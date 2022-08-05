@@ -2,15 +2,15 @@
 #
 # Set the UseMPI and UseNetcdf variables to make the desired shdom version.
 
-FC     = gfortran  # your Fortran 90 compiler here (same as used by mpif90)
-FFLAGS = -O3       #   your flags here
-#FC     = pgf90
-#FFLAGS = -fast
-MPIFC  = mpif90    # MPI Fortran 90 compiling command for shdom90
+FC       = gfortran  # your Fortran 90 compiler here (same as used by mpif90)
+FFLAGS   = -O3       #   your flags here
+#FC       = pgf90
+#FFLAGS   = -fast
+MPIFC    = mpif90    # MPI Fortran 90 compiling command for shdom90
 MPIFLAGS = -O3     #   MPI compiling flags
-LIBS   = 
+LIBS     =
 
-SHDOMOBJS   = shdomsub1.o shdomsub2.o shdomsub3.o fftpack.o ocean_brdf.o 
+SHDOMOBJS   = shdomsub1.o shdomsub2.o shdomsub3.o fftpack.o ocean_brdf.o
 
 UseMPI = no
 UseNetcdf = no
@@ -38,7 +38,7 @@ else
   LIBS   += $(NetcdfLib)
 endif
 
-all:  shdom  propgen make_mie_table make_tmatrix_table plotscattab 
+all:  shdom  propgen make_mie_table make_tmatrix_table plotscattab
 
 shdom: shdom.o $(SHDOMOBJS)
 	$(F90) $(F90FLAGS) -o shdom shdom.o $(SHDOMOBJS) $(LIBS)
@@ -68,7 +68,7 @@ shdom_netcdf.o: shdom_netcdf.f90
 	$(F90) -c $(F90FLAGS) shdom_netcdf.f90
 
 
-AsciiPropertyFileToNetcdf: AsciiPropertyFileToNetcdf.o 
+AsciiPropertyFileToNetcdf: AsciiPropertyFileToNetcdf.o
 	$(F90) $(F90FLAGS) -o AsciiPropertyFileToNetcdf AsciiPropertyFileToNetcdf.o shdom_netcdf.o  $(LIBS)
 AsciiPropertyFileToNetcdf.o: AsciiPropertyFileToNetcdf.f90 shdom_netcdf.o
 	$(F90) -c $(F90FLAGS) AsciiPropertyFileToNetcdf.f90
@@ -87,4 +87,3 @@ plotscattab: plotscattab.f90
 
 
 .f.o :; $(FC) -c $(FFLAGS) $*.f
-
