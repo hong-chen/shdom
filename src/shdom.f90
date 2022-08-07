@@ -1,16 +1,16 @@
 !   SHDOM: Spherical harmonic discrete ordinate radiative transfer method.
 !      See shdom.txt for documentation.
 
-      MODULE SHDOM_PROPERTY_ARRAYS
-        INTEGER, SAVE              :: NPX, NPY, NPZ, NUMPHASE
-        REAL,    SAVE              :: DELX, DELY, XSTART, YSTART
-        REAL,    SAVE, ALLOCATABLE :: ZLEVELS(:)
-        REAL,    SAVE, ALLOCATABLE :: TEMPP(:), EXTINCTP(:), ALBEDOP(:)
-        REAL,    SAVE, ALLOCATABLE :: LEGENP(:), EXTDIRP(:)
-        INTEGER*2,SAVE,ALLOCATABLE :: IPHASEP(:)
-        INTEGER, SAVE              :: NZCKD
-        REAL,    SAVE, ALLOCATABLE :: ZCKD(:), GASABS(:)
-      END MODULE
+MODULE SHDOM_PROPERTY_ARRAYS
+    INTEGER, SAVE              :: NPX, NPY, NPZ, NUMPHASE
+    REAL,    SAVE              :: DELX, DELY, XSTART, YSTART
+    REAL,    SAVE, ALLOCATABLE :: ZLEVELS(:)
+    REAL,    SAVE, ALLOCATABLE :: TEMPP(:), EXTINCTP(:), ALBEDOP(:)
+    REAL,    SAVE, ALLOCATABLE :: LEGENP(:), EXTDIRP(:)
+    INTEGER*2,SAVE,ALLOCATABLE :: IPHASEP(:)
+    INTEGER, SAVE              :: NZCKD
+    REAL,    SAVE, ALLOCATABLE :: ZCKD(:), GASABS(:)
+END MODULE
 
 
       PROGRAM SHDOM
@@ -1541,4 +1541,3 @@
       IF (VALIDBEAM) SIDE=6
       RETURN
       END
-
