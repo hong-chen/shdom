@@ -38,8 +38,18 @@ else
   LIBS   += $(NetcdfLib)
 endif
 
-all:  shdom  propgen make_mie_table make_tmatrix_table plotscattab
+TARGETS = shdom propgen make_mie_table make_tmatrix_table plotscattab
 
+# Options
+# =============================================================
+all: ${TARGETS}
+
+clean:
+	rm -rf *.o *.mod *~ ${TARGETS}
+# =============================================================
+
+# Dependencies
+# =============================================================
 shdom: shdom.o $(SHDOMOBJS)
 	$(F90) $(F90FLAGS) -o shdom shdom.o $(SHDOMOBJS) $(LIBS)
 
@@ -84,6 +94,7 @@ make_mie_table: make_mie_table.f90
 
 plotscattab: plotscattab.f90
 	$(F90) $(F90FLAGS) plotscattab.f90  -o plotscattab
+# =============================================================
 
 
 .f.o :; $(FC) -c $(FFLAGS) $*.f
