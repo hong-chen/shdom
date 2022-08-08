@@ -19,6 +19,7 @@ NetcdfHome = /usr/local/netcdf-3.6.3
 NetcdfInl  = -I$(NetcdfHome)/include
 NetcdfLib  = -L$(NetcdfHome)/lib -lnetcdf
 
+TARGETS = shdom propgen make_mie_table make_tmatrix_table plotscattab
 
 ifeq ($(UseMPI),no)
   SHDOMOBJS += shdom_nompi.o
@@ -38,7 +39,6 @@ else
   LIBS   += $(NetcdfLib)
 endif
 
-TARGETS = shdom propgen make_mie_table make_tmatrix_table plotscattab
 
 # Options
 # =============================================================

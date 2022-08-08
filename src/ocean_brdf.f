@@ -11,7 +11,7 @@ c         xmu=cosine of the zenith angle of the reflected radiation
 c         xphi=relative azimuth angle (between 0 and 2*pi)
 c         xpaw=azim. of sun - azim. of wind (in radian)
 c              For the direct solar radiation, the wind direction
-c              is fixed at the azimuth angle of 0 degree so that 
+c              is fixed at the azimuth angle of 0 degree so that
 c              the azimuth angle of the sun = xpaw.
 c
 C OUTPUT: brdfx=the total reflectance of the sea water
