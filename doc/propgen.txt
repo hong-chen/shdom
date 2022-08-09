@@ -67,10 +67,10 @@ scattering table extinction is normalized for a mass content of 1 g/m^3.
 The gamma distribution of particle droplet sizes is
      n(r) = a r^alpha exp(-b*r)
  where r is the particle radius, and a, b, alpha specify the gamma
-distribution.  The number concentration of droplets is 
+distribution.  The number concentration of droplets is
   N = a Gamma(alpha+1)/ b^(alpha+1), where Gamma is the gamma function.
 The effective radius of the distribution is r_eff = (alpha+3)/b, while
-the effective variance is v_eff = 1/(alpha+3).  A typical value for 
+the effective variance is v_eff = 1/(alpha+3).  A typical value for
 water clouds is v_eff=0.1 or alpha=7.  For ice clouds a typical value is
 alpha=1 or 2.  An exponential distribution is obtained with alpha=0.  A
 large value of alpha gives close to a monodisperse distribution.
@@ -78,7 +78,7 @@ large value of alpha gives close to a monodisperse distribution.
 The modified gamma distribution of particle sizes is
      n(r) = a r^alpha exp(-b*r^gamma)
  where r is the particle radius, and a, b, alpha, gamma specify the
-modified gamma distribution.  
+modified gamma distribution.
 
 The lognormal distribution of particle sizes is
      n(r) = a/r exp( -[ln(r/r0)]^2 / (2*sigma^2) )
@@ -96,7 +96,7 @@ There are often microphysical reasons for truncating the theoretical
 size distribution; for example, one might say that the cloud droplet
 mode ends at a radius of 50 microns.  For a narrow gamma distribution
 (alpha=7) of cloud droplets, a maximum radius of only twice the largest
-effective radius gives virtually the same optical properties as the 
+effective radius gives virtually the same optical properties as the
 untruncated gamma distribution.  For a wide lognormal distribution, as
 might be used for an aerosol distribution, a much larger maximum radius
 relative to the largest effective radius would be required if no
@@ -116,7 +116,7 @@ accuracy is sought.
                    Input Parameters
 
 Parameter   Description
-POLTAB      logical flag for polarized scattering table output 
+POLTAB      logical flag for polarized scattering table output
               (T=polarized, F=unpolarized)
 WAVELEN1    wavelength range (microns) for this band
 WAVELEN2      for monochromatic choose WAVELEN1=WAVELEN2
@@ -137,7 +137,7 @@ GAMMA       modified gamma distribution parameter
 NRETANB     number of effective radii entries in Mie table
 SRETAB      starting effective radius (micron) in Mie table
 ERETAB      ending effective radius (micron) in Mie table
-LOGRE       logical flag for log-spaced effective radius ouput 
+LOGRE       logical flag for log-spaced effective radius ouput
               (T=log-spaced r_e, F=evenly spaced r_e)
 MAXRADIUS   maxium particle radius in size distribution (micron)
 MIETABFILE  output Mie scattering table file name
@@ -156,7 +156,7 @@ Mishchenko T-matrix code, which will not converge for as large size
 parameters or extreme axis ratios as the quad-precision version.  For
 more information on this T-matrix implementation see the comments at the
 beginning of tmatrixwig.f and the journal article:
-  M. I. Mishchenko and L. D. Travis, Capabilities and limitations of a 
+  M. I. Mishchenko and L. D. Travis, Capabilities and limitations of a
 current FORTRAN implementation of the T-matrix method for randomly
 oriented, rotationally    symmetric scatterers, J. Quant. Spectrosc.
 Radiat. Transfer, vol. 60, 309-324 (1998).
@@ -174,15 +174,15 @@ radius of the spheroidal or cylindrical particles.
   The gamma distribution of particle sizes is
      n(r) = a r^alpha exp(-b*r)
  where r is the equivalent volume radius, and a, b, alpha specify the
-gamma distribution.  
+gamma distribution.
   The modified gamma distribution of particle sizes is
      n(r) = a r^alpha exp(-b*r^gamma)
  where r is the equivalent volume radius, and a, b, alpha, gamma specify
-the modified gamma distribution.  
+the modified gamma distribution.
   The lognormal distribution of particle sizes is
      n(r) = a/r exp( -[ln(r/r0)]^2 / (2*sigma^2) )
  where r0 is the logarithmic mode of the distribution and sigma is the
-standard deviation of the log.  
+standard deviation of the log.
 
 The maximum radius of the distribution is specified by the user because
 it is the critical determinant of the calculation computer time.  If
@@ -194,14 +194,14 @@ there is truncation of the theoretical distribution.  The number and
 spacing of the integration steps over the size distribution is
 controlled by the GET_NSIZE and GET_SIZES subroutines.  The default
 formula is DELX = max(0.01,0.03*X**0.5), where X is the size parameter
-(2*pi*r/lambda, lambda=wavelength) and DELX is the integration step. 
+(2*pi*r/lambda, lambda=wavelength) and DELX is the integration step.
 This integration spacing is adequate for most purposes, but can be
 easily changed if higher accuracy is sought.
 
                    Input Parameters
 
 Parameter   Description
-POLTAB      logical flag for polarized scattering table output 
+POLTAB      logical flag for polarized scattering table output
               (T=polarized, F=unpolarized)
 WAVELEN     wavelength for the T-matrix calculation (microns)
 PARTYPE     particle type: W=water, I=ice, A=aerosol
@@ -221,7 +221,7 @@ GAMMA       modified gamma distribution parameter
 NRETANB     number of effective radii entries in Mie table
 SRETAB      starting effective radius (micron) in Mie table
 ERETAB      ending effective radius (micron) in Mie table
-LOGRE       logical flag for log-spaced effective radius ouput 
+LOGRE       logical flag for log-spaced effective radius ouput
               (T=log-spaced r_e, F=evenly spaced r_e)
 MAXRADIUS   maxium particle radius in size distribution (micron)
 TABLEFILE  output scattering table file name
@@ -283,7 +283,7 @@ On Rayleigh optical depth calculations, J. Atmos. Oceanic. Technol., 16,
 1854-1861.
   Propgen uses the hypsometric relation to calculate the pressure
 profile from the input temperature profile.  The input surface pressure
-for Rayleigh scattering corresponds to the zero height level in the 
+for Rayleigh scattering corresponds to the zero height level in the
 propgen input.  If no Rayleigh scattering is desired, the RAYSFCPRES
 input may be set to zero.
   The Rayleigh scattering phase function (and phase matrix for
@@ -293,10 +293,10 @@ factor.
 Typically a cloud field occupies only small portion of the atmospheric
 profile and the other height levels are used to fill in the rest of the
 atmosphere.  The other height levels should be chosen according to the
-needs of SHDOM and the molecular absorption and scattering profile. 
+needs of SHDOM and the molecular absorption and scattering profile.
 SHDOM needs some vertical resolution to resolve the radiance field.  If
 molecular Rayleigh scattering is significant, then the other levels must
-exist in clear sky to put that scattering in the property file. 
+exist in clear sky to put that scattering in the property file.
 Similarly, if a k-distribution file is giving the molecular absorption,
 then other levels must cover the range where the absorption is
 significant.  For example, stratospheric levels need to be included for
@@ -314,7 +314,7 @@ to be specified at each grid point.  The particle file is an ascii text
 file with the following format:
    3            [format type]
    Nx Ny Nz     [number of X, Y, Z grid points]
-   delX delY    [X and Y grid spacing in km]   
+   delX delY    [X and Y grid spacing in km]
    Z1 ... Zn    [heights of particle levels in km]
    T1 ... Tn    [temperatures in Kelvin at these levels]
    IX IY IZ  Numcomp  Type1 Mass1 Reff1 ... TypeN MassN ReffN
@@ -330,7 +330,7 @@ can read the old 2 parameter LWC files that cloudprp used, which has
 the format:
    2            [format type]
    Nx Ny Nz     [number of X, Y, Z grid points]
-   delX delY    [X and Y grid spacing in km]   
+   delX delY    [X and Y grid spacing in km]
    Z1 ... Zn    [heights of cloud levels in km]
    T1 ... Tn    [temperatures in Kelvin]
    IX IY IZ LWC Reff
@@ -349,7 +349,7 @@ radii on the sixth header line.  After the header, for each effective
 radius entry in a scattering table, there is one line with the effective
 radius, the volume extinction coefficient (km^-1 for a mass content of 1
 g/m^3), the single scattering albedo, and the order (Nleg) of the
-Legendre or Wigner d-function series of the phase function/matrix. 
+Legendre or Wigner d-function series of the phase function/matrix.
 Propgen can read unpolarized or polarized scattering table formats,
 which differ in the phase function/matrix series coefficients.  The
 unpolarized format contains one or more lines with the the Nleg+1
@@ -360,31 +360,31 @@ Wigner d-function series is the four diagonal phase matrix elements (a1,
 a2, a3, a4) followed by the I-Q and U-V matrix elements (b1, b2). The
 first (I-I) and fourth (V-V) Wigner d-function series are regular
 Legendre series.  For an example scattering table, see one of the
-scattering table files produced by the example script. 
+scattering table files produced by the example script.
 
                    Input Parameters
 
 Parameter       Description
 NSCATTAB        number of input scattering tables (number of pure components)
-                  For PARFILE='NONE' use NSCATTAB=0, and then omit 
+                  For PARFILE='NONE' use NSCATTAB=0, and then omit
                   SCATTABFILES, SCATNUMS, abd POLTABS.
 SCATTABFILES()  name of each scattering table file
-SCATNUMS()      index or particle type of each scattering table (these type 
+SCATNUMS()      index or particle type of each scattering table (these type
                   numbers must match the types in the particle file)
 POLTABS()       logical flags for the type of each scattering table file:
                   T=polarized table, F=unpolarized table
 PARFILE         input particle properties filename (or NONE for Rayleigh only)
 MAXNEWPHASE     maximum number of new phase functions created
-ASYMTOL         tolerance in asymmetry parameter for creating a 
+ASYMTOL         tolerance in asymmetry parameter for creating a
                   new phase function
-FRACPHASETOL    maximum fractional error tolerance in phase function value 
+FRACPHASETOL    maximum fractional error tolerance in phase function value
                   for creating a new phase function
 RAYWAVELEN      wavelength for Rayleigh molecular scattering (micron)
 RAYSFCPRES      surface pressure for Rayleigh molecular scattering (mb or hPa)
 NZO             number of extra height levels output in property file
                   (in addition to those in the particle file)
 ZOTHER()        heights (km) and temperatures (K) of other levels
-TEMPOTHER()     
+TEMPOTHER()
 POLOUT          output polarized (P) or unpolarized (U) SHDOM property file
 PROPFILE        output SHDOM property file name
 
@@ -404,16 +404,16 @@ phase functions for different effective radius and particular phase
 matrix elements (P11, P22, P33, P44, P12, P34) may be selected for
 conversion.  The phase matrix elements beyond P11 may also be output as
 a ratio to P11.  A graphing program can be used to plot the output of
-plotscattab.  
+plotscattab.
 
                Plotting file format
 
 The output file from plotscattab contains a four line header and then
 the phase functions in separate columns.  An example of the phase
 function output for one effective radius and is:
-!  Scattering table phase functions: dust_w0.646_ax2.00_tmat.scat 
+!  Scattering table phase functions: dust_w0.646_ax2.00_tmat.scat
 ! Angle  cos(angle)  Phase functions for effective radii (um) / matrix element
-!                       1.00       1.00        1.00        1.00        1.00        1.00 
+!                       1.00       1.00        1.00        1.00        1.00        1.00
 !                      P11       P22/P11     P33/P11     P44/P11     P12/P11     P34/P11
     0.00  1.000000  0.1060E+03  0.9995E+00  0.9995E+00  0.9991E+00  0.0000E+00  0.0000E+00
       . . .
@@ -426,7 +426,7 @@ INFILE      scattering table or property file name
 NANGLE      number of output angles (e.g. 181 for output at every degree)
               NANGLE<0 allows the user the input ABS(NANGLE) angles
 NOUT        number of output phase functions
-OUTREFF()   effective radii (micron) list or 
+OUTREFF()   effective radii (micron) list or
               tabulated phase function numbers (1,2,...)
 PELEM()     phase matrix elements (1=P11, 2=P22, 3=P33, 4=P44, 5=P12, 6=P34)
               for each effective radii in list (<0 for ratio to P11)
