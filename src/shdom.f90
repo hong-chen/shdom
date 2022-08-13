@@ -1,118 +1,128 @@
-!   SHDOM: Spherical harmonic discrete ordinate radiative transfer method.
-!      See shdom.txt for documentation.
+! This code is a cleaned-up version of SHDOM/shdom.f90 by Evans 1996.
+!
+! 2022-08-13
+! by Hong Chen (hong.chen.cu@gmail.com) at Laboratory for Atmospheric and Space Physics
 
-MODULE SHDOM_PROPERTY_ARRAYS
-    INTEGER, SAVE              :: NPX, NPY, NPZ, NUMPHASE
-    REAL,    SAVE              :: DELX, DELY, XSTART, YSTART
-    REAL,    SAVE, ALLOCATABLE :: ZLEVELS(:)
-    REAL,    SAVE, ALLOCATABLE :: TEMPP(:), EXTINCTP(:), ALBEDOP(:)
-    REAL,    SAVE, ALLOCATABLE :: LEGENP(:), EXTDIRP(:)
-    INTEGER*2,SAVE,ALLOCATABLE :: IPHASEP(:)
-    INTEGER, SAVE              :: NZCKD
-    REAL,    SAVE, ALLOCATABLE :: ZCKD(:), GASABS(:)
-END MODULE
+! SHDOM: Spherical harmonic discrete ordinate radiative transfer method.
+! See shdom.txt for documentation.
 
-
-      PROGRAM SHDOM
-      USE SHDOM_PROPERTY_ARRAYS
-      USE shdom_netcdf
-      IMPLICIT NONE
-!                         Number of output files and inputs parameter per file
-      INTEGER, PARAMETER :: MAXOUT=20, MAXPAR=500
-      REAL                 :: OUTPARMS(MAXPAR,MAXOUT)
-      CHARACTER            :: OUTTYPES(MAXOUT)*1, OUTFILES(MAXOUT)*80
-
-      REAL,    ALLOCATABLE :: DELG(:), KABS(:,:)
-      REAL,    ALLOCATABLE :: XGRID(:), YGRID(:), ZGRID(:)
-      REAL,    ALLOCATABLE :: TEMP(:), PLANCK(:), EXTINCT(:), ALBEDO(:)
-      REAL,    ALLOCATABLE :: LEGEN(:)
-      INTEGER*2,ALLOCATABLE:: IPHASE(:)
-      INTEGER, ALLOCATABLE :: GRIDPTR(:,:), NEIGHPTR(:,:), TREEPTR(:,:)
-      INTEGER*2,ALLOCATABLE:: CELLFLAGS(:)
-      REAL,    ALLOCATABLE :: GRIDPOS(:,:)
-      INTEGER, ALLOCATABLE :: RSHPTR(:), SHPTR(:), OSHPTR(:)
-      REAL,    ALLOCATABLE :: RADIANCE(:,:), SOURCE(:,:), DELSOURCE(:,:)
-      INTEGER, ALLOCATABLE :: WORK1(:)
-      REAL,    ALLOCATABLE :: WORK(:), WORK2(:)
-      REAL,    ALLOCATABLE :: FLUXES(:), DIRFLUX(:)
-      INTEGER, ALLOCATABLE :: NPHI0(:)
-      REAL,    ALLOCATABLE :: MU(:), WTDO(:), PHI(:)
-      INTEGER, ALLOCATABLE :: BCPTR(:)
-      REAL,    ALLOCATABLE :: BCRAD(:,:)
-      REAL,    ALLOCATABLE :: SFCPARMS(:)
-      REAL,    ALLOCATABLE :: SFCGRIDPARMS(:)
-      REAL,    ALLOCATABLE :: SUMFLUXES(:), SUMDIRFLUX(:), SUMFLUXDIV(:)
-      REAL,    ALLOCATABLE :: SUMSHTERMS(:), SOURCE1OUT(:)
-      REAL,    ALLOCATABLE :: SUMRADOUT(:), SUMVISOUT(:)
-      REAL,    ALLOCATABLE :: TEMPPT(:), EXTINCTPT(:), ALBEDOPT(:)
-      REAL,    ALLOCATABLE :: LEGENPT(:)
-      INTEGER*2, ALLOCATABLE :: IPHASEPT(:)
-      REAL,    ALLOCATABLE :: ALLFLUXES(:,:,:,:)
-      REAL,    ALLOCATABLE :: ALLFLUXDIV(:,:,:), ALLSHTERMS(:,:,:,:)
-      REAL,    ALLOCATABLE :: XALLGRID(:), YALLGRID(:)
-
-      INTEGER :: MAXPG, MAXIG, MAXIC, MAXIV, MAXIDO, MAXNZ, MAXNG
-      INTEGER :: MAXLEG, MAXPGL, MAXIGL
-      INTEGER :: MAXNBC, MAXBCRAD
-      INTEGER :: MAXSFCPTS, MAXSFCPARS,  BIG_ARRAYS
-      REAL    :: MEMWORD, WANTMEM
-      REAL    :: MAX_TOTAL_MB, ADAPT_GRID_FACTOR
-      REAL    :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
-      REAL    :: MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
-
-      INTEGER NSTOKES, NX, NY, NZ, NX1, NY1
-      INTEGER NXT, NYT, NPXT, NPYT, MAXPGT, MAXPGLT
-      INTEGER NXSFC, NYSFC, NSFCPAR, NTOPPTS, NBOTPTS
-      INTEGER NG, SIDE
-      INTEGER ML, MM, NLM, NSTLEG, NLEG, NANG, NMU, NPHI, NPHI0MAX
-      INTEGER NBPTS, NPTS, NCELLS, NSH, NBCELLS, OLDNPTS
-      INTEGER MAXITER, ITER, TOTITER, IG, I, NUMOUT, BCFLAG, IPFLAG
-      INTEGER NRAD, IRAD, NXOUT, NYOUT, NVIS, IVIS, NSCAN, NPIX, NSHOUT
-      INTEGER NCELLSTOT, NPTSTOT, NSHTOT
-      LOGICAL KDIST, INRADFLAG, NEWGRIDFLAG, DELTAM, ACCELFLAG
-      LOGICAL BASEOUT, HIGHORDERRAD, MASTERPROC, VALIDBEAM, BTEST
-      LOGICAL RADIANCE_OUT, VISUAL_OUT
-      LOGICAL FLUX_OUT, FLUXDIV_OUT, SH_OUT, SOURCE_OUT
-      REAL  SOLARFLUX, SOLARMU, SOLARAZ, SOLFLUX
-      REAL  GNDTEMP, GNDALBEDO, SKYRAD, WAVENO(2), WAVELEN
-      REAL  SOLACC, SOLCRIT, SPLITACC, SHACC
-      REAL  DELXSFC, DELYSFC, MAXASYM, REDUCE
-      REAL  MUOUT, PHIOUT
-      REAL  UNIFZLEV, XO, YO, ZO, DIRPATH
-      REAL  CPUTIME1, CPUTIME2, CPUTIMETOTAL, SUM_CPU_TIME
-      CHARACTER SRCTYPE*1, UNITS*1
-      CHARACTER GRIDTYPE*1, PROPTYPE*1, SFCTYPE*2
-      CHARACTER*80 PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
-      CHARACTER*80 OutFileNC, RUNNAME
-      EXTERNAL SUM_CPU_TIME
+module shdom_property_arrays
+  integer  , save              :: npx, npy, npz, numphase
+  integer  , save              :: nzckd
+  real     , save              :: delx, dely, xstart, ystart
+  real     , save, allocatable :: zlevels(:)
+  real     , save, allocatable :: tempp(:), extinctp(:), albedop(:)
+  real     , save, allocatable :: legenp(:), extdirp(:)
+  integer*2, save, allocatable :: iphasep(:)
+  real     , save, allocatable :: zckd(:), gasabs(:)
+end module
 
 
-!          Choose the option to compute higher order radiance SH terms
-      HIGHORDERRAD = .FALSE.
-      NSHOUT = 4
-      IF (HIGHORDERRAD) NSHOUT=5
-!          Choose type of initialization/output for k-distributions:
-!            True means initiatize with and output only the base grid.
-      BASEOUT = .FALSE.
+program shdom
 
-      CALL CPU_TIME(CPUTIME1)
+  use shdom_property_arrays
+  use shdom_netcdf
 
-       ! Start up MPI for multiple processors if available, and
-       !  return flag for master process (procnum=0)
-      CALL START_MPI (MASTERPROC)
+  implicit none
+
+  ! Number of output files and inputs parameter per file
+  integer  , parameter   :: MAXOUT=20, MAXPAR=500
+  real                   :: OUTPARMS(MAXPAR,MAXOUT)
+  character              :: OUTTYPES(MAXOUT)*1, OUTFILES(MAXOUT)*80
+
+  real     , allocatable :: DELG(:), KABS(:,:)
+  real     , allocatable :: XGRID(:), YGRID(:), ZGRID(:)
+  real     , allocatable :: TEMP(:), PLANCK(:), EXTINCT(:), ALBEDO(:)
+  real     , allocatable :: LEGEN(:)
+  integer*2, allocatable :: IPHASE(:)
+  integer  , allocatable :: GRIDPTR(:,:), NEIGHPTR(:,:), TREEPTR(:,:)
+  integer*2, allocatable :: CELLFLAGS(:)
+  real     , allocatable :: GRIDPOS(:,:)
+  integer  , allocatable :: RSHPTR(:), SHPTR(:), OSHPTR(:)
+  real     , allocatable :: RADIANCE(:,:), SOURCE(:,:), DELSOURCE(:,:)
+  integer  , allocatable :: WORK1(:)
+  real     , allocatable :: WORK(:), WORK2(:)
+  real     , allocatable :: FLUXES(:), DIRFLUX(:)
+  integer  , allocatable :: NPHI0(:)
+  real     , allocatable :: MU(:), WTDO(:), PHI(:)
+  integer  , allocatable :: BCPTR(:)
+  real     , allocatable :: BCRAD(:,:)
+  real     , allocatable :: SFCPARMS(:)
+  real     , allocatable :: SFCGRIDPARMS(:)
+  real     , allocatable :: SUMFLUXES(:), SUMDIRFLUX(:), SUMFLUXDIV(:)
+  real     , allocatable :: SUMSHTERMS(:), SOURCE1OUT(:)
+  real     , allocatable :: SUMRADOUT(:), SUMVISOUT(:)
+  real     , allocatable :: TEMPPT(:), EXTINCTPT(:), ALBEDOPT(:)
+  real     , allocatable :: LEGENPT(:)
+  integer*2, allocatable :: IPHASEPT(:)
+  real     , allocatable :: ALLFLUXES(:,:,:,:)
+  real     , allocatable :: ALLFLUXDIV(:,:,:), ALLSHTERMS(:,:,:,:)
+  real     , allocatable :: XALLGRID(:), YALLGRID(:)
+
+  integer :: MAXPG, MAXIG, MAXIC, MAXIV, MAXIDO, MAXNZ, MAXNG
+  integer :: MAXLEG, MAXPGL, MAXIGL
+  integer :: MAXNBC, MAXBCRAD
+  integer :: MAXSFCPTS, MAXSFCPARS,  BIG_ARRAYS
+  real    :: MEMWORD, WANTMEM
+  real    :: MAX_TOTAL_MB, ADAPT_GRID_FACTOR
+  real    :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
+  real    :: MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
+
+  integer NSTOKES, NX, NY, NZ, NX1, NY1
+  integer NXT, NYT, NPXT, NPYT, MAXPGT, MAXPGLT
+  integer NXSFC, NYSFC, NSFCPAR, NTOPPTS, NBOTPTS
+  integer NG, SIDE
+  integer ML, MM, NLM, NSTLEG, NLEG, NANG, NMU, NPHI, NPHI0MAX
+  integer NBPTS, NPTS, NCELLS, NSH, NBCELLS, OLDNPTS
+  integer MAXITER, ITER, TOTITER, IG, I, NUMOUT, BCFLAG, IPFLAG
+  integer NRAD, IRAD, NXOUT, NYOUT, NVIS, IVIS, NSCAN, NPIX, NSHOUT
+  integer NCELLSTOT, NPTSTOT, NSHTOT
+  logical KDIST, INRADFLAG, NEWGRIDFLAG, DELTAM, ACCELFLAG
+  logical BASEOUT, HIGHORDERRAD, MASTERPROC, VALIDBEAM, BTEST
+  logical RADIANCE_OUT, VISUAL_OUT
+  logical FLUX_OUT, FLUXDIV_OUT, SH_OUT, SOURCE_OUT
+  real    SOLARFLUX, SOLARMU, SOLARAZ, SOLFLUX
+  real    GNDTEMP, GNDALBEDO, SKYRAD, WAVENO(2), WAVELEN
+  real    SOLACC, SOLCRIT, SPLITACC, SHACC
+  real    DELXSFC, DELYSFC, MAXASYM, REDUCE
+  real    MUOUT, PHIOUT
+  real    UNIFZLEV, XO, YO, ZO, DIRPATH
+  real    CPUTIME1, CPUTIME2, CPUTIMETOTAL, SUM_CPU_TIME
+  character    :: SRCTYPE*1, UNITS*1
+  character    :: GRIDTYPE*1, PROPTYPE*1, SFCTYPE*2
+  character*80 :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
+  character*80 :: OutFileNC, RUNNAME
+  external     :: SUM_CPU_TIME
 
 
-      IF (MASTERPROC) THEN
-        CALL USER_INPUT (RUNNAME, PROPFILE, SFCFILE, CKDFILE,        &
-                       INSAVEFILE, OUTSAVEFILE,                      &
-                       NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,       &
-                       IPFLAG, KDIST, DELTAM, GRIDTYPE,              &
-                       SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD, &
-                       GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,   &
-                       ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,  &
-                       MAXOUT,MAXPAR, NUMOUT,OUTTYPES,OUTPARMS,OUTFILES, &
-                       OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,    &
-                       NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
+  ! Choose the option to compute higher order radiance SH terms
+  HIGHORDERRAD = .FALSE.
+  NSHOUT = 4
+  IF (HIGHORDERRAD) NSHOUT=5
+  ! Choose type of initialization/output for k-distributions:
+  ! True means initiatize with and output only the base grid.
+  BASEOUT = .FALSE.
+
+  CALL CPU_TIME(CPUTIME1)
+
+  ! Start up MPI for multiple processors if available, and
+  !  return flag for master process (procnum=0)
+  CALL START_MPI (MASTERPROC)
+
+
+  if (MASTERPROC) then
+
+    CALL USER_INPUT (RUNNAME, PROPFILE, SFCFILE, CKDFILE,              &
+                     INSAVEFILE, OUTSAVEFILE,                          &
+                     NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,           &
+                     IPFLAG, KDIST, DELTAM, GRIDTYPE,                  &
+                     SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,     &
+                     GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,       &
+                     ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,      &
+                     MAXOUT,MAXPAR, NUMOUT,OUTTYPES,OUTPARMS,OUTFILES, &
+                     OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,       &
+                     NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
+
 !        CALL NAMELIST_INPUT (RUNNAME, PROPFILE, SFCFILE, CKDFILE,    &
 !                       INSAVEFILE, OUTSAVEFILE,                      &
 !                       NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG, IPFLAG,&
@@ -123,7 +133,8 @@ END MODULE
 !                       MAXOUT,MAXPAR,NUMOUT,OUTTYPES,OUTPARMS,OUTFILES, &
 !                       OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,    &
 !                       NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
-      ENDIF
+  end if
+
       CALL BROADCAST_USER_INPUT (RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
                        INSAVEFILE, OUTSAVEFILE,                      &
                        NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,                &
