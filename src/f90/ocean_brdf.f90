@@ -246,14 +246,17 @@ subroutine morcasiwat(wl, c, r2)
   u1 = 0.75
   r1 = 0.33*bb/u1/kd
 
- 100  u2 = 0.90*(1.-r1)/(1.+2.25*r1)
+  do
+    u2 = 0.90*(1.-r1)/(1.+2.25*r1)
+    r2 = 0.33*bb/u2/kd
+    err = abs((r2-r1)/r2)
 
-  r2 = 0.33*bb/u2/kd
-  err = abs((r2-r1)/r2)
-  if (err .GE. 0.0001) then
-     r1 = r2
-     goto 100
-  endif
+    if (err .ge. 0.0001) then
+      r1 = r2
+    else
+      exit
+    endif
+  enddo
 
 end subroutine
 
@@ -262,243 +265,257 @@ end subroutine
 
 
 
-      SUBROUTINE INDWAT(Wl,Xsal,Nr,Ni)
-      IMPLICIT NONE
-!*--INDWAT244
-!
-! input parameters:  wl=wavelength (in micrometers)
-!                    xsal=salinity (in ppt), if xsal<0 then 34.3ppt by default
-! output parameters: nr=index of refraction of sea water
-!                    ni=extinction coefficient of sea water
-!
-      REAL twl(62) , tnr(62) , tni(62)
-      REAL Nr , Ni , Wl , xwl , yr , yi , nrc , nic , Xsal
-      INTEGER i
-! Indices of refraction for pure water from Hale and Querry,
-! Applied Optique, March 1973, Vol. 12,  No. 3, pp. 555-563
-      DATA twl/0.250 , 0.275 , 0.300 , 0.325 , 0.345 , 0.375 , 0.400 ,  &
-         & 0.425 , 0.445 , 0.475 , 0.500 , 0.525 , 0.550 , 0.575 ,      &
-         & 0.600 , 0.625 , 0.650 , 0.675 , 0.700 , 0.725 , 0.750 ,      &
-         & 0.775 , 0.800 , 0.825 , 0.850 , 0.875 , 0.900 , 0.925 ,      &
-         & 0.950 , 0.975 , 1.000 , 1.200 , 1.400 , 1.600 , 1.800 ,      &
-         & 2.000 , 2.200 , 2.400 , 2.600 , 2.650 , 2.700 , 2.750 ,      &
-         & 2.800 , 2.850 , 2.900 , 2.950 , 3.000 , 3.050 , 3.100 ,      &
-         & 3.150 , 3.200 , 3.250 , 3.300 , 3.350 , 3.400 , 3.450 ,      &
+subroutine indwat(wl, xsal, nr, ni)
+
+  ! input parameters:  wl=wavelength (in micrometers)
+  !                    xsal=salinity (in ppt), if xsal<0 then 34.3ppt by default
+  ! output parameters: nr=index of refraction of sea water
+  !                    ni=extinction coefficient of sea water
+
+  implicit none
+
+  real twl(62) , tnr(62) , tni(62)
+  real nr, ni, wl, xwl, yr, yi, nrc, nic, xsal
+  integer i
+
+  ! Indices of refraction for pure water from Hale and Querry,
+  ! Applied Optique, March 1973, Vol. 12,  No. 3, pp. 555-563
+  data twl/0.250 , 0.275 , 0.300 , 0.325 , 0.345 , 0.375 , 0.400 , &
+         & 0.425 , 0.445 , 0.475 , 0.500 , 0.525 , 0.550 , 0.575 , &
+         & 0.600 , 0.625 , 0.650 , 0.675 , 0.700 , 0.725 , 0.750 , &
+         & 0.775 , 0.800 , 0.825 , 0.850 , 0.875 , 0.900 , 0.925 , &
+         & 0.950 , 0.975 , 1.000 , 1.200 , 1.400 , 1.600 , 1.800 , &
+         & 2.000 , 2.200 , 2.400 , 2.600 , 2.650 , 2.700 , 2.750 , &
+         & 2.800 , 2.850 , 2.900 , 2.950 , 3.000 , 3.050 , 3.100 , &
+         & 3.150 , 3.200 , 3.250 , 3.300 , 3.350 , 3.400 , 3.450 , &
          & 3.500 , 3.600 , 3.700 , 3.800 , 3.900 , 4.000/
-      DATA tnr/1.362 , 1.354 , 1.349 , 1.346 , 1.343 , 1.341 , 1.339 ,  &
-         & 1.338 , 1.337 , 1.336 , 1.335 , 1.334 , 1.333 , 1.333 ,      &
-         & 1.332 , 1.332 , 1.331 , 1.331 , 1.331 , 1.330 , 1.330 ,      &
-         & 1.330 , 1.329 , 1.329 , 1.329 , 1.328 , 1.328 , 1.328 ,      &
-         & 1.327 , 1.327 , 1.327 , 1.324 , 1.321 , 1.317 , 1.312 ,      &
-         & 1.306 , 1.296 , 1.279 , 1.242 , 1.219 , 1.188 , 1.157 ,      &
-         & 1.142 , 1.149 , 1.201 , 1.292 , 1.371 , 1.426 , 1.467 ,      &
-         & 1.483 , 1.478 , 1.467 , 1.450 , 1.432 , 1.420 , 1.410 ,      &
+
+  data tnr/1.362 , 1.354 , 1.349 , 1.346 , 1.343 , 1.341 , 1.339 , &
+         & 1.338 , 1.337 , 1.336 , 1.335 , 1.334 , 1.333 , 1.333 , &
+         & 1.332 , 1.332 , 1.331 , 1.331 , 1.331 , 1.330 , 1.330 , &
+         & 1.330 , 1.329 , 1.329 , 1.329 , 1.328 , 1.328 , 1.328 , &
+         & 1.327 , 1.327 , 1.327 , 1.324 , 1.321 , 1.317 , 1.312 , &
+         & 1.306 , 1.296 , 1.279 , 1.242 , 1.219 , 1.188 , 1.157 , &
+         & 1.142 , 1.149 , 1.201 , 1.292 , 1.371 , 1.426 , 1.467 , &
+         & 1.483 , 1.478 , 1.467 , 1.450 , 1.432 , 1.420 , 1.410 , &
          & 1.400 , 1.385 , 1.374 , 1.364 , 1.357 , 1.351/
-      DATA tni/3.35E-08 , 2.35E-08 , 1.60E-08 , 1.08E-08 , 6.50E-09 ,   &
-         & 3.50E-09 , 1.86E-09 , 1.30E-09 , 1.02E-09 , 9.35E-10 ,       &
-         & 1.00E-09 , 1.32E-09 , 1.96E-09 , 3.60E-09 , 1.09E-08 ,       &
-         & 1.39E-08 , 1.64E-08 , 2.23E-08 , 3.35E-08 , 9.15E-08 ,       &
-         & 1.56E-07 , 1.48E-07 , 1.25E-07 , 1.82E-07 , 2.93E-07 ,       &
-         & 3.91E-07 , 4.86E-07 , 1.06E-06 , 2.93E-06 , 3.48E-06 ,       &
-         & 2.89E-06 , 9.89E-06 , 1.38E-04 , 8.55E-05 , 1.15E-04 ,       &
-         & 1.10E-03 , 2.89E-04 , 9.56E-04 , 3.17E-03 , 6.70E-03 ,       &
-         & 1.90E-02 , 5.90E-02 , 1.15E-01 , 1.85E-01 , 2.68E-01 ,       &
-         & 2.98E-01 , 2.72E-01 , 2.40E-01 , 1.92E-01 , 1.35E-01 ,       &
-         & 9.24E-02 , 6.10E-02 , 3.68E-02 , 2.61E-02 , 1.95E-02 ,       &
-         & 1.32E-02 , 9.40E-03 , 5.15E-03 , 3.60E-03 , 3.40E-03 ,       &
-         & 3.80E-03 , 4.60E-03/
-      i = 2
- 100  IF ( Wl.GE.twl(i) ) THEN
-         IF ( i.LT.62 ) THEN
-            i = i + 1
-            GOTO 100
-         ENDIF
-      ENDIF
-      xwl = twl(i) - twl(i-1)
-      yr = tnr(i) - tnr(i-1)
-      yi = tni(i) - tni(i-1)
-      Nr = tnr(i-1) + (Wl-twl(i-1))*yr/xwl
-      Ni = tni(i-1) + (Wl-twl(i-1))*yi/xwl
-!
-! Correction to be applied to the index of refraction and to the extinction
-! coefficients of the pure water to obtain the ocean water one (see for
-! example Friedman). By default, a typical sea water is assumed
-! (Salinity=34.3ppt, Chlorinity=19ppt) as reported by Sverdrup.
-! In that case there is no correction for the extinction coefficient between
-! 0.25 and 4 microns. For the index of refraction, a correction of +0.006
-! has to be applied (McLellan). For a chlorinity of 19.0ppt the correction
-! is a linear function of the salt concentration. Then, in 6S users are able
-! to enter the salt concentration (in ppt).
-! REFERENCES:
-! Friedman D., Applied Optics, 1969, Vol.8, No.10, pp.2073-2078.
-! McLellan H.J., Elements of physical Oceanography, Pergamon Press, Inc.,
-!        New-York, 1965, p 129.
-! Sverdrup H.V. et al., The Oceans (Prentice-Hall, Inc., Englewood Cliffs,
-!        N.J., 1942, p 173.
- 
-      nrc = 0.006
-      nic = 0.000
-      IF ( Xsal.GE.0.0 ) THEN
-         Nr = Nr + nrc*(Xsal/34.3)
-         Ni = Ni + nic*(Xsal/34.3)
-      ELSE
-         Nr = Nr + nrc
-         Ni = Ni + nic
-      ENDIF
-      END
-!*==SUNGLINT.spg  processed by SPAG 6.72Dc at 23:26 on 12 Aug 2022
- 
- 
- 
-      SUBROUTINE SUNGLINT(Wspd,Nr,Ni,Azw,Ts,Tv,Fi,Rog)
-      IMPLICIT NONE
-!*--SUNGLINT332
-! input parameters:   wspd=speed of the wind (in m/s)
-!                     nr=index of refraction of the sea water
-!                     ni=extinction coefficient of the sea water
-!                     azw=azim. of the sun - azim. of the wind (in deg.)
-!                     ts=solar zenith angle (in deg.)
-!                     tv=view zenith angle (in deg.)
-!                     fi=relative azimuth (sun-satellite)
-! output parameters:  rog=reflectance of the sun glint
-!
-      REAL pi , fac
-      REAL Wspd , Nr , Ni , Ts , Tv , Fi , Rog , Azw , phw
-      REAL cs , cv , ss , sv , phi , zx , zy , tantilt , tilt , proba , &
-         & xe , xn , xe2 , xn2
-      REAL coef , cos2chi , coschi , sinchi
-      REAL r1 , sigmac , sigmau , c21 , c03 , c40 , c04 , c22
- 
-      pi = ATAN(1.)*4.
-      fac = pi/180.
-      phw = Azw*fac
-      cs = COS(Ts*fac)
-      cv = COS(Tv*fac)
-      ss = SIN(Ts*fac)
-      sv = SIN(Tv*fac)
-      phi = Fi*fac
-      zx = -sv*SIN(phi)/(cs+cv)
-      zy = (ss+sv*COS(phi))/(cs+cv)
-      tantilt = SQRT(zx*zx+zy*zy)
-      tilt = ATAN(tantilt)
-!  Anisotropic Gaussian distribution
-!    phw=phi_sun-phi_wind
-      sigmac = 0.003 + 0.00192*Wspd
-      sigmau = 0.00316*Wspd
-      c21 = 0.01 - 0.0086*Wspd
-      c03 = 0.04 - 0.033*Wspd
-      c40 = 0.40
-      c22 = 0.12
-      c04 = 0.23
-      xe = (COS(phw)*zx+SIN(phw)*zy)/SQRT(sigmac)
-      xn = (-SIN(phw)*zx+COS(phw)*zy)/SQRT(sigmau)
-      xe2 = xe*xe
-      xn2 = xn*xn
-      coef = 1 - c21/2.*(xe2-1)*xn - c03/6.*(xn2-3)*xn
-      coef = coef + c40/24.*(xe2*xe2-6*xe2+3)
-      coef = coef + c04/24.*(xn2*xn2-6*xn2+3)
-      coef = coef + c22/4.*(xe2-1)*(xn2-1)
-      proba = coef/2./pi/SQRT(sigmau)/SQRT(sigmac)*EXP(-(xe2+xn2)/2.)
-! Compute Fresnel's coefficient R1
-      cos2chi = cv*cs + sv*ss*COS(phi)
-      IF ( cos2chi.GT.1.0 ) cos2chi = 0.99999999999
-      IF ( cos2chi.LT.-1.0 ) cos2chi = -0.99999999999
-      coschi = SQRT(0.5*(1+cos2chi))
-      sinchi = SQRT(0.5*(1-cos2chi))
-      CALL FRESNEL(Nr,Ni,coschi,sinchi,r1)
-! Compute Reflectance of the sun glint
-      Rog = pi*r1*proba/4./cs/cv/(COS(tilt)**4)
-      END
-!*==FRESNEL.spg  processed by SPAG 6.72Dc at 23:26 on 12 Aug 2022
- 
- 
-      SUBROUTINE FRESNEL(Nr,Ni,Coschi,Sinchi,R1)
-      IMPLICIT NONE
-!*--FRESNEL394
-!
-! to compute the Fresnel's coefficient of reflection (see for
-! example M. Born and E. Wolf, Principles of Optics, Pergamon Press, fifth
-! edition, 1975, pp 628
-! input parameters: nr=index of refraction of the sea water
-!                   ni=extinction coefficient of the sea water
-!                   coschi & sinchi=cosine and sine of the incident radiation
-!                                   with respect of the wave facet normal.
-! output parameter: R1=Fresnel's coefficient for reflection
-!
-      REAL Nr , Ni , a1 , a2 , u , v , rr2 , rl2 , b1 , b2 , R1 ,       &
-         & Coschi , Sinchi
-! absolute value for a1 to get v=0 when ni=0
-      a1 = ABS(Nr*Nr-Ni*Ni-Sinchi*Sinchi)
-      a2 = SQRT((Nr*Nr-Ni*Ni-Sinchi*Sinchi)**2.+4*Nr*Nr*Ni*Ni)
-      u = SQRT(0.5*(a1+a2))
-      v = SQRT(MAX(0.0,0.5*(-a1+a2)))
-      rr2 = ((Coschi-u)**2+v*v)/((Coschi+u)**2+v*v)
-      b1 = (Nr*Nr-Ni*Ni)*Coschi
-      b2 = 2*Nr*Ni*Coschi
-      rl2 = ((b1-u)**2+(b2-v)**2)/((b1+u)**2+(b2+v)**2)
-      R1 = (rr2+rl2)/2.
-      END
-!*==GLITALBE.spg  processed by SPAG 6.72Dc at 23:26 on 12 Aug 2022
- 
- 
- 
-      SUBROUTINE GLITALBE(Wspd,Nr,Ni,Azw,Rge)
-      IMPLICIT NONE
-!*--GLITALBE424
-!*** Start of declarations inserted by SPAG
-      INTEGER nfa , nta , ntb
-!*** End of declarations inserted by SPAG
-!
-! To compute the spherical albedo of the sea water. See for example
-! Masuda et al., Remote Sens. Environ., 24, 313-329, 1988.
-!
-! input parameters: wsp=wind of speed
-!                   nr=index of refraction of the sea water
-!                   ni=extinction coefficient of the sea water
-!                   azw=azim. of sun - azim. of wind (in deg.)
-! output parameter: rge=spherical albedo of the sun glint
-!
-      REAL Nr , Ni , Azw , phw , Rge , q , Wspd , prefl , proba , pr ,  &
-         & pp , pi , fac
-      REAL sigma , sigmac , sigmau , c21 , c03 , c40 , c04 , c22
-      REAL costt , hta , htb , hfa , cotb , cota , cofa , diff , coef
-      REAL phin , cosphin , sinphin , costet , tet , sintet
-      REAL costetn , sintetn , tantetn , coschi , sinchi
-      REAL zx , zy , xe , xn , xe2 , xn2 , fonc0 , pond , r1
-      INTEGER km , i , j
- 
-      pi = ATAN(1.)*4.
-      fac = pi/180.
-      sigma = 0.003 + 0.00512*Wspd
-      sigmac = 0.003 + 0.00192*Wspd
-      sigmau = 0.00316*Wspd
-      c21 = 0.01 - 0.0086*Wspd
-      c03 = 0.04 - 0.033*Wspd
-      c40 = 0.40
-      c22 = 0.12
-      c04 = 0.23
-! costt to minimize the time of the computation
-!     integration between 1 and costt instead of 1 and 0
-      q = 50
-      costt = 1./SQRT(1+q*sigma/4.)
-      phw = Azw*fac
- 
-      prefl = 0.
-      proba = 0.
- 
-      ntb = 31
-      htb = 1./FLOAT(ntb-1)
-! loops on the zenith angle of the emitted radiation
-      DO km = 1 , ntb
-         costet = (km-1)*htb
-         tet = ACOS(costet)
-         sintet = SIN(tet)
-         tet = tet/fac
-! Simpson's rules for the angle of the emitted radiation teta
-         cotb = 2.
-         diff = ABS(km/2-km/2.)
-         IF ( diff.LT.0.00001 ) cotb = 4.
-         IF ( km.EQ.1 .OR. km.EQ.ntb ) cotb = 1.0
+
+  data tni/3.35e-08 , 2.35e-08 , 1.60e-08 , 1.08e-08 , 6.50e-09 , &
+         & 3.50e-09 , 1.86e-09 , 1.30e-09 , 1.02e-09 , 9.35e-10 , &
+         & 1.00e-09 , 1.32e-09 , 1.96e-09 , 3.60e-09 , 1.09e-08 , &
+         & 1.39e-08 , 1.64e-08 , 2.23e-08 , 3.35e-08 , 9.15e-08 , &
+         & 1.56e-07 , 1.48e-07 , 1.25e-07 , 1.82e-07 , 2.93e-07 , &
+         & 3.91e-07 , 4.86e-07 , 1.06e-06 , 2.93e-06 , 3.48e-06 , &
+         & 2.89e-06 , 9.89e-06 , 1.38e-04 , 8.55e-05 , 1.15e-04 , &
+         & 1.10e-03 , 2.89e-04 , 9.56e-04 , 3.17e-03 , 6.70e-03 , &
+         & 1.90e-02 , 5.90e-02 , 1.15e-01 , 1.85e-01 , 2.68e-01 , &
+         & 2.98e-01 , 2.72e-01 , 2.40e-01 , 1.92e-01 , 1.35e-01 , &
+         & 9.24e-02 , 6.10e-02 , 3.68e-02 , 2.61e-02 , 1.95e-02 , &
+         & 1.32e-02 , 9.40e-03 , 5.15e-03 , 3.60e-03 , 3.40e-03 , &
+         & 3.80e-03 , 4.60e-03/
+
+  i = 2
+  do
+    if (wl .ge. twl(i)) then
+      exit
+    else
+      if (i .lt. 62 ) then
+        i = i + 1
+      else
+        exit
+      endif
+    endif
+  enddo
+
+  xwl = twl(i) - twl(i-1)
+  yr  = tnr(i) - tnr(i-1)
+  yi  = tni(i) - tni(i-1)
+  nr  = tnr(i-1) + (wl-twl(i-1))*yr/xwl
+  ni  = tni(i-1) + (wl-twl(i-1))*yi/xwl
+
+  ! Correction to be applied to the index of refraction and to the extinction
+  ! coefficients of the pure water to obtain the ocean water one (see for
+  ! example Friedman). By default, a typical sea water is assumed
+  ! (Salinity=34.3ppt, Chlorinity=19ppt) as reported by Sverdrup.
+  ! In that case there is no correction for the extinction coefficient between
+  ! 0.25 and 4 microns. For the index of refraction, a correction of +0.006
+  ! has to be applied (McLellan). For a chlorinity of 19.0ppt the correction
+  ! is a linear function of the salt concentration. Then, in 6S users are able
+  ! to enter the salt concentration (in ppt).
+  ! REFERENCES:
+  ! Friedman D., Applied Optics, 1969, Vol.8, No.10, pp.2073-2078.
+  ! McLellan H.J., Elements of physical Oceanography, Pergamon Press, Inc.,
+  !        New-York, 1965, p 129.
+  ! Sverdrup H.V. et al., The Oceans (Prentice-Hall, Inc., Englewood Cliffs,
+  !        N.J., 1942, p 173.
+
+  nrc = 0.006
+  nic = 0.000
+  if (xsal .ge. 0.0) then
+     nr = nr + nrc*(xsal/34.3)
+     ni = ni + nic*(xsal/34.3)
+  else
+     nr = nr + nrc
+     ni = ni + nic
+   endif
+
+end subroutine
+
+
+
+subroutine sunglint(wspd, nr, ni, azw, ts, tv, fi, rog)
+
+  ! input parameters:   wspd=speed of the wind (in m/s)
+  !                     nr=index of refraction of the sea water
+  !                     ni=extinction coefficient of the sea water
+  !                     azw=azim. of the sun - azim. of the wind (in deg.)
+  !                     ts=solar zenith angle (in deg.)
+  !                     tv=view zenith angle (in deg.)
+  !                     fi=relative azimuth (sun-satellite)
+  ! output parameters:  rog=reflectance of the sun glint
+
+  implicit none
+  real pi, fac
+  real wspd, nr, ni, ts, tv, fi, rog, azw, phw
+  real cs, cv, ss, sv, phi, zx, zy, tantilt, tilt, proba, xe, xn, xe2, xn2
+  real coef, cos2chi, coschi, sinchi
+  real r1, sigmac, sigmau, c21, c03, c40, c04, c22
+
+  pi  = atan(1.0)*4.0
+  fac = pi/180.0
+  phw = azw*fac
+  cs  = cos(ts*fac)
+  cv  = cos(tv*fac)
+  ss  = cos(ts*fac)
+  sv  = cos(tv*fac)
+  phi = fi*fac
+  zx  = -sv*sin(phi)/(cs+cv)
+  zy  = (ss+sv*cos(phi))/(cs+cv)
+  tantilt = sqrt(zx*zx+zy*zy)
+  tilt    = atan(tantilt)
+
+  ! Anisotropic Gaussian distribution
+  ! phw=phi_sun-phi_wind
+  sigmac = 0.003 + 0.00192*wspd
+  sigmau = 0.00316*wspd
+  c21 = 0.01 - 0.0086*wspd
+  c03 = 0.04 - 0.033*wspd
+  c40 = 0.40
+  c22 = 0.12
+  c04 = 0.23
+  xe  = (cos(phw)*zx+sin(phw)*zy)/sqrt(sigmac)
+  xn  = (-sin(phw)*zx+cos(phw)*zy)/sqrt(sigmau)
+  xe2 = xe*xe
+  xn2 = xn*xn
+  coef  = 1.0 - c21/2.0*(xe2-1.0)*xn - c03/6.0*(xn2-3.0)*xn
+  coef  = coef + c40/24.0*(xe2*xe2-6.0*xe2+3.0)
+  coef  = coef + c04/24.0*(xn2*xn2-6.0*xn2+3.0)
+  coef  = coef + c22/4.0*(xe2-1.0)*(xn2-1.0)
+  proba = coef/2.0/pi/sqrt(sigmau)/sqrt(sigmac)*exp(-(xe2+xn2)/2.0)
+
+  ! Compute Fresnel's coefficient R1
+  cos2chi = cv*cs + sv*ss*COS(phi)
+  if (cos2chi .gt.  1.0) cos2chi =  0.99999999999
+  if (cos2chi .lt. -1.0) cos2chi = -0.99999999999
+
+  coschi = sqrt(0.5*(1+cos2chi))
+  sinchi = sqrt(0.5*(1-cos2chi))
+  call fresnel(nr, ni, coschi, sinchi, r1)
+
+  ! Compute Reflectance of the sun glint
+  rog = pi*r1*proba/4.0/cs/cv/(cos(tilt)**4.0)
+
+end subroutine
+
+
+
+
+subroutine fresnel(nr, ni, coschi, sinchi, r1)
+
+  ! to compute the Fresnel's coefficient of reflection (see for
+  ! example M. Born and E. Wolf, Principles of Optics, Pergamon Press, fifth
+  ! edition, 1975, pp 628
+  ! input parameters: nr=index of refraction of the sea water
+  !                   ni=extinction coefficient of the sea water
+  !                   coschi & sinchi=cosine and sine of the incident radiation
+  !                                   with respect of the wave facet normal.
+  ! output parameter: R1=Fresnel's coefficient for reflection
+
+  implicit none
+  real nr, ni, a1, a2, u, v, rr2, rl2, b1, b2, r1, coschi, sinchi
+
+  ! absolute value for a1 to get v=0 when ni=0
+  a1  = abs(nr*nr-ni*ni-sinchi*sinchi)
+  a2  = sqrt((nr*nr-ni*ni-sinchi*sinchi)**2.0+4.0*nr*nr*ni*ni)
+  u   = sqrt(0.5*(a1+a2))
+  v   = sqrt(max(0.0, 0.5*(-a1+a2)))
+  rr2 = ((coschi-u)**2+v*v)/((coschi+u)**2+v*v)
+  b1  = (nr*nr-ni*ni)*coschi
+  b2  = 2.0*nr*ni*coschi
+  rl2 = ((b1-u)**2.0+(b2-v)**2.0)/((b1+u)**2.0+(b2+v)**2.0)
+  r1  = (rr2+rl2)/2.0
+
+end subroutine
+
+
+
+subroutine glitable(wspd, nr, ni, azw, rge)
+
+  ! To compute the spherical albedo of the sea water. See for example
+  ! Masuda et al., Remote Sens. Environ., 24, 313-329, 1988.
+  !
+  ! input parameters: wsp=wind of speed
+  !                   nr=index of refraction of the sea water
+  !                   ni=extinction coefficient of the sea water
+  !                   azw=azim. of sun - azim. of wind (in deg.)
+  ! output parameter: rge=spherical albedo of the sun glint
+
+  implicit none
+  integer nfa, nta, ntb
+
+  real Nr, Ni, Azw, phw, Rge, q, Wspd, prefl, proba, pr, pp, pi, fac
+  real sigma, sigmac, sigmau, c21, c03, c40, c04, c22
+  real costt, hta, htb, hfa, cotb, cota, cofa, diff, coef
+  real phin, cosphin, sinphin, costet, tet, sintet
+  real costetn, sintetn, tantetn, coschi, sinchi
+  real zx, zy, xe, xn, xe2, xn2, fonc0, pond, r1
+  integer km, i, j
+
+  pi     = atan(1.0)*4.0
+  fac    = pi/180.0
+  sigma  = 0.003 + 0.00512*wspd
+  sigmac = 0.003 + 0.00192*wspd
+  sigmau = 0.00316*wspd
+  c21 = 0.01 - 0.0086*wspd
+  c03 = 0.04 - 0.033*wspd
+  c40 = 0.40
+  c22 = 0.12
+  c04 = 0.23
+
+  ! costt to minimize the time of the computation
+  ! integration between 1 and costt instead of 1 and 0
+  q = 50
+  costt = 1.0/sqrt(1.0+q*sigma/4.0)
+  phw = azw*fac
+
+  prefl = 0.0
+  proba = 0.0
+
+  ntb = 31
+  htb = 1.0/float(ntb-1.0)
+
+  ! loops on the zenith angle of the emitted radiation
+  do km = 1 , ntb
+    costet = (km-1)*htb
+    tet = acos(costet)
+    sintet = sin(tet)
+    tet = tet/fac
+
+    ! Simpson's rules for the angle of the emitted radiation teta
+    cotb = 2.0
+    diff = abs(km/2 - km/2.)
+    if (diff .lt. 0.00001) cotb = 4.0
+    if (km .eq. 1 .OR. km.EQ.ntb ) cotb = 1.0
 !  loops step for phiN and tetaN (N is the facet unit normal vector)
          IF ( tet.LT.91 ) nta = 801
          IF ( tet.LT.81 ) nta = 301
@@ -559,13 +576,14 @@ end subroutine
          pond = 2.*hta*hfa*htb/pi/SQRT(sigmac)/SQRT(sigmau)/3./3./3.
          prefl = prefl + pr*pond
          proba = proba + pp*pond
-      ENDDO
-      Rge = prefl/proba
-      END
-!*==GETBOUND.spg  processed by SPAG 6.72Dc at 23:26 on 12 Aug 2022
- 
- 
- 
+   enddo
+
+  rge = prefl/proba
+
+end subroutine
+
+
+
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !
 !     PROGRAM: GETBOUND.FOR
@@ -578,9 +596,9 @@ end subroutine
 !*--GETBOUND555
       REAL Xvals(*) , X
       INTEGER Ind1 , Ind2 , Ifirst , Ilast , i , imid
- 
+
       imid = Ilast/2 + 1
- 
+
       IF ( Xvals(Ilast).GT.Xvals(Ifirst) ) THEN
          IF ( X.GT.Xvals(imid) ) THEN
             DO i = imid , Ilast - 1
