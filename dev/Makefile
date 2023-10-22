@@ -43,8 +43,8 @@ all:  shdom  propgen make_mie_table make_tmatrix_table plotscattab
 shdom: shdom.o $(SHDOMOBJS)
 	$(F90) $(F90FLAGS) -o shdom shdom.o $(SHDOMOBJS) $(LIBS)
 
-shdom.o: shdom.f90 $(SHDOMOBJS)
-	$(F90) -c $(F90FLAGS) shdom.f90
+shdom.o: shdom_main.f90 $(SHDOMOBJS)
+	$(F90) -c $(F90FLAGS) shdom_main.f90
 
 shdomsub1.o: shdomsub1.f
 	$(F90) -c $(F90FLAGS) shdomsub1.f
