@@ -431,5 +431,3 @@ OUTREFF()   effective radii (micron) list or
 PELEM()     phase matrix elements (1=P11, 2=P22, 3=P33, 4=P44, 5=P12, 6=P34)
               for each effective radii in list (<0 for ratio to P11)
 PLOTFILE    plotting output file name
-
-
