@@ -1,0 +1,84 @@
+
+This tar file contains the Spherical Harmonic Discrete Ordinate Method
+(SHDOM) radiative transfer model written by Frank Evans at the
+University of Colorado.  This model computes polarized monochromatic or
+spectral band radiative transfer in a one, two, or three-dimensional
+medium for either collimated solar and/or thermal emission sources of
+radiation.  The model is written in a variant of Fortran 77 and in
+Fortran90, and it requires a Fortran 90 compiler.  The distribution also
+contains Fortran 90 programs for generating the optical property files
+input to SHDOM from physical properties of water cloud particles
+and aerosols.  
+
+This is a preliminary beta distribution because more testing is needed
+of polarized SHDOM, though first order testing has been done.  The
+distribution is available from http://nit.colorado.edu.  This Web site
+also contains results of validation testing, examples useful for
+learning how to run the model, and a PDF version of journal articles.
+
+The new polarized distribution does not contain make_ice_table.f90
+because the Ping Yang ice scattering database it used was not polarized
+and was obsolete (2000).  The broadband k-distribution programs
+(ckdfu.f, ckdswrrtm.f, ckdlwrrtm.f) were also dropped because Monte
+Carlo methods are much more efficient for broadband flux and heating
+rate calculations.  These codes (and cloudprp.f and old scripts) are
+still available in the last distribution of unpolarized SHDOM 
+(shdom_unpol.tar.gz).
+
+
+The following is a list of the files:
+
+ README             this file
+
+ shdom.txt          documentation file for SHDOM
+ shdom.f90          main program
+ shdomsub1.f        subroutines used during solution procedure
+ shdomsub2.f        subroutines used before or after solution procedure
+ shdomsub3.f        input/output subroutines 
+ shdom_mpi.f90      subroutines that make MPI calls
+ shdom_nompi.f      dummy routines for not using MPI
+ shdom_netcdf.f90   subroutines that make netcdf calls
+ shdom_nonetcdf.f90 dummy routines for not using netcdf
+ fftpack.f          Fast Fourier Transform routines
+ ocean_brdf.f       scalar ocean surface reflectance routines
+
+ propgen.txt        documentation for the optical property generation system
+ make_mie_table.f90 makes scattering table for spherical particles
+ miewig.f           subroutines for Mie scattering
+ indexwatice.f      water/ice refractive index routines
+ make_tmatrix_table.f90   makes scattering table for spheroids and cylinder
+ tmatrixwig.f       subroutines for T-matrix calculations
+ lpd.f              matrix solver routines for T-matrix routines
+ tmd.par.f          array size parameter file for T-matrix routines
+ plotscattab.f90    makes phase functions versus angle from scattering tables
+ propgen.f90        makes SHDOM property file from particle properties file
+ AsciiPropertyFileToNetcdf.f90
+
+ makefile           Unix makefile for compiling shdom and companion programs
+
+ run_mono_les       script to do monochromatic solar or thermal RT in a cloud
+ run_brdf           script demonstrating five surface reflection models
+ run_polarized      script to make scattering tables, property file, and
+                      run polarized SHDOM for cloud and dust aerosol
+ run_visualize      script demonstrating SHDOM visualization image output
+ run_multproc       script demonstrating SHDOM with multiple processors on SMP
+ put.c              small C program for scripts
+
+ lesw16.nml          example namelist input file
+ les2y21.lwc         LWC file for propgen (2D slice of LES field)
+ les_stcu.lwc        LWC file for propgen (full LES field) for run_visualize
+ era0621nh12_t21.lwc LWC file (large grid sparse cumulus LES field)
+ aero0822nh15c_t13_iy249.lwc  LWC file for polarization example script
+
+ idl/           directory of IDL files for reading and visualizing SHDOM files
+                   See shdom1dplots.pro, shdom2dplots.pro, 
+                      plot_brdf.pro, and plot_polarized.pro
+
+ Updatelist.txt  list of distribution dates with bug fixes and updates made
+
+Comments, bug reports, and suggestions are welcome.  
+
+    Frank Evans           March 7, 2014
+    Dept. of Atmospheric and Oceanic Sciences
+    University of Colorado, Boulder 80309-0311
+    evans@nit.colorado.edu     (719) 580-5003
