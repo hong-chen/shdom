@@ -1,9 +1,9 @@
 ! PROGRAM PROPGEN
 !
-!   Makes an SHDOM tabulated phase function optical properties file
-! from a particle properties file specifying the 3D distribution of mass
-! content and effective radius for several types of particles.  The
-! optical properties for these particle types are specified in scattering
+!   Makes an SHDOM tabulated phase function optical properties file 
+! from a particle properties file specifying the 3D distribution of mass 
+! content and effective radius for several types of particles.  The 
+! optical properties for these particle types are specified in scattering 
 ! table files.  The optical properties are linearly interpolated in
 ! effective radius within the scattering tables.  The extinction and
 ! single scattering albedo for the mixture specified at each grid point
@@ -16,19 +16,19 @@
 ! are specified for the asymmetry parameter and the maximum fractional
 ! error in 90 phase function values from 2 to 180 degrees.
 !  Particle property file format:
-!   3
+!   3        
 !   Nx Ny Nz     [number of X, Y, Z grid points]
-!   delX delY    [X and Y grid spacing in km]
+!   delX delY    [X and Y grid spacing in km]   
 !   Z1 ... Zn    [heights of particle levels in km]
 !   T1 ... Tn    [temperatures in Kelvin]
 !   IX IY IZ  numcomp  Type1 Mass1 Reff1 ... TypeN MassN ReffN
 ! numcomp is the number of particle components, Type? are the type numbers
-! of the components, Mass? are the mass contents [g/m^3] of the components,
+! of the components, Mass? are the mass contents [g/m^3] of the components, 
 ! and Reff? are the effective radii [microns] of the components.
-!
+! 
 !  compile: pgf90 -fast -o propgen  propgen.f90
 !
-!    Frank Evans    University of Colorado     May 2003
+!    Frank Evans    University of Colorado     May 2003 
 !                 Updated for polarization     July 2013
 
 
@@ -107,7 +107,7 @@ SUBROUTINE USER_INPUT (NSCATTAB, SCATTABFILES, SCATNUMS, POLTABS, PARFILE, &
 
   WRITE (*,*) 'Output polarized (P) or unpolarized (U) SHDOM property file'
   READ (*,'(A)') POLOUT
-  WRITE (*,*) POLOUT
+  WRITE (*,*) POLOUT   
 
   WRITE(*,*) 'Output property file name'
   READ(*,'(A)') PROPFILE
@@ -120,7 +120,7 @@ END SUBROUTINE USER_INPUT
 SUBROUTINE READ_SCAT_TABLE_SIZE (SCATTABFILE, POLTAB, WAVELEN1, WAVELEN2, &
                                  NRETAB, MAXNCOEF)
  ! Reads the scattering table file to find the number of effective radii,
- ! the maximum order of the Wigner d-function series phase functions, and
+ ! the maximum order of the Wigner d-function series phase functions, and 
  ! also the wavelength range.
   IMPLICIT NONE
   CHARACTER(LEN=*), INTENT(IN) :: SCATTABFILE
@@ -159,8 +159,8 @@ END SUBROUTINE READ_SCAT_TABLE_SIZE
 
 SUBROUTINE READ_SCAT_TABLE (SCATTABFILE, POLTAB, NPHASEPOL, NRETAB,RETAB, &
                             EXTINCT, SSALB, MAXCOEF, NCOEF, WIGCOEF)
- ! Reads the table of scattering properties as a function of effective
- ! radius.  POLTAB=.true. means a polarized scattering table with Wigner
+ ! Reads the table of scattering properties as a function of effective 
+ ! radius.  POLTAB=.true. means a polarized scattering table with Wigner 
  ! d-function coefficients for six phase matrix elements instead of one.
  ! The order of the six elements is the four diagonal ones (a1, a2, a3, a4)
  ! followed by the IQ and UV coefficients (b1, b2).
@@ -180,7 +180,7 @@ SUBROUTINE READ_SCAT_TABLE (SCATTABFILE, POLTAB, NPHASEPOL, NRETAB,RETAB, &
   READ (1,*)
   READ (1,*)
   READ (1,*)
-  READ (1,*)
+  READ (1,*) 
   DO I = 1, NRETAB
     READ (1,*) RETAB(I), EXTINCT(I), SSALB(I), NCOEF(I)
     IF (POLTAB) THEN
@@ -291,7 +291,7 @@ SUBROUTINE READ_PARTICLE_FILE (PARFILE, NX, NY, NZP, NSCATTAB, PARTYPES, &
       PRINT *,'READ_PARTICLE_FILE: Must have only one scattering table to use 2 parameter LWC file.'
       STOP
     ENDIF
-     ! Read in the data
+     ! Read in the data 
     DO WHILE (.TRUE.)
       READ (2,*,END=190) IX, IY, IZ, MASS(1), RE(1)
       IF (IX >= 1 .AND. IX <= NX .AND. IY >= 1 .AND. IY <= NY .AND. &
@@ -304,7 +304,7 @@ SUBROUTINE READ_PARTICLE_FILE (PARFILE, NX, NY, NZP, NSCATTAB, PARTYPES, &
     ENDDO
 
   ELSE IF (FILEKIND == 3) THEN
-     ! Read in the data
+     ! Read in the data 
     DO WHILE (.TRUE.)
       READ (2,*,END=190) IX, IY, IZ, NC, &
                        (PT(I), MASS(I), RE(I), I=1,MIN(NC,NSCATTAB))
@@ -382,7 +382,7 @@ SUBROUTINE ORGANIZE_LEVELS (NZP, ZPAR, TEMPPAR, NZO, ZOTHER, TEMPOTHER, &
         IPARLEV(K) = J
         J = MIN(NZP,J+1)
       ENDIF
-    ENDDO
+    ENDDO 
   ENDIF
 END SUBROUTINE ORGANIZE_LEVELS
 
@@ -617,7 +617,7 @@ SUBROUTINE RAYLEIGH_EXTINCT (NZT, ZLEVELS,TEMP, RAYSFCPRES, RAYLCOEF, EXTRAYL)
  ! Computes the molecular Rayleigh extinction profile EXTRAYL [/km]
  ! from the temperature profile TEMP [K] at ZLEVELS [km].  Assumes
  ! a linear lapse rate between levels to compute the pressure at
- ! each level starting with the SFCPRES [mb].  The Rayleigh extinction is
+ ! each level starting with the SFCPRES [mb].  The Rayleigh extinction is 
  ! proportional to air density, with the coefficient RAYLCOEF in [K/(mb km)].
   IMPLICIT NONE
   INTEGER, INTENT(IN) :: NZT
@@ -625,7 +625,7 @@ SUBROUTINE RAYLEIGH_EXTINCT (NZT, ZLEVELS,TEMP, RAYSFCPRES, RAYLCOEF, EXTRAYL)
   REAL,    INTENT(OUT) :: EXTRAYL(NZT)
   INTEGER :: I
   REAL    :: PRES, LAPSE, TS, DZ
-
+      
   ! Find surface pressure by integrating hydrostatic relation
   !  for a dry atmosphere up to surface height.
   PRES = RAYSFCPRES
@@ -651,12 +651,12 @@ END SUBROUTINE RAYLEIGH_EXTINCT
 
 SUBROUTINE RAYLEIGH_PHASE_FUNCTION (WAVELEN, NPHASEPOL, MAXCOEF, &
                                     NCOEF, RAYWIGCOEF)
- ! Returns the Wigner d-function coefficients for either the Rayleigh
- ! scalar phase function or polarized phase matrix for molecular
- ! scattering by air.  Includes the wavelength depolarization factor.
- ! From Mishchenko's book "Multiple scattering of light by particles:
- ! Radiative Transfer and Coherent Backscattering", Cambridge, 2006.
- ! Thanks to Adrian Doicu.   WAVELEN is the wavelength in microns.
+ ! Returns the Wigner d-function coefficients for either the Rayleigh 
+ ! scalar phase function or polarized phase matrix for molecular 
+ ! scattering by air.  Includes the wavelength depolarization factor.  
+ ! From Mishchenko's book "Multiple scattering of light by particles: 
+ ! Radiative Transfer and Coherent Backscattering", Cambridge, 2006.  
+ ! Thanks to Adrian Doicu.   WAVELEN is the wavelength in microns.  
  ! NPHASEPOL=1 for the scalar case, and 6 for the phase matrix case.
   IMPLICIT NONE
   INTEGER, INTENT(IN) :: NPHASEPOL, MAXCOEF
@@ -671,8 +671,8 @@ SUBROUTINE RAYLEIGH_PHASE_FUNCTION (WAVELEN, NPHASEPOL, MAXCOEF, &
   RAYWIGCOEF(1:NPHASEPOL,:) = 0.0
   FKING = AKING + BKING/WAVELEN**2 + CKING/WAVELEN**4
   DEPOL = 6.D0*(FKING-1.D0) / (3.D0 + 7.D0*FKING)
-  DELTA = (1.0 - DEPOL) / (1.0 + 0.5*DEPOL)
-  DELTAP = (1.0 - 2.0*DEPOL) / (1.0 - DEPOL)
+  DELTA = (1.0 - DEPOL) / (1.0 + 0.5*DEPOL) 
+  DELTAP = (1.0 - 2.0*DEPOL) / (1.0 - DEPOL) 
   RAYWIGCOEF(1,0) = 1.0  ; RAYWIGCOEF(1,2) = 0.5*DELTA
   IF (NPHASEPOL == 6) THEN
     RAYWIGCOEF(2,2) = 3.0*DELTA
@@ -695,19 +695,19 @@ SUBROUTINE PHASEFUNC_FROM_LEGENDRE (NANGLES, NCOEF, LEGCOEF, PHASE)
   REAL,    INTENT(OUT) :: PHASE(NANGLES)
   INTEGER :: J, L
   REAL(8) :: RD, MU, SUM, PL, PL1, PL2
-
+  
   RD = ACOS(-1.0D0)/180.D0
   DO J = 1, NANGLES
     MU = COS(RD*J*180.D0/NANGLES)
     SUM = 0.0
       ! Use upward recurrence to find Legendre polynomials
     PL1 = 1.0
-    PL = 1.0
+    PL = 1.0 
     DO L = 0, NCOEF
       IF (L .GT. 0) PL = (2*L-1)*MU*PL1/L-(L-1)*PL2/L
       SUM = SUM + LEGCOEF(L)*PL
       PL2 = PL1
-      PL1 = PL
+      PL1 = PL 
     ENDDO
     PHASE(J) = SUM
   ENDDO
@@ -765,7 +765,7 @@ SUBROUTINE OUTPUT_PROPERTIES (PROPFILE, NPHASEPOL, NX, NY, NZT, &
         ENDDO
       ENDDO
     ENDIF
-  ENDDO
+  ENDDO  
 
   ! Write one line of optical properties for each grid point
   DO IX = 1, NX
@@ -777,7 +777,7 @@ SUBROUTINE OUTPUT_PROPERTIES (PROPFILE, NPHASEPOL, NX, NY, NZT, &
     ENDDO
   ENDDO
   CLOSE (3)
-END SUBROUTINE OUTPUT_PROPERTIES
+END SUBROUTINE OUTPUT_PROPERTIES 
 
 
 END MODULE COMBINE_PROP
@@ -897,9 +897,9 @@ PROGRAM PROPGEN
   ALLOCATE (ZLEVELS(NZT), TEMP(NZT), IPARLEV(NZT), EXTRAYL(NZT))
   CALL ORGANIZE_LEVELS (NZP, ZPAR, TEMPPAR, NZO, ZOTHER, TEMPOTHER, &
                         NZT, ZLEVELS, TEMP, IPARLEV)
+ 
 
-
-   ! Use the parameterization of Bodhaine et al. (1999) eq 30 for tau_R at
+   ! Use the parameterization of Bodhaine et al. (1999) eq 30 for tau_R at 
    ! sea level and convert to Rayleigh density coefficient:
    !   k = 0.03370*(p_sfc/1013.25)*tau_R  for k in K/(mb km) (from assumptions in RAYLEIGH_EXTINCT)
   RAYLCOEF = 0.03370*(RAYSFCPRES/1013.25)* 0.0021520 &
@@ -909,7 +909,7 @@ PROGRAM PROPGEN
     ! Compute the molecular Rayleigh scattering extinction profile
   CALL RAYLEIGH_EXTINCT (NZT, ZLEVELS, TEMP, RAYSFCPRES, RAYLCOEF, EXTRAYL)
 
-
+        
   ALLOCATE (ASYM(0:MAXNPHASE), PHASE(NANGLES,0:MAXNPHASE))
   NPHASE = NENTRIES
    ! Make the asymmetry param and angle space low resolution phase functions
@@ -981,7 +981,7 @@ PROGRAM PROPGEN
           EXTINCT(IZ,IY,IX) = EXTINCT(IZ,IY,IX) + EXT
         ENDDO ! end of component loop
 
-        ! Normalize to get the combined optical properties
+        ! Normalize to get the combined optical properties 
         IF (EXTINCT(IZ,IY,IX) > 0.0) THEN
           SSALB(IZ,IY,IX) = SCATTER/EXTINCT(IZ,IY,IX)
         ELSE
@@ -1049,3 +1049,6 @@ PROGRAM PROPGEN
   DEALLOCATE (POLTABS)
 
 END
+
+
+

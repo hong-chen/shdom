@@ -8,7 +8,7 @@ FFLAGS = -O3       #   your flags here
 #FFLAGS = -fast
 MPIFC  = mpif90    # MPI Fortran 90 compiling command for shdom90
 MPIFLAGS = -O3     #   MPI compiling flags
-LIBS   =
+LIBS   = 
 
 SHDOMOBJS   = shdomsub1.o shdomsub2.o shdomsub3.o fftpack.o ocean_brdf.o 
 
@@ -38,7 +38,7 @@ else
   LIBS   += $(NetcdfLib)
 endif
 
-all:  shdom  propgen make_mie_table make_tmatrix_table plotscattab
+all:  shdom  propgen make_mie_table make_tmatrix_table plotscattab 
 
 shdom: shdom.o $(SHDOMOBJS)
 	$(F90) $(F90FLAGS) -o shdom shdom.o $(SHDOMOBJS) $(LIBS)
@@ -87,3 +87,4 @@ plotscattab: plotscattab.f90
 
 
 .f.o :; $(FC) -c $(FFLAGS) $*.f
+
