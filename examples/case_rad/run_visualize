@@ -15,7 +15,7 @@ set fdir_data=data
 # sections of the script.
 set MakeMieTable=0
 set MakePropertyFile=0
-set RunSHDOMsolve=1
+set RunSHDOMsolve=0
 set SingleFrames=1
 set RunCameraVisual=0
 
@@ -94,6 +94,10 @@ set Nx=`$AWK 'BEGIN {getline; getline; print $1;}' $prpfile`
 set Ny=`$AWK 'BEGIN {getline; getline; print $2;}' $prpfile`
 set Nz=`$AWK 'BEGIN {getline; getline; print $3;}' $prpfile`
 
+echo $Nx
+echo $Ny
+echo $Nz
+exit
 
 
 if ($RunSHDOMsolve) then
