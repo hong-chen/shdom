@@ -1,3 +1,10 @@
+# by Hong Chen
+# Notes for Mac:
+# export LIBRARY_PATH="$LIBRARY_PATH:/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib"
+# FFLAGS = -O3 -fallow-argument-mismatch
+# PATH="/Users/hchen/Work/mygit/shdom/bin:$PATH"
+#
+#
 # Makefile for SHDOM and related programs in distribution
 #
 # Set the UseMPI and UseNetcdf variables to make the desired shdom version.

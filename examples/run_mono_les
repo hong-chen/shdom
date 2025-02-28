@@ -1,11 +1,9 @@
 #!/bin/csh
-#   Example script for monochromatic solar or thermal radiative transfer 
+#   Example script for monochromatic solar or thermal radiative transfer
 # on the FIRE LES 2D cloud.  Makes Mie tables with make_mie_table, runs
-# propgen to make the SHDOM property file and then shdom to do the 
+# propgen to make the SHDOM property file and then shdom to do the
 # radiative transfer.
-setenv PATH "/Users/hchen/Work/mygit/shdom/ori_fe_run:$PATH"
 set AWK=awk   # use nawk on SGI and Sun
-
 
 set Solar=1     # 1 for solar, 0 for thermal
 
@@ -36,7 +34,7 @@ if (!(-e put))  cc -o put  put.c
 
 if ($MakeMieTable) then
   #  Makes the Mie scattering table for spherical water droplets for
-  # gamma size distributions with a range of effective radius. 
+  # gamma size distributions with a range of effective radius.
 
   set polarizedtable=F             # F=unpolarized output, T=polarized output
   set distflag=G                   # G=gamma, L=lognormal size distribution
@@ -56,8 +54,8 @@ endif
 
 
 if ($MakePropertyFile) then
-  # Runs propgen to make the SHDOM optical property file from the 
-  # type 2 LWC file for the 64x17 stratocumulus LES slice.  
+  # Runs propgen to make the SHDOM optical property file from the
+  # type 2 LWC file for the 64x17 stratocumulus LES slice.
 
   set lwcfile=les2y21.lwc # type 2 LWC file
   set scattypes = (1)
@@ -85,7 +83,7 @@ endif
 if ($RunSHDOM) then
 #   Run SHDOM for either solar or thermal radiative transfer
 
-  #   Set SHDOM parameters: 
+  #   Set SHDOM parameters:
   set Nstokes=1               # unpolarized radiative transfer
   set IPflag=0                # independent pixel flag (0 = 3D, 3 = IP)
   set BCflag=0                # horizontal boundary conditions (0 = periodic)
@@ -102,7 +100,7 @@ if ($RunSHDOM) then
   else
     set Nmu=8                 # number of zenith angles in both hemispheres
     set Nphi=16               # number of azimuth angles
-    set deltaM=F              # don't use delta-M scaling 
+    set deltaM=F              # don't use delta-M scaling
     set sfcemis=0.98          # surface emissivity
     set Tsfc=288              # surface temperature (K)
     set Tsky=0.0              # downwelling brightnes temperature
@@ -118,7 +116,7 @@ if ($RunSHDOM) then
   set Foutparm="2 0.750 0.055 1.0"
 
   set nb=(`head -2 $prpfile | tail -1`)
-  echo " "; echo " "; 
+  echo " "; echo " ";
   if ($Solar) then
     echo "$outbase :  wavelen=$wavelen  Nmu=$Nmu  split=$splitacc"
     put les2y21w16 $prpfile NONE NONE NONE NONE $Nstokes "$nb[1] $nb[2] $nb[3]" \
