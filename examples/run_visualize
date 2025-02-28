@@ -1,5 +1,5 @@
 #!/bin/csh
-#   Script for demonstrating visualization mode output of SHDOM.
+# Script for demonstrating visualization mode output of SHDOM.
 # Uses the stratocumulus cloud from phase 2 of the I3RC.
 # Warning: the SHDOM runs are CPU intensive (5.5 minutes for the SHDOM
 # solution and 33 minutes for the 100 frame camera visualization on
