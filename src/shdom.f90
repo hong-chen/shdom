@@ -1541,4 +1541,3 @@
       IF (VALIDBEAM) SIDE=6
       RETURN
       END
-
