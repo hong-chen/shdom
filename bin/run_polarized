@@ -3,13 +3,14 @@
 # with an LES cumulus cloud slice and horizontally uniform dust aerosol.
 
  # To run sections of the script, set the corresponding variables below to 1.
-set Make_Mie_table=0
-set Make_Tmatrix_table=0
-set Run_plotscattab=0
-set Convert_LWC_to_Particle=0
-set Run_propgen=0
-set Run_SHDOM=0
-set Parse_SHDOM_radiance=0
+setenv PATH "/Users/hchen/Work/mygit/shdom/ori_fe_run:$PATH"
+set Make_Mie_table=1
+set Make_Tmatrix_table=1
+set Run_plotscattab=1
+set Convert_LWC_to_Particle=1
+set Run_propgen=1
+set Run_SHDOM=1
+set Parse_SHDOM_radiance=1
 
  # The wavelength (microns) for the calculations
 set wavelen=0.646

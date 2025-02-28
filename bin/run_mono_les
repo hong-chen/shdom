@@ -3,6 +3,7 @@
 # on the FIRE LES 2D cloud.  Makes Mie tables with make_mie_table, runs
 # propgen to make the SHDOM property file and then shdom to do the 
 # radiative transfer.
+setenv PATH "/Users/hchen/Work/mygit/shdom/ori_fe_run:$PATH"
 set AWK=awk   # use nawk on SGI and Sun
 
 
