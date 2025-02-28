@@ -1,9 +1,10 @@
 # by Hong Chen
+# ==============================================================================================
 # Notes for Mac:
 # export LIBRARY_PATH="$LIBRARY_PATH:/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib"
 # FFLAGS = -O3 -fallow-argument-mismatch
 # PATH="/Users/hchen/Work/mygit/shdom/bin:$PATH"
-#
+# ==============================================================================================
 #
 # Makefile for SHDOM and related programs in distribution
 #
@@ -21,7 +22,6 @@ LIBS   =
 
 CURRENT_DIR = $(shell pwd)
 BIN_DIR     = $(abspath $(CURRENT_DIR)/../bin)
-BUILD_DIR   = $(abspath $(CURRENT_DIR)/../build)
 
 TARGETS = shdom propgen make_mie_table make_tmatrix_table plotscattab put
 
@@ -30,7 +30,7 @@ SHDOMOBJS = shdom_sub1.o shdom_sub2.o shdom_sub3.o _fftpack.o shdSfc_ocean.o
 UseMPI = no
 UseNetcdf = no
 
-NetcdfHome = /usr/local/netcdf-3.6.3
+NetcdfHome = /Users/hchen/Work/soft/anaconda3/envs/er3t-dev
 NetcdfInl  = -I$(NetcdfHome)/include
 NetcdfLib  = -L$(NetcdfHome)/lib -lnetcdf
 
