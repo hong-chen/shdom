@@ -21,7 +21,7 @@ C
 C      This interface was written by Frank Evans  (May 2011)
 C        Modified for Wigner d-functions  (January 2014)
 C
-C        Compile: pgf77 -c tmatrixdwig.f lpd.f  (tmd.par.f include file used)
+C        Compile: pgf77 -c tmatrixdwig.f lpd.f  (_tmd.par.f include file used)
 C
 C      The main code was modified to put in the subroutine interface at
 C      the beginning, set parameters for a single particle, and calculate
@@ -49,7 +49,7 @@ C   CALCULATION OF LIGHT SCATTERING BY POLYDISPERSE, RANDOMLY
 C   ORIENTED PARTICLES OF IDENTICAL AXIALLY SYMMETRIC SHAPE      
 
 C   This version of the code uses DOUBLE PRECISION variables
-C   and must be used along with the accompanying files tmd.par.f      
+C   and must be used along with the accompanying files _tmd.par.f      
 C   and lpd.f.    
                                                                        
 C   Last update 08/06/2005 
@@ -308,13 +308,13 @@ C   instability caused by extreme values of particle parameters.
                                                                        
 C   The message "WARNING: NGAUSS=NPNG1" means that convergence over    
 C   the parameter NG (see Ref. 2) cannot be obtained for the NPNG1     
-C   value specified in the PARAMETER statement in the file tmd.par.f. 
+C   value specified in the PARAMETER statement in the file _tmd.par.f. 
 C   Often this is not a serious problem, especially for compact         
 C   particles.                                                         
                                                                        
 C   Larger and/or more aspherical particles may require larger         
 C   values of the parameters NPN1, NPN4, and NPNG1 in the file
-C   tmd.par.f.  It is recommended to keep NPN1=NPN4+25 and
+C   _tmd.par.f.  It is recommended to keep NPN1=NPN4+25 and
 C   NPNG1=3*NPN1.  Note that the memory requirement increases    
 C   as the third power of NPN4. If the memory of                  
 C   a computer is too small to accomodate the code in its current    
@@ -393,7 +393,7 @@ C   ANY DAMAGES THAT MAY RESULT FROM THE USE OF THE PROGRAM.
 
 
 
-      INCLUDE 'tmd.par.f'
+      INCLUDE '_tmd.par.f'
       REAL*8  LAM,MRR,MRI,X(NPNG2),W(NPNG2),S(NPNG2),SS(NPNG2),
      *        AN(NPN1),R(NPNG2),DR(NPNG2),
      *        DDR(NPNG2),DRR(NPNG2),DRI(NPNG2),ANN(NPN1,NPN1)
@@ -849,7 +849,7 @@ C**********************************************************************
  
       SUBROUTINE CONST (NGAUSS,NMAX,MMAX,P,X,W,AN,ANN,S,SS,NP,EPS)
       IMPLICIT REAL*8 (A-H,O-Z)
-      INCLUDE 'tmd.par.f'
+      INCLUDE '_tmd.par.f'
       REAL*8 X(NPNG2),W(NPNG2),X1(NPNG1),W1(NPNG1),
      *        X2(NPNG1),W2(NPNG1),
      *        S(NPNG2),SS(NPNG2),
@@ -902,7 +902,7 @@ C**********************************************************************
  
       SUBROUTINE VARY (LAM,MRR,MRI,A,EPS,NP,NGAUSS,X,P,PPI,PIR,PII,
      *                 R,DR,DDR,DRR,DRI,NMAX)
-      INCLUDE 'tmd.par.f'
+      INCLUDE '_tmd.par.f'
       IMPLICIT REAL*8 (A-H,O-Z)
       REAL*8  X(NPNG2),R(NPNG2),DR(NPNG2),MRR,MRI,LAM,
      *        Z(NPNG2),ZR(NPNG2),ZI(NPNG2),
@@ -1024,7 +1024,7 @@ C**********************************************************************
 C************************************************************************
  
       SUBROUTINE BESS (X,XR,XI,NG,NMAX,NNMAX1,NNMAX2)
-      INCLUDE 'tmd.par.f'
+      INCLUDE '_tmd.par.f'
       IMPLICIT REAL*8 (A-H,O-Z)
       REAL*8 X(NG),XR(NG),XI(NG),
      *        J(NPNG2,NPN1),Y(NPNG2,NPN1),JR(NPNG2,NPN1),
@@ -1114,7 +1114,7 @@ C                                                                     *
 C**********************************************************************
  
       SUBROUTINE CJB (XR,XI,YR,YI,UR,UI,NMAX,NNMAX)
-      INCLUDE 'tmd.par.f'
+      INCLUDE '_tmd.par.f'
       IMPLICIT REAL*8 (A-H,O-Z)
       REAL*8 YR(NMAX),YI(NMAX),UR(NMAX),UI(NMAX)
       REAL*8 CYR(NPN1),CYI(NPN1),CZR(1200),CZI(1200),
@@ -1187,7 +1187,7 @@ C**********************************************************************
  
       SUBROUTINE TMATR0 (NGAUSS,X,W,AN,ANN,S,SS,PPI,PIR,PII,R,DR,DDR,
      *                  DRR,DRI,NMAX,NCHECK)
-      INCLUDE 'tmd.par.f'
+      INCLUDE '_tmd.par.f'
       IMPLICIT REAL*8 (A-H,O-Z)
       REAL*8  X(NPNG2),W(NPNG2),AN(NPN1),S(NPNG2),SS(NPNG2),
      *        R(NPNG2),DR(NPNG2),SIG(NPN2),
@@ -1401,7 +1401,7 @@ C**********************************************************************
  
       SUBROUTINE TMATR (M,NGAUSS,X,W,AN,ANN,S,SS,PPI,PIR,PII,R,DR,DDR,
      *                  DRR,DRI,NMAX,NCHECK)
-      INCLUDE 'tmd.par.f'
+      INCLUDE '_tmd.par.f'
       IMPLICIT REAL*8 (A-H,O-Z)
       REAL*8  X(NPNG2),W(NPNG2),AN(NPN1),S(NPNG2),SS(NPNG2),
      *        R(NPNG2),DR(NPNG2),SIG(NPN2),
@@ -1681,7 +1681,7 @@ C**********************************************************************
 C*****************************************************************
  
       SUBROUTINE VIG (X, NMAX, M, DV1, DV2)
-      INCLUDE 'tmd.par.f'
+      INCLUDE '_tmd.par.f'
       IMPLICIT REAL*8 (A-H,O-Z)
       REAL*8 DV1(NPN1),DV2(NPN1)
  
@@ -1740,7 +1740,7 @@ C                                                                     *
 C**********************************************************************
  
       SUBROUTINE TT(NMAX,NCHECK)
-      INCLUDE 'tmd.par.f'
+      INCLUDE '_tmd.par.f'
       IMPLICIT REAL*8 (A-H,O-Z)
       REAL*8 F(NPN2,NPN2),B(NPN2),WORK(NPN2),
      *       QR(NPN2,NPN2),QI(NPN2,NPN2),
@@ -1808,7 +1808,7 @@ C                                                                   *
 C********************************************************************
  
       SUBROUTINE GSP(NMAX,CSCA,LAM,ALF1,ALF2,ALF3,ALF4,BET1,BET2,LMAX)
-      INCLUDE 'tmd.par.f'
+      INCLUDE '_tmd.par.f'
       IMPLICIT REAL*8 (A-B,D-H,O-Z),COMPLEX*16 (C)
       REAL*8 LAM,SSIGN(900)
       REAL*8  CSCA,SSI(NPL),SSJ(NPN1),
@@ -2204,7 +2204,7 @@ C   IF K1=1 AND K2=0, THEN 0.LE.M.LE.N
  
  
       SUBROUTINE CCG(N,N1,NMAX,K1,K2,GG)
-      INCLUDE 'tmd.par.f'
+      INCLUDE '_tmd.par.f'
       IMPLICIT REAL*8 (A-H,O-Z)
       REAL*8 GG(NPL1,NPN6),CD(0:NPN5),CU(0:NPN5)
       IF(NMAX.LE.NPN4.
@@ -2727,7 +2727,7 @@ C               for each angle.
       IMPLICIT REAL*8 (A-H,O-Z)
       INTEGER Nang
       REAL*8  muang(Nang), scatmat(6,Nang)
-      INCLUDE 'tmd.par.f'
+      INCLUDE '_tmd.par.f'
       REAL*8 A1(NPL),A2(NPL),A3(NPL),A4(NPL),B1(NPL),B2(NPL)
 
 c      N=NPNA
