@@ -320,8 +320,8 @@ C     be in the namelist, hence the two sets of variables.
       IF (dMAXOUT.NE.MAXOUT) STOP 'NAMELIST_INPUT: MAXOUT not the same.'
       IF (dMAXPAR.NE.MAXPAR) STOP 'NAMELIST_INPUT: MAXPAR not the same.'
 
-      SOLARMU = -1.0     
-      GNDALBEDO = 0.0 
+      SOLARMU = -1.0
+      GNDALBEDO = 0.0
       WAVELEN = 1.0
       WAVENO(1) = 10000.
       WAVENO(2) = 10001.
