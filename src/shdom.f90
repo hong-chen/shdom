@@ -102,7 +102,7 @@
       CALL START_MPI (MASTERPROC)
 
 
-      IF (MASTERPROC) THEN 
+      IF (MASTERPROC) THEN
         CALL USER_INPUT (RUNNAME, PROPFILE, SFCFILE, CKDFILE,        &
                        INSAVEFILE, OUTSAVEFILE,                      &
                        NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,       &
@@ -115,8 +115,8 @@
                        NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
 !        CALL NAMELIST_INPUT (RUNNAME, PROPFILE, SFCFILE, CKDFILE,    &
 !                       INSAVEFILE, OUTSAVEFILE,                      &
-!                       NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG, IPFLAG,&
-!                       KDIST, DELTAM, GRIDTYPE,                      &
+!                       NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,       &
+!                       IPFLAG, KDIST, DELTAM, GRIDTYPE,              &
 !                       SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD, &
 !                       GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,   &
 !                       ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,  &
@@ -171,7 +171,7 @@
 
       ALLOCATE (MU(NMU), WTDO(NMU*NPHI), PHI(NMU*NPHI), NPHI0(NMU))
 
-!         Find out the size of the input property file grid 
+!         Find out the size of the input property file grid
       IF (MASTERPROC) THEN
         CALL READ_PROPERTY_SIZE (PROPFILE, NSTLEG, NLEG, NPX, NPY, NPZ, &
                                  NUMPHASE, MAXLEG, MAXPGL, DELX, DELY)
