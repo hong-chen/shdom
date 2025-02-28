@@ -1,16 +1,16 @@
 PROGRAM PLOTSCATTAB
-! PLOTSCATTAB make a plotting file of the phase functions in a scattering
-! table file produced by make_mie_table.f90 or make_tmatrix_table.f90.
+! PLOTSCATTAB make a plotting file of the phase functions in a scattering 
+! table file produced by make_mie_table.f90 or make_tmatrix_table.f90.  
 ! The scattering tables contains the Legendre polynomial expansion of the
 ! phase functions, or the Wigner d-function explansions of the six unique
-! elements of the phase matrix, for several effective radii.  Selected
-! phase matrix elements for specified effective radii may be converted
-! to a function of angle for output.  The program can also plot the phase
-! functions or phase matrix elements in the beginning of an SHDOM tabulated
+! elements of the phase matrix, for several effective radii.  Selected 
+! phase matrix elements for specified effective radii may be converted 
+! to a function of angle for output.  The program can also plot the phase 
+! functions or phase matrix elements in the beginning of an SHDOM tabulated 
 ! phase function property file.
 !
 !  compile: pgf90 -fast -o plotscattab  plotscattab.f90
-!
+! 
 !    Frank Evans    University of Colorado     May 2003
 !               Updated for polarized SHDOM    Feb 2014
   IMPLICIT NONE
@@ -28,7 +28,7 @@ PROGRAM PLOTSCATTAB
   ELEMNAMES(:) = (/ 'P34/P11', 'P12/P11', 'P44/P11', 'P33/P11', 'P22/P11', &
                     '  P11  ', '  P11  ', '  P11  ', &
                     '  P22  ', '  P33  ', '  P44  ', '  P12  ', '  P34  ' /)
-
+  
   WRITE (*,*) 'Scattering table or SHDOM property file input (S or P)'
   READ (*,'(A1)') FILETYPE
     WRITE (*,'(1X,A1)') FILETYPE
@@ -210,8 +210,8 @@ END SUBROUTINE READ_SCAT_TABLE_SIZE
 
 SUBROUTINE READ_SCAT_TABLE (SCATTABFILE, POLTAB, NPHASEPOL, NRETAB,RETAB, &
                              MAXNCOEF, NCOEF, WIGCOEF)
- ! Reads the table of scattering properties as a function of effective
- ! radius.  POLTAB=.true. means a polarized scattering table with Wigner
+ ! Reads the table of scattering properties as a function of effective 
+ ! radius.  POLTAB=.true. means a polarized scattering table with Wigner 
  ! d-function coefficients for six phase matrix elements instead of one.
  ! The order of the six elements is the four diagonal ones (a1, a2, a3, a4)
  ! followed by the IQ and UV coefficients (b1, b2).
@@ -231,7 +231,7 @@ SUBROUTINE READ_SCAT_TABLE (SCATTABFILE, POLTAB, NPHASEPOL, NRETAB,RETAB, &
   READ (1,*)
   READ (1,*)
   READ (1,*)
-  READ (1,*)
+  READ (1,*) 
   DO I = 1, NRETAB
     READ (1,*) RETAB(I), EXTINCT, SSALB, NCOEF(I)
     IF (POLTAB) THEN
@@ -273,17 +273,17 @@ END SUBROUTINE READ_SCAT_TABLE
 
 
 
-
+ 
 SUBROUTINE READ_PROPERTY_SIZE (PROPFILE, NPHASEPOL, NUMPHASE, MAXNCOEF)
- ! Reads the header of the tabulated phase function property file to
- ! get the maximum array sizes needed for allocatable arrays.
+ ! Reads the header of the tabulated phase function property file to 
+ ! get the maximum array sizes needed for allocatable arrays.  
   IMPLICIT NONE
   CHARACTER(LEN=*), INTENT(IN) :: PROPFILE
   INTEGER, INTENT(OUT) :: NPHASEPOL, NUMPHASE, MAXNCOEF
   INTEGER :: NPX, NPY, NPZ, NUML, I, J, K, L
   REAL    :: DELX, DELY, ZLEVELS, CHI
   CHARACTER(LEN=1) :: PROPTYPE
-
+ 
   ! Open the file, figure out the type, and get the grid size
   OPEN (UNIT=2, FILE=PROPFILE, STATUS='OLD')
   READ (2,'(A1)') PROPTYPE
@@ -304,16 +304,16 @@ SUBROUTINE READ_PROPERTY_SIZE (PROPFILE, NPHASEPOL, NUMPHASE, MAXNCOEF)
   ELSE IF (PROPTYPE .EQ. 'P') THEN
 !    Property file type P is for polarized tabulated phase function format
     NPHASEPOL = 6
-    DO I = 1, NUMPHASE
+    DO I = 1, NUMPHASE 
       DO J = 1, 6
         READ (2,*) K, NUML, (CHI, L=0,NUML)
         IF (K /= J) THEN
           PRINT *, 'Error reading  polarized tabulated phase function format'
           STOP
         ENDIF
-        MAXNCOEF = MAX(NUML,MAXNCOEF)
+        MAXNCOEF = MAX(NUML,MAXNCOEF)   
       ENDDO
-    ENDDO
+    ENDDO  
   ENDIF
   CLOSE (2)
 END SUBROUTINE READ_PROPERTY_SIZE
@@ -332,7 +332,7 @@ SUBROUTINE READ_PROPERTY_PHASEMAT (PROPFILE, NPHASEPOL, NUMPHASE, MAXNCOEF,&
   INTEGER :: NPX, NPY, NPZ, I, J, K, L
   REAL    :: DELX, DELY, ZLEVELS
   CHARACTER(LEN=1) :: PROPTYPE
-
+ 
   OPEN (UNIT=2, FILE=PROPFILE, STATUS='OLD')
   READ (2,'(A1)') PROPTYPE
   READ (2,*) NPX, NPY, NPZ
@@ -346,24 +346,24 @@ SUBROUTINE READ_PROPERTY_PHASEMAT (PROPFILE, NPHASEPOL, NUMPHASE, MAXNCOEF,&
       DO J = 1, 6
         READ (2,*) K, NCOEF(I), (WIGCOEF(K,L,I), L=0,NCOEF(I))
       ENDDO
-    ENDIF
+    ENDIF  
   ENDDO
   CLOSE (2)
 END SUBROUTINE READ_PROPERTY_PHASEMAT
-
+ 
 
 
 
 SUBROUTINE TRANSFORM_WIGNERD_TO_PHASE (MAXNCOEF, NPHASEPOL, &
                                        PELEM, NCOEF, WIGCOEF, &
                                        NANGLE, ANGLE, PHASE)
- ! Transforms the phase matrix element (PELEM=1 to 6) from the Wigner
- ! d-function based coefficients of the scattering matrix (WIGCOEF) to
+ ! Transforms the phase matrix element (PELEM=1 to 6) from the Wigner 
+ ! d-function based coefficients of the scattering matrix (WIGCOEF) to 
  ! a function of angle, PHASE(NANGLE) (at scattering angles in degrees
- ! in ANGLE(:)).  The order of the six elements in WIGCOEF is the four
+ ! in ANGLE(:)).  The order of the six elements in WIGCOEF is the four 
  ! diagonal ones (alpha1, alpha2, alpha3, alpha4) followed by the IQ and
  ! UV coefficients (beta1, beta2).  The phase matrix elements indexed by
- ! PELEM are P11, P22, P33, P44, P12, P34.  If PELEM<0 then the ABS(PELEM)
+ ! PELEM are P11, P22, P33, P44, P12, P34.  If PELEM<0 then the ABS(PELEM) 
  ! phase matrix element is normalized by the P11 element on output in PHASE.
  ! (Doicu et al., 2013, JQSRT, http://dx.doi.org/10.1016/j.jqsrt.2012.12.009).
   IMPLICIT NONE
@@ -390,7 +390,7 @@ SUBROUTINE TRANSFORM_WIGNERD_TO_PHASE (MAXNCOEF, NPHASEPOL, &
     X = DCOS(ANGLE(J)*PI/180)
     XM = -X
 
-     ! Calculate the desired scattering matrix element for this angle (X)
+     ! Calculate the desired scattering matrix element for this angle (X) 
      ! from the Wigner d-function coefficients
     SELECT CASE (ABS(PELEM))
     CASE (1)
@@ -538,3 +538,4 @@ FUNCTION DMM1_N0 ( X, M, M1 ) RESULT( DMM1N0 )
     DMM1N0 = DMM1N0 * FACT**( MAXM + MINM )
   END IF
 END FUNCTION DMM1_N0
+

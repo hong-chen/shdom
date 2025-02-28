@@ -1,128 +1,118 @@
-! This code is a cleaned-up version of SHDOM/shdom.f90 by Evans 1996.
-!
-! 2022-08-13
-! by Hong Chen (hong.chen.cu@gmail.com) at Laboratory for Atmospheric and Space Physics
+!   SHDOM: Spherical harmonic discrete ordinate radiative transfer method.
+!      See shdom.txt for documentation.
 
-! SHDOM: Spherical harmonic discrete ordinate radiative transfer method.
-! See shdom.txt for documentation.
-
-module shdom_property_arrays
-  integer  , save              :: npx, npy, npz, numphase
-  integer  , save              :: nzckd
-  real     , save              :: delx, dely, xstart, ystart
-  real     , save, allocatable :: zlevels(:)
-  real     , save, allocatable :: tempp(:), extinctp(:), albedop(:)
-  real     , save, allocatable :: legenp(:), extdirp(:)
-  integer*2, save, allocatable :: iphasep(:)
-  real     , save, allocatable :: zckd(:), gasabs(:)
-end module
+      MODULE SHDOM_PROPERTY_ARRAYS
+        INTEGER, SAVE              :: NPX, NPY, NPZ, NUMPHASE
+        REAL,    SAVE              :: DELX, DELY, XSTART, YSTART
+        REAL,    SAVE, ALLOCATABLE :: ZLEVELS(:)
+        REAL,    SAVE, ALLOCATABLE :: TEMPP(:), EXTINCTP(:), ALBEDOP(:)
+        REAL,    SAVE, ALLOCATABLE :: LEGENP(:), EXTDIRP(:)
+        INTEGER*2,SAVE,ALLOCATABLE :: IPHASEP(:)
+        INTEGER, SAVE              :: NZCKD
+        REAL,    SAVE, ALLOCATABLE :: ZCKD(:), GASABS(:)
+      END MODULE
 
 
-program shdom
+      PROGRAM SHDOM
+      USE SHDOM_PROPERTY_ARRAYS
+      USE shdom_netcdf
+      IMPLICIT NONE
+!                         Number of output files and inputs parameter per file
+      INTEGER, PARAMETER :: MAXOUT=20, MAXPAR=500
+      REAL                 :: OUTPARMS(MAXPAR,MAXOUT)
+      CHARACTER            :: OUTTYPES(MAXOUT)*1, OUTFILES(MAXOUT)*80 
 
-  use shdom_property_arrays
-  use shdom_netcdf
+      REAL,    ALLOCATABLE :: DELG(:), KABS(:,:)
+      REAL,    ALLOCATABLE :: XGRID(:), YGRID(:), ZGRID(:)
+      REAL,    ALLOCATABLE :: TEMP(:), PLANCK(:), EXTINCT(:), ALBEDO(:)
+      REAL,    ALLOCATABLE :: LEGEN(:)
+      INTEGER*2,ALLOCATABLE:: IPHASE(:)
+      INTEGER, ALLOCATABLE :: GRIDPTR(:,:), NEIGHPTR(:,:), TREEPTR(:,:)
+      INTEGER*2,ALLOCATABLE:: CELLFLAGS(:)
+      REAL,    ALLOCATABLE :: GRIDPOS(:,:)
+      INTEGER, ALLOCATABLE :: RSHPTR(:), SHPTR(:), OSHPTR(:)
+      REAL,    ALLOCATABLE :: RADIANCE(:,:), SOURCE(:,:), DELSOURCE(:,:)
+      INTEGER, ALLOCATABLE :: WORK1(:)
+      REAL,    ALLOCATABLE :: WORK(:), WORK2(:)
+      REAL,    ALLOCATABLE :: FLUXES(:), DIRFLUX(:)
+      INTEGER, ALLOCATABLE :: NPHI0(:)
+      REAL,    ALLOCATABLE :: MU(:), WTDO(:), PHI(:)
+      INTEGER, ALLOCATABLE :: BCPTR(:)
+      REAL,    ALLOCATABLE :: BCRAD(:,:)
+      REAL,    ALLOCATABLE :: SFCPARMS(:)
+      REAL,    ALLOCATABLE :: SFCGRIDPARMS(:)
+      REAL,    ALLOCATABLE :: SUMFLUXES(:), SUMDIRFLUX(:), SUMFLUXDIV(:)
+      REAL,    ALLOCATABLE :: SUMSHTERMS(:), SOURCE1OUT(:)
+      REAL,    ALLOCATABLE :: SUMRADOUT(:), SUMVISOUT(:)
+      REAL,    ALLOCATABLE :: TEMPPT(:), EXTINCTPT(:), ALBEDOPT(:)
+      REAL,    ALLOCATABLE :: LEGENPT(:)
+      INTEGER*2, ALLOCATABLE :: IPHASEPT(:)
+      REAL,    ALLOCATABLE :: ALLFLUXES(:,:,:,:)
+      REAL,    ALLOCATABLE :: ALLFLUXDIV(:,:,:), ALLSHTERMS(:,:,:,:)
+      REAL,    ALLOCATABLE :: XALLGRID(:), YALLGRID(:)
 
-  implicit none
+      INTEGER :: MAXPG, MAXIG, MAXIC, MAXIV, MAXIDO, MAXNZ, MAXNG
+      INTEGER :: MAXLEG, MAXPGL, MAXIGL
+      INTEGER :: MAXNBC, MAXBCRAD
+      INTEGER :: MAXSFCPTS, MAXSFCPARS,  BIG_ARRAYS
+      REAL    :: MEMWORD, WANTMEM
+      REAL    :: MAX_TOTAL_MB, ADAPT_GRID_FACTOR
+      REAL    :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
+      REAL    :: MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
 
-  ! Number of output files and inputs parameter per file
-  integer  , parameter   :: MAXOUT=20, MAXPAR=500
-  real                   :: OUTPARMS(MAXPAR,MAXOUT)
-  character              :: OUTTYPES(MAXOUT)*1, OUTFILES(MAXOUT)*80
-
-  real     , allocatable :: DELG(:), KABS(:,:)
-  real     , allocatable :: XGRID(:), YGRID(:), ZGRID(:)
-  real     , allocatable :: TEMP(:), PLANCK(:), EXTINCT(:), ALBEDO(:)
-  real     , allocatable :: LEGEN(:)
-  integer*2, allocatable :: IPHASE(:)
-  integer  , allocatable :: GRIDPTR(:,:), NEIGHPTR(:,:), TREEPTR(:,:)
-  integer*2, allocatable :: CELLFLAGS(:)
-  real     , allocatable :: GRIDPOS(:,:)
-  integer  , allocatable :: RSHPTR(:), SHPTR(:), OSHPTR(:)
-  real     , allocatable :: RADIANCE(:,:), SOURCE(:,:), DELSOURCE(:,:)
-  integer  , allocatable :: WORK1(:)
-  real     , allocatable :: WORK(:), WORK2(:)
-  real     , allocatable :: FLUXES(:), DIRFLUX(:)
-  integer  , allocatable :: NPHI0(:)
-  real     , allocatable :: MU(:), WTDO(:), PHI(:)
-  integer  , allocatable :: BCPTR(:)
-  real     , allocatable :: BCRAD(:,:)
-  real     , allocatable :: SFCPARMS(:)
-  real     , allocatable :: SFCGRIDPARMS(:)
-  real     , allocatable :: SUMFLUXES(:), SUMDIRFLUX(:), SUMFLUXDIV(:)
-  real     , allocatable :: SUMSHTERMS(:), SOURCE1OUT(:)
-  real     , allocatable :: SUMRADOUT(:), SUMVISOUT(:)
-  real     , allocatable :: TEMPPT(:), EXTINCTPT(:), ALBEDOPT(:)
-  real     , allocatable :: LEGENPT(:)
-  integer*2, allocatable :: IPHASEPT(:)
-  real     , allocatable :: ALLFLUXES(:,:,:,:)
-  real     , allocatable :: ALLFLUXDIV(:,:,:), ALLSHTERMS(:,:,:,:)
-  real     , allocatable :: XALLGRID(:), YALLGRID(:)
-
-  integer :: MAXPG, MAXIG, MAXIC, MAXIV, MAXIDO, MAXNZ, MAXNG
-  integer :: MAXLEG, MAXPGL, MAXIGL
-  integer :: MAXNBC, MAXBCRAD
-  integer :: MAXSFCPTS, MAXSFCPARS,  BIG_ARRAYS
-  real    :: MEMWORD, WANTMEM
-  real    :: MAX_TOTAL_MB, ADAPT_GRID_FACTOR
-  real    :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
-  real    :: MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
-
-  integer NSTOKES, NX, NY, NZ, NX1, NY1
-  integer NXT, NYT, NPXT, NPYT, MAXPGT, MAXPGLT
-  integer NXSFC, NYSFC, NSFCPAR, NTOPPTS, NBOTPTS
-  integer NG, SIDE
-  integer ML, MM, NLM, NSTLEG, NLEG, NANG, NMU, NPHI, NPHI0MAX
-  integer NBPTS, NPTS, NCELLS, NSH, NBCELLS, OLDNPTS
-  integer MAXITER, ITER, TOTITER, IG, I, NUMOUT, BCFLAG, IPFLAG
-  integer NRAD, IRAD, NXOUT, NYOUT, NVIS, IVIS, NSCAN, NPIX, NSHOUT
-  integer NCELLSTOT, NPTSTOT, NSHTOT
-  logical KDIST, INRADFLAG, NEWGRIDFLAG, DELTAM, ACCELFLAG
-  logical BASEOUT, HIGHORDERRAD, MASTERPROC, VALIDBEAM, BTEST
-  logical RADIANCE_OUT, VISUAL_OUT
-  logical FLUX_OUT, FLUXDIV_OUT, SH_OUT, SOURCE_OUT
-  real    SOLARFLUX, SOLARMU, SOLARAZ, SOLFLUX
-  real    GNDTEMP, GNDALBEDO, SKYRAD, WAVENO(2), WAVELEN
-  real    SOLACC, SOLCRIT, SPLITACC, SHACC
-  real    DELXSFC, DELYSFC, MAXASYM, REDUCE
-  real    MUOUT, PHIOUT
-  real    UNIFZLEV, XO, YO, ZO, DIRPATH
-  real    CPUTIME1, CPUTIME2, CPUTIMETOTAL, SUM_CPU_TIME
-  character    :: SRCTYPE*1, UNITS*1
-  character    :: GRIDTYPE*1, PROPTYPE*1, SFCTYPE*2
-  character*80 :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
-  character*80 :: OutFileNC, RUNNAME
-  external     :: SUM_CPU_TIME
+      INTEGER NSTOKES, NX, NY, NZ, NX1, NY1
+      INTEGER NXT, NYT, NPXT, NPYT, MAXPGT, MAXPGLT
+      INTEGER NXSFC, NYSFC, NSFCPAR, NTOPPTS, NBOTPTS
+      INTEGER NG, SIDE
+      INTEGER ML, MM, NLM, NSTLEG, NLEG, NANG, NMU, NPHI, NPHI0MAX
+      INTEGER NBPTS, NPTS, NCELLS, NSH, NBCELLS, OLDNPTS
+      INTEGER MAXITER, ITER, TOTITER, IG, I, NUMOUT, BCFLAG, IPFLAG
+      INTEGER NRAD, IRAD, NXOUT, NYOUT, NVIS, IVIS, NSCAN, NPIX, NSHOUT
+      INTEGER NCELLSTOT, NPTSTOT, NSHTOT
+      LOGICAL KDIST, INRADFLAG, NEWGRIDFLAG, DELTAM, ACCELFLAG
+      LOGICAL BASEOUT, HIGHORDERRAD, MASTERPROC, VALIDBEAM, BTEST
+      LOGICAL RADIANCE_OUT, VISUAL_OUT
+      LOGICAL FLUX_OUT, FLUXDIV_OUT, SH_OUT, SOURCE_OUT
+      REAL  SOLARFLUX, SOLARMU, SOLARAZ, SOLFLUX
+      REAL  GNDTEMP, GNDALBEDO, SKYRAD, WAVENO(2), WAVELEN
+      REAL  SOLACC, SOLCRIT, SPLITACC, SHACC
+      REAL  DELXSFC, DELYSFC, MAXASYM, REDUCE
+      REAL  MUOUT, PHIOUT
+      REAL  UNIFZLEV, XO, YO, ZO, DIRPATH
+      REAL  CPUTIME1, CPUTIME2, CPUTIMETOTAL, SUM_CPU_TIME
+      CHARACTER SRCTYPE*1, UNITS*1
+      CHARACTER GRIDTYPE*1, PROPTYPE*1, SFCTYPE*2
+      CHARACTER*80 PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
+      CHARACTER*80 OutFileNC, RUNNAME
+      EXTERNAL SUM_CPU_TIME
 
 
-  ! Choose the option to compute higher order radiance SH terms
-  HIGHORDERRAD = .FALSE.
-  NSHOUT = 4
-  IF (HIGHORDERRAD) NSHOUT=5
-  ! Choose type of initialization/output for k-distributions:
-  ! True means initiatize with and output only the base grid.
-  BASEOUT = .FALSE.
+!          Choose the option to compute higher order radiance SH terms
+      HIGHORDERRAD = .FALSE.
+      NSHOUT = 4
+      IF (HIGHORDERRAD) NSHOUT=5
+!          Choose type of initialization/output for k-distributions:
+!            True means initiatize with and output only the base grid.
+      BASEOUT = .FALSE.
 
-  CALL CPU_TIME(CPUTIME1)
+      CALL CPU_TIME(CPUTIME1) 
 
-  ! Start up MPI for multiple processors if available, and
-  !  return flag for master process (procnum=0)
-  CALL START_MPI (MASTERPROC)
+       ! Start up MPI for multiple processors if available, and
+       !  return flag for master process (procnum=0)
+      CALL START_MPI (MASTERPROC)
 
 
-  if (MASTERPROC) then
-
-    CALL USER_INPUT (RUNNAME, PROPFILE, SFCFILE, CKDFILE,              &
-                     INSAVEFILE, OUTSAVEFILE,                          &
-                     NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,           &
-                     IPFLAG, KDIST, DELTAM, GRIDTYPE,                  &
-                     SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,     &
-                     GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,       &
-                     ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,      &
-                     MAXOUT,MAXPAR, NUMOUT,OUTTYPES,OUTPARMS,OUTFILES, &
-                     OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,       &
-                     NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
-
+      IF (MASTERPROC) THEN 
+        CALL USER_INPUT (RUNNAME, PROPFILE, SFCFILE, CKDFILE,        &
+                       INSAVEFILE, OUTSAVEFILE,                      &
+                       NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,       &
+                       IPFLAG, KDIST, DELTAM, GRIDTYPE,              &
+                       SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD, &
+                       GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,   &
+                       ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,  &
+                       MAXOUT,MAXPAR, NUMOUT,OUTTYPES,OUTPARMS,OUTFILES, &
+                       OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,    &
+                       NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
 !        CALL NAMELIST_INPUT (RUNNAME, PROPFILE, SFCFILE, CKDFILE,    &
 !                       INSAVEFILE, OUTSAVEFILE,                      &
 !                       NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG, IPFLAG,&
@@ -133,8 +123,7 @@ program shdom
 !                       MAXOUT,MAXPAR,NUMOUT,OUTTYPES,OUTPARMS,OUTFILES, &
 !                       OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,    &
 !                       NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
-  end if
-
+      ENDIF
       CALL BROADCAST_USER_INPUT (RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
                        INSAVEFILE, OUTSAVEFILE,                      &
                        NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,                &
@@ -182,7 +171,7 @@ program shdom
 
       ALLOCATE (MU(NMU), WTDO(NMU*NPHI), PHI(NMU*NPHI), NPHI0(NMU))
 
-!         Find out the size of the input property file grid
+!         Find out the size of the input property file grid 
       IF (MASTERPROC) THEN
         CALL READ_PROPERTY_SIZE (PROPFILE, NSTLEG, NLEG, NPX, NPY, NPZ, &
                                  NUMPHASE, MAXLEG, MAXPGL, DELX, DELY)
@@ -196,7 +185,7 @@ program shdom
       NXT=NX ; NYT=NY ; NPXT=NPX ; NPYT=NPY
 
        ! Map the full SHDOM domain onto the multiple processors:
-       !   change NPX,NPY and NX,NY to the subdomain size, and output
+       !   change NPX,NPY and NX,NY to the subdomain size, and output 
        !   the X and Y starting position of this subdomain.  Set bits
        !   2 and 3 in BCFLAG to indicate multiple processors in X and Y.
        !   Also open the slave processor log files.
@@ -227,7 +216,7 @@ program shdom
 
       MAXNZ = NPZ
       IF (BTEST(BCFLAG,2) .OR. BTEST(BCFLAG,3)) THEN
-         ! Read the properties of the medium to the master processor and
+         ! Read the properties of the medium to the master processor and 
          !  distribute to all the processors
         IF (MASTERPROC) THEN
           MAXPGT = NPXT*NPYT*NPZ
@@ -242,7 +231,7 @@ program shdom
 !          CALL read_properties_netcdf(PROPFILE, NPXT, NPYT, NPZ, NUMPHASE,   &
 !                              NSTLEG, MAXLEG, MAXPGT, MAXPGLT, DELTAM, NLEG, &
 !                              PROPTYPE, ZLEVELS, MAXASYM,          &
-!                              TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, IPHASEPT)
+!                              TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, IPHASEPT) 
           IF (NUMPHASE == 0) THEN
             WRITE (6,*) 'Standard property file (with phase function Legendre series at every point)'
             WRITE (6,*) '  is not allowed with multiple processors.'
@@ -268,7 +257,7 @@ program shdom
 !          CALL read_properties_netcdf(PROPFILE, NPX, NPY, NPZ, NUMPHASE,   &
 !                                    NSTLEG, MAXLEG, MAXPG, MAXPGL, DELTAM, NLEG, &
 !                                    PROPTYPE, ZLEVELS, MAXASYM,          &
-!                                    TEMPP, EXTINCTP, ALBEDOP, LEGENP, IPHASEP)
+!                                    TEMPP, EXTINCTP, ALBEDOP, LEGENP, IPHASEP) 
          ! Check values of medium properties
         CALL CHECK_PROPERTY_INPUT (NPX, NPY, NPZ, NSTLEG, NLEG,  &
                        DELX, DELY, ZLEVELS, &
@@ -352,7 +341,7 @@ program shdom
 
 
       MAXNBC = MAXIG*3/NZ
-!         Read in the surface properties
+!         Read in the surface properties      
       IF (SFCFILE(1:2) .EQ. 'NO') THEN
         SFCTYPE = 'FL'
       ELSE
@@ -449,7 +438,7 @@ program shdom
             NVIS = NVIS + NSTOKES*NSCAN*NPIX
           ENDIF
         ELSE IF (OUTTYPES(I) .EQ. 'F') THEN
-          IF (.NOT. FLUX_OUT) THEN
+          IF (.NOT. FLUX_OUT) THEN 
             ALLOCATE (SUMFLUXES(2*MAXIG), SUMDIRFLUX(MAXIG))
           ENDIF
           FLUX_OUT = .TRUE.
@@ -469,7 +458,7 @@ program shdom
           ENDIF
           SOURCE_OUT = .TRUE.
         ENDIF
-      ENDDO
+      ENDDO 
 
       ALLOCATE (SUMRADOUT(NRAD), SUMVISOUT(NVIS))
       ALLOCATE (WORK2(MAX(NVIS,NRAD,NSTOKES*MAXIG)))
@@ -497,7 +486,7 @@ program shdom
           ELSE IF (OUTTYPES(I) .EQ. 'M') THEN
             WRITE (6,'(A,A)') 'M output format not supported for multiple processors: ',TRIM(OUTFILES(I))
           ENDIF
-        ENDDO
+        ENDDO 
       ENDIF
 
 
@@ -695,10 +684,10 @@ program shdom
              CELLFLAGS,  FLUXES, SHPTR, SOURCE, RSHPTR, RADIANCE)
 
 
-      CALL CPU_TIME(CPUTIME2)
-      CPUTIMETOTAL = SUM_CPU_TIME(CPUTIME2 - CPUTIME1)
+      CALL CPU_TIME(CPUTIME2) 
+      CPUTIMETOTAL = SUM_CPU_TIME(CPUTIME2 - CPUTIME1) 
       IF (MASTERPROC) THEN
-        WRITE (6,'(A,F10.2)') 'Approximate total CPU time used (sec)', CPUTIMETOTAL
+        WRITE (6,'(A,F10.2)') 'Approximate total CPU time used (sec)', CPUTIMETOTAL 
       ENDIF
 
       NSH = SHPTR(NPTS+1)
@@ -855,20 +844,20 @@ program shdom
       DEALLOCATE (MU, WTDO, PHI, NPHI0)
 
       END
+ 
 
 
 
 
-
-
+ 
       SUBROUTINE TRILIN_INTERP_PROP (X, Y, Z, INIT, NSTLEG, NLEG, &
                      TEMP, EXTINCT, ALBEDO, LEGEN, IPHASE)
 !      Trilinearly interpolates the quantities on the input property
 !     grid at the single point (X,Y,Z) to get the output TEMP,EXTINCT,
-!     ALBEDO, and LEGEN or IPHASE.  Interpolation is done on the
+!     ALBEDO, and LEGEN or IPHASE.  Interpolation is done on the 
 !     volume coefficients.  Also adds in the separate gaseous absorption.
 !     Divides the phase function Legendre coefficients LEGEN by 2*l+1.
-!     The phase function pointer IPHASE (for tabulated phase functions)
+!     The phase function pointer IPHASE (for tabulated phase functions) 
 !     is that of the maximum weighted scattering property grid point.
 !     If INIT=.TRUE. then transfers the tabulated phase functions.
 
@@ -1055,33 +1044,33 @@ program shdom
       ENDIF
       RETURN
       END
+ 
+ 
 
 
-
-
-
+ 
       SUBROUTINE DIRECT_BEAM_PROP (INIT, XI, YI, ZI, BCFLAG, IPFLAG, &
-                     DELTAM, ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ, &
+                     DELTAM, ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ, & 
                      DIRFLUX,  UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
 !       Computes the direct beam flux at point (XI,YI,ZI) by integrating
-!     the extinction through the property grid.  If called with
+!     the extinction through the property grid.  If called with 
 !     INIT=1 then the property grid extinction array, solar direction
 !     terms, and lowest uniform level are computed and saved.  If called
 !     with INIT=2 then the input lowest uniform level (UNIFZLEV) is stored.
 !     Call with INIT=0 to do the path integration and return the direct
 !     beam flux on the horizontal (DIRFLUX) at XI,YI,ZI.
-!     The DELTAM flag is used to determine whether to delta-M scale the
-!     extinction for the direct beam computation.  The extinction includes
+!     The DELTAM flag is used to determine whether to delta-M scale the 
+!     extinction for the direct beam computation.  The extinction includes 
 !     the gaseous absorption.  If the IPFLAG has bit 2 set then the direct
 !     beam tracing is done in 3D, otherwise the lower two bits determine
-!     the type of tracing: 0 for 3D tracing, 1 for XZ only tracing,
-!     2 for YZ only tracing, and 3 for Z only tracing.  If BCFLAG bits 0
-!     or 1 are set then have open boundary conditions in X and/or Y.  In
-!     this case when the ray tracing back to the sun reaches the boundary
-!     then independent pixel mode is entered so that only Z grid
+!     the type of tracing: 0 for 3D tracing, 1 for XZ only tracing, 
+!     2 for YZ only tracing, and 3 for Z only tracing.  If BCFLAG bits 0 
+!     or 1 are set then have open boundary conditions in X and/or Y.  In 
+!     this case when the ray tracing back to the sun reaches the boundary 
+!     then independent pixel mode is entered so that only Z grid 
 !     intersections occur.
-!       For use with multiple processors (bit 2 or 3 set in BCFLAG),
-!     the VALIDBEAM flag is returned true if the ray to the sun made it
+!       For use with multiple processors (bit 2 or 3 set in BCFLAG), 
+!     the VALIDBEAM flag is returned true if the ray to the sun made it 
 !     to the top of the domain before hitting the subdomain side.  If the
 !     flag is false SIDE is returned with the boundary hit (1=-X, 2=+X,
 !     3=-Y, 4=+Y).  XE,YE,ZE returns the location of the exitting ray,
@@ -1108,7 +1097,7 @@ program shdom
       DOUBLE PRECISION U0, V0, W0, U1, V1, W1, AX, AY, AZ
       DOUBLE PRECISION U0M, V0M, W0M, U1M, V1M, W1M, DU, DV, DW
       DOUBLE PRECISION E1,E2,E3,E4,E5,E6,E7,E8,  A, B, C, D
-      DOUBLE PRECISION B1,B2,B3,B4,B5,B6,B7,B8,C1,C2,C3,C4,C5,C6,C7,C8
+      DOUBLE PRECISION B1,B2,B3,B4,B5,B6,B7,B8,C1,C2,C3,C4,C5,C6,C7,C8 
       DOUBLE PRECISION UV,UMV,UVM,UMVM,UW,UMW,UWM,UMWM,VW,VMW,VWM,VMWM
       DOUBLE PRECISION VWU,VWUM,UWV,UWVM,UVW,UVWM
       REAL, SAVE, ALLOCATABLE :: GASEXT(:), EXTMIN(:), EXTMAX(:)
@@ -1258,7 +1247,7 @@ program shdom
       X = XI - XSTART
       Y = YI - YSTART
 
-!         Find the grid location
+!         Find the grid location 
       IL=0
       IU=NPZ
       DO WHILE (IU-IL .GT. 1)
@@ -1297,7 +1286,7 @@ program shdom
       IF (BTEST(BCFLAG,1) .AND. (ABS(Y) .LT. 0.01*DELYD  &
          .OR. ABS(Y-(NPY-1)*DELYD) .LT. 0.01*DELYD))  CONSTY = .TRUE.
 
-       ! If have multiple subdomains (processors) and ray is going outwards
+       ! If have multiple subdomains (processors) and ray is going outwards 
        !   from a boundary then set the HITBOUNDARY flag
       HITBOUNDARY = .FALSE.
       IF (BTEST(BCFLAG,2)) THEN
@@ -1308,7 +1297,7 @@ program shdom
           SIDE = 1
           HITBOUNDARY = .TRUE.
         ENDIF
-      ENDIF
+      ENDIF 
       IF (BTEST(BCFLAG,3)) THEN
         IF (CY .GT. 0.0 .AND. ABS(Y-YDOMAIN) .LT. 0.001*DELYD) THEN
           SIDE = 4
@@ -1318,7 +1307,7 @@ program shdom
           SIDE = 3
           HITBOUNDARY = .TRUE.
         ENDIF
-      ENDIF
+      ENDIF 
 
 !           Grid cell loop begin
       PATH = DIRPATH
@@ -1329,16 +1318,16 @@ program shdom
             IP=NPX
           ELSE
             IP = 1
-          ENDIF
-        ENDIF
+          ENDIF   
+        ENDIF     
         JP = J + 1
         IF (J .EQ. NPY) THEN
           IF (BTEST(BCFLAG,1) .OR. BTEST(BCFLAG,3)) THEN
             JP=NPY
           ELSE
             JP = 1
-          ENDIF
-        ENDIF
+          ENDIF   
+        ENDIF     
         X0 = DELXD*(I-1)
         X1 = X0 + DELXD
         Y0 = DELYD*(J-1)
@@ -1399,7 +1388,7 @@ program shdom
         ELSE
           SOZ = 1.0E30
         ENDIF
-
+        
 !           The shortest distance is the plane we stop at:
 !             get the exitting location and increment the cell
         XOFFS = 0.0
@@ -1518,7 +1507,7 @@ program shdom
         B6 =  DU*VMW  - DV*UW   + DW*UVM
         B7 = -DU*VW   + DV*UMW  + DW*UMV
         B8 =  DU*VW   + DV*UW   + DW*UV
-        B = B1*E1 +B2*E2 +B3*E3 +B4*E4 +B5*E5 +B6*E6 +B7*E7 +B8*E8
+        B = B1*E1 +B2*E2 +B3*E3 +B4*E4 +B5*E5 +B6*E6 +B7*E7 +B8*E8 
         VW = DV*DW
         VWU  = VW*U0
         VWUM = VW*U0M
@@ -1536,7 +1525,7 @@ program shdom
         C6 = - VWU  + UWVM - UVW
         C7 = + VWUM - UWV  - UVW
         C8 = + VWU  + UWV  + UVW
-        C = C1*E1 +C2*E2 +C3*E3 +C4*E4 +C5*E5 +C6*E6 +C7*E7 +C8*E8
+        C = C1*E1 +C2*E2 +C3*E3 +C4*E4 +C5*E5 +C6*E6 +C7*E7 +C8*E8 
         D = DU*DV*DW*(E2+E3+E5+E8-E1-E4-E6-E7)
 !            Compute the path through the cell: integration of extinction
         PATH = PATH + SO*(A +0.5D0*B +0.3333333333333333D0*C +0.25D0*D)
@@ -1552,3 +1541,4 @@ program shdom
       IF (VALIDBEAM) SIDE=6
       RETURN
       END
+

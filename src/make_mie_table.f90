@@ -1,20 +1,20 @@
 PROGRAM MAKE_MIE_TABLE
-!
+! 
 ! Does Mie computations to create a scattering table as a function of
-! effective radius for gamma, modified gamma, or lognormal size distributions
+! effective radius for gamma, modified gamma, or lognormal size distributions 
 ! of spherical particles.  The particles may be water or ice (in which case
 ! the program provides the index of refraction depending on wavelength) or
 ! "aerosols" (in which case the index of refraction is user specified).
-! For water or ice particles the scattering properties may be averaged
-! over the desired spectral range with Planck function weighting.
-! The phase functions in the output scattering table are represented
+! For water or ice particles the scattering properties may be averaged 
+! over the desired spectral range with Planck function weighting.  
+! The phase functions in the output scattering table are represented 
 ! with Legendre series.  For polarized output, the six unique elements of
-! the phase matrix are represented with Wigner d-function expansions
+! the phase matrix are represented with Wigner d-function expansions 
 ! (Doicu et al., 2013, JQSRT, http://dx.doi.org/10.1016/j.jqsrt.2012.12.009).
 !
-!  compile: pgf90 -fast -o make_mie_table  make_mie_table.f90
+!  compile: pgf90 -fast -o make_mie_table  make_mie_table.f90 
 !                 indexwatice.f  miewig.f
-!
+!    
 !    Frank Evans    University of Colorado       May 2003
 !  Modified for polarization                     March 2012
 !  Modified for modified gamma distribution      September 2012
@@ -45,7 +45,7 @@ PROGRAM MAKE_MIE_TABLE
   ELSE IF (PARTYPE == 'I') THEN
     PARDENS = 0.916
   ENDIF
-
+  
    ! Calculate the maximum size parameter and the max number of Legendre terms
   CALL GET_CENTER_WAVELEN (WAVELEN1, WAVELEN2, WAVELENCEN)
   PI = ACOS(-1.0)
@@ -53,7 +53,7 @@ PROGRAM MAKE_MIE_TABLE
     XMAX = 2*PI*MAXRADIUS/WAVELEN1
   ELSE
     XMAX = 2*PI*MAXRADIUS/WAVELENCEN
-  ENDIF
+  ENDIF  
   MAXRANK = NINT(2*(XMAX + 4.0*XMAX**0.3334 + 2))
 
    ! Get the average index of refraction for water or ice
@@ -93,7 +93,7 @@ PROGRAM MAKE_MIE_TABLE
     ENDIF
 
     ! Calculate the discrete size number concentrations (ND), which vary
-    ! according to a truncated gamma, modified gamma, or lognormal
+    ! according to a truncated gamma, modified gamma, or lognormal 
     ! distribution that gives the desired effective radius (REFF) and LWC (1 g/m^3).
     CALL MAKE_SIZE_DIST (DISTFLAG, PARDENS, NSIZE, RADII, REFF, ALPHA, GAMMA, &
                          ND)
@@ -116,7 +116,7 @@ PROGRAM MAKE_MIE_TABLE
     IF (ABS(WIGCOEF(1,0,I)-1.0) > 0.0001) THEN
       PRINT *,'Phase function not normalized for Reff=',REFF,WIGCOEF(1,0,I)
       STOP
-    ENDIF
+    ENDIF 
     IF (EXTINCT(I) > 0.0) THEN
       SSALB(I) = SCATTER/EXTINCT(I)
     ENDIF
@@ -169,7 +169,7 @@ SUBROUTINE USER_INPUT (POLTAB, WAVELEN1,WAVELEN2, PARTYPE, RINDEX, PARDENS, &
     WRITE(*,*) 'Average Mie properties over wavelength or use Planck weighted'
     WRITE(*,*) '  index of refraction at center wavelength (A or C)'
     READ(*,'(A1)') AVGFLAG
-    WRITE (*,'(1X,A1)') AVGFLAG
+    WRITE (*,'(1X,A1)') AVGFLAG   
     IF (AVGFLAG == 'A') THEN
       WRITE(*,*) 'Wavelength interval for averaging (micron)'
       READ(*,*) DELTAWAVE
@@ -181,7 +181,7 @@ SUBROUTINE USER_INPUT (POLTAB, WAVELEN1,WAVELEN2, PARTYPE, RINDEX, PARDENS, &
   ELSE
     PARTYPE = 'A'
     WRITE (*,*) 'Aerosol complex index of refraction (negative imaginary part)'
-    READ (*,*) RINDEX
+    READ (*,*) RINDEX 
     WRITE (*,*) RINDEX
     WRITE (*,*) 'Aerosol particle bulk density (g/cm^3)'
     READ (*,*) PARDENS
@@ -282,12 +282,12 @@ END SUBROUTINE GET_SIZES
 
 
 SUBROUTINE GET_CENTER_WAVELEN (WAVELEN1, WAVELEN2, WAVELENCEN)
-!  Returns the Planck weighted center wavelength averaged over the
+!  Returns the Planck weighted center wavelength averaged over the 
 ! wavelength interval (WAVELEN1 < WAVELEN2 [microns]).  A solar
 ! blackbody temperature of 5800 K is used for the Planck weighting
 ! if the average wavelength is less than 3 microns, no Planck weighting
-! is done for an average wavelength between 3 and 5 microns, and a
-! blackbody temperature of 270 K is done for an average wavelength
+! is done for an average wavelength between 3 and 5 microns, and a 
+! blackbody temperature of 270 K is done for an average wavelength 
 ! greater than 5 microns.
   IMPLICIT NONE
   REAL, INTENT(IN)  :: WAVELEN1, WAVELEN2
@@ -295,7 +295,7 @@ SUBROUTINE GET_CENTER_WAVELEN (WAVELEN1, WAVELEN2, WAVELENCEN)
   REAL :: WAVECEN, DELWAVE, WAVE, BBTEMP, PLANCK, SUMP, SUMW
 
   IF (WAVELEN1 == WAVELEN2) THEN
-    WAVELENCEN = WAVELEN1
+    WAVELENCEN = WAVELEN1  
   ELSE
     WAVECEN = 0.5*(WAVELEN1+WAVELEN2)
     IF (WAVECEN < 3.0) THEN
@@ -305,11 +305,11 @@ SUBROUTINE GET_CENTER_WAVELEN (WAVELEN1, WAVELEN2, WAVELENCEN)
     ELSE
       BBTEMP = -1.0
       PLANCK = 1.0
-    ENDIF
+    ENDIF 
     DELWAVE = MIN(WAVECEN/100.,0.1*ABS(WAVELEN2-WAVELEN1))
     SUMP = 0.0
     SUMW = 0.0
-    WAVE = WAVELEN1
+    WAVE = WAVELEN1   
     DO WHILE (WAVE <= WAVELEN2)
       IF (BBTEMP > 0) PLANCK = (1.19E8/WAVE**5)/(EXP(1.439E4/(WAVE*BBTEMP))-1)
       SUMP = SUMP + PLANCK
@@ -329,7 +329,7 @@ SUBROUTINE GET_REFRACT_INDEX (PARTYPE, WAVELEN1, WAVELEN2, RINDEX)
  ! averaging is done at 0.05 micron intervals and is weighted by
  ! a Planck function at 5800 K temperature for central wavelengths
  ! less than 3 microns, a flat function between 3 and 5 microns, and
- ! 270 K Planck function beyond 5 microns.
+ ! 270 K Planck function beyond 5 microns.  
  ! The index of refraction is at -30 C for ice and +10 C for water
  ! (the temperature dependence is important in the microwave).
   IMPLICIT NONE
@@ -347,7 +347,7 @@ SUBROUTINE GET_REFRACT_INDEX (PARTYPE, WAVELEN1, WAVELEN2, RINDEX)
   ELSE
     BBTEMP = -1.0
     PLANCK = 1.0
-  ENDIF
+  ENDIF 
   DELWAVE = MIN(WAVECEN/100.,0.1*ABS(WAVELEN2-WAVELEN1))
   DELWAVE = MAX(DELWAVE,WAVECEN*1.0E-5)
   SUMP = 0.0
@@ -372,7 +372,7 @@ SUBROUTINE GET_REFRACT_INDEX (PARTYPE, WAVELEN1, WAVELEN2, RINDEX)
 END SUBROUTINE GET_REFRACT_INDEX
 
 
-
+ 
 
 SUBROUTINE COMPUTE_MIE_ALL_SIZES (AVGFLAG, WAVELEN1, WAVELEN2, DELTAWAVE, &
                                 PARTYPE, WAVELENCEN, RINDEX, NSIZE, RADII, &
@@ -382,7 +382,7 @@ SUBROUTINE COMPUTE_MIE_ALL_SIZES (AVGFLAG, WAVELEN1, WAVELEN2, DELTAWAVE, &
  ! For AVGFLAG='C' the computation is done at a single wavelength (WAVELENCEN),
  ! using the input index of refraction (RINDEX).  For AVGFLAG='A' an
  ! integration of the Mie properties over wavelength is performed for
- ! each radius.  For each wavelength, with spacing DELTAWAVE, the water
+ ! each radius.  For each wavelength, with spacing DELTAWAVE, the water 
  ! or ice (depending on PARTYPE) index of refraction is obtained and
  ! used in the Mie computation for that wavelength, and the Mie optical
  ! properties are averaged with Planck function weighting (blackbody
@@ -420,7 +420,7 @@ SUBROUTINE COMPUTE_MIE_ALL_SIZES (AVGFLAG, WAVELEN1, WAVELEN2, DELTAWAVE, &
     ELSE
       BBTEMP = -1.0
       PLANCK = 1.0
-    ENDIF
+    ENDIF 
     EXTINCT1(:) = 0.0
     SCATTER1(:) = 0.0
     NRANK1(:) = 1
@@ -459,7 +459,7 @@ SUBROUTINE MAKE_SIZE_DIST (DISTFLAG, PARDENS, NSIZE, RADII, REFF, ALPHA, GAMMA,&
                            ND)
  ! Calculates the number concentrations (ND in cm^-3) for the NSIZE
  ! discrete particle radii (micron) of a gamma or lognormal size distribution
- ! with an effective radius of REFF (micron), gamma shape parameter or
+ ! with an effective radius of REFF (micron), gamma shape parameter or 
  ! lognormal standard deviation of ALPHA, and mass content of 1 g/m^3.
  ! Also handles modified gamma distributions specified by ALPHA and GAMMA.
   IMPLICIT NONE
@@ -520,16 +520,16 @@ SUBROUTINE MAKE_SIZE_DIST (DISTFLAG, PARDENS, NSIZE, RADII, REFF, ALPHA, GAMMA,&
     ELSE
       REHI = REMID
     ENDIF
-  ENDDO
+  ENDDO  
 END SUBROUTINE MAKE_SIZE_DIST
 
 
 
 SUBROUTINE DO_SIZE_DIST (PARDENS, DISTFLAG, ALPHA, GAMMA, RE, NSIZE, RADII, &
                          ND, TRUERE)
- ! For the input effective radius (RE) [um], returns the number concentrations
- ! ND [cm^-3] and the calculated effective radius TRUERE [um] for a
- ! gamma, modified gamma, or lognormal size distribution with mass content
+ ! For the input effective radius (RE) [um], returns the number concentrations 
+ ! ND [cm^-3] and the calculated effective radius TRUERE [um] for a 
+ ! gamma, modified gamma, or lognormal size distribution with mass content 
  ! of 1 g/m^3.
   IMPLICIT NONE
   INTEGER, INTENT(IN) :: NSIZE
@@ -580,10 +580,10 @@ SUBROUTINE WRITE_MIE_TABLE (MIETABFILE, POLTAB, WAVELEN1,WAVELEN2, DELTAWAVE, &
                             PARTYPE, PARDENS, RINDEX, &
                             DISTFLAG, ALPHA, GAMMA, NRETAB,SRETAB,ERETAB,LOGRE,&
                             EXTINCT, SSALB, MAXRANK, NRANK, WIGCOEF)
- ! Writes the table of Mie scattering properties as a function of
- ! effective radius.  There are two types of tables output:
- ! unpolarized with Legendre (Wigner d_l_00) series of a single phase
- ! matrix element (P11) or polarized with six Wigner d-function series
+ ! Writes the table of Mie scattering properties as a function of 
+ ! effective radius.  There are two types of tables output: 
+ ! unpolarized with Legendre (Wigner d_l_00) series of a single phase 
+ ! matrix element (P11) or polarized with six Wigner d-function series 
  ! of the Mie phase matrix elements.
   IMPLICIT NONE
   INTEGER, INTENT(IN) :: NRETAB, MAXRANK, NRANK(NRETAB)
