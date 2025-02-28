@@ -14,7 +14,59 @@ CURRENT_DIR = $(shell pwd)
 BIN_DIR     = $(abspath $(CURRENT_DIR)/../bin)
 BUILD_DIR   = $(abspath $(CURRENT_DIR)/../build)
 
+TARGETS = shdom  propgen make_mie_table make_tmatrix_table plotscattab
+
 SHDOMOBJS   = shdomsub1.o shdomsub2.o shdomsub3.o fftpack.o ocean_brdf.o
 
-all:
-	@ echo $(BUILD_DIR)
+all: $(TARGETS)
+
+shdom: shdom.o $(SHDOMOBJS)
+	$(F90) $(F90FLAGS) -o shdom shdom.o $(SHDOMOBJS) $(LIBS)
+
+shdom.o: shdom.f90 $(SHDOMOBJS)
+	$(F90) -c $(F90FLAGS) shdom.f90
+
+shdomsub1.o: shdomsub1.f
+	$(F90) -c $(F90FLAGS) shdomsub1.f
+
+shdomsub2.o: shdomsub2.f
+	$(F90) -c $(F90FLAGS) shdomsub2.f
+
+shdomsub3.o: shdomsub3.f
+	$(F90) -c $(F90FLAGS) shdomsub3.f
+
+shdom_mpi.o: shdom_mpi.f90
+	$(F90) -c $(F90FLAGS) shdom_mpi.f90
+
+shdom_nompi.o: shdom_nompi.f
+	$(F90) -c $(F90FLAGS) shdom_nompi.f
+
+shdom_nonetcdf.o: shdom_nonetcdf.f90
+	$(F90) -c $(F90FLAGS) shdom_nonetcdf.f90
+
+shdom_netcdf.o: shdom_netcdf.f90
+	$(F90) -c $(F90FLAGS) shdom_netcdf.f90
+
+
+AsciiPropertyFileToNetcdf: AsciiPropertyFileToNetcdf.o
+	$(F90) $(F90FLAGS) -o AsciiPropertyFileToNetcdf AsciiPropertyFileToNetcdf.o shdom_netcdf.o  $(LIBS)
+AsciiPropertyFileToNetcdf.o: AsciiPropertyFileToNetcdf.f90 shdom_netcdf.o
+	$(F90) -c $(F90FLAGS) AsciiPropertyFileToNetcdf.f90
+
+propgen: propgen.f90
+	$(F90) $(F90FLAGS) propgen.f90  -o propgen
+
+make_tmatrix_table: make_tmatrix_table.f90
+	$(F90) $(F90FLAGS) make_tmatrix_table.f90 indexwatice.f tmatrixwig.f lpd.f  -o make_tmatrix_table
+
+make_mie_table: make_mie_table.f90
+	$(F90) $(F90FLAGS) make_mie_table.f90 indexwatice.f miewig.f  -o make_mie_table
+
+plotscattab: plotscattab.f90
+	$(F90) $(F90FLAGS) plotscattab.f90  -o plotscattab
+
+
+.f.o :; $(FC) -c $(FFLAGS) $*.f
+
+clean:
+	@ rm -f *.o *.mod $(TARGETS) *~
