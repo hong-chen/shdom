@@ -25,7 +25,7 @@ BIN_DIR     = $(abspath $(CURRENT_DIR)/../bin)
 
 TARGETS = shdom propgen make_mie_table make_tmatrix_table plotscattab put
 
-SHDOMOBJS = shdUtil_rte1.o shdUtil_rte2.o shdUtil_io.o _fftpack.o shdSfc_ocean.o
+SHDOMOBJS = shdUtil_rte1.o shdUtil_rte2.o shdUtil_ocean.o shdUtil_io.o _fftpack.o
 
 UseMPI = no
 UseNetcdf = no
