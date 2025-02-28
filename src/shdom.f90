@@ -85,18 +85,18 @@ program SHDOM
     character*80 OutFileNC, RUNNAME
     external SUM_CPU_TIME
 
-!          Choose the option to compute higher order radiance SH terms
+    ! Choose the option to compute higher order radiance SH terms
     HIGHORDERRAD = .false.
     NSHOUT = 4
     if (HIGHORDERRAD) NSHOUT = 5
-!          Choose type of initialization/output for k-distributions:
-!            True means initiatize with and output only the base grid.
+    ! Choose type of initialization/output for k-distributions:
+    !   True means initiatize with and output only the base grid.
     BASEOUT = .false.
 
     call cpu_time(CPUTIME1)
 
     ! Start up MPI for multiple processors if available, and
-    !  return flag for master process (procnum=0)
+    !   return flag for master process (procnum=0)
     call START_MPI(MASTERPROC)
 
     if (MASTERPROC) then
@@ -133,16 +133,16 @@ program SHDOM
                               NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
 
     ! The number of Stokes parameters (and components of the real
-    ! generalized spherical harmonics vectors) can be 1, 3, or 4.
+    !   generalized spherical harmonics vectors) can be 1, 3, or 4.
     NSTOKES = max(1, min(4, NSTOKES))
     if (NSTOKES .eq. 2) NSTOKES = 3
 
     NX = max(1, NX); NY = max(1, NY); NZ = max(2, NZ)
-!         If single plane or column then force IP mode
+    ! If single plane or column then force IP mode
     if (NX .eq. 1) IPFLAG = ior(IPFLAG, 1)
     if (NY .eq. 1) IPFLAG = ior(IPFLAG, 2)
 
-!          Make ML and MM from NMU and NPHI
+    ! Make ML and MM from NMU and NPHI
     NMU = max(2, 2*int((NMU + 1)/2))
     NPHI = max(1, NPHI)
     ML = NMU - 1
@@ -150,8 +150,8 @@ program SHDOM
     NLEG = ML
     if (DELTAM) NLEG = ML + 1
 
-!          Make ML and MM from NMU and NPHI
-!          Compute NLM, NPHI0MAX.
+    ! Make ML and MM from NMU and NPHI
+    ! Compute NLM, NPHI0MAX.
     if (SRCTYPE .eq. 'T') SOLARAZ = 0.0
     NPHI0MAX = NPHI
     NLM = (2*MM + 1)*(ML + 1) - MM*(MM + 1)
@@ -159,7 +159,7 @@ program SHDOM
 
     ! NSTLEG is the number of phase function elements used (1 or 6)
     ! Also used for the number of unique elements of the generalized
-    ! spherical harmonics matrices.
+    !   spherical harmonics matrices.
     if (NSTOKES .eq. 1) then
         NSTLEG = 1
     else
@@ -168,11 +168,11 @@ program SHDOM
 
     allocate (MU(NMU), WTDO(NMU*NPHI), PHI(NMU*NPHI), NPHI0(NMU))
 
-!         Find out the size of the input property file grid
+    ! Find out the size of the input property file grid
     if (MASTERPROC) then
         call READ_PROPERTY_SIZE(PROPFILE, NSTLEG, NLEG, NPX, NPY, NPZ, &
                                 NUMPHASE, MAXLEG, MAXPGL, DELX, DELY)
-!        CALL read_property_size_netcdf(PROPFILE, NSTLEG, NLEG, NPX,NPY,NPZ,&
+!        call read_property_size_netcdf(PROPFILE, NSTLEG, NLEG, NPX,NPY,NPZ,&
 !                                       NUMPHASE, MAXLEG, MAXPGL, DELX, DELY)
     end if
     call BROADCAST_PROPERTY_SIZE(NPX, NPY, NPZ, DELX, DELY, &
@@ -189,7 +189,7 @@ program SHDOM
     call MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE, &
                        XSTART, YSTART, RUNNAME)
 
-!         Set up base grid point actual size (NX1xNY1xNZ)
+    ! Set up base grid point actual size (NX1xNY1xNZ)
     NX1 = NX + 1
     if (btest(IPFLAG, 0) .or. btest(BCFLAG, 0) .or. btest(BCFLAG, 2)) NX1 = NX
     NY1 = NY + 1
@@ -199,11 +199,11 @@ program SHDOM
         stop
     end if
     NBPTS = NX1*NY1*NZ
-!        Calculate the number of base grid cells depending on the BCFLAG
+    ! Calculate the number of base grid cells depending on the BCFLAG
     NBCELLS = (NZ - 1)*(NX + ibits(BCFLAG, 0, 1) - ibits(BCFLAG, 2, 1)) &
               *(NY + ibits(BCFLAG, 1, 1) - ibits(BCFLAG, 3, 1))
 
-!         Determine the size of the property grid arrays so can allocate
+    ! Determine the size of the property grid arrays so can allocate
     MAXPG = NPX*NPY*NPZ
     if (NUMPHASE .eq. 0) MAXPGL = MAXPG*(MAXLEG + 1)*NSTLEG
     allocate (ZLEVELS(NPZ))
@@ -225,7 +225,7 @@ program SHDOM
                                  NSTLEG, MAXLEG, NLEG, MAXNZ, MAXPGT, MAXPGLT, DELTAM, &
                                  PROPTYPE, DELX, DELY, ZLEVELS, MAXASYM, &
                                  TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, NUMPHASE, IPHASEPT)
-!          CALL read_properties_netcdf(PROPFILE, NPXT, NPYT, NPZ, NUMPHASE,   &
+!          call read_properties_netcdf(PROPFILE, NPXT, NPYT, NPZ, NUMPHASE,   &
 !                              NSTLEG, MAXLEG, MAXPGT, MAXPGLT, DELTAM, NLEG, &
 !                              PROPTYPE, ZLEVELS, MAXASYM,          &
 !                              TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, IPHASEPT)
@@ -251,7 +251,7 @@ program SHDOM
                              NSTLEG, MAXLEG, NLEG, MAXNZ, MAXPG, MAXPGL, DELTAM, &
                              PROPTYPE, DELX, DELY, ZLEVELS, MAXASYM, &
                              TEMPP, EXTINCTP, ALBEDOP, LEGENP, NUMPHASE, IPHASEP)
-!          CALL read_properties_netcdf(PROPFILE, NPX, NPY, NPZ, NUMPHASE,   &
+!          call read_properties_netcdf(PROPFILE, NPX, NPY, NPZ, NUMPHASE,   &
 !                                    NSTLEG, MAXLEG, MAXPG, MAXPGL, DELTAM, NLEG, &
 !                                    PROPTYPE, ZLEVELS, MAXASYM,          &
 !                                    TEMPP, EXTINCTP, ALBEDOP, LEGENP, IPHASEP)
@@ -276,8 +276,8 @@ program SHDOM
                                        NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, RUNNAME)
     end if
 
-!         Guess maximum number of grid points, cells, SH vector size needed
-!           but don't let MAX_TOTAL_MB be exceeded
+    ! Guess maximum number of grid points, cells, SH vector size needed
+    ! but don't let MAX_TOTAL_MB be exceeded
     if (MAX_TOTAL_MB*1024.0**2 > 1.80*huge(MAXIV)) then
         MAX_TOTAL_MB = 1.80*huge(MAXIV)/1024.0**2
         write (6, *) 'MAX_TOTAL_MB reduced to fit memory model: ', MAX_TOTAL_MB
@@ -320,7 +320,7 @@ program SHDOM
         stop
     end if
 
-!         Allocate the internal adaptable grid arrays, including the BIG 3
+    ! Allocate the internal adaptable grid arrays, including the BIG 3
     allocate (XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ))
     allocate (TEMP(MAXIG), PLANCK(MAXIG))
     allocate (EXTINCT(MAXIG), ALBEDO(MAXIG), IPHASE(MAXIG))
@@ -335,7 +335,7 @@ program SHDOM
     allocate (FLUXES(2*MAXIG), DIRFLUX(MAXIG))
 
     MAXNBC = MAXIG*3/NZ
-!         Read in the surface properties
+    ! Read in the surface properties
     if (SFCFILE(1:2) .eq. 'NO') then
         SFCTYPE = 'FL'
     else
@@ -362,7 +362,7 @@ program SHDOM
     end if
     allocate (BCPTR(2*MAXNBC), BCRAD(NSTOKES, MAXBCRAD))
 
-!          If doing a k-distribution then get the band info from the CKD file
+    ! If doing a k-distribution then get the band info from the CKD file
     if (KDIST) then
         if (MASTERPROC) then
             call READ_CKD_SIZE(CKDFILE, WAVENO, NG, NZCKD)
@@ -385,7 +385,7 @@ program SHDOM
         BASEOUT = .false.
     end if
 
-!         Figure out what type of output we will be generating
+    ! Figure out what type of output we will be generating
     NRAD = 0
     NVIS = 0
     RADIANCE_OUT = .false.
@@ -479,14 +479,14 @@ program SHDOM
         end do
     end if
 
-!         Read in previous run from binary file if desired
+    ! Read in previous run from binary file if desired
     call RESTORE_STATE(INSAVEFILE, NSTOKES, NX, NY, NZ, ML, MM, NLM, &
                        INRADFLAG, NEWGRIDFLAG, XGRID, YGRID, ZGRID, &
                        NPTS, NCELLS, GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR, &
                        CELLFLAGS, FLUXES, SHPTR, SOURCE, RSHPTR, RADIANCE)
 
     if (NEWGRIDFLAG) then
-!           Make the internal base grid lines
+        ! Make the internal base grid lines
         call NEW_GRIDS(BCFLAG, GRIDTYPE, NPX, NPY, NPZ, NX, NY, NZ, &
                        XSTART, YSTART, DELX, DELY, ZLEVELS, &
                        XGRID, YGRID, ZGRID)
@@ -496,17 +496,17 @@ program SHDOM
     TOTITER = 0
     OLDNPTS = 0
 
-!         Loop over the k-distribution g's from high to low absorption
+    ! Loop over the k-distribution g's from high to low absorption
     do IG = NG, 1, -1
-!           If doing k-distribution then get the gas absorption profile.
+        ! If doing k-distribution then get the gas absorption profile.
         if (KDIST) then
             do I = 1, NZCKD
                 GASABS(I) = KABS(I, IG)
             end do
         end if
 
-!           If this is the first time through or we always want a base grid,
-!           then make the base grid point positions and grid cell structure.
+        ! If this is the first time through or we always want a base grid,
+        !   then make the base grid point positions and grid cell structure.
         if (BASEOUT .or. (IG .eq. NG .and. NEWGRIDFLAG)) then
             call INIT_CELL_STRUCTURE(BCFLAG, IPFLAG, &
                                      NX, NY, NZ, NX1, NY1, NPTS, NCELLS, &
@@ -515,8 +515,8 @@ program SHDOM
             NBCELLS = NCELLS
         end if
 
-!           Find the monochromatic SHDOM solution: adaptive grid output
-!             in SOURCE (SHPTR), RADIANCE (RSHPTR), FLUXES, DIRFLUX.
+        ! Find the monochromatic SHDOM solution: adaptive grid output
+        !   in SOURCE (SHPTR), RADIANCE (RSHPTR), FLUXES, DIRFLUX.
         call SOLVE_RTE(NSTOKES, NX, NY, NZ, NX1, NY1, NANG, &
                        ML, MM, NLM, NMU, NPHI, NLEG, NSTLEG, NUMPHASE, &
                        NPHI0, MU, PHI, WTDO, &
@@ -538,7 +538,7 @@ program SHDOM
         INRADFLAG = .false.
         TOTITER = TOTITER + ITER
 
-!         Compute the output and put in arrays.  First the radiance.
+        ! Compute the output and put in arrays.  First the radiance.
         if (RADIANCE_OUT) then
             IRAD = 0
             do I = 1, NUMOUT
@@ -612,7 +612,7 @@ program SHDOM
         end if
 
         if (SOURCE_OUT) then
-!             Compute source function throughout grid for this one angle
+            ! Compute source function throughout grid for this one angle
             do I = 1, NUMOUT
                 if (OUTTYPES(I) .eq. 'J') then
                     MUOUT = OUTPARMS(2, I)
@@ -627,15 +627,15 @@ program SHDOM
         end if
 
         if (BASEOUT) then
-!           If outputting only the base grid then throw out the other points
+            ! If outputting only the base grid then throw out the other points
             call INIT_CELL_STRUCTURE(BCFLAG, IPFLAG, &
                                      NX, NY, NZ, NX1, NY1, &
                                      NPTS, NCELLS, XGRID, YGRID, ZGRID, GRIDPOS, &
                                      GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS)
         else
-!           For the output from the grid point arrays (Flux, Net flux, SH)
-!             we may need to interpolate the running k-distribution sum
-!             to the newly created grid points.
+            ! For the output from the grid point arrays (Flux, Net flux, SH)
+            !   we may need to interpolate the running k-distribution sum
+            !   to the newly created grid points.
             call INTERP_OUTPUT(OLDNPTS, NPTS, FLUX_OUT, FLUXDIV_OUT, SH_OUT, &
                                SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV, SUMSHTERMS, &
                                NBCELLS, NCELLS, TREEPTR, GRIDPTR, GRIDPOS)
@@ -646,7 +646,7 @@ program SHDOM
             call SUM_OUTPUT(NG - IG, DELG(IG), NPTS, DIRFLUX, SUMDIRFLUX)
         end if
         if (FLUXDIV_OUT) then
-!               Compute the net flux divergence at every point
+            ! Compute the net flux divergence at every point
             call COMPUTE_NETFLUXDIV(NSTOKES, NPTS, RSHPTR, SRCTYPE, SOLARMU, &
                                     EXTINCT, ALBEDO, PLANCK, DIRFLUX, RADIANCE, WORK)
             call SUM_OUTPUT(NG - IG, DELG(IG), NPTS, WORK, SUMFLUXDIV)
@@ -772,7 +772,7 @@ program SHDOM
         end if
     end if
 
-!       Output visualization images if there are any
+    ! Output visualization images if there are any
     if (MASTERPROC) then
         do I = 1, NUMOUT
             if (OUTTYPES(I) == 'V') then
@@ -852,7 +852,7 @@ subroutine TRILIN_INTERP_PROP(X, Y, Z, INIT, NSTLEG, NLEG, &
     save EXTMIN, SCATMIN
 
     if (INIT) then
-!         If there are tabulated phase functions, then transfer them
+       ! If there are tabulated phase functions, then transfer them
         do I = 1, NUMPHASE
             do L = 0, NLEG
                 do J = 1, NSTLEG
@@ -865,7 +865,7 @@ subroutine TRILIN_INTERP_PROP(X, Y, Z, INIT, NSTLEG, NLEG, &
         return
     end if
 
-!         Find the grid location and compute the interpolation factors
+    ! Find the grid location and compute the interpolation factors
     IL = 0
     IU = NPZ
     do while (IU - IL .gt. 1)
@@ -919,7 +919,7 @@ subroutine TRILIN_INTERP_PROP(X, Y, Z, INIT, NSTLEG, NLEG, &
     I7 = I3 + 1
     I8 = I4 + 1
 
-!         Trilinearly interpolate the temperature, extinction, scattering
+    ! Trilinearly interpolate the temperature, extinction, scattering
     TEMP = F1*TEMPP(I1) + F2*TEMPP(I2) + F3*TEMPP(I3) + F4*TEMPP(I4) &
            + F5*TEMPP(I5) + F6*TEMPP(I6) + F7*TEMPP(I7) + F8*TEMPP(I8)
     EXTINCT = F1*EXTINCTP(I1) + F2*EXTINCTP(I2) + F3*EXTINCTP(I3) &
@@ -939,8 +939,8 @@ subroutine TRILIN_INTERP_PROP(X, Y, Z, INIT, NSTLEG, NLEG, &
     else
         ALBEDO = SCATTER/EXTMIN
     end if
-!         For tabulated phase functions pick the one we are on top of
-!         or the one with the most scattering weight.
+    ! For tabulated phase functions pick the one we are on top of
+    !   or the one with the most scattering weight.
     if (NUMPHASE .gt. 0) then
         MAXSCAT = -1.0
         if (SCAT1 .gt. MAXSCAT .or. abs(F1 - 1) .lt. 0.001) then
@@ -976,7 +976,7 @@ subroutine TRILIN_INTERP_PROP(X, Y, Z, INIT, NSTLEG, NLEG, &
             IPHASE = IPHASEP(I8)
         end if
     else
-!        Standard property file format: unpolarized
+        ! Standard property file format: unpolarized
         LEGEN(1, 0, 1) = 1.0
         do L = 1, NLEG
             LEGEN(1, L, 1) = SCAT1*LEGENP(L + (NLEG + 1)*(I1 - 1)) &
@@ -996,7 +996,7 @@ subroutine TRILIN_INTERP_PROP(X, Y, Z, INIT, NSTLEG, NLEG, &
         end do
     end if
 
-!         Add in the gaseous absorption to extinction and albedo
+    ! Add in the gaseous absorption to extinction and albedo
     if (NZCKD .gt. 0) then
         IL = 1
         IU = NZCKD
@@ -1025,29 +1025,29 @@ end
 subroutine DIRECT_BEAM_PROP(INIT, XI, YI, ZI, BCFLAG, IPFLAG, &
                             DELTAM, ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ, &
                             DIRFLUX, UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
-!       Computes the direct beam flux at point (XI,YI,ZI) by integrating
-!     the extinction through the property grid.  If called with
-!     INIT=1 then the property grid extinction array, solar direction
-!     terms, and lowest uniform level are computed and saved.  If called
-!     with INIT=2 then the input lowest uniform level (UNIFZLEV) is stored.
-!     Call with INIT=0 to do the path integration and return the direct
-!     beam flux on the horizontal (DIRFLUX) at XI,YI,ZI.
-!     The DELTAM flag is used to determine whether to delta-M scale the
-!     extinction for the direct beam computation.  The extinction includes
-!     the gaseous absorption.  If the IPFLAG has bit 2 set then the direct
-!     beam tracing is done in 3D, otherwise the lower two bits determine
-!     the type of tracing: 0 for 3D tracing, 1 for XZ only tracing,
-!     2 for YZ only tracing, and 3 for Z only tracing.  If BCFLAG bits 0
-!     or 1 are set then have open boundary conditions in X and/or Y.  In
-!     this case when the ray tracing back to the sun reaches the boundary
-!     then independent pixel mode is entered so that only Z grid
-!     intersections occur.
-!       For use with multiple processors (bit 2 or 3 set in BCFLAG),
-!     the VALIDBEAM flag is returned true if the ray to the sun made it
-!     to the top of the domain before hitting the subdomain side.  If the
-!     flag is false SIDE is returned with the boundary hit (1=-X, 2=+X,
-!     3=-Y, 4=+Y).  XE,YE,ZE returns the location of the exitting ray,
-!     and path is the optical path from XI,YI,ZI to the sun.
+! Computes the direct beam flux at point (XI,YI,ZI) by integrating
+!   the extinction through the property grid.  If called with
+!   INIT=1 then the property grid extinction array, solar direction
+!   terms, and lowest uniform level are computed and saved.  If called
+!   with INIT=2 then the input lowest uniform level (UNIFZLEV) is stored.
+!   Call with INIT=0 to do the path integration and return the direct
+!   beam flux on the horizontal (DIRFLUX) at XI,YI,ZI.
+!   The DELTAM flag is used to determine whether to delta-M scale the
+!   extinction for the direct beam computation.  The extinction includes
+!   the gaseous absorption.  If the IPFLAG has bit 2 set then the direct
+!   beam tracing is done in 3D, otherwise the lower two bits determine
+!   the type of tracing: 0 for 3D tracing, 1 for XZ only tracing,
+!   2 for YZ only tracing, and 3 for Z only tracing.  If BCFLAG bits 0
+!   or 1 are set then have open boundary conditions in X and/or Y.  In
+!   this case when the ray tracing back to the sun reaches the boundary
+!   then independent pixel mode is entered so that only Z grid
+!   intersections occur.
+! For use with multiple processors (bit 2 or 3 set in BCFLAG),
+!   the VALIDBEAM flag is returned true if the ray to the sun made it
+!   to the top of the domain before hitting the subdomain side.  If the
+!   flag is false SIDE is returned with the boundary hit (1=-X, 2=+X,
+!   3=-Y, 4=+Y).  XE,YE,ZE returns the location of the exitting ray,
+!   and path is the optical path from XI,YI,ZI to the sun.
     use SHDOM_PROPERTY_ARRAYS
     implicit none
     integer INIT, BCFLAG, IPFLAG, ML, NSTLEG, NLEG, SIDE
@@ -1085,7 +1085,7 @@ subroutine DIRECT_BEAM_PROP(INIT, XI, YI, ZI, BCFLAG, IPFLAG, &
 
     if (INIT .eq. 1) then
         if (.not. allocated(GASEXT)) allocate (GASEXT(NPZ), EXTMIN(NPZ), EXTMAX(NPZ))
-!           Get the gaseous extinction at the property grid levels
+        ! Get the gaseous extinction at the property grid levels
         do IZ = 1, NPZ
             if (NZCKD .gt. 0) then
                 IL = 1
@@ -1106,8 +1106,8 @@ subroutine DIRECT_BEAM_PROP(INIT, XI, YI, ZI, BCFLAG, IPFLAG, &
                 GASEXT(IZ) = 0.0
             end if
         end do
-!           First make the property grid extinction field, on which all
-!           the direct beam paths will be computed.
+        ! First make the property grid extinction field, on which all
+        !   the direct beam paths will be computed.
         IP = 0
         do IX = 1, NPX
             do IY = 1, NPY
@@ -1115,12 +1115,12 @@ subroutine DIRECT_BEAM_PROP(INIT, XI, YI, ZI, BCFLAG, IPFLAG, &
                     IP = IP + 1
                     EXTINCT = EXTINCTP(IP)
                     ALBEDO = ALBEDOP(IP)
-!                 Add in the gaseous absorption to extinction
+                    ! Add in the gaseous absorption to extinction
                     if (GASEXT(IZ) .gt. 0.0) then
                         ALBEDO = ALBEDO*EXTINCT/(EXTINCT + GASEXT(IZ))
                         EXTINCT = EXTINCT + GASEXT(IZ)
                     end if
-!                 Do the Delta-M scaling if needed
+                    ! Do the Delta-M scaling if needed
                     if (DELTAM) then
                         if (NUMPHASE .gt. 0) then
                             IPH = IPHASEP(IP)
@@ -1136,12 +1136,12 @@ subroutine DIRECT_BEAM_PROP(INIT, XI, YI, ZI, BCFLAG, IPFLAG, &
             end do
         end do
 
-!           Bit 2 of IPFLAG means do the direct beam in 3D
+        ! Bit 2 of IPFLAG means do the direct beam in 3D
         IPDIRECT = IPFLAG
         if (btest(IPFLAG, 2)) IPDIRECT = 0
 
-!           Make the ray direction (opposite to the solar beam)
-!           SOLAR?? is direction of beam, SUN?? is direction to sun (opposite)
+        ! Make the ray direction (opposite to the solar beam)
+        !   SOLAR?? is direction of beam, SUN?? is direction to sun (opposite)
         SUNMU = -SOLARMU
         SUNAZ = SOLARAZ + acos(-1.0)
         CX = sqrt(1.0 - SUNMU**2)*cos(SUNAZ)
@@ -1180,7 +1180,7 @@ subroutine DIRECT_BEAM_PROP(INIT, XI, YI, ZI, BCFLAG, IPFLAG, &
         YDOMAIN = DELYD*NPY
         if (btest(BCFLAG, 3)) YDOMAIN = DELYD*(NPY - 1)
 
-!           Find the Z level above which the medium is plane-parallel
+        ! Find the Z level above which the medium is plane-parallel
         EXTBEAMCUT = 1.0e-4
         do IZ = 1, NPZ
             EXTMIN(IZ) = 1.0e20
@@ -1204,7 +1204,7 @@ subroutine DIRECT_BEAM_PROP(INIT, XI, YI, ZI, BCFLAG, IPFLAG, &
         UNIFORMZLEV = ZLEVELS(JZ)
         UNIFZLEV = UNIFORMZLEV
         return
-!           Done with initialization
+    ! Done with initialization
     end if
 
     if (INIT .eq. 2) then
@@ -1212,12 +1212,12 @@ subroutine DIRECT_BEAM_PROP(INIT, XI, YI, ZI, BCFLAG, IPFLAG, &
         return
     end if
 
-!         Here for computing the direct beam path for one starting point.
+    ! Here for computing the direct beam path for one starting point.
     Z = ZI
     X = XI - XSTART
     Y = YI - YSTART
 
-!         Find the grid location
+    ! Find the grid location
     IL = 0
     IU = NPZ
     do while (IU - IL .gt. 1)
@@ -1279,7 +1279,7 @@ subroutine DIRECT_BEAM_PROP(INIT, XI, YI, ZI, BCFLAG, IPFLAG, &
         end if
     end if
 
-!           Grid cell loop begin
+    ! Grid cell loop begin
     PATH = DIRPATH
     do while (.not. HITBOUNDARY .and. abs(ZE - ZLEVELS(NPZ)) .gt. EPSZ)
         IP = I + 1
@@ -1311,7 +1311,7 @@ subroutine DIRECT_BEAM_PROP(INIT, XI, YI, ZI, BCFLAG, IPFLAG, &
             write (6, '(1(2X,3F9.5))') X, Y, Z
             stop
         end if
-!           Get the eight corner extinction values
+        ! Get the eight corner extinction values
         I1 = K + NPZ*(J - 1) + NPZ*NPY*(I - 1)
         I2 = K + NPZ*(J - 1) + NPZ*NPY*(IP - 1)
         I3 = K + NPZ*(JP - 1) + NPZ*NPY*(I - 1)
@@ -1325,8 +1325,8 @@ subroutine DIRECT_BEAM_PROP(INIT, XI, YI, ZI, BCFLAG, IPFLAG, &
         E7 = EXTDIRP(I3 + 1)
         E8 = EXTDIRP(I4 + 1)
 
-!           Compute the distance to the next grid plane in  X, Y, and Z
-!             If in horizontal uniform region or doing IP then fix X and/or Y.
+        ! Compute the distance to the next grid plane in  X, Y, and Z
+        !   If in horizontal uniform region or doing IP then fix X and/or Y.
         if (ZE .ge. UNIFORMZLEV) then
             CONSTX = .true.
             CONSTY = .true.
@@ -1359,8 +1359,8 @@ subroutine DIRECT_BEAM_PROP(INIT, XI, YI, ZI, BCFLAG, IPFLAG, &
             SOZ = 1.0e30
         end if
 
-!           The shortest distance is the plane we stop at:
-!             get the exitting location and increment the cell
+        ! The shortest distance is the plane we stop at:
+        !   get the exitting location and increment the cell
         XOFFS = 0.0
         YOFFS = 0.0
         if (SOZ .le. SOX .and. SOZ .le. SOY) then
@@ -1373,8 +1373,8 @@ subroutine DIRECT_BEAM_PROP(INIT, XI, YI, ZI, BCFLAG, IPFLAG, &
             if (.not. CONSTY) YP = YE + SO*CY
             ZP = ZE + SO*CZ
             I = I + DI
-!             If have reached a horizontal boundary then either wrap around
-!               (periodic) or go into IP mode (open boundaries).
+            ! If have reached a horizontal boundary then either wrap around
+            !   (periodic) or go into IP mode (open boundaries).
             if (I .eq. 0) then
                 if (btest(BCFLAG, 0)) then
                     I = 1
@@ -1433,7 +1433,7 @@ subroutine DIRECT_BEAM_PROP(INIT, XI, YI, ZI, BCFLAG, IPFLAG, &
             stop
         end if
         SO = max(SO, 0.0d0)
-!           Make the starting and ending interpolation factors
+        ! Make the starting and ending interpolation factors
         AX = 1.0d0/(X1 - X0)
         AY = 1.0d0/(Y1 - Y0)
         AZ = 1.0d0/(Z1 - Z0)
@@ -1443,7 +1443,7 @@ subroutine DIRECT_BEAM_PROP(INIT, XI, YI, ZI, BCFLAG, IPFLAG, &
         U1 = (XP - X0)*AX
         V1 = (YP - Y0)*AY
         W1 = (ZP - Z0)*AZ
-!           Compute the cubic polynomial extinction coefficients
+        ! Compute the cubic polynomial extinction coefficients
         U0M = 1.0 - U0
         V0M = 1.0 - V0
         W0M = 1.0 - W0
@@ -1497,7 +1497,7 @@ subroutine DIRECT_BEAM_PROP(INIT, XI, YI, ZI, BCFLAG, IPFLAG, &
         C8 = +VWU + UWV + UVW
         C = C1*E1 + C2*E2 + C3*E3 + C4*E4 + C5*E5 + C6*E6 + C7*E7 + C8*E8
         D = DU*DV*DW*(E2 + E3 + E5 + E8 - E1 - E4 - E6 - E7)
-!            Compute the path through the cell: integration of extinction
+        ! Compute the path through the cell: integration of extinction
         PATH = PATH + SO*(A + 0.5d0*B + 0.3333333333333333d0*C + 0.25d0*D)
 
         XE = XP + XOFFS
