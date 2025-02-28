@@ -25,7 +25,7 @@ BUILD_DIR   = $(abspath $(CURRENT_DIR)/../build)
 
 TARGETS = shdom propgen make_mie_table make_tmatrix_table plotscattab put
 
-SHDOMOBJS = shdomsub1.o shdomsub2.o shdomsub3.o fftpack.o ocean_brdf.o
+SHDOMOBJS = shdomsub1.o shdomsub2.o shdomsub3.o fftpack.o shdSfc_ocean.o
 
 UseMPI = no
 UseNetcdf = no
