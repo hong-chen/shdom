@@ -94,8 +94,8 @@ propgen: shdTool_propgen.f90
 make_tmatrix_table: make_tmatrix_table.f90
 	$(F90) $(F90FLAGS) make_tmatrix_table.f90 indexwatice.f tmatrixwig.f lpd.f  -o $(BIN_DIR)/make_tmatrix_table
 
-make_mie_table: make_mie_table.f90
-	$(F90) $(F90FLAGS) make_mie_table.f90 indexwatice.f miewig.f  -o $(BIN_DIR)/make_mie_table
+make_mie_table: shdTool_make_mie_table.f90
+	$(F90) $(F90FLAGS) shdTool_make_mie_table.f90 indexwatice.f miewig.f  -o $(BIN_DIR)/make_mie_table
 
 plotscattab: plotscattab.f90
 	$(F90) $(F90FLAGS) plotscattab.f90  -o $(BIN_DIR)/plotscattab
