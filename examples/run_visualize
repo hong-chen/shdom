@@ -4,17 +4,21 @@
 # Warning: the SHDOM runs are CPU intensive (5.5 minutes for the SHDOM
 # solution and 33 minutes for the 100 frame camera visualization on
 # a 3.0 GHz Intel Xeon processor).
-# The PGM images may be viewed with ImageMagick "display" and many other 
-# image viewers.  The PGM images from the visualization may be converted 
+# The PGM images may be viewed with ImageMagick "display" and many other
+# image viewers.  The PGM images from the visualization may be converted
 # to other formats with ImageMagick "convert".
 
 set AWK=awk
 
-set MakeMieTable=0          # Set each of these to 1 in turn to run the 
-set MakePropertyFile=0      #   sections of the script.
-set RunSHDOMsolve=0
-set SingleFrames=0
-set RunCameraVisual=0
+# Set each of these to 1 in turn to run the
+# sections of the script.
+set MakeMieTable=1
+set MakePropertyFile=1
+set RunSHDOMsolve=1
+set SingleFrames=1
+set RunCameraVisual=1
+
+set fdir_data=data
 
 set basefile=stcu067
 set prpfile=${basefile}.prp
@@ -28,7 +32,7 @@ set wavename=067
 
 if ($MakeMieTable) then
   #  Makes the Mie scattering table for spherical water droplets for
-  # gamma size distributions with a range of effective radius. 
+  # gamma size distributions with a range of effective radius.
   set polarizedtable=F             # F=unpolarized output, T=polarized output
   set outfile = "water_w${wavename}c.scat"
   set partype = "W"                # W for water
@@ -42,21 +46,20 @@ if ($MakeMieTable) then
 
   put $polarizedtable "$wavelen $wavelen" $partype $avgflag $distflag $alpha \
       "$Nretab $Sretab $Eretab" $logre $maxradius $outfile | make_mie_table
-  exit
 endif
 
 
 
 if ($MakePropertyFile) then
-  # Runs propgen to make the SHDOM optical property file from the 
+  # Runs propgen to make the SHDOM optical property file from the
   # old type 2 LWC file for the 64x64x16 stratocumulus LES field.
   # Adds in six other levels.
 
-  set lwcfile=les_stcu.lwc
+  set lwcfile=${fdir_data}/les_stcu.lwc
   set scattable=water_w${wavename}c.scat
   set poltabs = (F)
   set maxnewphase=100
-  set asymtol=0.01   
+  set asymtol=0.01
   set fracphasetol=0.1
   set sfcpres=1013
   set Nzother=6
@@ -71,7 +74,7 @@ endif
 
 
 
-#   Set SHDOM parameters: 
+#   Set SHDOM parameters:
 set Nstokes=1             # number of Stokes parameters (1=unpolarized)
 set Nmu=8                 # number of zenith angles in both hemispheres
 set Nphi=16               # number of azimuth angles
@@ -126,10 +129,10 @@ endif
 
 
 
- 
+
 if ($RunCameraVisual) then
-  # Computes a sequence of camera images with viewing parameters 
-  # interpolated between specified waypoint values.  
+  # Computes a sequence of camera images with viewing parameters
+  # interpolated between specified waypoint values.
   # An SHDOM save file is input.
   # V   1, nbytes, scale, X,Y,Z, theta, phi, rotang, NL, NS, delline, delsamp
 
@@ -193,7 +196,7 @@ if ($RunCameraVisual) then
       end
 
       @ k++
-    end    
+    end
     rm -f i.t base.inp
 endif
 

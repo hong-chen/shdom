@@ -37,6 +37,10 @@ future_dev
 future_dev/*
 bin
 bin/*
+*.prp
+*.bin
+*.scat
+*.pgm
 !tests
 !tests/*.py
 !dev
