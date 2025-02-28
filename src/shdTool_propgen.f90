@@ -591,424 +591,424 @@ contains
                         X(I) = -X(I)
 200                     continue
                         end if
-                        end subroutine SSORT
+    end subroutine SSORT
 
-                        subroutine RAYLEIGH_EXTINCT(NZT, ZLEVELS, TEMP, RAYSFCPRES, RAYLCOEF, EXTRAYL)
-                            ! Computes the molecular Rayleigh extinction profile EXTRAYL [/km]
-                            ! from the temperature profile TEMP [K] at ZLEVELS [km].  Assumes
-                            ! a linear lapse rate between levels to compute the pressure at
-                            ! each level starting with the SFCPRES [mb].  The Rayleigh extinction is
-                            ! proportional to air density, with the coefficient RAYLCOEF in [K/(mb km)].
-                            implicit none
-                            integer, intent(IN) :: NZT
-                            real, intent(IN) :: ZLEVELS(NZT), TEMP(NZT), RAYSFCPRES, RAYLCOEF
-                            real, intent(OUT) :: EXTRAYL(NZT)
-                            integer :: I
-                            real    :: PRES, LAPSE, TS, DZ
+    subroutine RAYLEIGH_EXTINCT(NZT, ZLEVELS, TEMP, RAYSFCPRES, RAYLCOEF, EXTRAYL)
+        ! Computes the molecular Rayleigh extinction profile EXTRAYL [/km]
+        ! from the temperature profile TEMP [K] at ZLEVELS [km].  Assumes
+        ! a linear lapse rate between levels to compute the pressure at
+        ! each level starting with the SFCPRES [mb].  The Rayleigh extinction is
+        ! proportional to air density, with the coefficient RAYLCOEF in [K/(mb km)].
+        implicit none
+        integer, intent(IN) :: NZT
+        real, intent(IN) :: ZLEVELS(NZT), TEMP(NZT), RAYSFCPRES, RAYLCOEF
+        real, intent(OUT) :: EXTRAYL(NZT)
+        integer :: I
+        real    :: PRES, LAPSE, TS, DZ
 
-                            ! Find surface pressure by integrating hydrostatic relation
-                            !  for a dry atmosphere up to surface height.
-                            PRES = RAYSFCPRES
-                            TS = TEMP(1)
-                            LAPSE = 6.5*0.001
-                            PRES = PRES*(TS/(TS + LAPSE*ZLEVELS(1)*1000.))**(9.8/(287.*LAPSE))
+        ! Find surface pressure by integrating hydrostatic relation
+        !  for a dry atmosphere up to surface height.
+        PRES = RAYSFCPRES
+        TS = TEMP(1)
+        LAPSE = 6.5*0.001
+        PRES = PRES*(TS/(TS + LAPSE*ZLEVELS(1)*1000.))**(9.8/(287.*LAPSE))
 
-                            ! Use layer mean temperature to compute fractional pressure change.
-                            do I = 1, NZT - 1
-                                EXTRAYL(I) = RAYLCOEF*PRES/TEMP(I)
-                                DZ = 1000.*(ZLEVELS(I + 1) - ZLEVELS(I))
-                                LAPSE = (TEMP(I) - TEMP(I + 1))/DZ
-                                if (abs(LAPSE) .gt. 0.00001) then
-                                    PRES = PRES*(TEMP(I + 1)/TEMP(I))**(9.8/(287.*LAPSE))
-                                else
-                                    PRES = PRES*exp(-9.8*DZ/(287.*TEMP(I)))
-                                end if
-                            end do
-                            EXTRAYL(NZT) = RAYLCOEF*PRES/TEMP(NZT)
-                        end subroutine RAYLEIGH_EXTINCT
+        ! Use layer mean temperature to compute fractional pressure change.
+        do I = 1, NZT - 1
+            EXTRAYL(I) = RAYLCOEF*PRES/TEMP(I)
+            DZ = 1000.*(ZLEVELS(I + 1) - ZLEVELS(I))
+            LAPSE = (TEMP(I) - TEMP(I + 1))/DZ
+            if (abs(LAPSE) .gt. 0.00001) then
+                PRES = PRES*(TEMP(I + 1)/TEMP(I))**(9.8/(287.*LAPSE))
+            else
+                PRES = PRES*exp(-9.8*DZ/(287.*TEMP(I)))
+            end if
+        end do
+        EXTRAYL(NZT) = RAYLCOEF*PRES/TEMP(NZT)
+    end subroutine RAYLEIGH_EXTINCT
 
-                        subroutine RAYLEIGH_PHASE_FUNCTION(WAVELEN, NPHASEPOL, MAXCOEF, &
-                                                           NCOEF, RAYWIGCOEF)
-                            ! Returns the Wigner d-function coefficients for either the Rayleigh
-                            ! scalar phase function or polarized phase matrix for molecular
-                            ! scattering by air.  Includes the wavelength depolarization factor.
-                            ! From Mishchenko's book "Multiple scattering of light by particles:
-                            ! Radiative Transfer and Coherent Backscattering", Cambridge, 2006.
-                            ! Thanks to Adrian Doicu.   WAVELEN is the wavelength in microns.
-                            ! NPHASEPOL=1 for the scalar case, and 6 for the phase matrix case.
-                            implicit none
-                            integer, intent(IN) :: NPHASEPOL, MAXCOEF
-                            real, intent(IN) :: WAVELEN
-                            integer, intent(OUT) :: NCOEF
-                            real, intent(OUT) :: RAYWIGCOEF(NPHASEPOL, 0:MAXCOEF)
-                            double precision, parameter :: AKING = 1.0469541d0, &
-                                BKING = 3.2503153d-04, CKING = 3.8622851d-05
-                            real :: FKING, DEPOL, DELTA, DELTAP
+    subroutine RAYLEIGH_PHASE_FUNCTION(WAVELEN, NPHASEPOL, MAXCOEF, &
+                                       NCOEF, RAYWIGCOEF)
+        ! Returns the Wigner d-function coefficients for either the Rayleigh
+        ! scalar phase function or polarized phase matrix for molecular
+        ! scattering by air.  Includes the wavelength depolarization factor.
+        ! From Mishchenko's book "Multiple scattering of light by particles:
+        ! Radiative Transfer and Coherent Backscattering", Cambridge, 2006.
+        ! Thanks to Adrian Doicu.   WAVELEN is the wavelength in microns.
+        ! NPHASEPOL=1 for the scalar case, and 6 for the phase matrix case.
+        implicit none
+        integer, intent(IN) :: NPHASEPOL, MAXCOEF
+        real, intent(IN) :: WAVELEN
+        integer, intent(OUT) :: NCOEF
+        real, intent(OUT) :: RAYWIGCOEF(NPHASEPOL, 0:MAXCOEF)
+        double precision, parameter :: AKING = 1.0469541d0, &
+            BKING = 3.2503153d-04, CKING = 3.8622851d-05
+        real :: FKING, DEPOL, DELTA, DELTAP
 
-                            NCOEF = 2
-                            RAYWIGCOEF(1:NPHASEPOL, :) = 0.0
-                            FKING = AKING + BKING/WAVELEN**2 + CKING/WAVELEN**4
-                            DEPOL = 6.d0*(FKING - 1.d0)/(3.d0 + 7.d0*FKING)
-                            DELTA = (1.0 - DEPOL)/(1.0 + 0.5*DEPOL)
-                            DELTAP = (1.0 - 2.0*DEPOL)/(1.0 - DEPOL)
-                            RAYWIGCOEF(1, 0) = 1.0; RAYWIGCOEF(1, 2) = 0.5*DELTA
-                            if (NPHASEPOL == 6) then
-                                RAYWIGCOEF(2, 2) = 3.0*DELTA
-                                RAYWIGCOEF(4, 1) = 1.5*DELTAP*DELTA
-                                RAYWIGCOEF(5, 2) = sqrt(1.5)*DELTA
-                            end if
-                        end subroutine RAYLEIGH_PHASE_FUNCTION
+        NCOEF = 2
+        RAYWIGCOEF(1:NPHASEPOL, :) = 0.0
+        FKING = AKING + BKING/WAVELEN**2 + CKING/WAVELEN**4
+        DEPOL = 6.d0*(FKING - 1.d0)/(3.d0 + 7.d0*FKING)
+        DELTA = (1.0 - DEPOL)/(1.0 + 0.5*DEPOL)
+        DELTAP = (1.0 - 2.0*DEPOL)/(1.0 - DEPOL)
+        RAYWIGCOEF(1, 0) = 1.0; RAYWIGCOEF(1, 2) = 0.5*DELTA
+        if (NPHASEPOL == 6) then
+            RAYWIGCOEF(2, 2) = 3.0*DELTA
+            RAYWIGCOEF(4, 1) = 1.5*DELTAP*DELTA
+            RAYWIGCOEF(5, 2) = sqrt(1.5)*DELTA
+        end if
+    end subroutine RAYLEIGH_PHASE_FUNCTION
 
-                        subroutine PHASEFUNC_FROM_LEGENDRE(NANGLES, NCOEF, LEGCOEF, PHASE)
-                            ! Calculates the phase function at NANGLES equally spaced angles
-                            ! from the Legendres series expansion in LEGCOEF.  The scalar (I,I)
-                            ! element of the phase matrix is expanded in Wigner d^l_{0,0} functions,
-                            ! which are the same as Legendre polynomials in \cos\Theta.
-                            implicit none
-                            integer, intent(IN) :: NANGLES, NCOEF
-                            real, intent(IN) :: LEGCOEF(0:NCOEF)
-                            real, intent(OUT) :: PHASE(NANGLES)
-                            integer :: J, L
-                            real(8) :: RD, MU, SUM, PL, PL1, PL2
+    subroutine PHASEFUNC_FROM_LEGENDRE(NANGLES, NCOEF, LEGCOEF, PHASE)
+        ! Calculates the phase function at NANGLES equally spaced angles
+        ! from the Legendres series expansion in LEGCOEF.  The scalar (I,I)
+        ! element of the phase matrix is expanded in Wigner d^l_{0,0} functions,
+        ! which are the same as Legendre polynomials in \cos\Theta.
+        implicit none
+        integer, intent(IN) :: NANGLES, NCOEF
+        real, intent(IN) :: LEGCOEF(0:NCOEF)
+        real, intent(OUT) :: PHASE(NANGLES)
+        integer :: J, L
+        real(8) :: RD, MU, SUM, PL, PL1, PL2
 
-                            RD = acos(-1.0d0)/180.d0
-                            do J = 1, NANGLES
-                                MU = cos(RD*J*180.d0/NANGLES)
-                                SUM = 0.0
-                                ! Use upward recurrence to find Legendre polynomials
-                                PL1 = 1.0
-                                PL = 1.0
-                                do L = 0, NCOEF
-                                    if (L .gt. 0) PL = (2*L - 1)*MU*PL1/L - (L - 1)*PL2/L
-                                    SUM = SUM + LEGCOEF(L)*PL
-                                    PL2 = PL1
-                                    PL1 = PL
-                                end do
-                                PHASE(J) = SUM
-                            end do
-                        end subroutine PHASEFUNC_FROM_LEGENDRE
+        RD = acos(-1.0d0)/180.d0
+        do J = 1, NANGLES
+            MU = cos(RD*J*180.d0/NANGLES)
+            SUM = 0.0
+            ! Use upward recurrence to find Legendre polynomials
+            PL1 = 1.0
+            PL = 1.0
+            do L = 0, NCOEF
+                if (L .gt. 0) PL = (2*L - 1)*MU*PL1/L - (L - 1)*PL2/L
+                SUM = SUM + LEGCOEF(L)*PL
+                PL2 = PL1
+                PL1 = PL
+            end do
+            PHASE(J) = SUM
+        end do
+    end subroutine PHASEFUNC_FROM_LEGENDRE
 
-                        subroutine OUTPUT_PROPERTIES(PROPFILE, NPHASEPOL, NX, NY, NZT, &
-                                                     DELX, DELY, ZLEVELS, TEMP, &
-                                                     NPHASE, MAXCOEF, NCOEF, WIGCOEF, &
-                                                     EXTINCT, SSALB, IPHASE)
-                            implicit none
-                            character(LEN=*), intent(IN) :: PROPFILE
-                            integer, intent(IN) :: NPHASEPOL, NX, NY, NZT, NPHASE, MAXCOEF
-                            integer, intent(IN) :: NCOEF(0:NPHASE), IPHASE(NZT, NY, NX)
-                            real, intent(IN) :: DELX, DELY, ZLEVELS(NZT), TEMP(NZT)
-                            real, intent(IN) :: WIGCOEF(NPHASEPOL, 0:MAXCOEF, 0:NPHASE)
-                            real, intent(IN) :: EXTINCT(NZT, NY, NX), SSALB(NZT, NY, NX)
-                            integer :: NPHASEOUT, I, IX, IY, IZ, J, K, L, NL
-                            integer, allocatable :: PHASECONV(:)
+    subroutine OUTPUT_PROPERTIES(PROPFILE, NPHASEPOL, NX, NY, NZT, &
+                                 DELX, DELY, ZLEVELS, TEMP, &
+                                 NPHASE, MAXCOEF, NCOEF, WIGCOEF, &
+                                 EXTINCT, SSALB, IPHASE)
+        implicit none
+        character(LEN=*), intent(IN) :: PROPFILE
+        integer, intent(IN) :: NPHASEPOL, NX, NY, NZT, NPHASE, MAXCOEF
+        integer, intent(IN) :: NCOEF(0:NPHASE), IPHASE(NZT, NY, NX)
+        real, intent(IN) :: DELX, DELY, ZLEVELS(NZT), TEMP(NZT)
+        real, intent(IN) :: WIGCOEF(NPHASEPOL, 0:MAXCOEF, 0:NPHASE)
+        real, intent(IN) :: EXTINCT(NZT, NY, NX), SSALB(NZT, NY, NX)
+        integer :: NPHASEOUT, I, IX, IY, IZ, J, K, L, NL
+        integer, allocatable :: PHASECONV(:)
 
-                            ! Make a phase function index conversion array to output only the ones used.
-                            allocate (PHASECONV(0:NPHASE))
-                            PHASECONV(:) = 0
-                            NPHASEOUT = 0
-                            do I = 0, NPHASE
-                                if (any(IPHASE(:, :, :) == I)) then
-                                    NPHASEOUT = NPHASEOUT + 1
-                                    PHASECONV(I) = NPHASEOUT
-                                end if
-                            end do
+        ! Make a phase function index conversion array to output only the ones used.
+        allocate (PHASECONV(0:NPHASE))
+        PHASECONV(:) = 0
+        NPHASEOUT = 0
+        do I = 0, NPHASE
+            if (any(IPHASE(:, :, :) == I)) then
+                NPHASEOUT = NPHASEOUT + 1
+                PHASECONV(I) = NPHASEOUT
+            end if
+        end do
 
-                            ! Open the property file and output the header including the
-                            !   tabulated phase functions
-                            open (UNIT=3, FILE=PROPFILE, STATUS='REPLACE')
-                            if (NPHASEPOL == 1) then
-                                write (3, '(A)') 'Tabulated phase function property file'
+        ! Open the property file and output the header including the
+        !   tabulated phase functions
+        open (UNIT=3, FILE=PROPFILE, STATUS='REPLACE')
+        if (NPHASEPOL == 1) then
+            write (3, '(A)') 'Tabulated phase function property file'
+        else
+            write (3, '(A)') 'Polarized tabulated phase function property file'
+        end if
+        write (3, '(3(1X,I5))') NX, NY, NZT
+        write (3, '(2(1X,F7.4),202(1X,F8.4))') DELX, DELY, (ZLEVELS(I), I=1, NZT)
+        write (3, '(1X,I4)') NPHASEOUT
+        do I = 0, NPHASE
+            if (PHASECONV(I) > 0) then
+                NL = NCOEF(I)
+                do J = 1, NPHASEPOL
+                    if (NPHASEPOL == 1) then
+                        write (3, '(1X,I4,5X,200(1X,F9.5))') NL, (WIGCOEF(J, L, I), L=1, min(NL, 200))
+                    else
+                        write (3, '(1X,I1,1X,I4,5X,201(1X,F9.5))') J, NL, (WIGCOEF(J, L, I), L=0, min(NL, 200))
+                    end if
+                    do K = 200, NL - 1, 200
+                        write (3, '(200(1X,F9.5))') (WIGCOEF(J, K + L, I), L=1, min(NL - K, 200))
+                    end do
+                end do
+            end if
+        end do
+
+        ! Write one line of optical properties for each grid point
+        do IX = 1, NX
+            do IY = 1, NY
+                do IZ = 1, NZT
+                    write (3, '(3(1X,I4),1X,F5.1,1X,F9.4,1X,F8.6,1X,I3)') IX, IY, IZ, &
+                        TEMP(IZ), EXTINCT(IZ, IY, IX), SSALB(IZ, IY, IX), PHASECONV(IPHASE(IZ, IY, IX))
+                end do
+            end do
+        end do
+        close (3)
+    end subroutine OUTPUT_PROPERTIES
+
+end module COMBINE_PROP
+
+program PROPGEN
+    use COMBINE_PROP
+    implicit none
+    integer :: NSCATTAB, MAXNEWPHASE, NZO
+    real    :: ASYMTOL, FRACPHASETOL, RAYWAVELEN, RAYSFCPRES
+    integer, pointer :: SCATNUMS(:)
+    logical, pointer :: POLTABS(:)
+    real, pointer :: ZOTHER(:), TEMPOTHER(:)
+    character(LEN=80), pointer :: SCATTABFILES(:)
+    character(LEN=80) :: PARFILE, PROPFILE
+    character(LEN=1) :: POLOUT
+    integer, parameter :: NANGLES = 90
+    integer :: NTYPES, NENTRIES, MAXNPHASE, NPHASE, NPHASEPOL
+    integer :: I, J, N1, N2, NRETAB, MAXCOEF, MAXNCOEF, MAXTYPENUM
+    integer :: NX, NY, NZP, NZT, IX, IY, IZ, IZP, NC, NL, IL, IM, IU, L, IPH
+    real    :: RAYLCOEF
+    real    :: DELX, DELY, EXT, SCAT, SCATTER, ASYM0, F, ERR, MINERR
+    integer, allocatable :: NRE(:), NCOEF(:)
+    integer, allocatable :: PARTYPES(:), TYPECONV(:)
+    integer, allocatable :: NCOMP(:, :, :), PTYPE(:, :, :, :), IPARLEV(:)
+    real, allocatable    :: WAVELEN1(:), WAVELEN2(:)
+    real, allocatable    :: WIGCOEF(:, :), PHASE0(:)
+    real, allocatable    :: RETAB(:), EXTINCTTAB(:), SSALBTAB(:), WIGCOEFTAB(:, :, :)
+    real, allocatable    :: ZPAR(:), TEMPPAR(:), ZLEVELS(:), TEMP(:), EXTRAYL(:)
+    real, allocatable    :: ASYM(:), PHASE(:, :)
+    real, allocatable    :: MASSCONT(:, :, :, :), REFF(:, :, :, :)
+    real, allocatable    :: EXTINCT(:, :, :), SSALB(:, :, :)
+    integer, allocatable :: IPHASE(:, :, :)
+
+    ! Data structures:
+
+    call USER_INPUT(NSCATTAB, SCATTABFILES, SCATNUMS, POLTABS, PARFILE, &
+                    MAXNEWPHASE, ASYMTOL, FRACPHASETOL, &
+                    RAYWAVELEN, RAYSFCPRES, NZO, ZOTHER, TEMPOTHER, &
+                    POLOUT, PROPFILE)
+    MAXNEWPHASE = max(MAXNEWPHASE, 2)
+    ASYMTOL = max(ASYMTOL, 0.002)
+    FRACPHASETOL = max(FRACPHASETOL, 0.01)
+
+    if (POLOUT == 'P' .or. POLOUT == 'p') then
+        NPHASEPOL = 6
+    else
+        NPHASEPOL = 1
+    end if
+
+    NTYPES = NSCATTAB
+    allocate (WAVELEN1(NSCATTAB), WAVELEN2(NSCATTAB))
+    allocate (NRE(0:NTYPES), PARTYPES(NTYPES))
+
+    NRE(0) = 1
+    MAXCOEF = 2
+    do I = 1, NSCATTAB
+        call READ_SCAT_TABLE_SIZE(SCATTABFILES(I), POLTABS(I), &
+                                  WAVELEN1(I), WAVELEN2(I), NRETAB, MAXNCOEF)
+        NRE(I) = NRE(I - 1) + NRETAB
+        MAXCOEF = max(MAXCOEF, MAXNCOEF)
+        if (I > 1 .and. abs((WAVELEN1(I) - WAVELEN1(1))/WAVELEN1(1)) > 0.01 &
+            .or. abs((WAVELEN2(I) - WAVELEN2(1))/WAVELEN2(1)) > 0.01) then
+            print *, 'Warning: scattering table wavelengths do not agree for table', I
+        end if
+    end do
+    deallocate (WAVELEN1, WAVELEN2)
+    NENTRIES = NRE(NSCATTAB) - 1
+    MAXNPHASE = NENTRIES + MAXNEWPHASE
+
+    allocate (RETAB(NENTRIES), EXTINCTTAB(NENTRIES), SSALBTAB(NENTRIES))
+    allocate (NCOEF(0:MAXNPHASE), WIGCOEFTAB(NPHASEPOL, 0:MAXCOEF, 0:MAXNPHASE))
+
+    WIGCOEFTAB(:, :, :) = 0.0
+    ! Put the Rayleigh phase matrix in the zero index
+    call RAYLEIGH_PHASE_FUNCTION(RAYWAVELEN, NPHASEPOL, MAXCOEF, &
+                                 NCOEF(0), WIGCOEFTAB(:, :, 0))
+
+    ! Read in the optical properties from the scattering table files
+    do I = 1, NSCATTAB
+        N1 = NRE(I - 1); N2 = NRE(I) - 1
+        call READ_SCAT_TABLE(SCATTABFILES(I), POLTABS(I), NPHASEPOL, &
+                             N2 - N1 + 1, RETAB(N1:N2), &
+                             EXTINCTTAB(N1:N2), SSALBTAB(N1:N2), &
+                             MAXCOEF, NCOEF(N1:N2), WIGCOEFTAB(:, 0:, N1:N2))
+    end do
+    PARTYPES(:) = SCATNUMS(:)
+    deallocate (SCATNUMS, SCATTABFILES)
+
+    ! Make the conversion table from particle type to scat table index
+    MAXTYPENUM = maxval(PARTYPES(:))
+    allocate (TYPECONV(0:MAXTYPENUM))
+    call MAKE_TYPE_CONV_TABLE(NTYPES, PARTYPES, MAXTYPENUM, TYPECONV)
+
+    ! Read in the particle properties file
+    if (PARFILE /= 'NONE' .and. PARFILE /= 'none') then
+        call READ_PARTICLE_FILE_SIZE(PARFILE, NX, NY, NZP)
+        allocate (ZPAR(NZP), TEMPPAR(NZP))
+        allocate (NCOMP(NZP, NY, NX), PTYPE(NSCATTAB, NZP, NY, NX))
+        allocate (MASSCONT(NSCATTAB, NZP, NY, NX), REFF(NSCATTAB, NZP, NY, NX))
+        call READ_PARTICLE_FILE(PARFILE, NX, NY, NZP, NSCATTAB, PARTYPES, &
+                                DELX, DELY, ZPAR, TEMPPAR, &
+                                NCOMP, PTYPE, MASSCONT, REFF)
+    else
+        NX = 1; NY = 1; NZP = 0
+        DELX = 1.0; DELY = 1.0
+    end if
+
+    ! Combine the particle levels and extra levels
+    NZT = NZP + NZO
+    allocate (ZLEVELS(NZT), TEMP(NZT), IPARLEV(NZT), EXTRAYL(NZT))
+    call ORGANIZE_LEVELS(NZP, ZPAR, TEMPPAR, NZO, ZOTHER, TEMPOTHER, &
+                         NZT, ZLEVELS, TEMP, IPARLEV)
+
+    ! Use the parameterization of Bodhaine et al. (1999) eq 30 for tau_R at
+    ! sea level and convert to Rayleigh density coefficient:
+    !   k = 0.03370*(p_sfc/1013.25)*tau_R  for k in K/(mb km) (from assumptions in RAYLEIGH_EXTINCT)
+    RAYLCOEF = 0.03370*(RAYSFCPRES/1013.25)*0.0021520 &
+               *(1.0455996 - 341.29061/RAYWAVELEN**2 - 0.90230850*RAYWAVELEN**2) &
+               /(1 + 0.0027059889/RAYWAVELEN**2 - 85.968563*RAYWAVELEN**2)
+    print *, 'Rayleigh total atmosphere optical depth: ', RAYLCOEF/0.03370
+    ! Compute the molecular Rayleigh scattering extinction profile
+    call RAYLEIGH_EXTINCT(NZT, ZLEVELS, TEMP, RAYSFCPRES, RAYLCOEF, EXTRAYL)
+
+    allocate (ASYM(0:MAXNPHASE), PHASE(NANGLES, 0:MAXNPHASE))
+    NPHASE = NENTRIES
+    ! Make the asymmetry param and angle space low resolution phase functions
+    do I = 0, NPHASE
+        ASYM(I) = WIGCOEFTAB(1, 1, I)/3
+        call PHASEFUNC_FROM_LEGENDRE(NANGLES, NCOEF(I), WIGCOEFTAB(1, :, I), PHASE(:, I))
+    end do
+
+    ! Allocate the output optical property arrays
+    allocate (EXTINCT(NZT, NY, NX), SSALB(NZT, NY, NX), IPHASE(NZT, NY, NX))
+
+    ! Do the optical property mixing from the components specified at each
+    !   grid point in the particle file.
+    allocate (WIGCOEF(NPHASEPOL, 0:MAXCOEF), PHASE0(NANGLES))
+    do IX = 1, NX
+        do IY = 1, NY
+            do IZ = 1, NZT
+                IZP = IPARLEV(IZ)
+                if (IZP == 0) then
+                    EXTINCT(IZ, IY, IX) = EXTRAYL(IZ) ! Only Rayleigh scattering if not
+                    SSALB(IZ, IY, IX) = 1.0 !   at a particle level
+                    IPHASE(IZ, IY, IX) = 0
+                else
+                    NC = NCOMP(IZP, IY, IX)
+                    ! Initialize optical property sums with Rayleigh scattering
+                    EXTINCT(IZ, IY, IX) = EXTRAYL(IZ)
+                    SCATTER = EXTRAYL(IZ)
+                    ASYM0 = 0.0
+                    PHASE0(:) = EXTRAYL(IZ)*PHASE(:, 0)
+                    NL = 2
+                    WIGCOEF(:, :) = EXTRAYL(IZ)*WIGCOEFTAB(:, :, 0)
+                    do J = 1, NC
+                        L = TYPECONV(PTYPE(J, IZP, IY, IX))
+                        ! Do binary search to find effective radius entry in table
+                        IL = NRE(L - 1)
+                        IU = NRE(L) - 1
+                        do while (IU - IL > 1)
+                            IM = (IL + IU)/2
+                            if (REFF(J, IZP, IY, IX) >= RETAB(IM)) then
+                                IL = IM
                             else
-                                write (3, '(A)') 'Polarized tabulated phase function property file'
+                                IU = IM
                             end if
-                            write (3, '(3(1X,I5))') NX, NY, NZT
-                            write (3, '(2(1X,F7.4),202(1X,F8.4))') DELX, DELY, (ZLEVELS(I), I=1, NZT)
-                            write (3, '(1X,I4)') NPHASEOUT
-                            do I = 0, NPHASE
-                                if (PHASECONV(I) > 0) then
-                                    NL = NCOEF(I)
-                                    do J = 1, NPHASEPOL
-                                        if (NPHASEPOL == 1) then
-                                            write (3, '(1X,I4,5X,200(1X,F9.5))') NL, (WIGCOEF(J, L, I), L=1, min(NL, 200))
-                                        else
-                                            write (3, '(1X,I1,1X,I4,5X,201(1X,F9.5))') J, NL, (WIGCOEF(J, L, I), L=0, min(NL, 200))
-                                        end if
-                                        do K = 200, NL - 1, 200
-                                            write (3, '(200(1X,F9.5))') (WIGCOEF(J, K + L, I), L=1, min(NL - K, 200))
-                                        end do
-                                    end do
-                                end if
-                            end do
+                        end do
+                        if (IU > IL) then
+                            F = (REFF(J, IZP, IY, IX) - RETAB(IL))/(RETAB(IU) - RETAB(IL))
+                        else if (IU == IL .and. &
+                                 abs((REFF(J, IZP, IY, IX) - RETAB(IL))/RETAB(IL)) < 0.001) then
+                            F = 0.0
+                        else
+                            F = -1.0
+                        end if
+                        if (F < 0.0 .or. F > 1.0) then
+                            print *, 'Warning: effective radius outside of table (IX,IY,IZ,type,Reff):'
+                        print '(4(1X,I3),1X,F6.2)', IX, IY, IZP, PTYPE(J, IZP, IY, IX), REFF(J, IZP, IY, IX)
+                            F = max(min(F, 1.0), 0.0)
+                        end if
+                        ! Interpolate optical properties in Reff for this component
+                        !   and sum over the components.
+                        EXT = MASSCONT(J, IZP, IY, IX)* &
+                              exp((1 - F)*log(EXTINCTTAB(IL)) + F*log(EXTINCTTAB(IU)))
+                        SCAT = EXT*((1 - F)*SSALBTAB(IL) + F*SSALBTAB(IU))
+                        ASYM0 = ASYM0 + SCAT*((1 - F)*ASYM(IL) + F*ASYM(IU))
+                        PHASE0(:) = PHASE0(:) + SCAT*((1 - F)*PHASE(:, IL) + F*PHASE(:, IU))
+                        NL = max(NL, NCOEF(IL), NCOEF(IU))
+                        WIGCOEF(:, 0:NL) = WIGCOEF(:, 0:NL) &
+                                        + SCAT*((1 - F)*WIGCOEFTAB(:, 0:NL, IL) + F*WIGCOEFTAB(:, 0:NL, IU))
+                        SCATTER = SCATTER + SCAT
+                        EXTINCT(IZ, IY, IX) = EXTINCT(IZ, IY, IX) + EXT
+                    end do ! end of component loop
 
-                            ! Write one line of optical properties for each grid point
-                            do IX = 1, NX
-                                do IY = 1, NY
-                                    do IZ = 1, NZT
-                                        write (3, '(3(1X,I4),1X,F5.1,1X,F9.4,1X,F8.6,1X,I3)') IX, IY, IZ, &
-                                            TEMP(IZ), EXTINCT(IZ, IY, IX), SSALB(IZ, IY, IX), PHASECONV(IPHASE(IZ, IY, IX))
-                                    end do
-                                end do
-                            end do
-                            close (3)
-                        end subroutine OUTPUT_PROPERTIES
+                    ! Normalize to get the combined optical properties
+                    if (EXTINCT(IZ, IY, IX) > 0.0) then
+                        SSALB(IZ, IY, IX) = SCATTER/EXTINCT(IZ, IY, IX)
+                    else
+                        SSALB(IZ, IY, IX) = 1.0
+                    end if
+                    if (SCATTER > 0.0) then
+                        ASYM0 = ASYM0/SCATTER
+                        PHASE0(:) = PHASE0(:)/SCATTER
+                        WIGCOEF(:, 0:NL) = WIGCOEF(:, 0:NL)/SCATTER
 
-                        end module COMBINE_PROP
-
-                        program PROPGEN
-                            use COMBINE_PROP
-                            implicit none
-                            integer :: NSCATTAB, MAXNEWPHASE, NZO
-                            real    :: ASYMTOL, FRACPHASETOL, RAYWAVELEN, RAYSFCPRES
-                            integer, pointer :: SCATNUMS(:)
-                            logical, pointer :: POLTABS(:)
-                            real, pointer :: ZOTHER(:), TEMPOTHER(:)
-                            character(LEN=80), pointer :: SCATTABFILES(:)
-                            character(LEN=80) :: PARFILE, PROPFILE
-                            character(LEN=1) :: POLOUT
-                            integer, parameter :: NANGLES = 90
-                            integer :: NTYPES, NENTRIES, MAXNPHASE, NPHASE, NPHASEPOL
-                            integer :: I, J, N1, N2, NRETAB, MAXCOEF, MAXNCOEF, MAXTYPENUM
-                            integer :: NX, NY, NZP, NZT, IX, IY, IZ, IZP, NC, NL, IL, IM, IU, L, IPH
-                            real    :: RAYLCOEF
-                            real    :: DELX, DELY, EXT, SCAT, SCATTER, ASYM0, F, ERR, MINERR
-                            integer, allocatable :: NRE(:), NCOEF(:)
-                            integer, allocatable :: PARTYPES(:), TYPECONV(:)
-                            integer, allocatable :: NCOMP(:, :, :), PTYPE(:, :, :, :), IPARLEV(:)
-                            real, allocatable    :: WAVELEN1(:), WAVELEN2(:)
-                            real, allocatable    :: WIGCOEF(:, :), PHASE0(:)
-                            real, allocatable    :: RETAB(:), EXTINCTTAB(:), SSALBTAB(:), WIGCOEFTAB(:, :, :)
-                            real, allocatable    :: ZPAR(:), TEMPPAR(:), ZLEVELS(:), TEMP(:), EXTRAYL(:)
-                            real, allocatable    :: ASYM(:), PHASE(:, :)
-                            real, allocatable    :: MASSCONT(:, :, :, :), REFF(:, :, :, :)
-                            real, allocatable    :: EXTINCT(:, :, :), SSALB(:, :, :)
-                            integer, allocatable :: IPHASE(:, :, :)
-
-                            ! Data structures:
-
-                            call USER_INPUT(NSCATTAB, SCATTABFILES, SCATNUMS, POLTABS, PARFILE, &
-                                            MAXNEWPHASE, ASYMTOL, FRACPHASETOL, &
-                                            RAYWAVELEN, RAYSFCPRES, NZO, ZOTHER, TEMPOTHER, &
-                                            POLOUT, PROPFILE)
-                            MAXNEWPHASE = max(MAXNEWPHASE, 2)
-                            ASYMTOL = max(ASYMTOL, 0.002)
-                            FRACPHASETOL = max(FRACPHASETOL, 0.01)
-
-                            if (POLOUT == 'P' .or. POLOUT == 'p') then
-                                NPHASEPOL = 6
-                            else
-                                NPHASEPOL = 1
+                        ! Find the closest phase function in terms of the asymmetry parameter
+                        !   and max fractional function value error normalized by user tolerances
+                        IPH = 0 ! initialize with the Rayleigh phase function
+                        MINERR = abs(ASYM0 - ASYM(IPH))/ASYMTOL &
+                             + maxval(abs((PHASE0(:) - PHASE(:, IPH))/(0.001 + PHASE(:, IPH))))/FRACPHASETOL
+                        do I = 1, NPHASE ! search all phase functions
+                            ERR = abs(ASYM0 - ASYM(I))/ASYMTOL &
+                               + maxval(abs((PHASE0(:) - PHASE(:, I))/max(0.001, PHASE(:, I))))/FRACPHASETOL
+                            if (ERR < MINERR) then
+                                MINERR = ERR
+                                IPH = I
                             end if
-
-                            NTYPES = NSCATTAB
-                            allocate (WAVELEN1(NSCATTAB), WAVELEN2(NSCATTAB))
-                            allocate (NRE(0:NTYPES), PARTYPES(NTYPES))
-
-                            NRE(0) = 1
-                            MAXCOEF = 2
-                            do I = 1, NSCATTAB
-                                call READ_SCAT_TABLE_SIZE(SCATTABFILES(I), POLTABS(I), &
-                                                          WAVELEN1(I), WAVELEN2(I), NRETAB, MAXNCOEF)
-                                NRE(I) = NRE(I - 1) + NRETAB
-                                MAXCOEF = max(MAXCOEF, MAXNCOEF)
-                                if (I > 1 .and. abs((WAVELEN1(I) - WAVELEN1(1))/WAVELEN1(1)) > 0.01 &
-                                    .or. abs((WAVELEN2(I) - WAVELEN2(1))/WAVELEN2(1)) > 0.01) then
-                                    print *, 'Warning: scattering table wavelengths do not agree for table', I
-                                end if
-                            end do
-                            deallocate (WAVELEN1, WAVELEN2)
-                            NENTRIES = NRE(NSCATTAB) - 1
-                            MAXNPHASE = NENTRIES + MAXNEWPHASE
-
-                            allocate (RETAB(NENTRIES), EXTINCTTAB(NENTRIES), SSALBTAB(NENTRIES))
-                            allocate (NCOEF(0:MAXNPHASE), WIGCOEFTAB(NPHASEPOL, 0:MAXCOEF, 0:MAXNPHASE))
-
-                            WIGCOEFTAB(:, :, :) = 0.0
-                            ! Put the Rayleigh phase matrix in the zero index
-                            call RAYLEIGH_PHASE_FUNCTION(RAYWAVELEN, NPHASEPOL, MAXCOEF, &
-                                                         NCOEF(0), WIGCOEFTAB(:, :, 0))
-
-                            ! Read in the optical properties from the scattering table files
-                            do I = 1, NSCATTAB
-                                N1 = NRE(I - 1); N2 = NRE(I) - 1
-                                call READ_SCAT_TABLE(SCATTABFILES(I), POLTABS(I), NPHASEPOL, &
-                                                     N2 - N1 + 1, RETAB(N1:N2), &
-                                                     EXTINCTTAB(N1:N2), SSALBTAB(N1:N2), &
-                                                     MAXCOEF, NCOEF(N1:N2), WIGCOEFTAB(:, 0:, N1:N2))
-                            end do
-                            PARTYPES(:) = SCATNUMS(:)
-                            deallocate (SCATNUMS, SCATTABFILES)
-
-                            ! Make the conversion table from particle type to scat table index
-                            MAXTYPENUM = maxval(PARTYPES(:))
-                            allocate (TYPECONV(0:MAXTYPENUM))
-                            call MAKE_TYPE_CONV_TABLE(NTYPES, PARTYPES, MAXTYPENUM, TYPECONV)
-
-                            ! Read in the particle properties file
-                            if (PARFILE /= 'NONE' .and. PARFILE /= 'none') then
-                                call READ_PARTICLE_FILE_SIZE(PARFILE, NX, NY, NZP)
-                                allocate (ZPAR(NZP), TEMPPAR(NZP))
-                                allocate (NCOMP(NZP, NY, NX), PTYPE(NSCATTAB, NZP, NY, NX))
-                                allocate (MASSCONT(NSCATTAB, NZP, NY, NX), REFF(NSCATTAB, NZP, NY, NX))
-                                call READ_PARTICLE_FILE(PARFILE, NX, NY, NZP, NSCATTAB, PARTYPES, &
-                                                        DELX, DELY, ZPAR, TEMPPAR, &
-                                                        NCOMP, PTYPE, MASSCONT, REFF)
-                            else
-                                NX = 1; NY = 1; NZP = 0
-                                DELX = 1.0; DELY = 1.0
+                        end do
+                        ! If the closest phase function is within the tolerances then use it,
+                        !   otherwise add the current grid point phase function to the list.
+                        if (abs(ASYM0 - ASYM(IPH)) < ASYMTOL .and. FRACPHASETOL > &
+                            maxval(abs((PHASE0(:) - PHASE(:, IPH))/max(0.001, PHASE(:, IPH))))) then
+                            IPHASE(IZ, IY, IX) = IPH
+                        else
+                            NPHASE = NPHASE + 1
+                            if (NPHASE > MAXNPHASE) then
+                                print *, 'Maximum number of new phase functions exceeded', NPHASE - NENTRIES
+                                stop
                             end if
+                            NCOEF(NPHASE) = NL
+                            WIGCOEFTAB(:, :, NPHASE) = WIGCOEF(:, :)
+                            ASYM(NPHASE) = WIGCOEFTAB(1, 1, NPHASE)/3
+                            call PHASEFUNC_FROM_LEGENDRE(NANGLES, NL, WIGCOEF(1, 0:), &
+                                                         PHASE(:, NPHASE))
+                            IPHASE(IZ, IY, IX) = NPHASE
+                        end if
 
-                            ! Combine the particle levels and extra levels
-                            NZT = NZP + NZO
-                            allocate (ZLEVELS(NZT), TEMP(NZT), IPARLEV(NZT), EXTRAYL(NZT))
-                            call ORGANIZE_LEVELS(NZP, ZPAR, TEMPPAR, NZO, ZOTHER, TEMPOTHER, &
-                                                 NZT, ZLEVELS, TEMP, IPARLEV)
+                    else ! if no scattering then just use the Rayleigh phase function
+                        IPHASE(IZ, IY, IX) = 0
+                    end if
+                end if
+            end do ! end of Z level loop
+        end do
+    end do
 
-                            ! Use the parameterization of Bodhaine et al. (1999) eq 30 for tau_R at
-                            ! sea level and convert to Rayleigh density coefficient:
-                            !   k = 0.03370*(p_sfc/1013.25)*tau_R  for k in K/(mb km) (from assumptions in RAYLEIGH_EXTINCT)
-                            RAYLCOEF = 0.03370*(RAYSFCPRES/1013.25)*0.0021520 &
-                                       *(1.0455996 - 341.29061/RAYWAVELEN**2 - 0.90230850*RAYWAVELEN**2) &
-                                       /(1 + 0.0027059889/RAYWAVELEN**2 - 85.968563*RAYWAVELEN**2)
-                            print *, 'Rayleigh total atmosphere optical depth: ', RAYLCOEF/0.03370
-                            ! Compute the molecular Rayleigh scattering extinction profile
-                            call RAYLEIGH_EXTINCT(NZT, ZLEVELS, TEMP, RAYSFCPRES, RAYLCOEF, EXTRAYL)
+    print *, 'Number of new phase functions added: ', NPHASE - NENTRIES
 
-                            allocate (ASYM(0:MAXNPHASE), PHASE(NANGLES, 0:MAXNPHASE))
-                            NPHASE = NENTRIES
-                            ! Make the asymmetry param and angle space low resolution phase functions
-                            do I = 0, NPHASE
-                                ASYM(I) = WIGCOEFTAB(1, 1, I)/3
-                                call PHASEFUNC_FROM_LEGENDRE(NANGLES, NCOEF(I), WIGCOEFTAB(1, :, I), PHASE(:, I))
-                            end do
+    call OUTPUT_PROPERTIES(PROPFILE, NPHASEPOL, NX, NY, NZT, &
+                           DELX, DELY, ZLEVELS, TEMP, &
+                           NPHASE, MAXCOEF, NCOEF, WIGCOEFTAB, &
+                           EXTINCT, SSALB, IPHASE)
 
-                            ! Allocate the output optical property arrays
-                            allocate (EXTINCT(NZT, NY, NX), SSALB(NZT, NY, NX), IPHASE(NZT, NY, NX))
+    deallocate (EXTINCT, SSALB, IPHASE, WIGCOEF, ASYM, PHASE0, PHASE)
+    if (allocated(MASSCONT)) then
+        deallocate (ZPAR, TEMPPAR, NCOMP, PTYPE, MASSCONT, REFF)
+    end if
+    deallocate (ZLEVELS, TEMP, IPARLEV)
+    deallocate (NCOEF, WIGCOEFTAB, RETAB, EXTINCTTAB, SSALBTAB)
+    deallocate (TYPECONV, PARTYPES, NRE)
+    deallocate (POLTABS)
 
-                            ! Do the optical property mixing from the components specified at each
-                            !   grid point in the particle file.
-                            allocate (WIGCOEF(NPHASEPOL, 0:MAXCOEF), PHASE0(NANGLES))
-                            do IX = 1, NX
-                                do IY = 1, NY
-                                    do IZ = 1, NZT
-                                        IZP = IPARLEV(IZ)
-                                        if (IZP == 0) then
-                                            EXTINCT(IZ, IY, IX) = EXTRAYL(IZ) ! Only Rayleigh scattering if not
-                                            SSALB(IZ, IY, IX) = 1.0 !   at a particle level
-                                            IPHASE(IZ, IY, IX) = 0
-                                        else
-                                            NC = NCOMP(IZP, IY, IX)
-                                            ! Initialize optical property sums with Rayleigh scattering
-                                            EXTINCT(IZ, IY, IX) = EXTRAYL(IZ)
-                                            SCATTER = EXTRAYL(IZ)
-                                            ASYM0 = 0.0
-                                            PHASE0(:) = EXTRAYL(IZ)*PHASE(:, 0)
-                                            NL = 2
-                                            WIGCOEF(:, :) = EXTRAYL(IZ)*WIGCOEFTAB(:, :, 0)
-                                            do J = 1, NC
-                                                L = TYPECONV(PTYPE(J, IZP, IY, IX))
-                                                ! Do binary search to find effective radius entry in table
-                                                IL = NRE(L - 1)
-                                                IU = NRE(L) - 1
-                                                do while (IU - IL > 1)
-                                                    IM = (IL + IU)/2
-                                                    if (REFF(J, IZP, IY, IX) >= RETAB(IM)) then
-                                                        IL = IM
-                                                    else
-                                                        IU = IM
-                                                    end if
-                                                end do
-                                                if (IU > IL) then
-                                                    F = (REFF(J, IZP, IY, IX) - RETAB(IL))/(RETAB(IU) - RETAB(IL))
-                                                else if (IU == IL .and. &
-                                                         abs((REFF(J, IZP, IY, IX) - RETAB(IL))/RETAB(IL)) < 0.001) then
-                                                    F = 0.0
-                                                else
-                                                    F = -1.0
-                                                end if
-                                                if (F < 0.0 .or. F > 1.0) then
-                                                    print *, 'Warning: effective radius outside of table (IX,IY,IZ,type,Reff):'
-                                                print '(4(1X,I3),1X,F6.2)', IX, IY, IZP, PTYPE(J, IZP, IY, IX), REFF(J, IZP, IY, IX)
-                                                    F = max(min(F, 1.0), 0.0)
-                                                end if
-                                                ! Interpolate optical properties in Reff for this component
-                                                !   and sum over the components.
-                                                EXT = MASSCONT(J, IZP, IY, IX)* &
-                                                      exp((1 - F)*log(EXTINCTTAB(IL)) + F*log(EXTINCTTAB(IU)))
-                                                SCAT = EXT*((1 - F)*SSALBTAB(IL) + F*SSALBTAB(IU))
-                                                ASYM0 = ASYM0 + SCAT*((1 - F)*ASYM(IL) + F*ASYM(IU))
-                                                PHASE0(:) = PHASE0(:) + SCAT*((1 - F)*PHASE(:, IL) + F*PHASE(:, IU))
-                                                NL = max(NL, NCOEF(IL), NCOEF(IU))
-                                                WIGCOEF(:, 0:NL) = WIGCOEF(:, 0:NL) &
-                                                                + SCAT*((1 - F)*WIGCOEFTAB(:, 0:NL, IL) + F*WIGCOEFTAB(:, 0:NL, IU))
-                                                SCATTER = SCATTER + SCAT
-                                                EXTINCT(IZ, IY, IX) = EXTINCT(IZ, IY, IX) + EXT
-                                            end do ! end of component loop
-
-                                            ! Normalize to get the combined optical properties
-                                            if (EXTINCT(IZ, IY, IX) > 0.0) then
-                                                SSALB(IZ, IY, IX) = SCATTER/EXTINCT(IZ, IY, IX)
-                                            else
-                                                SSALB(IZ, IY, IX) = 1.0
-                                            end if
-                                            if (SCATTER > 0.0) then
-                                                ASYM0 = ASYM0/SCATTER
-                                                PHASE0(:) = PHASE0(:)/SCATTER
-                                                WIGCOEF(:, 0:NL) = WIGCOEF(:, 0:NL)/SCATTER
-
-                                                ! Find the closest phase function in terms of the asymmetry parameter
-                                                !   and max fractional function value error normalized by user tolerances
-                                                IPH = 0 ! initialize with the Rayleigh phase function
-                                                MINERR = abs(ASYM0 - ASYM(IPH))/ASYMTOL &
-                                                     + maxval(abs((PHASE0(:) - PHASE(:, IPH))/(0.001 + PHASE(:, IPH))))/FRACPHASETOL
-                                                do I = 1, NPHASE ! search all phase functions
-                                                    ERR = abs(ASYM0 - ASYM(I))/ASYMTOL &
-                                                       + maxval(abs((PHASE0(:) - PHASE(:, I))/max(0.001, PHASE(:, I))))/FRACPHASETOL
-                                                    if (ERR < MINERR) then
-                                                        MINERR = ERR
-                                                        IPH = I
-                                                    end if
-                                                end do
-                                                ! If the closest phase function is within the tolerances then use it,
-                                                !   otherwise add the current grid point phase function to the list.
-                                                if (abs(ASYM0 - ASYM(IPH)) < ASYMTOL .and. FRACPHASETOL > &
-                                                    maxval(abs((PHASE0(:) - PHASE(:, IPH))/max(0.001, PHASE(:, IPH))))) then
-                                                    IPHASE(IZ, IY, IX) = IPH
-                                                else
-                                                    NPHASE = NPHASE + 1
-                                                    if (NPHASE > MAXNPHASE) then
-                                                        print *, 'Maximum number of new phase functions exceeded', NPHASE - NENTRIES
-                                                        stop
-                                                    end if
-                                                    NCOEF(NPHASE) = NL
-                                                    WIGCOEFTAB(:, :, NPHASE) = WIGCOEF(:, :)
-                                                    ASYM(NPHASE) = WIGCOEFTAB(1, 1, NPHASE)/3
-                                                    call PHASEFUNC_FROM_LEGENDRE(NANGLES, NL, WIGCOEF(1, 0:), &
-                                                                                 PHASE(:, NPHASE))
-                                                    IPHASE(IZ, IY, IX) = NPHASE
-                                                end if
-
-                                            else ! if no scattering then just use the Rayleigh phase function
-                                                IPHASE(IZ, IY, IX) = 0
-                                            end if
-                                        end if
-                                    end do ! end of Z level loop
-                                end do
-                            end do
-
-                            print *, 'Number of new phase functions added: ', NPHASE - NENTRIES
-
-                            call OUTPUT_PROPERTIES(PROPFILE, NPHASEPOL, NX, NY, NZT, &
-                                                   DELX, DELY, ZLEVELS, TEMP, &
-                                                   NPHASE, MAXCOEF, NCOEF, WIGCOEFTAB, &
-                                                   EXTINCT, SSALB, IPHASE)
-
-                            deallocate (EXTINCT, SSALB, IPHASE, WIGCOEF, ASYM, PHASE0, PHASE)
-                            if (allocated(MASSCONT)) then
-                                deallocate (ZPAR, TEMPPAR, NCOMP, PTYPE, MASSCONT, REFF)
-                            end if
-                            deallocate (ZLEVELS, TEMP, IPARLEV)
-                            deallocate (NCOEF, WIGCOEFTAB, RETAB, EXTINCTTAB, SSALBTAB)
-                            deallocate (TYPECONV, PARTYPES, NRE)
-                            deallocate (POLTABS)
-
-                        end
+end
