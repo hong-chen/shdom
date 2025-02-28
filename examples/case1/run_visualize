@@ -15,15 +15,15 @@ set AWK=awk
 set MakeMieTable=1
 set MakePropertyFile=1
 set RunSHDOMsolve=1
-set SingleFrames=1
+set SingleFrames=0
 set RunCameraVisual=1
 
 set fdir_data=data
 
 set basefile=stcu067
-set prpfile=${basefile}.prp
-set savefile=${basefile}a.bin
-set outbase=${basefile}a
+set prpfile=${fdir_data}/${basefile}.prp
+set savefile=${fdir_data}/${basefile}a.bin
+set outbase=${fdir_data}/${basefile}a
 
 set wavelen=0.67
 set wavename=067
@@ -34,7 +34,7 @@ if ($MakeMieTable) then
   #  Makes the Mie scattering table for spherical water droplets for
   # gamma size distributions with a range of effective radius.
   set polarizedtable=F             # F=unpolarized output, T=polarized output
-  set outfile = "water_w${wavename}c.scat"
+  set outfile = "${fdir_data}/water_w${wavename}c.scat"
   set partype = "W"                # W for water
   set distflag=G                   # G=gamma, L=lognormal size distribution
   set alpha = 7                    # gamma dist shape parameter
