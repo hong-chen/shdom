@@ -88,8 +88,8 @@ txt2nc: shdTool_txt2nc
 shdTool_txt2nc.o: shdTool_txt2nc.f90 shdom_netcdf.o
 	$(F90) -c $(F90FLAGS) shdTool_txt2nc.f90
 
-propgen: propgen.f90
-	$(F90) $(F90FLAGS) propgen.f90  -o $(BIN_DIR)/propgen
+propgen: shdTool_propgen.f90
+	$(F90) $(F90FLAGS) shdTool_propgen.f90  -o $(BIN_DIR)/propgen
 
 make_tmatrix_table: make_tmatrix_table.f90
 	$(F90) $(F90FLAGS) make_tmatrix_table.f90 indexwatice.f tmatrixwig.f lpd.f  -o $(BIN_DIR)/make_tmatrix_table
