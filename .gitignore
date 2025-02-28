@@ -42,6 +42,8 @@ bin/*
 *.scat
 *.pgm
 *.out
+!data
+!data/*.lwc
 !tests
 !tests/*.py
 !dev
