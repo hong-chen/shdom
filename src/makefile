@@ -82,11 +82,11 @@ shdom_nonetcdf.o: shdom_nonetcdf.f90
 shdom_netcdf.o: shdom_netcdf.f90
 	$(F90) -c $(F90FLAGS) shdom_netcdf.f90
 
-txt2nc: shdToolTxt2nc
-	$(F90) $(F90FLAGS) -o $(BIN_DIR)/txt2nc shdToolTxt2nc.o shdom_netcdf.o $(LIBS)
+txt2nc: shdTool_txt2nc
+	$(F90) $(F90FLAGS) -o $(BIN_DIR)/txt2nc shdTool_txt2nc.o shdom_netcdf.o $(LIBS)
 
-shdToolTxt2nc.o: shdToolTxt2nc.f90 shdom_netcdf.o
-	$(F90) -c $(F90FLAGS) shdToolTxt2nc.f90
+shdTool_txt2nc.o: shdTool_txt2nc.f90 shdom_netcdf.o
+	$(F90) -c $(F90FLAGS) shdTool_txt2nc.f90
 
 propgen: propgen.f90
 	$(F90) $(F90FLAGS) propgen.f90  -o $(BIN_DIR)/propgen
@@ -100,8 +100,8 @@ make_mie_table: make_mie_table.f90
 plotscattab: plotscattab.f90
 	$(F90) $(F90FLAGS) plotscattab.f90  -o $(BIN_DIR)/plotscattab
 
-put: shdToolPut.c
-	$(CC) $(CFLAGS) shdToolPut.c -o $(BIN_DIR)/put
+put: shdTool_put.c
+	$(CC) $(CFLAGS) shdTool_put.c -o $(BIN_DIR)/put
 
 .f.o :; $(FC) -c $(FFLAGS) $*.f
 
