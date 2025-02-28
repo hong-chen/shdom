@@ -33,10 +33,10 @@
  NUMOUT = 2
  OUTTYPES(1) = 'V'
  OUTPARMS(1,1) = 1 1 800 1.76 1.76 0.0 65 260 0 450 600 0.10 0.10
- OUTFILES(1) = 'stcu067_camera1.pgm'
+ OUTFILES(1) = 'shdom-out_cam1.pgm'
  OUTTYPES(2) = 'V'
  OUTPARMS(1,2) = 2 1 800 1.76 0.0 10.0 1.76 7.04 10.0 0.030 -30 30 0.15
- OUTFILES(2) = 'stcu067_track1.pgm'
+ OUTFILES(2) = 'shdom-out_trk1.pgm'
  OutFileNC = 'NONE'
  MAX_TOTAL_MB = 120.0
  ADAPT_GRID_FACTOR = 2.2
