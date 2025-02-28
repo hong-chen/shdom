@@ -25,7 +25,7 @@ BIN_DIR     = $(abspath $(CURRENT_DIR)/../bin)
 
 TARGETS = shdom propgen make_mie_table make_tmatrix_table plotscattab put
 
-SHDOMOBJS = shdom_sub1.o shdom_sub2.o shdUtil_io.o _fftpack.o shdSfc_ocean.o
+SHDOMOBJS = shdUtil_rte1.o shdUtil_rte2.o shdUtil_io.o _fftpack.o shdSfc_ocean.o
 
 UseMPI = no
 UseNetcdf = no
@@ -61,11 +61,11 @@ shdom: shdom.o $(SHDOMOBJS)
 shdom.o: shdom.f90 $(SHDOMOBJS)
 	$(F90) -c $(F90FLAGS) shdom.f90
 
-shdom_sub1.o: shdom_sub1.f
-	$(F90) -c $(F90FLAGS) shdom_sub1.f
+shdUtil_rte1.o: shdUtil_rte1.f
+	$(F90) -c $(F90FLAGS) shdUtil_rte1.f
 
-shdom_sub2.o: shdom_sub2.f
-	$(F90) -c $(F90FLAGS) shdom_sub2.f
+shdUtil_rte2.o: shdUtil_rte2.f
+	$(F90) -c $(F90FLAGS) shdUtil_rte2.f
 
 shdUtil_io.o: shdUtil_io.f
 	$(F90) -c $(F90FLAGS) shdUtil_io.f
