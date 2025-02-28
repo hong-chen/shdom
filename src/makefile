@@ -100,8 +100,8 @@ make_mie_table: make_mie_table.f90
 plotscattab: plotscattab.f90
 	$(F90) $(F90FLAGS) plotscattab.f90  -o $(BIN_DIR)/plotscattab
 
-put: put.c
-	$(CC) $(CFLAGS) put.c -o $(BIN_DIR)/put
+put: shdToolPut.c
+	$(CC) $(CFLAGS) shdToolPut.c -o $(BIN_DIR)/put
 
 .f.o :; $(FC) -c $(FFLAGS) $*.f
 
