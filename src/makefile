@@ -91,14 +91,14 @@ shdTool_txt2nc.o: shdTool_txt2nc.f90 shdom_netcdf.o
 propgen: shdTool_propgen.f90
 	$(F90) $(F90FLAGS) shdTool_propgen.f90  -o $(BIN_DIR)/propgen
 
-make_tmatrix_table: make_tmatrix_table.f90
-	$(F90) $(F90FLAGS) make_tmatrix_table.f90 indexwatice.f tmatrixwig.f lpd.f  -o $(BIN_DIR)/make_tmatrix_table
+make_tmatrix_table: shdTool_make_tmatrix_table.f90
+	$(F90) $(F90FLAGS) shdTool_make_tmatrix_table.f90 indexwatice.f tmatrixwig.f lpd.f -o $(BIN_DIR)/make_tmatrix_table
 
 make_mie_table: shdTool_make_mie_table.f90
-	$(F90) $(F90FLAGS) shdTool_make_mie_table.f90 indexwatice.f miewig.f  -o $(BIN_DIR)/make_mie_table
+	$(F90) $(F90FLAGS) shdTool_make_mie_table.f90 indexwatice.f miewig.f -o $(BIN_DIR)/make_mie_table
 
 plotscattab: shdTool_plotscattab.f90
-	$(F90) $(F90FLAGS) shdTool_plotscattab.f90  -o $(BIN_DIR)/plotscattab
+	$(F90) $(F90FLAGS) shdTool_plotscattab.f90 -o $(BIN_DIR)/plotscattab
 
 put: shdTool_put.c
 	$(CC) $(CFLAGS) shdTool_put.c -o $(BIN_DIR)/put
