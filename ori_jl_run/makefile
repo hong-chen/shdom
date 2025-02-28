@@ -10,7 +10,7 @@ MPIFC  = mpif90    # MPI Fortran 90 compiling command for shdom90
 MPIFLAGS = -O3     #   MPI compiling flags
 LIBS   = 
 
-SHDOMOBJS   = shdomsub1.o shdomsub2.o shdomsub3.o fftpack.o ocean_brdf.o 
+SHDOMOBJS   = shdomsub1.o shdomsub2.o shdomsub3.o shdomsub4.o fftpack.o ocean_brdf.o 
 
 UseMPI = no
 UseNetcdf = no
@@ -54,6 +54,9 @@ shdomsub2.o: shdomsub2.f
 
 shdomsub3.o: shdomsub3.f
 	$(F90) -c $(F90FLAGS) shdomsub3.f
+
+shdomsub4.o: shdomsub4.f
+	$(F90) -c $(F90FLAGS) shdomsub4.f
 
 shdom_mpi.o: shdom_mpi.f90
 	$(F90) -c $(F90FLAGS) shdom_mpi.f90
