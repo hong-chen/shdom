@@ -56,7 +56,7 @@ endif
 all: $(TARGETS)
 
 shdom: shdom.o $(SHDOMOBJS)
-	$(F90) $(F90FLAGS) -o $(BIN_DIR)/shdom shdom.o $(SHDOMOBJS) $(LIBS)
+	$(F90) $(F90FLAGS) shdom.o $(SHDOMOBJS) $(LIBS) -o $(BIN_DIR)/shdom
 
 shdom.o: shdom.f90 $(SHDOMOBJS)
 	$(F90) -c $(F90FLAGS) shdom.f90
@@ -83,13 +83,13 @@ shdom_netcdf.o: shdom_netcdf.f90
 	$(F90) -c $(F90FLAGS) shdom_netcdf.f90
 
 txt2nc: shdTool_txt2nc
-	$(F90) $(F90FLAGS) -o $(BIN_DIR)/txt2nc shdTool_txt2nc.o shdom_netcdf.o $(LIBS)
+	$(F90) $(F90FLAGS) shdTool_txt2nc.o shdom_netcdf.o $(LIBS) -o $(BIN_DIR)/txt2nc
 
 shdTool_txt2nc.o: shdTool_txt2nc.f90 shdom_netcdf.o
 	$(F90) -c $(F90FLAGS) shdTool_txt2nc.f90
 
 propgen: shdTool_propgen.f90
-	$(F90) $(F90FLAGS) shdTool_propgen.f90  -o $(BIN_DIR)/propgen
+	$(F90) $(F90FLAGS) shdTool_propgen.f90 -o $(BIN_DIR)/propgen
 
 make_tmatrix_table: shdTool_make_tmatrix_table.f90
 	$(F90) $(F90FLAGS) shdTool_make_tmatrix_table.f90 indexwatice.f tmatrixwig.f lpd.f -o $(BIN_DIR)/make_tmatrix_table
