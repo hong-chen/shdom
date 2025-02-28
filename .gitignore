@@ -16,6 +16,8 @@ build
 *.mp4
 
 # data files
+*.o
+*.mod
 *log*
 *model*
 *data*

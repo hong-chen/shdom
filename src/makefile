@@ -18,6 +18,32 @@ TARGETS = shdom  propgen make_mie_table make_tmatrix_table plotscattab
 
 SHDOMOBJS   = shdomsub1.o shdomsub2.o shdomsub3.o fftpack.o ocean_brdf.o
 
+UseMPI = no
+UseNetcdf = no
+
+NetcdfHome = /usr/local/netcdf-3.6.3
+NetcdfInl  = -I$(NetcdfHome)/include
+NetcdfLib  = -L$(NetcdfHome)/lib -lnetcdf
+
+
+ifeq ($(UseMPI),no)
+  SHDOMOBJS += shdom_nompi.o
+  F90 = $(FC)
+  F90FLAGS = $(FFLAGS)
+else
+  SHDOMOBJS += shdom_mpi.o
+  F90 = $(MPIFC)
+  F90FLAGS = $(MPIFLAGS)
+endif
+
+ifeq ($(UseNetcdf),no)
+  SHDOMOBJS += shdom_nonetcdf.o
+else
+  SHDOMOBJS += shdom_netcdf.o
+  F90FLAGS += $(NetcdfInl)
+  LIBS   += $(NetcdfLib)
+endif
+
 all: $(TARGETS)
 
 shdom: shdom.o $(SHDOMOBJS)
