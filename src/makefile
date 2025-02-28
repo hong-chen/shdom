@@ -3,6 +3,8 @@
 # Set the UseMPI and UseNetcdf variables to make the desired shdom version.
 
 FC     = gfortran                        # your Fortran 90 compiler here (same as used by mpif90)
+CC     = gcc
+CFLAGS =
 FFLAGS = -O3 -fallow-argument-mismatch   # your flags here
 #FC     = pgf90
 #FFLAGS = -fast
@@ -14,7 +16,7 @@ CURRENT_DIR = $(shell pwd)
 BIN_DIR     = $(abspath $(CURRENT_DIR)/../bin)
 BUILD_DIR   = $(abspath $(CURRENT_DIR)/../build)
 
-TARGETS = $(BIN_DIR)/shdom $(BIN_DIR)/propgen $(BIN_DIR)/make_mie_table $(BIN_DIR)/make_tmatrix_table $(BIN_DIR)/plotscattab
+TARGETS = shdom propgen make_mie_table make_tmatrix_table plotscattab put
 
 SHDOMOBJS = shdomsub1.o shdomsub2.o shdomsub3.o fftpack.o ocean_brdf.o
 
@@ -46,7 +48,7 @@ endif
 
 all: $(TARGETS)
 
-$(BIN_DIR)/shdom: shdom.o $(SHDOMOBJS)
+shdom: shdom.o $(SHDOMOBJS)
 	$(F90) $(F90FLAGS) -o $(BIN_DIR)/shdom shdom.o $(SHDOMOBJS) $(LIBS)
 
 shdom.o: shdom.f90 $(SHDOMOBJS)
@@ -74,24 +76,26 @@ shdom_netcdf.o: shdom_netcdf.f90
 	$(F90) -c $(F90FLAGS) shdom_netcdf.f90
 
 
-$(BIN_DIR)/AsciiPropertyFileToNetcdf: AsciiPropertyFileToNetcdf.o
+AsciiPropertyFileToNetcdf: AsciiPropertyFileToNetcdf.o
 	$(F90) $(F90FLAGS) -o $(BIN_DIR)/AsciiPropertyFileToNetcdf AsciiPropertyFileToNetcdf.o shdom_netcdf.o  $(LIBS)
 
 AsciiPropertyFileToNetcdf.o: AsciiPropertyFileToNetcdf.f90 shdom_netcdf.o
 	$(F90) -c $(F90FLAGS) AsciiPropertyFileToNetcdf.f90
 
-$(BIN_DIR)/propgen: propgen.f90
+propgen: propgen.f90
 	$(F90) $(F90FLAGS) propgen.f90  -o $(BIN_DIR)/propgen
 
-$(BIN_DIR)/make_tmatrix_table: make_tmatrix_table.f90
+make_tmatrix_table: make_tmatrix_table.f90
 	$(F90) $(F90FLAGS) make_tmatrix_table.f90 indexwatice.f tmatrixwig.f lpd.f  -o $(BIN_DIR)/make_tmatrix_table
 
-$(BIN_DIR)/make_mie_table: make_mie_table.f90
+make_mie_table: make_mie_table.f90
 	$(F90) $(F90FLAGS) make_mie_table.f90 indexwatice.f miewig.f  -o $(BIN_DIR)/make_mie_table
 
-$(BIN_DIR)/plotscattab: plotscattab.f90
+plotscattab: plotscattab.f90
 	$(F90) $(F90FLAGS) plotscattab.f90  -o $(BIN_DIR)/plotscattab
 
+put: put.c
+	$(CC) $(CFLAGS) -o $(BIN_DIR)/put put.c
 
 .f.o :; $(FC) -c $(FFLAGS) $*.f
 
