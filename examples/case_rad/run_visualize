@@ -13,8 +13,8 @@ set AWK=awk
 set fdir_data=data
 # Set each of these to 1 in turn to run the
 # sections of the script.
-set MakeMieTable=1
-set MakePropertyFile=1
+set MakeMieTable=0
+set MakePropertyFile=0
 set RunSHDOMsolve=1
 set SingleFrames=1
 set RunCameraVisual=0
