@@ -82,12 +82,11 @@ shdom_nonetcdf.o: shdom_nonetcdf.f90
 shdom_netcdf.o: shdom_netcdf.f90
 	$(F90) -c $(F90FLAGS) shdom_netcdf.f90
 
+txt2nc: shdToolTxt2nc
+	$(F90) $(F90FLAGS) -o $(BIN_DIR)/txt2nc shdToolTxt2nc.o shdom_netcdf.o $(LIBS)
 
-AsciiPropertyFileToNetcdf: AsciiPropertyFileToNetcdf.o
-	$(F90) $(F90FLAGS) -o $(BIN_DIR)/AsciiPropertyFileToNetcdf AsciiPropertyFileToNetcdf.o shdom_netcdf.o  $(LIBS)
-
-AsciiPropertyFileToNetcdf.o: AsciiPropertyFileToNetcdf.f90 shdom_netcdf.o
-	$(F90) -c $(F90FLAGS) AsciiPropertyFileToNetcdf.f90
+shdToolTxt2nc.o: shdToolTxt2nc.f90 shdom_netcdf.o
+	$(F90) -c $(F90FLAGS) shdToolTxt2nc.f90
 
 propgen: propgen.f90
 	$(F90) $(F90FLAGS) propgen.f90  -o $(BIN_DIR)/propgen
@@ -102,7 +101,7 @@ plotscattab: plotscattab.f90
 	$(F90) $(F90FLAGS) plotscattab.f90  -o $(BIN_DIR)/plotscattab
 
 put: put.c
-	$(CC) $(CFLAGS) -o $(BIN_DIR)/put put.c
+	$(CC) $(CFLAGS) put.c -o $(BIN_DIR)/put
 
 .f.o :; $(FC) -c $(FFLAGS) $*.f
 
