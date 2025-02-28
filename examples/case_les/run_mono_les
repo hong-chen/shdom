@@ -57,7 +57,7 @@ if ($MakePropertyFile) then
   # Runs propgen to make the SHDOM optical property file from the
   # type 2 LWC file for the 64x17 stratocumulus LES slice.
 
-  set lwcfile=les2y21.lwc # type 2 LWC file
+  set lwcfile=data/les2y21.lwc # type 2 LWC file
   set scattypes = (1)
   set poltabs = (F)       # scattering table polarization flag (F=unpolarized)
   set maxnewphase=30      # max number of new phase functions to make

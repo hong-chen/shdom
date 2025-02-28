@@ -41,6 +41,7 @@ bin/*
 *.bin
 *.scat
 *.pgm
+*.out
 !tests
 !tests/*.py
 !dev
