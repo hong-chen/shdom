@@ -12,6 +12,7 @@
 
   # Run the three sections in order:
   #   (set flag to 1, run script, check that output files were made)
+setenv PATH "/Users/hchen/Work/mygit/shdom/ori_fe_run:$PATH"
 set MakeMieTable=0
 set MakePropertyFile=0
 set RunSHDOM=0

@@ -3,7 +3,7 @@
 # Set the UseMPI and UseNetcdf variables to make the desired shdom version.
 
 FC     = gfortran  # your Fortran 90 compiler here (same as used by mpif90)
-FFLAGS = -O3       #   your flags here
+FFLAGS = -O3 -fallow-argument-mismatch      #   your flags here
 #FC     = pgf90
 #FFLAGS = -fast
 MPIFC  = mpif90    # MPI Fortran 90 compiling command for shdom90

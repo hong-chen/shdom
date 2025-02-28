@@ -9,6 +9,7 @@
 # plot_brdf.pro IDL script.
 
 #  Select sections of script to run
+setenv PATH "/Users/hchen/Work/mygit/shdom/ori_fe_run:$PATH"
 set MakePrp=1
 set MakeSfc=1
 set RunSHDOM=1

@@ -1,0 +1,138 @@
+
+ Name of this SHDOM run:
+les_cumulus_dust_w0.646_sfcW_ns3                                                
+ Atmospheric optical properties file name
+ les_cumulus_dust_w0.646.prp                                                     
+ Surface properties file name (or NONE)
+ wavesfc7.0.dat                                                                  
+ Correlated k-distribution file name (or NONE)
+ NONE                                                                            
+ Input binary save file name
+ NONE                                                                            
+ Output binary save file name
+ NONE                                                                            
+ Number of Stokes parameters (1, 3, or 4; 1=unpolarized)
+           3
+ Internal base grid size (Nx, Ny, Nz)
+         320           1          81
+ Number of discrete ordinates in mu and phi
+          16          32
+ Boundary conditions (0=periodic, 3=open)
+           0
+ Independent pixel approximation (0,1,2,3)
+           0
+ Delta-M method (T,F)
+ T
+ Z grid type (E-even, P-property file)
+ P
+ Thermal, solar, or both source (T, S, B)
+ S
+ Solar flux and direction (F, mu, phi[deg])
+   1.00000000      0.707099974       30.0000000    
+ Isotropic sky radiance
+   0.00000000    
+ Wavelength (micron)
+  0.646000028    
+ Cell splitting and spherical harmonic series accuracy
+   2.99999993E-02   3.00000003E-03
+ Acceleration flag (T or F), solution accuracy, and max iterations
+ T   2.99999992E-05         150
+ Number of output files
+           1
+ Output type (R-radiance, V-visualization, F-flux, H-heating,
+              S-spherical harmonic, J-source, M-medium)
+ R
+ Z level, X and Y spacing, X and Y offset, number of angles, and mu, phi pairs
+   5.00000000       6.25000000E-02   6.25000000E-02   0.00000000       0.00000000       9.00000000      0.500000000       180.000000      0.707109988       180.000000      0.866029978       180.000000      0.965929985       180.000000       1.00000000       0.00000000      0.965929985       0.00000000      0.866029978       0.00000000      0.707109988       0.00000000      0.500000000       0.00000000    
+ Output file name
+les_cumulus_dust_w0.646_sfcW_ns3.rad                                            
+ Output netcdf file name (or NONE or "")
+NONE                                                                            
+ Approximate maximum memory to use (MB for 4 byte reals)
+   2000.00000    
+ Ratio of total grid points to base grid points (1.0 to ~10)
+   2.00000000    
+ Ratio of average number of spherical harmonic terms to total possible (<=1.0)
+  0.949999988    
+ Ratio of number of grid cells to grid points (1.0 to 2.0)
+   1.50000000    
+
+ CHECK_PROPERTY_INPUT: Warning -
+  Number of property grid cells with optical depth greater than 2 :     460
+  Max cell optical depth :    10.2782764    
+
+ Starting solution iterations for SHDOM run: les_cumulus_dust_w0.646_sfcW_ns3
+ ! Iter Log(Sol)  SplitCrit  Npoints  Nsh(avg)
+     1  -0.860  0.605E+00    26001   217.02  0.848
+     2  -1.551  0.624E+00    26001   219.02  0.856
+     3  -2.022  0.536E+00    26007   219.14  0.856
+     4  -2.147  0.225E+00    26114   219.05  0.856
+     5  -2.238  0.120E+00    26357   218.98  0.855
+     6  -2.398  0.797E-01    26699   218.65  0.854
+     7  -2.472  0.553E-01    27296   217.60  0.850
+     8  -2.485  0.429E-01    27816   216.70  0.846
+     9  -2.525  0.372E-01    28161   216.32  0.845
+    10  -2.585  0.333E-01    28453   215.86  0.843
+    11  -2.615  0.299E-01    28788   215.34  0.841
+    12  -2.677  0.300E-01    28799   215.33  0.841
+    13  -2.754  0.300E-01    28829   215.19  0.841
+    14  -2.780  0.300E-01    28841   215.13  0.840
+    15  -2.814  0.300E-01    28936   214.83  0.839
+    16  -2.971  0.300E-01    28941   214.81  0.839
+    17  -3.124  0.300E-01    28944   214.80  0.839
+    18  -3.161  0.304E-01    28944   214.80  0.839
+    19  -3.044  0.304E-01    28944   214.80  0.839
+    20  -3.221  0.304E-01    28944   214.80  0.839
+    21  -3.357  0.304E-01    28944   214.80  0.839
+    22  -3.396  0.304E-01    28944   214.80  0.839
+    23  -3.270  0.304E-01    28944   214.80  0.839
+    24  -3.432  0.304E-01    28944   214.80  0.839
+    25  -3.543  0.304E-01    28944   214.80  0.839
+    26  -3.585  0.304E-01    28944   214.80  0.839
+    27  -3.469  0.304E-01    28944   214.80  0.839
+    28  -3.600  0.304E-01    28944   214.80  0.839
+    29  -3.651  0.304E-01    28944   214.80  0.839
+    30  -3.692  0.304E-01    28944   214.80  0.839
+    31  -3.577  0.304E-01    28944   214.80  0.839
+    32  -3.712  0.304E-01    28944   214.80  0.839
+    33  -3.752  0.304E-01    28944   214.80  0.839
+    34  -3.788  0.304E-01    28944   214.80  0.839
+    35  -3.649  0.304E-01    28944   214.80  0.839
+    36  -3.799  0.304E-01    28944   214.80  0.839
+    37  -3.852  0.304E-01    28944   214.80  0.839
+    38  -3.884  0.304E-01    28944   214.80  0.839
+    39  -3.732  0.304E-01    28944   214.80  0.839
+    40  -3.888  0.304E-01    28944   214.80  0.839
+    41  -3.945  0.304E-01    28944   214.80  0.839
+    42  -3.978  0.304E-01    28944   214.80  0.839
+    43  -3.829  0.304E-01    28944   214.80  0.839
+    44  -3.984  0.304E-01    28944   214.80  0.839
+    45  -4.033  0.304E-01    28944   214.80  0.839
+    46  -4.066  0.304E-01    28944   214.80  0.839
+    47  -3.914  0.304E-01    28944   214.80  0.839
+    48  -4.073  0.304E-01    28944   214.80  0.839
+    49  -4.122  0.304E-01    28944   214.80  0.839
+    50  -4.155  0.304E-01    28944   214.80  0.839
+    51  -3.994  0.304E-01    28944   214.80  0.839
+    52  -4.157  0.304E-01    28944   214.80  0.839
+    53  -4.212  0.304E-01    28944   214.80  0.839
+    54  -4.244  0.304E-01    28944   214.80  0.839
+    55  -4.077  0.304E-01    28944   214.80  0.839
+    56  -4.243  0.304E-01    28944   214.80  0.839
+    57  -4.302  0.304E-01    28944   214.80  0.839
+    58  -4.332  0.304E-01    28944   214.80  0.839
+    59  -4.167  0.304E-01    28944   214.80  0.839
+    60  -4.329  0.304E-01    28944   214.80  0.839
+    61  -4.388  0.304E-01    28944   214.80  0.839
+    62  -4.417  0.304E-01    28944   214.80  0.839
+    63  -4.259  0.304E-01    28944   214.80  0.839
+    64  -4.417  0.304E-01    28944   214.80  0.839
+    65  -4.471  0.304E-01    28944   214.80  0.839
+    66  -4.501  0.304E-01    28944   214.80  0.839
+    67  -4.352  0.304E-01    28944   214.80  0.839
+    68  -4.504  0.304E-01    28944   214.80  0.839
+    69  -4.553  0.304E-01    28944   214.80  0.839
+ ! Iterations:     69     Final Criterion:  0.000028
+Approximate total CPU time used (sec)     91.76
+ 231.02   1.113 0.839 1.058  Actual MAX_TOTAL_MB, ADAPT_GRID_FACTOR, NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
+       91.98 real        91.51 user         0.25 sys
