@@ -166,7 +166,7 @@ main routine. On some computers the NAMELIST input requires a space
 before the parameters.  All file name strings are a maximum of 80
 characters.
 
-.. code-block:: bash
+.. code-block:: JSON
 
    Parameter   Description
 
@@ -214,7 +214,7 @@ characters.
 
 Following for Solar or Both source
 
-.. code-block:: bash
+.. code-block:: JSON
 
    SOLARFLUX   top of medium solar flux on a horizontal surface (any units)
                   For k-distribution this is a multiplier for the solar flux
@@ -234,7 +234,7 @@ Following for Solar or Both source
 
 Following for Thermal source
 
-.. code-block:: bash
+.. code-block:: JSON
 
    GNDTEMP     ground temperature in Kelvin
 
@@ -279,7 +279,7 @@ Following for Thermal source
 
 For each output file there are three variables:
 
-.. code-block:: bash
+.. code-block:: JSON
 
    OUTTYPES(*) 'R' - for radiance,
                'V' - for visualization image output,
@@ -364,7 +364,7 @@ For each output file there are three variables:
 
 Memory parameters:
 
-.. code-block:: bash
+.. code-block:: JSON
 
    MAX_TOTAL_MB         approximate maximum memory to use (MB for 4 byte reals)
 
@@ -473,23 +473,25 @@ smear the transition over the resolution of the input property file
 (nature is seldom perfectly sharp).
 
 
-
 SURFACE REFLECTION MODELS
 -------------------------
 
-    There are currently five types of surface reflection:  Lambertian,
+There are currently five types of surface reflection:  Lambertian,
 RPV-original, Ocean, Wave-Fresnel, and Diner.  The RPV and Ocean
 reflection models are unpolarized, so NSTOKES must be 1.  Wave-Fresnel
 is used for polarized ocean modeling, and Diner for polarized land
 surface modeling.  It is simple to add other surface types (see SOURCE
 CODE OPTIONS).
-  A Lambertian surface reflects radiance isotropically, and is specified
+
+A Lambertian surface reflects radiance isotropically, and is specified
 with the surface albedo.
-  The RPV parameterization is used to model the general bidirectional
+
+The RPV parameterization is used to model the general bidirectional
 reflectance function (BRF) characteristics of land surfaces (soils and
 vegetation) with three parameters (rho0, k, Theta) (Rahman, Pinty,
 Verstraete, 1993:  J. Geophys. Res., 98, 20791).
-  The Ocean BRDF parameterization models the glint specular reflection
+
+The Ocean BRDF parameterization models the glint specular reflection
 averaged over wave facets and the internal reflection from sea water,
 and is specified by the wind speed and chlorophyl-alpha pigment
 concentration.  The Ocean reflectance model is obtained from the 6S
@@ -497,7 +499,8 @@ model and modified by Norman Loeb at NASA Langley.  High SHDOM angular
 resolution (Nmu, Nphi) is needed at low wind speeds to resolve the
 broadened specular reflection peak, so it is important to do a test
 with increasing angular resolution until the reflection is stable.
-  The Wave-Fresnel model calculates the polarized Fresnel reflection
+
+The Wave-Fresnel model calculates the polarized Fresnel reflection
 from a dielectric interface with a Gaussian distribution of slopes,
 including shadowing. The complex index of refraction of the dielectric
 (negative imaginary part for an absorbing medium) and the wind speed are
@@ -509,7 +512,8 @@ intensity of reflected sunlight.  J. Geophys. Res. 102, 16989-17013.)
 As with the Ocean model it is important to do a test with increasing
 angular resolution until the reflection is stable for low wind speeds,
 due to the nearly specular sunglint peak.
-  The Diner et al. model is used to calculate polarized reflection from
+
+The Diner et al. model is used to calculate polarized reflection from
 land surfaces.  It has two terms:  1) completely depolarizing volumetric
 scattering with the modified RPV model, and 2) Fresnel reflection from
 randomly oriented microfacets with either a uniform or Gaussian
@@ -529,10 +533,12 @@ bidirectional reflectance model using the ground-based multiangle
 spectropolarimetric imager. Atmosphere 2012, 3, 591-619;
 doi:10.3390/atmos3040591.  The modified RPV model is from Martonchik et
 al., 1998 (IEEE-TGARS, 36, 1266).
-  See the SURFACE FILE FORMAT section for how to specify the parameters.
+
+See the SURFACE FILE FORMAT section for how to specify the parameters.
 The temperature and reflection properties of these models may vary
 arbitrarily across the surface.
-  If the surface reflection parameters in the surface file are constant,
+
+If the surface reflection parameters in the surface file are constant,
 and thus the surface has horizontally uniform reflection, then the
 surface reflection matrix is precomputed for the discrete ordinate
 incident and outgoing directions, which can save considerable
@@ -544,22 +550,24 @@ precomputation is not performed in that case.
 BOUNDARY CONDITIONS
 -------------------
 
-    The upper boundary condition is open, i.e. there is no reflection from
+The upper boundary condition is open, i.e. there is no reflection from
 the top of the domain.  Isotropic incident radiance at the top boundary
 may be specified.  The surface reflection models are described above.
 
-    There are two options for the horizontal boundary conditions.  The
+There are two options for the horizontal boundary conditions.  The
 first is periodic and the second is open.  These are specified for X and
 Y directions independently using the BCFLAG: bit 0 for X and bit 1 for
 Y.  Thus BCFLAG=0 is periodic in X and Y, BCFLAG=1 is open in X and
 periodic in Y, and BCFLAG=3 is open in X and Y.  The independent pixel
 flag (IPFLAG) overrides the boundary condition flag, since an
 independent pixel does not have a horizontal boundary condition.
-    Periodic boundaries mean that when rays exit one side they wrap
+
+Periodic boundaries mean that when rays exit one side they wrap
 around to enter the opposite side. The periodic domain size is NX*DELX
 by NY*DELY; for example if NX=64 and DELX=0.050 km, then X=3.2 km is
 equivalent to X=0 km (left hand side).
-    The open horizontal boundary condition means that radiation leaving
+
+The open horizontal boundary condition means that radiation leaving
 the sides does not wrap around and is not reflected back in.  However,
 there may be radiation entering the sides.  For open BCs the property
 file grid points on the edges are used in independent pixel mode to
@@ -584,7 +592,7 @@ slanted paths.  Open boundary conditions are not allowed with MPI.
 GRID CELL STRUCTURE
 -------------------
 
-    To implement the adaptive grid there is a data structure that
+To implement the adaptive grid there is a data structure that
 specifies the relation between grid cells and grid points.  Grid cells
 are rectangular volumes (e.g. cubes in 3D, rectangles in 2D).  Grid points
 are the points at which the medium properties and the radiances are
@@ -594,7 +602,8 @@ Grid cells have pointers to neighboring cells, so that rays may be
 traced from cell to cell.  The adaptive grid is implemented by splitting
 cells in half (in any direction) and using pointers to parent and
 child cells.  See VARIABLES section for details.
-    For periodic boundary conditions there are NX*NY*(NZ-1) grid cells
+
+For periodic boundary conditions there are NX*NY*(NZ-1) grid cells
 and (NX+1)*(NY+1)*NZ grid points.  The IX=NX+1 column is the same  as
 the IX=1 column, because of the periodicity, but the grid points are
 repeated.  The last grid cell on the "right" has the last column of
@@ -610,11 +619,15 @@ mode has NX*NY*(NZ-1) grid cells and NX*NY*NZ grid points
 OUTPUT FORMATS
 --------------
 
-    The output goes to a number of plain text files (except for the
+
+The output goes to a number of plain text files (except for the
 visualization and netcdf output), each containing a header listing the
 input parameters.  The header also lists the number of iterations taken,
 which for a k-distribution is the total number over the distribution
 sum.  There are seven output types:
+
+.. code-block:: JSON
+
    R - radiance,
    V - visualization,
    F - hemispheric flux,
@@ -622,6 +635,7 @@ sum.  There are seven output types:
    S - spherical harmonic output,
    J - source function, and
    M - medium properties.
+
 Any number of ascii files maybe output during a single run.
 
 A single netcdf output file may be specified in addition to, or instead
@@ -663,14 +677,15 @@ NSTOKES=4) degree of circular polarization (-1 to +1).  The scaling to
 the pixel values is done automatically (see the PGM header for the
 scaling for each polarization component).
 
-  There are several ways to output hemispheric flux, including at the top
+There are several ways to output hemispheric flux, including at the top
 and bottom of the domain, on a regular horizontal grid at any level, or
 for every grid point.  The net flux convergence may be output for each
 grid point or for a domain averaged vertical profile.  The spherical
 harmonic output is the mean  radiance and net flux vector (proportional
 to the first 4 terms in the spherical harmonic expansion) and for solar
 problems includes the direct beam contribution.
- The source function output lists the extinction and source function
+
+The source function output lists the extinction and source function
 computed for a specified direction at every grid point. This can be
 useful for use by another program such as to compute limb radiances in a
 spherical geometry.  The medium properties output lists the (potentially
@@ -678,17 +693,16 @@ delta-M scaled) extinction, single scattering albedo, asymmetry
 parameter, and temperature at the grid points, and is useful for making
 sure the medium was input correctly.
 
-    There is a debugging output file format containing GLE graphics
+There is a debugging output file format containing GLE graphics
 commands to draw the grid cells and arrows showing the neighboring cell
 relationships for an XZ plane. If this is desired, comment in the call
 to VISUALIZE_CELLS after the solution iteration loop.
 
 
-
 BINARY SAVE FILES
 -----------------
 
-    The source function solution and associated state may be saved in
+The source function solution and associated state may be saved in
 binary files.  The adaptive grid cell structure, the source function,
 upwelling and downwelling fluxes, and lowest order terms of the
 spherical harmonic radiance field are stored.  These files can be
@@ -701,7 +715,7 @@ the output save file is from last k.
 PROPERTY FILE FORMAT
 --------------------
 
-    The properties of the medium may be input in four different formats;
+The properties of the medium may be input in four different formats;
 the first three are for unpolarized radiative transfer and the fourth is
 for polarized calculations. 1) the "standard" format specifies the
 extinction, scattering albedo, temperature, and Legendre phase function
@@ -720,21 +734,26 @@ format property files may be read in netcdf format.
 
 Note: Chi1 is 3 times the asymmetry parameter.
 
-    The standard file format has two header lines: the first line has
+The standard file format has two header lines: the first line has
 the size of the grid; the second line contains the X and Y grid
 spacing and the Z levels.  There is then one line per grid point
 giving the properties.  The format is as follows:
-    Nx  Ny  Nz
-    delX  delY  Z1  ...  Zn
-    IX IY IZ Temp Extinct Albedo NumL Chi1 . . . ChiL
-     . . .
+
+.. code-block:: JSON
+
+   Nx  Ny  Nz
+   delX  delY  Z1  ...  Zn
+   IX IY IZ Temp Extinct Albedo NumL Chi1 . . . ChiL
+   . . .
+
 where IX, IY, and IZ are the spatial indices (1,...,Nx, etc.), Temp is
 the grid point temperature in Kelvin, Extinct is the extinction in
 units inverse of the grid spacing units, Albedo is the single
 scattering albedo, NumL is the Legendre series degree, and Chi(n) are
 the coefficients of the Legendre expansion of the phase function.
 Chi1 is 3*g, where g is the asymmetry parameter.
-    The extinction only format has five header lines: the first line
+
+The extinction only format has five header lines: the first line
 must begin with 'E'; the second has the grid size; the third has the
 grid spacing and Z levels; the fourth has the temperatures in Kelvin
 of the Z levels; the fifth has the single scattering albedo, the degree
@@ -742,14 +761,18 @@ of the Legendre expansion of the phase function, and then the Legendre
 coefficients. There is one line for every grid point containing the
 grid point indices and the extinction; if the NY is 1 then only the
 X and Z indices are given.  The format is as follows:
-    E
-    Nx  Ny  Nz
-    delX  delY  Z1 ... Zn
-    T1 ... Tn
-    Albedo  NumL  Chi1 ...  ChiL
-    IX IZ Extinct   or   IX IY IZ Extinct
-      . . .
-    The tabulated phase function format has 4+NUMPHASE header lines,
+
+.. code-block:: JSON
+
+   E
+   Nx  Ny  Nz
+   delX  delY  Z1 ... Zn
+   T1 ... Tn
+   Albedo  NumL  Chi1 ...  ChiL
+   IX IZ Extinct   or   IX IY IZ Extinct
+    . . .
+
+The tabulated phase function format has 4+NUMPHASE header lines,
 where NUMPHASE is the number of phase functions:  the first line must
 begin with 'T'; the second has the grid size; the third has the grid
 spacing and Z levels; the fourth has the number of phase functions;
@@ -759,14 +782,18 @@ There is one line for every grid point containing the grid point
 indices, the temperature (Kelvin), the extinction, scattering albedo,
 and phase function index (1 to NUMPHASE) to the table in the header.
 The format is as follows:
-    T
-    Nx  Ny  Nz
-    delX  delY  Z1 ... Zn
-    numphase
-    NumL  Chi1 ...  ChiL       (for each phase function)
-      . . .
-    IX IY IZ  Temp Extinct Albedo  Iphase
-    The polarized tabulated phase function format is the same as the
+
+.. code-block:: JSON
+
+   T
+   Nx  Ny  Nz
+   delX  delY  Z1 ... Zn
+   numphase
+   NumL  Chi1 ...  ChiL       (for each phase function)
+   . . .
+   IX IY IZ  Temp Extinct Albedo  Iphase
+
+The polarized tabulated phase function format is the same as the
 tabulated phase function format, but has has 4+6*NUMPHASE header lines:
 the first line must begin with 'P'; the second has the grid size; the
 third has the grid spacing and Z levels; the fourth has the number of
@@ -775,7 +802,8 @@ phase matrix.  These six lines start with number 1 to 6, indicating
 which Wigner series, then the degree of the Wigner expansion, followed
 by the Wigner d-function coefficients, starting with the zeroth term
 (i.e. Chi0, not Chi1 as for the other formats).
-  The first Z level is the bottom surface and the last is the top
+
+The first Z level is the bottom surface and the last is the top
 surface.  The Legendre coefficients are normalized so that Chi0 (which
 is not listed) is always 1.  The phase function coefficients do not
 actually need to be all on one line; in fact, propgen uses multiple
@@ -785,7 +813,7 @@ lines for phase functions with more than 200 terms.
 SURFACE FILE FORMAT
 -------------------
 
-  There are currently five types of surface property files:
+There are currently five types of surface property files:
 Lambertian, RPV-original, Ocean, Wave-Fresnel, and Diner.  The file
 format allows the temperature and reflection properties to vary
 arbitrarily across the surface.  The surface properties are specified on
@@ -798,34 +826,55 @@ assigns the properties of the left side of the domain (IX=1) to the
 right side of the last cell (IX=NX+1).  A uniform surface can be
 specified by having Nx=1 and Ny=1 and making delX and delY large enough
 to cover the whole domain.
-  The Lambertian surface file format is as follows:
-    L
-    Nx  Ny   delX  delY
-    IX IY  SfcTemp SfcAlbedo
-      . . .
-  The RPV surface is specified with three parameters (rho0, k, Theta):
-    R
-    Nx  Ny   delX  delY
-    IX IY  SfcTemp  rho0  k  Theta
-      . . .
-  The Ocean surface is specified with the near surface wind speed (m/s)
+
+The Lambertian surface file format is as follows:
+
+.. code-block:: JSON
+
+   L
+   Nx  Ny   delX  delY
+   IX IY  SfcTemp SfcAlbedo
+   . . .
+
+The RPV surface is specified with three parameters (rho0, k, Theta):
+
+.. code-block:: JSON
+
+   R
+   Nx  Ny   delX  delY
+   IX IY  SfcTemp  rho0  k  Theta
+   . . .
+
+The Ocean surface is specified with the near surface wind speed (m/s)
 and the chlorophyl-alpha pigment concentration (mg/m^3):
-    O
-    Nx  Ny   delX  delY
-    IX IY  SfcTemp  WindSpeed  PigmentConc
-      . . .
-  The Wave-Fresnel surface is specified with the complex index of
+
+.. code-block:: JSON
+
+   O
+   Nx  Ny   delX  delY
+   IX IY  SfcTemp  WindSpeed  PigmentConc
+   . . .
+
+The Wave-Fresnel surface is specified with the complex index of
 refraction of the dielectric surface (Mre, Mim) and the near surface
 wind speed (m/s):
-    W
-    Nx  Ny   delX  delY
-    IX IY  SfcTemp  Mre  Mim  WindSpeed
-      . . .
-  The Diner surface is specified with five parameters (a, k, b, zeta, sigma)
-    R
-    Nx  Ny   delX  delY
-    IX IY  SfcTemp  a  k  b  zeta  sigma
-      . . .
+
+.. code-block:: JSON
+
+   W
+   Nx  Ny   delX  delY
+   IX IY  SfcTemp  Mre  Mim  WindSpeed
+   . . .
+
+The Diner surface is specified with five parameters (a, k, b, zeta, sigma)
+
+.. code-block:: JSON
+
+   R
+   Nx  Ny   delX  delY
+   IX IY  SfcTemp  a  k  b  zeta  sigma
+   . . .
+
 The IX and IY are the surface grid numbers (1 to Nx, 1 to Ny).  The surface
 temperature is specified in Kelvin.
 
@@ -833,7 +882,7 @@ temperature is specified in Kelvin.
 CORRELATED K-DISTRIBUTION FILE FORMAT
 -------------------------------------
 
-    The CKD file has the correlated k-distribution information for a
+The CKD file has the correlated k-distribution information for a
 series of spectral bands for a particular atmospheric profile. This file
 is made by another program from a profile.  Each band, i.e. a range of
 wavenumbers, has a k-distribution associated with it.  The k-distibution
@@ -848,10 +897,17 @@ are the weights with which the separate radiative transfer results are
 added together.
 
 There are three sections in the CKD file.
+
  1. The band information.
+
  2. The atmosphere information.
+
  3. The absorption coefficients for each band and g range.
+
 The format is:
+
+.. code-block:: JSON
+
    Comment line
    Number of bands
    Comment line
@@ -864,6 +920,7 @@ The format is:
    Comment line
    For each band and level:
      band number, level number, all the k_i's
+
 Notes: waveno1 and waveno2 are the starting and ending wave numbers in
 cm^-1 of the bands; solar flux is the top of the atmosphere solar
 irradiance in W/m^2 for overhead sun.  The level numbers start with 1
@@ -873,32 +930,33 @@ SHDOM levels.  The k-distributions should start with the lowest k's
 (they are used in the reverse order in the program).
 
 
-
 DETAILED METHOD OF OPERATION/REFERENCES
 ---------------------------------------
 
 See the journal papers:
-  Evans, K. F., 1998: The spherical harmonic discrete ordinate method
+
+* Evans, K. F., 1998: The spherical harmonic discrete ordinate method
 for three-dimensional atmospheric radiative transfer. J. Atmos. Sci.,
 55, 429-446.
-  Pincus, R., and K. F. Evans, 2009: Computational cost and accuracy in
+
+* Pincus, R., and K. F. Evans, 2009: Computational cost and accuracy in
 calculating three-dimensional radiative transfer: Results for new
 implementations of Monte Carlo and SHDOM.  J. Atmos. Sci., 66,
 3131-3146.
-  Doicu, A., D. Efremenko, T. Trautmann, 2013: A multi-dimensional
+
+* Doicu, A., D. Efremenko, T. Trautmann, 2013: A multi-dimensional
 vector spherical harmonics discrete ordinate method for atmospheric
 radiative transfer. J. Quant. Spectrosc. Radiat. Transfer, 118, 121-131.
-  Mishchenko, M. I., and L. D. Travis, 1997: Satellite retrieval of
+
+* Mishchenko, M. I., and L. D. Travis, 1997: Satellite retrieval of
 aerosol properties over the ocean using polarization as well as
 intensity of reflected sunlight.  J. Geophys. Res. 102, 16989-17013.
-
-
 
 
 OPERATING STRATEGY
 ------------------
 
-    The first step is to compile the code.  A makefile is provided, with
+The first step is to compile the code.  A makefile is provided, with
 options to compile with or without MPI (for multiple processors) and
 with or without the netcdf library.  SHDOM was originally written in
 Fortran 77 with common extensions.  Later, parts of SHDOM were written
@@ -907,7 +965,7 @@ shdomsub?.f) requires a Fortran 90 compiler.  Fortran 90 uses
 allocatable arrays and frees the user from having to set most of the
 parameters controlling the array sizes.
 
-    While a few algorithm and coding bugs may be left in the code, the
+While a few algorithm and coding bugs may be left in the code, the
 most common source of errors is incorrect input.  Be sure to check the
 input parameters against the documentation and the USER_INPUT routine.
 The correctness of the input property file format can be found by using
@@ -915,7 +973,7 @@ the 'M' - medium property output option.  There are routines that
 check the input parameters and property file for validity and issue
 warnings for common mistakes.
 
-    Conservation of energy can be used as a check for conservatively
+Conservation of energy can be used as a check for conservatively
 scattering medium, but remember that the multiple reflections between
 the surface and medium will introduce "extra" flux.  The collimated
 (solar) flux input parameter is the flux on a horizontal surface
@@ -923,7 +981,7 @@ the surface and medium will introduce "extra" flux.  The collimated
 scattering and no surface reflection the reflected plus transmitted
 flux over the domain should equal this parameter.
 
-    The delta-M scaling procedure is very useful for reducing the
+The delta-M scaling procedure is very useful for reducing the
 angular resolution needed.  It is generally used for collimated (solar)
 source problems.  One should remember that the delta-M scaling procedure
 changes the extinction, single scattering albedo, and Legendre phase
@@ -931,7 +989,7 @@ function fields, as can be seen with the medium output option.  This
 means that the direct solar flux is increased with delta-M scaling and
 must be added to the diffuse transmitted flux for meaningful results.
 
-    For putting in the rest of the atmosphere: a coarse grid outside the
+For putting in the rest of the atmosphere: a coarse grid outside the
 cloud region works because the rest of the atmosphere does not interact
 much with the cloud layer (little reflection back to the cloud layer).
 The fluxes, which depend on the cell-to-cell discrete ordinate
@@ -939,22 +997,28 @@ integration, will not be as reliable above the cloud level.  The
 radiances, however, which are computed by integrating the source
 function back all the way to the boundary will be fine at any level.
 
+
 Output during Iterations
 ------------------------
 
-    During the iterations, some useful information is output to stdout.
+During the iterations, some useful information is output to stdout.
 Six terms are output on a line each iteration:
-      Iterations,  Log10(solution criterion),  Cell splitting criterion,
-         Number of grid points,  Average number of SH terms,
-         Ratio of number of SH terms to total possible
-    Using these parameters you can track the convergence towards the
+
+.. code-block:: JSON
+
+   Iterations,  Log10(solution criterion),  Cell splitting criterion,
+      Number of grid points,  Average number of SH terms,
+      Ratio of number of SH terms to total possible
+
+Using these parameters you can track the convergence towards the
 solution and the behavior of the adaptive grid process.  As the current
 cell splitting accuracy parameter is reduced the number of grid points
 increases and the cell splitting criterion decreases. The cell splitting
 criterion is the maximum over the whole medium.  The adaptive spherical
 harmonic truncation may also be monitored with the average number of SH
 terms.
-    The solution criterion often does not converge monotonically.  When
+
+The solution criterion often does not converge monotonically.  When
 the cell splitting accuracy parameter is lowered and many adaptive cells
 are created the solution criterion typically increases.  The sequence
 acceleration method may cause the solution criterion to increase at a
@@ -968,7 +1032,7 @@ ACCEL).
 ACCURACY ISSUES
 ---------------
 
-   Like all numerical solutions to the radiative transfer equation, the
+Like all numerical solutions to the radiative transfer equation, the
 operation of SHDOM entails a tradeoff between computational speed and
 accuracy.  One difference between 1D and 3D radiative transfer is that
 it is very expensive to get very high accuracy (better than 1%) in 3D.
@@ -976,12 +1040,13 @@ This is a result of the five dimensional nature of the problem. This is
 also the case for Monte Carlo methods, but it is worse for explicit
 radiative transfer methods.  The strategy issues for running SHDOM
 involve how to achieve a required accuracy in a minimum CPU time.
-    The grid spacing needed is determined by some assumptions of SHDOM:
+
+The grid spacing needed is determined by some assumptions of SHDOM:
 1) the variation in the extinction and the product of the source
 function and extinction across a grid cell is linear, 2) the source
 function across a grid face is accurately interpolated with the bilinear
 method, and 3) the radiance across a grid face is accurately
-interpolated with the bilinear method.   The first and second
+interpolated with the bilinear method. The first and second
 assumptions should be satisfied by the source function based adaptive
 cell splitting algorithm, and also would be by having the optical depth
 across the grid cells small compared to one.  The third assumption is
@@ -998,7 +1063,7 @@ There are pathological cases in which a completely erroneous solar
 radiative transfer solution can occur if the optical depth across the
 cloud top grid cell is very large.
 
-    The accuracy is also determined by the angular resolution, specified
+The accuracy is also determined by the angular resolution, specified
 by the number of discrete ordinates (NMU and NPHI). To a lesser degree
 the adaptive spherical harmonic truncation parameter SHACC also
 determines the angular resolution.  Most of the benefit from the
@@ -1013,14 +1078,14 @@ For heating rates Nmu=8, Nphi=16 is enough, for hemispheric fluxes
 Nmu=8, Nphi=16 is often adequate, and radiances may need Nmu=16,
 Nphi=32 or more depending on the phase function.
 
-    Choosing the cell splitting accuracy: Remember that the adaptive
+Choosing the cell splitting accuracy: Remember that the adaptive
 parameters are in absolute units, not relative!  The actual accuracy is
 not linearly related to the cell splitting accuracy.  The cell splitting
 accuracy usually should be set substantially higher than the desired
 absolute flux accuracy.  Look at the examples in the 1998 journal paper
 for guidance.
 
-   The only sure way to know how to set the spatial and angular
+The only sure way to know how to set the spatial and angular
 resolution is to test how the desired solution behaves with increasing
 resolution, or make selected comparisons with an independent radiative
 transfer method.  It is not useful to increase the angular and spatial
@@ -1031,7 +1096,7 @@ Thus, setting the splitting accuracy so small that the number of
 adaptive grid points is many times the number of base grid points, will
 probably not achieve any higher accuracy.
 
-    Unlike for plane-parallel situations, the delta-M method does not
+Unlike for plane-parallel situations, the delta-M method does not
 assure high accuracy for downwelling solar flux in 2D and 3D as it does
 for 1D, thus the distribution of downwelling solar flux may not be
 accurate for highly peaked phase functions unless high angular
@@ -1041,14 +1106,14 @@ over all angles in the same way as for a uniform medium. This limitation
 appears to not affect upwelling flux, upwelling radiance, or heating
 rates.
 
-    Because of the thresholding nature of the cell splitting and the
+Because of the thresholding nature of the cell splitting and the
 spherical harmonic truncation, very small changes in the inputs can
 amplify into larger changes in the output results.  For example, running
 the same case on different machines can lead to noticeably different
 results.  These variations, however, should be within the overall
 accuracy of the results governed by the angular and spatial resolution.
 
-    Upwelling hemispheric fluxes are slightly more accurately computed
+Upwelling hemispheric fluxes are slightly more accurately computed
 by using the double Gaussian quadrature discrete ordinate set.  This is
 choosen by setting ORDINATESET=3 in SOLVE_RTE.  With this option,
 radiances, heating rates, and net fluxes may be slightly less accurate.
@@ -1066,10 +1131,13 @@ allows SHDOM to be compiled without an MPI libarary.  Using the parallel
 processing aspects of SHDOM requires that the MPI system be installed on
 the target computer.  Then the usual way to compile and run a program
 with MPI is:
-    mpif90 -O2 -o shdom  shdom.f90 shdom_mpi.f90 shdom_nonetcdf.f90 \
-              shdomsub1.f shdomsub2.f shdomsub3.f ocean_brdf.f fftpack.f
-    mpirun -np 4  shdom90 < shdom.inp
- where shdom.inp has the user input parameters and "-np 4" specifies
+
+.. code-block:: bash
+   mpif90 -O2 -o shdom  shdom.f90 shdom_mpi.f90 shdom_nonetcdf.f90 \
+             shdomsub1.f shdomsub2.f shdomsub3.f ocean_brdf.f fftpack.f
+   mpirun -np 4  shdom90 < shdom.inp
+
+where shdom.inp has the user input parameters and "-np 4" specifies
 that four processors will be used.  The MPI shared memory device (e.g.
 ch_shmem from the MPICH implementation) will be somewhat more efficient
 on an SMP machine than a device (e.g. ch_p4) that uses a network
@@ -1168,10 +1236,14 @@ because a processor subdomain with more cloud will have more adaptive
 grid points and thus larger values of the memory parameters.  When SHDOM
 is run on multiple processors it tries to read a file with the name
 RUNNAME//"_mem_params.inp".  The format of this file is
-  Comment line
-  Number of processors
-  One line for each processor (0 to Nproc-1) with the four parameters:
-    MAX_TOTAL_MB ADAPT_GRID_FACTOR NUM_SH_TERM_FACTOR CELL_TO_POINT_RATIO
+
+.. code-block:: JSON
+
+   Comment line
+   Number of processors
+   One line for each processor (0 to Nproc-1) with the four parameters:
+   MAX_TOTAL_MB ADAPT_GRID_FACTOR NUM_SH_TERM_FACTOR CELL_TO_POINT_RATIO
+
 If there is no input memory parameter file, or it is for a different
 number of processors, then the default memory parameters input by the
 user are used.  At the end of the SHDOM computation the actual memory
@@ -1220,16 +1292,24 @@ per line) running SHDOM takes on each processor.  It is important to
 understand the order in which MPI allocates the processors in your
 cluster.  For example, suppose the cluster has two computers, each with
 two SMP processors.  Then the MPI machine file might look like this:
-    fast:2
-    slow:2
- Typically, MPI will allocate the processors as follows: 0 on "fast", 1
+
+.. code-block:: JSON
+
+   fast:2
+   slow:2
+
+Typically, MPI will allocate the processors as follows: 0 on "fast", 1
 on "slow", 2 on "fast", and 3 on "slow".  If SHDOM is twice as fast on
 "fast" as on "slow", then shdom_proc_times.inp could be
-    1.0
-    2.0
-    1.0
-    2.0
- When SHDOM with load balancing is run with four processors on MPI, the
+
+.. code-block:: JSON
+
+   1.0
+   2.0
+   1.0
+   2.0
+
+When SHDOM with load balancing is run with four processors on MPI, the
 Y boundary line will be adjusted so that each processor on computer
 "fast" has twice the number of grid points as each processor on "slow".
 
@@ -1244,26 +1324,26 @@ the higher order radiance terms, or turning on processor load balancing,
 most of these would only be changed to experiment with the operation of
 the SHDOM algorithm.
 
-    Namelist input: main program (shdom.f or shdom90.f90); Comment out
+Namelist input: main program (shdom.f or shdom90.f90); Comment out
 the call to USER_INPUT and uncomment the call to NAMELIST_INPUT.
 
-    NetCDF property file input: main program (shdom90.f90); Comment out
+NetCDF property file input: main program (shdom90.f90); Comment out
 calls to READ_PROPERTY_SIZE, and READ_PROPERTIES and uncomment calls to
 read_property_size_netcdf and read_properties_netcdf.  Use the makefile
 to compile with the netcdf library.
 
-    Adding surface reflection types: in shdomsub2.f write a BRDF Fortran
+Adding surface reflection types: in shdomsub2.f write a BRDF Fortran
 function modeled on RPV_REFLECTION and add a call in SURFACE_BRDF to the
 new function.  In shdomsub3.f modify subroutine READ_SURFACE by adding a
 block to read in the new surface type parameters.
 
-    Discrete ordinate angle set: SOLVE_RTE (shdomsub1.f); The ORDINATESET
+Discrete ordinate angle set: SOLVE_RTE (shdomsub1.f); The ORDINATESET
 variable before call to MAKE_ANGLE_SET is the type of angle set: 1 - full
 Gaussian set, 2 - reduced Gaussian set (default), 3 - reduced double Gaussian.
 Using the double Gaussian angular set will give more accurate hemispheric
 fluxes, e.g. from a Lambertian surface.
 
-    Output rms of higher order radiance spherical harmonic terms:
+Output rms of higher order radiance spherical harmonic terms:
 at top of main program (shdom.f); set HIGHORDERRAD=.TRUE. for outputing
 the rms of the higher order radiance terms (above L=1,M=1) normalized by
 the mean radiance (S output mode).  This is useful for determining
@@ -1272,31 +1352,33 @@ Since all the radiance spherical harmonic terms are kept the running
 time may be somewhat longer, and the memory use (RADIANCE array) can be
 much larger.
 
-    Multiple processor load balancing: Change LoadBalance=.TRUE. at the
+Multiple processor load balancing: Change LoadBalance=.TRUE. at the
 beginning of shdom_mpi.f90 (see the last paragraph of the multiple
 processing section).
 
-    k-distribution initialization: at top of main program (shdom.f);
+k-distribution initialization: at top of main program (shdom.f);
 Change BASEOUT = .TRUE. to initialize with and output only the base
 grid during the iteration over k's, rather than the default of
 initializing with the previous k's adaptive grid structure.
 
-    Cell splitting scheduling: SOLVE_RTE (shdomsub1.f); The range of
+Cell splitting scheduling: SOLVE_RTE (shdomsub1.f); The range of
 solution criterion during which the adaptive grid cell splitting occurs
 can be chosen by changing ENDADAPTSOL and STARTADAPTSOL; other aspects
 of the scheduling can be changed as well.
-    Adaptive grid smoothing: SPLIT_GRID (shdomsub1.f); The call to
+
+Adaptive grid smoothing: SPLIT_GRID (shdomsub1.f); The call to
 subroutine GRID_SMOOTH_TEST may be commented out to stop the adaptive
 grid smoothing. This will produce somewhat fewer adaptive cells, but
 make a somewhat more irregular grid.
-    Cell splitting visualization: SOLVE_RTE (shdomsub1.f); The
+
+Cell splitting visualization: SOLVE_RTE (shdomsub1.f); The
 subroutine VISUALIZE_CELLS may be commented in after the solution loop
 to produce  a GLE graphics file showing the adaptive cell structure.
 This can be changed easily for other graphics languagues.  The
 subroutine OUTPUT_CELL_SPLIT may be commented in to output the medium
 extinction and adaptive cell splitting criterion for X, Y, and Z.
 
-    Cutoff transmission for back tracing: PATH_INTEGRATION (shdomsub1.f);
+Cutoff transmission for back tracing: PATH_INTEGRATION (shdomsub1.f);
 The TRANSMIN variable can be changed (e.g. from 1.0 to 0.1) to have the
 back ray tracing continue until the specified transmission is reached.
 This can eliminate the grid radiance interpolation error, but can take
@@ -1315,11 +1397,15 @@ during the solution procedure, the maximum size of many arrays can only
 be guessed at.  The approach taken is to define the maximum adaptive
 grid array sizes in terms of the base grid.  Thus the following three
 parameters must be input:
+
+.. code-block:: JSON
+
   ADAPT_GRID_FACTOR    ratio of the max number of internal grid points
                          to the number of base grid points
   NUM_SH_TERM_FACTOR   ratio of average number of spherical harmonic
                          terms to total possible (NLM)
   CELL_TO_POINT_RATIO  ratio of number of cells to number of grid points
+
 In addition, to prevent SHDOM from grabbing all the available memory,
 the maximum memory is specified with MAX_TOTAL_MB, which is the maximum
 total megabytes SHDOM should take (per processor), where a memory word
@@ -1339,8 +1425,15 @@ the low resolution run.
 
 For NSTOKES=1 and tabulated phase functions the major memory use in 4
 byte words is:
+
+.. code-block:: JSON
+
    MEMWORD = 16.5*MAXIC + 33*MAXIG + 3*MAXIV + MAXIDO
+
 where
+
+.. code-block:: JSON
+
   MAXIG   max number of internal grid points
   MAXIC   max number of grid cells, between 1 and 2 times grid points
   MAXIV   max words for source function and radiance arrays;
@@ -1348,7 +1441,11 @@ where
             number of grid points.
   MAXIDO  max words for temporary discrete ordinate azimuthal array;
             needed size is max azimuths times number of grid points.
+
 For Nmu=8 Nphi=16 the most space needed is
+
+.. code-block:: JSON
+
    MEMWORD = (33+33+192+16)*MAXIG = 274*MAXIG
 
 
@@ -1358,218 +1455,350 @@ VARIABLES
 
 The following is a list of important variables.
 
+.. code-block:: JSON
+
   Variables       Description/Comments
 
         First the variables used in the adaptive cell structure:
-NPTS           total number of grid points
-NCELLS         total number of cells
-GRIDPOS(3,IP)  x,y,z coordinate values of grid point locations
-GRIDPTR(8,IC)  pointer to 8 grid points belonging to a cell.
-                 Order of pointers is based on binary digits zyx:
-                 IOCT = 1 + BITX + 2*BITY + 4*BITZ, where
-                 BITc is 0 for negative side and 1 for positive side.
-NEIGHPTR(6,IC) pointer to 6 neighboring cells of a cell.
-                 Order of pointers are -X,+X,-Y,+Y,-Z,+Z (1-6).
-                 Is 0 if there is no neighbor cell (boundary).
-                 Is positive if there is just one cell across face
-                 of current cell (unique neighbor).  Is negative
-                 (-index) if there is more than one cell across
-                 the face of current cell.  In this case the
-                 cell pointed to is the parent cell that has a
-                 has same or larger face adjoining current cell.
-TREEPTR(2,IC)  pointer to parent and children cells in tree structure.
-                 First is pointer to parent cell, 0 for a base cell.
-                 Second is pointer to first of the two children cells.
-                 This pointer is 0 if there are no children cells.
-                 The children cells are in successive order, with
-                 the negative side first.  See CELLFLAGS for direction
-                 of division of split.
-CELLFLAGS(IC)  a collection of binary flags for the cells:
-                  bit  For bit set
-                   0  Do independent pixel for X
-                   1  Do independent pixel for Y
-                   2,3 Direction cell is split (0=no split, 1=X, 2=Y, 3=Z)
 
-        Input variables:
-PROPFILE        name of the input medium property file
-SFCFILE         name of the input surface property file (or NONE)
-CKDFILE         name of the input correlated k-distribution file (or NONE)
-INSAVEFILE      name of the input binary save file (or NONE)
-OUTSAVEFILE     name of the output binary save file (or NONE)
-NSTOKES         number of Stokes parameters (1, 3, or 4)
-NX, NY, NZ      base grid size in X, Y and Z
-NMU, NPHI       number of discrete ordinates covering -1<mu<1 and 0<phi<2pi
-BCFLAG          bit flags for open boundary conditions (also used for
-                  multiple processors)
-IPFLAG          bit flags for independent pixel mode:
-DELTAM          T (true) for delta-M scaling of medium and TMS method
-GRIDTYPE        E for even Z base grid, P for Z base grid from property file
-SRCTYPE         'S' for solar source, 'T' for thermal source, 'B' for both
-SOLARFLUX       top of medium solar flux on a horizontal surface (any units)
-SOLARMU         cosine of the solar zenith angle
-SOLARAZ         solar beam azimuthal angle; in radians for use in code.
-SKYRAD          isotropic diffuse radiance or Tb incident from above
-GNDALBEDO       bottom surface Lambertian albedo
-GNDTEMP         ground temperature in Kelvin
-UNITS           'R' for radiance units (W/m^2 ster), 'T' for Rayleigh-Jeans
-WAVELEN         wavelength in microns for 'R' units
-WAVENO(2)       wavenumber range (cm^-1) for correlated k-distribution.
-ACCELFLAG       T (true) to do the sequence acceleration.
-SOLACC          solution accuracy - tolerance for solution criterion
-MAXITER         maximum number of iterations allowed
-SPLITACC        cell splitting accuracy
-SHACC           adaptive spherical harmonic truncation accuracy
-NUMOUT          number of output files (different types usually)
-OUTTYPES(*)     output file type (R,F,H,S,J,M)
-OUTPARMS(*)     parameters for output mode
-OUTFILES(*)     output file name
-MAX_TOTAL_MB         approximate maximum memory to use (MB for 4 byte reals)
-ADAPT_GRID_FACTOR    ratio of total grid points to base grid points
-NUM_SH_TERM_FACTOR   ratio of average number of spherical harmonic terms
-                       to total possible (NLM)
-CELL_TO_POINT_RATIO  ratio of number of grid cells to grid points
+.. code-block:: JSON
 
+   NPTS           total number of grid points
 
-ML,MM           The maximum L and M of the spherical harmonic truncation.
-                  ML = NMU-1, MM = INT(NPHI/2)-1
-NLM             The number of spherical harmonic terms,
-                  NLM=(2*MM+1)*(ML+1)-MM*(MM+1)
-NLEG            The number of Legendre series phase function terms used in
-                  the solution procedure.
-NMU             The number of Gaussian quadrature discrete ordinates in mu.
-                  This is forced to be even for several reasons.
-NPHI            The maximum number of evenly spaced azimuthal angles.  This is
-                  specified for a full 2pi, though if NCS=1 actually only
-                  NPHI/2+1 azimuths from 0 to pi are used.  Forced to be >0.
-NPHI0MAX        The maximum number of azimuth angles actually used;
-                  for NCS=1 (cosine modes only) NPHI0=INT((NPHI+2)/2),
-                  otherwise NPHI0=NPHI.
-NPHI0(NMU)      The number of azimuth angles actually used for each zenith
-                  angle (for the reduced gaussian set less azimuthal angles
-                  are used near zenith and nadir).
-NSTLEG          The number of phase matrix elements used (1 for NSTOKES=1 or
-                   6 for NSTOKES>1); also it is the number of unique elements
-                   of the real generalized spherical harmonics matrices.
+   NCELLS         total number of cells
 
-NPX,NPY,NPZ     Size of the input property arrays.
-                  Need not be same as NX,NY,NZ
-NPXT, NPYT      Size in grid cells of the full input property domain grid
-                  for multiple processors
-NX, NY, NZ      Size in grid cells of the internal base grid.
-NXT, NYT        Size in grid cells of the full domain grid for MPI
+   GRIDPOS(3,IP)  x,y,z coordinate values of grid point locations
 
-DELX,DELY       The horizontal grid spacing of the property arrays.
-ZLEVELS         The input Z levels from the property file.
-XGRID,YGRID     The grid locations for each dimension. To facilitate the
-ZGRID             periodic horizontal boundaries, there are NX+1 values in
-                  XGRID, NY+1 in YGRID, NZ values in ZGRID.  Currently the
-                  grid locations are evenly spaced in X and Y.
+   GRIDPTR(8,IC)  pointer to 8 grid points belonging to a cell.
+                    Order of pointers is based on binary digits zyx:
+                    IOCT = 1 + BITX + 2*BITY + 4*BITZ, where
+                    BITc is 0 for negative side and 1 for positive side.
 
-            The variable for the input (variable) surface properties.
-SFCTYPE         The surface type (two characters) is set according to
-                  whether there is a surface file and its format:
-                  'FL' fixed Lambertian; 'VL' variable Lambertian,
-                  'VR' variable RPV, etc.
-NXSFC,NYSFC     Size of surface arrays (internally NXSFC+1 by NYSFC+1)
-DELXSFC,DELYSFC Spacing of regular surface arrays
-SFCPARMS(NSFCPAR,*)  Surface parmeters on regular sfc grid (temperature first)
-NSFCPAR         Number of surface parameters (2 for Lambertian [temp,albedo])
-SFCGRIDPARMS(NSFCPAR,*)  Surface parameters interpolated to boundary grid points
-                  first one is Planck function from interped temperature.
-NTOPPTS,NBOTPTS Number of boundary grid points at top and bottom
-BCPTR(*,2)      Pointers to grid points that are on top (1) and bottom (2)
-BCRAD(*)        Boundary radiances: first NTOPPTS are isotropic top radiances;
-                next NBOTPTS are upwelling bottom radiances; for general BRDF
-                the next NBOTPTS*NANG/2 are downwelling bottom radiances at
-                discrete ordinates (for doing integral over incident radiance).
+   NEIGHPTR(6,IC) pointer to 6 neighboring cells of a cell.
+                    Order of pointers are -X,+X,-Y,+Y,-Z,+Z (1-6).
+                    Is 0 if there is no neighbor cell (boundary).
+                    Is positive if there is just one cell across face
+                    of current cell (unique neighbor).  Is negative
+                    (-index) if there is more than one cell across
+                    the face of current cell.  In this case the
+                    cell pointed to is the parent cell that has a
+                    has same or larger face adjoining current cell.
 
-            The arrays with the input property fields.
-TEMPP,EXTINCTP  Temperature (K), extinction (km^-1),
-ALBEDOP         Single scattering albedo
-LEGENP          Phase function: Chi(1)...Chi(NLEG) are in LEGENP(1:NLEG,..).
-IPHASEP         Pointer to phase functions in LEGENP for tabulated phase funcs
-EXTDIRP         Extinction field (perhaps scaled) for direct beam computation
+   TREEPTR(2,IC)  pointer to parent and children cells in tree structure.
+                    First is pointer to parent cell, 0 for a base cell.
+                    Second is pointer to first of the two children cells.
+                    This pointer is 0 if there are no children cells.
+                    The children cells are in successive order, with
+                    the negative side first.  See CELLFLAGS for direction
+                    of division of split.
 
-            The arrays with the internal/adaptive grid fields.
-EXTINCT         Extinction field (scaled if delta-M)
-ALBEDO          Single scattering albedo (scaled if delta-M)
-TEMP            Temperature
-PLANCK          Planck function times (1-ALBEDO) for thermal sources
-DIRFLUX         For solar sources, the direct beam flux F*exp(-tau)
-                  (F=solar flux, tau=optical path to sun).
-LEGEN(NSTLEG,0:NLEG,*)  The phase function coefficients Chi(0)...Chi(NLEG)
-                 are in LEGEN(1,0:NLEG,) = Chi(l)/(2*l+1), e.g. LEGEN(1,0,)=1.
-IPHASE          Pointer to phase functions in LEGEN for tabulated phase funcs
+   CELLFLAGS(IC)  a collection of binary flags for the cells:
+                     bit  For bit set
+                      0  Do independent pixel for X
+                      1  Do independent pixel for Y
+                      2,3 Direction cell is split (0=no split, 1=X, 2=Y, 3=Z)
 
-              Correlated k-distribution arrays:
-DELG(NG)        k-distribution weights
-ZCKD            Heights read in from CKD file
-KABS            Absorption coefficients (km^-1) for all k's and CKD heights
-GASABS          Absorption coefficients for current k and CKD heights
+Input variables:
 
-          Spherical harmonic arrays (the three biggest ones):
-              See YLMALL routine for the order of the SH terms.
-              These three arrays have adaptive SH terms, and thus
-              require pointers to index into them. The pointers (e.g. SHPTR)
-              point to the element before the first SH term of a grid
-              cell; e.g. SHPTR(I)+1 points to the first SH term of the
-              I'th grid point in SOURCE, and SHPTR(I+1) points to the
-              last SH term of the I'th grid point.
-SOURCE(NSTOKES,*)    Spherical harmonic terms of the source function
-SHPTR(NPTS)          Pointer for SOURCE
-DELSOURCE(NSTOKES,*) The difference between successive source functions in iteration
-OSHPTR(NPTS)         Pointer for DELSOURCE
-RADIANCE(NSTOKES,*)  Spherical harmonic terms of the radiance field
-RSHPTR(NPTS)    Pointer for RADIANCE
+.. code-block:: JSON
 
-WORK            Work array for path integration; radiance field, Nazimuth*Npts
-WORK1/SWEEPORD  Work array for path integration; grid point sweeping order
-WORK2/GRIDRAD   Work array for path integration; single angle radiance
+   PROPFILE        name of the input medium property file
 
-            Output arrays:
-FLUXES(2,)      The two hemispheric diffuse fluxes for each grid point
-                  computed from the discrete ordinate radiance field.
-SUMFLUXES       Running k-distribution sum array for fluxes
-SUMDIRFLUX      Sum array for direct beam flux
-SUMFLUXDIV      Sum array for net flux divergence
-SUMSHTERMS      Sum array for spherical harmonic output
-SUMRADOUT       Sum array for radiance output (actual size needed is unknown)
+   SFCFILE         name of the input surface property file (or NONE)
 
-MU(NMU)           The Gaussian quadrature cosine zenith angles (mu<0 first)
-WTMU(NMU)         The Gaussian integration weights
-WTDO(NMU*NPHI0)   Discrete ordinate integration weights
-PHI(NMU*NPHI0)    Discrete azimuths, evenly spaced for each mu
-FFTFLAG(NMU)      Logical array, true to do FFT instead of DFT with CPHIn
-CMU1(NSTLEG,NLM,NMU) The spherical harmonic/discrete ordinate transform
-CMU2(NSTLEG,NMU,NLM) coefficients. The CMUn are for the zenith angle transform,
-CPHI1(-16:16,32,NMU) and the CPHIn are for the azimuthal angle transforms.
-CPHI2(32,-16:16,NMU) The 1 coefficients are for the SH to DO transform, and
-                     the 2 coefficients (which have the integrations weights)
-                     are for the DO to SH transform.
-YLMSUN(NSTLEG,NLM)  The spherical harmonic terms for the solar beam direction,
-                    which are for computing the single scattering source.
-FIXSH             Logical, if true than adaptive SH truncation is fixed
-OUTOFMEM          Logical, true if out of memory for splitting cells
-CURSPLITACC       Splitting accuracy used at a particular iteration
-SPLITCRIT         Splitting criterion currently achieved
-STARTADAPTSOL, ENDADAPTSOL  Starting and ending solution criterion for splitting
+   CKDFILE         name of the input correlated k-distribution file (or NONE)
 
-TRANSMIN          Transmission cutoff for back tracing through cells
+   INSAVEFILE      name of the input binary save file (or NONE)
 
-INRADFLAG         Logical variable, true if there is an input save file
-NEWGRIDFLAG       Logical, true to make new grids, otherwise use last ones
-BASEOUT           Logical, true to initialize/output with base grid for k-dist
-ITER              The number of iterations done for one SOLVE_RTE
-TOTITER           The total number of iterations done (over a k-dist)
-SOLCRIT           The final solution criterion achieved
-NRAD              Total number of output radiance locations/angles
-NVIS              Total number of output visualization pixels
+   OUTSAVEFILE     name of the output binary save file (or NONE)
+
+   NSTOKES         number of Stokes parameters (1, 3, or 4)
+
+   NX, NY, NZ      base grid size in X, Y and Z
+
+   NMU, NPHI       number of discrete ordinates covering -1<mu<1 and 0<phi<2pi
+
+   BCFLAG          bit flags for open boundary conditions (also used for
+                     multiple processors)
+
+   IPFLAG          bit flags for independent pixel mode:
+
+   DELTAM          T (true) for delta-M scaling of medium and TMS method
+
+   GRIDTYPE        E for even Z base grid, P for Z base grid from property file
+
+   SRCTYPE         'S' for solar source, 'T' for thermal source, 'B' for both
+
+   SOLARFLUX       top of medium solar flux on a horizontal surface (any units)
+
+   SOLARMU         cosine of the solar zenith angle
+
+   SOLARAZ         solar beam azimuthal angle; in radians for use in code.
+
+   SKYRAD          isotropic diffuse radiance or Tb incident from above
+
+   GNDALBEDO       bottom surface Lambertian albedo
+
+   GNDTEMP         ground temperature in Kelvin
+
+   UNITS           'R' for radiance units (W/m^2 ster), 'T' for Rayleigh-Jeans
+
+   WAVELEN         wavelength in microns for 'R' units
+
+   WAVENO(2)       wavenumber range (cm^-1) for correlated k-distribution.
+
+   ACCELFLAG       T (true) to do the sequence acceleration.
+
+   SOLACC          solution accuracy - tolerance for solution criterion
+
+   MAXITER         maximum number of iterations allowed
+
+   SPLITACC        cell splitting accuracy
+
+   SHACC           adaptive spherical harmonic truncation accuracy
+
+   NUMOUT          number of output files (different types usually)
+
+   OUTTYPES(*)     output file type (R,F,H,S,J,M)
+
+   OUTPARMS(*)     parameters for output mode
+
+   OUTFILES(*)     output file name
+
+   MAX_TOTAL_MB         approximate maximum memory to use (MB for 4 byte reals)
+
+   ADAPT_GRID_FACTOR    ratio of total grid points to base grid points
+
+   NUM_SH_TERM_FACTOR   ratio of average number of spherical harmonic terms
+                          to total possible (NLM)
+
+   CELL_TO_POINT_RATIO  ratio of number of grid cells to grid points
+
+   ML,MM           The maximum L and M of the spherical harmonic truncation.
+                     ML = NMU-1, MM = INT(NPHI/2)-1
+
+   NLM             The number of spherical harmonic terms,
+                     NLM=(2*MM+1)*(ML+1)-MM*(MM+1)
+
+   NLEG            The number of Legendre series phase function terms used in
+                     the solution procedure.
+
+   NMU             The number of Gaussian quadrature discrete ordinates in mu.
+                     This is forced to be even for several reasons.
+
+   NPHI            The maximum number of evenly spaced azimuthal angles.  This is
+                     specified for a full 2pi, though if NCS=1 actually only
+                     NPHI/2+1 azimuths from 0 to pi are used.  Forced to be >0.
+
+   NPHI0MAX        The maximum number of azimuth angles actually used;
+                     for NCS=1 (cosine modes only) NPHI0=INT((NPHI+2)/2),
+                     otherwise NPHI0=NPHI.
+
+   NPHI0(NMU)      The number of azimuth angles actually used for each zenith
+                     angle (for the reduced gaussian set less azimuthal angles
+                     are used near zenith and nadir).
+
+   NSTLEG          The number of phase matrix elements used (1 for NSTOKES=1 or
+                      6 for NSTOKES>1); also it is the number of unique elements
+                      of the real generalized spherical harmonics matrices.
+
+   NPX,NPY,NPZ     Size of the input property arrays.
+                     Need not be same as NX,NY,NZ
+
+   NPXT, NPYT      Size in grid cells of the full input property domain grid
+                     for multiple processors
+
+   NX, NY, NZ      Size in grid cells of the internal base grid.
+
+   NXT, NYT        Size in grid cells of the full domain grid for MPI
+
+   DELX,DELY       The horizontal grid spacing of the property arrays.
+
+   ZLEVELS         The input Z levels from the property file.
+
+   XGRID,YGRID     The grid locations for each dimension. To facilitate the
+
+   ZGRID             periodic horizontal boundaries, there are NX+1 values in
+                     XGRID, NY+1 in YGRID, NZ values in ZGRID.  Currently the
+                     grid locations are evenly spaced in X and Y.
+
+The variable for the input (variable) surface properties.
+
+.. code-block:: JSON
+
+   SFCTYPE         The surface type (two characters) is set according to
+                     whether there is a surface file and its format:
+                     'FL' fixed Lambertian; 'VL' variable Lambertian,
+                     'VR' variable RPV, etc.
+
+   NXSFC,NYSFC     Size of surface arrays (internally NXSFC+1 by NYSFC+1)
+
+   DELXSFC,DELYSFC Spacing of regular surface arrays
+
+   SFCPARMS(NSFCPAR,*)  Surface parmeters on regular sfc grid (temperature first)
+
+   NSFCPAR         Number of surface parameters (2 for Lambertian [temp,albedo])
+
+   SFCGRIDPARMS(NSFCPAR,*)  Surface parameters interpolated to boundary grid points
+                     first one is Planck function from interped temperature.
+
+   NTOPPTS,NBOTPTS Number of boundary grid points at top and bottom
+
+   BCPTR(*,2)      Pointers to grid points that are on top (1) and bottom (2)
+
+   BCRAD(*)        Boundary radiances: first NTOPPTS are isotropic top radiances;
+                   next NBOTPTS are upwelling bottom radiances; for general BRDF
+                   the next NBOTPTS*NANG/2 are downwelling bottom radiances at
+                   discrete ordinates (for doing integral over incident radiance).
+
+The arrays with the input property fields.
+
+.. code-block:: JSON
+
+   TEMPP,EXTINCTP  Temperature (K), extinction (km^-1),
+
+   ALBEDOP         Single scattering albedo
+
+   LEGENP          Phase function: Chi(1)...Chi(NLEG) are in LEGENP(1:NLEG,..).
+
+   IPHASEP         Pointer to phase functions in LEGENP for tabulated phase funcs
+
+   EXTDIRP         Extinction field (perhaps scaled) for direct beam computation
+
+The arrays with the internal/adaptive grid fields.
+
+.. code-block:: JSON
+
+   EXTINCT         Extinction field (scaled if delta-M)
+
+   ALBEDO          Single scattering albedo (scaled if delta-M)
+
+   TEMP            Temperature
+
+   PLANCK          Planck function times (1-ALBEDO) for thermal sources
+
+   DIRFLUX         For solar sources, the direct beam flux F*exp(-tau)
+                     (F=solar flux, tau=optical path to sun).
+
+   LEGEN(NSTLEG,0:NLEG,*)  The phase function coefficients Chi(0)...Chi(NLEG)
+                    are in LEGEN(1,0:NLEG,) = Chi(l)/(2*l+1), e.g. LEGEN(1,0,)=1.
+
+   IPHASE          Pointer to phase functions in LEGEN for tabulated phase funcs
+
+Correlated k-distribution arrays:
+
+.. code-block:: JSON
+
+   DELG(NG)        k-distribution weights
+
+   ZCKD            Heights read in from CKD file
+
+   KABS            Absorption coefficients (km^-1) for all k's and CKD heights
+
+   GASABS          Absorption coefficients for current k and CKD heights
+
+Spherical harmonic arrays (the three biggest ones):
+See YLMALL routine for the order of the SH terms.
+These three arrays have adaptive SH terms, and thus
+require pointers to index into them. The pointers (e.g. SHPTR)
+point to the element before the first SH term of a grid
+cell; e.g. SHPTR(I)+1 points to the first SH term of the
+I'th grid point in SOURCE, and SHPTR(I+1) points to the
+last SH term of the I'th grid point.
+
+.. code-block:: JSON
+
+   SOURCE(NSTOKES,*)    Spherical harmonic terms of the source function
+
+   SHPTR(NPTS)          Pointer for SOURCE
+
+   DELSOURCE(NSTOKES,*) The difference between successive source functions in iteration
+
+   OSHPTR(NPTS)         Pointer for DELSOURCE
+
+   RADIANCE(NSTOKES,*)  Spherical harmonic terms of the radiance field
+
+   RSHPTR(NPTS)    Pointer for RADIANCE
+
+   WORK            Work array for path integration; radiance field, Nazimuth*Npts
+
+   WORK1/SWEEPORD  Work array for path integration; grid point sweeping order
+
+   WORK2/GRIDRAD   Work array for path integration; single angle radiance
+
+Output arrays:
+
+.. code-block:: JSON
+
+   FLUXES(2,)      The two hemispheric diffuse fluxes for each grid point
+                     computed from the discrete ordinate radiance field.
+
+   SUMFLUXES       Running k-distribution sum array for fluxes
+
+   SUMDIRFLUX      Sum array for direct beam flux
+
+   SUMFLUXDIV      Sum array for net flux divergence
+
+   SUMSHTERMS      Sum array for spherical harmonic output
+
+   SUMRADOUT       Sum array for radiance output (actual size needed is unknown)
+
+   MU(NMU)           The Gaussian quadrature cosine zenith angles (mu<0 first)
+
+   WTMU(NMU)         The Gaussian integration weights
+
+   WTDO(NMU*NPHI0)   Discrete ordinate integration weights
+
+   PHI(NMU*NPHI0)    Discrete azimuths, evenly spaced for each mu
+
+   FFTFLAG(NMU)      Logical array, true to do FFT instead of DFT with CPHIn
+
+   CMU1(NSTLEG,NLM,NMU) The spherical harmonic/discrete ordinate transform
+
+   CMU2(NSTLEG,NMU,NLM) coefficients. The CMUn are for the zenith angle transform,
+
+   CPHI1(-16:16,32,NMU) and the CPHIn are for the azimuthal angle transforms.
+
+   CPHI2(32,-16:16,NMU) The 1 coefficients are for the SH to DO transform, and
+                        the 2 coefficients (which have the integrations weights)
+                        are for the DO to SH transform.
+
+   YLMSUN(NSTLEG,NLM)  The spherical harmonic terms for the solar beam direction,
+                       which are for computing the single scattering source.
+
+   FIXSH             Logical, if true than adaptive SH truncation is fixed
+
+   OUTOFMEM          Logical, true if out of memory for splitting cells
+
+   CURSPLITACC       Splitting accuracy used at a particular iteration
+
+   SPLITCRIT         Splitting criterion currently achieved
+
+   STARTADAPTSOL, ENDADAPTSOL  Starting and ending solution criterion for splitting
+
+   TRANSMIN          Transmission cutoff for back tracing through cells
+
+   INRADFLAG         Logical variable, true if there is an input save file
+
+   NEWGRIDFLAG       Logical, true to make new grids, otherwise use last ones
+
+   BASEOUT           Logical, true to initialize/output with base grid for k-dist
+
+   ITER              The number of iterations done for one SOLVE_RTE
+
+   TOTITER           The total number of iterations done (over a k-dist)
+
+   SOLCRIT           The final solution criterion achieved
+
+   NRAD              Total number of output radiance locations/angles
+
+   NVIS              Total number of output visualization pixels
 
 
 LIST OF ROUTINES
 ----------------
 
-    The following is a list of all the subroutines, where they are, and
+The following is a list of all the subroutines, where they are, and
 what they do.  The first column gives the file (0 is shdom.f90,
 1 is shdomsub1.f, 2 is shdomsub2.f, 3 is shdomsub3.f, M is shdom_mpi.f90,
 F is fftpack.f).  The second column indicates the calling routine.  The
@@ -1578,143 +1807,274 @@ shdomsub2.f, all the regular I/O routines are in shdomsub3.f, the MPI
 calling routines are in shdom_mpi.f90, and fftpack.f has the FFTPACK
 routines from NCAR.
 
-      Routine              Description
-0   TRILIN_INTERP_PROP   Interpolates medium properties to base/adaptive grid
-0   DIRECT_BEAM_PROP     Computes direct beam flux at a point
-1 0 SOLVE_RTE (S)        Main solver routine
-1   CALC_SOURCE_PNT      Calculates the SH source function at one grid point
-1   CALC_SOURCE_PNT_UNPOL  CALC_SOURCE_PNT for NSTOKES=1
-1 S COMPUTE_SOURCE       Computes the SH source function from the radiance
-1 S RADIANCE_TRUNCATION  Computes the next radiance truncation to use
-1 S ACCELERATE_SOLUTION  Accelerates the solution sequence
-1 S PATH_INTEGRATION (P) Integrates the source function to get radiance
-1 P BOUNDARY_PNTS        Makes BCPTR of list of top and bottom boundary points
-1 P SURFACE_PARM_INTERP  Interpolates variable surface params to adaptive grid
-1 S CHECK_UNIFORM_SFC    Determines if the surface file reflection is uniform
-1 P COMPUTE_TOP_RADIANCES  Makes the top boundary radiances
-1 P FIXED_LAMBERTIAN_BOUNDARY    Makes the bottom boundary upwelling radiances
-1 P VARIABLE_LAMBERTIAN_BOUNDARY Makes the bottom boundary upwelling radiances
-1 P VARIABLE_BRDF_SURFACE  Makes the upwelling radiances for general BRDF
-1 S MAKE_SFC_BRDF_DO_MATRIX  Makes the uniform surface BRDF function for discrete ordinates
-1 P UNIFORM_BRDF_SURFACE     Makes the upwelling radiances for uniform BRDFs
-1 P SH_TO_DO             Spherical harmonic to discrete ordinate transform
-1 P SH_TO_DO_UNPOL       SH_TO_DO for NSTOKES=1
-1 P DO_TO_SH             Discrete ordinate to SH transform
-1 P DO_TO_SH_UNPOL       DO_TO_SH for NSTOKES=1
-1 P SWEEPING_ORDER       Makes the point sweeping order for 2,4, or 8 octants
-1 P BACK_INT_GRID3D (B)  3D source function integration routine for one angle
-1 P BACK_INT_GRID3D_UNPOL  BACK_INT_GRID3D for NSTOKES=1
-1 P BACK_INT_GRID2D (B)  2D source function integration routine for one angle
-1 P BACK_INT_GRID1D (B)  1D source function integration routine for one angle
-1 B NEXT_CELL            Gets next cell to go to adjacent to this face
-1   SWEEP_BASE_CELL      Returns next base grid cell in sweep
-1   SWEEP_NEXT_CELL      Returns next grid cell in sweep
-1 S SPLIT_GRID (G)       Main routine for adaptive cell splitting
-1 G INTERPOLATE_POINT    Interpolates medium, source for new grid points
-1 G DIVIDE_CELL (D)      Divides a single cell, adjusts the adaptive structure
-1 D MATCH_NEIGHBOR_FACE  Resolves the neighbor pointers for a new cell
-1   INHERIT_NEIGHBOR     Updates a cell's new neighbor cell
-1 D NEW_GRID_POINTS      Makes two new points and sets up the pointers
-1   MATCH_GRID_POINT     Find whether neighboring cells have matching gridpoints
-1 G CELL_SPLIT_TEST      Computes splitting criterion and direction to split
-1 G GRID_SMOOTH_TEST     Determines if cell will be split for a "smoother" grid
+.. code-block:: JSON
 
-2   NEW_GRIDS            Makes the internal X, Y, and Z grids
-2 0 INIT_CELL_STRUCTURE  Make initial grid data structure for the base grid
-2 S INTERP_GRID          Interpolates medium from property to internal grid
-2 S MAKE_DIRECT          Makes direct beam solar flux (calls DIRECT_BEAM_PROP)
-2 S PREPARE_PROP         Does delta-M scaling; makes PLANCK
-2 S INIT_RADIANCE        Does an Eddington (two-stream) initializatin
-2   EDDRTF               Solves Eddington radiative transfer for flux
-2   TRIDIAG              Tridiagonal solver used by EDDRTF
-2 S MAKE_ANGLE_SET       Makes angle set for the discrete representation
-2 S MAKE_SH_DO_COEF      Makes the SH/DO transform coefficients
-2   SURFACE_BRDF         Computes the reflection for the one of the BRDF types
-2   WAVE_FRESNEL_REFLECTION  Routine for Wave-Fresnel polarized reflection
-2   DINER_REFLECTION     Routine for Diner polarized reflection
-2   RPV_REFLECTION       Function for Rahman, Pinty, Verstraete reflection
-2 0 SUM_OUTPUT           Sums an output array over the k-distribution.
-2 0 COMPUTE_NETFLUXDIV   Computes the net flux divergence everywhere
-2 0 COMPUTE_SH           Computes the SH output arrays
-2 0 INTERP_OUTPUT        Interpolates the output data to the new grid points
-2 S INTERP_RADIANCE      Interpolates SH radiance array to the new points
-2 0 VISUALIZE_RADIANCE   Computes radiances for the two visualization modes
-2   INTEGRATE_1RAY       Integrates the source function for one ray
-2   FIND_BOUNDARY_RADIANCE Gets the interpolated radiance at the boundary
-2   COMPUTE_SOURCE_1CELL Computes source times extinction for one cell
-2   COMPUTE_SOURCE_1CELL_UNPOL   COMPUTE_SOURCE_1CELL for NSTOKES=1
-2   PRECOMPUTE_PHASE     Precomputes phase function for all tabulated functions
-2   ROTATE_POL_PLANE     Rotates the plane of polarization for single scattered Stokes vector
-2 0 COMPUTE_RADIANCE (R) Computes the desired output radiance values
-2 R COMPUTE_ONE_SOURCE   Computes the source function for 1 angle
-2   SOLAR_SINGSCAT_VECT  Compute Stokes vector for a single scattering of sunlight
-2 R INTEGRATE_SOURCE     Integrates the source function backward for radiance
-2   INTERPOLATE_FIELD    Trilinearly interpolates field given a grid cell
-2   LOCATE_GRID_CELL     Locates grid cell containing the specified point
-2   LEGENDRE_ALL         Computes a set of Legendre polynomials for one angle
-2 S YLMALL               Computes a set of real generalized spherical harmonic functions
-2 S YLMALL_UNPOL         YLMALL for NSTOKES=1
-2   WIGNERFCT02P2M_NORMALIZED  Computes some Wigner d-functions
-2   DMM1_N0              Computes other Wigner d-functions
-2   WIGNERFCT_DM0        Computes more Wigner d-functions
-2   DM_M10_N0            Computes more Wigner d-functions
-2   WIGNERFCT            Computes more Wigner d-functions
-2   PLMALL               Computes more Wigner d-functions
-2   PLANCK_FUNCTION      Monochromatic Planck function routine
-2   INTEGRATE_PLANCK     Band integrates the Planck function
-2   GAUSQUADS            Gaussian quadrature routine
-2   DGAUSQUADS           Double Gaussian quadrature routine
-2   SSORT                Sorting routine for adaptive cell criterion
+         Routine              Description
+   0   TRILIN_INTERP_PROP   Interpolates medium properties to base/adaptive grid
 
-3 0 USER_INPUT           Gets the input parameters from stdin
-3 0 NAMELIST_INPUT       Gets the input parameters from a namelist
-3 0 CHECK_INPUT_PARMETERS Checks input parameters for validity/reasonableness
-3 0 READ_PROPERTY_SIZE   Gets the size of the property file
-3 0 READ_PROPERTIES      Reads the property file
-3 0 CHECK_PROPERTY_INPUT Checks the values read in from the property file
-3 0 READ_SURFACE_SIZE    Gets the size of the surfae file
-3 0 READ_SURFACE         Reads the surface file
-3 0 READ_CKD_SIZE        Gets the size of the k-distribution file
-3 0 READ_CKD             Reads the correlated k-distribution file
-3 0 RESTORE_STATE        Reads the binary state file
-3 0 SAVE_STATE           Writes the binary state file
-3 S OUTPUT_CELL_SPLIT    Outputs the cell splitting criterion for every cell
-3 S VISUALIZE_CELLS      Outputs GLE graphics of cell structure
-3 0 OUTPUT_RESULTS       Selects and outputs the results
-3 0 OUTPUT_RESULTS_PAR   Outputs results when using MPI
-3 0 OUTPUT_IMAGE         Outputs the visualization PGM images with labels
+   0   DIRECT_BEAM_PROP     Computes direct beam flux at a point
 
-M 0 START_MPI            Initializes the MPI system
-M 0 MAP_SHDOM_MPI        Sets the mapping of processors for the SHDOM domain
-M   OPTIMIZE_PROCESSOR_DOMAINS  Calculates the location of this processor
-M   LOAD_OBJ_FUNC        The objective function to minimize in the load balancing optimization
-M   ran                  Uniform random number generator
-M 0 BROADCAST_USER_INPUT Broadcasts the user input parameters from the master processor
-M 0 BROADCAST_PROPERTY_SIZE  Broadcasts the property file size information
-M 0 SCATTER_PROPERTIES   Sends the subdomain of optical properties to each processor
-M 0 BROADCAST_SURFACE_SIZE Broadcasts the surface array sizes from the master processor
-M 0 BROADCAST_SURFACE_PARMS Broadcasts the surface file parameters from the master processor
-M 0 BROADCAST_KDIST_SIZE Broadcasts the k-distribution array sizes from the master processor
-M 0 BROADCAST_KDIST_PARMS Broadcasts the k-distribution file parameters from the master processor
-M 0 READ_BROADCAST_MEM_PARAMS  Reads and broadcasts the *_mem_params.inp file
-M 0 SUM_CPU_TIME         Sums the CPU time used across all processors
-M 0 GATHER_OUTPUT        Gathers the base grid output data from all the processors
-M 1 TOTAL_ALBEDO_MAX     Finds the max ALBMAX over all processors
-M S UNIFY_SPLITTING      Turns on cell splitting (DOSPLIT=.TRUE.) for all processors if any want to
-M 1 TOTAL_SPLITCRIT_MAX  Finds the max SPLITCRIT over all processors
-M 2 MAKE_DIRECT_PAR      Calculates the grid point direct solar fluxes with multiple processors
-M P FIND_BOUNDARY_POINTS Makes the pointers to and positions of the boundary
-                           grid points of the neighboring processors
-M B CALC_BOUNDARY_RADIANCES Calculates the discrete ordinate boundary radiances
-M   INTEGRATE_RAY        Does the RTE integrations for CALC_BOUNDARY_RADIANCES
-M 0 COMPUTE_RADIANCE_PAR Computes the output radiances using multiple processors
-M 0 VISUALIZE_RADIANCE_PAR Computes the visualization output using MPI
-M S CALC_ACCEL_SOLCRIT   Calculates full domain acceleration parameter (& solcrit)
-M 0 END_SHDOM_MPI        Shuts down MPI, writes load balancing file
-M M ABORT_SHDOM_MPI      Prints error message and aborts MPI
+   1 0 SOLVE_RTE (S)        Main solver routine
 
-F   COSTI                Sets up for the cosine FFT
-F   COST                 Does the cosine transform FFT
-F   RFFTI                Sets up for the real FFT
-F   RFFTB                Does the real FFT to discrete azimuths
-F   RFFTF                Does the real FFT to Fourier coefficients
+   1   CALC_SOURCE_PNT      Calculates the SH source function at one grid point
+
+   1   CALC_SOURCE_PNT_UNPOL  CALC_SOURCE_PNT for NSTOKES=1
+
+   1 S COMPUTE_SOURCE       Computes the SH source function from the radiance
+
+   1 S RADIANCE_TRUNCATION  Computes the next radiance truncation to use
+
+   1 S ACCELERATE_SOLUTION  Accelerates the solution sequence
+
+   1 S PATH_INTEGRATION (P) Integrates the source function to get radiance
+
+   1 P BOUNDARY_PNTS        Makes BCPTR of list of top and bottom boundary points
+
+   1 P SURFACE_PARM_INTERP  Interpolates variable surface params to adaptive grid
+
+   1 S CHECK_UNIFORM_SFC    Determines if the surface file reflection is uniform
+
+   1 P COMPUTE_TOP_RADIANCES  Makes the top boundary radiances
+
+   1 P FIXED_LAMBERTIAN_BOUNDARY    Makes the bottom boundary upwelling radiances
+
+   1 P VARIABLE_LAMBERTIAN_BOUNDARY Makes the bottom boundary upwelling radiances
+
+   1 P VARIABLE_BRDF_SURFACE  Makes the upwelling radiances for general BRDF
+
+   1 S MAKE_SFC_BRDF_DO_MATRIX  Makes the uniform surface BRDF function for discrete ordinates
+
+   1 P UNIFORM_BRDF_SURFACE     Makes the upwelling radiances for uniform BRDFs
+
+   1 P SH_TO_DO             Spherical harmonic to discrete ordinate transform
+
+   1 P SH_TO_DO_UNPOL       SH_TO_DO for NSTOKES=1
+
+   1 P DO_TO_SH             Discrete ordinate to SH transform
+
+   1 P DO_TO_SH_UNPOL       DO_TO_SH for NSTOKES=1
+
+   1 P SWEEPING_ORDER       Makes the point sweeping order for 2,4, or 8 octants
+
+   1 P BACK_INT_GRID3D (B)  3D source function integration routine for one angle
+
+   1 P BACK_INT_GRID3D_UNPOL  BACK_INT_GRID3D for NSTOKES=1
+
+   1 P BACK_INT_GRID2D (B)  2D source function integration routine for one angle
+
+   1 P BACK_INT_GRID1D (B)  1D source function integration routine for one angle
+
+   1 B NEXT_CELL            Gets next cell to go to adjacent to this face
+
+   1   SWEEP_BASE_CELL      Returns next base grid cell in sweep
+
+   1   SWEEP_NEXT_CELL      Returns next grid cell in sweep
+
+   1 S SPLIT_GRID (G)       Main routine for adaptive cell splitting
+
+   1 G INTERPOLATE_POINT    Interpolates medium, source for new grid points
+
+   1 G DIVIDE_CELL (D)      Divides a single cell, adjusts the adaptive structure
+
+   1 D MATCH_NEIGHBOR_FACE  Resolves the neighbor pointers for a new cell
+
+   1   INHERIT_NEIGHBOR     Updates a cell's new neighbor cell
+
+   1 D NEW_GRID_POINTS      Makes two new points and sets up the pointers
+
+   1   MATCH_GRID_POINT     Find whether neighboring cells have matching gridpoints
+
+   1 G CELL_SPLIT_TEST      Computes splitting criterion and direction to split
+
+   1 G GRID_SMOOTH_TEST     Determines if cell will be split for a "smoother" grid
+
+   2   NEW_GRIDS            Makes the internal X, Y, and Z grids
+
+   2 0 INIT_CELL_STRUCTURE  Make initial grid data structure for the base grid
+
+   2 S INTERP_GRID          Interpolates medium from property to internal grid
+
+   2 S MAKE_DIRECT          Makes direct beam solar flux (calls DIRECT_BEAM_PROP)
+
+   2 S PREPARE_PROP         Does delta-M scaling; makes PLANCK
+
+   2 S INIT_RADIANCE        Does an Eddington (two-stream) initializatin
+
+   2   EDDRTF               Solves Eddington radiative transfer for flux
+
+   2   TRIDIAG              Tridiagonal solver used by EDDRTF
+
+   2 S MAKE_ANGLE_SET       Makes angle set for the discrete representation
+
+   2 S MAKE_SH_DO_COEF      Makes the SH/DO transform coefficients
+
+   2   SURFACE_BRDF         Computes the reflection for the one of the BRDF types
+
+   2   WAVE_FRESNEL_REFLECTION  Routine for Wave-Fresnel polarized reflection
+
+   2   DINER_REFLECTION     Routine for Diner polarized reflection
+
+   2   RPV_REFLECTION       Function for Rahman, Pinty, Verstraete reflection
+
+   2 0 SUM_OUTPUT           Sums an output array over the k-distribution.
+
+   2 0 COMPUTE_NETFLUXDIV   Computes the net flux divergence everywhere
+
+   2 0 COMPUTE_SH           Computes the SH output arrays
+
+   2 0 INTERP_OUTPUT        Interpolates the output data to the new grid points
+
+   2 S INTERP_RADIANCE      Interpolates SH radiance array to the new points
+
+   2 0 VISUALIZE_RADIANCE   Computes radiances for the two visualization modes
+
+   2   INTEGRATE_1RAY       Integrates the source function for one ray
+
+   2   FIND_BOUNDARY_RADIANCE Gets the interpolated radiance at the boundary
+
+   2   COMPUTE_SOURCE_1CELL Computes source times extinction for one cell
+
+   2   COMPUTE_SOURCE_1CELL_UNPOL   COMPUTE_SOURCE_1CELL for NSTOKES=1
+
+   2   PRECOMPUTE_PHASE     Precomputes phase function for all tabulated functions
+
+   2   ROTATE_POL_PLANE     Rotates the plane of polarization for single scattered Stokes vector
+
+   2 0 COMPUTE_RADIANCE (R) Computes the desired output radiance values
+
+   2 R COMPUTE_ONE_SOURCE   Computes the source function for 1 angle
+
+   2   SOLAR_SINGSCAT_VECT  Compute Stokes vector for a single scattering of sunlight
+
+   2 R INTEGRATE_SOURCE     Integrates the source function backward for radiance
+
+   2   INTERPOLATE_FIELD    Trilinearly interpolates field given a grid cell
+
+   2   LOCATE_GRID_CELL     Locates grid cell containing the specified point
+
+   2   LEGENDRE_ALL         Computes a set of Legendre polynomials for one angle
+
+   2 S YLMALL               Computes a set of real generalized spherical harmonic functions
+
+   2 S YLMALL_UNPOL         YLMALL for NSTOKES=1
+
+   2   WIGNERFCT02P2M_NORMALIZED  Computes some Wigner d-functions
+
+   2   DMM1_N0              Computes other Wigner d-functions
+
+   2   WIGNERFCT_DM0        Computes more Wigner d-functions
+
+   2   DM_M10_N0            Computes more Wigner d-functions
+
+   2   WIGNERFCT            Computes more Wigner d-functions
+
+   2   PLMALL               Computes more Wigner d-functions
+
+   2   PLANCK_FUNCTION      Monochromatic Planck function routine
+
+   2   INTEGRATE_PLANCK     Band integrates the Planck function
+
+   2   GAUSQUADS            Gaussian quadrature routine
+
+   2   DGAUSQUADS           Double Gaussian quadrature routine
+
+   2   SSORT                Sorting routine for adaptive cell criterion
+
+   3 0 USER_INPUT           Gets the input parameters from stdin
+
+   3 0 NAMELIST_INPUT       Gets the input parameters from a namelist
+
+   3 0 CHECK_INPUT_PARMETERS Checks input parameters for validity/reasonableness
+
+   3 0 READ_PROPERTY_SIZE   Gets the size of the property file
+
+   3 0 READ_PROPERTIES      Reads the property file
+
+   3 0 CHECK_PROPERTY_INPUT Checks the values read in from the property file
+
+   3 0 READ_SURFACE_SIZE    Gets the size of the surfae file
+
+   3 0 READ_SURFACE         Reads the surface file
+
+   3 0 READ_CKD_SIZE        Gets the size of the k-distribution file
+
+   3 0 READ_CKD             Reads the correlated k-distribution file
+
+   3 0 RESTORE_STATE        Reads the binary state file
+
+   3 0 SAVE_STATE           Writes the binary state file
+
+   3 S OUTPUT_CELL_SPLIT    Outputs the cell splitting criterion for every cell
+
+   3 S VISUALIZE_CELLS      Outputs GLE graphics of cell structure
+
+   3 0 OUTPUT_RESULTS       Selects and outputs the results
+
+   3 0 OUTPUT_RESULTS_PAR   Outputs results when using MPI
+
+   3 0 OUTPUT_IMAGE         Outputs the visualization PGM images with labels
+
+   M 0 START_MPI            Initializes the MPI system
+
+   M 0 MAP_SHDOM_MPI        Sets the mapping of processors for the SHDOM domain
+
+   M   OPTIMIZE_PROCESSOR_DOMAINS  Calculates the location of this processor
+
+   M   LOAD_OBJ_FUNC        The objective function to minimize in the load balancing optimization
+
+   M   ran                  Uniform random number generator
+
+   M 0 BROADCAST_USER_INPUT Broadcasts the user input parameters from the master processor
+
+   M 0 BROADCAST_PROPERTY_SIZE  Broadcasts the property file size information
+
+   M 0 SCATTER_PROPERTIES   Sends the subdomain of optical properties to each processor
+
+   M 0 BROADCAST_SURFACE_SIZE Broadcasts the surface array sizes from the master processor
+
+   M 0 BROADCAST_SURFACE_PARMS Broadcasts the surface file parameters from the master processor
+
+   M 0 BROADCAST_KDIST_SIZE Broadcasts the k-distribution array sizes from the master processor
+
+   M 0 BROADCAST_KDIST_PARMS Broadcasts the k-distribution file parameters from the master processor
+
+   M 0 READ_BROADCAST_MEM_PARAMS  Reads and broadcasts the *_mem_params.inp file
+
+   M 0 SUM_CPU_TIME         Sums the CPU time used across all processors
+
+   M 0 GATHER_OUTPUT        Gathers the base grid output data from all the processors
+
+   M 1 TOTAL_ALBEDO_MAX     Finds the max ALBMAX over all processors
+
+   M S UNIFY_SPLITTING      Turns on cell splitting (DOSPLIT=.TRUE.) for all processors if any want to
+
+   M 1 TOTAL_SPLITCRIT_MAX  Finds the max SPLITCRIT over all processors
+
+   M 2 MAKE_DIRECT_PAR      Calculates the grid point direct solar fluxes with multiple processors
+
+   M P FIND_BOUNDARY_POINTS Makes the pointers to and positions of the boundary
+                              grid points of the neighboring processors
+
+   M B CALC_BOUNDARY_RADIANCES Calculates the discrete ordinate boundary radiances
+
+   M   INTEGRATE_RAY        Does the RTE integrations for CALC_BOUNDARY_RADIANCES
+
+   M 0 COMPUTE_RADIANCE_PAR Computes the output radiances using multiple processors
+
+   M 0 VISUALIZE_RADIANCE_PAR Computes the visualization output using MPI
+
+   M S CALC_ACCEL_SOLCRIT   Calculates full domain acceleration parameter (& solcrit)
+
+   M 0 END_SHDOM_MPI        Shuts down MPI, writes load balancing file
+
+   M M ABORT_SHDOM_MPI      Prints error message and aborts MPI
+
+   F   COSTI                Sets up for the cosine FFT
+
+   F   COST                 Does the cosine transform FFT
+
+   F   RFFTI                Sets up for the real FFT
+
+   F   RFFTB                Does the real FFT to discrete azimuths
+
+   F   RFFTF                Does the real FFT to Fourier coefficients
