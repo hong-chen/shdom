@@ -28,14 +28,13 @@ How to Install
 
        git clone https://github.com/hong-chen/shdom.git
 
-
-2. Under newly cloned ``shdom/``, where it contains ``README.rst``, type in the following
+2. Under newly cloned ``<shdom repo>``, where it contains ``README.rst``, type in the following
 
     .. code-block:: bash
 
        cd src
 
-3. Under newly cloned ``shdom/src``, where it contains ``Makefile``, type in the following
+3. Under ``<shdom repo>/src``, where it contains ``Makefile``, type in the following
 
     .. code-block:: bash
 
@@ -43,7 +42,7 @@ How to Install
 
    Warning messages are expected during the compilation process, and will not affect the installation of ``shdom``.
 
-   Once the ``shdom`` is installed, the following executables will be generated
+   Once the ``shdom`` is successfully compiled, the following executables will be generated
 
    * ``bin/shdom``
 
@@ -57,13 +56,13 @@ How to Install
 
    * ``bin/put``
 
-4. Add the following to ``~/.bashrc`` (replace ``<shdom repo>`` with a valid path),
+4. Add the following to the system source file, e.g. ``~/.bashrc`` for ``bash`` (replace ``<shdom repo>`` with a valid path),
 
   .. code-block:: bash
 
      export PATH="<shdom repo>/bin:$PATH"
 
-5. Run the test case under ``examples/case_les``.
+5. Run the case under ``examples/case_les`` (see detailed instructions).
 
 **Tips**
 
