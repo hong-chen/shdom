@@ -70,6 +70,6 @@ def read_file(fname):
 
 if __name__ == '__main__':
 
-    fname = 'shdom-out1.txt'
+    fname = 'shdom-out.txt'
     read_file(fname)
     pass
