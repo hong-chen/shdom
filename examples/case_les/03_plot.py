@@ -24,7 +24,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # mpl.use('Agg')
 
 
-def read_file(fname):
+def figure_les(fname):
 
     data = np.loadtxt(fname, comments='!')[:, -1]
 
@@ -70,5 +70,5 @@ def read_file(fname):
 if __name__ == '__main__':
 
     fname = 'tmp-data/shdom-out_les.txt'
-    read_file(fname)
+    figure_les(fname)
     pass
