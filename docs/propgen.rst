@@ -1,5 +1,6 @@
-
-            SHDOM Property File Generation System
+=====================================
+SHDOM Property File Generation System
+=====================================
 
 
 The optical property file generation system for SHDOM converts physical
@@ -33,14 +34,16 @@ example particle file "les_cumulus_dust.part" specifies the mass content
 and effective radius distributions for a horizontally uniform aerosol
 layer (particle type 1) from the surface to 5 km, and a cumulus water
 cloud layer (type 2) from 0 to 2.7 km.
-   The distribution includes an IDL program "plot_polarized_example.pro"
+
+The distribution includes an IDL program "plot_polarized_example.pro"
 which plots the components of the particle file, the resulting
 extinction and single scattering albedo fields, and I, Q, U radiance
 output from SHDOM (requires other IDL files in the SHDOM distribution).
 
 
 
-                       MAKE_MIE_TABLE
+MAKE_MIE_TABLE
+--------------
 
 Make_mie_table calculates the single scattering properties of gamma,
 modified gamma, or lognormal distributions of spherical particles and
@@ -65,10 +68,20 @@ the aerosol is specified.  The density is needed because the output
 scattering table extinction is normalized for a mass content of 1 g/m^3.
 
 The gamma distribution of particle droplet sizes is
+
+.. code-block::
+
      n(r) = a r^alpha exp(-b*r)
- where r is the particle radius, and a, b, alpha specify the gamma
+
+where r is the particle radius, and a, b, alpha specify the gamma
 distribution.  The number concentration of droplets is
-  N = a Gamma(alpha+1)/ b^(alpha+1), where Gamma is the gamma function.
+
+.. code-block::
+
+     N = a Gamma(alpha+1)/ b^(alpha+1)
+
+where Gamma is the gamma function.
+
 The effective radius of the distribution is r_eff = (alpha+3)/b, while
 the effective variance is v_eff = 1/(alpha+3).  A typical value for
 water clouds is v_eff=0.1 or alpha=7.  For ice clouds a typical value is
@@ -76,13 +89,21 @@ alpha=1 or 2.  An exponential distribution is obtained with alpha=0.  A
 large value of alpha gives close to a monodisperse distribution.
 
 The modified gamma distribution of particle sizes is
+
+.. code-block::
+
      n(r) = a r^alpha exp(-b*r^gamma)
- where r is the particle radius, and a, b, alpha, gamma specify the
+
+where r is the particle radius, and a, b, alpha, gamma specify the
 modified gamma distribution.
 
 The lognormal distribution of particle sizes is
+
+.. code-block::
+
      n(r) = a/r exp( -[ln(r/r0)]^2 / (2*sigma^2) )
- where r0 is the logarithmic mode of the distribution and sigma is the
+
+where r0 is the logarithmic mode of the distribution and sigma is the
 standard deviation of the log.  The number concentration of droplets is
 N = sqrt(2*pi)*sigma*a.  The effective radius of the distribution is
 r_eff = r0*exp(2.5*sigma^2) and the effective variance of the
@@ -113,39 +134,59 @@ and DELX is the integration step.  This integration spacing is
 adequate for most purposes, but can be easily changed if higher
 accuracy is sought.
 
-                   Input Parameters
+Input Parameters
 
-Parameter   Description
-POLTAB      logical flag for polarized scattering table output
-              (T=polarized, F=unpolarized)
-WAVELEN1    wavelength range (microns) for this band
-WAVELEN2      for monochromatic choose WAVELEN1=WAVELEN2
-PARTYPE     particle type: W=water, I=ice, A=aerosol
-              if PARTTYPE='A' then the index of refraction is input,
-              otherwise tables for water and ice index are used.
-AVGFLAG     'A' for spectral average over the wavelength range (for
-              PARTYPE='W' or 'I'), 'C' to use the central wavelength.
-DELTAWAVE   wavelength interval for averaging (micron)
-RINDEX      aerosol complex index of refraction (negative imaginary part)
-PARDENS     aerosol particle bulk density (g/cm^3)
-DISTFLAG    'G' for gamma distribution, 'M' for modified gamma distribution,
-              or 'L' for lognormal distribution
-ALPHA       distribution shape parameter (either alpha in gamma distribution
-              or sigma in lognormal distribution).  Effective variance
-              = 1/(alpha+3) for gamma, exp(alpha^2)-1 for lognormal.
-GAMMA       modified gamma distribution parameter
-NRETANB     number of effective radii entries in Mie table
-SRETAB      starting effective radius (micron) in Mie table
-ERETAB      ending effective radius (micron) in Mie table
-LOGRE       logical flag for log-spaced effective radius ouput
-              (T=log-spaced r_e, F=evenly spaced r_e)
-MAXRADIUS   maxium particle radius in size distribution (micron)
-MIETABFILE  output Mie scattering table file name
+.. code-block::
+
+    Parameter   Description
+
+    POLTAB      logical flag for polarized scattering table output
+                  (T=polarized, F=unpolarized)
+
+    WAVELEN1    wavelength range (microns) for this band
+
+    WAVELEN2      for monochromatic choose WAVELEN1=WAVELEN2
+
+    PARTYPE     particle type: W=water, I=ice, A=aerosol
+                  if PARTTYPE='A' then the index of refraction is input,
+                  otherwise tables for water and ice index are used.
+
+    AVGFLAG     'A' for spectral average over the wavelength range (for
+                  PARTYPE='W' or 'I'), 'C' to use the central wavelength.
+
+    DELTAWAVE   wavelength interval for averaging (micron)
+
+    RINDEX      aerosol complex index of refraction (negative imaginary part)
+
+    PARDENS     aerosol particle bulk density (g/cm^3)
+
+    DISTFLAG    'G' for gamma distribution, 'M' for modified gamma distribution,
+                  or 'L' for lognormal distribution
+
+    ALPHA       distribution shape parameter (either alpha in gamma distribution
+                  or sigma in lognormal distribution).  Effective variance
+                  = 1/(alpha+3) for gamma, exp(alpha^2)-1 for lognormal.
+
+    GAMMA       modified gamma distribution parameter
+
+    NRETANB     number of effective radii entries in Mie table
+
+    SRETAB      starting effective radius (micron) in Mie table
+
+    ERETAB      ending effective radius (micron) in Mie table
+
+    LOGRE       logical flag for log-spaced effective radius ouput
+                  (T=log-spaced r_e, F=evenly spaced r_e)
+
+    MAXRADIUS   maxium particle radius in size distribution (micron)
+
+    MIETABFILE  output Mie scattering table file name
 
 
 
 
-                       MAKE_TMATRIX_TABLE
+MAKE_TMATRIX_TABLE
+------------------
 
 Make_tmatrix_table calculates the single scattering properties of gamma,
 modified gamma, or lognormal distributions of spheroidal or cylindrical
@@ -156,10 +197,11 @@ Mishchenko T-matrix code, which will not converge for as large size
 parameters or extreme axis ratios as the quad-precision version.  For
 more information on this T-matrix implementation see the comments at the
 beginning of tmatrixwig.f and the journal article:
-  M. I. Mishchenko and L. D. Travis, Capabilities and limitations of a
-current FORTRAN implementation of the T-matrix method for randomly
-oriented, rotationally    symmetric scatterers, J. Quant. Spectrosc.
-Radiat. Transfer, vol. 60, 309-324 (1998).
+
+* M. I. Mishchenko and L. D. Travis, Capabilities and limitations of a
+  current FORTRAN implementation of the T-matrix method for randomly
+  oriented, rotationally    symmetric scatterers, J. Quant. Spectrosc.
+  Radiat. Transfer, vol. 60, 309-324 (1998).
 
 If the particle type is water or ice then the index of refraction is
 determined from the wavelength.  If an "aerosol" particle type is chosen
@@ -171,17 +213,32 @@ wavelength range.
 
 The size distributions are specified in the equivalent spherical volume
 radius of the spheroidal or cylindrical particles.
-  The gamma distribution of particle sizes is
+
+The gamma distribution of particle sizes is
+
+.. code-block::
+
      n(r) = a r^alpha exp(-b*r)
- where r is the equivalent volume radius, and a, b, alpha specify the
+
+where r is the equivalent volume radius, and a, b, alpha specify the
 gamma distribution.
-  The modified gamma distribution of particle sizes is
+
+The modified gamma distribution of particle sizes is
+
+.. code-block::
+
      n(r) = a r^alpha exp(-b*r^gamma)
- where r is the equivalent volume radius, and a, b, alpha, gamma specify
+
+where r is the equivalent volume radius, and a, b, alpha, gamma specify
 the modified gamma distribution.
-  The lognormal distribution of particle sizes is
+
+The lognormal distribution of particle sizes is
+
+.. code-block::
+
      n(r) = a/r exp( -[ln(r/r0)]^2 / (2*sigma^2) )
- where r0 is the logarithmic mode of the distribution and sigma is the
+
+where r0 is the logarithmic mode of the distribution and sigma is the
 standard deviation of the log.
 
 The maximum radius of the distribution is specified by the user because
@@ -198,39 +255,58 @@ formula is DELX = max(0.01,0.03*X**0.5), where X is the size parameter
 This integration spacing is adequate for most purposes, but can be
 easily changed if higher accuracy is sought.
 
-                   Input Parameters
+Input Parameters
 
-Parameter   Description
-POLTAB      logical flag for polarized scattering table output
-              (T=polarized, F=unpolarized)
-WAVELEN     wavelength for the T-matrix calculation (microns)
-PARTYPE     particle type: W=water, I=ice, A=aerosol
-              if PARTTYPE='A' then the index of refraction is input,
-              otherwise tables for water and ice index are used.
-RINDEX      aerosol complex index of refraction (negative imaginary part)
-PARDENS     aerosol particle bulk density (g/cm^3)
-CYLFLAG     logical flag specifying the particle shape:
-               T=cylindrical, F=spheroidal
-AXRATIO     particle axis ratio (>1 for oblate spheroid, <1 for prolate)
-DISTFLAG    'G' for gamma distribution, 'M' for modified gamma distribution,
-              or 'L' for lognormal distribution
-ALPHA       distribution shape parameter (either alpha in gamma distribution
-              or sigma in lognormal distribution).  Effective variance
-              = 1/(alpha+3) for gamma, exp(alpha^2)-1 for lognormal.
-GAMMA       modified gamma distribution parameter
-NRETANB     number of effective radii entries in Mie table
-SRETAB      starting effective radius (micron) in Mie table
-ERETAB      ending effective radius (micron) in Mie table
-LOGRE       logical flag for log-spaced effective radius ouput
-              (T=log-spaced r_e, F=evenly spaced r_e)
-MAXRADIUS   maxium particle radius in size distribution (micron)
-TABLEFILE  output scattering table file name
+.. code-block::
+
+   Parameter   Description
+
+   POLTAB      logical flag for polarized scattering table output
+                 (T=polarized, F=unpolarized)
+
+   WAVELEN     wavelength for the T-matrix calculation (microns)
+
+   PARTYPE     particle type: W=water, I=ice, A=aerosol
+                 if PARTTYPE='A' then the index of refraction is input,
+                 otherwise tables for water and ice index are used.
+
+   RINDEX      aerosol complex index of refraction (negative imaginary part)
+
+   PARDENS     aerosol particle bulk density (g/cm^3)
+
+   CYLFLAG     logical flag specifying the particle shape:
+                  T=cylindrical, F=spheroidal
+
+   AXRATIO     particle axis ratio (>1 for oblate spheroid, <1 for prolate)
+
+   DISTFLAG    'G' for gamma distribution, 'M' for modified gamma distribution,
+                 or 'L' for lognormal distribution
+
+   ALPHA       distribution shape parameter (either alpha in gamma distribution
+                 or sigma in lognormal distribution).  Effective variance
+                 = 1/(alpha+3) for gamma, exp(alpha^2)-1 for lognormal.
+
+   GAMMA       modified gamma distribution parameter
+
+   NRETANB     number of effective radii entries in Mie table
+
+   SRETAB      starting effective radius (micron) in Mie table
+
+   ERETAB      ending effective radius (micron) in Mie table
+
+   LOGRE       logical flag for log-spaced effective radius ouput
+                 (T=log-spaced r_e, F=evenly spaced r_e)
+
+   MAXRADIUS   maxium particle radius in size distribution (micron)
+
+   TABLEFILE  output scattering table file name
 
 
 
 
 
-                        PROPGEN
+PROPGEN
+-------
 
 Propgen generates an optical property file for SHDOM from a particle
 property file specifying the 3D distribution of mass content and
@@ -256,7 +332,7 @@ second and third parameters are the tolerance in asymmetry parameter
 error and the tolerance in maximum fractional error in phase function
 values.  The maximum fractional phase function error is calculated at 90
 angles from 2 to 180 degrees, but this can be changed by changing the
- "INTEGER, PARAMETER :: NANGLES=90" statement in propgen.f90.  Smaller
+"INTEGER, PARAMETER :: NANGLES=90" statement in propgen.f90.  Smaller
 values of the two tolerances will produce a more accurate property file,
 but at the expense of a larger number of phase functions.  If the
 property file is to be used only for flux computations then the
@@ -278,15 +354,18 @@ propgen also calculates and includes molecular Rayleigh scattering.  The
 user specifies a wavelength and surface pressure for Rayleigh
 scattering, and the Rayleigh extinction coefficient (in terms of air
 pressure and temperature) is obtained from equation 30 in
-  Bodhaine, B. A., N. B. Wood, E. G. Dutton, and J. R. Slusser (1999),
-On Rayleigh optical depth calculations, J. Atmos. Oceanic. Technol., 16,
-1854-1861.
-  Propgen uses the hypsometric relation to calculate the pressure
+
+* Bodhaine, B. A., N. B. Wood, E. G. Dutton, and J. R. Slusser (1999),
+  On Rayleigh optical depth calculations, J. Atmos. Oceanic. Technol., 16,
+  1854-1861.
+
+Propgen uses the hypsometric relation to calculate the pressure
 profile from the input temperature profile.  The input surface pressure
 for Rayleigh scattering corresponds to the zero height level in the
 propgen input.  If no Rayleigh scattering is desired, the RAYSFCPRES
 input may be set to zero.
-  The Rayleigh scattering phase function (and phase matrix for
+
+The Rayleigh scattering phase function (and phase matrix for
 polarization) now includes the wavelength dependent depolarization
 factor.
 
@@ -305,21 +384,26 @@ specified as "NONE" then only molecular Rayleigh scattering is  included
 and there must be other height levels.
 
 
-                     Particle Properties File
+Particle Properties File
+------------------------
 
 The particle file specifies the three-dimensional distribution of mass
 content (g/m^3) and effective radius (microns) for each component type
 of particle.  Only the the particle types with nonzero mass content need
 to be specified at each grid point.  The particle file is an ascii text
 file with the following format:
+
+.. code-block::
+
    3            [format type]
    Nx Ny Nz     [number of X, Y, Z grid points]
    delX delY    [X and Y grid spacing in km]
    Z1 ... Zn    [heights of particle levels in km]
    T1 ... Tn    [temperatures in Kelvin at these levels]
    IX IY IZ  Numcomp  Type1 Mass1 Reff1 ... TypeN MassN ReffN
-    . . .
- Numcomp is the number of particle components, Type? are the type
+   . . .
+
+Numcomp is the number of particle components, Type? are the type
 numbers of the components, Mass? are the mass contents [g/m^3] of the
 components, and Reff? are the effective radii [microns] of the
 components.  See file "les_cumulus_dust.part" made by the
@@ -328,20 +412,25 @@ file.  There may be missing grid points, in which case the empty grid
 has no particles.  In addition to this new particle file format, propgen
 can read the old 2 parameter LWC files that cloudprp used, which has
 the format:
+
+.. code-block::
+
    2            [format type]
    Nx Ny Nz     [number of X, Y, Z grid points]
    delX delY    [X and Y grid spacing in km]
    Z1 ... Zn    [heights of cloud levels in km]
    T1 ... Tn    [temperatures in Kelvin]
    IX IY IZ LWC Reff
- The LWC is the liquid water content [g/m^3], and Reff is the effective
+
+The LWC is the liquid water content [g/m^3], and Reff is the effective
 radius [micron] at each cloudy grid point.  See file
 "aero0822nh15c_t13_iy249.lwc" in the distribution for an example LWC
 file.  There can be only one scattering file input to propgen when using
 an LWC input file instead of a particle input file.
 
 
-                  Scattering Table Format
+Scattering Table Format
+-----------------------
 
 The scattering tables have a six line header.  Propgen only reads the
 wavelength range in the second header line and the number of effective
@@ -362,36 +451,54 @@ first (I-I) and fourth (V-V) Wigner d-function series are regular
 Legendre series.  For an example scattering table, see one of the
 scattering table files produced by the example script.
 
-                   Input Parameters
+Input Parameters
 
-Parameter       Description
-NSCATTAB        number of input scattering tables (number of pure components)
-                  For PARFILE='NONE' use NSCATTAB=0, and then omit
-                  SCATTABFILES, SCATNUMS, abd POLTABS.
-SCATTABFILES()  name of each scattering table file
-SCATNUMS()      index or particle type of each scattering table (these type
-                  numbers must match the types in the particle file)
-POLTABS()       logical flags for the type of each scattering table file:
-                  T=polarized table, F=unpolarized table
-PARFILE         input particle properties filename (or NONE for Rayleigh only)
-MAXNEWPHASE     maximum number of new phase functions created
-ASYMTOL         tolerance in asymmetry parameter for creating a
-                  new phase function
-FRACPHASETOL    maximum fractional error tolerance in phase function value
-                  for creating a new phase function
-RAYWAVELEN      wavelength for Rayleigh molecular scattering (micron)
-RAYSFCPRES      surface pressure for Rayleigh molecular scattering (mb or hPa)
-NZO             number of extra height levels output in property file
-                  (in addition to those in the particle file)
-ZOTHER()        heights (km) and temperatures (K) of other levels
-TEMPOTHER()
-POLOUT          output polarized (P) or unpolarized (U) SHDOM property file
-PROPFILE        output SHDOM property file name
+.. code-block::
+
+   Parameter       Description
+
+   NSCATTAB        number of input scattering tables (number of pure components)
+                     For PARFILE='NONE' use NSCATTAB=0, and then omit
+                     SCATTABFILES, SCATNUMS, abd POLTABS.
+
+   SCATTABFILES()  name of each scattering table file
+
+   SCATNUMS()      index or particle type of each scattering table (these type
+                     numbers must match the types in the particle file)
+
+   POLTABS()       logical flags for the type of each scattering table file:
+                     T=polarized table, F=unpolarized table
+
+   PARFILE         input particle properties filename (or NONE for Rayleigh only)
+
+   MAXNEWPHASE     maximum number of new phase functions created
+
+   ASYMTOL         tolerance in asymmetry parameter for creating a
+                     new phase function
+
+   FRACPHASETOL    maximum fractional error tolerance in phase function value
+                     for creating a new phase function
+
+   RAYWAVELEN      wavelength for Rayleigh molecular scattering (micron)
+
+   RAYSFCPRES      surface pressure for Rayleigh molecular scattering (mb or hPa)
+
+   NZO             number of extra height levels output in property file
+                     (in addition to those in the particle file)
+
+   ZOTHER()        heights (km) and temperatures (K) of other levels
+
+   TEMPOTHER()
+
+   POLOUT          output polarized (P) or unpolarized (U) SHDOM property file
+
+   PROPFILE        output SHDOM property file name
 
 
 
 
-                        PLOTSCATTAB
+PLOTSCATTAB
+-----------
 
 Plotscattab calculates phase functions (or phase matrix elements) as a
 function of scattering angle from a scattering table produced by
@@ -406,28 +513,40 @@ conversion.  The phase matrix elements beyond P11 may also be output as
 a ratio to P11.  A graphing program can be used to plot the output of
 plotscattab.
 
-               Plotting file format
+Plotting file format
 
 The output file from plotscattab contains a four line header and then
 the phase functions in separate columns.  An example of the phase
 function output for one effective radius and is:
-!  Scattering table phase functions: dust_w0.646_ax2.00_tmat.scat
-! Angle  cos(angle)  Phase functions for effective radii (um) / matrix element
-!                       1.00       1.00        1.00        1.00        1.00        1.00
-!                      P11       P22/P11     P33/P11     P44/P11     P12/P11     P34/P11
-    0.00  1.000000  0.1060E+03  0.9995E+00  0.9995E+00  0.9991E+00  0.0000E+00  0.0000E+00
-      . . .
 
-                   Input Parameters
+.. code-block::
 
-Parameter   Description
-FILETYPE    'S'=scattering table input, 'P'=SHDOM property file input
-INFILE      scattering table or property file name
-NANGLE      number of output angles (e.g. 181 for output at every degree)
-              NANGLE<0 allows the user the input ABS(NANGLE) angles
-NOUT        number of output phase functions
-OUTREFF()   effective radii (micron) list or
-              tabulated phase function numbers (1,2,...)
-PELEM()     phase matrix elements (1=P11, 2=P22, 3=P33, 4=P44, 5=P12, 6=P34)
-              for each effective radii in list (<0 for ratio to P11)
-PLOTFILE    plotting output file name
+   !  Scattering table phase functions: dust_w0.646_ax2.00_tmat.scat
+   ! Angle  cos(angle)  Phase functions for effective radii (um) / matrix element
+   !                       1.00       1.00        1.00        1.00        1.00        1.00
+   !                      P11       P22/P11     P33/P11     P44/P11     P12/P11     P34/P11
+       0.00  1.000000  0.1060E+03  0.9995E+00  0.9995E+00  0.9991E+00  0.0000E+00  0.0000E+00
+         . . .
+
+Input Parameters
+
+.. code-block::
+
+   Parameter   Description
+
+   FILETYPE    'S'=scattering table input, 'P'=SHDOM property file input
+
+   INFILE      scattering table or property file name
+
+   NANGLE      number of output angles (e.g. 181 for output at every degree)
+                 NANGLE<0 allows the user the input ABS(NANGLE) angles
+
+   NOUT        number of output phase functions
+
+   OUTREFF()   effective radii (micron) list or
+                 tabulated phase function numbers (1,2,...)
+
+   PELEM()     phase matrix elements (1=P11, 2=P22, 3=P33, 4=P44, 5=P12, 6=P34)
+                 for each effective radii in list (<0 for ratio to P11)
+
+   PLOTFILE    plotting output file name
