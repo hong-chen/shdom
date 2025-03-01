@@ -1,10 +1,10 @@
  $SHDOMINPUT
  RUNNAME = 'Visualize'
- PROPFILE = 'data/les.prp'
- SFCFILE = 'data/ocean.sfc'
+ PROPFILE = 'data/les_prp.txt'
+ SFCFILE = 'data/sfc_lambertian.txt'
  CKDFILE = 'NONE'
- INSAVEFILE = 'les.inp.bin'
- OUTSAVEFILE = 'les.out.bin'
+ INSAVEFILE = 'tmp-data/shdom-sav-i_les.bin'
+ OUTSAVEFILE ='tmp-data/shdom-sav-o_les.bin'
  NSTOKES = 1
  NX = 240
  NY = 240
@@ -18,43 +18,23 @@
  SRCTYPE = 'S'
  SOLARFLUX = 1.0
  SOLARMU = 0.88
- SOLARAZ = 0.0
+ SOLARAZ = 45.0
  SKYRAD = 0.0
- GNDALBEDO = 0.15
+ GNDALBEDO = 0.03
  UNITS= 'R'
  GNDTEMP = 290
  WAVENO = 500.0, 800.0
  WAVELEN = 0.65
  ACCELFLAG = .FALSE.
  SOLACC = 1.0E-4
- MAXITER = 100
+ MAXITER = 200
  SPLITACC = 0.1
  SHACC = 0.003
  NUMOUT = 1
  OUTTYPES(1) = 'R'
- OUTPARMS(1,1) = 705.0, 0.2, 0.2, 0.0, 0.0, 21,
- 0.88, 0.00,
- 0.88, 180.00,
- 0.9511, 270.00,
- 0.9613, 270.00,
- 0.9703, 270.00,
- 0.9781, 270.00,
- 0.9848, 270.00,
- 0.9903, 270.00,
- 0.9945, 270.00,
- 0.9976, 270.00,
- 0.9994, 270.00,
- 1.0000, 270.00,
- 0.9994, 90.00,
- 0.9976, 90.00,
- 0.9945, 90.00,
- 0.9903, 90.00,
- 0.9848, 90.00,
- 0.9781, 90.00,
- 0.9703, 90.00,
- 0.9613, 90.00,
- 0.9511, 90.00
- OUTFILES(1) = 'shdom-out.txt'
+ OUTPARMS(1,1) = 705.0, 0.2, 0.2, 0.0, 0.0, 1,
+ 1.0, 0.00
+ OUTFILES(1) = 'shdom-out_les.txt'
  OutFileNC = 'NONE'
  MAX_TOTAL_MB = 4000.0
  ADAPT_GRID_FACTOR = 2.2
