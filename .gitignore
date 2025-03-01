@@ -26,7 +26,8 @@ build
 *.nc
 *.pk
 *.html
-*.txt
+*prp.txt
+*sca.txt
 
 # libRadtran
 randomseed
