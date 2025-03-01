@@ -15,7 +15,7 @@ How to Install
 
     * `Intel Fortran <https://docs.conda.io/en/latest/miniconda.html>`_ (costly, faster).
 
-   We recommend ``GFortran`` and current ``Makefile`` is developed around ``gfortran``.
+   We recommend ``gfortran`` (`GFortran <https://fortran-lang.org/learn/os_setup/install_gfortran/>`_) and current ``Makefile`` is developed around ``gfortran``.
 
 |
 
@@ -41,25 +41,40 @@ How to Install
 
        make
 
-     Warning messages are expected during the compilation process, and will not affect the usage of ``shdom``.
+   Warning messages are expected during the compilation process, and will not affect the installation of ``shdom``.
 
-.. tip::
+   Once the ``shdom`` is installed, the following executables will be generated
 
-    * For Mac users, add the following to ``~/.bashrc``,
+   * ``bin/shdom``
 
-        .. code-block:: bash
+   * ``bin/propgen``
 
-           export LIBRARY_PATH="$LIBRARY_PATH:/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib"
+   * ``bin/make_mie_table``
 
-     * Add the following to ``~/.bashrc`` (replace ``<shdom repo>`` with a valid path),
+   * ``bin/make_tmatrix_table``
 
-        .. code-block:: bash
+   * ``bin/plotscattab``
 
-            export PATH="<shdom repo>/bin:$PATH"
+   * ``bin/put``
 
-    If you encountered any error, please feel free to reach out at `Discord SUPPORT/installation <https://discord.com/channels/681619528945500252/1123343093417119754>`__
-    for community support.
+4. Add the following to ``~/.bashrc`` (replace ``<shdom repo>`` with a valid path),
 
+  .. code-block:: bash
+
+     export PATH="<shdom repo>/bin:$PATH"
+
+5. Run the test case under ``examples/case_les``.
+
+**Tips**
+
+* For Mac users, add the following to ``~/.bashrc``,
+
+  .. code-block:: bash
+
+     export LIBRARY_PATH="$LIBRARY_PATH:/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib"
+
+If you encountered any error, please feel free to reach out at `Discord SUPPORT/installation <https://discord.com/channels/681619528945500252/1123343093417119754>`__
+for community support.
 
 Document File Change
 --------------------
