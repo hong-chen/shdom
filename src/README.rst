@@ -7,7 +7,10 @@ Original code is avaiable `here <https://coloradolinux.com/shdom/>`_ by `Frank E
 ===================
 Installation Tweaks
 ===================
-* 
+* For Mac, the following was added to ``~/.bashrc``,
+  .. code-block:: bash
+
+     export LIBRARY_PATH="$LIBRARY_PATH:/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib"
 
 ================
 File Name Change
