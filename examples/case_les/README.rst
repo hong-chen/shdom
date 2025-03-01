@@ -2,7 +2,7 @@
 Case LES
 ========
 
-Please make sure `data/` contains the following files before run any scripts
+Please make sure ``data/`` contains the following files before run any scripts
 
 * ``data/les_lwc.txt``
 * ``data/sfc_lambertian.txt``
