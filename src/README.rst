@@ -30,6 +30,8 @@ File Change
 
   * added ``clean`` option for ``make``
 
+  * changed the module names accordingly
+
 * ``shdom.f90``: was ``shdom.f90``
 
   * formatted the code
