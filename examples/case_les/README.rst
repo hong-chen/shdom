@@ -4,8 +4,8 @@ Case LES
 
 Please make sure `data/` contains the following files before run any scripts
 
-* `data/les.lwc`
-* `data/ocean.sfc`
+* ``data/les.lwc``
+* ``data/ocean.sfc``
 
 
 1. **Generate property file**: run the following command
