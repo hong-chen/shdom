@@ -21,17 +21,22 @@ Installation Tweaks
 
 Document File Change
 --------------------
+
 * ``docs/README.rst``: was ``README``
 
-  * changed to reStructuredText format
+  * changed to rST format
 
 * ``docs/shdom.rst``: was ``shdom.txt``
 
-  * changed to reStructuredText format
+  * changed to rST format
 
 * ``docs/propgen.rst``: was ``propgen.txt``
 
-  * changed to reStructuredText format
+  * changed to rST format
+
+* ``HISTORY.rst``: was ``Updatelist.txt``
+
+  * changed to rST format
 
 Source Code File Change
 -----------------------
