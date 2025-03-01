@@ -15,7 +15,7 @@ LIBS   =
 CURRENT_DIR = $(shell pwd)
 BIN_DIR     = $(abspath $(CURRENT_DIR)/../bin)
 
-TARGETS = shdom propgen make_mie_table make_tmatrix_table plotscattab put
+TARGETS = bin shdom propgen make_mie_table make_tmatrix_table plotscattab put
 
 SHDOMOBJS = shdUtil_rte1.o shdUtil_rte2.o shdUtil_ocean.o shdUtil_io.o _fftpack.o
 
@@ -25,7 +25,6 @@ UseNetcdf = no
 NetcdfHome = /Users/hchen/Work/soft/anaconda3/envs/er3t-dev
 NetcdfInl  = -I$(NetcdfHome)/include
 NetcdfLib  = -L$(NetcdfHome)/lib -lnetcdf
-
 
 ifeq ($(UseMPI),no)
   SHDOMOBJS += shdom_nompi.o
@@ -46,6 +45,9 @@ else
 endif
 
 all: $(TARGETS)
+
+bin:
+	mkdir -p $(BIN_DIR)
 
 shdom: shdom.o $(SHDOMOBJS)
 	$(F90) $(F90FLAGS) shdom.o $(SHDOMOBJS) $(LIBS) -o $(BIN_DIR)/shdom
