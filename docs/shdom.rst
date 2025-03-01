@@ -5,7 +5,7 @@ SHDOM -  Spherical Harmonic Discrete Ordinate Method for 3D Atmospheric Radiativ
 OVERVIEW
 --------
 
-  This implementation of SHDOM computes polarized monochromatic or
+This implementation of SHDOM computes polarized monochromatic or
 spectral band radiative transfer in a one, two, or three-dimensional
 medium for either collimated solar and/or thermal emission sources of
 radiation.  The properties of the medium can be specified completely
@@ -35,7 +35,7 @@ a Fortran 90 compiler is now required.
 METHOD IN BRIEF
 ---------------
 
-    SHDOM uses an iterative process to compute the source function
+SHDOM uses an iterative process to compute the source function
 (including the scattering integral) on a grid of points in space.  The
 angular part of the source function is represented with a spherical
 harmonic expansion. Solving for the source function instead of the
@@ -50,7 +50,7 @@ chooses where to put grid points is useful in atmospheric radiative
 transfer because the source function is usually rapidly varying in
 some regions and slowly varying in others.
 
-    The iterative method is equivalent to a successive order approach.
+The iterative method is equivalent to a successive order approach.
 For each iteration 1) the source function is transformed to discrete
 ordinates at every grid point, 2) the integral form of the radiative
 transfer equation is used to compute the discrete ordinate radiance at
@@ -123,13 +123,13 @@ unpolarized calculations the spherical harmonics terms are different in
 the new polarized SHDOM code from the old SHDOM code (due to a different
 azimuth angle basis).
 
-  For polarized radiative transfer with randomly oriented particles
+For polarized radiative transfer with randomly oriented particles
 having a plane of symmetry, there are six unique elements of the 4x4
 scattering phase matrix.  One aspect of using the real generalized
 spherical harmonics basis is that the phase matrix elements as a
 function of scattering angle are expressed in Wigner d-function  series.
 
-  For the I-I (P11) and V-V (P44) elements of the phase  matrix these
+For the I-I (P11) and V-V (P44) elements of the phase  matrix these
 series are the same as Legendre series, while for the other four
 elements (P22, P33, P12, P34) the Wigner d-function series are not
 equivalent to Legendre series.  There is a new polarized property file
@@ -138,12 +138,12 @@ format, but including the coefficients for the six Wigner d-function
 series expansions of the phase matrix elements.  The old SHDOM property
 file formats may still be used for unpolarized (NSTOKE=1) calculations.
 
-  The SHDOM output types that output polarized results are radiance (R),
+The SHDOM output types that output polarized results are radiance (R),
 visualization images (V), and source function (J).  The hemispheric flux
 (F), heating rate (H), spherical harmonics (S), and medium properties
 (M) output unpolarized results as before.
 
-  An unpolarized radiative transfer calculation is chosen with
+An unpolarized radiative transfer calculation is chosen with
 NSTOKES=1, in which case special subroutines are used so there is little
 loss of efficiency compared to the old (unpolarized) SHDOM for 3D
 problems.  Polarized radiative transfer is chosen with NSTOKES=3 for I,
@@ -155,7 +155,7 @@ very good because V is very small.
 INPUT PARAMETERS
 ----------------
 
-    The parameters are input in the routine USER_INPUT or
+The parameters are input in the routine USER_INPUT or
 NAMELIST_INPUT.  USER_INPUT uses READ statements from stdin in response
 to written messages.  Because not all parameters are relevant at once,
 the complete list is not input.  Run shdom interactively for the actual
@@ -168,163 +168,208 @@ characters.
 
 .. code-block:: bash
 
-    Parameter   Description
-    RUNNAME     label for the run (also for multiple processor log file names)
-    PROPFILE    name of the input medium property file
-    SFCFILE     name of the input surface property file (or NONE)
-    CKDFILE     name of the input correlated k-distribution file (or NONE)
-    INSAVEFILE  name of the input binary save file (or NONE)
-    OUTSAVEFILE name of the output binary save file (or NONE)
-    NSTOKES     number of Stokes parameters (1 for I, i.e. unpolarized;
-                   3 for I, Q, U; or 4 for I, Q, U, V)
-    NX, NY, NZ  base grid size in X, Y and Z
-                  (NZ is one more than the number grid cells vertically;
-                   NX and NY are the number of grid points horizontally;
-                   for periodic boundaries there is actually an extra plane
-                   of grid points on the horizontal boundaries)
-    NMU, NPHI   number of discrete ordinates covering -1<mu<1 and 0<phi<2pi
-    BCFLAG      Bit flags to specify the horizontal boundary conditions:
+   Parameter   Description
+
+   RUNNAME     label for the run (also for multiple processor log file names)
+
+   PROPFILE    name of the input medium property file
+
+   SFCFILE     name of the input surface property file (or NONE)
+
+   CKDFILE     name of the input correlated k-distribution file (or NONE)
+
+   INSAVEFILE  name of the input binary save file (or NONE)
+
+   OUTSAVEFILE name of the output binary save file (or NONE)
+
+   NSTOKES     number of Stokes parameters (1 for I, i.e. unpolarized;
+                 3 for I, Q, U; or 4 for I, Q, U, V)
+
+   NX, NY, NZ  base grid size in X, Y and Z
+                 (NZ is one more than the number grid cells vertically;
+                  NX and NY are the number of grid points horizontally;
+                  for periodic boundaries there is actually an extra plane
+                  of grid points on the horizontal boundaries)
+
+   NMU, NPHI   number of discrete ordinates covering -1<mu<1 and 0<phi<2pi
+
+   BCFLAG      Bit flags to specify the horizontal boundary conditions:
                   0 for periodic in X & Y, 1 for open in X, 2 for open in Y,
                   3 for open in X & Y.
-    IPFLAG      Bit flags for independent pixel mode: 0 for 3D, 1 for
-                independent (2D) scans in X, 2 for 2D scans in Y (X-Z planes),
-                3 for indepedent pixels (i.e. bit 0 for X and bit 1 for Y).
-                Bit 2 of IPFLAG means do the direct beam in 3D, e.g.
-                IPFLAG=7 means 3D direct beam but IP diffuse radiative transfer.
-    DELTAM      T (true) for delta-M scaling of medium and Nakajima and Tanaka
-                  method of computing radiances
-    GRIDTYPE    E for even Z base grid between bottom and top,
-                P for Z base grid levels from property file,
-                F for Z base grid levels from file: zgrid.inp.
 
-    SRCTYPE     'S' for solar source, 'T' for thermal source, 'B' for both
-            Following for Solar or Both source
-    SOLARFLUX   top of medium solar flux on a horizontal surface (any units)
+   IPFLAG      Bit flags for independent pixel mode: 0 for 3D, 1 for
+                  independent (2D) scans in X, 2 for 2D scans in Y (X-Z planes),
+                  3 for indepedent pixels (i.e. bit 0 for X and bit 1 for Y).
+                  Bit 2 of IPFLAG means do the direct beam in 3D, e.g.
+                  IPFLAG=7 means 3D direct beam but IP diffuse radiative transfer.
+
+   DELTAM      T (true) for delta-M scaling of medium and Nakajima and Tanaka
+                  method of computing radiances
+
+   GRIDTYPE    E for even Z base grid between bottom and top,
+               P for Z base grid levels from property file,
+               F for Z base grid levels from file: zgrid.inp.
+
+   SRCTYPE     'S' for solar source, 'T' for thermal source, 'B' for both
+
+Following for Solar or Both source
+
+.. code-block:: bash
+
+   SOLARFLUX   top of medium solar flux on a horizontal surface (any units)
                   For k-distribution this is a multiplier for the solar flux
                   in the CKD file (i.e. normally should be 1).
-    SOLARMU     cosine of the solar zenith angle (this represents the
+
+   SOLARMU     cosine of the solar zenith angle (this represents the
                   direction of travel of the solar beam, so is forced
                   to be negative although it can be specified positive).
-    SOLARAZ     solar beam azimuthal angle; specified in degrees but
+
+   SOLARAZ     solar beam azimuthal angle; specified in degrees but
                   immediately converted to radians for use in code.
                   0 is beam going in positive X direction, 90 is positive Y.
-    SKYRAD      isotropic diffuse radiance incident from above
-    GNDALBEDO   bottom surface Lambertian albedo
-            Following for Thermal source
-    GNDTEMP     ground temperature in Kelvin
-    GNDALBEDO   the input emissivity for Lambertian surface is converted
+
+   SKYRAD      isotropic diffuse radiance incident from above
+
+   GNDALBEDO   bottom surface Lambertian albedo
+
+Following for Thermal source
+
+.. code-block:: bash
+
+   GNDTEMP     ground temperature in Kelvin
+
+   GNDALBEDO   the input emissivity for Lambertian surface is converted
                   to albedo by GNDALBEDO=1-emissivity
-    SKYRAD      blackbody temperature (Kelvin) of radiation incident from above
-    UNITS       'R' for radiance units (W/m^2 ster),
+
+   SKYRAD      blackbody temperature (Kelvin) of radiation incident from above
+
+   UNITS       'R' for radiance units (W/m^2 ster),
                   'T' for brightness temperature (Rayleigh-Jeans assumed)
-    WAVELEN     wavelength in microns for 'R' units;
+
+   WAVELEN     wavelength in microns for 'R' units;
                   WAVELEN not needed for solar sources (except for Ocean surface)
                   (GNDTEMP and WAVELEN used for Both source)
-    WAVENO(2)   wavenumber range (cm^-1) for correlated k-distribution.
+
+   WAVENO(2)   wavenumber range (cm^-1) for correlated k-distribution.
                   This particular range must be in the CKD file.
                   If KDIST then WAVELEN set to 10000/(average wavenumber),
                   and UNITS='B' for band.
 
-    ACCELFLAG   T (true) to do the sequence acceleration. An acceleration
+   ACCELFLAG   T (true) to do the sequence acceleration. An acceleration
                   extrapolation of the source function is done every other
                   iteration.
-    SOLACC      solution accuracy - tolerance for solution criterion
-    MAXITER     maximum number of iterations allowed
-    SPLITACC    cell splitting accuracy; grid cells that have the adaptive
+
+   SOLACC      solution accuracy - tolerance for solution criterion
+
+   MAXITER     maximum number of iterations allowed
+
+   SPLITACC    cell splitting accuracy; grid cells that have the adaptive
                   splitting criterion above this value are split.
                   This is an absolute measure, but cannot be easily associated
                   with the resulting radiometric accuracy.
                   Set to zero or negative for no adaptive cell splitting.
-    SHACC       adaptive spherical harmonic truncation accuracy; the
+
+   SHACC       adaptive spherical harmonic truncation accuracy; the
                   spherical harmonic source function series is truncated
                   after the terms are below this level. Truncation can still
                   happens if SHACC=0 (for 0 source terms).  This is also
                   an absolute measure, and is approximately the level of accuracy.
 
-    NUMOUT      number of output files (different types usually)
-          For each output file there are three variables:
-    OUTTYPES(*) 'R' - for radiance,
-                'V' - for visualization image output,
-                'F' - for hemispheric flux,
-                'H' - for heating rate (net flux convergence),
-                'S' - for spherical harmonic (mean radiance, net flux),
-                'J' - for source function for one direction,
-                'M' - for medium properties.
+   NUMOUT      number of output files (different types usually)
 
-    OUTPARMS(*) Type Values
-                R   Z level, X spacing, Y spacing, X offset, Y offset,
-                          num angles, mu1, phi1, mu2, phi2, . . .
-                      Z level is the height of the output locations.
-                      X/Y spacing is distance between output X/Y locations.
-                      X/Y offset is extra distance beyond domain (for open BCs).
-                      Each outgoing angle is specified with -1 <= mu <= 1
-                      (mu>0 is upwelling and mu must not be zero), and
-                      phi in degrees (0 is exitting in +X direction)
+For each output file there are three variables:
 
-                 V  camera mode: 1, nbytes, scale, X,Y,Z, theta, phi, rotang,
-                                    nlines, nsamps, delline, delsamp
-                      nbytes is number of bytes per pixel in PGM output images
-                        (nbytes=2 outputs most significant byte first, -2 outputs LSB first)
-                      scale is the scaling from radiance to pixel value in image
-                      X, Y, Z is the camera location
-                      theta is the zenith angle [deg] of the pointing direction
-                      phi is the azimuth angle [deg] of the pointing direction
-                      rotang is the angle [deg] camera is rotated around pointing
-                      nlines is the number of pixels in vertical
-                      nsamps is the number of pixels in horizontal
-                      delline is the angle [deg] between pixels in vertical
-                      delsamp is the angle [deg] between pixels in horizontal
-                 V  cross track mode: 2, nbytes, scale, X1,Y1,Z1, X2,Y2,Z2,
-                                         spacing, scan1, scan2, delscan
-                      nbytes is number of bytes per pixel in PGM output images
-                      scale is the scaling from radiance to pixel value in image
-                      X1, Y1, Z1 is the starting camera location
-                      X2, Y2, Z2 is the ending camera location
-                      spacing is the along track distance between scans
-                      scan1 is the min cross track scan angle [deg] (left side)
-                      scan2 is the max cross track scan angle [deg] (right side)
-                      delscan is the angle [deg] between pixels in the scan
+.. code-block:: bash
 
-                 F  Format  [, Z level, X spacing, Y spacing]
-                      Format:
-                        1 - flux at top (up) and bottom (down) of medium
-                            at horizontal base grid locations
-                        2 - up and down flux at Z level height at locations
-                            with X and Y horizontal spacing,
-                        3 - domain averaged vertical profile,
-                        4 - output at every base grid point.
-                        5 - output at every grid point.
-                      Only format 2 inputs the parameters after the format.
+   OUTTYPES(*) 'R' - for radiance,
+               'V' - for visualization image output,
+               'F' - for hemispheric flux,
+               'H' - for heating rate (net flux convergence),
+               'S' - for spherical harmonic (mean radiance, net flux),
+               'J' - for source function for one direction,
+               'M' - for medium properties.
 
-                 H   Format
-                       1 - domain averaged vertical profile.
-                       2 - output every base grid point: -Div(Fnet).
-                       3 - output every grid point
-                 S   Format
-                       1 - output every base grid point
-                       2 - output every grid point
-                       Output is mean radiance, X, Y, and Z net fluxes.
-                 J   Format,  mu, phi
-                       1 - output every base grid point
-                       2 - output every grid point
-                       Source function in direction mu, phi(degrees), mu may be 0.
-                 M   Format
-                       1 - output every base grid point
-                       2 - output every grid point
-                       Output is medium properties: extinction, single scatter
-                       albedo, asymmetry parameter, temperature.
-    OUTFILES(*) output file name (or NONE for no ascii file)
+   OUTPARMS(*) Type Values
+               R   Z level, X spacing, Y spacing, X offset, Y offset,
+                         num angles, mu1, phi1, mu2, phi2, . . .
+                     Z level is the height of the output locations.
+                     X/Y spacing is distance between output X/Y locations.
+                     X/Y offset is extra distance beyond domain (for open BCs).
+                     Each outgoing angle is specified with -1 <= mu <= 1
+                     (mu>0 is upwelling and mu must not be zero), and
+                     phi in degrees (0 is exitting in +X direction)
 
-    OutFileNC   netcdf output file name (or 'NONE' or '' for no netcdf file).
-                  The netcdf file has all NUMOUT outputs for the
-                  OUTTYPES(*) specified above.
+                V  camera mode: 1, nbytes, scale, X,Y,Z, theta, phi, rotang,
+                                   nlines, nsamps, delline, delsamp
+                     nbytes is number of bytes per pixel in PGM output images
+                       (nbytes=2 outputs most significant byte first, -2 outputs LSB first)
+                     scale is the scaling from radiance to pixel value in image
+                     X, Y, Z is the camera location
+                     theta is the zenith angle [deg] of the pointing direction
+                     phi is the azimuth angle [deg] of the pointing direction
+                     rotang is the angle [deg] camera is rotated around pointing
+                     nlines is the number of pixels in vertical
+                     nsamps is the number of pixels in horizontal
+                     delline is the angle [deg] between pixels in vertical
+                     delsamp is the angle [deg] between pixels in horizontal
+                V  cross track mode: 2, nbytes, scale, X1,Y1,Z1, X2,Y2,Z2,
+                                        spacing, scan1, scan2, delscan
+                     nbytes is number of bytes per pixel in PGM output images
+                     scale is the scaling from radiance to pixel value in image
+                     X1, Y1, Z1 is the starting camera location
+                     X2, Y2, Z2 is the ending camera location
+                     spacing is the along track distance between scans
+                     scan1 is the min cross track scan angle [deg] (left side)
+                     scan2 is the max cross track scan angle [deg] (right side)
+                     delscan is the angle [deg] between pixels in the scan
 
-       Memory parameters:
-    MAX_TOTAL_MB         approximate maximum memory to use (MB for 4 byte reals)
-    ADAPT_GRID_FACTOR    ratio of total grid points to base grid points
-    NUM_SH_TERM_FACTOR   ratio of average number of spherical harmonic terms
+                F  Format  [, Z level, X spacing, Y spacing]
+                     Format:
+                       1 - flux at top (up) and bottom (down) of medium
+                           at horizontal base grid locations
+                       2 - up and down flux at Z level height at locations
+                           with X and Y horizontal spacing,
+                       3 - domain averaged vertical profile,
+                       4 - output at every base grid point.
+                       5 - output at every grid point.
+                     Only format 2 inputs the parameters after the format.
+
+                H   Format
+                      1 - domain averaged vertical profile.
+                      2 - output every base grid point: -Div(Fnet).
+                      3 - output every grid point
+
+                S   Format
+                      1 - output every base grid point
+                      2 - output every grid point
+                      Output is mean radiance, X, Y, and Z net fluxes.
+
+                J   Format,  mu, phi
+                      1 - output every base grid point
+                      2 - output every grid point
+                      Source function in direction mu, phi(degrees), mu may be 0.
+
+                M   Format
+                      1 - output every base grid point
+                      2 - output every grid point
+                      Output is medium properties: extinction, single scatter
+                      albedo, asymmetry parameter, temperature.
+
+   OUTFILES(*) output file name (or NONE for no ascii file)
+
+   OutFileNC   netcdf output file name (or 'NONE' or '' for no netcdf file).
+                 The netcdf file has all NUMOUT outputs for the
+                 OUTTYPES(*) specified above.
+
+Memory parameters:
+
+.. code-block:: bash
+
+   MAX_TOTAL_MB         approximate maximum memory to use (MB for 4 byte reals)
+   ADAPT_GRID_FACTOR    ratio of total grid points to base grid points
+   NUM_SH_TERM_FACTOR   ratio of average number of spherical harmonic terms
                            to total possible (NLM)
-    CELL_TO_POINT_RATIO  ratio of number of grid cells to grid points
+   CELL_TO_POINT_RATIO  ratio of number of grid cells to grid points
 
 
 CHOOSING INPUT PARAMETERS
