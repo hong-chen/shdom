@@ -30,7 +30,7 @@ def read_file(fname):
     # data = data.reshape((352, -1, 352))
     # data = data.reshape((352, 352, -1))
     # data = data.reshape((-1, 352, 352))
-    data = data.reshape((-1, 64, 64))
+    data = data.reshape((-1, 480, 480))
 
     for i in range(data.shape[0]):
         # figure
