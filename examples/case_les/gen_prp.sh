@@ -20,7 +20,7 @@ set SingleFrames=0
 set RunCameraVisual=0
 
 set basefile=les
-set prpfile=${basefile}.prp
+set prpfile="${fdir_data}/${basefile}.prp"
 set savefile=${basefile}a.bin
 set outbase=${basefile}a
 
@@ -33,10 +33,10 @@ if ($MakeMieTable) then
   #  Makes the Mie scattering table for spherical water droplets for
   # gamma size distributions with a range of effective radius.
   set polarizedtable=F             # F=unpolarized output, T=polarized output
-  set outfile = water_w${wavename}c.scat
-  set partype = "W"                # W for water
+  set outfile="${fdir_data}/water_w${wavename}c.scat"
+  set partype="W"                # W for water
   set distflag=G                   # G=gamma, L=lognormal size distribution
-  set alpha = 7                    # gamma dist shape parameter
+  set alpha=7 i                    # gamma dist shape parameter
   set Nretab=50                    # number of effective radius in table
   set Sretab=0.5; set Eretab=25    # starting, ending effective radius (micron)
   set logre=F                      # evenly spaced r_e
@@ -55,7 +55,7 @@ if ($MakePropertyFile) then
   # Adds in six other levels.
 
   set lwcfile="${fdir_data}/les.lwc"
-  set scattable=water_w${wavename}c.scat
+  set scattable="${fdir_data}/water_w${wavename}c.scat"
   set poltabs = (F)
   set maxnewphase=1000
   set asymtol=0.01
