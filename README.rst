@@ -5,7 +5,6 @@ Spherical Harmonic Discrete Ordinate Method (SHDOM) for Atmospheric Radiative Tr
 All of the code here was initially developed by `Frank Evans <evans@nit.colorado.edu>`_ and available `here <https://coloradolinux.com/shdom/>`_.
 
 |
-|
 
 How to Install
 --------------
@@ -66,7 +65,8 @@ How to Install
 
 |
 
-**Tips**
+Tips
+----
 
 * For Mac users, add the following to ``~/.bashrc``,
 
@@ -77,7 +77,6 @@ How to Install
 If you encountered any error, please feel free to reach out at `Discord SUPPORT/installation <https://discord.com/channels/681619528945500252/1123343093417119754>`__
 for community support.
 
-|
 |
 
 Document File Change
