@@ -4,20 +4,62 @@ Spherical Harmonic Discrete Ordinate Method (SHDOM) for Atmospheric Radiative Tr
 
 All of the code here was initially developed by `Frank Evans <evans@nit.colorado.edu>`_ and available `here <https://coloradolinux.com/shdom/>`_.
 
-Installation Tweaks
--------------------
+How to Install
+--------------
 
-* For Mac users, add the following to ``~/.bashrc``,
+**Dependencies**
 
-  .. code-block:: bash
+1. Require ``fortran`` and ``c`` compilers (``c`` is usually built-in, pick **one** from the following for ``fortran``)
 
-    export LIBRARY_PATH="$LIBRARY_PATH:/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib"
+    * `GFortran <https://fortran-lang.org/learn/os_setup/install_gfortran/>`_ (free, more popular);
 
-* Add the following to ``~/.bashrc`` (replace ``<shdom repo>`` with a valid path),
+    * `Intel Fortran <https://docs.conda.io/en/latest/miniconda.html>`_ (costly, faster).
 
-  .. code-block:: bash
+   We recommend ``GFortran`` and current ``Makefile`` is developed around ``gfortran``.
 
-    export PATH="<shdom repo>/bin:$PATH"
+|
+
+
+**SHDOM**
+
+1. Open a terminal, type in the following
+
+    .. code-block:: bash
+
+       git clone https://github.com/hong-chen/shdom.git
+
+
+2. Under newly cloned ``shdom/``, where it contains ``README.rst``, type in the following
+
+    .. code-block:: bash
+
+       cd src
+
+3. Under newly cloned ``shdom/src``, where it contains ``Makefile``, type in the following
+
+    .. code-block:: bash
+
+       make
+
+     Warning messages are expected during the compilation process, and will not affect the usage of ``shdom``.
+
+.. tip::
+
+    * For Mac users, add the following to ``~/.bashrc``,
+
+        .. code-block:: bash
+
+           export LIBRARY_PATH="$LIBRARY_PATH:/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib"
+
+     * Add the following to ``~/.bashrc`` (replace ``<shdom repo>`` with a valid path),
+
+        .. code-block:: bash
+
+            export PATH="<shdom repo>/bin:$PATH"
+
+    If you encountered any error, please feel free to reach out at `Discord SUPPORT/installation <https://discord.com/channels/681619528945500252/1123343093417119754>`__
+    for community support.
+
 
 Document File Change
 --------------------
