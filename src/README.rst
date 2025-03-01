@@ -13,6 +13,13 @@ Installation Tweaks
 
      export LIBRARY_PATH="$LIBRARY_PATH:/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib"
 
+* Add the following to ``~/.bashrc`` (replace <shdom repo> with a valid path),
+
+  .. code-block:: bash
+
+     export PATH="<shdom repo>/bin:$PATH"
+
+
 ================
 File Name Change
 ================
