@@ -12,7 +12,7 @@ Please make sure `data/` contains the following files before run any scripts
 
    .. code-block:: bash
 
-      ./gen.sh
+      ./01_gen.sh
 
    Once run successfully, the following files will be generated
 
@@ -23,7 +23,7 @@ Please make sure `data/` contains the following files before run any scripts
 
    .. code-block:: bash
 
-      ./run.sh
+      ./02_run.sh
 
    Once run successfully, the following file will be generated
 
@@ -33,4 +33,4 @@ Please make sure `data/` contains the following files before run any scripts
 
    .. code-block:: bash
 
-      python plot.py
+      python 03_plot.py
