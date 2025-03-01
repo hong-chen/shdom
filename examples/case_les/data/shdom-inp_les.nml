@@ -1,7 +1,7 @@
  $SHDOMINPUT
  RUNNAME = 'Visualize'
  PROPFILE = 'tmp-data/les_prp.txt'
- SFCFILE = 'data/sfc_lambertian.txt'
+ SFCFILE = 'data/sfc_land.txt'
  CKDFILE = 'NONE'
  INSAVEFILE = 'tmp-data/shdom-sav-i_les.bin'
  OUTSAVEFILE ='tmp-data/shdom-sav-o_les.bin'
