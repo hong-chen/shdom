@@ -25,7 +25,9 @@ File Name Change
 ================
 
 * ``Makefile``: was ``makefile``
+
   * added ``-fallow-argument-mismatc`` to ``FFLAGS``
+
   * added ``clean`` option for ``make``
 
 * ``shdom.f90``: was ``shdom.f90``
