@@ -20,9 +20,9 @@ Installation Tweaks
      export PATH="<shdom repo>/bin:$PATH"
 
 
-================
-File Name Change
-================
+===========
+File Change
+===========
 
 * ``Makefile``: was ``makefile``
 
