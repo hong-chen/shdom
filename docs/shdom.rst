@@ -166,7 +166,7 @@ main routine. On some computers the NAMELIST input requires a space
 before the parameters.  All file name strings are a maximum of 80
 characters.
 
-.. code-block:: JSON
+.. code-block::
 
    Parameter   Description
 
@@ -214,7 +214,7 @@ characters.
 
 Following for Solar or Both source
 
-.. code-block:: JSON
+.. code-block::
 
    SOLARFLUX   top of medium solar flux on a horizontal surface (any units)
                   For k-distribution this is a multiplier for the solar flux
@@ -234,7 +234,7 @@ Following for Solar or Both source
 
 Following for Thermal source
 
-.. code-block:: JSON
+.. code-block::
 
    GNDTEMP     ground temperature in Kelvin
 
@@ -279,7 +279,7 @@ Following for Thermal source
 
 For each output file there are three variables:
 
-.. code-block:: JSON
+.. code-block::
 
    OUTTYPES(*) 'R' - for radiance,
                'V' - for visualization image output,
@@ -364,7 +364,7 @@ For each output file there are three variables:
 
 Memory parameters:
 
-.. code-block:: JSON
+.. code-block::
 
    MAX_TOTAL_MB         approximate maximum memory to use (MB for 4 byte reals)
 
@@ -626,7 +626,7 @@ input parameters.  The header also lists the number of iterations taken,
 which for a k-distribution is the total number over the distribution
 sum.  There are seven output types:
 
-.. code-block:: JSON
+.. code-block::
 
    R - radiance,
    V - visualization,
@@ -739,7 +739,7 @@ the size of the grid; the second line contains the X and Y grid
 spacing and the Z levels.  There is then one line per grid point
 giving the properties.  The format is as follows:
 
-.. code-block:: JSON
+.. code-block::
 
    Nx  Ny  Nz
    delX  delY  Z1  ...  Zn
@@ -762,7 +762,7 @@ coefficients. There is one line for every grid point containing the
 grid point indices and the extinction; if the NY is 1 then only the
 X and Z indices are given.  The format is as follows:
 
-.. code-block:: JSON
+.. code-block::
 
    E
    Nx  Ny  Nz
@@ -783,7 +783,7 @@ indices, the temperature (Kelvin), the extinction, scattering albedo,
 and phase function index (1 to NUMPHASE) to the table in the header.
 The format is as follows:
 
-.. code-block:: JSON
+.. code-block::
 
    T
    Nx  Ny  Nz
@@ -829,7 +829,7 @@ to cover the whole domain.
 
 The Lambertian surface file format is as follows:
 
-.. code-block:: JSON
+.. code-block::
 
    L
    Nx  Ny   delX  delY
@@ -838,7 +838,7 @@ The Lambertian surface file format is as follows:
 
 The RPV surface is specified with three parameters (rho0, k, Theta):
 
-.. code-block:: JSON
+.. code-block::
 
    R
    Nx  Ny   delX  delY
@@ -848,7 +848,7 @@ The RPV surface is specified with three parameters (rho0, k, Theta):
 The Ocean surface is specified with the near surface wind speed (m/s)
 and the chlorophyl-alpha pigment concentration (mg/m^3):
 
-.. code-block:: JSON
+.. code-block::
 
    O
    Nx  Ny   delX  delY
@@ -859,7 +859,7 @@ The Wave-Fresnel surface is specified with the complex index of
 refraction of the dielectric surface (Mre, Mim) and the near surface
 wind speed (m/s):
 
-.. code-block:: JSON
+.. code-block::
 
    W
    Nx  Ny   delX  delY
@@ -868,7 +868,7 @@ wind speed (m/s):
 
 The Diner surface is specified with five parameters (a, k, b, zeta, sigma)
 
-.. code-block:: JSON
+.. code-block::
 
    R
    Nx  Ny   delX  delY
@@ -906,7 +906,7 @@ There are three sections in the CKD file.
 
 The format is:
 
-.. code-block:: JSON
+.. code-block::
 
    Comment line
    Number of bands
@@ -1004,7 +1004,7 @@ Output during Iterations
 During the iterations, some useful information is output to stdout.
 Six terms are output on a line each iteration:
 
-.. code-block:: JSON
+.. code-block::
 
    Iterations,  Log10(solution criterion),  Cell splitting criterion,
       Number of grid points,  Average number of SH terms,
@@ -1237,7 +1237,7 @@ grid points and thus larger values of the memory parameters.  When SHDOM
 is run on multiple processors it tries to read a file with the name
 RUNNAME//"_mem_params.inp".  The format of this file is
 
-.. code-block:: JSON
+.. code-block::
 
    Comment line
    Number of processors
@@ -1293,7 +1293,7 @@ understand the order in which MPI allocates the processors in your
 cluster.  For example, suppose the cluster has two computers, each with
 two SMP processors.  Then the MPI machine file might look like this:
 
-.. code-block:: JSON
+.. code-block::
 
    fast:2
    slow:2
@@ -1302,7 +1302,7 @@ Typically, MPI will allocate the processors as follows: 0 on "fast", 1
 on "slow", 2 on "fast", and 3 on "slow".  If SHDOM is twice as fast on
 "fast" as on "slow", then shdom_proc_times.inp could be
 
-.. code-block:: JSON
+.. code-block::
 
    1.0
    2.0
@@ -1398,7 +1398,7 @@ be guessed at.  The approach taken is to define the maximum adaptive
 grid array sizes in terms of the base grid.  Thus the following three
 parameters must be input:
 
-.. code-block:: JSON
+.. code-block::
 
   ADAPT_GRID_FACTOR    ratio of the max number of internal grid points
                          to the number of base grid points
@@ -1426,13 +1426,13 @@ the low resolution run.
 For NSTOKES=1 and tabulated phase functions the major memory use in 4
 byte words is:
 
-.. code-block:: JSON
+.. code-block::
 
    MEMWORD = 16.5*MAXIC + 33*MAXIG + 3*MAXIV + MAXIDO
 
 where
 
-.. code-block:: JSON
+.. code-block::
 
   MAXIG   max number of internal grid points
   MAXIC   max number of grid cells, between 1 and 2 times grid points
@@ -1444,7 +1444,7 @@ where
 
 For Nmu=8 Nphi=16 the most space needed is
 
-.. code-block:: JSON
+.. code-block::
 
    MEMWORD = (33+33+192+16)*MAXIG = 274*MAXIG
 
@@ -1455,13 +1455,13 @@ VARIABLES
 
 The following is a list of important variables.
 
-.. code-block:: JSON
+.. code-block::
 
   Variables       Description/Comments
 
         First the variables used in the adaptive cell structure:
 
-.. code-block:: JSON
+.. code-block::
 
    NPTS           total number of grid points
 
@@ -1500,7 +1500,7 @@ The following is a list of important variables.
 
 Input variables:
 
-.. code-block:: JSON
+.. code-block::
 
    PROPFILE        name of the input medium property file
 
@@ -1624,7 +1624,7 @@ Input variables:
 
 The variable for the input (variable) surface properties.
 
-.. code-block:: JSON
+.. code-block::
 
    SFCTYPE         The surface type (two characters) is set according to
                      whether there is a surface file and its format:
@@ -1653,7 +1653,7 @@ The variable for the input (variable) surface properties.
 
 The arrays with the input property fields.
 
-.. code-block:: JSON
+.. code-block::
 
    TEMPP,EXTINCTP  Temperature (K), extinction (km^-1),
 
@@ -1667,7 +1667,7 @@ The arrays with the input property fields.
 
 The arrays with the internal/adaptive grid fields.
 
-.. code-block:: JSON
+.. code-block::
 
    EXTINCT         Extinction field (scaled if delta-M)
 
@@ -1687,7 +1687,7 @@ The arrays with the internal/adaptive grid fields.
 
 Correlated k-distribution arrays:
 
-.. code-block:: JSON
+.. code-block::
 
    DELG(NG)        k-distribution weights
 
@@ -1706,7 +1706,7 @@ cell; e.g. SHPTR(I)+1 points to the first SH term of the
 I'th grid point in SOURCE, and SHPTR(I+1) points to the
 last SH term of the I'th grid point.
 
-.. code-block:: JSON
+.. code-block::
 
    SOURCE(NSTOKES,*)    Spherical harmonic terms of the source function
 
@@ -1728,7 +1728,7 @@ last SH term of the I'th grid point.
 
 Output arrays:
 
-.. code-block:: JSON
+.. code-block::
 
    FLUXES(2,)      The two hemispheric diffuse fluxes for each grid point
                      computed from the discrete ordinate radiance field.
@@ -1807,7 +1807,7 @@ shdomsub2.f, all the regular I/O routines are in shdomsub3.f, the MPI
 calling routines are in shdom_mpi.f90, and fftpack.f has the FFTPACK
 routines from NCAR.
 
-.. code-block:: JSON
+.. code-block::
 
          Routine              Description
    0   TRILIN_INTERP_PROP   Interpolates medium properties to base/adaptive grid
