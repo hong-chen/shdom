@@ -4,8 +4,9 @@ Case LES
 
 Please make sure `data/` contains the following files before run any scripts
 
-* ``data/les.lwc``
-* ``data/ocean.sfc``
+* ``data/les_lwc.txt``
+* ``data/sfc_lambertian.txt``
+* ``data/sfc_ocean.txt``
 
 
 1. **Generate property file**: run the following command
@@ -16,8 +17,8 @@ Please make sure `data/` contains the following files before run any scripts
 
    Once run successfully, the following files will be generated
 
-   * ``data/water_w065c.scat``
-   * ``data/les.prp``
+   * ``data/water_w065c_sca.txt``
+   * ``data/les_prp.txt``
 
 2. **Run SHDOM**: run the following command
 

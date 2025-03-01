@@ -20,20 +20,19 @@ set SingleFrames=0
 set RunCameraVisual=0
 
 set basefile=les
-set prpfile="${fdir_data}/${basefile}.prp"
+set prpfile="${fdir_data}/${basefile}_prp.txt"
 set savefile=${basefile}a.bin
 set outbase=${basefile}a
 
 set wavelen=0.65
 set wavename=065
 
-
-
 if ($MakeMieTable) then
   #  Makes the Mie scattering table for spherical water droplets for
   # gamma size distributions with a range of effective radius.
   set polarizedtable=F             # F=unpolarized output, T=polarized output
-  set outfile="${fdir_data}/water_w${wavename}c.scat"
+  #set outfile="${fdir_data}/water_w${wavename}c_sca.txt"
+  set outfile="water_w${wavename}c_sca.txt"
   set partype="W"                # W for water
   set distflag=G                   # G=gamma, L=lognormal size distribution
   set alpha=7 i                    # gamma dist shape parameter
@@ -44,7 +43,8 @@ if ($MakeMieTable) then
   set avgflag=C                    #  C for using central wavelength
 
   put $polarizedtable "$wavelen $wavelen" $partype $avgflag $distflag $alpha \
-      "$Nretab $Sretab $Eretab" $logre $maxradius $outfile | make_mie_table
+      "$Nretab $Sretab $Eretab" $logre $maxradius "$outfile" | make_mie_table
+  mv $outfile $fdir_data
 endif
 
 
@@ -54,8 +54,8 @@ if ($MakePropertyFile) then
   # old type 2 LWC file for the 64x64x16 stratocumulus LES field.
   # Adds in six other levels.
 
-  set lwcfile="${fdir_data}/les.lwc"
-  set scattable="${fdir_data}/water_w${wavename}c.scat"
+  set lwcfile="${fdir_data}/les_lwc.txt"
+  set scattable="${fdir_data}/water_w${wavename}c_sca.txt"
   set poltabs = (F)
   set maxnewphase=1000
   set asymtol=0.01
@@ -66,7 +66,7 @@ if ($MakePropertyFile) then
                5.0 260  13.0 210)
   set  polout=U
 
-  put 1 $scattable 1 "$poltabs" $lwcfile \
+  put 1 $scattable 1 "$poltabs" "$lwcfile" \
       $maxnewphase $asymtol $fracphasetol $wavelen $sfcpres \
       $Nzother $ZTother $polout $prpfile  | propgen
 endif
