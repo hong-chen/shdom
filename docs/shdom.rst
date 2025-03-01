@@ -312,6 +312,7 @@ For each output file there are three variables:
                      nsamps is the number of pixels in horizontal
                      delline is the angle [deg] between pixels in vertical
                      delsamp is the angle [deg] between pixels in horizontal
+
                 V  cross track mode: 2, nbytes, scale, X1,Y1,Z1, X2,Y2,Z2,
                                         spacing, scan1, scan2, delscan
                      nbytes is number of bytes per pixel in PGM output images
@@ -366,9 +367,12 @@ Memory parameters:
 .. code-block:: bash
 
    MAX_TOTAL_MB         approximate maximum memory to use (MB for 4 byte reals)
+
    ADAPT_GRID_FACTOR    ratio of total grid points to base grid points
+
    NUM_SH_TERM_FACTOR   ratio of average number of spherical harmonic terms
                            to total possible (NLM)
+
    CELL_TO_POINT_RATIO  ratio of number of grid cells to grid points
 
 
