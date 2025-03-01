@@ -770,7 +770,7 @@ X and Z indices are given.  The format is as follows:
    T1 ... Tn
    Albedo  NumL  Chi1 ...  ChiL
    IX IZ Extinct   or   IX IY IZ Extinct
-    . . .
+   . . .
 
 The tabulated phase function format has 4+NUMPHASE header lines,
 where NUMPHASE is the number of phase functions:  the first line must
@@ -936,21 +936,21 @@ DETAILED METHOD OF OPERATION/REFERENCES
 See the journal papers:
 
 * Evans, K. F., 1998: The spherical harmonic discrete ordinate method
-for three-dimensional atmospheric radiative transfer. J. Atmos. Sci.,
-55, 429-446.
+  for three-dimensional atmospheric radiative transfer. J. Atmos. Sci.,
+  55, 429-446.
 
 * Pincus, R., and K. F. Evans, 2009: Computational cost and accuracy in
-calculating three-dimensional radiative transfer: Results for new
-implementations of Monte Carlo and SHDOM.  J. Atmos. Sci., 66,
-3131-3146.
+  calculating three-dimensional radiative transfer: Results for new
+  implementations of Monte Carlo and SHDOM.  J. Atmos. Sci., 66,
+  3131-3146.
 
 * Doicu, A., D. Efremenko, T. Trautmann, 2013: A multi-dimensional
-vector spherical harmonics discrete ordinate method for atmospheric
-radiative transfer. J. Quant. Spectrosc. Radiat. Transfer, 118, 121-131.
+  vector spherical harmonics discrete ordinate method for atmospheric
+  radiative transfer. J. Quant. Spectrosc. Radiat. Transfer, 118, 121-131.
 
 * Mishchenko, M. I., and L. D. Travis, 1997: Satellite retrieval of
-aerosol properties over the ocean using polarization as well as
-intensity of reflected sunlight.  J. Geophys. Res. 102, 16989-17013.
+  aerosol properties over the ocean using polarization as well as
+  intensity of reflected sunlight.  J. Geophys. Res. 102, 16989-17013.
 
 
 OPERATING STRATEGY
@@ -1388,7 +1388,7 @@ much more CPU time.
 ARRAY SIZES AND MEMORY MANAGEMENT
 ---------------------------------
 
-    The main program (shdom.f90) determines the sizes of most arrays and
+The main program (shdom.f90) determines the sizes of most arrays and
 allocates memory for them.  Thus the user does not usually have to
 recompile the program for different problems.  As there is no way to
 determine the OUTPARM array size before calling USER_INPUT, the MAXOUT
