@@ -6,11 +6,11 @@
  INSAVEFILE = 'les.bin'
  OUTSAVEFILE = 'NONE'
  NSTOKES = 1
- NX = 480
- NY = 480
+ NX = 240
+ NY = 240
  NZ = 10
- NMU = 4
- NPHI = 4
+ NMU = 8
+ NPHI = 8
  BCFLAG = 0
  IPFLAG = 0
  DELTAM = .TRUE.
