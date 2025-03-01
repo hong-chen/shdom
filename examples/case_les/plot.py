@@ -30,7 +30,8 @@ def read_file(fname):
     # data = data.reshape((352, -1, 352))
     # data = data.reshape((352, 352, -1))
     # data = data.reshape((-1, 352, 352))
-    data = data.reshape((-1, 240, 240))
+    # data = data.reshape((-1, 240, 240))
+    data = data.reshape((-1, 480, 480))
 
     for i in range(data.shape[0]):
         # figure
@@ -43,7 +44,7 @@ def read_file(fname):
             # plot1
             #╭──────────────────────────────────────────────────────────────╮#
             ax1 = fig.add_subplot(111)
-            cs = ax1.imshow(data[i, :, :], origin='lower', cmap='Greys_r', zorder=0) #, extent=extent, vmin=0.0, vmax=0.5)
+            cs = ax1.imshow(data[i, 40:-40, 40:-40], origin='lower', cmap='Greys_r', zorder=0) #, extent=extent, vmin=0.0, vmax=0.5)
             # ax1.scatter(data_x, data_y, s=2, c='k', lw=0.0)
             # ax1.set_xlim((0, 1))
             # ax1.set_ylim((0, 1))
@@ -52,6 +53,7 @@ def read_file(fname):
             # ax1.set_title('Plot1')
             # ax1.xaxis.set_major_locator(FixedLocator(np.arange(0, 100, 5)))
             # ax1.yaxis.set_major_locator(FixedLocator(np.arange(0, 100, 5)))
+            ax1.axis('off')
             #╰──────────────────────────────────────────────────────────────╯#
             # save figure
             #╭──────────────────────────────────────────────────────────────╮#
