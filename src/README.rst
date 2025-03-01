@@ -1,6 +1,6 @@
-====================
-Source Code of SHDOM
-====================
+=================
+SHDOM Source Code
+=================
 
 All of the code here was initially developed by `Frank Evans <evans@nit.colorado.edu>`_ and available `here <https://coloradolinux.com/shdom/>`_.
 
