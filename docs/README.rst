@@ -79,6 +79,8 @@ The following is a list of the files:
 
 Comments, bug reports, and suggestions are welcome.
 
+.. code-block::
+
     Frank Evans           March 7, 2014
     Dept. of Atmospheric and Oceanic Sciences
     University of Colorado, Boulder 80309-0311
