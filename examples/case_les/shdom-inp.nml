@@ -1,9 +1,9 @@
  $SHDOMINPUT
  RUNNAME = 'Visualize'
- PROPFILE = 'data/stcu067.prp'
+ PROPFILE = 'data/les.prp'
  SFCFILE = 'NONE'
  CKDFILE = 'NONE'
- INSAVEFILE = 'stcu067a.bin'
+ INSAVEFILE = 'les.bin'
  OUTSAVEFILE = 'NONE'
  NSTOKES = 1
  NX = 64
