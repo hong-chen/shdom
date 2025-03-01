@@ -73,6 +73,6 @@ def read_file(fname):
 
 if __name__ == '__main__':
 
-    fname = 'shdom-out_les.txt'
+    fname = 'tmp-data/shdom-out_les.txt'
     read_file(fname)
     pass
