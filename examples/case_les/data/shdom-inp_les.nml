@@ -36,7 +36,7 @@
  0.9, 90.00
  OUTFILES(1) = 'tmp-data/shdom-out_les.txt'
  OutFileNC = 'NONE'
- MAX_TOTAL_MB = 4000.0
+ MAX_TOTAL_MB = 8000.0
  ADAPT_GRID_FACTOR = 2.2
  NUM_SH_TERM_FACTOR = 0.6
  CELL_TO_POINT_RATIO = 1.5
