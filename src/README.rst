@@ -36,6 +36,8 @@ File Change
 
   * formatted the code
 
+  * changed the default from ``user_input`` to ``namelist_input``
+
 * ``shdom_mpi.f90``: was ``shdom_mpi.f90``
 
 * ``shdom_netcdf.f90``: was ``shdom_netcdf.f90``
