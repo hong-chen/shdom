@@ -33,7 +33,7 @@
  NUMOUT = 1
  OUTTYPES(1) = 'R'
  OUTPARMS(1,1) = 705.0, 0.2, 0.2, 0.0, 0.0, 1,
- 1.0, 0.00
+ 0.9, 90.00
  OUTFILES(1) = 'tmp-data/shdom-out_les.txt'
  OutFileNC = 'NONE'
  MAX_TOTAL_MB = 4000.0
