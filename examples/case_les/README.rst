@@ -7,6 +7,7 @@ Please make sure `data/` contains the following files before run any scripts
 * ``data/les_lwc.txt``
 * ``data/sfc_lambertian.txt``
 * ``data/sfc_ocean.txt``
+* ``data/shdom-inp_les.nml``
 
 
 1. **Generate property file**: run the following command
