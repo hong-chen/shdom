@@ -3,8 +3,8 @@
  PROPFILE = 'data/les.prp'
  SFCFILE = 'NONE'
  CKDFILE = 'NONE'
- INSAVEFILE = 'les.bin'
- OUTSAVEFILE = 'NONE'
+ INSAVEFILE = 'les.inp.bin'
+ OUTSAVEFILE = 'les.out.bin'
  NSTOKES = 1
  NX = 240
  NY = 240
@@ -54,7 +54,7 @@
  0.9511, 90.00
  OUTFILES(1) = 'shdom-out.txt'
  OutFileNC = 'NONE'
- MAX_TOTAL_MB = 6000.0
+ MAX_TOTAL_MB = 4000.0
  ADAPT_GRID_FACTOR = 2.2
  NUM_SH_TERM_FACTOR = 0.6
  CELL_TO_POINT_RATIO = 1.5
