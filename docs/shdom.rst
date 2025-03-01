@@ -898,11 +898,11 @@ added together.
 
 There are three sections in the CKD file.
 
- 1. The band information.
+1. The band information.
 
- 2. The atmosphere information.
+2. The atmosphere information.
 
- 3. The absorption coefficients for each band and g range.
+3. The absorption coefficients for each band and g range.
 
 The format is:
 
