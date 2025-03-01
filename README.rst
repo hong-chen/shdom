@@ -4,6 +4,9 @@ Spherical Harmonic Discrete Ordinate Method (SHDOM) for Atmospheric Radiative Tr
 
 All of the code here was initially developed by `Frank Evans <evans@nit.colorado.edu>`_ and available `here <https://coloradolinux.com/shdom/>`_.
 
+|
+|
+
 How to Install
 --------------
 
@@ -16,9 +19,6 @@ How to Install
     * `Intel Fortran <https://docs.conda.io/en/latest/miniconda.html>`_ (costly, faster).
 
    We recommend ``gfortran`` (`GFortran <https://fortran-lang.org/learn/os_setup/install_gfortran/>`_) and current ``Makefile`` is developed around ``gfortran``.
-
-|
-
 
 **SHDOM**
 
@@ -58,11 +58,13 @@ How to Install
 
 4. Add the following to the system source file, e.g. ``~/.bashrc`` for ``bash`` (replace ``<shdom repo>`` with a valid path),
 
-  .. code-block:: bash
+    .. code-block:: bash
 
-     export PATH="<shdom repo>/bin:$PATH"
+       export PATH="<shdom repo>/bin:$PATH"
 
-5. Run the case under ``examples/case_les`` (see detailed instructions).
+5. Run the case under ``examples/case_les`` (see detailed instructions there).
+
+|
 
 **Tips**
 
@@ -74,6 +76,9 @@ How to Install
 
 If you encountered any error, please feel free to reach out at `Discord SUPPORT/installation <https://discord.com/channels/681619528945500252/1123343093417119754>`__
 for community support.
+
+|
+|
 
 Document File Change
 --------------------
@@ -93,6 +98,8 @@ Document File Change
 * ``HISTORY.rst``: was ``Updatelist.txt``
 
   * changed to rST format
+
+|
 
 Source Code File Change
 -----------------------
@@ -159,6 +166,7 @@ Source Code File Change
 
 * ``src/_lapack.f``: was ``lpd.f``
 
+|
 
 Other Resources
 ---------------
