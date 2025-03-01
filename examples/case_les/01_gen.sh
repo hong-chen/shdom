@@ -10,7 +10,10 @@
 
 set AWK=awk
 
-set fdir_data=data
+set fdir_data="data"
+set fdir_data_tmp="tmp-data"
+mkdir $fdir_data_tmp
+
 # Set each of these to 1 in turn to run the
 # sections of the script.
 set MakeMieTable=1
@@ -20,7 +23,7 @@ set SingleFrames=0
 set RunCameraVisual=0
 
 set basefile=les
-set prpfile="${fdir_data}/${basefile}_prp.txt"
+set prpfile="${fdir_data_tmp}/${basefile}_prp.txt"
 set savefile=${basefile}a.bin
 set outbase=${basefile}a
 
@@ -44,7 +47,7 @@ if ($MakeMieTable) then
 
   put $polarizedtable "$wavelen $wavelen" $partype $avgflag $distflag $alpha \
       "$Nretab $Sretab $Eretab" $logre $maxradius "$outfile" | make_mie_table
-  mv $outfile $fdir_data
+  mv $outfile $fdir_data_tmp
 endif
 
 
@@ -55,7 +58,7 @@ if ($MakePropertyFile) then
   # Adds in six other levels.
 
   set lwcfile="${fdir_data}/les_lwc.txt"
-  set scattable="${fdir_data}/water_w${wavename}c_sca.txt"
+  set scattable="${fdir_data_tmp}/water_w${wavename}c_sca.txt"
   set poltabs = (F)
   set maxnewphase=1000
   set asymtol=0.01

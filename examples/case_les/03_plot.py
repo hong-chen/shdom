@@ -44,7 +44,8 @@ def read_file(fname):
             # plot1
             #╭──────────────────────────────────────────────────────────────╮#
             ax1 = fig.add_subplot(111)
-            cs = ax1.imshow(data[i, 20:-20, 20:-20], origin='lower', cmap='Greys_r', zorder=0) #, extent=extent, vmin=0.0, vmax=0.5)
+            # cs = ax1.imshow(data[i, 20:-20, 20:-20], origin='lower', cmap='Greys_r', zorder=0) #, extent=extent, vmin=0.0, vmax=0.5)
+            cs = ax1.imshow(data[i, :, :], origin='lower', cmap='Greys_r', zorder=0) #, extent=extent, vmin=0.0, vmax=0.5)
             # ax1.scatter(data_x, data_y, s=2, c='k', lw=0.0)
             # ax1.set_xlim((0, 1))
             # ax1.set_ylim((0, 1))
@@ -72,6 +73,6 @@ def read_file(fname):
 
 if __name__ == '__main__':
 
-    fname = 'shdom-out.txt'
+    fname = 'shdom-out_les.txt'
     read_file(fname)
     pass

@@ -17,8 +17,8 @@ Please make sure `data/` contains the following files before run any scripts
 
    Once run successfully, the following files will be generated
 
-   * ``data/water_w065c_sca.txt``
-   * ``data/les_prp.txt``
+   * ``tmp-data/water_w065c_sca.txt``
+   * ``tmp-data/les_prp.txt``
 
 2. **Run SHDOM**: run the following command
 
@@ -28,7 +28,7 @@ Please make sure `data/` contains the following files before run any scripts
 
    Once run successfully, the following file will be generated
 
-   * ``shdom-out.txt``
+   * ``tmp-data/shdom-out_les.txt``
 
 3. **Plot the results** from SHDOM output: run the following command
 
