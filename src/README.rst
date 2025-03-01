@@ -7,7 +7,7 @@ All of the code here was initially developed by `Frank Evans <evans@nit.colorado
 ===================
 Installation Tweaks
 ===================
-* For Mac, the following was added to ``~/.bashrc``,
+* For Mac users, add the following to ``~/.bashrc``,
 
   .. code-block:: bash
 
@@ -25,6 +25,9 @@ File Name Change
 ================
 
 * ``Makefile``: was ``makefile``
+  * added ``-fallow-argument-mismatc`` to ``FFLAGS``
+  * added ``clean`` option for ``make``
+
 * ``shdom.f90``: was ``shdom.f90``
 * ``shdom_mpi.f90``: was ``shdom_mpi.f90``
 * ``shdom_netcdf.f90``: was ``shdom_netcdf.f90``
