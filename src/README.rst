@@ -1,8 +1,8 @@
-==================
-Spherical Harmonic Discrete Ordinate Method (SHDOM) for Atmospheric Radiative Transfer
-==================
+====================
+Source Code of SHDOM
+====================
 
-Original code is avaiable `here <https://coloradolinux.com/shdom/>`_ by `Frank Evans <evans@nit.colorado.edu>`_.
+All of the code here was initially developed by `Frank Evans <evans@nit.colorado.edu>`_ and available `here <https://coloradolinux.com/shdom/>`_.
 
 ===================
 Installation Tweaks
@@ -13,7 +13,7 @@ Installation Tweaks
 
      export LIBRARY_PATH="$LIBRARY_PATH:/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib"
 
-* Add the following to ``~/.bashrc`` (replace <shdom repo> with a valid path),
+* Add the following to ``~/.bashrc`` (replace ``<shdom repo>`` with a valid path),
 
   .. code-block:: bash
 
