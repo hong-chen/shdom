@@ -23,15 +23,12 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # import cartopy.crs as ccrs
 # mpl.use('Agg')
 
+
 def read_file(fname):
 
     data = np.loadtxt(fname, comments='!')[:, -1]
 
-    # data = data.reshape((352, -1, 352))
-    # data = data.reshape((352, 352, -1))
-    # data = data.reshape((-1, 352, 352))
     data = data.reshape((-1, 240, 240))
-    # data = data.reshape((-1, 480, 480))
 
     for i in range(data.shape[0]):
         # figure
@@ -61,14 +58,13 @@ def read_file(fname):
             fig.subplots_adjust(hspace=0.35, wspace=0.35)
             _metadata_ = {'Computer': os.uname()[1], 'Script': os.path.abspath(__file__), 'Function':sys._getframe().f_code.co_name, 'Date':datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}
             fname_fig = '%s_%2.2d.png' % (_metadata_['Function'], i)
-            plt.savefig(fname_fig, bbox_inches='tight', metadata=_metadata_, transparent=False)
+            plt.savefig(fname_fig, bbox_inches='tight', metadata=_metadata_, transparent=False, pad_inches=0.0)
             #╰──────────────────────────────────────────────────────────────╯#
             # plt.show()
             # sys.exit()
             plt.close(fig)
             plt.clf()
         #╰────────────────────────────────────────────────────────────────────────────╯#
-
 
 
 if __name__ == '__main__':
