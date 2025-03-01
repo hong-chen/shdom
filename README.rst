@@ -4,10 +4,10 @@ Spherical Harmonic Discrete Ordinate Method (SHDOM) for Atmospheric Radiative Tr
 
 
 
-=========
-Resources
-=========
+===============
+Other Resources
+===============
 
-* `SHDOM <https://coloradolinux.com/shdom/>`_: original SHDOM
+* `SHDOM <https://coloradolinux.com/shdom/>`_: legacy SHDOM
 
-* `AT3D <https://github.com/CloudTomography/AT3D>`_: a python-based SHDOM tailored towards cloud tomography
+* `AT3D <https://github.com/CloudTomography/AT3D>`_: a Python-based SHDOM tailored towards cloud tomography applications
