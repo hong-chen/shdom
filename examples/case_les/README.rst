@@ -29,7 +29,7 @@ Please make sure `data/` contains the following files before run any scripts
 
       ./run.sh
 
-   Once run successfully, the following files will be generated
+   Once run successfully, the following file will be generated
 
    * ``shdom-out.txt``
 
