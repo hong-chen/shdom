@@ -19,9 +19,8 @@ Installation Tweaks
 
     export PATH="<shdom repo>/bin:$PATH"
 
-
-File Change
------------
+Document File Change
+--------------------
 * ``docs/README.rst``: was ``README``
 
   * changed to reStructuredText format
@@ -33,6 +32,9 @@ File Change
 * ``docs/propgen.rst``: was ``propgen.txt``
 
   * changed to reStructuredText format
+
+Source Code File Change
+-----------------------
 
 * ``src/Makefile``: was ``makefile``
 
