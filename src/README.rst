@@ -68,6 +68,8 @@ File Change
 
 * ``shdTool_make_mie_table.f90``: was ``make_mie_table.f90``
 
+  * formatted the code
+
 * ``shdTool_make_tmatrix_table.f90``: was ``make_tmatrix_table.f90``
 
 * ``shdTool_put.c``: was ``put.c``
