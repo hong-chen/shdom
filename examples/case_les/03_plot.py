@@ -61,7 +61,6 @@ def get_data_shdom_out_rad_txt(
 def figure_les(fname, vza_mu=0.9):
 
     data = get_data_shdom_out_rad_txt(fname)
-    _, Nx, Ny = data.shape
 
     for i in range(data.shape[0]):
         # figure
