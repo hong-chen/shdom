@@ -24,7 +24,10 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # mpl.use('Agg')
 
 
-def get_data_shdom_out_txt(fname):
+def get_data_shdom_out_txt(
+        fname,
+        verbose=True,
+        ):
 
     data_ = np.loadtxt(fname, comments='!')
 
@@ -33,8 +36,11 @@ def get_data_shdom_out_txt(fname):
 
     data = data_[:, -1].reshape((-1, Nx, Ny), order='F')
 
-    print(fname)
-    print(data.shape)
+    if verbose:
+        print('Reading SHDOM output file: <%s> ...' % os.path.abspath(fname))
+        print('╭────────────────────────────────────────────────────────────────────────────╮')
+        print('Data dimension (Ni, Nx, Ny):', data.shape)
+        print('╰────────────────────────────────────────────────────────────────────────────╯')
 
     return data
 
