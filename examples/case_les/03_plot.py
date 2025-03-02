@@ -108,4 +108,10 @@ if __name__ == '__main__':
 
     figure_les(fname)
 
+    # Z0 = 20.0
+    # vza = 30.0
+    # vza_mu = np.cos(np.deg2rad(vza))
+    # print(vza_mu)
+    # vza_rad = np.arccos(vza_mu)
+    # print(np.rad2deg(vza_rad))
     pass
