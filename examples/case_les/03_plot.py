@@ -45,9 +45,18 @@ def get_data_shdom_out_txt(
     return data
 
 
-def figure_les(fname):
+def figure_les(fname, vza_mu=0.9):
 
     data = get_data_shdom_out_txt(fname)
+    _, Nx, Ny = data.shape
+
+    # Ny_shift = int(data.shape[1]*(1.0-vza_mu))+1
+    Ny_shift = 28
+
+    data_new = np.zeros_like(data)
+
+    data_new[:, :, :-Ny_shift] = data[:, :, Ny_shift:]
+    data_new[:, :, Ny-Ny_shift:] = data[:, :, :Ny_shift]
 
     for i in range(data.shape[0]):
         # figure
@@ -59,7 +68,7 @@ def figure_les(fname):
             # plot1
             #╭──────────────────────────────────────────────────────────────╮#
             ax1 = fig.add_subplot(111, aspect='auto')
-            cs = ax1.imshow(data[i, :, :].T, origin='lower', cmap='Greys_r', zorder=0, aspect='auto', vmin=0.0, vmax=0.2) #, extent=extent, vmin=0.0, vmax=0.5)
+            cs = ax1.imshow(data_new[i, :, :].T, origin='lower', cmap='Greys_r', zorder=0, aspect='auto', vmin=0.0, vmax=0.2) #, extent=extent, vmin=0.0, vmax=0.5)
             ax1.axis('off')
             #╰──────────────────────────────────────────────────────────────╯#
             # save figure
@@ -69,6 +78,8 @@ def figure_les(fname):
             fname_fig = '%s_%2.2d.png' % (_metadata_['Function'], i)
             plt.savefig(fname_fig, bbox_inches='tight', metadata=_metadata_, transparent=False, pad_inches=0.0)
             #╰──────────────────────────────────────────────────────────────╯#
+            # plt.show()
+            # sys.exit()
             plt.close(fig)
             plt.clf()
         #╰────────────────────────────────────────────────────────────────────────────╯#
@@ -79,4 +90,5 @@ if __name__ == '__main__':
     fname = 'tmp-data/shdom-out_les.txt'
 
     figure_les(fname)
+
     pass
