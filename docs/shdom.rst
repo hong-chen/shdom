@@ -1463,13 +1463,11 @@ VARIABLES
 
 The following is a list of important variables.
 
+First the variables used in the adaptive cell structure:
+
 .. code-block::
 
   Variables       Description/Comments
-
-        First the variables used in the adaptive cell structure:
-
-.. code-block::
 
    NPTS           total number of grid points
 

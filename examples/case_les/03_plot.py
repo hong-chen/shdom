@@ -66,13 +66,14 @@ def figure_les(fname, vza_mu=0.9):
         # figure
         #╭────────────────────────────────────────────────────────────────────────────╮#
         plot = True
+        extent = [0, 48, 0, 48]
         if plot:
             plt.close('all')
             fig = plt.figure(figsize=(8, 8))
             # plot1
             #╭──────────────────────────────────────────────────────────────╮#
             ax1 = fig.add_subplot(111, aspect='auto')
-            cs = ax1.imshow(data[i, :, :].T, origin='lower', cmap='Greys_r', zorder=0, aspect='auto', vmin=0.0, vmax=0.2) #, extent=extent, vmin=0.0, vmax=0.5)
+            cs = ax1.imshow(data[i, :, :].T, origin='lower', cmap='Greys_r', zorder=0, aspect='auto', vmin=0.0, vmax=0.2, extent=extent)
             # cs = ax1.imshow(data_new[i, :, :].T, origin='lower', cmap='Greys_r', zorder=0, aspect='auto', vmin=0.0, vmax=0.2) #, extent=extent, vmin=0.0, vmax=0.5)
             ax1.axis('off')
             #╰──────────────────────────────────────────────────────────────╯#
@@ -83,8 +84,8 @@ def figure_les(fname, vza_mu=0.9):
             fname_fig = '%s_%2.2d.png' % (_metadata_['Function'], i)
             plt.savefig(fname_fig, bbox_inches='tight', metadata=_metadata_, transparent=False, pad_inches=0.0)
             #╰──────────────────────────────────────────────────────────────╯#
-            # plt.show()
-            # sys.exit()
+            plt.show()
+            sys.exit()
             plt.close(fig)
             plt.clf()
         #╰────────────────────────────────────────────────────────────────────────────╯#
