@@ -63,14 +63,6 @@ def figure_les(fname, vza_mu=0.9):
     data = get_data_shdom_out_rad_txt(fname)
     _, Nx, Ny = data.shape
 
-    # Ny_shift = int(data.shape[1]*(1.0-vza_mu))+1
-    Ny_shift = 28
-
-    # data_new = np.zeros_like(data)
-
-    # data_new[:, :, :-Ny_shift] = data[:, :, Ny_shift:]
-    # data_new[:, :, Ny-Ny_shift:] = data[:, :, :Ny_shift]
-
     for i in range(data.shape[0]):
         # figure
         #╭────────────────────────────────────────────────────────────────────────────╮#
