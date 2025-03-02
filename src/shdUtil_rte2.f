@@ -2746,7 +2746,7 @@ C           If doing polarization, sum the second Wigner function series
       RETURN
       END
 
- 
+
 
       SUBROUTINE ROTATE_POL_PLANE (NSTOKES, COSSCAT,
      .                          SOLARMU, MU, DELPHI, SCATVECT)
@@ -2794,13 +2794,13 @@ C      scattered Stokes vector in SINGSCAT.
 
 
       SUBROUTINE COMPUTE_RADIANCE (NSTOKES, NX, NY, NZ, NPTS, NCELLS,
-     .             ML, MM, NLM, NSTLEG, NLEG, NUMPHASE, 
+     .             ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,
      .             NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,
      .             BCFLAG, IPFLAG, SRCTYPE, DELTAM, SOLARMU, SOLARAZ,
-     .             SFCTYPE, NSFCPAR, SFCGRIDPARMS, 
+     .             SFCTYPE, NSFCPAR, SFCGRIDPARMS,
      .             MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,
      .             GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, UNITS,
-     .             XGRID, YGRID, ZGRID, GRIDPOS, 
+     .             XGRID, YGRID, ZGRID, GRIDPOS,
      .             GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,
      .             EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,
      .             SHPTR, SOURCE, SOURCE1, GRIDRAD,
@@ -2826,7 +2826,7 @@ C       Computes the radiances for the specified locations and directions.
       REAL    SOURCE(NSTOKES,*)
       REAL    OUTPARMS(*), RADOUT(NSTOKES,*)
       CHARACTER SRCTYPE*1, SFCTYPE*2, UNITS*1
- 
+
       INTEGER I, IBC, IANG, JX, JY, K, SIDE
       INTEGER NANGOUT, NXOUT, NYOUT
       LOGICAL LAMBERTIAN, VALIDRAD
@@ -2834,24 +2834,33 @@ C       Computes the radiances for the specified locations and directions.
       REAL    MUOUT, PHIOUT, PHID
       REAL    XDOMAIN, YDOMAIN, STARTX, STARTY
 
+C     +
+C     added by Hong Chen
+C     For fixing the domain shift issue
+      DOUBLE PRECISION HC_VZA_RAD, HC_XOFFSET, HC_YOFFSET
+C     -
 
-C         Make the isotropic radiances for the top boundary
-      CALL COMPUTE_TOP_RADIANCES (SRCTYPE, SKYRAD, WAVENO, WAVELEN, 
+C     Make the isotropic radiances for the top boundary
+      CALL COMPUTE_TOP_RADIANCES (SRCTYPE, SKYRAD, WAVENO, WAVELEN,
      .                            UNITS, NTOPPTS, NSTOKES, BCRAD(1,1))
-C         Make the bottom boundary radiances for the Lambertian surfaces.  
-C          Compute the upwelling bottom radiances using the downwelling fluxes.
+
+C     Make the bottom boundary radiances for the Lambertian surfaces.
+C       Compute the upwelling bottom radiances using the downwelling fluxes.
       IF (SFCTYPE .EQ. 'FL') THEN
+
         CALL FIXED_LAMBERTIAN_BOUNDARY (NBOTPTS, BCPTR(1,2),
-     .             DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO, 
+     .             DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO,
      .             WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1,1+NTOPPTS))
+
       ELSE IF (SFCTYPE .EQ. 'VL') THEN
+
         CALL VARIABLE_LAMBERTIAN_BOUNDARY (NBOTPTS, BCPTR(1,2),
      .               DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS,
      .               NSTOKES, BCRAD(1,1+NTOPPTS))
+
       ENDIF
 
-
-C         Setup the regularly spaced radiance locations
+C     Setup the regularly spaced radiance locations
       XDOMAIN = XGRID(NX+1-IBITS(BCFLAG,0,1))-XGRID(1) + 2*OUTPARMS(4)
       STARTX = -OUTPARMS(4)
       IF (OUTPARMS(2) .EQ. 0.0) THEN
@@ -2869,19 +2878,29 @@ C         Setup the regularly spaced radiance locations
       Z0 = MIN( MAX(OUTPARMS(1),ZGRID(1)), ZGRID(NZ))
       NANGOUT = NINT(OUTPARMS(6))
 
-
       LAMBERTIAN = SFCTYPE(2:2) .EQ. 'L'
 
-C         Loop over the radiance directions
+C     Loop over the radiance directions
       DO IANG = 1, NANGOUT
         MUOUT = OUTPARMS(2*IANG+5)
         PHID = OUTPARMS(2*IANG+6)
         PHIOUT = PHID*ACOS(-1.0)/180.0
+
+C       +
+C       added by Hong Chen
+C       for fixing the domain shift issue
+        HC_VZA_RAD = ACOS(MUOUT)
+        HC_XOFFSET = Z0*TAN(HC_VZA_RAD)*COS(PHIOUT)
+        HC_YOFFSET = Z0*TAN(HC_VZA_RAD)*SIN(PHIOUT)
+        STARTX = -OUTPARMS(4)+HC_XOFFSET
+        STARTY = -OUTPARMS(5)+HC_YOFFSET
+C       -
+
         IF (MUOUT .EQ. 0.0 .OR. ABS(MUOUT) .GT. 1.0) THEN
           WRITE (6,*) 'COMPUTE_RADIANCE: Bad mu for radiance',MUOUT
-        ELSE          
+        ELSE
 
-C             Compute the source function throughout grid for this angle
+C         Compute the source function throughout grid for this angle
           CALL COMPUTE_ONE_SOURCE (NSTOKES, ML, MM, NLM, NSTLEG,NLEG,
      .                 NUMPHASE, NPTS, DELTAM, MUOUT, PHIOUT, SRCTYPE,
      .                 SOLARMU, SOLARAZ, ALBEDO, LEGEN,
@@ -2918,7 +2937,7 @@ C               by integrating over the stored downwelling radiances.
             ENDDO
           ENDIF
 
-C             Integrate backward from the location to get the radiance
+C         Integrate backward from the location to get the radiance
           Y0 = STARTY
           DO JY = 1, NYOUT
             X0 = STARTX
@@ -2941,11 +2960,12 @@ C             Integrate backward from the location to get the radiance
       ENDDO
 
       RETURN
+
       END
 
 
- 
- 
+
+
       SUBROUTINE COMPUTE_ONE_SOURCE (NSTOKES, 
      .             ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,
      .             NPTS, DELTAM, MU, PHI, SRCTYPE, SOLARMU, SOLARAZ,
