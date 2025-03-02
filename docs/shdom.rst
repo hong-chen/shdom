@@ -194,11 +194,14 @@ characters.
    NMU, NPHI   number of discrete ordinates covering -1<mu<1 and 0<phi<2pi
 
    BCFLAG      Bit flags to specify the horizontal boundary conditions:
-                  0 for periodic in X & Y, 1 for open in X, 2 for open in Y,
+                  0 for periodic in X & Y,
+                  1 for open in X,
+                  2 for open in Y,
                   3 for open in X & Y.
 
-   IPFLAG      Bit flags for independent pixel mode: 0 for 3D, 1 for
-                  independent (2D) scans in X, 2 for 2D scans in Y (X-Z planes),
+   IPFLAG      Bit flags for independent pixel mode: 0 for 3D,
+                  1 for independent (2D) scans in X,
+                  2 for 2D scans in Y (X-Z planes),
                   3 for indepedent pixels (i.e. bit 0 for X and bit 1 for Y).
                   Bit 2 of IPFLAG means do the direct beam in 3D, e.g.
                   IPFLAG=7 means 3D direct beam but IP diffuse radiative transfer.
@@ -244,7 +247,7 @@ Following for Thermal source
    SKYRAD      blackbody temperature (Kelvin) of radiation incident from above
 
    UNITS       'R' for radiance units (W/m^2 ster),
-                  'T' for brightness temperature (Rayleigh-Jeans assumed)
+               'T' for brightness temperature (Rayleigh-Jeans assumed)
 
    WAVELEN     wavelength in microns for 'R' units;
                   WAVELEN not needed for solar sources (except for Ocean surface)
@@ -1133,8 +1136,10 @@ the target computer.  Then the usual way to compile and run a program
 with MPI is:
 
 .. code-block:: bash
+
    mpif90 -O2 -o shdom  shdom.f90 shdom_mpi.f90 shdom_nonetcdf.f90 \
              shdomsub1.f shdomsub2.f shdomsub3.f ocean_brdf.f fftpack.f
+
    mpirun -np 4  shdom90 < shdom.inp
 
 where shdom.inp has the user input parameters and "-np 4" specifies
@@ -1435,10 +1440,13 @@ where
 .. code-block::
 
   MAXIG   max number of internal grid points
+
   MAXIC   max number of grid cells, between 1 and 2 times grid points
+
   MAXIV   max words for source function and radiance arrays;
             needed size is average spherical harmonic truncation times
             number of grid points.
+
   MAXIDO  max words for temporary discrete ordinate azimuthal array;
             needed size is max azimuths times number of grid points.
 
