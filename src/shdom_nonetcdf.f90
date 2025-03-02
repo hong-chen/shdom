@@ -8,7 +8,7 @@ contains
 
     subroutine read_property_size_netcdf(PROPFILE, NSTLEG, NLEG, NPX, NPY, NPZ, &
                                          NUMPHASE, MAXLEG, MAXPGL, DELX, DELY)
-        character(len=*) :: propfile
+        character(len=256) :: propfile
         integer          :: NSTLEG, NLEG
         integer          :: NPX, NPY, NPZ, NUMPHASE, MAXLEG, MAXPGL
         real             :: DELX, DELY
