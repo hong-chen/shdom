@@ -24,22 +24,35 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # mpl.use('Agg')
 
 
-def get_data_shdom_out_txt(
+def get_data_shdom_out_rad_txt(
         fname,
         verbose=True,
+        iLine=18,
         ):
 
-    data_ = np.loadtxt(fname, comments='!')
+    # retrieve Nd, Nx, Ny
+    #╭────────────────────────────────────────────────────────────────────────────╮#
+    with open(fname, 'r') as f:
+        for i in range(iLine):
+            line = f.readline().strip()
 
-    Nx = (data_[:, 1]==data_[0, 0]).sum()
-    Ny = int(data_.shape[0]/Nx)
+    index_sx = line.find('NXO')
+    line = line[index_sx:]
+    index_sy = line.find('NYO')
+    index_sd = line.find('NDIR')
 
-    data = data_[:, -1].reshape((-1, Nx, Ny), order='F')
+    Nx = int(line[:index_sy].split('=')[-1].strip())
+    Ny = int(line[index_sy:index_sd].split('=')[-1].strip())
+    Nd = int(line[index_sd:].split('=')[-1].strip())
+    #╰────────────────────────────────────────────────────────────────────────────╯#
+
+    data_ = np.loadtxt(fname, comments='!')[:, -1]
+    data = data_.reshape((Nd, Nx, Ny), order='F')
 
     if verbose:
         print('Reading SHDOM output file: <%s> ...' % os.path.abspath(fname))
         print('╭────────────────────────────────────────────────────────────────────────────╮')
-        print('Data dimension (Ni, Nx, Ny):', data.shape)
+        print('Data dimension (Nd, Nx, Ny):', data.shape)
         print('╰────────────────────────────────────────────────────────────────────────────╯')
 
     return data
@@ -47,16 +60,16 @@ def get_data_shdom_out_txt(
 
 def figure_les(fname, vza_mu=0.9):
 
-    data = get_data_shdom_out_txt(fname)
+    data = get_data_shdom_out_rad_txt(fname)
     _, Nx, Ny = data.shape
 
     # Ny_shift = int(data.shape[1]*(1.0-vza_mu))+1
     Ny_shift = 28
 
-    data_new = np.zeros_like(data)
+    # data_new = np.zeros_like(data)
 
-    data_new[:, :, :-Ny_shift] = data[:, :, Ny_shift:]
-    data_new[:, :, Ny-Ny_shift:] = data[:, :, :Ny_shift]
+    # data_new[:, :, :-Ny_shift] = data[:, :, Ny_shift:]
+    # data_new[:, :, Ny-Ny_shift:] = data[:, :, :Ny_shift]
 
     for i in range(data.shape[0]):
         # figure
@@ -68,7 +81,8 @@ def figure_les(fname, vza_mu=0.9):
             # plot1
             #╭──────────────────────────────────────────────────────────────╮#
             ax1 = fig.add_subplot(111, aspect='auto')
-            cs = ax1.imshow(data_new[i, :, :].T, origin='lower', cmap='Greys_r', zorder=0, aspect='auto', vmin=0.0, vmax=0.2) #, extent=extent, vmin=0.0, vmax=0.5)
+            cs = ax1.imshow(data[i, :, :].T, origin='lower', cmap='Greys_r', zorder=0, aspect='auto', vmin=0.0, vmax=0.2) #, extent=extent, vmin=0.0, vmax=0.5)
+            # cs = ax1.imshow(data_new[i, :, :].T, origin='lower', cmap='Greys_r', zorder=0, aspect='auto', vmin=0.0, vmax=0.2) #, extent=extent, vmin=0.0, vmax=0.5)
             ax1.axis('off')
             #╰──────────────────────────────────────────────────────────────╯#
             # save figure
