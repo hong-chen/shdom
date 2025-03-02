@@ -5,7 +5,7 @@ program PropertyToNetcdf
   interface
     subroutine getarg(pos, value)
       integer,            intent(in)  :: pos
-      character(len = *), intent(out) :: value
+      character(len=256), intent(out) :: value
     end subroutine getarg
 
     function iargc()
@@ -13,7 +13,7 @@ program PropertyToNetcdf
     end function iargc
   end interface
 
-  character(len = 128) :: asciiFile, netcdfFile
+  character(len=256) :: asciiFile, netcdfFile
   integer              :: numArgs
   ! -------------------------------------
   numArgs = iargc()

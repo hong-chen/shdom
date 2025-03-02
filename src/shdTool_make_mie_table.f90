@@ -26,7 +26,7 @@ program MAKE_MIE_TABLE
     real    :: SRETAB, ERETAB, ALPHA, GAMMA, MAXRADIUS
     complex :: RINDEX
     character(LEN=1) :: PARTYPE, AVGFLAG, DISTFLAG
-    character(LEN=80) :: MIETABFILE
+    character(LEN=256) :: MIETABFILE
     integer :: NSIZE, MAXRANK, I, J, L, NL
     real    :: PI, WAVELENCEN, XMAX, REFF, SCATTER
     integer, allocatable :: NRANK1(:), NRANK(:)
@@ -141,7 +141,7 @@ subroutine USER_INPUT(POLTAB, WAVELEN1, WAVELEN2, PARTYPE, RINDEX, PARDENS, &
     real, intent(OUT) :: SRETAB, ERETAB, ALPHA, GAMMA, MAXRADIUS
     complex, intent(OUT) :: RINDEX
     character(LEN=1), intent(OUT) :: PARTYPE, AVGFLAG, DISTFLAG
-    character(LEN=*), intent(OUT) :: MIETABFILE
+    character(LEN=256), intent(OUT) :: MIETABFILE
 
     write (*, *) 'Making Mie scattering tables for spherical particles'
 
@@ -567,7 +567,7 @@ subroutine WRITE_MIE_TABLE(MIETABFILE, POLTAB, WAVELEN1, WAVELEN2, DELTAWAVE, &
     real, intent(IN) :: EXTINCT(NRETAB), SSALB(NRETAB)
     real, intent(IN) :: WIGCOEF(6, 0:MAXRANK, NRETAB)
     character(LEN=1), intent(IN) :: PARTYPE, DISTFLAG
-    character(LEN=*), intent(IN) :: MIETABFILE
+    character(LEN=256), intent(IN) :: MIETABFILE
     integer :: I, J, JP, K, L, NL, NPHASEPOL
     real REFF
 

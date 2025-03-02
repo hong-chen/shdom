@@ -81,8 +81,8 @@ program SHDOM
     real CPUTIME1, CPUTIME2, CPUTIMETOTAL, SUM_CPU_TIME
     character SRCTYPE*1, UNITS*1
     character GRIDTYPE*1, PROPTYPE*1, SFCTYPE*2
-    character*80 PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
-    character*80 OutFileNC, RUNNAME
+    character*256 PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
+    character*256 OutFileNC, RUNNAME
     external SUM_CPU_TIME
 
     ! Choose the option to compute higher order radiance SH terms

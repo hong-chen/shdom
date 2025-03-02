@@ -43,11 +43,11 @@ contains
         implicit none
         integer, intent(OUT) :: NSCATTAB, NZO, MAXNEWPHASE
         real, intent(OUT) :: RAYWAVELEN, RAYSFCPRES, ASYMTOL, FRACPHASETOL
-        character(LEN=*), intent(OUT) :: PARFILE, PROPFILE
+        character(LEN=256), intent(OUT) :: PARFILE, PROPFILE
         integer, pointer     :: SCATNUMS(:)
         logical, pointer     :: POLTABS(:)
         real, pointer     :: ZOTHER(:), TEMPOTHER(:)
-        character(LEN=80), pointer :: SCATTABFILES(:)
+        character(LEN=256), pointer :: SCATTABFILES(:)
         character(LEN=1) :: POLOUT
         integer :: I
 
@@ -119,7 +119,7 @@ contains
         ! the maximum order of the Wigner d-function series phase functions, and
         ! also the wavelength range.
         implicit none
-        character(LEN=*), intent(IN) :: SCATTABFILE
+        character(LEN=256), intent(IN) :: SCATTABFILE
         logical, intent(IN) :: POLTAB
         integer, intent(OUT) :: NRETAB, MAXNCOEF
         real, intent(OUT) :: WAVELEN1, WAVELEN2
@@ -159,7 +159,7 @@ contains
         ! The order of the six elements is the four diagonal ones (a1, a2, a3, a4)
         ! followed by the IQ and UV coefficients (b1, b2).
         implicit none
-        character(LEN=*), intent(IN) :: SCATTABFILE
+        character(LEN=256), intent(IN) :: SCATTABFILE
         integer, intent(IN)  :: NPHASEPOL, NRETAB, MAXCOEF
         logical, intent(IN)  :: POLTAB
         integer, intent(OUT) :: NCOEF(:)
@@ -230,7 +230,7 @@ contains
 
     subroutine READ_PARTICLE_FILE_SIZE(PARFILE, NX, NY, NZP)
         implicit none
-        character(LEN=*), intent(IN) :: PARFILE
+        character(LEN=256), intent(IN) :: PARFILE
         integer, intent(OUT) :: NX, NY, NZP
 
         open (UNIT=2, FILE=PARFILE, STATUS='OLD')
@@ -251,7 +251,7 @@ contains
         ! radius (micron).
         !  Also reads the old 2 parameter LWC files with LWC and Reff at each point.
         implicit none
-        character(LEN=*), intent(IN) :: PARFILE
+        character(LEN=256), intent(IN) :: PARFILE
         integer, intent(IN) :: NX, NY, NZP, NSCATTAB, PARTYPES(NSCATTAB)
         real, intent(OUT) :: DELX, DELY, ZPAR(NZP), TEMPPAR(NZP)
         integer, intent(OUT) :: NCOMP(NZP, NY, NX), PTYPE(NSCATTAB, NZP, NY, NX)
@@ -693,7 +693,7 @@ contains
                                  NPHASE, MAXCOEF, NCOEF, WIGCOEF, &
                                  EXTINCT, SSALB, IPHASE)
         implicit none
-        character(LEN=*), intent(IN) :: PROPFILE
+        character(LEN=256), intent(IN) :: PROPFILE
         integer, intent(IN) :: NPHASEPOL, NX, NY, NZT, NPHASE, MAXCOEF
         integer, intent(IN) :: NCOEF(0:NPHASE), IPHASE(NZT, NY, NX)
         real, intent(IN) :: DELX, DELY, ZLEVELS(NZT), TEMP(NZT)
@@ -762,8 +762,8 @@ program PROPGEN
     integer, pointer :: SCATNUMS(:)
     logical, pointer :: POLTABS(:)
     real, pointer :: ZOTHER(:), TEMPOTHER(:)
-    character(LEN=80), pointer :: SCATTABFILES(:)
-    character(LEN=80) :: PARFILE, PROPFILE
+    character(LEN=256), pointer :: SCATTABFILES(:)
+    character(LEN=256) :: PARFILE, PROPFILE
     character(LEN=1) :: POLOUT
     integer, parameter :: NANGLES = 90
     integer :: NTYPES, NENTRIES, MAXNPHASE, NPHASE, NPHASEPOL
