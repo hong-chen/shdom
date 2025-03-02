@@ -33,6 +33,9 @@ def get_data_shdom_out_txt(fname):
 
     data = data_[:, -1].reshape((-1, Nx, Ny), order='F')
 
+    print(fname)
+    print(data.shape)
+
     return data
 
 

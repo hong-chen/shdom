@@ -11,7 +11,7 @@
  NZ = 10
  NMU = 4
  NPHI = 8
- BCFLAG = 0
+ BCFLAG = 3
  IPFLAG = 0
  DELTAM = .TRUE.
  GRIDTYPE = 'P'
