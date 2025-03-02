@@ -36,3 +36,8 @@ Please make sure ``data/`` contains the following files before run any scripts
    .. code-block:: bash
 
       python 03_plot.py
+
+   Once run successfully, the following image sequence will be generated
+
+   .. image:: https://github.com/hong-chen/shdom/blob/master/examples/case_les/data/les.gif
+       :width: 400
