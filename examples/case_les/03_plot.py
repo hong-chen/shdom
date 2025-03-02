@@ -62,7 +62,12 @@ def figure_les(fname, vza_mu=0.9):
 
     data = get_data_shdom_out_rad_txt(fname)
 
+    Ny_shift = -2
+
     for i in range(data.shape[0]):
+
+        data0 = np.roll(data[i, :, :], Ny_shift, axis=1)
+
         # figure
         #╭────────────────────────────────────────────────────────────────────────────╮#
         plot = True
@@ -73,7 +78,7 @@ def figure_les(fname, vza_mu=0.9):
             # plot1
             #╭──────────────────────────────────────────────────────────────╮#
             ax1 = fig.add_subplot(111, aspect='auto')
-            cs = ax1.imshow(data[i, :, :].T, origin='lower', cmap='Greys_r', zorder=0, aspect='auto', vmin=0.0, vmax=0.2, extent=extent)
+            cs = ax1.imshow(data0.T, origin='lower', cmap='Greys_r', zorder=0, aspect='auto', vmin=0.0, vmax=0.2, extent=extent)
             # cs = ax1.imshow(data_new[i, :, :].T, origin='lower', cmap='Greys_r', zorder=0, aspect='auto', vmin=0.0, vmax=0.2) #, extent=extent, vmin=0.0, vmax=0.5)
             ax1.axis('off')
             #╰──────────────────────────────────────────────────────────────╯#
