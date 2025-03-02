@@ -62,7 +62,7 @@ def figure_les(fname, vza_mu=0.9):
 
     data = get_data_shdom_out_rad_txt(fname)
 
-    Ny_shift = -2
+    Ny_shift = -32
 
     for i in range(data.shape[0]):
 
