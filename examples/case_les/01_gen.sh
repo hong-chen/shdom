@@ -65,9 +65,8 @@ if ($MakePropertyFile) then
   set fracphasetol=0.1
   set sfcpres=1013
   set Nzother=8
-  set ZTother=(0.0 286.3  0.200 285.1  0.4125 283.8  0.8375 287.0  \
-               5.0 260  13.0 210  20.0 180  705.0 5.0)
-  set  polout=U
+  set ZTother=(0.0 286.3  0.200 285.1  0.4125 283.8  0.8375 287.0 5.0 260  13.0 210  20.0 180  705.0 5.0)
+  set polout=U
 
   put 1 $scattable 1 "$poltabs" "$lwcfile" \
       $maxnewphase $asymtol $fracphasetol $wavelen $sfcpres \
