@@ -84,8 +84,8 @@ def figure_les(fname, vza_mu=0.9):
             fname_fig = '%s_%2.2d.png' % (_metadata_['Function'], i)
             plt.savefig(fname_fig, bbox_inches='tight', metadata=_metadata_, transparent=False, pad_inches=0.0)
             #╰──────────────────────────────────────────────────────────────╯#
-            plt.show()
-            sys.exit()
+            # plt.show()
+            # sys.exit()
             plt.close(fig)
             plt.clf()
         #╰────────────────────────────────────────────────────────────────────────────╯#
