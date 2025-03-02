@@ -65,7 +65,7 @@ def figure_les(fname, vza_mu=0.9):
     # Ny_shift = int(-(13.0 * np.tan(np.deg2rad(30.0))//0.2 + 1))
     # Ny_shift = -38
 
-    Ny_shift = int(-(13.0 * np.tan(np.deg2rad(45.0))//0.2 + 1))
+    Ny_shift = int(-(705.0 * np.tan(np.deg2rad(45.0))//0.2 + 1))
     print(Ny_shift)
 
 

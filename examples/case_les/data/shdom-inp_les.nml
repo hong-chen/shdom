@@ -8,7 +8,7 @@
  NSTOKES = 1
  NX = 240
  NY = 240
- NZ = 10
+ NZ = 12
  NMU = 4
  NPHI = 8
  BCFLAG = 0
@@ -33,7 +33,7 @@
  NUMOUT = 1
  OUTTYPES(1) = 'R'
  OUTPARMS(1,1) = 705.0, 0.2, 0.2, 0.0, 0.0, 1,
- 0.7071, 90.00
+ 1.0, 90.00
  OUTFILES(1) = 'tmp-data/shdom-out_les.txt'
  OutFileNC = 'NONE'
  MAX_TOTAL_MB = 8000.0
