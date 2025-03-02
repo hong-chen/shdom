@@ -4,6 +4,12 @@ Spherical Harmonic Discrete Ordinate Method (SHDOM) for Atmospheric Radiative Tr
 
 All of the code here was initially developed by `Frank Evans <evans@nit.colorado.edu>`_ and available `here <https://coloradolinux.com/shdom/>`_.
 
+Documents:
+
+* `shdom <https://github.com/hong-chen/shdom/blob/master/docs/shdom.rst>`_
+
+* `propgen <https://github.com/hong-chen/shdom/blob/master/docs/propgen.rst>`_
+
 |
 
 How to Install
