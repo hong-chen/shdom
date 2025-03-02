@@ -58,21 +58,13 @@ def get_data_shdom_out_rad_txt(
     return data
 
 
-def figure_les(fname, vza_mu=0.9):
+def figure_les(fname):
 
     data = get_data_shdom_out_rad_txt(fname)
 
-    # Ny_shift = int(-(13.0 * np.tan(np.deg2rad(30.0))//0.2 + 1))
-    # Ny_shift = -38
-
-    # Ny_shift = int(-(705.0 * np.tan(np.deg2rad(45.0))//0.2 + 1))
-    # print(Ny_shift)
-    Ny_shift = 0
-
-
     for i in range(data.shape[0]):
 
-        data0 = np.roll(data[i, :, :], Ny_shift, axis=1)
+        data0 = data[i, :, :]
 
         # figure
         #╭────────────────────────────────────────────────────────────────────────────╮#
@@ -85,7 +77,6 @@ def figure_les(fname, vza_mu=0.9):
             #╭──────────────────────────────────────────────────────────────╮#
             ax1 = fig.add_subplot(111, aspect='auto')
             cs = ax1.imshow(data0.T, origin='lower', cmap='Greys_r', zorder=0, aspect='auto', vmin=0.0, vmax=0.2, extent=extent)
-            # cs = ax1.imshow(data_new[i, :, :].T, origin='lower', cmap='Greys_r', zorder=0, aspect='auto', vmin=0.0, vmax=0.2) #, extent=extent, vmin=0.0, vmax=0.5)
             ax1.axis('off')
             #╰──────────────────────────────────────────────────────────────╯#
             # save figure
@@ -108,10 +99,4 @@ if __name__ == '__main__':
 
     figure_les(fname)
 
-    # Z0 = 20.0
-    # vza = 30.0
-    # vza_mu = np.cos(np.deg2rad(vza))
-    # print(vza_mu)
-    # vza_rad = np.arccos(vza_mu)
-    # print(np.rad2deg(vza_rad))
     pass
