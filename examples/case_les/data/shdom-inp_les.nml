@@ -32,7 +32,7 @@
  SHACC = 0.003
  NUMOUT = 1
  OUTTYPES(1) = 'R'
- OUTPARMS(1,1) = 705.0, 0.2, 0.2222, 0.0, 0.0, 2,
+ OUTPARMS(1,1) = 705.0, 0.2, 0.2, 0.0, 0.0, 2,
  1.0, 90.00,
  0.9, 90.00
  OUTFILES(1) = 'tmp-data/shdom-out_les.txt'
