@@ -148,7 +148,7 @@ Source Code File Change
   * converted from F77 to F90
   * formatted the code
 
-* ``src/shdScat_tmx_wig.f``: was ``tmatrixwig.f``
+* ``src/_shdScat_tmx_wig.f``: was ``tmatrixwig.f``
 
 * ``src/shdSolv_1.f90``: was ``shdomsub1.f``
 
@@ -165,7 +165,7 @@ Source Code File Change
   * converted from F77 to F90
   * formatted the code
 
-* ``src/shdSurf_ocean.f``: was ``ocean_brdf.f``
+* ``src/_shdSurf_ocean.f``: was ``ocean_brdf.f``
 
 * ``src/shdTool_propgen.f90``: was ``propgen.f90``
 

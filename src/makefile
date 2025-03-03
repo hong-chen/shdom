@@ -17,7 +17,7 @@ BIN_DIR     = $(abspath $(CURRENT_DIR)/../bin)
 
 TARGETS = bin shdom propgen make_mie_table make_tmatrix_table plotscattab put
 
-SHDOMOBJS = shdSolv_1.o shdSolv_2.o shdSurf_ocean.o shdUtil_io.o _fftpack.o
+SHDOMOBJS = shdSolv_1.o shdSolv_2.o shdUtil_io.o _shdSurf_ocean.o _fftpack.o
 
 UseMPI = no
 UseNetcdf = no
@@ -86,7 +86,7 @@ propgen: shdTool_propgen.f90
 	$(F90) $(F90FLAGS) shdTool_propgen.f90 -o $(BIN_DIR)/propgen
 
 make_tmatrix_table: shdTool_make_tmx_tab.f90
-	$(F90) $(F90FLAGS) shdTool_make_tmx_tab.f90 shdScat_ind_wat_ice.f90 shdScat_tmx_wig.f _lapack.f -o $(BIN_DIR)/make_tmatrix_table
+	$(F90) $(F90FLAGS) shdTool_make_tmx_tab.f90 shdScat_ind_wat_ice.f90 _shdScat_tmx_wig.f _lapack.f -o $(BIN_DIR)/make_tmatrix_table
 
 make_mie_table: shdTool_make_mie_tab.f90
 	$(F90) $(F90FLAGS) shdTool_make_mie_tab.f90 shdScat_ind_wat_ice.f90 shdScat_mie_wig.f90 -o $(BIN_DIR)/make_mie_table
