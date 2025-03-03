@@ -86,10 +86,10 @@ propgen: shdTool_propgen.f90
 	$(F90) $(F90FLAGS) shdTool_propgen.f90 -o $(BIN_DIR)/propgen
 
 make_tmatrix_table: shdTool_make_tmatrix_table.f90
-	$(F90) $(F90FLAGS) shdTool_make_tmatrix_table.f90 shdSca_indexwatice.f shdSca_tmatrixwig.f _lapack.f -o $(BIN_DIR)/make_tmatrix_table
+	$(F90) $(F90FLAGS) shdTool_make_tmatrix_table.f90 shdSca_indexwatice.f90 shdSca_tmatrixwig.f _lapack.f -o $(BIN_DIR)/make_tmatrix_table
 
 make_mie_table: shdTool_make_mie_table.f90
-	$(F90) $(F90FLAGS) shdTool_make_mie_table.f90 shdSca_indexwatice.f shdSca_miewig.f -o $(BIN_DIR)/make_mie_table
+	$(F90) $(F90FLAGS) shdTool_make_mie_table.f90 shdSca_indexwatice.f90 shdSca_miewig.f90 -o $(BIN_DIR)/make_mie_table
 
 plotscattab: shdTool_plotscattab.f90
 	$(F90) $(F90FLAGS) shdTool_plotscattab.f90 -o $(BIN_DIR)/plotscattab
