@@ -248,20 +248,20 @@ subroutine USER_INPUT( &
 
     write (*, *)
     return
-end
+end subroutine
 
-subroutine NAMELIST_INPUT                                         &
-    &               (dRUNNAME, dPROPFILE, dSFCFILE, dCKDFILE,          &
-    &                dINSAVEFILE, dOUTSAVEFILE,                        &
-    &                dNSTOKES, dNX, dNY, dNZ, dNMU, dNPHI,             &
-    &                dBCFLAG, dIPFLAG,                                 &
-    &                dKDIST, dDELTAM, dGRIDTYPE,                       &
-    &                dSRCTYPE, dSOLARFLUX, dSOLARMU, dSOLARAZ, dSKYRAD,  &
-    &                dGNDTEMP, dGNDALBEDO, dUNITS, dWAVENO, dWAVELEN,  &
-    &                dACCELFLAG, dSOLACC, dMAXITER, dSPLITACC, dSHACC,  &
-    &       dMAXOUT, dMAXPAR, dNUMOUT, dOUTTYPES, dOUTPARMS, dOUTFILES,&
-    &                dOutFileNC, dMAX_TOTAL_MB, dADAPT_GRID_FACTOR,    &
-    &                dNUM_SH_TERM_FACTOR, dCELL_TO_POINT_RATIO)
+subroutine NAMELIST_INPUT ( &
+    & dRUNNAME, dPROPFILE, dSFCFILE, dCKDFILE, &
+    & dINSAVEFILE, dOUTSAVEFILE, &
+    & dNSTOKES, dNX, dNY, dNZ, dNMU, dNPHI, &
+    & dBCFLAG, dIPFLAG, &
+    & dKDIST, dDELTAM, dGRIDTYPE, &
+    & dSRCTYPE, dSOLARFLUX, dSOLARMU, dSOLARAZ, dSKYRAD, &
+    & dGNDTEMP, dGNDALBEDO, dUNITS, dWAVENO, dWAVELEN, &
+    & dACCELFLAG, dSOLACC, dMAXITER, dSPLITACC, dSHACC, &
+    & dMAXOUT, dMAXPAR, dNUMOUT, dOUTTYPES, dOUTPARMS, dOUTFILES, &
+    & dOutFileNC, dMAX_TOTAL_MB, dADAPT_GRID_FACTOR, &
+    & dNUM_SH_TERM_FACTOR, dCELL_TO_POINT_RATIO)
     ! Obtains the input parameters for the program from a namelist
     ! read from stdin.  See the overall program documentation for the
     ! list of input parameters.  The subroutine dummy variables can't
@@ -300,16 +300,17 @@ subroutine NAMELIST_INPUT                                         &
     character OUTTYPES(MAXOUT)*1, OUTFILES(MAXOUT)*256
     character*256 PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
     character*256 OutFileNC, RUNNAME
-    namelist /SHDOMINPUT/ RUNNAME, PROPFILE, SFCFILE, CKDFILE,        &
-   &                 INSAVEFILE, OUTSAVEFILE,                         &
-   &                 NSTOKES, NX, NY, NZ, NMU, NPHI,                  &
-   &                 BCFLAG, IPFLAG, DELTAM, GRIDTYPE,                &
-   &                 SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,    &
-   &                 GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,      &
-   &                 ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,     &
-   &                 NUMOUT, OUTTYPES, OUTPARMS, OUTFILES, OutFileNC, &
-   &                 MAX_TOTAL_MB, ADAPT_GRID_FACTOR,                 &
-   &                 NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
+    namelist /SHDOMINPUT/ &
+        & RUNNAME, PROPFILE, SFCFILE, CKDFILE, &
+        & INSAVEFILE, OUTSAVEFILE, &
+        & NSTOKES, NX, NY, NZ, NMU, NPHI, &
+        & BCFLAG, IPFLAG, DELTAM, GRIDTYPE, &
+        & SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD, &
+        & GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN, &
+        & ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC, &
+        & NUMOUT, OUTTYPES, OUTPARMS, OUTFILES, OutFileNC, &
+        & MAX_TOTAL_MB, ADAPT_GRID_FACTOR, &
+        & NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
 
     character*256 NMLFILE
 
@@ -422,7 +423,7 @@ subroutine NAMELIST_INPUT                                         &
     dCELL_TO_POINT_RATIO = CELL_TO_POINT_RATIO
 
     return
-end
+end subroutine
 
 subroutine CHECK_INPUT_PARAMETERS(NMU, NPHI, DELTAM, MAXASYM,    &
     &               GRIDTYPE, SRCTYPE, UNITS, SOLARFLUX, SOLARMU,      &
