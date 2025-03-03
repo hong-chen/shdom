@@ -1166,25 +1166,26 @@ subroutine READ_CKD_SIZE(CKDFILE, WAVENO, NG, NZCKD)
     JB = 0
     do IB = 1, NB
         read (1, *) KB, WAVENUM1, WAVENUM2, SF, N
-        if (abs(WAVENUM1 - WAVENO(1)) .lt. 1.0 .and.                     &
-     &       abs(WAVENUM2 - WAVENO(2)) .lt. 1.0) then
+        if (abs(WAVENUM1 - WAVENO(1)) .lt. 1.0 .and. &
+            & abs(WAVENUM2 - WAVENO(2)) .lt. 1.0) then
             backspace (1)
             NG = N
             read (1, *) JB, WAVENUM1, WAVENUM2, SF, N
         end if
     end do
     if (JB .eq. 0) then
-        write (*, *) ' Wavenumber range not found in CKD file : ',       &
-     &              WAVENO(1), WAVENO(2), CKDFILE
+        write (*, *) ' Wavenumber range not found in CKD file : ', &
+            & WAVENO(1), WAVENO(2), CKDFILE
         stop
     end if
     read (1, *) NZCKD
     close (1)
     return
-end
+end subroutine
 
-subroutine READ_CKD(MAXNG, MAXNZ, CKDFILE, WAVENO, SOLFLUX,      &
-    &                     NG, DELG, NZCKD, ZCKD, KABS)
+subroutine READ_CKD( &
+    & MAXNG, MAXNZ, CKDFILE, WAVENO, SOLFLUX, &
+    & NG, DELG, NZCKD, ZCKD, KABS)
     ! Reads the information appropriate for one band from a
     ! correlated k-distribution file.   The wavenumber range (cm^-1)
     ! in the file must match the desired in WAVENO.  The solar flux
