@@ -950,11 +950,12 @@ subroutine READ_SURFACE_SIZE(SFCFILE, MAXSFCPTS, MAXSFCPARS)
     end if
     close (1)
     return
-end
+end subroutine
 
-subroutine READ_SURFACE(SFCFILE, MAXSFCPTS, MAXSFCPARS,          &
-    &                     SFCTYPE, NXSFC, NYSFC, DELXSFC, DELYSFC,     &
-    &                     NSFCPAR, SFCPARMS, GNDTEMP, GNDALBEDO)
+subroutine READ_SURFACE( &
+    & SFCFILE, MAXSFCPTS, MAXSFCPARS, &
+    & SFCTYPE, NXSFC, NYSFC, DELXSFC, DELYSFC, &
+    & NSFCPAR, SFCPARMS, GNDTEMP, GNDALBEDO)
     ! Reads the surface properties from the file into the surface arra
     ! There are currently six surface types (Lambertian, Wave-Fresnel,
     ! Ocean, RPV, and Diner polarized RPV), though it is simple to add m
@@ -1008,16 +1009,16 @@ subroutine READ_SURFACE(SFCFILE, MAXSFCPTS, MAXSFCPARS,          &
         end if
         do while (.true.)
             read (1, *, end=290) IX, IY, TEMP, ALB
-            if (IX .ge. 1 .and. IX .le. NXSFC .and.                       &
-       &        IY .ge. 1 .and. IY .le. NYSFC) then
+            if (IX .ge. 1 .and. IX .le. NXSFC .and. &
+                & IY .ge. 1 .and. IY .le. NYSFC) then
                 I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
                 SFCPARMS(I + 1) = TEMP
                 SFCPARMS(I + 2) = ALB
-                if (ALB .lt. 0.0 .or. ALB .gt. 1.0)                         &
-         &        stop 'READ_SURFACE: Illegal surface albedo'
-                if (TEMP .lt. 150. .or. TEMP .gt. 350.)                     &
-         &        write (*, *) 'READ_SURFACE: Warning -',                    &
-         &          ' surface temperature: ', IX, IY, TEMP
+                if (ALB .lt. 0.0 .or. ALB .gt. 1.0) &
+                    & stop 'READ_SURFACE: Illegal surface albedo'
+                if (TEMP .lt. 150. .or. TEMP .gt. 350.) &
+                    & write (*, *) 'READ_SURFACE: Warning -', &
+                    & ' surface temperature: ', IX, IY, TEMP
                 GNDTEMP = GNDTEMP + TEMP
                 GNDALBEDO = GNDALBEDO + ALB
                 N = N + 1
@@ -1033,8 +1034,8 @@ subroutine READ_SURFACE(SFCFILE, MAXSFCPTS, MAXSFCPARS,          &
         end if
         do while (.true.)
             read (1, *, end=290) IX, IY, TEMP, MRE, MIM, WSPD
-            if (IX .ge. 1 .and. IX .le. NXSFC .and.                       &
-       &        IY .ge. 1 .and. IY .le. NYSFC) then
+            if (IX .ge. 1 .and. IX .le. NXSFC .and. &
+                & IY .ge. 1 .and. IY .le. NYSFC) then
                 I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
                 SFCPARMS(I + 1) = TEMP
                 SFCPARMS(I + 2) = MRE
@@ -1055,8 +1056,8 @@ subroutine READ_SURFACE(SFCFILE, MAXSFCPTS, MAXSFCPARS,          &
         end if
         do while (.true.)
             read (1, *, end=290) IX, IY, TEMP, WSPD, PCL
-            if (IX .ge. 1 .and. IX .le. NXSFC .and.                       &
-       &        IY .ge. 1 .and. IY .le. NYSFC) then
+            if (IX .ge. 1 .and. IX .le. NXSFC .and. &
+                & IY .ge. 1 .and. IY .le. NYSFC) then
                 I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
                 SFCPARMS(I + 1) = TEMP
                 SFCPARMS(I + 2) = WSPD
@@ -1079,8 +1080,8 @@ subroutine READ_SURFACE(SFCFILE, MAXSFCPTS, MAXSFCPARS,          &
         end if
         do while (.true.)
             read (1, *, end=290) IX, IY, TEMP, RHO0, KR, THETA
-            if (IX .ge. 1 .and. IX .le. NXSFC .and.                       &
-       &        IY .ge. 1 .and. IY .le. NYSFC) then
+            if (IX .ge. 1 .and. IX .le. NXSFC .and. &
+                & IY .ge. 1 .and. IY .le. NYSFC) then
                 I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
                 SFCPARMS(I + 1) = TEMP
                 SFCPARMS(I + 2) = RHO0
@@ -1106,8 +1107,8 @@ subroutine READ_SURFACE(SFCFILE, MAXSFCPTS, MAXSFCPARS,          &
         end if
         do while (.true.)
             read (1, *, end=290) IX, IY, TEMP, A, KR, B, ZETA, SIGMA
-            if (IX .ge. 1 .and. IX .le. NXSFC .and.                       &
-       &        IY .ge. 1 .and. IY .le. NYSFC) then
+            if (IX .ge. 1 .and. IX .le. NXSFC .and. &
+                & IY .ge. 1 .and. IY .le. NYSFC) then
                 I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
                 SFCPARMS(I + 1) = TEMP
                 SFCPARMS(I + 2) = A
@@ -1146,7 +1147,7 @@ subroutine READ_SURFACE(SFCFILE, MAXSFCPTS, MAXSFCPARS,          &
     GNDALBEDO = GNDALBEDO/N
     GNDTEMP = GNDTEMP/N
     return
-end
+end subroutine
 
 subroutine READ_CKD_SIZE(CKDFILE, WAVENO, NG, NZCKD)
     ! Find the size of the k-distribution arrays for this wavenumber b
