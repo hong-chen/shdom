@@ -49,7 +49,7 @@ lib/*
 *.pgm
 *.out
 !data
-!data/*.lwc
+!data/*.txt
 !tests
 !tests/*.py
 !dev
