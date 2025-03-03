@@ -1,8 +1,9 @@
-subroutine NEW_GRIDS(BCFLAG, GRIDTYPE, NPX, NPY, NPZ, NX, NY, NZ,  &
-&                      XSTART, YSTART, DELXP, DELYP, ZLEVELS,      &
-&                      XGRID, YGRID, ZGRID)
-!       Makes the XGRID, YGRID, and ZGRID arrays from the input Z levels
-!     and X and Y spacing from the property file according to the GRIDTY
+subroutine NEW_GRIDS(&
+    & BCFLAG, GRIDTYPE, NPX, NPY, NPZ, NX, NY, NZ,&
+    & XSTART, YSTART, DELXP, DELYP, ZLEVELS,&
+    & XGRID, YGRID, ZGRID)
+    ! Makes the XGRID, YGRID, and ZGRID arrays from the input Z levels
+    !   and X and Y spacing from the property file according to the GRIDTY
     implicit none
     integer BCFLAG, NPX, NPY, NPZ, NX, NY, NZ
     real XSTART, YSTART, DELXP, DELYP, ZLEVELS(NPZ)
@@ -10,9 +11,9 @@ subroutine NEW_GRIDS(BCFLAG, GRIDTYPE, NPX, NPY, NPZ, NX, NY, NZ,  &
     character GRIDTYPE*1
     integer IX, IY, IZ
 
-!         Make the X, Y, and Z grids, depending on type:
-!           E for evenly spaced, P from property file, F from zgrid.inp
-!           Only Even allowed horizontally
+    ! Make the X, Y, and Z grids, depending on type:
+    !   E for evenly spaced, P from property file, F from zgrid.inp
+    !   Only Even allowed horizontally
     if (DELXP .le. 0.0) DELXP = 1.0
     if (btest(BCFLAG, 2)) then
         do IX = 1, NX
@@ -37,8 +38,8 @@ subroutine NEW_GRIDS(BCFLAG, GRIDTYPE, NPX, NPY, NPZ, NX, NY, NZ,  &
 
     if (GRIDTYPE .eq. 'P') then
         if (NZ .ne. NPZ) then
-            write (6, *)                                                   &
-       &    'NEW_GRIDS: For internal Z grid same as property file grid,'
+            write (6, *)&
+                & 'NEW_GRIDS: For internal Z grid same as property file grid,'
             write (6, *) 'must have same number of grid points (NZ=NPZ).'
             stop
         end if
@@ -47,8 +48,8 @@ subroutine NEW_GRIDS(BCFLAG, GRIDTYPE, NPX, NPY, NPZ, NX, NY, NZ,  &
         end do
     else if (GRIDTYPE .eq. 'E') then
         do IZ = 1, NZ
-            ZGRID(IZ) = ZLEVELS(1)                                        &
-       &             + (IZ - 1)*(ZLEVELS(NPZ) - ZLEVELS(1))/FLOAT(NZ - 1)
+            ZGRID(IZ) = ZLEVELS(1)&
+                & + (IZ - 1)*(ZLEVELS(NPZ) - ZLEVELS(1))/FLOAT(NZ - 1)
         end do
     else if (GRIDTYPE .eq. 'F') then
         open (UNIT=3, FILE='zgrid.inp', STATUS='OLD')
@@ -63,60 +64,61 @@ subroutine NEW_GRIDS(BCFLAG, GRIDTYPE, NPX, NPY, NPZ, NX, NY, NZ,  &
     return
 end subroutine
 
-subroutine INIT_CELL_STRUCTURE(BCFLAG, IPFLAG,                   &
-&                     NX, NY, NZ, NX1, NY1, NPTS, NCELLS,          &
-&                     XGRID, YGRID, ZGRID, GRIDPOS,                &
-&                     GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS)
-!     Make the initial grid cell data structure for the base grid.
-!     For periodic boundary conditions there are NX*NY*(NZ-1) grid cells
-!     and (NX+1)*(NY+1)*NZ grid points.  The IX=NX+1 column is the same
-!     as the IX=1 column, because of the periodicity, but the grid point
-!     are repeated.  The last grid cell on the "right" has the last colu
-!     of grid points on the "left" and the repeated "virtual" set of gri
-!     points on the "right".  For open boundary conditions in X and Y
-!     there are (NX+1)*(NY+1)*(NZ-1) grid cells and NX*NY*NZ grid points
-!     Open boundary conditions are done with the lowest "left most" and
-!     "right most" X and Y columns being independent pixels with
-!     their own grid cells (zero width), therefore one extra grid cell
-!     is required.   Multiple processor boundary conditions have
-!     (NX-1)*(NY-1)*(NZ-1) grid cells and NX*NY*NZ grid points.
-!     Independent pixel mode has NX*NY*(NZ-1) grid cells and NX*NY*NZ
-!     grid points
-!       Variable       Description
-!      IPFLAG         Independent pixel flag - 0 for none, 1 for X, 2 fo
-!                       3 for X&Y.
-!      BCFLAG         Boundary condition flag - 0 for periodic, 1 for op
-!                       2 for open in Y, 3 for open in X&Y.  4 for multi
-!                       processor in X, 8 for MP in Y, 12 for MP in both
-!      NPTS           total number of grid points
-!      NCELLS         total number of cells
-!      GRIDPOS(3,IP)  x,y,z coordinate values of grid point locations
-!      GRIDPTR(8,IC)  pointer to 8 grid points belonging to a cell.
-!                       Order of pointers is based on binary digits zyx:
-!                       IOCT = 1 + BITX + 2*BITY + 4*BITZ, where
-!                       BITc is 0 for negative side and 1 for positive s
-!      NEIGHPTR(6,IC) pointer to 6 neighboring cells of a cell.
-!                       Order of pointers are -X,+X,-Y,+Y,-Z,+Z (1-6).
-!                       Is 0 if there is no neighbor cell (boundary).
-!                       Is positive if there is just one cell across fac
-!                       of current cell (unique neighbor).  Is negative
-!                       (-index) if there is more than one cell across
-!                       the face of current cell.  In this case the
-!                       cell pointed to is the parent cell that has a
-!                       has same or larger face adjoining current cell.
-!      TREEPTR(2,IC)  pointer to parent and children cells in tree struc
-!                       First is pointer to parent cell, 0 for a base ce
-!                       Second is pointer to first of the two children c
-!                       This pointer is 0 if there are no children cells
-!                       The children cells are in successive order, with
-!                       the negative side first.  See CELLFLAGS for dire
-!                       of division of split.
-!      CELLFLAGS(IC)  a collection of binary flags for the cells:
-!                       bit  For bit set
-!                        0  Do independent pixel for X
-!                        1  Do independent pixel for Y
-!                       2,3 Direction cell is split (0=no split, 1=X, 2=
-!        IP is a grid point index, IC is a cell index.
+subroutine INIT_CELL_STRUCTURE(&
+    & BCFLAG, IPFLAG,&
+    & NX, NY, NZ, NX1, NY1, NPTS, NCELLS,&
+    & XGRID, YGRID, ZGRID, GRIDPOS,&
+    & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS)
+    ! Make the initial grid cell data structure for the base grid.
+    ! For periodic boundary conditions there are NX*NY*(NZ-1) grid cells
+    ! and (NX+1)*(NY+1)*NZ grid points.  The IX=NX+1 column is the same
+    ! as the IX=1 column, because of the periodicity, but the grid point
+    ! are repeated.  The last grid cell on the "right" has the last colu
+    ! of grid points on the "left" and the repeated "virtual" set of gri
+    ! points on the "right".  For open boundary conditions in X and Y
+    ! there are (NX+1)*(NY+1)*(NZ-1) grid cells and NX*NY*NZ grid points
+    ! Open boundary conditions are done with the lowest "left most" and
+    ! "right most" X and Y columns being independent pixels with
+    ! their own grid cells (zero width), therefore one extra grid cell
+    ! is required.   Multiple processor boundary conditions have
+    ! (NX-1)*(NY-1)*(NZ-1) grid cells and NX*NY*NZ grid points.
+    ! Independent pixel mode has NX*NY*(NZ-1) grid cells and NX*NY*NZ
+    ! grid points
+    !   Variable       Description
+    ! IPFLAG         Independent pixel flag - 0 for none, 1 for X, 2 fo
+    !                  3 for X&Y.
+    ! BCFLAG         Boundary condition flag - 0 for periodic, 1 for op
+    !                  2 for open in Y, 3 for open in X&Y.  4 for multi
+    !                  processor in X, 8 for MP in Y, 12 for MP in both
+    ! NPTS           total number of grid points
+    ! NCELLS         total number of cells
+    ! GRIDPOS(3,IP)  x,y,z coordinate values of grid point locations
+    ! GRIDPTR(8,IC)  pointer to 8 grid points belonging to a cell.
+    !                  Order of pointers is based on binary digits zyx:
+    !                  IOCT = 1 + BITX + 2*BITY + 4*BITZ, where
+    !                  BITc is 0 for negative side and 1 for positive s
+    ! NEIGHPTR(6,IC) pointer to 6 neighboring cells of a cell.
+    !                  Order of pointers are -X,+X,-Y,+Y,-Z,+Z (1-6).
+    !                  Is 0 if there is no neighbor cell (boundary).
+    !                  Is positive if there is just one cell across fac
+    !                  of current cell (unique neighbor).  Is negative
+    !                  (-index) if there is more than one cell across
+    !                  the face of current cell.  In this case the
+    !                  cell pointed to is the parent cell that has a
+    !                  has same or larger face adjoining current cell.
+    ! TREEPTR(2,IC)  pointer to parent and children cells in tree struc
+    !                  First is pointer to parent cell, 0 for a base ce
+    !                  Second is pointer to first of the two children c
+    !                  This pointer is 0 if there are no children cells
+    !                  The children cells are in successive order, with
+    !                  the negative side first.  See CELLFLAGS for dire
+    !                  of division of split.
+    ! CELLFLAGS(IC)  a collection of binary flags for the cells:
+    !                  bit  For bit set
+    !                   0  Do independent pixel for X
+    !                   1  Do independent pixel for Y
+    !                  2,3 Direction cell is split (0=no split, 1=X, 2=
+    ! IP is a grid point index, IC is a cell index.
     implicit none
     integer IPFLAG, BCFLAG, NX, NY, NZ, NX1, NY1, NPTS, NCELLS
     integer GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
@@ -125,7 +127,7 @@ subroutine INIT_CELL_STRUCTURE(BCFLAG, IPFLAG,                   &
     integer IX, IY, IZ, IX0, IX1, IY0, IY1, I, NXC, NYC
     logical BTEST
 
-!         First, make the grid point positions
+    ! First, make the grid point positions
     I = 0
     do IX = 1, NX1
         do IY = 1, NY1
@@ -146,7 +148,7 @@ subroutine INIT_CELL_STRUCTURE(BCFLAG, IPFLAG,                   &
     if (btest(BCFLAG, 1)) NYC = NY + 1
     if (btest(BCFLAG, 3) .and. .not. btest(IPFLAG, 1)) NYC = NY - 1
 
-!         Then setup the cell structures
+    ! Then setup the cell structures
     I = 0
     do IX = 1, NXC
         if (btest(IPFLAG, 0)) then
@@ -181,8 +183,8 @@ subroutine INIT_CELL_STRUCTURE(BCFLAG, IPFLAG,                   &
                 GRIDPTR(7, I) = IZ + 1 + NZ*(IY1 - 1) + NZ*NY1*(IX0 - 1)
                 GRIDPTR(8, I) = IZ + 1 + NZ*(IY1 - 1) + NZ*NY1*(IX1 - 1)
                 CELLFLAGS(I) = 0
-!               Initialize the neighbor pointer; to self for IP mode or
-!                 if open boundary conditions and at either end
+                ! Initialize the neighbor pointer; to self for IP mode or
+                !   if open boundary conditions and at either end
                 if (btest(IPFLAG, 0)) then
                     NEIGHPTR(1, I) = I
                     NEIGHPTR(2, I) = I
@@ -273,7 +275,7 @@ subroutine INIT_CELL_STRUCTURE(BCFLAG, IPFLAG,                   &
                 else
                     NEIGHPTR(6, I) = I + 1
                 end if
-!               Base grid cells have no parents or children
+                ! Base grid cells have no parents or children
                 TREEPTR(1, I) = 0
                 TREEPTR(2, I) = 0
             end do
@@ -283,10 +285,11 @@ subroutine INIT_CELL_STRUCTURE(BCFLAG, IPFLAG,                   &
     return
 end subroutine
 
-subroutine INTERP_GRID(NPTS, NSTLEG, NLEG, GRIDPOS,              &
-&               TEMP, EXTINCT, ALBEDO, LEGEN, IPHASE)
-!       Calls TRILIN_INTERP_PROP to interpolate the input arrays from
-!     the property grid to each internal grid point.
+subroutine INTERP_GRID(&
+    & NPTS, NSTLEG, NLEG, GRIDPOS,&
+    & TEMP, EXTINCT, ALBEDO, LEGEN, IPHASE)
+    ! Calls TRILIN_INTERP_PROP to interpolate the input arrays from
+    !   the property grid to each internal grid point.
     implicit none
     integer NPTS, NSTLEG, NLEG
     integer*2 IPHASE(*)
@@ -294,27 +297,27 @@ subroutine INTERP_GRID(NPTS, NSTLEG, NLEG, GRIDPOS,              &
     real TEMP(*), EXTINCT(*), ALBEDO(*), LEGEN(NSTLEG, 0:NLEG, *)
     integer IP
 
-!         Initialize: transfer the tabulated phase functions
-    call TRILIN_INTERP_PROP(0.0, 0.0, 0.0, .true., NSTLEG, NLEG,     &
-   &                         TEMP, EXTINCT, ALBEDO,                   &
-   &                         LEGEN(1, 0, 1), IPHASE)
+    ! Initialize: transfer the tabulated phase functions
+    call TRILIN_INTERP_PROP(0.0, 0.0, 0.0, .true., NSTLEG, NLEG,&
+        & TEMP, EXTINCT, ALBEDO,&
+        & LEGEN(1, 0, 1), IPHASE)
 
-!         Trilinearly interpolate from the property grid to the adaptive
+    ! Trilinearly interpolate from the property grid to the adaptive
     do IP = 1, NPTS
-        call TRILIN_INTERP_PROP                                         &
-     &          (GRIDPOS(1, IP), GRIDPOS(2, IP), GRIDPOS(3, IP),           &
-     &           .false., NSTLEG, NLEG, TEMP(IP), EXTINCT(IP),          &
-     &            ALBEDO(IP), LEGEN(1, 0, IP), IPHASE(IP))
+        call TRILIN_INTERP_PROP&
+            & (GRIDPOS(1, IP), GRIDPOS(2, IP), GRIDPOS(3, IP),&
+            & .false., NSTLEG, NLEG, TEMP(IP), EXTINCT(IP),&
+            & ALBEDO(IP), LEGEN(1, 0, IP), IPHASE(IP))
     end do
     return
 end subroutine
 
-subroutine MAKE_DIRECT(NPTS, BCFLAG, IPFLAG, DELTAM,             &
-&                ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,    &
-&                GRIDPOS, DIRFLUX)
-!       Makes the direct beam solar flux for the internal base grid.
-!     DIRFLUX is set to F*exp(-tau_sun).
-!     Actually calls DIRECT_BEAM_PROP to do all the hard work.
+subroutine MAKE_DIRECT(NPTS, BCFLAG, IPFLAG, DELTAM,&
+    & ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
+    & GRIDPOS, DIRFLUX)
+    ! Makes the direct beam solar flux for the internal base grid.
+    !   DIRFLUX is set to F*exp(-tau_sun).
+    !   Actually calls DIRECT_BEAM_PROP to do all the hard work.
     implicit none
     integer NPTS, BCFLAG, IPFLAG, ML, NSTLEG, NLEG
     logical DELTAM
@@ -324,31 +327,31 @@ subroutine MAKE_DIRECT(NPTS, BCFLAG, IPFLAG, DELTAM,             &
     logical VALIDBEAM
     real UNIFZLEV, XO, YO, ZO, DIR, DIRPATH
 
-    call DIRECT_BEAM_PROP(1, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,          &
-   &            DELTAM, ML, NSTLEG, NLEG,                             &
-   &            SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),              &
-   &            UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
+    call DIRECT_BEAM_PROP(1, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
+        & DELTAM, ML, NSTLEG, NLEG,&
+        & SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
+        & UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
 
     do IP = 1, NPTS
         DIRPATH = 0.0
-        call DIRECT_BEAM_PROP                                           &
-     &           (0, GRIDPOS(1, IP), GRIDPOS(2, IP), GRIDPOS(3, IP),       &
-     &            BCFLAG, IPFLAG, DELTAM, ML, NSTLEG, NLEG,             &
-     &            SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(IP),           &
-     &            UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
+        call DIRECT_BEAM_PROP&
+            & (0, GRIDPOS(1, IP), GRIDPOS(2, IP), GRIDPOS(3, IP),&
+            & BCFLAG, IPFLAG, DELTAM, ML, NSTLEG, NLEG,&
+            & SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(IP),&
+            & UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
     end do
     return
 end subroutine
 
-subroutine PREPARE_PROP(ML, MM, NSTLEG, NLEG, NPTS, DELTAM,      &
-&              NUMPHASE, SRCTYPE, UNITS, WAVENO, WAVELEN, ALBMAX,  &
-&              EXTINCT, ALBEDO, LEGEN, TEMP, PLANCK, IPHASE)
-!       Prepares the grid arrays for the iterative solution process.
-!       If doing Delta-M scaling then the extinction, albedo, and Legend
-!       terms are scaled first; only the 0 to ML LEGEN terms are scaled.
-!       Outputs PLANCK with (1-omega)*B(T) for thermal source, where B(T
-!       the Planck function (meaning depends on UNITS).
-!       TEMP array is unchanged.
+subroutine PREPARE_PROP(ML, MM, NSTLEG, NLEG, NPTS, DELTAM,&
+    & NUMPHASE, SRCTYPE, UNITS, WAVENO, WAVELEN, ALBMAX,&
+    & EXTINCT, ALBEDO, LEGEN, TEMP, PLANCK, IPHASE)
+    ! Prepares the grid arrays for the iterative solution process.
+    ! If doing Delta-M scaling then the extinction, albedo, and Legend
+    ! terms are scaled first; only the 0 to ML LEGEN terms are scaled.
+    ! Outputs PLANCK with (1-omega)*B(T) for thermal source, where B(T
+    ! the Planck function (meaning depends on UNITS).
+    ! TEMP array is unchanged.
     implicit none
     integer ML, MM, NSTLEG, NLEG, NPTS, NUMPHASE
     integer*2 IPHASE(NPTS)
@@ -366,7 +369,7 @@ subroutine PREPARE_PROP(ML, MM, NSTLEG, NLEG, NPTS, DELTAM,      &
         do IPH = 1, NUMPHASE
             F = LEGEN(1, ML + 1, IPH)
             do L = 0, ML
-!            Scale the diagonal and off-diagonal phase matrix elements d
+                ! Scale the diagonal and off-diagonal phase matrix elements d
                 LEGEN(1, L, IPH) = (LEGEN(1, L, IPH) - F)/(1 - F)
                 if (NSTLEG .gt. 1) then
                     LEGEN(2, L, IPH) = (LEGEN(2, L, IPH) - F)/(1 - F)
@@ -384,7 +387,7 @@ subroutine PREPARE_PROP(ML, MM, NSTLEG, NLEG, NPTS, DELTAM,      &
             if (NUMPHASE .gt. 0) then
                 F = LEGEN(1, ML + 1, IPHASE(I))
             else
-!             NUMPHASE=0 is standard property format, which is unpolariz
+                ! NUMPHASE=0 is standard property format, which is unpolariz
                 F = LEGEN(1, ML + 1, I)
                 do L = 0, ML
                     LEGEN(1, L, I) = (LEGEN(1, L, I) - F)/(1 - F)
@@ -402,16 +405,16 @@ subroutine PREPARE_PROP(ML, MM, NSTLEG, NLEG, NPTS, DELTAM,      &
     return
 end subroutine
 
-subroutine INIT_RADIANCE(NSTOKES, NXY, NZ, NSTLEG, NLEG,         &
-&             RSHPTR, ZGRID,                                       &
-&             EXTINCT, ALBEDO, LEGEN, TEMP, NUMPHASE, IPHASE,      &
-&             SRCTYPE, SOLARFLUX, SOLARMU, GNDALBEDO, GNDTEMP,     &
-&             SKYRAD, UNITS, WAVENO, WAVELEN, RADIANCE)
-!       Initializes radiance field by solving plane-parallel two-stream.
-!     Solves the L=1 M=0 SH system by transforming the pentadiagonal
-!     system to tridiagonal and calling solver.
-!     Does the initialization for the NXY columns of the base grid.
-!     Only the I Stokes parameter is initialized, the rest are zeroed.
+subroutine INIT_RADIANCE(NSTOKES, NXY, NZ, NSTLEG, NLEG,&
+    & RSHPTR, ZGRID,&
+    & EXTINCT, ALBEDO, LEGEN, TEMP, NUMPHASE, IPHASE,&
+    & SRCTYPE, SOLARFLUX, SOLARMU, GNDALBEDO, GNDTEMP,&
+    & SKYRAD, UNITS, WAVENO, WAVELEN, RADIANCE)
+    ! Initializes radiance field by solving plane-parallel two-stream.
+    ! Solves the L=1 M=0 SH system by transforming the pentadiagonal
+    ! system to tridiagonal and calling solver.
+    ! Does the initialization for the NXY columns of the base grid.
+    ! Only the I Stokes parameter is initialized, the rest are zeroed.
     implicit none
     integer NSTOKES, NXY, NZ, NSTLEG, NLEG, NUMPHASE, RSHPTR(*)
     integer*2 IPHASE(NZ, NXY)
@@ -441,11 +444,11 @@ subroutine INIT_RADIANCE(NSTOKES, NXY, NZ, NSTLEG, NLEG,         &
     C0 = sqrt(1.0/PI)
     C1 = sqrt(3.0/(4*PI))
 
-!         Loop over all the columns in the base grid
+    ! Loop over all the columns in the base grid
     IR = 0
     RSHPTR(1) = 0
     do I = 1, NXY
-!           Make layer properties for the Eddington routine
+        ! Make layer properties for the Eddington routine
         do IZ = 1, NLAYER
             L = NZ - IZ
             EXT0 = EXTINCT(IZ, I)
@@ -477,12 +480,12 @@ subroutine INIT_RADIANCE(NSTOKES, NXY, NZ, NSTLEG, NLEG,         &
         end do
         TEMPS(1) = TEMP(NZ, I)
         GNDEMIS = 1.0 - GNDALBEDO
-!           Call the Eddington flux routine
-        call EDDRTF(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,           &
-     &              TEMPS, DELTAM, SRCTYPE, SOLARFLUX, SOLARMU,         &
-     &              GNDTEMP, GNDEMIS, SKYRAD, UNITS, WAVENO, WAVELEN,    &
-     &              FLUXES)
-!           Convert fluxes to first two moments of spherical harmonics
+        ! Call the Eddington flux routine
+        call EDDRTF(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
+            & TEMPS, DELTAM, SRCTYPE, SOLARFLUX, SOLARMU,&
+            & GNDTEMP, GNDEMIS, SKYRAD, UNITS, WAVENO, WAVELEN,&
+            & FLUXES)
+        ! Convert fluxes to first two moments of spherical harmonics
         do IZ = 1, NZ
             L = NZ + 1 - IZ
             RADIANCE(:, IR + 1) = 0.0
@@ -499,59 +502,58 @@ subroutine INIT_RADIANCE(NSTOKES, NXY, NZ, NSTLEG, NLEG,         &
     return
 end subroutine
 
-subroutine EDDRTF(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,       &
-&              TEMPS, DELTAM, SRCTYPE, SOLARFLUX, SOLARMU,         &
-&              GNDTEMP, GNDEMIS, SKYRAD, UNITS, WAVENO, WAVELEN,    &
-&              FLUXES)
-!
-!       EDDRTF computes the layer interface fluxes for a plane-parallel
-!     atmosphere with either solar or thermal source of radiation using
-!     the Eddington approximation.  The medium is specified by a number
-!     of homogeneous layers.  For a thermal source the Planck function i
-!     linear with optical depth, while for a solar source it is exponent
-!     The temperatures, optical depth, single scattering albedo, and
-!     asymmetry parameter are specified for each layer.  The boundary
-!     conditions such as the solar flux, and reflection and/or emission
-!     ground surface are also specified. Delta Eddington scaling may be
-!     used.  The diffuse Eddington fluxes and the solar direct flux at
-!     each level are returned.
-!       The model works by calculating the reflection, transmission, and
-!     source terms for each layer from the input properties.  A
-!     tri-diagonal matrix solver is then used to compute the diffuse flu
-!     at each layer interface from the applied boundary conditions.
-!
-!     Parameters:
-!       Input:
-!     NLAYER         integer      Number of homogenous layers
-!                                  (layers are specified from the top do
-!     OPTDEPTHS      real array   Optical thickness of layers
-!     ALBEDOS        real array   Single scattering albedos
-!     ASYMMETRIES    real array   Asymmetry parameters
-!     TEMPS          real array   Temperatures (K) at layer interfaces
-!                                  (e.g. TEMPS(1) is at top of top layer
-!                                   TEMPS(2) is at bottom of top layer).
-!     DELTAM         logical      True for delta-Eddington scaling
-!     SRCTYPE        character    'S' for solar source, 'T' for thermal
-!     SOLARFLUX      real         Incident solar flux on horizonal plane
-!     SOLARMU        real         Cosine of the solar zenith angle
-!     GNDTEMP        real         Ground temperature (Kelvin)
-!     GNDEMIS        real         Ground emissivity (1-albedo)
-!     SKYRAD         real         Radiance (for solar) or brightness
-!                                  temperature (for thermal) of isotropi
-!                                  incident radiation from above
-!     UNITS          character    Units of flux for thermal source
-!                                 'T' for brightness temperature,
-!                                 'R' for W/(m^2 micron),
-!                                 'B' for W/(m^2)  for band integration.
-!     WAVENO(2)      real         Wavenumber range (cm^-1) (UNITS='B')
-!     WAVELEN        real         Wavelength (micron) (UNITS='R')
-!
-!       Output:
-!     FLUXES         real         Eddington fluxes at layer interfaces.
-!                                   FLUXES(1,L) is upwelling diffuse,
-!                                   FLUXES(2,L) is downwelling diffuse,
-!                                   FLUXES(3,L) is downwelling direct,
-!                                   L=1 is top, L=NUML+1 is bottom
+subroutine EDDRTF(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
+    & TEMPS, DELTAM, SRCTYPE, SOLARFLUX, SOLARMU,&
+    & GNDTEMP, GNDEMIS, SKYRAD, UNITS, WAVENO, WAVELEN,&
+    & FLUXES)
+    ! EDDRTF computes the layer interface fluxes for a plane-parallel
+    ! atmosphere with either solar or thermal source of radiation using
+    ! the Eddington approximation.  The medium is specified by a number
+    ! of homogeneous layers.  For a thermal source the Planck function i
+    ! linear with optical depth, while for a solar source it is exponent
+    ! The temperatures, optical depth, single scattering albedo, and
+    ! asymmetry parameter are specified for each layer.  The boundary
+    ! conditions such as the solar flux, and reflection and/or emission
+    ! ground surface are also specified. Delta Eddington scaling may be
+    ! used.  The diffuse Eddington fluxes and the solar direct flux at
+    ! each level are returned.
+    ! The model works by calculating the reflection, transmission, and
+    ! source terms for each layer from the input properties.  A
+    ! tri-diagonal matrix solver is then used to compute the diffuse flu
+    ! at each layer interface from the applied boundary conditions.
+    !
+    ! Parameters:
+    !   Input:
+    ! NLAYER         integer      Number of homogenous layers
+    !                              (layers are specified from the top do
+    ! OPTDEPTHS      real array   Optical thickness of layers
+    ! ALBEDOS        real array   Single scattering albedos
+    ! ASYMMETRIES    real array   Asymmetry parameters
+    ! TEMPS          real array   Temperatures (K) at layer interfaces
+    !                              (e.g. TEMPS(1) is at top of top layer
+    !                               TEMPS(2) is at bottom of top layer).
+    ! DELTAM         logical      True for delta-Eddington scaling
+    ! SRCTYPE        character    'S' for solar source, 'T' for thermal
+    ! SOLARFLUX      real         Incident solar flux on horizonal plane
+    ! SOLARMU        real         Cosine of the solar zenith angle
+    ! GNDTEMP        real         Ground temperature (Kelvin)
+    ! GNDEMIS        real         Ground emissivity (1-albedo)
+    ! SKYRAD         real         Radiance (for solar) or brightness
+    !                              temperature (for thermal) of isotropi
+    !                              incident radiation from above
+    ! UNITS          character    Units of flux for thermal source
+    !                             'T' for brightness temperature,
+    !                             'R' for W/(m^2 micron),
+    !                             'B' for W/(m^2)  for band integration.
+    ! WAVENO(2)      real         Wavenumber range (cm^-1) (UNITS='B')
+    ! WAVELEN        real         Wavelength (micron) (UNITS='R')
+    !
+    !   Output:
+    ! FLUXES         real         Eddington fluxes at layer interfaces.
+    !                               FLUXES(1,L) is upwelling diffuse,
+    !                               FLUXES(2,L) is downwelling diffuse,
+    !                               FLUXES(3,L) is downwelling direct,
+    !                               L=1 is top, L=NUML+1 is bottom
     implicit none
     integer NLAYER
     logical DELTAM
@@ -576,9 +578,9 @@ subroutine EDDRTF(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,       &
     N = 2*NLAYER + 2
     allocate (LOWER(N), UPPER(N), DIAG(N), RHS(N))
 
-!               Compute the reflection, transmission, and source
-!               coefficients for each layer for the diffuse Eddington
-!               two stream problem.
+    ! Compute the reflection, transmission, and source
+    !   coefficients for each layer for the diffuse Eddington
+    !   two stream problem.
     if (SRCTYPE .eq. 'T') then
         call PLANCK_FUNCTION(TEMPS(1), UNITS, WAVENO, WAVELEN, BBRAD)
         PLANCK1 = PI*BBRAD
@@ -589,7 +591,7 @@ subroutine EDDRTF(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,       &
     do L = 1, NLAYER
         DELTAU = OPTDEPTHS(L)
         if (DELTAU .lt. 0.0) stop 'EDDRTF: TAU<0'
-!            Special case for zero optical depth
+        ! Special case for zero optical depth
         if (DELTAU .eq. 0.0) then
             TRANS = 1.0
             REFLECT = 0.0
@@ -607,7 +609,7 @@ subroutine EDDRTF(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,       &
             R = (1.0 - OMEGA*(4.0 - 3.0*G))/4.0
             T = (7.0 - OMEGA*(4.0 + 3.0*G))/4.0
             LAMBDA = sqrt(3.0*(1.0 - OMEGA)*(1.0 - OMEGA*G))
-!              Special case for conservative scattering (lambda=0)
+            ! Special case for conservative scattering (lambda=0)
             if (LAMBDA .eq. 0.0) then
                 D = 1.0/(1.0 + T*DELTAU)
                 TRANS = D
@@ -623,7 +625,7 @@ subroutine EDDRTF(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,       &
             end if
 
             if (SRCTYPE .eq. 'T') then
-!               Calculate thermal source terms
+                ! Calculate thermal source terms
                 call PLANCK_FUNCTION(TEMPS(L + 1), UNITS, WAVENO, WAVELEN, BBRAD)
                 PLANCK2 = PI*BBRAD
                 V = 2.0*(PLANCK2 - PLANCK1)/(3.0*(1.-OMEGA*G)*DELTAU)
@@ -645,7 +647,7 @@ subroutine EDDRTF(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,       &
                 PLANCK1 = PLANCK2
                 FLUXES(3, L) = 0.0
             else
-!               Calculate solar source terms
+                ! Calculate solar source terms
                 FLUXES(3, L) = SOLARFLUX*exp(-TAU/MU0)
                 DS = 1.0/(LAMBDA**2 - 1.0/MU0**2)
                 B1 = 0.5*OMEGA*(SOLARFLUX/MU0)*exp(-TAU/MU0)*DS
@@ -681,7 +683,7 @@ subroutine EDDRTF(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,       &
         I = I + 2
     end do
 
-!           Set up boundary radiances
+    ! Set up boundary radiances
     if (SRCTYPE .eq. 'S') then
         FLUXES(3, NLAYER + 1) = SOLARFLUX*exp(-TAU/MU0)
         GNDFLUX = (1.0 - GNDEMIS)*SOLARFLUX*exp(-TAU/MU0)
@@ -693,7 +695,7 @@ subroutine EDDRTF(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,       &
         call PLANCK_FUNCTION(SKYRAD, UNITS, WAVENO, WAVELEN, BBRAD)
         SKYFLUX = PI*BBRAD
     end if
-!           Setup for and call the tri-diagonal matrix solver
+    ! Setup for and call the tri-diagonal matrix solver
     RHS(1) = SKYFLUX
     DIAG(1) = 0.0
     UPPER(1) = 1.0
@@ -702,7 +704,7 @@ subroutine EDDRTF(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,       &
     RHS(N) = GNDFLUX
     call TRIDIAG(N, LOWER, DIAG, UPPER, RHS)
 
-!           Put the fluxes in the output array
+    ! Put the fluxes in the output array
     if (UNITS .eq. 'T') then
         C = 1.0/PI
     else
@@ -720,12 +722,12 @@ subroutine EDDRTF(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,       &
 end subroutine
 
 subroutine TRIDIAG(N, LOWER, DIAG, UPPER, RHS)
-!       Computes the solution to a tridiagonal system.
-!       N is order of the matrix.  LOWER(2..N) is the subdiagonal,
-!       DIAG(1..N) is the diagonal, and UPPER(1..N-1) is the
-!       superdiagonal.  On input RHS is the right hand side, while
-!       on output it is the solution vector.  Everything is destroyed.
-!       Hacked from Linpack DGTSL.
+    ! Computes the solution to a tridiagonal system.
+    ! N is order of the matrix.  LOWER(2..N) is the subdiagonal,
+    ! DIAG(1..N) is the diagonal, and UPPER(1..N-1) is the
+    ! superdiagonal.  On input RHS is the right hand side, while
+    ! on output it is the solution vector.  Everything is destroyed.
+    ! Hacked from Linpack DGTSL.
     implicit none
     integer N
     double precision LOWER(*), DIAG(*), UPPER(*), RHS(*)
@@ -741,7 +743,7 @@ subroutine TRIDIAG(N, LOWER, DIAG, UPPER, RHS)
     UPPER(1) = 0.0
     UPPER(N) = 0.0
     do K = 1, N - 1
-!              Interchange this and next row to the get the largest pivo
+        ! Interchange this and next row to the get the largest pivo
         if (abs(LOWER(K + 1)) .ge. abs(LOWER(K))) then
             T = LOWER(K + 1)
             LOWER(K + 1) = LOWER(K)
@@ -765,7 +767,7 @@ subroutine TRIDIAG(N, LOWER, DIAG, UPPER, RHS)
     end do
     if (LOWER(N) .eq. 0.0) goto 990
 
-!           Back substitute
+    ! Back substitute
     RHS(N) = RHS(N)/LOWER(N)
     RHS(N - 1) = (RHS(N - 1) - DIAG(N - 1)*RHS(N))/LOWER(N - 1)
     do KB = 1, N - 2
@@ -774,23 +776,23 @@ subroutine TRIDIAG(N, LOWER, DIAG, UPPER, RHS)
     end do
     return
 
-990       continue
+990 continue
     stop 'Singular matrix in TRIDIAG'
 end subroutine
 
-subroutine MAKE_ANGLE_SET(NMU, NPHI, ITYPE, NPHI0MAX,            &
-&             NPHI0, MU, PHI, WTMU, WTDO, FFTFLAG, NANG)
-!       Make the set of angles for the discrete space representation.
-!     The number of mu's (cosine zenith angles) and maximum number of
-!     phi's (azimuth angles) is input.  The actual number of azimuthal
-!     angles for each mu is output (NPHI0).  There are three types of
-!     discrete ordinate sets: ITYPE=1 is a gaussian grid, 2 is a reduced
-!     gaussian grid, and 3 is a reduced double gaussian set.
-!     The output is the NMU mu values, the NPHI0 phi values for each mu,
-!     and the integration weight for each ordinate. The first NMU/2 mu
-!     angles are the downwelling (mu<0) angles.  Also output are the
-!     maximum number of azimuthal angles (NPHI0MAX), the flags for doing
-!     an azimuthal FFT for each mu and the total number of angles.
+subroutine MAKE_ANGLE_SET(NMU, NPHI, ITYPE, NPHI0MAX,&
+    & NPHI0, MU, PHI, WTMU, WTDO, FFTFLAG, NANG)
+    ! Make the set of angles for the discrete space representation.
+    ! The number of mu's (cosine zenith angles) and maximum number of
+    ! phi's (azimuth angles) is input.  The actual number of azimuthal
+    ! angles for each mu is output (NPHI0).  There are three types of
+    ! discrete ordinate sets: ITYPE=1 is a gaussian grid, 2 is a reduced
+    ! gaussian grid, and 3 is a reduced double gaussian set.
+    ! The output is the NMU mu values, the NPHI0 phi values for each mu,
+    ! and the integration weight for each ordinate. The first NMU/2 mu
+    ! angles are the downwelling (mu<0) angles.  Also output are the
+    ! maximum number of azimuthal angles (NPHI0MAX), the flags for doing
+    ! an azimuthal FFT for each mu and the total number of angles.
     implicit none
     integer NMU, NPHI, ITYPE, NPHI0MAX, NPHI0(NMU), NANG
     logical FFTFLAG(NMU)
@@ -799,30 +801,30 @@ subroutine MAKE_ANGLE_SET(NMU, NPHI, ITYPE, NPHI0MAX,            &
     real DELPHI
     parameter(MAXNPHI=256)
     integer GOODNFFT(MAXNPHI)
-    data GOODNFFT/1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 16,          &
-   &      18, 18, 20, 20, 24, 24, 24, 24, 25, 27, 27, 30, 30, 30, 32, 32,          &
-   &      36, 36, 36, 36, 40, 40, 40, 40, 45, 45, 45, 45, 45, 48, 48, 48,          &
-   &      50, 50, 54, 54, 54, 54, 60, 60, 60, 60, 60, 60, 64, 64, 64, 64,          &
-   &      72, 72, 72, 72, 72, 72, 72, 72, 80, 80, 80, 80, 80, 80, 80, 80,          &
-   &      81, 90, 90, 90, 90, 90, 90, 90, 90, 90, 96, 96, 96, 96, 96, 96,          &
-   &          100, 100, 100, 100, 108, 108, 108, 108,                        &
-   &          108, 108, 108, 108, 120, 120, 120, 120,                        &
-   &          120, 120, 120, 120, 120, 120, 120, 120,                        &
-   &          128, 128, 128, 128, 128, 128, 128, 128,                        &
-   &          144, 144, 144, 144, 144, 144, 144, 144,                        &
-   &          144, 144, 144, 144, 144, 144, 144, 144,                        &
-   &          160, 160, 160, 160, 160, 160, 160, 160,                        &
-   &          160, 160, 160, 160, 160, 160, 160, 160,                        &
-   &          180, 180, 180, 180, 180, 180, 180, 180, 180, 180,                &
-   &          180, 180, 180, 180, 180, 180, 180, 180, 180, 180,                &
-   &          192, 192, 192, 192, 192, 192, 192, 192, 192, 192, 192, 192,        &
-   &          200, 200, 200, 200, 200, 200, 200, 200,                        &
-   &          216, 216, 216, 216, 216, 216, 216, 216,                        &
-   &          216, 216, 216, 216, 216, 216, 216, 216,                        &
-   &          240, 240, 240, 240, 240, 240, 240, 240, 240, 240, 240, 240,        &
-   &          240, 240, 240, 240, 240, 240, 240, 240, 240, 240, 240, 240,        &
-   &          256, 256, 256, 256, 256, 256, 256, 256,                        &
-   &          256, 256, 256, 256, 256, 256, 256, 256/
+    data GOODNFFT/1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 16,&
+        & 18, 18, 20, 20, 24, 24, 24, 24, 25, 27, 27, 30, 30, 30, 32, 32,&
+        & 36, 36, 36, 36, 40, 40, 40, 40, 45, 45, 45, 45, 45, 48, 48, 48,&
+        & 50, 50, 54, 54, 54, 54, 60, 60, 60, 60, 60, 60, 64, 64, 64, 64,&
+        & 72, 72, 72, 72, 72, 72, 72, 72, 80, 80, 80, 80, 80, 80, 80, 80,&
+        & 81, 90, 90, 90, 90, 90, 90, 90, 90, 90, 96, 96, 96, 96, 96, 96,&
+        & 100, 100, 100, 100, 108, 108, 108, 108,&
+        & 108, 108, 108, 108, 120, 120, 120, 120,&
+        & 120, 120, 120, 120, 120, 120, 120, 120,&
+        & 128, 128, 128, 128, 128, 128, 128, 128,&
+        & 144, 144, 144, 144, 144, 144, 144, 144,&
+        & 144, 144, 144, 144, 144, 144, 144, 144,&
+        & 160, 160, 160, 160, 160, 160, 160, 160,&
+        & 160, 160, 160, 160, 160, 160, 160, 160,&
+        & 180, 180, 180, 180, 180, 180, 180, 180, 180, 180,&
+        & 180, 180, 180, 180, 180, 180, 180, 180, 180, 180,&
+        & 192, 192, 192, 192, 192, 192, 192, 192, 192, 192, 192, 192,&
+        & 200, 200, 200, 200, 200, 200, 200, 200,&
+        & 216, 216, 216, 216, 216, 216, 216, 216,&
+        & 216, 216, 216, 216, 216, 216, 216, 216,&
+        & 240, 240, 240, 240, 240, 240, 240, 240, 240, 240, 240, 240,&
+        & 240, 240, 240, 240, 240, 240, 240, 240, 240, 240, 240, 240,&
+        & 256, 256, 256, 256, 256, 256, 256, 256,&
+        & 256, 256, 256, 256, 256, 256, 256, 256/
 
     MM = max(0, int(NPHI/2) - 1)
     NANG = 0
@@ -837,8 +839,8 @@ subroutine MAKE_ANGLE_SET(NMU, NPHI, ITYPE, NPHI0MAX,            &
             if (ITYPE .eq. 1) then
                 NPHI0(J) = NPHI0MAX
             else
-                if (NPHI0MAX .gt. MAXNPHI)                                  &
-         &          stop 'MAKE_ANGLE_SET: exceeded GOODNFFT'
+                if (NPHI0MAX .gt. MAXNPHI)&
+                    & stop 'MAKE_ANGLE_SET: exceeded GOODNFFT'
                 NPHI0(J) = int(0.9 + NPHI0MAX*sqrt(1 - MU(J)**2))
                 NPHI0(J) = min(NPHI0MAX, GOODNFFT(NPHI0(J)))
             end if
@@ -857,18 +859,18 @@ subroutine MAKE_ANGLE_SET(NMU, NPHI, ITYPE, NPHI0MAX,            &
     return
 end subroutine
 
-subroutine MAKE_SH_DO_COEF(NSTLEG, ML, MM, NLM, NMU, NPHI0,      &
-&             NPHI0MAX, MU, PHI, WTMU, WTDO, FFTFLAG,              &
-&             CMU1, CMU2, CPHI1, CPHI2, WPHISAVE)
-!       Makes the transformation coefficients for the real generalized
-!     spherical harmonic transform.  The main coefficients are output in
-!     four arrays: 1 is for the SH_TO_DO forward transform, 2 is for the
-!     DO_TO_SH back transform, which contains the discrete angle integra
-!     weights.  The coefficients are divided up into the mu dependent se
-!      CMUn (function of l, m, mu_j), and the phi dependent set CPHIn
-!     (function of m, phi_k) for each mu_j.
-!     The FFTPACK phase coefficients for the FFT in azimuth are also
-!     output in WPHISAVE.
+subroutine MAKE_SH_DO_COEF(NSTLEG, ML, MM, NLM, NMU, NPHI0,&
+    & NPHI0MAX, MU, PHI, WTMU, WTDO, FFTFLAG,&
+    & CMU1, CMU2, CPHI1, CPHI2, WPHISAVE)
+    ! Makes the transformation coefficients for the real generalized
+    ! spherical harmonic transform.  The main coefficients are output in
+    ! four arrays: 1 is for the SH_TO_DO forward transform, 2 is for the
+    ! DO_TO_SH back transform, which contains the discrete angle integra
+    ! weights.  The coefficients are divided up into the mu dependent se
+    ! CMUn (function of l, m, mu_j), and the phi dependent set CPHIn
+    ! (function of m, phi_k) for each mu_j.
+    ! The FFTPACK phase coefficients for the FFT in azimuth are also
+    ! output in WPHISAVE.
     implicit none
     integer NSTLEG, ML, MM, NLM, NMU, NPHI0(NMU), NPHI0MAX
     logical FFTFLAG(NMU)
@@ -880,7 +882,7 @@ subroutine MAKE_SH_DO_COEF(NSTLEG, ML, MM, NLM, NMU, NPHI0,      &
     real X, W
     real, allocatable :: PRC(:, :)
 
-!        Make the mu part of the real generalized spherical harmonics
+    ! Make the mu part of the real generalized spherical harmonics
     allocate (PRC(6, NLM))
     do I = 1, NMU
         X = MU(I)
@@ -901,14 +903,14 @@ subroutine MAKE_SH_DO_COEF(NSTLEG, ML, MM, NLM, NMU, NPHI0,      &
     end do
     deallocate (PRC)
 
-!         Make the to and from Fourier coefficients for each mu
+    ! Make the to and from Fourier coefficients for each mu
     do I = 1, NMU
         if (.not. FFTFLAG(I)) then
-!             If not doing an FFT for this mu then make the DFT coeffici
+            ! If not doing an FFT for this mu then make the DFT coeffici
             W = 1.0/WTMU(I)
             do K = 1, NPHI0(I)
-                if (NPHI0(I) .gt. 32 .or. MM .gt. 16) stop                 &
-         &        'MAKE_SH_DO_COEF: Fourier coefficients array exceeded'
+                if (NPHI0(I) .gt. 32 .or. MM .gt. 16) stop&
+                    & 'MAKE_SH_DO_COEF: Fourier coefficients array exceeded'
                 CPHI1(0, K, I) = 1.0
                 CPHI2(K, 0, I) = WTDO(I, K)*W
                 do M = 1, MM
@@ -919,32 +921,32 @@ subroutine MAKE_SH_DO_COEF(NSTLEG, ML, MM, NLM, NMU, NPHI0,      &
                 end do
             end do
         else
-!             Precompute the phase factors for the FFTs
+            ! Precompute the phase factors for the FFTs
             call RFFTI(NPHI0(I), WPHISAVE(1, I))
         end if
     end do
     return
 end subroutine
 
-subroutine SURFACE_BRDF(SFCTYPE, REFPARMS, WAVELEN,              &
-&                         MU2, PHI2, MU1, PHI1, NSTOKES, REFLECT)
-!       Returns the reflection matrix for the general bidirectional
-!     reflection distribution function of the specified type (SFCTYPE).
-!     The incident direction is (MU1,PHI1), and the outgoing direction
-!     is (MU2,PHI2) (MU is cosine of zenith angle, and PHI is the azimut
-!     angle in radians).  The incident directions have mu<0 (downward),
-!     while the outgoing directions have mu>0 (upward). The reflection
-!     function is normalized so that for a Lambertian surface (uniform
-!     reflection) the returned value (REFLECT) is simply the albedo.
-!       This routine calls the desired BRDF function, passing the
-!     appropriate parameters.  More BRDF surface types may be added easi
-!     by putting in the appropriate function calls.
-!            Type        Parameters
-!       L  Lambertian    albedo
-!       W  WaveFresnel   Real, Imaginary index of refraction, wind speed
-!       D  Diner et al   a, k, b, zeta, sigma
-!       O  Ocean         Wind speed (m/s), Pigmentation (mg/m^3)
-!       R  RPV-original  rho0, k, Theta
+subroutine SURFACE_BRDF(SFCTYPE, REFPARMS, WAVELEN,&
+    & MU2, PHI2, MU1, PHI1, NSTOKES, REFLECT)
+    ! Returns the reflection matrix for the general bidirectional
+    ! reflection distribution function of the specified type (SFCTYPE).
+    ! The incident direction is (MU1,PHI1), and the outgoing direction
+    ! is (MU2,PHI2) (MU is cosine of zenith angle, and PHI is the azimut
+    ! angle in radians).  The incident directions have mu<0 (downward),
+    ! while the outgoing directions have mu>0 (upward). The reflection
+    ! function is normalized so that for a Lambertian surface (uniform
+    ! reflection) the returned value (REFLECT) is simply the albedo.
+    ! This routine calls the desired BRDF function, passing the
+    ! appropriate parameters.  More BRDF surface types may be added easi
+    ! by putting in the appropriate function calls.
+    !      Type        Parameters
+    ! L  Lambertian    albedo
+    ! W  WaveFresnel   Real, Imaginary index of refraction, wind speed
+    ! D  Diner et al   a, k, b, zeta, sigma
+    ! O  Ocean         Wind speed (m/s), Pigmentation (mg/m^3)
+    ! R  RPV-original  rho0, k, Theta
     implicit none
     integer NSTOKES
     real REFPARMS(*), WAVELEN, MU1, PHI1, MU2, PHI2, REFLECT(4, 4)
@@ -955,36 +957,36 @@ subroutine SURFACE_BRDF(SFCTYPE, REFPARMS, WAVELEN,              &
 
     PI = acos(-1.0)
     if (SFCTYPE .eq. 'L' .or. SFCTYPE .eq. 'l') then
-!         L or l: Lambertian surface BRDF is constant.
-!           (for testing, as done more efficiently by Lambertian routine
+        ! L or l: Lambertian surface BRDF is constant.
+        !   (for testing, as done more efficiently by Lambertian routine
         REFLECT(1:NSTOKES, 1:NSTOKES) = 0.0
         REFLECT(1, 1) = REFPARMS(1)
     else if (SFCTYPE .eq. 'W') then
-!         W: Fresnel reflection with Gaussian distribution of slopes
-        call WAVE_FRESNEL_REFLECTION(REFPARMS(1), REFPARMS(2),         &
-     &            REFPARMS(3), MU1, MU2, PHI1, PHI2, NSTOKES, REFLECT)
+        ! W: Fresnel reflection with Gaussian distribution of slopes
+        call WAVE_FRESNEL_REFLECTION(REFPARMS(1), REFPARMS(2),&
+            & REFPARMS(3), MU1, MU2, PHI1, PHI2, NSTOKES, REFLECT)
     else if (SFCTYPE .eq. 'D') then
-!         D: Diner et al., depolarizing modified RPV + Fresnel reflectio
-!            from microfacets with uniform or Gaussian distribution of s
-        call DINER_REFLECTION(REFPARMS(1), REFPARMS(2), REFPARMS(3),   &
-     &                         REFPARMS(4), REFPARMS(5),                &
-     &                         -MU1, MU2, PHI2 - PHI1, NSTOKES, REFLECT)
+        ! D: Diner et al., depolarizing modified RPV + Fresnel reflectio
+        !   from microfacets with uniform or Gaussian distribution of s
+        call DINER_REFLECTION(REFPARMS(1), REFPARMS(2), REFPARMS(3),&
+            & REFPARMS(4), REFPARMS(5),&
+            & -MU1, MU2, PHI2 - PHI1, NSTOKES, REFLECT)
     else if (SFCTYPE .eq. 'R') then
-!         R: Rahman, Pinty, and Verstraete
+        ! R: Rahman, Pinty, and Verstraete
         if (NSTOKES .gt. 1) then
             print *, 'RPV BRDF is only for unpolarized case'
             stop
         end if
-        REFLECT(1, 1) = RPV_REFLECTION(REFPARMS(1), REFPARMS(2),         &
-     &                           REFPARMS(3), -MU1, MU2, PHI1 - PHI2 - PI)
+        REFLECT(1, 1) = RPV_REFLECTION(REFPARMS(1), REFPARMS(2),&
+            & REFPARMS(3), -MU1, MU2, PHI1 - PHI2 - PI)
     else if (SFCTYPE .eq. 'O') then
-!         O: Ocean BRDF from 6S modified by Norm Loeb
+        ! O: Ocean BRDF from 6S modified by Norm Loeb
         if (NSTOKES .gt. 1) then
             print *, 'Ocean BRDF from 6S is only for unpolarized case'
             stop
         end if
-        call ocean_brdf_sw(REFPARMS(1), -1., REFPARMS(2), WAVELEN,     &
-     &                      -MU1, MU2, PHI1 - PHI2, PHI1, REFLECT(1, 1))
+        call ocean_brdf_sw(REFPARMS(1), -1., REFPARMS(2), WAVELEN,&
+            & -MU1, MU2, PHI1 - PHI2, PHI1, REFLECT(1, 1))
     else
         stop 'SURFACE_BRDF: Unknown BRDF type'
     end if
@@ -992,23 +994,23 @@ subroutine SURFACE_BRDF(SFCTYPE, REFPARMS, WAVELEN,              &
     return
 end subroutine
 
-subroutine WAVE_FRESNEL_REFLECTION(MRE, MIM, WINDSPEED,          &
-&                         MUI, MUR, PHII, PHIR, NSTOKES, REFLECT)
-!       Computes the polarized Fresnel reflection from a dielectric
-!     interface with a Gaussian distribution of slopes, including shadow
-!     The complex index of refraction of the dielectric is specified wit
-!     MRE,MIM (MIM is negative for an absorbing medium) and the wind spe
-!     is in m/s.  The incident direction is (MUI,PHII), and the outgoing
-!     direction is (MUR,PHIR) (MU is cosine of zenith angle with MU>0 an
-!     PHI is the azimuthal angle in radians).
-!       The code is courtesy of Michael Mishchenko, with some modificati
-!     The mean square surface slope (s^2) or SIGMA2 in Mishchenko and Tr
-!     is obtained from the Cox and Munk formula in the paper.
-!       For all formulas and definitions, see the paper:
-!     M. I. Mishchenko and L. D. Travis, 1997: Satellite retrieval
-!     of aerosol properties over the ocean using polarization as well as
-!     intensity of reflected sunlight.  J. Geophys. Res. 102, 16989-1701
-!
+subroutine WAVE_FRESNEL_REFLECTION(MRE, MIM, WINDSPEED,&
+    & MUI, MUR, PHII, PHIR, NSTOKES, REFLECT)
+    !   Computes the polarized Fresnel reflection from a dielectric
+    ! interface with a Gaussian distribution of slopes, including shadow
+    ! The complex index of refraction of the dielectric is specified wit
+    ! MRE,MIM (MIM is negative for an absorbing medium) and the wind spe
+    ! is in m/s.  The incident direction is (MUI,PHII), and the outgoing
+    ! direction is (MUR,PHIR) (MU is cosine of zenith angle with MU>0 an
+    ! PHI is the azimuthal angle in radians).
+    !   The code is courtesy of Michael Mishchenko, with some modificati
+    ! The mean square surface slope (s^2) or SIGMA2 in Mishchenko and Tr
+    ! is obtained from the Cox and Munk formula in the paper.
+    !   For all formulas and definitions, see the paper:
+    ! M. I. Mishchenko and L. D. Travis, 1997: Satellite retrieval
+    ! of aerosol properties over the ocean using polarization as well as
+    ! intensity of reflected sunlight.  J. Geophys. Res. 102, 16989-1701
+    !
     implicit none
     integer NSTOKES
     real MRE, MIM, WINDSPEED, MUI, MUR, PHII, PHIR, REFLECT(4, 4)
@@ -1032,8 +1034,8 @@ subroutine WAVE_FRESNEL_REFLECTION(MRE, MIM, WINDSPEED,          &
     DMUI = DABS(dble(MUI))
     DMUR = dble(MUR)
 
-!       Cartesian components of the unit vectors of the incident and
-!       scattered beams
+    ! Cartesian components of the unit vectors of the incident and
+    ! scattered beams
     if (DABS(DMUI - 1e0) .lt. 1d-10) DMUI = 0.999999999999d0
     if (DABS(DMUR - 1e0) .lt. 1d-10) DMUR = 0.999999999999d0
     DCOSI = DCOS(dble(PHII))
@@ -1048,14 +1050,14 @@ subroutine WAVE_FRESNEL_REFLECTION(MRE, MIM, WINDSPEED,          &
     VR1 = DSR*DCOSR
     VR2 = DSR*DSINR
     VR3 = DMUR
-!       Local surface normal for specular reflection
+    ! Local surface normal for specular reflection
     UNIT1 = VI1 - VR1
     UNIT2 = VI2 - VR2
     UNIT3 = VI3 - VR3
     FACT1 = UNIT1*UNIT1 + UNIT2*UNIT2 + UNIT3*UNIT3
     FACTOR = sqrt(1d0/FACT1)
 
-!      Fresnel reflection coefficients
+    ! Fresnel reflection coefficients
     XI1 = FACTOR*(UNIT1*VI1 + UNIT2*VI2 + UNIT3*VI3)
     CXI2 = CDSQRT(1d0 - (1d0 - XI1*XI1)*CN1*CN1/(CN2*CN2))
     C1 = CN1*XI1
@@ -1065,7 +1067,7 @@ subroutine WAVE_FRESNEL_REFLECTION(MRE, MIM, WINDSPEED,          &
     C2 = CN1*CXI2
     CRPAR = (C1 - C2)/(C1 + C2)
 
-!      Calculation of the amplitude scattering matrix
+    ! Calculation of the amplitude scattering matrix
     TI1 = -DMUI*DCOSI
     TI2 = -DMUI*DSINI
     TI3 = -DSI
@@ -1091,7 +1093,7 @@ subroutine WAVE_FRESNEL_REFLECTION(MRE, MIM, WINDSPEED,          &
     CF21 = -E4*CRPER + E3*CRPAR
     CF22 = E2*CRPER + E1*CRPAR
 
-!      Calculation of the Stokes reflection matrix
+    ! Calculation of the Stokes reflection matrix
     VP1 = VI2*VR3 - VI3*VR2
     VP2 = VI3*VR1 - VI1*VR3
     VP3 = VI1*VR2 - VI2*VR1
@@ -1140,7 +1142,7 @@ subroutine WAVE_FRESNEL_REFLECTION(MRE, MIM, WINDSPEED,          &
         REFLECT(4, 4) = (CTTPP - CTPPT)*DCOEFF
     end if
 
-!      Shadowing
+    ! Shadowing
     P = DACOS(-1.0d0)
     S1 = DSQRT(2*SIGMA2/P)
     S3 = 1d0/(DSQRT(2*SIGMA2))
@@ -1158,32 +1160,32 @@ subroutine WAVE_FRESNEL_REFLECTION(MRE, MIM, WINDSPEED,          &
     return
 end subroutine
 
-subroutine DINER_REFLECTION(A, K, B, ZETA, SIGMA,                &
-&                         MU1, MU2, PHI, NSTOKES, REFLECT)
-!       Computes polarized reflection from the Diner et al. (2012) model
-!     which two terms: 1) completely depolarizing volumetric scattering
-!     the modified RPV model, and 2) Fresnel reflection from randomly
-!     oriented microfacets with either a uniform or Gaussian distributio
-!     of slopes.  The three parameters of the modified-RPV model are A,
-!     and B.  The weight given to the Fresnel-microfacet term is ZETA (i
-!     ZETA=0 then only the REFLECT(1,1) element is non-zero with the
-!     modified-RPV model).  SIGMA is the standard deviation of microface
-!     slopes for the Gaussian orientation distribution, but if SIGMA<=0
-!     the uniform orientation distribution is used.  The complex index o
-!     refraction of the Fresnel microfacets is specified in this subrout
-!     The Diner et al. (2012) model leaves out the hotspot factor of the
-!     modified RPV model (and the original RPV), but the hotspot factor
-!     included here.
-!       The cosine of the incident zenith angle is MU1 (MU1>0), the
-!     cosine of the outgoing zenith angle is MU2 (MU2>0), and the relati
-!     azimuthal angle is PHI=PHI2-PHI1 (radians).
-!       For all formulas and definitions, see the paper:
-!     Diner, D. J., F. Xu, J. V. Martonchik, B. E. Rheingans, S. Geier,
-!     V. M. Jovanovic, A. Davis, R. A. Chipman, S. C. McClain, 2012:
-!     Exploration of a polarized surface bidirectional reflectance model
-!     using the ground-based multiangle spectropolarimetric imager.
-!     Atmosphere 2012, 3, 591-619; doi:10.3390/atmos3040591.
-!
+subroutine DINER_REFLECTION(A, K, B, ZETA, SIGMA,&
+    & MU1, MU2, PHI, NSTOKES, REFLECT)
+    !   Computes polarized reflection from the Diner et al. (2012) model
+    ! which two terms: 1) completely depolarizing volumetric scattering
+    ! the modified RPV model, and 2) Fresnel reflection from randomly
+    ! oriented microfacets with either a uniform or Gaussian distributio
+    ! of slopes.  The three parameters of the modified-RPV model are A,
+    ! and B.  The weight given to the Fresnel-microfacet term is ZETA (i
+    ! ZETA=0 then only the REFLECT(1,1) element is non-zero with the
+    ! modified-RPV model).  SIGMA is the standard deviation of microface
+    ! slopes for the Gaussian orientation distribution, but if SIGMA<=0
+    ! the uniform orientation distribution is used.  The complex index o
+    ! refraction of the Fresnel microfacets is specified in this subrout
+    ! The Diner et al. (2012) model leaves out the hotspot factor of the
+    ! modified RPV model (and the original RPV), but the hotspot factor
+    ! included here.
+    !   The cosine of the incident zenith angle is MU1 (MU1>0), the
+    ! cosine of the outgoing zenith angle is MU2 (MU2>0), and the relati
+    ! azimuthal angle is PHI=PHI2-PHI1 (radians).
+    !   For all formulas and definitions, see the paper:
+    ! Diner, D. J., F. Xu, J. V. Martonchik, B. E. Rheingans, S. Geier,
+    ! V. M. Jovanovic, A. Davis, R. A. Chipman, S. C. McClain, 2012:
+    ! Exploration of a polarized surface bidirectional reflectance model
+    ! using the ground-based multiangle spectropolarimetric imager.
+    ! Atmosphere 2012, 3, 591-619; doi:10.3390/atmos3040591.
+    !
     implicit none
     integer NSTOKES
     real A, K, B, ZETA, SIGMA, MU1, MU2, PHI
@@ -1195,14 +1197,14 @@ subroutine DINER_REFLECTION(A, K, B, ZETA, SIGMA,                &
     real COS2ALPHA1, SIN2ALPHA1, COS2ALPHA2, SIN2ALPHA2
     complex SFCINDEX, EPSILON, D, RP, RS
 
-!      Another free parameter of the Fresnel microfacet model is the
-!        index of refraction specified here
+    ! Another free parameter of the Fresnel microfacet model is the
+    !   index of refraction specified here
     SFCINDEX = cmplx(1.5, 0.0)
 
     REFLECT(1:NSTOKES, 1:NSTOKES) = 0.0
 
-!      The modified RPV model (Martonchik et al., 1998, IEEE-TGARS, 36,
-!      is implemented here.  Equation 6 in Diner et al. leaves out the h
+    ! The modified RPV model (Martonchik et al., 1998, IEEE-TGARS, 36,
+    !   is implemented here.  Equation 6 in Diner et al. leaves out the h
     SINTH1 = sqrt(1.0 - MU1**2)
     SINTH2 = sqrt(1.0 - MU2**2)
     COSPHI = cos(PHI)
@@ -1216,32 +1218,32 @@ subroutine DINER_REFLECTION(A, K, B, ZETA, SIGMA,                &
     REFLECT(1, 1) = REFLECT(1, 1)*HOT
     if (ZETA .lt. 0.0) return
 
-!      Calculate incident/reflectance angle relative to microfacet (eq 1
+    ! Calculate incident/reflectance angle relative to microfacet (eq 1
     GAMMA = 0.5*acos(-COSSCATANG)
     COSGAMMA = cos(GAMMA)
 
-!      Calculate the Fresnel reflection coefficients (equivalent to eq 1
-!        [D = n*cos(gamma')]
+    ! Calculate the Fresnel reflection coefficients (equivalent to eq 1
+    !   [D = n*cos(gamma')]
     EPSILON = SFCINDEX**2
     D = sqrt(EPSILON - 1.0 + COSGAMMA**2)
     RP = (EPSILON*COSGAMMA - D)/(EPSILON*COSGAMMA + D)
     RS = (COSGAMMA - D)/(COSGAMMA + D)
 
-!      Calculate the Mueller matrix elements for Fresnel reflection (eq
+    ! Calculate the Mueller matrix elements for Fresnel reflection (eq
     F11 = 0.5*(CABS(RP)**2 + CABS(RS)**2)
     F12 = 0.5*(CABS(RP)**2 - CABS(RS)**2)
     F33 = real(RP*conjg(RS))
     F34 = -IMAG(RP*conjg(RS))
 
-!      Calculate facet tilt angle, beta (eq 16b)
+    ! Calculate facet tilt angle, beta (eq 16b)
     COSBETA = 0.5*(MU1 + MU2)/COSGAMMA
 
-!      Calculate the factor before the M*P*M matrix including the distri
-!       of microfacet orientations (Gaussian for SIGMA>0) (eq 13 & 14)
-!       Note: Diner's BRDF is multiplied by pi here
+    ! Calculate the factor before the M*P*M matrix including the distri
+    !   of microfacet orientations (Gaussian for SIGMA>0) (eq 13 & 14)
+    !   Note: Diner's BRDF is multiplied by pi here
     if (SIGMA .gt. 0.0) then
-        H = ZETA*exp(-0.5*(1/COSBETA**2 - 1)/SIGMA**2)                   &
-     &        /(8*SIGMA**2*MU2*MU1*COSBETA**4)
+        H = ZETA*exp(-0.5*(1/COSBETA**2 - 1)/SIGMA**2)&
+            & /(8*SIGMA**2*MU2*MU1*COSBETA**4)
     else
         H = ZETA/(8*MU2*MU1*COSBETA)
     end if
@@ -1249,7 +1251,7 @@ subroutine DINER_REFLECTION(A, K, B, ZETA, SIGMA,                &
     REFLECT(1, 1) = REFLECT(1, 1) + H*F11
 
     if (NSTOKES .ge. 2) then
-!        Calculate the polarization rotation angles (eq 20 & 21)
+        ! Calculate the polarization rotation angles (eq 20 & 21)
         SINPHI = sin(PHI)
         ALPHA1 = atan(SINTH2*SINPHI/(MU2*SINTH1 + SINTH2*MU1*COSPHI))
         ALPHA2 = atan(SINTH1*SINPHI/(SINTH2*MU1 + MU2*SINTH1*COSPHI))
@@ -1258,22 +1260,22 @@ subroutine DINER_REFLECTION(A, K, B, ZETA, SIGMA,                &
         COS2ALPHA2 = cos(2*ALPHA2)
         SIN2ALPHA2 = sin(2*ALPHA2)
 
-!        Calculate the rotated Mueller matrix (M*P*M) for Fresnel reflec
-!         and multiply by the H factor to get the final BRDF
+        ! Calculate the rotated Mueller matrix (M*P*M) for Fresnel reflec
+        !   and multiply by the H factor to get the final BRDF
         REFLECT(1, 2) = H*F12*COS2ALPHA1
         REFLECT(2, 1) = H*F12*COS2ALPHA2
-        REFLECT(2, 2) = H*(F11*COS2ALPHA1*COS2ALPHA2                     &
-     &                  + F33*SIN2ALPHA1*SIN2ALPHA2)
+        REFLECT(2, 2) = H*(F11*COS2ALPHA1*COS2ALPHA2&
+            & + F33*SIN2ALPHA1*SIN2ALPHA2)
     end if
     if (NSTOKES .ge. 3) then
         REFLECT(1, 3) = -H*F12*SIN2ALPHA1
-        REFLECT(2, 3) = H*(-F11*SIN2ALPHA1*COS2ALPHA2                    &
-     &                   + F33*COS2ALPHA1*SIN2ALPHA2)
+        REFLECT(2, 3) = H*(-F11*SIN2ALPHA1*COS2ALPHA2&
+            & + F33*COS2ALPHA1*SIN2ALPHA2)
         REFLECT(3, 1) = -H*F12*SIN2ALPHA2
-        REFLECT(3, 2) = H*(-F11*COS2ALPHA1*SIN2ALPHA2                    &
-     &                   + F33*SIN2ALPHA1*COS2ALPHA2)
-        REFLECT(3, 3) = H*(F11*SIN2ALPHA1*SIN2ALPHA2                    &
-     &                   + F33*COS2ALPHA1*COS2ALPHA2)
+        REFLECT(3, 2) = H*(-F11*COS2ALPHA1*SIN2ALPHA2&
+            & + F33*SIN2ALPHA1*COS2ALPHA2)
+        REFLECT(3, 3) = H*(F11*SIN2ALPHA1*SIN2ALPHA2&
+            & + F33*COS2ALPHA1*COS2ALPHA2)
     end if
     if (NSTOKES .ge. 4) then
         REFLECT(1, 4) = 0.0
@@ -1288,20 +1290,20 @@ subroutine DINER_REFLECTION(A, K, B, ZETA, SIGMA,                &
 end subroutine
 
 real function RPV_REFLECTION(RHO0, K, THETA, MU1, MU2, PHI)
-!       Computes the Rahman, Pinty, Verstraete BRDF.  The incident
-!     and outgoing cosine zenith angles are MU1 and MU2, respectively,
-!     and the relative azimuthal angle is PHI.  In this case the inciden
-!     direction is where the radiation is coming from (i.e. opposite of
-!     discrete ordinate), so MU1>0 and the hot spot is MU2=MU1 and PHI=0
-!     The reference is:
-!       Rahman, Pinty, Verstraete, 1993: Coupled Surface-Atmosphere
-!       Reflectance (CSAR) Model. 2. Semiempirical Surface Model Usable
-!       With NOAA Advanced Very High Resolution Radiometer Data,
-!       J. Geophys. Res., 98, 20791-20801.
-!
-!     Implementation modified by Alexei Lyapustin to prevent negative
-!     values in SQRT function in calculating CAPG, and to prevent
-!     unphysical growth of RPV BRDF at small mu or mu0.
+    !   Computes the Rahman, Pinty, Verstraete BRDF.  The incident
+    ! and outgoing cosine zenith angles are MU1 and MU2, respectively,
+    ! and the relative azimuthal angle is PHI.  In this case the inciden
+    ! direction is where the radiation is coming from (i.e. opposite of
+    ! discrete ordinate), so MU1>0 and the hot spot is MU2=MU1 and PHI=0
+    ! The reference is:
+    !   Rahman, Pinty, Verstraete, 1993: Coupled Surface-Atmosphere
+    !   Reflectance (CSAR) Model. 2. Semiempirical Surface Model Usable
+    !   With NOAA Advanced Very High Resolution Radiometer Data,
+    !   J. Geophys. Res., 98, 20791-20801.
+    !
+    ! Implementation modified by Alexei Lyapustin to prevent negative
+    ! values in SQRT function in calculating CAPG, and to prevent
+    ! unphysical growth of RPV BRDF at small mu or mu0.
 
     real RHO0, K, THETA, MU1, MU2, PHI, mu_min, x1, x2
     real M, F, H, COSPHI, SIN1, SIN2, COSG, TAN1, TAN2, CAPG
@@ -1328,8 +1330,8 @@ real function RPV_REFLECTION(RHO0, K, THETA, MU1, MU2, PHI)
 end function
 
 subroutine SUM_OUTPUT(IFLAG, WT, N, data, SUMDATA)
-!         Sums an output array over the k-distribution.
-!     If IFLAG=0 then the output array is set to the input times the wei
+    !     Sums an output array over the k-distribution.
+    ! If IFLAG=0 then the output array is set to the input times the wei
     implicit none
     integer IFLAG, N, I
     real WT, data(N), SUMDATA(N)
@@ -1345,10 +1347,10 @@ subroutine SUM_OUTPUT(IFLAG, WT, N, data, SUMDATA)
     return
 end subroutine
 
-subroutine COMPUTE_NETFLUXDIV(NSTOKES, NPTS, RSHPTR, SRCTYPE,    &
-&             SOLARMU, EXTINCT, ALBEDO, PLANCK, DIRFLUX,           &
-&             RADIANCE, NETFLUXDIV)
-!       Computes the net flux divergence at every grid point.
+subroutine COMPUTE_NETFLUXDIV(NSTOKES, NPTS, RSHPTR, SRCTYPE,&
+    & SOLARMU, EXTINCT, ALBEDO, PLANCK, DIRFLUX,&
+    & RADIANCE, NETFLUXDIV)
+    ! Computes the net flux divergence at every grid point.
     implicit none
     integer NSTOKES, NPTS, RSHPTR(NPTS + 1)
     real PLANCK(NPTS), DIRFLUX(NPTS), SOLARMU
@@ -1375,14 +1377,14 @@ subroutine COMPUTE_NETFLUXDIV(NSTOKES, NPTS, RSHPTR, SRCTYPE,    &
     return
 end subroutine
 
-subroutine COMPUTE_SH(NSHOUT, NSTOKES, NPTS, SRCTYPE,            &
-&                       SOLARMU, SOLARAZ, DIRFLUX,                 &
-&                       RSHPTR, ML, MM, RADIANCE, SHTERMS)
-!       Computes the quantities for the spherical harmonic output.
-!     At each grid point the mean radiance and net flux (Fx, Fy, Fz)
-!     are computed.  The output includes the diffuse and direct solar
-!     components.  If NSHOUT=5 then the HIGHORDERRAD flag is set and the
-!     rms of the higher order terms in the radiance series is computed.
+subroutine COMPUTE_SH(NSHOUT, NSTOKES, NPTS, SRCTYPE,&
+    & SOLARMU, SOLARAZ, DIRFLUX,&
+    & RSHPTR, ML, MM, RADIANCE, SHTERMS)
+    !   Computes the quantities for the spherical harmonic output.
+    ! At each grid point the mean radiance and net flux (Fx, Fy, Fz)
+    ! are computed.  The output includes the diffuse and direct solar
+    ! components.  If NSHOUT=5 then the HIGHORDERRAD flag is set and the
+    ! rms of the higher order terms in the radiance series is computed.
     implicit none
     integer NSTOKES, NPTS, RSHPTR(NPTS + 1), ML, MM, NSHOUT
     real SOLARMU, SOLARAZ, DIRFLUX(NPTS)
@@ -1396,7 +1398,7 @@ subroutine COMPUTE_SH(NSHOUT, NSTOKES, NPTS, SRCTYPE,            &
     NLM = (2*MM + 1)*(ML + 1) - MM*(MM + 1)
     allocate (YLMSUN(NLM))
 
-!             Spherical Harmonic output: individual SH terms
+    ! Spherical Harmonic output: individual SH terms
     PI = acos(-1.0)
     A = sqrt(2.0*PI/3.0)
     C = sqrt(4.0*PI/3.0)
@@ -1415,14 +1417,14 @@ subroutine COMPUTE_SH(NSHOUT, NSTOKES, NPTS, SRCTYPE,            &
         IMEAN = C0*RADIANCE(1, IR + 1)
         FZ = C*RADIANCE(1, IR + 3)
         if (MM .gt. 0) then
-!          FX = -C*RADIANCE(1,IR+4)   ! old spherical harmonics basis
+            ! FX = -C*RADIANCE(1,IR+4)   ! old spherical harmonics basis
             ! real generaliz
             FX = -A*(RADIANCE(1, IR + 4) + RADIANCE(1, IR + 2))
         else
             FX = 0.0
         end if
         if (MM .gt. 0) then
-!          FY = -C*RADIANCE(1,IR+2)
+            ! FY = -C*RADIANCE(1,IR+2)
             ! real generaliz
             FY = -A*(RADIANCE(1, IR + 2) - RADIANCE(1, IR + 4))
         else
@@ -1453,15 +1455,15 @@ subroutine COMPUTE_SH(NSHOUT, NSTOKES, NPTS, SRCTYPE,            &
     return
 end subroutine
 
-subroutine INTERP_OUTPUT(OLDNPTS, NPTS,                          &
-&                  FLUX_OUT, FLUXDIV_OUT, SH_OUT,                  &
-&                  FLUXES, DIRFLUX, FLUXDIV, SHTERMS,              &
-&                  NBCELLS, NCELLS, TREEPTR, GRIDPTR, GRIDPOS)
-!       Interpolates the output data to the new grid points (those >OLDN
-!     from the old grid points.  The output data is in FLUXES, DIRFLUX,
-!     FLUXDIV, and SHTERMS.  OLDNPTS is set to zero to do no interpolati
-!     Each new point is located in a cell, and the two parent grid point
-!     are found to interpolate the data from.
+subroutine INTERP_OUTPUT(OLDNPTS, NPTS,&
+    & FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
+    & FLUXES, DIRFLUX, FLUXDIV, SHTERMS,&
+    & NBCELLS, NCELLS, TREEPTR, GRIDPTR, GRIDPOS)
+    !   Interpolates the output data to the new grid points (those >OLDN
+    ! from the old grid points.  The output data is in FLUXES, DIRFLUX,
+    ! FLUXDIV, and SHTERMS.  OLDNPTS is set to zero to do no interpolati
+    ! Each new point is located in a cell, and the two parent grid point
+    ! are found to interpolate the data from.
     implicit none
     integer OLDNPTS, NPTS, NBCELLS, NCELLS
     integer GRIDPTR(8, NCELLS), TREEPTR(2, NCELLS)
@@ -1471,32 +1473,32 @@ subroutine INTERP_OUTPUT(OLDNPTS, NPTS,                          &
     real GRIDPOS(3, *)
     integer IP, IC, ICELL, IPARENT, IDIR, I, J, DIR1, DIR2, IP1, IP2
     integer GRIDCORNER(2, 4, 3)
-    data GRIDCORNER/1, 2, 3, 4, 5, 6, 7, 8, 1, 3, 2, 4, 5, 7, 6, 8,          &
-   &                1, 5, 2, 6, 3, 7, 4, 8/
+    data GRIDCORNER/1, 2, 3, 4, 5, 6, 7, 8, 1, 3, 2, 4, 5, 7, 6, 8,&
+        & 1, 5, 2, 6, 3, 7, 4, 8/
 
     if (OLDNPTS .le. 0) return
 
-!         Go through all the non-base grid cells
+    ! Go through all the non-base grid cells
     do ICELL = NBCELLS + 1, NCELLS
         do IC = 1, 8
             IP = GRIDPTR(IC, ICELL)
             if (IP .gt. OLDNPTS) then
                 IPARENT = TREEPTR(1, ICELL)
-!             Go through all 12 edges of parent cell to find which one h
+                ! Go through all 12 edges of parent cell to find which one h
                 do IDIR = 1, 3
                     DIR1 = mod(IDIR - 1 + 1, 3) + 1
                     DIR2 = mod(IDIR - 1 + 2, 3) + 1
                     do I = 1, 4
                         IP1 = GRIDPTR(GRIDCORNER(1, I, IDIR), IPARENT)
                         IP2 = GRIDPTR(GRIDCORNER(2, I, IDIR), IPARENT)
-                        if (GRIDPOS(DIR1, IP1) .eq. GRIDPOS(DIR1, IP) .and.       &
-             &              GRIDPOS(DIR2, IP1) .eq. GRIDPOS(DIR2, IP)) goto 120
+                        if (GRIDPOS(DIR1, IP1) .eq. GRIDPOS(DIR1, IP) .and.&
+                            & GRIDPOS(DIR2, IP1) .eq. GRIDPOS(DIR2, IP)) goto 120
                     end do
                 end do
                 stop 'INTERP_OUTPUT: point not on an edge'
-120                   continue
-!            Interpolate the data from the two parent points at the
-!              ends of the edge; assume the cell was split in half.
+120             continue
+                ! Interpolate the data from the two parent points at the
+                !   ends of the edge; assume the cell was split in half.
                 if (FLUX_OUT) then
                     FLUXES(1, IP) = 0.5*(FLUXES(1, IP1) + FLUXES(1, IP2))
                     FLUXES(2, IP) = 0.5*(FLUXES(2, IP1) + FLUXES(2, IP2))
@@ -1517,10 +1519,10 @@ subroutine INTERP_OUTPUT(OLDNPTS, NPTS,                          &
     return
 end subroutine
 
-subroutine INTERP_RADIANCE(NSTOKES, OLDNPTS, NPTS, RSHPTR,       &
-&          RADIANCE, NBCELLS, NCELLS, TREEPTR, GRIDPTR, GRIDPOS)
-!       Interpolates the spherical harmonic radiance array to the new
-!     grid points (>OLDNPTS) from the old grid points.
+subroutine INTERP_RADIANCE(NSTOKES, OLDNPTS, NPTS, RSHPTR,&
+    & RADIANCE, NBCELLS, NCELLS, TREEPTR, GRIDPTR, GRIDPOS)
+    ! Interpolates the spherical harmonic radiance array to the new
+    !   grid points (>OLDNPTS) from the old grid points.
     implicit none
     integer NSTOKES, OLDNPTS, NPTS, NBCELLS, NCELLS
     integer RSHPTR(NPTS + 1), GRIDPTR(8, NCELLS), TREEPTR(2, NCELLS)
@@ -1529,32 +1531,32 @@ subroutine INTERP_RADIANCE(NSTOKES, OLDNPTS, NPTS, RSHPTR,       &
     integer IR, IR1, IR2, NR, NR1, NR2
     integer GRIDCORNER(2, 4, 3)
     real RAD1(NSTOKES), RAD2(NSTOKES)
-    data GRIDCORNER/1, 2, 3, 4, 5, 6, 7, 8, 1, 3, 2, 4, 5, 7, 6, 8,          &
-   &                1, 5, 2, 6, 3, 7, 4, 8/
+    data GRIDCORNER/1, 2, 3, 4, 5, 6, 7, 8, 1, 3, 2, 4, 5, 7, 6, 8,&
+        & 1, 5, 2, 6, 3, 7, 4, 8/
 
     if (OLDNPTS .le. 0) return
 
-!         Go through all the non-base grid cells
+    ! Go through all the non-base grid cells
     do ICELL = NBCELLS + 1, NCELLS
         do IC = 1, 8
             IP = GRIDPTR(IC, ICELL)
             if (IP .gt. OLDNPTS) then
                 IPARENT = TREEPTR(1, ICELL)
-!             Go through all 12 edges of parent cell to find which one h
+                ! Go through all 12 edges of parent cell to find which one h
                 do IDIR = 1, 3
                     DIR1 = mod(IDIR - 1 + 1, 3) + 1
                     DIR2 = mod(IDIR - 1 + 2, 3) + 1
                     do I = 1, 4
                         IP1 = GRIDPTR(GRIDCORNER(1, I, IDIR), IPARENT)
                         IP2 = GRIDPTR(GRIDCORNER(2, I, IDIR), IPARENT)
-                        if (GRIDPOS(DIR1, IP1) .eq. GRIDPOS(DIR1, IP) .and.       &
-             &              GRIDPOS(DIR2, IP1) .eq. GRIDPOS(DIR2, IP)) goto 120
+                        if (GRIDPOS(DIR1, IP1) .eq. GRIDPOS(DIR1, IP) .and.&
+                            & GRIDPOS(DIR2, IP1) .eq. GRIDPOS(DIR2, IP)) goto 120
                     end do
                 end do
                 stop 'INTERP_OUTPUT: point not on an edge'
-120                   continue
-!            Interpolate the data from the two parent points at the
-!              ends of the edge; assume the cell was split in half.
+120             continue
+                ! Interpolate the data from the two parent points at the
+                !   ends of the edge; assume the cell was split in half.
                 IR1 = RSHPTR(IP1)
                 IR2 = RSHPTR(IP2)
                 NR1 = RSHPTR(IP1 + 1) - RSHPTR(IP1)
@@ -1582,19 +1584,19 @@ subroutine INTERP_RADIANCE(NSTOKES, OLDNPTS, NPTS, RSHPTR,       &
     return
 end subroutine
 
-subroutine VISUALIZE_RADIANCE(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
-&             ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,                 &
-&             NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,                 &
-&             BCFLAG, IPFLAG, SRCTYPE, DELTAM, SOLARMU, SOLARAZ,   &
-&             SFCTYPE, NSFCPAR, SFCGRIDPARMS,                      &
-&             MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,              &
-&             GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, UNITS,  &
-&             XGRID, YGRID, ZGRID, GRIDPOS,                        &
-&             GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,               &
-&             EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,     &
-&             SHPTR, SOURCE, OUTPARMS, IVIS, VISOUT)
-!       Computes Stokes radiances (output in VISOUT) for the visualizati
-!      modes: 1) camera mode, and 2) cross track scanning.
+subroutine VISUALIZE_RADIANCE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+    & ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
+    & NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
+    & BCFLAG, IPFLAG, SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
+    & SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
+    & MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
+    & GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, UNITS,&
+    & XGRID, YGRID, ZGRID, GRIDPOS,&
+    & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+    & EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
+    & SHPTR, SOURCE, OUTPARMS, IVIS, VISOUT)
+    !   Computes Stokes radiances (output in VISOUT) for the visualizati
+    !  modes: 1) camera mode, and 2) cross track scanning.
     implicit none
     integer NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG, NPTS, NCELLS
     integer ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
@@ -1638,24 +1640,24 @@ subroutine VISUALIZE_RADIANCE(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
             NSCATANGLE = max(36, min(MAXSCATANG, 2*NLEG))
             NSTPHASE = min(NSTLEG, 2)
             allocate (PHASETAB(NSTPHASE, NUMPHASE, NSCATANGLE))
-            call PRECOMPUTE_PHASE(NSCATANGLE, NUMPHASE, NSTPHASE,        &
-       &                    NSTOKES, ML, NSTLEG, NLEG, LEGEN, PHASETAB)
+            call PRECOMPUTE_PHASE(NSCATANGLE, NUMPHASE, NSTPHASE,&
+                & NSTOKES, ML, NSTLEG, NLEG, LEGEN, PHASETAB)
         end if
     end if
 
-!         Make the isotropic radiances for the top boundary
-    call COMPUTE_TOP_RADIANCES(SRCTYPE, SKYRAD, WAVENO, WAVELEN,     &
-   &                            UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
-!         Make the bottom boundary radiances for the Lambertian surfaces
-!          Compute the upwelling bottom radiances using the downwelling
+    ! Make the isotropic radiances for the top boundary
+    call COMPUTE_TOP_RADIANCES(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
+        & UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
+    ! Make the bottom boundary radiances for the Lambertian surfaces
+    !   Compute the upwelling bottom radiances using the downwelling
     if (SFCTYPE .eq. 'FL') then
-        call FIXED_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR(1, 2),            &
-     &             DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO,        &
-     &             WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1, 1 + NTOPPTS))
+        call FIXED_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR(1, 2),&
+            & DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO,&
+            & WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1, 1 + NTOPPTS))
     else if (SFCTYPE .eq. 'VL') then
-        call VARIABLE_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR(1, 2),         &
-     &               DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS,   &
-     &               NSTOKES, BCRAD(1, 1 + NTOPPTS))
+        call VARIABLE_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR(1, 2),&
+            & DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS,&
+            & NSTOKES, BCRAD(1, 1 + NTOPPTS))
     end if
 
     CAMERA_MODE = nint(OUTPARMS(1)) .eq. 1
@@ -1663,26 +1665,26 @@ subroutine VISUALIZE_RADIANCE(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
         NL = nint(OUTPARMS(10))
         NS = nint(OUTPARMS(11))
     else
-        NL = 1 + int(sqrt((OUTPARMS(4) - OUTPARMS(7))**2                 &
-     &               + (OUTPARMS(5) - OUTPARMS(8))**2                      &
-     &               + (OUTPARMS(6) - OUTPARMS(9))**2)/OUTPARMS(10))
+        NL = 1 + int(sqrt((OUTPARMS(4) - OUTPARMS(7))**2&
+            & + (OUTPARMS(5) - OUTPARMS(8))**2&
+            & + (OUTPARMS(6) - OUTPARMS(9))**2)/OUTPARMS(10))
         NS = 1 + int(abs(OUTPARMS(12) - OUTPARMS(11))/OUTPARMS(13))
     end if
     PI = acos(-1.0d0)
     DEGRAD = PI/180.
 
-!         Loop over pixels in image
+    ! Loop over pixels in image
     do LINE = 1, NL
         do SAMP = 1, NS
             IVIS = IVIS + 1
 
             if (CAMERA_MODE) then
-!         Camera mode:
-!          1, bytes, scale, X,Y,Z, theta, phi, rotang, NL, NS, delline,
-!
-!           Use spherical trig to find the pixel direction (MURAY,PHIRAY
-!             from the camera center (THETA0,PHI0) and the relative pixe
-!             angles (U,V).
+                ! Camera mode:
+                !   1, bytes, scale, X,Y,Z, theta, phi, rotang, NL, NS, delline,
+                !
+                ! Use spherical trig to find the pixel direction (MURAY,PHIRAY
+                !   from the camera center (THETA0,PHI0) and the relative pixe
+                !   angles (U,V).
                 UP = (SAMP - NS/2 - 1)*OUTPARMS(13)*DEGRAD
                 VP = (LINE - NL/2 - 1)*OUTPARMS(12)*DEGRAD
                 ROTANG = OUTPARMS(9)*DEGRAD
@@ -1713,8 +1715,8 @@ subroutine VISUALIZE_RADIANCE(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
                     else if (abs(SINTH1) .gt. 1.0e-6) then
                         COSDELPHI = (cos(U) - COSTH*cos(THETA1))/(SINTH1*SINTH)
                     else if (abs(SINTH0) .gt. 1.0e-6) then
-                        COSDELPHI = (cos(U)*cos(V) - COSTH*cos(THETA0))             &
-               &                     /(SINTH0*SINTH)
+                        COSDELPHI = (cos(U)*cos(V) - COSTH*cos(THETA0))&
+                            & /(SINTH0*SINTH)
                     end if
                     COSDELPHI = min(+1.0d0, max(-1.0d0, COSDELPHI))
                     if (U .ge. 0.0) then
@@ -1730,10 +1732,10 @@ subroutine VISUALIZE_RADIANCE(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
 
             else
 
-!         Cross track scanning in the vertical plane:
-!          2, bytes, scale, X1,Y1,Z1, X2,Y2,Z2, spacing, scan1, scan2, d
-!            Start and end of scan angle (scan1, scan2) are +/- relative
-!            to nadir, and positive is on right side.
+                ! Cross track scanning in the vertical plane:
+                !   2, bytes, scale, X1,Y1,Z1, X2,Y2,Z2, spacing, scan1, scan2, d
+                ! Start and end of scan angle (scan1, scan2) are +/- relative
+                !   to nadir, and positive is on right side.
                 X1 = OUTPARMS(4)
                 Y1 = OUTPARMS(5)
                 Z1 = OUTPARMS(6)
@@ -1744,7 +1746,7 @@ subroutine VISUALIZE_RADIANCE(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
                 RX = (X2 - X1)/DIST
                 RY = (Y2 - Y1)/DIST
                 RZ = (Z2 - Z1)/DIST
-!         D = (LINE-1)*OUTPARMS(10)
+                ! D = (LINE-1)*OUTPARMS(10)
                 D = (NL - LINE)*OUTPARMS(10)
                 X0 = X1 + D*RX
                 Y0 = Y1 + D*RY
@@ -1758,7 +1760,7 @@ subroutine VISUALIZE_RADIANCE(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
                 end if
             end if
 
-!             Extrapolate ray to domain top if above
+            ! Extrapolate ray to domain top if above
             if (Z0 .gt. ZGRID(NZ)) then
                 if (COSTH .ge. 0.0) then
                     VISRAD(:) = 0.0
@@ -1773,42 +1775,42 @@ subroutine VISUALIZE_RADIANCE(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
                 stop
             end if
 
-!         MURAY,PHRAY is camera pixel viewing direction;
-!         MU2,PHI2 is radiance travel direction (the opposite)
+            ! MURAY,PHRAY is camera pixel viewing direction;
+            ! MU2,PHI2 is radiance travel direction (the opposite)
             MURAY = SNGL(COSTH)
             PHIRAY = SNGL(PHIR)
             MU2 = -COSTH
             PHI2 = PHIR + PI
 
-!         Integrate the extinction and source function along this ray
-!         to calculate the Stokes radiance vector for this pixel
+            ! Integrate the extinction and source function along this ray
+            !   to calculate the Stokes radiance vector for this pixel
             TRANSMIT = 1.0d0; VISRAD(:) = 0.0d0
-            call INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,           &
-         &                       NSTPHASE, NSCATANGLE, PHASETAB,            &
-         &                       NX, NY, NZ, NPTS, NCELLS,                  &
-         &                       GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,     &
-         &                       XGRID, YGRID, ZGRID, GRIDPOS,              &
-         &                       ML, MM, NLM, NLEG, NUMPHASE,               &
-         &                       NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,       &
-         &                       DELTAM, SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, &
-         &                       EXTINCT, ALBEDO, LEGEN, IPHASE,            &
-         &                       DIRFLUX, SHPTR, SOURCE, YLMSUN,            &
-         &                       MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,    &
-         &                       SFCTYPE, NSFCPAR, SFCGRIDPARMS,            &
-         &                       MU2, PHI2, X0, Y0, Z0,                       &
-         &                     XE, YE, ZE, SIDE, TRANSMIT, VISRAD, VALIDRAD)
-900               continue
-!        WRITE (6,'(1X,2F8.4,1X,2F11.7,4(1X,F11.6))')
-!     .         X0,Y0,MURAY,PHIRAY,VISRAD(:)
+            call INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
+                & NSTPHASE, NSCATANGLE, PHASETAB,&
+                & NX, NY, NZ, NPTS, NCELLS,&
+                & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+                & XGRID, YGRID, ZGRID, GRIDPOS,&
+                & ML, MM, NLM, NLEG, NUMPHASE,&
+                & NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
+                & DELTAM, SRCTYPE, WAVELEN, SOLARMU, SOLARAZ,&
+                & EXTINCT, ALBEDO, LEGEN, IPHASE,&
+                & DIRFLUX, SHPTR, SOURCE, YLMSUN,&
+                & MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
+                & SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
+                & MU2, PHI2, X0, Y0, Z0,&
+                & XE, YE, ZE, SIDE, TRANSMIT, VISRAD, VALIDRAD)
+900         continue
+            ! write (6,'(1X,2F8.4,1X,2F11.7,4(1X,F11.6))')&
+            !     & X0,Y0,MURAY,PHIRAY,VISRAD(:)
             VISOUT(1, IVIS) = VISRAD(1)
             if (VISRAD(1) .gt. 0.0) then
                 if (NSTOKES .gt. 1) then
-!           Output degree (0 to 1) and angle (-180 to 180) of linear pol
+                    ! Output degree (0 to 1) and angle (-180 to 180) of linear pol
                     VISOUT(2, IVIS) = sqrt(VISRAD(2)**2 + VISRAD(3)**2)/VISRAD(1)
                     VISOUT(3, IVIS) = (180/PI)*0.5*atan2(VISRAD(3), VISRAD(2))
                 end if
                 if (NSTOKES .eq. 4) then
-!           Output degree of circular polarization (-1 to 1)
+                    ! Output degree of circular polarization (-1 to 1)
                     VISOUT(4, IVIS) = VISRAD(4)/VISRAD(1)
                 end if
             else
@@ -1820,7 +1822,7 @@ subroutine VISUALIZE_RADIANCE(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
     deallocate (YLMSUN)
     if (allocated(PHASETAB)) deallocate (PHASETAB)
     if (NSTOKES .gt. 1) then
-!        Choose the best range for the angle of linear polarization (-90
+        ! Choose the best range for the angle of linear polarization (-90
         N = NL*NS
         allocate (AOLP(N))
         AOLP(:) = VISOUT(3, IVIS - N + 1:IVIS)
@@ -1839,27 +1841,27 @@ subroutine VISUALIZE_RADIANCE(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
     return
 end subroutine
 
-subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,       &
-&                        NSTPHASE, NSCATANGLE, PHASETAB,           &
-&                        NX, NY, NZ, NPTS, NCELLS,                 &
-&                        GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,    &
-&                        XGRID, YGRID, ZGRID, GRIDPOS,             &
-&                        ML, MM, NLM, NLEG, NUMPHASE,              &
-&                        NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,      &
-&                        DELTAM, SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, &
-&                        EXTINCT, ALBEDO, LEGEN, IPHASE,           &
-&                        DIRFLUX, SHPTR, SOURCE, YLMSUN,           &
-&                        MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,   &
-&                        SFCTYPE, NSFCPAR, SFCGRIDPARMS,           &
-&                        MU2, PHI2, X0, Y0, Z0,                      &
-&                   XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
-!       Integrates the source function through the extinction field
-!     (EXTINCT) backward from the outgoing direction (MU2,PHI2) to find
-!     radiance (RADIANCE) at the point X0,Y0,Z0.
-!     The transmission and radiance of the ray so far (TRANSMIT, RADIANC
-!     are input and returned after the integration along with the exitti
-!     ray location (XE,YE,ZE) and side of the domain (1=-X,2=+X,3=-Y,4=+
-!     5=-Z,6=+Z).
+subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
+    & NSTPHASE, NSCATANGLE, PHASETAB,&
+    & NX, NY, NZ, NPTS, NCELLS,&
+    & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+    & XGRID, YGRID, ZGRID, GRIDPOS,&
+    & ML, MM, NLM, NLEG, NUMPHASE,&
+    & NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
+    & DELTAM, SRCTYPE, WAVELEN, SOLARMU, SOLARAZ,&
+    & EXTINCT, ALBEDO, LEGEN, IPHASE,&
+    & DIRFLUX, SHPTR, SOURCE, YLMSUN,&
+    & MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
+    & SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
+    & MU2, PHI2, X0, Y0, Z0,&
+    & XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
+    !   Integrates the source function through the extinction field
+    ! (EXTINCT) backward from the outgoing direction (MU2,PHI2) to find
+    ! radiance (RADIANCE) at the point X0,Y0,Z0.
+    ! The transmission and radiance of the ray so far (TRANSMIT, RADIANC
+    ! are input and returned after the integration along with the exitti
+    ! ray location (XE,YE,ZE) and side of the domain (1=-X,2=+X,3=-Y,4=+
+    ! 5=-Z,6=+Z).
     implicit none
     integer BCFLAG, IPFLAG, NSTOKES, NSTLEG, NSTPHASE, NSCATANGLE
     integer NX, NY, NZ, NPTS, NCELLS, SIDE
@@ -1907,40 +1909,40 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,       &
 
     data OPPFACE/2, 1, 4, 3, 6, 5/
     data ONEY/0, 0, -1, -2, 0, 0, -5, -6/, ONEX/0, -1, 0, -3, 0, -5, 0, -7/
-    data DONEFACE/0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 3, 0, 5, 0, 7, 2, 0, 4, 0, 6, 0, 8, 0,  &
-   &              0, 0, 1, 2, 0, 0, 5, 6, 3, 4, 0, 0, 5, 6, 0, 0,                   &
-   &              0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 0, 0, 0, 0/
+    data DONEFACE/0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 3, 0, 5, 0, 7, 2, 0, 4, 0, 6, 0, 8, 0,&
+        & 0, 0, 1, 2, 0, 0, 5, 6, 3, 4, 0, 0, 5, 6, 0, 0,&
+        & 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 0, 0, 0, 0/
 
-!         TRANSCUT is the transmission to stop the integration at
+    ! TRANSCUT is the transmission to stop the integration at
     TRANSCUT = 5.0e-5
-!         TAUTOL is the maximum optical path for the subgrid intervals
+    ! TAUTOL is the maximum optical path for the subgrid intervals
     TAUTOL = 0.2
 
     EPS = 1.0e-5*(GRIDPOS(3, GRIDPTR(8, 1)) - GRIDPOS(3, GRIDPTR(1, 1)))
     MAXCELLSCROSS = 50*max(NX, NY, NZ)
     PI = acos(-1.0d0)
 
-!       Calculate the generalized spherical harmonics for this direction
+    ! Calculate the generalized spherical harmonics for this direction
     allocate (YLMDIR(NSTLEG, NLM))
     call YLMALL(.false., SNGL(MU2), SNGL(PHI2), ML, MM, NSTLEG, YLMDIR)
 
     if (SRCTYPE .ne. 'T' .and. DELTAM) then
-!          Get the solar single scattering Stokes vector for the outgoin
-!          direction my interpolating in scattering angle in the PHASETA
-!          table and then rotating the Q/U polarization to the outgoing
-        COSSCAT = SOLARMU*MU2 + sqrt((1.0 - SOLARMU**2)*(1.0 - MU2**2))     &
-                 &                  *cos(SOLARAZ - PHI2)
+        ! Get the solar single scattering Stokes vector for the outgoin
+        !   direction my interpolating in scattering angle in the PHASETA
+        !   table and then rotating the Q/U polarization to the outgoing
+        COSSCAT = SOLARMU*MU2 + sqrt((1.0 - SOLARMU**2)*(1.0 - MU2**2))&
+            & *cos(SOLARAZ - PHI2)
         if (NUMPHASE .gt. 0) then
             allocate (SINGSCAT(NSTOKES, NUMPHASE))
             F = (NSCATANGLE - 1)*(acos(COSSCAT)/PI) + 1
             J = min(NSCATANGLE - 1, int(F))
             F = F - J
             do I = 1, NUMPHASE
-                SINGSCAT(1:NSTPHASE, I)                                      &
-         &               = (1 - F)*PHASETAB(:, I, J) + F*PHASETAB(:, I, J + 1)
+                SINGSCAT(1:NSTPHASE, I)&
+                    & = (1 - F)*PHASETAB(:, I, J) + F*PHASETAB(:, I, J + 1)
                 if (NSTOKES .gt. 1) then
-                    call ROTATE_POL_PLANE(NSTOKES, COSSCAT, SOLARMU,         &
-           &                   SNGL(MU2), SOLARAZ - SNGL(PHI2), SINGSCAT(:, I))
+                    call ROTATE_POL_PLANE(NSTOKES, COSSCAT, SOLARMU,&
+                        & SNGL(MU2), SOLARAZ - SNGL(PHI2), SINGSCAT(:, I))
                 end if
             end do
         else
@@ -1952,7 +1954,7 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,       &
         end if
     end if
 
-!         Make the ray direction (opposite to the outgoing direction)
+    ! Make the ray direction (opposite to the outgoing direction)
     CX = sqrt(1.0d0 - MU2**2)*cos(PHI2 - PI)
     CY = sqrt(1.0d0 - MU2**2)*sin(PHI2 - PI)
     CZ = -MU2
@@ -1975,7 +1977,7 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,       &
         CZINV = 1.0e6
     end if
 
-!         Setup for the ray path direction
+    ! Setup for the ray path direction
     if (CX .lt. 0.0) then
         BITX = 1
     else
@@ -1995,31 +1997,31 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,       &
     XM = 0.5*(XGRID(1) + XGRID(NX))
     YM = 0.5*(YGRID(1) + YGRID(NY))
 
-!         Start at the desired point, getting the extinction and source
+    ! Start at the desired point, getting the extinction and source
     XE = X0
     YE = Y0
     ZE = Z0
-!      ZE = MAX(MIN(Z0,DBLE(ZGRID(NZ))),DBLE(ZGRID(1)))
-    call LOCATE_GRID_CELL(NX, NY, NZ, XGRID, YGRID, ZGRID,           &
-   &                  NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS,   &
-   &                  BCFLAG, IPFLAG, XE, YE, ZE, ICELL)
-!      print '(A,5(1X,F8.5),1X,I6)',
-!     .     'INTEGRATE_1RAY:',X0,Y0,Z0,MU2,PHI2,ICELL
+    ! ZE = MAX(MIN(Z0,DBLE(ZGRID(NZ))),DBLE(ZGRID(1)))
+    call LOCATE_GRID_CELL(NX, NY, NZ, XGRID, YGRID, ZGRID,&
+        & NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS,&
+        & BCFLAG, IPFLAG, XE, YE, ZE, ICELL)
+    ! print '(A,5(1X,F8.5),1X,I6)',&
+    !     & 'INTEGRATE_1RAY:',X0,Y0,Z0,MU2,PHI2,ICELL
     IFACE = 0
     NGRID = 0
 
-!         Loop until reach a Z boundary or transmission is very small
+    ! Loop until reach a Z boundary or transmission is very small
     VALIDRAD = .false.
     do while (.not. VALIDRAD .and. ICELL .gt. 0)
-!           Make sure current cell is valid
+        ! Make sure current cell is valid
         if (ICELL .le. 0) then
-            write (6, *) 'INTEGRATE_1RAY: ICELL=', ICELL,                    &
-       &                MU2, PHI2, XE, YE, ZE
+            write (6, *) 'INTEGRATE_1RAY: ICELL=', ICELL,&
+                & MU2, PHI2, XE, YE, ZE
             stop
         end if
         NGRID = NGRID + 1
 
-!           Decide which of the eight grid points we need the source fun
+        ! Decide which of the eight grid points we need the source fun
         do I = 1, 8
             DONETHIS(I) = DONEFACE(I, IFACE + 1)
             if (NX .eq. 1 .and. ONEX(I) .lt. 0) DONETHIS(I) = ONEX(I)
@@ -2027,26 +2029,26 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,       &
             OEXTINCT8(I) = EXTINCT8(I)
             OSRCEXT8(:, I) = SRCEXT8(:, I)
         end do
-!         Compute the source function times extinction in direction (MU2
+        ! Compute the source function times extinction in direction (MU2
         if (NSTOKES .eq. 1) then
-            call COMPUTE_SOURCE_1CELL_UNPOL(ICELL, GRIDPTR,              &
-       &             ML, MM, NLM, NLEG, NUMPHASE,                         &
-       &             NPTS, DELTAM, SRCTYPE, SOLARMU,                      &
-       &             EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX,             &
-       &             SHPTR, SOURCE, YLMDIR, YLMSUN, SUNDIRLEG, SINGSCAT,  &
-       &             DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,              &
-       &             EXTINCT8, SRCEXT8)
+            call COMPUTE_SOURCE_1CELL_UNPOL(ICELL, GRIDPTR,&
+                & ML, MM, NLM, NLEG, NUMPHASE,&
+                & NPTS, DELTAM, SRCTYPE, SOLARMU,&
+                & EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX,&
+                & SHPTR, SOURCE, YLMDIR, YLMSUN, SUNDIRLEG, SINGSCAT,&
+                & DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
+                & EXTINCT8, SRCEXT8)
         else
-            call COMPUTE_SOURCE_1CELL(ICELL, GRIDPTR,                    &
-       &             NSTOKES, NSTLEG, ML, MM, NLM, NLEG, NUMPHASE,        &
-       &             NPTS, DELTAM, SRCTYPE, SOLARMU,                      &
-       &             EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX,             &
-       &             SHPTR, SOURCE, YLMDIR, YLMSUN, SUNDIRLEG, SINGSCAT,  &
-       &             DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,              &
-       &             EXTINCT8, SRCEXT8)
+            call COMPUTE_SOURCE_1CELL(ICELL, GRIDPTR,&
+                & NSTOKES, NSTLEG, ML, MM, NLM, NLEG, NUMPHASE,&
+                & NPTS, DELTAM, SRCTYPE, SOLARMU,&
+                & EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX,&
+                & SHPTR, SOURCE, YLMDIR, YLMSUN, SUNDIRLEG, SINGSCAT,&
+                & DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
+                & EXTINCT8, SRCEXT8)
         end if
 
-!         Interpolate the source and extinction to the current point
+        ! Interpolate the source and extinction to the current point
         IPT1 = GRIDPTR(1, ICELL)
         IPT2 = GRIDPTR(8, ICELL)
         DELX = GRIDPOS(1, IPT2) - GRIDPOS(1, IPT1)
@@ -2066,31 +2068,31 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,       &
         U = (XE - GRIDPOS(1, IPT1))*INVDELX
         V = (YE - GRIDPOS(2, IPT1))*INVDELY
         W = (ZE - GRIDPOS(3, IPT1))*INVDELZ
-        SRCEXT1(:) = (1 - W)*((1 - V)*((1 - U)*SRCEXT8(:, 1) + U*SRCEXT8(:, 2))   &
-     &                     + V*((1 - U)*SRCEXT8(:, 3) + U*SRCEXT8(:, 4)))   &
-     &              + W*((1 - V)*((1 - U)*SRCEXT8(:, 5) + U*SRCEXT8(:, 6))    &
-     &                     + V*((1 - U)*SRCEXT8(:, 7) + U*SRCEXT8(:, 8)))
+        SRCEXT1(:) = (1 - W)*((1 - V)*((1 - U)*SRCEXT8(:, 1) + U*SRCEXT8(:, 2))&
+            & + V*((1 - U)*SRCEXT8(:, 3) + U*SRCEXT8(:, 4)))&
+            & + W*((1 - V)*((1 - U)*SRCEXT8(:, 5) + U*SRCEXT8(:, 6))&
+            & + V*((1 - U)*SRCEXT8(:, 7) + U*SRCEXT8(:, 8)))
         SRCEXT1(1) = max(0.0, SRCEXT1(1))
-        EXT1 = (1 - W)*((1 - V)*((1 - U)*EXTINCT8(1) + U*EXTINCT8(2))         &
-     &                  + V*((1 - U)*EXTINCT8(3) + U*EXTINCT8(4)))        &
-     &           + W*((1 - V)*((1 - U)*EXTINCT8(5) + U*EXTINCT8(6))         &
-     &                  + V*((1 - U)*EXTINCT8(7) + U*EXTINCT8(8)))
+        EXT1 = (1 - W)*((1 - V)*((1 - U)*EXTINCT8(1) + U*EXTINCT8(2))&
+            & + V*((1 - U)*EXTINCT8(3) + U*EXTINCT8(4)))&
+            & + W*((1 - V)*((1 - U)*EXTINCT8(5) + U*EXTINCT8(6))&
+            & + V*((1 - U)*EXTINCT8(7) + U*EXTINCT8(8)))
 
-!           This cell is independent pixel if IP mode or open boundary
-!             conditions and ray is leaving domain (i.e. not entering)
-        IPINX = btest(int(CELLFLAGS(ICELL)), 0) .and.                    &
-     &          .not. (btest(BCFLAG, 0) .and.                           &
-     &          ((CX .gt. 0 .and. XE .lt. XM) .or. (CX .lt. 0 .and. XE .gt. XM)))
-        IPINY = btest(int(CELLFLAGS(ICELL)), 1) .and.                    &
-     &          .not. (btest(BCFLAG, 1) .and.                           &
-     &          ((CY .gt. 0 .and. YE .lt. YM) .or. (CY .lt. 0 .and. YE .gt. YM)))
+        ! This cell is independent pixel if IP mode or open boundary
+        !   conditions and ray is leaving domain (i.e. not entering)
+        IPINX = btest(int(CELLFLAGS(ICELL)), 0) .and.&
+            & .not. (btest(BCFLAG, 0) .and.&
+            & ((CX .gt. 0 .and. XE .lt. XM) .or. (CX .lt. 0 .and. XE .gt. XM)))
+        IPINY = btest(int(CELLFLAGS(ICELL)), 1) .and.&
+            & .not. (btest(BCFLAG, 1) .and.&
+            & ((CY .gt. 0 .and. YE .lt. YM) .or. (CY .lt. 0 .and. YE .gt. YM)))
 
-!           Find boundaries of the current cell
-!           Find the three possible intersection planes (X,Y,Z)
-!             from the coordinates of the opposite corner grid point
+        ! Find boundaries of the current cell
+        ! Find the three possible intersection planes (X,Y,Z)
+        !   from the coordinates of the opposite corner grid point
         IOPP = GRIDPTR(9 - IOCT, ICELL)
-!           Get the distances to the 3 planes and select the closest
-!             (always need to deal with the cell that is wrapped)
+        ! Get the distances to the 3 planes and select the closest
+        !   (always need to deal with the cell that is wrapped)
         if (IPINX) then
             SOX = 1.0e20
         else
@@ -2104,57 +2106,57 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,       &
         SOZ = (GRIDPOS(3, IOPP) - ZE)*CZINV
         SO = min(SOX, SOY, SOZ)
         if (SO .lt. -EPS) then
-            write (6, *) 'INTEGRATE_1RAY: SO<0  ',                         &
-       &      MU2, PHI2, XE, YE, ZE, SO, ICELL
+            write (6, *) 'INTEGRATE_1RAY: SO<0  ',&
+                & MU2, PHI2, XE, YE, ZE, SO, ICELL
             stop
         end if
         XN = XE + SO*CX
         YN = YE + SO*CY
         ZN = ZE + SO*CZ
 
-!           Find the optical path across the grid cell and figure how
-!             many subgrid intervals to use
+        ! Find the optical path across the grid cell and figure how
+        !   many subgrid intervals to use
         U = (XN - GRIDPOS(1, IPT1))*INVDELX
         V = (YN - GRIDPOS(2, IPT1))*INVDELY
         W = (ZN - GRIDPOS(3, IPT1))*INVDELZ
-        EXTN = (1 - W)*((1 - V)*((1 - U)*EXTINCT8(1) + U*EXTINCT8(2))         &
-     &                  + V*((1 - U)*EXTINCT8(3) + U*EXTINCT8(4)))        &
-     &           + W*((1 - V)*((1 - U)*EXTINCT8(5) + U*EXTINCT8(6))         &
-     &                  + V*((1 - U)*EXTINCT8(7) + U*EXTINCT8(8)))
+        EXTN = (1 - W)*((1 - V)*((1 - U)*EXTINCT8(1) + U*EXTINCT8(2))&
+            & + V*((1 - U)*EXTINCT8(3) + U*EXTINCT8(4)))&
+            & + W*((1 - V)*((1 - U)*EXTINCT8(5) + U*EXTINCT8(6))&
+            & + V*((1 - U)*EXTINCT8(7) + U*EXTINCT8(8)))
         TAUGRID = SO*0.5*(EXT1 + EXTN)
         NTAU = max(1, 1 + int(TAUGRID/TAUTOL))
         DELS = SO/NTAU
 
-!           Loop over the subgrid cells
+        ! Loop over the subgrid cells
         do IT = 1, NTAU
             S = IT*DELS
             XI = XE + S*CX
             YI = YE + S*CY
             ZI = ZE + S*CZ
-!            Interpolate extinction and source function along path
+            ! Interpolate extinction and source function along path
             U = (XI - GRIDPOS(1, IPT1))*INVDELX
             V = (YI - GRIDPOS(2, IPT1))*INVDELY
             W = (ZI - GRIDPOS(3, IPT1))*INVDELZ
-            EXT0 = (1 - W)*((1 - V)*((1 - U)*EXTINCT8(1) + U*EXTINCT8(2))       &
-       &                    + V*((1 - U)*EXTINCT8(3) + U*EXTINCT8(4)))      &
-       &             + W*((1 - V)*((1 - U)*EXTINCT8(5) + U*EXTINCT8(6))       &
-       &                    + V*((1 - U)*EXTINCT8(7) + U*EXTINCT8(8)))
-            SRCEXT0(:) = (1 - W)*((1 - V)*((1 - U)*SRCEXT8(:, 1) + U*SRCEXT8(:, 2)) &
-       &                    + V*((1 - U)*SRCEXT8(:, 3) + U*SRCEXT8(:, 4)))    &
-       &             + W*((1 - V)*((1 - U)*SRCEXT8(:, 5) + U*SRCEXT8(:, 6))     &
-       &                    + V*((1 - U)*SRCEXT8(:, 7) + U*SRCEXT8(:, 8)))
+            EXT0 = (1 - W)*((1 - V)*((1 - U)*EXTINCT8(1) + U*EXTINCT8(2))&
+                & + V*((1 - U)*EXTINCT8(3) + U*EXTINCT8(4)))&
+                & + W*((1 - V)*((1 - U)*EXTINCT8(5) + U*EXTINCT8(6))&
+                & + V*((1 - U)*EXTINCT8(7) + U*EXTINCT8(8)))
+            SRCEXT0(:) = (1 - W)*((1 - V)*((1 - U)*SRCEXT8(:, 1) + U*SRCEXT8(:, 2))&
+                & + V*((1 - U)*SRCEXT8(:, 3) + U*SRCEXT8(:, 4)))&
+                & + W*((1 - V)*((1 - U)*SRCEXT8(:, 5) + U*SRCEXT8(:, 6))&
+                & + V*((1 - U)*SRCEXT8(:, 7) + U*SRCEXT8(:, 8)))
             SRCEXT0(1) = max(0.0, SRCEXT0(1))
 
-!            Compute the subgrid radiance: integration of the source fun
+            ! Compute the subgrid radiance: integration of the source fun
             EXT = 0.5*(EXT0 + EXT1)
             if (EXT .ne. 0.0) then
                 TAU = EXT*DELS
                 ABSCELL = TAU*(1.0 - 0.5*TAU*(1.0 - 0.33333333333*TAU))
                 TRANSCELL = 1.0 - ABSCELL
-!                 Linear extinction, linear source*extinction, to second
-                SRC(:) = (0.5*(SRCEXT0(:) + SRCEXT1(:))                      &
-         &           + 0.08333333333*(EXT0*SRCEXT1(:) - EXT1*SRCEXT0(:))*DELS &
-         &                *(1.0 - 0.05*(EXT1 - EXT0)*DELS))/EXT
+                ! Linear extinction, linear source*extinction, to second
+                SRC(:) = (0.5*(SRCEXT0(:) + SRCEXT1(:))&
+                    & + 0.08333333333*(EXT0*SRCEXT1(:) - EXT1*SRCEXT0(:))*DELS&
+                    & *(1.0 - 0.05*(EXT1 - EXT0)*DELS))/EXT
             else
                 ABSCELL = 0.0
                 TRANSCELL = 1.0
@@ -2165,10 +2167,10 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,       &
             TRANSMIT = TRANSMIT*TRANSCELL
             EXT1 = EXT0
             SRCEXT1(:) = SRCEXT0(:)
-!                End of sub grid cell loop
+        ! End of sub grid cell loop
         end do
 
-!               Get the intersection face number (i.e. neighptr index)
+        ! Get the intersection face number (i.e. neighptr index)
         if (SOX .le. SOZ .and. SOX .le. SOY) then
             IFACE = 2 - BITX
             JFACE = 1
@@ -2182,23 +2184,23 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,       &
             JFACE = 3
             OPENBCFACE = .false.
         end if
-!            Get the next cell to go to
+        ! Get the next cell to go to
         INEXTCELL = NEIGHPTR(IFACE, ICELL)
         if (INEXTCELL .lt. 0) then
-            call NEXT_CELL(XN, YN, ZN, IFACE, JFACE, ICELL, GRIDPOS,     &
-       &           GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXTCELL)
+            call NEXT_CELL(XN, YN, ZN, IFACE, JFACE, ICELL, GRIDPOS,&
+                & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXTCELL)
         end if
-!             If going to same or larger face then use previous face
+        ! If going to same or larger face then use previous face
         if (NEIGHPTR(IFACE, ICELL) .ge. 0 .and. .not. OPENBCFACE) then
             KFACE = IFACE
             IC = ICELL
         else
-!             If going to smaller face then use next face (more accurate
+            ! If going to smaller face then use next face (more accurate
             KFACE = OPPFACE(IFACE)
             IC = INEXTCELL
             IFACE = 0
         end if
-!           Get the location coordinate
+        ! Get the location coordinate
         if (INEXTCELL .gt. 0) then
             if (JFACE .eq. 1) then
                 XN = GRIDPOS(1, GRIDPTR(IOCT, INEXTCELL))
@@ -2209,20 +2211,20 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,       &
             end if
         end if
 
-!           If the transmission is greater than zero and not at a
-!             boundary then prepare for next cell
+        ! If the transmission is greater than zero and not at a
+        !   boundary then prepare for next cell
         if (TRANSMIT .lt. TRANSCUT .or. NGRID .gt. MAXCELLSCROSS) then
             VALIDRAD = .true.
         else if (INEXTCELL .eq. 0 .and. IFACE .ge. 5) then
             VALIDRAD = .true.
-            call FIND_BOUNDARY_RADIANCE(NSTOKES, XN, YN,                 &
-       &                      SNGL(MU2), SNGL(PHI2),                      &
-       &                      IC, KFACE, GRIDPTR, GRIDPOS,                &
-       &                      MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,     &
-       &                      NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,        &
-       &                      SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX, &
-       &                      SFCTYPE, NSFCPAR, SFCGRIDPARMS,             &
-       &                      RADBND)
+            call FIND_BOUNDARY_RADIANCE(NSTOKES, XN, YN,&
+                & SNGL(MU2), SNGL(PHI2),&
+                & IC, KFACE, GRIDPTR, GRIDPOS,&
+                & MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
+                & NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
+                & SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
+                & SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
+                & RADBND)
             RADIANCE(:) = RADIANCE(:) + TRANSMIT*RADBND(:)
         else
             ICELL = INEXTCELL
@@ -2246,17 +2248,17 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,       &
     return
 end subroutine
 
-subroutine FIND_BOUNDARY_RADIANCE(NSTOKES, XB, YB, MU2, PHI2,    &
-&                      ICELL, KFACE, GRIDPTR, GRIDPOS,             &
-&                      MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,     &
-&                      NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,        &
-&                      SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX, &
-&                      SFCTYPE, NSFCPAR, SFCGRIDPARMS,             &
-&                      RADBND)
-!       Returns the interpolated Stokes radiance at the boundary (RADBND
-!     Inputs are the boundary location (XB,YB), ray direction away from
-!     boundary (MU2,PHI2), cell number (ICELL) and face (KFACE) at
-!     the boundary point.
+subroutine FIND_BOUNDARY_RADIANCE(NSTOKES, XB, YB, MU2, PHI2,&
+    & ICELL, KFACE, GRIDPTR, GRIDPOS,&
+    & MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
+    & NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
+    & SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
+    & SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
+    & RADBND)
+    !   Returns the interpolated Stokes radiance at the boundary (RADBND
+    ! Inputs are the boundary location (XB,YB), ray direction away from
+    ! boundary (MU2,PHI2), cell number (ICELL) and face (KFACE) at
+    ! the boundary point.
     implicit none
     integer NSTOKES, ICELL, KFACE, MAXNBC, NTOPPTS, NBOTPTS
     integer GRIDPTR(8, *), BCPTR(MAXNBC, 2)
@@ -2273,19 +2275,19 @@ subroutine FIND_BOUNDARY_RADIANCE(NSTOKES, XB, YB, MU2, PHI2,    &
     logical LAMBERTIAN
     real X(4), Y(4), RAD(NSTOKES, 4), U, V
     integer GRIDFACE(4, 6)
-    data GRIDFACE/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8,             &
-   &                 1, 2, 3, 4, 5, 6, 7, 8/
+    data GRIDFACE/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8,&
+        & 1, 2, 3, 4, 5, 6, 7, 8/
 
     LAMBERTIAN = SFCTYPE(2:2) .eq. 'L'
 
-!       Loop over the four gridpoints of the cell face on the boundary
+    ! Loop over the four gridpoints of the cell face on the boundary
     do J = 1, 4
         IP = GRIDPTR(GRIDFACE(J, KFACE), ICELL)
         X(J) = GRIDPOS(1, IP)
         Y(J) = GRIDPOS(2, IP)
 
         if (MU2 .lt. 0.0) then
-!           Do a binary search to locate the top boundary point
+            ! Do a binary search to locate the top boundary point
             IL = 1
             IU = NTOPPTS
             do while (IU - IL .gt. 1)
@@ -2298,13 +2300,13 @@ subroutine FIND_BOUNDARY_RADIANCE(NSTOKES, XB, YB, MU2, PHI2,    &
             end do
             IBC = IL
             if (BCPTR(IBC, 1) .ne. IP) IBC = IU
-            if (BCPTR(IBC, 1) .ne. IP)                                     &
-       &      stop 'FIND_BOUNDARY_RADIANCE: Not at boundary'
+            if (BCPTR(IBC, 1) .ne. IP)&
+                & stop 'FIND_BOUNDARY_RADIANCE: Not at boundary'
             RAD(:, J) = BCRAD(:, IBC)
 
         else
 
-!           Do a binary search to locate the bottom boundary point
+            ! Do a binary search to locate the bottom boundary point
             IL = 1
             IU = NBOTPTS
             do while (IU - IL .gt. 1)
@@ -2317,15 +2319,15 @@ subroutine FIND_BOUNDARY_RADIANCE(NSTOKES, XB, YB, MU2, PHI2,    &
             end do
             IBC = IL
             if (BCPTR(IBC, 2) .ne. IP) IBC = IU
-            if (BCPTR(IBC, 2) .ne. IP)                                     &
-       &      stop 'FIND_BOUNDARY_RADIANCE: Not at boundary'
+            if (BCPTR(IBC, 2) .ne. IP)&
+                & stop 'FIND_BOUNDARY_RADIANCE: Not at boundary'
 
             if (.not. LAMBERTIAN) then
-                call VARIABLE_BRDF_SURFACE(NBOTPTS, IBC, IBC, BCPTR(1, 2),    &
-         &             NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MU2, PHI2,      &
-         &             SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,         &
-         &             SFCTYPE, NSFCPAR, SFCGRIDPARMS, NSTOKES,             &
-         &             BCRAD(:, 1 + NTOPPTS))
+                call VARIABLE_BRDF_SURFACE(NBOTPTS, IBC, IBC, BCPTR(1, 2),&
+                    & NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MU2, PHI2,&
+                    & SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
+                    & SFCTYPE, NSFCPAR, SFCGRIDPARMS, NSTOKES,&
+                    & BCRAD(:, 1 + NTOPPTS))
             end if
             RAD(:, J) = BCRAD(:, NTOPPTS + IBC)
         end if
@@ -2340,8 +2342,8 @@ subroutine FIND_BOUNDARY_RADIANCE(NSTOKES, XB, YB, MU2, PHI2,    &
     else
         V = 0.0
     end if
-    RADBND(:) = (1 - U)*(1 - V)*RAD(:, 1) + U*(1 - V)*RAD(:, 2)               &
-   &              + (1 - U)*V*RAD(:, 3) + U*V*RAD(:, 4)
+    RADBND(:) = (1 - U)*(1 - V)*RAD(:, 1) + U*(1 - V)*RAD(:, 2)&
+        & + (1 - U)*V*RAD(:, 3) + U*V*RAD(:, 4)
     return
 end subroutine
 
