@@ -815,20 +815,20 @@ subroutine CHECK_PROPERTY_INPUT( &
 
     ! NPX and NPY must be 1 or greater, NPZ must be 2 or greater
     if (NPX .lt. 1 .or. NPY .lt. 1 .or. NPZ .lt. 2) then
-        write (*, *) 'CHECK_PROPERTY_INPUT: Bad grid size - ',           &
-     &         NPX, NPY, NPZ
+        write (*, *) 'CHECK_PROPERTY_INPUT: Bad grid size - ', &
+            & NPX, NPY, NPZ
         stop
     end if
     if (DELX .le. 0.0 .or. DELY .le. 0.0) then
-        write (*, *) 'CHECK_PROPERTY_INPUT: Bad grid spacing - ',        &
-     &         'DELX,DELY: ', DELX, DELY
+        write (*, *) 'CHECK_PROPERTY_INPUT: Bad grid spacing - ', &
+            & 'DELX,DELY: ', DELX, DELY
         stop
     end if
     ! The vertical levels must be increasing
     do IZ = 1, NPZ - 1
         if (ZLEVELS(IZ + 1) .le. ZLEVELS(IZ)) then
             write (*, *) 'CHECK_PROPERTY_INPUT: ZLEVELS must increase : ', &
-       &         IZ, ZLEVELS(IZ), ZLEVELS(IZ + 1)
+                & IZ, ZLEVELS(IZ), ZLEVELS(IZ + 1)
             stop
         end if
     end do
@@ -842,19 +842,19 @@ subroutine CHECK_PROPERTY_INPUT( &
         TMAX = max(TMAX, TEMPP(I))
     end do
     if (TMIN .lt. 150.0 .or. TMAX .gt. 350.0) then
-        write (*, *) 'CHECK_PROPERTY_INPUT: Warning - ',                 &
-     &        'temperature min and max (Kelvin): ', TMIN, TMAX
+        write (*, *) 'CHECK_PROPERTY_INPUT: Warning - ', &
+            & 'temperature min and max (Kelvin): ', TMIN, TMAX
         write (*, *)
     end if
     do I = 1, N
         if (EXTINCTP(I) .lt. 0.0) then
-            write (*, *) 'CHECK_PROPERTY_INPUT: Negative extinction - ',   &
-       &        EXTINCTP(I), ' at grid point ', I
+            write (*, *) 'CHECK_PROPERTY_INPUT: Negative extinction - ', &
+                & EXTINCTP(I), ' at grid point ', I
             stop
         end if
         if (ALBEDOP(I) .lt. 0.0 .or. ALBEDOP(I) .gt. 1.0) then
-            write (*, *) 'CHECK_PROPERTY_INPUT: Single scattering ',       &
-       &      'albedo out of range - ', ALBEDOP(I), ' at grid point ', I
+            write (*, *) 'CHECK_PROPERTY_INPUT: Single scattering ', &
+                & 'albedo out of range - ', ALBEDOP(I), ' at grid point ', I
             stop
         end if
     end do
@@ -863,16 +863,16 @@ subroutine CHECK_PROPERTY_INPUT( &
     LEGWARN = .false.
     do I = 1, N
         if (LEGENP(1, 1, I) .lt. -3.0 .or. LEGENP(1, 1, I) .gt. 3.0) then
-            write (*, *) 'CHECK_PROPERTY_INPUT: Asymmetry parameter ',     &
-       &      'out of range - ', LEGENP(1, 1, I)/3.0, ' at grid point ', I
+            write (*, *) 'CHECK_PROPERTY_INPUT: Asymmetry parameter ', &
+                & 'out of range - ', LEGENP(1, 1, I)/3.0, ' at grid point ', I
             stop
         end if
         if (LEGENP(1, 1, I) .eq. 1.0) LEGWARN = .true.
     end do
     if (LEGWARN) then
-        write (*, *) 'CHECK_PROPERTY_INPUT: Warning - ',                 &
-     &        'an asymmetry parameter is 1/3 (Chi1=1); ',               &
-     &        '  Chi0 should not be specified for Chi1.'
+        write (*, *) 'CHECK_PROPERTY_INPUT: Warning - ', &
+            & 'an asymmetry parameter is 1/3 (Chi1=1); ', &
+            & '  Chi0 should not be specified for Chi1.'
         write (*, *)
     end if
 
@@ -881,7 +881,7 @@ subroutine CHECK_PROPERTY_INPUT( &
         do I = 1, N
             if (IPHASEP(I) .lt. 1 .or. IPHASEP(I) .gt. NUMPHASE) then
                 write (*, *) 'CHECK_PROPERTY_INPUT: Phase function pointer', &
-         &      ' out of range - ', IPHASEP(I), ' at grid point ', I
+                    & ' out of range - ', IPHASEP(I), ' at grid point ', I
                 stop
             end if
         end do
@@ -902,14 +902,14 @@ subroutine CHECK_PROPERTY_INPUT( &
     end do
     if (NTHICK .gt. 0) then
         write (*, *) 'CHECK_PROPERTY_INPUT: Warning -'
-        write (*, '(A,A,I7)') '  Number of property grid cells',         &
-     &     ' with optical depth greater than 2 : ', NTHICK
+        write (*, '(A,A,I7)') '  Number of property grid cells', &
+            & ' with optical depth greater than 2 : ', NTHICK
         write (*, *) ' Max cell optical depth : ', MAXTAU
         write (*, *)
     end if
 
     return
-end
+end subroutine
 
 subroutine READ_SURFACE_SIZE(SFCFILE, MAXSFCPTS, MAXSFCPARS)
     ! Gets the size of the surface property inputs (temperature is
