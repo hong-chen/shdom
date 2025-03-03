@@ -163,7 +163,7 @@ Source Code File Change
   * converted from F77 to F90
   * formatted the code
 
-* ``src/shdUtil_ocean.f``: was ``ocean_brdf.f``
+* ``src/shdSurf_ocean.f``: was ``ocean_brdf.f``
 
 * ``src/shdTool_propgen.f90``: was ``propgen.f90``
 
