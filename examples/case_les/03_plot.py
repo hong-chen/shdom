@@ -97,6 +97,8 @@ if __name__ == '__main__':
 
     fname = 'tmp-data/shdom-out_les.txt'
 
+    os.system('diff data/shdom-out_les.txt %s' % fname)
+
     figure_les(fname)
 
     pass

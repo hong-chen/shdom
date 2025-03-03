@@ -1,27 +1,28 @@
-subroutine SOLVE_RTE(NSTOKES, NX, NY, NZ, NX1, NY1, NANG,      &
-&               ML, MM, NLM, NMU, NPHI, NLEG, NSTLEG, NUMPHASE,     &
-&               NPHI0, MU, PHI, WTDO,                              &
-&               MAXIV, MAXIC, MAXIG, MAXIDO, INRADFLAG,            &
-&               BCFLAG, IPFLAG, DELTAM, SRCTYPE, HIGHORDERRAD,     &
-&               SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,               &
-&               SFCTYPE, GNDTEMP, GNDALBEDO,                       &
-&               NXSFC, NYSFC, DELXSFC, DELYSFC,                    &
-&               NSFCPAR, SFCPARMS, SFCGRIDPARMS,                   &
-&               UNITS, WAVENO, WAVELEN,                            &
-&               ACCELFLAG, SOLACC, MAXITER, SOLCRIT, ITER,         &
-&               SPLITACC, SHACC, XGRID, YGRID, ZGRID,               &
-&               TEMP, PLANCK, EXTINCT, ALBEDO, LEGEN, IPHASE,      &
-&               MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR, BCRAD,  &
-&               NPTS, GRIDPOS,                                     &
-&               NCELLS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,     &
-&               RSHPTR, SHPTR, OSHPTR, WORK, WORK1, WORK2,         &
-&               SOURCE, DELSOURCE, RADIANCE, FLUXES, DIRFLUX)
+subroutine SOLVE_RTE( &
+    & NSTOKES, NX, NY, NZ, NX1, NY1, NANG, &
+    & ML, MM, NLM, NMU, NPHI, NLEG, NSTLEG, NUMPHASE, &
+    & NPHI0, MU, PHI, WTDO, &
+    & MAXIV, MAXIC, MAXIG, MAXIDO, INRADFLAG, &
+    & BCFLAG, IPFLAG, DELTAM, SRCTYPE, HIGHORDERRAD, &
+    & SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD, &
+    & SFCTYPE, GNDTEMP, GNDALBEDO, &
+    & NXSFC, NYSFC, DELXSFC, DELYSFC, &
+    & NSFCPAR, SFCPARMS, SFCGRIDPARMS, &
+    & UNITS, WAVENO, WAVELEN, &
+    & ACCELFLAG, SOLACC, MAXITER, SOLCRIT, ITER, &
+    & SPLITACC, SHACC, XGRID, YGRID, ZGRID, &
+    & TEMP, PLANCK, EXTINCT, ALBEDO, LEGEN, IPHASE, &
+    & MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR, BCRAD, &
+    & NPTS, GRIDPOS, &
+    & NCELLS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,     &
+    & RSHPTR, SHPTR, OSHPTR, WORK, WORK1, WORK2, &
+    & SOURCE, DELSOURCE, RADIANCE, FLUXES, DIRFLUX)
 
-!       Performs the SHDOM solution procedure.
-!      Output is returned in SOURCE, RADIANCE, FLUXES, DIRFLUX.
-!       The adaptive grid stucture (NCELLS,GRIDPTR,NEIGHPTR,TREEPTR,
-!       CELLFLAGS,NPTS,GRIDPOS) is input and modified for new grid
-!       cells and points on output.
+    ! Performs the SHDOM solution procedure.
+    ! Output is returned in SOURCE, RADIANCE, FLUXES, DIRFLUX.
+    ! The adaptive grid stucture (NCELLS,GRIDPTR,NEIGHPTR,TREEPTR,
+    ! CELLFLAGS,NPTS,GRIDPOS) is input and modified for new grid
+    ! cells and points on output.
     implicit none
     integer NSTOKES, NX, NY, NZ, NX1, NY1, NXSFC, NYSFC, NSFCPAR
     integer ML, MM, NLM, NMU, NPHI, NANG, NLEG, NSTLEG, NUMPHASE
@@ -65,77 +66,77 @@ subroutine SOLVE_RTE(NSTOKES, NX, NY, NZ, NX1, NY1, NANG,      &
     real, allocatable :: YLMSUN(:, :), WTMU(:), WPHISAVE(:)
     real, allocatable :: SFC_BRDF_DO(:, :, :, :, :, :)
 
-!       Allocate local arrays
-!         NSTLEG=1 for NSTOKES=1, otherwise NSTLEG=6
+    ! Allocate local arrays
+    ! NSTLEG=1 for NSTOKES=1, otherwise NSTLEG=6
     allocate (CMU1(NSTLEG, NLM, NMU), CMU2(NSTLEG, NLM, NMU))
     allocate (CPHI1(-16:16, 32, NMU), CPHI2(32, -16:16, NMU))
     allocate (YLMSUN(NSTLEG, NLM))
     allocate (FFTFLAG(NMU), WTMU(NMU), WPHISAVE(NMU*(3*NPHI + 15)))
 
-!       Set up some things before solution loop
+    ! Set up some things before solution loop
 
-!           Transfer the medium properties to the internal grid and add
-    call INTERP_GRID(NPTS, NSTLEG, NLEG, GRIDPOS,                    &
-   &                  TEMP, EXTINCT, ALBEDO, LEGEN, IPHASE)
+    ! Transfer the medium properties to the internal grid and add
+    call INTERP_GRID(NPTS, NSTLEG, NLEG, GRIDPOS, &
+        & TEMP, EXTINCT, ALBEDO, LEGEN, IPHASE)
 
-!         If Delta-M then scale the extinction, albedo, and Legendre ter
-!         Put the Planck blackbody source in PLANCK.
-    call PREPARE_PROP(ML, MM, NSTLEG, NLEG, NPTS, DELTAM, NUMPHASE,  &
-   &                   SRCTYPE, UNITS, WAVENO, WAVELEN, ALBMAX,       &
-   &                   EXTINCT, ALBEDO, LEGEN, TEMP, PLANCK, IPHASE)
-!       Get the maximum single scattering albedo over all processors
+    ! If Delta-M then scale the extinction, albedo, and Legendre ter
+    ! Put the Planck blackbody source in PLANCK.
+    call PREPARE_PROP(ML, MM, NSTLEG, NLEG, NPTS, DELTAM, NUMPHASE, &
+        & SRCTYPE, UNITS, WAVENO, WAVELEN, ALBMAX, &
+        & EXTINCT, ALBEDO, LEGEN, TEMP, PLANCK, IPHASE)
+    ! Get the maximum single scattering albedo over all processors
     call TOTAL_ALBEDO_MAX(ALBMAX)
 
-!           Compute the solar transmission in DIRFLUX.
-!           Precompute Ylm's for solar direction
+    ! Compute the solar transmission in DIRFLUX.
+    ! Precompute Ylm's for solar direction
     if (SRCTYPE .ne. 'T') then
         if (btest(BCFLAG, 2) .or. btest(BCFLAG, 3)) then
-            call MAKE_DIRECT_PAR(1, NPTS, BCFLAG, IPFLAG, DELTAM, ML,     &
-       &                      NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,  &
-       &                      GRIDPOS, NX, XGRID, NY, YGRID, DIRFLUX)
+            call MAKE_DIRECT_PAR(1, NPTS, BCFLAG, IPFLAG, DELTAM, ML, &
+                & NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ, &
+                & GRIDPOS, NX, XGRID, NY, YGRID, DIRFLUX)
         else
-            call MAKE_DIRECT(NPTS, BCFLAG, IPFLAG, DELTAM, ML,           &
-       &                      NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,  &
-       &                      GRIDPOS, DIRFLUX)
+            call MAKE_DIRECT(NPTS, BCFLAG, IPFLAG, DELTAM, ML, &
+                & NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ, &
+                & GRIDPOS, DIRFLUX)
         end if
-        call YLMALL(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG,          &
-     &               YLMSUN)
+        call YLMALL(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG, &
+            & YLMSUN)
     end if
 
-!           Make the discrete ordinates (angles)
-!             (set 2 is reduced gaussian, 3 is reduced double gauss)
+    ! Make the discrete ordinates (angles)
+    !   (set 2 is reduced gaussian, 3 is reduced double gauss)
     ORDINATESET = 2
-    call MAKE_ANGLE_SET(NMU, NPHI, ORDINATESET, NPHI0MAX,           &
-   &         NPHI0, MU, PHI, WTMU, WTDO, FFTFLAG, NANG)
+    call MAKE_ANGLE_SET(NMU, NPHI, ORDINATESET, NPHI0MAX, &
+        & NPHI0, MU, PHI, WTMU, WTDO, FFTFLAG, NANG)
 
-!           Make the Ylm transform coefficients
-    call MAKE_SH_DO_COEF(NSTLEG, ML, MM, NLM, NMU, NPHI0,            &
-   &                      NPHI0MAX, MU, PHI, WTMU, WTDO, FFTFLAG,     &
-   &                      CMU1, CMU2, CPHI1, CPHI2, WPHISAVE)
+    ! Make the Ylm transform coefficients
+    call MAKE_SH_DO_COEF(NSTLEG, ML, MM, NLM, NMU, NPHI0, &
+        & NPHI0MAX, MU, PHI, WTMU, WTDO, FFTFLAG, &
+        & CMU1, CMU2, CPHI1, CPHI2, WPHISAVE)
 
     FIXSH = .false.
     if (.not. INRADFLAG) then
-!           Initialize the radiance on the base grid using Eddington
-!             two-stream plane-parallel
-        call INIT_RADIANCE(NSTOKES, NX1*NY1, NZ, NSTLEG, NLEG,         &
-     &         RSHPTR, ZGRID,                                           &
-     &         EXTINCT, ALBEDO, LEGEN, TEMP, NUMPHASE, IPHASE,          &
-     &         SRCTYPE, SOLARFLUX, SOLARMU, GNDALBEDO, GNDTEMP, SKYRAD, &
-     &         UNITS, WAVENO, WAVELEN, RADIANCE)
-!           Interpolate the radiance on the non-base grid points from th
-!             base grid points
+        ! Initialize the radiance on the base grid using Eddington
+        ! two-stream plane-parallel
+        call INIT_RADIANCE(NSTOKES, NX1*NY1, NZ, NSTLEG, NLEG, &
+            & RSHPTR, ZGRID, &
+            & EXTINCT, ALBEDO, LEGEN, TEMP, NUMPHASE, IPHASE, &
+            & SRCTYPE, SOLARFLUX, SOLARMU, GNDALBEDO, GNDTEMP, SKYRAD, &
+            & UNITS, WAVENO, WAVELEN, RADIANCE)
+        ! Interpolate the radiance on the non-base grid points from th
+        !   base grid points
         NBPTS = NX1*NY1*NZ
-        NBCELLS = (NZ - 1)*(NX + ibits(BCFLAG, 0, 1) - ibits(BCFLAG, 2, 1))       &
-                 &                  *(NY + ibits(BCFLAG, 1, 1) - ibits(BCFLAG, 3, 1))
-        call INTERP_RADIANCE(NSTOKES, NBPTS, NPTS, RSHPTR, RADIANCE,   &
-     &             NBCELLS, NCELLS, TREEPTR, GRIDPTR, GRIDPOS)
-!           Initialize the source function from the radiance field
-        call COMPUTE_SOURCE(NSTOKES, ML, MM, NLM,                       &
-     &         NSTLEG, NLEG, NUMPHASE, NPTS,                            &
-     &         FIXSH, SRCTYPE, SOLARMU, YLMSUN, ALBEDO, LEGEN,          &
-     &         IPHASE, PLANCK, DIRFLUX, SHACC,                          &
-     &         MAXIV, RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR, DELSOURCE,  &
-     &         .true., ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM)
+        NBCELLS = (NZ - 1)*(NX + ibits(BCFLAG, 0, 1) - ibits(BCFLAG, 2, 1)) &
+            & *(NY + ibits(BCFLAG, 1, 1) - ibits(BCFLAG, 3, 1))
+        call INTERP_RADIANCE(NSTOKES, NBPTS, NPTS, RSHPTR, RADIANCE, &
+            & NBCELLS, NCELLS, TREEPTR, GRIDPTR, GRIDPOS)
+        ! Initialize the source function from the radiance field
+        call COMPUTE_SOURCE(NSTOKES, ML, MM, NLM, &
+            & NSTLEG, NLEG, NUMPHASE, NPTS, &
+            & FIXSH, SRCTYPE, SOLARMU, YLMSUN, ALBEDO, LEGEN, &
+            & IPHASE, PLANCK, DIRFLUX, SHACC, &
+            & MAXIV, RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR, DELSOURCE, &
+            & .true., ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM)
     end if
 
     if (ACCELFLAG) then
@@ -145,36 +146,36 @@ subroutine SOLVE_RTE(NSTOKES, NX, NY, NZ, NX1, NY1, NANG,      &
     SOLCRIT = 1.0
 
     LAMBERTIAN = SFCTYPE(2:2) .eq. 'L'
-!         Make the pointers to the grid points on the top and bottom bou
-    call BOUNDARY_PNTS(NPTS, NANG, LAMBERTIAN, MAXNBC, MAXBCRAD,     &
-   &                    ZGRID(1), ZGRID(NZ), GRIDPOS,                 &
-   &                    NTOPPTS, NBOTPTS, BCPTR)
+    ! Make the pointers to the grid points on the top and bottom bou
+    call BOUNDARY_PNTS(NPTS, NANG, LAMBERTIAN, MAXNBC, MAXBCRAD, &
+        & ZGRID(1), ZGRID(NZ), GRIDPOS, &
+        & NTOPPTS, NBOTPTS, BCPTR)
     if (SFCTYPE(1:1) .eq. 'V') then
-!             If this is a variable surface then bilinearly interpolate
-!               the surface temperature and reflection parameters to the
-!               bottom grid points.
-        call SURFACE_PARM_INTERP(NBOTPTS, BCPTR(1, 2), GRIDPOS,         &
-     &             SRCTYPE, WAVENO, WAVELEN, UNITS,                     &
-     &             NXSFC, NYSFC, DELXSFC, DELYSFC, NSFCPAR, SFCPARMS,   &
-     &             SFCGRIDPARMS)
-        call CHECK_UNIFORM_SFC(NXSFC, NYSFC, NSFCPAR, SFCPARMS,        &
-     &                          UNIFORM_SFC_BRDF)
+        ! If this is a variable surface then bilinearly interpolate
+        !   the surface temperature and reflection parameters to the
+        !   bottom grid points.
+        call SURFACE_PARM_INTERP(NBOTPTS, BCPTR(1, 2), GRIDPOS, &
+            & SRCTYPE, WAVENO, WAVELEN, UNITS, &
+            & NXSFC, NYSFC, DELXSFC, DELYSFC, NSFCPAR, SFCPARMS, &
+            & SFCGRIDPARMS)
+        call CHECK_UNIFORM_SFC(NXSFC, NYSFC, NSFCPAR, SFCPARMS, &
+            & UNIFORM_SFC_BRDF)
         if (UNIFORM_SFC_BRDF) then
-            if (NSTOKES*(NMU/2)*NPHI0MAX .gt.                             &
-       &         sqrt(1.0*huge(NMU)/kind(NMU))) then
+            if (NSTOKES*(NMU/2)*NPHI0MAX .gt. &
+                & sqrt(1.0*huge(NMU)/kind(NMU))) then
                 IERR = 1
             else
-                allocate (SFC_BRDF_DO(NSTOKES, NMU/2, NPHI0MAX,               &
-         &                  NSTOKES, NMU/2, NPHI0MAX), STAT=IERR)
+                allocate (SFC_BRDF_DO(NSTOKES, NMU/2, NPHI0MAX, &
+                    & NSTOKES, NMU/2, NPHI0MAX), STAT=IERR)
             end if
             if (IERR .eq. 0) then
-                call MAKE_SFC_BRDF_DO_MATRIX(SFCTYPE, WAVELEN,             &
-         &                      NXSFC, NYSFC, NSFCPAR, SFCPARMS, NSTOKES,   &
-         &                      NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,        &
-         &                      SFC_BRDF_DO)
+                call MAKE_SFC_BRDF_DO_MATRIX(SFCTYPE, WAVELEN, &
+                    & NXSFC, NYSFC, NSFCPAR, SFCPARMS, NSTOKES, &
+                    & NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, &
+                    & SFC_BRDF_DO)
             else
-                print '(A,A)', 'Not enough memory to allocate precomputed',  &
-         &                    ' surface BRDF discrete ordinate matrix: '
+                print '(A,A)', 'Not enough memory to allocate precomputed', &
+                    & ' surface BRDF discrete ordinate matrix: '
                 print *, '  Proceeding more slowly.'
                 UNIFORM_SFC_BRDF = .false.
             end if
@@ -183,17 +184,17 @@ subroutine SOLVE_RTE(NSTOKES, NX, NY, NZ, NX1, NY1, NANG,      &
 
     ITER = 0
     if (MAXITER .le. ITER) return
-!         Starting values for the adaptive cell splitting controlling me
-!         The splitting accuracy used at a particular iteration is CURSP
-!         and it is started out high an lowered to the desired SPLITACC.
-!         The cell splitting starts when the solution criterion (SOLCRIT
-!         goes below STARTADAPTSOL and ends when the solution criterion
-!         goes below ENDADAPTSOL, though the current splitting accuracy
-!         is designed to get to the final SPLITACC over a smaller range
-!         (ADAPTRANGE).  The currect splitting accuracy is computed from
-!         a geometric average of the solution criterion (AVGSOLCRIT).
-!         The SPLIT_GRID routine is called and the splitting criterion r
-!         as long as SPLITTESTING is true.
+    ! Starting values for the adaptive cell splitting controlling me
+    ! The splitting accuracy used at a particular iteration is CURSP
+    ! and it is started out high an lowered to the desired SPLITACC.
+    ! The cell splitting starts when the solution criterion (SOLCRIT
+    ! goes below STARTADAPTSOL and ends when the solution criterion
+    ! goes below ENDADAPTSOL, though the current splitting accuracy
+    ! is designed to get to the final SPLITACC over a smaller range
+    ! (ADAPTRANGE).  The currect splitting accuracy is computed from
+    ! a geometric average of the solution criterion (AVGSOLCRIT).
+    ! The SPLIT_GRID routine is called and the splitting criterion r
+    ! as long as SPLITTESTING is true.
     SPLITTESTING = .true.
     OUTOFMEM = .false.
     ENDADAPTSOL = 0.001
@@ -206,108 +207,108 @@ subroutine SOLVE_RTE(NSTOKES, NX, NY, NZ, NX1, NY1, NANG,      &
 
     write (6, *) '! Iter Log(Sol)  SplitCrit  Npoints  Nsh(avg)'
 
-!         Main solution loop
-!           Iterate until the iterations exceed the limit, or the desire
-!           solution criterion is reached and the current splitting accu
-!           is down to the desired level.
-    do while (ITER .lt. MAXITER .and. (SOLCRIT .gt. SOLACC            &
-   &        .or. (SPLITCRIT .gt. SPLITACC .and.                       &
-   &              CURSPLITACC .gt. SPLITACC .and. .not. OUTOFMEM)))
+    ! Main solution loop
+    !   Iterate until the iterations exceed the limit, or the desire
+    !   solution criterion is reached and the current splitting accu
+    !   is down to the desired level.
+    do while (ITER .lt. MAXITER .and. (SOLCRIT .gt. SOLACC &
+        & .or. (SPLITCRIT .gt. SPLITACC .and. &
+        & CURSPLITACC .gt. SPLITACC .and. .not. OUTOFMEM)))
         ITER = ITER + 1
 
-!           Don't do the adaptive grid cell splitting stuff unless wante
+        ! Don't do the adaptive grid cell splitting stuff unless wante
         if (SPLITACC .gt. 0.0) then
-!             If in the right solution range then try to split some cell
-!               interpolate the medium and source functions to the new p
-!             The current splitting accuracy is started high and then lo
+            ! If in the right solution range then try to split some cell
+            !   interpolate the medium and source functions to the new p
+            ! The current splitting accuracy is started high and then lo
             AVGSOLCRIT = sqrt(AVGSOLCRIT*SOLCRIT)
-            DOSPLIT = SOLCRIT .le. STARTADAPTSOL .and.                    &
-       &        (SOLCRIT .gt. ENDADAPTSOL .or. CURSPLITACC .gt. SPLITACC) &
-       &         .and. .not. OUTOFMEM
-!           Make sure all processors are going to split cells if any wan
+            DOSPLIT = SOLCRIT .le. STARTADAPTSOL .and. &
+                & (SOLCRIT .gt. ENDADAPTSOL .or. CURSPLITACC .gt. SPLITACC) &
+                & .and. .not. OUTOFMEM
+            ! Make sure all processors are going to split cells if any wan
             call UNIFY_SPLITTING(DOSPLIT, STARTSPLITACC)
             BETA = log(STARTSPLITACC/SPLITACC)/log(ADAPTRANGE)
-            CURSPLITACC = min(CURSPLITACC, max(SPLITACC,                  &
-       &                 SPLITACC*(AVGSOLCRIT/(3.0*ENDADAPTSOL))**BETA))
+            CURSPLITACC = min(CURSPLITACC, max(SPLITACC, &
+                & SPLITACC*(AVGSOLCRIT/(3.0*ENDADAPTSOL))**BETA))
             if (SOLCRIT .le. ENDADAPTSOL) CURSPLITACC = SPLITACC
             if (SPLITTESTING) then
-                call SPLIT_GRID(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,     &
-         &             DOSPLIT, OUTOFMEM, CURSPLITACC, SPLITCRIT,            &
-         &             NPTS, NCELLS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, &
-         &             GRIDPOS, NX, XGRID, NY, YGRID,                       &
-         &             NSTOKES, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,        &
-         &             DELTAM, BCFLAG, IPFLAG, ACCELFLAG,                   &
-         &             EXTINCT, ALBEDO, LEGEN, IPHASE,                      &
-         &             RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR,             &
-         &             TEMP, PLANCK, DIRFLUX, SRCTYPE,                      &
-         &             SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN,                 &
-         &             UNITS, WAVENO, WAVELEN, WORK, WORK2)
+                call SPLIT_GRID(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX, &
+                    & DOSPLIT, OUTOFMEM, CURSPLITACC, SPLITCRIT, &
+                    & NPTS, NCELLS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, &
+                    & GRIDPOS, NX, XGRID, NY, YGRID, &
+                    & NSTOKES, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE, &
+                    & DELTAM, BCFLAG, IPFLAG, ACCELFLAG, &
+                    & EXTINCT, ALBEDO, LEGEN, IPHASE, &
+                    & RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR, &
+                    & TEMP, PLANCK, DIRFLUX, SRCTYPE, &
+                    & SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN, &
+                    & UNITS, WAVENO, WAVELEN, WORK, WORK2)
                 if (SOLCRIT .gt. STARTADAPTSOL) STARTSPLITACC = SPLITCRIT
             end if
-!           Find the maximum splitting criterion over all processors
+            ! Find the maximum splitting criterion over all processors
             call TOTAL_SPLITCRIT_MAX(SPLITCRIT)
             if (SOLCRIT .le. ENDADAPTSOL) SPLITTESTING = .false.
         end if
 
-!            Find the SH truncation to use for the radiance (RSHPTR)
-        call RADIANCE_TRUNCATION(HIGHORDERRAD,                         &
-     &           NSTOKES, ML, MM, NSTLEG, NLEG, NUMPHASE,               &
-     &           NPTS, ALBEDO, LEGEN, IPHASE, SHPTR, RADIANCE,          &
-     &           MAXIV + MAXIG, FIXSH, SHACC, RSHPTR)
+        ! Find the SH truncation to use for the radiance (RSHPTR)
+        call RADIANCE_TRUNCATION(HIGHORDERRAD, &
+            & NSTOKES, ML, MM, NSTLEG, NLEG, NUMPHASE, &
+            & NPTS, ALBEDO, LEGEN, IPHASE, SHPTR, RADIANCE, &
+            & MAXIV + MAXIG, FIXSH, SHACC, RSHPTR)
 
-!           Integrate the source function along discrete ordinates
-!             to compute the radiance field.  The input source function
-!             and output radiance are in spherical harmonic expansions,
-!             and the SH/DO transforms are done during the loop over
-!             discrete ordinates.
+        ! Integrate the source function along discrete ordinates
+        !   to compute the radiance field.  The input source function
+        !   and output radiance are in spherical harmonic expansions,
+        !   and the SH/DO transforms are done during the loop over
+        !   discrete ordinates.
         call PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG, ML, MM, NLM, &
-     &           NMU, NPHI0MAX, NPHI0, NANG, BCFLAG, IPFLAG,            &
-     &           NPTS, NCELLS, XGRID, YGRID, ZGRID, GRIDPOS,            &
-     &           GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,                 &
-     &           SRCTYPE, SOLARMU, SOLARAZ, SKYRAD, WAVENO, WAVELEN,    &
-     &           UNITS, SFCTYPE, GNDTEMP, GNDALBEDO,                    &
-     &           NXSFC, NYSFC, DELXSFC, DELYSFC, NSFCPAR, SFCPARMS,     &
-     &           SFCGRIDPARMS, UNIFORM_SFC_BRDF, SFC_BRDF_DO,           &
-     &           MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR, BCRAD,      &
-     &           MU, PHI, WTDO,                                         &
-     &           CMU1, CPHI1, CMU2, CPHI2, WPHISAVE, FFTFLAG,           &
-     &           DIRFLUX, FLUXES, EXTINCT,                              &
-     &           SHPTR, SOURCE, RSHPTR, RADIANCE,                       &
-     &           WORK, WORK1, WORK2)
+            & NMU, NPHI0MAX, NPHI0, NANG, BCFLAG, IPFLAG, &
+            & NPTS, NCELLS, XGRID, YGRID, ZGRID, GRIDPOS, &
+            & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, &
+            & SRCTYPE, SOLARMU, SOLARAZ, SKYRAD, WAVENO, WAVELEN, &
+            & UNITS, SFCTYPE, GNDTEMP, GNDALBEDO, &
+            & NXSFC, NYSFC, DELXSFC, DELYSFC, NSFCPAR, SFCPARMS, &
+            & SFCGRIDPARMS, UNIFORM_SFC_BRDF, SFC_BRDF_DO, &
+            & MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR, BCRAD, &
+            & MU, PHI, WTDO, &
+            & CMU1, CPHI1, CMU2, CPHI2, WPHISAVE, FFTFLAG, &
+            & DIRFLUX, FLUXES, EXTINCT, &
+            & SHPTR, SOURCE, RSHPTR, RADIANCE, &
+            & WORK, WORK1, WORK2)
 
-!            Compute the source function from the radiance field,
-!              do the adaptive spherical harmonics truncation, compute
-!              the solution criterion, and dot products for acceleration
+        ! Compute the source function from the radiance field,
+        !   do the adaptive spherical harmonics truncation, compute
+        !   the solution criterion, and dot products for acceleration
         if (SOLCRIT .lt. ENDADAPTSOL .or. ITER .gt. 30) FIXSH = .true.
-        call COMPUTE_SOURCE(NSTOKES, ML, MM, NLM,                      &
-     &         NSTLEG, NLEG, NUMPHASE, NPTS,                            &
-     &         FIXSH, SRCTYPE, SOLARMU, YLMSUN, ALBEDO, LEGEN,          &
-     &         IPHASE, PLANCK, DIRFLUX, SHACC,                          &
-     &         MAXIV, RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR, DELSOURCE,  &
-     &         .false., ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM)
+        call COMPUTE_SOURCE(NSTOKES, ML, MM, NLM, &
+            &  NSTLEG, NLEG, NUMPHASE, NPTS, &
+            &  FIXSH, SRCTYPE, SOLARMU, YLMSUN, ALBEDO, LEGEN, &
+            &  IPHASE, PLANCK, DIRFLUX, SHACC, &
+            &  MAXIV, RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR, DELSOURCE, &
+            &  .false., ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM)
 
-!           Calculate the acceleration parameter and solution criterion
-!            from all the processors
-        call CALC_ACCEL_SOLCRIT(ACCELFLAG, DELJDOT, DELJOLD, DELJNEW,  &
-     &                           JNORM, ACCELPAR, SOLCRIT)
+        ! Calculate the acceleration parameter and solution criterion
+        !   from all the processors
+        call CALC_ACCEL_SOLCRIT(ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, &
+            & JNORM, ACCELPAR, SOLCRIT)
 
-!           Accelerate the convergence of the source function vector
-        call ACCELERATE_SOLUTION(ACCELPAR, NPTS, SHPTR, OSHPTR,        &
-     &                            NSTOKES, SOURCE, DELSOURCE)
+        ! Accelerate the convergence of the source function vector
+        call ACCELERATE_SOLUTION(ACCELPAR, NPTS, SHPTR, OSHPTR, &
+            & NSTOKES, SOURCE, DELSOURCE)
 
-!           If it is a not scattering medium then do only one iteration
+        ! If it is a not scattering medium then do only one iteration
         if (ALBMAX .lt. SOLACC) SOLCRIT = SOLACC
 
-!           Print out the log solution criterion, number of points,
-!             and average SH truncation.
-        write (6, '(2X,I4,F8.3,1X,E10.3,1X,I8,1X,F8.2,1X,F6.3)')         &
-     &        ITER, log10(max(SOLCRIT, 1.0e-20)), SPLITCRIT,             &
-     &        NPTS, FLOAT(SHPTR(NPTS + 1))/NPTS,                          &
-     &        FLOAT(SHPTR(NPTS + 1))/(NPTS*NLM)
+        ! Print out the log solution criterion, number of points,
+        !   and average SH truncation.
+        write (6, '(2X,I4,F8.3,1X,E10.3,1X,I8,1X,F8.2,1X,F6.3)') &
+            & ITER, log10(max(SOLCRIT, 1.0e-20)), SPLITCRIT, &
+            & NPTS, FLOAT(SHPTR(NPTS + 1))/NPTS, &
+            & FLOAT(SHPTR(NPTS + 1))/(NPTS*NLM)
     end do
 
-    write (6, '(1X,A,I6,A,F9.6)') '! Iterations: ', ITER,              &
-   &                   '     Final Criterion: ', SOLCRIT
+    write (6, '(1X,A,I6,A,F9.6)') '! Iterations: ', ITER, &
+        & '     Final Criterion: ', SOLCRIT
 
     if (SFCTYPE(1:1) .eq. 'V' .and. UNIFORM_SFC_BRDF) then
         deallocate (SFC_BRDF_DO)
@@ -315,27 +316,28 @@ subroutine SOLVE_RTE(NSTOKES, NX, NY, NZ, NX1, NY1, NANG,      &
     deallocate (YLMSUN, FFTFLAG, WTMU, WPHISAVE)
     deallocate (CMU1, CMU2, CPHI1, CPHI2)
 
-!          Comment in for GLE graphics output of cell structure (see rou
-!      CALL VISUALIZE_CELLS ('cellfinal.gle', YGRID(1), 1, IPFLAG,
-!     .           NX, XGRID(NX+1)-XGRID(1), ZGRID(NZ)-ZGRID(1),
-!     .           NCELLS, GRIDPTR, NEIGHPTR, TREEPTR,
-!     .           CELLFLAGS, GRIDPOS)
+    ! Comment in for GLE graphics output of cell structure (see rou
+    ! call VISUALIZE_CELLS('cellfinal.gle', YGRID(1), 1, IPFLAG, &
+    !     & NX, XGRID(NX+1)-XGRID(1), ZGRID(NZ)-ZGRID(1), &
+    !     & NCELLS, GRIDPTR, NEIGHPTR, TREEPTR, &
+    !     & CELLFLAGS, GRIDPOS)
 
-!          Comment in for output of cell splitting criterion for every c
-!      CALL OUTPUT_CELL_SPLIT ('cellsplit.dat',GRIDPTR,
-!     .                        GRIDPOS, EXTINCT, SHPTR, SOURCE, NCELLS)
+    ! Comment in for output of cell splitting criterion for every c
+    ! call OUTPUT_CELL_SPLIT ('cellsplit.dat',GRIDPTR, &
+    !     & GRIDPOS, EXTINCT, SHPTR, SOURCE, NCELLS)
 
     return
-end
+end subroutine
 
-subroutine CALC_SOURCE_PNT(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,     &
-&                            SRCTYPE, FLUX0, YLMSUN, PLANCK,       &
-&                            ALBEDO, IPH, LEGEN, NR, RADIANCE,     &
-&                            SOURCET)
-!      Calculates the polarized source function in real generalized
-!      spherical harmonics at one grid point from the radiance in
-!      real generalized spherical harmonics and thermal and/or solar
-!      source information.
+subroutine CALC_SOURCE_PNT( &
+    & NSTOKES, NLM, NSTLEG, NLEG, LOFJ, &
+    & SRCTYPE, FLUX0, YLMSUN, PLANCK, &
+    & ALBEDO, IPH, LEGEN, NR, RADIANCE, &
+    & SOURCET)
+    ! Calculates the polarized source function in real generalized
+    ! spherical harmonics at one grid point from the radiance in
+    ! real generalized spherical harmonics and thermal and/or solar
+    ! source information.
     implicit none
     integer NSTOKES, NSTLEG, NLEG, NLM, LOFJ(NLM), IPH, NR
     character SRCTYPE*1
@@ -348,9 +350,9 @@ subroutine CALC_SOURCE_PNT(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,     &
     integer J
 
     SOURCET(:, :) = 0.0
-!       Calculate the generalized spherical harmonics source function
-!       from the radiance vector in genSH.  Do different parts of the
-!       matrix multiply depending on NSTOKES.
+    ! Calculate the generalized spherical harmonics source function
+    ! from the radiance vector in genSH.  Do different parts of the
+    ! matrix multiply depending on NSTOKES.
     do J = 1, NR
         SOURCET(1, J) = SOURCET(1, J) + LEGEN(1, LOFJ(J), IPH)*RADIANCE(1, J)
     end do
@@ -359,50 +361,51 @@ subroutine CALC_SOURCE_PNT(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,     &
             SOURCET(1, J) = SOURCET(1, J) + LEGEN(5, LOFJ(J), IPH)*RADIANCE(2, J)
         end do
         do J = 5, NR
-            SOURCET(2, J) = SOURCET(2, J) + LEGEN(5, LOFJ(J), IPH)*RADIANCE(1, J)&
-       &                               + LEGEN(2, LOFJ(J), IPH)*RADIANCE(2, J)
+            SOURCET(2, J) = SOURCET(2, J) + LEGEN(5, LOFJ(J), IPH)*RADIANCE(1, J) &
+                & + LEGEN(2, LOFJ(J), IPH)*RADIANCE(2, J)
             SOURCET(3, J) = SOURCET(3, J) + LEGEN(3, LOFJ(J), IPH)*RADIANCE(3, J)
         end do
     end if
     if (NSTOKES .eq. 4) then
         do J = 1, NR
             SOURCET(3, J) = SOURCET(3, J) + LEGEN(6, LOFJ(J), IPH)*RADIANCE(4, J)
-            SOURCET(4, J) = SOURCET(4, J) - LEGEN(6, LOFJ(J), IPH)*RADIANCE(3, J)&
-       &                               + LEGEN(4, LOFJ(J), IPH)*RADIANCE(4, J)
+            SOURCET(4, J) = SOURCET(4, J) - LEGEN(6, LOFJ(J), IPH)*RADIANCE(3, J) &
+                & + LEGEN(4, LOFJ(J), IPH)*RADIANCE(4, J)
         end do
     end if
-!       Do the final multiplication by the single scattering albedo
+    ! Do the final multiplication by the single scattering albedo
     SOURCET(:, :) = ALBEDO*SOURCET(:, :)
 
-!       Calculate the generalized spherical harmonics source function
-!       from the solar direct beam
+    ! Calculate the generalized spherical harmonics source function
+    ! from the solar direct beam
     if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
         do J = 1, NLM
-            SOURCET(1, J) = SOURCET(1, J)                                   &
-       &                 + FLUX0*ALBEDO*LEGEN(1, LOFJ(J), IPH)*YLMSUN(1, J)
+            SOURCET(1, J) = SOURCET(1, J) &
+                & + FLUX0*ALBEDO*LEGEN(1, LOFJ(J), IPH)*YLMSUN(1, J)
         end do
         if (NSTOKES .gt. 1) then
             do J = 5, NLM
-                SOURCET(2, J) = SOURCET(2, J)                                 &
-         &                 + FLUX0*ALBEDO*LEGEN(5, LOFJ(J), IPH)*YLMSUN(1, J)
+                SOURCET(2, J) = SOURCET(2, J) &
+                    & + FLUX0*ALBEDO*LEGEN(5, LOFJ(J), IPH)*YLMSUN(1, J)
             end do
         end if
     end if
-!       Add in the isotropic unpolarized thermal emission
+    ! Add in the isotropic unpolarized thermal emission
     if (SRCTYPE .eq. 'T' .or. SRCTYPE .eq. 'B') then
         SOURCET(1, 1) = SOURCET(1, 1) + C*PLANCK
     end if
 
     return
-end
+end subroutine
 
-subroutine CALC_SOURCE_PNT_UNPOL(NLM, NLEG, LOFJ,                &
-&                            SRCTYPE, FLUX0, YLMSUN, PLANCK,       &
-&                            ALBEDO, IPH, LEGEN, NR, RADIANCE,     &
-&                            SOURCET)
-!      Calculates the scalar source function in spherical harmonics at
-!      one grid point from the radiance in spherical harmonics and
-!      thermal and/or solar source information.
+subroutine CALC_SOURCE_PNT_UNPOL( &
+    & NLM, NLEG, LOFJ, &
+    & SRCTYPE, FLUX0, YLMSUN, PLANCK, &
+    & ALBEDO, IPH, LEGEN, NR, RADIANCE, &
+    & SOURCET)
+    ! Calculates the scalar source function in spherical harmonics at
+    ! one grid point from the radiance in spherical harmonics and
+    ! thermal and/or solar source information.
     implicit none
     integer NLEG, NLM, LOFJ(NLM), IPH, NR
     character SRCTYPE*1
@@ -415,54 +418,55 @@ subroutine CALC_SOURCE_PNT_UNPOL(NLM, NLEG, LOFJ,                &
     integer J
 
     SOURCET(:) = 0.0
-!       Calculate the generalized spherical harmonics source function
-!       from the solar direct beam
+    ! Calculate the generalized spherical harmonics source function
+    ! from the solar direct beam
     if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
         do J = 1, NLM
             SOURCET(J) = FLUX0*ALBEDO*LEGEN(LOFJ(J), IPH)*YLMSUN(J)
         end do
     end if
-!       Add in the isotropic unpolarized thermal emission
+    ! Add in the isotropic unpolarized thermal emission
     if (SRCTYPE .eq. 'T' .or. SRCTYPE .eq. 'B') then
         SOURCET(1) = SOURCET(1) + C*PLANCK
     end if
 
-!       Calculate the generalized spherical harmonics source function
-!       from the radiance vector in genSH.
+    ! Calculate the generalized spherical harmonics source function
+    ! from the radiance vector in genSH.
     do J = 1, NR
         SOURCET(J) = SOURCET(J) + ALBEDO*LEGEN(LOFJ(J), IPH)*RADIANCE(J)
     end do
     return
-end
+end subroutine
 
-subroutine COMPUTE_SOURCE(NSTOKES, ML, MM, NLM,                  &
-&             NSTLEG, NLEG, NUMPHASE, NPTS, FIXSH,                  &
-&             SRCTYPE, SOLARMU, YLMSUN, ALBEDO, LEGEN,             &
-&             IPHASE, PLANCK, DIRFLUX, SHACC, MAXIV,               &
-&             RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR, DELSOURCE,  &
-&             FIRST, ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM)
-!       Computes the source function (SOURCE) in spherical harmonic spac
-!     for all the grid points.  The thermal source and/or solar
-!     pseudo-source (in PLANCK or DIRFLUX) is added to the scattering so
-!     (computed from LEGEN and the spherical harmonic expansion in RADIA
-!     Also computes the adaptive spherical harmonic truncation for
-!     the source function, unless FIXSH is true.  The SH truncation is s
-!     so that the higher terms of the source function are smaller in
-!     absolute value than SHACC. The truncation is to the nearest l,
-!     so that a triangular (for M=L) truncation is preserved.  If there
-!     is little or no scattering then the SH truncation can be set to
-!     zero terms.  The source function SH truncation is output in terms
-!     of the pointer SHPTR (note that RSHPTR refers to the RADIANCE arra
-!     and OSHPTR to the DELSOURCE array).
-!       To save memory this routine also computes some things for the
-!     series acceleration: the dot products of the difference in source
-!     function between successive iterations and the new difference sour
-!     function vector (DELSOURCE).  To avoid using another array and
-!     because of the adaptive truncation pointer stuff, this requires
-!     two extra calculations of the source function.
-!       Computes the sum of squares of the new source function for calcu
-!     of the solution criterion (SOLCRIT, the RMS difference in succesiv
-!     source function fields normalized by the RMS of the field).
+subroutine COMPUTE_SOURCE( &
+    & NSTOKES, ML, MM, NLM, &
+    & NSTLEG, NLEG, NUMPHASE, NPTS, FIXSH, &
+    & SRCTYPE, SOLARMU, YLMSUN, ALBEDO, LEGEN, &
+    & IPHASE, PLANCK, DIRFLUX, SHACC, MAXIV, &
+    & RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR, DELSOURCE, &
+    & FIRST, ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM)
+    ! Computes the source function (SOURCE) in spherical harmonic spac
+    !   for all the grid points.  The thermal source and/or solar
+    !   pseudo-source (in PLANCK or DIRFLUX) is added to the scattering so
+    !   (computed from LEGEN and the spherical harmonic expansion in RADIA
+    !   Also computes the adaptive spherical harmonic truncation for
+    !   the source function, unless FIXSH is true.  The SH truncation is s
+    !   so that the higher terms of the source function are smaller in
+    !   absolute value than SHACC. The truncation is to the nearest l,
+    !   so that a triangular (for M=L) truncation is preserved.  If there
+    !   is little or no scattering then the SH truncation can be set to
+    !   zero terms.  The source function SH truncation is output in terms
+    !   of the pointer SHPTR (note that RSHPTR refers to the RADIANCE arra
+    !   and OSHPTR to the DELSOURCE array).
+    ! To save memory this routine also computes some things for the
+    !   series acceleration: the dot products of the difference in source
+    !   function between successive iterations and the new difference sour
+    !   function vector (DELSOURCE).  To avoid using another array and
+    !   because of the adaptive truncation pointer stuff, this requires
+    !   two extra calculations of the source function.
+    ! Computes the sum of squares of the new source function for calcu
+    !   of the solution criterion (SOLCRIT, the RMS difference in succesiv
+    !   source function fields normalized by the RMS of the field).
     implicit none
     integer NSTOKES, NPTS, ML, MM, NLM, NSTLEG, NLEG
     integer NUMPHASE, MAXIV
@@ -484,12 +488,12 @@ subroutine COMPUTE_SOURCE(NSTOKES, ML, MM, NLM,                  &
     allocate (LOFJ(NLM), SOURCET(NSTOKES, NLM))
 
     SRCMIN = SHACC
-!         Make source function from scattering integral and real sources
-!             Solar source: DIRFLUX has F0*exp(-tau)
-!             Thermal source: PLANCK has (1-omega)*B(T)
+    ! Make source function from scattering integral and real sources
+    !   Solar source: DIRFLUX has F0*exp(-tau)
+    !   Thermal source: PLANCK has (1-omega)*B(T)
     SECMU0 = 1.0/abs(SOLARMU)
     C = sqrt(4.0*acos(-1.0))
-!         Make the l index as a function of SH term (J)
+    ! Make the l index as a function of SH term (J)
     J = 0
     do L = 0, ML
         ME = min(L, MM)
@@ -500,14 +504,14 @@ subroutine COMPUTE_SOURCE(NSTOKES, ML, MM, NLM,                  &
         end do
     end do
 
-!         Compute the dot products of the successive source differences
+    ! Compute the dot products of the successive source differences
     if (.not. FIRST) then
         DELJDOT = 0.0
         DELJOLD = 0.0
         DELJNEW = 0.0
         JNORM = 0.0
         do I = 1, NPTS
-!             Compute the temporary source function for this point
+            ! Compute the temporary source function for this point
             if (NUMPHASE .gt. 0) then
                 IPH = IPHASE(I)
             else
@@ -520,27 +524,27 @@ subroutine COMPUTE_SOURCE(NSTOKES, ML, MM, NLM,                  &
                 stop
             end if
             if (NSTOKES .eq. 1) then
-                call CALC_SOURCE_PNT_UNPOL(NLM, NLEG, LOFJ,                &
-         &                          SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,     &
-         &                          PLANCK(I), ALBEDO(I), IPH, LEGEN,       &
-         &                          NR, RADIANCE(1, IR + 1), SOURCET)
+                call CALC_SOURCE_PNT_UNPOL(NLM, NLEG, LOFJ, &
+                    & SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN, &
+                    & PLANCK(I), ALBEDO(I), IPH, LEGEN, &
+                    & NR, RADIANCE(1, IR + 1), SOURCET)
             else
-                call CALC_SOURCE_PNT(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,     &
-         &                          SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,     &
-         &                          PLANCK(I), ALBEDO(I), IPH, LEGEN,       &
-         &                          NR, RADIANCE(1, IR + 1), SOURCET)
+                call CALC_SOURCE_PNT(NSTOKES, NLM, NSTLEG, NLEG, LOFJ, &
+                    & SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN, &
+                    & PLANCK(I), ALBEDO(I), IPH, LEGEN, &
+                    & NR, RADIANCE(1, IR + 1), SOURCET)
             end if
 
-!             Compute the dot product of the new and old source differen
-!               and the solution criterion (don't use new points for Jno
+            ! Compute the dot product of the new and old source differen
+            !   and the solution criterion (don't use new points for Jno
             if (ACCELFLAG) then
                 IS = SHPTR(I)
                 ISO = OSHPTR(I)
                 NS = min(SHPTR(I + 1) - IS, OSHPTR(I + 1) - ISO)
                 do K = 1, NSTOKES
                     do J = 1, NS
-                        DELJDOT = DELJDOT +                                     &
-             &             (SOURCET(K, J) - SOURCE(K, IS + J))*DELSOURCE(K, ISO + J)
+                        DELJDOT = DELJDOT + &
+                            & (SOURCET(K, J) - SOURCE(K, IS + J))*DELSOURCE(K, ISO + J)
                         DELJOLD = DELJOLD + DELSOURCE(K, ISO + J)**2
                         DELJNEW = DELJNEW + (SOURCET(K, J) - SOURCE(K, IS + J))**2
                         JNORM = JNORM + SOURCE(K, IS + J)**2
@@ -559,10 +563,10 @@ subroutine COMPUTE_SOURCE(NSTOKES, ML, MM, NLM,                  &
         end do
     end if
 
-!         Compute and store the new source function difference vector
+    ! Compute and store the new source function difference vector
     if (.not. FIRST .and. ACCELFLAG) then
         do I = 1, NPTS
-!             Compute the temporary source function for this point
+            ! Compute the temporary source function for this point
             if (NUMPHASE .gt. 0) then
                 IPH = IPHASE(I)
             else
@@ -571,18 +575,18 @@ subroutine COMPUTE_SOURCE(NSTOKES, ML, MM, NLM,                  &
             IR = RSHPTR(I)
             NR = RSHPTR(I + 1) - IR
             if (NSTOKES .eq. 1) then
-                call CALC_SOURCE_PNT_UNPOL(NLM, NLEG, LOFJ,                &
-         &                          SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,     &
-         &                          PLANCK(I), ALBEDO(I), IPH, LEGEN,       &
-         &                          NR, RADIANCE(1, IR + 1), SOURCET)
+                call CALC_SOURCE_PNT_UNPOL(NLM, NLEG, LOFJ, &
+                    & SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN, &
+                    & PLANCK(I), ALBEDO(I), IPH, LEGEN, &
+                    & NR, RADIANCE(1, IR + 1), SOURCET)
             else
-                call CALC_SOURCE_PNT(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,     &
-         &                          SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,     &
-         &                          PLANCK(I), ALBEDO(I), IPH, LEGEN,       &
-         &                          NR, RADIANCE(1, IR + 1), SOURCET)
+                call CALC_SOURCE_PNT(NSTOKES, NLM, NSTLEG, NLEG, LOFJ, &
+                    & SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN, &
+                    & PLANCK(I), ALBEDO(I), IPH, LEGEN, &
+                    & NR, RADIANCE(1, IR + 1), SOURCET)
             end if
 
-!             Make the source difference vector
+            ! Make the source difference vector
             IS = SHPTR(I)
             NS = SHPTR(I + 1) - IS
             OSHPTR(I) = IS
@@ -593,7 +597,7 @@ subroutine COMPUTE_SOURCE(NSTOKES, ML, MM, NLM,                  &
         OSHPTR(NPTS + 1) = SHPTR(NPTS + 1)
     end if
 
-!         Compute the source function in the temporary array.
+    ! Compute the source function in the temporary array.
     IS = 0
     do I = 1, NPTS
         if (NUMPHASE .gt. 0) then
@@ -608,22 +612,22 @@ subroutine COMPUTE_SOURCE(NSTOKES, ML, MM, NLM,                  &
             stop
         end if
         if (NSTOKES .eq. 1) then
-            call CALC_SOURCE_PNT_UNPOL(NLM, NLEG, LOFJ,                  &
-       &                          SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,     &
-       &                          PLANCK(I), ALBEDO(I), IPH, LEGEN,       &
-       &                          NR, RADIANCE(1, IR + 1), SOURCET)
+            call CALC_SOURCE_PNT_UNPOL(NLM, NLEG, LOFJ, &
+                & SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN, &
+                & PLANCK(I), ALBEDO(I), IPH, LEGEN, &
+                & NR, RADIANCE(1, IR + 1), SOURCET)
         else
-            call CALC_SOURCE_PNT(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,       &
-       &                        SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,       &
-       &                        PLANCK(I), ALBEDO(I), IPH, LEGEN,         &
-       &                        NR, RADIANCE(1, IR + 1), SOURCET)
+            call CALC_SOURCE_PNT(NSTOKES, NLM, NSTLEG, NLEG, LOFJ, &
+                & SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN, &
+                & PLANCK(I), ALBEDO(I), IPH, LEGEN, &
+                & NR, RADIANCE(1, IR + 1), SOURCET)
         end if
         if (FIXSH) then
             NS = SHPTR(I + 1) - IS
         else
-!           Then do the adaptive spherical harmonics:
-!             Find how many source function terms to use, and how many
-!             terms wanted for the radiance.
+            ! Then do the adaptive spherical harmonics:
+            !   Find how many source function terms to use, and how many
+            !   terms wanted for the radiance.
             if (SRCTYPE .eq. 'S') then
                 JS = 0
             else
@@ -634,7 +638,7 @@ subroutine COMPUTE_SOURCE(NSTOKES, ML, MM, NLM,                  &
                     if (abs(SOURCET(K, J)) .gt. SRCMIN) JS = J
                 end do
             end do
-!             Use all the m's for the last l for the source function.
+            ! Use all the m's for the last l for the source function.
             if (JS .eq. 0) then
                 NS = 0
             else
@@ -652,7 +656,7 @@ subroutine COMPUTE_SOURCE(NSTOKES, ML, MM, NLM,                  &
             write (6, *) 'Out of memory for more spherical harmonic terms.'
             stop
         end if
-!           Transfer the new source function
+        ! Transfer the new source function
         do J = 1, NS
             SOURCE(:, IS + J) = SOURCET(:, J)
         end do
@@ -661,23 +665,23 @@ subroutine COMPUTE_SOURCE(NSTOKES, ML, MM, NLM,                  &
     SHPTR(NPTS + 1) = IS
     deallocate (LOFJ, SOURCET)
     return
-end
+end subroutine
 
-subroutine RADIANCE_TRUNCATION(HIGHORDERRAD,                     &
-&             NSTOKES, ML, MM, NSTLEG, NLEG, NUMPHASE,             &
-&             NPTS, ALBEDO, LEGEN, IPHASE, SHPTR, RADIANCE,        &
-&             MAXIR, FIXSH, SHACC, RSHPTR)
-!       Computes the next radiance spherical harmonic series truncation
-!     to use based on the current source function truncation and the
-!     scattering properties.  The radiance truncation is the smaller
-!     of that based on a minimum SH term radiance and that needed for
-!     the computation of the source function.  The truncation is always
-!     made for a complete set in the L index.  The radiance SH truncatio
-!     is set to a few higher L index than the source function, so that
-!     the source function truncation may grow (since initialized with
-!     a low order truncation).  The minimum radiance truncation is
-!     L=1 so that the mean radiance and net flux terms may be computed,
-!     unless HIGHORDERRAD is on, in which case all terms are kept.
+subroutine RADIANCE_TRUNCATION(HIGHORDERRAD, &
+    & NSTOKES, ML, MM, NSTLEG, NLEG, NUMPHASE, &
+    & NPTS, ALBEDO, LEGEN, IPHASE, SHPTR, RADIANCE, &
+    & MAXIR, FIXSH, SHACC, RSHPTR)
+    ! Computes the next radiance spherical harmonic series truncation
+    ! to use based on the current source function truncation and the
+    ! scattering properties.  The radiance truncation is the smaller
+    ! of that based on a minimum SH term radiance and that needed for
+    ! the computation of the source function.  The truncation is always
+    ! made for a complete set in the L index.  The radiance SH truncatio
+    ! is set to a few higher L index than the source function, so that
+    ! the source function truncation may grow (since initialized with
+    ! a low order truncation).  The minimum radiance truncation is
+    ! L=1 so that the mean radiance and net flux terms may be computed,
+    ! unless HIGHORDERRAD is on, in which case all terms are kept.
     implicit none
     integer NPTS, NSTOKES, ML, MM, NSTLEG, NLEG, NUMPHASE, MAXIR
     integer SHPTR(NPTS + 1), RSHPTR(NPTS + 2)
@@ -694,7 +698,7 @@ subroutine RADIANCE_TRUNCATION(HIGHORDERRAD,                     &
 
     RADMIN = SHACC
     NOTEND = .true.
-!         Make the l index as a function of SH term (J)
+    ! Make the l index as a function of SH term (J)
     NLM = (2*MM + 1)*(ML + 1) - MM*(MM + 1)
     allocate (LOFJ(NLM))
     J = 0
@@ -711,10 +715,10 @@ subroutine RADIANCE_TRUNCATION(HIGHORDERRAD,                     &
     IR = 0
     RSHPTR(1) = 0
     do I = 1, NPTS
-!           Find how many terms wanted for the radiance based on the
-!             radiance threshold (RADMIN) (use the mean radiance as an
-!             upper limit to the SH term radiance).
-!             We don't have radiances for any new points, so don't use t
+        ! Find how many terms wanted for the radiance based on the
+        !   radiance threshold (RADMIN) (use the mean radiance as an
+        !   upper limit to the SH term radiance).
+        !   We don't have radiances for any new points, so don't use t
         NRO = RSHPTR(I + 1) - IRO
         if (NRO .eq. 0) NOTEND = .false.
         if (NOTEND) then
@@ -725,19 +729,20 @@ subroutine RADIANCE_TRUNCATION(HIGHORDERRAD,                     &
             end if
             LR = 1
             do L = 1, ML
-                if (ALBEDO(I)*LEGEN(1, L, K)*RADIANCE(1, IRO + 1) .gt. RADMIN)   &
-         &        LR = L
+                ! the following two lines (L747-748 in shdomsub1.f) do not make sense
+                if (ALBEDO(I)*LEGEN(1, L, K)*RADIANCE(1, IRO + 1) .gt. RADMIN) &
+                    & LR = L
             end do
         else
             LR = ML
         end if
         IRO = IRO + NRO
 
-!           The radiance L truncation is the smaller of the radiance cut
-!             from above and a few more than the source truncation, but
-!             it is at least 1 (so low order terms are always available)
-!             For higher order radiance option, use all terms.
-!             But if out of memory, use the source function truncation.
+        ! The radiance L truncation is the smaller of the radiance cut
+        !   from above and a few more than the source truncation, but
+        !   it is at least 1 (so low order terms are always available)
+        !   For higher order radiance option, use all terms.
+        !   But if out of memory, use the source function truncation.
         NS = max(1, SHPTR(I + 1) - SHPTR(I))
         LS = LOFJ(NS)
         LR = min(LR, LS + ML/8 + 2)
@@ -750,8 +755,8 @@ subroutine RADIANCE_TRUNCATION(HIGHORDERRAD,                     &
         IR = IR + NR
         RSHPTR(I + 1) = IR
         if (IR .gt. MAXIR) then
-            write (6, *)                                                   &
-       &    'RADIANCE_TRUNCATION: Out of memory for more radiance terms.'
+            write (6, *) &
+                & 'RADIANCE_TRUNCATION: Out of memory for more radiance terms.'
             goto 190
         end if
     end do
@@ -759,9 +764,9 @@ subroutine RADIANCE_TRUNCATION(HIGHORDERRAD,                     &
     deallocate (LOFJ)
     return
 
-!         If out of memory or the SH truncation is fixed then
-!           just set the radiance truncation to that of the source.
-190         continue
+    ! If out of memory or the SH truncation is fixed then
+    ! just set the radiance truncation to that of the source.
+190 continue
     RSHPTR(1) = 0
     IR = 0
     do I = 1, NPTS
@@ -775,8 +780,8 @@ subroutine RADIANCE_TRUNCATION(HIGHORDERRAD,                     &
         end if
         IR = IR + NR
         if (IR .gt. MAXIR) then
-            write (6, *) 'RADIANCE_TRUNCATION: Really out of memory ',     &
-       &      'for more radiance terms.'
+            write (6, *) 'RADIANCE_TRUNCATION: Really out of memory ', &
+                & 'for more radiance terms.'
             write (6, *) 'Increase MAXIV.'
             stop
         end if
@@ -784,7 +789,7 @@ subroutine RADIANCE_TRUNCATION(HIGHORDERRAD,                     &
     end do
     RSHPTR(NPTS + 2) = IR
     return
-end
+end subroutine
 
 subroutine ACCELERATE_SOLUTION(ACCELPAR, NPTS, SHPTR, OSHPTR,    &
 &                                NSTOKES, SOURCE, DELSOURCE)

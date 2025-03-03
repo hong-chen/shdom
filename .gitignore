@@ -28,7 +28,6 @@ build
 *.html
 *prp.txt
 *sca.txt
-*out*txt
 
 # libRadtran
 randomseed
@@ -49,7 +48,8 @@ lib/*
 *.pgm
 *.out
 !data
-!data/*.lwc
+!data/*.nml
+!data/*.txt
 !tests
 !tests/*.py
 !dev

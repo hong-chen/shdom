@@ -2,7 +2,7 @@
 Spherical Harmonic Discrete Ordinate Method (SHDOM) for Atmospheric Radiative Transfer
 ======================================================================================
 
-All of the code here was initially developed by `Frank Evans <evans@nit.colorado.edu>`_ and available `here <https://coloradolinux.com/shdom/>`_.
+SHDOM was initially developed by `Frank Evans <evans@nit.colorado.edu>`_ and available `here <https://coloradolinux.com/shdom/>`_.
 
 Documents:
 

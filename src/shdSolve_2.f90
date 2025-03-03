@@ -2692,19 +2692,20 @@ subroutine ROTATE_POL_PLANE(NSTOKES, COSSCAT,                    &
     return
 end subroutine
 
-subroutine COMPUTE_RADIANCE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,   &
-&             ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,                 &
-&             NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,                 &
-&             BCFLAG, IPFLAG, SRCTYPE, DELTAM, SOLARMU, SOLARAZ,   &
-&             SFCTYPE, NSFCPAR, SFCGRIDPARMS,                      &
-&             MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,              &
-&             GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, UNITS,  &
-&             XGRID, YGRID, ZGRID, GRIDPOS,                        &
-&             GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,               &
-&             EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,     &
-&             SHPTR, SOURCE, SOURCE1, GRIDRAD,                     &
-&             OUTPARMS, IRAD, RADOUT)
-!       Computes the radiances for the specified locations and direction
+subroutine COMPUTE_RADIANCE( &
+    & NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
+    & ML, MM, NLM, NSTLEG, NLEG, NUMPHASE, &
+    & NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, &
+    & BCFLAG, IPFLAG, SRCTYPE, DELTAM, SOLARMU, SOLARAZ, &
+    & SFCTYPE, NSFCPAR, SFCGRIDPARMS, &
+    & MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD, &
+    & GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, UNITS, &
+    & XGRID, YGRID, ZGRID, GRIDPOS, &
+    & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, &
+    & EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES, &
+    & SHPTR, SOURCE, SOURCE1, GRIDRAD, &
+    & OUTPARMS, IRAD, RADOUT)
+    ! Computes the radiances for the specified locations and direction
     implicit none
     integer NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG, NPTS, NCELLS
     integer ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
@@ -2733,33 +2734,30 @@ subroutine COMPUTE_RADIANCE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,   &
     real MUOUT, PHIOUT, PHID
     real XDOMAIN, YDOMAIN, STARTX, STARTY
 
-!     +
-!     added by Hong Chen
-!     For fixing the domain shift issue
+    ! added by Hong Chen for fixing the "domain shift" issue
     double precision HC_VZA_RAD, HC_XOFFSET, HC_YOFFSET
-!     -
 
-!     Make the isotropic radiances for the top boundary
-    call COMPUTE_TOP_RADIANCES(SRCTYPE, SKYRAD, WAVENO, WAVELEN,     &
-   &                            UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
+    ! Make the isotropic radiances for the top boundary
+    call COMPUTE_TOP_RADIANCES(SRCTYPE, SKYRAD, WAVENO, WAVELEN, &
+        & UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
 
-!     Make the bottom boundary radiances for the Lambertian surfaces.
-!       Compute the upwelling bottom radiances using the downwelling flu
+    ! Make the bottom boundary radiances for the Lambertian surfaces.
+    ! Compute the upwelling bottom radiances using the downwelling flu
     if (SFCTYPE .eq. 'FL') then
 
-        call FIXED_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR(1, 2),            &
-     &             DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO,        &
-     &             WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1, 1 + NTOPPTS))
+        call FIXED_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR(1, 2), &
+            & DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO, &
+            & WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1, 1 + NTOPPTS))
 
     else if (SFCTYPE .eq. 'VL') then
 
-        call VARIABLE_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR(1, 2),         &
-     &               DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS,   &
-     &               NSTOKES, BCRAD(1, 1 + NTOPPTS))
+        call VARIABLE_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR(1, 2), &
+            & DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS, &
+            & NSTOKES, BCRAD(1, 1 + NTOPPTS))
 
     end if
 
-!     Setup the regularly spaced radiance locations
+    ! Setup the regularly spaced radiance locations
     XDOMAIN = XGRID(NX + 1 - ibits(BCFLAG, 0, 1)) - XGRID(1) + 2*OUTPARMS(4)
     STARTX = -OUTPARMS(4)
     if (OUTPARMS(2) .eq. 0.0) then
@@ -2779,44 +2777,41 @@ subroutine COMPUTE_RADIANCE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,   &
 
     LAMBERTIAN = SFCTYPE(2:2) .eq. 'L'
 
-!     Loop over the radiance directions
+    ! Loop over the radiance directions
     do IANG = 1, NANGOUT
         MUOUT = OUTPARMS(2*IANG + 5)
         PHID = OUTPARMS(2*IANG + 6)
         PHIOUT = PHID*acos(-1.0)/180.0
 
-!       +
-!       added by Hong Chen
-!       for fixing the domain shift issue
+        ! added by Hong Chen for fixing the "domain shift" issue
         HC_VZA_RAD = acos(MUOUT)
         HC_XOFFSET = Z0*tan(HC_VZA_RAD)*cos(PHIOUT)
         HC_YOFFSET = Z0*tan(HC_VZA_RAD)*sin(PHIOUT)
         STARTX = -OUTPARMS(4) + HC_XOFFSET
         STARTY = -OUTPARMS(5) + HC_YOFFSET
-!       -
 
         if (MUOUT .eq. 0.0 .or. abs(MUOUT) .gt. 1.0) then
             write (6, *) 'COMPUTE_RADIANCE: Bad mu for radiance', MUOUT
         else
 
-!         Compute the source function throughout grid for this angle
-            call COMPUTE_ONE_SOURCE(NSTOKES, ML, MM, NLM, NSTLEG, NLEG,   &
-       &                 NUMPHASE, NPTS, DELTAM, MUOUT, PHIOUT, SRCTYPE,  &
-       &                 SOLARMU, SOLARAZ, ALBEDO, LEGEN,                 &
-       &                 IPHASE, DIRFLUX, SHPTR, SOURCE, SOURCE1)
+            ! Compute the source function throughout grid for this angle
+            call COMPUTE_ONE_SOURCE(NSTOKES, ML, MM, NLM, NSTLEG, NLEG, &
+                & NUMPHASE, NPTS, DELTAM, MUOUT, PHIOUT, SRCTYPE, &
+                & SOLARMU, SOLARAZ, ALBEDO, LEGEN, &
+                & IPHASE, DIRFLUX, SHPTR, SOURCE, SOURCE1)
 
-!             Set the radiance field to -1, so we can determine valid ra
-!               Also set the source array to the extinction times the so
-!               function, so the grid interpolation is correct.
+            ! Set the radiance field to -1, so we can determine valid ra
+            !   Also set the source array to the extinction times the so
+            !   function, so the grid interpolation is correct.
             do I = 1, NPTS
                 GRIDRAD(1, I) = -1.0
                 SOURCE1(:, I) = SOURCE1(:, I)*EXTINCT(I)
             end do
-!             Get boundary radiances: either top or bottom
-!             Isotropic top boundary or Lambertian bottom boundary can u
-!               the previously computed boundary radiances in BCRAD,
-!               otherwise, compute the radiance for this angle
-!               by integrating over the stored downwelling radiances.
+            ! Get boundary radiances: either top or bottom
+            ! Isotropic top boundary or Lambertian bottom boundary can u
+            !   the previously computed boundary radiances in BCRAD,
+            !   otherwise, compute the radiance for this angle
+            !   by integrating over the stored downwelling radiances.
             if (MUOUT .lt. 0.0) then
                 do IBC = 1, NTOPPTS
                     I = BCPTR(IBC, 1)
@@ -2825,10 +2820,10 @@ subroutine COMPUTE_RADIANCE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,   &
             else
                 if (.not. LAMBERTIAN) then
                     call VARIABLE_BRDF_SURFACE(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2), &
-           &             NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MUOUT, PHIOUT,  &
-           &             SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,         &
-           &             SFCTYPE, NSFCPAR, SFCGRIDPARMS, NSTOKES,             &
-           &             BCRAD(1, 1 + NTOPPTS))
+                        & NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MUOUT, PHIOUT, &
+                        & SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX, &
+                        & SFCTYPE, NSFCPAR, SFCGRIDPARMS, NSTOKES, &
+                        & BCRAD(1, 1 + NTOPPTS))
                 end if
                 do IBC = 1, NBOTPTS
                     I = BCPTR(IBC, 2)
@@ -2836,20 +2831,20 @@ subroutine COMPUTE_RADIANCE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,   &
                 end do
             end if
 
-!         Integrate backward from the location to get the radiance
+            ! Integrate backward from the location to get the radiance
             Y0 = STARTY
             do JY = 1, NYOUT
                 X0 = STARTX
                 do JX = 1, NXOUT
                     IRAD = IRAD + 1
                     TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
-                    call INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,           &
-           &                        NX, NY, NZ, NPTS, NCELLS,                 &
-           &                        GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,    &
-           &                        XGRID, YGRID, ZGRID, GRIDPOS,             &
-           &                        MUOUT, PHIOUT, GRIDRAD, EXTINCT, SOURCE1, &
-           &                        X0, Y0, Z0, XE, YE, ZE, SIDE,               &
-           &                        TRANSMIT, RADIANCE, VALIDRAD)
+                    call INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES, &
+                        & NX, NY, NZ, NPTS, NCELLS, &
+                        & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, &
+                        & XGRID, YGRID, ZGRID, GRIDPOS, &
+                        & MUOUT, PHIOUT, GRIDRAD, EXTINCT, SOURCE1, &
+                        & X0, Y0, Z0, XE, YE, ZE, SIDE, &
+                        & TRANSMIT, RADIANCE, VALIDRAD)
                     RADOUT(:, IRAD) = RADIANCE(1:NSTOKES)
                     X0 = X0 + OUTPARMS(2)
                 end do
