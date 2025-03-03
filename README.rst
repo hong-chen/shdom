@@ -127,7 +127,10 @@ Source Code File Change
 
 * ``src/shdom_netcdf.f90``: was ``shdom_netcdf.f90``
 
-* ``src/shdom_nompi.f``: was ``shdom_nompi.f``
+* ``src/shdom_nompi.f90``: was ``shdom_nompi.f``
+
+  * converted from F77 to F90
+  * formatted the code
 
 * ``src/shdom_nonetcdf.f90``: was ``shdom_nonetcdf.f90``
 
@@ -146,7 +149,6 @@ Source Code File Change
 * ``src/shdUtil_io.f90``: was ``shdomsub3.f``
 
   * converted from F77 to F90
-
   * formatted the code
 
 * ``src/shdUtil_ocean.f``: was ``ocean_brdf.f``
