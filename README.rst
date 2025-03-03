@@ -136,24 +136,24 @@ Source Code File Change
 
   * formatted the code
 
-* ``src/shdSca_indexwatice.f90``: was ``indexwatice.f``
+* ``src/shdScat_indexwatice.f90``: was ``indexwatice.f``
 
   * converted from F77 to F90
   * formatted the code
 
-* ``src/shdSca_miewig.f90``: was ``miewig.f``
+* ``src/shdScat_miewig.f90``: was ``miewig.f``
 
   * converted from F77 to F90
   * formatted the code
 
-* ``src/shdSca_tmatrixwig.f``: was ``tmatrixwig.f``
+* ``src/shdScat_tmatrixwig.f``: was ``tmatrixwig.f``
 
-* ``src/shdSolve_1.f90``: was ``shdomsub1.f``
+* ``src/shdSolv_1.f90``: was ``shdomsub1.f``
 
   * converted from F77 to F90
   * formatted the code
 
-* ``src/shdSolve_2.f90``: was ``shdomsub2.f``
+* ``src/shdSolv_2.f90``: was ``shdomsub2.f``
 
   * converted from F77 to F90
   * formatted the code
