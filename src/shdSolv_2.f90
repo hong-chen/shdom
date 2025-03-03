@@ -2347,20 +2347,20 @@ subroutine FIND_BOUNDARY_RADIANCE(NSTOKES, XB, YB, MU2, PHI2,&
     return
 end subroutine
 
-subroutine COMPUTE_SOURCE_1CELL(ICELL, GRIDPTR,                  &
-&             NSTOKES, NSTLEG, ML, MM, NLM, NLEG, NUMPHASE,        &
-&             NPTS, DELTAM, SRCTYPE, SOLARMU,                      &
-&             EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX,             &
-&             SHPTR, SOURCE, YLMDIR, YLMSUN, SUNDIRLEG, SINGSCAT,  &
-&             DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,              &
-&             EXTINCT8, SRCEXT8)
-!       Computes the source function times extinction for gridpoints
-!     belonging to cell ICELL in the direction (MU,PHI).  The results
-!     are returned in SRCEXT8 and EXTINCT8.
-!     The spherical harmonic source function series is input in SOURCE.
-!     For a solar source if delta-M then use Nakajima and Tanaka TMS
-!     procedure, replacing delta-M single scattering with single scatter
-!     for unscaled untruncated phase function.
+subroutine COMPUTE_SOURCE_1CELL(ICELL, GRIDPTR,&
+    & NSTOKES, NSTLEG, ML, MM, NLM, NLEG, NUMPHASE,&
+    & NPTS, DELTAM, SRCTYPE, SOLARMU,&
+    & EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX,&
+    & SHPTR, SOURCE, YLMDIR, YLMSUN, SUNDIRLEG, SINGSCAT,&
+    & DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
+    & EXTINCT8, SRCEXT8)
+    !   Computes the source function times extinction for gridpoints
+    ! belonging to cell ICELL in the direction (MU,PHI).  The results
+    ! are returned in SRCEXT8 and EXTINCT8.
+    ! The spherical harmonic source function series is input in SOURCE.
+    ! For a solar source if delta-M then use Nakajima and Tanaka TMS
+    ! procedure, replacing delta-M single scattering with single scatter
+    ! for unscaled untruncated phase function.
     implicit none
     integer ICELL, NSTOKES, NSTLEG, NPTS, ML, MM, NLM, NLEG, NUMPHASE
     integer GRIDPTR(8, *), SHPTR(NPTS + 1)
@@ -2382,8 +2382,8 @@ subroutine COMPUTE_SOURCE_1CELL(ICELL, GRIDPTR,                  &
 
     SECMU0 = 1.0d0/abs(SOLARMU)
 
-!         Loop over the grid points, computing the source function
-!           at the viewing angle from the spherical harmonics source fun
+    ! Loop over the grid points, computing the source function
+    !   at the viewing angle from the spherical harmonics source fun
     do N = 1, 8
         IP = GRIDPTR(N, ICELL)
         I = DONETHIS(N)
@@ -2398,18 +2398,18 @@ subroutine COMPUTE_SOURCE_1CELL(ICELL, GRIDPTR,                  &
             OLDIPTS(N) = IP
             IS = SHPTR(IP)
             NS = SHPTR(IP + 1) - IS
-!             Sum over the real generalized spherical harmonic series
-!             of the source function
+            ! Sum over the real generalized spherical harmonic series
+            !   of the source function
             SRCEXT8(:, N) = 0.0
             do J = 1, NS
                 SRCEXT8(1, N) = SRCEXT8(1, N) + SOURCE(1, IS + J)*YLMDIR(1, J)
             end do
             if (NSTOKES .gt. 1) then
                 do J = 1, NS
-                    SRCEXT8(2, N) = SRCEXT8(2, N) + SOURCE(2, IS + J)*YLMDIR(2, J)  &
-           &                                    + SOURCE(3, IS + J)*YLMDIR(5, J)
-                    SRCEXT8(3, N) = SRCEXT8(3, N) + SOURCE(2, IS + J)*YLMDIR(6, J)  &
-           &                                    + SOURCE(3, IS + J)*YLMDIR(3, J)
+                    SRCEXT8(2, N) = SRCEXT8(2, N) + SOURCE(2, IS + J)*YLMDIR(2, J)&
+                        & + SOURCE(3, IS + J)*YLMDIR(5, J)
+                    SRCEXT8(3, N) = SRCEXT8(3, N) + SOURCE(2, IS + J)*YLMDIR(6, J)&
+                        & + SOURCE(3, IS + J)*YLMDIR(3, J)
                 end do
             end if
             if (NSTOKES .eq. 4) then
@@ -2418,14 +2418,14 @@ subroutine COMPUTE_SOURCE_1CELL(ICELL, GRIDPTR,                  &
                 end do
             end if
 
-!             Special case for solar source and Delta-M
+            ! Special case for solar source and Delta-M
             if (SRCTYPE .ne. 'T' .and. DELTAM) then
                 if (NUMPHASE .gt. 0) then
                     IPH = IPHASE(IP)
                 else
                     IPH = IP
                 end if
-!               First subtract off the truncated single scattering
+                ! First subtract off the truncated single scattering
                 DA = ALBEDO(IP)*DIRFLUX(IP)*SECMU0
                 J = 1
                 do L = 0, ML
@@ -2449,8 +2449,8 @@ subroutine COMPUTE_SOURCE_1CELL(ICELL, GRIDPTR,                  &
                         end if
                     end if
                 end do
-!               Then add in the single scattering contribution for the
-!               original unscaled phase function.
+                ! Then add in the single scattering contribution for the
+                !   original unscaled phase function.
                 if (NUMPHASE .gt. 0) then
                     SRCEXT8(:, N) = SRCEXT8(:, N) + DA*SINGSCAT(:, IPH)
                 else if (NSTOKES .eq. 1) then
@@ -2474,20 +2474,20 @@ subroutine COMPUTE_SOURCE_1CELL(ICELL, GRIDPTR,                  &
     return
 end subroutine
 
-subroutine COMPUTE_SOURCE_1CELL_UNPOL(ICELL, GRIDPTR,            &
-&             ML, MM, NLM, NLEG, NUMPHASE,                         &
-&             NPTS, DELTAM, SRCTYPE, SOLARMU,                      &
-&             EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX,             &
-&             SHPTR, SOURCE, YLMDIR, YLMSUN, SUNDIRLEG, SINGSCAT,  &
-&             DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,              &
-&             EXTINCT8, SRCEXT8)
-!       Computes the source function times extinction for gridpoints
-!     belonging to cell ICELL in the direction (MU,PHI).  The results
-!     are returned in SRCEXT8 and EXTINCT8.
-!     The spherical harmonic source function series is input in SOURCE.
-!     For a solar source if delta-M then use Nakajima and Tanaka TMS
-!     procedure, replacing delta-M single scattering with single scatter
-!     for unscaled untruncated phase function.
+subroutine COMPUTE_SOURCE_1CELL_UNPOL(ICELL, GRIDPTR,&
+    & ML, MM, NLM, NLEG, NUMPHASE,&
+    & NPTS, DELTAM, SRCTYPE, SOLARMU,&
+    & EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX,&
+    & SHPTR, SOURCE, YLMDIR, YLMSUN, SUNDIRLEG, SINGSCAT,&
+    & DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
+    & EXTINCT8, SRCEXT8)
+    !   Computes the source function times extinction for gridpoints
+    ! belonging to cell ICELL in the direction (MU,PHI).  The results
+    ! are returned in SRCEXT8 and EXTINCT8.
+    ! The spherical harmonic source function series is input in SOURCE.
+    ! For a solar source if delta-M then use Nakajima and Tanaka TMS
+    ! procedure, replacing delta-M single scattering with single scatter
+    ! for unscaled untruncated phase function.
     implicit none
     integer ICELL, NPTS, ML, MM, NLM, NLEG, NUMPHASE
     integer GRIDPTR(8, *), SHPTR(NPTS + 1)
@@ -2509,8 +2509,8 @@ subroutine COMPUTE_SOURCE_1CELL_UNPOL(ICELL, GRIDPTR,            &
 
     SECMU0 = 1.0d0/abs(SOLARMU)
 
-!         Loop over the grid points, computing the source function
-!           at the viewing angle from the spherical harmonics source fun
+    ! Loop over the grid points, computing the source function
+    !   at the viewing angle from the spherical harmonics source fun
     do N = 1, 8
         IP = GRIDPTR(N, ICELL)
         I = DONETHIS(N)
@@ -2525,21 +2525,21 @@ subroutine COMPUTE_SOURCE_1CELL_UNPOL(ICELL, GRIDPTR,            &
             OLDIPTS(N) = IP
             IS = SHPTR(IP)
             NS = SHPTR(IP + 1) - IS
-!             Sum over the real generalized spherical harmonic series
-!             of the source function
+            ! Sum over the real generalized spherical harmonic series
+            !   of the source function
             SRCEXT8(N) = 0.0
             do J = 1, NS
                 SRCEXT8(N) = SRCEXT8(N) + SOURCE(IS + J)*YLMDIR(J)
             end do
 
-!             Special case for solar source and Delta-M
+            ! Special case for solar source and Delta-M
             if (SRCTYPE .ne. 'T' .and. DELTAM) then
                 if (NUMPHASE .gt. 0) then
                     IPH = IPHASE(IP)
                 else
                     IPH = IP
                 end if
-!               First subtract off the truncated single scattering
+                ! First subtract off the truncated single scattering
                 DA = ALBEDO(IP)*DIRFLUX(IP)*SECMU0
                 J = 1
                 do L = 0, ML
@@ -2554,8 +2554,8 @@ subroutine COMPUTE_SOURCE_1CELL_UNPOL(ICELL, GRIDPTR,            &
                         end do
                     end if
                 end do
-!               Then add in the single scattering contribution for the
-!               original unscaled phase function.
+                ! Then add in the single scattering contribution for the
+                !   original unscaled phase function.
                 if (NUMPHASE .gt. 0) then
                     SRCEXT8(N) = SRCEXT8(N) + DA*SINGSCAT(IPH)
                 else
@@ -2579,12 +2579,12 @@ subroutine COMPUTE_SOURCE_1CELL_UNPOL(ICELL, GRIDPTR,            &
     return
 end subroutine
 
-subroutine PRECOMPUTE_PHASE(NSCATANGLE, NUMPHASE, NSTPHASE,      &
-&                      NSTOKES, ML, NSTLEG, NLEG, LEGEN, PHASETAB)
-!       Precomputes the phase matrix elements I-I and I-Q as a function
-!     of scattering angle for solar direct scattering for all the
-!     tabulated phase functions. Output is in PHASETAB.
-!     NSTPHASE=1 for NSTOKES=1 and NSTPHASE=2 for NSTOKES>1.
+subroutine PRECOMPUTE_PHASE(NSCATANGLE, NUMPHASE, NSTPHASE,&
+    & NSTOKES, ML, NSTLEG, NLEG, LEGEN, PHASETAB)
+    !   Precomputes the phase matrix elements I-I and I-Q as a function
+    ! of scattering angle for solar direct scattering for all the
+    ! tabulated phase functions. Output is in PHASETAB.
+    ! NSTPHASE=1 for NSTOKES=1 and NSTPHASE=2 for NSTOKES>1.
     implicit none
     integer NSCATANGLE, NUMPHASE, NSTPHASE
     integer NSTOKES, NSTLEG, ML, NLEG
@@ -2607,8 +2607,8 @@ subroutine PRECOMPUTE_PHASE(NSCATANGLE, NUMPHASE, NSTPHASE,      &
             call WIGNERFCT(X, NLEG, 2, 0, DMM2)
         end if
 
-!          Unscaled the needed Legendre coefficients, but divide by 1-f
-!          because extinction is still scaled (for TMS method)
+        ! Unscaled the needed Legendre coefficients, but divide by 1-f
+        !   because extinction is still scaled (for TMS method)
         do IPH = 1, NUMPHASE
             F = LEGEN(1, ML + 1, IPH)
             do L = 0, NLEG
@@ -2626,7 +2626,7 @@ subroutine PRECOMPUTE_PHASE(NSCATANGLE, NUMPHASE, NSTPHASE,      &
                 end if
             end do
 
-!           Sum the first Wigner function series, which is actually a Le
+            ! Sum the first Wigner function series, which is actually a Le
             A1 = 0.0d0
             do L = 0, NLEG
                 FCT = 2.0d0*L + 1.0d0
@@ -2640,7 +2640,7 @@ subroutine PRECOMPUTE_PHASE(NSCATANGLE, NUMPHASE, NSTPHASE,      &
             PHASETAB(1, IPH, J) = SNGL(A1*OFOURPI)
 
             if (NSTOKES .gt. 1) then
-!           If doing polarization, sum the second Wigner function series
+                ! If doing polarization, sum the second Wigner function series
                 B1 = 0.0d0
                 do L = 0, NLEG
                     FCT = 2.0d0*L + 1.0d0
@@ -2655,11 +2655,11 @@ subroutine PRECOMPUTE_PHASE(NSCATANGLE, NUMPHASE, NSTPHASE,      &
     return
 end subroutine
 
-subroutine ROTATE_POL_PLANE(NSTOKES, COSSCAT,                    &
-&                          SOLARMU, MU, DELPHI, SCATVECT)
-!      Rotates the plane of polarization from the scattering plane
-!      to the outgoing meridional plane for the solar single
-!      scattered Stokes vector in SINGSCAT.
+subroutine ROTATE_POL_PLANE(NSTOKES, COSSCAT,&
+    & SOLARMU, MU, DELPHI, SCATVECT)
+    ! Rotates the plane of polarization from the scattering plane
+    ! to the outgoing meridional plane for the solar single
+    ! scattered Stokes vector in SINGSCAT.
     implicit none
     integer NSTOKES
     double precision COSSCAT
@@ -2694,18 +2694,18 @@ subroutine ROTATE_POL_PLANE(NSTOKES, COSSCAT,                    &
     return
 end subroutine
 
-subroutine COMPUTE_RADIANCE( &
-    & NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
-    & ML, MM, NLM, NSTLEG, NLEG, NUMPHASE, &
-    & NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, &
-    & BCFLAG, IPFLAG, SRCTYPE, DELTAM, SOLARMU, SOLARAZ, &
-    & SFCTYPE, NSFCPAR, SFCGRIDPARMS, &
-    & MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD, &
-    & GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, UNITS, &
-    & XGRID, YGRID, ZGRID, GRIDPOS, &
-    & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, &
-    & EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES, &
-    & SHPTR, SOURCE, SOURCE1, GRIDRAD, &
+subroutine COMPUTE_RADIANCE(&
+    & NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+    & ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
+    & NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
+    & BCFLAG, IPFLAG, SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
+    & SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
+    & MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
+    & GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, UNITS,&
+    & XGRID, YGRID, ZGRID, GRIDPOS,&
+    & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+    & EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
+    & SHPTR, SOURCE, SOURCE1, GRIDRAD,&
     & OUTPARMS, IRAD, RADOUT)
     ! Computes the radiances for the specified locations and direction
     implicit none
@@ -2740,21 +2740,21 @@ subroutine COMPUTE_RADIANCE( &
     double precision HC_VZA_RAD, HC_XOFFSET, HC_YOFFSET
 
     ! Make the isotropic radiances for the top boundary
-    call COMPUTE_TOP_RADIANCES(SRCTYPE, SKYRAD, WAVENO, WAVELEN, &
+    call COMPUTE_TOP_RADIANCES(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
         & UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
 
     ! Make the bottom boundary radiances for the Lambertian surfaces.
     ! Compute the upwelling bottom radiances using the downwelling flu
     if (SFCTYPE .eq. 'FL') then
 
-        call FIXED_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR(1, 2), &
-            & DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO, &
+        call FIXED_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR(1, 2),&
+            & DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO,&
             & WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1, 1 + NTOPPTS))
 
     else if (SFCTYPE .eq. 'VL') then
 
-        call VARIABLE_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR(1, 2), &
-            & DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS, &
+        call VARIABLE_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR(1, 2),&
+            & DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS,&
             & NSTOKES, BCRAD(1, 1 + NTOPPTS))
 
     end if
@@ -2797,9 +2797,9 @@ subroutine COMPUTE_RADIANCE( &
         else
 
             ! Compute the source function throughout grid for this angle
-            call COMPUTE_ONE_SOURCE(NSTOKES, ML, MM, NLM, NSTLEG, NLEG, &
-                & NUMPHASE, NPTS, DELTAM, MUOUT, PHIOUT, SRCTYPE, &
-                & SOLARMU, SOLARAZ, ALBEDO, LEGEN, &
+            call COMPUTE_ONE_SOURCE(NSTOKES, ML, MM, NLM, NSTLEG, NLEG,&
+                & NUMPHASE, NPTS, DELTAM, MUOUT, PHIOUT, SRCTYPE,&
+                & SOLARMU, SOLARAZ, ALBEDO, LEGEN,&
                 & IPHASE, DIRFLUX, SHPTR, SOURCE, SOURCE1)
 
             ! Set the radiance field to -1, so we can determine valid ra
@@ -2821,10 +2821,10 @@ subroutine COMPUTE_RADIANCE( &
                 end do
             else
                 if (.not. LAMBERTIAN) then
-                    call VARIABLE_BRDF_SURFACE(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2), &
-                        & NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MUOUT, PHIOUT, &
-                        & SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX, &
-                        & SFCTYPE, NSFCPAR, SFCGRIDPARMS, NSTOKES, &
+                    call VARIABLE_BRDF_SURFACE(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
+                        & NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MUOUT, PHIOUT,&
+                        & SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
+                        & SFCTYPE, NSFCPAR, SFCGRIDPARMS, NSTOKES,&
                         & BCRAD(1, 1 + NTOPPTS))
                 end if
                 do IBC = 1, NBOTPTS
@@ -2840,12 +2840,12 @@ subroutine COMPUTE_RADIANCE( &
                 do JX = 1, NXOUT
                     IRAD = IRAD + 1
                     TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
-                    call INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES, &
-                        & NX, NY, NZ, NPTS, NCELLS, &
-                        & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, &
-                        & XGRID, YGRID, ZGRID, GRIDPOS, &
-                        & MUOUT, PHIOUT, GRIDRAD, EXTINCT, SOURCE1, &
-                        & X0, Y0, Z0, XE, YE, ZE, SIDE, &
+                    call INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
+                        & NX, NY, NZ, NPTS, NCELLS,&
+                        & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+                        & XGRID, YGRID, ZGRID, GRIDPOS,&
+                        & MUOUT, PHIOUT, GRIDRAD, EXTINCT, SOURCE1,&
+                        & X0, Y0, Z0, XE, YE, ZE, SIDE,&
                         & TRANSMIT, RADIANCE, VALIDRAD)
                     RADOUT(:, IRAD) = RADIANCE(1:NSTOKES)
                     X0 = X0 + OUTPARMS(2)
@@ -2859,10 +2859,10 @@ subroutine COMPUTE_RADIANCE( &
 
 end subroutine
 
-subroutine COMPUTE_ONE_SOURCE(NSTOKES, &
-    & ML, MM, NLM, NSTLEG, NLEG, NUMPHASE, &
-    & NPTS, DELTAM, MU, PHI, SRCTYPE, SOLARMU, SOLARAZ, &
-    & ALBEDO, LEGEN, IPHASE, DIRFLUX, &
+subroutine COMPUTE_ONE_SOURCE(NSTOKES,&
+    & ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
+    & NPTS, DELTAM, MU, PHI, SRCTYPE, SOLARMU, SOLARAZ,&
+    & ALBEDO, LEGEN, IPHASE, DIRFLUX,&
     & SHPTR, SOURCE, SOURCE1)
     ! Computes the source function (SOURCE1) in the direction (MU,PHI)
     ! for the whole domain (NX,NZ).  The spherical harmonic source funct
@@ -2898,10 +2898,10 @@ subroutine COMPUTE_ONE_SOURCE(NSTOKES, &
     call YLMALL(.false., MU, PHI, ML, MM, NSTLEG, YLMDIR)
     if (SRCTYPE .ne. 'T') then
         OFOURPI = 1.0/(4.0*acos(-1.0))
-        call YLMALL(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG, &
+        call YLMALL(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG,&
             & YLMSUN)
         SECMU0 = 1.0/abs(SOLARMU)
-        COSSCAT = SOLARMU*MU + sqrt((1.0d0 - SOLARMU**2)*(1.0d0 - MU**2)) &
+        COSSCAT = SOLARMU*MU + sqrt((1.0d0 - SOLARMU**2)*(1.0d0 - MU**2))&
             & *cos(SOLARAZ - PHI)
         if (NUMPHASE .eq. 0 .and. TMS) then
             ! If non-tabulate phase functions (unpolarized) then
@@ -2937,11 +2937,11 @@ subroutine COMPUTE_ONE_SOURCE(NSTOKES, &
             end do
             ! Sum the Wigner series (for A1 and B1), rotate the plane of
             !   polarization to the outgoing direction, and return the Stoke
-            call SOLAR_SINGSCAT_VECT(NLEG, UNSCLEGEN, COSSCAT, &
-                & SOLARMU, MU, SOLARAZ - PHI, NSTOKES, &
+            call SOLAR_SINGSCAT_VECT(NLEG, UNSCLEGEN, COSSCAT,&
+                & SOLARMU, MU, SOLARAZ - PHI, NSTOKES,&
                 & SINGSCAT(1, IPH))
             if (SINGSCAT(1, IPH) .le. 0.0) then
-                write (6, *) 'COMPUTE_ONE_SOURCE: negative source function', &
+                write (6, *) 'COMPUTE_ONE_SOURCE: negative source function',&
                     & ' for tabulated phase function:', IPH, MU, PHI, SINGSCAT(1, IPH)
                 stop
             end if
@@ -2961,9 +2961,9 @@ subroutine COMPUTE_ONE_SOURCE(NSTOKES, &
         end do
         if (NSTOKES .gt. 1) then
             do J = 1, NS
-                SOURCE1(2, I) = SOURCE1(2, I) + SOURCE(2, IS + J)*YLMDIR(2, J) &
+                SOURCE1(2, I) = SOURCE1(2, I) + SOURCE(2, IS + J)*YLMDIR(2, J)&
                     & + SOURCE(3, IS + J)*YLMDIR(5, J)
-                SOURCE1(3, I) = SOURCE1(3, I) + SOURCE(2, IS + J)*YLMDIR(6, J) &
+                SOURCE1(3, I) = SOURCE1(3, I) + SOURCE(2, IS + J)*YLMDIR(6, J)&
                     & + SOURCE(3, IS + J)*YLMDIR(3, J)
             end do
         end if
@@ -3031,8 +3031,8 @@ subroutine COMPUTE_ONE_SOURCE(NSTOKES, &
     return
 end subroutine
 
-subroutine SOLAR_SINGSCAT_VECT(NLEG, SINGLEGEN, COSSCAT, &
-    & SOLARMU, MU, DELPHI, NSTOKES, &
+subroutine SOLAR_SINGSCAT_VECT(NLEG, SINGLEGEN, COSSCAT,&
+    & SOLARMU, MU, DELPHI, NSTOKES,&
     & SCATVECT)
     ! Calculates the Stokes vector for a single scattering of unpolariz
     ! sunlight from the solar direction (SOLARMU) to the outgoing
@@ -3099,12 +3099,12 @@ subroutine SOLAR_SINGSCAT_VECT(NLEG, SINGLEGEN, COSSCAT, &
     return
 end subroutine
 
-subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES, &
-    & NX, NY, NZ, NPTS, NCELLS, &
-    & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, &
-    & XGRID, YGRID, ZGRID, GRIDPOS, &
-    & MU, PHI, GRIDRAD, EXTINCT, SOURCE, &
-    & X0, Y0, Z0, XE, YE, ZE, SIDE, &
+subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
+    & NX, NY, NZ, NPTS, NCELLS,&
+    & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+    & XGRID, YGRID, ZGRID, GRIDPOS,&
+    & MU, PHI, GRIDRAD, EXTINCT, SOURCE,&
+    & X0, Y0, Z0, XE, YE, ZE, SIDE,&
     & TRANSMIT, RADIANCE, VALIDRAD)
     ! Integrates the source function (SOURCE) through the extinction
     ! field (EXTINCT) backward in the direction opposite to (MU,PHI)
@@ -3136,7 +3136,7 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES, &
     double precision TAUTOL, TAUGRID, S, DELS
     double precision EXT, TAU, TRANSCELL, ABSCELL
     double precision SRC(NSTOKES), RAD(NSTOKES)
-    data GRIDFACE/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8, &
+    data GRIDFACE/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8,&
         & 1, 2, 3, 4, 5, 6, 7, 8/, OPPFACE/2, 1, 4, 3, 6, 5/
 
     ! TAUTOL is the maximum optical path for the subgrid intervals
@@ -3188,14 +3188,14 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES, &
     XE = X0
     YE = Y0
     ZE = Z0
-    call LOCATE_GRID_CELL(NX, NY, NZ, XGRID, YGRID, ZGRID, &
-        & NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS, &
+    call LOCATE_GRID_CELL(NX, NY, NZ, XGRID, YGRID, ZGRID,&
+        & NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS,&
         & BCFLAG, IPFLAG, XE, YE, ZE, ICELL)
     ! print '(A,5(1X,F8.5),1X,I6)', &
     !     & 'INTEGRATE_SOURCE:', X0, Y0, Z0, MU, PHI, ICELL
-    call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS, &
+    call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,&
         & XE, YE, ZE, 1, EXTINCT, 1, 1, EXT1)
-    call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS, &
+    call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,&
         & XE, YE, ZE, NSTOKES, SOURCE, 1, NSTOKES, SRCEXT1)
     SRCEXT1(1) = max(0.0, SRCEXT1(1))
 
@@ -3204,11 +3204,11 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES, &
     do while (.not. VALIDRAD .and. ICELL .gt. 0)
         ! This cell is independent pixel if IP mode or open boundary
         !   conditions and ray is leaving domain (i.e. not entering)
-        IPINX = btest(int(CELLFLAGS(ICELL)), 0) .and. &
-            & .not. (btest(BCFLAG, 0) .and. &
+        IPINX = btest(int(CELLFLAGS(ICELL)), 0) .and.&
+            & .not. (btest(BCFLAG, 0) .and.&
             & ((CX .gt. 0 .and. XE .lt. XM) .or. (CX .lt. 0 .and. XE .gt. XM)))
-        IPINY = btest(int(CELLFLAGS(ICELL)), 1) .and. &
-            & .not. (btest(BCFLAG, 1) .and. &
+        IPINY = btest(int(CELLFLAGS(ICELL)), 1) .and.&
+            & .not. (btest(BCFLAG, 1) .and.&
             & ((CY .gt. 0 .and. YE .lt. YM) .or. (CY .lt. 0 .and. YE .gt. YM)))
 
         ! Find boundaries of the current cell
@@ -3230,8 +3230,8 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES, &
         SOZ = (GRIDPOS(3, IOPP) - ZE)*CZINV
         SO = min(SOX, SOY, SOZ)
         if (SO .lt. -EPS) then
-            write (6, *) 'INTEGRATE_SOURCE: SO<0  ', &
-                & MU, PHI, X0, Y0, Z0, XE, YE, ZE, SO, SOX, SOY, SOZ, XGRID(1), YGRID(1), &
+            write (6, *) 'INTEGRATE_SOURCE: SO<0  ',&
+                & MU, PHI, X0, Y0, Z0, XE, YE, ZE, SO, SOX, SOY, SOZ, XGRID(1), YGRID(1),&
                 & GRIDPOS(1, IOPP), GRIDPOS(2, IOPP), GRIDPOS(3, IOPP)
             stop
         end if
@@ -3249,7 +3249,7 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES, &
 
         ! Find the optical path across the grid cell and figure how
         !   many subgrid intervals to use
-        call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS, &
+        call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,&
             & XN, YN, ZN, 1, EXTINCT, 1, 1, EXTN)
         TAUGRID = SO*0.5*(EXT1 + EXTN)
         NTAU = max(1, 1 + int(TAUGRID/TAUTOL))
@@ -3272,10 +3272,10 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES, &
             if (IT .eq. NTAU) then
                 EXT0 = EXTN
             else
-                call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS, &
+                call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,&
                     & XI, YI, ZI, 1, EXTINCT, 1, 1, EXT0)
             end if
-            call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS, &
+            call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,&
                 & XI, YI, ZI, NSTOKES, SOURCE, 1, NSTOKES, SRCEXT0)
             SRCEXT0(1) = max(0.0, SRCEXT0(1))
 
@@ -3286,8 +3286,8 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES, &
                 ABSCELL = TAU*(1.0 - 0.5*TAU*(1.0 - 0.33333333333*TAU))
                 TRANSCELL = 1.0 - ABSCELL
                 ! Linear extinction, linear source*extinction, to second
-                SRC(:) = (0.5*(SRCEXT0(:) + SRCEXT1(:)) + 0.08333333333* &
-                    & (EXT0*SRCEXT1(:) - EXT1*SRCEXT0(:))*DELS &
+                SRC(:) = (0.5*(SRCEXT0(:) + SRCEXT1(:)) + 0.08333333333*&
+                    & (EXT0*SRCEXT1(:) - EXT1*SRCEXT0(:))*DELS&
                     & *(1.0 - 0.05*(EXT1 - EXT0)*DELS))/EXT
             else
                 ABSCELL = 0.0
@@ -3319,7 +3319,7 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES, &
         ! Get the next cell to go to
         INEXTCELL = NEIGHPTR(IFACE, ICELL)
         if (INEXTCELL .lt. 0) then
-            call NEXT_CELL(XN, YN, ZN, IFACE, JFACE, ICELL, GRIDPOS, &
+            call NEXT_CELL(XN, YN, ZN, IFACE, JFACE, ICELL, GRIDPOS,&
                 & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXTCELL)
         end if
         ! Get the four grid points on the intersection face for
@@ -3353,10 +3353,10 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES, &
         !   If not, only prepare for next cell
         if (TRANSMIT .lt. 1.0e-5) then
             VALIDRAD = .true.
-        else if (GRIDRAD(1, I1) .ge. 0.0 .and. GRIDRAD(1, I2) .ge. 0.0 .and. &
+        else if (GRIDRAD(1, I1) .ge. 0.0 .and. GRIDRAD(1, I2) .ge. 0.0 .and.&
             & GRIDRAD(1, I3) .ge. 0.0 .and. GRIDRAD(1, I4) .ge. 0.0) then
             VALIDRAD = .true.
-            call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS, XI, YI, ZI, &
+            call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS, XI, YI, ZI,&
                 & NSTOKES, GRIDRAD, 1, NSTOKES, RAD0)
             RADIANCE(:) = RADIANCE(:) + TRANSMIT*RAD0(:)
         else
@@ -3371,13 +3371,13 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES, &
     return
 end subroutine
 
-subroutine INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,            &
-&                            X, Y, Z, ND, FIELD, ID1, NV, VALUES)
-!       Trilinearly interpolates the field (FIELD) given a grid cell
-!     pointer (ICELL), to compute the field values (VALUES) at the desir
-!     point (X,Y,Z). ND is the leading index of the FIELD (1 for a
-!     scalar field), ID1 is the first element of the vector to interpola
-!     and NV elements are output.
+subroutine INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,&
+    & X, Y, Z, ND, FIELD, ID1, NV, VALUES)
+    !   Trilinearly interpolates the field (FIELD) given a grid cell
+    ! pointer (ICELL), to compute the field values (VALUES) at the desir
+    ! point (X,Y,Z). ND is the leading index of the FIELD (1 for a
+    ! scalar field), ID1 is the first element of the vector to interpola
+    ! and NV elements are output.
     implicit none
     integer ICELL, GRIDPTR(8, *), ND, ID1, NV
     double precision X, Y, Z
@@ -3400,26 +3400,26 @@ subroutine INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,            &
     WM = 1 - W
 
     do ID = ID1, ID1 + NV - 1
-        VALUES(ID - ID1 + 1) = WM*(VM*(UM*FIELD(ID, GRIDPTR(1, ICELL))        &
-     &               + U*FIELD(ID, GRIDPTR(2, ICELL)))                    &
-     &           + V*(UM*FIELD(ID, GRIDPTR(3, ICELL))                     &
-     &               + U*FIELD(ID, GRIDPTR(4, ICELL))))                   &
-     &       + W*(VM*(UM*FIELD(ID, GRIDPTR(5, ICELL))                     &
-     &               + U*FIELD(ID, GRIDPTR(6, ICELL)))                    &
-     &           + V*(UM*FIELD(ID, GRIDPTR(7, ICELL))                     &
-     &               + U*FIELD(ID, GRIDPTR(8, ICELL))))
+        VALUES(ID - ID1 + 1) = WM*(VM*(UM*FIELD(ID, GRIDPTR(1, ICELL))&
+            & + U*FIELD(ID, GRIDPTR(2, ICELL)))&
+            & + V*(UM*FIELD(ID, GRIDPTR(3, ICELL))&
+            & + U*FIELD(ID, GRIDPTR(4, ICELL))))&
+            & + W*(VM*(UM*FIELD(ID, GRIDPTR(5, ICELL))&
+            & + U*FIELD(ID, GRIDPTR(6, ICELL)))&
+            & + V*(UM*FIELD(ID, GRIDPTR(7, ICELL))&
+            & + U*FIELD(ID, GRIDPTR(8, ICELL))))
     end do
     return
 end subroutine
 
-subroutine LOCATE_GRID_CELL(NX, NY, NZ, XGRID, YGRID, ZGRID,     &
-&                  NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS,   &
-&                  BCFLAG, IPFLAG, X0, Y0, Z0, ICELL)
-!       Locates the grid cell in the tree structure containing the
-!     specified point (X0,Y0,Z0), and returns the cell pointer ICELL.
-!     First the base grid cell is found (using NX,NY,NZ, XGRID,YGRID,ZGR
-!     and the tree is traced down to find the smallest cell containing
-!     the point.
+subroutine LOCATE_GRID_CELL(NX, NY, NZ, XGRID, YGRID, ZGRID,&
+    & NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS,&
+    & BCFLAG, IPFLAG, X0, Y0, Z0, ICELL)
+    !   Locates the grid cell in the tree structure containing the
+    ! specified point (X0,Y0,Z0), and returns the cell pointer ICELL.
+    ! First the base grid cell is found (using NX,NY,NZ, XGRID,YGRID,ZGR
+    ! and the tree is traced down to find the smallest cell containing
+    ! the point.
     implicit none
     integer NX, NY, NZ, NCELLS, ICELL, BCFLAG, IPFLAG
     integer GRIDPTR(8, NCELLS), TREEPTR(2, NCELLS)
@@ -3431,7 +3431,7 @@ subroutine LOCATE_GRID_CELL(NX, NY, NZ, XGRID, YGRID, ZGRID,     &
     logical BTEST
     double precision XDOMAIN, YDOMAIN
 
-!           Move point to within horizontal domain if periodic
+    ! Move point to within horizontal domain if periodic
     if (.not. (btest(BCFLAG, 0) .or. btest(BCFLAG, 2))) then
         XDOMAIN = XGRID(NX + 1) - XGRID(1)
         if (X0 .lt. XGRID(1)) then
@@ -3449,9 +3449,9 @@ subroutine LOCATE_GRID_CELL(NX, NY, NZ, XGRID, YGRID, ZGRID,     &
         end if
     end if
 
-!         Find the base grid cell (base grid does not have to be even sp
-!           so do binary search in X, Y, and Z)
-!           Special case for independent pixel: get closest grid column.
+    ! Find the base grid cell (base grid does not have to be even sp
+    !   so do binary search in X, Y, and Z)
+    !   Special case for independent pixel: get closest grid column.
     IL = 0
     if (btest(IPFLAG, 0)) then
         IU = NX
@@ -3514,16 +3514,16 @@ subroutine LOCATE_GRID_CELL(NX, NY, NZ, XGRID, YGRID, ZGRID,     &
     end do
     IZ = max(IL, 1)
 
-!         Special case for open boundary conditions: if outside the 1 to
-!           domain then use the IP grid cells at either end
+    ! Special case for open boundary conditions: if outside the 1 to
+    !   domain then use the IP grid cells at either end
     NXC = NX
     if (btest(BCFLAG, 0)) then
         NXC = NX + 1
         if (X0 .lt. XGRID(1)) then
-!          X0 = XGRID(1)
+            ! X0 = XGRID(1)
             IX = 1
         else if (X0 .gt. XGRID(NX)) then
-!          X0 = XGRID(NX)
+            ! X0 = XGRID(NX)
             IX = NX + 1
         else
             IX = IX + 1
@@ -3537,10 +3537,10 @@ subroutine LOCATE_GRID_CELL(NX, NY, NZ, XGRID, YGRID, ZGRID,     &
     if (btest(BCFLAG, 1)) then
         NYC = NY + 1
         if (Y0 .lt. YGRID(1)) then
-!          Y0 = YGRID(1)
+            ! Y0 = YGRID(1)
             IY = 1
         else if (Y0 .gt. YGRID(NY)) then
-!          Y0 = YGRID(NY)
+            ! Y0 = YGRID(NY)
             IY = NY + 1
         else
             IY = IY + 1
@@ -3551,15 +3551,15 @@ subroutine LOCATE_GRID_CELL(NX, NY, NZ, XGRID, YGRID, ZGRID,     &
         IY = min(IY, NYC)
     end if
 
-!         Get the base grid cell pointer
+    ! Get the base grid cell pointer
     ICELL = IZ + (NZ - 1)*(IY - 1) + (NZ - 1)*NYC*(IX - 1)
 
-!         Trace down the tree: point to the positive child cell, get the
-!           grid point that is on the negative (X,Y,Z) side, use the
-!           flags to find which dimension (X,Y,Z) the parent cell was
-!           split in, then compare the grid point with the test point
-!           (X0,Y0,Z0) to find which child cell (pos or neg) the test
-!           point is in.
+    !   Trace down the tree: point to the positive child cell, get the
+    ! grid point that is on the negative (X,Y,Z) side, use the
+    ! flags to find which dimension (X,Y,Z) the parent cell was
+    ! split in, then compare the grid point with the test point
+    ! (X0,Y0,Z0) to find which child cell (pos or neg) the test
+    ! point is in.
     do while (TREEPTR(2, ICELL) .gt. 0)
         DIR = ibits(int(CELLFLAGS(ICELL)), 2, 2)
         IC = TREEPTR(2, ICELL) + 1
@@ -3578,10 +3578,10 @@ subroutine LOCATE_GRID_CELL(NX, NY, NZ, XGRID, YGRID, ZGRID,     &
 end subroutine
 
 subroutine LEGENDRE_ALL(COSSCAT, NLEG, P)
-!       This subroutine computes a set of Legendre polynomials for
-!     a particular scattering angle COSSCAT.  NLEG is the maximum term.
-!     The Legendre functions evaluated at COSSCAT are returned in
-!     P, starting at l=0 and ending with l=NLEG  (NLEG+1 terms).
+    !   This subroutine computes a set of Legendre polynomials for
+    ! a particular scattering angle COSSCAT.  NLEG is the maximum term.
+    ! The Legendre functions evaluated at COSSCAT are returned in
+    ! P, starting at l=0 and ending with l=NLEG  (NLEG+1 terms).
     implicit none
     integer NLEG
     double precision COSSCAT, P(0:NLEG)
@@ -3590,7 +3590,7 @@ subroutine LEGENDRE_ALL(COSSCAT, NLEG, P)
 
     X = dble(COSSCAT)
     if (X*X .gt. 1.) stop 'LEGENDRE_ALL: |COSSCAT| larger than 1'
-!         Use the stable upward recursion on l, starting from P_0
+    ! Use the stable upward recursion on l, starting from P_0
     PL2 = 1.0d0
     P(0) = PL2
     if (NLEG .gt. 1) then
@@ -3607,14 +3607,14 @@ subroutine LEGENDRE_ALL(COSSCAT, NLEG, P)
 end subroutine
 
 subroutine YLMALL(TRANSPOSE, MU, PHI, ML, MM, NSTLEG, YR)
-!       This subroutine computes a set of normalized real generalized
-!     spherical harmonic functions (YR) for a particular direction mu,ph
-!     (Doicu et al. 2013; http://dx.doi.org/10.1016/j.jqsrt.2012.12.009)
-!     ML is the maximum meridional mode, MM is the maximum azimuthal mod
-!     NSTLEG is the number of matrix elements returned, either 1 for the
-!     1,1 term or 6 for the 6 unique elements of the 4x4 matrix.
-!     J = 2*(L*(L+1))/2 + M+1  for L<=MM
-!     J = (2*MM+1)*L-MM*(2+2*(MM-1))/2 + M+1  for L>MM
+    !   This subroutine computes a set of normalized real generalized
+    ! spherical harmonic functions (YR) for a particular direction mu,ph
+    ! (Doicu et al. 2013; http://dx.doi.org/10.1016/j.jqsrt.2012.12.009)
+    ! ML is the maximum meridional mode, MM is the maximum azimuthal mod
+    ! NSTLEG is the number of matrix elements returned, either 1 for the
+    ! 1,1 term or 6 for the 6 unique elements of the 4x4 matrix.
+    ! J = 2*(L*(L+1))/2 + M+1  for L<=MM
+    ! J = (2*MM+1)*L-MM*(2+2*(MM-1))/2 + M+1  for L>MM
     implicit none
     integer ML, MM, NSTLEG
     real MU, PHI
@@ -3635,15 +3635,15 @@ subroutine YLMALL(TRANSPOSE, MU, PHI, ML, MM, NSTLEG, YR)
     PI = DACOS(-1.d0)
     FCT = 1.d0/DSQRT(2.d0*PI)
 
-!       sign accounting for transpose matrices
+    ! sign accounting for transpose matrices
     if (.not. TRANSPOSE) then
         SIGN = 1.d0
     else
         SIGN = -1.d0
     end if
 
-!     ..................................................................
-!                                M = 0
+    ! ..................................................................
+    !                               M = 0
     M = 0
     call WIGNERFCT02P2M_NORMALIZED(X, ML, M, DM0, DM2P, DM2M)
     do L = 0, ML
@@ -3656,7 +3656,7 @@ subroutine YLMALL(TRANSPOSE, MU, PHI, ML, MM, NSTLEG, YR)
         P2 = -0.5d0*FCT*(DM2P(L) + DM2M(L))
         P3 = -0.5d0*FCT*(DM2P(L) - DM2M(L))
 
-!       --- Unm = Pnm*cos(m*phi) ---
+    ! --- Unm = Pnm*cos(m*phi) ---
         YR(1, J) = P1
         if (NSTLEG .eq. 6) then
             YR(2, J) = P2
@@ -3667,15 +3667,15 @@ subroutine YLMALL(TRANSPOSE, MU, PHI, ML, MM, NSTLEG, YR)
         end if
     end do
 
-!     ..................................................................
-!                                   M =/ 0
+    ! ..................................................................
+    !                               M =/ 0
     do MABS = 1, MM
         call WIGNERFCT02P2M_NORMALIZED(X, ML, MABS, DM0, DM2P, DM2M)
         COSM = cos(MABS*PHI)
         SINM = sin(MABS*PHI)
         do L = MABS, ML
-!         ..............................................................
-!                                     M > 0
+    ! ..............................................................
+    !                               M > 0
             M = MABS
             if (L .le. MM) then
                 J = L*(L + 1) + M + 1
@@ -3685,8 +3685,8 @@ subroutine YLMALL(TRANSPOSE, MU, PHI, ML, MM, NSTLEG, YR)
             P1 = FCT*DM0(L)
             P2 = -0.5d0*FCT*(DM2P(L) + DM2M(L))
             P3 = -0.5d0*FCT*(DM2P(L) - DM2M(L))
-!
-!         --- Unm = Pnm*cos(m*phi) - D*Pnm*sin(m*phi) ---
+
+            ! --- Unm = Pnm*cos(m*phi) - D*Pnm*sin(m*phi) ---
             YR(1, J) = P1*COSM - P1*SINM
             if (NSTLEG .eq. 6) then
                 YR(2, J) = P2*COSM - P2*SINM
@@ -3695,8 +3695,8 @@ subroutine YLMALL(TRANSPOSE, MU, PHI, ML, MM, NSTLEG, YR)
                 YR(5, J) = P3*COSM - SIGN*P3*SINM
                 YR(6, J) = P3*COSM + SIGN*P3*SINM
             end if
-!         ..............................................................
-!                                      M < 0
+    ! ..............................................................
+    !                               M < 0
             M = -MABS
             if (L .le. MM) then
                 J = L*(L + 1) + M + 1
@@ -3704,7 +3704,7 @@ subroutine YLMALL(TRANSPOSE, MU, PHI, ML, MM, NSTLEG, YR)
                 J = (2*MM + 1)*L - MM**2 + M + 1
             end if
 
-!         --- Vnm = Pnm*sin(m*phi) + D*Pnm*cos(m*phi) ---
+            ! --- Vnm = Pnm*sin(m*phi) + D*Pnm*cos(m*phi) ---
             YR(1, J) = P1*SINM + P1*COSM
             if (NSTLEG .eq. 6) then
                 YR(2, J) = P2*SINM + P2*COSM
@@ -3719,29 +3719,29 @@ subroutine YLMALL(TRANSPOSE, MU, PHI, ML, MM, NSTLEG, YR)
     return
 end subroutine
 
-subroutine WIGNERFCT02P2M_NORMALIZED(MIU, NRANK, M,              &
-&                                      DM0, DM2P, DM2M)
-!       ----------------------------------------------------------------
-!       |  The routine computes the DMM1N vector coefficients for
-!       |               M >= 0; M1 = 0, 2, -2; N = 0,...,NRANK, and
-!       |              -1 <= MIU <= 1
-!       |  For M1 = -2, we use the symmetry relation
-!       |               DM-M1(MIU) = (-1)**(N+M) * DMM1(-MIU)
-!       ----------------------------------------------------------------
+subroutine WIGNERFCT02P2M_NORMALIZED(MIU, NRANK, M,&
+    & DM0, DM2P, DM2M)
+    ! ----------------------------------------------------------------
+    ! |  The routine computes the DMM1N vector coefficients for
+    ! |               M >= 0; M1 = 0, 2, -2; N = 0,...,NRANK, and
+    ! |              -1 <= MIU <= 1
+    ! |  For M1 = -2, we use the symmetry relation
+    ! |               DM-M1(MIU) = (-1)**(N+M) * DMM1(-MIU)
+    ! ----------------------------------------------------------------
     implicit none
     integer NRANK, M
     double precision MIU
     double precision DM0(0:NRANK), DM2P(0:NRANK), DM2M(0:NRANK)
     integer N0, N
     double precision XP, XM, FACT1, FACT2, FACTP, FACTM, DMM1_N0
-!
+
     !for M1 = 0 and M1 = 2
     XP = MIU
     !for M1 = - 2
     XM = -MIU
-!       ................................................................
-!                                DM0 for M1 = 0
-!       ................................................................
+    ! ................................................................
+    ! DM0 for M1 = 0
+    ! ................................................................
     DM0 = 0.d0
     if (M .le. NRANK) then
         if (M .eq. 0) then
@@ -3759,12 +3759,12 @@ subroutine WIGNERFCT02P2M_NORMALIZED(MIU, NRANK, M,              &
                 FACT1 = FACT1/DSQRT(dble((N + 1)**2 - M**2))
                 FACT1 = FACT1/dble(N + 1)
                 FACT1 = FACT1*dble(2*N + 1)/dble(N)
-!
+
                 FACT2 = DSQRT(dble(N**2 - M**2))*dble(N)
                 FACT2 = FACT2/DSQRT(dble((N + 1)**2 - M**2))
                 FACT2 = FACT2/dble(N + 1)
                 FACT2 = FACT2*dble(N + 1)/dble(N)
-!
+
                 DM0(N + 1) = FACT1*DM0(N) - FACT2*DM0(N - 1)
             end do
         end if
@@ -3772,9 +3772,9 @@ subroutine WIGNERFCT02P2M_NORMALIZED(MIU, NRANK, M,              &
             DM0(N) = DSQRT(N + 0.5d0)*DM0(N)
         end do
     end if
-!       ................................................................
-!                    DM2P and DM2M for M1 = 2 and M1 = -2
-!       ................................................................
+    ! ................................................................
+    ! DM2P and DM2M for M1 = 2 and M1 = -2
+    ! ................................................................
     N0 = max(M, 2)
     DM2P = 0.d0
     DM2M = 0.d0
@@ -3784,23 +3784,23 @@ subroutine WIGNERFCT02P2M_NORMALIZED(MIU, NRANK, M,              &
         do N = N0, NRANK - 1
             FACTP = dble(N*(N + 1))*XP - dble(2*M)
             FACTM = dble(N*(N + 1))*XM - dble(2*M)
-!
+
             FACT1 = 1.d0/DSQRT(dble((N + 1)**2 - M**2))
             FACT1 = FACT1/DSQRT(dble((N + 1)**2 - 4))
             FACT1 = FACT1*dble(2*N + 1)/dble(N)
-!
-            FACT2 = DSQRT(dble(N**2 - M**2))                      &
-                   &            *DSQRT(dble(N**2 - 4))
+
+            FACT2 = DSQRT(dble(N**2 - M**2))&
+                & *DSQRT(dble(N**2 - 4))
             FACT2 = FACT2/DSQRT(dble((N + 1)**2 - M**2))
             FACT2 = FACT2/DSQRT(dble((N + 1)**2 - 4))
             FACT2 = FACT2*dble(N + 1)/dble(N)
-!
+
             DM2P(N + 1) = FACTP*FACT1*DM2P(N) - FACT2*DM2P(N - 1)
             DM2M(N + 1) = FACTM*FACT1*DM2M(N) - FACT2*DM2M(N - 1)
         end do
         do N = 0, NRANK
             DM2M(N) = (-1.d0)**(N + M)*DM2M(N)
-!
+
             DM2P(N) = DSQRT(N + 0.5d0)*DM2P(N)
             DM2M(N) = DSQRT(N + 0.5d0)*DM2M(N)
         end do
@@ -3809,17 +3809,17 @@ subroutine WIGNERFCT02P2M_NORMALIZED(MIU, NRANK, M,              &
 end subroutine
 
 function DMM1_N0(X, M, M1) result(DMM1N0)
-!       ---------------------------------------------------------------
-!       | THE ROUTINE COMPUTES THE WIGNER FUNCTIONS FOR               |
-!       |     M >= 0, M1 >= 0, AND N0 = MAX(M,M1)                     |
-!       ---------------------------------------------------------------
+    ! ---------------------------------------------------------------
+    ! | THE ROUTINE COMPUTES THE WIGNER FUNCTIONS FOR               |
+    ! |     M >= 0, M1 >= 0, AND N0 = MAX(M,M1)                     |
+    ! ---------------------------------------------------------------
     implicit none
     integer M, M1
     double precision X, DMM1N0
-!
+
     integer P, MAXM, MINM
     double precision PROD, FACT, CMM1
-!
+
     if (M .eq. M1) then
         FACT = ((1.d0 + X)/2.d0)**M
         DMM1N0 = FACT
@@ -3845,13 +3845,13 @@ function DMM1_N0(X, M, M1) result(DMM1N0)
 end function
 
 subroutine YLMALL_UNPOL(MU, PHI, ML, MM, YR)
-!       This subroutine computes a set of the unpolarized (I-I) element
-!     normalized real generalized spherical harmonic functions (YR) for
-!     a particular direction mu,phi.  (Doicu et al. 2013;
-!     http://dx.doi.org/10.1016/j.jqsrt.2012.12.009)
-!     ML is the maximum meridional mode, MM is the maximum azimuthal mod
-!       J = 2*(L*(L+1))/2 + M+1  for L<=MM
-!       J = (2*MM+1)*L-MM*(2+2*(MM-1))/2 + M+1  for L>MM
+    !   This subroutine computes a set of the unpolarized (I-I) element
+    ! normalized real generalized spherical harmonic functions (YR) for
+    ! a particular direction mu,phi.  (Doicu et al. 2013;
+    ! http://dx.doi.org/10.1016/j.jqsrt.2012.12.009)
+    ! ML is the maximum meridional mode, MM is the maximum azimuthal mod
+    !   J = 2*(L*(L+1))/2 + M+1  for L<=MM
+    !   J = (2*MM+1)*L-MM*(2+2*(MM-1))/2 + M+1  for L>MM
     implicit none
     integer ML, MM
     real MU, PHI
@@ -3883,11 +3883,11 @@ subroutine YLMALL_UNPOL(MU, PHI, ML, MM, YR)
                 J = (2*MM + 1)*L - MM**2 + M + 1
             end if
 
-!           M>=0:  Unm = Pnm*cos(m*phi) - D*Pnm*sin(m*phi)
+            ! M>=0:  Unm = Pnm*cos(m*phi) - D*Pnm*sin(m*phi)
             YR(J) = (COSM - SINM)*DM0(L)
 
             J = J - 2*M
-!            M<0:  Vnm = Pnm*sin(m*phi) + D*Pnm*cos(m*phi)
+            ! M<0:  Vnm = Pnm*sin(m*phi) + D*Pnm*cos(m*phi)
             YR(J) = (COSM + SINM)*DM0(L)
         end do
     end do
@@ -3896,11 +3896,11 @@ subroutine YLMALL_UNPOL(MU, PHI, ML, MM, YR)
 end subroutine
 
 subroutine WIGNERFCT_DM0(X, NRANK, M, DM0)
-!       ----------------------------------------------------------------
-!       |  The routine computes the DMM1N vector coefficients for
-!       |               M >= 0; M1 = 0; N = 0,...,NRANK, and     |
-!       |              -1 <= X <= 1                                   |
-!       ----------------------------------------------------------------
+    ! ----------------------------------------------------------------
+    ! |  The routine computes the DMM1N vector coefficients for      |
+    ! |               M >= 0; M1 = 0; N = 0,...,NRANK, and           |
+    ! |              -1 <= X <= 1                                    |
+    ! ----------------------------------------------------------------
     implicit none
     integer NRANK, M
     double precision X
@@ -3908,7 +3908,7 @@ subroutine WIGNERFCT_DM0(X, NRANK, M, DM0)
     integer N
     double precision DM_M10_N0
 
-!                   DM0 for M1 = 0
+    ! DM0 for M1 = 0
     DM0(:) = 0.d0
     if (M .le. NRANK) then
         if (M .eq. 0) then
@@ -3920,9 +3920,9 @@ subroutine WIGNERFCT_DM0(X, NRANK, M, DM0)
         else
             DM0(M) = DM_M10_N0(X, M)
             do N = M, NRANK - 1
-                DM0(N + 1) = ((2*N + 1)*X*DM0(N)                             &
-       &                            - DSQRT(dble(N**2 - M**2))*DM0(N - 1))  &
-       &                        /DSQRT(dble((N + 1)**2 - M**2))
+                DM0(N + 1) = ((2*N + 1)*X*DM0(N)&
+                    & - DSQRT(dble(N**2 - M**2))*DM0(N - 1))&
+                    & /DSQRT(dble((N + 1)**2 - M**2))
             end do
         end if
         do N = 0, NRANK
@@ -3933,8 +3933,8 @@ subroutine WIGNERFCT_DM0(X, NRANK, M, DM0)
 end subroutine
 
 function DM_M10_N0(X, M) result(DMM0N0)
-!        The routine computes the Wigner functions for M >= 0, M1 = 0, a
-!        N0 = M
+    ! The routine computes the Wigner functions for M >= 0, M1 = 0, a
+    ! N0 = M
     implicit none
     integer M
     double precision X, DMM0N0
@@ -3955,18 +3955,18 @@ function DM_M10_N0(X, M) result(DMM0N0)
 end function
 
 subroutine WIGNERFCT(X, NRANK, M, M1, DMM1)
-!       ----------------------------------------------------------------
-!       |  The routine computes the DMM1N vector coefficients for
-!       |               M >= 0, M1 >= 0,  N = 0,...,NRANK, and
-!       |               -1 < X= COS(BETA) < 1
-!       ----------------------------------------------------------------
+    ! ----------------------------------------------------------------
+    ! |  The routine computes the DMM1N vector coefficients for
+    ! |               M >= 0, M1 >= 0,  N = 0,...,NRANK, and
+    ! |               -1 < X= COS(BETA) < 1
+    ! ----------------------------------------------------------------
     implicit none
     integer NRANK, M, M1
     double precision X, DMM1(0:NRANK)
-!
+
     integer N0, N
     double precision FACT1, FACT2, DMM1_N0
-!
+
     N0 = max(M, M1)
     DMM1 = 0.d0
     if (N0 .eq. 0) then
@@ -3984,13 +3984,13 @@ subroutine WIGNERFCT(X, NRANK, M, M1, DMM1)
             FACT1 = FACT1/DSQRT(dble((N + 1)**2 - M**2))
             FACT1 = FACT1/DSQRT(dble((N + 1)**2 - M1**2))
             FACT1 = FACT1*dble(2*N + 1)/dble(N)
-!
-            FACT2 = DSQRT(dble(N**2 - M**2))                      &
-                   &             *DSQRT(dble(N**2 - M1**2))
+
+            FACT2 = DSQRT(dble(N**2 - M**2))&
+                & *DSQRT(dble(N**2 - M1**2))
             FACT2 = FACT2/DSQRT(dble((N + 1)**2 - M**2))
             FACT2 = FACT2/DSQRT(dble((N + 1)**2 - M1**2))
             FACT2 = FACT2*dble(N + 1)/dble(N)
-!
+
             DMM1(N + 1) = FACT1*DMM1(N) - FACT2*DMM1(N - 1)
         end do
     end if
@@ -4003,34 +4003,34 @@ subroutine PLMALL(TRANSPOSE, MU, ML, MM, PRC)
     real MU
     logical TRANSPOSE
     real PRC(6, *)
-!     --- local variables ---
+    ! --- local variables ---
     integer J, M, MABS, L
     double precision X, PI, FCT, P1, P2, P3, SIGN
-    double precision, allocatable :: DM0(:), DM2P(:),             &
-   &                  DM2M(:)
+    double precision, allocatable :: DM0(:), DM2P(:),&
+        & DM2M(:)
 
-!     --- allocate ---
+    ! --- allocate ---
     allocate (DM0(0:ML), DM2P(0:ML), DM2M(0:ML))
 
     X = dble(MU)
 
-!     --- normalization constant ---
+    ! --- normalization constant ---
     PI = DACOS(-1.d0)
     FCT = 1.d0/DSQRT(2.d0*PI)
 
-!     --- sign accounting for transpose matrices ---
+    ! --- sign accounting for transpose matrices ---
     if (.not. TRANSPOSE) then
         SIGN = 1.d0
     else
         SIGN = -1.d0
     end if
-!     ..................................................................
-!                                M = 0
-!     ..................................................................
+    ! ..................................................................
+    !                            M = 0
+    ! ..................................................................
     M = 0
-    call WIGNERFCT02P2M_NORMALIZED                                    &
-   &   (X, ML, M,                                                    &
-   &     DM0, DM2P, DM2M)
+    call WIGNERFCT02P2M_NORMALIZED&
+        & (X, ML, M,&
+        & DM0, DM2P, DM2M)
     do L = 0, ML
         if (L .le. MM) then
             J = L*(L + 1) + M + 1
@@ -4040,8 +4040,8 @@ subroutine PLMALL(TRANSPOSE, MU, ML, MM, PRC)
         P1 = FCT*DM0(L)
         P2 = -0.5d0*FCT*(DM2P(L) + DM2M(L))
         P3 = -0.5d0*FCT*(DM2P(L) - DM2M(L))
-!
-!       --- PRCnm = Pnm ---
+
+        ! --- PRCnm = Pnm ---
         PRC(1, J) = P1
         PRC(2, J) = P2
         PRC(3, J) = P2
@@ -4049,17 +4049,17 @@ subroutine PLMALL(TRANSPOSE, MU, ML, MM, PRC)
         PRC(5, J) = P3
         PRC(6, J) = P3
     end do
-!     ..................................................................
-!                                   M =/ 0
-!     ..................................................................
+    ! ..................................................................
+    !                               M =/ 0
+    ! ..................................................................
     do MABS = 1, MM
-        call WIGNERFCT02P2M_NORMALIZED                                  &
-     &     (X, ML, MABS,                                               &
-     &       DM0, DM2P, DM2M)
+        call WIGNERFCT02P2M_NORMALIZED&
+            & (X, ML, MABS,&
+            & DM0, DM2P, DM2M)
         do L = MABS, ML
-!         ..............................................................
-!                                     M > 0
-!         ..............................................................
+    ! ..................................................................
+    !                               M > 0
+    ! ..................................................................
             M = MABS
             if (L .le. MM) then
                 J = L*(L + 1) + M + 1
@@ -4069,25 +4069,25 @@ subroutine PLMALL(TRANSPOSE, MU, ML, MM, PRC)
             P1 = FCT*DM0(L)
             P2 = -0.5d0*FCT*(DM2P(L) + DM2M(L))
             P3 = -0.5d0*FCT*(DM2P(L) - DM2M(L))
-!
-!         --- PRCnm = Pnm ---
+
+            ! --- PRCnm = Pnm ---
             PRC(1, J) = P1
             PRC(2, J) = P2
             PRC(3, J) = P2
             PRC(4, J) = P1
             PRC(5, J) = P3
             PRC(6, J) = P3
-!         ..............................................................
-!                                      M < 0
-!         ..............................................................
+    ! ..................................................................
+    !                               M < 0
+    ! ..................................................................
             M = -MABS
             if (L .le. MM) then
                 J = L*(L + 1) + M + 1
             else
                 J = (2*MM + 1)*L - MM**2 + M + 1
             end if
-!
-!         --- PRCnm = D*Pnm ---
+
+            ! --- PRCnm = D*Pnm ---
             PRC(1, J) = P1
             PRC(2, J) = P2
             PRC(3, J) = -P2
@@ -4101,13 +4101,13 @@ subroutine PLMALL(TRANSPOSE, MU, ML, MM, PRC)
 end subroutine
 
 subroutine PLANCK_FUNCTION(TEMP, UNITS, WAVENO, WAVELEN, PLANCK)
-!        Calculates the Planck blackbody radiance. If UNITS='T' then
-!     using brightness temperature units and the temperature is simply
-!     returned. If UNITS='B' then doing a band integration and the
-!     Planck blackbody radiance in [Watts /(meter^2 ster)] over a
-!     wavenumber range [cm^-1] is returned. Otherwise, the Planck
-!     blackbody radiance in [Watts /(meter^2 ster micron)] for a
-!     temperature in [Kelvins] at a wavelength in [microns] is returned.
+    !    Calculates the Planck blackbody radiance. If UNITS='T' then
+    ! using brightness temperature units and the temperature is simply
+    ! returned. If UNITS='B' then doing a band integration and the
+    ! Planck blackbody radiance in [Watts /(meter^2 ster)] over a
+    ! wavenumber range [cm^-1] is returned. Otherwise, the Planck
+    ! blackbody radiance in [Watts /(meter^2 ster micron)] for a
+    ! temperature in [Kelvins] at a wavelength in [microns] is returned.
     implicit none
     real TEMP, WAVENO(2), WAVELEN, PLANCK
     character*1 UNITS
@@ -4126,8 +4126,8 @@ subroutine PLANCK_FUNCTION(TEMP, UNITS, WAVENO, WAVELEN, PLANCK)
         end if
     else
         if (TEMP .gt. 0.0) then
-            PLANCK = 1.1911e8/WAVELEN**5                                &
-       &            /(exp(1.4388e4/(WAVELEN*TEMP)) - 1)
+            PLANCK = 1.1911e8/WAVELEN**5&
+                & /(exp(1.4388e4/(WAVELEN*TEMP)) - 1)
         else
             PLANCK = 0.0
         end if
@@ -4136,9 +4136,9 @@ subroutine PLANCK_FUNCTION(TEMP, UNITS, WAVENO, WAVELEN, PLANCK)
 end subroutine
 
 subroutine INTEGRATE_PLANCK(X1, X2, F)
-!       Returns integral of x**3/(exp(x)-1) from x1 to x2.
-!       Accurate to better than 1 part in 10**9 for integral from
-!       0 to infinity (pi**4/15).
+    ! Returns integral of x**3/(exp(x)-1) from x1 to x2.
+    ! Accurate to better than 1 part in 10**9 for integral from
+    ! 0 to infinity (pi**4/15).
     implicit none
     double precision X1, X2, F
     double precision INTLOW, INTHIGH
@@ -4158,42 +4158,42 @@ subroutine INTEGRATE_PLANCK(X1, X2, F)
 end subroutine
 
 double precision function INTLOW(X)
-!       Integral of x**3/(exp(x)-1) from 0 to x.
-!       Accurate for x less than about 1.
-!       Uses Taylor series expansion around x=0.
+    ! Integral of x**3/(exp(x)-1) from 0 to x.
+    ! Accurate for x less than about 1.
+    ! Uses Taylor series expansion around x=0.
     implicit none
     double precision X
     integer N
     double precision SUM, F, A(29)
-    data A/0.0d0,                                                  &
-   &          0.0d0, 0.333333333333333333333d0,                      &
-   &       -0.125d0, 0.016666666666666666667d0,                      &
-   &          0.0d0, -0.0001984126984126984127d0,                     &
-   &          0.0d0, 0.36743092298647854203d-5,                      &
-   &          0.0d0, -0.75156325156325156325d-7,                      &
-   &          0.0d0, 0.16059043836821614599d-8,                      &
-   &          0.0d0, -0.35227934257916621232d-10,                     &
-   &          0.0d0, 0.78720803121674581370d-12,                     &
-   &          0.0d0, -0.17840422612224120352d-13,                     &
-   &          0.0d0, 0.40886009791799259829d-15,                     &
-   &          0.0d0, -0.94559508632959211871d-17,                     &
-   &          0.0d0, 0.22036011313440918061d-18,                     &
-   &          0.0d0, -0.51683202540046382743d-20,                     &
-   &          0.0d0, 0.12188644964239543006d-20/
+    data A/0.0d0,&
+        & 0.0d0, 0.333333333333333333333d0,&
+        & -0.125d0, 0.016666666666666666667d0,&
+        & 0.0d0, -0.0001984126984126984127d0,&
+        & 0.0d0, 0.36743092298647854203d-5,&
+        & 0.0d0, -0.75156325156325156325d-7,&
+        & 0.0d0, 0.16059043836821614599d-8,&
+        & 0.0d0, -0.35227934257916621232d-10,&
+        & 0.0d0, 0.78720803121674581370d-12,&
+        & 0.0d0, -0.17840422612224120352d-13,&
+        & 0.0d0, 0.40886009791799259829d-15,&
+        & 0.0d0, -0.94559508632959211871d-17,&
+        & 0.0d0, 0.22036011313440918061d-18,&
+        & 0.0d0, -0.51683202540046382743d-20,&
+        & 0.0d0, 0.12188644964239543006d-20/
 
     SUM = A(4)*X**4
     F = X
     do 100 N = 3, 29, 2
         F = X*X*F
         SUM = SUM + A(N)*F
-100       end do
+100 end do
     INTLOW = SUM
     return
 end function
 
 double precision function INTHIGH(X)
-!       Integral of x**3/(exp(x)-1) from x to infinity.
-!       Accurate for x greater than about 1.
+    ! Integral of x**3/(exp(x)-1) from x to infinity.
+    ! Accurate for x greater than about 1.
     implicit none
     double precision X
     integer N
@@ -4201,18 +4201,18 @@ double precision function INTHIGH(X)
 
     SUM = 0.0d0
     do 100 N = 1, 15
-        SUM = SUM + exp(-N*X)                                         &
-             &           *(X**3/N + 3*X**2/N**2 + 6*X/N**3 + 6.0d0/N**4)
-100       end do
+        SUM = SUM + exp(-N*X)&
+            & *(X**3/N + 3*X**2/N**2 + 6*X/N**3 + 6.0d0/N**4)
+100 end do
     INTHIGH = SUM
     return
 end function
 
 subroutine GAUSQUADS(N, XA, WT)
-!         Generates the abscissas (X) and weights (W) for an N point
-!       Gauss-Legendre quadrature.  The XA are returned in this order:
-!       -mu1, -mu2, ..., -muK, mu1, mu2, ..., muK  (mu1 > mu2 > muK,
-!       K=N/2, N must be even).
+    !   Generates the abscissas (X) and weights (W) for an N point
+    ! Gauss-Legendre quadrature.  The XA are returned in this order:
+    ! -mu1, -mu2, ..., -muK, mu1, mu2, ..., muK  (mu1 > mu2 > muK,
+    ! K=N/2, N must be even).
     implicit none
     integer N
     real XA(*), WT(*)
@@ -4225,7 +4225,7 @@ subroutine GAUSQUADS(N, XA, WT)
     do J = 1, K
         X = cos(3.141592654*(J - .25)/(N + .5))
         I = 0
-100           continue
+100     continue
         PL1 = 1
         PL = X
         do L = 2, N
@@ -4247,10 +4247,10 @@ subroutine GAUSQUADS(N, XA, WT)
 end subroutine
 
 subroutine DGAUSQUADS(N, XA, WT)
-!         Generates the abscissas (X) and weights (W) for an N point
-!       Double-Gauss-Legendre quadrature.  The XA are returned in this o
-!       -mu1, -mu2, ..., -muK, mu1, mu2, ..., muK  (mu1 > mu2 > muK,
-!       K=N/2, N must be even).
+    !   Generates the abscissas (X) and weights (W) for an N point
+    ! Double-Gauss-Legendre quadrature.  The XA are returned in this o
+    ! -mu1, -mu2, ..., -muK, mu1, mu2, ..., muK  (mu1 > mu2 > muK,
+    ! K=N/2, N must be even).
     implicit none
     integer N
     real XA(*), WT(*)
@@ -4264,7 +4264,7 @@ subroutine DGAUSQUADS(N, XA, WT)
     do J = 1, K
         X = cos(3.141592654*(J - .25)/(N2 + .5))
         I = 0
-100           continue
+100     continue
         PL1 = 1
         PL = X
         do L = 2, N2
@@ -4290,54 +4290,54 @@ subroutine DGAUSQUADS(N, XA, WT)
 end subroutine
 
 subroutine SSORT(X, Y, N, KFLAG)
-!***BEGIN PROLOGUE  SSORT
-!***PURPOSE  Sort an array and optionally make the same interchanges in
-!            an auxiliary array.  The array may be sorted in increasing
-!            or decreasing order.  A slightly modified QUICKSORT
-!            algorithm is used.
-!***LIBRARY   SLATEC
-!***CATEGORY  N6A2B
-!***TYPE      SINGLE PRECISION (SSORT-S, DSORT-D, ISORT-I)
-!***KEYWORDS  SINGLETON QUICKSORT, SORT, SORTING
-!***AUTHOR  Jones, R. E., (SNLA)
-!           Wisniewski, J. A., (SNLA)
-!***DESCRIPTION
-!
-!   SSORT sorts array X and optionally makes the same interchanges in
-!   array Y.  The array X may be sorted in increasing order or
-!   decreasing order.  A slightly modified quicksort algorithm is used.
-!
-!   Description of Parameters
-!      X - array of values to be sorted   (usually abscissas)
-!      Y - array to be (optionally) carried along
-!      N - number of values in array X to be sorted
-!      KFLAG - control parameter
-!            =  2  means sort X in increasing order and carry Y along.
-!            =  1  means sort X in increasing order (ignoring Y)
-!            = -1  means sort X in decreasing order (ignoring Y)
-!            = -2  means sort X in decreasing order and carry Y along.
-!
-!***REFERENCES  R. C. Singleton, Algorithm 347, An efficient algorithm
-!                 for sorting with minimal storage, Communications of
-!                 the ACM, 12, 3 (1969), pp. 185-187.
-!***END PROLOGUE  SSORT
-!     .. Scalar Arguments ..
+    !***BEGIN PROLOGUE  SSORT
+    !***PURPOSE  Sort an array and optionally make the same interchanges in
+    !            an auxiliary array.  The array may be sorted in increasing
+    !            or decreasing order.  A slightly modified QUICKSORT
+    !            algorithm is used.
+    !***LIBRARY   SLATEC
+    !***CATEGORY  N6A2B
+    !***TYPE      SINGLE PRECISION (SSORT-S, DSORT-D, ISORT-I)
+    !***KEYWORDS  SINGLETON QUICKSORT, SORT, SORTING
+    !***AUTHOR  Jones, R. E., (SNLA)
+    !           Wisniewski, J. A., (SNLA)
+    !***DESCRIPTION
+    !
+    !   SSORT sorts array X and optionally makes the same interchanges in
+    !   array Y.  The array X may be sorted in increasing order or
+    !   decreasing order.  A slightly modified quicksort algorithm is used.
+    !
+    !   Description of Parameters
+    !      X - array of values to be sorted   (usually abscissas)
+    !      Y - array to be (optionally) carried along
+    !      N - number of values in array X to be sorted
+    !      KFLAG - control parameter
+    !            =  2  means sort X in increasing order and carry Y along.
+    !            =  1  means sort X in increasing order (ignoring Y)
+    !            = -1  means sort X in decreasing order (ignoring Y)
+    !            = -2  means sort X in decreasing order and carry Y along.
+    !
+    !***REFERENCES  R. C. Singleton, Algorithm 347, An efficient algorithm
+    !                 for sorting with minimal storage, Communications of
+    !                 the ACM, 12, 3 (1969), pp. 185-187.
+    !***END PROLOGUE  SSORT
+    !     .. Scalar Arguments ..
     integer KFLAG, N
-!     .. Array Arguments ..
-!      REAL X(*), Y(*)
+    ! .. Array Arguments ..
+    ! real X(*), Y(*)
     real X(*)
     integer Y(*)
-!     .. Local Scalars ..
-!      REAL R, T, TT, TTY, TY
+    ! .. Local Scalars ..
+    ! real R, T, TT, TTY, TY
     real R, T, TT
     integer TY, TTY
     integer I, IJ, J, K, KK, L, M, NN
-!     .. Local Arrays ..
+    ! .. Local Arrays ..
     integer IL(51), IU(51)
-!     .. External Subroutines ..
-!     .. Intrinsic Functions ..
+    ! .. External Subroutines ..
+    ! .. Intrinsic Functions ..
     intrinsic ABS, INT
-!***First executable statement  SSORT
+    !***First executable statement  SSORT
     NN = N
     if (NN .lt. 1) then
         stop 'The number of values to be sorted is not positive.'
@@ -4348,226 +4348,226 @@ subroutine SSORT(X, Y, N, KFLAG)
         stop 'The sort control parameter, K, is not 2, 1, -1, or -2.'
     end if
 
-!     Alter array X to get decreasing order if needed
+    ! Alter array X to get decreasing order if needed
     if (KFLAG .le. -1) then
         do 10 I = 1, NN
             X(I) = -X(I)
-10                continue
-            end if
+10      continue
+     end if
 
-            if (KK .eq. 2) GO TO 100
+    if (KK .eq. 2) GO TO 100
 
-!     Sort X only
-            M = 1
-            I = 1
-            J = NN
-            R = 0.375e0
+    ! Sort X only
+    M = 1
+    I = 1
+    J = NN
+    R = 0.375e0
 
-20                if (I .eq. J) GO TO 60
-            if (R .le. 0.5898437e0) then
-                R = R + 3.90625e-2
-            else
-                R = R - 0.21875e0
-            end if
+20  if (I .eq. J) GO TO 60
+    if (R .le. 0.5898437e0) then
+        R = R + 3.90625e-2
+    else
+        R = R - 0.21875e0
+    end if
 
-30                K = I
+30  K = I
 
-!     Select a central element of the array and save it in location T
-            IJ = I + int((J - I)*R)
+    ! Select a central element of the array and save it in location T
+    IJ = I + int((J - I)*R)
+    T = X(IJ)
+
+    ! If first element of array is greater than T, interchange with T
+    if (X(I) .gt. T) then
+        X(IJ) = X(I)
+        X(I) = T
+        T = X(IJ)
+    end if
+    L = J
+
+    ! If last element of array is less than than T, interchange with T
+    if (X(J) .lt. T) then
+        X(IJ) = X(J)
+        X(J) = T
+        T = X(IJ)
+
+        ! If first element of array is greater than T, interchange with T
+        if (X(I) .gt. T) then
+            X(IJ) = X(I)
+            X(I) = T
             T = X(IJ)
+        end if
+    end if
 
-!     If first element of array is greater than T, interchange with T
-            if (X(I) .gt. T) then
-                X(IJ) = X(I)
-                X(I) = T
-                T = X(IJ)
-            end if
-            L = J
+    ! Find an element in the second half of the array which is smaller
+    ! than T
+40  L = L - 1
+    if (X(L) .gt. T) GO TO 40
 
-!     If last element of array is less than than T, interchange with T
-            if (X(J) .lt. T) then
-                X(IJ) = X(J)
-                X(J) = T
-                T = X(IJ)
+    ! Find an element in the first half of the array which is greater
+    ! than T
+50  K = K + 1
+    if (X(K) .lt. T) GO TO 50
 
-!        If first element of array is greater than T, interchange with T
-                if (X(I) .gt. T) then
-                    X(IJ) = X(I)
-                    X(I) = T
-                    T = X(IJ)
-                end if
-            end if
+    ! Interchange these elements
+    if (K .le. L) then
+        TT = X(L)
+        X(L) = X(K)
+        X(K) = TT
+        GO TO 40
+    end if
 
-!     Find an element in the second half of the array which is smaller
-!     than T
-40                L = L - 1
-            if (X(L) .gt. T) GO TO 40
+    ! Save upper and lower subscripts of the array yet to be sorted
+    if (L - I .gt. J - K) then
+        IL(M) = I
+        IU(M) = L
+        I = K
+        M = M + 1
+    else
+        IL(M) = K
+        IU(M) = J
+        J = L
+        M = M + 1
+    end if
+    GO TO 70
 
-!     Find an element in the first half of the array which is greater
-!     than T
-50                K = K + 1
-            if (X(K) .lt. T) GO TO 50
+    ! Begin again on another portion of the unsorted array
+60  M = M - 1
+    if (M .eq. 0) GO TO 190
+    I = IL(M)
+    J = IU(M)
 
-!     Interchange these elements
-            if (K .le. L) then
-                TT = X(L)
-                X(L) = X(K)
-                X(K) = TT
-                GO TO 40
-            end if
+70  if (J - I .ge. 1) GO TO 30
+    if (I .eq. 1) GO TO 20
+    I = I - 1
 
-!     Save upper and lower subscripts of the array yet to be sorted
-            if (L - I .gt. J - K) then
-                IL(M) = I
-                IU(M) = L
-                I = K
-                M = M + 1
-            else
-                IL(M) = K
-                IU(M) = J
-                J = L
-                M = M + 1
-            end if
-            GO TO 70
+80  I = I + 1
+    if (I .eq. J) GO TO 60
+    T = X(I + 1)
+    if (X(I) .le. T) GO TO 80
+    K = I
 
-!     Begin again on another portion of the unsorted array
-60                M = M - 1
-            if (M .eq. 0) GO TO 190
-            I = IL(M)
-            J = IU(M)
+90  X(K + 1) = X(K)
+    K = K - 1
+    if (T .lt. X(K)) GO TO 90
+    X(K + 1) = T
+    GO TO 80
 
-70                if (J - I .ge. 1) GO TO 30
-            if (I .eq. 1) GO TO 20
-            I = I - 1
+    ! Sort X and carry Y along
+100 M = 1
+    I = 1
+    J = NN
+    R = 0.375e0
 
-80                I = I + 1
-            if (I .eq. J) GO TO 60
-            T = X(I + 1)
-            if (X(I) .le. T) GO TO 80
-            K = I
+110 if (I .eq. J) GO TO 150
+    if (R .le. 0.5898437e0) then
+        R = R + 3.90625e-2
+    else
+        R = R - 0.21875e0
+    end if
 
-90                X(K + 1) = X(K)
-            K = K - 1
-            if (T .lt. X(K)) GO TO 90
-            X(K + 1) = T
-            GO TO 80
+120 K = I
 
-!     Sort X and carry Y along
-100               M = 1
-            I = 1
-            J = NN
-            R = 0.375e0
+    ! Select a central element of the array and save it in location T
+    IJ = I + int((J - I)*R)
+    T = X(IJ)
+    TY = Y(IJ)
 
-110               if (I .eq. J) GO TO 150
-            if (R .le. 0.5898437e0) then
-                R = R + 3.90625e-2
-            else
-                R = R - 0.21875e0
-            end if
-!
-120               K = I
+    ! If first element of array is greater than T, interchange with T
+    if (X(I) .gt. T) then
+        X(IJ) = X(I)
+        X(I) = T
+        T = X(IJ)
+        Y(IJ) = Y(I)
+        Y(I) = TY
+        TY = Y(IJ)
+    end if
+    L = J
 
-!     Select a central element of the array and save it in location T
-            IJ = I + int((J - I)*R)
+    ! If last element of array is less than T, interchange with T
+    if (X(J) .lt. T) then
+        X(IJ) = X(J)
+        X(J) = T
+        T = X(IJ)
+        Y(IJ) = Y(J)
+        Y(J) = TY
+        TY = Y(IJ)
+
+    ! If first element of array is greater than T, interchange with T
+        if (X(I) .gt. T) then
+            X(IJ) = X(I)
+            X(I) = T
             T = X(IJ)
+            Y(IJ) = Y(I)
+            Y(I) = TY
             TY = Y(IJ)
+        end if
+    end if
 
-!     If first element of array is greater than T, interchange with T
-            if (X(I) .gt. T) then
-                X(IJ) = X(I)
-                X(I) = T
-                T = X(IJ)
-                Y(IJ) = Y(I)
-                Y(I) = TY
-                TY = Y(IJ)
-            end if
-            L = J
+    ! Find an element in the second half of the array which is smaller
+    ! than T
+130 L = L - 1
+    if (X(L) .gt. T) GO TO 130
 
-!     If last element of array is less than T, interchange with T
-            if (X(J) .lt. T) then
-                X(IJ) = X(J)
-                X(J) = T
-                T = X(IJ)
-                Y(IJ) = Y(J)
-                Y(J) = TY
-                TY = Y(IJ)
+    ! Find an element in the first half of the array which is greater
+    ! than T
+140 K = K + 1
+    if (X(K) .lt. T) GO TO 140
 
-!        If first element of array is greater than T, interchange with T
-                if (X(I) .gt. T) then
-                    X(IJ) = X(I)
-                    X(I) = T
-                    T = X(IJ)
-                    Y(IJ) = Y(I)
-                    Y(I) = TY
-                    TY = Y(IJ)
-                end if
-            end if
+    ! Interchange these elements
+    if (K .le. L) then
+        TT = X(L)
+        X(L) = X(K)
+        X(K) = TT
+        TTY = Y(L)
+        Y(L) = Y(K)
+        Y(K) = TTY
+        GO TO 130
+    end if
 
-!     Find an element in the second half of the array which is smaller
-!     than T
-130               L = L - 1
-            if (X(L) .gt. T) GO TO 130
+    ! Save upper and lower subscripts of the array yet to be sorted
+    if (L - I .gt. J - K) then
+        IL(M) = I
+        IU(M) = L
+        I = K
+        M = M + 1
+    else
+        IL(M) = K
+        IU(M) = J
+        J = L
+        M = M + 1
+    end if
+    GO TO 160
 
-!     Find an element in the first half of the array which is greater
-!     than T
-140               K = K + 1
-            if (X(K) .lt. T) GO TO 140
+    ! Begin again on another portion of the unsorted array
+150 M = M - 1
+    if (M .eq. 0) GO TO 190
+    I = IL(M)
+    J = IU(M)
 
-!     Interchange these elements
-            if (K .le. L) then
-                TT = X(L)
-                X(L) = X(K)
-                X(K) = TT
-                TTY = Y(L)
-                Y(L) = Y(K)
-                Y(K) = TTY
-                GO TO 130
-            end if
+160 if (J - I .ge. 1) GO TO 120
+    if (I .eq. 1) GO TO 110
+    I = I - 1
 
-!     Save upper and lower subscripts of the array yet to be sorted
-            if (L - I .gt. J - K) then
-                IL(M) = I
-                IU(M) = L
-                I = K
-                M = M + 1
-            else
-                IL(M) = K
-                IU(M) = J
-                J = L
-                M = M + 1
-            end if
-            GO TO 160
+170 I = I + 1
+    if (I .eq. J) GO TO 150
+    T = X(I + 1)
+    TY = Y(I + 1)
+    if (X(I) .le. T) GO TO 170
+    K = I
 
-!     Begin again on another portion of the unsorted array
-150               M = M - 1
-            if (M .eq. 0) GO TO 190
-            I = IL(M)
-            J = IU(M)
+180 X(K + 1) = X(K)
+    Y(K + 1) = Y(K)
+    K = K - 1
+    if (T .lt. X(K)) GO TO 180
+    X(K + 1) = T
+    Y(K + 1) = TY
+    GO TO 170
 
-160               if (J - I .ge. 1) GO TO 120
-            if (I .eq. 1) GO TO 110
-            I = I - 1
-
-170               I = I + 1
-            if (I .eq. J) GO TO 150
-            T = X(I + 1)
-            TY = Y(I + 1)
-            if (X(I) .le. T) GO TO 170
-            K = I
-
-180               X(K + 1) = X(K)
-            Y(K + 1) = Y(K)
-            K = K - 1
-            if (T .lt. X(K)) GO TO 180
-            X(K + 1) = T
-            Y(K + 1) = TY
-            GO TO 170
-
-!     Clean up
-190               if (KFLAG .le. -1) then
-                do 200 I = 1, NN
-                    X(I) = -X(I)
-200                       continue
-                    end if
-                    return
+    ! Clean up
+190 if (KFLAG .le. -1) then
+        do 200 I = 1, NN
+            X(I) = -X(I)
+200     continue
+    end if
+    return
 end subroutine
