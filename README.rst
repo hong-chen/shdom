@@ -23,7 +23,7 @@ How to Install
 
     * `Intel Fortran <https://docs.conda.io/en/latest/miniconda.html>`_ (costly, faster).
 
-   We recommend ``gfortran`` (`GFortran <https://fortran-lang.org/learn/os_setup/install_gfortran/>`_) and current ``Makefile`` is developed around ``gfortran``.
+   We recommend ``gfortran`` (`GFortran <https://fortran-lang.org/learn/os_setup/install_gfortran/>`_) and current ``makefile`` is developed around ``gfortran``.
 
 **SHDOM**
 
@@ -39,7 +39,7 @@ How to Install
 
        cd src
 
-3. Under ``<shdom repo>/src``, where it contains ``Makefile``, type in the following
+3. Under ``<shdom repo>/src``, where it contains ``makefile``, type in the following
 
     .. code-block:: bash
 
@@ -109,7 +109,7 @@ Document File Change
 Source Code File Change
 -----------------------
 
-* ``src/Makefile``: was ``makefile``
+* ``src/makefile``: was ``makefile``
 
   * added ``-fallow-argument-mismatc`` to ``FFLAGS``
 
