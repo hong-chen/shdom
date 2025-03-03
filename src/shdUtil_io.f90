@@ -1250,10 +1250,11 @@ subroutine READ_CKD( &
     return
 end subroutine
 
-subroutine RESTORE_STATE(INSAVEFILE, NSTOKES, NX, NY, NZ,        &
-    &      ML, MM, NLM, INRADFLAG, NEWGRIDFLAG, XGRID, YGRID, ZGRID,   &
-    &      NPTS, NCELLS, GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR,          &
-    &      CELLFLAGS, FLUXES, SHPTR, SOURCE, RSHPTR, RADIANCE)
+subroutine RESTORE_STATE( &
+    & INSAVEFILE, NSTOKES, NX, NY, NZ, &
+    & ML, MM, NLM, INRADFLAG, NEWGRIDFLAG, XGRID, YGRID, ZGRID, &
+    & NPTS, NCELLS, GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR, &
+    & CELLFLAGS, FLUXES, SHPTR, SOURCE, RSHPTR, RADIANCE)
     ! Reads the binary save file containing a previous state of
     ! the SHDOM solution. This includes the cell tree structure,
     ! the spherical harmonic expansion of the source function,
@@ -1278,16 +1279,16 @@ subroutine RESTORE_STATE(INSAVEFILE, NSTOKES, NX, NY, NZ,        &
     NEWGRIDFLAG = .true.
     if (INSAVEFILE(1:4) .eq. 'NONE') return
 
-    open (UNIT=3, FILE=INSAVEFILE, STATUS='OLD',                      &
-   &              FORM='UNFORMATTED', ERR=900)
+    open (UNIT=3, FILE=INSAVEFILE, STATUS='OLD', &
+        & FORM='UNFORMATTED', ERR=900)
     read (3) NSTI, NXI, NYI, NZI, MLI, MMI, NLMI, NPTS, NCELLS
     if (NXI .ne. NX .or. NYI .ne. NY .or. NZI .ne. NZ) then
         write (6, *) 'RESTORE_STATE: wrong grid size:', NXI, NYI, NZI
         close (3)
         return
     end if
-    if (NSTI .ne. NSTOKES .or.                                        &
-   &    MLI .gt. ML .or. MMI .gt. MM) then
+    if (NSTI .ne. NSTOKES .or. &
+        & MLI .gt. ML .or. MMI .gt. MM) then
         write (6, *) 'RESTORE_STATE: incompatible SH:', NSTI, MLI, MMI
         close (3)
         return
@@ -1324,12 +1325,13 @@ subroutine RESTORE_STATE(INSAVEFILE, NSTOKES, NX, NY, NZ,        &
     INRADFLAG = .false.
     NEWGRIDFLAG = .true.
     return
-end
+end subroutine
 
-subroutine SAVE_STATE(OUTSAVEFILE, NSTOKES, NX, NY, NZ,          &
-    &       ML, MM, NLM, WORK, XGRID, YGRID, ZGRID,                    &
-    &       NPTS, NCELLS, GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR,         &
-    &       CELLFLAGS, FLUXES, SHPTR, SOURCE, RSHPTR, RADIANCE)
+subroutine SAVE_STATE( &
+    & OUTSAVEFILE, NSTOKES, NX, NY, NZ, &
+    & ML, MM, NLM, WORK, XGRID, YGRID, ZGRID, &
+    & NPTS, NCELLS, GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR, &
+    & CELLFLAGS, FLUXES, SHPTR, SOURCE, RSHPTR, RADIANCE)
     ! Write a binary save file containing the current state of
     ! the SHDOM solution. This includes the cell tree structure,
     ! the spherical harmonic expansion of the source function,
@@ -1347,8 +1349,8 @@ subroutine SAVE_STATE(OUTSAVEFILE, NSTOKES, NX, NY, NZ,          &
 
     if (OUTSAVEFILE(1:4) .eq. 'NONE') return
 
-    open (UNIT=3, FILE=OUTSAVEFILE, STATUS='UNKNOWN',                 &
-   &              FORM='UNFORMATTED')
+    open (UNIT=3, FILE=OUTSAVEFILE, STATUS='UNKNOWN', &
+        & FORM='UNFORMATTED')
     write (3) NSTOKES, NX, NY, NZ, ML, MM, NLM, NPTS, NCELLS
 
     write (3) (XGRID(I), I=1, NX + 1)
@@ -1379,10 +1381,11 @@ subroutine SAVE_STATE(OUTSAVEFILE, NSTOKES, NX, NY, NZ,          &
 
     close (3)
     return
-end
+end subroutine
 
-subroutine OUTPUT_CELL_SPLIT(OUTFILE, GRIDPTR, GRIDPOS, EXTINCT,  &
-    &                              SHPTR, SOURCE, NCELLS)
+subroutine OUTPUT_CELL_SPLIT( &
+    & OUTFILE, GRIDPTR, GRIDPOS, EXTINCT,  &
+    & SHPTR, SOURCE, NCELLS)
     ! Outputs the final cell splitting criterion for each grid cell
     ! and direction (X,Y,Z).  Calls CELL_SPLIT_TEST.
     ! Mainly for debugging purposes.
@@ -1395,37 +1398,38 @@ subroutine OUTPUT_CELL_SPLIT(OUTFILE, GRIDPTR, GRIDPOS, EXTINCT,  &
     real ADAPTCRIT(3), MAXADAPT, XC, YC, ZC, EXT
 
     open (UNIT=9, FILE=OUTFILE, STATUS='UNKNOWN')
-    write (9, *) '!  ICELL   Xc     Yc     Zc  ',                      &
-   &            'Extinct SplitX  SplitY  SplitZ'
+    write (9, *) '!  ICELL   Xc     Yc     Zc  ', &
+        & 'Extinct SplitX  SplitY  SplitZ'
 
     ! Loop over all the cells
     do ICELL = 1, NCELLS
         ! Get the adaptive grid criterion for the 3 directions
-        call CELL_SPLIT_TEST(GRIDPTR, GRIDPOS, EXTINCT,                &
-     &                        SHPTR, SOURCE, ICELL,                     &
-     &                        ADAPTCRIT, MAXADAPT, IDIR)
+        call CELL_SPLIT_TEST(GRIDPTR, GRIDPOS, EXTINCT, &
+            & SHPTR, SOURCE, ICELL, &
+            & ADAPTCRIT, MAXADAPT, IDIR)
         ! Compute the cell center location and mean extinction
         IP1 = GRIDPTR(1, ICELL)
         IP2 = GRIDPTR(8, ICELL)
         XC = 0.5*(GRIDPOS(1, IP1) + GRIDPOS(1, IP2))
         YC = 0.5*(GRIDPOS(2, IP1) + GRIDPOS(2, IP2))
         ZC = 0.5*(GRIDPOS(3, IP1) + GRIDPOS(3, IP2))
-        EXT = (EXTINCT(GRIDPTR(1, ICELL)) + EXTINCT(GRIDPTR(2, ICELL))    &
-     &       + EXTINCT(GRIDPTR(3, ICELL)) + EXTINCT(GRIDPTR(4, ICELL))    &
-     &       + EXTINCT(GRIDPTR(5, ICELL)) + EXTINCT(GRIDPTR(6, ICELL))    &
-     &       + EXTINCT(GRIDPTR(7, ICELL)) + EXTINCT(GRIDPTR(8, ICELL)))/8
-        write (9, '(1X,I5,3(1X,F6.3),1X,E11.4,3(1X,F7.5))')              &
-     &        ICELL, XC, YC, ZC, EXT,                                   &
-     &        ADAPTCRIT(1), ADAPTCRIT(2), ADAPTCRIT(3)
+        EXT =  (EXTINCT(GRIDPTR(1, ICELL)) + EXTINCT(GRIDPTR(2, ICELL)) &
+            & + EXTINCT(GRIDPTR(3, ICELL)) + EXTINCT(GRIDPTR(4, ICELL)) &
+            & + EXTINCT(GRIDPTR(5, ICELL)) + EXTINCT(GRIDPTR(6, ICELL)) &
+            & + EXTINCT(GRIDPTR(7, ICELL)) + EXTINCT(GRIDPTR(8, ICELL)))/8
+        write (9, '(1X,I5,3(1X,F6.3),1X,E11.4,3(1X,F7.5))') &
+            & ICELL, XC, YC, ZC, EXT, &
+            & ADAPTCRIT(1), ADAPTCRIT(2), ADAPTCRIT(3)
     end do
 
     close (9)
     return
-end
+end subroutine
 
-subroutine VISUALIZE_CELLS(OUTFILE, YVAL, OUTTYPE,               &
-    &      IPFLAG, NX, XDOMAIN, ZDOMAIN,                               &
-    &      NCELLS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, GRIDPOS)
+subroutine VISUALIZE_CELLS( &
+    & OUTFILE, YVAL, OUTTYPE, &
+    & IPFLAG, NX, XDOMAIN, ZDOMAIN, &
+    & NCELLS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, GRIDPOS)
     ! Visualizes the cell structure by outputting GLE code to draw
     ! a diagram of the cells in the XZ plane.  Only the end cells are
     ! output.  The outlines of the cells are drawn, and arrows between
@@ -1499,9 +1503,9 @@ subroutine VISUALIZE_CELLS(OUTFILE, YVAL, OUTTYPE,               &
 
     do IC = 1, NCELLS
         ! Output if it is an end cell and crosses the Y value
-        if (TREEPTR(2, IC) .eq. 0 .and.                                  &
-     &      GRIDPOS(2, GRIDPTR(1, IC)) .le. YVAL .and.                    &
-     &      GRIDPOS(2, GRIDPTR(3, IC)) .ge. YVAL) then
+        if (TREEPTR(2, IC) .eq. 0 .and. &
+            & GRIDPOS(2, GRIDPTR(1, IC)) .le. YVAL .and. &
+            & GRIDPOS(2, GRIDPTR(3, IC)) .ge. YVAL) then
             ! Get the center of the cell
             XC = (GRIDPOS(1, GRIDPTR(1, IC)) + GRIDPOS(1, GRIDPTR(8, IC)))/2
             ZC = (GRIDPOS(3, GRIDPTR(1, IC)) + GRIDPOS(3, GRIDPTR(8, IC)))/2
@@ -1516,11 +1520,11 @@ subroutine VISUALIZE_CELLS(OUTFILE, YVAL, OUTTYPE,               &
             X4 = GRIDPOS(1, GRIDPTR(5, IC))
             Z4 = GRIDPOS(3, GRIDPTR(5, IC))
             if (btest(IPFLAG, 0)) then
-                write (9, '(A,6(1X,F6.3),I8)') '@drawbox ',                  &
-         &       S*X1, S*Z1, S*X3, S*Z3, S*XC, S*ZC, IC
+                write (9, '(A,6(1X,F6.3),I8)') '@drawbox ', &
+                    & S*X1, S*Z1, S*X3, S*Z3, S*XC, S*ZC, IC
             else
-                write (9, '(A,10(1X,F6.3),I8)') '@drawbox ',                 &
-         &       S*X1, S*Z1, S*X2, S*Z2, S*X3, S*Z3, S*X4, S*Z4, S*XC, S*ZC, IC
+                write (9, '(A,10(1X,F6.3),I8)') '@drawbox ', &
+                    & S*X1, S*Z1, S*X2, S*Z2, S*X3, S*Z3, S*X4, S*Z4, S*XC, S*ZC, IC
             end if
             if (OUTTYPE .eq. 1) then
                 ! Draw the neighbor arrows
@@ -1533,10 +1537,10 @@ subroutine VISUALIZE_CELLS(OUTFILE, YVAL, OUTTYPE,               &
                         ZN = (GRIDPOS(3, GRIDPTR(1, IN)) + GRIDPOS(3, GRIDPTR(8, IN)))/2
                         XA = XC + 1.0*(XN - XC)
                         ZA = ZC + 1.0*(ZN - ZC)
-                        if (.not. (XN - XC .gt. 0.0 .and. J .eq. 1 .or.             &
-               &                   XN - XC .lt. 0.0 .and. J .eq. 2)) then
-                            write (9, '(A,4(1X,F6.3),1X,I8)') '@drawarrow ',         &
-                 &            S*XC, S*ZC, S*XA, S*ZA, NEIGHPTR(J, IC)
+                        if (.not. (XN - XC .gt. 0.0 .and. J .eq. 1 .or. &
+                            & XN - XC .lt. 0.0 .and. J .eq. 2)) then
+                            write (9, '(A,4(1X,F6.3),1X,I8)') '@drawarrow ', &
+                                & S*XC, S*ZC, S*XA, S*ZA, NEIGHPTR(J, IC)
                         end if
                     end if
                 end do
