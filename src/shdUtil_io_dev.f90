@@ -662,7 +662,7 @@ subroutine READ_PROPERTIES( &
             else
                 read (1, *, end=290) IX, IY, IZ, EXT
             end if
-            if ( IX .ge. 1 .and. IX .le. NPX .and. &
+            if (IX .ge. 1 .and. IX .le. NPX .and. &
                & IY .ge. 1 .and. IY .le. NPY .and. &
                & IZ .ge. 1 .and. IZ .le. NPZ) then
                 K = IZ + NPZ*(IY - 1) + NPZ*NPY*(IX - 1)
@@ -733,7 +733,7 @@ subroutine READ_PROPERTIES( &
 
         do while (.true.)
             read (1, *, end=290) IX, IY, IZ, TMP, EXT, ALB, IPH
-            if ( IX .ge. 1 .and. IX .le. NPX .and. &
+            if (IX .ge. 1 .and. IX .le. NPX .and. &
                & IY .ge. 1 .and. IY .le. NPY .and. &
                & IZ .ge. 1 .and. IZ .le. NPZ) then
                 K = IZ + NPZ*(IY - 1) + NPZ*NPY*(IX - 1)
@@ -768,9 +768,9 @@ subroutine READ_PROPERTIES( &
         MAXASYM = -1.0
         do while (.true.)
             read (1, *, end=290) IX, IY, IZ, TMP, EXT, ALB, NUML
-            if ( IX .ge. 1 .and. IX .le. NPX .and. &
-               & IY .ge. 1 .and. IY .le. NPY .and. &
-               & IZ .ge. 1 .and. IZ .le. NPZ) then
+            if (IX .ge. 1 .and. IX .le. NPX .and. &
+                & IY .ge. 1 .and. IY .le. NPY .and. &
+                & IZ .ge. 1 .and. IZ .le. NPZ) then
                 K = IZ + NPZ*(IY - 1) + NPZ*NPY*(IX - 1)
                 KL = (NLEG + 1)*(K - 1)
                 backspace (1)
@@ -1209,18 +1209,18 @@ subroutine READ_CKD( &
     JB = 0
     do IB = 1, NB
         read (1, *) KB, WAVENUM1, WAVENUM2, SF, N
-        if (abs(WAVENUM1 - WAVENO(1)) .lt. 1.0 .and.                     &
-     &       abs(WAVENUM2 - WAVENO(2)) .lt. 1.0) then
+        if (abs(WAVENUM1 - WAVENO(1)) .lt. 1.0 .and. &
+            & abs(WAVENUM2 - WAVENO(2)) .lt. 1.0) then
             backspace (1)
             NG = N
             if (NG .gt. MAXNG) stop 'READ_CKD: MAXNG exceeded'
-            read (1, *) JB, WAVENO(1), WAVENO(2), SOLFLUX,                 &
-       &               N, (DELG(IG), IG=1, NG)
+            read (1, *) JB, WAVENO(1), WAVENO(2), SOLFLUX, &
+                & N, (DELG(IG), IG=1, NG)
         end if
     end do
     if (JB .eq. 0) then
-        write (*, *) ' Wavenumber range not found in CKD file : ',       &
-     &              WAVENO(1), WAVENO(2), CKDFILE
+        write (*, *) ' Wavenumber range not found in CKD file : ', &
+            & WAVENO(1), WAVENO(2), CKDFILE
         stop
     end if
     ! Read the Z level heights
@@ -1240,15 +1240,15 @@ subroutine READ_CKD( &
         read (1, *) IB, J, (KABS(I + (IG - 1)*NZCKD), IG=1, NG)
         do IG = 1, NG
             if (KABS(I + (IG - 1)*NZCKD) .lt. 0.0) then
-                write (*, '(1X,A,A,I3,A,I3,A,I2)')                           &
-         &        'Negative absorption in CKD file.  ',                     &
-         &        'Band: ', IB, '   Level: ', I, '   k: ', IG
+                write (*, '(1X,A,A,I3,A,I3,A,I2)') &
+                    & 'Negative absorption in CKD file.  ', &
+                    & 'Band: ', IB, '   Level: ', I, '   k: ', IG
             end if
         end do
     end do
     close (1)
     return
-end
+end subroutine
 
 subroutine RESTORE_STATE(INSAVEFILE, NSTOKES, NX, NY, NZ,        &
     &      ML, MM, NLM, INRADFLAG, NEWGRIDFLAG, XGRID, YGRID, ZGRID,   &
