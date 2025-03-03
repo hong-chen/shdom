@@ -17,7 +17,7 @@ BIN_DIR     = $(abspath $(CURRENT_DIR)/../bin)
 
 TARGETS = bin shdom propgen make_mie_table make_tmatrix_table plotscattab put
 
-SHDOMOBJS = shdUtil_rte1.o shdUtil_rte2.o shdUtil_ocean.o shdUtil_io.o _fftpack.o
+SHDOMOBJS = shdSolve_1.o shdSolve_2.o shdUtil_ocean.o shdUtil_io.o _fftpack.o
 
 UseMPI = no
 UseNetcdf = no
@@ -55,20 +55,20 @@ shdom: shdom.o $(SHDOMOBJS)
 shdom.o: shdom.f90 $(SHDOMOBJS)
 	$(F90) -c $(F90FLAGS) shdom.f90
 
-shdUtil_rte1.o: shdUtil_rte1.f
-	$(F90) -c $(F90FLAGS) shdUtil_rte1.f
+shdSolve_1.o: shdSolve_1.f90
+	$(F90) -c $(F90FLAGS) shdSolve_1.f90
 
-shdUtil_rte2.o: shdUtil_rte2.f
-	$(F90) -c $(F90FLAGS) shdUtil_rte2.f
+shdSolve_2.o: shdSolve_2.f90
+	$(F90) -c $(F90FLAGS) shdSolve_2.f90
 
-shdUtil_io.o: shdUtil_io.f
-	$(F90) -c $(F90FLAGS) shdUtil_io.f
+shdUtil_io.o: shdUtil_io.f90
+	$(F90) -c $(F90FLAGS) shdUtil_io.f90
 
 shdom_mpi.o: shdom_mpi.f90
 	$(F90) -c $(F90FLAGS) shdom_mpi.f90
 
-shdom_nompi.o: shdom_nompi.f
-	$(F90) -c $(F90FLAGS) shdom_nompi.f
+shdom_nompi.o: shdom_nompi.f90
+	$(F90) -c $(F90FLAGS) shdom_nompi.f90
 
 shdom_nonetcdf.o: shdom_nonetcdf.f90
 	$(F90) -c $(F90FLAGS) shdom_nonetcdf.f90
@@ -86,10 +86,10 @@ propgen: shdTool_propgen.f90
 	$(F90) $(F90FLAGS) shdTool_propgen.f90 -o $(BIN_DIR)/propgen
 
 make_tmatrix_table: shdTool_make_tmatrix_table.f90
-	$(F90) $(F90FLAGS) shdTool_make_tmatrix_table.f90 shdSca_indexwatice.f shdSca_tmatrixwig.f _lapack.f -o $(BIN_DIR)/make_tmatrix_table
+	$(F90) $(F90FLAGS) shdTool_make_tmatrix_table.f90 shdSca_indexwatice.f90 shdSca_tmatrixwig.f _lapack.f -o $(BIN_DIR)/make_tmatrix_table
 
 make_mie_table: shdTool_make_mie_table.f90
-	$(F90) $(F90FLAGS) shdTool_make_mie_table.f90 shdSca_indexwatice.f shdSca_miewig.f -o $(BIN_DIR)/make_mie_table
+	$(F90) $(F90FLAGS) shdTool_make_mie_table.f90 shdSca_indexwatice.f90 shdSca_miewig.f90 -o $(BIN_DIR)/make_mie_table
 
 plotscattab: shdTool_plotscattab.f90
 	$(F90) $(F90FLAGS) shdTool_plotscattab.f90 -o $(BIN_DIR)/plotscattab
