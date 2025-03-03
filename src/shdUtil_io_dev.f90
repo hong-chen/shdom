@@ -1,13 +1,14 @@
-subroutine USER_INPUT(RUNNAME, PROPFILE, SFCFILE, CKDFILE,       &
-   &                 INSAVEFILE, OUTSAVEFILE,                         &
-   &                 NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,          &
-   &                 IPFLAG, KDIST, DELTAM, GRIDTYPE,                 &
-   &                 SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,    &
-   &                 GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,      &
-   &                 ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,     &
-   &                 MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS, OUTFILES, &
-   &                 OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,      &
-   &                 NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
+subroutine USER_INPUT( &
+    & RUNNAME, PROPFILE, SFCFILE, CKDFILE, &
+    & INSAVEFILE, OUTSAVEFILE, &
+    & NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG, &
+    & IPFLAG, KDIST, DELTAM, GRIDTYPE, &
+    & SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD, &
+    & GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN, &
+    & ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC, &
+    & MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS, OUTFILES, &
+    & OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR, &
+    & NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
 
     ! Obtains the input parameters for the program by writing prompts
     ! to and reading responses from the terminal.  Echos the inputs to
@@ -48,8 +49,8 @@ subroutine USER_INPUT(RUNNAME, PROPFILE, SFCFILE, CKDFILE,       &
     write (*, '(1X,A)') 'Surface properties file name (or NONE)'
     read (*, '(A)') SFCFILE
     write (*, *) SFCFILE
-    write (*, '(1X,A)')                                                &
-   &   'Correlated k-distribution file name (or NONE)'
+    write (*, '(1X,A)') &
+        & 'Correlated k-distribution file name (or NONE)'
     read (*, '(A)') CKDFILE
     write (*, *) CKDFILE
     KDIST = CKDFILE(1:2) .ne. 'NO'
@@ -60,8 +61,8 @@ subroutine USER_INPUT(RUNNAME, PROPFILE, SFCFILE, CKDFILE,       &
     read (*, '(A)') OUTSAVEFILE
     write (*, *) OUTSAVEFILE
 
-    write (*, '(1X,A)')                                                &
-   &   'Number of Stokes parameters (1, 3, or 4; 1=unpolarized)'
+    write (*, '(1X,A)') &
+        & 'Number of Stokes parameters (1, 3, or 4; 1=unpolarized)'
     read (*, *) NSTOKES
     write (*, *) NSTOKES
     write (*, '(1X,A)') 'Internal base grid size (Nx, Ny, Nz)'
@@ -70,8 +71,8 @@ subroutine USER_INPUT(RUNNAME, PROPFILE, SFCFILE, CKDFILE,       &
     write (*, '(1X,A)') 'Number of discrete ordinates in mu and phi'
     read (*, *) NMU, NPHI
     write (*, *) NMU, NPHI
-    write (*, '(1X,A)')                                                &
-   &  'Boundary conditions (0=periodic, 3=open)'
+    write (*, '(1X,A)') &
+        & 'Boundary conditions (0=periodic, 3=open)'
     read (*, *) BCFLAG
     write (*, *) BCFLAG
 
@@ -151,13 +152,13 @@ subroutine USER_INPUT(RUNNAME, PROPFILE, SFCFILE, CKDFILE,       &
         end if
     end if
 
-    write (*, '(1X,A)')                                                &
-   &  'Cell splitting and spherical harmonic series accuracy'
+    write (*, '(1X,A)') &
+        & 'Cell splitting and spherical harmonic series accuracy'
     read (*, *) SPLITACC, SHACC
     write (*, *) SPLITACC, SHACC
 
-    write (*, '(1X,A,A)') 'Acceleration flag (T or F), ',              &
-   &       'solution accuracy, and max iterations'
+    write (*, '(1X,A,A)') 'Acceleration flag (T or F), ', &
+        & 'solution accuracy, and max iterations'
     read (*, *) ACCELFLAG, SOLACC, MAXITER
     write (*, *) ACCELFLAG, SOLACC, MAXITER
 
@@ -166,18 +167,18 @@ subroutine USER_INPUT(RUNNAME, PROPFILE, SFCFILE, CKDFILE,       &
     write (*, *) NUMOUT
     if (NUMOUT .gt. MAXOUT) stop 'USER_INPUT: MAXOUT exceeded'
     do I = 1, NUMOUT
-        write (*, '(1X,A,A)') 'Output type (R-radiance, ',               &
-       &       'V-visualization, F-flux, H-heating,'
+        write (*, '(1X,A,A)') 'Output type (R-radiance, ', &
+            & 'V-visualization, F-flux, H-heating,'
         write (*, '(14X,A)') 'S-spherical harmonic, J-source, M-medium)'
         read (*, '(A)') OUTTYPES(I)
         write (*, *) OUTTYPES(I)
         if (OUTTYPES(I) (1:1) .eq. 'R') then
-            write (*, '(1X,A,A)')                                          &
-       &          'Z level, X and Y spacing, X and Y offset, ',           &
-       &          'number of angles, and mu, phi pairs'
-            read (*, *) OUTPARMS(1, I), OUTPARMS(2, I), OUTPARMS(3, I),       &
-       &               OUTPARMS(4, I), OUTPARMS(5, I),                      &
-       &               N, (OUTPARMS(J + 6, I), J=1, min(2*N, MAXPAR - 6))
+            write (*, '(1X,A,A)') &
+                & 'Z level, X and Y spacing, X and Y offset, ', &
+                & 'number of angles, and mu, phi pairs'
+            read (*, *) OUTPARMS(1, I), OUTPARMS(2, I), OUTPARMS(3, I), &
+                & OUTPARMS(4, I), OUTPARMS(5, I), &
+                & N, (OUTPARMS(J + 6, I), J=1, min(2*N, MAXPAR - 6))
             if (N .gt. (MAXPAR - 6)/2) then
                 print *, 'Number of radiance angles is too large for MAXPAR'
                 stop
@@ -186,15 +187,15 @@ subroutine USER_INPUT(RUNNAME, PROPFILE, SFCFILE, CKDFILE,       &
             OUTPARMS(6, I) = FLOAT(N)
             write (*, *) (OUTPARMS(J, I), J=1, 2*N + 6)
         else if (OUTTYPES(I) (1:1) .eq. 'V') then
-            write (*, '(1X,A,A)')                                          &
-       &'1, bytes,scale, X,Y,Z, theta,phi,rotang, NL,NS, delline,delsamp'
-            write (*, '(1X,A,A)')                                          &
-       &'2, bytes,scale, X1,Y1,Z1, X2,Y2,Z2, spacing, scan1,scan2,delscan'
+            write (*, '(1X,A,A)') &
+                & '1, bytes,scale, X,Y,Z, theta,phi,rotang, NL,NS, delline,delsamp'
+            write (*, '(1X,A,A)') &
+                & '2, bytes,scale, X1,Y1,Z1, X2,Y2,Z2, spacing, scan1,scan2,delscan'
             read (*, *) (OUTPARMS(J, I), J=1, 13)
             write (*, *) (OUTPARMS(J, I), J=1, 13)
         else if (OUTTYPES(I) (1:1) .eq. 'F') then
-            write (*, '(1X,A)')                                            &
-       &        'Format (1,2,3,4,5), [Z, del X, del Y for format 2]'
+            write (*, '(1X,A)') &
+                & 'Format (1,2,3,4,5), [Z, del X, del Y for format 2]'
             read (*, *) N, (OUTPARMS(1 + J, I), J=1, 3*max(0, 1 - abs(N - 2)))
             OUTPARMS(1, I) = FLOAT(N)
             if (N .eq. 2) then
@@ -228,20 +229,20 @@ subroutine USER_INPUT(RUNNAME, PROPFILE, SFCFILE, CKDFILE,       &
     read (*, '(A)') OutFileNC
     write (*, '(A)') OutFileNC
 
-    write (*, '(1X,A)')                                                &
-   &   'Approximate maximum memory to use (MB for 4 byte reals)'
+    write (*, '(1X,A)') &
+        & 'Approximate maximum memory to use (MB for 4 byte reals)'
     read (*, *) MAX_TOTAL_MB
     write (*, *) MAX_TOTAL_MB
-    write (*, '(1X,A)')                                                &
-   &   'Ratio of total grid points to base grid points (1.0 to ~10)'
+    write (*, '(1X,A)') &
+        & 'Ratio of total grid points to base grid points (1.0 to ~10)'
     read (*, *) ADAPT_GRID_FACTOR
     write (*, *) ADAPT_GRID_FACTOR
-    write (*, '(1X,A,A)') 'Ratio of average number of spherical',      &
-   &   ' harmonic terms to total possible (<=1.0)'
+    write (*, '(1X,A,A)') 'Ratio of average number of spherical', &
+        & ' harmonic terms to total possible (<=1.0)'
     read (*, *) NUM_SH_TERM_FACTOR
     write (*, *) NUM_SH_TERM_FACTOR
-    write (*, '(1X,A)')                                                &
-   &   'Ratio of number of grid cells to grid points (1.0 to 2.0)'
+    write (*, '(1X,A)') &
+        & 'Ratio of number of grid cells to grid points (1.0 to 2.0)'
     read (*, *) CELL_TO_POINT_RATIO
     write (*, *) CELL_TO_POINT_RATIO
 
