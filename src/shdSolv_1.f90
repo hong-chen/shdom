@@ -2302,33 +2302,33 @@ subroutine BACK_INT_GRID3D(NX, NY, NZ, NA, NPTS, NCELLS,&
             RAD(:) = RAD(:) + TRANSMIT*SRC(:)*ABSCELL
             TRANSMIT = TRANSMIT*TRANSCELL
             if (RAD(1) < -1.0e-5) then
-                print '(A,3(1X,F6.4),8(1X,E12.5))',                         &
-         &         'BACK_INT_GRID3D: RAD<0 ',                               &
-         &         xe, ye, ze, ext0, ext1, so, tau, transmit, src, abscell, rad(:)
+                print '(A,3(1X,F6.4),8(1X,E12.5))',&
+                    & 'BACK_INT_GRID3D: RAD<0 ',&
+                    & xe, ye, ze, ext0, ext1, so, tau, transmit, src, abscell, rad(:)
                 call ABORT_SHDOM_MPI('The end')
             end if
-            VALIDFACE = (GRIDRAD(1, I1) .ge. -0.1 .and. GRIDRAD(1, I2) .ge. -0.1   &
-       &         .and. GRIDRAD(1, I3) .ge. -0.1 .and. GRIDRAD(1, I4) .ge. -0.1)
-            if (INEXTCELL .le. 0 .or.                                     &
-       &         (TRANSMIT .le. TRANSMIN .and. VALIDFACE)) then
+            VALIDFACE = (GRIDRAD(1, I1) .ge. -0.1 .and. GRIDRAD(1, I2) .ge. -0.1&
+                & .and. GRIDRAD(1, I3) .ge. -0.1 .and. GRIDRAD(1, I4) .ge. -0.1)
+            if (INEXTCELL .le. 0 .or.&
+                & (TRANSMIT .le. TRANSMIN .and. VALIDFACE)) then
                 if (VALIDFACE) then
                     VALIDRAD = .true.
-                    RAD0(:) = F1*GRIDRAD(:, I1) + F2*GRIDRAD(:, I2)             &
-           &                + F3*GRIDRAD(:, I3) + F4*GRIDRAD(:, I4)
+                    RAD0(:) = F1*GRIDRAD(:, I1) + F2*GRIDRAD(:, I2)&
+                        & + F3*GRIDRAD(:, I3) + F4*GRIDRAD(:, I4)
                     RAD(:) = RAD(:) + TRANSMIT*RAD0(:)
                 else
                     print *, 'BACK_INT_GRID3D: INEXTCELL=0: ', xe, ye, ze, icell
                     print *, iz, joct, mu, phi
-                    print '(i7,4(1x,f7.4))', i1, GRIDRAD(1, I1),                &
-           &                  gridpos(1, i1), gridpos(2, i1), gridpos(3, i1)
-                    print '(i7,4(1x,f7.4))', i2, GRIDRAD(1, I2),                &
-           &                  gridpos(1, i2), gridpos(2, i2), gridpos(3, i2)
-                    print '(i7,4(1x,f7.4))', i3, GRIDRAD(1, I3),                &
-           &                  gridpos(1, i3), gridpos(2, i3), gridpos(3, i3)
-                    print '(i7,4(1x,f7.4))', i4, GRIDRAD(1, I4),                &
-           &                  gridpos(1, i4), gridpos(2, i4), gridpos(3, i4)
-                    print '(i7,8x,3(1x,f7.4))', ipt,                          &
-           &                  gridpos(1, ipt), gridpos(2, ipt), gridpos(3, ipt)
+                    print '(i7,4(1x,f7.4))', i1, GRIDRAD(1, I1),&
+                        & gridpos(1, i1), gridpos(2, i1), gridpos(3, i1)
+                    print '(i7,4(1x,f7.4))', i2, GRIDRAD(1, I2),&
+                        & gridpos(1, i2), gridpos(2, i2), gridpos(3, i2)
+                    print '(i7,4(1x,f7.4))', i3, GRIDRAD(1, I3),&
+                        & gridpos(1, i3), gridpos(2, i3), gridpos(3, i3)
+                    print '(i7,4(1x,f7.4))', i4, GRIDRAD(1, I4),&
+                        & gridpos(1, i4), gridpos(2, i4), gridpos(3, i4)
+                    print '(i7,8x,3(1x,f7.4))', ipt,&
+                        & gridpos(1, ipt), gridpos(2, ipt), gridpos(3, ipt)
                     stop
                 end if
             else
@@ -2339,11 +2339,11 @@ subroutine BACK_INT_GRID3D(NX, NY, NZ, NA, NPTS, NCELLS,&
         end do
         GRIDRAD(:, IPT) = RAD(:)
 
-500             continue
+500     continue
     end do
 
     return
-end
+end subroutine
 
 subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,     &
 &             GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,               &
