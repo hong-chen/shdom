@@ -1089,12 +1089,12 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
     return
 end subroutine
 
-subroutine BOUNDARY_PNTS(NPTS, NANG, LAMBERTIAN, MAXNBC, MAXBCRAD, &
-&                          ZBOT, ZTOP, GRIDPOS,                    &
-&                          NTOPPTS, NBOTPTS, BCPTR)
-!       Returns the BCPTR pointer array for the NTOPPTS top boundary
-!     points (BCPTR(*,1)) and the NBOTPTS bottom boundary points (BCPTR(
-!     All the grid points are looked at to find the boundary ones.
+subroutine BOUNDARY_PNTS(NPTS, NANG, LAMBERTIAN, MAXNBC, MAXBCRAD,&
+    & ZBOT, ZTOP, GRIDPOS,&
+    & NTOPPTS, NBOTPTS, BCPTR)
+    !   Returns the BCPTR pointer array for the NTOPPTS top boundary
+    ! points (BCPTR(*,1)) and the NBOTPTS bottom boundary points (BCPTR(
+    ! All the grid points are looked at to find the boundary ones.
     implicit none
     integer NPTS, NANG, MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS
     integer BCPTR(MAXNBC, 2)
@@ -1102,7 +1102,7 @@ subroutine BOUNDARY_PNTS(NPTS, NANG, LAMBERTIAN, MAXNBC, MAXBCRAD, &
     real ZBOT, ZTOP, GRIDPOS(3, NPTS)
     integer I, IT, IB, NA
 
-!         Loop over all points finding the top and bottom ones
+    ! Loop over all points finding the top and bottom ones
     if (LAMBERTIAN) then
         NA = 1
     else
@@ -1131,7 +1131,7 @@ subroutine BOUNDARY_PNTS(NPTS, NANG, LAMBERTIAN, MAXNBC, MAXBCRAD, &
     NTOPPTS = IT
     NBOTPTS = IB
     return
-end
+end subroutine
 
 subroutine SURFACE_PARM_INTERP(NBOTPTS, BCPTR, GRIDPOS,          &
 &               SRCTYPE, WAVENO, WAVELEN, UNITS,                   &
