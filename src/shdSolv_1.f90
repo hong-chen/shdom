@@ -1495,20 +1495,20 @@ subroutine UNIFORM_BRDF_SURFACE(NBOTPTS, BCPTR,&
     return
 end subroutine
 
-subroutine SH_TO_DO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,          &
-&                     NMU, NPHI0MAX, NPHI0,                        &
-&                     IMU, FFTFLAG, CMU1, CPHI1, WSAVE,            &
-&                     SHPTR, INDATA, OUTDATA)
-!       Transforms the input data from spherical harmonic space to discr
-!     ordinate space for one zenith angle (IMU).  Successive transforms
-!     done in zenith and then azimuth angle.  The Fourier transform in
-!     azimuth is done using a matrix multiply DFT for smaller number of
-!     angles (NPHI0*(2*MM+1)<160) and with an FFT for larger number of
-!     angles.  The FFT is used for any number of angles above the limit,
-!     but is much more efficient for NPHI0 whose factors are small prime
-!     (powers of 2 are best).  The spherical harmonic truncation of the
-!     input array is adaptive (with pointer SHPTR); the last term for
-!     each grid point must be the maximum m for the particular l term.
+subroutine SH_TO_DO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
+    & NMU, NPHI0MAX, NPHI0,&
+    & IMU, FFTFLAG, CMU1, CPHI1, WSAVE,&
+    & SHPTR, INDATA, OUTDATA)
+    !   Transforms the input data from spherical harmonic space to discr
+    ! ordinate space for one zenith angle (IMU).  Successive transforms
+    ! done in zenith and then azimuth angle.  The Fourier transform in
+    ! azimuth is done using a matrix multiply DFT for smaller number of
+    ! angles (NPHI0*(2*MM+1)<160) and with an FFT for larger number of
+    ! angles.  The FFT is used for any number of angles above the limit,
+    ! but is much more efficient for NPHI0 whose factors are small prime
+    ! (powers of 2 are best).  The spherical harmonic truncation of the
+    ! input array is adaptive (with pointer SHPTR); the last term for
+    ! each grid point must be the maximum m for the particular l term.
     implicit none
     integer NPTS, NSTOKES, NSTLEG
     integer ML, MM, NLM, NMU, NPHI0MAX, NPHI0
@@ -1525,7 +1525,7 @@ subroutine SH_TO_DO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,          &
     allocate (MOFJ(NLM), TMP(2*MM + 2))
     allocate (SUMUV(NSTOKES, -MM:MM), SUMCS(NSTOKES, -MM:MM))
 
-!         Make the M for each J array
+    ! Make the M for each J array
     J = 0
     do L = 0, ML
         do M = -min(L, MM), min(L, MM)
@@ -1534,9 +1534,9 @@ subroutine SH_TO_DO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,          &
         end do
     end do
 
-!         Do the transform for each grid point
+    ! Do the transform for each grid point
     do I = 1, NPTS
-!             Determine the current SH truncation to use
+        ! Determine the current SH truncation to use
         IS = SHPTR(I)
         NSH = SHPTR(I + 1) - IS
         if (NSH .eq. 0) then
@@ -1544,22 +1544,22 @@ subroutine SH_TO_DO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,          &
                 OUTDATA(:, K, I) = 0.0
             end do
         else
-!           Figure the max Fourier azimuthal mode we can do for this Nph
+            ! Figure the max Fourier azimuthal mode we can do for this Nph
             ME = max(0, min((NPHI0/2) - 1, MOFJ(NSH)))
             MS = -ME
-!              First do mu part of real generalized spherical harmonics
-!               transform by summing over l for each m.
+            ! First do mu part of real generalized spherical harmonics
+            !   transform by summing over l for each m.
             SUMUV(:, :) = 0.0
             do J = 1, NSH
                 M = MOFJ(J)
                 SUMUV(1, M) = SUMUV(1, M) + CMU1(1, J, IMU)*INDATA(1, IS + J)
                 if (NSTOKES .gt. 1) then
-                    SUMUV(2, M) = SUMUV(2, M)                                   &
-           &                              + CMU1(2, J, IMU)*INDATA(2, IS + J)      &
-           &                              + CMU1(5, J, IMU)*INDATA(3, IS + J)
-                    SUMUV(3, M) = SUMUV(3, M)                                   &
-           &                              + CMU1(6, J, IMU)*INDATA(2, IS + J)      &
-           &                              + CMU1(3, J, IMU)*INDATA(3, IS + J)
+                    SUMUV(2, M) = SUMUV(2, M)&
+                        & + CMU1(2, J, IMU)*INDATA(2, IS + J)&
+                        & + CMU1(5, J, IMU)*INDATA(3, IS + J)
+                    SUMUV(3, M) = SUMUV(3, M)&
+                        & + CMU1(6, J, IMU)*INDATA(2, IS + J)&
+                        & + CMU1(3, J, IMU)*INDATA(3, IS + J)
                 end if
                 if (NSTOKES .eq. 4) then
                     SUMUV(4, M) = SUMUV(4, M) + CMU1(4, J, IMU)*INDATA(4, IS + J)
@@ -1585,10 +1585,10 @@ subroutine SH_TO_DO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,          &
                 end do
             end if
 
-!             Then do the Fourier transform from m to phi for each mu
+            ! Then do the Fourier transform from m to phi for each mu
             if (FFTFLAG(IMU)) then
                 do N = 1, NSTOKES
-!               For sines and cosines use a real FFT, and rearrange term
+                    ! For sines and cosines use a real FFT, and rearrange term
                     TMP(1) = SUMCS(N, 0)
                     MR = 2
                     do M = 1, ME
@@ -1606,7 +1606,7 @@ subroutine SH_TO_DO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,          &
                 end do
 
             else
-!               Else do a slow DFT
+                ! Else do a slow DFT
                 do IPHI = 1, NPHI0
                     do N = 1, NSTOKES
                         SUM1 = 0.0
@@ -1621,26 +1621,26 @@ subroutine SH_TO_DO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,          &
     end do
     deallocate (MOFJ, SUMUV, SUMCS, TMP)
     return
-end
+end subroutine
 
-subroutine SH_TO_DO_UNPOL(NPTS, ML, MM, NLM,                     &
-&                     NMU, NPHI0MAX, NPHI0,                        &
-&                     IMU, FFTFLAG, CMU1, CPHI1, WSAVE,            &
-&                     SHPTR, INDATA, OUTDATA)
-!       Transforms the input data from spherical harmonic space to discr
-!     ordinate space for one zenith angle (IMU) for the unpolarized case
-!     Successive transforms are done in zenith and then azimuth angle.
-!     The Fourier transform in
-!     azimuth is done using a matrix multiply DFT for smaller number of
-!     angles (NPHI0*(2*MM+1)<160) and with an FFT for larger number of
-!     angles.  The FFT is used for any number of angles above the limit,
-!     but is much more efficient for NPHI0 whose factors are small prime
-!     (powers of 2 are best).  The spherical harmonic truncation of the
-!     input array is adaptive (with pointer SHPTR); the last term for
-!     each grid point must be the maximum m for the particular l term.
-!     The number of floating point operations for the DFT is 2*Nmu*Nphi0
-!     The number of floating point operations for the zenith angle trans
-!     is 2*Nmu*Nlm.
+subroutine SH_TO_DO_UNPOL(NPTS, ML, MM, NLM,&
+    & NMU, NPHI0MAX, NPHI0,&
+    & IMU, FFTFLAG, CMU1, CPHI1, WSAVE,&
+    & SHPTR, INDATA, OUTDATA)
+    !   Transforms the input data from spherical harmonic space to discr
+    ! ordinate space for one zenith angle (IMU) for the unpolarized case
+    ! Successive transforms are done in zenith and then azimuth angle.
+    ! The Fourier transform in
+    ! azimuth is done using a matrix multiply DFT for smaller number of
+    ! angles (NPHI0*(2*MM+1)<160) and with an FFT for larger number of
+    ! angles.  The FFT is used for any number of angles above the limit,
+    ! but is much more efficient for NPHI0 whose factors are small prime
+    ! (powers of 2 are best).  The spherical harmonic truncation of the
+    ! input array is adaptive (with pointer SHPTR); the last term for
+    ! each grid point must be the maximum m for the particular l term.
+    ! The number of floating point operations for the DFT is 2*Nmu*Nphi0
+    ! The number of floating point operations for the zenith angle trans
+    ! is 2*Nmu*Nlm.
     implicit none
     integer NPTS
     integer ML, MM, NLM, NMU, NPHI0MAX, NPHI0
@@ -1656,7 +1656,7 @@ subroutine SH_TO_DO_UNPOL(NPTS, ML, MM, NLM,                     &
 
     allocate (MOFJ(NLM), SUMUV(-MM:MM), SUMCS(-MM:MM), TMP(2*MM + 2))
 
-!       Make the M for each J array
+    ! Make the M for each J array
     J = 0
     do L = 0, ML
         do M = -min(L, MM), min(L, MM)
@@ -1665,9 +1665,9 @@ subroutine SH_TO_DO_UNPOL(NPTS, ML, MM, NLM,                     &
         end do
     end do
 
-!         Do the transform for each grid point
+    ! Do the transform for each grid point
     do I = 1, NPTS
-!             Determine the current SH truncation to use
+        ! Determine the current SH truncation to use
         IS = SHPTR(I)
         NSH = SHPTR(I + 1) - IS
         if (NSH .eq. 0) then
@@ -1675,11 +1675,11 @@ subroutine SH_TO_DO_UNPOL(NPTS, ML, MM, NLM,                     &
                 OUTDATA(K, I) = 0.0
             end do
         else
-!           Figure the max Fourier azimuthal mode we can do for this Nph
+            ! Figure the max Fourier azimuthal mode we can do for this Nph
             ME = max(0, min((NPHI0/2) - 1, MOFJ(NSH)))
             MS = -ME
-!             First do mu part of real generalized spherical harmonics
-!             transform by summing over l for each m.
+            ! First do mu part of real generalized spherical harmonics
+            !   transform by summing over l for each m.
             SUMUV(:) = 0.0
             do J = 1, NSH
                 M = MOFJ(J)
@@ -1691,9 +1691,9 @@ subroutine SH_TO_DO_UNPOL(NPTS, ML, MM, NLM,                     &
                 SUMCS(-M) = SUMUV(-M) - SUMUV(M)
             end do
 
-!             Then do the Fourier transform from m to phi for each mu
+            ! Then do the Fourier transform from m to phi for each mu
             if (FFTFLAG(IMU)) then
-!             For sines and cosines use a real FFT, and rearrange terms
+                ! For sines and cosines use a real FFT, and rearrange terms
                 TMP(1) = SUMCS(0)
                 MR = 2
                 do M = 1, ME
@@ -1709,7 +1709,7 @@ subroutine SH_TO_DO_UNPOL(NPTS, ML, MM, NLM,                     &
                     OUTDATA(K, I) = TMP(K)
                 end do
             else
-!               Else do a slow DFT
+                ! Else do a slow DFT
                 do IPHI = 1, NPHI0
                     SUM1 = 0.0
                     do M = MS, ME
@@ -1722,15 +1722,15 @@ subroutine SH_TO_DO_UNPOL(NPTS, ML, MM, NLM,                     &
     end do
     deallocate (MOFJ, SUMUV, SUMCS, TMP)
     return
-end
+end subroutine
 
-subroutine DO_TO_SH(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,          &
-&                     NMU, NPHI0MAX, NPHI0,                        &
-&                     IMU, FFTFLAG, CMU2, CPHI2, WSAVE,            &
-&                     RSHPTR, INDATA, OUTDATA)
-!       Transforms the input field from discrete ordinate space to spher
-!     harmonic space for one zenith angle (IMU) by keeping a running
-!     sum in OUTDATA between successive calls.  (See SH_TO_DO for more).
+subroutine DO_TO_SH(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
+    & NMU, NPHI0MAX, NPHI0,&
+    & IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
+    & RSHPTR, INDATA, OUTDATA)
+    !   Transforms the input field from discrete ordinate space to spher
+    ! harmonic space for one zenith angle (IMU) by keeping a running
+    ! sum in OUTDATA between successive calls.  (See SH_TO_DO for more).
     implicit none
     integer NPTS, NSTOKES, NSTLEG
     integer ML, MM, NLM, NMU, NPHI0MAX, NPHI0
@@ -1749,7 +1749,7 @@ subroutine DO_TO_SH(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,          &
 
     DELPHI = 2.0*acos(-1.0)/NPHI0
 
-!         Make the M for each J array
+    ! Make the M for each J array
     J = 0
     do L = 0, ML
         do M = -min(L, MM), min(L, MM)
@@ -1758,21 +1758,21 @@ subroutine DO_TO_SH(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,          &
         end do
     end do
 
-!         Do the transform for each grid point
+    ! Do the transform for each grid point
     IS = 0
     do I = 1, NPTS
-!             Determine the current SH truncation to use
+        ! Determine the current SH truncation to use
         NSH = RSHPTR(I + 1) - RSHPTR(I)
-!           Figure the max Fourier azimuthal mode we can do for this Nph
+        ! Figure the max Fourier azimuthal mode we can do for this Nph
         ME = max(0, min((NPHI0/2) - 1, MOFJ(NSH)))
         MS = -ME
-!           First do Fourier transform from phi to m for each mu
+        ! First do Fourier transform from phi to m for each mu
         if (FFTFLAG(IMU)) then
             do N = 1, NSTOKES
                 do K = 1, NPHI0
                     TMP(K) = INDATA(N, K, I)
                 end do
-!               For sines and cosines use a real FFT, and rearrange term
+                ! For sines and cosines use a real FFT, and rearrange term
                 call RFFTF(NPHI0, TMP, WSAVE(1, IMU))
                 SUMCS(N, 0) = TMP(1)*DELPHI
                 MR = 2
@@ -1783,7 +1783,7 @@ subroutine DO_TO_SH(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,          &
                 end do
             end do
         else
-!             Else do a slow DFT
+            ! Else do a slow DFT
             do M = MS, ME
                 do N = 1, NSTOKES
                     SUM1 = 0.0
@@ -1794,8 +1794,8 @@ subroutine DO_TO_SH(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,          &
                 end do
             end do
         end if
-!             Then do mu part of real generalized spherical harmonics
-!               transform by summing over l for each m.
+        ! Then do mu part of real generalized spherical harmonics
+        !   transform by summing over l for each m.
         SUMUV(:, ME + 1:MM) = 0.0
         SUMUV(:, -MM:MS - 1) = 0.0
         SUMUV(:, 0) = SUMCS(:, 0)
@@ -1821,10 +1821,10 @@ subroutine DO_TO_SH(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,          &
             M = MOFJ(J)
             OUTDATA(1, IS + J) = OUTDATA(1, IS + J) + CMU2(1, IMU, J)*SUMUV(1, M)
             if (NSTOKES .gt. 1) then
-                OUTDATA(2, IS + J) = OUTDATA(2, IS + J) + CMU2(2, IMU, J)*SUMUV(2, M)    &
-         &                                    + CMU2(5, IMU, J)*SUMUV(3, M)
-                OUTDATA(3, IS + J) = OUTDATA(3, IS + J) + CMU2(6, IMU, J)*SUMUV(2, M)    &
-         &                                    + CMU2(3, IMU, J)*SUMUV(3, M)
+                OUTDATA(2, IS + J) = OUTDATA(2, IS + J) + CMU2(2, IMU, J)*SUMUV(2, M)&
+                    & + CMU2(5, IMU, J)*SUMUV(3, M)
+                OUTDATA(3, IS + J) = OUTDATA(3, IS + J) + CMU2(6, IMU, J)*SUMUV(2, M)&
+                    & + CMU2(3, IMU, J)*SUMUV(3, M)
             end if
             if (NSTOKES .eq. 4) then
                 OUTDATA(4, IS + J) = OUTDATA(4, IS + J) + CMU2(4, IMU, J)*SUMUV(4, M)
@@ -1834,15 +1834,15 @@ subroutine DO_TO_SH(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,          &
     end do
     deallocate (MOFJ, SUMUV, SUMCS, TMP)
     return
-end
+end subroutine
 
-subroutine DO_TO_SH_UNPOL(NPTS, ML, MM, NLM,                     &
-&                     NMU, NPHI0MAX, NPHI0,                        &
-&                     IMU, FFTFLAG, CMU2, CPHI2, WSAVE,            &
-&                     RSHPTR, INDATA, OUTDATA)
-!       Transforms the input field from discrete ordinate space to spher
-!     harmonic space for one zenith angle (IMU) by keeping a running
-!     sum in OUTDATA between successive calls.  (See SH_TO_DO for more).
+subroutine DO_TO_SH_UNPOL(NPTS, ML, MM, NLM,&
+    & NMU, NPHI0MAX, NPHI0,&
+    & IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
+    & RSHPTR, INDATA, OUTDATA)
+    !   Transforms the input field from discrete ordinate space to spher
+    ! harmonic space for one zenith angle (IMU) by keeping a running
+    ! sum in OUTDATA between successive calls.  (See SH_TO_DO for more).
     implicit none
     integer NPTS
     integer ML, MM, NLM, NMU, NPHI0MAX, NPHI0
@@ -1859,7 +1859,7 @@ subroutine DO_TO_SH_UNPOL(NPTS, ML, MM, NLM,                     &
     allocate (MOFJ(NLM), SUMUV(-MM:MM), SUMCS(-MM:MM), TMP(NPHI0))
 
     DELPHI = 2.0*acos(-1.0)/NPHI0
-!         Make the M for each J array
+    ! Make the M for each J array
     J = 0
     do L = 0, ML
         do M = -min(L, MM), min(L, MM)
@@ -1868,21 +1868,21 @@ subroutine DO_TO_SH_UNPOL(NPTS, ML, MM, NLM,                     &
         end do
     end do
 
-!         Do the transform for each grid point
+    ! Do the transform for each grid point
     IS = 0
     do I = 1, NPTS
-!           Determine the current SH truncation to use
+        ! Determine the current SH truncation to use
         NSH = RSHPTR(I + 1) - RSHPTR(I)
         SUMCS(:) = 0.0
-!         Figure the max Fourier azimuthal mode we can do for this Nphi0
+        ! Figure the max Fourier azimuthal mode we can do for this Nphi0
         ME = max(0, min((NPHI0/2) - 1, MOFJ(NSH)))
         MS = -ME
-!           First do Fourier transform from phi to m for each mu
+        ! First do Fourier transform from phi to m for each mu
         if (FFTFLAG(IMU)) then
             do K = 1, NPHI0
                 TMP(K) = INDATA(K, I)
             end do
-!               For sines and cosines use a real FFT, and rearrange term
+            ! For sines and cosines use a real FFT, and rearrange term
             call RFFTF(NPHI0, TMP, WSAVE(1, IMU))
             SUMCS(0) = TMP(1)*DELPHI
             MR = 2
@@ -1892,7 +1892,7 @@ subroutine DO_TO_SH_UNPOL(NPTS, ML, MM, NLM,                     &
                 MR = MR + 2
             end do
         else
-!           Else do a slow DFT
+            ! Else do a slow DFT
             do M = MS, ME
                 SUM1 = 0.0
                 do IPHI = 1, NPHI0
@@ -1901,8 +1901,8 @@ subroutine DO_TO_SH_UNPOL(NPTS, ML, MM, NLM,                     &
                 SUMCS(M) = SUM1
             end do
         end if
-!           Then do mu part of real generalized spherical harmonics
-!             transform by summing over l for each m.
+        ! Then do mu part of real generalized spherical harmonics
+        !   transform by summing over l for each m.
         SUMUV(0) = SUMCS(0)
         do M = 1, MM
             SUMUV(M) = SUMCS(M) - SUMCS(-M)
@@ -1916,19 +1916,19 @@ subroutine DO_TO_SH_UNPOL(NPTS, ML, MM, NLM,                     &
     end do
     deallocate (MOFJ, SUMUV, SUMCS, TMP)
     return
-end
+end subroutine
 
-subroutine SWEEPING_ORDER(NX, NY, NZ, NPTS, NCELLS,              &
-&                          GRIDPTR, TREEPTR, CELLFLAGS,            &
-&                          BCFLAG, IPFLAG, SWEEPORD, GRIDRAD)
-!       Make the array of grid point sweeping order for each discrete
-!     ordinate octant (SWEEPORD).  Rather than pointing to the grid poin
-!     directly, the elements of SWEEPORD point to the cell (bits 3-30) a
-!     the corner of the cell (bits 0-2).  The first index is the grid
-!     point visiting order (1-NPTS), and the second index refers to the
-!     octant, but is not the octant number.  The octant index is transla
-!     to the octant number with IOCTORDER - this complication arises bec
-!     of the desire to use just 2 or 4 octants in 1D or 2D.
+subroutine SWEEPING_ORDER(NX, NY, NZ, NPTS, NCELLS,&
+    & GRIDPTR, TREEPTR, CELLFLAGS,&
+    & BCFLAG, IPFLAG, SWEEPORD, GRIDRAD)
+    !   Make the array of grid point sweeping order for each discrete
+    ! ordinate octant (SWEEPORD).  Rather than pointing to the grid poin
+    ! directly, the elements of SWEEPORD point to the cell (bits 3-30) a
+    ! the corner of the cell (bits 0-2).  The first index is the grid
+    ! point visiting order (1-NPTS), and the second index refers to the
+    ! octant, but is not the octant number.  The octant index is transla
+    ! to the octant number with IOCTORDER - this complication arises bec
+    ! of the desire to use just 2 or 4 octants in 1D or 2D.
     implicit none
     integer NX, NY, NZ, NPTS, NCELLS, BCFLAG, IPFLAG
     integer GRIDPTR(8, NCELLS), TREEPTR(2, NCELLS)
@@ -1939,13 +1939,13 @@ subroutine SWEEPING_ORDER(NX, NY, NZ, NPTS, NCELLS,              &
     integer IPCELL, IPT, IORDER
     integer INDEXCORN, ICORNER, CORNDOG(8, 8), IOCTORDER(8)
     logical SWEEP_NEXT_CELL, BTEST
-    data CORNDOG/8, 7, 6, 5, 4, 3, 2, 1, 7, 8, 5, 6, 3, 4, 1, 2, 6, 5, 8, 7, 2, 1, 4, 3,   &
-   &             5, 6, 7, 8, 1, 2, 3, 4, 4, 3, 2, 1, 8, 7, 6, 5, 3, 4, 1, 2, 7, 8, 5, 6,   &
-   &             2, 1, 4, 3, 6, 5, 8, 7, 1, 2, 3, 4, 5, 6, 7, 8/
+    data CORNDOG/8, 7, 6, 5, 4, 3, 2, 1, 7, 8, 5, 6, 3, 4, 1, 2, 6, 5, 8, 7, 2, 1, 4, 3,&
+        & 5, 6, 7, 8, 1, 2, 3, 4, 4, 3, 2, 1, 8, 7, 6, 5, 3, 4, 1, 2, 7, 8, 5, 6,&
+        & 2, 1, 4, 3, 6, 5, 8, 7, 1, 2, 3, 4, 5, 6, 7, 8/
     data IOCTORDER/1, 5, 2, 6, 3, 7, 4, 8/
 
-!         IOCT is the octant the ray come from or the discrete ordinate
-!      IOCT = 1 + BITX + 2*BITY + 4*BITZ
+    ! IOCT is the octant the ray come from or the discrete ordinate
+    !   IOCT = 1 + BITX + 2*BITY + 4*BITZ
 
     if (btest(IPFLAG, 1) .and. btest(IPFLAG, 0)) then
         NOCT = 2
@@ -1961,67 +1961,67 @@ subroutine SWEEPING_ORDER(NX, NY, NZ, NPTS, NCELLS,              &
     if (btest(BCFLAG, 1)) NYC = NY + 1
     if (btest(BCFLAG, 3) .and. .not. btest(IPFLAG, 1)) NYC = NY - 1
 
-!         Loop over the number of octants needed; get the octant number
+    ! Loop over the number of octants needed; get the octant number
     do JOCT = 1, NOCT
         IOCT = IOCTORDER(JOCT)
 
-!           Set each grid point flag to indicate unvisited.
+        ! Set each grid point flag to indicate unvisited.
         do IPT = 1, NPTS
             GRIDRAD(IPT) = -1.0
         end do
 
-!           Sweep through all the grid points
+        ! Sweep through all the grid points
         IORDER = 1
         IPCELL = 0
         INDEXCORN = 8
-100             continue
-!         INDEXCORN is a logical ordering index to the 8 corners in a ce
-!           it is not the actual corner. ICORNER is the actual corner an
-!           depends on the ray direction (IOCT) and INDEXCORN.
-!           Scan the 8 points in a cell according to the ray direction:
-!           Do the ones furthest "upstream" first; loop until we find
-!           a point that is not already done.
+100     continue
+        ! INDEXCORN is a logical ordering index to the 8 corners in a ce
+        !   it is not the actual corner. ICORNER is the actual corner an
+        !   depends on the ray direction (IOCT) and INDEXCORN.
+        !   Scan the 8 points in a cell according to the ray direction:
+        !   Do the ones furthest "upstream" first; loop until we find
+        !   a point that is not already done.
         if (INDEXCORN .eq. 8) then
-!               If done with the current cell, then go to next
+            ! If done with the current cell, then go to next
             INDEXCORN = 1
-            if (.not. SWEEP_NEXT_CELL(BCFLAG, NXC, NYC, NZ, IOCT,    &
-   &                    IPCELL, TREEPTR, CELLFLAGS)) goto 900
+            if (.not. SWEEP_NEXT_CELL(BCFLAG, NXC, NYC, NZ, IOCT,&
+                & IPCELL, TREEPTR, CELLFLAGS)) goto 900
         else
             INDEXCORN = INDEXCORN + 1
         end if
-!               Compute the corresponding point
-!             ICORNER = IAND(NOT(IEOR(INDEXCORN-1,IOCT-1)),7) + 1
+        ! Compute the corresponding point
+        !   ICORNER = IAND(NOT(IEOR(INDEXCORN-1,IOCT-1)),7) + 1
         ICORNER = CORNDOG(INDEXCORN, IOCT)
         IPT = GRIDPTR(ICORNER, IPCELL)
         if (GRIDRAD(IPT) .ge. 0.0) goto 100
 
         GRIDRAD(IPT) = 1.0
-!             Fill in the next entry with the grid cell and corner of th
+        ! Fill in the next entry with the grid cell and corner of th
         SWEEPORD(IORDER, JOCT) = ior(ishft(IPCELL, 3), ICORNER - 1)
         IORDER = IORDER + 1
         goto 100
-900             continue
+900     continue
     end do
 
     return
-end
+end subroutine
 
-subroutine BACK_INT_GRID3D(NX, NY, NZ, NA, NPTS, NCELLS,           &
-&             GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,               &
-&             GRIDPOS, XGRID, YGRID, ZGRID, SWEEPORD,              &
-&             MU, PHI, TRANSMIN, BCFLAG, IPFLAG,                   &
-&             EXTINCT, NSTOKES, SOURCE, KANG, GRIDRAD)
-!       Sweeps through the spatial grid computing radiance vectors for t
-!     discrete ordinate direction (MU,PHI) by integrating the source
-!     function and extinction backward from each point.  The sweeping
-!     order through the grid points is in SWEEPORD. If a point is
-!     already done (nonnegative in GRIDRAD) then it is skipped.
-!     For each grid point a ray opposite to the ordinate direction is tr
-!     back to a face containing known (valid) radiances.  As each cell i
-!     crossed (usually only one) the integration of the source function
-!     across the cell is done and added to the radiance.  The radiance
-!     at the end of the ray path is interpolated from the known grid poi
-!     radiances on the face.  The resulting radiances are put in GRIDRAD
+subroutine BACK_INT_GRID3D(NX, NY, NZ, NA, NPTS, NCELLS,&
+    & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+    & GRIDPOS, XGRID, YGRID, ZGRID, SWEEPORD,&
+    & MU, PHI, TRANSMIN, BCFLAG, IPFLAG,&
+    & EXTINCT, NSTOKES, SOURCE, KANG, GRIDRAD)
+    !   Sweeps through the spatial grid computing radiance vectors for t
+    ! discrete ordinate direction (MU,PHI) by integrating the source
+    ! function and extinction backward from each point.  The sweeping
+    ! order through the grid points is in SWEEPORD. If a point is
+    ! already done (nonnegative in GRIDRAD) then it is skipped.
+    ! For each grid point a ray opposite to the ordinate direction is tr
+    ! back to a face containing known (valid) radiances.  As each cell i
+    ! crossed (usually only one) the integration of the source function
+    ! across the cell is done and added to the radiance.  The radiance
+    ! at the end of the ray path is interpolated from the known grid poi
+    ! radiances on the face.  The resulting radiances are put in GRIDRAD
     implicit none
     integer NX, NY, NZ, NA, NPTS, NCELLS, NSTOKES, KANG
     integer BCFLAG, IPFLAG
@@ -2047,13 +2047,13 @@ subroutine BACK_INT_GRID3D(NX, NY, NZ, NA, NPTS, NCELLS,           &
     double precision EXT0P, SRCEXT0P(NSTOKES)
     double precision TAU, TRANSCELL, ABSCELL, TRANSMIT
     double precision RAD(NSTOKES), RAD0(NSTOKES)
-    data GRIDFACE/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8,                &
-   &              1, 2, 3, 4, 5, 6, 7, 8/, OPPFACE/2, 1, 4, 3, 6, 5/
+    data GRIDFACE/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8,&
+        & 1, 2, 3, 4, 5, 6, 7, 8/, OPPFACE/2, 1, 4, 3, 6, 5/
     data JOCTORDER3/1, 3, 5, 7, 2, 4, 6, 8/, JOCTORDER2/1, 3, 1, 3, 2, 4, 2, 4/
 
     EPS = 1.0e-3*(GRIDPOS(3, GRIDPTR(8, 1)) - GRIDPOS(3, GRIDPTR(1, 1)))
 
-!         Make the ray direction (opposite to the discrete ordinate dire
+    ! Make the ray direction (opposite to the discrete ordinate dire
     PI = acos(-1.0)
     CX = sqrt(1.0 - MU**2)*cos(PHI + PI)
     CY = sqrt(1.0 - MU**2)*sin(PHI + PI)
@@ -2072,8 +2072,8 @@ subroutine BACK_INT_GRID3D(NX, NY, NZ, NA, NPTS, NCELLS,           &
     end if
     CZINV = 1.0d0/CZ
 
-!         Setup the sweeping direction and the gridpoint location
-!         BITc is 0 for positive direction trace back ray, 1 for negativ
+    ! Setup the sweeping direction and the gridpoint location
+    ! BITc is 0 for positive direction trace back ray, 1 for negativ
     if (CX .lt. 0.0) then
         BITX = 1
     else
@@ -2091,7 +2091,7 @@ subroutine BACK_INT_GRID3D(NX, NY, NZ, NA, NPTS, NCELLS,           &
     else
         stop 'BACK_INT_GRID: Bad MU'
     end if
-!         IOCT is the octant the ray come from or the discrete ordinate
+    ! IOCT is the octant the ray come from or the discrete ordinate
     IOCT = 1 + BITX + 2*BITY + 4*BITZ
     if (btest(IPFLAG, 1)) then
         JOCT = JOCTORDER2(IOCT)
@@ -2100,30 +2100,30 @@ subroutine BACK_INT_GRID3D(NX, NY, NZ, NA, NPTS, NCELLS,           &
     end if
 
     IZ = (NZ - 1)*(1 - BITZ) + 1
-!         Sweep through all the grid points
+    ! Sweep through all the grid points
     do IORDER = 1, NPTS
         IPCELL = ishft(SWEEPORD(IORDER, JOCT), -3)
         ICORNER = ibits(SWEEPORD(IORDER, JOCT), 0, 3) + 1
         IPT = GRIDPTR(ICORNER, IPCELL)
 
         if (btest(BCFLAG, 2) .or. btest(BCFLAG, 3)) then
-!           For multiple processors get the subdomain boundary radiances
-!           for each Z slab
-            if ((GRIDPOS(3, IPT) .lt. ZGRID(IZ) .and. BITZ .eq. 0) .or.      &
-       &        (GRIDPOS(3, IPT) .gt. ZGRID(IZ) .and. BITZ .eq. 1)) then
+            ! For multiple processors get the subdomain boundary radiances
+            !   for each Z slab
+            if ((GRIDPOS(3, IPT) .lt. ZGRID(IZ) .and. BITZ .eq. 0) .or.&
+                &(GRIDPOS(3, IPT) .gt. ZGRID(IZ) .and. BITZ .eq. 1)) then
                 IZ = IZ + 2*BITZ - 1
-                call CALC_BOUNDARY_RADIANCES(BCFLAG, IPFLAG, JOCT, IZ,     &
-         &                        NX, NY, NZ, XGRID, YGRID, ZGRID,          &
-         &                        NA, NPTS, NCELLS, GRIDPTR,                &
-         &                        NEIGHPTR, TREEPTR, CELLFLAGS, GRIDPOS,    &
-         &                        MU, PHI, EXTINCT, NSTOKES, SOURCE,        &
-         &                        KANG, GRIDRAD)
+                call CALC_BOUNDARY_RADIANCES(BCFLAG, IPFLAG, JOCT, IZ,&
+                    & NX, NY, NZ, XGRID, YGRID, ZGRID,&
+                    & NA, NPTS, NCELLS, GRIDPTR,&
+                    & NEIGHPTR, TREEPTR, CELLFLAGS, GRIDPOS,&
+                    & MU, PHI, EXTINCT, NSTOKES, SOURCE,&
+                    & KANG, GRIDRAD)
             end if
         end if
 
         if (GRIDRAD(1, IPT) .ge. 0.0) goto 500
 
-!           Start off at the grid point
+        ! Start off at the grid point
         ICELL = IPCELL
         TRANSMIT = 1.0
         EXT1 = EXTINCT(IPT)
@@ -2133,24 +2133,24 @@ subroutine BACK_INT_GRID3D(NX, NY, NZ, NA, NPTS, NCELLS,           &
         YE = GRIDPOS(2, IPT)
         ZE = GRIDPOS(3, IPT)
 
-!           Loop until finding a face with known radiances
+        ! Loop until finding a face with known radiances
         VALIDRAD = .false.
         do while (.not. VALIDRAD)
-!             Make sure current cell is valid
+            ! Make sure current cell is valid
             if (ICELL .le. 0) then
-                write (6, *) 'BACK_INT_GRID: ICELL=0  ',                     &
-         &           MU, PHI, IPT, INEXTCELL, xe, ye, ze,                      &
-         &           gridpos(1, ipt), gridpos(2, ipt), gridpos(3, ipt)
+                write (6, *) 'BACK_INT_GRID: ICELL=0  ',&
+                    & MU, PHI, IPT, INEXTCELL, xe, ye, ze,&
+                    & gridpos(1, ipt), gridpos(2, ipt), gridpos(3, ipt)
                 stop
             end if
             IPINX = btest(int(CELLFLAGS(ICELL)), 0)
             IPINY = btest(int(CELLFLAGS(ICELL)), 1)
 
-!             Find boundaries of the current cell
-!             Find the three possible intersection planes (X,Y,Z)
-!               from the coordinates of the opposite corner grid point
+            ! Find boundaries of the current cell
+            ! Find the three possible intersection planes (X,Y,Z)
+            !   from the coordinates of the opposite corner grid point
             IOPP = GRIDPTR(9 - IOCT, ICELL)
-!             Get the distances to the 3 planes and select the closest
+            ! Get the distances to the 3 planes and select the closest
             if (IPINX) then
                 SOX = 1.0e20
             else
@@ -2164,16 +2164,16 @@ subroutine BACK_INT_GRID3D(NX, NY, NZ, NA, NPTS, NCELLS,           &
             SOZ = (GRIDPOS(3, IOPP) - ZE)*CZINV
             SO = min(SOX, SOY, SOZ)
             if (SO .lt. -EPS) then
-                write (6, *) 'BACK_INT_GRID: SO<0  ',                        &
-         &          MU, PHI, XE, YE, ZE, SOX, SOY, SOZ, SO, IPT, ICELL
+                write (6, *) 'BACK_INT_GRID: SO<0  ',&
+                    & MU, PHI, XE, YE, ZE, SOX, SOY, SOZ, SO, IPT, ICELL
                 stop
             end if
-!              Compute the coordinates of the cell exitting location
+            ! Compute the coordinates of the cell exitting location
             XE = XE + SO*CX
             YE = YE + SO*CY
             ZE = ZE + SO*CZ
 
-!             Get the intersection face number (i.e. neighptr index)
+            ! Get the intersection face number (i.e. neighptr index)
             if (SOX .le. SOZ .and. SOX .le. SOY) then
                 IFACE = 2 - BITX
                 JFACE = 1
@@ -2184,20 +2184,20 @@ subroutine BACK_INT_GRID3D(NX, NY, NZ, NA, NPTS, NCELLS,           &
                 IFACE = 6 - BITZ
                 JFACE = 3
             end if
-!             Get the next cell to go to
+            ! Get the next cell to go to
             INEXTCELL = NEIGHPTR(IFACE, ICELL)
             if (INEXTCELL .lt. 0) then
-                call NEXT_CELL(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,   &
-         &           GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXTCELL)
+                call NEXT_CELL(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
+                    & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXTCELL)
             end if
 
-!             Get the face grid pointers
+            ! Get the face grid pointers
             if (NEIGHPTR(IFACE, ICELL) .ge. 0) then
-!               If going to same or larger face then use previous face
+                ! If going to same or larger face then use previous face
                 KFACE = IFACE
                 IC = ICELL
             else
-!               If going to smaller face then use next face (more accura
+                ! If going to smaller face then use next face (more accura
                 KFACE = OPPFACE(IFACE)
                 IC = INEXTCELL
             end if
@@ -2205,7 +2205,7 @@ subroutine BACK_INT_GRID3D(NX, NY, NZ, NA, NPTS, NCELLS,           &
             I2 = GRIDPTR(GRIDFACE(2, KFACE), IC)
             I3 = GRIDPTR(GRIDFACE(3, KFACE), IC)
             I4 = GRIDPTR(GRIDFACE(4, KFACE), IC)
-!             Compute the face interpolation factors
+            ! Compute the face interpolation factors
             if (JFACE .eq. 1) then
                 U = (ZE - GRIDPOS(3, I1))/(GRIDPOS(3, I3) - GRIDPOS(3, I1))
                 if (IPINY) then
@@ -2232,14 +2232,14 @@ subroutine BACK_INT_GRID3D(NX, NY, NZ, NA, NPTS, NCELLS,           &
                     V = (XE - GRIDPOS(1, I1))/(GRIDPOS(1, I2) - GRIDPOS(1, I1))
                 end if
             end if
-            if (u .lt. -0.0001 .or. v .lt. -0.0001 .or.                   &
-       &        u .gt. 1.0001 .or. v .gt. 1.0001) then
-                print *, 'BACK_INT_GRID3D: u,v<0 or u,v>1: ',               &
-         &        mu, phi, xe, ye, ze, u, v, iface, jface, kface,                    &
-         &        gridpos(1, i1), gridpos(2, i1), gridpos(3, i1)
+            if (u .lt. -0.0001 .or. v .lt. -0.0001 .or.&
+                & u .gt. 1.0001 .or. v .gt. 1.0001) then
+                print *, 'BACK_INT_GRID3D: u,v<0 or u,v>1: ',&
+                    & mu, phi, xe, ye, ze, u, v, iface, jface, kface,&
+                    & gridpos(1, i1), gridpos(2, i1), gridpos(3, i1)
             end if
 
-!             Get the location coordinate (does the boundary wrapping)
+            ! Get the location coordinate (does the boundary wrapping)
             if (INEXTCELL .gt. 0) then
                 if (JFACE .eq. 1) then
                     XE = GRIDPOS(1, GRIDPTR(IOCT, INEXTCELL))
@@ -2250,55 +2250,55 @@ subroutine BACK_INT_GRID3D(NX, NY, NZ, NA, NPTS, NCELLS,           &
                 end if
             end if
 
-!             Interpolate extinction and source function at face interse
+            ! Interpolate extinction and source function at face interse
             F1 = (1 - U)*(1 - V)
             F2 = (1 - U)*V
             F3 = U*(1 - V)
             F4 = U*V
-            EXT0 = F1*EXTINCT(I1) + F2*EXTINCT(I2)                        &
-       &         + F3*EXTINCT(I3) + F4*EXTINCT(I4)
-!             Correctly interpolate source using extinction*source
-            SRCEXT0(:) = F1*SOURCE(:, KANG, I1)*EXTINCT(I1)                 &
-       &               + F2*SOURCE(:, KANG, I2)*EXTINCT(I2)                 &
-       &               + F3*SOURCE(:, KANG, I3)*EXTINCT(I3)                 &
-       &               + F4*SOURCE(:, KANG, I4)*EXTINCT(I4)
-!             Compute the cell radiance: integration of the source funct
+            EXT0 = F1*EXTINCT(I1) + F2*EXTINCT(I2)&
+                & + F3*EXTINCT(I3) + F4*EXTINCT(I4)
+            ! Correctly interpolate source using extinction*source
+            SRCEXT0(:) = F1*SOURCE(:, KANG, I1)*EXTINCT(I1)&
+                & + F2*SOURCE(:, KANG, I2)*EXTINCT(I2)&
+                & + F3*SOURCE(:, KANG, I3)*EXTINCT(I3)&
+                & + F4*SOURCE(:, KANG, I4)*EXTINCT(I4)
+            ! Compute the cell radiance: integration of the source funct
             EXT = 0.5*(EXT0 + EXT1)
             TAU = EXT*SO
             if (TAU .ge. 0.5) then
                 TRANSCELL = exp(-TAU)
                 ABSCELL = 1.0 - TRANSCELL
             else
-                ABSCELL = TAU*(1.0 - 0.5*TAU*                                 &
-         &                 (1.0 - 0.33333333333*TAU*(1 - 0.25*TAU)))
+                ABSCELL = TAU*(1.0 - 0.5*TAU*&
+                    & (1.0 - 0.33333333333*TAU*(1 - 0.25*TAU)))
                 TRANSCELL = 1.0 - ABSCELL
             end if
             if (TAU .le. 2.0) then
                 if (EXT .eq. 0.0) then
                     SRC(:) = 0.0
                 else
-!                 Linear extinction, linear source*extinction, to first
-                    SRC(:) = (0.5*(SRCEXT0(:) + SRCEXT1(:)) + 0.08333333333    &
-                             &                 *(EXT0*SRCEXT1(:) - EXT1*SRCEXT0(:))*SO)/EXT
+                    ! Linear extinction, linear source*extinction, to first
+                    SRC(:) = (0.5*(SRCEXT0(:) + SRCEXT1(:)) + 0.08333333333&
+                        & *(EXT0*SRCEXT1(:) - EXT1*SRCEXT0(:))*SO)/EXT
                 end if
             else
-!               Combined first order expansion and constant extinction f
+                ! Combined first order expansion and constant extinction f
                 EXT0P = EXT0
                 SRCEXT0P(:) = SRCEXT0(:)
                 if (TAU .gt. 4.0) then
                     EXT0P = EXT1 + (EXT0 - EXT1)*4.0/TAU
                     if (EXT0 .gt. 0.0) SRCEXT0P(:) = SRCEXT0(:)*EXT0P/EXT0
                 end if
-                SRC(:) = 1.0/(EXT0P + EXT1)*(SRCEXT0P(:) + SRCEXT1(:)         &
-         &           + (EXT0P*SRCEXT1(:) - EXT1*SRCEXT0P(:))*2.0/(EXT0P + EXT1) &
-         &                 *(1 - 2/TAU + 2*TRANSCELL/ABSCELL))
+                SRC(:) = 1.0/(EXT0P + EXT1)*(SRCEXT0P(:) + SRCEXT1(:)&
+                    & + (EXT0P*SRCEXT1(:) - EXT1*SRCEXT0P(:))*2.0/(EXT0P + EXT1)&
+                    & *(1 - 2/TAU + 2*TRANSCELL/ABSCELL))
             end if
             SRC(1) = max(SRC(1), 0.0d0)
 
-!             Add in the cell radiance and update the transmission.
-!             If this is a boundary or the transmission is below the
-!             cutoff and we have a valid radiance then set the flag
-!             to stop the tracing and add in the interpolated face radia
+            ! Add in the cell radiance and update the transmission.
+            ! If this is a boundary or the transmission is below the
+            !   cutoff and we have a valid radiance then set the flag
+            !   to stop the tracing and add in the interpolated face radia
             RAD(:) = RAD(:) + TRANSMIT*SRC(:)*ABSCELL
             TRANSMIT = TRANSMIT*TRANSCELL
             if (RAD(1) < -1.0e-5) then
