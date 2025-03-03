@@ -49,6 +49,7 @@ lib/*
 *.pgm
 *.out
 !data
+!data/*.nml
 !data/*.txt
 !tests
 !tests/*.py
