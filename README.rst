@@ -143,7 +143,11 @@ Source Code File Change
 
 * ``src/shdUtil_rte2.f``: was ``shdomsub2.f``
 
-* ``src/shdUtil_io.f``: was ``shdomsub3.f``
+* ``src/shdUtil_io.f90``: was ``shdomsub3.f``
+
+  * converted from F77 to F90
+
+  * formatted the code
 
 * ``src/shdUtil_ocean.f``: was ``ocean_brdf.f``
 
