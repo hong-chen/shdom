@@ -729,9 +729,7 @@ subroutine RADIANCE_TRUNCATION(HIGHORDERRAD, &
             end if
             LR = 1
             do L = 1, ML
-                ! the following two lines (L747-748 in shdomsub1.f) do not make sense
-                if (ALBEDO(I)*LEGEN(1, L, K)*RADIANCE(1, IRO + 1) .gt. RADMIN) &
-                    & LR = L
+                if (ALBEDO(I)*LEGEN(1, L, K)*RADIANCE(1, IRO + 1) .gt. RADMIN) LR = L
             end do
         else
             LR = ML

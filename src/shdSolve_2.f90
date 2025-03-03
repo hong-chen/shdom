@@ -2857,17 +2857,17 @@ subroutine COMPUTE_RADIANCE( &
 
 end subroutine
 
-subroutine COMPUTE_ONE_SOURCE(NSTOKES,                           &
-&             ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,                 &
-&             NPTS, DELTAM, MU, PHI, SRCTYPE, SOLARMU, SOLARAZ,    &
-&             ALBEDO, LEGEN, IPHASE, DIRFLUX,                      &
-&             SHPTR, SOURCE, SOURCE1)
-!       Computes the source function (SOURCE1) in the direction (MU,PHI)
-!     for the whole domain (NX,NZ).  The spherical harmonic source funct
-!     series is input in SOURCE.
-!     For a solar source if delta-M then use Nakajima and Tanaka TMS
-!     procedure, replacing delta-M single scattering with single scatter
-!     for unscaled untruncated phase function.
+subroutine COMPUTE_ONE_SOURCE(NSTOKES, &
+    & ML, MM, NLM, NSTLEG, NLEG, NUMPHASE, &
+    & NPTS, DELTAM, MU, PHI, SRCTYPE, SOLARMU, SOLARAZ, &
+    & ALBEDO, LEGEN, IPHASE, DIRFLUX, &
+    & SHPTR, SOURCE, SOURCE1)
+    ! Computes the source function (SOURCE1) in the direction (MU,PHI)
+    ! for the whole domain (NX,NZ).  The spherical harmonic source funct
+    ! series is input in SOURCE.
+    ! For a solar source if delta-M then use Nakajima and Tanaka TMS
+    ! procedure, replacing delta-M single scattering with single scatter
+    ! for unscaled untruncated phase function.
     implicit none
     integer NSTOKES, NPTS, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
     integer SHPTR(NPTS + 1)
@@ -2890,21 +2890,21 @@ subroutine COMPUTE_ONE_SOURCE(NSTOKES,                           &
     if (abs(MU) .gt. 1.0) stop 'COMPUTE_ONE_SOURCE: Bad mu'
 
     TMS = DELTAM
-!      TMS = .FALSE.
+    ! TMS = .FALSE.
 
-!         Precompute Ylm's for output direction and solar direction
+    ! Precompute Ylm's for output direction and solar direction
     call YLMALL(.false., MU, PHI, ML, MM, NSTLEG, YLMDIR)
     if (SRCTYPE .ne. 'T') then
         OFOURPI = 1.0/(4.0*acos(-1.0))
-        call YLMALL(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG,          &
-     &               YLMSUN)
+        call YLMALL(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG, &
+            & YLMSUN)
         SECMU0 = 1.0/abs(SOLARMU)
-        COSSCAT = SOLARMU*MU + sqrt((1.0d0 - SOLARMU**2)*(1.0d0 - MU**2))   &
-                 &              *cos(SOLARAZ - PHI)
+        COSSCAT = SOLARMU*MU + sqrt((1.0d0 - SOLARMU**2)*(1.0d0 - MU**2)) &
+            & *cos(SOLARAZ - PHI)
         if (NUMPHASE .eq. 0 .and. TMS) then
-!           If non-tabulate phase functions (unpolarized) then
-!           compute the Legendre polynomials for the scattering angle
-!           for the untruncated solar single scattering computation.
+            ! If non-tabulate phase functions (unpolarized) then
+            !   compute the Legendre polynomials for the scattering angle
+            !   for the untruncated solar single scattering computation.
             call LEGENDRE_ALL(dble(COSSCAT), NLEG, SUNDIRLEG)
             do L = 0, NLEG
                 SUNDIRLEG(L) = SUNDIRLEG(L)*(2*L + 1)*OFOURPI
@@ -2912,12 +2912,12 @@ subroutine COMPUTE_ONE_SOURCE(NSTOKES,                           &
         end if
     end if
 
-!         If solar source and tabulated phase functions then precompute
-!         the single scattered solar Stokes vector to outgoing direction
+    ! If solar source and tabulated phase functions then precompute
+    !   the single scattered solar Stokes vector to outgoing direction
     if (SRCTYPE .ne. 'T' .and. TMS .and. NUMPHASE .gt. 0) then
         do IPH = 1, NUMPHASE
-!           Unscaled the needed Legendre coefficients, but divide by 1-f
-!           because extinction is still scaled (for TMS method)
+            ! Unscaled the needed Legendre coefficients, but divide by 1-f
+            !   because extinction is still scaled (for TMS method)
             F = LEGEN(1, ML + 1, IPH)
             do L = 0, NLEG
                 if (L .le. ML) then
@@ -2933,36 +2933,36 @@ subroutine COMPUTE_ONE_SOURCE(NSTOKES,                           &
                     end if
                 end if
             end do
-!           Sum the Wigner series (for A1 and B1), rotate the plane of
-!           polarization to the outgoing direction, and return the Stoke
-            call SOLAR_SINGSCAT_VECT(NLEG, UNSCLEGEN, COSSCAT,           &
-       &                              SOLARMU, MU, SOLARAZ - PHI, NSTOKES,  &
-       &                              SINGSCAT(1, IPH))
+            ! Sum the Wigner series (for A1 and B1), rotate the plane of
+            !   polarization to the outgoing direction, and return the Stoke
+            call SOLAR_SINGSCAT_VECT(NLEG, UNSCLEGEN, COSSCAT, &
+                & SOLARMU, MU, SOLARAZ - PHI, NSTOKES, &
+                & SINGSCAT(1, IPH))
             if (SINGSCAT(1, IPH) .le. 0.0) then
                 write (6, *) 'COMPUTE_ONE_SOURCE: negative source function', &
-         &      ' for tabulated phase function:', IPH, MU, PHI, SINGSCAT(1, IPH)
+                    & ' for tabulated phase function:', IPH, MU, PHI, SINGSCAT(1, IPH)
                 stop
             end if
         end do
     end if
 
-!         Loop over all the grid points, computing the source function
-!           at the viewing angle from the spherical harmonic source func
+    ! Loop over all the grid points, computing the source function
+    !   at the viewing angle from the spherical harmonic source func
     do I = 1, NPTS
         IS = SHPTR(I)
         NS = SHPTR(I + 1) - IS
-!         Sum over the real generalized spherical harmonic series
-!         of the source function
+        ! Sum over the real generalized spherical harmonic series
+        !   of the source function
         SOURCE1(:, I) = 0.0
         do J = 1, NS
             SOURCE1(1, I) = SOURCE1(1, I) + SOURCE(1, IS + J)*YLMDIR(1, J)
         end do
         if (NSTOKES .gt. 1) then
             do J = 1, NS
-                SOURCE1(2, I) = SOURCE1(2, I) + SOURCE(2, IS + J)*YLMDIR(2, J)    &
-         &                                  + SOURCE(3, IS + J)*YLMDIR(5, J)
-                SOURCE1(3, I) = SOURCE1(3, I) + SOURCE(2, IS + J)*YLMDIR(6, J)    &
-         &                                  + SOURCE(3, IS + J)*YLMDIR(3, J)
+                SOURCE1(2, I) = SOURCE1(2, I) + SOURCE(2, IS + J)*YLMDIR(2, J) &
+                    & + SOURCE(3, IS + J)*YLMDIR(5, J)
+                SOURCE1(3, I) = SOURCE1(3, I) + SOURCE(2, IS + J)*YLMDIR(6, J) &
+                    & + SOURCE(3, IS + J)*YLMDIR(3, J)
             end do
         end if
         if (NSTOKES .eq. 4) then
@@ -2971,14 +2971,14 @@ subroutine COMPUTE_ONE_SOURCE(NSTOKES,                           &
             end do
         end if
 
-!           Special case for solar source and Delta-M
+        ! Special case for solar source and Delta-M
         if (SRCTYPE .ne. 'T' .and. TMS) then
             if (NUMPHASE .gt. 0) then
                 IPH = IPHASE(I)
             else
                 IPH = I
             end if
-!             First subtract off the truncated single scattering
+            ! First subtract off the truncated single scattering
             DA = ALBEDO(I)*DIRFLUX(I)*SECMU0
             J = 1
             do L = 0, ML
@@ -3003,15 +3003,15 @@ subroutine COMPUTE_ONE_SOURCE(NSTOKES,                           &
                 end if
             end do
 
-!             Then add in the single scattering contribution for the
-!             original unscaled phase matrix.
+            ! Then add in the single scattering contribution for the
+            !   original unscaled phase matrix.
             if (NUMPHASE .gt. 0) then
                 SOURCE1(:, I) = SOURCE1(:, I) + DA*SINGSCAT(:, IPH)
             else if (NSTOKES .eq. 1) then
-!             If we have a phase function for each grid point (which
-!             should be the unpolarized case) then unscale the Legendre
-!             coefficients for L<=ML and sum over the Legendre series
-!             in cosine of the scattering angle.
+                ! If we have a phase function for each grid point (which
+                !   should be the unpolarized case) then unscale the Legendre
+                !   coefficients for L<=ML and sum over the Legendre series
+                !   in cosine of the scattering angle.
                 F = LEGEN(1, ML + 1, IPH)
                 do L = 0, NLEG
                     if (L .le. ML) then
@@ -3029,16 +3029,16 @@ subroutine COMPUTE_ONE_SOURCE(NSTOKES,                           &
     return
 end subroutine
 
-subroutine SOLAR_SINGSCAT_VECT(NLEG, SINGLEGEN, COSSCAT,         &
-&                               SOLARMU, MU, DELPHI, NSTOKES,      &
-&                               SCATVECT)
-!      Calculates the Stokes vector for a single scattering of unpolariz
-!      sunlight from the solar direction (SOLARMU) to the outgoing
-!      direction (MU) and with cosine scattering angle (COSSCAT).
-!      The A1 and B1 elements of the phase matrix are calculated from
-!      the Wigner function expansion coefficients (SINGLEGEN).
-!      The plane of polarization is rotated from the scattering plane to
-!      the outgoing meridional plane.  Also divides the output vector by
+subroutine SOLAR_SINGSCAT_VECT(NLEG, SINGLEGEN, COSSCAT, &
+    & SOLARMU, MU, DELPHI, NSTOKES, &
+    & SCATVECT)
+    ! Calculates the Stokes vector for a single scattering of unpolariz
+    ! sunlight from the solar direction (SOLARMU) to the outgoing
+    ! direction (MU) and with cosine scattering angle (COSSCAT).
+    ! The A1 and B1 elements of the phase matrix are calculated from
+    ! the Wigner function expansion coefficients (SINGLEGEN).
+    ! The plane of polarization is rotated from the scattering plane to
+    ! the outgoing meridional plane.  Also divides the output vector by
     implicit none
     integer NLEG, NSTOKES
     real SINGLEGEN(2, 0:NLEG), COSSCAT, SOLARMU, MU, DELPHI
@@ -3052,7 +3052,7 @@ subroutine SOLAR_SINGSCAT_VECT(NLEG, SINGLEGEN, COSSCAT,         &
 
     allocate (DMM1(0:NLEG))
 
-!       Sum the first Wigner function series, which is actually a Legend
+    ! Sum the first Wigner function series, which is actually a Legend
     X = dble(COSSCAT)
     call WIGNERFCT(X, NLEG, 0, 0, DMM1)
     A1 = 0.0d0
@@ -3063,7 +3063,7 @@ subroutine SOLAR_SINGSCAT_VECT(NLEG, SINGLEGEN, COSSCAT,         &
     SCATVECT(1) = A1*OFOURPI
 
     if (NSTOKES .gt. 1) then
-!        If doing polarization, sum the second Wigner function series
+        ! If doing polarization, sum the second Wigner function series
         call WIGNERFCT(X, NLEG, 2, 0, DMM1)
         B1 = 0.0d0
         do L = 0, NLEG
@@ -3071,8 +3071,8 @@ subroutine SOLAR_SINGSCAT_VECT(NLEG, SINGLEGEN, COSSCAT,         &
             B1 = B1 - FCT*dble(SINGLEGEN(2, L))*DMM1(L)
         end do
 
-!        Rotate the plane of polarization from the scattering plane
-!        to the outgoing meridional plane.
+        ! Rotate the plane of polarization from the scattering plane
+        !   to the outgoing meridional plane.
         SIN_SCAT = DSQRT(max(0.0d0, 1.d0 - COSSCAT**2))
         SIN_THETA1 = DSQRT(1.d0 - SOLARMU**2)
         SIN_THETA2 = DSQRT(1.d0 - MU**2)
@@ -3097,21 +3097,21 @@ subroutine SOLAR_SINGSCAT_VECT(NLEG, SINGLEGEN, COSSCAT,         &
     return
 end subroutine
 
-subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,             &
-&                        NX, NY, NZ, NPTS, NCELLS,                 &
-&                        GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,    &
-&                        XGRID, YGRID, ZGRID, GRIDPOS,             &
-&                        MU, PHI, GRIDRAD, EXTINCT, SOURCE,        &
-&                        X0, Y0, Z0, XE, YE, ZE, SIDE,            &
-&                        TRANSMIT, RADIANCE, VALIDRAD)
-!       Integrates the source function (SOURCE) through the extinction
-!     field (EXTINCT) backward in the direction opposite to (MU,PHI)
-!     to find the outgoing radiance (RADIANCE) at the point X0,Y0,Z0.
-!     The radiances at the opposite boundary are input in GRIDRAD.
-!     The transmission and radiance of the ray so far (TRANSMIT, RADIANC
-!     are input and returned after the integration along with the exitti
-!     ray location (XE,YE,ZE) and side of the domain (1=-X,2=+X,3=-Y,4=+
-!     5=-Z,6=+Z).
+subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES, &
+    & NX, NY, NZ, NPTS, NCELLS, &
+    & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, &
+    & XGRID, YGRID, ZGRID, GRIDPOS, &
+    & MU, PHI, GRIDRAD, EXTINCT, SOURCE, &
+    & X0, Y0, Z0, XE, YE, ZE, SIDE, &
+    & TRANSMIT, RADIANCE, VALIDRAD)
+    ! Integrates the source function (SOURCE) through the extinction
+    ! field (EXTINCT) backward in the direction opposite to (MU,PHI)
+    ! to find the outgoing radiance (RADIANCE) at the point X0,Y0,Z0.
+    ! The radiances at the opposite boundary are input in GRIDRAD.
+    ! The transmission and radiance of the ray so far (TRANSMIT, RADIANC
+    ! are input and returned after the integration along with the exitti
+    ! ray location (XE,YE,ZE) and side of the domain (1=-X,2=+X,3=-Y,4=+
+    ! 5=-Z,6=+Z).
     implicit none
     integer BCFLAG, IPFLAG, NSTOKES, NX, NY, NZ, NPTS, NCELLS, SIDE
     integer GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
@@ -3134,14 +3134,14 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,             &
     double precision TAUTOL, TAUGRID, S, DELS
     double precision EXT, TAU, TRANSCELL, ABSCELL
     double precision SRC(NSTOKES), RAD(NSTOKES)
-    data GRIDFACE/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8,                &
-   &              1, 2, 3, 4, 5, 6, 7, 8/, OPPFACE/2, 1, 4, 3, 6, 5/
+    data GRIDFACE/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8, &
+        & 1, 2, 3, 4, 5, 6, 7, 8/, OPPFACE/2, 1, 4, 3, 6, 5/
 
-!         TAUTOL is the maximum optical path for the subgrid intervals
+    ! TAUTOL is the maximum optical path for the subgrid intervals
     TAUTOL = 0.1
     EPS = 1.0e-4*(GRIDPOS(3, GRIDPTR(8, 1)) - GRIDPOS(3, GRIDPTR(1, 1)))
 
-!         Make the ray direction (opposite to the discrete ordinate dire
+    ! Make the ray direction (opposite to the discrete ordinate dire
     PI = acos(-1.0)
     CX = sqrt(1.0 - MU**2)*cos(PHI + PI)
     CY = sqrt(1.0 - MU**2)*sin(PHI + PI)
@@ -3160,7 +3160,7 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,             &
     end if
     CZINV = 1.0d0/CZ
 
-!         Setup for the ray path direction
+    ! Setup for the ray path direction
     if (CX .lt. 0.0) then
         BITX = 1
     else
@@ -3182,39 +3182,39 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,             &
     XM = 0.5*(XGRID(1) + XGRID(NX))
     YM = 0.5*(YGRID(1) + YGRID(NY))
 
-!         Start at the desired point, getting the extinction and source
+    ! Start at the desired point, getting the extinction and source
     XE = X0
     YE = Y0
     ZE = Z0
-    call LOCATE_GRID_CELL(NX, NY, NZ, XGRID, YGRID, ZGRID,           &
-   &                  NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS,   &
-   &                  BCFLAG, IPFLAG, XE, YE, ZE, ICELL)
-!      print '(A,5(1X,F8.5),1X,I6)',
-!     .     'INTEGRATE_SOURCE:',X0,Y0,Z0,MU,PHI,ICELL
-    call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,                  &
-   &                        XE, YE, ZE, 1, EXTINCT, 1, 1, EXT1)
-    call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,                  &
-   &                XE, YE, ZE, NSTOKES, SOURCE, 1, NSTOKES, SRCEXT1)
+    call LOCATE_GRID_CELL(NX, NY, NZ, XGRID, YGRID, ZGRID, &
+        & NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS, &
+        & BCFLAG, IPFLAG, XE, YE, ZE, ICELL)
+    ! print '(A,5(1X,F8.5),1X,I6)', &
+    !     & 'INTEGRATE_SOURCE:', X0, Y0, Z0, MU, PHI, ICELL
+    call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS, &
+        & XE, YE, ZE, 1, EXTINCT, 1, 1, EXT1)
+    call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS, &
+        & XE, YE, ZE, NSTOKES, SOURCE, 1, NSTOKES, SRCEXT1)
     SRCEXT1(1) = max(0.0, SRCEXT1(1))
 
-!         Loop until finding a face with known radiances
+    ! Loop until finding a face with known radiances
     VALIDRAD = .false.
     do while (.not. VALIDRAD .and. ICELL .gt. 0)
-!           This cell is independent pixel if IP mode or open boundary
-!             conditions and ray is leaving domain (i.e. not entering)
-        IPINX = btest(int(CELLFLAGS(ICELL)), 0) .and.                    &
-     &          .not. (btest(BCFLAG, 0) .and.                           &
-     &          ((CX .gt. 0 .and. XE .lt. XM) .or. (CX .lt. 0 .and. XE .gt. XM)))
-        IPINY = btest(int(CELLFLAGS(ICELL)), 1) .and.                    &
-     &          .not. (btest(BCFLAG, 1) .and.                           &
-     &          ((CY .gt. 0 .and. YE .lt. YM) .or. (CY .lt. 0 .and. YE .gt. YM)))
+        ! This cell is independent pixel if IP mode or open boundary
+        !   conditions and ray is leaving domain (i.e. not entering)
+        IPINX = btest(int(CELLFLAGS(ICELL)), 0) .and. &
+            & .not. (btest(BCFLAG, 0) .and. &
+            & ((CX .gt. 0 .and. XE .lt. XM) .or. (CX .lt. 0 .and. XE .gt. XM)))
+        IPINY = btest(int(CELLFLAGS(ICELL)), 1) .and. &
+            & .not. (btest(BCFLAG, 1) .and. &
+            & ((CY .gt. 0 .and. YE .lt. YM) .or. (CY .lt. 0 .and. YE .gt. YM)))
 
-!           Find boundaries of the current cell
-!           Find the three possible intersection planes (X,Y,Z)
-!             from the coordinates of the opposite corner grid point
+        ! Find boundaries of the current cell
+        ! Find the three possible intersection planes (X,Y,Z)
+        ! from the coordinates of the opposite corner grid point
         IOPP = GRIDPTR(9 - IOCT, ICELL)
-!           Get the distances to the 3 planes and select the closest
-!             (always need to deal with the cell that is wrapped)
+        ! Get the distances to the 3 planes and select the closest
+        !   (always need to deal with the cell that is wrapped)
         if (IPINX .or. CX .eq. 0.0) then
             SOX = 1.0e20
         else
@@ -3228,9 +3228,9 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,             &
         SOZ = (GRIDPOS(3, IOPP) - ZE)*CZINV
         SO = min(SOX, SOY, SOZ)
         if (SO .lt. -EPS) then
-            write (6, *) 'INTEGRATE_SOURCE: SO<0  ',                       &
-       &      MU, PHI, X0, Y0, Z0, XE, YE, ZE, SO, SOX, SOY, SOZ, XGRID(1), YGRID(1),  &
-       &      GRIDPOS(1, IOPP), GRIDPOS(2, IOPP), GRIDPOS(3, IOPP)
+            write (6, *) 'INTEGRATE_SOURCE: SO<0  ', &
+                & MU, PHI, X0, Y0, Z0, XE, YE, ZE, SO, SOX, SOY, SOZ, XGRID(1), YGRID(1), &
+                & GRIDPOS(1, IOPP), GRIDPOS(2, IOPP), GRIDPOS(3, IOPP)
             stop
         end if
         if (IPINX) then
@@ -3245,14 +3245,14 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,             &
         end if
         ZN = ZE + SO*CZ
 
-!           Find the optical path across the grid cell and figure how
-!             many subgrid intervals to use
-        call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,                &
-     &                          XN, YN, ZN, 1, EXTINCT, 1, 1, EXTN)
+        ! Find the optical path across the grid cell and figure how
+        !   many subgrid intervals to use
+        call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS, &
+            & XN, YN, ZN, 1, EXTINCT, 1, 1, EXTN)
         TAUGRID = SO*0.5*(EXT1 + EXTN)
         NTAU = max(1, 1 + int(TAUGRID/TAUTOL))
         DELS = SO/NTAU
-!           Loop over the subgrid cells
+        ! Loop over the subgrid cells
         do IT = 1, NTAU
             S = IT*DELS
             if (IPINX) then
@@ -3266,27 +3266,27 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,             &
                 YI = YE + S*CY
             end if
             ZI = ZE + S*CZ
-!            Interpolate extinction and source function along path
+            ! Interpolate extinction and source function along path
             if (IT .eq. NTAU) then
                 EXT0 = EXTN
             else
-                call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,            &
-         &                          XI, YI, ZI, 1, EXTINCT, 1, 1, EXT0)
+                call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS, &
+                    & XI, YI, ZI, 1, EXTINCT, 1, 1, EXT0)
             end if
-            call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,              &
-       &               XI, YI, ZI, NSTOKES, SOURCE, 1, NSTOKES, SRCEXT0)
+            call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS, &
+                & XI, YI, ZI, NSTOKES, SOURCE, 1, NSTOKES, SRCEXT0)
             SRCEXT0(1) = max(0.0, SRCEXT0(1))
 
-!            Compute the subgrid radiance: integration of the source fun
+            ! Compute the subgrid radiance: integration of the source fun
             EXT = 0.5*(EXT0 + EXT1)
             if (EXT .ne. 0.0) then
                 TAU = EXT*DELS
                 ABSCELL = TAU*(1.0 - 0.5*TAU*(1.0 - 0.33333333333*TAU))
                 TRANSCELL = 1.0 - ABSCELL
-!                 Linear extinction, linear source*extinction, to second
-                SRC(:) = (0.5*(SRCEXT0(:) + SRCEXT1(:)) + 0.08333333333*     &
-         &                   (EXT0*SRCEXT1(:) - EXT1*SRCEXT0(:))*DELS         &
-         &                    *(1.0 - 0.05*(EXT1 - EXT0)*DELS))/EXT
+                ! Linear extinction, linear source*extinction, to second
+                SRC(:) = (0.5*(SRCEXT0(:) + SRCEXT1(:)) + 0.08333333333* &
+                    & (EXT0*SRCEXT1(:) - EXT1*SRCEXT0(:))*DELS &
+                    & *(1.0 - 0.05*(EXT1 - EXT0)*DELS))/EXT
             else
                 ABSCELL = 0.0
                 TRANSCELL = 1.0
@@ -3297,10 +3297,10 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,             &
             SRCEXT1(:) = SRCEXT0(:)
             EXT1 = EXT0
             TRANSMIT = TRANSMIT*TRANSCELL
-!                End of sub grid cell loop
+        ! End of sub grid cell loop
         end do
 
-!               Get the intersection face number (i.e. neighptr index)
+        ! Get the intersection face number (i.e. neighptr index)
         if (SOX .le. SOZ .and. SOX .le. SOY) then
             IFACE = 2 - BITX
             JFACE = 1
@@ -3314,20 +3314,20 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,             &
             JFACE = 3
             OPENBCFACE = .false.
         end if
-!            Get the next cell to go to
+        ! Get the next cell to go to
         INEXTCELL = NEIGHPTR(IFACE, ICELL)
         if (INEXTCELL .lt. 0) then
-            call NEXT_CELL(XN, YN, ZN, IFACE, JFACE, ICELL, GRIDPOS,     &
-       &           GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXTCELL)
+            call NEXT_CELL(XN, YN, ZN, IFACE, JFACE, ICELL, GRIDPOS, &
+                & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXTCELL)
         end if
-!           Get the four grid points on the intersection face for
-!             telling if at the boundary
-!             If going to same or larger face then use previous face
+        ! Get the four grid points on the intersection face for
+        !   telling if at the boundary
+        !   If going to same or larger face then use previous face
         if (NEIGHPTR(IFACE, ICELL) .ge. 0 .and. .not. OPENBCFACE) then
             KFACE = IFACE
             IC = ICELL
         else
-!             If going to smaller face then use next face (more accurate
+            ! If going to smaller face then use next face (more accurate
             KFACE = OPPFACE(IFACE)
             IC = INEXTCELL
         end if
@@ -3335,7 +3335,7 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,             &
         I2 = GRIDPTR(GRIDFACE(2, KFACE), IC)
         I3 = GRIDPTR(GRIDFACE(3, KFACE), IC)
         I4 = GRIDPTR(GRIDFACE(4, KFACE), IC)
-!           Get the location coordinate
+        ! Get the location coordinate
         if (INEXTCELL .gt. 0) then
             if (JFACE .eq. 1) then
                 XN = GRIDPOS(1, GRIDPTR(IOCT, INEXTCELL))
@@ -3346,16 +3346,16 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,             &
             end if
         end if
 
-!           See if there are valid radiances for the intersection face:
-!           If so, set flag, interpolate radiance, and add in
-!           If not, only prepare for next cell
+        ! See if there are valid radiances for the intersection face:
+        !   If so, set flag, interpolate radiance, and add in
+        !   If not, only prepare for next cell
         if (TRANSMIT .lt. 1.0e-5) then
             VALIDRAD = .true.
-        else if (GRIDRAD(1, I1) .ge. 0.0 .and. GRIDRAD(1, I2) .ge. 0.0 .and.  &
-     &      GRIDRAD(1, I3) .ge. 0.0 .and. GRIDRAD(1, I4) .ge. 0.0) then
+        else if (GRIDRAD(1, I1) .ge. 0.0 .and. GRIDRAD(1, I2) .ge. 0.0 .and. &
+            & GRIDRAD(1, I3) .ge. 0.0 .and. GRIDRAD(1, I4) .ge. 0.0) then
             VALIDRAD = .true.
-            call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS, XI, YI, ZI,  &
-       &                            NSTOKES, GRIDRAD, 1, NSTOKES, RAD0)
+            call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS, XI, YI, ZI, &
+                & NSTOKES, GRIDRAD, 1, NSTOKES, RAD0)
             RADIANCE(:) = RADIANCE(:) + TRANSMIT*RAD0(:)
         else
             ICELL = INEXTCELL
