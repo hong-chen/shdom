@@ -2484,14 +2484,14 @@ subroutine OUTPUT_RESULTS_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
     return
 end
 
-subroutine OUTPUT_IMAGE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,       &
-    &             NSH, ML, MM, NLM, NMU, NPHI, NANG, NG,                 &
-    &             PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,  &
-    &             BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,           &
-    &             SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,                 &
-    &             SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS, &
-    &             SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,           &
-    &             IVIS, VISOUT, OUTPARMS, OUTFILE)
+subroutine OUTPUT_IMAGE(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
+    & NSH, ML, MM, NLM, NMU, NPHI, NANG, NG, &
+    & PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE, &
+    & BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE, &
+    & SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD, &
+    & SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS, &
+    & SPLITACC, SHACC, SOLACC, MAXITER, TOTITER, &
+    & IVIS, VISOUT, OUTPARMS, OUTFILE)
     ! Writes the visualization image in PGM binary format with either
     ! one byte or two byte pixels.  The PGM binary format (P5) has an
     ! ascii header which has the image parameters amd can include commen
@@ -2535,9 +2535,9 @@ subroutine OUTPUT_IMAGE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,       &
         NL = nint(OUTPARMS(10))
         NS = nint(OUTPARMS(11))
     else if (OUTPARMS(1) .eq. 2) then
-        NL = 1 + sqrt((OUTPARMS(4) - OUTPARMS(7))**2                      &
-     &               + (OUTPARMS(5) - OUTPARMS(8))**2                      &
-     &               + (OUTPARMS(6) - OUTPARMS(9))**2)/OUTPARMS(10)
+        NL = 1 + sqrt((OUTPARMS(4) - OUTPARMS(7))**2 &
+                  & + (OUTPARMS(5) - OUTPARMS(8))**2 &
+                  & + (OUTPARMS(6) - OUTPARMS(9))**2)/OUTPARMS(10)
         NS = 1 + abs(OUTPARMS(12) - OUTPARMS(11))/OUTPARMS(13)
     end if
     NBYTES = min(2, max(1, nint(abs(OUTPARMS(2)))))
@@ -2595,8 +2595,8 @@ subroutine OUTPUT_IMAGE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,       &
     ! Open the PGM image, which has to be direct access to output the
     ! clean binary pixel data
     RECLEN = NS*NBYTES
-    open (UNIT=2, FILE=OUTFILE, STATUS='UNKNOWN',                     &
-   &      ACCESS='DIRECT', FORM='UNFORMATTED', RECL=RECLEN)
+    open (UNIT=2, FILE=OUTFILE, STATUS='UNKNOWN', &
+        & ACCESS='DIRECT', FORM='UNFORMATTED', RECL=RECLEN)
 
     ! Start the PGM header in the buffer
     LF = char(10)
@@ -2646,76 +2646,76 @@ subroutine OUTPUT_IMAGE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,       &
         UNITSNAME = 'WATTS/(M^2 MICRON STER)'
     end if
 
-    write (BUF(I:I + 79), '(A,A1)')                                      &
-   &  '# Polarized SHDOM Visualization Output', LF
+    write (BUF(I:I + 79), '(A,A1)') &
+        & '# Polarized SHDOM Visualization Output', LF
     I = I + index(BUF(I:I + 79), LF)
-    write (BUF(I:I + 79), '(2(A,I3),A,I5,2(A,I3),A,I5,A,I10,A1)')        &
-   &    '# L=', ML, '  M=', MM, '  NLM=', NLM,                            &
-   &    '   NMU=', NMU, '  NPHI=', NPHI, '  NANG=', NANG,               &
-   &    '   NSH=', NSH, LF
+    write (BUF(I:I + 79), '(2(A,I3),A,I5,2(A,I3),A,I5,A,I10,A1)') &
+        & '# L=', ML, '  M=', MM, '  NLM=', NLM, &
+        & '   NMU=', NMU, '  NPHI=', NPHI, '  NANG=', NANG, &
+        & '   NSH=', NSH, LF
     I = I + index(BUF(I:I + 79), LF)
-    write (BUF(I:I + 90), '(A,I1,3(A,I4),2(A,I8),A1)')                   &
-   &  '# NSTOKES=', NSTOKES, '  NX=', NX, '   NY=', NY, '  NZ=', NZ,        &
-   &  '    NPTS=', NPTS, '   NCELLS=', NCELLS, LF
+    write (BUF(I:I + 90), '(A,I1,3(A,I4),2(A,I8),A1)') &
+        & '# NSTOKES=', NSTOKES, '  NX=', NX, '   NY=', NY, '  NZ=', NZ, &
+        & '    NPTS=', NPTS, '   NCELLS=', NCELLS, LF
     I = I + index(BUF(I:I + 79), LF)
-    write (BUF(I:I + 79), '(A,A,A1)')                                    &
-   &  '# PROPERTY_FILE=', trim(PROPFILE), LF
+    write (BUF(I:I + 79), '(A,A,A1)') &
+        & '# PROPERTY_FILE=', trim(PROPFILE), LF
     I = I + index(BUF(I:I + 79), LF)
-    write (BUF(I:I + 79), '(A,A,A,I2,A1)')                               &
-   &  '# CORRELATED_K-DIST_FILE=', trim(CKDFILE), '   NUM_G=', NG, LF
+    write (BUF(I:I + 79), '(A,A,A,I2,A1)') &
+        & '# CORRELATED_K-DIST_FILE=', trim(CKDFILE), '   NUM_G=', NG, LF
     I = I + index(BUF(I:I + 79), LF)
-    write (BUF(I:I + 79), '(A,A,A1)')                                    &
-   &  '# INPUT_SAVE_FILE=', trim(INSAVEFILE), LF
+    write (BUF(I:I + 79), '(A,A,A1)') &
+        & '# INPUT_SAVE_FILE=', trim(INSAVEFILE), LF
     I = I + index(BUF(I:I + 79), LF)
-    write (BUF(I:I + 79), '(A,A,A1)')                                    &
-   &  '# OUTPUT_SAVE_FILE=', trim(OUTSAVEFILE), LF
+    write (BUF(I:I + 79), '(A,A,A1)') &
+        & '# OUTPUT_SAVE_FILE=', trim(OUTSAVEFILE), LF
     I = I + index(BUF(I:I + 79), LF)
     if (DELTAM) then
-        write (BUF(I:I + 79), '(A,A14,A,A1)')                              &
-     &    '# SOURCE_TYPE=', SOURCENAME, '    DELTA-M METHOD', LF
+        write (BUF(I:I + 79), '(A,A14,A,A1)') &
+            & '# SOURCE_TYPE=', SOURCENAME, '    DELTA-M METHOD', LF
         I = I + index(BUF(I:I + 79), LF)
     else
-        write (BUF(I:I + 79), '(A,A14,A1)')                                &
-     &    '# SOURCE_TYPE=', SOURCENAME, LF
+        write (BUF(I:I + 79), '(A,A14,A1)') &
+            & '# SOURCE_TYPE=', SOURCENAME, LF
         I = I + index(BUF(I:I + 79), LF)
     end if
-    write (BUF(I:I + 79), '(A,A32,A,I1,A1)') '# GRID_TYPE=', GRIDNAME,   &
-   &                         '   INDEPENDENT_PIXEL=', IPFLAG, LF
+    write (BUF(I:I + 79), '(A,A32,A,I1,A1)') '# GRID_TYPE=', GRIDNAME, &
+        & '   INDEPENDENT_PIXEL=', IPFLAG, LF
     I = I + index(BUF(I:I + 79), LF)
-    write (BUF(I:I + 79), '(A,A22,A,I2,A1)')                             &
-   & '# SURFACE_TYPE=', SFCNAME, '   HORIZ_BOUNDARY_COND=', BCFLAG, LF
+    write (BUF(I:I + 79), '(A,A22,A,I2,A1)') &
+        & '# SURFACE_TYPE=', SFCNAME, '   HORIZ_BOUNDARY_COND=', BCFLAG, LF
     I = I + index(BUF(I:I + 79), LF)
     if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
         if (SFCTYPE(1:1) .eq. 'V') then
-            write (BUF(I:I + 79), '(A,A,A,E12.5,A1)')                        &
-       &        '# SURFACE_FILE=', trim(SFCFILE),                         &
-       &        '  SKY_RAD=', SKYRAD, LF
+            write (BUF(I:I + 79), '(A,A,A,E12.5,A1)') &
+                & '# SURFACE_FILE=', trim(SFCFILE), &
+                & '  SKY_RAD=', SKYRAD, LF
             I = I + index(BUF(I:I + 79), LF)
         else
             if (SRCTYPE .eq. 'B') then
-                write (BUF(I:I + 79), '(A,F9.7,A,F8.3,A,E12.5,A1)')            &
-         &        '# GROUND_ALBEDO=', GNDALBEDO, '  GROUND_TEMP=', GNDTEMP,   &
-         &        '  SKY_RAD=', SKYRAD, LF
+                write (BUF(I:I + 79), '(A,F9.7,A,F8.3,A,E12.5,A1)') &
+                    & '# GROUND_ALBEDO=', GNDALBEDO, '  GROUND_TEMP=', GNDTEMP, &
+                    & '  SKY_RAD=', SKYRAD, LF
                 I = I + index(BUF(I:I + 79), LF)
             else
-                write (BUF(I:I + 79), '(A,F9.7,A,E12.5,A1)')                   &
-         &        '# GROUND_ALBEDO=', GNDALBEDO, '  SKY_RAD=', SKYRAD, LF
+                write (BUF(I:I + 79), '(A,F9.7,A,E12.5,A1)') &
+                    & '# GROUND_ALBEDO=', GNDALBEDO, '  SKY_RAD=', SKYRAD, LF
                 I = I + index(BUF(I:I + 79), LF)
             end if
         end if
-        write (BUF(I:I + 79), '(A,E13.6,A,F10.7,A,F8.3,A1)')               &
-     &         '# SOLAR_FLUX=', SOLARFLUX, '   SOLAR_MU=', SOLARMU,     &
-     &         '   SOLAR_AZ=', SOLARAZ*180.0/acos(-1.0), LF
+        write (BUF(I:I + 79), '(A,E13.6,A,F10.7,A,F8.3,A1)') &
+            & '# SOLAR_FLUX=', SOLARFLUX, '   SOLAR_MU=', SOLARMU, &
+            & '   SOLAR_AZ=', SOLARAZ*180.0/acos(-1.0), LF
         I = I + index(BUF(I:I + 79), LF)
     else
         if (SFCTYPE(1:1) .eq. 'V') then
-            write (BUF(I:I + 79), '(A,A,A1)')                                &
-       &      '# SURFACE_FILE=', trim(SFCFILE), LF
+            write (BUF(I:I + 79), '(A,A,A1)') &
+                & '# SURFACE_FILE=', trim(SFCFILE), LF
             I = I + index(BUF(I:I + 79), LF)
         else
-            write (BUF(I:I + 79), '(A,F8.3,A,F9.7,A1)')                      &
-       &      '# GROUND_TEMP=', GNDTEMP,                                   &
-       &      '  GROUND_EMIS=', 1.0 - GNDALBEDO, LF
+            write (BUF(I:I + 79), '(A,F8.3,A,F9.7,A1)') &
+                & '# GROUND_TEMP=', GNDTEMP, &
+                & '  GROUND_EMIS=', 1.0 - GNDALBEDO, LF
             I = I + index(BUF(I:I + 79), LF)
         end if
         write (BUF(I:I + 79), '(A,F8.3,A1)') '# SKY_TEMP=', SKYRAD, LF
@@ -2726,25 +2726,25 @@ subroutine OUTPUT_IMAGE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,       &
         write (BUF(I:I + 79), '(A,A24,A1)') '# UNITS=', UNITSNAME, LF
         I = I + index(BUF(I:I + 79), LF)
     else if (UNITS .eq. 'B') then
-        write (BUF(I:I + 79), '(A,A24,A,2(1X,F10.2),A1)')                  &
-     &    '# UNITS=', UNITSNAME,                                        &
-     &    '   WAVENUMBER_RANGE=', WAVENO(1), WAVENO(2), LF
+        write (BUF(I:I + 79), '(A,A24,A,2(1X,F10.2),A1)') &
+            & '# UNITS=', UNITSNAME, &
+            & '   WAVENUMBER_RANGE=', WAVENO(1), WAVENO(2), LF
         I = I + index(BUF(I:I + 79), LF)
     else
-        write (BUF(I:I + 79), '(A,A24,A,F10.2,A1)')                        &
-     &    '# UNITS=', UNITSNAME, '   WAVELENGTH=', WAVELEN, LF
+        write (BUF(I:I + 79), '(A,A24,A,F10.2,A1)') &
+            & '# UNITS=', UNITSNAME, '   WAVELENGTH=', WAVELEN, LF
         I = I + index(BUF(I:I + 79), LF)
     end if
-    write (BUF(I:I + 79), '(2(A,E10.3),A1)')                             &
-   &  '# SPLITTING_ACCURACY=', SPLITACC,                              &
-   &  '   SPHERICAL_HARMONIC_ACCURACY=', SHACC, LF
+    write (BUF(I:I + 79), '(2(A,E10.3),A1)') &
+        & '# SPLITTING_ACCURACY=', SPLITACC, &
+        & '   SPHERICAL_HARMONIC_ACCURACY=', SHACC, LF
     I = I + index(BUF(I:I + 79), LF)
-    write (BUF(I:I + 79), '(A,E10.3,A1)')                                &
-   &  '# SOLUTION_ACCURACY=', SOLACC, LF
+    write (BUF(I:I + 79), '(A,E10.3,A1)') &
+        & '# SOLUTION_ACCURACY=', SOLACC, LF
     I = I + index(BUF(I:I + 79), LF)
-    write (BUF(I:I + 79), '(2(A,I4),A1)')                                &
-   &  '# MAXIMUM_ITERATIONS=', MAXITER,                               &
-   &  '   NUMBER_ITERATIONS=', TOTITER, LF
+    write (BUF(I:I + 79), '(2(A,I4),A1)') &
+        & '# MAXIMUM_ITERATIONS=', MAXITER, &
+        & '   NUMBER_ITERATIONS=', TOTITER, LF
     I = I + index(BUF(I:I + 79), LF)
     write (BUF(I:I + 7), '(A,A1)') '# ', LF
     I = I + index(BUF(I:I + 7), LF)
@@ -2752,65 +2752,65 @@ subroutine OUTPUT_IMAGE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,       &
     if (CAMERA_MODE) then
         write (BUF(I:I + 79), '(A,A1)') '# CAMERA MODE:', LF
         I = I + index(BUF(I:I + 79), LF)
-!          1, bytes, scale, X,Y,Z, theta, phi, rotang, NL, NS, delline,
-        write (BUF(I:I + 79), '(A,F9.2,A1)')                               &
-     &      '# RADIANCE_SCALE=', OUTPARMS(3), LF
+        ! 1, bytes, scale, X,Y,Z, theta, phi, rotang, NL, NS, delline,
+        write (BUF(I:I + 79), '(A,F9.2,A1)') &
+            & '# RADIANCE_SCALE=', OUTPARMS(3), LF
         I = I + index(BUF(I:I + 79), LF)
-        write (BUF(I:I + 79), '(A,3(1X,F9.3),A1)') '# CAMERA_LOCATION=',   &
-     &      OUTPARMS(4), OUTPARMS(5), OUTPARMS(6), LF
+        write (BUF(I:I + 79), '(A,3(1X,F9.3),A1)') '# CAMERA_LOCATION=', &
+            & OUTPARMS(4), OUTPARMS(5), OUTPARMS(6), LF
         I = I + index(BUF(I:I + 79), LF)
-        write (BUF(I:I + 79), '(A,F10.5,A1)')                              &
-     &      '# CAMERA_ZENITH_ANGLE=', OUTPARMS(7), LF
+        write (BUF(I:I + 79), '(A,F10.5,A1)') &
+            & '# CAMERA_ZENITH_ANGLE=', OUTPARMS(7), LF
         I = I + index(BUF(I:I + 79), LF)
-        write (BUF(I:I + 79), '(A,F10.5,A1)')                              &
-     &      '# CAMERA_AZIMUTH_ANGLE=', OUTPARMS(8), LF
+        write (BUF(I:I + 79), '(A,F10.5,A1)') &
+            & '# CAMERA_AZIMUTH_ANGLE=', OUTPARMS(8), LF
         I = I + index(BUF(I:I + 79), LF)
-        write (BUF(I:I + 79), '(A,F10.5,A1)')                              &
-     &      '# CAMERA_ROTATION_ANGLE=', OUTPARMS(9), LF
+        write (BUF(I:I + 79), '(A,F10.5,A1)') &
+            & '# CAMERA_ROTATION_ANGLE=', OUTPARMS(9), LF
         I = I + index(BUF(I:I + 79), LF)
-        write (BUF(I:I + 79), '(A,I5,A1)')                                 &
-     &      '# CAMERA_NUMBER_LINES=', nint(OUTPARMS(10)), LF
+        write (BUF(I:I + 79), '(A,I5,A1)') &
+            & '# CAMERA_NUMBER_LINES=', nint(OUTPARMS(10)), LF
         I = I + index(BUF(I:I + 79), LF)
-        write (BUF(I:I + 79), '(A,I5,A1)')                                 &
-     &      '# CAMERA_NUMBER_SAMPLES=', nint(OUTPARMS(11)), LF
+        write (BUF(I:I + 79), '(A,I5,A1)') &
+            & '# CAMERA_NUMBER_SAMPLES=', nint(OUTPARMS(11)), LF
         I = I + index(BUF(I:I + 79), LF)
-        write (BUF(I:I + 79), '(A,F8.5,A1)')                               &
-     &      '# CAMERA_LINE_SPACING_ANGLE=', OUTPARMS(12), LF
+        write (BUF(I:I + 79), '(A,F8.5,A1)') &
+            & '# CAMERA_LINE_SPACING_ANGLE=', OUTPARMS(12), LF
         I = I + index(BUF(I:I + 79), LF)
-        write (BUF(I:I + 79), '(A,F8.5,A1)')                               &
-     &      '# CAMERA_SAMPLE_SPACING_ANGLE=', OUTPARMS(13), LF
+        write (BUF(I:I + 79), '(A,F8.5,A1)') &
+            & '# CAMERA_SAMPLE_SPACING_ANGLE=', OUTPARMS(13), LF
         I = I + index(BUF(I:I + 79), LF)
 
     else
-        write (BUF(I:I + 79), '(A,A1)')                                    &
-     &      '# CROSS TRACK SCANNING MODE:', LF
+        write (BUF(I:I + 79), '(A,A1)') &
+            & '# CROSS TRACK SCANNING MODE:', LF
         I = I + index(BUF(I:I + 79), LF)
-!          2, bytes, scale, X1,Y1,Z1, X2,Y2,Z2, spacing, scan1, scan2, d
-        write (BUF(I:I + 79), '(A,F9.2,A1)')                               &
-     &      '# RADIANCE_SCALE=', OUTPARMS(3), LF
+        ! 2, bytes, scale, X1,Y1,Z1, X2,Y2,Z2, spacing, scan1, scan2, d
+        write (BUF(I:I + 79), '(A,F9.2,A1)') &
+            & '# RADIANCE_SCALE=', OUTPARMS(3), LF
         I = I + index(BUF(I:I + 79), LF)
-        write (BUF(I:I + 79), '(A,3(1X,F9.3),A1)') '# START_LOCATION=',    &
-     &      OUTPARMS(4), OUTPARMS(5), OUTPARMS(6), LF
+        write (BUF(I:I + 79), '(A,3(1X,F9.3),A1)') '# START_LOCATION=', &
+            & OUTPARMS(4), OUTPARMS(5), OUTPARMS(6), LF
         I = I + index(BUF(I:I + 79), LF)
-        write (BUF(I:I + 79), '(A,3(1X,F9.3),A1)') '# END_LOCATION=',      &
-     &      OUTPARMS(7), OUTPARMS(8), OUTPARMS(9), LF
+        write (BUF(I:I + 79), '(A,3(1X,F9.3),A1)') '# END_LOCATION=', &
+            & OUTPARMS(7), OUTPARMS(8), OUTPARMS(9), LF
         I = I + index(BUF(I:I + 79), LF)
-        write (BUF(I:I + 79), '(A,F8.4,A1)')                               &
-     &      '# SPACING_ON_TRACK=', OUTPARMS(10), LF
+        write (BUF(I:I + 79), '(A,F8.4,A1)') &
+            & '# SPACING_ON_TRACK=', OUTPARMS(10), LF
         I = I + index(BUF(I:I + 79), LF)
-        write (BUF(I:I + 79), '(A,F8.3,A1)')                               &
-     &      '# START_SCAN_ANGLE=', OUTPARMS(11), LF
+        write (BUF(I:I + 79), '(A,F8.3,A1)') &
+            & '# START_SCAN_ANGLE=', OUTPARMS(11), LF
         I = I + index(BUF(I:I + 79), LF)
-        write (BUF(I:I + 79), '(A,F8.3,A1)')                               &
-     &      '# END_SCAN_ANGLE=', OUTPARMS(12), LF
+        write (BUF(I:I + 79), '(A,F8.3,A1)') &
+            & '# END_SCAN_ANGLE=', OUTPARMS(12), LF
         I = I + index(BUF(I:I + 79), LF)
-        write (BUF(I:I + 79), '(A,F7.4,A1)')                               &
-     &      '# SCAN_ANGLE_SPACING=', OUTPARMS(13), LF
+        write (BUF(I:I + 79), '(A,F7.4,A1)') &
+            & '# SCAN_ANGLE_SPACING=', OUTPARMS(13), LF
         I = I + index(BUF(I:I + 79), LF)
     end if
     do M = 1, NSTOKES
-        write (BUF(I:I + 79), VISFORM(M)) '# ', trim(POLNAMES(M)),          &
-     &        '_RANGE_IN_PIXEL=', VISMIN(M), VISMAX(M), LF
+        write (BUF(I:I + 79), VISFORM(M)) '# ', trim(POLNAMES(M)), &
+            & '_RANGE_IN_PIXEL=', VISMIN(M), VISMAX(M), LF
         I = I + index(BUF(I:I + 79), LF)
     end do
 
@@ -2873,4 +2873,4 @@ subroutine OUTPUT_IMAGE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,       &
     deallocate (BUFFER1)
     close (2)
     return
-end
+end subroutine
