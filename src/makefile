@@ -67,8 +67,8 @@ shdUtil_io.o: shdUtil_io.f90
 shdom_mpi.o: shdom_mpi.f90
 	$(F90) -c $(F90FLAGS) shdom_mpi.f90
 
-shdom_nompi.o: shdom_nompi.f
-	$(F90) -c $(F90FLAGS) shdom_nompi.f
+shdom_nompi.o: shdom_nompi.f90
+	$(F90) -c $(F90FLAGS) shdom_nompi.f90
 
 shdom_nonetcdf.o: shdom_nonetcdf.f90
 	$(F90) -c $(F90FLAGS) shdom_nonetcdf.f90
