@@ -425,10 +425,11 @@ subroutine NAMELIST_INPUT ( &
     return
 end subroutine
 
-subroutine CHECK_INPUT_PARAMETERS(NMU, NPHI, DELTAM, MAXASYM,    &
-    &               GRIDTYPE, SRCTYPE, UNITS, SOLARFLUX, SOLARMU,      &
-    &               WAVENO, WAVELEN, GNDTEMP, GNDALBEDO,               &
-    &               SPLITACC, SHACC)
+subroutine CHECK_INPUT_PARAMETERS( &
+    & NMU, NPHI, DELTAM, MAXASYM, &
+    & GRIDTYPE, SRCTYPE, UNITS, SOLARFLUX, SOLARMU, &
+    & WAVENO, WAVELEN, GNDTEMP, GNDALBEDO, &
+    & SPLITACC, SHACC)
     ! Checks for validity of the input parameters. Gives warning for
     ! parameters that might not be correct.
     ! Check the letter flags.
@@ -446,12 +447,12 @@ subroutine CHECK_INPUT_PARAMETERS(NMU, NPHI, DELTAM, MAXASYM,    &
     character*1 GRIDTYPE, SRCTYPE, UNITS
     real FLUX
 
-    if (SRCTYPE .ne. 'S' .and. SRCTYPE .ne. 'T' .and. SRCTYPE .ne. 'B')  &
-   &    stop 'CHECK_INPUT_PARMETERS: Illegal source type'
-    if (UNITS .ne. 'R' .and. UNITS .ne. 'T' .and. UNITS .ne. 'B')     &
-   &    stop 'CHECK_INPUT_PARMETERS: Illegal units'
-    if (GRIDTYPE .ne. 'E' .and. GRIDTYPE .ne. 'P' .and. GRIDTYPE .ne. 'F')  &
-   &    stop 'CHECK_INPUT_PARMETERS: Illegal grid type'
+    if (SRCTYPE .ne. 'S' .and. SRCTYPE .ne. 'T' .and. SRCTYPE .ne. 'B') &
+        & stop 'CHECK_INPUT_PARMETERS: Illegal source type'
+    if (UNITS .ne. 'R' .and. UNITS .ne. 'T' .and. UNITS .ne. 'B') &
+        & stop 'CHECK_INPUT_PARMETERS: Illegal units'
+    if (GRIDTYPE .ne. 'E' .and. GRIDTYPE .ne. 'P' .and. GRIDTYPE .ne. 'F') &
+        & stop 'CHECK_INPUT_PARMETERS: Illegal grid type'
 
     if (SRCTYPE .ne. 'T' .and. SOLARMU .eq. 0.0) then
         write (*, *) 'CHECK_INPUT_PARMETERS: cosine solar zenith angle'
@@ -476,8 +477,8 @@ subroutine CHECK_INPUT_PARAMETERS(NMU, NPHI, DELTAM, MAXASYM,    &
     if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
         FLUX = FLUX + SOLARFLUX
     end if
-    if (SPLITACC .gt. 0.0 .and.                                       &
-   &    (SPLITACC .lt. 0.001*FLUX .or. SPLITACC .gt. 0.1*FLUX)) then
+    if (SPLITACC .gt. 0.0 .and. &
+        & (SPLITACC .lt. 0.001*FLUX .or. SPLITACC .gt. 0.1*FLUX)) then
         write (*, *) 'CHECK_INPUT_PARMETERS: Splitting accuracy parameter'
         write (*, *) ' is not a fraction, but scales with fluxes'
         write (*, *)
@@ -488,8 +489,8 @@ subroutine CHECK_INPUT_PARAMETERS(NMU, NPHI, DELTAM, MAXASYM,    &
         write (*, *)
     end if
 
-    if (SRCTYPE .ne. 'S' .and.                                        &
-   &    (GNDTEMP .lt. 150. .or. GNDTEMP .gt. 350.)) then
+    if (SRCTYPE .ne. 'S' .and. &
+        & (GNDTEMP .lt. 150. .or. GNDTEMP .gt. 350.)) then
         write (*, *) 'CHECK_INPUT_PARMETERS: Warning - '
         write (*, *) '  ground temperature out of Earth range.'
         write (*, *)
@@ -505,10 +506,10 @@ subroutine CHECK_INPUT_PARAMETERS(NMU, NPHI, DELTAM, MAXASYM,    &
     end if
 
     return
-end
+end subroutine
 
 subroutine READ_PROPERTY_SIZE(PROPFILE, NSTLEG, NLEG, NPX, NPY, NPZ, &
-&                            NUMPHASE, MAXLEG, MAXPGL, DELX, DELY)
+    & NUMPHASE, MAXLEG, MAXPGL, DELX, DELY)
     ! Reads parts of the property file to get the maximum array sizes
     ! needed for allocatable arrays.  For extinction only and tabulated
     ! phase function formats, only the header is read, while for the
@@ -525,11 +526,11 @@ subroutine READ_PROPERTY_SIZE(PROPFILE, NSTLEG, NLEG, NPX, NPY, NPZ, &
     ! Open the file, figure out the type, and get the grid size
     open (UNIT=1, FILE=PROPFILE, STATUS='OLD')
     read (1, '(A1)') PROPTYPE
-    if (PROPTYPE .ne. 'E' .and. PROPTYPE .ne. 'T'                     &
-   &    .and. PROPTYPE .ne. 'P') rewind (1)
+    if (PROPTYPE .ne. 'E' .and. PROPTYPE .ne. 'T' &
+        & .and. PROPTYPE .ne. 'P') rewind (1)
     if (PROPTYPE .ne. 'P' .and. NSTLEG .gt. 1) then
-        write (*, '(A,A)') 'Error: NSTOKES>1 requires ',                 &
-     &                    'Polarized phase function property file'
+        write (*, '(A,A)') 'Error: NSTOKES>1 requires ', &
+            & 'Polarized phase function property file'
         stop
     end if
     read (1, *) NPX, NPY, NPZ
@@ -569,8 +570,8 @@ subroutine READ_PROPERTY_SIZE(PROPFILE, NSTLEG, NLEG, NPX, NPY, NPZ, &
         ! Standard property file has everything variable
         MAXLEG = NLEG
         do while (.true.)
-            read (1, *, end=190) IX, IY, IZ, TMP, EXT, ALB, NUML,           &
-       &                         (CHI, L=1, NUML)
+            read (1, *, end=190) IX, IY, IZ, TMP, EXT, ALB, NUML, &
+                & (CHI, L=1, NUML)
             MAXLEG = max(NUML, MAXLEG)
         end do
 190     continue
@@ -578,7 +579,7 @@ subroutine READ_PROPERTY_SIZE(PROPFILE, NSTLEG, NLEG, NPX, NPY, NPZ, &
     end if
     close (1)
     return
-end
+end subroutine
 
 subroutine READ_PROPERTIES(PROPFILE, NPX, NPY, NPZ,              &
     &             NSTLEG, MAXLEG, NLEG, MAXNZ, MAXPG, MAXPGL, DELTAM,  &
