@@ -789,10 +789,10 @@ subroutine RADIANCE_TRUNCATION(HIGHORDERRAD,&
     return
 end subroutine
 
-subroutine ACCELERATE_SOLUTION(ACCELPAR, NPTS, SHPTR, OSHPTR,    &
-&                                NSTOKES, SOURCE, DELSOURCE)
-!       Accelerates the successive order of scattering series using the
-!     input acceleration parameter (ACCELPAR).
+subroutine ACCELERATE_SOLUTION(ACCELPAR, NPTS, SHPTR, OSHPTR,&
+    & NSTOKES, SOURCE, DELSOURCE)
+    !   Accelerates the successive order of scattering series using the
+    ! input acceleration parameter (ACCELPAR).
     implicit none
     integer NPTS, SHPTR(*), OSHPTR(*), NSTOKES
     real ACCELPAR, SOURCE(NSTOKES, *), DELSOURCE(NSTOKES, *)
@@ -806,53 +806,53 @@ subroutine ACCELERATE_SOLUTION(ACCELPAR, NPTS, SHPTR, OSHPTR,    &
             NSD = OSHPTR(I + 1) - ISD
             NSC = min(NS, NSD)
             do J = 1, NSC
-                SOURCE(:, IS + J) = SOURCE(:, IS + J)                             &
-         &                       + ACCELPAR*DELSOURCE(:, ISD + J)
+                SOURCE(:, IS + J) = SOURCE(:, IS + J)&
+                    & + ACCELPAR*DELSOURCE(:, ISD + J)
             end do
         end do
     end if
 
     return
-end
+end subroutine
 
-subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,         &
-&             ML, MM, NLM, NMU, NPHI0MAX, NPHI0, NANG,             &
-&             BCFLAG, IPFLAG,                                      &
-&             NPTS, NCELLS, XGRID, YGRID, ZGRID, GRIDPOS,         &
-&             GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,               &
-&             SRCTYPE, SOLARMU, SOLARAZ, SKYRAD, WAVENO, WAVELEN,  &
-&             UNITS, SFCTYPE, GNDTEMP, GNDALBEDO,                  &
-&             NXSFC, NYSFC, DELXSFC, DELYSFC, NSFCPAR, SFCPARMS,   &
-&             SFCGRIDPARMS, UNIFORM_SFC_BRDF, SFC_BRDF_DO,         &
-&             MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR, BCRAD,    &
-&             MU, PHI, WTDO,                                       &
-&             CMU1, CPHI1, CMU2, CPHI2, WSAVE, FFTFLAG,            &
-&             DIRFLUX, FLUXES, EXTINCT,                            &
-&             SHPTR, SOURCE, RSHPTR, RADIANCE,                     &
-&             WORK, SWEEPORD, GRIDRAD)
-!       Performs the path integrations through the medium specified by
-!     the extinction (EXTINCT) and source function (SOURCE) in
-!     spherical harmonic space.  The source function is transformed to
-!     discrete ordinates one zenith angle at a time.  The integrations
-!     are done from the top boundary (with no reflection) down to the
-!     bottom boundary for the downwelling angles, and then up from the
-!     bottom to the top after computing the surface reflection/emission.
-!     After the path integrations produce the discrete angle radiance
-!     it is transformed and added to output radiance spherical harmonic
-!     expansion.  The hemispheric flux FLUXES is also computed.
-!     The discrete ordinates in MU, PHI must be a complete set with the
-!     downwelling (mu<0) angles first.
-!       The surface reflection is handled differently for Lambertian
-!     surfaces and more general surfaces specified by bidirectional
-!     reflection distribution functions (BRDF).  For the general BRDF,
-!     the bottom boundary radiance must be computed for each upwelling
-!     ordinate, while for the Lambertian surface the boundary radiances
-!     can be computed just once, since they are isotropic.  For Lamberti
-!     cases the BCRAD array holds only the isotropic radiance for the
-!     boundaries at the top (downwelling) and bottom (upwelling) boundar
-!     For the general BRDF, the BCRAD array in addition holds the
-!     downwelling radiances at all discrete ordinates for the bottom
-!     boundary points.
+subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
+    & ML, MM, NLM, NMU, NPHI0MAX, NPHI0, NANG,&
+    & BCFLAG, IPFLAG,&
+    & NPTS, NCELLS, XGRID, YGRID, ZGRID, GRIDPOS,&
+    & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+    & SRCTYPE, SOLARMU, SOLARAZ, SKYRAD, WAVENO, WAVELEN,&
+    & UNITS, SFCTYPE, GNDTEMP, GNDALBEDO,&
+    & NXSFC, NYSFC, DELXSFC, DELYSFC, NSFCPAR, SFCPARMS,&
+    & SFCGRIDPARMS, UNIFORM_SFC_BRDF, SFC_BRDF_DO,&
+    & MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
+    & MU, PHI, WTDO,&
+    & CMU1, CPHI1, CMU2, CPHI2, WSAVE, FFTFLAG,&
+    & DIRFLUX, FLUXES, EXTINCT,&
+    & SHPTR, SOURCE, RSHPTR, RADIANCE,&
+    & WORK, SWEEPORD, GRIDRAD)
+    !   Performs the path integrations through the medium specified by
+    ! the extinction (EXTINCT) and source function (SOURCE) in
+    ! spherical harmonic space.  The source function is transformed to
+    ! discrete ordinates one zenith angle at a time.  The integrations
+    ! are done from the top boundary (with no reflection) down to the
+    ! bottom boundary for the downwelling angles, and then up from the
+    ! bottom to the top after computing the surface reflection/emission.
+    ! After the path integrations produce the discrete angle radiance
+    ! it is transformed and added to output radiance spherical harmonic
+    ! expansion.  The hemispheric flux FLUXES is also computed.
+    ! The discrete ordinates in MU, PHI must be a complete set with the
+    ! downwelling (mu<0) angles first.
+    !   The surface reflection is handled differently for Lambertian
+    ! surfaces and more general surfaces specified by bidirectional
+    ! reflection distribution functions (BRDF).  For the general BRDF,
+    ! the bottom boundary radiance must be computed for each upwelling
+    ! ordinate, while for the Lambertian surface the boundary radiances
+    ! can be computed just once, since they are isotropic.  For Lamberti
+    ! cases the BCRAD array holds only the isotropic radiance for the
+    ! boundaries at the top (downwelling) and bottom (upwelling) boundar
+    ! For the general BRDF, the BCRAD array in addition holds the
+    ! downwelling radiances at all discrete ordinates for the bottom
+    ! boundary points.
     implicit none
     integer NX, NY, NZ, NSTOKES, NSTLEG, ML, MM, NLM
     integer NMU, NPHI0MAX, NPHI0(NMU), NANG
@@ -885,121 +885,121 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,         &
     real A, TRANSMIN
     save OLDNPTS
 
-!         Set the minimum transmission for the cell tracing (1 for singl
+    ! Set the minimum transmission for the cell tracing (1 for singl
     TRANSMIN = 1.00
 
-!         Make the new grid cell/point sweeping order if need to
+    ! Make the new grid cell/point sweeping order if need to
     if (NPTS .ne. OLDNPTS) then
-        call SWEEPING_ORDER(NX, NY, NZ, NPTS, NCELLS,                  &
-     &                       GRIDPTR, TREEPTR, CELLFLAGS,               &
-     &                       BCFLAG, IPFLAG, SWEEPORD, GRIDRAD)
+        call SWEEPING_ORDER(NX, NY, NZ, NPTS, NCELLS,&
+            & GRIDPTR, TREEPTR, CELLFLAGS,&
+            & BCFLAG, IPFLAG, SWEEPORD, GRIDRAD)
     end if
 
-    call FIND_BOUNDARY_POINTS(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR, &
-   &                       GRIDPOS, NX, NY, NZ, XGRID, YGRID, ZGRID)
+    call FIND_BOUNDARY_POINTS(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
+        & GRIDPOS, NX, NY, NZ, XGRID, YGRID, ZGRID)
 
     LAMBERTIAN = SFCTYPE(2:2) .eq. 'L'
     if (NPTS .ne. OLDNPTS) then
-!         Make the pointers to the grid points on the top and bottom bou
-        call BOUNDARY_PNTS(NPTS, NANG, LAMBERTIAN, MAXNBC, MAXBCRAD,   &
-     &                      ZGRID(1), ZGRID(NZ), GRIDPOS,               &
-     &                      NTOPPTS, NBOTPTS, BCPTR)
+        ! Make the pointers to the grid points on the top and bottom bou
+        call BOUNDARY_PNTS(NPTS, NANG, LAMBERTIAN, MAXNBC, MAXBCRAD,&
+            & ZGRID(1), ZGRID(NZ), GRIDPOS,&
+            & NTOPPTS, NBOTPTS, BCPTR)
         if (SFCTYPE(1:1) .eq. 'V') then
-!             If this is a variable surface then bilinearly interpolate
-!               the surface temperature and reflection parameters to the
-!               bottom grid points.
-            call SURFACE_PARM_INTERP(NBOTPTS, BCPTR(1, 2), GRIDPOS,       &
-       &             SRCTYPE, WAVENO, WAVELEN, UNITS,                     &
-       &             NXSFC, NYSFC, DELXSFC, DELYSFC, NSFCPAR, SFCPARMS,   &
-       &             SFCGRIDPARMS)
+            ! If this is a variable surface then bilinearly interpolate
+            !   the surface temperature and reflection parameters to the
+            !   bottom grid points.
+            call SURFACE_PARM_INTERP(NBOTPTS, BCPTR(1, 2), GRIDPOS,&
+                & SRCTYPE, WAVENO, WAVELEN, UNITS,&
+                & NXSFC, NYSFC, DELXSFC, DELYSFC, NSFCPAR, SFCPARMS,&
+                & SFCGRIDPARMS)
         end if
     end if
-!         Make the isotropic radiances for the top boundary
-    call COMPUTE_TOP_RADIANCES(SRCTYPE, SKYRAD, WAVENO, WAVELEN,     &
-   &                            UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
+    ! Make the isotropic radiances for the top boundary
+    call COMPUTE_TOP_RADIANCES(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
+        & UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
 
-!         Zero the flux arrays and set temporary radiance to -1 for not
+    ! Zero the flux arrays and set temporary radiance to -1 for not
     do I = 1, NPTS
         FLUXES(1, I) = 0.0
         FLUXES(2, I) = 0.0
         GRIDRAD(1, I) = -1.0
     end do
-!         Zero the output spherical harmonic radiance
+    ! Zero the output spherical harmonic radiance
     NR = RSHPTR(NPTS + 1)
     do I = 1, NR
         RADIANCE(:, I) = 0.0
     end do
 
-!      print *, 'Path integration:'
-!          Loop over the zenith angles (downwelling angles must be first
+    ! print *, 'Path integration:'
+    ! Loop over the zenith angles (downwelling angles must be first
     IANG = 1
     do IMU = 1, NMU
 
         if (IMU .eq. NMU/2 + 1) then
-!           For the first upwelling angle, make the bottom boundary radi
-!             for the Lambertian surfaces.  Compute the upwelling bottom
-!             radiances using the downwelling fluxes.
+            ! For the first upwelling angle, make the bottom boundary radi
+            !   for the Lambertian surfaces.  Compute the upwelling bottom
+            !   radiances using the downwelling fluxes.
             if (SFCTYPE .eq. 'FL') then
-                call FIXED_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR(1, 2),        &
-         &             DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO,        &
-         &             WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1, 1 + NTOPPTS))
+                call FIXED_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR(1, 2),&
+                    & DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO,&
+                    & WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1, 1 + NTOPPTS))
             else if (SFCTYPE .eq. 'VL') then
-                call VARIABLE_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR(1, 2),     &
-         &             DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS,     &
-         &             NSTOKES, BCRAD(1, 1 + NTOPPTS))
+                call VARIABLE_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR(1, 2),&
+                    & DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS,&
+                    & NSTOKES, BCRAD(1, 1 + NTOPPTS))
             end if
         end if
         if (NSTOKES .eq. 1) then
-            call SH_TO_DO_UNPOL(NPTS, ML, MM, NLM,                       &
-       &                 NMU, NPHI0MAX, NPHI0(IMU),                       &
-       &                 IMU, FFTFLAG, CMU1, CPHI1, WSAVE,                &
-       &                 SHPTR, SOURCE, WORK)
+            call SH_TO_DO_UNPOL(NPTS, ML, MM, NLM,&
+                & NMU, NPHI0MAX, NPHI0(IMU),&
+                & IMU, FFTFLAG, CMU1, CPHI1, WSAVE,&
+                & SHPTR, SOURCE, WORK)
         else
-            call SH_TO_DO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,            &
-       &                 NMU, NPHI0MAX, NPHI0(IMU),                       &
-       &                 IMU, FFTFLAG, CMU1, CPHI1, WSAVE,                &
-       &                 SHPTR, SOURCE, WORK)
+            call SH_TO_DO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
+                & NMU, NPHI0MAX, NPHI0(IMU),&
+                & IMU, FFTFLAG, CMU1, CPHI1, WSAVE,&
+                & SHPTR, SOURCE, WORK)
         end if
 
-!           Enforce the discrete ordinate I source function to be non-ne
+        ! Enforce the discrete ordinate I source function to be non-ne
         do I = 1, NPTS
             do IPHI = 1, NPHI0(IMU)
                 WORK(1, IPHI, I) = max(0.0, WORK(1, IPHI, I))
             end do
         end do
 
-!           Loop over the azimuthal angles
+        ! Loop over the azimuthal angles
         do IPHI = 1, NPHI0(IMU)
 
             if (MU(IMU) .lt. 0.0) then
-!               For downward ordinates, initialize the top boundary radi
+                ! For downward ordinates, initialize the top boundary radi
                 IUPDOWN = 1
                 do IBC = 1, NTOPPTS
                     I = BCPTR(IBC, 1)
                     GRIDRAD(:, I) = BCRAD(:, IBC)
                 end do
             else
-!               Initialize the bottom boundary radiances
+                ! Initialize the bottom boundary radiances
                 IUPDOWN = 2
                 if (.not. LAMBERTIAN) then
-!               If a Lambertian surface, use the radiances computed abov
-!                 otherwise, compute the radiance for this angle
-!                 by integrating over the stored downwelling radiances.
-!               If the surface reflection is uniform use the precomputed
-!                 BRDF matrix to do the integration.
+                    ! If a Lambertian surface, use the radiances computed abov
+                    !   otherwise, compute the radiance for this angle
+                    !   by integrating over the stored downwelling radiances.
+                    ! If the surface reflection is uniform use the precomputed
+                    !   BRDF matrix to do the integration.
                     if (UNIFORM_SFC_BRDF) then
-                        call UNIFORM_BRDF_SURFACE(NBOTPTS, BCPTR(1, 2),          &
-              &               NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, IMU, IPHI,    &
-              &               SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,       &
-              &               SFCTYPE, NSFCPAR, SFCGRIDPARMS, SFC_BRDF_DO,       &
-              &               NSTOKES, BCRAD(1, 1 + NTOPPTS))
+                        call UNIFORM_BRDF_SURFACE(NBOTPTS, BCPTR(1, 2),&
+                            & NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, IMU, IPHI,&
+                            & SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
+                            & SFCTYPE, NSFCPAR, SFCGRIDPARMS, SFC_BRDF_DO,&
+                            & NSTOKES, BCRAD(1, 1 + NTOPPTS))
                     else
-                        call VARIABLE_BRDF_SURFACE(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2), &
-              &               NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,               &
-              &               MU(IMU), PHI(IMU, IPHI),                            &
-              &               SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,       &
-              &               SFCTYPE, NSFCPAR, SFCGRIDPARMS,                    &
-              &               NSTOKES, BCRAD(1, 1 + NTOPPTS))
+                        call VARIABLE_BRDF_SURFACE(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
+                            & NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
+                            & MU(IMU), PHI(IMU, IPHI),&
+                            & SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
+                            & SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
+                            & NSTOKES, BCRAD(1, 1 + NTOPPTS))
                     end if
                 end if
                 do IBC = 1, NBOTPTS
@@ -1008,42 +1008,42 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,         &
                 end do
             end if
 
-!             Do backward path integration from each grid point not done
+            ! Do backward path integration from each grid point not done
             if (btest(IPFLAG, 1) .and. btest(IPFLAG, 0)) then
-                call BACK_INT_GRID1D(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,   &
-         &               GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,             &
-         &               GRIDPOS, SWEEPORD, MU(IMU), PHI(IMU, IPHI), TRANSMIN,  &
-         &               EXTINCT, NSTOKES, WORK, IPHI, GRIDRAD)
-            else if (btest(IPFLAG, 1) .and.                                &
-       &            .not. (btest(BCFLAG, 2) .or. btest(BCFLAG, 3))) then
-                call BACK_INT_GRID2D(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,   &
-         &               GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,             &
-         &               GRIDPOS, SWEEPORD, MU(IMU), PHI(IMU, IPHI), TRANSMIN,  &
-         &               EXTINCT, NSTOKES, WORK, IPHI, GRIDRAD)
+                call BACK_INT_GRID1D(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,&
+                    & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+                    & GRIDPOS, SWEEPORD, MU(IMU), PHI(IMU, IPHI), TRANSMIN,&
+                    & EXTINCT, NSTOKES, WORK, IPHI, GRIDRAD)
+            else if (btest(IPFLAG, 1) .and.&
+                & .not. (btest(BCFLAG, 2) .or. btest(BCFLAG, 3))) then
+                call BACK_INT_GRID2D(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,&
+                    & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+                    & GRIDPOS, SWEEPORD, MU(IMU), PHI(IMU, IPHI), TRANSMIN,&
+                    & EXTINCT, NSTOKES, WORK, IPHI, GRIDRAD)
             else
                 if (NSTOKES .eq. 1) then
-                    call BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,  &
-            &               GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,             &
-            &               GRIDPOS, XGRID, YGRID, ZGRID, SWEEPORD,            &
-            &               MU(IMU), PHI(IMU, IPHI), TRANSMIN, BCFLAG, IPFLAG,   &
-            &               EXTINCT, WORK, IPHI, GRIDRAD)
+                    call BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,&
+                        & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+                        & GRIDPOS, XGRID, YGRID, ZGRID, SWEEPORD,&
+                        & MU(IMU), PHI(IMU, IPHI), TRANSMIN, BCFLAG, IPFLAG,&
+                        & EXTINCT, WORK, IPHI, GRIDRAD)
                 else
-                    call BACK_INT_GRID3D(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,  &
-            &               GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,             &
-            &               GRIDPOS, XGRID, YGRID, ZGRID, SWEEPORD,            &
-            &               MU(IMU), PHI(IMU, IPHI), TRANSMIN, BCFLAG, IPFLAG,   &
-            &               EXTINCT, NSTOKES, WORK, IPHI, GRIDRAD)
+                    call BACK_INT_GRID3D(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,&
+                        & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+                        & GRIDPOS, XGRID, YGRID, ZGRID, SWEEPORD,&
+                        & MU(IMU), PHI(IMU, IPHI), TRANSMIN, BCFLAG, IPFLAG,&
+                        & EXTINCT, NSTOKES, WORK, IPHI, GRIDRAD)
                 end if
             end if
 
-!             Transfer the radiance for the (IMU,IPHI) discrete ordinate
-!               GRIDRAD to the work array.
+            ! Transfer the radiance for the (IMU,IPHI) discrete ordinate
+            !   GRIDRAD to the work array.
             do I = 1, NPTS
                 if (GRIDRAD(1, I) .lt. -0.0001) then
-                    write (6, *) 'PATH_INTEGRATION: Grid point has no value',  &
-           &          I, MU(IMU), PHI(IMU, IPHI), GRIDRAD(1, I), XGRID(1), YGRID(1), &
-           &          GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I)
-!              STOP
+                    write (6, *) 'PATH_INTEGRATION: Grid point has no value',&
+                        & I, MU(IMU), PHI(IMU, IPHI), GRIDRAD(1, I), XGRID(1), YGRID(1),&
+                        & GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I)
+                    ! stop
                     GRIDRAD(1, I) = 0.0
                 else
                     WORK(:, IPHI, I) = GRIDRAD(:, I)
@@ -1051,14 +1051,14 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,         &
                 end if
             end do
 
-!             Do the sum for the hemispheric fluxes for this angle
+            ! Do the sum for the hemispheric fluxes for this angle
             A = abs(MU(IMU))*WTDO(IMU, IPHI)
             do I = 1, NPTS
                 FLUXES(IUPDOWN, I) = FLUXES(IUPDOWN, I) + A*WORK(1, IPHI, I)
             end do
 
-!             For a general BRDF surface save the downwelling radiance
-!               at the bottom boundary points.
+            ! For a general BRDF surface save the downwelling radiance
+            !   at the bottom boundary points.
             if (.not. LAMBERTIAN .and. IMU .le. NMU/2) then
                 I1 = NTOPPTS + NBOTPTS*IANG
                 do IBC = 1, NBOTPTS
@@ -1070,24 +1070,24 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,         &
             IANG = IANG + 1
         end do
 
-!           Transform the radiance to spherical harmonics for this zenit
+        ! Transform the radiance to spherical harmonics for this zenit
         if (NSTOKES .eq. 1) then
-            call DO_TO_SH_UNPOL(NPTS, ML, MM, NLM,                       &
-       &                 NMU, NPHI0MAX, NPHI0(IMU),                       &
-       &                 IMU, FFTFLAG, CMU2, CPHI2, WSAVE,                &
-       &                 RSHPTR, WORK, RADIANCE)
+            call DO_TO_SH_UNPOL(NPTS, ML, MM, NLM,&
+                & NMU, NPHI0MAX, NPHI0(IMU),&
+                & IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
+                & RSHPTR, WORK, RADIANCE)
         else
-            call DO_TO_SH(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,            &
-       &                 NMU, NPHI0MAX, NPHI0(IMU),                       &
-       &                 IMU, FFTFLAG, CMU2, CPHI2, WSAVE,                &
-       &                 RSHPTR, WORK, RADIANCE)
+            call DO_TO_SH(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
+                & NMU, NPHI0MAX, NPHI0(IMU),&
+                & IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
+                & RSHPTR, WORK, RADIANCE)
         end if
     end do
 
     OLDNPTS = NPTS
 
     return
-end
+end subroutine
 
 subroutine BOUNDARY_PNTS(NPTS, NANG, LAMBERTIAN, MAXNBC, MAXBCRAD, &
 &                          ZBOT, ZTOP, GRIDPOS,                    &
