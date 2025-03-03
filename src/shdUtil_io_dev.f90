@@ -581,10 +581,11 @@ subroutine READ_PROPERTY_SIZE(PROPFILE, NSTLEG, NLEG, NPX, NPY, NPZ, &
     return
 end subroutine
 
-subroutine READ_PROPERTIES(PROPFILE, NPX, NPY, NPZ,              &
-    &             NSTLEG, MAXLEG, NLEG, MAXNZ, MAXPG, MAXPGL, DELTAM,  &
-    &             PROPTYPE, DELX, DELY, ZLEVELS, MAXASYM,              &
-    &             TEMPP, EXTINCTP, ALBEDOP, LEGENP, NUMPHASE, IPHASEP)
+subroutine READ_PROPERTIES( &
+    & PROPFILE, NPX, NPY, NPZ, &
+    & NSTLEG, MAXLEG, NLEG, MAXNZ, MAXPG, MAXPGL, DELTAM, &
+    & PROPTYPE, DELX, DELY, ZLEVELS, MAXASYM, &
+    & TEMPP, EXTINCTP, ALBEDOP, LEGENP, NUMPHASE, IPHASEP)
     ! Reads the medium properties from the file into the property arra
     ! There are four formats: the standard format specifies the extincti
     ! scattering albedo, temperature, and Legendre phase function expans
@@ -618,11 +619,11 @@ subroutine READ_PROPERTIES(PROPFILE, NPX, NPY, NPZ,              &
     ! Open the file, figure out the type, and get the grid size
     open (UNIT=1, FILE=PROPFILE, STATUS='OLD')
     read (1, '(A1)') PROPTYPE
-    if (PROPTYPE .ne. 'E' .and. PROPTYPE .ne. 'T'                     &
-   &    .and. PROPTYPE .ne. 'P') rewind (1)
+    if (PROPTYPE .ne. 'E' .and. PROPTYPE .ne. 'T' &
+        & .and. PROPTYPE .ne. 'P') rewind (1)
     if (PROPTYPE .ne. 'P' .and. NSTLEG .gt. 1) then
-        write (*, '(A,A)') 'Error: NSTOKES>1 requires ',                 &
-     &                    'Polarized phase function property file'
+        write (*, '(A,A)') 'Error: NSTOKES>1 requires ', &
+            & 'Polarized phase function property file'
         stop
     end if
     read (1, *) NPX, NPY, NPZ
@@ -638,17 +639,17 @@ subroutine READ_PROPERTIES(PROPFILE, NPX, NPY, NPZ,              &
             NLEG = max(NLEG, NUML)
             NLEG = min(NLEG, MAXLEG)
         end if
-        if (NPX*NPY*NPZ .gt. MAXPG)                                     &
-     &    stop 'READ_PROPERTIES: MAXPG exceeded'
-        if (NLEG + 1 .gt. MAXPGL)                                         &
-     &    stop 'READ_PROPERTIES: MAXPGL exceeded'
+        if (NPX*NPY*NPZ .gt. MAXPG) &
+            & stop 'READ_PROPERTIES: MAXPG exceeded'
+        if (NLEG + 1 .gt. MAXPGL) &
+            & stop 'READ_PROPERTIES: MAXPGL exceeded'
         rewind (1)
         read (1, *)
         read (1, *) NPX, NPY, NPZ
         read (1, *) DELX, DELY, (ZLEVELS(K), K=1, NPZ)
         read (1, *) (TEMPP(IZ), IZ=1, NPZ)
-        read (1, *) ALB, NUML, (LEGENP(L + 1), L=1, min(NUML, NLEG)),        &
-     &                        (CHI, L=NLEG + 1, NUML)
+        read (1, *) ALB, NUML, (LEGENP(L + 1), L=1, min(NUML, NLEG)), &
+            & (CHI, L=NLEG + 1, NUML)
         LEGENP(1) = 1.0
         MAXASYM = LEGENP(1 + 1)/3.0
         do L = NUML + 1, NLEG
@@ -661,9 +662,9 @@ subroutine READ_PROPERTIES(PROPFILE, NPX, NPY, NPZ,              &
             else
                 read (1, *, end=290) IX, IY, IZ, EXT
             end if
-            if (IX .ge. 1 .and. IX .le. NPX .and.                         &
-       &        IY .ge. 1 .and. IY .le. NPY .and.                         &
-       &        IZ .ge. 1 .and. IZ .le. NPZ) then
+            if ( IX .ge. 1 .and. IX .le. NPX .and. &
+               & IY .ge. 1 .and. IY .le. NPY .and. &
+               & IZ .ge. 1 .and. IZ .le. NPZ) then
                 K = IZ + NPZ*(IY - 1) + NPZ*NPY*(IX - 1)
                 TEMPP(K) = TEMPP(IZ)
                 EXTINCTP(K) = EXT
@@ -688,16 +689,16 @@ subroutine READ_PROPERTIES(PROPFILE, NPX, NPY, NPZ,              &
                 NLEG = max(NUML, NLEG)
             end do
             if (NLEG .gt. MAXLEG) then
-                write (*, '(A,I4,A,I4,A)')                                   &
-         &        'Warning: truncating phase function from ',               &
-         &         NLEG, ' to ', MAXLEG, ' Legendre terms.'
+                write (*, '(A,I4,A,I4,A)') &
+                    & 'Warning: truncating phase function from ', &
+                    & NLEG, ' to ', MAXLEG, ' Legendre terms.'
             end if
             NLEG = min(NLEG, MAXLEG)
         end if
         N = NPX*NPY*NPZ
         if (N .gt. MAXPG) stop 'READ_PROPERTIES: MAXPG exceeded'
-        if (NUMPHASE*(NLEG + 1)*NSTLEG .gt. MAXPGL)                       &
-     &    stop 'READ_PROPERTIES: MAXPGL exceeded'
+        if (NUMPHASE*(NLEG + 1)*NSTLEG .gt. MAXPGL) &
+            & stop 'READ_PROPERTIES: MAXPGL exceeded'
         rewind (1)
         read (1, *)
         read (1, *) NPX, NPY, NPZ
@@ -708,17 +709,17 @@ subroutine READ_PROPERTIES(PROPFILE, NPX, NPY, NPZ,              &
             IL = (NLEG + 1)*(I - 1)
             if (PROPTYPE .eq. 'T') then
                 LEGENP(IL + 1) = 1.0
-                read (1, *) NUML, (LEGENP(IL + L + 1), L=1, min(NUML, NLEG)),      &
-         &                     (CHI, L=NLEG + 1, NUML)
+                read (1, *) NUML, (LEGENP(IL + L + 1), L=1, min(NUML, NLEG)), &
+                    & (CHI, L=NLEG + 1, NUML)
                 do L = NUML + 1, NLEG
                     LEGENP(L + IL + 1) = 0.0
                 end do
             else
                 do J = 1, 6
                     if (J .le. NSTLEG) then
-                        read (1, *) JS, NUML,                                    &
-             &            (LEGENP((IL + L)*NSTLEG + J), L=0, min(NUML, NLEG)),        &
-             &                     (CHI, L=NLEG + 1, NUML)
+                        read (1, *) JS, NUML, &
+                            & (LEGENP((IL + L)*NSTLEG + J), L=0, min(NUML, NLEG)), &
+                            & (CHI, L=NLEG + 1, NUML)
                         do L = NUML + 1, NLEG
                             LEGENP((IL + L)*NSTLEG + J) = 0.0
                         end do
@@ -732,9 +733,9 @@ subroutine READ_PROPERTIES(PROPFILE, NPX, NPY, NPZ,              &
 
         do while (.true.)
             read (1, *, end=290) IX, IY, IZ, TMP, EXT, ALB, IPH
-            if (IX .ge. 1 .and. IX .le. NPX .and.                         &
-       &        IY .ge. 1 .and. IY .le. NPY .and.                         &
-       &        IZ .ge. 1 .and. IZ .le. NPZ) then
+            if ( IX .ge. 1 .and. IX .le. NPX .and. &
+               & IY .ge. 1 .and. IY .le. NPY .and. &
+               & IZ .ge. 1 .and. IZ .le. NPZ) then
                 K = IZ + NPZ*(IY - 1) + NPZ*NPY*(IX - 1)
                 TEMPP(K) = TMP
                 EXTINCTP(K) = EXT
@@ -750,8 +751,8 @@ subroutine READ_PROPERTIES(PROPFILE, NPX, NPY, NPZ,              &
         NUMPHASE = 0
         if (DELTAM) then
             do while (.true.)
-                read (1, *, end=190) IX, IY, IZ, TMP, EXT, ALB, NUML,         &
-         &                         (CHI, L=1, NUML)
+                read (1, *, end=190) IX, IY, IZ, TMP, EXT, ALB, NUML, &
+                    & (CHI, L=1, NUML)
                 NLEG = max(NUML, NLEG)
             end do
 190         continue
@@ -762,20 +763,20 @@ subroutine READ_PROPERTIES(PROPFILE, NPX, NPY, NPZ,              &
         end if
         N = NPX*NPY*NPZ
         if (N .gt. MAXPG) stop 'READ_PROPERTIES: MAXPG exceeded'
-        if (N*(NLEG + 1) .gt. MAXPGL)                                     &
-     &    stop 'READ_PROPERTIES: MAXPGL exceeded'
+        if (N*(NLEG + 1) .gt. MAXPGL) &
+            & stop 'READ_PROPERTIES: MAXPGL exceeded'
         MAXASYM = -1.0
         do while (.true.)
             read (1, *, end=290) IX, IY, IZ, TMP, EXT, ALB, NUML
-            if (IX .ge. 1 .and. IX .le. NPX .and.                         &
-       &        IY .ge. 1 .and. IY .le. NPY .and.                         &
-       &        IZ .ge. 1 .and. IZ .le. NPZ) then
+            if ( IX .ge. 1 .and. IX .le. NPX .and. &
+               & IY .ge. 1 .and. IY .le. NPY .and. &
+               & IZ .ge. 1 .and. IZ .le. NPZ) then
                 K = IZ + NPZ*(IY - 1) + NPZ*NPY*(IX - 1)
                 KL = (NLEG + 1)*(K - 1)
                 backspace (1)
-                read (1, *, end=290) IX, IY, IZ, TEMPP(K), EXTINCTP(K),     &
-       &            ALBEDOP(K), NUML, (LEGENP(L + KL), L=1, min(NUML, NLEG)), &
-       &                              (CHI, L=NLEG + 1, NUML)
+                read (1, *, end=290) IX, IY, IZ, TEMPP(K), EXTINCTP(K), &
+                    & ALBEDOP(K), NUML, (LEGENP(L + KL), L=1, min(NUML, NLEG)), &
+                    & (CHI, L=NLEG + 1, NUML)
                 MAXASYM = max(MAXASYM, LEGENP(KL + 1 + 1)/3.0)
                 LEGENP(1 + KL) = 1.0
                 do L = NUML + 1, NLEG
@@ -789,11 +790,12 @@ subroutine READ_PROPERTIES(PROPFILE, NPX, NPY, NPZ,              &
 290 continue
     close (1)
     return
-end
+end subroutine
 
-subroutine CHECK_PROPERTY_INPUT(NPX, NPY, NPZ, NSTLEG, NLEG,     &
-    &             DELX, DELY, ZLEVELS,                                 &
-    &             TEMPP, EXTINCTP, ALBEDOP, LEGENP, NUMPHASE, IPHASEP)
+subroutine CHECK_PROPERTY_INPUT( &
+    & NPX, NPY, NPZ, NSTLEG, NLEG, &
+    & DELX, DELY, ZLEVELS, &
+    & TEMPP, EXTINCTP, ALBEDOP, LEGENP, NUMPHASE, IPHASEP)
     ! Checks the input medium property values for correctness.
     ! Warning if temperature below 150 K or above 350 K.
     ! Stop if negative extinction, single scattering albedo below 0 or
