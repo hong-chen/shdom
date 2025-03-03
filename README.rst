@@ -19,9 +19,11 @@ How to Install
 
 1. Require ``fortran`` and ``c`` compilers (``c`` is usually built-in, pick **one** from the following for ``fortran``)
 
-    * `GFortran <https://fortran-lang.org/learn/os_setup/install_gfortran/>`_ (free, more popular);
+    * `GFortran <https://fortran-lang.org/learn/os_setup/install_gfortran/>`_ (free, popular);
 
-    * `Intel Fortran <https://docs.conda.io/en/latest/miniconda.html>`_ (costly, faster).
+    * `Intel Fortran <https://docs.conda.io/en/latest/miniconda.html>`_ (not free, faster).
+
+    * `PGI Fortran <https://docs.nvidia.com/hpc-sdk/pgi-compilers/>`_ (not free, faster).
 
    We recommend ``gfortran`` (`GFortran <https://fortran-lang.org/learn/os_setup/install_gfortran/>`_) and current ``makefile`` is developed around ``gfortran``.
 
