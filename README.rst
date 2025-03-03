@@ -136,17 +136,17 @@ Source Code File Change
 
   * formatted the code
 
-* ``src/shdScat_indexwatice.f90``: was ``indexwatice.f``
+* ``src/shdScat_ind_wat_ice.f90``: was ``indexwatice.f``
 
   * converted from F77 to F90
   * formatted the code
 
-* ``src/shdScat_miewig.f90``: was ``miewig.f``
+* ``src/shdScat_mie_wig.f90``: was ``miewig.f``
 
   * converted from F77 to F90
   * formatted the code
 
-* ``src/shdScat_tmatrixwig.f``: was ``tmatrixwig.f``
+* ``src/shdScat_tmx_wig.f``: was ``tmatrixwig.f``
 
 * ``src/shdSolv_1.f90``: was ``shdomsub1.f``
 
@@ -169,17 +169,17 @@ Source Code File Change
 
   * formatted the code
 
-* ``src/shdTool_make_mie_table.f90``: was ``make_mie_table.f90``
+* ``src/shdTool_make_mie_tab.f90``: was ``make_mie_table.f90``
 
   * formatted the code
 
-* ``src/shdTool_make_tmatrix_table.f90``: was ``make_tmatrix_table.f90``
+* ``src/shdTool_make_tmx_tab.f90``: was ``make_tmatrix_table.f90``
 
 * ``src/shdTool_put.c``: was ``put.c``
 
   * modified the code to resolve a warning from compilation
 
-* ``src/shdTool_plotscattab.f90``: was ``plotscattab.f90``
+* ``src/shdTool_plot_sca_tab.f90``: was ``plotscattab.f90``
 
 * ``src/shdTool_txt2nc.c``: was ``AsciiPropertyFileToNetcdf.f90``
 
