@@ -55,11 +55,11 @@ shdom: shdom.o $(SHDOMOBJS)
 shdom.o: shdom.f90 $(SHDOMOBJS)
 	$(F90) -c $(F90FLAGS) shdom.f90
 
-shdUtil_rte1.o: shdUtil_rte1.f
-	$(F90) -c $(F90FLAGS) shdUtil_rte1.f
+shdUtil_rte1.o: shdUtil_rte1.f90
+	$(F90) -c $(F90FLAGS) shdUtil_rte1.f90
 
-shdUtil_rte2.o: shdUtil_rte2.f
-	$(F90) -c $(F90FLAGS) shdUtil_rte2.f
+shdUtil_rte2.o: shdUtil_rte2.f90
+	$(F90) -c $(F90FLAGS) shdUtil_rte2.f90
 
 shdUtil_io.o: shdUtil_io.f90
 	$(F90) -c $(F90FLAGS) shdUtil_io.f90
