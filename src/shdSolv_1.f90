@@ -1133,20 +1133,20 @@ subroutine BOUNDARY_PNTS(NPTS, NANG, LAMBERTIAN, MAXNBC, MAXBCRAD,&
     return
 end subroutine
 
-subroutine SURFACE_PARM_INTERP(NBOTPTS, BCPTR, GRIDPOS,          &
-&               SRCTYPE, WAVENO, WAVELEN, UNITS,                   &
-&               NXSFC, NYSFC, DELXSFC, DELYSFC, NSFCPAR, SFCPARMS, &
-&               SFCGRIDPARMS)
-!       Bilinearly interpolates the surface properties from the regular
-!     surface grid to the boundary points of the adaptive grid.
-!     The locations of the NBOTPTS grid points on the bottom boundary
-!     (pointed to by BCPTR) are in the GRIDPOS array.  The input regular
-!     surface info is specified by the number of grid lines (NXSFC,NYSFC
-!     the grid spacing (DELXSFC,DELYSFC), the number of parameters at
-!     each grid point (NSFCPAR), and the surface parameters (SFCPARMS).
-!     The output interpolated surface parameters at the NBOTPTS boundary
-!     points are in SFCGRIDPARMS.  The first parameter is input as
-!     temperature, but converted to Planck function for output.
+subroutine SURFACE_PARM_INTERP(NBOTPTS, BCPTR, GRIDPOS,&
+    & SRCTYPE, WAVENO, WAVELEN, UNITS,&
+    & NXSFC, NYSFC, DELXSFC, DELYSFC, NSFCPAR, SFCPARMS,&
+    & SFCGRIDPARMS)
+    !   Bilinearly interpolates the surface properties from the regular
+    ! surface grid to the boundary points of the adaptive grid.
+    ! The locations of the NBOTPTS grid points on the bottom boundary
+    ! (pointed to by BCPTR) are in the GRIDPOS array.  The input regular
+    ! surface info is specified by the number of grid lines (NXSFC,NYSFC
+    ! the grid spacing (DELXSFC,DELYSFC), the number of parameters at
+    ! each grid point (NSFCPAR), and the surface parameters (SFCPARMS).
+    ! The output interpolated surface parameters at the NBOTPTS boundary
+    ! points are in SFCGRIDPARMS.  The first parameter is input as
+    ! temperature, but converted to Planck function for output.
     implicit none
     integer NBOTPTS, BCPTR(*), NXSFC, NYSFC, NSFCPAR
     real WAVENO(2), WAVELEN
@@ -1157,7 +1157,7 @@ subroutine SURFACE_PARM_INTERP(NBOTPTS, BCPTR, GRIDPOS,          &
     integer I, IBC, IX, IY, J
     real RX, RY, U, V, TEMP, PLANCK
 
-!         Loop over all bottom points
+    ! Loop over all bottom points
     do IBC = 1, NBOTPTS
         I = BCPTR(IBC)
         RX = GRIDPOS(1, I)/DELXSFC
@@ -1167,9 +1167,9 @@ subroutine SURFACE_PARM_INTERP(NBOTPTS, BCPTR, GRIDPOS,          &
         U = max(0.0, min(1.0, RX - (IX - 1)))
         V = max(0.0, min(1.0, RY - (IY - 1)))
         do J = 1, NSFCPAR
-            SFCGRIDPARMS(J, IBC) = (1 - U)*(1 - V)*SFCPARMS(J, IX, IY)           &
-       &        + (1 - U)*V*SFCPARMS(J, IX, IY + 1)                             &
-       &        + U*(1 - V)*SFCPARMS(J, IX + 1, IY) + U*V*SFCPARMS(J, IX + 1, IY + 1)
+            SFCGRIDPARMS(J, IBC) = (1 - U)*(1 - V)*SFCPARMS(J, IX, IY)&
+                & + (1 - U)*V*SFCPARMS(J, IX, IY + 1)&
+                & + U*(1 - V)*SFCPARMS(J, IX + 1, IY) + U*V*SFCPARMS(J, IX + 1, IY + 1)
         end do
         if (SRCTYPE .eq. 'S') then
             PLANCK = 0.0
@@ -1180,13 +1180,13 @@ subroutine SURFACE_PARM_INTERP(NBOTPTS, BCPTR, GRIDPOS,          &
         SFCGRIDPARMS(1, IBC) = PLANCK
     end do
     return
-end
+end subroutine
 
-subroutine CHECK_UNIFORM_SFC(NXSFC, NYSFC, NSFCPAR, SFCPARMS,    &
-&                              UNIFORM_SFC_BRDF)
-!       Checks to see if the surface reflection parameters are uniform,
-!     and if so sets the UNIFORM_SFC_BRDF flag.  The temperature need
-!     not be uniform.
+subroutine CHECK_UNIFORM_SFC(NXSFC, NYSFC, NSFCPAR, SFCPARMS,&
+    & UNIFORM_SFC_BRDF)
+    !   Checks to see if the surface reflection parameters are uniform,
+    ! and if so sets the UNIFORM_SFC_BRDF flag.  The temperature need
+    ! not be uniform.
     implicit none
     integer NXSFC, NYSFC, NSFCPAR
     real SFCPARMS(NSFCPAR, NXSFC + 1, NYSFC + 1)
@@ -1205,13 +1205,13 @@ subroutine CHECK_UNIFORM_SFC(NXSFC, NYSFC, NSFCPAR, SFCPARMS,    &
         end do
     end do
     return
-end
+end subroutine
 
-subroutine COMPUTE_TOP_RADIANCES(SRCTYPE, SKYRAD, WAVENO, WAVELEN, &
-&                                  UNITS, NTOPPTS, NSTOKES, BCRAD)
-!       Returns the beginning of the BCRAD array with the downwelling
-!     radiance for the NTOPPTS top boundary points.  Currently all
-!     points have the same unpolarized isotropic radiance.
+subroutine COMPUTE_TOP_RADIANCES(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
+    & UNITS, NTOPPTS, NSTOKES, BCRAD)
+    !   Returns the beginning of the BCRAD array with the downwelling
+    ! radiance for the NTOPPTS top boundary points.  Currently all
+    ! points have the same unpolarized isotropic radiance.
     implicit none
     integer NTOPPTS, NSTOKES
     real SKYRAD, WAVENO(2), WAVELEN
@@ -1220,29 +1220,29 @@ subroutine COMPUTE_TOP_RADIANCES(SRCTYPE, SKYRAD, WAVENO, WAVELEN, &
     integer IBC, K
     real SKYRAD2
 
-!           At top, boundary radiance is any isotropic sky radiation
+    ! At top, boundary radiance is any isotropic sky radiation
     if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
         SKYRAD2 = SKYRAD
     else
         call PLANCK_FUNCTION(SKYRAD, UNITS, WAVENO, WAVELEN, SKYRAD2)
     end if
-!         Loop over all points assigning the uniform radiance
+    ! Loop over all points assigning the uniform radiance
     do IBC = 1, NTOPPTS
         BCRAD(1, IBC) = SKYRAD2
         BCRAD(2:, IBC) = 0.0
     end do
     return
-end
+end subroutine
 
-subroutine FIXED_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR,             &
-&             DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO,        &
-&             WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD)
-!       Returns the BCRAD array with the upwelling unpolarized radiance
-!     a Lambertian surface for the bottom points (pointed to by BCPTR).
-!     If there is reflection the downwelling hemispheric flux at the
-!     bottom points is gotten (from FLUXES). There may also be thermal
-!     emission (depending on temperature and emissivity) or reflected
-!     collimated solar radiation (DIRFLUX).
+subroutine FIXED_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR,&
+    & DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO,&
+    & WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD)
+    !   Returns the BCRAD array with the upwelling unpolarized radiance
+    ! a Lambertian surface for the bottom points (pointed to by BCPTR).
+    ! If there is reflection the downwelling hemispheric flux at the
+    ! bottom points is gotten (from FLUXES). There may also be thermal
+    ! emission (depending on temperature and emissivity) or reflected
+    ! collimated solar radiation (DIRFLUX).
     implicit none
     integer NBOTPTS, BCPTR(*), NSTOKES
     real DIRFLUX(*), FLUXES(2, *)
@@ -1258,7 +1258,7 @@ subroutine FIXED_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR,             &
         GNDRAD = GNDRAD*(1.0 - GNDALBEDO)
     end if
 
-!         Loop over all bottom points finding the upwelling radiance
+    ! Loop over all bottom points finding the upwelling radiance
     do IBC = 1, NBOTPTS
         I = BCPTR(IBC)
         if (SRCTYPE .eq. 'S') then
@@ -1271,19 +1271,19 @@ subroutine FIXED_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR,             &
         BCRAD(2:, IBC) = 0.0
     end do
     return
-end
+end subroutine
 
-subroutine VARIABLE_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR,          &
-&             DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS,     &
-&             NSTOKES, BCRAD)
-!       Returns the BCRAD array with the upwelling unpolarized radiance
-!     variable Lambertian surface for the bottom points (pointed to by B
-!     SFCGRIDPARMS contains the interpolated surface properties for the
-!     bottom boundary points; the first is Planck function and the secon
-!     albedo.  The reflection is computed from the downwelling hemispher
-!     flux (in FLUXES).  There may also be thermal emission (depending o
-!     temperature and emissivity) or reflected collimated solar radiatio
-!     (from DIRFLUX).
+subroutine VARIABLE_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR,&
+    & DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS,&
+    & NSTOKES, BCRAD)
+    !   Returns the BCRAD array with the upwelling unpolarized radiance
+    ! variable Lambertian surface for the bottom points (pointed to by B
+    ! SFCGRIDPARMS contains the interpolated surface properties for the
+    ! bottom boundary points; the first is Planck function and the secon
+    ! albedo.  The reflection is computed from the downwelling hemispher
+    ! flux (in FLUXES).  There may also be thermal emission (depending o
+    ! temperature and emissivity) or reflected collimated solar radiatio
+    ! (from DIRFLUX).
     implicit none
     integer NBOTPTS, BCPTR(*), NSFCPAR, NSTOKES
     real DIRFLUX(*), FLUXES(2, *)
@@ -1295,7 +1295,7 @@ subroutine VARIABLE_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR,          &
 
     OPI = 1.0/acos(-1.0)
 
-!         Loop over all bottom points
+    ! Loop over all bottom points
     do IBC = 1, NBOTPTS
         I = BCPTR(IBC)
         ALB = SFCGRIDPARMS(2, IBC)
@@ -1312,29 +1312,29 @@ subroutine VARIABLE_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR,          &
         BCRAD(2:, IBC) = 0.0
     end do
     return
-end
+end subroutine
 
-subroutine VARIABLE_BRDF_SURFACE(NBOTPTS, IBEG, IEND, BCPTR,     &
-&               NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MU2, PHI2,    &
-&               SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,       &
-&               SFCTYPE, NSFCPAR, SFCGRIDPARMS, NSTOKES, BCRAD)
-!       Computes the upwelling Stokes vector of the bottom boundary poin
-!     for one outgoing direction using the specified bidirectional
-!     reflectance distribution function.  The upwelling Stokes vector
-!     includes the reflection of the incident radiance, the thermal
-!     emission (emissivity*Planck function), and the reflected direct
-!     solar flux (if applicable).  The upwelling radiance vector is the
-!     integral over all incident directions of the BRDF times the
-!     downwelling radiance, so a discrete sum is done and the integral
-!     weights (WTDO) are included. The general BRDF function is called
-!     to compute the Stokes reflectance matrix for the particular BRDF
-!     type (SFCTYPE) with parameters (SFCGRIDPARMS) for the incident and
-!     outgoing directions.  The emissivity is computed implicitly from t
-!     integral of the BRDF.  The outgoing direction is specified with
-!     (MU2,PHI2), and the BRDF is computed for all incident directions
-!     (loop over JMU,JPHI).  The incident downwelling radiance vectors a
-!     input in BCRAD(*,*,2...) and the outgoing upwelling radiance vecto
-!     are output in BCRAD(*,*,1).
+subroutine VARIABLE_BRDF_SURFACE(NBOTPTS, IBEG, IEND, BCPTR,&
+    & NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MU2, PHI2,&
+    & SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
+    & SFCTYPE, NSFCPAR, SFCGRIDPARMS, NSTOKES, BCRAD)
+    !   Computes the upwelling Stokes vector of the bottom boundary poin
+    ! for one outgoing direction using the specified bidirectional
+    ! reflectance distribution function.  The upwelling Stokes vector
+    ! includes the reflection of the incident radiance, the thermal
+    ! emission (emissivity*Planck function), and the reflected direct
+    ! solar flux (if applicable).  The upwelling radiance vector is the
+    ! integral over all incident directions of the BRDF times the
+    ! downwelling radiance, so a discrete sum is done and the integral
+    ! weights (WTDO) are included. The general BRDF function is called
+    ! to compute the Stokes reflectance matrix for the particular BRDF
+    ! type (SFCTYPE) with parameters (SFCGRIDPARMS) for the incident and
+    ! outgoing directions.  The emissivity is computed implicitly from t
+    ! integral of the BRDF.  The outgoing direction is specified with
+    ! (MU2,PHI2), and the BRDF is computed for all incident directions
+    ! (loop over JMU,JPHI).  The incident downwelling radiance vectors a
+    ! input in BCRAD(*,*,2...) and the outgoing upwelling radiance vecto
+    ! are output in BCRAD(*,*,1).
     implicit none
     integer NBOTPTS, IBEG, IEND, BCPTR(NBOTPTS)
     integer NMU, NPHI0MAX, NPHI0(NMU), NSFCPAR, NSTOKES
@@ -1349,51 +1349,51 @@ subroutine VARIABLE_BRDF_SURFACE(NBOTPTS, IBEG, IEND, BCPTR,     &
 
     do IBC = IBEG, IEND
 
-!         Initialize the upwelling boundary radiances to zero or to
-!           the reflection of direct unpolarized solar flux.
+        ! Initialize the upwelling boundary radiances to zero or to
+        !   the reflection of direct unpolarized solar flux.
         BCRAD(:, IBC, 1) = 0.0
         if (SRCTYPE .ne. 'T') then
             I = BCPTR(IBC)
-            call SURFACE_BRDF(SFCTYPE(2:2), SFCGRIDPARMS(2, IBC), WAVELEN, &
-       &                    MU2, PHI2, SOLARMU, SOLARAZ, NSTOKES, REFLECT)
-            BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1)                               &
-       &                    + OPI*REFLECT(1:NSTOKES, 1)*DIRFLUX(I)
+            call SURFACE_BRDF(SFCTYPE(2:2), SFCGRIDPARMS(2, IBC), WAVELEN,&
+                & MU2, PHI2, SOLARMU, SOLARAZ, NSTOKES, REFLECT)
+            BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1)&
+                & + OPI*REFLECT(1:NSTOKES, 1)*DIRFLUX(I)
         end if
 
-!         Integrate over the incident discrete ordinate directions (JMU,
+        ! Integrate over the incident discrete ordinate directions (JMU,
         JANG = 1
         do JMU = 1, NMU/2
             do JPHI = 1, NPHI0(JMU)
-                call SURFACE_BRDF(SFCTYPE(2:2), SFCGRIDPARMS(2, IBC),       &
-         &                     WAVELEN, MU2, PHI2, MU(JMU), PHI(JMU, JPHI),    &
-         &                     NSTOKES, REFLECT)
+                call SURFACE_BRDF(SFCTYPE(2:2), SFCGRIDPARMS(2, IBC),&
+                    & WAVELEN, MU2, PHI2, MU(JMU), PHI(JMU, JPHI),&
+                    & NSTOKES, REFLECT)
                 W = OPI*abs(MU(JMU))*WTDO(JMU, JPHI)
-!             Add in the polarized reflection
+                ! Add in the polarized reflection
                 do K1 = 1, NSTOKES
-                    BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1)                           &
-           &                   + W*REFLECT(1:NSTOKES, K1)*BCRAD(K1, IBC, JANG + 1)
+                    BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1)&
+                        & + W*REFLECT(1:NSTOKES, K1)*BCRAD(K1, IBC, JANG + 1)
                 end do
-!             Add in the polarized thermal emission
-                BCRAD(1, IBC, 1) = BCRAD(1, IBC, 1)                             &
-         &                     + W*(1 - REFLECT(1, 1))*SFCGRIDPARMS(1, IBC)
-                BCRAD(2:, IBC, 1) = BCRAD(2:, IBC, 1)                           &
-         &                   - W*REFLECT(2:NSTOKES, 1)*SFCGRIDPARMS(1, IBC)
+                ! Add in the polarized thermal emission
+                BCRAD(1, IBC, 1) = BCRAD(1, IBC, 1)&
+                    & + W*(1 - REFLECT(1, 1))*SFCGRIDPARMS(1, IBC)
+                BCRAD(2:, IBC, 1) = BCRAD(2:, IBC, 1)&
+                    & - W*REFLECT(2:NSTOKES, 1)*SFCGRIDPARMS(1, IBC)
                 JANG = JANG + 1
             end do
         end do
 
     end do
     return
-end
+end subroutine
 
-subroutine MAKE_SFC_BRDF_DO_MATRIX(SFCTYPE, WAVELEN,             &
-&                   NXSFC, NYSFC, NSFCPAR, SFCPARMS, NSTOKES,      &
-&                   NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,           &
-&                   SFC_BRDF_DO)
-!      Makes the precomputed BRDF surface reflection matrix for
-!      discrete ordinate incident and outgoing directions.  For each
-!      pair of discrete ordinates SURFACE_BRDF is called and the
-!      integration weights are included.
+subroutine MAKE_SFC_BRDF_DO_MATRIX(SFCTYPE, WAVELEN,&
+    & NXSFC, NYSFC, NSFCPAR, SFCPARMS, NSTOKES,&
+    & NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
+    & SFC_BRDF_DO)
+    !   Makes the precomputed BRDF surface reflection matrix for
+    ! discrete ordinate incident and outgoing directions.  For each
+    ! pair of discrete ordinates SURFACE_BRDF is called and the
+    ! integration weights are included.
     implicit none
     integer NXSFC, NYSFC, NSFCPAR
     integer NSTOKES, NMU, NPHI0MAX, NPHI0(NMU)
@@ -1405,26 +1405,26 @@ subroutine MAKE_SFC_BRDF_DO_MATRIX(SFCTYPE, WAVELEN,             &
     real OPI, REFLECT(4, 4), W
 
     OPI = 1.0/acos(-1.0)
-!       Loop over outgoing discrete ordinates (IMU,IPHI)
+    ! Loop over outgoing discrete ordinates (IMU,IPHI)
     do IMU = NMU/2 + 1, NMU
         IMU1 = IMU - NMU/2
         do IPHI = 1, NPHI0(IMU)
-!           Loop over incident discrete ordinates (JMU,JPHI)
+            ! Loop over incident discrete ordinates (JMU,JPHI)
             do JMU = 1, NMU/2
                 do JPHI = 1, NPHI0(JMU)
-!               Get the BRDF for this
-                    call SURFACE_BRDF(SFCTYPE(2:2), SFCPARMS(2, 1, 1),         &
-           &                     WAVELEN, MU(IMU), PHI(IMU, IPHI),              &
-           &                     MU(JMU), PHI(JMU, JPHI), NSTOKES, REFLECT)
+                    ! Get the BRDF for this
+                    call SURFACE_BRDF(SFCTYPE(2:2), SFCPARMS(2, 1, 1),&
+                        & WAVELEN, MU(IMU), PHI(IMU, IPHI),&
+                        & MU(JMU), PHI(JMU, JPHI), NSTOKES, REFLECT)
                     W = OPI*abs(MU(JMU))*WTDO(JMU, JPHI)
-                    SFC_BRDF_DO(:, IMU1, IPHI, :, JMU, JPHI)                       &
-           &                      = W*REFLECT(1:NSTOKES, 1:NSTOKES)
+                    SFC_BRDF_DO(:, IMU1, IPHI, :, JMU, JPHI)&
+                        & = W*REFLECT(1:NSTOKES, 1:NSTOKES)
                 end do
             end do
         end do
     end do
     return
-end
+end subroutine
 
 subroutine UNIFORM_BRDF_SURFACE(NBOTPTS, BCPTR,                  &
 &               NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, IMU, IPHI,    &
