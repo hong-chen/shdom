@@ -1426,25 +1426,25 @@ subroutine MAKE_SFC_BRDF_DO_MATRIX(SFCTYPE, WAVELEN,&
     return
 end subroutine
 
-subroutine UNIFORM_BRDF_SURFACE(NBOTPTS, BCPTR,                  &
-&               NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, IMU, IPHI,    &
-&               SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,       &
-&               SFCTYPE, NSFCPAR, SFCGRIDPARMS, SFC_BRDF_DO,       &
-&               NSTOKES, BCRAD)
-!       Computes the upwelling Stokes vector of the bottom boundary poin
-!     for one outgoing discrete ordinate using the precomputed bidirecti
-!     reflectance distribution matrix for the discrete ordinates.
-!     The upwelling Stokes vector includes the reflection of the inciden
-!     radiance, the thermal emission (emissivity*Planck function), and t
-!     reflected direct solar flux (if applicable).  The upwelling radian
-!     vector is the integral over all incident directions of the BRDF ti
-!     the downwelling radiance, so a discrete sum is done using the SFC_
-!     matrix, which includes the integral weights (WTDO).  The emissivit
-!     is computed implicitly from the integral of the BRDF.  The outgoin
-!     direction is specified with (IMU,IPHI), and the BRDF is computed f
-!     all incident directions (loop over JMU,JPHI).  The incident downwe
-!     radiance vectors are input in BCRAD(*,*,2...) and the outgoing
-!     upwelling radiance vectors are output in BCRAD(*,*,1).
+subroutine UNIFORM_BRDF_SURFACE(NBOTPTS, BCPTR,&
+    & NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, IMU, IPHI,&
+    & SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
+    & SFCTYPE, NSFCPAR, SFCGRIDPARMS, SFC_BRDF_DO,&
+    & NSTOKES, BCRAD)
+    !   Computes the upwelling Stokes vector of the bottom boundary poin
+    ! for one outgoing discrete ordinate using the precomputed bidirecti
+    ! reflectance distribution matrix for the discrete ordinates.
+    ! The upwelling Stokes vector includes the reflection of the inciden
+    ! radiance, the thermal emission (emissivity*Planck function), and t
+    ! reflected direct solar flux (if applicable).  The upwelling radian
+    ! vector is the integral over all incident directions of the BRDF ti
+    ! the downwelling radiance, so a discrete sum is done using the SFC_
+    ! matrix, which includes the integral weights (WTDO).  The emissivit
+    ! is computed implicitly from the integral of the BRDF.  The outgoin
+    ! direction is specified with (IMU,IPHI), and the BRDF is computed f
+    ! all incident directions (loop over JMU,JPHI).  The incident downwe
+    ! radiance vectors are input in BCRAD(*,*,2...) and the outgoing
+    ! upwelling radiance vectors are output in BCRAD(*,*,1).
     implicit none
     integer NBOTPTS, BCPTR(NBOTPTS)
     integer NMU, NPHI0MAX, NPHI0(NMU), IMU, IPHI, NSFCPAR, NSTOKES
@@ -1461,39 +1461,39 @@ subroutine UNIFORM_BRDF_SURFACE(NBOTPTS, BCPTR,                  &
     IMU1 = IMU - NMU/2
     do IBC = 1, NBOTPTS
 
-!         Initialize the upwelling boundary radiances to zero or to
-!           the reflection of direct unpolarized solar flux.
+        ! Initialize the upwelling boundary radiances to zero or to
+        !   the reflection of direct unpolarized solar flux.
         BCRAD(:, IBC, 1) = 0.0
         if (SRCTYPE .ne. 'T') then
             I = BCPTR(IBC)
-            call SURFACE_BRDF(SFCTYPE(2:2), SFCGRIDPARMS(2, IBC), WAVELEN, &
-       &                       MU(IMU), PHI(IMU, IPHI), SOLARMU, SOLARAZ,   &
-       &                       NSTOKES, REFLECT)
-            BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1)                               &
-       &                     + OPI*REFLECT(1:NSTOKES, 1)*DIRFLUX(I)
+            call SURFACE_BRDF(SFCTYPE(2:2), SFCGRIDPARMS(2, IBC), WAVELEN,&
+                & MU(IMU), PHI(IMU, IPHI), SOLARMU, SOLARAZ,&
+                & NSTOKES, REFLECT)
+            BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1)&
+                & + OPI*REFLECT(1:NSTOKES, 1)*DIRFLUX(I)
         end if
 
-!         Integrate over the incident discrete ordinate directions (JMU,
+        ! Integrate over the incident discrete ordinate directions (JMU,
         JANG = 1
         do JMU = 1, NMU/2
             do JPHI = 1, NPHI0(JMU)
-!             Add in the polarized reflection
+                ! Add in the polarized reflection
                 do K1 = 1, NSTOKES
-                    BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1) + BCRAD(K1, IBC, JANG + 1)     &
-                                      &                          *SFC_BRDF_DO(:, IMU1, IPHI, K1, JMU, JPHI)
+                    BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1) + BCRAD(K1, IBC, JANG + 1)&
+                        & *SFC_BRDF_DO(:, IMU1, IPHI, K1, JMU, JPHI)
                 end do
-!             Add in the polarized thermal emission
+                ! Add in the polarized thermal emission
                 W = OPI*abs(MU(JMU))*WTDO(JMU, JPHI)
-                BCRAD(1, IBC, 1) = BCRAD(1, IBC, 1) + SFCGRIDPARMS(1, IBC)       &
-                                  &                      *(W - SFC_BRDF_DO(1, IMU1, IPHI, 1, JMU, JPHI))
-                BCRAD(2:, IBC, 1) = BCRAD(2:, IBC, 1) - SFCGRIDPARMS(1, IBC)     &
-                                   &                        *SFC_BRDF_DO(2:, IMU1, IPHI, 1, JMU, JPHI)
+                BCRAD(1, IBC, 1) = BCRAD(1, IBC, 1) + SFCGRIDPARMS(1, IBC)&
+                    & *(W - SFC_BRDF_DO(1, IMU1, IPHI, 1, JMU, JPHI))
+                BCRAD(2:, IBC, 1) = BCRAD(2:, IBC, 1) - SFCGRIDPARMS(1, IBC)&
+                    & *SFC_BRDF_DO(2:, IMU1, IPHI, 1, JMU, JPHI)
                 JANG = JANG + 1
             end do
         end do
     end do
     return
-end
+end subroutine
 
 subroutine SH_TO_DO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,          &
 &                     NMU, NPHI0MAX, NPHI0,                        &
