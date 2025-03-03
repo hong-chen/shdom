@@ -1549,22 +1549,23 @@ subroutine VISUALIZE_CELLS(OUTFILE, YVAL, OUTTYPE,               &
 
     close (9)
     return
-end
+end subroutine
 
-subroutine OUTPUT_RESULTS(NSTOKES, NX, NY, NZ, NBPTS, NPTS, NCELLS, &
-    &             NSH, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,              &
-    &             NMU, NPHI, NANG, NG,                                 &
-    &             PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,  &
-    &             BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,           &
-    &             SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,                 &
-    &             SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS, &
-    &             SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,           &
-    &             XGRID, YGRID, ZGRID, GRIDPOS,                        &
-    &             TREEPTR, GRIDPTR, CELLFLAGS,                         &
-    &             EXTINCT, ALBEDO, LEGEN, IPHASE, TEMP,                &
-    &             FLUXES, DIRFLUX, FLUXDIV,                            &
-    &             IRAD, RADOUT, NSHOUT, SHTERMS, SOURCE1OUT,           &
-    &             OUTTYPE, OUTPARMS, OUTFILE)
+subroutine OUTPUT_RESULTS( &
+    & NSTOKES, NX, NY, NZ, NBPTS, NPTS, NCELLS, &
+    & NSH, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE, &
+    & NMU, NPHI, NANG, NG, &
+    & PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE, &
+    & BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE, &
+    & SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD, &
+    & SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS, &
+    & SPLITACC, SHACC, SOLACC, MAXITER, TOTITER, &
+    & XGRID, YGRID, ZGRID, GRIDPOS, &
+    & TREEPTR, GRIDPTR, CELLFLAGS, &
+    & EXTINCT, ALBEDO, LEGEN, IPHASE, TEMP, &
+    & FLUXES, DIRFLUX, FLUXDIV, &
+    & IRAD, RADOUT, NSHOUT, SHTERMS, SOURCE1OUT, &
+    & OUTTYPE, OUTPARMS, OUTFILE)
     ! Writes the desired type of output file from the output fields
     ! with a header giving the input parameters.
     ! There are five types (OUTTYPE) of output: 'R' - for radiance,
@@ -1665,54 +1666,54 @@ subroutine OUTPUT_RESULTS(NSTOKES, NX, NY, NZ, NBPTS, NPTS, NCELLS, &
     if (OUTTYPE .eq. 'M') OUTNAME = 'MEDIUM-PROPERTIES'
 
     open (UNIT=2, FILE=OUTFILE, STATUS='UNKNOWN')
-    write (2, '(A,A)')                                                 &
-   &  '! Polarized Spherical Harmonic Discrete Ordinate',             &
-   &  ' Radiative Transfer Output'
-    write (2, '(2(A,I3),A,I5,2(A,I3),A,I5,A,I10)')                     &
-   &    '!  L=', ML, '  M=', MM, '  NLM=', NLM,                           &
-   &    '   NMU=', NMU, '  NPHI=', NPHI, '  NANG=', NANG,               &
-   &    '   NSH=', NSH
-    write (2, '(A,I1,3(A,I4),2(A,I8))') '!  NSTOKES=', NSTOKES,         &
-   &  '   NX=', NX, '   NY=', NY, '   NZ=', NZ,                            &
-   &  '    NPTS=', NPTS, '   NCELLS=', NCELLS
+    write (2, '(A,A)') &
+        & '! Polarized Spherical Harmonic Discrete Ordinate', &
+        & ' Radiative Transfer Output'
+    write (2, '(2(A,I3),A,I5,2(A,I3),A,I5,A,I10)') &
+        & '!  L=', ML, '  M=', MM, '  NLM=', NLM, &
+        & '   NMU=', NMU, '  NPHI=', NPHI, '  NANG=', NANG, &
+        & '   NSH=', NSH
+    write (2, '(A,I1,3(A,I4),2(A,I8))') '!  NSTOKES=', NSTOKES, &
+        & '   NX=', NX, '   NY=', NY, '   NZ=', NZ, &
+        & '    NPTS=', NPTS, '   NCELLS=', NCELLS
     write (2, '(A,A)') '!  PROPERTY_FILE=', trim(PROPFILE)
-    write (2, '(A,A,A,I2)') '!  CORRELATED_K-DIST_FILE=',              &
-   &                    trim(CKDFILE), '   NUM_G=', NG
+    write (2, '(A,A,A,I2)') '!  CORRELATED_K-DIST_FILE=', &
+        & trim(CKDFILE), '   NUM_G=', NG
     write (2, '(A,A)') '!  INPUT_SAVE_FILE=', trim(INSAVEFILE)
     write (2, '(A,A)') '!  OUTPUT_SAVE_FILE=', trim(OUTSAVEFILE)
     if (DELTAM) then
-        write (2, '(A,A14,A)') '!  SOURCE_TYPE=', SOURCENAME,           &
-     &                        '      DELTA-M METHOD'
+        write (2, '(A,A14,A)') '!  SOURCE_TYPE=', SOURCENAME, &
+            & '      DELTA-M METHOD'
     else
         write (2, '(A,A14)') '!  SOURCE_TYPE=', SOURCENAME
     end if
-    write (2, '(A,A32,A,I1)') '!  GRID_TYPE=', GRIDNAME,               &
-   &                         '   INDEPENDENT_PIXEL=', IPFLAG
-    write (2, '(A,A22,A,I1)') '!  SURFACE_TYPE=', SFCNAME,             &
-   &                         '   HORIZ_BOUNDARY_COND=', BCFLAG
+    write (2, '(A,A32,A,I1)') '!  GRID_TYPE=', GRIDNAME, &
+        & '   INDEPENDENT_PIXEL=', IPFLAG
+    write (2, '(A,A22,A,I1)') '!  SURFACE_TYPE=', SFCNAME, &
+        & '   HORIZ_BOUNDARY_COND=', BCFLAG
     if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
         if (SFCTYPE(1:1) .eq. 'V') then
-            write (2, '(A,A,A,E12.5)') '!  SURFACE_FILE=', trim(SFCFILE),   &
-       &                                 '  SKY_RAD=', SKYRAD
+            write (2, '(A,A,A,E12.5)') '!  SURFACE_FILE=', trim(SFCFILE), &
+                & '  SKY_RAD=', SKYRAD
         else
             if (SRCTYPE .eq. 'B') then
-                write (2, '(A,F9.7,A,F8.3,A,E12.5)')                         &
-         &        '!  GROUND_ALBEDO=', GNDALBEDO, '  GROUND_TEMP=', GNDTEMP,  &
-         &        '  SKY_RAD=', SKYRAD
+                write (2, '(A,F9.7,A,F8.3,A,E12.5)') &
+                    & '!  GROUND_ALBEDO=', GNDALBEDO, '  GROUND_TEMP=', GNDTEMP, &
+                    & '  SKY_RAD=', SKYRAD
             else
-                write (2, '(A,F9.7,A,E12.5)')                                &
-         &        '!  GROUND_ALBEDO=', GNDALBEDO, '  SKY_RAD=', SKYRAD
+                write (2, '(A,F9.7,A,E12.5)') &
+                    & '!  GROUND_ALBEDO=', GNDALBEDO, '  SKY_RAD=', SKYRAD
             end if
         end if
-        write (2, '(A,E13.6,A,F10.7,A,F8.3)')                            &
-     &         '!  SOLAR_FLUX=', SOLARFLUX, '   SOLAR_MU=', SOLARMU,    &
-     &         '   SOLAR_AZ=', SOLARAZ*180.0/acos(-1.0)
+        write (2, '(A,E13.6,A,F10.7,A,F8.3)') &
+            & '!  SOLAR_FLUX=', SOLARFLUX, '   SOLAR_MU=', SOLARMU, &
+            & '   SOLAR_AZ=', SOLARAZ*180.0/acos(-1.0)
     else
         if (SFCTYPE(1:1) .eq. 'V') then
             write (2, '(A,A)') '!  SURFACE_FILE=', trim(SFCFILE)
         else
-            write (2, '(A,F8.3,A,F9.7)')                                   &
-       &      '!  GROUND_TEMP=', GNDTEMP, '  GROUND_EMIS=', 1.0 - GNDALBEDO
+            write (2, '(A,F8.3,A,F9.7)') &
+       & '!  GROUND_TEMP=', GNDTEMP, '  GROUND_EMIS=', 1.0 - GNDALBEDO
         end if
         write (2, '(A,F8.3)') '!  SKY_TEMP=', SKYRAD
     end if
@@ -1720,17 +1721,17 @@ subroutine OUTPUT_RESULTS(NSTOKES, NX, NY, NZ, NBPTS, NPTS, NCELLS, &
     if (UNITS .eq. 'T') then
         write (2, '(A,A24)') '!  UNITS=', UNITSNAME
     else if (UNITS .eq. 'B') then
-        write (2, '(A,A24,A,2(1X,F10.2))') '!  UNITS=', UNITSNAME,       &
-     &           '   WAVENUMBER_RANGE=', WAVENO(1), WAVENO(2)
+        write (2, '(A,A24,A,2(1X,F10.2))') '!  UNITS=', UNITSNAME, &
+            & '   WAVENUMBER_RANGE=', WAVENO(1), WAVENO(2)
     else
-        write (2, '(A,A24,A,F10.2)') '!  UNITS=', UNITSNAME,             &
-     &           '   WAVELENGTH=', WAVELEN
+        write (2, '(A,A24,A,F10.2)') '!  UNITS=', UNITSNAME, &
+            & '   WAVELENGTH=', WAVELEN
     end if
-    write (2, '(2(A,E10.3))') '!  SPLITTING_ACCURACY=', SPLITACC,      &
-   &                         '   SPHERICAL_HARMONIC_ACCURACY=', SHACC
+    write (2, '(2(A,E10.3))') '!  SPLITTING_ACCURACY=', SPLITACC, &
+        & '   SPHERICAL_HARMONIC_ACCURACY=', SHACC
     write (2, '(A,E10.3)') '!  SOLUTION_ACCURACY=', SOLACC
-    write (2, '(2(A,I4))') '!  MAXIMUM_ITERATIONS=', MAXITER,       &
-   &                         '   NUMBER_ITERATIONS=', TOTITER
+    write (2, '(2(A,I4))') '!  MAXIMUM_ITERATIONS=', MAXITER, &
+        & '   NUMBER_ITERATIONS=', TOTITER
     write (2, '(A,A20)') '!  OUTPUT_TYPE=', OUTNAME
 
     PI = acos(-1.0)
@@ -1754,23 +1755,23 @@ subroutine OUTPUT_RESULTS(NSTOKES, NX, NY, NZ, NBPTS, NPTS, NCELLS, &
         Z0 = min(max(OUTPARMS(1), ZGRID(1)), ZGRID(NZ))
         NANGOUT = nint(OUTPARMS(6))
 
-        write (2, '(A,F7.3,3(A,I4))') '!    RADIANCE AT Z=', Z0,         &
-     &      '    NXO=', NXOUT, '    NYO=', NYOUT, '    NDIR=', NANGOUT
+        write (2, '(A,F7.3,3(A,I4))') '!    RADIANCE AT Z=', Z0, &
+            & '    NXO=', NXOUT, '    NYO=', NYOUT, '    NDIR=', NANGOUT
         if (UNITS .eq. 'T') then
             FORM = '(2(1X,F7.3),1X,4(1X,F6.2))'
-            write (2, '(A)')                                               &
-       &      '!   X       Y       RADIANCE (STOKES I, Q, U, V)'
+            write (2, '(A)') &
+                & '!   X       Y       RADIANCE (STOKES I, Q, U, V)'
         else
             FORM = '(2(1X,F7.3),1X,4(1X,E12.5))'
-            write (2, '(A)')                                               &
-       &      '!   X       Y        RADIANCE (STOKES I, Q, U, V)'
+            write (2, '(A)') &
+                & '!   X       Y        RADIANCE (STOKES I, Q, U, V)'
         end if
 
         do K = 1, NANGOUT
             MUOUT = OUTPARMS(2*K + 5)
             PHID = OUTPARMS(2*K + 6)
-            write (2, '(A,1X,F8.5,1X,F7.2,2X,A)')                          &
-       &          '! ', MUOUT, PHID, '<- (mu,phi)'
+            write (2, '(A,1X,F8.5,1X,F7.2,2X,A)') &
+                & '! ', MUOUT, PHID, '<- (mu,phi)'
             Y0 = STARTY
             do JY = 1, NYOUT
                 X0 = STARTX
@@ -1795,8 +1796,8 @@ subroutine OUTPUT_RESULTS(NSTOKES, NX, NY, NZ, NBPTS, NPTS, NCELLS, &
             else
                 if (SRCTYPE .ne. 'T') then
                     FORM = '(2(1X,F7.3),1X,3(2X,E12.5))'
-                    write (2, '(A)')                                           &
-           &     '!   X       Y           UP       DOWN_DIFFUSE   DOWN_DIRECT'
+                    write (2, '(A)') &
+                        & '!   X       Y           UP       DOWN_DIFFUSE   DOWN_DIRECT'
                 else
                     FORM = '(2(1X,F7.3),1X,2(2X,E12.5))'
                     write (2, '(A)') '!   X       Y           UP           DOWN'
@@ -1805,14 +1806,14 @@ subroutine OUTPUT_RESULTS(NSTOKES, NX, NY, NZ, NBPTS, NPTS, NCELLS, &
             C = 1.0
             if (UNITS .eq. 'T') C = 1.0/PI
             do I = 1, NBPTS, NZ
-                if (GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.                     &
-         &          GRIDPOS(2, I) .lt. YGRID(NY + 1)) then
+                if (GRIDPOS(1, I) .lt. XGRID(NX + 1) .and. &
+                    & GRIDPOS(2, I) .lt. YGRID(NY + 1)) then
                     if (SRCTYPE .ne. 'T') then
-                        write (2, FORM) GRIDPOS(1, I), GRIDPOS(2, I),              &
-             &            C*FLUXES(2, I + NZ - 1), C*FLUXES(1, I), DIRFLUX(I)
+                        write (2, FORM) GRIDPOS(1, I), GRIDPOS(2, I), &
+                            & C*FLUXES(2, I + NZ - 1), C*FLUXES(1, I), DIRFLUX(I)
                     else
-                        write (2, FORM) GRIDPOS(1, I), GRIDPOS(2, I),              &
-             &              C*FLUXES(2, I + NZ - 1), C*FLUXES(1, I)
+                        write (2, FORM) GRIDPOS(1, I), GRIDPOS(2, I), &
+                            & C*FLUXES(2, I + NZ - 1), C*FLUXES(1, I)
                     end if
                 end if
             end do
@@ -1827,7 +1828,7 @@ subroutine OUTPUT_RESULTS(NSTOKES, NX, NY, NZ, NBPTS, NPTS, NCELLS, &
             NY2 = NY + 1 - ibits(BCFLAG, 1, 1)
             NYOUT = max(1, nint((YGRID(NY2) - YGRID(1))/OUTPARMS(4)))
             write (2, '(A,F7.3,2(A,I4))') '!    UPWELLING FLUX:     Z=', Z0, &
-       &        '    NXO=', NXOUT, '    NYO=', NYOUT
+                & '    NXO=', NXOUT, '    NYO=', NYOUT
             write (2, '(A,F7.3)') '!    DOWNWELLING FLUX:   Z=', Z0
             if (UNITS .eq. 'T') then
                 FORM = '(2(1X,F7.3),1X,2(2X,F6.2))'
@@ -1835,8 +1836,8 @@ subroutine OUTPUT_RESULTS(NSTOKES, NX, NY, NZ, NBPTS, NPTS, NCELLS, &
             else
                 if (SRCTYPE .ne. 'T') then
                     FORM = '(2(1X,F7.3),1X,3(2X,E12.5))'
-                    write (2, '(A)')                                           &
-           &     '!   X       Y           UP       DOWN_DIFFUSE   DOWN_DIRECT'
+                    write (2, '(A)') &
+                        & '!   X       Y           UP       DOWN_DIFFUSE   DOWN_DIRECT'
                 else
                     FORM = '(2(1X,F7.3),1X,2(2X,E12.5))'
                     write (2, '(A)') '!   X       Y           UP           DOWN'
@@ -1848,15 +1849,15 @@ subroutine OUTPUT_RESULTS(NSTOKES, NX, NY, NZ, NBPTS, NPTS, NCELLS, &
             do JY = 1, NYOUT
                 X0 = XGRID(1)
                 do JX = 1, NXOUT
-                    call LOCATE_GRID_CELL(NX, NY, NZ, XGRID, YGRID, ZGRID,   &
-           &                  NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS,   &
-           &                  BCFLAG, IPFLAG, X0, Y0, Z0, ICELL)
-                    call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,          &
-           &                             X0, Y0, Z0, 2, FLUXES, 1, 1, FDN)
-                    call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,          &
-           &                             X0, Y0, Z0, 2, FLUXES, 2, 1, FUP)
-                    call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,          &
-           &                             X0, Y0, Z0, 1, DIRFLUX, 1, 1, FDIR)
+                    call LOCATE_GRID_CELL(NX, NY, NZ, XGRID, YGRID, ZGRID, &
+                        & NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS, &
+                        & BCFLAG, IPFLAG, X0, Y0, Z0, ICELL)
+                    call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS, &
+                        & X0, Y0, Z0, 2, FLUXES, 1, 1, FDN)
+                    call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS, &
+                        & X0, Y0, Z0, 2, FLUXES, 2, 1, FUP)
+                    call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS, &
+                        & X0, Y0, Z0, 1, DIRFLUX, 1, 1, FDIR)
                     if (SRCTYPE .ne. 'T') then
                         write (2, FORM) X0, Y0, C*FUP, C*FDN, FDIR
                     else
@@ -1875,8 +1876,8 @@ subroutine OUTPUT_RESULTS(NSTOKES, NX, NY, NZ, NBPTS, NPTS, NCELLS, &
             else
                 if (SRCTYPE .ne. 'T') then
                     FORM = '(1X,F7.3,1X,3(2X,E12.5))'
-                    write (2, '(A)')                                           &
-           &            '!    Z          UP       DOWN_DIFFUSE   DOWN_DIRECT'
+                    write (2, '(A)') &
+                        & '!    Z          UP       DOWN_DIFFUSE   DOWN_DIRECT'
                 else
                     FORM = '(1X,F7.3,1X,2(2X,E12.5))'
                     write (2, '(A)') '!    Z          UP           DOWN'
@@ -1890,8 +1891,8 @@ subroutine OUTPUT_RESULTS(NSTOKES, NX, NY, NZ, NBPTS, NPTS, NCELLS, &
                 SUM3 = 0.0
                 N = 0
                 do I = IZ, NBPTS, NZ
-                    if (GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.                   &
-           &            GRIDPOS(2, I) .lt. YGRID(NY + 1)) then
+                    if (GRIDPOS(1, I) .lt. XGRID(NX + 1) .and. &
+                        & GRIDPOS(2, I) .lt. YGRID(NY + 1)) then
                         SUM1 = SUM1 + FLUXES(1, I)
                         SUM2 = SUM2 + FLUXES(2, I)
                         SUM3 = SUM3 + DIRFLUX(I)
@@ -1921,25 +1922,25 @@ subroutine OUTPUT_RESULTS(NSTOKES, NX, NY, NZ, NBPTS, NPTS, NCELLS, &
             else
                 if (SRCTYPE .ne. 'T') then
                     FORM = '(3(1X,F7.3),1X,3(2X,E12.5))'
-                    write (2, '(A,A)') '!   X       Y       Z',                &
-           &          '           UP       DOWN_DIFFUSE   DOWN_DIRECT'
+                    write (2, '(A,A)') '!   X       Y       Z', &
+                        & '           UP       DOWN_DIFFUSE   DOWN_DIRECT'
                 else
                     FORM = '(3(1X,F7.3),1X,2(2X,E12.5))'
-                    write (2, '(A)')                                           &
-           &       '!   X       Y       Z           UP           DOWN'
+                    write (2, '(A)') &
+                        & '!   X       Y       Z           UP           DOWN'
                 end if
             end if
             C = 1.0
             if (UNITS .eq. 'T') C = 1.0/PI
             do I = 1, N
-                if ((GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.                    &
-         &           GRIDPOS(2, I) .lt. YGRID(NY + 1)) .or. ALLGRID) then
+                if ((GRIDPOS(1, I) .lt. XGRID(NX + 1) .and. &
+                    & GRIDPOS(2, I) .lt. YGRID(NY + 1)) .or. ALLGRID) then
                     if (SRCTYPE .ne. 'T') then
-                        write (2, FORM) GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I),  &
-             &            C*FLUXES(2, I), C*FLUXES(1, I), DIRFLUX(I)
+                        write (2, FORM) GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I), &
+                            & C*FLUXES(2, I), C*FLUXES(1, I), DIRFLUX(I)
                     else
-                        write (2, FORM) GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I),  &
-             &            C*FLUXES(2, I), C*FLUXES(1, I)
+                        write (2, FORM) GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I), &
+                            & C*FLUXES(2, I), C*FLUXES(1, I)
                     end if
                 end if
             end do
@@ -1955,8 +1956,8 @@ subroutine OUTPUT_RESULTS(NSTOKES, NX, NY, NZ, NBPTS, NPTS, NCELLS, &
                 SUM = 0.0
                 N = 0
                 do I = IZ, NBPTS, NZ
-                    if (GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.                   &
-           &            GRIDPOS(2, I) .lt. YGRID(NY + 1)) then
+                    if (GRIDPOS(1, I) .lt. XGRID(NX + 1) .and. &
+                        & GRIDPOS(2, I) .lt. YGRID(NY + 1)) then
                         SUM = SUM + FLUXDIV(I)
                         N = N + 1
                     end if
@@ -1976,10 +1977,10 @@ subroutine OUTPUT_RESULTS(NSTOKES, NX, NY, NZ, NBPTS, NPTS, NCELLS, &
             ! Format 3 is flux convergence for every grid point
             write (2, '(A)') '!    X       Y        Z       -DIV(Fnet)'
             do I = 1, N
-                if ((GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.                    &
-         &           GRIDPOS(2, I) .lt. YGRID(NY + 1)) .or. ALLGRID) then
-                    write (2, '(3(1X,F7.3),2X,E13.5)')                         &
-           &          GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I), -FLUXDIV(I)
+                if ((GRIDPOS(1, I) .lt. XGRID(NX + 1) .and. &
+                    & GRIDPOS(2, I) .lt. YGRID(NY + 1)) .or. ALLGRID) then
+                    write (2, '(3(1X,F7.3),2X,E13.5)') &
+                        & GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I), -FLUXDIV(I)
                 end if
             end do
         end if
@@ -1997,26 +1998,26 @@ subroutine OUTPUT_RESULTS(NSTOKES, NX, NY, NZ, NBPTS, NPTS, NCELLS, &
             ALLGRID = .false.
         end if
         if (NSHOUT .eq. 5) then
-            write (2, '(A,A)') '!    X       Y        Z         Imean',    &
-       &     '          Fx           Fy           Fz       HOrms'
+            write (2, '(A,A)') '!    X       Y        Z         Imean', &
+                & '          Fx           Fy           Fz       HOrms'
             do I = 1, N
-                if ((GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.                    &
-         &         GRIDPOS(2, I) .lt. YGRID(NY + 1)) .or. ALLGRID) then
-                    write (2, '(3(1X,F7.3),1X,4(1X,E12.5),1X,F6.3)')           &
-           &          GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I),               &
-           &          SHTERMS(1, I), SHTERMS(2, I), SHTERMS(3, I), SHTERMS(4, I),   &
-           &          SHTERMS(5, I)/max(1e-20, SHTERMS(1, I))
+                if ((GRIDPOS(1, I) .lt. XGRID(NX + 1) .and. &
+                    & GRIDPOS(2, I) .lt. YGRID(NY + 1)) .or. ALLGRID) then
+                    write (2, '(3(1X,F7.3),1X,4(1X,E12.5),1X,F6.3)') &
+                        & GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I), &
+                        & SHTERMS(1, I), SHTERMS(2, I), SHTERMS(3, I), SHTERMS(4, I), &
+                        & SHTERMS(5, I)/max(1e-20, SHTERMS(1, I))
                 end if
             end do
         else
-            write (2, '(A,A)') '!    X       Y        Z         Imean',    &
-       &     '          Fx           Fy           Fz '
+            write (2, '(A,A)') '!    X       Y        Z         Imean', &
+                & '          Fx           Fy           Fz '
             do I = 1, N
-                if ((GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.                    &
-         &         GRIDPOS(2, I) .lt. YGRID(NY + 1)) .or. ALLGRID) then
-                    write (2, '(3(1X,F7.3),1X,4(1X,E12.5))')                   &
-           &          GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I),               &
-           &          SHTERMS(1, I), SHTERMS(2, I), SHTERMS(3, I), SHTERMS(4, I)
+                if ((GRIDPOS(1, I) .lt. XGRID(NX + 1) .and. &
+                    & GRIDPOS(2, I) .lt. YGRID(NY + 1)) .or. ALLGRID) then
+                    write (2, '(3(1X,F7.3),1X,4(1X,E12.5))') &
+                        & GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I), &
+                        & SHTERMS(1, I), SHTERMS(2, I), SHTERMS(3, I), SHTERMS(4, I)
                 end if
             end do
         end if
@@ -2034,16 +2035,16 @@ subroutine OUTPUT_RESULTS(NSTOKES, NX, NY, NZ, NBPTS, NPTS, NCELLS, &
         end if
         MUOUT = OUTPARMS(2)
         PHID = OUTPARMS(3)
-        write (2, '(A,1X,F8.5,1X,F7.2,2X,A)')                            &
-     &          '! ', MUOUT, PHID, '<- (mu,phi)'
-        write (2, '(A,A)') '!    X       Y       Z    ',                 &
-     &      ' Extinction   Source Function (Stokes I, Q, U, V)'
+        write (2, '(A,1X,F8.5,1X,F7.2,2X,A)') &
+            & '! ', MUOUT, PHID, '<- (mu,phi)'
+        write (2, '(A,A)') '!    X       Y       Z    ', &
+            & ' Extinction   Source Function (Stokes I, Q, U, V)'
         do I = 1, N
-            if ((GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.                      &
-       &         GRIDPOS(2, I) .lt. YGRID(NY + 1)) .or. ALLGRID) then
-                write (2, '(3(1X,F7.3),5(1X,E12.5))')                        &
-         &          GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I),               &
-         &          EXTINCT(I), SOURCE1OUT(:, I)
+            if ((GRIDPOS(1, I) .lt. XGRID(NX + 1) .and. &
+                & GRIDPOS(2, I) .lt. YGRID(NY + 1)) .or. ALLGRID) then
+                write (2, '(3(1X,F7.3),5(1X,E12.5))') &
+                    & GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I), &
+                    & EXTINCT(I), SOURCE1OUT(:, I)
             end if
         end do
 
@@ -2059,19 +2060,19 @@ subroutine OUTPUT_RESULTS(NSTOKES, NX, NY, NZ, NBPTS, NPTS, NCELLS, &
             N = NBPTS
             ALLGRID = .false.
         end if
-        write (2, '(A,A)') '!    X       Y       Z',                     &
-       &         '      Extinct  Albedo  Asymmetry Temp'
+        write (2, '(A,A)') '!    X       Y       Z', &
+            & '      Extinct  Albedo  Asymmetry Temp'
         do I = 1, N
             if (NUMPHASE .gt. 0) then
                 ASYM = LEGEN(1, 1, IPHASE(I))
             else
                 ASYM = LEGEN(1, 1, I)
             end if
-            if ((GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.                      &
-           &     GRIDPOS(2, I) .lt. YGRID(NY + 1)) .or. ALLGRID) then
-                write (2, '(3(1X,F7.3),1X,F10.6,1X,F8.6,1X,F8.5,1X,F7.2)')   &
-               &       GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I),              &
-               &       EXTINCT(I), ALBEDO(I), ASYM, TEMP(I)
+            if ((GRIDPOS(1, I) .lt. XGRID(NX + 1) .and. &
+                & GRIDPOS(2, I) .lt. YGRID(NY + 1)) .or. ALLGRID) then
+                write (2, '(3(1X,F7.3),1X,F10.6,1X,F8.6,1X,F8.5,1X,F7.2)') &
+                    & GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I), &
+                    & EXTINCT(I), ALBEDO(I), ASYM, TEMP(I)
             end if
         end do
 
@@ -2079,18 +2080,19 @@ subroutine OUTPUT_RESULTS(NSTOKES, NX, NY, NZ, NBPTS, NPTS, NCELLS, &
 
     close (2)
     return
-end
+end subroutine
 
-subroutine OUTPUT_RESULTS_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
-&             NSH, ML, MM, NLM, NMU, NPHI, NANG, NG,                   &
-&             PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,  &
-&             BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,           &
-&             SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,                 &
-&             SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS, &
-&             SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,           &
-&             XDOMAIN, YDOMAIN, XGRID, YGRID, ZGRID,               &
-&             FLUXES, FLUXDIV, NSHOUT, SHTERMS, IRAD, RADOUT,      &
-&             OUTTYPE, OUTPARMS, OUTFILE)
+subroutine OUTPUT_RESULTS_PAR( &
+    & NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
+    & NSH, ML, MM, NLM, NMU, NPHI, NANG, NG, &
+    & PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE, &
+    & BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE, &
+    & SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD, &
+    & SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS, &
+    & SPLITACC, SHACC, SOLACC, MAXITER, TOTITER, &
+    & XDOMAIN, YDOMAIN, XGRID, YGRID, ZGRID, &
+    & FLUXES, FLUXDIV, NSHOUT, SHTERMS, IRAD, RADOUT, &
+    & OUTTYPE, OUTPARMS, OUTFILE)
     ! Writes the desired type of output file from the output fields
     ! with a header giving the input parameters.
     ! There are four supported types (OUTTYPE) of output: 'R' - for radi
@@ -2181,54 +2183,54 @@ subroutine OUTPUT_RESULTS_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
     if (OUTTYPE .eq. 'S') OUTNAME = 'SPHERICAL-HARMONIC'
 
     open (UNIT=2, FILE=OUTFILE, STATUS='UNKNOWN')
-    write (2, '(A,A)')                                                 &
-   &  '! Polarized Spherical Harmonic Discrete Ordinate',             &
-   &  ' Radiative Transfer Output'
-    write (2, '(2(A,I3),A,I5,2(A,I3),A,I5,A,I10)')                     &
-   &    '!  L=', ML, '  M=', MM, '  NLM=', NLM,                           &
-   &    '   NMU=', NMU, '  NPHI=', NPHI, '  NANG=', NANG,               &
-   &    '   NSH=', NSH
-    write (2, '(A,I1,3(A,I4),2(A,I8))') '!  NSTOKES=', NSTOKES,         &
-   &  '   NX=', NX, '   NY=', NY, '   NZ=', NZ,                            &
-   &  '   NPTS=', NPTS, '   NCELLS=', NCELLS
+    write (2, '(A,A)') &
+        & '! Polarized Spherical Harmonic Discrete Ordinate', &
+        & ' Radiative Transfer Output'
+    write (2, '(2(A,I3),A,I5,2(A,I3),A,I5,A,I10)') &
+        & '!  L=', ML, '  M=', MM, '  NLM=', NLM, &
+        & '   NMU=', NMU, '  NPHI=', NPHI, '  NANG=', NANG, &
+        & '   NSH=', NSH
+    write (2, '(A,I1,3(A,I4),2(A,I8))') '!  NSTOKES=', NSTOKES, &
+        & '   NX=', NX, '   NY=', NY, '   NZ=', NZ, &
+        & '   NPTS=', NPTS, '   NCELLS=', NCELLS
     write (2, '(A,A)') '!  PROPERTY_FILE=', trim(PROPFILE)
-    write (2, '(A,A,A,I2)') '!  CORRELATED_K-DIST_FILE=',              &
-   &                     trim(CKDFILE), '   NUM_G=', NG
+    write (2, '(A,A,A,I2)') '!  CORRELATED_K-DIST_FILE=', &
+        & trim(CKDFILE), '   NUM_G=', NG
     write (2, '(A,A)') '!  INPUT_SAVE_FILE=', trim(INSAVEFILE)
     write (2, '(A,A)') '!  OUTPUT_SAVE_FILE=', trim(OUTSAVEFILE)
     if (DELTAM) then
-        write (2, '(A,A14,A)') '!  SOURCE_TYPE=', SOURCENAME,           &
-     &                        '      DELTA-M METHOD'
+        write (2, '(A,A14,A)') '!  SOURCE_TYPE=', SOURCENAME, &
+            & '      DELTA-M METHOD'
     else
         write (2, '(A,A14)') '!  SOURCE_TYPE=', SOURCENAME
     end if
-    write (2, '(A,A32,A,I1)') '!  GRID_TYPE=', GRIDNAME,               &
-   &                         '   INDEPENDENT_PIXEL=', IPFLAG
-    write (2, '(A,A22,A,I2)') '!  SURFACE_TYPE=', SFCNAME,             &
-   &                         '   HORIZ_BOUNDARY_COND=', BCFLAG
+    write (2, '(A,A32,A,I1)') '!  GRID_TYPE=', GRIDNAME, &
+        & '   INDEPENDENT_PIXEL=', IPFLAG
+    write (2, '(A,A22,A,I2)') '!  SURFACE_TYPE=', SFCNAME, &
+        & '   HORIZ_BOUNDARY_COND=', BCFLAG
     if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
         if (SFCTYPE(1:1) .eq. 'V') then
-            write (2, '(A,A,A,E12.5)') '!  SURFACE_FILE=', trim(SFCFILE),   &
-       &                                 '  SKY_RAD=', SKYRAD
+            write (2, '(A,A,A,E12.5)') '!  SURFACE_FILE=', trim(SFCFILE), &
+                & '  SKY_RAD=', SKYRAD
         else
             if (SRCTYPE .eq. 'B') then
-                write (2, '(A,F9.7,A,F8.3,A,E12.5)')                         &
-         &        '!  GROUND_ALBEDO=', GNDALBEDO, '  GROUND_TEMP=', GNDTEMP,  &
-         &        '  SKY_RAD=', SKYRAD
+                write (2, '(A,F9.7,A,F8.3,A,E12.5)') &
+                    & '!  GROUND_ALBEDO=', GNDALBEDO, '  GROUND_TEMP=', GNDTEMP, &
+                    & '  SKY_RAD=', SKYRAD
             else
-                write (2, '(A,F9.7,A,E12.5)')                                &
-         &        '!  GROUND_ALBEDO=', GNDALBEDO, '  SKY_RAD=', SKYRAD
+                write (2, '(A,F9.7,A,E12.5)') &
+                    & '!  GROUND_ALBEDO=', GNDALBEDO, '  SKY_RAD=', SKYRAD
             end if
         end if
-        write (2, '(A,E13.6,A,F10.7,A,F8.3)')                            &
-     &         '!  SOLAR_FLUX=', SOLARFLUX, '   SOLAR_MU=', SOLARMU,    &
-     &         '   SOLAR_AZ=', SOLARAZ*180.0/acos(-1.0)
+        write (2, '(A,E13.6,A,F10.7,A,F8.3)') &
+            & '!  SOLAR_FLUX=', SOLARFLUX, '   SOLAR_MU=', SOLARMU, &
+            & '   SOLAR_AZ=', SOLARAZ*180.0/acos(-1.0)
     else
         if (SFCTYPE(1:1) .eq. 'V') then
             write (2, '(A,A)') '!  SURFACE_FILE=', trim(SFCFILE)
         else
-            write (2, '(A,F8.3,A,F9.7)')                                   &
-       &      '!  GROUND_TEMP=', GNDTEMP, '  GROUND_EMIS=', 1.0 - GNDALBEDO
+            write (2, '(A,F8.3,A,F9.7)') &
+                & '!  GROUND_TEMP=', GNDTEMP, '  GROUND_EMIS=', 1.0 - GNDALBEDO
         end if
         write (2, '(A,F8.3)') '!  SKY_TEMP=', SKYRAD
     end if
@@ -2236,17 +2238,17 @@ subroutine OUTPUT_RESULTS_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
     if (UNITS .eq. 'T') then
         write (2, '(A,A24)') '!  UNITS=', UNITSNAME
     else if (UNITS .eq. 'B') then
-        write (2, '(A,A24,A,2(1X,F10.2))') '!  UNITS=', UNITSNAME,       &
-     &           '   WAVENUMBER_RANGE=', WAVENO(1), WAVENO(2)
+        write (2, '(A,A24,A,2(1X,F10.2))') '!  UNITS=', UNITSNAME, &
+            & '   WAVENUMBER_RANGE=', WAVENO(1), WAVENO(2)
     else
-        write (2, '(A,A24,A,F10.2)') '!  UNITS=', UNITSNAME,             &
-     &           '   WAVELENGTH=', WAVELEN
+        write (2, '(A,A24,A,F10.2)') '!  UNITS=', UNITSNAME, &
+            & '   WAVELENGTH=', WAVELEN
     end if
-    write (2, '(2(A,E10.3))') '!  SPLITTING_ACCURACY=', SPLITACC,      &
-   &                         '   SPHERICAL_HARMONIC_ACCURACY=', SHACC
+    write (2, '(2(A,E10.3))') '!  SPLITTING_ACCURACY=', SPLITACC, &
+        & '   SPHERICAL_HARMONIC_ACCURACY=', SHACC
     write (2, '(A,E10.3)') '!  SOLUTION_ACCURACY=', SOLACC
-    write (2, '(2(A,I4))') '!  MAXIMUM_ITERATIONS=', MAXITER,       &
-   &                         '   NUMBER_ITERATIONS=', TOTITER
+    write (2, '(2(A,I4))') '!  MAXIMUM_ITERATIONS=', MAXITER, &
+        & '   NUMBER_ITERATIONS=', TOTITER
     write (2, '(A,A20)') '!  OUTPUT_TYPE=', OUTNAME
 
     PI = acos(-1.0)
@@ -2268,23 +2270,23 @@ subroutine OUTPUT_RESULTS_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
         Z0 = min(max(OUTPARMS(1), ZGRID(1)), ZGRID(NZ))
         NANGOUT = nint(OUTPARMS(6))
 
-        write (2, '(A,F7.3,3(A,I4))') '!    RADIANCE AT Z=', Z0,         &
-     &      '    NXO=', NXOUT, '    NYO=', NYOUT, '    NDIR=', NANGOUT
+        write (2, '(A,F7.3,3(A,I4))') '!    RADIANCE AT Z=', Z0, &
+            & '    NXO=', NXOUT, '    NYO=', NYOUT, '    NDIR=', NANGOUT
         if (UNITS .eq. 'T') then
             FORM = '(2(1X,F7.3),1X,4(1X,F6.2))'
-            write (2, '(A)')                                               &
-       &       '!   X       Y      RADIANCE (STOKES I, Q, U, V)'
+            write (2, '(A)') &
+                & '!   X       Y      RADIANCE (STOKES I, Q, U, V)'
         else
             FORM = '(2(1X,F7.3),1X,4(1X,E12.5))'
-            write (2, '(A)')                                               &
-       &       '!   X       Y        RADIANCE (STOKES I, Q, U, V)'
+            write (2, '(A)') &
+                & '!   X       Y        RADIANCE (STOKES I, Q, U, V)'
         end if
 
         do K = 1, NANGOUT
             MUOUT = OUTPARMS(2*K + 5)
             PHID = OUTPARMS(2*K + 6)
-            write (2, '(A,1X,F8.5,1X,F7.2,2X,A)')                          &
-       &          '! ', MUOUT, PHID, '<- (mu,phi)'
+            write (2, '(A,1X,F8.5,1X,F7.2,2X,A)') &
+                & '! ', MUOUT, PHID, '<- (mu,phi)'
             Y0 = STARTY
             do JY = 1, NYOUT
                 X0 = STARTX
@@ -2309,8 +2311,8 @@ subroutine OUTPUT_RESULTS_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
             else
                 if (SRCTYPE .ne. 'T') then
                     FORM = '(2(1X,F7.3),1X,3(2X,E12.5))'
-                    write (2, '(A)')                                           &
-           &     '!   X       Y           UP       DOWN_DIFFUSE   DOWN_DIRECT'
+                    write (2, '(A)') &
+                        & '!   X       Y           UP       DOWN_DIFFUSE   DOWN_DIRECT'
                 else
                     FORM = '(2(1X,F7.3),1X,2(2X,E12.5))'
                     write (2, '(A)') '!   X       Y           UP           DOWN'
@@ -2321,11 +2323,11 @@ subroutine OUTPUT_RESULTS_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
             do I = 1, NX
                 do J = 1, NY
                     if (SRCTYPE .ne. 'T') then
-                        write (2, FORM) XGRID(I), YGRID(J),                      &
-             &            C*FLUXES(2, NZ, J, I), C*FLUXES(1, 1, J, I), FLUXES(3, 1, J, I)
+                        write (2, FORM) XGRID(I), YGRID(J), &
+                            & C*FLUXES(2, NZ, J, I), C*FLUXES(1, 1, J, I), FLUXES(3, 1, J, I)
                     else
-                        write (2, FORM) XGRID(I), YGRID(J),                      &
-             &              C*FLUXES(2, NZ, J, I), C*FLUXES(1, 1, J, I)
+                        write (2, FORM) XGRID(I), YGRID(J), &
+                            & C*FLUXES(2, NZ, J, I), C*FLUXES(1, 1, J, I)
                     end if
                 end do
             end do
@@ -2342,8 +2344,8 @@ subroutine OUTPUT_RESULTS_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
             else
                 if (SRCTYPE .ne. 'T') then
                     FORM = '(1X,F7.3,1X,3(2X,E12.5))'
-                    write (2, '(A)')                                           &
-           &            '!    Z          UP       DOWN_DIFFUSE   DOWN_DIRECT'
+                    write (2, '(A)') &
+                        & '!    Z          UP       DOWN_DIFFUSE   DOWN_DIRECT'
                 else
                     FORM = '(1X,F7.3,1X,2(2X,E12.5))'
                     write (2, '(A)') '!    Z          UP           DOWN'
@@ -2379,12 +2381,12 @@ subroutine OUTPUT_RESULTS_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
             else
                 if (SRCTYPE .ne. 'T') then
                     FORM = '(3(1X,F7.3),1X,3(2X,E12.5))'
-                    write (2, '(A,A)') '!   X       Y       Z',                &
-           &          '           UP       DOWN_DIFFUSE   DOWN_DIRECT'
+                    write (2, '(A,A)') '!   X       Y       Z', &
+                        & '           UP       DOWN_DIFFUSE   DOWN_DIRECT'
                 else
                     FORM = '(3(1X,F7.3),1X,2(2X,E12.5))'
-                    write (2, '(A)')                                           &
-           &       '!   X       Y       Z           UP           DOWN'
+                    write (2, '(A)') &
+                        & '!   X       Y       Z           UP           DOWN'
                 end if
             end if
             C = 1.0
@@ -2393,11 +2395,11 @@ subroutine OUTPUT_RESULTS_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
                 do J = 1, NY
                     do K = 1, NZ
                         if (SRCTYPE .ne. 'T') then
-                            write (2, FORM) XGRID(I), YGRID(J), ZGRID(K),              &
-                 &            C*FLUXES(2, K, J, I), C*FLUXES(1, K, J, I), FLUXES(3, K, J, I)
+                            write (2, FORM) XGRID(I), YGRID(J), ZGRID(K), &
+                                & C*FLUXES(2, K, J, I), C*FLUXES(1, K, J, I), FLUXES(3, K, J, I)
                         else
-                            write (2, FORM) XGRID(I), YGRID(J), ZGRID(K),              &
-                 &            C*FLUXES(2, K, J, I), C*FLUXES(1, K, J, I)
+                            write (2, FORM) XGRID(I), YGRID(J), ZGRID(K), &
+                                & C*FLUXES(2, K, J, I), C*FLUXES(1, K, J, I)
                         end if
                     end do
                 end do
@@ -2428,8 +2430,8 @@ subroutine OUTPUT_RESULTS_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
             do I = 1, NX
                 do J = 1, NY
                     do K = 1, NZ
-                        write (2, '(3(1X,F7.3),2X,E13.5)')                         &
-               &             XGRID(I), YGRID(J), ZGRID(K), -FLUXDIV(K, J, I)
+                        write (2, '(3(1X,F7.3),2X,E13.5)') &
+                            & XGRID(I), YGRID(J), ZGRID(K), -FLUXDIV(K, J, I)
                     end do
                 end do
             end do
@@ -2441,27 +2443,27 @@ subroutine OUTPUT_RESULTS_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
         !   Output mean intensity and net flux (x,y,z components).
         !   and maybe normalized rms of higher order terms
         if (NSHOUT .eq. 5) then
-            write (2, '(A,A)') '!    X       Y        Z         Imean',    &
-       &     '          Fx           Fy           Fz       HOrms'
+            write (2, '(A,A)') '!    X       Y        Z         Imean', &
+                & '          Fx           Fy           Fz       HOrms'
             do I = 1, NX
                 do J = 1, NY
                     do K = 1, NZ
-                        write (2, '(3(1X,F7.3),1X,4(1X,E12.5),1X,F6.3)')           &
-               &          XGRID(I), YGRID(J), ZGRID(K), SHTERMS(1, K, J, I),         &
-               &          SHTERMS(2, K, J, I), SHTERMS(3, K, J, I), SHTERMS(4, K, J, I),     &
-               &          SHTERMS(5, K, J, I)/max(1e-20, SHTERMS(1, K, J, I))
+                        write (2, '(3(1X,F7.3),1X,4(1X,E12.5),1X,F6.3)') &
+                            & XGRID(I), YGRID(J), ZGRID(K), SHTERMS(1, K, J, I), &
+                            & SHTERMS(2, K, J, I), SHTERMS(3, K, J, I), SHTERMS(4, K, J, I), &
+                            & SHTERMS(5, K, J, I)/max(1e-20, SHTERMS(1, K, J, I))
                     end do
                 end do
             end do
         else
-            write (2, '(A,A)') '!    X       Y        Z         Imean',    &
-       &     '          Fx           Fy           Fz '
+            write (2, '(A,A)') '!    X       Y        Z         Imean', &
+                & '          Fx           Fy           Fz '
             do I = 1, NX
                 do J = 1, NY
                     do K = 1, NZ
-                        write (2, '(3(1X,F7.3),1X,4(1X,E12.5),1X,F6.3)')           &
-               &          XGRID(I), YGRID(J), ZGRID(K), SHTERMS(1, K, J, I),         &
-               &          SHTERMS(2, K, J, I), SHTERMS(3, K, J, I), SHTERMS(4, K, J, I)
+                        write (2, '(3(1X,F7.3),1X,4(1X,E12.5),1X,F6.3)') &
+                            & XGRID(I), YGRID(J), ZGRID(K), SHTERMS(1, K, J, I), &
+                            & SHTERMS(2, K, J, I), SHTERMS(3, K, J, I), SHTERMS(4, K, J, I)
                     end do
                 end do
             end do
@@ -2482,7 +2484,7 @@ subroutine OUTPUT_RESULTS_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
 
     close (2)
     return
-end
+end subroutine
 
 subroutine OUTPUT_IMAGE(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
     & NSH, ML, MM, NLM, NMU, NPHI, NANG, NG, &
