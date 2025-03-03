@@ -148,12 +148,12 @@ Source Code File Change
 
 * ``src/shdSca_tmatrixwig.f``: was ``tmatrixwig.f``
 
-* ``src/shdUtil_rte1.f90``: was ``shdomsub1.f``
+* ``src/shdSolve_1.f90``: was ``shdomsub1.f``
 
   * converted from F77 to F90
   * formatted the code
 
-* ``src/shdUtil_rte2.f90``: was ``shdomsub2.f``
+* ``src/shdSolve_2.f90``: was ``shdomsub2.f``
 
   * converted from F77 to F90
   * formatted the code
