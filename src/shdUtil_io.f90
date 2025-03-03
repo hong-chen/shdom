@@ -2849,11 +2849,11 @@ subroutine OUTPUT_IMAGE(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
                     DN = nint(VISSCALE(M)*(VISOUT(M, K) - VISMIN(M)))
                     DN = max(0, min(255, DN))
                     BUFFER1(I) = DN
-!              IF (DN .GT. 127) THEN
-!                BUFFER1(I) = DN - 256
-!              ELSE
-!                BUFFER1(I) = DN
-!              ENDIF
+                    ! if (DN .GT. 127) then
+                    !     BUFFER1(I) = DN - 256
+                    ! else
+                    !     BUFFER1(I) = DN
+                    ! endif
                     K = K + 1
                 end do
                 write (2, REC=LABRECS + L) BUFFER1(1:NS)
