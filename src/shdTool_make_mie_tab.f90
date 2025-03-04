@@ -212,11 +212,11 @@ subroutine USER_INPUT(POLTAB, WAVELEN1, WAVELEN2, PARTYPE, RINDEX, PARDENS,&
 
     write (*, *) 'Maximum particle radius in size distribution (micron)'
     read (*, *) MAXRADIUS
-    write (*, '(1X,F7.2)') MAXRADIUS
+    write (*, '(1X, F7.2)') MAXRADIUS
 
     write (*, *) 'Output Mie scattering table name'
-    read (*, *) MIETABFILE
-    write (*, '(1X,A70)') MIETABFILE
+    read (*, '(A)') MIETABFILE
+    write (*, '(A)') MIETABFILE
 end subroutine USER_INPUT
 
 subroutine GET_NSIZE(SRETAB, MAXRADIUS, WAVELEN, NSIZE)

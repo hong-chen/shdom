@@ -34,8 +34,8 @@ if ($MakeMieTable) then
   #  Makes the Mie scattering table for spherical water droplets for
   # gamma size distributions with a range of effective radius.
   set polarizedtable=F             # F=unpolarized output, T=polarized output
-  #set outfile="${fdir_data_tmp}/water_w${wavename}c_sca.txt"
-  set outfile="water_w${wavename}c_sca.txt"
+  set outfile="${fdir_data_tmp}/water_w${wavename}c_sca.txt"
+  #set outfile="water_w${wavename}c_sca.txt"
   set partype="W"                # W for water
   set distflag=G                   # G=gamma, L=lognormal size distribution
   set alpha=7 i                    # gamma dist shape parameter
@@ -47,7 +47,7 @@ if ($MakeMieTable) then
 
   put $polarizedtable "$wavelen $wavelen" $partype $avgflag $distflag $alpha \
       "$Nretab $Sretab $Eretab" $logre $maxradius "$outfile" | make_mie_table
-  mv $outfile $fdir_data_tmp
+  #mv $outfile $fdir_data_tmp
 endif
 
 
