@@ -3337,7 +3337,8 @@ subroutine SPLIT_GRID(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
     integer NPTS, NCELLS, BCFLAG, IPFLAG
     integer NX, NY, NSTOKES, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
     integer GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
-    integer RSHPTR(*), SHPTR(*), OSHPTR(*), ADAPTIND(*)
+    integer RSHPTR(*), SHPTR(*), OSHPTR(*)
+    real ADAPTIND(*)
     integer*2 CELLFLAGS(*), IPHASE(*)
     logical DELTAM, ACCELFLAG, DOSPLIT, OUTOFMEM
     real CURSPLITACC, SPLITCRIT
@@ -3368,7 +3369,7 @@ subroutine SPLIT_GRID(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
                     call CELL_SPLIT_TEST(GRIDPTR, GRIDPOS, EXTINCT,&
                         & SHPTR, NSTOKES, SOURCE, ICELL,&
                         & ADAPT, ADAPTCRIT(N + 1), IDIR)
-                    ADAPTIND(N + 1) = 4*ICELL + IDIR
+                    ADAPTIND(N+1) = 4*ICELL + IDIR
                     N = N + 1
                 end if
             end do
@@ -3397,8 +3398,8 @@ subroutine SPLIT_GRID(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
                     & RSHPTR(NPTS + 1) .gt. MAXRAD) then
                     OUTOFMEM0 = .true.
                 else
-                    ICELL = ADAPTIND(I)/4
-                    IDIR = iand(ADAPTIND(I), 3)
+                    ICELL = int(ADAPTIND(I))/4
+                    IDIR = iand(int(ADAPTIND(I)), 3)
                     ! Create the new grid points and make pointers
                     call DIVIDE_CELL(NPTS, NCELLS, GRIDPTR, NEIGHPTR,&
                         & TREEPTR, CELLFLAGS, GRIDPOS, ICELL, IDIR, NEWPOINTS)
@@ -3430,7 +3431,7 @@ subroutine SPLIT_GRID(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
                 else
                     ! See if cell should be split to make better grid:
                     !   IDIR=0 if no, IDIR=direction (1,2,3) otherwise
-                    ICELL = ADAPTIND(I)/4
+                    ICELL = int(ADAPTIND(I))/4
                     call GRID_SMOOTH_TEST(GRIDPTR, GRIDPOS, NEIGHPTR,&
                         & TREEPTR, CELLFLAGS, SHPTR, ICELL, IDIR)
                     ! Set IDIR=0 to stop adaptive grid smoothing
