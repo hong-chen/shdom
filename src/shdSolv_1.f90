@@ -2930,20 +2930,20 @@ subroutine BACK_INT_GRID2D(NX, NY, NZ, NA, NPTS, NCELLS,&
     return
 end subroutine
 
-subroutine BACK_INT_GRID1D(NX, NY, NZ, NA, NPTS, NCELLS,           &
-&             GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,               &
-&             GRIDPOS, SWEEPORD, MU, PHI, TRANSMIN,                &
-&             EXTINCT, NSTOKES, SOURCE, KANG, GRIDRAD)
-!       Sweeps through the spatial grid computing radiances for the
-!     discrete ordinate direction (MU,PHI) by integrating the source
-!     function and extinction backward from each point.  If a point is
-!     already done (nonnegative in GRIDRAD) then it is skipped.
-!     For each grid point a ray opposite to the ordinate direction is tr
-!     back to a face containing known (valid) radiances.  As each cell i
-!     crossed (usually only one) the integration of the source function
-!     across the cell is done and added to the radiance.  The radiance
-!     ad the end of the ray path is interpolated from the known grid poi
-!     radiances on the face.  The resulting radiances are put in GRIDRAD
+subroutine BACK_INT_GRID1D(NX, NY, NZ, NA, NPTS, NCELLS,&
+    & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+    & GRIDPOS, SWEEPORD, MU, PHI, TRANSMIN,&
+    & EXTINCT, NSTOKES, SOURCE, KANG, GRIDRAD)
+    !   Sweeps through the spatial grid computing radiances for the
+    ! discrete ordinate direction (MU,PHI) by integrating the source
+    ! function and extinction backward from each point.  If a point is
+    ! already done (nonnegative in GRIDRAD) then it is skipped.
+    ! For each grid point a ray opposite to the ordinate direction is tr
+    ! back to a face containing known (valid) radiances.  As each cell i
+    ! crossed (usually only one) the integration of the source function
+    ! across the cell is done and added to the radiance.  The radiance
+    ! ad the end of the ray path is interpolated from the known grid poi
+    ! radiances on the face.  The resulting radiances are put in GRIDRAD
     implicit none
     integer NX, NY, NZ, NA, NPTS, NCELLS, KANG, NSTOKES
     integer GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
@@ -2971,13 +2971,13 @@ subroutine BACK_INT_GRID1D(NX, NY, NZ, NA, NPTS, NCELLS,           &
 
     EPS = 1.0e-3*(GRIDPOS(3, GRIDPTR(8, 1)) - GRIDPOS(3, GRIDPTR(1, 1)))
 
-!         Make the ray direction (opposite to the discrete ordinate dire
+    ! Make the ray direction (opposite to the discrete ordinate dire
     PI = acos(-1.0)
     CZ = -MU
     CZINV = 1.0d0/CZ
 
-!         Setup the sweeping direction and the gridpoint location
-!         BITc is 0 for positive direction trace back ray, 1 for negativ
+    ! Setup the sweeping direction and the gridpoint location
+    ! BITc is 0 for positive direction trace back ray, 1 for negativ
     if (CZ .lt. -1.0e-3) then
         BITZ = 1
     else if (CZ .gt. 1.0e-3) then
@@ -2985,18 +2985,18 @@ subroutine BACK_INT_GRID1D(NX, NY, NZ, NA, NPTS, NCELLS,           &
     else
         stop 'BACK_INT_GRID3D: Bad MU'
     end if
-!         IOCT is the octant the ray come from or the discrete ordinate
+    ! IOCT is the octant the ray come from or the discrete ordinate
     IOCT = 1 + 4*BITZ
     JOCT = JOCTORDER(IOCT)
 
-!         Sweep through all the grid points
+    ! Sweep through all the grid points
     do IORDER = 1, NPTS
         IPCELL = ishft(SWEEPORD(IORDER, JOCT), -3)
         ICORNER = ibits(SWEEPORD(IORDER, JOCT), 0, 3) + 1
         IPT = GRIDPTR(ICORNER, IPCELL)
         if (GRIDRAD(1, IPT) .ge. 0.0) goto 500
 
-!           Start off at the grid point
+        ! Start off at the grid point
         ICELL = IPCELL
         TRANSMIT = 1.0
         EXT1 = EXTINCT(IPT)
@@ -3006,81 +3006,81 @@ subroutine BACK_INT_GRID1D(NX, NY, NZ, NA, NPTS, NCELLS,           &
         YE = GRIDPOS(2, IPT)
         ZE = GRIDPOS(3, IPT)
 
-!           Loop until finding a face with known radiances
+        ! Loop until finding a face with known radiances
         VALIDRAD = .false.
         do while (.not. VALIDRAD)
-!             Make sure current cell is valid
+            ! Make sure current cell is valid
             if (ICELL .le. 0) then
-                write (6, *) 'BACK_INT_GRID: ICELL=0  ',                     &
-         &           MU, PHI, IPT, INEXTCELL
+                write (6, *) 'BACK_INT_GRID: ICELL=0  ',&
+                    & MU, PHI, IPT, INEXTCELL
                 stop
             end if
-!             Find boundaries of the current cell
-!             Find the three possible intersection planes (X,Y,Z)
-!               from the coordinates of the opposite corner grid point
+            ! Find boundaries of the current cell
+            ! Find the three possible intersection planes (X,Y,Z)
+            !   from the coordinates of the opposite corner grid point
             IOPP = GRIDPTR(9 - IOCT, ICELL)
-!             Get the distances to the 3 planes and select the closest
+            ! Get the distances to the 3 planes and select the closest
             SO = (GRIDPOS(3, IOPP) - ZE)*CZINV
             if (SO .lt. -EPS) then
-                write (6, *) 'BACK_INT_GRID1D: SO<0  ',                      &
-         &          MU, PHI, ZE, SO, IPT, ICELL
+                write (6, *) 'BACK_INT_GRID1D: SO<0  ',&
+                    & MU, PHI, ZE, SO, IPT, ICELL
                 stop
             end if
-!              Compute the coordinates of the cell exitting location
+            ! Compute the coordinates of the cell exitting location
             ZE = ZE + SO*CZ
 
-!             Get the intersection face number (i.e. neighptr index)
+            ! Get the intersection face number (i.e. neighptr index)
             IFACE = 6 - BITZ
-!             Get the next cell to go to
+            ! Get the next cell to go to
             INEXTCELL = NEIGHPTR(IFACE, ICELL)
 
-!             Get the face grid pointers
+            ! Get the face grid pointers
             I1 = GRIDPTR(GRIDFACE(IFACE), ICELL)
-!             Get the location coordinate (does the boundary wrapping)
+            ! Get the location coordinate (does the boundary wrapping)
             if (INEXTCELL .gt. 0) then
                 ZE = GRIDPOS(3, GRIDPTR(IOCT, INEXTCELL))
             end if
 
-!             Get extinction and source function at face intersection
+            ! Get extinction and source function at face intersection
             EXT0 = EXTINCT(I1)
             SRCEXT0(:) = EXTINCT(I1)*SOURCE(:, KANG, I1)
-!             Compute the cell radiance: integration of the source funct
+            ! Compute the cell radiance: integration of the source funct
             EXT = 0.5*(EXT0 + EXT1)
             TAU = EXT*SO
             if (TAU .ge. 0.5) then
                 TRANSCELL = exp(-TAU)
                 ABSCELL = 1.0 - TRANSCELL
             else
-                ABSCELL = TAU*(1.0 - 0.5*TAU*                                 &
-         &                 (1.0 - 0.33333333333*TAU*(1 - 0.25*TAU)))
+                ABSCELL = TAU*(1.0 - 0.5*TAU*&
+                    & (1.0 - 0.33333333333*TAU*(1 - 0.25*TAU)))
                 TRANSCELL = 1.0 - ABSCELL
             end if
             if (TAU .le. 2.0) then
                 if (EXT .eq. 0.0) then
                     SRC(:) = 0.0
                 else
-!                 Linear extinction, linear source*extinction, to first
-                    SRC(:) = (0.5*(SRCEXT0(:) + SRCEXT1(:)) + 0.08333333333    &
-                             &                    *(EXT0*SRCEXT1(:) - EXT1*SRCEXT0(:))*SO)/EXT
+                    ! Linear extinction, linear source*extinction, to first
+                    SRC(:) = (0.5*(SRCEXT0(:) + SRCEXT1(:)) + 0.08333333333&
+                        & *(EXT0*SRCEXT1(:) - EXT1*SRCEXT0(:))*SO)/EXT
                 end if
             else
-!               Combined first order expansion and constant extinction f
+                ! Combined first order expansion and constant extinction f
                 EXT0P = EXT0
                 SRCEXT0P(:) = SRCEXT0(:)
                 if (TAU .gt. 4.0) then
                     EXT0P = EXT1 + (EXT0 - EXT1)*4.0/TAU
                     if (EXT0 .gt. 0.0) SRCEXT0P(:) = SRCEXT0(:)*EXT0P/EXT0
                 end if
-                SRC(:) = 1.0/(EXT0P + EXT1)*(SRCEXT0P(:) + SRCEXT1(:)         &
-         &           + (EXT0P*SRCEXT1(:) - EXT1*SRCEXT0P(:))*2.0/(EXT0P + EXT1) &
-         &                 *(1 - 2/TAU + 2*TRANSCELL/ABSCELL))
+                SRC(:) = 1.0/(EXT0P + EXT1)*(SRCEXT0P(:) + SRCEXT1(:)&
+                    & + (EXT0P*SRCEXT1(:) - EXT1*SRCEXT0P(:))*2.0/(EXT0P + EXT1)&
+                    & *(1 - 2/TAU + 2*TRANSCELL/ABSCELL))
             end if
             SRC(1) = max(SRC(1), 0.0d0)
 
-!             See if there are valid radiances for the intersection face
-!             If so, set flag, interpolate radiance, and add to
-!               radiance from source function in cell
-!             If not, only add in cell radiance and prepare for next cel
+            ! See if there are valid radiances for the intersection face
+            ! If so, set flag, interpolate radiance, and add to
+            !   radiance from source function in cell
+            ! If not, only add in cell radiance and prepare for next cel
             if (GRIDRAD(1, I1) .ge. -0.1) then
                 VALIDRAD = .true.
                 RAD0(:) = GRIDRAD(:, I1)
@@ -3095,19 +3095,18 @@ subroutine BACK_INT_GRID1D(NX, NY, NZ, NA, NPTS, NCELLS,           &
         end do
 
         GRIDRAD(:, IPT) = RAD(:)
-500             continue
+500     continue
     end do
     return
-end
+end subroutine
 
-subroutine NEXT_CELL(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,   &
-&                GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXT)
-!       Gets the next cell (INEXT) to go to that is adjacent to this fac
-
-!     IFACE (1-6) has which face (-X,+X,-Y,+Y,-Z,+Z) of the current cell
-!     (ICELL) we are at, and JFACE (1-3) is the direction (X,Y,Z).
-!     The current location (XE,YE,ZE) on the face is used to find the ce
-!     if there are several adjacent to the current cell.
+subroutine NEXT_CELL(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
+    & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXT)
+    !   Gets the next cell (INEXT) to go to that is adjacent to this fac
+    ! IFACE (1-6) has which face (-X,+X,-Y,+Y,-Z,+Z) of the current cell
+    ! (ICELL) we are at, and JFACE (1-3) is the direction (X,Y,Z).
+    ! The current location (XE,YE,ZE) on the face is used to find the ce
+    ! if there are several adjacent to the current cell.
     implicit none
     integer IFACE, JFACE, ICELL, INEXT
     integer GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
@@ -3116,28 +3115,28 @@ subroutine NEXT_CELL(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,   &
     double precision XE, YE, ZE
     integer IC, IC1, DIR
 
-!         Get the pointer to the neighbor cell
+    ! Get the pointer to the neighbor cell
     INEXT = NEIGHPTR(IFACE, ICELL)
     if (INEXT .lt. 0) then
-!           If neighbor pointer is negative then we are going into a cel
-!           that has subcells, and the absolute value of the pointer is
-!           cell to start the tree search.
+        ! If neighbor pointer is negative then we are going into a cel
+        !   that has subcells, and the absolute value of the pointer is
+        !   cell to start the tree search.
         IC = abs(INEXT)
-!           Go down the tree until there is no children
+        ! Go down the tree until there is no children
         do while (TREEPTR(2, IC) .gt. 0)
-!             Get the direction cell is split
+            ! Get the direction cell is split
             DIR = ibits(int(CELLFLAGS(IC)), 2, 2)
             if (DIR .eq. 0) stop 'NEXT_CELL: No split direction'
-!             If split is in direction of face then choose the near chil
-!               which is the negative side cell if this is a positive fa
+            ! If split is in direction of face then choose the near chil
+            !   which is the negative side cell if this is a positive fa
             IC1 = TREEPTR(2, IC)
             if (DIR .eq. JFACE) then
                 IC = IC1 + 1 - mod(IFACE - 1, 2)
             else
-!             If split is not in direction of face then find which of tw
-!               has a face that contains the current location.
-!               Compare the appropriate coordinate (X,Y,Z) of the grid p
-!                 on the split line with the current location.
+                ! If split is not in direction of face then find which of tw
+                !   has a face that contains the current location.
+                ! Compare the appropriate coordinate (X,Y,Z) of the grid p
+                !   on the split line with the current location.
                 IC = IC1
                 if (DIR .eq. 1) then
                     if (XE .gt. GRIDPOS(1, GRIDPTR(8, IC1))) IC = IC + 1
@@ -3152,7 +3151,7 @@ subroutine NEXT_CELL(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,   &
     end if
 
     return
-end
+end subroutine
 
 logical function SWEEP_BASE_CELL(BCFLAG, NXC, NYC, NZ, IOCT, ICELL)
 !       Returns the next base grid cell.  The octant the ray direction
