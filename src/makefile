@@ -22,7 +22,7 @@ SHDOMOBJS = shdSolv_1.o shdSolv_2.o shdUtil_io.o shdSurf_ocean.o _fftpack.o
 UseMPI = no
 UseNetcdf = no
 
-NetcdfHome = /Users/hchen/Work/soft/anaconda3/envs/er3t-dev
+NetcdfHome = /usr/local/netcdf-3.6.3
 NetcdfInl  = -I$(NetcdfHome)/include
 NetcdfLib  = -L$(NetcdfHome)/lib -lnetcdf
 
