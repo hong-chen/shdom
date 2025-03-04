@@ -1,24 +1,24 @@
 program MAKE_MIE_TABLE
-!
-! Does Mie computations to create a scattering table as a function of
-! effective radius for gamma, modified gamma, or lognormal size distributions
-! of spherical particles.  The particles may be water or ice (in which case
-! the program provides the index of refraction depending on wavelength) or
-! "aerosols" (in which case the index of refraction is user specified).
-! For water or ice particles the scattering properties may be averaged
-! over the desired spectral range with Planck function weighting.
-! The phase functions in the output scattering table are represented
-! with Legendre series.  For polarized output, the six unique elements of
-! the phase matrix are represented with Wigner d-function expansions
-! (Doicu et al., 2013, JQSRT, http://dx.doi.org/10.1016/j.jqsrt.2012.12.009).
-!
-!  compile: pgf90 -fast -o make_mie_table  make_mie_table.f90
-!                 indexwatice.f  miewig.f
-!
-!    Frank Evans    University of Colorado       May 2003
-!  Modified for polarization                     March 2012
-!  Modified for modified gamma distribution      September 2012
-!  Modified for Wigner d-function coefficients   July 2012
+
+    ! Does Mie computations to create a scattering table as a function of
+    ! effective radius for gamma, modified gamma, or lognormal size distributions
+    ! of spherical particles.  The particles may be water or ice (in which case
+    ! the program provides the index of refraction depending on wavelength) or
+    ! "aerosols" (in which case the index of refraction is user specified).
+    ! For water or ice particles the scattering properties may be averaged
+    ! over the desired spectral range with Planck function weighting.
+    ! The phase functions in the output scattering table are represented
+    ! with Legendre series.  For polarized output, the six unique elements of
+    ! the phase matrix are represented with Wigner d-function expansions
+    ! (Doicu et al., 2013, JQSRT, http://dx.doi.org/10.1016/j.jqsrt.2012.12.009).
+    !
+    !  compile: pgf90 -fast -o make_mie_table  make_mie_table.f90
+    !                 indexwatice.f  miewig.f
+    !
+    !    Frank Evans    University of Colorado       May 2003
+    !  Modified for polarization                     March 2012
+    !  Modified for modified gamma distribution      September 2012
+    !  Modified for Wigner d-function coefficients   July 2012
     implicit none
     integer :: NRETAB
     logical :: POLTAB, LOGRE
@@ -37,8 +37,8 @@ program MAKE_MIE_TABLE
 
     ! Get the input parameters
     call USER_INPUT(POLTAB, WAVELEN1, WAVELEN2, PARTYPE, RINDEX, PARDENS, &
-                    AVGFLAG, DELTAWAVE, DISTFLAG, ALPHA, GAMMA, &
-                    NRETAB, SRETAB, ERETAB, LOGRE, MAXRADIUS, MIETABFILE)
+        AVGFLAG, DELTAWAVE, DISTFLAG, ALPHA, GAMMA, &
+        NRETAB, SRETAB, ERETAB, LOGRE, MAXRADIUS, MIETABFILE)
     if (PARTYPE == 'W') then
         PARDENS = 1.0
     else if (PARTYPE == 'I') then
@@ -74,9 +74,9 @@ program MAKE_MIE_TABLE
 
     ! Do the Mie computations for each radius, which may involve several
     !   Mie calculation over the wavelength integration
-    call COMPUTE_MIE_ALL_SIZES(AVGFLAG, WAVELEN1, WAVELEN2, DELTAWAVE, PARTYPE, &
-                               WAVELENCEN, RINDEX, NSIZE, RADII, MAXRANK, &
-                               EXTINCT1, SCATTER1, NRANK1, WIGCOEF1)
+    call COMPUTE_MIE_ALL_SIZES(AVGFLAG, WAVELEN1, WAVELEN2, DELTAWAVE, PARTYPE,&
+        & WAVELENCEN, RINDEX, NSIZE, RADII, MAXRANK,&
+        & EXTINCT1, SCATTER1, NRANK1, WIGCOEF1)
 
     ! Loop over the number of output tabulated effective radii
     do I = 1, NRETAB
@@ -92,8 +92,8 @@ program MAKE_MIE_TABLE
         ! Calculate the discrete size number concentrations (ND), which vary
         ! according to a truncated gamma, modified gamma, or lognormal
         ! distribution that gives the desired effective radius (REFF) and LWC (1 g/m^3).
-        call MAKE_SIZE_DIST(DISTFLAG, PARDENS, NSIZE, RADII, REFF, ALPHA, GAMMA, &
-                            ND)
+        call MAKE_SIZE_DIST(DISTFLAG, PARDENS, NSIZE, RADII, REFF, ALPHA, GAMMA,&
+            & ND)
 
         ! Sum the scattering properties over the discrete size distribution
         EXTINCT(I) = 0.0
@@ -121,18 +121,18 @@ program MAKE_MIE_TABLE
 
     end do ! end of effective radius loop
 
-    call WRITE_MIE_TABLE(MIETABFILE, POLTAB, WAVELEN1, WAVELEN2, DELTAWAVE, &
-                         PARTYPE, PARDENS, RINDEX, &
-                         DISTFLAG, ALPHA, GAMMA, NRETAB, SRETAB, ERETAB, LOGRE, &
-                         EXTINCT, SSALB, MAXRANK, NRANK, WIGCOEF)
+    call WRITE_MIE_TABLE(MIETABFILE, POLTAB, WAVELEN1, WAVELEN2, DELTAWAVE,&
+        & PARTYPE, PARDENS, RINDEX,&
+        & DISTFLAG, ALPHA, GAMMA, NRETAB, SRETAB, ERETAB, LOGRE,&
+        & EXTINCT, SSALB, MAXRANK, NRANK, WIGCOEF)
 
     deallocate (EXTINCT, SSALB, NRANK, WIGCOEF)
     deallocate (ND, EXTINCT1, SCATTER1, NRANK1, WIGCOEF1)
-end
+end program
 
-subroutine USER_INPUT(POLTAB, WAVELEN1, WAVELEN2, PARTYPE, RINDEX, PARDENS, &
-                      AVGFLAG, DELTAWAVE, DISTFLAG, ALPHA, GAMMA, &
-                      NRETAB, SRETAB, ERETAB, LOGRE, MAXRADIUS, MIETABFILE)
+subroutine USER_INPUT(POLTAB, WAVELEN1, WAVELEN2, PARTYPE, RINDEX, PARDENS,&
+    & AVGFLAG, DELTAWAVE, DISTFLAG, ALPHA, GAMMA,&
+    & NRETAB, SRETAB, ERETAB, LOGRE, MAXRADIUS, MIETABFILE)
     ! Reads the input parameters from the standard input
     implicit none
     integer, intent(OUT) :: NRETAB
@@ -236,7 +236,7 @@ subroutine GET_NSIZE(SRETAB, MAXRADIUS, WAVELEN, NSIZE)
     do while (RAD < MAXRADIUS)
         X = TWOPI*RAD/WAVELEN
         DELX = max(0.01, 0.03*X**0.5) ! coarser spacing at large size parameters
-!    DELX = 0.1                     ! One alternative method
+        ! DELX = 0.1                     ! One alternative method
         DELRAD = min(DELX*WAVELEN/TWOPI, DELRADMAX)
         RAD = RAD + DELRAD
         NSIZE = NSIZE + 1
@@ -262,7 +262,7 @@ subroutine GET_SIZES(SRETAB, MAXRADIUS, WAVELEN, NSIZE, RADII)
     do N = 2, NSIZE
         X = TWOPI*RAD/WAVELEN
         DELX = max(0.01, 0.03*X**0.5) ! coarser spacing at large size parameters
-!    DELX = 0.1                     ! One alternative method
+        ! DELX = 0.1                     ! One alternative method
         DELRAD = min(DELX*WAVELEN/TWOPI, DELRADMAX)
         RAD = RAD + DELRAD
         RADII(N) = RAD
@@ -270,13 +270,13 @@ subroutine GET_SIZES(SRETAB, MAXRADIUS, WAVELEN, NSIZE, RADII)
 end subroutine GET_SIZES
 
 subroutine GET_CENTER_WAVELEN(WAVELEN1, WAVELEN2, WAVELENCEN)
-!  Returns the Planck weighted center wavelength averaged over the
-! wavelength interval (WAVELEN1 < WAVELEN2 [microns]).  A solar
-! blackbody temperature of 5800 K is used for the Planck weighting
-! if the average wavelength is less than 3 microns, no Planck weighting
-! is done for an average wavelength between 3 and 5 microns, and a
-! blackbody temperature of 270 K is done for an average wavelength
-! greater than 5 microns.
+    !  Returns the Planck weighted center wavelength averaged over the
+    ! wavelength interval (WAVELEN1 < WAVELEN2 [microns]).  A solar
+    ! blackbody temperature of 5800 K is used for the Planck weighting
+    ! if the average wavelength is less than 3 microns, no Planck weighting
+    ! is done for an average wavelength between 3 and 5 microns, and a
+    ! blackbody temperature of 270 K is done for an average wavelength
+    ! greater than 5 microns.
     implicit none
     real, intent(IN)  :: WAVELEN1, WAVELEN2
     real, intent(OUT) :: WAVELENCEN
@@ -356,9 +356,9 @@ subroutine GET_REFRACT_INDEX(PARTYPE, WAVELEN1, WAVELEN2, RINDEX)
     RINDEX = cmplx(MRE, -MIM)
 end subroutine GET_REFRACT_INDEX
 
-subroutine COMPUTE_MIE_ALL_SIZES(AVGFLAG, WAVELEN1, WAVELEN2, DELTAWAVE, &
-                                 PARTYPE, WAVELENCEN, RINDEX, NSIZE, RADII, &
-                                 MAXRANK, EXTINCT1, SCATTER1, NRANK1, WIGCOEF1)
+subroutine COMPUTE_MIE_ALL_SIZES(AVGFLAG, WAVELEN1, WAVELEN2, DELTAWAVE,&
+    & PARTYPE, WAVELENCEN, RINDEX, NSIZE, RADII,&
+    & MAXRANK, EXTINCT1, SCATTER1, NRANK1, WIGCOEF1)
     ! Does a Mie computation for each particle radius in RADII and returns the
     ! optical properties in arrays EXTINCT1, SCATTER1, NRANK1, and WIGCOEF1.
     ! For AVGFLAG='C' the computation is done at a single wavelength (WAVELENCEN),
@@ -388,8 +388,8 @@ subroutine COMPUTE_MIE_ALL_SIZES(AVGFLAG, WAVELEN1, WAVELEN2, DELTAWAVE, &
     if (AVGFLAG == 'C') then
         ! For using one central wavelength: just call Mie routine for each radius
         do I = 1, NSIZE
-            call MIE_ONE(WAVELENCEN, RINDEX, RADII(I), MAXRANK, &
-                         EXTINCT1(I), SCATTER1(I), NRANK1(I), WIGCOEF1(1, 0, I))
+            call MIE_ONE(WAVELENCEN, RINDEX, RADII(I), MAXRANK,&
+                & EXTINCT1(I), SCATTER1(I), NRANK1(I), WIGCOEF1(1, 0, I))
         end do
 
     else
@@ -433,8 +433,8 @@ subroutine COMPUTE_MIE_ALL_SIZES(AVGFLAG, WAVELEN1, WAVELEN2, DELTAWAVE, &
     end if
 end subroutine COMPUTE_MIE_ALL_SIZES
 
-subroutine MAKE_SIZE_DIST(DISTFLAG, PARDENS, NSIZE, RADII, REFF, ALPHA, GAMMA, &
-                          ND)
+subroutine MAKE_SIZE_DIST(DISTFLAG, PARDENS, NSIZE, RADII, REFF, ALPHA, GAMMA,&
+    & ND)
     ! Calculates the number concentrations (ND in cm^-3) for the NSIZE
     ! discrete particle radii (micron) of a gamma or lognormal size distribution
     ! with an effective radius of REFF (micron), gamma shape parameter or
@@ -450,8 +450,8 @@ subroutine MAKE_SIZE_DIST(DISTFLAG, PARDENS, NSIZE, RADII, REFF, ALPHA, GAMMA, &
     real    :: TRUERE, F, REHI, RELO, REMID
 
     ! See if the true effective radius is already close enough
-    call DO_SIZE_DIST(PARDENS, DISTFLAG, ALPHA, GAMMA, REFF, &
-                      NSIZE, RADII, ND, TRUERE)
+    call DO_SIZE_DIST(PARDENS, DISTFLAG, ALPHA, GAMMA, REFF,&
+        & NSIZE, RADII, ND, TRUERE)
     if (abs(TRUERE - REFF) < TOL*REFF) return
     F = REFF/TRUERE
 
@@ -464,8 +464,8 @@ subroutine MAKE_SIZE_DIST(DISTFLAG, PARDENS, NSIZE, RADII, REFF, ALPHA, GAMMA, &
         do while (TRUERE <= REFF .and. I < 8)
             REHI = F*REHI
             I = I + 1
-            call DO_SIZE_DIST(PARDENS, DISTFLAG, ALPHA, GAMMA, REHI, &
-                              NSIZE, RADII, ND, TRUERE)
+            call DO_SIZE_DIST(PARDENS, DISTFLAG, ALPHA, GAMMA, REHI,&
+                & NSIZE, RADII, ND, TRUERE)
         end do
         if (TRUERE <= REFF) then
             print *, 'MAKE_SIZE_DIST: effective radius cannot be achieved', REFF, TRUERE
@@ -480,8 +480,8 @@ subroutine MAKE_SIZE_DIST(DISTFLAG, PARDENS, NSIZE, RADII, REFF, ALPHA, GAMMA, &
         do while (TRUERE >= REFF .and. I < 8)
             RELO = F*RELO
             I = I + 1
-            call DO_SIZE_DIST(PARDENS, DISTFLAG, ALPHA, GAMMA, RELO, &
-                              NSIZE, RADII, ND, TRUERE)
+            call DO_SIZE_DIST(PARDENS, DISTFLAG, ALPHA, GAMMA, RELO,&
+                & NSIZE, RADII, ND, TRUERE)
         end do
         if (TRUERE >= REFF) then
             print *, 'MAKE_SIZE_DIST: effective radius cannot be achieved', REFF, TRUERE
@@ -491,8 +491,8 @@ subroutine MAKE_SIZE_DIST(DISTFLAG, PARDENS, NSIZE, RADII, REFF, ALPHA, GAMMA, &
     ! Do bisection to get correct effective radius
     do while (abs(TRUERE - REFF) > TOL*REFF)
         REMID = 0.5*(RELO + REHI)
-        call DO_SIZE_DIST(PARDENS, DISTFLAG, ALPHA, GAMMA, REMID, &
-                          NSIZE, RADII, ND, TRUERE)
+        call DO_SIZE_DIST(PARDENS, DISTFLAG, ALPHA, GAMMA, REMID,&
+            & NSIZE, RADII, ND, TRUERE)
         if (TRUERE < REFF) then
             RELO = REMID
         else
@@ -501,8 +501,8 @@ subroutine MAKE_SIZE_DIST(DISTFLAG, PARDENS, NSIZE, RADII, REFF, ALPHA, GAMMA, &
     end do
 end subroutine MAKE_SIZE_DIST
 
-subroutine DO_SIZE_DIST(PARDENS, DISTFLAG, ALPHA, GAMMA, RE, NSIZE, RADII, &
-                        ND, TRUERE)
+subroutine DO_SIZE_DIST(PARDENS, DISTFLAG, ALPHA, GAMMA, RE, NSIZE, RADII,&
+    & ND, TRUERE)
     ! For the input effective radius (RE) [um], returns the number concentrations
     ! ND [cm^-3] and the calculated effective radius TRUERE [um] for a
     ! gamma, modified gamma, or lognormal size distribution with mass content
@@ -521,8 +521,8 @@ subroutine DO_SIZE_DIST(PARDENS, DISTFLAG, ALPHA, GAMMA, RE, NSIZE, RADII, &
         A = 1.e6/((4*PI/3.)*PARDENS*B**(-ALPHA - 4)*exp(GAMMLN(ALPHA + 4.)))
     else if (DISTFLAG == 'M') then
         B = (exp(GAMMLN((ALPHA + 4.)/GAMMA) - GAMMLN((ALPHA + 3.)/GAMMA))/RE)**GAMMA
-        A = 1.e6*GAMMA*B**((ALPHA + 4)/GAMMA) &
-            /((4*PI/3.)*PARDENS*exp(GAMMLN((ALPHA + 4.)/GAMMA)))
+        A = 1.e6*GAMMA*B**((ALPHA + 4)/GAMMA)&
+            & /((4*PI/3.)*PARDENS*exp(GAMMLN((ALPHA + 4.)/GAMMA)))
     else if (DISTFLAG == 'L') then
         B = RE*exp(-2.5*ALPHA**2)
         A = 1.e6/((4*PI/3.)*PARDENS*sqrt(2*PI)*ALPHA*B**3*exp(4.5*ALPHA**2))
@@ -532,8 +532,8 @@ subroutine DO_SIZE_DIST(PARDENS, DISTFLAG, ALPHA, GAMMA, RE, NSIZE, RADII, &
     SUM3 = 0.0
     do J = 1, NSIZE
         R = RADII(J)
-        DELR = sqrt(RADII(J)*RADII(min(NSIZE, J + 1))) &
-               - sqrt(RADII(J)*RADII(max(1, J - 1)))
+        DELR = sqrt(RADII(J)*RADII(min(NSIZE, J + 1)))&
+            & - sqrt(RADII(J)*RADII(max(1, J - 1)))
         if (DISTFLAG == 'G') then
             ND(J) = A*R**ALPHA*exp(-B*R)*DELR
         else if (DISTFLAG == 'M') then
@@ -549,10 +549,10 @@ subroutine DO_SIZE_DIST(PARDENS, DISTFLAG, ALPHA, GAMMA, RE, NSIZE, RADII, &
     TRUERE = SUM3/SUM2
 end subroutine DO_SIZE_DIST
 
-subroutine WRITE_MIE_TABLE(MIETABFILE, POLTAB, WAVELEN1, WAVELEN2, DELTAWAVE, &
-                           PARTYPE, PARDENS, RINDEX, &
-                           DISTFLAG, ALPHA, GAMMA, NRETAB, SRETAB, ERETAB, LOGRE, &
-                           EXTINCT, SSALB, MAXRANK, NRANK, WIGCOEF)
+subroutine WRITE_MIE_TABLE(MIETABFILE, POLTAB, WAVELEN1, WAVELEN2, DELTAWAVE,&
+    & PARTYPE, PARDENS, RINDEX,&
+    & DISTFLAG, ALPHA, GAMMA, NRETAB, SRETAB, ERETAB, LOGRE,&
+    & EXTINCT, SSALB, MAXRANK, NRANK, WIGCOEF)
     ! Writes the table of Mie scattering properties as a function of
     ! effective radius.  There are two types of tables output:
     ! unpolarized with Legendre (Wigner d_l_00) series of a single phase
@@ -593,8 +593,8 @@ subroutine WRITE_MIE_TABLE(MIETABFILE, POLTAB, WAVELEN1, WAVELEN2, DELTAWAVE, &
     else if (DISTFLAG == 'M') then
         write (3, '(2(1X,F7.5),A)') ALPHA, GAMMA, ' modified gamma size distribution shape parameters'
     end if
-    write (3, '(1X,I3,2(1X,F8.3),A)') NRETAB, SRETAB, ERETAB, &
-        '  number, starting, ending effective radius'
+    write (3, '(1X,I3,2(1X,F8.3),A)') NRETAB, SRETAB, ERETAB,&
+        & '  number, starting, ending effective radius'
 
     do I = 1, NRETAB
         if (NRETAB <= 1) then
@@ -604,8 +604,8 @@ subroutine WRITE_MIE_TABLE(MIETABFILE, POLTAB, WAVELEN1, WAVELEN2, DELTAWAVE, &
         else
             REFF = (ERETAB - SRETAB)*FLOAT(I - 1)/(NRETAB - 1) + SRETAB
         end if
-        write (3, '(1X,F8.4,1X,E12.5,1X,F8.6,1X,I6,A)') &
-            REFF, EXTINCT(I), SSALB(I), NRANK(I), '  Reff  Ext  Alb  Nrank'
+        write (3, '(1X,F8.4,1X,E12.5,1X,F8.6,1X,I6,A)')&
+            & REFF, EXTINCT(I), SSALB(I), NRANK(I), '  Reff  Ext  Alb  Nrank'
         do J = 1, NPHASEPOL
             if (POLTAB) then
                 write (3, '(I1,1X,201(1X,F10.5))') J, (WIGCOEF(J, L, I), L=0, min(NRANK(I), 200))
