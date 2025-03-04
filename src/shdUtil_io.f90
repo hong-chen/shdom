@@ -1736,7 +1736,7 @@ subroutine OUTPUT_RESULTS(&
     write (2, '(A,E10.3)') '!  SOLUTION_ACCURACY=', SOLACC
     write (2, '(2(A,I4))') '!  MAXIMUM_ITERATIONS=', MAXITER,&
         & '   NUMBER_ITERATIONS=', TOTITER
-    write (2, '(A,A20)') '!  OUTPUT_TYPE=', OUTNAME
+    write (2, '(A,A)') '!  OUTPUT_TYPE=', trim(adjustl(OUTNAME))
 
     PI = acos(-1.0)
 
@@ -2253,7 +2253,7 @@ subroutine OUTPUT_RESULTS_PAR(&
     write (2, '(A,E10.3)') '!  SOLUTION_ACCURACY=', SOLACC
     write (2, '(2(A,I4))') '!  MAXIMUM_ITERATIONS=', MAXITER,&
         & '   NUMBER_ITERATIONS=', TOTITER
-    write (2, '(A,A20)') '!  OUTPUT_TYPE=', OUTNAME
+    write (2, '(A,A)') '!  OUTPUT_TYPE=', trim(adjustl(OUTNAME))
 
     PI = acos(-1.0)
 
