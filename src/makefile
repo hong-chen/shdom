@@ -15,7 +15,7 @@ LIBS   =
 CURRENT_DIR = $(shell pwd)
 BIN_DIR     = $(abspath $(CURRENT_DIR)/../bin)
 
-TARGETS = bin shdom propgen make_mie_table make_tmatrix_table plotscattab put
+TARGETS = bin shdom _shdom propgen make_mie_table make_tmatrix_table plotscattab put
 
 SHDOMOBJS = shdSolv_1.o shdSolv_2.o shdUtil_io.o shdSurf_ocean.o _fftpack.o
 
@@ -49,9 +49,6 @@ all: $(TARGETS)
 bin:
 	mkdir -p $(BIN_DIR)
 
-# this for user input
-#shdom: _shdom.o $(SHDOMOBJS)
-#    $(F90) $(F90FLAGS) _shdom.o $(SHDOMOBJS) $(LIBS) -o $(BIN_DIR)/shdom
 
 # this for namelist input
 shdom: shdom.o $(SHDOMOBJS)
@@ -59,6 +56,10 @@ shdom: shdom.o $(SHDOMOBJS)
 
 shdom.o: shdom.f90 $(SHDOMOBJS)
 	$(F90) -c $(F90FLAGS) shdom.f90
+
+# this for user input
+_shdom: _shdom.o $(SHDOMOBJS)
+	$(F90) $(F90FLAGS) _shdom.o $(SHDOMOBJS) $(LIBS) -o $(BIN_DIR)/_shdom
 
 _shdom.o: _shdom.f90 $(SHDOMOBJS)
 	$(F90) -c $(F90FLAGS) _shdom.f90
