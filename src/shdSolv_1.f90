@@ -3647,13 +3647,13 @@ subroutine INTERPOLATE_POINT(NEWPOINTS, NPTS,&
     return
 end subroutine
 
-subroutine DIVIDE_CELL(NPTS, NCELLS, GRIDPTR, NEIGHPTR,          &
-&             TREEPTR, CELLFLAGS, GRIDPOS, ICELL, IDIR, NEWPOINTS)
-!       Divides a single cell (ICELL) in the IDIR direction (1=Z,2=Y,3=X
-!     Makes the pointers to the two new cells (TREEPTR), set the flags
-!     (CELLFLAGS), creates the new grid points if they don't exist alrea
-!     and updates the neighbor pointers (NEIGHPTR) for the new cells and
-!     their neighboring cells.
+subroutine DIVIDE_CELL(NPTS, NCELLS, GRIDPTR, NEIGHPTR,&
+    & TREEPTR, CELLFLAGS, GRIDPOS, ICELL, IDIR, NEWPOINTS)
+    !   Divides a single cell (ICELL) in the IDIR direction (1=Z,2=Y,3=X
+    ! Makes the pointers to the two new cells (TREEPTR), set the flags
+    ! (CELLFLAGS), creates the new grid points if they don't exist alrea
+    ! and updates the neighbor pointers (NEIGHPTR) for the new cells and
+    ! their neighboring cells.
     implicit none
     integer NPTS, NCELLS, ICELL, IDIR, NEWPOINTS(3, 4)
     integer GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
@@ -3662,13 +3662,13 @@ subroutine DIVIDE_CELL(NPTS, NCELLS, GRIDPTR, NEIGHPTR,          &
     integer NEWCELL, IFACE, I
     logical BTEST
 
-!         Only allow to divide an end cell (i.e. one not yet divided)
+    ! Only allow to divide an end cell (i.e. one not yet divided)
     if (TREEPTR(2, ICELL) .ne. 0) then
         stop 'DIVIDE_CELL: Cannot divide already split cell.'
     end if
 
-!         Do the tree pointers: parent points to negative child,
-!           children point back to parent.
+    ! Do the tree pointers: parent points to negative child,
+    !   children point back to parent.
     NEWCELL = NCELLS + 1
     NCELLS = NCELLS + 2
     TREEPTR(2, ICELL) = NEWCELL
@@ -3676,8 +3676,8 @@ subroutine DIVIDE_CELL(NPTS, NCELLS, GRIDPTR, NEIGHPTR,          &
     TREEPTR(2, NEWCELL) = 0
     TREEPTR(1, NEWCELL + 1) = ICELL
     TREEPTR(2, NEWCELL + 1) = 0
-!         Do the flags: put the splitting direction in the parent and
-!           inherit the boundary flags for the children.
+    ! Do the flags: put the splitting direction in the parent and
+    !   inherit the boundary flags for the children.
     CELLFLAGS(ICELL) = ior(int(CELLFLAGS(ICELL)), ishft(IDIR, 2))
     CELLFLAGS(NEWCELL) = 0
     CELLFLAGS(NEWCELL + 1) = 0
@@ -3688,20 +3688,20 @@ subroutine DIVIDE_CELL(NPTS, NCELLS, GRIDPTR, NEIGHPTR,          &
         end if
     end do
 
-!         Do the grid points:
-    call NEW_GRID_POINTS(IDIR, ICELL, NEWCELL, NPTS,                 &
-   &                      GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,      &
-   &                      GRIDPOS, NEWPOINTS)
+    ! Do the grid points:
+    call NEW_GRID_POINTS(IDIR, ICELL, NEWCELL, NPTS,&
+        & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+        & GRIDPOS, NEWPOINTS)
 
-!         Do the neighbor pointers:
+    ! Do the neighbor pointers:
     do IFACE = 1, 6
-!           Special case if the neighbor is the cell itself
+        ! Special case if the neighbor is the cell itself
         if (NEIGHPTR(IFACE, ICELL) .eq. ICELL) then
             NEIGHPTR(IFACE, NEWCELL) = NEWCELL
             NEIGHPTR(IFACE, NEWCELL + 1) = NEWCELL + 1
-!           For the faces in the split direction, the children either
-!             point to the other child or inherit the parent's neighbor.
-!             Also update the neighbor's neighbor pointer.
+        ! For the faces in the split direction, the children either
+        !   point to the other child or inherit the parent's neighbor.
+        !   Also update the neighbor's neighbor pointer.
         else if (IFACE .eq. 2*IDIR) then
             NEIGHPTR(IFACE, NEWCELL) = NEWCELL + 1
             NEIGHPTR(IFACE, NEWCELL + 1) = NEIGHPTR(IFACE, ICELL)
@@ -3709,28 +3709,28 @@ subroutine DIVIDE_CELL(NPTS, NCELLS, GRIDPTR, NEIGHPTR,          &
             NEIGHPTR(IFACE, NEWCELL + 1) = NEWCELL
             NEIGHPTR(IFACE, NEWCELL) = NEIGHPTR(IFACE, ICELL)
         else
-!           For the other four faces:
-!             The children inherit the parent's neighbor pointers
+            ! For the other four faces:
+            !   The children inherit the parent's neighbor pointers
             NEIGHPTR(IFACE, NEWCELL) = NEIGHPTR(IFACE, ICELL)
             NEIGHPTR(IFACE, NEWCELL + 1) = NEIGHPTR(IFACE, ICELL)
         end if
-!         Then see if we can match faces further down the neighbor's tre
-!           also update the neighboring cells pointers
-        call MATCH_NEIGHBOR_FACE(IFACE, NEWCELL, NEIGHPTR,             &
-     &              CELLFLAGS, TREEPTR, GRIDPTR, GRIDPOS)
-        call MATCH_NEIGHBOR_FACE(IFACE, NEWCELL + 1, NEIGHPTR,           &
-     &              CELLFLAGS, TREEPTR, GRIDPTR, GRIDPOS)
+        ! Then see if we can match faces further down the neighbor's tre
+        !   also update the neighboring cells pointers
+        call MATCH_NEIGHBOR_FACE(IFACE, NEWCELL, NEIGHPTR,&
+            & CELLFLAGS, TREEPTR, GRIDPTR, GRIDPOS)
+        call MATCH_NEIGHBOR_FACE(IFACE, NEWCELL + 1, NEIGHPTR,&
+            & CELLFLAGS, TREEPTR, GRIDPTR, GRIDPOS)
     end do
 
     return
-end
+end subroutine
 
-subroutine MATCH_NEIGHBOR_FACE(IFACE, IC, NEIGHPTR, CELLFLAGS,   &
-&                                TREEPTR, GRIDPTR, GRIDPOS)
-!       Resolves the neighbor pointers for a new cell IC (from a subdivi
-!     for the IFACE face.  Based on the size of this new face and
-!     the corresponding faces of the neighboring cells (down its tree),
-!     the new cell's NEIGHPTR and those of the neighboring cells are upd
+subroutine MATCH_NEIGHBOR_FACE(IFACE, IC, NEIGHPTR, CELLFLAGS,&
+    & TREEPTR, GRIDPTR, GRIDPOS)
+    !   Resolves the neighbor pointers for a new cell IC (from a subdivi
+    ! for the IFACE face.  Based on the size of this new face and
+    ! the corresponding faces of the neighboring cells (down its tree),
+    ! the new cell's NEIGHPTR and those of the neighboring cells are upd
     implicit none
     integer IFACE, IC, NEIGHPTR(6, *), TREEPTR(2, *), GRIDPTR(8, *)
     integer*2 CELLFLAGS(*)
@@ -3742,50 +3742,50 @@ subroutine MATCH_NEIGHBOR_FACE(IFACE, IC, NEIGHPTR, CELLFLAGS,   &
     data OPPFACE/2, 1, 4, 3, 6, 5/
 
     IN = abs(NEIGHPTR(IFACE, IC))
-!         If no neighbor then return
+    ! If no neighbor then return
     if (IN .eq. 0) return
     JFACE = (IFACE + 1)/2
-!         Get the center of the new face
+    ! Get the center of the new face
     IC1 = GRIDPTR(1, IC)
     IC8 = GRIDPTR(8, IC)
     DIR1 = mod(JFACE - 1 + 1, 3) + 1
     DIR2 = mod(JFACE - 1 + 2, 3) + 1
     POS(DIR1) = (GRIDPOS(DIR1, IC1) + GRIDPOS(DIR1, IC8))/2
     POS(DIR2) = (GRIDPOS(DIR2, IC1) + GRIDPOS(DIR2, IC8))/2
-!         Go down the neighbors cell tree
+    ! Go down the neighbors cell tree
     DONE = .false.
     do while (.not. DONE .and. IC .ne. IN)
-!           Compare the coordinates of this neighbor cell to see
-!             if the new face is contained within the neighbor face.
+        ! Compare the coordinates of this neighbor cell to see
+        !   if the new face is contained within the neighbor face.
         IN1 = GRIDPTR(1, IN)
         IN8 = GRIDPTR(8, IN)
-        if (GRIDPOS(DIR1, IC1) .ge. GRIDPOS(DIR1, IN1) .and.              &
-     &      GRIDPOS(DIR1, IC8) .le. GRIDPOS(DIR1, IN8) .and.              &
-     &      GRIDPOS(DIR2, IC1) .ge. GRIDPOS(DIR2, IN1) .and.              &
-     &      GRIDPOS(DIR2, IC8) .le. GRIDPOS(DIR2, IN8)) then
-!             If this is the bottom of the tree then we have a face matc
+        if (GRIDPOS(DIR1, IC1) .ge. GRIDPOS(DIR1, IN1) .and.&
+            & GRIDPOS(DIR1, IC8) .le. GRIDPOS(DIR1, IN8) .and.&
+            & GRIDPOS(DIR2, IC1) .ge. GRIDPOS(DIR2, IN1) .and.&
+            & GRIDPOS(DIR2, IC8) .le. GRIDPOS(DIR2, IN8)) then
+            ! If this is the bottom of the tree then we have a face matc
             if (TREEPTR(2, IN) .eq. 0) then
                 NEIGHPTR(IFACE, IC) = IN
             else
                 NEIGHPTR(IFACE, IC) = -IN
             end if
         end if
-!           Compare the size of the neighbor face with the new face.
-!             Update the neighbor's neighbor pointer to the new face
-!             if the neighbor face is smaller, otherwise make the
-!             pointer negative, because it no longer points to an end no
-        if (GRIDPOS(DIR1, IN1) .ge. GRIDPOS(DIR1, IC1) .and.              &
-     &      GRIDPOS(DIR1, IN8) .le. GRIDPOS(DIR1, IC8) .and.              &
-     &      GRIDPOS(DIR2, IN1) .ge. GRIDPOS(DIR2, IC1) .and.              &
-     &      GRIDPOS(DIR2, IN8) .le. GRIDPOS(DIR2, IC8)) then
-            call INHERIT_NEIGHBOR(IN, OPPFACE(IFACE), IC,              &
-     &                             NEIGHPTR, TREEPTR, CELLFLAGS)
+        ! Compare the size of the neighbor face with the new face.
+        !   Update the neighbor's neighbor pointer to the new face
+        !   if the neighbor face is smaller, otherwise make the
+        !   pointer negative, because it no longer points to an end no
+        if (GRIDPOS(DIR1, IN1) .ge. GRIDPOS(DIR1, IC1) .and.&
+            & GRIDPOS(DIR1, IN8) .le. GRIDPOS(DIR1, IC8) .and.&
+            & GRIDPOS(DIR2, IN1) .ge. GRIDPOS(DIR2, IC1) .and.&
+            & GRIDPOS(DIR2, IN8) .le. GRIDPOS(DIR2, IC8)) then
+            call INHERIT_NEIGHBOR(IN, OPPFACE(IFACE), IC,&
+                & NEIGHPTR, TREEPTR, CELLFLAGS)
         else
             NEIGHPTR(OPPFACE(IFACE), IN) = -abs(NEIGHPTR(OPPFACE(IFACE), IN))
         end if
 
-!         Go down the neighbors cell tree until there is no children,
-!           finding the cell that contains the center of the new face.
+        ! Go down the neighbors cell tree until there is no children,
+        !   finding the cell that contains the center of the new face.
         if (TREEPTR(2, IN) .eq. 0) then
             DONE = .true.
         else
@@ -3804,46 +3804,46 @@ subroutine MATCH_NEIGHBOR_FACE(IFACE, IC, NEIGHPTR, CELLFLAGS,   &
     end do
 
     return
-end
+end subroutine
 
-subroutine INHERIT_NEIGHBOR(ICELL, IFACE, IN,                    &
-&                             NEIGHPTR, TREEPTR, CELLFLAGS)
-!       Updates the ICELL cell's new neighbor cell (IN) for all
-!     children cells that border the face (IFACE).
+subroutine INHERIT_NEIGHBOR(ICELL, IFACE, IN,&
+    & NEIGHPTR, TREEPTR, CELLFLAGS)
+    !   Updates the ICELL cell's new neighbor cell (IN) for all
+    ! children cells that border the face (IFACE).
     implicit none
     integer ICELL, IFACE, IN, NEIGHPTR(6, *), TREEPTR(2, *)
     integer*2 CELLFLAGS(*)
     integer JFACE, IC, DIR, SP, STACK(50)
     logical DONE
 
-!         Go through the tree checking the cells:
-!           The stack holds the second child cells, which are the
-!             next cell to go to if at an end cell.
+    ! Go through the tree checking the cells:
+    ! The stack holds the second child cells, which are the
+    !   next cell to go to if at an end cell.
     JFACE = (IFACE + 1)/2
     IC = ICELL
     SP = 0
     DONE = .false.
     do while (.not. DONE)
         NEIGHPTR(IFACE, IC) = IN
-!           If this is an end cell then pop the stack
+        ! If this is an end cell then pop the stack
         if (TREEPTR(2, IC) .eq. 0) then
-!             If no more to pop then we are done
+            ! If no more to pop then we are done
             if (SP .eq. 0) then
                 DONE = .true.
             else
-!             Otherwise, pop the stack to get the next cell to go to
+                ! Otherwise, pop the stack to get the next cell to go to
                 IC = STACK(SP)
                 SP = SP - 1
             end if
         else
-!             Not and end cell, so this cell has children.
-!             If split is in same direction as face then do only close c
+            ! Not and end cell, so this cell has children.
+            ! If split is in same direction as face then do only close c
             DIR = ibits(int(CELLFLAGS(IC)), 2, 2)
             if (DIR .eq. JFACE) then
                 IC = TREEPTR(2, IC) + mod(IFACE - 1, 2)
             else
-!             Otherwise need to go to both children so put the second ch
-!               on the stack and set the pointer to go to the first chil
+                ! Otherwise need to go to both children so put the second ch
+                !   on the stack and set the pointer to go to the first chil
                 SP = SP + 1
                 if (SP .gt. 50) stop 'INHERIT_NEIGHBOR: Stack exceeded'
                 STACK(SP) = TREEPTR(2, IC) + 1
@@ -3853,18 +3853,18 @@ subroutine INHERIT_NEIGHBOR(ICELL, IFACE, IN,                    &
     end do
 
     return
-end
+end subroutine
 
-subroutine NEW_GRID_POINTS(IDIR, ICELL, NEWCELL, NPTS,           &
-&                        GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,    &
-&                        GRIDPOS, NEWPOINTS)
-!       Sets up the pointers to the grid points for the two new cells.
-!     Creates the four new points if they don't already exist, changing
-!     NPTS and GRIDPOS accordingly.  Returns the NEWPOINTS(3,4) arrays
-!     that gives information about the new points: NEWPOINTS(3,) is the
-!     point address of the new points (or zero), and NEWPOINTS(1,) and
-!     NEWPOINTS(2,) are the "parent" grid points these should be
-!     interpolated from.
+subroutine NEW_GRID_POINTS(IDIR, ICELL, NEWCELL, NPTS,&
+    & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+    & GRIDPOS, NEWPOINTS)
+    !   Sets up the pointers to the grid points for the two new cells.
+    ! Creates the four new points if they don't already exist, changing
+    ! NPTS and GRIDPOS accordingly.  Returns the NEWPOINTS(3,4) arrays
+    ! that gives information about the new points: NEWPOINTS(3,) is the
+    ! point address of the new points (or zero), and NEWPOINTS(1,) and
+    ! NEWPOINTS(2,) are the "parent" grid points these should be
+    ! interpolated from.
     implicit none
     integer IDIR, ICELL, NEWCELL, NPTS, NEWPOINTS(3, 4)
     integer GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
@@ -3874,28 +3874,28 @@ subroutine NEW_GRID_POINTS(IDIR, ICELL, NEWCELL, NPTS,           &
     integer IFACE1, IFACE2, ICELL2
     integer GRIDCORNER(2, 4, 3), FACEGRID(2, 4, 3)
     real XP, YP, ZP
-    data GRIDCORNER/1, 2, 3, 4, 5, 6, 7, 8, 1, 3, 2, 4, 5, 7, 6, 8,          &
-   &                1, 5, 2, 6, 3, 7, 4, 8/
-    data FACEGRID/3, 5, 4, 5, 3, 6, 4, 6, 1, 5, 2, 5, 1, 6, 2, 6,            &
-   &              1, 3, 2, 3, 1, 4, 2, 4/
+    data GRIDCORNER/1, 2, 3, 4, 5, 6, 7, 8, 1, 3, 2, 4, 5, 7, 6, 8,&
+        & 1, 5, 2, 6, 3, 7, 4, 8/
+    data FACEGRID/3, 5, 4, 5, 3, 6, 4, 6, 1, 5, 2, 5, 1, 6, 2, 6,&
+        & 1, 3, 2, 3, 1, 4, 2, 4/
 
-!     In general, when subdividing a cell four new points may be made.
-!     Each of these points belongs to two faces of the original cell.
-!     Use the MATCH_GRID_POINT routine to try to find matches in cells
-!     across the two faces that contain the point; also cross the face o
-!     one of these to get the third bounding cell.  If any of the approp
-!     gridpoints of these three cells has the same coordinates then the
-!     already exists, otherwise create the point.
+    !   In general, when subdividing a cell four new points may be made.
+    ! Each of these points belongs to two faces of the original cell.
+    ! Use the MATCH_GRID_POINT routine to try to find matches in cells
+    ! across the two faces that contain the point; also cross the face o
+    ! one of these to get the third bounding cell.  If any of the approp
+    ! gridpoints of these three cells has the same coordinates then the
+    ! already exists, otherwise create the point.
 
-!         Temporarily set new cells' grid pointer to the parent cell's o
+    ! Temporarily set new cells' grid pointer to the parent cell's o
     do K = 1, 8
         GRIDPTR(K, NEWCELL) = GRIDPTR(K, ICELL)
         GRIDPTR(K, NEWCELL + 1) = GRIDPTR(K, ICELL)
     end do
 
-!         Loop over the four edges with potentially new points
+    ! Loop over the four edges with potentially new points
     do I = 1, 4
-!           Get the grid corners and coordinates for this edge and split
+        ! Get the grid corners and coordinates for this edge and split
         I1 = GRIDCORNER(1, I, IDIR)
         I2 = GRIDCORNER(2, I, IDIR)
         IP1 = GRIDPTR(I1, ICELL)
@@ -3904,25 +3904,25 @@ subroutine NEW_GRID_POINTS(IDIR, ICELL, NEWCELL, NPTS,           &
         YP = (GRIDPOS(2, IP1) + GRIDPOS(2, IP2))/2
         ZP = (GRIDPOS(3, IP1) + GRIDPOS(3, IP2))/2
 
-!          Look for gridpoints matching this new point in the three cell
-!            that border this edge
+        ! Look for gridpoints matching this new point in the three cell
+        !   that border this edge
         IFACE1 = FACEGRID(1, I, IDIR)
-        call MATCH_GRID_POINT(XP, YP, ZP, ICELL, IFACE1, GRIDPOS,        &
-     &             GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, IPMATCH)
+        call MATCH_GRID_POINT(XP, YP, ZP, ICELL, IFACE1, GRIDPOS,&
+            & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, IPMATCH)
         if (IPMATCH .eq. 0) then
             IFACE2 = FACEGRID(2, I, IDIR)
-            call MATCH_GRID_POINT(XP, YP, ZP, ICELL, IFACE2, GRIDPOS,      &
-       &               GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, IPMATCH)
+            call MATCH_GRID_POINT(XP, YP, ZP, ICELL, IFACE2, GRIDPOS,&
+                & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, IPMATCH)
         end if
         if (IPMATCH .eq. 0) then
             ICELL2 = abs(NEIGHPTR(IFACE1, ICELL))
             if (ICELL2 .gt. 0) then
-                call MATCH_GRID_POINT(XP, YP, ZP, ICELL2, IFACE2, GRIDPOS,   &
-         &               GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, IPMATCH)
+                call MATCH_GRID_POINT(XP, YP, ZP, ICELL2, IFACE2, GRIDPOS,&
+                    & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, IPMATCH)
             end if
         end if
 
-!           Set some new cells' grid pointers to the new or matching one
+        ! Set some new cells' grid pointers to the new or matching one
         if (IPMATCH .eq. 0) then
             NPTS = NPTS + 1
             GRIDPTR(I2, NEWCELL) = NPTS
@@ -3941,18 +3941,18 @@ subroutine NEW_GRID_POINTS(IDIR, ICELL, NEWCELL, NPTS,           &
     end do
 
     return
-end
+end subroutine
 
-subroutine MATCH_GRID_POINT(XP, YP, ZP, ICELL, IFACE,            &
-&                GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,   &
-&                IPMATCH)
-!       Determines whether the neighboring cells to ICELL adjacent to
-!     face IFACE (1-6: -X,+X,-Y,+Y,-Z,+Z) have gridpoints that match
-!     the point at XP,YP,ZP on face IFACE of cell ICELL.
-!     If the face of ICELL has several neighboring cells, then the tree
-!     is traced down to find those cells that might contain XP,YP,ZP.
-!     IPMATCH is returned 0 if there is no match, otherwise it has the
-!     number of the matching existing gridpoint.
+subroutine MATCH_GRID_POINT(XP, YP, ZP, ICELL, IFACE,&
+    & GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+    & IPMATCH)
+    !   Determines whether the neighboring cells to ICELL adjacent to
+    ! face IFACE (1-6: -X,+X,-Y,+Y,-Z,+Z) have gridpoints that match
+    ! the point at XP,YP,ZP on face IFACE of cell ICELL.
+    ! If the face of ICELL has several neighboring cells, then the tree
+    ! is traced down to find those cells that might contain XP,YP,ZP.
+    ! IPMATCH is returned 0 if there is no match, otherwise it has the
+    ! number of the matching existing gridpoint.
     implicit none
     real XP, YP, ZP
     integer ICELL, IFACE
@@ -3965,53 +3965,53 @@ subroutine MATCH_GRID_POINT(XP, YP, ZP, ICELL, IFACE,            &
     integer CELLSTACK(MAXSTACK), SP
     integer INEXT, IDIR, DIR, IC, IC1, KFACE, IPT, I
     integer OPPFACE(6), GRIDFACE(4, 6)
-    data OPPFACE/2, 1, 4, 3, 6, 5/,                                     &
-   &   GRIDFACE/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8/
+    data OPPFACE/2, 1, 4, 3, 6, 5/,&
+        & GRIDFACE/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8/
 
     IPMATCH = 0
     IDIR = (IFACE + 1)/2
     KFACE = OPPFACE(IFACE)
 
-!       Get the pointer to the neighbor cell
+    ! Get the pointer to the neighbor cell
     IC = abs(NEIGHPTR(IFACE, ICELL))
-!       Don't process if the neighbor cell is a boundary
+    ! Don't process if the neighbor cell is a boundary
     if (IC .eq. 0) return
 
-!      Go down all relevant branches of the tree until there are no chil
+    ! Go down all relevant branches of the tree until there are no chil
     SP = 0
     do while (.true.)
 
-!         If at an end cell then check for a gridpoint match at the four
-!           corners of the cell's face
+        ! If at an end cell then check for a gridpoint match at the four
+        !   corners of the cell's face
         do while (TREEPTR(2, IC) .eq. 0)
             do I = 1, 4
                 IPT = GRIDPTR(GRIDFACE(I, KFACE), IC)
-                if (XP .eq. GRIDPOS(1, IPT) .and. YP .eq. GRIDPOS(2, IPT)     &
-         &          .and. ZP .eq. GRIDPOS(3, IPT)) then
+                if (XP .eq. GRIDPOS(1, IPT) .and. YP .eq. GRIDPOS(2, IPT)&
+                    & .and. ZP .eq. GRIDPOS(3, IPT)) then
                     IPMATCH = IPT
                     return
                 end if
             end do
-!           Return if there are no more branches on the stack, otherwise
+            ! Return if there are no more branches on the stack, otherwise
             if (SP .eq. 0) return
             IC = CELLSTACK(SP)
             SP = SP - 1
         end do
 
-!         Get the direction current cell is split
+        ! Get the direction current cell is split
         DIR = ibits(int(CELLFLAGS(IC)), 2, 2)
         if (DIR .eq. 0) stop 'MATCH_GRID_POINT: No split direction'
-!         If split is in direction of face then choose the near child ce
-!           which is the negative side cell if this is a positive face.
+        ! If split is in direction of face then choose the near child ce
+        !   which is the negative side cell if this is a positive face.
         IC1 = TREEPTR(2, IC)
         if (DIR .eq. IDIR) then
             IC = IC1 + 1 - mod(IFACE - 1, 2)
         else
-!          If split is not in direction of face then find which of two c
-!          has a face that contains the current location by comparing th
-!          appropriate coordinate (X,Y,Z) of the grid point on the split
-!          with the current location.  If the split line matches a coord
-!          then we have to trace down both cells so put one on the stack
+            !   If split is not in direction of face then find which of two c
+            ! has a face that contains the current location by comparing th
+            ! appropriate coordinate (X,Y,Z) of the grid point on the split
+            ! with the current location.  If the split line matches a coord
+            ! then we have to trace down both cells so put one on the stack
             IC = IC1
             if (DIR .eq. 1) then
                 if (XP .eq. GRIDPOS(1, GRIDPTR(8, IC1))) then
@@ -4035,30 +4035,30 @@ subroutine MATCH_GRID_POINT(XP, YP, ZP, ICELL, IFACE,            &
                     IC = IC + 1
                 end if
             end if
-            if (SP .ge. MAXSTACK)                                         &
-       &      stop 'MATCH_GRID_POINT: MAXSTACK exceeded'
+            if (SP .ge. MAXSTACK)&
+                & stop 'MATCH_GRID_POINT: MAXSTACK exceeded'
         end if
     end do
 
-end
+end subroutine
 
-subroutine CELL_SPLIT_TEST(GRIDPTR, GRIDPOS, EXTINCT,            &
-&                            SHPTR, NSTOKES, SOURCE, ICELL,        &
-&                            ADAPTCRIT, MAXADAPT, IDIR)
-!       Computes the adaptive cell splitting criterion for the X, Y, and
-!     directions for cell (ICELL).  The three criterion are returned in
-!     ADAPTCRIT, the max criterion is returned in MAXADAPT, and the
-!     direction of max criterion in IDIR.
-!     The adaptive cell criterion is computed by averaging the division
-!     criterion over the four pairs of grid points that cross the potent
-!     split direction. The cell division criterion is based on the
-!     integration of the source function across the cell (including the
-!     optical depth/transmission factor) that gives the delta radiance.
-!     The criterion is actually the part of the integral that depends on
-!     the difference in the extinction times source function across a ce
-!     The rms over all angles of the extinction/source function differen
-!     is computed in spherical harmonic space by summing the square of
-!     the difference over all terms.
+subroutine CELL_SPLIT_TEST(GRIDPTR, GRIDPOS, EXTINCT,&
+    & SHPTR, NSTOKES, SOURCE, ICELL,&
+    & ADAPTCRIT, MAXADAPT, IDIR)
+    !   Computes the adaptive cell splitting criterion for the X, Y, and
+    ! directions for cell (ICELL).  The three criterion are returned in
+    ! ADAPTCRIT, the max criterion is returned in MAXADAPT, and the
+    ! direction of max criterion in IDIR.
+    ! The adaptive cell criterion is computed by averaging the division
+    ! criterion over the four pairs of grid points that cross the potent
+    ! split direction. The cell division criterion is based on the
+    ! integration of the source function across the cell (including the
+    ! optical depth/transmission factor) that gives the delta radiance.
+    ! The criterion is actually the part of the integral that depends on
+    ! the difference in the extinction times source function across a ce
+    ! The rms over all angles of the extinction/source function differen
+    ! is computed in spherical harmonic space by summing the square of
+    ! the difference over all terms.
     implicit none
     integer NSTOKES, ICELL, IDIR
     integer SHPTR(*), GRIDPTR(8, *)
@@ -4069,18 +4069,18 @@ subroutine CELL_SPLIT_TEST(GRIDPTR, GRIDPOS, EXTINCT,            &
     integer GRIDCORNER(2, 4, 3)
     real SPLIT, SUM1, JAY, TAU, EXT
     real C0
-    data GRIDCORNER/1, 2, 3, 4, 5, 6, 7, 8, 1, 3, 2, 4, 5, 7, 6, 8,          &
-   &                1, 5, 2, 6, 3, 7, 4, 8/
+    data GRIDCORNER/1, 2, 3, 4, 5, 6, 7, 8, 1, 3, 2, 4, 5, 7, 6, 8,&
+        & 1, 5, 2, 6, 3, 7, 4, 8/
     data C0/0.282095/
 
     MAXADAPT = -1.0
-!         Loop over the three possible directions to do the split (X,Y,Z
+    ! Loop over the three possible directions to do the split (X,Y,Z
     do ID = 1, 3
         SUM1 = 0.0
         NUM = 0
-!           Loop over four edges that cross the ID direction
+        ! Loop over four edges that cross the ID direction
         do IE = 1, 4
-!             Get the grid points
+            ! Get the grid points
             IP1 = GRIDPTR(GRIDCORNER(1, IE, ID), ICELL)
             IP2 = GRIDPTR(GRIDCORNER(2, IE, ID), ICELL)
             if (IP1 .ne. IP2) then
@@ -4091,12 +4091,12 @@ subroutine CELL_SPLIT_TEST(GRIDPTR, GRIDPOS, EXTINCT,            &
                 NS2 = SHPTR(IP2 + 1) - IS2
                 JAY = 0.0
                 NS = min(NS1, NS2)
-!               Compute the source function rms difference integrated
-!               over all angles, which is sum of squares of spherical
-!               harmonic term differences.
+                !   Compute the source function rms difference integrated
+                ! over all angles, which is sum of squares of spherical
+                ! harmonic term differences.
                 do J = 1, NS
-                    JAY = JAY + (EXTINCT(IP2)*SOURCE(1, IS2 + J)                 &
-           &                     - EXTINCT(IP1)*SOURCE(1, IS1 + J))**2
+                    JAY = JAY + (EXTINCT(IP2)*SOURCE(1, IS2 + J)&
+                        & - EXTINCT(IP1)*SOURCE(1, IS1 + J))**2
                 end do
                 do J = NS + 1, NS1
                     JAY = JAY + (EXTINCT(IP1)*SOURCE(1, IS1 + J))**2
@@ -4128,16 +4128,16 @@ subroutine CELL_SPLIT_TEST(GRIDPTR, GRIDPOS, EXTINCT,            &
     end do
 
     return
-end
+end subroutine
 
-subroutine GRID_SMOOTH_TEST(GRIDPTR, GRIDPOS, NEIGHPTR,          &
-&                        TREEPTR, CELLFLAGS, SHPTR, ICELL, IDIR)
-!       Tests the grid cell ICELL for splitting in order to improve the
-!     adaptive grid smoothness.  The direction to split the cell is retu
-!     in IDIR (1-X, 2-Y, 3-Z, 0-don't).
-!     The criterion for splitting the cell is
-!       1) cell has finer grid cells on either side
-!       2) a neighboring cell has grid spacing more than 3 times finer
+subroutine GRID_SMOOTH_TEST(GRIDPTR, GRIDPOS, NEIGHPTR,&
+    & TREEPTR, CELLFLAGS, SHPTR, ICELL, IDIR)
+    !   Tests the grid cell ICELL for splitting in order to improve the
+    ! adaptive grid smoothness.  The direction to split the cell is retu
+    ! in IDIR (1-X, 2-Y, 3-Z, 0-don't).
+    ! The criterion for splitting the cell is
+    !   1) cell has finer grid cells on either side
+    !   2) a neighboring cell has grid spacing more than 3 times finer
     implicit none
     integer ICELL, IDIR
     integer GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *), SHPTR(*)
@@ -4148,26 +4148,26 @@ subroutine GRID_SMOOTH_TEST(GRIDPTR, GRIDPOS, NEIGHPTR,          &
     integer FACECORNER(4, 6), EDGECORNER(2, 3)
     double precision XE, YE, ZE
     real RATIO, SIZERATIO, CURGRIDSIZE(3), GRIDSIZE(2), GRIDSIZEINV
-    data FACECORNER/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8,               &
-   &                1, 2, 3, 4, 5, 6, 7, 8/
+    data FACECORNER/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8,&
+        & 1, 2, 3, 4, 5, 6, 7, 8/
     data EDGECORNER/1, 2, 1, 3, 1, 5/
 
     IDIR = 0
     SIZERATIO = 1.0
-!         Loop over the three possible directions to do the split (X,Y,Z
+    ! Loop over the three possible directions to do the split (X,Y,Z
     do ID = 1, 3
-!           Get the grid points
+        ! Get the grid points
         IP1 = GRIDPTR(EDGECORNER(1, ID), ICELL)
         IP2 = GRIDPTR(EDGECORNER(2, ID), ICELL)
         CURGRIDSIZE(ID) = 1.0e20
         if (IP1 .ne. IP2) then
             CURGRIDSIZE(ID) = abs(GRIDPOS(ID, IP1) - GRIDPOS(ID, IP2))
             GRIDSIZEINV = 1.0/CURGRIDSIZE(ID)
-!             Loop over two opposite faces
+            ! Loop over two opposite faces
             do J = 1, 2
                 DIRSPLIT(J) = 0
                 IFACE = 2*(ID - 1) + J
-!               Get location of center of cell's face
+                ! Get location of center of cell's face
                 XE = 0.0
                 YE = 0.0
                 ZE = 0.0
@@ -4177,17 +4177,17 @@ subroutine GRID_SMOOTH_TEST(GRIDPTR, GRIDPOS, NEIGHPTR,          &
                     YE = YE + GRIDPOS(2, IP)*0.25
                     ZE = ZE + GRIDPOS(3, IP)*0.25
                 end do
-!               Get the neighboring cell and its size in this direction
-                call NEXT_CELL(XE, YE, ZE, IFACE, ID, ICELL, GRIDPOS,      &
-         &                 GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INCELL(J))
-!               If the neighbor does not exist or is a base cell or
-!                 is an independent pixel cell in X or Y then set
-!                 its grid size the same as current cell (so don't split
+                ! Get the neighboring cell and its size in this direction
+                call NEXT_CELL(XE, YE, ZE, IFACE, ID, ICELL, GRIDPOS,&
+                    & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INCELL(J))
+                ! If the neighbor does not exist or is a base cell or
+                !   is an independent pixel cell in X or Y then set
+                !   its grid size the same as current cell (so don't split
                 if (INCELL(J) .eq. 0) then
                     GRIDSIZE(J) = CURGRIDSIZE(ID)
                 else
-                    GRIDSIZE(J) = abs(GRIDPOS(ID, GRIDPTR(1, INCELL(J)))       &
-           &                         - GRIDPOS(ID, GRIDPTR(8, INCELL(J))))
+                    GRIDSIZE(J) = abs(GRIDPOS(ID, GRIDPTR(1, INCELL(J)))&
+                        & - GRIDPOS(ID, GRIDPTR(8, INCELL(J))))
 
                     if (TREEPTR(1, INCELL(J)) .eq. 0) then
                         GRIDSIZE(J) = CURGRIDSIZE(ID)
@@ -4196,32 +4196,32 @@ subroutine GRID_SMOOTH_TEST(GRIDPTR, GRIDPOS, NEIGHPTR,          &
                         GRIDSIZE(J) = CURGRIDSIZE(ID)
                     end if
                 end if
-!               If there are multiple neighboring cells then get
-!                 direction the neighbor cell was split
+                ! If there are multiple neighboring cells then get
+                !   direction the neighbor cell was split
                 IN = NEIGHPTR(IFACE, ICELL)
                 if (IN .lt. 0) then
                     DIRSPLIT(J) = ibits(int(CELLFLAGS(abs(IN))), 2, 2)
                 end if
             end do
 
-!             Split cell this way if cells on opposite side are smaller
-!               this direction OR opposite neighbor cells are split in
-!               same other direction.
-            if (GRIDSIZE(1)*GRIDSIZEINV .lt. 0.75 .and.                   &
-       &        GRIDSIZE(2)*GRIDSIZEINV .lt. 0.75) then
+            ! Split cell this way if cells on opposite side are smaller
+            !   this direction OR opposite neighbor cells are split in
+            !   same other direction.
+            if (GRIDSIZE(1)*GRIDSIZEINV .lt. 0.75 .and.&
+                & GRIDSIZE(2)*GRIDSIZEINV .lt. 0.75) then
                 IDIR = ID
             end if
-            if (DIRSPLIT(1) .gt. 0 .and. DIRSPLIT(1) .ne. ID .and.        &
-       &        DIRSPLIT(1) .eq. DIRSPLIT(2)) then
+            if (DIRSPLIT(1) .gt. 0 .and. DIRSPLIT(1) .ne. ID .and.&
+                & DIRSPLIT(1) .eq. DIRSPLIT(2)) then
                 IDIR = DIRSPLIT(1)
             end if
 
-!             Split cell this way if ratio of neighboring grid cells' si
-!               to this cells size (in ID direction) is less than 0.4.
+            ! Split cell this way if ratio of neighboring grid cells' si
+            !   to this cells size (in ID direction) is less than 0.4.
             RATIO = min(GRIDSIZE(1)*GRIDSIZEINV, GRIDSIZE(2)*GRIDSIZEINV)
             if (RATIO .lt. 0.4 .and. RATIO .lt. SIZERATIO) then
-!               Check if there is any source function for this cell, bef
-!                 deciding to split it (no point in dividing clear sky).
+                ! Check if there is any source function for this cell, bef
+                !   deciding to split it (no point in dividing clear sky).
                 ISUM = 0
                 do I = 1, 8
                     IP = GRIDPTR(I, ICELL)
@@ -4237,4 +4237,4 @@ subroutine GRID_SMOOTH_TEST(GRIDPTR, GRIDPOS, NEIGHPTR,          &
     end do
 
     return
-end
+end subroutine
