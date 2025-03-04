@@ -165,7 +165,10 @@ Source Code File Change
   * converted from F77 to F90
   * formatted the code
 
-* ``src/_shdSurf_ocean.f``: was ``ocean_brdf.f``
+* ``src/shdSurf_ocean.f90``: was ``ocean_brdf.f``
+
+  * converted from F77 to F90
+  * formatted the code
 
 * ``src/shdTool_propgen.f90``: was ``propgen.f90``
 
@@ -179,6 +182,7 @@ Source Code File Change
 
 * ``src/shdTool_put.f90``: was ``put.c``
 
+  * converted from F77 to F90
   * modified the code to resolve a warning from compilation
 
 * ``src/shdTool_plot_sca_tab.f90``: was ``plotscattab.f90``

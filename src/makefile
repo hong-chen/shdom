@@ -5,7 +5,7 @@
 FC     = gfortran                        # your Fortran 90 compiler here (same as used by mpif90)
 CC     = gcc
 CFLAGS =
-FFLAGS = -O3 -fallow-argument-mismatch   # your flags here
+FFLAGS = -O3 -fallow-argument-mismatch  # your flags here
 #FC     = pgf90
 #FFLAGS = -fast
 MPIFC  = mpif90    # MPI Fortran 90 compiling command for shdom90
@@ -17,7 +17,7 @@ BIN_DIR     = $(abspath $(CURRENT_DIR)/../bin)
 
 TARGETS = bin shdom propgen make_mie_table make_tmatrix_table plotscattab put
 
-SHDOMOBJS = shdSolv_1.o shdSolv_2.o shdUtil_io.o _shdSurf_ocean.o _fftpack.o
+SHDOMOBJS = shdSolv_1.o shdSolv_2.o shdUtil_io.o shdSurf_ocean.o _fftpack.o
 
 UseMPI = no
 UseNetcdf = no
@@ -63,6 +63,9 @@ shdSolv_2.o: shdSolv_2.f90
 
 shdUtil_io.o: shdUtil_io.f90
 	$(F90) -c $(F90FLAGS) shdUtil_io.f90
+
+shdSurf_ocean.o: shdSurf_ocean.f90
+	$(F90) -c $(F90FLAGS) shdSurf_ocean.f90
 
 shdom_mpi.o: shdom_mpi.f90
 	$(F90) -c $(F90FLAGS) shdom_mpi.f90
