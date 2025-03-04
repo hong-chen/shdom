@@ -5,15 +5,15 @@
 
 C      Computes the light scattering properties of a single randomly
 C      oriented spheroid or cylinder using the T-matrix code of M. Mishchenko.
-C      Spheroids are calculated with cylflag=.false. and cylinders with 
-C      cylflag=.true.  The axis ratio (axratio) is > 1 for an oblate 
+C      Spheroids are calculated with cylflag=.false. and cylinders with
+C      cylflag=.true.  The axis ratio (axratio) is > 1 for an oblate
 C      spheroid and < 1 for a prolate spheroid.   For cylinders axratio
-C      is the ratio of the diameter to the length.   The radius is 
-C      the equal volume radius. The imaginary part of the complex index 
-C      of refraction specified in mindex can have either sign, as it is 
-C      set to positive when used.  
-C      The Wigner d-function coefficients of the six unique elements of 
-C      the scattering phase matrix are returned in wigcoef(6,0:maxleg) in 
+C      is the ratio of the diameter to the length.   The radius is
+C      the equal volume radius. The imaginary part of the complex index
+C      of refraction specified in mindex can have either sign, as it is
+C      set to positive when used.
+C      The Wigner d-function coefficients of the six unique elements of
+C      the scattering phase matrix are returned in wigcoef(6,0:maxleg) in
 C      order alpha1, alpha2, alpha3, alpha4, beta1, beta2.
 C      The inputs and outputs to this subroutine are in REAL*4, but
 C      the T-matrix calculations are done in REAL*8.
@@ -28,11 +28,11 @@ C      the beginning, set parameters for a single particle, and calculate
 C      the Legendre coefficients of the six unique elements of the phase
 C      matrix (first make Gaussian quadrature angles, call MATR to get the
 C      scattering matrix at these angles, and then do the integration over
-C      Wigner functions).  The MATR subroutine was modified to output the 
-C      scattering matrix at specified angles.  
+C      Wigner functions).  The MATR subroutine was modified to output the
+C      scattering matrix at specified angles.
       IMPLICIT REAL*8 (A-H,O-Z)
       INTEGER  maxrank, nrank
-      LOGICAL  cylflag 
+      LOGICAL  cylflag
       REAL     wavelength, radius, axratio
       COMPLEX*8  mindex
       REAL     extcross, scatcross, ssalbedo, asymmetry
@@ -42,122 +42,122 @@ C      Comments below are from the original tmd.lp.f code.
 
 C   New release including the LAPACK matrix inversion procedure.
 C   We thank Cory Davis (University of Edinburgh) for pointing
-C   out the possibility of replacing the proprietary NAG matrix 
+C   out the possibility of replacing the proprietary NAG matrix
 C   inversion routine by the public-domain LAPACK equivalent.
 
-C   CALCULATION OF LIGHT SCATTERING BY POLYDISPERSE, RANDOMLY          
-C   ORIENTED PARTICLES OF IDENTICAL AXIALLY SYMMETRIC SHAPE      
+C   CALCULATION OF LIGHT SCATTERING BY POLYDISPERSE, RANDOMLY
+C   ORIENTED PARTICLES OF IDENTICAL AXIALLY SYMMETRIC SHAPE
 
 C   This version of the code uses DOUBLE PRECISION variables
-C   and must be used along with the accompanying files _tmd.par.f      
-C   and lpd.f.    
-                                                                       
-C   Last update 08/06/2005 
-                                                                       
-C   The code has been developed by Michael Mishchenko at the NASA      
+C   and must be used along with the accompanying files _tmd.par.f
+C   and lpd.f.
+
+C   Last update 08/06/2005
+
+C   The code has been developed by Michael Mishchenko at the NASA
 C   Goddard Institute for Space Studies, New York. This research
 C   was funded by the NASA Radiation Sciences Program.
-                                                                       
-C   The code can be used without limitations in any not-for-       
-C   profit scientific research.  We only request that in any      
-C   publication using the code the source of the code be acknowledged  
-C   and relevant references (see below) be made.                                   
-                                                                       
-C   This version of the code is applicable to spheroids,               
-C   Chebyshev particles, and finite circular cylinders.                
-                                                                       
-C   The computational method is based on the Watermsn's T-matrix      
-C   approach and is described in detail in the following papers:           
-C                                                                      
-C   1.  M. I. Mishchenko, Light scattering by randomly oriented        
-C       axially symmetric particles, J. Opt. Soc. Am. A,               
-C       vol. 8, 871-882 (1991).                                        
-C                                                                      
-C   2.  M. I. Mishchenko, Light scattering by size-shape               
-C       distributions of randomly oriented axially symmetric           
-C       particles of a size comparable to a wavelength,                
-C       Appl. Opt., vol. 32, 4652-4666 (1993).                         
-C                                                                      
-C   3.  M. I. Mishchenko and L. D. Travis, T-matrix computations       
-C       of light scattering by large spheroidal particles,             
-C       Opt. Commun., vol. 109, 16-21 (1994).                          
-C                                                                      
-C   4.  M. I. Mishchenko, L. D. Travis, and A. Macke, Scattering       
-C       of light by polydisperse, randomly oriented, finite            
-C       circular cylinders, Appl. Opt., vol. 35, 4927-4940 (1996).     
-C                                                                      
-C   5.  D. J. Wielaard, M. I. Mishchenko, A. Macke, and B. E. Carlson, 
-C       Improved T-matrix computations for large, nonabsorbing and    
-C       weakly absorbing nonspherical particles and comparison         
-C       with geometrical optics approximation, Appl. Opt., vol. 36,    
-C       4305-4313 (1997).                                                  
-C                                                                      
-C   A general review of the T-matrix approach can be found in          
-C                                                                      
-C   6.  M. I. Mishchenko, L. D. Travis, and D. W. Mackowski,           
-C       T-matrix computations of light scattering by nonspherical      
-C       particles: a review, J. Quant. Spectrosc. Radiat.             
-C       Transfer, vol. 55, 535-575 (1996).                             
-C                                                                      
-C   The following paper provides a detailed user guide to the          
-C   T-matrix code:                                                     
-C                                                                      
-C   7.  M. I. Mishchenko and L. D. Travis, Capabilities and            
-C       limitations of a current FORTRAN implementation of the         
-C       T-matrix method for randomly oriented, rotationally            
-C       symmetric scatterers, J. Quant. Spectrosc. Radiat. Transfer,   
-C       vol. 60, 309-324 (1998).                                       
+
+C   The code can be used without limitations in any not-for-
+C   profit scientific research.  We only request that in any
+C   publication using the code the source of the code be acknowledged
+C   and relevant references (see below) be made.
+
+C   This version of the code is applicable to spheroids,
+C   Chebyshev particles, and finite circular cylinders.
+
+C   The computational method is based on the Watermsn's T-matrix
+C   approach and is described in detail in the following papers:
 C
-C   These papers are available in the .pdf format at the web site 
+C   1.  M. I. Mishchenko, Light scattering by randomly oriented
+C       axially symmetric particles, J. Opt. Soc. Am. A,
+C       vol. 8, 871-882 (1991).
+C
+C   2.  M. I. Mishchenko, Light scattering by size-shape
+C       distributions of randomly oriented axially symmetric
+C       particles of a size comparable to a wavelength,
+C       Appl. Opt., vol. 32, 4652-4666 (1993).
+C
+C   3.  M. I. Mishchenko and L. D. Travis, T-matrix computations
+C       of light scattering by large spheroidal particles,
+C       Opt. Commun., vol. 109, 16-21 (1994).
+C
+C   4.  M. I. Mishchenko, L. D. Travis, and A. Macke, Scattering
+C       of light by polydisperse, randomly oriented, finite
+C       circular cylinders, Appl. Opt., vol. 35, 4927-4940 (1996).
+C
+C   5.  D. J. Wielaard, M. I. Mishchenko, A. Macke, and B. E. Carlson,
+C       Improved T-matrix computations for large, nonabsorbing and
+C       weakly absorbing nonspherical particles and comparison
+C       with geometrical optics approximation, Appl. Opt., vol. 36,
+C       4305-4313 (1997).
+C
+C   A general review of the T-matrix approach can be found in
+C
+C   6.  M. I. Mishchenko, L. D. Travis, and D. W. Mackowski,
+C       T-matrix computations of light scattering by nonspherical
+C       particles: a review, J. Quant. Spectrosc. Radiat.
+C       Transfer, vol. 55, 535-575 (1996).
+C
+C   The following paper provides a detailed user guide to the
+C   T-matrix code:
+C
+C   7.  M. I. Mishchenko and L. D. Travis, Capabilities and
+C       limitations of a current FORTRAN implementation of the
+C       T-matrix method for randomly oriented, rotationally
+C       symmetric scatterers, J. Quant. Spectrosc. Radiat. Transfer,
+C       vol. 60, 309-324 (1998).
+C
+C   These papers are available in the .pdf format at the web site
 C
 C   http://www.giss.nasa.gov/~crmim/publications/
 C
-C   or in hardcopy upon request from Michael Mishchenko    
-C   Please e-mail your request to crmim@giss.nasa.gov.      
+C   or in hardcopy upon request from Michael Mishchenko
+C   Please e-mail your request to crmim@giss.nasa.gov.
 C
-C   A comprehensive book "Scattering, Absorption, and Emission of  
+C   A comprehensive book "Scattering, Absorption, and Emission of
 C   Light by Small Particles" (Cambridge University Press, Cambridge,
-C   2002) is also available in the .pdf format at the web site 
+C   2002) is also available in the .pdf format at the web site
 C
 C   http://www.giss.nasa.gov/~crmim/books.html
- 
-C   Analytical averaging over particle orientations (Ref. 1) makes     
-C   this method the fastest exact technique currently available.       
-C   The use of an automatic convergence procedure                      
-C   (Ref. 2) makes the code convenient in massive computations.        
-C   Ref. 4 describes features specific for finite cylinders as         
-C   particles with sharp rectangular edges.  Ref. 5 describes further      
-C   numerical improvements.                                               
-                                                                       
-C   The use of extended precision variables (Ref. 3) can                     
+
+C   Analytical averaging over particle orientations (Ref. 1) makes
+C   this method the fastest exact technique currently available.
+C   The use of an automatic convergence procedure
+C   (Ref. 2) makes the code convenient in massive computations.
+C   Ref. 4 describes features specific for finite cylinders as
+C   particles with sharp rectangular edges.  Ref. 5 describes further
+C   numerical improvements.
+
+C   The use of extended precision variables (Ref. 3) can
 C   significantly increase the maximal convergent equivalent-sphere
 C   size parameter and make it greater than 200 (depending on
 C   refractive index and aspect ratio). The extended-precision code
-C   is also available. However, the use of extended precision varibales     
-C   results in a greater consumption of CPU time.                  
-C   On IBM RISC workstations, that code is approximately               
-C   five times slower than this double-precision code.  The            
-C   CPU time difference between the double-precision and extended-     
-C   precision codes can be larger on supercomputers.                   
-                                                                       
-C   This is the first part of the full T-matrix code.  The second part,    
-C   lpd.f, is completely independent of the firsti part. It contains no    
+C   is also available. However, the use of extended precision varibales
+C   results in a greater consumption of CPU time.
+C   On IBM RISC workstations, that code is approximately
+C   five times slower than this double-precision code.  The
+C   CPU time difference between the double-precision and extended-
+C   precision codes can be larger on supercomputers.
+
+C   This is the first part of the full T-matrix code.  The second part,
+C   lpd.f, is completely independent of the firsti part. It contains no
 C   T-matrix-specific subroutines and can be compiled separately.
-C   The second part of the code replaces the previously implemented 
-C   standard matrix inversion scheme based on Gaussian elimination 
-C   by a scheme based on the LU factorization technique.     
-C   As described in Ref. 5 above, the use of the LU factorization is          
-C   especially beneficial for nonabsorbing or weakly absorbing particles.     
+C   The second part of the code replaces the previously implemented
+C   standard matrix inversion scheme based on Gaussian elimination
+C   by a scheme based on the LU factorization technique.
+C   As described in Ref. 5 above, the use of the LU factorization is
+C   especially beneficial for nonabsorbing or weakly absorbing particles.
 C   In this code we use the LAPACK implementation of the LU factorization
-C   scheme. LAPACK stands for Linear Algebra PACKage. The latter is 
+C   scheme. LAPACK stands for Linear Algebra PACKage. The latter is
 C   publicly available at the following internet site:
 C
-C   http://www.netlib.org/lapack/      
-                                                                      
-C   INPUT PARAMETERS:                                                  
-C                                                                      
-C      RAT = 1 - particle size is specified in terms of the            
-C                equal-volume-sphere radius                             
+C   http://www.netlib.org/lapack/
+
+C   INPUT PARAMETERS:
+C
+C      RAT = 1 - particle size is specified in terms of the
+C                equal-volume-sphere radius
 C      RAT.NE.1 - particle size is specified in terms of the           
 C                equal-surface-area-sphere radius                      
 C      NDISTR specifies the distribution of equivalent-sphere radii   
@@ -1753,13 +1753,13 @@ C**********************************************************************
       COMMON /CTT/ QR,QI,RGQR,RGQI
       NDIM=NPN2
       NNMAX=2*NMAX
- 
-C     Matrix inversion from LAPACK 
- 
+
+C     Matrix inversion from LAPACK
+
       DO I=1,NNMAX
-	   DO J=1,NNMAX
-	      ZQ(I,J)=DCMPLX(QR(I,J),QI(I,J))
-	   ENDDO
+      DO J=1,NNMAX
+        ZQ(I,J)=DCMPLX(QR(I,J),QI(I,J))
+      ENDDO
       ENDDO
       INFO=0
       CALL ZGETRF(NNMAX,NNMAX,ZQ,NPN2,IPIV,INFO)
@@ -1772,7 +1772,7 @@ C     Matrix inversion from LAPACK
          DO J=1,NNMAX
             TR=0D0
             TI=0D0
-	    DO K=1,NNMAX
+      DO K=1,NNMAX
                  ARR=RGQR(I,K)
                  ARI=RGQI(I,K)
                  AR=ZQ(K,J)
@@ -1780,13 +1780,13 @@ C     Matrix inversion from LAPACK
                  TR=TR-ARR*AR+ARI*AI
                  TI=TI-ARR*AI-ARI*AR
             ENDDO
-	    TR1(I,J)=TR
+      TR1(I,J)=TR
             TI1(I,J)=TI
          ENDDO
       ENDDO
       RETURN
       END
- 
+
 C********************************************************************
 C                                                                   *
 C   CALCULATION OF THE EXPANSION COEFFICIENTS FOR (I,Q,U,V) -       *
