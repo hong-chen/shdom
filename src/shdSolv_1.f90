@@ -3484,22 +3484,22 @@ subroutine SPLIT_GRID(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
     return
 end subroutine
 
-subroutine INTERPOLATE_POINT(NEWPOINTS, NPTS,                    &
-&             NSTOKES, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,         &
-&             DELTAM, BCFLAG, IPFLAG, ACCELFLAG, GRIDPOS,          &
-&             SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN,        &
-&             UNITS, WAVENO, WAVELEN,                              &
-&             EXTINCT, ALBEDO, LEGEN, IPHASE, TEMP, PLANCK, DIRFLUX, &
-&             RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR)
-!       Interpolates the medium properties, radiance, and source functio
-!     new grid points (specified in NEWPOINTS).  The medium properties a
-!     interpolated from the property grid, since interpolating from the
-!     internal grid may not faithfully represent the true medium.
-!     The delta-M scaling is done to the new grid point properties if ne
-!     The direct beam flux and the Planck function for the new points is
-!     recomputed (rather than interpolated).  The radiance is averaged
-!     from the two parent grid points, and used to compute the source
-!     function for the new points.
+subroutine INTERPOLATE_POINT(NEWPOINTS, NPTS,&
+    & NSTOKES, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
+    & DELTAM, BCFLAG, IPFLAG, ACCELFLAG, GRIDPOS,&
+    & SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN,&
+    & UNITS, WAVENO, WAVELEN,&
+    & EXTINCT, ALBEDO, LEGEN, IPHASE, TEMP, PLANCK, DIRFLUX,&
+    & RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR)
+    !   Interpolates the medium properties, radiance, and source functio
+    ! new grid points (specified in NEWPOINTS).  The medium properties a
+    ! interpolated from the property grid, since interpolating from the
+    ! internal grid may not faithfully represent the true medium.
+    ! The delta-M scaling is done to the new grid point properties if ne
+    ! The direct beam flux and the Planck function for the new points is
+    ! recomputed (rather than interpolated).  The radiance is averaged
+    ! from the two parent grid points, and used to compute the source
+    ! function for the new points.
     implicit none
     integer NEWPOINTS(3, 4), NPTS
     integer NSTOKES, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
@@ -3525,7 +3525,7 @@ subroutine INTERPOLATE_POINT(NEWPOINTS, NPTS,                    &
     real, allocatable :: SOURCET(:, :)
 
     allocate (LOFJ(NLM), SOURCET(NSTOKES, NLM))
-!         Make the l index as a function of SH term (J)
+    ! Make the l index as a function of SH term (J)
     J = 0
     do L = 0, ML
         ME = min(L, MM)
@@ -3541,22 +3541,22 @@ subroutine INTERPOLATE_POINT(NEWPOINTS, NPTS,                    &
         SECMU0 = 1.0/abs(SOLARMU)
     end if
 
-!         Loop over the (potentially) four new grid points
+    ! Loop over the (potentially) four new grid points
     do I = 1, 4
         if (NEWPOINTS(3, I) .gt. 0) then
-!             Get the parent and new grid pointers
+            ! Get the parent and new grid pointers
             IP1 = NEWPOINTS(1, I)
             IP2 = NEWPOINTS(2, I)
             IP = NEWPOINTS(3, I)
 
-!             Interpolate the medium properties from the property grid
+            ! Interpolate the medium properties from the property grid
             X = GRIDPOS(1, IP)
             Y = GRIDPOS(2, IP)
             Z = GRIDPOS(3, IP)
-            call TRILIN_INTERP_PROP(X, Y, Z, .false., NSTLEG, NLEG,      &
-       &                             TEMP(IP), EXTINCT(IP), ALBEDO(IP),   &
-       &                             LEGEN(1, 0, IP), IPHASE(IP))
-!             Do the Delta-M scaling of extinction and albedo for this p
+            call TRILIN_INTERP_PROP(X, Y, Z, .false., NSTLEG, NLEG,&
+                & TEMP(IP), EXTINCT(IP), ALBEDO(IP),&
+                & LEGEN(1, 0, IP), IPHASE(IP))
+            ! Do the Delta-M scaling of extinction and albedo for this p
             if (DELTAM) then
                 if (NUMPHASE .gt. 0) then
                     F = LEGEN(1, ML + 1, IPHASE(IP))
@@ -3570,29 +3570,29 @@ subroutine INTERPOLATE_POINT(NEWPOINTS, NPTS,                    &
                 ALBEDO(IP) = (1.0 - F)*ALBEDO(IP)/(1.0 - ALBEDO(IP)*F)
             end if
 
-!             Compute the new Planck source function (if needed)
+            ! Compute the new Planck source function (if needed)
             if (SRCTYPE .ne. 'S') then
                 call PLANCK_FUNCTION(TEMP(IP), UNITS, WAVENO, WAVELEN, BB)
                 PLANCK(IP) = (1.0 - ALBEDO(IP))*BB
             end if
 
-!             Compute the new direct beam flux (if needed)
+            ! Compute the new direct beam flux (if needed)
             if (SRCTYPE .ne. 'T') then
                 if (btest(BCFLAG, 2) .or. btest(BCFLAG, 3)) then
-!               If parallel mode then calculate a temporary approximatio
-!                 to the direct flux (for source function calculation be
+                    ! If parallel mode then calculate a temporary approximatio
+                    !   to the direct flux (for source function calculation be
                     DIRFLUX(IP) = exp(0.5*(log(DIRFLUX(IP1)) + log(DIRFLUX(IP2))))
                 else
-!               Otherwise, calculate the exact direct beam from property
+                    ! Otherwise, calculate the exact direct beam from property
                     DIRPATH = 0.0
-                    call DIRECT_BEAM_PROP(0, X, Y, Z, BCFLAG, IPFLAG, DELTAM,  &
-           &                  ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,    &
-           &                  DIRFLUX(IP),                                    &
-           &                  UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
+                    call DIRECT_BEAM_PROP(0, X, Y, Z, BCFLAG, IPFLAG, DELTAM,&
+                        & ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
+                        & DIRFLUX(IP),&
+                        & UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
                 end if
             end if
 
-!             Interpolate the radiance
+            ! Interpolate the radiance
             IR1 = RSHPTR(IP1)
             IR2 = RSHPTR(IP2)
             NR1 = RSHPTR(IP1 + 1) - RSHPTR(IP1)
@@ -3614,7 +3614,7 @@ subroutine INTERPOLATE_POINT(NEWPOINTS, NPTS,                    &
                 RADIANCE(:, IR + J) = 0.5*(RAD1(:) + RAD2(:))
             end do
 
-!             Compute the source function for the new points
+            ! Compute the source function for the new points
             NS1 = SHPTR(IP1 + 1) - SHPTR(IP1)
             NS2 = SHPTR(IP2 + 1) - SHPTR(IP2)
             NS = max(NS1, NS2)
@@ -3627,15 +3627,15 @@ subroutine INTERPOLATE_POINT(NEWPOINTS, NPTS,                    &
                 IPH = IP
             end if
             if (NSTOKES .eq. 1) then
-                call CALC_SOURCE_PNT_UNPOL(NLM, NLEG, LOFJ,                &
-         &                          SRCTYPE, DIRFLUX(IP)*SECMU0, YLMSUN,    &
-         &                          PLANCK(IP), ALBEDO(IP), IPH, LEGEN,     &
-         &                          NR, RADIANCE(1, IR + 1), SOURCET)
+                call CALC_SOURCE_PNT_UNPOL(NLM, NLEG, LOFJ,&
+                    & SRCTYPE, DIRFLUX(IP)*SECMU0, YLMSUN,&
+                    & PLANCK(IP), ALBEDO(IP), IPH, LEGEN,&
+                    & NR, RADIANCE(1, IR + 1), SOURCET)
             else
-                call CALC_SOURCE_PNT(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,     &
-         &                          SRCTYPE, DIRFLUX(IP)*SECMU0, YLMSUN,    &
-         &                          PLANCK(IP), ALBEDO(IP), IPH, LEGEN,     &
-         &                          NR, RADIANCE(1, IR + 1), SOURCET)
+                call CALC_SOURCE_PNT(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
+                    & SRCTYPE, DIRFLUX(IP)*SECMU0, YLMSUN,&
+                    & PLANCK(IP), ALBEDO(IP), IPH, LEGEN,&
+                    & NR, RADIANCE(1, IR + 1), SOURCET)
             end if
             do J = 1, NS
                 SOURCE(:, IS + J) = SOURCET(:, J)
@@ -3645,7 +3645,7 @@ subroutine INTERPOLATE_POINT(NEWPOINTS, NPTS,                    &
     deallocate (LOFJ, SOURCET)
 
     return
-end
+end subroutine
 
 subroutine DIVIDE_CELL(NPTS, NCELLS, GRIDPTR, NEIGHPTR,          &
 &             TREEPTR, CELLFLAGS, GRIDPOS, ICELL, IDIR, NEWPOINTS)
