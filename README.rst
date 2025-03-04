@@ -189,9 +189,12 @@ Source Code File Change
 
 * ``src/shdTool_plot_sca_tab.f90``: was ``plotscattab.f90``
 
-* ``src/shdTool_txt2nc.c``: was ``AsciiPropertyFileToNetcdf.f90``
+* ``src/shdTool_txt2nc.f90``: was ``AsciiPropertyFileToNetcdf.f90``
 
-* ``src/_tmd.par.f``: was ``tmd.par.f``
+* ``src/shdScat_tmx_par.f90``: was ``tmd.par.f``
+
+  * converted from F77 to F90
+  * formatted the code
 
 * ``src/_fftpack.f``: was ``fftpack.f``
 
