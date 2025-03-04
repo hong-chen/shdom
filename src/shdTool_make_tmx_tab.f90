@@ -208,8 +208,8 @@ subroutine USER_INPUT(POLTAB, WAVELEN, PARTYPE, RINDEX, PARDENS,&
     write (*, '(1X,F7.2)') MAXRADIUS
 
     write (*, *) 'Output scattering table name'
-    read (*, *) TABLEFILE
-    write (*, '(1X,A70)') TABLEFILE
+    read (*, '(A)') TABLEFILE
+    write (*, '(A)') TABLEFILE
 end subroutine USER_INPUT
 
 subroutine GET_NSIZE(SRETAB, MAXRADIUS, WAVELEN, NSIZE)
