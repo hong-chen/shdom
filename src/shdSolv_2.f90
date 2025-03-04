@@ -2785,12 +2785,14 @@ subroutine COMPUTE_RADIANCE(&
         PHID = OUTPARMS(2*IANG + 6)
         PHIOUT = PHID*acos(-1.0)/180.0
 
-        ! added by Hong Chen for fixing the "domain shift" issue
-        HC_VZA_RAD = acos(MUOUT)
-        HC_XOFFSET = Z0*tan(HC_VZA_RAD)*cos(PHIOUT)
-        HC_YOFFSET = Z0*tan(HC_VZA_RAD)*sin(PHIOUT)
-        STARTX = -OUTPARMS(4) + HC_XOFFSET
-        STARTY = -OUTPARMS(5) + HC_YOFFSET
+        ! added by Hong Chen for fixing the "domain shift" issue (only for 3D)
+        if (IPFLAG .eq. 0) then
+            HC_VZA_RAD = acos(MUOUT)
+            HC_XOFFSET = Z0*tan(HC_VZA_RAD)*cos(PHIOUT)
+            HC_YOFFSET = Z0*tan(HC_VZA_RAD)*sin(PHIOUT)
+            STARTX = -OUTPARMS(4) + HC_XOFFSET
+            STARTY = -OUTPARMS(5) + HC_YOFFSET
+        endif
 
         if (MUOUT .eq. 0.0 .or. abs(MUOUT) .gt. 1.0) then
             write (6, *) 'COMPUTE_RADIANCE: Bad mu for radiance', MUOUT
