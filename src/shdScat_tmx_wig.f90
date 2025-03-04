@@ -652,7 +652,7 @@ subroutine TMATRIXWIG(wavelength, mindex, radius,&
               if (NMAX1 .gt. NPN4) stop
               do 213 N2 = 1, NMAX1
                   NN2 = N2 + NMAX
-                  do 213 N1 = 1, NMAX1
+                  do 313 N1 = 1, NMAX1
                       NN1 = N1 + NMAX
                       ZZ1 = TR1(N1, N2)
                       RT11(1, N1, N2) = ZZ1
@@ -672,6 +672,7 @@ subroutine TMATRIXWIG(wavelength, mindex, radius,&
                       IT22(1, N1, N2) = ZZ8
                       QSCA = QSCA + ZZ1*ZZ1 + ZZ2*ZZ2 + ZZ3*ZZ3 + ZZ4*ZZ4&
                           & + ZZ5*ZZ5 + ZZ6*ZZ6 + ZZ7*ZZ7 + ZZ8*ZZ8
+313               continue
 213           continue
               ! PRINT 7800,0,DABS(QEXT),QSCA,NMAX
               do 220 M = 1, NMAX1
@@ -684,7 +685,7 @@ subroutine TMATRIXWIG(wavelength, mindex, radius,&
                   do 214 N2 = 1, NM1
                       NN2 = N2 + M - 1
                       N22 = N2 + NM
-                      do 214 N1 = 1, NM1
+                      do 314 N1 = 1, NM1
                           NN1 = N1 + M - 1
                           N11 = N1 + NM
                           ZZ1 = TR1(N1, N2)
@@ -705,6 +706,7 @@ subroutine TMATRIXWIG(wavelength, mindex, radius,&
                           IT22(M1, NN1, NN2) = ZZ8
                           QSC = QSC + (ZZ1*ZZ1 + ZZ2*ZZ2 + ZZ3*ZZ3 + ZZ4*ZZ4&
                               & + ZZ5*ZZ5 + ZZ6*ZZ6 + ZZ7*ZZ7 + ZZ8*ZZ8)*2d0
+314                   continue
 214               continue
                   NNM = 2*NM
                   QXT = 0d0
@@ -857,10 +859,11 @@ subroutine CONST(NGAUSS, NMAX, MMAX, P, X, W, AN, ANN, S, SS, NP, EPS)
           AN(N) = DFLOAT(NN)
           D = DSQRT(DFLOAT(2*N + 1)/DFLOAT(NN))
           DD(N) = D
-      do 10 N1 = 1, N
-          DDD = D*DD(N1)*0.5d0
-          ANN(N, N1) = DDD
-          ANN(N1, N) = DDD
+          do 101 N1 = 1, N
+              DDD = D*DD(N1)*0.5d0
+              ANN(N, N1) = DDD
+              ANN(N1, N) = DDD
+101       continue
 10    continue
       NG = 2*NGAUSS
       if (NP .eq. -2) GO TO 11
@@ -1033,21 +1036,22 @@ subroutine BESS(X, XR, XI, NG, NMAX, NNMAX1, NNMAX2)
       common/CBESS/J, Y, JR, JI, DJ, DY, DJR, DJI
 
       do 10 I = 1, NG
-           XX = X(I)
-           call RJB(XX, AJ, ADJ, NMAX, NNMAX1)
-           call RYB(XX, AY, ADY, NMAX)
-           YR = XR(I)
-           YI = XI(I)
-           call CJB(YR, YI, AJR, AJI, ADJR, ADJI, NMAX, NNMAX2)
-           do 10 N = 1, NMAX
-                J(I, N) = AJ(N)
-                Y(I, N) = AY(N)
-                JR(I, N) = AJR(N)
-                JI(I, N) = AJI(N)
-                DJ(I, N) = ADJ(N)
-                DY(I, N) = ADY(N)
-                DJR(I, N) = ADJR(N)
-                DJI(I, N) = ADJI(N)
+          XX = X(I)
+          call RJB(XX, AJ, ADJ, NMAX, NNMAX1)
+          call RYB(XX, AY, ADY, NMAX)
+          YR = XR(I)
+          YI = XI(I)
+          call CJB(YR, YI, AJR, AJI, ADJR, ADJI, NMAX, NNMAX2)
+          do 103 N = 1, NMAX
+              J(I, N) = AJ(N)
+              Y(I, N) = AY(N)
+              JR(I, N) = AJR(N)
+              JI(I, N) = AJI(N)
+              DJ(I, N) = ADJ(N)
+              DY(I, N) = ADY(N)
+              DJR(I, N) = ADJR(N)
+              DJI(I, N) = ADJI(N)
+103       continue
 10    continue
       return
 end subroutine
@@ -1094,10 +1098,12 @@ subroutine RYB(X, Y, V, NMAX)
       Y(2) = (-3d0*X3 + X1)*C - 3d0*X2*S
       NMAX1 = NMAX - 1
       do 5 I = 2, NMAX1
-5         Y(I + 1) = DFLOAT(2*I + 1)*X1*Y(I) - Y(I - 1)
-          V(1) = -X1*(C + Y1)
-          do 10 I = 2, NMAX
-10            V(I) = Y(I - 1) - DFLOAT(I)*X1*Y(I)
+          Y(I + 1) = DFLOAT(2*I + 1)*X1*Y(I) - Y(I - 1)
+5     continue
+      V(1) = -X1*(C + Y1)
+      do 10 I = 2, NMAX
+          V(I) = Y(I - 1) - DFLOAT(I)*X1*Y(I)
+10    continue
       return
 end subroutine
 
@@ -1237,7 +1243,7 @@ subroutine TMATR0(NGAUSS, X, W, AN, ANN, S, SS, PPI, PIR, PII, R, DR, DDR,&
           I1 = NGAUSS + I
           I2 = NGAUSS - I + 1
           call VIG(X(I1), NMAX, 0, DV1, DV2)
-          do 25 N = 1, NMAX
+          do 125 N = 1, NMAX
               SI = SIG(N)
               DD1 = DV1(N)
               DD2 = DV2(N)
@@ -1245,6 +1251,7 @@ subroutine TMATR0(NGAUSS, X, W, AN, ANN, S, SS, PPI, PIR, PII, R, DR, DDR,&
               D2(I1, N) = DD2
               D1(I2, N) = DD1*SI
               D2(I2, N) = -DD2*SI
+125       continue
 25    continue
 30    do 40 I = 1, NGSS
            RR(I) = W(I)*R(I)
@@ -1252,7 +1259,7 @@ subroutine TMATR0(NGAUSS, X, W, AN, ANN, S, SS, PPI, PIR, PII, R, DR, DDR,&
 
       do 300 N1 = MM1, NMAX
           AN1 = AN(N1)
-          do 300 N2 = MM1, NMAX
+          do 333 N2 = MM1, NMAX
               AN2 = AN(N2)
               AR12 = 0d0
               AR21 = 0d0
@@ -1337,6 +1344,7 @@ subroutine TMATR0(NGAUSS, X, W, AN, ANN, S, SS, PPI, PIR, PII, R, DR, DDR,&
               RG21(N1, N2) = GR21*AN12
               IG12(N1, N2) = GI12*AN12
               IG21(N1, N2) = GI21*AN12
+333       continue
 300   continue
 
       TPIR = PIR
@@ -1347,7 +1355,7 @@ subroutine TMATR0(NGAUSS, X, W, AN, ANN, S, SS, PPI, PIR, PII, R, DR, DDR,&
       do 310 N1 = MM1, NMAX
           K1 = N1 - MM1 + 1
           KK1 = K1 + NM
-          do 310 N2 = MM1, NMAX
+          do 311 N2 = MM1, NMAX
               K2 = N2 - MM1 + 1
               KK2 = K2 + NM
 
@@ -1380,15 +1388,17 @@ subroutine TMATR0(NGAUSS, X, W, AN, ANN, S, SS, PPI, PIR, PII, R, DR, DDR,&
               TQI(KK1, KK2) = TPIR*TAI12 + TPII*TAR12 + TPPI*TAI21
               TRGQR(KK1, KK2) = TPIR*TGR12 - TPII*TGI12 + TPPI*TGR21
               TRGQI(KK1, KK2) = TPIR*TGI12 + TPII*TGR12 + TPPI*TGI21
+311       continue
 310   continue
 
       NNMAX = 2*NM
       do 320 N1 = 1, NNMAX
-          do 320 N2 = 1, NNMAX
+          do 322 N2 = 1, NNMAX
               QR(N1, N2) = TQR(N1, N2)
               QI(N1, N2) = TQI(N1, N2)
               RGQR(N1, N2) = TRGQR(N1, N2)
               RGQI(N1, N2) = TRGQI(N1, N2)
+322       continue
 320   continue
       call TT(NMAX, NCHECK)
       return
@@ -1453,14 +1463,15 @@ subroutine TMATR(M, NGAUSS, X, W, AN, ANN, S, SS, PPI, PIR, PII, R, DR, DDR,&
           I1 = NGAUSS + I
           I2 = NGAUSS - I + 1
           call VIG(X(I1), NMAX, M, DV1, DV2)
-          do 25 N = 1, NMAX
+          do 225 N = 1, NMAX
               SI = SIG(N)
-             DD1 = DV1(N)
-             DD2 = DV2(N)
-             D1(I1, N) = DD1
-             D2(I1, N) = DD2
-             D1(I2, N) = DD1*SI
-             D2(I2, N) = -DD2*SI
+              DD1 = DV1(N)
+              DD2 = DV2(N)
+              D1(I1, N) = DD1
+              D2(I1, N) = DD2
+              D1(I2, N) = DD1*SI
+              D2(I2, N) = -DD2*SI
+225       continue
 25    continue
 30    do 40 I = 1, NGSS
           WR = W(I)*R(I)
@@ -1471,7 +1482,7 @@ subroutine TMATR(M, NGAUSS, X, W, AN, ANN, S, SS, PPI, PIR, PII, R, DR, DDR,&
 
       do 300 N1 = MM1, NMAX
           AN1 = AN(N1)
-          do 300 N2 = MM1, NMAX
+          do 330 N2 = MM1, NMAX
               AN2 = AN(N2)
               AR11 = 0d0
               AR12 = 0d0
@@ -1607,7 +1618,7 @@ subroutine TMATR(M, NGAUSS, X, W, AN, ANN, S, SS, PPI, PIR, PII, R, DR, DDR,&
               IG12(N1, N2) = GI12*AN12
               IG21(N1, N2) = GI21*AN12
               IG22(N1, N2) = GI22*AN12
-
+330       continue
 300   continue
       TPIR = PIR
       TPII = PII
@@ -1616,7 +1627,7 @@ subroutine TMATR(M, NGAUSS, X, W, AN, ANN, S, SS, PPI, PIR, PII, R, DR, DDR,&
       do 310 N1 = MM1, NMAX
           K1 = N1 - MM1 + 1
           KK1 = K1 + NM
-          do 310 N2 = MM1, NMAX
+          do 340 N2 = MM1, NMAX
               K2 = N2 - MM1 + 1
               KK2 = K2 + NM
 
@@ -1659,15 +1670,17 @@ subroutine TMATR(M, NGAUSS, X, W, AN, ANN, S, SS, PPI, PIR, PII, R, DR, DDR,&
               TQI(KK1, KK2) = TPIR*TAI12 + TPII*TAR12 + TPPI*TAI21
               TRGQR(KK1, KK2) = TPIR*TGR12 - TPII*TGI12 + TPPI*TGR21
               TRGQI(KK1, KK2) = TPIR*TGI12 + TPII*TGR12 + TPPI*TGI21
+340       continue
 310   continue
 
       NNMAX = 2*NM
       do 320 N1 = 1, NNMAX
-          do 320 N2 = 1, NNMAX
+          do 323 N2 = 1, NNMAX
               QR(N1, N2) = TQR(N1, N2)
               QI(N1, N2) = TQI(N1, N2)
               RGQR(N1, N2) = TRGQR(N1, N2)
               RGQI(N1, N2) = TRGQI(N1, N2)
+323       continue
 320   continue
 
       call TT(NM, NCHECK)
@@ -2539,7 +2552,8 @@ subroutine GAUSS(N, IND1, IND2, Z, W)
               DJ = DJ + A
               PA = PB
               PB = PC
-20        PC = X*PB + (X*PB - PA)*(DJ - A)/DJ
+              PC = X*PB + (X*PB - PA)*(DJ - A)/DJ
+20        continue
           PA = A/((PB - X*PC)*F)
           PB = PA*PC*(A - X*X)
           X = X - PB
@@ -2557,7 +2571,8 @@ subroutine GAUSS(N, IND1, IND2, Z, W)
           & ' OF ', I4, '-TH ORDER')
       do 105 I = 1, K
           ZZ = -Z(I)
-105   print 1200, I, ZZ, I, W(I)
+          print 1200, I, ZZ, I, W(I)
+105   continue
 1200  format(' ', 4x, 'X(', I4, ') = ', F17.14, 5x, 'W(', I4, ') = ', F17.14)
       GO TO 115
 110   continue
@@ -2566,7 +2581,8 @@ subroutine GAUSS(N, IND1, IND2, Z, W)
 115   continue
       if (IND1 .eq. 0) GO TO 140
       do 120 I = 1, N
-120   Z(I) = (A + Z(I))/B
+          Z(I) = (A + Z(I))/B
+120   continue
 140   continue
       return
 end subroutine
