@@ -595,8 +595,8 @@ subroutine TMATRIXWIG(wavelength, mindex, radius,&
                       NMAX1 = N
                       if (DQSCA .le. DDELT .and. DQEXT .le. DDELT) GO TO 12
 10                continue
-12                    continue
-!              PRINT 7335, NMAX1,DQSCA,DQEXT
+12                continue
+                  ! PRINT 7335, NMAX1,DQSCA,DQEXT
                   if (DSCA .le. DDELT .and. DEXT .le. DDELT) GO TO 55
                   if (NMA .eq. NPN1) then
                       print 7333, NPN1
@@ -605,128 +605,128 @@ subroutine TMATRIXWIG(wavelength, mindex, radius,&
                       return
                   end if
 50            continue
-55 NNNGGG = NGAUSS + 1
-            if (NGAUSS .eq. NPNG1) print 7336
-            MMAX = NMAX1
-            do 150 NGAUS = NNNGGG, NPNG1
-               NGAUSS = NGAUS
-               NGGG = 2*NGAUSS
-7336 format('WARNING: NGAUSS=NPNG1')
-7337 format(' NG=', I3, '  DC2=', D8.2, '   DC1=', D8.2)
-               call CONST(NGAUSS, NMAX, MMAX, P, X, W, AN, ANN, S, SS, NP, EPS)
-               call VARY(LAM, MRR, MRI, A, EPS, NP, NGAUSS, X, P, PPI, PIR, PII, R, &
-     &                   DR, DDR, DRR, DRI, NMAX)
-               call TMATR0(NGAUSS, X, W, AN, ANN, S, SS, PPI, PIR, PII, R, DR,    &
-     &                      DDR, DRR, DRI, NMAX, NCHECK)
-               QEXT = 0d0
-               QSCA = 0d0
-               do 104 N = 1, NMAX
-                  N1 = N + NMAX
-                  TR1NN = TR1(N, N)
-                  TI1NN = TI1(N, N)
-                  TR1NN1 = TR1(N1, N1)
-                  TI1NN1 = TI1(N1, N1)
-                  DN1 = DFLOAT(2*N + 1)
-                  QSCA = QSCA + DN1*(TR1NN*TR1NN + TI1NN*TI1NN                &
-     &                          + TR1NN1*TR1NN1 + TI1NN1*TI1NN1)
-                  QEXT = QEXT + (TR1NN + TR1NN1)*DN1
-104 continue
-               DSCA = DABS((QSCA1 - QSCA)/QSCA)
-               DEXT = DABS((QEXT1 - QEXT)/QEXT)
-!              PRINT 7337, NGGG,DSCA,DEXT
-               QEXT1 = QEXT
-               QSCA1 = QSCA
-               if (DSCA .le. DDELT .and. DEXT .le. DDELT) GO TO 155
-               if (NGAUS .eq. NPNG1) print 7336
-150 continue
-155 continue
-            QSCA = 0d0
-            QEXT = 0d0
-            NNM = NMAX*2
-            do 204 N = 1, NNM
-               QEXT = QEXT + TR1(N, N)
-204 continue
-            if (NMAX1 .gt. NPN4) print 7550, NMAX1
-7550 format('NMAX1 = ', I3, ', i.e. greater than NPN4.',         &
-     &              ' Execution terminated')
-            if (NMAX1 .gt. NPN4) stop
-            do 213 N2 = 1, NMAX1
-               NN2 = N2 + NMAX
-               do 213 N1 = 1, NMAX1
-                  NN1 = N1 + NMAX
-                  ZZ1 = TR1(N1, N2)
-                  RT11(1, N1, N2) = ZZ1
-                  ZZ2 = TI1(N1, N2)
-                  IT11(1, N1, N2) = ZZ2
-                  ZZ3 = TR1(N1, NN2)
-                  RT12(1, N1, N2) = ZZ3
-                  ZZ4 = TI1(N1, NN2)
-                  IT12(1, N1, N2) = ZZ4
-                  ZZ5 = TR1(NN1, N2)
-                  RT21(1, N1, N2) = ZZ5
-                  ZZ6 = TI1(NN1, N2)
-                  IT21(1, N1, N2) = ZZ6
-                  ZZ7 = TR1(NN1, NN2)
-                  RT22(1, N1, N2) = ZZ7
-                  ZZ8 = TI1(NN1, NN2)
-                  IT22(1, N1, N2) = ZZ8
-                  QSCA = QSCA + ZZ1*ZZ1 + ZZ2*ZZ2 + ZZ3*ZZ3 + ZZ4*ZZ4             &
-     &                 + ZZ5*ZZ5 + ZZ6*ZZ6 + ZZ7*ZZ7 + ZZ8*ZZ8
-213 continue
-!           PRINT 7800,0,DABS(QEXT),QSCA,NMAX
-            do 220 M = 1, NMAX1
-               call TMATR(M, NGAUSS, X, W, AN, ANN, S, SS, PPI, PIR, PII, R, DR,    &
-     &                    DDR, DRR, DRI, NMAX, NCHECK)
-               NM = NMAX - M + 1
-               NM1 = NMAX1 - M + 1
-               M1 = M + 1
-               QSC = 0d0
-               do 214 N2 = 1, NM1
-                  NN2 = N2 + M - 1
-                  N22 = N2 + NM
-                  do 214 N1 = 1, NM1
-                     NN1 = N1 + M - 1
-                     N11 = N1 + NM
-                     ZZ1 = TR1(N1, N2)
-                     RT11(M1, NN1, NN2) = ZZ1
-                     ZZ2 = TI1(N1, N2)
-                     IT11(M1, NN1, NN2) = ZZ2
-                     ZZ3 = TR1(N1, N22)
-                     RT12(M1, NN1, NN2) = ZZ3
-                     ZZ4 = TI1(N1, N22)
-                     IT12(M1, NN1, NN2) = ZZ4
-                     ZZ5 = TR1(N11, N2)
-                     RT21(M1, NN1, NN2) = ZZ5
-                     ZZ6 = TI1(N11, N2)
-                     IT21(M1, NN1, NN2) = ZZ6
-                     ZZ7 = TR1(N11, N22)
-                     RT22(M1, NN1, NN2) = ZZ7
-                     ZZ8 = TI1(N11, N22)
-                     IT22(M1, NN1, NN2) = ZZ8
-                     QSC = QSC + (ZZ1*ZZ1 + ZZ2*ZZ2 + ZZ3*ZZ3 + ZZ4*ZZ4           &
-     &                       + ZZ5*ZZ5 + ZZ6*ZZ6 + ZZ7*ZZ7 + ZZ8*ZZ8)*2d0
-214       continue
-          NNM = 2*NM
-          QXT = 0d0
-          do 215 N = 1, NNM
-              QXT = QXT + TR1(N, N)*2d0
-215       continue
-          QSCA = QSCA + QSC
-          QEXT = QEXT + QXT
-          ! PRINT 7800,M,DABS(QXT),QSC,NMAX
-7800      format(' m=', I3, '  qxt=', d12.6, '  qsc=', d12.6,&
-              & '  nmax=', I3)
-220       continue
-          COEFF1 = LAM*LAM*0.5d0/P
-          CSCA = QSCA*COEFF1
-          CEXT = -QEXT*COEFF1
-          ! PRINT 7880, NMAX,NMAX1
-7880      format('nmax=', I3, '   nmax1=', I3)
-          call GSP(NMAX1, CSCA, LAM, AL1, AL2, AL3, AL4, BE1, BE2, LMAX)
-          L1M = LMAX + 1
-          L1MAX = max(L1MAX, L1M)
-          WGII = WG1(I)
-          WGI = WGII*CSCA
+55            NNNGGG = NGAUSS + 1
+              if (NGAUSS .eq. NPNG1) print 7336
+              MMAX = NMAX1
+              do 150 NGAUS = NNNGGG, NPNG1
+                  NGAUSS = NGAUS
+                  NGGG = 2*NGAUSS
+7336              format('WARNING: NGAUSS=NPNG1')
+7337              format(' NG=', I3, '  DC2=', D8.2, '   DC1=', D8.2)
+                  call CONST(NGAUSS, NMAX, MMAX, P, X, W, AN, ANN, S, SS, NP, EPS)
+                  call VARY(LAM, MRR, MRI, A, EPS, NP, NGAUSS, X, P, PPI, PIR, PII, R,&
+                      & DR, DDR, DRR, DRI, NMAX)
+                  call TMATR0(NGAUSS, X, W, AN, ANN, S, SS, PPI, PIR, PII, R, DR,&
+                      & DDR, DRR, DRI, NMAX, NCHECK)
+                  QEXT = 0d0
+                  QSCA = 0d0
+                  do 104 N = 1, NMAX
+                      N1 = N + NMAX
+                      TR1NN = TR1(N, N)
+                      TI1NN = TI1(N, N)
+                      TR1NN1 = TR1(N1, N1)
+                      TI1NN1 = TI1(N1, N1)
+                      DN1 = DFLOAT(2*N + 1)
+                      QSCA = QSCA + DN1*(TR1NN*TR1NN + TI1NN*TI1NN&
+                          & + TR1NN1*TR1NN1 + TI1NN1*TI1NN1)
+                      QEXT = QEXT + (TR1NN + TR1NN1)*DN1
+104               continue
+                  DSCA = DABS((QSCA1 - QSCA)/QSCA)
+                  DEXT = DABS((QEXT1 - QEXT)/QEXT)
+                  ! PRINT 7337, NGGG,DSCA,DEXT
+                  QEXT1 = QEXT
+                  QSCA1 = QSCA
+                  if (DSCA .le. DDELT .and. DEXT .le. DDELT) GO TO 155
+                  if (NGAUS .eq. NPNG1) print 7336
+150           continue
+155           continue
+              QSCA = 0d0
+              QEXT = 0d0
+              NNM = NMAX*2
+              do 204 N = 1, NNM
+                  QEXT = QEXT + TR1(N, N)
+204           continue
+              if (NMAX1 .gt. NPN4) print 7550, NMAX1
+7550          format('NMAX1 = ', I3, ', i.e. greater than NPN4.',&
+                  & ' Execution terminated')
+              if (NMAX1 .gt. NPN4) stop
+              do 213 N2 = 1, NMAX1
+                  NN2 = N2 + NMAX
+                  do 213 N1 = 1, NMAX1
+                      NN1 = N1 + NMAX
+                      ZZ1 = TR1(N1, N2)
+                      RT11(1, N1, N2) = ZZ1
+                      ZZ2 = TI1(N1, N2)
+                      IT11(1, N1, N2) = ZZ2
+                      ZZ3 = TR1(N1, NN2)
+                      RT12(1, N1, N2) = ZZ3
+                      ZZ4 = TI1(N1, NN2)
+                      IT12(1, N1, N2) = ZZ4
+                      ZZ5 = TR1(NN1, N2)
+                      RT21(1, N1, N2) = ZZ5
+                      ZZ6 = TI1(NN1, N2)
+                      IT21(1, N1, N2) = ZZ6
+                      ZZ7 = TR1(NN1, NN2)
+                      RT22(1, N1, N2) = ZZ7
+                      ZZ8 = TI1(NN1, NN2)
+                      IT22(1, N1, N2) = ZZ8
+                      QSCA = QSCA + ZZ1*ZZ1 + ZZ2*ZZ2 + ZZ3*ZZ3 + ZZ4*ZZ4&
+                          & + ZZ5*ZZ5 + ZZ6*ZZ6 + ZZ7*ZZ7 + ZZ8*ZZ8
+213           continue
+              ! PRINT 7800,0,DABS(QEXT),QSCA,NMAX
+              do 220 M = 1, NMAX1
+                  call TMATR(M, NGAUSS, X, W, AN, ANN, S, SS, PPI, PIR, PII, R, DR,&
+                      & DDR, DRR, DRI, NMAX, NCHECK)
+                  NM = NMAX - M + 1
+                  NM1 = NMAX1 - M + 1
+                  M1 = M + 1
+                  QSC = 0d0
+                  do 214 N2 = 1, NM1
+                      NN2 = N2 + M - 1
+                      N22 = N2 + NM
+                      do 214 N1 = 1, NM1
+                          NN1 = N1 + M - 1
+                          N11 = N1 + NM
+                          ZZ1 = TR1(N1, N2)
+                          RT11(M1, NN1, NN2) = ZZ1
+                          ZZ2 = TI1(N1, N2)
+                          IT11(M1, NN1, NN2) = ZZ2
+                          ZZ3 = TR1(N1, N22)
+                          RT12(M1, NN1, NN2) = ZZ3
+                          ZZ4 = TI1(N1, N22)
+                          IT12(M1, NN1, NN2) = ZZ4
+                          ZZ5 = TR1(N11, N2)
+                          RT21(M1, NN1, NN2) = ZZ5
+                          ZZ6 = TI1(N11, N2)
+                          IT21(M1, NN1, NN2) = ZZ6
+                          ZZ7 = TR1(N11, N22)
+                          RT22(M1, NN1, NN2) = ZZ7
+                          ZZ8 = TI1(N11, N22)
+                          IT22(M1, NN1, NN2) = ZZ8
+                          QSC = QSC + (ZZ1*ZZ1 + ZZ2*ZZ2 + ZZ3*ZZ3 + ZZ4*ZZ4&
+                              & + ZZ5*ZZ5 + ZZ6*ZZ6 + ZZ7*ZZ7 + ZZ8*ZZ8)*2d0
+214               continue
+                  NNM = 2*NM
+                  QXT = 0d0
+                  do 215 N = 1, NNM
+                      QXT = QXT + TR1(N, N)*2d0
+215               continue
+                  QSCA = QSCA + QSC
+                  QEXT = QEXT + QXT
+                  ! PRINT 7800,M,DABS(QXT),QSC,NMAX
+7800              format(' m=', I3, '  qxt=', d12.6, '  qsc=', d12.6,&
+                      & '  nmax=', I3)
+220           continue
+              COEFF1 = LAM*LAM*0.5d0/P
+              CSCA = QSCA*COEFF1
+              CEXT = -QEXT*COEFF1
+              ! PRINT 7880, NMAX,NMAX1
+7880          format('nmax=', I3, '   nmax1=', I3)
+              call GSP(NMAX1, CSCA, LAM, AL1, AL2, AL3, AL4, BE1, BE2, LMAX)
+              L1M = LMAX + 1
+              L1MAX = max(L1MAX, L1M)
+              WGII = WG1(I)
+              WGI = WGII*CSCA
           do 250 L1 = 1, L1M
               ALPH1(L1) = ALPH1(L1) + AL1(L1)*WGI
               ALPH2(L1) = ALPH2(L1) + AL2(L1)*WGI
