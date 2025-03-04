@@ -177,7 +177,7 @@ Source Code File Change
 
 * ``src/shdTool_make_tmx_tab.f90``: was ``make_tmatrix_table.f90``
 
-* ``src/shdTool_put.c``: was ``put.c``
+* ``src/shdTool_put.f90``: was ``put.c``
 
   * modified the code to resolve a warning from compilation
 

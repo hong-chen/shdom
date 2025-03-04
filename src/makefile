@@ -94,8 +94,8 @@ make_mie_table: shdTool_make_mie_tab.f90
 plotscattab: shdTool_plot_sca_tab.f90
 	$(F90) $(F90FLAGS) shdTool_plot_sca_tab.f90 -o $(BIN_DIR)/plotscattab
 
-put: shdTool_put.c
-	$(CC) $(CFLAGS) shdTool_put.c -o $(BIN_DIR)/put
+put: shdTool_put.f90
+	$(F90) $(F90FLAGS) shdTool_put.f90 -o $(BIN_DIR)/put
 
 .f.o :; $(FC) -c $(FFLAGS) $*.f
 
