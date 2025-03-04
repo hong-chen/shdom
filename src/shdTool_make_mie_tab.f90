@@ -571,7 +571,7 @@ subroutine WRITE_MIE_TABLE(MIETABFILE, POLTAB, WAVELEN1, WAVELEN2, DELTAWAVE,&
     integer :: I, J, JP, K, L, NL, NPHASEPOL
     real REFF
 
-    open (UNIT=3, FILE=MIETABFILE, STATUS='REPLACE')
+    open (UNIT=3, FILE=trim(adjustl(MIETABFILE)), STATUS='REPLACE')
     if (POLTAB) then
         NPHASEPOL = 6
         write (3, '(A)') '! Polarized Mie scattering table vs. effective radius (LWC=1 g/m^3)'

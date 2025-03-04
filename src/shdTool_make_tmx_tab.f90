@@ -406,7 +406,7 @@ subroutine WRITE_SCAT_TABLE(TABLEFILE, POLTAB, WAVELEN,&
     else
         SHAPE = 'spheroid'
     end if
-    open (UNIT=3, FILE=TABLEFILE, STATUS='REPLACE')
+    open (UNIT=3, FILE=trim(adjustl(TABLEFILE)), STATUS='REPLACE')
     if (POLTAB) then
         NPHASEPOL = 6
         write (3, '(3A)') '! Polarized T-matrix ', trim(SHAPE), ' scattering table vs. effective radius (LWC=1 g/m^3)'

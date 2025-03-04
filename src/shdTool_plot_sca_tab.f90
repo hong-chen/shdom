@@ -119,7 +119,7 @@ program PLOTSCATTAB
     end do
 
     ! Output the phase functions
-    open (UNIT=1, FILE=PLOTFILE, STATUS='UNKNOWN')
+    open (UNIT=1, FILE=trim(adjustl(PLOTFILE)), STATUS='UNKNOWN')
     if (FILETYPE == 'P') then
         write (1, '(A,A40)') '!  Property file phase functions: ', INFILE
         write (1, '(A)') '! Angle  cos(angle)  Phase functions with index numbers'
@@ -151,7 +151,7 @@ subroutine READ_SCAT_TABLE_SIZE(SCATTABFILE, POLTAB, NPHASEPOL, &
     integer :: I, J, L, NCOEF, IERR
     real    :: REFF, EXT, SSALB, CHI
 
-    open (UNIT=3, FILE=SCATTABFILE, STATUS='OLD')
+    open (UNIT=3, FILE=trim(adjustl(SCATTABFILE)), STATUS='OLD')
     read (3, *)
     read (3, *)
     read (3, *)
@@ -217,7 +217,7 @@ subroutine READ_SCAT_TABLE(SCATTABFILE, POLTAB, NPHASEPOL, NRETAB, RETAB, &
     integer :: I, J, L
     real    :: CHI, EXTINCT, SSALB
 
-    open (UNIT=1, FILE=SCATTABFILE, STATUS='OLD')
+    open (UNIT=1, FILE=trim(adjustl(SCATTABFILE)), STATUS='OLD')
     read (1, *)
     read (1, *)
     read (1, *)
@@ -274,7 +274,7 @@ subroutine READ_PROPERTY_SIZE(PROPFILE, NPHASEPOL, NUMPHASE, MAXNCOEF)
     character(LEN=1) :: PROPTYPE
 
     ! Open the file, figure out the type, and get the grid size
-    open (UNIT=2, FILE=PROPFILE, STATUS='OLD')
+    open (UNIT=2, FILE=trim(adjustl(PROPFILE)), STATUS='OLD')
     read (2, '(A1)') PROPTYPE
     if (PROPTYPE /= 'T' .and. PROPTYPE /= 'P') then
         print *, 'Must be a tabulated phase function property file.'
@@ -320,7 +320,7 @@ subroutine READ_PROPERTY_PHASEMAT(PROPFILE, NPHASEPOL, NUMPHASE, MAXNCOEF, &
     real    :: DELX, DELY, ZLEVELS
     character(LEN=1) :: PROPTYPE
 
-    open (UNIT=2, FILE=PROPFILE, STATUS='OLD')
+    open (UNIT=2, FILE=trim(adjustl(PROPFILE)), STATUS='OLD')
     read (2, '(A1)') PROPTYPE
     read (2, *) NPX, NPY, NPZ
     read (2, *) DELX, DELY, (ZLEVELS, K=1, NPZ)

@@ -126,7 +126,7 @@ contains
         integer :: I, J, L, NCOEF
         real    :: REFF, EXT, SSALB, CHI
 
-        open (UNIT=1, FILE=SCATTABFILE, STATUS='OLD')
+        open (UNIT=1, FILE=trim(adjustl(SCATTABFILE)), STATUS='OLD')
         read (1, *)
         read (1, *) WAVELEN1, WAVELEN2
         read (1, *)
@@ -168,7 +168,7 @@ contains
         integer :: I, J, L
         real    :: CHI
 
-        open (UNIT=1, FILE=SCATTABFILE, STATUS='OLD')
+        open (UNIT=1, FILE=trim(adjustl(SCATTABFILE)), STATUS='OLD')
         read (1, *)
         read (1, *)
         read (1, *)
@@ -233,7 +233,7 @@ contains
         character(LEN=256), intent(IN) :: PARFILE
         integer, intent(OUT) :: NX, NY, NZP
 
-        open (UNIT=2, FILE=PARFILE, STATUS='OLD')
+        open (UNIT=2, FILE=trim(adjustl(PARFILE)), STATUS='OLD')
         read (2, *)
         read (2, *) NX, NY, NZP
         close (2)
@@ -266,7 +266,7 @@ contains
         REFF(:, :, :, :) = 0.0
 
         ! Read in the header
-        open (UNIT=2, FILE=PARFILE, STATUS='OLD')
+        open (UNIT=2, FILE=trim(adjustl(PARFILE)), STATUS='OLD')
         read (2, *) FILEKIND
         read (2, *) ! NX, NY, NZP
         read (2, *) DELX, DELY
@@ -715,7 +715,7 @@ contains
 
         ! Open the property file and output the header including the
         !   tabulated phase functions
-        open (UNIT=3, FILE=PROPFILE, STATUS='REPLACE')
+        open (UNIT=3, FILE=trim(adjustl(PROPFILE)), STATUS='REPLACE')
         if (NPHASEPOL == 1) then
             write (3, '(A)') 'Tabulated phase function property file'
         else

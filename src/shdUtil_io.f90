@@ -326,7 +326,7 @@ subroutine NAMELIST_INPUT (&
     ! Read in the namelist
     write (*, '(1X,A)') 'Namelist file name'
     read (*, '(A)') NMLFILE
-    open (UNIT=5, FILE=NMLFILE, STATUS='OLD')
+    open (UNIT=5, FILE=trim(adjustl(NMLFILE)), STATUS='OLD')
     read (5, NML=SHDOMINPUT)
     close (5)
 
@@ -524,7 +524,7 @@ subroutine READ_PROPERTY_SIZE(PROPFILE, NSTLEG, NLEG, NPX, NPY, NPZ,&
     character PROPTYPE*1
 
     ! Open the file, figure out the type, and get the grid size
-    open (UNIT=1, FILE=PROPFILE, STATUS='OLD')
+    open (UNIT=1, FILE=trim(adjustl(PROPFILE)), STATUS='OLD')
     read (1, '(A1)') PROPTYPE
     if (PROPTYPE .ne. 'E' .and. PROPTYPE .ne. 'T'&
         & .and. PROPTYPE .ne. 'P') rewind (1)
@@ -617,7 +617,7 @@ subroutine READ_PROPERTIES(&
     real TMP, EXT, ALB, CHI
 
     ! Open the file, figure out the type, and get the grid size
-    open (UNIT=1, FILE=PROPFILE, STATUS='OLD')
+    open (UNIT=1, FILE=trim(adjustl(PROPFILE)), STATUS='OLD')
     read (1, '(A1)') PROPTYPE
     if (PROPTYPE .ne. 'E' .and. PROPTYPE .ne. 'T'&
         & .and. PROPTYPE .ne. 'P') rewind (1)
@@ -922,7 +922,7 @@ subroutine READ_SURFACE_SIZE(SFCFILE, MAXSFCPTS, MAXSFCPARS)
 
     ! Open the file, figure out the type, and get the grid size
     SFCTYPE(1:1) = 'V'
-    open (UNIT=1, FILE=SFCFILE, STATUS='OLD')
+    open (UNIT=1, FILE=trim(adjustl(SFCFILE)), STATUS='OLD')
     read (1, '(A1)') SFCTYPE(2:2)
     read (1, *) NXSFC, NYSFC
     MAXSFCPTS = (NXSFC + 1)*(NYSFC + 1)
@@ -988,7 +988,7 @@ subroutine READ_SURFACE(&
     ! Surface type is variable something
     SFCTYPE(1:1) = 'V'
     ! Open the file, figure out the type, and get the grid size
-    open (UNIT=1, FILE=SFCFILE, STATUS='OLD')
+    open (UNIT=1, FILE=trim(adjustl(SFCFILE)), STATUS='OLD')
     read (1, '(A1)') SFCTYPE(2:2)
     read (1, *) NXSFC, NYSFC, DELXSFC, DELYSFC
     if ((NXSFC + 1)*(NYSFC + 1) .gt. MAXSFCPTS) then
@@ -1158,7 +1158,7 @@ subroutine READ_CKD_SIZE(CKDFILE, WAVENO, NG, NZCKD)
     integer NB, IB, JB, KB, N
     real WAVENUM1, WAVENUM2, SF
 
-    open (UNIT=1, FILE=CKDFILE, STATUS='OLD')
+    open (UNIT=1, FILE=trim(adjustl(CKDFILE)), STATUS='OLD')
     read (1, *)
     read (1, *) NB
     read (1, *)
@@ -1201,7 +1201,7 @@ subroutine READ_CKD(&
     integer NB, IB, JB, KB, IG, I, J, N
     real WAVENUM1, WAVENUM2, SF
 
-    open (UNIT=1, FILE=CKDFILE, STATUS='OLD')
+    open (UNIT=1, FILE=trim(adjustl(CKDFILE)), STATUS='OLD')
     read (1, *)
     read (1, *) NB
     read (1, *)
@@ -1279,7 +1279,7 @@ subroutine RESTORE_STATE(&
     NEWGRIDFLAG = .true.
     if (INSAVEFILE(1:4) .eq. 'NONE') return
 
-    open (UNIT=3, FILE=INSAVEFILE, STATUS='OLD',&
+    open (UNIT=3, FILE=trim(adjustl(INSAVEFILE)), STATUS='OLD',&
         & FORM='UNFORMATTED', ERR=900)
     read (3) NSTI, NXI, NYI, NZI, MLI, MMI, NLMI, NPTS, NCELLS
     if (NXI .ne. NX .or. NYI .ne. NY .or. NZI .ne. NZ) then
@@ -1349,7 +1349,7 @@ subroutine SAVE_STATE(&
 
     if (OUTSAVEFILE(1:4) .eq. 'NONE') return
 
-    open (UNIT=3, FILE=OUTSAVEFILE, STATUS='UNKNOWN',&
+    open (UNIT=3, FILE=trim(adjustl(OUTSAVEFILE)), STATUS='UNKNOWN',&
         & FORM='UNFORMATTED')
     write (3) NSTOKES, NX, NY, NZ, ML, MM, NLM, NPTS, NCELLS
 
@@ -1397,7 +1397,7 @@ subroutine OUTPUT_CELL_SPLIT(&
     integer IP1, IP2, ICELL, IDIR
     real ADAPTCRIT(3), MAXADAPT, XC, YC, ZC, EXT
 
-    open (UNIT=9, FILE=OUTFILE, STATUS='UNKNOWN')
+    open (UNIT=9, FILE=trim(adjustl(OUTFILE)), STATUS='UNKNOWN')
     write (9, *) '!  ICELL   Xc     Yc     Zc  ',&
         & 'Extinct SplitX  SplitY  SplitZ'
 
@@ -1452,7 +1452,7 @@ subroutine VISUALIZE_CELLS(&
     S = min(24.0/XDOMAIN, 18.0/ZDOMAIN)
     XSIZE = S*XDOMAIN
     ZSIZE = S*ZDOMAIN
-    open (UNIT=9, FILE=OUTFILE, STATUS='UNKNOWN')
+    open (UNIT=9, FILE=trim(adjustl(OUTFILE)), STATUS='UNKNOWN')
     write (9, '(A,2(1X,F6.2))') 'size ', XSIZE, ZSIZE
     write (9, '(A)') 'set just cc'
     write (9, '(A)') 'amove 0 0'
@@ -1669,7 +1669,7 @@ subroutine OUTPUT_RESULTS(&
     if (OUTTYPE .eq. 'J') OUTNAME = 'SOURCE_FUNCTION'
     if (OUTTYPE .eq. 'M') OUTNAME = 'MEDIUM-PROPERTIES'
 
-    open (UNIT=2, FILE=OUTFILE, STATUS='UNKNOWN')
+    open (UNIT=2, FILE=trim(adjustl(OUTFILE)), STATUS='UNKNOWN')
     write (2, '(A,A)')&
         & '! Polarized Spherical Harmonic Discrete Ordinate',&
         & ' Radiative Transfer Output'
@@ -2186,7 +2186,7 @@ subroutine OUTPUT_RESULTS_PAR(&
     if (OUTTYPE .eq. 'H') OUTNAME = 'NET_FLUX_DIV'
     if (OUTTYPE .eq. 'S') OUTNAME = 'SPHERICAL-HARMONIC'
 
-    open (UNIT=2, FILE=OUTFILE, STATUS='UNKNOWN')
+    open (UNIT=2, FILE=trim(adjustl(OUTFILE)), STATUS='UNKNOWN')
     write (2, '(A,A)')&
         & '! Polarized Spherical Harmonic Discrete Ordinate',&
         & ' Radiative Transfer Output'
@@ -2601,7 +2601,7 @@ subroutine OUTPUT_IMAGE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     ! Open the PGM image, which has to be direct access to output the
     ! clean binary pixel data
     RECLEN = NS*NBYTES
-    open (UNIT=2, FILE=OUTFILE, STATUS='UNKNOWN',&
+    open (UNIT=2, FILE=trim(adjustl(OUTFILE)), STATUS='UNKNOWN',&
         & ACCESS='DIRECT', FORM='UNFORMATTED', RECL=RECLEN)
 
     ! Start the PGM header in the buffer
