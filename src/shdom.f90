@@ -19,7 +19,7 @@ program SHDOM
     ! Number of output files and inputs parameter per file
     integer, parameter :: MAXOUT = 20, MAXPAR = 500
     real                 :: OUTPARMS(MAXPAR, MAXOUT)
-    character            :: OUTTYPES(MAXOUT)*1, OUTFILES(MAXOUT)*80
+    character            :: OUTTYPES(MAXOUT)*1, OUTFILES(MAXOUT)*256
 
     real, allocatable :: DELG(:), KABS(:, :)
     real, allocatable :: XGRID(:), YGRID(:), ZGRID(:)
@@ -459,22 +459,22 @@ program SHDOM
             if (OUTTYPES(I) .eq. 'F') then
                 if (nint(OUTPARMS(1, I)) .eq. 2 .or. nint(OUTPARMS(1, I)) .eq. 5) then
                     write (6, '(A,I1,A,A)') 'F output format ', nint(OUTPARMS(1, I)), &
-                        ' not supported for multiple processors: ', trim(OUTFILES(I))
+                        ' not supported for multiple processors: ', trim(adjustl(OUTFILES(I)))
                 end if
             else if (OUTTYPES(I) .eq. 'H') then
                 if (nint(OUTPARMS(1, I)) .eq. 3) then
                     write (6, '(A,I1,A,A)') 'H output format ', nint(OUTPARMS(1, I)), &
-                        ' not supported for multiple processors: ', trim(OUTFILES(I))
+                        ' not supported for multiple processors: ', trim(adjustl(OUTFILES(I)))
                 end if
             else if (OUTTYPES(I) .eq. 'S') then
                 if (nint(OUTPARMS(1, I)) .eq. 2) then
                     write (6, '(A,I1,A,A)') 'S output format ', nint(OUTPARMS(1, I)), &
-                        ' not supported for multiple processors: ', trim(OUTFILES(I))
+                        ' not supported for multiple processors: ', trim(adjustl(OUTFILES(I)))
                 end if
             else if (OUTTYPES(I) .eq. 'J') then
-                write (6, '(A,A)') 'J output format not supported for multiple processors: ', trim(OUTFILES(I))
+                write (6, '(A,A)') 'J output format not supported for multiple processors: ', trim(adjustl(OUTFILES(I)))
             else if (OUTTYPES(I) .eq. 'M') then
-                write (6, '(A,A)') 'M output format not supported for multiple processors: ', trim(OUTFILES(I))
+                write (6, '(A,A)') 'M output format not supported for multiple processors: ', trim(adjustl(OUTFILES(I)))
             end if
         end do
     end if
@@ -492,7 +492,7 @@ program SHDOM
                        XGRID, YGRID, ZGRID)
     end if
 
-    write (6, *) 'Starting solution iterations for SHDOM run: ', trim(RUNNAME)
+    write (6, *) 'Starting solution iterations for SHDOM run: ', trim(adjustl(RUNNAME))
     TOTITER = 0
     OLDNPTS = 0
 
@@ -706,7 +706,7 @@ program SHDOM
                                             OUTTYPES(I), OUTPARMS(1, I), OUTFILES(I))
                 end if
             end do
-            if (trim(OutFileNC) /= 'NONE' .and. trim(OutFileNC) /= '') then
+            if (trim(adjustl(OutFileNC)) /= 'NONE' .and. trim(adjustl(OutFileNC)) /= '') then
                 call output_results_netcdf_par(NSTOKES, NXT, NYT, NZ, &
                                                NPTSTOT, NCELLSTOT, NSHTOT, &
                                                ML, MM, NLM, NMU, NPHI, NANG, NG, &
@@ -744,7 +744,7 @@ program SHDOM
                                     OUTTYPES(I), OUTPARMS(1, I), OUTFILES(I))
             end if
         end do
-        if (trim(OutFileNC) /= 'NONE' .and. trim(OutFileNC) /= '') then
+        if (trim(adjustl(OutFileNC)) /= 'NONE' .and. trim(adjustl(OutFileNC)) /= '') then
             allocate (ALLFLUXES(3, NZ, NY1, NX1), ALLFLUXDIV(NZ, NY1, NX1))
             allocate (ALLSHTERMS(NSHOUT, NZ, NY1, NX1))
             if (FLUX_OUT) then
