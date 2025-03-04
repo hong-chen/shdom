@@ -3130,7 +3130,8 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
     integer I1, I2, I3, I4, IOPP, NTAU, IT, K
     logical IPINX, IPINY, OPENBCFACE, BTEST
     integer GRIDFACE(4, 6), OPPFACE(6), JFACE, KFACE, IC
-    real EXT0, EXT1, EXTN, XM, YM
+    real EXT0(1), EXT1(1), EXTN(1)
+    real XM, YM
     real SRCEXT0(NSTOKES), SRCEXT1(NSTOKES), RAD0(NSTOKES)
     double precision PI, CX, CY, CZ, CXINV, CYINV, CZINV
     double precision XN, YN, ZN, XI, YI, ZI
@@ -3253,7 +3254,7 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
         !   many subgrid intervals to use
         call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,&
             & XN, YN, ZN, 1, EXTINCT, 1, 1, EXTN)
-        TAUGRID = SO*0.5*(EXT1 + EXTN)
+        TAUGRID = SO*0.5*(EXT1(1) + EXTN(1))
         NTAU = max(1, 1 + int(TAUGRID/TAUTOL))
         DELS = SO/NTAU
         ! Loop over the subgrid cells
@@ -3272,7 +3273,7 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
             ZI = ZE + S*CZ
             ! Interpolate extinction and source function along path
             if (IT .eq. NTAU) then
-                EXT0 = EXTN
+                EXT0(1) = EXTN(1)
             else
                 call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,&
                     & XI, YI, ZI, 1, EXTINCT, 1, 1, EXT0)
@@ -3282,15 +3283,15 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
             SRCEXT0(1) = max(0.0, SRCEXT0(1))
 
             ! Compute the subgrid radiance: integration of the source fun
-            EXT = 0.5*(EXT0 + EXT1)
+            EXT = 0.5*(EXT0(1) + EXT1(1))
             if (EXT .ne. 0.0) then
                 TAU = EXT*DELS
                 ABSCELL = TAU*(1.0 - 0.5*TAU*(1.0 - 0.33333333333*TAU))
                 TRANSCELL = 1.0 - ABSCELL
                 ! Linear extinction, linear source*extinction, to second
                 SRC(:) = (0.5*(SRCEXT0(:) + SRCEXT1(:)) + 0.08333333333*&
-                    & (EXT0*SRCEXT1(:) - EXT1*SRCEXT0(:))*DELS&
-                    & *(1.0 - 0.05*(EXT1 - EXT0)*DELS))/EXT
+                    & (EXT0(1)*SRCEXT1(:) - EXT1(1)*SRCEXT0(:))*DELS&
+                    & *(1.0 - 0.05*(EXT1(1) - EXT0(1))*DELS))/EXT
             else
                 ABSCELL = 0.0
                 TRANSCELL = 1.0
@@ -3299,7 +3300,7 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
 
             RADIANCE(:) = RADIANCE(:) + TRANSMIT*SRC(:)*ABSCELL
             SRCEXT1(:) = SRCEXT0(:)
-            EXT1 = EXT0
+            EXT1(1) = EXT0(1)
             TRANSMIT = TRANSMIT*TRANSCELL
         ! End of sub grid cell loop
         end do
