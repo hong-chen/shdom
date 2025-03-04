@@ -50,12 +50,12 @@ bin:
 	mkdir -p $(BIN_DIR)
 
 # this for user input
-shdom: _shdom.o $(SHDOMOBJS)
-	$(F90) $(F90FLAGS) _shdom.o $(SHDOMOBJS) $(LIBS) -o $(BIN_DIR)/shdom
+#shdom: _shdom.o $(SHDOMOBJS)
+#    $(F90) $(F90FLAGS) _shdom.o $(SHDOMOBJS) $(LIBS) -o $(BIN_DIR)/shdom
 
 # this for namelist input
-#shdom: shdom.o $(SHDOMOBJS)
-#    $(F90) $(F90FLAGS) shdom.o $(SHDOMOBJS) $(LIBS) -o $(BIN_DIR)/shdom
+shdom: shdom.o $(SHDOMOBJS)
+	$(F90) $(F90FLAGS) shdom.o $(SHDOMOBJS) $(LIBS) -o $(BIN_DIR)/shdom
 
 shdom.o: shdom.f90 $(SHDOMOBJS)
 	$(F90) -c $(F90FLAGS) shdom.f90
