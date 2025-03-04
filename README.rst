@@ -148,7 +148,9 @@ Source Code File Change
   * converted from F77 to F90
   * formatted the code
 
-* ``src/_shdScat_tmx_wig.f``: was ``tmatrixwig.f``
+* ``src/shdScat_tmx_wig.f90``: was ``tmatrixwig.f``
+  * converted from F77 to F90
+  * formatted the code
 
 * ``src/shdSolv_1.f90``: was ``shdomsub1.f``
 
