@@ -411,8 +411,8 @@ subroutine TMATRIXWIG(wavelength, mindex, radius,&
       real*8 D22P(0:maxnang), D22M(0:maxnang)
       real*8 A1, A2, A3, A4, B1, B2, F
 
-      common/CT/TR1, TI1
-      common/TMAT/RT11, RT12, RT21, RT22, IT11, IT12, IT21, IT22
+      common /CT/ TR1, TI1
+      common /TMAT/ RT11, RT12, RT21, RT22, IT11, IT12, IT21, IT22
       P = DACOS(-1d0)
 
       !  OPEN FILES *******************************************************
@@ -917,7 +917,7 @@ subroutine VARY(LAM, MRR, MRI, A, EPS, NP, NGAUSS, X, P, PPI, PIR, PII,&
           & DJR(NPNG2, NPN1), DJI(NPNG2, NPN1), DDR(NPNG2),&
           & DRR(NPNG2), DRI(NPNG2),&
           & DY(NPNG2, NPN1)
-      common/CBESS/J, Y, JR, JI, DJ, DY, DJR, DJI
+      common /CBESS/ J, Y, JR, JI, DJ, DY, DJR, DJI
       NG = NGAUSS*2
       if (NP .eq. -1) call RSP1(X, NG, NGAUSS, A, EPS, NP, R, DR)
       if (NP .ge. 0) call RSP2(X, NG, A, EPS, NP, R, DR)
@@ -1041,7 +1041,7 @@ subroutine BESS(X, XR, XI, NG, NMAX, NNMAX1, NNMAX2)
           & AJ(NPN1), AY(NPN1), AJR(NPN1), AJI(NPN1),&
           & ADJ(NPN1), ADY(NPN1), ADJR(NPN1),&
           & ADJI(NPN1)
-      common/CBESS/J, Y, JR, JI, DJ, DY, DJR, DJI
+      common /CBESS/ J, Y, JR, JI, DJ, DY, DJR, DJI
 
       do 10 I = 1, NG
           XX = X(I)
@@ -1229,12 +1229,12 @@ subroutine TMATR0(NGAUSS, X, W, AN, ANN, S, SS, PPI, PIR, PII, R, DR, DDR,&
           & TRGQR(NPN2, NPN2), TRGQI(NPN2, NPN2)
       real*8 TR1(NPN2, NPN2), TI1(NPN2, NPN2)
       real*4 PLUS(NPN6*NPN4*NPN4*8)
-      common/TMAT0/PLUS,&
+      common /TMAT0/ PLUS,&
           & R11, R12, R21, R22, I11, I12, I21, I22, RG11, RG12, RG21, RG22,&
           & IG11, IG12, IG21, IG22
-      common/CBESS/J, Y, JR, JI, DJ, DY, DJR, DJI
-      common/CT/TR1, TI1
-      common/CTT/QR, QI, RGQR, RGQI
+      common /CBESS/ J, Y, JR, JI, DJ, DY, DJR, DJI
+      common /CT/ TR1, TI1
+      common /CTT/ QR, QI, RGQR, RGQI
       MM1 = 1
       NNMAX = NMAX + NMAX
       NG = 2*NGAUSS
@@ -1449,12 +1449,12 @@ subroutine TMATR(M, NGAUSS, X, W, AN, ANN, S, SS, PPI, PIR, PII, R, DR, DDR,&
           & TRGQR(NPN2, NPN2), TRGQI(NPN2, NPN2)
       real*8 TR1(NPN2, NPN2), TI1(NPN2, NPN2)
       real*4 PLUS(NPN6*NPN4*NPN4*8)
-      common/TMAT0/PLUS,&
+      common /TMAT0/ PLUS,&
           & R11, R12, R21, R22, I11, I12, I21, I22, RG11, RG12, RG21, RG22,&
           & IG11, IG12, IG21, IG22
-      common/CBESS/J, Y, JR, JI, DJ, DY, DJR, DJI
-      common/CT/TR1, TI1
-      common/CTT/QR, QI, RGQR, RGQI
+      common /CBESS/ J, Y, JR, JI, DJ, DY, DJR, DJI
+      common /CT/ TR1, TI1
+      common /CTT/ QR, QI, RGQR, RGQI
       MM1 = M
       QM = DFLOAT(M)
       QMM = QM*QM
@@ -1777,8 +1777,8 @@ subroutine TT(NMAX, NCHECK)
       real*8 TR1(NPN2, NPN2), TI1(NPN2, NPN2)
       complex*16 ZQ(NPN2, NPN2), ZW(NPN2)
       integer IPIV(NPN2), IPVT(NPN2)
-      common/CT/TR1, TI1
-      common/CTT/QR, QI, RGQR, RGQI
+      common /CT/ TR1, TI1
+      common /CTT/ QR, QI, RGQR, RGQI
       NDIM = NPN2
       NNMAX = 2*NMAX
 
@@ -1862,9 +1862,9 @@ subroutine GSP(NMAX, CSCA, LAM, ALF1, ALF2, ALF3, ALF4, BET1, BET2, LMAX)
           & TI21(NPN6, NPN4, NPN4), TI22(NPN6, NPN4, NPN4)
       complex*16 CIM(NPN1)
 
-      common/TMAT/TR11, TR12, TR21, TR22, TI11, TI12, TI21, TI22
-      common/CBESS_G/B1R, B1I, B2R, B2I
-      common/SS/SSIGN
+      common /TMAT/ TR11, TR12, TR21, TR22, TI11, TI12, TI21, TI22
+      common /CBESS_G/ B1R, B1I, B2R, B2I
+      common /SS/ SSIGN
       equivalence(PLUS1(1), TR11(1, 1, 1))
       equivalence(D1(1, 1, 1), PLUS1(1)),&
           & (D2(1, 1, 1), PLUS1(NPL1*NPN4*NPN4 + 1)),&
@@ -2186,7 +2186,7 @@ end subroutine
 
 subroutine FACT
       real*8 F(900)
-      common/FAC/F
+      common /FAC/ F
       F(1) = 0d0
       F(2) = 0d0
       do 2 I = 3, 900
@@ -2203,7 +2203,7 @@ end subroutine
 
 subroutine SIGNUM
       real*8 SSIGN(900)
-      common/SS/SSIGN
+      common /SS/ SSIGN
       SSIGN(1) = 1d0
       do 2 N = 2, 899
           SSIGN(N) = -SSIGN(N - 1)
@@ -2325,7 +2325,7 @@ end subroutine
 subroutine DIRECT(N, M, N1, M1, NN, MM, C)
       implicit real*8(A - H, O - Z)
       real*8 F(900)
-      common/FAC/F
+      common /FAC/ F
       C = F(2*N + 1) + F(2*N1 + 1) + F(N + N1 + M + M1 + 1) + F(N + N1 - M - M1 + 1)
       C = C - F(2*(N + N1) + 1) - F(N + M + 1) - F(N - M + 1) - F(N1 + M1 + 1) - F(N1 - M1 + 1)
       C = DEXP(C)
@@ -2344,8 +2344,8 @@ end subroutine
 subroutine CCGIN(N, N1, M, MM, G)
       implicit real*8(A - H, O - Z)
       real*8 F(900), SSIGN(900)
-      common/SS/SSIGN
-      common/FAC/F
+      common /SS/ SSIGN
+      common /FAC/ F
       M1 = MM - M
       if (N .ge. IABS(M) .AND.&
           & N1 .ge. IABS(M1) .AND.&
