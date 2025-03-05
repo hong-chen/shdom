@@ -122,6 +122,8 @@ C          destroyed between calls of COST.
 
         IWSAVE = WSAVE(2*NM1+1+N)
         CALL RFFTF1 (NM1,X,WSAVE(N+1),WSAVE(NM1+1+N),IWSAVE)
+        WSAVE(2*NM1+1+N) = IWSAVE
+
       ENDIF
       XIM2 = X(2)
       X(2) = C1
@@ -162,6 +164,7 @@ C        WSAVE must not be changed between calls of RFFTF or RFFTB.
 
       IWSAVE = WSAVE(2*N+1)
       CALL RFFTI1 (N,WSAVE(N+1),IWSAVE)
+      WSAVE(2*N+1) = IWSAVE
 
       RETURN
       END
@@ -289,8 +292,8 @@ C          calls of RFFTF or RFFTB.
       !CALL RFFTF1 (N,R,WSAVE,WSAVE(N+1),WSAVE(2*N+1))
 
       IWSAVE = WSAVE(2*N+1)
-
       CALL RFFTF1 (N,R,WSAVE,WSAVE(N+1),IWSAVE)
+      WSAVE(2*N+1) = IWSAVE
 
       RETURN
       END
@@ -402,6 +405,7 @@ C         calls of RFFTB or RFFTF.
 
       IWSAVE = WSAVE(2*N+1)
       CALL RFFTB1 (N,R,WSAVE,WSAVE(N+1),IWSAVE)
+      WSAVE(2*N+1) = IWSAVE
 
       RETURN
       END
