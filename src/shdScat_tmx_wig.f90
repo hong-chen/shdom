@@ -1840,7 +1840,9 @@ subroutine GSP(NMAX, CSCA, LAM, ALF1, ALF2, ALF3, ALF4, BET1, BET2, LMAX)
       include 'shdScat_tmx_par.f90'
 
       implicit real*8(A - B, D - H, O - Z), complex*16(C)
+
       real*8 LAM, SSIGN(900)
+
       real*8 CSCA, SSI(NPL), SSJ(NPN1),&
           & ALF1(NPL), ALF2(NPL), ALF3(NPL),&
           & ALF4(NPL), BET1(NPL), BET2(NPL),&
@@ -1849,23 +1851,37 @@ subroutine GSP(NMAX, CSCA, LAM, ALF1, ALF2, ALF3, ALF4, BET1, BET2, LMAX)
           & G1(NPL1, NPN6), G2(NPL1, NPN6),&
           & AR1(NPN4), AR2(NPN4), AI1(NPN4), AI2(NPN4),&
           & FR(NPN4, NPN4), FI(NPN4, NPN4), FF(NPN4, NPN4)
+
       real*4 B1R(NPL1, NPL1, NPN4), B1I(NPL1, NPL1, NPN4),&
           & B2R(NPL1, NPL1, NPN4), B2I(NPL1, NPL1, NPN4),&
           & D1(NPL1, NPN4, NPN4), D2(NPL1, NPN4, NPN4),&
           & D3(NPL1, NPN4, NPN4), D4(NPL1, NPN4, NPN4),&
           & D5R(NPL1, NPN4, NPN4), D5I(NPL1, NPN4, NPN4),&
           & PLUS1(NPN6*NPN4*NPN4*8)
+
       real*4&
           & TR11(NPN6, NPN4, NPN4), TR12(NPN6, NPN4, NPN4),&
           & TR21(NPN6, NPN4, NPN4), TR22(NPN6, NPN4, NPN4),&
           & TI11(NPN6, NPN4, NPN4), TI12(NPN6, NPN4, NPN4),&
           & TI21(NPN6, NPN4, NPN4), TI22(NPN6, NPN4, NPN4)
+
+      !real*4&
+      !    & RT11(NPN6, NPN4, NPN4), RT12(NPN6, NPN4, NPN4),&
+      !    & RT21(NPN6, NPN4, NPN4), RT22(NPN6, NPN4, NPN4),&
+      !    & IT11(NPN6, NPN4, NPN4), IT12(NPN6, NPN4, NPN4),&
+      !    & IT21(NPN6, NPN4, NPN4), IT22(NPN6, NPN4, NPN4)
+
       complex*16 CIM(NPN1)
 
       common /TMAT/ TR11, TR12, TR21, TR22, TI11, TI12, TI21, TI22
+      !common /TMAT/ RT11, RT12, RT21, RT22, IT11, IT12, IT21, IT22
+
       common /CBESS_G/ B1R, B1I, B2R, B2I
       common /SS/ SSIGN
+
       equivalence(PLUS1(1), TR11(1, 1, 1))
+      !equivalence(PLUS1(1), RT11(1, 1, 1))
+
       equivalence(D1(1, 1, 1), PLUS1(1)),&
           & (D2(1, 1, 1), PLUS1(NPL1*NPN4*NPN4 + 1)),&
           & (D3(1, 1, 1), PLUS1(NPL1*NPN4*NPN4*2 + 1)),&
@@ -1922,6 +1938,7 @@ subroutine GSP(NMAX, CSCA, LAM, ALF1, ALF2, ALF3, ALF4, BET1, BET2, LMAX)
               do 6 M1 = 1, M1MAX
                   M = M1 - 1
                   L1 = NPN6 + M
+
                   TT1 = TR11(M1, N, NN)
                   TT2 = TR12(M1, N, NN)
                   TT3 = TR21(M1, N, NN)
@@ -1930,6 +1947,16 @@ subroutine GSP(NMAX, CSCA, LAM, ALF1, ALF2, ALF3, ALF4, BET1, BET2, LMAX)
                   TT6 = TI12(M1, N, NN)
                   TT7 = TI21(M1, N, NN)
                   TT8 = TI22(M1, N, NN)
+
+                  !TT1 = RT11(M1, N, NN)
+                  !TT2 = RT12(M1, N, NN)
+                  !TT3 = RT21(M1, N, NN)
+                  !TT4 = RT22(M1, N, NN)
+                  !TT5 = IT11(M1, N, NN)
+                  !TT6 = IT12(M1, N, NN)
+                  !TT7 = IT21(M1, N, NN)
+                  !TT8 = IT22(M1, N, NN)
+
                   T1 = TT1 + TT2
                   T2 = TT3 + TT4
                   T3 = TT5 + TT6
