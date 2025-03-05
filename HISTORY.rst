@@ -1,3 +1,21 @@
+* 2024-03-05 v0.1.0
+
+    * Converted the majority of the Fortran 77 code to Fortran 90.
+
+    * Resolved the "domain shifting" issue for 3D radiance calculations (see `PR #1 <https://github.com/hong-chen/shdom/pull/1>`_).
+
+    * Fixed bugs in input/output (I/O) operations.
+
+    * Addressed warnings during code compilation.
+
+    * Benchmarked with legacy test cases:
+
+        - ``run_brdf`` (passed)
+        - ``run_mono_les`` (passed)
+        - ``run_polarized`` (passed)
+        - ``run_visualize`` (passed)
+        - ``run_multproc`` (not yet verified)
+
 * 2015-05-13 by Frank Evans
 
     Fixed bugs concerning CALC_SOURCE_PNT and CALC_SOURCE_PNT_UNPOL.
