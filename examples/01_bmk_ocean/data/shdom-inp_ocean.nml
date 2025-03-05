@@ -1,14 +1,14 @@
  $SHDOMINPUT
- RUNNAME = 'Visualize'
- PROPFILE = 'tmp-data/les_prp.txt'
- SFCFILE = 'data/sfc_land.txt'
+ RUNNAME = 'Ocean'
+ PROPFILE = 'data/atm_clear_prp.txt'
+ SFCFILE = 'data/sfc_ocean_u10.txt'
  CKDFILE = 'NONE'
- INSAVEFILE = 'tmp-data/shdom-sav-i_les.bin'
+ INSAVEFILE = 'NONE'
  OUTSAVEFILE ='NONE'
  NSTOKES = 1
- NX = 240
- NY = 240
- NZ = 10
+ NX = 480
+ NY = 480
+ NZ = 11
  NMU = 4
  NPHI = 8
  BCFLAG = 0
