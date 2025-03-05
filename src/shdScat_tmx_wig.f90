@@ -391,6 +391,7 @@ subroutine TMATRIXWIG(wavelength, mindex, radius,&
       !   ANY DAMAGES THAT MAY RESULT FROM THE USE OF THE PROGRAM.
 
       include 'shdScat_tmx_par.f90'
+
       real*8 LAM, MRR, MRI, X(NPNG2), W(NPNG2), S(NPNG2), SS(NPNG2),&
           & AN(NPN1), R(NPNG2), DR(NPNG2),&
           & DDR(NPNG2), DRR(NPNG2), DRI(NPNG2), ANN(NPN1, NPN1)
@@ -847,8 +848,11 @@ end subroutine
 !**********************************************************************
 
 subroutine CONST(NGAUSS, NMAX, MMAX, P, X, W, AN, ANN, S, SS, NP, EPS)
-      implicit real*8(A - H, O - Z)
+
       include 'shdScat_tmx_par.f90'
+
+      implicit real*8(A - H, O - Z)
+
       real*8 X(NPNG2), W(NPNG2), X1(NPNG1), W1(NPNG1),&
           & X2(NPNG1), W2(NPNG1),&
           & S(NPNG2), SS(NPNG2),&
@@ -902,7 +906,9 @@ end subroutine
 
 subroutine VARY(LAM, MRR, MRI, A, EPS, NP, NGAUSS, X, P, PPI, PIR, PII,&
       & R, DR, DDR, DRR, DRI, NMAX)
+
       include 'shdScat_tmx_par.f90'
+
       implicit real*8(A - H, O - Z)
       real*8 X(NPNG2), R(NPNG2), DR(NPNG2), MRR, MRI, LAM,&
           & Z(NPNG2), ZR(NPNG2), ZI(NPNG2),&
@@ -1024,7 +1030,9 @@ end subroutine
 !***********************************************************************
 
 subroutine BESS(X, XR, XI, NG, NMAX, NNMAX1, NNMAX2)
+
       include 'shdScat_tmx_par.f90'
+
       implicit real*8(A - H, O - Z)
       real*8 X(NG), XR(NG), XI(NG),&
           & J(NPNG2, NPN1), Y(NPNG2, NPN1), JR(NPNG2, NPN1),&
@@ -1117,7 +1125,9 @@ end subroutine
 !**********************************************************************
 
 subroutine CJB(XR, XI, YR, YI, UR, UI, NMAX, NNMAX)
+
       include 'shdScat_tmx_par.f90'
+
       implicit real*8(A - H, O - Z)
       real*8 YR(NMAX), YI(NMAX), UR(NMAX), UI(NMAX)
       real*8 CYR(NPN1), CYI(NPN1), CZR(1200), CZI(1200),&
@@ -1190,7 +1200,9 @@ end subroutine
 
 subroutine TMATR0(NGAUSS, X, W, AN, ANN, S, SS, PPI, PIR, PII, R, DR, DDR,&
       & DRR, DRI, NMAX, NCHECK)
+
       include 'shdScat_tmx_par.f90'
+
       implicit real*8(A - H, O - Z)
       real*8 X(NPNG2), W(NPNG2), AN(NPN1), S(NPNG2), SS(NPNG2),&
           & R(NPNG2), DR(NPNG2), SIG(NPN2),&
@@ -1217,7 +1229,7 @@ subroutine TMATR0(NGAUSS, X, W, AN, ANN, S, SS, PPI, PIR, PII, R, DR, DDR,&
           & TRGQR(NPN2, NPN2), TRGQI(NPN2, NPN2)
       real*8 TR1(NPN2, NPN2), TI1(NPN2, NPN2)
       real*4 PLUS(NPN6*NPN4*NPN4*8)
-      common/TMAT/PLUS,&
+      common/TMAT0/PLUS,&
           & R11, R12, R21, R22, I11, I12, I21, I22, RG11, RG12, RG21, RG22,&
           & IG11, IG12, IG21, IG22
       common/CBESS/J, Y, JR, JI, DJ, DY, DJR, DJI
@@ -1408,7 +1420,9 @@ end subroutine
 
 subroutine TMATR(M, NGAUSS, X, W, AN, ANN, S, SS, PPI, PIR, PII, R, DR, DDR,&
       & DRR, DRI, NMAX, NCHECK)
+
       include 'shdScat_tmx_par.f90'
+
       implicit real*8(A - H, O - Z)
       real*8 X(NPNG2), W(NPNG2), AN(NPN1), S(NPNG2), SS(NPNG2),&
           & R(NPNG2), DR(NPNG2), SIG(NPN2),&
@@ -1435,7 +1449,7 @@ subroutine TMATR(M, NGAUSS, X, W, AN, ANN, S, SS, PPI, PIR, PII, R, DR, DDR,&
           & TRGQR(NPN2, NPN2), TRGQI(NPN2, NPN2)
       real*8 TR1(NPN2, NPN2), TI1(NPN2, NPN2)
       real*4 PLUS(NPN6*NPN4*NPN4*8)
-      common/TMAT/PLUS,&
+      common/TMAT0/PLUS,&
           & R11, R12, R21, R22, I11, I12, I21, I22, RG11, RG12, RG21, RG22,&
           & IG11, IG12, IG21, IG22
       common/CBESS/J, Y, JR, JI, DJ, DY, DJR, DJI
@@ -1691,7 +1705,9 @@ end subroutine
 !*****************************************************************
 
 subroutine VIG(X, NMAX, M, DV1, DV2)
+
       include 'shdScat_tmx_par.f90'
+
       implicit real*8(A - H, O - Z)
       real*8 DV1(NPN1), DV2(NPN1)
 
@@ -1750,7 +1766,9 @@ end subroutine
 !**********************************************************************
 
 subroutine TT(NMAX, NCHECK)
+
       include 'shdScat_tmx_par.f90'
+
       implicit real*8(A - H, O - Z)
       real*8 F(NPN2, NPN2), B(NPN2), WORK(NPN2),&
           & QR(NPN2, NPN2), QI(NPN2, NPN2),&
@@ -1818,7 +1836,9 @@ end subroutine
 !********************************************************************
 
 subroutine GSP(NMAX, CSCA, LAM, ALF1, ALF2, ALF3, ALF4, BET1, BET2, LMAX)
+
       include 'shdScat_tmx_par.f90'
+
       implicit real*8(A - B, D - H, O - Z), complex*16(C)
       real*8 LAM, SSIGN(900)
       real*8 CSCA, SSI(NPL), SSJ(NPN1),&
@@ -1843,7 +1863,7 @@ subroutine GSP(NMAX, CSCA, LAM, ALF1, ALF2, ALF3, ALF4, BET1, BET2, LMAX)
       complex*16 CIM(NPN1)
 
       common/TMAT/TR11, TR12, TR21, TR22, TI11, TI12, TI21, TI22
-      common/CBESS/B1R, B1I, B2R, B2I
+      common/CBESS_G/B1R, B1I, B2R, B2I
       common/SS/SSIGN
       equivalence(PLUS1(1), TR11(1, 1, 1))
       equivalence(D1(1, 1, 1), PLUS1(1)),&
@@ -2212,7 +2232,9 @@ end subroutine
 !   IF K1=1 AND K2=0, THEN 0.LE.M.LE.N
 
 subroutine CCG(N, N1, NMAX, K1, K2, GG)
+
       include 'shdScat_tmx_par.f90'
+
       implicit real*8(A - H, O - Z)
       real*8 GG(NPL1, NPN6), CD(0:NPN5), CU(0:NPN5)
       if (NMAX .le. NPN4 .AND.&
@@ -2734,10 +2756,12 @@ end subroutine
 !               for each angle.
 
 subroutine MATR(A1, A2, A3, A4, B1, B2, LMAX, Nang, muang, scatmat)
+
+      include 'shdScat_tmx_par.f90'
+
       implicit real*8(A - H, O - Z)
       integer Nang
       real*8 muang(Nang), scatmat(6, Nang)
-      include 'shdScat_tmx_par.f90'
       real*8 A1(NPL), A2(NPL), A3(NPL), A4(NPL), B1(NPL), B2(NPL)
 
       ! N=NPNA
