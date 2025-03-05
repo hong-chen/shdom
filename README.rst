@@ -138,7 +138,7 @@ Source Code File Change
 
   * formatted the code
 
-* ``src/shdScat_ind_wat_ice.f90``: was ``indexwatice.f``
+* ``src/shdScat_ind_wat.f90``: was ``indexwatice.f``
 
   * converted from F77 to F90
   * formatted the code
