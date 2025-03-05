@@ -1,35 +1,391 @@
+! Computes the light scattering properties of a single randomly
+! oriented spheroid or cylinder using the T-matrix code of M. Mishc
+! Spheroids are calculated with cylflag=.false. and cylinders with
+! cylflag=.true.  The axis ratio (axratio) is > 1 for an oblate
+! spheroid and < 1 for a prolate spheroid.   For cylinders axratio
+! is the ratio of the diameter to the length.   The radius is
+! the equal volume radius. The imaginary part of the complex index
+! of refraction specified in mindex can have either sign, as it is
+! set to positive when used.
+! The Wigner d-function coefficients of the six unique elements of
+! the scattering phase matrix are returned in wigcoef(6,0:maxleg) i
+! order alpha1, alpha2, alpha3, alpha4, beta1, beta2.
+! The inputs and outputs to this subroutine are in REAL*4, but
+! the T-matrix calculations are done in REAL*8.
+!
+! This interface was written by Frank Evans  (May 2011)
+!   Modified for Wigner d-functions  (January 2014)
+!
+! Compile: pgf77 -c tmatrixdwig.f lpd.f  (shdScat_tmx_par.f90 include file
+!
+! The main code was modified to put in the subroutine interface at
+! the beginning, set parameters for a single particle, and calculat
+! the Legendre coefficients of the six unique elements of the phase
+! matrix (first make Gaussian quadrature angles, call MATR to get t
+! scattering matrix at these angles, and then do the integration ov
+! Wigner functions).  The MATR subroutine was modified to output th
+! scattering matrix at specified angles.
+
+
+!   Comments below are from the original tmd.lp.f code.
+
+!   New release including the LAPACK matrix inversion procedure.
+!   We thank Cory Davis (University of Edinburgh) for pointing
+!   out the possibility of replacing the proprietary NAG matrix
+!   inversion routine by the public-domain LAPACK equivalent.
+
+!   CALCULATION OF LIGHT SCATTERING BY POLYDISPERSE, RANDOMLY
+!   ORIENTED PARTICLES OF IDENTICAL AXIALLY SYMMETRIC SHAPE
+
+!   This version of the code uses DOUBLE PRECISION variables
+!   and must be used along with the accompanying files shdScat_tmx_par.f90
+!   and lpd.f.
+
+!   Last update 08/06/2005
+
+!   The code has been developed by Michael Mishchenko at the NASA
+!   Goddard Institute for Space Studies, New York. This research
+!   was funded by the NASA Radiation Sciences Program.
+
+!   The code can be used without limitations in any not-for-
+!   profit scientific research.  We only request that in any
+!   publication using the code the source of the code be acknowledged
+!   and relevant references (see below) be made.
+
+!   This version of the code is applicable to spheroids,
+!   Chebyshev particles, and finite circular cylinders.
+
+!   The computational method is based on the Watermsn's T-matrix
+!   approach and is described in detail in the following papers:
+!
+!   1.  M. I. Mishchenko, Light scattering by randomly oriented
+!       axially symmetric particles, J. Opt. Soc. Am. A,
+!       vol. 8, 871-882 (1991).
+!
+!   2.  M. I. Mishchenko, Light scattering by size-shape
+!       distributions of randomly oriented axially symmetric
+!       particles of a size comparable to a wavelength,
+!       Appl. Opt., vol. 32, 4652-4666 (1993).
+!
+!   3.  M. I. Mishchenko and L. D. Travis, T-matrix computations
+!       of light scattering by large spheroidal particles,
+!       Opt. Commun., vol. 109, 16-21 (1994).
+!
+!   4.  M. I. Mishchenko, L. D. Travis, and A. Macke, Scattering
+!       of light by polydisperse, randomly oriented, finite
+!       circular cylinders, Appl. Opt., vol. 35, 4927-4940 (1996).
+!
+!   5.  D. J. Wielaard, M. I. Mishchenko, A. Macke, and B. E. Carlson,
+!       Improved T-matrix computations for large, nonabsorbing and
+!       weakly absorbing nonspherical particles and comparison
+!       with geometrical optics approximation, Appl. Opt., vol. 36,
+!       4305-4313 (1997).
+!
+!   A general review of the T-matrix approach can be found in
+!
+!   6.  M. I. Mishchenko, L. D. Travis, and D. W. Mackowski,
+!       T-matrix computations of light scattering by nonspherical
+!       particles: a review, J. Quant. Spectrosc. Radiat.
+!       Transfer, vol. 55, 535-575 (1996).
+!
+!   The following paper provides a detailed user guide to the
+!   T-matrix code:
+!
+!   7.  M. I. Mishchenko and L. D. Travis, Capabilities and
+!       limitations of a current FORTRAN implementation of the
+!       T-matrix method for randomly oriented, rotationally
+!       symmetric scatterers, J. Quant. Spectrosc. Radiat. Transfer,
+!       vol. 60, 309-324 (1998).
+!
+!   These papers are available in the .pdf format at the web site
+!
+!   http://www.giss.nasa.gov/~crmim/publications/
+!
+!   or in hardcopy upon request from Michael Mishchenko
+!   Please e-mail your request to crmim@giss.nasa.gov.
+!
+!   A comprehensive book "Scattering, Absorption, and Emission of
+!   Light by Small Particles" (Cambridge University Press, Cambridge,
+!   2002) is also available in the .pdf format at the web site
+!
+!   http://www.giss.nasa.gov/~crmim/books.html
+
+!   Analytical averaging over particle orientations (Ref. 1) makes
+!   this method the fastest exact technique currently available.
+!   The use of an automatic convergence procedure
+!   (Ref. 2) makes the code convenient in massive computations.
+!   Ref. 4 describes features specific for finite cylinders as
+!   particles with sharp rectangular edges.  Ref. 5 describes further
+!   numerical improvements.
+
+!   The use of extended precision variables (Ref. 3) can
+!   significantly increase the maximal convergent equivalent-sphere
+!   size parameter and make it greater than 200 (depending on
+!   refractive index and aspect ratio). The extended-precision code
+!   is also available. However, the use of extended precision varibales
+!   results in a greater consumption of CPU time.
+!   On IBM RISC workstations, that code is approximately
+!   five times slower than this double-precision code.  The
+!   CPU time difference between the double-precision and extended-
+!   precision codes can be larger on supercomputers.
+
+!   This is the first part of the full T-matrix code.  The second part,
+!   lpd.f, is completely independent of the firsti part. It contains no
+!   T-matrix-specific subroutines and can be compiled separately.
+!   The second part of the code replaces the previously implemented
+!   standard matrix inversion scheme based on Gaussian elimination
+!   by a scheme based on the LU factorization technique.
+!   As described in Ref. 5 above, the use of the LU factorization is
+!   especially beneficial for nonabsorbing or weakly absorbing particles
+!   In this code we use the LAPACK implementation of the LU factorizatio
+!   scheme. LAPACK stands for Linear Algebra PACKage. The latter is
+!   publicly available at the following internet site:
+!
+!   http://www.netlib.org/lapack/
+
+!   INPUT PARAMETERS:
+!
+!      RAT = 1 - particle size is specified in terms of the
+!                equal-volume-sphere radius
+!      RAT.NE.1 - particle size is specified in terms of the
+!                equal-surface-area-sphere radius
+!      NDISTR specifies the distribution of equivalent-sphere radii
+!      NDISTR = 1 - modified gamma distribution
+!           [Eq. (40) of Ref. 7]
+!               AXI=alpha
+!               B=r_c
+!               GAM=gamma
+!      NDISTR = 2 - log-normal distribution
+!           [Eq. 41) of Ref. 7]
+!               AXI=r_g
+!               B=[ln(sigma_g)]**2
+!      NDISTR = 3 - power law distribution
+!           [Eq. (42) of Ref. 7]
+!                AXI=r_eff (effective radius)
+!                B=v_eff (effective variance)
+!                Parameters R1 and R2 (see below) are calculated
+!                automatically for given AXI and B
+!      NDISTR = 4 - gamma distribution
+!           [Eq. (39) of Ref. 7]
+!                AXI=a
+!                B=b
+!      NDISTR = 5 - modified power law distribution
+!         [Eq. (24) in M. I. Mishchenko et al.,
+!         Bidirectional reflectance of flat,
+!         optically thick particulate laters: an efficient radiative
+!         transfer solution and applications to snow and soil surfaces,
+!         J. Quant. Spectrosc. Radiat. Transfer, Vol. 63, 409-432 (1999)
+!                B=alpha
+!
+!      The code computes NPNAX size distributions of the same type
+!      and with the same values of B and GAM in one run.
+!      The parameter AXI varies from AXMAX to AXMAX/NPNAX in steps of
+!      AXMAX/NPNAX.  To compute a single size distribution, use
+!      NPNAX=1 and AXMAX equal to AXI of this size distribution.
+!
+!      R1 and R2 - minimum and maximum equivalent-sphere radii
+!           in the size distribution. They are calculated automatically
+!           for the power law distribution with given AXI and B
+!           but must be specified for other distributions
+!           after the lines
+!
+!             DO 600 IAX=1,NPNAX
+!                AXI=AXMAX-DAX*DFLOAT(IAX-1)
+!
+!           in the main program.
+!           For the modified power law distribution (NDISTR=5), the
+!           minimum radius is 0, R2 is the maximum radius,
+!           and R1 is the intermediate radius at which the
+!           n(r)=const dependence is replaced by the power law
+!           dependence.
+!
+!      NKMAX.LE.988 is such that NKMAX+2 is the
+!           number of Gaussian quadrature points used in
+!           integrating over the size distribution for particles with
+!           AXI=AXMAX.  For particles with AXI=AXMAX-AXMAX/NPNAX,
+!           AXMAX-2*AXMAX/NPNAX, etc. the number of Gaussian points
+!           linearly decreases.
+!           For the modified power law distribution, the number
+!           of integration points on the interval [0,R1] is also
+!           equal to NKMAX.
+!
+!      LAM - wavelength of light
+!      MRR and MRI - real and imaginary parts of the refractive
+!                  index (MRI.GE.0)
+!      EPS and NP - specify the shape of the particles.
+!             For spheroids NP=-1 and EPS is the ratio of the
+!                 horizontal to rotational axes.  EPS is larger than
+!                 1 for oblate spheroids and smaller than 1 for
+!                 prolate spheroids.
+!             For cylinders NP=-2 and EPS is the ratio of the
+!                 diameter to the length.
+!             For Chebyshev particles NP must be positive and
+!                 is the degree of the Chebyshev polynomial, while
+!                 EPS is the deformation parameter
+!                 [Eq. (33) of Ref. 7].
+!      DDELT - accuracy of the computations
+!      NPNA - number of equidistant scattering angles (from 0
+!             to 180 deg) for which the scattering matrix is
+!             calculated.
+!      NDGS - parameter controlling the number of division points
+!             in computing integrals over the particle surface.
+!             For compact particles, the recommended value is 2.
+!             For highly aspherical particles larger values (3, 4,...)
+!             may be necessary to obtain convergence.
+!             The code does not check convergence over this parameter.
+!             Therefore, control comparisons of results obtained with
+!             different NDGS-values are recommended.
+
+!   OUTPUT PARAMETERS:
+!
+!      REFF and VEFF - effective radius and effective variance of
+!          the size distribution as defined by Eqs. (43)-(45) of
+!          Ref. 7.
+!      CEXT - extinction cross section per particle
+!      CSCA - scattering cross section per particle
+!      W - single scattering albedo
+!      <cos> - asymmetry parameter of the phase function
+!      ALPHA1,...,BETA2 - coefficients appearing in the expansions
+!          of the elements of the scattering matrix in
+!          generalized spherical functions
+!          [Eqs. (11)-(16) of Ref. 7].
+!      F11,...,F44 - elements of the normalized scattering matrix [as
+!          defined by Eqs. (1)-(3) of Ref. 7] versus scattering angle
+
+!   Note that LAM, r_c, r_g, r_eff, a, R1, and R2 must
+!   be given in the same units of length, and that
+!   the dimension of CEXT and CSCA is that of LAM squared (e.g., if
+!   LAM and AXI are given in microns, then CEXT and CSCA are
+!   calculated in square microns).
+
+!   The physical correctness of the computed results is tested using
+!   the general inequalities derived by van der Mee and Hovenier,
+!   Astron. Astrophys., vol. 228, 559-568 (1990).  Although
+!   the message that the test of van der Mee and Hovenier is satisfied
+!   does not guarantee that the results are absolutely correct,
+!   the message that the test is not satisfied can mean that something
+!   is wrong.
+
+!   The convergence of the T-matrix method for particles with
+!   different sizes, refractive indices, and aspect ratios can be
+!   dramatically different.  Usually, large sizes and large aspect
+!   ratios cause problems.  The user of this code
+!   should first experiment with different input parameters in
+!   order to get an idea of the range of applicability of this
+!   technique.  Sometimes decreasing the aspect ratio
+!   from 3 to 2 can increase the maximum convergent equivalent-
+!   sphere size parameter by a factor of several (Ref. 7).
+!   The CPU time required rapidly increases with increasing ratio
+!   radius/wavelength and/or with increasing particle asphericity.
+!   This should be taken into account in planning massive computations.
+!   Using an optimizing compiler on IBM RISC workstations saves
+!   about 70% of CPU time.
+
+!   Execution can be automatically terminated if dimensions of certain
+!   arrays are not big enough or if the convergence procedure decides
+!   that the accuracy of double precision variables is insufficient
+!   to obtain a converged T-matrix solution for given particles.
+!   In all cases, a message appears explaining the cause of termination.
+
+!   The message
+!        "WARNING:  W IS GREATER THAN 1"
+!   means that the single-scattering albedo exceeds the maximum
+!   possible value 1.  If W is greater than 1 by more than
+!   DDELT, this message can be an indication of numerical
+!   instability caused by extreme values of particle parameters.
+
+!   The message "WARNING: NGAUSS=NPNG1" means that convergence over
+!   the parameter NG (see Ref. 2) cannot be obtained for the NPNG1
+!   value specified in the PARAMETER statement in the file shdScat_tmx_par.f90
+!   Often this is not a serious problem, especially for compact
+!   particles.
+
+!   Larger and/or more aspherical particles may require larger
+!   values of the parameters NPN1, NPN4, and NPNG1 in the file
+!   shdScat_tmx_par.f90.  It is recommended to keep NPN1=NPN4+25 and
+!   NPNG1=3*NPN1.  Note that the memory requirement increases
+!   as the third power of NPN4. If the memory of
+!   a computer is too small to accomodate the code in its current
+!   setting, the parameters NPN1, NPN4, and NPNG1 should be
+!   decreased. However, this will decrease the maximum size parameter
+!   that can be handled by the code.
+
+!   In some cases any increases of NPN1 will not make the T-matrix
+!   computations convergent.  This means that the particle is just
+!   too "bad" (extreme size parameter and/or extreme aspect ratio
+!   and/or extreme refractive index; see Ref. 7).
+!   The main program contains several PRINT statements which are
+!   currently commentd out.  If uncommented, these statements will
+!   produce numbers which show the convergence rate and can be
+!   used to determine whether T-matrix computations for given particle
+!   parameters will converge at all.
+
+!   Some of the common blocks are used to save memory rather than
+!   to transfer data.  Therefore, if a compiler produces a warning
+!   message that the lengths of a common block are different in
+!   different subroutines, this is not a real problem.
+
+!   The recommended value of DDELT is 0.001.  For bigger values,
+!   false convergence can be obtained.
+
+!   In computations for spheres use EPS=1.000001 instead of EPS=1.
+!   The use of EPS=1 can cause overflows in some rare cases.
+
+!   To calculate a monodisperse particle, use the options
+!        NPNAX=1
+!        AXMAX=R
+!        B=1D-1
+!        NKMAX=-1
+!        NDISTR=4
+!        ...
+!        DO 600 IAX=1,NPNAX
+!           AXI=AXMAX-DAX*DFLOAT(IAX-1)
+!           R1=0.9999999*AXI
+!           R2=1.0000001*AXI
+!        ...
+!   where R is the equivalent-sphere radius.
+
+!   It is recommended to use the power law rather than the
+!   gamma size distribution, because in this case convergent solution
+!   can be obtained for larger REFF and VEFF assuming the same
+!   maximal R2 (Mishchenko and Travis, Appl. Opt., vol. 33, 7206-7225,
+!   1994).
+
+!   For some compilers, DACOS must be raplaced by DARCOS and DASIN
+!   by DARSIN.
+
+!   If many different size distributions are computed and the
+!   refractive index is fixed, then another approach can be more
+!   efficient than running this code many times.  Specifically,
+!   scattering results should be computed for monodisperse particles
+!   with sizes ranging from essentially zero to some maximum value
+!   with a small step size (say, 0.02 microns).  These results
+!   should be stored on disk and can be used along with spline
+!   interpolation to compute scattering by particles with intermediate
+!   sizes.  Scattering patterns for monodisperse nonspherical
+!   particles in random orientation are (much) smoother than for
+!   monodisperse spheres, and spline interpolation usually gives good
+!   results. In this way, averaging over any size distribution is a
+!   matter of seconds.  For more on size averaging, see Refs. 2 and 4.
+
+!   We would highly appreciate informing me of any problems encountered
+!   with this code.  Please send your message to the following
+!   e-mail address:  CRMIM@GISS.NASA.GOV.
+
+!   WHILE THE COMPUTER PROGRAM HAS BEEN TESTED FOR A VARIETY OF CASES,
+!   IT IS NOT INCONCEIVABLE THAT IT CONTAINS UNDETECTED ERRORS. ALSO,
+!   INPUT PARAMETERS CAN BE USED WHICH ARE OUTSIDE THE ENVELOPE OF
+!   VALUES FOR WHICH RESULTS ARE COMPUTED ACCURATELY. FOR THIS REASON,
+!   THE AUTHORS AND THEIR ORGANIZATION DISCLAIM ALL LIABILITY FOR
+!   ANY DAMAGES THAT MAY RESULT FROM THE USE OF THE PROGRAM.
+
 subroutine TMATRIXWIG(wavelength, mindex, radius,&
       & cylflag, axratio, maxrank,&
       & extcross, scatcross, ssalbedo, asymmetry,&
       & nrank, wigcoef)
 
-      ! Computes the light scattering properties of a single randomly
-      ! oriented spheroid or cylinder using the T-matrix code of M. Mishc
-      ! Spheroids are calculated with cylflag=.false. and cylinders with
-      ! cylflag=.true.  The axis ratio (axratio) is > 1 for an oblate
-      ! spheroid and < 1 for a prolate spheroid.   For cylinders axratio
-      ! is the ratio of the diameter to the length.   The radius is
-      ! the equal volume radius. The imaginary part of the complex index
-      ! of refraction specified in mindex can have either sign, as it is
-      ! set to positive when used.
-      ! The Wigner d-function coefficients of the six unique elements of
-      ! the scattering phase matrix are returned in wigcoef(6,0:maxleg) i
-      ! order alpha1, alpha2, alpha3, alpha4, beta1, beta2.
-      ! The inputs and outputs to this subroutine are in REAL*4, but
-      ! the T-matrix calculations are done in REAL*8.
-      !
-      ! This interface was written by Frank Evans  (May 2011)
-      !   Modified for Wigner d-functions  (January 2014)
-      !
-      ! Compile: pgf77 -c tmatrixdwig.f lpd.f  (shdScat_tmx_par.f90 include file
-      !
-      ! The main code was modified to put in the subroutine interface at
-      ! the beginning, set parameters for a single particle, and calculat
-      ! the Legendre coefficients of the six unique elements of the phase
-      ! matrix (first make Gaussian quadrature angles, call MATR to get t
-      ! scattering matrix at these angles, and then do the integration ov
-      ! Wigner functions).  The MATR subroutine was modified to output th
-      ! scattering matrix at specified angles.
+      include 'shdScat_tmx_par.f90'
+
       implicit real*8(A - H, O - Z)
       integer maxrank, nrank
       logical cylflag
@@ -37,360 +393,7 @@ subroutine TMATRIXWIG(wavelength, mindex, radius,&
       complex*8 mindex
       real extcross, scatcross, ssalbedo, asymmetry
 
-      !   Comments below are from the original tmd.lp.f code.
-
-      !   New release including the LAPACK matrix inversion procedure.
-      !   We thank Cory Davis (University of Edinburgh) for pointing
-      !   out the possibility of replacing the proprietary NAG matrix
-      !   inversion routine by the public-domain LAPACK equivalent.
-
-      !   CALCULATION OF LIGHT SCATTERING BY POLYDISPERSE, RANDOMLY
-      !   ORIENTED PARTICLES OF IDENTICAL AXIALLY SYMMETRIC SHAPE
-
-      !   This version of the code uses DOUBLE PRECISION variables
-      !   and must be used along with the accompanying files shdScat_tmx_par.f90
-      !   and lpd.f.
-
-      !   Last update 08/06/2005
-
-      !   The code has been developed by Michael Mishchenko at the NASA
-      !   Goddard Institute for Space Studies, New York. This research
-      !   was funded by the NASA Radiation Sciences Program.
-
-      !   The code can be used without limitations in any not-for-
-      !   profit scientific research.  We only request that in any
-      !   publication using the code the source of the code be acknowledged
-      !   and relevant references (see below) be made.
-
-      !   This version of the code is applicable to spheroids,
-      !   Chebyshev particles, and finite circular cylinders.
-
-      !   The computational method is based on the Watermsn's T-matrix
-      !   approach and is described in detail in the following papers:
-      !
-      !   1.  M. I. Mishchenko, Light scattering by randomly oriented
-      !       axially symmetric particles, J. Opt. Soc. Am. A,
-      !       vol. 8, 871-882 (1991).
-      !
-      !   2.  M. I. Mishchenko, Light scattering by size-shape
-      !       distributions of randomly oriented axially symmetric
-      !       particles of a size comparable to a wavelength,
-      !       Appl. Opt., vol. 32, 4652-4666 (1993).
-      !
-      !   3.  M. I. Mishchenko and L. D. Travis, T-matrix computations
-      !       of light scattering by large spheroidal particles,
-      !       Opt. Commun., vol. 109, 16-21 (1994).
-      !
-      !   4.  M. I. Mishchenko, L. D. Travis, and A. Macke, Scattering
-      !       of light by polydisperse, randomly oriented, finite
-      !       circular cylinders, Appl. Opt., vol. 35, 4927-4940 (1996).
-      !
-      !   5.  D. J. Wielaard, M. I. Mishchenko, A. Macke, and B. E. Carlson,
-      !       Improved T-matrix computations for large, nonabsorbing and
-      !       weakly absorbing nonspherical particles and comparison
-      !       with geometrical optics approximation, Appl. Opt., vol. 36,
-      !       4305-4313 (1997).
-      !
-      !   A general review of the T-matrix approach can be found in
-      !
-      !   6.  M. I. Mishchenko, L. D. Travis, and D. W. Mackowski,
-      !       T-matrix computations of light scattering by nonspherical
-      !       particles: a review, J. Quant. Spectrosc. Radiat.
-      !       Transfer, vol. 55, 535-575 (1996).
-      !
-      !   The following paper provides a detailed user guide to the
-      !   T-matrix code:
-      !
-      !   7.  M. I. Mishchenko and L. D. Travis, Capabilities and
-      !       limitations of a current FORTRAN implementation of the
-      !       T-matrix method for randomly oriented, rotationally
-      !       symmetric scatterers, J. Quant. Spectrosc. Radiat. Transfer,
-      !       vol. 60, 309-324 (1998).
-      !
-      !   These papers are available in the .pdf format at the web site
-      !
-      !   http://www.giss.nasa.gov/~crmim/publications/
-      !
-      !   or in hardcopy upon request from Michael Mishchenko
-      !   Please e-mail your request to crmim@giss.nasa.gov.
-      !
-      !   A comprehensive book "Scattering, Absorption, and Emission of
-      !   Light by Small Particles" (Cambridge University Press, Cambridge,
-      !   2002) is also available in the .pdf format at the web site
-      !
-      !   http://www.giss.nasa.gov/~crmim/books.html
-
-      !   Analytical averaging over particle orientations (Ref. 1) makes
-      !   this method the fastest exact technique currently available.
-      !   The use of an automatic convergence procedure
-      !   (Ref. 2) makes the code convenient in massive computations.
-      !   Ref. 4 describes features specific for finite cylinders as
-      !   particles with sharp rectangular edges.  Ref. 5 describes further
-      !   numerical improvements.
-
-      !   The use of extended precision variables (Ref. 3) can
-      !   significantly increase the maximal convergent equivalent-sphere
-      !   size parameter and make it greater than 200 (depending on
-      !   refractive index and aspect ratio). The extended-precision code
-      !   is also available. However, the use of extended precision varibales
-      !   results in a greater consumption of CPU time.
-      !   On IBM RISC workstations, that code is approximately
-      !   five times slower than this double-precision code.  The
-      !   CPU time difference between the double-precision and extended-
-      !   precision codes can be larger on supercomputers.
-
-      !   This is the first part of the full T-matrix code.  The second part,
-      !   lpd.f, is completely independent of the firsti part. It contains no
-      !   T-matrix-specific subroutines and can be compiled separately.
-      !   The second part of the code replaces the previously implemented
-      !   standard matrix inversion scheme based on Gaussian elimination
-      !   by a scheme based on the LU factorization technique.
-      !   As described in Ref. 5 above, the use of the LU factorization is
-      !   especially beneficial for nonabsorbing or weakly absorbing particles
-      !   In this code we use the LAPACK implementation of the LU factorizatio
-      !   scheme. LAPACK stands for Linear Algebra PACKage. The latter is
-      !   publicly available at the following internet site:
-      !
-      !   http://www.netlib.org/lapack/
-
-      !   INPUT PARAMETERS:
-      !
-      !      RAT = 1 - particle size is specified in terms of the
-      !                equal-volume-sphere radius
-      !      RAT.NE.1 - particle size is specified in terms of the
-      !                equal-surface-area-sphere radius
-      !      NDISTR specifies the distribution of equivalent-sphere radii
-      !      NDISTR = 1 - modified gamma distribution
-      !           [Eq. (40) of Ref. 7]
-      !               AXI=alpha
-      !               B=r_c
-      !               GAM=gamma
-      !      NDISTR = 2 - log-normal distribution
-      !           [Eq. 41) of Ref. 7]
-      !               AXI=r_g
-      !               B=[ln(sigma_g)]**2
-      !      NDISTR = 3 - power law distribution
-      !           [Eq. (42) of Ref. 7]
-      !                AXI=r_eff (effective radius)
-      !                B=v_eff (effective variance)
-      !                Parameters R1 and R2 (see below) are calculated
-      !                automatically for given AXI and B
-      !      NDISTR = 4 - gamma distribution
-      !           [Eq. (39) of Ref. 7]
-      !                AXI=a
-      !                B=b
-      !      NDISTR = 5 - modified power law distribution
-      !         [Eq. (24) in M. I. Mishchenko et al.,
-      !         Bidirectional reflectance of flat,
-      !         optically thick particulate laters: an efficient radiative
-      !         transfer solution and applications to snow and soil surfaces,
-      !         J. Quant. Spectrosc. Radiat. Transfer, Vol. 63, 409-432 (1999)
-      !                B=alpha
-      !
-      !      The code computes NPNAX size distributions of the same type
-      !      and with the same values of B and GAM in one run.
-      !      The parameter AXI varies from AXMAX to AXMAX/NPNAX in steps of
-      !      AXMAX/NPNAX.  To compute a single size distribution, use
-      !      NPNAX=1 and AXMAX equal to AXI of this size distribution.
-      !
-      !      R1 and R2 - minimum and maximum equivalent-sphere radii
-      !           in the size distribution. They are calculated automatically
-      !           for the power law distribution with given AXI and B
-      !           but must be specified for other distributions
-      !           after the lines
-      !
-      !             DO 600 IAX=1,NPNAX
-      !                AXI=AXMAX-DAX*DFLOAT(IAX-1)
-      !
-      !           in the main program.
-      !           For the modified power law distribution (NDISTR=5), the
-      !           minimum radius is 0, R2 is the maximum radius,
-      !           and R1 is the intermediate radius at which the
-      !           n(r)=const dependence is replaced by the power law
-      !           dependence.
-      !
-      !      NKMAX.LE.988 is such that NKMAX+2 is the
-      !           number of Gaussian quadrature points used in
-      !           integrating over the size distribution for particles with
-      !           AXI=AXMAX.  For particles with AXI=AXMAX-AXMAX/NPNAX,
-      !           AXMAX-2*AXMAX/NPNAX, etc. the number of Gaussian points
-      !           linearly decreases.
-      !           For the modified power law distribution, the number
-      !           of integration points on the interval [0,R1] is also
-      !           equal to NKMAX.
-      !
-      !      LAM - wavelength of light
-      !      MRR and MRI - real and imaginary parts of the refractive
-      !                  index (MRI.GE.0)
-      !      EPS and NP - specify the shape of the particles.
-      !             For spheroids NP=-1 and EPS is the ratio of the
-      !                 horizontal to rotational axes.  EPS is larger than
-      !                 1 for oblate spheroids and smaller than 1 for
-      !                 prolate spheroids.
-      !             For cylinders NP=-2 and EPS is the ratio of the
-      !                 diameter to the length.
-      !             For Chebyshev particles NP must be positive and
-      !                 is the degree of the Chebyshev polynomial, while
-      !                 EPS is the deformation parameter
-      !                 [Eq. (33) of Ref. 7].
-      !      DDELT - accuracy of the computations
-      !      NPNA - number of equidistant scattering angles (from 0
-      !             to 180 deg) for which the scattering matrix is
-      !             calculated.
       real wigcoef(6, 0:maxrank)
-      !      NDGS - parameter controlling the number of division points
-      !             in computing integrals over the particle surface.
-      !             For compact particles, the recommended value is 2.
-      !             For highly aspherical particles larger values (3, 4,...)
-      !             may be necessary to obtain convergence.
-      !             The code does not check convergence over this parameter.
-      !             Therefore, control comparisons of results obtained with
-      !             different NDGS-values are recommended.
-
-      !   OUTPUT PARAMETERS:
-      !
-      !      REFF and VEFF - effective radius and effective variance of
-      !          the size distribution as defined by Eqs. (43)-(45) of
-      !          Ref. 7.
-      !      CEXT - extinction cross section per particle
-      !      CSCA - scattering cross section per particle
-      !      W - single scattering albedo
-      !      <cos> - asymmetry parameter of the phase function
-      !      ALPHA1,...,BETA2 - coefficients appearing in the expansions
-      !          of the elements of the scattering matrix in
-      !          generalized spherical functions
-      !          [Eqs. (11)-(16) of Ref. 7].
-      !      F11,...,F44 - elements of the normalized scattering matrix [as
-      !          defined by Eqs. (1)-(3) of Ref. 7] versus scattering angle
-
-      !   Note that LAM, r_c, r_g, r_eff, a, R1, and R2 must
-      !   be given in the same units of length, and that
-      !   the dimension of CEXT and CSCA is that of LAM squared (e.g., if
-      !   LAM and AXI are given in microns, then CEXT and CSCA are
-      !   calculated in square microns).
-
-      !   The physical correctness of the computed results is tested using
-      !   the general inequalities derived by van der Mee and Hovenier,
-      !   Astron. Astrophys., vol. 228, 559-568 (1990).  Although
-      !   the message that the test of van der Mee and Hovenier is satisfied
-      !   does not guarantee that the results are absolutely correct,
-      !   the message that the test is not satisfied can mean that something
-      !   is wrong.
-
-      !   The convergence of the T-matrix method for particles with
-      !   different sizes, refractive indices, and aspect ratios can be
-      !   dramatically different.  Usually, large sizes and large aspect
-      !   ratios cause problems.  The user of this code
-      !   should first experiment with different input parameters in
-      !   order to get an idea of the range of applicability of this
-      !   technique.  Sometimes decreasing the aspect ratio
-      !   from 3 to 2 can increase the maximum convergent equivalent-
-      !   sphere size parameter by a factor of several (Ref. 7).
-      !   The CPU time required rapidly increases with increasing ratio
-      !   radius/wavelength and/or with increasing particle asphericity.
-      !   This should be taken into account in planning massive computations.
-      !   Using an optimizing compiler on IBM RISC workstations saves
-      !   about 70% of CPU time.
-
-      !   Execution can be automatically terminated if dimensions of certain
-      !   arrays are not big enough or if the convergence procedure decides
-      !   that the accuracy of double precision variables is insufficient
-      !   to obtain a converged T-matrix solution for given particles.
-      !   In all cases, a message appears explaining the cause of termination.
-
-      !   The message
-      !        "WARNING:  W IS GREATER THAN 1"
-      !   means that the single-scattering albedo exceeds the maximum
-      !   possible value 1.  If W is greater than 1 by more than
-      !   DDELT, this message can be an indication of numerical
-      !   instability caused by extreme values of particle parameters.
-
-      !   The message "WARNING: NGAUSS=NPNG1" means that convergence over
-      !   the parameter NG (see Ref. 2) cannot be obtained for the NPNG1
-      !   value specified in the PARAMETER statement in the file shdScat_tmx_par.f90
-      !   Often this is not a serious problem, especially for compact
-      !   particles.
-
-      !   Larger and/or more aspherical particles may require larger
-      !   values of the parameters NPN1, NPN4, and NPNG1 in the file
-      !   shdScat_tmx_par.f90.  It is recommended to keep NPN1=NPN4+25 and
-      !   NPNG1=3*NPN1.  Note that the memory requirement increases
-      !   as the third power of NPN4. If the memory of
-      !   a computer is too small to accomodate the code in its current
-      !   setting, the parameters NPN1, NPN4, and NPNG1 should be
-      !   decreased. However, this will decrease the maximum size parameter
-      !   that can be handled by the code.
-
-      !   In some cases any increases of NPN1 will not make the T-matrix
-      !   computations convergent.  This means that the particle is just
-      !   too "bad" (extreme size parameter and/or extreme aspect ratio
-      !   and/or extreme refractive index; see Ref. 7).
-      !   The main program contains several PRINT statements which are
-      !   currently commentd out.  If uncommented, these statements will
-      !   produce numbers which show the convergence rate and can be
-      !   used to determine whether T-matrix computations for given particle
-      !   parameters will converge at all.
-
-      !   Some of the common blocks are used to save memory rather than
-      !   to transfer data.  Therefore, if a compiler produces a warning
-      !   message that the lengths of a common block are different in
-      !   different subroutines, this is not a real problem.
-
-      !   The recommended value of DDELT is 0.001.  For bigger values,
-      !   false convergence can be obtained.
-
-      !   In computations for spheres use EPS=1.000001 instead of EPS=1.
-      !   The use of EPS=1 can cause overflows in some rare cases.
-
-      !   To calculate a monodisperse particle, use the options
-      !        NPNAX=1
-      !        AXMAX=R
-      !        B=1D-1
-      !        NKMAX=-1
-      !        NDISTR=4
-      !        ...
-      !        DO 600 IAX=1,NPNAX
-      !           AXI=AXMAX-DAX*DFLOAT(IAX-1)
-      !           R1=0.9999999*AXI
-      !           R2=1.0000001*AXI
-      !        ...
-      !   where R is the equivalent-sphere radius.
-
-      !   It is recommended to use the power law rather than the
-      !   gamma size distribution, because in this case convergent solution
-      !   can be obtained for larger REFF and VEFF assuming the same
-      !   maximal R2 (Mishchenko and Travis, Appl. Opt., vol. 33, 7206-7225,
-      !   1994).
-
-      !   For some compilers, DACOS must be raplaced by DARCOS and DASIN
-      !   by DARSIN.
-
-      !   If many different size distributions are computed and the
-      !   refractive index is fixed, then another approach can be more
-      !   efficient than running this code many times.  Specifically,
-      !   scattering results should be computed for monodisperse particles
-      !   with sizes ranging from essentially zero to some maximum value
-      !   with a small step size (say, 0.02 microns).  These results
-      !   should be stored on disk and can be used along with spline
-      !   interpolation to compute scattering by particles with intermediate
-      !   sizes.  Scattering patterns for monodisperse nonspherical
-      !   particles in random orientation are (much) smoother than for
-      !   monodisperse spheres, and spline interpolation usually gives good
-      !   results. In this way, averaging over any size distribution is a
-      !   matter of seconds.  For more on size averaging, see Refs. 2 and 4.
-
-      !   We would highly appreciate informing me of any problems encountered
-      !   with this code.  Please send your message to the following
-      !   e-mail address:  CRMIM@GISS.NASA.GOV.
-
-      !   WHILE THE COMPUTER PROGRAM HAS BEEN TESTED FOR A VARIETY OF CASES,
-      !   IT IS NOT INCONCEIVABLE THAT IT CONTAINS UNDETECTED ERRORS. ALSO,
-      !   INPUT PARAMETERS CAN BE USED WHICH ARE OUTSIDE THE ENVELOPE OF
-      !   VALUES FOR WHICH RESULTS ARE COMPUTED ACCURATELY. FOR THIS REASON,
-      !   THE AUTHORS AND THEIR ORGANIZATION DISCLAIM ALL LIABILITY FOR
-      !   ANY DAMAGES THAT MAY RESULT FROM THE USE OF THE PROGRAM.
-
-      include 'shdScat_tmx_par.f90'
 
       real*8 LAM, MRR, MRI, X(NPNG2), W(NPNG2), S(NPNG2), SS(NPNG2),&
           & AN(NPN1), R(NPNG2), DR(NPNG2),&
@@ -1204,6 +1207,7 @@ subroutine TMATR0(NGAUSS, X, W, AN, ANN, S, SS, PPI, PIR, PII, R, DR, DDR,&
       include 'shdScat_tmx_par.f90'
 
       implicit real*8(A - H, O - Z)
+
       real*8 X(NPNG2), W(NPNG2), AN(NPN1), S(NPNG2), SS(NPNG2),&
           & R(NPNG2), DR(NPNG2), SIG(NPN2),&
           & J(NPNG2, NPN1), Y(NPNG2, NPN1),&
