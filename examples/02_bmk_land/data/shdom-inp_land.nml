@@ -1,0 +1,50 @@
+ $SHDOMINPUT
+ RUNNAME = 'Visualize'
+ PROPFILE = 'tmp-data/les_prp.txt'
+ SFCFILE = 'data/sfc_land.txt'
+ CKDFILE = 'NONE'
+ INSAVEFILE = 'tmp-data/shdom-sav-i_les.bin'
+ OUTSAVEFILE ='NONE'
+ NSTOKES = 1
+ NX = 240
+ NY = 240
+ NZ = 10
+ NMU = 4
+ NPHI = 8
+ BCFLAG = 0
+ IPFLAG = 0
+ DELTAM = .TRUE.
+ GRIDTYPE = 'P'
+ SRCTYPE = 'S'
+ SOLARFLUX = 1.0
+ SOLARMU = 0.88
+ SOLARAZ = 45.0
+ SKYRAD = 0.0
+ GNDALBEDO = 0.03
+ UNITS= 'R'
+ GNDTEMP = 290
+ WAVENO = 500.0, 800.0
+ WAVELEN = 0.65
+ ACCELFLAG = .FALSE.
+ SOLACC = 1.0E-4
+ MAXITER = 50
+ SPLITACC = 0.1
+ SHACC = 0.003
+ NUMOUT = 1
+ OUTTYPES(1) = 'R'
+ OUTPARMS(1,1) = 20.0, 0.2, 0.2, 0.0, 0.0, 8,
+ 0.8660, 0.0,
+ 0.8660, 45.0,
+ 0.8660, 90.0,
+ 0.8660, 135.0,
+ 0.8660, 180.0,
+ 0.8660, 225.0,
+ 0.8660, 270.0,
+ 0.8660, 315.0
+ OUTFILES(1) = 'tmp-data/shdom-out_les.txt'
+ OutFileNC = 'NONE'
+ MAX_TOTAL_MB = 8000.0
+ ADAPT_GRID_FACTOR = 2.2
+ NUM_SH_TERM_FACTOR = 0.6
+ CELL_TO_POINT_RATIO = 1.5
+ $END
