@@ -32,7 +32,7 @@
  SHACC = 0.003
  NUMOUT = 1
  OUTTYPES(1) = 'R'
- OUTPARMS(1,1) = 20.0, 0.2, 0.2, 0.0, 0.0, 8,
+ OUTPARMS(1,1) = 20.0, 0.1, 0.1, 0.0, 0.0, 8,
  0.8660, 0.0,
  0.8660, 45.0,
  0.8660, 90.0,
@@ -41,7 +41,7 @@
  0.8660, 225.0,
  0.8660, 270.0,
  0.8660, 315.0
- OUTFILES(1) = 'tmp-data/shdom-out_les.txt'
+ OUTFILES(1) = 'tmp-data/shdom-out_ocean.txt'
  OutFileNC = 'NONE'
  MAX_TOTAL_MB = 8000.0
  ADAPT_GRID_FACTOR = 2.2

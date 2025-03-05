@@ -127,10 +127,10 @@ def figure_les(fname):
 
 if __name__ == '__main__':
 
-    fname = 'tmp-data/shdom-out_les.txt'
+    fname = 'tmp-data/shdom-out_ocean.txt'
 
-    os.system('diff data/shdom-out_les.txt %s' % fname)
+    # os.system('diff data/shdom-out_les.txt %s' % fname)
 
-    # figure_les(fname)
+    figure_les(fname)
 
     pass
