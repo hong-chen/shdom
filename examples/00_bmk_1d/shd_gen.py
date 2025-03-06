@@ -186,7 +186,9 @@ def gen_ckd_file(
 
         g = ' '.join(['%.6f' % value for value in abs0.coef['weight']['data']])
 
-        f.write('%d %.1f %.1f %.4f %d %s' % (1, wvln_min, wvln_max, sol, Ng, g))
+        f.write('%d %.1f %.1f %.4f %d %s\n' % (1, wvln_min, wvln_max, sol, Ng, g))
+
+        f.write('%d ! Number of levels\n' % atm0.lev['altitude']['data'].size)
 
     print(abs0.coef.keys())
 
