@@ -2,7 +2,7 @@
  RUNNAME = 'Ocean'
  PROPFILE = 'tmp-data/les_prp.txt'
  SFCFILE = 'data/sfc_ocean_u10.txt'
- CKDFILE = 'NONE'
+ CKDFILE = 'data/modis_aqua_b01_shdom-ckd.txt'
  INSAVEFILE = 'NONE'
  OUTSAVEFILE ='NONE'
  NSTOKES = 1

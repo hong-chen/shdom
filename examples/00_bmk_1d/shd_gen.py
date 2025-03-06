@@ -171,7 +171,7 @@ def gen_ckd_file(
 
     Nband = 1
 
-    with open('test_modis_aqua_b01_shdom-ckd.txt', 'w') as f:
+    with open('data/modis_aqua_b01_shdom-ckd.txt', 'w') as f:
         f.write('! Correlated k-dist file: Aqua MODIS Band-1\n')
         f.write('%d ! number of bands\n' % 1)
         f.write('! Band# | Wave#1 | Wave#2 | SolFlx | Ng | g1 | g2 | ...\n')
@@ -186,11 +186,32 @@ def gen_ckd_file(
 
         g = ' '.join(['%.6f' % value for value in abs0.coef['weight']['data']])
 
-        f.write('%d %.1f %.1f %.4f %d %s\n' % (1, wvln_min, wvln_max, sol, Ng, g))
+        for iband in range(Nband):
+            f.write('%d %.1f %.1f %.4f %d %s\n' % (iband+1, wvln_min, wvln_max, sol, Ng, g))
 
-        f.write('%d ! Number of levels\n' % atm0.lev['altitude']['data'].size)
+        f.write('%d ! Number of levels\n' % atm0.lay['altitude']['data'].size)
 
-    print(abs0.coef.keys())
+        f.write('!\n')
+        f.write('! Alt [km] | Pres [mb] | Temp [K]\n')
+
+        alt = atm0.lay['altitude']['data'][::-1]
+        temp = atm0.lay['temperature']['data'][::-1]
+        pres = atm0.lay['pressure']['data'][::-1]
+
+        indices_sort = np.argsort(abs0.coef['weight']['data'])
+        kabs = abs0.coef['abso_coef']['data'][::-1, indices_sort] * 1000.0
+
+        for j in range(alt.size):
+            f.write('%.3f %.1f %.1f\n' % (alt[j], pres[j], temp[j]))
+
+        f.write('! iBand | iLay | AbsCoef [km^-1]\n')
+
+        for iband in range(Nband):
+            for j in range(alt.size):
+                kabs_s = ' '.join(['%.5e' % kabs0 for kabs0 in kabs[j, :]])
+                f.write('%d %d %s\n' % (iband+1, j+1, kabs_s))
+
+
 
 if __name__ == '__main__':
 
