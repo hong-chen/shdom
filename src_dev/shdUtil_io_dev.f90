@@ -7,6 +7,14 @@ module shdUtil
   implicit none
   private
 
+  ! Output types
+  !╭────────────────────────────────────────────────╮!
+  ! R : radiance, Nang, Nx, Ny, Nz=1
+  ! V1: camera mode
+  ! V2: cross track
+  ! F1: irradiance, 
+  !╰────────────────────────────────────────────────╯!
+
   ! public modules
   !╭────────────────────────────────────────────────╮!
   public :: shdUtil__outputData
@@ -72,8 +80,6 @@ contains
 
   subroutine shdUtil__outputDataFlx()
     integer :: i, j, k
-
-    ! F1: 
 
     ! Hemispheric flux output
     !   Format 1 is flux at top and bottom of medium at grid point
