@@ -455,8 +455,8 @@ accuracy. Try starting with SOLACC=1E-4.
 
 See section on ARRAY SIZES AND MEMORY MANAGEMENT for how to choose the
 four memory parameters (MAX_TOTAL_MB, ADAPT_GRID_FACTOR,
-NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO) used in shdom.f90 or to
-adjust the array sizes in shdom.f to accomodate your problem size and
+NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO) used in ``shdom.f90`` or to
+adjust the array sizes in ``shdom.f`` to accomodate your problem size and
 computer memory.  The four memory parameters do not affect the SHDOM
 solution (unless SHDOM runs out of memory); they only control the array
 sizes.
@@ -732,7 +732,7 @@ d-function expansion coefficients for each phase matrix in the header.
 All file types are plain ascii and read by  Fortran free format (so most
 "lines" may be broken across lines).  With a small code change
 (commenting in calls to read_property_size_netcdf and
-read_properties_netcdf in shdom.f90) the two tabulated phase function
+read_properties_netcdf in ``shdom.f90``) the two tabulated phase function
 format property files may be read in netcdf format.
 
 Note: Chi1 is 3 times the asymmetry parameter.
@@ -963,8 +963,8 @@ The first step is to compile the code.  A makefile is provided, with
 options to compile with or without MPI (for multiple processors) and
 with or without the netcdf library.  SHDOM was originally written in
 Fortran 77 with common extensions.  Later, parts of SHDOM were written
-in Fortran 90, and now all of the SHDOM-specific code (shdom.f90 and
-shdomsub?.f) requires a Fortran 90 compiler.  Fortran 90 uses
+in Fortran 90, and now all of the SHDOM-specific code (``shdom.f90`` and
+``shdSolv_x.f90``) requires a Fortran 90 compiler.  Fortran 90 uses
 allocatable arrays and frees the user from having to set most of the
 parameters controlling the array sizes.
 
@@ -1128,8 +1128,8 @@ RUNNING SHDOM WITH MULTIPLE PROCESSORS
 SHDOM may be run on multiple processors, either in a shared memory
 system (e.g. SMP) or in a distributed memory system (e.g. a cluster),
 using the Message Passing Interface (MPI) version 1.  All of the SHDOM
-code that calls MPI routines is in the shdom_mpi.f90 file.  A set of
-equivalent (mostly) dummy routines is provided in shdom_nompi.f, which
+code that calls MPI routines is in the ``shdom_mpi.f90`` file.  A set of
+equivalent (mostly) dummy routines is provided in ``shdom_nompi.f90``, which
 allows SHDOM to be compiled without an MPI libarary.  Using the parallel
 processing aspects of SHDOM requires that the MPI system be installed on
 the target computer.  Then the usual way to compile and run a program
@@ -1138,7 +1138,7 @@ with MPI is:
 .. code-block:: bash
 
    mpif90 -O2 -o shdom  shdom.f90 shdom_mpi.f90 shdom_nonetcdf.f90 \
-             shdomsub1.f shdomsub2.f shdomsub3.f ocean_brdf.f fftpack.f
+             shdSolv_1.f shdSolv_2.f shdUtil_io.f shdSfc_ocean.f90 _fftpack.f
 
    mpirun -np 4  shdom90 < shdom.inp
 
@@ -1269,7 +1269,7 @@ This could occur, for example, if there is high cloud fraction on one
 side of the full domain, and low cloud fraction on the other side.
 SHDOM has the ability to perform processor load balancing.  Normally,
 this feature is turned off, but may be used by setting the logical
-parameter "LoadBalance=.TRUE." at the beginning of shdom_mpi.f90.  The
+parameter "LoadBalance=.TRUE." at the beginning of ``shdom_mpi.f90``.  The
 load balancing procedure requires that a previous SHDOM run be made with
 the same property file, so that the total number of grid points can be
 estimated.  This prior run can be done at lower angular resolution
@@ -1329,27 +1329,27 @@ the higher order radiance terms, or turning on processor load balancing,
 most of these would only be changed to experiment with the operation of
 the SHDOM algorithm.
 
-Namelist input: main program (shdom.f or shdom90.f90); Comment out
-the call to USER_INPUT and uncomment the call to NAMELIST_INPUT.
+Namelist input: main program (``shdom90.f90``); Comment out
+the call to ``USER_INPUT`` and uncomment the call to ``NAMELIST_INPUT``.
 
-NetCDF property file input: main program (shdom90.f90); Comment out
-calls to READ_PROPERTY_SIZE, and READ_PROPERTIES and uncomment calls to
-read_property_size_netcdf and read_properties_netcdf.  Use the makefile
+NetCDF property file input: main program (``shdom90.f90``); Comment out
+calls to ``READ_PROPERTY_SIZE``, and ``READ_PROPERTIES`` and uncomment calls to
+``read_property_size_netcdf`` and ``read_properties_netcdf``.  Use the ``makefile``
 to compile with the netcdf library.
 
-Adding surface reflection types: in shdomsub2.f write a BRDF Fortran
-function modeled on RPV_REFLECTION and add a call in SURFACE_BRDF to the
-new function.  In shdomsub3.f modify subroutine READ_SURFACE by adding a
+Adding surface reflection types: in ``shdSolv_2.f90`` write a BRDF Fortran
+function modeled on ``RPV_REFLECTION`` and add a call in ``SURFACE_BRDF`` to the
+new function.  In ``shdUtil_io.f90`` modify subroutine ``READ_SURFACE`` by adding a
 block to read in the new surface type parameters.
 
-Discrete ordinate angle set: SOLVE_RTE (shdomsub1.f); The ORDINATESET
-variable before call to MAKE_ANGLE_SET is the type of angle set: 1 - full
+Discrete ordinate angle set: SOLVE_RTE (``shdSolv_1.f90``); The ``ORDINATESET``
+variable before call to ``MAKE_ANGLE_SET`` is the type of angle set: 1 - full
 Gaussian set, 2 - reduced Gaussian set (default), 3 - reduced double Gaussian.
 Using the double Gaussian angular set will give more accurate hemispheric
 fluxes, e.g. from a Lambertian surface.
 
 Output rms of higher order radiance spherical harmonic terms:
-at top of main program (shdom.f); set HIGHORDERRAD=.TRUE. for outputing
+at top of main program (``shdom.f90``); set ``HIGHORDERRAD=.TRUE.`` for outputing
 the rms of the higher order radiance terms (above L=1,M=1) normalized by
 the mean radiance (S output mode).  This is useful for determining
 regions in the diffusion domain, where the higher order terms are zero.
@@ -1357,33 +1357,33 @@ Since all the radiance spherical harmonic terms are kept the running
 time may be somewhat longer, and the memory use (RADIANCE array) can be
 much larger.
 
-Multiple processor load balancing: Change LoadBalance=.TRUE. at the
-beginning of shdom_mpi.f90 (see the last paragraph of the multiple
+Multiple processor load balancing: Change ``LoadBalance=.TRUE.`` at the
+beginning of ``shdom_mpi.f90`` (see the last paragraph of the multiple
 processing section).
 
-k-distribution initialization: at top of main program (shdom.f);
+k-distribution initialization: at top of main program (``shdom.f90``);
 Change BASEOUT = .TRUE. to initialize with and output only the base
 grid during the iteration over k's, rather than the default of
 initializing with the previous k's adaptive grid structure.
 
-Cell splitting scheduling: SOLVE_RTE (shdomsub1.f); The range of
+Cell splitting scheduling: ``SOLVE_RTE`` (``shdSolv_1.f90``); The range of
 solution criterion during which the adaptive grid cell splitting occurs
-can be chosen by changing ENDADAPTSOL and STARTADAPTSOL; other aspects
+can be chosen by changing ``ENDADAPTSOL`` and ``STARTADAPTSOL``; other aspects
 of the scheduling can be changed as well.
 
-Adaptive grid smoothing: SPLIT_GRID (shdomsub1.f); The call to
+Adaptive grid smoothing: SPLIT_GRID (``shdSolv_1.f90``); The call to
 subroutine GRID_SMOOTH_TEST may be commented out to stop the adaptive
 grid smoothing. This will produce somewhat fewer adaptive cells, but
 make a somewhat more irregular grid.
 
-Cell splitting visualization: SOLVE_RTE (shdomsub1.f); The
-subroutine VISUALIZE_CELLS may be commented in after the solution loop
+Cell splitting visualization: SOLVE_RTE (``shdSolv_1.f90``); The
+subroutine ``VISUALIZE_CELLS`` may be commented in after the solution loop
 to produce  a GLE graphics file showing the adaptive cell structure.
 This can be changed easily for other graphics languagues.  The
-subroutine OUTPUT_CELL_SPLIT may be commented in to output the medium
+subroutine ``OUTPUT_CELL_SPLIT`` may be commented in to output the medium
 extinction and adaptive cell splitting criterion for X, Y, and Z.
 
-Cutoff transmission for back tracing: PATH_INTEGRATION (shdomsub1.f);
+Cutoff transmission for back tracing: PATH_INTEGRATION (`shdSolv_1.f90`);
 The TRANSMIN variable can be changed (e.g. from 1.0 to 0.1) to have the
 back ray tracing continue until the specified transmission is reached.
 This can eliminate the grid radiance interpolation error, but can take
@@ -1393,7 +1393,7 @@ much more CPU time.
 ARRAY SIZES AND MEMORY MANAGEMENT
 ---------------------------------
 
-The main program (shdom.f90) determines the sizes of most arrays and
+The main program (``shdom.f90``) determines the sizes of most arrays and
 allocates memory for them.  Thus the user does not usually have to
 recompile the program for different problems.  As there is no way to
 determine the OUTPARM array size before calling USER_INPUT, the MAXOUT
@@ -1805,12 +1805,13 @@ LIST OF ROUTINES
 ----------------
 
 The following is a list of all the subroutines, where they are, and
-what they do.  The first column gives the file (0 is shdom.f90,
-1 is shdomsub1.f, 2 is shdomsub2.f, 3 is shdomsub3.f, M is shdom_mpi.f90,
-F is fftpack.f).  The second column indicates the calling routine.  The
-major solving routines are in shdomsub1.f, other routines are in
-shdomsub2.f, all the regular I/O routines are in shdomsub3.f, the MPI
-calling routines are in shdom_mpi.f90, and fftpack.f has the FFTPACK
+what they do.  The first column gives the file (0 is ``shdom.f90``,
+1 is ``shdSolv_1.f90``, 2 is ``shdSolv_2.f90``, 3 is ``shdUtil_io.f90``,
+M is ``shdom_mpi.f90``, F is ``_fftpack.f``).  The second column indicates
+the calling routine.
+The major solving routines are in ``shdSolv_1.f90``, other routines are in
+``shdSolv_2.f90``, all the regular I/O routines are in ``shdUtil_io.f90``,
+the MPI calling routines are in ``shdom_mpi.f90``, and ``_fftpack.f`` has the FFTPACK
 routines from NCAR.
 
 .. code-block::
