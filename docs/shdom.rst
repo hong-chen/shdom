@@ -14,21 +14,21 @@ of the scattering phase matrix, and temperature for the particular
 wavelength or spectral band may be specified at each input grid point.
 SHDOM is superior to Monte Carlo radiative transfer methods when many
 radiative quantities are desired, e.g. the radiance field across the
-domain top.  Radiances in any direction, hemispheric fluxes, net fluxes,
+domain top. Radiances in any direction, hemispheric fluxes, net fluxes,
 mean radiances, and net flux convergence (related to heating rates) may
-be output anywhere in the domain.  For highly peaked phase functions the
+be output anywhere in the domain. For highly peaked phase functions the
 delta-M method may be chosen, in which case the radiance is computed
-with an untruncated phase function single scattering correction.  A
+with an untruncated phase function single scattering correction. A
 correlated k-distribution approach is used for the integration over a
-spectral band.  There may be uniform or spatially variable Lambertian
-reflection and emission from the ground surface.  Several types of
+spectral band. There may be uniform or spatially variable Lambertian
+reflection and emission from the ground surface. Several types of
 bidirectional reflection distribution functions (BRDF) for the surface
-are implemented, and more may be added easily.  SHDOM may be run on a
+are implemented, and more may be added easily. SHDOM may be run on a
 single processor or on multiple processors (e.g. an SMP machine or a
-cluster) using the Message Passing Interface (MPI).  SHDOM may be run
+cluster) using the Message Passing Interface (MPI). SHDOM may be run
 efficiently for unpolarized (scalar) radiative transfer by choosing
 NSTOKES=1, or for polarized (vector) radiative transfer problems with
-NSTOKES=3 or 4 Stokes parameters.  SHDOM is implemented in Fortran, and
+NSTOKES=3 or 4 Stokes parameters. SHDOM is implemented in Fortran, and
 a Fortran 90 compiler is now required.
 
 
@@ -43,9 +43,9 @@ radiance field saves memory, because there are often parts of a medium
 where the source function is zero or angularly very smooth (hence few
 spherical harmonic terms).  The other reason for using spherical
 harmonics is that the scattering integral is more efficiently computed
-than in discrete ordinates.  A discrete ordinate representation is used
+than in discrete ordinates. A discrete ordinate representation is used
 in the solution process because the streaming of radiation is more
-physically (and correctly) computed in this way.  An adaptive grid that
+physically (and correctly) computed in this way. An adaptive grid that
 chooses where to put grid points is useful in atmospheric radiative
 transfer because the source function is usually rapidly varying in
 some regions and slowly varying in others.
@@ -58,11 +58,11 @@ every grid point, 3) the radiance is transformed back to spherical
 harmonics, and 4) the new source function is computed from the radiance
 in spherical harmonics.  As with all order of scattering methods the
 number of iterations increases with the single scattering albedo and
-optical depth.  A sequence acceleration method is used to speed up
-convergence, which is typically achieved in under 50 iterations.  During
+optical depth. A sequence acceleration method is used to speed up
+convergence, which is typically achieved in under 50 iterations. During
 the solution process, the grid cells with the integral of the source
 function difference above a certain limit are split in half, generating
-new grid points.  The number of spherical harmonic terms kept at each
+new grid points. The number of spherical harmonic terms kept at each
 grid point also changes as the iterations proceed (i.e. adaptive
 spherical harmonic truncation).
 
@@ -1138,11 +1138,11 @@ with MPI is:
 .. code-block:: bash
 
    mpif90 -O2 -o shdom  shdom.f90 shdom_mpi.f90 shdom_nonetcdf.f90 \
-             shdSolv_1.f shdSolv_2.f shdUtil_io.f shdSfc_ocean.f90 _fftpack.f
+             shdSolv_1.f90 shdSolv_2.f90 shdUtil_io.f90 shdSfc_ocean.f90 _fftpack.f
 
    mpirun -np 4  shdom90 < shdom.inp
 
-where shdom.inp has the user input parameters and "-np 4" specifies
+where shdom.inp has the user input parameters and ``-np 4`` specifies
 that four processors will be used.  The MPI shared memory device (e.g.
 ch_shmem from the MPICH implementation) will be somewhat more efficient
 on an SMP machine than a device (e.g. ch_p4) that uses a network
