@@ -143,7 +143,7 @@ def gen_prop_1d(
     pass
 
 
-def gen_ckd_file(
+def gen_clear_sky(
         wavelength=650.0,
         solver='3D',
         overwrite=True,
@@ -169,6 +169,12 @@ def gen_ckd_file(
     abs0 = er3t.pre.abs.abs_rep(wavelength=wavelength, fname=fname_abs, target='modis', band_name='modis_aqua_b01', atm_obj=atm0, overwrite=overwrite)
     #╰────────────────────────────────────────────────────────────────────────────╯#
 
+    gen_atm_file_1d(atm0)
+
+    # gen_ckd_file(atm0, abs0)
+
+def gen_ckd_file(atm0, abs0):
+
     Nband = 1
 
     with open('data/modis_aqua_b01_shdom-ckd.txt', 'w') as f:
@@ -189,7 +195,7 @@ def gen_ckd_file(
         for iband in range(Nband):
             f.write('%d %.1f %.1f %.4f %d %s\n' % (iband+1, wvln_min, wvln_max, sol, Ng, g))
 
-        f.write('%d ! Number of levels\n' % atm0.lay['altitude']['data'].size)
+        f.write('%d ! Number of levels\n' % abs0.atm0.lay['altitude']['data'].size)
 
         f.write('!\n')
         f.write('! Alt [km] | Pres [mb] | Temp [K]\n')
@@ -211,11 +217,48 @@ def gen_ckd_file(
                 kabs_s = ' '.join(['%.5e' % kabs0 for kabs0 in kabs[j, :]])
                 f.write('%d %d %s\n' % (iband+1, j+1, kabs_s))
 
+def gen_atm_file_1d(atm0):
 
+    parfile = 'NONE'
+
+    maxnewphase = 2
+
+    asymtol = 0.01
+
+    fracphasetol = 0.1
+
+    wavelen = 0.65
+
+    Nzother = atm0.lay['altitude']['data'].size
+
+    ZTother = zip(atm0.lay['altitude']['data'], atm0.lay['temperature']['data'])
+
+    ZTother_list = []
+    for ZTother0 in ZTother:
+        ZTother0_s = ' '.join(['%.2f' % item for item in list(ZTother0)])
+        ZTother_list.append(ZTother0_s)
+
+    ZTother_s = '  '.join(ZTother_list)
+
+    sfcpres = 1013.25
+    #   set ZTother=(0 288  3 269  6 249  9 230  12 217  15 217  18 217 \
+    #       21 218  24 221  27 224  30 227)
+
+    command = '%s %d %s %d %.4f %.4f %.4f \
+            ' % (put_exe, 0, parfile, maxnewphase, asymtol, fracphasetol, wavelen,\
+            )
+
+    #   set polout=P
+
+    #   ${put_exe} 0  $parfile  $maxnewphase $asymtol $fracphasetol \
+    #       $wavelen $sfcpres $Nzother $ZTother $polout $prpfile \
+    #     | ${propgen_exe}| tail -3
+
+    # endif
 
 if __name__ == '__main__':
 
     # gen_two_params_lwc_file(overwrite=True)
-    gen_ckd_file()
+    gen_clear_sky()
 
     pass
