@@ -8,7 +8,7 @@
  NSTOKES = 1
  NX = 480
  NY = 480
- NZ = 11
+ NZ = 20
  NMU = 8
  NPHI = 16
  BCFLAG = 0
