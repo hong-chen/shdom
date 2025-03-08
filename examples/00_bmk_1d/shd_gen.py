@@ -35,6 +35,7 @@ rcParams['font.size'] = 14
 
 _FDIR_BIN_ = '/Users/hchen/Work/mygit/shdom/bin'
 _PUT_ = '%s/put' % _FDIR_BIN_
+_PROPGEN_ = '%s/propgen' % _FDIR_BIN_
 
 
 
@@ -219,6 +220,8 @@ def gen_ckd_file(atm0, abs0):
 
 def gen_atm_file_1d(atm0):
 
+    fname_prp = 'data/atm-clear_shdom-prp.txt'
+
     parfile = 'NONE'
 
     maxnewphase = 2
@@ -243,10 +246,18 @@ def gen_atm_file_1d(atm0):
     sfcpres = 1013.25
     #   set ZTother=(0 288  3 269  6 249  9 230  12 217  15 217  18 217 \
     #       21 218  24 221  27 224  30 227)
+    polout='P'
 
-    command = '%s %d %s %d %.4f %.4f %.4f \
-            ' % (put_exe, 0, parfile, maxnewphase, asymtol, fracphasetol, wavelen,\
+    command = '%s %d %s %d %.2f %.2f %.4f \
+%.2f %d %s %s %s | %s' % (_PUT_, 0, parfile, maxnewphase, asymtol, fracphasetol, wavelen,\
+            sfcpres, Nzother, ZTother_s, polout, fname_prp, _PROPGEN_\
             )
+
+    os.system(command)
+
+    '''
+    /Users/hchen/Work/mygit/shdom/bin/put 0 NONE 2 0.01 0.1  0.85 1013.25 11 0 288 3 269 6 249 9 230 12 217 15 217 18 217 21 218 24 221 27 224 30 227 P atmos_ray0.85.prp  | /Users/hchen/Work/mygit/shdom/bin/propgen| tail -3
+    '''
 
     #   set polout=P
 
