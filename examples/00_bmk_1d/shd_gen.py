@@ -94,8 +94,8 @@ def gen_two_params_lwc_file(
         for ix in np.arange(Nx):
             for iy in np.arange(Ny):
                 for iz in np.arange(Nz):
-                    f.write('%d %d %d %.6f %.2f\n' % ((ix+1), (iy+1), (iz+1), lwc[ix, iy, iz], cer[ix, iy, iz]))
-                    # f.write('%d %d %d %.6f %.2f\n' % ((ix+1), (iy+1), (iz+1), 0.0, cer[ix, iy, iz]))
+                    # f.write('%d %d %d %.6f %.2f\n' % ((ix+1), (iy+1), (iz+1), lwc[ix, iy, iz], cer[ix, iy, iz]))
+                    f.write('%d %d %d %.6f %.2f\n' % ((ix+1), (iy+1), (iz+1), 0.0, cer[ix, iy, iz]))
     #╰────────────────────────────────────────────────────────────────────────────╯#
 
     return
@@ -269,7 +269,7 @@ def gen_atm_file_1d(atm0):
 
 if __name__ == '__main__':
 
-    # gen_two_params_lwc_file(overwrite=True)
-    gen_clear_sky()
+    gen_two_params_lwc_file(overwrite=True)
+    # gen_clear_sky()
 
     pass

@@ -1,16 +1,19 @@
  $SHDOMINPUT
- RUNNAME = 'Visualize'
+ RUNNAME = 'Land'
+ !PROPFILE = 'data/shdom-prp_atm-clear.txt'
  PROPFILE = 'tmp-data/les_prp.txt'
- SFCFILE = 'data/sfc_land.txt'
+ SFCFILE = 'data/shdom-sfc_land.txt'
+ CKDFILE = 'data/shdom-ckd_modis-aqua-b01.txt'
  CKDFILE = 'NONE'
- INSAVEFILE = 'tmp-data/shdom-sav-i_les.bin'
+ INSAVEFILE = 'NONE'
  OUTSAVEFILE ='NONE'
  NSTOKES = 1
- NX = 240
- NY = 240
+ NX = 480
+ NY = 480
+ !NZ = 20
  NZ = 10
- NMU = 4
- NPHI = 8
+ NMU = 8
+ NPHI = 16
  BCFLAG = 0
  IPFLAG = 0
  DELTAM = .TRUE.
@@ -23,7 +26,7 @@
  GNDALBEDO = 0.03
  UNITS= 'R'
  GNDTEMP = 290
- WAVENO = 500.0, 800.0
+ WAVENO = 14492.8 16393.4
  WAVELEN = 0.65
  ACCELFLAG = .FALSE.
  SOLACC = 1.0E-4
@@ -32,7 +35,7 @@
  SHACC = 0.003
  NUMOUT = 1
  OUTTYPES(1) = 'R'
- OUTPARMS(1,1) = 20.0, 0.2, 0.2, 0.0, 0.0, 8,
+ OUTPARMS(1,1) = 20.0, 0.1, 0.1, 0.0, 0.0, 8,
  0.8660, 0.0,
  0.8660, 45.0,
  0.8660, 90.0,
@@ -41,7 +44,7 @@
  0.8660, 225.0,
  0.8660, 270.0,
  0.8660, 315.0
- OUTFILES(1) = 'tmp-data/shdom-out_les.txt'
+ OUTFILES(1) = 'tmp-data/shdom-out_land.txt'
  OutFileNC = 'NONE'
  MAX_TOTAL_MB = 8000.0
  ADAPT_GRID_FACTOR = 2.2
