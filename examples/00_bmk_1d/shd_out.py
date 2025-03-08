@@ -231,9 +231,9 @@ def get_data_shdom_out_txt(
 def figure_check(filename='brdf_L1f.out'):
 
     # fname_ori = 'ori/official/%s' % filename
-    fname_ori = 'ori/%s' % filename
+    fname_ori = 'tmp-data/%s' % filename
     data_ori = get_data_shdom_out_txt(fname_ori)
-    fname_new = 'new/%s' % filename
+    fname_new = 'tmp-data/%s' % filename
     data_new = get_data_shdom_out_txt(fname_new)
 
     if data_ori is None or data_new is None:
@@ -313,7 +313,7 @@ def figure_check(filename='brdf_L1f.out'):
 
 if __name__ == '__main__':
 
-    filenames = [os.path.basename(fname) for fname in sorted(glob.glob('new/*.rad'))]
+    filenames = [os.path.basename(fname) for fname in sorted(glob.glob('tmp-data/*shd*out*.txt'))]
 
     for filename in filenames:
         print(filename)

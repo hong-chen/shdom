@@ -1,7 +1,7 @@
  $SHDOMINPUT
  RUNNAME = 'Ocean'
  PROPFILE = 'data/atm-clear_shdom-prp.txt'
- SFCFILE = 'data/sfc_ocean_u10.txt'
+ SFCFILE = 'data/sfc_ocean.txt'
  CKDFILE = 'data/modis_aqua_b01_shdom-ckd.txt'
  INSAVEFILE = 'NONE'
  OUTSAVEFILE ='NONE'
@@ -23,7 +23,7 @@
  GNDALBEDO = 0.03
  UNITS= 'R'
  GNDTEMP = 290
- WAVENO = 500.0, 800.0
+ WAVENO = 14492.8 16393.4
  WAVELEN = 0.65
  ACCELFLAG = .FALSE.
  SOLACC = 1.0E-4
