@@ -13,7 +13,7 @@ subroutine MAP_SHDOM_MPI( &
     implicit none
     integer BCFLAG, NPX, NPY, NX, NY, NZ
     real DELX, DELY
-    character PROPFILE*64
+    character PROPFILE*256
     real XSTART, YSTART
 
     XSTART = 0.0
@@ -38,8 +38,8 @@ subroutine BROADCAST_USER_INPUT(RUNNAME, &
     real GNDTEMP, GNDALBEDO, SKYRAD, WAVENO(2), WAVELEN
     real SOLACC, SPLITACC, SHACC, OUTPARMS(MAXPAR, MAXOUT)
     character SRCTYPE*1, GRIDTYPE*1, UNITS*1, OUTTYPES(*)*1
-    character RUNNAME*64, PROPFILE*64, SFCFILE*64, CKDFILE*64
-    character OUTFILES(*)*64, INSAVEFILE*64, OUTSAVEFILE*64
+    character RUNNAME*256, PROPFILE*256, SFCFILE*256, CKDFILE*256
+    character OUTFILES(*)*256, INSAVEFILE*256, OUTSAVEFILE*256
 
     return
 end subroutine
@@ -319,7 +319,7 @@ subroutine END_SHDOM_MPI(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART, &
     implicit none
     integer NPTS, NPX, NPY, NPXT, NPYT
     real GRIDPOS(3, NPTS), XSTART, YSTART, DELX, DELY
-    character PROPFILE*64
+    character PROPFILE*256
 
     return
 end subroutine
