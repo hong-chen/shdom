@@ -1,6 +1,6 @@
  $SHDOMINPUT
  RUNNAME = 'Ocean'
- PROPFILE = 'data/shdom-prp_atm-clear.txt.txt'
+ PROPFILE = 'data/shdom-prp_atm-clear.txt'
  SFCFILE = 'data/shdom-sfc_ocean.txt'
  CKDFILE = 'data/shdom-ckd_modis-aqua-b01.txt'
  INSAVEFILE = 'NONE'
