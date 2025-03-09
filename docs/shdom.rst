@@ -73,12 +73,12 @@ TERMINOLOGY
 The medium properties (extinction, single scattering albedo, expansion
 coefficients of the phase function/phase matrix elements, temperature)
 are input at grid points from a "property file".  These fields are
-defined spatially (X, Y, and Z spacing) by the "property grid", which is
+defined spatially (``X``, ``Y``, and ``Z`` spacing) by the "property grid", which is
 defined by the input file and is not the actual spatial grid used for
 computatations.  The internal grid used for computation has two
-components: the "base grid" is  regularly spaced (even in X and Y, even
-or not in Z) and is defined by input parameters NX, NY, NZ, and
-GRIDTYPE.  The "adaptive grid" is all the grid cells including those
+components: the "base grid" is  regularly spaced (even in ``X`` and ``Y``, even
+or not in ``Z``) and is defined by input parameters ``NX``, ``NY``, ``NZ``, and
+``GRIDTYPE``.  The "adaptive grid" is all the grid cells including those
 defined by subdividing the base grid cells.  New cells are made by "cell
 splitting", which is the process of  figuring out which cells need to be
 subdivided and dividing them in half to create new grid points.  The
@@ -89,15 +89,15 @@ reached, when the source function is changing by sufficiently small
 amounts that convergence is declared.
 
 The "spherical harmonic terms" are the series expansion of the angular
-dependence of the source function.  The angular dependence is also
+dependence of the source function. The angular dependence is also
 represented by "discrete ordinates", which are discrete directions
-(mu_i, phi_i) at which the source function or radiance is specified.
-Angles are specified by mu, which is the cosine of the zenith angle,
-and phi, which is the azimuth angle, counter-clockwise from the X axis.
+(``mu_i``, ``phi_i``) at which the source function or radiance is specified.
+Angles are specified by ``mu``, which is the cosine of the zenith angle,
+and ``phi``, which is the azimuth angle, counter-clockwise from the X axis.
 "Delta-M scaling" is a standard method of reducing the forward
 scattering peak in the phase function, by scaling the phase function,
 single scattering albedo, and extinction so the solution to the
-radiative transfer equation is the same.  The "independent pixel"
+radiative transfer equation is the same. The "independent pixel"
 approximation is a standard method of solving for horizontal domain
 averaged radiative properties of an inhomogeneous medium by averaging
 the results of 1D radiative transfer on separate columns.
@@ -107,24 +107,24 @@ POLARIZATION
 ------------
 
 Polarization in SHDOM has been implemented with the standard Stokes
-parameters: I, Q, U, and V.  I is the regular radiance or intensity, Q
-and U measured the amount and orientation of linear polarization, and V
+parameters: ``I``, ``Q``, ``U``, and ``V``. ``I`` is the regular radiance or intensity, ``Q``
+and ``U`` measured the amount and orientation of linear polarization, and ``V``
 measures the amount and sign of circular polarization.  The particular
 definitions of the Stokes parameters are as in Mishchenko and Travis
-1997. The Q and U parameters depend on their reference plane, which
+1997. The ``Q`` and ``U`` parameters depend on their reference plane, which
 rotates from the incoming meridional plane, to the scattering plane, and
-then to the outgoing meridional plane.  This coupling between Q and U
+then to the outgoing meridional plane. This coupling between ``Q`` and ``U``
 causes most of the complexity in implementing polarization in spherical
-harmonics.  The spherical harmonics basis implemented in SHDOM is the
+harmonics. The spherical harmonics basis implemented in SHDOM is the
 "real generalized spherical harmonics" of Doicu et al. 2013.  The key
 subroutines implementing this spherical harmonics basis were adapted
-from a research code kindly provided by Adrian Doicu.  Even for
+from a research code kindly provided by Adrian Doicu. Even for
 unpolarized calculations the spherical harmonics terms are different in
 the new polarized SHDOM code from the old SHDOM code (due to a different
 azimuth angle basis).
 
 For polarized radiative transfer with randomly oriented particles
-having a plane of symmetry, there are six unique elements of the 4x4
+having a plane of symmetry, there are six unique elements of the ``4x4``
 scattering phase matrix.  One aspect of using the real generalized
 spherical harmonics basis is that the phase matrix elements as a
 function of scattering angle are expressed in Wigner d-function  series.
@@ -136,34 +136,34 @@ equivalent to Legendre series.  There is a new polarized property file
 input format for SHDOM, which is based on the tabulated phase function
 format, but including the coefficients for the six Wigner d-function
 series expansions of the phase matrix elements.  The old SHDOM property
-file formats may still be used for unpolarized (NSTOKE=1) calculations.
+file formats may still be used for unpolarized (``NSTOKE=1``) calculations.
 
-The SHDOM output types that output polarized results are radiance (R),
-visualization images (V), and source function (J).  The hemispheric flux
-(F), heating rate (H), spherical harmonics (S), and medium properties
-(M) output unpolarized results as before.
+The SHDOM output types that output polarized results are radiance (``R``),
+visualization images (``V``), and source function (``J``).  The hemispheric flux
+(``F``), heating rate (``H``), spherical harmonics (``S``), and medium properties
+(``M``) output unpolarized results as before.
 
 An unpolarized radiative transfer calculation is chosen with
-NSTOKES=1, in which case special subroutines are used so there is little
+``NSTOKES=1``, in which case special subroutines are used so there is little
 loss of efficiency compared to the old (unpolarized) SHDOM for 3D
-problems.  Polarized radiative transfer is chosen with NSTOKES=3 for I,
-Q, U or NSTOKES=4 for I, Q, U, V Stokes parameters.  For most
-atmospheric radiative transfer problems the NSTOKES=3 approximation is
-very good because V is very small.
+problems.  Polarized radiative transfer is chosen with ``NSTOKES=3`` for ``I``,
+``Q``, ``U`` or ``NSTOKES=4`` for ``I``, ``Q``, ``U``, ``V`` Stokes parameters.  For most
+atmospheric radiative transfer problems the ``NSTOKES=3`` approximation is
+very good because ``V`` is very small.
 
 
 INPUT PARAMETERS
 ----------------
 
-The parameters are input in the routine USER_INPUT or
-NAMELIST_INPUT.  USER_INPUT uses READ statements from stdin in response
+The parameters are input in the routine ``USER_INPUT`` or
+``NAMELIST_INPUT``.  ``USER_INPUT`` uses ``READ`` statements from stdin in response
 to written messages.  Because not all parameters are relevant at once,
 the complete list is not input.  Run shdom interactively for the actual
-sequence.  The USER_INPUT routine echos the input values so that a
+sequence.  The ``USER_INPUT`` routine echos the input values so that a
 useful "log" file output is produced when run non-interactively.  To use
-the namelist style input, comment in the call to NAMELIST_INPUT in the
+the namelist style input, comment in the call to ``NAMELIST_INPUT`` in the
 main routine. On some computers the NAMELIST input requires a space
-before the parameters.  All file name strings are a maximum of 80
+before the parameters.  All file name strings are a maximum of 256
 characters.
 
 .. code-block::
@@ -566,9 +566,9 @@ flag (IPFLAG) overrides the boundary condition flag, since an
 independent pixel does not have a horizontal boundary condition.
 
 Periodic boundaries mean that when rays exit one side they wrap
-around to enter the opposite side. The periodic domain size is NX*DELX
-by NY*DELY; for example if NX=64 and DELX=0.050 km, then X=3.2 km is
-equivalent to X=0 km (left hand side).
+around to enter the opposite side. The periodic domain size is ``NX*DELX``
+by NY*DELY; for example if ``NX=64`` and ``DELX=0.050`` km, then ``X=3.2`` km is
+equivalent to ``X=0`` km (left hand side).
 
 The open horizontal boundary condition means that radiation leaving
 the sides does not wrap around and is not reflected back in.  However,
@@ -606,17 +606,17 @@ traced from cell to cell.  The adaptive grid is implemented by splitting
 cells in half (in any direction) and using pointers to parent and
 child cells.  See VARIABLES section for details.
 
-For periodic boundary conditions there are NX*NY*(NZ-1) grid cells
-and (NX+1)*(NY+1)*NZ grid points.  The IX=NX+1 column is the same  as
-the IX=1 column, because of the periodicity, but the grid points are
+For periodic boundary conditions there are ``NX*NY*(NZ-1)`` grid cells
+and ``(NX+1)*(NY+1)*NZ`` grid points.  The ``IX=NX+1`` column is the same  as
+the ``IX=1`` column, because of the periodicity, but the grid points are
 repeated.  The last grid cell on the "right" has the last column of
 grid points on the "left" and the repeated "virtual" set of grid  points
 on the "right".  For open boundary conditions in X and Y there are
-(NX+1)*(NY+1)*(NZ-1) grid cells and NX*NY*NZ grid points. Open boundary
+``(NX+1)*(NY+1)*(NZ-1)`` grid cells and ``NX*NY*NZ`` grid points. Open boundary
 conditions are done with the lowest "left most" and "right most" X and Y
 columns being independent "pixels" with their own grid cells (zero
 width), therefore one extra grid cell is required.  Independent pixel
-mode has NX*NY*(NZ-1) grid cells and NX*NY*NZ grid points
+mode has ``NX*NY*(NZ-1)`` grid cells and ``NX*NY*NZ`` grid points
 
 
 OUTPUT FORMATS
