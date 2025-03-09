@@ -3,7 +3,7 @@
  PROPFILE = 'tmp-data/les_prp.txt'
  SFCFILE = 'data/sfc_ocean.txt'
  CKDFILE = 'NONE'
- INSAVEFILE = 'NONE'
+ INSAVEFILE = 'test.bin'
  OUTSAVEFILE = 'NONE'
  NSTOKES = 1
  NX = 64
