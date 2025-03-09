@@ -108,7 +108,8 @@ def figure_les(fname):
                 # plot1
                 #╭──────────────────────────────────────────────────────────────╮#
                 ax1 = fig.add_subplot(111, aspect='auto')
-                cs = ax1.imshow(data0, origin='lower', cmap='Greys_r', zorder=0, aspect='auto', vmin=0.0, vmax=0.05, extent=extent)
+                # cs = ax1.imshow(data0, origin='lower', cmap='Greys_r', zorder=0, aspect='auto', vmin=0.0, vmax=0.05, extent=extent)
+                cs = ax1.plot(data0[100, :])
                 ax1.axis('off')
                 #╰──────────────────────────────────────────────────────────────╯#
                 # save figure
@@ -118,8 +119,8 @@ def figure_les(fname):
                 fname_fig = '%s_%2.2d_%2.2d.png' % (_metadata_['Function'], i, j)
                 plt.savefig(fname_fig, bbox_inches='tight', metadata=_metadata_, transparent=False, pad_inches=0.0)
                 #╰──────────────────────────────────────────────────────────────╯#
-                # plt.show()
-                # sys.exit()
+                plt.show()
+                sys.exit()
                 plt.close(fig)
                 plt.clf()
             #╰────────────────────────────────────────────────────────────────────────────╯#
