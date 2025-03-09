@@ -144,36 +144,6 @@ def gen_prop_1d(
     pass
 
 
-def gen_clear_sky(
-        wavelength=650.0,
-        solver='3D',
-        overwrite=True,
-        plot=True
-        ):
-
-    _metadata   = {'Computer': os.uname()[1], 'Script': os.path.abspath(__file__), 'Function':sys._getframe().f_code.co_name, 'Date':datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-    fdir='%s/tmp-data/%s/%s' % (fdir0, name_tag, _metadata['Function'])
-
-    if not os.path.exists(fdir):
-        os.makedirs(fdir)
-
-    # define an atmosphere object
-    #╭────────────────────────────────────────────────────────────────────────────╮#
-    levels = np.linspace(0.0, 20.0, 21)
-    fname_atm = '%s/atm.pk' % fdir
-    atm0 = er3t.pre.atm.atm_atmmod(levels=levels, fname=fname_atm, overwrite=overwrite)
-    #╰────────────────────────────────────────────────────────────────────────────╯#
-
-    # define an absorption object
-    #╭────────────────────────────────────────────────────────────────────────────╮#
-    fname_abs = '%s/abs.pk' % fdir
-    abs0 = er3t.pre.abs.abs_rep(wavelength=wavelength, fname=fname_abs, target='modis', band_name='modis_aqua_b01', atm_obj=atm0, overwrite=overwrite)
-    #╰────────────────────────────────────────────────────────────────────────────╯#
-
-    gen_atm_file_1d(atm0)
-
-    # gen_ckd_file(atm0, abs0)
-
 def gen_ckd_file(atm0, abs0):
 
     Nband = 1
@@ -220,7 +190,7 @@ def gen_ckd_file(atm0, abs0):
 
 def gen_atm_file_1d(atm0):
 
-    fname_prp = 'data/atm-clear_shdom-prp.txt'
+    fname_prp = 'data/shdom-prp_atm-clear.txt'
 
     parfile = 'NONE'
 
@@ -246,7 +216,7 @@ def gen_atm_file_1d(atm0):
     sfcpres = 1013.25
     #   set ZTother=(0 288  3 269  6 249  9 230  12 217  15 217  18 217 \
     #       21 218  24 221  27 224  30 227)
-    polout='P'
+    polout='NONE'
 
     command = '%s %d %s %d %.2f %.2f %.4f \
 %.2f %d %s %s %s | %s' % (_PUT_, 0, parfile, maxnewphase, asymtol, fracphasetol, wavelen,\
@@ -259,17 +229,44 @@ def gen_atm_file_1d(atm0):
     /Users/hchen/Work/mygit/shdom/bin/put 0 NONE 2 0.01 0.1  0.85 1013.25 11 0 288 3 269 6 249 9 230 12 217 15 217 18 217 21 218 24 221 27 224 30 227 P atmos_ray0.85.prp  | /Users/hchen/Work/mygit/shdom/bin/propgen| tail -3
     '''
 
-    #   set polout=P
-
     #   ${put_exe} 0  $parfile  $maxnewphase $asymtol $fracphasetol \
     #       $wavelen $sfcpres $Nzother $ZTother $polout $prpfile \
     #     | ${propgen_exe}| tail -3
 
-    # endif
+
+def gen_clear_sky(
+        wavelength=650.0,
+        solver='3D',
+        overwrite=True,
+        plot=True
+        ):
+
+    _metadata   = {'Computer': os.uname()[1], 'Script': os.path.abspath(__file__), 'Function':sys._getframe().f_code.co_name, 'Date':datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+    fdir='%s/tmp-data/%s/%s' % (fdir0, name_tag, _metadata['Function'])
+
+    if not os.path.exists(fdir):
+        os.makedirs(fdir)
+
+    # define an atmosphere object
+    #╭────────────────────────────────────────────────────────────────────────────╮#
+    levels = np.linspace(0.0, 20.0, 21)
+    fname_atm = '%s/atm.pk' % fdir
+    atm0 = er3t.pre.atm.atm_atmmod(levels=levels, fname=fname_atm, overwrite=overwrite)
+    #╰────────────────────────────────────────────────────────────────────────────╯#
+
+    # define an absorption object
+    #╭────────────────────────────────────────────────────────────────────────────╮#
+    fname_abs = '%s/abs.pk' % fdir
+    abs0 = er3t.pre.abs.abs_rep(wavelength=wavelength, fname=fname_abs, target='modis', band_name='modis_aqua_b01', atm_obj=atm0, overwrite=overwrite)
+    #╰────────────────────────────────────────────────────────────────────────────╯#
+
+    gen_atm_file_1d(atm0)
+
+    # gen_ckd_file(atm0, abs0)
 
 if __name__ == '__main__':
 
-    gen_two_params_lwc_file(overwrite=True)
-    # gen_clear_sky()
+    # gen_two_params_lwc_file(overwrite=True)
+    gen_clear_sky()
 
     pass
