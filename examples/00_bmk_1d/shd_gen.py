@@ -249,7 +249,7 @@ def gen_clear_sky(
 
     # define an atmosphere object
     #╭────────────────────────────────────────────────────────────────────────────╮#
-    levels = np.linspace(0.0, 20.0, 21)
+    levels = np.linspace(0.0, 20.0, 11)
     fname_atm = '%s/atm.pk' % fdir
     atm0 = er3t.pre.atm.atm_atmmod(levels=levels, fname=fname_atm, overwrite=overwrite)
     #╰────────────────────────────────────────────────────────────────────────────╯#
