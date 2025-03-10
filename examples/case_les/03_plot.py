@@ -29,7 +29,7 @@ import er3t
 #╭────────────────────────────────────────────────────────────────────────────╮#
 name_tag = '00_er3t_mca'
 fdir0    = er3t.common.fdir_examples
-photons = 1e8
+photons = 1e9
 Ncpu    = 12
 rcParams['font.size'] = 14
 #╰────────────────────────────────────────────────────────────────────────────╯#
@@ -139,7 +139,7 @@ def figure_les_comp(fname):
 
     data = get_data_shdom_out_txt(fname)
 
-    fname = '/Users/hchen/Work/mygit/er3t/examples/tmp-data/00_er3t_mca/run_mcarats/mca-out-rad-3d_example_07_rad_les_cloud_3d.h5'
+    fname = '/Users/hchen/Work/mygit/er3t/examples/tmp-data/00_er3t_mca/run_mcarats/mca-out-rad-3d_run_mcarats.h5'
     f = h5py.File(fname, 'r')
     data_ = f['mean/rad'][...].T
     f.close()
@@ -160,14 +160,31 @@ def figure_les_comp(fname):
                 #╭──────────────────────────────────────────────────────────────╮#
                 ax1 = fig.add_subplot(131, aspect='equal')
                 cs = ax1.imshow(data0, origin='lower', cmap='Greys_r', zorder=0, aspect='equal', vmin=0.0, vmax=0.25, extent=extent)
+                ax1.set_title('SHDOM')
+
+                divider = make_axes_locatable(ax1)
+                cax = divider.append_axes('right', '5%', pad='3%')
+                cbar = fig.colorbar(cs, cax=cax)
 
                 # ax2 = fig.add_subplot(132, aspect='equal')
                 # cs = ax2.scatter(data_, data0, s=1)
                 ax2 = fig.add_subplot(132, aspect='equal')
                 cs = ax2.imshow((data0-data_), origin='lower', cmap='seismic', zorder=0, aspect='equal', vmin=-0.1, vmax=0.1, extent=extent)
+                ax2.set_title('SHDOM - MCARaTS')
+
+                divider = make_axes_locatable(ax2)
+                cax = divider.append_axes('right', '5%', pad='3%')
+                cbar = fig.colorbar(cs, cax=cax)
+
 
                 ax3 = fig.add_subplot(133, aspect='equal')
                 cs = ax3.imshow(data_, origin='lower', cmap='Greys_r', zorder=0, aspect='equal', vmin=0.0, vmax=0.25, extent=extent)
+                ax3.set_title('MCARaTS')
+
+                divider = make_axes_locatable(ax3)
+                cax = divider.append_axes('right', '5%', pad='3%')
+                cbar = fig.colorbar(cs, cax=cax)
+
                 # ax1.scatter(data_, data0, s=1)
                 # ax2.set_xlim((0.0, 0.3))
                 # ax2.set_ylim((0.0, 0.3))
@@ -414,7 +431,7 @@ if __name__ == '__main__':
     # os.system('diff data/shdom-out_les.txt %s' % fname)
 
     # figure_les(fname)
-    # figure_les_comp(fname)
+    figure_les_comp(fname)
 
-    run_mcarats()
+    # run_mcarats()
     pass
