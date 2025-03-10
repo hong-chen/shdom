@@ -12,7 +12,7 @@
  NMU = 8
  NPHI = 16
  BCFLAG = 0
- IPFLAG = 3
+ IPFLAG = 0
  DELTAM = .TRUE.
  GRIDTYPE = 'P'
  SRCTYPE = 'S'
@@ -27,14 +27,14 @@
  WAVELEN = 0.65
  ACCELFLAG = .TRUE.
  SOLACC = 1.0E-5
- MAXITER = 200
+ MAXITER = 50
  SPLITACC = 0.01
  SHACC = 0.003
  NUMOUT = 1
  OUTTYPES(1) = 'R'
  OUTPARMS(1,1) = 19.0, 0.2, 0.2, 0.0, 0.0, 1,
  1.0, 0.0
- OUTFILES(1) = 'tmp-data/shdom-out_les_ipa.txt'
+ OUTFILES(1) = 'tmp-data/shdom-out_les-crk.txt'
  OutFileNC = 'NONE'
  MAX_TOTAL_MB = 8000.0
  ADAPT_GRID_FACTOR = 2.2

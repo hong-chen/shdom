@@ -70,22 +70,28 @@ def gen_two_params_lwc_file(
     # define an cloud object
     #╭────────────────────────────────────────────────────────────────────────────╮#
     fname_nc  = '%s/data/00_er3t_mca/aux/les.nc' % (er3t.common.fdir_examples)
-    fname_les = '%s/les.pk' % fdir
-    cld0      = er3t.pre.cld.cld_les(fname_nc=fname_nc, fname=fname_les, coarsen=[1, 1, 25], overwrite=overwrite)
+    # fname_les = '%s/les.pk' % fdir
+    fname_les = '/Users/hchen/Work/mygit/er3t/examples/tmp-data/00_er3t_mca/run_mcarats/les.pk'
+    cld0      = er3t.pre.cld.cld_les(fname_nc=fname_nc, fname=fname_les, coarsen=[2, 2, 25], overwrite=False)
+
+    cer = cld0.lay['cer']['data']
+
+    q_factor = 2.0
+    const0   = 0.75*q_factor/(1000.0*1e-6)
+    lwc = cld0.lay['extinction']['data']/(const0/cer) * 1000.0
     #╰────────────────────────────────────────────────────────────────────────────╯#
 
 
     # generate les_lwc.txt
     #╭────────────────────────────────────────────────────────────────────────────╮#
-    lwc = cld0.lay['lwc']['data']*1000.0
-    cer = cld0.lay['cer']['data']
-    cer[cer>=25.0] = 25.0
-    cer[cer<=0.5] = 0.5
+    # lwc = cld0.lay['lwc']['data']*1000.0
+    # cer[cer>=25.0] = 25.0
+    # cer[cer<=0.5] = 0.5
     temp = cld0.lay['temperature']['data']
 
     Nx, Ny, Nz = lwc.shape
 
-    with open('les_lwc.txt', 'w') as f:
+    with open('shdom-lwc_les.txt', 'w') as f:
         f.write('2  parameter LWC file\n')
         f.write('%d %d %d\n' % lwc.shape)
         f.write('%.4f %.4f\n' % (cld0.lay['dx']['data'], cld0.lay['dy']['data']))
@@ -94,8 +100,8 @@ def gen_two_params_lwc_file(
         for ix in np.arange(Nx):
             for iy in np.arange(Ny):
                 for iz in np.arange(Nz):
-                    # f.write('%d %d %d %.6f %.2f\n' % ((ix+1), (iy+1), (iz+1), lwc[ix, iy, iz], cer[ix, iy, iz]))
-                    f.write('%d %d %d %.6f %.2f\n' % ((ix+1), (iy+1), (iz+1), 0.0, cer[ix, iy, iz]))
+                    f.write('%d %d %d %.6f %.2f\n' % ((ix+1), (iy+1), (iz+1), lwc[ix, iy, iz], cer[ix, iy, iz]))
+                    # f.write('%d %d %d %.6f %.2f\n' % ((ix+1), (iy+1), (iz+1), 0.0, cer[ix, iy, iz]))
     #╰────────────────────────────────────────────────────────────────────────────╯#
 
     return
@@ -266,7 +272,7 @@ def gen_clear_sky(
 
 if __name__ == '__main__':
 
-    # gen_two_params_lwc_file(overwrite=True)
-    gen_clear_sky()
+    gen_two_params_lwc_file(overwrite=False)
+    # gen_clear_sky()
 
     pass
