@@ -1,6 +1,6 @@
  $SHDOMINPUT
  RUNNAME = 'LES'
- PROPFILE = 'tmp-data/les_prp.txt'
+ PROPFILE = 'tmp-data/shdom-prp_les.txt'
  SFCFILE = 'NONE'
  !CKDFILE = 'data/shdom-ckd_modis-aqua-b01.txt'
  CKDFILE = 'NONE'
