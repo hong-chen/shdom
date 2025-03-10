@@ -95,7 +95,7 @@ def gen_two_params_lwc_file(
         f.write('2  parameter LWC file\n')
         f.write('%d %d %d\n' % lwc.shape)
         f.write('%.4f %.4f\n' % (cld0.lay['dx']['data'], cld0.lay['dy']['data']))
-        f.write('%s\n' % ' '.join([str('%.4f' % alt0) for alt0 in cld0.lay['altitude']['data']]))
+        f.write('%s\n' % ' '.join([str('%.4f' % (alt0+0.5)) for alt0 in cld0.lay['altitude']['data']]))
         f.write('%s\n' % ' '.join([str('%.4f' % np.mean(temp[:, :, iz])) for iz in range(Nz)]))
         for ix in np.arange(Nx):
             for iy in np.arange(Ny):
