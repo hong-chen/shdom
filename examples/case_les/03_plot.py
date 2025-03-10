@@ -434,14 +434,152 @@ def run_mcarats(
     #╰────────────────────────────────────────────────────────────────────────────╯#
 
 
+def figure_diff_vs_ipa():
+
+    # shdom
+    #╭────────────────────────────────────────────────────────────────────────────╮#
+    fname_ipa = 'tmp-data/shdom-out_les-ipa.txt'
+    fname_3d  = 'tmp-data/shdom-out_les-ckd.txt'
+    data_shd_ipa = np.squeeze(get_data_shdom_out_txt(fname_ipa))
+    data_shd_3d  = np.squeeze(get_data_shdom_out_txt(fname_3d))
+    data_shd_diff = data_shd_3d - data_shd_ipa
+    #╰────────────────────────────────────────────────────────────────────────────╯#
+
+    # mcarats
+    #╭────────────────────────────────────────────────────────────────────────────╮#
+    fname_ipa = '/Users/hchen/Work/mygit/er3t/examples/tmp-data/00_er3t_mca/run_mcarats/mca-out-rad-ipa_run_mcarats.h5'
+    fname_3d  = '/Users/hchen/Work/mygit/er3t/examples/tmp-data/00_er3t_mca/run_mcarats/mca-out-rad-3d_run_mcarats.h5'
+
+    f = h5py.File(fname_ipa, 'r')
+    data_mca_ipa = f['mean/rad'][...].T
+    f.close()
+
+    f = h5py.File(fname_3d, 'r')
+    data_mca_3d  = f['mean/rad'][...].T
+    f.close()
+
+    data_mca_diff = data_mca_3d - data_mca_ipa
+    #╰────────────────────────────────────────────────────────────────────────────╯#
+
+    # figure
+    #╭────────────────────────────────────────────────────────────────────────────╮#
+    plot = True
+    if plot:
+        plt.close('all')
+        fig = plt.figure(figsize=(8, 6))
+        # fig.suptitle('Figure')
+        # plot1
+        #╭──────────────────────────────────────────────────────────────╮#
+        ax1 = fig.add_subplot(111)
+        ax1.scatter(data_shd_ipa, data_shd_diff, s=3, c='r', lw=0.0, alpha=1.0)
+        ax1.scatter(data_mca_ipa, data_mca_diff, s=3, c='b', lw=0.0, alpha=1.0)
+        ax1.axhline(0.0, color='gray', ls='--')
+        # ax1.set_xlim((0, 1))
+        # ax1.set_ylim((0, 1))
+        ax1.set_xlabel('IPA')
+        ax1.set_ylabel('3D - IPA')
+        # ax1.set_title('Plot1')
+        # ax1.xaxis.set_major_locator(FixedLocator(np.arange(0, 100, 5)))
+        # ax1.yaxis.set_major_locator(FixedLocator(np.arange(0, 100, 5)))
+        #╰──────────────────────────────────────────────────────────────╯#
+        patches_legend = [
+                         mpatches.Patch(color='red'   , label='SHDOM'), \
+                         mpatches.Patch(color='blue'  , label='MCARaTS'), \
+                         ]
+        # ax1.legend(handles=patches_legend, bbox_to_anchor=(0., 1.01, 1., .102), loc=3, ncol=len(patches_legend), mode="expand", borderaxespad=0., frameon=False, handletextpad=0.2, fontsize=14)
+        ax1.legend(handles=patches_legend, loc='upper right', fontsize=16)
+
+        # save figure
+        #╭──────────────────────────────────────────────────────────────╮#
+        fig.subplots_adjust(hspace=0.35, wspace=0.35)
+        _metadata_ = {'Computer': os.uname()[1], 'Script': os.path.abspath(__file__), 'Function':sys._getframe().f_code.co_name, 'Date':datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}
+        fname_fig = '%s_%s.png' % (_metadata_['Date'], _metadata_['Function'],)
+        plt.savefig(fname_fig, bbox_inches='tight', metadata=_metadata_, transparent=False)
+        #╰──────────────────────────────────────────────────────────────╯#
+        plt.show()
+        sys.exit()
+        plt.close(fig)
+        plt.clf()
+    #╰────────────────────────────────────────────────────────────────────────────╯#
+
+def figure_shd_vs_mca():
+
+    # shdom
+    #╭────────────────────────────────────────────────────────────────────────────╮#
+    fname_ipa = 'tmp-data/shdom-out_les-ipa.txt'
+    fname_3d  = 'tmp-data/shdom-out_les-ckd.txt'
+    data_shd_ipa = np.squeeze(get_data_shdom_out_txt(fname_ipa))
+    data_shd_3d  = np.squeeze(get_data_shdom_out_txt(fname_3d))
+    data_shd_diff = data_shd_3d - data_shd_ipa
+    #╰────────────────────────────────────────────────────────────────────────────╯#
+
+    # mcarats
+    #╭────────────────────────────────────────────────────────────────────────────╮#
+    fname_ipa = '/Users/hchen/Work/mygit/er3t/examples/tmp-data/00_er3t_mca/run_mcarats/mca-out-rad-ipa_run_mcarats.h5'
+    fname_3d  = '/Users/hchen/Work/mygit/er3t/examples/tmp-data/00_er3t_mca/run_mcarats/mca-out-rad-3d_run_mcarats.h5'
+
+    f = h5py.File(fname_ipa, 'r')
+    data_mca_ipa = f['mean/rad'][...].T
+    f.close()
+
+    f = h5py.File(fname_3d, 'r')
+    data_mca_3d  = f['mean/rad'][...].T
+    f.close()
+
+    data_mca_diff = data_mca_3d - data_mca_ipa
+    #╰────────────────────────────────────────────────────────────────────────────╯#
+
+    # figure
+    #╭────────────────────────────────────────────────────────────────────────────╮#
+    plot = True
+    if plot:
+        plt.close('all')
+        fig = plt.figure(figsize=(8, 6))
+        # fig.suptitle('Figure')
+        # plot1
+        #╭──────────────────────────────────────────────────────────────╮#
+        ax1 = fig.add_subplot(111, aspect='equal')
+        ax1.scatter(data_mca_3d, data_shd_3d, s=3, c='r', lw=0.0, alpha=1.0)
+        ax1.scatter(data_mca_ipa, data_shd_ipa, s=3, c='b', lw=0.0, alpha=1.0)
+        ax1.plot([0.0, 1.0], [0.0, 1.0], color='gray', ls='--')
+        ax1.set_xlim((0, 0.4))
+        ax1.set_ylim((0, 0.4))
+        ax1.set_xlabel('MCARaTS')
+        ax1.set_ylabel('SHDOM')
+        # ax1.xaxis.set_major_locator(FixedLocator(np.arange(0, 100, 5)))
+        # ax1.yaxis.set_major_locator(FixedLocator(np.arange(0, 100, 5)))
+        #╰──────────────────────────────────────────────────────────────╯#
+        patches_legend = [
+                         mpatches.Patch(color='red'   , label='3D'), \
+                         mpatches.Patch(color='blue'  , label='IPA'), \
+                         ]
+        # ax1.legend(handles=patches_legend, bbox_to_anchor=(0., 1.01, 1., .102), loc=3, ncol=len(patches_legend), mode="expand", borderaxespad=0., frameon=False, handletextpad=0.2, fontsize=14)
+        ax1.legend(handles=patches_legend, loc='upper right', fontsize=16)
+
+        # save figure
+        #╭──────────────────────────────────────────────────────────────╮#
+        fig.subplots_adjust(hspace=0.35, wspace=0.35)
+        _metadata_ = {'Computer': os.uname()[1], 'Script': os.path.abspath(__file__), 'Function':sys._getframe().f_code.co_name, 'Date':datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}
+        fname_fig = '%s_%s.png' % (_metadata_['Date'], _metadata_['Function'],)
+        plt.savefig(fname_fig, bbox_inches='tight', metadata=_metadata_, transparent=False)
+        #╰──────────────────────────────────────────────────────────────╯#
+        plt.show()
+        sys.exit()
+        plt.close(fig)
+        plt.clf()
+    #╰────────────────────────────────────────────────────────────────────────────╯#
+
 if __name__ == '__main__':
 
     # fname = 'tmp-data/shdom-out_les-nockd.txt'
     # fname = 'tmp-data/shdom-out_les-ckd.txt'
-    fname = 'tmp-data/shdom-out_les-ipa.txt'
+    # fname = 'tmp-data/shdom-out_les-ipa.txt'
 
     # figure_les(fname)
-    figure_les_comp(fname)
+    # figure_les_comp(fname)
 
     # run_mcarats(solver='IPA')
+
+    # figure_diff_vs_ipa()
+    figure_shd_vs_mca()
     pass
