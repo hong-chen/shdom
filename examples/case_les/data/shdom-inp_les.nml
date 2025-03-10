@@ -2,8 +2,8 @@
  RUNNAME = 'LES'
  PROPFILE = 'tmp-data/shdom-prp_les.txt'
  SFCFILE = 'NONE'
- CKDFILE = '/Users/hchen/Work/mygit/shdom/data/shdom-ckd_modis-aqua-b01.txt'
- !CKDFILE = 'NONE'
+ !CKDFILE = '/Users/hchen/Work/mygit/shdom/data/shdom-ckd_modis-aqua-b01.txt'
+ CKDFILE = 'NONE'
  INSAVEFILE = 'NONE'
  OUTSAVEFILE ='NONE'
  NSTOKES = 1
@@ -35,7 +35,7 @@
  OUTTYPES(1) = 'R'
  OUTPARMS(1,1) = 19.0, 0.2, 0.2, 0.0, 0.0, 1,
  1.0, 0.0
- OUTFILES(1) = 'tmp-data/shdom-out_les-ckd.txt'
+ OUTFILES(1) = 'tmp-data/shdom-out_les.txt'
  OutFileNC = 'NONE'
  MAX_TOTAL_MB = 8000.0
  ADAPT_GRID_FACTOR = 2.2
