@@ -139,7 +139,7 @@ def figure_les_comp(fname):
 
     data = get_data_shdom_out_txt(fname)
 
-    if 'les-ckd' in fname:
+    if ('les-ckd' in fname) or ('les-crk' in fname):
         tag_shd = '3D w. CKD'
         tag_mca = '3D w. CKD'
         fname_mca = '/Users/hchen/Work/mygit/er3t/examples/tmp-data/00_er3t_mca/run_mcarats/mca-out-rad-3d_run_mcarats.h5'
@@ -629,15 +629,16 @@ if __name__ == '__main__':
 
     # fname = 'tmp-data/shdom-out_les-nockd.txt'
     # fname = 'tmp-data/shdom-out_les-ckd.txt'
+    fname = 'tmp-data/shdom-out_les-crk.txt'
     # fname = 'tmp-data/shdom-out_les-ipa.txt'
 
     # figure_les(fname)
-    # figure_les_comp(fname)
+    figure_les_comp(fname)
 
     # run_mcarats(solver='IPA')
 
     # figure_diff_vs_ipa()
     # figure_shd_vs_mca()
 
-    figure_lwc_shd()
+    # figure_lwc_shd()
     pass
