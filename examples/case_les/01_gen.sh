@@ -10,7 +10,7 @@
 
 set AWK=awk
 
-set fdir_data="data"
+set fdir_data="/Users/hchen/Work/mygit/shdom/data"
 set fdir_data_tmp="tmp-data"
 mkdir $fdir_data_tmp
 
@@ -22,8 +22,8 @@ set RunSHDOMsolve=0
 set SingleFrames=0
 set RunCameraVisual=0
 
-set basefile=les
-set prpfile="${fdir_data_tmp}/${basefile}_prp.txt"
+set basefile="les"
+set prpfile="${fdir_data_tmp}/shdom-prp_${basefile}.txt"
 set savefile=${basefile}a.bin
 set outbase=${basefile}a
 
@@ -34,15 +34,24 @@ if ($MakeMieTable) then
   #  Makes the Mie scattering table for spherical water droplets for
   # gamma size distributions with a range of effective radius.
   set polarizedtable=F             # F=unpolarized output, T=polarized output
-  set outfile="${fdir_data_tmp}/water_w${wavename}c_sca.txt"
+
+  set outfile="${fdir_data_tmp}/shdom-sca-${wavename}_${basefile}.txt"
+
   #set outfile="water_w${wavename}c_sca.txt"
   set partype="W"                # W for water
+
   set distflag=G                   # G=gamma, L=lognormal size distribution
+
   set alpha=7 i                    # gamma dist shape parameter
+
   set Nretab=50                    # number of effective radius in table
+
   set Sretab=0.5; set Eretab=25    # starting, ending effective radius (micron)
+
   set logre=F                      # evenly spaced r_e
+
   set maxradius=75
+
   set avgflag=C                    #  C for using central wavelength
 
   put $polarizedtable "$wavelen $wavelen" $partype $avgflag $distflag $alpha \
@@ -57,15 +66,24 @@ if ($MakePropertyFile) then
   # old type 2 LWC file for the 64x64x16 stratocumulus LES field.
   # Adds in six other levels.
 
-  set lwcfile="${fdir_data}/les_lwc.txt"
-  set scattable="${fdir_data_tmp}/water_w${wavename}c_sca.txt"
+  set lwcfile="${fdir_data}/shdom-lwc_${basefile}.txt"
+
+  set scattable="${fdir_data_tmp}/shdom-sca-${wavename}_${basefile}.txt"
+
   set poltabs = (F)
+
   set maxnewphase=1000
+
   set asymtol=0.01
+
   set fracphasetol=0.1
+
   set sfcpres=1013.0
+
   set Nzother=6
+
   set ZTother=(0.0 286.3  0.200 285.1  0.4125 283.8  0.8375 287.0 5.0 260.0  20.0 180.0)
+
   set polout=U
 
   put 1 $scattable 1 "$poltabs" "$lwcfile" \
