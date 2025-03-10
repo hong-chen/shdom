@@ -426,8 +426,8 @@ def run_mcarats(
 
 if __name__ == '__main__':
 
-    fname = 'tmp-data/shdom-out_les.txt'
-    # fname = 'tmp-data/shdom-out_les-ckd.txt'
+    # fname = 'tmp-data/shdom-out_les.txt'
+    fname = 'tmp-data/shdom-out_les-ckd.txt'
 
     # os.system('diff data/shdom-out_les.txt %s' % fname)
 
