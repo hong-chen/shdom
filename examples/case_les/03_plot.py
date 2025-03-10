@@ -31,7 +31,7 @@ name_tag = '00_er3t_mca'
 fdir0    = er3t.common.fdir_examples
 photons = 1e9
 Ncpu    = 12
-rcParams['font.size'] = 14
+rcParams['font.size'] = 24
 #╰────────────────────────────────────────────────────────────────────────────╯#
 
 
@@ -106,7 +106,7 @@ def figure_les(fname):
     for i in range(data.shape[0]):
         for j in range(data.shape[1]):
 
-            data0 = np.squeeze(data[i, j, ...])
+            data_shd = np.squeeze(data[i, j, ...])
 
             # figure
             #╭────────────────────────────────────────────────────────────────────────────╮#
@@ -118,7 +118,7 @@ def figure_les(fname):
                 # plot1
                 #╭──────────────────────────────────────────────────────────────╮#
                 ax1 = fig.add_subplot(111, aspect='auto')
-                cs = ax1.imshow(data0, origin='lower', cmap='Greys_r', zorder=0, aspect='auto', vmin=0.0, vmax=0.25, extent=extent)
+                cs = ax1.imshow(data_shd, origin='lower', cmap='Greys_r', zorder=0, aspect='auto', vmin=0.0, vmax=0.25, extent=extent)
                 ax1.axis('off')
                 #╰──────────────────────────────────────────────────────────────╯#
                 # save figure
@@ -139,15 +139,27 @@ def figure_les_comp(fname):
 
     data = get_data_shdom_out_txt(fname)
 
-    fname = '/Users/hchen/Work/mygit/er3t/examples/tmp-data/00_er3t_mca/run_mcarats/mca-out-rad-3d_run_mcarats.h5'
-    f = h5py.File(fname, 'r')
-    data_ = f['mean/rad'][...].T
+    if 'les-ckd' in fname:
+        tag_shd = '3D w. CKD'
+        tag_mca = '3D w. CKD'
+        fname_mca = '/Users/hchen/Work/mygit/er3t/examples/tmp-data/00_er3t_mca/run_mcarats/mca-out-rad-3d_run_mcarats.h5'
+    elif 'les-nockd' in fname:
+        tag_shd = '3D w.o. CKD'
+        tag_mca = '3D w. CKD'
+        fname_mca = '/Users/hchen/Work/mygit/er3t/examples/tmp-data/00_er3t_mca/run_mcarats/mca-out-rad-3d_run_mcarats.h5'
+    elif 'les-ipa' in fname:
+        tag_shd = 'IPA w. CKD'
+        tag_mca = 'IPA w. CKD'
+        fname_mca = '/Users/hchen/Work/mygit/er3t/examples/tmp-data/00_er3t_mca/run_mcarats/mca-out-rad-ipa_run_mcarats.h5'
+
+    f = h5py.File(fname_mca, 'r')
+    data_mca = f['mean/rad'][...].T
     f.close()
 
     for i in range(data.shape[0]):
         for j in range(data.shape[1]):
 
-            data0 = np.squeeze(data[i, j, ...])
+            data_shd = np.squeeze(data[i, j, ...])
 
             # figure
             #╭────────────────────────────────────────────────────────────────────────────╮#
@@ -159,17 +171,17 @@ def figure_les_comp(fname):
                 # plot1
                 #╭──────────────────────────────────────────────────────────────╮#
                 ax1 = fig.add_subplot(131, aspect='equal')
-                cs = ax1.imshow(data0, origin='lower', cmap='Greys_r', zorder=0, aspect='equal', vmin=0.0, vmax=0.25, extent=extent)
-                ax1.set_title('SHDOM')
+                cs = ax1.imshow(data_shd, origin='lower', cmap='Greys_r', zorder=0, aspect='equal', vmin=0.0, vmax=0.25, extent=extent)
+                ax1.set_title('SHDOM (%s)' % tag_shd)
 
                 divider = make_axes_locatable(ax1)
                 cax = divider.append_axes('right', '5%', pad='3%')
                 cbar = fig.colorbar(cs, cax=cax)
 
                 # ax2 = fig.add_subplot(132, aspect='equal')
-                # cs = ax2.scatter(data_, data0, s=1)
+                # cs = ax2.scatter(data_mca, data_shd, s=1)
                 ax2 = fig.add_subplot(132, aspect='equal')
-                cs = ax2.imshow((data0-data_), origin='lower', cmap='seismic', zorder=0, aspect='equal', vmin=-0.1, vmax=0.1, extent=extent)
+                cs = ax2.imshow((data_shd-data_mca), origin='lower', cmap='seismic', zorder=0, aspect='equal', vmin=-0.1, vmax=0.1, extent=extent)
                 ax2.set_title('SHDOM - MCARaTS')
 
                 divider = make_axes_locatable(ax2)
@@ -178,14 +190,14 @@ def figure_les_comp(fname):
 
 
                 ax3 = fig.add_subplot(133, aspect='equal')
-                cs = ax3.imshow(data_, origin='lower', cmap='Greys_r', zorder=0, aspect='equal', vmin=0.0, vmax=0.25, extent=extent)
-                ax3.set_title('MCARaTS')
+                cs = ax3.imshow(data_mca, origin='lower', cmap='Greys_r', zorder=0, aspect='equal', vmin=0.0, vmax=0.25, extent=extent)
+                ax3.set_title('MCARaTS (%s)' % tag_mca)
 
                 divider = make_axes_locatable(ax3)
                 cax = divider.append_axes('right', '5%', pad='3%')
                 cbar = fig.colorbar(cs, cax=cax)
 
-                # ax1.scatter(data_, data0, s=1)
+                # ax1.scatter(data_mca, data_shd, s=1)
                 # ax2.set_xlim((0.0, 0.3))
                 # ax2.set_ylim((0.0, 0.3))
                 ax1.axis('off')
@@ -424,12 +436,12 @@ def run_mcarats(
 
 if __name__ == '__main__':
 
-    # fname = 'tmp-data/shdom-out_les.txt'
-    fname = 'tmp-data/shdom-out_les-ckd.txt'
+    fname = 'tmp-data/shdom-out_les-nockd.txt'
+    # fname = 'tmp-data/shdom-out_les-ckd.txt'
     # fname = 'tmp-data/shdom-out_les-ipa.txt'
 
     # figure_les(fname)
-    # figure_les_comp(fname)
+    figure_les_comp(fname)
 
-    # run_mcarats()
+    # run_mcarats(solver='IPA')
     pass
