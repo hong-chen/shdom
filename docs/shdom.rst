@@ -397,8 +397,8 @@ often the same size as the property grid, but can have more grid points
 for higher spatial resolution or even can have less grid points than the
 property grid.
 
-PROPFILE always needs to be specified, but INSAVEFILE and OUTSAVEFILE
-seldom do, and CKDFILE is only for doing a k-distribution.  SFCFILE is
+``PROPFILE`` always needs to be specified, but ``INSAVEFILE`` and ``OUTSAVEFILE``
+seldom do, and ``CKDFILE`` is only for doing a k-distribution.  ``SFCFILE`` is
 given for a Lambertian surface with variable albedo or temperature or a
 different BRDF, but otherwise is NONE or NO.
 
@@ -894,7 +894,7 @@ in the notation of Fu and Liou, 1993).  A radiative transfer calculation
 is done for each "k" in the sum, which represents the gaseous
 absorption.  The distribution of gases in the atmosphere is assumed to
 horizontally uniform, and so the absorption coefficients depend only on
-height.  Thus the CKD file specifies the absorption coefficient (in
+height. Thus the CKD file specifies the absorption coefficient (in
 km^-1) for each height, "k" in the sum, and each band.  The delta g's
 are the weights with which the separate radiative transfer results are
 added together.
@@ -911,16 +911,19 @@ The format is:
 
 .. code-block::
 
-   Comment line
-   Number of bands
-   Comment line
-   For each band:
-     band num, waveno1, waveno2, solar flux, number of k's, all the delta g's
-   Number of z levels
-   Two comment lines
+   ! Comment line
+   Number of bands [e.g., 1]
+   ! Comment line
+   Band number #1, waveno1, waveno2, solar flux, number of k's, all the delta g's
+   Band number #2, waveno1, waveno2, solar flux, number of k's, all the delta g's
+   ...
+   [e.g., 1 14492.8 16393.4 1.5764 1 1.000000]
+   Number of z levels [e.g., 20]
+   ! Comment line
+   ! Comment line
    For each atmospheric level from the top down:
      height, (other profile information is not used)
-   Comment line
+   ! Comment line
    For each band and level:
      band number, level number, all the k_i's
 
