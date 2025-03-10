@@ -206,12 +206,11 @@ def figure_les_comp(fname):
             #╰────────────────────────────────────────────────────────────────────────────╯#
 
 
-
 def run_mcarats(
         wavelength=650.0,
         solver='3D',
         overwrite=True,
-        plot=True
+        plot=False
         ):
 
     """
@@ -423,17 +422,14 @@ def run_mcarats(
     #╰────────────────────────────────────────────────────────────────────────────╯#
 
 
-
 if __name__ == '__main__':
 
     # fname = 'tmp-data/shdom-out_les.txt'
-    # fname = 'tmp-data/shdom-out_les-ckd.txt'
-    fname = 'tmp-data/shdom-out_les-ipa.txt'
-
-    # os.system('diff data/shdom-out_les.txt %s' % fname)
+    fname = 'tmp-data/shdom-out_les-ckd.txt'
+    # fname = 'tmp-data/shdom-out_les-ipa.txt'
 
     # figure_les(fname)
-    figure_les_comp(fname)
+    # figure_les_comp(fname)
 
     # run_mcarats()
     pass
