@@ -1,9 +1,9 @@
  $SHDOMINPUT
  RUNNAME = 'Ocean'
- PROPFILE = 'data/shdom-prp_atm-clear.txt'
+ PROPFILE = '/Users/hchen/Work/mygit/shdom/data/shdom-prp_atm-clear.txt'
  !PROPFILE = 'tmp-data/les_prp.txt'
- SFCFILE = 'data/shdom-sfc_ocean.txt'
- !CKDFILE = 'data/shdom-ckd_modis-aqua-b01.txt'
+ SFCFILE = '/Users/hchen/Work/mygit/shdom/data/shdom-sfc_ocean.txt'
+ !CKDFILE = '/Users/hchen/Work/mygit/shdom/data/shdom-ckd_modis-aqua-b01.txt'
  CKDFILE = 'NONE'
  INSAVEFILE = 'NONE'
  OUTSAVEFILE ='NONE'
