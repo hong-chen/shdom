@@ -161,15 +161,18 @@ def figure_les_comp(fname):
                 ax1 = fig.add_subplot(131, aspect='equal')
                 cs = ax1.imshow(data0, origin='lower', cmap='Greys_r', zorder=0, aspect='equal', vmin=0.0, vmax=0.25, extent=extent)
 
+                # ax2 = fig.add_subplot(132, aspect='equal')
+                # cs = ax2.scatter(data_, data0, s=1)
                 ax2 = fig.add_subplot(132, aspect='equal')
-                cs = ax2.scatter(data_, data0, s=1)
+                cs = ax2.imshow((data0-data_), origin='lower', cmap='seismic', zorder=0, aspect='equal', vmin=-0.1, vmax=0.1, extent=extent)
 
                 ax3 = fig.add_subplot(133, aspect='equal')
                 cs = ax3.imshow(data_, origin='lower', cmap='Greys_r', zorder=0, aspect='equal', vmin=0.0, vmax=0.25, extent=extent)
                 # ax1.scatter(data_, data0, s=1)
-                ax2.set_xlim((0.0, 0.3))
-                ax2.set_ylim((0.0, 0.3))
+                # ax2.set_xlim((0.0, 0.3))
+                # ax2.set_ylim((0.0, 0.3))
                 ax1.axis('off')
+                ax2.axis('off')
                 ax3.axis('off')
                 #╰──────────────────────────────────────────────────────────────╯#
                 # save figure
