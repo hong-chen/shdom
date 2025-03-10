@@ -6,7 +6,7 @@
  CKDFILE = 'data/shdom-ckd_modis-aqua-b01.txt'
  CKDFILE = 'NONE'
  INSAVEFILE = 'NONE'
- OUTSAVEFILE ='tmp-data/les_prp.bin'
+ OUTSAVEFILE ='NONE'
  NSTOKES = 1
  NX = 480
  NY = 480

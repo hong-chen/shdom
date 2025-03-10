@@ -1,29 +1,30 @@
  $SHDOMINPUT
- RUNNAME = 'Visualize'
+ RUNNAME = 'LES'
  PROPFILE = 'tmp-data/les_prp.txt'
- SFCFILE = 'data/sfc_land.txt'
+ SFCFILE = 'NONE'
+ !CKDFILE = 'data/shdom-ckd_modis-aqua-b01.txt'
  CKDFILE = 'NONE'
- INSAVEFILE = 'tmp-data/shdom-sav-i_les.bin'
+ INSAVEFILE = 'NONE'
  OUTSAVEFILE ='NONE'
  NSTOKES = 1
  NX = 240
  NY = 240
  NZ = 10
- NMU = 4
- NPHI = 8
+ NMU = 8
+ NPHI = 16
  BCFLAG = 0
  IPFLAG = 0
  DELTAM = .TRUE.
  GRIDTYPE = 'P'
  SRCTYPE = 'S'
- SOLARFLUX = 1.0
- SOLARMU = 0.88
- SOLARAZ = 45.0
+ SOLARFLUX = 1.5764
+ SOLARMU = 0.8660
+ SOLARAZ = 225.0
  SKYRAD = 0.0
  GNDALBEDO = 0.03
  UNITS= 'R'
  GNDTEMP = 290
- WAVENO = 500.0, 800.0
+ WAVENO = 14492.8 16393.4
  WAVELEN = 0.65
  ACCELFLAG = .FALSE.
  SOLACC = 1.0E-4
@@ -32,15 +33,8 @@
  SHACC = 0.003
  NUMOUT = 1
  OUTTYPES(1) = 'R'
- OUTPARMS(1,1) = 20.0, 0.2, 0.2, 0.0, 0.0, 8,
- 0.8660, 0.0,
- 0.8660, 45.0,
- 0.8660, 90.0,
- 0.8660, 135.0,
- 0.8660, 180.0,
- 0.8660, 225.0,
- 0.8660, 270.0,
- 0.8660, 315.0
+ OUTPARMS(1,1) = 19.0, 0.2, 0.2, 0.0, 0.0, 1,
+ 1.0, 0.0
  OUTFILES(1) = 'tmp-data/shdom-out_les.txt'
  OutFileNC = 'NONE'
  MAX_TOTAL_MB = 8000.0

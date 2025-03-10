@@ -23,6 +23,16 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # import cartopy.crs as ccrs
 # mpl.use('Agg')
 
+import er3t
+
+# global variables
+#╭────────────────────────────────────────────────────────────────────────────╮#
+name_tag = '00_er3t_mca'
+fdir0    = er3t.common.fdir_examples
+photons = 1e8
+Ncpu    = 12
+rcParams['font.size'] = 14
+#╰────────────────────────────────────────────────────────────────────────────╯#
 
 
 def get_data_shdom_out_txt(
@@ -125,12 +135,283 @@ def figure_les(fname):
             #╰────────────────────────────────────────────────────────────────────────────╯#
 
 
+def figure_les_comp(fname):
+
+    data = get_data_shdom_out_txt(fname)
+
+    fname = '/Users/hchen/Work/mygit/er3t/examples/tmp-data/00_er3t_mca/example_07_rad_les_cloud_3d/mca-out-rad-3d_example_07_rad_les_cloud_3d.h5'
+    f = h5py.File(fname, 'r')
+    data_ = f['mean/rad'][...].T
+    f.close()
+
+    for i in range(data.shape[0]):
+        for j in range(data.shape[1]):
+
+            data0 = np.squeeze(data[i, j, ...])
+
+            # figure
+            #╭────────────────────────────────────────────────────────────────────────────╮#
+            plot = True
+            extent = [0, 48, 0, 48]
+            if plot:
+                plt.close('all')
+                fig = plt.figure(figsize=(24, 8))
+                # plot1
+                #╭──────────────────────────────────────────────────────────────╮#
+                ax1 = fig.add_subplot(131, aspect='equal')
+                cs = ax1.imshow(data0, origin='lower', cmap='Greys_r', zorder=0, aspect='equal', vmin=0.0, vmax=0.25, extent=extent)
+
+                ax2 = fig.add_subplot(132, aspect='equal')
+                cs = ax2.scatter(data_, data0, s=1)
+
+                ax3 = fig.add_subplot(133, aspect='equal')
+                cs = ax3.imshow(data_, origin='lower', cmap='Greys_r', zorder=0, aspect='equal', vmin=0.0, vmax=0.25, extent=extent)
+                # ax1.scatter(data_, data0, s=1)
+                ax2.set_xlim((0.0, 0.3))
+                ax2.set_ylim((0.0, 0.3))
+                ax1.axis('off')
+                ax3.axis('off')
+                #╰──────────────────────────────────────────────────────────────╯#
+                # save figure
+                #╭──────────────────────────────────────────────────────────────╮#
+                fig.subplots_adjust(hspace=0.35, wspace=0.35)
+                _metadata_ = {'Computer': os.uname()[1], 'Script': os.path.abspath(__file__), 'Function':sys._getframe().f_code.co_name, 'Date':datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}
+                fname_fig = '%s_%2.2d_%2.2d.png' % (_metadata_['Function'], i, j)
+                plt.savefig(fname_fig, bbox_inches='tight', metadata=_metadata_, transparent=False, pad_inches=0.0)
+                #╰──────────────────────────────────────────────────────────────╯#
+                plt.show()
+                sys.exit()
+                plt.close(fig)
+                plt.clf()
+            #╰────────────────────────────────────────────────────────────────────────────╯#
+
+
+
+def example_07_rad_les_cloud_3d(
+        wavelength=650.0,
+        solver='3D',
+        overwrite=True,
+        plot=True
+        ):
+
+    """
+    Similar to test_02 but for calculating radiance fields using LES data (nadir radiance at
+    the satellite altitude of 705km)
+
+    Additionally, Mie phase function is used instead of HG that was used in test_01 - test_04
+
+    To run this test, we will need data/00_er3t_mca/aux/les.nc
+    """
+
+    _metadata   = {'Computer': os.uname()[1], 'Script': os.path.abspath(__file__), 'Function':sys._getframe().f_code.co_name, 'Date':datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+    fdir='%s/tmp-data/%s/%s' % (fdir0, name_tag, _metadata['Function'])
+
+    if not os.path.exists(fdir):
+        os.makedirs(fdir)
+
+    # define an atmosphere object
+    #╭────────────────────────────────────────────────────────────────────────────╮#
+    # levels: altitude of the layer interface in km, here, levels will be 0.0, 1.0, 2.0, ...., 20.0
+    levels    = np.linspace(0.0, 20.0, 11)
+
+    # file name of the pickle file for atmosphere
+    fname_atm = '%s/atm.pk' % fdir
+
+    # atmosphere object
+    atm0      = er3t.pre.atm.atm_atmmod(levels=levels, fname=fname_atm, overwrite=overwrite)
+
+    # data can be accessed at
+    #     atm0.lev['altitude']['data']
+    #     atm0.lev['pressure']['data']
+    #     atm0.lev['temperature']['data']
+    #     atm0.lev['h2o']['data']
+    #     atm0.lev['o3']['data']
+    #     atm0.lev['o2']['data']
+    #     atm0.lev['co2']['data']
+    #     atm0.lev['ch4']['data']
+    #
+    #     atm0.lay['altitude']['data']
+    #     atm0.lay['pressure']['data']
+    #     atm0.lay['temperature']['data']
+    #     atm0.lay['h2o']['data']
+    #     atm0.lay['o3']['data']
+    #     atm0.lay['o2']['data']
+    #     atm0.lay['co2']['data']
+    #     atm0.lay['ch4']['data']
+    #╰────────────────────────────────────────────────────────────────────────────╯#
+
+
+    # define an absorption object
+    #╭────────────────────────────────────────────────────────────────────────────╮#
+    # file name of the pickle file for absorption
+    fname_abs = '%s/abs.pk' % fdir
+
+    # absorption object
+    abs0 = er3t.pre.abs.abs_rep(wavelength=wavelength, fname=fname_abs, target='modis', band_name='modis_aqua_b01', atm_obj=atm0, overwrite=overwrite)
+
+    # data can be accessed at
+    #     abs0.coef['wavelength']['data']
+    #     abs0.coef['abso_coef']['data']
+    #     abs0.coef['slit_func']['data']
+    #     abs0.coef['solar']['data']
+    #     abs0.coef['weight']['data']
+    #╰────────────────────────────────────────────────────────────────────────────╯#
+
+
+    # define an cloud object
+    #╭────────────────────────────────────────────────────────────────────────────╮#
+    # file name of the netcdf file
+    fname_nc  = '%s/data/00_er3t_mca/aux/les.nc' % (er3t.common.fdir_examples)
+
+    # file name of the pickle file for cloud
+    fname_les = '%s/les.pk' % fdir
+
+    # cloud object
+    cld0      = er3t.pre.cld.cld_les(fname_nc=fname_nc, fname=fname_les, coarsen=[2, 2, 25], overwrite=overwrite)
+
+    # data can be accessed at
+    #     cld0.lay['x']['data']
+    #     cld0.lay['y']['data']
+    #     cld0.lay['nx']['data']
+    #     cld0.lay['ny']['data']
+    #     cld0.lay['dx']['data']
+    #     cld0.lay['dy']['data']
+    #     cld0.lay['altitude']['data']
+    #     cld0.lay['extinction']['data']
+    #     cld0.lay['temperature']['data']
+    #
+    #     cld0.lev['altitude']['data']
+    #╰────────────────────────────────────────────────────────────────────────────╯#
+
+
+    # define mca_sca object
+    #╭────────────────────────────────────────────────────────────────────────────╮#
+    pha0 = er3t.pre.pha.pha_mie_wc(wavelength=wavelength)
+    sca  = er3t.rtm.mca.mca_sca(pha_obj=pha0, fname='%s/mca_sca.bin' % fdir, overwrite=overwrite)
+    #╰────────────────────────────────────────────────────────────────────────────╯#
+
+
+    # define mcarats 1d and 3d "atmosphere", can represent aersol, cloud, atmosphere
+    #╭────────────────────────────────────────────────────────────────────────────╮#
+    # inhomogeneous 3d mcarats "atmosphere"
+    atm3d0  = er3t.rtm.mca.mca_atm_3d(cld_obj=cld0, atm_obj=atm0, pha_obj=pha0, fname='%s/mca_atm_3d.bin' % fdir, overwrite=overwrite)
+    # data can be accessed at
+    #     atm3d0.nml['Atm_nx']['data']
+    #     atm3d0.nml['Atm_ny']['data']
+    #     atm3d0.nml['Atm_dx']['data']
+    #     atm3d0.nml['Atm_dy']['data']
+    #     atm3d0.nml['Atm_nz3']['data']
+    #     atm3d0.nml['Atm_iz3l']['data']
+    #     atm3d0.nml['Atm_tmpa3d']['data']
+    #     atm3d0.nml['Atm_abst3d']['data']
+    #     atm3d0.nml['Atm_extp3d']['data']
+    #     atm3d0.nml['Atm_omgp3d']['data']
+    #     atm3d0.nml['Atm_apfp3d']['data']
+
+    # homogeneous 1d mcarats "atmosphere"
+    atm1d0  = er3t.rtm.mca.mca_atm_1d(atm_obj=atm0, abs_obj=abs0)
+    # data can be accessed at
+    #     atm1d0.nml[ig]['Atm_zgrd0']['data']
+    #     atm1d0.nml[ig]['Atm_wkd0']['data']
+    #     atm1d0.nml[ig]['Atm_mtprof']['data']
+    #     atm1d0.nml[ig]['Atm_tmp1d']['data']
+    #     atm1d0.nml[ig]['Atm_nkd']['data']
+    #     atm1d0.nml[ig]['Atm_nz']['data']
+    #     atm1d0.nml[ig]['Atm_ext1d']['data']
+    #     atm1d0.nml[ig]['Atm_abs1d']['data']
+    #     atm1d0.nml[ig]['Atm_omg1d']['data']
+    #     atm1d0.nml[ig]['Atm_apf1d']['data']
+
+
+    # make them into python list, can contain more than one 1d or 3d mcarats "atmosphere"
+    atm_1ds   = [atm1d0]
+    atm_3ds   = [atm3d0]
+    #╰────────────────────────────────────────────────────────────────────────────╯#
+
+
+    # define mcarats object
+    #╭────────────────────────────────────────────────────────────────────────────╮#
+    # run mcarats
+    mca0 = er3t.rtm.mca.mcarats_ng(
+            date=datetime.datetime(2017, 8, 13),
+            atm_1ds=atm_1ds,
+            atm_3ds=atm_3ds,
+            Ng=abs0.Ng,
+            target='radiance',
+            surface_albedo=0.03,
+            sca=sca,
+            solar_zenith_angle=30.0,
+            solar_azimuth_angle=45.0,
+            sensor_zenith_angle=0.0,
+            sensor_azimuth_angle=0.0,
+            sensor_altitude=19000.0,
+            fdir='%s/%4.4d/rad_%s' % (fdir, wavelength, solver.lower()),
+            Nrun=3,
+            photons=photons,
+            weights=abs0.coef['weight']['data'],
+            solver=solver,
+            Ncpu=Ncpu,
+            mp_mode='py',
+            overwrite=overwrite
+            )
+
+    # data can be accessed at
+    #     mca0.Nrun
+    #     mca0.Ng
+    #     mca0.nml         (Nrun, Ng), e.g., mca0.nml[0][0], namelist for the first g of the first run
+    #     mca0.fnames_inp  (Nrun, Ng), e.g., mca0.fnames_inp[0][0], input file name for the first g of the first run
+    #     mca0.fnames_out  (Nrun, Ng), e.g., mca0.fnames_out[0][0], output file name for the first g of the first run
+    #╰────────────────────────────────────────────────────────────────────────────╯#
+
+
+    # define mcarats output object
+    #╭────────────────────────────────────────────────────────────────────────────╮#
+    # read mcarats output files (binary) and save the data into h5 file
+    # The mode can be specified as 'all', 'mean', 'std', if 'all' is specified, the data will have last
+    # dimension of number of runs
+    # e.g.,
+    # out0 = mca_out_ng(fname='mca-out-rad-3d_les.h5', mca_obj=mca0, abs_obj=abs0, mode='mean', squeeze=True, verbose=True, overwrite=True)
+    # out0 = mca_out_ng(fname='mca-out-rad-3d_les.h5', mca_obj=mca0, abs_obj=abs0, mode='std' , squeeze=True, verbose=True, overwrite=True)
+    # out0 = mca_out_ng(fname='mca-out-rad-3d_les.h5', mca_obj=mca0, abs_obj=abs0, mode='all' , squeeze=True, verbose=True, overwrite=True)
+
+    fname_h5 = '%s/mca-out-rad-%s_%s.h5' % (fdir, solver.lower(), _metadata['Function'])
+    out0 = er3t.rtm.mca.mca_out_ng(fname=fname_h5, mca_obj=mca0, abs_obj=abs0, mode='mean', squeeze=True, verbose=True, overwrite=overwrite)
+
+    # data can be accessed at
+    #     out0.data['rad']['data']
+    #╰────────────────────────────────────────────────────────────────────────────╯#
+
+
+    # plot
+    #╭────────────────────────────────────────────────────────────────────────────╮#
+    if plot:
+        fname_png = '%s-%s_%s.png' % (name_tag, _metadata['Function'], solver.lower())
+
+        fig = plt.figure(figsize=(8, 6))
+        ax1 = fig.add_subplot(111)
+        cs = ax1.imshow(np.transpose(out0.data['rad']['data']), cmap='Greys_r', vmin=0.0, vmax=0.3, origin='lower')
+        ax1.set_xlabel('X Index')
+        ax1.set_ylabel('Y Index')
+        ax1.set_title('Radiance at %.2f nm (%s Mode)' % (wavelength, solver))
+        plt.savefig(fname_png, bbox_inches='tight')
+        plt.close(fig)
+    #╰────────────────────────────────────────────────────────────────────────────╯#
+
+    # References
+    #╭────────────────────────────────────────────────────────────────────────────╮#
+    er3t.util.print_reference()
+    #╰────────────────────────────────────────────────────────────────────────────╯#
+
+
+
 if __name__ == '__main__':
 
     fname = 'tmp-data/shdom-out_les.txt'
 
-    os.system('diff data/shdom-out_les.txt %s' % fname)
+    # os.system('diff data/shdom-out_les.txt %s' % fname)
 
-    figure_les(fname)
+    # figure_les(fname)
+    figure_les_comp(fname)
 
+    # example_07_rad_les_cloud_3d()
     pass
