@@ -139,7 +139,7 @@ def figure_les_comp(fname):
 
     data = get_data_shdom_out_txt(fname)
 
-    fname = '/Users/hchen/Work/mygit/er3t/examples/tmp-data/00_er3t_mca/example_07_rad_les_cloud_3d/mca-out-rad-3d_example_07_rad_les_cloud_3d.h5'
+    fname = '/Users/hchen/Work/mygit/er3t/examples/tmp-data/00_er3t_mca/run_mcarats/mca-out-rad-3d_example_07_rad_les_cloud_3d.h5'
     f = h5py.File(fname, 'r')
     data_ = f['mean/rad'][...].T
     f.close()
