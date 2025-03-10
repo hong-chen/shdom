@@ -82,7 +82,7 @@ if ($MakePropertyFile) then
 
   set Nzother=6
 
-  set ZTother=(0.0 286.3  0.200 285.1  0.4125 283.8  0.8375 287.0 5.0 260.0  20.0 180.0)
+  set ZTother=(0.0 286.3  5.0 285.1  6.0 283.8  8.0 287.0 12.0 260.0  20.0 180.0)
 
   set polout=U
 
