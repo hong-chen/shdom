@@ -190,7 +190,7 @@ def figure_les_comp(fname):
 
 
 
-def example_07_rad_les_cloud_3d(
+def run_mcarats(
         wavelength=650.0,
         solver='3D',
         overwrite=True,
@@ -215,7 +215,7 @@ def example_07_rad_les_cloud_3d(
     # define an atmosphere object
     #╭────────────────────────────────────────────────────────────────────────────╮#
     # levels: altitude of the layer interface in km, here, levels will be 0.0, 1.0, 2.0, ...., 20.0
-    levels    = np.linspace(0.0, 20.0, 11)
+    levels    = np.linspace(0.0, 20.0, 21)
 
     # file name of the pickle file for atmosphere
     fname_atm = '%s/atm.pk' % fdir
@@ -414,7 +414,7 @@ if __name__ == '__main__':
     # os.system('diff data/shdom-out_les.txt %s' % fname)
 
     # figure_les(fname)
-    figure_les_comp(fname)
+    # figure_les_comp(fname)
 
-    # example_07_rad_les_cloud_3d()
+    run_mcarats()
     pass
