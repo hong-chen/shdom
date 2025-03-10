@@ -260,9 +260,9 @@ def gen_clear_sky(
     abs0 = er3t.pre.abs.abs_rep(wavelength=wavelength, fname=fname_abs, target='modis', band_name='modis_aqua_b01', atm_obj=atm0, overwrite=overwrite)
     #╰────────────────────────────────────────────────────────────────────────────╯#
 
-    gen_atm_file_1d(atm0)
+    # gen_atm_file_1d(atm0)
 
-    # gen_ckd_file(atm0, abs0)
+    gen_ckd_file(atm0, abs0)
 
 if __name__ == '__main__':
 

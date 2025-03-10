@@ -2,8 +2,8 @@
  RUNNAME = 'LES'
  PROPFILE = 'tmp-data/shdom-prp_les.txt'
  SFCFILE = 'NONE'
- CKDFILE = '/Users/hchen/Work/mygit/shdom/data/shdom-ckd_modis-aqua-b01.txt'
- !CKDFILE = 'NONE'
+ !CKDFILE = '/Users/hchen/Work/mygit/shdom/data/shdom-ckd_modis-aqua-b01.txt'
+ CKDFILE = 'NONE'
  INSAVEFILE = 'NONE'
  OUTSAVEFILE ='NONE'
  NSTOKES = 1
