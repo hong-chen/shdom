@@ -135,88 +135,6 @@ def figure_les(fname):
             #╰────────────────────────────────────────────────────────────────────────────╯#
 
 
-def figure_les_comp(fname):
-
-    data = get_data_shdom_out_txt(fname)
-
-    if ('les-ckd' in fname) or ('les-crk' in fname):
-        tag_shd = '3D w. CKD'
-        tag_mca = '3D w. CKD'
-        fname_mca = '/Users/hchen/Work/mygit/er3t/examples/tmp-data/00_er3t_mca/run_mcarats/mca-out-rad-3d_run_mcarats.h5'
-    elif 'les-nockd' in fname:
-        tag_shd = '3D w.o. CKD'
-        tag_mca = '3D w. CKD'
-        fname_mca = '/Users/hchen/Work/mygit/er3t/examples/tmp-data/00_er3t_mca/run_mcarats/mca-out-rad-3d_run_mcarats.h5'
-    elif 'les-ipa' in fname:
-        tag_shd = 'IPA w. CKD'
-        tag_mca = 'IPA w. CKD'
-        fname_mca = '/Users/hchen/Work/mygit/er3t/examples/tmp-data/00_er3t_mca/run_mcarats/mca-out-rad-ipa_run_mcarats.h5'
-
-    f = h5py.File(fname_mca, 'r')
-    data_mca = f['mean/rad'][...].T
-    f.close()
-
-    for i in range(data.shape[0]):
-        for j in range(data.shape[1]):
-
-            data_shd = np.squeeze(data[i, j, ...])
-
-            # figure
-            #╭────────────────────────────────────────────────────────────────────────────╮#
-            plot = True
-            extent = [0, 48, 0, 48]
-            if plot:
-                plt.close('all')
-                fig = plt.figure(figsize=(24, 8))
-                # plot1
-                #╭──────────────────────────────────────────────────────────────╮#
-                ax1 = fig.add_subplot(131, aspect='equal')
-                cs = ax1.imshow(data_shd, origin='lower', cmap='Greys_r', zorder=0, aspect='equal', vmin=0.0, vmax=0.25, extent=extent)
-                ax1.set_title('SHDOM (%s)' % tag_shd)
-
-                divider = make_axes_locatable(ax1)
-                cax = divider.append_axes('right', '5%', pad='3%')
-                cbar = fig.colorbar(cs, cax=cax)
-
-                # ax2 = fig.add_subplot(132, aspect='equal')
-                # cs = ax2.scatter(data_mca, data_shd, s=1)
-                ax2 = fig.add_subplot(132, aspect='equal')
-                cs = ax2.imshow((data_shd-data_mca), origin='lower', cmap='seismic', zorder=0, aspect='equal', vmin=-0.1, vmax=0.1, extent=extent)
-                ax2.set_title('SHDOM - MCARaTS')
-
-                divider = make_axes_locatable(ax2)
-                cax = divider.append_axes('right', '5%', pad='3%')
-                cbar = fig.colorbar(cs, cax=cax)
-
-
-                ax3 = fig.add_subplot(133, aspect='equal')
-                cs = ax3.imshow(data_mca, origin='lower', cmap='Greys_r', zorder=0, aspect='equal', vmin=0.0, vmax=0.25, extent=extent)
-                ax3.set_title('MCARaTS (%s)' % tag_mca)
-
-                divider = make_axes_locatable(ax3)
-                cax = divider.append_axes('right', '5%', pad='3%')
-                cbar = fig.colorbar(cs, cax=cax)
-
-                # ax1.scatter(data_mca, data_shd, s=1)
-                # ax2.set_xlim((0.0, 0.3))
-                # ax2.set_ylim((0.0, 0.3))
-                ax1.axis('off')
-                ax2.axis('off')
-                ax3.axis('off')
-                #╰──────────────────────────────────────────────────────────────╯#
-                # save figure
-                #╭──────────────────────────────────────────────────────────────╮#
-                fig.subplots_adjust(hspace=0.35, wspace=0.35)
-                _metadata_ = {'Computer': os.uname()[1], 'Script': os.path.abspath(__file__), 'Function':sys._getframe().f_code.co_name, 'Date':datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}
-                fname_fig = '%s_%2.2d_%2.2d.png' % (_metadata_['Function'], i, j)
-                plt.savefig(fname_fig, bbox_inches='tight', metadata=_metadata_, transparent=False, pad_inches=0.0)
-                #╰──────────────────────────────────────────────────────────────╯#
-                plt.show()
-                sys.exit()
-                plt.close(fig)
-                plt.clf()
-            #╰────────────────────────────────────────────────────────────────────────────╯#
-
 
 def run_mcarats(
         wavelength=650.0,
@@ -623,13 +541,125 @@ def figure_lwc_shd():
         plt.clf()
     #╰────────────────────────────────────────────────────────────────────────────╯#
 
+def figure_les_comp(fname):
+
+    data = get_data_shdom_out_txt(fname)
+
+    if ('les-ckd' in fname) or ('les-crk' in fname):
+        tag_shd = '3D'
+        tag_mca = '3D'
+        fname_mca = '/Users/hchen/Work/mygit/er3t/examples/tmp-data/00_er3t_mca/run_mcarats/mca-out-rad-3d_run_mcarats.h5'
+    elif 'les-nockd' in fname:
+        tag_shd = '3D w.o. CKD'
+        tag_mca = '3D w. CKD'
+        fname_mca = '/Users/hchen/Work/mygit/er3t/examples/tmp-data/00_er3t_mca/run_mcarats/mca-out-rad-3d_run_mcarats.h5'
+    elif 'les-ipa' in fname:
+        tag_shd = 'IPA'
+        tag_mca = 'IPA'
+        fname_mca = '/Users/hchen/Work/mygit/er3t/examples/tmp-data/00_er3t_mca/run_mcarats/mca-out-rad-ipa_run_mcarats.h5'
+
+    f = h5py.File(fname_mca, 'r')
+    data_mca = f['mean/rad'][...].T
+    f.close()
+
+    for i in range(data.shape[0]):
+        for j in range(data.shape[1]):
+
+            data_shd = np.squeeze(data[i, j, ...])
+
+            # figure
+            #╭────────────────────────────────────────────────────────────────────────────╮#
+            plot = True
+            extent = [0, 48, 0, 48]
+            if plot:
+                plt.close('all')
+                fig = plt.figure(figsize=(14, 14))
+                fig.suptitle(tag_shd)
+                # plot1
+                #╭──────────────────────────────────────────────────────────────╮#
+                ax1 = fig.add_subplot(221, aspect='equal')
+                cs = ax1.imshow(data_shd, origin='lower', cmap='Greys_r', zorder=0, aspect='equal', vmin=0.0, vmax=0.25, extent=extent)
+                # ax1.set_title('SHDOM (%s)' % tag_shd)
+                ax1.set_title('SHDOM')
+
+                divider = make_axes_locatable(ax1)
+                cax = divider.append_axes('right', '5%', pad='3%')
+                cbar = fig.colorbar(cs, cax=cax)
+
+                ax2 = fig.add_subplot(222, aspect='equal')
+                cs = ax2.imshow((data_shd-data_mca), origin='lower', cmap='seismic', zorder=0, aspect='equal', vmin=-0.1, vmax=0.1, extent=extent)
+                ax2.set_title('SHDOM - MCARaTS')
+
+                divider = make_axes_locatable(ax2)
+                cax = divider.append_axes('right', '5%', pad='3%')
+                cbar = fig.colorbar(cs, cax=cax)
+
+
+                ax3 = fig.add_subplot(223, aspect='equal')
+                cs = ax3.imshow(data_mca, origin='lower', cmap='Greys_r', zorder=0, aspect='equal', vmin=0.0, vmax=0.25, extent=extent)
+                # ax3.set_title('MCARaTS (%s)' % tag_mca)
+                ax3.set_title('MCARaTS')
+
+                divider = make_axes_locatable(ax3)
+                cax = divider.append_axes('right', '5%', pad='3%')
+                cbar = fig.colorbar(cs, cax=cax)
+
+                ax4 = fig.add_subplot(224, aspect='equal')
+
+                # heatmap
+                #╭──────────────────────────────────────────────────────────────╮#
+                data_x = data_mca.copy()
+                data_y = data_shd.copy()
+                xedge = np.linspace(0.0, 0.5, 51)
+                yedge = np.linspace(0.0, 0.5, 51)
+                heatmap, xedge, yedge = np.histogram2d(data_x.ravel(), data_y.ravel(), bins=(xedge, yedge))
+                extent = [xedge[0], xedge[-1], yedge[0], yedge[-1]]
+                x = (xedge[:-1]+xedge[1:]) / 2.0
+                y = (yedge[:-1]+yedge[1:]) / 2.0
+                xx, yy = np.meshgrid(x, y, indexing='ij')
+                levels = np.linspace(0, 200, 201)
+                cmap = mpl.colormaps['jet']
+                cmap.set_under('white')
+                cs = ax4.contourf(xx, yy, heatmap, levels, extent=extent, extend='both', cmap=cmap, zorder=0)
+                ax4.plot(extent[:2], extent[2:], color='gray', ls='--', lw=1.5)
+                ax4.set_xlim(extent[:2])
+                ax4.set_ylim(extent[2:])
+                ax4.set_title('Heatmap')
+                ax4.plot([0.0, 1.0], [0.0, 1.0], color='gray', ls='--')
+                ax4.set_xlabel('MCARaTS')
+                ax4.set_ylabel('SHDOM')
+                divider = make_axes_locatable(ax4)
+                cax = divider.append_axes('right', '5%', pad='3%')
+                cbar = fig.colorbar(cs, cax=cax)
+                #╰──────────────────────────────────────────────────────────────╯#
+
+
+                # ax1.scatter(data_mca, data_shd, s=1)
+                # ax2.set_xlim((0.0, 0.3))
+                # ax2.set_ylim((0.0, 0.3))
+                ax1.axis('off')
+                ax2.axis('off')
+                ax3.axis('off')
+                #╰──────────────────────────────────────────────────────────────╯#
+                # save figure
+                #╭──────────────────────────────────────────────────────────────╮#
+                fig.subplots_adjust(hspace=0.35, wspace=0.35)
+                _metadata_ = {'Computer': os.uname()[1], 'Script': os.path.abspath(__file__), 'Function':sys._getframe().f_code.co_name, 'Date':datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}
+                fname_fig = '%s_%2.2d_%2.2d.png' % (_metadata_['Function'], i, j)
+                plt.savefig(fname_fig, bbox_inches='tight', metadata=_metadata_, transparent=False, pad_inches=0.0)
+                #╰──────────────────────────────────────────────────────────────╯#
+                plt.show()
+                sys.exit()
+                plt.close(fig)
+                plt.clf()
+            #╰────────────────────────────────────────────────────────────────────────────╯#
+
 
 
 if __name__ == '__main__':
 
     # fname = 'tmp-data/shdom-out_les-nockd.txt'
-    # fname = 'tmp-data/shdom-out_les-ckd.txt'
-    fname = 'tmp-data/shdom-out_les-crk.txt'
+    fname = 'tmp-data/shdom-out_les-ckd.txt'
     # fname = 'tmp-data/shdom-out_les-ipa.txt'
 
     # figure_les(fname)
