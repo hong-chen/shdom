@@ -148,7 +148,7 @@ def gen_ckd_file(atm0, abs0):
 
     Nband = 1
 
-    with open('data/modis_aqua_b01_shdom-ckd.txt', 'w') as f:
+    with open('data/shdom-ckd_modis-aqua-b01.txt', 'w') as f:
         f.write('! Correlated k-dist file: Aqua MODIS Band-1\n')
         f.write('%d ! number of bands\n' % 1)
         f.write('! Band# | Wave#1 | Wave#2 | SolFlx | Ng | g1 | g2 | ...\n')
@@ -166,7 +166,7 @@ def gen_ckd_file(atm0, abs0):
         for iband in range(Nband):
             f.write('%d %.1f %.1f %.4f %d %s\n' % (iband+1, wvln_min, wvln_max, sol, Ng, g))
 
-        f.write('%d ! Number of levels\n' % abs0.atm0.lay['altitude']['data'].size)
+        f.write('%d\n' % atm0.lay['altitude']['data'].size)
 
         f.write('!\n')
         f.write('! Alt [km] | Pres [mb] | Temp [K]\n')
@@ -176,10 +176,11 @@ def gen_ckd_file(atm0, abs0):
         pres = atm0.lay['pressure']['data'][::-1]
 
         indices_sort = np.argsort(abs0.coef['weight']['data'])
-        kabs = abs0.coef['abso_coef']['data'][::-1, indices_sort] * 1000.0
+        kabs = abs0.coef['abso_coef']['data'][::-1, indices_sort]
 
         for j in range(alt.size):
-            f.write('%.3f %.1f %.1f\n' % (alt[j], pres[j], temp[j]))
+            # f.write('%.3f %.1f %.1f\n' % (alt[j], pres[j], temp[j]))
+            f.write('%.3f\n' % (alt[j]))
 
         f.write('! iBand | iLay | AbsCoef [km^-1]\n')
 
@@ -232,7 +233,6 @@ def gen_atm_file_1d(atm0):
     #   ${put_exe} 0  $parfile  $maxnewphase $asymtol $fracphasetol \
     #       $wavelen $sfcpres $Nzother $ZTother $polout $prpfile \
     #     | ${propgen_exe}| tail -3
-
 
 def gen_clear_sky(
         wavelength=650.0,
