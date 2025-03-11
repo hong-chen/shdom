@@ -149,7 +149,6 @@ def gen_prop_1d(
     command = '%s '
     pass
 
-
 def gen_ckd_file(atm0, abs0):
 
     Nband = 1
@@ -270,9 +269,89 @@ def gen_clear_sky(
 
     gen_ckd_file(atm0, abs0)
 
+
+
+
+def convert_mie():
+
+    """
+    subroutine WRITE_MIE_TABLE(MIETABFILE, POLTAB, WAVELEN1, WAVELEN2, DELTAWAVE,&
+        & PARTYPE, PARDENS, RINDEX,&
+        & DISTFLAG, ALPHA, GAMMA, NRETAB, SRETAB, ERETAB, LOGRE,&
+        & EXTINCT, SSALB, MAXRANK, NRANK, WIGCOEF)
+        ! Writes the table of Mie scattering properties as a function of
+        ! effective radius.  There are two types of tables output:
+        ! unpolarized with Legendre (Wigner d_l_00) series of a single phase
+        ! matrix element (P11) or polarized with six Wigner d-function series
+        ! of the Mie phase matrix elements.
+        implicit none
+        integer, intent(IN) :: NRETAB, MAXRANK, NRANK(NRETAB)
+        logical, intent(IN) :: POLTAB, LOGRE
+        complex, intent(IN) :: RINDEX
+        real, intent(IN) :: WAVELEN1, WAVELEN2, DELTAWAVE
+        real, intent(IN) :: PARDENS, SRETAB, ERETAB, ALPHA, GAMMA
+        real, intent(IN) :: EXTINCT(NRETAB), SSALB(NRETAB)
+        real, intent(IN) :: WIGCOEF(6, 0:MAXRANK, NRETAB)
+        character(LEN=1), intent(IN) :: PARTYPE, DISTFLAG
+        character(LEN=256), intent(IN) :: MIETABFILE
+        integer :: I, J, JP, K, L, NL, NPHASEPOL
+        real REFF
+
+        open (UNIT=3, FILE=trim(adjustl(MIETABFILE)), STATUS='REPLACE')
+        if (POLTAB) then
+            NPHASEPOL = 6
+            write (3, '(A)') '! Polarized Mie scattering table vs. effective radius (LWC=1 g/m^3)'
+        else
+            NPHASEPOL = 1
+            write (3, '(A)') '! Mie scattering table vs. effective radius (LWC=1 g/m^3)'
+        end if
+        if (DELTAWAVE < 0.0) then
+            write (3, '(2(1X,F8.3),A)') WAVELEN1, WAVELEN2, '  wavelength range (micron)'
+        else
+            write (3, '(3(1X,F8.3),A)') WAVELEN1, WAVELEN2, DELTAWAVE, '  wavelength range and averaging step (micron)'
+        end if
+        write (3, '(1X,F5.3,2X,A1,A)') PARDENS, PARTYPE, '   particle density (g/cm^3) and type (Water, Ice, Aerosol)'
+        write (3, '(2(1X,E13.6),A)') RINDEX, '  particle index of refraction'
+        if (DISTFLAG == 'L') then
+            write (3, '(F7.5,A)') ALPHA, '  lognormal log standard deviation'
+        else if (DISTFLAG == 'G') then
+            write (3, '(F7.5,A)') ALPHA, ' gamma size distribution shape parameter'
+        else if (DISTFLAG == 'M') then
+            write (3, '(2(1X,F7.5),A)') ALPHA, GAMMA, ' modified gamma size distribution shape parameters'
+        end if
+        write (3, '(1X,I3,2(1X,F8.3),A)') NRETAB, SRETAB, ERETAB,&
+            & '  number, starting, ending effective radius'
+
+        do I = 1, NRETAB
+            if (NRETAB <= 1) then
+                REFF = SRETAB
+            else if (LOGRE) then
+                REFF = exp((log(ERETAB) - log(SRETAB))*FLOAT(I - 1)/(NRETAB - 1) + log(SRETAB))
+            else
+                REFF = (ERETAB - SRETAB)*FLOAT(I - 1)/(NRETAB - 1) + SRETAB
+            end if
+            write (3, '(1X,F8.4,1X,E12.5,1X,F8.6,1X,I6,A)')&
+                & REFF, EXTINCT(I), SSALB(I), NRANK(I), '  Reff  Ext  Alb  Nrank'
+            do J = 1, NPHASEPOL
+                if (POLTAB) then
+                    write (3, '(I1,1X,201(1X,F10.5))') J, (WIGCOEF(J, L, I), L=0, min(NRANK(I), 200))
+                else
+                    write (3, '(2X,201(1X,F10.5))') (WIGCOEF(J, L, I), L=0, min(NRANK(I), 200))
+                end if
+                do K = 200, NRANK(I) - 1, 200
+                    write (3, '(2X,200(1X,F10.5))') (WIGCOEF(J, K + L, I), L=1, min(200, NRANK(I) - K))
+                end do
+            end do
+        end do
+        close (3)
+    end subroutine WRITE_MIE_TABLE
+    """
+
+    pass
+
 if __name__ == '__main__':
 
-    gen_two_params_lwc_file(overwrite=False)
+    # gen_two_params_lwc_file(overwrite=False)
     # gen_clear_sky()
 
     pass
