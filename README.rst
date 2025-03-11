@@ -51,7 +51,9 @@ How to Install
 
    Once the ``shdom`` is successfully compiled, the following executables will be generated
 
-   * ``bin/shdom``
+   * ``bin/shdom`` (namelist input)
+
+   * ``bin/_shdom`` (user input)
 
    * ``bin/propgen``
 
@@ -114,15 +116,13 @@ Source Code File Change
 * ``src/makefile``: was ``makefile``
 
   * added ``-fallow-argument-mismatc`` to ``FFLAGS``
-
   * added ``clean`` option for ``make``
-
   * changed the module names accordingly
+  * added ``_shdom`` for ``make``
 
 * ``src/shdom.f90``: was ``shdom.f90``
 
   * formatted the code
-
   * changed the default from ``user_input`` to ``namelist_input``
 
 * ``src/shdom_mpi.f90``: was ``shdom_mpi.f90``
@@ -208,4 +208,4 @@ Other Resources
 
 * `SHDOM <https://coloradolinux.com/shdom/>`_: legacy SHDOM
 
-* `AT3D <https://github.com/CloudTomography/AT3D>`_: a Python-based SHDOM tailored towards cloud tomography applications
+* `AT3D <https://github.com/CloudTomography/AT3D>`_: a Python-interfaced SHDOM tailored towards cloud tomography applications
