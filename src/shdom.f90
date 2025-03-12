@@ -2,13 +2,13 @@
 !      See shdom.txt for documentation.
 
 module SHDOM_PROPERTY_ARRAYS
-    integer, save              :: NPX, NPY, NPZ, NUMPHASE
-    real, save              :: DELX, DELY, XSTART, YSTART
+    integer, save :: NPX, NPY, NPZ, NUMPHASE
+    real, save    :: DELX, DELY, XSTART, YSTART
     real, save, allocatable :: ZLEVELS(:)
     real, save, allocatable :: TEMPP(:), EXTINCTP(:), ALBEDOP(:)
     real, save, allocatable :: LEGENP(:), EXTDIRP(:)
     integer*2, save, allocatable :: IPHASEP(:)
-    integer, save              :: NZCKD
+    integer, save :: NZCKD
     real, save, allocatable :: ZCKD(:), GASABS(:)
 end module
 
@@ -18,8 +18,8 @@ program SHDOM
     implicit none
     ! Number of output files and inputs parameter per file
     integer, parameter :: MAXOUT = 20, MAXPAR = 500
-    real                 :: OUTPARMS(MAXPAR, MAXOUT)
-    character            :: OUTTYPES(MAXOUT)*1, OUTFILES(MAXOUT)*256
+    real      :: OUTPARMS(MAXPAR, MAXOUT)
+    character :: OUTTYPES(MAXOUT)*1, OUTFILES(MAXOUT)*256
 
     real, allocatable :: DELG(:), KABS(:, :)
     real, allocatable :: XGRID(:), YGRID(:), ZGRID(:)
@@ -54,36 +54,36 @@ program SHDOM
     integer :: MAXLEG, MAXPGL, MAXIGL
     integer :: MAXNBC, MAXBCRAD
     integer :: MAXSFCPTS, MAXSFCPARS, BIG_ARRAYS
-    real    :: MEMWORD, WANTMEM
-    real    :: MAX_TOTAL_MB, ADAPT_GRID_FACTOR
-    real    :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
-    real    :: MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
+    real :: MEMWORD, WANTMEM
+    real :: MAX_TOTAL_MB, ADAPT_GRID_FACTOR
+    real :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
+    real :: MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
 
-    integer NSTOKES, NX, NY, NZ, NX1, NY1
-    integer NXT, NYT, NPXT, NPYT, MAXPGT, MAXPGLT
-    integer NXSFC, NYSFC, NSFCPAR, NTOPPTS, NBOTPTS
-    integer NG, SIDE
-    integer ML, MM, NLM, NSTLEG, NLEG, NANG, NMU, NPHI, NPHI0MAX
-    integer NBPTS, NPTS, NCELLS, NSH, NBCELLS, OLDNPTS
-    integer MAXITER, ITER, TOTITER, IG, I, NUMOUT, BCFLAG, IPFLAG
-    integer NRAD, IRAD, NXOUT, NYOUT, NVIS, IVIS, NSCAN, NPIX, NSHOUT
-    integer NCELLSTOT, NPTSTOT, NSHTOT
-    logical KDIST, INRADFLAG, NEWGRIDFLAG, DELTAM, ACCELFLAG
-    logical BASEOUT, HIGHORDERRAD, MASTERPROC, VALIDBEAM, BTEST
-    logical RADIANCE_OUT, VISUAL_OUT
-    logical FLUX_OUT, FLUXDIV_OUT, SH_OUT, SOURCE_OUT
-    real SOLARFLUX, SOLARMU, SOLARAZ, SOLFLUX
-    real GNDTEMP, GNDALBEDO, SKYRAD, WAVENO(2), WAVELEN
-    real SOLACC, SOLCRIT, SPLITACC, SHACC
-    real DELXSFC, DELYSFC, MAXASYM, REDUCE
-    real MUOUT, PHIOUT
-    real UNIFZLEV, XO, YO, ZO, DIRPATH
-    real CPUTIME1, CPUTIME2, CPUTIMETOTAL, SUM_CPU_TIME
-    character SRCTYPE*1, UNITS*1
-    character GRIDTYPE*1, PROPTYPE*1, SFCTYPE*2
-    character*256 PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
-    character*256 OutFileNC, RUNNAME
-    external SUM_CPU_TIME
+    integer :: NSTOKES, NX, NY, NZ, NX1, NY1
+    integer :: NXT, NYT, NPXT, NPYT, MAXPGT, MAXPGLT
+    integer :: NXSFC, NYSFC, NSFCPAR, NTOPPTS, NBOTPTS
+    integer :: NG, SIDE
+    integer :: ML, MM, NLM, NSTLEG, NLEG, NANG, NMU, NPHI, NPHI0MAX
+    integer :: NBPTS, NPTS, NCELLS, NSH, NBCELLS, OLDNPTS
+    integer :: MAXITER, ITER, TOTITER, IG, I, NUMOUT, BCFLAG, IPFLAG
+    integer :: NRAD, IRAD, NXOUT, NYOUT, NVIS, IVIS, NSCAN, NPIX, NSHOUT
+    integer :: NCELLSTOT, NPTSTOT, NSHTOT
+    logical :: KDIST, INRADFLAG, NEWGRIDFLAG, DELTAM, ACCELFLAG
+    logical :: BASEOUT, HIGHORDERRAD, MASTERPROC, VALIDBEAM, BTEST
+    logical :: RADIANCE_OUT, VISUAL_OUT
+    logical :: FLUX_OUT, FLUXDIV_OUT, SH_OUT, SOURCE_OUT
+    real :: SOLARFLUX, SOLARMU, SOLARAZ, SOLFLUX
+    real :: GNDTEMP, GNDALBEDO, SKYRAD, WAVENO(2), WAVELEN
+    real :: SOLACC, SOLCRIT, SPLITACC, SHACC
+    real :: DELXSFC, DELYSFC, MAXASYM, REDUCE
+    real :: MUOUT, PHIOUT
+    real :: UNIFZLEV, XO, YO, ZO, DIRPATH
+    real :: CPUTIME1, CPUTIME2, CPUTIMETOTAL, SUM_CPU_TIME
+    character :: SRCTYPE*1, UNITS*1
+    character :: GRIDTYPE*1, PROPTYPE*1, SFCTYPE*2
+    character*256 :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
+    character*256 :: OutFileNC, RUNNAME
+    external :: SUM_CPU_TIME
 
     ! Choose the option to compute higher order radiance SH terms
     HIGHORDERRAD = .false.
