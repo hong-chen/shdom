@@ -2,7 +2,7 @@
  RUNNAME = 'Land'
  !PROPFILE = '/Users/hchen/Work/mygit/shdom/data/shdom-prp_atm-clear.txt'
  PROPFILE = 'tmp-data/les_prp.txt'
- SFCFILE = '/Users/hchen/Work/mygit/shdom/data/shdom-sfc_land.txt'
+ SFCFILE = '/Users/hchen/Work/mygit/shdom/data/shdom-sfc-lsrt_land.txt'
  CKDFILE = '/Users/hchen/Work/mygit/shdom/data/shdom-ckd_modis-aqua-b01.txt'
  INSAVEFILE = 'NONE'
  OUTSAVEFILE ='NONE'

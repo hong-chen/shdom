@@ -942,6 +942,9 @@ subroutine READ_SURFACE_SIZE(SFCFILE, MAXSFCPTS, MAXSFCPARS)
     else if (SFCTYPE .eq. 'VR') then
         ! Surface file type R is for RPV surface
         MAXSFCPARS = 4
+    else if (SFCTYPE .eq. 'VT') then
+        ! Surface file type T is for LSRT surface
+        MAXSFCPARS = 4
     else if (SFCTYPE .eq. 'VD') then
         ! Surface file type D is for Diner polarized RPV surface:
         MAXSFCPARS = 6
@@ -975,6 +978,7 @@ subroutine READ_SURFACE(&
     !   O  Ocean         Wind speed (m/s), Pigmentation (mg/m^3)
     !   D  Diner et al   a, k, b, zeta, sigma
     !   R  RPV           rho0, k, Theta
+    !   T  LSRT          f_iso, f_vol, f_geo
     !
     implicit none
     integer MAXSFCPTS, MAXSFCPARS, NXSFC, NYSFC, NSFCPAR
@@ -983,6 +987,7 @@ subroutine READ_SURFACE(&
     character SFCFILE*256, SFCTYPE*2
     integer N, I, I0, IX, IY, J
     real ALB, TEMP, MRE, MIM, RHO0, KR, THETA, WSPD, PCL
+    real F_ISO, F_VOL, F_GEO
     real A, B, ZETA, SIGMA
 
     ! Surface type is variable something
@@ -1089,6 +1094,28 @@ subroutine READ_SURFACE(&
                 SFCPARMS(I + 4) = THETA
                 GNDTEMP = GNDTEMP + TEMP
                 GNDALBEDO = GNDALBEDO + RHO0
+                N = N + 1
+            end if
+        end do
+
+    ! Surface file type T is for LSRT surface:
+    else if (SFCTYPE .eq. 'VT') then
+        NSFCPAR = 4
+        if (NSFCPAR .gt. MAXSFCPARS) then
+            write (*, *) 'READ_SURFACE: MAXSFCPARS exceeded'
+            stop
+        end if
+        do while (.true.)
+            read (1, *, end=290) IX, IY, TEMP, F_ISO, F_VOL, F_GEO
+            if (IX .ge. 1 .and. IX .le. NXSFC .and.&
+                & IY .ge. 1 .and. IY .le. NYSFC) then
+                I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
+                SFCPARMS(I + 1) = TEMP
+                SFCPARMS(I + 2) = F_ISO
+                SFCPARMS(I + 3) = F_VOL
+                SFCPARMS(I + 4) = F_GEO
+                GNDTEMP = GNDTEMP + TEMP
+                GNDALBEDO = GNDALBEDO + F_ISO
                 N = N + 1
             end if
         end do
