@@ -1,10 +1,4 @@
-module shdSurf
-
-  public :: shdSurf__surface_brdf
-
-contains
-
-  subroutine shdSurf__surface_brdf(SFCTYPE, REFPARMS, WAVELEN,&
+  subroutine SURFACE_BRDF(SFCTYPE, REFPARMS, WAVELEN,&
       &MU2, PHI2, MU1, PHI1, NSTOKES, REFLECT)
       !╭────────────────────────────────────────────────────────────────────────────╮!
       ! Returns the reflection matrix for the general bidirectional
@@ -32,7 +26,7 @@ contains
       integer :: K1, K2
       real    :: REFPARMS(*), WAVELEN, MU1, PHI1, MU2, PHI2, REFLECT(4, 4)
       real    :: PI
-      real    :: RPV_REFLECTION
+      real    :: RPV_REFLECTION, LSRT_REFLECTION
       character :: SFCTYPE*1
 
       PI = acos(-1.0)
@@ -457,22 +451,22 @@ contains
       !   MODIS BRDF/Albedo Product ATBD v5.0, equations 37-44
       !╰────────────────────────────────────────────────────────────────────────────╯!
 
-      real(8) :: PI, COS1, COS2, SIN1, SIN2, TAN1, TAN2, COS_PHI, SIN_PHI
-      real(8) :: F_ISO, F_GEO, F_VOL, MU1, MU2, PHI
-      real(8) :: K_GEO, K_VOL
-      real(8) :: XI, COS_XI, SIN_XI
-      real(8) :: B2R, H2B
-      real(8) :: THETA1_, COS1_, SIN1_, TAN1_, SEC1_
-      real(8) :: THETA2_, COS2_, SIN2_, TAN2_, SEC2_
-      real(8) :: COS_XI_, D_2, COS_T, SIN_T, T, O
+      real(4) :: PI, COS1, COS2, SIN1, SIN2, TAN1, TAN2, COS_PHI, SIN_PHI
+      real(4) :: F_ISO, F_GEO, F_VOL, MU1, MU2, PHI
+      real(4) :: K_GEO, K_VOL
+      real(4) :: XI, COS_XI, SIN_XI
+      real(4) :: B2R, H2B
+      real(4) :: THETA1_, COS1_, SIN1_, TAN1_, SEC1_
+      real(4) :: THETA2_, COS2_, SIN2_, TAN2_, SEC2_
+      real(4) :: COS_XI_, D_2, COS_T, SIN_T, T, O
 
       ! calculate trigonometry
       !╭────────────────────────────────────────────────╮!
-      PI = acos(-1.0_R)
+      PI = acos(-1.0)
       COS1 = MU1
       COS2 = MU2
-      SIN1 = sqrt(1.0_R - COS1**2)
-      SIN2 = sqrt(1.0_R - COS2**2)
+      SIN1 = sqrt(1.0 - COS1**2)
+      SIN2 = sqrt(1.0 - COS2**2)
       TAN1 = SIN1/COS1
       TAN2 = SIN2/COS2
       COS_PHI = cos(PHI)
@@ -482,38 +476,38 @@ contains
       ! K_VOL
       !╭────────────────────────────────────────────────╮!
       COS_XI = ((COS1*COS2)) + (SIN1*SIN2*COS_PHI)
-      SIN_XI = sqrt(1.0_R - COS_XI**2)
+      SIN_XI = sqrt(1.0 - COS_XI**2)
       XI = acos(COS_XI)
 
-      K_VOL = ((PI/2.0_R-XI)*COS_XI + SIN_XI)/(COS1+COS2) - (PI/4.0_R)
+      K_VOL = ((PI/2.0 - XI)*COS_XI + SIN_XI)/(COS1+COS2) - (PI/4.0)
       !╰────────────────────────────────────────────────╯!
 
       ! K_GEO
       !╭────────────────────────────────────────────────╮!
-      B2R = 1.0_R
-      H2B = 2.0_R
+      B2R = 1.0
+      H2B = 2.0
       THETA1_ = atan(B2R*TAN2)
       THETA2_ = atan(B2R*TAN1)
       COS1_ = cos(THETA1_)
       COS2_ = cos(THETA2_)
-      SIN1_ = sqrt(1.0_R - COS1_**2)
-      SIN2_ = sqrt(1.0_R - COS2_**2)
+      SIN1_ = sqrt(1.0 - COS1_**2)
+      SIN2_ = sqrt(1.0 - COS2_**2)
       TAN1_ = SIN1_/COS1_
       TAN2_ = SIN2_/COS2_
-      SEC1_ = 1.0_R/COS1_
-      SEC2_ = 1.0_R/COS2_
+      SEC1_ = 1.0/COS1_
+      SEC2_ = 1.0/COS2_
 
       COS_XI_ = COS1_*COS2_ + SIN1_*SIN2_*COS_PHI
 
-      D_2 = TAN1_**2 + TAN2_**2 - 2.0_R*TAN1_*TAN2_*COS_PHI
+      D_2 = TAN1_**2 + TAN2_**2 - 2.0*TAN1_*TAN2_*COS_PHI
 
       COS_T = H2B * (sqrt(D_2 + (TAN1_*TAN2_*SIN_PHI)**2))/(SEC1_ + SEC2_)
-      SIN_T = sqrt(1.0_R - COS_T**2)
+      SIN_T = sqrt(1.0 - COS_T**2)
       T = acos(COS_T)
 
-      O = (1.0_R/PI) * (T - SIN_T*COS_T) * (SEC1_ + SEC2_)
+      O = (1.0/PI) * (T - SIN_T*COS_T) * (SEC1_ + SEC2_)
 
-      K_GEO = O - SEC1_ - SEC2_ + 0.5_R*(1.0_R+COS_XI_)*SEC1_*SEC2_
+      K_GEO = O - SEC1_ - SEC2_ + 0.5*(1.0+COS_XI_)*SEC1_*SEC2_
       !╰────────────────────────────────────────────────╯!
 
       LSRT_REFLECTION = F_ISO + F_VOL*K_VOL + F_GEO*K_GEO
@@ -521,5 +515,3 @@ contains
       return
 
   end function
-
-end module shdSurf
