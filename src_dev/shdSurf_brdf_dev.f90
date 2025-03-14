@@ -443,7 +443,7 @@ contains
       return
   end function
 
-  real function LSRT_REFLECTION(F_ISO, F_GEO, F_VOL, MU1, MU2, PHI)
+  real function LSRT_REFLECTION(F_ISO, F_VOL, F_GEO, MU1, MU2, PHI)
       !╭────────────────────────────────────────────────────────────────────────────╮!
       !   Computes the RossLi BRDF.  The incident
       ! and outgoing cosine zenith angles are MU1 and MU2, respectively,
@@ -454,7 +454,7 @@ contains
       ! Code reference:
       !   https://github.com/vikasnataraja/sif-sat/blob/master/sifsat/kernels.py
       ! Formula reference:
-      !   MODIS BRDF/Albedo Product ATBD v5.0 equations 37-44
+      !   MODIS BRDF/Albedo Product ATBD v5.0, equations 37-44
       !╰────────────────────────────────────────────────────────────────────────────╯!
 
       real(8) :: PI, COS1, COS2, SIN1, SIN2, TAN1, TAN2, COS_PHI, SIN_PHI
@@ -484,6 +484,7 @@ contains
       COS_XI = ((COS1*COS2)) + (SIN1*SIN2*COS_PHI)
       SIN_XI = sqrt(1.0_R - COS_XI**2)
       XI = acos(COS_XI)
+
       K_VOL = ((PI/2.0_R-XI)*COS_XI + SIN_XI)/(COS1+COS2) - (PI/4.0_R)
       !╰────────────────────────────────────────────────╯!
 
