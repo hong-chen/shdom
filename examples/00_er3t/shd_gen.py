@@ -349,9 +349,45 @@ def convert_mie():
 
     pass
 
+
+def gen_sfc_lsrt_file(
+        wavelength=650.0,
+        solver='3D',
+        overwrite=False,
+        plot=True
+        ):
+
+    _metadata   = {'Computer': os.uname()[1], 'Script': os.path.abspath(__file__), 'Function':sys._getframe().f_code.co_name, 'Date':datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+    fdir='%s/tmp-data/%s/%s' % (fdir0, name_tag, _metadata['Function'])
+
+    if not os.path.exists(fdir):
+        os.makedirs(fdir)
+
+    # generate sfc_lanb.txt
+    #╭────────────────────────────────────────────────────────────────────────────╮#
+    f = h5py.File('/Users/hchen/Work/01_libera/06_mod-lrt-bmk/aux/surface_albedo_land.h5', 'r')
+    f_iso = f['fiso_659'][...]
+    f_geo = f['fgeo_659'][...]
+    f_vol = f['fvol_659'][...]
+    f.close()
+
+    Nx, Ny = f_iso.shape
+
+    with open('shdom-sfc-lsrt_land.txt', 'w') as f:
+        f.write('T\n')
+        f.write('%d %d %.4f %.4f\n' % (Nx, Ny, (48.0/Nx), (48.0/Ny)))
+        for ix in np.arange(Nx):
+            for iy in np.arange(Ny):
+                f.write('%d %d %.2f %.6f %.6f %.6f\n' % ((ix+1), (iy+1), 285.0, f_iso[ix, iy], f_vol[ix, iy], f_geo[ix, iy]))
+    #╰────────────────────────────────────────────────────────────────────────────╯#
+
+    return
+
+
 if __name__ == '__main__':
 
     # gen_two_params_lwc_file(overwrite=False)
     # gen_clear_sky()
+    gen_sfc_lsrt_file()
 
     pass
