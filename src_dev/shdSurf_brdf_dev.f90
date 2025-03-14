@@ -443,19 +443,77 @@ contains
       return
   end function
 
-  real function LSRT_REFLECTION(K_ISO, K_GEO, K_VOL, MU1, MU2, PHI)
+  real function LSRT_REFLECTION(F_ISO, F_GEO, F_VOL, MU1, MU2, PHI)
+      !╭────────────────────────────────────────────────────────────────────────────╮!
       !   Computes the RossLi BRDF.  The incident
       ! and outgoing cosine zenith angles are MU1 and MU2, respectively,
       ! and the relative azimuthal angle is PHI.  In this case the incident
       ! direction is where the radiation is coming from (i.e. opposite of
       ! discrete ordinate), so MU1>0 and the hot spot is MU2=MU1 and PHI=0
+      !╰────────────────────────────────────────────────────────────────────────────╯!
 
-      real :: K_ISO, K_GEO, K_VOL, MU1, MU2, PHI
-      real :: F_ISO, F_GEO, F_VOL
+      real(8) :: PI, COS1, COS2, SIN1, SIN2, TAN1, TAN2, COS_PHI, SIN_PHI
+      real(8) :: F_ISO, F_GEO, F_VOL, MU1, MU2, PHI
+      real(8) :: K_GEO, K_VOL
+      real(8) :: XI, COS_XI, SIN_XI
+      real(8) :: B2R, H2B
+      real(8) :: THETA1_, COS1_, SIN1_, TAN1_, SEC1_
+      real(8) :: THETA2_, COS2_, SIN2_, TAN2_, SEC2_
+      real(8) :: COS_XI_, D, COS_T, SIN_T, T, O
 
-      LSRT_REFLECTION = 0.0
+      ! calculate trigonometry
+      !╭────────────────────────────────────────────────╮!
+      PI = acos(-1.0_R)
+      COS1 = MU1
+      COS2 = MU2
+      SIN1 = sqrt(1.0_R - COS1**2)
+      SIN2 = sqrt(1.0_R - COS2**2)
+      TAN1 = SIN1/COS1
+      TAN2 = SIN2/COS2
+      COS_PHI = cos(PHI)
+      SIN_PHI = sin(PHI)
+      !╰────────────────────────────────────────────────╯!
+
+      ! K_VOL
+      !╭────────────────────────────────────────────────╮!
+      COS_XI = ((COS1*COS2)) + (SIN1*SIN2*COS_PHI)
+      SIN_XI = sqrt(1.0_R - COS_XI**2)
+      XI = acos(COS_XI)
+      K_VOL = ((PI/2.0_R-XI)*COS_XI + SIN_XI)/(COS1+COS2) - (PI/4.0_R)
+      !╰────────────────────────────────────────────────╯!
+
+      ! K_GEO
+      !╭────────────────────────────────────────────────╮!
+      B2R = 1.0_R
+      H2B = 2.0_R
+      THETA1_ = atan(B2R*TAN2)
+      THETA2_ = THETA1_ / (atan(B2R*TAN1))
+      COS1_ = cos(THETA1_)
+      COS2_ = cos(THETA2_)
+      SIN1_ = sqrt(1.0_R - COS1_**2)
+      SIN2_ = sqrt(1.0_R - COS2_**2)
+      TAN1_ = SIN1_/COS1_
+      TAN2_ = SIN2_/COS2_
+      SEC1_ = 1.0_R/COS1_
+      SEC2_ = 1.0_R/COS2_
+
+      COS_XI_ = COS1_*COS2_ + SIN1_*SIN2_*COS_PHI
+
+      D = sqrt(TAN1_**2 + TAN2_**2 - 2.0_R*TAN1_*TAN2_*COS_PHI)
+
+      COS_T = H2B * (sqrt(D**2 + (TAN1_*TAN2_*SIN_PHI)**2))/(SEC1_ + SEC2_)
+      SIN_T = sqrt(1.0_R - COS_T**2)
+      T = acos(COS_T)
+
+      O = (1.0_R/PI) * (T - SIN_T*COS_T) * (SEC1_ + SEC2_)
+
+      K_GEO = O - SEC1_ - SEC2_ + 0.5_R*(1.0_R+COS_XI_)*SEC1_*SEC2_
+      !╰────────────────────────────────────────────────╯!
+
+      LSRT_REFLECTION = F_ISO + F_VOL*K_VOL + F_GEO*K_GEO
 
       return
+
   end function
 
 end module shdSurf
