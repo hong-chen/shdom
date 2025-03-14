@@ -93,6 +93,7 @@ contains
 
   subroutine WAVE_FRESNEL_REFLECTION(MRE, MIM, WINDSPEED,&
       & MUI, MUR, PHII, PHIR, NSTOKES, REFLECT)
+      !╭────────────────────────────────────────────────────────────────────────────╮!
       !   Computes the polarized Fresnel reflection from a dielectric
       ! interface with a Gaussian distribution of slopes, including shadow
       ! The complex index of refraction of the dielectric is specified wit
@@ -107,7 +108,8 @@ contains
       ! M. I. Mishchenko and L. D. Travis, 1997: Satellite retrieval
       ! of aerosol properties over the ocean using polarization as well as
       ! intensity of reflected sunlight.  J. Geophys. Res. 102, 16989-1701
-      !
+      !╰────────────────────────────────────────────────────────────────────────────╯!
+
       implicit none
       integer NSTOKES
       real MRE, MIM, WINDSPEED, MUI, MUR, PHII, PHIR, REFLECT(4, 4)
@@ -259,6 +261,7 @@ contains
 
   subroutine DINER_REFLECTION(A, K, B, ZETA, SIGMA,&
       & MU1, MU2, PHI, NSTOKES, REFLECT)
+      !╭────────────────────────────────────────────────────────────────────────────╮!
       !   Computes polarized reflection from the Diner et al. (2012) model
       ! which two terms: 1) completely depolarizing volumetric scattering
       ! the modified RPV model, and 2) Fresnel reflection from randomly
@@ -282,7 +285,8 @@ contains
       ! Exploration of a polarized surface bidirectional reflectance model
       ! using the ground-based multiangle spectropolarimetric imager.
       ! Atmosphere 2012, 3, 591-619; doi:10.3390/atmos3040591.
-      !
+      !╰────────────────────────────────────────────────────────────────────────────╯!
+
       implicit none
       integer NSTOKES
       real A, K, B, ZETA, SIGMA, MU1, MU2, PHI
@@ -387,6 +391,7 @@ contains
   end subroutine
 
   real function RPV_REFLECTION(RHO0, K, THETA, MU1, MU2, PHI)
+      !╭────────────────────────────────────────────────────────────────────────────╮!
       !   Computes the Rahman, Pinty, Verstraete BRDF.  The incident
       ! and outgoing cosine zenith angles are MU1 and MU2, respectively,
       ! and the relative azimuthal angle is PHI.  In this case the incident
@@ -401,6 +406,7 @@ contains
       ! Implementation modified by Alexei Lyapustin to prevent negative
       ! values in SQRT function in calculating CAPG, and to prevent
       ! unphysical growth of RPV BRDF at small mu or mu0.
+      !╰────────────────────────────────────────────────────────────────────────────╯!
 
       real :: RHO0, K, THETA, MU1, MU2, PHI, mu_min, x1, x2
       real :: M, F, H, COSPHI, SIN1, SIN2, COSG, TAN1, TAN2, CAPG
