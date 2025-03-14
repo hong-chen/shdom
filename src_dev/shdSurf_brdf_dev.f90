@@ -450,6 +450,11 @@ contains
       ! and the relative azimuthal angle is PHI.  In this case the incident
       ! direction is where the radiation is coming from (i.e. opposite of
       ! discrete ordinate), so MU1>0 and the hot spot is MU2=MU1 and PHI=0
+      !
+      ! Code reference:
+      !   https://github.com/vikasnataraja/sif-sat/blob/master/sifsat/kernels.py
+      ! Formula reference:
+      !   MODIS BRDF/Albedo Product ATBD v5.0 equations 37-44
       !╰────────────────────────────────────────────────────────────────────────────╯!
 
       real(8) :: PI, COS1, COS2, SIN1, SIN2, TAN1, TAN2, COS_PHI, SIN_PHI
