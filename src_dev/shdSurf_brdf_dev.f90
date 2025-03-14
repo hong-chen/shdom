@@ -464,7 +464,7 @@ contains
       real(8) :: B2R, H2B
       real(8) :: THETA1_, COS1_, SIN1_, TAN1_, SEC1_
       real(8) :: THETA2_, COS2_, SIN2_, TAN2_, SEC2_
-      real(8) :: COS_XI_, D, COS_T, SIN_T, T, O
+      real(8) :: COS_XI_, D_2, COS_T, SIN_T, T, O
 
       ! calculate trigonometry
       !╭────────────────────────────────────────────────╮!
@@ -492,7 +492,7 @@ contains
       B2R = 1.0_R
       H2B = 2.0_R
       THETA1_ = atan(B2R*TAN2)
-      THETA2_ = THETA1_ / (atan(B2R*TAN1))
+      THETA2_ = atan(B2R*TAN1)
       COS1_ = cos(THETA1_)
       COS2_ = cos(THETA2_)
       SIN1_ = sqrt(1.0_R - COS1_**2)
@@ -504,9 +504,9 @@ contains
 
       COS_XI_ = COS1_*COS2_ + SIN1_*SIN2_*COS_PHI
 
-      D = sqrt(TAN1_**2 + TAN2_**2 - 2.0_R*TAN1_*TAN2_*COS_PHI)
+      D_2 = TAN1_**2 + TAN2_**2 - 2.0_R*TAN1_*TAN2_*COS_PHI
 
-      COS_T = H2B * (sqrt(D**2 + (TAN1_*TAN2_*SIN_PHI)**2))/(SEC1_ + SEC2_)
+      COS_T = H2B * (sqrt(D_2 + (TAN1_*TAN2_*SIN_PHI)**2))/(SEC1_ + SEC2_)
       SIN_T = sqrt(1.0_R - COS_T**2)
       T = acos(COS_T)
 
