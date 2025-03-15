@@ -1,7 +1,7 @@
  $SHDOMINPUT
  RUNNAME = 'LES'
  PROPFILE = 'tmp-data/shdom-prp_les.txt'
- SFCFILE = '/Users/hchen/Work/mygit/shdom/data/shdom-sfc-lsrt_land.txt'
+ SFCFILE = '/Users/hchen/Work/mygit/shdom/data/shdom-sfc_land-lsrt.txt'
  CKDFILE = '/Users/hchen/Work/mygit/shdom/data/shdom-ckd_modis-aqua-b01.txt'
  INSAVEFILE = 'NONE'
  OUTSAVEFILE ='NONE'
@@ -18,7 +18,7 @@
  SRCTYPE = 'S'
  SOLARFLUX = 0.974116
  SOLARMU = 0.8660
- SOLARAZ = 90.0
+ SOLARAZ = 270.0
  SKYRAD = 0.0
  GNDALBEDO = 0.03
  UNITS= 'R'
