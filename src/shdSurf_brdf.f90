@@ -529,6 +529,7 @@
       !╰────────────────────────────────────────────────╯!
 
       LSRT_REFLECTION = F_ISO + F_VOL*K_VOL + F_GEO*K_GEO
+
       if (LSRT_REFLECTION .lt. 0.0) LSRT_REFLECTION = 0.0
 
       return

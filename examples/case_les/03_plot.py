@@ -662,8 +662,8 @@ if __name__ == '__main__':
     fname = 'tmp-data/shdom-out_les-ckd.txt'
     # fname = 'tmp-data/shdom-out_les-ipa.txt'
 
-    # figure_les(fname)
-    figure_les_comp(fname)
+    figure_les(fname)
+    # figure_les_comp(fname)
 
     # run_mcarats(solver='IPA')
 
