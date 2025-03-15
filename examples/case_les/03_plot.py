@@ -118,7 +118,7 @@ def figure_les(fname):
                 # plot1
                 #╭──────────────────────────────────────────────────────────────╮#
                 ax1 = fig.add_subplot(111, aspect='auto')
-                cs = ax1.imshow(data_shd, origin='lower', cmap='Greys_r', zorder=0, aspect='auto', vmin=0.0, vmax=0.25, extent=extent)
+                cs = ax1.imshow(data_shd, origin='lower', cmap='Greys_r', zorder=0, aspect='auto', vmin=0.0, vmax=0.4, extent=extent)
                 ax1.axis('off')
                 #╰──────────────────────────────────────────────────────────────╯#
                 # save figure
