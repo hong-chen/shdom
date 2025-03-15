@@ -44,8 +44,7 @@ subroutine MIE_ONE(WAVELENGTH, MINDEX, RADIUS,&
     else
         NQUAD = min(nint(1.25*NQUAD), MAXRANK)
         if (NQUAD .gt. MAXN) then
-            print *, 'MIE_ONE: MAXN exceeded by NQUAD'
-            stop
+            stop 'Error [MIE_ONE]: MAXN exceeded by NQUAD.'
         end if
         call GAUSQUAD(NQUAD, MU, WTS)
         LASTNQUAD = NQUAD
@@ -114,9 +113,7 @@ subroutine MIECALC(NTERMS, X, MN, A, B)
     NSTOP = X + 4.0*X**0.3334 + 2
     if (NTERMS .le. 0) NTERMS = NSTOP
     if (NTERMS .gt. MAXTERMS) then
-        write (*, *)&
-            & 'Mie calculation requires more terms than available.'
-        stop
+        stop 'Error [MIECAL]: Mie calculation requires more terms than available.'
     end if
 
     ! Generate the Dn's by down recurrence  D = d(log(PSI(y)))/dy
