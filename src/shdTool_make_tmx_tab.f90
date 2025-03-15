@@ -111,7 +111,7 @@ program MAKE_TMATRIX_TABLE
             if (WIGCOEF(1, L, I) .gt. 0.5e-5) NRANK(I) = L
         end do
         if (abs(WIGCOEF(1, 0, I) - 1.0) > 0.0001) then
-            print *, 'Phase function not normalized for Reff=', REFF, WIGCOEF(1, 0, I)
+            print *, 'Error [MAKE_TMATRIX_TABLE]: Phase function not normalized for Reff=', REFF, WIGCOEF(1, 0, I)
             stop
         end if
         if (EXTINCT(I) > 0.0) then
@@ -191,7 +191,7 @@ subroutine USER_INPUT(POLTAB, WAVELEN, PARTYPE, RINDEX, PARDENS,&
         read (*, *) ALPHA, GAMMA
         write (*, '(2(1X,F6.3))') ALPHA, GAMMA
     else
-        write (*, *) 'Unrecognized size distribution type'
+        write (*, *) 'Error [USER_INPUT]: Unrecognized size distribution type.'
         stop
     end if
 
@@ -297,7 +297,7 @@ subroutine MAKE_SIZE_DIST(DISTFLAG, PARDENS, NSIZE, RADII, REFF, ALPHA, GAMMA,&
                             & NSIZE, RADII, ND, TRUERE)
         end do
         if (TRUERE <= REFF) then
-            print *, 'MAKE_SIZE_DIST: effective radius cannot be achieved', REFF, TRUERE
+            print *, 'Error [MAKE_SIZE_DIST]: Effective radius cannot be achieved', REFF, TRUERE
             stop
         end if
     else
@@ -313,7 +313,7 @@ subroutine MAKE_SIZE_DIST(DISTFLAG, PARDENS, NSIZE, RADII, REFF, ALPHA, GAMMA,&
                             & NSIZE, RADII, ND, TRUERE)
         end do
         if (TRUERE >= REFF) then
-            print *, 'MAKE_SIZE_DIST: effective radius cannot be achieved', REFF, TRUERE
+            print *, 'Error [MAKE_SIZE_DIST]: Effective radius cannot be achieved', REFF, TRUERE
             stop
         end if
     end if

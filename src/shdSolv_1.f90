@@ -520,7 +520,7 @@ subroutine COMPUTE_SOURCE(&
             IR = RSHPTR(I)
             NR = RSHPTR(I + 1) - IR
             if (NR .gt. NLM) then
-                write (6, *) 'COMPUTE_SOURCE: NR>NLM 1', I, IR, RSHPTR(I + 1)
+                write (6, *) 'Error [COMPUTE_SOURCE]: NR>NLM 1', I, IR, RSHPTR(I + 1)
                 stop
             end if
             if (NSTOKES .eq. 1) then
@@ -608,7 +608,7 @@ subroutine COMPUTE_SOURCE(&
         IR = RSHPTR(I)
         NR = RSHPTR(I + 1) - IR
         if (NR .gt. NLM) then
-            write (6, *) 'COMPUTE_SOURCE: NR>NLM 3', I, IR, RSHPTR(I + 1)
+            write (6, *) 'Error [COMPUTE_SOURCE]: NR>NLM 3', I, IR, RSHPTR(I + 1)
             stop
         end if
         if (NSTOKES .eq. 1) then
@@ -652,7 +652,7 @@ subroutine COMPUTE_SOURCE(&
             SHPTR(I) = IS
         end if
         if (IS + NS .gt. MAXIV) then
-            write (6, *) 'COMPUTE_SOURCE: MAXIV exceeded', MAXIV
+            write (6, *) 'Error [COMPUTE_SOURCE]: MAXIV exceeded.', MAXIV
             write (6, *) 'Out of memory for more spherical harmonic terms.'
             stop
         end if
@@ -778,7 +778,7 @@ subroutine RADIANCE_TRUNCATION(HIGHORDERRAD,&
         end if
         IR = IR + NR
         if (IR .gt. MAXIR) then
-            write (6, *) 'RADIANCE_TRUNCATION: Really out of memory ',&
+            write (6, *) 'Error [RADIANCE_TRUNCATION]: Really out of memory ',&
                 & 'for more radiance terms.'
             write (6, *) 'Increase MAXIV.'
             stop
@@ -1040,7 +1040,7 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
             !   GRIDRAD to the work array.
             do I = 1, NPTS
                 if (GRIDRAD(1, I) .lt. -0.0001) then
-                    write (6, *) 'PATH_INTEGRATION: Grid point has no value',&
+                    write (6, *) 'Error [PATH_INTEGRATION]: Grid point has no value',&
                         & I, MU(IMU), PHI(IMU, IPHI), GRIDRAD(1, I), XGRID(1), YGRID(1),&
                         & GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I)
                     ! stop
@@ -1114,7 +1114,7 @@ subroutine BOUNDARY_PNTS(NPTS, NANG, LAMBERTIAN, MAXNBC, MAXBCRAD,&
         if (GRIDPOS(3, I) .ge. ZTOP) then
             IT = IT + 1
             if (IT .gt. MAXNBC .or. IT .gt. MAXBCRAD) then
-                write (6, *) 'BOUNDARY_PNTS: MAXNBC exceeded - top.'
+                write (6, *) 'Error [BOUNDARY_PNTS]: MAXNBC exceeded - top.'
                 stop
             end if
             BCPTR(IT, 1) = I
@@ -1122,7 +1122,7 @@ subroutine BOUNDARY_PNTS(NPTS, NANG, LAMBERTIAN, MAXNBC, MAXBCRAD,&
         if (GRIDPOS(3, I) .le. ZBOT) then
             IB = IB + 1
             if (IB .gt. MAXNBC .or. IT + IB*NA .gt. MAXBCRAD) then
-                write (6, *) 'BOUNDARY_PNTS: MAXNBC exceeded - bottom.'
+                write (6, *) 'Error [BOUNDARY_PNTS]: MAXNBC exceeded - bottom.'
                 stop
             end if
             BCPTR(IB, 2) = I
@@ -2138,7 +2138,7 @@ subroutine BACK_INT_GRID3D(NX, NY, NZ, NA, NPTS, NCELLS,&
         do while (.not. VALIDRAD)
             ! Make sure current cell is valid
             if (ICELL .le. 0) then
-                write (6, *) 'BACK_INT_GRID: ICELL=0  ',&
+                write (6, *) 'Error [BACK_INT_GRID]: ICELL=0  ',&
                     & MU, PHI, IPT, INEXTCELL, xe, ye, ze,&
                     & gridpos(1, ipt), gridpos(2, ipt), gridpos(3, ipt)
                 stop
@@ -2164,7 +2164,7 @@ subroutine BACK_INT_GRID3D(NX, NY, NZ, NA, NPTS, NCELLS,&
             SOZ = (GRIDPOS(3, IOPP) - ZE)*CZINV
             SO = min(SOX, SOY, SOZ)
             if (SO .lt. -EPS) then
-                write (6, *) 'BACK_INT_GRID: SO<0  ',&
+                write (6, *) 'Error [BACK_INT_GRID]: SO<0  ',&
                     & MU, PHI, XE, YE, ZE, SOX, SOY, SOZ, SO, IPT, ICELL
                 stop
             end if
@@ -2317,7 +2317,7 @@ subroutine BACK_INT_GRID3D(NX, NY, NZ, NA, NPTS, NCELLS,&
                         & + F3*GRIDRAD(:, I3) + F4*GRIDRAD(:, I4)
                     RAD(:) = RAD(:) + TRANSMIT*RAD0(:)
                 else
-                    print *, 'BACK_INT_GRID3D: INEXTCELL=0: ', xe, ye, ze, icell
+                    print *, 'Error [BACK_INT_GRID3D]: INEXTCELL=0: ', xe, ye, ze, icell
                     print *, iz, joct, mu, phi
                     print '(i7,4(1x,f7.4))', i1, GRIDRAD(1, I1),&
                         & gridpos(1, i1), gridpos(2, i1), gridpos(3, i1)
@@ -2472,7 +2472,7 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
         do while (.not. VALIDRAD)
             ! Make sure current cell is valid
             if (ICELL .le. 0) then
-                write (6, *) 'BACK_INT_GRID: ICELL=0  ',&
+                write (6, *) 'Error [BACK_INT_GRID]: ICELL=0  ',&
                     & MU, PHI, IPT, INEXTCELL, xe, ye, ze,&
                     & gridpos(1, ipt), gridpos(2, ipt), gridpos(3, ipt)
                 stop
@@ -2498,7 +2498,7 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
             SOZ = (GRIDPOS(3, IOPP) - ZE)*CZINV
             SO = min(SOX, SOY, SOZ)
             if (SO .lt. -EPS) then
-                write (6, *) 'BACK_INT_GRID: SO<0  ',&
+                write (6, *) 'Error [BACK_INT_GRID]: SO<0  ',&
                     & MU, PHI, XE, YE, ZE, SOX, SOY, SOZ, SO, IPT, ICELL
                 stop
             end if
@@ -2654,7 +2654,7 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
                         & + F3*GRIDRAD(I3) + F4*GRIDRAD(I4)
                     RAD = RAD + TRANSMIT*RAD0
                 else
-                    print *, 'BACK_INT_GRID3D: INEXTCELL=0: ', xe, ye, ze, icell
+                    print *, 'Error [BACK_INT_GRID3D]: INEXTCELL=0: ', xe, ye, ze, icell
                     print *, iz, joct, mu, phi
                     print '(i7,4(1x,f7.4))', i1, GRIDRAD(I1),&
                         & gridpos(1, i1), gridpos(2, i1), gridpos(3, i1)
@@ -2779,7 +2779,7 @@ subroutine BACK_INT_GRID2D(NX, NY, NZ, NA, NPTS, NCELLS,&
         do while (.not. VALIDRAD)
             ! Make sure current cell is valid
             if (ICELL .le. 0) then
-                write (6, *) 'BACK_INT_GRID: ICELL=0  ',&
+                write (6, *) 'Error [BACK_INT_GRID]: ICELL=0  ',&
                     & MU, PHI, IPT, INEXTCELL
                 stop
             end if
@@ -2798,7 +2798,7 @@ subroutine BACK_INT_GRID2D(NX, NY, NZ, NA, NPTS, NCELLS,&
             SOZ = (GRIDPOS(3, IOPP) - ZE)*CZINV
             SO = min(SOX, SOZ)
             if (SO .lt. -EPS) then
-                write (6, *) 'BACK_INT_GRID2D: SO<0  ',&
+                write (6, *) 'Error [BACK_INT_GRID2D]: SO<0  ',&
                     & MU, PHI, XE, ZE, SOX, SOZ, SO, IPT, ICELL
                 stop
             end if
@@ -2907,7 +2907,7 @@ subroutine BACK_INT_GRID2D(NX, NY, NZ, NA, NPTS, NCELLS,&
                     RAD0(:) = F1*GRIDRAD(:, I1) + F2*GRIDRAD(:, I2)
                     RAD(:) = RAD(:) + TRANSMIT*RAD0(:)
                 else
-                    print *, 'BACK_INT_GRID2D: INEXTCELL=0: ', xe, ye, ze, icell
+                    print *, 'Error [BACK_INT_GRID2D]: INEXTCELL=0: ', xe, ye, ze, icell
                     print *, iz, joct, mu, phi
                     print '(i7,4(1x,f7.4))', i1, GRIDRAD(1, I1),&
                         & gridpos(1, i1), gridpos(2, i1), gridpos(3, i1)
@@ -3011,7 +3011,7 @@ subroutine BACK_INT_GRID1D(NX, NY, NZ, NA, NPTS, NCELLS,&
         do while (.not. VALIDRAD)
             ! Make sure current cell is valid
             if (ICELL .le. 0) then
-                write (6, *) 'BACK_INT_GRID: ICELL=0  ',&
+                write (6, *) 'Error [BACK_INT_GRID]: ICELL=0  ',&
                     & MU, PHI, IPT, INEXTCELL
                 stop
             end if
@@ -3022,7 +3022,7 @@ subroutine BACK_INT_GRID1D(NX, NY, NZ, NA, NPTS, NCELLS,&
             ! Get the distances to the 3 planes and select the closest
             SO = (GRIDPOS(3, IOPP) - ZE)*CZINV
             if (SO .lt. -EPS) then
-                write (6, *) 'BACK_INT_GRID1D: SO<0  ',&
+                write (6, *) 'Error [BACK_INT_GRID1D]: SO<0  ',&
                     & MU, PHI, ZE, SO, IPT, ICELL
                 stop
             end if

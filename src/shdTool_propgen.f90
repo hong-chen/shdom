@@ -203,11 +203,11 @@ contains
                 end if
             end if
             if (abs(WIGCOEF(1, 0, I) - 1.0) > 0.0001) then
-                print *, 'READ_SCAT_TABLE: Incorrect Legendre series; chi_0 is not 1'
+                print *, 'Error [READ_SCAT_TABLE]: Incorrect Legendre series; chi_0 is not 1.'
                 stop
             end if
             if (I > 1 .and. RETAB(I) <= RETAB(I - 1)) then
-                print *, 'READ_SCAT_TABLE: Effective radius not increasing in table:', SCATTABFILE
+                print *, 'Error [READ_SCAT_TABLE]: Effective radius not increasing in table:', SCATTABFILE
                 stop
             end if
         end do
@@ -275,7 +275,7 @@ contains
 
         if (FILEKIND == 2) then
             if (NSCATTAB /= 1) then
-                print *, 'READ_PARTICLE_FILE: Must have only one scattering table to use 2 parameter LWC file.'
+                print *, 'Error [READ_PARTICLE_FILE]: Must have only one scattering table to use 2 parameter LWC file.'
                 stop
             end if
             ! Read in the data
@@ -296,7 +296,7 @@ contains
                 read (2, *, end=190) IX, IY, IZ, NC, &
                     (PT(I), MASS(I), RE(I), I=1, min(NC, NSCATTAB))
                 if (NC > NSCATTAB) then
-                    print *, 'READ_PARTICLE_FILE: More particle components than scattering tables.'
+                    print *, 'Error [READ_PARTICLE_FILE]: More particle components than scattering tables.'
                     stop
                 end if
                 if (IX >= 1 .and. IX <= NX .and. IY >= 1 .and. IY <= NY .and. &
@@ -309,7 +309,7 @@ contains
             end do
 
         else
-            print *, 'READ_PARTICLE_FILE: Must be type 2 or 3 particle properties file.'
+            print *, 'Error [READ_PARTICLE_FILE]: Must be type 2 or 3 particle properties file.'
             stop
         end if
 
@@ -339,7 +339,7 @@ contains
         if (NZP > 0) then
             do J = 1, NZO
                 if (ZOTHER(J) >= ZPAR(1) .and. ZOTHER(J) <= ZPAR(NZP)) then
-                    print '(1X,A,F7.3)', 'Warning: other Z level inside range of particle levels:', ZOTHER(J)
+                    print '(1X,A,F7.3)', 'Warning [ORGANIZE_LEVELS]: Other Z level inside range of particle levels:', ZOTHER(J)
                     print *, '         The other Z levels have only Rayleigh scattering.'
                 end if
             end do
@@ -351,7 +351,7 @@ contains
         ! Check to see if two Z levels are same
         do K = 1, NZT - 1
             if (ZLEVELS(K) == ZLEVELS(K + 1)) then
-                print *, 'ORGANIZE_LEVELS: Same Z levels: ', ZLEVELS(K)
+                print *, 'Error [ORGANIZE_LEVELS]: Same Z levels: ', ZLEVELS(K)
                 stop
             end if
         end do
@@ -394,11 +394,11 @@ contains
 
         NN = N
         if (NN .lt. 1) then
-            stop 'The number of values to be sorted is not positive.'
+            stop 'Error [SSORT]: The number of values to be sorted is not positive.'
         end if
         KK = abs(KFLAG)
         if (KK .ne. 1 .and. KK .ne. 2) then
-            stop 'The sort control parameter, K, is not 2, 1, -1, or -2.'
+            stop 'Error [SSORT]: The sort control parameter, K, is not 2, 1, -1, or -2.'
         end if
 
         ! Alter array X to get decreasing order if needed
@@ -812,7 +812,7 @@ program PROPGEN
         MAXCOEF = max(MAXCOEF, MAXNCOEF)
         if (I > 1 .and. abs((WAVELEN1(I) - WAVELEN1(1))/WAVELEN1(1)) > 0.01 &
             .or. abs((WAVELEN2(I) - WAVELEN2(1))/WAVELEN2(1)) > 0.01) then
-            print *, 'Warning: scattering table wavelengths do not agree for table', I
+            print *, 'Warning [PROPGEN]: Scattering table wavelengths do not agree for table', I
         end if
     end do
     deallocate (WAVELEN1, WAVELEN2)
@@ -926,7 +926,7 @@ program PROPGEN
                             F = -1.0
                         end if
                         if (F < 0.0 .or. F > 1.0) then
-                            print *, 'Warning: effective radius outside of table (IX,IY,IZ,type,Reff):'
+                            print *, 'Warning [PROPGEN]: Effective radius outside of table (IX,IY,IZ,type,Reff):'
                         print '(4(1X,I3),1X,F6.2)', IX, IY, IZP, PTYPE(J, IZP, IY, IX), REFF(J, IZP, IY, IX)
                             F = max(min(F, 1.0), 0.0)
                         end if
@@ -976,7 +976,7 @@ program PROPGEN
                         else
                             NPHASE = NPHASE + 1
                             if (NPHASE > MAXNPHASE) then
-                                print *, 'Maximum number of new phase functions exceeded', NPHASE - NENTRIES
+                                print *, 'Error [PROPGEN]: Maximum number of new phase functions exceeded', NPHASE - NENTRIES
                                 stop
                             end if
                             NCOEF(NPHASE) = NL

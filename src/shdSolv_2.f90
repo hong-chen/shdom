@@ -39,7 +39,7 @@ subroutine NEW_GRIDS(&
     if (GRIDTYPE .eq. 'P') then
         if (NZ .ne. NPZ) then
             write (6, *)&
-                & 'NEW_GRIDS: For internal Z grid same as property file grid,'
+                & 'Error [NEW_GRIDS]: For internal Z grid same as property file grid,'
             write (6, *) 'must have same number of grid points (NZ=NPZ).'
             stop
         end if
@@ -840,7 +840,7 @@ subroutine MAKE_ANGLE_SET(NMU, NPHI, ITYPE, NPHI0MAX,&
                 NPHI0(J) = NPHI0MAX
             else
                 if (NPHI0MAX .gt. MAXNPHI)&
-                    & stop 'Error [MAKE_ANGLE_SET]: exceeded GOODNFFT.'
+                    & stop 'Error [MAKE_ANGLE_SET]: Exceeded GOODNFFT.'
                 NPHI0(J) = int(0.9 + NPHI0MAX*sqrt(1 - MU(J)**2))
                 NPHI0(J) = min(NPHI0MAX, GOODNFFT(NPHI0(J)))
             end if
@@ -854,7 +854,7 @@ subroutine MAKE_ANGLE_SET(NMU, NPHI, ITYPE, NPHI0MAX,&
         end do
 
     else
-        stop 'Error [MAKE_ANGLE_SET]: invalid discrete ordinate type.'
+        stop 'Error [MAKE_ANGLE_SET]: Invalid discrete ordinate type.'
     end if
     return
 end subroutine
@@ -910,7 +910,7 @@ subroutine MAKE_SH_DO_COEF(NSTLEG, ML, MM, NLM, NMU, NPHI0,&
             W = 1.0/WTMU(I)
             do K = 1, NPHI0(I)
                 if (NPHI0(I) .gt. 32 .or. MM .gt. 16) stop&
-                    & 'MAKE_SH_DO_COEF: Fourier coefficients array exceeded'
+                    & 'Error [MAKE_SH_DO_COEF]: Fourier coefficients array exceeded.'
                 CPHI1(0, K, I) = 1.0
                 CPHI2(K, 0, I) = WTDO(I, K)*W
                 do M = 1, MM
@@ -1370,7 +1370,7 @@ subroutine VISUALIZE_RADIANCE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 Y0 = Y0 + R*sqrt(1 - COSTH**2)*sin(PHIR)
                 Z0 = ZGRID(NZ)
             else if (Z0 .lt. ZGRID(1)) then
-                write (6, *) 'VISUALIZE_RADIANCE: Level below domain'
+                write (6, *) 'Error [VISUALIZE_RADIANCE]: Level below domain.'
                 stop
             end if
 
@@ -1614,7 +1614,7 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
     do while (.not. VALIDRAD .and. ICELL .gt. 0)
         ! Make sure current cell is valid
         if (ICELL .le. 0) then
-            write (6, *) 'INTEGRATE_1RAY: ICELL=', ICELL,&
+            write (6, *) 'Error [INTEGRATE_1RAY]: ICELL=', ICELL,&
                 & MU2, PHI2, XE, YE, ZE
             stop
         end if
@@ -1705,7 +1705,7 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
         SOZ = (GRIDPOS(3, IOPP) - ZE)*CZINV
         SO = min(SOX, SOY, SOZ)
         if (SO .lt. -EPS) then
-            write (6, *) 'INTEGRATE_1RAY: SO<0  ',&
+            write (6, *) 'Error [INTEGRATE_1RAY]: SO<0  ',&
                 & MU2, PHI2, XE, YE, ZE, SO, ICELL
             stop
         end if
@@ -2232,8 +2232,8 @@ subroutine PRECOMPUTE_PHASE(NSCATANGLE, NUMPHASE, NSTPHASE,&
                 A1 = A1 + FCT*dble(UNSCLEGEN(1, L))*DMM1(L)
             end do
             if (A1 .le. 0.0) then
-                write (6, *) 'PRECOMPUTE_PHASE: negative phase function',    &
-         &          ' for tabulated phase function: ', IPH, J, A1
+                write (6, *) 'Error [PRECOMPUTE_PHASE]: negative phase function',&
+                    &' for tabulated phase function: ', IPH, J, A1
                 stop
             end if
             PHASETAB(1, IPH, J) = SNGL(A1*OFOURPI)
@@ -2546,8 +2546,8 @@ subroutine COMPUTE_ONE_SOURCE(NSTOKES,&
                 & SOLARMU, MU, SOLARAZ - PHI, NSTOKES,&
                 & SINGSCAT(1, IPH))
             if (SINGSCAT(1, IPH) .le. 0.0) then
-                write (6, *) 'COMPUTE_ONE_SOURCE: negative source function',&
-                    & ' for tabulated phase function:', IPH, MU, PHI, SINGSCAT(1, IPH)
+                write (6, *) 'Error [COMPUTE_ONE_SOURCE]: negative source function',&
+                    &' for tabulated phase function:', IPH, MU, PHI, SINGSCAT(1, IPH)
                 stop
             end if
         end do
@@ -2836,7 +2836,7 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
         SOZ = (GRIDPOS(3, IOPP) - ZE)*CZINV
         SO = min(SOX, SOY, SOZ)
         if (SO .lt. -EPS) then
-            write (6, *) 'INTEGRATE_SOURCE: SO<0  ',&
+            write (6, *) 'Error [INTEGRATE_SOURCE]: SO<0  ',&
                 & MU, PHI, X0, Y0, Z0, XE, YE, ZE, SO, SOX, SOY, SOZ, XGRID(1), YGRID(1),&
                 & GRIDPOS(1, IOPP), GRIDPOS(2, IOPP), GRIDPOS(3, IOPP)
             stop

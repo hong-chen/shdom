@@ -180,7 +180,7 @@ subroutine USER_INPUT(&
                 & OUTPARMS(4, I), OUTPARMS(5, I),&
                 & N, (OUTPARMS(J + 6, I), J=1, min(2*N, MAXPAR - 6))
             if (N .gt. (MAXPAR - 6)/2) then
-                print *, 'Number of radiance angles is too large for MAXPAR'
+                print *, 'Error [USER_INPUT]: Number of radiance angles is too large for MAXPAR'
                 stop
             end if
             N = min(N, (MAXPAR - 6)/2)
@@ -455,13 +455,13 @@ subroutine CHECK_INPUT_PARAMETERS(&
         & stop 'Error [CHECK_INPUT_PARMETERS]: Illegal grid type.'
 
     if (SRCTYPE .ne. 'T' .and. SOLARMU .eq. 0.0) then
-        write (*, *) 'CHECK_INPUT_PARMETERS: cosine solar zenith angle'
+        write (*, *) 'Error [CHECK_INPUT_PARMETERS]: Cosine solar zenith angle'
         write (*, *) ' (SOLARMU) cannot be zero.'
         stop
     end if
 
     if (.not. DELTAM .and. SRCTYPE .ne. 'T' .and. MAXASYM .gt. 0.5) then
-        write (*, *) 'CHECK_INPUT_PARMETERS: Delta-M should be used'
+        write (*, *) 'Warning [CHECK_INPUT_PARMETERS]: Delta-M should be used'
         write (*, *) ' (DELTAM=.TRUE.) for solar radiative transfer'
         write (*, *) ' with highly peaked phase functions.'
         write (*, *)
@@ -479,12 +479,12 @@ subroutine CHECK_INPUT_PARAMETERS(&
     end if
     if (SPLITACC .gt. 0.0 .and.&
         & (SPLITACC .lt. 0.001*FLUX .or. SPLITACC .gt. 0.1*FLUX)) then
-        write (*, *) 'CHECK_INPUT_PARMETERS: Splitting accuracy parameter'
+        write (*, *) 'Warning [CHECK_INPUT_PARMETERS]: Splitting accuracy parameter'
         write (*, *) ' is not a fraction, but scales with fluxes'
         write (*, *)
     end if
     if (SHACC .gt. 0.0 .and. SHACC .gt. 0.03*FLUX) then
-        write (*, *) 'CHECK_INPUT_PARMETERS: Spherical harmonic accuracy'
+        write (*, *) 'Warning [CHECK_INPUT_PARMETERS]: Spherical harmonic accuracy'
         write (*, *) ' (SHACC) is not a fraction, but scales with fluxes'
         write (*, *)
     end if
@@ -496,12 +496,12 @@ subroutine CHECK_INPUT_PARAMETERS(&
         write (*, *)
     end if
     if (GNDALBEDO .lt. 0.0 .or. GNDALBEDO .gt. 1.0) then
-        write (*, *) 'CHECK_INPUT_PARMETERS: Ground albedo must be 0 to 1'
+        write (*, *) 'Error [CHECK_INPUT_PARMETERS]: Ground albedo must be 0 to 1.'
         stop
     end if
 
     if (NPHI .lt. NMU) then
-        write (*, *) 'CHECK_INPUT_PARMETERS: Usually want NPHI >= NMU'
+        write (*, *) 'Warning [CHECK_INPUT_PARMETERS]: Usually want NPHI >= NMU.'
         write (*, *)
     end if
 
@@ -527,10 +527,10 @@ subroutine READ_PROPERTY_SIZE(PROPFILE, NSTLEG, NLEG, NPX, NPY, NPZ,&
     open (UNIT=1, FILE=trim(adjustl(PROPFILE)), STATUS='OLD')
     read (1, '(A1)') PROPTYPE
     if (PROPTYPE .ne. 'E' .and. PROPTYPE .ne. 'T'&
-        & .and. PROPTYPE .ne. 'P') rewind (1)
+        &.and. PROPTYPE .ne. 'P') rewind (1)
     if (PROPTYPE .ne. 'P' .and. NSTLEG .gt. 1) then
-        write (*, '(A,A)') 'Error: NSTOKES>1 requires ',&
-            & 'Polarized phase function property file'
+        write (*, '(A,A)') 'Error [READ_PROPERTY_SIZE]: NSTOKES>1 requires ',&
+            &'Polarized phase function property file'
         stop
     end if
     read (1, *) NPX, NPY, NPZ
@@ -622,8 +622,8 @@ subroutine READ_PROPERTIES(&
     if (PROPTYPE .ne. 'E' .and. PROPTYPE .ne. 'T'&
         & .and. PROPTYPE .ne. 'P') rewind (1)
     if (PROPTYPE .ne. 'P' .and. NSTLEG .gt. 1) then
-        write (*, '(A,A)') 'Error: NSTOKES>1 requires ',&
-            & 'Polarized phase function property file'
+        write (*, '(A,A)') 'Error [READ_PROPERTIES]: NSTOKES>1 requires ',&
+            & 'Polarized phase function property file.'
         stop
     end if
     read (1, *) NPX, NPY, NPZ
@@ -698,7 +698,7 @@ subroutine READ_PROPERTIES(&
         N = NPX*NPY*NPZ
         if (N .gt. MAXPG) stop 'Error [READ_PROPERTIES]: MAXPG exceeded.'
         if (NUMPHASE*(NLEG + 1)*NSTLEG .gt. MAXPGL)&
-            & stop 'Error [READ_PROPERTIES]: MAXPGL exceeded.'
+            &stop 'Error [READ_PROPERTIES]: MAXPGL exceeded.'
         rewind (1)
         read (1, *)
         read (1, *) NPX, NPY, NPZ
@@ -815,19 +815,19 @@ subroutine CHECK_PROPERTY_INPUT(&
 
     ! NPX and NPY must be 1 or greater, NPZ must be 2 or greater
     if (NPX .lt. 1 .or. NPY .lt. 1 .or. NPZ .lt. 2) then
-        write (*, *) 'CHECK_PROPERTY_INPUT: Bad grid size - ',&
+        write (*, *) 'Error [CHECK_PROPERTY_INPUT]: Bad grid size - ',&
             & NPX, NPY, NPZ
         stop
     end if
     if (DELX .le. 0.0 .or. DELY .le. 0.0) then
-        write (*, *) 'CHECK_PROPERTY_INPUT: Bad grid spacing - ',&
+        write (*, *) 'Error [CHECK_PROPERTY_INPUT]: Bad grid spacing - ',&
             & 'DELX,DELY: ', DELX, DELY
         stop
     end if
     ! The vertical levels must be increasing
     do IZ = 1, NPZ - 1
         if (ZLEVELS(IZ + 1) .le. ZLEVELS(IZ)) then
-            write (*, *) 'CHECK_PROPERTY_INPUT: ZLEVELS must increase : ',&
+            write (*, *) 'Error [CHECK_PROPERTY_INPUT]: ZLEVELS must increase : ',&
                 & IZ, ZLEVELS(IZ), ZLEVELS(IZ + 1)
             stop
         end if
@@ -848,12 +848,12 @@ subroutine CHECK_PROPERTY_INPUT(&
     end if
     do I = 1, N
         if (EXTINCTP(I) .lt. 0.0) then
-            write (*, *) 'CHECK_PROPERTY_INPUT: Negative extinction - ',&
+            write (*, *) 'Error [CHECK_PROPERTY_INPUT]: Negative extinction - ',&
                 & EXTINCTP(I), ' at grid point ', I
             stop
         end if
         if (ALBEDOP(I) .lt. 0.0 .or. ALBEDOP(I) .gt. 1.0) then
-            write (*, *) 'CHECK_PROPERTY_INPUT: Single scattering ',&
+            write (*, *) 'Error [CHECK_PROPERTY_INPUT]: Single scattering ',&
                 & 'albedo out of range - ', ALBEDOP(I), ' at grid point ', I
             stop
         end if
@@ -863,7 +863,7 @@ subroutine CHECK_PROPERTY_INPUT(&
     LEGWARN = .false.
     do I = 1, N
         if (LEGENP(1, 1, I) .lt. -3.0 .or. LEGENP(1, 1, I) .gt. 3.0) then
-            write (*, *) 'CHECK_PROPERTY_INPUT: Asymmetry parameter ',&
+            write (*, *) 'Error [CHECK_PROPERTY_INPUT]: Asymmetry parameter ',&
                 & 'out of range - ', LEGENP(1, 1, I)/3.0, ' at grid point ', I
             stop
         end if
@@ -880,7 +880,7 @@ subroutine CHECK_PROPERTY_INPUT(&
         N = NPX*NPY*NPZ
         do I = 1, N
             if (IPHASEP(I) .lt. 1 .or. IPHASEP(I) .gt. NUMPHASE) then
-                write (*, *) 'CHECK_PROPERTY_INPUT: Phase function pointer',&
+                write (*, *) 'Error [CHECK_PROPERTY_INPUT]: Phase function pointer',&
                     & ' out of range - ', IPHASEP(I), ' at grid point ', I
                 stop
             end if
@@ -997,7 +997,7 @@ subroutine READ_SURFACE(&
     read (1, '(A1)') SFCTYPE(2:2)
     read (1, *) NXSFC, NYSFC, DELXSFC, DELYSFC
     if ((NXSFC + 1)*(NYSFC + 1) .gt. MAXSFCPTS) then
-        write (*, *) 'READ_SURFACE: MAXSFCPTS exceeded'
+        write (*, *) 'Error [READ_SURFACE]: MAXSFCPTS exceeded.'
         stop
     end if
 
@@ -1009,7 +1009,7 @@ subroutine READ_SURFACE(&
     if (SFCTYPE .eq. 'VL' .or. SFCTYPE .eq. 'Vl') then
         NSFCPAR = 2
         if (NSFCPAR .gt. MAXSFCPARS) then
-            write (*, *) 'READ_SURFACE: MAXSFCPARS exceeded'
+            write (*, *) 'Error [READ_SURFACE]: MAXSFCPARS exceeded.'
             stop
         end if
         do while (.true.)
@@ -1034,7 +1034,7 @@ subroutine READ_SURFACE(&
     else if (SFCTYPE .eq. 'VW') then
         NSFCPAR = 4
         if (NSFCPAR .gt. MAXSFCPARS) then
-            write (*, *) 'READ_SURFACE: MAXSFCPARS exceeded'
+            write (*, *) 'Error [READ_SURFACE]: MAXSFCPARS exceeded.'
             stop
         end if
         do while (.true.)
@@ -1056,7 +1056,7 @@ subroutine READ_SURFACE(&
     else if (SFCTYPE .eq. 'VO') then
         NSFCPAR = 3
         if (NSFCPAR .gt. MAXSFCPARS) then
-            write (*, *) 'READ_SURFACE: MAXSFCPARS exceeded'
+            write (*, *) 'Error [READ_SURFACE]: MAXSFCPARS exceeded.'
             stop
         end if
         do while (.true.)
@@ -1080,7 +1080,7 @@ subroutine READ_SURFACE(&
     else if (SFCTYPE .eq. 'VR') then
         NSFCPAR = 4
         if (NSFCPAR .gt. MAXSFCPARS) then
-            write (*, *) 'READ_SURFACE: MAXSFCPARS exceeded'
+            write (*, *) 'Error [READ_SURFACE]: MAXSFCPARS exceeded.'
             stop
         end if
         do while (.true.)
@@ -1102,7 +1102,7 @@ subroutine READ_SURFACE(&
     else if (SFCTYPE .eq. 'VT') then
         NSFCPAR = 4
         if (NSFCPAR .gt. MAXSFCPARS) then
-            write (*, *) 'READ_SURFACE: MAXSFCPARS exceeded'
+            write (*, *) 'Error [READ_SURFACE]: MAXSFCPARS exceeded.'
             stop
         end if
         do while (.true.)
@@ -1129,7 +1129,7 @@ subroutine READ_SURFACE(&
     else if (SFCTYPE .eq. 'VD') then
         NSFCPAR = 6
         if (NSFCPAR .gt. MAXSFCPARS) then
-            write (*, *) 'READ_SURFACE: MAXSFCPARS exceeded'
+            write (*, *) 'Error [READ_SURFACE]: MAXSFCPARS exceeded.'
             stop
         end if
         do while (.true.)
@@ -1201,7 +1201,7 @@ subroutine READ_CKD_SIZE(CKDFILE, WAVENO, NG, NZCKD)
         end if
     end do
     if (JB .eq. 0) then
-        write (*, *) ' Wavenumber range not found in CKD file : ',&
+        write (*, *) 'Error [READ_CKD_SIZE]: Wavenumber range not found in CKD file : ',&
             & WAVENO(1), WAVENO(2), CKDFILE
         stop
     end if
@@ -1246,7 +1246,7 @@ subroutine READ_CKD(&
         end if
     end do
     if (JB .eq. 0) then
-        write (*, *) ' Wavenumber range not found in CKD file : ',&
+        write (*, *) 'Error [READ_CKD]: Wavenumber range not found in CKD file : ',&
             & WAVENO(1), WAVENO(2), CKDFILE
         stop
     end if

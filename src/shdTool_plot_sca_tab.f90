@@ -252,11 +252,11 @@ subroutine READ_SCAT_TABLE(SCATTABFILE, POLTAB, NPHASEPOL, NRETAB, RETAB, &
             end if
         end if
         if (abs(WIGCOEF(1, 0, I) - 1.0) > 0.0001) then
-            print *, 'READ_SCAT_TABLE: Incorrect Legendre series; chi_0 is not 1'
+            print *, 'Error [READ_SCAT_TABLE]: Incorrect Legendre series; chi_0 is not 1'
             stop
         end if
         if (I > 1 .and. RETAB(I) <= RETAB(I - 1)) then
-            print *, 'READ_SCAT_TABLE: Effective radius not increasing in table:', SCATTABFILE
+            print *, 'Error [READ_SCAT_TABLE]: Effective radius not increasing in table:', SCATTABFILE
             stop
         end if
     end do
@@ -277,7 +277,7 @@ subroutine READ_PROPERTY_SIZE(PROPFILE, NPHASEPOL, NUMPHASE, MAXNCOEF)
     open (UNIT=2, FILE=trim(adjustl(PROPFILE)), STATUS='OLD')
     read (2, '(A1)') PROPTYPE
     if (PROPTYPE /= 'T' .and. PROPTYPE /= 'P') then
-        print *, 'Must be a tabulated phase function property file.'
+        print *, 'Error [READ_PROPERTY_SIZE]: Must be a tabulated phase function property file.'
         stop
     end if
     read (2, *) NPX, NPY, NPZ
@@ -297,7 +297,7 @@ subroutine READ_PROPERTY_SIZE(PROPFILE, NPHASEPOL, NUMPHASE, MAXNCOEF)
             do J = 1, 6
                 read (2, *) K, NUML, (CHI, L=0, NUML)
                 if (K /= J) then
-                    print *, 'Error reading  polarized tabulated phase function format'
+                    print *, 'Error [READ_PROPERTY_SIZE]: Error reading  polarized tabulated phase function format.'
                     stop
                 end if
                 MAXNCOEF = max(NUML, MAXNCOEF)
@@ -360,8 +360,8 @@ subroutine TRANSFORM_WIGNERD_TO_PHASE(MAXNCOEF, NPHASEPOL, &
     real, allocatable :: NORM(:)
 
     if (NPHASEPOL == 1 .and. PELEM > 1) then
-        print '(A,I1,A)', 'Cannot do phase matrix element ', PELEM, &
-            ' for unpolarized scattering table'
+        print '(A,I1,A)', 'Error [TRANSFORM_WIGNERD_TO_PHASE]: Cannot do phase matrix element ', PELEM,&
+            &' for unpolarized scattering table.'
         stop
     end if
 
@@ -427,7 +427,7 @@ subroutine TRANSFORM_WIGNERD_TO_PHASE(MAXNCOEF, NPHASEPOL, &
             PHASE(J) = B2
 
         case DEFAULT
-            print *, 'Illegal PELEM phase matrix element number'
+            print *, 'Error [TRANSFORM_WIGNERD_TO_PHASE]: Illegal PELEM phase matrix element number.'
             stop
         end select
 

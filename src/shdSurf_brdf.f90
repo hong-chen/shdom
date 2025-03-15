@@ -56,27 +56,29 @@
 
           ! R: Rahman, Pinty, and Verstraete
           if (NSTOKES .gt. 1) then
-              print *, 'RPV BRDF is only for unpolarized case'
-              stop
+              stop 'Error [SURFACE_BRDF]: RPV BRDF is only for unpolarized case'
           end if
           REFLECT(1, 1) = RPV_REFLECTION(REFPARMS(1), REFPARMS(2),&
+              &REFPARMS(3), -MU1, MU2, PHI1 - PHI2 - PI)
+
+      else if (SFCTYPE .eq. 'T' .or. SFCTYPE .eq. 't') then
+
+          ! T: RossThick LiSquare
+          if (NSTOKES .gt. 1) then
+              stop 'Error [SURFACE_BRDF]: LSRT BRDF is only for unpolarized case'
+          end if
+          ! T: LSRT model
+          REFLECT(1, 1) = LSRT_REFLECTION(REFPARMS(1), REFPARMS(2),&
               &REFPARMS(3), -MU1, MU2, PHI1 - PHI2 - PI)
 
       else if (SFCTYPE .eq. 'O' .or. SFCTYPE .eq. 'o') then
 
           ! O: Ocean BRDF from 6S modified by Norm Loeb
           if (NSTOKES .gt. 1) then
-              print *, 'Ocean BRDF from 6S is only for unpolarized case'
-              stop
+              stop 'Error [SURFACE_BRDF]: Ocean BRDF from 6S is only for unpolarized case'
           end if
           call ocean_brdf_sw(REFPARMS(1), -1., REFPARMS(2), WAVELEN,&
               & -MU1, MU2, PHI1 - PHI2, PHI1, REFLECT(1, 1))
-
-      else if (SFCTYPE .eq. 'T' .or. SFCTYPE .eq. 't') then
-
-          ! T: LSRT model
-          REFLECT(1, 1) = LSRT_REFLECTION(REFPARMS(1), REFPARMS(2),&
-              &REFPARMS(3), -MU1, MU2, PHI1 - PHI2 - PI)
 
       else
           stop 'Error [SURFACE_BRDF]: Unknown BRDF type.'
