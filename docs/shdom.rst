@@ -480,7 +480,7 @@ SURFACE REFLECTION MODELS
 -------------------------
 
 There are currently five types of surface reflection:  Lambertian,
-RPV-original, Ocean, Wave-Fresnel, and Diner.  The RPV and Ocean
+RPV-original, LSRT, Ocean, Wave-Fresnel, and Diner.  The RPV, LSRT, and Ocean
 reflection models are unpolarized, so NSTOKES must be 1.  Wave-Fresnel
 is used for polarized ocean modeling, and Diner for polarized land
 surface modeling.  It is simple to add other surface types (see SOURCE
@@ -1925,6 +1925,8 @@ routines from NCAR.
    2   DINER_REFLECTION     Routine for Diner polarized reflection
 
    2   RPV_REFLECTION       Function for Rahman, Pinty, Verstraete reflection
+
+   2   LSRT_REFLECTION      Function for RossThick-LiSparse reflection
 
    2 0 SUM_OUTPUT           Sums an output array over the k-distribution.
 
