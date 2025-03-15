@@ -980,13 +980,13 @@ subroutine TRILIN_INTERP_PROP(X, Y, Z, INIT, NSTLEG, NLEG, &
         LEGEN(1, 0, 1) = 1.0
         do L = 1, NLEG
             LEGEN(1, L, 1) = SCAT1*LEGENP(L + (NLEG + 1)*(I1 - 1)) &
-                             + SCAT2*LEGENP(L + (NLEG + 1)*(I2 - 1)) &
-                             + SCAT3*LEGENP(L + (NLEG + 1)*(I3 - 1)) &
-                             + SCAT4*LEGENP(L + (NLEG + 1)*(I4 - 1)) &
-                             + SCAT5*LEGENP(L + (NLEG + 1)*(I5 - 1)) &
-                             + SCAT6*LEGENP(L + (NLEG + 1)*(I6 - 1)) &
-                             + SCAT7*LEGENP(L + (NLEG + 1)*(I7 - 1)) &
-                             + SCAT8*LEGENP(L + (NLEG + 1)*(I8 - 1))
+                           + SCAT2*LEGENP(L + (NLEG + 1)*(I2 - 1)) &
+                           + SCAT3*LEGENP(L + (NLEG + 1)*(I3 - 1)) &
+                           + SCAT4*LEGENP(L + (NLEG + 1)*(I4 - 1)) &
+                           + SCAT5*LEGENP(L + (NLEG + 1)*(I5 - 1)) &
+                           + SCAT6*LEGENP(L + (NLEG + 1)*(I6 - 1)) &
+                           + SCAT7*LEGENP(L + (NLEG + 1)*(I7 - 1)) &
+                           + SCAT8*LEGENP(L + (NLEG + 1)*(I8 - 1))
             if (SCATTER .gt. SCATMIN) then
                 LEGEN(1, L, 1) = LEGEN(1, L, 1)/SCATTER
             else
