@@ -79,7 +79,7 @@
               &REFPARMS(3), -MU1, MU2, PHI1 - PHI2 - PI)
 
       else
-          stop 'SURFACE_BRDF: Unknown BRDF type'
+          stop 'Error [SURFACE_BRDF]: Unknown BRDF type.'
       end if
 
       return
