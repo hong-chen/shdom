@@ -58,7 +58,7 @@ subroutine NEW_GRIDS(&
         end do
         close (3)
     else
-        stop 'NEW_GRIDS: Illegal grid type in Z'
+        stop 'Error [NEW_GRIDS]: Illegal grid type in Z.'
     end if
 
     return
@@ -590,7 +590,7 @@ subroutine EDDRTF(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
     I = 2
     do L = 1, NLAYER
         DELTAU = OPTDEPTHS(L)
-        if (DELTAU .lt. 0.0) stop 'EDDRTF: TAU<0'
+        if (DELTAU .lt. 0.0) stop 'Error [EDDRTF]: TAU<0.'
         ! Special case for zero optical depth
         if (DELTAU .eq. 0.0) then
             TRANS = 1.0
@@ -777,7 +777,7 @@ subroutine TRIDIAG(N, LOWER, DIAG, UPPER, RHS)
     return
 
 990 continue
-    stop 'Singular matrix in TRIDIAG'
+    stop 'Error [TRIDIAG]: Singular matrix in TRIDIAG.'
 end subroutine
 
 subroutine MAKE_ANGLE_SET(NMU, NPHI, ITYPE, NPHI0MAX,&
@@ -840,7 +840,7 @@ subroutine MAKE_ANGLE_SET(NMU, NPHI, ITYPE, NPHI0MAX,&
                 NPHI0(J) = NPHI0MAX
             else
                 if (NPHI0MAX .gt. MAXNPHI)&
-                    & stop 'MAKE_ANGLE_SET: exceeded GOODNFFT'
+                    & stop 'Error [MAKE_ANGLE_SET]: exceeded GOODNFFT.'
                 NPHI0(J) = int(0.9 + NPHI0MAX*sqrt(1 - MU(J)**2))
                 NPHI0(J) = min(NPHI0MAX, GOODNFFT(NPHI0(J)))
             end if
@@ -854,7 +854,7 @@ subroutine MAKE_ANGLE_SET(NMU, NPHI, ITYPE, NPHI0MAX,&
         end do
 
     else
-        stop 'MAKE_ANGLE_SET: invalid discrete ordinate type'
+        stop 'Error [MAKE_ANGLE_SET]: invalid discrete ordinate type.'
     end if
     return
 end subroutine
@@ -1094,7 +1094,7 @@ subroutine INTERP_OUTPUT(OLDNPTS, NPTS,&
                             & GRIDPOS(DIR2, IP1) .eq. GRIDPOS(DIR2, IP)) goto 120
                     end do
                 end do
-                stop 'INTERP_OUTPUT: point not on an edge'
+                stop 'Error [INTERP_OUTPUT]: Point not on an edge.'
 120             continue
                 ! Interpolate the data from the two parent points at the
                 !   ends of the edge; assume the cell was split in half.
@@ -1152,7 +1152,7 @@ subroutine INTERP_RADIANCE(NSTOKES, OLDNPTS, NPTS, RSHPTR,&
                             & GRIDPOS(DIR2, IP1) .eq. GRIDPOS(DIR2, IP)) goto 120
                     end do
                 end do
-                stop 'INTERP_OUTPUT: point not on an edge'
+                stop 'Error [INTERP_OUTPUT]: Point not on an edge.'
 120             continue
                 ! Interpolate the data from the two parent points at the
                 !   ends of the edge; assume the cell was split in half.
@@ -1900,7 +1900,7 @@ subroutine FIND_BOUNDARY_RADIANCE(NSTOKES, XB, YB, MU2, PHI2,&
             IBC = IL
             if (BCPTR(IBC, 1) .ne. IP) IBC = IU
             if (BCPTR(IBC, 1) .ne. IP)&
-                & stop 'FIND_BOUNDARY_RADIANCE: Not at boundary'
+                & stop 'Error [FIND_BOUNDARY_RADIANCE]: Not at boundary.'
             RAD(:, J) = BCRAD(:, IBC)
 
         else
@@ -1919,7 +1919,7 @@ subroutine FIND_BOUNDARY_RADIANCE(NSTOKES, XB, YB, MU2, PHI2,&
             IBC = IL
             if (BCPTR(IBC, 2) .ne. IP) IBC = IU
             if (BCPTR(IBC, 2) .ne. IP)&
-                & stop 'FIND_BOUNDARY_RADIANCE: Not at boundary'
+                & stop 'Error [FIND_BOUNDARY_RADIANCE]: Not at boundary.'
 
             if (.not. LAMBERTIAN) then
                 call VARIABLE_BRDF_SURFACE(NBOTPTS, IBC, IBC, BCPTR(1, 2),&
@@ -2494,7 +2494,7 @@ subroutine COMPUTE_ONE_SOURCE(NSTOKES,&
     allocate (YLMDIR(NSTLEG, NLM), YLMSUN(NSTLEG, NLM))
     allocate (SUNDIRLEG(0:NLEG))
     allocate (UNSCLEGEN(2, 0:NLEG), SINGSCAT(NSTOKES, NUMPHASE))
-    if (abs(MU) .gt. 1.0) stop 'COMPUTE_ONE_SOURCE: Bad mu'
+    if (abs(MU) .gt. 1.0) stop 'Error [COMPUTE_ONE_SOURCE]: Bad mu.'
 
     TMS = DELTAM
     ! TMS = .FALSE.
@@ -2784,7 +2784,7 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
     else if (CZ .gt. 1.0e-3) then
         BITZ = 0
     else
-        stop 'INTEGRATE_SOURCE: Bad MU'
+        stop 'Error [INTEGRATE_SOURCE]: Bad MU.'
     end if
     IOCT = 1 + BITX + 2*BITY + 4*BITZ
     XM = 0.5*(XGRID(1) + XGRID(NX))
@@ -3195,7 +3195,7 @@ subroutine LEGENDRE_ALL(COSSCAT, NLEG, P)
     double precision X, PL, PL1, PL2
 
     X = dble(COSSCAT)
-    if (X*X .gt. 1.) stop 'LEGENDRE_ALL: |COSSCAT| larger than 1'
+    if (X*X .gt. 1.) stop 'Error [LEGENDRE_ALL]: |COSSCAT| larger than 1.'
     ! Use the stable upward recursion on l, starting from P_0
     PL2 = 1.0d0
     P(0) = PL2
@@ -3758,7 +3758,7 @@ subroutine INTEGRATE_PLANCK(X1, X2, F)
     else if (X1 .ge. C .and. X2 .ge. C) then
         F = INTHIGH(X1) - INTHIGH(X2)
     else
-        stop 'X1 and X2 out of order'
+        stop 'Error [INTEGRATE_PLANCK]: X1 and X2 out of order.'
     end if
     return
 end subroutine
@@ -3827,7 +3827,7 @@ subroutine GAUSQUADS(N, XA, WT)
     parameter(TINY=3.0d-7)
 
     K = N/2
-    if (2*K .ne. N) stop 'GAUSQUADS: N must be even'
+    if (2*K .ne. N) stop 'Error [GAUSQUADS]: N must be even.'
     do J = 1, K
         X = cos(3.141592654*(J - .25)/(N + .5))
         I = 0
@@ -3865,7 +3865,7 @@ subroutine DGAUSQUADS(N, XA, WT)
     parameter(TINY=3.0d-7)
 
     N2 = N/2
-    if (2*N2 .ne. N) stop 'DGAUSQUADS: N must be even'
+    if (2*N2 .ne. N) stop 'Error [DGAUSQUADS]: N must be even.'
     K = (N2 + 1)/2
     do J = 1, K
         X = cos(3.141592654*(J - .25)/(N2 + .5))
@@ -3946,12 +3946,12 @@ subroutine SSORT(X, Y, N, KFLAG)
     !***First executable statement  SSORT
     NN = N
     if (NN .lt. 1) then
-        stop 'The number of values to be sorted is not positive.'
+        stop 'Error [SSORT]: The number of values to be sorted is not positive.'
     end if
 
     KK = abs(KFLAG)
     if (KK .ne. 1 .and. KK .ne. 2) then
-        stop 'The sort control parameter, K, is not 2, 1, -1, or -2.'
+        stop 'Error [SSORT]: The sort control parameter, K, is not 2, 1, -1, or -2.'
     end if
 
     ! Alter array X to get decreasing order if needed
