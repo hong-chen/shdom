@@ -165,7 +165,7 @@ subroutine USER_INPUT(&
     write (*, '(1X,A)') 'Number of output files'
     read (*, *) NUMOUT
     write (*, *) NUMOUT
-    if (NUMOUT .gt. MAXOUT) stop 'USER_INPUT: MAXOUT exceeded'
+    if (NUMOUT .gt. MAXOUT) stop 'Error [USER_INPUT]: MAXOUT exceeded.'
     do I = 1, NUMOUT
         write (*, '(1X,A,A)') 'Output type (R-radiance, ',&
             & 'V-visualization, F-flux, H-heating,'
@@ -314,8 +314,8 @@ subroutine NAMELIST_INPUT (&
 
     character*256 NMLFILE
 
-    if (dMAXOUT .ne. MAXOUT) stop 'NAMELIST_INPUT: MAXOUT not the same.'
-    if (dMAXPAR .ne. MAXPAR) stop 'NAMELIST_INPUT: MAXPAR not the same.'
+    if (dMAXOUT .ne. MAXOUT) stop 'Error [NAMELIST_INPUT]: MAXOUT not the same.'
+    if (dMAXPAR .ne. MAXPAR) stop 'Error [NAMELIST_INPUT]: MAXPAR not the same.'
 
     SOLARMU = -1.0
     GNDALBEDO = 0.0
@@ -383,7 +383,7 @@ subroutine NAMELIST_INPUT (&
     dMAXITER = MAXITER
 
     dNUMOUT = NUMOUT
-    if (NUMOUT .gt. MAXOUT) stop 'NAMELIST_INPUT: MAXOUT exceeded'
+    if (NUMOUT .gt. MAXOUT) stop 'Error [NAMELIST_INPUT]: MAXOUT exceeded.'
     do I = 1, NUMOUT
         dOUTTYPES(I) = OUTTYPES(I)
         if (OUTTYPES(I) (1:1) .eq. 'R') then
@@ -448,11 +448,11 @@ subroutine CHECK_INPUT_PARAMETERS(&
     real FLUX
 
     if (SRCTYPE .ne. 'S' .and. SRCTYPE .ne. 'T' .and. SRCTYPE .ne. 'B')&
-        & stop 'CHECK_INPUT_PARMETERS: Illegal source type'
+        & stop 'Error [CHECK_INPUT_PARMETERS]: Illegal source type.'
     if (UNITS .ne. 'R' .and. UNITS .ne. 'T' .and. UNITS .ne. 'B')&
-        & stop 'CHECK_INPUT_PARMETERS: Illegal units'
+        & stop 'Error [CHECK_INPUT_PARMETERS]: Illegal units.'
     if (GRIDTYPE .ne. 'E' .and. GRIDTYPE .ne. 'P' .and. GRIDTYPE .ne. 'F')&
-        & stop 'CHECK_INPUT_PARMETERS: Illegal grid type'
+        & stop 'Error [CHECK_INPUT_PARMETERS]: Illegal grid type.'
 
     if (SRCTYPE .ne. 'T' .and. SOLARMU .eq. 0.0) then
         write (*, *) 'CHECK_INPUT_PARMETERS: cosine solar zenith angle'
@@ -491,7 +491,7 @@ subroutine CHECK_INPUT_PARAMETERS(&
 
     if (SRCTYPE .ne. 'S' .and.&
         & (GNDTEMP .lt. 150. .or. GNDTEMP .gt. 350.)) then
-        write (*, *) 'CHECK_INPUT_PARMETERS: Warning - '
+        write (*, *) 'Warning [CHECK_INPUT_PARMETERS]: '
         write (*, *) '  ground temperature out of Earth range.'
         write (*, *)
     end if
@@ -627,7 +627,7 @@ subroutine READ_PROPERTIES(&
         stop
     end if
     read (1, *) NPX, NPY, NPZ
-    if (NPZ .gt. MAXNZ) stop 'READ_PROPERTIES: MAXNZ exceeded'
+    if (NPZ .gt. MAXNZ) stop 'Error [READ_PROPERTIES]: MAXNZ exceeded.'
     read (1, *) DELX, DELY, (ZLEVELS(K), K=1, NPZ)
 
     ! Property file type E is for extinction only format
@@ -640,9 +640,9 @@ subroutine READ_PROPERTIES(&
             NLEG = min(NLEG, MAXLEG)
         end if
         if (NPX*NPY*NPZ .gt. MAXPG)&
-            & stop 'READ_PROPERTIES: MAXPG exceeded'
+            & stop 'Error [READ_PROPERTIES]: MAXPG exceeded.'
         if (NLEG + 1 .gt. MAXPGL)&
-            & stop 'READ_PROPERTIES: MAXPGL exceeded'
+            & stop 'Error [READ_PROPERTIES]: MAXPGL exceeded.'
         rewind (1)
         read (1, *)
         read (1, *) NPX, NPY, NPZ
@@ -690,15 +690,15 @@ subroutine READ_PROPERTIES(&
             end do
             if (NLEG .gt. MAXLEG) then
                 write (*, '(A,I4,A,I4,A)')&
-                    & 'Warning: truncating phase function from ',&
+                    & 'Warning [READ_PROPERTIES]: Truncating phase function from ',&
                     & NLEG, ' to ', MAXLEG, ' Legendre terms.'
             end if
             NLEG = min(NLEG, MAXLEG)
         end if
         N = NPX*NPY*NPZ
-        if (N .gt. MAXPG) stop 'READ_PROPERTIES: MAXPG exceeded'
+        if (N .gt. MAXPG) stop 'Error [READ_PROPERTIES]: MAXPG exceeded.'
         if (NUMPHASE*(NLEG + 1)*NSTLEG .gt. MAXPGL)&
-            & stop 'READ_PROPERTIES: MAXPGL exceeded'
+            & stop 'Error [READ_PROPERTIES]: MAXPGL exceeded.'
         rewind (1)
         read (1, *)
         read (1, *) NPX, NPY, NPZ
@@ -762,9 +762,9 @@ subroutine READ_PROPERTIES(&
             read (1, *) DELX, DELY, (ZLEVELS(K), K=1, NPZ)
         end if
         N = NPX*NPY*NPZ
-        if (N .gt. MAXPG) stop 'READ_PROPERTIES: MAXPG exceeded'
+        if (N .gt. MAXPG) stop 'Error [READ_PROPERTIES]: MAXPG exceeded.'
         if (N*(NLEG + 1) .gt. MAXPGL)&
-            & stop 'READ_PROPERTIES: MAXPGL exceeded'
+            & stop 'Error [READ_PROPERTIES]: MAXPGL exceeded.'
         MAXASYM = -1.0
         do while (.true.)
             read (1, *, end=290) IX, IY, IZ, TMP, EXT, ALB, NUML
@@ -842,7 +842,7 @@ subroutine CHECK_PROPERTY_INPUT(&
         TMAX = max(TMAX, TEMPP(I))
     end do
     if (TMIN .lt. 150.0 .or. TMAX .gt. 350.0) then
-        write (*, *) 'CHECK_PROPERTY_INPUT: Warning - ',&
+        write (*, *) 'Warning [CHECK_PROPERTY_INPUT]: ',&
             & 'temperature min and max (Kelvin): ', TMIN, TMAX
         write (*, *)
     end if
@@ -870,7 +870,7 @@ subroutine CHECK_PROPERTY_INPUT(&
         if (LEGENP(1, 1, I) .eq. 1.0) LEGWARN = .true.
     end do
     if (LEGWARN) then
-        write (*, *) 'CHECK_PROPERTY_INPUT: Warning - ',&
+        write (*, *) 'Warning [CHECK_PROPERTY_INPUT]: ',&
             & 'an asymmetry parameter is 1/3 (Chi1=1); ',&
             & '  Chi0 should not be specified for Chi1.'
         write (*, *)
@@ -901,7 +901,7 @@ subroutine CHECK_PROPERTY_INPUT(&
         end do
     end do
     if (NTHICK .gt. 0) then
-        write (*, *) 'CHECK_PROPERTY_INPUT: Warning -'
+        write (*, *) 'Warning [CHECK_PROPERTY_INPUT]: '
         write (*, '(A,A,I7)') '  Number of property grid cells',&
             & ' with optical depth greater than 2 : ', NTHICK
         write (*, *) ' Max cell optical depth : ', MAXTAU
@@ -949,7 +949,7 @@ subroutine READ_SURFACE_SIZE(SFCFILE, MAXSFCPTS, MAXSFCPARS)
         ! Surface file type D is for Diner polarized RPV surface:
         MAXSFCPARS = 6
     else
-        stop 'READ_SURFACE_SIZE: Unknown BRDF type'
+        stop 'Error [READ_SURFACE_SIZE]: Unknown BRDF type.'
     end if
     close (1)
     return
@@ -1020,9 +1020,9 @@ subroutine READ_SURFACE(&
                 SFCPARMS(I + 1) = TEMP
                 SFCPARMS(I + 2) = ALB
                 if (ALB .lt. 0.0 .or. ALB .gt. 1.0)&
-                    & stop 'READ_SURFACE: Illegal surface albedo'
+                    & stop 'Error [READ_SURFACE]: Illegal surface albedo.'
                 if (TEMP .lt. 150. .or. TEMP .gt. 350.)&
-                    & write (*, *) 'READ_SURFACE: Warning -',&
+                    & write (*, *) 'Warning [READ_SURFACE]: ',&
                     & ' surface temperature: ', IX, IY, TEMP
                 GNDTEMP = GNDTEMP + TEMP
                 GNDALBEDO = GNDALBEDO + ALB
@@ -1150,7 +1150,7 @@ subroutine READ_SURFACE(&
         end do
 
     else
-        stop 'READ_SURFACE: Unknown BRDF type'
+        stop 'Error [READ_SURFACE]: Unknown BRDF type.'
     end if
 
 290 continue
@@ -1240,7 +1240,7 @@ subroutine READ_CKD(&
             & abs(WAVENUM2 - WAVENO(2)) .lt. 1.0) then
             backspace (1)
             NG = N
-            if (NG .gt. MAXNG) stop 'READ_CKD: MAXNG exceeded'
+            if (NG .gt. MAXNG) stop 'Error [READ_CKD]: MAXNG exceeded.'
             read (1, *) JB, WAVENO(1), WAVENO(2), SOLFLUX,&
                 & N, (DELG(IG), IG=1, NG)
         end if
@@ -1252,7 +1252,7 @@ subroutine READ_CKD(&
     end if
     ! Read the Z level heights
     read (1, *) NZCKD
-    if (NZCKD .gt. MAXNZ) stop 'READ_CKD: MAXNZ exceeded'
+    if (NZCKD .gt. MAXNZ) stop 'Error [READ_CKD]: MAXNZ exceeded.'
     read (1, *)
     read (1, *)
     do I = 1, NZCKD
