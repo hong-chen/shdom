@@ -2089,7 +2089,7 @@ subroutine BACK_INT_GRID3D(NX, NY, NZ, NA, NPTS, NCELLS,&
     else if (CZ .gt. 1.0e-3) then
         BITZ = 0
     else
-        stop 'BACK_INT_GRID: Bad MU'
+        stop 'Error [BACK_INT_GRID]: Bad MU.'
     end if
     ! IOCT is the octant the ray come from or the discrete ordinate
     IOCT = 1 + BITX + 2*BITY + 4*BITZ
@@ -2423,7 +2423,7 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
     else if (CZ .gt. 1.0e-3) then
         BITZ = 0
     else
-        stop 'BACK_INT_GRID: Bad MU'
+        stop 'Error [BACK_INT_GRID]: Bad MU.'
     end if
     ! IOCT is the octant the ray come from or the discrete ordinate
     IOCT = 1 + BITX + 2*BITY + 4*BITZ
@@ -2751,7 +2751,7 @@ subroutine BACK_INT_GRID2D(NX, NY, NZ, NA, NPTS, NCELLS,&
     else if (CZ .gt. 1.0e-3) then
         BITZ = 0
     else
-        stop 'BACK_INT_GRID: Bad MU'
+        stop 'Error [BACK_INT_GRID]: Bad MU.'
     end if
     ! IOCT is the octant the ray come from or the discrete ordinate
     IOCT = 1 + BITX + 4*BITZ
@@ -2983,7 +2983,7 @@ subroutine BACK_INT_GRID1D(NX, NY, NZ, NA, NPTS, NCELLS,&
     else if (CZ .gt. 1.0e-3) then
         BITZ = 0
     else
-        stop 'BACK_INT_GRID3D: Bad MU'
+        stop 'Error [BACK_INT_GRID3D]: Bad MU.'
     end if
     ! IOCT is the octant the ray come from or the discrete ordinate
     IOCT = 1 + 4*BITZ
@@ -3126,7 +3126,7 @@ subroutine NEXT_CELL(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
         do while (TREEPTR(2, IC) .gt. 0)
             ! Get the direction cell is split
             DIR = ibits(int(CELLFLAGS(IC)), 2, 2)
-            if (DIR .eq. 0) stop 'NEXT_CELL: No split direction'
+            if (DIR .eq. 0) stop 'Error [NEXT_CELL]: No split direction.'
             ! If split is in direction of face then choose the near chil
             !   which is the negative side cell if this is a positive fa
             IC1 = TREEPTR(2, IC)
@@ -3299,7 +3299,7 @@ logical function SWEEP_NEXT_CELL(BCFLAG, NXC, NYC, NZ, IOCT,&
             ! Depending on the ordinate octant, decide which child to
             !   do first and put the second child on the stack.
             SP = SP + 1
-            if (SP .gt. 50) stop 'SWEEP_NEXT_CELL: Stack exceeded'
+            if (SP .gt. 50) stop 'Error [SWEEP_NEXT_CELL]: Stack exceeded.'
             IDIR = ibits(int(CELLFLAGS(IC)), 2, 2) - 1
             if (btest(IOCT - 1, IDIR)) then
                 STACK(SP) = TREEPTR(2, IC) + 1
@@ -3665,7 +3665,7 @@ subroutine DIVIDE_CELL(NPTS, NCELLS, GRIDPTR, NEIGHPTR,&
 
     ! Only allow to divide an end cell (i.e. one not yet divided)
     if (TREEPTR(2, ICELL) .ne. 0) then
-        stop 'DIVIDE_CELL: Cannot divide already split cell.'
+        stop 'Error [DIVIDE_CELL]: Cannot divide already split cell.'
     end if
 
     ! Do the tree pointers: parent points to negative child,
@@ -3846,7 +3846,7 @@ subroutine INHERIT_NEIGHBOR(ICELL, IFACE, IN,&
                 ! Otherwise need to go to both children so put the second ch
                 !   on the stack and set the pointer to go to the first chil
                 SP = SP + 1
-                if (SP .gt. 50) stop 'INHERIT_NEIGHBOR: Stack exceeded'
+                if (SP .gt. 50) stop 'Error [INHERIT_NEIGHBOR]: Stack exceeded.'
                 STACK(SP) = TREEPTR(2, IC) + 1
                 IC = TREEPTR(2, IC)
             end if
@@ -4001,7 +4001,7 @@ subroutine MATCH_GRID_POINT(XP, YP, ZP, ICELL, IFACE,&
 
         ! Get the direction current cell is split
         DIR = ibits(int(CELLFLAGS(IC)), 2, 2)
-        if (DIR .eq. 0) stop 'MATCH_GRID_POINT: No split direction'
+        if (DIR .eq. 0) stop 'Error [MATCH_GRID_POINT]: No split direction.'
         ! If split is in direction of face then choose the near child ce
         !   which is the negative side cell if this is a positive face.
         IC1 = TREEPTR(2, IC)
@@ -4037,7 +4037,7 @@ subroutine MATCH_GRID_POINT(XP, YP, ZP, ICELL, IFACE,&
                 end if
             end if
             if (SP .ge. MAXSTACK)&
-                & stop 'MATCH_GRID_POINT: MAXSTACK exceeded'
+                & stop 'Error [MATCH_GRID_POINT]: MAXSTACK exceeded.'
         end if
     end do
 
