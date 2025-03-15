@@ -459,12 +459,19 @@
       real(4) :: THETA1_, COS1_, SIN1_, TAN1_, SEC1_
       real(4) :: THETA2_, COS2_, SIN2_, TAN2_, SEC2_
       real(4) :: COS_XI_, D_2, COS_T, SIN_T, T, O
+      real(4) :: COS_MIN
 
       ! calculate trigonometry
       !╭────────────────────────────────────────────────╮!
+      COS_MIN = 0.03
+
       PI = acos(-1.0)
       COS1 = MU1
       COS2 = MU2
+
+      if (COS1 .lt. COS_MIN) COS1 = COS_MIN
+      if (COS2 .lt. COS_MIN) COS2 = COS_MIN
+
       SIN1 = sqrt(1.0 - COS1**2)
       SIN2 = sqrt(1.0 - COS2**2)
       TAN1 = SIN1/COS1
@@ -476,6 +483,7 @@
       ! K_VOL
       !╭────────────────────────────────────────────────╮!
       COS_XI = ((COS1*COS2)) + (SIN1*SIN2*COS_PHI)
+
       SIN_XI = sqrt(1.0 - COS_XI**2)
       XI = acos(COS_XI)
 
@@ -489,7 +497,13 @@
       THETA1_ = atan(B2R*TAN2)
       THETA2_ = atan(B2R*TAN1)
       COS1_ = cos(THETA1_)
+      if (COS1_ .lt. -1.0) COS1_ = -1.0
+      if (COS1_ .gt.  1.0) COS1_ =  1.0
+
       COS2_ = cos(THETA2_)
+      if (COS2_ .lt. -1.0) COS2_ = -1.0
+      if (COS2_ .gt.  1.0) COS2_ =  1.0
+
       SIN1_ = sqrt(1.0 - COS1_**2)
       SIN2_ = sqrt(1.0 - COS2_**2)
       TAN1_ = SIN1_/COS1_
@@ -500,8 +514,12 @@
       COS_XI_ = COS1_*COS2_ + SIN1_*SIN2_*COS_PHI
 
       D_2 = TAN1_**2 + TAN2_**2 - 2.0*TAN1_*TAN2_*COS_PHI
+      if (D_2 .lt. 0.0) D_2 = 0.0
 
       COS_T = H2B * (sqrt(D_2 + (TAN1_*TAN2_*SIN_PHI)**2))/(SEC1_ + SEC2_)
+      if (COS_T .lt. -1.0) COS_T = -1.0
+      if (COS_T .gt.  1.0) COS_T =  1.0
+
       SIN_T = sqrt(1.0 - COS_T**2)
       T = acos(COS_T)
 
@@ -511,6 +529,7 @@
       !╰────────────────────────────────────────────────╯!
 
       LSRT_REFLECTION = F_ISO + F_VOL*K_VOL + F_GEO*K_GEO
+      if (LSRT_REFLECTION .lt. 0.0) LSRT_REFLECTION = 0.0
 
       return
 

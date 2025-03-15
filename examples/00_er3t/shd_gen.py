@@ -367,8 +367,8 @@ def gen_sfc_lsrt_file(
     #╭────────────────────────────────────────────────────────────────────────────╮#
     f = h5py.File('/Users/hchen/Work/01_libera/06_mod-lrt-bmk/aux/surface_albedo_land.h5', 'r')
     f_iso = f['fiso_659'][...]
-    f_geo = f['fgeo_659'][...]
     f_vol = f['fvol_659'][...]
+    f_geo = f['fgeo_659'][...]
     f.close()
 
     Nx, Ny = f_iso.shape
