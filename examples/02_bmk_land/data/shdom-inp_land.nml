@@ -1,6 +1,6 @@
  $SHDOMINPUT
  RUNNAME = 'LAND'
- PROPFILE = 'tmp-data/shdom-prp_zero.txt'
+ !PROPFILE = 'tmp-data/shdom-prp_zero.txt'
  SFCFILE = '/Users/hchen/Work/mygit/shdom/data/shdom-sfc_land-lsrt.txt'
  CKDFILE = '/Users/hchen/Work/mygit/shdom/data/shdom-ckd_modis-aqua-b01.txt'
  INSAVEFILE = 'NONE'
