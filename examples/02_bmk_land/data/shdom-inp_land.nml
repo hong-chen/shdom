@@ -6,9 +6,9 @@
  INSAVEFILE = 'NONE'
  OUTSAVEFILE ='NONE'
  NSTOKES = 1
- NX = 1
- NY = 1
- NZ = 10
+ NX = 416
+ NY = 531
+ NZ = 7
  NMU = 8
  NPHI = 16
  BCFLAG = 0

@@ -452,11 +452,44 @@ def gen_two_params_lwc_file(
 
     return
 
+def gen_lwc_zero(
+        Nx=417,
+        Ny=532,
+        Nz=1,
+        dx=0.25,
+        dy=0.25,
+        wavelength=650.0,
+        solver='3D',
+        overwrite=False,
+        plot=True
+        ):
+
+    # generate les_lwc.txt
+    #╭────────────────────────────────────────────────────────────────────────────╮#
+    lwc = np.zeros((Nx, Ny, Nz), dtype=np.float32)
+    cer = np.zeros((Nx, Ny, Nz), dtype=np.float32)
+    cer[...] = 0.5
+
+    with open('shdom-lwc_les-zero.txt', 'w') as f:
+        f.write('2  parameter LWC file\n')
+        f.write('%d %d %d\n' % lwc.shape)
+        f.write('%.4f %.4f\n' % (dx, dy))
+        f.write('1.0\n')
+        f.write('285.0\n')
+        for ix in np.arange(Nx):
+            for iy in np.arange(Ny):
+                for iz in np.arange(Nz):
+                    f.write('%d %d %d %.6f %.2f\n' % ((ix+1), (iy+1), (iz+1), lwc[ix, iy, iz], cer[ix, iy, iz]))
+    #╰────────────────────────────────────────────────────────────────────────────╯#
+
+    return
+
 
 if __name__ == '__main__':
 
     # gen_two_params_lwc_file(overwrite=False)
     # gen_clear_sky()
-    gen_sfc_lsrt_file()
+    # gen_sfc_lsrt_file()
+    gen_lwc_zero()
 
     pass

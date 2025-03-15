@@ -22,8 +22,8 @@ set RunSHDOMsolve=0
 set SingleFrames=0
 set RunCameraVisual=0
 
-set basefile=les
-set prpfile="${fdir_data_tmp}/${basefile}_prp.txt"
+set basefile="zero"
+set prpfile="${fdir_data_tmp}/shdom-prp_${basefile}.txt"
 set savefile=${basefile}a.bin
 set outbase=${basefile}a
 
@@ -57,7 +57,7 @@ if ($MakePropertyFile) then
   # old type 2 LWC file for the 64x64x16 stratocumulus LES field.
   # Adds in six other levels.
 
-  set lwcfile="${fdir_data_tmp}/les_lwc.txt"
+  set lwcfile="/Users/hchen/Work/mygit/shdom/data/shdom-lwc_zero.txt"
   set scattable="${fdir_data_tmp}/water_w${wavename}c_sca.txt"
   set poltabs = (F)
   set maxnewphase=1000
@@ -65,7 +65,7 @@ if ($MakePropertyFile) then
   set fracphasetol=0.1
   set sfcpres=1013.0
   set Nzother=6
-  set ZTother=(0.0 286.3  0.200 285.1  0.4125 283.8  0.8375 287.0 5.0 260.0  19.0 180.0)
+  set ZTother=(0.0 286.3  0.200 285.1  0.4125 283.8  0.8375 287.0  2.0 286.3  3.0 286.3  4.0 286.3  5.0 260.0  19.0 180.0)
   set polout=U
 
   put 1 $scattable 1 "$poltabs" "$lwcfile" \
