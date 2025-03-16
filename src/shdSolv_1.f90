@@ -281,20 +281,20 @@ subroutine SOLVE_RTE(&
         !   the solution criterion, and dot products for acceleration
         if (SOLCRIT .lt. ENDADAPTSOL .or. ITER .gt. 30) FIXSH = .true.
         call COMPUTE_SOURCE(NSTOKES, ML, MM, NLM,&
-            & NSTLEG, NLEG, NUMPHASE, NPTS,&
-            & FIXSH, SRCTYPE, SOLARMU, YLMSUN, ALBEDO, LEGEN,&
-            & IPHASE, PLANCK, DIRFLUX, SHACC,&
-            & MAXIV, RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR, DELSOURCE,&
-            & .false., ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM)
+            &NSTLEG, NLEG, NUMPHASE, NPTS,&
+            &FIXSH, SRCTYPE, SOLARMU, YLMSUN, ALBEDO, LEGEN,&
+            &IPHASE, PLANCK, DIRFLUX, SHACC,&
+            &MAXIV, RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR, DELSOURCE,&
+            &.false., ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM)
 
         ! Calculate the acceleration parameter and solution criterion
         !   from all the processors
         call CALC_ACCEL_SOLCRIT(ACCELFLAG, DELJDOT, DELJOLD, DELJNEW,&
-            & JNORM, ACCELPAR, SOLCRIT)
+            &JNORM, ACCELPAR, SOLCRIT)
 
         ! Accelerate the convergence of the source function vector
         call ACCELERATE_SOLUTION(ACCELPAR, NPTS, SHPTR, OSHPTR,&
-            & NSTOKES, SOURCE, DELSOURCE)
+            &NSTOKES, SOURCE, DELSOURCE)
 
         ! If it is a not scattering medium then do only one iteration
         if (ALBMAX .lt. SOLACC) SOLCRIT = SOLACC
@@ -302,13 +302,13 @@ subroutine SOLVE_RTE(&
         ! Print out the log solution criterion, number of points,
         !   and average SH truncation.
         write (6, '(2X,I4,F8.3,1X,E10.3,1X,I8,1X,F8.2,1X,F6.3)')&
-            & ITER, log10(max(SOLCRIT, 1.0e-20)), SPLITCRIT,&
-            & NPTS, FLOAT(SHPTR(NPTS + 1))/NPTS,&
-            & FLOAT(SHPTR(NPTS + 1))/(NPTS*NLM)
+            &ITER, log10(max(SOLCRIT, 1.0e-20)), SPLITCRIT,&
+            &NPTS, FLOAT(SHPTR(NPTS + 1))/NPTS,&
+            &FLOAT(SHPTR(NPTS + 1))/(NPTS*NLM)
     end do
 
     write (6, '(1X,A,I6,A,F9.6)') '! Iterations: ', ITER,&
-        & '     Final Criterion: ', SOLCRIT
+        &'     Final Criterion: ', SOLCRIT
 
     if (SFCTYPE(1:1) .eq. 'V' .and. UNIFORM_SFC_BRDF) then
         deallocate (SFC_BRDF_DO)
