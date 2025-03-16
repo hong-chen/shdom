@@ -628,7 +628,7 @@ def figure_modis_comp(fname):
                 ax4.set_ylim(extent[2:])
                 ax4.set_title('Heatmap')
                 ax4.plot([0.0, 1.0], [0.0, 1.0], color='gray', ls='--')
-                ax4.set_xlabel('MCARaTS')
+                ax4.set_xlabel('MODIS')
                 ax4.set_ylabel('SHDOM')
                 divider = make_axes_locatable(ax4)
                 cax = divider.append_axes('right', '5%', pad='3%')
