@@ -375,14 +375,16 @@ def gen_sfc_lsrt_file(
     Nx, Ny = f_iso.shape
     Nx = 250
     Ny = 250
+    Xs = 150
+    Ys = 150
 
     # with open('shdom-sfc_land-lsrt.txt', 'w') as f:
     with open('shdom-sfc_modis.txt', 'w') as f:
         f.write('T\n')
         # f.write('%d %d %.4f %.4f\n' % (Nx, Ny, (48.0/Nx), (48.0/Ny)))
         f.write('%d %d %.4f %.4f\n' % (Nx, Ny, 0.25, 0.25))
-        for ix in np.arange(Nx):
-            for iy in np.arange(Ny):
+        for ix in np.arange(Xs, Xs+Nx):
+            for iy in np.arange(Ys, Ys+Ny):
                 f.write('%d %d %.2f %.6f %.6f %.6f\n' % ((ix+1), (iy+1), 285.0, f_iso[ix, iy], f_vol[ix, iy], f_geo[ix, iy]))
     #╰────────────────────────────────────────────────────────────────────────────╯#
 
@@ -547,6 +549,8 @@ def gen_lwc_modis(
     Nx, Ny, Nz = lwc.shape
     Nx = 250
     Ny = 250
+    Xs = 150
+    Ys = 150
 
     with open('shdom-lwc_modis.txt', 'w') as f:
         f.write('2  parameter LWC file\n')
@@ -554,8 +558,8 @@ def gen_lwc_modis(
         f.write('%.4f %.4f\n' % (cld0.lay['dx']['data'], cld0.lay['dy']['data']))
         f.write('%s\n' % ' '.join([str('%.4f' % (alt0+0.5)) for alt0 in cld0.lay['altitude']['data']]))
         f.write('%s\n' % ' '.join([str('%.4f' % np.mean(temp[:, :, iz])) for iz in range(Nz)]))
-        for ix in np.arange(Nx):
-            for iy in np.arange(Ny):
+        for ix in np.arange(Xs, Xs+Nx):
+            for iy in np.arange(Ys, Ys+Ny):
                 for iz in np.arange(Nz):
                     f.write('%d %d %d %.6f %.2f\n' % ((ix+1), (iy+1), (iz+1), lwc[ix, iy, iz], cer[ix, iy, iz]))
                     # f.write('%d %d %d %.6f %.2f\n' % ((ix+1), (iy+1), (iz+1), 0.0, cer[ix, iy, iz]))
@@ -570,6 +574,6 @@ if __name__ == '__main__':
     # gen_clear_sky()
     gen_sfc_lsrt_file()
     # gen_lwc_zero()
-    # gen_lwc_modis()
+    gen_lwc_modis()
 
     pass
