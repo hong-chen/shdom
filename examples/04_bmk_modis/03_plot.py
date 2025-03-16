@@ -98,44 +98,6 @@ def get_data_shdom_out_txt(
 
     return data
 
-
-def figure_les(fname):
-
-    data = get_data_shdom_out_txt(fname)
-
-    for i in range(data.shape[0]):
-        for j in range(data.shape[1]):
-
-            data_shd = np.squeeze(data[i, j, ...])
-
-            # figure
-            #╭────────────────────────────────────────────────────────────────────────────╮#
-            plot = True
-            extent = [0, 48, 0, 48]
-            if plot:
-                plt.close('all')
-                fig = plt.figure(figsize=(8, 8))
-                # plot1
-                #╭──────────────────────────────────────────────────────────────╮#
-                ax1 = fig.add_subplot(111, aspect='auto')
-                cs = ax1.imshow(data_shd, origin='lower', cmap='Greys_r', zorder=0, aspect='auto', vmin=0.0, vmax=0.5, extent=extent)
-                ax1.axis('off')
-                #╰──────────────────────────────────────────────────────────────╯#
-                # save figure
-                #╭──────────────────────────────────────────────────────────────╮#
-                fig.subplots_adjust(hspace=0.35, wspace=0.35)
-                _metadata_ = {'Computer': os.uname()[1], 'Script': os.path.abspath(__file__), 'Function':sys._getframe().f_code.co_name, 'Date':datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}
-                fname_fig = '%s_%2.2d_%2.2d.png' % (_metadata_['Function'], i, j)
-                plt.savefig(fname_fig, bbox_inches='tight', metadata=_metadata_, transparent=False, pad_inches=0.0)
-                #╰──────────────────────────────────────────────────────────────╯#
-                # plt.show()
-                # sys.exit()
-                plt.close(fig)
-                plt.clf()
-            #╰────────────────────────────────────────────────────────────────────────────╯#
-
-
-
 def run_mcarats(
         wavelength=650.0,
         solver='3D',
@@ -351,7 +313,6 @@ def run_mcarats(
     er3t.util.print_reference()
     #╰────────────────────────────────────────────────────────────────────────────╯#
 
-
 def figure_diff_vs_ipa():
 
     # shdom
@@ -487,7 +448,6 @@ def figure_shd_vs_mca():
         plt.clf()
     #╰────────────────────────────────────────────────────────────────────────────╯#
 
-
 def figure_lwc_shd():
 
     # shdom
@@ -541,7 +501,44 @@ def figure_lwc_shd():
         plt.clf()
     #╰────────────────────────────────────────────────────────────────────────────╯#
 
-def figure_les_comp(fname):
+
+
+def figure_modis(fname):
+
+    data = get_data_shdom_out_txt(fname)
+
+    for i in range(data.shape[0]):
+        for j in range(data.shape[1]):
+
+            data_shd = np.squeeze(data[i, j, ...])
+
+            # figure
+            #╭────────────────────────────────────────────────────────────────────────────╮#
+            plot = True
+            extent = [0, 48, 0, 48]
+            if plot:
+                plt.close('all')
+                fig = plt.figure(figsize=(8, 8))
+                # plot1
+                #╭──────────────────────────────────────────────────────────────╮#
+                ax1 = fig.add_subplot(111, aspect='auto')
+                cs = ax1.imshow(data_shd, origin='lower', cmap='Greys_r', zorder=0, aspect='auto', vmin=0.0, vmax=0.5, extent=extent)
+                ax1.axis('off')
+                #╰──────────────────────────────────────────────────────────────╯#
+                # save figure
+                #╭──────────────────────────────────────────────────────────────╮#
+                fig.subplots_adjust(hspace=0.35, wspace=0.35)
+                _metadata_ = {'Computer': os.uname()[1], 'Script': os.path.abspath(__file__), 'Function':sys._getframe().f_code.co_name, 'Date':datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}
+                fname_fig = '%s_%2.2d_%2.2d.png' % (_metadata_['Function'], i, j)
+                plt.savefig(fname_fig, bbox_inches='tight', metadata=_metadata_, transparent=False, pad_inches=0.0)
+                #╰──────────────────────────────────────────────────────────────╯#
+                # plt.show()
+                # sys.exit()
+                plt.close(fig)
+                plt.clf()
+            #╰────────────────────────────────────────────────────────────────────────────╯#
+
+def figure_modis_comp(fname):
 
     data = get_data_shdom_out_txt(fname)
 
@@ -662,20 +659,10 @@ def figure_les_comp(fname):
             #╰────────────────────────────────────────────────────────────────────────────╯#
 
 
-
 if __name__ == '__main__':
 
-    # fname = 'tmp-data/shdom-out_les-nockd.txt'
     fname = 'tmp-data/shdom-out_modis.txt'
-    # fname = 'tmp-data/shdom-out_les-ipa.txt'
 
-    figure_les(fname)
-    # figure_les_comp(fname)
-
-    # run_mcarats(solver='IPA')
-
-    # figure_diff_vs_ipa()
-    # figure_shd_vs_mca()
-
-    # figure_lwc_shd()
+    # figure_modis(fname)
+    # figure_modis_comp(fname)
     pass
