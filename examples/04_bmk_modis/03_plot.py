@@ -581,7 +581,7 @@ def figure_modis_comp(fname):
                 # plot1
                 #╭──────────────────────────────────────────────────────────────╮#
                 ax1 = fig.add_subplot(221, aspect='equal')
-                cs = ax1.imshow(data_shd, origin='lower', cmap='Greys_r', zorder=0, aspect='equal', vmin=0.0, vmax=0.6, extent=extent)
+                cs = ax1.imshow(data_shd, origin='lower', cmap='viridis', zorder=0, aspect='equal', vmin=0.0, vmax=0.6, extent=extent)
                 # ax1.set_title('SHDOM (%s)' % tag_shd)
                 ax1.set_title('SHDOM')
 
@@ -590,7 +590,7 @@ def figure_modis_comp(fname):
                 cbar = fig.colorbar(cs, cax=cax)
 
                 ax2 = fig.add_subplot(222, aspect='equal')
-                cs = ax2.imshow((data_shd-data_mca), origin='lower', cmap='seismic', zorder=0, aspect='equal', vmin=-0.1, vmax=0.1, extent=extent)
+                cs = ax2.imshow((data_shd-data_mca), origin='lower', cmap='seismic', zorder=0, aspect='equal', vmin=-0.3, vmax=0.3, extent=extent)
                 ax2.set_title('SHDOM - MODIS')
 
                 divider = make_axes_locatable(ax2)
@@ -598,7 +598,7 @@ def figure_modis_comp(fname):
                 cbar = fig.colorbar(cs, cax=cax)
 
                 ax3 = fig.add_subplot(223, aspect='equal')
-                cs = ax3.imshow(data_mca, origin='lower', cmap='Greys_r', zorder=0, aspect='equal', vmin=0.0, vmax=0.6, extent=extent)
+                cs = ax3.imshow(data_mca, origin='lower', cmap='viridis', zorder=0, aspect='equal', vmin=0.0, vmax=0.6, extent=extent)
                 # ax3.set_title('MCARaTS (%s)' % tag_mca)
                 ax3.set_title('MODIS')
 
