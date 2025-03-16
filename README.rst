@@ -168,6 +168,10 @@ Source Code File Change
   * converted from F77 to F90
   * formatted the code
 
+* ``src/shdSurf_brdf.f90``: separated from ``shdomsub2.f``
+
+  * added LSRT model
+
 * ``src/shdSurf_ocean.f90``: was ``ocean_brdf.f``
 
   * converted from F77 to F90
