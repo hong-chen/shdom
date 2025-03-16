@@ -1705,7 +1705,7 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
         SOZ = (GRIDPOS(3, IOPP) - ZE)*CZINV
         SO = min(SOX, SOY, SOZ)
         if (SO .lt. -EPS) then
-            write (6, *) 'Error [INTEGRATE_1RAY]: SO<0  ',&
+            write (6, *) 'Error [INTEGRATE_1RAY]: SO<0 ',&
                 & MU2, PHI2, XE, YE, ZE, SO, ICELL
             stop
         end if
@@ -2837,7 +2837,7 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
         SOZ = (GRIDPOS(3, IOPP) - ZE)*CZINV
         SO = min(SOX, SOY, SOZ)
         if (SO .lt. -EPS) then
-            write (6, *) 'Error [INTEGRATE_SOURCE]: SO<0  ',&
+            write (6, *) 'Error [INTEGRATE_SOURCE]: SO<0 ',&
                 & MU, PHI, X0, Y0, Z0, XE, YE, ZE, SO, SOX, SOY, SOZ, XGRID(1), YGRID(1),&
                 & GRIDPOS(1, IOPP), GRIDPOS(2, IOPP), GRIDPOS(3, IOPP)
             stop
