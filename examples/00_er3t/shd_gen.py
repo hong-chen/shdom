@@ -376,7 +376,8 @@ def gen_sfc_lsrt_file(
 
     with open('shdom-sfc_land-lsrt.txt', 'w') as f:
         f.write('T\n')
-        f.write('%d %d %.4f %.4f\n' % (Nx, Ny, (48.0/Nx), (48.0/Ny)))
+        # f.write('%d %d %.4f %.4f\n' % (Nx, Ny, (48.0/Nx), (48.0/Ny)))
+        f.write('%d %d %.4f %.4f\n' % (Nx, Ny, 0.25, 0.25))
         for ix in np.arange(Nx):
             for iy in np.arange(Ny):
                 f.write('%d %d %.2f %.6f %.6f %.6f\n' % ((ix+1), (iy+1), 285.0, f_iso[ix, iy], f_vol[ix, iy], f_geo[ix, iy]))
