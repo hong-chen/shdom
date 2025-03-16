@@ -664,5 +664,5 @@ if __name__ == '__main__':
     fname = 'tmp-data/shdom-out_modis.txt'
 
     # figure_modis(fname)
-    # figure_modis_comp(fname)
+    figure_modis_comp(fname)
     pass
