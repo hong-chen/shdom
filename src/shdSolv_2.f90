@@ -2337,7 +2337,7 @@ subroutine COMPUTE_RADIANCE(&
 
     ! added for fixing the "domain shift" issue
     !╭──────────────────────────────────────────────────────────────╮!
-    double precision DS_VZA_RAD, DS_XOFFSET, DS_YOFFSET
+    double precision DS_Z0, DS_VZA_RAD, DS_XOFFSET, DS_YOFFSET
     !╰──────────────────────────────────────────────────────────────╯!
 
     ! Make the isotropic radiances for the top boundary
@@ -2389,9 +2389,10 @@ subroutine COMPUTE_RADIANCE(&
         ! added for fixing the "domain shift" issue (only for 3D)
         !╭────────────────────────────────────────────────╮!
         if (IPFLAG .eq. 0) then
+            DS_Z0 = Z0-ZGRID(1)
             DS_VZA_RAD = acos(MUOUT)
-            DS_XOFFSET = (Z0-ZGRID(1))*tan(DS_VZA_RAD)*cos(PHIOUT)
-            DS_YOFFSET = (Z0-ZGRID(1))*tan(DS_VZA_RAD)*sin(PHIOUT)
+            DS_XOFFSET = DS_Z0*tan(DS_VZA_RAD)*cos(PHIOUT)
+            DS_YOFFSET = DS_Z0*tan(DS_VZA_RAD)*sin(PHIOUT)
             STARTX = -OUTPARMS(4) + DS_XOFFSET
             STARTY = -OUTPARMS(5) + DS_YOFFSET
         endif
