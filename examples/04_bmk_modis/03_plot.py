@@ -578,11 +578,10 @@ def figure_modis_comp(fname):
             if plot:
                 plt.close('all')
                 fig = plt.figure(figsize=(14, 14))
-                fig.suptitle(tag_shd)
                 # plot1
                 #╭──────────────────────────────────────────────────────────────╮#
                 ax1 = fig.add_subplot(221, aspect='equal')
-                cs = ax1.imshow(data_shd, origin='lower', cmap='Greys_r', zorder=0, aspect='equal', vmin=0.0, vmax=0.5, extent=extent)
+                cs = ax1.imshow(data_shd, origin='lower', cmap='Greys_r', zorder=0, aspect='equal', vmin=0.0, vmax=0.6, extent=extent)
                 # ax1.set_title('SHDOM (%s)' % tag_shd)
                 ax1.set_title('SHDOM')
 
@@ -598,9 +597,8 @@ def figure_modis_comp(fname):
                 cax = divider.append_axes('right', '5%', pad='3%')
                 cbar = fig.colorbar(cs, cax=cax)
 
-
                 ax3 = fig.add_subplot(223, aspect='equal')
-                cs = ax3.imshow(data_mca, origin='lower', cmap='Greys_r', zorder=0, aspect='equal', vmin=0.0, vmax=0.5, extent=extent)
+                cs = ax3.imshow(data_mca, origin='lower', cmap='Greys_r', zorder=0, aspect='equal', vmin=0.0, vmax=0.6, extent=extent)
                 # ax3.set_title('MCARaTS (%s)' % tag_mca)
                 ax3.set_title('MODIS')
 
@@ -614,14 +612,14 @@ def figure_modis_comp(fname):
                 #╭──────────────────────────────────────────────────────────────╮#
                 data_x = data_mca.copy()
                 data_y = data_shd.copy()
-                xedge = np.linspace(0.0, 0.5, 51)
-                yedge = np.linspace(0.0, 0.5, 51)
+                xedge = np.linspace(0.0, 0.6, 61)
+                yedge = np.linspace(0.0, 0.6, 61)
                 heatmap, xedge, yedge = np.histogram2d(data_x.ravel(), data_y.ravel(), bins=(xedge, yedge))
                 extent = [xedge[0], xedge[-1], yedge[0], yedge[-1]]
                 x = (xedge[:-1]+xedge[1:]) / 2.0
                 y = (yedge[:-1]+yedge[1:]) / 2.0
                 xx, yy = np.meshgrid(x, y, indexing='ij')
-                levels = np.linspace(0, 200, 201)
+                levels = np.linspace(0, 50, 101)
                 cmap = mpl.colormaps['jet']
                 cmap.set_under('white')
                 cs = ax4.contourf(xx, yy, heatmap, levels, extent=extent, extend='both', cmap=cmap, zorder=0)
