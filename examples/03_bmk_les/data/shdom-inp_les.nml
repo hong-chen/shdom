@@ -57,7 +57,7 @@
  0.8660, 315.0,
  0.8660, 330.0,
  0.8660, 345.0
- OUTFILES(1) = 'tmp-data/shdom-out_les-ckd.txt'
+ OUTFILES(1) = 'tmp-data/shdom-out_les.txt'
  OutFileNC = 'NONE'
  MAX_TOTAL_MB = 8000.0
  ADAPT_GRID_FACTOR = 2.2

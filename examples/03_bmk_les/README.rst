@@ -2,10 +2,10 @@
 Case LES
 ========
 
-Please make sure ``data/`` contains the following files before run any scripts
+Please make sure ``<shdom repo>/data`` and ``data/`` contains the following files before run any scripts
 
-* ``data/les_lwc.txt``
-* ``data/sfc_land.txt``
+* ``<shdom repo>/data/shdom-lwc_les.txt``
+* ``<shdom repo>/data/shdom-sfc_land-lsrt.txt``
 * ``data/shdom-inp_les.nml``
 
 
