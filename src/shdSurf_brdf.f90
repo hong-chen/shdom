@@ -21,6 +21,7 @@
       ! R  RPV-original  rho0, k, Theta
       ! T  LSRT          k_iso, k_geo, k_vol
       !╰────────────────────────────────────────────────────────────────────────────╯!
+
       implicit none
       integer :: NSTOKES
       integer :: K1, K2
@@ -63,7 +64,7 @@
 
       else if (SFCTYPE .eq. 'T' .or. SFCTYPE .eq. 't') then
 
-          ! T: RossThick LiSquare
+          ! T: LSRT model
           if (NSTOKES .gt. 1) then
               stop 'Error [SURFACE_BRDF]: LSRT BRDF is only for unpolarized case'
           end if
@@ -88,7 +89,7 @@
   end subroutine
 
   subroutine WAVE_FRESNEL_REFLECTION(MRE, MIM, WINDSPEED,&
-      & MUI, MUR, PHII, PHIR, NSTOKES, REFLECT)
+      &MUI, MUR, PHII, PHIR, NSTOKES, REFLECT)
       !╭────────────────────────────────────────────────────────────────────────────╮!
       !   Computes the polarized Fresnel reflection from a dielectric
       ! interface with a Gaussian distribution of slopes, including shadow
@@ -256,7 +257,7 @@
   end subroutine
 
   subroutine DINER_REFLECTION(A, K, B, ZETA, SIGMA,&
-      & MU1, MU2, PHI, NSTOKES, REFLECT)
+      &MU1, MU2, PHI, NSTOKES, REFLECT)
       !╭────────────────────────────────────────────────────────────────────────────╮!
       !   Computes polarized reflection from the Diner et al. (2012) model
       ! which two terms: 1) completely depolarizing volumetric scattering
