@@ -490,7 +490,7 @@ if __name__ == '__main__':
 
     # gen_two_params_lwc_file(overwrite=False)
     # gen_clear_sky()
-    gen_sfc_lsrt_file()
+    # gen_sfc_lsrt_file()
     # gen_lwc_zero()
 
     pass
