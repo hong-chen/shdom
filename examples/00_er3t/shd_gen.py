@@ -373,8 +373,11 @@ def gen_sfc_lsrt_file(
     f.close()
 
     Nx, Ny = f_iso.shape
+    Nx = 250
+    Ny = 250
 
-    with open('shdom-sfc_land-lsrt.txt', 'w') as f:
+    # with open('shdom-sfc_land-lsrt.txt', 'w') as f:
+    with open('shdom-sfc_modis.txt', 'w') as f:
         f.write('T\n')
         # f.write('%d %d %.4f %.4f\n' % (Nx, Ny, (48.0/Nx), (48.0/Ny)))
         f.write('%d %d %.4f %.4f\n' % (Nx, Ny, 0.25, 0.25))
@@ -486,11 +489,87 @@ def gen_lwc_zero(
     return
 
 
+def gen_lwc_modis(
+        wavelength=650.0,
+        solver='3D',
+        overwrite=False,
+        plot=True
+        ):
+
+    _metadata   = {'Computer': os.uname()[1], 'Script': os.path.abspath(__file__), 'Function':sys._getframe().f_code.co_name, 'Date':datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+    fdir='%s/tmp-data/%s/%s' % (fdir0, name_tag, _metadata['Function'])
+
+    if not os.path.exists(fdir):
+        os.makedirs(fdir)
+
+    # define an atmosphere object
+    #╭────────────────────────────────────────────────────────────────────────────╮#
+    levels = np.arange(0.0, 20.1, 0.5)
+    fname_atm = '%s/atm.pk' % fdir
+    atm0 = er3t.pre.atm.atm_atmmod(levels=levels, fname=fname_atm, overwrite=overwrite)
+    #╰────────────────────────────────────────────────────────────────────────────╯#
+
+
+    # define an absorption object
+    #╭────────────────────────────────────────────────────────────────────────────╮#
+    fname_abs = '%s/abs.pk' % fdir
+    abs0 = er3t.pre.abs.abs_rep(wavelength=wavelength, fname=fname_abs, target='modis', band_name='modis_aqua_b01', atm_obj=atm0, overwrite=overwrite)
+    #╰────────────────────────────────────────────────────────────────────────────╯#
+
+
+    # define an cloud object
+    #╭────────────────────────────────────────────────────────────────────────────╮#
+    fname_cld = '/Users/hchen/Work/mygit/er3t/projects/tmp-data/02_modis_rad-sim/sim-0650.0nm/3d/cld.pk'
+    cld0 = er3t.pre.cld.cld_gen_cop(
+            fname=fname_cld,
+            overwrite=False
+            )
+
+    cer = cld0.lay['cer']['data']
+    lwc = np.zeros_like(cer)
+
+    q_factor = 2.0
+    const0   = 0.75*q_factor/(1000.0*1e-6)
+    lwc[cer>0.0] = cld0.lay['extinction']['data'][cer>0.0]/(const0/cer[cer>0.0]) * 1000.0
+
+    cer[cer==0.0] = 0.5
+    cer[cer>25.0] = 25.0
+    #╰────────────────────────────────────────────────────────────────────────────╯#
+
+
+    # generate les_lwc.txt
+    #╭────────────────────────────────────────────────────────────────────────────╮#
+    # lwc = cld0.lay['lwc']['data']*1000.0
+    # cer[cer>=25.0] = 25.0
+    # cer[cer<=0.5] = 0.5
+    temp = cld0.lay['temperature']['data']
+
+    Nx, Ny, Nz = lwc.shape
+    Nx = 250
+    Ny = 250
+
+    with open('shdom-lwc_modis.txt', 'w') as f:
+        f.write('2  parameter LWC file\n')
+        f.write('%d %d %d\n' % (Nx, Ny, Nz))
+        f.write('%.4f %.4f\n' % (cld0.lay['dx']['data'], cld0.lay['dy']['data']))
+        f.write('%s\n' % ' '.join([str('%.4f' % (alt0+0.5)) for alt0 in cld0.lay['altitude']['data']]))
+        f.write('%s\n' % ' '.join([str('%.4f' % np.mean(temp[:, :, iz])) for iz in range(Nz)]))
+        for ix in np.arange(Nx):
+            for iy in np.arange(Ny):
+                for iz in np.arange(Nz):
+                    f.write('%d %d %d %.6f %.2f\n' % ((ix+1), (iy+1), (iz+1), lwc[ix, iy, iz], cer[ix, iy, iz]))
+                    # f.write('%d %d %d %.6f %.2f\n' % ((ix+1), (iy+1), (iz+1), 0.0, cer[ix, iy, iz]))
+    #╰────────────────────────────────────────────────────────────────────────────╯#
+
+    return
+
+
 if __name__ == '__main__':
 
     # gen_two_params_lwc_file(overwrite=False)
     # gen_clear_sky()
-    # gen_sfc_lsrt_file()
+    gen_sfc_lsrt_file()
     # gen_lwc_zero()
+    # gen_lwc_modis()
 
     pass
