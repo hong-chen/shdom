@@ -16,6 +16,7 @@ from scipy import interpolate
 def cal_sol_fac(dtime):
 
     """
+    er3t.util.cal_sol_fac
     Calculate solar factor that accounts for Sun-Earth distance
     Input:
         dtime: datetime.datetime object
