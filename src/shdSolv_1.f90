@@ -1040,7 +1040,7 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
             !   GRIDRAD to the work array.
             do I = 1, NPTS
                 if (GRIDRAD(1, I) .lt. -0.0001) then
-                    write (6, *) 'Error [PATH_INTEGRATION]: Grid point has no value',&
+                    write (6, *) 'Warning [PATH_INTEGRATION]: Grid point has no value',&
                         & I, MU(IMU), PHI(IMU, IPHI), GRIDRAD(1, I), XGRID(1), YGRID(1),&
                         & GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I)
                     ! stop
@@ -2138,7 +2138,7 @@ subroutine BACK_INT_GRID3D(NX, NY, NZ, NA, NPTS, NCELLS,&
         do while (.not. VALIDRAD)
             ! Make sure current cell is valid
             if (ICELL .le. 0) then
-                write (6, *) 'Error [BACK_INT_GRID]: ICELL=0  ',&
+                write (6, *) 'Error [BACK_INT_GRID]: ICELL=0 ',&
                     & MU, PHI, IPT, INEXTCELL, xe, ye, ze,&
                     & gridpos(1, ipt), gridpos(2, ipt), gridpos(3, ipt)
                 stop
@@ -2164,7 +2164,7 @@ subroutine BACK_INT_GRID3D(NX, NY, NZ, NA, NPTS, NCELLS,&
             SOZ = (GRIDPOS(3, IOPP) - ZE)*CZINV
             SO = min(SOX, SOY, SOZ)
             if (SO .lt. -EPS) then
-                write (6, *) 'Error [BACK_INT_GRID]: SO<0  ',&
+                write (6, *) 'Error [BACK_INT_GRID]: SO<0 ',&
                     & MU, PHI, XE, YE, ZE, SOX, SOY, SOZ, SO, IPT, ICELL
                 stop
             end if
@@ -2472,7 +2472,7 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
         do while (.not. VALIDRAD)
             ! Make sure current cell is valid
             if (ICELL .le. 0) then
-                write (6, *) 'Error [BACK_INT_GRID]: ICELL=0  ',&
+                write (6, *) 'Error [BACK_INT_GRID]: ICELL=0 ',&
                     & MU, PHI, IPT, INEXTCELL, xe, ye, ze,&
                     & gridpos(1, ipt), gridpos(2, ipt), gridpos(3, ipt)
                 stop
@@ -2498,7 +2498,7 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
             SOZ = (GRIDPOS(3, IOPP) - ZE)*CZINV
             SO = min(SOX, SOY, SOZ)
             if (SO .lt. -EPS) then
-                write (6, *) 'Error [BACK_INT_GRID]: SO<0  ',&
+                write (6, *) 'Error [BACK_INT_GRID]: SO<0 ',&
                     & MU, PHI, XE, YE, ZE, SOX, SOY, SOZ, SO, IPT, ICELL
                 stop
             end if
@@ -2779,7 +2779,7 @@ subroutine BACK_INT_GRID2D(NX, NY, NZ, NA, NPTS, NCELLS,&
         do while (.not. VALIDRAD)
             ! Make sure current cell is valid
             if (ICELL .le. 0) then
-                write (6, *) 'Error [BACK_INT_GRID]: ICELL=0  ',&
+                write (6, *) 'Error [BACK_INT_GRID]: ICELL=0 ',&
                     & MU, PHI, IPT, INEXTCELL
                 stop
             end if
@@ -2798,7 +2798,7 @@ subroutine BACK_INT_GRID2D(NX, NY, NZ, NA, NPTS, NCELLS,&
             SOZ = (GRIDPOS(3, IOPP) - ZE)*CZINV
             SO = min(SOX, SOZ)
             if (SO .lt. -EPS) then
-                write (6, *) 'Error [BACK_INT_GRID2D]: SO<0  ',&
+                write (6, *) 'Error [BACK_INT_GRID2D]: SO<0 ',&
                     & MU, PHI, XE, ZE, SOX, SOZ, SO, IPT, ICELL
                 stop
             end if
@@ -3011,7 +3011,7 @@ subroutine BACK_INT_GRID1D(NX, NY, NZ, NA, NPTS, NCELLS,&
         do while (.not. VALIDRAD)
             ! Make sure current cell is valid
             if (ICELL .le. 0) then
-                write (6, *) 'Error [BACK_INT_GRID]: ICELL=0  ',&
+                write (6, *) 'Error [BACK_INT_GRID]: ICELL=0 ',&
                     & MU, PHI, IPT, INEXTCELL
                 stop
             end if
@@ -3022,7 +3022,7 @@ subroutine BACK_INT_GRID1D(NX, NY, NZ, NA, NPTS, NCELLS,&
             ! Get the distances to the 3 planes and select the closest
             SO = (GRIDPOS(3, IOPP) - ZE)*CZINV
             if (SO .lt. -EPS) then
-                write (6, *) 'Error [BACK_INT_GRID1D]: SO<0  ',&
+                write (6, *) 'Error [BACK_INT_GRID1D]: SO<0 ',&
                     & MU, PHI, ZE, SO, IPT, ICELL
                 stop
             end if
