@@ -6,17 +6,14 @@ import copy
 import multiprocessing as mp
 from collections import OrderedDict
 # from tqdm import tqdm
-import h5py
-from pyhdf.SD import SD, SDC
-from netCDF4 import Dataset
 import numpy as np
 from scipy import interpolate
 
 
+# er3t.util.cal_sol_fac
 def cal_sol_fac(dtime):
 
     """
-    er3t.util.cal_sol_fac
     Calculate solar factor that accounts for Sun-Earth distance
     Input:
         dtime: datetime.datetime object
