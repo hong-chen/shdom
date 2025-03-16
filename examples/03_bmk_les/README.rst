@@ -17,8 +17,8 @@ Please make sure ``<shdom repo>/data`` and ``data/`` contains the following file
 
    Once run successfully, the following files will be generated
 
-   * ``tmp-data/water_w065c_sca.txt``
-   * ``tmp-data/les_prp.txt``
+   * ``tmp-data/shdom-sca-065_les.txt``
+   * ``tmp-data/shdom-prp_les.txt``
 
 2. **Run SHDOM**: run the following command
 
