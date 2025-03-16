@@ -6,8 +6,8 @@
  INSAVEFILE = 'NONE'
  OUTSAVEFILE ='NONE'
  NSTOKES = 1
- NX = 250
- NY = 250
+ NX = 150
+ NY = 150
  NZ = 29
  NMU = 8
  NPHI = 16

@@ -561,7 +561,7 @@ def figure_modis_comp(fname):
     Xs = 150
     Ys = 150
     f = h5py.File(fname_mca, 'r')
-    data_mca = f['mod/rad/rad_0650'][Xs:Xs+250, Ys:Ys+250].T
+    data_mca = f['mod/rad/rad_0650'][Xs:Xs+150, Ys:Ys+150].T
     f.close()
     data_mca = data_mca[25:-25, 25:-25]
 

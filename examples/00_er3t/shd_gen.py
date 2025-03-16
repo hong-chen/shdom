@@ -473,8 +473,8 @@ def gen_lwc_modis(
     temp = cld0.lay['temperature']['data']
 
     Nx, Ny, Nz = lwc.shape
-    Nx = 250
-    Ny = 250
+    Nx = 150
+    Ny = 150
     Xs = 150
     Ys = 150
 
@@ -516,8 +516,8 @@ def gen_sfc_modis(
     f.close()
 
     Nx, Ny = f_iso.shape
-    Nx = 250
-    Ny = 250
+    Nx = 150
+    Ny = 150
     Xs = 150
     Ys = 150
 
