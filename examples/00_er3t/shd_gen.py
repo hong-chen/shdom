@@ -239,36 +239,6 @@ def gen_atm_file_1d(atm0):
     #       $wavelen $sfcpres $Nzother $ZTother $polout $prpfile \
     #     | ${propgen_exe}| tail -3
 
-def gen_clear_sky(
-        wavelength=650.0,
-        solver='3D',
-        overwrite=True,
-        plot=True
-        ):
-
-    _metadata   = {'Computer': os.uname()[1], 'Script': os.path.abspath(__file__), 'Function':sys._getframe().f_code.co_name, 'Date':datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-    fdir='%s/tmp-data/%s/%s' % (fdir0, name_tag, _metadata['Function'])
-
-    if not os.path.exists(fdir):
-        os.makedirs(fdir)
-
-    # define an atmosphere object
-    #╭────────────────────────────────────────────────────────────────────────────╮#
-    levels = np.linspace(0.0, 20.0, 11)
-    fname_atm = '%s/atm.pk' % fdir
-    atm0 = er3t.pre.atm.atm_atmmod(levels=levels, fname=fname_atm, overwrite=overwrite)
-    #╰────────────────────────────────────────────────────────────────────────────╯#
-
-    # define an absorption object
-    #╭────────────────────────────────────────────────────────────────────────────╮#
-    fname_abs = '%s/abs.pk' % fdir
-    abs0 = er3t.pre.abs.abs_rep(wavelength=wavelength, fname=fname_abs, target='modis', band_name='modis_aqua_b01', atm_obj=atm0, overwrite=overwrite)
-    #╰────────────────────────────────────────────────────────────────────────────╯#
-
-    # gen_atm_file_1d(atm0)
-
-    gen_ckd_file(atm0, abs0)
-
 
 
 
@@ -349,11 +319,10 @@ def convert_mie():
 
     pass
 
-
-def gen_sfc_lsrt_file(
+def gen_clear_sky_1d(
         wavelength=650.0,
         solver='3D',
-        overwrite=False,
+        overwrite=True,
         plot=True
         ):
 
@@ -363,35 +332,25 @@ def gen_sfc_lsrt_file(
     if not os.path.exists(fdir):
         os.makedirs(fdir)
 
-    # generate sfc_lanb.txt
+    # define an atmosphere object
     #╭────────────────────────────────────────────────────────────────────────────╮#
-    # f = h5py.File('/Users/hchen/Work/01_libera/06_mod-lrt-bmk/aux/surface_albedo_land.h5', 'r')
-    f = h5py.File('/Users/hchen/Work/mygit/er3t/projects/data/02_modis_rad-sim/pre-data.h5', 'r')
-    f_iso = f['mod/sfc/fiso_43_0650'][...]
-    f_vol = f['mod/sfc/fvol_43_0650'][...]
-    f_geo = f['mod/sfc/fgeo_43_0650'][...]
-    f.close()
-
-    Nx, Ny = f_iso.shape
-    Nx = 250
-    Ny = 250
-    Xs = 150
-    Ys = 150
-
-    # with open('shdom-sfc_land-lsrt.txt', 'w') as f:
-    with open('shdom-sfc_modis.txt', 'w') as f:
-        f.write('T\n')
-        # f.write('%d %d %.4f %.4f\n' % (Nx, Ny, (48.0/Nx), (48.0/Ny)))
-        f.write('%d %d %.4f %.4f\n' % (Nx, Ny, 0.25, 0.25))
-        for ix in np.arange(Xs, Xs+Nx):
-            for iy in np.arange(Ys, Ys+Ny):
-                f.write('%d %d %.2f %.6f %.6f %.6f\n' % ((ix+1), (iy+1), 285.0, f_iso[ix, iy], f_vol[ix, iy], f_geo[ix, iy]))
+    levels = np.linspace(0.0, 20.0, 11)
+    fname_atm = '%s/atm.pk' % fdir
+    atm0 = er3t.pre.atm.atm_atmmod(levels=levels, fname=fname_atm, overwrite=overwrite)
     #╰────────────────────────────────────────────────────────────────────────────╯#
 
-    return
+    # define an absorption object
+    #╭────────────────────────────────────────────────────────────────────────────╮#
+    fname_abs = '%s/abs.pk' % fdir
+    abs0 = er3t.pre.abs.abs_rep(wavelength=wavelength, fname=fname_abs, target='modis', band_name='modis_aqua_b01', atm_obj=atm0, overwrite=overwrite)
+    #╰────────────────────────────────────────────────────────────────────────────╯#
+
+    # gen_atm_file_1d(atm0)
+
+    gen_ckd_file(atm0, abs0)
 
 
-def gen_two_params_lwc_file(
+def gen_lwc_les(
         wavelength=650.0,
         solver='3D',
         overwrite=False,
@@ -457,39 +416,6 @@ def gen_two_params_lwc_file(
     #╰────────────────────────────────────────────────────────────────────────────╯#
 
     return
-
-def gen_lwc_zero(
-        Nx=417,
-        Ny=532,
-        Nz=1,
-        dx=0.25,
-        dy=0.25,
-        wavelength=650.0,
-        solver='3D',
-        overwrite=False,
-        plot=True
-        ):
-
-    # generate les_lwc.txt
-    #╭────────────────────────────────────────────────────────────────────────────╮#
-    lwc = np.zeros((Nx, Ny, Nz), dtype=np.float32)
-    cer = np.zeros((Nx, Ny, Nz), dtype=np.float32)
-    cer[...] = 0.5
-
-    with open('shdom-lwc_les-zero.txt', 'w') as f:
-        f.write('2  parameter LWC file\n')
-        f.write('%d %d %d\n' % lwc.shape)
-        f.write('%.4f %.4f\n' % (dx, dy))
-        f.write('1.0\n')
-        f.write('285.0\n')
-        for ix in np.arange(Nx):
-            for iy in np.arange(Ny):
-                for iz in np.arange(Nz):
-                    f.write('%d %d %d %.6f %.2f\n' % ((ix+1), (iy+1), (iz+1), lwc[ix, iy, iz], cer[ix, iy, iz]))
-    #╰────────────────────────────────────────────────────────────────────────────╯#
-
-    return
-
 
 def gen_lwc_modis(
         wavelength=650.0,
@@ -567,13 +493,52 @@ def gen_lwc_modis(
 
     return
 
+def gen_sfc_modis(
+        wavelength=650.0,
+        solver='3D',
+        overwrite=False,
+        plot=True
+        ):
+
+    _metadata   = {'Computer': os.uname()[1], 'Script': os.path.abspath(__file__), 'Function':sys._getframe().f_code.co_name, 'Date':datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+    fdir='%s/tmp-data/%s/%s' % (fdir0, name_tag, _metadata['Function'])
+
+    if not os.path.exists(fdir):
+        os.makedirs(fdir)
+
+    # generate sfc_lanb.txt
+    #╭────────────────────────────────────────────────────────────────────────────╮#
+    # f = h5py.File('/Users/hchen/Work/01_libera/06_mod-lrt-bmk/aux/surface_albedo_land.h5', 'r')
+    f = h5py.File('/Users/hchen/Work/mygit/er3t/projects/data/02_modis_rad-sim/pre-data.h5', 'r')
+    f_iso = f['mod/sfc/fiso_43_0650'][...]
+    f_vol = f['mod/sfc/fvol_43_0650'][...]
+    f_geo = f['mod/sfc/fgeo_43_0650'][...]
+    f.close()
+
+    Nx, Ny = f_iso.shape
+    Nx = 250
+    Ny = 250
+    Xs = 150
+    Ys = 150
+
+    # with open('shdom-sfc_land-lsrt.txt', 'w') as f:
+    with open('shdom-sfc_modis.txt', 'w') as f:
+        f.write('T\n')
+        # f.write('%d %d %.4f %.4f\n' % (Nx, Ny, (48.0/Nx), (48.0/Ny)))
+        f.write('%d %d %.4f %.4f\n' % (Nx, Ny, 0.25, 0.25))
+        for ix in np.arange(Xs, Xs+Nx):
+            for iy in np.arange(Ys, Ys+Ny):
+                f.write('%d %d %.2f %.6f %.6f %.6f\n' % ((ix+1), (iy+1), 285.0, f_iso[ix, iy], f_vol[ix, iy], f_geo[ix, iy]))
+    #╰────────────────────────────────────────────────────────────────────────────╯#
+
+    return
+
 
 if __name__ == '__main__':
 
-    # gen_two_params_lwc_file(overwrite=False)
-    # gen_clear_sky()
-    gen_sfc_lsrt_file()
-    # gen_lwc_zero()
+    # gen_clear_sky_1d()
+    # gen_lwc_les(overwrite=False)
+    gen_sfc_modis()
     gen_lwc_modis()
 
     pass
