@@ -561,8 +561,10 @@ def figure_les_comp(fname):
     tag_mca = '3D'
     fname_mca = '/Users/hchen/Work/mygit/er3t/projects/data/02_modis_rad-sim/pre-data.h5'
 
+    Xs = 150
+    Ys = 150
     f = h5py.File(fname_mca, 'r')
-    data_mca = f['mod/rad/rad_0650'][:250, :250].T
+    data_mca = f['mod/rad/rad_0650'][Xs:Xs+250, Ys:Ys+250].T
     f.close()
     data_mca = data_mca[25:-25, 25:-25]
 
@@ -667,8 +669,8 @@ if __name__ == '__main__':
     fname = 'tmp-data/shdom-out_modis.txt'
     # fname = 'tmp-data/shdom-out_les-ipa.txt'
 
-    # figure_les(fname)
-    figure_les_comp(fname)
+    figure_les(fname)
+    # figure_les_comp(fname)
 
     # run_mcarats(solver='IPA')
 
