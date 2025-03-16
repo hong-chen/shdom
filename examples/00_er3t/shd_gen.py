@@ -242,83 +242,6 @@ def gen_atm_file_1d(atm0):
 
 
 
-def convert_mie():
-
-    """
-    subroutine WRITE_MIE_TABLE(MIETABFILE, POLTAB, WAVELEN1, WAVELEN2, DELTAWAVE,&
-        & PARTYPE, PARDENS, RINDEX,&
-        & DISTFLAG, ALPHA, GAMMA, NRETAB, SRETAB, ERETAB, LOGRE,&
-        & EXTINCT, SSALB, MAXRANK, NRANK, WIGCOEF)
-        ! Writes the table of Mie scattering properties as a function of
-        ! effective radius.  There are two types of tables output:
-        ! unpolarized with Legendre (Wigner d_l_00) series of a single phase
-        ! matrix element (P11) or polarized with six Wigner d-function series
-        ! of the Mie phase matrix elements.
-        implicit none
-        integer, intent(IN) :: NRETAB, MAXRANK, NRANK(NRETAB)
-        logical, intent(IN) :: POLTAB, LOGRE
-        complex, intent(IN) :: RINDEX
-        real, intent(IN) :: WAVELEN1, WAVELEN2, DELTAWAVE
-        real, intent(IN) :: PARDENS, SRETAB, ERETAB, ALPHA, GAMMA
-        real, intent(IN) :: EXTINCT(NRETAB), SSALB(NRETAB)
-        real, intent(IN) :: WIGCOEF(6, 0:MAXRANK, NRETAB)
-        character(LEN=1), intent(IN) :: PARTYPE, DISTFLAG
-        character(LEN=256), intent(IN) :: MIETABFILE
-        integer :: I, J, JP, K, L, NL, NPHASEPOL
-        real REFF
-
-        open (UNIT=3, FILE=trim(adjustl(MIETABFILE)), STATUS='REPLACE')
-        if (POLTAB) then
-            NPHASEPOL = 6
-            write (3, '(A)') '! Polarized Mie scattering table vs. effective radius (LWC=1 g/m^3)'
-        else
-            NPHASEPOL = 1
-            write (3, '(A)') '! Mie scattering table vs. effective radius (LWC=1 g/m^3)'
-        end if
-        if (DELTAWAVE < 0.0) then
-            write (3, '(2(1X,F8.3),A)') WAVELEN1, WAVELEN2, '  wavelength range (micron)'
-        else
-            write (3, '(3(1X,F8.3),A)') WAVELEN1, WAVELEN2, DELTAWAVE, '  wavelength range and averaging step (micron)'
-        end if
-        write (3, '(1X,F5.3,2X,A1,A)') PARDENS, PARTYPE, '   particle density (g/cm^3) and type (Water, Ice, Aerosol)'
-        write (3, '(2(1X,E13.6),A)') RINDEX, '  particle index of refraction'
-        if (DISTFLAG == 'L') then
-            write (3, '(F7.5,A)') ALPHA, '  lognormal log standard deviation'
-        else if (DISTFLAG == 'G') then
-            write (3, '(F7.5,A)') ALPHA, ' gamma size distribution shape parameter'
-        else if (DISTFLAG == 'M') then
-            write (3, '(2(1X,F7.5),A)') ALPHA, GAMMA, ' modified gamma size distribution shape parameters'
-        end if
-        write (3, '(1X,I3,2(1X,F8.3),A)') NRETAB, SRETAB, ERETAB,&
-            & '  number, starting, ending effective radius'
-
-        do I = 1, NRETAB
-            if (NRETAB <= 1) then
-                REFF = SRETAB
-            else if (LOGRE) then
-                REFF = exp((log(ERETAB) - log(SRETAB))*FLOAT(I - 1)/(NRETAB - 1) + log(SRETAB))
-            else
-                REFF = (ERETAB - SRETAB)*FLOAT(I - 1)/(NRETAB - 1) + SRETAB
-            end if
-            write (3, '(1X,F8.4,1X,E12.5,1X,F8.6,1X,I6,A)')&
-                & REFF, EXTINCT(I), SSALB(I), NRANK(I), '  Reff  Ext  Alb  Nrank'
-            do J = 1, NPHASEPOL
-                if (POLTAB) then
-                    write (3, '(I1,1X,201(1X,F10.5))') J, (WIGCOEF(J, L, I), L=0, min(NRANK(I), 200))
-                else
-                    write (3, '(2X,201(1X,F10.5))') (WIGCOEF(J, L, I), L=0, min(NRANK(I), 200))
-                end if
-                do K = 200, NRANK(I) - 1, 200
-                    write (3, '(2X,200(1X,F10.5))') (WIGCOEF(J, K + L, I), L=1, min(200, NRANK(I) - K))
-                end do
-            end do
-        end do
-        close (3)
-    end subroutine WRITE_MIE_TABLE
-    """
-
-    pass
-
 def gen_clear_sky_1d(
         wavelength=650.0,
         solver='3D',
@@ -532,6 +455,154 @@ def gen_sfc_modis(
     #╰────────────────────────────────────────────────────────────────────────────╯#
 
     return
+
+
+
+
+def convert_prpfile():
+
+    """
+    subroutine WRITE_MIE_TABLE(MIETABFILE, POLTAB, WAVELEN1, WAVELEN2, DELTAWAVE,&
+        & PARTYPE, PARDENS, RINDEX,&
+        & DISTFLAG, ALPHA, GAMMA, NRETAB, SRETAB, ERETAB, LOGRE,&
+        & EXTINCT, SSALB, MAXRANK, NRANK, WIGCOEF)
+        ! Writes the table of Mie scattering properties as a function of
+        ! effective radius.  There are two types of tables output:
+        ! unpolarized with Legendre (Wigner d_l_00) series of a single phase
+        ! matrix element (P11) or polarized with six Wigner d-function series
+        ! of the Mie phase matrix elements.
+        implicit none
+        integer, intent(IN) :: NRETAB, MAXRANK, NRANK(NRETAB)
+        logical, intent(IN) :: POLTAB, LOGRE
+        complex, intent(IN) :: RINDEX
+        real, intent(IN) :: WAVELEN1, WAVELEN2, DELTAWAVE
+        real, intent(IN) :: PARDENS, SRETAB, ERETAB, ALPHA, GAMMA
+        real, intent(IN) :: EXTINCT(NRETAB), SSALB(NRETAB)
+        real, intent(IN) :: WIGCOEF(6, 0:MAXRANK, NRETAB)
+        character(LEN=1), intent(IN) :: PARTYPE, DISTFLAG
+        character(LEN=256), intent(IN) :: MIETABFILE
+        integer :: I, J, JP, K, L, NL, NPHASEPOL
+        real REFF
+
+        open (UNIT=3, FILE=trim(adjustl(MIETABFILE)), STATUS='REPLACE')
+        if (POLTAB) then
+            NPHASEPOL = 6
+            write (3, '(A)') '! Polarized Mie scattering table vs. effective radius (LWC=1 g/m^3)'
+        else
+            NPHASEPOL = 1
+            write (3, '(A)') '! Mie scattering table vs. effective radius (LWC=1 g/m^3)'
+        end if
+        if (DELTAWAVE < 0.0) then
+            write (3, '(2(1X,F8.3),A)') WAVELEN1, WAVELEN2, '  wavelength range (micron)'
+        else
+            write (3, '(3(1X,F8.3),A)') WAVELEN1, WAVELEN2, DELTAWAVE, '  wavelength range and averaging step (micron)'
+        end if
+        write (3, '(1X,F5.3,2X,A1,A)') PARDENS, PARTYPE, '   particle density (g/cm^3) and type (Water, Ice, Aerosol)'
+        write (3, '(2(1X,E13.6),A)') RINDEX, '  particle index of refraction'
+        if (DISTFLAG == 'L') then
+            write (3, '(F7.5,A)') ALPHA, '  lognormal log standard deviation'
+        else if (DISTFLAG == 'G') then
+            write (3, '(F7.5,A)') ALPHA, ' gamma size distribution shape parameter'
+        else if (DISTFLAG == 'M') then
+            write (3, '(2(1X,F7.5),A)') ALPHA, GAMMA, ' modified gamma size distribution shape parameters'
+        end if
+        write (3, '(1X,I3,2(1X,F8.3),A)') NRETAB, SRETAB, ERETAB,&
+            & '  number, starting, ending effective radius'
+
+        do I = 1, NRETAB
+            if (NRETAB <= 1) then
+                REFF = SRETAB
+            else if (LOGRE) then
+                REFF = exp((log(ERETAB) - log(SRETAB))*FLOAT(I - 1)/(NRETAB - 1) + log(SRETAB))
+            else
+                REFF = (ERETAB - SRETAB)*FLOAT(I - 1)/(NRETAB - 1) + SRETAB
+            end if
+            write (3, '(1X,F8.4,1X,E12.5,1X,F8.6,1X,I6,A)')&
+                & REFF, EXTINCT(I), SSALB(I), NRANK(I), '  Reff  Ext  Alb  Nrank'
+            do J = 1, NPHASEPOL
+                if (POLTAB) then
+                    write (3, '(I1,1X,201(1X,F10.5))') J, (WIGCOEF(J, L, I), L=0, min(NRANK(I), 200))
+                else
+                    write (3, '(2X,201(1X,F10.5))') (WIGCOEF(J, L, I), L=0, min(NRANK(I), 200))
+                end if
+                do K = 200, NRANK(I) - 1, 200
+                    write (3, '(2X,200(1X,F10.5))') (WIGCOEF(J, K + L, I), L=1, min(200, NRANK(I) - K))
+                end do
+            end do
+        end do
+        close (3)
+    end subroutine WRITE_MIE_TABLE
+
+
+    subroutine OUTPUT_PROPERTIES(PROPFILE, NPHASEPOL, NX, NY, NZT, &
+                                 DELX, DELY, ZLEVELS, TEMP, &
+                                 NPHASE, MAXCOEF, NCOEF, WIGCOEF, &
+                                 EXTINCT, SSALB, IPHASE)
+        implicit none
+        character(LEN=256), intent(IN) :: PROPFILE
+        integer, intent(IN) :: NPHASEPOL, NX, NY, NZT, NPHASE, MAXCOEF
+        integer, intent(IN) :: NCOEF(0:NPHASE), IPHASE(NZT, NY, NX)
+        real, intent(IN) :: DELX, DELY, ZLEVELS(NZT), TEMP(NZT)
+        real, intent(IN) :: WIGCOEF(NPHASEPOL, 0:MAXCOEF, 0:NPHASE)
+        real, intent(IN) :: EXTINCT(NZT, NY, NX), SSALB(NZT, NY, NX)
+        integer :: NPHASEOUT, I, IX, IY, IZ, J, K, L, NL
+        integer, allocatable :: PHASECONV(:)
+
+        ! Make a phase function index conversion array to output only the ones used.
+        allocate (PHASECONV(0:NPHASE))
+        PHASECONV(:) = 0
+        NPHASEOUT = 0
+        do I = 0, NPHASE
+            if (any(IPHASE(:, :, :) == I)) then
+                NPHASEOUT = NPHASEOUT + 1
+                PHASECONV(I) = NPHASEOUT
+            end if
+        end do
+
+        ! Open the property file and output the header including the
+        !   tabulated phase functions
+        open (UNIT=3, FILE=trim(adjustl(PROPFILE)), STATUS='REPLACE')
+        if (NPHASEPOL == 1) then
+            write (3, '(A)') 'Tabulated phase function property file'
+        else
+            write (3, '(A)') 'Polarized tabulated phase function property file'
+        end if
+        write (3, '(3(1X,I5))') NX, NY, NZT
+        write (3, '(2(1X,F7.4),202(1X,F8.4))') DELX, DELY, (ZLEVELS(I), I=1, NZT)
+        write (3, '(1X,I4)') NPHASEOUT
+        do I = 0, NPHASE
+            if (PHASECONV(I) > 0) then
+                NL = NCOEF(I)
+                do J = 1, NPHASEPOL
+                    if (NPHASEPOL == 1) then
+                        write (3, '(1X,I4,5X,200(1X,F9.5))') NL, (WIGCOEF(J, L, I), L=1, min(NL, 200))
+                    else
+                        write (3, '(1X,I1,1X,I4,5X,201(1X,F9.5))') J, NL, (WIGCOEF(J, L, I), L=0, min(NL, 200))
+                    end if
+                    do K = 200, NL - 1, 200
+                        write (3, '(200(1X,F9.5))') (WIGCOEF(J, K + L, I), L=1, min(NL - K, 200))
+                    end do
+                end do
+            end if
+        end do
+
+        ! Write one line of optical properties for each grid point
+        do IX = 1, NX
+            do IY = 1, NY
+                do IZ = 1, NZT
+                    write (3, '(3(1X,I4),1X,F5.1,1X,F9.4,1X,F8.6,1X,I3)') IX, IY, IZ, &
+                        TEMP(IZ), EXTINCT(IZ, IY, IX), SSALB(IZ, IY, IX), PHASECONV(IPHASE(IZ, IY, IX))
+                end do
+            end do
+        end do
+        close (3)
+    end subroutine OUTPUT_PROPERTIES
+ 
+
+
+    """
+
+    pass
 
 
 if __name__ == '__main__':
