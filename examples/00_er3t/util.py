@@ -48,11 +48,11 @@ def cal_shd_saa(normal_azimuth_angle):
     while normal_azimuth_angle > 360.0:
         normal_azimuth_angle -= 360.0
 
-    shd_azimuth = 270.0 - normal_azimuth_angle
-    if shd_azimuth < 0.0:
-        shd_azimuth += 360.0
+    shd_saa = 270.0 - normal_azimuth_angle
+    if shd_saa < 0.0:
+        shd_saa += 360.0
 
-    return shd_azimuth
+    return shd_saa
 
 
 def cal_shd_vaa(normal_azimuth_angle):
@@ -73,11 +73,11 @@ def cal_shd_vaa(normal_azimuth_angle):
     while normal_azimuth_angle > 360.0:
         normal_azimuth_angle -= 360.0
 
-    shd_azimuth = 90.0 - normal_azimuth_angle
-    if shd_azimuth < 0.0:
-        shd_azimuth += 360.0
+    shd_vaa = 90.0 - normal_azimuth_angle
+    if shd_vaa < 0.0:
+        shd_vaa += 360.0
 
-    return shd_azimuth
+    return shd_vaa
 
 
 if __name__ == '__main__':
