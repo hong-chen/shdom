@@ -3,8 +3,6 @@
 # Set the UseMPI and UseNetcdf variables to make the desired shdom version.
 
 FC     = gfortran                        # your Fortran 90 compiler here (same as used by mpif90)
-CC     = gcc
-CFLAGS =
 
 GFORTRAN_VERSION = $(shell gfortran -dumpversion)
 VERSION = 10
