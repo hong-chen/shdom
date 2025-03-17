@@ -2,7 +2,7 @@
  RUNNAME = 'MODIS'
  PROPFILE = 'tmp-data/shdom-prp_modis.txt'
  SFCFILE = 'data/shdom-sfc_modis.txt'
- CKDFILE = '/Users/hchen/Work/mygit/shdom/data/shdom-ckd_modis-aqua-b01.txt'
+ CKDFILE = '../../data/shdom-ckd_modis-aqua-b01.txt'
  INSAVEFILE = 'NONE'
  OUTSAVEFILE ='NONE'
  NSTOKES = 1

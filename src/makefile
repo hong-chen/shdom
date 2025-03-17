@@ -7,7 +7,7 @@ CC     = gcc
 CFLAGS =
 
 GFORTRAN_VERSION := $(shell gfortran -dumpversion)
-VERSION := 10
+VERSION := 9
 ifeq ($(VERSION),$(firstword $(sort $(GFORTRAN_VERSION) $(VERSION))))
 	FFLAGS = -O3 -Wargument-mismatch
 else
