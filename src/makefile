@@ -5,7 +5,15 @@
 FC     = gfortran                        # your Fortran 90 compiler here (same as used by mpif90)
 CC     = gcc
 CFLAGS =
-FFLAGS = -O3 -fallow-argument-mismatch  # your flags here
+
+GFORTRAN_VERSION := $(shell gfortran -dumpversion)
+VERSION := 10
+ifeq ($(VERSION),$(firstword $(sort $(GFORTRAN_VERSION) $(VERSION))))
+	FFLAGS = -O3 -Wargument-mismatch
+else
+	FFLAGS = -O3 -fallow-argument-mismatch
+endif
+
 #FC     = pgf90
 #FFLAGS = -fast
 MPIFC  = mpif90    # MPI Fortran 90 compiling command for shdom90
