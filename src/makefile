@@ -6,13 +6,13 @@ FC     = gfortran                        # your Fortran 90 compiler here (same a
 CC     = gcc
 CFLAGS =
 
-GFORTRAN_VERSION := $(shell gfortran -dumpversion)
-VERSION := 9
-ifeq ($(VERSION),$(firstword $(sort $(GFORTRAN_VERSION) $(VERSION))))
-	FFLAGS = -O3 -Wargument-mismatch
-else
-	FFLAGS = -O3 -fallow-argument-mismatch
-endif
+#GFORTRAN_VERSION := $(shell gfortran -dumpversion)
+#VERSION := 9
+#ifeq ($(VERSION),$(firstword $(sort $(GFORTRAN_VERSION) $(VERSION))))
+#    FFLAGS = -O3 -Wargument-mismatch
+#else
+FFLAGS = -O3 -fallow-argument-mismatch
+#endif
 
 #FC     = pgf90
 #FFLAGS = -fast
