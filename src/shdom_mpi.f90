@@ -93,7 +93,7 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
   call MPI_DIMS_CREATE(numproc, 2, dims, ierr)
 
   ! Create 2D Cartesian mapping of processors:
-  call MPI_CART_CREATE(MPI_COMM_WORLD, 2, dims, periodic, reorder, &
+  call MPI_CART_CREATE(MPI_COMM_WORLD, 2, dims, periodic, reorder,&
                        comm2d, ierr)
 
   if (dims(1) > 1) BCFLAG = ibset(BCFLAG, 2)
@@ -2080,7 +2080,7 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
 
   ! added for fixing the "domain shift" issue
   !╭──────────────────────────────────────────────────────────────╮!
-  double precision DS_Z0, DS_VZA_RAD, DS_XOFFSET, DS_YOFFSET
+  real :: DS_Z0, DS_VZA_RAD, DS_XOFFSET, DS_YOFFSET, TOT_XOFFSET, TOT_YOFFSET
   !╰──────────────────────────────────────────────────────────────╯!
 
   ! Make the isotropic radiances for the top boundary
@@ -2119,8 +2119,8 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
   MAXNRAD = nint(4.0*(NXOUT*NYOUT)/numproc)
 !  MAXNRAD = NXOUT*NYOUT
   allocate (RadSend(NSTOKES, MAXNRAD), IndexSend(MAXNRAD))
-  if (myproc == 0) allocate (NradRecv(numproc - 1), &
-                             RadRecv(NSTOKES, MAXNRAD, numproc - 1), IndexRecv(MAXNRAD, numproc - 1))
+  if (myproc == 0) allocate (NradRecv(numproc - 1),&
+      &RadRecv(NSTOKES, MAXNRAD, numproc - 1), IndexRecv(MAXNRAD, numproc - 1))
   allocate (BndRadRealInfo(4 + NSTOKES, MAXNRAD, 4), BndRadIntInfo(MAXNRAD, 4))
   allocate (requests(max(12, 3*numproc)), status(MPI_STATUS_SIZE, max(12, 3*numproc)))
 
@@ -2137,8 +2137,11 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
       DS_VZA_RAD = acos(MUOUT)
       DS_XOFFSET = DS_Z0*tan(DS_VZA_RAD)*cos(PHIOUT)
       DS_YOFFSET = DS_Z0*tan(DS_VZA_RAD)*sin(PHIOUT)
-      STARTX = -OUTPARMS(4) + DS_XOFFSET
-      STARTY = -OUTPARMS(5) + DS_YOFFSET
+      TOT_XOFFSET = -OUTPARMS(4) + DS_XOFFSET
+      TOT_YOFFSET = -OUTPARMS(5) + DS_YOFFSET
+    else
+      TOT_XOFFSET = -OUTPARMS(4)
+      TOT_YOFFSET = -OUTPARMS(5)
     endif
     !╰────────────────────────────────────────────────╯!
 
@@ -2209,15 +2212,15 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
         X0 = STARTX
         do JX = 1, NXOUT
           NRAD = NRAD + 1
-          if (X0 .ge. XGRID(1) - EPS .and. X0 .le. XGRID(NX) + EPS .and. &
-              Y0 .ge. YGRID(1) - EPS .and. Y0 .le. YGRID(NY) + EPS) then
+          if (X0 .ge. (XGRID(1)-EPS) .and. X0 .le. (XGRID(NX)+EPS) .and. &
+              Y0 .ge. (YGRID(1)-EPS) .and. Y0 .le. (YGRID(NY)+EPS)) then
             TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
             call INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES, &
                                   NX, NY, NZ, NPTS, NCELLS, &
                                   GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, &
                                   XGRID, YGRID, ZGRID, GRIDPOS, &
                                   MUOUT, PHIOUT, GRIDRAD, EXTINCT, SOURCE1, &
-                                  X0, Y0, Z0, XE, YE, ZE, SIDE, &
+                                  X0+TOT_XOFFSET, Y0+TOT_YOFFSET, Z0, XE, YE, ZE, SIDE, &
                                   TRANSMIT, RADIANCE, VALIDRAD)
 
             ! If we got a radiance then store it in RadSend otherwise save
@@ -2234,6 +2237,15 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
               end if
               NINVALID(SIDE) = NINVALID(SIDE) + 1
               if (NINVALID(SIDE) > MAXNRAD) call ABORT_SHDOM_MPI('COMPUTE_RADIANCE_PAR: MAXNRAD exceeded by NINVALID(SIDE) 1')
+
+              !XE = XE-TOT_XOFFSET
+              !if (XE .gt. XGRID(NX)) XE = XE - XGRID(NX)
+              !if (XE .lt. XGRID(1)) XE = XE + XGRID(NX)
+
+              !YE = YE-TOT_YOFFSET
+              !if (YE .gt. YGRID(NY)) YE = YE - YGRID(NY)
+              !if (YE .lt. YGRID(1)) YE = YE + YGRID(NY)
+
               BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, TRANSMIT, RADIANCE(:)/)
               BndRadIntInfo(NINVALID(SIDE), SIDE) = NRAD
             end if

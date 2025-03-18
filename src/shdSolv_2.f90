@@ -2717,7 +2717,7 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
     ! to find the outgoing radiance (RADIANCE) at the point X0,Y0,Z0.
     ! The radiances at the opposite boundary are input in GRIDRAD.
     ! The transmission and radiance of the ray so far (TRANSMIT, RADIANC
-    ! are input and returned after the integration along with the exitti
+    ! are input and returned after the integration along with the exitting
     ! ray location (XE,YE,ZE) and side of the domain (1=-X,2=+X,3=-Y,4=+
     ! 5=-Z,6=+Z).
     implicit none
