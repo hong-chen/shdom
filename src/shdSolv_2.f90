@@ -2337,7 +2337,7 @@ subroutine COMPUTE_RADIANCE(&
 
     ! added for fixing the "domain shift" issue
     !╭──────────────────────────────────────────────────────────────╮!
-    double precision DS_Z0, DS_VZA_RAD, DS_XOFFSET, DS_YOFFSET
+    real :: DS_Z0, DS_VZA_RAD, DS_XOFFSET, DS_YOFFSET
     !╰──────────────────────────────────────────────────────────────╯!
 
     ! Make the isotropic radiances for the top boundary
