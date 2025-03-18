@@ -23,7 +23,7 @@ subroutine START_MPI(MASTERPROC)
 
   call MPI_INIT(ierr)
   if (ierr .ne. MPI_SUCCESS) then
-    write (6, *) 'Error starting MPI version of SHDOM. Terminating.'
+    write (6, *) 'Error [START_MPI]: Terminating ...'
     stop
   end if
 
@@ -37,13 +37,14 @@ subroutine START_MPI(MASTERPROC)
 
   if (myproc == 0) then
     MASTERPROC = .true.
+    write (6,'(A)') 'Message [START_MPI]: Starting MPI version of SHDOM ...'
   else
     MASTERPROC = .false.
   end if
 end subroutine START_MPI
 
-subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE, &
-                         XSTART, YSTART, RUNNAME)
+subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
+  &XSTART, YSTART, RUNNAME)
   ! Sets up the mapping of processors for the SHDOM domain (creating the
   ! 2D communicator, comm2d).  Determines the subdomain property grid
   ! (NPX,NPY) and internal base grid (NX,NY) sizes, and outputs the
@@ -63,16 +64,19 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE, &
   implicit none
   integer, intent(INOUT) :: BCFLAG, NPX, NPY, NX, NY, NZ
   real, intent(IN) :: DELX, DELY
-  character(LEN=80), intent(IN) :: PROPFILE, RUNNAME
+  character(LEN=256), intent(IN) :: PROPFILE, RUNNAME
   real, intent(OUT) :: XSTART, YSTART
   integer :: NPXT, NPYT, NXT, NYT
   integer :: i, ierr, dims(2), coords(2)
   logical :: periodic(2) = (/.true., .true./), reorder = .false.
   real    :: XEND, YEND
   character(LEN=3) :: procstr
-  character(LEN=72) :: logfile
+  character(LEN=256) :: logfile
   include 'mpif.h'
 
+  NPXT = NPX; NPYT = NPY; NXT = NX; NYT = NY
+
+  !if ((numproc == 1) .or. ((NPXT == 1) .and. (NPYT == 1))) then
   if (numproc == 1) then
     XSTART = 0.0; YSTART = 0.0
     return
@@ -84,14 +88,12 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE, &
     open (UNIT=6, FILE=logfile, STATUS='UNKNOWN')
   end if
 
-  NPXT = NPX; NPYT = NPY; NXT = NX; NYT = NY
-
   ! Partition 2D Cartesian topology:
   dims(:) = 0
   call MPI_DIMS_CREATE(numproc, 2, dims, ierr)
 
   ! Create 2D Cartesian mapping of processors:
-  call MPI_CART_CREATE(MPI_COMM_WORLD, 2, dims, periodic, reorder, &
+  call MPI_CART_CREATE(MPI_COMM_WORLD, 2, dims, periodic, reorder,&
                        comm2d, ierr)
 
   if (dims(1) > 1) BCFLAG = ibset(BCFLAG, 2)
@@ -111,7 +113,7 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE, &
     NX = nint(NXT*FLOAT(NPX - 1)/NPXT) + 1
     if (abs(NPXT/FLOAT(NXT) - (NPX - 1)/FLOAT(NX - 1)) > 0.0001) then
       call ABORT_SHDOM_MPI('MAP_SHDOM_MPI: Even X base grid cannot be preserved&
-          & for this NX and number of processors')
+          &for this NX and number of processors')
     end if
     IXYOUT(1, 1) = nint(NXT*FLOAT(IXYPRP(1, 1) - 1)/NPXT) + 1
     IXYOUT(2, 1) = nint(NXT*FLOAT(NPX - 1)/NPXT)
@@ -145,10 +147,11 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE, &
   call MPI_CART_SHIFT(comm2d, 0, 1, iprocneigh(1), iprocneigh(2), ierr)
   call MPI_CART_SHIFT(comm2d, 1, 1, iprocneigh(3), iprocneigh(4), ierr)
 
-  write (6, '(A,2(1X,I2),A,I3)') 'Number of processors in X and Y:', dims(1:2), &
-    '   This processor: ', myproc
-  write (6, '(A,4(1X,I3))') 'Neighbors:', iprocneigh(1:4)
-  write (6, '(2(A,2F7.3))') 'Processor X range: ', XSTART, XEND, '   Y range: ', YSTART, YEND
+  write (6, '(A)') 'MPI Details:'
+  write (6, '(2X,A,2(1X,I2))') 'Number of processors in X and Y:', dims(1:2)
+  write (6, '(2X,A,I3)') 'This processor: ', myproc
+  write (6, '(2X,A,4(1X,I3))') 'Neighbors:', iprocneigh(1:4)
+  write (6, '(2X,2(A,2F7.3))') 'Processor X range: ', XSTART, XEND, '   Y range: ', YSTART, YEND
   write (6, *)
 end subroutine MAP_SHDOM_MPI
 
@@ -166,7 +169,7 @@ subroutine OPTIMIZE_PROCESSOR_DOMAINS(ProcDims, ProcCoord, NPXT, NPYT, &
   use SHDOM_MPI_DATA
   implicit none
   integer, intent(IN) :: ProcDims(2), ProcCoord(2), NPXT, NPYT
-  character(LEN=80), intent(IN) :: PROPFILE, RUNNAME
+  character(LEN=256), intent(IN) :: PROPFILE, RUNNAME
   integer :: NPXTI, NPYTI
   integer :: IX, IY, JX, JY, Nxd, Nyd, N, I, ierr
   integer :: BndLines(ProcDims(1) + ProcDims(2) - 2)
@@ -183,7 +186,7 @@ subroutine OPTIMIZE_PROCESSOR_DOMAINS(ProcDims, ProcCoord, NPXT, NPYT, &
   real    :: LOAD_OBJ_FUNC, Energy, NewEnergy, LowestEnergy, DeltaE, Boltz
   integer, allocatable :: ProcCoordAll(:, :), Ngrid(:, :)
   real, allocatable :: wtproc(:)
-  character(LEN=80) :: PROPFILEI
+  character(LEN=256) :: PROPFILEI
   include 'mpif.h'
 
   ! Initialize the subdomain boundary lines to evenly spaced
@@ -371,16 +374,17 @@ real function ran(idum)
   ran = am*ior(iand(IM, ieor(ix, iy)), 1)
 end function ran
 
-subroutine BROADCAST_USER_INPUT(RUNNAME, PROPFILE, SFCFILE, CKDFILE, &
-                                INSAVEFILE, OUTSAVEFILE, &
-                                NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG, &
-                                IPFLAG, KDIST, DELTAM, GRIDTYPE, &
-                                SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD, &
-                                GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN, &
-                                ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC, &
-                                MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS, &
-                                MAX_TOTAL_MB, SPLITTING_FACTOR, &
-                                NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
+subroutine BROADCAST_USER_INPUT(&
+  RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
+  INSAVEFILE, OUTSAVEFILE,&
+  NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
+  IPFLAG, KDIST, DELTAM, GRIDTYPE,&
+  SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+  GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,&
+  ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
+  MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS,&
+  MAX_TOTAL_MB, SPLITTING_FACTOR,&
+  NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
   ! Broadcasts all the user input parameters (except unneeded file names)
   ! from the master processor to the slave processors.
   use SHDOM_MPI_DATA
@@ -395,14 +399,14 @@ subroutine BROADCAST_USER_INPUT(RUNNAME, PROPFILE, SFCFILE, CKDFILE, &
   real, intent(INOUT) :: MAX_TOTAL_MB, SPLITTING_FACTOR
   real, intent(INOUT) :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
   character(LEN=1), intent(INOUT) :: SRCTYPE, GRIDTYPE, UNITS, OUTTYPES(*)
-  character(LEN=80), intent(INOUT) :: RUNNAME, PROPFILE, SFCFILE, CKDFILE
-  character(LEN=80), intent(INOUT) :: INSAVEFILE, OUTSAVEFILE
+  character(LEN=256), intent(INOUT) :: RUNNAME, PROPFILE, SFCFILE, CKDFILE
+  character(LEN=256), intent(INOUT) :: INSAVEFILE, OUTSAVEFILE
   include 'mpif.h'
   integer :: ierr, intbuf(10)
   logical :: logbuf(3)
   real    :: realbuf(16)
   character(LEN=1) :: char1buf(3)
-  character(LEN=80) :: char80buf(6)
+  character(LEN=256) :: char256buf(6)
   character(LEN=3) :: procstr
 
   if (numproc <= 1) return
@@ -432,10 +436,10 @@ subroutine BROADCAST_USER_INPUT(RUNNAME, PROPFILE, SFCFILE, CKDFILE, &
   call MPI_BCAST(char1buf, 3, MPI_CHARACTER, 0, MPI_COMM_WORLD, ierr)
   SRCTYPE = char1buf(1); GRIDTYPE = char1buf(2); UNITS = char1buf(3)
 
-  char80buf(:) = (/PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE, RUNNAME/)
-  call MPI_BCAST(char80buf, 6*80, MPI_CHARACTER, 0, MPI_COMM_WORLD, ierr)
-  PROPFILE = char80buf(1); SFCFILE = char80buf(2); CKDFILE = char80buf(3)
-  INSAVEFILE = char80buf(4); OUTSAVEFILE = char80buf(5); RUNNAME = char80buf(6)
+  char256buf(:) = (/PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE, RUNNAME/)
+  call MPI_BCAST(char256buf, 6*256, MPI_CHARACTER, 0, MPI_COMM_WORLD, ierr)
+  PROPFILE = char256buf(1); SFCFILE = char256buf(2); CKDFILE = char256buf(3)
+  INSAVEFILE = char256buf(4); OUTSAVEFILE = char256buf(5); RUNNAME = char256buf(6)
 
   call MPI_BCAST(OUTPARMS, MAXPAR*NUMOUT, MPI_REAL, 0, MPI_COMM_WORLD, ierr)
   call MPI_BCAST(OUTTYPES, NUMOUT*1, MPI_CHARACTER, 0, MPI_COMM_WORLD, ierr)
@@ -1993,7 +1997,7 @@ subroutine INTEGRATE_RAY(BCFLAG, IPFLAG, NX, NY, NZ, NA, &
     RAD(:) = RAD(:) + TRANS*SRC(:)*ABSCELL
     TRANS = TRANS*TRANSCELL
     if (RAD(1) < -1.0e-5) then
-      write (6, '(3(1X,F5.3),8(1X,E12.5))'), &
+      write (6, '(3(1X,F5.3),8(1X,E12.5))') &
         xe, ye, ze, ext0, ext1, so, tau, trans, src, abscell, rad(:)
     end if
     if (GRIDRAD(1, I1) .ge. 0.0 .and. GRIDRAD(1, I2) .ge. 0.0 &
@@ -2074,6 +2078,11 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
   integer, allocatable :: IndexSend(:), IndexRecv(:, :), BndRadIntInfo(:, :)
   real, allocatable    :: RadSend(:, :), RadRecv(:, :, :), BndRadRealInfo(:, :, :)
 
+  ! added for fixing the "domain shift" issue
+  !╭──────────────────────────────────────────────────────────────╮!
+  real :: DS_Z0, DS_VZA_RAD, DS_XOFFSET, DS_YOFFSET, TOT_XOFFSET, TOT_YOFFSET
+  !╰──────────────────────────────────────────────────────────────╯!
+
   ! Make the isotropic radiances for the top boundary
   call COMPUTE_TOP_RADIANCES(SRCTYPE, SKYRAD, WAVENO, WAVELEN, &
                              UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
@@ -2110,8 +2119,8 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
   MAXNRAD = nint(4.0*(NXOUT*NYOUT)/numproc)
 !  MAXNRAD = NXOUT*NYOUT
   allocate (RadSend(NSTOKES, MAXNRAD), IndexSend(MAXNRAD))
-  if (myproc == 0) allocate (NradRecv(numproc - 1), &
-                             RadRecv(NSTOKES, MAXNRAD, numproc - 1), IndexRecv(MAXNRAD, numproc - 1))
+  if (myproc == 0) allocate (NradRecv(numproc - 1),&
+      &RadRecv(NSTOKES, MAXNRAD, numproc - 1), IndexRecv(MAXNRAD, numproc - 1))
   allocate (BndRadRealInfo(4 + NSTOKES, MAXNRAD, 4), BndRadIntInfo(MAXNRAD, 4))
   allocate (requests(max(12, 3*numproc)), status(MPI_STATUS_SIZE, max(12, 3*numproc)))
 
@@ -2120,8 +2129,26 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
     MUOUT = OUTPARMS(2*K + 5)
     PHID = OUTPARMS(2*K + 6)
     PHIOUT = PHID*acos(-1.0)/180.0
+
+    ! added for fixing the "domain shift" issue (only for 3D)
+    !╭────────────────────────────────────────────────╮!
+    !if (IPFLAG .eq. 0) then
+    !  DS_Z0 = Z0-ZGRID(1)
+    !  DS_VZA_RAD = acos(MUOUT)
+    !  DS_XOFFSET = DS_Z0*tan(DS_VZA_RAD)*cos(PHIOUT)
+    !  DS_YOFFSET = DS_Z0*tan(DS_VZA_RAD)*sin(PHIOUT)
+    !  TOT_XOFFSET = -OUTPARMS(4) + DS_XOFFSET
+    !  TOT_YOFFSET = -OUTPARMS(5) + DS_YOFFSET
+    !else
+    !  TOT_XOFFSET = -OUTPARMS(4)
+    !  TOT_YOFFSET = -OUTPARMS(5)
+    !endif
+    !STARTX = TOT_XOFFSET
+    !STARTY = TOT_YOFFSET
+    !╰────────────────────────────────────────────────╯!
+
     if (MUOUT .eq. 0.0 .or. abs(MUOUT) .gt. 1.0) then
-      write (6, *) 'COMPUTE_RADIANCE: Bad mu for radiance', MUOUT
+      write (6, *) 'COMPUTE_RADIANCE_PAR: Bad mu for radiance', MUOUT
     else
 
       ! Compute the source function throughout grid for this angle
@@ -2187,8 +2214,8 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
         X0 = STARTX
         do JX = 1, NXOUT
           NRAD = NRAD + 1
-          if (X0 .ge. XGRID(1) - EPS .and. X0 .le. XGRID(NX) + EPS .and. &
-              Y0 .ge. YGRID(1) - EPS .and. Y0 .le. YGRID(NY) + EPS) then
+          if (X0 .ge. (XGRID(1)-EPS) .and. X0 .le. (XGRID(NX)+EPS) .and. &
+              Y0 .ge. (YGRID(1)-EPS) .and. Y0 .le. (YGRID(NY)+EPS)) then
             TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
             call INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES, &
                                   NX, NY, NZ, NPTS, NCELLS, &
@@ -2212,6 +2239,7 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
               end if
               NINVALID(SIDE) = NINVALID(SIDE) + 1
               if (NINVALID(SIDE) > MAXNRAD) call ABORT_SHDOM_MPI('COMPUTE_RADIANCE_PAR: MAXNRAD exceeded by NINVALID(SIDE) 1')
+
               BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, TRANSMIT, RADIANCE(:)/)
               BndRadIntInfo(NINVALID(SIDE), SIDE) = NRAD
             end if

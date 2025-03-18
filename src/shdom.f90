@@ -110,26 +110,27 @@ program SHDOM
         !               MAXOUT,MAXPAR, NUMOUT,OUTTYPES,OUTPARMS,OUTFILES, &
         !               OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,    &
         !               NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
-        call NAMELIST_INPUT(RUNNAME, PROPFILE, SFCFILE, CKDFILE, &
-                            INSAVEFILE, OUTSAVEFILE, &
-                            NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG, &
-                            IPFLAG, KDIST, DELTAM, GRIDTYPE, &
-                            SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD, &
-                            GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN, &
-                            ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC, &
-                            MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS, OUTFILES, &
-                            OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR, &
+        call NAMELIST_INPUT(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
+                            INSAVEFILE, OUTSAVEFILE,&
+                            NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
+                            IPFLAG, KDIST, DELTAM, GRIDTYPE,&
+                            SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+                            GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,&
+                            ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
+                            MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS, OUTFILES,&
+                            OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
                             NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
     end if
-    call BROADCAST_USER_INPUT(RUNNAME, PROPFILE, SFCFILE, CKDFILE, &
-                              INSAVEFILE, OUTSAVEFILE, &
-                              NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG, &
-                              IPFLAG, KDIST, DELTAM, GRIDTYPE, &
-                              SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD, &
-                              GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN, &
-                              ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC, &
-                              MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS, &
-                              MAX_TOTAL_MB, ADAPT_GRID_FACTOR, &
+
+    call BROADCAST_USER_INPUT(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
+                              INSAVEFILE, OUTSAVEFILE,&
+                              NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
+                              IPFLAG, KDIST, DELTAM, GRIDTYPE,&
+                              SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+                              GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,&
+                              ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
+                              MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS,&
+                              MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
                               NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
 
     ! The number of Stokes parameters (and components of the real
@@ -170,12 +171,12 @@ program SHDOM
 
     ! Find out the size of the input property file grid
     if (MASTERPROC) then
-        call READ_PROPERTY_SIZE(PROPFILE, NSTLEG, NLEG, NPX, NPY, NPZ, &
+        call READ_PROPERTY_SIZE(PROPFILE, NSTLEG, NLEG, NPX, NPY, NPZ,&
                                 NUMPHASE, MAXLEG, MAXPGL, DELX, DELY)
 !        call read_property_size_netcdf(PROPFILE, NSTLEG, NLEG, NPX,NPY,NPZ,&
 !                                       NUMPHASE, MAXLEG, MAXPGL, DELX, DELY)
     end if
-    call BROADCAST_PROPERTY_SIZE(NPX, NPY, NPZ, DELX, DELY, &
+    call BROADCAST_PROPERTY_SIZE(NPX, NPY, NPZ, DELX, DELY,&
                                  NUMPHASE, MAXLEG, MAXPGL)
 
     ! Set the full domain grid sizes (variables end in T)
@@ -186,7 +187,7 @@ program SHDOM
     !   the X and Y starting position of this subdomain.  Set bits
     !   2 and 3 in BCFLAG to indicate multiple processors in X and Y.
     !   Also open the slave processor log files.
-    call MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE, &
+    call MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
                        XSTART, YSTART, RUNNAME)
 
     ! Set up base grid point actual size (NX1xNY1xNZ)

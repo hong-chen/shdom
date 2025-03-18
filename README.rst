@@ -17,15 +17,7 @@ How to Install
 
 **Dependencies**
 
-1. Require ``fortran`` and ``c`` compilers (``c`` is usually built-in, pick **one** from the following for ``fortran``)
-
-    * `GFortran <https://fortran-lang.org/learn/os_setup/install_gfortran/>`_ (free, popular);
-
-    * `Intel Fortran <https://docs.conda.io/en/latest/miniconda.html>`_ (not free, faster).
-
-    * `PGI Fortran <https://docs.nvidia.com/hpc-sdk/pgi-compilers/>`_ (not free, faster).
-
-   We recommend ``gfortran`` (`GFortran <https://fortran-lang.org/learn/os_setup/install_gfortran/>`_) and current ``makefile`` is developed around ``gfortran``.
+Require a ``fortran`` compiler, we recommend `GFortran <https://fortran-lang.org/learn/os_setup/install_gfortran/>`_.
 
 **SHDOM**
 
@@ -71,7 +63,7 @@ How to Install
 
        export PATH="<shdom repo>/bin:$PATH"
 
-5. Run the case under ``examples/case_les`` (see detailed instructions there).
+5. Run the case under ``examples/03_bmk_les`` (see detailed instructions there).
 
 |
 
