@@ -15,7 +15,7 @@ endif
 #FC     = pgf90
 #FFLAGS = -fast
 MPIFC  = mpif90    # MPI Fortran 90 compiling command for shdom90
-MPIFLAGS = -O3     #   MPI compiling flags
+MPIFLAGS = $(FFLAGS)     # MPI compiling flags: additional options + FFLAGS
 LIBS   =
 
 CURRENT_DIR = $(shell pwd)
