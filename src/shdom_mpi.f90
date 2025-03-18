@@ -37,7 +37,7 @@ subroutine START_MPI(MASTERPROC)
 
   if (myproc == 0) then
     MASTERPROC = .true.
-    write (6, *) 'Message [START_MPI]: Starting MPI version of SHDOM ...'
+    write (6,'(A)') 'Message [START_MPI]: Starting MPI version of SHDOM ...'
   else
     MASTERPROC = .false.
   end if
@@ -2078,6 +2078,11 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
   integer, allocatable :: IndexSend(:), IndexRecv(:, :), BndRadIntInfo(:, :)
   real, allocatable    :: RadSend(:, :), RadRecv(:, :, :), BndRadRealInfo(:, :, :)
 
+  ! added for fixing the "domain shift" issue
+  !╭──────────────────────────────────────────────────────────────╮!
+  double precision DS_Z0, DS_VZA_RAD, DS_XOFFSET, DS_YOFFSET
+  !╰──────────────────────────────────────────────────────────────╯!
+
   ! Make the isotropic radiances for the top boundary
   call COMPUTE_TOP_RADIANCES(SRCTYPE, SKYRAD, WAVENO, WAVELEN, &
                              UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
@@ -2124,6 +2129,19 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
     MUOUT = OUTPARMS(2*K + 5)
     PHID = OUTPARMS(2*K + 6)
     PHIOUT = PHID*acos(-1.0)/180.0
+
+    ! added for fixing the "domain shift" issue (only for 3D)
+    !╭────────────────────────────────────────────────╮!
+    if (IPFLAG .eq. 0) then
+      DS_Z0 = Z0-ZGRID(1)
+      DS_VZA_RAD = acos(MUOUT)
+      DS_XOFFSET = DS_Z0*tan(DS_VZA_RAD)*cos(PHIOUT)
+      DS_YOFFSET = DS_Z0*tan(DS_VZA_RAD)*sin(PHIOUT)
+      STARTX = -OUTPARMS(4) + DS_XOFFSET
+      STARTY = -OUTPARMS(5) + DS_YOFFSET
+    endif
+    !╰────────────────────────────────────────────────╯!
+
     if (MUOUT .eq. 0.0 .or. abs(MUOUT) .gt. 1.0) then
       write (6, *) 'COMPUTE_RADIANCE: Bad mu for radiance', MUOUT
     else
