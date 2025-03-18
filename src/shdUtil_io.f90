@@ -251,17 +251,17 @@ subroutine USER_INPUT(&
 end subroutine
 
 subroutine NAMELIST_INPUT (&
-    & dRUNNAME, dPROPFILE, dSFCFILE, dCKDFILE,&
-    & dINSAVEFILE, dOUTSAVEFILE,&
-    & dNSTOKES, dNX, dNY, dNZ, dNMU, dNPHI,&
-    & dBCFLAG, dIPFLAG,&
-    & dKDIST, dDELTAM, dGRIDTYPE,&
-    & dSRCTYPE, dSOLARFLUX, dSOLARMU, dSOLARAZ, dSKYRAD,&
-    & dGNDTEMP, dGNDALBEDO, dUNITS, dWAVENO, dWAVELEN,&
-    & dACCELFLAG, dSOLACC, dMAXITER, dSPLITACC, dSHACC,&
-    & dMAXOUT, dMAXPAR, dNUMOUT, dOUTTYPES, dOUTPARMS, dOUTFILES,&
-    & dOutFileNC, dMAX_TOTAL_MB, dADAPT_GRID_FACTOR,&
-    & dNUM_SH_TERM_FACTOR, dCELL_TO_POINT_RATIO)
+    &dRUNNAME, dPROPFILE, dSFCFILE, dCKDFILE,&
+    &dINSAVEFILE, dOUTSAVEFILE,&
+    &dNSTOKES, dNX, dNY, dNZ, dNMU, dNPHI,&
+    &dBCFLAG, dIPFLAG,&
+    &dKDIST, dDELTAM, dGRIDTYPE,&
+    &dSRCTYPE, dSOLARFLUX, dSOLARMU, dSOLARAZ, dSKYRAD,&
+    &dGNDTEMP, dGNDALBEDO, dUNITS, dWAVENO, dWAVELEN,&
+    &dACCELFLAG, dSOLACC, dMAXITER, dSPLITACC, dSHACC,&
+    &dMAXOUT, dMAXPAR, dNUMOUT, dOUTTYPES, dOUTPARMS, dOUTFILES,&
+    &dOutFileNC, dMAX_TOTAL_MB, dADAPT_GRID_FACTOR,&
+    &dNUM_SH_TERM_FACTOR, dCELL_TO_POINT_RATIO)
     ! Obtains the input parameters for the program from a namelist
     ! read from stdin.  See the overall program documentation for the
     ! list of input parameters.  The subroutine dummy variables can't
@@ -312,7 +312,7 @@ subroutine NAMELIST_INPUT (&
         & MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
         & NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
 
-    character*256 NMLFILE
+    character(256) :: NMLFILE
 
     if (dMAXOUT .ne. MAXOUT) stop 'Error [NAMELIST_INPUT]: MAXOUT not the same.'
     if (dMAXPAR .ne. MAXPAR) stop 'Error [NAMELIST_INPUT]: MAXPAR not the same.'
@@ -324,8 +324,9 @@ subroutine NAMELIST_INPUT (&
     WAVENO(2) = 10001.
 
     ! Read in the namelist
-    write (*, '(1X,A)') 'Namelist file name'
-    read (*, '(A)') NMLFILE
+    call get_command_argument(1, NMLFILE)
+    write (*, '(1X,A)') 'Namelist file:'
+    write (*, '(1X,A)') trim(adjustl(NMLFILE))
     open (UNIT=5, FILE=trim(adjustl(NMLFILE)), STATUS='OLD')
     read (5, NML=SHDOMINPUT)
     close (5)

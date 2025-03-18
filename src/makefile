@@ -1,13 +1,14 @@
 # Makefile for SHDOM and related programs in distribution
-#
-# Set the UseMPI and UseNetcdf variables to make the desired shdom version.
 
-#FC = gfortran
-FC = mpif90
+# pick one of the following two
+#╭────────────────────────────────────────────────╮#
+FC = gfortran
+#FC = mpif90
+#╰────────────────────────────────────────────────╯#
 
-GFORTRAN_VERSION = $(shell $(FC) -dumpversion)
+FORTRAN_VERSION = $(shell $(FC) -dumpversion)
 VERSION = 10
-ifeq ($(shell test $(GFORTRAN_VERSION) -lt $(VERSION); echo $$?), 0)
+ifeq ($(shell test $(FORTRAN_VERSION) -lt $(VERSION); echo $$?), 0)
 	FFLAGS = -O3 -Wargument-mismatch
 else
 	FFLAGS = -O3 -fallow-argument-mismatch
@@ -25,17 +26,17 @@ ifeq ($(FC), mpif90)
 else
 	UseMPI = no
 endif
-UseNetcdf = no
 
 ifeq ($(UseMPI),no)
   SHDOMOBJS += shdom_nompi.o
-  F90 = $(FC)
-  F90FLAGS = $(FFLAGS)
 else
   SHDOMOBJS += shdom_mpi.o
-  F90 = $(FC)
-  F90FLAGS = $(FFLAGS)
 endif
+
+F90 = $(FC)
+F90FLAGS = $(FFLAGS)
+
+UseNetcdf = no
 
 NetcdfHome = /usr/local/netcdf-3.6.3
 NetcdfInl  = -I$(NetcdfHome)/include
