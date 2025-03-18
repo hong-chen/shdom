@@ -43,8 +43,8 @@ subroutine START_MPI(MASTERPROC)
   end if
 end subroutine START_MPI
 
-subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE, &
-                         XSTART, YSTART, RUNNAME)
+subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
+  &XSTART, YSTART, RUNNAME)
   ! Sets up the mapping of processors for the SHDOM domain (creating the
   ! 2D communicator, comm2d).  Determines the subdomain property grid
   ! (NPX,NPY) and internal base grid (NX,NY) sizes, and outputs the
@@ -71,9 +71,12 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE, &
   logical :: periodic(2) = (/.true., .true./), reorder = .false.
   real    :: XEND, YEND
   character(LEN=3) :: procstr
-  character(LEN=72) :: logfile
+  character(LEN=256) :: logfile
   include 'mpif.h'
 
+  NPXT = NPX; NPYT = NPY; NXT = NX; NYT = NY
+
+  !if ((numproc == 1) .or. ((NPXT == 1) .and. (NPYT == 1))) then
   if (numproc == 1) then
     XSTART = 0.0; YSTART = 0.0
     return
@@ -84,8 +87,6 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE, &
     logfile = trim(RUNNAME)//procstr//'.log'
     open (UNIT=6, FILE=logfile, STATUS='UNKNOWN')
   end if
-
-  NPXT = NPX; NPYT = NPY; NXT = NX; NYT = NY
 
   ! Partition 2D Cartesian topology:
   dims(:) = 0
@@ -112,7 +113,7 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE, &
     NX = nint(NXT*FLOAT(NPX - 1)/NPXT) + 1
     if (abs(NPXT/FLOAT(NXT) - (NPX - 1)/FLOAT(NX - 1)) > 0.0001) then
       call ABORT_SHDOM_MPI('MAP_SHDOM_MPI: Even X base grid cannot be preserved&
-          & for this NX and number of processors')
+          &for this NX and number of processors')
     end if
     IXYOUT(1, 1) = nint(NXT*FLOAT(IXYPRP(1, 1) - 1)/NPXT) + 1
     IXYOUT(2, 1) = nint(NXT*FLOAT(NPX - 1)/NPXT)
@@ -146,10 +147,11 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE, &
   call MPI_CART_SHIFT(comm2d, 0, 1, iprocneigh(1), iprocneigh(2), ierr)
   call MPI_CART_SHIFT(comm2d, 1, 1, iprocneigh(3), iprocneigh(4), ierr)
 
-  write (6, '(A,2(1X,I2),A,I3)') 'Number of processors in X and Y:', dims(1:2), &
-    '   This processor: ', myproc
-  write (6, '(A,4(1X,I3))') 'Neighbors:', iprocneigh(1:4)
-  write (6, '(2(A,2F7.3))') 'Processor X range: ', XSTART, XEND, '   Y range: ', YSTART, YEND
+  write (6, '(A)') 'MPI Details:'
+  write (6, '(2X,A,2(1X,I2))') 'Number of processors in X and Y:', dims(1:2)
+  write (6, '(2X,A,I3)') 'This processor: ', myproc
+  write (6, '(2X,A,4(1X,I3))') 'Neighbors:', iprocneigh(1:4)
+  write (6, '(2X,2(A,2F7.3))') 'Processor X range: ', XSTART, XEND, '   Y range: ', YSTART, YEND
   write (6, *)
 end subroutine MAP_SHDOM_MPI
 
@@ -1995,7 +1997,7 @@ subroutine INTEGRATE_RAY(BCFLAG, IPFLAG, NX, NY, NZ, NA, &
     RAD(:) = RAD(:) + TRANS*SRC(:)*ABSCELL
     TRANS = TRANS*TRANSCELL
     if (RAD(1) < -1.0e-5) then
-      write (6, '(3(1X,F5.3),8(1X,E12.5))'), &
+      write (6, '(3(1X,F5.3),8(1X,E12.5))') &
         xe, ye, ze, ext0, ext1, so, tau, trans, src, abscell, rad(:)
     end if
     if (GRIDRAD(1, I1) .ge. 0.0 .and. GRIDRAD(1, I2) .ge. 0.0 &
