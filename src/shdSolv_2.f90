@@ -2389,7 +2389,7 @@ subroutine COMPUTE_RADIANCE(&
         ! added for fixing the "domain shift" issue (only for 3D)
         !╭────────────────────────────────────────────────╮!
         if (IPFLAG .eq. 0) then
-            DS_Z0 = Z0-ZGRID(1)
+            DS_Z0 = Z0 - ZGRID(1)
             DS_VZA_RAD = acos(MUOUT)
             DS_XOFFSET = DS_Z0*tan(DS_VZA_RAD)*cos(PHIOUT)
             DS_YOFFSET = DS_Z0*tan(DS_VZA_RAD)*sin(PHIOUT)
@@ -2716,7 +2716,7 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
     ! field (EXTINCT) backward in the direction opposite to (MU,PHI)
     ! to find the outgoing radiance (RADIANCE) at the point X0,Y0,Z0.
     ! The radiances at the opposite boundary are input in GRIDRAD.
-    ! The transmission and radiance of the ray so far (TRANSMIT, RADIANC
+    ! The transmission and radiance of the ray so far (TRANSMIT, RADIANCE
     ! are input and returned after the integration along with the exitting
     ! ray location (XE,YE,ZE) and side of the domain (1=-X,2=+X,3=-Y,4=+
     ! 5=-Z,6=+Z).
@@ -2745,6 +2745,23 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
     double precision SRC(NSTOKES), RAD(NSTOKES)
     data GRIDFACE/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8,&
         & 1, 2, 3, 4, 5, 6, 7, 8/, OPPFACE/2, 1, 4, 3, 6, 5/
+
+    ! added for fixing the "domain shift" issue
+    !╭──────────────────────────────────────────────────────────────╮!
+    !real :: DS_Z0, DS_VZA_RAD, DS_XOFFSET, DS_YOFFSET
+
+    !if (IPFLAG .eq. 0) then
+    !  DS_Z0 = ZGRID(NZ) - ZGRID(1)
+    !  DS_VZA_RAD = acos(MU)
+    !  DS_XOFFSET = DS_Z0*tan(DS_VZA_RAD)*cos(PHI)
+    !  DS_YOFFSET = DS_Z0*tan(DS_VZA_RAD)*sin(PHI)
+    !else
+    !  DS_XOFFSET = 0.0
+    !  DS_YOFFSET = 0.0
+    !endif
+    !X0 = X0 + DS_XOFFSET
+    !Y0 = Y0 + DS_YOFFSET
+    !╰──────────────────────────────────────────────────────────────╯!
 
     ! TAUTOL is the maximum optical path for the subgrid intervals
     TAUTOL = 0.1

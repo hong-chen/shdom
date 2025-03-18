@@ -2132,23 +2132,23 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
 
     ! added for fixing the "domain shift" issue (only for 3D)
     !╭────────────────────────────────────────────────╮!
-    if (IPFLAG .eq. 0) then
-      DS_Z0 = Z0-ZGRID(1)
-      DS_VZA_RAD = acos(MUOUT)
-      DS_XOFFSET = DS_Z0*tan(DS_VZA_RAD)*cos(PHIOUT)
-      DS_YOFFSET = DS_Z0*tan(DS_VZA_RAD)*sin(PHIOUT)
-      TOT_XOFFSET = -OUTPARMS(4) + DS_XOFFSET
-      TOT_YOFFSET = -OUTPARMS(5) + DS_YOFFSET
-    else
-      TOT_XOFFSET = -OUTPARMS(4)
-      TOT_YOFFSET = -OUTPARMS(5)
-    endif
-    STARTX = TOT_XOFFSET
-    STARTY = TOT_YOFFSET
+    !if (IPFLAG .eq. 0) then
+    !  DS_Z0 = Z0-ZGRID(1)
+    !  DS_VZA_RAD = acos(MUOUT)
+    !  DS_XOFFSET = DS_Z0*tan(DS_VZA_RAD)*cos(PHIOUT)
+    !  DS_YOFFSET = DS_Z0*tan(DS_VZA_RAD)*sin(PHIOUT)
+    !  TOT_XOFFSET = -OUTPARMS(4) + DS_XOFFSET
+    !  TOT_YOFFSET = -OUTPARMS(5) + DS_YOFFSET
+    !else
+    !  TOT_XOFFSET = -OUTPARMS(4)
+    !  TOT_YOFFSET = -OUTPARMS(5)
+    !endif
+    !STARTX = TOT_XOFFSET
+    !STARTY = TOT_YOFFSET
     !╰────────────────────────────────────────────────╯!
 
     if (MUOUT .eq. 0.0 .or. abs(MUOUT) .gt. 1.0) then
-      write (6, *) 'COMPUTE_RADIANCE: Bad mu for radiance', MUOUT
+      write (6, *) 'COMPUTE_RADIANCE_PAR: Bad mu for radiance', MUOUT
     else
 
       ! Compute the source function throughout grid for this angle
@@ -2239,14 +2239,6 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
               end if
               NINVALID(SIDE) = NINVALID(SIDE) + 1
               if (NINVALID(SIDE) > MAXNRAD) call ABORT_SHDOM_MPI('COMPUTE_RADIANCE_PAR: MAXNRAD exceeded by NINVALID(SIDE) 1')
-
-              !XE = XE-TOT_XOFFSET
-              !if (XE .gt. XGRID(NX)) XE = XE - XGRID(NX)
-              !if (XE .lt. XGRID(1)) XE = XE + XGRID(NX)
-
-              !YE = YE-TOT_YOFFSET
-              !if (YE .gt. YGRID(NY)) YE = YE - YGRID(NY)
-              !if (YE .lt. YGRID(1)) YE = YE + YGRID(NY)
 
               BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, TRANSMIT, RADIANCE(:)/)
               BndRadIntInfo(NINVALID(SIDE), SIDE) = NRAD

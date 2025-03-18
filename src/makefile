@@ -2,8 +2,8 @@
 
 # pick one of the following two
 #╭────────────────────────────────────────────────╮#
-#FC = gfortran
-FC = mpif90
+FC = gfortran
+#FC = mpif90
 #╰────────────────────────────────────────────────╯#
 
 FORTRAN_VERSION = $(shell $(FC) -dumpversion)
