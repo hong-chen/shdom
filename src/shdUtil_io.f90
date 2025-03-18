@@ -325,8 +325,7 @@ subroutine NAMELIST_INPUT (&
 
     ! Read in the namelist
     call get_command_argument(1, NMLFILE)
-    write (*, '(1X,A)') 'Namelist file:'
-    write (*, '(1X,A)') trim(adjustl(NMLFILE))
+    write (*, '(1X,A,1X,"<",A,">")') 'Input namelist file:', trim(adjustl(NMLFILE))
     open (UNIT=5, FILE=trim(adjustl(NMLFILE)), STATUS='OLD')
     read (5, NML=SHDOMINPUT)
     close (5)

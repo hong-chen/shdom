@@ -121,6 +121,7 @@ program SHDOM
                             OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR, &
                             NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
     end if
+
     call BROADCAST_USER_INPUT(RUNNAME, PROPFILE, SFCFILE, CKDFILE, &
                               INSAVEFILE, OUTSAVEFILE, &
                               NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG, &

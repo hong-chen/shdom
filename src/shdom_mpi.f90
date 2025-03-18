@@ -23,7 +23,7 @@ subroutine START_MPI(MASTERPROC)
 
   call MPI_INIT(ierr)
   if (ierr .ne. MPI_SUCCESS) then
-    write (6, *) 'Error starting MPI version of SHDOM. Terminating.'
+    write (6, *) 'Error [START_MPI]: Terminating ...'
     stop
   end if
 
@@ -37,6 +37,7 @@ subroutine START_MPI(MASTERPROC)
 
   if (myproc == 0) then
     MASTERPROC = .true.
+    write (6, *) 'Message [START_MPI]: Starting MPI version of SHDOM ...'
   else
     MASTERPROC = .false.
   end if
@@ -63,7 +64,7 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE, &
   implicit none
   integer, intent(INOUT) :: BCFLAG, NPX, NPY, NX, NY, NZ
   real, intent(IN) :: DELX, DELY
-  character(LEN=80), intent(IN) :: PROPFILE, RUNNAME
+  character(LEN=256), intent(IN) :: PROPFILE, RUNNAME
   real, intent(OUT) :: XSTART, YSTART
   integer :: NPXT, NPYT, NXT, NYT
   integer :: i, ierr, dims(2), coords(2)
@@ -166,7 +167,7 @@ subroutine OPTIMIZE_PROCESSOR_DOMAINS(ProcDims, ProcCoord, NPXT, NPYT, &
   use SHDOM_MPI_DATA
   implicit none
   integer, intent(IN) :: ProcDims(2), ProcCoord(2), NPXT, NPYT
-  character(LEN=80), intent(IN) :: PROPFILE, RUNNAME
+  character(LEN=256), intent(IN) :: PROPFILE, RUNNAME
   integer :: NPXTI, NPYTI
   integer :: IX, IY, JX, JY, Nxd, Nyd, N, I, ierr
   integer :: BndLines(ProcDims(1) + ProcDims(2) - 2)
@@ -183,7 +184,7 @@ subroutine OPTIMIZE_PROCESSOR_DOMAINS(ProcDims, ProcCoord, NPXT, NPYT, &
   real    :: LOAD_OBJ_FUNC, Energy, NewEnergy, LowestEnergy, DeltaE, Boltz
   integer, allocatable :: ProcCoordAll(:, :), Ngrid(:, :)
   real, allocatable :: wtproc(:)
-  character(LEN=80) :: PROPFILEI
+  character(LEN=256) :: PROPFILEI
   include 'mpif.h'
 
   ! Initialize the subdomain boundary lines to evenly spaced
@@ -371,16 +372,17 @@ real function ran(idum)
   ran = am*ior(iand(IM, ieor(ix, iy)), 1)
 end function ran
 
-subroutine BROADCAST_USER_INPUT(RUNNAME, PROPFILE, SFCFILE, CKDFILE, &
-                                INSAVEFILE, OUTSAVEFILE, &
-                                NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG, &
-                                IPFLAG, KDIST, DELTAM, GRIDTYPE, &
-                                SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD, &
-                                GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN, &
-                                ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC, &
-                                MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS, &
-                                MAX_TOTAL_MB, SPLITTING_FACTOR, &
-                                NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
+subroutine BROADCAST_USER_INPUT(&
+  RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
+  INSAVEFILE, OUTSAVEFILE,&
+  NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
+  IPFLAG, KDIST, DELTAM, GRIDTYPE,&
+  SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+  GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,&
+  ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
+  MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS,&
+  MAX_TOTAL_MB, SPLITTING_FACTOR,&
+  NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
   ! Broadcasts all the user input parameters (except unneeded file names)
   ! from the master processor to the slave processors.
   use SHDOM_MPI_DATA
@@ -395,14 +397,14 @@ subroutine BROADCAST_USER_INPUT(RUNNAME, PROPFILE, SFCFILE, CKDFILE, &
   real, intent(INOUT) :: MAX_TOTAL_MB, SPLITTING_FACTOR
   real, intent(INOUT) :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
   character(LEN=1), intent(INOUT) :: SRCTYPE, GRIDTYPE, UNITS, OUTTYPES(*)
-  character(LEN=80), intent(INOUT) :: RUNNAME, PROPFILE, SFCFILE, CKDFILE
-  character(LEN=80), intent(INOUT) :: INSAVEFILE, OUTSAVEFILE
+  character(LEN=256), intent(INOUT) :: RUNNAME, PROPFILE, SFCFILE, CKDFILE
+  character(LEN=256), intent(INOUT) :: INSAVEFILE, OUTSAVEFILE
   include 'mpif.h'
   integer :: ierr, intbuf(10)
   logical :: logbuf(3)
   real    :: realbuf(16)
   character(LEN=1) :: char1buf(3)
-  character(LEN=80) :: char80buf(6)
+  character(LEN=256) :: char256buf(6)
   character(LEN=3) :: procstr
 
   if (numproc <= 1) return
@@ -432,10 +434,10 @@ subroutine BROADCAST_USER_INPUT(RUNNAME, PROPFILE, SFCFILE, CKDFILE, &
   call MPI_BCAST(char1buf, 3, MPI_CHARACTER, 0, MPI_COMM_WORLD, ierr)
   SRCTYPE = char1buf(1); GRIDTYPE = char1buf(2); UNITS = char1buf(3)
 
-  char80buf(:) = (/PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE, RUNNAME/)
-  call MPI_BCAST(char80buf, 6*80, MPI_CHARACTER, 0, MPI_COMM_WORLD, ierr)
-  PROPFILE = char80buf(1); SFCFILE = char80buf(2); CKDFILE = char80buf(3)
-  INSAVEFILE = char80buf(4); OUTSAVEFILE = char80buf(5); RUNNAME = char80buf(6)
+  char256buf(:) = (/PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE, RUNNAME/)
+  call MPI_BCAST(char256buf, 6*256, MPI_CHARACTER, 0, MPI_COMM_WORLD, ierr)
+  PROPFILE = char256buf(1); SFCFILE = char256buf(2); CKDFILE = char256buf(3)
+  INSAVEFILE = char256buf(4); OUTSAVEFILE = char256buf(5); RUNNAME = char256buf(6)
 
   call MPI_BCAST(OUTPARMS, MAXPAR*NUMOUT, MPI_REAL, 0, MPI_COMM_WORLD, ierr)
   call MPI_BCAST(OUTTYPES, NUMOUT*1, MPI_CHARACTER, 0, MPI_COMM_WORLD, ierr)
