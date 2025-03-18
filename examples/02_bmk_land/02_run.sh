@@ -2,4 +2,5 @@
 
 mkdir -p tmp-data
 fname_nml="data/shdom-inp_land.nml"
-put $fname_nml | shdom
+#put $fname_nml | mpirun -np 4 shdom
+mpirun -np 4 shdom < data/shdom-inp_land.nml

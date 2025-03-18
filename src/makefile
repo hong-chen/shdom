@@ -2,21 +2,16 @@
 #
 # Set the UseMPI and UseNetcdf variables to make the desired shdom version.
 
-FC     = gfortran                        # your Fortran 90 compiler here (same as used by mpif90)
+#FC = gfortran
+FC = mpif90
 
-GFORTRAN_VERSION = $(shell gfortran -dumpversion)
+GFORTRAN_VERSION = $(shell $(FC) -dumpversion)
 VERSION = 10
 ifeq ($(shell test $(GFORTRAN_VERSION) -lt $(VERSION); echo $$?), 0)
 	FFLAGS = -O3 -Wargument-mismatch
 else
 	FFLAGS = -O3 -fallow-argument-mismatch
 endif
-
-#FC     = pgf90
-#FFLAGS = -fast
-MPIFC  = mpif90    # MPI Fortran 90 compiling command for shdom90
-MPIFLAGS = -O3     #   MPI compiling flags
-LIBS   =
 
 CURRENT_DIR = $(shell pwd)
 BIN_DIR     = $(abspath $(CURRENT_DIR)/../bin)
@@ -25,12 +20,12 @@ TARGETS = bin shdom _shdom propgen make_mie_table make_tmatrix_table plotscattab
 
 SHDOMOBJS = shdSolv_1.o shdSolv_2.o shdUtil_io.o shdSurf_brdf.o shdSurf_ocean.o _fftpack.o
 
-UseMPI = no
+ifeq ($(FC), mpif90)
+	UseMPI = yes
+else
+	UseMPI = no
+endif
 UseNetcdf = no
-
-NetcdfHome = /usr/local/netcdf-3.6.3
-NetcdfInl  = -I$(NetcdfHome)/include
-NetcdfLib  = -L$(NetcdfHome)/lib -lnetcdf
 
 ifeq ($(UseMPI),no)
   SHDOMOBJS += shdom_nompi.o
@@ -38,9 +33,13 @@ ifeq ($(UseMPI),no)
   F90FLAGS = $(FFLAGS)
 else
   SHDOMOBJS += shdom_mpi.o
-  F90 = $(MPIFC)
-  F90FLAGS = $(MPIFLAGS)
+  F90 = $(FC)
+  F90FLAGS = $(FFLAGS)
 endif
+
+NetcdfHome = /usr/local/netcdf-3.6.3
+NetcdfInl  = -I$(NetcdfHome)/include
+NetcdfLib  = -L$(NetcdfHome)/lib -lnetcdf
 
 ifeq ($(UseNetcdf),no)
   SHDOMOBJS += shdom_nonetcdf.o
