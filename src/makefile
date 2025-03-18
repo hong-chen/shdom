@@ -28,9 +28,9 @@ else
 endif
 
 ifeq ($(UseMPI),no)
-  SHDOMOBJS += shdom_nompi.o
+	SHDOMOBJS += shdom_nompi.o
 else
-  SHDOMOBJS += shdom_mpi.o
+	SHDOMOBJS += shdom_mpi.o
 endif
 
 F90 = $(FC)
@@ -43,18 +43,17 @@ NetcdfInl  = -I$(NetcdfHome)/include
 NetcdfLib  = -L$(NetcdfHome)/lib -lnetcdf
 
 ifeq ($(UseNetcdf),no)
-  SHDOMOBJS += shdom_nonetcdf.o
+	SHDOMOBJS += shdom_nonetcdf.o
 else
-  SHDOMOBJS += shdom_netcdf.o
-  F90FLAGS += $(NetcdfInl)
-  LIBS   += $(NetcdfLib)
+	SHDOMOBJS += shdom_netcdf.o
+	F90FLAGS += $(NetcdfInl)
+	LIBS   += $(NetcdfLib)
 endif
 
 all: $(TARGETS)
 
 bin:
 	mkdir -p $(BIN_DIR)
-
 
 # this for namelist input
 shdom: shdom.o $(SHDOMOBJS)
