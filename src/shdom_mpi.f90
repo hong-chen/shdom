@@ -2143,6 +2143,8 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
       TOT_XOFFSET = -OUTPARMS(4)
       TOT_YOFFSET = -OUTPARMS(5)
     endif
+    STARTX = TOT_XOFFSET
+    STARTY = TOT_YOFFSET
     !╰────────────────────────────────────────────────╯!
 
     if (MUOUT .eq. 0.0 .or. abs(MUOUT) .gt. 1.0) then
@@ -2220,7 +2222,7 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
                                   GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, &
                                   XGRID, YGRID, ZGRID, GRIDPOS, &
                                   MUOUT, PHIOUT, GRIDRAD, EXTINCT, SOURCE1, &
-                                  X0+TOT_XOFFSET, Y0+TOT_YOFFSET, Z0, XE, YE, ZE, SIDE, &
+                                  X0, Y0, Z0, XE, YE, ZE, SIDE, &
                                   TRANSMIT, RADIANCE, VALIDRAD)
 
             ! If we got a radiance then store it in RadSend otherwise save
