@@ -3019,7 +3019,7 @@ end subroutine END_SHDOM_MPI
 subroutine ABORT_SHDOM_MPI(ERRSTR)
   use SHDOM_MPI_DATA
   implicit none
-  character(LEN=256), intent(IN) :: ERRSTR
+  character(LEN=*), intent(IN) :: ERRSTR
   integer :: ierr, errorcode = 7
 
   write (6, *) trim(adjustl(ERRSTR))
