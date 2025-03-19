@@ -35,20 +35,21 @@ endif
 
 F90 = $(FC)
 F90FLAGS = $(FFLAGS)
+LIBS =
 
-#UseNetcdf = no
+UseNetcdf = no
 
-#NetcdfHome = /usr/local/netcdf-3.6.3
-#NetcdfInl  = -I$(NetcdfHome)/include
-#NetcdfLib  = -L$(NetcdfHome)/lib -lnetcdf
+NetcdfHome = /usr/local/netcdf-3.6.3
+NetcdfInl  = -I$(NetcdfHome)/include
+NetcdfLib  = -L$(NetcdfHome)/lib -lnetcdf
 
-#ifeq ($(UseNetcdf),no)
-#    SHDOMOBJS += shdom_nonetcdf.o
-#else
-#    SHDOMOBJS += shdom_netcdf.o
-#    F90FLAGS += $(NetcdfInl)
-#    LIBS += $(NetcdfLib)
-#endif
+ifeq ($(UseNetcdf),no)
+	SHDOMOBJS += shdom_nonetcdf.o
+else
+	SHDOMOBJS += shdom_netcdf.o
+	F90FLAGS += $(NetcdfInl)
+	LIBS += $(NetcdfLib)
+endif
 
 all: $(TARGETS)
 
