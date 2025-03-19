@@ -84,8 +84,8 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
 
   if (myproc > 0) then
     write (procstr, '(I3.3)') myproc
-    logfile = trim(RUNNAME)//procstr//'.log'
-    open (UNIT=6, FILE=logfile, STATUS='UNKNOWN')
+    logfile = trim(adjustl(RUNNAME))//procstr//'.log'
+    open (UNIT=6, FILE=trim(adjustl(logfile)), STATUS='UNKNOWN')
   end if
 
   ! Partition 2D Cartesian topology:
@@ -670,7 +670,7 @@ subroutine READ_BROADCAST_MEM_PARAMS(MAX_TOTAL_MB, ADAPT_GRID_FACTOR, &
   implicit none
   real, intent(INOUT) :: MAX_TOTAL_MB, ADAPT_GRID_FACTOR
   real, intent(INOUT) :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
-  character(LEN=*), intent(IN) :: RUNNAME
+  character(LEN=256), intent(IN) :: RUNNAME
   integer :: Nproc, ierr, i, j
   real, allocatable :: MemParam(:, :)
   include 'mpif.h'
@@ -2148,7 +2148,7 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
     !╰────────────────────────────────────────────────╯!
 
     if (MUOUT .eq. 0.0 .or. abs(MUOUT) .gt. 1.0) then
-      write (6, *) 'COMPUTE_RADIANCE_PAR: Bad mu for radiance', MUOUT
+      write (6, *) 'Warning [COMPUTE_RADIANCE_PAR]: Bad mu for radiance', MUOUT
     else
 
       ! Compute the source function throughout grid for this angle
@@ -2229,16 +2229,17 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
             !  the information needed to pass to other processors
             if (VALIDRAD) then
               Ndone = Ndone + 1
-              if (Ndone > MAXNRAD) call ABORT_SHDOM_MPI('COMPUTE_RADIANCE_PAR: MAXNRAD exceeded by Ndone 1')
+              if (Ndone > MAXNRAD) call ABORT_SHDOM_MPI('Error [COMPUTE_RADIANCE_PAR]: MAXNRAD exceeded by Ndone 1.')
               RadSend(:, Ndone) = RADIANCE(:)
               IndexSend(Ndone) = NRAD
             else
               if (SIDE /= Lupx .and. SIDE /= Lupy) then
                 write (6, *) 'Bad SIDE 1:', myproc, muout, phiout, x0, y0, z0, SIDE, xe, ye, ze
-                call ABORT_SHDOM_MPI('COMPUTE_RADIANCE_PAR')
+                call ABORT_SHDOM_MPI('Error [COMPUTE_RADIANCE_PAR]: Bad SIDE 1')
               end if
               NINVALID(SIDE) = NINVALID(SIDE) + 1
-              if (NINVALID(SIDE) > MAXNRAD) call ABORT_SHDOM_MPI('COMPUTE_RADIANCE_PAR: MAXNRAD exceeded by NINVALID(SIDE) 1')
+              if (NINVALID(SIDE) > MAXNRAD)&
+                call ABORT_SHDOM_MPI('Error [COMPUTE_RADIANCE_PAR]: MAXNRAD exceeded by NINVALID(SIDE) 1.')
 
               BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, TRANSMIT, RADIANCE(:)/)
               BndRadIntInfo(NINVALID(SIDE), SIDE) = NRAD
@@ -2314,16 +2315,18 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
             ! save information needed to pass to neighboring processors
             if (VALIDRAD) then
               Ndone = Ndone + 1
-              if (Ndone > MAXNRAD) call ABORT_SHDOM_MPI('COMPUTE_RADIANCE_PAR: MAXNRAD exceeded by Ndone 2')
+              if (Ndone > MAXNRAD)&
+                call ABORT_SHDOM_MPI('Error [COMPUTE_RADIANCE_PAR]: MAXNRAD exceeded by Ndone 2.')
               RadSend(:, Ndone) = RADIANCE(:)
               IndexSend(Ndone) = BndRadIntInfo(J, Ldownx)
             else
               if (SIDE /= Lupx .and. SIDE /= Lupy) then
                 write (6, *) 'Bad SIDE 2x', myproc, muout, phiout, x, y, z, SIDE, xe, ye, ze
-                call ABORT_SHDOM_MPI('COMPUTE_RADIANCE_PAR')
+                call ABORT_SHDOM_MPI('Error [COMPUTE_RADIANCE_PAR]: Bad SIDE 2x')
               end if
               NINVALID(SIDE) = NINVALID(SIDE) + 1
-              if (NINVALID(SIDE) > MAXNRAD) call ABORT_SHDOM_MPI('COMPUTE_RADIANCE_PAR: MAXNRAD exceeded by NINVALID(SIDE) 2')
+              if (NINVALID(SIDE) > MAXNRAD)&
+                call ABORT_SHDOM_MPI('Error [COMPUTE_RADIANCE_PAR]: MAXNRAD exceeded by NINVALID(SIDE) 2.')
               BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, TRANSMIT, RADIANCE(:)/)
               BndRadIntInfo(NINVALID(SIDE), SIDE) = BndRadIntInfo(J, Ldownx)
             end if
@@ -2349,16 +2352,17 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
             ! save information needed to pass to neighboring processors
             if (VALIDRAD) then
               Ndone = Ndone + 1
-              if (Ndone > MAXNRAD) call ABORT_SHDOM_MPI('COMPUTE_RADIANCE_PAR: MAXNRAD exceeded by Ndone 3')
+              if (Ndone > MAXNRAD) call ABORT_SHDOM_MPI('Error [COMPUTE_RADIANCE_PAR]: MAXNRAD exceeded by Ndone 3.')
               RadSend(:, Ndone) = RADIANCE(:)
               IndexSend(Ndone) = BndRadIntInfo(J, Ldowny)
             else
               if (SIDE /= Lupx .and. SIDE /= Lupy) then
                 write (6, *) 'Bad SIDE 2y', myproc, muout, phiout, x, y, z, SIDE, xe, ye, ze
-                call ABORT_SHDOM_MPI('COMPUTE_RADIANCE_PAR')
+                call ABORT_SHDOM_MPI('Error [COMPUTE_RADIANCE_PAR]: Bad SIDE 2y')
               end if
               NINVALID(SIDE) = NINVALID(SIDE) + 1
-              if (NINVALID(SIDE) > MAXNRAD) call ABORT_SHDOM_MPI('COMPUTE_RADIANCE_PAR: MAXNRAD exceeded by NINVALID(SIDE) 3')
+              if (NINVALID(SIDE) > MAXNRAD)&
+                call ABORT_SHDOM_MPI('Error [COMPUTE_RADIANCE_PAR]: MAXNRAD exceeded by NINVALID(SIDE) 3.')
               BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, TRANSMIT, RADIANCE(:)/)
               BndRadIntInfo(NINVALID(SIDE), SIDE) = BndRadIntInfo(J, Ldowny)
             end if
@@ -2625,7 +2629,7 @@ subroutine VISUALIZE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
         Y0 = Y0 + R*sqrt(1 - COSTH**2)*sin(PHIR)
         Z0 = ZGRID(NZ)
       else if (Z0 .lt. ZGRID(1)) then
-        write (6, *) 'VISUALIZE_RADIANCE: Level below domain'
+        write (6, *) 'Error [VISUALIZE_RADIANCE]: Level below domain.'
         stop
       end if
 
@@ -2906,7 +2910,7 @@ subroutine END_SHDOM_MPI(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART, DELX, DELY, &
   implicit none
   integer, intent(IN) :: NPTS, NPX, NPY, NPXT, NPYT
   real, intent(IN) :: GRIDPOS(3, NPTS), XSTART, YSTART, DELX, DELY
-  character(LEN=*), intent(IN) :: PROPFILE, RUNNAME
+  character(LEN=256), intent(IN) :: PROPFILE, RUNNAME
   integer :: I, IX, IY, MAXN, SX, SY, EX, EY, NX, NY
   integer :: iproc, ierr, irq
   integer, allocatable :: NUMGRID(:, :), NUMGRIDALL(:, :), NORM(:, :), IXYALL(:, :, :)
@@ -3015,9 +3019,9 @@ end subroutine END_SHDOM_MPI
 subroutine ABORT_SHDOM_MPI(ERRSTR)
   use SHDOM_MPI_DATA
   implicit none
-  character(LEN=*), intent(IN) :: ERRSTR
+  character(LEN=256), intent(IN) :: ERRSTR
   integer :: ierr, errorcode = 7
 
-  write (6, *) ERRSTR
+  write (6, *) trim(adjustl(ERRSTR))
   call MPI_ABORT(comm2d, errorcode, ierr)
 end subroutine ABORT_SHDOM_MPI
