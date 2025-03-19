@@ -205,7 +205,8 @@ subroutine SOLVE_RTE(&
     AVGSOLCRIT = SOLCRIT
     SPLITCRIT = 0.0
 
-    write (6, *) '! Iter Log(Sol)  SplitCrit  Npoints  Nsh(avg)'
+    write (6, '(A)') 'Message [SOLVE_RTE]:'
+    write (6, '(A)') '+ Iter  Log(Sol)  SplitCrit  Npoints  Nsh(avg)'
 
     ! Main solution loop
     !   Iterate until the iterations exceed the limit, or the desire
@@ -301,14 +302,14 @@ subroutine SOLVE_RTE(&
 
         ! Print out the log solution criterion, number of points,
         !   and average SH truncation.
-        write (6, '(2X,I4,F8.3,1X,E10.3,1X,I8,1X,F8.2,1X,F6.3)')&
+        write (6, '(2X,I4,2X,F7.3,2X,E10.3,1X,I8,1X,F8.2,1X,F6.3)')&
             &ITER, log10(max(SOLCRIT, 1.0e-20)), SPLITCRIT,&
             &NPTS, FLOAT(SHPTR(NPTS + 1))/NPTS,&
             &FLOAT(SHPTR(NPTS + 1))/(NPTS*NLM)
     end do
 
-    write (6, '(1X,A,I6,A,F9.6)') '! Iterations: ', ITER,&
-        &'     Final Criterion: ', SOLCRIT
+    write (6, '(A,I4,A,F9.6)') '- Iterations: ', ITER,&
+        &', Final Criterion: ', SOLCRIT
 
     if (SFCTYPE(1:1) .eq. 'V' .and. UNIFORM_SFC_BRDF) then
         deallocate (SFC_BRDF_DO)
@@ -3457,8 +3458,8 @@ subroutine SPLIT_GRID(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
         if (OUTOFMEM0) then
             OUTOFMEM = .true.
             write (6, '(2A,I8,A,I8)')&
-                & 'Further cell splitting requires larger array allocations:',&
-                & '  Ncells=', NCELLS, '  Npnts=', NPTS
+                &'Message [SPLIT_GRID]: Further cell splitting requires larger array allocations: ',&
+                &'Ncells = ', NCELLS, ', Npnts = ', NPTS
         end if
 
         ! If in parallel mode, calculate all the direct beam fluxes at on
