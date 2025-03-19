@@ -17,23 +17,23 @@ How to Install
 
 **Dependencies**
 
-Require a ``fortran`` compiler, we recommend `GFortran <https://fortran-lang.org/learn/os_setup/install_gfortran/>`_.
+* Require a ``fortran`` compiler, we recommend `GFortran <https://fortran-lang.org/learn/os_setup/install_gfortran/>`_.
 
 **SHDOM**
 
-1. Open a terminal, type in the following
+#. Open a terminal, type in the following
 
     .. code-block:: bash
 
        git clone https://github.com/hong-chen/shdom.git
 
-2. Under newly cloned ``<shdom repo>``, where it contains ``README.rst``, type in the following
+#. Under newly cloned ``<shdom repo>``, where it contains ``README.rst``, type in the following
 
     .. code-block:: bash
 
        cd src
 
-3. Under ``<shdom repo>/src``, where it contains ``makefile``, type in the following
+#. Under ``<shdom repo>/src``, where it contains ``makefile``, type in the following
 
     .. code-block:: bash
 
@@ -57,13 +57,13 @@ Require a ``fortran`` compiler, we recommend `GFortran <https://fortran-lang.org
 
    * ``bin/put``
 
-4. Add the following to the system source file, e.g. ``~/.bashrc`` for ``bash`` (replace ``<shdom repo>`` with a valid path),
+#. Add the following to the system source file, e.g. ``~/.bashrc`` for ``bash`` (replace ``<shdom repo>`` with a valid path),
 
     .. code-block:: bash
 
        export PATH="<shdom repo>/bin:$PATH"
 
-5. Run the case under ``examples/03_bmk_les`` (see detailed instructions there).
+#. Run the case under ``examples/03_bmk_les`` (see detailed instructions `there <https://github.com/hong-chen/shdom/blob/master/examples/03_bmk_les/README.rst>`_).
 
 |
 
