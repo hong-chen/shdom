@@ -325,7 +325,7 @@ subroutine NAMELIST_INPUT (&
 
     ! Read in the namelist
     call get_command_argument(1, NMLFILE)
-    write (*, '(A,"<",A,">")') 'Message [NAMELIST_INPUT]: Reading ', trim(adjustl(NMLFILE))
+    write (*, '(A,"<",A,">")') 'Message [NAMELIST_INPUT]: ', trim(adjustl(NMLFILE))
     open (UNIT=5, FILE=trim(adjustl(NMLFILE)), STATUS='OLD')
     read (5, NML=SHDOMINPUT)
     close (5)
@@ -901,11 +901,9 @@ subroutine CHECK_PROPERTY_INPUT(&
         end do
     end do
     if (NTHICK .gt. 0) then
-        write (*, *) 'Warning [CHECK_PROPERTY_INPUT]: '
-        write (*, '(A,A,I7)') '  Number of property grid cells',&
-            & ' with optical depth greater than 2 : ', NTHICK
-        write (*, *) ' Max cell optical depth : ', MAXTAU
-        write (*, *)
+        write (*, '(A)') 'Message [CHECK_PROPERTY_INPUT]: '
+        write (*, '(A,I8)') '  Number of property grid cells with optical depth greater than 2: ', NTHICK
+        write (*, '(A,F8.2)') '  Max cell optical depth: ', MAXTAU
     end if
 
     return
