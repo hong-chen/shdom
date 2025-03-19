@@ -63,7 +63,7 @@ How to Install
 
        export PATH="<shdom repo>/bin:$PATH"
 
-#. Run the case under ``examples/03_bmk_les`` (see detailed instructions `there <https://github.com/hong-chen/shdom/blob/master/examples/03_bmk_les/README.rst>`_).
+#. Run the case under ``examples/03_bmk_les`` (see detailed instructions `there <https://github.com/hong-chen/shdom/blob/master/examples/03_bmk_les>`_).
 
 |
 
