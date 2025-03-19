@@ -44,9 +44,9 @@ NetcdfInl  = -I$(NetcdfHome)/include
 NetcdfLib  = -L$(NetcdfHome)/lib -lnetcdf
 
 ifeq ($(UseNetcdf),no)
-	SHDOMOBJS += shdom_nonetcdf.o
+	SHDOMOBJS += shdom_nonc.o
 else
-	SHDOMOBJS += shdom_netcdf.o
+	SHDOMOBJS += shdom_nc.o
 	F90FLAGS += $(NetcdfInl)
 	LIBS += $(NetcdfLib)
 endif
@@ -88,22 +88,22 @@ shdSurf_brdf.o: shdSurf_brdf.f90
 shdSurf_ocean.o: shdSurf_ocean.f90
 	$(F90) -c $(F90FLAGS) shdSurf_ocean.f90
 
-shdom_mpi.o: shdom_mpi.f90
-	$(F90) -c $(F90FLAGS) shdom_mpi.f90
-
 shdom_nompi.o: shdom_nompi.f90
 	$(F90) -c $(F90FLAGS) shdom_nompi.f90
 
-shdom_nonetcdf.o: shdom_nonetcdf.f90
-	$(F90) -c $(F90FLAGS) shdom_nonetcdf.f90
+shdom_mpi.o: shdom_mpi.f90
+	$(F90) -c $(F90FLAGS) shdom_mpi.f90
 
-shdom_netcdf.o: shdom_netcdf.f90
-	$(F90) -c $(F90FLAGS) shdom_netcdf.f90
+shdom_nonc.o: shdom_nonc.f90
+	$(F90) -c $(F90FLAGS) shdom_nonc.f90
+
+shdom_nc.o: shdom_nc.f90
+	$(F90) -c $(F90FLAGS) shdom_nc.f90
 
 txt2nc: shdTool_txt2nc
-	$(F90) $(F90FLAGS) shdTool_txt2nc.o shdom_netcdf.o $(LIBS) -o $(BIN_DIR)/txt2nc
+	$(F90) $(F90FLAGS) shdTool_txt2nc.o shdom_nc.o $(LIBS) -o $(BIN_DIR)/txt2nc
 
-shdTool_txt2nc.o: tools/shdTool_txt2nc.f90 shdom_netcdf.o
+shdTool_txt2nc.o: tools/shdTool_txt2nc.f90 shdom_nc.o
 	$(F90) -c $(F90FLAGS) tools/shdTool_txt2nc.f90
 
 propgen: tools/shdTool_propgen.f90
