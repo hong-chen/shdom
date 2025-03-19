@@ -702,8 +702,9 @@ subroutine READ_BROADCAST_MEM_PARAMS(MAX_TOTAL_MB, ADAPT_GRID_FACTOR, &
   NUM_SH_TERM_FACTOR = MemParam(3, myproc)
   CELL_TO_POINT_RATIO = MemParam(4, myproc)
   deallocate (MemParam)
-  write (6, '(F7.2,1X,F7.3,2(1X,F5.3),A)') MAX_TOTAL_MB, ADAPT_GRID_FACTOR, &
-    NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, '  Memory parameters used'
+  write (6, '(A)') 'Message [READ_BROADCAST_MEM_PARAMS]:'
+  write (6, '(2X,A,F7.2,1X,F7.3,2(1X,F5.3))') 'Memory parameters used: ', MAX_TOTAL_MB, ADAPT_GRID_FACTOR, &
+    NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
 end subroutine READ_BROADCAST_MEM_PARAMS
 
 real function SUM_CPU_TIME(cpuTimes)
