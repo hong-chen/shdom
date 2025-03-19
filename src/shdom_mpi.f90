@@ -3008,8 +3008,14 @@ subroutine END_SHDOM_MPI(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART, DELX, DELY, &
   end if
 
   ElapsedTime = MPI_WTIME() - StartTime
-  write (6, '(A,F9.2)') 'Total elapsed time (sec): ', ElapsedTime
-  write (6, *) 'Finished with SHDOM run: ', trim(RUNNAME)
+
+  if (ElapsedTime .lt. 60.0) then
+      write (6, '(A,F6.2)') 'Message [END_SHDOM_MPI]: Total elapsed time (sec):', ElapsedTime
+  else
+      write (6, '(A,F6.2)') 'Message [END_SHDOM_MPI]: Total elapsed time (min):', ElapsedTime/60.0
+  endif
+
+  write (6, '(A,"<",A,">")') 'Message [END_SHDOM_MPI]: Finished with SHDOM run: ', trim(adjustl(RUNNAME))
 
   ! Shut down MPI
   if (allocated(BXYPTR)) deallocate (BXYPTR, IBXYPTR, BXYPOS)
