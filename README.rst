@@ -84,110 +84,80 @@ for community support.
 Document File Change
 --------------------
 
-* ``docs/README.rst``: was ``README``
+**Major changes:**
 
-  * changed to rST format
+#. changed the format from `txt` to `rst`.
+
+The following is a list of file-to-file reference:
+
+* ``docs/README.rst``: was ``README``
 
 * ``docs/shdom.rst``: was ``shdom.txt``
 
-  * changed to rST format
-
 * ``docs/propgen.rst``: was ``propgen.txt``
 
-  * changed to rST format
-
 * ``HISTORY.rst``: was ``Updatelist.txt``
-
-  * changed to rST format
 
 |
 
 Source Code File Change
 -----------------------
 
+**Major changes:**
+
+#. added support for LSRT BRDF model;
+
+#. fixed domain shift issue in 3D radiance calculations;
+
+#. added examples for benchmarking purpose;
+
+#. changed the legacy code from `F77` to `F90`;
+
+#. formatted the code.
+
+|
+
+The following is a list of file-to-file reference:
+
 * ``src/makefile``: was ``makefile``
 
-  * added ``-fallow-argument-mismatc`` to ``FFLAGS``
-  * added ``clean`` option for ``make``
-  * changed the module names accordingly
-  * added ``shdom_`` for ``make``
-
 * ``src/shdom.f90`` and ``src/shdom_.f90``: was ``shdom.f90``
-
-  * formatted the code
-  * changed the default from ``user_input`` to ``namelist_input``
 
 * ``src/shdom_mpi.f90``: was ``shdom_mpi.f90``
 
 * ``src/shdom_nompi.f90``: was ``shdom_nompi.f``
 
-  * converted from F77 to F90
-  * formatted the code
-
 * ``src/shdom_nc.f90``: was ``shdom_netcdf.f90``
 
 * ``src/shdom_nonc.f90``: was ``shdom_nonetcdf.f90``
 
-  * formatted the code
-
 * ``src/shdSolv_1.f90``: was ``shdomsub1.f``
-
-  * converted from F77 to F90
-  * formatted the code
 
 * ``src/shdSolv_2.f90``: was ``shdomsub2.f``
 
-  * converted from F77 to F90
-  * formatted the code
-
 * ``src/shdUtil_io.f90``: was ``shdomsub3.f``
-
-  * converted from F77 to F90
-  * formatted the code
 
 * ``src/shdSurf_brdf.f90``: separated from ``shdomsub2.f``
 
-  * added LSRT model
-
 * ``src/shdSurf_ocean.f90``: was ``ocean_brdf.f``
-
-  * converted from F77 to F90
-  * formatted the code
 
 * ``src/fftpack.f90``: was ``fftpack.f``
 
-  * converted from F77 to F90 (https://fortran-lang.github.io/fftpack/)
-  * formatted the code
+|
 
 * ``src/tools/shdTool_propgen.f90``: was ``propgen.f90``
 
-  * formatted the code
-
 * ``src/tools/shdTool_make_mie_tab.f90``: was ``make_mie_table.f90``
-
-  * formatted the code
 
 * ``src/tools/shdScat_ind_wat.f90``: was ``indexwatice.f``
 
-  * converted from F77 to F90
-  * formatted the code
-
 * ``src/tools/shdScat_mie_wig.f90``: was ``miewig.f``
-
-  * converted from F77 to F90
-  * formatted the code
 
 * ``src/tools/shdTool_make_tmx_tab.f90``: was ``make_tmatrix_table.f90``
 
 * ``src/tools/shdScat_tmx_wig.f90``: was ``tmatrixwig.f``
 
-  * converted from F77 to F90
-  * formatted the code
-
 * ``src/tools/shdScat_tmx_par.f90``: was ``tmd.par.f``
-
-  * converted from F77 to F90
-  * formatted the code
 
 * ``src/tools/_lapack.f``: was ``lpd.f``
 
@@ -196,9 +166,6 @@ Source Code File Change
 * ``src/tools/shdTool_txt2nc.f90``: was ``AsciiPropertyFileToNetcdf.f90``
 
 * ``src/tools/shdTool_put.f90``: was ``put.c``
-
-  * converted from F77 to F90
-  * modified the code to resolve a warning from compilation
 
 |
 
