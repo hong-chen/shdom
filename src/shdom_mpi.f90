@@ -147,12 +147,11 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
   call MPI_CART_SHIFT(comm2d, 0, 1, iprocneigh(1), iprocneigh(2), ierr)
   call MPI_CART_SHIFT(comm2d, 1, 1, iprocneigh(3), iprocneigh(4), ierr)
 
-  write (6, '(A)') 'MPI Details:'
+  write (6, '(A)') 'Message [MAP_SHDOM_MPI]:'
   write (6, '(2X,A,2(1X,I2))') 'Number of processors in X and Y:', dims(1:2)
   write (6, '(2X,A,I3)') 'This processor: ', myproc
   write (6, '(2X,A,4(1X,I3))') 'Neighbors:', iprocneigh(1:4)
   write (6, '(2X,2(A,2F7.3))') 'Processor X range: ', XSTART, XEND, '   Y range: ', YSTART, YEND
-  write (6, *)
 end subroutine MAP_SHDOM_MPI
 
 subroutine OPTIMIZE_PROCESSOR_DOMAINS(ProcDims, ProcCoord, NPXT, NPYT, &
