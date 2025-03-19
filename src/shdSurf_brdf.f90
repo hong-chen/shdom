@@ -442,11 +442,12 @@
 
   real function LSRT_REFLECTION(F_ISO, F_VOL, F_GEO, MU1, MU2, PHI)
       !╭────────────────────────────────────────────────────────────────────────────╮!
-      !   Computes the RossLi BRDF.  The incident
-      ! and outgoing cosine zenith angles are MU1 and MU2, respectively,
-      ! and the relative azimuthal angle is PHI.  In this case the incident
-      ! direction is where the radiation is coming from (i.e. opposite of
-      ! discrete ordinate), so MU1>0 and the hot spot is MU2=MU1 and PHI=0
+      ! Computes the RossLi BRDF.
+      ! MU1: cosine of zenith angle of the incident light (solar zenith angle)
+      ! MU2: cosine of zenith angle of the receiver (viewing zenith angle)
+      ! PHI: relative azimuth angle, 0 pointing east, positive counter-clockwise
+      !
+      ! When MU1>0 and the hot spot is MU2=MU1 and PHI=0
       !
       ! Code reference:
       !   https://github.com/vikasnataraja/sif-sat/blob/master/sifsat/kernels.py
