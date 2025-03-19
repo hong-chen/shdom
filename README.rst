@@ -124,9 +124,9 @@ Source Code File Change
   * converted from F77 to F90
   * formatted the code
 
-* ``src/shdom_netcdf.f90``: was ``shdom_netcdf.f90``
+* ``src/shdom_nc.f90``: was ``shdom_netcdf.f90``
 
-* ``src/shdom_nonetcdf.f90``: was ``shdom_nonetcdf.f90``
+* ``src/shdom_nonc.f90``: was ``shdom_nonetcdf.f90``
 
   * formatted the code
 
