@@ -35,6 +35,7 @@ endif
 
 F90 = $(FC)
 F90FLAGS = $(FFLAGS)
+LIBS =
 
 UseNetcdf = no
 
@@ -47,7 +48,7 @@ ifeq ($(UseNetcdf),no)
 else
 	SHDOMOBJS += shdom_netcdf.o
 	F90FLAGS += $(NetcdfInl)
-	LIBS   += $(NetcdfLib)
+	LIBS += $(NetcdfLib)
 endif
 
 all: $(TARGETS)

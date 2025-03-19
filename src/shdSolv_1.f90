@@ -654,7 +654,7 @@ subroutine COMPUTE_SOURCE(&
         end if
         if (IS + NS .gt. MAXIV) then
             write (6, *) 'Error [COMPUTE_SOURCE]: MAXIV exceeded.', MAXIV
-            write (6, *) 'Out of memory for more spherical harmonic terms.'
+            write (6, *) '  Out of memory for more spherical harmonic terms.'
             stop
         end if
         ! Transfer the new source function
@@ -755,7 +755,7 @@ subroutine RADIANCE_TRUNCATION(HIGHORDERRAD,&
         RSHPTR(I + 1) = IR
         if (IR .gt. MAXIR) then
             write (6, *)&
-                & 'RADIANCE_TRUNCATION: Out of memory for more radiance terms.'
+                & 'Message [RADIANCE_TRUNCATION]: Out of memory for more radiance terms.'
             goto 190
         end if
     end do
@@ -781,7 +781,7 @@ subroutine RADIANCE_TRUNCATION(HIGHORDERRAD,&
         if (IR .gt. MAXIR) then
             write (6, *) 'Error [RADIANCE_TRUNCATION]: Really out of memory ',&
                 & 'for more radiance terms.'
-            write (6, *) 'Increase MAXIV.'
+            write (6, *) '  Increase MAXIV.'
             stop
         end if
         RSHPTR(I + 1) = IR
