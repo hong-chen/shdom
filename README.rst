@@ -86,7 +86,9 @@ Document File Change
 
 **Major changes:**
 
-#. changed the format from `txt` to `rst`.
+#. Changed the format from ``txt`` to ``rst``.
+
+|
 
 The following is a list of file-to-file reference:
 
@@ -105,15 +107,15 @@ Source Code File Change
 
 **Major changes:**
 
-#. added support for LSRT BRDF model;
+#. Added support for LSRT BRDF model;
 
-#. fixed domain shift issue in 3D radiance calculations;
+#. Fixed domain shift issue in 3D radiance calculations;
 
-#. added examples for benchmarking purpose;
+#. Added examples for benchmarking purpose;
 
-#. changed the legacy code from `F77` to `F90`;
+#. Changed the legacy code from ``F77`` to ``F90``;
 
-#. formatted the code.
+#. Formatted the code.
 
 |
 
