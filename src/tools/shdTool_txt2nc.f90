@@ -1,5 +1,5 @@
 program PropertyToNetcdf
-  use shdom_netcdf
+  use shdom_nc
   implicit none
 
   interface

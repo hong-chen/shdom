@@ -1,4 +1,4 @@
-module shdom_netcdf
+module shdom_nc
   !
   ! Netcdf interface for SHDOM input and output.
   !
@@ -1032,4 +1032,4 @@ contains
     IntToChar = adjustl(IntToChar)
   end function IntToChar
 
-end module shdom_netcdf
+end module shdom_nc

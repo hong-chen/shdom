@@ -31,7 +31,7 @@
 !    Frank Evans    University of Colorado     May 2003
 !                 Updated for polarization     July 2013
 
-module COMBINE_PROP
+module propgen_comb
 
 contains
 
@@ -752,10 +752,10 @@ contains
         close (3)
     end subroutine OUTPUT_PROPERTIES
 
-end module COMBINE_PROP
+end module propgen_comb
 
 program PROPGEN
-    use COMBINE_PROP
+    use propgen_comb
     implicit none
     integer :: NSCATTAB, MAXNEWPHASE, NZO
     real    :: ASYMTOL, FRACPHASETOL, RAYWAVELEN, RAYSFCPRES

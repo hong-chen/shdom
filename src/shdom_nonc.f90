@@ -1,4 +1,4 @@
-module shdom_netcdf
+module shdom_nc
     !
     ! Dummy SHDOM netcdf interface for linking without netcdf.
     !
@@ -63,4 +63,4 @@ contains
         print *, 'Not outputting a netcdf file because SHDOM was compiled without netcdf library.'
     end subroutine output_results_netcdf_par
 
-end module shdom_netcdf
+end module shdom_nc

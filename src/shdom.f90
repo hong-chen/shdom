@@ -1,7 +1,7 @@
 !   SHDOM: Spherical harmonic discrete ordinate radiative transfer method.
 !      See shdom.txt for documentation.
 
-module SHDOM_PROPERTY_ARRAYS
+module shdom_arr
     integer, save :: NPX, NPY, NPZ, NUMPHASE
     real, save    :: DELX, DELY, XSTART, YSTART
     real, save, allocatable :: ZLEVELS(:)
@@ -10,11 +10,11 @@ module SHDOM_PROPERTY_ARRAYS
     integer*2, save, allocatable :: IPHASEP(:)
     integer, save :: NZCKD
     real, save, allocatable :: ZCKD(:), GASABS(:)
-end module
+end module shdom_arr
 
 program SHDOM
-    use SHDOM_PROPERTY_ARRAYS
-    use shdom_netcdf
+    use shdom_arr
+    use shdom_nc
     implicit none
     ! Number of output files and inputs parameter per file
     integer, parameter :: MAXOUT = 20, MAXPAR = 500
@@ -842,7 +842,7 @@ subroutine TRILIN_INTERP_PROP(X, Y, Z, INIT, NSTLEG, NLEG, &
 !     is that of the maximum weighted scattering property grid point.
 !     If INIT=.TRUE. then transfers the tabulated phase functions.
 
-    use SHDOM_PROPERTY_ARRAYS
+    use shdom_arr
     implicit none
     integer NSTLEG, NLEG
     integer*2 IPHASE
@@ -1052,7 +1052,7 @@ subroutine DIRECT_BEAM_PROP(INIT, XI, YI, ZI, BCFLAG, IPFLAG, &
 !   flag is false SIDE is returned with the boundary hit (1=-X, 2=+X,
 !   3=-Y, 4=+Y).  XE,YE,ZE returns the location of the exitting ray,
 !   and path is the optical path from XI,YI,ZI to the sun.
-    use SHDOM_PROPERTY_ARRAYS
+    use shdom_arr
     implicit none
     integer INIT, BCFLAG, IPFLAG, ML, NSTLEG, NLEG, SIDE
     logical DELTAM, VALIDBEAM
