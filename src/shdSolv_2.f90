@@ -39,8 +39,8 @@ subroutine NEW_GRIDS(&
     if (GRIDTYPE .eq. 'P') then
         if (NZ .ne. NPZ) then
             write (6, *)&
-                & 'Error [NEW_GRIDS]: For internal Z grid same as property file grid,'
-            write (6, *) 'must have same number of grid points (NZ=NPZ).'
+                &'Error [NEW_GRIDS]: For internal Z grid same as property file grid,'
+            write (6, *) '  must have same number of grid points (NZ=NPZ).'
             stop
         end if
         do IZ = 1, NZ
@@ -2399,7 +2399,7 @@ subroutine COMPUTE_RADIANCE(&
         !╰────────────────────────────────────────────────╯!
 
         if (MUOUT .eq. 0.0 .or. abs(MUOUT) .gt. 1.0) then
-            write (6, *) 'COMPUTE_RADIANCE: Bad mu for radiance', MUOUT
+            write (6, *) 'Warning [COMPUTE_RADIANCE]: Bad mu for radiance', MUOUT
         else
 
             ! Compute the source function throughout grid for this angle
