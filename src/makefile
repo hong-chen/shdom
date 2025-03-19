@@ -17,7 +17,7 @@ endif
 CURRENT_DIR = $(shell pwd)
 BIN_DIR     = $(abspath $(CURRENT_DIR)/../bin)
 
-TARGETS = bin shdom _shdom propgen make_mie_table make_tmatrix_table plotscattab put
+TARGETS = bin shdom shdom_ propgen make_mie_table make_tmatrix_table plotscattab put
 
 SHDOMOBJS = shdSolv_1.o shdSolv_2.o shdUtil_io.o shdSurf_brdf.o shdSurf_ocean.o fftpack.o
 
@@ -64,11 +64,11 @@ shdom.o: shdom.f90 $(SHDOMOBJS)
 	$(F90) -c $(F90FLAGS) shdom.f90
 
 # this for user input
-_shdom: _shdom.o $(SHDOMOBJS)
-	$(F90) $(F90FLAGS) _shdom.o $(SHDOMOBJS) $(LIBS) -o $(BIN_DIR)/_shdom
+shdom_: shdom_.o $(SHDOMOBJS)
+	$(F90) $(F90FLAGS) shdom_.o $(SHDOMOBJS) $(LIBS) -o $(BIN_DIR)/shdom_
 
-_shdom.o: _shdom.f90 $(SHDOMOBJS)
-	$(F90) -c $(F90FLAGS) _shdom.f90
+shdom_.o: shdom_.f90 $(SHDOMOBJS)
+	$(F90) -c $(F90FLAGS) shdom_.f90
 
 shdSolv_1.o: shdSolv_1.f90
 	$(F90) -c $(F90FLAGS) shdSolv_1.f90
@@ -103,23 +103,23 @@ shdom_netcdf.o: shdom_netcdf.f90
 txt2nc: shdTool_txt2nc
 	$(F90) $(F90FLAGS) shdTool_txt2nc.o shdom_netcdf.o $(LIBS) -o $(BIN_DIR)/txt2nc
 
-shdTool_txt2nc.o: shdTool_txt2nc.f90 shdom_netcdf.o
-	$(F90) -c $(F90FLAGS) shdTool_txt2nc.f90
+shdTool_txt2nc.o: tools/shdTool_txt2nc.f90 shdom_netcdf.o
+	$(F90) -c $(F90FLAGS) tools/shdTool_txt2nc.f90
 
-propgen: shdTool_propgen.f90
-	$(F90) $(F90FLAGS) shdTool_propgen.f90 -o $(BIN_DIR)/propgen
+propgen: tools/shdTool_propgen.f90
+	$(F90) $(F90FLAGS) tools/shdTool_propgen.f90 -o $(BIN_DIR)/propgen
 
-make_tmatrix_table: shdTool_make_tmx_tab.f90
-	$(F90) $(F90FLAGS) shdTool_make_tmx_tab.f90 shdScat_ind_wat.f90 shdScat_tmx_wig.f90 _lapack.f -o $(BIN_DIR)/make_tmatrix_table
+make_tmatrix_table: tools/shdTool_make_tmx_tab.f90
+	$(F90) $(F90FLAGS) tools/shdTool_make_tmx_tab.f90 tools/shdScat_ind_wat.f90 tools/shdScat_tmx_wig.f90 tools/_lapack.f -o $(BIN_DIR)/make_tmatrix_table
 
-make_mie_table: shdTool_make_mie_tab.f90
-	$(F90) $(F90FLAGS) shdTool_make_mie_tab.f90 shdScat_ind_wat.f90 shdScat_mie_wig.f90 -o $(BIN_DIR)/make_mie_table
+make_mie_table: tools/shdTool_make_mie_tab.f90
+	$(F90) $(F90FLAGS) tools/shdTool_make_mie_tab.f90 tools/shdScat_ind_wat.f90 tools/shdScat_mie_wig.f90 -o $(BIN_DIR)/make_mie_table
 
-plotscattab: shdTool_plot_sca_tab.f90
-	$(F90) $(F90FLAGS) shdTool_plot_sca_tab.f90 -o $(BIN_DIR)/plotscattab
+plotscattab: tools/shdTool_plot_sca_tab.f90
+	$(F90) $(F90FLAGS) tools/shdTool_plot_sca_tab.f90 -o $(BIN_DIR)/plotscattab
 
-put: shdTool_put.f90
-	$(F90) $(F90FLAGS) shdTool_put.f90 -o $(BIN_DIR)/put
+put: tools/shdTool_put.f90
+	$(F90) $(F90FLAGS) tools/shdTool_put.f90 -o $(BIN_DIR)/put
 
 .f.o :; $(FC) -c $(FFLAGS) $*.f
 
