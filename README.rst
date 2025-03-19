@@ -45,7 +45,7 @@ Require a ``fortran`` compiler, we recommend `GFortran <https://fortran-lang.org
 
    * ``bin/shdom`` (namelist input)
 
-   * ``bin/_shdom`` (user input)
+   * ``bin/shdom_`` (user input)
 
    * ``bin/propgen``
 
@@ -110,39 +110,24 @@ Source Code File Change
   * added ``-fallow-argument-mismatc`` to ``FFLAGS``
   * added ``clean`` option for ``make``
   * changed the module names accordingly
-  * added ``_shdom`` for ``make``
+  * added ``shdom_`` for ``make``
 
-* ``src/shdom.f90``: was ``shdom.f90``
+* ``src/shdom.f90`` and ``src/shdom_.f90``: was ``shdom.f90``
 
   * formatted the code
   * changed the default from ``user_input`` to ``namelist_input``
 
 * ``src/shdom_mpi.f90``: was ``shdom_mpi.f90``
 
-* ``src/shdom_netcdf.f90``: was ``shdom_netcdf.f90``
-
 * ``src/shdom_nompi.f90``: was ``shdom_nompi.f``
 
   * converted from F77 to F90
   * formatted the code
 
+* ``src/shdom_netcdf.f90``: was ``shdom_netcdf.f90``
+
 * ``src/shdom_nonetcdf.f90``: was ``shdom_nonetcdf.f90``
 
-  * formatted the code
-
-* ``src/shdScat_ind_wat.f90``: was ``indexwatice.f``
-
-  * converted from F77 to F90
-  * formatted the code
-
-* ``src/shdScat_mie_wig.f90``: was ``miewig.f``
-
-  * converted from F77 to F90
-  * formatted the code
-
-* ``src/shdScat_tmx_wig.f90``: was ``tmatrixwig.f``
-
-  * converted from F77 to F90
   * formatted the code
 
 * ``src/shdSolv_1.f90``: was ``shdomsub1.f``
@@ -169,36 +154,51 @@ Source Code File Change
   * converted from F77 to F90
   * formatted the code
 
-* ``src/shdTool_propgen.f90``: was ``propgen.f90``
-
-  * formatted the code
-
-* ``src/shdTool_make_mie_tab.f90``: was ``make_mie_table.f90``
-
-  * formatted the code
-
-* ``src/shdTool_make_tmx_tab.f90``: was ``make_tmatrix_table.f90``
-
-* ``src/shdTool_put.f90``: was ``put.c``
-
-  * converted from F77 to F90
-  * modified the code to resolve a warning from compilation
-
-* ``src/shdTool_plot_sca_tab.f90``: was ``plotscattab.f90``
-
-* ``src/shdTool_txt2nc.f90``: was ``AsciiPropertyFileToNetcdf.f90``
-
-* ``src/shdScat_tmx_par.f90``: was ``tmd.par.f``
-
-  * converted from F77 to F90
-  * formatted the code
-
 * ``src/fftpack.f90``: was ``fftpack.f``
 
   * converted from F77 to F90 (https://fortran-lang.github.io/fftpack/)
   * formatted the code
 
-* ``src/_lapack.f``: was ``lpd.f``
+* ``src/tools/shdTool_propgen.f90``: was ``propgen.f90``
+
+  * formatted the code
+
+* ``src/tools/shdTool_make_mie_tab.f90``: was ``make_mie_table.f90``
+
+  * formatted the code
+
+* ``src/tools/shdScat_ind_wat.f90``: was ``indexwatice.f``
+
+  * converted from F77 to F90
+  * formatted the code
+
+* ``src/tools/shdScat_mie_wig.f90``: was ``miewig.f``
+
+  * converted from F77 to F90
+  * formatted the code
+
+* ``src/tools/shdTool_make_tmx_tab.f90``: was ``make_tmatrix_table.f90``
+
+* ``src/tools/shdScat_tmx_wig.f90``: was ``tmatrixwig.f``
+
+  * converted from F77 to F90
+  * formatted the code
+
+* ``src/tools/shdScat_tmx_par.f90``: was ``tmd.par.f``
+
+  * converted from F77 to F90
+  * formatted the code
+
+* ``src/tools/_lapack.f``: was ``lpd.f``
+
+* ``src/tools/shdTool_plot_sca_tab.f90``: was ``plotscattab.f90``
+
+* ``src/tools/shdTool_txt2nc.f90``: was ``AsciiPropertyFileToNetcdf.f90``
+
+* ``src/tools/shdTool_put.f90``: was ``put.c``
+
+  * converted from F77 to F90
+  * modified the code to resolve a warning from compilation
 
 |
 
