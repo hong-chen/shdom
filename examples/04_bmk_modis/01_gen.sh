@@ -37,34 +37,32 @@ if ($MakeMieTable) then
 
   set outfile="${fdir_data_tmp}/shdom-sca-${wavename}_${basefile}.txt"
 
-  #set outfile="water_w${wavename}c_sca.txt"
-  set partype="W"                # W for water
+  set partype="W"  # W for water
 
-  set distflag=G                   # G=gamma, L=lognormal size distribution
+  set distflag=G   # G=gamma, L=lognormal size distribution
 
-  set alpha=7 i                    # gamma dist shape parameter
+  set alpha=7 i    # gamma dist shape parameter
 
-  set Nretab=50                    # number of effective radius in table
+  set Nretab=50    # number of effective radius in table
 
-  set Sretab=0.5; set Eretab=25    # starting, ending effective radius (micron)
+  set Sretab=0.5
 
-  set logre=F                      # evenly spaced r_e
+  set Eretab=25    # starting, ending effective radius (micron)
+
+  set logre=F      # evenly spaced r_e
 
   set maxradius=75
 
-  set avgflag=C                    #  C for using central wavelength
+  set avgflag=C    #  C for using central wavelength
 
   put $polarizedtable "$wavelen $wavelen" $partype $avgflag $distflag $alpha \
       "$Nretab $Sretab $Eretab" $logre $maxradius "$outfile" | make_mie_table
-  #mv $outfile $fdir_data_tmp
+
 endif
 
 
 
 if ($MakePropertyFile) then
-  # Runs propgen to make the SHDOM optical property file from the
-  # old type 2 LWC file for the 64x64x16 stratocumulus LES field.
-  # Adds in six other levels.
 
   set lwcfile="${fdir_data}/shdom-lwc_${basefile}.txt"
 
@@ -89,6 +87,7 @@ if ($MakePropertyFile) then
   put 1 $scattable 1 "$poltabs" "$lwcfile" \
       $maxnewphase $asymtol $fracphasetol $wavelen $sfcpres \
       $Nzother $ZTother $polout $prpfile  | propgen
+
 endif
 
 set Nx=`$AWK 'BEGIN {getline; getline; print $1;}' $prpfile`
