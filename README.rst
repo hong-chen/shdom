@@ -139,9 +139,7 @@ The following is a list of file-to-file reference:
 
 * ``src/shdUtil_io.f90``: was ``shdomsub3.f``
 
-* ``src/shdSurf_brdf.f90``: separated from ``shdomsub2.f``
-
-* ``src/shdSurf_ocean.f90``: was ``ocean_brdf.f``
+* ``src/shdSurf_brdf.f90``: partially from ``shdomsub2.f`` and combined with ``ocean_brdf.f``
 
 * ``src/fftpack.f90``: was ``fftpack.f``
 

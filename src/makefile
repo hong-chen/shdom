@@ -19,7 +19,7 @@ BIN_DIR     = $(abspath $(CURRENT_DIR)/../bin)
 
 TARGETS = bin shdom shdom_ propgen make_mie_table make_tmatrix_table plotscattab put
 
-SHDOMOBJS = shdSolv_1.o shdSolv_2.o shdUtil_io.o shdSurf_brdf.o shdSurf_ocean.o fftpack.o
+SHDOMOBJS = shdSolv_1.o shdSolv_2.o shdUtil_io.o shdSurf_brdf.o fftpack.o
 
 ifeq ($(FC), mpif90)
 	UseMPI = yes
@@ -84,9 +84,6 @@ shdUtil_io.o: shdUtil_io.f90
 
 shdSurf_brdf.o: shdSurf_brdf.f90
 	$(F90) -c $(F90FLAGS) shdSurf_brdf.f90
-
-shdSurf_ocean.o: shdSurf_ocean.f90
-	$(F90) -c $(F90FLAGS) shdSurf_ocean.f90
 
 shdom_nompi.o: shdom_nompi.f90
 	$(F90) -c $(F90FLAGS) shdom_nompi.f90
