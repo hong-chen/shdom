@@ -80,16 +80,7 @@ C          destroyed between calls of COST.
       NM1 = N-1
       NP1 = N+1
       NS2 = N/2
-
-      !IF (N-2) 106,101,102
-      IF (N-2 .LT. 0) THEN
-          GO TO 106
-      ELSEIF (N-2 .EQ. 0) THEN
-          GO TO 101
-      ELSE
-          GO TO 102
-      ENDIF
-
+      IF (N-2) 106,101,102
   101 X1H = X(1)+X(2)
       X(2) = X(1)-X(2)
       X(1) = X1H
@@ -160,31 +151,13 @@ C        WSAVE must not be changed between calls of RFFTF or RFFTB.
       NF = 0
       J = 0
   101 J = J+1
-
-      !IF (J-4) 102,102,103
-      IF (J-4 .LT. 0) THEN
-          GO TO 102
-      ELSEIF (J-4 .EQ. 0) THEN
-          GO TO 102
-      ELSE
-          GO TO 103
-      ENDIF
-
+      IF (J-4) 102,102,103
   102 NTRY = NTRYH(J)
       GO TO 104
   103 NTRY = NTRY+2
   104 NQ = NL/NTRY
       NR = NL-NTRY*NQ
-
-      !IF (NR) 101,105,101
-      IF (NR .LT. 0) THEN
-          GO TO 101
-      ELSEIF (NR .EQ. 0) THEN
-          GO TO 105
-      ELSE
-          GO TO 101
-      ENDIF
-
+      IF (NR) 101,105,101
   105 NF = NF+1
       IFAC(NF+2) = NTRY
       NL = NQ
@@ -446,16 +419,7 @@ C         calls of RFFTB or RFFTF.
          CH(1,1,K) = CC(1,K,1)+CC(1,K,2)
          CH(IDO,2,K) = CC(1,K,1)-CC(1,K,2)
   101 CONTINUE
-
-      !IF (IDO-2) 107,105,102
-      IF (IDO-2 .LT. 0) THEN
-          GO TO 107
-      ELSEIF (IDO-2 .EQ. 0) THEN
-          GO TO 105
-      ELSE
-          GO TO 102
-      ENDIF
-
+      IF (IDO-2) 107,105,102
   102 IDP2 = IDO+2
       DO 104 K=1,L1
          DO 103 I=3,IDO,2
@@ -526,16 +490,7 @@ C         calls of RFFTB or RFFTF.
          CH(IDO,2,K) = CC(1,K,1)-CC(1,K,3)
          CH(1,3,K) = CC(1,K,4)-CC(1,K,2)
   101 CONTINUE
-
-      !IF (IDO-2) 107,105,102
-      IF (IDO-2 .LT. 0) THEN
-          GO TO 107
-      ELSEIF (IDO-2 .EQ. 0) THEN
-          GO TO 105
-      ELSE
-          GO TO 102
-      ENDIF
-
+      IF (IDO-2) 107,105,102
   102 IDP2 = IDO+2
       DO 104 K=1,L1
          DO 103 I=3,IDO,2
@@ -815,16 +770,7 @@ C
          CH(1,K,1) = CC(1,1,K)+CC(IDO,2,K)
          CH(1,K,2) = CC(1,1,K)-CC(IDO,2,K)
   101 CONTINUE
-
-      !IF (IDO-2) 107,105,102
-      IF (IDO-2 .LT. 0) THEN
-          GO TO 107
-      ELSEIF (IDO-2 .EQ. 0) THEN
-          GO TO 105
-      ELSE
-          GO TO 102
-      ENDIF
-
+      IF (IDO-2) 107,105,102
   102 IDP2 = IDO+2
       DO 104 K=1,L1
          DO 103 I=3,IDO,2
@@ -899,16 +845,7 @@ C
          CH(1,K,3) = TR2-TR3
          CH(1,K,4) = TR1+TR4
   101 CONTINUE
-
-      !IF (IDO-2) 107,105,102
-      IF (IDO-2 .LT. 0) THEN
-          GO TO 107
-      ELSEIF (IDO-2 .EQ. 0) THEN
-          GO TO 105
-      ELSE
-          GO TO 102
-      ENDIF
-
+      IF (IDO-2) 107,105,102
   102 IDP2 = IDO+2
       DO 104 K=1,L1
          DO 103 I=3,IDO,2

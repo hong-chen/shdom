@@ -3,15 +3,15 @@
      .             (pws,xsal,pcl,pwl,xmuo,xmu,xphi,xpaw,brdfx)
 C
 C INPUT:  pws=wind speed (in m/s) [value not allowed below 0.25 m/s]
-C         xsal=salinity (in ppt) [if xsal<0 then 34.3ppt by default]
-C         pcl=pigment concentration (in mg/m^3)
+C	  xsal=salinity (in ppt) [if xsal<0 then 34.3ppt by default]
+C	  pcl=pigment concentration (in mg/m^3)
 C         pwl=wavelength of the computation (in micrometer)
 c         xmuo=cosine of the zenith angle of the incident radiation
 c         xmu=cosine of the zenith angle of the reflected radiation
 c         xphi=relative azimuth angle (between 0 and 2*pi)
 c         xpaw=azim. of sun - azim. of wind (in radian)
 c              For the direct solar radiation, the wind direction
-c              is fixed at the azimuth angle of 0 degree so that
+c              is fixed at the azimuth angle of 0 degree so that 
 c              the azimuth angle of the sun = xpaw.
 c
 C OUTPUT: brdfx=the total reflectance of the sea water
@@ -124,30 +124,30 @@ C TOTAL REFLECTANCE OF SEA WATER
 
 
       subroutine morcasiwat(wl,C,R2)
-C Spectral diffuse attenuation coefficient of Case I Waters as Predicted
-C by MOREL within the spectral range 400-700nm (1988, Journal of Geophysical
+C Spectral diffuse attenuation coefficient of Case I Waters as Predicted 
+C by MOREL within the spectral range 400-700nm (1988, Journal of Geophysical 
 C Research, Vol.93, No C9, pp 10749-10768)
 C
-C input parameters: wl wavelength (IN MICROMETERS)
-C                   C  pigment concentration
-C output parameter: R2  reflectance of water
+C input parameters:	wl wavelength (IN MICROMETERS)
+C			C  pigment concentration
+C output parameter:	R2  reflectance of water
 C
 C According Morel,1988, we use:
 C
-C Kd    spectral value of the attenuation coefficient for
-C        downwelling irradiance
-C        with: Kd=Kw+Xc*C**e
-C Kw    spectral value of the diffuse attenuation coefficient
-C        for pure oceanic water
-C Xc, e spectral coefficients to compute the diffuse attenuation
-C       coefficient for pigment
-C bb  total backscattering coefficient
-C  with: bb=0.5*bw+bbt*b
-C bw    spectral value of the molecular scattering coefficient of water
-C bbt,b parameters to compute the scattering coefficients of pigments
+C Kd	spectral value of the attenuation coefficient for 
+C	 downwelling irradiance
+C	 with: Kd=Kw+Xc*C**e
+C Kw	spectral value of the diffuse attenuation coefficient 
+C	 for pure oceanic water
+C Xc, e	spectral coefficients to compute the diffuse attenuation 
+C	 coefficient for pigment
+C bb	total backscattering coefficient
+C	 with: bb=0.5*bw+bbt*b
+C bw	spectral value of the molecular scattering coefficient of water
+C bbt,b	parameters to compute the scattering coefficients of pigments
 C
-C R2    reflectance of water below the surface
-C    with: R2=(0.33/u)*(bb/Kd)  where u is depending of R2
+C R2	reflectance of water below the surface
+C	 with: R2=(0.33/u)*(bb/Kd)	where u is depending of R2
 C
       real Kw,Kd
       real tKw(61),tXc(61),te(61),tbw(61)
@@ -206,9 +206,9 @@ C
      & 0.0010,0.0009,0.0008,0.0008,0.0008,
      & 0.0007,0.0007,0.0007,0.0007,0.0007,
      & 0.0007/
-      if (wl .lt. 0.400 .or. wl .gt. 0.700) then
-        R2=0.000
-        goto 60
+      if (wl.lt.0.400.or.wl.gt.0.700)then
+	R2=0.000
+	goto 60
       endif
 
       iwl=1+nint((wl-0.400)/0.005)
@@ -251,58 +251,58 @@ C
        real twl(62),tnr(62),tni(62)
        real nr,ni,wl,xwl,yr,yi,nrc,nic,xsal
        integer i
-C Indices of refraction for pure water from Hale and Querry,
+C Indices of refraction for pure water from Hale and Querry, 
 C Applied Optique, March 1973, Vol. 12,  No. 3, pp. 555-563
        data twl/
-     .  0.250,0.275,0.300,0.325,0.345,0.375,0.400,0.425,0.445,0.475,
-     .  0.500,0.525,0.550,0.575,0.600,0.625,0.650,0.675,0.700,0.725,
-     .  0.750,0.775,0.800,0.825,0.850,0.875,0.900,0.925,0.950,0.975,
-     .  1.000,1.200,1.400,1.600,1.800,2.000,2.200,2.400,2.600,2.650,
-     .  2.700,2.750,2.800,2.850,2.900,2.950,3.000,3.050,3.100,3.150,
-     .  3.200,3.250,3.300,3.350,3.400,3.450,3.500,3.600,3.700,3.800,
-     .  3.900,4.000/
+     S  0.250,0.275,0.300,0.325,0.345,0.375,0.400,0.425,0.445,0.475,
+     S  0.500,0.525,0.550,0.575,0.600,0.625,0.650,0.675,0.700,0.725,
+     S  0.750,0.775,0.800,0.825,0.850,0.875,0.900,0.925,0.950,0.975,
+     S  1.000,1.200,1.400,1.600,1.800,2.000,2.200,2.400,2.600,2.650,
+     S  2.700,2.750,2.800,2.850,2.900,2.950,3.000,3.050,3.100,3.150,
+     S  3.200,3.250,3.300,3.350,3.400,3.450,3.500,3.600,3.700,3.800,
+     S  3.900,4.000/
         data tnr/
-     .  1.362,1.354,1.349,1.346,1.343,1.341,1.339,1.338,1.337,1.336,
-     .  1.335,1.334,1.333,1.333,1.332,1.332,1.331,1.331,1.331,1.330,
-     .  1.330,1.330,1.329,1.329,1.329,1.328,1.328,1.328,1.327,1.327,
-     .  1.327,1.324,1.321,1.317,1.312,1.306,1.296,1.279,1.242,1.219,
-     .  1.188,1.157,1.142,1.149,1.201,1.292,1.371,1.426,1.467,1.483,
-     .  1.478,1.467,1.450,1.432,1.420,1.410,1.400,1.385,1.374,1.364,
-     .  1.357,1.351/
+     S  1.362,1.354,1.349,1.346,1.343,1.341,1.339,1.338,1.337,1.336,
+     S  1.335,1.334,1.333,1.333,1.332,1.332,1.331,1.331,1.331,1.330,
+     S  1.330,1.330,1.329,1.329,1.329,1.328,1.328,1.328,1.327,1.327,
+     S  1.327,1.324,1.321,1.317,1.312,1.306,1.296,1.279,1.242,1.219,
+     S  1.188,1.157,1.142,1.149,1.201,1.292,1.371,1.426,1.467,1.483,
+     S  1.478,1.467,1.450,1.432,1.420,1.410,1.400,1.385,1.374,1.364,
+     S  1.357,1.351/
         data tni/
-     .  3.35E-08,2.35E-08,1.60E-08,1.08E-08,6.50E-09,
-     .  3.50E-09,1.86E-09,1.30E-09,1.02E-09,9.35E-10,
-     .  1.00E-09,1.32E-09,1.96E-09,3.60E-09,1.09E-08,
-     .  1.39E-08,1.64E-08,2.23E-08,3.35E-08,9.15E-08,
-     .  1.56E-07,1.48E-07,1.25E-07,1.82E-07,2.93E-07,
-     .  3.91E-07,4.86E-07,1.06E-06,2.93E-06,3.48E-06,
-     .  2.89E-06,9.89E-06,1.38E-04,8.55E-05,1.15E-04,
-     .  1.10E-03,2.89E-04,9.56E-04,3.17E-03,6.70E-03,
-     .  1.90E-02,5.90E-02,1.15E-01,1.85E-01,2.68E-01,
-     .  2.98E-01,2.72E-01,2.40E-01,1.92E-01,1.35E-01,
-     .  9.24E-02,6.10E-02,3.68E-02,2.61E-02,1.95E-02,
-     .  1.32E-02,9.40E-03,5.15E-03,3.60E-03,3.40E-03,
-     .  3.80E-03,4.60E-03/
+     S  3.35E-08,2.35E-08,1.60E-08,1.08E-08,6.50E-09,
+     S  3.50E-09,1.86E-09,1.30E-09,1.02E-09,9.35E-10,
+     S  1.00E-09,1.32E-09,1.96E-09,3.60E-09,1.09E-08,
+     S  1.39E-08,1.64E-08,2.23E-08,3.35E-08,9.15E-08,
+     S  1.56E-07,1.48E-07,1.25E-07,1.82E-07,2.93E-07,
+     S  3.91E-07,4.86E-07,1.06E-06,2.93E-06,3.48E-06,
+     S  2.89E-06,9.89E-06,1.38E-04,8.55E-05,1.15E-04,
+     S  1.10E-03,2.89E-04,9.56E-04,3.17E-03,6.70E-03,
+     S  1.90E-02,5.90E-02,1.15E-01,1.85E-01,2.68E-01,
+     S  2.98E-01,2.72E-01,2.40E-01,1.92E-01,1.35E-01,
+     S  9.24E-02,6.10E-02,3.68E-02,2.61E-02,1.95E-02,
+     S  1.32E-02,9.40E-03,5.15E-03,3.60E-03,3.40E-03,
+     S  3.80E-03,4.60E-03/
         i=2
  10     if (wl.lt.twl(i)) goto 20
         if (i.lt.62) then
            i=i+1
            goto 10
            endif
- 20     xwl=twl(i)-twl(i-1)
-        yr=tnr(i)-tnr(i-1)
-        yi=tni(i)-tni(i-1)
+ 20     xwl=twl(i)-twl(i-1)        
+        yr=tnr(i)-tnr(i-1)        
+        yi=tni(i)-tni(i-1)        
         nr=tnr(i-1)+(wl-twl(i-1))*yr/xwl
         ni=tni(i-1)+(wl-twl(i-1))*yi/xwl
-c
-c Correction to be applied to the index of refraction and to the extinction
-c coefficients of the pure water to obtain the ocean water one (see for
-c example Friedman). By default, a typical sea water is assumed
-c (Salinity=34.3ppt, Chlorinity=19ppt) as reported by Sverdrup.
-c In that case there is no correction for the extinction coefficient between
-c 0.25 and 4 microns. For the index of refraction, a correction of +0.006
-c has to be applied (McLellan). For a chlorinity of 19.0ppt the correction
-c is a linear function of the salt concentration. Then, in 6S users are able
+c 
+c Correction to be applied to the index of refraction and to the extinction 
+c coefficients of the pure water to obtain the ocean water one (see for 
+c example Friedman). By default, a typical sea water is assumed 
+c (Salinity=34.3ppt, Chlorinity=19ppt) as reported by Sverdrup. 
+c In that case there is no correction for the extinction coefficient between 
+c 0.25 and 4 microns. For the index of refraction, a correction of +0.006 
+c has to be applied (McLellan). For a chlorinity of 19.0ppt the correction 
+c is a linear function of the salt concentration. Then, in 6S users are able 
 c to enter the salt concentration (in ppt).
 c REFERENCES:
 c Friedman D., Applied Optics, 1969, Vol.8, No.10, pp.2073-2078.
@@ -391,7 +391,7 @@ C example M. Born and E. Wolf, Principles of Optics, Pergamon Press, fifth
 C edition, 1975, pp 628
 C input parameters: nr=index of refraction of the sea water
 C                   ni=extinction coefficient of the sea water
-C                   coschi & sinchi=cosine and sine of the incident radiation
+C                   coschi & sinchi=cosine and sine of the incident radiation 
 C                                   with respect of the wave facet normal.
 C output parameter: R1=Fresnel's coefficient for reflection
 C
@@ -415,7 +415,7 @@ c absolute value for a1 to get v=0 when ni=0
 C
 C To compute the spherical albedo of the sea water. See for example
 C Masuda et al., Remote Sens. Environ., 24, 313-329, 1988.
-C
+C 
 C input parameters: wsp=wind of speed
 C                   nr=index of refraction of the sea water
 C                   ni=extinction coefficient of the sea water
@@ -456,7 +456,7 @@ c loops on the zenith angle of the emitted radiation
         costet=(km-1)*htb
         tet=acos(costet)
         sintet=sin(tet)
-        tet=tet/fac
+ 	tet=tet/fac
 c Simpson's rules for the angle of the emitted radiation teta
         cotb=2.
         diff=abs(km/2-km/2.)
