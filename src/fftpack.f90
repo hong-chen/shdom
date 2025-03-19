@@ -10,7 +10,7 @@
 
 module fftpack_kind
     implicit none
-    integer,parameter :: rk = kind(1.0)
+    integer,parameter :: rk = kind(1.0) ! has to be set to real(4) for SHDOM
 end module fftpack_kind
 
 subroutine dffti(n,Wsave)
