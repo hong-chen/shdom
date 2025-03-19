@@ -402,7 +402,7 @@ subroutine TMATRIXWIG(wavelength, mindex, radius,&
           & ALPH1(NPL), ALPH2(NPL), ALPH3(NPL), ALPH4(NPL), BET1(NPL),&
           & BET2(NPL), XG1(2000), WG1(2000),&
           & AL1(NPL), AL2(NPL), AL3(NPL), AL4(NPL), BE1(NPL), BE2(NPL)
-      real*4&
+      real*8&
           & RT11(NPN6, NPN4, NPN4), RT12(NPN6, NPN4, NPN4),&
           & RT21(NPN6, NPN4, NPN4), RT22(NPN6, NPN4, NPN4),&
           & IT11(NPN6, NPN4, NPN4), IT12(NPN6, NPN4, NPN4),&
@@ -1863,7 +1863,7 @@ subroutine GSP(NMAX, CSCA, LAM, ALF1, ALF2, ALF3, ALF4, BET1, BET2, LMAX)
           & D5R(NPL1, NPN4, NPN4), D5I(NPL1, NPN4, NPN4),&
           & PLUS1(NPN6*NPN4*NPN4*8)
 
-      real*4&
+      real*8&
           & TR11(NPN6, NPN4, NPN4), TR12(NPN6, NPN4, NPN4),&
           & TR21(NPN6, NPN4, NPN4), TR22(NPN6, NPN4, NPN4),&
           & TI11(NPN6, NPN4, NPN4), TI12(NPN6, NPN4, NPN4),&
@@ -1878,13 +1878,11 @@ subroutine GSP(NMAX, CSCA, LAM, ALF1, ALF2, ALF3, ALF4, BET1, BET2, LMAX)
       complex*16 CIM(NPN1)
 
       common /TMAT/ TR11, TR12, TR21, TR22, TI11, TI12, TI21, TI22
-      !common /TMAT/ RT11, RT12, RT21, RT22, IT11, IT12, IT21, IT22
 
       common /CBESS_G/ B1R, B1I, B2R, B2I
       common /SS/ SSIGN
 
       equivalence(PLUS1(1), TR11(1, 1, 1))
-      !equivalence(PLUS1(1), RT11(1, 1, 1))
 
       equivalence(D1(1, 1, 1), PLUS1(1)),&
           & (D2(1, 1, 1), PLUS1(NPL1*NPN4*NPN4 + 1)),&
@@ -1951,15 +1949,6 @@ subroutine GSP(NMAX, CSCA, LAM, ALF1, ALF2, ALF3, ALF4, BET1, BET2, LMAX)
                   TT6 = TI12(M1, N, NN)
                   TT7 = TI21(M1, N, NN)
                   TT8 = TI22(M1, N, NN)
-
-                  !TT1 = RT11(M1, N, NN)
-                  !TT2 = RT12(M1, N, NN)
-                  !TT3 = RT21(M1, N, NN)
-                  !TT4 = RT22(M1, N, NN)
-                  !TT5 = IT11(M1, N, NN)
-                  !TT6 = IT12(M1, N, NN)
-                  !TT7 = IT21(M1, N, NN)
-                  !TT8 = IT22(M1, N, NN)
 
                   T1 = TT1 + TT2
                   T2 = TT3 + TT4
