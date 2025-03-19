@@ -2,13 +2,13 @@
 !      See shdom.txt for documentation.
 
 module SHDOM_PROPERTY_ARRAYS
-    integer, save              :: NPX, NPY, NPZ, NUMPHASE
-    real, save              :: DELX, DELY, XSTART, YSTART
+    integer, save :: NPX, NPY, NPZ, NUMPHASE
+    real, save    :: DELX, DELY, XSTART, YSTART
     real, save, allocatable :: ZLEVELS(:)
     real, save, allocatable :: TEMPP(:), EXTINCTP(:), ALBEDOP(:)
     real, save, allocatable :: LEGENP(:), EXTDIRP(:)
     integer*2, save, allocatable :: IPHASEP(:)
-    integer, save              :: NZCKD
+    integer, save :: NZCKD
     real, save, allocatable :: ZCKD(:), GASABS(:)
 end module
 
@@ -18,8 +18,8 @@ program SHDOM
     implicit none
     ! Number of output files and inputs parameter per file
     integer, parameter :: MAXOUT = 20, MAXPAR = 500
-    real                 :: OUTPARMS(MAXPAR, MAXOUT)
-    character            :: OUTTYPES(MAXOUT)*1, OUTFILES(MAXOUT)*256
+    real      :: OUTPARMS(MAXPAR, MAXOUT)
+    character :: OUTTYPES(MAXOUT)*1, OUTFILES(MAXOUT)*256
 
     real, allocatable :: DELG(:), KABS(:, :)
     real, allocatable :: XGRID(:), YGRID(:), ZGRID(:)
@@ -54,36 +54,36 @@ program SHDOM
     integer :: MAXLEG, MAXPGL, MAXIGL
     integer :: MAXNBC, MAXBCRAD
     integer :: MAXSFCPTS, MAXSFCPARS, BIG_ARRAYS
-    real    :: MEMWORD, WANTMEM
-    real    :: MAX_TOTAL_MB, ADAPT_GRID_FACTOR
-    real    :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
-    real    :: MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
+    real :: MEMWORD, WANTMEM
+    real :: MAX_TOTAL_MB, ADAPT_GRID_FACTOR
+    real :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
+    real :: MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
 
-    integer NSTOKES, NX, NY, NZ, NX1, NY1
-    integer NXT, NYT, NPXT, NPYT, MAXPGT, MAXPGLT
-    integer NXSFC, NYSFC, NSFCPAR, NTOPPTS, NBOTPTS
-    integer NG, SIDE
-    integer ML, MM, NLM, NSTLEG, NLEG, NANG, NMU, NPHI, NPHI0MAX
-    integer NBPTS, NPTS, NCELLS, NSH, NBCELLS, OLDNPTS
-    integer MAXITER, ITER, TOTITER, IG, I, NUMOUT, BCFLAG, IPFLAG
-    integer NRAD, IRAD, NXOUT, NYOUT, NVIS, IVIS, NSCAN, NPIX, NSHOUT
-    integer NCELLSTOT, NPTSTOT, NSHTOT
-    logical KDIST, INRADFLAG, NEWGRIDFLAG, DELTAM, ACCELFLAG
-    logical BASEOUT, HIGHORDERRAD, MASTERPROC, VALIDBEAM, BTEST
-    logical RADIANCE_OUT, VISUAL_OUT
-    logical FLUX_OUT, FLUXDIV_OUT, SH_OUT, SOURCE_OUT
-    real SOLARFLUX, SOLARMU, SOLARAZ, SOLFLUX
-    real GNDTEMP, GNDALBEDO, SKYRAD, WAVENO(2), WAVELEN
-    real SOLACC, SOLCRIT, SPLITACC, SHACC
-    real DELXSFC, DELYSFC, MAXASYM, REDUCE
-    real MUOUT, PHIOUT
-    real UNIFZLEV, XO, YO, ZO, DIRPATH
-    real CPUTIME1, CPUTIME2, CPUTIMETOTAL, SUM_CPU_TIME
-    character SRCTYPE*1, UNITS*1
-    character GRIDTYPE*1, PROPTYPE*1, SFCTYPE*2
-    character*256 PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
-    character*256 OutFileNC, RUNNAME
-    external SUM_CPU_TIME
+    integer :: NSTOKES, NX, NY, NZ, NX1, NY1
+    integer :: NXT, NYT, NPXT, NPYT, MAXPGT, MAXPGLT
+    integer :: NXSFC, NYSFC, NSFCPAR, NTOPPTS, NBOTPTS
+    integer :: NG, SIDE
+    integer :: ML, MM, NLM, NSTLEG, NLEG, NANG, NMU, NPHI, NPHI0MAX
+    integer :: NBPTS, NPTS, NCELLS, NSH, NBCELLS, OLDNPTS
+    integer :: MAXITER, ITER, TOTITER, IG, I, NUMOUT, BCFLAG, IPFLAG
+    integer :: NRAD, IRAD, NXOUT, NYOUT, NVIS, IVIS, NSCAN, NPIX, NSHOUT
+    integer :: NCELLSTOT, NPTSTOT, NSHTOT
+    logical :: KDIST, INRADFLAG, NEWGRIDFLAG, DELTAM, ACCELFLAG
+    logical :: BASEOUT, HIGHORDERRAD, MASTERPROC, VALIDBEAM, BTEST
+    logical :: RADIANCE_OUT, VISUAL_OUT
+    logical :: FLUX_OUT, FLUXDIV_OUT, SH_OUT, SOURCE_OUT
+    real :: SOLARFLUX, SOLARMU, SOLARAZ, SOLFLUX
+    real :: GNDTEMP, GNDALBEDO, SKYRAD, WAVENO(2), WAVELEN
+    real :: SOLACC, SOLCRIT, SPLITACC, SHACC
+    real :: DELXSFC, DELYSFC, MAXASYM, REDUCE
+    real :: MUOUT, PHIOUT
+    real :: UNIFZLEV, XO, YO, ZO, DIRPATH
+    real :: CPUTIME1, CPUTIME2, CPUTIMETOTAL, SUM_CPU_TIME
+    character :: SRCTYPE*1, UNITS*1
+    character :: GRIDTYPE*1, PROPTYPE*1, SFCTYPE*2
+    character*256 :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
+    character*256 :: OutFileNC, RUNNAME
+    external :: SUM_CPU_TIME
 
     ! Choose the option to compute higher order radiance SH terms
     HIGHORDERRAD = .false.
@@ -100,36 +100,37 @@ program SHDOM
     call START_MPI(MASTERPROC)
 
     if (MASTERPROC) then
-        call USER_INPUT(RUNNAME, PROPFILE, SFCFILE, CKDFILE,        &
-                       INSAVEFILE, OUTSAVEFILE,                      &
-                       NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,       &
-                       IPFLAG, KDIST, DELTAM, GRIDTYPE,              &
-                       SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD, &
-                       GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,   &
-                       ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,  &
-                       MAXOUT,MAXPAR, NUMOUT,OUTTYPES,OUTPARMS,OUTFILES, &
-                       OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,    &
+        call USER_INPUT(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
+                       INSAVEFILE, OUTSAVEFILE,&
+                       NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
+                       IPFLAG, KDIST, DELTAM, GRIDTYPE,&
+                       SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+                       GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,&
+                       ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
+                       MAXOUT,MAXPAR, NUMOUT,OUTTYPES,OUTPARMS,OUTFILES,&
+                       OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
                        NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
-        !call NAMELIST_INPUT(RUNNAME, PROPFILE, SFCFILE, CKDFILE, &
-        !                    INSAVEFILE, OUTSAVEFILE, &
-        !                    NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG, &
-        !                    IPFLAG, KDIST, DELTAM, GRIDTYPE, &
-        !                    SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD, &
-        !                    GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN, &
-        !                    ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC, &
-        !                    MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS, OUTFILES, &
-        !                    OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR, &
+        !call NAMELIST_INPUT(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
+        !                    INSAVEFILE, OUTSAVEFILE,&
+        !                    NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
+        !                    IPFLAG, KDIST, DELTAM, GRIDTYPE,&
+        !                    SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+        !                    GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,&
+        !                    ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
+        !                    MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS, OUTFILES,&
+        !                    OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
         !                    NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
     end if
-    call BROADCAST_USER_INPUT(RUNNAME, PROPFILE, SFCFILE, CKDFILE, &
-                              INSAVEFILE, OUTSAVEFILE, &
-                              NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG, &
-                              IPFLAG, KDIST, DELTAM, GRIDTYPE, &
-                              SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD, &
-                              GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN, &
-                              ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC, &
-                              MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS, &
-                              MAX_TOTAL_MB, ADAPT_GRID_FACTOR, &
+
+    call BROADCAST_USER_INPUT(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
+                              INSAVEFILE, OUTSAVEFILE,&
+                              NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
+                              IPFLAG, KDIST, DELTAM, GRIDTYPE,&
+                              SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+                              GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,&
+                              ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
+                              MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS,&
+                              MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
                               NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
 
     ! The number of Stokes parameters (and components of the real
@@ -170,12 +171,12 @@ program SHDOM
 
     ! Find out the size of the input property file grid
     if (MASTERPROC) then
-        call READ_PROPERTY_SIZE(PROPFILE, NSTLEG, NLEG, NPX, NPY, NPZ, &
+        call READ_PROPERTY_SIZE(PROPFILE, NSTLEG, NLEG, NPX, NPY, NPZ,&
                                 NUMPHASE, MAXLEG, MAXPGL, DELX, DELY)
 !        call read_property_size_netcdf(PROPFILE, NSTLEG, NLEG, NPX,NPY,NPZ,&
 !                                       NUMPHASE, MAXLEG, MAXPGL, DELX, DELY)
     end if
-    call BROADCAST_PROPERTY_SIZE(NPX, NPY, NPZ, DELX, DELY, &
+    call BROADCAST_PROPERTY_SIZE(NPX, NPY, NPZ, DELX, DELY,&
                                  NUMPHASE, MAXLEG, MAXPGL)
 
     ! Set the full domain grid sizes (variables end in T)
@@ -186,7 +187,7 @@ program SHDOM
     !   the X and Y starting position of this subdomain.  Set bits
     !   2 and 3 in BCFLAG to indicate multiple processors in X and Y.
     !   Also open the slave processor log files.
-    call MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE, &
+    call MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
                        XSTART, YSTART, RUNNAME)
 
     ! Set up base grid point actual size (NX1xNY1xNZ)
@@ -280,7 +281,7 @@ program SHDOM
     ! but don't let MAX_TOTAL_MB be exceeded
     if (MAX_TOTAL_MB*1024.0**2 > 1.80*huge(MAXIV)) then
         MAX_TOTAL_MB = 1.80*huge(MAXIV)/1024.0**2
-        write (6, *) 'MAX_TOTAL_MB reduced to fit memory model: ', MAX_TOTAL_MB
+        write (6, '(A,F10.2)') 'Message [SHDOM]: MAX_TOTAL_MB reduced to fit memory model:', MAX_TOTAL_MB
     end if
     if (SPLITACC .le. 0.0 .and. INSAVEFILE(1:4) .eq. 'NONE') &
         ADAPT_GRID_FACTOR = 1.0
@@ -291,15 +292,15 @@ program SHDOM
     REDUCE = min(1.0, ((MAX_TOTAL_MB*1024**2)/4 - MEMWORD)/WANTMEM)
     ADAPT_GRID_FACTOR = ADAPT_GRID_FACTOR*REDUCE
     if (ADAPT_GRID_FACTOR < 1.0) then
-        write (6, *) 'MAX_TOTAL_MB memory limit exceeded with just base grid.'
+        write (6, '(A)') 'Error [SHDOM]: MAX_TOTAL_MB memory limit exceeded with just base grid.'
         stop
     end if
     if (REDUCE < 1.0) then
-        write (6, *) 'ADAPT_GRID_FACTOR reduced to ', ADAPT_GRID_FACTOR
+        write (6, '(A,F8.2)') 'Message [SHDOM]: ADAPT_GRID_FACTOR reduced to:', ADAPT_GRID_FACTOR
     end if
     WANTMEM = REDUCE*WANTMEM
     if (WANTMEM > huge(MAXIV)) then
-        write (6, *) 'Number of words of memory exceeds max integer size:', WANTMEM
+        write (6, '(A,F8.2)') 'Error [SHDOM]: Number of words of memory exceeds max integer size:', WANTMEM
         stop
     end if
     MAXIG = nint(ADAPT_GRID_FACTOR*NBPTS)
@@ -312,11 +313,11 @@ program SHDOM
         MAXIGL = MAXIG*NSTLEG*(MAXLEG + 1)
     end if
     if (4.0*(MAXIV + MAXIG)*NSTOKES > huge(MAXIV)) then
-        write (6, *) 'Size of big SH arrays (MAXIV) probably exceeds max integer number of bytes:', MAXIV
+        write (6, '(A,F8.2)') 'Error [SHDOM]: Size of big SH arrays (MAXIV) probably exceeds max integer number of bytes:', MAXIV
         stop
     end if
     if (4.0*8.0*MAXIC > huge(MAXIV)) then
-        write (6, *) 'Size of GRIDPTR array (8*MAXIC) probably exceeds max integer number of bytes:', 8*MAXIC
+        write (6, '(A,F8.2)') 'Error [SHDOM]: Size of GRIDPTR array (8*MAXIC) probably exceeds max integer number of bytes:', 8*MAXIC
         stop
     end if
 
@@ -492,7 +493,7 @@ program SHDOM
                        XGRID, YGRID, ZGRID)
     end if
 
-    write (6, *) 'Starting solution iterations for SHDOM run: ', trim(adjustl(RUNNAME))
+    write (6, '(A,"<",A,">")') 'Message [SHDOM]: Starting solution iterations for SHDOM run: ', trim(adjustl(RUNNAME))
     TOTITER = 0
     OLDNPTS = 0
 
@@ -669,7 +670,11 @@ program SHDOM
     call cpu_time(CPUTIME2)
     CPUTIMETOTAL = SUM_CPU_TIME(CPUTIME2 - CPUTIME1)
     if (MASTERPROC) then
-        write (6, '(A,F10.2)') 'Approximate total CPU time used (sec)', CPUTIMETOTAL
+        if (CPUTIMETOTAL .lt. 60.0) then
+            write (6, '(A,F6.2)') 'Message [SHDOM]: Approximate total CPU time used (sec):', CPUTIMETOTAL
+        else
+            write (6, '(A,F6.2)') 'Message [SHDOM]: Approximate total CPU time used (min):', CPUTIMETOTAL/60.0
+        endif
     end if
 
     NSH = SHPTR(NPTS + 1)
@@ -796,9 +801,8 @@ program SHDOM
     ADAPTGRIDFAC_OUT = FLOAT(NPTS)/NBPTS
     SHTERM_FAC_OUT = FLOAT(NSH)/(NLM*NPTS)
     CELL_POINT_OUT = FLOAT(NCELLS)/NPTS
-    write (6, '(F7.2,1X,F7.3,2(1X,F5.3),A)') &
-        MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT, &
-        '  Actual MAX_TOTAL_MB, ADAPT_GRID_FACTOR, NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO'
+    write (6, '(A)')'Message [SHDOM]: Actual MAX_TOTAL_MB, ADAPT_GRID_FACTOR, NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO'
+    write (6, '(23X,F7.2,6X,F7.3,14X,F5.3,15X,F5.3)') MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
 
     call END_SHDOM_MPI(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART, DELX, DELY, &
                        NPXT, NPYT, PROPFILE, RUNNAME)
@@ -825,7 +829,7 @@ program SHDOM
     deallocate (ZLEVELS, TEMPP, EXTINCTP, ALBEDOP, EXTDIRP, IPHASEP, LEGENP)
     deallocate (MU, WTDO, PHI, NPHI0)
 
-end
+end program
 
 subroutine TRILIN_INTERP_PROP(X, Y, Z, INIT, NSTLEG, NLEG, &
                               TEMP, EXTINCT, ALBEDO, LEGEN, IPHASE)
@@ -980,13 +984,13 @@ subroutine TRILIN_INTERP_PROP(X, Y, Z, INIT, NSTLEG, NLEG, &
         LEGEN(1, 0, 1) = 1.0
         do L = 1, NLEG
             LEGEN(1, L, 1) = SCAT1*LEGENP(L + (NLEG + 1)*(I1 - 1)) &
-                             + SCAT2*LEGENP(L + (NLEG + 1)*(I2 - 1)) &
-                             + SCAT3*LEGENP(L + (NLEG + 1)*(I3 - 1)) &
-                             + SCAT4*LEGENP(L + (NLEG + 1)*(I4 - 1)) &
-                             + SCAT5*LEGENP(L + (NLEG + 1)*(I5 - 1)) &
-                             + SCAT6*LEGENP(L + (NLEG + 1)*(I6 - 1)) &
-                             + SCAT7*LEGENP(L + (NLEG + 1)*(I7 - 1)) &
-                             + SCAT8*LEGENP(L + (NLEG + 1)*(I8 - 1))
+                           + SCAT2*LEGENP(L + (NLEG + 1)*(I2 - 1)) &
+                           + SCAT3*LEGENP(L + (NLEG + 1)*(I3 - 1)) &
+                           + SCAT4*LEGENP(L + (NLEG + 1)*(I4 - 1)) &
+                           + SCAT5*LEGENP(L + (NLEG + 1)*(I5 - 1)) &
+                           + SCAT6*LEGENP(L + (NLEG + 1)*(I6 - 1)) &
+                           + SCAT7*LEGENP(L + (NLEG + 1)*(I7 - 1)) &
+                           + SCAT8*LEGENP(L + (NLEG + 1)*(I8 - 1))
             if (SCATTER .gt. SCATMIN) then
                 LEGEN(1, L, 1) = LEGEN(1, L, 1)/SCATTER
             else
@@ -1020,7 +1024,7 @@ subroutine TRILIN_INTERP_PROP(X, Y, Z, INIT, NSTLEG, NLEG, &
         EXTINCT = EXTINCT + KG
     end if
     return
-end
+end subroutine
 
 subroutine DIRECT_BEAM_PROP(INIT, XI, YI, ZI, BCFLAG, IPFLAG, &
                             DELTAM, ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ, &
@@ -1510,4 +1514,4 @@ subroutine DIRECT_BEAM_PROP(INIT, XI, YI, ZI, BCFLAG, IPFLAG, &
     VALIDBEAM = abs(ZE - ZLEVELS(NPZ)) .lt. EPSZ
     if (VALIDBEAM) SIDE = 6
     return
-end
+end subroutine

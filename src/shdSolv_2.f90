@@ -922,7 +922,7 @@ subroutine MAKE_SH_DO_COEF(NSTLEG, ML, MM, NLM, NMU, NPHI0,&
             end do
         else
             ! Precompute the phase factors for the FFTs
-            call RFFTI(NPHI0(I), WPHISAVE(1, I))
+            call DFFTI(NPHI0(I), WPHISAVE(1, I))
         end if
     end do
     return

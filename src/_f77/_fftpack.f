@@ -77,9 +77,6 @@ C             of itself.
 C  WSAVE   contains initialization calculations which must not be
 C          destroyed between calls of COST.
       DIMENSION X(*),WSAVE(*)
-
-      DIMENSION IWSAVE(2*(N-1)+1+N)
-
       NM1 = N-1
       NP1 = N+1
       NS2 = N/2
@@ -118,12 +115,7 @@ C          destroyed between calls of COST.
       MODN = MOD(N,2)
       IF (MODN .NE. 0) X(NS2+1) = X(NS2+1)+X(NS2+1)
       IF (NM1 .GT. 1) THEN
-        !CALL RFFTF1 (NM1,X,WSAVE(N+1),WSAVE(NM1+1+N),WSAVE(2*NM1+1+N))
-
-        IWSAVE = WSAVE(2*NM1+1+N)
-        CALL RFFTF1 (NM1,X,WSAVE(N+1),WSAVE(NM1+1+N),IWSAVE)
-        WSAVE(2*NM1+1+N) = IWSAVE
-
+        CALL RFFTF1 (NM1,X,WSAVE(N+1),WSAVE(NM1+1+N),WSAVE(2*NM1+1+N))
       ENDIF
       XIM2 = X(2)
       X(2) = C1
@@ -155,17 +147,8 @@ C        as long as N remains unchanged. Different WSAVE arrays
 C        are required for different values of N. The contents of
 C        WSAVE must not be changed between calls of RFFTF or RFFTB.
       DIMENSION WSAVE(*)
-
-      DIMENSION IWSAVE(2*N+1)
-
       IF (N .EQ. 1) RETURN
-
-      !CALL RFFTI1 (N,WSAVE(N+1),WSAVE(2*N+1))
-
-      IWSAVE = WSAVE(2*N+1)
-      CALL RFFTI1 (N,WSAVE(N+1),IWSAVE)
-      WSAVE(2*N+1) = IWSAVE
-
+      CALL RFFTI1 (N,WSAVE(N+1),WSAVE(2*N+1))
       RETURN
       END
 
@@ -283,18 +266,9 @@ C              followed by a call of RFFTB will multiply the input
 C              sequence by N.
 C  WSAVE   contains results which must not be destroyed between
 C          calls of RFFTF or RFFTB.
-      DIMENSION R(*), WSAVE(*)
-
-      DIMENSION IWSAVE(2*N+1)
-
+      DIMENSION       R(*)       ,WSAVE(*)
       IF (N .EQ. 1) RETURN
-
-      !CALL RFFTF1 (N,R,WSAVE,WSAVE(N+1),WSAVE(2*N+1))
-
-      IWSAVE = WSAVE(2*N+1)
-      CALL RFFTF1 (N,R,WSAVE,WSAVE(N+1),IWSAVE)
-      WSAVE(2*N+1) = IWSAVE
-
+      CALL RFFTF1 (N,R,WSAVE,WSAVE(N+1),WSAVE(2*N+1))
       RETURN
       END
 
@@ -396,17 +370,8 @@ C              sequence by N.
 C WSAVE   contains results which must not be destroyed between
 C         calls of RFFTB or RFFTF.
       DIMENSION       R(*)       ,WSAVE(*)
-
-      DIMENSION IWSAVE(2*N+1)
-
       IF (N .EQ. 1) RETURN
-
-      !CALL RFFTB1 (N,R,WSAVE,WSAVE(N+1),WSAVE(2*N+1))
-
-      IWSAVE = WSAVE(2*N+1)
-      CALL RFFTB1 (N,R,WSAVE,WSAVE(N+1),IWSAVE)
-      WSAVE(2*N+1) = IWSAVE
-
+      CALL RFFTB1 (N,R,WSAVE,WSAVE(N+1),WSAVE(2*N+1))
       RETURN
       END
 
