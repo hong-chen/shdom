@@ -193,7 +193,10 @@ Source Code File Change
   * converted from F77 to F90
   * formatted the code
 
-* ``src/_fftpack.f``: was ``fftpack.f``
+* ``src/fftpack.f90``: was ``fftpack.f``
+
+  * converted from F77 to F90 (https://fortran-lang.github.io/fftpack/)
+  * formatted the code
 
 * ``src/_lapack.f``: was ``lpd.f``
 

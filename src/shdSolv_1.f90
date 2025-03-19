@@ -1600,7 +1600,7 @@ subroutine SH_TO_DO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
                     do M2 = MR, NPHI0
                         TMP(M2) = 0.0
                     end do
-                    call RFFTB(NPHI0, TMP, WSAVE(1, IMU))
+                    call DFFTB(NPHI0, TMP, WSAVE(1, IMU))
                     do K = 1, NPHI0
                         OUTDATA(N, K, I) = TMP(K)
                     end do
@@ -1705,7 +1705,7 @@ subroutine SH_TO_DO_UNPOL(NPTS, ML, MM, NLM,&
                 do M2 = MR, NPHI0
                     TMP(M2) = 0.0
                 end do
-                call RFFTB(NPHI0, TMP, WSAVE(1, IMU))
+                call DFFTB(NPHI0, TMP, WSAVE(1, IMU))
                 do K = 1, NPHI0
                     OUTDATA(K, I) = TMP(K)
                 end do
@@ -1774,7 +1774,7 @@ subroutine DO_TO_SH(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
                     TMP(K) = INDATA(N, K, I)
                 end do
                 ! For sines and cosines use a real FFT, and rearrange term
-                call RFFTF(NPHI0, TMP, WSAVE(1, IMU))
+                call DFFTF(NPHI0, TMP, WSAVE(1, IMU))
                 SUMCS(N, 0) = TMP(1)*DELPHI
                 MR = 2
                 do M = 1, ME
@@ -1884,7 +1884,7 @@ subroutine DO_TO_SH_UNPOL(NPTS, ML, MM, NLM,&
                 TMP(K) = INDATA(K, I)
             end do
             ! For sines and cosines use a real FFT, and rearrange term
-            call RFFTF(NPHI0, TMP, WSAVE(1, IMU))
+            call DFFTF(NPHI0, TMP, WSAVE(1, IMU))
             SUMCS(0) = TMP(1)*DELPHI
             MR = 2
             do M = 1, ME
