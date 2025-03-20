@@ -98,7 +98,9 @@ subroutine shdUtil_io__outputRad(&
     else
         NYOUT = max(1, nint(YDOMAIN/OUTPARMS(3)))
     end if
+
     Z0 = min(max(OUTPARMS(1), ZGRID(1)), ZGRID(NZ))
+
     NANGOUT = nint(OUTPARMS(6))
 
     write (2, '(A,F7.3,3(A,I4))') '!    RADIANCE AT Z=', Z0,&
