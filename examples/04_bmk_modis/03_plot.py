@@ -35,106 +35,6 @@ rcParams['font.size'] = 24
 #╰────────────────────────────────────────────────────────────────────────────╯#
 
 
-def get_data_shdom_out_txt_ori(
-        fname,
-        verbose=True,
-        ):
-
-    if verbose:
-        print('Reading SHDOM output file:\n <%s> ...' % os.path.abspath(fname))
-        print('╭────────────────────────────────────────────────────────────────────────────╮')
-
-
-    headers = []
-    with open(fname, 'r') as f:
-        line = f.readline().strip()
-        while line[0] == '!':
-            headers.append(line)
-            line = f.readline().strip()
-
-    Nline_output_type = [i for i in range(len(headers)) if ('OUTPUT_TYPE=' in headers[i])][0]
-    output_type = headers[Nline_output_type].split('=')[-1].lower().strip()
-
-    # Ndata
-    #╭────────────────────────────────────────────────────────────────────────────╮#
-    line_xy = [line for line in headers[Nline_output_type:] if ('  X  ' in line) or ('  Y  ' in line) or (' Z ' in line)][0]
-    Ndata_s = 0
-    if '  X  ' in line_xy:
-        Ndata_s += 1
-    if '  Y  ' in line_xy:
-        Ndata_s += 1
-    if ' Z ' in line_xy:
-        Ndata_s += 1
-
-    data_ = np.loadtxt(fname, comments='!')[:, Ndata_s:]
-    Ndata = data_.shape[-1]
-    #╰────────────────────────────────────────────────────────────────────────────╯#
-
-    # Nx, Ny, Nz
-    #╭────────────────────────────────────────────────────────────────────────────╮#
-    line_xy = [line for line in headers[Nline_output_type:] if ('NXO=' in line) or ('NYO=' in line)]
-    if len(line_xy) == 1:
-        Nz = 1
-        Nx = int(line_xy[0][1:].split('NXO=')[1].split()[0])
-        Ny = int(line_xy[0][1:].split('NYO=')[1].split()[0])
-        if 'NDIR' in line_xy[0]:
-            Ndir = int(line_xy[0][1:].split('NDIR=')[1].split()[0])
-        else:
-            Ndir = 1
-    elif len(line_xy) == 0:
-        Nx = int(headers[2][1:].split('NX=')[1].split()[0])
-        Ny = int(headers[2][1:].split('NY=')[1].split()[0])
-        Nz = data_.shape[0]//Nx//Ny
-        Ndir = 1
-    #╰────────────────────────────────────────────────────────────────────────────╯#
-
-    data = np.zeros((Ndata, Ndir, Nx, Ny, Nz), dtype=np.float32)
-    for i in range(Ndata):
-        data[i, ...] = data_[:, i].reshape((Ndir, Nx, Ny, Nz))
-
-    if verbose:
-        print('%s (Ndata, Ndir, Nx, Ny, Nz): %s' % (output_type.title(), data.shape))
-        print('╰────────────────────────────────────────────────────────────────────────────╯')
-
-    return data
-
-
-def get_data_shdom_out_txt(
-        fname,
-        verbose=True,
-        ):
-
-    if verbose:
-        print('Reading SHDOM output file:\n <%s> ...' % os.path.abspath(fname))
-        print('╭────────────────────────────────────────────────────────────────────────────╮')
-
-    with open(fname, 'r') as f:
-        headers = f.readlines()
-
-    # output data variable
-    #╭────────────────────────────────────────────────────────────────────────────╮#
-    Nline_output_type = [i for i in range(len(headers)) if ('OUTPUT_TYPE=' in headers[i])][0]
-    output_type = headers[Nline_output_type].split('=')[-1].lower().strip()
-    #╰────────────────────────────────────────────────────────────────────────────╯#
-
-    # data shape
-    #╭────────────────────────────────────────────────────────────────────────────╮#
-    Nvar, Nset, Nx, Ny, Nz = [int(num_s.strip()) for num_s in headers[-1].replace('!', '').split(',')]
-    #╰────────────────────────────────────────────────────────────────────────────╯#
-
-    # read binary data
-    #╭────────────────────────────────────────────────────────────────────────────╮#
-    fname_data = headers[-2].replace('!', '').strip()
-    data = np.fromfile(fname_data, dtype='<f4').reshape((Nvar, Nset, Nx, Ny, Nz))
-    #╰────────────────────────────────────────────────────────────────────────────╯#
-
-    if verbose:
-        print('%s (Nvar, Nset, Nx, Ny, Nz): %s' % (output_type.title(), data.shape))
-        print('╰────────────────────────────────────────────────────────────────────────────╯')
-
-    return data
-
-
 def run_mcarats(
         wavelength=650.0,
         solver='3D',
@@ -577,7 +477,7 @@ def figure_modis(fname):
 
 def figure_modis_comp(fname):
 
-    data = get_data_shdom_out_txt(fname)
+    data = er3t.rtm.shd.get_shd_data_out(fname)
 
     # if ('les-ckd' in fname) or ('les-crk' in fname):
     #     tag_shd = '3D'
@@ -598,27 +498,27 @@ def figure_modis_comp(fname):
     Xs = 150
     Ys = 150
     f = h5py.File(fname_mca, 'r')
-    data_mca = f['mod/rad/rad_0650'][Xs:Xs+150, Ys:Ys+150].T
+    data_mca = f['mod/rad/rad_0650'][Xs:Xs+150, Ys:Ys+150]
     f.close()
     data_mca = data_mca[25:-25, 25:-25]
 
-    for i in range(data.shape[0]):
-        for j in range(data.shape[1]):
+    for j in range(data.shape[-1]):
+        for i in range(data.shape[-2]):
 
-            data_shd = np.squeeze(data[i, j, ...])
+            data_shd = np.squeeze(data[..., i, j])
             data_shd = data_shd[25:-25, 25:-25]
 
             # figure
             #╭────────────────────────────────────────────────────────────────────────────╮#
             plot = True
-            extent = [0, 48, 0, 48]
+            extent = [0, 25, 0, 25]
             if plot:
                 plt.close('all')
                 fig = plt.figure(figsize=(14, 14))
                 # plot1
                 #╭──────────────────────────────────────────────────────────────╮#
                 ax1 = fig.add_subplot(221, aspect='equal')
-                cs = ax1.imshow(data_shd, origin='lower', cmap='viridis', zorder=0, aspect='equal', vmin=0.0, vmax=0.6, extent=extent)
+                cs = ax1.imshow(data_shd.T, origin='lower', cmap='viridis', zorder=0, aspect='equal', vmin=0.0, vmax=0.6, extent=extent)
                 # ax1.set_title('SHDOM (%s)' % tag_shd)
                 ax1.set_title('SHDOM')
 
@@ -627,7 +527,7 @@ def figure_modis_comp(fname):
                 cbar = fig.colorbar(cs, cax=cax)
 
                 ax2 = fig.add_subplot(222, aspect='equal')
-                cs = ax2.imshow((data_shd-data_mca), origin='lower', cmap='seismic', zorder=0, aspect='equal', vmin=-0.3, vmax=0.3, extent=extent)
+                cs = ax2.imshow((data_shd-data_mca).T, origin='lower', cmap='seismic', zorder=0, aspect='equal', vmin=-0.3, vmax=0.3, extent=extent)
                 ax2.set_title('SHDOM - MODIS')
 
                 divider = make_axes_locatable(ax2)
@@ -635,7 +535,7 @@ def figure_modis_comp(fname):
                 cbar = fig.colorbar(cs, cax=cax)
 
                 ax3 = fig.add_subplot(223, aspect='equal')
-                cs = ax3.imshow(data_mca, origin='lower', cmap='viridis', zorder=0, aspect='equal', vmin=0.0, vmax=0.6, extent=extent)
+                cs = ax3.imshow(data_mca.T, origin='lower', cmap='viridis', zorder=0, aspect='equal', vmin=0.0, vmax=0.6, extent=extent)
                 # ax3.set_title('MCARaTS (%s)' % tag_mca)
                 ax3.set_title('MODIS')
 
