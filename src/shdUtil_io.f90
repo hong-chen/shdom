@@ -1628,21 +1628,21 @@ subroutine shdUtil_io__plotCell(&
 end subroutine shdUtil_io__plotCell
 
 subroutine shdUtil_io__outputResult(&
-    & NSTOKES, NX, NY, NZ, NBPTS, NPTS, NCELLS,&
-    & NSH, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
-    & NMU, NPHI, NANG, NG,&
-    & PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
-    & BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
-    & SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
-    & SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS,&
-    & SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
-    & XGRID, YGRID, ZGRID, GRIDPOS,&
-    & TREEPTR, GRIDPTR, CELLFLAGS,&
-    & EXTINCT, ALBEDO, LEGEN, IPHASE, TEMP,&
-    & FLUXES, DIRFLUX, FLUXDIV,&
-    & IRAD, RADOUT, NSHOUT, SHTERMS, SOURCE1OUT,&
-    & OUTTYPE, OUTPARMS, OUTFILE)
-    ! Writes the desired type of output file from the output fields
+    &NSTOKES, NX, NY, NZ, NBPTS, NPTS, NCELLS,&
+    &NSH, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
+    &NMU, NPHI, NANG, NG,&
+    &PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
+    &BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
+    &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+    &SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS,&
+    &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
+    &XGRID, YGRID, ZGRID, GRIDPOS,&
+    &TREEPTR, GRIDPTR, CELLFLAGS,&
+    &EXTINCT, ALBEDO, LEGEN, IPHASE, TEMP,&
+    &FLUXES, DIRFLUX, FLUXDIV,&
+    &IRAD, RADOUT, NSHOUT, SHTERMS, SOURCE1OUT,&
+    &OUTTYPE, OUTPARMS, OUTFILE)
+    !   Writes the desired type of output file from the output fields
     ! with a header giving the input parameters.
     ! There are five types (OUTTYPE) of output: 'R' - for radiance,
     ! 'F' - for hemispheric flux, 'H' - for heating rate (net flux
