@@ -1622,7 +1622,7 @@ subroutine shdUtil_io__saveState(&
     if (OUTSAVEFILE(1:4) .eq. 'NONE') return
 
     open (UNIT=3, FILE=trim(adjustl(OUTSAVEFILE)), STATUS='UNKNOWN',&
-        & FORM='UNFORMATTED')
+        &FORM='UNFORMATTED')
     write (3) NSTOKES, NX, NY, NZ, ML, MM, NLM, NPTS, NCELLS
 
     write (3) (XGRID(I), I=1, NX + 1)
