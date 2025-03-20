@@ -23,9 +23,6 @@ module shdUtil_out
   public :: shdUtil_io__plotCell
 
   public :: shdUtil_io__saveState
-
-  !public :: shdUtil_io__outputData
-  !public :: shdUtil_io__outputDesc
   !╰────────────────────────────────────────────────╯!
 
 contains
