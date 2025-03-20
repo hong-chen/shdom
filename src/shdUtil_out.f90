@@ -319,24 +319,8 @@ subroutine shdUtil_io__outputResult(&
 
         write(*, '(A)') 'Message [shdUtil_io__outputResult]: Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
 
+        !                         DATA_OUT, NVAR,    NSET,    NX,    NY,    NZ,    OUTFILE_DATA
         call shdUtil_io__outputData(RADOUT, NSTOKES, NANGOUT, NXOUT, NYOUT, NZOUT, OUTFILE_DATA)
-
-        !do K = 1, NANGOUT
-        !    MUOUT = OUTPARMS(2*K + 5)
-        !    PHID = OUTPARMS(2*K + 6)
-        !    !write (2, '(A,1X,F8.5,1X,F7.2,2X,A)')&
-        !    !    & '! ', MUOUT, PHID, '<- (mu,phi)'
-        !    Y0 = STARTY
-        !    do JY = 1, NYOUT
-        !        X0 = STARTX
-        !        do JX = 1, NXOUT
-        !            IRAD = IRAD + 1
-        !            write (2, FORM) X0, Y0, RADOUT(:, IRAD)
-        !            X0 = X0 + OUTPARMS(2)
-        !        end do
-        !        Y0 = Y0 + OUTPARMS(3)
-        !    end do
-        !end do
 
     else if (OUTTYPE .eq. 'F') then
 
