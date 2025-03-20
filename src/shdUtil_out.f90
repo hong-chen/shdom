@@ -27,6 +27,111 @@ module shdUtil_out
 
 contains
 
+subroutine shdUtil_io__outputRad(&
+    &NSTOKES, NX, NY, NZ, NBPTS, NPTS, NCELLS,&
+    &NSH, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
+    &NMU, NPHI, NANG, NG,&
+    &PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
+    &BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
+    &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+    &SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS,&
+    &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
+    &XGRID, YGRID, ZGRID, GRIDPOS,&
+    &TREEPTR, GRIDPTR, CELLFLAGS,&
+    &EXTINCT, ALBEDO, LEGEN, IPHASE, TEMP,&
+    &FLUXES, DIRFLUX, FLUXDIV,&
+    &IRAD, RADOUT, NSHOUT, SHTERMS, SOURCE1OUT,&
+    &OUTTYPE, OUTPARMS, OUTFILE)
+    !   Writes the desired type of output file from the output fields
+    ! with a header giving the input parameters.
+    ! There are five types (OUTTYPE) of output: 'R' - for radiance,
+    ! 'F' - for hemispheric flux, 'H' - for heating rate (net flux
+    ! convergence), 'S' - for spherical harmonic terms, and 'M' for
+    ! medium properties.
+    ! See the overall program documentation for output parameters.
+
+    integer NSTOKES, NX, NY, NZ, NBPTS, NPTS, NCELLS, NSH
+    integer ML, MM, NLM, NSTLEG, NLEG, NUMPHASE, NMU, NPHI, NANG, NG
+    integer BCFLAG, IPFLAG
+    integer MAXITER, TOTITER, IRAD, NSHOUT
+    integer TREEPTR(2, NCELLS), GRIDPTR(8, NCELLS)
+    integer*2 CELLFLAGS(NCELLS), IPHASE(NPTS)
+    logical DELTAM
+    real SOLARFLUX, SOLARMU, SOLARAZ
+    real GNDTEMP, GNDALBEDO, SKYRAD
+    real SOLACC, SPLITACC, SHACC
+    real WAVENO(2), WAVELEN
+    real XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ), GRIDPOS(3, NPTS)
+    real OUTPARMS(*)
+    character SRCTYPE*1, SFCTYPE*2, UNITS*1, GRIDTYPE*1, OUTTYPE*1
+    character(256) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
+    character(256) :: OUTFILE
+    real EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, NPTS)
+    real TEMP(NPTS)
+    real FLUXES(2, NPTS), DIRFLUX(NPTS), FLUXDIV(NPTS)
+    real RADOUT(NSTOKES, *), SHTERMS(NSHOUT, NPTS)
+    real SOURCE1OUT(NSTOKES, *)
+
+    integer IZ, I, K, N, NX2, NY2, J, JX, JY, ICELL
+    integer NANGOUT, NXOUT, NYOUT
+    logical ALLGRID
+    real MUOUT, PHID, C, PI, SUM, SUM1, SUM2, SUM3
+    real XDOMAIN, YDOMAIN, STARTX, STARTY
+    real FUP, FDN, FDIR, ASYM
+    double precision X0, Y0, Z0
+    character*128 FORM
+    character*128 GRIDNAME, SOURCENAME, UNITSNAME, OUTNAME, SFCNAME
+
+    ! Radiance output
+    XDOMAIN = XGRID(NX + 1 - ibits(BCFLAG, 0, 1)) - XGRID(1) + 2*OUTPARMS(4)
+    STARTX = -OUTPARMS(4)
+    if (OUTPARMS(2) .eq. 0.0) then
+        NXOUT = 1
+    else
+        NXOUT = max(1, nint(XDOMAIN/OUTPARMS(2)))
+    end if
+
+    YDOMAIN = YGRID(NY + 1 - ibits(BCFLAG, 1, 1)) - YGRID(1) + 2*OUTPARMS(5)
+    STARTY = -OUTPARMS(5)
+    if (OUTPARMS(3) .eq. 0.0) then
+        NYOUT = 1
+    else
+        NYOUT = max(1, nint(YDOMAIN/OUTPARMS(3)))
+    end if
+    Z0 = min(max(OUTPARMS(1), ZGRID(1)), ZGRID(NZ))
+    NANGOUT = nint(OUTPARMS(6))
+
+    write (2, '(A,F7.3,3(A,I4))') '!    RADIANCE AT Z=', Z0,&
+        & '    NXO=', NXOUT, '    NYO=', NYOUT, '    NDIR=', NANGOUT
+    if (UNITS .eq. 'T') then
+        FORM = '(2(1X,F7.3),1X,4(1X,F6.2))'
+        write (2, '(A)')&
+            & '!   X       Y       RADIANCE (STOKES I, Q, U, V)'
+    else
+        FORM = '(2(1X,F7.3),1X,4(1X,E12.5))'
+        write (2, '(A)')&
+            & '!   X       Y        RADIANCE (STOKES I, Q, U, V)'
+    end if
+
+    do K = 1, NANGOUT
+        MUOUT = OUTPARMS(2*K + 5)
+        PHID = OUTPARMS(2*K + 6)
+        write (2, '(A,1X,F8.5,1X,F7.2,2X,A)')&
+            & '! ', MUOUT, PHID, '<- (mu,phi)'
+        Y0 = STARTY
+        do JY = 1, NYOUT
+            X0 = STARTX
+            do JX = 1, NXOUT
+                IRAD = IRAD + 1
+                write (2, FORM) X0, Y0, RADOUT(:, IRAD)
+                X0 = X0 + OUTPARMS(2)
+            end do
+            Y0 = Y0 + OUTPARMS(3)
+        end do
+    end do
+
+end subroutine shdUtil_io__outputRad
+
 subroutine shdUtil_io__outputResult(&
     &NSTOKES, NX, NY, NZ, NBPTS, NPTS, NCELLS,&
     &NSH, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
@@ -213,6 +318,10 @@ subroutine shdUtil_io__outputResult(&
     PI = acos(-1.0)
 
     if (OUTTYPE .eq. 'R') then
+
+        !close(2)
+        !call shdUtil_io__outputRad()
+
         ! Radiance output
         XDOMAIN = XGRID(NX + 1 - ibits(BCFLAG, 0, 1)) - XGRID(1) + 2*OUTPARMS(4)
         STARTX = -OUTPARMS(4)
@@ -221,6 +330,7 @@ subroutine shdUtil_io__outputResult(&
         else
             NXOUT = max(1, nint(XDOMAIN/OUTPARMS(2)))
         end if
+
         YDOMAIN = YGRID(NY + 1 - ibits(BCFLAG, 1, 1)) - YGRID(1) + 2*OUTPARMS(5)
         STARTY = -OUTPARMS(5)
         if (OUTPARMS(3) .eq. 0.0) then
