@@ -155,13 +155,13 @@ very good because ``V`` is very small.
 INPUT PARAMETERS
 ----------------
 
-The parameters are input in the routine ``USER_INPUT`` or
-``NAMELIST_INPUT``.  ``USER_INPUT`` uses ``READ`` statements from stdin in response
+The parameters are input in the routine ``shdUtil_io__userInput`` or
+``shdUtil_io__nmlInput``. ``shdUtil_io__userInput`` uses ``READ`` statements from stdin in response
 to written messages.  Because not all parameters are relevant at once,
 the complete list is not input.  Run shdom interactively for the actual
-sequence.  The ``USER_INPUT`` routine echos the input values so that a
+sequence. The ``shdUtil_io__userInput`` routine echos the input values so that a
 useful "log" file output is produced when run non-interactively.  To use
-the namelist style input, comment in the call to ``NAMELIST_INPUT`` in the
+the namelist style input, change ``nmlMode = .True.`` in the
 main routine. On some computers the NAMELIST input requires a space
 before the parameters.  All file name strings are a maximum of 256
 characters.
@@ -973,7 +973,7 @@ parameters controlling the array sizes.
 
 While a few algorithm and coding bugs may be left in the code, the
 most common source of errors is incorrect input.  Be sure to check the
-input parameters against the documentation and the USER_INPUT routine.
+input parameters against the documentation and the ``shdUtil_io__userInput`` routine.
 The correctness of the input property file format can be found by using
 the 'M' - medium property output option.  There are routines that
 check the input parameters and property file for validity and issue
@@ -1332,8 +1332,8 @@ the higher order radiance terms, or turning on processor load balancing,
 most of these would only be changed to experiment with the operation of
 the SHDOM algorithm.
 
-Namelist input: main program (``shdom90.f90``); Comment out
-the call to ``USER_INPUT`` and uncomment the call to ``NAMELIST_INPUT``.
+Namelist input: main program (``shdom90.f90``); ``nmlMode = .True.`` (by default)
+calls ``shdUtil_io__nmlInput`` and ``nmlMode = .True.`` calls ``shdUtil_io__userInput``.
 
 NetCDF property file input: main program (``shdom90.f90``); Comment out
 calls to ``READ_PROPERTY_SIZE``, and ``READ_PROPERTIES`` and uncomment calls to
@@ -1399,7 +1399,7 @@ ARRAY SIZES AND MEMORY MANAGEMENT
 The main program (``shdom.f90``) determines the sizes of most arrays and
 allocates memory for them.  Thus the user does not usually have to
 recompile the program for different problems.  As there is no way to
-determine the OUTPARM array size before calling USER_INPUT, the MAXOUT
+determine the OUTPARM array size before calling ``shdUtil_io__userInput``, the MAXOUT
 and MAXPAR constants are still defined. Since the adaptive grid grows
 during the solution procedure, the maximum size of many arrays can only
 be guessed at.  The approach taken is to define the maximum adaptive
@@ -1992,11 +1992,11 @@ routines from NCAR.
 
    2   SSORT                Sorting routine for adaptive cell criterion
 
-   3 0 USER_INPUT           Gets the input parameters from stdin
+   3 0 shdUtil_io__userInput: Gets the input parameters from stdin
 
-   3 0 NAMELIST_INPUT       Gets the input parameters from a namelist
+   3 0 shdUtil_io__nmlInput: Gets the input parameters from a namelist
 
-   3 0 CHECK_INPUT_PARMETERS Checks input parameters for validity/reasonableness
+   3 0 shdUtil_io__checkInputParams: Checks input parameters for validity/reasonableness
 
    3 0 READ_PROPERTY_SIZE   Gets the size of the property file
 
