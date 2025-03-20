@@ -29,7 +29,7 @@ contains
 
 subroutine shdUtil_io__outputData(&
     &DATA_OUT, NVAR, NSET, NX, NY, NZ,&
-    &OUTFILE_DATA)
+    &ISTART, OUTFILE_DATA)
     !   Writes the desired type of output file from the output fields
     ! with a header giving the input parameters.
     ! There are five types (OUTTYPE) of output: 'R' - for radiance,
@@ -41,20 +41,24 @@ subroutine shdUtil_io__outputData(&
     integer, intent(in) :: NVAR, NSET, NX, NY, NZ
     real, intent(in)    :: DATA_OUT(NVAR, *)
     character(*), intent(in) :: OUTFILE_DATA
+    integer, intent(inout) :: ISTART
     integer :: ivar, iset, ix, iy, iz, idata, istat
 
     open (UNIT=88, FILE=trim(adjustl(OUTFILE_DATA)), STATUS='REPLACE', form='UNFORMATTED', access='STREAM', iostat=istat)
 
+    idata = ISTART
+
     if (istat .eq. 0) then
 
         do ivar = 1, NVAR
-          idata = 0
+          ! rewind for each column variable
+          ISTART = idata
           do iset = 1, NSET
             do iz = 1, NZ
               do iy = 1, NY
                 do ix = 1, NX
-                    idata = idata + 1
-                    write (88) DATA_OUT(ivar, idata)
+                    ISTART = ISTART + 1
+                    write (88) DATA_OUT(ivar, ISTART)
                 end do
               end do
             end do
@@ -95,27 +99,29 @@ subroutine shdUtil_io__outputResult(&
     ! medium properties.
     ! See the overall program documentation for output parameters.
 
-    integer NSTOKES, NX, NY, NZ, NBPTS, NPTS, NCELLS, NSH
-    integer ML, MM, NLM, NSTLEG, NLEG, NUMPHASE, NMU, NPHI, NANG, NG
-    integer BCFLAG, IPFLAG
-    integer MAXITER, TOTITER, IRAD, NSHOUT
-    integer TREEPTR(2, NCELLS), GRIDPTR(8, NCELLS)
-    integer*2 CELLFLAGS(NCELLS), IPHASE(NPTS)
-    logical DELTAM
-    real SOLARFLUX, SOLARMU, SOLARAZ
-    real GNDTEMP, GNDALBEDO, SKYRAD
-    real SOLACC, SPLITACC, SHACC
-    real WAVENO(2), WAVELEN
-    real XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ), GRIDPOS(3, NPTS)
-    real OUTPARMS(*)
-    character SRCTYPE*1, SFCTYPE*2, UNITS*1, GRIDTYPE*1, OUTTYPE*1
-    character(256) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
-    character(256) :: OUTFILE
-    real EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, NPTS)
-    real TEMP(NPTS)
-    real FLUXES(2, NPTS), DIRFLUX(NPTS), FLUXDIV(NPTS)
-    real RADOUT(NSTOKES, *), SHTERMS(NSHOUT, NPTS)
-    real SOURCE1OUT(NSTOKES, *)
+    integer, intent(in) :: NSTOKES, NX, NY, NZ, NBPTS, NPTS, NCELLS, NSH
+    integer, intent(in) :: ML, MM, NLM, NSTLEG, NLEG, NUMPHASE, NMU, NPHI, NANG, NG
+    integer, intent(in) :: BCFLAG, IPFLAG
+    integer, intent(in) :: MAXITER, TOTITER, NSHOUT
+    integer, intent(in) :: TREEPTR(2, NCELLS), GRIDPTR(8, NCELLS)
+    integer*2, intent(in) :: CELLFLAGS(NCELLS), IPHASE(NPTS)
+    logical  , intent(in) :: DELTAM
+    real, intent(in) :: SOLARFLUX, SOLARMU, SOLARAZ
+    real, intent(in) :: GNDTEMP, GNDALBEDO, SKYRAD
+    real, intent(in) :: SOLACC, SPLITACC, SHACC
+    real, intent(in) :: WAVENO(2), WAVELEN
+    real, intent(in) :: XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ), GRIDPOS(3, NPTS)
+    real, intent(inout) :: OUTPARMS(*)
+    character, intent(in) :: SRCTYPE*1, SFCTYPE*2, UNITS*1, GRIDTYPE*1, OUTTYPE*1
+    character(256), intent(in) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
+    character(256), intent(in) :: OUTFILE
+    real, intent(in) :: EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, NPTS)
+    real, intent(in) :: TEMP(NPTS)
+    real, intent(in) :: FLUXES(2, NPTS), DIRFLUX(NPTS), FLUXDIV(NPTS)
+    real, intent(in) :: SOURCE1OUT(NSTOKES, *)
+
+    real, intent(in) :: RADOUT(NSTOKES, *), SHTERMS(NSHOUT, NPTS)
+    integer, intent(inout) :: IRAD
 
     integer IZ, I, K, N, NX2, NY2, J, JX, JY, ICELL
     integer NANGOUT, NXOUT, NYOUT, NZOUT
@@ -311,16 +317,21 @@ subroutine shdUtil_io__outputResult(&
                 &'!   X       Y       RADIANCE (STOKES I, Q, U, V)'
         end if
 
+        ! description for binary data
+        !╭────────────────────────────────────────────────╮!
         write (2, '(A)') '! The following contains information for binary data intepretation:'
         write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
         write (2, '(A, 5(I6,A))') '! ', NXOUT, ',', NYOUT, ',', NZOUT, ',', NANGOUT, ',', NSTOKES, ''
-
         close(2)
+        !╰────────────────────────────────────────────────╯!
 
+        ! binary data
+        !╭────────────────────────────────────────────────╮!
         write(*, '(A)') 'Message [shdUtil_io__outputResult]: Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
 
-        !                         DATA_OUT, NVAR,    NSET,    NX,    NY,    NZ,    OUTFILE_DATA
-        call shdUtil_io__outputData(RADOUT, NSTOKES, NANGOUT, NXOUT, NYOUT, NZOUT, OUTFILE_DATA)
+        !                         DATA_OUT, NVAR,    NSET,    NX,    NY,    NZ,  ISTART, OUTFILE_DATA
+        call shdUtil_io__outputData(RADOUT, NSTOKES, NANGOUT, NXOUT, NYOUT, NZOUT, IRAD, OUTFILE_DATA)
+        !╰────────────────────────────────────────────────╯!
 
     else if (OUTTYPE .eq. 'F') then
 
@@ -1049,7 +1060,7 @@ subroutine shdUtil_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     integer ML, MM, NLM, NMU, NPHI, NANG, NG
     integer BCFLAG, IPFLAG
     integer MAXITER, TOTITER, IVIS
-    logical DELTAM
+    logical, intent(in) :: DELTAM
     real SOLARFLUX, SOLARMU, SOLARAZ
     real GNDTEMP, GNDALBEDO, SKYRAD
     real SOLACC, SPLITACC, SHACC
