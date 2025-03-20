@@ -177,7 +177,7 @@ program SHDOM
 
     ! Find out the size of the input property file grid
     if (MASTERPROC) then
-        call READ_PROPERTY_SIZE(PROPFILE, NSTLEG, NLEG, NPX, NPY, NPZ,&
+        call shdUtil_io__readPropSize(PROPFILE, NSTLEG, NLEG, NPX, NPY, NPZ,&
                                 NUMPHASE, MAXLEG, MAXPGL, DELX, DELY)
 !        call read_property_size_netcdf(PROPFILE, NSTLEG, NLEG, NPX,NPY,NPZ,&
 !                                       NUMPHASE, MAXLEG, MAXPGL, DELX, DELY)
@@ -228,7 +228,7 @@ program SHDOM
             if (NUMPHASE .eq. 0) MAXPGLT = MAXPGT*(MAXLEG + 1)*NSTLEG
             allocate (TEMPPT(MAXPGT), EXTINCTPT(MAXPGT), ALBEDOPT(MAXPGT))
             allocate (IPHASEPT(MAXPGT), LEGENPT(MAXPGLT))
-            call READ_PROPERTIES(PROPFILE, NPXT, NPYT, NPZ, &
+            call shdUtil_io__readProp(PROPFILE, NPXT, NPYT, NPZ, &
                                  NSTLEG, MAXLEG, NLEG, MAXNZ, MAXPGT, MAXPGLT, DELTAM, &
                                  PROPTYPE, DELX, DELY, ZLEVELS, MAXASYM, &
                                  TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, NUMPHASE, IPHASEPT)
@@ -254,7 +254,7 @@ program SHDOM
         if (MASTERPROC) deallocate (TEMPPT, EXTINCTPT, ALBEDOPT, IPHASEPT)
     else
         ! Read the properties of the medium to the single processor
-        call READ_PROPERTIES(PROPFILE, NPX, NPY, NPZ, &
+        call shdUtil_io__readProp(PROPFILE, NPX, NPY, NPZ, &
                              NSTLEG, MAXLEG, NLEG, MAXNZ, MAXPG, MAXPGL, DELTAM, &
                              PROPTYPE, DELX, DELY, ZLEVELS, MAXASYM, &
                              TEMPP, EXTINCTP, ALBEDOP, LEGENP, NUMPHASE, IPHASEP)

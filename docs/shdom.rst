@@ -731,7 +731,7 @@ polarized tabulated phase function format tabulates the six Wigner
 d-function expansion coefficients for each phase matrix in the header.
 All file types are plain ascii and read by  Fortran free format (so most
 "lines" may be broken across lines).  With a small code change
-(commenting in calls to read_property_size_netcdf and
+(commenting in calls to ``read_property_size_netcdf`` and
 read_properties_netcdf in ``shdom.f90``) the two tabulated phase function
 format property files may be read in netcdf format.
 
@@ -1336,7 +1336,7 @@ Namelist input: main program (``shdom90.f90``); ``nmlMode = .True.`` (by default
 calls ``shdUtil_io__nmlInput`` and ``nmlMode = .True.`` calls ``shdUtil_io__userInput``.
 
 NetCDF property file input: main program (``shdom90.f90``); Comment out
-calls to ``READ_PROPERTY_SIZE``, and ``READ_PROPERTIES`` and uncomment calls to
+calls to ``shdUtil_io__readPropSize``, and ``shdUtil_io__readProp`` and uncomment calls to
 ``read_property_size_netcdf`` and ``read_properties_netcdf``.  Use the ``makefile``
 to compile with the netcdf library.
 
@@ -1998,9 +1998,9 @@ routines from NCAR.
 
    3 0 shdUtil_io__checkInputParams: Checks input parameters for validity/reasonableness
 
-   3 0 READ_PROPERTY_SIZE   Gets the size of the property file
+   3 0 shdUtil_io__readPropSize: Gets the size of the property file
 
-   3 0 READ_PROPERTIES      Reads the property file
+   3 0 shdUtil_io__readProp: Reads the property file
 
    3 0 CHECK_PROPERTY_INPUT Checks the values read in from the property file
 

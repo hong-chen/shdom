@@ -18,12 +18,14 @@ module shdUtil_io
   public :: shdUtil_io__userInput
   public :: shdUtil_io__nmlInput
   public :: shdUtil_io__checkInputParams
+  public :: shdUtil_io__readPropSize
+  public :: shdUtil_io__readProp
 
   !public :: shdUtil_io__outputData
   !public :: shdUtil_io__outputDesc
   !╰────────────────────────────────────────────────╯!
 
-  contains
+contains
 
 subroutine shdUtil_io__userInput(&
     &RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
@@ -465,7 +467,6 @@ subroutine shdUtil_io__checkInputParams(&
     ! Check for reasonable range of GNDTEMP and valid range of GNDALBEDO
     ! Check for SOLARMU=0.
     ! Check for NPHI<NMU.
-    implicit none
     integer NMU, NPHI
     logical DELTAM
     real MAXASYM, SOLARFLUX, SOLARMU, WAVENO(2), WAVELEN
@@ -534,15 +535,12 @@ subroutine shdUtil_io__checkInputParams(&
     return
 end subroutine shdUtil_io__checkInputParams
 
-end module shdUtil_io
-
-subroutine READ_PROPERTY_SIZE(PROPFILE, NSTLEG, NLEG, NPX, NPY, NPZ,&
-    & NUMPHASE, MAXLEG, MAXPGL, DELX, DELY)
+subroutine shdUtil_io__readPropSize(PROPFILE, NSTLEG, NLEG, NPX, NPY, NPZ,&
+    &NUMPHASE, MAXLEG, MAXPGL, DELX, DELY)
     ! Reads parts of the property file to get the maximum array sizes
     ! needed for allocatable arrays.  For extinction only and tabulated
     ! phase function formats, only the header is read, while for the
     ! standard format, the whole file must be read to determine MAXLEG.
-    implicit none
     integer NSTLEG, NPX, NPY, NPZ
     integer NUMPHASE, NLEG, MAXLEG, MAXPGL
     real DELX, DELY
@@ -607,9 +605,9 @@ subroutine READ_PROPERTY_SIZE(PROPFILE, NSTLEG, NLEG, NPX, NPY, NPZ,&
     end if
     close (1)
     return
-end subroutine
+end subroutine shdUtil_io__readPropSize
 
-subroutine READ_PROPERTIES(&
+subroutine shdUtil_io__readProp(&
     & PROPFILE, NPX, NPY, NPZ,&
     & NSTLEG, MAXLEG, NLEG, MAXNZ, MAXPG, MAXPGL, DELTAM,&
     & PROPTYPE, DELX, DELY, ZLEVELS, MAXASYM,&
@@ -818,7 +816,10 @@ subroutine READ_PROPERTIES(&
 290 continue
     close (1)
     return
-end subroutine
+end subroutine shdUtil_io__readProp
+
+end module shdUtil_io
+
 
 subroutine CHECK_PROPERTY_INPUT(&
     & NPX, NPY, NPZ, NSTLEG, NLEG,&
