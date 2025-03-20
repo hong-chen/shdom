@@ -15,7 +15,8 @@ end module shdom_arr
 program SHDOM
     use shdom_arr
     use shdom_nc
-    use shdUtil_io
+    use shdUtil_inp
+    use shdUtil_out
     implicit none
     ! Number of output files and inputs parameter per file
     integer, parameter :: MAXOUT = 20, MAXPAR = 500

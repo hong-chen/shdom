@@ -1141,9 +1141,9 @@ with MPI is:
 .. code-block:: bash
 
    mpif90 -O2 -o shdom  shdom.f90 shdom_mpi.f90 shdom_nonetcdf.f90 \
-             shdSolv_1.f90 shdSolv_2.f90 shdUtil_io.f90 shdSfc_ocean.f90 _fftpack.f
+             shdSolv_1.f90 shdSolv_2.f90 shdUtil_inp.f90 shdUtil_out.f90 fftpack.f90
 
-   mpirun -np 4  shdom90 < shdom.inp
+   mpirun -np 4  shdom shdom.inp
 
 where shdom.inp has the user input parameters and ``-np 4`` specifies
 that four processors will be used.  The MPI shared memory device (e.g.
@@ -1342,7 +1342,7 @@ to compile with the netcdf library.
 
 Adding surface reflection types: in ``shdSolv_2.f90`` write a BRDF Fortran
 function modeled on ``RPV_REFLECTION`` and add a call in ``SURFACE_BRDF`` to the
-new function.  In ``shdUtil_io.f90`` modify subroutine ``shdUtil_io__readSurf`` by adding a
+new function.  In ``shdUtil_inp.f90`` modify subroutine ``shdUtil_io__readSurf`` by adding a
 block to read in the new surface type parameters.
 
 Discrete ordinate angle set: SOLVE_RTE (``shdSolv_1.f90``); The ``ORDINATESET``
@@ -1809,12 +1809,12 @@ LIST OF ROUTINES
 
 The following is a list of all the subroutines, where they are, and
 what they do.  The first column gives the file (0 is ``shdom.f90``,
-1 is ``shdSolv_1.f90``, 2 is ``shdSolv_2.f90``, 3 is ``shdUtil_io.f90``,
-M is ``shdom_mpi.f90``, F is ``_fftpack.f``).  The second column indicates
+1 is ``shdSolv_1.f90``, 2 is ``shdSolv_2.f90``, 3 is ``shdUtil_inp.f90`` and ``shdUtil_out.f90``,
+M is ``shdom_mpi.f90``, F is ``fftpack.f90``).  The second column indicates
 the calling routine.
 The major solving routines are in ``shdSolv_1.f90``, other routines are in
-``shdSolv_2.f90``, all the regular I/O routines are in ``shdUtil_io.f90``,
-the MPI calling routines are in ``shdom_mpi.f90``, and ``_fftpack.f`` has the FFTPACK
+``shdSolv_2.f90``, all the regular I/O routines are in ``shdUtil_inp.f90`` and ``shdUtil_out.f90``,
+the MPI calling routines are in ``shdom_mpi.f90``, and ``fftpack.f90`` has the FFTPACK
 routines from NCAR.
 
 .. code-block::
