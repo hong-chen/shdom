@@ -265,7 +265,7 @@ program SHDOM
 
     if (MASTERPROC) then
         ! Check input parameters
-        call CHECK_INPUT_PARAMETERS(NMU, NPHI, DELTAM, MAXASYM, &
+        call shdUtil_io__checkInputParams(NMU, NPHI, DELTAM, MAXASYM, &
                                     GRIDTYPE, SRCTYPE, UNITS, SOLARFLUX, SOLARMU, &
                                     WAVENO, WAVELEN, GNDTEMP, GNDALBEDO, &
                                     SPLITACC, SHACC)

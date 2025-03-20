@@ -17,6 +17,7 @@ module shdUtil_io
   !╭────────────────────────────────────────────────╮!
   public :: shdUtil_io__userInput
   public :: shdUtil_io__nmlInput
+  public :: shdUtil_io__checkInputParams
 
   !public :: shdUtil_io__outputData
   !public :: shdUtil_io__outputDesc
@@ -36,7 +37,6 @@ subroutine shdUtil_io__userInput(&
     &OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
     &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
 
-    use globals
     ! Obtains the input parameters for the program by writing prompts
     ! to and reading responses from the terminal.  Echos the inputs to
     ! make a useful log file when running non-interactively.  See the ov
@@ -292,7 +292,6 @@ subroutine shdUtil_io__nmlInput(&
     ! read from stdin.  See the overall program documentation for the
     ! list of input parameters.  The subroutine dummy variables can't
     ! be in the namelist, hence the two sets of variables.
-    use globals
 
     integer dMAXOUT, dMAXPAR
     integer dNSTOKES, dNX, dNY, dNZ, dNMU, dNPHI
@@ -451,13 +450,12 @@ subroutine shdUtil_io__nmlInput(&
 
     return
 end subroutine shdUtil_io__nmlInput
-end module shdUtil_io
 
-subroutine CHECK_INPUT_PARAMETERS(&
-    & NMU, NPHI, DELTAM, MAXASYM,&
-    & GRIDTYPE, SRCTYPE, UNITS, SOLARFLUX, SOLARMU,&
-    & WAVENO, WAVELEN, GNDTEMP, GNDALBEDO,&
-    & SPLITACC, SHACC)
+subroutine shdUtil_io__checkInputParams(&
+    &NMU, NPHI, DELTAM, MAXASYM,&
+    &GRIDTYPE, SRCTYPE, UNITS, SOLARFLUX, SOLARMU,&
+    &WAVENO, WAVELEN, GNDTEMP, GNDALBEDO,&
+    &SPLITACC, SHACC)
     ! Checks for validity of the input parameters. Gives warning for
     ! parameters that might not be correct.
     ! Check the letter flags.
@@ -476,11 +474,11 @@ subroutine CHECK_INPUT_PARAMETERS(&
     real FLUX
 
     if (SRCTYPE .ne. 'S' .and. SRCTYPE .ne. 'T' .and. SRCTYPE .ne. 'B')&
-        & stop 'Error [CHECK_INPUT_PARMETERS]: Illegal source type.'
+        &stop 'Error [CHECK_INPUT_PARMETERS]: Illegal source type.'
     if (UNITS .ne. 'R' .and. UNITS .ne. 'T' .and. UNITS .ne. 'B')&
-        & stop 'Error [CHECK_INPUT_PARMETERS]: Illegal units.'
+        &stop 'Error [CHECK_INPUT_PARMETERS]: Illegal units.'
     if (GRIDTYPE .ne. 'E' .and. GRIDTYPE .ne. 'P' .and. GRIDTYPE .ne. 'F')&
-        & stop 'Error [CHECK_INPUT_PARMETERS]: Illegal grid type.'
+        &stop 'Error [CHECK_INPUT_PARMETERS]: Illegal grid type.'
 
     if (SRCTYPE .ne. 'T' .and. SOLARMU .eq. 0.0) then
         write (*, *) 'Error [CHECK_INPUT_PARMETERS]: Cosine solar zenith angle'
@@ -506,7 +504,7 @@ subroutine CHECK_INPUT_PARAMETERS(&
         FLUX = FLUX + SOLARFLUX
     end if
     if (SPLITACC .gt. 0.0 .and.&
-        & (SPLITACC .lt. 0.001*FLUX .or. SPLITACC .gt. 0.1*FLUX)) then
+        &(SPLITACC .lt. 0.001*FLUX .or. SPLITACC .gt. 0.1*FLUX)) then
         write (*, *) 'Warning [CHECK_INPUT_PARMETERS]: Splitting accuracy parameter'
         write (*, *) ' is not a fraction, but scales with fluxes'
         write (*, *)
@@ -518,7 +516,7 @@ subroutine CHECK_INPUT_PARAMETERS(&
     end if
 
     if (SRCTYPE .ne. 'S' .and.&
-        & (GNDTEMP .lt. 150. .or. GNDTEMP .gt. 350.)) then
+        &(GNDTEMP .lt. 150. .or. GNDTEMP .gt. 350.)) then
         write (*, *) 'Warning [CHECK_INPUT_PARMETERS]: '
         write (*, *) '  ground temperature out of Earth range.'
         write (*, *)
@@ -534,7 +532,9 @@ subroutine CHECK_INPUT_PARAMETERS(&
     end if
 
     return
-end subroutine
+end subroutine shdUtil_io__checkInputParams
+
+end module shdUtil_io
 
 subroutine READ_PROPERTY_SIZE(PROPFILE, NSTLEG, NLEG, NPX, NPY, NPZ,&
     & NUMPHASE, MAXLEG, MAXPGL, DELX, DELY)
@@ -2754,28 +2754,28 @@ subroutine OUTPUT_IMAGE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
         else
             if (SRCTYPE .eq. 'B') then
                 write (BUF(I:I + 79), '(A,F9.7,A,F8.3,A,E12.5,A1)')&
-                    & '# GROUND_ALBEDO=', GNDALBEDO, '  GROUND_TEMP=', GNDTEMP,&
-                    & '  SKY_RAD=', SKYRAD, LF
+                    &'# GROUND_ALBEDO=', GNDALBEDO, '  GROUND_TEMP=', GNDTEMP,&
+                    &'  SKY_RAD=', SKYRAD, LF
                 I = I + index(BUF(I:I + 79), LF)
             else
                 write (BUF(I:I + 79), '(A,F9.7,A,E12.5,A1)')&
-                    & '# GROUND_ALBEDO=', GNDALBEDO, '  SKY_RAD=', SKYRAD, LF
+                    &'# GROUND_ALBEDO=', GNDALBEDO, '  SKY_RAD=', SKYRAD, LF
                 I = I + index(BUF(I:I + 79), LF)
             end if
         end if
         write (BUF(I:I + 79), '(A,E13.6,A,F10.7,A,F8.3,A1)')&
-            & '# SOLAR_FLUX=', SOLARFLUX, '   SOLAR_MU=', SOLARMU,&
-            & '   SOLAR_AZ=', SOLARAZ*180.0/acos(-1.0), LF
+            &'# SOLAR_FLUX=', SOLARFLUX, '   SOLAR_MU=', SOLARMU,&
+            &'   SOLAR_AZ=', SOLARAZ*180.0/acos(-1.0), LF
         I = I + index(BUF(I:I + 79), LF)
     else
         if (SFCTYPE(1:1) .eq. 'V') then
             write (BUF(I:I + 79), '(A,A,A1)')&
-                & '# SURFACE_FILE=', trim(SFCFILE), LF
+                &'# SURFACE_FILE=', trim(SFCFILE), LF
             I = I + index(BUF(I:I + 79), LF)
         else
             write (BUF(I:I + 79), '(A,F8.3,A,F9.7,A1)')&
-                & '# GROUND_TEMP=', GNDTEMP,&
-                & '  GROUND_EMIS=', 1.0 - GNDALBEDO, LF
+                &'# GROUND_TEMP=', GNDTEMP,&
+                &'  GROUND_EMIS=', 1.0 - GNDALBEDO, LF
             I = I + index(BUF(I:I + 79), LF)
         end if
         write (BUF(I:I + 79), '(A,F8.3,A1)') '# SKY_TEMP=', SKYRAD, LF
@@ -2787,24 +2787,24 @@ subroutine OUTPUT_IMAGE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
         I = I + index(BUF(I:I + 79), LF)
     else if (UNITS .eq. 'B') then
         write (BUF(I:I + 79), '(A,A24,A,2(1X,F10.2),A1)')&
-            & '# UNITS=', UNITSNAME,&
-            & '   WAVENUMBER_RANGE=', WAVENO(1), WAVENO(2), LF
+            &'# UNITS=', UNITSNAME,&
+            &'   WAVENUMBER_RANGE=', WAVENO(1), WAVENO(2), LF
         I = I + index(BUF(I:I + 79), LF)
     else
         write (BUF(I:I + 79), '(A,A24,A,F10.2,A1)')&
-            & '# UNITS=', UNITSNAME, '   WAVELENGTH=', WAVELEN, LF
+            &'# UNITS=', UNITSNAME, '   WAVELENGTH=', WAVELEN, LF
         I = I + index(BUF(I:I + 79), LF)
     end if
     write (BUF(I:I + 79), '(2(A,E10.3),A1)')&
-        & '# SPLITTING_ACCURACY=', SPLITACC,&
-        & '   SPHERICAL_HARMONIC_ACCURACY=', SHACC, LF
+        &'# SPLITTING_ACCURACY=', SPLITACC,&
+        &'   SPHERICAL_HARMONIC_ACCURACY=', SHACC, LF
     I = I + index(BUF(I:I + 79), LF)
     write (BUF(I:I + 79), '(A,E10.3,A1)')&
-        & '# SOLUTION_ACCURACY=', SOLACC, LF
+        &'# SOLUTION_ACCURACY=', SOLACC, LF
     I = I + index(BUF(I:I + 79), LF)
     write (BUF(I:I + 79), '(2(A,I4),A1)')&
-        & '# MAXIMUM_ITERATIONS=', MAXITER,&
-        & '   NUMBER_ITERATIONS=', TOTITER, LF
+        &'# MAXIMUM_ITERATIONS=', MAXITER,&
+        &'   NUMBER_ITERATIONS=', TOTITER, LF
     I = I + index(BUF(I:I + 79), LF)
     write (BUF(I:I + 7), '(A,A1)') '# ', LF
     I = I + index(BUF(I:I + 7), LF)
@@ -2814,63 +2814,63 @@ subroutine OUTPUT_IMAGE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
         I = I + index(BUF(I:I + 79), LF)
         ! 1, bytes, scale, X,Y,Z, theta, phi, rotang, NL, NS, delline,
         write (BUF(I:I + 79), '(A,F9.2,A1)')&
-            & '# RADIANCE_SCALE=', OUTPARMS(3), LF
+            &'# RADIANCE_SCALE=', OUTPARMS(3), LF
         I = I + index(BUF(I:I + 79), LF)
         write (BUF(I:I + 79), '(A,3(1X,F9.3),A1)') '# CAMERA_LOCATION=',&
-            & OUTPARMS(4), OUTPARMS(5), OUTPARMS(6), LF
+            &OUTPARMS(4), OUTPARMS(5), OUTPARMS(6), LF
         I = I + index(BUF(I:I + 79), LF)
         write (BUF(I:I + 79), '(A,F10.5,A1)')&
-            & '# CAMERA_ZENITH_ANGLE=', OUTPARMS(7), LF
+            &'# CAMERA_ZENITH_ANGLE=', OUTPARMS(7), LF
         I = I + index(BUF(I:I + 79), LF)
         write (BUF(I:I + 79), '(A,F10.5,A1)')&
-            & '# CAMERA_AZIMUTH_ANGLE=', OUTPARMS(8), LF
+            &'# CAMERA_AZIMUTH_ANGLE=', OUTPARMS(8), LF
         I = I + index(BUF(I:I + 79), LF)
         write (BUF(I:I + 79), '(A,F10.5,A1)')&
-            & '# CAMERA_ROTATION_ANGLE=', OUTPARMS(9), LF
+            &'# CAMERA_ROTATION_ANGLE=', OUTPARMS(9), LF
         I = I + index(BUF(I:I + 79), LF)
         write (BUF(I:I + 79), '(A,I5,A1)')&
-            & '# CAMERA_NUMBER_LINES=', nint(OUTPARMS(10)), LF
+            &'# CAMERA_NUMBER_LINES=', nint(OUTPARMS(10)), LF
         I = I + index(BUF(I:I + 79), LF)
         write (BUF(I:I + 79), '(A,I5,A1)')&
-            & '# CAMERA_NUMBER_SAMPLES=', nint(OUTPARMS(11)), LF
+            &'# CAMERA_NUMBER_SAMPLES=', nint(OUTPARMS(11)), LF
         I = I + index(BUF(I:I + 79), LF)
         write (BUF(I:I + 79), '(A,F8.5,A1)')&
-            & '# CAMERA_LINE_SPACING_ANGLE=', OUTPARMS(12), LF
+            &'# CAMERA_LINE_SPACING_ANGLE=', OUTPARMS(12), LF
         I = I + index(BUF(I:I + 79), LF)
         write (BUF(I:I + 79), '(A,F8.5,A1)')&
-            & '# CAMERA_SAMPLE_SPACING_ANGLE=', OUTPARMS(13), LF
+            &'# CAMERA_SAMPLE_SPACING_ANGLE=', OUTPARMS(13), LF
         I = I + index(BUF(I:I + 79), LF)
 
     else
         write (BUF(I:I + 79), '(A,A1)')&
-            & '# CROSS TRACK SCANNING MODE:', LF
+            &'# CROSS TRACK SCANNING MODE:', LF
         I = I + index(BUF(I:I + 79), LF)
         ! 2, bytes, scale, X1,Y1,Z1, X2,Y2,Z2, spacing, scan1, scan2, d
         write (BUF(I:I + 79), '(A,F9.2,A1)')&
-            & '# RADIANCE_SCALE=', OUTPARMS(3), LF
+            &'# RADIANCE_SCALE=', OUTPARMS(3), LF
         I = I + index(BUF(I:I + 79), LF)
         write (BUF(I:I + 79), '(A,3(1X,F9.3),A1)') '# START_LOCATION=',&
-            & OUTPARMS(4), OUTPARMS(5), OUTPARMS(6), LF
+            &OUTPARMS(4), OUTPARMS(5), OUTPARMS(6), LF
         I = I + index(BUF(I:I + 79), LF)
         write (BUF(I:I + 79), '(A,3(1X,F9.3),A1)') '# END_LOCATION=',&
-            & OUTPARMS(7), OUTPARMS(8), OUTPARMS(9), LF
+            &OUTPARMS(7), OUTPARMS(8), OUTPARMS(9), LF
         I = I + index(BUF(I:I + 79), LF)
         write (BUF(I:I + 79), '(A,F8.4,A1)')&
-            & '# SPACING_ON_TRACK=', OUTPARMS(10), LF
+            &'# SPACING_ON_TRACK=', OUTPARMS(10), LF
         I = I + index(BUF(I:I + 79), LF)
         write (BUF(I:I + 79), '(A,F8.3,A1)')&
-            & '# START_SCAN_ANGLE=', OUTPARMS(11), LF
+            &'# START_SCAN_ANGLE=', OUTPARMS(11), LF
         I = I + index(BUF(I:I + 79), LF)
         write (BUF(I:I + 79), '(A,F8.3,A1)')&
-            & '# END_SCAN_ANGLE=', OUTPARMS(12), LF
+            &'# END_SCAN_ANGLE=', OUTPARMS(12), LF
         I = I + index(BUF(I:I + 79), LF)
         write (BUF(I:I + 79), '(A,F7.4,A1)')&
-            & '# SCAN_ANGLE_SPACING=', OUTPARMS(13), LF
+            &'# SCAN_ANGLE_SPACING=', OUTPARMS(13), LF
         I = I + index(BUF(I:I + 79), LF)
     end if
     do M = 1, NSTOKES
         write (BUF(I:I + 79), VISFORM(M)) '# ', trim(POLNAMES(M)),&
-            & '_RANGE_IN_PIXEL=', VISMIN(M), VISMAX(M), LF
+            &'_RANGE_IN_PIXEL=', VISMIN(M), VISMAX(M), LF
         I = I + index(BUF(I:I + 79), LF)
     end do
 
