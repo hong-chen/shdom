@@ -27,21 +27,9 @@ module shdUtil_out
 
 contains
 
-subroutine shdUtil_io__outputRad(&
-    &NSTOKES, NX, NY, NZ, NBPTS, NPTS, NCELLS,&
-    &NSH, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
-    &NMU, NPHI, NANG, NG,&
-    &PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
-    &BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
-    &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
-    &SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS,&
-    &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
-    &XGRID, YGRID, ZGRID, GRIDPOS,&
-    &TREEPTR, GRIDPTR, CELLFLAGS,&
-    &EXTINCT, ALBEDO, LEGEN, IPHASE, TEMP,&
-    &FLUXES, DIRFLUX, FLUXDIV,&
-    &IRAD, RADOUT, NSHOUT, SHTERMS, SOURCE1OUT,&
-    &OUTTYPE, OUTPARMS, OUTFILE)
+subroutine shdUtil_io__outputData(&
+    &DATA_OUT, NVAR, NSET, NX, NY, NZ,&
+    &OUTFILE_DATA)
     !   Writes the desired type of output file from the output fields
     ! with a header giving the input parameters.
     ! There are five types (OUTTYPE) of output: 'R' - for radiance,
@@ -50,89 +38,40 @@ subroutine shdUtil_io__outputRad(&
     ! medium properties.
     ! See the overall program documentation for output parameters.
 
-    integer NSTOKES, NX, NY, NZ, NBPTS, NPTS, NCELLS, NSH
-    integer ML, MM, NLM, NSTLEG, NLEG, NUMPHASE, NMU, NPHI, NANG, NG
-    integer BCFLAG, IPFLAG
-    integer MAXITER, TOTITER, IRAD, NSHOUT
-    integer TREEPTR(2, NCELLS), GRIDPTR(8, NCELLS)
-    integer*2 CELLFLAGS(NCELLS), IPHASE(NPTS)
-    logical DELTAM
-    real SOLARFLUX, SOLARMU, SOLARAZ
-    real GNDTEMP, GNDALBEDO, SKYRAD
-    real SOLACC, SPLITACC, SHACC
-    real WAVENO(2), WAVELEN
-    real XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ), GRIDPOS(3, NPTS)
-    real OUTPARMS(*)
-    character SRCTYPE*1, SFCTYPE*2, UNITS*1, GRIDTYPE*1, OUTTYPE*1
-    character(256) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
-    character(256) :: OUTFILE
-    real EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, NPTS)
-    real TEMP(NPTS)
-    real FLUXES(2, NPTS), DIRFLUX(NPTS), FLUXDIV(NPTS)
-    real RADOUT(NSTOKES, *), SHTERMS(NSHOUT, NPTS)
-    real SOURCE1OUT(NSTOKES, *)
+    integer, intent(in) :: NVAR, NSET, NX, NY, NZ
+    real, intent(in)    :: DATA_OUT(NVAR, NVAR*NSET*NZ*NY*NX)
+    character(*), intent(in) :: OUTFILE_DATA
+    integer :: ivar, iset, ix, iy, iz, idata, istat
 
-    integer IZ, I, K, N, NX2, NY2, J, JX, JY, ICELL
-    integer NANGOUT, NXOUT, NYOUT
-    logical ALLGRID
-    real MUOUT, PHID, C, PI, SUM, SUM1, SUM2, SUM3
-    real XDOMAIN, YDOMAIN, STARTX, STARTY
-    real FUP, FDN, FDIR, ASYM
-    double precision X0, Y0, Z0
-    character*128 FORM
-    character*128 GRIDNAME, SOURCENAME, UNITSNAME, OUTNAME, SFCNAME
+    open (UNIT=88, FILE=trim(adjustl(OUTFILE_DATA)), STATUS='REPLACE', form='UNFORMATTED', access='STREAM', iostat=istat)
 
-    ! Radiance output
-    XDOMAIN = XGRID(NX + 1 - ibits(BCFLAG, 0, 1)) - XGRID(1) + 2*OUTPARMS(4)
-    STARTX = -OUTPARMS(4)
-    if (OUTPARMS(2) .eq. 0.0) then
-        NXOUT = 1
-    else
-        NXOUT = max(1, nint(XDOMAIN/OUTPARMS(2)))
-    end if
+    if (istat .eq. 0) then
 
-    YDOMAIN = YGRID(NY + 1 - ibits(BCFLAG, 1, 1)) - YGRID(1) + 2*OUTPARMS(5)
-    STARTY = -OUTPARMS(5)
-    if (OUTPARMS(3) .eq. 0.0) then
-        NYOUT = 1
-    else
-        NYOUT = max(1, nint(YDOMAIN/OUTPARMS(3)))
-    end if
+        idata = 0
 
-    Z0 = min(max(OUTPARMS(1), ZGRID(1)), ZGRID(NZ))
-
-    NANGOUT = nint(OUTPARMS(6))
-
-    write (2, '(A,F7.3,3(A,I4))') '!    RADIANCE AT Z=', Z0,&
-        & '    NXO=', NXOUT, '    NYO=', NYOUT, '    NDIR=', NANGOUT
-    if (UNITS .eq. 'T') then
-        FORM = '(2(1X,F7.3),1X,4(1X,F6.2))'
-        write (2, '(A)')&
-            & '!   X       Y       RADIANCE (STOKES I, Q, U, V)'
-    else
-        FORM = '(2(1X,F7.3),1X,4(1X,E12.5))'
-        write (2, '(A)')&
-            & '!   X       Y        RADIANCE (STOKES I, Q, U, V)'
-    end if
-
-    do K = 1, NANGOUT
-        MUOUT = OUTPARMS(2*K + 5)
-        PHID = OUTPARMS(2*K + 6)
-        write (2, '(A,1X,F8.5,1X,F7.2,2X,A)')&
-            & '! ', MUOUT, PHID, '<- (mu,phi)'
-        Y0 = STARTY
-        do JY = 1, NYOUT
-            X0 = STARTX
-            do JX = 1, NXOUT
-                IRAD = IRAD + 1
-                write (2, FORM) X0, Y0, RADOUT(:, IRAD)
-                X0 = X0 + OUTPARMS(2)
+        do ivar = 1, NVAR
+          do iset = 1, NSET
+            do iz = 1, NZ
+              do iy = 1, NY
+                do ix = 1, NX
+                    idata = idata + 1
+                    write (88) DATA_OUT(ivar, idata)
+                end do
+              end do
             end do
-            Y0 = Y0 + OUTPARMS(3)
+          end do
         end do
-    end do
 
-end subroutine shdUtil_io__outputRad
+        close(88, iostat=istat)
+        write(*, '(A)') 'Message [shdUtil_io__outputData]: Data saved at <'//trim(adjustl(OUTFILE_DATA))//'>.'
+    else
+        write(*, '(A)') 'Error [shdUtil_io__outputData]: Failed to open file <'//trim(adjustl(OUTFILE_DATA))//'>.'
+        stop
+    end if
+
+    return
+
+end subroutine shdUtil_io__outputData
 
 subroutine shdUtil_io__outputResult(&
     &NSTOKES, NX, NY, NZ, NBPTS, NPTS, NCELLS,&
@@ -172,7 +111,7 @@ subroutine shdUtil_io__outputResult(&
     real OUTPARMS(*)
     character SRCTYPE*1, SFCTYPE*2, UNITS*1, GRIDTYPE*1, OUTTYPE*1
     character(256) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
-    character(256) :: OUTFILE
+    character(256) :: OUTFILE, OUTFILE_DATA
     real EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, NPTS)
     real TEMP(NPTS)
     real FLUXES(2, NPTS), DIRFLUX(NPTS), FLUXDIV(NPTS)
@@ -180,7 +119,7 @@ subroutine shdUtil_io__outputResult(&
     real SOURCE1OUT(NSTOKES, *)
 
     integer IZ, I, K, N, NX2, NY2, J, JX, JY, ICELL
-    integer NANGOUT, NXOUT, NYOUT
+    integer NANGOUT, NXOUT, NYOUT, NZOUT
     logical ALLGRID
     real MUOUT, PHID, C, PI, SUM, SUM1, SUM2, SUM3
     real XDOMAIN, YDOMAIN, STARTX, STARTY
@@ -188,6 +127,8 @@ subroutine shdUtil_io__outputResult(&
     double precision X0, Y0, Z0
     character*128 FORM
     character*128 GRIDNAME, SOURCENAME, UNITSNAME, OUTNAME, SFCNAME
+
+    OUTFILE_DATA = trim(adjustl(OUTFILE))//'.dat'
 
     GRIDNAME = 'EVEN (X,Y)  '
     if (GRIDTYPE .eq. 'P') then
@@ -325,6 +266,8 @@ subroutine shdUtil_io__outputResult(&
         !call shdUtil_io__outputRad()
 
         ! Radiance output
+        ! NXOUT
+        !╭────────────────────────────────────────────────╮!
         XDOMAIN = XGRID(NX + 1 - ibits(BCFLAG, 0, 1)) - XGRID(1) + 2*OUTPARMS(4)
         STARTX = -OUTPARMS(4)
         if (OUTPARMS(2) .eq. 0.0) then
@@ -332,7 +275,10 @@ subroutine shdUtil_io__outputResult(&
         else
             NXOUT = max(1, nint(XDOMAIN/OUTPARMS(2)))
         end if
+        !╰────────────────────────────────────────────────╯!
 
+        ! NYOUT
+        !╭────────────────────────────────────────────────╮!
         YDOMAIN = YGRID(NY + 1 - ibits(BCFLAG, 1, 1)) - YGRID(1) + 2*OUTPARMS(5)
         STARTY = -OUTPARMS(5)
         if (OUTPARMS(3) .eq. 0.0) then
@@ -340,37 +286,55 @@ subroutine shdUtil_io__outputResult(&
         else
             NYOUT = max(1, nint(YDOMAIN/OUTPARMS(3)))
         end if
+        !╰────────────────────────────────────────────────╯!
+
+        ! Z0
+        !╭────────────────────────────────────────────────╮!
         Z0 = min(max(OUTPARMS(1), ZGRID(1)), ZGRID(NZ))
+        NZOUT = 1
+        !╰────────────────────────────────────────────────╯!
+
+        ! NANGOUT
+        !╭────────────────────────────────────────────────╮!
         NANGOUT = nint(OUTPARMS(6))
+        !╰────────────────────────────────────────────────╯!
 
         write (2, '(A,F7.3,3(A,I4))') '!    RADIANCE AT Z=', Z0,&
-            & '    NXO=', NXOUT, '    NYO=', NYOUT, '    NDIR=', NANGOUT
+            &'    NXO=', NXOUT, '    NYO=', NYOUT, '    NDIR=', NANGOUT
         if (UNITS .eq. 'T') then
             FORM = '(2(1X,F7.3),1X,4(1X,F6.2))'
             write (2, '(A)')&
-                & '!   X       Y       RADIANCE (STOKES I, Q, U, V)'
+                &'!   X       Y       RADIANCE (STOKES I, Q, U, V)'
         else
             FORM = '(2(1X,F7.3),1X,4(1X,E12.5))'
             write (2, '(A)')&
-                & '!   X       Y        RADIANCE (STOKES I, Q, U, V)'
+                &'!   X       Y       RADIANCE (STOKES I, Q, U, V)'
         end if
 
-        do K = 1, NANGOUT
-            MUOUT = OUTPARMS(2*K + 5)
-            PHID = OUTPARMS(2*K + 6)
-            write (2, '(A,1X,F8.5,1X,F7.2,2X,A)')&
-                & '! ', MUOUT, PHID, '<- (mu,phi)'
-            Y0 = STARTY
-            do JY = 1, NYOUT
-                X0 = STARTX
-                do JX = 1, NXOUT
-                    IRAD = IRAD + 1
-                    write (2, FORM) X0, Y0, RADOUT(:, IRAD)
-                    X0 = X0 + OUTPARMS(2)
-                end do
-                Y0 = Y0 + OUTPARMS(3)
-            end do
-        end do
+        write (2, '(A)') '! '//trim(adjustl(OUTFILE_DATA))
+        write (2, '(A, 5(I6,A))') '! ', NSTOKES, ',', NANGOUT, ',', NXOUT, ',', NYOUT, ',', NZOUT, ''
+
+        close(2)
+        write(*, '(A)') 'Message [shdUtil_io__outputResult]: Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+
+        call shdUtil_io__outputData(RADOUT, NSTOKES, NANGOUT, NXOUT, NYOUT, NZOUT, OUTFILE_DATA)
+
+        !do K = 1, NANGOUT
+        !    MUOUT = OUTPARMS(2*K + 5)
+        !    PHID = OUTPARMS(2*K + 6)
+        !    !write (2, '(A,1X,F8.5,1X,F7.2,2X,A)')&
+        !    !    & '! ', MUOUT, PHID, '<- (mu,phi)'
+        !    Y0 = STARTY
+        !    do JY = 1, NYOUT
+        !        X0 = STARTX
+        !        do JX = 1, NXOUT
+        !            IRAD = IRAD + 1
+        !            write (2, FORM) X0, Y0, RADOUT(:, IRAD)
+        !            X0 = X0 + OUTPARMS(2)
+        !        end do
+        !        Y0 = Y0 + OUTPARMS(3)
+        !    end do
+        !end do
 
     else if (OUTTYPE .eq. 'F') then
         ! Hemispheric flux output

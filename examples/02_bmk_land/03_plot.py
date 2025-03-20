@@ -35,7 +35,8 @@ rcParams['font.size'] = 24
 #╰────────────────────────────────────────────────────────────────────────────╯#
 
 
-def get_data_shdom_out_txt(
+
+def get_data_shdom_out_txt_ori(
         fname,
         verbose=True,
         ):
@@ -94,6 +95,42 @@ def get_data_shdom_out_txt(
 
     if verbose:
         print('%s (Ndata, Ndir, Nx, Ny, Nz): %s' % (output_type.title(), data.shape))
+        print('╰────────────────────────────────────────────────────────────────────────────╯')
+
+    return data
+
+
+def get_data_shdom_out_txt(
+        fname,
+        verbose=True,
+        ):
+
+    if verbose:
+        print('Reading SHDOM output file:\n <%s> ...' % os.path.abspath(fname))
+        print('╭────────────────────────────────────────────────────────────────────────────╮')
+
+    with open(fname, 'r') as f:
+        headers = f.readlines()
+
+    # output data variable
+    #╭────────────────────────────────────────────────────────────────────────────╮#
+    Nline_output_type = [i for i in range(len(headers)) if ('OUTPUT_TYPE=' in headers[i])][0]
+    output_type = headers[Nline_output_type].split('=')[-1].lower().strip()
+    #╰────────────────────────────────────────────────────────────────────────────╯#
+
+    # data shape
+    #╭────────────────────────────────────────────────────────────────────────────╮#
+    Nvar, Nset, Nx, Ny, Nz = [int(num_s.strip()) for num_s in headers[-1].replace('!', '').split(',')]
+    #╰────────────────────────────────────────────────────────────────────────────╯#
+
+    # read binary data
+    #╭────────────────────────────────────────────────────────────────────────────╮#
+    fname_data = headers[-2].replace('!', '').strip()
+    data = np.fromfile(fname_data, dtype='<f4').reshape((Nvar, Nset, Nx, Ny, Nz))
+    #╰────────────────────────────────────────────────────────────────────────────╯#
+
+    if verbose:
+        print('%s (Nvar, Nset, Nx, Ny, Nz): %s' % (output_type.title(), data.shape))
         print('╰────────────────────────────────────────────────────────────────────────────╯')
 
     return data
