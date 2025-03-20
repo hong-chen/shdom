@@ -114,7 +114,7 @@ program SHDOM
                 MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS, OUTFILES,&
                 OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
                 NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
-        else:
+        else
             call shdUtil_io__userInput(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
                 INSAVEFILE, OUTSAVEFILE,&
                 NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
