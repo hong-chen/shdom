@@ -86,6 +86,8 @@ program SHDOM
     character*256 :: OutFileNC, RUNNAME
     external :: SUM_CPU_TIME
 
+    logical :: nmlMode = .True.
+
     ! Choose the option to compute higher order radiance SH terms
     HIGHORDERRAD = .false.
     NSHOUT = 4
@@ -101,26 +103,29 @@ program SHDOM
     call START_MPI(MASTERPROC)
 
     if (MASTERPROC) then
-        !call shdUtil_io__userInput(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
-        !               INSAVEFILE, OUTSAVEFILE,&
-        !               NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
-        !               IPFLAG, KDIST, DELTAM, GRIDTYPE,&
-        !               SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
-        !               GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,&
-        !               ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
-        !               MAXOUT,MAXPAR, NUMOUT,OUTTYPES,OUTPARMS,OUTFILES,&
-        !               OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
-        !               NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
-        call shdUtil_io__nmlInput(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
-                            INSAVEFILE, OUTSAVEFILE,&
-                            NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
-                            IPFLAG, KDIST, DELTAM, GRIDTYPE,&
-                            SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
-                            GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,&
-                            ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
-                            MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS, OUTFILES,&
-                            OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
-                            NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
+        if (nmlMode) then
+            call shdUtil_io__nmlInput(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
+                INSAVEFILE, OUTSAVEFILE,&
+                NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
+                IPFLAG, KDIST, DELTAM, GRIDTYPE,&
+                SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+                GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,&
+                ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
+                MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS, OUTFILES,&
+                OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
+                NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
+        else:
+            call shdUtil_io__userInput(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
+                INSAVEFILE, OUTSAVEFILE,&
+                NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
+                IPFLAG, KDIST, DELTAM, GRIDTYPE,&
+                SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+                GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,&
+                ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
+                MAXOUT,MAXPAR, NUMOUT,OUTTYPES,OUTPARMS,OUTFILES,&
+                OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
+                NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
+        end if
     end if
 
     call BROADCAST_USER_INPUT(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
