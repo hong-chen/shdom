@@ -111,7 +111,7 @@ subroutine shdUtil_io__outputResult(&
     real OUTPARMS(*)
     character SRCTYPE*1, SFCTYPE*2, UNITS*1, GRIDTYPE*1, OUTTYPE*1
     character(256) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
-    character(256) :: OUTFILE, OUTFILE_DATA
+    character(256) :: OUTFILE
     real EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, NPTS)
     real TEMP(NPTS)
     real FLUXES(2, NPTS), DIRFLUX(NPTS), FLUXDIV(NPTS)
@@ -128,7 +128,11 @@ subroutine shdUtil_io__outputResult(&
     character*128 FORM
     character*128 GRIDNAME, SOURCENAME, UNITSNAME, OUTNAME, SFCNAME
 
-    OUTFILE_DATA = trim(adjustl(OUTFILE))//'.dat'
+    character(256) :: OUTFILE_DATA
+    character(10)  :: DATA_POSTFIX
+
+    DATA_POSTFIX = '.dat'
+    OUTFILE_DATA = trim(adjustl(OUTFILE))//trim(adjustl(DATA_POSTFIX))
 
     GRIDNAME = 'EVEN (X,Y)  '
     if (GRIDTYPE .eq. 'P') then
@@ -308,10 +312,12 @@ subroutine shdUtil_io__outputResult(&
                 &'!   X       Y       RADIANCE (STOKES I, Q, U, V)'
         end if
 
-        write (2, '(A)') '! '//trim(adjustl(OUTFILE_DATA))
-        write (2, '(A, 5(I6,A))') '! ', NSTOKES, ',', NANGOUT, ',', NXOUT, ',', NYOUT, ',', NZOUT, ''
+        write (2, '(A)') '! The following contains information for binary data intepretation:'
+        write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
+        write (2, '(A, 5(I6,A))') '! ', NXOUT, ',', NYOUT, ',', NZOUT, ',', NANGOUT, ',', NSTOKES, ''
 
         close(2)
+
         write(*, '(A)') 'Message [shdUtil_io__outputResult]: Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
 
         call shdUtil_io__outputData(RADOUT, NSTOKES, NANGOUT, NXOUT, NYOUT, NZOUT, OUTFILE_DATA)
@@ -334,11 +340,20 @@ subroutine shdUtil_io__outputResult(&
         !end do
 
     else if (OUTTYPE .eq. 'F') then
-        ! Hemispheric flux output
+
+        if (UNITS .eq. 'T') then
+            C = 1.0 / PI
+        else
+            C = 1.0
+        end if
+
+        ! Hemispheric flux output, F1
         !   Format 1 is flux at top and bottom of medium at grid point
         if (nint(OUTPARMS(1)) .le. 1) then
+
             write (2, '(A,F7.3)') '!    UPWELLING FLUX:     Z=', ZGRID(NZ)
             write (2, '(A,F7.3)') '!    DOWNWELLING FLUX:   Z=', ZGRID(1)
+
             if (UNITS .eq. 'T') then
                 FORM = '(2(1X,F7.3),1X,2(2X,F6.2))'
                 write (2, '(A)') '!   X       Y        UP     DOWN'
@@ -352,8 +367,7 @@ subroutine shdUtil_io__outputResult(&
                     write (2, '(A)') '!   X       Y           UP           DOWN'
                 end if
             end if
-            C = 1.0
-            if (UNITS .eq. 'T') C = 1.0/PI
+
             do I = 1, NBPTS, NZ
                 if (GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.&
                     & GRIDPOS(2, I) .lt. YGRID(NY + 1)) then
@@ -368,6 +382,7 @@ subroutine shdUtil_io__outputResult(&
             end do
 
         else if (nint(OUTPARMS(1)) .eq. 2) then
+
             ! Format 2 is flux at a given level at regular locations
             Z0 = min(max(OUTPARMS(2), ZGRID(1)), ZGRID(NZ))
             if (OUTPARMS(3) .eq. 0.0) OUTPARMS(3) = 1.0
@@ -392,8 +407,7 @@ subroutine shdUtil_io__outputResult(&
                     write (2, '(A)') '!   X       Y           UP           DOWN'
                 end if
             end if
-            C = 1.0
-            if (UNITS .eq. 'T') C = 1.0/PI
+
             Y0 = YGRID(1)
             do JY = 1, NYOUT
                 X0 = XGRID(1)
@@ -432,8 +446,7 @@ subroutine shdUtil_io__outputResult(&
                     write (2, '(A)') '!    Z          UP           DOWN'
                 end if
             end if
-            C = 1.0
-            if (UNITS .eq. 'T') C = 1.0/PI
+
             do IZ = 1, NZ
                 SUM1 = 0.0
                 SUM2 = 0.0
@@ -456,6 +469,7 @@ subroutine shdUtil_io__outputResult(&
             end do
 
         else if (nint(OUTPARMS(1)) .ge. 4) then
+
             ! Format 4 is fluxes at every base grid point
             ! Format 5 is fluxes at every grid point
             if (nint(OUTPARMS(1)) .eq. 5) then
@@ -479,8 +493,7 @@ subroutine shdUtil_io__outputResult(&
                         & '!   X       Y       Z           UP           DOWN'
                 end if
             end if
-            C = 1.0
-            if (UNITS .eq. 'T') C = 1.0/PI
+
             do I = 1, N
                 if ((GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.&
                     & GRIDPOS(2, I) .lt. YGRID(NY + 1)) .or. ALLGRID) then
