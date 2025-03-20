@@ -39,7 +39,7 @@ subroutine shdUtil_io__outputData(&
     ! See the overall program documentation for output parameters.
 
     integer, intent(in) :: NVAR, NSET, NX, NY, NZ
-    real, intent(in)    :: DATA_OUT(NVAR, NVAR*NSET*NZ*NY*NX)
+    real, intent(in)    :: DATA_OUT(NVAR, *)
     character(*), intent(in) :: OUTFILE_DATA
     integer :: ivar, iset, ix, iy, iz, idata, istat
 
@@ -47,9 +47,8 @@ subroutine shdUtil_io__outputData(&
 
     if (istat .eq. 0) then
 
-        idata = 0
-
         do ivar = 1, NVAR
+          idata = 0
           do iset = 1, NSET
             do iz = 1, NZ
               do iy = 1, NY
