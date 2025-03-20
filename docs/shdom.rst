@@ -1342,7 +1342,7 @@ to compile with the netcdf library.
 
 Adding surface reflection types: in ``shdSolv_2.f90`` write a BRDF Fortran
 function modeled on ``RPV_REFLECTION`` and add a call in ``SURFACE_BRDF`` to the
-new function.  In ``shdUtil_io.f90`` modify subroutine ``READ_SURFACE`` by adding a
+new function.  In ``shdUtil_io.f90`` modify subroutine ``shdUtil_io__readSurf`` by adding a
 block to read in the new surface type parameters.
 
 Discrete ordinate angle set: SOLVE_RTE (``shdSolv_1.f90``); The ``ORDINATESET``
@@ -2002,29 +2002,29 @@ routines from NCAR.
 
    3 0 shdUtil_io__readProp: Reads the property file
 
-   3 0 CHECK_PROPERTY_INPUT Checks the values read in from the property file
+   3 0 shdUtil_io__checkPropInput: Checks the values read in from the property file
 
-   3 0 READ_SURFACE_SIZE    Gets the size of the surfae file
+   3 0 shdUtil_io__readSurfSize: Gets the size of the surfae file
 
-   3 0 READ_SURFACE         Reads the surface file
+   3 0 shdUtil_io__readSurf: Reads the surface file
 
-   3 0 READ_CKD_SIZE        Gets the size of the k-distribution file
+   3 0 shdUtil_io__readCkdSize: Gets the size of the k-distribution file
 
-   3 0 READ_CKD             Reads the correlated k-distribution file
+   3 0 shdUtil_io__readCkd: Reads the correlated k-distribution file
 
-   3 0 RESTORE_STATE        Reads the binary state file
+   3 0 shdUtil_io__restoreState: Reads the binary state file
 
-   3 0 SAVE_STATE           Writes the binary state file
+   3 0 shdUtil_io__saveState: Writes the binary state file
 
-   3 S OUTPUT_CELL_SPLIT    Outputs the cell splitting criterion for every cell
+   3 S shdUtil_io__outputCellSplit: Outputs the cell splitting criterion for every cell
 
-   3 S VISUALIZE_CELLS      Outputs GLE graphics of cell structure
+   3 S shdUtil_io__plotCell: Outputs GLE graphics of cell structure
 
-   3 0 OUTPUT_RESULTS       Selects and outputs the results
+   3 0 shdUtil_io__outputResult: Selects and outputs the results
 
-   3 0 OUTPUT_RESULTS_PAR   Outputs results when using MPI
+   3 0 shdUtil_io__outputResultMpi: Outputs results when using MPI
 
-   3 0 OUTPUT_IMAGE         Outputs the visualization PGM images with labels
+   3 0 shdUtil_io__outputImg: Outputs the visualization PGM images with labels
 
    M 0 START_MPI            Initializes the MPI system
 

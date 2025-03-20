@@ -242,7 +242,7 @@ program SHDOM
                 stop
             end if
             ! Check values of medium properties
-            call CHECK_PROPERTY_INPUT(NPXT, NPYT, NPZ, NSTLEG, NLEG, &
+            call shdUtil_io__checkPropInput(NPXT, NPYT, NPZ, NSTLEG, NLEG, &
                                       DELX, DELY, ZLEVELS, &
                                       TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, NUMPHASE, IPHASEPT)
         end if
@@ -263,7 +263,7 @@ program SHDOM
 !                                    PROPTYPE, ZLEVELS, MAXASYM,          &
 !                                    TEMPP, EXTINCTP, ALBEDOP, LEGENP, IPHASEP)
         ! Check values of medium properties
-        call CHECK_PROPERTY_INPUT(NPX, NPY, NPZ, NSTLEG, NLEG, &
+        call shdUtil_io__checkPropInput(NPX, NPY, NPZ, NSTLEG, NLEG, &
                                   DELX, DELY, ZLEVELS, &
                                   TEMPP, EXTINCTP, ALBEDOP, LEGENP, NUMPHASE, IPHASEP)
     end if
@@ -347,13 +347,13 @@ program SHDOM
         SFCTYPE = 'FL'
     else
         if (MASTERPROC) then
-            call READ_SURFACE_SIZE(SFCFILE, MAXSFCPTS, MAXSFCPARS)
+            call shdUtil_io__readSurfSize(SFCFILE, MAXSFCPTS, MAXSFCPARS)
         end if
         ! Broadcast the surface array sizes
         call BROADCAST_SURFACE_SIZE(MAXSFCPTS, MAXSFCPARS)
         allocate (SFCPARMS(MAXSFCPARS*MAXSFCPTS))
         if (MASTERPROC) then
-            call READ_SURFACE(SFCFILE, MAXSFCPTS, MAXSFCPARS, &
+            call shdUtil_io__readSurf(SFCFILE, MAXSFCPTS, MAXSFCPARS, &
                               SFCTYPE, NXSFC, NYSFC, DELXSFC, DELYSFC, &
                               NSFCPAR, SFCPARMS, GNDTEMP, GNDALBEDO)
         end if
@@ -372,14 +372,14 @@ program SHDOM
     ! If doing a k-distribution then get the band info from the CKD file
     if (KDIST) then
         if (MASTERPROC) then
-            call READ_CKD_SIZE(CKDFILE, WAVENO, NG, NZCKD)
+            call shdUtil_io__readCkdSize(CKDFILE, WAVENO, NG, NZCKD)
         end if
         ! Broadcast the k-distribution array sizes
         call BROADCAST_KDIST_SIZE(NG, NZCKD)
         allocate (ZCKD(NZCKD), GASABS(NZCKD), DELG(NG), KABS(NZCKD, NG))
         if (MASTERPROC) then
             MAXNG = NG; MAXNZ = NZCKD
-            call READ_CKD(MAXNG, MAXNZ, CKDFILE, WAVENO, SOLFLUX, &
+            call shdUtil_io__readCkd(MAXNG, MAXNZ, CKDFILE, WAVENO, SOLFLUX, &
                           NG, DELG, NZCKD, ZCKD, KABS)
         end if
         call BROADCAST_KDIST_PARMS(SOLFLUX, NG, DELG, NZCKD, ZCKD, KABS)
@@ -487,7 +487,7 @@ program SHDOM
     end if
 
     ! Read in previous run from binary file if desired
-    call RESTORE_STATE(INSAVEFILE, NSTOKES, NX, NY, NZ, ML, MM, NLM, &
+    call shdUtil_io__restoreState(INSAVEFILE, NSTOKES, NX, NY, NZ, ML, MM, NLM, &
                        INRADFLAG, NEWGRIDFLAG, XGRID, YGRID, ZGRID, &
                        NPTS, NCELLS, GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR, &
                        CELLFLAGS, FLUXES, SHPTR, SOURCE, RSHPTR, RADIANCE)
@@ -668,7 +668,7 @@ program SHDOM
         OLDNPTS = NPTS
     end do
 
-    call SAVE_STATE(OUTSAVEFILE, NSTOKES, NX, NY, NZ, ML, MM, NLM, &
+    call shdUtil_io__saveState(OUTSAVEFILE, NSTOKES, NX, NY, NZ, ML, MM, NLM, &
                     WORK, XGRID, YGRID, ZGRID, &
                     NPTS, NCELLS, GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR, &
                     CELLFLAGS, FLUXES, SHPTR, SOURCE, RSHPTR, RADIANCE)
@@ -703,7 +703,7 @@ program SHDOM
         if (MASTERPROC) then
             do I = 1, NUMOUT
                 if (OUTTYPES(I) /= 'V' .and. OUTFILES(I) /= 'NONE') then
-                    call OUTPUT_RESULTS_PAR(NSTOKES, NXT, NYT, NZ, &
+                    call shdUtil_io__outputResultMpi(NSTOKES, NXT, NYT, NZ, &
                                             NPTSTOT, NCELLSTOT, NSHTOT, &
                                             ML, MM, NLM, NMU, NPHI, NANG, NG, &
                                             PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE, &
@@ -740,7 +740,7 @@ program SHDOM
 
         do I = 1, NUMOUT
             if (OUTTYPES(I) /= 'V' .and. OUTFILES(I) /= 'NONE') then
-                call OUTPUT_RESULTS(NSTOKES, NX, NY, NZ, NBPTS, NPTS, NCELLS, &
+                call shdUtil_io__outputResult(NSTOKES, NX, NY, NZ, NBPTS, NPTS, NCELLS, &
                                     NSH, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE, NMU, NPHI, NANG, NG, &
                                     PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE, &
                                     BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE, &
@@ -787,7 +787,7 @@ program SHDOM
     if (MASTERPROC) then
         do I = 1, NUMOUT
             if (OUTTYPES(I) == 'V') then
-                call OUTPUT_IMAGE(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
+                call shdUtil_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
                                   NSH, ML, MM, NLM, NMU, NPHI, NANG, NG, &
                                   PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE, &
                                   BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE, &

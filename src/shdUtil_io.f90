@@ -17,9 +17,27 @@ module shdUtil_io
   !╭────────────────────────────────────────────────╮!
   public :: shdUtil_io__userInput
   public :: shdUtil_io__nmlInput
+
   public :: shdUtil_io__checkInputParams
+
   public :: shdUtil_io__readPropSize
   public :: shdUtil_io__readProp
+  public :: shdUtil_io__checkPropInput
+
+  public :: shdUtil_io__readSurfSize
+  public :: shdUtil_io__readSurf
+
+  public :: shdUtil_io__readCkdSize
+  public :: shdUtil_io__readCkd
+
+  public :: shdUtil_io__restoreState
+  public :: shdUtil_io__saveState
+
+  public :: shdUtil_io__outputCellSplit
+  public :: shdUtil_io__plotCell
+  public :: shdUtil_io__outputResult
+  public :: shdUtil_io__outputResultMpi
+  public :: shdUtil_io__outputImg
 
   !public :: shdUtil_io__outputData
   !public :: shdUtil_io__outputDesc
@@ -629,7 +647,7 @@ subroutine shdUtil_io__readProp(&
     ! it may not exceed MAXLEG; otherwise NLEG is the number of Legendre
     ! terms to be used (regardless of what is in property file).
     ! See the overall program documentation for the four file formats.
-    implicit none
+
     integer NPX, NPY, NPZ, NSTLEG, MAXLEG, NLEG, NUMPHASE
     integer MAXNZ, MAXPG, MAXPGL
     integer*2 IPHASEP(*)
@@ -818,10 +836,8 @@ subroutine shdUtil_io__readProp(&
     return
 end subroutine shdUtil_io__readProp
 
-end module shdUtil_io
 
-
-subroutine CHECK_PROPERTY_INPUT(&
+subroutine shdUtil_io__checkPropInput(&
     & NPX, NPY, NPZ, NSTLEG, NLEG,&
     & DELX, DELY, ZLEVELS,&
     & TEMPP, EXTINCTP, ALBEDOP, LEGENP, NUMPHASE, IPHASEP)
@@ -832,7 +848,7 @@ subroutine CHECK_PROPERTY_INPUT(&
     ! out of range (of tabulated phase functions).
     ! Warning if Chi1=1, for people specifying Chi0.
     ! Warning if optical depth across a grid cell exceeds 2.
-    implicit none
+
     integer NPX, NPY, NPZ, NSTLEG, NLEG, NUMPHASE
     integer*2 IPHASEP(*)
     real DELX, DELY, ZLEVELS(*)
@@ -936,12 +952,13 @@ subroutine CHECK_PROPERTY_INPUT(&
     end if
 
     return
-end subroutine
+end subroutine shdUtil_io__checkPropInput
 
-subroutine READ_SURFACE_SIZE(SFCFILE, MAXSFCPTS, MAXSFCPARS)
+
+subroutine shdUtil_io__readSurfSize(SFCFILE, MAXSFCPTS, MAXSFCPARS)
     ! Gets the size of the surface property inputs (temperature is
     ! always included).
-    implicit none
+
     integer MAXSFCPTS, MAXSFCPARS
     character(256) :: SFCFILE
     integer NXSFC, NYSFC
@@ -980,9 +997,9 @@ subroutine READ_SURFACE_SIZE(SFCFILE, MAXSFCPTS, MAXSFCPARS)
     end if
     close (1)
     return
-end subroutine
+end subroutine shdUtil_io__readSurfSize
 
-subroutine READ_SURFACE(&
+subroutine shdUtil_io__readSurf(&
     & SFCFILE, MAXSFCPTS, MAXSFCPARS,&
     & SFCTYPE, NXSFC, NYSFC, DELXSFC, DELYSFC,&
     & NSFCPAR, SFCPARMS, GNDTEMP, GNDALBEDO)
@@ -1006,8 +1023,7 @@ subroutine READ_SURFACE(&
     !   D  Diner et al   a, k, b, zeta, sigma
     !   R  RPV           rho0, k, Theta
     !   T  LSRT          f_iso, f_vol, f_geo
-    !
-    implicit none
+
     integer MAXSFCPTS, MAXSFCPARS, NXSFC, NYSFC, NSFCPAR
     real DELXSFC, DELYSFC
     real SFCPARMS(*), GNDTEMP, GNDALBEDO
@@ -1202,11 +1218,11 @@ subroutine READ_SURFACE(&
     GNDALBEDO = GNDALBEDO/N
     GNDTEMP = GNDTEMP/N
     return
-end subroutine
+end subroutine shdUtil_io__readSurf
 
-subroutine READ_CKD_SIZE(CKDFILE, WAVENO, NG, NZCKD)
+subroutine shdUtil_io__readCkdSize(CKDFILE, WAVENO, NG, NZCKD)
     ! Find the size of the k-distribution arrays for this wavenumber b
-    implicit none
+
     integer NG, NZCKD
     real WAVENO(2)
     character(256) :: CKDFILE
@@ -1236,9 +1252,9 @@ subroutine READ_CKD_SIZE(CKDFILE, WAVENO, NG, NZCKD)
     read (1, *) NZCKD
     close (1)
     return
-end subroutine
+end subroutine shdUtil_io__readCkdSize
 
-subroutine READ_CKD(&
+subroutine shdUtil_io__readCkd(&
     & MAXNG, MAXNZ, CKDFILE, WAVENO, SOLFLUX,&
     & NG, DELG, NZCKD, ZCKD, KABS)
     ! Reads the information appropriate for one band from a
@@ -1249,7 +1265,7 @@ subroutine READ_CKD(&
     ! levels from the top down in ZCKD, and the absorption coefficients
     ! for each g and level in KABS.  The array sizes MAXNG and MAXNZ
     ! are checked.
-    implicit none
+
     integer MAXNG, MAXNZ, NG, NZCKD
     real WAVENO(2), SOLFLUX, DELG(*), ZCKD(*), KABS(*)
     character(256) :: CKDFILE
@@ -1303,9 +1319,9 @@ subroutine READ_CKD(&
     end do
     close (1)
     return
-end subroutine
+end subroutine shdUtil_io__readCkd
 
-subroutine RESTORE_STATE(&
+subroutine shdUtil_io__restoreState(&
     & INSAVEFILE, NSTOKES, NX, NY, NZ,&
     & ML, MM, NLM, INRADFLAG, NEWGRIDFLAG, XGRID, YGRID, ZGRID,&
     & NPTS, NCELLS, GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR,&
@@ -1318,7 +1334,7 @@ subroutine RESTORE_STATE(&
     ! otherwise it is true.  The input file may have any spherical
     ! harmonic truncation smaller than the current (ML,MM,NLM).
     ! The flag NEWGRIDFLAG is set to false if reading succeeds.
-    implicit none
+
     integer NSTOKES, NX, NY, NZ, ML, MM, NLM, NPTS, NCELLS
     integer SHPTR(*), RSHPTR(*)
     integer GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
@@ -1380,9 +1396,9 @@ subroutine RESTORE_STATE(&
     INRADFLAG = .false.
     NEWGRIDFLAG = .true.
     return
-end subroutine
+end subroutine shdUtil_io__restoreState
 
-subroutine SAVE_STATE(&
+subroutine shdUtil_io__saveState(&
     & OUTSAVEFILE, NSTOKES, NX, NY, NZ,&
     & ML, MM, NLM, WORK, XGRID, YGRID, ZGRID,&
     & NPTS, NCELLS, GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR,&
@@ -1392,7 +1408,7 @@ subroutine SAVE_STATE(&
     ! the spherical harmonic expansion of the source function,
     ! the low order terms of the radiance expansion, and the flux array.
     ! If the file name is 'NONE' then no file is written.
-    implicit none
+
     integer NSTOKES, NX, NY, NZ, ML, MM, NLM, NPTS, NCELLS
     integer SHPTR(NPTS + 1), RSHPTR(NPTS)
     integer GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
@@ -1436,15 +1452,15 @@ subroutine SAVE_STATE(&
 
     close (3)
     return
-end subroutine
+end subroutine shdUtil_io__saveState
 
-subroutine OUTPUT_CELL_SPLIT(&
+subroutine shdUtil_io__outputCellSplit(&
     & OUTFILE, GRIDPTR, GRIDPOS, EXTINCT,&
     & SHPTR, SOURCE, NCELLS)
     ! Outputs the final cell splitting criterion for each grid cell
     ! and direction (X,Y,Z).  Calls CELL_SPLIT_TEST.
     ! Mainly for debugging purposes.
-    implicit none
+
     integer NCELLS
     integer SHPTR(*), GRIDPTR(8, *)
     real GRIDPOS(3, *), EXTINCT(*), SOURCE(*)
@@ -1479,19 +1495,20 @@ subroutine OUTPUT_CELL_SPLIT(&
 
     close (9)
     return
-end subroutine
+end subroutine shdUtil_io__outputCellSplit
 
-subroutine VISUALIZE_CELLS(&
+subroutine shdUtil_io__plotCell(&
     & OUTFILE, YVAL, OUTTYPE,&
     & IPFLAG, NX, XDOMAIN, ZDOMAIN,&
     & NCELLS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, GRIDPOS)
+
     ! Visualizes the cell structure by outputting GLE code to draw
     ! a diagram of the cells in the XZ plane.  Only the end cells are
     ! output.  The outlines of the cells are drawn, and arrows between
     ! the cell centers show the neighbor relationships.
     ! OUTTYPE=0 for cell outlines only, OUTTYPE=1 for cells and arrows.
     ! There is a special output for IP mode.
-    implicit none
+
     integer OUTTYPE, IPFLAG, NX, NCELLS
     integer GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
     integer*2 CELLFLAGS(*)
@@ -1608,9 +1625,9 @@ subroutine VISUALIZE_CELLS(&
 
     close (9)
     return
-end subroutine
+end subroutine shdUtil_io__plotCell
 
-subroutine OUTPUT_RESULTS(&
+subroutine shdUtil_io__outputResult(&
     & NSTOKES, NX, NY, NZ, NBPTS, NPTS, NCELLS,&
     & NSH, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
     & NMU, NPHI, NANG, NG,&
@@ -1632,7 +1649,7 @@ subroutine OUTPUT_RESULTS(&
     ! convergence), 'S' - for spherical harmonic terms, and 'M' for
     ! medium properties.
     ! See the overall program documentation for output parameters.
-    implicit none
+
     integer NSTOKES, NX, NY, NZ, NBPTS, NPTS, NCELLS, NSH
     integer ML, MM, NLM, NSTLEG, NLEG, NUMPHASE, NMU, NPHI, NANG, NG
     integer BCFLAG, IPFLAG
@@ -2139,9 +2156,9 @@ subroutine OUTPUT_RESULTS(&
 
     close (2)
     return
-end subroutine
+end subroutine shdUtil_io__outputResult
 
-subroutine OUTPUT_RESULTS_PAR(&
+subroutine shdUtil_io__outputResultMpi(&
     & NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     & NSH, ML, MM, NLM, NMU, NPHI, NANG, NG,&
     & PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
@@ -2158,7 +2175,7 @@ subroutine OUTPUT_RESULTS_PAR(&
     ! 'F' - for hemispheric flux, 'H' - for heating rate (net flux
     ! convergence), 'S' - for spherical harmonic terms
     ! See the overall program documentation for output parameters.
-    implicit none
+
     integer NSTOKES, NX, NY, NZ, NPTS, NCELLS, NSH
     integer ML, MM, NLM, NMU, NPHI, NANG, NG
     integer BCFLAG, IPFLAG
@@ -2543,9 +2560,9 @@ subroutine OUTPUT_RESULTS_PAR(&
 
     close (2)
     return
-end subroutine
+end subroutine shdUtil_io__outputResultMpi
 
-subroutine OUTPUT_IMAGE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+subroutine shdUtil_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     & NSH, ML, MM, NLM, NMU, NPHI, NANG, NG,&
     & PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
     & BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
@@ -2558,7 +2575,7 @@ subroutine OUTPUT_IMAGE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     ! ascii header which has the image parameters amd can include commen
     ! (here the SHDOM input parameters), followed by the byte or two byt
     ! image pixels.
-    implicit none
+
     integer NSTOKES, NX, NY, NZ, NPTS, NCELLS, NSH
     integer ML, MM, NLM, NMU, NPHI, NANG, NG
     integer BCFLAG, IPFLAG
@@ -2934,4 +2951,6 @@ subroutine OUTPUT_IMAGE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     deallocate (BUFFER1)
     close (2)
     return
-end subroutine
+end subroutine shdUtil_io__outputImg
+
+end module shdUtil_io

@@ -318,13 +318,13 @@ subroutine SOLVE_RTE(&
     deallocate (CMU1, CMU2, CPHI1, CPHI2)
 
     ! Comment in for GLE graphics output of cell structure (see rou
-    ! call VISUALIZE_CELLS('cellfinal.gle', YGRID(1), 1, IPFLAG, &
+    ! call shdUtil_io__plotCell('cellfinal.gle', YGRID(1), 1, IPFLAG, &
     !     & NX, XGRID(NX+1)-XGRID(1), ZGRID(NZ)-ZGRID(1), &
     !     & NCELLS, GRIDPTR, NEIGHPTR, TREEPTR, &
     !     & CELLFLAGS, GRIDPOS)
 
     ! Comment in for output of cell splitting criterion for every c
-    ! call OUTPUT_CELL_SPLIT ('cellsplit.dat',GRIDPTR, &
+    ! call shdUtil_io_outputCellSplit ('cellsplit.dat',GRIDPTR, &
     !     & GRIDPOS, EXTINCT, SHPTR, SOURCE, NCELLS)
 
     return
