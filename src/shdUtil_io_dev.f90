@@ -2,7 +2,7 @@
 !╭──────────────────────────────────────────────────────────────╮!
 !╰──────────────────────────────────────────────────────────────╯!
 
-module shdUtil
+module shdUtil_io
 
   implicit none
   private
@@ -12,7 +12,7 @@ module shdUtil
   ! R : radiance, Nang, Nx, Ny, Nz=1
   ! V1: camera mode
   ! V2: cross track
-  ! F1: irradiance, 
+  ! F1: irradiance,
   !╰────────────────────────────────────────────────╯!
 
   ! public modules
@@ -23,7 +23,7 @@ module shdUtil
 
 contains
 
-  subroutine shdUtil__outputDataRad()
+subroutine shdUtil__outputDataRad()
     integer :: i, j, k
 
     ! R Nx, Ny, Nz=1, NANGOUT
@@ -76,9 +76,9 @@ contains
     end do
     return
 
-  end subroutine shdUtil__outputDataRad()
+end subroutine shdUtil__outputDataRad()
 
-  subroutine shdUtil__outputDataFlx()
+subroutine shdUtil__outputDataFlx()
     integer :: i, j, k
 
     ! Hemispheric flux output
@@ -243,9 +243,9 @@ contains
     end if
 
     return
-  end subroutine shdUtil__outputDataFlx()
+end subroutine shdUtil__outputDataFlx()
 
-  subroutine shdUtil__outputData(&
+subroutine shdUtil__outputData(&
     & NSTOKES, NX, NY, NZ, NBPTS, NPTS, NCELLS,&
     & NSH, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
     & NMU, NPHI, NANG, NG,&
@@ -982,4 +982,5 @@ subroutine shdUtil__outputDesc(&
     close (2)
     return
 end subroutine
-end module
+
+end module shdUtil_io
