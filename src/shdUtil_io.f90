@@ -1,20 +1,46 @@
-subroutine USER_INPUT(&
-    & RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
-    & INSAVEFILE, OUTSAVEFILE,&
-    & NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
-    & IPFLAG, KDIST, DELTAM, GRIDTYPE,&
-    & SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
-    & GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,&
-    & ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
-    & MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS, OUTFILES,&
-    & OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
-    & NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
+module shdUtil_io
 
+  use globals
+
+  implicit none
+  private
+
+  ! Output types
+  !╭────────────────────────────────────────────────╮!
+  ! R : radiance, Nang, Nx, Ny, Nz=1
+  ! V1: camera mode
+  ! V2: cross track
+  ! F1: irradiance,
+  !╰────────────────────────────────────────────────╯!
+
+  ! public modules
+  !╭────────────────────────────────────────────────╮!
+  public :: shdUtil_io__userInput
+  public :: shdUtil_io__nmlInput
+
+  !public :: shdUtil_io__outputData
+  !public :: shdUtil_io__outputDesc
+  !╰────────────────────────────────────────────────╯!
+
+  contains
+
+subroutine shdUtil_io__userInput(&
+    &RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
+    &INSAVEFILE, OUTSAVEFILE,&
+    &NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
+    &IPFLAG, KDIST, DELTAM, GRIDTYPE,&
+    &SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+    &GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,&
+    &ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
+    &MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS, OUTFILES,&
+    &OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
+    &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
+
+    use globals
     ! Obtains the input parameters for the program by writing prompts
     ! to and reading responses from the terminal.  Echos the inputs to
     ! make a useful log file when running non-interactively.  See the ov
     ! program documentation for the list of input parameters.
-    implicit none
     integer NSTOKES, NX, NY, NZ, NMU, NPHI
     integer BCFLAG, IPFLAG
     integer MAXITER, MAXOUT, MAXPAR, NUMOUT
@@ -27,8 +53,8 @@ subroutine USER_INPUT(&
     real NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
     character SRCTYPE*1, GRIDTYPE*1, UNITS*1
     character OUTTYPES(*)*1, OUTFILES(*)*256
-    character*256 PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
-    character*256 OutFileNC, RUNNAME
+    character(256) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
+    character(256) :: OutFileNC, RUNNAME
     integer I, J, N
     real GNDEMIS
 
@@ -50,7 +76,7 @@ subroutine USER_INPUT(&
     read (*, '(A)') SFCFILE
     write (*, *) SFCFILE
     write (*, '(1X,A)')&
-        & 'Correlated k-distribution file name (or NONE)'
+        &'Correlated k-distribution file name (or NONE)'
     read (*, '(A)') CKDFILE
     write (*, *) CKDFILE
     KDIST = CKDFILE(1:2) .ne. 'NO'
@@ -62,7 +88,7 @@ subroutine USER_INPUT(&
     write (*, *) OUTSAVEFILE
 
     write (*, '(1X,A)')&
-        & 'Number of Stokes parameters (1, 3, or 4; 1=unpolarized)'
+        &'Number of Stokes parameters (1, 3, or 4; 1=unpolarized)'
     read (*, *) NSTOKES
     write (*, *) NSTOKES
     write (*, '(1X,A)') 'Internal base grid size (Nx, Ny, Nz)'
@@ -72,7 +98,7 @@ subroutine USER_INPUT(&
     read (*, *) NMU, NPHI
     write (*, *) NMU, NPHI
     write (*, '(1X,A)')&
-        & 'Boundary conditions (0=periodic, 3=open)'
+        &'Boundary conditions (0=periodic, 3=open)'
     read (*, *) BCFLAG
     write (*, *) BCFLAG
 
@@ -153,12 +179,12 @@ subroutine USER_INPUT(&
     end if
 
     write (*, '(1X,A)')&
-        & 'Cell splitting and spherical harmonic series accuracy'
+        &'Cell splitting and spherical harmonic series accuracy'
     read (*, *) SPLITACC, SHACC
     write (*, *) SPLITACC, SHACC
 
     write (*, '(1X,A,A)') 'Acceleration flag (T or F), ',&
-        & 'solution accuracy, and max iterations'
+        &'solution accuracy, and max iterations'
     read (*, *) ACCELFLAG, SOLACC, MAXITER
     write (*, *) ACCELFLAG, SOLACC, MAXITER
 
@@ -168,17 +194,17 @@ subroutine USER_INPUT(&
     if (NUMOUT .gt. MAXOUT) stop 'Error [USER_INPUT]: MAXOUT exceeded.'
     do I = 1, NUMOUT
         write (*, '(1X,A,A)') 'Output type (R-radiance, ',&
-            & 'V-visualization, F-flux, H-heating,'
+            &'V-visualization, F-flux, H-heating,'
         write (*, '(14X,A)') 'S-spherical harmonic, J-source, M-medium)'
         read (*, '(A)') OUTTYPES(I)
         write (*, *) OUTTYPES(I)
         if (OUTTYPES(I) (1:1) .eq. 'R') then
             write (*, '(1X,A,A)')&
-                & 'Z level, X and Y spacing, X and Y offset, ',&
-                & 'number of angles, and mu, phi pairs'
+                &'Z level, X and Y spacing, X and Y offset, ',&
+                &'number of angles, and mu, phi pairs'
             read (*, *) OUTPARMS(1, I), OUTPARMS(2, I), OUTPARMS(3, I),&
-                & OUTPARMS(4, I), OUTPARMS(5, I),&
-                & N, (OUTPARMS(J + 6, I), J=1, min(2*N, MAXPAR - 6))
+                &OUTPARMS(4, I), OUTPARMS(5, I),&
+                &N, (OUTPARMS(J + 6, I), J=1, min(2*N, MAXPAR - 6))
             if (N .gt. (MAXPAR - 6)/2) then
                 print *, 'Error [USER_INPUT]: Number of radiance angles is too large for MAXPAR'
                 stop
@@ -188,14 +214,14 @@ subroutine USER_INPUT(&
             write (*, *) (OUTPARMS(J, I), J=1, 2*N + 6)
         else if (OUTTYPES(I) (1:1) .eq. 'V') then
             write (*, '(1X,A,A)')&
-                & '1, bytes,scale, X,Y,Z, theta,phi,rotang, NL,NS, delline,delsamp'
+                &'1, bytes,scale, X,Y,Z, theta,phi,rotang, NL,NS, delline,delsamp'
             write (*, '(1X,A,A)')&
-                & '2, bytes,scale, X1,Y1,Z1, X2,Y2,Z2, spacing, scan1,scan2,delscan'
+                &'2, bytes,scale, X1,Y1,Z1, X2,Y2,Z2, spacing, scan1,scan2,delscan'
             read (*, *) (OUTPARMS(J, I), J=1, 13)
             write (*, *) (OUTPARMS(J, I), J=1, 13)
         else if (OUTTYPES(I) (1:1) .eq. 'F') then
             write (*, '(1X,A)')&
-                & 'Format (1,2,3,4,5), [Z, del X, del Y for format 2]'
+                &'Format (1,2,3,4,5), [Z, del X, del Y for format 2]'
             read (*, *) N, (OUTPARMS(1 + J, I), J=1, 3*max(0, 1 - abs(N - 2)))
             OUTPARMS(1, I) = FLOAT(N)
             if (N .eq. 2) then
@@ -230,27 +256,27 @@ subroutine USER_INPUT(&
     write (*, '(A)') OutFileNC
 
     write (*, '(1X,A)')&
-        & 'Approximate maximum memory to use (MB for 4 byte reals)'
+        &'Approximate maximum memory to use (MB for 4 byte reals)'
     read (*, *) MAX_TOTAL_MB
     write (*, *) MAX_TOTAL_MB
     write (*, '(1X,A)')&
-        & 'Ratio of total grid points to base grid points (1.0 to ~10)'
+        &'Ratio of total grid points to base grid points (1.0 to ~10)'
     read (*, *) ADAPT_GRID_FACTOR
     write (*, *) ADAPT_GRID_FACTOR
     write (*, '(1X,A,A)') 'Ratio of average number of spherical',&
-        & ' harmonic terms to total possible (<=1.0)'
+        &' harmonic terms to total possible (<=1.0)'
     read (*, *) NUM_SH_TERM_FACTOR
     write (*, *) NUM_SH_TERM_FACTOR
     write (*, '(1X,A)')&
-        & 'Ratio of number of grid cells to grid points (1.0 to 2.0)'
+        &'Ratio of number of grid cells to grid points (1.0 to 2.0)'
     read (*, *) CELL_TO_POINT_RATIO
     write (*, *) CELL_TO_POINT_RATIO
 
     write (*, *)
     return
-end subroutine
+end subroutine shdUtil_io__userInput
 
-subroutine NAMELIST_INPUT (&
+subroutine shdUtil_io__nmlInput(&
     &dRUNNAME, dPROPFILE, dSFCFILE, dCKDFILE,&
     &dINSAVEFILE, dOUTSAVEFILE,&
     &dNSTOKES, dNX, dNY, dNZ, dNMU, dNPHI,&
@@ -266,7 +292,8 @@ subroutine NAMELIST_INPUT (&
     ! read from stdin.  See the overall program documentation for the
     ! list of input parameters.  The subroutine dummy variables can't
     ! be in the namelist, hence the two sets of variables.
-    implicit none
+    use globals
+
     integer dMAXOUT, dMAXPAR
     integer dNSTOKES, dNX, dNY, dNZ, dNMU, dNPHI
     integer dBCFLAG, dIPFLAG
@@ -280,9 +307,9 @@ subroutine NAMELIST_INPUT (&
     real dNUM_SH_TERM_FACTOR, dCELL_TO_POINT_RATIO
     character dSRCTYPE*1, dGRIDTYPE*1, dUNITS*1
     character dOUTTYPES(*)*1, dOUTFILES(*)*256
-    character*256 dOutFileNC, dRUNNAME
-    character*256 dPROPFILE, dSFCFILE, dCKDFILE
-    character*256 dINSAVEFILE, dOUTSAVEFILE
+    character(256) :: dOutFileNC, dRUNNAME
+    character(256) :: dPROPFILE, dSFCFILE, dCKDFILE
+    character(256) :: dINSAVEFILE, dOUTSAVEFILE
     integer I, J, N
 
     integer MAXOUT, MAXPAR
@@ -298,19 +325,19 @@ subroutine NAMELIST_INPUT (&
     real OUTPARMS(MAXPAR, MAXOUT)
     character SRCTYPE*1, GRIDTYPE*1, UNITS*1
     character OUTTYPES(MAXOUT)*1, OUTFILES(MAXOUT)*256
-    character*256 PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
-    character*256 OutFileNC, RUNNAME
+    character(256) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
+    character(256) :: OutFileNC, RUNNAME
     namelist /SHDOMINPUT/&
-        & RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
-        & INSAVEFILE, OUTSAVEFILE,&
-        & NSTOKES, NX, NY, NZ, NMU, NPHI,&
-        & BCFLAG, IPFLAG, DELTAM, GRIDTYPE,&
-        & SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
-        & GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,&
-        & ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
-        & NUMOUT, OUTTYPES, OUTPARMS, OUTFILES, OutFileNC,&
-        & MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
-        & NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
+        &RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
+        &INSAVEFILE, OUTSAVEFILE,&
+        &NSTOKES, NX, NY, NZ, NMU, NPHI,&
+        &BCFLAG, IPFLAG, DELTAM, GRIDTYPE,&
+        &SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+        &GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,&
+        &ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
+        &NUMOUT, OUTTYPES, OUTPARMS, OUTFILES, OutFileNC,&
+        &MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
+        &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
 
     character(256) :: NMLFILE
 
@@ -423,7 +450,8 @@ subroutine NAMELIST_INPUT (&
     dCELL_TO_POINT_RATIO = CELL_TO_POINT_RATIO
 
     return
-end subroutine
+end subroutine shdUtil_io__nmlInput
+end module shdUtil_io
 
 subroutine CHECK_INPUT_PARAMETERS(&
     & NMU, NPHI, DELTAM, MAXASYM,&
@@ -518,7 +546,7 @@ subroutine READ_PROPERTY_SIZE(PROPFILE, NSTLEG, NLEG, NPX, NPY, NPZ,&
     integer NSTLEG, NPX, NPY, NPZ
     integer NUMPHASE, NLEG, MAXLEG, MAXPGL
     real DELX, DELY
-    character PROPFILE*256
+    character(256) :: PROPFILE
     integer NUML, IX, IY, IZ, I, J, K, L
     real ZLEVELS, TMP, EXT, ALB, CHI
     character PROPTYPE*1
@@ -611,7 +639,7 @@ subroutine READ_PROPERTIES(&
     real DELX, DELY, ZLEVELS(*)
     real TEMPP(*), EXTINCTP(*)
     real ALBEDOP(*), LEGENP(*), MAXASYM
-    character PROPFILE*256
+    character(256) :: PROPFILE
     character PROPTYPE*1
     integer I, IX, IY, IZ, J, JS, K, KL, L, IL, NUML, IPH, N
     real TMP, EXT, ALB, CHI
@@ -914,7 +942,7 @@ subroutine READ_SURFACE_SIZE(SFCFILE, MAXSFCPTS, MAXSFCPARS)
     ! always included).
     implicit none
     integer MAXSFCPTS, MAXSFCPARS
-    character SFCFILE*256
+    character(256) :: SFCFILE
     integer NXSFC, NYSFC
     character SFCTYPE*2
 
@@ -982,7 +1010,8 @@ subroutine READ_SURFACE(&
     integer MAXSFCPTS, MAXSFCPARS, NXSFC, NYSFC, NSFCPAR
     real DELXSFC, DELYSFC
     real SFCPARMS(*), GNDTEMP, GNDALBEDO
-    character SFCFILE*256, SFCTYPE*2
+    character(256) :: SFCFILE
+    character SFCTYPE*2
     integer N, I, I0, IX, IY, J
     real ALB, TEMP, MRE, MIM, RHO0, KR, THETA, WSPD, PCL
     real F_ISO, F_VOL, F_GEO
@@ -1179,7 +1208,7 @@ subroutine READ_CKD_SIZE(CKDFILE, WAVENO, NG, NZCKD)
     implicit none
     integer NG, NZCKD
     real WAVENO(2)
-    character CKDFILE*256
+    character(256) :: CKDFILE
     integer NB, IB, JB, KB, N
     real WAVENUM1, WAVENUM2, SF
 
@@ -1222,7 +1251,7 @@ subroutine READ_CKD(&
     implicit none
     integer MAXNG, MAXNZ, NG, NZCKD
     real WAVENO(2), SOLFLUX, DELG(*), ZCKD(*), KABS(*)
-    character CKDFILE*256
+    character(256) :: CKDFILE
     integer NB, IB, JB, KB, IG, I, J, N
     real WAVENUM1, WAVENUM2, SF
 
@@ -1296,7 +1325,7 @@ subroutine RESTORE_STATE(&
     logical INRADFLAG, NEWGRIDFLAG
     real XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ)
     real GRIDPOS(3, *), FLUXES(2, *), SOURCE(*), RADIANCE(*)
-    character INSAVEFILE*256
+    character(256) :: INSAVEFILE
     integer NSTI, NXI, NYI, NZI, MLI, MMI, NLMI
     integer I, J, NS, NR
 
@@ -1369,7 +1398,7 @@ subroutine SAVE_STATE(&
     integer*2 CELLFLAGS(NCELLS)
     real XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ), WORK(*)
     real GRIDPOS(3, NPTS), FLUXES(2, NPTS), SOURCE(*), RADIANCE(*)
-    character OUTSAVEFILE*256
+    character(256) :: OUTSAVEFILE
     integer I, J, K, IR, NS, NR
 
     if (OUTSAVEFILE(1:4) .eq. 'NONE') return
@@ -1418,7 +1447,7 @@ subroutine OUTPUT_CELL_SPLIT(&
     integer NCELLS
     integer SHPTR(*), GRIDPTR(8, *)
     real GRIDPOS(3, *), EXTINCT(*), SOURCE(*)
-    character OUTFILE*256
+    character(256) :: OUTFILE
     integer IP1, IP2, ICELL, IDIR
     real ADAPTCRIT(3), MAXADAPT, XC, YC, ZC, EXT
 
@@ -1466,7 +1495,7 @@ subroutine VISUALIZE_CELLS(&
     integer GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
     integer*2 CELLFLAGS(*)
     real YVAL, XDOMAIN, ZDOMAIN, GRIDPOS(3, *)
-    character OUTFILE*256
+    character(256) :: OUTFILE
     integer IC
     integer J, IN
     logical BTEST
@@ -1617,8 +1646,8 @@ subroutine OUTPUT_RESULTS(&
     real XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ), GRIDPOS(3, NPTS)
     real OUTPARMS(*)
     character SRCTYPE*1, SFCTYPE*2, UNITS*1, GRIDTYPE*1, OUTTYPE*1
-    character*256 PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
-    character*256 OUTFILE
+    character(256) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
+    character(256) :: OUTFILE
     real EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, NPTS)
     real TEMP(NPTS)
     real FLUXES(2, NPTS), DIRFLUX(NPTS), FLUXDIV(NPTS)
@@ -2141,8 +2170,8 @@ subroutine OUTPUT_RESULTS_PAR(&
     real XDOMAIN, YDOMAIN, XGRID(NX), YGRID(NY), ZGRID(NZ)
     real OUTPARMS(*)
     character SRCTYPE*1, SFCTYPE*2, UNITS*1, GRIDTYPE*1, OUTTYPE*1
-    character*256 PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
-    character*256 OUTFILE
+    character(256) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
+    character(256) :: OUTFILE
     real FLUXES(3, NZ, NY, NX), FLUXDIV(NZ, NY, NX)
     real RADOUT(NSTOKES, *), SHTERMS(NSHOUT, NZ, NY, NX)
 
@@ -2540,8 +2569,8 @@ subroutine OUTPUT_IMAGE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     real WAVENO(2), WAVELEN
     real OUTPARMS(*)
     character SRCTYPE*1, SFCTYPE*2, UNITS*1, GRIDTYPE*1
-    character*256 PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
-    character*256 OUTFILE
+    character(256) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
+    character(256) :: OUTFILE
     real VISOUT(NSTOKES, *)
 
     integer MAXHEAD, NL, NS, NLOUT, LABRECS, RECLEN, NBYTES

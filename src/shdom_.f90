@@ -15,6 +15,7 @@ end module shdom_arr
 program SHDOM
     use shdom_arr
     use shdom_nc
+    use shdUtil_io
     implicit none
     ! Number of output files and inputs parameter per file
     integer, parameter :: MAXOUT = 20, MAXPAR = 500
@@ -100,7 +101,7 @@ program SHDOM
     call START_MPI(MASTERPROC)
 
     if (MASTERPROC) then
-        call USER_INPUT(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
+        call shdUtil_io__userInput(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
                        INSAVEFILE, OUTSAVEFILE,&
                        NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
                        IPFLAG, KDIST, DELTAM, GRIDTYPE,&
@@ -110,7 +111,7 @@ program SHDOM
                        MAXOUT,MAXPAR, NUMOUT,OUTTYPES,OUTPARMS,OUTFILES,&
                        OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
                        NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
-        !call NAMELIST_INPUT(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
+        !call shdUtil_io__nmlInput(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
         !                    INSAVEFILE, OUTSAVEFILE,&
         !                    NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
         !                    IPFLAG, KDIST, DELTAM, GRIDTYPE,&
