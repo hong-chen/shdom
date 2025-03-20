@@ -66,6 +66,8 @@ subroutine SOLVE_RTE(&
     real, allocatable :: YLMSUN(:, :), WTMU(:), WPHISAVE(:)
     real, allocatable :: SFC_BRDF_DO(:, :, :, :, :, :)
 
+    real :: CPU_TIME_ITER, CPU_TIME_ITER0, CPU_TIME_ITER1
+
     ! Allocate local arrays
     ! NSTLEG=1 for NSTOKES=1, otherwise NSTLEG=6
     allocate (CMU1(NSTLEG, NLM, NMU), CMU2(NSTLEG, NLM, NMU))
@@ -183,6 +185,8 @@ subroutine SOLVE_RTE(&
     end if
 
     ITER = 0
+    call cpu_time(CPU_TIME_ITER0)
+
     if (MAXITER .le. ITER) return
     ! Starting values for the adaptive cell splitting controlling me
     ! The splitting accuracy used at a particular iteration is CURSP
@@ -300,12 +304,17 @@ subroutine SOLVE_RTE(&
         ! If it is a not scattering medium then do only one iteration
         if (ALBMAX .lt. SOLACC) SOLCRIT = SOLACC
 
+        call cpu_time(CPU_TIME_ITER1)
+        CPU_TIME_ITER = CPU_TIME_ITER1 - CPU_TIME_ITER0
+        CPU_TIME_ITER0 = CPU_TIME_ITER1
+
         ! Print out the log solution criterion, number of points,
         !   and average SH truncation.
-        write (6, '(2X,I4,2X,F7.3,2X,E10.3,1X,I8,1X,F8.2,1X,F6.3)')&
+        write (6, '(2X,I4,2X,F7.3,2X,E10.3,1X,I8,1X,F8.2,2X,F6.2," sec")')&
             &ITER, log10(max(SOLCRIT, 1.0e-20)), SPLITCRIT,&
             &NPTS, FLOAT(SHPTR(NPTS + 1))/NPTS,&
-            &FLOAT(SHPTR(NPTS + 1))/(NPTS*NLM)
+            &CPU_TIME_ITER
+            !&FLOAT(SHPTR(NPTS + 1))/(NPTS*NLM)
     end do
 
     write (6, '(A,I4,A,F9.6)') '- Iterations: ', ITER,&
