@@ -262,9 +262,6 @@ subroutine shdUtil_io__outputResult(&
 
     if (OUTTYPE .eq. 'R') then
 
-        !close(2)
-        !call shdUtil_io__outputRad()
-
         ! Radiance output
         ! NXOUT
         !╭────────────────────────────────────────────────╮!
