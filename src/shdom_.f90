@@ -12,7 +12,7 @@ module shdom_arr
     real, save, allocatable :: ZCKD(:), GASABS(:)
 end module shdom_arr
 
-program SHDOM
+program shdom_main
     use shdom_arr
     use shdom_nc
     use shdUtil_inp
@@ -203,7 +203,7 @@ program SHDOM
     NY1 = NY + 1
     if (btest(IPFLAG, 1) .or. btest(BCFLAG, 1) .or. btest(BCFLAG, 3)) NY1 = NY
     if (NZ .le. 1) then
-        write (6, *) 'Error [SHDOM]: NZ < 2.'
+        write (6, *) 'Error [shdom_main]: NZ < 2.'
         stop
     end if
     NBPTS = NX1*NY1*NZ
@@ -288,7 +288,7 @@ program SHDOM
     ! but don't let MAX_TOTAL_MB be exceeded
     if (MAX_TOTAL_MB*1024.0**2 > 1.80*huge(MAXIV)) then
         MAX_TOTAL_MB = 1.80*huge(MAXIV)/1024.0**2
-        write (6, '(A,F10.2)') 'Message [SHDOM]: MAX_TOTAL_MB reduced to fit memory model:', MAX_TOTAL_MB
+        write (6, '(A,F10.2)') 'Message [shdom_main]: MAX_TOTAL_MB reduced to fit memory model:', MAX_TOTAL_MB
     end if
     if (SPLITACC .le. 0.0 .and. INSAVEFILE(1:4) .eq. 'NONE') &
         ADAPT_GRID_FACTOR = 1.0
@@ -299,15 +299,15 @@ program SHDOM
     REDUCE = min(1.0, ((MAX_TOTAL_MB*1024**2)/4 - MEMWORD)/WANTMEM)
     ADAPT_GRID_FACTOR = ADAPT_GRID_FACTOR*REDUCE
     if (ADAPT_GRID_FACTOR < 1.0) then
-        write (6, '(A)') 'Error [SHDOM]: MAX_TOTAL_MB memory limit exceeded with just base grid.'
+        write (6, '(A)') 'Error [shdom_main]: MAX_TOTAL_MB memory limit exceeded with just base grid.'
         stop
     end if
     if (REDUCE < 1.0) then
-        write (6, '(A,F8.2)') 'Message [SHDOM]: ADAPT_GRID_FACTOR reduced to:', ADAPT_GRID_FACTOR
+        write (6, '(A,F8.2)') 'Message [shdom_main]: ADAPT_GRID_FACTOR reduced to:', ADAPT_GRID_FACTOR
     end if
     WANTMEM = REDUCE*WANTMEM
     if (WANTMEM > huge(MAXIV)) then
-        write (6, '(A,F8.2)') 'Error [SHDOM]: Number of words of memory exceeds max integer size:', WANTMEM
+        write (6, '(A,F8.2)') 'Error [shdom_main]: Number of words of memory exceeds max integer size:', WANTMEM
         stop
     end if
     MAXIG = nint(ADAPT_GRID_FACTOR*NBPTS)
@@ -320,11 +320,11 @@ program SHDOM
         MAXIGL = MAXIG*NSTLEG*(MAXLEG + 1)
     end if
     if (4.0*(MAXIV + MAXIG)*NSTOKES > huge(MAXIV)) then
-        write (6, '(A,F8.2)') 'Error [SHDOM]: Size of big SH arrays (MAXIV) probably exceeds max integer number of bytes:', MAXIV
+        write (6, '(A,F8.2)') 'Error [shdom_main]: Size of big SH arrays (MAXIV) probably exceeds max integer number of bytes:', MAXIV
         stop
     end if
     if (4.0*8.0*MAXIC > huge(MAXIV)) then
-        write (6, '(A,F8.2)') 'Error [SHDOM]: Size of GRIDPTR array (8*MAXIC) probably exceeds max integer number of bytes:', 8*MAXIC
+        write (6, '(A,F8.2)') 'Error [shdom_main]: Size of GRIDPTR array (8*MAXIC) probably exceeds max integer number of bytes:', 8*MAXIC
         stop
     end if
 
@@ -500,7 +500,7 @@ program SHDOM
                        XGRID, YGRID, ZGRID)
     end if
 
-    write (6, '(A,"<",A,">")') 'Message [SHDOM]: Starting solution iterations for SHDOM run: ', trim(adjustl(RUNNAME))
+    write (6, '(A,"<",A,">")') 'Message [shdom_main]: Starting solution iterations for SHDOM run: ', trim(adjustl(RUNNAME))
     TOTITER = 0
     OLDNPTS = 0
 
@@ -678,9 +678,9 @@ program SHDOM
     CPUTIMETOTAL = SUM_CPU_TIME(CPUTIME2 - CPUTIME1)
     if (MASTERPROC) then
         if (CPUTIMETOTAL .lt. 60.0) then
-            write (6, '(A,F6.2)') 'Message [SHDOM]: Approximate total CPU time used (sec):', CPUTIMETOTAL
+            write (6, '(A,F6.2)') 'Message [shdom_main]: Approximate total CPU time used (sec):', CPUTIMETOTAL
         else
-            write (6, '(A,F6.2)') 'Message [SHDOM]: Approximate total CPU time used (min):', CPUTIMETOTAL/60.0
+            write (6, '(A,F6.2)') 'Message [shdom_main]: Approximate total CPU time used (min):', CPUTIMETOTAL/60.0
         endif
     end if
 
@@ -808,8 +808,8 @@ program SHDOM
     ADAPTGRIDFAC_OUT = FLOAT(NPTS)/NBPTS
     SHTERM_FAC_OUT = FLOAT(NSH)/(NLM*NPTS)
     CELL_POINT_OUT = FLOAT(NCELLS)/NPTS
-    write (6, '(A)')'Message [SHDOM]: Actual MAX_TOTAL_MB, ADAPT_GRID_FACTOR, NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO'
-    write (6, '(23X,F7.2,6X,F7.3,14X,F5.3,15X,F5.3)') MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
+    write (6, '(A)')'Message [shdom_main]: Actual MAX_TOTAL_MB, ADAPT_GRID_FACTOR, NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO'
+    write (6, '(28X,F7.2,6X,F7.3,14X,F5.3,15X,F5.3)') MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
 
     call END_SHDOM_MPI(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART, DELX, DELY, &
                        NPXT, NPYT, PROPFILE, RUNNAME)
@@ -836,7 +836,7 @@ program SHDOM
     deallocate (ZLEVELS, TEMPP, EXTINCTP, ALBEDOP, EXTDIRP, IPHASEP, LEGENP)
     deallocate (MU, WTDO, PHI, NPHI0)
 
-end program
+end program shdom_main
 
 subroutine TRILIN_INTERP_PROP(X, Y, Z, INIT, NSTLEG, NLEG, &
                               TEMP, EXTINCT, ALBEDO, LEGEN, IPHASE)
