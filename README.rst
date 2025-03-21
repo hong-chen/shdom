@@ -133,9 +133,9 @@ The following is a list of file-to-file reference:
 
 * ``src/shdSolv_2.f90``: was ``shdomsub2.f``
 
-* ``src/shdUtil_inp.f90``: partially from ``shdomsub3.f``
+* ``src/shdIO_inp.f90``: partially from ``shdomsub3.f``
 
-* ``src/shdUtil_out.f90``: partially from ``shdomsub3.f``
+* ``src/shdIO_out.f90``: partially from ``shdomsub3.f``
 
 * ``src/shdSurf_brdf.f90``: partially from ``shdomsub2.f`` and combined with ``ocean_brdf.f``
 

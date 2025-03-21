@@ -1,4 +1,4 @@
-module shdUtil_inp
+module shd_io_inp
 
   use globals
 
@@ -7,27 +7,27 @@ module shdUtil_inp
 
   ! public modules
   !╭────────────────────────────────────────────────╮!
-  public :: shdUtil_io__userInput
-  public :: shdUtil_io__nmlInput
+  public :: shd_io__userInput
+  public :: shd_io__nmlInput
 
-  public :: shdUtil_io__checkInputParams
+  public :: shd_io__checkInputParams
 
-  public :: shdUtil_io__readPropSize
-  public :: shdUtil_io__readProp
-  public :: shdUtil_io__checkPropInput
+  public :: shd_io__readPropSize
+  public :: shd_io__readProp
+  public :: shd_io__checkPropInput
 
-  public :: shdUtil_io__readSurfSize
-  public :: shdUtil_io__readSurf
+  public :: shd_io__readSurfSize
+  public :: shd_io__readSurf
 
-  public :: shdUtil_io__readCkdSize
-  public :: shdUtil_io__readCkd
+  public :: shd_io__readCkdSize
+  public :: shd_io__readCkd
 
-  public :: shdUtil_io__restoreState
+  public :: shd_io__restoreState
   !╰────────────────────────────────────────────────╯!
 
 contains
 
-subroutine shdUtil_io__userInput(&
+subroutine shd_io__userInput(&
     &RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
     &INSAVEFILE, OUTSAVEFILE,&
     &NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
@@ -193,7 +193,7 @@ subroutine shdUtil_io__userInput(&
     write (*, '(1X,A)') 'Number of output files'
     read (*, *) NUMOUT
     write (*, *) NUMOUT
-    if (NUMOUT .gt. MAXOUT) stop 'Error [shdUtil_io__userInput]: MAXOUT exceeded.'
+    if (NUMOUT .gt. MAXOUT) stop 'Error [_userInput]: MAXOUT exceeded.'
     do I = 1, NUMOUT
         write (*, '(1X,A,A)') 'Output type (R-radiance, ',&
             &'V-visualization, F-flux, H-heating,'
@@ -208,7 +208,7 @@ subroutine shdUtil_io__userInput(&
                 &OUTPARMS(4, I), OUTPARMS(5, I),&
                 &N, (OUTPARMS(J + 6, I), J=1, min(2*N, MAXPAR - 6))
             if (N .gt. (MAXPAR - 6)/2) then
-                print *, 'Error [shdUtil_io__userInput]: Number of radiance angles is too large for MAXPAR'
+                print *, 'Error [_userInput]: Number of radiance angles is too large for MAXPAR'
                 stop
             end if
             N = min(N, (MAXPAR - 6)/2)
@@ -280,9 +280,9 @@ subroutine shdUtil_io__userInput(&
 
     write (*, *)
     return
-end subroutine shdUtil_io__userInput
+end subroutine shd_io__userInput
 
-subroutine shdUtil_io__nmlInput(&
+subroutine shd_io__nmlInput(&
     &dRUNNAME, dPROPFILE, dSFCFILE, dCKDFILE,&
     &dINSAVEFILE, dOUTSAVEFILE,&
     &dNSTOKES, dNX, dNY, dNZ, dNMU, dNPHI,&
@@ -346,8 +346,8 @@ subroutine shdUtil_io__nmlInput(&
 
     character(256) :: NMLFILE
 
-    if (dMAXOUT .ne. MAXOUT) stop 'Error [shdUtil_io__nmlInput]: MAXOUT not the same.'
-    if (dMAXPAR .ne. MAXPAR) stop 'Error [shdUtil_io__nmlInput]: MAXPAR not the same.'
+    if (dMAXOUT .ne. MAXOUT) stop 'Error [_nmlInput]: MAXOUT not the same.'
+    if (dMAXPAR .ne. MAXPAR) stop 'Error [_nmlInput]: MAXPAR not the same.'
 
     SOLARMU = -1.0
     GNDALBEDO = 0.0
@@ -415,7 +415,7 @@ subroutine shdUtil_io__nmlInput(&
     dMAXITER = MAXITER
 
     dNUMOUT = NUMOUT
-    if (NUMOUT .gt. MAXOUT) stop 'Error [shdUtil_io__nmlInput]: MAXOUT exceeded.'
+    if (NUMOUT .gt. MAXOUT) stop 'Error [_nmlInput]: MAXOUT exceeded.'
     do I = 1, NUMOUT
         dOUTTYPES(I) = OUTTYPES(I)
         if (OUTTYPES(I) (1:1) .eq. 'R') then
@@ -460,9 +460,9 @@ subroutine shdUtil_io__nmlInput(&
     dCELL_TO_POINT_RATIO = CELL_TO_POINT_RATIO
 
     return
-end subroutine shdUtil_io__nmlInput
+end subroutine shd_io__nmlInput
 
-subroutine shdUtil_io__checkInputParams(&
+subroutine shd_io__checkInputParams(&
     &NMU, NPHI, DELTAM, MAXASYM,&
     &GRIDTYPE, SRCTYPE, UNITS, SOLARFLUX, SOLARMU,&
     &WAVENO, WAVELEN, GNDTEMP, GNDALBEDO,&
@@ -484,20 +484,20 @@ subroutine shdUtil_io__checkInputParams(&
     real FLUX
 
     if (SRCTYPE .ne. 'S' .and. SRCTYPE .ne. 'T' .and. SRCTYPE .ne. 'B')&
-        &stop 'Error [shdUtil_io__checkInputParams]: Illegal source type.'
+        &stop 'Error [_checkInputParams]: Illegal source type.'
     if (UNITS .ne. 'R' .and. UNITS .ne. 'T' .and. UNITS .ne. 'B')&
-        &stop 'Error [shdUtil_io__checkInputParams]: Illegal units.'
+        &stop 'Error [_checkInputParams]: Illegal units.'
     if (GRIDTYPE .ne. 'E' .and. GRIDTYPE .ne. 'P' .and. GRIDTYPE .ne. 'F')&
-        &stop 'Error [shdUtil_io__checkInputParams]: Illegal grid type.'
+        &stop 'Error [_checkInputParams]: Illegal grid type.'
 
     if (SRCTYPE .ne. 'T' .and. SOLARMU .eq. 0.0) then
-        write (*, *) 'Error [shdUtil_io__checkInputParams]: Cosine solar zenith angle'
+        write (*, *) 'Error [_checkInputParams]: Cosine solar zenith angle'
         write (*, *) ' (SOLARMU) cannot be zero.'
         stop
     end if
 
     if (.not. DELTAM .and. SRCTYPE .ne. 'T' .and. MAXASYM .gt. 0.5) then
-        write (*, *) 'Warning [shdUtil_io__checkInputParams]: Delta-M should be used'
+        write (*, *) 'Warning [_checkInputParams]: Delta-M should be used'
         write (*, *) ' (DELTAM=.TRUE.) for solar radiative transfer'
         write (*, *) ' with highly peaked phase functions.'
         write (*, *)
@@ -515,36 +515,36 @@ subroutine shdUtil_io__checkInputParams(&
     end if
     if (SPLITACC .gt. 0.0 .and.&
         &(SPLITACC .lt. 0.001*FLUX .or. SPLITACC .gt. 0.1*FLUX)) then
-        write (*, *) 'Warning [shdUtil_io__checkInputParams]: Splitting accuracy parameter'
+        write (*, *) 'Warning [_checkInputParams]: Splitting accuracy parameter'
         write (*, *) ' is not a fraction, but scales with fluxes'
         write (*, *)
     end if
     if (SHACC .gt. 0.0 .and. SHACC .gt. 0.03*FLUX) then
-        write (*, *) 'Warning [shdUtil_io__checkInputParams]: Spherical harmonic accuracy'
+        write (*, *) 'Warning [_checkInputParams]: Spherical harmonic accuracy'
         write (*, *) ' (SHACC) is not a fraction, but scales with fluxes'
         write (*, *)
     end if
 
     if (SRCTYPE .ne. 'S' .and.&
         &(GNDTEMP .lt. 150. .or. GNDTEMP .gt. 350.)) then
-        write (*, *) 'Warning [shdUtil_io__checkInputParams]: '
+        write (*, *) 'Warning [_checkInputParams]: '
         write (*, *) '  ground temperature out of Earth range.'
         write (*, *)
     end if
     if (GNDALBEDO .lt. 0.0 .or. GNDALBEDO .gt. 1.0) then
-        write (*, *) 'Error [shdUtil_io__checkInputParams]: Ground albedo must be 0 to 1.'
+        write (*, *) 'Error [_checkInputParams]: Ground albedo must be 0 to 1.'
         stop
     end if
 
     if (NPHI .lt. NMU) then
-        write (*, *) 'Warning [shdUtil_io__checkInputParams]: Usually want NPHI >= NMU.'
+        write (*, *) 'Warning [_checkInputParams]: Usually want NPHI >= NMU.'
         write (*, *)
     end if
 
     return
-end subroutine shdUtil_io__checkInputParams
+end subroutine shd_io__checkInputParams
 
-subroutine shdUtil_io__readPropSize(PROPFILE, NSTLEG, NLEG, NPX, NPY, NPZ,&
+subroutine shd_io__readPropSize(PROPFILE, NSTLEG, NLEG, NPX, NPY, NPZ,&
     &NUMPHASE, MAXLEG, MAXPGL, DELX, DELY)
     ! Reads parts of the property file to get the maximum array sizes
     ! needed for allocatable arrays.  For extinction only and tabulated
@@ -564,7 +564,7 @@ subroutine shdUtil_io__readPropSize(PROPFILE, NSTLEG, NLEG, NPX, NPY, NPZ,&
     if (PROPTYPE .ne. 'E' .and. PROPTYPE .ne. 'T'&
         &.and. PROPTYPE .ne. 'P') rewind (1)
     if (PROPTYPE .ne. 'P' .and. NSTLEG .gt. 1) then
-        write (*, '(A,A)') 'Error [shdUtil_io__readPropSize]: NSTOKES>1 requires ',&
+        write (*, '(A,A)') 'Error [_readPropSize]: NSTOKES>1 requires ',&
             &'Polarized phase function property file'
         stop
     end if
@@ -614,9 +614,9 @@ subroutine shdUtil_io__readPropSize(PROPFILE, NSTLEG, NLEG, NPX, NPY, NPZ,&
     end if
     close (1)
     return
-end subroutine shdUtil_io__readPropSize
+end subroutine shd_io__readPropSize
 
-subroutine shdUtil_io__readProp(&
+subroutine shd_io__readProp(&
     & PROPFILE, NPX, NPY, NPZ,&
     & NSTLEG, MAXLEG, NLEG, MAXNZ, MAXPG, MAXPGL, DELTAM,&
     & PROPTYPE, DELX, DELY, ZLEVELS, MAXASYM,&
@@ -657,12 +657,12 @@ subroutine shdUtil_io__readProp(&
     if (PROPTYPE .ne. 'E' .and. PROPTYPE .ne. 'T'&
         & .and. PROPTYPE .ne. 'P') rewind (1)
     if (PROPTYPE .ne. 'P' .and. NSTLEG .gt. 1) then
-        write (*, '(A,A)') 'Error [shdUtil_io__readProp]: NSTOKES>1 requires ',&
+        write (*, '(A,A)') 'Error [_readProp]: NSTOKES>1 requires ',&
             & 'Polarized phase function property file.'
         stop
     end if
     read (1, *) NPX, NPY, NPZ
-    if (NPZ .gt. MAXNZ) stop 'Error [shdUtil_io__readProp]: MAXNZ exceeded.'
+    if (NPZ .gt. MAXNZ) stop 'Error [_readProp]: MAXNZ exceeded.'
     read (1, *) DELX, DELY, (ZLEVELS(K), K=1, NPZ)
 
     ! Property file type E is for extinction only format
@@ -675,9 +675,9 @@ subroutine shdUtil_io__readProp(&
             NLEG = min(NLEG, MAXLEG)
         end if
         if (NPX*NPY*NPZ .gt. MAXPG)&
-            & stop 'Error [shdUtil_io__readProp]: MAXPG exceeded.'
+            & stop 'Error [_readProp]: MAXPG exceeded.'
         if (NLEG + 1 .gt. MAXPGL)&
-            & stop 'Error [shdUtil_io__readProp]: MAXPGL exceeded.'
+            & stop 'Error [_readProp]: MAXPGL exceeded.'
         rewind (1)
         read (1, *)
         read (1, *) NPX, NPY, NPZ
@@ -725,15 +725,15 @@ subroutine shdUtil_io__readProp(&
             end do
             if (NLEG .gt. MAXLEG) then
                 write (*, '(A,I4,A,I4,A)')&
-                    & 'Warning [shdUtil_io__readProp]: Truncating phase function from ',&
+                    & 'Warning [_readProp]: Truncating phase function from ',&
                     & NLEG, ' to ', MAXLEG, ' Legendre terms.'
             end if
             NLEG = min(NLEG, MAXLEG)
         end if
         N = NPX*NPY*NPZ
-        if (N .gt. MAXPG) stop 'Error [shdUtil_io__readProp]: MAXPG exceeded.'
+        if (N .gt. MAXPG) stop 'Error [_readProp]: MAXPG exceeded.'
         if (NUMPHASE*(NLEG + 1)*NSTLEG .gt. MAXPGL)&
-            &stop 'Error [shdUtil_io__readProp]: MAXPGL exceeded.'
+            &stop 'Error [_readProp]: MAXPGL exceeded.'
         rewind (1)
         read (1, *)
         read (1, *) NPX, NPY, NPZ
@@ -797,9 +797,9 @@ subroutine shdUtil_io__readProp(&
             read (1, *) DELX, DELY, (ZLEVELS(K), K=1, NPZ)
         end if
         N = NPX*NPY*NPZ
-        if (N .gt. MAXPG) stop 'Error [shdUtil_io__readProp]: MAXPG exceeded.'
+        if (N .gt. MAXPG) stop 'Error [_readProp]: MAXPG exceeded.'
         if (N*(NLEG + 1) .gt. MAXPGL)&
-            & stop 'Error [shdUtil_io__readProp]: MAXPGL exceeded.'
+            & stop 'Error [_readProp]: MAXPGL exceeded.'
         MAXASYM = -1.0
         do while (.true.)
             read (1, *, end=290) IX, IY, IZ, TMP, EXT, ALB, NUML
@@ -825,10 +825,10 @@ subroutine shdUtil_io__readProp(&
 290 continue
     close (1)
     return
-end subroutine shdUtil_io__readProp
+end subroutine shd_io__readProp
 
 
-subroutine shdUtil_io__checkPropInput(&
+subroutine shd_io__checkPropInput(&
     & NPX, NPY, NPZ, NSTLEG, NLEG,&
     & DELX, DELY, ZLEVELS,&
     & TEMPP, EXTINCTP, ALBEDOP, LEGENP, NUMPHASE, IPHASEP)
@@ -851,19 +851,19 @@ subroutine shdUtil_io__checkPropInput(&
 
     ! NPX and NPY must be 1 or greater, NPZ must be 2 or greater
     if (NPX .lt. 1 .or. NPY .lt. 1 .or. NPZ .lt. 2) then
-        write (*, *) 'Error [shdUtil_io__checkPropInput]: Bad grid size - ',&
+        write (*, *) 'Error [_checkPropInput]: Bad grid size - ',&
             & NPX, NPY, NPZ
         stop
     end if
     if (DELX .le. 0.0 .or. DELY .le. 0.0) then
-        write (*, *) 'Error [shdUtil_io__checkPropInput]: Bad grid spacing - ',&
+        write (*, *) 'Error [_checkPropInput]: Bad grid spacing - ',&
             & 'DELX,DELY: ', DELX, DELY
         stop
     end if
     ! The vertical levels must be increasing
     do IZ = 1, NPZ - 1
         if (ZLEVELS(IZ + 1) .le. ZLEVELS(IZ)) then
-            write (*, *) 'Error [shdUtil_io__checkPropInput]: ZLEVELS must increase : ',&
+            write (*, *) 'Error [_checkPropInput]: ZLEVELS must increase : ',&
                 & IZ, ZLEVELS(IZ), ZLEVELS(IZ + 1)
             stop
         end if
@@ -878,18 +878,18 @@ subroutine shdUtil_io__checkPropInput(&
         TMAX = max(TMAX, TEMPP(I))
     end do
     if (TMIN .lt. 150.0 .or. TMAX .gt. 350.0) then
-        write (*, *) 'Warning [shdUtil_io__checkPropInput]: ',&
+        write (*, *) 'Warning [_checkPropInput]: ',&
             & 'temperature min and max (Kelvin): ', TMIN, TMAX
         write (*, *)
     end if
     do I = 1, N
         if (EXTINCTP(I) .lt. 0.0) then
-            write (*, *) 'Error [shdUtil_io__checkPropInput]: Negative extinction - ',&
+            write (*, *) 'Error [_checkPropInput]: Negative extinction - ',&
                 & EXTINCTP(I), ' at grid point ', I
             stop
         end if
         if (ALBEDOP(I) .lt. 0.0 .or. ALBEDOP(I) .gt. 1.0) then
-            write (*, *) 'Error [shdUtil_io__checkPropInput]: Single scattering ',&
+            write (*, *) 'Error [_checkPropInput]: Single scattering ',&
                 & 'albedo out of range - ', ALBEDOP(I), ' at grid point ', I
             stop
         end if
@@ -899,14 +899,14 @@ subroutine shdUtil_io__checkPropInput(&
     LEGWARN = .false.
     do I = 1, N
         if (LEGENP(1, 1, I) .lt. -3.0 .or. LEGENP(1, 1, I) .gt. 3.0) then
-            write (*, *) 'Error [shdUtil_io__checkPropInput]: Asymmetry parameter ',&
+            write (*, *) 'Error [_checkPropInput]: Asymmetry parameter ',&
                 & 'out of range - ', LEGENP(1, 1, I)/3.0, ' at grid point ', I
             stop
         end if
         if (LEGENP(1, 1, I) .eq. 1.0) LEGWARN = .true.
     end do
     if (LEGWARN) then
-        write (*, *) 'Warning [shdUtil_io__checkPropInput]: ',&
+        write (*, *) 'Warning [_checkPropInput]: ',&
             & 'an asymmetry parameter is 1/3 (Chi1=1); ',&
             & '  Chi0 should not be specified for Chi1.'
         write (*, *)
@@ -916,7 +916,7 @@ subroutine shdUtil_io__checkPropInput(&
         N = NPX*NPY*NPZ
         do I = 1, N
             if (IPHASEP(I) .lt. 1 .or. IPHASEP(I) .gt. NUMPHASE) then
-                write (*, *) 'Error [shdUtil_io__checkPropInput]: Phase function pointer',&
+                write (*, *) 'Error [_checkPropInput]: Phase function pointer',&
                     & ' out of range - ', IPHASEP(I), ' at grid point ', I
                 stop
             end if
@@ -943,10 +943,10 @@ subroutine shdUtil_io__checkPropInput(&
     end if
 
     return
-end subroutine shdUtil_io__checkPropInput
+end subroutine shd_io__checkPropInput
 
 
-subroutine shdUtil_io__readSurfSize(SFCFILE, MAXSFCPTS, MAXSFCPARS)
+subroutine shd_io__readSurfSize(SFCFILE, MAXSFCPTS, MAXSFCPARS)
     ! Gets the size of the surface property inputs (temperature is
     ! always included).
 
@@ -984,13 +984,13 @@ subroutine shdUtil_io__readSurfSize(SFCFILE, MAXSFCPTS, MAXSFCPARS)
         ! Surface file type D is for Diner polarized RPV surface:
         MAXSFCPARS = 6
     else
-        stop 'Error [shdUtil_io__readSurfSize]: Unknown BRDF type.'
+        stop 'Error [_readSurfSize]: Unknown BRDF type.'
     end if
     close (1)
     return
-end subroutine shdUtil_io__readSurfSize
+end subroutine shd_io__readSurfSize
 
-subroutine shdUtil_io__readSurf(&
+subroutine shd_io__readSurf(&
     & SFCFILE, MAXSFCPTS, MAXSFCPARS,&
     & SFCTYPE, NXSFC, NYSFC, DELXSFC, DELYSFC,&
     & NSFCPAR, SFCPARMS, GNDTEMP, GNDALBEDO)
@@ -1032,7 +1032,7 @@ subroutine shdUtil_io__readSurf(&
     read (1, '(A1)') SFCTYPE(2:2)
     read (1, *) NXSFC, NYSFC, DELXSFC, DELYSFC
     if ((NXSFC + 1)*(NYSFC + 1) .gt. MAXSFCPTS) then
-        write (*, *) 'Error [shdUtil_io__readSurf]: MAXSFCPTS exceeded.'
+        write (*, *) 'Error [_readSurf]: MAXSFCPTS exceeded.'
         stop
     end if
 
@@ -1044,7 +1044,7 @@ subroutine shdUtil_io__readSurf(&
     if (SFCTYPE .eq. 'VL' .or. SFCTYPE .eq. 'Vl') then
         NSFCPAR = 2
         if (NSFCPAR .gt. MAXSFCPARS) then
-            write (*, *) 'Error [shdUtil_io__readSurf]: MAXSFCPARS exceeded.'
+            write (*, *) 'Error [_readSurf]: MAXSFCPARS exceeded.'
             stop
         end if
         do while (.true.)
@@ -1055,7 +1055,7 @@ subroutine shdUtil_io__readSurf(&
                 SFCPARMS(I + 1) = TEMP
                 SFCPARMS(I + 2) = ALB
                 if (ALB .lt. 0.0 .or. ALB .gt. 1.0)&
-                    & stop 'Error [shdUtil_io__readSurf]: Illegal surface albedo.'
+                    & stop 'Error [_readSurf]: Illegal surface albedo.'
                 if (TEMP .lt. 150. .or. TEMP .gt. 350.)&
                     & write (*, *) 'Warning [READ_SURFACE]: ',&
                     & ' surface temperature: ', IX, IY, TEMP
@@ -1069,7 +1069,7 @@ subroutine shdUtil_io__readSurf(&
     else if (SFCTYPE .eq. 'VW') then
         NSFCPAR = 4
         if (NSFCPAR .gt. MAXSFCPARS) then
-            write (*, *) 'Error [shdUtil_io__readSurf]: MAXSFCPARS exceeded.'
+            write (*, *) 'Error [_readSurf]: MAXSFCPARS exceeded.'
             stop
         end if
         do while (.true.)
@@ -1091,7 +1091,7 @@ subroutine shdUtil_io__readSurf(&
     else if (SFCTYPE .eq. 'VO') then
         NSFCPAR = 3
         if (NSFCPAR .gt. MAXSFCPARS) then
-            write (*, *) 'Error [shdUtil_io__readSurf]: MAXSFCPARS exceeded.'
+            write (*, *) 'Error [_readSurf]: MAXSFCPARS exceeded.'
             stop
         end if
         do while (.true.)
@@ -1115,7 +1115,7 @@ subroutine shdUtil_io__readSurf(&
     else if (SFCTYPE .eq. 'VR') then
         NSFCPAR = 4
         if (NSFCPAR .gt. MAXSFCPARS) then
-            write (*, *) 'Error [shdUtil_io__readSurf]: MAXSFCPARS exceeded.'
+            write (*, *) 'Error [_readSurf]: MAXSFCPARS exceeded.'
             stop
         end if
         do while (.true.)
@@ -1137,7 +1137,7 @@ subroutine shdUtil_io__readSurf(&
     else if (SFCTYPE .eq. 'VT') then
         NSFCPAR = 4
         if (NSFCPAR .gt. MAXSFCPARS) then
-            write (*, *) 'Error [shdUtil_io__readSurf]: MAXSFCPARS exceeded.'
+            write (*, *) 'Error [_readSurf]: MAXSFCPARS exceeded.'
             stop
         end if
         do while (.true.)
@@ -1164,7 +1164,7 @@ subroutine shdUtil_io__readSurf(&
     else if (SFCTYPE .eq. 'VD') then
         NSFCPAR = 6
         if (NSFCPAR .gt. MAXSFCPARS) then
-            write (*, *) 'Error [shdUtil_io__readSurf]: MAXSFCPARS exceeded.'
+            write (*, *) 'Error [_readSurf]: MAXSFCPARS exceeded.'
             stop
         end if
         do while (.true.)
@@ -1185,7 +1185,7 @@ subroutine shdUtil_io__readSurf(&
         end do
 
     else
-        stop 'Error [shdUtil_io__readSurf]: Unknown BRDF type.'
+        stop 'Error [_readSurf]: Unknown BRDF type.'
     end if
 
 290 continue
@@ -1209,9 +1209,9 @@ subroutine shdUtil_io__readSurf(&
     GNDALBEDO = GNDALBEDO/N
     GNDTEMP = GNDTEMP/N
     return
-end subroutine shdUtil_io__readSurf
+end subroutine shd_io__readSurf
 
-subroutine shdUtil_io__readCkdSize(CKDFILE, WAVENO, NG, NZCKD)
+subroutine shd_io__readCkdSize(CKDFILE, WAVENO, NG, NZCKD)
     ! Find the size of the k-distribution arrays for this wavenumber b
 
     integer NG, NZCKD
@@ -1236,16 +1236,16 @@ subroutine shdUtil_io__readCkdSize(CKDFILE, WAVENO, NG, NZCKD)
         end if
     end do
     if (JB .eq. 0) then
-        write (*, *) 'Error [shdUtil_io__readCkdSize]: Wavenumber range not found in CKD file : ',&
+        write (*, *) 'Error [_readCkdSize]: Wavenumber range not found in CKD file : ',&
             & WAVENO(1), WAVENO(2), CKDFILE
         stop
     end if
     read (1, *) NZCKD
     close (1)
     return
-end subroutine shdUtil_io__readCkdSize
+end subroutine shd_io__readCkdSize
 
-subroutine shdUtil_io__readCkd(&
+subroutine shd_io__readCkd(&
     & MAXNG, MAXNZ, CKDFILE, WAVENO, SOLFLUX,&
     & NG, DELG, NZCKD, ZCKD, KABS)
     ! Reads the information appropriate for one band from a
@@ -1275,19 +1275,19 @@ subroutine shdUtil_io__readCkd(&
             & abs(WAVENUM2 - WAVENO(2)) .lt. 1.0) then
             backspace (1)
             NG = N
-            if (NG .gt. MAXNG) stop 'Error [shdUtil_io__readCkd]: MAXNG exceeded.'
+            if (NG .gt. MAXNG) stop 'Error [_readCkd]: MAXNG exceeded.'
             read (1, *) JB, WAVENO(1), WAVENO(2), SOLFLUX,&
                 & N, (DELG(IG), IG=1, NG)
         end if
     end do
     if (JB .eq. 0) then
-        write (*, *) 'Error [shdUtil_io__readCkd]: Wavenumber range not found in CKD file : ',&
+        write (*, *) 'Error [_readCkd]: Wavenumber range not found in CKD file : ',&
             & WAVENO(1), WAVENO(2), CKDFILE
         stop
     end if
     ! Read the Z level heights
     read (1, *) NZCKD
-    if (NZCKD .gt. MAXNZ) stop 'Error [shdUtil_io__readCkd]: MAXNZ exceeded.'
+    if (NZCKD .gt. MAXNZ) stop 'Error [_readCkd]: MAXNZ exceeded.'
     read (1, *)
     read (1, *)
     do I = 1, NZCKD
@@ -1310,9 +1310,9 @@ subroutine shdUtil_io__readCkd(&
     end do
     close (1)
     return
-end subroutine shdUtil_io__readCkd
+end subroutine shd_io__readCkd
 
-subroutine shdUtil_io__restoreState(&
+subroutine shd_io__restoreState(&
     & INSAVEFILE, NSTOKES, NX, NY, NZ,&
     & ML, MM, NLM, INRADFLAG, NEWGRIDFLAG, XGRID, YGRID, ZGRID,&
     & NPTS, NCELLS, GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR,&
@@ -1383,10 +1383,10 @@ subroutine shdUtil_io__restoreState(&
     return
 
 900 continue
-    write (6, *) 'Warning [shdUtil_io__restoreState]: Input radiance vector file not found.'
+    write (6, *) 'Warning [_restoreState]: Input radiance vector file not found.'
     INRADFLAG = .false.
     NEWGRIDFLAG = .true.
     return
-end subroutine shdUtil_io__restoreState
+end subroutine shd_io__restoreState
 
-end module shdUtil_inp
+end module shd_io_inp

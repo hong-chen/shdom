@@ -14,8 +14,8 @@ end module shdom_arr
 
 program shdom_main
     use shdom_arr
-    use shdUtil_inp
-    use shdUtil_out
+    use shd_io_inp
+    use shd_io_out
     implicit none
     ! Number of output files and inputs parameter per file
     integer, parameter :: MAXOUT = 20, MAXPAR = 500
@@ -104,7 +104,7 @@ program shdom_main
 
     if (MASTERPROC) then
         if (nmlMode) then
-            call shdUtil_io__nmlInput(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
+            call shd_io__nmlInput(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
                 INSAVEFILE, OUTSAVEFILE,&
                 NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
                 IPFLAG, KDIST, DELTAM, GRIDTYPE,&
@@ -115,7 +115,7 @@ program shdom_main
                 OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
                 NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
         else
-            call shdUtil_io__userInput(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
+            call shd_io__userInput(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
                 INSAVEFILE, OUTSAVEFILE,&
                 NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
                 IPFLAG, KDIST, DELTAM, GRIDTYPE,&
@@ -177,7 +177,7 @@ program shdom_main
 
     ! Find out the size of the input property file grid
     if (MASTERPROC) then
-        call shdUtil_io__readPropSize(PROPFILE, NSTLEG, NLEG, NPX, NPY, NPZ,&
+        call shd_io__readPropSize(PROPFILE, NSTLEG, NLEG, NPX, NPY, NPZ,&
                                 NUMPHASE, MAXLEG, MAXPGL, DELX, DELY)
     end if
     call BROADCAST_PROPERTY_SIZE(NPX, NPY, NPZ, DELX, DELY,&
@@ -226,7 +226,7 @@ program shdom_main
             if (NUMPHASE .eq. 0) MAXPGLT = MAXPGT*(MAXLEG + 1)*NSTLEG
             allocate (TEMPPT(MAXPGT), EXTINCTPT(MAXPGT), ALBEDOPT(MAXPGT))
             allocate (IPHASEPT(MAXPGT), LEGENPT(MAXPGLT))
-            call shdUtil_io__readProp(PROPFILE, NPXT, NPYT, NPZ, &
+            call shd_io__readProp(PROPFILE, NPXT, NPYT, NPZ, &
                                  NSTLEG, MAXLEG, NLEG, MAXNZ, MAXPGT, MAXPGLT, DELTAM, &
                                  PROPTYPE, DELX, DELY, ZLEVELS, MAXASYM, &
                                  TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, NUMPHASE, IPHASEPT)
@@ -236,7 +236,7 @@ program shdom_main
                 stop
             end if
             ! Check values of medium properties
-            call shdUtil_io__checkPropInput(NPXT, NPYT, NPZ, NSTLEG, NLEG, &
+            call shd_io__checkPropInput(NPXT, NPYT, NPZ, NSTLEG, NLEG, &
                                       DELX, DELY, ZLEVELS, &
                                       TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, NUMPHASE, IPHASEPT)
         end if
@@ -248,19 +248,19 @@ program shdom_main
         if (MASTERPROC) deallocate (TEMPPT, EXTINCTPT, ALBEDOPT, IPHASEPT)
     else
         ! Read the properties of the medium to the single processor
-        call shdUtil_io__readProp(PROPFILE, NPX, NPY, NPZ, &
+        call shd_io__readProp(PROPFILE, NPX, NPY, NPZ, &
                              NSTLEG, MAXLEG, NLEG, MAXNZ, MAXPG, MAXPGL, DELTAM, &
                              PROPTYPE, DELX, DELY, ZLEVELS, MAXASYM, &
                              TEMPP, EXTINCTP, ALBEDOP, LEGENP, NUMPHASE, IPHASEP)
         ! Check values of medium properties
-        call shdUtil_io__checkPropInput(NPX, NPY, NPZ, NSTLEG, NLEG, &
+        call shd_io__checkPropInput(NPX, NPY, NPZ, NSTLEG, NLEG, &
                                   DELX, DELY, ZLEVELS, &
                                   TEMPP, EXTINCTP, ALBEDOP, LEGENP, NUMPHASE, IPHASEP)
     end if
 
     if (MASTERPROC) then
         ! Check input parameters
-        call shdUtil_io__checkInputParams(NMU, NPHI, DELTAM, MAXASYM, &
+        call shd_io__checkInputParams(NMU, NPHI, DELTAM, MAXASYM, &
                                     GRIDTYPE, SRCTYPE, UNITS, SOLARFLUX, SOLARMU, &
                                     WAVENO, WAVELEN, GNDTEMP, GNDALBEDO, &
                                     SPLITACC, SHACC)
@@ -337,13 +337,13 @@ program shdom_main
         SFCTYPE = 'FL'
     else
         if (MASTERPROC) then
-            call shdUtil_io__readSurfSize(SFCFILE, MAXSFCPTS, MAXSFCPARS)
+            call shd_io__readSurfSize(SFCFILE, MAXSFCPTS, MAXSFCPARS)
         end if
         ! Broadcast the surface array sizes
         call BROADCAST_SURFACE_SIZE(MAXSFCPTS, MAXSFCPARS)
         allocate (SFCPARMS(MAXSFCPARS*MAXSFCPTS))
         if (MASTERPROC) then
-            call shdUtil_io__readSurf(SFCFILE, MAXSFCPTS, MAXSFCPARS, &
+            call shd_io__readSurf(SFCFILE, MAXSFCPTS, MAXSFCPARS, &
                               SFCTYPE, NXSFC, NYSFC, DELXSFC, DELYSFC, &
                               NSFCPAR, SFCPARMS, GNDTEMP, GNDALBEDO)
         end if
@@ -362,14 +362,14 @@ program shdom_main
     ! If doing a k-distribution then get the band info from the CKD file
     if (KDIST) then
         if (MASTERPROC) then
-            call shdUtil_io__readCkdSize(CKDFILE, WAVENO, NG, NZCKD)
+            call shd_io__readCkdSize(CKDFILE, WAVENO, NG, NZCKD)
         end if
         ! Broadcast the k-distribution array sizes
         call BROADCAST_KDIST_SIZE(NG, NZCKD)
         allocate (ZCKD(NZCKD), GASABS(NZCKD), DELG(NG), KABS(NZCKD, NG))
         if (MASTERPROC) then
             MAXNG = NG; MAXNZ = NZCKD
-            call shdUtil_io__readCkd(MAXNG, MAXNZ, CKDFILE, WAVENO, SOLFLUX, &
+            call shd_io__readCkd(MAXNG, MAXNZ, CKDFILE, WAVENO, SOLFLUX, &
                           NG, DELG, NZCKD, ZCKD, KABS)
         end if
         call BROADCAST_KDIST_PARMS(SOLFLUX, NG, DELG, NZCKD, ZCKD, KABS)
@@ -477,7 +477,7 @@ program shdom_main
     end if
 
     ! Read in previous run from binary file if desired
-    call shdUtil_io__restoreState(INSAVEFILE, NSTOKES, NX, NY, NZ, ML, MM, NLM, &
+    call shd_io__restoreState(INSAVEFILE, NSTOKES, NX, NY, NZ, ML, MM, NLM, &
                        INRADFLAG, NEWGRIDFLAG, XGRID, YGRID, ZGRID, &
                        NPTS, NCELLS, GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR, &
                        CELLFLAGS, FLUXES, SHPTR, SOURCE, RSHPTR, RADIANCE)
@@ -658,7 +658,7 @@ program shdom_main
         OLDNPTS = NPTS
     end do
 
-    call shdUtil_io__saveState(OUTSAVEFILE, NSTOKES, NX, NY, NZ, ML, MM, NLM, &
+    call shd_io__saveState(OUTSAVEFILE, NSTOKES, NX, NY, NZ, ML, MM, NLM, &
                     WORK, XGRID, YGRID, ZGRID, &
                     NPTS, NCELLS, GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR, &
                     CELLFLAGS, FLUXES, SHPTR, SOURCE, RSHPTR, RADIANCE)
@@ -693,7 +693,7 @@ program shdom_main
         if (MASTERPROC) then
             do I = 1, NUMOUT
                 if (OUTTYPES(I) /= 'V' .and. OUTFILES(I) /= 'NONE') then
-                    call shdUtil_io__outputResultMpi(NSTOKES, NXT, NYT, NZ, &
+                    call shd_io__outputResultMpi(NSTOKES, NXT, NYT, NZ, &
                                             NPTSTOT, NCELLSTOT, NSHTOT, &
                                             ML, MM, NLM, NMU, NPHI, NANG, NG, &
                                             PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE, &
@@ -718,7 +718,7 @@ program shdom_main
 
         do I = 1, NUMOUT
             if (OUTTYPES(I) /= 'V' .and. OUTFILES(I) /= 'NONE') then
-                call shdUtil_io__outputResult(NSTOKES, NX, NY, NX1, NY1, NZ, NBPTS, NPTS, NCELLS, &
+                call shd_io__outputResult(NSTOKES, NX, NY, NX1, NY1, NZ, NBPTS, NPTS, NCELLS, &
                                     NSH, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE, NMU, NPHI, NANG, NG, &
                                     PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE, &
                                     BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE, &
@@ -739,7 +739,7 @@ program shdom_main
     if (MASTERPROC) then
         do I = 1, NUMOUT
             if (OUTTYPES(I) == 'V') then
-                call shdUtil_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
+                call shd_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
                                   NSH, ML, MM, NLM, NMU, NPHI, NANG, NG, &
                                   PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE, &
                                   BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE, &

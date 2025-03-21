@@ -155,11 +155,11 @@ very good because ``V`` is very small.
 INPUT PARAMETERS
 ----------------
 
-The parameters are input in the routine ``shdUtil_io__userInput`` or
-``shdUtil_io__nmlInput``. ``shdUtil_io__userInput`` uses ``READ`` statements from stdin in response
+The parameters are input in the routine ``shd_io__userInput`` or
+``shd_io__nmlInput``. ``shd_io__userInput`` uses ``READ`` statements from stdin in response
 to written messages.  Because not all parameters are relevant at once,
 the complete list is not input.  Run shdom interactively for the actual
-sequence. The ``shdUtil_io__userInput`` routine echos the input values so that a
+sequence. The ``shd_io__userInput`` routine echos the input values so that a
 useful "log" file output is produced when run non-interactively.  To use
 the namelist style input, change ``nmlMode = .True.`` in the
 main routine. On some computers the NAMELIST input requires a space
@@ -973,7 +973,7 @@ parameters controlling the array sizes.
 
 While a few algorithm and coding bugs may be left in the code, the
 most common source of errors is incorrect input.  Be sure to check the
-input parameters against the documentation and the ``shdUtil_io__userInput`` routine.
+input parameters against the documentation and the ``shd_io__userInput`` routine.
 The correctness of the input property file format can be found by using
 the 'M' - medium property output option.  There are routines that
 check the input parameters and property file for validity and issue
@@ -1141,7 +1141,7 @@ with MPI is:
 .. code-block:: bash
 
    mpif90 -O2 -o shdom  shdom.f90 shdom_mpi.f90 shdom_nonetcdf.f90 \
-             shdSolv_1.f90 shdSolv_2.f90 shdUtil_inp.f90 shdUtil_out.f90 fftpack.f90
+             shdSolv_1.f90 shdSolv_2.f90 shdIO_inp.f90 shdIO_out.f90 fftpack.f90
 
    mpirun -np 4  shdom shdom.inp
 
@@ -1333,16 +1333,16 @@ most of these would only be changed to experiment with the operation of
 the SHDOM algorithm.
 
 Namelist input: main program (``shdom90.f90``); ``nmlMode = .True.`` (by default)
-calls ``shdUtil_io__nmlInput`` and ``nmlMode = .True.`` calls ``shdUtil_io__userInput``.
+calls ``shd_io__nmlInput`` and ``nmlMode = .True.`` calls ``shd_io__userInput``.
 
 NetCDF property file input: main program (``shdom90.f90``); Comment out
-calls to ``shdUtil_io__readPropSize``, and ``shdUtil_io__readProp`` and uncomment calls to
+calls to ``shd_io__readPropSize``, and ``shd_io__readProp`` and uncomment calls to
 ``read_property_size_netcdf`` and ``read_properties_netcdf``.  Use the ``makefile``
 to compile with the netcdf library.
 
 Adding surface reflection types: in ``shdSolv_2.f90`` write a BRDF Fortran
 function modeled on ``RPV_REFLECTION`` and add a call in ``SURFACE_BRDF`` to the
-new function.  In ``shdUtil_inp.f90`` modify subroutine ``shdUtil_io__readSurf`` by adding a
+new function.  In ``shdIO_inp.f90`` modify subroutine ``shd_io__readSurf`` by adding a
 block to read in the new surface type parameters.
 
 Discrete ordinate angle set: SOLVE_RTE (``shdSolv_1.f90``); The ``ORDINATESET``
@@ -1399,7 +1399,7 @@ ARRAY SIZES AND MEMORY MANAGEMENT
 The main program (``shdom.f90``) determines the sizes of most arrays and
 allocates memory for them.  Thus the user does not usually have to
 recompile the program for different problems.  As there is no way to
-determine the OUTPARM array size before calling ``shdUtil_io__userInput``, the MAXOUT
+determine the OUTPARM array size before calling ``shd_io__userInput``, the MAXOUT
 and MAXPAR constants are still defined. Since the adaptive grid grows
 during the solution procedure, the maximum size of many arrays can only
 be guessed at.  The approach taken is to define the maximum adaptive
@@ -1809,11 +1809,11 @@ LIST OF ROUTINES
 
 The following is a list of all the subroutines, where they are, and
 what they do.  The first column gives the file (0 is ``shdom.f90``,
-1 is ``shdSolv_1.f90``, 2 is ``shdSolv_2.f90``, 3 is ``shdUtil_inp.f90`` and ``shdUtil_out.f90``,
+1 is ``shdSolv_1.f90``, 2 is ``shdSolv_2.f90``, 3 is ``shdIO_inp.f90`` and ``shdIO_out.f90``,
 M is ``shdom_mpi.f90``, F is ``fftpack.f90``).  The second column indicates
 the calling routine.
 The major solving routines are in ``shdSolv_1.f90``, other routines are in
-``shdSolv_2.f90``, all the regular I/O routines are in ``shdUtil_inp.f90`` and ``shdUtil_out.f90``,
+``shdSolv_2.f90``, all the regular I/O routines are in ``shdIO_inp.f90`` and ``shdIO_out.f90``,
 the MPI calling routines are in ``shdom_mpi.f90``, and ``fftpack.f90`` has the FFTPACK
 routines from NCAR.
 
@@ -1992,39 +1992,39 @@ routines from NCAR.
 
    2   SSORT                Sorting routine for adaptive cell criterion
 
-   3 0 shdUtil_io__userInput: Gets the input parameters from stdin
+   3 0 shd_io__userInput: Gets the input parameters from stdin
 
-   3 0 shdUtil_io__nmlInput: Gets the input parameters from a namelist
+   3 0 shd_io__nmlInput: Gets the input parameters from a namelist
 
-   3 0 shdUtil_io__checkInputParams: Checks input parameters for validity/reasonableness
+   3 0 shd_io__checkInputParams: Checks input parameters for validity/reasonableness
 
-   3 0 shdUtil_io__readPropSize: Gets the size of the property file
+   3 0 shd_io__readPropSize: Gets the size of the property file
 
-   3 0 shdUtil_io__readProp: Reads the property file
+   3 0 shd_io__readProp: Reads the property file
 
-   3 0 shdUtil_io__checkPropInput: Checks the values read in from the property file
+   3 0 shd_io__checkPropInput: Checks the values read in from the property file
 
-   3 0 shdUtil_io__readSurfSize: Gets the size of the surfae file
+   3 0 shd_io__readSurfSize: Gets the size of the surfae file
 
-   3 0 shdUtil_io__readSurf: Reads the surface file
+   3 0 shd_io__readSurf: Reads the surface file
 
-   3 0 shdUtil_io__readCkdSize: Gets the size of the k-distribution file
+   3 0 shd_io__readCkdSize: Gets the size of the k-distribution file
 
-   3 0 shdUtil_io__readCkd: Reads the correlated k-distribution file
+   3 0 shd_io__readCkd: Reads the correlated k-distribution file
 
-   3 0 shdUtil_io__restoreState: Reads the binary state file
+   3 0 shd_io__restoreState: Reads the binary state file
 
-   3 0 shdUtil_io__saveState: Writes the binary state file
+   3 0 shd_io__saveState: Writes the binary state file
 
-   3 S shdUtil_io__outputCellSplit: Outputs the cell splitting criterion for every cell
+   3 S shd_io__outputCellSplit: Outputs the cell splitting criterion for every cell
 
-   3 S shdUtil_io__plotCell: Outputs GLE graphics of cell structure
+   3 S shd_io__plotCell: Outputs GLE graphics of cell structure
 
-   3 0 shdUtil_io__outputResult: Selects and outputs the results
+   3 0 shd_io__outputResult: Selects and outputs the results
 
-   3 0 shdUtil_io__outputResultMpi: Outputs results when using MPI
+   3 0 shd_io__outputResultMpi: Outputs results when using MPI
 
-   3 0 shdUtil_io__outputImg: Outputs the visualization PGM images with labels
+   3 0 shd_io__outputImg: Outputs the visualization PGM images with labels
 
    M 0 START_MPI            Initializes the MPI system
 

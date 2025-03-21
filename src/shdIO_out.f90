@@ -1,4 +1,4 @@
-module shdUtil_out
+module shd_io_out
 
   use globals
 
@@ -7,19 +7,19 @@ module shdUtil_out
 
   ! public modules
   !╭────────────────────────────────────────────────╮!
-  public :: shdUtil_io__outputResult
-  public :: shdUtil_io__outputResultMpi
-  public :: shdUtil_io__outputImg
+  public :: shd_io__outputResult
+  public :: shd_io__outputResultMpi
+  public :: shd_io__outputImg
 
-  public :: shdUtil_io__outputCellSplit
-  public :: shdUtil_io__plotCell
+  public :: shd_io__outputCellSplit
+  public :: shd_io__plotCell
 
-  public :: shdUtil_io__saveState
+  public :: shd_io__saveState
   !╰────────────────────────────────────────────────╯!
 
 contains
 
-subroutine shdUtil_io__outputData(&
+subroutine shd_io__outputData(&
     &DATA_OUT, NVAR, NDATA,&
     &IDATA, OUTFILE_DATA, MODE)
 
@@ -70,16 +70,16 @@ subroutine shdUtil_io__outputData(&
 
     else
 
-        write(*, '(A)') 'Error [shdUtil_io__outputData]: Failed to open file <'//trim(adjustl(OUTFILE_DATA))//'>.'
+        write(*, '(A)') 'Error [_outputData]: Failed to open file <'//trim(adjustl(OUTFILE_DATA))//'>.'
         stop
 
     end if
 
     return
 
-end subroutine shdUtil_io__outputData
+end subroutine shd_io__outputData
 
-subroutine shdUtil_io__outputResult(&
+subroutine shd_io__outputResult(&
     &NSTOKES, NX, NY, NX1, NY1, NZ, NBPTS, NPTS, NCELLS,&
     &NSH, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
     &NMU, NPHI, NANG, NG,&
@@ -334,7 +334,7 @@ subroutine shdUtil_io__outputResult(&
         ! binary data
         !╭────────────────────────────────────────────────╮!
         write(*, '(A)') 'Message [_outputResult]: <R> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
-        call shdUtil_io__outputData(RADOUT, NSTOKES, NANGOUT*NXOUT*NYOUT, IRAD, OUTFILE_DATA)
+        call shd_io__outputData(RADOUT, NSTOKES, NANGOUT*NXOUT*NYOUT, IRAD, OUTFILE_DATA)
         !╰────────────────────────────────────────────────╯!
 
     else if (OUTTYPE .eq. 'F') then
@@ -387,14 +387,14 @@ subroutine shdUtil_io__outputResult(&
             write(*, '(A)') 'Message [_outputResult]: <F1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
 
             IDATA = 0
-            call shdUtil_io__outputData(C*FLUXES(2, NZ:NBPTS:NZ), 1, NX1*NY1, IDATA, OUTFILE_DATA)
+            call shd_io__outputData(C*FLUXES(2, NZ:NBPTS:NZ), 1, NX1*NY1, IDATA, OUTFILE_DATA)
 
             IDATA = 0
-            call shdUtil_io__outputData(C*FLUXES(1, 1:NBPTS:NZ), 1, NX1*NY1, IDATA, OUTFILE_DATA, 'ADD')
+            call shd_io__outputData(C*FLUXES(1, 1:NBPTS:NZ), 1, NX1*NY1, IDATA, OUTFILE_DATA, 'ADD')
 
             if (SRCTYPE .ne. 'T') then
                 IDATA = 0
-                call shdUtil_io__outputData(DIRFLUX(1:NBPTS:NZ), 1, NX1*NY1, IDATA, OUTFILE_DATA, 'ADD')
+                call shd_io__outputData(DIRFLUX(1:NBPTS:NZ), 1, NX1*NY1, IDATA, OUTFILE_DATA, 'ADD')
             end if
             !╰────────────────────────────────────────────────╯!
 
@@ -483,14 +483,14 @@ subroutine shdUtil_io__outputResult(&
             write(*, '(A)') 'Message [_outputResult]: <F2> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
 
             IDATA = 0
-            call shdUtil_io__outputData(C*FUP, 1, NXOUT*NYOUT, IDATA, OUTFILE_DATA)
+            call shd_io__outputData(C*FUP, 1, NXOUT*NYOUT, IDATA, OUTFILE_DATA)
 
             IDATA = 0
-            call shdUtil_io__outputData(C*FDN, 1, NXOUT*NYOUT, IDATA, OUTFILE_DATA, 'ADD')
+            call shd_io__outputData(C*FDN, 1, NXOUT*NYOUT, IDATA, OUTFILE_DATA, 'ADD')
 
             if (SRCTYPE .ne. 'T') then
                 IDATA = 0
-                call shdUtil_io__outputData(FDIR, 1, NXOUT*NYOUT, IDATA, OUTFILE_DATA, 'ADD')
+                call shd_io__outputData(FDIR, 1, NXOUT*NYOUT, IDATA, OUTFILE_DATA, 'ADD')
             end if
 
             deallocate(FUP)
@@ -579,14 +579,14 @@ subroutine shdUtil_io__outputResult(&
             write(*, '(A)') 'Message [_outputResult]: <F3> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
 
             IDATA = 0
-            call shdUtil_io__outputData(C*SUM2/N, 1, NZ, IDATA, OUTFILE_DATA)
+            call shd_io__outputData(C*SUM2/N, 1, NZ, IDATA, OUTFILE_DATA)
 
             IDATA = 0
-            call shdUtil_io__outputData(C*SUM1/N, 1, NZ, IDATA, OUTFILE_DATA, 'ADD')
+            call shd_io__outputData(C*SUM1/N, 1, NZ, IDATA, OUTFILE_DATA, 'ADD')
 
             if (SRCTYPE .ne. 'T') then
                 IDATA = 0
-                call shdUtil_io__outputData(SUM3/N, 1, NZ, IDATA, OUTFILE_DATA, 'ADD')
+                call shd_io__outputData(SUM3/N, 1, NZ, IDATA, OUTFILE_DATA, 'ADD')
             end if
 
             deallocate(SUM1)
@@ -671,24 +671,24 @@ subroutine shdUtil_io__outputResult(&
             end if
 
             IDATA = 0
-            call shdUtil_io__outputData(C*FLUXES(2, :), 1, N, IDATA, OUTFILE_DATA)
+            call shd_io__outputData(C*FLUXES(2, :), 1, N, IDATA, OUTFILE_DATA)
 
             IDATA = 0
-            call shdUtil_io__outputData(C*FLUXES(1, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
+            call shd_io__outputData(C*FLUXES(1, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
 
             if (SRCTYPE .ne. 'T') then
                 IDATA = 0
-                call shdUtil_io__outputData(DIRFLUX(:), 1, N, IDATA, OUTFILE_DATA, 'ADD')
+                call shd_io__outputData(DIRFLUX(:), 1, N, IDATA, OUTFILE_DATA, 'ADD')
             end if
 
             ! add grid positions (or binary data cannot be reconstructed)
             if (ALLGRID) then
                 IDATA = 0
-                call shdUtil_io__outputData(GRIDPOS(1, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
+                call shd_io__outputData(GRIDPOS(1, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
                 IDATA = 0
-                call shdUtil_io__outputData(GRIDPOS(2, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
+                call shd_io__outputData(GRIDPOS(2, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
                 IDATA = 0
-                call shdUtil_io__outputData(GRIDPOS(3, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
+                call shd_io__outputData(GRIDPOS(3, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
             end if
             !╰────────────────────────────────────────────────╯!
 
@@ -844,9 +844,9 @@ subroutine shdUtil_io__outputResult(&
 
     close (2)
     return
-end subroutine shdUtil_io__outputResult
+end subroutine shd_io__outputResult
 
-subroutine shdUtil_io__outputResultMpi(&
+subroutine shd_io__outputResultMpi(&
     & NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     & NSH, ML, MM, NLM, NMU, NPHI, NANG, NG,&
     & PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
@@ -1248,9 +1248,9 @@ subroutine shdUtil_io__outputResultMpi(&
 
     close (2)
     return
-end subroutine shdUtil_io__outputResultMpi
+end subroutine shd_io__outputResultMpi
 
-subroutine shdUtil_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+subroutine shd_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     & NSH, ML, MM, NLM, NMU, NPHI, NANG, NG,&
     & PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
     & BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
@@ -1639,9 +1639,9 @@ subroutine shdUtil_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     deallocate (BUFFER1)
     close (2)
     return
-end subroutine shdUtil_io__outputImg
+end subroutine shd_io__outputImg
 
-subroutine shdUtil_io__outputCellSplit(&
+subroutine shd_io__outputCellSplit(&
     & OUTFILE, GRIDPTR, GRIDPOS, EXTINCT,&
     & SHPTR, SOURCE, NCELLS)
     ! Outputs the final cell splitting criterion for each grid cell
@@ -1682,9 +1682,9 @@ subroutine shdUtil_io__outputCellSplit(&
 
     close (9)
     return
-end subroutine shdUtil_io__outputCellSplit
+end subroutine shd_io__outputCellSplit
 
-subroutine shdUtil_io__plotCell(&
+subroutine shd_io__plotCell(&
     & OUTFILE, YVAL, OUTTYPE,&
     & IPFLAG, NX, XDOMAIN, ZDOMAIN,&
     & NCELLS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, GRIDPOS)
@@ -1812,9 +1812,9 @@ subroutine shdUtil_io__plotCell(&
 
     close (9)
     return
-end subroutine shdUtil_io__plotCell
+end subroutine shd_io__plotCell
 
-subroutine shdUtil_io__saveState(&
+subroutine shd_io__saveState(&
     & OUTSAVEFILE, NSTOKES, NX, NY, NZ,&
     & ML, MM, NLM, WORK, XGRID, YGRID, ZGRID,&
     & NPTS, NCELLS, GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR,&
@@ -1868,6 +1868,6 @@ subroutine shdUtil_io__saveState(&
 
     close (3)
     return
-end subroutine shdUtil_io__saveState
+end subroutine shd_io__saveState
 
-end module shdUtil_out
+end module shd_io_out
