@@ -203,7 +203,7 @@ program SHDOM
     NY1 = NY + 1
     if (btest(IPFLAG, 1) .or. btest(BCFLAG, 1) .or. btest(BCFLAG, 3)) NY1 = NY
     if (NZ .le. 1) then
-        write (6, *) 'NZ < 2'
+        write (6, *) 'Error [SHDOM]: NZ < 2.'
         stop
     end if
     NBPTS = NX1*NY1*NZ
@@ -741,7 +741,7 @@ program SHDOM
 
         do I = 1, NUMOUT
             if (OUTTYPES(I) /= 'V' .and. OUTFILES(I) /= 'NONE') then
-                call shdUtil_io__outputResult(NSTOKES, NX, NY, NZ, NBPTS, NPTS, NCELLS, &
+                call shdUtil_io__outputResult(NSTOKES, NX, NY, NX1, NY1, NZ, NBPTS, NPTS, NCELLS, &
                                     NSH, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE, NMU, NPHI, NANG, NG, &
                                     PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE, &
                                     BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE, &

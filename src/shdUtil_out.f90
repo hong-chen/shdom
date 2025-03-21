@@ -28,8 +28,8 @@ module shdUtil_out
 contains
 
 subroutine shdUtil_io__outputData(&
-    &DATA_OUT, NVAR, NSET, NX, NY, NZ,&
-    &ISTART, OUTFILE_DATA)
+    &DATA_OUT, NVAR, NDATA,&
+    &IDATA, OUTFILE_DATA, FILE_STATUS)
     !   Writes the desired type of output file from the output fields
     ! with a header giving the input parameters.
     ! There are five types (OUTTYPE) of output: 'R' - for radiance,
@@ -38,31 +38,32 @@ subroutine shdUtil_io__outputData(&
     ! medium properties.
     ! See the overall program documentation for output parameters.
 
-    integer, intent(in) :: NVAR, NSET, NX, NY, NZ
-    real, intent(in)    :: DATA_OUT(NVAR, *)
+    real, intent(in) :: DATA_OUT(NVAR, *)
+    integer :: NVAR, NDATA
+    integer, intent(inout) :: IDATA
     character(*), intent(in) :: OUTFILE_DATA
-    integer, intent(inout) :: ISTART
-    integer :: ivar, iset, ix, iy, iz, idata, istat
+    character(*), intent(in), optional :: FILE_STATUS
+    integer :: ivar, icount, idata_start, istat
 
-    open (UNIT=88, FILE=trim(adjustl(OUTFILE_DATA)), STATUS='REPLACE', form='UNFORMATTED', access='STREAM', iostat=istat)
+    if ((present(FILE_STATUS)) .and. (FILE_STATUS .eq. 'OLD')) then
+        open (UNIT=88, FILE=trim(adjustl(OUTFILE_DATA)), STATUS=FILE_STATUS, position='APPEND',&
+            &form='UNFORMATTED', access='STREAM', iostat=istat)
+    else
+        open (UNIT=88, FILE=trim(adjustl(OUTFILE_DATA)), STATUS='REPLACE',&
+            &form='UNFORMATTED', access='STREAM', iostat=istat)
+    end if
 
-    idata = ISTART
+    idata_start = IDATA
 
     if (istat .eq. 0) then
 
         do ivar = 1, NVAR
-          ! rewind for each column variable
-          ISTART = idata
-          do iset = 1, NSET
-            do iz = 1, NZ
-              do iy = 1, NY
-                do ix = 1, NX
-                    ISTART = ISTART + 1
-                    write (88) DATA_OUT(ivar, ISTART)
-                end do
-              end do
+            ! rewind for each column variable
+            IDATA = idata_start
+            do icount = 1, NDATA
+                 IDATA = IDATA + 1
+                 write (88) DATA_OUT(ivar, IDATA)
             end do
-          end do
         end do
 
         close(88, iostat=istat)
@@ -77,7 +78,7 @@ subroutine shdUtil_io__outputData(&
 end subroutine shdUtil_io__outputData
 
 subroutine shdUtil_io__outputResult(&
-    &NSTOKES, NX, NY, NZ, NBPTS, NPTS, NCELLS,&
+    &NSTOKES, NX, NY, NX1, NY1, NZ, NBPTS, NPTS, NCELLS,&
     &NSH, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
     &NMU, NPHI, NANG, NG,&
     &PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
@@ -99,7 +100,7 @@ subroutine shdUtil_io__outputResult(&
     ! medium properties.
     ! See the overall program documentation for output parameters.
 
-    integer, intent(in) :: NSTOKES, NX, NY, NZ, NBPTS, NPTS, NCELLS, NSH
+    integer, intent(in) :: NSTOKES, NX, NY, NX1, NY1, NZ, NBPTS, NPTS, NCELLS, NSH
     integer, intent(in) :: ML, MM, NLM, NSTLEG, NLEG, NUMPHASE, NMU, NPHI, NANG, NG
     integer, intent(in) :: BCFLAG, IPFLAG
     integer, intent(in) :: MAXITER, TOTITER, NSHOUT
@@ -124,18 +125,19 @@ subroutine shdUtil_io__outputResult(&
     integer, intent(inout) :: IRAD
 
     integer IZ, I, K, N, NX2, NY2, J, JX, JY, ICELL
-    integer NANGOUT, NXOUT, NYOUT, NZOUT
+    integer NANGOUT, NXOUT, NYOUT
     logical ALLGRID
     real MUOUT, PHID, C, PI, SUM, SUM1, SUM2, SUM3
     real XDOMAIN, YDOMAIN, STARTX, STARTY
-    real FUP, FDN, FDIR, ASYM
+    real :: ASYM
+    real, allocatable :: FUP(:), FDN(:), FDIR(:)
     double precision X0, Y0, Z0
     character*128 FORM
     character*128 GRIDNAME, SOURCENAME, UNITSNAME, OUTNAME, SFCNAME
 
     character(256) :: OUTFILE_DATA
     character(10)  :: DATA_POSTFIX
-
+    integer :: NVAR, NDATA, IDATA
     DATA_POSTFIX = '.dat'
     OUTFILE_DATA = trim(adjustl(OUTFILE))//trim(adjustl(DATA_POSTFIX))
 
@@ -297,7 +299,6 @@ subroutine shdUtil_io__outputResult(&
         ! Z0
         !╭────────────────────────────────────────────────╮!
         Z0 = min(max(OUTPARMS(1), ZGRID(1)), ZGRID(NZ))
-        NZOUT = 1
         !╰────────────────────────────────────────────────╯!
 
         ! NANGOUT
@@ -320,17 +321,16 @@ subroutine shdUtil_io__outputResult(&
         ! description for binary data
         !╭────────────────────────────────────────────────╮!
         write (2, '(A)') '! The following contains information for binary data intepretation:'
+        write (2, '(A)') '! R'
         write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-        write (2, '(A, 5(I6,A))') '! ', NXOUT, ',', NYOUT, ',', NZOUT, ',', NANGOUT, ',', NSTOKES, ''
+        write (2, '(A, 5(I6,A))') '! ', NXOUT, ',', NYOUT, ',', 1, ',', NANGOUT, ',', NSTOKES, ''
         close(2)
         !╰────────────────────────────────────────────────╯!
 
         ! binary data
         !╭────────────────────────────────────────────────╮!
-        write(*, '(A)') 'Message [shdUtil_io__outputResult]: Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
-
-        !                         DATA_OUT, NVAR,    NSET,    NX,    NY,    NZ,  ISTART, OUTFILE_DATA
-        call shdUtil_io__outputData(RADOUT, NSTOKES, NANGOUT, NXOUT, NYOUT, NZOUT, IRAD, OUTFILE_DATA)
+        write(*, '(A)') 'Message [shdUtil_io__outputResult]:[R] Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+        call shdUtil_io__outputData(RADOUT, NSTOKES, NANGOUT*NXOUT*NYOUT, IRAD, OUTFILE_DATA)
         !╰────────────────────────────────────────────────╯!
 
     else if (OUTTYPE .eq. 'F') then
@@ -341,8 +341,15 @@ subroutine shdUtil_io__outputResult(&
             C = 1.0
         end if
 
+        if (SRCTYPE .ne. 'T') then
+            NVAR = 3
+        else
+            NVAR = 2
+        end if
+
         ! Hemispheric flux output, F1
-        !   Format 1 is flux at top and bottom of medium at grid point
+        ! Format 1 is flux at top and bottom of medium at grid point
+        ! NVAR=2 or 3, NSET=1, NX=NX, NY=NY, NZ=1
         if (nint(OUTPARMS(1)) .le. 1) then
 
             write (2, '(A,F7.3)') '!    UPWELLING FLUX:     Z=', ZGRID(NZ)
@@ -362,22 +369,51 @@ subroutine shdUtil_io__outputResult(&
                 end if
             end if
 
-            do I = 1, NBPTS, NZ
-                if (GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.&
-                    & GRIDPOS(2, I) .lt. YGRID(NY + 1)) then
-                    if (SRCTYPE .ne. 'T') then
-                        write (2, FORM) GRIDPOS(1, I), GRIDPOS(2, I),&
-                            & C*FLUXES(2, I + NZ - 1), C*FLUXES(1, I), DIRFLUX(I)
-                    else
-                        write (2, FORM) GRIDPOS(1, I), GRIDPOS(2, I),&
-                            & C*FLUXES(2, I + NZ - 1), C*FLUXES(1, I)
-                    end if
-                end if
-            end do
+            ! description for binary data
+            !╭────────────────────────────────────────────────╮!
+            write (2, '(A)') '! The following contains information for binary data intepretation:'
+            write (2, '(A)') '! F1'
+            write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
+            write (2, '(A, 5(I6,A))') '! ', NX, ',', NY, ',', 1, ',', 1, ',', NVAR, ''
+            close(2)
+            !╰────────────────────────────────────────────────╯!
 
+            ! binary data
+            !╭────────────────────────────────────────────────╮!
+            write(*, '(A)') 'Message [shdUtil_io__outputResult]: [F1] Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+
+            IDATA = 0
+            call shdUtil_io__outputData(C*FLUXES(2, NZ:NBPTS:NZ), 1, NX*NY, IDATA, OUTFILE_DATA)
+
+            IDATA = 0
+            call shdUtil_io__outputData(C*FLUXES(1, 1:NBPTS:NZ), 1, NX*NY, IDATA, OUTFILE_DATA, 'OLD')
+
+            if (SRCTYPE .ne. 'T') then
+                IDATA = 0
+                call shdUtil_io__outputData(DIRFLUX(1:NBPTS:NZ), 1, NX*NY, IDATA, OUTFILE_DATA, 'OLD')
+            end if
+            !╰────────────────────────────────────────────────╯!
+
+            ! original
+            !╭────────────────────────────────────────────────╮!
+            !do I = 1, NBPTS, NZ
+            !    if (GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.&
+            !        & GRIDPOS(2, I) .lt. YGRID(NY + 1)) then
+            !        if (SRCTYPE .ne. 'T') then
+            !            write (2, FORM) GRIDPOS(1, I), GRIDPOS(2, I),&
+            !                & C*FLUXES(2, I + NZ - 1), C*FLUXES(1, I), DIRFLUX(I)
+            !        else
+            !            write (2, FORM) GRIDPOS(1, I), GRIDPOS(2, I),&
+            !                & C*FLUXES(2, I + NZ - 1), C*FLUXES(1, I)
+            !        end if
+            !    end if
+            !end do
+            !╰────────────────────────────────────────────────╯!
+
+        ! Format 2 is flux at a given level at regular locations
+        ! NVAR=2 or 3, NSET=1, NX=NXOUT, NY=NYOUT, NZ=1
         else if (nint(OUTPARMS(1)) .eq. 2) then
 
-            ! Format 2 is flux at a given level at regular locations
             Z0 = min(max(OUTPARMS(2), ZGRID(1)), ZGRID(NZ))
             if (OUTPARMS(3) .eq. 0.0) OUTPARMS(3) = 1.0
             NX2 = NX + 1 - ibits(BCFLAG, 0, 1)
@@ -402,31 +438,90 @@ subroutine shdUtil_io__outputResult(&
                 end if
             end if
 
+            ! data processing
+            !╭────────────────────────────────────────────────╮!
+            allocate(FUP(NXOUT*NYOUT))
+            allocate(FDN(NXOUT*NYOUT))
+            allocate(FDIR(NXOUT*NYOUT))
+            IDATA = 0
             Y0 = YGRID(1)
             do JY = 1, NYOUT
                 X0 = XGRID(1)
                 do JX = 1, NXOUT
+                    IDATA = IDATA + 1
                     call LOCATE_GRID_CELL(NX, NY, NZ, XGRID, YGRID, ZGRID,&
                         & NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS,&
                         & BCFLAG, IPFLAG, X0, Y0, Z0, ICELL)
                     call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,&
-                        & X0, Y0, Z0, 2, FLUXES, 1, 1, FDN)
+                        & X0, Y0, Z0, 2, FLUXES, 1, 1, FDN(IDATA))
                     call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,&
-                        & X0, Y0, Z0, 2, FLUXES, 2, 1, FUP)
+                        & X0, Y0, Z0, 2, FLUXES, 2, 1, FUP(IDATA))
                     call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,&
-                        & X0, Y0, Z0, 1, DIRFLUX, 1, 1, FDIR)
-                    if (SRCTYPE .ne. 'T') then
-                        write (2, FORM) X0, Y0, C*FUP, C*FDN, FDIR
-                    else
-                        write (2, FORM) X0, Y0, C*FUP, C*FDN
-                    end if
+                        & X0, Y0, Z0, 1, DIRFLUX, 1, 1, FDIR(IDATA))
                     X0 = X0 + OUTPARMS(3)
                 end do
                 Y0 = Y0 + OUTPARMS(4)
             end do
+            !╰────────────────────────────────────────────────╯!
 
+            ! description for binary data
+            !╭────────────────────────────────────────────────╮!
+            write (2, '(A)') '! The following contains information for binary data intepretation:'
+            write (2, '(A)') '! F2'
+            write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
+            write (2, '(A, 5(I6,A))') '! ', NXOUT, ',', NYOUT, ',', 1, ',', 1, ',', NVAR, ''
+            close(2)
+            !╰────────────────────────────────────────────────╯!
+
+            ! binary data
+            !╭────────────────────────────────────────────────╮!
+            write(*, '(A)') 'Message [shdUtil_io__outputResult]: [F2] Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+
+            IDATA = 0
+            call shdUtil_io__outputData(C*FUP, 1, NXOUT*NYOUT, IDATA, OUTFILE_DATA)
+
+            IDATA = 0
+            call shdUtil_io__outputData(C*FDN, 1, NXOUT*NYOUT, IDATA, OUTFILE_DATA, 'OLD')
+
+            if (SRCTYPE .ne. 'T') then
+                IDATA = 0
+                call shdUtil_io__outputData(FDIR, 1, NXOUT*NYOUT, IDATA, OUTFILE_DATA, 'OLD')
+            end if
+
+            deallocate(FUP)
+            deallocate(FDN)
+            deallocate(FDIR)
+            !╰────────────────────────────────────────────────╯!
+
+            ! original
+            !╭────────────────────────────────────────────────╮!
+            !Y0 = YGRID(1)
+            !do JY = 1, NYOUT
+            !    X0 = XGRID(1)
+            !    do JX = 1, NXOUT
+            !        call LOCATE_GRID_CELL(NX, NY, NZ, XGRID, YGRID, ZGRID,&
+            !            & NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS,&
+            !            & BCFLAG, IPFLAG, X0, Y0, Z0, ICELL)
+            !        call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,&
+            !            & X0, Y0, Z0, 2, FLUXES, 1, 1, FDN)
+            !        call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,&
+            !            & X0, Y0, Z0, 2, FLUXES, 2, 1, FUP)
+            !        call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,&
+            !            & X0, Y0, Z0, 1, DIRFLUX, 1, 1, FDIR)
+            !        if (SRCTYPE .ne. 'T') then
+            !            write (2, FORM) X0, Y0, C*FUP, C*FDN, FDIR
+            !        else
+            !            write (2, FORM) X0, Y0, C*FUP, C*FDN
+            !        end if
+            !        X0 = X0 + OUTPARMS(3)
+            !    end do
+            !    Y0 = Y0 + OUTPARMS(4)
+            !end do
+            !╰────────────────────────────────────────────────╯!
+
+        ! Format 3 is domain averaged vertical profile
+        ! NVAR=2 or 3, NSET=1, NX=NX1, NY=NY1, NZ=1
         else if (nint(OUTPARMS(1)) .eq. 3) then
-            ! Format 3 is domain averaged vertical profile
             if (UNITS .eq. 'T') then
                 FORM = '(1X,F7.3,1X,2(2X,F6.2))'
                 write (2, '(A)') '!   Z        UP     DOWN'
@@ -462,10 +557,11 @@ subroutine shdUtil_io__outputResult(&
                 end if
             end do
 
+        ! Format 4 is fluxes at every base grid point
+        ! Format 5 is fluxes at every grid point
+        ! NVAR=2 or 3, NSET=1, NX=NX1, NY=NY1, NZ=NZ
         else if (nint(OUTPARMS(1)) .ge. 4) then
 
-            ! Format 4 is fluxes at every base grid point
-            ! Format 5 is fluxes at every grid point
             if (nint(OUTPARMS(1)) .eq. 5) then
                 N = NPTS
                 ALLGRID = .true.
@@ -488,18 +584,57 @@ subroutine shdUtil_io__outputResult(&
                 end if
             end if
 
-            do I = 1, N
-                if ((GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.&
-                    & GRIDPOS(2, I) .lt. YGRID(NY + 1)) .or. ALLGRID) then
-                    if (SRCTYPE .ne. 'T') then
-                        write (2, FORM) GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I),&
-                            & C*FLUXES(2, I), C*FLUXES(1, I), DIRFLUX(I)
-                    else
-                        write (2, FORM) GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I),&
-                            & C*FLUXES(2, I), C*FLUXES(1, I)
-                    end if
-                end if
-            end do
+            ! description for binary data
+            !╭────────────────────────────────────────────────╮!
+            write (2, '(A)') '! The following contains information for binary data intepretation:'
+            if (ALLGRID) then
+                write (2, '(A)') '! F5'
+                write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
+                write (2, '(A, 2(I6,A))') '! ', N, ',', NVAR, ''
+            else
+                write (2, '(A)') '! F4'
+                write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
+                write (2, '(A, 5(I6,A))') '! ', NX1, ',', NY1, ',', NZ, ',', 1, ',', NVAR, ''
+            end if
+            close(2)
+            !╰────────────────────────────────────────────────╯!
+
+            ! binary data
+            !╭────────────────────────────────────────────────╮!
+            if (ALLGRID) then
+                write(*, '(A)') 'Message [shdUtil_io__outputResult]: [F5] Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+            else
+                write(*, '(A)') 'Message [shdUtil_io__outputResult]: [F4] Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+            end if
+
+            IDATA = 0
+            call shdUtil_io__outputData(C*FLUXES(2, :), 1, N, IDATA, OUTFILE_DATA)
+
+            IDATA = 0
+            call shdUtil_io__outputData(C*FLUXES(1, :), 1, N, IDATA, OUTFILE_DATA, 'OLD')
+
+            if (SRCTYPE .ne. 'T') then
+                IDATA = 0
+                call shdUtil_io__outputData(DIRFLUX(:), 1, N, IDATA, OUTFILE_DATA, 'OLD')
+            end if
+            !╰────────────────────────────────────────────────╯!
+
+            ! original
+            !╭────────────────────────────────────────────────╮!
+            !do I = 1, N
+            !    if ((GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.&
+            !        & GRIDPOS(2, I) .lt. YGRID(NY + 1)) .or. ALLGRID) then
+            !        if (SRCTYPE .ne. 'T') then
+            !            write (2, FORM) GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I),&
+            !                & C*FLUXES(2, I), C*FLUXES(1, I), DIRFLUX(I)
+            !        else
+            !            write (2, FORM) GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I),&
+            !                & C*FLUXES(2, I), C*FLUXES(1, I)
+            !        end if
+            !    end if
+            !end do
+            !╰────────────────────────────────────────────────╯!
+
         end if
 
     else if (OUTTYPE .eq. 'H') then
