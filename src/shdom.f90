@@ -836,7 +836,7 @@ program SHDOM
     deallocate (ZLEVELS, TEMPP, EXTINCTP, ALBEDOP, EXTDIRP, IPHASEP, LEGENP)
     deallocate (MU, WTDO, PHI, NPHI0)
 
-end program
+end program SHDOM
 
 subroutine TRILIN_INTERP_PROP(X, Y, Z, INIT, NSTLEG, NLEG, &
                               TEMP, EXTINCT, ALBEDO, LEGEN, IPHASE)
