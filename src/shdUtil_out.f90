@@ -69,7 +69,7 @@ subroutine shdUtil_io__outputData(&
 
         close(88, iostat=istat)
 
-        DATA_SIZE = 4.0*NVAR*NDATA/1048576.0
+        DATA_SIZE = 4.0*NVAR*NDATA/1000000.0
         write(*, '(A,F6.2,A)') 'Message [shdUtil_io__outputData]: Data saved at <'//trim(adjustl(OUTFILE_DATA))//'> (',&
             &DATA_SIZE, 'MB).'
     else
