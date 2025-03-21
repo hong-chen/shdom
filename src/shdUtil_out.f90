@@ -30,13 +30,8 @@ contains
 subroutine shdUtil_io__outputData(&
     &DATA_OUT, NVAR, NDATA,&
     &IDATA, OUTFILE_DATA, MODE)
-    !   Writes the desired type of output file from the output fields
-    ! with a header giving the input parameters.
-    ! There are five types (OUTTYPE) of output: 'R' - for radiance,
-    ! 'F' - for hemispheric flux, 'H' - for heating rate (net flux
-    ! convergence), 'S' - for spherical harmonic terms, and 'M' for
-    ! medium properties.
-    ! See the overall program documentation for output parameters.
+
+    ! Writes data into binary file
 
     real, intent(in) :: DATA_OUT(NVAR, *)
     integer :: NVAR, NDATA
@@ -44,6 +39,7 @@ subroutine shdUtil_io__outputData(&
     character(*), intent(in) :: OUTFILE_DATA
     character(*), intent(in), optional :: MODE
     integer :: ivar, icount, idata_start, istat
+    integer :: DATA_BYTE
     real :: DATA_SIZE
 
     if ((present(MODE)) .and. (MODE .eq. 'ADD')) then
@@ -69,7 +65,8 @@ subroutine shdUtil_io__outputData(&
 
         close(88, iostat=istat)
 
-        DATA_SIZE = 4.0*NVAR*NDATA/1000000.0
+        inquire(FILE=trim(adjustl(OUTFILE_DATA)), SIZE=DATA_BYTE)
+        DATA_SIZE = DATA_BYTE/1000000.0
         write(*, '(A,F6.2,A)') 'Message [shdUtil_io__outputData]: Data saved at <'//trim(adjustl(OUTFILE_DATA))//'> (',&
             &DATA_SIZE, 'MB).'
     else
@@ -131,7 +128,8 @@ subroutine shdUtil_io__outputResult(&
     integer IZ, I, K, N, NX2, NY2, J, JX, JY, ICELL
     integer NANGOUT, NXOUT, NYOUT
     logical ALLGRID
-    real MUOUT, PHID, C, PI, SUM, SUM1, SUM2, SUM3
+    real MUOUT, PHID, C, PI, SUM
+    real, allocatable :: SUM1(:), SUM2(:), SUM3(:)
     real XDOMAIN, YDOMAIN, STARTX, STARTY
     real :: ASYM
     real, allocatable :: FUP(:), FDN(:), FDIR(:)
@@ -542,26 +540,81 @@ subroutine shdUtil_io__outputResult(&
                 end if
             end if
 
+            ! data processing
+            !╭────────────────────────────────────────────────╮!
+            allocate(SUM1(NZ))
+            allocate(SUM2(NZ))
+            allocate(SUM3(NZ))
+
             do IZ = 1, NZ
-                SUM1 = 0.0
-                SUM2 = 0.0
-                SUM3 = 0.0
+                SUM1(IZ) = 0.0
+                SUM2(IZ) = 0.0
+                SUM3(IZ) = 0.0
                 N = 0
                 do I = IZ, NBPTS, NZ
                     if (GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.&
                         & GRIDPOS(2, I) .lt. YGRID(NY + 1)) then
-                        SUM1 = SUM1 + FLUXES(1, I)
-                        SUM2 = SUM2 + FLUXES(2, I)
-                        SUM3 = SUM3 + DIRFLUX(I)
+                        SUM1(IZ) = SUM1(IZ) + FLUXES(1, I)
+                        SUM2(IZ) = SUM2(IZ) + FLUXES(2, I)
+                        SUM3(IZ) = SUM3(IZ) + DIRFLUX(I)
                         N = N + 1
                     end if
                 end do
-                if (SRCTYPE .ne. 'T') then
-                    write (2, FORM) ZGRID(IZ), C*SUM2/N, C*SUM1/N, SUM3/N
-                else
-                    write (2, FORM) ZGRID(IZ), C*SUM2/N, C*SUM1/N
-                end if
             end do
+            !╰────────────────────────────────────────────────╯!
+
+            ! description for binary data
+            !╭────────────────────────────────────────────────╮!
+            write (2, '(A)') '! The following contains information for binary data intepretation:'
+            write (2, '(A)') '! F3'
+            write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
+            write (2, '(A, 5(I6,A))') '! ', 1, ',', 1, ',', NZ, ',', 1, ',', NVAR, ''
+            close(2)
+            !╰────────────────────────────────────────────────╯!
+
+            ! binary data
+            !╭────────────────────────────────────────────────╮!
+            write(*, '(A)') 'Message [shdUtil_io__outputResult]: <F3> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+
+            IDATA = 0
+            call shdUtil_io__outputData(C*SUM2/N, 1, NZ, IDATA, OUTFILE_DATA)
+
+            IDATA = 0
+            call shdUtil_io__outputData(C*SUM1/N, 1, NZ, IDATA, OUTFILE_DATA, 'ADD')
+
+            if (SRCTYPE .ne. 'T') then
+                IDATA = 0
+                call shdUtil_io__outputData(SUM3/N, 1, NZ, IDATA, OUTFILE_DATA, 'ADD')
+            end if
+
+            deallocate(SUM1)
+            deallocate(SUM2)
+            deallocate(SUM3)
+            !╰────────────────────────────────────────────────╯!
+
+            ! original
+            !╭────────────────────────────────────────────────╮!
+            !do IZ = 1, NZ
+            !    SUM1 = 0.0
+            !    SUM2 = 0.0
+            !    SUM3 = 0.0
+            !    N = 0
+            !    do I = IZ, NBPTS, NZ
+            !        if (GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.&
+            !            & GRIDPOS(2, I) .lt. YGRID(NY + 1)) then
+            !            SUM1 = SUM1 + FLUXES(1, I)
+            !            SUM2 = SUM2 + FLUXES(2, I)
+            !            SUM3 = SUM3 + DIRFLUX(I)
+            !            N = N + 1
+            !        end if
+            !    end do
+            !    if (SRCTYPE .ne. 'T') then
+            !        write (2, FORM) ZGRID(IZ), C*SUM2/N, C*SUM1/N, SUM3/N
+            !    else
+            !        write (2, FORM) ZGRID(IZ), C*SUM2/N, C*SUM1/N
+            !    end if
+            !end do
+            !╰────────────────────────────────────────────────╯!
 
         ! Format 4 is fluxes at every base grid point
         ! Format 5 is fluxes at every grid point
