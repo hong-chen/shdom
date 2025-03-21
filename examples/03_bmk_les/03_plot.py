@@ -28,7 +28,7 @@ import er3t
 
 def figure_les(fname):
 
-    data = er3t.rtm.shd.get_shd_data_out(fname)
+    data = er3t.rtm.shd.get_shd_data_out_test(fname)
 
     for j in range(data.shape[-1]):
         for i in range(data.shape[-2]):
@@ -46,6 +46,7 @@ def figure_les(fname):
                 #╭──────────────────────────────────────────────────────────────╮#
                 ax1 = fig.add_subplot(111, aspect='auto')
                 cs = ax1.imshow(data_shd.T, origin='lower', cmap='Greys_r', zorder=0, aspect='auto', vmin=0.0, vmax=0.3, extent=extent)
+                # cs = ax1.imshow(data_shd.T, origin='lower', cmap='Greys_r', zorder=0, aspect='auto', extent=extent)
                 ax1.axis('off')
                 #╰──────────────────────────────────────────────────────────────╯#
                 # save figure
@@ -65,8 +66,10 @@ def figure_les(fname):
 
 if __name__ == '__main__':
 
-    fname = 'tmp-data/shdom-out_les.txt'
+    # fnames = sorted(glob.glob('tmp-data/shdom-out*.txt'))
+    fnames = sorted(glob.glob('tmp-data/shdom-out*f1.txt'))
 
-    figure_les(fname)
+    for fname in fnames:
+        figure_les(fname)
 
     pass
