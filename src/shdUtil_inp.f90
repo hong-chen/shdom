@@ -353,7 +353,7 @@ subroutine shdUtil_io__nmlInput(&
 
     ! Read in the namelist
     call get_command_argument(1, NMLFILE)
-    write (*, '(A,"<",A,">")') 'Message [shdUtil_io__nmlInput]: ', trim(adjustl(NMLFILE))
+    write (*, '(A,"<",A,">")') 'Message [_nmlInput]: ', trim(adjustl(NMLFILE))
     open (UNIT=5, FILE=trim(adjustl(NMLFILE)), STATUS='OLD')
     read (5, NML=SHDOMINPUT)
     close (5)
@@ -928,7 +928,7 @@ subroutine shdUtil_io__checkPropInput(&
         end do
     end do
     if (NTHICK .gt. 0) then
-        write (*, '(A)') 'Message [shdUtil_io__checkPropInput]: '
+        write (*, '(A)') 'Message [_checkPropInput]: '
         write (*, '(A,I8)') '  Number of property grid cells with optical depth greater than 2: ', NTHICK
         write (*, '(A,F8.2)') '  Max cell optical depth: ', MAXTAU
     end if
@@ -1336,13 +1336,13 @@ subroutine shdUtil_io__restoreState(&
         & FORM='UNFORMATTED', ERR=900)
     read (3) NSTI, NXI, NYI, NZI, MLI, MMI, NLMI, NPTS, NCELLS
     if (NXI .ne. NX .or. NYI .ne. NY .or. NZI .ne. NZ) then
-        write (6, *) 'Message [shdUtil_io__restoreState]: wrong grid size:', NXI, NYI, NZI
+        write (6, *) 'Message [_restoreState]: wrong grid size:', NXI, NYI, NZI
         close (3)
         return
     end if
     if (NSTI .ne. NSTOKES .or.&
         & MLI .gt. ML .or. MMI .gt. MM) then
-        write (6, *) 'Message [shdUtil_io__restoreState]: incompatible SH:', NSTI, MLI, MMI
+        write (6, *) 'Message [_restoreState]: incompatible SH:', NSTI, MLI, MMI
         close (3)
         return
     end if
