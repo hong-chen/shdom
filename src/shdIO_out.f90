@@ -808,7 +808,7 @@ subroutine shd_io__outputResult(&
             end if
 
             IDATA = 0
-            call shd_io__outputData(-FLUXDIV(I), 1, N, IDATA, OUTFILE_DATA)
+            call shd_io__outputData(-FLUXDIV, 1, N, IDATA, OUTFILE_DATA)
 
             ! add grid positions (or binary data cannot be reconstructed)
             if (ALLGRID) then
