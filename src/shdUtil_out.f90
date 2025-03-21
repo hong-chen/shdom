@@ -5,14 +5,6 @@ module shdUtil_out
   implicit none
   private
 
-  ! Output types
-  !╭────────────────────────────────────────────────╮!
-  ! R : radiance, Nang, Nx, Ny, Nz=1
-  ! V1: camera mode
-  ! V2: cross track
-  ! F1: irradiance,
-  !╰────────────────────────────────────────────────╯!
-
   ! public modules
   !╭────────────────────────────────────────────────╮!
   public :: shdUtil_io__outputResult
@@ -69,10 +61,10 @@ subroutine shdUtil_io__outputData(&
         DATA_SIZE = DATA_BYTE/1000000.0
 
         if ((present(MODE)) .and. (MODE .eq. 'ADD')) then
-            write(*, '(A,F6.2,A)') 'Message [shdUtil_io__outputData]: Data added to <'//trim(adjustl(OUTFILE_DATA))//'> (',&
+            write(*, '(A,F6.2,A)') 'Message [outputData]: Data added to <'//trim(adjustl(OUTFILE_DATA))//'> (',&
                 &DATA_SIZE, 'MB).'
         else
-            write(*, '(A,F6.2,A)') 'Message [shdUtil_io__outputData]: Data saved at <'//trim(adjustl(OUTFILE_DATA))//'> (',&
+            write(*, '(A,F6.2,A)') 'Message [outputData]: Data saved at <'//trim(adjustl(OUTFILE_DATA))//'> (',&
                 &DATA_SIZE, 'MB).'
         end if
 
@@ -149,6 +141,7 @@ subroutine shdUtil_io__outputResult(&
     character(256) :: OUTFILE_DATA
     character(10)  :: DATA_POSTFIX
     integer :: NVAR, NDATA, IDATA
+
     DATA_POSTFIX = '.dat'
     OUTFILE_DATA = trim(adjustl(OUTFILE))//trim(adjustl(DATA_POSTFIX))
 
@@ -340,7 +333,7 @@ subroutine shdUtil_io__outputResult(&
 
         ! binary data
         !╭────────────────────────────────────────────────╮!
-        write(*, '(A)') 'Message [shdUtil_io__outputResult]: <R> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+        write(*, '(A)') 'Message [outputResult]: <R> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
         call shdUtil_io__outputData(RADOUT, NSTOKES, NANGOUT*NXOUT*NYOUT, IRAD, OUTFILE_DATA)
         !╰────────────────────────────────────────────────╯!
 
@@ -391,7 +384,7 @@ subroutine shdUtil_io__outputResult(&
 
             ! binary data
             !╭────────────────────────────────────────────────╮!
-            write(*, '(A)') 'Message [shdUtil_io__outputResult]: <F1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+            write(*, '(A)') 'Message [outputResult]: <F1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
 
             IDATA = 0
             call shdUtil_io__outputData(C*FLUXES(2, NZ:NBPTS:NZ), 1, NX1*NY1, IDATA, OUTFILE_DATA)
@@ -487,7 +480,7 @@ subroutine shdUtil_io__outputResult(&
 
             ! binary data
             !╭────────────────────────────────────────────────╮!
-            write(*, '(A)') 'Message [shdUtil_io__outputResult]: <F2> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+            write(*, '(A)') 'Message [outputResult]: <F2> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
 
             IDATA = 0
             call shdUtil_io__outputData(C*FUP, 1, NXOUT*NYOUT, IDATA, OUTFILE_DATA)
@@ -583,7 +576,7 @@ subroutine shdUtil_io__outputResult(&
 
             ! binary data
             !╭────────────────────────────────────────────────╮!
-            write(*, '(A)') 'Message [shdUtil_io__outputResult]: <F3> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+            write(*, '(A)') 'Message [outputResult]: <F3> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
 
             IDATA = 0
             call shdUtil_io__outputData(C*SUM2/N, 1, NZ, IDATA, OUTFILE_DATA)
@@ -672,9 +665,9 @@ subroutine shdUtil_io__outputResult(&
             ! binary data
             !╭────────────────────────────────────────────────╮!
             if (ALLGRID) then
-                write(*, '(A)') 'Message [shdUtil_io__outputResult]: <F5> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+                write(*, '(A)') 'Message [outputResult]: <F5> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
             else
-                write(*, '(A)') 'Message [shdUtil_io__outputResult]: <F4> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+                write(*, '(A)') 'Message [outputResult]: <F4> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
             end if
 
             IDATA = 0
