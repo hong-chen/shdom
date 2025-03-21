@@ -522,6 +522,7 @@ subroutine shdUtil_io__outputResult(&
         ! Format 3 is domain averaged vertical profile
         ! NVAR=2 or 3, NSET=1, NX=NX1, NY=NY1, NZ=1
         else if (nint(OUTPARMS(1)) .eq. 3) then
+
             if (UNITS .eq. 'T') then
                 FORM = '(1X,F7.3,1X,2(2X,F6.2))'
                 write (2, '(A)') '!   Z        UP     DOWN'
