@@ -29,7 +29,7 @@ contains
 
 subroutine shdUtil_io__outputData(&
     &DATA_OUT, NVAR, NDATA,&
-    &IDATA, OUTFILE_DATA, FILE_STATUS)
+    &IDATA, OUTFILE_DATA, MODE)
     !   Writes the desired type of output file from the output fields
     ! with a header giving the input parameters.
     ! There are five types (OUTTYPE) of output: 'R' - for radiance,
@@ -42,11 +42,12 @@ subroutine shdUtil_io__outputData(&
     integer :: NVAR, NDATA
     integer, intent(inout) :: IDATA
     character(*), intent(in) :: OUTFILE_DATA
-    character(*), intent(in), optional :: FILE_STATUS
+    character(*), intent(in), optional :: MODE
     integer :: ivar, icount, idata_start, istat
+    real :: DATA_SIZE
 
-    if ((present(FILE_STATUS)) .and. (FILE_STATUS .eq. 'OLD')) then
-        open (UNIT=88, FILE=trim(adjustl(OUTFILE_DATA)), STATUS=FILE_STATUS, position='APPEND',&
+    if ((present(MODE)) .and. (MODE .eq. 'ADD')) then
+        open (UNIT=88, FILE=trim(adjustl(OUTFILE_DATA)), STATUS='OLD', position='APPEND',&
             &form='UNFORMATTED', access='STREAM', iostat=istat)
     else
         open (UNIT=88, FILE=trim(adjustl(OUTFILE_DATA)), STATUS='REPLACE',&
@@ -67,7 +68,10 @@ subroutine shdUtil_io__outputData(&
         end do
 
         close(88, iostat=istat)
-        write(*, '(A)') 'Message [shdUtil_io__outputData]: Data saved at <'//trim(adjustl(OUTFILE_DATA))//'>.'
+
+        DATA_SIZE = 4.0*NVAR*NDATA/1048576.0
+        write(*, '(A,F6.2,A)') 'Message [shdUtil_io__outputData]: Data saved at <'//trim(adjustl(OUTFILE_DATA))//'> (',&
+            &DATA_SIZE, 'MB).'
     else
         write(*, '(A)') 'Error [shdUtil_io__outputData]: Failed to open file <'//trim(adjustl(OUTFILE_DATA))//'>.'
         stop
@@ -329,7 +333,7 @@ subroutine shdUtil_io__outputResult(&
 
         ! binary data
         !╭────────────────────────────────────────────────╮!
-        write(*, '(A)') 'Message [shdUtil_io__outputResult]:[R] Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+        write(*, '(A)') 'Message [shdUtil_io__outputResult]: <R> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
         call shdUtil_io__outputData(RADOUT, NSTOKES, NANGOUT*NXOUT*NYOUT, IRAD, OUTFILE_DATA)
         !╰────────────────────────────────────────────────╯!
 
@@ -374,23 +378,23 @@ subroutine shdUtil_io__outputResult(&
             write (2, '(A)') '! The following contains information for binary data intepretation:'
             write (2, '(A)') '! F1'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-            write (2, '(A, 5(I6,A))') '! ', NX, ',', NY, ',', 1, ',', 1, ',', NVAR, ''
+            write (2, '(A, 5(I6,A))') '! ', NX1, ',', NY1, ',', 1, ',', 1, ',', NVAR, ''
             close(2)
             !╰────────────────────────────────────────────────╯!
 
             ! binary data
             !╭────────────────────────────────────────────────╮!
-            write(*, '(A)') 'Message [shdUtil_io__outputResult]: [F1] Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+            write(*, '(A)') 'Message [shdUtil_io__outputResult]: <F1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
 
             IDATA = 0
-            call shdUtil_io__outputData(C*FLUXES(2, NZ:NBPTS:NZ), 1, NX*NY, IDATA, OUTFILE_DATA)
+            call shdUtil_io__outputData(C*FLUXES(2, NZ:NBPTS:NZ), 1, NX1*NY1, IDATA, OUTFILE_DATA)
 
             IDATA = 0
-            call shdUtil_io__outputData(C*FLUXES(1, 1:NBPTS:NZ), 1, NX*NY, IDATA, OUTFILE_DATA, 'OLD')
+            call shdUtil_io__outputData(C*FLUXES(1, 1:NBPTS:NZ), 1, NX1*NY1, IDATA, OUTFILE_DATA, 'ADD')
 
             if (SRCTYPE .ne. 'T') then
                 IDATA = 0
-                call shdUtil_io__outputData(DIRFLUX(1:NBPTS:NZ), 1, NX*NY, IDATA, OUTFILE_DATA, 'OLD')
+                call shdUtil_io__outputData(DIRFLUX(1:NBPTS:NZ), 1, NX1*NY1, IDATA, OUTFILE_DATA, 'ADD')
             end if
             !╰────────────────────────────────────────────────╯!
 
@@ -476,17 +480,17 @@ subroutine shdUtil_io__outputResult(&
 
             ! binary data
             !╭────────────────────────────────────────────────╮!
-            write(*, '(A)') 'Message [shdUtil_io__outputResult]: [F2] Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+            write(*, '(A)') 'Message [shdUtil_io__outputResult]: <F2> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
 
             IDATA = 0
             call shdUtil_io__outputData(C*FUP, 1, NXOUT*NYOUT, IDATA, OUTFILE_DATA)
 
             IDATA = 0
-            call shdUtil_io__outputData(C*FDN, 1, NXOUT*NYOUT, IDATA, OUTFILE_DATA, 'OLD')
+            call shdUtil_io__outputData(C*FDN, 1, NXOUT*NYOUT, IDATA, OUTFILE_DATA, 'ADD')
 
             if (SRCTYPE .ne. 'T') then
                 IDATA = 0
-                call shdUtil_io__outputData(FDIR, 1, NXOUT*NYOUT, IDATA, OUTFILE_DATA, 'OLD')
+                call shdUtil_io__outputData(FDIR, 1, NXOUT*NYOUT, IDATA, OUTFILE_DATA, 'ADD')
             end if
 
             deallocate(FUP)
@@ -604,20 +608,20 @@ subroutine shdUtil_io__outputResult(&
             ! binary data
             !╭────────────────────────────────────────────────╮!
             if (ALLGRID) then
-                write(*, '(A)') 'Message [shdUtil_io__outputResult]: [F5] Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+                write(*, '(A)') 'Message [shdUtil_io__outputResult]: <F5> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
             else
-                write(*, '(A)') 'Message [shdUtil_io__outputResult]: [F4] Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+                write(*, '(A)') 'Message [shdUtil_io__outputResult]: <F4> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
             end if
 
             IDATA = 0
             call shdUtil_io__outputData(C*FLUXES(2, :), 1, N, IDATA, OUTFILE_DATA)
 
             IDATA = 0
-            call shdUtil_io__outputData(C*FLUXES(1, :), 1, N, IDATA, OUTFILE_DATA, 'OLD')
+            call shdUtil_io__outputData(C*FLUXES(1, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
 
             if (SRCTYPE .ne. 'T') then
                 IDATA = 0
-                call shdUtil_io__outputData(DIRFLUX(:), 1, N, IDATA, OUTFILE_DATA, 'OLD')
+                call shdUtil_io__outputData(DIRFLUX(:), 1, N, IDATA, OUTFILE_DATA, 'ADD')
             end if
             !╰────────────────────────────────────────────────╯!
 
