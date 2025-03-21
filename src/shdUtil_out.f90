@@ -67,11 +67,20 @@ subroutine shdUtil_io__outputData(&
 
         inquire(FILE=trim(adjustl(OUTFILE_DATA)), SIZE=DATA_BYTE)
         DATA_SIZE = DATA_BYTE/1000000.0
-        write(*, '(A,F6.2,A)') 'Message [shdUtil_io__outputData]: Data saved at <'//trim(adjustl(OUTFILE_DATA))//'> (',&
-            &DATA_SIZE, 'MB).'
+
+        if ((present(MODE)) .and. (MODE .eq. 'ADD')) then
+            write(*, '(A,F6.2,A)') 'Message [shdUtil_io__outputData]: Data added to <'//trim(adjustl(OUTFILE_DATA))//'> (',&
+                &DATA_SIZE, 'MB).'
+        else
+            write(*, '(A,F6.2,A)') 'Message [shdUtil_io__outputData]: Data saved at <'//trim(adjustl(OUTFILE_DATA))//'> (',&
+                &DATA_SIZE, 'MB).'
+        end if
+
     else
+
         write(*, '(A)') 'Error [shdUtil_io__outputData]: Failed to open file <'//trim(adjustl(OUTFILE_DATA))//'>.'
         stop
+
     end if
 
     return
@@ -628,6 +637,7 @@ subroutine shdUtil_io__outputResult(&
                 N = NBPTS
                 ALLGRID = .false.
             end if
+
             if (UNITS .eq. 'T') then
                 FORM = '(3(1X,F7.3),1X,2(2X,F6.2))'
                 write (2, '(A)') '!   X       Y       Z        UP     DOWN'
@@ -649,7 +659,8 @@ subroutine shdUtil_io__outputResult(&
             if (ALLGRID) then
                 write (2, '(A)') '! F5'
                 write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-                write (2, '(A, 2(I6,A))') '! ', N, ',', NVAR, ''
+                ! added x, y, z (NVAR+3)
+                write (2, '(A, 2(I6,A))') '! ', N, ',', NVAR+3, ''
             else
                 write (2, '(A)') '! F4'
                 write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
@@ -675,6 +686,16 @@ subroutine shdUtil_io__outputResult(&
             if (SRCTYPE .ne. 'T') then
                 IDATA = 0
                 call shdUtil_io__outputData(DIRFLUX(:), 1, N, IDATA, OUTFILE_DATA, 'ADD')
+            end if
+
+            ! add grid positions (or binary data cannot be reconstructed)
+            if (ALLGRID) then
+                IDATA = 0
+                call shdUtil_io__outputData(GRIDPOS(1, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
+                IDATA = 0
+                call shdUtil_io__outputData(GRIDPOS(2, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
+                IDATA = 0
+                call shdUtil_io__outputData(GRIDPOS(3, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
             end if
             !╰────────────────────────────────────────────────╯!
 
