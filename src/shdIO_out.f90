@@ -142,7 +142,7 @@ subroutine shd_io__outputResult(&
     character(10)  :: DATA_POSTFIX
     integer :: NVAR, NDATA, IDATA
 
-    DATA_POSTFIX = '.dat'
+    DATA_POSTFIX = '.shd'
     OUTFILE_DATA = trim(adjustl(OUTFILE))//trim(adjustl(DATA_POSTFIX))
 
     GRIDNAME = 'EVEN (X,Y)  '
@@ -710,26 +710,71 @@ subroutine shd_io__outputResult(&
 
         end if
 
+    ! Heating output: net flux convergence
     else if (OUTTYPE .eq. 'H') then
 
-        ! Heating output: net flux convergence
+        NVAR = 1
+
+        ! Format 1 is domain averaged vertical profile
         if (nint(OUTPARMS(1)) .eq. 1) then
-            ! Format 1 is domain averaged vertical profile
-            write (2, '(A,A)') '!    Z       -DIV(Fnet)'
+
+            ! data processing
+            !╭────────────────────────────────────────────────╮!
+            allocate(SUM1(NZ))
+
             do IZ = 1, NZ
-                SUM = 0.0
+                SUM1(IZ) = 0.0
                 N = 0
                 do I = IZ, NBPTS, NZ
                     if (GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.&
                         & GRIDPOS(2, I) .lt. YGRID(NY + 1)) then
-                        SUM = SUM + FLUXDIV(I)
+                        SUM1(IZ) = SUM1(IZ) + FLUXDIV(I)
                         N = N + 1
                     end if
                 end do
-                write (2, '(1X,F7.3,2X,E13.5)') ZGRID(IZ), -SUM/N
             end do
+            !╰────────────────────────────────────────────────╯!
+
+            ! description for binary data
+            !╭────────────────────────────────────────────────╮!
+            write (2, '(A)') '! The following contains information for binary data intepretation:'
+            write (2, '(A)') '! H1'
+            write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
+            write (2, '(A, 5(I6,A))') '! ', 1, ',', 1, ',', NZ, ',', 1, ',', NVAR, ''
+            close(2)
+            !╰────────────────────────────────────────────────╯!
+
+            ! binary data
+            !╭────────────────────────────────────────────────╮!
+            write(*, '(A)') 'Message [_outputResult]: <H1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+
+            IDATA = 0
+            call shd_io__outputData(-SUM1/N, 1, NZ, IDATA, OUTFILE_DATA)
+
+            deallocate(SUM1)
+            !╰────────────────────────────────────────────────╯!
+
+            ! original
+            !╭────────────────────────────────────────────────╮!
+            !write (2, '(A,A)') '!    Z       -DIV(Fnet)'
+            !do IZ = 1, NZ
+            !    SUM = 0.0
+            !    N = 0
+            !    do I = IZ, NBPTS, NZ
+            !        if (GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.&
+            !            & GRIDPOS(2, I) .lt. YGRID(NY + 1)) then
+            !            SUM = SUM + FLUXDIV(I)
+            !            N = N + 1
+            !        end if
+            !    end do
+            !    write (2, '(1X,F7.3,2X,E13.5)') ZGRID(IZ), -SUM/N
+            !end do
+            !╰────────────────────────────────────────────────╯!
 
         else
+
+            ! Format 2 is flux convergence for every base grid point
+            ! Format 3 is flux convergence for every grid point
             if (nint(OUTPARMS(1)) .eq. 3) then
                 N = NPTS
                 ALLGRID = .true.
@@ -737,23 +782,64 @@ subroutine shd_io__outputResult(&
                 N = NBPTS
                 ALLGRID = .false.
             end if
-            ! Format 2 is flux convergence for every base grid point
-            ! Format 3 is flux convergence for every grid point
-            write (2, '(A)') '!    X       Y        Z       -DIV(Fnet)'
-            do I = 1, N
-                if ((GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.&
-                    & GRIDPOS(2, I) .lt. YGRID(NY + 1)) .or. ALLGRID) then
-                    write (2, '(3(1X,F7.3),2X,E13.5)')&
-                        & GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I), -FLUXDIV(I)
-                end if
-            end do
+
+            ! description for binary data
+            !╭────────────────────────────────────────────────╮!
+            write (2, '(A)') '! The following contains information for binary data intepretation:'
+            if (ALLGRID) then
+                write (2, '(A)') '! H3'
+                write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
+                ! added x, y, z (NVAR+3)
+                write (2, '(A, 2(I6,A))') '! ', N, ',', NVAR+3, ''
+            else
+                write (2, '(A)') '! H2'
+                write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
+                write (2, '(A, 5(I6,A))') '! ', NX1, ',', NY1, ',', NZ, ',', 1, ',', NVAR, ''
+            end if
+            close(2)
+            !╰────────────────────────────────────────────────╯!
+
+            ! binary data
+            !╭────────────────────────────────────────────────╮!
+            if (ALLGRID) then
+                write(*, '(A)') 'Message [_outputResult]: <H3> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+            else
+                write(*, '(A)') 'Message [_outputResult]: <H2> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+            end if
+
+            IDATA = 0
+            call shd_io__outputData(-FLUXDIV(I), 1, N, IDATA, OUTFILE_DATA)
+
+            ! add grid positions (or binary data cannot be reconstructed)
+            if (ALLGRID) then
+                IDATA = 0
+                call shd_io__outputData(GRIDPOS(1, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
+                IDATA = 0
+                call shd_io__outputData(GRIDPOS(2, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
+                IDATA = 0
+                call shd_io__outputData(GRIDPOS(3, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
+            end if
+            !╰────────────────────────────────────────────────╯!
+
+            ! original
+            !╭────────────────────────────────────────────────╮!
+            !write (2, '(A)') '!    X       Y        Z       -DIV(Fnet)'
+            !do I = 1, N
+            !    if ((GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.&
+            !        & GRIDPOS(2, I) .lt. YGRID(NY + 1)) .or. ALLGRID) then
+            !        write (2, '(3(1X,F7.3),2X,E13.5)')&
+            !            & GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I), -FLUXDIV(I)
+            !    end if
+            !end do
+            !╰────────────────────────────────────────────────╯!
+
         end if
 
+    ! Spherical Harmonic output:
+    !   Output mean intensity and net flux (x,y,z components).
+    !   and maybe normalized rms of higher order terms
     else if (OUTTYPE .eq. 'S') then
 
-        ! Spherical Harmonic output:
-        !   Output mean intensity and net flux (x,y,z components).
-        !   and maybe normalized rms of higher order terms
         if (nint(OUTPARMS(1)) .eq. 2) then
             N = NPTS
             ALLGRID = .true.
@@ -761,6 +847,7 @@ subroutine shd_io__outputResult(&
             N = NBPTS
             ALLGRID = .false.
         end if
+
         if (NSHOUT .eq. 5) then
             write (2, '(A,A)') '!    X       Y        Z         Imean',&
                 & '          Fx           Fy           Fz       HOrms'
