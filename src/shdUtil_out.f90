@@ -443,6 +443,7 @@ subroutine shdUtil_io__outputResult(&
             allocate(FUP(NXOUT*NYOUT))
             allocate(FDN(NXOUT*NYOUT))
             allocate(FDIR(NXOUT*NYOUT))
+
             IDATA = 0
             Y0 = YGRID(1)
             do JY = 1, NYOUT
