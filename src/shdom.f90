@@ -14,7 +14,6 @@ end module shdom_arr
 
 program shdom_main
     use shdom_arr
-    use shdom_nc
     use shdUtil_inp
     use shdUtil_out
     implicit none
@@ -180,8 +179,6 @@ program shdom_main
     if (MASTERPROC) then
         call shdUtil_io__readPropSize(PROPFILE, NSTLEG, NLEG, NPX, NPY, NPZ,&
                                 NUMPHASE, MAXLEG, MAXPGL, DELX, DELY)
-!        call read_property_size_netcdf(PROPFILE, NSTLEG, NLEG, NPX,NPY,NPZ,&
-!                                       NUMPHASE, MAXLEG, MAXPGL, DELX, DELY)
     end if
     call BROADCAST_PROPERTY_SIZE(NPX, NPY, NPZ, DELX, DELY,&
                                  NUMPHASE, MAXLEG, MAXPGL)
@@ -233,10 +230,6 @@ program shdom_main
                                  NSTLEG, MAXLEG, NLEG, MAXNZ, MAXPGT, MAXPGLT, DELTAM, &
                                  PROPTYPE, DELX, DELY, ZLEVELS, MAXASYM, &
                                  TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, NUMPHASE, IPHASEPT)
-!          call read_properties_netcdf(PROPFILE, NPXT, NPYT, NPZ, NUMPHASE,   &
-!                              NSTLEG, MAXLEG, MAXPGT, MAXPGLT, DELTAM, NLEG, &
-!                              PROPTYPE, ZLEVELS, MAXASYM,          &
-!                              TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, IPHASEPT)
             if (NUMPHASE == 0) then
                 write (6, *) 'Standard property file (with phase function Legendre series at every point)'
                 write (6, *) '  is not allowed with multiple processors.'
@@ -259,10 +252,6 @@ program shdom_main
                              NSTLEG, MAXLEG, NLEG, MAXNZ, MAXPG, MAXPGL, DELTAM, &
                              PROPTYPE, DELX, DELY, ZLEVELS, MAXASYM, &
                              TEMPP, EXTINCTP, ALBEDOP, LEGENP, NUMPHASE, IPHASEP)
-!          call read_properties_netcdf(PROPFILE, NPX, NPY, NPZ, NUMPHASE,   &
-!                                    NSTLEG, MAXLEG, MAXPG, MAXPGL, DELTAM, NLEG, &
-!                                    PROPTYPE, ZLEVELS, MAXASYM,          &
-!                                    TEMPP, EXTINCTP, ALBEDOP, LEGENP, IPHASEP)
         ! Check values of medium properties
         call shdUtil_io__checkPropInput(NPX, NPY, NPZ, NSTLEG, NLEG, &
                                   DELX, DELY, ZLEVELS, &
@@ -718,19 +707,7 @@ program shdom_main
                                             OUTTYPES(I), OUTPARMS(1, I), OUTFILES(I))
                 end if
             end do
-            if (trim(adjustl(OutFileNC)) /= 'NONE' .and. trim(adjustl(OutFileNC)) /= '') then
-                call output_results_netcdf_par(NSTOKES, NXT, NYT, NZ, &
-                                               NPTSTOT, NCELLSTOT, NSHTOT, &
-                                               ML, MM, NLM, NMU, NPHI, NANG, NG, &
-                                               PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE, &
-                                               BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE, &
-                                               SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD, &
-                                               SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS, &
-                                               SPLITACC, SHACC, SOLACC, MAXITER, TOTITER, CPUTIMETOTAL, &
-                                               NPXT*DELX, NPYT*DELY, XALLGRID, YALLGRID, ZGRID, &
-                                               ALLFLUXES, ALLFLUXDIV, NSHOUT, ALLSHTERMS, IRAD, SUMRADOUT, &
-                                               NUMOUT, OUTTYPES, OUTPARMS, OutFileNC)
-            end if
+
             if (FLUX_OUT) deallocate (ALLFLUXES)
             if (FLUXDIV_OUT) deallocate (ALLFLUXDIV)
             if (SH_OUT) deallocate (ALLSHTERMS)
@@ -756,32 +733,6 @@ program shdom_main
                                     OUTTYPES(I), OUTPARMS(1, I), OUTFILES(I))
             end if
         end do
-        if (trim(adjustl(OutFileNC)) /= 'NONE' .and. trim(adjustl(OutFileNC)) /= '') then
-            allocate (ALLFLUXES(3, NZ, NY1, NX1), ALLFLUXDIV(NZ, NY1, NX1))
-            allocate (ALLSHTERMS(NSHOUT, NZ, NY1, NX1))
-            if (FLUX_OUT) then
-                ALLFLUXES(1:2, :, :, :) = reshape(SUMFLUXES(1:2*NBPTS), (/2, NZ, NY1, NX1/))
-                ALLFLUXES(3, :, :, :) = reshape(SUMDIRFLUX(1:NBPTS), (/NZ, NY1, NX1/))
-            end if
-            if (FLUXDIV_OUT) then
-                ALLFLUXDIV(:, :, :) = reshape(SUMFLUXDIV(1:NBPTS), (/NZ, NY1, NX1/))
-            end if
-            if (SH_OUT) then
-                ALLSHTERMS(:, :, :, :) = reshape(SUMSHTERMS(1:NSHOUT*NBPTS), (/NSHOUT, NZ, NY1, NX1/))
-            end if
-            call output_results_netcdf_par(NSTOKES, NX, NY, NZ, NPTS, NCELLS, &
-                                           NSH, ML, MM, NLM, NMU, NPHI, NANG, NG, &
-                                           PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE, &
-                                           BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE, &
-                                           SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD, &
-                                           SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS, &
-                                           SPLITACC, SHACC, SOLACC, MAXITER, TOTITER, CPUTIMETOTAL, &
-                                           NPX*DELX, NPY*DELY, XGRID, YGRID, ZGRID, &
-                                           ALLFLUXES(:, :, 1:NY, 1:NX), ALLFLUXDIV(:, 1:NY, 1:NX), &
-                                           NSHOUT, ALLSHTERMS(:, :, 1:NY, 1:NX), IRAD, SUMRADOUT, &
-                                           NUMOUT, OUTTYPES, OUTPARMS, OutFileNC)
-            deallocate (ALLFLUXES, ALLFLUXDIV, ALLSHTERMS)
-        end if
     end if
 
     ! Output visualization images if there are any

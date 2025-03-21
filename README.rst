@@ -129,10 +129,6 @@ The following is a list of file-to-file reference:
 
 * ``src/shdom_nompi.f90``: was ``shdom_nompi.f``
 
-* ``src/shdom_nc.f90``: was ``shdom_netcdf.f90``
-
-* ``src/shdom_nonc.f90``: was ``shdom_nonetcdf.f90``
-
 * ``src/shdSolv_1.f90``: was ``shdomsub1.f``
 
 * ``src/shdSolv_2.f90``: was ``shdomsub2.f``
@@ -165,9 +161,9 @@ The following is a list of file-to-file reference:
 
 * ``src/tools/shdTool_plot_sca_tab.f90``: was ``plotscattab.f90``
 
-* ``src/tools/shdTool_txt2nc.f90``: was ``AsciiPropertyFileToNetcdf.f90``
-
 * ``src/tools/shdTool_put.f90``: was ``put.c``
+
+* Removed support for ``netCDF``, thus ``netCDF`` related codes are not presented.
 
 |
 

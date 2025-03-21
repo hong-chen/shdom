@@ -37,20 +37,6 @@ F90 = $(FC)
 F90FLAGS = $(FFLAGS)
 LIBS =
 
-UseNetcdf = no
-
-NetcdfHome = /usr/local/netcdf-3.6.3
-NetcdfInl  = -I$(NetcdfHome)/include
-NetcdfLib  = -L$(NetcdfHome)/lib -lnetcdf
-
-ifeq ($(UseNetcdf),no)
-	SHDOMOBJS += shdom_nonc.o
-else
-	SHDOMOBJS += shdom_nc.o
-	F90FLAGS += $(NetcdfInl)
-	LIBS += $(NetcdfLib)
-endif
-
 all: $(TARGETS)
 
 bin:
@@ -91,23 +77,11 @@ shdom_nompi.o: shdom_nompi.f90
 shdom_mpi.o: shdom_mpi.f90
 	$(F90) -c $(F90FLAGS) shdom_mpi.f90
 
-shdom_nonc.o: shdom_nonc.f90
-	$(F90) -c $(F90FLAGS) shdom_nonc.f90
-
-shdom_nc.o: shdom_nc.f90
-	$(F90) -c $(F90FLAGS) shdom_nc.f90
-
 fftpack.o: fftpack.f90
 	$(F90) -c $(F90FLAGS) fftpack.f90
 
 globals.o: globals.f90
 	$(F90) -c $(F90FLAGS) globals.f90
-
-txt2nc: shdTool_txt2nc
-	$(F90) $(F90FLAGS) shdTool_txt2nc.o shdom_nc.o $(LIBS) -o $(BIN_DIR)/txt2nc
-
-shdTool_txt2nc.o: tools/shdTool_txt2nc.f90 shdom_nc.o
-	$(F90) -c $(F90FLAGS) tools/shdTool_txt2nc.f90
 
 propgen: tools/shdTool_propgen.f90
 	$(F90) $(F90FLAGS) tools/shdTool_propgen.f90 -o $(BIN_DIR)/propgen

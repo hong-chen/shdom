@@ -58,7 +58,7 @@
  0.8660, 330.0,
  0.8660, 345.0
  OUTFILES(1) = 'tmp-data/shdom-out_les.txt'
- OutFileNC = 'NONE'
+ OutFileNC = 'test.nc'
  MAX_TOTAL_MB = 8000.0
  ADAPT_GRID_FACTOR = 2.2
  NUM_SH_TERM_FACTOR = 0.6

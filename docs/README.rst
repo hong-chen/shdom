@@ -38,8 +38,6 @@ The following is a list of the files:
     shdomsub3.f        input/output subroutines
     shdom_mpi.f90      subroutines that make MPI calls
     shdom_nompi.f      dummy routines for not using MPI
-    shdom_netcdf.f90   subroutines that make netcdf calls
-    shdom_nonetcdf.f90 dummy routines for not using netcdf
     fftpack.f          Fast Fourier Transform routines
     ocean_brdf.f       scalar ocean surface reflectance routines
 
@@ -53,7 +51,6 @@ The following is a list of the files:
     tmd.par.f          array size parameter file for T-matrix routines
     plotscattab.f90    makes phase functions versus angle from scattering tables
     propgen.f90        makes SHDOM property file from particle properties file
-    AsciiPropertyFileToNetcdf.f90
 
     makefile           Unix makefile for compiling shdom and companion programs
 

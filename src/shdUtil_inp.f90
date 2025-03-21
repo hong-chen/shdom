@@ -256,6 +256,10 @@ subroutine shdUtil_io__userInput(&
     write (*, '(1X,A)') 'Output netcdf file name (or NONE or "")'
     read (*, '(A)') OutFileNC
     write (*, '(A)') OutFileNC
+    if (OutFileNC .ne. 'NONE') then
+        write(*, '(A)') 'Warning [_userInput]: Removed support for netCDF, set <OUTFILENC="NONE">.'
+        OutFileNC = 'NONE'
+    end if
 
     write (*, '(1X,A)')&
         &'Approximate maximum memory to use (MB for 4 byte reals)'
@@ -444,6 +448,11 @@ subroutine shdUtil_io__nmlInput(&
         dOUTFILES(I) = OUTFILES(I)
     end do
     dOutFileNC = OutFileNC
+
+    if (dOutFileNC .ne. 'NONE') then
+        write(*, '(A)') 'Warning [_nmlInput]: Removed support for netCDF, set <OUTFILENC="NONE">.'
+        dOutFileNC = 'NONE'
+    end if
 
     dMAX_TOTAL_MB = MAX_TOTAL_MB
     dADAPT_GRID_FACTOR = ADAPT_GRID_FACTOR
