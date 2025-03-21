@@ -678,9 +678,9 @@ program shdom_main
     CPUTIMETOTAL = SUM_CPU_TIME(CPUTIME2 - CPUTIME1)
     if (MASTERPROC) then
         if (CPUTIMETOTAL .lt. 60.0) then
-            write (6, '(A,F6.2)') 'Message [shdom_main]: Approximate total CPU time used (sec):', CPUTIMETOTAL
+            write (6, '(A,F6.2,A)') 'Message [shdom_main]: Total CPU time used:', CPUTIMETOTAL, ' sec'
         else
-            write (6, '(A,F6.2)') 'Message [shdom_main]: Approximate total CPU time used (min):', CPUTIMETOTAL/60.0
+            write (6, '(A,F6.2,A)') 'Message [shdom_main]: Total CPU time used:', CPUTIMETOTAL/60.0, ' min'
         endif
     end if
 
