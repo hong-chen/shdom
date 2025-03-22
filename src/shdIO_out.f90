@@ -2119,7 +2119,7 @@ subroutine shd_io__saveState(&
     do I = 1, NPTS
         IR = RSHPTR(I)
         do J = 1, NSTOKES*4
-            ! the max function is applied to fix the segmentation issue
+            ! the following is an attempt to fix the segmentation issue
             !╭────────────────────────────────────────────────╮!
             !WORK(K) = RADIANCE(NSTOKES*(IR-1)+J)
             WORK(K) = RADIANCE(NSTOKES*(IR)+J)
