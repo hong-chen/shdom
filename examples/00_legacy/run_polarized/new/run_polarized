@@ -1,0 +1,354 @@
+#!/bin/csh
+# Unix C-shell script for running polarized SHDOM for an X-Z example
+# with an LES cumulus cloud slice and horizontally uniform dust aerosol.
+
+# To run sections of the script, set the corresponding variables below to 1.
+set Make_Mie_table=1
+set Make_Tmatrix_table=1
+set Run_plotscattab=1
+set Convert_LWC_to_Particle=1
+set Run_propgen=1
+set Run_SHDOM=1
+set Parse_SHDOM_radiance=1
+
+
+set fdir_bin="../../../../bin"
+set put_exe="${fdir_bin}/put"
+set propgen_exe="${fdir_bin}/propgen"
+set shdom_exe="${fdir_bin}/shdom_"
+set make_mie_table_exe="${fdir_bin}/make_mie_table"
+set make_tmatrix_table_exe="${fdir_bin}/make_tmatrix_table"
+set plotscattab_exe="${fdir_bin}/plotscattab"
+
+# The wavelength (microns) for the calculations
+set wavelen=0.646
+
+
+if ($Make_Mie_table) then
+    #  Makes the Mie scattering table for spherical water droplets for
+    # gamma size distributions with a range of effective radius.
+
+    set polarizedtable=T
+
+    if ($polarizedtable == "T") then
+        set outfile = water_w${wavelen}.scat
+    else
+        set outfile = water_w${wavelen}un.scat
+    endif
+
+    set partype = "W"                # W for water
+
+    set distflag=G                   # G=gamma, L=lognormal size distribution
+
+    set alpha = 7                    # gamma dist shape parameter
+
+    set Nretab=50                    # number of effective radius in table
+
+    set Sretab=0.5; set Eretab=25    # starting, ending effective radius (micron)
+
+    set logre=F                      # evenly spaced r_e
+
+    set maxradius=50
+
+    set avgflag=C                    # A for averaging over wavelength range
+                                     # C for using central wavelength
+
+    ${put_exe} $polarizedtable "$wavelen $wavelen" $partype $avgflag \
+       $distflag $alpha "$Nretab $Sretab $Eretab" $logre $maxradius $outfile \
+     | ${make_mie_table_exe}
+
+endif
+
+
+if ($Make_Tmatrix_table) then
+    # Makes a T-matrix scattering table for spheroidal dust aerosol particles
+    # with a lognormal size distribution with a range of effective radius.
+    # (The maximum effective radius is small for dust, but this reflects the
+    # limitations of the double precision T-matrix code.)
+
+    set polarizedtable=T
+
+    set tmatoutfile = dust_w${wavelen}_ax2.00_tmat.scat
+
+    set partype = "A"
+
+    set rindex = "(1.50,-0.01)"
+
+    set aerdens = 2.0
+
+    set cylflag=F                  # F=spheroids, T=cylinders
+
+    set axialratio=2.00            # axis ratio (>1 oblate, <1 prolate)
+
+    set distflag=L                 # L=lognormal size distribution
+
+    set logstd = 1.0               # log std dev
+
+    set Nretab=21                  # number of effective radius in table
+
+    set Sretab=0.1; set Eretab=1.0 # starting, ending effective radius (micron)
+
+    set logre=T                    # log spaced r_e
+
+    set maxradius=3.0
+
+    ${put_exe} $polarizedtable $wavelen $partype "$rindex" $aerdens $cylflag $axialratio \
+        $distflag $logstd "$Nretab $Sretab $Eretab" $logre $maxradius  \
+        $tmatoutfile   | /usr/bin/time ${make_tmatrix_table_exe}
+
+endif
+
+
+
+if ($Run_plotscattab) then
+
+    # Runs plotscattab to make phase matrix elements as a function of angle
+
+    set basename1=water_w${wavelen}
+    set basename2=dust_w${wavelen}_ax2.00_tmat
+
+    # Run plotscattab on the scattering tables to output all six 
+    # phase matrix elements for one effective radius in each table
+    set re=20
+    ${put_exe} S ${basename1}.scat 181 6 "$re $re $re $re $re $re" \
+        "1 -2 -3 -4 -5 -6" ${basename1}_phase.grf | ${plotscattab_exe}
+
+    set re=1.0
+    ${put_exe} S ${basename2}.scat 181 6 "$re $re $re $re $re $re" \
+        "1 -2 -3 -4 -5 -6" ${basename2}_phase.grf | ${plotscattab_exe}
+endif
+
+
+
+
+if ($Convert_LWC_to_Particle) then
+    # Converts the cloud LWC and r_eff in an ascii LWC file (input to cloudprp),
+    # and also including an aerosol type, to an ascii particle file for input
+    # to propgen
+
+    set lwcfile=aero0822nh15c_t13_iy249.lwc
+    set partfile=les_cumulus_dust.part
+    set ztopcld=2.70  # only use cloud levels below this height
+
+    # Make a simple aerosol mass content (g/m^2) and effective radius (um) profile
+    ${put_exe} "0.0 0.000100 1.0"  "1.0 0.000080 0.9" "2.0 0.000060 0.8" \
+        "2.5 0.000050 0.75" "3.0 0.000030 0.7" "4.0 0.000010 0.5" \
+        "5.0 0.0      0.3" >! aero.t
+
+    cat $lwcfile | awk -v ztopcld=$ztopcld \
+    'BEGIN {# read all of the cloud LWC file\
+     getline; getline; nx=$1; ny=$2; nz=$3; getline; dx=$1; dy=$2; \
+     getline; for (k=1; k<=nz; k++) zc[k]=$k;\
+     getline; for (k=1; k<=nz; k++) Tc[k]=$k;\
+     while (getline > 0) {lwc[$1,$2,$3]=$4; re[$1,$2,$3]=$5;}\
+     for (k=1; k<=nz; k++) {if (zc[k]<ztopcld) nzc=k};\
+      # read in aerosol profile\
+     while ((getline<"aero.t")>0) {na++; za[na]=$1; massa[na]=$2; reffa[na]=$3;}\
+      # add aerosol levels below cloud domain \
+     j=1;\
+     while (za[j] < zc[1]) {\
+       z[j]=za[j]; T[j]=Tc[1]+6.5*(zc[1]-z[j]);\
+       lwca[j]=massa[j]; rea[j]=reffa[j]; j++;}\
+      # interpolate aerosol properties to cloud grid\
+     i=j; kcb=j; kct=kcb+nzc-1;\
+     for (k=1; k<=nzc; k++) {\
+       if (zc[k]>=za[j+1]) j++; if (j>na-1) j=na-1;\
+       f=(zc[k]-za[j])/(za[j+1]-za[j]); \
+       z[i]=zc[k]; T[i]=Tc[k];\
+       lwca[i]=(1-f)*massa[j]+f*massa[j+1];\
+       rea[i]=(1-f)*reffa[j]+f*reffa[j+1];\
+       i++;}\
+      # add aerosol levels above cloud domain\
+     j1=j+1;\
+     for (j=j1; j<=na; j++) {\
+       z[i]=za[j]; T[i]=T[nzc]-6.5*(z[i]-z[nzc]);\
+       lwca[i]=massa[j]; rea[i]=reffa[j];\
+       i++;}  nz=i-1;\
+      # write header of particle file\
+     print "3   propgen particle file";\
+     print nx,ny,nz; print dx,dy;\
+     for (k=1; k<=nz; k++) {printf " %6.4f",z[k];} printf "\n";\
+     for (k=1; k<=nz; k++) {printf " %6.2f",T[k];} printf "\n"; \
+      # write rest of particle file\
+     for (i=1; i<=nx; i++) for (j=1; j<=ny; j++) for (k=1; k<=nz; k++) {\
+       if ((k>=kcb)&&(k<=kct)) {kc=k-kcb+1;\
+         if (lwc[i,j,kc]>0) printf "%3d %3d %3d %1d %1d %6.4f %5.2f %1d %7.5f %5.3f\n",\
+                           i,j,k,2,1,lwc[i,j,kc],re[i,j,kc],2,lwca[k],rea[k]; }\
+       if (lwc[i,j,kc]==0) printf "%3d %3d %3d %1d %1d %7.5f %5.3f\n",\
+                            i,j,k,1,2,lwca[k],rea[k];} }' >! $partfile
+    rm -f aero.t
+endif
+
+
+
+if ($Run_propgen) then
+    # Makes an SHDOM property file with propgen at the current wavelength
+    # from the input particle file and the scattering tables.
+
+    # Input particle file with mass content and effective radius for
+    # the cloud droplets and spheroidal dust particles:
+    set partfile=les_cumulus_dust.part
+
+    # Output SHDOM optical properties file:
+    set prpfile=les_cumulus_dust_w${wavelen}.prp
+
+    # Scattering tables for the two types of particles:
+    set scattables = (water_w${wavelen}.scat dust_w0.646_ax2.00_tmat.scat)
+
+    # The particle types in the particle file for the two scattering tables
+    set scattypes = (1 2)
+
+    set poltabs = (T T)  # scattering table polarization flag (T=polarized)
+
+    set maxnewphase=100  # maximum number of new phase functions created
+
+    set asymtol=0.01     # tolerance in asymmetry parameter for creating a new phase function
+
+    set fracphasetol=0.1 # maximum fractional error tolerance in phase function value for creating a new phase function
+
+    set sfcpres=1010     # surface pressure (mb)
+
+    set Nzother=0        # number of additional levels to insert outside of particle file levels
+
+    set ZTother=()       # height (km) and temperature (K) of other levels
+
+    set polout=P         # output a polarized SHDOM property file
+
+    ${put_exe} $#scattables $scattables "$scattypes" "$poltabs" $partfile \
+        $maxnewphase $asymtol $fracphasetol \
+        $wavelen $sfcpres $Nzother $ZTother $polout $prpfile  | ${propgen_exe}
+endif
+
+
+
+
+if ($Run_SHDOM) then
+    # Runs polarized SHDOM on the 2D LES/aerosol field and outputs 
+    # Stokes radiances in a number of directions at the domain top.
+
+    set prpfile=les_cumulus_dust_w${wavelen}.prp
+
+    set sfctype=W         # surface reflection model
+
+    set Nstokes=3         # number of Stokes parameters in SHDOM computation
+
+    set solarmu=0.7071    # cosine of solar zenith angle
+
+    set solarphi=30       # solar azimuth angle (30 degrees north of east)
+
+    set outbase=les_cumulus_dust_w${wavelen}_sfc${sfctype}_ns${Nstokes}
+
+    set Zref=5.0        # height of SHDOM radiances (km)
+
+    set delxy=0.0625    # LES grid spacing (km)
+
+    set xydomain=20     # LES domain size (km)
+
+    # Make the surface reflection file for Lambertian or Wave-Fresnel
+    if ($sfctype == "L") then
+
+        set albedo = 0.05
+        set sfcfile = lambertian_alb${albedo}.dat
+        ${put_exe} L "1 1 $xydomain $xydomain" "1 1 290 $albedo" >! $sfcfile
+
+    endif
+
+    if ($sfctype == "W") then
+        set windspeed = 7.0
+        set sfcfile = wavesfc${windspeed}.dat
+        set sfcindex=(1.33 0.0)
+        ${put_exe} W "1 1 $xydomain $xydomain" "1 1 290 $sfcindex[1] $sfcindex[2] $windspeed" >! $sfcfile
+    endif
+
+    # Run SHDOM to calculate radiances for one solar zenith/azimuth
+    set solarflux=1.0       # solar flux on horizontal
+
+    set solacc=3.0E-5       # solution iteration accuracy
+
+    set Nmu=16              # number of zenith angles over both hemispheres
+
+    set Nphi=32             # number of azimuth angles
+
+    set splitacc=0.03       # adaptive grid cell splitting accuracy
+
+    set shacc=0.003         # adaptive spherical harmonic accuracy
+
+    set accel=T             # solution acceleration flag
+
+    set maxiter=150         # maximum number of iterations
+
+    set IPflag=0            # 3D radiative transfer
+
+    set BCflag=0            # horizontal boundary conditions (0 = periodic)
+
+    set deltaM=T            # use delta-M scaling for solar problems
+
+    set MaxMB=2000          # Memory parameters:
+
+    set SplittingFactor=2.0
+
+    set CellPointRatio=1.5
+
+    set NumSHtermFactor=0.95
+
+     # input parameters for 9 output radiances in phi=180,0 plane (west-east)
+    set Routparm="$Zref $delxy $delxy 0.0 0.0  9 \
+        0.50000 180  0.70711 180  0.86603 180  0.96593 180  1.00000 0.0 \
+        0.96593   0  0.86603   0  0.70711   0  0.50000   0"
+
+    set radfile=${outbase}.rad
+
+    set nb=(`head -2 $prpfile | tail -1`)
+    ${put_exe} ${outbase}  $prpfile $sfcfile NONE NONE NONE \
+        $Nstokes "$nb[1] $nb[2] $nb[3]" "$Nmu $Nphi" $BCflag $IPflag $deltaM P \
+        S "$solarflux $solarmu $solarphi"  0.0 $wavelen \
+        "$splitacc $shacc" "$accel $solacc $maxiter" \
+        1 R  $Routparm $radfile  NONE \
+        $MaxMB $SplittingFactor $NumSHtermFactor $CellPointRatio \
+        | ${shdom_exe}
+        #| /usr/bin/time ${shdom_exe}  >&! ${outbase}.log
+endif
+
+
+
+if ($Parse_SHDOM_radiance) then
+    # Parse an SHDOM radiance file to make a graphing file of the 
+    # Stokes radiances as a function of X for one direction.
+    # The radiances may be shifted in X so that different outgoing
+    # ray directions will match at a specified height.
+
+    set sfctype=W         # surface reflection model
+
+    set Nstokes=3         # number of Stokes parameters in SHDOM computation
+
+    set outbase=les_cumulus_dust_w${wavelen}_sfc${sfctype}_ns${Nstokes}
+
+    set mu1 = 0.707     # outgoing mu and phi in radiance file to choose
+
+    set phi1 = 0
+
+    set Zref = 2.0      # reference level for radiance shifting (km)
+
+    set Xdomain = 20    # X domain width (km)
+
+    set radfile=${outbase}.rad
+
+    set grffile=${outbase}_mu${mu1}_phi${phi1}.grf
+
+    cat $radfile | awk -v Ns=$Nstokes -v mu1=$mu1 -v phi1=$phi1 \
+        -v zref=$Zref -v xdomain=$Xdomain \
+    '{if (($2=="RADIANCE")&&($10=="NDIR=")) {\
+        zrad=$5; nxo=$7; ndir=$11; getline; \
+        for (j=1; j<=ndir; j++) {\
+          getline; mu=$2; phi=$3;\
+          xshift=(zref-zrad)*(sqrt(1-mu^2)/mu)*cos(0.01745329252*phi);\
+          for (i=1; i<=nxo; i++) { getline; \
+            if ((mu>mu1-0.001)&&(mu<mu1+0.001)&&(phi==phi1)) {\
+              xp=$1+xshift; if (xp<0) xp+=(1-int(xp/xdomain))*xdomain;\
+              xp=xp % xdomain; Irad=$3; Qrad=$4; Urad=$5;\
+              if (Ns==3) printf "%8.4f %9.6f %9.6f %9.6f\n",xp,Irad,Qrad,Urad;\
+              if (Ns==1) printf "%8.4f %9.6f\n",xp,Irad;\
+           } } } }}' | sort -n >!  $grffile
+
+endif
+

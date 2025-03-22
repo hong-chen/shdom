@@ -47,7 +47,9 @@ lib/*
 *.bin
 *.scat
 *.pgm
-*.out
+*i.t
+*.inp
+*.out*
 !data
 !data/*.nml
 !data/*.txt
