@@ -943,6 +943,8 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
     ! print *, 'Path integration:'
     ! Loop over the zenith angles (downwelling angles must be first
     IANG = 1
+
+! -- loop mu
     do IMU = 1, NMU
 
         if (IMU .eq. NMU/2 + 1) then
@@ -959,6 +961,7 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
                     & NSTOKES, BCRAD(1, 1 + NTOPPTS))
             end if
         end if
+
         if (NSTOKES .eq. 1) then
             call SH_TO_DO_UNPOL(NPTS, ML, MM, NLM,&
                 & NMU, NPHI0MAX, NPHI0(IMU),&
@@ -978,20 +981,25 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
             end do
         end do
 
+! -- loop phi
         ! Loop over the azimuthal angles
         do IPHI = 1, NPHI0(IMU)
 
             if (MU(IMU) .lt. 0.0) then
+
                 ! For downward ordinates, initialize the top boundary radi
                 IUPDOWN = 1
                 do IBC = 1, NTOPPTS
                     I = BCPTR(IBC, 1)
                     GRIDRAD(:, I) = BCRAD(:, IBC)
                 end do
+
             else
+
                 ! Initialize the bottom boundary radiances
                 IUPDOWN = 2
                 if (.not. LAMBERTIAN) then
+
                     ! If a Lambertian surface, use the radiances computed abov
                     !   otherwise, compute the radiance for this angle
                     !   by integrating over the stored downwelling radiances.
@@ -1012,10 +1020,12 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
                             & NSTOKES, BCRAD(1, 1 + NTOPPTS))
                     end if
                 end if
+
                 do IBC = 1, NBOTPTS
                     I = BCPTR(IBC, 2)
                     GRIDRAD(:, I) = BCRAD(:, IBC + NTOPPTS)
                 end do
+
             end if
 
             ! Do backward path integration from each grid point not done
@@ -1092,6 +1102,7 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
                 & IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
                 & RSHPTR, WORK, RADIANCE)
         end if
+
     end do
 
     OLDNPTS = NPTS
