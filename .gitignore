@@ -48,6 +48,7 @@ lib/*
 *.scat
 *.pgm
 *i.t
+*.inp
 *.out*
 !data
 !data/*.nml
