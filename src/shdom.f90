@@ -129,15 +129,15 @@ program shdom_main
     end if
 
     call BROADCAST_USER_INPUT(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
-                              INSAVEFILE, OUTSAVEFILE,&
-                              NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
-                              IPFLAG, KDIST, DELTAM, GRIDTYPE,&
-                              SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
-                              GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,&
-                              ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
-                              MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS,&
-                              MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
-                              NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
+        &INSAVEFILE, OUTSAVEFILE,&
+        &NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
+        &IPFLAG, KDIST, DELTAM, GRIDTYPE,&
+        &SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+        &GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,&
+        &ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
+        &MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS,&
+        &MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
+        &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
 
     ! The number of Stokes parameters (and components of the real
     !   generalized spherical harmonics vectors) can be 1, 3, or 4.
