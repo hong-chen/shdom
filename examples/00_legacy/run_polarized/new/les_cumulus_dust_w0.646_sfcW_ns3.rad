@@ -17,7 +17,16 @@
 !  OUTPUT_TYPE=RADIANCE
 !    RADIANCE AT Z=  5.000    NXO= 320    NYO=   1    NDIR=   9
 !   X       Y       RADIANCE (STOKES I, Q, U, V)
+!   0.50000  180.00  <- (mu,phi)
+!   0.70711  180.00  <- (mu,phi)
+!   0.86603  180.00  <- (mu,phi)
+!   0.96593  180.00  <- (mu,phi)
+!   1.00000    0.00  <- (mu,phi)
+!   0.96593    0.00  <- (mu,phi)
+!   0.86603    0.00  <- (mu,phi)
+!   0.70711    0.00  <- (mu,phi)
+!   0.50000    0.00  <- (mu,phi)
 ! The following contains information for binary data intepretation:
 ! R
-! .sHdOm
+! .sHdOm-out
 !    320,     1,     1,     9,     3

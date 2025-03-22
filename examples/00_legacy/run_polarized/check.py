@@ -25,7 +25,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 import er3t
 
-def figure_check(filename='brdf_L1f.out'):
+def figure_check(filename='brdf_L1f.out', plot=False):
 
     fname_ori = 'ori/%s' % filename
     data_ori = er3t.rtm.shd.get_shd_data_out_ori(fname_ori)
@@ -52,9 +52,10 @@ def figure_check(filename='brdf_L1f.out'):
             else:
                 data1 = np.squeeze(data1)
 
+            print('[iVar=%d, iSet=%d] Sum(Diff) = %.4f' % (j, i, (data1-data0).sum()))
+
             # figure
             #╭────────────────────────────────────────────────────────────────────────────╮#
-            plot = True
             if plot:
                 plt.close('all')
                 # plot1
