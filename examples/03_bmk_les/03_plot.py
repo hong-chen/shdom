@@ -25,42 +25,50 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 import er3t
 
+def plot(data, iset, ivar, vmin=0.0, vmax=1.0):
+
+    # figure
+    #╭────────────────────────────────────────────────────────────────────────────╮#
+    plot = True
+    extent = [0, 48, 0, 48]
+    if plot:
+        plt.close('all')
+        fig = plt.figure(figsize=(6, 6))
+        # plot1
+        #╭──────────────────────────────────────────────────────────────╮#
+        ax1 = fig.add_subplot(111, aspect='auto')
+        cs = ax1.imshow(data.T, origin='lower', cmap='Greys_r', zorder=0, aspect='auto', vmin=vmin, vmax=vmax, extent=extent)
+        ax1.axis('off')
+        #╰──────────────────────────────────────────────────────────────╯#
+        # save figure
+        #╭──────────────────────────────────────────────────────────────╮#
+        fig.subplots_adjust(hspace=0.35, wspace=0.35)
+        _metadata_ = {'Computer': os.uname()[1], 'Script': os.path.abspath(__file__), 'Function':sys._getframe().f_code.co_name, 'Date':datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}
+        fname_fig = '%s_iset-%2.2d_ivar-%2.2d.png' % (os.path.basename(fname).replace('.txt', ''), iset, ivar)
+        plt.savefig(fname_fig, bbox_inches='tight', metadata=_metadata_, transparent=False, pad_inches=0.0)
+        #╰──────────────────────────────────────────────────────────────╯#
+        # plt.show()
+        # sys.exit()
+        plt.close(fig)
+        plt.clf()
+        #╰────────────────────────────────────────────────────────────────────────────╯#
+
 
 def figure_les(fname):
 
     data = er3t.rtm.shd.get_shd_data_out(fname)
 
-    for j in range(data.shape[-1]):
-        for i in range(data.shape[-2]):
+    for ivar in range(data.shape[-1]):
+        for iset in range(data.shape[-2]):
 
-            data_shd = np.squeeze(data[..., i, j])
+            data_shd = np.squeeze(data[..., iset, ivar])
 
-            # figure
-            #╭────────────────────────────────────────────────────────────────────────────╮#
-            plot = True
-            extent = [0, 48, 0, 48]
-            if plot:
-                plt.close('all')
-                fig = plt.figure(figsize=(8, 8))
-                # plot1
-                #╭──────────────────────────────────────────────────────────────╮#
-                ax1 = fig.add_subplot(111, aspect='auto')
-                cs = ax1.imshow(data_shd.T, origin='lower', cmap='Greys_r', zorder=0, aspect='auto', vmin=0.0, vmax=0.3, extent=extent)
-                # cs = ax1.imshow(data_shd.T, origin='lower', cmap='Greys_r', zorder=0, aspect='auto', extent=extent)
-                ax1.axis('off')
-                #╰──────────────────────────────────────────────────────────────╯#
-                # save figure
-                #╭──────────────────────────────────────────────────────────────╮#
-                fig.subplots_adjust(hspace=0.35, wspace=0.35)
-                _metadata_ = {'Computer': os.uname()[1], 'Script': os.path.abspath(__file__), 'Function':sys._getframe().f_code.co_name, 'Date':datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}
-                fname_fig = '%s_iset-%2.2d_ivar-%2.2d.png' % (os.path.basename(fname).replace('.txt', ''), i, j)
-                plt.savefig(fname_fig, bbox_inches='tight', metadata=_metadata_, transparent=False, pad_inches=0.0)
-                #╰──────────────────────────────────────────────────────────────╯#
-                # plt.show()
-                # sys.exit()
-                plt.close(fig)
-                plt.clf()
-            #╰────────────────────────────────────────────────────────────────────────────╯#
+            if data_shd.ndim > 2:
+                for iset_ in range(data_shd.shape[-1]):
+                    plot(data_shd[..., iset_], iset_, ivar)
+            else:
+                plot(data_shd, iset, ivar)
+
 
 
 
