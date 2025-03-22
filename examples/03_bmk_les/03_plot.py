@@ -28,7 +28,7 @@ import er3t
 
 def figure_les(fname):
 
-    data = er3t.rtm.shd.get_shd_data_out_test(fname)
+    data = er3t.rtm.shd.get_shd_data_out(fname)
 
     for j in range(data.shape[-1]):
         for i in range(data.shape[-2]):
@@ -53,7 +53,7 @@ def figure_les(fname):
                 #╭──────────────────────────────────────────────────────────────╮#
                 fig.subplots_adjust(hspace=0.35, wspace=0.35)
                 _metadata_ = {'Computer': os.uname()[1], 'Script': os.path.abspath(__file__), 'Function':sys._getframe().f_code.co_name, 'Date':datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}
-                fname_fig = '%s_iset-%2.2d_ivar-%2.2d.png' % (_metadata_['Function'], i, j)
+                fname_fig = '%s_iset-%2.2d_ivar-%2.2d.png' % (os.path.basename(fname).replace('.txt', ''), i, j)
                 plt.savefig(fname_fig, bbox_inches='tight', metadata=_metadata_, transparent=False, pad_inches=0.0)
                 #╰──────────────────────────────────────────────────────────────╯#
                 # plt.show()
@@ -66,8 +66,7 @@ def figure_les(fname):
 
 if __name__ == '__main__':
 
-    # fnames = sorted(glob.glob('tmp-data/shdom-out*.txt'))
-    fnames = sorted(glob.glob('tmp-data/shdom-out*f1.txt'))
+    fnames = sorted(glob.glob('tmp-data/shdom-out*.txt'))
 
     for fname in fnames:
         figure_les(fname)
