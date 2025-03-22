@@ -142,7 +142,7 @@ subroutine shd_io__outputResult(&
     character(10)  :: DATA_POSTFIX
     integer :: NVAR, NDATA, IDATA
 
-    DATA_POSTFIX = '.shd'
+    DATA_POSTFIX = '.sHdOm'
     OUTFILE_DATA = trim(adjustl(OUTFILE))//trim(adjustl(DATA_POSTFIX))
 
     GRIDNAME = 'EVEN (X,Y)  '
