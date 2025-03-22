@@ -129,7 +129,7 @@ subroutine shd_io__outputResult(&
     integer IZ, I, K, N, NX2, NY2, J, JX, JY, ICELL
     integer NANGOUT, NXOUT, NYOUT
     logical ALLGRID
-    real MUOUT, PHID, C, PI, SUM
+    real MUOUT, PHID, C, SUM
     real, allocatable :: SUM1(:), SUM2(:), SUM3(:)
     real XDOMAIN, YDOMAIN, STARTX, STARTY
     real :: ASYM
@@ -273,8 +273,6 @@ subroutine shd_io__outputResult(&
         & '   NUMBER_ITERATIONS=', TOTITER
     write (2, '(A,A)') '!  OUTPUT_TYPE=', trim(adjustl(OUTNAME))
 
-    PI = acos(-1.0)
-
     if (OUTTYPE .eq. 'R') then
 
         ! Radiance output
@@ -340,7 +338,7 @@ subroutine shd_io__outputResult(&
     else if (OUTTYPE .eq. 'F') then
 
         if (UNITS .eq. 'T') then
-            C = 1.0 / PI
+            C = 1.0 / PI_
         else
             C = 1.0
         end if
@@ -1102,8 +1100,6 @@ subroutine shd_io__outputResultMpi(&
         & '   NUMBER_ITERATIONS=', TOTITER
     write (2, '(A,A)') '!  OUTPUT_TYPE=', trim(adjustl(OUTNAME))
 
-    PI = acos(-1.0)
-
     if (OUTTYPE .eq. 'R') then
         ! Radiance output
         STARTX = 0.0
@@ -1170,7 +1166,7 @@ subroutine shd_io__outputResultMpi(&
                 end if
             end if
             C = 1.0
-            if (UNITS .eq. 'T') C = 1.0/PI
+            if (UNITS .eq. 'T') C = 1.0 / PI_
             do I = 1, NX
                 do J = 1, NY
                     if (SRCTYPE .ne. 'T') then
@@ -1203,7 +1199,7 @@ subroutine shd_io__outputResultMpi(&
                 end if
             end if
             C = 1.0
-            if (UNITS .eq. 'T') C = 1.0/PI
+            if (UNITS .eq. 'T') C = 1.0 / PI_
             N = NX*NY
             do K = 1, NZ
                 SUM1 = 0.0
@@ -1241,7 +1237,7 @@ subroutine shd_io__outputResultMpi(&
                 end if
             end if
             C = 1.0
-            if (UNITS .eq. 'T') C = 1.0/PI
+            if (UNITS .eq. 'T') C = 1.0 / PI_
             do I = 1, NX
                 do J = 1, NY
                     do K = 1, NZ
