@@ -482,6 +482,8 @@ program shdom_main
                        NPTS, NCELLS, GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR, &
                        CELLFLAGS, FLUXES, SHPTR, SOURCE, RSHPTR, RADIANCE)
 
+    ! check if we can use pre-calculated "state", if not, generate new grids
+    ! NEWGRIDFLAG is from shd_io__restoreState call
     if (NEWGRIDFLAG) then
         ! Make the internal base grid lines
         call NEW_GRIDS(BCFLAG, GRIDTYPE, NPX, NPY, NPZ, NX, NY, NZ, &
