@@ -1313,10 +1313,10 @@ subroutine shd_io__readCkd(&
 end subroutine shd_io__readCkd
 
 subroutine shd_io__restoreState(&
-    & INSAVEFILE, NSTOKES, NX, NY, NZ,&
-    & ML, MM, NLM, INRADFLAG, NEWGRIDFLAG, XGRID, YGRID, ZGRID,&
-    & NPTS, NCELLS, GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR,&
-    & CELLFLAGS, FLUXES, SHPTR, SOURCE, RSHPTR, RADIANCE)
+    &INSAVEFILE, NSTOKES, NX, NY, NZ,&
+    &ML, MM, NLM, INRADFLAG, NEWGRIDFLAG, XGRID, YGRID, ZGRID,&
+    &NPTS, NCELLS, GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR,&
+    &CELLFLAGS, FLUXES, SHPTR, SOURCE, RSHPTR, RADIANCE)
     ! Reads the binary save file containing a previous state of
     ! the SHDOM solution. This includes the cell tree structure,
     ! the spherical harmonic expansion of the source function,
@@ -1326,37 +1326,44 @@ subroutine shd_io__restoreState(&
     ! harmonic truncation smaller than the current (ML,MM,NLM).
     ! The flag NEWGRIDFLAG is set to false if reading succeeds.
 
-    integer NSTOKES, NX, NY, NZ, ML, MM, NLM, NPTS, NCELLS
-    integer SHPTR(*), RSHPTR(*)
-    integer GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
-    integer*2 CELLFLAGS(*)
-    logical INRADFLAG, NEWGRIDFLAG
-    real XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ)
-    real GRIDPOS(3, *), FLUXES(2, *), SOURCE(*), RADIANCE(*)
-    character(256) :: INSAVEFILE
-    integer NSTI, NXI, NYI, NZI, MLI, MMI, NLMI
-    integer I, J, NS, NR
+    character(*), intent(in) :: INSAVEFILE
+    integer, intent(in) :: NSTOKES, NX, NY, NZ, ML, MM, NLM
+
+    integer, intent(out) :: NPTS, NCELLS
+    integer, intent(out) :: SHPTR(*), RSHPTR(*)
+    integer, intent(out) :: GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
+    integer(2), intent(out) :: CELLFLAGS(*)
+    logical, intent(out) :: INRADFLAG, NEWGRIDFLAG
+    real, intent(out) :: XGRID(NX+1), YGRID(NY+1), ZGRID(NZ)
+    real, intent(out) :: GRIDPOS(3, *), FLUXES(2, *), SOURCE(*), RADIANCE(*)
+
+    integer :: NSTI, NXI, NYI, NZI, MLI, MMI, NLMI
+    integer :: I, J, NS, NR
 
     INRADFLAG = .false.
     NEWGRIDFLAG = .true.
     if (INSAVEFILE(1:4) .eq. 'NONE') return
 
     open (UNIT=3, FILE=trim(adjustl(INSAVEFILE)), STATUS='OLD',&
-        & FORM='UNFORMATTED', ERR=900)
+        &FORM='UNFORMATTED', ERR=900)
+
     read (3) NSTI, NXI, NYI, NZI, MLI, MMI, NLMI, NPTS, NCELLS
+
     if (NXI .ne. NX .or. NYI .ne. NY .or. NZI .ne. NZ) then
-        write (6, *) 'Message [_restoreState]: wrong grid size:', NXI, NYI, NZI
+        write (6, '(A, 3I6)') 'Message [_restoreState]: wrong grid size:', NXI, NYI, NZI
         close (3)
         return
     end if
+
     if (NSTI .ne. NSTOKES .or.&
-        & MLI .gt. ML .or. MMI .gt. MM) then
-        write (6, *) 'Message [_restoreState]: incompatible SH:', NSTI, MLI, MMI
+        &MLI .gt. ML .or. MMI .gt. MM) then
+        write (6, '(A, 3I6)') 'Message [_restoreState]: incompatible SH:', NSTI, MLI, MMI
         close (3)
         return
     end if
-    read (3) (XGRID(I), I=1, NX + 1)
-    read (3) (YGRID(I), I=1, NY + 1)
+
+    read (3) (XGRID(I), I=1, NX+1)
+    read (3) (YGRID(I), I=1, NY+1)
     read (3) (ZGRID(I), I=1, NZ)
     read (3) ((GRIDPTR(J, I), J=1, 8), I=1, NCELLS)
     read (3) ((NEIGHPTR(J, I), J=1, 6), I=1, NCELLS)
@@ -1378,15 +1385,20 @@ subroutine shd_io__restoreState(&
     end do
 
     close (3)
+
+    write (6, '(A)') 'Message [_restoreState]: State restored from <'//trim(adjustl(INSAVEFILE))//'> ...'
+
     INRADFLAG = .true.
     NEWGRIDFLAG = .false.
     return
 
 900 continue
-    write (6, *) 'Warning [_restoreState]: Input radiance vector file not found.'
+    write (6, '(A)') 'Warning [_restoreState]: Input radiance vector file not found.'
     INRADFLAG = .false.
     NEWGRIDFLAG = .true.
+
     return
+
 end subroutine shd_io__restoreState
 
 end module shd_io_inp

@@ -2071,24 +2071,28 @@ subroutine shd_io__plotCell(&
 end subroutine shd_io__plotCell
 
 subroutine shd_io__saveState(&
-    & OUTSAVEFILE, NSTOKES, NX, NY, NZ,&
-    & ML, MM, NLM, WORK, XGRID, YGRID, ZGRID,&
-    & NPTS, NCELLS, GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR,&
-    & CELLFLAGS, FLUXES, SHPTR, SOURCE, RSHPTR, RADIANCE)
+    &OUTSAVEFILE, NSTOKES, NX, NY, NZ,&
+    &ML, MM, NLM, WORK, XGRID, YGRID, ZGRID,&
+    &NPTS, NCELLS, GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR,&
+    &CELLFLAGS, FLUXES, SHPTR, SOURCE, RSHPTR, RADIANCE)
     ! Write a binary save file containing the current state of
     ! the SHDOM solution. This includes the cell tree structure,
     ! the spherical harmonic expansion of the source function,
     ! the low order terms of the radiance expansion, and the flux array.
     ! If the file name is 'NONE' then no file is written.
 
-    integer NSTOKES, NX, NY, NZ, ML, MM, NLM, NPTS, NCELLS
-    integer SHPTR(NPTS + 1), RSHPTR(NPTS)
-    integer GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
-    integer*2 CELLFLAGS(NCELLS)
-    real XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ), WORK(*)
-    real GRIDPOS(3, NPTS), FLUXES(2, NPTS), SOURCE(*), RADIANCE(*)
-    character(256) :: OUTSAVEFILE
-    integer I, J, K, IR, NS, NR
+    character(*), intent(in) :: OUTSAVEFILE
+    integer, intent(in) :: NSTOKES, NX, NY, NZ, ML, MM, NLM, NPTS, NCELLS
+    integer, intent(in) :: SHPTR(NPTS+1), RSHPTR(NPTS)
+    integer, intent(in) :: GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
+    integer(2), intent(in) :: CELLFLAGS(NCELLS)
+    real, intent(in) :: XGRID(NX+1), YGRID(NY+1), ZGRID(NZ)
+    real, intent(inout) :: WORK(*)
+    real, intent(in) :: GRIDPOS(3, NPTS), FLUXES(2, NPTS), SOURCE(*), RADIANCE(*)
+
+    integer :: I, J, K, IR, NS, NR
+    integer :: DATA_BYTE
+    real :: DATA_SIZE
 
     if (OUTSAVEFILE(1:4) .eq. 'NONE') return
 
@@ -2123,6 +2127,12 @@ subroutine shd_io__saveState(&
     write (3) (WORK(I), I=1, NSTOKES*NR)
 
     close (3)
+
+    inquire(FILE=trim(adjustl(OUTSAVEFILE)), SIZE=DATA_BYTE)
+    DATA_SIZE = DATA_BYTE/1000000.0
+    write(*, '(A,F6.2,A)') 'Message [_saveState]: Data saved at <'//trim(adjustl(OUTSAVEFILE))//'> (',&
+        &DATA_SIZE, 'MB).'
+
     return
 end subroutine shd_io__saveState
 
