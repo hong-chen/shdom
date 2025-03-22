@@ -2096,12 +2096,12 @@ subroutine shd_io__saveState(&
 
     if (OUTSAVEFILE(1:4) .eq. 'NONE') return
 
-    open (UNIT=3, FILE=trim(adjustl(OUTSAVEFILE)), STATUS='UNKNOWN',&
+    open (UNIT=3, FILE=trim(adjustl(OUTSAVEFILE)), STATUS='REPLACE',&
         &FORM='UNFORMATTED')
     write (3) NSTOKES, NX, NY, NZ, ML, MM, NLM, NPTS, NCELLS
 
-    write (3) (XGRID(I), I=1, NX + 1)
-    write (3) (YGRID(I), I=1, NY + 1)
+    write (3) (XGRID(I), I=1, NX+1)
+    write (3) (YGRID(I), I=1, NY+1)
     write (3) (ZGRID(I), I=1, NZ)
     write (3) ((GRIDPTR(J, I), J=1, 8), I=1, NCELLS)
     write (3) ((NEIGHPTR(J, I), J=1, 6), I=1, NCELLS)
@@ -2119,10 +2119,15 @@ subroutine shd_io__saveState(&
     do I = 1, NPTS
         IR = RSHPTR(I)
         do J = 1, NSTOKES*4
-            WORK(K) = RADIANCE(NSTOKES*(IR - 1) + J)
+            ! the max function is applied to fix the segmentation issue
+            !╭────────────────────────────────────────────────╮!
+            !WORK(K) = RADIANCE(NSTOKES*(IR-1)+J)
+            WORK(K) = RADIANCE(NSTOKES*(IR)+J)
+            !╰────────────────────────────────────────────────╯!
             K = K + 1
         end do
     end do
+
     NR = 4*NPTS
     write (3) (WORK(I), I=1, NSTOKES*NR)
 

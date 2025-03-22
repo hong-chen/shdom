@@ -1381,7 +1381,7 @@ subroutine shd_io__restoreState(&
     read (3) (RADIANCE(I), I=1, NSTOKES*NR)
     RSHPTR(1) = 0
     do I = 1, NPTS
-        RSHPTR(I + 1) = RSHPTR(I) + NSTOKES*4
+        RSHPTR(I+1) = RSHPTR(I) + NSTOKES*4
     end do
 
     close (3)

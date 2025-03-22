@@ -467,7 +467,7 @@ subroutine COMPUTE_SOURCE(&
     !   so that a triangular (for M=L) truncation is preserved.  If there
     !   is little or no scattering then the SH truncation can be set to
     !   zero terms.  The source function SH truncation is output in terms
-    !   of the pointer SHPTR (note that RSHPTR refers to the RADIANCE arra
+    !   of the pointer SHPTR (note that RSHPTR refers to the RADIANCE array
     !   and OSHPTR to the DELSOURCE array).
     ! To save memory this routine also computes some things for the
     !   series acceleration: the dot products of the difference in source
