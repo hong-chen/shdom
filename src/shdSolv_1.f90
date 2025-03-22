@@ -2486,6 +2486,7 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
     end if
 
     IZ = (NZ - 1)*(1 - BITZ) + 1
+
     ! Sweep through all the grid points
     do IORDER = 1, NPTS
         IPCELL = ishft(SWEEPORD(IORDER, JOCT), -3)
