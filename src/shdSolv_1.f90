@@ -168,7 +168,7 @@ subroutine SOLVE_RTE(&
                 IERR = 1
             else
                 allocate (SFC_BRDF_DO(NSTOKES, NMU/2, NPHI0MAX,&
-                    & NSTOKES, NMU/2, NPHI0MAX), STAT=IERR)
+                    &NSTOKES, NMU/2, NPHI0MAX), STAT=IERR)
             end if
             if (IERR .eq. 0) then
                 call MAKE_SFC_BRDF_DO_MATRIX(SFCTYPE, WAVELEN,&
@@ -328,22 +328,22 @@ subroutine SOLVE_RTE(&
 
     ! Comment in for GLE graphics output of cell structure (see rou
     ! call shdUtil_io__plotCell('cellfinal.gle', YGRID(1), 1, IPFLAG, &
-    !     & NX, XGRID(NX+1)-XGRID(1), ZGRID(NZ)-ZGRID(1), &
-    !     & NCELLS, GRIDPTR, NEIGHPTR, TREEPTR, &
-    !     & CELLFLAGS, GRIDPOS)
+    !     &NX, XGRID(NX+1)-XGRID(1), ZGRID(NZ)-ZGRID(1), &
+    !     &NCELLS, GRIDPTR, NEIGHPTR, TREEPTR, &
+    !     &CELLFLAGS, GRIDPOS)
 
     ! Comment in for output of cell splitting criterion for every c
     ! call shdUtil_io_outputCellSplit ('cellsplit.dat',GRIDPTR, &
-    !     & GRIDPOS, EXTINCT, SHPTR, SOURCE, NCELLS)
+    !     &GRIDPOS, EXTINCT, SHPTR, SOURCE, NCELLS)
 
     return
 end subroutine
 
 subroutine CALC_SOURCE_PNT(&
-    & NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
-    & SRCTYPE, FLUX0, YLMSUN, PLANCK,&
-    & ALBEDO, IPH, LEGEN, NR, RADIANCE,&
-    & SOURCET)
+    &NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
+    &SRCTYPE, FLUX0, YLMSUN, PLANCK,&
+    &ALBEDO, IPH, LEGEN, NR, RADIANCE,&
+    &SOURCET)
     ! Calculates the polarized source function in real generalized
     ! spherical harmonics at one grid point from the radiance in
     ! real generalized spherical harmonics and thermal and/or solar
@@ -372,7 +372,7 @@ subroutine CALC_SOURCE_PNT(&
         end do
         do J = 5, NR
             SOURCET(2, J) = SOURCET(2, J) + LEGEN(5, LOFJ(J), IPH)*RADIANCE(1, J)&
-                & + LEGEN(2, LOFJ(J), IPH)*RADIANCE(2, J)
+                &+ LEGEN(2, LOFJ(J), IPH)*RADIANCE(2, J)
             SOURCET(3, J) = SOURCET(3, J) + LEGEN(3, LOFJ(J), IPH)*RADIANCE(3, J)
         end do
     end if
@@ -380,7 +380,7 @@ subroutine CALC_SOURCE_PNT(&
         do J = 1, NR
             SOURCET(3, J) = SOURCET(3, J) + LEGEN(6, LOFJ(J), IPH)*RADIANCE(4, J)
             SOURCET(4, J) = SOURCET(4, J) - LEGEN(6, LOFJ(J), IPH)*RADIANCE(3, J)&
-                & + LEGEN(4, LOFJ(J), IPH)*RADIANCE(4, J)
+                &+ LEGEN(4, LOFJ(J), IPH)*RADIANCE(4, J)
         end do
     end if
     ! Do the final multiplication by the single scattering albedo
@@ -391,12 +391,12 @@ subroutine CALC_SOURCE_PNT(&
     if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
         do J = 1, NLM
             SOURCET(1, J) = SOURCET(1, J)&
-                & + FLUX0*ALBEDO*LEGEN(1, LOFJ(J), IPH)*YLMSUN(1, J)
+                &+ FLUX0*ALBEDO*LEGEN(1, LOFJ(J), IPH)*YLMSUN(1, J)
         end do
         if (NSTOKES .gt. 1) then
             do J = 5, NLM
                 SOURCET(2, J) = SOURCET(2, J)&
-                    & + FLUX0*ALBEDO*LEGEN(5, LOFJ(J), IPH)*YLMSUN(1, J)
+                    &+ FLUX0*ALBEDO*LEGEN(5, LOFJ(J), IPH)*YLMSUN(1, J)
             end do
         end if
     end if
@@ -409,10 +409,10 @@ subroutine CALC_SOURCE_PNT(&
 end subroutine
 
 subroutine CALC_SOURCE_PNT_UNPOL(&
-    & NLM, NLEG, LOFJ,&
-    & SRCTYPE, FLUX0, YLMSUN, PLANCK,&
-    & ALBEDO, IPH, LEGEN, NR, RADIANCE,&
-    & SOURCET)
+    &NLM, NLEG, LOFJ,&
+    &SRCTYPE, FLUX0, YLMSUN, PLANCK,&
+    &ALBEDO, IPH, LEGEN, NR, RADIANCE,&
+    &SOURCET)
     ! Calculates the scalar source function in spherical harmonics at
     ! one grid point from the radiance in spherical harmonics and
     ! thermal and/or solar source information.
@@ -445,16 +445,17 @@ subroutine CALC_SOURCE_PNT_UNPOL(&
     do J = 1, NR
         SOURCET(J) = SOURCET(J) + ALBEDO*LEGEN(LOFJ(J), IPH)*RADIANCE(J)
     end do
+
     return
 end subroutine
 
 subroutine COMPUTE_SOURCE(&
-    & NSTOKES, ML, MM, NLM,&
-    & NSTLEG, NLEG, NUMPHASE, NPTS, FIXSH,&
-    & SRCTYPE, SOLARMU, YLMSUN, ALBEDO, LEGEN,&
-    & IPHASE, PLANCK, DIRFLUX, SHACC, MAXIV,&
-    & RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR, DELSOURCE,&
-    & FIRST, ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM)
+    &NSTOKES, ML, MM, NLM,&
+    &NSTLEG, NLEG, NUMPHASE, NPTS, FIXSH,&
+    &SRCTYPE, SOLARMU, YLMSUN, ALBEDO, LEGEN,&
+    &IPHASE, PLANCK, DIRFLUX, SHACC, MAXIV,&
+    &RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR, DELSOURCE,&
+    &FIRST, ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM)
     ! Computes the source function (SOURCE) in spherical harmonic spac
     !   for all the grid points.  The thermal source and/or solar
     !   pseudo-source (in PLANCK or DIRFLUX) is added to the scattering so
@@ -535,14 +536,14 @@ subroutine COMPUTE_SOURCE(&
             end if
             if (NSTOKES .eq. 1) then
                 call CALC_SOURCE_PNT_UNPOL(NLM, NLEG, LOFJ,&
-                    & SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
-                    & PLANCK(I), ALBEDO(I), IPH, LEGEN,&
-                    & NR, RADIANCE(1, IR + 1), SOURCET)
+                    &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
+                    &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
+                    &NR, RADIANCE(1, IR + 1), SOURCET)
             else
                 call CALC_SOURCE_PNT(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
-                    & SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
-                    & PLANCK(I), ALBEDO(I), IPH, LEGEN,&
-                    & NR, RADIANCE(1, IR + 1), SOURCET)
+                    &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
+                    &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
+                    &NR, RADIANCE(1, IR + 1), SOURCET)
             end if
 
             ! Compute the dot product of the new and old source differen
@@ -554,7 +555,7 @@ subroutine COMPUTE_SOURCE(&
                 do K = 1, NSTOKES
                     do J = 1, NS
                         DELJDOT = DELJDOT +&
-                            & (SOURCET(K, J) - SOURCE(K, IS + J))*DELSOURCE(K, ISO + J)
+                            &(SOURCET(K, J) - SOURCE(K, IS + J))*DELSOURCE(K, ISO + J)
                         DELJOLD = DELJOLD + DELSOURCE(K, ISO + J)**2
                         DELJNEW = DELJNEW + (SOURCET(K, J) - SOURCE(K, IS + J))**2
                         JNORM = JNORM + SOURCE(K, IS + J)**2
@@ -586,14 +587,14 @@ subroutine COMPUTE_SOURCE(&
             NR = RSHPTR(I + 1) - IR
             if (NSTOKES .eq. 1) then
                 call CALC_SOURCE_PNT_UNPOL(NLM, NLEG, LOFJ,&
-                    & SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
-                    & PLANCK(I), ALBEDO(I), IPH, LEGEN,&
-                    & NR, RADIANCE(1, IR + 1), SOURCET)
+                    &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
+                    &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
+                    &NR, RADIANCE(1, IR + 1), SOURCET)
             else
                 call CALC_SOURCE_PNT(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
-                    & SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
-                    & PLANCK(I), ALBEDO(I), IPH, LEGEN,&
-                    & NR, RADIANCE(1, IR + 1), SOURCET)
+                    &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
+                    &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
+                    &NR, RADIANCE(1, IR + 1), SOURCET)
             end if
 
             ! Make the source difference vector
@@ -623,14 +624,14 @@ subroutine COMPUTE_SOURCE(&
         end if
         if (NSTOKES .eq. 1) then
             call CALC_SOURCE_PNT_UNPOL(NLM, NLEG, LOFJ,&
-                & SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
-                & PLANCK(I), ALBEDO(I), IPH, LEGEN,&
-                & NR, RADIANCE(1, IR + 1), SOURCET)
+                &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
+                &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
+                &NR, RADIANCE(1, IR + 1), SOURCET)
         else
             call CALC_SOURCE_PNT(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
-                & SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
-                & PLANCK(I), ALBEDO(I), IPH, LEGEN,&
-                & NR, RADIANCE(1, IR + 1), SOURCET)
+                &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
+                &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
+                &NR, RADIANCE(1, IR + 1), SOURCET)
         end if
         if (FIXSH) then
             NS = SHPTR(I + 1) - IS
@@ -678,9 +679,9 @@ subroutine COMPUTE_SOURCE(&
 end subroutine
 
 subroutine RADIANCE_TRUNCATION(HIGHORDERRAD,&
-    & NSTOKES, ML, MM, NSTLEG, NLEG, NUMPHASE,&
-    & NPTS, ALBEDO, LEGEN, IPHASE, SHPTR, RADIANCE,&
-    & MAXIR, FIXSH, SHACC, RSHPTR)
+    &NSTOKES, ML, MM, NSTLEG, NLEG, NUMPHASE,&
+    &NPTS, ALBEDO, LEGEN, IPHASE, SHPTR, RADIANCE,&
+    &MAXIR, FIXSH, SHACC, RSHPTR)
     ! Computes the next radiance spherical harmonic series truncation
     ! to use based on the current source function truncation and the
     ! scattering properties.  The radiance truncation is the smaller
@@ -764,7 +765,7 @@ subroutine RADIANCE_TRUNCATION(HIGHORDERRAD,&
         RSHPTR(I + 1) = IR
         if (IR .gt. MAXIR) then
             write (6, *)&
-                & 'Message [RADIANCE_TRUNCATION]: Out of memory for more radiance terms.'
+                &'Message [RADIANCE_TRUNCATION]: Out of memory for more radiance terms.'
             goto 190
         end if
     end do
@@ -789,7 +790,7 @@ subroutine RADIANCE_TRUNCATION(HIGHORDERRAD,&
         IR = IR + NR
         if (IR .gt. MAXIR) then
             write (6, *) 'Error [RADIANCE_TRUNCATION]: Really out of memory ',&
-                & 'for more radiance terms.'
+                &'for more radiance terms.'
             write (6, *) '  Increase MAXIV.'
             stop
         end if
@@ -800,7 +801,7 @@ subroutine RADIANCE_TRUNCATION(HIGHORDERRAD,&
 end subroutine
 
 subroutine ACCELERATE_SOLUTION(ACCELPAR, NPTS, SHPTR, OSHPTR,&
-    & NSTOKES, SOURCE, DELSOURCE)
+    &NSTOKES, SOURCE, DELSOURCE)
     !   Accelerates the successive order of scattering series using the
     ! input acceleration parameter (ACCELPAR).
     implicit none
@@ -817,7 +818,7 @@ subroutine ACCELERATE_SOLUTION(ACCELPAR, NPTS, SHPTR, OSHPTR,&
             NSC = min(NS, NSD)
             do J = 1, NSC
                 SOURCE(:, IS + J) = SOURCE(:, IS + J)&
-                    & + ACCELPAR*DELSOURCE(:, ISD + J)
+                    &+ ACCELPAR*DELSOURCE(:, ISD + J)
             end do
         end do
     end if
@@ -826,20 +827,21 @@ subroutine ACCELERATE_SOLUTION(ACCELPAR, NPTS, SHPTR, OSHPTR,&
 end subroutine
 
 subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
-    & ML, MM, NLM, NMU, NPHI0MAX, NPHI0, NANG,&
-    & BCFLAG, IPFLAG,&
-    & NPTS, NCELLS, XGRID, YGRID, ZGRID, GRIDPOS,&
-    & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-    & SRCTYPE, SOLARMU, SOLARAZ, SKYRAD, WAVENO, WAVELEN,&
-    & UNITS, SFCTYPE, GNDTEMP, GNDALBEDO,&
-    & NXSFC, NYSFC, DELXSFC, DELYSFC, NSFCPAR, SFCPARMS,&
-    & SFCGRIDPARMS, UNIFORM_SFC_BRDF, SFC_BRDF_DO,&
-    & MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-    & MU, PHI, WTDO,&
-    & CMU1, CPHI1, CMU2, CPHI2, WSAVE, FFTFLAG,&
-    & DIRFLUX, FLUXES, EXTINCT,&
-    & SHPTR, SOURCE, RSHPTR, RADIANCE,&
-    & WORK, SWEEPORD, GRIDRAD)
+    &ML, MM, NLM, NMU, NPHI0MAX, NPHI0, NANG,&
+    &BCFLAG, IPFLAG,&
+    &NPTS, NCELLS, XGRID, YGRID, ZGRID, GRIDPOS,&
+    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+    &SRCTYPE, SOLARMU, SOLARAZ, SKYRAD, WAVENO, WAVELEN,&
+    &UNITS, SFCTYPE, GNDTEMP, GNDALBEDO,&
+    &NXSFC, NYSFC, DELXSFC, DELYSFC, NSFCPAR, SFCPARMS,&
+    &SFCGRIDPARMS, UNIFORM_SFC_BRDF, SFC_BRDF_DO,&
+    &MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
+    &MU, PHI, WTDO,&
+    &CMU1, CPHI1, CMU2, CPHI2, WSAVE, FFTFLAG,&
+    &DIRFLUX, FLUXES, EXTINCT,&
+    &SHPTR, SOURCE, RSHPTR, RADIANCE,&
+    &WORK, SWEEPORD, GRIDRAD)
+
     !   Performs the path integrations through the medium specified by
     ! the extinction (EXTINCT) and source function (SOURCE) in
     ! spherical harmonic space.  The source function is transformed to
@@ -863,6 +865,7 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
     ! For the general BRDF, the BCRAD array in addition holds the
     ! downwelling radiances at all discrete ordinates for the bottom
     ! boundary points.
+
     implicit none
     integer NX, NY, NZ, NSTOKES, NSTLEG, ML, MM, NLM
     integer NMU, NPHI0MAX, NPHI0(NMU), NANG
@@ -903,32 +906,32 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
     ! Make the new grid cell/point sweeping order if need to
     if (NPTS .ne. OLDNPTS) then
         call SWEEPING_ORDER(NX, NY, NZ, NPTS, NCELLS,&
-            & GRIDPTR, TREEPTR, CELLFLAGS,&
-            & BCFLAG, IPFLAG, SWEEPORD, GRIDRAD)
+            &GRIDPTR, TREEPTR, CELLFLAGS,&
+            &BCFLAG, IPFLAG, SWEEPORD, GRIDRAD)
     end if
 
     call FIND_BOUNDARY_POINTS(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
-        & GRIDPOS, NX, NY, NZ, XGRID, YGRID, ZGRID)
+        &GRIDPOS, NX, NY, NZ, XGRID, YGRID, ZGRID)
 
     LAMBERTIAN = SFCTYPE(2:2) .eq. 'L'
     if (NPTS .ne. OLDNPTS) then
         ! Make the pointers to the grid points on the top and bottom bou
         call BOUNDARY_PNTS(NPTS, NANG, LAMBERTIAN, MAXNBC, MAXBCRAD,&
-            & ZGRID(1), ZGRID(NZ), GRIDPOS,&
-            & NTOPPTS, NBOTPTS, BCPTR)
+            &ZGRID(1), ZGRID(NZ), GRIDPOS,&
+            &NTOPPTS, NBOTPTS, BCPTR)
         if (SFCTYPE(1:1) .eq. 'V') then
             ! If this is a variable surface then bilinearly interpolate
             !   the surface temperature and reflection parameters to the
             !   bottom grid points.
             call SURFACE_PARM_INTERP(NBOTPTS, BCPTR(1, 2), GRIDPOS,&
-                & SRCTYPE, WAVENO, WAVELEN, UNITS,&
-                & NXSFC, NYSFC, DELXSFC, DELYSFC, NSFCPAR, SFCPARMS,&
-                & SFCGRIDPARMS)
+                &SRCTYPE, WAVENO, WAVELEN, UNITS,&
+                &NXSFC, NYSFC, DELXSFC, DELYSFC, NSFCPAR, SFCPARMS,&
+                &SFCGRIDPARMS)
         end if
     end if
     ! Make the isotropic radiances for the top boundary
     call COMPUTE_TOP_RADIANCES(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
-        & UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
+        &UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
 
     ! Zero the flux arrays and set temporary radiance to -1 for not
     do I = 1, NPTS
@@ -955,25 +958,25 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
             !   radiances using the downwelling fluxes.
             if (SFCTYPE .eq. 'FL') then
                 call FIXED_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR(1, 2),&
-                    & DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO,&
-                    & WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1, 1 + NTOPPTS))
+                    &DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO,&
+                    &WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1, 1 + NTOPPTS))
             else if (SFCTYPE .eq. 'VL') then
                 call VARIABLE_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR(1, 2),&
-                    & DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS,&
-                    & NSTOKES, BCRAD(1, 1 + NTOPPTS))
+                    &DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS,&
+                    &NSTOKES, BCRAD(1, 1 + NTOPPTS))
             end if
         end if
 
         if (NSTOKES .eq. 1) then
             call SH_TO_DO_UNPOL(NPTS, ML, MM, NLM,&
-                & NMU, NPHI0MAX, NPHI0(IMU),&
-                & IMU, FFTFLAG, CMU1, CPHI1, WSAVE,&
-                & SHPTR, SOURCE, WORK)
+                &NMU, NPHI0MAX, NPHI0(IMU),&
+                &IMU, FFTFLAG, CMU1, CPHI1, WSAVE,&
+                &SHPTR, SOURCE, WORK)
         else
             call SH_TO_DO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
-                & NMU, NPHI0MAX, NPHI0(IMU),&
-                & IMU, FFTFLAG, CMU1, CPHI1, WSAVE,&
-                & SHPTR, SOURCE, WORK)
+                &NMU, NPHI0MAX, NPHI0(IMU),&
+                &IMU, FFTFLAG, CMU1, CPHI1, WSAVE,&
+                &SHPTR, SOURCE, WORK)
         end if
 
         ! Enforce the discrete ordinate I source function to be non-ne
@@ -1009,17 +1012,17 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
                     !   BRDF matrix to do the integration.
                     if (UNIFORM_SFC_BRDF) then
                         call UNIFORM_BRDF_SURFACE(NBOTPTS, BCPTR(1, 2),&
-                            & NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, IMU, IPHI,&
-                            & SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
-                            & SFCTYPE, NSFCPAR, SFCGRIDPARMS, SFC_BRDF_DO,&
-                            & NSTOKES, BCRAD(1, 1 + NTOPPTS))
+                            &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, IMU, IPHI,&
+                            &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
+                            &SFCTYPE, NSFCPAR, SFCGRIDPARMS, SFC_BRDF_DO,&
+                            &NSTOKES, BCRAD(1, 1 + NTOPPTS))
                     else
                         call VARIABLE_BRDF_SURFACE(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
-                            & NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-                            & MU(IMU), PHI(IMU, IPHI),&
-                            & SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
-                            & SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
-                            & NSTOKES, BCRAD(1, 1 + NTOPPTS))
+                            &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
+                            &MU(IMU), PHI(IMU, IPHI),&
+                            &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
+                            &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
+                            &NSTOKES, BCRAD(1, 1 + NTOPPTS))
                     end if
                 end if
 
@@ -1071,8 +1074,8 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
             do I = 1, NPTS
                 if (GRIDRAD(1, I) .lt. -0.0001) then
                     write (6, *) 'Warning [PATH_INTEGRATION]: Grid point has no value',&
-                        & I, MU(IMU), PHI(IMU, IPHI), GRIDRAD(1, I), XGRID(1), YGRID(1),&
-                        & GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I)
+                        &I, MU(IMU), PHI(IMU, IPHI), GRIDRAD(1, I), XGRID(1), YGRID(1),&
+                        &GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I)
                     ! stop
                     GRIDRAD(1, I) = 0.0
                 else
@@ -1103,14 +1106,14 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
         ! Transform the radiance to spherical harmonics for this zenit
         if (NSTOKES .eq. 1) then
             call DO_TO_SH_UNPOL(NPTS, ML, MM, NLM,&
-                & NMU, NPHI0MAX, NPHI0(IMU),&
-                & IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
-                & RSHPTR, WORK, RADIANCE)
+                &NMU, NPHI0MAX, NPHI0(IMU),&
+                &IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
+                &RSHPTR, WORK, RADIANCE)
         else
             call DO_TO_SH(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
-                & NMU, NPHI0MAX, NPHI0(IMU),&
-                & IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
-                & RSHPTR, WORK, RADIANCE)
+                &NMU, NPHI0MAX, NPHI0(IMU),&
+                &IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
+                &RSHPTR, WORK, RADIANCE)
         end if
 
     end do
@@ -1121,8 +1124,8 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
 end subroutine
 
 subroutine BOUNDARY_PNTS(NPTS, NANG, LAMBERTIAN, MAXNBC, MAXBCRAD,&
-    & ZBOT, ZTOP, GRIDPOS,&
-    & NTOPPTS, NBOTPTS, BCPTR)
+    &ZBOT, ZTOP, GRIDPOS,&
+    &NTOPPTS, NBOTPTS, BCPTR)
     !   Returns the BCPTR pointer array for the NTOPPTS top boundary
     ! points (BCPTR(*,1)) and the NBOTPTS bottom boundary points (BCPTR(
     ! All the grid points are looked at to find the boundary ones.
@@ -1165,9 +1168,10 @@ subroutine BOUNDARY_PNTS(NPTS, NANG, LAMBERTIAN, MAXNBC, MAXBCRAD,&
 end subroutine
 
 subroutine SURFACE_PARM_INTERP(NBOTPTS, BCPTR, GRIDPOS,&
-    & SRCTYPE, WAVENO, WAVELEN, UNITS,&
-    & NXSFC, NYSFC, DELXSFC, DELYSFC, NSFCPAR, SFCPARMS,&
-    & SFCGRIDPARMS)
+    &SRCTYPE, WAVENO, WAVELEN, UNITS,&
+    &NXSFC, NYSFC, DELXSFC, DELYSFC, NSFCPAR, SFCPARMS,&
+    &SFCGRIDPARMS)
+
     !   Bilinearly interpolates the surface properties from the regular
     ! surface grid to the boundary points of the adaptive grid.
     ! The locations of the NBOTPTS grid points on the bottom boundary
@@ -1178,6 +1182,7 @@ subroutine SURFACE_PARM_INTERP(NBOTPTS, BCPTR, GRIDPOS,&
     ! The output interpolated surface parameters at the NBOTPTS boundary
     ! points are in SFCGRIDPARMS.  The first parameter is input as
     ! temperature, but converted to Planck function for output.
+
     implicit none
     integer NBOTPTS, BCPTR(*), NXSFC, NYSFC, NSFCPAR
     real WAVENO(2), WAVELEN
@@ -1199,8 +1204,8 @@ subroutine SURFACE_PARM_INTERP(NBOTPTS, BCPTR, GRIDPOS,&
         V = max(0.0, min(1.0, RY - (IY - 1)))
         do J = 1, NSFCPAR
             SFCGRIDPARMS(J, IBC) = (1 - U)*(1 - V)*SFCPARMS(J, IX, IY)&
-                & + (1 - U)*V*SFCPARMS(J, IX, IY + 1)&
-                & + U*(1 - V)*SFCPARMS(J, IX + 1, IY) + U*V*SFCPARMS(J, IX + 1, IY + 1)
+                &+ (1 - U)*V*SFCPARMS(J, IX, IY + 1)&
+                &+ U*(1 - V)*SFCPARMS(J, IX + 1, IY) + U*V*SFCPARMS(J, IX + 1, IY + 1)
         end do
         if (SRCTYPE .eq. 'S') then
             PLANCK = 0.0
@@ -1214,7 +1219,7 @@ subroutine SURFACE_PARM_INTERP(NBOTPTS, BCPTR, GRIDPOS,&
 end subroutine
 
 subroutine CHECK_UNIFORM_SFC(NXSFC, NYSFC, NSFCPAR, SFCPARMS,&
-    & UNIFORM_SFC_BRDF)
+    &UNIFORM_SFC_BRDF)
     !   Checks to see if the surface reflection parameters are uniform,
     ! and if so sets the UNIFORM_SFC_BRDF flag.  The temperature need
     ! not be uniform.
@@ -1239,7 +1244,7 @@ subroutine CHECK_UNIFORM_SFC(NXSFC, NYSFC, NSFCPAR, SFCPARMS,&
 end subroutine
 
 subroutine COMPUTE_TOP_RADIANCES(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
-    & UNITS, NTOPPTS, NSTOKES, BCRAD)
+    &UNITS, NTOPPTS, NSTOKES, BCRAD)
     !   Returns the beginning of the BCRAD array with the downwelling
     ! radiance for the NTOPPTS top boundary points.  Currently all
     ! points have the same unpolarized isotropic radiance.
@@ -1266,8 +1271,8 @@ subroutine COMPUTE_TOP_RADIANCES(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
 end subroutine
 
 subroutine FIXED_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR,&
-    & DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO,&
-    & WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD)
+    &DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO,&
+    &WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD)
     !   Returns the BCRAD array with the upwelling unpolarized radiance
     ! a Lambertian surface for the bottom points (pointed to by BCPTR).
     ! If there is reflection the downwelling hemispheric flux at the
@@ -1305,8 +1310,8 @@ subroutine FIXED_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR,&
 end subroutine
 
 subroutine VARIABLE_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR,&
-    & DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS,&
-    & NSTOKES, BCRAD)
+    &DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS,&
+    &NSTOKES, BCRAD)
     !   Returns the BCRAD array with the upwelling unpolarized radiance
     ! variable Lambertian surface for the bottom points (pointed to by B
     ! SFCGRIDPARMS contains the interpolated surface properties for the
@@ -1346,9 +1351,9 @@ subroutine VARIABLE_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR,&
 end subroutine
 
 subroutine VARIABLE_BRDF_SURFACE(NBOTPTS, IBEG, IEND, BCPTR,&
-    & NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MU2, PHI2,&
-    & SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
-    & SFCTYPE, NSFCPAR, SFCGRIDPARMS, NSTOKES, BCRAD)
+    &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MU2, PHI2,&
+    &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
+    &SFCTYPE, NSFCPAR, SFCGRIDPARMS, NSTOKES, BCRAD)
     !   Computes the upwelling Stokes vector of the bottom boundary poin
     ! for one outgoing direction using the specified bidirectional
     ! reflectance distribution function.  The upwelling Stokes vector
@@ -1386,9 +1391,9 @@ subroutine VARIABLE_BRDF_SURFACE(NBOTPTS, IBEG, IEND, BCPTR,&
         if (SRCTYPE .ne. 'T') then
             I = BCPTR(IBC)
             call SURFACE_BRDF(SFCTYPE(2:2), SFCGRIDPARMS(2, IBC), WAVELEN,&
-                & MU2, PHI2, SOLARMU, SOLARAZ, NSTOKES, REFLECT)
+                &MU2, PHI2, SOLARMU, SOLARAZ, NSTOKES, REFLECT)
             BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1)&
-                & + OPI*REFLECT(1:NSTOKES, 1)*DIRFLUX(I)
+                &+ OPI*REFLECT(1:NSTOKES, 1)*DIRFLUX(I)
         end if
 
         ! Integrate over the incident discrete ordinate directions (JMU,
@@ -1396,19 +1401,19 @@ subroutine VARIABLE_BRDF_SURFACE(NBOTPTS, IBEG, IEND, BCPTR,&
         do JMU = 1, NMU/2
             do JPHI = 1, NPHI0(JMU)
                 call SURFACE_BRDF(SFCTYPE(2:2), SFCGRIDPARMS(2, IBC),&
-                    & WAVELEN, MU2, PHI2, MU(JMU), PHI(JMU, JPHI),&
-                    & NSTOKES, REFLECT)
+                    &WAVELEN, MU2, PHI2, MU(JMU), PHI(JMU, JPHI),&
+                    &NSTOKES, REFLECT)
                 W = OPI*abs(MU(JMU))*WTDO(JMU, JPHI)
                 ! Add in the polarized reflection
                 do K1 = 1, NSTOKES
                     BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1)&
-                        & + W*REFLECT(1:NSTOKES, K1)*BCRAD(K1, IBC, JANG + 1)
+                        &+ W*REFLECT(1:NSTOKES, K1)*BCRAD(K1, IBC, JANG + 1)
                 end do
                 ! Add in the polarized thermal emission
                 BCRAD(1, IBC, 1) = BCRAD(1, IBC, 1)&
-                    & + W*(1 - REFLECT(1, 1))*SFCGRIDPARMS(1, IBC)
+                    &+ W*(1 - REFLECT(1, 1))*SFCGRIDPARMS(1, IBC)
                 BCRAD(2:, IBC, 1) = BCRAD(2:, IBC, 1)&
-                    & - W*REFLECT(2:NSTOKES, 1)*SFCGRIDPARMS(1, IBC)
+                    &- W*REFLECT(2:NSTOKES, 1)*SFCGRIDPARMS(1, IBC)
                 JANG = JANG + 1
             end do
         end do
@@ -1418,9 +1423,9 @@ subroutine VARIABLE_BRDF_SURFACE(NBOTPTS, IBEG, IEND, BCPTR,&
 end subroutine
 
 subroutine MAKE_SFC_BRDF_DO_MATRIX(SFCTYPE, WAVELEN,&
-    & NXSFC, NYSFC, NSFCPAR, SFCPARMS, NSTOKES,&
-    & NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-    & SFC_BRDF_DO)
+    &NXSFC, NYSFC, NSFCPAR, SFCPARMS, NSTOKES,&
+    &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
+    &SFC_BRDF_DO)
     !   Makes the precomputed BRDF surface reflection matrix for
     ! discrete ordinate incident and outgoing directions.  For each
     ! pair of discrete ordinates SURFACE_BRDF is called and the
@@ -1445,11 +1450,11 @@ subroutine MAKE_SFC_BRDF_DO_MATRIX(SFCTYPE, WAVELEN,&
                 do JPHI = 1, NPHI0(JMU)
                     ! Get the BRDF for this
                     call SURFACE_BRDF(SFCTYPE(2:2), SFCPARMS(2, 1, 1),&
-                        & WAVELEN, MU(IMU), PHI(IMU, IPHI),&
-                        & MU(JMU), PHI(JMU, JPHI), NSTOKES, REFLECT)
+                        &WAVELEN, MU(IMU), PHI(IMU, IPHI),&
+                        &MU(JMU), PHI(JMU, JPHI), NSTOKES, REFLECT)
                     W = OPI*abs(MU(JMU))*WTDO(JMU, JPHI)
                     SFC_BRDF_DO(:, IMU1, IPHI, :, JMU, JPHI)&
-                        & = W*REFLECT(1:NSTOKES, 1:NSTOKES)
+                        &= W*REFLECT(1:NSTOKES, 1:NSTOKES)
                 end do
             end do
         end do
@@ -1458,10 +1463,11 @@ subroutine MAKE_SFC_BRDF_DO_MATRIX(SFCTYPE, WAVELEN,&
 end subroutine
 
 subroutine UNIFORM_BRDF_SURFACE(NBOTPTS, BCPTR,&
-    & NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, IMU, IPHI,&
-    & SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
-    & SFCTYPE, NSFCPAR, SFCGRIDPARMS, SFC_BRDF_DO,&
-    & NSTOKES, BCRAD)
+    &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, IMU, IPHI,&
+    &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
+    &SFCTYPE, NSFCPAR, SFCGRIDPARMS, SFC_BRDF_DO,&
+    &NSTOKES, BCRAD)
+
     !   Computes the upwelling Stokes vector of the bottom boundary poin
     ! for one outgoing discrete ordinate using the precomputed bidirecti
     ! reflectance distribution matrix for the discrete ordinates.
@@ -1476,6 +1482,7 @@ subroutine UNIFORM_BRDF_SURFACE(NBOTPTS, BCPTR,&
     ! all incident directions (loop over JMU,JPHI).  The incident downwe
     ! radiance vectors are input in BCRAD(*,*,2...) and the outgoing
     ! upwelling radiance vectors are output in BCRAD(*,*,1).
+
     implicit none
     integer NBOTPTS, BCPTR(NBOTPTS)
     integer NMU, NPHI0MAX, NPHI0(NMU), IMU, IPHI, NSFCPAR, NSTOKES
@@ -1498,10 +1505,10 @@ subroutine UNIFORM_BRDF_SURFACE(NBOTPTS, BCPTR,&
         if (SRCTYPE .ne. 'T') then
             I = BCPTR(IBC)
             call SURFACE_BRDF(SFCTYPE(2:2), SFCGRIDPARMS(2, IBC), WAVELEN,&
-                & MU(IMU), PHI(IMU, IPHI), SOLARMU, SOLARAZ,&
-                & NSTOKES, REFLECT)
+                &MU(IMU), PHI(IMU, IPHI), SOLARMU, SOLARAZ,&
+                &NSTOKES, REFLECT)
             BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1)&
-                & + OPI*REFLECT(1:NSTOKES, 1)*DIRFLUX(I)
+                &+ OPI*REFLECT(1:NSTOKES, 1)*DIRFLUX(I)
         end if
 
         ! Integrate over the incident discrete ordinate directions (JMU,
@@ -1511,14 +1518,14 @@ subroutine UNIFORM_BRDF_SURFACE(NBOTPTS, BCPTR,&
                 ! Add in the polarized reflection
                 do K1 = 1, NSTOKES
                     BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1) + BCRAD(K1, IBC, JANG + 1)&
-                        & *SFC_BRDF_DO(:, IMU1, IPHI, K1, JMU, JPHI)
+                        &*SFC_BRDF_DO(:, IMU1, IPHI, K1, JMU, JPHI)
                 end do
                 ! Add in the polarized thermal emission
                 W = OPI*abs(MU(JMU))*WTDO(JMU, JPHI)
                 BCRAD(1, IBC, 1) = BCRAD(1, IBC, 1) + SFCGRIDPARMS(1, IBC)&
-                    & *(W - SFC_BRDF_DO(1, IMU1, IPHI, 1, JMU, JPHI))
+                    &*(W - SFC_BRDF_DO(1, IMU1, IPHI, 1, JMU, JPHI))
                 BCRAD(2:, IBC, 1) = BCRAD(2:, IBC, 1) - SFCGRIDPARMS(1, IBC)&
-                    & *SFC_BRDF_DO(2:, IMU1, IPHI, 1, JMU, JPHI)
+                    &*SFC_BRDF_DO(2:, IMU1, IPHI, 1, JMU, JPHI)
                 JANG = JANG + 1
             end do
         end do
@@ -1527,9 +1534,10 @@ subroutine UNIFORM_BRDF_SURFACE(NBOTPTS, BCPTR,&
 end subroutine
 
 subroutine SH_TO_DO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
-    & NMU, NPHI0MAX, NPHI0,&
-    & IMU, FFTFLAG, CMU1, CPHI1, WSAVE,&
-    & SHPTR, INDATA, OUTDATA)
+    &NMU, NPHI0MAX, NPHI0,&
+    &IMU, FFTFLAG, CMU1, CPHI1, WSAVE,&
+    &SHPTR, INDATA, OUTDATA)
+
     !   Transforms the input data from spherical harmonic space to discr
     ! ordinate space for one zenith angle (IMU).  Successive transforms
     ! done in zenith and then azimuth angle.  The Fourier transform in
@@ -1540,6 +1548,7 @@ subroutine SH_TO_DO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
     ! (powers of 2 are best).  The spherical harmonic truncation of the
     ! input array is adaptive (with pointer SHPTR); the last term for
     ! each grid point must be the maximum m for the particular l term.
+
     implicit none
     integer NPTS, NSTOKES, NSTLEG
     integer ML, MM, NLM, NMU, NPHI0MAX, NPHI0
@@ -1586,11 +1595,11 @@ subroutine SH_TO_DO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
                 SUMUV(1, M) = SUMUV(1, M) + CMU1(1, J, IMU)*INDATA(1, IS + J)
                 if (NSTOKES .gt. 1) then
                     SUMUV(2, M) = SUMUV(2, M)&
-                        & + CMU1(2, J, IMU)*INDATA(2, IS + J)&
-                        & + CMU1(5, J, IMU)*INDATA(3, IS + J)
+                        &+ CMU1(2, J, IMU)*INDATA(2, IS + J)&
+                        &+ CMU1(5, J, IMU)*INDATA(3, IS + J)
                     SUMUV(3, M) = SUMUV(3, M)&
-                        & + CMU1(6, J, IMU)*INDATA(2, IS + J)&
-                        & + CMU1(3, J, IMU)*INDATA(3, IS + J)
+                        &+ CMU1(6, J, IMU)*INDATA(2, IS + J)&
+                        &+ CMU1(3, J, IMU)*INDATA(3, IS + J)
                 end if
                 if (NSTOKES .eq. 4) then
                     SUMUV(4, M) = SUMUV(4, M) + CMU1(4, J, IMU)*INDATA(4, IS + J)
@@ -1655,9 +1664,9 @@ subroutine SH_TO_DO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
 end subroutine
 
 subroutine SH_TO_DO_UNPOL(NPTS, ML, MM, NLM,&
-    & NMU, NPHI0MAX, NPHI0,&
-    & IMU, FFTFLAG, CMU1, CPHI1, WSAVE,&
-    & SHPTR, INDATA, OUTDATA)
+    &NMU, NPHI0MAX, NPHI0,&
+    &IMU, FFTFLAG, CMU1, CPHI1, WSAVE,&
+    &SHPTR, INDATA, OUTDATA)
     !   Transforms the input data from spherical harmonic space to discr
     ! ordinate space for one zenith angle (IMU) for the unpolarized case
     ! Successive transforms are done in zenith and then azimuth angle.
@@ -1756,12 +1765,14 @@ subroutine SH_TO_DO_UNPOL(NPTS, ML, MM, NLM,&
 end subroutine
 
 subroutine DO_TO_SH(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
-    & NMU, NPHI0MAX, NPHI0,&
-    & IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
-    & RSHPTR, INDATA, OUTDATA)
+    &NMU, NPHI0MAX, NPHI0,&
+    &IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
+    &RSHPTR, INDATA, OUTDATA)
+
     !   Transforms the input field from discrete ordinate space to spher
     ! harmonic space for one zenith angle (IMU) by keeping a running
     ! sum in OUTDATA between successive calls.  (See SH_TO_DO for more).
+
     implicit none
     integer NPTS, NSTOKES, NSTLEG
     integer ML, MM, NLM, NMU, NPHI0MAX, NPHI0
@@ -1853,9 +1864,9 @@ subroutine DO_TO_SH(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
             OUTDATA(1, IS + J) = OUTDATA(1, IS + J) + CMU2(1, IMU, J)*SUMUV(1, M)
             if (NSTOKES .gt. 1) then
                 OUTDATA(2, IS + J) = OUTDATA(2, IS + J) + CMU2(2, IMU, J)*SUMUV(2, M)&
-                    & + CMU2(5, IMU, J)*SUMUV(3, M)
+                    &+ CMU2(5, IMU, J)*SUMUV(3, M)
                 OUTDATA(3, IS + J) = OUTDATA(3, IS + J) + CMU2(6, IMU, J)*SUMUV(2, M)&
-                    & + CMU2(3, IMU, J)*SUMUV(3, M)
+                    &+ CMU2(3, IMU, J)*SUMUV(3, M)
             end if
             if (NSTOKES .eq. 4) then
                 OUTDATA(4, IS + J) = OUTDATA(4, IS + J) + CMU2(4, IMU, J)*SUMUV(4, M)
@@ -1868,12 +1879,14 @@ subroutine DO_TO_SH(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
 end subroutine
 
 subroutine DO_TO_SH_UNPOL(NPTS, ML, MM, NLM,&
-    & NMU, NPHI0MAX, NPHI0,&
-    & IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
-    & RSHPTR, INDATA, OUTDATA)
-    !   Transforms the input field from discrete ordinate space to spher
+    &NMU, NPHI0MAX, NPHI0,&
+    &IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
+    &RSHPTR, INDATA, OUTDATA)
+
+    !   Transforms the input field from discrete ordinate space to spheric
     ! harmonic space for one zenith angle (IMU) by keeping a running
     ! sum in OUTDATA between successive calls.  (See SH_TO_DO for more).
+
     implicit none
     integer NPTS
     integer ML, MM, NLM, NMU, NPHI0MAX, NPHI0
@@ -1950,16 +1963,18 @@ subroutine DO_TO_SH_UNPOL(NPTS, ML, MM, NLM,&
 end subroutine
 
 subroutine SWEEPING_ORDER(NX, NY, NZ, NPTS, NCELLS,&
-    & GRIDPTR, TREEPTR, CELLFLAGS,&
-    & BCFLAG, IPFLAG, SWEEPORD, GRIDRAD)
+    &GRIDPTR, TREEPTR, CELLFLAGS,&
+    &BCFLAG, IPFLAG, SWEEPORD, GRIDRAD)
+
     !   Make the array of grid point sweeping order for each discrete
-    ! ordinate octant (SWEEPORD).  Rather than pointing to the grid poin
+    ! ordinate octant (SWEEPORD).  Rather than pointing to the grid point
     ! directly, the elements of SWEEPORD point to the cell (bits 3-30) a
     ! the corner of the cell (bits 0-2).  The first index is the grid
     ! point visiting order (1-NPTS), and the second index refers to the
-    ! octant, but is not the octant number.  The octant index is transla
+    ! octant, but is not the octant number.  The octant index is translated
     ! to the octant number with IOCTORDER - this complication arises bec
     ! of the desire to use just 2 or 4 octants in 1D or 2D.
+
     implicit none
     integer NX, NY, NZ, NPTS, NCELLS, BCFLAG, IPFLAG
     integer GRIDPTR(8, NCELLS), TREEPTR(2, NCELLS)
@@ -1971,8 +1986,8 @@ subroutine SWEEPING_ORDER(NX, NY, NZ, NPTS, NCELLS,&
     integer INDEXCORN, ICORNER, CORNDOG(8, 8), IOCTORDER(8)
     logical SWEEP_NEXT_CELL, BTEST
     data CORNDOG/8, 7, 6, 5, 4, 3, 2, 1, 7, 8, 5, 6, 3, 4, 1, 2, 6, 5, 8, 7, 2, 1, 4, 3,&
-        & 5, 6, 7, 8, 1, 2, 3, 4, 4, 3, 2, 1, 8, 7, 6, 5, 3, 4, 1, 2, 7, 8, 5, 6,&
-        & 2, 1, 4, 3, 6, 5, 8, 7, 1, 2, 3, 4, 5, 6, 7, 8/
+        &5, 6, 7, 8, 1, 2, 3, 4, 4, 3, 2, 1, 8, 7, 6, 5, 3, 4, 1, 2, 7, 8, 5, 6,&
+        &2, 1, 4, 3, 6, 5, 8, 7, 1, 2, 3, 4, 5, 6, 7, 8/
     data IOCTORDER/1, 5, 2, 6, 3, 7, 4, 8/
 
     ! IOCT is the octant the ray come from or the discrete ordinate
@@ -2016,7 +2031,7 @@ subroutine SWEEPING_ORDER(NX, NY, NZ, NPTS, NCELLS,&
             ! If done with the current cell, then go to next
             INDEXCORN = 1
             if (.not. SWEEP_NEXT_CELL(BCFLAG, NXC, NYC, NZ, IOCT,&
-                & IPCELL, TREEPTR, CELLFLAGS)) goto 900
+                &IPCELL, TREEPTR, CELLFLAGS)) goto 900
         else
             INDEXCORN = INDEXCORN + 1
         end if
@@ -2031,17 +2046,20 @@ subroutine SWEEPING_ORDER(NX, NY, NZ, NPTS, NCELLS,&
         SWEEPORD(IORDER, JOCT) = ior(ishft(IPCELL, 3), ICORNER - 1)
         IORDER = IORDER + 1
         goto 100
+
 900     continue
+
     end do
 
     return
 end subroutine
 
 subroutine BACK_INT_GRID3D(NX, NY, NZ, NA, NPTS, NCELLS,&
-    & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-    & GRIDPOS, XGRID, YGRID, ZGRID, SWEEPORD,&
-    & MU, PHI, TRANSMIN, BCFLAG, IPFLAG,&
-    & EXTINCT, NSTOKES, SOURCE, KANG, GRIDRAD)
+    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+    &GRIDPOS, XGRID, YGRID, ZGRID, SWEEPORD,&
+    &MU, PHI, TRANSMIN, BCFLAG, IPFLAG,&
+    &EXTINCT, NSTOKES, SOURCE, KANG, GRIDRAD)
+
     !   Sweeps through the spatial grid computing radiance vectors for t
     ! discrete ordinate direction (MU,PHI) by integrating the source
     ! function and extinction backward from each point.  The sweeping
@@ -2053,6 +2071,7 @@ subroutine BACK_INT_GRID3D(NX, NY, NZ, NA, NPTS, NCELLS,&
     ! across the cell is done and added to the radiance.  The radiance
     ! at the end of the ray path is interpolated from the known grid poi
     ! radiances on the face.  The resulting radiances are put in GRIDRAD
+
     implicit none
     integer NX, NY, NZ, NA, NPTS, NCELLS, NSTOKES, KANG
     integer BCFLAG, IPFLAG
@@ -2079,7 +2098,7 @@ subroutine BACK_INT_GRID3D(NX, NY, NZ, NA, NPTS, NCELLS,&
     double precision TAU, TRANSCELL, ABSCELL, TRANSMIT
     double precision RAD(NSTOKES), RAD0(NSTOKES)
     data GRIDFACE/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8,&
-        & 1, 2, 3, 4, 5, 6, 7, 8/, OPPFACE/2, 1, 4, 3, 6, 5/
+        &1, 2, 3, 4, 5, 6, 7, 8/, OPPFACE/2, 1, 4, 3, 6, 5/
     data JOCTORDER3/1, 3, 5, 7, 2, 4, 6, 8/, JOCTORDER2/1, 3, 1, 3, 2, 4, 2, 4/
 
     EPS = 1.0e-3*(GRIDPOS(3, GRIDPTR(8, 1)) - GRIDPOS(3, GRIDPTR(1, 1)))
@@ -2144,243 +2163,244 @@ subroutine BACK_INT_GRID3D(NX, NY, NZ, NA, NPTS, NCELLS,&
                 &(GRIDPOS(3, IPT) .gt. ZGRID(IZ) .and. BITZ .eq. 1)) then
                 IZ = IZ + 2*BITZ - 1
                 call CALC_BOUNDARY_RADIANCES(BCFLAG, IPFLAG, JOCT, IZ,&
-                    & NX, NY, NZ, XGRID, YGRID, ZGRID,&
-                    & NA, NPTS, NCELLS, GRIDPTR,&
-                    & NEIGHPTR, TREEPTR, CELLFLAGS, GRIDPOS,&
-                    & MU, PHI, EXTINCT, NSTOKES, SOURCE,&
-                    & KANG, GRIDRAD)
+                    &NX, NY, NZ, XGRID, YGRID, ZGRID,&
+                    &NA, NPTS, NCELLS, GRIDPTR,&
+                    &NEIGHPTR, TREEPTR, CELLFLAGS, GRIDPOS,&
+                    &MU, PHI, EXTINCT, NSTOKES, SOURCE,&
+                    &KANG, GRIDRAD)
             end if
         end if
 
-        if (GRIDRAD(1, IPT) .ge. 0.0) goto 500
+        if (GRIDRAD(1, IPT) .lt. 0.0) then
 
-        ! Start off at the grid point
-        ICELL = IPCELL
-        TRANSMIT = 1.0
-        EXT1 = EXTINCT(IPT)
-        RAD(:) = 0.0
-        SRCEXT1(:) = EXT1*SOURCE(:, KANG, IPT)
-        XE = GRIDPOS(1, IPT)
-        YE = GRIDPOS(2, IPT)
-        ZE = GRIDPOS(3, IPT)
+            ! Start off at the grid point
+            ICELL = IPCELL
+            TRANSMIT = 1.0
+            EXT1 = EXTINCT(IPT)
+            RAD(:) = 0.0
+            SRCEXT1(:) = EXT1*SOURCE(:, KANG, IPT)
+            XE = GRIDPOS(1, IPT)
+            YE = GRIDPOS(2, IPT)
+            ZE = GRIDPOS(3, IPT)
 
-        ! Loop until finding a face with known radiances
-        VALIDRAD = .false.
-        do while (.not. VALIDRAD)
-            ! Make sure current cell is valid
-            if (ICELL .le. 0) then
-                write (6, *) 'Error [BACK_INT_GRID]: ICELL=0 ',&
-                    & MU, PHI, IPT, INEXTCELL, xe, ye, ze,&
-                    & gridpos(1, ipt), gridpos(2, ipt), gridpos(3, ipt)
-                stop
-            end if
-            IPINX = btest(int(CELLFLAGS(ICELL)), 0)
-            IPINY = btest(int(CELLFLAGS(ICELL)), 1)
-
-            ! Find boundaries of the current cell
-            ! Find the three possible intersection planes (X,Y,Z)
-            !   from the coordinates of the opposite corner grid point
-            IOPP = GRIDPTR(9 - IOCT, ICELL)
-            ! Get the distances to the 3 planes and select the closest
-            if (IPINX) then
-                SOX = 1.0e20
-            else
-                SOX = (GRIDPOS(1, IOPP) - XE)*CXINV
-            end if
-            if (IPINY) then
-                SOY = 1.0e20
-            else
-                SOY = (GRIDPOS(2, IOPP) - YE)*CYINV
-            end if
-            SOZ = (GRIDPOS(3, IOPP) - ZE)*CZINV
-            SO = min(SOX, SOY, SOZ)
-            if (SO .lt. -EPS) then
-                write (6, *) 'Error [BACK_INT_GRID]: SO<0 ',&
-                    & MU, PHI, XE, YE, ZE, SOX, SOY, SOZ, SO, IPT, ICELL
-                stop
-            end if
-            ! Compute the coordinates of the cell exitting location
-            XE = XE + SO*CX
-            YE = YE + SO*CY
-            ZE = ZE + SO*CZ
-
-            ! Get the intersection face number (i.e. neighptr index)
-            if (SOX .le. SOZ .and. SOX .le. SOY) then
-                IFACE = 2 - BITX
-                JFACE = 1
-            else if (SOY .le. SOZ) then
-                IFACE = 4 - BITY
-                JFACE = 2
-            else
-                IFACE = 6 - BITZ
-                JFACE = 3
-            end if
-            ! Get the next cell to go to
-            INEXTCELL = NEIGHPTR(IFACE, ICELL)
-            if (INEXTCELL .lt. 0) then
-                call NEXT_CELL(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
-                    & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXTCELL)
-            end if
-
-            ! Get the face grid pointers
-            if (NEIGHPTR(IFACE, ICELL) .ge. 0) then
-                ! If going to same or larger face then use previous face
-                KFACE = IFACE
-                IC = ICELL
-            else
-                ! If going to smaller face then use next face (more accura
-                KFACE = OPPFACE(IFACE)
-                IC = INEXTCELL
-            end if
-            I1 = GRIDPTR(GRIDFACE(1, KFACE), IC)
-            I2 = GRIDPTR(GRIDFACE(2, KFACE), IC)
-            I3 = GRIDPTR(GRIDFACE(3, KFACE), IC)
-            I4 = GRIDPTR(GRIDFACE(4, KFACE), IC)
-            ! Compute the face interpolation factors
-            if (JFACE .eq. 1) then
-                U = (ZE - GRIDPOS(3, I1))/(GRIDPOS(3, I3) - GRIDPOS(3, I1))
-                if (IPINY) then
-                    V = 0.5
-                else
-                    V = (YE - GRIDPOS(2, I1))/(GRIDPOS(2, I2) - GRIDPOS(2, I1))
-                end if
-            else if (JFACE .eq. 2) then
-                U = (ZE - GRIDPOS(3, I1))/(GRIDPOS(3, I3) - GRIDPOS(3, I1))
-                if (IPINX) then
-                    V = 0.5
-                else
-                    V = (XE - GRIDPOS(1, I1))/(GRIDPOS(1, I2) - GRIDPOS(1, I1))
-                end if
-            else
-                if (IPINY) then
-                    U = 0.5
-                else
-                    U = (YE - GRIDPOS(2, I1))/(GRIDPOS(2, I3) - GRIDPOS(2, I1))
-                end if
-                if (IPINX) then
-                    V = 0.5
-                else
-                    V = (XE - GRIDPOS(1, I1))/(GRIDPOS(1, I2) - GRIDPOS(1, I1))
-                end if
-            end if
-            if (u .lt. -0.0001 .or. v .lt. -0.0001 .or.&
-                & u .gt. 1.0001 .or. v .gt. 1.0001) then
-                print *, 'BACK_INT_GRID3D: u,v<0 or u,v>1: ',&
-                    & mu, phi, xe, ye, ze, u, v, iface, jface, kface,&
-                    & gridpos(1, i1), gridpos(2, i1), gridpos(3, i1)
-            end if
-
-            ! Get the location coordinate (does the boundary wrapping)
-            if (INEXTCELL .gt. 0) then
-                if (JFACE .eq. 1) then
-                    XE = GRIDPOS(1, GRIDPTR(IOCT, INEXTCELL))
-                else if (JFACE .eq. 2) then
-                    YE = GRIDPOS(2, GRIDPTR(IOCT, INEXTCELL))
-                else
-                    ZE = GRIDPOS(3, GRIDPTR(IOCT, INEXTCELL))
-                end if
-            end if
-
-            ! Interpolate extinction and source function at face interse
-            F1 = (1 - U)*(1 - V)
-            F2 = (1 - U)*V
-            F3 = U*(1 - V)
-            F4 = U*V
-            EXT0 = F1*EXTINCT(I1) + F2*EXTINCT(I2)&
-                & + F3*EXTINCT(I3) + F4*EXTINCT(I4)
-            ! Correctly interpolate source using extinction*source
-            SRCEXT0(:) = F1*SOURCE(:, KANG, I1)*EXTINCT(I1)&
-                & + F2*SOURCE(:, KANG, I2)*EXTINCT(I2)&
-                & + F3*SOURCE(:, KANG, I3)*EXTINCT(I3)&
-                & + F4*SOURCE(:, KANG, I4)*EXTINCT(I4)
-            ! Compute the cell radiance: integration of the source funct
-            EXT = 0.5*(EXT0 + EXT1)
-            TAU = EXT*SO
-            if (TAU .ge. 0.5) then
-                TRANSCELL = exp(-TAU)
-                ABSCELL = 1.0 - TRANSCELL
-            else
-                ABSCELL = TAU*(1.0 - 0.5*TAU*&
-                    & (1.0 - 0.33333333333*TAU*(1 - 0.25*TAU)))
-                TRANSCELL = 1.0 - ABSCELL
-            end if
-            if (TAU .le. 2.0) then
-                if (EXT .eq. 0.0) then
-                    SRC(:) = 0.0
-                else
-                    ! Linear extinction, linear source*extinction, to first
-                    SRC(:) = (0.5*(SRCEXT0(:) + SRCEXT1(:)) + 0.08333333333&
-                        & *(EXT0*SRCEXT1(:) - EXT1*SRCEXT0(:))*SO)/EXT
-                end if
-            else
-                ! Combined first order expansion and constant extinction f
-                EXT0P = EXT0
-                SRCEXT0P(:) = SRCEXT0(:)
-                if (TAU .gt. 4.0) then
-                    EXT0P = EXT1 + (EXT0 - EXT1)*4.0/TAU
-                    if (EXT0 .gt. 0.0) SRCEXT0P(:) = SRCEXT0(:)*EXT0P/EXT0
-                end if
-                SRC(:) = 1.0/(EXT0P + EXT1)*(SRCEXT0P(:) + SRCEXT1(:)&
-                    & + (EXT0P*SRCEXT1(:) - EXT1*SRCEXT0P(:))*2.0/(EXT0P + EXT1)&
-                    & *(1 - 2/TAU + 2*TRANSCELL/ABSCELL))
-            end if
-            SRC(1) = max(SRC(1), 0.0d0)
-
-            ! Add in the cell radiance and update the transmission.
-            ! If this is a boundary or the transmission is below the
-            !   cutoff and we have a valid radiance then set the flag
-            !   to stop the tracing and add in the interpolated face radia
-            RAD(:) = RAD(:) + TRANSMIT*SRC(:)*ABSCELL
-            TRANSMIT = TRANSMIT*TRANSCELL
-            if (RAD(1) < -1.0e-5) then
-                print '(A,3(1X,F6.4),8(1X,E12.5))',&
-                    & 'BACK_INT_GRID3D: RAD<0 ',&
-                    & xe, ye, ze, ext0, ext1, so, tau, transmit, src, abscell, rad(:)
-                call ABORT_SHDOM_MPI('The end')
-            end if
-            VALIDFACE = (GRIDRAD(1, I1) .ge. -0.1 .and. GRIDRAD(1, I2) .ge. -0.1&
-                & .and. GRIDRAD(1, I3) .ge. -0.1 .and. GRIDRAD(1, I4) .ge. -0.1)
-            if (INEXTCELL .le. 0 .or.&
-                & (TRANSMIT .le. TRANSMIN .and. VALIDFACE)) then
-                if (VALIDFACE) then
-                    VALIDRAD = .true.
-                    RAD0(:) = F1*GRIDRAD(:, I1) + F2*GRIDRAD(:, I2)&
-                        & + F3*GRIDRAD(:, I3) + F4*GRIDRAD(:, I4)
-                    RAD(:) = RAD(:) + TRANSMIT*RAD0(:)
-                else
-                    print *, 'Error [BACK_INT_GRID3D]: INEXTCELL=0: ', xe, ye, ze, icell
-                    print *, iz, joct, mu, phi
-                    print '(i7,4(1x,f7.4))', i1, GRIDRAD(1, I1),&
-                        & gridpos(1, i1), gridpos(2, i1), gridpos(3, i1)
-                    print '(i7,4(1x,f7.4))', i2, GRIDRAD(1, I2),&
-                        & gridpos(1, i2), gridpos(2, i2), gridpos(3, i2)
-                    print '(i7,4(1x,f7.4))', i3, GRIDRAD(1, I3),&
-                        & gridpos(1, i3), gridpos(2, i3), gridpos(3, i3)
-                    print '(i7,4(1x,f7.4))', i4, GRIDRAD(1, I4),&
-                        & gridpos(1, i4), gridpos(2, i4), gridpos(3, i4)
-                    print '(i7,8x,3(1x,f7.4))', ipt,&
-                        & gridpos(1, ipt), gridpos(2, ipt), gridpos(3, ipt)
+            ! Loop until finding a face with known radiances
+            VALIDRAD = .false.
+            do while (.not. VALIDRAD)
+                ! Make sure current cell is valid
+                if (ICELL .le. 0) then
+                    write (6, *) 'Error [BACK_INT_GRID]: ICELL=0 ',&
+                        &MU, PHI, IPT, INEXTCELL, xe, ye, ze,&
+                        &gridpos(1, ipt), gridpos(2, ipt), gridpos(3, ipt)
                     stop
                 end if
-            else
-                EXT1 = EXT0
-                SRCEXT1(:) = SRCEXT0(:)
-                ICELL = INEXTCELL
-            end if
-        end do
-        GRIDRAD(:, IPT) = RAD(:)
+                IPINX = btest(int(CELLFLAGS(ICELL)), 0)
+                IPINY = btest(int(CELLFLAGS(ICELL)), 1)
 
-500     continue
+                ! Find boundaries of the current cell
+                ! Find the three possible intersection planes (X,Y,Z)
+                !   from the coordinates of the opposite corner grid point
+                IOPP = GRIDPTR(9 - IOCT, ICELL)
+                ! Get the distances to the 3 planes and select the closest
+                if (IPINX) then
+                    SOX = 1.0e20
+                else
+                    SOX = (GRIDPOS(1, IOPP) - XE)*CXINV
+                end if
+                if (IPINY) then
+                    SOY = 1.0e20
+                else
+                    SOY = (GRIDPOS(2, IOPP) - YE)*CYINV
+                end if
+                SOZ = (GRIDPOS(3, IOPP) - ZE)*CZINV
+                SO = min(SOX, SOY, SOZ)
+                if (SO .lt. -EPS) then
+                    write (6, *) 'Error [BACK_INT_GRID]: SO<0 ',&
+                        &MU, PHI, XE, YE, ZE, SOX, SOY, SOZ, SO, IPT, ICELL
+                    stop
+                end if
+                ! Compute the coordinates of the cell exitting location
+                XE = XE + SO*CX
+                YE = YE + SO*CY
+                ZE = ZE + SO*CZ
+
+                ! Get the intersection face number (i.e. neighptr index)
+                if (SOX .le. SOZ .and. SOX .le. SOY) then
+                    IFACE = 2 - BITX
+                    JFACE = 1
+                else if (SOY .le. SOZ) then
+                    IFACE = 4 - BITY
+                    JFACE = 2
+                else
+                    IFACE = 6 - BITZ
+                    JFACE = 3
+                end if
+                ! Get the next cell to go to
+                INEXTCELL = NEIGHPTR(IFACE, ICELL)
+                if (INEXTCELL .lt. 0) then
+                    call NEXT_CELL(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
+                        &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXTCELL)
+                end if
+
+                ! Get the face grid pointers
+                if (NEIGHPTR(IFACE, ICELL) .ge. 0) then
+                    ! If going to same or larger face then use previous face
+                    KFACE = IFACE
+                    IC = ICELL
+                else
+                    ! If going to smaller face then use next face (more accura
+                    KFACE = OPPFACE(IFACE)
+                    IC = INEXTCELL
+                end if
+                I1 = GRIDPTR(GRIDFACE(1, KFACE), IC)
+                I2 = GRIDPTR(GRIDFACE(2, KFACE), IC)
+                I3 = GRIDPTR(GRIDFACE(3, KFACE), IC)
+                I4 = GRIDPTR(GRIDFACE(4, KFACE), IC)
+                ! Compute the face interpolation factors
+                if (JFACE .eq. 1) then
+                    U = (ZE - GRIDPOS(3, I1))/(GRIDPOS(3, I3) - GRIDPOS(3, I1))
+                    if (IPINY) then
+                        V = 0.5
+                    else
+                        V = (YE - GRIDPOS(2, I1))/(GRIDPOS(2, I2) - GRIDPOS(2, I1))
+                    end if
+                else if (JFACE .eq. 2) then
+                    U = (ZE - GRIDPOS(3, I1))/(GRIDPOS(3, I3) - GRIDPOS(3, I1))
+                    if (IPINX) then
+                        V = 0.5
+                    else
+                        V = (XE - GRIDPOS(1, I1))/(GRIDPOS(1, I2) - GRIDPOS(1, I1))
+                    end if
+                else
+                    if (IPINY) then
+                        U = 0.5
+                    else
+                        U = (YE - GRIDPOS(2, I1))/(GRIDPOS(2, I3) - GRIDPOS(2, I1))
+                    end if
+                    if (IPINX) then
+                        V = 0.5
+                    else
+                        V = (XE - GRIDPOS(1, I1))/(GRIDPOS(1, I2) - GRIDPOS(1, I1))
+                    end if
+                end if
+                if (u .lt. -0.0001 .or. v .lt. -0.0001 .or.&
+                    &u .gt. 1.0001 .or. v .gt. 1.0001) then
+                    print *, 'BACK_INT_GRID3D: u,v<0 or u,v>1: ',&
+                        &mu, phi, xe, ye, ze, u, v, iface, jface, kface,&
+                        &gridpos(1, i1), gridpos(2, i1), gridpos(3, i1)
+                end if
+
+                ! Get the location coordinate (does the boundary wrapping)
+                if (INEXTCELL .gt. 0) then
+                    if (JFACE .eq. 1) then
+                        XE = GRIDPOS(1, GRIDPTR(IOCT, INEXTCELL))
+                    else if (JFACE .eq. 2) then
+                        YE = GRIDPOS(2, GRIDPTR(IOCT, INEXTCELL))
+                    else
+                        ZE = GRIDPOS(3, GRIDPTR(IOCT, INEXTCELL))
+                    end if
+                end if
+
+                ! Interpolate extinction and source function at face interse
+                F1 = (1 - U)*(1 - V)
+                F2 = (1 - U)*V
+                F3 = U*(1 - V)
+                F4 = U*V
+                EXT0 = F1*EXTINCT(I1) + F2*EXTINCT(I2)&
+                    &+ F3*EXTINCT(I3) + F4*EXTINCT(I4)
+                ! Correctly interpolate source using extinction*source
+                SRCEXT0(:) = F1*SOURCE(:, KANG, I1)*EXTINCT(I1)&
+                    &+ F2*SOURCE(:, KANG, I2)*EXTINCT(I2)&
+                    &+ F3*SOURCE(:, KANG, I3)*EXTINCT(I3)&
+                    &+ F4*SOURCE(:, KANG, I4)*EXTINCT(I4)
+                ! Compute the cell radiance: integration of the source funct
+                EXT = 0.5*(EXT0 + EXT1)
+                TAU = EXT*SO
+                if (TAU .ge. 0.5) then
+                    TRANSCELL = exp(-TAU)
+                    ABSCELL = 1.0 - TRANSCELL
+                else
+                    ABSCELL = TAU*(1.0 - 0.5*TAU*&
+                        &(1.0 - 0.33333333333*TAU*(1 - 0.25*TAU)))
+                    TRANSCELL = 1.0 - ABSCELL
+                end if
+                if (TAU .le. 2.0) then
+                    if (EXT .eq. 0.0) then
+                        SRC(:) = 0.0
+                    else
+                        ! Linear extinction, linear source*extinction, to first
+                        SRC(:) = (0.5*(SRCEXT0(:) + SRCEXT1(:)) + 0.08333333333&
+                            &*(EXT0*SRCEXT1(:) - EXT1*SRCEXT0(:))*SO)/EXT
+                    end if
+                else
+                    ! Combined first order expansion and constant extinction f
+                    EXT0P = EXT0
+                    SRCEXT0P(:) = SRCEXT0(:)
+                    if (TAU .gt. 4.0) then
+                        EXT0P = EXT1 + (EXT0 - EXT1)*4.0/TAU
+                        if (EXT0 .gt. 0.0) SRCEXT0P(:) = SRCEXT0(:)*EXT0P/EXT0
+                    end if
+                    SRC(:) = 1.0/(EXT0P + EXT1)*(SRCEXT0P(:) + SRCEXT1(:)&
+                        &+ (EXT0P*SRCEXT1(:) - EXT1*SRCEXT0P(:))*2.0/(EXT0P + EXT1)&
+                        &*(1 - 2/TAU + 2*TRANSCELL/ABSCELL))
+                end if
+                SRC(1) = max(SRC(1), 0.0d0)
+
+                ! Add in the cell radiance and update the transmission.
+                ! If this is a boundary or the transmission is below the
+                !   cutoff and we have a valid radiance then set the flag
+                !   to stop the tracing and add in the interpolated face radia
+                RAD(:) = RAD(:) + TRANSMIT*SRC(:)*ABSCELL
+                TRANSMIT = TRANSMIT*TRANSCELL
+                if (RAD(1) < -1.0e-5) then
+                    print '(A,3(1X,F6.4),8(1X,E12.5))',&
+                        &'BACK_INT_GRID3D: RAD<0 ',&
+                        &xe, ye, ze, ext0, ext1, so, tau, transmit, src, abscell, rad(:)
+                    call ABORT_SHDOM_MPI('The end')
+                end if
+                VALIDFACE = (GRIDRAD(1, I1) .ge. -0.1 .and. GRIDRAD(1, I2) .ge. -0.1&
+                    &.and. GRIDRAD(1, I3) .ge. -0.1 .and. GRIDRAD(1, I4) .ge. -0.1)
+                if (INEXTCELL .le. 0 .or.&
+                    &(TRANSMIT .le. TRANSMIN .and. VALIDFACE)) then
+                    if (VALIDFACE) then
+                        VALIDRAD = .true.
+                        RAD0(:) = F1*GRIDRAD(:, I1) + F2*GRIDRAD(:, I2)&
+                            &+ F3*GRIDRAD(:, I3) + F4*GRIDRAD(:, I4)
+                        RAD(:) = RAD(:) + TRANSMIT*RAD0(:)
+                    else
+                        print *, 'Error [BACK_INT_GRID3D]: INEXTCELL=0: ', xe, ye, ze, icell
+                        print *, iz, joct, mu, phi
+                        print '(i7,4(1x,f7.4))', i1, GRIDRAD(1, I1),&
+                            &gridpos(1, i1), gridpos(2, i1), gridpos(3, i1)
+                        print '(i7,4(1x,f7.4))', i2, GRIDRAD(1, I2),&
+                            &gridpos(1, i2), gridpos(2, i2), gridpos(3, i2)
+                        print '(i7,4(1x,f7.4))', i3, GRIDRAD(1, I3),&
+                            &gridpos(1, i3), gridpos(2, i3), gridpos(3, i3)
+                        print '(i7,4(1x,f7.4))', i4, GRIDRAD(1, I4),&
+                            &gridpos(1, i4), gridpos(2, i4), gridpos(3, i4)
+                        print '(i7,8x,3(1x,f7.4))', ipt,&
+                            &gridpos(1, ipt), gridpos(2, ipt), gridpos(3, ipt)
+                        stop
+                    end if
+                else
+                    EXT1 = EXT0
+                    SRCEXT1(:) = SRCEXT0(:)
+                    ICELL = INEXTCELL
+                end if
+            end do
+            GRIDRAD(:, IPT) = RAD(:)
+
+        end if
     end do
 
     return
 end subroutine
 
 subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
-    & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-    & GRIDPOS, XGRID, YGRID, ZGRID, SWEEPORD,&
-    & MU, PHI, TRANSMIN, BCFLAG, IPFLAG,&
-    & EXTINCT, SOURCE, KANG, GRIDRAD)
+    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+    &GRIDPOS, XGRID, YGRID, ZGRID, SWEEPORD,&
+    &MU, PHI, TRANSMIN, BCFLAG, IPFLAG,&
+    &EXTINCT, SOURCE, KANG, GRIDRAD)
+
     !   Sweeps through the spatial grid computing radiances for the
     ! discrete ordinate direction (MU,PHI) by integrating the source
     ! function and extinction backward from each point.  The sweeping
@@ -2392,6 +2412,7 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
     ! across the cell is done and added to the radiance.  The radiance
     ! at the end of the ray path is interpolated from the known grid poi
     ! radiances on the face.  The resulting radiances are put in GRIDRAD
+
     integer NX, NY, NZ, NA, NPTS, NCELLS, KANG, BCFLAG, IPFLAG
     integer GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
     integer SWEEPORD(NPTS, *)
@@ -2413,7 +2434,7 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
     double precision EXT0P, SRCEXT0P
     double precision TAU, TRANSCELL, ABSCELL, RAD, RAD0, TRANSMIT
     data GRIDFACE/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8,&
-        & 1, 2, 3, 4, 5, 6, 7, 8/, OPPFACE/2, 1, 4, 3, 6, 5/
+        &1, 2, 3, 4, 5, 6, 7, 8/, OPPFACE/2, 1, 4, 3, 6, 5/
     data JOCTORDER3/1, 3, 5, 7, 2, 4, 6, 8/, JOCTORDER2/1, 3, 1, 3, 2, 4, 2, 4/
 
     EPS = 1.0e-3*(GRIDPOS(3, GRIDPTR(8, 1)) - GRIDPOS(3, GRIDPTR(1, 1)))
@@ -2486,238 +2507,240 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
             end if
         end if
 
-        if (GRIDRAD(IPT) .ge. 0.0) goto 500
+        if (GRIDRAD(IPT) .lt. 0.0) then
 
-        ! Start off at the grid point
-        ICELL = IPCELL
-        RAD = 0.0
-        TRANSMIT = 1.0
-        EXT1 = EXTINCT(IPT)
-        SRCEXT1 = EXT1*SOURCE(KANG, IPT)
-        XE = GRIDPOS(1, IPT)
-        YE = GRIDPOS(2, IPT)
-        ZE = GRIDPOS(3, IPT)
+            ! Start off at the grid point
+            ICELL = IPCELL
+            RAD = 0.0
+            TRANSMIT = 1.0
+            EXT1 = EXTINCT(IPT)
+            SRCEXT1 = EXT1*SOURCE(KANG, IPT)
+            XE = GRIDPOS(1, IPT)
+            YE = GRIDPOS(2, IPT)
+            ZE = GRIDPOS(3, IPT)
 
-        ! Loop until finding a face with known radiances
-        VALIDRAD = .false.
-        do while (.not. VALIDRAD)
-            ! Make sure current cell is valid
-            if (ICELL .le. 0) then
-                write (6, *) 'Error [BACK_INT_GRID]: ICELL=0 ',&
-                    &MU, PHI, IPT, INEXTCELL, xe, ye, ze,&
-                    &gridpos(1, ipt), gridpos(2, ipt), gridpos(3, ipt)
-                stop
-            end if
-            IPINX = btest(int(CELLFLAGS(ICELL)), 0)
-            IPINY = btest(int(CELLFLAGS(ICELL)), 1)
-
-            ! Find boundaries of the current cell
-            ! Find the three possible intersection planes (X,Y,Z)
-            !   from the coordinates of the opposite corner grid point
-            IOPP = GRIDPTR(9 - IOCT, ICELL)
-            ! Get the distances to the 3 planes and select the closest
-            if (IPINX) then
-                SOX = 1.0e20
-            else
-                SOX = (GRIDPOS(1, IOPP) - XE)*CXINV
-            end if
-            if (IPINY) then
-                SOY = 1.0e20
-            else
-                SOY = (GRIDPOS(2, IOPP) - YE)*CYINV
-            end if
-            SOZ = (GRIDPOS(3, IOPP) - ZE)*CZINV
-            SO = min(SOX, SOY, SOZ)
-            if (SO .lt. -EPS) then
-                write (6, *) 'Error [BACK_INT_GRID]: SO<0 ',&
-                    &MU, PHI, XE, YE, ZE, SOX, SOY, SOZ, SO, IPT, ICELL
-                stop
-            end if
-            ! Compute the coordinates of the cell exitting location
-            XE = XE + SO*CX
-            YE = YE + SO*CY
-            ZE = ZE + SO*CZ
-
-            ! Get the intersection face number (i.e. neighptr index)
-            if (SOX .le. SOZ .and. SOX .le. SOY) then
-                IFACE = 2 - BITX
-                JFACE = 1
-            else if (SOY .le. SOZ) then
-                IFACE = 4 - BITY
-                JFACE = 2
-            else
-                IFACE = 6 - BITZ
-                JFACE = 3
-            end if
-            ! Get the next cell to go to
-            INEXTCELL = NEIGHPTR(IFACE, ICELL)
-            if (INEXTCELL .lt. 0) then
-                call NEXT_CELL(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
-                    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXTCELL)
-            end if
-
-            ! Get the face grid pointers
-            if (NEIGHPTR(IFACE, ICELL) .ge. 0) then
-                ! If going to same or larger face then use previous face
-                KFACE = IFACE
-                IC = ICELL
-            else
-                ! If going to smaller face then use next face (more accura
-                KFACE = OPPFACE(IFACE)
-                IC = INEXTCELL
-            end if
-            I1 = GRIDPTR(GRIDFACE(1, KFACE), IC)
-            I2 = GRIDPTR(GRIDFACE(2, KFACE), IC)
-            I3 = GRIDPTR(GRIDFACE(3, KFACE), IC)
-            I4 = GRIDPTR(GRIDFACE(4, KFACE), IC)
-            ! Compute the face interpolation factors
-            if (JFACE .eq. 1) then
-                U = (ZE - GRIDPOS(3, I1))/(GRIDPOS(3, I3) - GRIDPOS(3, I1))
-                if (IPINY) then
-                    V = 0.5
-                else
-                    V = (YE - GRIDPOS(2, I1))/(GRIDPOS(2, I2) - GRIDPOS(2, I1))
-                end if
-            else if (JFACE .eq. 2) then
-                U = (ZE - GRIDPOS(3, I1))/(GRIDPOS(3, I3) - GRIDPOS(3, I1))
-                if (IPINX) then
-                    V = 0.5
-                else
-                    V = (XE - GRIDPOS(1, I1))/(GRIDPOS(1, I2) - GRIDPOS(1, I1))
-                end if
-            else
-                if (IPINY) then
-                    U = 0.5
-                else
-                    U = (YE - GRIDPOS(2, I1))/(GRIDPOS(2, I3) - GRIDPOS(2, I1))
-                end if
-                if (IPINX) then
-                    V = 0.5
-                else
-                    V = (XE - GRIDPOS(1, I1))/(GRIDPOS(1, I2) - GRIDPOS(1, I1))
-                end if
-            end if
-            if (u .lt. -0.0001 .or. v .lt. -0.0001 .or.&
-                &u .gt. 1.0001 .or. v .gt. 1.0001) then
-                print *, 'BACK_INT_GRID3D: u,v<0 or u,v>1: ',&
-                    &mu, phi, xe, ye, ze, u, v, iface, jface, kface,&
-                    &gridpos(1, i1), gridpos(2, i1), gridpos(3, i1)
-            end if
-
-            ! Get the location coordinate (does the boundary wrapping)
-            if (INEXTCELL .gt. 0) then
-                if (JFACE .eq. 1) then
-                    XE = GRIDPOS(1, GRIDPTR(IOCT, INEXTCELL))
-                else if (JFACE .eq. 2) then
-                    YE = GRIDPOS(2, GRIDPTR(IOCT, INEXTCELL))
-                else
-                    ZE = GRIDPOS(3, GRIDPTR(IOCT, INEXTCELL))
-                end if
-            end if
-
-            ! Interpolate extinction and source function at face interse
-            F1 = (1 - U)*(1 - V)
-            F2 = (1 - U)*V
-            F3 = U*(1 - V)
-            F4 = U*V
-            EXT0 = F1*EXTINCT(I1) + F2*EXTINCT(I2)&
-                &+ F3*EXTINCT(I3) + F4*EXTINCT(I4)
-            ! Correctly interpolate source using extinction*source
-            SRCEXT0 = (F1*SOURCE(KANG, I1)*EXTINCT(I1)&
-                &+ F2*SOURCE(KANG, I2)*EXTINCT(I2)&
-                &+ F3*SOURCE(KANG, I3)*EXTINCT(I3)&
-                &+ F4*SOURCE(KANG, I4)*EXTINCT(I4))
-            ! Compute the cell radiance: integration of the source funct
-            EXT = 0.5*(EXT0 + EXT1)
-            TAU = EXT*SO
-            if (TAU .ge. 0.5) then
-                TRANSCELL = exp(-TAU)
-                ABSCELL = 1.0 - TRANSCELL
-            else
-                ABSCELL = TAU*(1.0 - 0.5*TAU*&
-                    &(1.0 - 0.33333333333*TAU*(1 - 0.25*TAU)))
-                TRANSCELL = 1.0 - ABSCELL
-            end if
-            if (TAU .le. 2.0) then
-                if (EXT .eq. 0.0) then
-                    SRC = 0.0
-                else
-                    ! Linear extinction, linear source*extinction, to first
-                    SRC = (0.5*(SRCEXT0 + SRCEXT1)&
-                        &+ 0.08333333333*(EXT0*SRCEXT1 - EXT1*SRCEXT0)*SO)/EXT
-                end if
-            else
-                ! Combined first order expansion and constant extinction f
-                ! SRC = 0.5/EXT *( SRCEXT0+SRCEXT1&
-                !     & + (EXT0*SRCEXT1-EXT1*SRCEXT0)*SO&
-                !     & *(1-2/TAU+2*TRANSCELL/ABSCELL)/TAU )
-                EXT0P = EXT0
-                SRCEXT0P = SRCEXT0
-                if (TAU .gt. 4.0) then
-                    EXT0P = EXT1 + (EXT0 - EXT1)*4.0/TAU
-                    if (EXT0 .gt. 0.0) SRCEXT0P = SRCEXT0*EXT0P/EXT0
-                end if
-                SRC = 1.0/(EXT0P + EXT1)*(SRCEXT0P + SRCEXT1&
-                    &+ (EXT0P*SRCEXT1 - EXT1*SRCEXT0P)*2.0/(EXT0P + EXT1)&
-                    &*(1 - 2/TAU + 2*TRANSCELL/ABSCELL))
-            end if
-            SRC = max(SRC, 0.0d0)
-
-            ! Add in the cell radiance and update the transmission.
-            ! If this is a boundary or the transmission is below the
-            ! cutoff and we have a valid radiance then set the flag
-            ! to stop the tracing and add in the interpolated face radia
-            RAD = RAD + TRANSMIT*SRC*ABSCELL
-            TRANSMIT = TRANSMIT*TRANSCELL
-            if (RAD < -1.0e-5) then
-                print '(A,3(1X,F6.4),8(1X,E12.5))',&
-                    &'BACK_INT_GRID3D: RAD<0 ',&
-                    &xe, ye, ze, ext0, ext1, so, tau, transmit, src, abscell, rad
-                call ABORT_SHDOM_MPI('The end')
-            end if
-            VALIDFACE = (GRIDRAD(I1) .ge. -0.1 .and. GRIDRAD(I2) .ge. -0.1&
-                &.and. GRIDRAD(I3) .ge. -0.1 .and. GRIDRAD(I4) .ge. -0.1)
-            if (INEXTCELL .le. 0 .or.&
-                &(TRANSMIT .le. TRANSMIN .and. VALIDFACE)) then
-                if (VALIDFACE) then
-                    VALIDRAD = .true.
-                    RAD0 = F1*GRIDRAD(I1) + F2*GRIDRAD(I2)&
-                        &+ F3*GRIDRAD(I3) + F4*GRIDRAD(I4)
-                    RAD = RAD + TRANSMIT*RAD0
-                else
-                    print *, 'Error [BACK_INT_GRID3D]: INEXTCELL=0: ', xe, ye, ze, icell
-                    print *, iz, joct, mu, phi
-                    print '(i7,4(1x,f7.4))', i1, GRIDRAD(I1),&
-                        &gridpos(1, i1), gridpos(2, i1), gridpos(3, i1)
-                    print '(i7,4(1x,f7.4))', i2, GRIDRAD(I2),&
-                        &gridpos(1, i2), gridpos(2, i2), gridpos(3, i2)
-                    print '(i7,4(1x,f7.4))', i3, GRIDRAD(I3),&
-                        &gridpos(1, i3), gridpos(2, i3), gridpos(3, i3)
-                    print '(i7,4(1x,f7.4))', i4, GRIDRAD(I4),&
-                        &gridpos(1, i4), gridpos(2, i4), gridpos(3, i4)
-                    print '(i7,8x,3(1x,f7.4))', ipt,&
+            ! Loop until finding a face with known radiances
+            VALIDRAD = .false.
+            do while (.not. VALIDRAD)
+                ! Make sure current cell is valid
+                if (ICELL .le. 0) then
+                    write (6, *) 'Error [BACK_INT_GRID]: ICELL=0 ',&
+                        &MU, PHI, IPT, INEXTCELL, xe, ye, ze,&
                         &gridpos(1, ipt), gridpos(2, ipt), gridpos(3, ipt)
                     stop
                 end if
-            else
-                EXT1 = EXT0
-                SRCEXT1 = SRCEXT0
-                ICELL = INEXTCELL
-            end if
-        end do
+                IPINX = btest(int(CELLFLAGS(ICELL)), 0)
+                IPINY = btest(int(CELLFLAGS(ICELL)), 1)
 
-        GRIDRAD(IPT) = RAD
+                ! Find boundaries of the current cell
+                ! Find the three possible intersection planes (X,Y,Z)
+                !   from the coordinates of the opposite corner grid point
+                IOPP = GRIDPTR(9 - IOCT, ICELL)
+                ! Get the distances to the 3 planes and select the closest
+                if (IPINX) then
+                    SOX = 1.0e20
+                else
+                    SOX = (GRIDPOS(1, IOPP) - XE)*CXINV
+                end if
+                if (IPINY) then
+                    SOY = 1.0e20
+                else
+                    SOY = (GRIDPOS(2, IOPP) - YE)*CYINV
+                end if
+                SOZ = (GRIDPOS(3, IOPP) - ZE)*CZINV
+                SO = min(SOX, SOY, SOZ)
+                if (SO .lt. -EPS) then
+                    write (6, *) 'Error [BACK_INT_GRID]: SO<0 ',&
+                        &MU, PHI, XE, YE, ZE, SOX, SOY, SOZ, SO, IPT, ICELL
+                    stop
+                end if
+                ! Compute the coordinates of the cell exitting location
+                XE = XE + SO*CX
+                YE = YE + SO*CY
+                ZE = ZE + SO*CZ
 
-500     continue
+                ! Get the intersection face number (i.e. neighptr index)
+                if (SOX .le. SOZ .and. SOX .le. SOY) then
+                    IFACE = 2 - BITX
+                    JFACE = 1
+                else if (SOY .le. SOZ) then
+                    IFACE = 4 - BITY
+                    JFACE = 2
+                else
+                    IFACE = 6 - BITZ
+                    JFACE = 3
+                end if
+                ! Get the next cell to go to
+                INEXTCELL = NEIGHPTR(IFACE, ICELL)
+                if (INEXTCELL .lt. 0) then
+                    call NEXT_CELL(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
+                        &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXTCELL)
+                end if
+
+                ! Get the face grid pointers
+                if (NEIGHPTR(IFACE, ICELL) .ge. 0) then
+                    ! If going to same or larger face then use previous face
+                    KFACE = IFACE
+                    IC = ICELL
+                else
+                    ! If going to smaller face then use next face (more accura
+                    KFACE = OPPFACE(IFACE)
+                    IC = INEXTCELL
+                end if
+                I1 = GRIDPTR(GRIDFACE(1, KFACE), IC)
+                I2 = GRIDPTR(GRIDFACE(2, KFACE), IC)
+                I3 = GRIDPTR(GRIDFACE(3, KFACE), IC)
+                I4 = GRIDPTR(GRIDFACE(4, KFACE), IC)
+                ! Compute the face interpolation factors
+                if (JFACE .eq. 1) then
+                    U = (ZE - GRIDPOS(3, I1))/(GRIDPOS(3, I3) - GRIDPOS(3, I1))
+                    if (IPINY) then
+                        V = 0.5
+                    else
+                        V = (YE - GRIDPOS(2, I1))/(GRIDPOS(2, I2) - GRIDPOS(2, I1))
+                    end if
+                else if (JFACE .eq. 2) then
+                    U = (ZE - GRIDPOS(3, I1))/(GRIDPOS(3, I3) - GRIDPOS(3, I1))
+                    if (IPINX) then
+                        V = 0.5
+                    else
+                        V = (XE - GRIDPOS(1, I1))/(GRIDPOS(1, I2) - GRIDPOS(1, I1))
+                    end if
+                else
+                    if (IPINY) then
+                        U = 0.5
+                    else
+                        U = (YE - GRIDPOS(2, I1))/(GRIDPOS(2, I3) - GRIDPOS(2, I1))
+                    end if
+                    if (IPINX) then
+                        V = 0.5
+                    else
+                        V = (XE - GRIDPOS(1, I1))/(GRIDPOS(1, I2) - GRIDPOS(1, I1))
+                    end if
+                end if
+                if (u .lt. -0.0001 .or. v .lt. -0.0001 .or.&
+                    &u .gt. 1.0001 .or. v .gt. 1.0001) then
+                    print *, 'BACK_INT_GRID3D: u,v<0 or u,v>1: ',&
+                        &mu, phi, xe, ye, ze, u, v, iface, jface, kface,&
+                        &gridpos(1, i1), gridpos(2, i1), gridpos(3, i1)
+                end if
+
+                ! Get the location coordinate (does the boundary wrapping)
+                if (INEXTCELL .gt. 0) then
+                    if (JFACE .eq. 1) then
+                        XE = GRIDPOS(1, GRIDPTR(IOCT, INEXTCELL))
+                    else if (JFACE .eq. 2) then
+                        YE = GRIDPOS(2, GRIDPTR(IOCT, INEXTCELL))
+                    else
+                        ZE = GRIDPOS(3, GRIDPTR(IOCT, INEXTCELL))
+                    end if
+                end if
+
+                ! Interpolate extinction and source function at face interse
+                F1 = (1 - U)*(1 - V)
+                F2 = (1 - U)*V
+                F3 = U*(1 - V)
+                F4 = U*V
+                EXT0 = F1*EXTINCT(I1) + F2*EXTINCT(I2)&
+                    &+ F3*EXTINCT(I3) + F4*EXTINCT(I4)
+                ! Correctly interpolate source using extinction*source
+                SRCEXT0 = (F1*SOURCE(KANG, I1)*EXTINCT(I1)&
+                    &+ F2*SOURCE(KANG, I2)*EXTINCT(I2)&
+                    &+ F3*SOURCE(KANG, I3)*EXTINCT(I3)&
+                    &+ F4*SOURCE(KANG, I4)*EXTINCT(I4))
+                ! Compute the cell radiance: integration of the source funct
+                EXT = 0.5*(EXT0 + EXT1)
+                TAU = EXT*SO
+                if (TAU .ge. 0.5) then
+                    TRANSCELL = exp(-TAU)
+                    ABSCELL = 1.0 - TRANSCELL
+                else
+                    ABSCELL = TAU*(1.0 - 0.5*TAU*&
+                        &(1.0 - 0.33333333333*TAU*(1 - 0.25*TAU)))
+                    TRANSCELL = 1.0 - ABSCELL
+                end if
+                if (TAU .le. 2.0) then
+                    if (EXT .eq. 0.0) then
+                        SRC = 0.0
+                    else
+                        ! Linear extinction, linear source*extinction, to first
+                        SRC = (0.5*(SRCEXT0 + SRCEXT1)&
+                            &+ 0.08333333333*(EXT0*SRCEXT1 - EXT1*SRCEXT0)*SO)/EXT
+                    end if
+                else
+                    ! Combined first order expansion and constant extinction f
+                    ! SRC = 0.5/EXT *( SRCEXT0+SRCEXT1&
+                    !     &+ (EXT0*SRCEXT1-EXT1*SRCEXT0)*SO&
+                    !     &*(1-2/TAU+2*TRANSCELL/ABSCELL)/TAU )
+                    EXT0P = EXT0
+                    SRCEXT0P = SRCEXT0
+                    if (TAU .gt. 4.0) then
+                        EXT0P = EXT1 + (EXT0 - EXT1)*4.0/TAU
+                        if (EXT0 .gt. 0.0) SRCEXT0P = SRCEXT0*EXT0P/EXT0
+                    end if
+                    SRC = 1.0/(EXT0P + EXT1)*(SRCEXT0P + SRCEXT1&
+                        &+ (EXT0P*SRCEXT1 - EXT1*SRCEXT0P)*2.0/(EXT0P + EXT1)&
+                        &*(1 - 2/TAU + 2*TRANSCELL/ABSCELL))
+                end if
+                SRC = max(SRC, 0.0d0)
+
+                ! Add in the cell radiance and update the transmission.
+                ! If this is a boundary or the transmission is below the
+                ! cutoff and we have a valid radiance then set the flag
+                ! to stop the tracing and add in the interpolated face radia
+                RAD = RAD + TRANSMIT*SRC*ABSCELL
+                TRANSMIT = TRANSMIT*TRANSCELL
+                if (RAD < -1.0e-5) then
+                    print '(A,3(1X,F6.4),8(1X,E12.5))',&
+                        &'BACK_INT_GRID3D: RAD<0 ',&
+                        &xe, ye, ze, ext0, ext1, so, tau, transmit, src, abscell, rad
+                    call ABORT_SHDOM_MPI('The end')
+                end if
+                VALIDFACE = (GRIDRAD(I1) .ge. -0.1 .and. GRIDRAD(I2) .ge. -0.1&
+                    &.and. GRIDRAD(I3) .ge. -0.1 .and. GRIDRAD(I4) .ge. -0.1)
+                if (INEXTCELL .le. 0 .or.&
+                    &(TRANSMIT .le. TRANSMIN .and. VALIDFACE)) then
+                    if (VALIDFACE) then
+                        VALIDRAD = .true.
+                        RAD0 = F1*GRIDRAD(I1) + F2*GRIDRAD(I2)&
+                            &+ F3*GRIDRAD(I3) + F4*GRIDRAD(I4)
+                        RAD = RAD + TRANSMIT*RAD0
+                    else
+                        print *, 'Error [BACK_INT_GRID3D]: INEXTCELL=0: ', xe, ye, ze, icell
+                        print *, iz, joct, mu, phi
+                        print '(i7,4(1x,f7.4))', i1, GRIDRAD(I1),&
+                            &gridpos(1, i1), gridpos(2, i1), gridpos(3, i1)
+                        print '(i7,4(1x,f7.4))', i2, GRIDRAD(I2),&
+                            &gridpos(1, i2), gridpos(2, i2), gridpos(3, i2)
+                        print '(i7,4(1x,f7.4))', i3, GRIDRAD(I3),&
+                            &gridpos(1, i3), gridpos(2, i3), gridpos(3, i3)
+                        print '(i7,4(1x,f7.4))', i4, GRIDRAD(I4),&
+                            &gridpos(1, i4), gridpos(2, i4), gridpos(3, i4)
+                        print '(i7,8x,3(1x,f7.4))', ipt,&
+                            &gridpos(1, ipt), gridpos(2, ipt), gridpos(3, ipt)
+                        stop
+                    end if
+                else
+                    EXT1 = EXT0
+                    SRCEXT1 = SRCEXT0
+                    ICELL = INEXTCELL
+                end if
+            end do
+
+            GRIDRAD(IPT) = RAD
+
+        end if
+
     end do
 
     return
 end subroutine
 
 subroutine BACK_INT_GRID2D(NX, NY, NZ, NA, NPTS, NCELLS,&
-    & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-    & GRIDPOS, SWEEPORD, MU, PHI, TRANSMIN,&
-    & EXTINCT, NSTOKES, SOURCE, KANG, GRIDRAD)
+    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+    &GRIDPOS, SWEEPORD, MU, PHI, TRANSMIN,&
+    &EXTINCT, NSTOKES, SOURCE, KANG, GRIDRAD)
+
     !   Sweeps through the spatial grid computing radiances for the
     ! discrete ordinate direction (MU,PHI) by integrating the source
     ! function and extinction backward from each point.  If a point is
@@ -2728,6 +2751,7 @@ subroutine BACK_INT_GRID2D(NX, NY, NZ, NA, NPTS, NCELLS,&
     ! across the cell is done and added to the radiance.  The radiance
     ! ad the end of the ray path is interpolated from the known grid poi
     ! radiances on the face.  The resulting radiances are put in GRIDRAD
+
     implicit none
     integer NX, NY, NZ, NA, NPTS, NCELLS, KANG, NSTOKES
     integer GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
@@ -2793,178 +2817,181 @@ subroutine BACK_INT_GRID2D(NX, NY, NZ, NA, NPTS, NCELLS,&
         IPCELL = ishft(SWEEPORD(IORDER, JOCT), -3)
         ICORNER = ibits(SWEEPORD(IORDER, JOCT), 0, 3) + 1
         IPT = GRIDPTR(ICORNER, IPCELL)
-        if (GRIDRAD(1, IPT) .ge. 0.0) goto 500
+        if (GRIDRAD(1, IPT) .lt. 0.0) then
 
-        ! Start off at the grid point
-        ICELL = IPCELL
-        TRANSMIT = 1.0
-        EXT1 = EXTINCT(IPT)
-        RAD(:) = 0.0
-        SRCEXT1(:) = EXT1*SOURCE(:, KANG, IPT)
-        XE = GRIDPOS(1, IPT)
-        YE = GRIDPOS(2, IPT)
-        ZE = GRIDPOS(3, IPT)
+            ! Start off at the grid point
+            ICELL = IPCELL
+            TRANSMIT = 1.0
+            EXT1 = EXTINCT(IPT)
+            RAD(:) = 0.0
+            SRCEXT1(:) = EXT1*SOURCE(:, KANG, IPT)
+            XE = GRIDPOS(1, IPT)
+            YE = GRIDPOS(2, IPT)
+            ZE = GRIDPOS(3, IPT)
 
-        ! Loop until finding a face with known radiances
-        VALIDRAD = .false.
-        do while (.not. VALIDRAD)
-            ! Make sure current cell is valid
-            if (ICELL .le. 0) then
-                write (6, *) 'Error [BACK_INT_GRID]: ICELL=0 ',&
-                    & MU, PHI, IPT, INEXTCELL
-                stop
-            end if
-            IPINX = btest(int(CELLFLAGS(ICELL)), 0)
-
-            ! Find boundaries of the current cell
-            ! Find the three possible intersection planes (X,Y,Z)
-            !   from the coordinates of the opposite corner grid point
-            IOPP = GRIDPTR(9 - IOCT, ICELL)
-            ! Get the distances to the 3 planes and select the closest
-            if (IPINX) then
-                SOX = 1.0e20
-            else
-                SOX = (GRIDPOS(1, IOPP) - XE)*CXINV
-            end if
-            SOZ = (GRIDPOS(3, IOPP) - ZE)*CZINV
-            SO = min(SOX, SOZ)
-            if (SO .lt. -EPS) then
-                write (6, *) 'Error [BACK_INT_GRID2D]: SO<0 ',&
-                    & MU, PHI, XE, ZE, SOX, SOZ, SO, IPT, ICELL
-                stop
-            end if
-            ! Compute the coordinates of the cell exitting location
-            XE = XE + SO*CX
-            ZE = ZE + SO*CZ
-
-            ! Get the intersection face number (i.e. neighptr index)
-            if (SOX .le. SOZ) then
-                IFACE = 2 - BITX
-                JFACE = 1
-            else
-                IFACE = 6 - BITZ
-                JFACE = 3
-            end if
-            ! Get the next cell to go to
-            INEXTCELL = NEIGHPTR(IFACE, ICELL)
-            if (INEXTCELL .lt. 0) then
-                call NEXT_CELL(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
-                    & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXTCELL)
-            end if
-
-            ! Get the face grid pointers
-            if (NEIGHPTR(IFACE, ICELL) .ge. 0) then
-                ! If going to same or larger face then use previous face
-                KFACE = IFACE
-                IC = ICELL
-            else
-                ! If going to smaller face then use next face (more accura
-                KFACE = OPPFACE(IFACE)
-                IC = INEXTCELL
-            end if
-            I1 = GRIDPTR(GRIDFACE(1, KFACE), IC)
-            I2 = GRIDPTR(GRIDFACE(2, KFACE), IC)
-            ! Compute the face interpolation factors
-            if (JFACE .eq. 1) then
-                U = (ZE - GRIDPOS(3, I1))/(GRIDPOS(3, I2) - GRIDPOS(3, I1))
-            else
-                if (IPINX) then
-                    U = 0.5
-                else
-                    U = (XE - GRIDPOS(1, I1))/(GRIDPOS(1, I2) - GRIDPOS(1, I1))
-                end if
-            end if
-
-            ! Get the location coordinate (does the boundary wrapping)
-            if (INEXTCELL .gt. 0) then
-                if (JFACE .eq. 1) then
-                    XE = GRIDPOS(1, GRIDPTR(IOCT, INEXTCELL))
-                else
-                    ZE = GRIDPOS(3, GRIDPTR(IOCT, INEXTCELL))
-                end if
-            end if
-
-            ! Interpolate extinction and source function at face interse
-            F1 = 1 - U
-            F2 = U
-            EXT0 = F1*EXTINCT(I1) + F2*EXTINCT(I2)
-            ! Correctly interpolate source using extinction*source
-            SRCEXT0(:) = (F1*SOURCE(:, KANG, I1)*EXTINCT(I1)&
-                & + F2*SOURCE(:, KANG, I2)*EXTINCT(I2))
-            ! Compute the cell radiance: integration of the source funct
-            EXT = 0.5*(EXT0 + EXT1)
-            TAU = EXT*SO
-            if (TAU .ge. 0.5) then
-                TRANSCELL = exp(-TAU)
-                ABSCELL = 1.0 - TRANSCELL
-            else
-                ABSCELL = TAU*(1.0 - 0.5*TAU*&
-                    & (1.0 - 0.33333333333*TAU*(1 - 0.25*TAU)))
-                TRANSCELL = 1.0 - ABSCELL
-            end if
-            if (TAU .le. 2.0) then
-                if (EXT .eq. 0.0) then
-                    SRC(:) = 0.0
-                else
-                    ! Linear extinction, linear source*extinction, to first
-                    SRC(:) = (0.5*(SRCEXT0(:) + SRCEXT1(:)) + 0.08333333333&
-                        & *(EXT0*SRCEXT1(:) - EXT1*SRCEXT0(:))*SO)/EXT
-                end if
-            else
-                ! Combined first order expansion and constant extinction f
-                EXT0P = EXT0
-                SRCEXT0P(:) = SRCEXT0(:)
-                if (TAU .gt. 4.0) then
-                    EXT0P = EXT1 + (EXT0 - EXT1)*4.0/TAU
-                    if (EXT0 .gt. 0.0) SRCEXT0P(:) = SRCEXT0(:)*EXT0P/EXT0
-                end if
-                SRC(:) = 1.0/(EXT0P + EXT1)*(SRCEXT0P(:) + SRCEXT1(:)&
-                    & + (EXT0P*SRCEXT1(:) - EXT1*SRCEXT0P(:))*2.0/(EXT0P + EXT1)&
-                    & *(1 - 2/TAU + 2*TRANSCELL/ABSCELL))
-            end if
-            SRC(1) = max(SRC(1), 0.0d0)
-
-            ! Add in the cell radiance and update the transmission.
-            ! If this is a boundary or the transmission is below the
-            ! cutoff and we have a valid radiance then set the flag
-            ! to stop the tracing and add in the interpolated face radia
-            RAD(:) = RAD(:) + TRANSMIT*SRC(:)*ABSCELL
-            TRANSMIT = TRANSMIT*TRANSCELL
-            VALIDFACE = (GRIDRAD(1, I1) .ge. -0.1 .and. GRIDRAD(1, I2) .ge. -0.1)
-            if (INEXTCELL .le. 0 .or.&
-                & (TRANSMIT .le. TRANSMIN .and. VALIDFACE)) then
-                if (VALIDFACE) then
-                    VALIDRAD = .true.
-                    RAD0(:) = F1*GRIDRAD(:, I1) + F2*GRIDRAD(:, I2)
-                    RAD(:) = RAD(:) + TRANSMIT*RAD0(:)
-                else
-                    print *, 'Error [BACK_INT_GRID2D]: INEXTCELL=0: ', xe, ye, ze, icell
-                    print *, iz, joct, mu, phi
-                    print '(i7,4(1x,f7.4))', i1, GRIDRAD(1, I1),&
-                        & gridpos(1, i1), gridpos(2, i1), gridpos(3, i1)
-                    print '(i7,4(1x,f7.4))', i2, GRIDRAD(1, I2),&
-                        & gridpos(1, i2), gridpos(2, i2), gridpos(3, i2)
-                    print '(i7,8x,3(1x,f7.4))', ipt,&
-                        & gridpos(1, ipt), gridpos(2, ipt), gridpos(3, ipt)
+            ! Loop until finding a face with known radiances
+            VALIDRAD = .false.
+            do while (.not. VALIDRAD)
+                ! Make sure current cell is valid
+                if (ICELL .le. 0) then
+                    write (6, *) 'Error [BACK_INT_GRID]: ICELL=0 ',&
+                        &MU, PHI, IPT, INEXTCELL
                     stop
                 end if
-            else
-                EXT1 = EXT0
-                SRCEXT1(:) = SRCEXT0(:)
-                ICELL = INEXTCELL
-            end if
-        end do
+                IPINX = btest(int(CELLFLAGS(ICELL)), 0)
 
-        GRIDRAD(:, IPT) = RAD(:)
-500     continue
+                ! Find boundaries of the current cell
+                ! Find the three possible intersection planes (X,Y,Z)
+                !   from the coordinates of the opposite corner grid point
+                IOPP = GRIDPTR(9 - IOCT, ICELL)
+                ! Get the distances to the 3 planes and select the closest
+                if (IPINX) then
+                    SOX = 1.0e20
+                else
+                    SOX = (GRIDPOS(1, IOPP) - XE)*CXINV
+                end if
+                SOZ = (GRIDPOS(3, IOPP) - ZE)*CZINV
+                SO = min(SOX, SOZ)
+                if (SO .lt. -EPS) then
+                    write (6, *) 'Error [BACK_INT_GRID2D]: SO<0 ',&
+                        &MU, PHI, XE, ZE, SOX, SOZ, SO, IPT, ICELL
+                    stop
+                end if
+                ! Compute the coordinates of the cell exitting location
+                XE = XE + SO*CX
+                ZE = ZE + SO*CZ
+
+                ! Get the intersection face number (i.e. neighptr index)
+                if (SOX .le. SOZ) then
+                    IFACE = 2 - BITX
+                    JFACE = 1
+                else
+                    IFACE = 6 - BITZ
+                    JFACE = 3
+                end if
+                ! Get the next cell to go to
+                INEXTCELL = NEIGHPTR(IFACE, ICELL)
+                if (INEXTCELL .lt. 0) then
+                    call NEXT_CELL(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
+                        &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXTCELL)
+                end if
+
+                ! Get the face grid pointers
+                if (NEIGHPTR(IFACE, ICELL) .ge. 0) then
+                    ! If going to same or larger face then use previous face
+                    KFACE = IFACE
+                    IC = ICELL
+                else
+                    ! If going to smaller face then use next face (more accura
+                    KFACE = OPPFACE(IFACE)
+                    IC = INEXTCELL
+                end if
+                I1 = GRIDPTR(GRIDFACE(1, KFACE), IC)
+                I2 = GRIDPTR(GRIDFACE(2, KFACE), IC)
+                ! Compute the face interpolation factors
+                if (JFACE .eq. 1) then
+                    U = (ZE - GRIDPOS(3, I1))/(GRIDPOS(3, I2) - GRIDPOS(3, I1))
+                else
+                    if (IPINX) then
+                        U = 0.5
+                    else
+                        U = (XE - GRIDPOS(1, I1))/(GRIDPOS(1, I2) - GRIDPOS(1, I1))
+                    end if
+                end if
+
+                ! Get the location coordinate (does the boundary wrapping)
+                if (INEXTCELL .gt. 0) then
+                    if (JFACE .eq. 1) then
+                        XE = GRIDPOS(1, GRIDPTR(IOCT, INEXTCELL))
+                    else
+                        ZE = GRIDPOS(3, GRIDPTR(IOCT, INEXTCELL))
+                    end if
+                end if
+
+                ! Interpolate extinction and source function at face interse
+                F1 = 1 - U
+                F2 = U
+                EXT0 = F1*EXTINCT(I1) + F2*EXTINCT(I2)
+                ! Correctly interpolate source using extinction*source
+                SRCEXT0(:) = (F1*SOURCE(:, KANG, I1)*EXTINCT(I1)&
+                    &+ F2*SOURCE(:, KANG, I2)*EXTINCT(I2))
+                ! Compute the cell radiance: integration of the source funct
+                EXT = 0.5*(EXT0 + EXT1)
+                TAU = EXT*SO
+                if (TAU .ge. 0.5) then
+                    TRANSCELL = exp(-TAU)
+                    ABSCELL = 1.0 - TRANSCELL
+                else
+                    ABSCELL = TAU*(1.0 - 0.5*TAU*&
+                        &(1.0 - 0.33333333333*TAU*(1 - 0.25*TAU)))
+                    TRANSCELL = 1.0 - ABSCELL
+                end if
+                if (TAU .le. 2.0) then
+                    if (EXT .eq. 0.0) then
+                        SRC(:) = 0.0
+                    else
+                        ! Linear extinction, linear source*extinction, to first
+                        SRC(:) = (0.5*(SRCEXT0(:) + SRCEXT1(:)) + 0.08333333333&
+                            &*(EXT0*SRCEXT1(:) - EXT1*SRCEXT0(:))*SO)/EXT
+                    end if
+                else
+                    ! Combined first order expansion and constant extinction f
+                    EXT0P = EXT0
+                    SRCEXT0P(:) = SRCEXT0(:)
+                    if (TAU .gt. 4.0) then
+                        EXT0P = EXT1 + (EXT0 - EXT1)*4.0/TAU
+                        if (EXT0 .gt. 0.0) SRCEXT0P(:) = SRCEXT0(:)*EXT0P/EXT0
+                    end if
+                    SRC(:) = 1.0/(EXT0P + EXT1)*(SRCEXT0P(:) + SRCEXT1(:)&
+                        &+ (EXT0P*SRCEXT1(:) - EXT1*SRCEXT0P(:))*2.0/(EXT0P + EXT1)&
+                        &*(1 - 2/TAU + 2*TRANSCELL/ABSCELL))
+                end if
+                SRC(1) = max(SRC(1), 0.0d0)
+
+                ! Add in the cell radiance and update the transmission.
+                ! If this is a boundary or the transmission is below the
+                ! cutoff and we have a valid radiance then set the flag
+                ! to stop the tracing and add in the interpolated face radia
+                RAD(:) = RAD(:) + TRANSMIT*SRC(:)*ABSCELL
+                TRANSMIT = TRANSMIT*TRANSCELL
+                VALIDFACE = (GRIDRAD(1, I1) .ge. -0.1 .and. GRIDRAD(1, I2) .ge. -0.1)
+                if (INEXTCELL .le. 0 .or.&
+                    &(TRANSMIT .le. TRANSMIN .and. VALIDFACE)) then
+                    if (VALIDFACE) then
+                        VALIDRAD = .true.
+                        RAD0(:) = F1*GRIDRAD(:, I1) + F2*GRIDRAD(:, I2)
+                        RAD(:) = RAD(:) + TRANSMIT*RAD0(:)
+                    else
+                        print *, 'Error [BACK_INT_GRID2D]: INEXTCELL=0: ', xe, ye, ze, icell
+                        print *, iz, joct, mu, phi
+                        print '(i7,4(1x,f7.4))', i1, GRIDRAD(1, I1),&
+                            &gridpos(1, i1), gridpos(2, i1), gridpos(3, i1)
+                        print '(i7,4(1x,f7.4))', i2, GRIDRAD(1, I2),&
+                            &gridpos(1, i2), gridpos(2, i2), gridpos(3, i2)
+                        print '(i7,8x,3(1x,f7.4))', ipt,&
+                            &gridpos(1, ipt), gridpos(2, ipt), gridpos(3, ipt)
+                        stop
+                    end if
+                else
+                    EXT1 = EXT0
+                    SRCEXT1(:) = SRCEXT0(:)
+                    ICELL = INEXTCELL
+                end if
+            end do
+
+            GRIDRAD(:, IPT) = RAD(:)
+
+        end if
+
     end do
     return
 end subroutine
 
 subroutine BACK_INT_GRID1D(NX, NY, NZ, NA, NPTS, NCELLS,&
-    & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-    & GRIDPOS, SWEEPORD, MU, PHI, TRANSMIN,&
-    & EXTINCT, NSTOKES, SOURCE, KANG, GRIDRAD)
+    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+    &GRIDPOS, SWEEPORD, MU, PHI, TRANSMIN,&
+    &EXTINCT, NSTOKES, SOURCE, KANG, GRIDRAD)
+
     !   Sweeps through the spatial grid computing radiances for the
     ! discrete ordinate direction (MU,PHI) by integrating the source
     ! function and extinction backward from each point.  If a point is
@@ -2975,6 +3002,7 @@ subroutine BACK_INT_GRID1D(NX, NY, NZ, NA, NPTS, NCELLS,&
     ! across the cell is done and added to the radiance.  The radiance
     ! ad the end of the ray path is interpolated from the known grid poi
     ! radiances on the face.  The resulting radiances are put in GRIDRAD
+
     implicit none
     integer NX, NY, NZ, NA, NPTS, NCELLS, KANG, NSTOKES
     integer GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
@@ -3025,114 +3053,113 @@ subroutine BACK_INT_GRID1D(NX, NY, NZ, NA, NPTS, NCELLS,&
         IPCELL = ishft(SWEEPORD(IORDER, JOCT), -3)
         ICORNER = ibits(SWEEPORD(IORDER, JOCT), 0, 3) + 1
         IPT = GRIDPTR(ICORNER, IPCELL)
-        if (GRIDRAD(1, IPT) .ge. 0.0) goto 500
+        if (GRIDRAD(1, IPT) .lt. 0.0) then
+            ! Start off at the grid point
+            ICELL = IPCELL
+            TRANSMIT = 1.0
+            EXT1 = EXTINCT(IPT)
+            RAD(:) = 0.0
+            SRCEXT1(:) = EXT1*SOURCE(:, KANG, IPT)
+            XE = GRIDPOS(1, IPT)
+            YE = GRIDPOS(2, IPT)
+            ZE = GRIDPOS(3, IPT)
 
-        ! Start off at the grid point
-        ICELL = IPCELL
-        TRANSMIT = 1.0
-        EXT1 = EXTINCT(IPT)
-        RAD(:) = 0.0
-        SRCEXT1(:) = EXT1*SOURCE(:, KANG, IPT)
-        XE = GRIDPOS(1, IPT)
-        YE = GRIDPOS(2, IPT)
-        ZE = GRIDPOS(3, IPT)
+            ! Loop until finding a face with known radiances
+            VALIDRAD = .false.
+            do while (.not. VALIDRAD)
+                ! Make sure current cell is valid
+                if (ICELL .le. 0) then
+                    write (6, *) 'Error [BACK_INT_GRID]: ICELL=0 ',&
+                        &MU, PHI, IPT, INEXTCELL
+                    stop
+                end if
+                ! Find boundaries of the current cell
+                ! Find the three possible intersection planes (X,Y,Z)
+                !   from the coordinates of the opposite corner grid point
+                IOPP = GRIDPTR(9 - IOCT, ICELL)
+                ! Get the distances to the 3 planes and select the closest
+                SO = (GRIDPOS(3, IOPP) - ZE)*CZINV
+                if (SO .lt. -EPS) then
+                    write (6, *) 'Error [BACK_INT_GRID1D]: SO<0 ',&
+                        &MU, PHI, ZE, SO, IPT, ICELL
+                    stop
+                end if
+                ! Compute the coordinates of the cell exitting location
+                ZE = ZE + SO*CZ
 
-        ! Loop until finding a face with known radiances
-        VALIDRAD = .false.
-        do while (.not. VALIDRAD)
-            ! Make sure current cell is valid
-            if (ICELL .le. 0) then
-                write (6, *) 'Error [BACK_INT_GRID]: ICELL=0 ',&
-                    & MU, PHI, IPT, INEXTCELL
-                stop
-            end if
-            ! Find boundaries of the current cell
-            ! Find the three possible intersection planes (X,Y,Z)
-            !   from the coordinates of the opposite corner grid point
-            IOPP = GRIDPTR(9 - IOCT, ICELL)
-            ! Get the distances to the 3 planes and select the closest
-            SO = (GRIDPOS(3, IOPP) - ZE)*CZINV
-            if (SO .lt. -EPS) then
-                write (6, *) 'Error [BACK_INT_GRID1D]: SO<0 ',&
-                    & MU, PHI, ZE, SO, IPT, ICELL
-                stop
-            end if
-            ! Compute the coordinates of the cell exitting location
-            ZE = ZE + SO*CZ
+                ! Get the intersection face number (i.e. neighptr index)
+                IFACE = 6 - BITZ
+                ! Get the next cell to go to
+                INEXTCELL = NEIGHPTR(IFACE, ICELL)
 
-            ! Get the intersection face number (i.e. neighptr index)
-            IFACE = 6 - BITZ
-            ! Get the next cell to go to
-            INEXTCELL = NEIGHPTR(IFACE, ICELL)
+                ! Get the face grid pointers
+                I1 = GRIDPTR(GRIDFACE(IFACE), ICELL)
+                ! Get the location coordinate (does the boundary wrapping)
+                if (INEXTCELL .gt. 0) then
+                    ZE = GRIDPOS(3, GRIDPTR(IOCT, INEXTCELL))
+                end if
 
-            ! Get the face grid pointers
-            I1 = GRIDPTR(GRIDFACE(IFACE), ICELL)
-            ! Get the location coordinate (does the boundary wrapping)
-            if (INEXTCELL .gt. 0) then
-                ZE = GRIDPOS(3, GRIDPTR(IOCT, INEXTCELL))
-            end if
-
-            ! Get extinction and source function at face intersection
-            EXT0 = EXTINCT(I1)
-            SRCEXT0(:) = EXTINCT(I1)*SOURCE(:, KANG, I1)
-            ! Compute the cell radiance: integration of the source funct
-            EXT = 0.5*(EXT0 + EXT1)
-            TAU = EXT*SO
-            if (TAU .ge. 0.5) then
-                TRANSCELL = exp(-TAU)
-                ABSCELL = 1.0 - TRANSCELL
-            else
-                ABSCELL = TAU*(1.0 - 0.5*TAU*&
-                    & (1.0 - 0.33333333333*TAU*(1 - 0.25*TAU)))
-                TRANSCELL = 1.0 - ABSCELL
-            end if
-            if (TAU .le. 2.0) then
-                if (EXT .eq. 0.0) then
-                    SRC(:) = 0.0
+                ! Get extinction and source function at face intersection
+                EXT0 = EXTINCT(I1)
+                SRCEXT0(:) = EXTINCT(I1)*SOURCE(:, KANG, I1)
+                ! Compute the cell radiance: integration of the source funct
+                EXT = 0.5*(EXT0 + EXT1)
+                TAU = EXT*SO
+                if (TAU .ge. 0.5) then
+                    TRANSCELL = exp(-TAU)
+                    ABSCELL = 1.0 - TRANSCELL
                 else
-                    ! Linear extinction, linear source*extinction, to first
-                    SRC(:) = (0.5*(SRCEXT0(:) + SRCEXT1(:)) + 0.08333333333&
-                        & *(EXT0*SRCEXT1(:) - EXT1*SRCEXT0(:))*SO)/EXT
+                    ABSCELL = TAU*(1.0 - 0.5*TAU*&
+                        &(1.0 - 0.33333333333*TAU*(1 - 0.25*TAU)))
+                    TRANSCELL = 1.0 - ABSCELL
                 end if
-            else
-                ! Combined first order expansion and constant extinction f
-                EXT0P = EXT0
-                SRCEXT0P(:) = SRCEXT0(:)
-                if (TAU .gt. 4.0) then
-                    EXT0P = EXT1 + (EXT0 - EXT1)*4.0/TAU
-                    if (EXT0 .gt. 0.0) SRCEXT0P(:) = SRCEXT0(:)*EXT0P/EXT0
+                if (TAU .le. 2.0) then
+                    if (EXT .eq. 0.0) then
+                        SRC(:) = 0.0
+                    else
+                        ! Linear extinction, linear source*extinction, to first
+                        SRC(:) = (0.5*(SRCEXT0(:) + SRCEXT1(:)) + 0.08333333333&
+                            &*(EXT0*SRCEXT1(:) - EXT1*SRCEXT0(:))*SO)/EXT
+                    end if
+                else
+                    ! Combined first order expansion and constant extinction f
+                    EXT0P = EXT0
+                    SRCEXT0P(:) = SRCEXT0(:)
+                    if (TAU .gt. 4.0) then
+                        EXT0P = EXT1 + (EXT0 - EXT1)*4.0/TAU
+                        if (EXT0 .gt. 0.0) SRCEXT0P(:) = SRCEXT0(:)*EXT0P/EXT0
+                    end if
+                    SRC(:) = 1.0/(EXT0P + EXT1)*(SRCEXT0P(:) + SRCEXT1(:)&
+                        &+ (EXT0P*SRCEXT1(:) - EXT1*SRCEXT0P(:))*2.0/(EXT0P + EXT1)&
+                        &*(1 - 2/TAU + 2*TRANSCELL/ABSCELL))
                 end if
-                SRC(:) = 1.0/(EXT0P + EXT1)*(SRCEXT0P(:) + SRCEXT1(:)&
-                    & + (EXT0P*SRCEXT1(:) - EXT1*SRCEXT0P(:))*2.0/(EXT0P + EXT1)&
-                    & *(1 - 2/TAU + 2*TRANSCELL/ABSCELL))
-            end if
-            SRC(1) = max(SRC(1), 0.0d0)
+                SRC(1) = max(SRC(1), 0.0d0)
 
-            ! See if there are valid radiances for the intersection face
-            ! If so, set flag, interpolate radiance, and add to
-            !   radiance from source function in cell
-            ! If not, only add in cell radiance and prepare for next cel
-            if (GRIDRAD(1, I1) .ge. -0.1) then
-                VALIDRAD = .true.
-                RAD0(:) = GRIDRAD(:, I1)
-                RAD(:) = RAD(:) + TRANSMIT*(RAD0(:)*TRANSCELL + SRC(:)*ABSCELL)
-            else
-                RAD(:) = RAD(:) + TRANSMIT*SRC(:)*ABSCELL
-                SRCEXT1(:) = SRCEXT0(:)
-                TRANSMIT = TRANSMIT*TRANSCELL
-                EXT1 = EXT0
-                ICELL = INEXTCELL
-            end if
-        end do
+                ! See if there are valid radiances for the intersection face
+                ! If so, set flag, interpolate radiance, and add to
+                !   radiance from source function in cell
+                ! If not, only add in cell radiance and prepare for next cel
+                if (GRIDRAD(1, I1) .ge. -0.1) then
+                    VALIDRAD = .true.
+                    RAD0(:) = GRIDRAD(:, I1)
+                    RAD(:) = RAD(:) + TRANSMIT*(RAD0(:)*TRANSCELL + SRC(:)*ABSCELL)
+                else
+                    RAD(:) = RAD(:) + TRANSMIT*SRC(:)*ABSCELL
+                    SRCEXT1(:) = SRCEXT0(:)
+                    TRANSMIT = TRANSMIT*TRANSCELL
+                    EXT1 = EXT0
+                    ICELL = INEXTCELL
+                end if
+            end do
 
-        GRIDRAD(:, IPT) = RAD(:)
-500     continue
+            GRIDRAD(:, IPT) = RAD(:)
+        end if
     end do
     return
 end subroutine
 
 subroutine NEXT_CELL(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
-    & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXT)
+    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXT)
     !   Gets the next cell (INEXT) to go to that is adjacent to this fac
     ! IFACE (1-6) has which face (-X,+X,-Y,+Y,-Z,+Z) of the current cell
     ! (ICELL) we are at, and JFACE (1-3) is the direction (X,Y,Z).
@@ -3185,6 +3212,7 @@ subroutine NEXT_CELL(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
 end subroutine
 
 logical function SWEEP_BASE_CELL(BCFLAG, NXC, NYC, NZ, IOCT, ICELL)
+
     !   Returns the next base grid cell.  The octant the ray direction
     ! is coming from (IOCT) determines the order of sweeping.  ICELL is
     ! for the first call to set things up.  The function returns false i
@@ -3192,6 +3220,7 @@ logical function SWEEP_BASE_CELL(BCFLAG, NXC, NYC, NZ, IOCT, ICELL)
     ! simulated.  For open boundary condition do the endpoint cells
     ! (in X,Y) first, so the boundary grid points will be done with
     ! independent pixel radiative transfer.
+
     implicit none
     integer BCFLAG, NXC, NYC, NZ, IOCT, ICELL
     logical BTEST
@@ -3277,7 +3306,7 @@ logical function SWEEP_BASE_CELL(BCFLAG, NXC, NYC, NZ, IOCT, ICELL)
 end function
 
 logical function SWEEP_NEXT_CELL(BCFLAG, NXC, NYC, NZ, IOCT,&
-    & ICELL, TREEPTR, CELLFLAGS)
+    &ICELL, TREEPTR, CELLFLAGS)
     !   Returns the next grid cell given the last cell (ICELL).  The
     ! octant the ray direction is coming from (IOCT) determines the
     ! order of sweeping.  ICELL is 0 for the first call to set things up
@@ -3317,7 +3346,7 @@ logical function SWEEP_NEXT_CELL(BCFLAG, NXC, NYC, NZ, IOCT,&
                 !   next base cell if there is one.
                 if (SP .eq. 0) then
                     SWEEP_NEXT_CELL =&
-                        & SWEEP_BASE_CELL(BCFLAG, NXC, NYC, NZ, IOCT, IC)
+                        &SWEEP_BASE_CELL(BCFLAG, NXC, NYC, NZ, IOCT, IC)
                     if (.not. SWEEP_NEXT_CELL) return
                 else
                     ! Otherwise, pop the stack to get the next cell to go to.
@@ -3348,21 +3377,23 @@ logical function SWEEP_NEXT_CELL(BCFLAG, NXC, NYC, NZ, IOCT,&
 end function
 
 subroutine SPLIT_GRID(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
-    & DOSPLIT, OUTOFMEM, CURSPLITACC, SPLITCRIT,&
-    & NPTS, NCELLS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-    & GRIDPOS, NX, XGRID, NY, YGRID,&
-    & NSTOKES, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
-    & DELTAM, BCFLAG, IPFLAG, ACCELFLAG,&
-    & EXTINCT, ALBEDO, LEGEN, IPHASE,&
-    & RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR,&
-    & TEMP, PLANCK, DIRFLUX, SRCTYPE,&
-    & SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN,&
-    & UNITS, WAVENO, WAVELEN, ADAPTCRIT, ADAPTIND)
+    &DOSPLIT, OUTOFMEM, CURSPLITACC, SPLITCRIT,&
+    &NPTS, NCELLS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+    &GRIDPOS, NX, XGRID, NY, YGRID,&
+    &NSTOKES, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
+    &DELTAM, BCFLAG, IPFLAG, ACCELFLAG,&
+    &EXTINCT, ALBEDO, LEGEN, IPHASE,&
+    &RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR,&
+    &TEMP, PLANCK, DIRFLUX, SRCTYPE,&
+    &SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN,&
+    &UNITS, WAVENO, WAVELEN, ADAPTCRIT, ADAPTIND)
+
     !   Splits the cells that have a cell dividing criterion greater tha
     ! CURSPLITACC if DOSPLIT is true.  The current splitting criterion
     ! achieved is returned in SPLITCRIT.  If we are at the end of the
     ! grid point, grid cell, or spherical harmonic arrays (sizes given
     ! by MAXIG, MAXIC, MAXIV, MAXIDO) then the OUTOFMEM flag is returned
+
     implicit none
     integer MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX
     integer NPTS, NCELLS, BCFLAG, IPFLAG
@@ -3398,8 +3429,8 @@ subroutine SPLIT_GRID(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
                 if (TREEPTR(2, ICELL) .eq. 0) then
                     ! If this is a end node cell then compute adaptive criteri
                     call CELL_SPLIT_TEST(GRIDPTR, GRIDPOS, EXTINCT,&
-                        & SHPTR, NSTOKES, SOURCE, ICELL,&
-                        & ADAPT, ADAPTCRIT(N + 1), IDIR)
+                        &SHPTR, NSTOKES, SOURCE, ICELL,&
+                        &ADAPT, ADAPTCRIT(N + 1), IDIR)
                     ADAPTIND(N+1) = 4*ICELL + IDIR
                     N = N + 1
                 end if
@@ -3422,26 +3453,26 @@ subroutine SPLIT_GRID(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
             OUTOFMEM0 = OUTOFMEM
             I = 1
             do while (ADAPTCRIT(I) .gt. CURSPLITACC .and. .not. OUTOFMEM0&
-                & .and. I .le. N)
+                &.and. I .le. N)
                 if (NCELLS .gt. MAXCELLS .or. NPTS .gt. MAXPTS .or.&
-                    & NPTS*NPHI0MAX .gt. MAXWORK .or.&
-                    & SHPTR(NPTS + 1) .gt. MAXSH .or.&
-                    & RSHPTR(NPTS + 1) .gt. MAXRAD) then
+                    &NPTS*NPHI0MAX .gt. MAXWORK .or.&
+                    &SHPTR(NPTS + 1) .gt. MAXSH .or.&
+                    &RSHPTR(NPTS + 1) .gt. MAXRAD) then
                     OUTOFMEM0 = .true.
                 else
                     ICELL = int(ADAPTIND(I))/4
                     IDIR = iand(int(ADAPTIND(I)), 3)
                     ! Create the new grid points and make pointers
                     call DIVIDE_CELL(NPTS, NCELLS, GRIDPTR, NEIGHPTR,&
-                        & TREEPTR, CELLFLAGS, GRIDPOS, ICELL, IDIR, NEWPOINTS)
+                        &TREEPTR, CELLFLAGS, GRIDPOS, ICELL, IDIR, NEWPOINTS)
                     ! Interpolate the medium properties, radiance, and sourc
                     call INTERPOLATE_POINT(NEWPOINTS, NPTS,&
-                        & NSTOKES, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
-                        & DELTAM, BCFLAG, IPFLAG, ACCELFLAG, GRIDPOS,&
-                        & SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN,&
-                        & UNITS, WAVENO, WAVELEN,&
-                        & EXTINCT, ALBEDO, LEGEN, IPHASE, TEMP, PLANCK, DIRFLUX,&
-                        & RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR)
+                        &NSTOKES, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
+                        &DELTAM, BCFLAG, IPFLAG, ACCELFLAG, GRIDPOS,&
+                        &SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN,&
+                        &UNITS, WAVENO, WAVELEN,&
+                        &EXTINCT, ALBEDO, LEGEN, IPHASE, TEMP, PLANCK, DIRFLUX,&
+                        &RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR)
                 end if
                 I = I + 1
             end do
@@ -3455,30 +3486,30 @@ subroutine SPLIT_GRID(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
             ! Split some more cells to make the adaptive grid "smoother"
             do while (.not. OUTOFMEM .and. I .le. N)
                 if (NCELLS .gt. MAXCELLS .or. NPTS .gt. MAXPTS .or.&
-                    & NPTS*NPHI0MAX .gt. MAXWORK .or.&
-                    & SHPTR(NPTS + 1) .gt. MAXSH .or.&
-                    & RSHPTR(NPTS + 1) .gt. MAXRAD) then
+                    &NPTS*NPHI0MAX .gt. MAXWORK .or.&
+                    &SHPTR(NPTS + 1) .gt. MAXSH .or.&
+                    &RSHPTR(NPTS + 1) .gt. MAXRAD) then
                     OUTOFMEM = .true.
                 else
                     ! See if cell should be split to make better grid:
                     !   IDIR=0 if no, IDIR=direction (1,2,3) otherwise
                     ICELL = int(ADAPTIND(I))/4
                     call GRID_SMOOTH_TEST(GRIDPTR, GRIDPOS, NEIGHPTR,&
-                        & TREEPTR, CELLFLAGS, SHPTR, ICELL, IDIR)
+                        &TREEPTR, CELLFLAGS, SHPTR, ICELL, IDIR)
                     ! Set IDIR=0 to stop adaptive grid smoothing
                     ! IDIR = 0
                     if (IDIR .gt. 0) then
                         ! Create the new grid points and make pointers
                         call DIVIDE_CELL(NPTS, NCELLS, GRIDPTR, NEIGHPTR,&
-                            & TREEPTR, CELLFLAGS, GRIDPOS, ICELL, IDIR, NEWPOINTS)
+                            &TREEPTR, CELLFLAGS, GRIDPOS, ICELL, IDIR, NEWPOINTS)
                         ! Interpolate the medium properties, radiance, and sou
                         call INTERPOLATE_POINT(NEWPOINTS, NPTS,&
-                            & NSTOKES, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
-                            & DELTAM, BCFLAG, IPFLAG, ACCELFLAG, GRIDPOS,&
-                            & SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN,&
-                            & UNITS, WAVENO, WAVELEN,&
-                            & EXTINCT, ALBEDO, LEGEN, IPHASE, TEMP, PLANCK, DIRFLUX,&
-                            & RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR)
+                            &NSTOKES, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
+                            &DELTAM, BCFLAG, IPFLAG, ACCELFLAG, GRIDPOS,&
+                            &SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN,&
+                            &UNITS, WAVENO, WAVELEN,&
+                            &EXTINCT, ALBEDO, LEGEN, IPHASE, TEMP, PLANCK, DIRFLUX,&
+                            &RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR)
                     end if
                 end if
                 I = I + 1
@@ -3494,11 +3525,11 @@ subroutine SPLIT_GRID(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
 
         ! If in parallel mode, calculate all the direct beam fluxes at on
         if (SRCTYPE .ne. 'T' .and.&
-            & (btest(BCFLAG, 2) .or. btest(BCFLAG, 3))) then
+            &(btest(BCFLAG, 2) .or. btest(BCFLAG, 3))) then
             call MAKE_DIRECT_PAR(OLDNPTS + 1, NPTS, BCFLAG,&
-                & IPFLAG, DELTAM, ML, NSTLEG, NLEG,&
-                & SOLARFLUX, SOLARMU, SOLARAZ, GRIDPOS,&
-                & NX, XGRID, NY, YGRID, DIRFLUX)
+                &IPFLAG, DELTAM, ML, NSTLEG, NLEG,&
+                &SOLARFLUX, SOLARMU, SOLARAZ, GRIDPOS,&
+                &NX, XGRID, NY, YGRID, DIRFLUX)
         end if
     end if
 
@@ -3507,8 +3538,8 @@ subroutine SPLIT_GRID(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
     do ICELL = 1, NCELLS
         if (TREEPTR(2, ICELL) .eq. 0) then
             call CELL_SPLIT_TEST(GRIDPTR, GRIDPOS, EXTINCT,&
-                & SHPTR, NSTOKES, SOURCE, ICELL,&
-                & ADAPT, ADAPTCRIT(1), IDIR)
+                &SHPTR, NSTOKES, SOURCE, ICELL,&
+                &ADAPT, ADAPTCRIT(1), IDIR)
             SPLITCRIT = max(SPLITCRIT, ADAPTCRIT(1))
         end if
     end do
@@ -3517,12 +3548,12 @@ subroutine SPLIT_GRID(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
 end subroutine
 
 subroutine INTERPOLATE_POINT(NEWPOINTS, NPTS,&
-    & NSTOKES, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
-    & DELTAM, BCFLAG, IPFLAG, ACCELFLAG, GRIDPOS,&
-    & SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN,&
-    & UNITS, WAVENO, WAVELEN,&
-    & EXTINCT, ALBEDO, LEGEN, IPHASE, TEMP, PLANCK, DIRFLUX,&
-    & RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR)
+    &NSTOKES, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
+    &DELTAM, BCFLAG, IPFLAG, ACCELFLAG, GRIDPOS,&
+    &SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN,&
+    &UNITS, WAVENO, WAVELEN,&
+    &EXTINCT, ALBEDO, LEGEN, IPHASE, TEMP, PLANCK, DIRFLUX,&
+    &RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR)
     !   Interpolates the medium properties, radiance, and source functio
     ! new grid points (specified in NEWPOINTS).  The medium properties a
     ! interpolated from the property grid, since interpolating from the
@@ -3532,6 +3563,7 @@ subroutine INTERPOLATE_POINT(NEWPOINTS, NPTS,&
     ! recomputed (rather than interpolated).  The radiance is averaged
     ! from the two parent grid points, and used to compute the source
     ! function for the new points.
+
     implicit none
     integer NEWPOINTS(3, 4), NPTS
     integer NSTOKES, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
@@ -3586,8 +3618,8 @@ subroutine INTERPOLATE_POINT(NEWPOINTS, NPTS,&
             Y = GRIDPOS(2, IP)
             Z = GRIDPOS(3, IP)
             call TRILIN_INTERP_PROP(X, Y, Z, .false., NSTLEG, NLEG,&
-                & TEMP(IP), EXTINCT(IP), ALBEDO(IP),&
-                & LEGEN(1, 0, IP), IPHASE(IP))
+                &TEMP(IP), EXTINCT(IP), ALBEDO(IP),&
+                &LEGEN(1, 0, IP), IPHASE(IP))
             ! Do the Delta-M scaling of extinction and albedo for this p
             if (DELTAM) then
                 if (NUMPHASE .gt. 0) then
@@ -3618,9 +3650,9 @@ subroutine INTERPOLATE_POINT(NEWPOINTS, NPTS,&
                     ! Otherwise, calculate the exact direct beam from property
                     DIRPATH = 0.0
                     call DIRECT_BEAM_PROP(0, X, Y, Z, BCFLAG, IPFLAG, DELTAM,&
-                        & ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
-                        & DIRFLUX(IP),&
-                        & UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
+                        &ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
+                        &DIRFLUX(IP),&
+                        &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
                 end if
             end if
 
@@ -3660,14 +3692,14 @@ subroutine INTERPOLATE_POINT(NEWPOINTS, NPTS,&
             end if
             if (NSTOKES .eq. 1) then
                 call CALC_SOURCE_PNT_UNPOL(NLM, NLEG, LOFJ,&
-                    & SRCTYPE, DIRFLUX(IP)*SECMU0, YLMSUN,&
-                    & PLANCK(IP), ALBEDO(IP), IPH, LEGEN,&
-                    & NR, RADIANCE(1, IR + 1), SOURCET)
+                    &SRCTYPE, DIRFLUX(IP)*SECMU0, YLMSUN,&
+                    &PLANCK(IP), ALBEDO(IP), IPH, LEGEN,&
+                    &NR, RADIANCE(1, IR + 1), SOURCET)
             else
                 call CALC_SOURCE_PNT(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
-                    & SRCTYPE, DIRFLUX(IP)*SECMU0, YLMSUN,&
-                    & PLANCK(IP), ALBEDO(IP), IPH, LEGEN,&
-                    & NR, RADIANCE(1, IR + 1), SOURCET)
+                    &SRCTYPE, DIRFLUX(IP)*SECMU0, YLMSUN,&
+                    &PLANCK(IP), ALBEDO(IP), IPH, LEGEN,&
+                    &NR, RADIANCE(1, IR + 1), SOURCET)
             end if
             do J = 1, NS
                 SOURCE(:, IS + J) = SOURCET(:, J)
@@ -3680,7 +3712,7 @@ subroutine INTERPOLATE_POINT(NEWPOINTS, NPTS,&
 end subroutine
 
 subroutine DIVIDE_CELL(NPTS, NCELLS, GRIDPTR, NEIGHPTR,&
-    & TREEPTR, CELLFLAGS, GRIDPOS, ICELL, IDIR, NEWPOINTS)
+    &TREEPTR, CELLFLAGS, GRIDPOS, ICELL, IDIR, NEWPOINTS)
     !   Divides a single cell (ICELL) in the IDIR direction (1=Z,2=Y,3=X
     ! Makes the pointers to the two new cells (TREEPTR), set the flags
     ! (CELLFLAGS), creates the new grid points if they don't exist alrea
@@ -3722,8 +3754,8 @@ subroutine DIVIDE_CELL(NPTS, NCELLS, GRIDPTR, NEIGHPTR,&
 
     ! Do the grid points:
     call NEW_GRID_POINTS(IDIR, ICELL, NEWCELL, NPTS,&
-        & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-        & GRIDPOS, NEWPOINTS)
+        &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+        &GRIDPOS, NEWPOINTS)
 
     ! Do the neighbor pointers:
     do IFACE = 1, 6
@@ -3749,16 +3781,16 @@ subroutine DIVIDE_CELL(NPTS, NCELLS, GRIDPTR, NEIGHPTR,&
         ! Then see if we can match faces further down the neighbor's tre
         !   also update the neighboring cells pointers
         call MATCH_NEIGHBOR_FACE(IFACE, NEWCELL, NEIGHPTR,&
-            & CELLFLAGS, TREEPTR, GRIDPTR, GRIDPOS)
+            &CELLFLAGS, TREEPTR, GRIDPTR, GRIDPOS)
         call MATCH_NEIGHBOR_FACE(IFACE, NEWCELL + 1, NEIGHPTR,&
-            & CELLFLAGS, TREEPTR, GRIDPTR, GRIDPOS)
+            &CELLFLAGS, TREEPTR, GRIDPTR, GRIDPOS)
     end do
 
     return
 end subroutine
 
 subroutine MATCH_NEIGHBOR_FACE(IFACE, IC, NEIGHPTR, CELLFLAGS,&
-    & TREEPTR, GRIDPTR, GRIDPOS)
+    &TREEPTR, GRIDPTR, GRIDPOS)
     !   Resolves the neighbor pointers for a new cell IC (from a subdivi
     ! for the IFACE face.  Based on the size of this new face and
     ! the corresponding faces of the neighboring cells (down its tree),
@@ -3792,9 +3824,9 @@ subroutine MATCH_NEIGHBOR_FACE(IFACE, IC, NEIGHPTR, CELLFLAGS,&
         IN1 = GRIDPTR(1, IN)
         IN8 = GRIDPTR(8, IN)
         if (GRIDPOS(DIR1, IC1) .ge. GRIDPOS(DIR1, IN1) .and.&
-            & GRIDPOS(DIR1, IC8) .le. GRIDPOS(DIR1, IN8) .and.&
-            & GRIDPOS(DIR2, IC1) .ge. GRIDPOS(DIR2, IN1) .and.&
-            & GRIDPOS(DIR2, IC8) .le. GRIDPOS(DIR2, IN8)) then
+            &GRIDPOS(DIR1, IC8) .le. GRIDPOS(DIR1, IN8) .and.&
+            &GRIDPOS(DIR2, IC1) .ge. GRIDPOS(DIR2, IN1) .and.&
+            &GRIDPOS(DIR2, IC8) .le. GRIDPOS(DIR2, IN8)) then
             ! If this is the bottom of the tree then we have a face matc
             if (TREEPTR(2, IN) .eq. 0) then
                 NEIGHPTR(IFACE, IC) = IN
@@ -3807,11 +3839,11 @@ subroutine MATCH_NEIGHBOR_FACE(IFACE, IC, NEIGHPTR, CELLFLAGS,&
         !   if the neighbor face is smaller, otherwise make the
         !   pointer negative, because it no longer points to an end no
         if (GRIDPOS(DIR1, IN1) .ge. GRIDPOS(DIR1, IC1) .and.&
-            & GRIDPOS(DIR1, IN8) .le. GRIDPOS(DIR1, IC8) .and.&
-            & GRIDPOS(DIR2, IN1) .ge. GRIDPOS(DIR2, IC1) .and.&
-            & GRIDPOS(DIR2, IN8) .le. GRIDPOS(DIR2, IC8)) then
+            &GRIDPOS(DIR1, IN8) .le. GRIDPOS(DIR1, IC8) .and.&
+            &GRIDPOS(DIR2, IN1) .ge. GRIDPOS(DIR2, IC1) .and.&
+            &GRIDPOS(DIR2, IN8) .le. GRIDPOS(DIR2, IC8)) then
             call INHERIT_NEIGHBOR(IN, OPPFACE(IFACE), IC,&
-                & NEIGHPTR, TREEPTR, CELLFLAGS)
+                &NEIGHPTR, TREEPTR, CELLFLAGS)
         else
             NEIGHPTR(OPPFACE(IFACE), IN) = -abs(NEIGHPTR(OPPFACE(IFACE), IN))
         end if
@@ -3839,7 +3871,7 @@ subroutine MATCH_NEIGHBOR_FACE(IFACE, IC, NEIGHPTR, CELLFLAGS,&
 end subroutine
 
 subroutine INHERIT_NEIGHBOR(ICELL, IFACE, IN,&
-    & NEIGHPTR, TREEPTR, CELLFLAGS)
+    &NEIGHPTR, TREEPTR, CELLFLAGS)
     !   Updates the ICELL cell's new neighbor cell (IN) for all
     ! children cells that border the face (IFACE).
     implicit none
@@ -3888,8 +3920,8 @@ subroutine INHERIT_NEIGHBOR(ICELL, IFACE, IN,&
 end subroutine
 
 subroutine NEW_GRID_POINTS(IDIR, ICELL, NEWCELL, NPTS,&
-    & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-    & GRIDPOS, NEWPOINTS)
+    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+    &GRIDPOS, NEWPOINTS)
     !   Sets up the pointers to the grid points for the two new cells.
     ! Creates the four new points if they don't already exist, changing
     ! NPTS and GRIDPOS accordingly.  Returns the NEWPOINTS(3,4) arrays
@@ -3907,9 +3939,9 @@ subroutine NEW_GRID_POINTS(IDIR, ICELL, NEWCELL, NPTS,&
     integer GRIDCORNER(2, 4, 3), FACEGRID(2, 4, 3)
     real XP, YP, ZP
     data GRIDCORNER/1, 2, 3, 4, 5, 6, 7, 8, 1, 3, 2, 4, 5, 7, 6, 8,&
-        & 1, 5, 2, 6, 3, 7, 4, 8/
+        &1, 5, 2, 6, 3, 7, 4, 8/
     data FACEGRID/3, 5, 4, 5, 3, 6, 4, 6, 1, 5, 2, 5, 1, 6, 2, 6,&
-        & 1, 3, 2, 3, 1, 4, 2, 4/
+        &1, 3, 2, 3, 1, 4, 2, 4/
 
     !   In general, when subdividing a cell four new points may be made.
     ! Each of these points belongs to two faces of the original cell.
@@ -3940,17 +3972,17 @@ subroutine NEW_GRID_POINTS(IDIR, ICELL, NEWCELL, NPTS,&
         !   that border this edge
         IFACE1 = FACEGRID(1, I, IDIR)
         call MATCH_GRID_POINT(XP, YP, ZP, ICELL, IFACE1, GRIDPOS,&
-            & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, IPMATCH)
+            &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, IPMATCH)
         if (IPMATCH .eq. 0) then
             IFACE2 = FACEGRID(2, I, IDIR)
             call MATCH_GRID_POINT(XP, YP, ZP, ICELL, IFACE2, GRIDPOS,&
-                & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, IPMATCH)
+                &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, IPMATCH)
         end if
         if (IPMATCH .eq. 0) then
             ICELL2 = abs(NEIGHPTR(IFACE1, ICELL))
             if (ICELL2 .gt. 0) then
                 call MATCH_GRID_POINT(XP, YP, ZP, ICELL2, IFACE2, GRIDPOS,&
-                    & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, IPMATCH)
+                    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, IPMATCH)
             end if
         end if
 
@@ -3976,8 +4008,8 @@ subroutine NEW_GRID_POINTS(IDIR, ICELL, NEWCELL, NPTS,&
 end subroutine
 
 subroutine MATCH_GRID_POINT(XP, YP, ZP, ICELL, IFACE,&
-    & GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-    & IPMATCH)
+    &GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+    &IPMATCH)
     !   Determines whether the neighboring cells to ICELL adjacent to
     ! face IFACE (1-6: -X,+X,-Y,+Y,-Z,+Z) have gridpoints that match
     ! the point at XP,YP,ZP on face IFACE of cell ICELL.
@@ -3998,7 +4030,7 @@ subroutine MATCH_GRID_POINT(XP, YP, ZP, ICELL, IFACE,&
     integer INEXT, IDIR, DIR, IC, IC1, KFACE, IPT, I
     integer OPPFACE(6), GRIDFACE(4, 6)
     data OPPFACE/2, 1, 4, 3, 6, 5/,&
-        & GRIDFACE/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8/
+        &GRIDFACE/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8/
 
     IPMATCH = 0
     IDIR = (IFACE + 1)/2
@@ -4019,7 +4051,7 @@ subroutine MATCH_GRID_POINT(XP, YP, ZP, ICELL, IFACE,&
             do I = 1, 4
                 IPT = GRIDPTR(GRIDFACE(I, KFACE), IC)
                 if (XP .eq. GRIDPOS(1, IPT) .and. YP .eq. GRIDPOS(2, IPT)&
-                    & .and. ZP .eq. GRIDPOS(3, IPT)) then
+                    &.and. ZP .eq. GRIDPOS(3, IPT)) then
                     IPMATCH = IPT
                     return
                 end if
@@ -4068,29 +4100,31 @@ subroutine MATCH_GRID_POINT(XP, YP, ZP, ICELL, IFACE,&
                 end if
             end if
             if (SP .ge. MAXSTACK)&
-                & stop 'Error [MATCH_GRID_POINT]: MAXSTACK exceeded.'
+                &stop 'Error [MATCH_GRID_POINT]: MAXSTACK exceeded.'
         end if
     end do
 
 end subroutine
 
 subroutine CELL_SPLIT_TEST(GRIDPTR, GRIDPOS, EXTINCT,&
-    & SHPTR, NSTOKES, SOURCE, ICELL,&
-    & ADAPTCRIT, MAXADAPT, IDIR)
+    &SHPTR, NSTOKES, SOURCE, ICELL,&
+    &ADAPTCRIT, MAXADAPT, IDIR)
+
     !   Computes the adaptive cell splitting criterion for the X, Y, and
     ! directions for cell (ICELL).  The three criterion are returned in
     ! ADAPTCRIT, the max criterion is returned in MAXADAPT, and the
     ! direction of max criterion in IDIR.
     ! The adaptive cell criterion is computed by averaging the division
-    ! criterion over the four pairs of grid points that cross the potent
+    ! criterion over the four pairs of grid points that cross the potential
     ! split direction. The cell division criterion is based on the
     ! integration of the source function across the cell (including the
     ! optical depth/transmission factor) that gives the delta radiance.
     ! The criterion is actually the part of the integral that depends on
     ! the difference in the extinction times source function across a ce
-    ! The rms over all angles of the extinction/source function differen
+    ! The rms over all angles of the extinction/source function difference
     ! is computed in spherical harmonic space by summing the square of
     ! the difference over all terms.
+
     implicit none
     integer NSTOKES, ICELL, IDIR
     integer SHPTR(*), GRIDPTR(8, *)
@@ -4102,7 +4136,7 @@ subroutine CELL_SPLIT_TEST(GRIDPTR, GRIDPOS, EXTINCT,&
     real SPLIT, SUM1, JAY, TAU, EXT
     real C0
     data GRIDCORNER/1, 2, 3, 4, 5, 6, 7, 8, 1, 3, 2, 4, 5, 7, 6, 8,&
-        & 1, 5, 2, 6, 3, 7, 4, 8/
+        &1, 5, 2, 6, 3, 7, 4, 8/
     data C0/0.282095/
 
     MAXADAPT = -1.0
@@ -4128,7 +4162,7 @@ subroutine CELL_SPLIT_TEST(GRIDPTR, GRIDPOS, EXTINCT,&
                 ! harmonic term differences.
                 do J = 1, NS
                     JAY = JAY + (EXTINCT(IP2)*SOURCE(1, IS2 + J)&
-                        & - EXTINCT(IP1)*SOURCE(1, IS1 + J))**2
+                        &- EXTINCT(IP1)*SOURCE(1, IS1 + J))**2
                 end do
                 do J = NS + 1, NS1
                     JAY = JAY + (EXTINCT(IP1)*SOURCE(1, IS1 + J))**2
@@ -4163,7 +4197,7 @@ subroutine CELL_SPLIT_TEST(GRIDPTR, GRIDPOS, EXTINCT,&
 end subroutine
 
 subroutine GRID_SMOOTH_TEST(GRIDPTR, GRIDPOS, NEIGHPTR,&
-    & TREEPTR, CELLFLAGS, SHPTR, ICELL, IDIR)
+    &TREEPTR, CELLFLAGS, SHPTR, ICELL, IDIR)
     !   Tests the grid cell ICELL for splitting in order to improve the
     ! adaptive grid smoothness.  The direction to split the cell is retu
     ! in IDIR (1-X, 2-Y, 3-Z, 0-don't).
@@ -4181,7 +4215,7 @@ subroutine GRID_SMOOTH_TEST(GRIDPTR, GRIDPOS, NEIGHPTR,&
     double precision XE, YE, ZE
     real RATIO, SIZERATIO, CURGRIDSIZE(3), GRIDSIZE(2), GRIDSIZEINV
     data FACECORNER/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8,&
-        & 1, 2, 3, 4, 5, 6, 7, 8/
+        &1, 2, 3, 4, 5, 6, 7, 8/
     data EDGECORNER/1, 2, 1, 3, 1, 5/
 
     IDIR = 0
@@ -4211,7 +4245,7 @@ subroutine GRID_SMOOTH_TEST(GRIDPTR, GRIDPOS, NEIGHPTR,&
                 end do
                 ! Get the neighboring cell and its size in this direction
                 call NEXT_CELL(XE, YE, ZE, IFACE, ID, ICELL, GRIDPOS,&
-                    & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INCELL(J))
+                    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INCELL(J))
                 ! If the neighbor does not exist or is a base cell or
                 !   is an independent pixel cell in X or Y then set
                 !   its grid size the same as current cell (so don't split
@@ -4219,7 +4253,7 @@ subroutine GRID_SMOOTH_TEST(GRIDPTR, GRIDPOS, NEIGHPTR,&
                     GRIDSIZE(J) = CURGRIDSIZE(ID)
                 else
                     GRIDSIZE(J) = abs(GRIDPOS(ID, GRIDPTR(1, INCELL(J)))&
-                        & - GRIDPOS(ID, GRIDPTR(8, INCELL(J))))
+                        &- GRIDPOS(ID, GRIDPTR(8, INCELL(J))))
 
                     if (TREEPTR(1, INCELL(J)) .eq. 0) then
                         GRIDSIZE(J) = CURGRIDSIZE(ID)
@@ -4240,11 +4274,11 @@ subroutine GRID_SMOOTH_TEST(GRIDPTR, GRIDPOS, NEIGHPTR,&
             !   this direction OR opposite neighbor cells are split in
             !   same other direction.
             if (GRIDSIZE(1)*GRIDSIZEINV .lt. 0.75 .and.&
-                & GRIDSIZE(2)*GRIDSIZEINV .lt. 0.75) then
+                &GRIDSIZE(2)*GRIDSIZEINV .lt. 0.75) then
                 IDIR = ID
             end if
             if (DIRSPLIT(1) .gt. 0 .and. DIRSPLIT(1) .ne. ID .and.&
-                & DIRSPLIT(1) .eq. DIRSPLIT(2)) then
+                &DIRSPLIT(1) .eq. DIRSPLIT(2)) then
                 IDIR = DIRSPLIT(1)
             end if
 
