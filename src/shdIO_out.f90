@@ -132,10 +132,11 @@ subroutine shd_io__outputResult(&
     integer NANGOUT, NXOUT, NYOUT
     logical ALLGRID
     real MUOUT, PHID, C, SUM
-    real, allocatable :: SUM1(:), SUM2(:), SUM3(:)
     real XDOMAIN, YDOMAIN, STARTX, STARTY
-    real :: ASYM
+    real, allocatable :: ASYM(:)
     real, allocatable :: FUP(:), FDN(:), FDIR(:)
+    real, allocatable :: SUM1(:), SUM2(:), SUM3(:)
+    real, allocatable :: SHTERM5(:)
     double precision X0, Y0, Z0
     character*128 FORM
     character*128 GRIDNAME, SOURCENAME, UNITSNAME, OUTNAME, SFCNAME
@@ -144,7 +145,7 @@ subroutine shd_io__outputResult(&
     character(10)  :: DATA_POSTFIX
     integer :: NVAR, NDATA, IDATA
 
-    DATA_POSTFIX = '.sHdOm'
+    DATA_POSTFIX = '.sHdOm-out'
     OUTFILE_DATA = trim(adjustl(OUTFILE))//trim(adjustl(DATA_POSTFIX))
 
     GRIDNAME = 'EVEN (X,Y)  '
@@ -208,71 +209,80 @@ subroutine shd_io__outputResult(&
 
     open (UNIT=2, FILE=trim(adjustl(OUTFILE)), STATUS='UNKNOWN')
     write (2, '(A,A)')&
-        & '! Polarized Spherical Harmonic Discrete Ordinate',&
-        & ' Radiative Transfer Output'
+        &'! Polarized Spherical Harmonic Discrete Ordinate',&
+        &' Radiative Transfer Output'
     write (2, '(2(A,I3),A,I5,2(A,I3),A,I5,A,I10)')&
-        & '!  L=', ML, '  M=', MM, '  NLM=', NLM,&
-        & '   NMU=', NMU, '  NPHI=', NPHI, '  NANG=', NANG,&
-        & '   NSH=', NSH
+        &'!  L=', ML, '  M=', MM, '  NLM=', NLM,&
+        &'   NMU=', NMU, '  NPHI=', NPHI, '  NANG=', NANG,&
+        &'   NSH=', NSH
     write (2, '(A,I1,3(A,I4),2(A,I8))') '!  NSTOKES=', NSTOKES,&
-        & '   NX=', NX, '   NY=', NY, '   NZ=', NZ,&
-        & '    NPTS=', NPTS, '   NCELLS=', NCELLS
+        &'   NX=', NX, '   NY=', NY, '   NZ=', NZ,&
+        &'    NPTS=', NPTS, '   NCELLS=', NCELLS
     write (2, '(A,A)') '!  PROPERTY_FILE=', trim(PROPFILE)
     write (2, '(A,A,A,I2)') '!  CORRELATED_K-DIST_FILE=',&
-        & trim(CKDFILE), '   NUM_G=', NG
+        &trim(CKDFILE), '   NUM_G=', NG
     write (2, '(A,A)') '!  INPUT_SAVE_FILE=', trim(INSAVEFILE)
     write (2, '(A,A)') '!  OUTPUT_SAVE_FILE=', trim(OUTSAVEFILE)
+
     if (DELTAM) then
         write (2, '(A,A14,A)') '!  SOURCE_TYPE=', SOURCENAME,&
-            & '      DELTA-M METHOD'
+            &'      DELTA-M METHOD'
     else
         write (2, '(A,A14)') '!  SOURCE_TYPE=', SOURCENAME
     end if
+
     write (2, '(A,A32,A,I1)') '!  GRID_TYPE=', GRIDNAME,&
-        & '   INDEPENDENT_PIXEL=', IPFLAG
+        &'   INDEPENDENT_PIXEL=', IPFLAG
     write (2, '(A,A22,A,I1)') '!  SURFACE_TYPE=', SFCNAME,&
-        & '   HORIZ_BOUNDARY_COND=', BCFLAG
+        &'   HORIZ_BOUNDARY_COND=', BCFLAG
+
     if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
+
         if (SFCTYPE(1:1) .eq. 'V') then
             write (2, '(A,A,A,E12.5)') '!  SURFACE_FILE=', trim(SFCFILE),&
-                & '  SKY_RAD=', SKYRAD
+                &'  SKY_RAD=', SKYRAD
         else
             if (SRCTYPE .eq. 'B') then
                 write (2, '(A,F9.7,A,F8.3,A,E12.5)')&
-                    & '!  GROUND_ALBEDO=', GNDALBEDO, '  GROUND_TEMP=', GNDTEMP,&
-                    & '  SKY_RAD=', SKYRAD
+                    &'!  GROUND_ALBEDO=', GNDALBEDO, '  GROUND_TEMP=', GNDTEMP,&
+                    &'  SKY_RAD=', SKYRAD
             else
                 write (2, '(A,F9.7,A,E12.5)')&
-                    & '!  GROUND_ALBEDO=', GNDALBEDO, '  SKY_RAD=', SKYRAD
+                    &'!  GROUND_ALBEDO=', GNDALBEDO, '  SKY_RAD=', SKYRAD
             end if
         end if
+
         write (2, '(A,E13.6,A,F10.7,A,F8.3)')&
-            & '!  SOLAR_FLUX=', SOLARFLUX, '   SOLAR_MU=', SOLARMU,&
-            & '   SOLAR_AZ=', SOLARAZ*180.0/acos(-1.0)
+            &'!  SOLAR_FLUX=', SOLARFLUX, '   SOLAR_MU=', SOLARMU,&
+            &'   SOLAR_AZ=', SOLARAZ*180.0/acos(-1.0)
+
     else
+
         if (SFCTYPE(1:1) .eq. 'V') then
             write (2, '(A,A)') '!  SURFACE_FILE=', trim(SFCFILE)
         else
             write (2, '(A,F8.3,A,F9.7)')&
-       & '!  GROUND_TEMP=', GNDTEMP, '  GROUND_EMIS=', 1.0 - GNDALBEDO
+                &'!  GROUND_TEMP=', GNDTEMP, '  GROUND_EMIS=', 1.0 - GNDALBEDO
         end if
         write (2, '(A,F8.3)') '!  SKY_TEMP=', SKYRAD
+
     end if
 
     if (UNITS .eq. 'T') then
         write (2, '(A,A24)') '!  UNITS=', UNITSNAME
     else if (UNITS .eq. 'B') then
         write (2, '(A,A24,A,2(1X,F10.2))') '!  UNITS=', UNITSNAME,&
-            & '   WAVENUMBER_RANGE=', WAVENO(1), WAVENO(2)
+            &'   WAVENUMBER_RANGE=', WAVENO(1), WAVENO(2)
     else
         write (2, '(A,A24,A,F10.2)') '!  UNITS=', UNITSNAME,&
-            & '   WAVELENGTH=', WAVELEN
+            &'   WAVELENGTH=', WAVELEN
     end if
+
     write (2, '(2(A,E10.3))') '!  SPLITTING_ACCURACY=', SPLITACC,&
-        & '   SPHERICAL_HARMONIC_ACCURACY=', SHACC
+        &'   SPHERICAL_HARMONIC_ACCURACY=', SHACC
     write (2, '(A,E10.3)') '!  SOLUTION_ACCURACY=', SOLACC
     write (2, '(2(A,I4))') '!  MAXIMUM_ITERATIONS=', MAXITER,&
-        & '   NUMBER_ITERATIONS=', TOTITER
+        &'   NUMBER_ITERATIONS=', TOTITER
     write (2, '(A,A)') '!  OUTPUT_TYPE=', trim(adjustl(OUTNAME))
 
     if (OUTTYPE .eq. 'R') then
@@ -321,6 +331,16 @@ subroutine shd_io__outputResult(&
             write (2, '(A)')&
                 &'!   X       Y       RADIANCE (STOKES I, Q, U, V)'
         end if
+
+        ! data processing
+        !╭────────────────────────────────────────────────╮!
+        do K = 1, NANGOUT
+            MUOUT = OUTPARMS(2*K + 5)
+            PHID = OUTPARMS(2*K + 6)
+            write (2, '(A,1X,F8.5,1X,F7.2,2X,A)')&
+                &'! ', MUOUT, PHID, '<- (mu,phi)'
+        end do
+        !╰────────────────────────────────────────────────╯!
 
         ! description for binary data
         !╭────────────────────────────────────────────────╮!
@@ -679,11 +699,7 @@ subroutine shd_io__outputResult(&
             ! add grid positions (or binary data cannot be reconstructed)
             if (ALLGRID) then
                 IDATA = 0
-                call shd_io__outputData(GRIDPOS(1, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
-                IDATA = 0
-                call shd_io__outputData(GRIDPOS(2, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
-                IDATA = 0
-                call shd_io__outputData(GRIDPOS(3, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
+                call shd_io__outputData(GRIDPOS(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
             end if
             !╰────────────────────────────────────────────────╯!
 
@@ -712,6 +728,8 @@ subroutine shd_io__outputResult(&
 
         ! Format 1 is domain averaged vertical profile
         if (nint(OUTPARMS(1)) .eq. 1) then
+
+            write (2, '(A,A)') '!    Z       -DIV(Fnet)'
 
             ! data processing
             !╭────────────────────────────────────────────────╮!
@@ -750,7 +768,6 @@ subroutine shd_io__outputResult(&
 
             ! original
             !╭────────────────────────────────────────────────╮!
-            !write (2, '(A,A)') '!    Z       -DIV(Fnet)'
             !do IZ = 1, NZ
             !    SUM = 0.0
             !    N = 0
@@ -776,6 +793,8 @@ subroutine shd_io__outputResult(&
                 N = NBPTS
                 ALLGRID = .false.
             end if
+
+            write (2, '(A)') '!    X       Y        Z       -DIV(Fnet)'
 
             ! description for binary data
             !╭────────────────────────────────────────────────╮!
@@ -806,17 +825,12 @@ subroutine shd_io__outputResult(&
             ! add grid positions (or binary data cannot be reconstructed)
             if (ALLGRID) then
                 IDATA = 0
-                call shd_io__outputData(GRIDPOS(1, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
-                IDATA = 0
-                call shd_io__outputData(GRIDPOS(2, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
-                IDATA = 0
-                call shd_io__outputData(GRIDPOS(3, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
+                call shd_io__outputData(GRIDPOS(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
             end if
             !╰────────────────────────────────────────────────╯!
 
             ! original
             !╭────────────────────────────────────────────────╮!
-            !write (2, '(A)') '!    X       Y        Z       -DIV(Fnet)'
             !do I = 1, N
             !    if ((GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.&
             !        & GRIDPOS(2, I) .lt. YGRID(NY + 1)) .or. ALLGRID) then
@@ -841,32 +855,95 @@ subroutine shd_io__outputResult(&
             ALLGRID = .false.
         end if
 
+        ! data processing
+        !╭────────────────────────────────────────────────╮!
+        allocate(SHTERM5(N))
+
         if (NSHOUT .eq. 5) then
+            NVAR = 5
             write (2, '(A,A)') '!    X       Y        Z         Imean',&
-                & '          Fx           Fy           Fz       HOrms'
+                &'          Fx           Fy           Fz       HOrms'
             do I = 1, N
-                if ((GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.&
-                    & GRIDPOS(2, I) .lt. YGRID(NY + 1)) .or. ALLGRID) then
-                    write (2, '(3(1X,F7.3),1X,4(1X,E12.5),1X,F6.3)')&
-                        & GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I),&
-                        & SHTERMS(1, I), SHTERMS(2, I), SHTERMS(3, I), SHTERMS(4, I),&
-                        & SHTERMS(5, I)/max(1e-20, SHTERMS(1, I))
-                end if
+                SHTERM5(I) = SHTERMS(5, I)/max(1e-20, SHTERMS(1, I))
             end do
         else
+            NVAR = 4
             write (2, '(A,A)') '!    X       Y        Z         Imean',&
-                & '          Fx           Fy           Fz '
-            do I = 1, N
-                if ((GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.&
-                    & GRIDPOS(2, I) .lt. YGRID(NY + 1)) .or. ALLGRID) then
-                    write (2, '(3(1X,F7.3),1X,4(1X,E12.5))')&
-                        & GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I),&
-                        & SHTERMS(1, I), SHTERMS(2, I), SHTERMS(3, I), SHTERMS(4, I)
-                end if
-            end do
+                &'          Fx           Fy           Fz '
+        end if
+        !╰────────────────────────────────────────────────╯!
+
+        ! description for binary data
+        !╭────────────────────────────────────────────────╮!
+        write (2, '(A)') '! The following contains information for binary data intepretation:'
+        if (ALLGRID) then
+            write (2, '(A)') '! S2'
+            write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
+            ! added x, y, z (NVAR+3)
+            write (2, '(A, 2(I6,A))') '! ', N, ',', NVAR+3, ''
+        else
+            write (2, '(A)') '! S1'
+            write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
+            write (2, '(A, 5(I6,A))') '! ', NX1, ',', NY1, ',', NZ, ',', 1, ',', NVAR, ''
+        end if
+        !╰────────────────────────────────────────────────╯!
+
+        ! binary data
+        !╭────────────────────────────────────────────────╮!
+        if (ALLGRID) then
+            write(*, '(A)') 'Message [_outputResult]: <S2> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+        else
+            write(*, '(A)') 'Message [_outputResult]: <S1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
         end if
 
+        IDATA = 0
+        call shd_io__outputData(SHTERMS(1:4, :), 4, N, IDATA, OUTFILE_DATA)
+
+        if (NSHOUT .eq. 5) then
+            IDATA = 0
+            call shd_io__outputData(SHTERM5, 1, N, IDATA, OUTFILE_DATA, 'ADD')
+        end if
+
+        ! add grid positions (or binary data cannot be reconstructed)
+        if (ALLGRID) then
+            IDATA = 0
+            call shd_io__outputData(GRIDPOS(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
+        end if
+
+        deallocate(SHTERM5)
+        !╰────────────────────────────────────────────────╯!
+
+        ! original
+        !╭────────────────────────────────────────────────╮!
+        !if (NSHOUT .eq. 5) then
+        !    write (2, '(A,A)') '!    X       Y        Z         Imean',&
+        !        &'          Fx           Fy           Fz       HOrms'
+        !    do I = 1, N
+        !        if ((GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.&
+        !            &GRIDPOS(2, I) .lt. YGRID(NY + 1)) .or. ALLGRID) then
+        !            write (2, '(3(1X,F7.3),1X,4(1X,E12.5),1X,F6.3)')&
+        !                &GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I),&
+        !                &SHTERMS(1, I), SHTERMS(2, I), SHTERMS(3, I), SHTERMS(4, I),&
+        !                &SHTERMS(5, I)/max(1e-20, SHTERMS(1, I))
+        !        end if
+        !    end do
+        !else
+        !    write (2, '(A,A)') '!    X       Y        Z         Imean',&
+        !        &'          Fx           Fy           Fz '
+        !    do I = 1, N
+        !        if ((GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.&
+        !            &GRIDPOS(2, I) .lt. YGRID(NY + 1)) .or. ALLGRID) then
+        !            write (2, '(3(1X,F7.3),1X,4(1X,E12.5))')&
+        !                &GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I),&
+        !                &SHTERMS(1, I), SHTERMS(2, I), SHTERMS(3, I), SHTERMS(4, I)
+        !        end if
+        !    end do
+        !end if
+        !╰────────────────────────────────────────────────╯!
+
     else if (OUTTYPE .eq. 'J') then
+
+        NVAR = 5
 
         ! J source function output: source function for a specified ang
         !   at every grid point
@@ -877,26 +954,68 @@ subroutine shd_io__outputResult(&
             N = NBPTS
             ALLGRID = .false.
         end if
+
         MUOUT = OUTPARMS(2)
         PHID = OUTPARMS(3)
         write (2, '(A,1X,F8.5,1X,F7.2,2X,A)')&
-            & '! ', MUOUT, PHID, '<- (mu,phi)'
+            &'! ', MUOUT, PHID, '<- (mu,phi)'
         write (2, '(A,A)') '!    X       Y       Z    ',&
-            & ' Extinction   Source Function (Stokes I, Q, U, V)'
-        do I = 1, N
-            if ((GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.&
-                & GRIDPOS(2, I) .lt. YGRID(NY + 1)) .or. ALLGRID) then
-                write (2, '(3(1X,F7.3),5(1X,E12.5))')&
-                    & GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I),&
-                    & EXTINCT(I), SOURCE1OUT(:, I)
-            end if
-        end do
+            &' Extinction   Source Function (Stokes I, Q, U, V)'
 
+        ! description for binary data
+        !╭────────────────────────────────────────────────╮!
+        write (2, '(A)') '! The following contains information for binary data intepretation:'
+        if (ALLGRID) then
+            write (2, '(A)') '! J2'
+            write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
+            ! added x, y, z (NVAR+3)
+            write (2, '(A, 2(I6,A))') '! ', N, ',', NVAR+3, ''
+        else
+            write (2, '(A)') '! J1'
+            write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
+            write (2, '(A, 5(I6,A))') '! ', NX1, ',', NY1, ',', NZ, ',', 1, ',', NVAR, ''
+        end if
+        !╰────────────────────────────────────────────────╯!
+
+        ! binary data
+        !╭────────────────────────────────────────────────╮!
+        if (ALLGRID) then
+            write(*, '(A)') 'Message [_outputResult]: <J2> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+        else
+            write(*, '(A)') 'Message [_outputResult]: <J1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+        end if
+
+        IDATA = 0
+        call shd_io__outputData(EXTINCT, 1, N, IDATA, OUTFILE_DATA)
+        IDATA = 0
+        call shd_io__outputData(SOURCE1OUT, 4, N, IDATA, OUTFILE_DATA, 'ADD')
+
+        ! add grid positions (or binary data cannot be reconstructed)
+        if (ALLGRID) then
+            IDATA = 0
+            call shd_io__outputData(GRIDPOS(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
+        end if
+        !╰────────────────────────────────────────────────╯!
+
+        ! original
+        !╭────────────────────────────────────────────────╮!
+        !do I = 1, N
+        !    if ((GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.&
+        !        & GRIDPOS(2, I) .lt. YGRID(NY + 1)) .or. ALLGRID) then
+        !        write (2, '(3(1X,F7.3),5(1X,E12.5))')&
+        !            & GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I),&
+        !            & EXTINCT(I), SOURCE1OUT(:, I)
+        !    end if
+        !end do
+        !╰────────────────────────────────────────────────╯!
+
+    ! Medium output: grid point medium properties -
+    !   Output extinction, single scattering albedo,
+    !   asymmetry parameter, and temperature.
     else if (OUTTYPE .eq. 'M') then
 
-        ! Medium output: grid point medium properties -
-        !   Output extinction, single scattering albedo,
-        !   asymmetry parameter, and temperature.
+        NVAR = 4
+
         if (nint(OUTPARMS(1)) .eq. 2) then
             N = NPTS
             ALLGRID = .true.
@@ -904,21 +1023,80 @@ subroutine shd_io__outputResult(&
             N = NBPTS
             ALLGRID = .false.
         end if
+
         write (2, '(A,A)') '!    X       Y       Z',&
-            & '      Extinct  Albedo  Asymmetry Temp'
+            &'      Extinct  Albedo  Asymmetry Temp'
+
+        ! data processing
+        !╭────────────────────────────────────────────────╮!
+        allocate(ASYM(N))
         do I = 1, N
             if (NUMPHASE .gt. 0) then
-                ASYM = LEGEN(1, 1, IPHASE(I))
+                ASYM(I) = LEGEN(1, 1, IPHASE(I))
             else
-                ASYM = LEGEN(1, 1, I)
-            end if
-            if ((GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.&
-                & GRIDPOS(2, I) .lt. YGRID(NY + 1)) .or. ALLGRID) then
-                write (2, '(3(1X,F7.3),1X,F10.6,1X,F8.6,1X,F8.5,1X,F7.2)')&
-                    & GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I),&
-                    & EXTINCT(I), ALBEDO(I), ASYM, TEMP(I)
+                ASYM(I) = LEGEN(1, 1, I)
             end if
         end do
+        !╰────────────────────────────────────────────────╯!
+
+        ! description for binary data
+        !╭────────────────────────────────────────────────╮!
+        write (2, '(A)') '! The following contains information for binary data intepretation:'
+        if (ALLGRID) then
+            write (2, '(A)') '! M2'
+            write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
+            ! added x, y, z (NVAR+3)
+            write (2, '(A, 2(I6,A))') '! ', N, ',', NVAR+3, ''
+        else
+            write (2, '(A)') '! M1'
+            write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
+            write (2, '(A, 5(I6,A))') '! ', NX1, ',', NY1, ',', NZ, ',', 1, ',', NVAR, ''
+        end if
+        !╰────────────────────────────────────────────────╯!
+
+        ! binary data
+        !╭────────────────────────────────────────────────╮!
+        if (ALLGRID) then
+            write(*, '(A)') 'Message [_outputResult]: <M2> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+        else
+            write(*, '(A)') 'Message [_outputResult]: <M1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+        end if
+
+        IDATA = 0
+        call shd_io__outputData(EXTINCT, 1, N, IDATA, OUTFILE_DATA)
+        IDATA = 0
+        call shd_io__outputData(ALBEDO, 1, N, IDATA, OUTFILE_DATA, 'ADD')
+        IDATA = 0
+        call shd_io__outputData(ASYM, 1, N, IDATA, OUTFILE_DATA, 'ADD')
+        IDATA = 0
+        call shd_io__outputData(TEMP, 1, N, IDATA, OUTFILE_DATA, 'ADD')
+
+        ! add grid positions (or binary data cannot be reconstructed)
+        if (ALLGRID) then
+            IDATA = 0
+            call shd_io__outputData(GRIDPOS(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
+        end if
+
+        deallocate(ASYM)
+        !╰────────────────────────────────────────────────╯!
+
+
+        ! original
+        !╭────────────────────────────────────────────────╮!
+        !do I = 1, N
+        !    if (NUMPHASE .gt. 0) then
+        !        ASYM = LEGEN(1, 1, IPHASE(I))
+        !    else
+        !        ASYM = LEGEN(1, 1, I)
+        !    end if
+        !    if ((GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.&
+        !        & GRIDPOS(2, I) .lt. YGRID(NY + 1)) .or. ALLGRID) then
+        !        write (2, '(3(1X,F7.3),1X,F10.6,1X,F8.6,1X,F8.5,1X,F7.2)')&
+        !            & GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I),&
+        !            & EXTINCT(I), ALBEDO(I), ASYM, TEMP(I)
+        !    end if
+        !end do
+        !╰────────────────────────────────────────────────╯!
 
     end if
 
