@@ -895,6 +895,8 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
     real A, TRANSMIN
     save OLDNPTS
 
+    real :: CPU_TIME_TEST, CPU_TIME_TEST0, CPU_TIME_TEST1
+
     ! Set the minimum transmission for the cell tracing (1 for singl
     TRANSMIN = 1.00
 
@@ -1030,29 +1032,37 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
 
             ! Do backward path integration from each grid point not done
             if (btest(IPFLAG, 1) .and. btest(IPFLAG, 0)) then
+
                 call BACK_INT_GRID1D(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,&
-                    & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-                    & GRIDPOS, SWEEPORD, MU(IMU), PHI(IMU, IPHI), TRANSMIN,&
-                    & EXTINCT, NSTOKES, WORK, IPHI, GRIDRAD)
+                    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+                    &GRIDPOS, SWEEPORD, MU(IMU), PHI(IMU, IPHI), TRANSMIN,&
+                    &EXTINCT, NSTOKES, WORK, IPHI, GRIDRAD)
+
             else if (btest(IPFLAG, 1) .and.&
-                & .not. (btest(BCFLAG, 2) .or. btest(BCFLAG, 3))) then
+                &.not. (btest(BCFLAG, 2) .or. btest(BCFLAG, 3))) then
+
                 call BACK_INT_GRID2D(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,&
-                    & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-                    & GRIDPOS, SWEEPORD, MU(IMU), PHI(IMU, IPHI), TRANSMIN,&
-                    & EXTINCT, NSTOKES, WORK, IPHI, GRIDRAD)
+                    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+                    &GRIDPOS, SWEEPORD, MU(IMU), PHI(IMU, IPHI), TRANSMIN,&
+                    &EXTINCT, NSTOKES, WORK, IPHI, GRIDRAD)
+
             else
                 if (NSTOKES .eq. 1) then
+
                     call BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,&
-                        & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-                        & GRIDPOS, XGRID, YGRID, ZGRID, SWEEPORD,&
-                        & MU(IMU), PHI(IMU, IPHI), TRANSMIN, BCFLAG, IPFLAG,&
-                        & EXTINCT, WORK, IPHI, GRIDRAD)
+                        &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+                        &GRIDPOS, XGRID, YGRID, ZGRID, SWEEPORD,&
+                        &MU(IMU), PHI(IMU, IPHI), TRANSMIN, BCFLAG, IPFLAG,&
+                        &EXTINCT, WORK, IPHI, GRIDRAD)
+
                 else
+
                     call BACK_INT_GRID3D(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,&
-                        & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-                        & GRIDPOS, XGRID, YGRID, ZGRID, SWEEPORD,&
-                        & MU(IMU), PHI(IMU, IPHI), TRANSMIN, BCFLAG, IPFLAG,&
-                        & EXTINCT, NSTOKES, WORK, IPHI, GRIDRAD)
+                        &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+                        &GRIDPOS, XGRID, YGRID, ZGRID, SWEEPORD,&
+                        &MU(IMU), PHI(IMU, IPHI), TRANSMIN, BCFLAG, IPFLAG,&
+                        &EXTINCT, NSTOKES, WORK, IPHI, GRIDRAD)
+
                 end if
             end if
 
@@ -2465,14 +2475,14 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
             ! For multiple processors get the subdomain boundary radiances
             !   for each Z slab
             if ((GRIDPOS(3, IPT) .lt. ZGRID(IZ) .and. BITZ .eq. 0) .or.&
-                & (GRIDPOS(3, IPT) .gt. ZGRID(IZ) .and. BITZ .eq. 1)) then
+                &(GRIDPOS(3, IPT) .gt. ZGRID(IZ) .and. BITZ .eq. 1)) then
                 IZ = IZ + 2*BITZ - 1
                 call CALC_BOUNDARY_RADIANCES(BCFLAG, IPFLAG, JOCT, IZ,&
-                    & NX, NY, NZ, XGRID, YGRID, ZGRID,&
-                    & NA, NPTS, NCELLS, GRIDPTR,&
-                    & NEIGHPTR, TREEPTR, CELLFLAGS, GRIDPOS,&
-                    & MU, PHI, EXTINCT, 1, SOURCE,&
-                    & KANG, GRIDRAD)
+                    &NX, NY, NZ, XGRID, YGRID, ZGRID,&
+                    &NA, NPTS, NCELLS, GRIDPTR,&
+                    &NEIGHPTR, TREEPTR, CELLFLAGS, GRIDPOS,&
+                    &MU, PHI, EXTINCT, 1, SOURCE,&
+                    &KANG, GRIDRAD)
             end if
         end if
 
@@ -2494,8 +2504,8 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
             ! Make sure current cell is valid
             if (ICELL .le. 0) then
                 write (6, *) 'Error [BACK_INT_GRID]: ICELL=0 ',&
-                    & MU, PHI, IPT, INEXTCELL, xe, ye, ze,&
-                    & gridpos(1, ipt), gridpos(2, ipt), gridpos(3, ipt)
+                    &MU, PHI, IPT, INEXTCELL, xe, ye, ze,&
+                    &gridpos(1, ipt), gridpos(2, ipt), gridpos(3, ipt)
                 stop
             end if
             IPINX = btest(int(CELLFLAGS(ICELL)), 0)
@@ -2520,7 +2530,7 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
             SO = min(SOX, SOY, SOZ)
             if (SO .lt. -EPS) then
                 write (6, *) 'Error [BACK_INT_GRID]: SO<0 ',&
-                    & MU, PHI, XE, YE, ZE, SOX, SOY, SOZ, SO, IPT, ICELL
+                    &MU, PHI, XE, YE, ZE, SOX, SOY, SOZ, SO, IPT, ICELL
                 stop
             end if
             ! Compute the coordinates of the cell exitting location
@@ -2543,7 +2553,7 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
             INEXTCELL = NEIGHPTR(IFACE, ICELL)
             if (INEXTCELL .lt. 0) then
                 call NEXT_CELL(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
-                    & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXTCELL)
+                    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXTCELL)
             end if
 
             ! Get the face grid pointers
@@ -2588,10 +2598,10 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
                 end if
             end if
             if (u .lt. -0.0001 .or. v .lt. -0.0001 .or.&
-                & u .gt. 1.0001 .or. v .gt. 1.0001) then
+                &u .gt. 1.0001 .or. v .gt. 1.0001) then
                 print *, 'BACK_INT_GRID3D: u,v<0 or u,v>1: ',&
-                    & mu, phi, xe, ye, ze, u, v, iface, jface, kface,&
-                    & gridpos(1, i1), gridpos(2, i1), gridpos(3, i1)
+                    &mu, phi, xe, ye, ze, u, v, iface, jface, kface,&
+                    &gridpos(1, i1), gridpos(2, i1), gridpos(3, i1)
             end if
 
             ! Get the location coordinate (does the boundary wrapping)
@@ -2611,12 +2621,12 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
             F3 = U*(1 - V)
             F4 = U*V
             EXT0 = F1*EXTINCT(I1) + F2*EXTINCT(I2)&
-                & + F3*EXTINCT(I3) + F4*EXTINCT(I4)
+                &+ F3*EXTINCT(I3) + F4*EXTINCT(I4)
             ! Correctly interpolate source using extinction*source
             SRCEXT0 = (F1*SOURCE(KANG, I1)*EXTINCT(I1)&
-                & + F2*SOURCE(KANG, I2)*EXTINCT(I2)&
-                & + F3*SOURCE(KANG, I3)*EXTINCT(I3)&
-                & + F4*SOURCE(KANG, I4)*EXTINCT(I4))
+                &+ F2*SOURCE(KANG, I2)*EXTINCT(I2)&
+                &+ F3*SOURCE(KANG, I3)*EXTINCT(I3)&
+                &+ F4*SOURCE(KANG, I4)*EXTINCT(I4))
             ! Compute the cell radiance: integration of the source funct
             EXT = 0.5*(EXT0 + EXT1)
             TAU = EXT*SO
@@ -2625,7 +2635,7 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
                 ABSCELL = 1.0 - TRANSCELL
             else
                 ABSCELL = TAU*(1.0 - 0.5*TAU*&
-                    & (1.0 - 0.33333333333*TAU*(1 - 0.25*TAU)))
+                    &(1.0 - 0.33333333333*TAU*(1 - 0.25*TAU)))
                 TRANSCELL = 1.0 - ABSCELL
             end if
             if (TAU .le. 2.0) then
@@ -2634,7 +2644,7 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
                 else
                     ! Linear extinction, linear source*extinction, to first
                     SRC = (0.5*(SRCEXT0 + SRCEXT1)&
-                        & + 0.08333333333*(EXT0*SRCEXT1 - EXT1*SRCEXT0)*SO)/EXT
+                        &+ 0.08333333333*(EXT0*SRCEXT1 - EXT1*SRCEXT0)*SO)/EXT
                 end if
             else
                 ! Combined first order expansion and constant extinction f
@@ -2648,8 +2658,8 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
                     if (EXT0 .gt. 0.0) SRCEXT0P = SRCEXT0*EXT0P/EXT0
                 end if
                 SRC = 1.0/(EXT0P + EXT1)*(SRCEXT0P + SRCEXT1&
-                    & + (EXT0P*SRCEXT1 - EXT1*SRCEXT0P)*2.0/(EXT0P + EXT1)&
-                    & *(1 - 2/TAU + 2*TRANSCELL/ABSCELL))
+                    &+ (EXT0P*SRCEXT1 - EXT1*SRCEXT0P)*2.0/(EXT0P + EXT1)&
+                    &*(1 - 2/TAU + 2*TRANSCELL/ABSCELL))
             end if
             SRC = max(SRC, 0.0d0)
 
@@ -2661,32 +2671,32 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
             TRANSMIT = TRANSMIT*TRANSCELL
             if (RAD < -1.0e-5) then
                 print '(A,3(1X,F6.4),8(1X,E12.5))',&
-                    & 'BACK_INT_GRID3D: RAD<0 ',&
-                    & xe, ye, ze, ext0, ext1, so, tau, transmit, src, abscell, rad
+                    &'BACK_INT_GRID3D: RAD<0 ',&
+                    &xe, ye, ze, ext0, ext1, so, tau, transmit, src, abscell, rad
                 call ABORT_SHDOM_MPI('The end')
             end if
             VALIDFACE = (GRIDRAD(I1) .ge. -0.1 .and. GRIDRAD(I2) .ge. -0.1&
-                & .and. GRIDRAD(I3) .ge. -0.1 .and. GRIDRAD(I4) .ge. -0.1)
+                &.and. GRIDRAD(I3) .ge. -0.1 .and. GRIDRAD(I4) .ge. -0.1)
             if (INEXTCELL .le. 0 .or.&
-                & (TRANSMIT .le. TRANSMIN .and. VALIDFACE)) then
+                &(TRANSMIT .le. TRANSMIN .and. VALIDFACE)) then
                 if (VALIDFACE) then
                     VALIDRAD = .true.
                     RAD0 = F1*GRIDRAD(I1) + F2*GRIDRAD(I2)&
-                        & + F3*GRIDRAD(I3) + F4*GRIDRAD(I4)
+                        &+ F3*GRIDRAD(I3) + F4*GRIDRAD(I4)
                     RAD = RAD + TRANSMIT*RAD0
                 else
                     print *, 'Error [BACK_INT_GRID3D]: INEXTCELL=0: ', xe, ye, ze, icell
                     print *, iz, joct, mu, phi
                     print '(i7,4(1x,f7.4))', i1, GRIDRAD(I1),&
-                        & gridpos(1, i1), gridpos(2, i1), gridpos(3, i1)
+                        &gridpos(1, i1), gridpos(2, i1), gridpos(3, i1)
                     print '(i7,4(1x,f7.4))', i2, GRIDRAD(I2),&
-                        & gridpos(1, i2), gridpos(2, i2), gridpos(3, i2)
+                        &gridpos(1, i2), gridpos(2, i2), gridpos(3, i2)
                     print '(i7,4(1x,f7.4))', i3, GRIDRAD(I3),&
-                        & gridpos(1, i3), gridpos(2, i3), gridpos(3, i3)
+                        &gridpos(1, i3), gridpos(2, i3), gridpos(3, i3)
                     print '(i7,4(1x,f7.4))', i4, GRIDRAD(I4),&
-                        & gridpos(1, i4), gridpos(2, i4), gridpos(3, i4)
+                        &gridpos(1, i4), gridpos(2, i4), gridpos(3, i4)
                     print '(i7,8x,3(1x,f7.4))', ipt,&
-                        & gridpos(1, ipt), gridpos(2, ipt), gridpos(3, ipt)
+                        &gridpos(1, ipt), gridpos(2, ipt), gridpos(3, ipt)
                     stop
                 end if
             else
