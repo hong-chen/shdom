@@ -70,6 +70,8 @@ subroutine shd_io__outputData(&
 
     else
 
+        close(88, iostat=istat)
+
         write(*, '(A)') 'Error [_outputData]: Failed to open file <'//trim(adjustl(OUTFILE_DATA))//'>.'
         stop
 
@@ -326,7 +328,6 @@ subroutine shd_io__outputResult(&
         write (2, '(A)') '! R'
         write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
         write (2, '(A, 5(I6,A))') '! ', NXOUT, ',', NYOUT, ',', 1, ',', NANGOUT, ',', NSTOKES, ''
-        close(2)
         !╰────────────────────────────────────────────────╯!
 
         ! binary data
@@ -377,7 +378,6 @@ subroutine shd_io__outputResult(&
             write (2, '(A)') '! F1'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
             write (2, '(A, 5(I6,A))') '! ', NX1, ',', NY1, ',', 1, ',', 1, ',', NVAR, ''
-            close(2)
             !╰────────────────────────────────────────────────╯!
 
             ! binary data
@@ -473,7 +473,6 @@ subroutine shd_io__outputResult(&
             write (2, '(A)') '! F2'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
             write (2, '(A, 5(I6,A))') '! ', NXOUT, ',', NYOUT, ',', 1, ',', 1, ',', NVAR, ''
-            close(2)
             !╰────────────────────────────────────────────────╯!
 
             ! binary data
@@ -569,7 +568,6 @@ subroutine shd_io__outputResult(&
             write (2, '(A)') '! F3'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
             write (2, '(A, 5(I6,A))') '! ', 1, ',', 1, ',', NZ, ',', 1, ',', NVAR, ''
-            close(2)
             !╰────────────────────────────────────────────────╯!
 
             ! binary data
@@ -657,7 +655,6 @@ subroutine shd_io__outputResult(&
                 write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
                 write (2, '(A, 5(I6,A))') '! ', NX1, ',', NY1, ',', NZ, ',', 1, ',', NVAR, ''
             end if
-            close(2)
             !╰────────────────────────────────────────────────╯!
 
             ! binary data
@@ -739,7 +736,6 @@ subroutine shd_io__outputResult(&
             write (2, '(A)') '! H1'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
             write (2, '(A, 5(I6,A))') '! ', 1, ',', 1, ',', NZ, ',', 1, ',', NVAR, ''
-            close(2)
             !╰────────────────────────────────────────────────╯!
 
             ! binary data
@@ -794,7 +790,6 @@ subroutine shd_io__outputResult(&
                 write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
                 write (2, '(A, 5(I6,A))') '! ', NX1, ',', NY1, ',', NZ, ',', 1, ',', NVAR, ''
             end if
-            close(2)
             !╰────────────────────────────────────────────────╯!
 
             ! binary data
