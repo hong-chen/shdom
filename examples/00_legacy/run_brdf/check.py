@@ -26,6 +26,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 import er3t
 
+_plot_ = False
 
 def figure_check(filename='brdf_L1f.out', plot=False):
 
@@ -116,6 +117,6 @@ if __name__ == '__main__':
 
     for filename in filenames:
         print(filename)
-        figure_check(filename=filename)
+        figure_check(filename=filename, plot=_plot_)
 
     pass
