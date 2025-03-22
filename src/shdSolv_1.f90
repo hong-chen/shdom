@@ -2413,6 +2413,8 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
     ! at the end of the ray path is interpolated from the known grid poi
     ! radiances on the face.  The resulting radiances are put in GRIDRAD
 
+    !use omp_lib
+
     integer NX, NY, NZ, NA, NPTS, NCELLS, KANG, BCFLAG, IPFLAG
     integer GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
     integer SWEEPORD(NPTS, *)
@@ -2488,7 +2490,21 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
     IZ = (NZ - 1)*(1 - BITZ) + 1
 
     ! Sweep through all the grid points
+!!$OMP PARALLEL PRIVATE(IORDER, IPCELL, ICORNER, IPT, &
+!!$OMP IZ, ICELL, RAD, TRANSMIT, EXT1, SRCEXT1, XE, YE, ZE, &
+!!$OMP VALIDRAD, INEXTCELL, IPINX, IPINY, IOPP, SOX, SOY, SOZ, SO, &
+!!$OMP IFACE, JFACE, KFACE, IC, I1, I2, I3, I4, U, V, &
+!!$OMP F1, F2, F3, F4, EXT0, SRCEXT0, EXT, TAU, TRANSCELL, ABSCELL, &
+!!$OMP SRC, EXT0P, SRCEXT0P, VALIDFACE, RAD0) &
+!!$OMP SHARED(JOCT, BCFLAG, GRIDPOS, ZGRID, BITZ, IPFLAG, NX, NY, NZ, &
+!!$OMP XGRID, YGRID, NA, NPTS, NCELLS, &
+!!$OMP GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, &
+!!$OMP MU, PHI, EXTINCT, SOURCE, KANG, GRIDRAD, &
+!!$OMP IOCT, CXINV, CYINV, CZINV, EPS, &
+!!$OMP BITX, BITY, GRIDFACE, TRANSMIN)
+!!$OMP DO
     do IORDER = 1, NPTS
+
         IPCELL = ishft(SWEEPORD(IORDER, JOCT), -3)
         ICORNER = ibits(SWEEPORD(IORDER, JOCT), 0, 3) + 1
         IPT = GRIDPTR(ICORNER, IPCELL)
@@ -2526,8 +2542,8 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
                 ! Make sure current cell is valid
                 if (ICELL .le. 0) then
                     write (6, *) 'Error [BACK_INT_GRID]: ICELL=0 ',&
-                        &MU, PHI, IPT, INEXTCELL, xe, ye, ze,&
-                        &gridpos(1, ipt), gridpos(2, ipt), gridpos(3, ipt)
+                        &MU, PHI, IPT, INEXTCELL, XE, YE, ZE,&
+                        &GRIDPOS(1, IPT), GRIDPOS(2, IPT), GRIDPOS(3, IPT)
                     stop
                 end if
                 IPINX = btest(int(CELLFLAGS(ICELL)), 0)
@@ -2588,11 +2604,13 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
                     KFACE = OPPFACE(IFACE)
                     IC = INEXTCELL
                 end if
+
                 I1 = GRIDPTR(GRIDFACE(1, KFACE), IC)
                 I2 = GRIDPTR(GRIDFACE(2, KFACE), IC)
                 I3 = GRIDPTR(GRIDFACE(3, KFACE), IC)
                 I4 = GRIDPTR(GRIDFACE(4, KFACE), IC)
                 ! Compute the face interpolation factors
+
                 if (JFACE .eq. 1) then
                     U = (ZE - GRIDPOS(3, I1))/(GRIDPOS(3, I3) - GRIDPOS(3, I1))
                     if (IPINY) then
@@ -2619,11 +2637,12 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
                         V = (XE - GRIDPOS(1, I1))/(GRIDPOS(1, I2) - GRIDPOS(1, I1))
                     end if
                 end if
-                if (u .lt. -0.0001 .or. v .lt. -0.0001 .or.&
-                    &u .gt. 1.0001 .or. v .gt. 1.0001) then
-                    print *, 'BACK_INT_GRID3D: u,v<0 or u,v>1: ',&
-                        &mu, phi, xe, ye, ze, u, v, iface, jface, kface,&
-                        &gridpos(1, i1), gridpos(2, i1), gridpos(3, i1)
+
+                if (U .lt. -0.0001 .or. V .lt. -0.0001 .or.&
+                    &U .gt. 1.0001 .or. V .gt. 1.0001) then
+                    print *, 'BACK_INT_GRID3D: U,V<0 or U,V>1: ',&
+                        &MU, PHI, XE, YE, ZE, U, V, IFACE, JFACE, KFACE,&
+                        &GRIDPOS(1, I1), GRIDPOS(2, I1), GRIDPOS(3, I1)
                 end if
 
                 ! Get the location coordinate (does the boundary wrapping)
@@ -2651,6 +2670,7 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
                     &+ F4*SOURCE(KANG, I4)*EXTINCT(I4))
                 ! Compute the cell radiance: integration of the source funct
                 EXT = 0.5*(EXT0 + EXT1)
+
                 TAU = EXT*SO
                 if (TAU .ge. 0.5) then
                     TRANSCELL = exp(-TAU)
@@ -2660,6 +2680,7 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
                         &(1.0 - 0.33333333333*TAU*(1 - 0.25*TAU)))
                     TRANSCELL = 1.0 - ABSCELL
                 end if
+
                 if (TAU .le. 2.0) then
                     if (EXT .eq. 0.0) then
                         SRC = 0.0
@@ -2689,12 +2710,13 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
                 ! If this is a boundary or the transmission is below the
                 ! cutoff and we have a valid radiance then set the flag
                 ! to stop the tracing and add in the interpolated face radia
+
                 RAD = RAD + TRANSMIT*SRC*ABSCELL
                 TRANSMIT = TRANSMIT*TRANSCELL
                 if (RAD < -1.0e-5) then
                     print '(A,3(1X,F6.4),8(1X,E12.5))',&
                         &'BACK_INT_GRID3D: RAD<0 ',&
-                        &xe, ye, ze, ext0, ext1, so, tau, transmit, src, abscell, rad
+                        &XE, YE, ZE, EXT0, EXT1, SO, TAU, TRANSMIT, SRC, ABSCELL, RAD
                     call ABORT_SHDOM_MPI('The end')
                 end if
                 VALIDFACE = (GRIDRAD(I1) .ge. -0.1 .and. GRIDRAD(I2) .ge. -0.1&
@@ -2733,6 +2755,8 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
         end if
 
     end do
+!!$OMP END DO
+!!$OMP END PARALLEL
 
     return
 end subroutine
