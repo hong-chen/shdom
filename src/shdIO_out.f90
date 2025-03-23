@@ -1147,6 +1147,13 @@ subroutine shd_io__outputResultMpi(&
     character*128 FORM
     character*64 GRIDNAME, SOURCENAME, UNITSNAME, OUTNAME, SFCNAME
 
+    character(256) :: OUTFILE_DATA
+    character(10)  :: DATA_POSTFIX
+    integer :: NVAR, NDATA, IDATA
+
+    DATA_POSTFIX = '.sHdOm-out'
+    OUTFILE_DATA = trim(adjustl(OUTFILE))//trim(adjustl(DATA_POSTFIX))
+
     GRIDNAME = 'EVEN (X,Y)  '
     if (GRIDTYPE .eq. 'P') then
         GRIDNAME = GRIDNAME(1:14)//'PROPERTY-FILE (Z) '
@@ -1302,22 +1309,49 @@ subroutine shd_io__outputResultMpi(&
                 & '!   X       Y        RADIANCE (STOKES I, Q, U, V)'
         end if
 
+        ! data processing
+        !╭────────────────────────────────────────────────╮!
         do K = 1, NANGOUT
             MUOUT = OUTPARMS(2*K + 5)
             PHID = OUTPARMS(2*K + 6)
             write (2, '(A,1X,F8.5,1X,F7.2,2X,A)')&
-                & '! ', MUOUT, PHID, '<- (mu,phi)'
-            Y0 = STARTY
-            do JY = 1, NYOUT
-                X0 = STARTX
-                do JX = 1, NXOUT
-                    IRAD = IRAD + 1
-                    write (2, FORM) X0, Y0, RADOUT(:, IRAD)
-                    X0 = X0 + OUTPARMS(2)
-                end do
-                Y0 = Y0 + OUTPARMS(3)
-            end do
+                &'! ', MUOUT, PHID, '<- (mu,phi)'
         end do
+        !╰────────────────────────────────────────────────╯!
+
+        ! description for binary data
+        !╭────────────────────────────────────────────────╮!
+        write (2, '(A)') '! The following contains information for binary data intepretation:'
+        write (2, '(A)') '! R'
+        write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
+        write (2, '(A, 5(I6,A))') '! ', NXOUT, ',', NYOUT, ',', 1, ',', NANGOUT, ',', NSTOKES, ''
+        !╰────────────────────────────────────────────────╯!
+
+        ! binary data
+        !╭────────────────────────────────────────────────╮!
+        write(*, '(A)') 'Message [_outputResultMpi]: <R> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+        call shd_io__outputData(RADOUT, NSTOKES, NANGOUT*NXOUT*NYOUT, IRAD, OUTFILE_DATA)
+        !╰────────────────────────────────────────────────╯!
+
+        ! original
+        !╭────────────────────────────────────────────────╮!
+        !do K = 1, NANGOUT
+        !    MUOUT = OUTPARMS(2*K + 5)
+        !    PHID = OUTPARMS(2*K + 6)
+        !    write (2, '(A,1X,F8.5,1X,F7.2,2X,A)')&
+        !        & '! ', MUOUT, PHID, '<- (mu,phi)'
+        !    Y0 = STARTY
+        !    do JY = 1, NYOUT
+        !        X0 = STARTX
+        !        do JX = 1, NXOUT
+        !            IRAD = IRAD + 1
+        !            write (2, FORM) X0, Y0, RADOUT(:, IRAD)
+        !            X0 = X0 + OUTPARMS(2)
+        !        end do
+        !        Y0 = Y0 + OUTPARMS(3)
+        !    end do
+        !end do
+        !╰────────────────────────────────────────────────╯!
 
     else if (OUTTYPE .eq. 'F') then
         ! Hemispheric flux output
