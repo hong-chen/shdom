@@ -2,8 +2,8 @@
 
 # pick one of the following two
 #╭────────────────────────────────────────────────╮#
-FC = gfortran
-#FC = mpif90
+#FC = gfortran
+FC = mpif90
 #╰────────────────────────────────────────────────╯#
 
 FORTRAN_VERSION = $(shell $(FC) -dumpversion)
@@ -11,7 +11,8 @@ VERSION_LIMIT = 10
 ifeq ($(shell test $(FORTRAN_VERSION) -lt $(VERSION_LIMIT); echo $$?), 0)
 	FFLAGS = -O3 -Wargument-mismatch
 else
-	FFLAGS = -O3 -fallow-argument-mismatch -fopenmp
+	FFLAGS = -O3 -fallow-argument-mismatch
+	#FFLAGS += -fopenmp
 endif
 
 CURRENT_DIR = $(shell pwd)
