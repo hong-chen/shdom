@@ -197,7 +197,7 @@ subroutine shdSolv__solveRte(&
     ! is designed to get to the final SPLITACC over a smaller range
     ! (ADAPTRANGE).  The currect splitting accuracy is computed from
     ! a geometric average of the solution criterion (AVGSOLCRIT).
-    ! The SPLIT_GRID routine is called and the splitting criterion r
+    ! The shdSolv__splitGrid routine is called and the splitting criterion r
     ! as long as SPLITTESTING is true.
     SPLITTESTING = .true.
     OUTOFMEM = .false.
@@ -237,7 +237,7 @@ subroutine shdSolv__solveRte(&
                 &SPLITACC*(AVGSOLCRIT/(3.0*ENDADAPTSOL))**BETA))
             if (SOLCRIT .le. ENDADAPTSOL) CURSPLITACC = SPLITACC
             if (SPLITTESTING) then
-                call SPLIT_GRID(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
+                call shdSolv__splitGrid(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
                     &DOSPLIT, OUTOFMEM, CURSPLITACC, SPLITCRIT,&
                     &NPTS, NCELLS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
                     &GRIDPOS, NX, XGRID, NY, YGRID,&
@@ -3401,7 +3401,7 @@ logical function SWEEP_NEXT_CELL(BCFLAG, NXC, NYC, NZ, IOCT,&
     return
 end function
 
-subroutine SPLIT_GRID(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
+subroutine shdSolv__splitGrid(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
     &DOSPLIT, OUTOFMEM, CURSPLITACC, SPLITCRIT,&
     &NPTS, NCELLS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &GRIDPOS, NX, XGRID, NY, YGRID,&
@@ -3544,7 +3544,7 @@ subroutine SPLIT_GRID(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
         if (OUTOFMEM0) then
             OUTOFMEM = .true.
             write (6, '(2A,I8,A,I8)')&
-                &'Message [SPLIT_GRID]: Further cell splitting requires larger array allocations: ',&
+                &'Message [_splitGrid]: Further cell splitting requires larger array allocations: ',&
                 &'Ncells = ', NCELLS, ', Npnts = ', NPTS
         end if
 
