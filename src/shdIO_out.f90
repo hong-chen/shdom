@@ -1126,7 +1126,7 @@ subroutine shd_io__radShiftCorr(&
     do ISET = 1, NSET
 
         MUOUT = MU_SET(ISET)
-        PHIOUT = PHI_SET(ISET)*acos(-1.0)/180.0
+        PHIOUT = PHI_SET(ISET)
 
         DS_VZA_RAD = acos(MUOUT)
         DS_XOFFSET = DS_Z*tan(DS_VZA_RAD)*cos(PHIOUT)
@@ -1154,25 +1154,6 @@ subroutine shd_io__radShiftCorr(&
     deallocate(DATA_COPY)
 
     return
-    ! original
-    !╭────────────────────────────────────────────────╮!
-    !do K = 1, NANGOUT
-    !    MUOUT = OUTPARMS(2*K + 5)
-    !    PHID = OUTPARMS(2*K + 6)
-    !    write (2, '(A,1X,F8.5,1X,F7.2,2X,A)')&
-    !        & '! ', MUOUT, PHID, '<- (mu,phi)'
-    !    Y0 = STARTY
-    !    do JY = 1, NYOUT
-    !        X0 = STARTX
-    !        do JX = 1, NXOUT
-    !            IRAD = IRAD + 1
-    !            write (2, FORM) X0, Y0, RADOUT(:, IRAD)
-    !            X0 = X0 + OUTPARMS(2)
-    !        end do
-    !        Y0 = Y0 + OUTPARMS(3)
-    !    end do
-    !end do
-    !╰────────────────────────────────────────────────╯!
 
 end subroutine shd_io__radShiftCorr
 
@@ -1393,11 +1374,13 @@ subroutine shd_io__outputResultMpi(&
             write (2, '(A,1X,F8.5,1X,F7.2,2X,A)')&
                 &'! ', MUOUT, PHID, '<- (mu,phi)'
             MU_SET(K) = MUOUT
-            PHI_SET(K) = PHID
+            PHI_SET(K) = PHID*acos(-1.0)/180.0
         end do
 
-        call shd_io__radShiftCorr(RADOUT(:, 1:NXOUT*NYOUT*NANGOUT), NSTOKES, NANGOUT, NXOUT, NYOUT,&
-            OUTPARMS(2), OUTPARMS(3), XDOMAIN, YDOMAIN, Z0-ZGRID(1), MU_SET, PHI_SET)
+        if (IPFLAG .eq. 0) then
+            call shd_io__radShiftCorr(RADOUT(:, 1:NXOUT*NYOUT*NANGOUT), NSTOKES, NANGOUT, NXOUT, NYOUT,&
+                OUTPARMS(2), OUTPARMS(3), XDOMAIN, YDOMAIN, Z0-ZGRID(1), MU_SET, PHI_SET)
+        end if
 
         deallocate(MU_SET, PHI_SET)
         !╰────────────────────────────────────────────────╯!
