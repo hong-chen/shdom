@@ -1104,17 +1104,89 @@ subroutine shd_io__outputResult(&
     return
 end subroutine shd_io__outputResult
 
+subroutine shd_io__radShiftCorr(&
+    &DATA, NVAR, NSET, NX, NY, DX, DY,&
+    &XDOMAIN, YDOMAIN,&
+    &DS_Z, MU_SET, PHI_SET)
+
+    integer, intent(in) :: NVAR, NSET, NX, NY
+    real, intent(inout) :: DATA(NVAR, *)
+    real, intent(in) :: DX, DY, XDOMAIN, YDOMAIN
+    real, intent(in) :: MU_SET(*), PHI_SET(*)
+
+    real(8) :: DS_Z
+    real :: DS_VZA_RAD, DS_XOFFSET, DS_YOFFSET, MUOUT, PHIOUT
+    integer :: XSHIFT, YSHIFT, ISET, IVAR
+    real, allocatable :: DATA_COPY(:, :, :, :)
+
+    allocate(DATA_COPY(NX, NY, NSET, NVAR))
+
+    DATA_COPY = reshape(DATA(:, 1:NX*NY*NSET), (/NX, NY, NSET, NVAR/))
+
+    do ISET = 1, NSET
+
+        MUOUT = MU_SET(ISET)
+        PHIOUT = PHI_SET(ISET)*acos(-1.0)/180.0
+
+        DS_VZA_RAD = acos(MUOUT)
+        DS_XOFFSET = DS_Z*tan(DS_VZA_RAD)*cos(PHIOUT)
+        DS_YOFFSET = DS_Z*tan(DS_VZA_RAD)*sin(PHIOUT)
+
+        XSHIFT = floor(DS_XOFFSET/DX)
+        YSHIFT = ceiling(DS_YOFFSET/DY)
+
+        if (XSHIFT .ne. 0) then
+            do IVAR = 1, NVAR
+                DATA_COPY(:, :, ISET, IVAR) = cshift(DATA_COPY(:, :, ISET, IVAR), SHIFT=XSHIFT, DIM=1)
+            end do
+        end if
+
+        if (YSHIFT .ne. 0) then
+            do IVAR = 1, NVAR
+                DATA_COPY(:, :, ISET, IVAR) = cshift(DATA_COPY(:, :, ISET, IVAR), SHIFT=YSHIFT, DIM=2)
+            end do
+        end if
+
+    end do
+
+    DATA(:, 1:NX*NY*NSET) = reshape(DATA_COPY, (/NVAR, NX*NY*NSET/))
+
+    deallocate(DATA_COPY)
+
+    return
+    ! original
+    !╭────────────────────────────────────────────────╮!
+    !do K = 1, NANGOUT
+    !    MUOUT = OUTPARMS(2*K + 5)
+    !    PHID = OUTPARMS(2*K + 6)
+    !    write (2, '(A,1X,F8.5,1X,F7.2,2X,A)')&
+    !        & '! ', MUOUT, PHID, '<- (mu,phi)'
+    !    Y0 = STARTY
+    !    do JY = 1, NYOUT
+    !        X0 = STARTX
+    !        do JX = 1, NXOUT
+    !            IRAD = IRAD + 1
+    !            write (2, FORM) X0, Y0, RADOUT(:, IRAD)
+    !            X0 = X0 + OUTPARMS(2)
+    !        end do
+    !        Y0 = Y0 + OUTPARMS(3)
+    !    end do
+    !end do
+    !╰────────────────────────────────────────────────╯!
+
+end subroutine shd_io__radShiftCorr
+
 subroutine shd_io__outputResultMpi(&
-    & NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
-    & NSH, ML, MM, NLM, NMU, NPHI, NANG, NG,&
-    & PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
-    & BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
-    & SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
-    & SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS,&
-    & SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
-    & XDOMAIN, YDOMAIN, XGRID, YGRID, ZGRID,&
-    & FLUXES, FLUXDIV, NSHOUT, SHTERMS, IRAD, RADOUT,&
-    & OUTTYPE, OUTPARMS, OUTFILE)
+    &NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+    &NSH, ML, MM, NLM, NMU, NPHI, NANG, NG,&
+    &PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
+    &BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
+    &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+    &SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS,&
+    &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
+    &XDOMAIN, YDOMAIN, XGRID, YGRID, ZGRID,&
+    &FLUXES, FLUXDIV, NSHOUT, SHTERMS, IRAD, RADOUT,&
+    &OUTTYPE, OUTPARMS, OUTFILE)
     ! Writes the desired type of output file from the output fields
     ! with a header giving the input parameters.
     ! There are four supported types (OUTTYPE) of output: 'R' - for radi
@@ -1147,6 +1219,7 @@ subroutine shd_io__outputResultMpi(&
     character*128 FORM
     character*64 GRIDNAME, SOURCENAME, UNITSNAME, OUTNAME, SFCNAME
 
+    real, allocatable :: MU_SET(:), PHI_SET(:)
     character(256) :: OUTFILE_DATA
     character(10)  :: DATA_POSTFIX
     integer :: NVAR, NDATA, IDATA
@@ -1306,17 +1379,27 @@ subroutine shd_io__outputResultMpi(&
         else
             FORM = '(2(1X,F7.3),1X,4(1X,E12.5))'
             write (2, '(A)')&
-                & '!   X       Y        RADIANCE (STOKES I, Q, U, V)'
+                & '!   X       Y      RADIANCE (STOKES I, Q, U, V)'
         end if
 
         ! data processing
         !╭────────────────────────────────────────────────╮!
+        allocate(MU_SET(NANGOUT))
+        allocate(PHI_SET(NANGOUT))
+
         do K = 1, NANGOUT
             MUOUT = OUTPARMS(2*K + 5)
             PHID = OUTPARMS(2*K + 6)
             write (2, '(A,1X,F8.5,1X,F7.2,2X,A)')&
                 &'! ', MUOUT, PHID, '<- (mu,phi)'
+            MU_SET(K) = MUOUT
+            PHI_SET(K) = PHID
         end do
+
+        call shd_io__radShiftCorr(RADOUT(:, 1:NXOUT*NYOUT*NANGOUT), NSTOKES, NANGOUT, NXOUT, NYOUT,&
+            OUTPARMS(2), OUTPARMS(3), XDOMAIN, YDOMAIN, Z0-ZGRID(1), MU_SET, PHI_SET)
+
+        deallocate(MU_SET, PHI_SET)
         !╰────────────────────────────────────────────────╯!
 
         ! description for binary data
