@@ -12,7 +12,8 @@ ifeq ($(shell test $(FORTRAN_VERSION) -lt $(VERSION_LIMIT); echo $$?), 0)
 	FFLAGS = -O3 -Wargument-mismatch
 else
 	FFLAGS = -O3 -fallow-argument-mismatch
-	#FFLAGS += -fopenmp
+	# openMPI
+	FFLAGS += -fopenmp
 endif
 
 CURRENT_DIR = $(shell pwd)
