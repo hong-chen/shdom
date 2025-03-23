@@ -536,7 +536,7 @@ program shdom_main
 
         ! Find the monochromatic SHDOM solution: adaptive grid output
         !   in SOURCE (SHPTR), RADIANCE (RSHPTR), FLUXES, DIRFLUX.
-        call SOLVE_RTE(NSTOKES, NX, NY, NZ, NX1, NY1, NANG,&
+        call shdSolv__solveRte(NSTOKES, NX, NY, NZ, NX1, NY1, NANG,&
             &ML, MM, NLM, NMU, NPHI, NLEG, NSTLEG, NUMPHASE,&
             &NPHI0, MU, PHI, WTDO,&
             &MAXIV, MAXIC, MAXIG, MAXIDO, INRADFLAG,&

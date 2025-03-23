@@ -1,4 +1,4 @@
-subroutine SOLVE_RTE(&
+subroutine shdSolv__solveRte(&
     &NSTOKES, NX, NY, NZ, NX1, NY1, NANG,&
     &ML, MM, NLM, NMU, NPHI, NLEG, NSTLEG, NUMPHASE,&
     &NPHI0, MU, PHI, WTDO,&
@@ -209,7 +209,7 @@ subroutine SOLVE_RTE(&
     AVGSOLCRIT = SOLCRIT
     SPLITCRIT = 0.0
 
-    write (6, '(A)') 'Message [SOLVE_RTE]:'
+    write (6, '(A)') 'Message [_solveRte]:'
     write (6, '(A)') '+ Iter  Log(Sol)  SplitCrit  Npoints  Nsh(avg)'
 
     ! Main solution loop
@@ -337,7 +337,7 @@ subroutine SOLVE_RTE(&
     !     &GRIDPOS, EXTINCT, SHPTR, SOURCE, NCELLS)
 
     return
-end subroutine
+end subroutine shdSolv__solveRte
 
 subroutine CALC_SOURCE_PNT(&
     &NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
