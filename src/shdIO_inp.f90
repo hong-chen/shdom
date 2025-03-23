@@ -606,7 +606,7 @@ subroutine shd_io__readPropSize(PROPFILE, NSTLEG, NLEG, NPX, NPY, NPZ,&
         MAXLEG = NLEG
         do while (.true.)
             read (1, *, end=190) IX, IY, IZ, TMP, EXT, ALB, NUML,&
-                & (CHI, L=1, NUML)
+                &(CHI, L=1, NUML)
             MAXLEG = max(NUML, MAXLEG)
         end do
 190     continue
@@ -617,10 +617,10 @@ subroutine shd_io__readPropSize(PROPFILE, NSTLEG, NLEG, NPX, NPY, NPZ,&
 end subroutine shd_io__readPropSize
 
 subroutine shd_io__readProp(&
-    & PROPFILE, NPX, NPY, NPZ,&
-    & NSTLEG, MAXLEG, NLEG, MAXNZ, MAXPG, MAXPGL, DELTAM,&
-    & PROPTYPE, DELX, DELY, ZLEVELS, MAXASYM,&
-    & TEMPP, EXTINCTP, ALBEDOP, LEGENP, NUMPHASE, IPHASEP)
+    &PROPFILE, NPX, NPY, NPZ,&
+    &NSTLEG, MAXLEG, NLEG, MAXNZ, MAXPG, MAXPGL, DELTAM,&
+    &PROPTYPE, DELX, DELY, ZLEVELS, MAXASYM,&
+    &TEMPP, EXTINCTP, ALBEDOP, LEGENP, NUMPHASE, IPHASEP)
     ! Reads the medium properties from the file into the property arra
     ! There are four formats: the standard format specifies the extincti
     ! scattering albedo, temperature, and Legendre phase function expans
@@ -655,10 +655,10 @@ subroutine shd_io__readProp(&
     open (UNIT=1, FILE=trim(adjustl(PROPFILE)), STATUS='OLD')
     read (1, '(A1)') PROPTYPE
     if (PROPTYPE .ne. 'E' .and. PROPTYPE .ne. 'T'&
-        & .and. PROPTYPE .ne. 'P') rewind (1)
+        &.and. PROPTYPE .ne. 'P') rewind (1)
     if (PROPTYPE .ne. 'P' .and. NSTLEG .gt. 1) then
         write (*, '(A,A)') 'Error [_readProp]: NSTOKES>1 requires ',&
-            & 'Polarized phase function property file.'
+            &'Polarized phase function property file.'
         stop
     end if
     read (1, *) NPX, NPY, NPZ
@@ -675,16 +675,16 @@ subroutine shd_io__readProp(&
             NLEG = min(NLEG, MAXLEG)
         end if
         if (NPX*NPY*NPZ .gt. MAXPG)&
-            & stop 'Error [_readProp]: MAXPG exceeded.'
+            &stop 'Error [_readProp]: MAXPG exceeded.'
         if (NLEG + 1 .gt. MAXPGL)&
-            & stop 'Error [_readProp]: MAXPGL exceeded.'
+            &stop 'Error [_readProp]: MAXPGL exceeded.'
         rewind (1)
         read (1, *)
         read (1, *) NPX, NPY, NPZ
         read (1, *) DELX, DELY, (ZLEVELS(K), K=1, NPZ)
         read (1, *) (TEMPP(IZ), IZ=1, NPZ)
         read (1, *) ALB, NUML, (LEGENP(L + 1), L=1, min(NUML, NLEG)),&
-            & (CHI, L=NLEG + 1, NUML)
+            &(CHI, L=NLEG + 1, NUML)
         LEGENP(1) = 1.0
         MAXASYM = LEGENP(1 + 1)/3.0
         do L = NUML + 1, NLEG
@@ -698,8 +698,8 @@ subroutine shd_io__readProp(&
                 read (1, *, end=290) IX, IY, IZ, EXT
             end if
             if (IX .ge. 1 .and. IX .le. NPX .and.&
-               & IY .ge. 1 .and. IY .le. NPY .and.&
-               & IZ .ge. 1 .and. IZ .le. NPZ) then
+               &IY .ge. 1 .and. IY .le. NPY .and.&
+               &IZ .ge. 1 .and. IZ .le. NPZ) then
                 K = IZ + NPZ*(IY - 1) + NPZ*NPY*(IX - 1)
                 TEMPP(K) = TEMPP(IZ)
                 EXTINCTP(K) = EXT
@@ -725,8 +725,8 @@ subroutine shd_io__readProp(&
             end do
             if (NLEG .gt. MAXLEG) then
                 write (*, '(A,I4,A,I4,A)')&
-                    & 'Warning [_readProp]: Truncating phase function from ',&
-                    & NLEG, ' to ', MAXLEG, ' Legendre terms.'
+                    &'Warning [_readProp]: Truncating phase function from ',&
+                    &NLEG, ' to ', MAXLEG, ' Legendre terms.'
             end if
             NLEG = min(NLEG, MAXLEG)
         end if
@@ -745,7 +745,7 @@ subroutine shd_io__readProp(&
             if (PROPTYPE .eq. 'T') then
                 LEGENP(IL + 1) = 1.0
                 read (1, *) NUML, (LEGENP(IL + L + 1), L=1, min(NUML, NLEG)),&
-                    & (CHI, L=NLEG + 1, NUML)
+                    &(CHI, L=NLEG + 1, NUML)
                 do L = NUML + 1, NLEG
                     LEGENP(L + IL + 1) = 0.0
                 end do
@@ -753,8 +753,8 @@ subroutine shd_io__readProp(&
                 do J = 1, 6
                     if (J .le. NSTLEG) then
                         read (1, *) JS, NUML,&
-                            & (LEGENP((IL + L)*NSTLEG + J), L=0, min(NUML, NLEG)),&
-                            & (CHI, L=NLEG + 1, NUML)
+                            &(LEGENP((IL + L)*NSTLEG + J), L=0, min(NUML, NLEG)),&
+                            &(CHI, L=NLEG + 1, NUML)
                         do L = NUML + 1, NLEG
                             LEGENP((IL + L)*NSTLEG + J) = 0.0
                         end do
@@ -769,8 +769,8 @@ subroutine shd_io__readProp(&
         do while (.true.)
             read (1, *, end=290) IX, IY, IZ, TMP, EXT, ALB, IPH
             if (IX .ge. 1 .and. IX .le. NPX .and.&
-               & IY .ge. 1 .and. IY .le. NPY .and.&
-               & IZ .ge. 1 .and. IZ .le. NPZ) then
+               &IY .ge. 1 .and. IY .le. NPY .and.&
+               &IZ .ge. 1 .and. IZ .le. NPZ) then
                 K = IZ + NPZ*(IY - 1) + NPZ*NPY*(IX - 1)
                 TEMPP(K) = TMP
                 EXTINCTP(K) = EXT
@@ -787,7 +787,7 @@ subroutine shd_io__readProp(&
         if (DELTAM) then
             do while (.true.)
                 read (1, *, end=190) IX, IY, IZ, TMP, EXT, ALB, NUML,&
-                    & (CHI, L=1, NUML)
+                    &(CHI, L=1, NUML)
                 NLEG = max(NUML, NLEG)
             end do
 190         continue
@@ -799,19 +799,19 @@ subroutine shd_io__readProp(&
         N = NPX*NPY*NPZ
         if (N .gt. MAXPG) stop 'Error [_readProp]: MAXPG exceeded.'
         if (N*(NLEG + 1) .gt. MAXPGL)&
-            & stop 'Error [_readProp]: MAXPGL exceeded.'
+            &stop 'Error [_readProp]: MAXPGL exceeded.'
         MAXASYM = -1.0
         do while (.true.)
             read (1, *, end=290) IX, IY, IZ, TMP, EXT, ALB, NUML
             if (IX .ge. 1 .and. IX .le. NPX .and.&
-                & IY .ge. 1 .and. IY .le. NPY .and.&
-                & IZ .ge. 1 .and. IZ .le. NPZ) then
+                &IY .ge. 1 .and. IY .le. NPY .and.&
+                &IZ .ge. 1 .and. IZ .le. NPZ) then
                 K = IZ + NPZ*(IY - 1) + NPZ*NPY*(IX - 1)
                 KL = (NLEG + 1)*(K - 1)
                 backspace (1)
                 read (1, *, end=290) IX, IY, IZ, TEMPP(K), EXTINCTP(K),&
-                    & ALBEDOP(K), NUML, (LEGENP(L + KL), L=1, min(NUML, NLEG)),&
-                    & (CHI, L=NLEG + 1, NUML)
+                    &ALBEDOP(K), NUML, (LEGENP(L + KL), L=1, min(NUML, NLEG)),&
+                    &(CHI, L=NLEG + 1, NUML)
                 MAXASYM = max(MAXASYM, LEGENP(KL + 1 + 1)/3.0)
                 LEGENP(1 + KL) = 1.0
                 do L = NUML + 1, NLEG
@@ -829,9 +829,9 @@ end subroutine shd_io__readProp
 
 
 subroutine shd_io__checkPropInput(&
-    & NPX, NPY, NPZ, NSTLEG, NLEG,&
-    & DELX, DELY, ZLEVELS,&
-    & TEMPP, EXTINCTP, ALBEDOP, LEGENP, NUMPHASE, IPHASEP)
+    &NPX, NPY, NPZ, NSTLEG, NLEG,&
+    &DELX, DELY, ZLEVELS,&
+    &TEMPP, EXTINCTP, ALBEDOP, LEGENP, NUMPHASE, IPHASEP)
     ! Checks the input medium property values for correctness.
     ! Warning if temperature below 150 K or above 350 K.
     ! Stop if negative extinction, single scattering albedo below 0 or
@@ -852,19 +852,19 @@ subroutine shd_io__checkPropInput(&
     ! NPX and NPY must be 1 or greater, NPZ must be 2 or greater
     if (NPX .lt. 1 .or. NPY .lt. 1 .or. NPZ .lt. 2) then
         write (*, *) 'Error [_checkPropInput]: Bad grid size - ',&
-            & NPX, NPY, NPZ
+            &NPX, NPY, NPZ
         stop
     end if
     if (DELX .le. 0.0 .or. DELY .le. 0.0) then
         write (*, *) 'Error [_checkPropInput]: Bad grid spacing - ',&
-            & 'DELX,DELY: ', DELX, DELY
+            &'DELX,DELY: ', DELX, DELY
         stop
     end if
     ! The vertical levels must be increasing
     do IZ = 1, NPZ - 1
         if (ZLEVELS(IZ + 1) .le. ZLEVELS(IZ)) then
             write (*, *) 'Error [_checkPropInput]: ZLEVELS must increase : ',&
-                & IZ, ZLEVELS(IZ), ZLEVELS(IZ + 1)
+                &IZ, ZLEVELS(IZ), ZLEVELS(IZ + 1)
             stop
         end if
     end do
@@ -879,18 +879,18 @@ subroutine shd_io__checkPropInput(&
     end do
     if (TMIN .lt. 150.0 .or. TMAX .gt. 350.0) then
         write (*, *) 'Warning [_checkPropInput]: ',&
-            & 'temperature min and max (Kelvin): ', TMIN, TMAX
+            &'temperature min and max (Kelvin): ', TMIN, TMAX
         write (*, *)
     end if
     do I = 1, N
         if (EXTINCTP(I) .lt. 0.0) then
             write (*, *) 'Error [_checkPropInput]: Negative extinction - ',&
-                & EXTINCTP(I), ' at grid point ', I
+                &EXTINCTP(I), ' at grid point ', I
             stop
         end if
         if (ALBEDOP(I) .lt. 0.0 .or. ALBEDOP(I) .gt. 1.0) then
             write (*, *) 'Error [_checkPropInput]: Single scattering ',&
-                & 'albedo out of range - ', ALBEDOP(I), ' at grid point ', I
+                &'albedo out of range - ', ALBEDOP(I), ' at grid point ', I
             stop
         end if
     end do
@@ -900,15 +900,15 @@ subroutine shd_io__checkPropInput(&
     do I = 1, N
         if (LEGENP(1, 1, I) .lt. -3.0 .or. LEGENP(1, 1, I) .gt. 3.0) then
             write (*, *) 'Error [_checkPropInput]: Asymmetry parameter ',&
-                & 'out of range - ', LEGENP(1, 1, I)/3.0, ' at grid point ', I
+                &'out of range - ', LEGENP(1, 1, I)/3.0, ' at grid point ', I
             stop
         end if
         if (LEGENP(1, 1, I) .eq. 1.0) LEGWARN = .true.
     end do
     if (LEGWARN) then
         write (*, *) 'Warning [_checkPropInput]: ',&
-            & 'an asymmetry parameter is 1/3 (Chi1=1); ',&
-            & '  Chi0 should not be specified for Chi1.'
+            &'an asymmetry parameter is 1/3 (Chi1=1); ',&
+            &'  Chi0 should not be specified for Chi1.'
         write (*, *)
     end if
 
@@ -917,7 +917,7 @@ subroutine shd_io__checkPropInput(&
         do I = 1, N
             if (IPHASEP(I) .lt. 1 .or. IPHASEP(I) .gt. NUMPHASE) then
                 write (*, *) 'Error [_checkPropInput]: Phase function pointer',&
-                    & ' out of range - ', IPHASEP(I), ' at grid point ', I
+                    &' out of range - ', IPHASEP(I), ' at grid point ', I
                 stop
             end if
         end do
@@ -991,9 +991,9 @@ subroutine shd_io__readSurfSize(SFCFILE, MAXSFCPTS, MAXSFCPARS)
 end subroutine shd_io__readSurfSize
 
 subroutine shd_io__readSurf(&
-    & SFCFILE, MAXSFCPTS, MAXSFCPARS,&
-    & SFCTYPE, NXSFC, NYSFC, DELXSFC, DELYSFC,&
-    & NSFCPAR, SFCPARMS, GNDTEMP, GNDALBEDO)
+    &SFCFILE, MAXSFCPTS, MAXSFCPARS,&
+    &SFCTYPE, NXSFC, NYSFC, DELXSFC, DELYSFC,&
+    &NSFCPAR, SFCPARMS, GNDTEMP, GNDALBEDO)
     ! Reads the surface properties from the file into the surface arra
     ! There are currently six surface types (Lambertian, Wave-Fresnel,
     ! Ocean, RPV, and Diner polarized RPV), though it is simple to add m
@@ -1050,15 +1050,15 @@ subroutine shd_io__readSurf(&
         do while (.true.)
             read (1, *, end=290) IX, IY, TEMP, ALB
             if (IX .ge. 1 .and. IX .le. NXSFC .and.&
-                & IY .ge. 1 .and. IY .le. NYSFC) then
+                &IY .ge. 1 .and. IY .le. NYSFC) then
                 I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
                 SFCPARMS(I + 1) = TEMP
                 SFCPARMS(I + 2) = ALB
                 if (ALB .lt. 0.0 .or. ALB .gt. 1.0)&
-                    & stop 'Error [_readSurf]: Illegal surface albedo.'
+                    &stop 'Error [_readSurf]: Illegal surface albedo.'
                 if (TEMP .lt. 150. .or. TEMP .gt. 350.)&
-                    & write (*, *) 'Warning [READ_SURFACE]: ',&
-                    & ' surface temperature: ', IX, IY, TEMP
+                    &write (*, *) 'Warning [READ_SURFACE]: ',&
+                    &' surface temperature: ', IX, IY, TEMP
                 GNDTEMP = GNDTEMP + TEMP
                 GNDALBEDO = GNDALBEDO + ALB
                 N = N + 1
@@ -1075,7 +1075,7 @@ subroutine shd_io__readSurf(&
         do while (.true.)
             read (1, *, end=290) IX, IY, TEMP, MRE, MIM, WSPD
             if (IX .ge. 1 .and. IX .le. NXSFC .and.&
-                & IY .ge. 1 .and. IY .le. NYSFC) then
+                &IY .ge. 1 .and. IY .le. NYSFC) then
                 I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
                 SFCPARMS(I + 1) = TEMP
                 SFCPARMS(I + 2) = MRE
@@ -1097,7 +1097,7 @@ subroutine shd_io__readSurf(&
         do while (.true.)
             read (1, *, end=290) IX, IY, TEMP, WSPD, PCL
             if (IX .ge. 1 .and. IX .le. NXSFC .and.&
-                & IY .ge. 1 .and. IY .le. NYSFC) then
+                &IY .ge. 1 .and. IY .le. NYSFC) then
                 I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
                 SFCPARMS(I + 1) = TEMP
                 SFCPARMS(I + 2) = WSPD
@@ -1121,7 +1121,7 @@ subroutine shd_io__readSurf(&
         do while (.true.)
             read (1, *, end=290) IX, IY, TEMP, RHO0, KR, THETA
             if (IX .ge. 1 .and. IX .le. NXSFC .and.&
-                & IY .ge. 1 .and. IY .le. NYSFC) then
+                &IY .ge. 1 .and. IY .le. NYSFC) then
                 I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
                 SFCPARMS(I + 1) = TEMP
                 SFCPARMS(I + 2) = RHO0
@@ -1143,7 +1143,7 @@ subroutine shd_io__readSurf(&
         do while (.true.)
             read (1, *, end=290) IX, IY, TEMP, F_ISO, F_VOL, F_GEO
             if (IX .ge. 1 .and. IX .le. NXSFC .and.&
-                & IY .ge. 1 .and. IY .le. NYSFC) then
+                &IY .ge. 1 .and. IY .le. NYSFC) then
                 I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
                 SFCPARMS(I + 1) = TEMP
                 SFCPARMS(I + 2) = F_ISO
@@ -1170,7 +1170,7 @@ subroutine shd_io__readSurf(&
         do while (.true.)
             read (1, *, end=290) IX, IY, TEMP, A, KR, B, ZETA, SIGMA
             if (IX .ge. 1 .and. IX .le. NXSFC .and.&
-                & IY .ge. 1 .and. IY .le. NYSFC) then
+                &IY .ge. 1 .and. IY .le. NYSFC) then
                 I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
                 SFCPARMS(I + 1) = TEMP
                 SFCPARMS(I + 2) = A
@@ -1229,7 +1229,7 @@ subroutine shd_io__readCkdSize(CKDFILE, WAVENO, NG, NZCKD)
     do IB = 1, NB
         read (1, *) KB, WAVENUM1, WAVENUM2, SF, N
         if (abs(WAVENUM1 - WAVENO(1)) .lt. 1.0 .and.&
-            & abs(WAVENUM2 - WAVENO(2)) .lt. 1.0) then
+            &abs(WAVENUM2 - WAVENO(2)) .lt. 1.0) then
             backspace (1)
             NG = N
             read (1, *) JB, WAVENUM1, WAVENUM2, SF, N
@@ -1237,7 +1237,7 @@ subroutine shd_io__readCkdSize(CKDFILE, WAVENO, NG, NZCKD)
     end do
     if (JB .eq. 0) then
         write (*, *) 'Error [_readCkdSize]: Wavenumber range not found in CKD file : ',&
-            & WAVENO(1), WAVENO(2), CKDFILE
+            &WAVENO(1), WAVENO(2), CKDFILE
         stop
     end if
     read (1, *) NZCKD
@@ -1246,8 +1246,8 @@ subroutine shd_io__readCkdSize(CKDFILE, WAVENO, NG, NZCKD)
 end subroutine shd_io__readCkdSize
 
 subroutine shd_io__readCkd(&
-    & MAXNG, MAXNZ, CKDFILE, WAVENO, SOLFLUX,&
-    & NG, DELG, NZCKD, ZCKD, KABS)
+    &MAXNG, MAXNZ, CKDFILE, WAVENO, SOLFLUX,&
+    &NG, DELG, NZCKD, ZCKD, KABS)
     ! Reads the information appropriate for one band from a
     ! correlated k-distribution file.   The wavenumber range (cm^-1)
     ! in the file must match the desired in WAVENO.  The solar flux
@@ -1272,17 +1272,17 @@ subroutine shd_io__readCkd(&
     do IB = 1, NB
         read (1, *) KB, WAVENUM1, WAVENUM2, SF, N
         if (abs(WAVENUM1 - WAVENO(1)) .lt. 1.0 .and.&
-            & abs(WAVENUM2 - WAVENO(2)) .lt. 1.0) then
+            &abs(WAVENUM2 - WAVENO(2)) .lt. 1.0) then
             backspace (1)
             NG = N
             if (NG .gt. MAXNG) stop 'Error [_readCkd]: MAXNG exceeded.'
             read (1, *) JB, WAVENO(1), WAVENO(2), SOLFLUX,&
-                & N, (DELG(IG), IG=1, NG)
+                &N, (DELG(IG), IG=1, NG)
         end if
     end do
     if (JB .eq. 0) then
         write (*, *) 'Error [_readCkd]: Wavenumber range not found in CKD file : ',&
-            & WAVENO(1), WAVENO(2), CKDFILE
+            &WAVENO(1), WAVENO(2), CKDFILE
         stop
     end if
     ! Read the Z level heights
@@ -1303,8 +1303,8 @@ subroutine shd_io__readCkd(&
         do IG = 1, NG
             if (KABS(I + (IG - 1)*NZCKD) .lt. 0.0) then
                 write (*, '(1X,A,A,I3,A,I3,A,I2)')&
-                    & 'Negative absorption in CKD file.  ',&
-                    & 'Band: ', IB, '   Level: ', I, '   k: ', IG
+                    &'Negative absorption in CKD file.  ',&
+                    &'Band: ', IB, '   Level: ', I, '   k: ', IG
             end if
         end do
     end do
