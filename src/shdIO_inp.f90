@@ -43,6 +43,7 @@ subroutine shd_io__userInput(&
     ! to and reading responses from the terminal.  Echos the inputs to
     ! make a useful log file when running non-interactively.  See the ov
     ! program documentation for the list of input parameters.
+
     integer NSTOKES, NX, NY, NZ, NMU, NPHI
     integer BCFLAG, IPFLAG
     integer MAXITER, MAXOUT, MAXPAR, NUMOUT
@@ -294,6 +295,7 @@ subroutine shd_io__nmlInput(&
     &dMAXOUT, dMAXPAR, dNUMOUT, dOUTTYPES, dOUTPARMS, dOUTFILES,&
     &dOutFileNC, dMAX_TOTAL_MB, dADAPT_GRID_FACTOR,&
     &dNUM_SH_TERM_FACTOR, dCELL_TO_POINT_RATIO)
+
     ! Obtains the input parameters for the program from a namelist
     ! read from stdin.  See the overall program documentation for the
     ! list of input parameters.  The subroutine dummy variables can't
@@ -467,6 +469,7 @@ subroutine shd_io__checkInputParams(&
     &GRIDTYPE, SRCTYPE, UNITS, SOLARFLUX, SOLARMU,&
     &WAVENO, WAVELEN, GNDTEMP, GNDALBEDO,&
     &SPLITACC, SHACC)
+
     ! Checks for validity of the input parameters. Gives warning for
     ! parameters that might not be correct.
     ! Check the letter flags.
@@ -476,6 +479,7 @@ subroutine shd_io__checkInputParams(&
     ! Check for reasonable range of GNDTEMP and valid range of GNDALBEDO
     ! Check for SOLARMU=0.
     ! Check for NPHI<NMU.
+
     integer NMU, NPHI
     logical DELTAM
     real MAXASYM, SOLARFLUX, SOLARMU, WAVENO(2), WAVELEN
@@ -546,10 +550,12 @@ end subroutine shd_io__checkInputParams
 
 subroutine shd_io__readPropSize(PROPFILE, NSTLEG, NLEG, NPX, NPY, NPZ,&
     &NUMPHASE, MAXLEG, MAXPGL, DELX, DELY)
+
     ! Reads parts of the property file to get the maximum array sizes
     ! needed for allocatable arrays.  For extinction only and tabulated
     ! phase function formats, only the header is read, while for the
     ! standard format, the whole file must be read to determine MAXLEG.
+
     integer NSTLEG, NPX, NPY, NPZ
     integer NUMPHASE, NLEG, MAXLEG, MAXPGL
     real DELX, DELY
@@ -621,6 +627,7 @@ subroutine shd_io__readProp(&
     &NSTLEG, MAXLEG, NLEG, MAXNZ, MAXPG, MAXPGL, DELTAM,&
     &PROPTYPE, DELX, DELY, ZLEVELS, MAXASYM,&
     &TEMPP, EXTINCTP, ALBEDOP, LEGENP, NUMPHASE, IPHASEP)
+
     ! Reads the medium properties from the file into the property arra
     ! There are four formats: the standard format specifies the extincti
     ! scattering albedo, temperature, and Legendre phase function expans
@@ -685,11 +692,13 @@ subroutine shd_io__readProp(&
         read (1, *) (TEMPP(IZ), IZ=1, NPZ)
         read (1, *) ALB, NUML, (LEGENP(L + 1), L=1, min(NUML, NLEG)),&
             &(CHI, L=NLEG + 1, NUML)
+
         LEGENP(1) = 1.0
         MAXASYM = LEGENP(1 + 1)/3.0
         do L = NUML + 1, NLEG
             LEGENP(L) = 0.0
         end do
+
         IY = 1
         do while (.true.)
             if (NPY .eq. 1) then
@@ -713,6 +722,7 @@ subroutine shd_io__readProp(&
         read (1, *) NUMPHASE
         ! If delta-M then find the largest number of Legendre terms
         if (DELTAM) then
+
             do I = 1, NUMPHASE
                 if (PROPTYPE .eq. 'T') then
                     read (1, *) NUML, (CHI, L=1, NUML)
@@ -723,13 +733,16 @@ subroutine shd_io__readProp(&
                 end if
                 NLEG = max(NUML, NLEG)
             end do
+
             if (NLEG .gt. MAXLEG) then
                 write (*, '(A,I4,A,I4,A)')&
                     &'Warning [_readProp]: Truncating phase function from ',&
                     &NLEG, ' to ', MAXLEG, ' Legendre terms.'
             end if
             NLEG = min(NLEG, MAXLEG)
+
         end if
+
         N = NPX*NPY*NPZ
         if (N .gt. MAXPG) stop 'Error [_readProp]: MAXPG exceeded.'
         if (NUMPHASE*(NLEG + 1)*NSTLEG .gt. MAXPGL)&
@@ -825,6 +838,7 @@ subroutine shd_io__readProp(&
 290 continue
     close (1)
     return
+
 end subroutine shd_io__readProp
 
 
@@ -832,6 +846,7 @@ subroutine shd_io__checkPropInput(&
     &NPX, NPY, NPZ, NSTLEG, NLEG,&
     &DELX, DELY, ZLEVELS,&
     &TEMPP, EXTINCTP, ALBEDOP, LEGENP, NUMPHASE, IPHASEP)
+
     ! Checks the input medium property values for correctness.
     ! Warning if temperature below 150 K or above 350 K.
     ! Stop if negative extinction, single scattering albedo below 0 or
@@ -855,11 +870,13 @@ subroutine shd_io__checkPropInput(&
             &NPX, NPY, NPZ
         stop
     end if
+
     if (DELX .le. 0.0 .or. DELY .le. 0.0) then
         write (*, *) 'Error [_checkPropInput]: Bad grid spacing - ',&
             &'DELX,DELY: ', DELX, DELY
         stop
     end if
+
     ! The vertical levels must be increasing
     do IZ = 1, NPZ - 1
         if (ZLEVELS(IZ + 1) .le. ZLEVELS(IZ)) then
@@ -868,6 +885,7 @@ subroutine shd_io__checkPropInput(&
             stop
         end if
     end do
+
     ! Loop over the property grid points, checking parameters
     !   Warn about temperatures outside of Earth atmosphere temperat
     N = NPX*NPY*NPZ
@@ -877,11 +895,13 @@ subroutine shd_io__checkPropInput(&
         TMIN = min(TMIN, TEMPP(I))
         TMAX = max(TMAX, TEMPP(I))
     end do
+
     if (TMIN .lt. 150.0 .or. TMAX .gt. 350.0) then
         write (*, *) 'Warning [_checkPropInput]: ',&
             &'temperature min and max (Kelvin): ', TMIN, TMAX
         write (*, *)
     end if
+
     do I = 1, N
         if (EXTINCTP(I) .lt. 0.0) then
             write (*, *) 'Error [_checkPropInput]: Negative extinction - ',&
@@ -905,6 +925,7 @@ subroutine shd_io__checkPropInput(&
         end if
         if (LEGENP(1, 1, I) .eq. 1.0) LEGWARN = .true.
     end do
+
     if (LEGWARN) then
         write (*, *) 'Warning [_checkPropInput]: ',&
             &'an asymmetry parameter is 1/3 (Chi1=1); ',&
@@ -936,6 +957,7 @@ subroutine shd_io__checkPropInput(&
             end if
         end do
     end do
+
     if (NTHICK .gt. 0) then
         write (*, '(A)') 'Message [_checkPropInput]: '
         write (*, '(A,I8)') '  Number of property grid cells with optical depth greater than 2: ', NTHICK
@@ -943,10 +965,12 @@ subroutine shd_io__checkPropInput(&
     end if
 
     return
+
 end subroutine shd_io__checkPropInput
 
 
 subroutine shd_io__readSurfSize(SFCFILE, MAXSFCPTS, MAXSFCPARS)
+
     ! Gets the size of the surface property inputs (temperature is
     ! always included).
 
@@ -988,6 +1012,7 @@ subroutine shd_io__readSurfSize(SFCFILE, MAXSFCPTS, MAXSFCPARS)
     end if
     close (1)
     return
+
 end subroutine shd_io__readSurfSize
 
 subroutine shd_io__readSurf(&
@@ -1185,7 +1210,7 @@ subroutine shd_io__readSurf(&
         end do
 
     else
-        stop 'Error [_readSurf]: Unknown BRDF type.'
+        stop 'Error [_readSurf]: Unknown BRDF type <'//trim(adjustl(SFCTYPE))//'>.'
     end if
 
 290 continue
@@ -1199,6 +1224,7 @@ subroutine shd_io__readSurf(&
             SFCPARMS(I + J) = SFCPARMS(I0 + J)
         end do
     end do
+
     do IY = 1, NYSFC + 1
         I0 = NSFCPAR*((NXSFC + 1)*(IY - 1))
         I = NSFCPAR*(NXSFC + (NXSFC + 1)*(IY - 1))
@@ -1206,12 +1232,15 @@ subroutine shd_io__readSurf(&
             SFCPARMS(I + J) = SFCPARMS(I0 + J)
         end do
     end do
+
     GNDALBEDO = GNDALBEDO/N
     GNDTEMP = GNDTEMP/N
     return
+
 end subroutine shd_io__readSurf
 
 subroutine shd_io__readCkdSize(CKDFILE, WAVENO, NG, NZCKD)
+
     ! Find the size of the k-distribution arrays for this wavenumber b
 
     integer NG, NZCKD
@@ -1224,6 +1253,7 @@ subroutine shd_io__readCkdSize(CKDFILE, WAVENO, NG, NZCKD)
     read (1, *)
     read (1, *) NB
     read (1, *)
+
     ! Read band information until the right one is found
     JB = 0
     do IB = 1, NB
@@ -1235,19 +1265,23 @@ subroutine shd_io__readCkdSize(CKDFILE, WAVENO, NG, NZCKD)
             read (1, *) JB, WAVENUM1, WAVENUM2, SF, N
         end if
     end do
+
     if (JB .eq. 0) then
         write (*, *) 'Error [_readCkdSize]: Wavenumber range not found in CKD file : ',&
             &WAVENO(1), WAVENO(2), CKDFILE
         stop
     end if
+
     read (1, *) NZCKD
     close (1)
     return
+
 end subroutine shd_io__readCkdSize
 
 subroutine shd_io__readCkd(&
     &MAXNG, MAXNZ, CKDFILE, WAVENO, SOLFLUX,&
     &NG, DELG, NZCKD, ZCKD, KABS)
+
     ! Reads the information appropriate for one band from a
     ! correlated k-distribution file.   The wavenumber range (cm^-1)
     ! in the file must match the desired in WAVENO.  The solar flux
@@ -1317,6 +1351,7 @@ subroutine shd_io__restoreState(&
     &ML, MM, NLM, INRADFLAG, NEWGRIDFLAG, XGRID, YGRID, ZGRID,&
     &NPTS, NCELLS, GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR,&
     &CELLFLAGS, FLUXES, SHPTR, SOURCE, RSHPTR, RADIANCE)
+
     ! Reads the binary save file containing a previous state of
     ! the SHDOM solution. This includes the cell tree structure,
     ! the spherical harmonic expansion of the source function,
@@ -1350,14 +1385,14 @@ subroutine shd_io__restoreState(&
     read (3) NSTI, NXI, NYI, NZI, MLI, MMI, NLMI, NPTS, NCELLS
 
     if (NXI .ne. NX .or. NYI .ne. NY .or. NZI .ne. NZ) then
-        write (6, '(A, 3I6)') 'Message [_restoreState]: wrong grid size:', NXI, NYI, NZI
+        write (6, '(A, 3I6)') 'Warning [_restoreState]: wrong grid size:', NXI, NYI, NZI
         close (3)
         return
     end if
 
     if (NSTI .ne. NSTOKES .or.&
         &MLI .gt. ML .or. MMI .gt. MM) then
-        write (6, '(A, 3I6)') 'Message [_restoreState]: incompatible SH:', NSTI, MLI, MMI
+        write (6, '(A, 3I6)') 'Warning [_restoreState]: incompatible SH:', NSTI, MLI, MMI
         close (3)
         return
     end if
@@ -1393,7 +1428,7 @@ subroutine shd_io__restoreState(&
     return
 
 900 continue
-    write (6, '(A)') 'Warning [_restoreState]: Input radiance vector file not found.'
+    write (6, '(A)') 'Warning [_restoreState]: Failed to restore state file from <'//trim(adjustl(INSAVEFILE))//'>.'
     INRADFLAG = .false.
     NEWGRIDFLAG = .true.
 
