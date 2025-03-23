@@ -1,7 +1,7 @@
 !   SHDOM: Spherical harmonic discrete ordinate radiative transfer method.
 !      See shdom.txt for documentation.
 
-module shd_common_arr
+module shd_arr
     integer, save :: NPX, NPY, NPZ, NUMPHASE
     real, save    :: DELX, DELY, XSTART, YSTART
     real, save, allocatable :: ZLEVELS(:)
@@ -10,10 +10,10 @@ module shd_common_arr
     integer*2, save, allocatable :: IPHASEP(:)
     integer, save :: NZCKD
     real, save, allocatable :: ZCKD(:), GASABS(:)
-end module shd_common_arr
+end module shd_arr
 
 program shdom_main
-    use shd_common_arr
+    use shd_arr
     use shd_io_inp
     use shd_io_out
     implicit none
@@ -825,7 +825,7 @@ subroutine TRILIN_INTERP_PROP(X, Y, Z, INIT, NSTLEG, NLEG,&
     ! is that of the maximum weighted scattering property grid point.
     ! If INIT=.TRUE. then transfers the tabulated phase functions.
 
-    use shd_common_arr
+    use shd_arr
     implicit none
     integer NSTLEG, NLEG
     integer*2 IPHASE
@@ -1035,7 +1035,7 @@ subroutine DIRECT_BEAM_PROP(INIT, XI, YI, ZI, BCFLAG, IPFLAG,&
     !   flag is false SIDE is returned with the boundary hit (1=-X, 2=+X,
     !   3=-Y, 4=+Y).  XE,YE,ZE returns the location of the exitting ray,
     !   and path is the optical path from XI,YI,ZI to the sun.
-    use shd_common_arr
+    use shd_arr
     implicit none
     integer INIT, BCFLAG, IPFLAG, ML, NSTLEG, NLEG, SIDE
     logical DELTAM, VALIDBEAM
