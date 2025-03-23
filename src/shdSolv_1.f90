@@ -866,6 +866,8 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
     ! downwelling radiances at all discrete ordinates for the bottom
     ! boundary points.
 
+    use omp_lib
+
     implicit none
     integer NX, NY, NZ, NSTOKES, NSTLEG, ML, MM, NLM
     integer NMU, NPHI0MAX, NPHI0(NMU), NANG
@@ -934,11 +936,14 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
         &UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
 
     ! Zero the flux arrays and set temporary radiance to -1 for not
+!$OMP DO PUBLIC(FLUXES, GRIDRAD)
     do I = 1, NPTS
         FLUXES(1, I) = 0.0
         FLUXES(2, I) = 0.0
         GRIDRAD(1, I) = -1.0
     end do
+!$OMP END DO PUBLIC(FLUXES, GRIDRAD)
+
     ! Zero the output spherical harmonic radiance
     NR = RSHPTR(NPTS + 1)
     do I = 1, NR
@@ -1057,6 +1062,7 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
                         &GRIDPOS, XGRID, YGRID, ZGRID, SWEEPORD,&
                         &MU(IMU), PHI(IMU, IPHI), TRANSMIN, BCFLAG, IPFLAG,&
                         &EXTINCT, WORK, IPHI, GRIDRAD)
+
 
                 else
 
@@ -2439,6 +2445,8 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
         &1, 2, 3, 4, 5, 6, 7, 8/, OPPFACE/2, 1, 4, 3, 6, 5/
     data JOCTORDER3/1, 3, 5, 7, 2, 4, 6, 8/, JOCTORDER2/1, 3, 1, 3, 2, 4, 2, 4/
 
+    integer :: i
+
     EPS = 1.0e-3*(GRIDPOS(3, GRIDPTR(8, 1)) - GRIDPOS(3, GRIDPTR(1, 1)))
 
     ! Make the ray direction (opposite to the discrete ordinate dire
@@ -2503,26 +2511,53 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
 !!$OMP IOCT, CXINV, CYINV, CZINV, EPS, &
 !!$OMP BITX, BITY, GRIDFACE, TRANSMIN)
 !!$OMP DO
+
+!!$OMP PARALLEL PRIVATE(IORDER, IPCELL, ICORNER, IPT, &
+!!$OMP IZ, ICELL, RAD, TRANSMIT, EXT1, SRCEXT1, XE, YE, ZE, &
+!!$OMP VALIDRAD, INEXTCELL, IPINX, IPINY, IOPP, SOX, SOY, SOZ, SO, &
+!!$OMP IFACE, JFACE, KFACE, IC, I1, I2, I3, I4, U, V, &
+!!$OMP F1, F2, F3, F4, EXT0, SRCEXT0, EXT, TAU, TRANSCELL, ABSCELL, &
+!!$OMP SRC, EXT0P, SRCEXT0P, VALIDFACE, RAD0) &
+!!$OMP SHARED(SWEEPORD, JOCT, BCFLAG, GRIDPOS, ZGRID, BITZ, IPFLAG, NX, NY, NZ, &
+!!$OMP XGRID, YGRID, NA, NPTS, NCELLS, &
+!!$OMP GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, &
+!!$OMP MU, PHI, EXTINCT, SOURCE, KANG, GRIDRAD, &
+!!$OMP IOCT, CXINV, CYINV, CZINV, EPS, &
+!!$OMP BITX, BITY, GRIDFACE, TRANSMIN)
+!!$OMP PARALLEL PRIVATE(IORDER, IPCELL, ICORNER, IPT, &
+!!$OMP ICELL, RAD, TRANSMIT, EXT1, SRCEXT1, XE, YE, ZE, &
+!!$OMP VALIDRAD, INEXTCELL, IPINX, IPINY, IOPP, SOX, SOY, SOZ, SO, &
+!!$OMP IFACE, JFACE, KFACE, IC, I1, I2, I3, I4, U, V, &
+!!$OMP F1, F2, F3, F4, EXT0, SRCEXT0, EXT, TAU, TRANSCELL, ABSCELL, &
+!!$OMP SRC, EXT0P, SRCEXT0P, VALIDFACE, RAD0) &
+!!$OMP SHARED(GRIDRAD, &
+!!$OMP SWEEPORD, JOCT, BCFLAG, GRIDPOS, ZGRID, BITZ, IPFLAG, NX, NY, NZ, &
+!!$OMP XGRID, YGRID, NA, NPTS, NCELLS, &
+!!$OMP GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, &
+!!$OMP MU, PHI, EXTINCT, SOURCE, KANG, &
+!!$OMP IOCT, CXINV, CYINV, CZINV, EPS, &
+!!$OMP BITX, BITY, GRIDFACE, TRANSMIN)
+!!$OMP DO
     do IORDER = 1, NPTS
 
         IPCELL = ishft(SWEEPORD(IORDER, JOCT), -3)
         ICORNER = ibits(SWEEPORD(IORDER, JOCT), 0, 3) + 1
         IPT = GRIDPTR(ICORNER, IPCELL)
 
-        if (btest(BCFLAG, 2) .or. btest(BCFLAG, 3)) then
-            ! For multiple processors get the subdomain boundary radiances
-            !   for each Z slab
-            if ((GRIDPOS(3, IPT) .lt. ZGRID(IZ) .and. BITZ .eq. 0) .or.&
-                &(GRIDPOS(3, IPT) .gt. ZGRID(IZ) .and. BITZ .eq. 1)) then
-                IZ = IZ + 2*BITZ - 1
-                call CALC_BOUNDARY_RADIANCES(BCFLAG, IPFLAG, JOCT, IZ,&
-                    &NX, NY, NZ, XGRID, YGRID, ZGRID,&
-                    &NA, NPTS, NCELLS, GRIDPTR,&
-                    &NEIGHPTR, TREEPTR, CELLFLAGS, GRIDPOS,&
-                    &MU, PHI, EXTINCT, 1, SOURCE,&
-                    &KANG, GRIDRAD)
-            end if
-        end if
+        !if (btest(BCFLAG, 2) .or. btest(BCFLAG, 3)) then
+        !    ! For multiple processors get the subdomain boundary radiances
+        !    !   for each Z slab
+        !    if ((GRIDPOS(3, IPT) .lt. ZGRID(IZ) .and. BITZ .eq. 0) .or.&
+        !        &(GRIDPOS(3, IPT) .gt. ZGRID(IZ) .and. BITZ .eq. 1)) then
+        !        IZ = IZ + 2*BITZ - 1
+        !        call CALC_BOUNDARY_RADIANCES(BCFLAG, IPFLAG, JOCT, IZ,&
+        !            &NX, NY, NZ, XGRID, YGRID, ZGRID,&
+        !            &NA, NPTS, NCELLS, GRIDPTR,&
+        !            &NEIGHPTR, TREEPTR, CELLFLAGS, GRIDPOS,&
+        !            &MU, PHI, EXTINCT, 1, SOURCE,&
+        !            &KANG, GRIDRAD)
+        !    end if
+        !end if
 
         if (GRIDRAD(IPT) .lt. 0.0) then
 
