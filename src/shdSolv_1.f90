@@ -936,13 +936,15 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
         &UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
 
     ! Zero the flux arrays and set temporary radiance to -1 for not
-!$OMP DO PUBLIC(FLUXES, GRIDRAD)
+!!$OMP PARALLEL
+!!$OMP DO PRIVATE(I) PUBLIC(FLUXES, GRIDRAD)
     do I = 1, NPTS
         FLUXES(1, I) = 0.0
         FLUXES(2, I) = 0.0
         GRIDRAD(1, I) = -1.0
     end do
-!$OMP END DO PUBLIC(FLUXES, GRIDRAD)
+!!$OMP END DO
+!!$OMP END PARALLEL
 
     ! Zero the output spherical harmonic radiance
     NR = RSHPTR(NPTS + 1)
@@ -985,11 +987,15 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
         end if
 
         ! Enforce the discrete ordinate I source function to be non-ne
+!!$OMP PARALLEL PRIVATE(I, IPHI) PUBLIC(NPTS, NPHI0, WORK)
+!!$OMP DO PRIVATE(I, IPHI) PUBLIC(NPTS, NPHI0, WORK)
         do I = 1, NPTS
             do IPHI = 1, NPHI0(IMU)
                 WORK(1, IPHI, I) = max(0.0, WORK(1, IPHI, I))
             end do
         end do
+!!$OMP END DO
+!!$OMP END PARALLEL
 
 ! -- loop phi
         ! Loop over the azimuthal angles
@@ -1077,6 +1083,8 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
 
             ! Transfer the radiance for the (IMU,IPHI) discrete ordinate
             !   GRIDRAD to the work array.
+!!$OMP PARALLEL PRIVATE(I) PUBLIC(GRIDRAD, WORK, IPHI)
+!!$OMP DO PRIVATE(I) PUBLIC(GRIDRAD, WORK, IPHI)
             do I = 1, NPTS
                 if (GRIDRAD(1, I) .lt. -0.0001) then
                     write (6, *) 'Warning [PATH_INTEGRATION]: Grid point has no value',&
@@ -1089,12 +1097,18 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
                     GRIDRAD(1, I) = -1.0
                 end if
             end do
+!!$OMP END DO
+!!$OMP END PARALLEL
 
             ! Do the sum for the hemispheric fluxes for this angle
             A = abs(MU(IMU))*WTDO(IMU, IPHI)
+!!$OMP PARALLEL PRIVATE(I) PUBLIC(FLUXES, IUPDOWN, A, IPHI, WORK)
+!!$OMP DO PRIVATE(I) PUBLIC(FLUXES, IUPDOWN, A, IPHI, WORK)
             do I = 1, NPTS
                 FLUXES(IUPDOWN, I) = FLUXES(IUPDOWN, I) + A*WORK(1, IPHI, I)
             end do
+!!$OMP END DO
+!!$OMP END PARALLEL
 
             ! For a general BRDF surface save the downwelling radiance
             !   at the bottom boundary points.
