@@ -2706,12 +2706,12 @@ subroutine SOLAR_SINGSCAT_VECT(NLEG, SINGLEGEN, COSSCAT,&
 end subroutine
 
 subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
-    & NX, NY, NZ, NPTS, NCELLS,&
-    & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-    & XGRID, YGRID, ZGRID, GRIDPOS,&
-    & MU, PHI, GRIDRAD, EXTINCT, SOURCE,&
-    & X0, Y0, Z0, XE, YE, ZE, SIDE,&
-    & TRANSMIT, RADIANCE, VALIDRAD)
+    &NX, NY, NZ, NPTS, NCELLS,&
+    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+    &XGRID, YGRID, ZGRID, GRIDPOS,&
+    &MU, PHI, GRIDRAD, EXTINCT, SOURCE,&
+    &X0, Y0, Z0, XE, YE, ZE, SIDE,&
+    &TRANSMIT, RADIANCE, VALIDRAD)
     ! Integrates the source function (SOURCE) through the extinction
     ! field (EXTINCT) backward in the direction opposite to (MU,PHI)
     ! to find the outgoing radiance (RADIANCE) at the point X0,Y0,Z0.
@@ -2996,12 +2996,14 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
 end subroutine
 
 subroutine INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,&
-    & X, Y, Z, ND, FIELD, ID1, NV, VALUES)
+    &X, Y, Z, ND, FIELD, ID1, NV, VALUES)
+
     !   Trilinearly interpolates the field (FIELD) given a grid cell
     ! pointer (ICELL), to compute the field values (VALUES) at the desir
     ! point (X,Y,Z). ND is the leading index of the FIELD (1 for a
     ! scalar field), ID1 is the first element of the vector to interpola
     ! and NV elements are output.
+
     implicit none
     integer ICELL, GRIDPTR(8, *), ND, ID1, NV
     double precision X, Y, Z
@@ -3025,13 +3027,13 @@ subroutine INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,&
 
     do ID = ID1, ID1 + NV - 1
         VALUES(ID - ID1 + 1) = WM*(VM*(UM*FIELD(ID, GRIDPTR(1, ICELL))&
-            & + U*FIELD(ID, GRIDPTR(2, ICELL)))&
-            & + V*(UM*FIELD(ID, GRIDPTR(3, ICELL))&
-            & + U*FIELD(ID, GRIDPTR(4, ICELL))))&
-            & + W*(VM*(UM*FIELD(ID, GRIDPTR(5, ICELL))&
-            & + U*FIELD(ID, GRIDPTR(6, ICELL)))&
-            & + V*(UM*FIELD(ID, GRIDPTR(7, ICELL))&
-            & + U*FIELD(ID, GRIDPTR(8, ICELL))))
+            &+ U*FIELD(ID, GRIDPTR(2, ICELL)))&
+            &+ V*(UM*FIELD(ID, GRIDPTR(3, ICELL))&
+            &+ U*FIELD(ID, GRIDPTR(4, ICELL))))&
+            &+ W*(VM*(UM*FIELD(ID, GRIDPTR(5, ICELL))&
+            &+ U*FIELD(ID, GRIDPTR(6, ICELL)))&
+            &+ V*(UM*FIELD(ID, GRIDPTR(7, ICELL))&
+            &+ U*FIELD(ID, GRIDPTR(8, ICELL))))
     end do
     return
 end subroutine
