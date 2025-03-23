@@ -7,7 +7,7 @@
  OUTSAVEFILE ='NONE'
  NSTOKES = 1
  NX = 240
- NY = 180
+ NY = 160
  NZ = 10
  NMU = 8
  NPHI = 16

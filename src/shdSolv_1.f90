@@ -339,7 +339,7 @@ subroutine shdSolv__solveRte(&
     return
 end subroutine shdSolv__solveRte
 
-subroutine CALC_SOURCE_PNT(&
+subroutine shdSolv__calSrcPnt(&
     &NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
     &SRCTYPE, FLUX0, YLMSUN, PLANCK,&
     &ALBEDO, IPH, LEGEN, NR, RADIANCE,&
@@ -408,7 +408,7 @@ subroutine CALC_SOURCE_PNT(&
     return
 end subroutine
 
-subroutine CALC_SOURCE_PNT_UNPOL(&
+subroutine shdSolv__calSrcPntUnp(&
     &NLM, NLEG, LOFJ,&
     &SRCTYPE, FLUX0, YLMSUN, PLANCK,&
     &ALBEDO, IPH, LEGEN, NR, RADIANCE,&
@@ -535,12 +535,12 @@ subroutine COMPUTE_SOURCE(&
                 stop
             end if
             if (NSTOKES .eq. 1) then
-                call CALC_SOURCE_PNT_UNPOL(NLM, NLEG, LOFJ,&
+                call shdSolv__calSrcPntUnp(NLM, NLEG, LOFJ,&
                     &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
                     &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
                     &NR, RADIANCE(1, IR + 1), SOURCET)
             else
-                call CALC_SOURCE_PNT(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
+                call shdSolv__calSrcPnt(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
                     &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
                     &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
                     &NR, RADIANCE(1, IR + 1), SOURCET)
@@ -586,12 +586,12 @@ subroutine COMPUTE_SOURCE(&
             IR = RSHPTR(I)
             NR = RSHPTR(I + 1) - IR
             if (NSTOKES .eq. 1) then
-                call CALC_SOURCE_PNT_UNPOL(NLM, NLEG, LOFJ,&
+                call shdSolv__calSrcPntUnp(NLM, NLEG, LOFJ,&
                     &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
                     &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
                     &NR, RADIANCE(1, IR + 1), SOURCET)
             else
-                call CALC_SOURCE_PNT(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
+                call shdSolv__calSrcPnt(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
                     &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
                     &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
                     &NR, RADIANCE(1, IR + 1), SOURCET)
@@ -623,12 +623,12 @@ subroutine COMPUTE_SOURCE(&
             stop
         end if
         if (NSTOKES .eq. 1) then
-            call CALC_SOURCE_PNT_UNPOL(NLM, NLEG, LOFJ,&
+            call shdSolv__calSrcPntUnp(NLM, NLEG, LOFJ,&
                 &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
                 &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
                 &NR, RADIANCE(1, IR + 1), SOURCET)
         else
-            call CALC_SOURCE_PNT(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
+            call shdSolv__calSrcPnt(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
                 &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
                 &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
                 &NR, RADIANCE(1, IR + 1), SOURCET)
@@ -3716,12 +3716,12 @@ subroutine INTERPOLATE_POINT(NEWPOINTS, NPTS,&
                 IPH = IP
             end if
             if (NSTOKES .eq. 1) then
-                call CALC_SOURCE_PNT_UNPOL(NLM, NLEG, LOFJ,&
+                call shdSolv__calSrcPntUnp(NLM, NLEG, LOFJ,&
                     &SRCTYPE, DIRFLUX(IP)*SECMU0, YLMSUN,&
                     &PLANCK(IP), ALBEDO(IP), IPH, LEGEN,&
                     &NR, RADIANCE(1, IR + 1), SOURCET)
             else
-                call CALC_SOURCE_PNT(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
+                call shdSolv__calSrcPnt(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
                     &SRCTYPE, DIRFLUX(IP)*SECMU0, YLMSUN,&
                     &PLANCK(IP), ALBEDO(IP), IPH, LEGEN,&
                     &NR, RADIANCE(1, IR + 1), SOURCET)

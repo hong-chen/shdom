@@ -65,9 +65,9 @@ def figure_les(fname):
 
             if data_shd.ndim > 2:
                 for iset_ in range(data_shd.shape[-1]):
-                    plot(data_shd[..., iset_], iset_, ivar)
+                    plot(data_shd[..., iset_], iset_, ivar, vmin=0.0, vmax=1.0)
             else:
-                plot(data_shd, iset, ivar)
+                plot(data_shd, iset, ivar, vmin=0.0, vmax=0.3)
 
 
 
