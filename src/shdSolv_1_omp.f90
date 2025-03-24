@@ -222,7 +222,7 @@ subroutine shdSolv__solveRte(&
         &.or. (SPLITCRIT .gt. SPLITACC .and.&
         &CURSPLITACC .gt. SPLITACC .and. .not. OUTOFMEM)))
 
-        call SYSTEM_CLOCK(count_start, count_rate, count_max)
+        call system_clock(count_start, count_rate, count_max)
 
         ITER = ITER + 1
 
@@ -309,7 +309,7 @@ subroutine shdSolv__solveRte(&
         ! If it is a not scattering medium then do only one iteration
         if (ALBMAX .lt. SOLACC) SOLCRIT = SOLACC
 
-        call SYSTEM_CLOCK(count_end, count_rate, count_max)
+        call system_clock(count_end, count_rate, count_max)
         elapsed_time = (real(count_end) - real(count_start)) / real(count_rate)
 
         ! Print out the log solution criterion, number of points,
@@ -835,8 +835,8 @@ subroutine ACCELERATE_SOLUTION(&
     integer I, J, IS, ISD, K, NS, NSD, NSC
 
     if (ACCELPAR .gt. 0.0) then
-!!$OMP PARALLEL PRIVATE(I, IS, NS, ISD, NSD, NSC, J) SHARED(SHPTR, OSHPTR, ACCELPAR, SOURCE, DELSOURCE)
-!$OMP DO PRIVATE(I, IS, NS, ISD, NSD, NSC, J)
+!$OMP PARALLEL DEFAULT(SHARED) PRIVATE(I, J, IS, NS, ISD, NSD, NSC)
+!$OMP DO
         do I = 1, NPTS
             IS = SHPTR(I)
             NS = SHPTR(I + 1) - IS
@@ -849,7 +849,7 @@ subroutine ACCELERATE_SOLUTION(&
             end do
         end do
 !$OMP END DO
-!!$OMP END PARALLEL
+!$OMP END PARALLEL
     end if
 
     return
@@ -890,13 +890,15 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
     ! ordinate, while for the Lambertian surface the boundary radiances
     ! can be computed just once, since they are isotropic.  For Lambertian
     ! cases the BCRAD array holds only the isotropic radiance for the
-    ! boundaries at the top (downwelling) and bottom (upwelling) boundary
+    ! boundaries at the top (downwelling) and bottom (upwelling) boundaries.
     ! For the general BRDF, the BCRAD array in addition holds the
     ! downwelling radiances at all discrete ordinates for the bottom
     ! boundary points.
 
     use omp_lib
-!!$OMP PARALLEL PRIVATE(I) SHARED(FLUXES, GRIDRAD)
+
+!! OMP sample code
+!!$OMP PARALLEL DEFAULT(SHARED) PRIVATE(I)
 !!$OMP DO
 !!$OMP END DO
 !!$OMP END PARALLEL
