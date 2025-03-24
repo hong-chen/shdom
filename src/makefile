@@ -1,5 +1,6 @@
 # Makefile for SHDOM and related programs in distribution
 
+useOMP = yes
 # pick one of the following two
 #╭────────────────────────────────────────────────╮#
 FC = gfortran
@@ -12,16 +13,19 @@ ifeq ($(shell test $(FORTRAN_VERSION) -lt $(VERSION_LIMIT); echo $$?), 0)
 	FFLAGS = -O3 -Wargument-mismatch
 else
 	FFLAGS = -O3 -fallow-argument-mismatch
-	# openMPI
-	FFLAGS += -fopenmp
 endif
 
 CURRENT_DIR = $(shell pwd)
 BIN_DIR     = $(abspath $(CURRENT_DIR)/../bin)
-
 TARGETS = bin shdom shdom_ propgen make_mie_table make_tmatrix_table plotscattab put
 
-SHDOMOBJS = shdSolv_1.o shdSolv_2.o shdIO_inp.o shdIO_out.o shdSurf_brdf.o fftpack.o globals.o
+ifeq ($(useOMP), yes)
+	# openMPI
+	FFLAGS += -fopenmp
+	SHDOMOBJS = shdSolv_omp.o shdSolv_2.o shdIO_inp.o shdIO_out.o shdSurf_brdf.o fftpack.o globals.o
+else
+	SHDOMOBJS = shdSolv_1.o shdSolv_2.o shdIO_inp.o shdIO_out.o shdSurf_brdf.o fftpack.o globals.o
+endif
 
 ifeq ($(FC), mpif90)
 	UseMPI = yes
@@ -60,6 +64,9 @@ shdom_.o: shdom_.f90 $(SHDOMOBJS)
 
 shdSolv_1.o: shdSolv_1.f90
 	$(F90) -c $(F90FLAGS) shdSolv_1.f90
+
+shdSolv_omp.o: shdSolv_omp.f90
+	$(F90) -c $(F90FLAGS) shdSolv_omp.f90
 
 shdSolv_2.o: shdSolv_2.f90
 	$(F90) -c $(F90FLAGS) shdSolv_2.f90

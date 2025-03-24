@@ -417,9 +417,11 @@ subroutine shdSolv__calSrcPntUnp(&
     &SRCTYPE, FLUX0, YLMSUN, PLANCK,&
     &ALBEDO, IPH, LEGEN, NR, RADIANCE,&
     &SOURCET)
+
     ! Calculates the scalar source function in spherical harmonics at
     ! one grid point from the radiance in spherical harmonics and
     ! thermal and/or solar source information.
+
     implicit none
     integer NLEG, NLM, LOFJ(NLM), IPH, NR
     character SRCTYPE*1
@@ -461,12 +463,12 @@ subroutine COMPUTE_SOURCE(&
     &RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR, DELSOURCE,&
     &FIRST, ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM)
 
-    ! Computes the source function (SOURCE) in spherical harmonic spac
+    ! Computes the source function (SOURCE) in spherical harmonic space
     !   for all the grid points.  The thermal source and/or solar
-    !   pseudo-source (in PLANCK or DIRFLUX) is added to the scattering so
-    !   (computed from LEGEN and the spherical harmonic expansion in RADIA
+    !   pseudo-source (in PLANCK or DIRFLUX) is added to the scattering source
+    !   (computed from LEGEN and the spherical harmonic expansion in RADIAIANCE).
     !   Also computes the adaptive spherical harmonic truncation for
-    !   the source function, unless FIXSH is true.  The SH truncation is s
+    !   the source function, unless FIXSH is true.  The SH truncation is set
     !   so that the higher terms of the source function are smaller in
     !   absolute value than SHACC. The truncation is to the nearest l,
     !   so that a triangular (for M=L) truncation is preserved.  If there
@@ -476,12 +478,12 @@ subroutine COMPUTE_SOURCE(&
     !   and OSHPTR to the DELSOURCE array).
     ! To save memory this routine also computes some things for the
     !   series acceleration: the dot products of the difference in source
-    !   function between successive iterations and the new difference sour
+    !   function between successive iterations and the new difference source
     !   function vector (DELSOURCE).  To avoid using another array and
     !   because of the adaptive truncation pointer stuff, this requires
     !   two extra calculations of the source function.
-    ! Computes the sum of squares of the new source function for calcu
-    !   of the solution criterion (SOLCRIT, the RMS difference in succesiv
+    ! Computes the sum of squares of the new source function for calculation
+    !   of the solution criterion (SOLCRIT, the RMS difference in succesive
     !   source function fields normalized by the RMS of the field).
 
     implicit none
@@ -815,8 +817,6 @@ subroutine ACCELERATE_SOLUTION(&
     !   Accelerates the successive order of scattering series using the
     ! input acceleration parameter (ACCELPAR).
 
-    use omp_lib
-
     implicit none
     integer, intent(in) :: NPTS, SHPTR(*), OSHPTR(*), NSTOKES
     real, intent(in) :: ACCELPAR, DELSOURCE(NSTOKES, *)
@@ -824,8 +824,6 @@ subroutine ACCELERATE_SOLUTION(&
     integer I, J, IS, ISD, K, NS, NSD, NSC
 
     if (ACCELPAR .gt. 0.0) then
-!$OMP PARALLEL PRIVATE(I, IS, NS, ISD, NSD, NSC, J) SHARED(SHPTR, OSHPTR, ACCELPAR, SOURCE, DELSOURCE)
-!$OMP DO
         do I = 1, NPTS
             IS = SHPTR(I)
             NS = SHPTR(I + 1) - IS
@@ -837,8 +835,6 @@ subroutine ACCELERATE_SOLUTION(&
                     &+ ACCELPAR*DELSOURCE(:, ISD + J)
             end do
         end do
-!$OMP END DO
-!$OMP END PARALLEL
     end if
 
     return
@@ -883,12 +879,6 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
     ! For the general BRDF, the BCRAD array in addition holds the
     ! downwelling radiances at all discrete ordinates for the bottom
     ! boundary points.
-
-    use omp_lib
-!!$OMP PARALLEL PRIVATE(I) SHARED(FLUXES, GRIDRAD)
-!!$OMP DO
-!!$OMP END DO
-!!$OMP END PARALLEL
 
     implicit none
     integer NX, NY, NZ, NSTOKES, NSTLEG, ML, MM, NLM
@@ -961,15 +951,11 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
         &UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
 
     ! Zero the flux arrays and set temporary radiance to -1 for not
-!$OMP PARALLEL PRIVATE(I) SHARED(FLUXES, GRIDRAD)
-!$OMP DO
     do I = 1, NPTS
         FLUXES(1, I) = 0.0
         FLUXES(2, I) = 0.0
         GRIDRAD(1, I) = -1.0
     end do
-!$OMP END DO
-!$OMP END PARALLEL
 
     ! Zero the output spherical harmonic radiance
     NR = RSHPTR(NPTS + 1)
@@ -1012,15 +998,11 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
         end if
 
         ! Enforce the discrete ordinate I source function to be non-ne
-!$OMP PARALLEL PRIVATE(I, IPHI) SHARED(NPTS, NPHI0, WORK)
-!$OMP DO
         do I = 1, NPTS
             do IPHI = 1, NPHI0(IMU)
                 WORK(1, IPHI, I) = max(0.0, WORK(1, IPHI, I))
             end do
         end do
-!$OMP END DO
-!$OMP END PARALLEL
 
 ! -- loop phi
         ! Loop over the azimuthal angles
@@ -1108,8 +1090,6 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
 
             ! Transfer the radiance for the (IMU,IPHI) discrete ordinate
             !   GRIDRAD to the work array.
-!$OMP PARALLEL PRIVATE(I) SHARED(GRIDRAD, WORK, IPHI)
-!$OMP DO
             do I = 1, NPTS
                 if (GRIDRAD(1, I) .lt. -0.0001) then
                     write (6, *) 'Warning [PATH_INTEGRATION]: Grid point has no value',&
@@ -1122,18 +1102,12 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
                     GRIDRAD(1, I) = -1.0
                 end if
             end do
-!$OMP END DO
-!$OMP END PARALLEL
 
             ! Do the sum for the hemispheric fluxes for this angle
             A = abs(MU(IMU))*WTDO(IMU, IPHI)
-!$OMP PARALLEL PRIVATE(I) SHARED(FLUXES, IUPDOWN, A, IPHI, WORK)
-!$OMP DO
             do I = 1, NPTS
                 FLUXES(IUPDOWN, I) = FLUXES(IUPDOWN, I) + A*WORK(1, IPHI, I)
             end do
-!$OMP END DO
-!$OMP END PARALLEL
 
             ! For a general BRDF surface save the downwelling radiance
             !   at the bottom boundary points.
@@ -1177,8 +1151,6 @@ subroutine BOUNDARY_PNTS(&
     ! points (BCPTR(*,1)) and the NBOTPTS bottom boundary points (BCPTR(
     ! All the grid points are looked at to find the boundary ones.
 
-    use omp_lib
-
     implicit none
     integer, intent(in) :: NPTS, NANG, MAXNBC, MAXBCRAD
     integer, intent(inout) :: NTOPPTS, NBOTPTS
@@ -1186,7 +1158,6 @@ subroutine BOUNDARY_PNTS(&
     logical LAMBERTIAN
     real, intent(in) :: ZBOT, ZTOP, GRIDPOS(3, NPTS)
     integer :: I, IT, IB, NA
-    !integer :: IT0, IB0
 
     ! Loop over all points finding the top and bottom ones
     if (LAMBERTIAN) then
@@ -1197,13 +1168,8 @@ subroutine BOUNDARY_PNTS(&
 
     IT = 0
     IB = 0
-!    IT0 = 0
-!    IB0 = 0
-!!$OMP PARALLEL PRIVATE(I, IT, IB) SHARED(GRIDPOS, ZTOP, ZBOT, MAXNBC, MAXBCRAD, NA, IT0, IB0)
-!!$OMP DO
     do I = 1, NPTS
         if (GRIDPOS(3, I) .ge. ZTOP) then
-            !IT0 = IT0 + 1
             IT = IT + 1
             if (IT .gt. MAXNBC .or. IT .gt. MAXBCRAD) then
                 write (6, *) 'Error [BOUNDARY_PNTS]: MAXNBC exceeded - top.'
@@ -1212,7 +1178,6 @@ subroutine BOUNDARY_PNTS(&
             BCPTR(IT, 1) = I
         end if
         if (GRIDPOS(3, I) .le. ZBOT) then
-            !IB0 = IB0 + 1
             IB = IB + 1
             if (IB .gt. MAXNBC .or. IT + IB*NA .gt. MAXBCRAD) then
                 write (6, *) 'Error [BOUNDARY_PNTS]: MAXNBC exceeded - bottom.'
@@ -1221,8 +1186,6 @@ subroutine BOUNDARY_PNTS(&
             BCPTR(IB, 2) = I
         end if
     end do
-!!$OMP END DO
-!!$OMP END PARALLEL
     NTOPPTS = IT
     NBOTPTS = IB
     return
@@ -2474,8 +2437,6 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
     ! at the end of the ray path is interpolated from the known grid poi
     ! radiances on the face.  The resulting radiances are put in GRIDRAD
 
-    !use omp_lib
-
     integer NX, NY, NZ, NA, NPTS, NCELLS, KANG, BCFLAG, IPFLAG
     integer GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
     integer SWEEPORD(NPTS, *)
@@ -2553,46 +2514,6 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
     IZ = (NZ - 1)*(1 - BITZ) + 1
 
     ! Sweep through all the grid points
-!!$OMP PARALLEL PRIVATE(IORDER, IPCELL, ICORNER, IPT, &
-!!$OMP IZ, ICELL, RAD, TRANSMIT, EXT1, SRCEXT1, XE, YE, ZE, &
-!!$OMP VALIDRAD, INEXTCELL, IPINX, IPINY, IOPP, SOX, SOY, SOZ, SO, &
-!!$OMP IFACE, JFACE, KFACE, IC, I1, I2, I3, I4, U, V, &
-!!$OMP F1, F2, F3, F4, EXT0, SRCEXT0, EXT, TAU, TRANSCELL, ABSCELL, &
-!!$OMP SRC, EXT0P, SRCEXT0P, VALIDFACE, RAD0) &
-!!$OMP SHARED(SWEEPORD, JOCT, BCFLAG, GRIDPOS, ZGRID, BITZ, IPFLAG, NX, NY, NZ, &
-!!$OMP XGRID, YGRID, NA, NPTS, NCELLS, &
-!!$OMP GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, &
-!!$OMP MU, PHI, EXTINCT, SOURCE, KANG, GRIDRAD, &
-!!$OMP IOCT, CXINV, CYINV, CZINV, EPS, &
-!!$OMP BITX, BITY, GRIDFACE, TRANSMIN)
-!!$OMP DO
-
-!!$OMP PARALLEL PRIVATE(IORDER, IPCELL, ICORNER, IPT, &
-!!$OMP IZ, ICELL, RAD, TRANSMIT, EXT1, SRCEXT1, XE, YE, ZE, &
-!!$OMP VALIDRAD, INEXTCELL, IPINX, IPINY, IOPP, SOX, SOY, SOZ, SO, &
-!!$OMP IFACE, JFACE, KFACE, IC, I1, I2, I3, I4, U, V, &
-!!$OMP F1, F2, F3, F4, EXT0, SRCEXT0, EXT, TAU, TRANSCELL, ABSCELL, &
-!!$OMP SRC, EXT0P, SRCEXT0P, VALIDFACE, RAD0) &
-!!$OMP SHARED(SWEEPORD, JOCT, BCFLAG, GRIDPOS, ZGRID, BITZ, IPFLAG, NX, NY, NZ, &
-!!$OMP XGRID, YGRID, NA, NPTS, NCELLS, &
-!!$OMP GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, &
-!!$OMP MU, PHI, EXTINCT, SOURCE, KANG, GRIDRAD, &
-!!$OMP IOCT, CXINV, CYINV, CZINV, EPS, &
-!!$OMP BITX, BITY, GRIDFACE, TRANSMIN)
-!!$OMP PARALLEL PRIVATE(IORDER, IPCELL, ICORNER, IPT, &
-!!$OMP ICELL, RAD, TRANSMIT, EXT1, SRCEXT1, XE, YE, ZE, &
-!!$OMP VALIDRAD, INEXTCELL, IPINX, IPINY, IOPP, SOX, SOY, SOZ, SO, &
-!!$OMP IFACE, JFACE, KFACE, IC, I1, I2, I3, I4, U, V, &
-!!$OMP F1, F2, F3, F4, EXT0, SRCEXT0, EXT, TAU, TRANSCELL, ABSCELL, &
-!!$OMP SRC, EXT0P, SRCEXT0P, VALIDFACE, RAD0) &
-!!$OMP SHARED(GRIDRAD, &
-!!$OMP SWEEPORD, JOCT, BCFLAG, GRIDPOS, ZGRID, BITZ, IPFLAG, NX, NY, NZ, &
-!!$OMP XGRID, YGRID, NA, NPTS, NCELLS, &
-!!$OMP GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, &
-!!$OMP MU, PHI, EXTINCT, SOURCE, KANG, &
-!!$OMP IOCT, CXINV, CYINV, CZINV, EPS, &
-!!$OMP BITX, BITY, GRIDFACE, TRANSMIN)
-!!$OMP DO
     do IORDER = 1, NPTS
 
         IPCELL = ishft(SWEEPORD(IORDER, JOCT), -3)
@@ -2845,8 +2766,6 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
         end if
 
     end do
-!!$OMP END DO
-!!$OMP END PARALLEL
 
     return
 end subroutine
