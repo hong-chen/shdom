@@ -23,6 +23,7 @@ subroutine shdSolv__solveRte(&
     ! The adaptive grid stucture (NCELLS,GRIDPTR,NEIGHPTR,TREEPTR,
     ! CELLFLAGS,NPTS,GRIDPOS) is input and modified for new grid
     ! cells and points on output.
+
     implicit none
     integer NSTOKES, NX, NY, NZ, NX1, NY1, NXSFC, NYSFC, NSFCPAR
     integer ML, MM, NLM, NMU, NPHI, NANG, NLEG, NSTLEG, NUMPHASE
@@ -862,9 +863,9 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
     ! reflection distribution functions (BRDF).  For the general BRDF,
     ! the bottom boundary radiance must be computed for each upwelling
     ! ordinate, while for the Lambertian surface the boundary radiances
-    ! can be computed just once, since they are isotropic.  For Lamberti
+    ! can be computed just once, since they are isotropic.  For Lambertian
     ! cases the BCRAD array holds only the isotropic radiance for the
-    ! boundaries at the top (downwelling) and bottom (upwelling) boundar
+    ! boundaries at the top (downwelling) and bottom (upwelling) boundary
     ! For the general BRDF, the BCRAD array in addition holds the
     ! downwelling radiances at all discrete ordinates for the bottom
     ! boundary points.
@@ -903,7 +904,10 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
     real A, TRANSMIN
     save OLDNPTS
 
-    real :: CPU_TIME_TEST, CPU_TIME_TEST0, CPU_TIME_TEST1
+    integer :: count_start, count_rate, count_max
+    integer :: count_end
+    real :: elapsed_time
+
 
     ! Set the minimum transmission for the cell tracing (1 for singl
     TRANSMIN = 1.00
@@ -939,15 +943,15 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
         &UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
 
     ! Zero the flux arrays and set temporary radiance to -1 for not
-!!$OMP PARALLEL
-!!$OMP DO PRIVATE(I) PUBLIC(FLUXES, GRIDRAD)
+!$OMP PARALLEL PRIVATE(I) SHARED(FLUXES, GRIDRAD)
+!$OMP DO
     do I = 1, NPTS
         FLUXES(1, I) = 0.0
         FLUXES(2, I) = 0.0
         GRIDRAD(1, I) = -1.0
     end do
-!!$OMP END DO
-!!$OMP END PARALLEL
+!$OMP END DO
+!$OMP END PARALLEL
 
     ! Zero the output spherical harmonic radiance
     NR = RSHPTR(NPTS + 1)
@@ -990,15 +994,15 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
         end if
 
         ! Enforce the discrete ordinate I source function to be non-ne
-!!$OMP PARALLEL PRIVATE(I, IPHI) PUBLIC(NPTS, NPHI0, WORK)
-!!$OMP DO PRIVATE(I, IPHI) PUBLIC(NPTS, NPHI0, WORK)
+!$OMP PARALLEL PRIVATE(I, IPHI) SHARED(NPTS, NPHI0, WORK)
+!$OMP DO
         do I = 1, NPTS
             do IPHI = 1, NPHI0(IMU)
                 WORK(1, IPHI, I) = max(0.0, WORK(1, IPHI, I))
             end do
         end do
-!!$OMP END DO
-!!$OMP END PARALLEL
+!$OMP END DO
+!$OMP END PARALLEL
 
 ! -- loop phi
         ! Loop over the azimuthal angles
@@ -1086,8 +1090,8 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
 
             ! Transfer the radiance for the (IMU,IPHI) discrete ordinate
             !   GRIDRAD to the work array.
-!!$OMP PARALLEL PRIVATE(I) PUBLIC(GRIDRAD, WORK, IPHI)
-!!$OMP DO PRIVATE(I) PUBLIC(GRIDRAD, WORK, IPHI)
+!$OMP PARALLEL PRIVATE(I) SHARED(GRIDRAD, WORK, IPHI)
+!$OMP DO
             do I = 1, NPTS
                 if (GRIDRAD(1, I) .lt. -0.0001) then
                     write (6, *) 'Warning [PATH_INTEGRATION]: Grid point has no value',&
@@ -1100,18 +1104,18 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
                     GRIDRAD(1, I) = -1.0
                 end if
             end do
-!!$OMP END DO
-!!$OMP END PARALLEL
+!$OMP END DO
+!$OMP END PARALLEL
 
             ! Do the sum for the hemispheric fluxes for this angle
             A = abs(MU(IMU))*WTDO(IMU, IPHI)
-!!$OMP PARALLEL PRIVATE(I) PUBLIC(FLUXES, IUPDOWN, A, IPHI, WORK)
-!!$OMP DO PRIVATE(I) PUBLIC(FLUXES, IUPDOWN, A, IPHI, WORK)
+!$OMP PARALLEL PRIVATE(I) SHARED(FLUXES, IUPDOWN, A, IPHI, WORK)
+!$OMP DO
             do I = 1, NPTS
                 FLUXES(IUPDOWN, I) = FLUXES(IUPDOWN, I) + A*WORK(1, IPHI, I)
             end do
-!!$OMP END DO
-!!$OMP END PARALLEL
+!$OMP END DO
+!$OMP END PARALLEL
 
             ! For a general BRDF surface save the downwelling radiance
             !   at the bottom boundary points.
