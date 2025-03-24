@@ -66,7 +66,9 @@ subroutine shdSolv__solveRte(&
     real, allocatable :: YLMSUN(:, :), WTMU(:), WPHISAVE(:)
     real, allocatable :: SFC_BRDF_DO(:, :, :, :, :, :)
 
-    real :: CPU_TIME_ITER, CPU_TIME_ITER0, CPU_TIME_ITER1
+    integer :: count_start, count_rate, count_max
+    integer :: count_end
+    real :: elapsed_time
 
     ! Allocate local arrays
     ! NSTLEG=1 for NSTOKES=1, otherwise NSTLEG=6
@@ -185,7 +187,6 @@ subroutine shdSolv__solveRte(&
     end if
 
     ITER = 0
-    call cpu_time(CPU_TIME_ITER0)
 
     if (MAXITER .le. ITER) return
     ! Starting values for the adaptive cell splitting controlling me
@@ -219,6 +220,9 @@ subroutine shdSolv__solveRte(&
     do while (ITER .lt. MAXITER .and. (SOLCRIT .gt. SOLACC&
         &.or. (SPLITCRIT .gt. SPLITACC .and.&
         &CURSPLITACC .gt. SPLITACC .and. .not. OUTOFMEM)))
+
+        call SYSTEM_CLOCK(count_start, count_rate, count_max)
+
         ITER = ITER + 1
 
         ! Don't do the adaptive grid cell splitting stuff unless wante
@@ -304,16 +308,15 @@ subroutine shdSolv__solveRte(&
         ! If it is a not scattering medium then do only one iteration
         if (ALBMAX .lt. SOLACC) SOLCRIT = SOLACC
 
-        call cpu_time(CPU_TIME_ITER1)
-        CPU_TIME_ITER = CPU_TIME_ITER1 - CPU_TIME_ITER0
-        CPU_TIME_ITER0 = CPU_TIME_ITER1
+        call SYSTEM_CLOCK(count_end, count_rate, count_max)
+        elapsed_time = (real(count_end) - real(count_start)) / real(count_rate)
 
         ! Print out the log solution criterion, number of points,
         !   and average SH truncation.
         write (6, '(2X,I4,2X,F7.3,2X,E10.3,1X,I8,1X,F8.2,2X,F6.2," sec")')&
             &ITER, log10(max(SOLCRIT, 1.0e-20)), SPLITCRIT,&
             &NPTS, FLOAT(SHPTR(NPTS + 1))/NPTS,&
-            &CPU_TIME_ITER
+            &elapsed_time
             !&FLOAT(SHPTR(NPTS + 1))/(NPTS*NLM)
     end do
 

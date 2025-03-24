@@ -79,12 +79,14 @@ program shdom_main
     real :: DELXSFC, DELYSFC, MAXASYM, REDUCE
     real :: MUOUT, PHIOUT
     real :: UNIFZLEV, XO, YO, ZO, DIRPATH
-    real :: CPUTIME1, CPUTIME2, CPUTIMETOTAL, SUM_CPU_TIME
     character :: SRCTYPE*1, UNITS*1
     character :: GRIDTYPE*1, PROPTYPE*1, SFCTYPE*2
     character*256 :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
     character*256 :: OutFileNC, RUNNAME
-    external :: SUM_CPU_TIME
+
+    integer :: count_start, count_rate, count_max
+    integer :: count_end
+    real :: elapsed_time
 
     logical :: nmlMode = .false.
 
@@ -96,7 +98,8 @@ program shdom_main
     !   True means initiatize with and output only the base grid.
     BASEOUT = .false.
 
-    call cpu_time(CPUTIME1)
+    !call cpu_time(CPUTIME1)
+    call SYSTEM_CLOCK(count_start, count_rate, count_max)
 
     ! Start up MPI for multiple processors if available, and
     !   return flag for master process (procnum=0)
@@ -685,13 +688,13 @@ program shdom_main
         &NPTS, NCELLS, GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR,&
         &CELLFLAGS, FLUXES, SHPTR, SOURCE, RSHPTR, RADIANCE)
 
-    call cpu_time(CPUTIME2)
-    CPUTIMETOTAL = SUM_CPU_TIME(CPUTIME2 - CPUTIME1)
+    call SYSTEM_CLOCK(count_end, count_rate, count_max)
+    elapsed_time = (real(count_end) - real(count_start)) / real(count_rate)
     if (MASTERPROC) then
-        if (CPUTIMETOTAL .lt. 60.0) then
-            write (6, '(A,F6.2,A)') 'Message [shdom_main]: Total CPU time used:', CPUTIMETOTAL, ' sec'
+        if (elapsed_time .lt. 60.0) then
+            write (6, '(A,F6.2,A)') 'Message [shdom_main]: Total time used:', elapsed_time, ' sec'
         else
-            write (6, '(A,F6.2,A)') 'Message [shdom_main]: Total CPU time used:', CPUTIMETOTAL/60.0, ' min'
+            write (6, '(A,F6.2,A)') 'Message [shdom_main]: Total time used:', elapsed_time/60.0, ' min'
         endif
     end if
 
