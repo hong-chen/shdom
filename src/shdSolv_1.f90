@@ -686,17 +686,19 @@ subroutine RADIANCE_TRUNCATION(HIGHORDERRAD,&
     &NSTOKES, ML, MM, NSTLEG, NLEG, NUMPHASE,&
     &NPTS, ALBEDO, LEGEN, IPHASE, SHPTR, RADIANCE,&
     &MAXIR, FIXSH, SHACC, RSHPTR)
+
     ! Computes the next radiance spherical harmonic series truncation
     ! to use based on the current source function truncation and the
     ! scattering properties.  The radiance truncation is the smaller
     ! of that based on a minimum SH term radiance and that needed for
     ! the computation of the source function.  The truncation is always
-    ! made for a complete set in the L index.  The radiance SH truncatio
+    ! made for a complete set in the L index.  The radiance SH truncation
     ! is set to a few higher L index than the source function, so that
     ! the source function truncation may grow (since initialized with
     ! a low order truncation).  The minimum radiance truncation is
     ! L=1 so that the mean radiance and net flux terms may be computed,
     ! unless HIGHORDERRAD is on, in which case all terms are kept.
+
     implicit none
     integer NPTS, NSTOKES, ML, MM, NSTLEG, NLEG, NUMPHASE, MAXIR
     integer SHPTR(NPTS + 1), RSHPTR(NPTS + 2)
