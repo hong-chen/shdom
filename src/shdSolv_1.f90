@@ -1177,12 +1177,16 @@ subroutine BOUNDARY_PNTS(&
     ! points (BCPTR(*,1)) and the NBOTPTS bottom boundary points (BCPTR(
     ! All the grid points are looked at to find the boundary ones.
 
+    use omp_lib
+
     implicit none
-    integer NPTS, NANG, MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS
+    integer, intent(in) :: NPTS, NANG, MAXNBC, MAXBCRAD
+    integer, intent(inout) :: NTOPPTS, NBOTPTS
     integer BCPTR(MAXNBC, 2)
     logical LAMBERTIAN
-    real ZBOT, ZTOP, GRIDPOS(3, NPTS)
-    integer I, IT, IB, NA
+    real, intent(in) :: ZBOT, ZTOP, GRIDPOS(3, NPTS)
+    integer :: I, IT, IB, NA
+    !integer :: IT0, IB0
 
     ! Loop over all points finding the top and bottom ones
     if (LAMBERTIAN) then
@@ -1190,10 +1194,16 @@ subroutine BOUNDARY_PNTS(&
     else
         NA = NANG/2 + 1
     end if
+
     IT = 0
     IB = 0
+!    IT0 = 0
+!    IB0 = 0
+!!$OMP PARALLEL PRIVATE(I, IT, IB) SHARED(GRIDPOS, ZTOP, ZBOT, MAXNBC, MAXBCRAD, NA, IT0, IB0)
+!!$OMP DO
     do I = 1, NPTS
         if (GRIDPOS(3, I) .ge. ZTOP) then
+            !IT0 = IT0 + 1
             IT = IT + 1
             if (IT .gt. MAXNBC .or. IT .gt. MAXBCRAD) then
                 write (6, *) 'Error [BOUNDARY_PNTS]: MAXNBC exceeded - top.'
@@ -1202,6 +1212,7 @@ subroutine BOUNDARY_PNTS(&
             BCPTR(IT, 1) = I
         end if
         if (GRIDPOS(3, I) .le. ZBOT) then
+            !IB0 = IB0 + 1
             IB = IB + 1
             if (IB .gt. MAXNBC .or. IT + IB*NA .gt. MAXBCRAD) then
                 write (6, *) 'Error [BOUNDARY_PNTS]: MAXNBC exceeded - bottom.'
@@ -1210,6 +1221,8 @@ subroutine BOUNDARY_PNTS(&
             BCPTR(IB, 2) = I
         end if
     end do
+!!$OMP END DO
+!!$OMP END PARALLEL
     NTOPPTS = IT
     NBOTPTS = IB
     return

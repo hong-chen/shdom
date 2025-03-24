@@ -74,7 +74,7 @@ def figure_les(fname):
 
 if __name__ == '__main__':
 
-    fnames = sorted(glob.glob('tmp-data/shdom-out*.txt'))
+    fnames = sorted(glob.glob('tmp-data/shdom-out*rad-all.txt'))
 
     for fname in fnames:
         figure_les(fname)
