@@ -3,6 +3,8 @@
 # with an LES cumulus cloud slice and horizontally uniform dust aerosol.
 
 # To run sections of the script, set the corresponding variables below to 1.
+setenv OMP_NUM_THREADS 8
+
 set Make_Mie_table=1
 set Make_Tmatrix_table=1
 set Run_plotscattab=1
