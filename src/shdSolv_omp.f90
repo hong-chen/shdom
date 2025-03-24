@@ -835,8 +835,8 @@ subroutine ACCELERATE_SOLUTION(&
     integer I, J, IS, ISD, K, NS, NSD, NSC
 
     if (ACCELPAR .gt. 0.0) then
-!$OMP PARALLEL PRIVATE(I, IS, NS, ISD, NSD, NSC, J) SHARED(SHPTR, OSHPTR, ACCELPAR, SOURCE, DELSOURCE)
-!$OMP DO
+!!$OMP PARALLEL PRIVATE(I, IS, NS, ISD, NSD, NSC, J) SHARED(SHPTR, OSHPTR, ACCELPAR, SOURCE, DELSOURCE)
+!$OMP DO PRIVATE(I, IS, NS, ISD, NSD, NSC, J)
         do I = 1, NPTS
             IS = SHPTR(I)
             NS = SHPTR(I + 1) - IS
@@ -849,7 +849,7 @@ subroutine ACCELERATE_SOLUTION(&
             end do
         end do
 !$OMP END DO
-!$OMP END PARALLEL
+!!$OMP END PARALLEL
     end if
 
     return
@@ -1023,8 +1023,8 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
         end if
 
         ! Enforce the discrete ordinate I source function to be non-ne
-!$OMP PARALLEL PRIVATE(I, IPHI) SHARED(NPTS, NPHI0, WORK)
-!$OMP DO
+!$OMP PARALLEL PRIVATE(I, IPHI) SHARED(NPHI0, WORK)
+!$OMP DO FIRSTPRIVATE(IMU)
         do I = 1, NPTS
             do IPHI = 1, NPHI0(IMU)
                 WORK(1, IPHI, I) = max(0.0, WORK(1, IPHI, I))
@@ -1119,8 +1119,8 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
 
             ! Transfer the radiance for the (IMU,IPHI) discrete ordinate
             !   GRIDRAD to the work array.
-!$OMP PARALLEL PRIVATE(I) SHARED(GRIDRAD, WORK, IPHI)
-!$OMP DO
+!$OMP PARALLEL DEFAULT(SHARED) PRIVATE(I)
+!$OMP DO FIRSTPRIVATE(IPHI, IMU)
             do I = 1, NPTS
                 if (GRIDRAD(1, I) .lt. -0.0001) then
                     write (6, *) 'Warning [PATH_INTEGRATION]: Grid point has no value',&
@@ -1138,8 +1138,8 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
 
             ! Do the sum for the hemispheric fluxes for this angle
             A = abs(MU(IMU))*WTDO(IMU, IPHI)
-!$OMP PARALLEL PRIVATE(I) SHARED(FLUXES, IUPDOWN, A, IPHI, WORK)
-!$OMP DO
+!$OMP PARALLEL PRIVATE(I) SHARED(FLUXES, WORK)
+!$OMP DO FIRSTPRIVATE(IPHI, IUPDOWN, A)
             do I = 1, NPTS
                 FLUXES(IUPDOWN, I) = FLUXES(IUPDOWN, I) + A*WORK(1, IPHI, I)
             end do
