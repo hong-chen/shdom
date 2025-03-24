@@ -460,6 +460,7 @@ subroutine COMPUTE_SOURCE(&
     &IPHASE, PLANCK, DIRFLUX, SHACC, MAXIV,&
     &RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR, DELSOURCE,&
     &FIRST, ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM)
+
     ! Computes the source function (SOURCE) in spherical harmonic spac
     !   for all the grid points.  The thermal source and/or solar
     !   pseudo-source (in PLANCK or DIRFLUX) is added to the scattering so
@@ -482,6 +483,7 @@ subroutine COMPUTE_SOURCE(&
     ! Computes the sum of squares of the new source function for calcu
     !   of the solution criterion (SOLCRIT, the RMS difference in succesiv
     !   source function fields normalized by the RMS of the field).
+
     implicit none
     integer NSTOKES, NPTS, ML, MM, NLM, NSTLEG, NLEG
     integer NUMPHASE, MAXIV
@@ -806,16 +808,24 @@ subroutine RADIANCE_TRUNCATION(HIGHORDERRAD,&
     return
 end subroutine
 
-subroutine ACCELERATE_SOLUTION(ACCELPAR, NPTS, SHPTR, OSHPTR,&
+subroutine ACCELERATE_SOLUTION(&
+    &ACCELPAR, NPTS, SHPTR, OSHPTR,&
     &NSTOKES, SOURCE, DELSOURCE)
+
     !   Accelerates the successive order of scattering series using the
     ! input acceleration parameter (ACCELPAR).
+
+    use omp_lib
+
     implicit none
-    integer NPTS, SHPTR(*), OSHPTR(*), NSTOKES
-    real ACCELPAR, SOURCE(NSTOKES, *), DELSOURCE(NSTOKES, *)
+    integer, intent(in) :: NPTS, SHPTR(*), OSHPTR(*), NSTOKES
+    real, intent(in) :: ACCELPAR, DELSOURCE(NSTOKES, *)
+    real, intent(inout) :: SOURCE(NSTOKES, *)
     integer I, J, IS, ISD, K, NS, NSD, NSC
 
     if (ACCELPAR .gt. 0.0) then
+!$OMP PARALLEL PRIVATE(I, IS, NS, ISD, NSD, NSC, J) SHARED(SHPTR, OSHPTR, ACCELPAR, SOURCE, DELSOURCE)
+!$OMP DO
         do I = 1, NPTS
             IS = SHPTR(I)
             NS = SHPTR(I + 1) - IS
@@ -827,6 +837,8 @@ subroutine ACCELERATE_SOLUTION(ACCELPAR, NPTS, SHPTR, OSHPTR,&
                     &+ ACCELPAR*DELSOURCE(:, ISD + J)
             end do
         end do
+!$OMP END DO
+!$OMP END PARALLEL
     end if
 
     return
@@ -873,6 +885,10 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
     ! boundary points.
 
     use omp_lib
+!!$OMP PARALLEL PRIVATE(I) SHARED(FLUXES, GRIDRAD)
+!!$OMP DO
+!!$OMP END DO
+!!$OMP END PARALLEL
 
     implicit none
     integer NX, NY, NZ, NSTOKES, NSTLEG, ML, MM, NLM
@@ -1152,12 +1168,15 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
     return
 end subroutine
 
-subroutine BOUNDARY_PNTS(NPTS, NANG, LAMBERTIAN, MAXNBC, MAXBCRAD,&
+subroutine BOUNDARY_PNTS(&
+    &NPTS, NANG, LAMBERTIAN, MAXNBC, MAXBCRAD,&
     &ZBOT, ZTOP, GRIDPOS,&
     &NTOPPTS, NBOTPTS, BCPTR)
+
     !   Returns the BCPTR pointer array for the NTOPPTS top boundary
     ! points (BCPTR(*,1)) and the NBOTPTS bottom boundary points (BCPTR(
     ! All the grid points are looked at to find the boundary ones.
+
     implicit none
     integer NPTS, NANG, MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS
     integer BCPTR(MAXNBC, 2)
