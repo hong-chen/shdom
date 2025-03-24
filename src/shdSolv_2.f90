@@ -918,7 +918,7 @@ subroutine MAKE_SH_DO_COEF(NSTLEG, ML, MM, NLM, NMU, NPHI0,&
             ! If not doing an FFT for this mu then make the DFT coeffici
             W = 1.0/WTMU(I)
             do K = 1, NPHI0(I)
-                if (NPHI0(I) .gt. 32 .or. MM .gt. 16) stop&
+                if (NPHI0(I) .gt. 32 .or. MM .gt. 16) stop &
                     &'Error [MAKE_SH_DO_COEF]: Fourier coefficients array exceeded.'
                 CPHI1(0, K, I) = 1.0
                 CPHI2(K, 0, I) = WTDO(I, K)*W
