@@ -1,7 +1,7 @@
 subroutine NEW_GRIDS(&
-    & BCFLAG, GRIDTYPE, NPX, NPY, NPZ, NX, NY, NZ,&
-    & XSTART, YSTART, DELXP, DELYP, ZLEVELS,&
-    & XGRID, YGRID, ZGRID)
+    &BCFLAG, GRIDTYPE, NPX, NPY, NPZ, NX, NY, NZ,&
+    &XSTART, YSTART, DELXP, DELYP, ZLEVELS,&
+    &XGRID, YGRID, ZGRID)
     ! Makes the XGRID, YGRID, and ZGRID arrays from the input Z levels
     !   and X and Y spacing from the property file according to the GRIDTY
     implicit none
@@ -49,7 +49,7 @@ subroutine NEW_GRIDS(&
     else if (GRIDTYPE .eq. 'E') then
         do IZ = 1, NZ
             ZGRID(IZ) = ZLEVELS(1)&
-                & + (IZ - 1)*(ZLEVELS(NPZ) - ZLEVELS(1))/FLOAT(NZ - 1)
+                &+ (IZ - 1)*(ZLEVELS(NPZ) - ZLEVELS(1))/FLOAT(NZ - 1)
         end do
     else if (GRIDTYPE .eq. 'F') then
         open (UNIT=3, FILE='zgrid.inp', STATUS='OLD')
@@ -65,10 +65,11 @@ subroutine NEW_GRIDS(&
 end subroutine
 
 subroutine INIT_CELL_STRUCTURE(&
-    & BCFLAG, IPFLAG,&
-    & NX, NY, NZ, NX1, NY1, NPTS, NCELLS,&
-    & XGRID, YGRID, ZGRID, GRIDPOS,&
-    & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS)
+    &BCFLAG, IPFLAG,&
+    &NX, NY, NZ, NX1, NY1, NPTS, NCELLS,&
+    &XGRID, YGRID, ZGRID, GRIDPOS,&
+    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS)
+
     ! Make the initial grid cell data structure for the base grid.
     ! For periodic boundary conditions there are NX*NY*(NZ-1) grid cells
     ! and (NX+1)*(NY+1)*NZ grid points.  The IX=NX+1 column is the same
@@ -119,6 +120,7 @@ subroutine INIT_CELL_STRUCTURE(&
     !                   1  Do independent pixel for Y
     !                  2,3 Direction cell is split (0=no split, 1=X, 2=
     ! IP is a grid point index, IC is a cell index.
+
     implicit none
     integer IPFLAG, BCFLAG, NX, NY, NZ, NX1, NY1, NPTS, NCELLS
     integer GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
@@ -286,8 +288,8 @@ subroutine INIT_CELL_STRUCTURE(&
 end subroutine
 
 subroutine INTERP_GRID(&
-    & NPTS, NSTLEG, NLEG, GRIDPOS,&
-    & TEMP, EXTINCT, ALBEDO, LEGEN, IPHASE)
+    &NPTS, NSTLEG, NLEG, GRIDPOS,&
+    &TEMP, EXTINCT, ALBEDO, LEGEN, IPHASE)
     ! Calls TRILIN_INTERP_PROP to interpolate the input arrays from
     !   the property grid to each internal grid point.
     implicit none
@@ -299,25 +301,27 @@ subroutine INTERP_GRID(&
 
     ! Initialize: transfer the tabulated phase functions
     call TRILIN_INTERP_PROP(0.0, 0.0, 0.0, .true., NSTLEG, NLEG,&
-        & TEMP, EXTINCT, ALBEDO,&
-        & LEGEN(1, 0, 1), IPHASE)
+        &TEMP, EXTINCT, ALBEDO,&
+        &LEGEN(1, 0, 1), IPHASE)
 
     ! Trilinearly interpolate from the property grid to the adaptive
     do IP = 1, NPTS
         call TRILIN_INTERP_PROP&
-            & (GRIDPOS(1, IP), GRIDPOS(2, IP), GRIDPOS(3, IP),&
-            & .false., NSTLEG, NLEG, TEMP(IP), EXTINCT(IP),&
-            & ALBEDO(IP), LEGEN(1, 0, IP), IPHASE(IP))
+            &(GRIDPOS(1, IP), GRIDPOS(2, IP), GRIDPOS(3, IP),&
+            &.false., NSTLEG, NLEG, TEMP(IP), EXTINCT(IP),&
+            &ALBEDO(IP), LEGEN(1, 0, IP), IPHASE(IP))
     end do
     return
 end subroutine
 
 subroutine MAKE_DIRECT(NPTS, BCFLAG, IPFLAG, DELTAM,&
-    & ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
-    & GRIDPOS, DIRFLUX)
+    &ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
+    &GRIDPOS, DIRFLUX)
+
     ! Makes the direct beam solar flux for the internal base grid.
     !   DIRFLUX is set to F*exp(-tau_sun).
     !   Actually calls DIRECT_BEAM_PROP to do all the hard work.
+
     implicit none
     integer NPTS, BCFLAG, IPFLAG, ML, NSTLEG, NLEG
     logical DELTAM
@@ -328,30 +332,32 @@ subroutine MAKE_DIRECT(NPTS, BCFLAG, IPFLAG, DELTAM,&
     real UNIFZLEV, XO, YO, ZO, DIR, DIRPATH
 
     call DIRECT_BEAM_PROP(1, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
-        & DELTAM, ML, NSTLEG, NLEG,&
-        & SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
-        & UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
+        &DELTAM, ML, NSTLEG, NLEG,&
+        &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
+        &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
 
     do IP = 1, NPTS
         DIRPATH = 0.0
         call DIRECT_BEAM_PROP&
-            & (0, GRIDPOS(1, IP), GRIDPOS(2, IP), GRIDPOS(3, IP),&
-            & BCFLAG, IPFLAG, DELTAM, ML, NSTLEG, NLEG,&
-            & SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(IP),&
-            & UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
+            &(0, GRIDPOS(1, IP), GRIDPOS(2, IP), GRIDPOS(3, IP),&
+            &BCFLAG, IPFLAG, DELTAM, ML, NSTLEG, NLEG,&
+            &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(IP),&
+            &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
     end do
     return
 end subroutine
 
 subroutine PREPARE_PROP(ML, MM, NSTLEG, NLEG, NPTS, DELTAM,&
-    & NUMPHASE, SRCTYPE, UNITS, WAVENO, WAVELEN, ALBMAX,&
-    & EXTINCT, ALBEDO, LEGEN, TEMP, PLANCK, IPHASE)
+    &NUMPHASE, SRCTYPE, UNITS, WAVENO, WAVELEN, ALBMAX,&
+    &EXTINCT, ALBEDO, LEGEN, TEMP, PLANCK, IPHASE)
+
     ! Prepares the grid arrays for the iterative solution process.
     ! If doing Delta-M scaling then the extinction, albedo, and Legend
     ! terms are scaled first; only the 0 to ML LEGEN terms are scaled.
     ! Outputs PLANCK with (1-omega)*B(T) for thermal source, where B(T
     ! the Planck function (meaning depends on UNITS).
     ! TEMP array is unchanged.
+
     implicit none
     integer ML, MM, NSTLEG, NLEG, NPTS, NUMPHASE
     integer*2 IPHASE(NPTS)
@@ -406,10 +412,10 @@ subroutine PREPARE_PROP(ML, MM, NSTLEG, NLEG, NPTS, DELTAM,&
 end subroutine
 
 subroutine INIT_RADIANCE(NSTOKES, NXY, NZ, NSTLEG, NLEG,&
-    & RSHPTR, ZGRID,&
-    & EXTINCT, ALBEDO, LEGEN, TEMP, NUMPHASE, IPHASE,&
-    & SRCTYPE, SOLARFLUX, SOLARMU, GNDALBEDO, GNDTEMP,&
-    & SKYRAD, UNITS, WAVENO, WAVELEN, RADIANCE)
+    &RSHPTR, ZGRID,&
+    &EXTINCT, ALBEDO, LEGEN, TEMP, NUMPHASE, IPHASE,&
+    &SRCTYPE, SOLARFLUX, SOLARMU, GNDALBEDO, GNDTEMP,&
+    &SKYRAD, UNITS, WAVENO, WAVELEN, RADIANCE)
     ! Initializes radiance field by solving plane-parallel two-stream.
     ! Solves the L=1 M=0 SH system by transforming the pentadiagonal
     ! system to tridiagonal and calling solver.
@@ -482,9 +488,9 @@ subroutine INIT_RADIANCE(NSTOKES, NXY, NZ, NSTLEG, NLEG,&
         GNDEMIS = 1.0 - GNDALBEDO
         ! Call the Eddington flux routine
         call EDDRTF(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
-            & TEMPS, DELTAM, SRCTYPE, SOLARFLUX, SOLARMU,&
-            & GNDTEMP, GNDEMIS, SKYRAD, UNITS, WAVENO, WAVELEN,&
-            & FLUXES)
+            &TEMPS, DELTAM, SRCTYPE, SOLARFLUX, SOLARMU,&
+            &GNDTEMP, GNDEMIS, SKYRAD, UNITS, WAVENO, WAVELEN,&
+            &FLUXES)
         ! Convert fluxes to first two moments of spherical harmonics
         do IZ = 1, NZ
             L = NZ + 1 - IZ
@@ -503,9 +509,9 @@ subroutine INIT_RADIANCE(NSTOKES, NXY, NZ, NSTLEG, NLEG,&
 end subroutine
 
 subroutine EDDRTF(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
-    & TEMPS, DELTAM, SRCTYPE, SOLARFLUX, SOLARMU,&
-    & GNDTEMP, GNDEMIS, SKYRAD, UNITS, WAVENO, WAVELEN,&
-    & FLUXES)
+    &TEMPS, DELTAM, SRCTYPE, SOLARFLUX, SOLARMU,&
+    &GNDTEMP, GNDEMIS, SKYRAD, UNITS, WAVENO, WAVELEN,&
+    &FLUXES)
     ! EDDRTF computes the layer interface fluxes for a plane-parallel
     ! atmosphere with either solar or thermal source of radiation using
     ! the Eddington approximation.  The medium is specified by a number
@@ -738,6 +744,7 @@ subroutine TRIDIAG(N, LOWER, DIAG, UPPER, RHS)
         if (DIAG(1) .eq. 0.0) goto 990
         RHS(1) = RHS(1)/DIAG(1)
     end if
+
     LOWER(1) = DIAG(1)
     DIAG(1) = UPPER(1)
     UPPER(1) = 0.0
@@ -781,7 +788,8 @@ subroutine TRIDIAG(N, LOWER, DIAG, UPPER, RHS)
 end subroutine
 
 subroutine MAKE_ANGLE_SET(NMU, NPHI, ITYPE, NPHI0MAX,&
-    & NPHI0, MU, PHI, WTMU, WTDO, FFTFLAG, NANG)
+    &NPHI0, MU, PHI, WTMU, WTDO, FFTFLAG, NANG)
+
     ! Make the set of angles for the discrete space representation.
     ! The number of mu's (cosine zenith angles) and maximum number of
     ! phi's (azimuth angles) is input.  The actual number of azimuthal
@@ -793,6 +801,7 @@ subroutine MAKE_ANGLE_SET(NMU, NPHI, ITYPE, NPHI0MAX,&
     ! angles are the downwelling (mu<0) angles.  Also output are the
     ! maximum number of azimuthal angles (NPHI0MAX), the flags for doing
     ! an azimuthal FFT for each mu and the total number of angles.
+
     implicit none
     integer NMU, NPHI, ITYPE, NPHI0MAX, NPHI0(NMU), NANG
     logical FFTFLAG(NMU)
@@ -802,29 +811,29 @@ subroutine MAKE_ANGLE_SET(NMU, NPHI, ITYPE, NPHI0MAX,&
     parameter(MAXNPHI=256)
     integer GOODNFFT(MAXNPHI)
     data GOODNFFT/1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 16,&
-        & 18, 18, 20, 20, 24, 24, 24, 24, 25, 27, 27, 30, 30, 30, 32, 32,&
-        & 36, 36, 36, 36, 40, 40, 40, 40, 45, 45, 45, 45, 45, 48, 48, 48,&
-        & 50, 50, 54, 54, 54, 54, 60, 60, 60, 60, 60, 60, 64, 64, 64, 64,&
-        & 72, 72, 72, 72, 72, 72, 72, 72, 80, 80, 80, 80, 80, 80, 80, 80,&
-        & 81, 90, 90, 90, 90, 90, 90, 90, 90, 90, 96, 96, 96, 96, 96, 96,&
-        & 100, 100, 100, 100, 108, 108, 108, 108,&
-        & 108, 108, 108, 108, 120, 120, 120, 120,&
-        & 120, 120, 120, 120, 120, 120, 120, 120,&
-        & 128, 128, 128, 128, 128, 128, 128, 128,&
-        & 144, 144, 144, 144, 144, 144, 144, 144,&
-        & 144, 144, 144, 144, 144, 144, 144, 144,&
-        & 160, 160, 160, 160, 160, 160, 160, 160,&
-        & 160, 160, 160, 160, 160, 160, 160, 160,&
-        & 180, 180, 180, 180, 180, 180, 180, 180, 180, 180,&
-        & 180, 180, 180, 180, 180, 180, 180, 180, 180, 180,&
-        & 192, 192, 192, 192, 192, 192, 192, 192, 192, 192, 192, 192,&
-        & 200, 200, 200, 200, 200, 200, 200, 200,&
-        & 216, 216, 216, 216, 216, 216, 216, 216,&
-        & 216, 216, 216, 216, 216, 216, 216, 216,&
-        & 240, 240, 240, 240, 240, 240, 240, 240, 240, 240, 240, 240,&
-        & 240, 240, 240, 240, 240, 240, 240, 240, 240, 240, 240, 240,&
-        & 256, 256, 256, 256, 256, 256, 256, 256,&
-        & 256, 256, 256, 256, 256, 256, 256, 256/
+        &18, 18, 20, 20, 24, 24, 24, 24, 25, 27, 27, 30, 30, 30, 32, 32,&
+        &36, 36, 36, 36, 40, 40, 40, 40, 45, 45, 45, 45, 45, 48, 48, 48,&
+        &50, 50, 54, 54, 54, 54, 60, 60, 60, 60, 60, 60, 64, 64, 64, 64,&
+        &72, 72, 72, 72, 72, 72, 72, 72, 80, 80, 80, 80, 80, 80, 80, 80,&
+        &81, 90, 90, 90, 90, 90, 90, 90, 90, 90, 96, 96, 96, 96, 96, 96,&
+        &100, 100, 100, 100, 108, 108, 108, 108,&
+        &108, 108, 108, 108, 120, 120, 120, 120,&
+        &120, 120, 120, 120, 120, 120, 120, 120,&
+        &128, 128, 128, 128, 128, 128, 128, 128,&
+        &144, 144, 144, 144, 144, 144, 144, 144,&
+        &144, 144, 144, 144, 144, 144, 144, 144,&
+        &160, 160, 160, 160, 160, 160, 160, 160,&
+        &160, 160, 160, 160, 160, 160, 160, 160,&
+        &180, 180, 180, 180, 180, 180, 180, 180, 180, 180,&
+        &180, 180, 180, 180, 180, 180, 180, 180, 180, 180,&
+        &192, 192, 192, 192, 192, 192, 192, 192, 192, 192, 192, 192,&
+        &200, 200, 200, 200, 200, 200, 200, 200,&
+        &216, 216, 216, 216, 216, 216, 216, 216,&
+        &216, 216, 216, 216, 216, 216, 216, 216,&
+        &240, 240, 240, 240, 240, 240, 240, 240, 240, 240, 240, 240,&
+        &240, 240, 240, 240, 240, 240, 240, 240, 240, 240, 240, 240,&
+        &256, 256, 256, 256, 256, 256, 256, 256,&
+        &256, 256, 256, 256, 256, 256, 256, 256/
 
     MM = max(0, int(NPHI/2) - 1)
     NANG = 0
@@ -840,7 +849,7 @@ subroutine MAKE_ANGLE_SET(NMU, NPHI, ITYPE, NPHI0MAX,&
                 NPHI0(J) = NPHI0MAX
             else
                 if (NPHI0MAX .gt. MAXNPHI)&
-                    & stop 'Error [MAKE_ANGLE_SET]: Exceeded GOODNFFT.'
+                    &stop 'Error [MAKE_ANGLE_SET]: Exceeded GOODNFFT.'
                 NPHI0(J) = int(0.9 + NPHI0MAX*sqrt(1 - MU(J)**2))
                 NPHI0(J) = min(NPHI0MAX, GOODNFFT(NPHI0(J)))
             end if
@@ -860,8 +869,8 @@ subroutine MAKE_ANGLE_SET(NMU, NPHI, ITYPE, NPHI0MAX,&
 end subroutine
 
 subroutine MAKE_SH_DO_COEF(NSTLEG, ML, MM, NLM, NMU, NPHI0,&
-    & NPHI0MAX, MU, PHI, WTMU, WTDO, FFTFLAG,&
-    & CMU1, CMU2, CPHI1, CPHI2, WPHISAVE)
+    &NPHI0MAX, MU, PHI, WTMU, WTDO, FFTFLAG,&
+    &CMU1, CMU2, CPHI1, CPHI2, WPHISAVE)
     ! Makes the transformation coefficients for the real generalized
     ! spherical harmonic transform.  The main coefficients are output in
     ! four arrays: 1 is for the SH_TO_DO forward transform, 2 is for the
@@ -910,7 +919,7 @@ subroutine MAKE_SH_DO_COEF(NSTLEG, ML, MM, NLM, NMU, NPHI0,&
             W = 1.0/WTMU(I)
             do K = 1, NPHI0(I)
                 if (NPHI0(I) .gt. 32 .or. MM .gt. 16) stop&
-                    & 'Error [MAKE_SH_DO_COEF]: Fourier coefficients array exceeded.'
+                    &'Error [MAKE_SH_DO_COEF]: Fourier coefficients array exceeded.'
                 CPHI1(0, K, I) = 1.0
                 CPHI2(K, 0, I) = WTDO(I, K)*W
                 do M = 1, MM
@@ -947,8 +956,8 @@ subroutine SUM_OUTPUT(IFLAG, WT, N, data, SUMDATA)
 end subroutine
 
 subroutine COMPUTE_NETFLUXDIV(NSTOKES, NPTS, RSHPTR, SRCTYPE,&
-    & SOLARMU, EXTINCT, ALBEDO, PLANCK, DIRFLUX,&
-    & RADIANCE, NETFLUXDIV)
+    &SOLARMU, EXTINCT, ALBEDO, PLANCK, DIRFLUX,&
+    &RADIANCE, NETFLUXDIV)
     ! Computes the net flux divergence at every grid point.
     implicit none
     integer NSTOKES, NPTS, RSHPTR(NPTS + 1)
@@ -977,13 +986,15 @@ subroutine COMPUTE_NETFLUXDIV(NSTOKES, NPTS, RSHPTR, SRCTYPE,&
 end subroutine
 
 subroutine COMPUTE_SH(NSHOUT, NSTOKES, NPTS, SRCTYPE,&
-    & SOLARMU, SOLARAZ, DIRFLUX,&
-    & RSHPTR, ML, MM, RADIANCE, SHTERMS)
+    &SOLARMU, SOLARAZ, DIRFLUX,&
+    &RSHPTR, ML, MM, RADIANCE, SHTERMS)
+
     !   Computes the quantities for the spherical harmonic output.
     ! At each grid point the mean radiance and net flux (Fx, Fy, Fz)
     ! are computed.  The output includes the diffuse and direct solar
     ! components.  If NSHOUT=5 then the HIGHORDERRAD flag is set and the
     ! rms of the higher order terms in the radiance series is computed.
+
     implicit none
     integer NSTOKES, NPTS, RSHPTR(NPTS + 1), ML, MM, NSHOUT
     real SOLARMU, SOLARAZ, DIRFLUX(NPTS)
@@ -1055,14 +1066,16 @@ subroutine COMPUTE_SH(NSHOUT, NSTOKES, NPTS, SRCTYPE,&
 end subroutine
 
 subroutine INTERP_OUTPUT(OLDNPTS, NPTS,&
-    & FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
-    & FLUXES, DIRFLUX, FLUXDIV, SHTERMS,&
-    & NBCELLS, NCELLS, TREEPTR, GRIDPTR, GRIDPOS)
+    &FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
+    &FLUXES, DIRFLUX, FLUXDIV, SHTERMS,&
+    &NBCELLS, NCELLS, TREEPTR, GRIDPTR, GRIDPOS)
+
     !   Interpolates the output data to the new grid points (those >OLDN
     ! from the old grid points.  The output data is in FLUXES, DIRFLUX,
     ! FLUXDIV, and SHTERMS.  OLDNPTS is set to zero to do no interpolati
     ! Each new point is located in a cell, and the two parent grid point
     ! are found to interpolate the data from.
+
     implicit none
     integer OLDNPTS, NPTS, NBCELLS, NCELLS
     integer GRIDPTR(8, NCELLS), TREEPTR(2, NCELLS)
@@ -1073,7 +1086,7 @@ subroutine INTERP_OUTPUT(OLDNPTS, NPTS,&
     integer IP, IC, ICELL, IPARENT, IDIR, I, J, DIR1, DIR2, IP1, IP2
     integer GRIDCORNER(2, 4, 3)
     data GRIDCORNER/1, 2, 3, 4, 5, 6, 7, 8, 1, 3, 2, 4, 5, 7, 6, 8,&
-        & 1, 5, 2, 6, 3, 7, 4, 8/
+        &1, 5, 2, 6, 3, 7, 4, 8/
 
     if (OLDNPTS .le. 0) return
 
@@ -1091,7 +1104,7 @@ subroutine INTERP_OUTPUT(OLDNPTS, NPTS,&
                         IP1 = GRIDPTR(GRIDCORNER(1, I, IDIR), IPARENT)
                         IP2 = GRIDPTR(GRIDCORNER(2, I, IDIR), IPARENT)
                         if (GRIDPOS(DIR1, IP1) .eq. GRIDPOS(DIR1, IP) .and.&
-                            & GRIDPOS(DIR2, IP1) .eq. GRIDPOS(DIR2, IP)) goto 120
+                            &GRIDPOS(DIR2, IP1) .eq. GRIDPOS(DIR2, IP)) goto 120
                     end do
                 end do
                 stop 'Error [INTERP_OUTPUT]: Point not on an edge.'
@@ -1119,7 +1132,7 @@ subroutine INTERP_OUTPUT(OLDNPTS, NPTS,&
 end subroutine
 
 subroutine INTERP_RADIANCE(NSTOKES, OLDNPTS, NPTS, RSHPTR,&
-    & RADIANCE, NBCELLS, NCELLS, TREEPTR, GRIDPTR, GRIDPOS)
+    &RADIANCE, NBCELLS, NCELLS, TREEPTR, GRIDPTR, GRIDPOS)
     ! Interpolates the spherical harmonic radiance array to the new
     !   grid points (>OLDNPTS) from the old grid points.
     implicit none
@@ -1131,7 +1144,7 @@ subroutine INTERP_RADIANCE(NSTOKES, OLDNPTS, NPTS, RSHPTR,&
     integer GRIDCORNER(2, 4, 3)
     real RAD1(NSTOKES), RAD2(NSTOKES)
     data GRIDCORNER/1, 2, 3, 4, 5, 6, 7, 8, 1, 3, 2, 4, 5, 7, 6, 8,&
-        & 1, 5, 2, 6, 3, 7, 4, 8/
+        &1, 5, 2, 6, 3, 7, 4, 8/
 
     if (OLDNPTS .le. 0) return
 
@@ -1149,7 +1162,7 @@ subroutine INTERP_RADIANCE(NSTOKES, OLDNPTS, NPTS, RSHPTR,&
                         IP1 = GRIDPTR(GRIDCORNER(1, I, IDIR), IPARENT)
                         IP2 = GRIDPTR(GRIDCORNER(2, I, IDIR), IPARENT)
                         if (GRIDPOS(DIR1, IP1) .eq. GRIDPOS(DIR1, IP) .and.&
-                            & GRIDPOS(DIR2, IP1) .eq. GRIDPOS(DIR2, IP)) goto 120
+                            &GRIDPOS(DIR2, IP1) .eq. GRIDPOS(DIR2, IP)) goto 120
                     end do
                 end do
                 stop 'Error [INTERP_OUTPUT]: Point not on an edge.'
@@ -1184,16 +1197,16 @@ subroutine INTERP_RADIANCE(NSTOKES, OLDNPTS, NPTS, RSHPTR,&
 end subroutine
 
 subroutine VISUALIZE_RADIANCE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
-    & ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
-    & NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-    & BCFLAG, IPFLAG, SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
-    & SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
-    & MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-    & GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, UNITS,&
-    & XGRID, YGRID, ZGRID, GRIDPOS,&
-    & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-    & EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
-    & SHPTR, SOURCE, OUTPARMS, IVIS, VISOUT)
+    &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
+    &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
+    &BCFLAG, IPFLAG, SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
+    &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
+    &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
+    &GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, UNITS,&
+    &XGRID, YGRID, ZGRID, GRIDPOS,&
+    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+    &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
+    &SHPTR, SOURCE, OUTPARMS, IVIS, VISOUT)
     !   Computes Stokes radiances (output in VISOUT) for the visualizati
     !  modes: 1) camera mode, and 2) cross track scanning.
     implicit none
@@ -1240,23 +1253,23 @@ subroutine VISUALIZE_RADIANCE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
             NSTPHASE = min(NSTLEG, 2)
             allocate (PHASETAB(NSTPHASE, NUMPHASE, NSCATANGLE))
             call PRECOMPUTE_PHASE(NSCATANGLE, NUMPHASE, NSTPHASE,&
-                & NSTOKES, ML, NSTLEG, NLEG, LEGEN, PHASETAB)
+                &NSTOKES, ML, NSTLEG, NLEG, LEGEN, PHASETAB)
         end if
     end if
 
     ! Make the isotropic radiances for the top boundary
     call COMPUTE_TOP_RADIANCES(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
-        & UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
+        &UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
     ! Make the bottom boundary radiances for the Lambertian surfaces
     !   Compute the upwelling bottom radiances using the downwelling
     if (SFCTYPE .eq. 'FL') then
         call FIXED_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR(1, 2),&
-            & DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO,&
-            & WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1, 1 + NTOPPTS))
+            &DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO,&
+            &WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1, 1 + NTOPPTS))
     else if (SFCTYPE .eq. 'VL') then
         call VARIABLE_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR(1, 2),&
-            & DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS,&
-            & NSTOKES, BCRAD(1, 1 + NTOPPTS))
+            &DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS,&
+            &NSTOKES, BCRAD(1, 1 + NTOPPTS))
     end if
 
     CAMERA_MODE = nint(OUTPARMS(1)) .eq. 1
@@ -1265,8 +1278,8 @@ subroutine VISUALIZE_RADIANCE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
         NS = nint(OUTPARMS(11))
     else
         NL = 1 + int(sqrt((OUTPARMS(4) - OUTPARMS(7))**2&
-            & + (OUTPARMS(5) - OUTPARMS(8))**2&
-            & + (OUTPARMS(6) - OUTPARMS(9))**2)/OUTPARMS(10))
+            &+ (OUTPARMS(5) - OUTPARMS(8))**2&
+            &+ (OUTPARMS(6) - OUTPARMS(9))**2)/OUTPARMS(10))
         NS = 1 + int(abs(OUTPARMS(12) - OUTPARMS(11))/OUTPARMS(13))
     end if
     PI = acos(-1.0d0)
@@ -1315,7 +1328,7 @@ subroutine VISUALIZE_RADIANCE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                         COSDELPHI = (cos(U) - COSTH*cos(THETA1))/(SINTH1*SINTH)
                     else if (abs(SINTH0) .gt. 1.0e-6) then
                         COSDELPHI = (cos(U)*cos(V) - COSTH*cos(THETA0))&
-                            & /(SINTH0*SINTH)
+                            &/(SINTH0*SINTH)
                     end if
                     COSDELPHI = min(+1.0d0, max(-1.0d0, COSDELPHI))
                     if (U .ge. 0.0) then
@@ -1385,22 +1398,22 @@ subroutine VISUALIZE_RADIANCE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
             !   to calculate the Stokes radiance vector for this pixel
             TRANSMIT = 1.0d0; VISRAD(:) = 0.0d0
             call INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
-                & NSTPHASE, NSCATANGLE, PHASETAB,&
-                & NX, NY, NZ, NPTS, NCELLS,&
-                & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-                & XGRID, YGRID, ZGRID, GRIDPOS,&
-                & ML, MM, NLM, NLEG, NUMPHASE,&
-                & NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-                & DELTAM, SRCTYPE, WAVELEN, SOLARMU, SOLARAZ,&
-                & EXTINCT, ALBEDO, LEGEN, IPHASE,&
-                & DIRFLUX, SHPTR, SOURCE, YLMSUN,&
-                & MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-                & SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
-                & MU2, PHI2, X0, Y0, Z0,&
-                & XE, YE, ZE, SIDE, TRANSMIT, VISRAD, VALIDRAD)
+                &NSTPHASE, NSCATANGLE, PHASETAB,&
+                &NX, NY, NZ, NPTS, NCELLS,&
+                &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+                &XGRID, YGRID, ZGRID, GRIDPOS,&
+                &ML, MM, NLM, NLEG, NUMPHASE,&
+                &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
+                &DELTAM, SRCTYPE, WAVELEN, SOLARMU, SOLARAZ,&
+                &EXTINCT, ALBEDO, LEGEN, IPHASE,&
+                &DIRFLUX, SHPTR, SOURCE, YLMSUN,&
+                &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
+                &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
+                &MU2, PHI2, X0, Y0, Z0,&
+                &XE, YE, ZE, SIDE, TRANSMIT, VISRAD, VALIDRAD)
 900         continue
             ! write (6,'(1X,2F8.4,1X,2F11.7,4(1X,F11.6))')&
-            !     & X0,Y0,MURAY,PHIRAY,VISRAD(:)
+            !     &X0,Y0,MURAY,PHIRAY,VISRAD(:)
             VISOUT(1, IVIS) = VISRAD(1)
             if (VISRAD(1) .gt. 0.0) then
                 if (NSTOKES .gt. 1) then
@@ -1441,19 +1454,20 @@ subroutine VISUALIZE_RADIANCE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
 end subroutine
 
 subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
-    & NSTPHASE, NSCATANGLE, PHASETAB,&
-    & NX, NY, NZ, NPTS, NCELLS,&
-    & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-    & XGRID, YGRID, ZGRID, GRIDPOS,&
-    & ML, MM, NLM, NLEG, NUMPHASE,&
-    & NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-    & DELTAM, SRCTYPE, WAVELEN, SOLARMU, SOLARAZ,&
-    & EXTINCT, ALBEDO, LEGEN, IPHASE,&
-    & DIRFLUX, SHPTR, SOURCE, YLMSUN,&
-    & MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-    & SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
-    & MU2, PHI2, X0, Y0, Z0,&
-    & XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
+    &NSTPHASE, NSCATANGLE, PHASETAB,&
+    &NX, NY, NZ, NPTS, NCELLS,&
+    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+    &XGRID, YGRID, ZGRID, GRIDPOS,&
+    &ML, MM, NLM, NLEG, NUMPHASE,&
+    &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
+    &DELTAM, SRCTYPE, WAVELEN, SOLARMU, SOLARAZ,&
+    &EXTINCT, ALBEDO, LEGEN, IPHASE,&
+    &DIRFLUX, SHPTR, SOURCE, YLMSUN,&
+    &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
+    &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
+    &MU2, PHI2, X0, Y0, Z0,&
+    &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
+
     !   Integrates the source function through the extinction field
     ! (EXTINCT) backward from the outgoing direction (MU2,PHI2) to find
     ! radiance (RADIANCE) at the point X0,Y0,Z0.
@@ -1461,6 +1475,7 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
     ! are input and returned after the integration along with the exitti
     ! ray location (XE,YE,ZE) and side of the domain (1=-X,2=+X,3=-Y,4=+
     ! 5=-Z,6=+Z).
+
     implicit none
     integer BCFLAG, IPFLAG, NSTOKES, NSTLEG, NSTPHASE, NSCATANGLE
     integer NX, NY, NZ, NPTS, NCELLS, SIDE
@@ -1509,8 +1524,8 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
     data OPPFACE/2, 1, 4, 3, 6, 5/
     data ONEY/0, 0, -1, -2, 0, 0, -5, -6/, ONEX/0, -1, 0, -3, 0, -5, 0, -7/
     data DONEFACE/0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 3, 0, 5, 0, 7, 2, 0, 4, 0, 6, 0, 8, 0,&
-        & 0, 0, 1, 2, 0, 0, 5, 6, 3, 4, 0, 0, 5, 6, 0, 0,&
-        & 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 0, 0, 0, 0/
+        &0, 0, 1, 2, 0, 0, 5, 6, 3, 4, 0, 0, 5, 6, 0, 0,&
+        &0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 0, 0, 0, 0/
 
     ! TRANSCUT is the transmission to stop the integration at
     TRANSCUT = 5.0e-5
@@ -1530,7 +1545,7 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
         !   direction my interpolating in scattering angle in the PHASETA
         !   table and then rotating the Q/U polarization to the outgoing
         COSSCAT = SOLARMU*MU2 + sqrt((1.0 - SOLARMU**2)*(1.0 - MU2**2))&
-            & *cos(SOLARAZ - PHI2)
+            &*cos(SOLARAZ - PHI2)
         if (NUMPHASE .gt. 0) then
             allocate (SINGSCAT(NSTOKES, NUMPHASE))
             F = (NSCATANGLE - 1)*(acos(COSSCAT)/PI) + 1
@@ -1538,10 +1553,10 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
             F = F - J
             do I = 1, NUMPHASE
                 SINGSCAT(1:NSTPHASE, I)&
-                    & = (1 - F)*PHASETAB(:, I, J) + F*PHASETAB(:, I, J + 1)
+                    &= (1 - F)*PHASETAB(:, I, J) + F*PHASETAB(:, I, J + 1)
                 if (NSTOKES .gt. 1) then
                     call ROTATE_POL_PLANE(NSTOKES, COSSCAT, SOLARMU,&
-                        & SNGL(MU2), SOLARAZ - SNGL(PHI2), SINGSCAT(:, I))
+                        &SNGL(MU2), SOLARAZ - SNGL(PHI2), SINGSCAT(:, I))
                 end if
             end do
         else
@@ -1602,10 +1617,10 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
     ZE = Z0
     ! ZE = MAX(MIN(Z0,DBLE(ZGRID(NZ))),DBLE(ZGRID(1)))
     call LOCATE_GRID_CELL(NX, NY, NZ, XGRID, YGRID, ZGRID,&
-        & NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS,&
-        & BCFLAG, IPFLAG, XE, YE, ZE, ICELL)
+        &NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS,&
+        &BCFLAG, IPFLAG, XE, YE, ZE, ICELL)
     ! print '(A,5(1X,F8.5),1X,I6)',&
-    !     & 'INTEGRATE_1RAY:',X0,Y0,Z0,MU2,PHI2,ICELL
+    !     &'INTEGRATE_1RAY:',X0,Y0,Z0,MU2,PHI2,ICELL
     IFACE = 0
     NGRID = 0
 
@@ -1615,7 +1630,7 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
         ! Make sure current cell is valid
         if (ICELL .le. 0) then
             write (6, *) 'Error [INTEGRATE_1RAY]: ICELL=', ICELL,&
-                & MU2, PHI2, XE, YE, ZE
+                &MU2, PHI2, XE, YE, ZE
             stop
         end if
         NGRID = NGRID + 1
@@ -1631,20 +1646,20 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
         ! Compute the source function times extinction in direction (MU2
         if (NSTOKES .eq. 1) then
             call COMPUTE_SOURCE_1CELL_UNPOL(ICELL, GRIDPTR,&
-                & ML, MM, NLM, NLEG, NUMPHASE,&
-                & NPTS, DELTAM, SRCTYPE, SOLARMU,&
-                & EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX,&
-                & SHPTR, SOURCE, YLMDIR, YLMSUN, SUNDIRLEG, SINGSCAT,&
-                & DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
-                & EXTINCT8, SRCEXT8)
+                &ML, MM, NLM, NLEG, NUMPHASE,&
+                &NPTS, DELTAM, SRCTYPE, SOLARMU,&
+                &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX,&
+                &SHPTR, SOURCE, YLMDIR, YLMSUN, SUNDIRLEG, SINGSCAT,&
+                &DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
+                &EXTINCT8, SRCEXT8)
         else
             call COMPUTE_SOURCE_1CELL(ICELL, GRIDPTR,&
-                & NSTOKES, NSTLEG, ML, MM, NLM, NLEG, NUMPHASE,&
-                & NPTS, DELTAM, SRCTYPE, SOLARMU,&
-                & EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX,&
-                & SHPTR, SOURCE, YLMDIR, YLMSUN, SUNDIRLEG, SINGSCAT,&
-                & DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
-                & EXTINCT8, SRCEXT8)
+                &NSTOKES, NSTLEG, ML, MM, NLM, NLEG, NUMPHASE,&
+                &NPTS, DELTAM, SRCTYPE, SOLARMU,&
+                &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX,&
+                &SHPTR, SOURCE, YLMDIR, YLMSUN, SUNDIRLEG, SINGSCAT,&
+                &DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
+                &EXTINCT8, SRCEXT8)
         end if
 
         ! Interpolate the source and extinction to the current point
@@ -1668,23 +1683,23 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
         V = (YE - GRIDPOS(2, IPT1))*INVDELY
         W = (ZE - GRIDPOS(3, IPT1))*INVDELZ
         SRCEXT1(:) = (1 - W)*((1 - V)*((1 - U)*SRCEXT8(:, 1) + U*SRCEXT8(:, 2))&
-            & + V*((1 - U)*SRCEXT8(:, 3) + U*SRCEXT8(:, 4)))&
-            & + W*((1 - V)*((1 - U)*SRCEXT8(:, 5) + U*SRCEXT8(:, 6))&
-            & + V*((1 - U)*SRCEXT8(:, 7) + U*SRCEXT8(:, 8)))
+            &+ V*((1 - U)*SRCEXT8(:, 3) + U*SRCEXT8(:, 4)))&
+            &+ W*((1 - V)*((1 - U)*SRCEXT8(:, 5) + U*SRCEXT8(:, 6))&
+            &+ V*((1 - U)*SRCEXT8(:, 7) + U*SRCEXT8(:, 8)))
         SRCEXT1(1) = max(0.0, SRCEXT1(1))
         EXT1 = (1 - W)*((1 - V)*((1 - U)*EXTINCT8(1) + U*EXTINCT8(2))&
-            & + V*((1 - U)*EXTINCT8(3) + U*EXTINCT8(4)))&
-            & + W*((1 - V)*((1 - U)*EXTINCT8(5) + U*EXTINCT8(6))&
-            & + V*((1 - U)*EXTINCT8(7) + U*EXTINCT8(8)))
+            &+ V*((1 - U)*EXTINCT8(3) + U*EXTINCT8(4)))&
+            &+ W*((1 - V)*((1 - U)*EXTINCT8(5) + U*EXTINCT8(6))&
+            &+ V*((1 - U)*EXTINCT8(7) + U*EXTINCT8(8)))
 
         ! This cell is independent pixel if IP mode or open boundary
         !   conditions and ray is leaving domain (i.e. not entering)
         IPINX = btest(int(CELLFLAGS(ICELL)), 0) .and.&
-            & .not. (btest(BCFLAG, 0) .and.&
-            & ((CX .gt. 0 .and. XE .lt. XM) .or. (CX .lt. 0 .and. XE .gt. XM)))
+            &.not. (btest(BCFLAG, 0) .and.&
+            &((CX .gt. 0 .and. XE .lt. XM) .or. (CX .lt. 0 .and. XE .gt. XM)))
         IPINY = btest(int(CELLFLAGS(ICELL)), 1) .and.&
-            & .not. (btest(BCFLAG, 1) .and.&
-            & ((CY .gt. 0 .and. YE .lt. YM) .or. (CY .lt. 0 .and. YE .gt. YM)))
+            &.not. (btest(BCFLAG, 1) .and.&
+            &((CY .gt. 0 .and. YE .lt. YM) .or. (CY .lt. 0 .and. YE .gt. YM)))
 
         ! Find boundaries of the current cell
         ! Find the three possible intersection planes (X,Y,Z)
@@ -1706,7 +1721,7 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
         SO = min(SOX, SOY, SOZ)
         if (SO .lt. -EPS) then
             write (6, *) 'Error [INTEGRATE_1RAY]: SO<0 ',&
-                & MU2, PHI2, XE, YE, ZE, SO, ICELL
+                &MU2, PHI2, XE, YE, ZE, SO, ICELL
             stop
         end if
         XN = XE + SO*CX
@@ -1719,9 +1734,9 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
         V = (YN - GRIDPOS(2, IPT1))*INVDELY
         W = (ZN - GRIDPOS(3, IPT1))*INVDELZ
         EXTN = (1 - W)*((1 - V)*((1 - U)*EXTINCT8(1) + U*EXTINCT8(2))&
-            & + V*((1 - U)*EXTINCT8(3) + U*EXTINCT8(4)))&
-            & + W*((1 - V)*((1 - U)*EXTINCT8(5) + U*EXTINCT8(6))&
-            & + V*((1 - U)*EXTINCT8(7) + U*EXTINCT8(8)))
+            &+ V*((1 - U)*EXTINCT8(3) + U*EXTINCT8(4)))&
+            &+ W*((1 - V)*((1 - U)*EXTINCT8(5) + U*EXTINCT8(6))&
+            &+ V*((1 - U)*EXTINCT8(7) + U*EXTINCT8(8)))
         TAUGRID = SO*0.5*(EXT1 + EXTN)
         NTAU = max(1, 1 + int(TAUGRID/TAUTOL))
         DELS = SO/NTAU
@@ -1737,13 +1752,13 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
             V = (YI - GRIDPOS(2, IPT1))*INVDELY
             W = (ZI - GRIDPOS(3, IPT1))*INVDELZ
             EXT0 = (1 - W)*((1 - V)*((1 - U)*EXTINCT8(1) + U*EXTINCT8(2))&
-                & + V*((1 - U)*EXTINCT8(3) + U*EXTINCT8(4)))&
-                & + W*((1 - V)*((1 - U)*EXTINCT8(5) + U*EXTINCT8(6))&
-                & + V*((1 - U)*EXTINCT8(7) + U*EXTINCT8(8)))
+                &+ V*((1 - U)*EXTINCT8(3) + U*EXTINCT8(4)))&
+                &+ W*((1 - V)*((1 - U)*EXTINCT8(5) + U*EXTINCT8(6))&
+                &+ V*((1 - U)*EXTINCT8(7) + U*EXTINCT8(8)))
             SRCEXT0(:) = (1 - W)*((1 - V)*((1 - U)*SRCEXT8(:, 1) + U*SRCEXT8(:, 2))&
-                & + V*((1 - U)*SRCEXT8(:, 3) + U*SRCEXT8(:, 4)))&
-                & + W*((1 - V)*((1 - U)*SRCEXT8(:, 5) + U*SRCEXT8(:, 6))&
-                & + V*((1 - U)*SRCEXT8(:, 7) + U*SRCEXT8(:, 8)))
+                &+ V*((1 - U)*SRCEXT8(:, 3) + U*SRCEXT8(:, 4)))&
+                &+ W*((1 - V)*((1 - U)*SRCEXT8(:, 5) + U*SRCEXT8(:, 6))&
+                &+ V*((1 - U)*SRCEXT8(:, 7) + U*SRCEXT8(:, 8)))
             SRCEXT0(1) = max(0.0, SRCEXT0(1))
 
             ! Compute the subgrid radiance: integration of the source fun
@@ -1754,8 +1769,8 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
                 TRANSCELL = 1.0 - ABSCELL
                 ! Linear extinction, linear source*extinction, to second
                 SRC(:) = (0.5*(SRCEXT0(:) + SRCEXT1(:))&
-                    & + 0.08333333333*(EXT0*SRCEXT1(:) - EXT1*SRCEXT0(:))*DELS&
-                    & *(1.0 - 0.05*(EXT1 - EXT0)*DELS))/EXT
+                    &+ 0.08333333333*(EXT0*SRCEXT1(:) - EXT1*SRCEXT0(:))*DELS&
+                    &*(1.0 - 0.05*(EXT1 - EXT0)*DELS))/EXT
             else
                 ABSCELL = 0.0
                 TRANSCELL = 1.0
@@ -1787,7 +1802,7 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
         INEXTCELL = NEIGHPTR(IFACE, ICELL)
         if (INEXTCELL .lt. 0) then
             call NEXT_CELL(XN, YN, ZN, IFACE, JFACE, ICELL, GRIDPOS,&
-                & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXTCELL)
+                &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXTCELL)
         end if
         ! If going to same or larger face then use previous face
         if (NEIGHPTR(IFACE, ICELL) .ge. 0 .and. .not. OPENBCFACE) then
@@ -1817,13 +1832,13 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
         else if (INEXTCELL .eq. 0 .and. IFACE .ge. 5) then
             VALIDRAD = .true.
             call FIND_BOUNDARY_RADIANCE(NSTOKES, XN, YN,&
-                & SNGL(MU2), SNGL(PHI2),&
-                & IC, KFACE, GRIDPTR, GRIDPOS,&
-                & MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-                & NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-                & SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
-                & SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
-                & RADBND)
+                &SNGL(MU2), SNGL(PHI2),&
+                &IC, KFACE, GRIDPTR, GRIDPOS,&
+                &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
+                &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
+                &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
+                &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
+                &RADBND)
             RADIANCE(:) = RADIANCE(:) + TRANSMIT*RADBND(:)
         else
             ICELL = INEXTCELL
@@ -1848,12 +1863,12 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
 end subroutine
 
 subroutine FIND_BOUNDARY_RADIANCE(NSTOKES, XB, YB, MU2, PHI2,&
-    & ICELL, KFACE, GRIDPTR, GRIDPOS,&
-    & MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-    & NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-    & SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
-    & SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
-    & RADBND)
+    &ICELL, KFACE, GRIDPTR, GRIDPOS,&
+    &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
+    &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
+    &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
+    &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
+    &RADBND)
     !   Returns the interpolated Stokes radiance at the boundary (RADBND
     ! Inputs are the boundary location (XB,YB), ray direction away from
     ! boundary (MU2,PHI2), cell number (ICELL) and face (KFACE) at
@@ -1875,7 +1890,7 @@ subroutine FIND_BOUNDARY_RADIANCE(NSTOKES, XB, YB, MU2, PHI2,&
     real X(4), Y(4), RAD(NSTOKES, 4), U, V
     integer GRIDFACE(4, 6)
     data GRIDFACE/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8,&
-        & 1, 2, 3, 4, 5, 6, 7, 8/
+        &1, 2, 3, 4, 5, 6, 7, 8/
 
     LAMBERTIAN = SFCTYPE(2:2) .eq. 'L'
 
@@ -1900,7 +1915,7 @@ subroutine FIND_BOUNDARY_RADIANCE(NSTOKES, XB, YB, MU2, PHI2,&
             IBC = IL
             if (BCPTR(IBC, 1) .ne. IP) IBC = IU
             if (BCPTR(IBC, 1) .ne. IP)&
-                & stop 'Error [FIND_BOUNDARY_RADIANCE]: Not at boundary.'
+                &stop 'Error [FIND_BOUNDARY_RADIANCE]: Not at boundary.'
             RAD(:, J) = BCRAD(:, IBC)
 
         else
@@ -1919,14 +1934,14 @@ subroutine FIND_BOUNDARY_RADIANCE(NSTOKES, XB, YB, MU2, PHI2,&
             IBC = IL
             if (BCPTR(IBC, 2) .ne. IP) IBC = IU
             if (BCPTR(IBC, 2) .ne. IP)&
-                & stop 'Error [FIND_BOUNDARY_RADIANCE]: Not at boundary.'
+                &stop 'Error [FIND_BOUNDARY_RADIANCE]: Not at boundary.'
 
             if (.not. LAMBERTIAN) then
                 call VARIABLE_BRDF_SURFACE(NBOTPTS, IBC, IBC, BCPTR(1, 2),&
-                    & NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MU2, PHI2,&
-                    & SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
-                    & SFCTYPE, NSFCPAR, SFCGRIDPARMS, NSTOKES,&
-                    & BCRAD(:, 1 + NTOPPTS))
+                    &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MU2, PHI2,&
+                    &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
+                    &SFCTYPE, NSFCPAR, SFCGRIDPARMS, NSTOKES,&
+                    &BCRAD(:, 1 + NTOPPTS))
             end if
             RAD(:, J) = BCRAD(:, NTOPPTS + IBC)
         end if
@@ -1942,17 +1957,17 @@ subroutine FIND_BOUNDARY_RADIANCE(NSTOKES, XB, YB, MU2, PHI2,&
         V = 0.0
     end if
     RADBND(:) = (1 - U)*(1 - V)*RAD(:, 1) + U*(1 - V)*RAD(:, 2)&
-        & + (1 - U)*V*RAD(:, 3) + U*V*RAD(:, 4)
+        &+ (1 - U)*V*RAD(:, 3) + U*V*RAD(:, 4)
     return
 end subroutine
 
 subroutine COMPUTE_SOURCE_1CELL(ICELL, GRIDPTR,&
-    & NSTOKES, NSTLEG, ML, MM, NLM, NLEG, NUMPHASE,&
-    & NPTS, DELTAM, SRCTYPE, SOLARMU,&
-    & EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX,&
-    & SHPTR, SOURCE, YLMDIR, YLMSUN, SUNDIRLEG, SINGSCAT,&
-    & DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
-    & EXTINCT8, SRCEXT8)
+    &NSTOKES, NSTLEG, ML, MM, NLM, NLEG, NUMPHASE,&
+    &NPTS, DELTAM, SRCTYPE, SOLARMU,&
+    &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX,&
+    &SHPTR, SOURCE, YLMDIR, YLMSUN, SUNDIRLEG, SINGSCAT,&
+    &DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
+    &EXTINCT8, SRCEXT8)
     !   Computes the source function times extinction for gridpoints
     ! belonging to cell ICELL in the direction (MU,PHI).  The results
     ! are returned in SRCEXT8 and EXTINCT8.
@@ -2006,9 +2021,9 @@ subroutine COMPUTE_SOURCE_1CELL(ICELL, GRIDPTR,&
             if (NSTOKES .gt. 1) then
                 do J = 1, NS
                     SRCEXT8(2, N) = SRCEXT8(2, N) + SOURCE(2, IS + J)*YLMDIR(2, J)&
-                        & + SOURCE(3, IS + J)*YLMDIR(5, J)
+                        &+ SOURCE(3, IS + J)*YLMDIR(5, J)
                     SRCEXT8(3, N) = SRCEXT8(3, N) + SOURCE(2, IS + J)*YLMDIR(6, J)&
-                        & + SOURCE(3, IS + J)*YLMDIR(3, J)
+                        &+ SOURCE(3, IS + J)*YLMDIR(3, J)
                 end do
             end if
             if (NSTOKES .eq. 4) then
@@ -2074,12 +2089,12 @@ subroutine COMPUTE_SOURCE_1CELL(ICELL, GRIDPTR,&
 end subroutine
 
 subroutine COMPUTE_SOURCE_1CELL_UNPOL(ICELL, GRIDPTR,&
-    & ML, MM, NLM, NLEG, NUMPHASE,&
-    & NPTS, DELTAM, SRCTYPE, SOLARMU,&
-    & EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX,&
-    & SHPTR, SOURCE, YLMDIR, YLMSUN, SUNDIRLEG, SINGSCAT,&
-    & DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
-    & EXTINCT8, SRCEXT8)
+    &ML, MM, NLM, NLEG, NUMPHASE,&
+    &NPTS, DELTAM, SRCTYPE, SOLARMU,&
+    &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX,&
+    &SHPTR, SOURCE, YLMDIR, YLMSUN, SUNDIRLEG, SINGSCAT,&
+    &DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
+    &EXTINCT8, SRCEXT8)
     !   Computes the source function times extinction for gridpoints
     ! belonging to cell ICELL in the direction (MU,PHI).  The results
     ! are returned in SRCEXT8 and EXTINCT8.
@@ -2179,7 +2194,7 @@ subroutine COMPUTE_SOURCE_1CELL_UNPOL(ICELL, GRIDPTR,&
 end subroutine
 
 subroutine PRECOMPUTE_PHASE(NSCATANGLE, NUMPHASE, NSTPHASE,&
-    & NSTOKES, ML, NSTLEG, NLEG, LEGEN, PHASETAB)
+    &NSTOKES, ML, NSTLEG, NLEG, LEGEN, PHASETAB)
     !   Precomputes the phase matrix elements I-I and I-Q as a function
     ! of scattering angle for solar direct scattering for all the
     ! tabulated phase functions. Output is in PHASETAB.
@@ -2255,7 +2270,7 @@ subroutine PRECOMPUTE_PHASE(NSCATANGLE, NUMPHASE, NSTPHASE,&
 end subroutine
 
 subroutine ROTATE_POL_PLANE(NSTOKES, COSSCAT,&
-    & SOLARMU, MU, DELPHI, SCATVECT)
+    &SOLARMU, MU, DELPHI, SCATVECT)
     ! Rotates the plane of polarization from the scattering plane
     ! to the outgoing meridional plane for the solar single
     ! scattered Stokes vector in SINGSCAT.
@@ -2294,18 +2309,18 @@ subroutine ROTATE_POL_PLANE(NSTOKES, COSSCAT,&
 end subroutine
 
 subroutine COMPUTE_RADIANCE(&
-    & NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
-    & ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
-    & NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-    & BCFLAG, IPFLAG, SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
-    & SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
-    & MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-    & GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, UNITS,&
-    & XGRID, YGRID, ZGRID, GRIDPOS,&
-    & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-    & EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
-    & SHPTR, SOURCE, SOURCE1, GRIDRAD,&
-    & OUTPARMS, IRAD, RADOUT)
+    &NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+    &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
+    &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
+    &BCFLAG, IPFLAG, SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
+    &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
+    &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
+    &GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, UNITS,&
+    &XGRID, YGRID, ZGRID, GRIDPOS,&
+    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+    &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
+    &SHPTR, SOURCE, SOURCE1, GRIDRAD,&
+    &OUTPARMS, IRAD, RADOUT)
     ! Computes the radiances for the specified locations and direction
     implicit none
     integer NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG, NPTS, NCELLS
@@ -2342,21 +2357,21 @@ subroutine COMPUTE_RADIANCE(&
 
     ! Make the isotropic radiances for the top boundary
     call COMPUTE_TOP_RADIANCES(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
-        & UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
+        &UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
 
     ! Make the bottom boundary radiances for the Lambertian surfaces.
     ! Compute the upwelling bottom radiances using the downwelling flu
     if (SFCTYPE .eq. 'FL') then
 
         call FIXED_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR(1, 2),&
-            & DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO,&
-            & WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1, 1 + NTOPPTS))
+            &DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO,&
+            &WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1, 1 + NTOPPTS))
 
     else if (SFCTYPE .eq. 'VL') then
 
         call VARIABLE_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR(1, 2),&
-            & DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS,&
-            & NSTOKES, BCRAD(1, 1 + NTOPPTS))
+            &DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS,&
+            &NSTOKES, BCRAD(1, 1 + NTOPPTS))
 
     end if
 
@@ -2404,9 +2419,9 @@ subroutine COMPUTE_RADIANCE(&
 
             ! Compute the source function throughout grid for this angle
             call COMPUTE_ONE_SOURCE(NSTOKES, ML, MM, NLM, NSTLEG, NLEG,&
-                & NUMPHASE, NPTS, DELTAM, MUOUT, PHIOUT, SRCTYPE,&
-                & SOLARMU, SOLARAZ, ALBEDO, LEGEN,&
-                & IPHASE, DIRFLUX, SHPTR, SOURCE, SOURCE1)
+                &NUMPHASE, NPTS, DELTAM, MUOUT, PHIOUT, SRCTYPE,&
+                &SOLARMU, SOLARAZ, ALBEDO, LEGEN,&
+                &IPHASE, DIRFLUX, SHPTR, SOURCE, SOURCE1)
 
             ! Set the radiance field to -1, so we can determine valid ra
             !   Also set the source array to the extinction times the so
@@ -2428,10 +2443,10 @@ subroutine COMPUTE_RADIANCE(&
             else
                 if (.not. LAMBERTIAN) then
                     call VARIABLE_BRDF_SURFACE(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
-                        & NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MUOUT, PHIOUT,&
-                        & SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
-                        & SFCTYPE, NSFCPAR, SFCGRIDPARMS, NSTOKES,&
-                        & BCRAD(1, 1 + NTOPPTS))
+                        &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MUOUT, PHIOUT,&
+                        &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
+                        &SFCTYPE, NSFCPAR, SFCGRIDPARMS, NSTOKES,&
+                        &BCRAD(1, 1 + NTOPPTS))
                 end if
                 do IBC = 1, NBOTPTS
                     I = BCPTR(IBC, 2)
@@ -2447,12 +2462,12 @@ subroutine COMPUTE_RADIANCE(&
                     IRAD = IRAD + 1
                     TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
                     call INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
-                        & NX, NY, NZ, NPTS, NCELLS,&
-                        & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-                        & XGRID, YGRID, ZGRID, GRIDPOS,&
-                        & MUOUT, PHIOUT, GRIDRAD, EXTINCT, SOURCE1,&
-                        & X0, Y0, Z0, XE, YE, ZE, SIDE,&
-                        & TRANSMIT, RADIANCE, VALIDRAD)
+                        &NX, NY, NZ, NPTS, NCELLS,&
+                        &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+                        &XGRID, YGRID, ZGRID, GRIDPOS,&
+                        &MUOUT, PHIOUT, GRIDRAD, EXTINCT, SOURCE1,&
+                        &X0, Y0, Z0, XE, YE, ZE, SIDE,&
+                        &TRANSMIT, RADIANCE, VALIDRAD)
                     RADOUT(:, IRAD) = RADIANCE(1:NSTOKES)
                     X0 = X0 + OUTPARMS(2)
                 end do
@@ -2466,10 +2481,10 @@ subroutine COMPUTE_RADIANCE(&
 end subroutine
 
 subroutine COMPUTE_ONE_SOURCE(NSTOKES,&
-    & ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
-    & NPTS, DELTAM, MU, PHI, SRCTYPE, SOLARMU, SOLARAZ,&
-    & ALBEDO, LEGEN, IPHASE, DIRFLUX,&
-    & SHPTR, SOURCE, SOURCE1)
+    &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
+    &NPTS, DELTAM, MU, PHI, SRCTYPE, SOLARMU, SOLARAZ,&
+    &ALBEDO, LEGEN, IPHASE, DIRFLUX,&
+    &SHPTR, SOURCE, SOURCE1)
     ! Computes the source function (SOURCE1) in the direction (MU,PHI)
     ! for the whole domain (NX,NZ).  The spherical harmonic source funct
     ! series is input in SOURCE.
@@ -2505,10 +2520,10 @@ subroutine COMPUTE_ONE_SOURCE(NSTOKES,&
     if (SRCTYPE .ne. 'T') then
         OFOURPI = 1.0/(4.0*acos(-1.0))
         call YLMALL(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG,&
-            & YLMSUN)
+            &YLMSUN)
         SECMU0 = 1.0/abs(SOLARMU)
         COSSCAT = SOLARMU*MU + sqrt((1.0d0 - SOLARMU**2)*(1.0d0 - MU**2))&
-            & *cos(SOLARAZ - PHI)
+            &*cos(SOLARAZ - PHI)
         if (NUMPHASE .eq. 0 .and. TMS) then
             ! If non-tabulate phase functions (unpolarized) then
             !   compute the Legendre polynomials for the scattering angle
@@ -2544,8 +2559,8 @@ subroutine COMPUTE_ONE_SOURCE(NSTOKES,&
             ! Sum the Wigner series (for A1 and B1), rotate the plane of
             !   polarization to the outgoing direction, and return the Stoke
             call SOLAR_SINGSCAT_VECT(NLEG, UNSCLEGEN, COSSCAT,&
-                & SOLARMU, MU, SOLARAZ - PHI, NSTOKES,&
-                & SINGSCAT(1, IPH))
+                &SOLARMU, MU, SOLARAZ - PHI, NSTOKES,&
+                &SINGSCAT(1, IPH))
             if (SINGSCAT(1, IPH) .le. 0.0) then
                 write (6, *) 'Error [COMPUTE_ONE_SOURCE]: negative source function',&
                     &' for tabulated phase function:', IPH, MU, PHI, SINGSCAT(1, IPH)
@@ -2568,9 +2583,9 @@ subroutine COMPUTE_ONE_SOURCE(NSTOKES,&
         if (NSTOKES .gt. 1) then
             do J = 1, NS
                 SOURCE1(2, I) = SOURCE1(2, I) + SOURCE(2, IS + J)*YLMDIR(2, J)&
-                    & + SOURCE(3, IS + J)*YLMDIR(5, J)
+                    &+ SOURCE(3, IS + J)*YLMDIR(5, J)
                 SOURCE1(3, I) = SOURCE1(3, I) + SOURCE(2, IS + J)*YLMDIR(6, J)&
-                    & + SOURCE(3, IS + J)*YLMDIR(3, J)
+                    &+ SOURCE(3, IS + J)*YLMDIR(3, J)
             end do
         end if
         if (NSTOKES .eq. 4) then
@@ -2638,8 +2653,8 @@ subroutine COMPUTE_ONE_SOURCE(NSTOKES,&
 end subroutine
 
 subroutine SOLAR_SINGSCAT_VECT(NLEG, SINGLEGEN, COSSCAT,&
-    & SOLARMU, MU, DELPHI, NSTOKES,&
-    & SCATVECT)
+    &SOLARMU, MU, DELPHI, NSTOKES,&
+    &SCATVECT)
     ! Calculates the Stokes vector for a single scattering of unpolariz
     ! sunlight from the solar direction (SOLARMU) to the outgoing
     ! direction (MU) and with cosine scattering angle (COSSCAT).
@@ -2744,7 +2759,7 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
     double precision EXT, TAU, TRANSCELL, ABSCELL
     double precision SRC(NSTOKES), RAD(NSTOKES)
     data GRIDFACE/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8,&
-        & 1, 2, 3, 4, 5, 6, 7, 8/, OPPFACE/2, 1, 4, 3, 6, 5/
+        &1, 2, 3, 4, 5, 6, 7, 8/, OPPFACE/2, 1, 4, 3, 6, 5/
 
     ! added for fixing the "domain shift" issue
     !╭──────────────────────────────────────────────────────────────╮!
@@ -2813,14 +2828,14 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
     YE = Y0
     ZE = Z0
     call LOCATE_GRID_CELL(NX, NY, NZ, XGRID, YGRID, ZGRID,&
-        & NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS,&
-        & BCFLAG, IPFLAG, XE, YE, ZE, ICELL)
+        &NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS,&
+        &BCFLAG, IPFLAG, XE, YE, ZE, ICELL)
     ! print '(A,5(1X,F8.5),1X,I6)', &
-    !     & 'INTEGRATE_SOURCE:', X0, Y0, Z0, MU, PHI, ICELL
+    !     &'INTEGRATE_SOURCE:', X0, Y0, Z0, MU, PHI, ICELL
     call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,&
-        & XE, YE, ZE, 1, EXTINCT, 1, 1, EXT1)
+        &XE, YE, ZE, 1, EXTINCT, 1, 1, EXT1)
     call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,&
-        & XE, YE, ZE, NSTOKES, SOURCE, 1, NSTOKES, SRCEXT1)
+        &XE, YE, ZE, NSTOKES, SOURCE, 1, NSTOKES, SRCEXT1)
     SRCEXT1(1) = max(0.0, SRCEXT1(1))
 
     ! Loop until finding a face with known radiances
@@ -2829,11 +2844,11 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
         ! This cell is independent pixel if IP mode or open boundary
         !   conditions and ray is leaving domain (i.e. not entering)
         IPINX = btest(int(CELLFLAGS(ICELL)), 0) .and.&
-            & .not. (btest(BCFLAG, 0) .and.&
-            & ((CX .gt. 0 .and. XE .lt. XM) .or. (CX .lt. 0 .and. XE .gt. XM)))
+            &.not. (btest(BCFLAG, 0) .and.&
+            &((CX .gt. 0 .and. XE .lt. XM) .or. (CX .lt. 0 .and. XE .gt. XM)))
         IPINY = btest(int(CELLFLAGS(ICELL)), 1) .and.&
-            & .not. (btest(BCFLAG, 1) .and.&
-            & ((CY .gt. 0 .and. YE .lt. YM) .or. (CY .lt. 0 .and. YE .gt. YM)))
+            &.not. (btest(BCFLAG, 1) .and.&
+            &((CY .gt. 0 .and. YE .lt. YM) .or. (CY .lt. 0 .and. YE .gt. YM)))
 
         ! Find boundaries of the current cell
         ! Find the three possible intersection planes (X,Y,Z)
@@ -2855,8 +2870,8 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
         SO = min(SOX, SOY, SOZ)
         if (SO .lt. -EPS) then
             write (6, *) 'Error [INTEGRATE_SOURCE]: SO<0 ',&
-                & MU, PHI, X0, Y0, Z0, XE, YE, ZE, SO, SOX, SOY, SOZ, XGRID(1), YGRID(1),&
-                & GRIDPOS(1, IOPP), GRIDPOS(2, IOPP), GRIDPOS(3, IOPP)
+                &MU, PHI, X0, Y0, Z0, XE, YE, ZE, SO, SOX, SOY, SOZ, XGRID(1), YGRID(1),&
+                &GRIDPOS(1, IOPP), GRIDPOS(2, IOPP), GRIDPOS(3, IOPP)
             stop
         end if
         if (IPINX) then
@@ -2874,7 +2889,7 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
         ! Find the optical path across the grid cell and figure how
         !   many subgrid intervals to use
         call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,&
-            & XN, YN, ZN, 1, EXTINCT, 1, 1, EXTN)
+            &XN, YN, ZN, 1, EXTINCT, 1, 1, EXTN)
         TAUGRID = SO*0.5*(EXT1(1) + EXTN(1))
         NTAU = max(1, 1 + int(TAUGRID/TAUTOL))
         DELS = SO/NTAU
@@ -2897,10 +2912,10 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
                 EXT0(1) = EXTN(1)
             else
                 call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,&
-                    & XI, YI, ZI, 1, EXTINCT, 1, 1, EXT0)
+                    &XI, YI, ZI, 1, EXTINCT, 1, 1, EXT0)
             end if
             call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,&
-                & XI, YI, ZI, NSTOKES, SOURCE, 1, NSTOKES, SRCEXT0)
+                &XI, YI, ZI, NSTOKES, SOURCE, 1, NSTOKES, SRCEXT0)
             SRCEXT0(1) = max(0.0, SRCEXT0(1))
 
             ! Compute the subgrid radiance: integration of the source fun
@@ -2911,8 +2926,8 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
                 TRANSCELL = 1.0 - ABSCELL
                 ! Linear extinction, linear source*extinction, to second
                 SRC(:) = (0.5*(SRCEXT0(:) + SRCEXT1(:)) + 0.08333333333*&
-                    & (EXT0(1)*SRCEXT1(:) - EXT1(1)*SRCEXT0(:))*DELS&
-                    & *(1.0 - 0.05*(EXT1(1) - EXT0(1))*DELS))/EXT
+                    &(EXT0(1)*SRCEXT1(:) - EXT1(1)*SRCEXT0(:))*DELS&
+                    &*(1.0 - 0.05*(EXT1(1) - EXT0(1))*DELS))/EXT
             else
                 ABSCELL = 0.0
                 TRANSCELL = 1.0
@@ -2944,7 +2959,7 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
         INEXTCELL = NEIGHPTR(IFACE, ICELL)
         if (INEXTCELL .lt. 0) then
             call NEXT_CELL(XN, YN, ZN, IFACE, JFACE, ICELL, GRIDPOS,&
-                & GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXTCELL)
+                &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXTCELL)
         end if
         ! Get the four grid points on the intersection face for
         !   telling if at the boundary
@@ -2978,10 +2993,10 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
         if (TRANSMIT .lt. 1.0e-5) then
             VALIDRAD = .true.
         else if (GRIDRAD(1, I1) .ge. 0.0 .and. GRIDRAD(1, I2) .ge. 0.0 .and.&
-            & GRIDRAD(1, I3) .ge. 0.0 .and. GRIDRAD(1, I4) .ge. 0.0) then
+            &GRIDRAD(1, I3) .ge. 0.0 .and. GRIDRAD(1, I4) .ge. 0.0) then
             VALIDRAD = .true.
             call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS, XI, YI, ZI,&
-                & NSTOKES, GRIDRAD, 1, NSTOKES, RAD0)
+                &NSTOKES, GRIDRAD, 1, NSTOKES, RAD0)
             RADIANCE(:) = RADIANCE(:) + TRANSMIT*RAD0(:)
         else
             ICELL = INEXTCELL
@@ -3039,8 +3054,8 @@ subroutine INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,&
 end subroutine
 
 subroutine LOCATE_GRID_CELL(NX, NY, NZ, XGRID, YGRID, ZGRID,&
-    & NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS,&
-    & BCFLAG, IPFLAG, X0, Y0, Z0, ICELL)
+    &NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS,&
+    &BCFLAG, IPFLAG, X0, Y0, Z0, ICELL)
     !   Locates the grid cell in the tree structure containing the
     ! specified point (X0,Y0,Z0), and returns the cell pointer ICELL.
     ! First the base grid cell is found (using NX,NY,NZ, XGRID,YGRID,ZGR
@@ -3346,7 +3361,7 @@ subroutine YLMALL(TRANSPOSE, MU, PHI, ML, MM, NSTLEG, YR)
 end subroutine
 
 subroutine WIGNERFCT02P2M_NORMALIZED(MIU, NRANK, M,&
-    & DM0, DM2P, DM2M)
+    &DM0, DM2P, DM2M)
     ! ----------------------------------------------------------------
     ! |  The routine computes the DMM1N vector coefficients for
     ! |               M >= 0; M1 = 0, 2, -2; N = 0,...,NRANK, and
@@ -3416,7 +3431,7 @@ subroutine WIGNERFCT02P2M_NORMALIZED(MIU, NRANK, M,&
             FACT1 = FACT1*dble(2*N + 1)/dble(N)
 
             FACT2 = DSQRT(dble(N**2 - M**2))&
-                & *DSQRT(dble(N**2 - 4))
+                &*DSQRT(dble(N**2 - 4))
             FACT2 = FACT2/DSQRT(dble((N + 1)**2 - M**2))
             FACT2 = FACT2/DSQRT(dble((N + 1)**2 - 4))
             FACT2 = FACT2*dble(N + 1)/dble(N)
@@ -3547,8 +3562,8 @@ subroutine WIGNERFCT_DM0(X, NRANK, M, DM0)
             DM0(M) = DM_M10_N0(X, M)
             do N = M, NRANK - 1
                 DM0(N + 1) = ((2*N + 1)*X*DM0(N)&
-                    & - DSQRT(dble(N**2 - M**2))*DM0(N - 1))&
-                    & /DSQRT(dble((N + 1)**2 - M**2))
+                    &- DSQRT(dble(N**2 - M**2))*DM0(N - 1))&
+                    &/DSQRT(dble((N + 1)**2 - M**2))
             end do
         end if
         do N = 0, NRANK
@@ -3612,7 +3627,7 @@ subroutine WIGNERFCT(X, NRANK, M, M1, DMM1)
             FACT1 = FACT1*dble(2*N + 1)/dble(N)
 
             FACT2 = DSQRT(dble(N**2 - M**2))&
-                & *DSQRT(dble(N**2 - M1**2))
+                &*DSQRT(dble(N**2 - M1**2))
             FACT2 = FACT2/DSQRT(dble((N + 1)**2 - M**2))
             FACT2 = FACT2/DSQRT(dble((N + 1)**2 - M1**2))
             FACT2 = FACT2*dble(N + 1)/dble(N)
@@ -3633,7 +3648,7 @@ subroutine PLMALL(TRANSPOSE, MU, ML, MM, PRC)
     integer J, M, MABS, L
     double precision X, PI, FCT, P1, P2, P3, SIGN
     double precision, allocatable :: DM0(:), DM2P(:),&
-        & DM2M(:)
+        &DM2M(:)
 
     ! --- allocate ---
     allocate (DM0(0:ML), DM2P(0:ML), DM2M(0:ML))
@@ -3655,8 +3670,8 @@ subroutine PLMALL(TRANSPOSE, MU, ML, MM, PRC)
     ! ..................................................................
     M = 0
     call WIGNERFCT02P2M_NORMALIZED&
-        & (X, ML, M,&
-        & DM0, DM2P, DM2M)
+        &(X, ML, M,&
+        &DM0, DM2P, DM2M)
     do L = 0, ML
         if (L .le. MM) then
             J = L*(L + 1) + M + 1
@@ -3680,8 +3695,8 @@ subroutine PLMALL(TRANSPOSE, MU, ML, MM, PRC)
     ! ..................................................................
     do MABS = 1, MM
         call WIGNERFCT02P2M_NORMALIZED&
-            & (X, ML, MABS,&
-            & DM0, DM2P, DM2M)
+            &(X, ML, MABS,&
+            &DM0, DM2P, DM2M)
         do L = MABS, ML
     ! ..................................................................
     !                               M > 0
@@ -3753,7 +3768,7 @@ subroutine PLANCK_FUNCTION(TEMP, UNITS, WAVENO, WAVELEN, PLANCK)
     else
         if (TEMP .gt. 0.0) then
             PLANCK = 1.1911e8/WAVELEN**5&
-                & /(exp(1.4388e4/(WAVELEN*TEMP)) - 1)
+                &/(exp(1.4388e4/(WAVELEN*TEMP)) - 1)
         else
             PLANCK = 0.0
         end if
@@ -3792,20 +3807,20 @@ double precision function INTLOW(X)
     integer N
     double precision SUM, F, A(29)
     data A/0.0d0,&
-        & 0.0d0, 0.333333333333333333333d0,&
-        & -0.125d0, 0.016666666666666666667d0,&
-        & 0.0d0, -0.0001984126984126984127d0,&
-        & 0.0d0, 0.36743092298647854203d-5,&
-        & 0.0d0, -0.75156325156325156325d-7,&
-        & 0.0d0, 0.16059043836821614599d-8,&
-        & 0.0d0, -0.35227934257916621232d-10,&
-        & 0.0d0, 0.78720803121674581370d-12,&
-        & 0.0d0, -0.17840422612224120352d-13,&
-        & 0.0d0, 0.40886009791799259829d-15,&
-        & 0.0d0, -0.94559508632959211871d-17,&
-        & 0.0d0, 0.22036011313440918061d-18,&
-        & 0.0d0, -0.51683202540046382743d-20,&
-        & 0.0d0, 0.12188644964239543006d-20/
+        &0.0d0, 0.333333333333333333333d0,&
+        &-0.125d0, 0.016666666666666666667d0,&
+        &0.0d0, -0.0001984126984126984127d0,&
+        &0.0d0, 0.36743092298647854203d-5,&
+        &0.0d0, -0.75156325156325156325d-7,&
+        &0.0d0, 0.16059043836821614599d-8,&
+        &0.0d0, -0.35227934257916621232d-10,&
+        &0.0d0, 0.78720803121674581370d-12,&
+        &0.0d0, -0.17840422612224120352d-13,&
+        &0.0d0, 0.40886009791799259829d-15,&
+        &0.0d0, -0.94559508632959211871d-17,&
+        &0.0d0, 0.22036011313440918061d-18,&
+        &0.0d0, -0.51683202540046382743d-20,&
+        &0.0d0, 0.12188644964239543006d-20/
 
     SUM = A(4)*X**4
     F = X
@@ -3828,7 +3843,7 @@ double precision function INTHIGH(X)
     SUM = 0.0d0
     do 100 N = 1, 15
         SUM = SUM + exp(-N*X)&
-            & *(X**3/N + 3*X**2/N**2 + 6*X/N**3 + 6.0d0/N**4)
+            &*(X**3/N + 3*X**2/N**2 + 6*X/N**3 + 6.0d0/N**4)
 100 end do
     INTHIGH = SUM
     return
