@@ -835,6 +835,9 @@ subroutine ACCELERATE_SOLUTION(&
     integer I, J, IS, ISD, K, NS, NSD, NSC
 
     if (ACCELPAR .gt. 0.0) then
+! haven't check whether this parallelization has racing issue
+! only passed limited cases
+!╭────────────────────────────────────────────────────────────────────────────╮!
 !$OMP PARALLEL DEFAULT(SHARED) PRIVATE(I, J, IS, NS, ISD, NSD, NSC)
 !$OMP DO
         do I = 1, NPTS
@@ -850,6 +853,7 @@ subroutine ACCELERATE_SOLUTION(&
         end do
 !$OMP END DO
 !$OMP END PARALLEL
+!╰────────────────────────────────────────────────────────────────────────────╯!
     end if
 
     return
