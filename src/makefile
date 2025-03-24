@@ -22,7 +22,7 @@ TARGETS = bin shdom shdom_ propgen make_mie_table make_tmatrix_table plotscattab
 ifeq ($(useOMP), yes)
 	# openMPI
 	FFLAGS += -fopenmp
-	SHDOMOBJS = shdSolv_omp.o shdSolv_2.o shdIO_inp.o shdIO_out.o shdSurf_brdf.o fftpack.o globals.o
+	SHDOMOBJS = shdSolv_1_omp.o shdSolv_2.o shdIO_inp.o shdIO_out.o shdSurf_brdf.o fftpack.o globals.o
 else
 	SHDOMOBJS = shdSolv_1.o shdSolv_2.o shdIO_inp.o shdIO_out.o shdSurf_brdf.o fftpack.o globals.o
 endif
@@ -65,8 +65,8 @@ shdom_.o: shdom_.f90 $(SHDOMOBJS)
 shdSolv_1.o: shdSolv_1.f90
 	$(F90) -c $(F90FLAGS) shdSolv_1.f90
 
-shdSolv_omp.o: shdSolv_omp.f90
-	$(F90) -c $(F90FLAGS) shdSolv_omp.f90
+shdSolv_1_omp.o: shdSolv_1_omp.f90
+	$(F90) -c $(F90FLAGS) shdSolv_1_omp.f90
 
 shdSolv_2.o: shdSolv_2.f90
 	$(F90) -c $(F90FLAGS) shdSolv_2.f90
