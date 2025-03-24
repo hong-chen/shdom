@@ -1012,6 +1012,7 @@ end subroutine
 subroutine DIRECT_BEAM_PROP(INIT, XI, YI, ZI, BCFLAG, IPFLAG,&
     &DELTAM, ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
     &DIRFLUX, UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
+
     ! Computes the direct beam flux at point (XI,YI,ZI) by integrating
     !   the extinction through the property grid.  If called with
     !   INIT=1 then the property grid extinction array, solar direction
@@ -1035,6 +1036,7 @@ subroutine DIRECT_BEAM_PROP(INIT, XI, YI, ZI, BCFLAG, IPFLAG,&
     !   flag is false SIDE is returned with the boundary hit (1=-X, 2=+X,
     !   3=-Y, 4=+Y).  XE,YE,ZE returns the location of the exitting ray,
     !   and path is the optical path from XI,YI,ZI to the sun.
+
     use shd_arr
     implicit none
     integer INIT, BCFLAG, IPFLAG, ML, NSTLEG, NLEG, SIDE
