@@ -353,6 +353,16 @@ program shdom_main
     allocate (WORK(NSTOKES*MAXIDO), WORK1(8*MAXIG))
     allocate (FLUXES(2*MAXIG), DIRFLUX(MAXIG))
 
+    ! print dimension parameters
+    !╭────────────────────────────────────────────────╮!
+    !print *, 'NSTOKES                :', NSTOKES
+    !print *, 'MAXIG (grid)           :', MAXIG
+    !print *, 'MAXIC (cell)           :', MAXIC
+    !print *, 'MAXIGL (Legendre)      :', MAXIGL
+    !print *, 'MAXIDO (grid x nphi)   :', MAXIDO
+    !print *, 'MAXIV (harmonic terms) :', MAXIV
+    !╰────────────────────────────────────────────────╯!
+
     MAXNBC = MAXIG*3/NZ
     ! Read in the surface properties
     if (SFCFILE(1:2) .eq. 'NO') then
