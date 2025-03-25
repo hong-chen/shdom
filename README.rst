@@ -131,7 +131,7 @@ The following is a list of file-to-file reference:
 
 * ``src/shdSolv.f90``: was ``shdomsub1.f``
 
-* ``src/shdCmpt.f90``: was ``shdomsub2.f``
+* ``src/shdComp.f90``: was ``shdomsub2.f``
 
 * ``src/shdIO_inp.f90``: partially from ``shdomsub3.f``
 

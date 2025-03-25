@@ -1141,7 +1141,7 @@ with MPI is:
 .. code-block:: bash
 
    mpif90 -O2 -o shdom  shdom.f90 shdom_mpi.f90 shdom_nonetcdf.f90 \
-             shdSolv.f90 shdCmpt.f90 shdIO_inp.f90 shdIO_out.f90 fftpack.f90
+             shdSolv.f90 shdComp.f90 shdIO_inp.f90 shdIO_out.f90 fftpack.f90
 
    mpirun -np 4  shdom shdom.inp
 
@@ -1340,7 +1340,7 @@ calls to ``shd_io__readPropSize``, and ``shd_io__readProp`` and uncomment calls 
 ``read_property_size_netcdf`` and ``read_properties_netcdf``.  Use the ``makefile``
 to compile with the netcdf library.
 
-Adding surface reflection types: in ``shdCmpt.f90`` write a BRDF Fortran
+Adding surface reflection types: in ``shdComp.f90`` write a BRDF Fortran
 function modeled on ``RPV_REFLECTION`` and add a call in ``SURFACE_BRDF`` to the
 new function.  In ``shdIO_inp.f90`` modify subroutine ``shd_io__readSurf`` by adding a
 block to read in the new surface type parameters.
@@ -1809,11 +1809,11 @@ LIST OF ROUTINES
 
 The following is a list of all the subroutines, where they are, and
 what they do.  The first column gives the file (0 is ``shdom.f90``,
-1 is ``shdSolv.f90``, 2 is ``shdCmpt.f90``, 3 is ``shdIO_inp.f90`` and ``shdIO_out.f90``,
+1 is ``shdSolv.f90``, 2 is ``shdComp.f90``, 3 is ``shdIO_inp.f90`` and ``shdIO_out.f90``,
 M is ``shdom_mpi.f90``, F is ``fftpack.f90``).  The second column indicates
 the calling routine.
 The major solving routines are in ``shdSolv.f90``, other routines are in
-``shdCmpt.f90``, all the regular I/O routines are in ``shdIO_inp.f90`` and ``shdIO_out.f90``,
+``shdComp.f90``, all the regular I/O routines are in ``shdIO_inp.f90`` and ``shdIO_out.f90``,
 the MPI calling routines are in ``shdom_mpi.f90``, and ``fftpack.f90`` has the FFTPACK
 routines from NCAR.
 
