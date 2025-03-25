@@ -37,7 +37,7 @@ jobs:
     - name: "cmake build with USE_NETCDF=on & USE_MPI=off"
       run: |
            source ./config/env.gnu.github.sh
-           cmake -B ${{github.workspace}}/build -DCMAKE_Fortran_COMPILER=gfortran -DUSE_MPI=off -DUSE_NETCDF=on -DNC_LIBS="${NC_LIBS}" -DNC_INC="${NC_INC}" -DCMAKE_VERBOSE_MAKEFILE=ON
+           cmake -B ${{github.workspace}}/build -DCMAKE_Fortran_COMPILER=gfortran -DUSE_MPI=off -DUSE_NETCDF=on -DNC_LIBS="${NC_LIBS}" -DNC_INC="${NC_INCLUDE}" -DCMAKE_VERBOSE_MAKEFILE=ON
            cmake --build ${{github.workspace}}/build 
            ls -al ${{github.workspace}}/build
            ls -al ${{github.workspace}}/build/bin
