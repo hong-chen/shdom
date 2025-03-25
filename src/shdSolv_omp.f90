@@ -418,10 +418,11 @@ subroutine shdSolv__calSrcPntUnp(&
     &ALBEDO, IPH, LEGEN, NR, RADIANCE,&
     &SOURCET)
 
-    use omp_lib
     ! Calculates the scalar source function in spherical harmonics at
     ! one grid point from the radiance in spherical harmonics and
     ! thermal and/or solar source information.
+
+    !use omp_lib
 
     implicit none
     integer NLEG, NLM, LOFJ(NLM), IPH, NR
@@ -438,13 +439,11 @@ subroutine shdSolv__calSrcPntUnp(&
     ! Calculate the generalized spherical harmonics source function
     ! from the solar direct beam
     if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
-!!$OMP PARALLEL DEFAULT(PRIVATE) SHARED(SOURCET, FLUX0, ALBEDO, LEGEN, LOFJ, IPH, YLMSUN)
-!!$OMP DO PRIVATE(J)
+!!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(J)
         do J = 1, NLM
             SOURCET(J) = FLUX0*ALBEDO*LEGEN(LOFJ(J), IPH)*YLMSUN(J)
         end do
-!!$OMP END DO
-!!$OMP END PARALLEL
+!!$OMP END PARALLEL DO
     end if
     ! Add in the isotropic unpolarized thermal emission
     if (SRCTYPE .eq. 'T' .or. SRCTYPE .eq. 'B') then
@@ -453,13 +452,11 @@ subroutine shdSolv__calSrcPntUnp(&
 
     ! Calculate the generalized spherical harmonics source function
     ! from the radiance vector in genSH.
-!!$OMP PARALLEL PRIVATE(J) SHARED(SOURCET, ALBEDO, LEGEN, LOFJ, IPH, RADIANCE)
-!!$OMP DO
+!!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(J)
     do J = 1, NR
         SOURCET(J) = SOURCET(J) + ALBEDO*LEGEN(LOFJ(J), IPH)*RADIANCE(J)
     end do
-!!$OMP END DO
-!!$OMP END PARALLEL
+!!$OMP END PARALLEL DO
 
     return
 end subroutine
