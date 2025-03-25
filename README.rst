@@ -19,7 +19,7 @@ How to Install
 
 * Require a ``fortran`` compiler, we recommend `GFortran <https://fortran-lang.org/learn/os_setup/install_gfortran/>`_.
 
-**SHDOM**
+**Build SHDOM with makefile**
 
 #. Open a terminal, type in the following
 
@@ -66,6 +66,32 @@ How to Install
 #. Run the case under ``examples/03_bmk_les`` (see detailed instructions `there <https://github.com/hong-chen/shdom/blob/master/examples/03_bmk_les>`_).
 
 |
+
+**Build SHDOM with cmake**
+
+#. If using neither NetCDF nor MPI (default options), create a new build dir, and enter that dir (e.g., ``cbuildi`` here), then type
+
+    .. code-block:: bash
+
+       mkdir cbuild && cd cbuild && cmake <YOUR_SHDOM_REPO_DIR> && make VERBOSE=1
+   
+   Once building finishes, you can find all executabls under ``cbuild/bin``
+    
+#. If using the MPI, set ``-DUSE_MPI=on`` for ``cmake``
+
+    .. code-block:: bash
+
+       mkdir cbuild && cd cbuild && cmake <YOUR_SHDOM_REPO_DIR> -DUSE_MPI=on && make VERBOSE=1
+
+#. If using the NetCDF, set ``-DUSE_NETCDF=on`` for ``cmake``, also, you need to set ``-DNC_INC=<NETCDF_INCLUDE_DIR>`` and ``-DNC_LIBS=<NETCDF_LIBRARY>``. For example,
+
+    .. code-block:: bash
+
+       mkdir cbuild && cd cbuild && cmake <YOUR_SHDOM_REPO_DIR> \
+       -DUSE_NETCDF=on \
+       -DNC_INC="/opt/homebrew/Cellar/netcdf-fortran/4.6.1_1/include" \
+       -DNC_LIBS="-L/opt/homebrew/Cellar/netcdf-fortran/4.6.1_1/lib -lnetcdff" && make VERBOSE=1
+
 
 Tips
 ----
