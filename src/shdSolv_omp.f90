@@ -899,12 +899,6 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
 
     use omp_lib
 
-!! OMP sample code
-!!$OMP PARALLEL DEFAULT(SHARED) PRIVATE(I)
-!!$OMP DO
-!!$OMP END DO
-!!$OMP END PARALLEL
-
     implicit none
     integer NX, NY, NZ, NSTOKES, NSTLEG, ML, MM, NLM
     integer NMU, NPHI0MAX, NPHI0(NMU), NANG
@@ -2499,7 +2493,7 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
         &1, 2, 3, 4, 5, 6, 7, 8/, OPPFACE/2, 1, 4, 3, 6, 5/
     data JOCTORDER3/1, 3, 5, 7, 2, 4, 6, 8/, JOCTORDER2/1, 3, 1, 3, 2, 4, 2, 4/
 
-    integer :: i
+    integer :: iwhile, ibreak
 
     EPS = 1.0e-3*(GRIDPOS(3, GRIDPTR(8, 1)) - GRIDPOS(3, GRIDPTR(1, 1)))
 
@@ -2552,66 +2546,45 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
     IZ = (NZ - 1)*(1 - BITZ) + 1
 
     ! Sweep through all the grid points
-!!$OMP PARALLEL PRIVATE(IORDER, IPCELL, ICORNER, IPT, &
-!!$OMP IZ, ICELL, RAD, TRANSMIT, EXT1, SRCEXT1, XE, YE, ZE, &
-!!$OMP VALIDRAD, INEXTCELL, IPINX, IPINY, IOPP, SOX, SOY, SOZ, SO, &
-!!$OMP IFACE, JFACE, KFACE, IC, I1, I2, I3, I4, U, V, &
-!!$OMP F1, F2, F3, F4, EXT0, SRCEXT0, EXT, TAU, TRANSCELL, ABSCELL, &
-!!$OMP SRC, EXT0P, SRCEXT0P, VALIDFACE, RAD0) &
-!!$OMP SHARED(SWEEPORD, JOCT, BCFLAG, GRIDPOS, ZGRID, BITZ, IPFLAG, NX, NY, NZ, &
-!!$OMP XGRID, YGRID, NA, NPTS, NCELLS, &
-!!$OMP GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, &
-!!$OMP MU, PHI, EXTINCT, SOURCE, KANG, GRIDRAD, &
-!!$OMP IOCT, CXINV, CYINV, CZINV, EPS, &
-!!$OMP BITX, BITY, GRIDFACE, TRANSMIN)
-!!$OMP DO
+! note: attempted to add OMP for this loop but the issue is that GRIDRAD is constantly updating
+! within the loop, e.g., the results of the next loop relies on the GRIDRAD of current one
+! if this reliance can be removed, the computational time can be dramatically reduced
 
-!!$OMP PARALLEL PRIVATE(IORDER, IPCELL, ICORNER, IPT, &
+    ! added for testing
+    !╭────────────────────────────────────────────────╮!
+    !ibreak = 1
+    !╰────────────────────────────────────────────────╯!
+!
+!!$OMP PARALLEL DO DEFAULT(SHARED) &
+!!$OMP PRIVATE(IORDER, IPCELL, ICORNER, IPT, &
 !!$OMP IZ, ICELL, RAD, TRANSMIT, EXT1, SRCEXT1, XE, YE, ZE, &
 !!$OMP VALIDRAD, INEXTCELL, IPINX, IPINY, IOPP, SOX, SOY, SOZ, SO, &
 !!$OMP IFACE, JFACE, KFACE, IC, I1, I2, I3, I4, U, V, &
 !!$OMP F1, F2, F3, F4, EXT0, SRCEXT0, EXT, TAU, TRANSCELL, ABSCELL, &
-!!$OMP SRC, EXT0P, SRCEXT0P, VALIDFACE, RAD0) &
-!!$OMP SHARED(SWEEPORD, JOCT, BCFLAG, GRIDPOS, ZGRID, BITZ, IPFLAG, NX, NY, NZ, &
-!!$OMP XGRID, YGRID, NA, NPTS, NCELLS, &
-!!$OMP GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, &
-!!$OMP MU, PHI, EXTINCT, SOURCE, KANG, GRIDRAD, &
-!!$OMP IOCT, CXINV, CYINV, CZINV, EPS, &
-!!$OMP BITX, BITY, GRIDFACE, TRANSMIN)
-!!$OMP PARALLEL PRIVATE(IORDER, IPCELL, ICORNER, IPT, &
-!!$OMP ICELL, RAD, TRANSMIT, EXT1, SRCEXT1, XE, YE, ZE, &
-!!$OMP VALIDRAD, INEXTCELL, IPINX, IPINY, IOPP, SOX, SOY, SOZ, SO, &
-!!$OMP IFACE, JFACE, KFACE, IC, I1, I2, I3, I4, U, V, &
-!!$OMP F1, F2, F3, F4, EXT0, SRCEXT0, EXT, TAU, TRANSCELL, ABSCELL, &
-!!$OMP SRC, EXT0P, SRCEXT0P, VALIDFACE, RAD0) &
-!!$OMP SHARED(GRIDRAD, &
-!!$OMP SWEEPORD, JOCT, BCFLAG, GRIDPOS, ZGRID, BITZ, IPFLAG, NX, NY, NZ, &
-!!$OMP XGRID, YGRID, NA, NPTS, NCELLS, &
-!!$OMP GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, &
-!!$OMP MU, PHI, EXTINCT, SOURCE, KANG, &
-!!$OMP IOCT, CXINV, CYINV, CZINV, EPS, &
-!!$OMP BITX, BITY, GRIDFACE, TRANSMIN)
-!!$OMP DO
+!!$OMP SRC, EXT0P, SRCEXT0P, VALIDFACE, RAD0)
     do IORDER = 1, NPTS
 
         IPCELL = ishft(SWEEPORD(IORDER, JOCT), -3)
         ICORNER = ibits(SWEEPORD(IORDER, JOCT), 0, 3) + 1
         IPT = GRIDPTR(ICORNER, IPCELL)
 
-        !if (btest(BCFLAG, 2) .or. btest(BCFLAG, 3)) then
-        !    ! For multiple processors get the subdomain boundary radiances
-        !    !   for each Z slab
-        !    if ((GRIDPOS(3, IPT) .lt. ZGRID(IZ) .and. BITZ .eq. 0) .or.&
-        !        &(GRIDPOS(3, IPT) .gt. ZGRID(IZ) .and. BITZ .eq. 1)) then
-        !        IZ = IZ + 2*BITZ - 1
-        !        call CALC_BOUNDARY_RADIANCES(BCFLAG, IPFLAG, JOCT, IZ,&
-        !            &NX, NY, NZ, XGRID, YGRID, ZGRID,&
-        !            &NA, NPTS, NCELLS, GRIDPTR,&
-        !            &NEIGHPTR, TREEPTR, CELLFLAGS, GRIDPOS,&
-        !            &MU, PHI, EXTINCT, 1, SOURCE,&
-        !            &KANG, GRIDRAD)
-        !    end if
-        !end if
+        ! this is for mpi (e.g., shdom_mpi.f90, not OMP)
+        !╭────────────────────────────────────────────────╮!
+        if (btest(BCFLAG, 2) .or. btest(BCFLAG, 3)) then
+            ! For multiple processors get the subdomain boundary radiances
+            !   for each Z slab
+            if ((GRIDPOS(3, IPT) .lt. ZGRID(IZ) .and. BITZ .eq. 0) .or.&
+                &(GRIDPOS(3, IPT) .gt. ZGRID(IZ) .and. BITZ .eq. 1)) then
+                IZ = IZ + 2*BITZ - 1
+                call CALC_BOUNDARY_RADIANCES(BCFLAG, IPFLAG, JOCT, IZ,&
+                    &NX, NY, NZ, XGRID, YGRID, ZGRID,&
+                    &NA, NPTS, NCELLS, GRIDPTR,&
+                    &NEIGHPTR, TREEPTR, CELLFLAGS, GRIDPOS,&
+                    &MU, PHI, EXTINCT, 1, SOURCE,&
+                    &KANG, GRIDRAD)
+            end if
+        end if
+        !╰────────────────────────────────────────────────╯!
 
         if (GRIDRAD(IPT) .lt. 0.0) then
 
@@ -2625,9 +2598,20 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
             YE = GRIDPOS(2, IPT)
             ZE = GRIDPOS(3, IPT)
 
+            ! added for testing
+            !╭────────────────────────────────────────────────╮!
+            !iwhile = 0
+            !╰────────────────────────────────────────────────╯!
+
             ! Loop until finding a face with known radiances
             VALIDRAD = .false.
             do while (.not. VALIDRAD)
+
+                ! added for testing
+                !╭────────────────────────────────────────────────╮!
+                !iwhile = iwhile + 1
+                !╰────────────────────────────────────────────────╯!
+
                 ! Make sure current cell is valid
                 if (ICELL .le. 0) then
                     write (6, *) 'Error [BACK_INT_GRID]: ICELL=0 ',&
@@ -2635,6 +2619,7 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
                         &GRIDPOS(1, IPT), GRIDPOS(2, IPT), GRIDPOS(3, IPT)
                     stop
                 end if
+
                 IPINX = btest(int(CELLFLAGS(ICELL)), 0)
                 IPINY = btest(int(CELLFLAGS(ICELL)), 1)
 
@@ -2676,6 +2661,7 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
                     IFACE = 6 - BITZ
                     JFACE = 3
                 end if
+
                 ! Get the next cell to go to
                 INEXTCELL = NEIGHPTR(IFACE, ICELL)
                 if (INEXTCELL .lt. 0) then
@@ -2692,14 +2678,27 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
                     ! If going to smaller face then use next face (more accura
                     KFACE = OPPFACE(IFACE)
                     IC = INEXTCELL
+                    ! added for testing
+                    !╭────────────────────────────────────────────────╮!
+                    !write(*, *) 'IPT', RAD
+                    !ibreak = ibreak + 1
+                    !write(*, *) '+'
+                    !╰────────────────────────────────────────────────╯!
                 end if
 
                 I1 = GRIDPTR(GRIDFACE(1, KFACE), IC)
                 I2 = GRIDPTR(GRIDFACE(2, KFACE), IC)
                 I3 = GRIDPTR(GRIDFACE(3, KFACE), IC)
                 I4 = GRIDPTR(GRIDFACE(4, KFACE), IC)
-                ! Compute the face interpolation factors
 
+                ! added for testing
+                !╭────────────────────────────────────────────────╮!
+                !write(*, *), "i, iwhile: ", IORDER, iwhile
+                !write(*, *), "ICELL, IPT: ", IPCELL, IPT
+                !write(*, *) "IPT, IWHILE, IC, INEXTCELL, I1, I2, I3, I4: ", IPT, iwhile, IC, INEXTCELL, I1, I2, I3, I4
+                !╰────────────────────────────────────────────────╯!
+
+                ! Compute the face interpolation factors
                 if (JFACE .eq. 1) then
                     U = (ZE - GRIDPOS(3, I1))/(GRIDPOS(3, I3) - GRIDPOS(3, I1))
                     if (IPINY) then
@@ -2798,8 +2797,7 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
                 ! Add in the cell radiance and update the transmission.
                 ! If this is a boundary or the transmission is below the
                 ! cutoff and we have a valid radiance then set the flag
-                ! to stop the tracing and add in the interpolated face radia
-
+                ! to stop the tracing and add in the interpolated face radiance
                 RAD = RAD + TRANSMIT*SRC*ABSCELL
                 TRANSMIT = TRANSMIT*TRANSCELL
                 if (RAD < -1.0e-5) then
@@ -2808,6 +2806,7 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
                         &XE, YE, ZE, EXT0, EXT1, SO, TAU, TRANSMIT, SRC, ABSCELL, RAD
                     call ABORT_SHDOM_MPI('The end')
                 end if
+
                 VALIDFACE = (GRIDRAD(I1) .ge. -0.1 .and. GRIDRAD(I2) .ge. -0.1&
                     &.and. GRIDRAD(I3) .ge. -0.1 .and. GRIDRAD(I4) .ge. -0.1)
                 if (INEXTCELL .le. 0 .or.&
@@ -2839,14 +2838,21 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
                 end if
             end do
 
+
+!!$OMP CRITICAL
             GRIDRAD(IPT) = RAD
+!!$OMP END CRITICAL
 
         end if
 
     end do
-!!$OMP END DO
-!!$OMP END PARALLEL
+!!$OMP END PARALLEL DO
 
+    ! added for testing
+    !╭────────────────────────────────────────────────╮!
+    !write(*, *) 'TOTAL: ', ibreak
+    !stop "haha"
+    !╰────────────────────────────────────────────────╯!
     return
 end subroutine
 
