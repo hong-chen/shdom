@@ -25,8 +25,8 @@ subroutine shdSolv__solveRte(&
     ! cells and points on output.
 
     implicit none
-    integer NSTOKES, NX, NY, NZ, NX1, NY1, NXSFC, NYSFC, NSFCPAR
-    integer ML, MM, NLM, NMU, NPHI, NANG, NLEG, NSTLEG, NUMPHASE
+    integer, intent(in) :: NSTOKES, NX, NY, NZ, NX1, NY1, NXSFC, NYSFC, NSFCPAR
+    integer, intent(in) :: ML, MM, NLM, NMU, NPHI, NANG, NLEG, NSTLEG, NUMPHASE
     integer NPHI0(*), MAXITER, ITER, BCFLAG, IPFLAG
     integer MAXIV, MAXIC, MAXIG, MAXIDO
     integer MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR(MAXNBC, 2)
