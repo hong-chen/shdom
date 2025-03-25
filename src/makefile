@@ -62,14 +62,14 @@ shdom_: shdom_.o $(SHDOMOBJS)
 shdom_.o: shdom_.f90 $(SHDOMOBJS)
 	$(F90) -c $(F90FLAGS) shdom_.f90
 
-shdSolv.o: shdSolv.f90
-	$(F90) -c $(F90FLAGS) shdSolv.f90
+shdSolv.o: tools/shdSolv.f90
+	$(F90) -c $(F90FLAGS) tools/shdSolv.f90
 
 shdSolv_omp.o: shdSolv_omp.f90
 	$(F90) -c $(F90FLAGS) shdSolv_omp.f90
 
-shdComp.o: shdComp.f90
-	$(F90) -c $(F90FLAGS) shdComp.f90
+shdComp.o: tools/shdComp.f90
+	$(F90) -c $(F90FLAGS) tools/shdComp.f90
 
 shdComp_omp.o: shdComp_omp.f90
 	$(F90) -c $(F90FLAGS) shdComp_omp.f90
