@@ -2,27 +2,16 @@ program PropertyToNetcdf
   use shdom_nc
   implicit none
 
-  interface
-    subroutine getarg(pos, value)
-      integer,            intent(in)  :: pos
-      character(len=256), intent(out) :: value
-    end subroutine getarg
-
-    function iargc()
-      integer :: iargc
-    end function iargc
-  end interface
-
   character(len=256) :: asciiFile, netcdfFile
   integer              :: numArgs
   ! -------------------------------------
-  numArgs = iargc()
+  numArgs = command_argument_count()
   if(numArgs < 1) stop "Error [PropertyToNetcdf]: Need to provide an input file name."
-  call getarg(1, asciiFile)
+  call get_command_argument(1, asciiFile)
   if(numArgs < 2) then
     netcdfFile = trim(asciiFile) // ".nc"
   else
-    call getarg(2, netcdfFile)
+    call get_command_argument(2, netcdfFile)
   end if
 
   print *, "Message [PropertyToNetcdf]: Converting ascii file ", trim(asciiFile), " to netcdf file ", trim(netcdfFile)
