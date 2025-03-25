@@ -2,6 +2,14 @@
 
 export OMP_NUM_THREADS=8
 
+export CURRENT_DIR=$(PWD)
+export SRC_DIR="../../src"
+
+cd $SRC_DIR
+make
+
+cd $CURRENT_DIR
+
 mkdir -p tmp-data
 
 #fname_nml="data/shdom-inp_les_save.nml"

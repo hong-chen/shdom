@@ -2,8 +2,10 @@ subroutine NEW_GRIDS(&
     &BCFLAG, GRIDTYPE, NPX, NPY, NPZ, NX, NY, NZ,&
     &XSTART, YSTART, DELXP, DELYP, ZLEVELS,&
     &XGRID, YGRID, ZGRID)
+
     ! Makes the XGRID, YGRID, and ZGRID arrays from the input Z levels
-    !   and X and Y spacing from the property file according to the GRIDTY
+    !   and X and Y spacing from the property file according to the GRIDTYPE.
+
     implicit none
     integer BCFLAG, NPX, NPY, NPZ, NX, NY, NZ
     real XSTART, YSTART, DELXP, DELYP, ZLEVELS(NPZ)
@@ -73,11 +75,11 @@ subroutine INIT_CELL_STRUCTURE(&
     ! Make the initial grid cell data structure for the base grid.
     ! For periodic boundary conditions there are NX*NY*(NZ-1) grid cells
     ! and (NX+1)*(NY+1)*NZ grid points.  The IX=NX+1 column is the same
-    ! as the IX=1 column, because of the periodicity, but the grid point
-    ! are repeated.  The last grid cell on the "right" has the last colu
-    ! of grid points on the "left" and the repeated "virtual" set of gri
+    ! as the IX=1 column, because of the periodicity, but the grid points
+    ! are repeated.  The last grid cell on the "right" has the last column
+    ! of grid points on the "left" and the repeated "virtual" set of grid
     ! points on the "right".  For open boundary conditions in X and Y
-    ! there are (NX+1)*(NY+1)*(NZ-1) grid cells and NX*NY*NZ grid points
+    ! there are (NX+1)*(NY+1)*(NZ-1) grid cells and NX*NY*NZ grid points.
     ! Open boundary conditions are done with the lowest "left most" and
     ! "right most" X and Y columns being independent pixels with
     ! their own grid cells (zero width), therefore one extra grid cell
@@ -86,39 +88,39 @@ subroutine INIT_CELL_STRUCTURE(&
     ! Independent pixel mode has NX*NY*(NZ-1) grid cells and NX*NY*NZ
     ! grid points
     !   Variable       Description
-    ! IPFLAG         Independent pixel flag - 0 for none, 1 for X, 2 fo
+    ! IPFLAG         Independent pixel flag - 0 for none, 1 for X, 2 for Y,
     !                  3 for X&Y.
-    ! BCFLAG         Boundary condition flag - 0 for periodic, 1 for op
-    !                  2 for open in Y, 3 for open in X&Y.  4 for multi
-    !                  processor in X, 8 for MP in Y, 12 for MP in both
+    ! BCFLAG         Boundary condition flag - 0 for periodic, 1 for open in X,
+    !                  2 for open in Y, 3 for open in X&Y.  4 for multiple
+    !                  processor in X, 8 for MP in Y, 12 for MP in both.
     ! NPTS           total number of grid points
     ! NCELLS         total number of cells
     ! GRIDPOS(3,IP)  x,y,z coordinate values of grid point locations
     ! GRIDPTR(8,IC)  pointer to 8 grid points belonging to a cell.
     !                  Order of pointers is based on binary digits zyx:
     !                  IOCT = 1 + BITX + 2*BITY + 4*BITZ, where
-    !                  BITc is 0 for negative side and 1 for positive s
+    !                  BITc is 0 for negative side and 1 for positive side.
     ! NEIGHPTR(6,IC) pointer to 6 neighboring cells of a cell.
     !                  Order of pointers are -X,+X,-Y,+Y,-Z,+Z (1-6).
     !                  Is 0 if there is no neighbor cell (boundary).
-    !                  Is positive if there is just one cell across fac
+    !                  Is positive if there is just one cell across face
     !                  of current cell (unique neighbor).  Is negative
     !                  (-index) if there is more than one cell across
     !                  the face of current cell.  In this case the
     !                  cell pointed to is the parent cell that has a
     !                  has same or larger face adjoining current cell.
-    ! TREEPTR(2,IC)  pointer to parent and children cells in tree struc
-    !                  First is pointer to parent cell, 0 for a base ce
-    !                  Second is pointer to first of the two children c
-    !                  This pointer is 0 if there are no children cells
+    ! TREEPTR(2,IC)  pointer to parent and children cells in tree structure.
+    !                  First is pointer to parent cell, 0 for a base cell.
+    !                  Second is pointer to first of the two children cells.
+    !                  This pointer is 0 if there are no children cells.
     !                  The children cells are in successive order, with
-    !                  the negative side first.  See CELLFLAGS for dire
+    !                  the negative side first.  See CELLFLAGS for direction
     !                  of division of split.
     ! CELLFLAGS(IC)  a collection of binary flags for the cells:
     !                  bit  For bit set
     !                   0  Do independent pixel for X
     !                   1  Do independent pixel for Y
-    !                  2,3 Direction cell is split (0=no split, 1=X, 2=
+    !                  2,3 Direction cell is split (0=no split, 1=X, 2=Y, 3=Z)
     ! IP is a grid point index, IC is a cell index.
 
     implicit none
@@ -290,6 +292,7 @@ end subroutine
 subroutine INTERP_GRID(&
     &NPTS, NSTLEG, NLEG, GRIDPOS,&
     &TEMP, EXTINCT, ALBEDO, LEGEN, IPHASE)
+
     ! Calls TRILIN_INTERP_PROP to interpolate the input arrays from
     !   the property grid to each internal grid point.
 
@@ -526,17 +529,17 @@ subroutine EDDRTF(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
     ! EDDRTF computes the layer interface fluxes for a plane-parallel
     ! atmosphere with either solar or thermal source of radiation using
     ! the Eddington approximation.  The medium is specified by a number
-    ! of homogeneous layers.  For a thermal source the Planck function i
-    ! linear with optical depth, while for a solar source it is exponent
+    ! of homogeneous layers.  For a thermal source the Planck function is
+    ! linear with optical depth, while for a solar source it is exponential.
     ! The temperatures, optical depth, single scattering albedo, and
     ! asymmetry parameter are specified for each layer.  The boundary
-    ! conditions such as the solar flux, and reflection and/or emission
+    ! conditions such as the solar flux, and reflection and/or emission from
     ! ground surface are also specified. Delta Eddington scaling may be
     ! used.  The diffuse Eddington fluxes and the solar direct flux at
     ! each level are returned.
     ! The model works by calculating the reflection, transmission, and
     ! source terms for each layer from the input properties.  A
-    ! tri-diagonal matrix solver is then used to compute the diffuse flu
+    ! tri-diagonal matrix solver is then used to compute the diffuse fluxes
     ! at each layer interface from the applied boundary conditions.
     !
     ! Parameters:
@@ -550,13 +553,13 @@ subroutine EDDRTF(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
     !                              (e.g. TEMPS(1) is at top of top layer
     !                               TEMPS(2) is at bottom of top layer).
     ! DELTAM         logical      True for delta-Eddington scaling
-    ! SRCTYPE        character    'S' for solar source, 'T' for thermal
+    ! SRCTYPE        character    'S' for solar source, 'T' for thermal source
     ! SOLARFLUX      real         Incident solar flux on horizonal plane
     ! SOLARMU        real         Cosine of the solar zenith angle
     ! GNDTEMP        real         Ground temperature (Kelvin)
     ! GNDEMIS        real         Ground emissivity (1-albedo)
     ! SKYRAD         real         Radiance (for solar) or brightness
-    !                              temperature (for thermal) of isotropi
+    !                              temperature (for thermal) of isotropic
     !                              incident radiation from above
     ! UNITS          character    Units of flux for thermal source
     !                             'T' for brightness temperature,
@@ -739,12 +742,14 @@ subroutine EDDRTF(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
 end subroutine
 
 subroutine TRIDIAG(N, LOWER, DIAG, UPPER, RHS)
+
     ! Computes the solution to a tridiagonal system.
     ! N is order of the matrix.  LOWER(2..N) is the subdiagonal,
     ! DIAG(1..N) is the diagonal, and UPPER(1..N-1) is the
     ! superdiagonal.  On input RHS is the right hand side, while
     ! on output it is the solution vector.  Everything is destroyed.
     ! Hacked from Linpack DGTSL.
+
     implicit none
     integer N
     double precision LOWER(*), DIAG(*), UPPER(*), RHS(*)
@@ -882,15 +887,17 @@ end subroutine
 subroutine MAKE_SH_DO_COEF(NSTLEG, ML, MM, NLM, NMU, NPHI0,&
     &NPHI0MAX, MU, PHI, WTMU, WTDO, FFTFLAG,&
     &CMU1, CMU2, CPHI1, CPHI2, WPHISAVE)
+
     ! Makes the transformation coefficients for the real generalized
     ! spherical harmonic transform.  The main coefficients are output in
     ! four arrays: 1 is for the SH_TO_DO forward transform, 2 is for the
-    ! DO_TO_SH back transform, which contains the discrete angle integra
-    ! weights.  The coefficients are divided up into the mu dependent se
+    ! DO_TO_SH back transform, which contains the discrete angle integration
+    ! weights.  The coefficients are divided up into the mu dependent set
     ! CMUn (function of l, m, mu_j), and the phi dependent set CPHIn
     ! (function of m, phi_k) for each mu_j.
     ! The FFTPACK phase coefficients for the FFT in azimuth are also
     ! output in WPHISAVE.
+
     implicit none
     integer NSTLEG, ML, MM, NLM, NMU, NPHI0(NMU), NPHI0MAX
     logical FFTFLAG(NMU)
@@ -1081,10 +1088,10 @@ subroutine INTERP_OUTPUT(OLDNPTS, NPTS,&
     &FLUXES, DIRFLUX, FLUXDIV, SHTERMS,&
     &NBCELLS, NCELLS, TREEPTR, GRIDPTR, GRIDPOS)
 
-    !   Interpolates the output data to the new grid points (those >OLDN
+    !   Interpolates the output data to the new grid points (those >OLDNPTS)
     ! from the old grid points.  The output data is in FLUXES, DIRFLUX,
-    ! FLUXDIV, and SHTERMS.  OLDNPTS is set to zero to do no interpolati
-    ! Each new point is located in a cell, and the two parent grid point
+    ! FLUXDIV, and SHTERMS.  OLDNPTS is set to zero to do no interpolation.
+    ! Each new point is located in a cell, and the two parent grid points
     ! are found to interpolate the data from.
 
     implicit none
@@ -1144,8 +1151,10 @@ end subroutine
 
 subroutine INTERP_RADIANCE(NSTOKES, OLDNPTS, NPTS, RSHPTR,&
     &RADIANCE, NBCELLS, NCELLS, TREEPTR, GRIDPTR, GRIDPOS)
+
     ! Interpolates the spherical harmonic radiance array to the new
     !   grid points (>OLDNPTS) from the old grid points.
+
     implicit none
     integer NSTOKES, OLDNPTS, NPTS, NBCELLS, NCELLS
     integer RSHPTR(NPTS + 1), GRIDPTR(8, NCELLS), TREEPTR(2, NCELLS)
@@ -1218,7 +1227,7 @@ subroutine VISUALIZE_RADIANCE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
     &SHPTR, SOURCE, OUTPARMS, IVIS, VISOUT)
-    !   Computes Stokes radiances (output in VISOUT) for the visualizati
+    !   Computes Stokes radiances (output in VISOUT) for the visualization
     !  modes: 1) camera mode, and 2) cross track scanning.
     implicit none
     integer NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG, NPTS, NCELLS
@@ -1880,7 +1889,7 @@ subroutine FIND_BOUNDARY_RADIANCE(NSTOKES, XB, YB, MU2, PHI2,&
     &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
     &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
     &RADBND)
-    !   Returns the interpolated Stokes radiance at the boundary (RADBND
+    !   Returns the interpolated Stokes radiance at the boundary (RADBND)
     ! Inputs are the boundary location (XB,YB), ray direction away from
     ! boundary (MU2,PHI2), cell number (ICELL) and face (KFACE) at
     ! the boundary point.
@@ -1984,7 +1993,7 @@ subroutine COMPUTE_SOURCE_1CELL(ICELL, GRIDPTR,&
     ! are returned in SRCEXT8 and EXTINCT8.
     ! The spherical harmonic source function series is input in SOURCE.
     ! For a solar source if delta-M then use Nakajima and Tanaka TMS
-    ! procedure, replacing delta-M single scattering with single scatter
+    ! procedure, replacing delta-M single scattering with single scattering
     ! for unscaled untruncated phase function.
     implicit none
     integer ICELL, NSTOKES, NSTLEG, NPTS, ML, MM, NLM, NLEG, NUMPHASE
@@ -2106,13 +2115,15 @@ subroutine COMPUTE_SOURCE_1CELL_UNPOL(ICELL, GRIDPTR,&
     &SHPTR, SOURCE, YLMDIR, YLMSUN, SUNDIRLEG, SINGSCAT,&
     &DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
     &EXTINCT8, SRCEXT8)
+
     !   Computes the source function times extinction for gridpoints
     ! belonging to cell ICELL in the direction (MU,PHI).  The results
     ! are returned in SRCEXT8 and EXTINCT8.
     ! The spherical harmonic source function series is input in SOURCE.
     ! For a solar source if delta-M then use Nakajima and Tanaka TMS
-    ! procedure, replacing delta-M single scattering with single scatter
+    ! procedure, replacing delta-M single scattering with single scattering
     ! for unscaled untruncated phase function.
+
     implicit none
     integer ICELL, NPTS, ML, MM, NLM, NLEG, NUMPHASE
     integer GRIDPTR(8, *), SHPTR(NPTS + 1)
@@ -2496,12 +2507,14 @@ subroutine COMPUTE_ONE_SOURCE(NSTOKES,&
     &NPTS, DELTAM, MU, PHI, SRCTYPE, SOLARMU, SOLARAZ,&
     &ALBEDO, LEGEN, IPHASE, DIRFLUX,&
     &SHPTR, SOURCE, SOURCE1)
+
     ! Computes the source function (SOURCE1) in the direction (MU,PHI)
-    ! for the whole domain (NX,NZ).  The spherical harmonic source funct
+    ! for the whole domain (NX,NZ).  The spherical harmonic source function
     ! series is input in SOURCE.
     ! For a solar source if delta-M then use Nakajima and Tanaka TMS
-    ! procedure, replacing delta-M single scattering with single scatter
+    ! procedure, replacing delta-M single scattering with single scattering
     ! for unscaled untruncated phase function.
+
     implicit none
     integer NSTOKES, NPTS, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
     integer SHPTR(NPTS + 1)
@@ -2666,13 +2679,15 @@ end subroutine
 subroutine SOLAR_SINGSCAT_VECT(NLEG, SINGLEGEN, COSSCAT,&
     &SOLARMU, MU, DELPHI, NSTOKES,&
     &SCATVECT)
-    ! Calculates the Stokes vector for a single scattering of unpolariz
+
+    ! Calculates the Stokes vector for a single scattering of unpolarized
     ! sunlight from the solar direction (SOLARMU) to the outgoing
     ! direction (MU) and with cosine scattering angle (COSSCAT).
     ! The A1 and B1 elements of the phase matrix are calculated from
     ! the Wigner function expansion coefficients (SINGLEGEN).
     ! The plane of polarization is rotated from the scattering plane to
-    ! the outgoing meridional plane.  Also divides the output vector by
+    ! the outgoing meridional plane.  Also divides the output vector by 4*pi.
+
     implicit none
     integer NLEG, NSTOKES
     real SINGLEGEN(2, 0:NLEG), COSSCAT, SOLARMU, MU, DELPHI
@@ -2738,14 +2753,16 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
     &MU, PHI, GRIDRAD, EXTINCT, SOURCE,&
     &X0, Y0, Z0, XE, YE, ZE, SIDE,&
     &TRANSMIT, RADIANCE, VALIDRAD)
+
     ! Integrates the source function (SOURCE) through the extinction
     ! field (EXTINCT) backward in the direction opposite to (MU,PHI)
     ! to find the outgoing radiance (RADIANCE) at the point X0,Y0,Z0.
     ! The radiances at the opposite boundary are input in GRIDRAD.
-    ! The transmission and radiance of the ray so far (TRANSMIT, RADIANCE
+    ! The transmission and radiance of the ray so far (TRANSMIT, RADIANCE)
     ! are input and returned after the integration along with the exitting
-    ! ray location (XE,YE,ZE) and side of the domain (1=-X,2=+X,3=-Y,4=+
+    ! ray location (XE,YE,ZE) and side of the domain (1=-X,2=+X,3=-Y,4=+Y,
     ! 5=-Z,6=+Z).
+
     implicit none
     integer BCFLAG, IPFLAG, NSTOKES, NX, NY, NZ, NPTS, NCELLS, SIDE
     integer GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
@@ -3025,9 +3042,9 @@ subroutine INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,&
     &X, Y, Z, ND, FIELD, ID1, NV, VALUES)
 
     !   Trilinearly interpolates the field (FIELD) given a grid cell
-    ! pointer (ICELL), to compute the field values (VALUES) at the desir
+    ! pointer (ICELL), to compute the field values (VALUES) at the desired
     ! point (X,Y,Z). ND is the leading index of the FIELD (1 for a
-    ! scalar field), ID1 is the first element of the vector to interpola
+    ! scalar field), ID1 is the first element of the vector to interpolate,
     ! and NV elements are output.
 
     implicit none
@@ -3067,11 +3084,13 @@ end subroutine
 subroutine LOCATE_GRID_CELL(NX, NY, NZ, XGRID, YGRID, ZGRID,&
     &NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS,&
     &BCFLAG, IPFLAG, X0, Y0, Z0, ICELL)
+
     !   Locates the grid cell in the tree structure containing the
     ! specified point (X0,Y0,Z0), and returns the cell pointer ICELL.
-    ! First the base grid cell is found (using NX,NY,NZ, XGRID,YGRID,ZGR
+    ! First the base grid cell is found (using NX,NY,NZ, XGRID,YGRID,ZGRID),
     ! and the tree is traced down to find the smallest cell containing
     ! the point.
+
     implicit none
     integer NX, NY, NZ, NCELLS, ICELL, BCFLAG, IPFLAG
     integer GRIDPTR(8, NCELLS), TREEPTR(2, NCELLS)
@@ -3260,9 +3279,9 @@ end subroutine
 
 subroutine YLMALL(TRANSPOSE, MU, PHI, ML, MM, NSTLEG, YR)
     !   This subroutine computes a set of normalized real generalized
-    ! spherical harmonic functions (YR) for a particular direction mu,ph
+    ! spherical harmonic functions (YR) for a particular direction mu,phi.
     ! (Doicu et al. 2013; http://dx.doi.org/10.1016/j.jqsrt.2012.12.009)
-    ! ML is the maximum meridional mode, MM is the maximum azimuthal mod
+    ! ML is the maximum meridional mode, MM is the maximum azimuthal mode.
     ! NSTLEG is the number of matrix elements returned, either 1 for the
     ! 1,1 term or 6 for the 6 unique elements of the 4x4 matrix.
     ! J = 2*(L*(L+1))/2 + M+1  for L<=MM
