@@ -292,6 +292,9 @@ subroutine INTERP_GRID(&
     &TEMP, EXTINCT, ALBEDO, LEGEN, IPHASE)
     ! Calls TRILIN_INTERP_PROP to interpolate the input arrays from
     !   the property grid to each internal grid point.
+
+    use omp_lib
+
     implicit none
     integer NPTS, NSTLEG, NLEG
     integer*2 IPHASE(*)
@@ -305,12 +308,15 @@ subroutine INTERP_GRID(&
         &LEGEN(1, 0, 1), IPHASE)
 
     ! Trilinearly interpolate from the property grid to the adaptive
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(IP)
     do IP = 1, NPTS
         call TRILIN_INTERP_PROP&
             &(GRIDPOS(1, IP), GRIDPOS(2, IP), GRIDPOS(3, IP),&
             &.false., NSTLEG, NLEG, TEMP(IP), EXTINCT(IP),&
             &ALBEDO(IP), LEGEN(1, 0, IP), IPHASE(IP))
     end do
+!$OMP END PARALLEL DO
+
     return
 end subroutine
 
@@ -321,6 +327,8 @@ subroutine MAKE_DIRECT(NPTS, BCFLAG, IPFLAG, DELTAM,&
     ! Makes the direct beam solar flux for the internal base grid.
     !   DIRFLUX is set to F*exp(-tau_sun).
     !   Actually calls DIRECT_BEAM_PROP to do all the hard work.
+
+    use omp_lib
 
     implicit none
     integer NPTS, BCFLAG, IPFLAG, ML, NSTLEG, NLEG
@@ -336,6 +344,7 @@ subroutine MAKE_DIRECT(NPTS, BCFLAG, IPFLAG, DELTAM,&
         &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
         &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
 
+!!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(IP, DIRPATH)
     do IP = 1, NPTS
         DIRPATH = 0.0
         call DIRECT_BEAM_PROP&
@@ -344,6 +353,8 @@ subroutine MAKE_DIRECT(NPTS, BCFLAG, IPFLAG, DELTAM,&
             &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(IP),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
     end do
+!!$OMP END PARALLEL DO
+
     return
 end subroutine
 
