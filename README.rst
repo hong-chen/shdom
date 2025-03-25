@@ -129,9 +129,9 @@ The following is a list of file-to-file reference:
 
 * ``src/shdom_nompi.f90``: was ``shdom_nompi.f``
 
-* ``src/shdSolv_1.f90``: was ``shdomsub1.f``
+* ``src/shdSolv.f90``: was ``shdomsub1.f``
 
-* ``src/shdSolv_2.f90``: was ``shdomsub2.f``
+* ``src/shdCmpt.f90``: was ``shdomsub2.f``
 
 * ``src/shdIO_inp.f90``: partially from ``shdomsub3.f``
 

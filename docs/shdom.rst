@@ -1141,7 +1141,7 @@ with MPI is:
 .. code-block:: bash
 
    mpif90 -O2 -o shdom  shdom.f90 shdom_mpi.f90 shdom_nonetcdf.f90 \
-             shdSolv_1.f90 shdSolv_2.f90 shdIO_inp.f90 shdIO_out.f90 fftpack.f90
+             shdSolv.f90 shdCmpt.f90 shdIO_inp.f90 shdIO_out.f90 fftpack.f90
 
    mpirun -np 4  shdom shdom.inp
 
@@ -1340,12 +1340,12 @@ calls to ``shd_io__readPropSize``, and ``shd_io__readProp`` and uncomment calls 
 ``read_property_size_netcdf`` and ``read_properties_netcdf``.  Use the ``makefile``
 to compile with the netcdf library.
 
-Adding surface reflection types: in ``shdSolv_2.f90`` write a BRDF Fortran
+Adding surface reflection types: in ``shdCmpt.f90`` write a BRDF Fortran
 function modeled on ``RPV_REFLECTION`` and add a call in ``SURFACE_BRDF`` to the
 new function.  In ``shdIO_inp.f90`` modify subroutine ``shd_io__readSurf`` by adding a
 block to read in the new surface type parameters.
 
-Discrete ordinate angle set: SOLVE_RTE (``shdSolv_1.f90``); The ``ORDINATESET``
+Discrete ordinate angle set: SOLVE_RTE (``shdSolv.f90``); The ``ORDINATESET``
 variable before call to ``MAKE_ANGLE_SET`` is the type of angle set: 1 - full
 Gaussian set, 2 - reduced Gaussian set (default), 3 - reduced double Gaussian.
 Using the double Gaussian angular set will give more accurate hemispheric
@@ -1369,24 +1369,24 @@ Change BASEOUT = .TRUE. to initialize with and output only the base
 grid during the iteration over k's, rather than the default of
 initializing with the previous k's adaptive grid structure.
 
-Cell splitting scheduling: ``SOLVE_RTE`` (``shdSolv_1.f90``); The range of
+Cell splitting scheduling: ``SOLVE_RTE`` (``shdSolv.f90``); The range of
 solution criterion during which the adaptive grid cell splitting occurs
 can be chosen by changing ``ENDADAPTSOL`` and ``STARTADAPTSOL``; other aspects
 of the scheduling can be changed as well.
 
-Adaptive grid smoothing: SPLIT_GRID (``shdSolv_1.f90``); The call to
+Adaptive grid smoothing: SPLIT_GRID (``shdSolv.f90``); The call to
 subroutine GRID_SMOOTH_TEST may be commented out to stop the adaptive
 grid smoothing. This will produce somewhat fewer adaptive cells, but
 make a somewhat more irregular grid.
 
-Cell splitting visualization: SOLVE_RTE (``shdSolv_1.f90``); The
+Cell splitting visualization: SOLVE_RTE (``shdSolv.f90``); The
 subroutine ``VISUALIZE_CELLS`` may be commented in after the solution loop
 to produce  a GLE graphics file showing the adaptive cell structure.
 This can be changed easily for other graphics languagues.  The
 subroutine ``OUTPUT_CELL_SPLIT`` may be commented in to output the medium
 extinction and adaptive cell splitting criterion for X, Y, and Z.
 
-Cutoff transmission for back tracing: PATH_INTEGRATION (`shdSolv_1.f90`);
+Cutoff transmission for back tracing: PATH_INTEGRATION (`shdSolv.f90`);
 The TRANSMIN variable can be changed (e.g. from 1.0 to 0.1) to have the
 back ray tracing continue until the specified transmission is reached.
 This can eliminate the grid radiance interpolation error, but can take
@@ -1809,11 +1809,11 @@ LIST OF ROUTINES
 
 The following is a list of all the subroutines, where they are, and
 what they do.  The first column gives the file (0 is ``shdom.f90``,
-1 is ``shdSolv_1.f90``, 2 is ``shdSolv_2.f90``, 3 is ``shdIO_inp.f90`` and ``shdIO_out.f90``,
+1 is ``shdSolv.f90``, 2 is ``shdCmpt.f90``, 3 is ``shdIO_inp.f90`` and ``shdIO_out.f90``,
 M is ``shdom_mpi.f90``, F is ``fftpack.f90``).  The second column indicates
 the calling routine.
-The major solving routines are in ``shdSolv_1.f90``, other routines are in
-``shdSolv_2.f90``, all the regular I/O routines are in ``shdIO_inp.f90`` and ``shdIO_out.f90``,
+The major solving routines are in ``shdSolv.f90``, other routines are in
+``shdCmpt.f90``, all the regular I/O routines are in ``shdIO_inp.f90`` and ``shdIO_out.f90``,
 the MPI calling routines are in ``shdom_mpi.f90``, and ``fftpack.f90`` has the FFTPACK
 routines from NCAR.
 
