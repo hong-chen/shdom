@@ -9,9 +9,9 @@ FC = gfortran
 FORTRAN_VERSION = $(shell $(FC) -dumpversion)
 VERSION_LIMIT = 10
 ifeq ($(shell test $(FORTRAN_VERSION) -lt $(VERSION_LIMIT); echo $$?), 0)
-	FFLAGS = -O3 -Wargument-mismatch
+	FFLAGS = -O3 -Wargument-mismatch -ffree-line-length-none
 else
-	FFLAGS = -O3 -fallow-argument-mismatch
+	FFLAGS = -O3 -fallow-argument-mismatch -ffree-line-length-none
 endif
 
 CURRENT_DIR = $(shell pwd)
