@@ -422,6 +422,8 @@ subroutine shdSolv__calSrcPntUnp(&
     ! one grid point from the radiance in spherical harmonics and
     ! thermal and/or solar source information.
 
+    ! note: adding OMP to this subroutine slows down the computation
+    ! possibly due to small loops and large overhead of OMP
     !use omp_lib
 
     implicit none
@@ -434,6 +436,7 @@ subroutine shdSolv__calSrcPntUnp(&
     real C
     parameter(C=3.544907703)
     integer J
+
 
     SOURCET(:) = 0.0
     ! Calculate the generalized spherical harmonics source function
