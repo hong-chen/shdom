@@ -1,0 +1,46 @@
+name: build_gfortran
+
+on:
+  push:
+  pull_request:
+
+env:
+  BUILD_TYPE: Debug
+
+jobs:
+  cmake_build:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: "install MPI, NetCDF, HDF4, HDF5"
+      run: |
+           sudo apt-get update
+           sudo apt install mpich
+           sudo apt install libnetcdf-dev libnetcdff-dev netcdf-bin 
+           sudo apt install hdf4-tools libhdf4-dev
+           #sudo apt install hdf5-tools libhdf5-dev
+           ulimit -s unlimited
+
+    - name: "check version and envs"
+      run: |
+           echo "===============================" && nf-config --all
+           echo "===============================" && nc-config --all
+           echo "===============================" && gcc -v
+           echo "===============================" && gfortran -v
+           echo "===============================" && pwd
+           echo "===============================" && h4fc --version && h4fc -show test.f90
+           #echo "===============================" && h5fc -showconfig && h5fc -show test.f90
+           echo "===============================" && ulimit -a
+
+    - name: "cmake build with USE_NETCDF=on & USE_MPI=off"
+      run: |
+           source ./config/env.gnu.github.sh
+           cmake -B ${{github.workspace}}/build -DCMAKE_Fortran_COMPILER=gfortran -DUSE_MPI=off -DUSE_NETCDF=on -DNC_LIBS=${NC_LIBS} -DNC_INC=${NC_INC} -DCMAKE_VERBOSE_MAKEFILE=ON
+           cmake --build ${{github.workspace}}/build 
+           ls -al ${{github.workspace}}/build
+           ls -al ${{github.workspace}}/build/bin
+
+
+
