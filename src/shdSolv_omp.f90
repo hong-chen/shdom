@@ -838,8 +838,7 @@ subroutine ACCELERATE_SOLUTION(&
 ! haven't check whether this parallelization has racing issue
 ! only passed limited cases
 !╭────────────────────────────────────────────────────────────────────────────╮!
-!$OMP PARALLEL DEFAULT(SHARED) PRIVATE(I, J, IS, NS, ISD, NSD, NSC)
-!$OMP DO
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(I, J, IS, NS, ISD, NSD, NSC)
         do I = 1, NPTS
             IS = SHPTR(I)
             NS = SHPTR(I + 1) - IS
@@ -851,8 +850,7 @@ subroutine ACCELERATE_SOLUTION(&
                     &+ ACCELPAR*DELSOURCE(:, ISD + J)
             end do
         end do
-!$OMP END DO
-!$OMP END PARALLEL
+!$OMP END PARALLEL DO
 !╰────────────────────────────────────────────────────────────────────────────╯!
     end if
 
@@ -978,15 +976,13 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
         &UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
 
     ! Zero the flux arrays and set temporary radiance to -1 for not
-!$OMP PARALLEL PRIVATE(I) SHARED(FLUXES, GRIDRAD)
-!$OMP DO
+!$OMP PARALLEL DO PRIVATE(I) SHARED(FLUXES, GRIDRAD)
     do I = 1, NPTS
         FLUXES(1, I) = 0.0
         FLUXES(2, I) = 0.0
         GRIDRAD(1, I) = -1.0
     end do
-!$OMP END DO
-!$OMP END PARALLEL
+!$OMP END PARALLEL DO
 
     ! Zero the output spherical harmonic radiance
     NR = RSHPTR(NPTS + 1)
@@ -1029,15 +1025,13 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
         end if
 
         ! Enforce the discrete ordinate I source function to be non-ne
-!$OMP PARALLEL PRIVATE(I, IPHI) SHARED(NPHI0, WORK)
-!$OMP DO FIRSTPRIVATE(IMU)
+!$OMP PARALLEL DO PRIVATE(I, IPHI) SHARED(NPHI0, WORK) FIRSTPRIVATE(IMU)
         do I = 1, NPTS
             do IPHI = 1, NPHI0(IMU)
                 WORK(1, IPHI, I) = max(0.0, WORK(1, IPHI, I))
             end do
         end do
-!$OMP END DO
-!$OMP END PARALLEL
+!$OMP END PARALLEL DO
 
 ! -- loop phi
         ! Loop over the azimuthal angles
@@ -1125,8 +1119,7 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
 
             ! Transfer the radiance for the (IMU,IPHI) discrete ordinate
             !   GRIDRAD to the work array.
-!$OMP PARALLEL DEFAULT(SHARED) PRIVATE(I)
-!$OMP DO FIRSTPRIVATE(IPHI, IMU)
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(I) FIRSTPRIVATE(IPHI, IMU)
             do I = 1, NPTS
                 if (GRIDRAD(1, I) .lt. -0.0001) then
                     write (6, *) 'Warning [PATH_INTEGRATION]: Grid point has no value',&
@@ -1139,18 +1132,15 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
                     GRIDRAD(1, I) = -1.0
                 end if
             end do
-!$OMP END DO
-!$OMP END PARALLEL
+!$OMP END PARALLEL DO
 
             ! Do the sum for the hemispheric fluxes for this angle
             A = abs(MU(IMU))*WTDO(IMU, IPHI)
-!$OMP PARALLEL PRIVATE(I) SHARED(FLUXES, WORK)
-!$OMP DO FIRSTPRIVATE(IPHI, IUPDOWN, A)
+!$OMP PARALLEL DO PRIVATE(I) SHARED(FLUXES, WORK) FIRSTPRIVATE(IPHI, IUPDOWN, A)
             do I = 1, NPTS
                 FLUXES(IUPDOWN, I) = FLUXES(IUPDOWN, I) + A*WORK(1, IPHI, I)
             end do
-!$OMP END DO
-!$OMP END PARALLEL
+!$OMP END PARALLEL DO
 
             ! For a general BRDF surface save the downwelling radiance
             !   at the bottom boundary points.
