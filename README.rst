@@ -75,9 +75,11 @@ for community support.
 
     * By default, neither ``netCDF`` nor ``MPI`` is chosen;
 
-    * If using the ``MPI``, run ``make mpi`` instead;
+    * If using the ``MPI``, run ``make mpi`` instead of ``make``;
 
-    * If using the ``netCDF``, run ``make nc`` instead. However, you will need
+    * If using the ``netCDF``, run ``make nc`` instead of ``make``.
+
+      However, you will need
       to modify ``-DNC_INC=<NETCDF_INCLUDE_DIR>`` and ``-DNC_LIBS=<NETCDF_LIBRARY_DIR> -lnetcdff``
       within ``makefile``, for example (current settings)
 
@@ -86,7 +88,7 @@ for community support.
            -DNC_INC="/opt/homebrew/Cellar/netcdf-fortran/4.6.1_1/include"
            -DNC_LIBS="-L/opt/homebrew/Cellar/netcdf-fortran/4.6.1_1/lib -lnetcdff"
 
-OR **Build SHDOM (based on GNU Make)**
+or **Build SHDOM (based on GNU Make)**
 
 #. Under ``<shdom repo>/src``, where it contains ``_legacy/``, type in the following
 
