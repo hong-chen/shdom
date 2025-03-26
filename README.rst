@@ -19,6 +19,24 @@ Documents:
 
 * `propgen <https://github.com/hong-chen/shdom/blob/master/docs/propgen.rst>`_
 
+**Major changes:**
+
+#. Added ``CMake`` support (contributed by `Dr. Cheng Da <https://www.cdalab.org>`_);
+
+#. Fixed a segmentation error when saving "state" from calculation;
+
+#. Changed ASCII output to binary format to reduce file size and accelerate processing speed;
+
+#. Added support for LSRT BRDF model;
+
+#. Fixed domain shift issue in 3D radiance calculations;
+
+#. Added examples (including legacy cases) for benchmarking purpose;
+
+#. Changed the legacy code from ``F77`` to ``F90``;
+
+#. Formatted the code.
+
 |
 
 How to Install
@@ -78,28 +96,24 @@ How to Install
 
 **Build SHDOM with cmake** (contributed by `Dr. Cheng Da <https://www.cdalab.org>`_)
 
-#. If using neither NetCDF nor MPI (default options), create a new build dir, and enter that dir (e.g., ``cbuild`` here), then type (``bash`` as an example)
+#. Open a terminal, type in the following
 
     .. code-block:: bash
 
-       mkdir cbuild ; cd cbuild ; cmake <shdom repo> ; make VERBOSE=1
+       git clone https://github.com/hong-chen/shdom.git
 
-   Once building finishes, you can find all executabls under ``cbuild/bin``
-
-#. If using the MPI, set ``-DUSE_MPI=on`` for ``cmake``
+#. Under newly cloned ``<shdom repo>``, where it contains ``README.rst``, type in the following
 
     .. code-block:: bash
 
-       mkdir cbuild ; cd cbuild ; cmake <shdom repo> -DUSE_MPI=on ; make VERBOSE=1
+       make
 
-#. If using the NetCDF, set ``-DUSE_NETCDF=on`` for ``cmake``, also, you need to set ``-DNC_INC=<NETCDF_INCLUDE_DIR>`` and ``-DNC_LIBS=<NETCDF_LIBRARY>``. For example,
+    * By default, neither ``netCDF`` nor ``MPI`` is picked;
 
-    .. code-block:: bash
+    * If using the ``MPI``, run ``make mpi`` instead;
 
-       mkdir cbuild ; cd cbuild ; cmake <shdom repo> \
-       -DUSE_NETCDF=on \
-       -DNC_INC="/opt/homebrew/Cellar/netcdf-fortran/4.6.1_1/include" \
-       -DNC_LIBS="-L/opt/homebrew/Cellar/netcdf-fortran/4.6.1_1/lib -lnetcdff" ; make VERBOSE=1
+    * If using the ``netCDF``, run ``make nc`` instead.
+
 
 Tips
 ----
@@ -110,36 +124,22 @@ Tips
 
      export LIBRARY_PATH="$LIBRARY_PATH:/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib"
 
+* For ``netCDF`` users, you will need to modify the ``-DNC_INC=<NETCDF_INCLUDE_DIR>`` and ``-DNC_LIBS=<NETCDF_LIBRARY>``
+  within ``makefile``, for example, current settings are
+
+  .. code-block:: bash
+
+     -DNC_INC="/opt/homebrew/Cellar/netcdf-fortran/4.6.1_1/include"
+     -DNC_LIBS="-L/opt/homebrew/Cellar/netcdf-fortran/4.6.1_1/lib -lnetcdff"
+
 If you encountered any error, please feel free to reach out at `Discord SUPPORT/installation <https://discord.com/channels/681619528945500252/1123343093417119754>`__
 for community support.
 
 |
 
 
-Source Code File Change
------------------------
-
-**Major changes:**
-
-#. Added ``CMake`` support (contributed by `Dr. Cheng Da <https://www.cdalab.org>`_);
-
-#. Fixed a segmentation error when saving "state" from calculation;
-
-#. Changed ASCII output to binary format to reduce file size and accelerate processing speed;
-
-#. Added support for LSRT BRDF model;
-
-#. Fixed domain shift issue in 3D radiance calculations;
-
-#. Added examples (including legacy cases) for benchmarking purpose;
-
-#. Changed the legacy code from ``F77`` to ``F90``;
-
-#. Formatted the code.
-
-|
-
-The following is a list of file-to-file reference:
+File-to-File Reference
+----------------------
 
 * ``src/makefile``: was ``makefile``
 
@@ -183,20 +183,11 @@ The following is a list of file-to-file reference:
 
 * ``src/tools/shdTool_put.f90``: was ``put.c``
 
+|
+
 * Planning to remove support for ``netCDF``, thus ``netCDF`` related codes are not presented.
 
 |
-
-Document File Change
---------------------
-
-**Major changes:**
-
-#. Changed the format from ``txt`` to ``rst``.
-
-|
-
-The following is a list of file-to-file reference:
 
 * ``docs/README.rst``: was ``README``
 
