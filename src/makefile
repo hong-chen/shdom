@@ -16,7 +16,7 @@ else
 endif
 
 CURRENT_DIR = $(shell pwd)
-BIN_DIR     = $(abspath $(CURRENT_DIR)/../bin)
+BIN_DIR     = $(abspath $(CURRENT_DIR)/../build/bin)
 TARGETS = bin shdom shdom_ propgen make_mie_table make_tmatrix_table plotscattab put
 
 ifeq ($(useOMP), yes)

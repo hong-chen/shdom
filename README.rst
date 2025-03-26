@@ -102,7 +102,7 @@ OR **Build SHDOM (based on GNU Make)**
 
     .. code-block:: bash
 
-       export PATH="<shdom repo>/bin:$PATH"
+       export PATH="<shdom repo>/build/bin:$PATH"
 
 #. Run the case under ``examples/03_bmk_les`` (see detailed instructions `there <https://github.com/hong-chen/shdom/blob/master/examples/03_bmk_les>`_).
 

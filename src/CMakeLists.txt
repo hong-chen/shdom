@@ -44,7 +44,7 @@ target_link_libraries(shdom_f90 PUBLIC ${SHDOM_LD_LIBS})
 #
 # build executables
 #
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../bin)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 set(exes shdom shdom_)
 foreach (x ${exes})

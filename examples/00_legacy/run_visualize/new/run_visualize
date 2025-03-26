@@ -27,7 +27,7 @@ set wavelen=0.67
 set wavename=067
 
 
-set fdir_bin="../../../../bin"
+set fdir_bin="../../../../build/bin"
 set put_exe="${fdir_bin}/put"
 set propgen_exe="${fdir_bin}/propgen"
 set shdom_exe="${fdir_bin}/shdom_"
