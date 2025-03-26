@@ -46,7 +46,7 @@ How to Install
 
 * Require a ``fortran`` compiler, we recommend `GFortran <https://fortran-lang.org/learn/os_setup/install_gfortran/>`_.
 
-**Build SHDOM with makefile**
+**Build SHDOM with (with GNU Make)**
 
 #. Open a terminal, type in the following
 
@@ -66,24 +66,6 @@ How to Install
 
        make
 
-   Warning messages are expected during the compilation process, and will not affect the installation of ``shdom``.
-
-   Once the ``shdom`` is successfully compiled, the following executables will be generated
-
-   * ``bin/shdom`` (namelist input)
-
-   * ``bin/shdom_`` (user input)
-
-   * ``bin/propgen``
-
-   * ``bin/make_mie_table``
-
-   * ``bin/make_tmatrix_table``
-
-   * ``bin/plotscattab``
-
-   * ``bin/put``
-
 #. Add the following to the system source file, e.g. ``~/.bashrc`` for ``bash`` (replace ``<shdom repo>`` with a valid path),
 
     .. code-block:: bash
@@ -94,7 +76,7 @@ How to Install
 
 |
 
-**Build SHDOM with cmake** (contributed by `Dr. Cheng Da <https://www.cdalab.org>`_)
+**Build SHDOM (with CMake)** (contributed by `Dr. Cheng Da <https://www.cdalab.org>`_)
 
 #. Open a terminal, type in the following
 
@@ -121,8 +103,34 @@ How to Install
            -DNC_INC="/opt/homebrew/Cellar/netcdf-fortran/4.6.1_1/include"
            -DNC_LIBS="-L/opt/homebrew/Cellar/netcdf-fortran/4.6.1_1/lib -lnetcdff"
 
+#. Add the following to the system source file, e.g. ``~/.bashrc`` for ``bash`` (replace ``<shdom repo>`` with a valid path),
+
+    .. code-block:: bash
+
+       export PATH="<shdom repo>/build/bin:$PATH"
+
+#. Run the case under ``examples/03_bmk_les`` (see detailed instructions `there <https://github.com/hong-chen/shdom/blob/master/examples/03_bmk_les>`_).
+
 Tips
 ----
+
+* Warning messages are expected during the compilation process, and will not affect the installation of ``shdom``.
+  Once the ``shdom`` is successfully compiled, the following executables will be generated
+
+   * ``bin/shdom`` (namelist input)
+
+   * ``bin/shdom_`` (user input)
+
+   * ``bin/propgen``
+
+   * ``bin/make_mie_table``
+
+   * ``bin/make_tmatrix_table``
+
+   * ``bin/plotscattab``
+
+   * ``bin/put``
+
 
 * For Mac users, add the following to ``~/.bashrc``,
 
