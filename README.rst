@@ -65,7 +65,7 @@ for community support.
 
        cd src
 
-#. Under ``<shdom repo>/src``, where it contains ``makefile``, type in the following
+#. Under ``<shdom repo>/src``, where it contains ``_legacy/``, type in the following
 
     .. code-block:: bash
 
