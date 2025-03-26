@@ -7,7 +7,7 @@ all:
 	mkdir $(BUILD_DIR)
 	cd $(BUILD_DIR); \
 		cmake $(CURRENT_DIR); \
-		make VERBOSE=1
+		make
 
 mpi:
 	rm -rf $(BUILD_DIR)
