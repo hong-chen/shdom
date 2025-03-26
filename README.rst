@@ -116,19 +116,19 @@ Tips
 * Warning messages are expected during the compilation process, and will not affect the installation of ``shdom``.
   Once the ``shdom`` is successfully compiled, the following executables will be generated
 
-   * ``bin/shdom`` (namelist input)
+   * ``<shdom repo>/build/bin/shdom`` (namelist input)
 
-   * ``bin/shdom_`` (user input)
+   * ``<shdom repo>/build/bin/shdom_`` (user input)
 
-   * ``bin/propgen``
+   * ``<shdom repo>/build/bin/propgen``
 
-   * ``bin/make_mie_table``
+   * ``<shdom repo>/build/bin/make_mie_table``
 
-   * ``bin/make_tmatrix_table``
+   * ``<shdom repo>/build/bin/make_tmatrix_table``
 
-   * ``bin/plotscattab``
+   * ``<shdom repo>/build/bin/plotscattab``
 
-   * ``bin/put``
+   * ``<shdom repo>/build/bin/put``
 
 
 * For Mac users, add the following to ``~/.bashrc``,
