@@ -78,8 +78,8 @@ for community support.
     * If using the ``MPI``, run ``make mpi`` instead;
 
     * If using the ``netCDF``, run ``make nc`` instead. However, you will need
-      to modify the ``-DNC_INC=<NETCDF_INCLUDE_DIR>`` and ``-DNC_LIBS=<NETCDF_LIBRARY>``
-      within ``makefile``, for example, current settings are
+      to modify ``-DNC_INC=<NETCDF_INCLUDE_DIR>`` and ``-DNC_LIBS=<NETCDF_LIBRARY_DIR> -lnetcdff``
+      within ``makefile``, for example (current settings)
 
         .. code-block:: bash
 
