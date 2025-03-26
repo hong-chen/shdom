@@ -42,6 +42,9 @@ Documents:
 How to Install
 --------------
 
+If you encountered any issue, please feel free to reach out at `Discord SUPPORT/installation <https://discord.com/channels/681619528945500252/1123343093417119754>`__
+for community support.
+
 **Dependencies**
 
 * Require a ``fortran`` compiler, we recommend `GFortran <https://fortran-lang.org/learn/os_setup/install_gfortran/>`_.
@@ -90,7 +93,7 @@ How to Install
 
        make
 
-    * By default, neither ``netCDF`` nor ``MPI`` is picked;
+    * By default, neither ``netCDF`` nor ``MPI`` is chosen;
 
     * If using the ``MPI``, run ``make mpi`` instead;
 
@@ -137,9 +140,6 @@ Tips
   .. code-block:: bash
 
      export LIBRARY_PATH="$LIBRARY_PATH:/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib"
-
-If you encountered any error, please feel free to reach out at `Discord SUPPORT/installation <https://discord.com/channels/681619528945500252/1123343093417119754>`__
-for community support.
 
 |
 
