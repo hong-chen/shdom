@@ -81,7 +81,7 @@ for community support.
 
       However, you will need
       to modify ``-DNC_INC=<NETCDF_INCLUDE_DIR>`` and ``-DNC_LIBS=<NETCDF_LIBRARY_DIR> -lnetcdff``
-      within ``makefile``, for example (current settings)
+      within ``Makefile``, for example (current settings)
 
         .. code-block:: bash
 
