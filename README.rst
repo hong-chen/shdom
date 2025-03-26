@@ -13,7 +13,7 @@ Spherical Harmonic Discrete Ordinate Method (SHDOM) for Atmospheric Radiative Tr
 
 SHDOM was initially developed by `Frank Evans <evans@nit.colorado.edu>`_ and available `here <https://coloradolinux.com/shdom/>`_.
 
-Documents:
+**Documents**:
 
 * `shdom <https://github.com/hong-chen/shdom/blob/master/docs/shdom.rst>`_
 
@@ -59,7 +59,7 @@ for community support.
 
        git clone https://github.com/hong-chen/shdom.git
 
-#. Under newly cloned ``<shdom repo>``, where it contains ``README.rst``, type in the following
+#. Under newly cloned ``<shdom repo>``, where it contains ``LICENSE``, type in the following
 
     .. code-block:: bash
 
@@ -89,7 +89,7 @@ for community support.
 
        git clone https://github.com/hong-chen/shdom.git
 
-#. Under newly cloned ``<shdom repo>``, where it contains ``README.rst``, type in the following
+#. Under newly cloned ``<shdom repo>``, where it contains ``LICENSE``, type in the following
 
     .. code-block:: bash
 
@@ -144,7 +144,6 @@ Tips
      export LIBRARY_PATH="$LIBRARY_PATH:/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib"
 
 |
-
 
 File-to-File Reference
 ----------------------
