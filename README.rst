@@ -112,8 +112,14 @@ How to Install
 
     * If using the ``MPI``, run ``make mpi`` instead;
 
-    * If using the ``netCDF``, run ``make nc`` instead.
+    * If using the ``netCDF``, run ``make nc`` instead. However, you will need
+      to modify the ``-DNC_INC=<NETCDF_INCLUDE_DIR>`` and ``-DNC_LIBS=<NETCDF_LIBRARY>``
+      within ``makefile``, for example, current settings are
 
+        .. code-block:: bash
+
+           -DNC_INC="/opt/homebrew/Cellar/netcdf-fortran/4.6.1_1/include"
+           -DNC_LIBS="-L/opt/homebrew/Cellar/netcdf-fortran/4.6.1_1/lib -lnetcdff"
 
 Tips
 ----
@@ -123,14 +129,6 @@ Tips
   .. code-block:: bash
 
      export LIBRARY_PATH="$LIBRARY_PATH:/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib"
-
-* For ``netCDF`` users, you will need to modify the ``-DNC_INC=<NETCDF_INCLUDE_DIR>`` and ``-DNC_LIBS=<NETCDF_LIBRARY>``
-  within ``makefile``, for example, current settings are
-
-  .. code-block:: bash
-
-     -DNC_INC="/opt/homebrew/Cellar/netcdf-fortran/4.6.1_1/include"
-     -DNC_LIBS="-L/opt/homebrew/Cellar/netcdf-fortran/4.6.1_1/lib -lnetcdff"
 
 If you encountered any error, please feel free to reach out at `Discord SUPPORT/installation <https://discord.com/channels/681619528945500252/1123343093417119754>`__
 for community support.

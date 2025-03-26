@@ -42,5 +42,3 @@ endif()
 foreach(x ${exes})
     install(TARGETS ${x})
 endforeach()
-
-

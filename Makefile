@@ -3,5 +3,9 @@ CURRENT_DIR = $(shell pwd)
 BUILD_DIR = $(abspath $(CURRENT_DIR)/build)
 
 all:
-	mkdir build
-	cd build; cmake ..; make VERBOSE=1
+	rm -rf $(BUILD_DIR)
+	mkdir $(BUILD_DIR)
+	cd $(BUILD_DIR); cmake $(CURRENT_DIR); make VERBOSE=1
+
+clean:
+	rm -rf $(BUILD_DIR)
