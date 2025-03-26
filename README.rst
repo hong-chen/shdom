@@ -90,7 +90,7 @@ How to Install
        mkdir cbuild ; cd cbuild ; cmake <shdom repo> \
        -DUSE_NETCDF=on \
        -DNC_INC="/opt/homebrew/Cellar/netcdf-fortran/4.6.1_1/include" \
-       -DNC_LIBS="-L/opt/homebrew/Cellar/netcdf-fortran/4.6.1_1/lib -lnetcdff" && make VERBOSE=1
+       -DNC_LIBS="-L/opt/homebrew/Cellar/netcdf-fortran/4.6.1_1/lib -lnetcdff" ; make VERBOSE=1
 
 
 Tips
