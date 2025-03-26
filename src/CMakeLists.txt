@@ -3,12 +3,17 @@
 #
 set(SHDOM_LIB_SRCS
     globals.f90
-    shdSolv.f90
-    shdComp.f90
     shdIO_inp.f90
     shdIO_out.f90
     shdSurf_brdf.f90
     fftpack.f90)
+
+if (USE_OMP)
+    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} dev/shdSolv_omp.f90 dev/shdComp_omp.f90)
+else()
+    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} shdSolv.f90 shdComp.f90)
+endif()
+
 if (USE_MPI)
     set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} shdom_mpi.f90)
 else()

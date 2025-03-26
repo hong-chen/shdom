@@ -14,6 +14,12 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
     endif()
 endif()
 
+# openMPI Support
+option(USE_OMP "build shdom with openmpi" OFF)
+if(USE_OMP)
+    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fopenmp")
+endif()
+
 # MPI Support
 option(USE_MPI "build shdom with mpi" OFF)
 if(USE_MPI)

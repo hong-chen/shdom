@@ -9,6 +9,14 @@ all:
 		cmake $(CURRENT_DIR); \
 		make
 
+omp:
+	rm -rf $(BUILD_DIR)
+	mkdir $(BUILD_DIR)
+	cd $(BUILD_DIR); \
+		cmake $(CURRENT_DIR) \
+			-DUSE_OMP=on; \
+		make
+
 mpi:
 	rm -rf $(BUILD_DIR)
 	mkdir $(BUILD_DIR)
