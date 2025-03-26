@@ -51,43 +51,21 @@ for community support.
 
 * Require a ``fortran`` compiler, we recommend `GFortran <https://fortran-lang.org/learn/os_setup/install_gfortran/>`_.
 
-**Build SHDOM (with GNU Make)**
-
-#. Open a terminal, type in the following
-
-    .. code-block:: bash
-
-       git clone https://github.com/hong-chen/shdom.git
-
-#. Under newly cloned ``<shdom repo>``, where it contains ``LICENSE``, type in the following
-
-    .. code-block:: bash
-
-       cd src
-
-#. Under ``<shdom repo>/src``, where it contains ``_legacy/``, type in the following
-
-    .. code-block:: bash
-
-       make
-
-#. Add the following to the system source file, e.g. ``~/.bashrc`` for ``bash`` (replace ``<shdom repo>`` with a valid path),
-
-    .. code-block:: bash
-
-       export PATH="<shdom repo>/bin:$PATH"
-
-#. Run the case under ``examples/03_bmk_les`` (see detailed instructions `there <https://github.com/hong-chen/shdom/blob/master/examples/03_bmk_les>`_).
+* We recommend ``CMake``, but it is optional.
 
 |
 
-**Build SHDOM (with CMake)** (contributed by `Dr. Cheng Da <https://www.cdalab.org>`_)
+**Clone the Repository**
 
 #. Open a terminal, type in the following
 
     .. code-block:: bash
 
        git clone https://github.com/hong-chen/shdom.git
+
+|
+
+**Build SHDOM (based on CMake)** (contributed by `Dr. Cheng Da <https://www.cdalab.org>`_)
 
 #. Under newly cloned ``<shdom repo>``, where it contains ``LICENSE``, type in the following
 
@@ -108,13 +86,27 @@ for community support.
            -DNC_INC="/opt/homebrew/Cellar/netcdf-fortran/4.6.1_1/include"
            -DNC_LIBS="-L/opt/homebrew/Cellar/netcdf-fortran/4.6.1_1/lib -lnetcdff"
 
+OR **Build SHDOM (based on GNU Make)**
+
+#. Under ``<shdom repo>/src``, where it contains ``_legacy/``, type in the following
+
+    .. code-block:: bash
+
+       make
+
+|
+
+**Post-Installation**
+
 #. Add the following to the system source file, e.g. ``~/.bashrc`` for ``bash`` (replace ``<shdom repo>`` with a valid path),
 
     .. code-block:: bash
 
-       export PATH="<shdom repo>/build/bin:$PATH"
+       export PATH="<shdom repo>/bin:$PATH"
 
 #. Run the case under ``examples/03_bmk_les`` (see detailed instructions `there <https://github.com/hong-chen/shdom/blob/master/examples/03_bmk_les>`_).
+
+|
 
 Tips
 ----
