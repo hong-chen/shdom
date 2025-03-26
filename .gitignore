@@ -35,6 +35,7 @@ randomseed
 *put*txt
 
 # exceptions for shdom legacy examples (examples/00_legacy)
+*.sfc
 *.prp
 *.out*
 *.t

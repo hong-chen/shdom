@@ -1,6 +1,6 @@
 # Makefile for SHDOM and related programs in distribution
 
-useOMP = no
+useOMP = yes
 # pick one of the following two
 #╭────────────────────────────────────────────────╮#
 FC = gfortran

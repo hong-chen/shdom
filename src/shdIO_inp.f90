@@ -959,7 +959,7 @@ subroutine shd_io__checkPropInput(&
     end do
 
     if (NTHICK .gt. 0) then
-        write (*, '(A)') 'Message [_checkPropInput]: '
+        write (*, '(A)') 'Message [_checkPropInput]:'
         write (*, '(A,I8)') '  Number of property grid cells with optical depth greater than 2: ', NTHICK
         write (*, '(A,F8.2)') '  Max cell optical depth: ', MAXTAU
     end if
