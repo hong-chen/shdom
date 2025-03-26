@@ -69,11 +69,11 @@ How to Install
 
 **Build SHDOM with cmake**
 
-#. If using neither NetCDF nor MPI (default options), create a new build dir, and enter that dir (e.g., ``cbuildi`` here), then type
+#. If using neither NetCDF nor MPI (default options), create a new build dir, and enter that dir (e.g., ``cbuild`` here), then type (``bash`` as an example)
 
     .. code-block:: bash
 
-       mkdir cbuild && cd cbuild && cmake <shdom repo> && make VERBOSE=1
+       mkdir cbuild ; cd cbuild ; cmake <shdom repo> ; make VERBOSE=1
 
    Once building finishes, you can find all executabls under ``cbuild/bin``
 
@@ -81,13 +81,13 @@ How to Install
 
     .. code-block:: bash
 
-       mkdir cbuild && cd cbuild && cmake <shdom repo> -DUSE_MPI=on && make VERBOSE=1
+       mkdir cbuild ; cd cbuild ; cmake <shdom repo> -DUSE_MPI=on ; make VERBOSE=1
 
 #. If using the NetCDF, set ``-DUSE_NETCDF=on`` for ``cmake``, also, you need to set ``-DNC_INC=<NETCDF_INCLUDE_DIR>`` and ``-DNC_LIBS=<NETCDF_LIBRARY>``. For example,
 
     .. code-block:: bash
 
-       mkdir cbuild && cd cbuild && cmake <shdom repo> \
+       mkdir cbuild ; cd cbuild ; cmake <shdom repo> \
        -DUSE_NETCDF=on \
        -DNC_INC="/opt/homebrew/Cellar/netcdf-fortran/4.6.1_1/include" \
        -DNC_LIBS="-L/opt/homebrew/Cellar/netcdf-fortran/4.6.1_1/lib -lnetcdff" && make VERBOSE=1

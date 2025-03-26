@@ -2,6 +2,7 @@
 # src codes
 #
 set(SHDOM_LIB_SRCS
+    globals.f90
     shdSolv.f90
     shdComp.f90
     shdIO_inp.f90

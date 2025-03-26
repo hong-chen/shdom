@@ -43,7 +43,7 @@ randomseed
 *.dat
 *.rad*
 *.bin
-*.scat
+*.sca*
 *.pgm
 *.grf
 *.inp
