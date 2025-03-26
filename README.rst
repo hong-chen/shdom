@@ -67,7 +67,7 @@ How to Install
 
 |
 
-**Build SHDOM with cmake**
+**Build SHDOM with cmake** (contributed by `Dr. Cheng Da <https://www.cdalab.org>`_)
 
 #. If using neither NetCDF nor MPI (default options), create a new build dir, and enter that dir (e.g., ``cbuild`` here), then type (``bash`` as an example)
 
@@ -92,7 +92,6 @@ How to Install
        -DNC_INC="/opt/homebrew/Cellar/netcdf-fortran/4.6.1_1/include" \
        -DNC_LIBS="-L/opt/homebrew/Cellar/netcdf-fortran/4.6.1_1/lib -lnetcdff" ; make VERBOSE=1
 
-
 Tips
 ----
 
@@ -107,37 +106,23 @@ for community support.
 
 |
 
-Document File Change
---------------------
-
-**Major changes:**
-
-#. Changed the format from ``txt`` to ``rst``.
-
-|
-
-The following is a list of file-to-file reference:
-
-* ``docs/README.rst``: was ``README``
-
-* ``docs/shdom.rst``: was ``shdom.txt``
-
-* ``docs/propgen.rst``: was ``propgen.txt``
-
-* ``HISTORY.rst``: was ``Updatelist.txt``
-
-|
 
 Source Code File Change
 -----------------------
 
 **Major changes:**
 
+#. Added ``CMake`` support (contributed by `Dr. Cheng Da <https://www.cdalab.org>`_);
+
+#. Fixed a segmentation error when saving "state" from calculation;
+
+#. Changed ASCII output to binary format to reduce file size and accelerate processing speed;
+
 #. Added support for LSRT BRDF model;
 
 #. Fixed domain shift issue in 3D radiance calculations;
 
-#. Added examples for benchmarking purpose;
+#. Added examples (including legacy cases) for benchmarking purpose;
 
 #. Changed the legacy code from ``F77`` to ``F90``;
 
@@ -189,7 +174,28 @@ The following is a list of file-to-file reference:
 
 * ``src/tools/shdTool_put.f90``: was ``put.c``
 
-* Removed support for ``netCDF``, thus ``netCDF`` related codes are not presented.
+* Planning to remove support for ``netCDF``, thus ``netCDF`` related codes are not presented.
+
+|
+
+Document File Change
+--------------------
+
+**Major changes:**
+
+#. Changed the format from ``txt`` to ``rst``.
+
+|
+
+The following is a list of file-to-file reference:
+
+* ``docs/README.rst``: was ``README``
+
+* ``docs/shdom.rst``: was ``shdom.txt``
+
+* ``docs/propgen.rst``: was ``propgen.txt``
+
+* ``HISTORY.rst``: was ``Updatelist.txt``
 
 |
 

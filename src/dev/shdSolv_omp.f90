@@ -2497,7 +2497,10 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
         &1, 2, 3, 4, 5, 6, 7, 8/, OPPFACE/2, 1, 4, 3, 6, 5/
     data JOCTORDER3/1, 3, 5, 7, 2, 4, 6, 8/, JOCTORDER2/1, 3, 1, 3, 2, 4, 2, 4/
 
-    integer :: iwhile, ibreak
+    ! added for testing
+    !╭────────────────────────────────────────────────╮!
+    !integer :: iwhile, ibreak
+    !╰────────────────────────────────────────────────╯!
 
     EPS = 1.0e-3*(GRIDPOS(3, GRIDPTR(8, 1)) - GRIDPOS(3, GRIDPTR(1, 1)))
 
@@ -2506,18 +2509,21 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
     CX = sqrt(1.0 - MU**2)*cos(PHI + PI)
     CY = sqrt(1.0 - MU**2)*sin(PHI + PI)
     CZ = -MU
+
     if (abs(CX) .gt. 1.0e-5) then
         CXINV = 1.0d0/CX
     else
         CX = 0.0
         CXINV = 1.0e6
     end if
+
     if (abs(CY) .gt. 1.0e-5) then
         CYINV = 1.0d0/CY
     else
         CY = 0.0
         CYINV = 1.0e6
     end if
+
     CZINV = 1.0d0/CZ
 
     ! Setup the sweeping direction and the gridpoint location
@@ -2527,11 +2533,13 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
     else
         BITX = 0
     end if
+
     if (CY .lt. 0.0) then
         BITY = 1
     else
         BITY = 0
     end if
+
     if (CZ .lt. -1.0e-3) then
         BITZ = 1
     else if (CZ .gt. 1.0e-3) then
@@ -2539,6 +2547,7 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
     else
         stop 'Error [BACK_INT_GRID]: Bad MU.'
     end if
+
     ! IOCT is the octant the ray come from or the discrete ordinate goes to.
     IOCT = 1 + BITX + 2*BITY + 4*BITZ
     if (btest(IPFLAG, 1)) then
@@ -2690,12 +2699,6 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
                     ! If going to smaller face then use next face (more accurate)
                     KFACE = OPPFACE(IFACE)
                     IC = INEXTCELL
-                    ! added for testing
-                    !╭────────────────────────────────────────────────╮!
-                    !write(*, *) 'IPT', RAD
-                    !ibreak = ibreak + 1
-                    !write(*, *) '+'
-                    !╰────────────────────────────────────────────────╯!
                 end if
 
                 I1 = GRIDPTR(GRIDFACE(1, KFACE), IC)
@@ -2708,9 +2711,17 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
                 !write(*, *) "IPT, IX, IY, IZ, IWHILE, IC, INEXT, I1, I2, I3, I4, : ", IPT, &
                 !    &GRIDPOS(1, IPT), GRIDPOS(2, IPT), GRIDPOS(3, IPT),&
                 !    &iwhile, IC, INEXTCELL, I1, I2, I3, I4
-                !write(*, '(I10, 3F6.2, 7I10)') IPT, &
-                !    &GRIDPOS(1, IPT), GRIDPOS(2, IPT), GRIDPOS(3, IPT),&
-                !    &iwhile, IC, INEXTCELL, I1, I2, I3, I4
+                !write(*, '(2I10, 3F8.2)') iwhile, IPT, &
+                !    &GRIDPOS(1, IPT), GRIDPOS(2, IPT), GRIDPOS(3, IPT)
+                !write(*, '(2I10, 3F8.2)') iwhile, I1, &
+                !    &GRIDPOS(1, I1), GRIDPOS(2, I1), GRIDPOS(3, I1)
+                !write(*, '(2I10, 3F8.2)') iwhile, I2, &
+                !    &GRIDPOS(1, I2), GRIDPOS(2, I2), GRIDPOS(3, I2)
+                !write(*, '(2I10, 3F8.2)') iwhile, I3, &
+                !    &GRIDPOS(1, I3), GRIDPOS(2, I3), GRIDPOS(3, I3)
+                !write(*, '(2I10, 3F8.2)') iwhile, I4, &
+                !    &GRIDPOS(1, I4), GRIDPOS(2, I4), GRIDPOS(3, I4)
+                !write(*,*)
                 !╰────────────────────────────────────────────────╯!
 
                 ! Compute the face interpolation factors
