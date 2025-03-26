@@ -42,7 +42,7 @@ jobs:
            cmake -B ${{github.workspace}}/cbuild_0 -DCMAKE_Fortran_COMPILER=gfortran -DUSE_MPI=off -DUSE_NETCDF=off
            cmake --build ${{github.workspace}}/cbuild_0
            ls -al ${{github.workspace}}/cbuild_0
-           ls -al ${{github.workspace}}/cbuild_0/bin
+           ls -al ${{github.workspace}}/cbuild_0/../bin
 
     - name: "cmake build with USE_NETCDF=on & USE_MPI=off"
       run: |
@@ -50,7 +50,7 @@ jobs:
            cmake -B ${{github.workspace}}/cbuild_1 -DCMAKE_Fortran_COMPILER=gfortran -DUSE_MPI=off -DUSE_NETCDF=on -DNC_LIBS="${NC_LIBS}" -DNC_INC="${NC_INCLUDE}"
            cmake --build ${{github.workspace}}/cbuild_1
            ls -al ${{github.workspace}}/cbuild_1
-           ls -al ${{github.workspace}}/cbuild_1/bin
+           ls -al ${{github.workspace}}/cbuild_1/../bin
 
     - name: "cmake build with USE_NETCDF=off & USE_MPI=on"
       run: |
@@ -58,7 +58,7 @@ jobs:
            cmake -B ${{github.workspace}}/cbuild_2 -DCMAKE_Fortran_COMPILER=gfortran -DUSE_MPI=on -DUSE_NETCDF=off
            cmake --build ${{github.workspace}}/cbuild_2
            ls -al ${{github.workspace}}/cbuild_2
-           ls -al ${{github.workspace}}/cbuild_2/bin
+           ls -al ${{github.workspace}}/cbuild_2/../bin
 
     - name: "cmake build with USE_NETCDF=on & USE_MPI=on"
       run: |
@@ -66,7 +66,7 @@ jobs:
            cmake -B ${{github.workspace}}/cbuild_3 -DCMAKE_Fortran_COMPILER=gfortran -DUSE_MPI=on -DUSE_NETCDF=on -DNC_LIBS="${NC_LIBS}" -DNC_INC="${NC_INCLUDE}"
            cmake --build ${{github.workspace}}/cbuild_3
            ls -al ${{github.workspace}}/cbuild_3
-           ls -al ${{github.workspace}}/cbuild_3/bin
+           ls -al ${{github.workspace}}/cbuild_3/../bin
 
     - name: "plain-makefile build with neither NetCDF nor MPI"
       run: |
