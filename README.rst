@@ -19,23 +19,25 @@ Documents:
 
 * `propgen <https://github.com/hong-chen/shdom/blob/master/docs/propgen.rst>`_
 
+|
+
 **Major changes:**
 
-#. Added ``CMake`` support (contributed by `Dr. Cheng Da <https://www.cdalab.org>`_);
+* Added ``CMake`` support (contributed by `Dr. Cheng Da <https://www.cdalab.org>`_);
 
-#. Fixed a segmentation error when saving "state" from calculation;
+* Fixed a segmentation error when saving "state" from calculation;
 
-#. Changed ASCII output to binary format to reduce file size and accelerate processing speed;
+* Changed ASCII output to binary format to reduce file size and accelerate processing speed;
 
-#. Added support for LSRT BRDF model;
+* Added support for LSRT BRDF model;
 
-#. Fixed domain shift issue in 3D radiance calculations;
+* Fixed domain shift issue in 3D radiance calculations;
 
-#. Added examples (including legacy cases) for benchmarking purpose;
+* Added examples (including legacy cases) for benchmarking purpose;
 
-#. Changed the legacy code from ``F77`` to ``F90``;
+* Changed the legacy code from ``F77`` to ``F90``;
 
-#. Formatted the code.
+* Formatted the code.
 
 |
 
@@ -49,7 +51,7 @@ for community support.
 
 * Require a ``fortran`` compiler, we recommend `GFortran <https://fortran-lang.org/learn/os_setup/install_gfortran/>`_.
 
-**Build SHDOM with (with GNU Make)**
+**Build SHDOM (with GNU Make)**
 
 #. Open a terminal, type in the following
 
