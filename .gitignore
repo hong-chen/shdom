@@ -34,6 +34,20 @@ build
 randomseed
 *put*txt
 
+# exceptions for shdom legacy examples (examples/00_legacy)
+*.prp
+*.out*
+*.t
+*.log
+*.par*
+*.dat
+*.rad*
+*.bin
+*.scat
+*.pgm
+*.grf
+*.inp
+
 # exceptions for shdom
 future_dev
 future_dev/*
@@ -43,13 +57,6 @@ include
 include/*
 lib
 lib/*
-*.prp
-*.bin
-*.scat
-*.pgm
-*i.t
-*.inp
-*.out*
 !data
 !data/*.nml
 !data/*.txt

@@ -73,21 +73,21 @@ How to Install
 
     .. code-block:: bash
 
-       mkdir cbuild && cd cbuild && cmake <YOUR_SHDOM_REPO_DIR> && make VERBOSE=1
-   
+       mkdir cbuild && cd cbuild && cmake <shdom repo> && make VERBOSE=1
+
    Once building finishes, you can find all executabls under ``cbuild/bin``
-    
+
 #. If using the MPI, set ``-DUSE_MPI=on`` for ``cmake``
 
     .. code-block:: bash
 
-       mkdir cbuild && cd cbuild && cmake <YOUR_SHDOM_REPO_DIR> -DUSE_MPI=on && make VERBOSE=1
+       mkdir cbuild && cd cbuild && cmake <shdom repo> -DUSE_MPI=on && make VERBOSE=1
 
 #. If using the NetCDF, set ``-DUSE_NETCDF=on`` for ``cmake``, also, you need to set ``-DNC_INC=<NETCDF_INCLUDE_DIR>`` and ``-DNC_LIBS=<NETCDF_LIBRARY>``. For example,
 
     .. code-block:: bash
 
-       mkdir cbuild && cd cbuild && cmake <YOUR_SHDOM_REPO_DIR> \
+       mkdir cbuild && cd cbuild && cmake <shdom repo> \
        -DUSE_NETCDF=on \
        -DNC_INC="/opt/homebrew/Cellar/netcdf-fortran/4.6.1_1/include" \
        -DNC_LIBS="-L/opt/homebrew/Cellar/netcdf-fortran/4.6.1_1/lib -lnetcdff" && make VERBOSE=1

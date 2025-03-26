@@ -2,9 +2,10 @@
 # src codes
 #
 set(SHDOM_LIB_SRCS
-    shdSolv_1.f90
-    shdSolv_2.f90
-    shdUtil_io.f90
+    shdSolv.f90
+    shdComp.f90
+    shdIO_inp.f90
+    shdIO_out.f90
     shdSurf_brdf.f90
     fftpack.f90)
 if (USE_MPI)
@@ -54,4 +55,3 @@ endforeach()
 
 
 add_subdirectory(tools)
-

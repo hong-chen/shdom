@@ -4,7 +4,7 @@
 export NC_INCLUDE=`nf-config --fflags|cut -d " " -f1 | cut -d "I" -f 2`
 export NC_LIBS=`nf-config --flibs`
 
-# config for HDF4 
+# config for HDF4
 export H4_INCLUDE=""
 export H4_LIBS=`h4fc -show TESTSRC | awk -F"TESTSRC " '{print $2}'`
 
@@ -16,7 +16,7 @@ export H5_LIBS=`h5fc -show TESTSRC | awk -F"TESTSRC " '{print $2}'`
 
 echo "====================================="
 echo "          configurations:"
-echo 
+echo
 echo "NC_INCLUDE=$NC_INCLUDE"
 echo "NC_LIBS=$NC_LIBS"
 
