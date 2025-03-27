@@ -10,7 +10,7 @@ export H4_LIBS=`h4fc -show TESTSRC | awk -F"TESTSRC " '{print $2}'`
 
 
 # config for HDF5
-export H5_INCLUDE=`h5fc -show TESTSRC | awk -F"TESTSRC" '{print $1}' | awk -F"-I" '{print $2}'|cut -d " " -f 1`
+export H5_INCLUDE=`h5fc -show TESTSRC | awk -F"TESTSRC" '{print $1}' | awk -F"-I" '{print $2}' | cut -d " " -f 1`
 export H5_LIBS=`h5fc -show TESTSRC | awk -F"TESTSRC " '{print $2}'`
 
 
