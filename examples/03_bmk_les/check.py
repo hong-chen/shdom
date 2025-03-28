@@ -7,12 +7,12 @@ import glob
 def check(fname, fname_ref, data_len=4, threshold=1e6):
 
     if not os.path.exists(fname):
-        msg = 'Error [check]: File <%s> does exist.' % (fname)
+        msg = 'Error [check]: File <%s> does NOT exist.' % (fname)
         print(msg)
         return
 
     if not os.path.exists(fname_ref):
-        msg = 'Error [check]: File <%s> does exist.' % (fname_ref)
+        msg = 'Error [check]: File <%s> does NOT exist.' % (fname_ref)
         print(msg)
         return
 
