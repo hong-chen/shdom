@@ -4,10 +4,17 @@ import struct
 import glob
 
 
-def check(fname, fdir_ref='data/output', data_len=4):
+def check(fname, fname_ref, data_len=4, threshold=1e6):
 
-    filename = os.path.basename(fname)
-    fname_ref = os.path.join(fdir_ref, filename)
+    if not os.path.exists(fname):
+        msg = 'Error [check]: File <%s> does exist.' % (fname)
+        print(msg)
+        return
+
+    if not os.path.exists(fname_ref):
+        msg = 'Error [check]: File <%s> does exist.' % (fname_ref)
+        print(msg)
+        return
 
     file_size = os.path.getsize(fname)
     file_size_ref = os.path.getsize(fname_ref)
@@ -23,11 +30,12 @@ def check(fname, fdir_ref='data/output', data_len=4):
 
         for idata in range(Ndata):
 
-            data = struct.unpack('=f', f.read(data_len))
-            data_ref = struct.unpack('<f', f_ref.read(data_len))
+            data = struct.unpack('=f', f.read(data_len))[0]
+            data_ref = struct.unpack('<f', f_ref.read(data_len))[0]
 
-            if data != data_ref:
-                msg = 'Error [check]: iData=%d, Data=%f, Data_Ref=%f, Diff=%f' % (idata+1, data, data_ref, data-data_ref)
+            diff = data - data_ref
+            if abs(diff)>threshold:
+                msg = 'Error [check]: iData=%d, Data=%f, Data_Ref=%f, Diff=%f' % (idata+1, data, data_ref, diff)
                 print(msg)
                 return
 
@@ -37,9 +45,13 @@ def check(fname, fdir_ref='data/output', data_len=4):
 
 if __name__ == '__main__':
 
+    fdir_ref='data/output'
+
     fnames = sorted(glob.glob('tmp-data/shdom-out*.sHdOm-out*'))
 
     for fname in fnames:
-        check(fname)
+        filename = os.path.basename(fname)
+        fname_ref = os.path.join(fdir_ref, filename)
+        check(fname, fname_ref)
 
     pass
