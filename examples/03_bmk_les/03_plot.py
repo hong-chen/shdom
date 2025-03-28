@@ -37,7 +37,7 @@ def plot(data, iset, ivar, vmin=0.0, vmax=1.0):
         # plot1
         #╭──────────────────────────────────────────────────────────────╮#
         ax1 = fig.add_subplot(111, aspect='auto')
-        cs = ax1.imshow(data.T, origin='lower', cmap='Greys_r', zorder=0, aspect='auto', vmin=vmin, vmax=vmax, extent=extent)
+        cs = ax1.imshow(data.T, origin='lower', cmap='viridis', zorder=0, aspect='auto', vmin=vmin, vmax=vmax, extent=extent)
         ax1.axis('off')
         #╰──────────────────────────────────────────────────────────────╯#
         # save figure

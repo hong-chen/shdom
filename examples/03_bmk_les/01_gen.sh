@@ -22,7 +22,7 @@ set RunSHDOMsolve=0
 set SingleFrames=0
 set RunCameraVisual=0
 
-set basefile="les"
+set basefile="les-fast"
 set prpfile="${fdir_data_tmp}/shdom-prp_${basefile}.txt"
 set savefile=${basefile}a.bin
 set outbase=${basefile}a
