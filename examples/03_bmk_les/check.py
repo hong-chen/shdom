@@ -4,7 +4,7 @@ import struct
 import glob
 
 
-def check(fname, fname_ref, data_len=4, threshold=1e6):
+def check(fname, fname_ref, data_len=4, threshold=1e-4):
 
     if not os.path.exists(fname):
         msg = 'Error [check]: File <%s> does NOT exist.' % (fname)
