@@ -1,5 +1,3 @@
-# This file is referenced from https://github.com/cd10kfsu/F90GIO, https://github.com/UMD-AOSC/Ocean-LETKF
-
 cmake_minimum_required(VERSION 3.10)
 
 project(SHDOM LANGUAGES Fortran)
@@ -17,7 +15,7 @@ endif()
 # openMP Support
 option(USE_OMP "build shdom with openmp" OFF)
 if(USE_OMP)
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fopenmp")
+    find_package(OpenMP REQUIRED COMPONENTS Fortran)
 endif()
 
 # MPI Support
@@ -26,6 +24,12 @@ if(USE_MPI)
     find_package(MPI REQUIRED COMPONENTS Fortran)
 endif()
 
+# Check the compatibility of the parallelization options
+if(USE_OMP AND USE_MPI)
+    message(FATAL_ERROR "USE_OMP and USE_MPI cannot be enabled at the same time. \nSet one of them OFF")
+endif()
+
+# check NetCDF support
 option(USE_NETCDF "build shdom with netcdf" OFF)
 if (USE_NETCDF)
     if (DEFINED NC_INC AND DEFINED NC_LIBS )
