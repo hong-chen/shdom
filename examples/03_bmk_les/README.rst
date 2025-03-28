@@ -38,5 +38,5 @@ Please make sure ``<shdom repo>/data/`` and ``data/`` contains the following fil
 
    Once run successfully, the following image sequence will be generated
 
-   .. image:: https://github.com/hong-chen/shdom/blob/master/examples/case_les/data/les.gif
+   .. image:: https://github.com/hong-chen/shdom/blob/master/examples/03_bmk_les/data/les.gif
        :width: 400
