@@ -2,7 +2,7 @@
 ! in this file.  If you do not have MPI, compile with shdom_nompi.f90
 ! instead.
 
-module SHDOM_MPI_DATA
+module globals_mpi
 
     use mpi_f08
 
@@ -11,10 +11,9 @@ module SHDOM_MPI_DATA
     double precision :: StartTime
     integer, allocatable :: BXYPTR(:, :, :), IBXYPTR(:, :, :)
     real, allocatable :: BXYPOS(:, :, :)
-
     type(MPI_Comm) :: comm2d
 
-end module
+end module globals_mpi
 
 subroutine START_MPI(MASTERPROC)
 
@@ -24,7 +23,7 @@ subroutine START_MPI(MASTERPROC)
     ! for the standard output from the non-master processors.
 
     use mpi_f08
-    use SHDOM_MPI_DATA
+    use globals_mpi
     implicit none
     logical, intent(OUT) :: MASTERPROC
     integer :: ierr
@@ -71,7 +70,7 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
     ! output arrays).
 
     use mpi_f08
-    use SHDOM_MPI_DATA
+    use globals_mpi
 
     implicit none
     integer, intent(INOUT) :: BCFLAG, NPX, NPY, NX, NY, NZ
@@ -82,7 +81,7 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
     integer :: i, ierr, dims(2), coords(2)
     logical :: periodic(2) = (/.true., .true./), reorder = .false.
     real    :: XEND, YEND
-    character(LEN=3) :: procstr
+    character(LEN=4) :: procstr
     character(LEN=256) :: logfile
 
     NPXT = NPX; NPYT = NPY; NXT = NX; NYT = NY
@@ -94,8 +93,8 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
     end if
 
     if (myproc > 0) then
-        write (procstr, '(I3.3)') myproc
-        logfile = trim(adjustl(RUNNAME))//procstr//'.log'
+        write (procstr, '(I4.4)') myproc
+        logfile = trim(adjustl(RUNNAME))//'.sHdOm-log.iproc-'//procstr
         open (UNIT=6, FILE=trim(adjustl(logfile)), STATUS='UNKNOWN')
     end if
 
@@ -177,7 +176,7 @@ subroutine OPTIMIZE_PROCESSOR_DOMAINS(ProcDims, ProcCoord, NPXT, NPYT,&
     ! heterogeneous processors to try to give more work to faster processors.
 
     use mpi_f08
-    use SHDOM_MPI_DATA
+    use globals_mpi
 
     implicit none
     integer, intent(IN) :: ProcDims(2), ProcCoord(2), NPXT, NPYT
@@ -407,7 +406,7 @@ subroutine BROADCAST_USER_INPUT(&
     ! from the master processor to the slave processors.
 
     use mpi_f08
-    use SHDOM_MPI_DATA
+    use globals_mpi
 
     implicit none
     integer, intent(INOUT) :: NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG, IPFLAG
@@ -428,7 +427,7 @@ subroutine BROADCAST_USER_INPUT(&
     real    :: realbuf(16)
     character(LEN=1) :: char1buf(3)
     character(LEN=256) :: char256buf(6)
-    character(LEN=3) :: procstr
+    character(LEN=4) :: procstr
 
     if (numproc <= 1) return
 
@@ -465,9 +464,9 @@ subroutine BROADCAST_USER_INPUT(&
     call MPI_BCAST(OUTPARMS, MAXPAR*NUMOUT, MPI_REAL, 0, MPI_COMM_WORLD, ierr)
     call MPI_BCAST(OUTTYPES, NUMOUT*1, MPI_CHARACTER, 0, MPI_COMM_WORLD, ierr)
 
-    write (procstr, '(I3.3)') myproc
-    if (INSAVEFILE(1:4) .ne. 'NONE') INSAVEFILE = trim(INSAVEFILE)//procstr
-    if (OUTSAVEFILE(1:4) .ne. 'NONE') OUTSAVEFILE = trim(OUTSAVEFILE)//procstr
+    write (procstr, '(I4.4)') myproc
+    if (INSAVEFILE(1:4) .ne. 'NONE') INSAVEFILE = trim(INSAVEFILE)//'.iproc-'//procstr
+    if (OUTSAVEFILE(1:4) .ne. 'NONE') OUTSAVEFILE = trim(OUTSAVEFILE)//'.iproc-'//procstr
 end subroutine BROADCAST_USER_INPUT
 
 subroutine BROADCAST_PROPERTY_SIZE(NPX, NPY, NPZ, DELX, DELY,&
@@ -477,7 +476,7 @@ subroutine BROADCAST_PROPERTY_SIZE(NPX, NPY, NPZ, DELX, DELY,&
     ! to the slave processors.
 
     use mpi_f08
-    use SHDOM_MPI_DATA
+    use globals_mpi
 
     implicit none
     integer, intent(INOUT) :: NPX, NPY, NPZ, NUMPHASE, MAXLEG, MAXPGL
@@ -509,7 +508,7 @@ subroutine SCATTER_PROPERTIES(NPXT, NPYT, NPX, NPY, NPZ,&
     ! boundaries between processors.
 
     use mpi_f08
-    use SHDOM_MPI_DATA
+    use globals_mpi
 
     implicit none
     integer, intent(IN) :: NPXT, NPYT, NPX, NPY, NPZ, NSTLEG, NUMPHASE
@@ -619,7 +618,7 @@ subroutine BROADCAST_SURFACE_SIZE(MAXSFCPTS, MAXSFCPARS)
     ! Broadcasts the surface array sizes from the master process to the others.
 
     use mpi_f08
-    use SHDOM_MPI_DATA
+    use globals_mpi
 
     implicit none
     integer, intent(INOUT) :: MAXSFCPTS, MAXSFCPARS
@@ -639,7 +638,8 @@ subroutine BROADCAST_SURFACE_PARMS(SFCTYPE, NXSFC, NYSFC, NSFCPAR,&
     ! Broadcasts the surface file parameters from the master process to the others.
 
     use mpi_f08
-    use SHDOM_MPI_DATA
+    use globals_mpi
+
     implicit none
     character(LEN=2), intent(INOUT) :: SFCTYPE
     integer, intent(INOUT) :: NXSFC, NYSFC, NSFCPAR
@@ -670,7 +670,7 @@ subroutine BROADCAST_KDIST_SIZE(NG, NZCKD)
     ! Broadcasts the k-distribution array sizes from the master process to the others.
 
     use mpi_f08
-    use SHDOM_MPI_DATA
+    use globals_mpi
 
     implicit none
     integer, intent(INOUT) :: NG, NZCKD
@@ -690,7 +690,7 @@ subroutine BROADCAST_KDIST_PARMS(SOLFLUX, NG, DELG, NZCKD, ZCKD, KABS)
     ! to the other processes.
 
     use mpi_f08
-    use SHDOM_MPI_DATA
+    use globals_mpi
 
     implicit none
     integer, intent(IN) :: NG, NZCKD
@@ -718,7 +718,7 @@ subroutine READ_BROADCAST_MEM_PARAMS(MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
     ! is one) and broadcasts the memory parameters to all the other processors.
 
     use mpi_f08
-    use SHDOM_MPI_DATA
+    use globals_mpi
 
     implicit none
     real, intent(INOUT) :: MAX_TOTAL_MB, ADAPT_GRID_FACTOR
@@ -766,7 +766,7 @@ real function SUM_CPU_TIME(cpuTimes)
     ! Sums the CPU time used across all processors
 
     use mpi_f08
-    use SHDOM_MPI_DATA
+    use globals_mpi
 
     real cpuTimes
     integer ierr
@@ -794,7 +794,7 @@ subroutine GATHER_OUTPUT(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
     ! sums NCELLS,NPTS,NSH over all processors.
 
     use mpi_f08
-    use SHDOM_MPI_DATA
+    use globals_mpi
 
     logical, intent(IN) :: FLUX_OUT, FLUXDIV_OUT, SH_OUT
     integer, intent(IN) :: IPFLAG, BCFLAG, NBPTS, NXT, NYT, NZ, NSHOUT, NPXT, NPYT
@@ -969,7 +969,7 @@ end subroutine GATHER_OUTPUT
 subroutine TOTAL_ALBEDO_MAX(ALBMAX)
 
     use mpi_f08
-    use SHDOM_MPI_DATA
+    use globals_mpi
 
     implicit none
     real, intent(INOUT) :: ALBMAX
@@ -988,7 +988,7 @@ end subroutine TOTAL_ALBEDO_MAX
 subroutine UNIFY_SPLITTING(DOSPLIT, STARTSPLITACC)
 
     use mpi_f08
-    use SHDOM_MPI_DATA
+    use globals_mpi
 
     implicit none
     logical, intent(INOUT) :: DOSPLIT
@@ -1011,7 +1011,7 @@ end subroutine UNIFY_SPLITTING
 subroutine TOTAL_SPLITCRIT_MAX(SPLITCRIT)
 
     use mpi_f08
-    use SHDOM_MPI_DATA
+    use globals_mpi
 
     implicit none
     real, intent(INOUT) :: SPLITCRIT
@@ -1037,7 +1037,7 @@ subroutine MAKE_DIRECT_PAR(SPT, NPTS, BCFLAG, IPFLAG,&
     ! DIRFLUX is set to F*exp(-tau_sun).
 
     use mpi_f08
-    use SHDOM_MPI_DATA
+    use globals_mpi
 
     implicit none
     integer, intent(IN) :: SPT, NPTS, BCFLAG, IPFLAG, ML, NSTLEG, NLEG, NX, NY
@@ -1299,7 +1299,7 @@ subroutine FIND_BOUNDARY_POINTS(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
     ! the gridpoint positions (X,Y,Z) for these boundary points.
 
     use mpi_f08
-    use SHDOM_MPI_DATA
+    use globals_mpi
 
     implicit none
     integer, intent(IN) :: BCFLAG, IPFLAG, NPTS, SWEEPORD(NPTS, *), GRIDPTR(8, *)
@@ -1506,7 +1506,7 @@ subroutine CALC_BOUNDARY_RADIANCES(BCFLAG, IPFLAG, JOCT, IZ,&
     ! all the other processors.
 
     use mpi_f08
-    use SHDOM_MPI_DATA
+    use globals_mpi
 
     implicit none
     integer, intent(IN) :: BCFLAG, IPFLAG, JOCT, IZ
@@ -1776,7 +1776,7 @@ subroutine INTEGRATE_RAY(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
     ! properly initialized on input).  The ending location X,Y,Z and the
     ! subdomain SIDE (1=-X,2=+X,3=-Y,4=+Y) are also returned.
 
-    use SHDOM_MPI_DATA
+    use globals_mpi
 
     implicit none
     integer, intent(IN) :: BCFLAG, IPFLAG, NX, NY, NZ, NA, NPTS, NCELLS
@@ -2146,7 +2146,7 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     ! across multiple processors.
 
     use mpi_f08
-    use SHDOM_MPI_DATA
+    use globals_mpi
 
     implicit none
     integer, intent(IN) :: NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG, NPTS, NCELLS
@@ -2562,7 +2562,7 @@ subroutine VISUALIZE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     ! modes: 1) camera mode, and 2) cross track scanning.
 
     use mpi_f08
-    use SHDOM_MPI_DATA
+    use globals_mpi
 
     implicit none
     integer, intent(IN) :: NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG, NPTS, NCELLS
@@ -3004,7 +3004,7 @@ subroutine CALC_ACCEL_SOLCRIT(DOACCEL, DELJDOT, DELJOLD, DELJNEW, JNORM,&
     ! full-domain-wide acceleration parameter and solution criterion.
 
     use mpi_f08
-    use SHDOM_MPI_DATA
+    use globals_mpi
 
     implicit none
     logical, intent(IN) :: DOACCEL
@@ -3053,7 +3053,7 @@ subroutine END_SHDOM_MPI(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART, DELX, DELY,&
     ! file.
 
     use mpi_f08
-    use SHDOM_MPI_DATA
+    use globals_mpi
 
     implicit none
     integer, intent(IN) :: NPTS, NPX, NPY, NPXT, NPYT
@@ -3176,7 +3176,7 @@ end subroutine END_SHDOM_MPI
 subroutine ABORT_SHDOM_MPI(ERRSTR)
 
     use mpi_f08
-    use SHDOM_MPI_DATA
+    use globals_mpi
 
     implicit none
     character(LEN=*), intent(IN) :: ERRSTR

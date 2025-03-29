@@ -119,3 +119,17 @@ contains
   end subroutine globals__print
 
 end module globals
+
+
+module globals_shdom
+
+    integer, save :: NPX, NPY, NPZ, NUMPHASE
+    real, save    :: DELX, DELY, XSTART, YSTART
+    real, save, allocatable :: ZLEVELS(:)
+    real, save, allocatable :: TEMPP(:), EXTINCTP(:), ALBEDOP(:)
+    real, save, allocatable :: LEGENP(:), EXTDIRP(:)
+    integer*2, save, allocatable :: IPHASEP(:)
+    integer, save :: NZCKD
+    real, save, allocatable :: ZCKD(:), GASABS(:)
+
+end module globals_shdom
