@@ -1132,8 +1132,8 @@ subroutine shd_io__radShiftCorr(&
         DS_XOFFSET = DS_Z*tan(DS_VZA_RAD)*cos(PHIOUT)
         DS_YOFFSET = DS_Z*tan(DS_VZA_RAD)*sin(PHIOUT)
 
-        XSHIFT = floor(DS_XOFFSET/DX)
-        YSHIFT = ceiling(DS_YOFFSET/DY)
+        XSHIFT = nint((DS_XOFFSET-DX/2.0)/DX)
+        YSHIFT = nint((DS_YOFFSET-DY/2.0)/DY)
 
         if (XSHIFT .ne. 0) then
             do IVAR = 1, NVAR
@@ -1156,6 +1156,85 @@ subroutine shd_io__radShiftCorr(&
     return
 
 end subroutine shd_io__radShiftCorr
+
+subroutine shd_io__radShiftCorrInterp(&
+    &DATA, NVAR, NSET, NX, NY, DX, DY,&
+    &XDOMAIN, YDOMAIN,&
+    &DS_Z, MU_SET, PHI_SET)
+
+    integer, intent(in) :: NVAR, NSET, NX, NY
+    real, intent(inout) :: DATA(NVAR, *)
+    real, intent(in) :: DX, DY, XDOMAIN, YDOMAIN
+    real, intent(in) :: MU_SET(*), PHI_SET(*)
+
+    real(8) :: DS_Z
+    real :: DS_VZA_RAD, DS_XOFFSET, DS_YOFFSET, MUOUT, PHIOUT
+    integer :: ISET, IVAR, JJ, II, IX_L, IX_R, IY_D, IY_U
+    real :: X0, Y0, X_L, X_R, DELTA_X, Y_D, Y_U, DELTA_Y, DENOM
+    real, allocatable :: DATA_ND(:, :, :, :), DATA_ND_OUT(:, :, :, :)
+
+    allocate(DATA_ND(NX, NY, NSET, NVAR), DATA_ND_OUT(NX, NY, NSET, NVAR))
+
+    DATA_ND = reshape(DATA(:, 1:NX*NY*NSET), (/NX, NY, NSET, NVAR/))
+    DATA_ND_OUT = 0.0
+    DENOM = DX*DY
+
+    do ISET = 1, NSET
+
+        MUOUT = MU_SET(ISET)
+        PHIOUT = PHI_SET(ISET)
+
+        DS_VZA_RAD = acos(MUOUT)
+        DS_XOFFSET = DS_Z*tan(DS_VZA_RAD)*cos(PHIOUT)
+        DS_YOFFSET = DS_Z*tan(DS_VZA_RAD)*sin(PHIOUT)
+
+        do JJ = 1, NY
+
+            Y0 = DS_YOFFSET + DY*(JJ-1)
+
+            if (Y0 .lt. 0.0) then
+                Y0 = Y0 + YDOMAIN
+            else if (Y0 .gt. YDOMAIN) then
+                Y0 = Y0 - YDOMAIN
+            end if
+
+            IY_D = int(Y0/DY) + 1
+            IY_U = IY_D + 1
+            DELTA_Y = Y0 - (DY*(IY_D-1))
+
+            do II = 1, NX
+
+                X0 = DS_XOFFSET + DX*(II-1)
+
+                if (X0 .lt. 0.0) then
+                    X0 = X0 + XDOMAIN
+                else if (X0 .gt. XDOMAIN) then
+                    X0 = X0 - XDOMAIN
+                end if
+
+                IX_L = int(X0/DX) + 1
+                IX_R = IX_L + 1
+                DELTA_X = X0 - (DX*(IX_L-1))
+
+                DATA_ND_OUT(II, JJ, ISET, :) =&
+                    (DATA_ND(IX_L, IY_D, ISET, :)*(DX-DELTA_X)*(DY-DELTA_Y) +&
+                     DATA_ND(IX_R, IY_U, ISET, :)*(DELTA_X)*(DY-DELTA_Y)    +&
+                     DATA_ND(IX_L, IY_D, ISET, :)*(DX-DELTA_X)*(DELTA_Y)    +&
+                     DATA_ND(IX_R, IY_U, ISET, :)*(DELTA_X)*(DELTA_Y))/DENOM
+
+            end do
+        end do
+
+
+    end do
+
+    DATA(:, 1:NX*NY*NSET) = reshape(DATA_ND_OUT, (/NVAR, NX*NY*NSET/))
+
+    deallocate(DATA_ND, DATA_ND_OUT)
+
+    return
+
+end subroutine shd_io__radShiftCorrInterp
 
 subroutine shd_io__outputResultMpi(&
     &NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
