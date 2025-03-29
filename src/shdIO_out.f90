@@ -1202,9 +1202,9 @@ subroutine shd_io__outputResultMpi(&
     real FLUXES(3, NZ, NY, NX), FLUXDIV(NZ, NY, NX)
     real RADOUT(NSTOKES, *), SHTERMS(NSHOUT, NZ, NY, NX)
 
-    integer I, J, K, N, JX, JY
+    integer I, J, K, N, JX, JY, IZ
     integer NANGOUT, NXOUT, NYOUT
-    real MUOUT, PHID, C, PI, SUM, SUM1, SUM2, SUM3
+    real MUOUT, PHID, C, PI, SUM
     real STARTX, STARTY
     double precision X0, Y0, Z0
     character*128 FORM
@@ -1214,6 +1214,8 @@ subroutine shd_io__outputResultMpi(&
     character(256) :: OUTFILE_DATA
     character(10)  :: DATA_POSTFIX
     integer :: NVAR, NDATA, IDATA
+    real, allocatable :: SUM1(:), SUM2(:), SUM3(:)
+    real, allocatable :: SHTERM5(:, :, :)
 
     DATA_POSTFIX = '.sHdOm-out'
     OUTFILE_DATA = trim(adjustl(OUTFILE))//trim(adjustl(DATA_POSTFIX))
@@ -1406,7 +1408,8 @@ subroutine shd_io__outputResultMpi(&
         ! binary data
         !╭────────────────────────────────────────────────╮!
         write(*, '(A)') 'Message [_outputResultMpi]: <R> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
-        call shd_io__outputData(RADOUT, NSTOKES, NANGOUT*NXOUT*NYOUT, IRAD, OUTFILE_DATA)
+        N = NANGOUT*NXOUT*NYOUT
+        call shd_io__outputData(RADOUT, NSTOKES, N, IRAD, OUTFILE_DATA)
         !╰────────────────────────────────────────────────╯!
 
         ! original
@@ -1429,10 +1432,24 @@ subroutine shd_io__outputResultMpi(&
         !end do
         !╰────────────────────────────────────────────────╯!
 
+    ! Hemispheric flux output
+    ! Format 1 is flux at top and bottom of medium at grid point
     else if (OUTTYPE .eq. 'F') then
-        ! Hemispheric flux output
-        ! Format 1 is flux at top and bottom of medium at grid point
+
+        if (UNITS .eq. 'T') then
+            C = 1.0 / PI_
+        else
+            C = 1.0
+        end if
+
+        if (SRCTYPE .ne. 'T') then
+            NVAR = 3
+        else
+            NVAR = 2
+        end if
+
         if (nint(OUTPARMS(1)) .le. 1) then
+
             write (2, '(A,F7.3)') '!    UPWELLING FLUX:     Z=', ZGRID(NZ)
             write (2, '(A,F7.3)') '!    DOWNWELLING FLUX:   Z=', ZGRID(1)
             if (UNITS .eq. 'T') then
@@ -1448,26 +1465,58 @@ subroutine shd_io__outputResultMpi(&
                     write (2, '(A)') '!   X       Y           UP           DOWN'
                 end if
             end if
-            C = 1.0
-            if (UNITS .eq. 'T') C = 1.0 / PI_
-            do I = 1, NX
-                do J = 1, NY
-                    if (SRCTYPE .ne. 'T') then
-                        write (2, FORM) XGRID(I), YGRID(J),&
-                            & C*FLUXES(2, NZ, J, I), C*FLUXES(1, 1, J, I), FLUXES(3, 1, J, I)
-                    else
-                        write (2, FORM) XGRID(I), YGRID(J),&
-                            & C*FLUXES(2, NZ, J, I), C*FLUXES(1, 1, J, I)
-                    end if
-                end do
-            end do
 
-        else if (nint(OUTPARMS(1)) .eq. 2) then
+            ! description for binary data
+            !╭────────────────────────────────────────────────╮!
+            write (2, '(A)') '! The following contains information for binary data intepretation:'
+            write (2, '(A)') '! F1'
+            write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
+            write (2, '(A, 5(I6,A))') '! ', NX, ',', NY, ',', 1, ',', 1, ',', NVAR, ''
+            !╰────────────────────────────────────────────────╯!
+
+            ! binary data
+            !╭────────────────────────────────────────────────╮!
+            write(*, '(A)') 'Message [_outputResultMpi]: <F1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+
+            N = NX*NY
+            IDATA = 0
+            call shd_io__outputData(C*FLUXES(2, NZ, :, :), 1, N, IDATA, OUTFILE_DATA)
+
+            IDATA = 0
+            call shd_io__outputData(C*FLUXES(1,  1, :, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
+
+            if (SRCTYPE .ne. 'T') then
+                IDATA = 0
+                call shd_io__outputData(FLUXES(3,  1, :, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
+            end if
+            !╰────────────────────────────────────────────────╯!
+
+            ! original
+            !╭────────────────────────────────────────────────╮!
+            !C = 1.0
+            !if (UNITS .eq. 'T') C = 1.0 / PI_
+            !do I = 1, NX
+            !    do J = 1, NY
+            !        if (SRCTYPE .ne. 'T') then
+            !            write (2, FORM) XGRID(I), YGRID(J),&
+            !                & C*FLUXES(2, NZ, J, I), C*FLUXES(1, 1, J, I), FLUXES(3, 1, J, I)
+            !        else
+            !            write (2, FORM) XGRID(I), YGRID(J),&
+            !                & C*FLUXES(2, NZ, J, I), C*FLUXES(1, 1, J, I)
+            !        end if
+            !    end do
+            !end do
+            !╰────────────────────────────────────────────────╯!
+
         ! Format 2 is flux at a given level at regular locations
         ! Not supported for multiple processors
+        else if (nint(OUTPARMS(1)) .eq. 2) then
 
+            write(*, '(A)') 'Error [_outputResultMpi]: MPI does NOT support <F2>.'
+
+        ! Format 3 is domain averaged vertical profile
         else if (nint(OUTPARMS(1)) .eq. 3) then
-            ! Format 3 is domain averaged vertical profile
+
             if (UNITS .eq. 'T') then
                 FORM = '(1X,F7.3,1X,2(2X,F6.2))'
                 write (2, '(A)') '!   Z        UP     DOWN'
@@ -1481,30 +1530,85 @@ subroutine shd_io__outputResultMpi(&
                     write (2, '(A)') '!    Z          UP           DOWN'
                 end if
             end if
-            C = 1.0
-            if (UNITS .eq. 'T') C = 1.0 / PI_
-            N = NX*NY
-            do K = 1, NZ
-                SUM1 = 0.0
-                SUM2 = 0.0
-                SUM3 = 0.0
+
+            ! data processing
+            !╭────────────────────────────────────────────────╮!
+            allocate(SUM1(NZ))
+            allocate(SUM2(NZ))
+            allocate(SUM3(NZ))
+
+            do IZ = 1, NZ
+                SUM1(IZ) = 0.0
+                SUM2(IZ) = 0.0
+                SUM3(IZ) = 0.0
+
                 do I = 1, NX
                     do J = 1, NY
-                        SUM1 = SUM1 + FLUXES(1, K, J, I)
-                        SUM2 = SUM2 + FLUXES(2, K, J, I)
-                        SUM3 = SUM3 + FLUXES(3, K, J, I)
+                        SUM1(IZ) = SUM1(IZ) + FLUXES(1, IZ, J, I)
+                        SUM2(IZ) = SUM2(IZ) + FLUXES(2, IZ, J, I)
+                        SUM3(IZ) = SUM3(IZ) + FLUXES(3, IZ, J, I)
                     end do
                 end do
-                if (SRCTYPE .ne. 'T') then
-                    write (2, FORM) ZGRID(K), C*SUM2/N, C*SUM1/N, SUM3/N
-                else
-                    write (2, FORM) ZGRID(K), C*SUM2/N, C*SUM1/N
-                end if
-            end do
 
-        else
-            ! Format 4 is fluxes at every base grid point
-            ! Format 5 is fluxes at every grid point (not supported)
+            end do
+            !╰────────────────────────────────────────────────╯!
+
+            ! description for binary data
+            !╭────────────────────────────────────────────────╮!
+            write (2, '(A)') '! The following contains information for binary data intepretation:'
+            write (2, '(A)') '! F3'
+            write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
+            write (2, '(A, 5(I6,A))') '! ', 1, ',', 1, ',', NZ, ',', 1, ',', NVAR, ''
+            !╰────────────────────────────────────────────────╯!
+
+            ! binary data
+            !╭────────────────────────────────────────────────╮!
+            write(*, '(A)') 'Message [_outputResultMpi]: <F3> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+
+            N = NX*NY
+            IDATA = 0
+            call shd_io__outputData(C*SUM2/N, 1, NZ, IDATA, OUTFILE_DATA)
+
+            IDATA = 0
+            call shd_io__outputData(C*SUM1/N, 1, NZ, IDATA, OUTFILE_DATA, 'ADD')
+
+            if (SRCTYPE .ne. 'T') then
+                IDATA = 0
+                call shd_io__outputData(SUM3/N, 1, NZ, IDATA, OUTFILE_DATA, 'ADD')
+            end if
+
+            deallocate(SUM1)
+            deallocate(SUM2)
+            deallocate(SUM3)
+            !╰────────────────────────────────────────────────╯!
+
+            ! original
+            !╭────────────────────────────────────────────────╮!
+            !C = 1.0
+            !if (UNITS .eq. 'T') C = 1.0 / PI_
+            !N = NX*NY
+            !do K = 1, NZ
+            !    SUM1 = 0.0
+            !    SUM2 = 0.0
+            !    SUM3 = 0.0
+            !    do I = 1, NX
+            !        do J = 1, NY
+            !            SUM1 = SUM1 + FLUXES(1, K, J, I)
+            !            SUM2 = SUM2 + FLUXES(2, K, J, I)
+            !            SUM3 = SUM3 + FLUXES(3, K, J, I)
+            !        end do
+            !    end do
+            !    if (SRCTYPE .ne. 'T') then
+            !        write (2, FORM) ZGRID(K), C*SUM2/N, C*SUM1/N, SUM3/N
+            !    else
+            !        write (2, FORM) ZGRID(K), C*SUM2/N, C*SUM1/N
+            !    end if
+            !end do
+            !╰────────────────────────────────────────────────╯!
+
+        ! Format 4 is fluxes at every base grid point
+        else if (nint(OUTPARMS(1)) .eq. 4) then
+
             if (UNITS .eq. 'T') then
                 FORM = '(3(1X,F7.3),1X,2(2X,F6.2))'
                 write (2, '(A)') '!   X       Y       Z        UP     DOWN'
@@ -1519,96 +1623,266 @@ subroutine shd_io__outputResultMpi(&
                         & '!   X       Y       Z           UP           DOWN'
                 end if
             end if
-            C = 1.0
-            if (UNITS .eq. 'T') C = 1.0 / PI_
-            do I = 1, NX
-                do J = 1, NY
-                    do K = 1, NZ
-                        if (SRCTYPE .ne. 'T') then
-                            write (2, FORM) XGRID(I), YGRID(J), ZGRID(K),&
-                                & C*FLUXES(2, K, J, I), C*FLUXES(1, K, J, I), FLUXES(3, K, J, I)
-                        else
-                            write (2, FORM) XGRID(I), YGRID(J), ZGRID(K),&
-                                & C*FLUXES(2, K, J, I), C*FLUXES(1, K, J, I)
-                        end if
-                    end do
-                end do
-            end do
+
+            ! description for binary data
+            !╭────────────────────────────────────────────────╮!
+            write (2, '(A)') '! The following contains information for binary data intepretation:'
+            write (2, '(A)') '! F4'
+            write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
+            write (2, '(A, 5(I6,A))') '! ', NX, ',', NY, ',', NZ, ',', 1, ',', NVAR, ''
+            !╰────────────────────────────────────────────────╯!
+
+            ! binary data
+            !╭────────────────────────────────────────────────╮!
+            write(*, '(A)') 'Message [_outputResultMpi]: <F4> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+
+            N = NX*NY*NZ
+            IDATA = 0
+            call shd_io__outputData(C*FLUXES(2, :, :, :), 1, N, IDATA, OUTFILE_DATA)
+
+            IDATA = 0
+            call shd_io__outputData(C*FLUXES(1, :, :, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
+
+            if (SRCTYPE .ne. 'T') then
+                IDATA = 0
+                call shd_io__outputData(FLUXES(3, :, :, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
+            end if
+            !╰────────────────────────────────────────────────╯!
+
+            ! original
+            !╭────────────────────────────────────────────────╮!
+            !C = 1.0
+            !if (UNITS .eq. 'T') C = 1.0 / PI_
+            !do I = 1, NX
+            !    do J = 1, NY
+            !        do K = 1, NZ
+            !            if (SRCTYPE .ne. 'T') then
+            !                write (2, FORM) XGRID(I), YGRID(J), ZGRID(K),&
+            !                    & C*FLUXES(2, K, J, I), C*FLUXES(1, K, J, I), FLUXES(3, K, J, I)
+            !            else
+            !                write (2, FORM) XGRID(I), YGRID(J), ZGRID(K),&
+            !                    & C*FLUXES(2, K, J, I), C*FLUXES(1, K, J, I)
+            !            end if
+            !        end do
+            !    end do
+            !end do
+            !╰────────────────────────────────────────────────╯!
+
+        ! Format 5 is fluxes at every grid point (not supported)
+        else
+
+            write(*, '(A)') 'Error [_outputResultMpi]: MPI does NOT support <F5>.'
+
         end if
 
     else if (OUTTYPE .eq. 'H') then
 
-        ! Heating output: net flux convergence
+        NVAR = 1
+
+        ! Format 1 is domain averaged vertical profile
         if (nint(OUTPARMS(1)) .eq. 1) then
-            ! Format 1 is domain averaged vertical profile
+
             write (2, '(A,A)') '!    Z       -DIV(Fnet)'
-            do K = 1, NZ
-                SUM = 0.0
+
+            ! data processing
+            !╭────────────────────────────────────────────────╮!
+            allocate(SUM1(NZ))
+
+            do IZ = 1, NZ
+                SUM1(IZ) = 0.0
                 do I = 1, NX
                     do J = 1, NY
-                        SUM = SUM + FLUXDIV(K, J, I)
+                        SUM1(IZ) = SUM1(IZ) + FLUXDIV(IZ, J, I)
                     end do
                 end do
-                write (2, '(1X,F7.3,2X,E13.5)') ZGRID(K), -SUM/(NX*NY)
             end do
+            !╰────────────────────────────────────────────────╯!
 
+            ! description for binary data
+            !╭────────────────────────────────────────────────╮!
+            write (2, '(A)') '! The following contains information for binary data intepretation:'
+            write (2, '(A)') '! H1'
+            write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
+            write (2, '(A, 5(I6,A))') '! ', 1, ',', 1, ',', NZ, ',', 1, ',', NVAR, ''
+            !╰────────────────────────────────────────────────╯!
+
+            ! binary data
+            !╭────────────────────────────────────────────────╮!
+            write(*, '(A)') 'Message [_outputResultMpi]: <H1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+
+            N = NX*NY
+            IDATA = 0
+            call shd_io__outputData(-SUM1/N, 1, NZ, IDATA, OUTFILE_DATA)
+
+            deallocate(SUM1)
+            !╰────────────────────────────────────────────────╯!
+
+            ! original
+            !╭────────────────────────────────────────────────╮!
+            !do K = 1, NZ
+            !    SUM = 0.0
+            !    do I = 1, NX
+            !        do J = 1, NY
+            !            SUM = SUM + FLUXDIV(K, J, I)
+            !        end do
+            !    end do
+            !    write (2, '(1X,F7.3,2X,E13.5)') ZGRID(K), -SUM/(NX*NY)
+            !end do
+            !╰────────────────────────────────────────────────╯!
+
+        ! Format 2 is flux convergence for every base grid point
+        else if (nint(OUTPARMS(1)) .eq. 2) then
+
+            write (2, '(A)') '!    X       Y        Z       -DIV(Fnet)'
+
+            ! description for binary data
+            !╭────────────────────────────────────────────────╮!
+            write (2, '(A)') '! The following contains information for binary data intepretation:'
+            write (2, '(A)') '! H2'
+            write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
+            write (2, '(A, 5(I6,A))') '! ', NX, ',', NY, ',', NZ, ',', 1, ',', NVAR, ''
+            !╰────────────────────────────────────────────────╯!
+
+            ! binary data
+            !╭────────────────────────────────────────────────╮!
+            write(*, '(A)') 'Message [_outputResultMpi]: <H2> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+
+            N = NX*NY*NZ
+            IDATA = 0
+            call shd_io__outputData(-FLUXDIV, 1, N, IDATA, OUTFILE_DATA)
+            !╰────────────────────────────────────────────────╯!
+
+            ! original
+            !╭────────────────────────────────────────────────╮!
+            !    do I = 1, NX
+            !        do J = 1, NY
+            !            do K = 1, NZ
+            !                write (2, '(3(1X,F7.3),2X,E13.5)')&
+            !                    & XGRID(I), YGRID(J), ZGRID(K), -FLUXDIV(K, J, I)
+            !            end do
+            !        end do
+            !    end do
+            !end if
+            !╰────────────────────────────────────────────────╯!
+
+        ! Format 3 is flux convergence for every grid point (not supported)
         else
 
-          ! Format 2 is flux convergence for every base grid point
-          ! Format 3 is flux convergence for every grid point (not sup
-            write (2, '(A)') '!    X       Y        Z       -DIV(Fnet)'
-            do I = 1, NX
-                do J = 1, NY
-                    do K = 1, NZ
-                        write (2, '(3(1X,F7.3),2X,E13.5)')&
-                            & XGRID(I), YGRID(J), ZGRID(K), -FLUXDIV(K, J, I)
-                    end do
-                end do
-            end do
+            write(*, '(A)') 'Error [_outputResultMpi]: MPI does NOT support <H3>.'
+
         end if
 
+
+    ! Spherical Harmonic output:
+    !   Output mean intensity and net flux (x,y,z components).
+    !   and maybe normalized rms of higher order terms
     else if (OUTTYPE .eq. 'S') then
 
-        ! Spherical Harmonic output:
-        !   Output mean intensity and net flux (x,y,z components).
-        !   and maybe normalized rms of higher order terms
-        if (NSHOUT .eq. 5) then
-            write (2, '(A,A)') '!    X       Y        Z         Imean',&
-                & '          Fx           Fy           Fz       HOrms'
-            do I = 1, NX
-                do J = 1, NY
-                    do K = 1, NZ
-                        write (2, '(3(1X,F7.3),1X,4(1X,E12.5),1X,F6.3)')&
-                            & XGRID(I), YGRID(J), ZGRID(K), SHTERMS(1, K, J, I),&
-                            & SHTERMS(2, K, J, I), SHTERMS(3, K, J, I), SHTERMS(4, K, J, I),&
-                            & SHTERMS(5, K, J, I)/max(1e-20, SHTERMS(1, K, J, I))
+        if (nint(OUTPARMS(1)) .eq. 1) then
+
+            N = NX*NY*NZ
+
+            ! data processing
+            !╭────────────────────────────────────────────────╮!
+            allocate(SHTERM5(NZ, NY, NX))
+
+            if (NSHOUT .eq. 5) then
+
+                NVAR = 5
+                write (2, '(A,A)') '!    X       Y        Z         Imean',&
+                    &'          Fx           Fy           Fz       HOrms'
+                do IZ = 1, NZ
+                    do I = 1, NX
+                        do J = 1, NY
+                            SHTERM5(IZ, J, I) = SHTERMS(5, IZ, J, I)/max(1e-20, SHTERMS(1, IZ, J, I))
+                        end do
                     end do
                 end do
-            end do
+
+            else
+
+                NVAR = 4
+                write (2, '(A,A)') '!    X       Y        Z         Imean',&
+                    &'          Fx           Fy           Fz '
+
+            end if
+            !╰────────────────────────────────────────────────╯!
+
+            ! description for binary data
+            !╭────────────────────────────────────────────────╮!
+            write (2, '(A)') '! The following contains information for binary data intepretation:'
+            write (2, '(A)') '! S1'
+            write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
+            write (2, '(A, 5(I6,A))') '! ', NX, ',', NY, ',', NZ, ',', 1, ',', NVAR, ''
+            !╰────────────────────────────────────────────────╯!
+
+            ! binary data
+            !╭────────────────────────────────────────────────╮!
+            write(*, '(A)') 'Message [_outputResultMpi]: <S1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+
+            IDATA = 0
+            call shd_io__outputData(SHTERMS(1:4, :, :, :), 4, N, IDATA, OUTFILE_DATA)
+
+            if (NSHOUT .eq. 5) then
+                IDATA = 0
+                call shd_io__outputData(SHTERM5, 1, N, IDATA, OUTFILE_DATA, 'ADD')
+            end if
+
+            deallocate(SHTERM5)
+            !╰────────────────────────────────────────────────╯!
+
         else
-            write (2, '(A,A)') '!    X       Y        Z         Imean',&
-                & '          Fx           Fy           Fz '
-            do I = 1, NX
-                do J = 1, NY
-                    do K = 1, NZ
-                        write (2, '(3(1X,F7.3),1X,4(1X,E12.5),1X,F6.3)')&
-                            & XGRID(I), YGRID(J), ZGRID(K), SHTERMS(1, K, J, I),&
-                            & SHTERMS(2, K, J, I), SHTERMS(3, K, J, I), SHTERMS(4, K, J, I)
-                    end do
-                end do
-            end do
+
+            write(*, '(A)') 'Error [_outputResultMpi]: MPI does NOT support <S2>.'
+
         end if
 
-    else if (OUTTYPE .eq. 'J') then
+        ! original
+        !╭────────────────────────────────────────────────╮!
+        !if (NSHOUT .eq. 5) then
+
+        !    write (2, '(A,A)') '!    X       Y        Z         Imean',&
+        !        &'          Fx           Fy           Fz       HOrms'
+        !    do I = 1, NX
+        !        do J = 1, NY
+        !            do K = 1, NZ
+        !                write (2, '(3(1X,F7.3),1X,4(1X,E12.5),1X,F6.3)')&
+        !                    &XGRID(I), YGRID(J), ZGRID(K), SHTERMS(1, K, J, I),&
+        !                    &SHTERMS(2, K, J, I), SHTERMS(3, K, J, I), SHTERMS(4, K, J, I),&
+        !                    &SHTERMS(5, K, J, I)/max(1e-20, SHTERMS(1, K, J, I))
+        !            end do
+        !        end do
+        !    end do
+
+        !else
+
+        !    write (2, '(A,A)') '!    X       Y        Z         Imean',&
+        !        &'          Fx           Fy           Fz '
+        !    do I = 1, NX
+        !        do J = 1, NY
+        !            do K = 1, NZ
+        !                write (2, '(3(1X,F7.3),1X,4(1X,E12.5),1X,F6.3)')&
+        !                    &XGRID(I), YGRID(J), ZGRID(K), SHTERMS(1, K, J, I),&
+        !                    &SHTERMS(2, K, J, I), SHTERMS(3, K, J, I), SHTERMS(4, K, J, I)
+        !            end do
+        !        end do
+        !    end do
+
+        !end if
+        !╰────────────────────────────────────────────────╯!
 
     ! J source function output: source function for a specified ang
     !   at every grid point (not supported)
+    else if (OUTTYPE .eq. 'J') then
 
-    else if (OUTTYPE .eq. 'M') then
+        write(*, '(A)') 'Error [_outputResultMpi]: MPI does NOT support <J1> or <J2>.'
 
     ! Medium output: grid point medium properties -
     !   Output extinction, single scattering albedo,
     !   asymmetry parameter, and temperature.  (not supported)
+    else if (OUTTYPE .eq. 'M') then
+
+        write(*, '(A)') 'Error [_outputResultMpi]: MPI does NOT support <M1> or <M2>.'
 
     end if
 
