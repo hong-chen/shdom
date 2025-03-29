@@ -23,7 +23,7 @@ mpi:
 	cd $(BUILD_DIR); \
 		cmake $(CURRENT_DIR) \
 			-DUSE_MPI=on; \
-		make VERBOSE=1
+		make
 
 nc:
 	rm -rf $(BUILD_DIR)
