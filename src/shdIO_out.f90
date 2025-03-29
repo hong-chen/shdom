@@ -2008,29 +2008,30 @@ subroutine shd_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
 end subroutine shd_io__outputImg
 
 subroutine shd_io__outputCellSplit(&
-    & OUTFILE, GRIDPTR, GRIDPOS, EXTINCT,&
-    & SHPTR, SOURCE, NCELLS)
+    &OUTFILE, GRIDPTR, GRIDPOS, EXTINCT,&
+    &SHPTR, SOURCE, NCELLS, NSTOKES)
+
     ! Outputs the final cell splitting criterion for each grid cell
     ! and direction (X,Y,Z).  Calls CELL_SPLIT_TEST.
     ! Mainly for debugging purposes.
 
-    integer NCELLS
+    integer NCELLS, NSTOKES
     integer SHPTR(*), GRIDPTR(8, *)
-    real GRIDPOS(3, *), EXTINCT(*), SOURCE(*)
+    real GRIDPOS(3, *), EXTINCT(*), SOURCE(NSTOKES, *)
     character(256) :: OUTFILE
     integer IP1, IP2, ICELL, IDIR
     real ADAPTCRIT(3), MAXADAPT, XC, YC, ZC, EXT
 
     open (UNIT=9, FILE=trim(adjustl(OUTFILE)), STATUS='UNKNOWN')
     write (9, *) '!  ICELL   Xc     Yc     Zc  ',&
-        & 'Extinct SplitX  SplitY  SplitZ'
+        &'Extinct SplitX  SplitY  SplitZ'
 
     ! Loop over all the cells
     do ICELL = 1, NCELLS
         ! Get the adaptive grid criterion for the 3 directions
         call CELL_SPLIT_TEST(GRIDPTR, GRIDPOS, EXTINCT,&
-            & SHPTR, SOURCE, ICELL,&
-            & ADAPTCRIT, MAXADAPT, IDIR)
+            &SHPTR, SOURCE, ICELL,&
+            &ADAPTCRIT, MAXADAPT, IDIR)
         ! Compute the cell center location and mean extinction
         IP1 = GRIDPTR(1, ICELL)
         IP2 = GRIDPTR(8, ICELL)
@@ -2038,12 +2039,12 @@ subroutine shd_io__outputCellSplit(&
         YC = 0.5*(GRIDPOS(2, IP1) + GRIDPOS(2, IP2))
         ZC = 0.5*(GRIDPOS(3, IP1) + GRIDPOS(3, IP2))
         EXT =  (EXTINCT(GRIDPTR(1, ICELL)) + EXTINCT(GRIDPTR(2, ICELL))&
-            & + EXTINCT(GRIDPTR(3, ICELL)) + EXTINCT(GRIDPTR(4, ICELL))&
-            & + EXTINCT(GRIDPTR(5, ICELL)) + EXTINCT(GRIDPTR(6, ICELL))&
-            & + EXTINCT(GRIDPTR(7, ICELL)) + EXTINCT(GRIDPTR(8, ICELL)))/8
+            &+ EXTINCT(GRIDPTR(3, ICELL)) + EXTINCT(GRIDPTR(4, ICELL))&
+            &+ EXTINCT(GRIDPTR(5, ICELL)) + EXTINCT(GRIDPTR(6, ICELL))&
+            &+ EXTINCT(GRIDPTR(7, ICELL)) + EXTINCT(GRIDPTR(8, ICELL)))/8
         write (9, '(1X,I5,3(1X,F6.3),1X,E11.4,3(1X,F7.5))')&
-            & ICELL, XC, YC, ZC, EXT,&
-            & ADAPTCRIT(1), ADAPTCRIT(2), ADAPTCRIT(3)
+            &ICELL, XC, YC, ZC, EXT,&
+            &ADAPTCRIT(1), ADAPTCRIT(2), ADAPTCRIT(3)
     end do
 
     close (9)
