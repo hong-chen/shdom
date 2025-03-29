@@ -1,6 +1,6 @@
 # Makefile for SHDOM and related programs in distribution
 
-useOMP = yes
+useOMP = no
 # pick one of the following two
 #╭────────────────────────────────────────────────╮#
 FC = gfortran
@@ -68,10 +68,10 @@ shdSolv.o: shdSolv.f90
 shdSolv_omp.o: dev/shdSolv_omp.f90
 	$(F90) -c $(F90FLAGS) dev/shdSolv_omp.f90
 
-shdComp.o: shdComp.f90
+shdComp.o: shdComp.f90 globals.o
 	$(F90) -c $(F90FLAGS) shdComp.f90
 
-shdComp_omp.o: dev/shdComp_omp.f90
+shdComp_omp.o: dev/shdComp_omp.f90 globals.o
 	$(F90) -c $(F90FLAGS) dev/shdComp_omp.f90
 
 shdIO_inp.o: shdIO_inp.f90 globals.o
