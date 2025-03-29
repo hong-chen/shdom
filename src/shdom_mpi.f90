@@ -2229,7 +2229,7 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     LAMBERTIAN = SFCTYPE(2:2) .eq. 'L'
 
     MAXNRAD = nint(4.0*(NXOUT*NYOUT)/numproc)
-!  MAXNRAD = NXOUT*NYOUT
+    ! MAXNRAD = NXOUT*NYOUT
     allocate (RadSend(NSTOKES, MAXNRAD), IndexSend(MAXNRAD))
     if (myproc == 0) allocate (NradRecv(numproc - 1),&
         &RadRecv(NSTOKES, MAXNRAD, numproc - 1), IndexRecv(MAXNRAD, numproc - 1))
@@ -2243,6 +2243,11 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
         PHIOUT = PHID*acos(-1.0)/180.0
 
         ! added for fixing the "domain shift" issue (only for 3D)
+        ! this is a first step correction:
+        !   single-pixel-wise mini adjustment, adding
+        !   interpolation effect
+        ! second step correction is done in the data output
+        !   <shd_io__radShiftCorr> in shdIO_out.f90
         !╭────────────────────────────────────────────────╮!
         if (IPFLAG .eq. 0) then
             DS_Z0 = Z0-ZGRID(1)
@@ -2256,11 +2261,15 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
             TOT_YOFFSET = 0.0
         endif
 
+        ! to avoid vertical stripes
+        ! this extra pixel shift is considered in the data output (second step correction)
         STARTX = TOT_XOFFSET - OUTPARMS(2)*nint(TOT_XOFFSET/OUTPARMS(2))
         if (STARTX .lt. 0.0) then
             STARTX = STARTX + OUTPARMS(2)
         end if
 
+        ! to avoid horizontal stripes
+        ! this extra pixel shift is considered in the data output (second step correction)
         STARTY = TOT_YOFFSET - OUTPARMS(3)*nint(TOT_YOFFSET/OUTPARMS(3))
         if (STARTY .lt. 0.0) then
             STARTY = STARTY + OUTPARMS(3)
@@ -2349,7 +2358,8 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                         !  the information needed to pass to other processors
                         if (VALIDRAD) then
                             Ndone = Ndone + 1
-                            if (Ndone > MAXNRAD) call ABORT_SHDOM_MPI('Error [COMPUTE_RADIANCE_PAR]: MAXNRAD exceeded by Ndone 1.')
+                            if (Ndone > MAXNRAD)&
+                                &call ABORT_SHDOM_MPI('Error [COMPUTE_RADIANCE_PAR]: MAXNRAD exceeded by Ndone 1.')
                             RadSend(:, Ndone) = RADIANCE(:)
                             IndexSend(Ndone) = NRAD
                         else
