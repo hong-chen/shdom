@@ -35,6 +35,8 @@ SHDOM was initially developed by `Frank Evans <evans@nit.colorado.edu>`_ and ava
 
 * Added examples (including legacy cases) for benchmarking purpose;
 
+* Fixed most of the warnings during code compilation;
+
 * Changed the legacy code from ``F77`` to ``F90``;
 
 * Formatted the code.
