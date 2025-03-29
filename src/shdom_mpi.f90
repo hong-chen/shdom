@@ -2244,19 +2244,27 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
 
         ! added for fixing the "domain shift" issue (only for 3D)
         !╭────────────────────────────────────────────────╮!
-        !if (IPFLAG .eq. 0) then
-        !  DS_Z0 = Z0-ZGRID(1)
-        !  DS_VZA_RAD = acos(MUOUT)
-        !  DS_XOFFSET = DS_Z0*tan(DS_VZA_RAD)*cos(PHIOUT)
-        !  DS_YOFFSET = DS_Z0*tan(DS_VZA_RAD)*sin(PHIOUT)
-        !  TOT_XOFFSET = -OUTPARMS(4) + DS_XOFFSET
-        !  TOT_YOFFSET = -OUTPARMS(5) + DS_YOFFSET
-        !else
-        !  TOT_XOFFSET = -OUTPARMS(4)
-        !  TOT_YOFFSET = -OUTPARMS(5)
-        !endif
-        !STARTX = TOT_XOFFSET
-        !STARTY = TOT_YOFFSET
+        if (IPFLAG .eq. 0) then
+            DS_Z0 = Z0-ZGRID(1)
+            DS_VZA_RAD = acos(MUOUT)
+            DS_XOFFSET = DS_Z0*tan(DS_VZA_RAD)*cos(PHIOUT)
+            DS_YOFFSET = DS_Z0*tan(DS_VZA_RAD)*sin(PHIOUT)
+            TOT_XOFFSET = DS_XOFFSET
+            TOT_YOFFSET = DS_YOFFSET
+        else
+            TOT_XOFFSET = 0.0
+            TOT_YOFFSET = 0.0
+        endif
+
+        STARTX = TOT_XOFFSET - OUTPARMS(2)*nint(TOT_XOFFSET/OUTPARMS(2))
+        if (STARTX .lt. 0.0) then
+            STARTX = STARTX + OUTPARMS(2)
+        end if
+
+        STARTY = TOT_YOFFSET - OUTPARMS(3)*nint(TOT_YOFFSET/OUTPARMS(3))
+        if (STARTY .lt. 0.0) then
+            STARTY = STARTY + OUTPARMS(3)
+        end if
         !╰────────────────────────────────────────────────╯!
 
         if (MUOUT .eq. 0.0 .or. abs(MUOUT) .gt. 1.0) then
