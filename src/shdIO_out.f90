@@ -1220,7 +1220,7 @@ subroutine shd_io__outputResultMpi(&
     real, allocatable :: SUM1(:), SUM2(:), SUM3(:)
     real, allocatable :: SHTERM5(:, :, :)
 
-    DATA_POSTFIX = '.sHdOm-out'
+    DATA_POSTFIX = '.mpi.sHdOm-out'
     OUTFILE_DATA = trim(adjustl(OUTFILE))//trim(adjustl(DATA_POSTFIX))
 
     GRIDNAME = 'EVEN (X,Y)  '
