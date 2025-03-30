@@ -142,7 +142,7 @@ subroutine shd_io__outputResult(&
     character*128 GRIDNAME, SOURCENAME, UNITSNAME, OUTNAME, SFCNAME
 
     character(256) :: OUTFILE_DATA
-    character(10)  :: DATA_POSTFIX
+    character(20)  :: DATA_POSTFIX
     integer :: NVAR, NDATA, IDATA
 
     DATA_POSTFIX = '.sHdOm-out'
@@ -1215,7 +1215,7 @@ subroutine shd_io__outputResultMpi(&
 
     real, allocatable :: MU_SET(:), PHI_SET(:)
     character(256) :: OUTFILE_DATA
-    character(10)  :: DATA_POSTFIX
+    character(20)  :: DATA_POSTFIX
     integer :: NVAR, NDATA, IDATA
     real, allocatable :: SUM1(:), SUM2(:), SUM3(:)
     real, allocatable :: SHTERM5(:, :, :)
