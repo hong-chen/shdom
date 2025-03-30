@@ -353,7 +353,8 @@ subroutine shd_io__outputResult(&
         ! binary data
         !╭────────────────────────────────────────────────╮!
         write(*, '(A)') 'Message [_outputResult]: <R> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
-        call shd_io__outputData(RADOUT, NSTOKES, NANGOUT*NXOUT*NYOUT, IRAD, OUTFILE_DATA)
+        N = NANGOUT*NXOUT*NYOUT
+        call shd_io__outputData(RADOUT, NSTOKES, N, IRAD, OUTFILE_DATA)
         !╰────────────────────────────────────────────────╯!
 
     else if (OUTTYPE .eq. 'F') then
@@ -404,15 +405,16 @@ subroutine shd_io__outputResult(&
             !╭────────────────────────────────────────────────╮!
             write(*, '(A)') 'Message [_outputResult]: <F1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
 
+            N = NX1*NY1
             IDATA = 0
-            call shd_io__outputData(C*FLUXES(2, NZ:NBPTS:NZ), 1, NX1*NY1, IDATA, OUTFILE_DATA)
+            call shd_io__outputData(C*FLUXES(2, NZ:NBPTS:NZ), 1, N, IDATA, OUTFILE_DATA)
 
             IDATA = 0
-            call shd_io__outputData(C*FLUXES(1, 1:NBPTS:NZ), 1, NX1*NY1, IDATA, OUTFILE_DATA, 'ADD')
+            call shd_io__outputData(C*FLUXES(1, 1:NBPTS:NZ), 1, N, IDATA, OUTFILE_DATA, 'ADD')
 
             if (SRCTYPE .ne. 'T') then
                 IDATA = 0
-                call shd_io__outputData(DIRFLUX(1:NBPTS:NZ), 1, NX1*NY1, IDATA, OUTFILE_DATA, 'ADD')
+                call shd_io__outputData(DIRFLUX(1:NBPTS:NZ), 1, N, IDATA, OUTFILE_DATA, 'ADD')
             end if
             !╰────────────────────────────────────────────────╯!
 
@@ -499,15 +501,16 @@ subroutine shd_io__outputResult(&
             !╭────────────────────────────────────────────────╮!
             write(*, '(A)') 'Message [_outputResult]: <F2> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
 
+            N = NXOUT*NYOUT
             IDATA = 0
-            call shd_io__outputData(C*FUP, 1, NXOUT*NYOUT, IDATA, OUTFILE_DATA)
+            call shd_io__outputData(C*FUP, 1, N, IDATA, OUTFILE_DATA)
 
             IDATA = 0
-            call shd_io__outputData(C*FDN, 1, NXOUT*NYOUT, IDATA, OUTFILE_DATA, 'ADD')
+            call shd_io__outputData(C*FDN, 1, N, IDATA, OUTFILE_DATA, 'ADD')
 
             if (SRCTYPE .ne. 'T') then
                 IDATA = 0
-                call shd_io__outputData(FDIR, 1, NXOUT*NYOUT, IDATA, OUTFILE_DATA, 'ADD')
+                call shd_io__outputData(FDIR, 1, N, IDATA, OUTFILE_DATA, 'ADD')
             end if
 
             deallocate(FUP)
