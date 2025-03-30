@@ -124,16 +124,34 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
 
     ! Make the new property and base grid sizes and the IXYOUT arrays
     if (dims(1) > 1) then
-        NPX = IXYPRP(2, 1) - IXYPRP(1, 1) + 1
-        NX = nint(NXT*FLOAT(NPX - 1)/NPXT) + 1
-        if (abs(NPXT/FLOAT(NXT) - (NPX - 1)/FLOAT(NX - 1)) > 0.0001) then
-            call ABORT_SHDOM_MPI('MAP_SHDOM_MPI: Even X base grid cannot be preserved&
-                &for this NX and number of processors')
+        if (NPXT .gt. 1) then
+
+            NPX = IXYPRP(2, 1) - IXYPRP(1, 1) + 1
+            NX = nint(NXT*FLOAT(NPX - 1)/NPXT) + 1
+            if (abs(NPXT/FLOAT(NXT) - (NPX - 1)/FLOAT(NX - 1)) > 0.0001) then
+                call ABORT_SHDOM_MPI('MAP_SHDOM_MPI: Even X base grid cannot be preserved&
+                    &for this NX and number of processors')
+            end if
+            IXYOUT(1, 1) = nint(NXT*FLOAT(IXYPRP(1, 1) - 1)/NPXT) + 1
+            IXYOUT(2, 1) = nint(NXT*FLOAT(NPX - 1)/NPXT)
+            XSTART = (IXYPRP(1, 1) - 1)*DELX
+            XEND = (IXYPRP(2, 1) - 1)*DELX
+
+        else
+
+            NPX = 1
+
+            IXYOUT(1, 1) = nint(real(NXT)/real(dims(1)))*coords(1) + 1
+            IXYOUT(2, 1) = min(nint(real(NXT)/real(dims(1)))*(coords(1)+1), NXT)
+
+            NX = IXYOUT(2, 1) - IXYOUT(1, 1) + 1
+
+            XSTART = DELX/NXT * (IXYOUT(1, 1)-1)
+            XEND   = DELX/NXT * (IXYOUT(2, 1))
+
+            !DELX = XEND - XSTART
+
         end if
-        IXYOUT(1, 1) = nint(NXT*FLOAT(IXYPRP(1, 1) - 1)/NPXT) + 1
-        IXYOUT(2, 1) = nint(NXT*FLOAT(NPX - 1)/NPXT)
-        XSTART = (IXYPRP(1, 1) - 1)*DELX
-        XEND = (IXYPRP(2, 1) - 1)*DELX
     else
         IXYOUT(1, 1) = 1
         IXYOUT(2, 1) = NXT
@@ -142,15 +160,34 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
     end if
 
     if (dims(2) > 1) then
-        NPY = IXYPRP(2, 2) - IXYPRP(1, 2) + 1
-        NY = nint(NYT*FLOAT(NPY - 1)/NPYT) + 1
-        if (abs(NPYT/FLOAT(NYT) - (NPY - 1)/FLOAT(NY - 1)) > 0.0001) then
-            call ABORT_SHDOM_MPI('MAP_SHDOM_MPI: Even Y base grid cannot be preserved for this NY and number of processors')
+
+        if (NPYT .gt. 1) then
+
+            NPY = IXYPRP(2, 2) - IXYPRP(1, 2) + 1
+            NY = nint(NYT*FLOAT(NPY - 1)/NPYT) + 1
+            if (abs(NPYT/FLOAT(NYT) - (NPY - 1)/FLOAT(NY - 1)) > 0.0001) then
+                call ABORT_SHDOM_MPI('MAP_SHDOM_MPI: Even Y base grid cannot be preserved for this NY and number of processors')
+            end if
+            IXYOUT(1, 2) = nint(NYT*FLOAT(IXYPRP(1, 2) - 1)/NPYT) + 1
+            IXYOUT(2, 2) = nint(NYT*FLOAT(NPY - 1)/NPYT)
+            YSTART = (IXYPRP(1, 2) - 1)*DELY
+            YEND = (IXYPRP(2, 2) - 1)*DELY
+
+        else
+
+            NPY = 1
+
+            IXYOUT(1, 2) = nint(real(NYT)/real(dims(2)))*coords(2) + 1
+            IXYOUT(2, 2) = min(nint(real(NYT)/real(dims(2)))*(coords(2)+1), NYT)
+
+            NY = IXYOUT(2, 2) - IXYOUT(1, 2) + 1
+
+            YSTART = DELY/NYT * (IXYOUT(1, 2)-1)
+            YEND   = DELY/NYT * (IXYOUT(2, 2))
+
+            !DELY = YEND - YSTART
+
         end if
-        IXYOUT(1, 2) = nint(NYT*FLOAT(IXYPRP(1, 2) - 1)/NPYT) + 1
-        IXYOUT(2, 2) = nint(NYT*FLOAT(NPY - 1)/NPYT)
-        YSTART = (IXYPRP(1, 2) - 1)*DELY
-        YEND = (IXYPRP(2, 2) - 1)*DELY
     else
         IXYOUT(1, 2) = 1
         IXYOUT(2, 2) = NYT
@@ -167,6 +204,7 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
     write (6, '(2X,A,I3)') 'This processor: ', myproc
     write (6, '(2X,A,4(1X,I3))') 'Neighbors:', iprocneigh(1:4)
     write (6, '(2X,2(A,2F7.3))') 'Processor X range: ', XSTART, XEND, '   Y range: ', YSTART, YEND
+
 end subroutine MAP_SHDOM_MPI
 
 subroutine OPTIMIZE_PROCESSOR_DOMAINS(ProcDims, ProcCoord, NPXT, NPYT,&
@@ -328,6 +366,7 @@ subroutine OPTIMIZE_PROCESSOR_DOMAINS(ProcDims, ProcCoord, NPXT, NPYT,&
     IDX(2:Nxd) = BndLines(1:Nxd - 1); IDY(2:Nyd) = BndLines(Nxd:N)
     IXYPRP(1:2, 1) = IDX(ProcCoord(1) + 1:ProcCoord(1) + 2)
     IXYPRP(1:2, 2) = IDY(ProcCoord(2) + 1:ProcCoord(2) + 2)
+
 end subroutine OPTIMIZE_PROCESSOR_DOMAINS
 
 real function LOAD_OBJ_FUNC(BndLines, Nxd, Nyd, ProcCoordAll, wtproc,&
