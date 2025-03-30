@@ -3,6 +3,7 @@
 
 program shdom_main
 
+    use globals
     use globals_shdom
     use shd_io_inp
     use shd_io_out
@@ -11,7 +12,8 @@ program shdom_main
     ! Number of output files and inputs parameter per file
     integer, parameter :: MAXOUT = 20, MAXPAR = 500
     real      :: OUTPARMS(MAXPAR, MAXOUT)
-    character :: OUTTYPES(MAXOUT)*1, OUTFILES(MAXOUT)*256
+    character(len=1) :: OUTTYPES(MAXOUT)
+    character(len=FNAMEMAXLEN_) :: OUTFILES(MAXOUT)
 
     real, allocatable :: DELG(:), KABS(:, :)
     real, allocatable :: XGRID(:), YGRID(:), ZGRID(:)
@@ -70,10 +72,11 @@ program shdom_main
     real :: DELXSFC, DELYSFC, MAXASYM, REDUCE
     real :: MUOUT, PHIOUT
     real :: UNIFZLEV, XO, YO, ZO, DIRPATH
-    character :: SRCTYPE*1, UNITS*1
-    character :: GRIDTYPE*1, PROPTYPE*1, SFCTYPE*2
-    character*256 :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
-    character*256 :: OutFileNC, RUNNAME
+    character(len=1) :: SRCTYPE, UNITS
+    character(len=1) :: GRIDTYPE, PROPTYPE
+    character(len=2) :: SFCTYPE
+    character(len=FNAMEMAXLEN_) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
+    character(len=FNAMEMAXLEN_) :: OutFileNC, RUNNAME
 
     integer :: count_start, count_rate, count_max
     integer :: count_end

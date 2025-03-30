@@ -28,7 +28,7 @@
       real    :: REFPARMS(*), WAVELEN, MU1, PHI1, MU2, PHI2, REFLECT(4, 4)
       real    :: PI
       real    :: RPV_REFLECTION, LSRT_REFLECTION
-      character :: SFCTYPE*1
+      character(len=1) :: SFCTYPE
 
       PI = acos(-1.0)
 

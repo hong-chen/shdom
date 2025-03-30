@@ -28,8 +28,8 @@ subroutine shd_io__outputData(&
     real, intent(in) :: DATA_OUT(NVAR, *)
     integer :: NVAR, NDATA
     integer, intent(inout) :: IDATA
-    character(*), intent(in) :: OUTFILE_DATA
-    character(*), intent(in), optional :: MODE
+    character(len=*), intent(in) :: OUTFILE_DATA
+    character(len=*), intent(in), optional :: MODE
     integer :: ivar, icount, idata_start, istat
     integer :: DATA_BYTE
     real :: DATA_SIZE
@@ -117,9 +117,10 @@ subroutine shd_io__outputResult(&
     real, intent(in) :: WAVENO(2), WAVELEN
     real, intent(in) :: XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ), GRIDPOS(3, NPTS)
     real, intent(inout) :: OUTPARMS(*)
-    character, intent(in) :: SRCTYPE*1, SFCTYPE*2, UNITS*1, GRIDTYPE*1, OUTTYPE*1
-    character(256), intent(in) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
-    character(256), intent(in) :: OUTFILE
+    character(len=1), intent(in) :: SRCTYPE, UNITS, GRIDTYPE, OUTTYPE
+    character(len=2), intent(in) :: SFCTYPE
+    character(len=*), intent(in) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
+    character(len=*), intent(in) :: OUTFILE
     real, intent(in) :: EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, NPTS)
     real, intent(in) :: TEMP(NPTS)
     real, intent(in) :: FLUXES(2, NPTS), DIRFLUX(NPTS), FLUXDIV(NPTS)
@@ -138,11 +139,11 @@ subroutine shd_io__outputResult(&
     real, allocatable :: SUM1(:), SUM2(:), SUM3(:)
     real, allocatable :: SHTERM5(:)
     double precision X0, Y0, Z0
-    character*128 FORM
-    character*128 GRIDNAME, SOURCENAME, UNITSNAME, OUTNAME, SFCNAME
+    character(len=128) :: FORM
+    character(len=128) :: GRIDNAME, SOURCENAME, UNITSNAME, OUTNAME, SFCNAME
 
-    character(256) :: OUTFILE_DATA
-    character(20)  :: DATA_POSTFIX
+    character(len=FNAMEMAXLEN_) :: OUTFILE_DATA
+    character(len=20)  :: DATA_POSTFIX
     integer :: NVAR, NDATA, IDATA
 
     DATA_POSTFIX = '.sHdOm-out'
@@ -1199,9 +1200,10 @@ subroutine shd_io__outputResultMpi(&
     real WAVENO(2), WAVELEN
     real XDOMAIN, YDOMAIN, XGRID(NX), YGRID(NY), ZGRID(NZ)
     real OUTPARMS(*)
-    character SRCTYPE*1, SFCTYPE*2, UNITS*1, GRIDTYPE*1, OUTTYPE*1
-    character(256) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
-    character(256) :: OUTFILE
+    character(len=1), intent(in) :: SRCTYPE, UNITS, GRIDTYPE, OUTTYPE
+    character(len=2), intent(in) :: SFCTYPE
+    character(len=*), intent(in) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
+    character(len=*), intent(in) :: OUTFILE
     real FLUXES(3, NZ, NY, NX), FLUXDIV(NZ, NY, NX)
     real RADOUT(NSTOKES, *), SHTERMS(NSHOUT, NZ, NY, NX)
 
@@ -1210,12 +1212,12 @@ subroutine shd_io__outputResultMpi(&
     real MUOUT, PHID, C, PI, SUM
     real STARTX, STARTY
     double precision X0, Y0, Z0
-    character*128 FORM
-    character*64 GRIDNAME, SOURCENAME, UNITSNAME, OUTNAME, SFCNAME
+    character(len=128) :: FORM
+    character(len=64) :: GRIDNAME, SOURCENAME, UNITSNAME, OUTNAME, SFCNAME
 
     real, allocatable :: MU_SET(:), PHI_SET(:)
-    character(256) :: OUTFILE_DATA
-    character(20)  :: DATA_POSTFIX
+    character(len=FNAMEMAXLEN_) :: OUTFILE_DATA
+    character(len=20)  :: DATA_POSTFIX
     integer :: NVAR, NDATA, IDATA
     real, allocatable :: SUM1(:), SUM2(:), SUM3(:)
     real, allocatable :: SHTERM5(:, :, :)
@@ -1917,9 +1919,10 @@ subroutine shd_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     real SOLACC, SPLITACC, SHACC
     real WAVENO(2), WAVELEN
     real OUTPARMS(*)
-    character SRCTYPE*1, SFCTYPE*2, UNITS*1, GRIDTYPE*1
-    character(256) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
-    character(256) :: OUTFILE
+    character(len=1), intent(in) :: SRCTYPE, UNITS, GRIDTYPE
+    character(len=2), intent(in) :: SFCTYPE
+    character(len=*), intent(in) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
+    character(len=*), intent(in) :: OUTFILE
     real VISOUT(NSTOKES, *)
 
     integer MAXHEAD, NL, NS, NLOUT, LABRECS, RECLEN, NBYTES
@@ -1928,10 +1931,10 @@ subroutine shd_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     real VISMIN(4), VISMAX(4), VISSCALE(4)
     logical CAMERA_MODE, LSBFIRST
     integer*1, allocatable :: BUFFER1(:)
-    character*128 GRIDNAME, SOURCENAME, UNITSNAME, SFCNAME
-    character*128 POLNAMES(4), VISFORM(4)
-    character*1 LF
-    character BUF*2000
+    character(len=128) :: GRIDNAME, SOURCENAME, UNITSNAME, SFCNAME
+    character(len=128) :: POLNAMES(4), VISFORM(4)
+    character(len=1) :: LF
+    character(len=2000) :: BUF
 
     MAXHEAD = 2000
     do I = 1, MAXHEAD
@@ -2295,7 +2298,7 @@ subroutine shd_io__outputCellSplit(&
     integer NCELLS, NSTOKES
     integer SHPTR(*), GRIDPTR(8, *)
     real GRIDPOS(3, *), EXTINCT(*), SOURCE(NSTOKES, *)
-    character(256) :: OUTFILE
+    character(len=*), intent(in) :: OUTFILE
     integer IP1, IP2, ICELL, IDIR
     real ADAPTCRIT(3), MAXADAPT, XC, YC, ZC, EXT
 
@@ -2344,7 +2347,7 @@ subroutine shd_io__plotCell(&
     integer GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
     integer*2 CELLFLAGS(*)
     real YVAL, XDOMAIN, ZDOMAIN, GRIDPOS(3, *)
-    character(256) :: OUTFILE
+    character(len=*), intent(in) :: OUTFILE
     integer IC
     integer J, IN
     logical BTEST
@@ -2469,7 +2472,7 @@ subroutine shd_io__saveState(&
     ! the low order terms of the radiance expansion, and the flux array.
     ! If the file name is 'NONE' then no file is written.
 
-    character(*), intent(in) :: OUTSAVEFILE
+    character(len=*), intent(in) :: OUTSAVEFILE
     integer, intent(in) :: NSTOKES, NX, NY, NZ, ML, MM, NLM, NPTS, NCELLS
     integer, intent(in) :: SHPTR(NPTS+1), RSHPTR(NPTS)
     integer, intent(in) :: GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)

@@ -10,7 +10,7 @@ subroutine NEW_GRIDS(&
     integer BCFLAG, NPX, NPY, NPZ, NX, NY, NZ
     real XSTART, YSTART, DELXP, DELYP, ZLEVELS(NPZ)
     real XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ)
-    character GRIDTYPE*1
+    character(len=1) :: GRIDTYPE
     integer IX, IY, IZ
 
     ! Make the X, Y, and Z grids, depending on type:
@@ -370,7 +370,7 @@ subroutine PREPARE_PROP(ML, MM, NSTLEG, NLEG, NPTS, DELTAM,&
     real WAVENO(2), WAVELEN, ALBMAX
     real EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, *)
     real TEMP(NPTS), PLANCK(NPTS)
-    character*1 SRCTYPE, UNITS
+    character(len=1) :: SRCTYPE, UNITS
     integer I, IPH, L
     real F, BB
 
@@ -435,14 +435,14 @@ subroutine INIT_RADIANCE(NSTOKES, NXY, NZ, NSTLEG, NLEG,&
     real EXTINCT(NZ, NXY), ALBEDO(NZ, NXY), LEGEN(NSTLEG, 0:NLEG, *)
     real TEMP(NZ, NXY)
     real RADIANCE(NSTOKES, *)
-    character SRCTYPE*1, UNITS*1
+    character(len=1) :: SRCTYPE, UNITS
     integer NLAYER, I, IZ, IR, J, K, L
     logical DELTAM
     real PI, C0, C1
     real EXT0, EXT1, SCAT0, SCAT1, G0, G1, GNDEMIS
     real, allocatable :: OPTDEPTHS(:), ALBEDOS(:), ASYMMETRIES(:)
     real, allocatable :: TEMPS(:), FLUXES(:, :)
-    character SRCT*1
+    character(len=1) :: SRCT
 
     allocate (OPTDEPTHS(NZ), ALBEDOS(NZ), ASYMMETRIES(NZ))
     allocate (TEMPS(NZ), FLUXES(3, NZ))
@@ -572,7 +572,7 @@ subroutine EDDRTF(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
     real OPTDEPTHS(*), ALBEDOS(*), ASYMMETRIES(*)
     real GNDTEMP, GNDEMIS, SKYRAD, SOLARFLUX, SOLARMU
     real WAVENO(2), WAVELEN
-    character*1 SRCTYPE, UNITS
+    character(len=1) :: SRCTYPE, UNITS
     real FLUXES(3, *)
 
     integer N, L, I
@@ -973,7 +973,7 @@ subroutine COMPUTE_NETFLUXDIV(NSTOKES, NPTS, RSHPTR, SRCTYPE,&
     real PLANCK(NPTS), DIRFLUX(NPTS), SOLARMU
     real EXTINCT(NPTS), ALBEDO(NPTS)
     real RADIANCE(NSTOKES, *), NETFLUXDIV(NPTS)
-    character SRCTYPE*1
+    character(len=1) :: SRCTYPE
     integer I, IR
     real PI, C, SECMU, HR
 
@@ -1008,7 +1008,7 @@ subroutine COMPUTE_SH(NSHOUT, NSTOKES, NPTS, SRCTYPE,&
     integer NSTOKES, NPTS, RSHPTR(NPTS + 1), ML, MM, NSHOUT
     real SOLARMU, SOLARAZ, DIRFLUX(NPTS)
     real RADIANCE(NSTOKES, *), SHTERMS(NSHOUT, NPTS)
-    character SRCTYPE*1
+    character(len=1) :: SRCTYPE
     integer I, IR, J, NLM
     real PI, A, C, C0, IMEAN, FX, FY, FZ, HORMS
     real SECSOL, SINSOL, SOLX, SOLY, SOLM, F0
@@ -1237,8 +1237,8 @@ subroutine VISUALIZE_RADIANCE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     real EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, *)
     real DIRFLUX(NPTS), FLUXES(2, NPTS), SOURCE(NSTOKES, *)
     real OUTPARMS(*), VISOUT(NSTOKES, *)
-    character SRCTYPE*1, SFCTYPE*2, UNITS*1
-
+    character(len=1) :: SRCTYPE, UNITS
+    character(len=2) :: SFCTYPE
     integer NSCATANGLE, NSTPHASE, I, J, L, N, SIDE
     integer NL, NS, LINE, SAMP
     logical CAMERA_MODE, VALIDRAD
@@ -1508,7 +1508,8 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
     real PHASETAB(NSTPHASE, NUMPHASE, NSCATANGLE)
     double precision MU2, PHI2, X0, Y0, Z0, XE, YE, ZE
     double precision TRANSMIT, RADIANCE(NSTOKES)
-    character SRCTYPE*1, SFCTYPE*2
+    character(len=1) :: SRCTYPE
+    character(len=2) :: SFCTYPE
 
     integer BITX, BITY, BITZ, IOCT, ICELL, INEXTCELL, IFACE
     integer IOPP, NTAU, IT, I, IPT1, IPT2, J, L
@@ -1894,7 +1895,8 @@ subroutine FIND_BOUNDARY_RADIANCE(NSTOKES, XB, YB, MU2, PHI2,&
     real WTDO(NMU, NPHI0MAX), MU(NMU), PHI(NMU, NPHI0MAX)
     real WAVELEN, SOLARMU, SOLARAZ, DIRFLUX(*)
     real SFCGRIDPARMS(NSFCPAR, NBOTPTS), BCRAD(NSTOKES, *)
-    character SRCTYPE*1, SFCTYPE*2
+    character(len=1) :: SRCTYPE
+    character(len=2) :: SFCTYPE
 
     integer IL, IM, IU, IP, IBC, J
     logical LAMBERTIAN
@@ -2000,7 +2002,7 @@ subroutine COMPUTE_SOURCE_1CELL(ICELL, GRIDPTR,&
     real OEXTINCT8(8), OSRCEXT8(NSTOKES, 8)
     real EXTINCT8(8), SRCEXT8(NSTOKES, 8)
     double precision SUNDIRLEG(0:NLEG)
-    character SRCTYPE*1
+    character(len=1) :: SRCTYPE
 
     integer IP, J, JT, L, M, MS, ME, IPH, IS, NS, N, I
     real SECMU0, F, DA, A, A1, B1
@@ -2129,7 +2131,7 @@ subroutine COMPUTE_SOURCE_1CELL_UNPOL(ICELL, GRIDPTR,&
     real OEXTINCT8(8), OSRCEXT8(8)
     real EXTINCT8(8), SRCEXT8(8)
     double precision SUNDIRLEG(0:NLEG)
-    character SRCTYPE*1
+    character(len=1) :: SRCTYPE
 
     integer IP, J, JT, L, M, MS, ME, IPH, IS, NS, N, I
     real SECMU0, F, DA, A, A1, B1
@@ -2354,8 +2356,8 @@ subroutine COMPUTE_RADIANCE(&
     real SOURCE1(NSTOKES, NPTS), GRIDRAD(NSTOKES, NPTS)
     real SOURCE(NSTOKES, *)
     real OUTPARMS(*), RADOUT(NSTOKES, *)
-    character SRCTYPE*1, SFCTYPE*2, UNITS*1
-
+    character(len=1) :: SRCTYPE, UNITS
+    character(len=2) :: SFCTYPE
     integer I, IBC, IANG, JX, JY, K, SIDE
     integer NANGOUT, NXOUT, NYOUT
     logical LAMBERTIAN, VALIDRAD
@@ -2514,7 +2516,7 @@ subroutine COMPUTE_ONE_SOURCE(NSTOKES,&
     real SOLARMU, SOLARAZ, MU, PHI
     real ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, NPTS), DIRFLUX(NPTS)
     real SOURCE(NSTOKES, *), SOURCE1(NSTOKES, NPTS)
-    character SRCTYPE*1
+    character(len=1) :: SRCTYPE
     integer I, J, JT, K, L, M, N, IPH, IS, NS, ME, MS
     real OFOURPI, DA, F, A, A1, B1, SECMU0, COSSCAT
     real, allocatable :: YLMDIR(:, :), YLMSUN(:, :)
@@ -3772,7 +3774,7 @@ subroutine PLANCK_FUNCTION(TEMP, UNITS, WAVENO, WAVELEN, PLANCK)
     ! temperature in [Kelvins] at a wavelength in [microns] is returned.
     implicit none
     real TEMP, WAVENO(2), WAVELEN, PLANCK
-    character*1 UNITS
+    character(len=1) :: UNITS
     double precision X1, X2, F
 
     if (UNITS .eq. 'T') then

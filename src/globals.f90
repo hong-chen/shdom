@@ -102,7 +102,7 @@ module globals
   real(R_),  parameter :: RHOWAT0_ = 0.99984e+3_R_       ! density (kg/m^3) of liquid water (0 deg.C)
   real(R_),  parameter :: RHOICE0_ = 0.917e+3_R_         ! density (kg/m^3) of water ice (0 deg.C)
 
-  integer :: FNAMEMAXLEN_ = 256 ! file name max length (number of characters)
+  integer, parameter :: FNAMEMAXLEN_ = 256 ! file name max length (number of characters)
 
 contains
 

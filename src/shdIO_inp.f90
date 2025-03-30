@@ -54,10 +54,11 @@ subroutine shd_io__userInput(&
     real OUTPARMS(MAXPAR, MAXOUT)
     real MAX_TOTAL_MB, ADAPT_GRID_FACTOR
     real NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
-    character SRCTYPE*1, GRIDTYPE*1, UNITS*1
-    character OUTTYPES(*)*1, OUTFILES(*)*256
-    character(256) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
-    character(256) :: OutFileNC, RUNNAME
+    character(len=1) :: SRCTYPE, GRIDTYPE, UNITS
+    character(len=1) :: OUTTYPES(*)
+    character(len=FNAMEMAXLEN_) :: OUTFILES(*)
+    character(len=FNAMEMAXLEN_) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
+    character(len=FNAMEMAXLEN_) :: OutFileNC, RUNNAME
     integer I, J, N
     real GNDEMIS
 
@@ -312,11 +313,12 @@ subroutine shd_io__nmlInput(&
     real dOUTPARMS(dMAXPAR, dMAXOUT)
     real dMAX_TOTAL_MB, dADAPT_GRID_FACTOR
     real dNUM_SH_TERM_FACTOR, dCELL_TO_POINT_RATIO
-    character dSRCTYPE*1, dGRIDTYPE*1, dUNITS*1
-    character dOUTTYPES(*)*1, dOUTFILES(*)*256
-    character(256) :: dOutFileNC, dRUNNAME
-    character(256) :: dPROPFILE, dSFCFILE, dCKDFILE
-    character(256) :: dINSAVEFILE, dOUTSAVEFILE
+    character(len=1) :: dSRCTYPE, dGRIDTYPE, dUNITS
+    character(len=1) ::  dOUTTYPES(*)
+    character(len=FNAMEMAXLEN_) :: dOUTFILES(*)
+    character(len=FNAMEMAXLEN_) :: dOutFileNC, dRUNNAME
+    character(len=FNAMEMAXLEN_) :: dPROPFILE, dSFCFILE, dCKDFILE
+    character(len=FNAMEMAXLEN_) :: dINSAVEFILE, dOUTSAVEFILE
     integer I, J, N
 
     integer MAXOUT, MAXPAR
@@ -330,10 +332,11 @@ subroutine shd_io__nmlInput(&
     real MAX_TOTAL_MB, ADAPT_GRID_FACTOR
     real NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
     real OUTPARMS(MAXPAR, MAXOUT)
-    character SRCTYPE*1, GRIDTYPE*1, UNITS*1
-    character OUTTYPES(MAXOUT)*1, OUTFILES(MAXOUT)*256
-    character(256) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
-    character(256) :: OutFileNC, RUNNAME
+    character(len=1) :: SRCTYPE, GRIDTYPE, UNITS
+    character(len=1) :: OUTTYPES(MAXOUT)
+    character(len=FNAMEMAXLEN_) :: OUTFILES(MAXOUT)
+    character(len=FNAMEMAXLEN_) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
+    character(len=FNAMEMAXLEN_) :: OutFileNC, RUNNAME
     namelist /SHDOMINPUT/&
         &RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
         &INSAVEFILE, OUTSAVEFILE,&
@@ -346,7 +349,7 @@ subroutine shd_io__nmlInput(&
         &MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
         &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
 
-    character(256) :: NMLFILE
+    character(len=FNAMEMAXLEN_) :: NMLFILE
 
     if (dMAXOUT .ne. MAXOUT) stop 'Error [_nmlInput]: MAXOUT not the same.'
     if (dMAXPAR .ne. MAXPAR) stop 'Error [_nmlInput]: MAXPAR not the same.'
@@ -484,7 +487,7 @@ subroutine shd_io__checkInputParams(&
     logical DELTAM
     real MAXASYM, SOLARFLUX, SOLARMU, WAVENO(2), WAVELEN
     real GNDTEMP, GNDALBEDO, SPLITACC, SHACC
-    character*1 GRIDTYPE, SRCTYPE, UNITS
+    character(len=1) :: GRIDTYPE, SRCTYPE, UNITS
     real FLUX
 
     if (SRCTYPE .ne. 'S' .and. SRCTYPE .ne. 'T' .and. SRCTYPE .ne. 'B')&
@@ -559,10 +562,10 @@ subroutine shd_io__readPropSize(PROPFILE, NSTLEG, NLEG, NPX, NPY, NPZ,&
     integer NSTLEG, NPX, NPY, NPZ
     integer NUMPHASE, NLEG, MAXLEG, MAXPGL
     real DELX, DELY
-    character(256) :: PROPFILE
+    character(len=*), intent(in) :: PROPFILE
     integer NUML, IX, IY, IZ, I, J, K, L
     real ZLEVELS, TMP, EXT, ALB, CHI
-    character PROPTYPE*1
+    character(len=1) :: PROPTYPE
 
     ! Open the file, figure out the type, and get the grid size
     open (UNIT=1, FILE=trim(adjustl(PROPFILE)), STATUS='OLD')
@@ -653,8 +656,8 @@ subroutine shd_io__readProp(&
     real DELX, DELY, ZLEVELS(*)
     real TEMPP(*), EXTINCTP(*)
     real ALBEDOP(*), LEGENP(*), MAXASYM
-    character(256) :: PROPFILE
-    character PROPTYPE*1
+    character(len=*), intent(in) :: PROPFILE
+    character(len=1) :: PROPTYPE
     integer I, IX, IY, IZ, J, JS, K, KL, L, IL, NUML, IPH, N
     real TMP, EXT, ALB, CHI
 
@@ -975,9 +978,9 @@ subroutine shd_io__readSurfSize(SFCFILE, MAXSFCPTS, MAXSFCPARS)
     ! always included).
 
     integer MAXSFCPTS, MAXSFCPARS
-    character(256) :: SFCFILE
+    character(len=*), intent(in) :: SFCFILE
     integer NXSFC, NYSFC
-    character SFCTYPE*2
+    character(len=2) :: SFCTYPE
 
     ! Open the file, figure out the type, and get the grid size
     SFCTYPE(1:1) = 'V'
@@ -1043,8 +1046,8 @@ subroutine shd_io__readSurf(&
     integer MAXSFCPTS, MAXSFCPARS, NXSFC, NYSFC, NSFCPAR
     real DELXSFC, DELYSFC
     real SFCPARMS(*), GNDTEMP, GNDALBEDO
-    character(256) :: SFCFILE
-    character SFCTYPE*2
+    character(len=*), intent(in) :: SFCFILE
+    character(len=2) :: SFCTYPE
     integer N, I, I0, IX, IY, J
     real ALB, TEMP, MRE, MIM, RHO0, KR, THETA, WSPD, PCL
     real F_ISO, F_VOL, F_GEO
@@ -1245,7 +1248,7 @@ subroutine shd_io__readCkdSize(CKDFILE, WAVENO, NG, NZCKD)
 
     integer NG, NZCKD
     real WAVENO(2)
-    character(256) :: CKDFILE
+    character(len=*), intent(in) :: CKDFILE
     integer NB, IB, JB, KB, N
     real WAVENUM1, WAVENUM2, SF
 
@@ -1293,7 +1296,7 @@ subroutine shd_io__readCkd(&
 
     integer MAXNG, MAXNZ, NG, NZCKD
     real WAVENO(2), SOLFLUX, DELG(*), ZCKD(*), KABS(*)
-    character(256) :: CKDFILE
+    character(len=*), intent(in) :: CKDFILE
     integer NB, IB, JB, KB, IG, I, J, N
     real WAVENUM1, WAVENUM2, SF
 

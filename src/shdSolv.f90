@@ -51,7 +51,8 @@ subroutine shdSolv__solveRte(&
     real SOURCE(NSTOKES, *), DELSOURCE(NSTOKES, *)
     real RADIANCE(NSTOKES, *)
     real WORK(*), WORK2(*)
-    character SRCTYPE*1, UNITS*1, SFCTYPE*2
+    character(len=1) :: SRCTYPE, UNITS
+    character(len=2) :: SFCTYPE
 
     integer NPHI0MAX, I, ORDINATESET, NBPTS, NBCELLS
     integer MAXNANGBND, NANGBND(4, 2), IERR
@@ -356,7 +357,7 @@ subroutine shdSolv__calSrcPnt(&
 
     implicit none
     integer NSTOKES, NSTLEG, NLEG, NLM, LOFJ(NLM), IPH, NR
-    character SRCTYPE*1
+    character(len=1) :: SRCTYPE
     real FLUX0, YLMSUN(NSTLEG, NLM), PLANCK, ALBEDO
     real LEGEN(NSTLEG, 0:NLEG, *)
     real RADIANCE(NSTOKES, NR)
@@ -426,7 +427,7 @@ subroutine shdSolv__calSrcPntUnp(&
 
     implicit none
     integer NLEG, NLM, LOFJ(NLM), IPH, NR
-    character SRCTYPE*1
+    character(len=1) :: SRCTYPE
     real FLUX0, YLMSUN(NLM), PLANCK, ALBEDO
     real LEGEN(0:NLEG, *)
     real RADIANCE(NR)
@@ -501,7 +502,7 @@ subroutine COMPUTE_SOURCE(&
     real PLANCK(NPTS), DIRFLUX(NPTS)
     real RADIANCE(NSTOKES, *)
     real SOURCE(NSTOKES, *), DELSOURCE(NSTOKES, *)
-    character SRCTYPE*1
+    character(len=1) :: SRCTYPE
     integer IS, ISO, IR, I, IPH, J, JS, K, L, LS, M, MS, ME, NS, NR
     integer, allocatable :: LOFJ(:)
     real, allocatable :: SOURCET(:, :)
@@ -907,7 +908,8 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
     real DIRFLUX(NPTS), FLUXES(2, NPTS), EXTINCT(NPTS)
     real GRIDRAD(NSTOKES, NPTS), WORK(NSTOKES, NPHI0MAX, NPTS)
     real SOURCE(NSTOKES, *), RADIANCE(NSTOKES, *)
-    character SRCTYPE*1, UNITS*1, SFCTYPE*2
+    character(len=1) :: SRCTYPE, UNITS
+    character(len=2) :: SFCTYPE
 
     integer I, I1, K, NR, IPHI, IMU, IBC, IANG, IUPDOWN, OLDNPTS
     integer joct, ipt, ip, iorder, ipcell, icorner
@@ -1219,7 +1221,7 @@ subroutine SURFACE_PARM_INTERP(NBOTPTS, BCPTR, GRIDPOS,&
     real DELXSFC, DELYSFC
     real GRIDPOS(3, *), SFCPARMS(NSFCPAR, NXSFC + 1, NYSFC + 1)
     real SFCGRIDPARMS(NSFCPAR, NBOTPTS)
-    character SRCTYPE*1, UNITS*1
+    character(len=1) :: SRCTYPE, UNITS
     integer I, IBC, IX, IY, J
     real RX, RY, U, V, TEMP, PLANCK
 
@@ -1284,7 +1286,7 @@ subroutine COMPUTE_TOP_RADIANCES(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
     integer NTOPPTS, NSTOKES
     real SKYRAD, WAVENO(2), WAVELEN
     real BCRAD(NSTOKES, *)
-    character SRCTYPE*1, UNITS*1
+    character(len=1) :: SRCTYPE, UNITS
     integer IBC, K
     real SKYRAD2
 
@@ -1316,7 +1318,7 @@ subroutine FIXED_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR,&
     real DIRFLUX(*), FLUXES(2, *)
     real GNDTEMP, GNDALBEDO, WAVENO(2), WAVELEN
     real BCRAD(NSTOKES, *)
-    character SRCTYPE*1, UNITS*1
+    character(len=1) :: SRCTYPE, UNITS
     integer I, IBC, K
     real ALB, GNDRAD
 
@@ -1357,7 +1359,7 @@ subroutine VARIABLE_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR,&
     real DIRFLUX(*), FLUXES(2, *)
     real SFCGRIDPARMS(NSFCPAR, NBOTPTS)
     real BCRAD(NSTOKES, *)
-    character SRCTYPE*1
+    character(len=1) :: SRCTYPE
     integer I, IBC, K
     real OPI, ALB, GNDRAD
 
@@ -1409,7 +1411,8 @@ subroutine VARIABLE_BRDF_SURFACE(NBOTPTS, IBEG, IEND, BCPTR,&
     real WTDO(NMU, NPHI0MAX), MU(NMU), PHI(NMU, NPHI0MAX)
     real MU2, PHI2, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX(*)
     real SFCGRIDPARMS(NSFCPAR, NBOTPTS), BCRAD(NSTOKES, NBOTPTS, *)
-    character SRCTYPE*1, SFCTYPE*2
+    character(len=1) :: SRCTYPE
+    character(len=2) :: SFCTYPE
     integer JMU, JPHI, IBC, I, JANG, K, K1, K2
     real OPI, REFLECT(4, 4), W, SUM0, SUM1, RADSPEC(4)
 
@@ -1468,7 +1471,7 @@ subroutine MAKE_SFC_BRDF_DO_MATRIX(SFCTYPE, WAVELEN,&
     real SFCPARMS(NSFCPAR, NXSFC + 1, NYSFC + 1), WAVELEN
     real WTDO(NMU, NPHI0MAX), MU(NMU), PHI(NMU, NPHI0MAX)
     real SFC_BRDF_DO(NSTOKES, NMU/2, NPHI0MAX, NSTOKES, NMU/2, NPHI0MAX)
-    character SFCTYPE*2
+    character(len=2) :: SFCTYPE
     integer IMU, IMU1, IPHI, JMU, JPHI, K1, K2
     real OPI, REFLECT(4, 4), W
 
@@ -1523,7 +1526,8 @@ subroutine UNIFORM_BRDF_SURFACE(NBOTPTS, BCPTR,&
     real SFCGRIDPARMS(NSFCPAR, NBOTPTS)
     real SFC_BRDF_DO(NSTOKES, NMU/2, NPHI0MAX, NSTOKES, NMU/2, NPHI0MAX)
     real BCRAD(NSTOKES, NBOTPTS, *)
-    character SRCTYPE*1, SFCTYPE*2
+    character(len=1) :: SRCTYPE
+    character(len=2) :: SFCTYPE
     integer IMU1, JMU, JPHI, IBC, I, JANG, K, K1, K2
     real OPI, REFLECT(4, 4), W
 
@@ -3469,7 +3473,7 @@ subroutine shdSolv__splitGrid(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
     real EXTINCT(*), ALBEDO(*), LEGEN(NSTLEG, 0:NLEG, *)
     real RADIANCE(NSTOKES, *), SOURCE(NSTOKES, *)
     real TEMP(*), PLANCK(*), DIRFLUX(*)
-    character SRCTYPE*1, UNITS*1
+    character(len=1) :: SRCTYPE, UNITS
     integer ICELL, ICELL1, IDIR, I, N, NEWPOINTS(3, 4), OLDNPTS
     integer MAXCELLS, MAXPTS, MAXWORK, MAXSH, MAXRAD
     logical OUTOFMEM0
@@ -3636,7 +3640,7 @@ subroutine INTERPOLATE_POINT(NEWPOINTS, NPTS,&
     real TEMP(NPTS), PLANCK(NPTS), DIRFLUX(NPTS)
     real RADIANCE(NSTOKES, *), SOURCE(NSTOKES, *)
     real GRIDPOS(3, *)
-    character SRCTYPE*1, UNITS*1
+    character(len=1) :: SRCTYPE, UNITS
     integer I, IP1, IP2, IP, IPH, J, K, L, M, ME, MS
     integer IS, NS, NS1, NS2
     integer IR, IR1, IR2, NR, NR1, NR2, SIDE
