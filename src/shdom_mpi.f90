@@ -86,6 +86,11 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
 
     NPXT = NPX; NPYT = NPY; NXT = NX; NYT = NY
 
+    if ((NPXT == 1) .and. (NPYT == 1)) then
+        call ABORT_SHDOM_MPI('MAP_SHDOM_MPI: Currently MPI does NOT support NPX=1 and NPY=1.')
+        stop
+    end if
+
     !if ((numproc == 1) .or. ((NPXT == 1) .and. (NPYT == 1))) then
     if (numproc == 1) then
         XSTART = 0.0; YSTART = 0.0
