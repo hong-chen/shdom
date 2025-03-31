@@ -402,16 +402,16 @@ seldom do, and ``CKDFILE`` is only for doing a k-distribution.  ``SFCFILE`` is
 given for a Lambertian surface with variable albedo or temperature or a
 different BRDF, but otherwise is NONE or NO.
 
-Set BCFLAG=0 for periodic boundary conditions, and BCFLAG=3 for open
+Set ``BCFLAG=0`` for periodic boundary conditions, and ``BCFLAG=3`` for open
 boundary conditions. See boundary condition section for explanation.
 
-Set IPFLAG=0 for normal radiative transfer. IPFLAG=3 is for the
+Set ``IPFLAG=0`` for normal radiative transfer. ``IPFLAG=3`` is for the
 independent pixel approximation.  The independent scanline approximation
 is 2D radiative transfer in the solar plane for a 3D medium; it can be
-chosen by setting the solar azimuth to 0 and IPFLAG=2 (or SOLARAZ=90
-degrees and IPFLAG=1).  Bit 2 of IPFLAG can be set to try an
+chosen by setting the solar azimuth to 0 and ``IPFLAG=2`` (or ``SOLARAZ=90``
+degrees and ``IPFLAG=1``).  Bit 2 of ``IPFLAG`` can be set to try an
 approximation where the direct beam is computed in 3D, but the diffuse
-transfer is done on indendent pixels or 2D slices.  Note, IPFLAG=4 is
+transfer is done on indendent pixels or 2D slices.  Note, ``IPFLAG=4`` is
 the same as IPFLAG=0.
 
 Generally for solar (collimated) problems with highly peaked phase
@@ -420,43 +420,43 @@ function must be truncated because a limited number of discrete
 ordinates can be used.
 
 If you want the internal base grid to have the same height levels as the
-input property grid then GRIDTYPE='P'. This option allows the vertical
+input property grid then ``GRIDTYPE='P'``. This option allows the vertical
 grid spacing to be nonuniform, e.g. more in a cloud layer and less in
 clear sky.  Another way to have the vertical base grid not be uniform is
-the GRIDTYPE='F' (file) option which will read the Z levels free format
+the ``GRIDTYPE='F'`` (file) option which will read the Z levels free format
 from a file with the name "zgrid.inp".  The other alternative is to
 have the base grid levels evenly spaced between the bottom and top of
 the domain (first and last level in property grid).  For an even grid
-GRIDTYPE='E', but keep in mind that there are NZ-1 grid cells, so that
-for doubling the vertical resolution use NZ=2*(NZP-1)+1 where NZP is
+``GRIDTYPE='E'``, but keep in mind that there are NZ-1 grid cells, so that
+for doubling the vertical resolution use ``NZ=2*(NZP-1)+1`` where ``NZP`` is
 the number of grid points vertically in the property file.
 
-The SKYRAD parameter is usually 0, but is nonzero when the problem
+The ``SKYRAD`` parameter is usually 0, but is nonzero when the problem
 includes diffuse radiation incident on the top boundary.  This could be
 the cosmic background radiation for microwave wavelengths, or diffuse
 skylight for solar problems where the domain top is actually in the
 lower atmosphere.
 
-The UNITS parameter is only relevant for thermal emission without a
+The ``UNITS`` parameter is only relevant for thermal emission without a
 k-distribution.
 
-The solution acceleration is usually turned on (ACCELFLAG=.TRUE.).
+The solution acceleration is usually turned on (``ACCELFLAG=.TRUE.``).
 If the number of iterations is small because the problem is optically
 thin or highly absorbing, then the sequence acceleration can be turned
 off, and the memory for the DELSOURCE array freed up (by giving the array
 a length of 1).
 
-The solution accuracy (SOLACC) is the rms change in the source function
-during an iteration normalized by the rms of the source function.  There
+The solution accuracy (``SOLACC``) is the RMS change in the source function
+during an iteration normalized by the RMS of the source function.  There
 is no need to make this much, much smaller than the general level of
 accuracy (related to the spatial and angular resolution). Because it is
 the rms change in an iteration, it should be smaller than the desired
-accuracy. Try starting with SOLACC=1E-4.
+accuracy. Try starting with ``SOLACC=1E-4``.
 
 See section on ARRAY SIZES AND MEMORY MANAGEMENT for how to choose the
-four memory parameters (MAX_TOTAL_MB, ADAPT_GRID_FACTOR,
-NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO) used in ``shdom.f90`` or to
-adjust the array sizes in ``shdom.f`` to accomodate your problem size and
+four memory parameters (``MAX_TOTAL_MB``, ``ADAPT_GRID_FACTOR``,
+``NUM_SH_TERM_FACTOR``, ``CELL_TO_POINT_RATIO``) used in ``shdom.f90`` or to
+adjust the array sizes in ``shdom.f90`` to accomodate your problem size and
 computer memory.  The four memory parameters do not affect the SHDOM
 solution (unless SHDOM runs out of memory); they only control the array
 sizes.
@@ -560,9 +560,9 @@ may be specified.  The surface reflection models are described above.
 There are two options for the horizontal boundary conditions.  The
 first is periodic and the second is open.  These are specified for X and
 Y directions independently using the BCFLAG: bit 0 for X and bit 1 for
-Y.  Thus BCFLAG=0 is periodic in X and Y, BCFLAG=1 is open in X and
-periodic in Y, and BCFLAG=3 is open in X and Y.  The independent pixel
-flag (IPFLAG) overrides the boundary condition flag, since an
+Y.  Thus ``BCFLAG=0`` is periodic in X and Y, ``BCFLAG=1`` is open in X and
+periodic in Y, and ``BCFLAG=3`` is open in X and Y.  The independent pixel
+flag (``IPFLAG``) overrides the boundary condition flag, since an
 independent pixel does not have a horizontal boundary condition.
 
 Periodic boundaries mean that when rays exit one side they wrap
@@ -578,7 +578,7 @@ compute the boundary radiation.  For example, in 2D (X and Z) the first
 and last X property grid columns are computed with plane-parallel (IPA)
 radiative transfer. These grid columns then provide the boundary
 radiances for the interior of the domain.  The interior domain is
-(NX-1)*DELX wide.  In 3D the four corner columns are computed with 1D
+``(NX-1)*DELX`` wide.  In 3D the four corner columns are computed with 1D
 (plane-parallel) radiative transfer, while the four side slices are done
 with 2D radiative transfer.  If you want the boundary columns to produce
 plane-parallel results, simply make sure the input optical properties
@@ -732,7 +732,7 @@ d-function expansion coefficients for each phase matrix in the header.
 All file types are plain ascii and read by  Fortran free format (so most
 "lines" may be broken across lines).  With a small code change
 (commenting in calls to ``read_property_size_netcdf`` and
-read_properties_netcdf in ``shdom.f90``) the two tabulated phase function
+``read_properties_netcdf`` in ``shdom.f90``) the two tabulated phase function
 format property files may be read in netcdf format.
 
 Note: Chi1 is 3 times the asymmetry parameter.
@@ -820,14 +820,14 @@ There are currently five types of surface property files:
 Lambertian, RPV-original, Ocean, Wave-Fresnel, and Diner.  The file
 format allows the temperature and reflection properties to vary
 arbitrarily across the surface.  The surface properties are specified on
-a regular, evenly spaced grid.  There should be Nx*Ny points in the
+a regular, evenly spaced grid.  There should be ``Nx*Ny`` points in the
 surface file.  The properties are bilinearly interpolated to the domain
 bottom grid point locations.  The surface domain is also periodic in X
-and Y, so that the domain is delX*Nx by delY*Ny in size.  Thus there are
+and Y, so that the domain is ``delX*Nx`` by ``delY*Ny`` in size.  Thus there are
 Nx cells across, and the routine that reads in the surface properties
-assigns the properties of the left side of the domain (IX=1) to the
-right side of the last cell (IX=NX+1).  A uniform surface can be
-specified by having Nx=1 and Ny=1 and making delX and delY large enough
+assigns the properties of the left side of the domain (``IX=1``) to the
+right side of the last cell (``IX=NX+1``).  A uniform surface can be
+specified by having ``Nx=1`` and ``Ny=1`` and making ``delX`` and ``delY`` large enough
 to cover the whole domain.
 
 The Lambertian surface file format is as follows:
@@ -966,8 +966,8 @@ The first step is to compile the code.  A makefile is provided, with
 options to compile with or without MPI (for multiple processors) and
 with or without the netcdf library.  SHDOM was originally written in
 Fortran 77 with common extensions.  Later, parts of SHDOM were written
-in Fortran 90, and now all of the SHDOM-specific code (``shdom.f90`` and
-``shdSolv_x.f90``) requires a Fortran 90 compiler.  Fortran 90 uses
+in Fortran 90, and now all of the SHDOM-specific code (``shdom.f90``,
+``shdSolv.f90``, ``shdComp.f90``) requires a Fortran 90 compiler.  Fortran 90 uses
 allocatable arrays and frees the user from having to set most of the
 parameters controlling the array sizes.
 
@@ -1194,7 +1194,7 @@ multiprocessing are all the same, but the "standard" format input
 property files, with the phase function Legendre series specified at
 every point, are not allowed.  The "log" output is written to stdout by
 the master processor.  The other processors write their output to
-RUNNAME//"???.log" (where RUNNAME is a user input string and ??? is the
+``<RUNNAME>.sHdOm-log.iproc-????`` (where ``<RUNNAME>`` is a user input string and ``????`` is the
 processor number).  The lines written each iteration during the solution
 procedure are for the subdomain operated on by each processor; therefore
 the number of grid points decreases as more processors are used.  The
@@ -1243,7 +1243,7 @@ NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO) separately for each processor
 because a processor subdomain with more cloud will have more adaptive
 grid points and thus larger values of the memory parameters.  When SHDOM
 is run on multiple processors it tries to read a file with the name
-RUNNAME//"_mem_params.inp".  The format of this file is
+``<RUNNAME>_mem_params.inp``.  The format of this file is
 
 .. code-block::
 
@@ -1326,16 +1326,16 @@ SOURCE CODE OPTIONS
 -------------------
 
 This is a list of options in the operation of SHDOM that one may select
-by making trivial code changes.  Except for selecting the NAMELIST
+by making trivial code changes.  Except for selecting the ``NAMELIST``
 option, choosing netcdf property file input, adding a new surface type,
 the higher order radiance terms, or turning on processor load balancing,
 most of these would only be changed to experiment with the operation of
 the SHDOM algorithm.
 
-Namelist input: main program (``shdom90.f90``); ``nmlMode = .True.`` (by default)
+Namelist input: main program (``shdom.f90``); ``nmlMode = .True.`` (by default)
 calls ``shd_io__nmlInput`` and ``nmlMode = .True.`` calls ``shd_io__userInput``.
 
-NetCDF property file input: main program (``shdom90.f90``); Comment out
+NetCDF property file input: main program (``shdom.f90``); Comment out
 calls to ``shd_io__readPropSize``, and ``shd_io__readProp`` and uncomment calls to
 ``read_property_size_netcdf`` and ``read_properties_netcdf``.  Use the ``makefile``
 to compile with the netcdf library.
@@ -1365,7 +1365,7 @@ beginning of ``shdom_mpi.f90`` (see the last paragraph of the multiple
 processing section).
 
 k-distribution initialization: at top of main program (``shdom.f90``);
-Change BASEOUT = .TRUE. to initialize with and output only the base
+Change ``BASEOUT = .TRUE.`` to initialize with and output only the base
 grid during the iteration over k's, rather than the default of
 initializing with the previous k's adaptive grid structure.
 
@@ -1375,7 +1375,7 @@ can be chosen by changing ``ENDADAPTSOL`` and ``STARTADAPTSOL``; other aspects
 of the scheduling can be changed as well.
 
 Adaptive grid smoothing: SPLIT_GRID (``shdSolv.f90``); The call to
-subroutine GRID_SMOOTH_TEST may be commented out to stop the adaptive
+subroutine ``GRID_SMOOTH_TEST`` may be commented out to stop the adaptive
 grid smoothing. This will produce somewhat fewer adaptive cells, but
 make a somewhat more irregular grid.
 
@@ -1387,7 +1387,7 @@ subroutine ``OUTPUT_CELL_SPLIT`` may be commented in to output the medium
 extinction and adaptive cell splitting criterion for X, Y, and Z.
 
 Cutoff transmission for back tracing: PATH_INTEGRATION (`shdSolv.f90`);
-The TRANSMIN variable can be changed (e.g. from 1.0 to 0.1) to have the
+The ``TRANSMIN`` variable can be changed (e.g. from 1.0 to 0.1) to have the
 back ray tracing continue until the specified transmission is reached.
 This can eliminate the grid radiance interpolation error, but can take
 much more CPU time.
@@ -1421,8 +1421,8 @@ is assumed to by 4 bytes.  The splitting factor is reduced to fit within
 the total memory limit.  The appropriate value of these parameters for a
 particular problem can be estimated from previous SHDOM output.  At the
 end of a run, shdom outputs the actual values needed for the four memory
-parameter values followed by the string "Actual MAX_TOTAL_MB,
-ADAPT_GRID_FACTOR, NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO".  These
+parameter values followed by the string ``Actual MAX_TOTAL_MB,
+ADAPT_GRID_FACTOR, NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO``.  These
 values can then be used for the input memory parameters for similar
 SHDOM runs.  The memory parameters may also be estimated from a fast
 lower angular resolution run (smaller NMU/NPHI), though the MAX_TOTAL_MB
@@ -1431,7 +1431,7 @@ the number of spherical harmonics terms (NLM), and all the memory
 parameters will need to be increased a little beyond those output from
 the low resolution run.
 
-For NSTOKES=1 and tabulated phase functions the major memory use in 4
+For ``NSTOKES=1`` and tabulated phase functions the major memory use in 4
 byte words is:
 
 .. code-block::
