@@ -1154,10 +1154,12 @@ subroutine MAKE_DIRECT_PAR(SPT, NPTS, BCFLAG, IPFLAG,&
         YMAX = YGRID(NY + 1)
     end if
 
+
     ! Do the initial direct beam tracing starting at the base grid points
     NINVALID(:) = 0
     do IP = SPT, NPTS
         DIRPATH = 0.0
+        !print *, GRIDPOS(1, IP), GRIDPOS(2, IP), GRIDPOS(3, IP)
         call DIRECT_BEAM_PROP(0, GRIDPOS(1, IP), GRIDPOS(2, IP), GRIDPOS(3, IP),&
             &BCFLAG, IPFLAG, DELTAM, ML, NSTLEG, NLEG,&
             &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(IP),&
