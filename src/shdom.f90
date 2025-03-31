@@ -608,19 +608,35 @@ program shdom_main
             do I = 1, NUMOUT
                 if (OUTTYPES(I) .eq. 'R') then
                     if (mpiMode) then
-                        call COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
-                            &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
-                            &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-                            &BCFLAG, NPXT*DELX, NPYT*DELY, IPFLAG,&
-                            &SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
-                            &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
-                            &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-                            &GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, UNITS,&
-                            &XGRID, YGRID, ZGRID, GRIDPOS,&
-                            &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-                            &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
-                            &SHPTR, SOURCE, WORK, WORK(1 + NPTS*NSTOKES),&
-                            &OUTPARMS(1, I), IRAD, WORK2)
+                        if ((NPXT .eq. 1) .and. (NPYT .eq. 1)) then
+                            call COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+                                &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
+                                &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
+                                &BCFLAG, NPXT*DELX, NPYT*DELY, IPFLAG,&
+                                &SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
+                                &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
+                                &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
+                                &GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, UNITS,&
+                                &XGRID, YGRID, ZGRID, GRIDPOS,&
+                                &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+                                &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
+                                &SHPTR, SOURCE, WORK, WORK(1 + NPTS*NSTOKES),&
+                                &OUTPARMS(1, I), IRAD, WORK2)
+                        else
+                            call COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+                                &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
+                                &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
+                                &BCFLAG, NPXT*DELX, NPYT*DELY, IPFLAG,&
+                                &SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
+                                &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
+                                &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
+                                &GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, UNITS,&
+                                &XGRID, YGRID, ZGRID, GRIDPOS,&
+                                &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+                                &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
+                                &SHPTR, SOURCE, WORK, WORK(1 + NPTS*NSTOKES),&
+                                &OUTPARMS(1, I), IRAD, WORK2)
+                        end if
                     else
                         call COMPUTE_RADIANCE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                             &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
