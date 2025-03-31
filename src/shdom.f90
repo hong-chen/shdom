@@ -768,28 +768,53 @@ program shdom_main
             allocate (XALLGRID(NXT), YALLGRID(NYT))
         end if
 
-        call GATHER_OUTPUT(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
-            &IPFLAG, BCFLAG, NBPTS, NXT, NYT, NZ, NSHOUT,&
-            &SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV, SUMSHTERMS,&
-            &NPXT, NPYT, DELX, DELY, XALLGRID, YALLGRID,&
-            &ALLFLUXES, ALLFLUXDIV, ALLSHTERMS,&
-            &NCELLS, NPTS, NSH, NCELLSTOT, NPTSTOT, NSHTOT)
+        if ((NPXT .eq. 1) .and. (NPYT .eq. 1)) then
+            call GATHER_OUTPUT(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
+                &IPFLAG, BCFLAG, NBPTS, NXT, NYT, NZ, NSHOUT,&
+                &SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV, SUMSHTERMS,&
+                &NPXT, NPYT, DELX0, DELY0, XALLGRID, YALLGRID,&
+                &ALLFLUXES, ALLFLUXDIV, ALLSHTERMS,&
+                &NCELLS, NPTS, NSH, NCELLSTOT, NPTSTOT, NSHTOT)
+        else
+            call GATHER_OUTPUT(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
+                &IPFLAG, BCFLAG, NBPTS, NXT, NYT, NZ, NSHOUT,&
+                &SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV, SUMSHTERMS,&
+                &NPXT, NPYT, DELX, DELY, XALLGRID, YALLGRID,&
+                &ALLFLUXES, ALLFLUXDIV, ALLSHTERMS,&
+                &NCELLS, NPTS, NSH, NCELLSTOT, NPTSTOT, NSHTOT)
+        end if
 
         if (MASTERPROC) then
             do I = 1, NUMOUT
                 if (OUTTYPES(I) /= 'V' .and. OUTFILES(I) /= 'NONE') then
-                    call shd_io__outputResultMpi(NSTOKES, NXT, NYT, NZ,&
-                        &NPTSTOT, NCELLSTOT, NSHTOT,&
-                        &ML, MM, NLM, NMU, NPHI, NANG, NG,&
-                        &PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
-                        &BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
-                        &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
-                        &SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS,&
-                        &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
-                        &NPXT*DELX, NPYT*DELY, XALLGRID, YALLGRID, ZGRID,&
-                        &ALLFLUXES, ALLFLUXDIV,&
-                        &NSHOUT, ALLSHTERMS, IRAD, SUMRADOUT,&
-                        &OUTTYPES(I), OUTPARMS(1, I), OUTFILES(I))
+                    if ((NPXT .eq. 1) .and. (NPYT .eq. 1)) then
+                        call shd_io__outputResultMpi(NSTOKES, NXT, NYT, NZ,&
+                            &NPTSTOT, NCELLSTOT, NSHTOT,&
+                            &ML, MM, NLM, NMU, NPHI, NANG, NG,&
+                            &PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
+                            &BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
+                            &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+                            &SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS,&
+                            &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
+                            &NPXT*DELX0, NPYT*DELY0, XALLGRID, YALLGRID, ZGRID,&
+                            &ALLFLUXES, ALLFLUXDIV,&
+                            &NSHOUT, ALLSHTERMS, IRAD, SUMRADOUT,&
+                            &OUTTYPES(I), OUTPARMS(1, I), OUTFILES(I))
+
+                    else
+                        call shd_io__outputResultMpi(NSTOKES, NXT, NYT, NZ,&
+                            &NPTSTOT, NCELLSTOT, NSHTOT,&
+                            &ML, MM, NLM, NMU, NPHI, NANG, NG,&
+                            &PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
+                            &BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
+                            &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+                            &SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS,&
+                            &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
+                            &NPXT*DELX, NPYT*DELY, XALLGRID, YALLGRID, ZGRID,&
+                            &ALLFLUXES, ALLFLUXDIV,&
+                            &NSHOUT, ALLSHTERMS, IRAD, SUMRADOUT,&
+                            &OUTTYPES(I), OUTPARMS(1, I), OUTFILES(I))
+                    end if
                 end if
             end do
 
