@@ -19,7 +19,11 @@ subroutine NEW_GRIDS(&
     if (DELXP .le. 0.0) DELXP = 1.0
     if (btest(BCFLAG, 2)) then
         do IX = 1, NX
-            XGRID(IX) = XSTART + (IX - 1)*(DELXP*(NPX - 1))/FLOAT(NX - 1)
+            if (NPX .gt. 1) then
+                XGRID(IX) = XSTART + (IX - 1)*(DELXP*(NPX - 1))/FLOAT(NX - 1)
+            else
+                XGRID(IX) = XSTART + (IX - 1)*(DELXP*NPX)/FLOAT(NX - 1)
+            end if
         end do
     else
         do IX = 1, NX + 1
@@ -30,7 +34,11 @@ subroutine NEW_GRIDS(&
     if (DELYP .le. 0.0) DELYP = 1.0
     if (btest(BCFLAG, 3)) then
         do IY = 1, NY
-            YGRID(IY) = YSTART + (IY - 1)*(DELYP*(NPY - 1))/FLOAT(NY - 1)
+            if (NPY .gt. 1) then
+                YGRID(IY) = YSTART + (IY - 1)*(DELYP*(NPY - 1))/FLOAT(NY - 1)
+            else
+                YGRID(IY) = YSTART + (IY - 1)*(DELYP*NPY)/FLOAT(NY - 1)
+            end if
         end do
     else
         do IY = 1, NY + 1

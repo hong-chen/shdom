@@ -108,6 +108,7 @@ subroutine shdSolv__solveRte(&
         call YLMALL(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG,&
             &YLMSUN)
     end if
+    print *, 'haha'
 
     ! Make the discrete ordinates (angles)
     !   (set 2 is reduced gaussian, 3 is reduced double gauss)

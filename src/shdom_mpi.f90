@@ -122,7 +122,6 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
     ! Make the optimal (or default) property grid divisions (in IXYPRP)
     call OPTIMIZE_PROCESSOR_DOMAINS(dims, coords, NPXT, NPYT, PROPFILE, RUNNAME)
 
-    print *, dims, coords
     ! Make the new property and base grid sizes and the IXYOUT arrays
     if (dims(1) > 1) then
         if (NPXT .gt. 1) then
@@ -146,11 +145,13 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
             IXYOUT(2, 1) = min(nint(real(NXT)/real(dims(1)))*(coords(1)+1), NXT)
 
             NX = IXYOUT(2, 1) - IXYOUT(1, 1) + 2
+            !if (IXYOUT(2, 1) .eq. NXT) NX = NX - 1
 
             XSTART = real(DELX)/real(NXT) * real((IXYOUT(1, 1)-1))
             XEND   = real(DELX)/real(NXT) * real((IXYOUT(2, 1)))
 
             DELX = XEND - XSTART
+
 
         end if
     else
@@ -182,6 +183,7 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
             IXYOUT(2, 2) = min(nint(real(NYT)/real(dims(2)))*(coords(2)+1), NYT)
 
             NY = IXYOUT(2, 2) - IXYOUT(1, 2) + 2
+            !if (IXYOUT(2, 2) .eq. NYT) NY = NY - 1
 
             YSTART = real(DELY)/real(NYT) * real((IXYOUT(1, 2)-1))
             YEND   = real(DELY)/real(NYT) * real((IXYOUT(2, 2)))
@@ -205,7 +207,6 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
     write (6, '(2X,A,I3)') 'This processor: ', myproc
     write (6, '(2X,A,4(1X,I3))') 'Neighbors:', iprocneigh(1:4)
     write (6, '(2X,2(A,2F7.3))') 'Processor X range: ', XSTART, XEND, '   Y range: ', YSTART, YEND
-    close(6)
 
 end subroutine MAP_SHDOM_MPI
 
@@ -2966,7 +2967,7 @@ subroutine VISUALIZE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
             &comm2d, ierr)
         AllDone = all(intrecvbuf(1:4) == 0)
     end do
-!  print *,'Done with ray tracing.', Ndone
+    !print *,'Done with ray tracing.', Ndone
 
     if (myproc > 0) then
         ! Send the finished radiances to the master processor

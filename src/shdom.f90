@@ -236,13 +236,6 @@ program shdom_main
 
     MAXNZ = NPZ
 
-    print *, 'Before:'
-    print *, 'Full Domain:', NXT, NYT, NPXT, NPYT
-    print *, 'Processor:', NX, NY, NPX, NPY
-    print *, 'DeltaXY:', DELX, DELY
-    print *, 'STARTXY:', XSTART, YSTART
-
-
     if (mpiMode) then
 
         if ((NPXT .eq. 1) .and. (NPYT .eq. 1)) then
@@ -310,12 +303,6 @@ program shdom_main
             &TEMPP, EXTINCTP, ALBEDOP, LEGENP, NUMPHASE, IPHASEP)
 
     end if
-
-    print *, 'After:'
-    print *, 'Full Domain:', NXT, NYT, NPXT, NPYT
-    print *, 'Processor:', NX, NY, NPX, NPY
-    print *, 'DeltaXY:', DELX, DELY
-    print *, 'STARTXY:', XSTART, YSTART
 
     if (MASTERPROC) then
         ! Check input parameters
@@ -568,12 +555,6 @@ program shdom_main
             &XSTART, YSTART, DELX, DELY, ZLEVELS,&
             &XGRID, YGRID, ZGRID)
     end if
-
-    print *, 'Now:'
-    print *, 'Full Domain:', NXT, NYT, NPXT, NPYT
-    print *, 'Processor:', NX, NY, NPX, NPY, NX1, NY1
-    print *, 'DeltaXY:', DELX, DELY
-    print *, 'STARTXY:', XSTART, YSTART
 
     write (6, '(A,"<",A,">")') 'Message [shdom_main]: Starting solution iterations for SHDOM run: ', trim(adjustl(RUNNAME))
     TOTITER = 0
