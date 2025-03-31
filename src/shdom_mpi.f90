@@ -2174,7 +2174,7 @@ subroutine INTEGRATE_RAY(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
 
 end subroutine INTEGRATE_RAY
 
-subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, NPX, NPY,&
     &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
     &BCFLAG, XDOMAIN, YDOMAIN, IPFLAG,&
@@ -2198,6 +2198,7 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
 
     implicit none
     integer, intent(IN) :: NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG, NPTS, NCELLS
+    integer, intent(IN) :: NPX, NPY
     integer, intent(IN) :: ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
     integer, intent(IN) :: NMU, NPHI0MAX, NPHI0(NMU)
     integer, intent(INOUT) :: NRAD
@@ -2367,14 +2368,14 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
             ! Set up the upstream/downstream boundaries for this direction
             Lupx = 0; Lupy = 0; Ldownx = 0; Ldowny = 0
             if (btest(BCFLAG, 2)) then
-                if (cos(PHIOUT) .gt. 1.0e-5) then
+                if ((cos(PHIOUT) .gt. 1.0e-5)) then
                     Ldownx = 2; Lupx = 1
                 else
                     Ldownx = 1; Lupx = 2
                 end if
             end if
             if (btest(BCFLAG, 3)) then
-                if (sin(PHIOUT) .gt. 1.0e-5) then
+                if ((sin(PHIOUT) .gt. 1.0e-5)) then
                     Ldowny = 4; Lupy = 3
                 else
                     Ldowny = 3; Lupy = 4

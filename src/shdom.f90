@@ -609,10 +609,10 @@ program shdom_main
                 if (OUTTYPES(I) .eq. 'R') then
                     if (mpiMode) then
                         if ((NPXT .eq. 1) .and. (NPYT .eq. 1)) then
-                            call COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+                            call COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, NPX, NPY,&
                                 &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
                                 &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-                                &BCFLAG, NPXT*DELX, NPYT*DELY, IPFLAG,&
+                                &BCFLAG, NPXT*DELX0, NPYT*DELY0, IPFLAG,&
                                 &SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
                                 &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
                                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
@@ -623,7 +623,7 @@ program shdom_main
                                 &SHPTR, SOURCE, WORK, WORK(1 + NPTS*NSTOKES),&
                                 &OUTPARMS(1, I), IRAD, WORK2)
                         else
-                            call COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+                            call COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, NPX, NPY,&
                                 &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
                                 &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                                 &BCFLAG, NPXT*DELX, NPYT*DELY, IPFLAG,&
@@ -786,7 +786,7 @@ program shdom_main
 
         if (MASTERPROC) then
             do I = 1, NUMOUT
-                if (OUTTYPES(I) /= 'V' .and. OUTFILES(I) /= 'NONE') then
+                if (OUTTYPES(I) .ne. 'V' .and. OUTFILES(I) .ne. 'NONE') then
                     if ((NPXT .eq. 1) .and. (NPYT .eq. 1)) then
                         call shd_io__outputResultMpi(NSTOKES, NXT, NYT, NZ,&
                             &NPTSTOT, NCELLSTOT, NSHTOT,&
