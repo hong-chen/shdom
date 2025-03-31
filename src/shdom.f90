@@ -63,13 +63,13 @@ program shdom_main
     integer :: NRAD, IRAD, NXOUT, NYOUT, NVIS, IVIS, NSCAN, NPIX, NSHOUT
     integer :: NCELLSTOT, NPTSTOT, NSHTOT
     logical :: KDIST, INRADFLAG, NEWGRIDFLAG, DELTAM, ACCELFLAG
-    logical :: BASEOUT, HIGHORDERRAD, MASTERPROC, VALIDBEAM, BTEST
+    logical :: BASEOUT, HIGHORDERRAD, MASTERPROC, VALIDBEAM
     logical :: RADIANCE_OUT, VISUAL_OUT
     logical :: FLUX_OUT, FLUXDIV_OUT, SH_OUT, SOURCE_OUT
     real :: SOLARFLUX, SOLARMU, SOLARAZ, SOLFLUX
     real :: GNDTEMP, GNDALBEDO, SKYRAD, WAVENO(2), WAVELEN
     real :: SOLACC, SOLCRIT, SPLITACC, SHACC
-    real :: DELXSFC, DELYSFC, MAXASYM, REDUCE
+    real :: DELXSFC, DELYSFC, MAXASYM, REDUCE_RATIO
     real :: MUOUT, PHIOUT
     real :: UNIFZLEV, XO, YO, ZO, DIRPATH
     character(len=1) :: SRCTYPE, UNITS
@@ -81,7 +81,7 @@ program shdom_main
     integer :: count_start, count_rate, count_max
     integer :: count_end
     real :: elapsed_time
-
+    logical :: mpiX, mpiY, mpiMode
     logical :: nmlMode = .true.
 
     ! Choose the option to compute higher order radiance SH terms
@@ -191,11 +191,29 @@ program shdom_main
     call MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
         &XSTART, YSTART, RUNNAME)
 
+    if (btest(BCFLAG, 2)) then
+        mpiX = .true.
+    else
+        mpiX = .false.
+    end if
+
+    if (btest(BCFLAG, 3)) then
+        mpiY = .true.
+    else
+        mpiY = .false.
+    end if
+
+    if (mpiX .or. mpiY) then
+        mpiMode = .true.
+    else
+        mpiMode = .false.
+    end if
+
     ! Set up base grid point actual size (NX1xNY1xNZ)
     NX1 = NX + 1
-    if (btest(IPFLAG, 0) .or. btest(BCFLAG, 0) .or. btest(BCFLAG, 2)) NX1 = NX
+    if (btest(IPFLAG, 0) .or. btest(BCFLAG, 0) .or. mpiX) NX1 = NX
     NY1 = NY + 1
-    if (btest(IPFLAG, 1) .or. btest(BCFLAG, 1) .or. btest(BCFLAG, 3)) NY1 = NY
+    if (btest(IPFLAG, 1) .or. btest(BCFLAG, 1) .or. mpiY) NY1 = NY
     if (NZ .le. 1) then
         write (6, '(A)') 'Error [shdom_main]: NZ < 2.'
         stop
@@ -216,7 +234,8 @@ program shdom_main
     MEMWORD = MEMWORD + 4.5*MAXPG + MAXPGL + NUMPHASE*NSTLEG*(MAXLEG + 1)
 
     MAXNZ = NPZ
-    if (btest(BCFLAG, 2) .or. btest(BCFLAG, 3)) then
+
+    if (mpiMode) then
 
         ! Read the properties of the medium to the master processor and
         !  distribute to all the processors
@@ -274,7 +293,7 @@ program shdom_main
             &SPLITACC, SHACC)
     end if
 
-    if (btest(BCFLAG, 2) .or. btest(BCFLAG, 3)) then
+    if (mpiMode) then
         ! Read the memory parameters from a file, if it exists, and send
         !  the parameters to all processors. Otherwise use the input ones.
         call READ_BROADCAST_MEM_PARAMS(MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
@@ -297,19 +316,19 @@ program shdom_main
 
     WANTMEM = ADAPT_GRID_FACTOR*NBPTS*(28 + 16.5*CELL_TO_POINT_RATIO&
         &+ NPHI0MAX*NSTOKES + NUM_SH_TERM_FACTOR*NSTOKES*NLM*BIG_ARRAYS)
-    REDUCE = min(1.0, ((MAX_TOTAL_MB*1024**2)/4 - MEMWORD)/WANTMEM)
+    REDUCE_RATIO = min(1.0, ((MAX_TOTAL_MB*1024**2)/4 - MEMWORD)/WANTMEM)
 
-    ADAPT_GRID_FACTOR = ADAPT_GRID_FACTOR*REDUCE
+    ADAPT_GRID_FACTOR = ADAPT_GRID_FACTOR*REDUCE_RATIO
     if (ADAPT_GRID_FACTOR < 1.0) then
         write (6, '(A)') 'Error [shdom_main]: MAX_TOTAL_MB memory limit exceeded with just base grid.'
         stop
     end if
 
-    if (REDUCE < 1.0) then
+    if (REDUCE_RATIO < 1.0) then
         write (6, '(A,F8.2)') 'Message [shdom_main]: ADAPT_GRID_FACTOR reduced to:', ADAPT_GRID_FACTOR
     end if
 
-    WANTMEM = REDUCE*WANTMEM
+    WANTMEM = REDUCE_RATIO*WANTMEM
     if (WANTMEM > huge(MAXIV)) then
         write (6, '(A,F8.2)') 'Error [shdom_main]: Number of words of memory exceeds max integer size:', WANTMEM
         stop
@@ -424,7 +443,7 @@ program shdom_main
             if (OUTPARMS(2, I) .le. 0.0) then
                 NXOUT = 1
             else
-                if (btest(BCFLAG, 2)) then
+                if (mpiX) then
                     NXOUT = max(1, nint(NPXT*DELX/OUTPARMS(2, I)))
                 else
                     NXOUT = max(1, nint((NPX*DELX + 2*OUTPARMS(4, I))/OUTPARMS(2, I)))
@@ -433,7 +452,7 @@ program shdom_main
             if (OUTPARMS(3, I) .le. 0.0) then
                 NYOUT = 1
             else
-                if (btest(BCFLAG, 3)) then
+                if (mpiY) then
                     NYOUT = max(1, nint(NPYT*DELY/OUTPARMS(3, I)))
                 else
                     NYOUT = max(1, nint((NPY*DELY + 2*OUTPARMS(5, I))/OUTPARMS(3, I)))
@@ -478,7 +497,7 @@ program shdom_main
     allocate (WORK2(max(NVIS, NRAD, NSTOKES*MAXIG)))
 
     ! Notify user that certain outputs are not supported with multiple processors
-    if ((btest(BCFLAG, 2) .or. btest(BCFLAG, 3)) .and. MASTERPROC) then
+    if (mpiMode .and. MASTERPROC) then
         do I = 1, NUMOUT
             if (OUTTYPES(I) .eq. 'F') then
                 if (nint(OUTPARMS(1, I)) .eq. 2 .or. nint(OUTPARMS(1, I)) .eq. 5) then
@@ -569,7 +588,7 @@ program shdom_main
             IRAD = 0
             do I = 1, NUMOUT
                 if (OUTTYPES(I) .eq. 'R') then
-                    if (btest(BCFLAG, 2) .or. btest(BCFLAG, 3)) then
+                    if (mpiMode) then
                         call COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                             &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
                             &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
@@ -606,7 +625,7 @@ program shdom_main
             IVIS = 0
             do I = 1, NUMOUT
                 if (OUTTYPES(I) .eq. 'V') then
-                    if (btest(BCFLAG, 2) .or. btest(BCFLAG, 3)) then
+                    if (mpiMode) then
                         call VISUALIZE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                             &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
                             &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
@@ -705,7 +724,7 @@ program shdom_main
     NSH = SHPTR(NPTS + 1)
     IRAD = 0
     IVIS = 0
-    if (btest(BCFLAG, 2) .or. btest(BCFLAG, 3)) then
+    if (mpiMode) then
 
         if (MASTERPROC) then
             if (FLUX_OUT) allocate (ALLFLUXES(3, NZ, NYT, NXT))
