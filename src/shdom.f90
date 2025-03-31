@@ -184,6 +184,9 @@ program shdom_main
     ! Set the full domain grid sizes (variables end in T)
     NXT = NX; NYT = NY; NPXT = NPX; NPYT = NPY
 
+    XDOMAIN_ = NPXT*DELX
+    YDOMAIN_ = NPYT*DELY
+
     ! Map the full SHDOM domain onto the multiple processors:
     !   change NPX,NPY and NX,NY to the subdomain size, and output
     !   the X and Y starting position of this subdomain.  Set bits
@@ -463,13 +466,9 @@ program shdom_main
                 NXOUT = 1
             else
                 if (mpiX) then
-                    if (NPX .gt. 1) then
-                        NXOUT = max(1, nint(NPXT*DELX/OUTPARMS(2, I)))
-                    else
-                        NXOUT = max(1, nint(NPXT*DELX0/OUTPARMS(2, I)))
-                    end if
+                    NXOUT = max(1, nint(XDOMAIN_/OUTPARMS(2, I)))
                 else
-                    NXOUT = max(1, nint((NPX*DELX + 2*OUTPARMS(4, I))/OUTPARMS(2, I)))
+                    NXOUT = max(1, nint((XDOMAIN_ + 2*OUTPARMS(4, I))/OUTPARMS(2, I)))
                 end if
             end if
             if (OUTPARMS(3, I) .le. 0.0) then
@@ -616,35 +615,19 @@ program shdom_main
             do I = 1, NUMOUT
                 if (OUTTYPES(I) .eq. 'R') then
                     if (mpiMode) then
-                        if ((NPXT .eq. 1) .and. (NPYT .eq. 1)) then
-                            call COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, NPX, NPY,&
-                                &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
-                                &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-                                &BCFLAG, NPXT*DELX0, NPYT*DELY0, IPFLAG,&
-                                &SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
-                                &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
-                                &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-                                &GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, UNITS,&
-                                &XGRID, YGRID, ZGRID, GRIDPOS,&
-                                &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-                                &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
-                                &SHPTR, SOURCE, WORK, WORK(1 + NPTS*NSTOKES),&
-                                &OUTPARMS(1, I), IRAD, WORK2)
-                        else
-                            call COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, NPX, NPY,&
-                                &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
-                                &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-                                &BCFLAG, NPXT*DELX, NPYT*DELY, IPFLAG,&
-                                &SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
-                                &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
-                                &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-                                &GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, UNITS,&
-                                &XGRID, YGRID, ZGRID, GRIDPOS,&
-                                &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-                                &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
-                                &SHPTR, SOURCE, WORK, WORK(1 + NPTS*NSTOKES),&
-                                &OUTPARMS(1, I), IRAD, WORK2)
-                        end if
+                        call COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, NPX, NPY,&
+                            &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
+                            &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
+                            &BCFLAG, XDOMAIN_, YDOMAIN_, IPFLAG,&
+                            &SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
+                            &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
+                            &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
+                            &GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, UNITS,&
+                            &XGRID, YGRID, ZGRID, GRIDPOS,&
+                            &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+                            &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
+                            &SHPTR, SOURCE, WORK, WORK(1 + NPTS*NSTOKES),&
+                            &OUTPARMS(1, I), IRAD, WORK2)
                     else
                         call COMPUTE_RADIANCE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                             &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
@@ -672,7 +655,7 @@ program shdom_main
                         call VISUALIZE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                             &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
                             &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-                            &BCFLAG, NPXT*DELX, NPYT*DELY, IPFLAG,&
+                            &BCFLAG, XDOMAIN_, YDOMAIN_, IPFLAG,&
                             &SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
                             &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
                             &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
@@ -776,53 +759,28 @@ program shdom_main
             allocate (XALLGRID(NXT), YALLGRID(NYT))
         end if
 
-        if ((NPXT .eq. 1) .and. (NPYT .eq. 1)) then
-            call GATHER_OUTPUT(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
-                &IPFLAG, BCFLAG, NBPTS, NXT, NYT, NZ, NSHOUT,&
-                &SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV, SUMSHTERMS,&
-                &NPXT, NPYT, DELX0, DELY0, XALLGRID, YALLGRID,&
-                &ALLFLUXES, ALLFLUXDIV, ALLSHTERMS,&
-                &NCELLS, NPTS, NSH, NCELLSTOT, NPTSTOT, NSHTOT)
-        else
-            call GATHER_OUTPUT(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
-                &IPFLAG, BCFLAG, NBPTS, NXT, NYT, NZ, NSHOUT,&
-                &SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV, SUMSHTERMS,&
-                &NPXT, NPYT, DELX, DELY, XALLGRID, YALLGRID,&
-                &ALLFLUXES, ALLFLUXDIV, ALLSHTERMS,&
-                &NCELLS, NPTS, NSH, NCELLSTOT, NPTSTOT, NSHTOT)
-        end if
+        call GATHER_OUTPUT(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
+            &IPFLAG, BCFLAG, NBPTS, NXT, NYT, NZ, NSHOUT,&
+            &SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV, SUMSHTERMS,&
+            &XDOMAIN_, YDOMAIN_, XALLGRID, YALLGRID,&
+            &ALLFLUXES, ALLFLUXDIV, ALLSHTERMS,&
+            &NCELLS, NPTS, NSH, NCELLSTOT, NPTSTOT, NSHTOT)
 
         if (MASTERPROC) then
             do I = 1, NUMOUT
                 if (OUTTYPES(I) .ne. 'V' .and. OUTFILES(I) .ne. 'NONE') then
-                    if ((NPXT .eq. 1) .and. (NPYT .eq. 1)) then
-                        call shd_io__outputResultMpi(NSTOKES, NXT, NYT, NZ,&
-                            &NPTSTOT, NCELLSTOT, NSHTOT,&
-                            &ML, MM, NLM, NMU, NPHI, NANG, NG,&
-                            &PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
-                            &BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
-                            &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
-                            &SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS,&
-                            &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
-                            &NPXT*DELX0, NPYT*DELY0, XALLGRID, YALLGRID, ZGRID,&
-                            &ALLFLUXES, ALLFLUXDIV,&
-                            &NSHOUT, ALLSHTERMS, IRAD, SUMRADOUT,&
-                            &OUTTYPES(I), OUTPARMS(1, I), OUTFILES(I))
-
-                    else
-                        call shd_io__outputResultMpi(NSTOKES, NXT, NYT, NZ,&
-                            &NPTSTOT, NCELLSTOT, NSHTOT,&
-                            &ML, MM, NLM, NMU, NPHI, NANG, NG,&
-                            &PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
-                            &BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
-                            &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
-                            &SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS,&
-                            &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
-                            &NPXT*DELX, NPYT*DELY, XALLGRID, YALLGRID, ZGRID,&
-                            &ALLFLUXES, ALLFLUXDIV,&
-                            &NSHOUT, ALLSHTERMS, IRAD, SUMRADOUT,&
-                            &OUTTYPES(I), OUTPARMS(1, I), OUTFILES(I))
-                    end if
+                    call shd_io__outputResultMpi(NSTOKES, NXT, NYT, NZ,&
+                        &NPTSTOT, NCELLSTOT, NSHTOT,&
+                        &ML, MM, NLM, NMU, NPHI, NANG, NG,&
+                        &PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
+                        &BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
+                        &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+                        &SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS,&
+                        &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
+                        &XDOMAIN_, YDOMAIN_, XALLGRID, YALLGRID, ZGRID,&
+                        &ALLFLUXES, ALLFLUXDIV,&
+                        &NSHOUT, ALLSHTERMS, IRAD, SUMRADOUT,&
+                        &OUTTYPES(I), OUTPARMS(1, I), OUTFILES(I))
                 end if
             end do
 
@@ -880,7 +838,7 @@ program shdom_main
     write (6, '(A)')'Message [shdom_main]: Actual MAX_TOTAL_MB, ADAPT_GRID_FACTOR, NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO'
     write (6, '(28X,F7.2,6X,F7.3,14X,F5.3,15X,F5.3)') MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
 
-    call END_SHDOM_MPI(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART, DELX, DELY,&
+    call END_SHDOM_MPI(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART, XDOMAIN_, YDOMAIN_,&
         &NPXT, NPYT, PROPFILE, RUNNAME)
 
     if (SRCTYPE .ne. 'T') then
