@@ -29,7 +29,7 @@ import er3t
 
 def figure_les(fname):
 
-    data = er3t.rtm.shd.get_shd_data_out(fname, verbose=True)
+    data = er3t.rtm.shd.get_shd_data_out(fname, verbose=False)
 
     for j in range(data.shape[-1]):
         for i in range(data.shape[-2]):
