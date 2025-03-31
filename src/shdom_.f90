@@ -81,6 +81,7 @@ program shdom_main
     integer :: count_start, count_rate, count_max
     integer :: count_end
     real :: elapsed_time
+    real :: DELX0, DELY0
     logical :: mpiX, mpiY, mpiMode
     logical :: nmlMode = .false.
 
@@ -237,39 +238,56 @@ program shdom_main
 
     if (mpiMode) then
 
-        ! Read the properties of the medium to the master processor and
-        !  distribute to all the processors
-        if (MASTERPROC) then
-            MAXPGT = NPXT*NPYT*NPZ
-            MAXPGLT = MAXPGL
-            if (NUMPHASE .eq. 0) MAXPGLT = MAXPGT*(MAXLEG + 1)*NSTLEG
+        if ((NPXT .eq. 1) .and. (NPYT .eq. 1)) then
 
-            allocate (TEMPPT(MAXPGT), EXTINCTPT(MAXPGT), ALBEDOPT(MAXPGT))
-            allocate (IPHASEPT(MAXPGT), LEGENPT(MAXPGLT))
+            ! Read the properties of the medium to the single processor
+            call shd_io__readProp(PROPFILE, NPX, NPY, NPZ,&
+                &NSTLEG, MAXLEG, NLEG, MAXNZ, MAXPG, MAXPGL, DELTAM,&
+                &PROPTYPE, DELX0, DELY0, ZLEVELS, MAXASYM,&
+                &TEMPP, EXTINCTP, ALBEDOP, LEGENP, NUMPHASE, IPHASEP)
 
-            call shd_io__readProp(PROPFILE, NPXT, NPYT, NPZ,&
-                &NSTLEG, MAXLEG, NLEG, MAXNZ, MAXPGT, MAXPGLT, DELTAM,&
-                &PROPTYPE, DELX, DELY, ZLEVELS, MAXASYM,&
-                &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, NUMPHASE, IPHASEPT)
-
-            if (NUMPHASE == 0) then
-                write (6, '(A)') 'Error [shdom_main]: Standard property file (with phase function Legendre series at every point)'
-                write (6, '(A)') '  is not allowed with multiple processors.'
-                stop
-            end if
             ! Check values of medium properties
-            call shd_io__checkPropInput(NPXT, NPYT, NPZ, NSTLEG, NLEG,&
+            call shd_io__checkPropInput(NPX, NPY, NPZ, NSTLEG, NLEG,&
                 &DELX, DELY, ZLEVELS,&
-                &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, NUMPHASE, IPHASEPT)
+                &TEMPP, EXTINCTP, ALBEDOP, LEGENP, NUMPHASE, IPHASEP)
+
+        else
+
+            ! Read the properties of the medium to the master processor and
+            !  distribute to all the processors
+            if (MASTERPROC) then
+                MAXPGT = NPXT*NPYT*NPZ
+                MAXPGLT = MAXPGL
+                if (NUMPHASE .eq. 0) MAXPGLT = MAXPGT*(MAXLEG + 1)*NSTLEG
+
+                allocate (TEMPPT(MAXPGT), EXTINCTPT(MAXPGT), ALBEDOPT(MAXPGT))
+                allocate (IPHASEPT(MAXPGT), LEGENPT(MAXPGLT))
+
+                call shd_io__readProp(PROPFILE, NPXT, NPYT, NPZ,&
+                    &NSTLEG, MAXLEG, NLEG, MAXNZ, MAXPGT, MAXPGLT, DELTAM,&
+                    &PROPTYPE, DELX, DELY, ZLEVELS, MAXASYM,&
+                    &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, NUMPHASE, IPHASEPT)
+
+                if (NUMPHASE == 0) then
+                    write (6, '(A)') 'Error [shdom_main]: Standard property file (with phase function Legendre series at every point)'
+                    write (6, '(A)') '  is not allowed with multiple processors.'
+                    stop
+                end if
+                ! Check values of medium properties
+                call shd_io__checkPropInput(NPXT, NPYT, NPZ, NSTLEG, NLEG,&
+                    &DELX, DELY, ZLEVELS,&
+                    &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, NUMPHASE, IPHASEPT)
+            end if
+
+            call SCATTER_PROPERTIES(NPXT, NPYT, NPX, NPY, NPZ,&
+                &NSTLEG, NLEG, NUMPHASE,&
+                &ZLEVELS, MAXASYM,&
+                &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, IPHASEPT,&
+                &TEMPP, EXTINCTP, ALBEDOP, LEGENP, IPHASEP)
+
+            if (MASTERPROC) deallocate (TEMPPT, EXTINCTPT, ALBEDOPT, IPHASEPT)
+
         end if
-
-        call SCATTER_PROPERTIES(NPXT, NPYT, NPX, NPY, NPZ,&
-            &NSTLEG, NLEG, NUMPHASE,&
-            &ZLEVELS, MAXASYM,&
-            &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, IPHASEPT,&
-            &TEMPP, EXTINCTP, ALBEDOP, LEGENP, IPHASEP)
-
-        if (MASTERPROC) deallocate (TEMPPT, EXTINCTPT, ALBEDOPT, IPHASEPT)
 
     else
 
@@ -283,6 +301,7 @@ program shdom_main
         call shd_io__checkPropInput(NPX, NPY, NPZ, NSTLEG, NLEG,&
             &DELX, DELY, ZLEVELS,&
             &TEMPP, EXTINCTP, ALBEDOP, LEGENP, NUMPHASE, IPHASEP)
+
     end if
 
     if (MASTERPROC) then
@@ -444,7 +463,11 @@ program shdom_main
                 NXOUT = 1
             else
                 if (mpiX) then
-                    NXOUT = max(1, nint(NPXT*DELX/OUTPARMS(2, I)))
+                    if (NPX .gt. 1) then
+                        NXOUT = max(1, nint(NPXT*DELX/OUTPARMS(2, I)))
+                    else
+                        NXOUT = max(1, nint(NPXT*DELX0/OUTPARMS(2, I)))
+                    end if
                 else
                     NXOUT = max(1, nint((NPX*DELX + 2*OUTPARMS(4, I))/OUTPARMS(2, I)))
                 end if
@@ -453,7 +476,11 @@ program shdom_main
                 NYOUT = 1
             else
                 if (mpiY) then
-                    NYOUT = max(1, nint(NPYT*DELY/OUTPARMS(3, I)))
+                    if (NPY .gt. 1) then
+                        NYOUT = max(1, nint(NPYT*DELY/OUTPARMS(3, I)))
+                    else
+                        NYOUT = max(1, nint(NPYT*DELY0/OUTPARMS(3, I)))
+                    end if
                 else
                     NYOUT = max(1, nint((NPY*DELY + 2*OUTPARMS(5, I))/OUTPARMS(3, I)))
                 end if
@@ -589,19 +616,35 @@ program shdom_main
             do I = 1, NUMOUT
                 if (OUTTYPES(I) .eq. 'R') then
                     if (mpiMode) then
-                        call COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
-                            &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
-                            &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-                            &BCFLAG, NPXT*DELX, NPYT*DELY, IPFLAG,&
-                            &SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
-                            &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
-                            &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-                            &GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, UNITS,&
-                            &XGRID, YGRID, ZGRID, GRIDPOS,&
-                            &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-                            &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
-                            &SHPTR, SOURCE, WORK, WORK(1 + NPTS*NSTOKES),&
-                            &OUTPARMS(1, I), IRAD, WORK2)
+                        if ((NPXT .eq. 1) .and. (NPYT .eq. 1)) then
+                            call COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, NPX, NPY,&
+                                &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
+                                &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
+                                &BCFLAG, NPXT*DELX0, NPYT*DELY0, IPFLAG,&
+                                &SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
+                                &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
+                                &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
+                                &GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, UNITS,&
+                                &XGRID, YGRID, ZGRID, GRIDPOS,&
+                                &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+                                &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
+                                &SHPTR, SOURCE, WORK, WORK(1 + NPTS*NSTOKES),&
+                                &OUTPARMS(1, I), IRAD, WORK2)
+                        else
+                            call COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, NPX, NPY,&
+                                &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
+                                &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
+                                &BCFLAG, NPXT*DELX, NPYT*DELY, IPFLAG,&
+                                &SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
+                                &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
+                                &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
+                                &GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, UNITS,&
+                                &XGRID, YGRID, ZGRID, GRIDPOS,&
+                                &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+                                &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
+                                &SHPTR, SOURCE, WORK, WORK(1 + NPTS*NSTOKES),&
+                                &OUTPARMS(1, I), IRAD, WORK2)
+                        end if
                     else
                         call COMPUTE_RADIANCE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                             &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
@@ -733,28 +776,53 @@ program shdom_main
             allocate (XALLGRID(NXT), YALLGRID(NYT))
         end if
 
-        call GATHER_OUTPUT(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
-            &IPFLAG, BCFLAG, NBPTS, NXT, NYT, NZ, NSHOUT,&
-            &SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV, SUMSHTERMS,&
-            &NPXT, NPYT, DELX, DELY, XALLGRID, YALLGRID,&
-            &ALLFLUXES, ALLFLUXDIV, ALLSHTERMS,&
-            &NCELLS, NPTS, NSH, NCELLSTOT, NPTSTOT, NSHTOT)
+        if ((NPXT .eq. 1) .and. (NPYT .eq. 1)) then
+            call GATHER_OUTPUT(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
+                &IPFLAG, BCFLAG, NBPTS, NXT, NYT, NZ, NSHOUT,&
+                &SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV, SUMSHTERMS,&
+                &NPXT, NPYT, DELX0, DELY0, XALLGRID, YALLGRID,&
+                &ALLFLUXES, ALLFLUXDIV, ALLSHTERMS,&
+                &NCELLS, NPTS, NSH, NCELLSTOT, NPTSTOT, NSHTOT)
+        else
+            call GATHER_OUTPUT(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
+                &IPFLAG, BCFLAG, NBPTS, NXT, NYT, NZ, NSHOUT,&
+                &SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV, SUMSHTERMS,&
+                &NPXT, NPYT, DELX, DELY, XALLGRID, YALLGRID,&
+                &ALLFLUXES, ALLFLUXDIV, ALLSHTERMS,&
+                &NCELLS, NPTS, NSH, NCELLSTOT, NPTSTOT, NSHTOT)
+        end if
 
         if (MASTERPROC) then
             do I = 1, NUMOUT
-                if (OUTTYPES(I) /= 'V' .and. OUTFILES(I) /= 'NONE') then
-                    call shd_io__outputResultMpi(NSTOKES, NXT, NYT, NZ,&
-                        &NPTSTOT, NCELLSTOT, NSHTOT,&
-                        &ML, MM, NLM, NMU, NPHI, NANG, NG,&
-                        &PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
-                        &BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
-                        &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
-                        &SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS,&
-                        &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
-                        &NPXT*DELX, NPYT*DELY, XALLGRID, YALLGRID, ZGRID,&
-                        &ALLFLUXES, ALLFLUXDIV,&
-                        &NSHOUT, ALLSHTERMS, IRAD, SUMRADOUT,&
-                        &OUTTYPES(I), OUTPARMS(1, I), OUTFILES(I))
+                if (OUTTYPES(I) .ne. 'V' .and. OUTFILES(I) .ne. 'NONE') then
+                    if ((NPXT .eq. 1) .and. (NPYT .eq. 1)) then
+                        call shd_io__outputResultMpi(NSTOKES, NXT, NYT, NZ,&
+                            &NPTSTOT, NCELLSTOT, NSHTOT,&
+                            &ML, MM, NLM, NMU, NPHI, NANG, NG,&
+                            &PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
+                            &BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
+                            &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+                            &SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS,&
+                            &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
+                            &NPXT*DELX0, NPYT*DELY0, XALLGRID, YALLGRID, ZGRID,&
+                            &ALLFLUXES, ALLFLUXDIV,&
+                            &NSHOUT, ALLSHTERMS, IRAD, SUMRADOUT,&
+                            &OUTTYPES(I), OUTPARMS(1, I), OUTFILES(I))
+
+                    else
+                        call shd_io__outputResultMpi(NSTOKES, NXT, NYT, NZ,&
+                            &NPTSTOT, NCELLSTOT, NSHTOT,&
+                            &ML, MM, NLM, NMU, NPHI, NANG, NG,&
+                            &PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
+                            &BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
+                            &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+                            &SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS,&
+                            &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
+                            &NPXT*DELX, NPYT*DELY, XALLGRID, YALLGRID, ZGRID,&
+                            &ALLFLUXES, ALLFLUXDIV,&
+                            &NSHOUT, ALLSHTERMS, IRAD, SUMRADOUT,&
+                            &OUTTYPES(I), OUTPARMS(1, I), OUTFILES(I))
+                    end if
                 end if
             end do
 

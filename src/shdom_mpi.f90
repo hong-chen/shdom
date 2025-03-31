@@ -74,7 +74,7 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
 
     implicit none
     integer, intent(INOUT) :: BCFLAG, NPX, NPY, NX, NY, NZ
-    real, intent(IN) :: DELX, DELY
+    real, intent(INOUT) :: DELX, DELY
     character(LEN=256), intent(IN) :: PROPFILE, RUNNAME
     real, intent(OUT) :: XSTART, YSTART
     integer :: NPXT, NPYT, NXT, NYT
@@ -86,10 +86,10 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
 
     NPXT = NPX; NPYT = NPY; NXT = NX; NYT = NY
 
-    if ((NPXT == 1) .and. (NPYT == 1)) then
-        call ABORT_SHDOM_MPI('MAP_SHDOM_MPI: Currently MPI does NOT support NPX=1 and NPY=1.')
-        stop
-    end if
+    !if ((NPXT == 1) .and. (NPYT == 1)) then
+    !    call ABORT_SHDOM_MPI('MAP_SHDOM_MPI: Currently MPI does NOT support NPX=1 and NPY=1.')
+    !    stop
+    !end if
 
     !if ((numproc == 1) .or. ((NPXT == 1) .and. (NPYT == 1))) then
     if (numproc == 1) then
@@ -144,12 +144,14 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
             IXYOUT(1, 1) = nint(real(NXT)/real(dims(1)))*coords(1) + 1
             IXYOUT(2, 1) = min(nint(real(NXT)/real(dims(1)))*(coords(1)+1), NXT)
 
-            NX = IXYOUT(2, 1) - IXYOUT(1, 1) + 1
+            NX = IXYOUT(2, 1) - IXYOUT(1, 1) + 2
+            !if (IXYOUT(2, 1) .eq. NXT) NX = NX - 1
 
-            XSTART = DELX/NXT * (IXYOUT(1, 1)-1)
-            XEND   = DELX/NXT * (IXYOUT(2, 1))
+            XSTART = real(DELX)/real(NXT) * real((IXYOUT(1, 1)-1))
+            XEND   = real(DELX)/real(NXT) * real((IXYOUT(2, 1)))
 
-            !DELX = XEND - XSTART
+            DELX = XEND - XSTART
+
 
         end if
     else
@@ -180,12 +182,13 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
             IXYOUT(1, 2) = nint(real(NYT)/real(dims(2)))*coords(2) + 1
             IXYOUT(2, 2) = min(nint(real(NYT)/real(dims(2)))*(coords(2)+1), NYT)
 
-            NY = IXYOUT(2, 2) - IXYOUT(1, 2) + 1
+            NY = IXYOUT(2, 2) - IXYOUT(1, 2) + 2
+            !if (IXYOUT(2, 2) .eq. NYT) NY = NY - 1
 
-            YSTART = DELY/NYT * (IXYOUT(1, 2)-1)
-            YEND   = DELY/NYT * (IXYOUT(2, 2))
+            YSTART = real(DELY)/real(NYT) * real((IXYOUT(1, 2)-1))
+            YEND   = real(DELY)/real(NYT) * real((IXYOUT(2, 2)))
 
-            !DELY = YEND - YSTART
+            DELY = YEND - YSTART
 
         end if
     else
@@ -1150,6 +1153,7 @@ subroutine MAKE_DIRECT_PAR(SPT, NPTS, BCFLAG, IPFLAG,&
     else
         YMAX = YGRID(NY + 1)
     end if
+
 
     ! Do the initial direct beam tracing starting at the base grid points
     NINVALID(:) = 0
@@ -2170,7 +2174,7 @@ subroutine INTEGRATE_RAY(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
 
 end subroutine INTEGRATE_RAY
 
-subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, NPX, NPY,&
     &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
     &BCFLAG, XDOMAIN, YDOMAIN, IPFLAG,&
@@ -2194,6 +2198,7 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
 
     implicit none
     integer, intent(IN) :: NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG, NPTS, NCELLS
+    integer, intent(IN) :: NPX, NPY
     integer, intent(IN) :: ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
     integer, intent(IN) :: NMU, NPHI0MAX, NPHI0(NMU)
     integer, intent(INOUT) :: NRAD
@@ -2363,14 +2368,16 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
             ! Set up the upstream/downstream boundaries for this direction
             Lupx = 0; Lupy = 0; Ldownx = 0; Ldowny = 0
             if (btest(BCFLAG, 2)) then
-                if (cos(PHIOUT) .gt. 1.0e-5) then
+                !if ((cos(PHIOUT) .gt. 1.0e-5) .and. (NPX .gt. 1)) then
+                if ((cos(PHIOUT) .gt. 1.0e-5)) then
                     Ldownx = 2; Lupx = 1
                 else
                     Ldownx = 1; Lupx = 2
                 end if
             end if
             if (btest(BCFLAG, 3)) then
-                if (sin(PHIOUT) .gt. 1.0e-5) then
+                !if ((sin(PHIOUT) .gt. 1.0e-5) .and. (NPY .gt. 1)) then
+                if ((sin(PHIOUT) .gt. 1.0e-5)) then
                     Ldowny = 4; Lupy = 3
                 else
                     Ldowny = 3; Lupy = 4
@@ -2387,6 +2394,7 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 X0 = STARTX
                 do JX = 1, NXOUT
                     NRAD = NRAD + 1
+
                     if (X0 .ge. (XGRID(1) - EPS) .and. X0 .le. (XGRID(NX) + EPS) .and.&
                         Y0 .ge. (YGRID(1) - EPS) .and. Y0 .le. (YGRID(NY) + EPS)) then
                         TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
@@ -2407,7 +2415,8 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                             RadSend(:, Ndone) = RADIANCE(:)
                             IndexSend(Ndone) = NRAD
                         else
-                            if (SIDE /= Lupx .and. SIDE /= Lupy) then
+                            !if ((SIDE /= Lupx .and. SIDE /= Lupy) .and. ((NPX .gt. 1) .and. (NPY .gt. 1))) then
+                            if ((SIDE /= Lupx .and. SIDE /= Lupy)) then
                                 write (6, *) 'Bad SIDE 1:', myproc, muout, phiout, x0, y0, z0, SIDE, xe, ye, ze
                                 call ABORT_SHDOM_MPI('Error [COMPUTE_RADIANCE_PAR]: Bad SIDE 1')
                             end if
@@ -2494,7 +2503,8 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                             RadSend(:, Ndone) = RADIANCE(:)
                             IndexSend(Ndone) = BndRadIntInfo(J, Ldownx)
                         else
-                            if (SIDE /= Lupx .and. SIDE /= Lupy) then
+                            !if ((SIDE /= Lupx .and. SIDE /= Lupy) .and. ((NPX .gt. 1) .and. (NPY .gt. 1))) then
+                            if ((SIDE /= Lupx .and. SIDE /= Lupy)) then
                                 write (6, *) 'Bad SIDE 2x', myproc, muout, phiout, x, y, z, SIDE, xe, ye, ze
                                 call ABORT_SHDOM_MPI('Error [COMPUTE_RADIANCE_PAR]: Bad SIDE 2x')
                             end if
@@ -2531,7 +2541,8 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                             RadSend(:, Ndone) = RADIANCE(:)
                             IndexSend(Ndone) = BndRadIntInfo(J, Ldowny)
                         else
-                            if (SIDE /= Lupx .and. SIDE /= Lupy) then
+                            !if ((SIDE /= Lupx .and. SIDE /= Lupy) .and. ((NPX .gt. 1) .and. (NPY .gt. 1))) then
+                            if ((SIDE /= Lupx .and. SIDE /= Lupy)) then
                                 write (6, *) 'Bad SIDE 2y', myproc, muout, phiout, x, y, z, SIDE, xe, ye, ze
                                 call ABORT_SHDOM_MPI('Error [COMPUTE_RADIANCE_PAR]: Bad SIDE 2y')
                             end if
@@ -2964,7 +2975,7 @@ subroutine VISUALIZE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
             &comm2d, ierr)
         AllDone = all(intrecvbuf(1:4) == 0)
     end do
-!  print *,'Done with ray tracing.', Ndone
+    !print *,'Done with ray tracing.', Ndone
 
     if (myproc > 0) then
         ! Send the finished radiances to the master processor
