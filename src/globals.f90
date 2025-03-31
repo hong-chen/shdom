@@ -125,6 +125,7 @@ module globals_shdom
 
     integer, save :: NPX, NPY, NPZ, NUMPHASE
     real, save    :: DELX, DELY, XSTART, YSTART
+    real, save    :: XDOMAIN_, YDOMAIN_
     real, save, allocatable :: ZLEVELS(:)
     real, save, allocatable :: TEMPP(:), EXTINCTP(:), ALBEDOP(:)
     real, save, allocatable :: LEGENP(:), EXTDIRP(:)

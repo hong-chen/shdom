@@ -23,6 +23,8 @@ SHDOM was initially developed by `Frank Evans <evans@nit.colorado.edu>`_ and ava
 
 **Major changes:**
 
+* Fixed "dead process issue" when running MPI version with 1D property field input;
+
 * Added ``CMake`` support (contributed by `Dr. Cheng Da <https://www.cdalab.org>`_);
 
 * Fixed a segmentation error when saving "state" from calculation;
@@ -31,7 +33,7 @@ SHDOM was initially developed by `Frank Evans <evans@nit.colorado.edu>`_ and ava
 
 * Added support for LSRT BRDF model;
 
-* Fixed domain shift issue in 3D radiance calculations;
+* Fixed domain shift issue in 3D radiance calculations (also for MPI version);
 
 * Added examples (including legacy cases) for benchmarking purpose;
 

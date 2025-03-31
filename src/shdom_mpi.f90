@@ -73,23 +73,18 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
     use globals_mpi
 
     implicit none
-    integer, intent(INOUT) :: BCFLAG, NPX, NPY, NX, NY, NZ
-    real, intent(INOUT) :: DELX, DELY
-    character(LEN=256), intent(IN) :: PROPFILE, RUNNAME
-    real, intent(OUT) :: XSTART, YSTART
+    integer, intent(inout) :: BCFLAG, NPX, NPY, NX, NY, NZ
+    character(len=*), intent(in) :: PROPFILE, RUNNAME
+    real, intent(inout) :: DELX, DELY
+    real, intent(out) :: XSTART, YSTART
     integer :: NPXT, NPYT, NXT, NYT
     integer :: i, ierr, dims(2), coords(2)
     logical :: periodic(2) = (/.true., .true./), reorder = .false.
     real    :: XEND, YEND
-    character(LEN=4) :: procstr
-    character(LEN=256) :: logfile
+    character(len=4) :: procstr
+    character(len=256) :: logfile
 
     NPXT = NPX; NPYT = NPY; NXT = NX; NYT = NY
-
-    !if ((NPXT == 1) .and. (NPYT == 1)) then
-    !    call ABORT_SHDOM_MPI('MAP_SHDOM_MPI: Currently MPI does NOT support NPX=1 and NPY=1.')
-    !    stop
-    !end if
 
     !if ((numproc == 1) .or. ((NPXT == 1) .and. (NPYT == 1))) then
     if (numproc == 1) then
@@ -829,7 +824,7 @@ end function SUM_CPU_TIME
 subroutine GATHER_OUTPUT(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
     &IPFLAG, BCFLAG, NBPTS, NXT, NYT, NZ, NSHOUT,&
     &SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV, SUMSHTERMS,&
-    &NPXT, NPYT, DELX, DELY, XALLGRID, YALLGRID,&
+    &XDOMAIN, YDOMAIN, XALLGRID, YALLGRID,&
     &ALLFLUXES, ALLFLUXDIV, ALLSHTERMS,&
     &NCELLS, NPTS, NSH, NCELLSTOT, NPTSTOT, NSHTOT)
 
@@ -843,16 +838,16 @@ subroutine GATHER_OUTPUT(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
     use mpi_f08
     use globals_mpi
 
-    logical, intent(IN) :: FLUX_OUT, FLUXDIV_OUT, SH_OUT
-    integer, intent(IN) :: IPFLAG, BCFLAG, NBPTS, NXT, NYT, NZ, NSHOUT, NPXT, NPYT
-    real, intent(IN) :: DELX, DELY
-    real, intent(IN) :: SUMFLUXES(2, NBPTS), SUMDIRFLUX(NBPTS)
-    real, intent(IN) :: SUMFLUXDIV(NBPTS), SUMSHTERMS(NSHOUT, NBPTS)
-    real, intent(OUT) :: XALLGRID(NXT), YALLGRID(NYT)
-    real, intent(OUT) :: ALLFLUXES(3, NZ, NYT, NXT), ALLFLUXDIV(NZ, NYT, NXT)
-    real, intent(OUT) :: ALLSHTERMS(NSHOUT, NZ, NYT, NXT)
-    integer, intent(IN) :: NCELLS, NPTS, NSH
-    integer, intent(OUT) :: NCELLSTOT, NPTSTOT, NSHTOT
+    logical, intent(in) :: FLUX_OUT, FLUXDIV_OUT, SH_OUT
+    integer, intent(in) :: IPFLAG, BCFLAG, NBPTS, NXT, NYT, NZ, NSHOUT
+    real, intent(in) :: XDOMAIN, YDOMAIN
+    real, intent(in) :: SUMFLUXES(2, NBPTS), SUMDIRFLUX(NBPTS)
+    real, intent(in) :: SUMFLUXDIV(NBPTS), SUMSHTERMS(NSHOUT, NBPTS)
+    real, intent(out) :: XALLGRID(NXT), YALLGRID(NYT)
+    real, intent(out) :: ALLFLUXES(3, NZ, NYT, NXT), ALLFLUXDIV(NZ, NYT, NXT)
+    real, intent(out) :: ALLSHTERMS(NSHOUT, NZ, NYT, NXT)
+    integer, intent(in) :: NCELLS, NPTS, NSH
+    integer, intent(out) :: NCELLSTOT, NPTSTOT, NSHTOT
 
     integer :: IX, IY, NX, NY, NX1, NY1, MAXN, I, send3int(3), recv3int(3)
     integer :: iproc, ierr, irq
@@ -1000,8 +995,8 @@ subroutine GATHER_OUTPUT(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
 
     ! Make the X and Y grids for the full domain
     if (myproc == 0) then
-        XALLGRID(1:NXT) = (/(NPXT*DELX*(I - 1)/NXT, I=1, NXT)/)
-        YALLGRID(1:NYT) = (/(NPYT*DELY*(I - 1)/NYT, I=1, NYT)/)
+        XALLGRID(1:NXT) = (/(XDOMAIN*(I - 1)/NXT, I=1, NXT)/)
+        YALLGRID(1:NYT) = (/(YDOMAIN*(I - 1)/NYT, I=1, NYT)/)
     end if
 
     ! Get the sum of the NCELLS, NPTS, and NSH over the processors
@@ -3099,7 +3094,7 @@ subroutine CALC_ACCEL_SOLCRIT(DOACCEL, DELJDOT, DELJOLD, DELJNEW, JNORM,&
     end if
 end subroutine CALC_ACCEL_SOLCRIT
 
-subroutine END_SHDOM_MPI(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART, DELX, DELY,&
+subroutine END_SHDOM_MPI(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART, XDOMAIN, YDOMAIN,&
     &NPXT, NPYT, PROPFILE, RUNNAME)
 
     ! Shuts down MPI at the end, but mainly finds the number of gridpoints
@@ -3112,16 +3107,19 @@ subroutine END_SHDOM_MPI(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART, DELX, DELY,&
 
     implicit none
     integer, intent(IN) :: NPTS, NPX, NPY, NPXT, NPYT
-    real, intent(IN) :: GRIDPOS(3, NPTS), XSTART, YSTART, DELX, DELY
+    real, intent(IN) :: GRIDPOS(3, NPTS), XSTART, YSTART, XDOMAIN, YDOMAIN
     character(LEN=256), intent(IN) :: PROPFILE, RUNNAME
     integer :: I, IX, IY, MAXN, SX, SY, EX, EY, NX, NY
     integer :: iproc, ierr, irq
     integer, allocatable :: NUMGRID(:, :), NUMGRIDALL(:, :), NORM(:, :), IXYALL(:, :, :)
     integer, allocatable :: recvbuf(:, :), buf(:, :)
+    real :: DELX, DELY
     real :: ElapsedTime
-
     type(MPI_Request), allocatable :: requests(:)
     type(MPI_Status), allocatable :: status(:)
+
+    DELX = real(XDOMAIN)/real(NPXT)
+    DELY = real(YDOMAIN)/real(NPYT)
 
     if (LoadBalance) then
         ! Calculate the number of grid points around each property grid column

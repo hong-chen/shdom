@@ -9,12 +9,12 @@ end subroutine
 
 subroutine MAP_SHDOM_MPI(&
     &BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY,&
-    &PROPFILE, XSTART, YSTART)
+    &PROPFILE, XSTART, YSTART, RUNNAME)
     implicit none
     integer BCFLAG, NPX, NPY, NX, NY, NZ
-    real DELX, DELY
-    character PROPFILE*256
-    real XSTART, YSTART
+    character(len=*), intent(in) :: PROPFILE, RUNNAME
+    real, intent(in) :: DELX, DELY
+    real, intent(out) :: XSTART, YSTART
 
     XSTART = 0.0
     YSTART = 0.0
@@ -117,7 +117,7 @@ end subroutine
 subroutine GATHER_OUTPUT(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
     &IPFLAG, BCFLAG, NBPTS, NXT, NYT, NZ, NSHOUT,&
     &SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV, SUMSHTERMS,&
-    &NPX, NPY, DELX, DELY, XALLGRID, YALLGRID,&
+    &XDOMAIN, YDOMAIN, XALLGRID, YALLGRID,&
     &ALLFLUXES, ALLFLUXDIV, ALLSHTERMS,&
     &NCELLS, NPTS, NSH, NCELLSTOT, NPTSTOT, NSHTOT)
     implicit none
@@ -315,11 +315,11 @@ subroutine CALC_ACCEL_SOLCRIT(&
 end subroutine
 
 subroutine END_SHDOM_MPI(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART,&
-    &DELX, DELY, NPXT, NPYT, PROPFILE)
+    &XDOMAIN, YDOMAIN, NPXT, NPYT, PROPFILE, RUNNAME)
     implicit none
     integer NPTS, NPX, NPY, NPXT, NPYT
-    real GRIDPOS(3, NPTS), XSTART, YSTART, DELX, DELY
-    character PROPFILE*256
+    real GRIDPOS(3, NPTS), XSTART, YSTART, XDOMAIN, YDOMAIN
+    character(len=*), intent(in) :: PROPFILE, RUNNAME
 
     return
 end subroutine
