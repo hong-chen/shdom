@@ -81,6 +81,7 @@ program shdom_main
     integer :: count_start, count_rate, count_max
     integer :: count_end
     real :: elapsed_time
+    real :: DELX0, DELY0
     logical :: mpiX, mpiY, mpiMode
     logical :: nmlMode = .true.
 
@@ -235,41 +236,65 @@ program shdom_main
 
     MAXNZ = NPZ
 
+    print *, 'Before:'
+    print *, 'Full Domain:', NXT, NYT, NPXT, NPYT
+    print *, 'Processor:', NX, NY, NPX, NPY
+    print *, 'DeltaXY:', DELX, DELY
+    print *, 'STARTXY:', XSTART, YSTART
+
+
     if (mpiMode) then
 
-        ! Read the properties of the medium to the master processor and
-        !  distribute to all the processors
-        if (MASTERPROC) then
-            MAXPGT = NPXT*NPYT*NPZ
-            MAXPGLT = MAXPGL
-            if (NUMPHASE .eq. 0) MAXPGLT = MAXPGT*(MAXLEG + 1)*NSTLEG
+        if ((NPXT .eq. 1) .and. (NPYT .eq. 1)) then
 
-            allocate (TEMPPT(MAXPGT), EXTINCTPT(MAXPGT), ALBEDOPT(MAXPGT))
-            allocate (IPHASEPT(MAXPGT), LEGENPT(MAXPGLT))
+            ! Read the properties of the medium to the single processor
+            call shd_io__readProp(PROPFILE, NPX, NPY, NPZ,&
+                &NSTLEG, MAXLEG, NLEG, MAXNZ, MAXPG, MAXPGL, DELTAM,&
+                &PROPTYPE, DELX0, DELY0, ZLEVELS, MAXASYM,&
+                &TEMPP, EXTINCTP, ALBEDOP, LEGENP, NUMPHASE, IPHASEP)
 
-            call shd_io__readProp(PROPFILE, NPXT, NPYT, NPZ,&
-                &NSTLEG, MAXLEG, NLEG, MAXNZ, MAXPGT, MAXPGLT, DELTAM,&
-                &PROPTYPE, DELX, DELY, ZLEVELS, MAXASYM,&
-                &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, NUMPHASE, IPHASEPT)
-
-            if (NUMPHASE == 0) then
-                write (6, '(A)') 'Error [shdom_main]: Standard property file (with phase function Legendre series at every point)'
-                write (6, '(A)') '  is not allowed with multiple processors.'
-                stop
-            end if
             ! Check values of medium properties
-            call shd_io__checkPropInput(NPXT, NPYT, NPZ, NSTLEG, NLEG,&
+            call shd_io__checkPropInput(NPX, NPY, NPZ, NSTLEG, NLEG,&
                 &DELX, DELY, ZLEVELS,&
-                &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, NUMPHASE, IPHASEPT)
+                &TEMPP, EXTINCTP, ALBEDOP, LEGENP, NUMPHASE, IPHASEP)
+
+        else
+
+            ! Read the properties of the medium to the master processor and
+            !  distribute to all the processors
+            if (MASTERPROC) then
+                MAXPGT = NPXT*NPYT*NPZ
+                MAXPGLT = MAXPGL
+                if (NUMPHASE .eq. 0) MAXPGLT = MAXPGT*(MAXLEG + 1)*NSTLEG
+
+                allocate (TEMPPT(MAXPGT), EXTINCTPT(MAXPGT), ALBEDOPT(MAXPGT))
+                allocate (IPHASEPT(MAXPGT), LEGENPT(MAXPGLT))
+
+                call shd_io__readProp(PROPFILE, NPXT, NPYT, NPZ,&
+                    &NSTLEG, MAXLEG, NLEG, MAXNZ, MAXPGT, MAXPGLT, DELTAM,&
+                    &PROPTYPE, DELX, DELY, ZLEVELS, MAXASYM,&
+                    &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, NUMPHASE, IPHASEPT)
+
+                if (NUMPHASE == 0) then
+                    write (6, '(A)') 'Error [shdom_main]: Standard property file (with phase function Legendre series at every point)'
+                    write (6, '(A)') '  is not allowed with multiple processors.'
+                    stop
+                end if
+                ! Check values of medium properties
+                call shd_io__checkPropInput(NPXT, NPYT, NPZ, NSTLEG, NLEG,&
+                    &DELX, DELY, ZLEVELS,&
+                    &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, NUMPHASE, IPHASEPT)
+            end if
+
+            call SCATTER_PROPERTIES(NPXT, NPYT, NPX, NPY, NPZ,&
+                &NSTLEG, NLEG, NUMPHASE,&
+                &ZLEVELS, MAXASYM,&
+                &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, IPHASEPT,&
+                &TEMPP, EXTINCTP, ALBEDOP, LEGENP, IPHASEP)
+
+            if (MASTERPROC) deallocate (TEMPPT, EXTINCTPT, ALBEDOPT, IPHASEPT)
+
         end if
-
-        call SCATTER_PROPERTIES(NPXT, NPYT, NPX, NPY, NPZ,&
-            &NSTLEG, NLEG, NUMPHASE,&
-            &ZLEVELS, MAXASYM,&
-            &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, IPHASEPT,&
-            &TEMPP, EXTINCTP, ALBEDOP, LEGENP, IPHASEP)
-
-        if (MASTERPROC) deallocate (TEMPPT, EXTINCTPT, ALBEDOPT, IPHASEPT)
 
     else
 
@@ -283,7 +308,14 @@ program shdom_main
         call shd_io__checkPropInput(NPX, NPY, NPZ, NSTLEG, NLEG,&
             &DELX, DELY, ZLEVELS,&
             &TEMPP, EXTINCTP, ALBEDOP, LEGENP, NUMPHASE, IPHASEP)
+
     end if
+
+    print *, 'After:'
+    print *, 'Full Domain:', NXT, NYT, NPXT, NPYT
+    print *, 'Processor:', NX, NY, NPX, NPY
+    print *, 'DeltaXY:', DELX, DELY
+    print *, 'STARTXY:', XSTART, YSTART
 
     if (MASTERPROC) then
         ! Check input parameters
@@ -536,6 +568,12 @@ program shdom_main
             &XSTART, YSTART, DELX, DELY, ZLEVELS,&
             &XGRID, YGRID, ZGRID)
     end if
+
+    print *, 'Now:'
+    print *, 'Full Domain:', NXT, NYT, NPXT, NPYT
+    print *, 'Processor:', NX, NY, NPX, NPY, NX1, NY1
+    print *, 'DeltaXY:', DELX, DELY
+    print *, 'STARTXY:', XSTART, YSTART
 
     write (6, '(A,"<",A,">")') 'Message [shdom_main]: Starting solution iterations for SHDOM run: ', trim(adjustl(RUNNAME))
     TOTITER = 0

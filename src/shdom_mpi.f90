@@ -74,7 +74,7 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
 
     implicit none
     integer, intent(INOUT) :: BCFLAG, NPX, NPY, NX, NY, NZ
-    real, intent(IN) :: DELX, DELY
+    real, intent(INOUT) :: DELX, DELY
     character(LEN=256), intent(IN) :: PROPFILE, RUNNAME
     real, intent(OUT) :: XSTART, YSTART
     integer :: NPXT, NPYT, NXT, NYT
@@ -86,10 +86,10 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
 
     NPXT = NPX; NPYT = NPY; NXT = NX; NYT = NY
 
-    if ((NPXT == 1) .and. (NPYT == 1)) then
-        call ABORT_SHDOM_MPI('MAP_SHDOM_MPI: Currently MPI does NOT support NPX=1 and NPY=1.')
-        stop
-    end if
+    !if ((NPXT == 1) .and. (NPYT == 1)) then
+    !    call ABORT_SHDOM_MPI('MAP_SHDOM_MPI: Currently MPI does NOT support NPX=1 and NPY=1.')
+    !    stop
+    !end if
 
     !if ((numproc == 1) .or. ((NPXT == 1) .and. (NPYT == 1))) then
     if (numproc == 1) then
@@ -122,6 +122,7 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
     ! Make the optimal (or default) property grid divisions (in IXYPRP)
     call OPTIMIZE_PROCESSOR_DOMAINS(dims, coords, NPXT, NPYT, PROPFILE, RUNNAME)
 
+    print *, dims, coords
     ! Make the new property and base grid sizes and the IXYOUT arrays
     if (dims(1) > 1) then
         if (NPXT .gt. 1) then
@@ -144,12 +145,12 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
             IXYOUT(1, 1) = nint(real(NXT)/real(dims(1)))*coords(1) + 1
             IXYOUT(2, 1) = min(nint(real(NXT)/real(dims(1)))*(coords(1)+1), NXT)
 
-            NX = IXYOUT(2, 1) - IXYOUT(1, 1) + 1
+            NX = IXYOUT(2, 1) - IXYOUT(1, 1) + 2
 
-            XSTART = DELX/NXT * (IXYOUT(1, 1)-1)
-            XEND   = DELX/NXT * (IXYOUT(2, 1))
+            XSTART = real(DELX)/real(NXT) * real((IXYOUT(1, 1)-1))
+            XEND   = real(DELX)/real(NXT) * real((IXYOUT(2, 1)))
 
-            !DELX = XEND - XSTART
+            DELX = XEND - XSTART
 
         end if
     else
@@ -180,12 +181,12 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
             IXYOUT(1, 2) = nint(real(NYT)/real(dims(2)))*coords(2) + 1
             IXYOUT(2, 2) = min(nint(real(NYT)/real(dims(2)))*(coords(2)+1), NYT)
 
-            NY = IXYOUT(2, 2) - IXYOUT(1, 2) + 1
+            NY = IXYOUT(2, 2) - IXYOUT(1, 2) + 2
 
-            YSTART = DELY/NYT * (IXYOUT(1, 2)-1)
-            YEND   = DELY/NYT * (IXYOUT(2, 2))
+            YSTART = real(DELY)/real(NYT) * real((IXYOUT(1, 2)-1))
+            YEND   = real(DELY)/real(NYT) * real((IXYOUT(2, 2)))
 
-            !DELY = YEND - YSTART
+            DELY = YEND - YSTART
 
         end if
     else
@@ -204,6 +205,7 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
     write (6, '(2X,A,I3)') 'This processor: ', myproc
     write (6, '(2X,A,4(1X,I3))') 'Neighbors:', iprocneigh(1:4)
     write (6, '(2X,2(A,2F7.3))') 'Processor X range: ', XSTART, XEND, '   Y range: ', YSTART, YEND
+    close(6)
 
 end subroutine MAP_SHDOM_MPI
 
