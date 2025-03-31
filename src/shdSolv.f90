@@ -356,57 +356,72 @@ subroutine shdSolv__calSrcPnt(&
     ! source information.
 
     implicit none
-    integer NSTOKES, NSTLEG, NLEG, NLM, LOFJ(NLM), IPH, NR
-    character(len=1) :: SRCTYPE
-    real FLUX0, YLMSUN(NSTLEG, NLM), PLANCK, ALBEDO
-    real LEGEN(NSTLEG, 0:NLEG, *)
-    real RADIANCE(NSTOKES, NR)
-    real SOURCET(NSTOKES, NLM)
-    real C
-    parameter(C=3.544907703)
+
+    integer, intent(in) :: NSTOKES, NSTLEG, NLEG, NLM, LOFJ(NLM), IPH, NR
+    real, intent(in) :: FLUX0, YLMSUN(NSTLEG, NLM), PLANCK, ALBEDO
+    real, intent(in) :: LEGEN(NSTLEG, 0:NLEG, *)
+    real, intent(in) :: RADIANCE(NSTOKES, NR)
+    character(len=1), intent(in) :: SRCTYPE
+
+    real, intent(out) :: SOURCET(NSTOKES, NLM)
+
+    real, parameter :: C = 3.544907703
     integer J
 
     SOURCET(:, :) = 0.0
+
     ! Calculate the generalized spherical harmonics source function
     ! from the radiance vector in genSH.  Do different parts of the
     ! matrix multiply depending on NSTOKES.
     do J = 1, NR
         SOURCET(1, J) = SOURCET(1, J) + LEGEN(1, LOFJ(J), IPH)*RADIANCE(1, J)
     end do
+
     if (NSTOKES .gt. 1) then
+
         do J = 1, NR
             SOURCET(1, J) = SOURCET(1, J) + LEGEN(5, LOFJ(J), IPH)*RADIANCE(2, J)
         end do
+
         do J = 5, NR
             SOURCET(2, J) = SOURCET(2, J) + LEGEN(5, LOFJ(J), IPH)*RADIANCE(1, J)&
                 &+ LEGEN(2, LOFJ(J), IPH)*RADIANCE(2, J)
             SOURCET(3, J) = SOURCET(3, J) + LEGEN(3, LOFJ(J), IPH)*RADIANCE(3, J)
         end do
+
     end if
+
     if (NSTOKES .eq. 4) then
+
         do J = 1, NR
             SOURCET(3, J) = SOURCET(3, J) + LEGEN(6, LOFJ(J), IPH)*RADIANCE(4, J)
             SOURCET(4, J) = SOURCET(4, J) - LEGEN(6, LOFJ(J), IPH)*RADIANCE(3, J)&
                 &+ LEGEN(4, LOFJ(J), IPH)*RADIANCE(4, J)
         end do
+
     end if
+
     ! Do the final multiplication by the single scattering albedo
     SOURCET(:, :) = ALBEDO*SOURCET(:, :)
 
     ! Calculate the generalized spherical harmonics source function
     ! from the solar direct beam
     if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
+
         do J = 1, NLM
             SOURCET(1, J) = SOURCET(1, J)&
                 &+ FLUX0*ALBEDO*LEGEN(1, LOFJ(J), IPH)*YLMSUN(1, J)
         end do
+
         if (NSTOKES .gt. 1) then
             do J = 5, NLM
                 SOURCET(2, J) = SOURCET(2, J)&
                     &+ FLUX0*ALBEDO*LEGEN(5, LOFJ(J), IPH)*YLMSUN(1, J)
             end do
         end if
+
     end if
+
     ! Add in the isotropic unpolarized thermal emission
     if (SRCTYPE .eq. 'T' .or. SRCTYPE .eq. 'B') then
         SOURCET(1, 1) = SOURCET(1, 1) + C*PLANCK
@@ -426,25 +441,31 @@ subroutine shdSolv__calSrcPntUnp(&
     ! thermal and/or solar source information.
 
     implicit none
-    integer NLEG, NLM, LOFJ(NLM), IPH, NR
-    character(len=1) :: SRCTYPE
-    real FLUX0, YLMSUN(NLM), PLANCK, ALBEDO
-    real LEGEN(0:NLEG, *)
-    real RADIANCE(NR)
-    real SOURCET(NLM)
-    real C
-    parameter(C=3.544907703)
+
+    integer, intent(in) :: NLEG, NLM, LOFJ(NLM), IPH, NR
+    character(len=1), intent(in) :: SRCTYPE
+    real, intent(in) :: FLUX0, YLMSUN(NLM), PLANCK, ALBEDO
+    real, intent(in) :: LEGEN(0:NLEG, *)
+    real, intent(in) :: RADIANCE(NR)
+
+    real, intent(out) :: SOURCET(NLM)
+
+    real, parameter :: C=3.544907703
     integer J
 
 
     SOURCET(:) = 0.0
+
     ! Calculate the generalized spherical harmonics source function
     ! from the solar direct beam
     if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
+
         do J = 1, NLM
             SOURCET(J) = FLUX0*ALBEDO*LEGEN(LOFJ(J), IPH)*YLMSUN(J)
         end do
+
     end if
+
     ! Add in the isotropic unpolarized thermal emission
     if (SRCTYPE .eq. 'T' .or. SRCTYPE .eq. 'B') then
         SOURCET(1) = SOURCET(1) + C*PLANCK
@@ -4091,8 +4112,7 @@ subroutine MATCH_GRID_POINT(XP, YP, ZP, ICELL, IFACE,&
     integer GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
     integer*2 CELLFLAGS(*)
     integer IPMATCH
-    integer MAXSTACK
-    parameter(MAXSTACK=64)
+    integer, parameter :: MAXSTACK=64
     integer CELLSTACK(MAXSTACK), SP
     integer INEXT, IDIR, DIR, IC, IC1, KFACE, IPT, I
     integer OPPFACE(6), GRIDFACE(4, 6)
