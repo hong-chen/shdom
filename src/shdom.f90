@@ -463,7 +463,11 @@ program shdom_main
                 NXOUT = 1
             else
                 if (mpiX) then
-                    NXOUT = max(1, nint(NPXT*DELX/OUTPARMS(2, I)))
+                    if (NPX .gt. 1) then
+                        NXOUT = max(1, nint(NPXT*DELX/OUTPARMS(2, I)))
+                    else
+                        NXOUT = max(1, nint(NPXT*DELX0/OUTPARMS(2, I)))
+                    end if
                 else
                     NXOUT = max(1, nint((NPX*DELX + 2*OUTPARMS(4, I))/OUTPARMS(2, I)))
                 end if
@@ -472,7 +476,11 @@ program shdom_main
                 NYOUT = 1
             else
                 if (mpiY) then
-                    NYOUT = max(1, nint(NPYT*DELY/OUTPARMS(3, I)))
+                    if (NPY .gt. 1) then
+                        NYOUT = max(1, nint(NPYT*DELY/OUTPARMS(3, I)))
+                    else
+                        NYOUT = max(1, nint(NPYT*DELY0/OUTPARMS(3, I)))
+                    end if
                 else
                     NYOUT = max(1, nint((NPY*DELY + 2*OUTPARMS(5, I))/OUTPARMS(3, I)))
                 end if

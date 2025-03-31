@@ -2368,6 +2368,7 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, NPX, NPY,&
             ! Set up the upstream/downstream boundaries for this direction
             Lupx = 0; Lupy = 0; Ldownx = 0; Ldowny = 0
             if (btest(BCFLAG, 2)) then
+                !if ((cos(PHIOUT) .gt. 1.0e-5) .and. (NPX .gt. 1)) then
                 if ((cos(PHIOUT) .gt. 1.0e-5)) then
                     Ldownx = 2; Lupx = 1
                 else
@@ -2375,6 +2376,7 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, NPX, NPY,&
                 end if
             end if
             if (btest(BCFLAG, 3)) then
+                !if ((sin(PHIOUT) .gt. 1.0e-5) .and. (NPY .gt. 1)) then
                 if ((sin(PHIOUT) .gt. 1.0e-5)) then
                     Ldowny = 4; Lupy = 3
                 else
@@ -2392,6 +2394,7 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, NPX, NPY,&
                 X0 = STARTX
                 do JX = 1, NXOUT
                     NRAD = NRAD + 1
+
                     if (X0 .ge. (XGRID(1) - EPS) .and. X0 .le. (XGRID(NX) + EPS) .and.&
                         Y0 .ge. (YGRID(1) - EPS) .and. Y0 .le. (YGRID(NY) + EPS)) then
                         TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
@@ -2412,7 +2415,8 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, NPX, NPY,&
                             RadSend(:, Ndone) = RADIANCE(:)
                             IndexSend(Ndone) = NRAD
                         else
-                            if (SIDE /= Lupx .and. SIDE /= Lupy) then
+                            !if ((SIDE /= Lupx .and. SIDE /= Lupy) .and. ((NPX .gt. 1) .and. (NPY .gt. 1))) then
+                            if ((SIDE /= Lupx .and. SIDE /= Lupy)) then
                                 write (6, *) 'Bad SIDE 1:', myproc, muout, phiout, x0, y0, z0, SIDE, xe, ye, ze
                                 call ABORT_SHDOM_MPI('Error [COMPUTE_RADIANCE_PAR]: Bad SIDE 1')
                             end if
@@ -2499,7 +2503,8 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, NPX, NPY,&
                             RadSend(:, Ndone) = RADIANCE(:)
                             IndexSend(Ndone) = BndRadIntInfo(J, Ldownx)
                         else
-                            if (SIDE /= Lupx .and. SIDE /= Lupy) then
+                            !if ((SIDE /= Lupx .and. SIDE /= Lupy) .and. ((NPX .gt. 1) .and. (NPY .gt. 1))) then
+                            if ((SIDE /= Lupx .and. SIDE /= Lupy)) then
                                 write (6, *) 'Bad SIDE 2x', myproc, muout, phiout, x, y, z, SIDE, xe, ye, ze
                                 call ABORT_SHDOM_MPI('Error [COMPUTE_RADIANCE_PAR]: Bad SIDE 2x')
                             end if
@@ -2536,7 +2541,8 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, NPX, NPY,&
                             RadSend(:, Ndone) = RADIANCE(:)
                             IndexSend(Ndone) = BndRadIntInfo(J, Ldowny)
                         else
-                            if (SIDE /= Lupx .and. SIDE /= Lupy) then
+                            !if ((SIDE /= Lupx .and. SIDE /= Lupy) .and. ((NPX .gt. 1) .and. (NPY .gt. 1))) then
+                            if ((SIDE /= Lupx .and. SIDE /= Lupy)) then
                                 write (6, *) 'Bad SIDE 2y', myproc, muout, phiout, x, y, z, SIDE, xe, ye, ze
                                 call ABORT_SHDOM_MPI('Error [COMPUTE_RADIANCE_PAR]: Bad SIDE 2y')
                             end if
