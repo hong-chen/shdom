@@ -41,8 +41,8 @@ module globals
   ! Programmer-dependent kinds of real/complex variables
   !// Note: The R_ is default and RD_ should be used only when needed.
   !    One's choice of precision for R_ and RD_ may depend on required accuracy and used memory size.
-  !integer,   parameter :: R_  = selected_real_kind(6)  ! default precision
-  integer,   parameter :: R_  = selected_real_kind(13) ! default precision
+  integer,   parameter :: R_  = selected_real_kind(6)  ! default precision
+  !integer,   parameter :: R_  = selected_real_kind(13) ! default precision
   integer,   parameter :: RD_ = selected_real_kind(13) ! higher  precision
 
   ! System-specific kinds of variables (no freedom for programmers)
