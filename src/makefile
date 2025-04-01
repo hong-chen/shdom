@@ -35,9 +35,9 @@ else
 endif
 
 ifeq ($(UseMPI),no)
-	SHDOMMPIOBJ = shdom_nompi.o
+	SHDOMMPIOBJ = shdExt_mpi_.o
 else
-	SHDOMMPIOBJ = shdom_mpi.o
+	SHDOMMPIOBJ = shdExt_mpi.o
 endif
 
 SHDOMOBJS += $(SHDOMMPIOBJ)
@@ -80,11 +80,11 @@ shdIO_out.o: shdIO_out.f90 globals.o
 shdSurf_brdf.o: shdSurf_brdf.f90 globals.o
 	$(F90) -c $(F90FLAGS) shdSurf_brdf.f90
 
-shdom_nompi.o: shdom_nompi.f90
-	$(F90) -c $(F90FLAGS) shdom_nompi.f90
+shdExt_mpi_.o: shdExt_mpi_.f90
+	$(F90) -c $(F90FLAGS) shdExt_mpi_.f90
 
-shdom_mpi.o: shdom_mpi.f90
-	$(F90) -c $(F90FLAGS) shdom_mpi.f90
+shdExt_mpi.o: shdExt_mpi.f90
+	$(F90) -c $(F90FLAGS) shdExt_mpi.f90
 
 fftpack.o: fftpack.f90
 	$(F90) -c $(F90FLAGS) fftpack.f90

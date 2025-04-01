@@ -150,9 +150,9 @@ File-to-File Reference
 
 * ``src/shdom.f90`` and ``src/shdom_.f90``: was ``shdom.f90``
 
-* ``src/shdom_mpi.f90``: was ``shdom_mpi.f90``
+* ``src/shdExt_mpi.f90``: was ``shdom_mpi.f90``
 
-* ``src/shdom_nompi.f90``: was ``shdom_nompi.f``
+* ``src/shdExt_mpi_.f90``: was ``shdom_nompi.f``
 
 * ``src/shdSolv.f90``: was ``shdomsub1.f``
 

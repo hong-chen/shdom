@@ -16,15 +16,15 @@ else()
 endif()
 
 if (USE_MPI)
-    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} shdom_mpi.f90)
+    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} shdExt_mpi.f90)
 else()
-    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} shdom_nompi.f90)
+    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} shdExt_mpi_.f90)
 endif()
 
 if (USE_NETCDF)
-    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} tools/shdom_nc.f90)
+    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} tools/shdExt_nc.f90)
 else()
-    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} tools/shdom_nonc.f90)
+    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} tools/shdExt_nc_.f90)
 endif()
 
 #
