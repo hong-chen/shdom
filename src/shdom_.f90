@@ -541,7 +541,7 @@ program shdom_main
     ! NEWGRIDFLAG is from shd_io__restoreState call
     if (NEWGRIDFLAG) then
         ! Make the internal base grid lines
-        call NEW_GRIDS(BCFLAG, GRIDTYPE, NPX_, NPY_, NPZ_, NX, NY, NZ,&
+        call shd_init__makeNewGrids(BCFLAG, GRIDTYPE, NPX_, NPY_, NPZ_, NX, NY, NZ,&
             &XSTART_, YSTART_, DELX_, DELY_, ZLEVELS_,&
             &XGRID, YGRID, ZGRID)
     end if
@@ -562,7 +562,7 @@ program shdom_main
         ! If this is the first time through or we always want a base grid,
         !   then make the base grid point positions and grid cell structure.
         if (BASEOUT .or. (IG .eq. NG .and. NEWGRIDFLAG)) then
-            call INIT_CELL_STRUCTURE(BCFLAG, IPFLAG,&
+            call shd_init__makeCellStructure(BCFLAG, IPFLAG,&
                 &NX, NY, NZ, NX1, NY1, NPTS, NCELLS,&
                 &XGRID, YGRID, ZGRID, GRIDPOS,&
                 &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS)
@@ -571,7 +571,7 @@ program shdom_main
 
         ! Find the monochromatic SHDOM solution: adaptive grid output
         !   in SOURCE (SHPTR), RADIANCE (RSHPTR), FLUXES, DIRFLUX.
-        call shdSolv__solveRte(NSTOKES, NX, NY, NZ, NX1, NY1, NANG,&
+        call shd_solv__solveRte(NSTOKES, NX, NY, NZ, NX1, NY1, NANG,&
             &ML, MM, NLM, NMU, NPHI, NLEG, NSTLEG, NUMPHASE_,&
             &NPHI0, MU, PHI, WTDO,&
             &MAXIV, MAXIC, MAXIG, MAXIDO, INRADFLAG,&
@@ -612,7 +612,7 @@ program shdom_main
                             &SHPTR, SOURCE, WORK, WORK(1 + NPTS*NSTOKES),&
                             &OUTPARMS(1, I), IRAD, WORK2)
                     else
-                        call COMPUTE_RADIANCE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+                        call shd_comp__computeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                             &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
                             &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                             &BCFLAG, IPFLAG, SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
@@ -627,7 +627,7 @@ program shdom_main
                     end if
                 end if
             end do
-            call SUM_OUTPUT(NG - IG, DELG(IG), NRAD, WORK2, SUMRADOUT)
+            call shd_comp__sumOutput(NG - IG, DELG(IG), NRAD, WORK2, SUMRADOUT)
         end if
 
         if (VISUAL_OUT) then
@@ -648,7 +648,7 @@ program shdom_main
                             &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
                             &SHPTR, SOURCE, OUTPARMS(1, I), IVIS, WORK2)
                     else
-                        call VISUALIZE_RADIANCE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+                        call shd_comp__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                             &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
                             &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                             &BCFLAG, IPFLAG, SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
@@ -662,7 +662,7 @@ program shdom_main
                     end if
                 end if
             end do
-            call SUM_OUTPUT(NG-IG, DELG(IG), NVIS, WORK2, SUMVISOUT)
+            call shd_comp__sumOutput(NG-IG, DELG(IG), NVIS, WORK2, SUMVISOUT)
         end if
 
         if (SOURCE_OUT) then
@@ -671,7 +671,7 @@ program shdom_main
                 if (OUTTYPES(I) .eq. 'J') then
                     MUOUT = OUTPARMS(2, I)
                     PHIOUT = OUTPARMS(3, I)*acos(-1.0)/180.0
-                    call COMPUTE_ONE_SOURCE(NSTOKES, ML, MM, NLM,&
+                    call shd_comp__computeOneSrc(NSTOKES, ML, MM, NLM,&
                         &NSTLEG, NLEG, NUMPHASE_,&
                         &NPTS, DELTAM, MUOUT, PHIOUT,&
                         &SRCTYPE, SOLARMU, SOLARAZ, ALBEDO, LEGEN, IPHASE,&
@@ -682,7 +682,7 @@ program shdom_main
 
         if (BASEOUT) then
             ! If outputting only the base grid then throw out the other points
-            call INIT_CELL_STRUCTURE(BCFLAG, IPFLAG,&
+            call shd_init__makeCellStructure(BCFLAG, IPFLAG,&
                 &NX, NY, NZ, NX1, NY1,&
                 &NPTS, NCELLS, XGRID, YGRID, ZGRID, GRIDPOS,&
                 &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS)
@@ -690,26 +690,26 @@ program shdom_main
             ! For the output from the grid point arrays (Flux, Net flux, SH)
             !   we may need to interpolate the running k-distribution sum
             !   to the newly created grid points.
-            call INTERP_OUTPUT(OLDNPTS, NPTS, FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
+            call shd_comp__interpOutput(OLDNPTS, NPTS, FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
                 SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV, SUMSHTERMS,&
                 NBCELLS, NCELLS, TREEPTR, GRIDPTR, GRIDPOS)
         end if
 
         if (FLUX_OUT) then
-            call SUM_OUTPUT(NG - IG, DELG(IG), 2*NPTS, FLUXES, SUMFLUXES)
-            call SUM_OUTPUT(NG - IG, DELG(IG), NPTS, DIRFLUX, SUMDIRFLUX)
+            call shd_comp__sumOutput(NG - IG, DELG(IG), 2*NPTS, FLUXES, SUMFLUXES)
+            call shd_comp__sumOutput(NG - IG, DELG(IG), NPTS, DIRFLUX, SUMDIRFLUX)
         end if
         if (FLUXDIV_OUT) then
             ! Compute the net flux divergence at every point
-            call COMPUTE_NETFLUXDIV(NSTOKES, NPTS, RSHPTR, SRCTYPE, SOLARMU,&
+            call shd_comp__computeNetFluxDiv(NSTOKES, NPTS, RSHPTR, SRCTYPE, SOLARMU,&
                 &EXTINCT, ALBEDO, PLANCK, DIRFLUX, RADIANCE, WORK)
-            call SUM_OUTPUT(NG - IG, DELG(IG), NPTS, WORK, SUMFLUXDIV)
+            call shd_comp__sumOutput(NG - IG, DELG(IG), NPTS, WORK, SUMFLUXDIV)
         end if
 
         if (SH_OUT) then
-            call COMPUTE_SH(NSHOUT, NSTOKES, NPTS, SRCTYPE, SOLARMU, SOLARAZ,&
+            call shd_comp__computeSH(NSHOUT, NSTOKES, NPTS, SRCTYPE, SOLARMU, SOLARAZ,&
                 &DIRFLUX, RSHPTR, ML, MM, RADIANCE, WORK)
-            call SUM_OUTPUT(NG - IG, DELG(IG), NSHOUT*NPTS, WORK, SUMSHTERMS)
+            call shd_comp__sumOutput(NG - IG, DELG(IG), NSHOUT*NPTS, WORK, SUMSHTERMS)
         end if
 
         OLDNPTS = NPTS
@@ -825,7 +825,7 @@ program shdom_main
         &NPXT, NPYT, PROPFILE, RUNNAME)
 
     if (SRCTYPE .ne. 'T') then
-        call DIRECT_BEAM_PROP(9, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
+        call shd_comp__computeDirectBeam(9, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
             &DELTAM, ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
     end if

@@ -1077,14 +1077,14 @@ subroutine shd_ext__mpiMakeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
 
     if (SPT .eq. 1) then
         ! Initialize the direct beam calculation
-        call DIRECT_BEAM_PROP(1, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
+        call shd_comp__computeDirectBeam(1, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
             &DELTAM, ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
         ! Find the max lowest uniform Z level over all processors and then
-        !   tell DIRECT_BEAM_PROP about it
+        !   tell shd_comp__computeDirectBeam about it
         UZLEV = UNIFZLEV
         call MPI_ALLREDUCE(UZLEV, UNIFZLEV, 1, MPI_REAL, MPI_MAX, comm2d_, ierr)
-        call DIRECT_BEAM_PROP(2, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
+        call shd_comp__computeDirectBeam(2, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
             &DELTAM, ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
     end if
@@ -1116,7 +1116,7 @@ subroutine shd_ext__mpiMakeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
     NINVALID(:) = 0
     do IP = SPT, NPTS
         DIRPATH = 0.0
-        call DIRECT_BEAM_PROP(0, GRIDPOS(1, IP), GRIDPOS(2, IP), GRIDPOS(3, IP),&
+        call shd_comp__computeDirectBeam(0, GRIDPOS(1, IP), GRIDPOS(2, IP), GRIDPOS(3, IP),&
             &BCFLAG, IPFLAG, DELTAM, ML, NSTLEG, NLEG,&
             &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(IP),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
@@ -1186,7 +1186,7 @@ subroutine shd_ext__mpiMakeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
                 X = BndDirRealInfo(1, J, Ldownx); Y = BndDirRealInfo(2, J, Ldownx)
                 Z = BndDirRealInfo(3, J, Ldownx); DIRPATH = BndDirRealInfo(4, J, Ldownx)
                 if (Y < YGRID(1) - EPS) Y = YMAX; if (Y > YMAX + EPS) Y = YGRID(1)
-                call DIRECT_BEAM_PROP(0, X, Y, Z, BCFLAG, IPFLAG,&
+                call shd_comp__computeDirectBeam(0, X, Y, Z, BCFLAG, IPFLAG,&
                     &DELTAM, ML, NSTLEG, NLEG,&
                     &SOLARFLUX, SOLARMU, SOLARAZ, DIRJUNK,&
                     &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
@@ -1218,7 +1218,7 @@ subroutine shd_ext__mpiMakeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
                 X = BndDirRealInfo(1, J, Ldowny); Y = BndDirRealInfo(2, J, Ldowny)
                 Z = BndDirRealInfo(3, J, Ldowny); DIRPATH = BndDirRealInfo(4, J, Ldowny)
                 if (X < XGRID(1) - EPS) X = XMAX; if (X > XMAX + EPS) X = XGRID(1)
-                call DIRECT_BEAM_PROP(0, X, Y, Z, BCFLAG, IPFLAG,&
+                call shd_comp__computeDirectBeam(0, X, Y, Z, BCFLAG, IPFLAG,&
                     &DELTAM, ML, NSTLEG, NLEG,&
                     &SOLARFLUX, SOLARMU, SOLARAZ, DIRJUNK,&
                     &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
@@ -2272,7 +2272,7 @@ subroutine shd_ext__mpiComputeRad(&
         else
 
             ! Compute the source function throughout grid for this angle
-            call COMPUTE_ONE_SOURCE(NSTOKES, ML, MM, NLM, NSTLEG,&
+            call shd_comp__computeOneSrc(NSTOKES, ML, MM, NLM, NSTLEG,&
                 &NLEG, NUMPHASE, NPTS, DELTAM, MUOUT, PHIOUT,&
                 &SRCTYPE, SOLARMU, SOLARAZ, ALBEDO, LEGEN, IPHASE,&
                 &DIRFLUX, SHPTR, SOURCE, SOURCE1)

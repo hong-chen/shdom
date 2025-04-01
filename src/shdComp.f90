@@ -1,4 +1,4 @@
-subroutine NEW_GRIDS(&
+subroutine shd_init__makeNewGrids(&
     &BCFLAG, GRIDTYPE, NPX, NPY, NPZ, NX, NY, NZ,&
     &XSTART, YSTART, DELXP, DELYP, ZLEVELS,&
     &XGRID, YGRID, ZGRID)
@@ -49,7 +49,7 @@ subroutine NEW_GRIDS(&
     if (GRIDTYPE .eq. 'P') then
         if (NZ .ne. NPZ) then
             write (6, *)&
-                &'Error [NEW_GRIDS]: For internal Z grid same as property file grid,'
+                &'Error [_makeNewGrids]: For internal Z grid same as property file grid,'
             write (6, *) '  must have same number of grid points (NZ=NPZ).'
             stop
         end if
@@ -68,13 +68,13 @@ subroutine NEW_GRIDS(&
         end do
         close (3)
     else
-        stop 'Error [NEW_GRIDS]: Illegal grid type in Z.'
+        stop 'Error [_makeNewGrids]: Illegal grid type in Z.'
     end if
 
     return
-end subroutine
+end subroutine shd_init__makeNewGrids
 
-subroutine INIT_CELL_STRUCTURE(&
+subroutine shd_init__makeCellStructure(&
     &BCFLAG, IPFLAG,&
     &NX, NY, NZ, NX1, NY1, NPTS, NCELLS,&
     &XGRID, YGRID, ZGRID, GRIDPOS,&
@@ -295,7 +295,7 @@ subroutine INIT_CELL_STRUCTURE(&
     end do
     NCELLS = I
     return
-end subroutine
+end subroutine shd_init__makeCellStructure
 
 subroutine INTERP_GRID(&
     &NPTS, NSTLEG, NLEG, GRIDPOS,&
@@ -332,7 +332,7 @@ subroutine MAKE_DIRECT(NPTS, BCFLAG, IPFLAG, DELTAM,&
 
     ! Makes the direct beam solar flux for the internal base grid.
     !   DIRFLUX is set to F*exp(-tau_sun).
-    !   Actually calls DIRECT_BEAM_PROP to do all the hard work.
+    !   Actually calls shd_comp__computeDirectBeam to do all the hard work.
 
     implicit none
     integer NPTS, BCFLAG, IPFLAG, ML, NSTLEG, NLEG
@@ -343,14 +343,15 @@ subroutine MAKE_DIRECT(NPTS, BCFLAG, IPFLAG, DELTAM,&
     logical VALIDBEAM
     real UNIFZLEV, XO, YO, ZO, DIR, DIRPATH
 
-    call DIRECT_BEAM_PROP(1, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
+    call shd_comp__computeDirectBeam(&
+        &1, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
         &DELTAM, ML, NSTLEG, NLEG,&
         &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
         &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
 
     do IP = 1, NPTS
         DIRPATH = 0.0
-        call DIRECT_BEAM_PROP&
+        call shd_comp__computeDirectBeam&
             &(0, GRIDPOS(1, IP), GRIDPOS(2, IP), GRIDPOS(3, IP),&
             &BCFLAG, IPFLAG, DELTAM, ML, NSTLEG, NLEG,&
             &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(IP),&
@@ -954,7 +955,7 @@ subroutine MAKE_SH_DO_COEF(NSTLEG, ML, MM, NLM, NMU, NPHI0,&
     return
 end subroutine
 
-subroutine SUM_OUTPUT(IFLAG, WT, N, data, SUMDATA)
+subroutine shd_comp__sumOutput(IFLAG, WT, N, data, SUMDATA)
     !     Sums an output array over the k-distribution.
     ! If IFLAG=0 then the output array is set to the input times the wei
     implicit none
@@ -970,9 +971,10 @@ subroutine SUM_OUTPUT(IFLAG, WT, N, data, SUMDATA)
         end do
     end if
     return
-end subroutine
 
-subroutine COMPUTE_NETFLUXDIV(NSTOKES, NPTS, RSHPTR, SRCTYPE,&
+end subroutine shd_comp__sumOutput
+
+subroutine shd_comp__computeNetFluxDiv(NSTOKES, NPTS, RSHPTR, SRCTYPE,&
     &SOLARMU, EXTINCT, ALBEDO, PLANCK, DIRFLUX,&
     &RADIANCE, NETFLUXDIV)
     ! Computes the net flux divergence at every grid point.
@@ -1000,9 +1002,9 @@ subroutine COMPUTE_NETFLUXDIV(NSTOKES, NPTS, RSHPTR, SRCTYPE,&
         NETFLUXDIV(I) = -HR
     end do
     return
-end subroutine
+end subroutine shd_comp__computeNetFluxDiv
 
-subroutine COMPUTE_SH(NSHOUT, NSTOKES, NPTS, SRCTYPE,&
+subroutine shd_comp__computeSH(NSHOUT, NSTOKES, NPTS, SRCTYPE,&
     &SOLARMU, SOLARAZ, DIRFLUX,&
     &RSHPTR, ML, MM, RADIANCE, SHTERMS)
 
@@ -1080,9 +1082,9 @@ subroutine COMPUTE_SH(NSHOUT, NSTOKES, NPTS, SRCTYPE,&
     end do
     deallocate (YLMSUN)
     return
-end subroutine
+end subroutine shd_comp__computeSH
 
-subroutine INTERP_OUTPUT(OLDNPTS, NPTS,&
+subroutine shd_comp__interpOutput(OLDNPTS, NPTS,&
     &FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
     &FLUXES, DIRFLUX, FLUXDIV, SHTERMS,&
     &NBCELLS, NCELLS, TREEPTR, GRIDPTR, GRIDPOS)
@@ -1124,7 +1126,7 @@ subroutine INTERP_OUTPUT(OLDNPTS, NPTS,&
                             &GRIDPOS(DIR2, IP1) .eq. GRIDPOS(DIR2, IP)) goto 120
                     end do
                 end do
-                stop 'Error [INTERP_OUTPUT]: Point not on an edge.'
+                stop 'Error [_interpOutput]: Point not on an edge.'
 120             continue
                 ! Interpolate the data from the two parent points at the
                 !   ends of the edge; assume the cell was split in half.
@@ -1146,7 +1148,7 @@ subroutine INTERP_OUTPUT(OLDNPTS, NPTS,&
     end do
 
     return
-end subroutine
+end subroutine shd_comp__interpOutput
 
 subroutine INTERP_RADIANCE(NSTOKES, OLDNPTS, NPTS, RSHPTR,&
     &RADIANCE, NBCELLS, NCELLS, TREEPTR, GRIDPTR, GRIDPOS)
@@ -1184,7 +1186,7 @@ subroutine INTERP_RADIANCE(NSTOKES, OLDNPTS, NPTS, RSHPTR,&
                             &GRIDPOS(DIR2, IP1) .eq. GRIDPOS(DIR2, IP)) goto 120
                     end do
                 end do
-                stop 'Error [INTERP_OUTPUT]: Point not on an edge.'
+                stop 'Error [_interpOutput]: Point not on an edge.'
 120             continue
                 ! Interpolate the data from the two parent points at the
                 !   ends of the edge; assume the cell was split in half.
@@ -1215,7 +1217,7 @@ subroutine INTERP_RADIANCE(NSTOKES, OLDNPTS, NPTS, RSHPTR,&
     return
 end subroutine
 
-subroutine VISUALIZE_RADIANCE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+subroutine shd_comp__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
     &BCFLAG, IPFLAG, SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
@@ -1470,7 +1472,7 @@ subroutine VISUALIZE_RADIANCE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
         deallocate (AOLP)
     end if
     return
-end subroutine
+end subroutine shd_comp__visualizeRad
 
 subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
     &NSTPHASE, NSCATANGLE, PHASETAB,&
@@ -2331,7 +2333,7 @@ subroutine ROTATE_POL_PLANE(NSTOKES, COSSCAT,&
     return
 end subroutine
 
-subroutine COMPUTE_RADIANCE(&
+subroutine shd_comp__computeRad(&
     &NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
@@ -2437,11 +2439,11 @@ subroutine COMPUTE_RADIANCE(&
         !╰────────────────────────────────────────────────╯!
 
         if (MUOUT .eq. 0.0 .or. abs(MUOUT) .gt. 1.0) then
-            write (6, *) 'Warning [COMPUTE_RADIANCE]: Bad mu for radiance', MUOUT
+            write (6, *) 'Warning [_computeRad]: Bad mu for radiance', MUOUT
         else
 
             ! Compute the source function throughout grid for this angle
-            call COMPUTE_ONE_SOURCE(NSTOKES, ML, MM, NLM, NSTLEG, NLEG,&
+            call shd_comp__computeOneSrc(NSTOKES, ML, MM, NLM, NSTLEG, NLEG,&
                 &NUMPHASE, NPTS, DELTAM, MUOUT, PHIOUT, SRCTYPE,&
                 &SOLARMU, SOLARAZ, ALBEDO, LEGEN,&
                 &IPHASE, DIRFLUX, SHPTR, SOURCE, SOURCE1)
@@ -2501,9 +2503,9 @@ subroutine COMPUTE_RADIANCE(&
 
     return
 
-end subroutine
+end subroutine shd_comp__computeRad
 
-subroutine COMPUTE_ONE_SOURCE(NSTOKES,&
+subroutine shd_comp__computeOneSrc(NSTOKES,&
     &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
     &NPTS, DELTAM, MU, PHI, SRCTYPE, SOLARMU, SOLARAZ,&
     &ALBEDO, LEGEN, IPHASE, DIRFLUX,&
@@ -2535,7 +2537,7 @@ subroutine COMPUTE_ONE_SOURCE(NSTOKES,&
     allocate (YLMDIR(NSTLEG, NLM), YLMSUN(NSTLEG, NLM))
     allocate (SUNDIRLEG(0:NLEG))
     allocate (UNSCLEGEN(2, 0:NLEG), SINGSCAT(NSTOKES, NUMPHASE))
-    if (abs(MU) .gt. 1.0) stop 'Error [COMPUTE_ONE_SOURCE]: Bad mu.'
+    if (abs(MU) .gt. 1.0) stop 'Error [_computeOneSrc]: Bad mu.'
 
     TMS = DELTAM
     ! TMS = .FALSE.
@@ -2587,7 +2589,7 @@ subroutine COMPUTE_ONE_SOURCE(NSTOKES,&
                 &SOLARMU, MU, SOLARAZ - PHI, NSTOKES,&
                 &SINGSCAT(1, IPH))
             if (SINGSCAT(1, IPH) .le. 0.0) then
-                write (6, *) 'Error [COMPUTE_ONE_SOURCE]: negative source function',&
+                write (6, *) 'Error [_computeOneSrc]: negative source function',&
                     &' for tabulated phase function:', IPH, MU, PHI, SINGSCAT(1, IPH)
                 stop
             end if
@@ -4140,7 +4142,7 @@ subroutine TRILIN_INTERP_PROP(X, Y, Z, INIT, NSTLEG, NLEG,&
     return
 end subroutine
 
-subroutine DIRECT_BEAM_PROP(INIT, XI, YI, ZI, BCFLAG, IPFLAG,&
+subroutine shd_comp__computeDirectBeam(INIT, XI, YI, ZI, BCFLAG, IPFLAG,&
     &DELTAM, ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
     &DIRFLUX, UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
 
@@ -4362,14 +4364,14 @@ subroutine DIRECT_BEAM_PROP(INIT, XI, YI, ZI, BCFLAG, IPFLAG,&
     I = int(X/DELXD) + 1
     if (I .gt. NPX_ .and. abs(X - XDOMAIN) .lt. 0.001*DELXD) I = NPX_
     if (I .lt. 1 .or. I .gt. NPX_) then
-        write (6, *) 'DIRECT_BEAM_PROP: Beyond X domain', I, XI, YI, ZI
+        write (6, *) '_computeDirectBeam: Beyond X domain', I, XI, YI, ZI
         stop
     end if
 
     J = int(Y/DELYD) + 1
     if (J .gt. NPY_ .and. abs(Y - YDOMAIN) .lt. 0.001*DELYD) J = NPY_
     if (J .lt. 1 .or. J .gt. NPY_) then
-        write (6, *) 'DIRECT_BEAM_PROP: Beyond Y domain', J, XI, YI, ZI
+        write (6, *) '_computeDirectBeam: Beyond Y domain', J, XI, YI, ZI
         stop
     end if
     XE = X
@@ -4438,7 +4440,7 @@ subroutine DIRECT_BEAM_PROP(INIT, XI, YI, ZI, BCFLAG, IPFLAG,&
         if  (I .lt. 1 .or. I .gt. NPX_ .or.&
             &J .lt. 1 .or. J .gt. NPY_ .or.&
             &K .lt. 1 .or. K .ge. NPZ_) then
-            write (6, '(A,3I4)') 'DIRECT_BEAM_PROP: beyond grid!', I, J, K
+            write (6, '(A,3I4)') '_computeDirectBeam: beyond grid!', I, J, K
             write (6, '(1(2X,3F9.5))') X, Y, Z
             stop
         end if
@@ -4559,7 +4561,7 @@ subroutine DIRECT_BEAM_PROP(INIT, XI, YI, ZI, BCFLAG, IPFLAG,&
             end if
         end if
         if (SO .lt. -EPSS) then
-            write (6, *) 'DIRECT_BEAM_PROP: SO<0', X, Y, Z,&
+            write (6, *) '_computeDirectBeam: SO<0', X, Y, Z,&
                 &XE, YE, ZE, XP, YP, ZP, CX, CY, CZ, SOX, SOY, SOZ
             stop
         end if
@@ -4641,7 +4643,7 @@ subroutine DIRECT_BEAM_PROP(INIT, XI, YI, ZI, BCFLAG, IPFLAG,&
     VALIDBEAM = abs(ZE - ZLEVELS_(NPZ_)) .lt. EPSZ
     if (VALIDBEAM) SIDE = 6
     return
-end subroutine
+end subroutine shd_comp__computeDirectBeam
 
 subroutine SSORT(X, Y, N, KFLAG)
     !***BEGIN PROLOGUE  SSORT

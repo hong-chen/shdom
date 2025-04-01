@@ -1,4 +1,4 @@
-subroutine shdSolv__solveRte(&
+subroutine shd_solv__solveRte(&
     &NSTOKES, NX, NY, NZ, NX1, NY1, NANG,&
     &ML, MM, NLM, NMU, NPHI, NLEG, NSTLEG, NUMPHASE,&
     &NPHI0, MU, PHI, WTDO,&
@@ -201,7 +201,7 @@ subroutine shdSolv__solveRte(&
     ! is designed to get to the final SPLITACC over a smaller range
     ! (ADAPTRANGE).  The currect splitting accuracy is computed from
     ! a geometric average of the solution criterion (AVGSOLCRIT).
-    ! The shdSolv__splitGrid routine is called and the splitting criterion returned
+    ! The shd_solv__splitGrid routine is called and the splitting criterion returned
     ! as long as SPLITTESTING is true.
     SPLITTESTING = .true.
     OUTOFMEM = .false.
@@ -244,7 +244,7 @@ subroutine shdSolv__solveRte(&
                 &SPLITACC*(AVGSOLCRIT/(3.0*ENDADAPTSOL))**BETA))
             if (SOLCRIT .le. ENDADAPTSOL) CURSPLITACC = SPLITACC
             if (SPLITTESTING) then
-                call shdSolv__splitGrid(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
+                call shd_solv__splitGrid(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
                     &DOSPLIT, OUTOFMEM, CURSPLITACC, SPLITCRIT,&
                     &NPTS, NCELLS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
                     &GRIDPOS, NX, XGRID, NY, YGRID,&
@@ -343,9 +343,9 @@ subroutine shdSolv__solveRte(&
     !     &GRIDPOS, EXTINCT, SHPTR, SOURCE, NCELLS)
 
     return
-end subroutine shdSolv__solveRte
+end subroutine shd_solv__solveRte
 
-subroutine shdSolv__calSrcPnt(&
+subroutine shd_solv__calSrcPnt(&
     &NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
     &SRCTYPE, FLUX0, YLMSUN, PLANCK,&
     &ALBEDO, IPH, LEGEN, NR, RADIANCE,&
@@ -431,7 +431,7 @@ subroutine shdSolv__calSrcPnt(&
     return
 end subroutine
 
-subroutine shdSolv__calSrcPntUnp(&
+subroutine shd_solv__calSrcPntUnp(&
     &NLM, NLEG, LOFJ,&
     &SRCTYPE, FLUX0, YLMSUN, PLANCK,&
     &ALBEDO, IPH, LEGEN, NR, RADIANCE,&
@@ -569,12 +569,12 @@ subroutine COMPUTE_SOURCE(&
                 stop
             end if
             if (NSTOKES .eq. 1) then
-                call shdSolv__calSrcPntUnp(NLM, NLEG, LOFJ,&
+                call shd_solv__calSrcPntUnp(NLM, NLEG, LOFJ,&
                     &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
                     &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
                     &NR, RADIANCE(1, IR + 1), SOURCET)
             else
-                call shdSolv__calSrcPnt(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
+                call shd_solv__calSrcPnt(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
                     &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
                     &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
                     &NR, RADIANCE(1, IR + 1), SOURCET)
@@ -620,12 +620,12 @@ subroutine COMPUTE_SOURCE(&
             IR = RSHPTR(I)
             NR = RSHPTR(I + 1) - IR
             if (NSTOKES .eq. 1) then
-                call shdSolv__calSrcPntUnp(NLM, NLEG, LOFJ,&
+                call shd_solv__calSrcPntUnp(NLM, NLEG, LOFJ,&
                     &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
                     &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
                     &NR, RADIANCE(1, IR + 1), SOURCET)
             else
-                call shdSolv__calSrcPnt(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
+                call shd_solv__calSrcPnt(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
                     &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
                     &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
                     &NR, RADIANCE(1, IR + 1), SOURCET)
@@ -657,12 +657,12 @@ subroutine COMPUTE_SOURCE(&
             stop
         end if
         if (NSTOKES .eq. 1) then
-            call shdSolv__calSrcPntUnp(NLM, NLEG, LOFJ,&
+            call shd_solv__calSrcPntUnp(NLM, NLEG, LOFJ,&
                 &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
                 &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
                 &NR, RADIANCE(1, IR + 1), SOURCET)
         else
-            call shdSolv__calSrcPnt(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
+            call shd_solv__calSrcPnt(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
                 &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
                 &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
                 &NR, RADIANCE(1, IR + 1), SOURCET)
@@ -3477,7 +3477,7 @@ logical function SWEEP_NEXT_CELL(BCFLAG, NXC, NYC, NZ, IOCT,&
     return
 end function
 
-subroutine shdSolv__splitGrid(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
+subroutine shd_solv__splitGrid(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
     &DOSPLIT, OUTOFMEM, CURSPLITACC, SPLITCRIT,&
     &NPTS, NCELLS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &GRIDPOS, NX, XGRID, NY, YGRID,&
@@ -3752,7 +3752,7 @@ subroutine INTERPOLATE_POINT(NEWPOINTS, NPTS,&
                 else
                     ! Otherwise, calculate the exact direct beam from property grid
                     DIRPATH = 0.0
-                    call DIRECT_BEAM_PROP(0, X, Y, Z, BCFLAG, IPFLAG, DELTAM,&
+                    call shd_comp__computeDirectBeam(0, X, Y, Z, BCFLAG, IPFLAG, DELTAM,&
                         &ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
                         &DIRFLUX(IP),&
                         &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
@@ -3794,12 +3794,12 @@ subroutine INTERPOLATE_POINT(NEWPOINTS, NPTS,&
                 IPH = IP
             end if
             if (NSTOKES .eq. 1) then
-                call shdSolv__calSrcPntUnp(NLM, NLEG, LOFJ,&
+                call shd_solv__calSrcPntUnp(NLM, NLEG, LOFJ,&
                     &SRCTYPE, DIRFLUX(IP)*SECMU0, YLMSUN,&
                     &PLANCK(IP), ALBEDO(IP), IPH, LEGEN,&
                     &NR, RADIANCE(1, IR + 1), SOURCET)
             else
-                call shdSolv__calSrcPnt(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
+                call shd_solv__calSrcPnt(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
                     &SRCTYPE, DIRFLUX(IP)*SECMU0, YLMSUN,&
                     &PLANCK(IP), ALBEDO(IP), IPH, LEGEN,&
                     &NR, RADIANCE(1, IR + 1), SOURCET)

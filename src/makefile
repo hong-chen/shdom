@@ -19,12 +19,13 @@ CURRENT_DIR = $(shell pwd)
 BIN_DIR     = $(abspath $(CURRENT_DIR)/../build/bin)
 TARGETS = bin shdom shdom_ propgen make_mie_table make_tmatrix_table plotscattab put
 
+# dummy option
 ifeq ($(useOMP), yes)
 	# openMPI
 	FFLAGS += -fopenmp
-	SHDOMOBJS = shdSolv_omp.o shdComp_omp.o shdIO_inp.o shdIO_out.o shdSurf_brdf.o fftpack.o globals.o
+	SHDOMOBJS = shdSolv.o shdComp.o shdIO_inp.o shdIO_out.o shdSurf_brdf.o fftpack.o globals.o
 else
-	SHDOMOBJS = shdSolv.o     shdComp.o     shdIO_inp.o shdIO_out.o shdSurf_brdf.o fftpack.o globals.o
+	SHDOMOBJS = shdSolv.o shdComp.o shdIO_inp.o shdIO_out.o shdSurf_brdf.o fftpack.o globals.o
 endif
 
 ifeq ($(FC), mpif90)
@@ -67,14 +68,8 @@ shdom_.o: shdom_.f90 $(SHDOMOBJS)
 shdSolv.o: shdSolv.f90 $(SHDOMMPIOBJ) shdSurf_brdf.o
 	$(F90) -c $(F90FLAGS) shdSolv.f90
 
-shdSolv_omp.o: dev/shdSolv_omp.f90 $(SHDOMMPIOBJ) shdSurf_brdf.o
-	$(F90) -c $(F90FLAGS) dev/shdSolv_omp.f90
-
 shdComp.o: shdComp.f90 globals.o $(SHDOMMPIOBJ)
 	$(F90) -c $(F90FLAGS) shdComp.f90
-
-shdComp_omp.o: dev/shdComp_omp.f90 globals.o $(SHDOMMPIOBJ)
-	$(F90) -c $(F90FLAGS) dev/shdComp_omp.f90
 
 shdIO_inp.o: shdIO_inp.f90 globals.o
 	$(F90) -c $(F90FLAGS) shdIO_inp.f90

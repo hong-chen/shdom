@@ -8,8 +8,9 @@ set(SHDOM_LIB_SRCS
     shdSurf_brdf.f90
     fftpack.f90)
 
+# dummy option
 if (USE_OMP)
-    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} dev/shdSolv_omp.f90 dev/shdComp_omp.f90)
+    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} shdSolv.f90 shdComp.f90)
 else()
     set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} shdSolv.f90 shdComp.f90)
 endif()
