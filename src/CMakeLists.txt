@@ -22,9 +22,9 @@ else()
 endif()
 
 if (USE_NETCDF)
-    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} shdom_nc.f90)
+    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} tools/shdom_nc.f90)
 else()
-    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} shdom_nonc.f90)
+    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} tools/shdom_nonc.f90)
 endif()
 
 #

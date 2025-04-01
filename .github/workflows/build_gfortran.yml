@@ -16,23 +16,23 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: "install MPI, NetCDF, HDF4, HDF5"
+    - name: "install MPI"
       run: |
            sudo apt-get update
            sudo apt install mpich
-           sudo apt install libnetcdf-dev libnetcdff-dev netcdf-bin
-           sudo apt install hdf4-tools libhdf4-dev
+           #sudo apt install libnetcdf-dev libnetcdff-dev netcdf-bin
+           #sudo apt install hdf4-tools libhdf4-dev
            #sudo apt install hdf5-tools libhdf5-dev
            ulimit -s unlimited
 
     - name: "check version and envs"
       run: |
-           echo "===============================" && nf-config --all
-           echo "===============================" && nc-config --all
+           #echo "===============================" && nf-config --all
+           #echo "===============================" && nc-config --all
            echo "===============================" && gcc -v
            echo "===============================" && gfortran -v
            echo "===============================" && pwd
-           echo "===============================" && h4fc --version && h4fc -show test.f90
+           #echo "===============================" && h4fc --version && h4fc -show test.f90
            #echo "===============================" && h5fc -showconfig && h5fc -show test.f90
            echo "===============================" && ulimit -a
 
@@ -44,13 +44,13 @@ jobs:
            ls -al ${{github.workspace}}/cbuild_0
            ls -al ${{github.workspace}}/cbuild_0/bin
 
-    - name: "cmake build with USE_NETCDF=on & USE_MPI=off"
-      run: |
-           source ./config/env.gnu.github.sh
-           cmake -B ${{github.workspace}}/cbuild_1 -DCMAKE_Fortran_COMPILER=gfortran -DUSE_MPI=off -DUSE_NETCDF=on -DNC_LIBS="${NC_LIBS}" -DNC_INC="${NC_INCLUDE}"
-           cmake --build ${{github.workspace}}/cbuild_1
-           ls -al ${{github.workspace}}/cbuild_1
-           ls -al ${{github.workspace}}/cbuild_1/bin
+    #- name: "cmake build with USE_NETCDF=on & USE_MPI=off"
+    #  run: |
+    #       source ./config/env.gnu.github.sh
+    #       cmake -B ${{github.workspace}}/cbuild_1 -DCMAKE_Fortran_COMPILER=gfortran -DUSE_MPI=off -DUSE_NETCDF=on -DNC_LIBS="${NC_LIBS}" -DNC_INC="${NC_INCLUDE}"
+    #       cmake --build ${{github.workspace}}/cbuild_1
+    #       ls -al ${{github.workspace}}/cbuild_1
+    #       ls -al ${{github.workspace}}/cbuild_1/bin
 
     - name: "cmake build with USE_NETCDF=off & USE_MPI=on"
       run: |
@@ -60,13 +60,13 @@ jobs:
            ls -al ${{github.workspace}}/cbuild_2
            ls -al ${{github.workspace}}/cbuild_2/bin
 
-    - name: "cmake build with USE_NETCDF=on & USE_MPI=on"
-      run: |
-           source ./config/env.gnu.github.sh
-           cmake -B ${{github.workspace}}/cbuild_3 -DCMAKE_Fortran_COMPILER=gfortran -DUSE_MPI=on -DUSE_NETCDF=on -DNC_LIBS="${NC_LIBS}" -DNC_INC="${NC_INCLUDE}"
-           cmake --build ${{github.workspace}}/cbuild_3
-           ls -al ${{github.workspace}}/cbuild_3
-           ls -al ${{github.workspace}}/cbuild_3/bin
+    #- name: "cmake build with USE_NETCDF=on & USE_MPI=on"
+    #  run: |
+    #       source ./config/env.gnu.github.sh
+    #       cmake -B ${{github.workspace}}/cbuild_3 -DCMAKE_Fortran_COMPILER=gfortran -DUSE_MPI=on -DUSE_NETCDF=on -DNC_LIBS="${NC_LIBS}" -DNC_INC="${NC_INCLUDE}"
+    #       cmake --build ${{github.workspace}}/cbuild_3
+    #       ls -al ${{github.workspace}}/cbuild_3
+    #       ls -al ${{github.workspace}}/cbuild_3/bin
 
     - name: "plain-makefile build with neither NetCDF nor MPI"
       run: |

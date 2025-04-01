@@ -32,7 +32,7 @@ add_executable(put shdTool_put.f90)
 set (exes make_tmatrix_table make_mie_table propgen plotscattab put)
 
 if (USE_NETCDF)
-    add_executable(txt2nc shdTool_txt2nc.f90 ../shdom_nc.f90)
+    add_executable(txt2nc shdTool_txt2nc.f90 shdom_nc.f90)
     target_include_directories(txt2nc PUBLIC "$<BUILD_INTERFACE:${SHDOM_INC}>")
     target_link_libraries(txt2nc PRIVATE ${SHDOM_LD_LIBS})
 
