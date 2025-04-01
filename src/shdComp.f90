@@ -4015,7 +4015,7 @@ subroutine TRILIN_INTERP_PROP(X, Y, Z, INIT, NSTLEG, NLEG,&
     W = dble(Z - ZLEVELS_(IZ))/(ZLEVELS_(IZ + 1) - ZLEVELS_(IZ))
     W = max(min(W, 1.0d0), 0.0d0)
     IX = int((X - XSTART_)/DELX_) + 1
-    if (abs(X - XSTART_ - NPX_*DELX_) .lt. 0.01*DELX_) IX = NPX_
+    if (abs(X - XSTART_ - XDOMAIN_) .lt. 0.01*DELX_) IX = NPX_
     if (IX .lt. 1 .or. IX .gt. NPX_) then
         write (6, *) 'TRILIN: Beyond X domain'
         stop
@@ -4026,7 +4026,7 @@ subroutine TRILIN_INTERP_PROP(X, Y, Z, INIT, NSTLEG, NLEG,&
     if (U .lt. 1.0d-5) U = 0.0d0
     if (U .gt. 1.0d0 - 1.0d-5) U = 1.0d0
     IY = int((Y - YSTART_)/DELY_) + 1
-    if (abs(Y - YSTART_ - NPY_*DELY_) .lt. 0.01*DELY_) IY = NPY_
+    if (abs(Y - YSTART_ - YDOMAIN_) .lt. 0.01*DELY_) IY = NPY_
     if (IY .lt. 1 .or. IY .gt. NPY_) then
         write (6, *) 'TRILIN: Beyond Y domain'
         stop
