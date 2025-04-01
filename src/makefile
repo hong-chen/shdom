@@ -64,10 +64,10 @@ shdom_: shdom_.o $(SHDOMOBJS)
 shdom_.o: shdom_.f90 $(SHDOMOBJS)
 	$(F90) -c $(F90FLAGS) shdom_.f90
 
-shdSolv.o: shdSolv.f90 $(SHDOMMPIOBJ)
+shdSolv.o: shdSolv.f90 $(SHDOMMPIOBJ) shdSurf_brdf.o
 	$(F90) -c $(F90FLAGS) shdSolv.f90
 
-shdSolv_omp.o: dev/shdSolv_omp.f90 $(SHDOMMPIOBJ)
+shdSolv_omp.o: dev/shdSolv_omp.f90 $(SHDOMMPIOBJ) shdSurf_brdf.o
 	$(F90) -c $(F90FLAGS) dev/shdSolv_omp.f90
 
 shdComp.o: shdComp.f90 globals.o $(SHDOMMPIOBJ)
@@ -82,7 +82,7 @@ shdIO_inp.o: shdIO_inp.f90 globals.o
 shdIO_out.o: shdIO_out.f90 globals.o
 	$(F90) -c $(F90FLAGS) shdIO_out.f90
 
-shdSurf_brdf.o: shdSurf_brdf.f90
+shdSurf_brdf.o: shdSurf_brdf.f90 globals.o
 	$(F90) -c $(F90FLAGS) shdSurf_brdf.f90
 
 shdom_nompi.o: shdom_nompi.f90

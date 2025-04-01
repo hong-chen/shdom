@@ -23,6 +23,7 @@ subroutine shdSolv__solveRte(&
     ! The adaptive grid stucture (NCELLS,GRIDPTR,NEIGHPTR,TREEPTR,
     ! CELLFLAGS,NPTS,GRIDPOS) is input and modified for new grid
     ! cells and points on output.
+    use shd_ext_mpi
 
     implicit none
     integer, intent(in) :: NSTOKES, NX, NY, NZ, NX1, NY1, NXSFC, NYSFC, NSFCPAR
@@ -51,7 +52,8 @@ subroutine shdSolv__solveRte(&
     real SOURCE(NSTOKES, *), DELSOURCE(NSTOKES, *)
     real RADIANCE(NSTOKES, *)
     real WORK(*), WORK2(*)
-    character SRCTYPE*1, UNITS*1, SFCTYPE*2
+    character(len=1) :: SRCTYPE, UNITS
+    character(len=2) :: SFCTYPE
 
     integer NPHI0MAX, I, ORDINATESET, NBPTS, NBCELLS
     integer MAXNANGBND, NANGBND(4, 2), IERR
@@ -90,13 +92,13 @@ subroutine shdSolv__solveRte(&
         &SRCTYPE, UNITS, WAVENO, WAVELEN, ALBMAX,&
         &EXTINCT, ALBEDO, LEGEN, TEMP, PLANCK, IPHASE)
     ! Get the maximum single scattering albedo over all processors
-    call TOTAL_ALBEDO_MAX(ALBMAX)
+    call shd_ext__mpiFindAlbMax(ALBMAX)
 
     ! Compute the solar transmission in DIRFLUX.
     ! Precompute Ylm's for solar direction
     if (SRCTYPE .ne. 'T') then
         if (btest(BCFLAG, 2) .or. btest(BCFLAG, 3)) then
-            call MAKE_DIRECT_PAR(1, NPTS, BCFLAG, IPFLAG, DELTAM, ML,&
+            call shd_ext__mpiMakeDirect(1, NPTS, BCFLAG, IPFLAG, DELTAM, ML,&
                 &NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
                 &GRIDPOS, NX, XGRID, NY, YGRID, DIRFLUX)
         else
@@ -236,7 +238,7 @@ subroutine shdSolv__solveRte(&
                 &(SOLCRIT .gt. ENDADAPTSOL .or. CURSPLITACC .gt. SPLITACC)&
                 &.and. .not. OUTOFMEM
             ! Make sure all processors are going to split cells if any want to
-            call UNIFY_SPLITTING(DOSPLIT, STARTSPLITACC)
+            call shd_ext__mpiUnifySplit(DOSPLIT, STARTSPLITACC)
             BETA = log(STARTSPLITACC/SPLITACC)/log(ADAPTRANGE)
             CURSPLITACC = min(CURSPLITACC, max(SPLITACC,&
                 &SPLITACC*(AVGSOLCRIT/(3.0*ENDADAPTSOL))**BETA))
@@ -256,7 +258,7 @@ subroutine shdSolv__solveRte(&
                 if (SOLCRIT .gt. STARTADAPTSOL) STARTSPLITACC = SPLITCRIT
             end if
             ! Find the maximum splitting criterion over all processors
-            call TOTAL_SPLITCRIT_MAX(SPLITCRIT)
+            call shd_ext__mpiFindTotSplitCritMax(SPLITCRIT)
             if (SOLCRIT .le. ENDADAPTSOL) SPLITTESTING = .false.
         end if
 
@@ -299,7 +301,7 @@ subroutine shdSolv__solveRte(&
 
         ! Calculate the acceleration parameter and solution criterion
         !   from all the processors
-        call CALC_ACCEL_SOLCRIT(ACCELFLAG, DELJDOT, DELJOLD, DELJNEW,&
+        call shd_ext__mpiCalAccelSolCrit(ACCELFLAG, DELJDOT, DELJOLD, DELJNEW,&
             &JNORM, ACCELPAR, SOLCRIT)
 
         ! Accelerate the convergence of the source function vector
@@ -355,57 +357,72 @@ subroutine shdSolv__calSrcPnt(&
     ! source information.
 
     implicit none
-    integer NSTOKES, NSTLEG, NLEG, NLM, LOFJ(NLM), IPH, NR
-    character SRCTYPE*1
-    real FLUX0, YLMSUN(NSTLEG, NLM), PLANCK, ALBEDO
-    real LEGEN(NSTLEG, 0:NLEG, *)
-    real RADIANCE(NSTOKES, NR)
-    real SOURCET(NSTOKES, NLM)
-    real C
-    parameter(C=3.544907703)
+
+    integer, intent(in) :: NSTOKES, NSTLEG, NLEG, NLM, LOFJ(NLM), IPH, NR
+    real, intent(in) :: FLUX0, YLMSUN(NSTLEG, NLM), PLANCK, ALBEDO
+    real, intent(in) :: LEGEN(NSTLEG, 0:NLEG, *)
+    real, intent(in) :: RADIANCE(NSTOKES, NR)
+    character(len=1), intent(in) :: SRCTYPE
+
+    real, intent(out) :: SOURCET(NSTOKES, NLM)
+
+    real, parameter :: C = 3.544907703
     integer J
 
     SOURCET(:, :) = 0.0
+
     ! Calculate the generalized spherical harmonics source function
     ! from the radiance vector in genSH.  Do different parts of the
     ! matrix multiply depending on NSTOKES.
     do J = 1, NR
         SOURCET(1, J) = SOURCET(1, J) + LEGEN(1, LOFJ(J), IPH)*RADIANCE(1, J)
     end do
+
     if (NSTOKES .gt. 1) then
+
         do J = 1, NR
             SOURCET(1, J) = SOURCET(1, J) + LEGEN(5, LOFJ(J), IPH)*RADIANCE(2, J)
         end do
+
         do J = 5, NR
             SOURCET(2, J) = SOURCET(2, J) + LEGEN(5, LOFJ(J), IPH)*RADIANCE(1, J)&
                 &+ LEGEN(2, LOFJ(J), IPH)*RADIANCE(2, J)
             SOURCET(3, J) = SOURCET(3, J) + LEGEN(3, LOFJ(J), IPH)*RADIANCE(3, J)
         end do
+
     end if
+
     if (NSTOKES .eq. 4) then
+
         do J = 1, NR
             SOURCET(3, J) = SOURCET(3, J) + LEGEN(6, LOFJ(J), IPH)*RADIANCE(4, J)
             SOURCET(4, J) = SOURCET(4, J) - LEGEN(6, LOFJ(J), IPH)*RADIANCE(3, J)&
                 &+ LEGEN(4, LOFJ(J), IPH)*RADIANCE(4, J)
         end do
+
     end if
+
     ! Do the final multiplication by the single scattering albedo
     SOURCET(:, :) = ALBEDO*SOURCET(:, :)
 
     ! Calculate the generalized spherical harmonics source function
     ! from the solar direct beam
     if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
+
         do J = 1, NLM
             SOURCET(1, J) = SOURCET(1, J)&
                 &+ FLUX0*ALBEDO*LEGEN(1, LOFJ(J), IPH)*YLMSUN(1, J)
         end do
+
         if (NSTOKES .gt. 1) then
             do J = 5, NLM
                 SOURCET(2, J) = SOURCET(2, J)&
                     &+ FLUX0*ALBEDO*LEGEN(5, LOFJ(J), IPH)*YLMSUN(1, J)
             end do
         end if
+
     end if
+
     ! Add in the isotropic unpolarized thermal emission
     if (SRCTYPE .eq. 'T' .or. SRCTYPE .eq. 'B') then
         SOURCET(1, 1) = SOURCET(1, 1) + C*PLANCK
@@ -424,32 +441,32 @@ subroutine shdSolv__calSrcPntUnp(&
     ! one grid point from the radiance in spherical harmonics and
     ! thermal and/or solar source information.
 
-    ! note: adding OMP to this subroutine slows down the computation
-    ! possibly due to small loops and large overhead of OMP
-    !use omp_lib
-
     implicit none
-    integer NLEG, NLM, LOFJ(NLM), IPH, NR
-    character SRCTYPE*1
-    real FLUX0, YLMSUN(NLM), PLANCK, ALBEDO
-    real LEGEN(0:NLEG, *)
-    real RADIANCE(NR)
-    real SOURCET(NLM)
-    real C
-    parameter(C=3.544907703)
+
+    integer, intent(in) :: NLEG, NLM, LOFJ(NLM), IPH, NR
+    character(len=1), intent(in) :: SRCTYPE
+    real, intent(in) :: FLUX0, YLMSUN(NLM), PLANCK, ALBEDO
+    real, intent(in) :: LEGEN(0:NLEG, *)
+    real, intent(in) :: RADIANCE(NR)
+
+    real, intent(out) :: SOURCET(NLM)
+
+    real, parameter :: C=3.544907703
     integer J
 
 
     SOURCET(:) = 0.0
+
     ! Calculate the generalized spherical harmonics source function
     ! from the solar direct beam
     if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
-!!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(J)
+
         do J = 1, NLM
             SOURCET(J) = FLUX0*ALBEDO*LEGEN(LOFJ(J), IPH)*YLMSUN(J)
         end do
-!!$OMP END PARALLEL DO
+
     end if
+
     ! Add in the isotropic unpolarized thermal emission
     if (SRCTYPE .eq. 'T' .or. SRCTYPE .eq. 'B') then
         SOURCET(1) = SOURCET(1) + C*PLANCK
@@ -457,11 +474,9 @@ subroutine shdSolv__calSrcPntUnp(&
 
     ! Calculate the generalized spherical harmonics source function
     ! from the radiance vector in genSH.
-!!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(J)
     do J = 1, NR
         SOURCET(J) = SOURCET(J) + ALBEDO*LEGEN(LOFJ(J), IPH)*RADIANCE(J)
     end do
-!!$OMP END PARALLEL DO
 
     return
 end subroutine
@@ -509,7 +524,7 @@ subroutine COMPUTE_SOURCE(&
     real PLANCK(NPTS), DIRFLUX(NPTS)
     real RADIANCE(NSTOKES, *)
     real SOURCE(NSTOKES, *), DELSOURCE(NSTOKES, *)
-    character SRCTYPE*1
+    character(len=1) :: SRCTYPE
     integer IS, ISO, IR, I, IPH, J, JS, K, L, LS, M, MS, ME, NS, NR
     integer, allocatable :: LOFJ(:)
     real, allocatable :: SOURCET(:, :)
@@ -828,8 +843,6 @@ subroutine ACCELERATE_SOLUTION(&
     !   Accelerates the successive order of scattering series using the
     ! input acceleration parameter (ACCELPAR).
 
-    use omp_lib
-
     implicit none
     integer, intent(in) :: NPTS, SHPTR(*), OSHPTR(*), NSTOKES
     real, intent(in) :: ACCELPAR, DELSOURCE(NSTOKES, *)
@@ -837,10 +850,6 @@ subroutine ACCELERATE_SOLUTION(&
     integer I, J, IS, ISD, K, NS, NSD, NSC
 
     if (ACCELPAR .gt. 0.0) then
-! haven't check whether this parallelization has racing issue
-! only passed limited cases
-!╭────────────────────────────────────────────────────────────────────────────╮!
-!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(I, J, IS, NS, ISD, NSD, NSC)
         do I = 1, NPTS
             IS = SHPTR(I)
             NS = SHPTR(I + 1) - IS
@@ -852,8 +861,6 @@ subroutine ACCELERATE_SOLUTION(&
                     &+ ACCELPAR*DELSOURCE(:, ISD + J)
             end do
         end do
-!$OMP END PARALLEL DO
-!╰────────────────────────────────────────────────────────────────────────────╯!
     end if
 
     return
@@ -899,7 +906,7 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
     ! downwelling radiances at all discrete ordinates for the bottom
     ! boundary points.
 
-    use omp_lib
+    use shd_ext_mpi
 
     implicit none
     integer NX, NY, NZ, NSTOKES, NSTLEG, ML, MM, NLM
@@ -925,7 +932,8 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
     real DIRFLUX(NPTS), FLUXES(2, NPTS), EXTINCT(NPTS)
     real GRIDRAD(NSTOKES, NPTS), WORK(NSTOKES, NPHI0MAX, NPTS)
     real SOURCE(NSTOKES, *), RADIANCE(NSTOKES, *)
-    character SRCTYPE*1, UNITS*1, SFCTYPE*2
+    character(len=1) :: SRCTYPE, UNITS
+    character(len=2) :: SFCTYPE
 
     integer I, I1, K, NR, IPHI, IMU, IBC, IANG, IUPDOWN, OLDNPTS
     integer joct, ipt, ip, iorder, ipcell, icorner
@@ -948,7 +956,7 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
             &BCFLAG, IPFLAG, SWEEPORD, GRIDRAD)
     end if
 
-    call FIND_BOUNDARY_POINTS(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
+    call shd_ext__mpiFindBoundaryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
         &GRIDPOS, NX, NY, NZ, XGRID, YGRID, ZGRID)
 
     LAMBERTIAN = SFCTYPE(2:2) .eq. 'L'
@@ -972,13 +980,11 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
         &UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
 
     ! Zero the flux arrays and set temporary radiance to -1 for not
-!$OMP PARALLEL DO PRIVATE(I) SHARED(FLUXES, GRIDRAD)
     do I = 1, NPTS
         FLUXES(1, I) = 0.0
         FLUXES(2, I) = 0.0
         GRIDRAD(1, I) = -1.0
     end do
-!$OMP END PARALLEL DO
 
     ! Zero the output spherical harmonic radiance
     NR = RSHPTR(NPTS + 1)
@@ -1021,13 +1027,11 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
         end if
 
         ! Enforce the discrete ordinate I source function to be non-ne
-!$OMP PARALLEL DO PRIVATE(I, IPHI) SHARED(NPHI0, WORK) FIRSTPRIVATE(IMU)
         do I = 1, NPTS
             do IPHI = 1, NPHI0(IMU)
                 WORK(1, IPHI, I) = max(0.0, WORK(1, IPHI, I))
             end do
         end do
-!$OMP END PARALLEL DO
 
 ! -- loop phi
         ! Loop over the azimuthal angles
@@ -1115,7 +1119,6 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
 
             ! Transfer the radiance for the (IMU,IPHI) discrete ordinate
             !   GRIDRAD to the work array.
-!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(I) FIRSTPRIVATE(IPHI, IMU)
             do I = 1, NPTS
                 if (GRIDRAD(1, I) .lt. -0.0001) then
                     write (6, *) 'Warning [PATH_INTEGRATION]: Grid point has no value',&
@@ -1128,15 +1131,12 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
                     GRIDRAD(1, I) = -1.0
                 end if
             end do
-!$OMP END PARALLEL DO
 
             ! Do the sum for the hemispheric fluxes for this angle
             A = abs(MU(IMU))*WTDO(IMU, IPHI)
-!$OMP PARALLEL DO PRIVATE(I) SHARED(FLUXES, WORK) FIRSTPRIVATE(IPHI, IUPDOWN, A)
             do I = 1, NPTS
                 FLUXES(IUPDOWN, I) = FLUXES(IUPDOWN, I) + A*WORK(1, IPHI, I)
             end do
-!$OMP END PARALLEL DO
 
             ! For a general BRDF surface save the downwelling radiance
             !   at the bottom boundary points.
@@ -1245,7 +1245,7 @@ subroutine SURFACE_PARM_INTERP(NBOTPTS, BCPTR, GRIDPOS,&
     real DELXSFC, DELYSFC
     real GRIDPOS(3, *), SFCPARMS(NSFCPAR, NXSFC + 1, NYSFC + 1)
     real SFCGRIDPARMS(NSFCPAR, NBOTPTS)
-    character SRCTYPE*1, UNITS*1
+    character(len=1) :: SRCTYPE, UNITS
     integer I, IBC, IX, IY, J
     real RX, RY, U, V, TEMP, PLANCK
 
@@ -1310,7 +1310,7 @@ subroutine COMPUTE_TOP_RADIANCES(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
     integer NTOPPTS, NSTOKES
     real SKYRAD, WAVENO(2), WAVELEN
     real BCRAD(NSTOKES, *)
-    character SRCTYPE*1, UNITS*1
+    character(len=1) :: SRCTYPE, UNITS
     integer IBC, K
     real SKYRAD2
 
@@ -1342,7 +1342,7 @@ subroutine FIXED_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR,&
     real DIRFLUX(*), FLUXES(2, *)
     real GNDTEMP, GNDALBEDO, WAVENO(2), WAVELEN
     real BCRAD(NSTOKES, *)
-    character SRCTYPE*1, UNITS*1
+    character(len=1) :: SRCTYPE, UNITS
     integer I, IBC, K
     real ALB, GNDRAD
 
@@ -1383,7 +1383,7 @@ subroutine VARIABLE_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR,&
     real DIRFLUX(*), FLUXES(2, *)
     real SFCGRIDPARMS(NSFCPAR, NBOTPTS)
     real BCRAD(NSTOKES, *)
-    character SRCTYPE*1
+    character(len=1) :: SRCTYPE
     integer I, IBC, K
     real OPI, ALB, GNDRAD
 
@@ -1429,13 +1429,17 @@ subroutine VARIABLE_BRDF_SURFACE(NBOTPTS, IBEG, IEND, BCPTR,&
     ! (loop over JMU,JPHI).  The incident downwelling radiance vectors are
     ! input in BCRAD(*,*,2...) and the outgoing upwelling radiance vectors
     ! are output in BCRAD(*,*,1).
+
+    use shd_surf
+
     implicit none
     integer NBOTPTS, IBEG, IEND, BCPTR(NBOTPTS)
     integer NMU, NPHI0MAX, NPHI0(NMU), NSFCPAR, NSTOKES
     real WTDO(NMU, NPHI0MAX), MU(NMU), PHI(NMU, NPHI0MAX)
     real MU2, PHI2, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX(*)
     real SFCGRIDPARMS(NSFCPAR, NBOTPTS), BCRAD(NSTOKES, NBOTPTS, *)
-    character SRCTYPE*1, SFCTYPE*2
+    character(len=1) :: SRCTYPE
+    character(len=2) :: SFCTYPE
     integer JMU, JPHI, IBC, I, JANG, K, K1, K2
     real OPI, REFLECT(4, 4), W, SUM0, SUM1, RADSPEC(4)
 
@@ -1448,7 +1452,7 @@ subroutine VARIABLE_BRDF_SURFACE(NBOTPTS, IBEG, IEND, BCPTR,&
         BCRAD(:, IBC, 1) = 0.0
         if (SRCTYPE .ne. 'T') then
             I = BCPTR(IBC)
-            call SURFACE_BRDF(SFCTYPE(2:2), SFCGRIDPARMS(2, IBC), WAVELEN,&
+            call shd_surf__brdfSurface(SFCTYPE(2:2), SFCGRIDPARMS(2, IBC), WAVELEN,&
                 &MU2, PHI2, SOLARMU, SOLARAZ, NSTOKES, REFLECT)
             BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1)&
                 &+ OPI*REFLECT(1:NSTOKES, 1)*DIRFLUX(I)
@@ -1458,7 +1462,7 @@ subroutine VARIABLE_BRDF_SURFACE(NBOTPTS, IBEG, IEND, BCPTR,&
         JANG = 1
         do JMU = 1, NMU/2
             do JPHI = 1, NPHI0(JMU)
-                call SURFACE_BRDF(SFCTYPE(2:2), SFCGRIDPARMS(2, IBC),&
+                call shd_surf__brdfSurface(SFCTYPE(2:2), SFCGRIDPARMS(2, IBC),&
                     &WAVELEN, MU2, PHI2, MU(JMU), PHI(JMU, JPHI),&
                     &NSTOKES, REFLECT)
                 W = OPI*abs(MU(JMU))*WTDO(JMU, JPHI)
@@ -1486,15 +1490,19 @@ subroutine MAKE_SFC_BRDF_DO_MATRIX(SFCTYPE, WAVELEN,&
     &SFC_BRDF_DO)
     !   Makes the precomputed BRDF surface reflection matrix for
     ! discrete ordinate incident and outgoing directions.  For each
-    ! pair of discrete ordinates SURFACE_BRDF is called and the
+    ! pair of discrete ordinates shd_surf__brdfSurface is called and the
     ! integration weights are included.
+
+    use shd_surf
+
     implicit none
+
     integer NXSFC, NYSFC, NSFCPAR
     integer NSTOKES, NMU, NPHI0MAX, NPHI0(NMU)
     real SFCPARMS(NSFCPAR, NXSFC + 1, NYSFC + 1), WAVELEN
     real WTDO(NMU, NPHI0MAX), MU(NMU), PHI(NMU, NPHI0MAX)
     real SFC_BRDF_DO(NSTOKES, NMU/2, NPHI0MAX, NSTOKES, NMU/2, NPHI0MAX)
-    character SFCTYPE*2
+    character(len=2) :: SFCTYPE
     integer IMU, IMU1, IPHI, JMU, JPHI, K1, K2
     real OPI, REFLECT(4, 4), W
 
@@ -1507,7 +1515,7 @@ subroutine MAKE_SFC_BRDF_DO_MATRIX(SFCTYPE, WAVELEN,&
             do JMU = 1, NMU/2
                 do JPHI = 1, NPHI0(JMU)
                     ! Get the BRDF for this
-                    call SURFACE_BRDF(SFCTYPE(2:2), SFCPARMS(2, 1, 1),&
+                    call shd_surf__brdfSurface(SFCTYPE(2:2), SFCPARMS(2, 1, 1),&
                         &WAVELEN, MU(IMU), PHI(IMU, IPHI),&
                         &MU(JMU), PHI(JMU, JPHI), NSTOKES, REFLECT)
                     W = OPI*abs(MU(JMU))*WTDO(JMU, JPHI)
@@ -1541,7 +1549,10 @@ subroutine UNIFORM_BRDF_SURFACE(NBOTPTS, BCPTR,&
     ! radiance vectors are input in BCRAD(*,*,2...) and the outgoing
     ! upwelling radiance vectors are output in BCRAD(*,*,1).
 
+    use shd_surf
+
     implicit none
+
     integer NBOTPTS, BCPTR(NBOTPTS)
     integer NMU, NPHI0MAX, NPHI0(NMU), IMU, IPHI, NSFCPAR, NSTOKES
     real WTDO(NMU, NPHI0MAX), MU(NMU), PHI(NMU, NPHI0MAX)
@@ -1549,7 +1560,8 @@ subroutine UNIFORM_BRDF_SURFACE(NBOTPTS, BCPTR,&
     real SFCGRIDPARMS(NSFCPAR, NBOTPTS)
     real SFC_BRDF_DO(NSTOKES, NMU/2, NPHI0MAX, NSTOKES, NMU/2, NPHI0MAX)
     real BCRAD(NSTOKES, NBOTPTS, *)
-    character SRCTYPE*1, SFCTYPE*2
+    character(len=1) :: SRCTYPE
+    character(len=2) :: SFCTYPE
     integer IMU1, JMU, JPHI, IBC, I, JANG, K, K1, K2
     real OPI, REFLECT(4, 4), W
 
@@ -1562,7 +1574,7 @@ subroutine UNIFORM_BRDF_SURFACE(NBOTPTS, BCPTR,&
         BCRAD(:, IBC, 1) = 0.0
         if (SRCTYPE .ne. 'T') then
             I = BCPTR(IBC)
-            call SURFACE_BRDF(SFCTYPE(2:2), SFCGRIDPARMS(2, IBC), WAVELEN,&
+            call shd_surf__brdfSurface(SFCTYPE(2:2), SFCGRIDPARMS(2, IBC), WAVELEN,&
                 &MU(IMU), PHI(IMU, IPHI), SOLARMU, SOLARAZ,&
                 &NSTOKES, REFLECT)
             BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1)&
@@ -2130,6 +2142,8 @@ subroutine BACK_INT_GRID3D(NX, NY, NZ, NA, NPTS, NCELLS,&
     ! at the end of the ray path is interpolated from the known grid point
     ! radiances on the face.  The resulting radiances are put in GRIDRAD.
 
+    use shd_ext_mpi
+
     implicit none
     integer NX, NY, NZ, NA, NPTS, NCELLS, NSTOKES, KANG
     integer BCFLAG, IPFLAG
@@ -2220,7 +2234,7 @@ subroutine BACK_INT_GRID3D(NX, NY, NZ, NA, NPTS, NCELLS,&
             if ((GRIDPOS(3, IPT) .lt. ZGRID(IZ) .and. BITZ .eq. 0) .or.&
                 &(GRIDPOS(3, IPT) .gt. ZGRID(IZ) .and. BITZ .eq. 1)) then
                 IZ = IZ + 2*BITZ - 1
-                call CALC_BOUNDARY_RADIANCES(BCFLAG, IPFLAG, JOCT, IZ,&
+                call shd_ext__mpiCalBoundaryRad(BCFLAG, IPFLAG, JOCT, IZ,&
                     &NX, NY, NZ, XGRID, YGRID, ZGRID,&
                     &NA, NPTS, NCELLS, GRIDPTR,&
                     &NEIGHPTR, TREEPTR, CELLFLAGS, GRIDPOS,&
@@ -2413,7 +2427,7 @@ subroutine BACK_INT_GRID3D(NX, NY, NZ, NA, NPTS, NCELLS,&
                     print '(A,3(1X,F6.4),8(1X,E12.5))',&
                         &'BACK_INT_GRID3D: RAD<0 ',&
                         &xe, ye, ze, ext0, ext1, so, tau, transmit, src, abscell, rad(:)
-                    call ABORT_SHDOM_MPI('The end')
+                    call shd_ext__mpiAbort('The end')
                 end if
                 VALIDFACE = (GRIDRAD(1, I1) .ge. -0.1 .and. GRIDRAD(1, I2) .ge. -0.1&
                     &.and. GRIDRAD(1, I3) .ge. -0.1 .and. GRIDRAD(1, I4) .ge. -0.1)
@@ -2471,7 +2485,7 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
     ! at the end of the ray path is interpolated from the known grid point
     ! radiances on the face.  The resulting radiances are put in GRIDRAD.
 
-    !use omp_lib
+    use shd_ext_mpi
 
     integer NX, NY, NZ, NA, NPTS, NCELLS, KANG, BCFLAG, IPFLAG
     integer GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
@@ -2497,10 +2511,7 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
         &1, 2, 3, 4, 5, 6, 7, 8/, OPPFACE/2, 1, 4, 3, 6, 5/
     data JOCTORDER3/1, 3, 5, 7, 2, 4, 6, 8/, JOCTORDER2/1, 3, 1, 3, 2, 4, 2, 4/
 
-    ! added for testing
-    !╭────────────────────────────────────────────────╮!
-    !integer :: iwhile, ibreak
-    !╰────────────────────────────────────────────────╯!
+    integer :: iwhile, ibreak
 
     EPS = 1.0e-3*(GRIDPOS(3, GRIDPTR(8, 1)) - GRIDPOS(3, GRIDPTR(1, 1)))
 
@@ -2509,21 +2520,18 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
     CX = sqrt(1.0 - MU**2)*cos(PHI + PI)
     CY = sqrt(1.0 - MU**2)*sin(PHI + PI)
     CZ = -MU
-
     if (abs(CX) .gt. 1.0e-5) then
         CXINV = 1.0d0/CX
     else
         CX = 0.0
         CXINV = 1.0e6
     end if
-
     if (abs(CY) .gt. 1.0e-5) then
         CYINV = 1.0d0/CY
     else
         CY = 0.0
         CYINV = 1.0e6
     end if
-
     CZINV = 1.0d0/CZ
 
     ! Setup the sweeping direction and the gridpoint location
@@ -2533,13 +2541,11 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
     else
         BITX = 0
     end if
-
     if (CY .lt. 0.0) then
         BITY = 1
     else
         BITY = 0
     end if
-
     if (CZ .lt. -1.0e-3) then
         BITZ = 1
     else if (CZ .gt. 1.0e-3) then
@@ -2547,7 +2553,6 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
     else
         stop 'Error [BACK_INT_GRID]: Bad MU.'
     end if
-
     ! IOCT is the octant the ray come from or the discrete ordinate goes to.
     IOCT = 1 + BITX + 2*BITY + 4*BITZ
     if (btest(IPFLAG, 1)) then
@@ -2559,22 +2564,6 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
     IZ = (NZ - 1)*(1 - BITZ) + 1
 
     ! Sweep through all the grid points
-! note: attempted to add OMP for this loop but the issue is that GRIDRAD is constantly updating
-! within the loop, e.g., the results of the next loop relies on the GRIDRAD of current one
-! if this reliance can be removed, the computational time can be dramatically reduced
-
-    ! added for testing
-    !╭────────────────────────────────────────────────╮!
-    !ibreak = 1
-    !╰────────────────────────────────────────────────╯!
-!
-!!$OMP PARALLEL DO DEFAULT(SHARED) &
-!!$OMP PRIVATE(IORDER, IPCELL, ICORNER, IPT, &
-!!$OMP IZ, ICELL, RAD, TRANSMIT, EXT1, SRCEXT1, XE, YE, ZE, &
-!!$OMP VALIDRAD, INEXTCELL, IPINX, IPINY, IOPP, SOX, SOY, SOZ, SO, &
-!!$OMP IFACE, JFACE, KFACE, IC, I1, I2, I3, I4, U, V, &
-!!$OMP F1, F2, F3, F4, EXT0, SRCEXT0, EXT, TAU, TRANSCELL, ABSCELL, &
-!!$OMP SRC, EXT0P, SRCEXT0P, VALIDFACE, RAD0)
     do IORDER = 1, NPTS
 
         IPCELL = ishft(SWEEPORD(IORDER, JOCT), -3)
@@ -2589,7 +2578,7 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
             if ((GRIDPOS(3, IPT) .lt. ZGRID(IZ) .and. BITZ .eq. 0) .or.&
                 &(GRIDPOS(3, IPT) .gt. ZGRID(IZ) .and. BITZ .eq. 1)) then
                 IZ = IZ + 2*BITZ - 1
-                call CALC_BOUNDARY_RADIANCES(BCFLAG, IPFLAG, JOCT, IZ,&
+                call shd_ext__mpiCalBoundaryRad(BCFLAG, IPFLAG, JOCT, IZ,&
                     &NX, NY, NZ, XGRID, YGRID, ZGRID,&
                     &NA, NPTS, NCELLS, GRIDPTR,&
                     &NEIGHPTR, TREEPTR, CELLFLAGS, GRIDPOS,&
@@ -2611,19 +2600,9 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
             YE = GRIDPOS(2, IPT)
             ZE = GRIDPOS(3, IPT)
 
-            ! added for testing
-            !╭────────────────────────────────────────────────╮!
-            !iwhile = 0
-            !╰────────────────────────────────────────────────╯!
-
             ! Loop until finding a face with known radiances
             VALIDRAD = .false.
             do while (.not. VALIDRAD)
-
-                ! added for testing
-                !╭────────────────────────────────────────────────╮!
-                !iwhile = iwhile + 1
-                !╰────────────────────────────────────────────────╯!
 
                 ! Make sure current cell is valid
                 if (ICELL .le. 0) then
@@ -2705,24 +2684,6 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
                 I2 = GRIDPTR(GRIDFACE(2, KFACE), IC)
                 I3 = GRIDPTR(GRIDFACE(3, KFACE), IC)
                 I4 = GRIDPTR(GRIDFACE(4, KFACE), IC)
-
-                ! added for testing
-                !╭────────────────────────────────────────────────╮!
-                !write(*, *) "IPT, IX, IY, IZ, IWHILE, IC, INEXT, I1, I2, I3, I4, : ", IPT, &
-                !    &GRIDPOS(1, IPT), GRIDPOS(2, IPT), GRIDPOS(3, IPT),&
-                !    &iwhile, IC, INEXTCELL, I1, I2, I3, I4
-                !write(*, '(2I10, 3F8.2)') iwhile, IPT, &
-                !    &GRIDPOS(1, IPT), GRIDPOS(2, IPT), GRIDPOS(3, IPT)
-                !write(*, '(2I10, 3F8.2)') iwhile, I1, &
-                !    &GRIDPOS(1, I1), GRIDPOS(2, I1), GRIDPOS(3, I1)
-                !write(*, '(2I10, 3F8.2)') iwhile, I2, &
-                !    &GRIDPOS(1, I2), GRIDPOS(2, I2), GRIDPOS(3, I2)
-                !write(*, '(2I10, 3F8.2)') iwhile, I3, &
-                !    &GRIDPOS(1, I3), GRIDPOS(2, I3), GRIDPOS(3, I3)
-                !write(*, '(2I10, 3F8.2)') iwhile, I4, &
-                !    &GRIDPOS(1, I4), GRIDPOS(2, I4), GRIDPOS(3, I4)
-                !write(*,*)
-                !╰────────────────────────────────────────────────╯!
 
                 ! Compute the face interpolation factors
                 if (JFACE .eq. 1) then
@@ -2830,7 +2791,7 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
                     print '(A,3(1X,F6.4),8(1X,E12.5))',&
                         &'BACK_INT_GRID3D: RAD<0 ',&
                         &XE, YE, ZE, EXT0, EXT1, SO, TAU, TRANSMIT, SRC, ABSCELL, RAD
-                    call ABORT_SHDOM_MPI('The end')
+                    call shd_ext__mpiAbort('The end')
                 end if
 
                 VALIDFACE = (GRIDRAD(I1) .ge. -0.1 .and. GRIDRAD(I2) .ge. -0.1&
@@ -2864,21 +2825,11 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
                 end if
             end do
 
-
-!!$OMP CRITICAL
             GRIDRAD(IPT) = RAD
-!!$OMP END CRITICAL
 
         end if
 
     end do
-!!$OMP END PARALLEL DO
-
-    ! added for testing
-    !╭────────────────────────────────────────────────╮!
-    !write(*, *) 'TOTAL: ', ibreak
-    !stop "stop here"
-    !╰────────────────────────────────────────────────╯!
     return
 end subroutine
 
@@ -3544,6 +3495,8 @@ subroutine shdSolv__splitGrid(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
     ! grid point, grid cell, or spherical harmonic arrays (sizes given
     ! by MAXIG, MAXIC, MAXIV, MAXIDO) then the OUTOFMEM flag is returned true.
 
+    use shd_ext_mpi
+
     implicit none
     integer MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX
     integer NPTS, NCELLS, BCFLAG, IPFLAG
@@ -3560,7 +3513,7 @@ subroutine shdSolv__splitGrid(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
     real EXTINCT(*), ALBEDO(*), LEGEN(NSTLEG, 0:NLEG, *)
     real RADIANCE(NSTOKES, *), SOURCE(NSTOKES, *)
     real TEMP(*), PLANCK(*), DIRFLUX(*)
-    character SRCTYPE*1, UNITS*1
+    character(len=1) :: SRCTYPE, UNITS
     integer ICELL, ICELL1, IDIR, I, N, NEWPOINTS(3, 4), OLDNPTS
     integer MAXCELLS, MAXPTS, MAXWORK, MAXSH, MAXRAD
     logical OUTOFMEM0
@@ -3676,7 +3629,7 @@ subroutine shdSolv__splitGrid(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
         ! If in parallel mode, calculate all the direct beam fluxes at once
         if (SRCTYPE .ne. 'T' .and.&
             &(btest(BCFLAG, 2) .or. btest(BCFLAG, 3))) then
-            call MAKE_DIRECT_PAR(OLDNPTS + 1, NPTS, BCFLAG,&
+            call shd_ext__mpiMakeDirect(OLDNPTS + 1, NPTS, BCFLAG,&
                 &IPFLAG, DELTAM, ML, NSTLEG, NLEG,&
                 &SOLARFLUX, SOLARMU, SOLARAZ, GRIDPOS,&
                 &NX, XGRID, NY, YGRID, DIRFLUX)
@@ -3727,7 +3680,7 @@ subroutine INTERPOLATE_POINT(NEWPOINTS, NPTS,&
     real TEMP(NPTS), PLANCK(NPTS), DIRFLUX(NPTS)
     real RADIANCE(NSTOKES, *), SOURCE(NSTOKES, *)
     real GRIDPOS(3, *)
-    character SRCTYPE*1, UNITS*1
+    character(len=1) :: SRCTYPE, UNITS
     integer I, IP1, IP2, IP, IPH, J, K, L, M, ME, MS
     integer IS, NS, NS1, NS2
     integer IR, IR1, IR2, NR, NR1, NR2, SIDE
@@ -4178,8 +4131,7 @@ subroutine MATCH_GRID_POINT(XP, YP, ZP, ICELL, IFACE,&
     integer GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
     integer*2 CELLFLAGS(*)
     integer IPMATCH
-    integer MAXSTACK
-    parameter(MAXSTACK=64)
+    integer, parameter :: MAXSTACK=64
     integer CELLSTACK(MAXSTACK), SP
     integer INEXT, IDIR, DIR, IC, IC1, KFACE, IPT, I
     integer OPPFACE(6), GRIDFACE(4, 6)

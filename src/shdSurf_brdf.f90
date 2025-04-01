@@ -1,548 +1,576 @@
-  subroutine SURFACE_BRDF(SFCTYPE, REFPARMS, WAVELEN,&
-      &MU2, PHI2, MU1, PHI1, NSTOKES, REFLECT)
-      !╭────────────────────────────────────────────────────────────────────────────╮!
-      ! Returns the reflection matrix for the general bidirectional
-      ! reflection distribution function of the specified type (SFCTYPE).
-      ! The incident direction is (MU1,PHI1), and the outgoing direction
-      ! is (MU2,PHI2) (MU is cosine of zenith angle, and PHI is the azimuth
-      ! angle in radians).  The incident directions have mu<0 (downward),
-      ! while the outgoing directions have mu>0 (upward). The reflection
-      ! function is normalized so that for a Lambertian surface (uniform
-      ! reflection) the returned value (REFLECT) is simply the albedo.
-      ! This routine calls the desired BRDF function, passing the
-      ! appropriate parameters.  More BRDF surface types may be added easily
-      ! by putting in the appropriate function calls.
-      !
-      !      Type        Parameters
-      ! L  Lambertian    albedo
-      ! W  WaveFresnel   Real, Imaginary index of refraction, wind speed
-      ! D  Diner et al   a, k, b, zeta, sigma
-      ! O  Ocean         Wind speed (m/s), Pigmentation (mg/m^3)
-      ! R  RPV-original  rho0, k, Theta
-      ! T  LSRT          k_iso, k_geo, k_vol
-      !╰────────────────────────────────────────────────────────────────────────────╯!
-
-      implicit none
-      integer :: NSTOKES
-      integer :: K1, K2
-      real    :: REFPARMS(*), WAVELEN, MU1, PHI1, MU2, PHI2, REFLECT(4, 4)
-      real    :: PI
-      real    :: RPV_REFLECTION, LSRT_REFLECTION
-      character(len=1) :: SFCTYPE
-
-      PI = acos(-1.0)
-
-      if (SFCTYPE .eq. 'L' .or. SFCTYPE .eq. 'l') then
-
-          ! L or l: Lambertian surface BRDF is constant.
-          !   (for testing, as done more efficiently by Lambertian routine
-          REFLECT(1:NSTOKES, 1:NSTOKES) = 0.0
-          REFLECT(1, 1) = REFPARMS(1)
-
-      else if (SFCTYPE .eq. 'W' .or. SFCTYPE .eq. 'w') then
-
-          ! W: Fresnel reflection with Gaussian distribution of slopes
-          call WAVE_FRESNEL_REFLECTION(REFPARMS(1), REFPARMS(2),&
-              &REFPARMS(3), MU1, MU2, PHI1, PHI2, NSTOKES, REFLECT)
-
-      else if (SFCTYPE .eq. 'D' .or. SFCTYPE .eq. 'd') then
-
-          ! D: Diner et al., depolarizing modified RPV + Fresnel reflection
-          !   from microfacets with uniform or Gaussian distribution of s
-          call DINER_REFLECTION(REFPARMS(1), REFPARMS(2), REFPARMS(3),&
-              &REFPARMS(4), REFPARMS(5),&
-              &-MU1, MU2, PHI2 - PHI1, NSTOKES, REFLECT)
-
-      else if (SFCTYPE .eq. 'R' .or. SFCTYPE .eq. 'r') then
-
-          ! R: Rahman, Pinty, and Verstraete
-          if (NSTOKES .gt. 1) then
-              stop 'Error [SURFACE_BRDF]: RPV BRDF is only for unpolarized case'
-          end if
-          REFLECT(1, 1) = RPV_REFLECTION(REFPARMS(1), REFPARMS(2),&
-              &REFPARMS(3), -MU1, MU2, PHI1 - PHI2 - PI)
-
-      else if (SFCTYPE .eq. 'T' .or. SFCTYPE .eq. 't') then
-
-          ! T: LSRT model
-          if (NSTOKES .gt. 1) then
-              stop 'Error [SURFACE_BRDF]: LSRT BRDF is only for unpolarized case'
-          end if
-          ! T: LSRT model
-          REFLECT(1, 1) = LSRT_REFLECTION(REFPARMS(1), REFPARMS(2),&
-              &REFPARMS(3), -MU1, MU2, PHI1 - PHI2 - PI)
-
-      else if (SFCTYPE .eq. 'O' .or. SFCTYPE .eq. 'o') then
-
-          ! O: Ocean BRDF from 6S modified by Norm Loeb
-          if (NSTOKES .gt. 1) then
-              stop 'Error [SURFACE_BRDF]: Ocean BRDF from 6S is only for unpolarized case'
-          end if
-          call ocean_brdf_sw(REFPARMS(1), -1., REFPARMS(2), WAVELEN,&
-              & -MU1, MU2, PHI1 - PHI2, PHI1, REFLECT(1, 1))
-
-      else
-          stop 'Error [SURFACE_BRDF]: Unknown BRDF type.'
-      end if
-
-      return
-  end subroutine
-
-  subroutine WAVE_FRESNEL_REFLECTION(MRE, MIM, WINDSPEED,&
-      &MUI, MUR, PHII, PHIR, NSTOKES, REFLECT)
-      !╭────────────────────────────────────────────────────────────────────────────╮!
-      !   Computes the polarized Fresnel reflection from a dielectric
-      ! interface with a Gaussian distribution of slopes, including shadow
-      ! The complex index of refraction of the dielectric is specified wit
-      ! MRE,MIM (MIM is negative for an absorbing medium) and the wind spe
-      ! is in m/s.  The incident direction is (MUI,PHII), and the outgoing
-      ! direction is (MUR,PHIR) (MU is cosine of zenith angle with MU>0 an
-      ! PHI is the azimuthal angle in radians).
-      !   The code is courtesy of Michael Mishchenko, with some modificati
-      ! The mean square surface slope (s^2) or SIGMA2 in Mishchenko and Tr
-      ! is obtained from the Cox and Munk formula in the paper.
-      !   For all formulas and definitions, see the paper:
-      ! M. I. Mishchenko and L. D. Travis, 1997: Satellite retrieval
-      ! of aerosol properties over the ocean using polarization as well as
-      ! intensity of reflected sunlight.  J. Geophys. Res. 102, 16989-1701
-      !╰────────────────────────────────────────────────────────────────────────────╯!
-
-      implicit none
-      integer NSTOKES
-      real MRE, MIM, WINDSPEED, MUI, MUR, PHII, PHIR, REFLECT(4, 4)
-      integer I, J
-      real*8 SIGMA2, DMUI, DMUR, DCOSI, DSINI, DCOSR, DSINR, DSI, DSR
-      real*8 VI1, VI2, VI3, VR1, VR2, VR3, UNIT1, UNIT2, UNIT3
-      real*8 FACT1, FACTOR, XI1
-      real*8 TI1, TI2, TI3, TR1, TR2, TR3, PI1, PI2, PI3, PR1, PR2, PR3
-      real*8 PIKR, PRKI, TIKR, TRKI, E1, E2, E3, E4
-      real*8 VP1, VP2, VP3, DMOD, RDZ2, RDZ4, DCOEFF, DEX
-      real*8 AF, AF11, AF12, AF21, AF22
-      real*8 P, S1, S2, S3, XI, XXI, DCOT, T1, T2
-      real*8 SHADOWI, SHADOWR, SHADOW, DERFC
-      complex*16 CN1, CN2, CXI2, C1, C2, CRPER, CRPAR
-      complex*16 CF11, CF12, CF21, CF22
-      complex*16 CI, C21, C22, CTTTP, CTTPT, CTTPP, CTPPT, CTPPP, CPTPP
-
-      CN1 = (1.0d0, 0.0d0)
-      CN2 = cmplx(MRE, MIM)
-      SIGMA2 = max(0.0005d0, 0.0015d0 + 0.00256d0*WINDSPEED)
-      DMUI = DABS(dble(MUI))
-      DMUR = dble(MUR)
-
-      ! Cartesian components of the unit vectors of the incident and
-      ! scattered beams
-      if (DABS(DMUI - 1e0) .lt. 1d-10) DMUI = 0.999999999999d0
-      if (DABS(DMUR - 1e0) .lt. 1d-10) DMUR = 0.999999999999d0
-      DCOSI = DCOS(dble(PHII))
-      DSINI = DSIN(dble(PHII))
-      DCOSR = DCOS(dble(PHIR))
-      DSINR = DSIN(dble(PHIR))
-      DSI = DSQRT(1d0 - DMUI*DMUI)
-      DSR = DSQRT(1d0 - DMUR*DMUR)
-      VI1 = DSI*DCOSI
-      VI2 = DSI*DSINI
-      VI3 = -DMUI
-      VR1 = DSR*DCOSR
-      VR2 = DSR*DSINR
-      VR3 = DMUR
-      ! Local surface normal for specular reflection
-      UNIT1 = VI1 - VR1
-      UNIT2 = VI2 - VR2
-      UNIT3 = VI3 - VR3
-      FACT1 = UNIT1*UNIT1 + UNIT2*UNIT2 + UNIT3*UNIT3
-      FACTOR = sqrt(1d0/FACT1)
-
-      ! Fresnel reflection coefficients
-      XI1 = FACTOR*(UNIT1*VI1 + UNIT2*VI2 + UNIT3*VI3)
-      CXI2 = CDSQRT(1d0 - (1d0 - XI1*XI1)*CN1*CN1/(CN2*CN2))
-      C1 = CN1*XI1
-      C2 = CN2*CXI2
-      CRPER = (C1 - C2)/(C1 + C2)
-      C1 = CN2*XI1
-      C2 = CN1*CXI2
-      CRPAR = (C1 - C2)/(C1 + C2)
-
-      ! Calculation of the amplitude scattering matrix
-      TI1 = -DMUI*DCOSI
-      TI2 = -DMUI*DSINI
-      TI3 = -DSI
-      TR1 = DMUR*DCOSR
-      TR2 = DMUR*DSINR
-      TR3 = -DSR
-      PI1 = -DSINI
-      PI2 = DCOSI
-      PI3 = 0d0
-      PR1 = -DSINR
-      PR2 = DCOSR
-      PR3 = 0d0
-      PIKR = PI1*VR1 + PI2*VR2 + PI3*VR3
-      PRKI = PR1*VI1 + PR2*VI2 + PR3*VI3
-      TIKR = TI1*VR1 + TI2*VR2 + TI3*VR3
-      TRKI = TR1*VI1 + TR2*VI2 + TR3*VI3
-      E1 = PIKR*PRKI
-      E2 = TIKR*TRKI
-      E3 = TIKR*PRKI
-      E4 = PIKR*TRKI
-      CF11 = E1*CRPER + E2*CRPAR
-      CF12 = -E3*CRPER + E4*CRPAR
-      CF21 = -E4*CRPER + E3*CRPAR
-      CF22 = E2*CRPER + E1*CRPAR
-
-      ! Calculation of the Stokes reflection matrix
-      VP1 = VI2*VR3 - VI3*VR2
-      VP2 = VI3*VR1 - VI1*VR3
-      VP3 = VI1*VR2 - VI2*VR1
-      DMOD = (VP1*VP1 + VP2*VP2 + VP3*VP3)**2
-      RDZ2 = UNIT3*UNIT3
-      RDZ4 = RDZ2*RDZ2
-      DEX = DEXP(-(UNIT1*UNIT1 + UNIT2*UNIT2)/(2*SIGMA2*RDZ2))
-      DCOEFF = FACT1**2*DEX/(4*DMUI*DMUR*DMOD*RDZ4*2*SIGMA2)
-      AF = 0.5d0*DCOEFF
-      AF11 = CDABS(CF11)**2
-      AF12 = CDABS(CF12)**2
-      AF21 = CDABS(CF21)**2
-      AF22 = CDABS(CF22)**2
-
-      REFLECT(1, 1) = (AF11 + AF12 + AF21 + AF22)*AF
-      if (NSTOKES .ge. 2) then
-          REFLECT(1, 2) = (AF11 - AF12 + AF21 - AF22)*AF
-          REFLECT(2, 1) = (AF11 - AF22 + AF12 - AF21)*AF
-          REFLECT(2, 2) = (AF11 - AF12 - AF21 + AF22)*AF
-      end if
-
-      CI = (0.0d0, -1.0d0)
-      C21 = conjg(CF21)
-      C22 = conjg(CF22)
-      CTTTP = CF11*conjg(CF12)
-      CTTPT = CF11*C21
-      CTTPP = CF11*C22
-      CTPPT = CF12*C21
-      CTPPP = CF12*C22
-      CPTPP = CF21*C22
-
-      if (NSTOKES .ge. 3) then
-          REFLECT(1, 3) = (-CTTTP - CPTPP)*DCOEFF
-          REFLECT(2, 3) = (-CTTTP + CPTPP)*DCOEFF
-          REFLECT(3, 1) = (-CTTPT - CTPPP)*DCOEFF
-          REFLECT(3, 2) = (-CTTPT + CTPPP)*DCOEFF
-          REFLECT(3, 3) = (CTTPP + CTPPT)*DCOEFF
-      end if
-      if (NSTOKES .ge. 4) then
-          REFLECT(1, 4) = -CI*(CTTTP + CPTPP)*DCOEFF
-          REFLECT(2, 4) = -CI*(CTTTP - CPTPP)*DCOEFF
-          REFLECT(3, 4) = CI*(CTTPP - CTPPT)*DCOEFF
-          REFLECT(4, 1) = CI*(CTTPT + CTPPP)*DCOEFF
-          REFLECT(4, 2) = CI*(CTTPT - CTPPP)*DCOEFF
-          REFLECT(4, 3) = -CI*(CTTPP + CTPPT)*DCOEFF
-          REFLECT(4, 4) = (CTTPP - CTPPT)*DCOEFF
-      end if
-
-      ! Shadowing
-      P = DACOS(-1.0d0)
-      S1 = DSQRT(2*SIGMA2/P)
-      S3 = 1d0/(DSQRT(2*SIGMA2))
-      S2 = S3*S3
-      DCOT = DMUI/sqrt(1d0 - DMUI**2)
-      T1 = DEXP(-S2*DCOT**2)
-      T2 = DERFC(DCOT*S3)
-      SHADOWI = 0.5d0*(S1*T1/DCOT - T2)
-      DCOT = DMUR/DSQRT(1d0 - DMUR**2)
-      T1 = DEXP(-S2*DCOT**2)
-      T2 = DERFC(DCOT*S3)
-      SHADOWR = 0.5*(S1*T1/DCOT - T2)
-      SHADOW = 1d0/(1d0 + SHADOWI + SHADOWR)
-      REFLECT(1:NSTOKES, 1:NSTOKES) = REFLECT(1:NSTOKES, 1:NSTOKES)*SHADOW
-      return
-  end subroutine
-
-  subroutine DINER_REFLECTION(A, K, B, ZETA, SIGMA,&
-      &MU1, MU2, PHI, NSTOKES, REFLECT)
-      !╭────────────────────────────────────────────────────────────────────────────╮!
-      !   Computes polarized reflection from the Diner et al. (2012) model
-      ! which two terms: 1) completely depolarizing volumetric scattering
-      ! the modified RPV model, and 2) Fresnel reflection from randomly
-      ! oriented microfacets with either a uniform or Gaussian distributio
-      ! of slopes.  The three parameters of the modified-RPV model are A,
-      ! and B.  The weight given to the Fresnel-microfacet term is ZETA (i
-      ! ZETA=0 then only the REFLECT(1,1) element is non-zero with the
-      ! modified-RPV model).  SIGMA is the standard deviation of microface
-      ! slopes for the Gaussian orientation distribution, but if SIGMA<=0
-      ! the uniform orientation distribution is used.  The complex index o
-      ! refraction of the Fresnel microfacets is specified in this subrout
-      ! The Diner et al. (2012) model leaves out the hotspot factor of the
-      ! modified RPV model (and the original RPV), but the hotspot factor
-      ! included here.
-      !   The cosine of the incident zenith angle is MU1 (MU1>0), the
-      ! cosine of the outgoing zenith angle is MU2 (MU2>0), and the relati
-      ! azimuthal angle is PHI=PHI2-PHI1 (radians).
-      !   For all formulas and definitions, see the paper:
-      ! Diner, D. J., F. Xu, J. V. Martonchik, B. E. Rheingans, S. Geier,
-      ! V. M. Jovanovic, A. Davis, R. A. Chipman, S. C. McClain, 2012:
-      ! Exploration of a polarized surface bidirectional reflectance model
-      ! using the ground-based multiangle spectropolarimetric imager.
-      ! Atmosphere 2012, 3, 591-619; doi:10.3390/atmos3040591.
-      !╰────────────────────────────────────────────────────────────────────────────╯!
-
-      implicit none
-      integer NSTOKES
-      real A, K, B, ZETA, SIGMA, MU1, MU2, PHI
-      real REFLECT(4, 4)
-      integer K1, K2
-      real SINTH1, SINTH2, COSPHI, COSSCATANG, TAN1, TAN2, CAPG, HOT
-      real GAMMA, COSGAMMA, F11, F12, F33, F34
-      real COSBETA, H, SINPHI, ALPHA1, ALPHA2
-      real COS2ALPHA1, SIN2ALPHA1, COS2ALPHA2, SIN2ALPHA2
-      complex SFCINDEX, EPSILON, D, RP, RS
-
-      ! Another free parameter of the Fresnel microfacet model is the
-      !   index of refraction specified here
-      SFCINDEX = cmplx(1.5, 0.0)
-
-      REFLECT(1:NSTOKES, 1:NSTOKES) = 0.0
-
-      ! The modified RPV model (Martonchik et al., 1998, IEEE-TGARS, 36,
-      !   is implemented here.  Equation 6 in Diner et al. leaves out the h
-      SINTH1 = sqrt(1.0 - MU1**2)
-      SINTH2 = sqrt(1.0 - MU2**2)
-      COSPHI = cos(PHI)
-      COSSCATANG = -MU1*MU2 + SINTH1*SINTH2*COSPHI
-      COSSCATANG = min(1.0, max(-1.0, COSSCATANG))
-      TAN1 = SINTH1/MU1
-      TAN2 = SINTH2/MU2
-      CAPG = sqrt(abs(TAN1**2 + TAN2**2 + 2*TAN1*TAN2*COSPHI))
-      HOT = 1 + (1 - A)/(1 + CAPG)
-      REFLECT(1, 1) = A*((MU1 + MU2)*MU1*MU2)**(K - 1)*exp(B*COSSCATANG)
-      REFLECT(1, 1) = REFLECT(1, 1)*HOT
-      if (ZETA .lt. 0.0) return
-
-      ! Calculate incident/reflectance angle relative to microfacet (eq 1
-      GAMMA = 0.5*acos(-COSSCATANG)
-      COSGAMMA = cos(GAMMA)
-
-      ! Calculate the Fresnel reflection coefficients (equivalent to eq 1
-      !   [D = n*cos(gamma')]
-      EPSILON = SFCINDEX**2
-      D = sqrt(EPSILON - 1.0 + COSGAMMA**2)
-      RP = (EPSILON*COSGAMMA - D)/(EPSILON*COSGAMMA + D)
-      RS = (COSGAMMA - D)/(COSGAMMA + D)
-
-      ! Calculate the Mueller matrix elements for Fresnel reflection (eq
-      F11 = 0.5*(CABS(RP)**2 + CABS(RS)**2)
-      F12 = 0.5*(CABS(RP)**2 - CABS(RS)**2)
-      F33 = real(RP*conjg(RS))
-      F34 = -IMAG(RP*conjg(RS))
-
-      ! Calculate facet tilt angle, beta (eq 16b)
-      COSBETA = 0.5*(MU1 + MU2)/COSGAMMA
-
-      ! Calculate the factor before the M*P*M matrix including the distri
-      !   of microfacet orientations (Gaussian for SIGMA>0) (eq 13 & 14)
-      !   Note: Diner's BRDF is multiplied by pi here
-      if (SIGMA .gt. 0.0) then
-          H = ZETA*exp(-0.5*(1/COSBETA**2 - 1)/SIGMA**2)&
-              & /(8*SIGMA**2*MU2*MU1*COSBETA**4)
-      else
-          H = ZETA/(8*MU2*MU1*COSBETA)
-      end if
-
-      REFLECT(1, 1) = REFLECT(1, 1) + H*F11
-
-      if (NSTOKES .ge. 2) then
-          ! Calculate the polarization rotation angles (eq 20 & 21)
-          SINPHI = sin(PHI)
-          ALPHA1 = atan(SINTH2*SINPHI/(MU2*SINTH1 + SINTH2*MU1*COSPHI))
-          ALPHA2 = atan(SINTH1*SINPHI/(SINTH2*MU1 + MU2*SINTH1*COSPHI))
-          COS2ALPHA1 = cos(2*ALPHA1)
-          SIN2ALPHA1 = sin(2*ALPHA1)
-          COS2ALPHA2 = cos(2*ALPHA2)
-          SIN2ALPHA2 = sin(2*ALPHA2)
-
-          ! Calculate the rotated Mueller matrix (M*P*M) for Fresnel reflec
-          !   and multiply by the H factor to get the final BRDF
-          REFLECT(1, 2) = H*F12*COS2ALPHA1
-          REFLECT(2, 1) = H*F12*COS2ALPHA2
-          REFLECT(2, 2) = H*(F11*COS2ALPHA1*COS2ALPHA2&
-              & + F33*SIN2ALPHA1*SIN2ALPHA2)
-      end if
-      if (NSTOKES .ge. 3) then
-          REFLECT(1, 3) = -H*F12*SIN2ALPHA1
-          REFLECT(2, 3) = H*(-F11*SIN2ALPHA1*COS2ALPHA2&
-              & + F33*COS2ALPHA1*SIN2ALPHA2)
-          REFLECT(3, 1) = -H*F12*SIN2ALPHA2
-          REFLECT(3, 2) = H*(-F11*COS2ALPHA1*SIN2ALPHA2&
-              & + F33*SIN2ALPHA1*COS2ALPHA2)
-          REFLECT(3, 3) = H*(F11*SIN2ALPHA1*SIN2ALPHA2&
-              & + F33*COS2ALPHA1*COS2ALPHA2)
-      end if
-      if (NSTOKES .ge. 4) then
-          REFLECT(1, 4) = 0.0
-          REFLECT(2, 4) = H*F34*SIN2ALPHA2
-          REFLECT(3, 4) = H*F34*COS2ALPHA2
-          REFLECT(4, 1) = 0.0
-          REFLECT(4, 2) = -H*F34*SIN2ALPHA1
-          REFLECT(4, 3) = -H*F34*COS2ALPHA1
-          REFLECT(4, 4) = H*F33
-      end if
-      return
-  end subroutine
-
-  real function RPV_REFLECTION(RHO0, K, THETA, MU1, MU2, PHI)
-      !╭────────────────────────────────────────────────────────────────────────────╮!
-      !   Computes the Rahman, Pinty, Verstraete BRDF.  The incident
-      ! and outgoing cosine zenith angles are MU1 and MU2, respectively,
-      ! and the relative azimuthal angle is PHI.  In this case the incident
-      ! direction is where the radiation is coming from (i.e. opposite of
-      ! discrete ordinate), so MU1>0 and the hot spot is MU2=MU1 and PHI=0
-      ! The reference is:
-      !   Rahman, Pinty, Verstraete, 1993: Coupled Surface-Atmosphere
-      !   Reflectance (CSAR) Model. 2. Semiempirical Surface Model Usable
-      !   With NOAA Advanced Very High Resolution Radiometer Data,
-      !   J. Geophys. Res., 98, 20791-20801.
-      !
-      ! Implementation modified by Alexei Lyapustin to prevent negative
-      ! values in SQRT function in calculating CAPG, and to prevent
-      ! unphysical growth of RPV BRDF at small mu or mu0.
-      !╰────────────────────────────────────────────────────────────────────────────╯!
-
-      real :: RHO0, K, THETA, MU1, MU2, PHI, mu_min, x1, x2
-      real :: M, F, H, COSPHI, SIN1, SIN2, COSG, TAN1, TAN2, CAPG
-
-      ! calculate M
-      !╭────────────────────────────────────────────────╮!
-      mu_min = 0.03
-      x1 = MU1
-      if (x1 .lt. mu_min) x1 = mu_min
-      x2 = MU2
-      if (x2 .lt. mu_min) x2 = mu_min
-      M = (x1*x2*(x1 + x2))**(K - 1)
-      !╰────────────────────────────────────────────────╯!
-
-      ! calculate F
-      !╭────────────────────────────────────────────────╮!
-      COSPHI = cos(PHI)
-      SIN1 = sqrt(1.0 - x1**2)
-      SIN2 = sqrt(1.0 - x2**2)
-      COSG = x1*x2 + SIN1*SIN2*COSPHI
-      F = (1 - THETA**2)/(1 + 2*THETA*COSG + THETA**2)**1.5
-      !╰────────────────────────────────────────────────╯!
-
-      ! calculate H
-      !╭────────────────────────────────────────────────╮!
-      TAN1 = SIN1/x1
-      TAN2 = SIN2/x2
-      CAPG = sqrt(abs(TAN1**2 + TAN2**2 - 2*TAN1*TAN2*COSPHI))
-      H = 1 + (1 - RHO0)/(1 + CAPG)
-      !╰────────────────────────────────────────────────╯!
-
-      RPV_REFLECTION = RHO0*M*F*H
-
-      return
-  end function
-
-  real function LSRT_REFLECTION(F_ISO, F_VOL, F_GEO, MU1, MU2, PHI)
-      !╭────────────────────────────────────────────────────────────────────────────╮!
-      ! Computes the RossLi BRDF.
-      ! MU1: cosine of zenith angle of the incident light (solar zenith angle)
-      ! MU2: cosine of zenith angle of the receiver (viewing zenith angle)
-      ! PHI: relative azimuth angle, 0 pointing east, positive counter-clockwise
-      !
-      ! When MU1>0 and the hot spot is MU2=MU1 and PHI=0
-      !
-      ! Code reference:
-      !   https://github.com/vikasnataraja/sif-sat/blob/master/sifsat/kernels.py
-      ! Formula reference:
-      !   MODIS BRDF/Albedo Product ATBD v5.0, equations 37-44
-      !╰────────────────────────────────────────────────────────────────────────────╯!
-
-      real(4) :: PI, COS1, COS2, SIN1, SIN2, TAN1, TAN2, COS_PHI, SIN_PHI
-      real(4) :: F_ISO, F_GEO, F_VOL, MU1, MU2, PHI
-      real(4) :: K_GEO, K_VOL
-      real(4) :: XI, COS_XI, SIN_XI
-      real(4) :: B2R, H2B
-      real(4) :: THETA1_, COS1_, SIN1_, TAN1_, SEC1_
-      real(4) :: THETA2_, COS2_, SIN2_, TAN2_, SEC2_
-      real(4) :: COS_XI_, D_2, COS_T, SIN_T, T, O
-      real(4) :: COS_MIN
-
-      ! calculate trigonometry
-      !╭────────────────────────────────────────────────╮!
-      COS_MIN = 0.03
-
-      PI = acos(-1.0)
-      COS1 = MU1
-      COS2 = MU2
-
-      if (COS1 .lt. COS_MIN) COS1 = COS_MIN
-      if (COS2 .lt. COS_MIN) COS2 = COS_MIN
-
-      SIN1 = sqrt(1.0 - COS1**2)
-      SIN2 = sqrt(1.0 - COS2**2)
-      TAN1 = SIN1/COS1
-      TAN2 = SIN2/COS2
-      COS_PHI = cos(PHI)
-      SIN_PHI = sin(PHI)
-      !╰────────────────────────────────────────────────╯!
-
-      ! K_VOL
-      !╭────────────────────────────────────────────────╮!
-      COS_XI = (COS1*COS2) + (SIN1*SIN2*COS_PHI)
-      if (COS_XI .lt. -1.0) COS_XI = -1.0
-      if (COS_XI .gt.  1.0) COS_XI =  1.0
-
-      SIN_XI = sqrt(1.0 - COS_XI**2)
-      XI = acos(COS_XI)
-
-      K_VOL = ((PI/2.0 - XI)*COS_XI + SIN_XI)/(COS1+COS2) - (PI/4.0)
-      !╰────────────────────────────────────────────────╯!
-
-      ! K_GEO
-      !╭────────────────────────────────────────────────╮!
-      B2R = 1.0
-      H2B = 2.0
-
-      THETA1_ = atan(B2R*TAN2)
-      COS1_ = cos(THETA1_)
-      if (COS1_ .lt. -1.0) COS1_ = -1.0
-      if (COS1_ .gt.  1.0) COS1_ =  1.0
-      SIN1_ = sqrt(1.0 - COS1_**2)
-      TAN1_ = SIN1_/COS1_
-      SEC1_ = 1.0/COS1_
-
-      THETA2_ = atan(B2R*TAN1)
-      COS2_ = cos(THETA2_)
-      if (COS2_ .lt. -1.0) COS2_ = -1.0
-      if (COS2_ .gt.  1.0) COS2_ =  1.0
-      SIN2_ = sqrt(1.0 - COS2_**2)
-      TAN2_ = SIN2_/COS2_
-      SEC2_ = 1.0/COS2_
-
-      COS_XI_ = (COS1_*COS2_) + (SIN1_*SIN2_*COS_PHI)
-
-      D_2 = TAN1_**2 + TAN2_**2 - 2.0*TAN1_*TAN2_*COS_PHI
-      if (D_2 .lt. 0.0) D_2 = 0.0
-
-      COS_T = H2B * (sqrt(D_2 + (TAN1_*TAN2_*SIN_PHI)**2))/(SEC1_ + SEC2_)
-      if (COS_T .lt. -1.0) COS_T = -1.0
-      if (COS_T .gt.  1.0) COS_T =  1.0
-      SIN_T = sqrt(1.0 - COS_T**2)
-      T = acos(COS_T)
-
-      O = (1.0/PI) * (T - SIN_T*COS_T) * (SEC1_ + SEC2_)
-
-      K_GEO = O - SEC1_ - SEC2_ + 0.5*(1.0+COS_XI_)*SEC1_*SEC2_
-      !╰────────────────────────────────────────────────╯!
-
-      LSRT_REFLECTION = F_ISO + F_VOL*K_VOL + F_GEO*K_GEO
-
-      if (LSRT_REFLECTION .lt. 0.0) LSRT_REFLECTION = 0.0
-
-      return
-
-  end function
-
-subroutine ocean_brdf_sw(&
-    & pws, xsal, pcl, pwl, xmuo, xmu, xphi, xpaw, brdfx)
+module shd_surf
+
+    use globals
+
+    implicit none
+
+    public :: shd_surf__brdfSurface
+    public :: shd_surf__brdfFresnel
+    public :: shd_surf__brdfDiner
+    public :: shd_surf__brdfRPV
+    public :: shd_surf__brdfLSRT
+    public :: shd_surf__brdfOcean
+
+contains
+
+subroutine shd_surf__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
+    &MU2, PHI2, MU1, PHI1, NSTOKES, REFLECT)
+
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    ! Returns the reflection matrix for the general bidirectional
+    ! reflection distribution function of the specified type (SFCTYPE).
+    ! The incident direction is (MU1,PHI1), and the outgoing direction
+    ! is (MU2,PHI2) (MU is cosine of zenith angle, and PHI is the azimuth
+    ! angle in radians).  The incident directions have mu<0 (downward),
+    ! while the outgoing directions have mu>0 (upward). The reflection
+    ! function is normalized so that for a Lambertian surface (uniform
+    ! reflection) the returned value (REFLECT) is simply the albedo.
+    ! This routine calls the desired BRDF function, passing the
+    ! appropriate parameters.  More BRDF surface types may be added easily
+    ! by putting in the appropriate function calls.
+    !
+    !      Type        Parameters
+    ! L  Lambertian    albedo
+    ! W  WaveFresnel   Real, Imaginary index of refraction, wind speed
+    ! D  Diner et al   a, k, b, zeta, sigma
+    ! O  Ocean         Wind speed (m/s), Pigmentation (mg/m^3)
+    ! R  RPV-original  rho0, k, Theta
+    ! T  LSRT          k_iso, k_geo, k_vol
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+    integer :: NSTOKES
+    integer :: K1, K2
+    real    :: REFPARMS(*), WAVELEN, MU1, PHI1, MU2, PHI2, REFLECT(4, 4)
+    character(len=1) :: SFCTYPE
+
+    if (SFCTYPE .eq. 'L' .or. SFCTYPE .eq. 'l') then
+
+        ! L or l: Lambertian surface BRDF is constant.
+        !   (for testing, as done more efficiently by Lambertian routine
+        REFLECT(1:NSTOKES, 1:NSTOKES) = 0.0
+        REFLECT(1, 1) = REFPARMS(1)
+
+    else if (SFCTYPE .eq. 'W' .or. SFCTYPE .eq. 'w') then
+
+        ! W: Fresnel reflection with Gaussian distribution of slopes
+        call shd_surf__brdfFresnel(REFPARMS(1), REFPARMS(2),&
+            &REFPARMS(3), MU1, MU2, PHI1, PHI2, NSTOKES, REFLECT)
+
+    else if (SFCTYPE .eq. 'D' .or. SFCTYPE .eq. 'd') then
+
+        ! D: Diner et al., depolarizing modified RPV + Fresnel reflection
+        !   from microfacets with uniform or Gaussian distribution of s
+        call shd_surf__brdfDiner(REFPARMS(1), REFPARMS(2), REFPARMS(3),&
+            &REFPARMS(4), REFPARMS(5),&
+            &-MU1, MU2, PHI2 - PHI1, NSTOKES, REFLECT)
+
+    else if (SFCTYPE .eq. 'R' .or. SFCTYPE .eq. 'r') then
+
+        ! R: Rahman, Pinty, and Verstraete
+        if (NSTOKES .gt. 1) then
+            stop 'Error [_brdfSurface]: RPV BRDF is only for unpolarized case'
+        end if
+
+        call shd_surf__brdfRPV(REFPARMS(1), REFPARMS(2),&
+            &REFPARMS(3), -MU1, MU2, PHI1-PHI2-PI_, REFLECT(1, 1))
+
+    else if (SFCTYPE .eq. 'T' .or. SFCTYPE .eq. 't') then
+
+        ! T: LSRT model
+        if (NSTOKES .gt. 1) then
+            stop 'Error [_brdfSurface]: LSRT BRDF is only for unpolarized case'
+        end if
+
+        ! T: LSRT model
+        call shd_surf__brdfLSRT(REFPARMS(1), REFPARMS(2),&
+            &REFPARMS(3), -MU1, MU2, PHI1-PHI2-PI_, REFLECT(1, 1))
+
+    else if (SFCTYPE .eq. 'O' .or. SFCTYPE .eq. 'o') then
+
+        ! O: Ocean BRDF from 6S modified by Norm Loeb
+        if (NSTOKES .gt. 1) then
+            stop 'Error [_brdfSurface]: Ocean BRDF from 6S is only for unpolarized case'
+        end if
+
+        call shd_surf__brdfOcean(REFPARMS(1), -1., REFPARMS(2), WAVELEN,&
+            & -MU1, MU2, PHI1 - PHI2, PHI1, REFLECT(1, 1))
+
+    else
+        stop 'Error [_brdfSurface]: Unknown BRDF type.'
+    end if
+
+    return
+end subroutine shd_surf__brdfSurface
+
+subroutine shd_surf__brdfFresnel(MRE, MIM, WINDSPEED,&
+    &MUI, MUR, PHII, PHIR, NSTOKES, REFLECT)
+
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    !   Computes the polarized Fresnel reflection from a dielectric
+    ! interface with a Gaussian distribution of slopes, including shadow
+    ! The complex index of refraction of the dielectric is specified wit
+    ! MRE,MIM (MIM is negative for an absorbing medium) and the wind spe
+    ! is in m/s.  The incident direction is (MUI,PHII), and the outgoing
+    ! direction is (MUR,PHIR) (MU is cosine of zenith angle with MU>0 an
+    ! PHI is the azimuthal angle in radians).
+    !   The code is courtesy of Michael Mishchenko, with some modificati
+    ! The mean square surface slope (s^2) or SIGMA2 in Mishchenko and Tr
+    ! is obtained from the Cox and Munk formula in the paper.
+    !   For all formulas and definitions, see the paper:
+    ! M. I. Mishchenko and L. D. Travis, 1997: Satellite retrieval
+    ! of aerosol properties over the ocean using polarization as well as
+    ! intensity of reflected sunlight.  J. Geophys. Res. 102, 16989-1701
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+    integer NSTOKES
+    real MRE, MIM, WINDSPEED, MUI, MUR, PHII, PHIR, REFLECT(4, 4)
+    integer I, J
+    real*8 SIGMA2, DMUI, DMUR, DCOSI, DSINI, DCOSR, DSINR, DSI, DSR
+    real*8 VI1, VI2, VI3, VR1, VR2, VR3, UNIT1, UNIT2, UNIT3
+    real*8 FACT1, FACTOR, XI1
+    real*8 TI1, TI2, TI3, TR1, TR2, TR3, PI1, PI2, PI3, PR1, PR2, PR3
+    real*8 PIKR, PRKI, TIKR, TRKI, E1, E2, E3, E4
+    real*8 VP1, VP2, VP3, DMOD, RDZ2, RDZ4, DCOEFF, DEX
+    real*8 AF, AF11, AF12, AF21, AF22
+    real*8 P, S1, S2, S3, XI, XXI, DCOT, T1, T2
+    real*8 SHADOWI, SHADOWR, SHADOW, DERFC
+    complex*16 CN1, CN2, CXI2, C1, C2, CRPER, CRPAR
+    complex*16 CF11, CF12, CF21, CF22
+    complex*16 CI, C21, C22, CTTTP, CTTPT, CTTPP, CTPPT, CTPPP, CPTPP
+
+    CN1 = (1.0d0, 0.0d0)
+    CN2 = cmplx(MRE, MIM)
+    SIGMA2 = max(0.0005d0, 0.0015d0 + 0.00256d0*WINDSPEED)
+    DMUI = DABS(dble(MUI))
+    DMUR = dble(MUR)
+
+    ! Cartesian components of the unit vectors of the incident and
+    ! scattered beams
+    if (DABS(DMUI - 1e0) .lt. 1d-10) DMUI = 0.999999999999d0
+    if (DABS(DMUR - 1e0) .lt. 1d-10) DMUR = 0.999999999999d0
+    DCOSI = DCOS(dble(PHII))
+    DSINI = DSIN(dble(PHII))
+    DCOSR = DCOS(dble(PHIR))
+    DSINR = DSIN(dble(PHIR))
+    DSI = DSQRT(1d0 - DMUI*DMUI)
+    DSR = DSQRT(1d0 - DMUR*DMUR)
+    VI1 = DSI*DCOSI
+    VI2 = DSI*DSINI
+    VI3 = -DMUI
+    VR1 = DSR*DCOSR
+    VR2 = DSR*DSINR
+    VR3 = DMUR
+
+    ! Local surface normal for specular reflection
+    UNIT1 = VI1 - VR1
+    UNIT2 = VI2 - VR2
+    UNIT3 = VI3 - VR3
+    FACT1 = UNIT1*UNIT1 + UNIT2*UNIT2 + UNIT3*UNIT3
+    FACTOR = sqrt(1d0/FACT1)
+
+    ! Fresnel reflection coefficients
+    XI1 = FACTOR*(UNIT1*VI1 + UNIT2*VI2 + UNIT3*VI3)
+    CXI2 = CDSQRT(1d0 - (1d0 - XI1*XI1)*CN1*CN1/(CN2*CN2))
+    C1 = CN1*XI1
+    C2 = CN2*CXI2
+    CRPER = (C1 - C2)/(C1 + C2)
+    C1 = CN2*XI1
+    C2 = CN1*CXI2
+    CRPAR = (C1 - C2)/(C1 + C2)
+
+    ! Calculation of the amplitude scattering matrix
+    TI1 = -DMUI*DCOSI
+    TI2 = -DMUI*DSINI
+    TI3 = -DSI
+    TR1 = DMUR*DCOSR
+    TR2 = DMUR*DSINR
+    TR3 = -DSR
+    PI1 = -DSINI
+    PI2 = DCOSI
+    PI3 = 0d0
+    PR1 = -DSINR
+    PR2 = DCOSR
+    PR3 = 0d0
+    PIKR = PI1*VR1 + PI2*VR2 + PI3*VR3
+    PRKI = PR1*VI1 + PR2*VI2 + PR3*VI3
+    TIKR = TI1*VR1 + TI2*VR2 + TI3*VR3
+    TRKI = TR1*VI1 + TR2*VI2 + TR3*VI3
+    E1 = PIKR*PRKI
+    E2 = TIKR*TRKI
+    E3 = TIKR*PRKI
+    E4 = PIKR*TRKI
+    CF11 = E1*CRPER + E2*CRPAR
+    CF12 = -E3*CRPER + E4*CRPAR
+    CF21 = -E4*CRPER + E3*CRPAR
+    CF22 = E2*CRPER + E1*CRPAR
+
+    ! Calculation of the Stokes reflection matrix
+    VP1 = VI2*VR3 - VI3*VR2
+    VP2 = VI3*VR1 - VI1*VR3
+    VP3 = VI1*VR2 - VI2*VR1
+    DMOD = (VP1*VP1 + VP2*VP2 + VP3*VP3)**2
+    RDZ2 = UNIT3*UNIT3
+    RDZ4 = RDZ2*RDZ2
+    DEX = DEXP(-(UNIT1*UNIT1 + UNIT2*UNIT2)/(2*SIGMA2*RDZ2))
+    DCOEFF = FACT1**2*DEX/(4*DMUI*DMUR*DMOD*RDZ4*2*SIGMA2)
+    AF = 0.5d0*DCOEFF
+    AF11 = CDABS(CF11)**2
+    AF12 = CDABS(CF12)**2
+    AF21 = CDABS(CF21)**2
+    AF22 = CDABS(CF22)**2
+
+    REFLECT(1, 1) = (AF11 + AF12 + AF21 + AF22)*AF
+    if (NSTOKES .ge. 2) then
+        REFLECT(1, 2) = (AF11 - AF12 + AF21 - AF22)*AF
+        REFLECT(2, 1) = (AF11 - AF22 + AF12 - AF21)*AF
+        REFLECT(2, 2) = (AF11 - AF12 - AF21 + AF22)*AF
+    end if
+
+    CI = (0.0d0, -1.0d0)
+    C21 = conjg(CF21)
+    C22 = conjg(CF22)
+    CTTTP = CF11*conjg(CF12)
+    CTTPT = CF11*C21
+    CTTPP = CF11*C22
+    CTPPT = CF12*C21
+    CTPPP = CF12*C22
+    CPTPP = CF21*C22
+
+    if (NSTOKES .ge. 3) then
+        REFLECT(1, 3) = (-CTTTP - CPTPP)*DCOEFF
+        REFLECT(2, 3) = (-CTTTP + CPTPP)*DCOEFF
+        REFLECT(3, 1) = (-CTTPT - CTPPP)*DCOEFF
+        REFLECT(3, 2) = (-CTTPT + CTPPP)*DCOEFF
+        REFLECT(3, 3) = (CTTPP + CTPPT)*DCOEFF
+    end if
+
+    if (NSTOKES .ge. 4) then
+        REFLECT(1, 4) = -CI*(CTTTP + CPTPP)*DCOEFF
+        REFLECT(2, 4) = -CI*(CTTTP - CPTPP)*DCOEFF
+        REFLECT(3, 4) = CI*(CTTPP - CTPPT)*DCOEFF
+        REFLECT(4, 1) = CI*(CTTPT + CTPPP)*DCOEFF
+        REFLECT(4, 2) = CI*(CTTPT - CTPPP)*DCOEFF
+        REFLECT(4, 3) = -CI*(CTTPP + CTPPT)*DCOEFF
+        REFLECT(4, 4) = (CTTPP - CTPPT)*DCOEFF
+    end if
+
+    ! Shadowing
+    P = DACOS(-1.0d0)
+    S1 = DSQRT(2*SIGMA2/P)
+    S3 = 1d0/(DSQRT(2*SIGMA2))
+    S2 = S3*S3
+    DCOT = DMUI/sqrt(1d0 - DMUI**2)
+    T1 = DEXP(-S2*DCOT**2)
+    T2 = DERFC(DCOT*S3)
+    SHADOWI = 0.5d0*(S1*T1/DCOT - T2)
+    DCOT = DMUR/DSQRT(1d0 - DMUR**2)
+    T1 = DEXP(-S2*DCOT**2)
+    T2 = DERFC(DCOT*S3)
+    SHADOWR = 0.5*(S1*T1/DCOT - T2)
+    SHADOW = 1d0/(1d0 + SHADOWI + SHADOWR)
+    REFLECT(1:NSTOKES, 1:NSTOKES) = REFLECT(1:NSTOKES, 1:NSTOKES)*SHADOW
+
+    return
+
+end subroutine shd_surf__brdfFresnel
+
+subroutine shd_surf__brdfDiner(A, K, B, ZETA, SIGMA,&
+    &MU1, MU2, PHI, NSTOKES, REFLECT)
+
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    !   Computes polarized reflection from the Diner et al. (2012) model
+    ! which two terms: 1) completely depolarizing volumetric scattering
+    ! the modified RPV model, and 2) Fresnel reflection from randomly
+    ! oriented microfacets with either a uniform or Gaussian distributio
+    ! of slopes.  The three parameters of the modified-RPV model are A,
+    ! and B.  The weight given to the Fresnel-microfacet term is ZETA (i
+    ! ZETA=0 then only the REFLECT(1,1) element is non-zero with the
+    ! modified-RPV model).  SIGMA is the standard deviation of microface
+    ! slopes for the Gaussian orientation distribution, but if SIGMA<=0
+    ! the uniform orientation distribution is used.  The complex index o
+    ! refraction of the Fresnel microfacets is specified in this subrout
+    ! The Diner et al. (2012) model leaves out the hotspot factor of the
+    ! modified RPV model (and the original RPV), but the hotspot factor
+    ! included here.
+    !   The cosine of the incident zenith angle is MU1 (MU1>0), the
+    ! cosine of the outgoing zenith angle is MU2 (MU2>0), and the relati
+    ! azimuthal angle is PHI=PHI2-PHI1 (radians).
+    !   For all formulas and definitions, see the paper:
+    ! Diner, D. J., F. Xu, J. V. Martonchik, B. E. Rheingans, S. Geier,
+    ! V. M. Jovanovic, A. Davis, R. A. Chipman, S. C. McClain, 2012:
+    ! Exploration of a polarized surface bidirectional reflectance model
+    ! using the ground-based multiangle spectropolarimetric imager.
+    ! Atmosphere 2012, 3, 591-619; doi:10.3390/atmos3040591.
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+    integer NSTOKES
+    real A, K, B, ZETA, SIGMA, MU1, MU2, PHI
+    real REFLECT(4, 4)
+    integer K1, K2
+    real SINTH1, SINTH2, COSPHI, COSSCATANG, TAN1, TAN2, CAPG, HOT
+    real GAMMA, COSGAMMA, F11, F12, F33, F34
+    real COSBETA, H, SINPHI, ALPHA1, ALPHA2
+    real COS2ALPHA1, SIN2ALPHA1, COS2ALPHA2, SIN2ALPHA2
+    complex SFCINDEX, EPSILON, D, RP, RS
+
+    ! Another free parameter of the Fresnel microfacet model is the
+    !   index of refraction specified here
+    SFCINDEX = cmplx(1.5, 0.0)
+
+    REFLECT(1:NSTOKES, 1:NSTOKES) = 0.0
+
+    ! The modified RPV model (Martonchik et al., 1998, IEEE-TGARS, 36,
+    !   is implemented here.  Equation 6 in Diner et al. leaves out the h
+    SINTH1 = sqrt(1.0 - MU1**2)
+    SINTH2 = sqrt(1.0 - MU2**2)
+    COSPHI = cos(PHI)
+    COSSCATANG = -MU1*MU2 + SINTH1*SINTH2*COSPHI
+    COSSCATANG = min(1.0, max(-1.0, COSSCATANG))
+    TAN1 = SINTH1/MU1
+    TAN2 = SINTH2/MU2
+    CAPG = sqrt(abs(TAN1**2 + TAN2**2 + 2*TAN1*TAN2*COSPHI))
+    HOT = 1 + (1 - A)/(1 + CAPG)
+    REFLECT(1, 1) = A*((MU1 + MU2)*MU1*MU2)**(K - 1)*exp(B*COSSCATANG)
+    REFLECT(1, 1) = REFLECT(1, 1)*HOT
+    if (ZETA .lt. 0.0) return
+
+    ! Calculate incident/reflectance angle relative to microfacet (eq 1
+    GAMMA = 0.5*acos(-COSSCATANG)
+    COSGAMMA = cos(GAMMA)
+
+    ! Calculate the Fresnel reflection coefficients (equivalent to eq 1
+    !   [D = n*cos(gamma')]
+    EPSILON = SFCINDEX**2
+    D = sqrt(EPSILON - 1.0 + COSGAMMA**2)
+    RP = (EPSILON*COSGAMMA - D)/(EPSILON*COSGAMMA + D)
+    RS = (COSGAMMA - D)/(COSGAMMA + D)
+
+    ! Calculate the Mueller matrix elements for Fresnel reflection (eq
+    F11 = 0.5*(CABS(RP)**2 + CABS(RS)**2)
+    F12 = 0.5*(CABS(RP)**2 - CABS(RS)**2)
+    F33 = real(RP*conjg(RS))
+    F34 = -IMAG(RP*conjg(RS))
+
+    ! Calculate facet tilt angle, beta (eq 16b)
+    COSBETA = 0.5*(MU1 + MU2)/COSGAMMA
+
+    ! Calculate the factor before the M*P*M matrix including the distri
+    !   of microfacet orientations (Gaussian for SIGMA>0) (eq 13 & 14)
+    !   Note: Diner's BRDF is multiplied by pi here
+    if (SIGMA .gt. 0.0) then
+        H = ZETA*exp(-0.5*(1/COSBETA**2 - 1)/SIGMA**2)&
+            & /(8*SIGMA**2*MU2*MU1*COSBETA**4)
+    else
+        H = ZETA/(8*MU2*MU1*COSBETA)
+    end if
+
+    REFLECT(1, 1) = REFLECT(1, 1) + H*F11
+
+    if (NSTOKES .ge. 2) then
+        ! Calculate the polarization rotation angles (eq 20 & 21)
+        SINPHI = sin(PHI)
+        ALPHA1 = atan(SINTH2*SINPHI/(MU2*SINTH1 + SINTH2*MU1*COSPHI))
+        ALPHA2 = atan(SINTH1*SINPHI/(SINTH2*MU1 + MU2*SINTH1*COSPHI))
+        COS2ALPHA1 = cos(2*ALPHA1)
+        SIN2ALPHA1 = sin(2*ALPHA1)
+        COS2ALPHA2 = cos(2*ALPHA2)
+        SIN2ALPHA2 = sin(2*ALPHA2)
+
+        ! Calculate the rotated Mueller matrix (M*P*M) for Fresnel reflec
+        !   and multiply by the H factor to get the final BRDF
+        REFLECT(1, 2) = H*F12*COS2ALPHA1
+        REFLECT(2, 1) = H*F12*COS2ALPHA2
+        REFLECT(2, 2) = H*(F11*COS2ALPHA1*COS2ALPHA2&
+            & + F33*SIN2ALPHA1*SIN2ALPHA2)
+    end if
+
+    if (NSTOKES .ge. 3) then
+        REFLECT(1, 3) = -H*F12*SIN2ALPHA1
+        REFLECT(2, 3) = H*(-F11*SIN2ALPHA1*COS2ALPHA2&
+            & + F33*COS2ALPHA1*SIN2ALPHA2)
+        REFLECT(3, 1) = -H*F12*SIN2ALPHA2
+        REFLECT(3, 2) = H*(-F11*COS2ALPHA1*SIN2ALPHA2&
+            & + F33*SIN2ALPHA1*COS2ALPHA2)
+        REFLECT(3, 3) = H*(F11*SIN2ALPHA1*SIN2ALPHA2&
+            & + F33*COS2ALPHA1*COS2ALPHA2)
+    end if
+
+    if (NSTOKES .ge. 4) then
+        REFLECT(1, 4) = 0.0
+        REFLECT(2, 4) = H*F34*SIN2ALPHA2
+        REFLECT(3, 4) = H*F34*COS2ALPHA2
+        REFLECT(4, 1) = 0.0
+        REFLECT(4, 2) = -H*F34*SIN2ALPHA1
+        REFLECT(4, 3) = -H*F34*COS2ALPHA1
+        REFLECT(4, 4) = H*F33
+    end if
+
+    return
+
+end subroutine shd_surf__brdfDiner
+
+subroutine shd_surf__brdfRPV(RHO0, K, THETA, MU1, MU2, PHI, REFLECT)
+
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    !   Computes the Rahman, Pinty, Verstraete BRDF.  The incident
+    ! and outgoing cosine zenith angles are MU1 and MU2, respectively,
+    ! and the relative azimuthal angle is PHI.  In this case the incident
+    ! direction is where the radiation is coming from (i.e. opposite of
+    ! discrete ordinate), so MU1>0 and the hot spot is MU2=MU1 and PHI=0
+    ! The reference is:
+    !   Rahman, Pinty, Verstraete, 1993: Coupled Surface-Atmosphere
+    !   Reflectance (CSAR) Model. 2. Semiempirical Surface Model Usable
+    !   With NOAA Advanced Very High Resolution Radiometer Data,
+    !   J. Geophys. Res., 98, 20791-20801.
+    !
+    ! Implementation modified by Alexei Lyapustin to prevent negative
+    ! values in SQRT function in calculating CAPG, and to prevent
+    ! unphysical growth of RPV BRDF at small mu or mu0.
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+    real, intent(in)  :: RHO0, K, THETA, MU1, MU2, PHI
+    real, intent(out) :: REFLECT
+    real :: mu_min, x1, x2
+    real :: M, F, H, COSPHI, SIN1, SIN2, COSG, TAN1, TAN2, CAPG
+
+    ! calculate M
+    !╭────────────────────────────────────────────────╮!
+    mu_min = 0.03
+    x1 = MU1
+    if (x1 .lt. mu_min) x1 = mu_min
+    x2 = MU2
+    if (x2 .lt. mu_min) x2 = mu_min
+    M = (x1*x2*(x1 + x2))**(K - 1)
+    !╰────────────────────────────────────────────────╯!
+
+    ! calculate F
+    !╭────────────────────────────────────────────────╮!
+    COSPHI = cos(PHI)
+    SIN1 = sqrt(1.0 - x1**2)
+    SIN2 = sqrt(1.0 - x2**2)
+    COSG = x1*x2 + SIN1*SIN2*COSPHI
+    F = (1 - THETA**2)/(1 + 2*THETA*COSG + THETA**2)**1.5
+    !╰────────────────────────────────────────────────╯!
+
+    ! calculate H
+    !╭────────────────────────────────────────────────╮!
+    TAN1 = SIN1/x1
+    TAN2 = SIN2/x2
+    CAPG = sqrt(abs(TAN1**2 + TAN2**2 - 2*TAN1*TAN2*COSPHI))
+    H = 1 + (1 - RHO0)/(1 + CAPG)
+    !╰────────────────────────────────────────────────╯!
+
+    REFLECT = RHO0*M*F*H
+
+    return
+
+end subroutine shd_surf__brdfRPV
+
+subroutine shd_surf__brdfLSRT(F_ISO, F_VOL, F_GEO, MU1, MU2, PHI, REFLECT)
+
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    ! Computes the RossLi BRDF.
+    ! MU1: cosine of zenith angle of the incident light (solar zenith angle)
+    ! MU2: cosine of zenith angle of the receiver (viewing zenith angle)
+    ! PHI: relative azimuth angle, 0 pointing east, positive counter-clockwise
+    !
+    ! When MU1>0 and the hot spot is MU2=MU1 and PHI=0
+    !
+    ! Code reference:
+    !   https://github.com/vikasnataraja/sif-sat/blob/master/sifsat/kernels.py
+    ! Formula reference:
+    !   MODIS BRDF/Albedo Product ATBD v5.0, equations 37-44
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+    real(4), intent(in)  :: F_ISO, F_GEO, F_VOL, MU1, MU2, PHI
+    real(4), intent(out) :: REFLECT
+    real(4) :: COS1, COS2, SIN1, SIN2, TAN1, TAN2, COS_PHI, SIN_PHI
+    real(4) :: K_GEO, K_VOL
+    real(4) :: XI, COS_XI, SIN_XI
+    real(4) :: B2R, H2B
+    real(4) :: THETA1_, COS1_, SIN1_, TAN1_, SEC1_
+    real(4) :: THETA2_, COS2_, SIN2_, TAN2_, SEC2_
+    real(4) :: COS_XI_, D_2, COS_T, SIN_T, T, O
+    real(4) :: COS_MIN
+
+
+    ! calculate trigonometry
+    !╭────────────────────────────────────────────────╮!
+    COS_MIN = 0.03
+
+    COS1 = MU1
+    COS2 = MU2
+
+    if (COS1 .lt. COS_MIN) COS1 = COS_MIN
+    if (COS2 .lt. COS_MIN) COS2 = COS_MIN
+
+    SIN1 = sqrt(1.0 - COS1**2)
+    SIN2 = sqrt(1.0 - COS2**2)
+    TAN1 = SIN1/COS1
+    TAN2 = SIN2/COS2
+    COS_PHI = cos(PHI)
+    SIN_PHI = sin(PHI)
+    !╰────────────────────────────────────────────────╯!
+
+    ! K_VOL
+    !╭────────────────────────────────────────────────╮!
+    COS_XI = (COS1*COS2) + (SIN1*SIN2*COS_PHI)
+    if (COS_XI .lt. -1.0) COS_XI = -1.0
+    if (COS_XI .gt.  1.0) COS_XI =  1.0
+
+    SIN_XI = sqrt(1.0 - COS_XI**2)
+    XI = acos(COS_XI)
+
+    K_VOL = ((PI_/2.0 - XI)*COS_XI + SIN_XI)/(COS1+COS2) - (PI_/4.0)
+    !╰────────────────────────────────────────────────╯!
+
+    ! K_GEO
+    !╭────────────────────────────────────────────────╮!
+    B2R = 1.0
+    H2B = 2.0
+
+    THETA1_ = atan(B2R*TAN2)
+    COS1_ = cos(THETA1_)
+    if (COS1_ .lt. -1.0) COS1_ = -1.0
+    if (COS1_ .gt.  1.0) COS1_ =  1.0
+    SIN1_ = sqrt(1.0 - COS1_**2)
+    TAN1_ = SIN1_/COS1_
+    SEC1_ = 1.0/COS1_
+
+    THETA2_ = atan(B2R*TAN1)
+    COS2_ = cos(THETA2_)
+    if (COS2_ .lt. -1.0) COS2_ = -1.0
+    if (COS2_ .gt.  1.0) COS2_ =  1.0
+    SIN2_ = sqrt(1.0 - COS2_**2)
+    TAN2_ = SIN2_/COS2_
+    SEC2_ = 1.0/COS2_
+
+    COS_XI_ = (COS1_*COS2_) + (SIN1_*SIN2_*COS_PHI)
+
+    D_2 = TAN1_**2 + TAN2_**2 - 2.0*TAN1_*TAN2_*COS_PHI
+    if (D_2 .lt. 0.0) D_2 = 0.0
+
+    COS_T = H2B * (sqrt(D_2 + (TAN1_*TAN2_*SIN_PHI)**2))/(SEC1_ + SEC2_)
+    if (COS_T .lt. -1.0) COS_T = -1.0
+    if (COS_T .gt.  1.0) COS_T =  1.0
+    SIN_T = sqrt(1.0 - COS_T**2)
+    T = acos(COS_T)
+
+    O = (1.0/PI_) * (T - SIN_T*COS_T) * (SEC1_ + SEC2_)
+
+    K_GEO = O - SEC1_ - SEC2_ + 0.5*(1.0+COS_XI_)*SEC1_*SEC2_
+    !╰────────────────────────────────────────────────╯!
+
+    REFLECT = F_ISO + F_VOL*K_VOL + F_GEO*K_GEO
+
+    if (REFLECT .lt. 0.0) REFLECT = 0.0
+
+    return
+
+end subroutine shd_surf__brdfLSRT
+
+subroutine shd_surf__brdfOcean(&
+    & pws, xsal, pcl, pwl, xmuo, xmu, xphi, xpaw, REFLECT)
     !
     ! INPUT:  pws=wind speed (in m/s) [value not allowed below 0.25 m/s]
     !         xsal=salinity (in ppt) [if xsal<0 then 34.3ppt by default]
@@ -556,15 +584,20 @@ subroutine ocean_brdf_sw(&
     !              is fixed at the azimuth angle of 0 degree so that
     !              the azimuth angle of the sun = xpaw.
     !
-    ! OUTPUT: brdfx=the total reflectance of the sea water
-    !
-    integer iwl
+    ! OUTPUT: REFLECT=the total reflectance of the sea water
+
+    real, intent(in)  :: pws, xsal, pcl, pwl, xmuo, xmu, xphi, xpaw
+    real, intent(out) :: REFLECT
+
     real Ref(39)
-    real pwl, paw, pcl, pws, wl, wspd, C, azw, xsal
-    real pi, fac, nr, ni, n12
+    real :: paw, wl, wspd, C, azw, phi
+    real fac, nr, ni, n12
     real tetas, w, wlp, ref_i, rwc, rw, tds
     real tetav, tdv, fi, rog, a, rwb
     real angbnd(5), wsbnd(6), tdsbnd(5, 6), tdvbnd(5, 6)
+
+    integer :: iwl, iang, iws, isz1, isz2, ivz1, ivz2, iws1, iws2
+
     ! effective reflectance of the whitecaps (Koepke, 1984)
     data Ref/&
         & 0.220, 0.220, 0.220, 0.220, 0.220, 0.220, 0.215, 0.210, 0.200, 0.190,&
@@ -591,15 +624,14 @@ subroutine ocean_brdf_sw(&
         & 0.8678726, 0.8797889, 0.8878716, 0.9091171, 0.7294627,&
         & 0.8137348, 0.8453338, 0.8629867, 0.8745421, 0.9036854/
 
-    pi = atan(1.)*4.
-    fac = pi/180.
+    fac = PI_/180.
     ! paw= azim. of sun - azim. of wind (in deg.)
     paw = xpaw/fac
     ! Conversion of parameter
     if (xphi .lt. 0.0) then
         phi = -xphi
-    else if (xphi .ge. 2.0*pi) then
-        phi = xphi - 2.0*pi
+    else if (xphi .ge. 2.0*PI_) then
+        phi = xphi - 2.0*PI_
     else
         phi = xphi
     end if
@@ -660,9 +692,9 @@ subroutine ocean_brdf_sw(&
     ! reflectance
     Rwb = (1/(n12*n12))*tds*tdv*Rw/(1 - a*Rw)
     ! TOTAL REFLECTANCE OF SEA WATER
-    brdfx = Rwc + (1 - W)*Rog + (1 - Rwc)*Rwb
+    REFLECT = Rwc + (1 - W)*Rog + (1 - Rwc)*Rwb
     return
-end subroutine
+end subroutine shd_surf__brdfOcean
 
 subroutine morcasiwat(wl, C, R2)
     ! Spectral diffuse attenuation coefficient of Case I Waters as Predicted
@@ -872,14 +904,13 @@ subroutine sunglint(wspd, nr, ni, azw, ts, tv, fi, rog)
     !                     fi=relative azimuth (sun-satellite)
     ! output parameters:  rog=reflectance of the sun glint
     !
-    real pi, fac
+    real fac
     real wspd, nr, ni, ts, tv, fi, rog, azw, phw
     real cs, cv, ss, sv, phi, zx, zy, tantilt, tilt, proba, xe, xn, xe2, xn2
     real coef, cos2chi, coschi, sinchi
     real r1, sigmaC, sigmaU, C21, C03, C40, C04, C22
 
-    pi = atan(1.)*4.
-    fac = pi/180.
+    fac = PI_/180.
     phw = azw*fac
     cs = cos(ts*fac)
     cv = cos(tv*fac)
@@ -907,7 +938,7 @@ subroutine sunglint(wspd, nr, ni, azw, ts, tv, fi, rog)
     coef = coef + c40/24.*(xe2*xe2 - 6*xe2 + 3)
     coef = coef + C04/24.*(xn2*xn2 - 6*xn2 + 3)
     coef = coef + C22/4.*(xe2 - 1)*(xn2 - 1)
-    proba = coef/2./pi/sqrt(sigmaU)/sqrt(sigmaC)*exp(-(xe2 + xn2)/2.)
+    proba = coef/2./PI_/sqrt(sigmaU)/sqrt(sigmaC)*exp(-(xe2 + xn2)/2.)
     ! Compute Fresnel's coefficient R1
     cos2chi = cv*cs + sv*ss*cos(phi)
     if (cos2chi .gt. 1.0) cos2chi = 0.99999999999
@@ -916,7 +947,7 @@ subroutine sunglint(wspd, nr, ni, azw, ts, tv, fi, rog)
     sinchi = sqrt(0.5*(1 - cos2chi))
     call Fresnel(nr, ni, coschi, sinchi, R1)
     ! Compute Reflectance of the sun glint
-    Rog = pi*R1*proba/4./cs/cv/(cos(tilt)**4)
+    Rog = PI_*R1*proba/4./cs/cv/(cos(tilt)**4)
     return
 end subroutine
 
@@ -956,16 +987,16 @@ subroutine glitalbe(wspd, nr, ni, azw, rge)
     !                   azw=azim. of sun - azim. of wind (in deg.)
     ! output parameter: rge=spherical albedo of the sun glint
     !
-    real nr, ni, azw, phw, rge, q, wspd, prefl, proba, pr, pp, pi, fac
+    real nr, ni, azw, phw, rge, q, wspd, prefl, proba, pr, pp, fac
     real sigma, sigmaC, sigmaU, C21, C03, C40, C04, C22
     real costt, hta, htb, hfa, cotb, cota, cofa, diff, coef
     real phin, cosphin, sinphin, costet, tet, sintet
     real costetn, sintetn, tantetn, coschi, sinchi
     real zx, zy, xe, xn, xe2, xn2, fonc0, pond, r1
     integer km, i, j
+    integer :: nfa, nta, ntb
 
-    pi = atan(1.)*4.
-    fac = pi/180.
+    fac = PI_/180.
     sigma = 0.003 + 0.00512*wspd
     sigmaC = 0.003 + 0.00192*wspd
     sigmaU = 0.00316*wspd
@@ -1003,7 +1034,7 @@ subroutine glitalbe(wspd, nr, ni, azw, rge)
         if (tet .lt. 65) nta = 31
         nfa = nta
         hta = (1.-costt)/float(nta - 1)
-        hfa = pi/float(nfa - 1)
+        hfa = PI_/float(nfa - 1)
         ! loops on phiN (azimuth angle of the facet normal vector)
         pr = 0.
         pp = 0.
@@ -1053,7 +1084,7 @@ subroutine glitalbe(wspd, nr, ni, azw, rge)
             end do
         end do
 
-        pond = 2.*hta*hfa*htb/pi/sqrt(sigmaC)/sqrt(sigmaU)/3./3./3.
+        pond = 2.*hta*hfa*htb/PI_/sqrt(sigmaC)/sqrt(sigmaU)/3./3./3.
         prefl = prefl + pr*pond
         proba = proba + pp*pond
     end do
@@ -1130,3 +1161,5 @@ subroutine getbound(xvals, ifirst, ilast, x, ind1, ind2)
 15  continue
     return
 end subroutine
+
+end module shd_surf

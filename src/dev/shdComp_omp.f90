@@ -10,7 +10,7 @@ subroutine NEW_GRIDS(&
     integer BCFLAG, NPX, NPY, NPZ, NX, NY, NZ
     real XSTART, YSTART, DELXP, DELYP, ZLEVELS(NPZ)
     real XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ)
-    character GRIDTYPE*1
+    character(len=1) :: GRIDTYPE
     integer IX, IY, IZ
 
     ! Make the X, Y, and Z grids, depending on type:
@@ -19,7 +19,11 @@ subroutine NEW_GRIDS(&
     if (DELXP .le. 0.0) DELXP = 1.0
     if (btest(BCFLAG, 2)) then
         do IX = 1, NX
-            XGRID(IX) = XSTART + (IX - 1)*(DELXP*(NPX - 1))/FLOAT(NX - 1)
+            if (NPX .gt. 1) then
+                XGRID(IX) = XSTART + (IX - 1)*(DELXP*(NPX - 1))/FLOAT(NX - 1)
+            else
+                XGRID(IX) = XSTART + (IX - 1)*(DELXP*NPX)/FLOAT(NX - 1)
+            end if
         end do
     else
         do IX = 1, NX + 1
@@ -30,7 +34,11 @@ subroutine NEW_GRIDS(&
     if (DELYP .le. 0.0) DELYP = 1.0
     if (btest(BCFLAG, 3)) then
         do IY = 1, NY
-            YGRID(IY) = YSTART + (IY - 1)*(DELYP*(NPY - 1))/FLOAT(NY - 1)
+            if (NPY .gt. 1) then
+                YGRID(IY) = YSTART + (IY - 1)*(DELYP*(NPY - 1))/FLOAT(NY - 1)
+            else
+                YGRID(IY) = YSTART + (IY - 1)*(DELYP*NPY)/FLOAT(NY - 1)
+            end if
         end do
     else
         do IY = 1, NY + 1
@@ -296,8 +304,6 @@ subroutine INTERP_GRID(&
     ! Calls TRILIN_INTERP_PROP to interpolate the input arrays from
     !   the property grid to each internal grid point.
 
-    use omp_lib
-
     implicit none
     integer NPTS, NSTLEG, NLEG
     integer*2 IPHASE(*)
@@ -310,14 +316,12 @@ subroutine INTERP_GRID(&
         &TEMP(1), EXTINCT(1), ALBEDO(1), LEGEN(1, 0, 1), IPHASE(1))
 
     ! Trilinearly interpolate from the property grid to the adaptive
-!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(IP)
     do IP = 1, NPTS
         call TRILIN_INTERP_PROP&
             &(GRIDPOS(1, IP), GRIDPOS(2, IP), GRIDPOS(3, IP),&
             &.false., NSTLEG, NLEG, TEMP(IP), EXTINCT(IP),&
             &ALBEDO(IP), LEGEN(1, 0, IP), IPHASE(IP))
     end do
-!$OMP END PARALLEL DO
 
     return
 end subroutine
@@ -329,8 +333,6 @@ subroutine MAKE_DIRECT(NPTS, BCFLAG, IPFLAG, DELTAM,&
     ! Makes the direct beam solar flux for the internal base grid.
     !   DIRFLUX is set to F*exp(-tau_sun).
     !   Actually calls DIRECT_BEAM_PROP to do all the hard work.
-
-    use omp_lib
 
     implicit none
     integer NPTS, BCFLAG, IPFLAG, ML, NSTLEG, NLEG
@@ -346,7 +348,6 @@ subroutine MAKE_DIRECT(NPTS, BCFLAG, IPFLAG, DELTAM,&
         &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
         &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
 
-!!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(IP, DIRPATH)
     do IP = 1, NPTS
         DIRPATH = 0.0
         call DIRECT_BEAM_PROP&
@@ -355,7 +356,6 @@ subroutine MAKE_DIRECT(NPTS, BCFLAG, IPFLAG, DELTAM,&
             &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(IP),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
     end do
-!!$OMP END PARALLEL DO
 
     return
 end subroutine
@@ -378,7 +378,7 @@ subroutine PREPARE_PROP(ML, MM, NSTLEG, NLEG, NPTS, DELTAM,&
     real WAVENO(2), WAVELEN, ALBMAX
     real EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, *)
     real TEMP(NPTS), PLANCK(NPTS)
-    character*1 SRCTYPE, UNITS
+    character(len=1) :: SRCTYPE, UNITS
     integer I, IPH, L
     real F, BB
 
@@ -443,14 +443,14 @@ subroutine INIT_RADIANCE(NSTOKES, NXY, NZ, NSTLEG, NLEG,&
     real EXTINCT(NZ, NXY), ALBEDO(NZ, NXY), LEGEN(NSTLEG, 0:NLEG, *)
     real TEMP(NZ, NXY)
     real RADIANCE(NSTOKES, *)
-    character SRCTYPE*1, UNITS*1
+    character(len=1) :: SRCTYPE, UNITS
     integer NLAYER, I, IZ, IR, J, K, L
     logical DELTAM
     real PI, C0, C1
     real EXT0, EXT1, SCAT0, SCAT1, G0, G1, GNDEMIS
     real, allocatable :: OPTDEPTHS(:), ALBEDOS(:), ASYMMETRIES(:)
     real, allocatable :: TEMPS(:), FLUXES(:, :)
-    character SRCT*1
+    character(len=1) :: SRCT
 
     allocate (OPTDEPTHS(NZ), ALBEDOS(NZ), ASYMMETRIES(NZ))
     allocate (TEMPS(NZ), FLUXES(3, NZ))
@@ -580,7 +580,7 @@ subroutine EDDRTF(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
     real OPTDEPTHS(*), ALBEDOS(*), ASYMMETRIES(*)
     real GNDTEMP, GNDEMIS, SKYRAD, SOLARFLUX, SOLARMU
     real WAVENO(2), WAVELEN
-    character*1 SRCTYPE, UNITS
+    character(len=1) :: SRCTYPE, UNITS
     real FLUXES(3, *)
 
     integer N, L, I
@@ -981,7 +981,7 @@ subroutine COMPUTE_NETFLUXDIV(NSTOKES, NPTS, RSHPTR, SRCTYPE,&
     real PLANCK(NPTS), DIRFLUX(NPTS), SOLARMU
     real EXTINCT(NPTS), ALBEDO(NPTS)
     real RADIANCE(NSTOKES, *), NETFLUXDIV(NPTS)
-    character SRCTYPE*1
+    character(len=1) :: SRCTYPE
     integer I, IR
     real PI, C, SECMU, HR
 
@@ -1016,7 +1016,7 @@ subroutine COMPUTE_SH(NSHOUT, NSTOKES, NPTS, SRCTYPE,&
     integer NSTOKES, NPTS, RSHPTR(NPTS + 1), ML, MM, NSHOUT
     real SOLARMU, SOLARAZ, DIRFLUX(NPTS)
     real RADIANCE(NSTOKES, *), SHTERMS(NSHOUT, NPTS)
-    character SRCTYPE*1
+    character(len=1) :: SRCTYPE
     integer I, IR, J, NLM
     real PI, A, C, C0, IMEAN, FX, FY, FZ, HORMS
     real SECSOL, SINSOL, SOLX, SOLY, SOLM, F0
@@ -1245,8 +1245,8 @@ subroutine VISUALIZE_RADIANCE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     real EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, *)
     real DIRFLUX(NPTS), FLUXES(2, NPTS), SOURCE(NSTOKES, *)
     real OUTPARMS(*), VISOUT(NSTOKES, *)
-    character SRCTYPE*1, SFCTYPE*2, UNITS*1
-
+    character(len=1) :: SRCTYPE, UNITS
+    character(len=2) :: SFCTYPE
     integer NSCATANGLE, NSTPHASE, I, J, L, N, SIDE
     integer NL, NS, LINE, SAMP
     logical CAMERA_MODE, VALIDRAD
@@ -1516,7 +1516,8 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
     real PHASETAB(NSTPHASE, NUMPHASE, NSCATANGLE)
     double precision MU2, PHI2, X0, Y0, Z0, XE, YE, ZE
     double precision TRANSMIT, RADIANCE(NSTOKES)
-    character SRCTYPE*1, SFCTYPE*2
+    character(len=1) :: SRCTYPE
+    character(len=2) :: SFCTYPE
 
     integer BITX, BITY, BITZ, IOCT, ICELL, INEXTCELL, IFACE
     integer IOPP, NTAU, IT, I, IPT1, IPT2, J, L
@@ -1902,7 +1903,8 @@ subroutine FIND_BOUNDARY_RADIANCE(NSTOKES, XB, YB, MU2, PHI2,&
     real WTDO(NMU, NPHI0MAX), MU(NMU), PHI(NMU, NPHI0MAX)
     real WAVELEN, SOLARMU, SOLARAZ, DIRFLUX(*)
     real SFCGRIDPARMS(NSFCPAR, NBOTPTS), BCRAD(NSTOKES, *)
-    character SRCTYPE*1, SFCTYPE*2
+    character(len=1) :: SRCTYPE
+    character(len=2) :: SFCTYPE
 
     integer IL, IM, IU, IP, IBC, J
     logical LAMBERTIAN
@@ -2008,7 +2010,7 @@ subroutine COMPUTE_SOURCE_1CELL(ICELL, GRIDPTR,&
     real OEXTINCT8(8), OSRCEXT8(NSTOKES, 8)
     real EXTINCT8(8), SRCEXT8(NSTOKES, 8)
     double precision SUNDIRLEG(0:NLEG)
-    character SRCTYPE*1
+    character(len=1) :: SRCTYPE
 
     integer IP, J, JT, L, M, MS, ME, IPH, IS, NS, N, I
     real SECMU0, F, DA, A, A1, B1
@@ -2137,7 +2139,7 @@ subroutine COMPUTE_SOURCE_1CELL_UNPOL(ICELL, GRIDPTR,&
     real OEXTINCT8(8), OSRCEXT8(8)
     real EXTINCT8(8), SRCEXT8(8)
     double precision SUNDIRLEG(0:NLEG)
-    character SRCTYPE*1
+    character(len=1) :: SRCTYPE
 
     integer IP, J, JT, L, M, MS, ME, IPH, IS, NS, N, I
     real SECMU0, F, DA, A, A1, B1
@@ -2362,8 +2364,8 @@ subroutine COMPUTE_RADIANCE(&
     real SOURCE1(NSTOKES, NPTS), GRIDRAD(NSTOKES, NPTS)
     real SOURCE(NSTOKES, *)
     real OUTPARMS(*), RADOUT(NSTOKES, *)
-    character SRCTYPE*1, SFCTYPE*2, UNITS*1
-
+    character(len=1) :: SRCTYPE, UNITS
+    character(len=2) :: SFCTYPE
     integer I, IBC, IANG, JX, JY, K, SIDE
     integer NANGOUT, NXOUT, NYOUT
     logical LAMBERTIAN, VALIDRAD
@@ -2522,7 +2524,7 @@ subroutine COMPUTE_ONE_SOURCE(NSTOKES,&
     real SOLARMU, SOLARAZ, MU, PHI
     real ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, NPTS), DIRFLUX(NPTS)
     real SOURCE(NSTOKES, *), SOURCE1(NSTOKES, NPTS)
-    character SRCTYPE*1
+    character(len=1) :: SRCTYPE
     integer I, J, JT, K, L, M, N, IPH, IS, NS, ME, MS
     real OFOURPI, DA, F, A, A1, B1, SECMU0, COSSCAT
     real, allocatable :: YLMDIR(:, :), YLMSUN(:, :)
@@ -2787,23 +2789,6 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
     double precision SRC(NSTOKES), RAD(NSTOKES)
     data GRIDFACE/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8,&
         &1, 2, 3, 4, 5, 6, 7, 8/, OPPFACE/2, 1, 4, 3, 6, 5/
-
-    ! added for fixing the "domain shift" issue
-    !╭──────────────────────────────────────────────────────────────╮!
-    !real :: DS_Z0, DS_VZA_RAD, DS_XOFFSET, DS_YOFFSET
-
-    !if (IPFLAG .eq. 0) then
-    !  DS_Z0 = ZGRID(NZ) - ZGRID(1)
-    !  DS_VZA_RAD = acos(MU)
-    !  DS_XOFFSET = DS_Z0*tan(DS_VZA_RAD)*cos(PHI)
-    !  DS_YOFFSET = DS_Z0*tan(DS_VZA_RAD)*sin(PHI)
-    !else
-    !  DS_XOFFSET = 0.0
-    !  DS_YOFFSET = 0.0
-    !endif
-    !X0 = X0 + DS_XOFFSET
-    !Y0 = Y0 + DS_YOFFSET
-    !╰──────────────────────────────────────────────────────────────╯!
 
     ! TAUTOL is the maximum optical path for the subgrid intervals
     TAUTOL = 0.1
@@ -3780,7 +3765,7 @@ subroutine PLANCK_FUNCTION(TEMP, UNITS, WAVENO, WAVELEN, PLANCK)
     ! temperature in [Kelvins] at a wavelength in [microns] is returned.
     implicit none
     real TEMP, WAVENO(2), WAVELEN, PLANCK
-    character*1 UNITS
+    character(len=1) :: UNITS
     double precision X1, X2, F
 
     if (UNITS .eq. 'T') then
@@ -3853,10 +3838,10 @@ double precision function INTLOW(X)
 
     SUM = A(4)*X**4
     F = X
-    do 100 N = 3, 29, 2
+    do N = 3, 29, 2
         F = X*X*F
         SUM = SUM + A(N)*F
-100 end do
+    end do
     INTLOW = SUM
     return
 end function
@@ -3870,10 +3855,10 @@ double precision function INTHIGH(X)
     double precision SUM
 
     SUM = 0.0d0
-    do 100 N = 1, 15
+    do N = 1, 15
         SUM = SUM + exp(-N*X)&
             &*(X**3/N + 3*X**2/N**2 + 6*X/N**3 + 6.0d0/N**4)
-100 end do
+    end do
     INTHIGH = SUM
     return
 end function
@@ -3986,51 +3971,51 @@ subroutine TRILIN_INTERP_PROP(X, Y, Z, INIT, NSTLEG, NLEG,&
 
     if (INIT) then
        ! If there are tabulated phase functions, then transfer them
-        do I = 1, NUMPHASE
+        do I = 1, NUMPHASE_
             do L = 0, NLEG
                 do J = 1, NSTLEG
-                    LEGEN(J, L, I) = LEGENP(J + NSTLEG*(L + (NLEG + 1)*(I - 1)))/(2*L + 1)
+                    LEGEN(J, L, I) = LEGENP_(J + NSTLEG*(L + (NLEG + 1)*(I - 1)))/(2*L + 1)
                 end do
             end do
         end do
-        EXTMIN = 1.0e-5/((ZLEVELS(NPZ) - ZLEVELS(1))/NPZ)
+        EXTMIN = 1.0e-5/((ZLEVELS_(NPZ_) - ZLEVELS_(1))/NPZ_)
         SCATMIN = 0.1*EXTMIN
         return
     end if
 
     ! Find the grid location and compute the interpolation factors
     IL = 0
-    IU = NPZ
+    IU = NPZ_
     do while (IU - IL .gt. 1)
         IM = (IU + IL)/2
-        if (Z .ge. ZLEVELS(IM)) then
+        if (Z .ge. ZLEVELS_(IM)) then
             IL = IM
         else
             IU = IM
         end if
     end do
     IZ = max(IL, 1)
-    W = dble(Z - ZLEVELS(IZ))/(ZLEVELS(IZ + 1) - ZLEVELS(IZ))
+    W = dble(Z - ZLEVELS_(IZ))/(ZLEVELS_(IZ + 1) - ZLEVELS_(IZ))
     W = max(min(W, 1.0d0), 0.0d0)
-    IX = int((X - XSTART)/DELX) + 1
-    if (abs(X - XSTART - NPX*DELX) .lt. 0.01*DELX) IX = NPX
-    if (IX .lt. 1 .or. IX .gt. NPX) then
+    IX = int((X - XSTART_)/DELX_) + 1
+    if (abs(X - XSTART_ - NPX_*DELX_) .lt. 0.01*DELX_) IX = NPX_
+    if (IX .lt. 1 .or. IX .gt. NPX_) then
         write (6, *) 'TRILIN: Beyond X domain'
         stop
     end if
-    IXP = mod(IX, NPX) + 1
-    U = dble(X - XSTART - DELX*(IX - 1))/DELX
+    IXP = mod(IX, NPX_) + 1
+    U = dble(X - XSTART_ - DELX_*(IX - 1))/DELX_
     U = max(min(U, 1.0d0), 0.0d0)
     if (U .lt. 1.0d-5) U = 0.0d0
     if (U .gt. 1.0d0 - 1.0d-5) U = 1.0d0
-    IY = int((Y - YSTART)/DELY) + 1
-    if (abs(Y - YSTART - NPY*DELY) .lt. 0.01*DELY) IY = NPY
-    if (IY .lt. 1 .or. IY .gt. NPY) then
+    IY = int((Y - YSTART_)/DELY_) + 1
+    if (abs(Y - YSTART_ - NPY_*DELY_) .lt. 0.01*DELY_) IY = NPY_
+    if (IY .lt. 1 .or. IY .gt. NPY_) then
         write (6, *) 'TRILIN: Beyond Y domain'
         stop
     end if
-    IYP = mod(IY, NPY) + 1
-    V = dble(Y - YSTART - DELY*(IY - 1))/DELY
+    IYP = mod(IY, NPY_) + 1
+    V = dble(Y - YSTART_ - DELY_*(IY - 1))/DELY_
     V = max(min(V, 1.0d0), 0.0d0)
     if (V .lt. 1.0d-5) V = 0.0d0
     if (V .gt. 1.0d0 - 1.0d-5) V = 1.0d0
@@ -4043,29 +4028,29 @@ subroutine TRILIN_INTERP_PROP(X, Y, Z, INIT, NSTLEG, NLEG,&
     F6 = U*(1 - V)*W
     F7 = (1 - U)*V*W
     F8 = U*V*W
-    I1 = IZ + NPZ*(IY - 1) + NPZ*NPY*(IX - 1)
-    I2 = IZ + NPZ*(IY - 1) + NPZ*NPY*(IXP - 1)
-    I3 = IZ + NPZ*(IYP - 1) + NPZ*NPY*(IX - 1)
-    I4 = IZ + NPZ*(IYP - 1) + NPZ*NPY*(IXP - 1)
+    I1 = IZ + NPZ_*(IY - 1) + NPZ_*NPY_*(IX - 1)
+    I2 = IZ + NPZ_*(IY - 1) + NPZ_*NPY_*(IXP - 1)
+    I3 = IZ + NPZ_*(IYP - 1) + NPZ_*NPY_*(IX - 1)
+    I4 = IZ + NPZ_*(IYP - 1) + NPZ_*NPY_*(IXP - 1)
     I5 = I1 + 1
     I6 = I2 + 1
     I7 = I3 + 1
     I8 = I4 + 1
 
     ! Trilinearly interpolate the temperature, extinction, scattering
-    TEMP = F1*TEMPP(I1) + F2*TEMPP(I2) + F3*TEMPP(I3) + F4*TEMPP(I4)&
-        &+ F5*TEMPP(I5) + F6*TEMPP(I6) + F7*TEMPP(I7) + F8*TEMPP(I8)
-    EXTINCT = F1*EXTINCTP(I1) + F2*EXTINCTP(I2) + F3*EXTINCTP(I3)&
-        &+ F4*EXTINCTP(I4) + F5*EXTINCTP(I5) + F6*EXTINCTP(I6)&
-        &+ F7*EXTINCTP(I7) + F8*EXTINCTP(I8)
-    SCAT1 = F1*EXTINCTP(I1)*ALBEDOP(I1)
-    SCAT2 = F2*EXTINCTP(I2)*ALBEDOP(I2)
-    SCAT3 = F3*EXTINCTP(I3)*ALBEDOP(I3)
-    SCAT4 = F4*EXTINCTP(I4)*ALBEDOP(I4)
-    SCAT5 = F5*EXTINCTP(I5)*ALBEDOP(I5)
-    SCAT6 = F6*EXTINCTP(I6)*ALBEDOP(I6)
-    SCAT7 = F7*EXTINCTP(I7)*ALBEDOP(I7)
-    SCAT8 = F8*EXTINCTP(I8)*ALBEDOP(I8)
+    TEMP = F1*TEMPP_(I1) + F2*TEMPP_(I2) + F3*TEMPP_(I3) + F4*TEMPP_(I4)&
+        &+ F5*TEMPP_(I5) + F6*TEMPP_(I6) + F7*TEMPP_(I7) + F8*TEMPP_(I8)
+    EXTINCT = F1*EXTINCTP_(I1) + F2*EXTINCTP_(I2) + F3*EXTINCTP_(I3)&
+        &+ F4*EXTINCTP_(I4) + F5*EXTINCTP_(I5) + F6*EXTINCTP_(I6)&
+        &+ F7*EXTINCTP_(I7) + F8*EXTINCTP_(I8)
+    SCAT1 = F1*EXTINCTP_(I1)*ALBEDOP_(I1)
+    SCAT2 = F2*EXTINCTP_(I2)*ALBEDOP_(I2)
+    SCAT3 = F3*EXTINCTP_(I3)*ALBEDOP_(I3)
+    SCAT4 = F4*EXTINCTP_(I4)*ALBEDOP_(I4)
+    SCAT5 = F5*EXTINCTP_(I5)*ALBEDOP_(I5)
+    SCAT6 = F6*EXTINCTP_(I6)*ALBEDOP_(I6)
+    SCAT7 = F7*EXTINCTP_(I7)*ALBEDOP_(I7)
+    SCAT8 = F8*EXTINCTP_(I8)*ALBEDOP_(I8)
     SCATTER = SCAT1 + SCAT2 + SCAT3 + SCAT4 + SCAT5 + SCAT6 + SCAT7 + SCAT8
     if (EXTINCT .gt. EXTMIN) then
         ALBEDO = SCATTER/EXTINCT
@@ -4074,52 +4059,52 @@ subroutine TRILIN_INTERP_PROP(X, Y, Z, INIT, NSTLEG, NLEG,&
     end if
     ! For tabulated phase functions pick the one we are on top of
     !   or the one with the most scattering weight.
-    if (NUMPHASE .gt. 0) then
+    if (NUMPHASE_ .gt. 0) then
         MAXSCAT = -1.0
         if (SCAT1 .gt. MAXSCAT .or. abs(F1 - 1) .lt. 0.001) then
             MAXSCAT = SCAT1
-            IPHASE = IPHASEP(I1)
+            IPHASE = IPHASEP_(I1)
         end if
         if (SCAT2 .gt. MAXSCAT .or. abs(F2 - 1) .lt. 0.001) then
             MAXSCAT = SCAT2
-            IPHASE = IPHASEP(I2)
+            IPHASE = IPHASEP_(I2)
         end if
         if (SCAT3 .gt. MAXSCAT .or. abs(F3 - 1) .lt. 0.001) then
             MAXSCAT = SCAT3
-            IPHASE = IPHASEP(I3)
+            IPHASE = IPHASEP_(I3)
         end if
         if (SCAT4 .gt. MAXSCAT .or. abs(F4 - 1) .lt. 0.001) then
             MAXSCAT = SCAT4
-            IPHASE = IPHASEP(I4)
+            IPHASE = IPHASEP_(I4)
         end if
         if (SCAT5 .gt. MAXSCAT .or. abs(F5 - 1) .lt. 0.001) then
             MAXSCAT = SCAT5
-            IPHASE = IPHASEP(I5)
+            IPHASE = IPHASEP_(I5)
         end if
         if (SCAT6 .gt. MAXSCAT .or. abs(F6 - 1) .lt. 0.001) then
             MAXSCAT = SCAT6
-            IPHASE = IPHASEP(I6)
+            IPHASE = IPHASEP_(I6)
         end if
         if (SCAT7 .gt. MAXSCAT .or. abs(F7 - 1) .lt. 0.001) then
             MAXSCAT = SCAT7
-            IPHASE = IPHASEP(I7)
+            IPHASE = IPHASEP_(I7)
         end if
         if (SCAT8 .gt. MAXSCAT .or. abs(F8 - 1) .lt. 0.001) then
             MAXSCAT = SCAT8
-            IPHASE = IPHASEP(I8)
+            IPHASE = IPHASEP_(I8)
         end if
     else
         ! Standard property file format: unpolarized
         LEGEN(1, 0, 1) = 1.0
         do L = 1, NLEG
-            LEGEN(1, L, 1) = SCAT1*LEGENP(L + (NLEG + 1)*(I1 - 1))&
-                &+ SCAT2*LEGENP(L + (NLEG + 1)*(I2 - 1))&
-                &+ SCAT3*LEGENP(L + (NLEG + 1)*(I3 - 1))&
-                &+ SCAT4*LEGENP(L + (NLEG + 1)*(I4 - 1))&
-                &+ SCAT5*LEGENP(L + (NLEG + 1)*(I5 - 1))&
-                &+ SCAT6*LEGENP(L + (NLEG + 1)*(I6 - 1))&
-                &+ SCAT7*LEGENP(L + (NLEG + 1)*(I7 - 1))&
-                &+ SCAT8*LEGENP(L + (NLEG + 1)*(I8 - 1))
+            LEGEN(1, L, 1) = SCAT1*LEGENP_(L + (NLEG + 1)*(I1 - 1))&
+                &+ SCAT2*LEGENP_(L + (NLEG + 1)*(I2 - 1))&
+                &+ SCAT3*LEGENP_(L + (NLEG + 1)*(I3 - 1))&
+                &+ SCAT4*LEGENP_(L + (NLEG + 1)*(I4 - 1))&
+                &+ SCAT5*LEGENP_(L + (NLEG + 1)*(I5 - 1))&
+                &+ SCAT6*LEGENP_(L + (NLEG + 1)*(I6 - 1))&
+                &+ SCAT7*LEGENP_(L + (NLEG + 1)*(I7 - 1))&
+                &+ SCAT8*LEGENP_(L + (NLEG + 1)*(I8 - 1))
             if (SCATTER .gt. SCATMIN) then
                 LEGEN(1, L, 1) = LEGEN(1, L, 1)/SCATTER
             else
@@ -4130,21 +4115,21 @@ subroutine TRILIN_INTERP_PROP(X, Y, Z, INIT, NSTLEG, NLEG,&
     end if
 
     ! Add in the gaseous absorption to extinction and albedo
-    if (NZCKD .gt. 0) then
+    if (NZCKD_ .gt. 0) then
         IL = 1
-        IU = NZCKD
+        IU = NZCKD_
         do while (IU - IL .gt. 1)
             IM = (IU + IL)/2
-            if (Z .le. ZCKD(IM)) then
+            if (Z .le. ZCKD_(IM)) then
                 IL = IM
             else
                 IU = IM
             end if
         end do
-        I = min(max(IL, 1), NZCKD - 1)
-        F = (Z - ZCKD(I))/(ZCKD(I + 1) - ZCKD(I))
+        I = min(max(IL, 1), NZCKD_ - 1)
+        F = (Z - ZCKD_(I))/(ZCKD_(I + 1) - ZCKD_(I))
         F = min(max(F, 0.0d0), 1.0d0)
-        KG = (1.0 - F)*GASABS(I) + F*GASABS(I + 1)
+        KG = (1.0 - F)*GASABS_(I) + F*GASABS_(I + 1)
         if (EXTINCT + KG .gt. 0.0) then
             ALBEDO = ALBEDO*EXTINCT/(EXTINCT + KG)
         else
@@ -4220,24 +4205,24 @@ subroutine DIRECT_BEAM_PROP(INIT, XI, YI, ZI, BCFLAG, IPFLAG,&
     end if
 
     if (INIT .eq. 1) then
-        if (.not. allocated(GASEXT)) allocate (GASEXT(NPZ), EXTMIN(NPZ), EXTMAX(NPZ))
+        if (.not. allocated(GASEXT)) allocate (GASEXT(NPZ_), EXTMIN(NPZ_), EXTMAX(NPZ_))
         ! Get the gaseous extinction at the property grid levels
-        do IZ = 1, NPZ
-            if (NZCKD .gt. 0) then
+        do IZ = 1, NPZ_
+            if (NZCKD_ .gt. 0) then
                 IL = 1
-                IU = NZCKD
+                IU = NZCKD_
                 do while (IU - IL .gt. 1)
                     IM = (IU + IL)/2
-                    if (ZLEVELS(IZ) .le. ZCKD(IM)) then
+                    if (ZLEVELS_(IZ) .le. ZCKD_(IM)) then
                         IL = IM
                     else
                         IU = IM
                     end if
                 end do
-                I = min(max(IL, 1), NZCKD - 1)
-                W0 = (ZLEVELS(IZ) - ZCKD(I))/(ZCKD(I + 1) - ZCKD(I))
+                I = min(max(IL, 1), NZCKD_ - 1)
+                W0 = (ZLEVELS_(IZ) - ZCKD_(I))/(ZCKD_(I + 1) - ZCKD_(I))
                 W0 = min(max(W0, 0.0d0), 1.0d0)
-                GASEXT(IZ) = (1.0 - W0)*GASABS(I) + W0*GASABS(I + 1)
+                GASEXT(IZ) = (1.0 - W0)*GASABS_(I) + W0*GASABS_(I + 1)
             else
                 GASEXT(IZ) = 0.0
             end if
@@ -4245,12 +4230,12 @@ subroutine DIRECT_BEAM_PROP(INIT, XI, YI, ZI, BCFLAG, IPFLAG,&
         ! First make the property grid extinction field, on which all
         !   the direct beam paths will be computed.
         IP = 0
-        do IX = 1, NPX
-            do IY = 1, NPY
-                do IZ = 1, NPZ
+        do IX = 1, NPX_
+            do IY = 1, NPY_
+                do IZ = 1, NPZ_
                     IP = IP + 1
-                    EXTINCT = EXTINCTP(IP)
-                    ALBEDO = ALBEDOP(IP)
+                    EXTINCT = EXTINCTP_(IP)
+                    ALBEDO = ALBEDOP_(IP)
                     ! Add in the gaseous absorption to extinction
                     if (GASEXT(IZ) .gt. 0.0) then
                         ALBEDO = ALBEDO*EXTINCT/(EXTINCT + GASEXT(IZ))
@@ -4258,16 +4243,16 @@ subroutine DIRECT_BEAM_PROP(INIT, XI, YI, ZI, BCFLAG, IPFLAG,&
                     end if
                     ! Do the Delta-M scaling if needed
                     if (DELTAM) then
-                        if (NUMPHASE .gt. 0) then
-                            IPH = IPHASEP(IP)
+                        if (NUMPHASE_ .gt. 0) then
+                            IPH = IPHASEP_(IP)
                         else
                             IPH = IP
                         end if
                         L = ML + 1
-                        F = LEGENP(1 + NSTLEG*(L + (NLEG + 1)*(IPH - 1)))/(2*L + 1)
+                        F = LEGENP_(1 + NSTLEG*(L + (NLEG + 1)*(IPH - 1)))/(2*L + 1)
                         EXTINCT = (1.0 - ALBEDO*F)*EXTINCT
                     end if
-                    EXTDIRP(IP) = EXTINCT
+                    EXTDIRP_(IP) = EXTINCT
                 end do
             end do
         end do
@@ -4304,40 +4289,48 @@ subroutine DIRECT_BEAM_PROP(INIT, XI, YI, ZI, BCFLAG, IPFLAG,&
         DI = nint(sign(1.0d0, CX))
         DJ = nint(sign(1.0d0, CY))
         DK = nint(sign(1.0d0, CZ))
-        EPSZ = 1.0e-6*(ZLEVELS(NPZ) - ZLEVELS(1))
-        EPSS = 1.0e-3*(ZLEVELS(NPZ) - ZLEVELS(1))/NPZ
-        if (.not. btest(IPDIRECT, 0)) EPSS = max(EPSS, 1.0d-4*DELX)
-        if (.not. btest(IPDIRECT, 1)) EPSS = max(EPSS, 1.0d-4*DELY)
-        DELXD = dble(DELX)
-        DELYD = dble(DELY)
+        EPSZ = 1.0e-6*(ZLEVELS_(NPZ_) - ZLEVELS_(1))
+        EPSS = 1.0e-3*(ZLEVELS_(NPZ_) - ZLEVELS_(1))/NPZ_
+        if (.not. btest(IPDIRECT, 0)) EPSS = max(EPSS, 1.0d-4*DELX_)
+        if (.not. btest(IPDIRECT, 1)) EPSS = max(EPSS, 1.0d-4*DELY_)
+        DELXD = dble(DELX_)
+        DELYD = dble(DELY_)
         EPSS = max(0.001*DELXD, 0.001*DELYD, EPSS)
-        XDOMAIN = DELXD*NPX
-        if (btest(BCFLAG, 2)) XDOMAIN = DELXD*(NPX - 1)
-        YDOMAIN = DELYD*NPY
-        if (btest(BCFLAG, 3)) YDOMAIN = DELYD*(NPY - 1)
+
+        if (btest(BCFLAG, 2) .and. (NPX_ .gt. 1)) then
+            XDOMAIN = DELXD*(NPX_ - 1)
+        else
+            XDOMAIN = DELXD*NPX_
+        end if
+
+        if (btest(BCFLAG, 3) .and. (NPY_ .gt. 1)) then
+            YDOMAIN = DELYD*(NPY_ - 1)
+        else
+            YDOMAIN = DELYD*NPY_
+        end if
 
         ! Find the Z level above which the medium is plane-parallel
         EXTBEAMCUT = 1.0e-4
-        do IZ = 1, NPZ
+        do IZ = 1, NPZ_
             EXTMIN(IZ) = 1.0e20
             EXTMAX(IZ) = 0.0
         end do
         IP = 0
-        do IX = 1, NPX
-            do IY = 1, NPY
-                do IZ = 1, NPZ
+        do IX = 1, NPX_
+            do IY = 1, NPY_
+                do IZ = 1, NPZ_
                     IP = IP + 1
-                    EXTMIN(IZ) = min(EXTINCTP(IP), EXTMIN(IZ))
-                    EXTMAX(IZ) = max(EXTINCTP(IP), EXTMAX(IZ))
+                    EXTMIN(IZ) = min(EXTINCTP_(IP), EXTMIN(IZ))
+                    EXTMAX(IZ) = max(EXTINCTP_(IP), EXTMAX(IZ))
                 end do
             end do
         end do
         JZ = 0
-        do IZ = 1, NPZ
+        do IZ = 1, NPZ_
             if (EXTMAX(IZ) - EXTMIN(IZ) .gt. EXTBEAMCUT) JZ = IZ
         end do
-        JZ = min(NPZ, JZ + 1)
-        UNIFORMZLEV = ZLEVELS(JZ)
+        JZ = min(NPZ_, JZ + 1)
+        UNIFORMZLEV = ZLEVELS_(JZ)
         UNIFZLEV = UNIFORMZLEV
         return
     ! Done with initialization
@@ -4350,30 +4343,32 @@ subroutine DIRECT_BEAM_PROP(INIT, XI, YI, ZI, BCFLAG, IPFLAG,&
 
     ! Here for computing the direct beam path for one starting point.
     Z = ZI
-    X = XI - XSTART
-    Y = YI - YSTART
+    X = XI - XSTART_
+    Y = YI - YSTART_
 
     ! Find the grid location
     IL = 0
-    IU = NPZ
+    IU = NPZ_
     do while (IU - IL .gt. 1)
         IM = (IU + IL)/2
-        if (Z .ge. ZLEVELS(IM)) then
+        if (Z .ge. ZLEVELS_(IM)) then
             IL = IM
         else
             IU = IM
         end if
     end do
     K = max(IL, 1)
+
     I = int(X/DELXD) + 1
-    if (I .gt. NPX .and. abs(X - XDOMAIN) .lt. 0.001*DELXD) I = NPX
-    if (I .lt. 1 .or. I .gt. NPX) then
+    if (I .gt. NPX_ .and. abs(X - XDOMAIN) .lt. 0.001*DELXD) I = NPX_
+    if (I .lt. 1 .or. I .gt. NPX_) then
         write (6, *) 'DIRECT_BEAM_PROP: Beyond X domain', I, XI, YI, ZI
         stop
     end if
+
     J = int(Y/DELYD) + 1
-    if (J .gt. NPY .and. abs(Y - YDOMAIN) .lt. 0.001*DELYD) J = NPY
-    if (J .lt. 1 .or. J .gt. NPY) then
+    if (J .gt. NPY_ .and. abs(Y - YDOMAIN) .lt. 0.001*DELYD) J = NPY_
+    if (J .lt. 1 .or. J .gt. NPY_) then
         write (6, *) 'DIRECT_BEAM_PROP: Beyond Y domain', J, XI, YI, ZI
         stop
     end if
@@ -4388,9 +4383,9 @@ subroutine DIRECT_BEAM_PROP(INIT, XI, YI, ZI, BCFLAG, IPFLAG,&
     if (CX .eq. 0.0) CONSTX = .true.
     if (CY .eq. 0.0) CONSTY = .true.
     if (btest(BCFLAG, 0) .and. (abs(X) .lt. 0.01*DELXD&
-        &.or. abs(X - (NPX - 1)*DELXD) .lt. 0.01*DELXD)) CONSTX = .true.
+        &.or. abs(X - (NPX_ - 1)*DELXD) .lt. 0.01*DELXD)) CONSTX = .true.
     if (btest(BCFLAG, 1) .and. (abs(Y) .lt. 0.01*DELYD&
-        &.or. abs(Y - (NPY - 1)*DELYD) .lt. 0.01*DELYD)) CONSTY = .true.
+        &.or. abs(Y - (NPY_ - 1)*DELYD) .lt. 0.01*DELYD)) CONSTY = .true.
 
     ! If have multiple subdomains (processors) and ray is going outwards
     !   from a boundary then set the HITBOUNDARY flag
@@ -4417,19 +4412,19 @@ subroutine DIRECT_BEAM_PROP(INIT, XI, YI, ZI, BCFLAG, IPFLAG,&
 
     ! Grid cell loop begin
     PATH = DIRPATH
-    do while (.not. HITBOUNDARY .and. abs(ZE - ZLEVELS(NPZ)) .gt. EPSZ)
+    do while (.not. HITBOUNDARY .and. abs(ZE - ZLEVELS_(NPZ_)) .gt. EPSZ)
         IP = I + 1
-        if (I .eq. NPX) then
+        if (I .eq. NPX_) then
             if (btest(BCFLAG, 0) .or. btest(BCFLAG, 2)) then
-                IP = NPX
+                IP = NPX_
             else
                 IP = 1
             end if
         end if
         JP = J + 1
-        if (J .eq. NPY) then
+        if (J .eq. NPY_) then
             if (btest(BCFLAG, 1) .or. btest(BCFLAG, 3)) then
-                JP = NPY
+                JP = NPY_
             else
                 JP = 1
             end if
@@ -4438,28 +4433,28 @@ subroutine DIRECT_BEAM_PROP(INIT, XI, YI, ZI, BCFLAG, IPFLAG,&
         X1 = X0 + DELXD
         Y0 = DELYD*(J - 1)
         Y1 = Y0 + DELYD
-        Z0 = ZLEVELS(K)
-        Z1 = ZLEVELS(K + 1)
-        if  (I .lt. 1 .or. I .gt. NPX .or.&
-            &J .lt. 1 .or. J .gt. NPY .or.&
-            &K .lt. 1 .or. K .ge. NPZ) then
+        Z0 = ZLEVELS_(K)
+        Z1 = ZLEVELS_(K + 1)
+        if  (I .lt. 1 .or. I .gt. NPX_ .or.&
+            &J .lt. 1 .or. J .gt. NPY_ .or.&
+            &K .lt. 1 .or. K .ge. NPZ_) then
             write (6, '(A,3I4)') 'DIRECT_BEAM_PROP: beyond grid!', I, J, K
             write (6, '(1(2X,3F9.5))') X, Y, Z
             stop
         end if
         ! Get the eight corner extinction values
-        I1 = K + NPZ*(J - 1) + NPZ*NPY*(I - 1)
-        I2 = K + NPZ*(J - 1) + NPZ*NPY*(IP - 1)
-        I3 = K + NPZ*(JP - 1) + NPZ*NPY*(I - 1)
-        I4 = K + NPZ*(JP - 1) + NPZ*NPY*(IP - 1)
-        E1 = EXTDIRP(I1)
-        E2 = EXTDIRP(I2)
-        E3 = EXTDIRP(I3)
-        E4 = EXTDIRP(I4)
-        E5 = EXTDIRP(I1 + 1)
-        E6 = EXTDIRP(I2 + 1)
-        E7 = EXTDIRP(I3 + 1)
-        E8 = EXTDIRP(I4 + 1)
+        I1 = K + NPZ_*(J - 1) + NPZ_*NPY_*(I - 1)
+        I2 = K + NPZ_*(J - 1) + NPZ_*NPY_*(IP - 1)
+        I3 = K + NPZ_*(JP - 1) + NPZ_*NPY_*(I - 1)
+        I4 = K + NPZ_*(JP - 1) + NPZ_*NPY_*(IP - 1)
+        E1 = EXTDIRP_(I1)
+        E2 = EXTDIRP_(I2)
+        E3 = EXTDIRP_(I3)
+        E4 = EXTDIRP_(I4)
+        E5 = EXTDIRP_(I1 + 1)
+        E6 = EXTDIRP_(I2 + 1)
+        E7 = EXTDIRP_(I3 + 1)
+        E8 = EXTDIRP_(I4 + 1)
 
         ! Compute the distance to the next grid plane in  X, Y, and Z
         !   If in horizontal uniform region or doing IP then fix X and/or Y.
@@ -4519,15 +4514,15 @@ subroutine DIRECT_BEAM_PROP(INIT, XI, YI, ZI, BCFLAG, IPFLAG,&
                     HITBOUNDARY = .true.
                     SIDE = 1
                 else
-                    I = NPX
+                    I = NPX_
                     XOFFS = XDOMAIN
                 end if
-            else if (I .ge. NPX .and. btest(BCFLAG, 2)) then
+            else if (I .ge. NPX_ .and. btest(BCFLAG, 2)) then
                 HITBOUNDARY = .true.
                 SIDE = 2
-            else if (I .eq. NPX + 1) then
+            else if (I .eq. NPX_ + 1) then
                 if (btest(BCFLAG, 0)) then
-                    I = NPX
+                    I = NPX_
                     CONSTX = .true.
                 else
                     I = 1
@@ -4547,15 +4542,15 @@ subroutine DIRECT_BEAM_PROP(INIT, XI, YI, ZI, BCFLAG, IPFLAG,&
                     HITBOUNDARY = .true.
                     SIDE = 3
                 else
-                    J = NPY
+                    J = NPY_
                     YOFFS = YDOMAIN
                 end if
-            else if (J .ge. NPY .and. btest(BCFLAG, 3)) then
+            else if (J .ge. NPY_ .and. btest(BCFLAG, 3)) then
                 HITBOUNDARY = .true.
                 SIDE = 4
-            else if (J .eq. NPY + 1) then
+            else if (J .eq. NPY_ + 1) then
                 if (btest(BCFLAG, 1)) then
-                    J = NPY
+                    J = NPY_
                     CONSTY = .true.
                 else
                     J = 1
@@ -4642,8 +4637,8 @@ subroutine DIRECT_BEAM_PROP(INIT, XI, YI, ZI, BCFLAG, IPFLAG,&
     end do
     DIRFLUX = SOLARFLUX*exp(-PATH)
     DIRPATH = PATH
-    XO = XE + XSTART; YO = YE + YSTART; ZO = ZE
-    VALIDBEAM = abs(ZE - ZLEVELS(NPZ)) .lt. EPSZ
+    XO = XE + XSTART_; YO = YE + YSTART_; ZO = ZE
+    VALIDBEAM = abs(ZE - ZLEVELS_(NPZ_)) .lt. EPSZ
     if (VALIDBEAM) SIDE = 6
     return
 end subroutine

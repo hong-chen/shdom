@@ -1429,6 +1429,9 @@ subroutine VARIABLE_BRDF_SURFACE(NBOTPTS, IBEG, IEND, BCPTR,&
     ! (loop over JMU,JPHI).  The incident downwelling radiance vectors are
     ! input in BCRAD(*,*,2...) and the outgoing upwelling radiance vectors
     ! are output in BCRAD(*,*,1).
+
+    use shd_surf
+
     implicit none
     integer NBOTPTS, IBEG, IEND, BCPTR(NBOTPTS)
     integer NMU, NPHI0MAX, NPHI0(NMU), NSFCPAR, NSTOKES
@@ -1449,7 +1452,7 @@ subroutine VARIABLE_BRDF_SURFACE(NBOTPTS, IBEG, IEND, BCPTR,&
         BCRAD(:, IBC, 1) = 0.0
         if (SRCTYPE .ne. 'T') then
             I = BCPTR(IBC)
-            call SURFACE_BRDF(SFCTYPE(2:2), SFCGRIDPARMS(2, IBC), WAVELEN,&
+            call shd_surf__brdfSurface(SFCTYPE(2:2), SFCGRIDPARMS(2, IBC), WAVELEN,&
                 &MU2, PHI2, SOLARMU, SOLARAZ, NSTOKES, REFLECT)
             BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1)&
                 &+ OPI*REFLECT(1:NSTOKES, 1)*DIRFLUX(I)
@@ -1459,7 +1462,7 @@ subroutine VARIABLE_BRDF_SURFACE(NBOTPTS, IBEG, IEND, BCPTR,&
         JANG = 1
         do JMU = 1, NMU/2
             do JPHI = 1, NPHI0(JMU)
-                call SURFACE_BRDF(SFCTYPE(2:2), SFCGRIDPARMS(2, IBC),&
+                call shd_surf__brdfSurface(SFCTYPE(2:2), SFCGRIDPARMS(2, IBC),&
                     &WAVELEN, MU2, PHI2, MU(JMU), PHI(JMU, JPHI),&
                     &NSTOKES, REFLECT)
                 W = OPI*abs(MU(JMU))*WTDO(JMU, JPHI)
@@ -1487,9 +1490,13 @@ subroutine MAKE_SFC_BRDF_DO_MATRIX(SFCTYPE, WAVELEN,&
     &SFC_BRDF_DO)
     !   Makes the precomputed BRDF surface reflection matrix for
     ! discrete ordinate incident and outgoing directions.  For each
-    ! pair of discrete ordinates SURFACE_BRDF is called and the
+    ! pair of discrete ordinates shd_surf__brdfSurface is called and the
     ! integration weights are included.
+
+    use shd_surf
+
     implicit none
+
     integer NXSFC, NYSFC, NSFCPAR
     integer NSTOKES, NMU, NPHI0MAX, NPHI0(NMU)
     real SFCPARMS(NSFCPAR, NXSFC + 1, NYSFC + 1), WAVELEN
@@ -1508,7 +1515,7 @@ subroutine MAKE_SFC_BRDF_DO_MATRIX(SFCTYPE, WAVELEN,&
             do JMU = 1, NMU/2
                 do JPHI = 1, NPHI0(JMU)
                     ! Get the BRDF for this
-                    call SURFACE_BRDF(SFCTYPE(2:2), SFCPARMS(2, 1, 1),&
+                    call shd_surf__brdfSurface(SFCTYPE(2:2), SFCPARMS(2, 1, 1),&
                         &WAVELEN, MU(IMU), PHI(IMU, IPHI),&
                         &MU(JMU), PHI(JMU, JPHI), NSTOKES, REFLECT)
                     W = OPI*abs(MU(JMU))*WTDO(JMU, JPHI)
@@ -1542,7 +1549,10 @@ subroutine UNIFORM_BRDF_SURFACE(NBOTPTS, BCPTR,&
     ! radiance vectors are input in BCRAD(*,*,2...) and the outgoing
     ! upwelling radiance vectors are output in BCRAD(*,*,1).
 
+    use shd_surf
+
     implicit none
+
     integer NBOTPTS, BCPTR(NBOTPTS)
     integer NMU, NPHI0MAX, NPHI0(NMU), IMU, IPHI, NSFCPAR, NSTOKES
     real WTDO(NMU, NPHI0MAX), MU(NMU), PHI(NMU, NPHI0MAX)
@@ -1564,7 +1574,7 @@ subroutine UNIFORM_BRDF_SURFACE(NBOTPTS, BCPTR,&
         BCRAD(:, IBC, 1) = 0.0
         if (SRCTYPE .ne. 'T') then
             I = BCPTR(IBC)
-            call SURFACE_BRDF(SFCTYPE(2:2), SFCGRIDPARMS(2, IBC), WAVELEN,&
+            call shd_surf__brdfSurface(SFCTYPE(2:2), SFCGRIDPARMS(2, IBC), WAVELEN,&
                 &MU(IMU), PHI(IMU, IPHI), SOLARMU, SOLARAZ,&
                 &NSTOKES, REFLECT)
             BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1)&
