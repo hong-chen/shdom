@@ -2790,23 +2790,6 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
     data GRIDFACE/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8,&
         &1, 2, 3, 4, 5, 6, 7, 8/, OPPFACE/2, 1, 4, 3, 6, 5/
 
-    ! added for fixing the "domain shift" issue
-    !╭──────────────────────────────────────────────────────────────╮!
-    !real :: DS_Z0, DS_VZA_RAD, DS_XOFFSET, DS_YOFFSET
-
-    !if (IPFLAG .eq. 0) then
-    !  DS_Z0 = ZGRID(NZ) - ZGRID(1)
-    !  DS_VZA_RAD = acos(MU)
-    !  DS_XOFFSET = DS_Z0*tan(DS_VZA_RAD)*cos(PHI)
-    !  DS_YOFFSET = DS_Z0*tan(DS_VZA_RAD)*sin(PHI)
-    !else
-    !  DS_XOFFSET = 0.0
-    !  DS_YOFFSET = 0.0
-    !endif
-    !X0 = X0 + DS_XOFFSET
-    !Y0 = Y0 + DS_YOFFSET
-    !╰──────────────────────────────────────────────────────────────╯!
-
     ! TAUTOL is the maximum optical path for the subgrid intervals
     TAUTOL = 0.1
     EPS = 1.0e-4*(GRIDPOS(3, GRIDPTR(8, 1)) - GRIDPOS(3, GRIDPTR(1, 1)))
@@ -3855,10 +3838,10 @@ double precision function INTLOW(X)
 
     SUM = A(4)*X**4
     F = X
-    do 100 N = 3, 29, 2
+    do N = 3, 29, 2
         F = X*X*F
         SUM = SUM + A(N)*F
-100 end do
+    end do
     INTLOW = SUM
     return
 end function
@@ -3872,10 +3855,10 @@ double precision function INTHIGH(X)
     double precision SUM
 
     SUM = 0.0d0
-    do 100 N = 1, 15
+    do N = 1, 15
         SUM = SUM + exp(-N*X)&
             &*(X**3/N + 3*X**2/N**2 + 6*X/N**3 + 6.0d0/N**4)
-100 end do
+    end do
     INTHIGH = SUM
     return
 end function
