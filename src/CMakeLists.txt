@@ -21,11 +21,11 @@ else()
     set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} shdExt_mpi_.f90)
 endif()
 
-if (USE_NETCDF)
-    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} tools/shdExt_nc.f90)
-else()
-    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} tools/shdExt_nc_.f90)
-endif()
+#if (USE_NETCDF)
+#    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} tools/shdExt_nc.f90)
+#else()
+#    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} tools/shdExt_nc_.f90)
+#endif()
 
 #
 # set compiling & linking flags

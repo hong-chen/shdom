@@ -475,14 +475,14 @@ subroutine shd_io__outputResult(&
                 X0 = XGRID(1)
                 do JX = 1, NXOUT
                     IDATA = IDATA + 1
-                    call LOCATE_GRID_CELL(NX, NY, NZ, XGRID, YGRID, ZGRID,&
+                    call shd_comp__findGridCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
                         & NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS,&
                         & BCFLAG, IPFLAG, X0, Y0, Z0, ICELL)
-                    call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,&
+                    call shd_comp__interpField(ICELL, GRIDPTR, GRIDPOS,&
                         & X0, Y0, Z0, 2, FLUXES, 1, 1, FDN(IDATA))
-                    call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,&
+                    call shd_comp__interpField(ICELL, GRIDPTR, GRIDPOS,&
                         & X0, Y0, Z0, 2, FLUXES, 2, 1, FUP(IDATA))
-                    call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,&
+                    call shd_comp__interpField(ICELL, GRIDPTR, GRIDPOS,&
                         & X0, Y0, Z0, 1, DIRFLUX, 1, 1, FDIR(IDATA))
                     X0 = X0 + OUTPARMS(3)
                 end do
@@ -525,14 +525,14 @@ subroutine shd_io__outputResult(&
             !do JY = 1, NYOUT
             !    X0 = XGRID(1)
             !    do JX = 1, NXOUT
-            !        call LOCATE_GRID_CELL(NX, NY, NZ, XGRID, YGRID, ZGRID,&
+            !        call shd_comp__findGridCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
             !            & NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS,&
             !            & BCFLAG, IPFLAG, X0, Y0, Z0, ICELL)
-            !        call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,&
+            !        call shd_comp__interpField(ICELL, GRIDPTR, GRIDPOS,&
             !            & X0, Y0, Z0, 2, FLUXES, 1, 1, FDN)
-            !        call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,&
+            !        call shd_comp__interpField(ICELL, GRIDPTR, GRIDPOS,&
             !            & X0, Y0, Z0, 2, FLUXES, 2, 1, FUP)
-            !        call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,&
+            !        call shd_comp__interpField(ICELL, GRIDPTR, GRIDPOS,&
             !            & X0, Y0, Z0, 1, DIRFLUX, 1, 1, FDIR)
             !        if (SRCTYPE .ne. 'T') then
             !            write (2, FORM) X0, Y0, C*FUP, C*FDN, FDIR
@@ -2309,7 +2309,7 @@ subroutine shd_io__outputCellSplit(&
     ! Loop over all the cells
     do ICELL = 1, NCELLS
         ! Get the adaptive grid criterion for the 3 directions
-        call CELL_SPLIT_TEST(GRIDPTR, GRIDPOS, EXTINCT,&
+        call shd_comp__testCellSplit(GRIDPTR, GRIDPOS, EXTINCT,&
             &SHPTR, SOURCE, ICELL,&
             &ADAPTCRIT, MAXADAPT, IDIR)
         ! Compute the cell center location and mean extinction

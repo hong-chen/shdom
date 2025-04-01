@@ -301,7 +301,7 @@ subroutine shd_comp__interpGrid(&
     &NPTS, NSTLEG, NLEG, GRIDPOS,&
     &TEMP, EXTINCT, ALBEDO, LEGEN, IPHASE)
 
-    ! Calls TRILIN_INTERP_PROP to interpolate the input arrays from
+    ! Calls shd_comp__triInterpProp to interpolate the input arrays from
     !   the property grid to each internal grid point.
 
     implicit none
@@ -312,12 +312,12 @@ subroutine shd_comp__interpGrid(&
     integer IP
 
     ! Initialize: transfer the tabulated phase functions
-    call TRILIN_INTERP_PROP(0.0, 0.0, 0.0, .true., NSTLEG, NLEG,&
+    call shd_comp__triInterpProp(0.0, 0.0, 0.0, .true., NSTLEG, NLEG,&
         &TEMP(1), EXTINCT(1), ALBEDO(1), LEGEN(1, 0, 1), IPHASE(1))
 
     ! Trilinearly interpolate from the property grid to the adaptive
     do IP = 1, NPTS
-        call TRILIN_INTERP_PROP&
+        call shd_comp__triInterpProp&
             &(GRIDPOS(1, IP), GRIDPOS(2, IP), GRIDPOS(3, IP),&
             &.false., NSTLEG, NLEG, TEMP(IP), EXTINCT(IP),&
             &ALBEDO(IP), LEGEN(1, 0, IP), IPHASE(IP))
@@ -418,7 +418,7 @@ subroutine shd_init__prepProp(ML, MM, NSTLEG, NLEG, NPTS, DELTAM,&
         end if
         ALBMAX = max(ALBMAX, ALBEDO(I))
         if (SRCTYPE .ne. 'S') then
-            call PLANCK_FUNCTION(TEMP(I), UNITS, WAVENO, WAVELEN, BB)
+            call shd_comp__computePlanck(TEMP(I), UNITS, WAVENO, WAVELEN, BB)
             PLANCK(I) = (1.0 - ALBEDO(I))*BB
         end if
     end do
@@ -501,7 +501,7 @@ subroutine shd_init__makeRad(NSTOKES, NXY, NZ, NSTLEG, NLEG,&
         TEMPS(1) = TEMP(NZ, I)
         GNDEMIS = 1.0 - GNDALBEDO
         ! Call the Eddington flux routine
-        call EDDRTF(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
+        call shd_comp__computeFluxPP(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
             &TEMPS, DELTAM, SRCTYPE, SOLARFLUX, SOLARMU,&
             &GNDTEMP, GNDEMIS, SKYRAD, UNITS, WAVENO, WAVELEN,&
             &FLUXES)
@@ -522,11 +522,12 @@ subroutine shd_init__makeRad(NSTOKES, NXY, NZ, NSTLEG, NLEG,&
     return
 end subroutine shd_init__makeRad
 
-subroutine EDDRTF(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
+subroutine shd_comp__computeFluxPP(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
     &TEMPS, DELTAM, SRCTYPE, SOLARFLUX, SOLARMU,&
     &GNDTEMP, GNDEMIS, SKYRAD, UNITS, WAVENO, WAVELEN,&
     &FLUXES)
-    ! EDDRTF computes the layer interface fluxes for a plane-parallel
+
+    ! shd_comp__computeFluxPP (EDDRTF) computes the layer interface fluxes for a plane-parallel
     ! atmosphere with either solar or thermal source of radiation using
     ! the Eddington approximation.  The medium is specified by a number
     ! of homogeneous layers.  For a thermal source the Planck function is
@@ -574,7 +575,9 @@ subroutine EDDRTF(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
     !                               FLUXES(2,L) is downwelling diffuse,
     !                               FLUXES(3,L) is downwelling direct,
     !                               L=1 is top, L=NUML+1 is bottom
+
     implicit none
+
     integer NLAYER
     logical DELTAM
     real TEMPS(*)
@@ -602,7 +605,7 @@ subroutine EDDRTF(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
     !   coefficients for each layer for the diffuse Eddington
     !   two stream problem.
     if (SRCTYPE .eq. 'T') then
-        call PLANCK_FUNCTION(TEMPS(1), UNITS, WAVENO, WAVELEN, BBRAD)
+        call shd_comp__computePlanck(TEMPS(1), UNITS, WAVENO, WAVELEN, BBRAD)
         PLANCK1 = PI*BBRAD
     end if
     MU0 = abs(SOLARMU)
@@ -610,7 +613,7 @@ subroutine EDDRTF(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
     I = 2
     do L = 1, NLAYER
         DELTAU = OPTDEPTHS(L)
-        if (DELTAU .lt. 0.0) stop 'Error [EDDRTF]: TAU<0.'
+        if (DELTAU .lt. 0.0) stop 'Error [_computeFluxPP]: TAU<0.'
         ! Special case for zero optical depth
         if (DELTAU .eq. 0.0) then
             TRANS = 1.0
@@ -646,7 +649,7 @@ subroutine EDDRTF(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
 
             if (SRCTYPE .eq. 'T') then
                 ! Calculate thermal source terms
-                call PLANCK_FUNCTION(TEMPS(L + 1), UNITS, WAVENO, WAVELEN, BBRAD)
+                call shd_comp__computePlanck(TEMPS(L + 1), UNITS, WAVENO, WAVELEN, BBRAD)
                 PLANCK2 = PI*BBRAD
                 V = 2.0*(PLANCK2 - PLANCK1)/(3.0*(1.-OMEGA*G)*DELTAU)
                 RADP1P = -V + PLANCK1
@@ -710,9 +713,9 @@ subroutine EDDRTF(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
         SKYFLUX = PI*SKYRAD
     else
         FLUXES(3, NLAYER + 1) = 0.0
-        call PLANCK_FUNCTION(GNDTEMP, UNITS, WAVENO, WAVELEN, BBRAD)
+        call shd_comp__computePlanck(GNDTEMP, UNITS, WAVENO, WAVELEN, BBRAD)
         GNDFLUX = PI*BBRAD*GNDEMIS
-        call PLANCK_FUNCTION(SKYRAD, UNITS, WAVENO, WAVELEN, BBRAD)
+        call shd_comp__computePlanck(SKYRAD, UNITS, WAVENO, WAVELEN, BBRAD)
         SKYFLUX = PI*BBRAD
     end if
     ! Setup for and call the tri-diagonal matrix solver
@@ -722,7 +725,7 @@ subroutine EDDRTF(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
     DIAG(N) = -(1.0 - GNDEMIS)
     LOWER(N) = 1.0
     RHS(N) = GNDFLUX
-    call TRIDIAG(N, LOWER, DIAG, UPPER, RHS)
+    call shd_comp__computeTriDiag(N, LOWER, DIAG, UPPER, RHS)
 
     ! Put the fluxes in the output array
     if (UNITS .eq. 'T') then
@@ -741,7 +744,7 @@ subroutine EDDRTF(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
     return
 end subroutine
 
-subroutine TRIDIAG(N, LOWER, DIAG, UPPER, RHS)
+subroutine shd_comp__computeTriDiag(N, LOWER, DIAG, UPPER, RHS)
 
     ! Computes the solution to a tridiagonal system.
     ! N is order of the matrix.  LOWER(2..N) is the subdiagonal,
@@ -800,7 +803,7 @@ subroutine TRIDIAG(N, LOWER, DIAG, UPPER, RHS)
     return
 
 990 continue
-    stop 'Error [TRIDIAG]: Singular matrix in TRIDIAG.'
+    stop 'Error [_computeTriDiag]: Singular matrix.'
 end subroutine
 
 subroutine shd_init__makeAngleSet(NMU, NPHI, ITYPE, NPHI0MAX,&
@@ -855,9 +858,9 @@ subroutine shd_init__makeAngleSet(NMU, NPHI, ITYPE, NPHI0MAX,&
     NANG = 0
     if (ITYPE .ge. 1 .or. ITYPE .le. 3) then
         if (ITYPE .le. 2) then
-            call GAUSQUADS(NMU, MU, WTMU)
+            call shd_comp__computeGausQuad(NMU, MU, WTMU)
         else if (ITYPE .eq. 3) then
-            call DGAUSQUADS(NMU, MU, WTMU)
+            call shd_comp__computeGausQuadDble(NMU, MU, WTMU)
         end if
         do J = 1, NMU
             NPHI0MAX = NPHI
@@ -914,14 +917,14 @@ subroutine shd_solv__makeSHDO(NSTLEG, ML, MM, NLM, NMU, NPHI0,&
     do I = 1, NMU
         X = MU(I)
         PRC(:, :) = 0.0
-        call PLMALL(.false., X, ML, MM, PRC)
+        call shd_comp__compute_PLM(.false., X, ML, MM, PRC)
         do J = 1, NLM
             do Q = 1, NSTLEG
                 CMU1(Q, J, I) = PRC(Q, J)
             end do
         end do
         PRC(:, :) = 0.0
-        call PLMALL(.true., X, ML, MM, PRC)
+        call shd_comp__compute_PLM(.true., X, ML, MM, PRC)
         do J = 1, NLM
             do Q = 1, NSTLEG
                 CMU2(Q, I, J) = PRC(Q, J)*WTMU(I)
@@ -1039,7 +1042,7 @@ subroutine shd_comp__computeSH(NSHOUT, NSTOKES, NPTS, SRCTYPE,&
     SOLM = SECSOL/(4.0*PI)
     F0 = 0.0
     if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
-        call YLMALL(.true., SOLARMU, SOLARAZ, ML, MM, 1, YLMSUN)
+        call shd_comp__computeYLM(.true., SOLARMU, SOLARAZ, ML, MM, 1, YLMSUN)
     end if
     do I = 1, NPTS
         IR = RSHPTR(I)
@@ -1228,8 +1231,10 @@ subroutine shd_comp__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
     &SHPTR, SOURCE, OUTPARMS, IVIS, VISOUT)
+
     !   Computes Stokes radiances (output in VISOUT) for the visualization
     !  modes: 1) camera mode, and 2) cross track scanning.
+
     implicit none
     integer NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG, NPTS, NCELLS
     integer ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
@@ -1268,12 +1273,12 @@ subroutine shd_comp__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     allocate (YLMSUN(NSTLEG, NLM))
 
     if (SRCTYPE .ne. 'T') then
-        call YLMALL(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG, YLMSUN)
+        call shd_comp__computeYLM(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG, YLMSUN)
         if (DELTAM .and. NUMPHASE .gt. 0) then
             NSCATANGLE = max(36, min(MAXSCATANG, 2*NLEG))
             NSTPHASE = min(NSTLEG, 2)
             allocate (PHASETAB(NSTPHASE, NUMPHASE, NSCATANGLE))
-            call PRECOMPUTE_PHASE(NSCATANGLE, NUMPHASE, NSTPHASE,&
+            call shd_comp__computePhase(NSCATANGLE, NUMPHASE, NSTPHASE,&
                 &NSTOKES, ML, NSTLEG, NLEG, LEGEN, PHASETAB)
         end if
     end if
@@ -1284,11 +1289,11 @@ subroutine shd_comp__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     ! Make the bottom boundary radiances for the Lambertian surfaces
     !   Compute the upwelling bottom radiances using the downwelling
     if (SFCTYPE .eq. 'FL') then
-        call FIXED_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR(1, 2),&
+        call shd_comp__computeRadSurfFL(NBOTPTS, BCPTR(1, 2),&
             &DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO,&
             &WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1, 1 + NTOPPTS))
     else if (SFCTYPE .eq. 'VL') then
-        call VARIABLE_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR(1, 2),&
+        call shd_comp__computeRadSurfVL(NBOTPTS, BCPTR(1, 2),&
             &DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS,&
             &NSTOKES, BCRAD(1, 1 + NTOPPTS))
     end if
@@ -1418,7 +1423,7 @@ subroutine shd_comp__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
             ! Integrate the extinction and source function along this ray
             !   to calculate the Stokes radiance vector for this pixel
             TRANSMIT = 1.0d0; VISRAD(:) = 0.0d0
-            call INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
+            call shd_comp__integrateRay1(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
                 &NSTPHASE, NSCATANGLE, PHASETAB,&
                 &NX, NY, NZ, NPTS, NCELLS,&
                 &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
@@ -1474,7 +1479,7 @@ subroutine shd_comp__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     return
 end subroutine shd_comp__visualizeRad
 
-subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
+subroutine shd_comp__integrateRay1(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
     &NSTPHASE, NSCATANGLE, PHASETAB,&
     &NX, NY, NZ, NPTS, NCELLS,&
     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
@@ -1560,7 +1565,7 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
 
     ! Calculate the generalized spherical harmonics for this direction
     allocate (YLMDIR(NSTLEG, NLM))
-    call YLMALL(.false., SNGL(MU2), SNGL(PHI2), ML, MM, NSTLEG, YLMDIR)
+    call shd_comp__computeYLM(.false., SNGL(MU2), SNGL(PHI2), ML, MM, NSTLEG, YLMDIR)
 
     if (SRCTYPE .ne. 'T' .and. DELTAM) then
         ! Get the solar single scattering Stokes vector for the outgoin
@@ -1577,13 +1582,13 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
                 SINGSCAT(1:NSTPHASE, I)&
                     &= (1 - F)*PHASETAB(:, I, J) + F*PHASETAB(:, I, J + 1)
                 if (NSTOKES .gt. 1) then
-                    call ROTATE_POL_PLANE(NSTOKES, COSSCAT, SOLARMU,&
+                    call shd_comp__rotatePolarPlane(NSTOKES, COSSCAT, SOLARMU,&
                         &SNGL(MU2), SOLARAZ - SNGL(PHI2), SINGSCAT(:, I))
                 end if
             end do
         else
             allocate (SUNDIRLEG(0:NLEG))
-            call LEGENDRE_ALL(COSSCAT, NLEG, SUNDIRLEG)
+            call shd_comp__computeLegendre(COSSCAT, NLEG, SUNDIRLEG)
             do L = 0, NLEG
                 SUNDIRLEG(L) = SUNDIRLEG(L)*(2*L + 1)/(4*PI)
             end do
@@ -1638,11 +1643,11 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
     YE = Y0
     ZE = Z0
     ! ZE = MAX(MIN(Z0,DBLE(ZGRID(NZ))),DBLE(ZGRID(1)))
-    call LOCATE_GRID_CELL(NX, NY, NZ, XGRID, YGRID, ZGRID,&
+    call shd_comp__findGridCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
         &NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS,&
         &BCFLAG, IPFLAG, XE, YE, ZE, ICELL)
     ! print '(A,5(1X,F8.5),1X,I6)',&
-    !     &'INTEGRATE_1RAY:',X0,Y0,Z0,MU2,PHI2,ICELL
+    !     &'_integrateRay1:',X0,Y0,Z0,MU2,PHI2,ICELL
     IFACE = 0
     NGRID = 0
 
@@ -1651,7 +1656,7 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
     do while (.not. VALIDRAD .and. ICELL .gt. 0)
         ! Make sure current cell is valid
         if (ICELL .le. 0) then
-            write (6, *) 'Error [INTEGRATE_1RAY]: ICELL=', ICELL,&
+            write (6, *) 'Error [_integrateRay1]: ICELL=', ICELL,&
                 &MU2, PHI2, XE, YE, ZE
             stop
         end if
@@ -1667,7 +1672,7 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
         end do
         ! Compute the source function times extinction in direction (MU2
         if (NSTOKES .eq. 1) then
-            call COMPUTE_SOURCE_1CELL_UNPOL(ICELL, GRIDPTR,&
+            call shd_comp__computeSrcCell1_(ICELL, GRIDPTR,&
                 &ML, MM, NLM, NLEG, NUMPHASE,&
                 &NPTS, DELTAM, SRCTYPE, SOLARMU,&
                 &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX,&
@@ -1675,7 +1680,7 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
                 &DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
                 &EXTINCT8, SRCEXT8)
         else
-            call COMPUTE_SOURCE_1CELL(ICELL, GRIDPTR,&
+            call shd_comp__computeSrcCell1(ICELL, GRIDPTR,&
                 &NSTOKES, NSTLEG, ML, MM, NLM, NLEG, NUMPHASE,&
                 &NPTS, DELTAM, SRCTYPE, SOLARMU,&
                 &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX,&
@@ -1742,7 +1747,7 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
         SOZ = (GRIDPOS(3, IOPP) - ZE)*CZINV
         SO = min(SOX, SOY, SOZ)
         if (SO .lt. -EPS) then
-            write (6, *) 'Error [INTEGRATE_1RAY]: SO<0 ',&
+            write (6, *) 'Error [_integrateRay1]: SO<0 ',&
                 &MU2, PHI2, XE, YE, ZE, SO, ICELL
             stop
         end if
@@ -1823,7 +1828,7 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
         ! Get the next cell to go to
         INEXTCELL = NEIGHPTR(IFACE, ICELL)
         if (INEXTCELL .lt. 0) then
-            call NEXT_CELL(XN, YN, ZN, IFACE, JFACE, ICELL, GRIDPOS,&
+            call shd_comp__moveNextCell(XN, YN, ZN, IFACE, JFACE, ICELL, GRIDPOS,&
                 &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXTCELL)
         end if
         ! If going to same or larger face then use previous face
@@ -1853,7 +1858,7 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
             VALIDRAD = .true.
         else if (INEXTCELL .eq. 0 .and. IFACE .ge. 5) then
             VALIDRAD = .true.
-            call FIND_BOUNDARY_RADIANCE(NSTOKES, XN, YN,&
+            call shd_comp__findBoundaryRad(NSTOKES, XN, YN,&
                 &SNGL(MU2), SNGL(PHI2),&
                 &IC, KFACE, GRIDPTR, GRIDPOS,&
                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
@@ -1884,7 +1889,7 @@ subroutine INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
     return
 end subroutine
 
-subroutine FIND_BOUNDARY_RADIANCE(NSTOKES, XB, YB, MU2, PHI2,&
+subroutine shd_comp__findBoundaryRad(NSTOKES, XB, YB, MU2, PHI2,&
     &ICELL, KFACE, GRIDPTR, GRIDPOS,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
@@ -1938,7 +1943,7 @@ subroutine FIND_BOUNDARY_RADIANCE(NSTOKES, XB, YB, MU2, PHI2,&
             IBC = IL
             if (BCPTR(IBC, 1) .ne. IP) IBC = IU
             if (BCPTR(IBC, 1) .ne. IP)&
-                &stop 'Error [FIND_BOUNDARY_RADIANCE]: Not at boundary.'
+                &stop 'Error [_findBoundaryRad]: Not at boundary.'
             RAD(:, J) = BCRAD(:, IBC)
 
         else
@@ -1957,10 +1962,10 @@ subroutine FIND_BOUNDARY_RADIANCE(NSTOKES, XB, YB, MU2, PHI2,&
             IBC = IL
             if (BCPTR(IBC, 2) .ne. IP) IBC = IU
             if (BCPTR(IBC, 2) .ne. IP)&
-                &stop 'Error [FIND_BOUNDARY_RADIANCE]: Not at boundary.'
+                &stop 'Error [_findBoundaryRad]: Not at boundary.'
 
             if (.not. LAMBERTIAN) then
-                call VARIABLE_BRDF_SURFACE(NBOTPTS, IBC, IBC, BCPTR(1, 2),&
+                call shd_comp__computeRadSurfVari(NBOTPTS, IBC, IBC, BCPTR(1, 2),&
                     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MU2, PHI2,&
                     &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
                     &SFCTYPE, NSFCPAR, SFCGRIDPARMS, NSTOKES,&
@@ -1984,7 +1989,7 @@ subroutine FIND_BOUNDARY_RADIANCE(NSTOKES, XB, YB, MU2, PHI2,&
     return
 end subroutine
 
-subroutine COMPUTE_SOURCE_1CELL(ICELL, GRIDPTR,&
+subroutine shd_comp__computeSrcCell1(ICELL, GRIDPTR,&
     &NSTOKES, NSTLEG, ML, MM, NLM, NLEG, NUMPHASE,&
     &NPTS, DELTAM, SRCTYPE, SOLARMU,&
     &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX,&
@@ -2111,7 +2116,7 @@ subroutine COMPUTE_SOURCE_1CELL(ICELL, GRIDPTR,&
     return
 end subroutine
 
-subroutine COMPUTE_SOURCE_1CELL_UNPOL(ICELL, GRIDPTR,&
+subroutine shd_comp__computeSrcCell1_(ICELL, GRIDPTR,&
     &ML, MM, NLM, NLEG, NUMPHASE,&
     &NPTS, DELTAM, SRCTYPE, SOLARMU,&
     &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX,&
@@ -2218,12 +2223,14 @@ subroutine COMPUTE_SOURCE_1CELL_UNPOL(ICELL, GRIDPTR,&
     return
 end subroutine
 
-subroutine PRECOMPUTE_PHASE(NSCATANGLE, NUMPHASE, NSTPHASE,&
+subroutine shd_comp__computePhase(NSCATANGLE, NUMPHASE, NSTPHASE,&
     &NSTOKES, ML, NSTLEG, NLEG, LEGEN, PHASETAB)
+
     !   Precomputes the phase matrix elements I-I and I-Q as a function
     ! of scattering angle for solar direct scattering for all the
     ! tabulated phase functions. Output is in PHASETAB.
     ! NSTPHASE=1 for NSTOKES=1 and NSTPHASE=2 for NSTOKES>1.
+
     implicit none
     integer NSCATANGLE, NUMPHASE, NSTPHASE
     integer NSTOKES, NSTLEG, ML, NLEG
@@ -2241,9 +2248,9 @@ subroutine PRECOMPUTE_PHASE(NSCATANGLE, NUMPHASE, NSTPHASE,&
     do J = 1, NSCATANGLE
         COSSCAT = cos(PI*DFLOAT(J - 1)/(NSCATANGLE - 1))
         X = dble(COSSCAT)
-        call WIGNERFCT(X, NLEG, 0, 0, DMM1)
+        call shd_comp__computeWigner(X, NLEG, 0, 0, DMM1)
         if (NSTOKES .gt. 1) then
-            call WIGNERFCT(X, NLEG, 2, 0, DMM2)
+            call shd_comp__computeWigner(X, NLEG, 2, 0, DMM2)
         end if
 
         ! Unscaled the needed Legendre coefficients, but divide by 1-f
@@ -2272,7 +2279,7 @@ subroutine PRECOMPUTE_PHASE(NSCATANGLE, NUMPHASE, NSTPHASE,&
                 A1 = A1 + FCT*dble(UNSCLEGEN(1, L))*DMM1(L)
             end do
             if (A1 .le. 0.0) then
-                write (6, *) 'Error [PRECOMPUTE_PHASE]: negative phase function',&
+                write (6, *) 'Error [_computePhase]: negative phase function',&
                     &' for tabulated phase function: ', IPH, J, A1
                 stop
             end if
@@ -2292,9 +2299,10 @@ subroutine PRECOMPUTE_PHASE(NSCATANGLE, NUMPHASE, NSTPHASE,&
 
     deallocate (UNSCLEGEN, DMM1, DMM2)
     return
-end subroutine
 
-subroutine ROTATE_POL_PLANE(NSTOKES, COSSCAT,&
+end subroutine shd_comp__computePhase
+
+subroutine shd_comp__rotatePolarPlane(NSTOKES, COSSCAT,&
     &SOLARMU, MU, DELPHI, SCATVECT)
     ! Rotates the plane of polarization from the scattering plane
     ! to the outgoing meridional plane for the solar single
@@ -2330,8 +2338,10 @@ subroutine ROTATE_POL_PLANE(NSTOKES, COSSCAT,&
     if (NSTOKES .eq. 4) then
         SCATVECT(4) = 0.0
     end if
+
     return
-end subroutine
+
+end subroutine shd_comp__rotatePolarPlane
 
 subroutine shd_comp__computeRad(&
     &NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
@@ -2388,13 +2398,13 @@ subroutine shd_comp__computeRad(&
     ! Compute the upwelling bottom radiances using the downwelling flu
     if (SFCTYPE .eq. 'FL') then
 
-        call FIXED_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR(1, 2),&
+        call shd_comp__computeRadSurfFL(NBOTPTS, BCPTR(1, 2),&
             &DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO,&
             &WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1, 1 + NTOPPTS))
 
     else if (SFCTYPE .eq. 'VL') then
 
-        call VARIABLE_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR(1, 2),&
+        call shd_comp__computeRadSurfVL(NBOTPTS, BCPTR(1, 2),&
             &DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS,&
             &NSTOKES, BCRAD(1, 1 + NTOPPTS))
 
@@ -2467,7 +2477,7 @@ subroutine shd_comp__computeRad(&
                 end do
             else
                 if (.not. LAMBERTIAN) then
-                    call VARIABLE_BRDF_SURFACE(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
+                    call shd_comp__computeRadSurfVari(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
                         &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MUOUT, PHIOUT,&
                         &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
                         &SFCTYPE, NSFCPAR, SFCGRIDPARMS, NSTOKES,&
@@ -2486,7 +2496,7 @@ subroutine shd_comp__computeRad(&
                 do JX = 1, NXOUT
                     IRAD = IRAD + 1
                     TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
-                    call INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
+                    call shd_comp__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
                         &NX, NY, NZ, NPTS, NCELLS,&
                         &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
                         &XGRID, YGRID, ZGRID, GRIDPOS,&
@@ -2543,10 +2553,10 @@ subroutine shd_comp__computeOneSrc(NSTOKES,&
     ! TMS = .FALSE.
 
     ! Precompute Ylm's for output direction and solar direction
-    call YLMALL(.false., MU, PHI, ML, MM, NSTLEG, YLMDIR)
+    call shd_comp__computeYLM(.false., MU, PHI, ML, MM, NSTLEG, YLMDIR)
     if (SRCTYPE .ne. 'T') then
         OFOURPI = 1.0/(4.0*acos(-1.0))
-        call YLMALL(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG,&
+        call shd_comp__computeYLM(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG,&
             &YLMSUN)
         SECMU0 = 1.0/abs(SOLARMU)
         COSSCAT = SOLARMU*MU + sqrt((1.0d0 - SOLARMU**2)*(1.0d0 - MU**2))&
@@ -2555,7 +2565,7 @@ subroutine shd_comp__computeOneSrc(NSTOKES,&
             ! If non-tabulate phase functions (unpolarized) then
             !   compute the Legendre polynomials for the scattering angle
             !   for the untruncated solar single scattering computation.
-            call LEGENDRE_ALL(dble(COSSCAT), NLEG, SUNDIRLEG)
+            call shd_comp__computeLegendre(dble(COSSCAT), NLEG, SUNDIRLEG)
             do L = 0, NLEG
                 SUNDIRLEG(L) = SUNDIRLEG(L)*(2*L + 1)*OFOURPI
             end do
@@ -2585,7 +2595,7 @@ subroutine shd_comp__computeOneSrc(NSTOKES,&
             end do
             ! Sum the Wigner series (for A1 and B1), rotate the plane of
             !   polarization to the outgoing direction, and return the Stoke
-            call SOLAR_SINGSCAT_VECT(NLEG, UNSCLEGEN, COSSCAT,&
+            call shd_comp__computeSolarStokesVect(NLEG, UNSCLEGEN, COSSCAT,&
                 &SOLARMU, MU, SOLARAZ - PHI, NSTOKES,&
                 &SINGSCAT(1, IPH))
             if (SINGSCAT(1, IPH) .le. 0.0) then
@@ -2679,7 +2689,8 @@ subroutine shd_comp__computeOneSrc(NSTOKES,&
     return
 end subroutine
 
-subroutine SOLAR_SINGSCAT_VECT(NLEG, SINGLEGEN, COSSCAT,&
+subroutine shd_comp__computeSolarStokesVect(&
+    &NLEG, SINGLEGEN, COSSCAT,&
     &SOLARMU, MU, DELPHI, NSTOKES,&
     &SCATVECT)
 
@@ -2706,7 +2717,7 @@ subroutine SOLAR_SINGSCAT_VECT(NLEG, SINGLEGEN, COSSCAT,&
 
     ! Sum the first Wigner function series, which is actually a Legend
     X = dble(COSSCAT)
-    call WIGNERFCT(X, NLEG, 0, 0, DMM1)
+    call shd_comp__computeWigner(X, NLEG, 0, 0, DMM1)
     A1 = 0.0d0
     do L = 0, NLEG
         FCT = 2.0d0*L + 1.0d0
@@ -2716,7 +2727,7 @@ subroutine SOLAR_SINGSCAT_VECT(NLEG, SINGLEGEN, COSSCAT,&
 
     if (NSTOKES .gt. 1) then
         ! If doing polarization, sum the second Wigner function series
-        call WIGNERFCT(X, NLEG, 2, 0, DMM1)
+        call shd_comp__computeWigner(X, NLEG, 2, 0, DMM1)
         B1 = 0.0d0
         do L = 0, NLEG
             FCT = 2.0d0*L + 1.0d0
@@ -2746,10 +2757,12 @@ subroutine SOLAR_SINGSCAT_VECT(NLEG, SINGLEGEN, COSSCAT,&
         SCATVECT(4) = 0.0
     end if
     deallocate (DMM1)
-    return
-end subroutine
 
-subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
+    return
+
+end subroutine shd_comp__computeSolarStokesVect
+
+subroutine shd_comp__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
     &NX, NY, NZ, NPTS, NCELLS,&
     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &XGRID, YGRID, ZGRID, GRIDPOS,&
@@ -2831,7 +2844,7 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
     else if (CZ .gt. 1.0e-3) then
         BITZ = 0
     else
-        stop 'Error [INTEGRATE_SOURCE]: Bad MU.'
+        stop 'Error [_integrateSrc]: Bad MU.'
     end if
     IOCT = 1 + BITX + 2*BITY + 4*BITZ
     XM = 0.5*(XGRID(1) + XGRID(NX))
@@ -2841,14 +2854,14 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
     XE = X0
     YE = Y0
     ZE = Z0
-    call LOCATE_GRID_CELL(NX, NY, NZ, XGRID, YGRID, ZGRID,&
+    call shd_comp__findGridCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
         &NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS,&
         &BCFLAG, IPFLAG, XE, YE, ZE, ICELL)
     ! print '(A,5(1X,F8.5),1X,I6)', &
-    !     &'INTEGRATE_SOURCE:', X0, Y0, Z0, MU, PHI, ICELL
-    call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,&
+    !     &'_integrateSrc:', X0, Y0, Z0, MU, PHI, ICELL
+    call shd_comp__interpField(ICELL, GRIDPTR, GRIDPOS,&
         &XE, YE, ZE, 1, EXTINCT, 1, 1, EXT1)
-    call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,&
+    call shd_comp__interpField(ICELL, GRIDPTR, GRIDPOS,&
         &XE, YE, ZE, NSTOKES, SOURCE, 1, NSTOKES, SRCEXT1)
     SRCEXT1(1) = max(0.0, SRCEXT1(1))
 
@@ -2883,7 +2896,7 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
         SOZ = (GRIDPOS(3, IOPP) - ZE)*CZINV
         SO = min(SOX, SOY, SOZ)
         if (SO .lt. -EPS) then
-            write (6, *) 'Error [INTEGRATE_SOURCE]: SO<0 ',&
+            write (6, *) 'Error [_integrateSrc]: SO<0 ',&
                 &MU, PHI, X0, Y0, Z0, XE, YE, ZE, SO, SOX, SOY, SOZ, XGRID(1), YGRID(1),&
                 &GRIDPOS(1, IOPP), GRIDPOS(2, IOPP), GRIDPOS(3, IOPP)
             stop
@@ -2902,7 +2915,7 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
 
         ! Find the optical path across the grid cell and figure how
         !   many subgrid intervals to use
-        call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,&
+        call shd_comp__interpField(ICELL, GRIDPTR, GRIDPOS,&
             &XN, YN, ZN, 1, EXTINCT, 1, 1, EXTN)
         TAUGRID = SO*0.5*(EXT1(1) + EXTN(1))
         NTAU = max(1, 1 + int(TAUGRID/TAUTOL))
@@ -2925,10 +2938,10 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
             if (IT .eq. NTAU) then
                 EXT0(1) = EXTN(1)
             else
-                call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,&
+                call shd_comp__interpField(ICELL, GRIDPTR, GRIDPOS,&
                     &XI, YI, ZI, 1, EXTINCT, 1, 1, EXT0)
             end if
-            call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,&
+            call shd_comp__interpField(ICELL, GRIDPTR, GRIDPOS,&
                 &XI, YI, ZI, NSTOKES, SOURCE, 1, NSTOKES, SRCEXT0)
             SRCEXT0(1) = max(0.0, SRCEXT0(1))
 
@@ -2972,7 +2985,7 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
         ! Get the next cell to go to
         INEXTCELL = NEIGHPTR(IFACE, ICELL)
         if (INEXTCELL .lt. 0) then
-            call NEXT_CELL(XN, YN, ZN, IFACE, JFACE, ICELL, GRIDPOS,&
+            call shd_comp__moveNextCell(XN, YN, ZN, IFACE, JFACE, ICELL, GRIDPOS,&
                 &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXTCELL)
         end if
         ! Get the four grid points on the intersection face for
@@ -3009,7 +3022,7 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
         else if (GRIDRAD(1, I1) .ge. 0.0 .and. GRIDRAD(1, I2) .ge. 0.0 .and.&
             &GRIDRAD(1, I3) .ge. 0.0 .and. GRIDRAD(1, I4) .ge. 0.0) then
             VALIDRAD = .true.
-            call INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS, XI, YI, ZI,&
+            call shd_comp__interpField(ICELL, GRIDPTR, GRIDPOS, XI, YI, ZI,&
                 &NSTOKES, GRIDRAD, 1, NSTOKES, RAD0)
             RADIANCE(:) = RADIANCE(:) + TRANSMIT*RAD0(:)
         else
@@ -3024,7 +3037,7 @@ subroutine INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
     return
 end subroutine
 
-subroutine INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,&
+subroutine shd_comp__interpField(ICELL, GRIDPTR, GRIDPOS,&
     &X, Y, Z, ND, FIELD, ID1, NV, VALUES)
 
     !   Trilinearly interpolates the field (FIELD) given a grid cell
@@ -3067,7 +3080,7 @@ subroutine INTERPOLATE_FIELD(ICELL, GRIDPTR, GRIDPOS,&
     return
 end subroutine
 
-subroutine LOCATE_GRID_CELL(NX, NY, NZ, XGRID, YGRID, ZGRID,&
+subroutine shd_comp__findGridCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
     &NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS,&
     &BCFLAG, IPFLAG, X0, Y0, Z0, ICELL)
 
@@ -3232,13 +3245,16 @@ subroutine LOCATE_GRID_CELL(NX, NY, NZ, XGRID, YGRID, ZGRID,&
     end do
 
     return
-end subroutine
 
-subroutine LEGENDRE_ALL(COSSCAT, NLEG, P)
+end subroutine shd_comp__findGridCell
+
+subroutine shd_comp__computeLegendre(COSSCAT, NLEG, P)
+
     !   This subroutine computes a set of Legendre polynomials for
     ! a particular scattering angle COSSCAT.  NLEG is the maximum term.
     ! The Legendre functions evaluated at COSSCAT are returned in
     ! P, starting at l=0 and ending with l=NLEG  (NLEG+1 terms).
+
     implicit none
     integer NLEG
     double precision COSSCAT, P(0:NLEG)
@@ -3246,7 +3262,7 @@ subroutine LEGENDRE_ALL(COSSCAT, NLEG, P)
     double precision X, PL, PL1, PL2
 
     X = dble(COSSCAT)
-    if (X*X .gt. 1.) stop 'Error [LEGENDRE_ALL]: |COSSCAT| larger than 1.'
+    if (X*X .gt. 1.) stop 'Error [_computeLegendre]: |COSSCAT| larger than 1.'
     ! Use the stable upward recursion on l, starting from P_0
     PL2 = 1.0d0
     P(0) = PL2
@@ -3261,9 +3277,10 @@ subroutine LEGENDRE_ALL(COSSCAT, NLEG, P)
         PL1 = PL
     end do
     return
-end subroutine
+end subroutine shd_comp__computeLegendre
 
-subroutine YLMALL(TRANSPOSED, MU, PHI, ML, MM, NSTLEG, YR)
+subroutine shd_comp__computeYLM(TRANSPOSED, MU, PHI, ML, MM, NSTLEG, YR)
+
     !   This subroutine computes a set of normalized real generalized
     ! spherical harmonic functions (YR) for a particular direction mu,phi.
     ! (Doicu et al. 2013; http://dx.doi.org/10.1016/j.jqsrt.2012.12.009)
@@ -3272,7 +3289,9 @@ subroutine YLMALL(TRANSPOSED, MU, PHI, ML, MM, NSTLEG, YR)
     ! 1,1 term or 6 for the 6 unique elements of the 4x4 matrix.
     ! J = 2*(L*(L+1))/2 + M+1  for L<=MM
     ! J = (2*MM+1)*L-MM*(2+2*(MM-1))/2 + M+1  for L>MM
+
     implicit none
+
     integer ML, MM, NSTLEG
     real MU, PHI
     logical TRANSPOSED
@@ -3282,7 +3301,7 @@ subroutine YLMALL(TRANSPOSED, MU, PHI, ML, MM, NSTLEG, YR)
     double precision, allocatable :: DM0(:), DM2P(:), DM2M(:)
 
     if (NSTLEG .eq. 1) then
-        call YLMALL_UNPOL(MU, PHI, ML, MM, YR)
+        call shd_comp__computeYLM_(MU, PHI, ML, MM, YR)
         return
     end if
 
@@ -3302,7 +3321,7 @@ subroutine YLMALL(TRANSPOSED, MU, PHI, ML, MM, NSTLEG, YR)
     ! ..................................................................
     !                               M = 0
     M = 0
-    call WIGNERFCT02P2M_NORMALIZED(X, ML, M, DM0, DM2P, DM2M)
+    call shd_comp__computeWignerDM0DM2PDM2M(X, ML, M, DM0, DM2P, DM2M)
     do L = 0, ML
         if (L .le. MM) then
             J = L*(L + 1) + M + 1
@@ -3327,7 +3346,7 @@ subroutine YLMALL(TRANSPOSED, MU, PHI, ML, MM, NSTLEG, YR)
     ! ..................................................................
     !                               M =/ 0
     do MABS = 1, MM
-        call WIGNERFCT02P2M_NORMALIZED(X, ML, MABS, DM0, DM2P, DM2M)
+        call shd_comp__computeWignerDM0DM2PDM2M(X, ML, MABS, DM0, DM2P, DM2M)
         COSM = cos(MABS*PHI)
         SINM = sin(MABS*PHI)
         do L = MABS, ML
@@ -3374,9 +3393,9 @@ subroutine YLMALL(TRANSPOSED, MU, PHI, ML, MM, NSTLEG, YR)
     end do
     deallocate (DM0, DM2P, DM2M)
     return
-end subroutine
+end subroutine shd_comp__computeYLM
 
-subroutine WIGNERFCT02P2M_NORMALIZED(MIU, NRANK, M,&
+subroutine shd_comp__computeWignerDM0DM2PDM2M(MIU, NRANK, M,&
     &DM0, DM2P, DM2M)
     ! ----------------------------------------------------------------
     ! |  The routine computes the DMM1N vector coefficients for
@@ -3390,7 +3409,7 @@ subroutine WIGNERFCT02P2M_NORMALIZED(MIU, NRANK, M,&
     double precision MIU
     double precision DM0(0:NRANK), DM2P(0:NRANK), DM2M(0:NRANK)
     integer N0, N
-    double precision XP, XM, FACT1, FACT2, FACTP, FACTM, DMM1_N0
+    double precision XP, XM, FACT1, FACT2, FACTP, FACTM, wignerDMM1N0
 
     !for M1 = 0 and M1 = 2
     XP = MIU
@@ -3410,7 +3429,7 @@ subroutine WIGNERFCT02P2M_NORMALIZED(MIU, NRANK, M,&
                 DM0(N + 1) = FACT1*DM0(N) - FACT2*DM0(N - 1)
             end do
         else
-            DM0(M) = DMM1_N0(XP, M, 0)
+            DM0(M) = wignerDMM1N0(XP, M, 0)
             do N = M, NRANK - 1
                 FACT1 = dble(N*(N + 1))*XP
                 FACT1 = FACT1/DSQRT(dble((N + 1)**2 - M**2))
@@ -3436,8 +3455,8 @@ subroutine WIGNERFCT02P2M_NORMALIZED(MIU, NRANK, M,&
     DM2P = 0.d0
     DM2M = 0.d0
     if (M .le. NRANK .and. NRANK .ge. 2) then
-        DM2P(N0) = DMM1_N0(XP, M, 2)
-        DM2M(N0) = DMM1_N0(XM, M, 2)
+        DM2P(N0) = wignerDMM1N0(XP, M, 2)
+        DM2M(N0) = wignerDMM1N0(XM, M, 2)
         do N = N0, NRANK - 1
             FACTP = dble(N*(N + 1))*XP - dble(2*M)
             FACTM = dble(N*(N + 1))*XM - dble(2*M)
@@ -3462,15 +3481,20 @@ subroutine WIGNERFCT02P2M_NORMALIZED(MIU, NRANK, M,&
             DM2M(N) = DSQRT(N + 0.5d0)*DM2M(N)
         end do
     end if
-    return
-end subroutine
 
-function DMM1_N0(X, M, M1) result(DMM1N0)
+    return
+
+end subroutine shd_comp__computeWignerDM0DM2PDM2M
+
+function wignerDMM1N0(X, M, M1) result(DMM1N0)
+
     ! ---------------------------------------------------------------
     ! | THE ROUTINE COMPUTES THE WIGNER FUNCTIONS FOR               |
     ! |     M >= 0, M1 >= 0, AND N0 = MAX(M,M1)                     |
     ! ---------------------------------------------------------------
+
     implicit none
+
     integer M, M1
     double precision X, DMM1N0
 
@@ -3499,9 +3523,9 @@ function DMM1_N0(X, M, M1) result(DMM1N0)
         DMM1N0 = DMM1N0*FACT**(MAXM + MINM)
     end if
     return
-end function
+end function wignerDMM1N0
 
-subroutine YLMALL_UNPOL(MU, PHI, ML, MM, YR)
+subroutine shd_comp__computeYLM_(MU, PHI, ML, MM, YR)
     !   This subroutine computes a set of the unpolarized (I-I) element
     ! normalized real generalized spherical harmonic functions (YR) for
     ! a particular direction mu,phi.  (Doicu et al. 2013;
@@ -3524,7 +3548,7 @@ subroutine YLMALL_UNPOL(MU, PHI, ML, MM, YR)
     FCT = 1.d0/DSQRT(2.d0*PI)
 
     do M = 0, MM
-        call WIGNERFCT_DM0(X, ML, M, DM0)
+        call shd_comp__computeWignerDM0(X, ML, M, DM0)
         DM0(:) = FCT*DM0(:)
         if (M .gt. 0) then
             COSM = cos(M*PHI)
@@ -3550,9 +3574,9 @@ subroutine YLMALL_UNPOL(MU, PHI, ML, MM, YR)
     end do
     deallocate (DM0)
     return
-end subroutine
+end subroutine shd_comp__computeYLM_
 
-subroutine WIGNERFCT_DM0(X, NRANK, M, DM0)
+subroutine shd_comp__computeWignerDM0(X, NRANK, M, DM0)
     ! ----------------------------------------------------------------
     ! |  The routine computes the DMM1N vector coefficients for      |
     ! |               M >= 0; M1 = 0; N = 0,...,NRANK, and           |
@@ -3563,7 +3587,7 @@ subroutine WIGNERFCT_DM0(X, NRANK, M, DM0)
     double precision X
     double precision DM0(0:NRANK)
     integer N
-    double precision DM_M10_N0
+    double precision wignerDMM0N0
 
     ! DM0 for M1 = 0
     DM0(:) = 0.d0
@@ -3575,7 +3599,7 @@ subroutine WIGNERFCT_DM0(X, NRANK, M, DM0)
                 DM0(N + 1) = ((2*N + 1)*X*DM0(N) - N*DM0(N - 1))/(N + 1)
             end do
         else
-            DM0(M) = DM_M10_N0(X, M)
+            DM0(M) = wignerDMM0N0(X, M)
             do N = M, NRANK - 1
                 DM0(N + 1) = ((2*N + 1)*X*DM0(N)&
                     &- DSQRT(dble(N**2 - M**2))*DM0(N - 1))&
@@ -3587,12 +3611,15 @@ subroutine WIGNERFCT_DM0(X, NRANK, M, DM0)
         end do
     end if
     return
-end subroutine
+end subroutine shd_comp__computeWignerDM0
 
-function DM_M10_N0(X, M) result(DMM0N0)
+function wignerDMM0N0(X, M) result(DMM0N0)
+
     ! The routine computes the Wigner functions for M >= 0, M1 = 0, a
     ! N0 = M
+
     implicit none
+
     integer M
     double precision X, DMM0N0
     integer P
@@ -3608,21 +3635,25 @@ function DM_M10_N0(X, M) result(DMM0N0)
         end do
         DMM0N0 = CM*PROD*(0.5d0*DSQRT((1.d0 - X)*(1.d0 + X)))**M
     end if
-    return
-end function
 
-subroutine WIGNERFCT(X, NRANK, M, M1, DMM1)
+    return
+
+end function wignerDMM0N0
+
+subroutine shd_comp__computeWigner(X, NRANK, M, M1, DMM1)
+
     ! ----------------------------------------------------------------
     ! |  The routine computes the DMM1N vector coefficients for
     ! |               M >= 0, M1 >= 0,  N = 0,...,NRANK, and
     ! |               -1 < X= COS(BETA) < 1
     ! ----------------------------------------------------------------
+
     implicit none
     integer NRANK, M, M1
     double precision X, DMM1(0:NRANK)
 
     integer N0, N
-    double precision FACT1, FACT2, DMM1_N0
+    double precision FACT1, FACT2, wignerDMM1N0
 
     N0 = max(M, M1)
     DMM1 = 0.d0
@@ -3635,7 +3666,7 @@ subroutine WIGNERFCT(X, NRANK, M, M1, DMM1)
             DMM1(N + 1) = FACT1*DMM1(N) - FACT2*DMM1(N - 1)
         end do
     else
-        DMM1(N0) = DMM1_N0(X, M, M1)
+        DMM1(N0) = wignerDMM1N0(X, M, M1)
         do N = N0, NRANK - 1
             FACT1 = dble(N*(N + 1))*X - dble(M*M1)
             FACT1 = FACT1/DSQRT(dble((N + 1)**2 - M**2))
@@ -3654,8 +3685,10 @@ subroutine WIGNERFCT(X, NRANK, M, M1, DMM1)
     return
 end subroutine
 
-subroutine PLMALL(TRANSPOSED, MU, ML, MM, PRC)
+subroutine shd_comp__compute_PLM(TRANSPOSED, MU, ML, MM, PRC)
+
     implicit none
+
     integer ML, MM
     real MU
     logical TRANSPOSED
@@ -3685,7 +3718,7 @@ subroutine PLMALL(TRANSPOSED, MU, ML, MM, PRC)
     !                            M = 0
     ! ..................................................................
     M = 0
-    call WIGNERFCT02P2M_NORMALIZED&
+    call shd_comp__computeWignerDM0DM2PDM2M&
         &(X, ML, M,&
         &DM0, DM2P, DM2M)
     do L = 0, ML
@@ -3710,7 +3743,7 @@ subroutine PLMALL(TRANSPOSED, MU, ML, MM, PRC)
     !                               M =/ 0
     ! ..................................................................
     do MABS = 1, MM
-        call WIGNERFCT02P2M_NORMALIZED&
+        call shd_comp__computeWignerDM0DM2PDM2M&
             &(X, ML, MABS,&
             &DM0, DM2P, DM2M)
         do L = MABS, ML
@@ -3757,7 +3790,7 @@ subroutine PLMALL(TRANSPOSED, MU, ML, MM, PRC)
     return
 end subroutine
 
-subroutine PLANCK_FUNCTION(TEMP, UNITS, WAVENO, WAVELEN, PLANCK)
+subroutine shd_comp__computePlanck(TEMP, UNITS, WAVENO, WAVELEN, PLANCK)
     !    Calculates the Planck blackbody radiance. If UNITS='T' then
     ! using brightness temperature units and the temperature is simply
     ! returned. If UNITS='B' then doing a band integration and the
@@ -3776,7 +3809,7 @@ subroutine PLANCK_FUNCTION(TEMP, UNITS, WAVENO, WAVELEN, PLANCK)
         if (TEMP .gt. 0.0) then
             X1 = 1.4388d0*WAVENO(1)/TEMP
             X2 = 1.4388d0*WAVENO(2)/TEMP
-            call INTEGRATE_PLANCK(X1, X2, F)
+            call shd_comp__integratePlanck(X1, X2, F)
             PLANCK = 1.1911d-8*(TEMP/1.4388d0)**4*F
         else
             PLANCK = 0.0
@@ -3792,32 +3825,34 @@ subroutine PLANCK_FUNCTION(TEMP, UNITS, WAVENO, WAVELEN, PLANCK)
     return
 end subroutine
 
-subroutine INTEGRATE_PLANCK(X1, X2, F)
+subroutine shd_comp__integratePlanck(X1, X2, F)
     ! Returns integral of x**3/(exp(x)-1) from x1 to x2.
     ! Accurate to better than 1 part in 10**9 for integral from
     ! 0 to infinity (pi**4/15).
     implicit none
     double precision X1, X2, F
-    double precision INTLOW, INTHIGH
+    double precision integralLow, integralHigh
     double precision C
 
     C = 1.0d0
     if (X1 .lt. C .and. X2 .lt. C) then
-        F = INTLOW(X2) - INTLOW(X1)
+        F = integralLow(X2) - integralLow(X1)
     else if (X1 .lt. C .and. X2 .ge. C) then
-        F = INTLOW(C) - INTLOW(X1) + INTHIGH(C) - INTHIGH(X2)
+        F = integralLow(C) - integralLow(X1) + integralHigh(C) - integralHigh(X2)
     else if (X1 .ge. C .and. X2 .ge. C) then
-        F = INTHIGH(X1) - INTHIGH(X2)
+        F = integralHigh(X1) - integralHigh(X2)
     else
-        stop 'Error [INTEGRATE_PLANCK]: X1 and X2 out of order.'
+        stop 'Error [_integratePlanck]: X1 and X2 out of order.'
     end if
     return
 end subroutine
 
-double precision function INTLOW(X)
+double precision function integralLow(X)
+
     ! Integral of x**3/(exp(x)-1) from 0 to x.
     ! Accurate for x less than about 1.
     ! Uses Taylor series expansion around x=0.
+
     implicit none
     double precision X
     integer N
@@ -3844,13 +3879,18 @@ double precision function INTLOW(X)
         F = X*X*F
         SUM = SUM + A(N)*F
     end do
-    INTLOW = SUM
-    return
-end function
 
-double precision function INTHIGH(X)
+    integralLow = SUM
+
+    return
+
+end function integralLow
+
+double precision function integralHigh(X)
+
     ! Integral of x**3/(exp(x)-1) from x to infinity.
     ! Accurate for x greater than about 1.
+
     implicit none
     double precision X
     integer N
@@ -3861,11 +3901,14 @@ double precision function INTHIGH(X)
         SUM = SUM + exp(-N*X)&
             &*(X**3/N + 3*X**2/N**2 + 6*X/N**3 + 6.0d0/N**4)
     end do
-    INTHIGH = SUM
-    return
-end function
 
-subroutine GAUSQUADS(N, XA, WT)
+    integralHigh = SUM
+
+    return
+
+end function integralHigh
+
+subroutine shd_comp__computeGausQuad(N, XA, WT)
     !   Generates the abscissas (X) and weights (W) for an N point
     ! Gauss-Legendre quadrature.  The XA are returned in this order:
     ! -mu1, -mu2, ..., -muK, mu1, mu2, ..., muK  (mu1 > mu2 > muK,
@@ -3878,7 +3921,7 @@ subroutine GAUSQUADS(N, XA, WT)
     parameter(TINY=3.0d-7)
 
     K = N/2
-    if (2*K .ne. N) stop 'Error [GAUSQUADS]: N must be even.'
+    if (2*K .ne. N) stop 'Error [_computeGausQuad]: N must be even.'
     do J = 1, K
         X = cos(3.141592654*(J - .25)/(N + .5))
         I = 0
@@ -3901,9 +3944,9 @@ subroutine GAUSQUADS(N, XA, WT)
         WT(J + K) = WT(J)
     end do
     return
-end subroutine
+end subroutine shd_comp__computeGausQuad
 
-subroutine DGAUSQUADS(N, XA, WT)
+subroutine shd_comp__computeGausQuadDble(N, XA, WT)
     !   Generates the abscissas (X) and weights (W) for an N point
     ! Double-Gauss-Legendre quadrature.  The XA are returned in this o
     ! -mu1, -mu2, ..., -muK, mu1, mu2, ..., muK  (mu1 > mu2 > muK,
@@ -3916,7 +3959,7 @@ subroutine DGAUSQUADS(N, XA, WT)
     parameter(TINY=3.0d-7)
 
     N2 = N/2
-    if (2*N2 .ne. N) stop 'Error [DGAUSQUADS]: N must be even.'
+    if (2*N2 .ne. N) stop 'Error [_computeGausQuadD]: N must be even.'
     K = (N2 + 1)/2
     do J = 1, K
         X = cos(3.141592654*(J - .25)/(N2 + .5))
@@ -3944,9 +3987,9 @@ subroutine DGAUSQUADS(N, XA, WT)
         WT(N2 + 1 - J) = WT(J + N2)
     end do
     return
-end subroutine
+end subroutine shd_comp__computeGausQuadDble
 
-subroutine TRILIN_INTERP_PROP(X, Y, Z, INIT, NSTLEG, NLEG,&
+subroutine shd_comp__triInterpProp(X, Y, Z, INIT, NSTLEG, NLEG,&
     &TEMP, EXTINCT, ALBEDO, LEGEN, IPHASE)
     !  Trilinearly interpolates the quantities on the input property
     ! grid at the single point (X,Y,Z) to get the output TEMP,EXTINCT,
@@ -4140,7 +4183,7 @@ subroutine TRILIN_INTERP_PROP(X, Y, Z, INIT, NSTLEG, NLEG,&
         EXTINCT = EXTINCT + KG
     end if
     return
-end subroutine
+end subroutine shd_comp__triInterpProp
 
 subroutine shd_comp__computeDirectBeam(INIT, XI, YI, ZI, BCFLAG, IPFLAG,&
     &DELTAM, ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
@@ -4645,7 +4688,7 @@ subroutine shd_comp__computeDirectBeam(INIT, XI, YI, ZI, BCFLAG, IPFLAG,&
     return
 end subroutine shd_comp__computeDirectBeam
 
-subroutine SSORT(X, Y, N, KFLAG)
+subroutine shd_comp__ssort(X, Y, N, KFLAG)
     !***BEGIN PROLOGUE  SSORT
     !***PURPOSE  Sort an array and optionally make the same interchanges in
     !            an auxiliary array.  The array may be sorted in increasing
@@ -4696,12 +4739,12 @@ subroutine SSORT(X, Y, N, KFLAG)
     !***First executable statement  SSORT
     NN = N
     if (NN .lt. 1) then
-        stop 'Error [SSORT]: The number of values to be sorted is not positive.'
+        stop 'Error [_ssort]: The number of values to be sorted is not positive.'
     end if
 
     KK = abs(KFLAG)
     if (KK .ne. 1 .and. KK .ne. 2) then
-        stop 'Error [SSORT]: The sort control parameter, K, is not 2, 1, -1, or -2.'
+        stop 'Error [_ssort]: The sort control parameter, K, is not 2, 1, -1, or -2.'
     end if
 
     ! Alter array X to get decreasing order if needed

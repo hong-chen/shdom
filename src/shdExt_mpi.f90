@@ -252,7 +252,7 @@ subroutine shd_ext__mpiOptimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
     integer :: TrialLines(ProcDims(1) + ProcDims(2) - 2), CurLines(ProcDims(1) + ProcDims(2) - 2)
     integer :: iseed = -3
     real    :: Temp, DelLines, u, shd_ext__mpiRan
-    real    :: shd_ext__mpiLoadObjFunc, Energy, NewEnergy, LowestEnergy, DeltaE, Boltz
+    real    :: loadObject, Energy, NewEnergy, LowestEnergy, DeltaE, Boltz
     integer, allocatable :: ProcCoordAll(:, :), Ngrid(:, :)
     real, allocatable :: wtproc(:)
     character(len=FNAMEMAXLEN_) :: PROPFILEI
@@ -320,7 +320,7 @@ subroutine shd_ext__mpiOptimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
             ! Do the simulated annealing to minimize the objective function
             u = shd_ext__mpiRan(iseed)
             NITER = NiterFac*N
-            Energy = shd_ext__mpiLoadObjFunc(BndLines, Nxd, Nyd, ProcCoordAll, wtproc, NPXT, NPYT, Ngrid)
+            Energy = loadObject(BndLines, Nxd, Nyd, ProcCoordAll, wtproc, NPXT, NPYT, Ngrid)
             LowestEnergy = Energy
             CurLines(:) = BndLines(:)
             ! print *, 'Annealing cycles: Cycle Temp Energy  BndLines'
@@ -343,7 +343,7 @@ subroutine shd_ext__mpiOptimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
                         end do
                     end do
                     ! Calculate the energy of these new boundary lines
-                    NewEnergy = shd_ext__mpiLoadObjFunc(TrialLines, Nxd, Nyd, ProcCoordAll, wtproc, NPXT, NPYT, Ngrid)
+                    NewEnergy = loadObject(TrialLines, Nxd, Nyd, ProcCoordAll, wtproc, NPXT, NPYT, Ngrid)
                     DeltaE = NewEnergy - Energy
                     if (DeltaE < 0.0) then ! If lower energy accept change
                         CurLines(:) = TrialLines(:)
@@ -384,7 +384,7 @@ subroutine shd_ext__mpiOptimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
 
 end subroutine shd_ext__mpiOptimizeProcDomain
 
-real function shd_ext__mpiLoadObjFunc(BndLines, Nxd, Nyd, ProcCoordAll, wtproc,&
+real function loadObject(BndLines, Nxd, Nyd, ProcCoordAll, wtproc,&
     &NPXT, NPYT, Ngrid)
 
     ! Calculates the objective function to minimize in doing the processor
@@ -417,9 +417,9 @@ real function shd_ext__mpiLoadObjFunc(BndLines, Nxd, Nyd, ProcCoordAll, wtproc,&
         OBJA = OBJA + (1.0/Nxd*Nyd)*&
             &(a*wtproc(J)*sum(Ngrid(IDX(IX):IDX(IX + 1), IDY(IY):IDY(IY + 1))) - 1.0)**2
     end do
-    shd_ext__mpiLoadObjFunc = OBJA
+    loadObject = OBJA
 
-end function shd_ext__mpiLoadObjFunc
+end function loadObject
 
 real function shd_ext__mpiRan(idum)
 
@@ -1442,7 +1442,7 @@ subroutine shd_ext__mpiFindBoundaryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
         INDX(1:NBX) = (/(J, J=1, NBX)/)
         ZARRAY(NBX + 1:NBX + NBY) = BNDPOS(3, JOCT, 1:NBY, 2, LY)
         INDX(NBX + 1:NBX + NBY) = (/(-J, J=1, NBY)/)
-        call SSORT(ZARRAY, INDX, NBX + NBY, 2*DZ)
+        call shd_comp__ssort(ZARRAY, INDX, NBX + NBY, 2*DZ)
 
         ! For each Z slab use Z sorted index to transfer the X or Y boundary points
         IBXYPTR_(:, :, JOCT) = 0
@@ -1988,7 +1988,7 @@ subroutine shd_ext__mpiIntegrateRay(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
         ! Get the next cell to go to
         INEXTCELL = NEIGHPTR(IFACE, ICELL)
         if (INEXTCELL .lt. 0) then
-            call NEXT_CELL(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
+            call shd_comp__moveNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
                 &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXTCELL)
         end if
 
@@ -2192,11 +2192,11 @@ subroutine shd_ext__mpiComputeRad(&
     ! Make the bottom boundary radiances for the Lambertian surfaces.
     ! Compute the upwelling bottom radiances using the downwelling fluxes.
     if (SFCTYPE .eq. 'FL') then
-        call FIXED_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR(1, 2),&
+        call shd_comp__computeRadSurfFL(NBOTPTS, BCPTR(1, 2),&
             &DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO,&
             &WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1, 1 + NTOPPTS))
     else if (SFCTYPE .eq. 'VL') then
-        call VARIABLE_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR(1, 2),&
+        call shd_comp__computeRadSurfVL(NBOTPTS, BCPTR(1, 2),&
             &DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS,&
             &NSTOKES, BCRAD(1, 1 + NTOPPTS))
     end if
@@ -2296,7 +2296,7 @@ subroutine shd_ext__mpiComputeRad(&
                 end do
             else
                 if (.not. LAMBERTIAN) then
-                    call VARIABLE_BRDF_SURFACE(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
+                    call shd_comp__computeRadSurfVari(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
                         &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MUOUT, PHIOUT,&
                         &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
                         &SFCTYPE, NSFCPAR, SFCGRIDPARMS, NSTOKES, BCRAD(1, 1 + NTOPPTS))
@@ -2339,7 +2339,7 @@ subroutine shd_ext__mpiComputeRad(&
                     if (X0 .ge. (XGRID(1) - EPS) .and. X0 .le. (XGRID(NX) + EPS) .and.&
                         Y0 .ge. (YGRID(1) - EPS) .and. Y0 .le. (YGRID(NY) + EPS)) then
                         TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
-                        call INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
+                        call shd_comp__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
                             &NX, NY, NZ, NPTS, NCELLS,&
                             &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
                             &XGRID, YGRID, ZGRID, GRIDPOS,&
@@ -2427,7 +2427,7 @@ subroutine shd_ext__mpiComputeRad(&
                         X = BndRadRealInfo(1, J, Ldownx); Y = BndRadRealInfo(2, J, Ldownx)
                         Z = BndRadRealInfo(3, J, Ldownx); TRANSMIT = BndRadRealInfo(4, J, Ldownx)
                         RADIANCE(:) = BndRadRealInfo(5:4 + NSTOKES, J, Ldownx)
-                        call INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
+                        call shd_comp__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
                             &NX, NY, NZ, NPTS, NCELLS,&
                             &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
                             &XGRID, YGRID, ZGRID, GRIDPOS,&
@@ -2464,7 +2464,7 @@ subroutine shd_ext__mpiComputeRad(&
                         X = BndRadRealInfo(1, J, Ldowny); Y = BndRadRealInfo(2, J, Ldowny)
                         Z = BndRadRealInfo(3, J, Ldowny); TRANSMIT = BndRadRealInfo(4, J, Ldowny)
                         RADIANCE(:) = BndRadRealInfo(5:4 + NSTOKES, J, Ldowny)
-                        call INTEGRATE_SOURCE(BCFLAG, IPFLAG, NSTOKES,&
+                        call shd_comp__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
                             &NX, NY, NZ, NPTS, NCELLS,&
                             &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
                             &XGRID, YGRID, ZGRID, GRIDPOS,&
@@ -2609,12 +2609,12 @@ subroutine shd_ext__mpiVisualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     allocate (YLMSUN(NSTLEG, NLM))
 
     if (SRCTYPE .ne. 'T') then
-        call YLMALL(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG, YLMSUN)
+        call shd_comp__computeYLM(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG, YLMSUN)
         if (DELTAM .and. NUMPHASE .gt. 0) then
             NSCATANGLE = max(36, min(MAXSCATANG, 2*NLEG))
             NSTPHASE = min(NSTLEG, 2)
             allocate (PHASETAB(NSTPHASE, NUMPHASE, NSCATANGLE))
-            call PRECOMPUTE_PHASE(NSCATANGLE, NUMPHASE, NSTPHASE,&
+            call shd_comp__computePhase(NSCATANGLE, NUMPHASE, NSTPHASE,&
                 &NSTOKES, ML, NSTLEG, NLEG, LEGEN, PHASETAB)
         end if
     end if
@@ -2625,11 +2625,11 @@ subroutine shd_ext__mpiVisualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     ! Make the bottom boundary radiances for the Lambertian surfaces.
     ! Compute the upwelling bottom radiances using the downwelling fluxes.
     if (SFCTYPE .eq. 'FL') then
-        call FIXED_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR(1, 2),&
+        call shd_comp__computeRadSurfFL(NBOTPTS, BCPTR(1, 2),&
             &DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO,&
             &WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1, 1 + NTOPPTS))
     else if (SFCTYPE .eq. 'VL') then
-        call VARIABLE_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR(1, 2),&
+        call shd_comp__computeRadSurfVL(NBOTPTS, BCPTR(1, 2),&
             &DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS,&
             &NSTOKES, BCRAD(1, 1 + NTOPPTS))
     end if
@@ -2783,7 +2783,7 @@ subroutine shd_ext__mpiVisualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 ! Integrate the extinction and source function along this ray
                 ! to calculate the Stokes radiance vector for this pixel
                 TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
-                call INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
+                call shd_comp__integrateRay1(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
                     &NSTPHASE, NSCATANGLE, PHASETAB,&
                     &NX, NY, NZ, NPTS, NCELLS,&
                     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
@@ -2870,7 +2870,7 @@ subroutine shd_ext__mpiVisualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 PHI2 = BndRecvRadRealInfo(5, J, IBND)
                 TRANSMIT = BndRecvRadRealInfo(6, J, IBND)
                 RADIANCE(:) = BndRecvRadRealInfo(7:6 + NSTOKES, J, IBND)
-                call INTEGRATE_1RAY(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
+                call shd_comp__integrateRay1(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
                     &NSTPHASE, NSCATANGLE, PHASETAB,&
                     &NX, NY, NZ, NPTS, NCELLS,&
                     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&

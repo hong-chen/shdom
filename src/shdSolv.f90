@@ -107,7 +107,7 @@ subroutine shd_solv__solveRte(&
                 &NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
                 &GRIDPOS, DIRFLUX)
         end if
-        call YLMALL(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG,&
+        call shd_comp__computeYLM(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG,&
             &YLMSUN)
     end if
 
@@ -344,6 +344,7 @@ subroutine shd_solv__solveRte(&
     !     &GRIDPOS, EXTINCT, SHPTR, SOURCE, NCELLS)
 
     return
+
 end subroutine shd_solv__solveRte
 
 subroutine shd_solv__calSrcPnt(&
@@ -430,9 +431,10 @@ subroutine shd_solv__calSrcPnt(&
     end if
 
     return
-end subroutine
 
-subroutine shd_solv__calSrcPntUnp(&
+end subroutine shd_solv__calSrcPnt
+
+subroutine shd_solv__calSrcPnt_(&
     &NLM, NLEG, LOFJ,&
     &SRCTYPE, FLUX0, YLMSUN, PLANCK,&
     &ALBEDO, IPH, LEGEN, NR, RADIANCE,&
@@ -480,7 +482,8 @@ subroutine shd_solv__calSrcPntUnp(&
     end do
 
     return
-end subroutine
+
+end subroutine shd_solv__calSrcPnt_
 
 subroutine shd_comp__computeSrc(&
     &NSTOKES, ML, MM, NLM,&
@@ -570,7 +573,7 @@ subroutine shd_comp__computeSrc(&
                 stop
             end if
             if (NSTOKES .eq. 1) then
-                call shd_solv__calSrcPntUnp(NLM, NLEG, LOFJ,&
+                call shd_solv__calSrcPnt_(NLM, NLEG, LOFJ,&
                     &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
                     &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
                     &NR, RADIANCE(1, IR + 1), SOURCET)
@@ -621,7 +624,7 @@ subroutine shd_comp__computeSrc(&
             IR = RSHPTR(I)
             NR = RSHPTR(I + 1) - IR
             if (NSTOKES .eq. 1) then
-                call shd_solv__calSrcPntUnp(NLM, NLEG, LOFJ,&
+                call shd_solv__calSrcPnt_(NLM, NLEG, LOFJ,&
                     &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
                     &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
                     &NR, RADIANCE(1, IR + 1), SOURCET)
@@ -658,7 +661,7 @@ subroutine shd_comp__computeSrc(&
             stop
         end if
         if (NSTOKES .eq. 1) then
-            call shd_solv__calSrcPntUnp(NLM, NLEG, LOFJ,&
+            call shd_solv__calSrcPnt_(NLM, NLEG, LOFJ,&
                 &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
                 &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
                 &NR, RADIANCE(1, IR + 1), SOURCET)
@@ -867,7 +870,8 @@ subroutine shd_solv__accelSol(&
     return
 end subroutine
 
-subroutine shd_solv__integratePath(NX, NY, NZ, NSTOKES, NSTLEG,&
+subroutine shd_solv__integratePath(&
+    &NX, NY, NZ, NSTOKES, NSTLEG,&
     &ML, MM, NLM, NMU, NPHI0MAX, NPHI0, NANG,&
     &BCFLAG, IPFLAG,&
     &NPTS, NCELLS, XGRID, YGRID, ZGRID, GRIDPOS,&
@@ -1005,23 +1009,23 @@ subroutine shd_solv__integratePath(NX, NY, NZ, NSTOKES, NSTLEG,&
             !   for the Lambertian surfaces.  Compute the upwelling bottom
             !   radiances using the downwelling fluxes.
             if (SFCTYPE .eq. 'FL') then
-                call FIXED_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR(1, 2),&
+                call shd_comp__computeRadSurfFL(NBOTPTS, BCPTR(1, 2),&
                     &DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO,&
                     &WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1, 1 + NTOPPTS))
             else if (SFCTYPE .eq. 'VL') then
-                call VARIABLE_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR(1, 2),&
+                call shd_comp__computeRadSurfVL(NBOTPTS, BCPTR(1, 2),&
                     &DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS,&
                     &NSTOKES, BCRAD(1, 1 + NTOPPTS))
             end if
         end if
 
         if (NSTOKES .eq. 1) then
-            call SH_TO_DO_UNPOL(NPTS, ML, MM, NLM,&
+            call shd_solv__SHtoDO_(NPTS, ML, MM, NLM,&
                 &NMU, NPHI0MAX, NPHI0(IMU),&
                 &IMU, FFTFLAG, CMU1, CPHI1, WSAVE,&
                 &SHPTR, SOURCE, WORK)
         else
-            call SH_TO_DO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
+            call shd_solv__SHtoDO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
                 &NMU, NPHI0MAX, NPHI0(IMU),&
                 &IMU, FFTFLAG, CMU1, CPHI1, WSAVE,&
                 &SHPTR, SOURCE, WORK)
@@ -1059,13 +1063,13 @@ subroutine shd_solv__integratePath(NX, NY, NZ, NSTOKES, NSTLEG,&
                     ! If the surface reflection is uniform use the precomputed
                     !   BRDF matrix to do the integration.
                     if (UNIFORM_SFC_BRDF) then
-                        call UNIFORM_BRDF_SURFACE(NBOTPTS, BCPTR(1, 2),&
+                        call shd_comp__computeRadSurfUnif(NBOTPTS, BCPTR(1, 2),&
                             &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, IMU, IPHI,&
                             &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
                             &SFCTYPE, NSFCPAR, SFCGRIDPARMS, SFC_BRDF_DO,&
                             &NSTOKES, BCRAD(1, 1 + NTOPPTS))
                     else
-                        call VARIABLE_BRDF_SURFACE(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
+                        call shd_comp__computeRadSurfVari(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
                             &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                             &MU(IMU), PHI(IMU, IPHI),&
                             &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
@@ -1084,7 +1088,7 @@ subroutine shd_solv__integratePath(NX, NY, NZ, NSTOKES, NSTLEG,&
             ! Do backward path integration from each grid point not done
             if (btest(IPFLAG, 1) .and. btest(IPFLAG, 0)) then
 
-                call BACK_INT_GRID1D(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,&
+                call shd_solv__backIntegrate1D(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,&
                     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
                     &GRIDPOS, SWEEPORD, MU(IMU), PHI(IMU, IPHI), TRANSMIN,&
                     &EXTINCT, NSTOKES, WORK, IPHI, GRIDRAD)
@@ -1092,7 +1096,7 @@ subroutine shd_solv__integratePath(NX, NY, NZ, NSTOKES, NSTLEG,&
             else if (btest(IPFLAG, 1) .and.&
                 &.not. (btest(BCFLAG, 2) .or. btest(BCFLAG, 3))) then
 
-                call BACK_INT_GRID2D(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,&
+                call shd_solv__backIntegrate2D(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,&
                     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
                     &GRIDPOS, SWEEPORD, MU(IMU), PHI(IMU, IPHI), TRANSMIN,&
                     &EXTINCT, NSTOKES, WORK, IPHI, GRIDRAD)
@@ -1100,7 +1104,7 @@ subroutine shd_solv__integratePath(NX, NY, NZ, NSTOKES, NSTLEG,&
             else
                 if (NSTOKES .eq. 1) then
 
-                    call BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,&
+                    call shd_solv__backIntegrate3D_(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,&
                         &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
                         &GRIDPOS, XGRID, YGRID, ZGRID, SWEEPORD,&
                         &MU(IMU), PHI(IMU, IPHI), TRANSMIN, BCFLAG, IPFLAG,&
@@ -1109,7 +1113,7 @@ subroutine shd_solv__integratePath(NX, NY, NZ, NSTOKES, NSTLEG,&
 
                 else
 
-                    call BACK_INT_GRID3D(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,&
+                    call shd_solv__backIntegrate3D(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,&
                         &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
                         &GRIDPOS, XGRID, YGRID, ZGRID, SWEEPORD,&
                         &MU(IMU), PHI(IMU, IPHI), TRANSMIN, BCFLAG, IPFLAG,&
@@ -1154,12 +1158,12 @@ subroutine shd_solv__integratePath(NX, NY, NZ, NSTOKES, NSTLEG,&
 
         ! Transform the radiance to spherical harmonics for this zenit
         if (NSTOKES .eq. 1) then
-            call DO_TO_SH_UNPOL(NPTS, ML, MM, NLM,&
+            call shd_solv__DOtoSHx(NPTS, ML, MM, NLM,&
                 &NMU, NPHI0MAX, NPHI0(IMU),&
                 &IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
                 &RSHPTR, WORK, RADIANCE)
         else
-            call DO_TO_SH(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
+            call shd_solv__DOtoSH(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
                 &NMU, NPHI0MAX, NPHI0(IMU),&
                 &IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
                 &RSHPTR, WORK, RADIANCE)
@@ -1268,7 +1272,7 @@ subroutine shd_comp__interpSurfParams(NBOTPTS, BCPTR, GRIDPOS,&
             PLANCK = 0.0
         else
             TEMP = SFCGRIDPARMS(1, IBC)
-            call PLANCK_FUNCTION(TEMP, UNITS, WAVENO, WAVELEN, PLANCK)
+            call shd_comp__computePlanck(TEMP, UNITS, WAVENO, WAVELEN, PLANCK)
         end if
         SFCGRIDPARMS(1, IBC) = PLANCK
     end do
@@ -1319,7 +1323,7 @@ subroutine shd_comp__computeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
     if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
         SKYRAD2 = SKYRAD
     else
-        call PLANCK_FUNCTION(SKYRAD, UNITS, WAVENO, WAVELEN, SKYRAD2)
+        call shd_comp__computePlanck(SKYRAD, UNITS, WAVENO, WAVELEN, SKYRAD2)
     end if
     ! Loop over all points assigning the uniform radiance
     do IBC = 1, NTOPPTS
@@ -1329,7 +1333,7 @@ subroutine shd_comp__computeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
     return
 end subroutine shd_comp__computeTopRad
 
-subroutine FIXED_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR,&
+subroutine shd_comp__computeRadSurfFL(NBOTPTS, BCPTR,&
     &DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO,&
     &WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD)
 
@@ -1351,7 +1355,7 @@ subroutine FIXED_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR,&
 
     ALB = GNDALBEDO/acos(-1.0)
     if (SRCTYPE .eq. 'T' .or. SRCTYPE .eq. 'B') then
-        call PLANCK_FUNCTION(GNDTEMP, UNITS, WAVENO, WAVELEN, GNDRAD)
+        call shd_comp__computePlanck(GNDTEMP, UNITS, WAVENO, WAVELEN, GNDRAD)
         GNDRAD = GNDRAD*(1.0 - GNDALBEDO)
     end if
 
@@ -1368,9 +1372,9 @@ subroutine FIXED_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR,&
         BCRAD(2:, IBC) = 0.0
     end do
     return
-end subroutine
+end subroutine shd_comp__computeRadSurfFL
 
-subroutine VARIABLE_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR,&
+subroutine shd_comp__computeRadSurfVL(NBOTPTS, BCPTR,&
     &DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS,&
     &NSTOKES, BCRAD)
 
@@ -1412,9 +1416,9 @@ subroutine VARIABLE_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR,&
     end do
     return
 
-end subroutine
+end subroutine shd_comp__computeRadSurfVL
 
-subroutine VARIABLE_BRDF_SURFACE(NBOTPTS, IBEG, IEND, BCPTR,&
+subroutine shd_comp__computeRadSurfVari(NBOTPTS, IBEG, IEND, BCPTR,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MU2, PHI2,&
     &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
     &SFCTYPE, NSFCPAR, SFCGRIDPARMS, NSTOKES, BCRAD)
@@ -1534,7 +1538,7 @@ subroutine shd_solv__makeSurfDO(SFCTYPE, WAVELEN,&
     return
 end subroutine shd_solv__makeSurfDO
 
-subroutine UNIFORM_BRDF_SURFACE(NBOTPTS, BCPTR,&
+subroutine shd_comp__computeRadSurfUnif(NBOTPTS, BCPTR,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, IMU, IPHI,&
     &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
     &SFCTYPE, NSFCPAR, SFCGRIDPARMS, SFC_BRDF_DO,&
@@ -1607,9 +1611,10 @@ subroutine UNIFORM_BRDF_SURFACE(NBOTPTS, BCPTR,&
         end do
     end do
     return
-end subroutine
 
-subroutine SH_TO_DO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
+end subroutine shd_comp__computeRadSurfUnif
+
+subroutine shd_solv__SHtoDO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
     &NMU, NPHI0MAX, NPHI0,&
     &IMU, FFTFLAG, CMU1, CPHI1, WSAVE,&
     &SHPTR, INDATA, OUTDATA)
@@ -1737,9 +1742,9 @@ subroutine SH_TO_DO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
     end do
     deallocate (MOFJ, SUMUV, SUMCS, TMP)
     return
-end subroutine
+end subroutine shd_solv__SHtoDO
 
-subroutine SH_TO_DO_UNPOL(NPTS, ML, MM, NLM,&
+subroutine shd_solv__SHtoDO_(NPTS, ML, MM, NLM,&
     &NMU, NPHI0MAX, NPHI0,&
     &IMU, FFTFLAG, CMU1, CPHI1, WSAVE,&
     &SHPTR, INDATA, OUTDATA)
@@ -1838,16 +1843,16 @@ subroutine SH_TO_DO_UNPOL(NPTS, ML, MM, NLM,&
     end do
     deallocate (MOFJ, SUMUV, SUMCS, TMP)
     return
-end subroutine
+end subroutine shd_solv__SHtoDO_
 
-subroutine DO_TO_SH(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
+subroutine shd_solv__DOtoSH(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
     &NMU, NPHI0MAX, NPHI0,&
     &IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
     &RSHPTR, INDATA, OUTDATA)
 
     !   Transforms the input field from discrete ordinate space to spherical
     ! harmonic space for one zenith angle (IMU) by keeping a running
-    ! sum in OUTDATA between successive calls.  (See SH_TO_DO for more).
+    ! sum in OUTDATA between successive calls.  (See shd_solv__SHtoDO for more).
 
     implicit none
     integer NPTS, NSTOKES, NSTLEG
@@ -1954,14 +1959,14 @@ subroutine DO_TO_SH(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
     return
 end subroutine
 
-subroutine DO_TO_SH_UNPOL(NPTS, ML, MM, NLM,&
+subroutine shd_solv__DOtoSHx(NPTS, ML, MM, NLM,&
     &NMU, NPHI0MAX, NPHI0,&
     &IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
     &RSHPTR, INDATA, OUTDATA)
 
     !   Transforms the input field from discrete ordinate space to spherical
     ! harmonic space for one zenith angle (IMU) by keeping a running
-    ! sum in OUTDATA between successive calls.  (See SH_TO_DO for more).
+    ! sum in OUTDATA between successive calls.  (See shd_solv__SHtoDO for more).
 
     implicit none
     integer NPTS
@@ -2060,7 +2065,7 @@ subroutine shd_solv__makeSweepOrder(NX, NY, NZ, NPTS, NCELLS,&
     integer NOCT, IOCT, JOCT, NXC, NYC
     integer IPCELL, IPT, IORDER
     integer INDEXCORN, ICORNER, CORNDOG(8, 8), IOCTORDER(8)
-    logical SWEEP_NEXT_CELL, BTEST
+    logical sweepCellNext, BTEST
     data CORNDOG/8, 7, 6, 5, 4, 3, 2, 1, 7, 8, 5, 6, 3, 4, 1, 2, 6, 5, 8, 7, 2, 1, 4, 3,&
         &5, 6, 7, 8, 1, 2, 3, 4, 4, 3, 2, 1, 8, 7, 6, 5, 3, 4, 1, 2, 7, 8, 5, 6,&
         &2, 1, 4, 3, 6, 5, 8, 7, 1, 2, 3, 4, 5, 6, 7, 8/
@@ -2106,7 +2111,7 @@ subroutine shd_solv__makeSweepOrder(NX, NY, NZ, NPTS, NCELLS,&
         if (INDEXCORN .eq. 8) then
             ! If done with the current cell, then go to next
             INDEXCORN = 1
-            if (.not. SWEEP_NEXT_CELL(BCFLAG, NXC, NYC, NZ, IOCT,&
+            if (.not. sweepCellNext(BCFLAG, NXC, NYC, NZ, IOCT,&
                 &IPCELL, TREEPTR, CELLFLAGS)) goto 900
         else
             INDEXCORN = INDEXCORN + 1
@@ -2130,7 +2135,7 @@ subroutine shd_solv__makeSweepOrder(NX, NY, NZ, NPTS, NCELLS,&
     return
 end subroutine shd_solv__makeSweepOrder
 
-subroutine BACK_INT_GRID3D(NX, NY, NZ, NA, NPTS, NCELLS,&
+subroutine shd_solv__backIntegrate3D(NX, NY, NZ, NA, NPTS, NCELLS,&
     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &GRIDPOS, XGRID, YGRID, ZGRID, SWEEPORD,&
     &MU, PHI, TRANSMIN, BCFLAG, IPFLAG,&
@@ -2315,7 +2320,7 @@ subroutine BACK_INT_GRID3D(NX, NY, NZ, NA, NPTS, NCELLS,&
                 ! Get the next cell to go to
                 INEXTCELL = NEIGHPTR(IFACE, ICELL)
                 if (INEXTCELL .lt. 0) then
-                    call NEXT_CELL(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
+                    call shd_comp__moveNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
                         &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXTCELL)
                 end if
 
@@ -2362,7 +2367,7 @@ subroutine BACK_INT_GRID3D(NX, NY, NZ, NA, NPTS, NCELLS,&
                 end if
                 if (u .lt. -0.0001 .or. v .lt. -0.0001 .or.&
                     &u .gt. 1.0001 .or. v .gt. 1.0001) then
-                    print *, 'BACK_INT_GRID3D: u,v<0 or u,v>1: ',&
+                    print *, '_backIntegrate3D: u,v<0 or u,v>1: ',&
                         &mu, phi, xe, ye, ze, u, v, iface, jface, kface,&
                         &gridpos(1, i1), gridpos(2, i1), gridpos(3, i1)
                 end if
@@ -2431,7 +2436,7 @@ subroutine BACK_INT_GRID3D(NX, NY, NZ, NA, NPTS, NCELLS,&
                 TRANSMIT = TRANSMIT*TRANSCELL
                 if (RAD(1) < -1.0e-5) then
                     print '(A,3(1X,F6.4),8(1X,E12.5))',&
-                        &'BACK_INT_GRID3D: RAD<0 ',&
+                        &'_backIntegrate3D: RAD<0 ',&
                         &xe, ye, ze, ext0, ext1, so, tau, transmit, src, abscell, rad(:)
                     call shd_ext__mpiAbort('The end')
                 end if
@@ -2445,7 +2450,7 @@ subroutine BACK_INT_GRID3D(NX, NY, NZ, NA, NPTS, NCELLS,&
                             &+ F3*GRIDRAD(:, I3) + F4*GRIDRAD(:, I4)
                         RAD(:) = RAD(:) + TRANSMIT*RAD0(:)
                     else
-                        print *, 'Error [BACK_INT_GRID3D]: INEXTCELL=0: ', xe, ye, ze, icell
+                        print *, 'Error [_backIntegrate3D]: INEXTCELL=0: ', xe, ye, ze, icell
                         print *, iz, joct, mu, phi
                         print '(i7,4(1x,f7.4))', i1, GRIDRAD(1, I1),&
                             &gridpos(1, i1), gridpos(2, i1), gridpos(3, i1)
@@ -2471,9 +2476,9 @@ subroutine BACK_INT_GRID3D(NX, NY, NZ, NA, NPTS, NCELLS,&
     end do
 
     return
-end subroutine
+end subroutine shd_solv__backIntegrate3D
 
-subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
+subroutine shd_solv__backIntegrate3D_(NX, NY, NZ, NA, NPTS, NCELLS,&
     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &GRIDPOS, XGRID, YGRID, ZGRID, SWEEPORD,&
     &MU, PHI, TRANSMIN, BCFLAG, IPFLAG,&
@@ -2671,7 +2676,7 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
                 ! Get the next cell to go to
                 INEXTCELL = NEIGHPTR(IFACE, ICELL)
                 if (INEXTCELL .lt. 0) then
-                    call NEXT_CELL(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
+                    call shd_comp__moveNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
                         &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXTCELL)
                 end if
 
@@ -2721,7 +2726,7 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
 
                 if (U .lt. -0.0001 .or. V .lt. -0.0001 .or.&
                     &U .gt. 1.0001 .or. V .gt. 1.0001) then
-                    print *, 'BACK_INT_GRID3D: U,V<0 or U,V>1: ',&
+                    print *, '_backIntegrate3D_: U,V<0 or U,V>1: ',&
                         &MU, PHI, XE, YE, ZE, U, V, IFACE, JFACE, KFACE,&
                         &GRIDPOS(1, I1), GRIDPOS(2, I1), GRIDPOS(3, I1)
                 end if
@@ -2795,7 +2800,7 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
                 TRANSMIT = TRANSMIT*TRANSCELL
                 if (RAD < -1.0e-5) then
                     print '(A,3(1X,F6.4),8(1X,E12.5))',&
-                        &'BACK_INT_GRID3D: RAD<0 ',&
+                        &'_backIntegrate3D_: RAD<0 ',&
                         &XE, YE, ZE, EXT0, EXT1, SO, TAU, TRANSMIT, SRC, ABSCELL, RAD
                     call shd_ext__mpiAbort('The end')
                 end if
@@ -2810,7 +2815,7 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
                             &+ F3*GRIDRAD(I3) + F4*GRIDRAD(I4)
                         RAD = RAD + TRANSMIT*RAD0
                     else
-                        print *, 'Error [BACK_INT_GRID3D]: INEXTCELL=0: ', xe, ye, ze, icell
+                        print *, 'Error [_backIntegrate3D_]: INEXTCELL=0: ', xe, ye, ze, icell
                         print *, iz, joct, mu, phi
                         print '(i7,4(1x,f7.4))', i1, GRIDRAD(I1),&
                             &gridpos(1, i1), gridpos(2, i1), gridpos(3, i1)
@@ -2837,9 +2842,9 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
 
     end do
     return
-end subroutine
+end subroutine shd_solv__backIntegrate3D_
 
-subroutine BACK_INT_GRID2D(NX, NY, NZ, NA, NPTS, NCELLS,&
+subroutine shd_solv__backIntegrate2D(NX, NY, NZ, NA, NPTS, NCELLS,&
     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &GRIDPOS, SWEEPORD, MU, PHI, TRANSMIN,&
     &EXTINCT, NSTOKES, SOURCE, KANG, GRIDRAD)
@@ -2856,6 +2861,7 @@ subroutine BACK_INT_GRID2D(NX, NY, NZ, NA, NPTS, NCELLS,&
     ! radiances on the face.  The resulting radiances are put in GRIDRAD.
 
     implicit none
+
     integer NX, NY, NZ, NA, NPTS, NCELLS, KANG, NSTOKES
     integer GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
     integer SWEEPORD(NPTS, *)
@@ -2956,7 +2962,7 @@ subroutine BACK_INT_GRID2D(NX, NY, NZ, NA, NPTS, NCELLS,&
                 SOZ = (GRIDPOS(3, IOPP) - ZE)*CZINV
                 SO = min(SOX, SOZ)
                 if (SO .lt. -EPS) then
-                    write (6, *) 'Error [BACK_INT_GRID2D]: SO<0 ',&
+                    write (6, *) 'Error [_backIntegrate2D]: SO<0 ',&
                         &MU, PHI, XE, ZE, SOX, SOZ, SO, IPT, ICELL
                     stop
                 end if
@@ -2975,7 +2981,7 @@ subroutine BACK_INT_GRID2D(NX, NY, NZ, NA, NPTS, NCELLS,&
                 ! Get the next cell to go to
                 INEXTCELL = NEIGHPTR(IFACE, ICELL)
                 if (INEXTCELL .lt. 0) then
-                    call NEXT_CELL(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
+                    call shd_comp__moveNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
                         &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXTCELL)
                 end if
 
@@ -3065,7 +3071,7 @@ subroutine BACK_INT_GRID2D(NX, NY, NZ, NA, NPTS, NCELLS,&
                         RAD0(:) = F1*GRIDRAD(:, I1) + F2*GRIDRAD(:, I2)
                         RAD(:) = RAD(:) + TRANSMIT*RAD0(:)
                     else
-                        print *, 'Error [BACK_INT_GRID2D]: INEXTCELL=0: ', xe, ye, ze, icell
+                        print *, 'Error [_backIntegrate2D]: INEXTCELL=0: ', xe, ye, ze, icell
                         print *, iz, joct, mu, phi
                         print '(i7,4(1x,f7.4))', i1, GRIDRAD(1, I1),&
                             &gridpos(1, i1), gridpos(2, i1), gridpos(3, i1)
@@ -3088,9 +3094,9 @@ subroutine BACK_INT_GRID2D(NX, NY, NZ, NA, NPTS, NCELLS,&
 
     end do
     return
-end subroutine
+end subroutine shd_solv__backIntegrate2D
 
-subroutine BACK_INT_GRID1D(NX, NY, NZ, NA, NPTS, NCELLS,&
+subroutine shd_solv__backIntegrate1D(NX, NY, NZ, NA, NPTS, NCELLS,&
     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &GRIDPOS, SWEEPORD, MU, PHI, TRANSMIN,&
     &EXTINCT, NSTOKES, SOURCE, KANG, GRIDRAD)
@@ -3145,7 +3151,7 @@ subroutine BACK_INT_GRID1D(NX, NY, NZ, NA, NPTS, NCELLS,&
     else if (CZ .gt. 1.0e-3) then
         BITZ = 0
     else
-        stop 'Error [BACK_INT_GRID3D]: Bad MU.'
+        stop 'Error [_backIntegrate1D]: Bad MU.'
     end if
     ! IOCT is the octant the ray come from or the discrete ordinate goes to.
     IOCT = 1 + 4*BITZ
@@ -3172,7 +3178,7 @@ subroutine BACK_INT_GRID1D(NX, NY, NZ, NA, NPTS, NCELLS,&
             do while (.not. VALIDRAD)
                 ! Make sure current cell is valid
                 if (ICELL .le. 0) then
-                    write (6, *) 'Error [BACK_INT_GRID]: ICELL=0 ',&
+                    write (6, *) 'Error [_backIntegrate1D]: ICELL=0 ',&
                         &MU, PHI, IPT, INEXTCELL
                     stop
                 end if
@@ -3183,7 +3189,7 @@ subroutine BACK_INT_GRID1D(NX, NY, NZ, NA, NPTS, NCELLS,&
                 ! Get the distances to the 3 planes and select the closest
                 SO = (GRIDPOS(3, IOPP) - ZE)*CZINV
                 if (SO .lt. -EPS) then
-                    write (6, *) 'Error [BACK_INT_GRID1D]: SO<0 ',&
+                    write (6, *) 'Error [_backIntegrate1D]: SO<0 ',&
                         &MU, PHI, ZE, SO, IPT, ICELL
                     stop
                 end if
@@ -3259,9 +3265,9 @@ subroutine BACK_INT_GRID1D(NX, NY, NZ, NA, NPTS, NCELLS,&
         end if
     end do
     return
-end subroutine
+end subroutine shd_solv__backIntegrate1D
 
-subroutine NEXT_CELL(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
+subroutine shd_comp__moveNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXT)
 
     !   Gets the next cell (INEXT) to go to that is adjacent to this face
@@ -3289,7 +3295,7 @@ subroutine NEXT_CELL(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
         do while (TREEPTR(2, IC) .gt. 0)
             ! Get the direction cell is split
             DIR = ibits(int(CELLFLAGS(IC)), 2, 2)
-            if (DIR .eq. 0) stop 'Error [NEXT_CELL]: No split direction.'
+            if (DIR .eq. 0) stop 'Error [_moveNextCell]: No split direction.'
             ! If split is in direction of face then choose the near child cell
             !   which is the negative side cell if this is a positive face.
             IC1 = TREEPTR(2, IC)
@@ -3314,9 +3320,9 @@ subroutine NEXT_CELL(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
     end if
 
     return
-end subroutine
+end subroutine shd_comp__moveNextCell
 
-logical function SWEEP_BASE_CELL(BCFLAG, NXC, NYC, NZ, IOCT, ICELL)
+logical function sweepCellBase(BCFLAG, NXC, NYC, NZ, IOCT, ICELL)
 
     !   Returns the next base grid cell.  The octant the ray direction
     ! is coming from (IOCT) determines the order of sweeping.  ICELL is 0
@@ -3327,12 +3333,13 @@ logical function SWEEP_BASE_CELL(BCFLAG, NXC, NYC, NZ, IOCT, ICELL)
     ! independent pixel radiative transfer.
 
     implicit none
+
     integer BCFLAG, NXC, NYC, NZ, IOCT, ICELL
     logical BTEST
     integer IX, IY, IZ, SIX, SIY, SIZ, EIX, EIY, EIZ, DIX, DIY, DIZ
     save IX, IY, IZ, SIX, SIY, SIZ, EIX, EIY, EIZ, DIX, DIY, DIZ
 
-    SWEEP_BASE_CELL = .true.
+    sweepCellBase = .true.
     ! If first time here then set up the loops
     if (ICELL .eq. 0) then
         if (btest(IOCT - 1, 0)) then
@@ -3390,7 +3397,7 @@ logical function SWEEP_BASE_CELL(BCFLAG, NXC, NYC, NZ, IOCT, ICELL)
         if (IX .eq. EIX) then
             if (IY .eq. EIY) then
                 if (IZ .eq. EIZ) then
-                    SWEEP_BASE_CELL = .false.
+                    sweepCellBase = .false.
                     return
                 else
                     IZ = IZ + DIZ
@@ -3408,9 +3415,9 @@ logical function SWEEP_BASE_CELL(BCFLAG, NXC, NYC, NZ, IOCT, ICELL)
     ! Compute the base grid cell
     ICELL = IZ + (NZ - 1)*(IY - 1) + (NZ - 1)*NYC*(IX - 1)
     return
-end function
+end function sweepCellBase
 
-logical function SWEEP_NEXT_CELL(BCFLAG, NXC, NYC, NZ, IOCT,&
+logical function sweepCellNext(BCFLAG, NXC, NYC, NZ, IOCT,&
     &ICELL, TREEPTR, CELLFLAGS)
 
     !   Returns the next grid cell given the last cell (ICELL).  The
@@ -3424,7 +3431,7 @@ logical function SWEEP_NEXT_CELL(BCFLAG, NXC, NYC, NZ, IOCT,&
     integer BCFLAG, NXC, NYC, NZ, IOCT, ICELL, TREEPTR(2, *)
     integer*2 CELLFLAGS(*)
     integer IC, IDIR, SP, STACK(50)
-    logical DONE, SWEEP_BASE_CELL, BTEST
+    logical DONE, sweepCellBase, BTEST
     save SP, STACK
 
     IC = ICELL
@@ -3432,9 +3439,10 @@ logical function SWEEP_NEXT_CELL(BCFLAG, NXC, NYC, NZ, IOCT,&
     ! Special case for first time here
     if (ICELL .eq. 0) then
         IC = 0
-        SWEEP_NEXT_CELL = SWEEP_BASE_CELL(BCFLAG, NXC, NYC, NZ, IOCT, IC)
+        sweepCellNext = sweepCellBase(BCFLAG, NXC, NYC, NZ, IOCT, IC)
         SP = 0
     end if
+
     ! The scanning direction is the direction (pos or neg) for each
     !   of X,Y,Z that the ray is going in (indicated by IOCT).
 
@@ -3452,9 +3460,9 @@ logical function SWEEP_NEXT_CELL(BCFLAG, NXC, NYC, NZ, IOCT,&
                 ! If no more to pop then we are at the base cell, so go to
                 !   next base cell if there is one.
                 if (SP .eq. 0) then
-                    SWEEP_NEXT_CELL =&
-                        &SWEEP_BASE_CELL(BCFLAG, NXC, NYC, NZ, IOCT, IC)
-                    if (.not. SWEEP_NEXT_CELL) return
+                    sweepCellNext=&
+                        &sweepCellBase(BCFLAG, NXC, NYC, NZ, IOCT, IC)
+                    if (.not. sweepCellNext) return
                 else
                     ! Otherwise, pop the stack to get the next cell to go to.
                     IC = STACK(SP)
@@ -3466,7 +3474,7 @@ logical function SWEEP_NEXT_CELL(BCFLAG, NXC, NYC, NZ, IOCT,&
             ! Depending on the ordinate octant, decide which child to
             !   do first and put the second child on the stack.
             SP = SP + 1
-            if (SP .gt. 50) stop 'Error [SWEEP_NEXT_CELL]: Stack exceeded.'
+            if (SP .gt. 50) stop 'Error [sweepCellNext]: Stack exceeded.'
             IDIR = ibits(int(CELLFLAGS(IC)), 2, 2) - 1
             if (btest(IOCT - 1, IDIR)) then
                 STACK(SP) = TREEPTR(2, IC) + 1
@@ -3479,9 +3487,9 @@ logical function SWEEP_NEXT_CELL(BCFLAG, NXC, NYC, NZ, IOCT,&
     end do
 
     ICELL = IC
-    SWEEP_NEXT_CELL = .true.
+    sweepCellNext = .true.
     return
-end function
+end function sweepCellNext
 
 subroutine shd_solv__splitGrid(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
     &DOSPLIT, OUTOFMEM, CURSPLITACC, SPLITCRIT,&
@@ -3537,7 +3545,7 @@ subroutine shd_solv__splitGrid(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
             do ICELL = ICELL1, NCELLS
                 if (TREEPTR(2, ICELL) .eq. 0) then
                     ! If this is a end node cell then compute adaptive criterion
-                    call CELL_SPLIT_TEST(GRIDPTR, GRIDPOS, EXTINCT,&
+                    call shd_comp__testCellSplit(GRIDPTR, GRIDPOS, EXTINCT,&
                         &SHPTR, NSTOKES, SOURCE, ICELL,&
                         &ADAPT, ADAPTCRIT(N + 1), IDIR)
                     ADAPTIND(N+1) = 4*ICELL + IDIR
@@ -3547,7 +3555,7 @@ subroutine shd_solv__splitGrid(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
             ICELL1 = NCELLS + 1
 
             ! Sort the adaptive criterion in decreasing order
-            call SSORT(ADAPTCRIT, ADAPTIND, N, -2)
+            call shd_comp__ssort(ADAPTCRIT, ADAPTIND, N, -2)
 
             ! Figure how many cells we can split, leaving some room
             !   for cells split during grid smoothing
@@ -3572,10 +3580,10 @@ subroutine shd_solv__splitGrid(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
                     ICELL = int(ADAPTIND(I))/4
                     IDIR = iand(int(ADAPTIND(I)), 3)
                     ! Create the new grid points and make pointers
-                    call DIVIDE_CELL(NPTS, NCELLS, GRIDPTR, NEIGHPTR,&
+                    call shd_comp__divideCell(NPTS, NCELLS, GRIDPTR, NEIGHPTR,&
                         &TREEPTR, CELLFLAGS, GRIDPOS, ICELL, IDIR, NEWPOINTS)
                     ! Interpolate the medium properties, radiance, and source
-                    call INTERPOLATE_POINT(NEWPOINTS, NPTS,&
+                    call shd_comp__interpPnt(NEWPOINTS, NPTS,&
                         &NSTOKES, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
                         &DELTAM, BCFLAG, IPFLAG, ACCELFLAG, GRIDPOS,&
                         &SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN,&
@@ -3603,16 +3611,16 @@ subroutine shd_solv__splitGrid(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
                     ! See if cell should be split to make better grid:
                     !   IDIR=0 if no, IDIR=direction (1,2,3) otherwise
                     ICELL = int(ADAPTIND(I))/4
-                    call GRID_SMOOTH_TEST(GRIDPTR, GRIDPOS, NEIGHPTR,&
+                    call shd_comp__testGridSmooth(GRIDPTR, GRIDPOS, NEIGHPTR,&
                         &TREEPTR, CELLFLAGS, SHPTR, ICELL, IDIR)
                     ! Set IDIR=0 to stop adaptive grid smoothing
                     ! IDIR = 0
                     if (IDIR .gt. 0) then
                         ! Create the new grid points and make pointers
-                        call DIVIDE_CELL(NPTS, NCELLS, GRIDPTR, NEIGHPTR,&
+                        call shd_comp__divideCell(NPTS, NCELLS, GRIDPTR, NEIGHPTR,&
                             &TREEPTR, CELLFLAGS, GRIDPOS, ICELL, IDIR, NEWPOINTS)
                         ! Interpolate the medium properties, radiance, and source
-                        call INTERPOLATE_POINT(NEWPOINTS, NPTS,&
+                        call shd_comp__interpPnt(NEWPOINTS, NPTS,&
                             &NSTOKES, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
                             &DELTAM, BCFLAG, IPFLAG, ACCELFLAG, GRIDPOS,&
                             &SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN,&
@@ -3646,7 +3654,7 @@ subroutine shd_solv__splitGrid(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
     SPLITCRIT = 0.0
     do ICELL = 1, NCELLS
         if (TREEPTR(2, ICELL) .eq. 0) then
-            call CELL_SPLIT_TEST(GRIDPTR, GRIDPOS, EXTINCT,&
+            call shd_comp__testCellSplit(GRIDPTR, GRIDPOS, EXTINCT,&
                 &SHPTR, NSTOKES, SOURCE, ICELL,&
                 &ADAPT, ADAPTCRIT(1), IDIR)
             SPLITCRIT = max(SPLITCRIT, ADAPTCRIT(1))
@@ -3654,9 +3662,9 @@ subroutine shd_solv__splitGrid(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
     end do
 
     return
-end subroutine
+end subroutine shd_solv__splitGrid
 
-subroutine INTERPOLATE_POINT(NEWPOINTS, NPTS,&
+subroutine shd_comp__interpPnt(NEWPOINTS, NPTS,&
     &NSTOKES, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
     &DELTAM, BCFLAG, IPFLAG, ACCELFLAG, GRIDPOS,&
     &SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN,&
@@ -3726,7 +3734,7 @@ subroutine INTERPOLATE_POINT(NEWPOINTS, NPTS,&
             X = GRIDPOS(1, IP)
             Y = GRIDPOS(2, IP)
             Z = GRIDPOS(3, IP)
-            call TRILIN_INTERP_PROP(X, Y, Z, .false., NSTLEG, NLEG,&
+            call shd_comp__triInterpProp(X, Y, Z, .false., NSTLEG, NLEG,&
                 &TEMP(IP), EXTINCT(IP), ALBEDO(IP),&
                 &LEGEN(1, 0, IP), IPHASE(IP))
             ! Do the Delta-M scaling of extinction and albedo for this point
@@ -3745,7 +3753,7 @@ subroutine INTERPOLATE_POINT(NEWPOINTS, NPTS,&
 
             ! Compute the new Planck source function (if needed)
             if (SRCTYPE .ne. 'S') then
-                call PLANCK_FUNCTION(TEMP(IP), UNITS, WAVENO, WAVELEN, BB)
+                call shd_comp__computePlanck(TEMP(IP), UNITS, WAVENO, WAVELEN, BB)
                 PLANCK(IP) = (1.0 - ALBEDO(IP))*BB
             end if
 
@@ -3800,7 +3808,7 @@ subroutine INTERPOLATE_POINT(NEWPOINTS, NPTS,&
                 IPH = IP
             end if
             if (NSTOKES .eq. 1) then
-                call shd_solv__calSrcPntUnp(NLM, NLEG, LOFJ,&
+                call shd_solv__calSrcPnt_(NLM, NLEG, LOFJ,&
                     &SRCTYPE, DIRFLUX(IP)*SECMU0, YLMSUN,&
                     &PLANCK(IP), ALBEDO(IP), IPH, LEGEN,&
                     &NR, RADIANCE(1, IR + 1), SOURCET)
@@ -3818,9 +3826,9 @@ subroutine INTERPOLATE_POINT(NEWPOINTS, NPTS,&
     deallocate (LOFJ, SOURCET)
 
     return
-end subroutine
+end subroutine shd_comp__interpPnt
 
-subroutine DIVIDE_CELL(NPTS, NCELLS, GRIDPTR, NEIGHPTR,&
+subroutine shd_comp__divideCell(NPTS, NCELLS, GRIDPTR, NEIGHPTR,&
     &TREEPTR, CELLFLAGS, GRIDPOS, ICELL, IDIR, NEWPOINTS)
 
     !   Divides a single cell (ICELL) in the IDIR direction (1=Z,2=Y,3=X)
@@ -3839,7 +3847,7 @@ subroutine DIVIDE_CELL(NPTS, NCELLS, GRIDPTR, NEIGHPTR,&
 
     ! Only allow to divide an end cell (i.e. one not yet divided)
     if (TREEPTR(2, ICELL) .ne. 0) then
-        stop 'Error [DIVIDE_CELL]: Cannot divide already split cell.'
+        stop 'Error [_divideCell]: Cannot divide already split cell.'
     end if
 
     ! Do the tree pointers: parent points to negative child,
@@ -3864,7 +3872,7 @@ subroutine DIVIDE_CELL(NPTS, NCELLS, GRIDPTR, NEIGHPTR,&
     end do
 
     ! Do the grid points:
-    call NEW_GRID_POINTS(IDIR, ICELL, NEWCELL, NPTS,&
+    call shd_init__makeNewGridPnt(IDIR, ICELL, NEWCELL, NPTS,&
         &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
         &GRIDPOS, NEWPOINTS)
 
@@ -3891,22 +3899,25 @@ subroutine DIVIDE_CELL(NPTS, NCELLS, GRIDPTR, NEIGHPTR,&
         end if
         ! Then see if we can match faces further down the neighbor's tree;
         !   also update the neighboring cells pointers
-        call MATCH_NEIGHBOR_FACE(IFACE, NEWCELL, NEIGHPTR,&
+        call shd_comp__matchNeighFace(IFACE, NEWCELL, NEIGHPTR,&
             &CELLFLAGS, TREEPTR, GRIDPTR, GRIDPOS)
-        call MATCH_NEIGHBOR_FACE(IFACE, NEWCELL + 1, NEIGHPTR,&
+        call shd_comp__matchNeighFace(IFACE, NEWCELL + 1, NEIGHPTR,&
             &CELLFLAGS, TREEPTR, GRIDPTR, GRIDPOS)
     end do
 
     return
-end subroutine
+end subroutine shd_comp__divideCell
 
-subroutine MATCH_NEIGHBOR_FACE(IFACE, IC, NEIGHPTR, CELLFLAGS,&
+subroutine shd_comp__matchNeighFace(IFACE, IC, NEIGHPTR, CELLFLAGS,&
     &TREEPTR, GRIDPTR, GRIDPOS)
+
     !   Resolves the neighbor pointers for a new cell IC (from a subdivision)
     ! for the IFACE face.  Based on the size of this new face and
     ! the corresponding faces of the neighboring cells (down its tree),
     ! the new cell's NEIGHPTR and those of the neighboring cells are updated.
+
     implicit none
+
     integer IFACE, IC, NEIGHPTR(6, *), TREEPTR(2, *), GRIDPTR(8, *)
     integer*2 CELLFLAGS(*)
     real GRIDPOS(3, *)
@@ -3953,7 +3964,7 @@ subroutine MATCH_NEIGHBOR_FACE(IFACE, IC, NEIGHPTR, CELLFLAGS,&
             &GRIDPOS(DIR1, IN8) .le. GRIDPOS(DIR1, IC8) .and.&
             &GRIDPOS(DIR2, IN1) .ge. GRIDPOS(DIR2, IC1) .and.&
             &GRIDPOS(DIR2, IN8) .le. GRIDPOS(DIR2, IC8)) then
-            call INHERIT_NEIGHBOR(IN, OPPFACE(IFACE), IC,&
+            call shd_comp__inheritNeigh(IN, OPPFACE(IFACE), IC,&
                 &NEIGHPTR, TREEPTR, CELLFLAGS)
         else
             NEIGHPTR(OPPFACE(IFACE), IN) = -abs(NEIGHPTR(OPPFACE(IFACE), IN))
@@ -3979,9 +3990,9 @@ subroutine MATCH_NEIGHBOR_FACE(IFACE, IC, NEIGHPTR, CELLFLAGS,&
     end do
 
     return
-end subroutine
+end subroutine shd_comp__matchNeighFace
 
-subroutine INHERIT_NEIGHBOR(ICELL, IFACE, IN,&
+subroutine shd_comp__inheritNeigh(ICELL, IFACE, IN,&
     &NEIGHPTR, TREEPTR, CELLFLAGS)
 
     !   Updates the ICELL cell's new neighbor cell (IN) for all
@@ -4022,7 +4033,7 @@ subroutine INHERIT_NEIGHBOR(ICELL, IFACE, IN,&
                 ! Otherwise need to go to both children so put the second child
                 !   on the stack and set the pointer to go to the first child next.
                 SP = SP + 1
-                if (SP .gt. 50) stop 'Error [INHERIT_NEIGHBOR]: Stack exceeded.'
+                if (SP .gt. 50) stop 'Error [_inheritNeigh]: Stack exceeded.'
                 STACK(SP) = TREEPTR(2, IC) + 1
                 IC = TREEPTR(2, IC)
             end if
@@ -4030,11 +4041,12 @@ subroutine INHERIT_NEIGHBOR(ICELL, IFACE, IN,&
     end do
 
     return
-end subroutine
+end subroutine shd_comp__inheritNeigh
 
-subroutine NEW_GRID_POINTS(IDIR, ICELL, NEWCELL, NPTS,&
+subroutine shd_init__makeNewGridPnt(IDIR, ICELL, NEWCELL, NPTS,&
     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &GRIDPOS, NEWPOINTS)
+
     !   Sets up the pointers to the grid points for the two new cells.
     ! Creates the four new points if they don't already exist, changing
     ! NPTS and GRIDPOS accordingly.  Returns the NEWPOINTS(3,4) arrays
@@ -4042,7 +4054,9 @@ subroutine NEW_GRID_POINTS(IDIR, ICELL, NEWCELL, NPTS,&
     ! point address of the new points (or zero), and NEWPOINTS(1,) and
     ! NEWPOINTS(2,) are the "parent" grid points these should be
     ! interpolated from.
+
     implicit none
+
     integer IDIR, ICELL, NEWCELL, NPTS, NEWPOINTS(3, 4)
     integer GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
     integer*2 CELLFLAGS(*)
@@ -4058,7 +4072,7 @@ subroutine NEW_GRID_POINTS(IDIR, ICELL, NEWCELL, NPTS,&
 
     !   In general, when subdividing a cell four new points may be made.
     ! Each of these points belongs to two faces of the original cell.
-    ! Use the MATCH_GRID_POINT routine to try to find matches in cells
+    ! Use the shd_comp__matchGridPnt routine to try to find matches in cells
     ! across the two faces that contain the point; also cross the face of
     ! one of these to get the third bounding cell.  If any of the appropriate
     ! gridpoints of these three cells has the same coordinates then the point
@@ -4084,17 +4098,17 @@ subroutine NEW_GRID_POINTS(IDIR, ICELL, NEWCELL, NPTS,&
         ! Look for gridpoints matching this new point in the three cell
         !   that border this edge
         IFACE1 = FACEGRID(1, I, IDIR)
-        call MATCH_GRID_POINT(XP, YP, ZP, ICELL, IFACE1, GRIDPOS,&
+        call shd_comp__matchGridPnt(XP, YP, ZP, ICELL, IFACE1, GRIDPOS,&
             &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, IPMATCH)
         if (IPMATCH .eq. 0) then
             IFACE2 = FACEGRID(2, I, IDIR)
-            call MATCH_GRID_POINT(XP, YP, ZP, ICELL, IFACE2, GRIDPOS,&
+            call shd_comp__matchGridPnt(XP, YP, ZP, ICELL, IFACE2, GRIDPOS,&
                 &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, IPMATCH)
         end if
         if (IPMATCH .eq. 0) then
             ICELL2 = abs(NEIGHPTR(IFACE1, ICELL))
             if (ICELL2 .gt. 0) then
-                call MATCH_GRID_POINT(XP, YP, ZP, ICELL2, IFACE2, GRIDPOS,&
+                call shd_comp__matchGridPnt(XP, YP, ZP, ICELL2, IFACE2, GRIDPOS,&
                     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, IPMATCH)
             end if
         end if
@@ -4118,9 +4132,9 @@ subroutine NEW_GRID_POINTS(IDIR, ICELL, NEWCELL, NPTS,&
     end do
 
     return
-end subroutine
+end subroutine shd_init__makeNewGridPnt
 
-subroutine MATCH_GRID_POINT(XP, YP, ZP, ICELL, IFACE,&
+subroutine shd_comp__matchGridPnt(XP, YP, ZP, ICELL, IFACE,&
     &GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &IPMATCH)
     !   Determines whether the neighboring cells to ICELL adjacent to
@@ -4176,7 +4190,7 @@ subroutine MATCH_GRID_POINT(XP, YP, ZP, ICELL, IFACE,&
 
         ! Get the direction current cell is split
         DIR = ibits(int(CELLFLAGS(IC)), 2, 2)
-        if (DIR .eq. 0) stop 'Error [MATCH_GRID_POINT]: No split direction.'
+        if (DIR .eq. 0) stop 'Error [_matchGridPnt]: No split direction.'
         ! If split is in direction of face then choose the near child cell
         !   which is the negative side cell if this is a positive face.
         IC1 = TREEPTR(2, IC)
@@ -4212,13 +4226,13 @@ subroutine MATCH_GRID_POINT(XP, YP, ZP, ICELL, IFACE,&
                 end if
             end if
             if (SP .ge. MAXSTACK)&
-                &stop 'Error [MATCH_GRID_POINT]: MAXSTACK exceeded.'
+                &stop 'Error [_matchGridPnt]: MAXSTACK exceeded.'
         end if
     end do
 
 end subroutine
 
-subroutine CELL_SPLIT_TEST(GRIDPTR, GRIDPOS, EXTINCT,&
+subroutine shd_comp__testCellSplit(GRIDPTR, GRIDPOS, EXTINCT,&
     &SHPTR, NSTOKES, SOURCE, ICELL,&
     &ADAPTCRIT, MAXADAPT, IDIR)
 
@@ -4306,9 +4320,9 @@ subroutine CELL_SPLIT_TEST(GRIDPTR, GRIDPOS, EXTINCT,&
     end do
 
     return
-end subroutine
+end subroutine shd_comp__testCellSplit
 
-subroutine GRID_SMOOTH_TEST(GRIDPTR, GRIDPOS, NEIGHPTR,&
+subroutine shd_comp__testGridSmooth(GRIDPTR, GRIDPOS, NEIGHPTR,&
     &TREEPTR, CELLFLAGS, SHPTR, ICELL, IDIR)
     !   Tests the grid cell ICELL for splitting in order to improve the
     ! adaptive grid smoothness.  The direction to split the cell is returned
@@ -4356,7 +4370,7 @@ subroutine GRID_SMOOTH_TEST(GRIDPTR, GRIDPOS, NEIGHPTR,&
                     ZE = ZE + GRIDPOS(3, IP)*0.25
                 end do
                 ! Get the neighboring cell and its size in this direction
-                call NEXT_CELL(XE, YE, ZE, IFACE, ID, ICELL, GRIDPOS,&
+                call shd_comp__moveNextCell(XE, YE, ZE, IFACE, ID, ICELL, GRIDPOS,&
                     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INCELL(J))
                 ! If the neighbor does not exist or is a base cell or
                 !   is an independent pixel cell in X or Y then set
@@ -4415,4 +4429,4 @@ subroutine GRID_SMOOTH_TEST(GRIDPTR, GRIDPOS, NEIGHPTR,&
     end do
 
     return
-end subroutine
+end subroutine shd_comp__testGridSmooth
