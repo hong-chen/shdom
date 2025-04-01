@@ -3,6 +3,7 @@ module shd_surf
     use globals
 
     implicit none
+    private
 
     public :: shd_surf__brdfSurface
     public :: shd_surf__brdfFresnel
