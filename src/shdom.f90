@@ -257,7 +257,7 @@ program shdom_main
                 &PROPTYPE, DELX0, DELY0, ZLEVELS_, MAXASYM,&
                 &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, NUMPHASE_, IPHASEPT)
 
-            if (NUMPHASE_ == 0) then
+            if (NUMPHASE_ .eq. 0) then
                 write (6, '(A)') 'Error [shdom_main]: Standard property file (with phase function Legendre series at every point)'
                 write (6, '(A)') '  is not allowed with multiple processors.'
                 stop
@@ -310,7 +310,7 @@ program shdom_main
 
     ! Guess maximum number of grid points, cells, SH vector size needed
     ! but don't let MAX_TOTAL_MB be exceeded
-    if (MAX_TOTAL_MB*1024.0**2 > 1.80*huge(MAXIV)) then
+    if (MAX_TOTAL_MB*1024.0**2 .gt. 1.80*huge(MAXIV)) then
         MAX_TOTAL_MB = 1.80*huge(MAXIV)/1024.0**2
         write (6, '(A,F10.2)') 'Message [shdom_main]: MAX_TOTAL_MB reduced to fit memory model:', MAX_TOTAL_MB
     end if
@@ -327,17 +327,17 @@ program shdom_main
     REDUCE_RATIO = min(1.0, ((MAX_TOTAL_MB*1024**2)/4 - MEMWORD)/WANTMEM)
 
     ADAPT_GRID_FACTOR = ADAPT_GRID_FACTOR*REDUCE_RATIO
-    if (ADAPT_GRID_FACTOR < 1.0) then
+    if (ADAPT_GRID_FACTOR .lt. 1.0) then
         write (6, '(A)') 'Error [shdom_main]: MAX_TOTAL_MB memory limit exceeded with just base grid.'
         stop
     end if
 
-    if (REDUCE_RATIO < 1.0) then
+    if (REDUCE_RATIO .lt. 1.0) then
         write (6, '(A,F8.2)') 'Message [shdom_main]: ADAPT_GRID_FACTOR reduced to:', ADAPT_GRID_FACTOR
     end if
 
     WANTMEM = REDUCE_RATIO*WANTMEM
-    if (WANTMEM > huge(MAXIV)) then
+    if (WANTMEM .gt. huge(MAXIV)) then
         write (6, '(A,F8.2)') 'Error [shdom_main]: Number of words of memory exceeds max integer size:', WANTMEM
         stop
     end if
@@ -351,11 +351,11 @@ program shdom_main
     else
         MAXIGL = MAXIG*NSTLEG*(MAXLEG + 1)
     end if
-    if (4.0*(MAXIV + MAXIG)*NSTOKES > huge(MAXIV)) then
+    if (4.0*(MAXIV + MAXIG)*NSTOKES .gt. huge(MAXIV)) then
         write (6, '(A,F8.2)') 'Error [shdom_main]: Size of big SH arrays (MAXIV) probably exceeds max integer number of bytes:', MAXIV
         stop
     end if
-    if (4.0*8.0*MAXIC > huge(MAXIV)) then
+    if (4.0*8.0*MAXIC .gt. huge(MAXIV)) then
         write (6, '(A,F8.2)') 'Error [shdom_main]: Size of GRIDPTR array (8*MAXIC) probably exceeds max integer number of bytes:', 8*MAXIC
         stop
     end if
@@ -775,7 +775,7 @@ program shdom_main
     else
 
         do I = 1, NUMOUT
-            if (OUTTYPES(I) /= 'V' .and. OUTFILES(I) /= 'NONE') then
+            if (OUTTYPES(I) .ne. 'V' .and. OUTFILES(I) .ne. 'NONE') then
                 call shd_io__outputResult(NSTOKES, NX, NY, NX1, NY1, NZ, NBPTS, NPTS, NCELLS,&
                     NSH, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_, NMU, NPHI, NANG, NG,&
                     PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
@@ -796,7 +796,7 @@ program shdom_main
     ! Output visualization images if there are any
     if (MASTERPROC) then
         do I = 1, NUMOUT
-            if (OUTTYPES(I) == 'V') then
+            if (OUTTYPES(I) .eq. 'V') then
                 call shd_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                     &NSH, ML, MM, NLM, NMU, NPHI, NANG, NG,&
                     &PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
