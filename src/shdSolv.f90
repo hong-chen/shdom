@@ -23,6 +23,7 @@ subroutine shd_solv__solveRte(&
     ! The adaptive grid stucture (NCELLS,GRIDPTR,NEIGHPTR,TREEPTR,
     ! CELLFLAGS,NPTS,GRIDPOS) is input and modified for new grid
     ! cells and points on output.
+
     use shd_ext_mpi
 
     implicit none
@@ -83,12 +84,12 @@ subroutine shd_solv__solveRte(&
     ! Set up some things before solution loop
 
     ! Transfer the medium properties to the internal grid and add gas abs
-    call INTERP_GRID(NPTS, NSTLEG, NLEG, GRIDPOS,&
+    call shd_comp__interpGrid(NPTS, NSTLEG, NLEG, GRIDPOS,&
         &TEMP, EXTINCT, ALBEDO, LEGEN, IPHASE)
 
     ! If Delta-M then scale the extinction, albedo, and Legendre terms
     ! Put the Planck blackbody source in PLANCK.
-    call PREPARE_PROP(ML, MM, NSTLEG, NLEG, NPTS, DELTAM, NUMPHASE,&
+    call shd_init__prepProp(ML, MM, NSTLEG, NLEG, NPTS, DELTAM, NUMPHASE,&
         &SRCTYPE, UNITS, WAVENO, WAVELEN, ALBMAX,&
         &EXTINCT, ALBEDO, LEGEN, TEMP, PLANCK, IPHASE)
     ! Get the maximum single scattering albedo over all processors
@@ -102,7 +103,7 @@ subroutine shd_solv__solveRte(&
                 &NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
                 &GRIDPOS, NX, XGRID, NY, YGRID, DIRFLUX)
         else
-            call MAKE_DIRECT(NPTS, BCFLAG, IPFLAG, DELTAM, ML,&
+            call shd_comp__makeDirect(NPTS, BCFLAG, IPFLAG, DELTAM, ML,&
                 &NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
                 &GRIDPOS, DIRFLUX)
         end if
@@ -113,11 +114,11 @@ subroutine shd_solv__solveRte(&
     ! Make the discrete ordinates (angles)
     !   (set 2 is reduced gaussian, 3 is reduced double gauss)
     ORDINATESET = 2
-    call MAKE_ANGLE_SET(NMU, NPHI, ORDINATESET, NPHI0MAX,&
+    call shd_init__makeAngleSet(NMU, NPHI, ORDINATESET, NPHI0MAX,&
         &NPHI0, MU, PHI, WTMU, WTDO, FFTFLAG, NANG)
 
     ! Make the Ylm transform coefficients
-    call MAKE_SH_DO_COEF(NSTLEG, ML, MM, NLM, NMU, NPHI0,&
+    call shd_solv__makeSHDO(NSTLEG, ML, MM, NLM, NMU, NPHI0,&
         &NPHI0MAX, MU, PHI, WTMU, WTDO, FFTFLAG,&
         &CMU1, CMU2, CPHI1, CPHI2, WPHISAVE)
 
@@ -125,7 +126,7 @@ subroutine shd_solv__solveRte(&
     if (.not. INRADFLAG) then
         ! Initialize the radiance on the base grid using Eddington
         ! two-stream plane-parallel
-        call INIT_RADIANCE(NSTOKES, NX1*NY1, NZ, NSTLEG, NLEG,&
+        call shd_init__makeRad(NSTOKES, NX1*NY1, NZ, NSTLEG, NLEG,&
             &RSHPTR, ZGRID,&
             &EXTINCT, ALBEDO, LEGEN, TEMP, NUMPHASE, IPHASE,&
             &SRCTYPE, SOLARFLUX, SOLARMU, GNDALBEDO, GNDTEMP, SKYRAD,&
@@ -135,10 +136,10 @@ subroutine shd_solv__solveRte(&
         NBPTS = NX1*NY1*NZ
         NBCELLS = (NZ - 1)*(NX + ibits(BCFLAG, 0, 1) - ibits(BCFLAG, 2, 1))&
             &*(NY + ibits(BCFLAG, 1, 1) - ibits(BCFLAG, 3, 1))
-        call INTERP_RADIANCE(NSTOKES, NBPTS, NPTS, RSHPTR, RADIANCE,&
+        call shd_comp__interpRad(NSTOKES, NBPTS, NPTS, RSHPTR, RADIANCE,&
             &NBCELLS, NCELLS, TREEPTR, GRIDPTR, GRIDPOS)
         ! Initialize the source function from the radiance field
-        call COMPUTE_SOURCE(NSTOKES, ML, MM, NLM,&
+        call shd_comp__computeSrc(NSTOKES, ML, MM, NLM,&
             &NSTLEG, NLEG, NUMPHASE, NPTS,&
             &FIXSH, SRCTYPE, SOLARMU, YLMSUN, ALBEDO, LEGEN,&
             &IPHASE, PLANCK, DIRFLUX, SHACC,&
@@ -154,18 +155,18 @@ subroutine shd_solv__solveRte(&
 
     LAMBERTIAN = SFCTYPE(2:2) .eq. 'L'
     ! Make the pointers to the grid points on the top and bottom boundaries
-    call BOUNDARY_PNTS(NPTS, NANG, LAMBERTIAN, MAXNBC, MAXBCRAD,&
+    call shd_solv__findBoundaryPnt(NPTS, NANG, LAMBERTIAN, MAXNBC, MAXBCRAD,&
         &ZGRID(1), ZGRID(NZ), GRIDPOS,&
         &NTOPPTS, NBOTPTS, BCPTR)
     if (SFCTYPE(1:1) .eq. 'V') then
         ! If this is a variable surface then bilinearly interpolate
         !   the surface temperature and reflection parameters to the
         !   bottom grid points.
-        call SURFACE_PARM_INTERP(NBOTPTS, BCPTR(1, 2), GRIDPOS,&
+        call shd_comp__interpSurfParams(NBOTPTS, BCPTR(1, 2), GRIDPOS,&
             &SRCTYPE, WAVENO, WAVELEN, UNITS,&
             &NXSFC, NYSFC, DELXSFC, DELYSFC, NSFCPAR, SFCPARMS,&
             &SFCGRIDPARMS)
-        call CHECK_UNIFORM_SFC(NXSFC, NYSFC, NSFCPAR, SFCPARMS,&
+        call shd_init__checkSurfUnif(NXSFC, NYSFC, NSFCPAR, SFCPARMS,&
             &UNIFORM_SFC_BRDF)
         if (UNIFORM_SFC_BRDF) then
             if (NSTOKES*(NMU/2)*NPHI0MAX .gt.&
@@ -176,7 +177,7 @@ subroutine shd_solv__solveRte(&
                     &NSTOKES, NMU/2, NPHI0MAX), STAT=IERR)
             end if
             if (IERR .eq. 0) then
-                call MAKE_SFC_BRDF_DO_MATRIX(SFCTYPE, WAVELEN,&
+                call shd_solv__makeSurfDO(SFCTYPE, WAVELEN,&
                     &NXSFC, NYSFC, NSFCPAR, SFCPARMS, NSTOKES,&
                     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                     &SFC_BRDF_DO)
@@ -263,7 +264,7 @@ subroutine shd_solv__solveRte(&
         end if
 
         ! Find the SH truncation to use for the radiance (RSHPTR)
-        call RADIANCE_TRUNCATION(HIGHORDERRAD,&
+        call shd_solv__truncateRad(HIGHORDERRAD,&
             &NSTOKES, ML, MM, NSTLEG, NLEG, NUMPHASE,&
             &NPTS, ALBEDO, LEGEN, IPHASE, SHPTR, RADIANCE,&
             &MAXIV + MAXIG, FIXSH, SHACC, RSHPTR)
@@ -273,7 +274,7 @@ subroutine shd_solv__solveRte(&
         !   and output radiance are in spherical harmonic expansions,
         !   and the SH/DO transforms are done during the loop over
         !   discrete ordinates.
-        call PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG, ML, MM, NLM,&
+        call shd_solv__integratePath(NX, NY, NZ, NSTOKES, NSTLEG, ML, MM, NLM,&
             &NMU, NPHI0MAX, NPHI0, NANG, BCFLAG, IPFLAG,&
             &NPTS, NCELLS, XGRID, YGRID, ZGRID, GRIDPOS,&
             &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
@@ -292,7 +293,7 @@ subroutine shd_solv__solveRte(&
         !   do the adaptive spherical harmonics truncation, compute
         !   the solution criterion, and dot products for acceleration
         if (SOLCRIT .lt. ENDADAPTSOL .or. ITER .gt. 30) FIXSH = .true.
-        call COMPUTE_SOURCE(NSTOKES, ML, MM, NLM,&
+        call shd_comp__computeSrc(NSTOKES, ML, MM, NLM,&
             &NSTLEG, NLEG, NUMPHASE, NPTS,&
             &FIXSH, SRCTYPE, SOLARMU, YLMSUN, ALBEDO, LEGEN,&
             &IPHASE, PLANCK, DIRFLUX, SHACC,&
@@ -305,7 +306,7 @@ subroutine shd_solv__solveRte(&
             &JNORM, ACCELPAR, SOLCRIT)
 
         ! Accelerate the convergence of the source function vector
-        call ACCELERATE_SOLUTION(ACCELPAR, NPTS, SHPTR, OSHPTR,&
+        call shd_solv__accelSol(ACCELPAR, NPTS, SHPTR, OSHPTR,&
             &NSTOKES, SOURCE, DELSOURCE)
 
         ! If it is a not scattering medium then do only one iteration
@@ -481,7 +482,7 @@ subroutine shd_solv__calSrcPntUnp(&
     return
 end subroutine
 
-subroutine COMPUTE_SOURCE(&
+subroutine shd_comp__computeSrc(&
     &NSTOKES, ML, MM, NLM,&
     &NSTLEG, NLEG, NUMPHASE, NPTS, FIXSH,&
     &SRCTYPE, SOLARMU, YLMSUN, ALBEDO, LEGEN,&
@@ -565,7 +566,7 @@ subroutine COMPUTE_SOURCE(&
             IR = RSHPTR(I)
             NR = RSHPTR(I + 1) - IR
             if (NR .gt. NLM) then
-                write (6, *) 'Error [COMPUTE_SOURCE]: NR>NLM 1', I, IR, RSHPTR(I + 1)
+                write (6, *) 'Error [_computeSrc]: NR>NLM 1', I, IR, RSHPTR(I + 1)
                 stop
             end if
             if (NSTOKES .eq. 1) then
@@ -653,7 +654,7 @@ subroutine COMPUTE_SOURCE(&
         IR = RSHPTR(I)
         NR = RSHPTR(I + 1) - IR
         if (NR .gt. NLM) then
-            write (6, *) 'Error [COMPUTE_SOURCE]: NR>NLM 3', I, IR, RSHPTR(I + 1)
+            write (6, *) 'Error [_computeSrc]: NR>NLM 3', I, IR, RSHPTR(I + 1)
             stop
         end if
         if (NSTOKES .eq. 1) then
@@ -697,7 +698,7 @@ subroutine COMPUTE_SOURCE(&
             SHPTR(I) = IS
         end if
         if (IS + NS .gt. MAXIV) then
-            write (6, *) 'Error [COMPUTE_SOURCE]: MAXIV exceeded.', MAXIV
+            write (6, *) 'Error [_computeSrc]: MAXIV exceeded.', MAXIV
             write (6, *) '  Out of memory for more spherical harmonic terms.'
             stop
         end if
@@ -712,7 +713,7 @@ subroutine COMPUTE_SOURCE(&
     return
 end subroutine
 
-subroutine RADIANCE_TRUNCATION(HIGHORDERRAD,&
+subroutine shd_solv__truncateRad(HIGHORDERRAD,&
     &NSTOKES, ML, MM, NSTLEG, NLEG, NUMPHASE,&
     &NPTS, ALBEDO, LEGEN, IPHASE, SHPTR, RADIANCE,&
     &MAXIR, FIXSH, SHACC, RSHPTR)
@@ -801,7 +802,7 @@ subroutine RADIANCE_TRUNCATION(HIGHORDERRAD,&
         RSHPTR(I + 1) = IR
         if (IR .gt. MAXIR) then
             write (6, *)&
-                &'Message [RADIANCE_TRUNCATION]: Out of memory for more radiance terms.'
+                &'Message [_truncateRad]: Out of memory for more radiance terms.'
             goto 190
         end if
     end do
@@ -825,7 +826,7 @@ subroutine RADIANCE_TRUNCATION(HIGHORDERRAD,&
         end if
         IR = IR + NR
         if (IR .gt. MAXIR) then
-            write (6, *) 'Error [RADIANCE_TRUNCATION]: Really out of memory ',&
+            write (6, *) 'Error [_truncateRad]: Really out of memory ',&
                 &'for more radiance terms.'
             write (6, *) '  Increase MAXIV.'
             stop
@@ -836,7 +837,7 @@ subroutine RADIANCE_TRUNCATION(HIGHORDERRAD,&
     return
 end subroutine
 
-subroutine ACCELERATE_SOLUTION(&
+subroutine shd_solv__accelSol(&
     &ACCELPAR, NPTS, SHPTR, OSHPTR,&
     &NSTOKES, SOURCE, DELSOURCE)
 
@@ -866,7 +867,7 @@ subroutine ACCELERATE_SOLUTION(&
     return
 end subroutine
 
-subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
+subroutine shd_solv__integratePath(NX, NY, NZ, NSTOKES, NSTLEG,&
     &ML, MM, NLM, NMU, NPHI0MAX, NPHI0, NANG,&
     &BCFLAG, IPFLAG,&
     &NPTS, NCELLS, XGRID, YGRID, ZGRID, GRIDPOS,&
@@ -951,7 +952,7 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
 
     ! Make the new grid cell/point sweeping order if need to
     if (NPTS .ne. OLDNPTS) then
-        call SWEEPING_ORDER(NX, NY, NZ, NPTS, NCELLS,&
+        call shd_solv__makeSweepOrder(NX, NY, NZ, NPTS, NCELLS,&
             &GRIDPTR, TREEPTR, CELLFLAGS,&
             &BCFLAG, IPFLAG, SWEEPORD, GRIDRAD)
     end if
@@ -962,21 +963,21 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
     LAMBERTIAN = SFCTYPE(2:2) .eq. 'L'
     if (NPTS .ne. OLDNPTS) then
         ! Make the pointers to the grid points on the top and bottom bou
-        call BOUNDARY_PNTS(NPTS, NANG, LAMBERTIAN, MAXNBC, MAXBCRAD,&
+        call shd_solv__findBoundaryPnt(NPTS, NANG, LAMBERTIAN, MAXNBC, MAXBCRAD,&
             &ZGRID(1), ZGRID(NZ), GRIDPOS,&
             &NTOPPTS, NBOTPTS, BCPTR)
         if (SFCTYPE(1:1) .eq. 'V') then
             ! If this is a variable surface then bilinearly interpolate
             !   the surface temperature and reflection parameters to the
             !   bottom grid points.
-            call SURFACE_PARM_INTERP(NBOTPTS, BCPTR(1, 2), GRIDPOS,&
+            call shd_comp__interpSurfParams(NBOTPTS, BCPTR(1, 2), GRIDPOS,&
                 &SRCTYPE, WAVENO, WAVELEN, UNITS,&
                 &NXSFC, NYSFC, DELXSFC, DELYSFC, NSFCPAR, SFCPARMS,&
                 &SFCGRIDPARMS)
         end if
     end if
     ! Make the isotropic radiances for the top boundary
-    call COMPUTE_TOP_RADIANCES(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
+    call shd_comp__computeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
         &UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
 
     ! Zero the flux arrays and set temporary radiance to -1 for not
@@ -1121,7 +1122,7 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
             !   GRIDRAD to the work array.
             do I = 1, NPTS
                 if (GRIDRAD(1, I) .lt. -0.0001) then
-                    write (6, *) 'Warning [PATH_INTEGRATION]: Grid point has no value',&
+                    write (6, *) 'Warning [_integratePath]: Grid point has no value',&
                         &I, MU(IMU), PHI(IMU, IPHI), GRIDRAD(1, I), XGRID(1), YGRID(1),&
                         &GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I)
                     ! stop
@@ -1169,9 +1170,9 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
     OLDNPTS = NPTS
 
     return
-end subroutine
+end subroutine shd_solv__integratePath
 
-subroutine BOUNDARY_PNTS(&
+subroutine shd_solv__findBoundaryPnt(&
     &NPTS, NANG, LAMBERTIAN, MAXNBC, MAXBCRAD,&
     &ZBOT, ZTOP, GRIDPOS,&
     &NTOPPTS, NBOTPTS, BCPTR)
@@ -1202,7 +1203,7 @@ subroutine BOUNDARY_PNTS(&
         if (GRIDPOS(3, I) .ge. ZTOP) then
             IT = IT + 1
             if (IT .gt. MAXNBC .or. IT .gt. MAXBCRAD) then
-                write (6, *) 'Error [BOUNDARY_PNTS]: MAXNBC exceeded - top.'
+                write (6, *) 'Error [_findBoundaryPnt]: MAXNBC exceeded - top.'
                 stop
             end if
             BCPTR(IT, 1) = I
@@ -1211,7 +1212,7 @@ subroutine BOUNDARY_PNTS(&
         if (GRIDPOS(3, I) .le. ZBOT) then
             IB = IB + 1
             if (IB .gt. MAXNBC .or. IT + IB*NA .gt. MAXBCRAD) then
-                write (6, *) 'Error [BOUNDARY_PNTS]: MAXNBC exceeded - bottom.'
+                write (6, *) 'Error [_findBoundaryPnt]: MAXNBC exceeded - bottom.'
                 stop
             end if
             BCPTR(IB, 2) = I
@@ -1223,7 +1224,7 @@ subroutine BOUNDARY_PNTS(&
     return
 end subroutine
 
-subroutine SURFACE_PARM_INTERP(NBOTPTS, BCPTR, GRIDPOS,&
+subroutine shd_comp__interpSurfParams(NBOTPTS, BCPTR, GRIDPOS,&
     &SRCTYPE, WAVENO, WAVELEN, UNITS,&
     &NXSFC, NYSFC, DELXSFC, DELYSFC, NSFCPAR, SFCPARMS,&
     &SFCGRIDPARMS)
@@ -1272,9 +1273,9 @@ subroutine SURFACE_PARM_INTERP(NBOTPTS, BCPTR, GRIDPOS,&
         SFCGRIDPARMS(1, IBC) = PLANCK
     end do
     return
-end subroutine
+end subroutine shd_comp__interpSurfParams
 
-subroutine CHECK_UNIFORM_SFC(NXSFC, NYSFC, NSFCPAR, SFCPARMS,&
+subroutine shd_init__checkSurfUnif(NXSFC, NYSFC, NSFCPAR, SFCPARMS,&
     &UNIFORM_SFC_BRDF)
 
     !   Checks to see if the surface reflection parameters are uniform,
@@ -1301,7 +1302,7 @@ subroutine CHECK_UNIFORM_SFC(NXSFC, NYSFC, NSFCPAR, SFCPARMS,&
     return
 end subroutine
 
-subroutine COMPUTE_TOP_RADIANCES(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
+subroutine shd_comp__computeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
     &UNITS, NTOPPTS, NSTOKES, BCRAD)
     !   Returns the beginning of the BCRAD array with the downwelling
     ! radiance for the NTOPPTS top boundary points.  Currently all
@@ -1326,17 +1327,19 @@ subroutine COMPUTE_TOP_RADIANCES(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
         BCRAD(2:, IBC) = 0.0
     end do
     return
-end subroutine
+end subroutine shd_comp__computeTopRad
 
 subroutine FIXED_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR,&
     &DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO,&
     &WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD)
+
     !   Returns the BCRAD array with the upwelling unpolarized radiance for
     ! a Lambertian surface for the bottom points (pointed to by BCPTR).
     ! If there is reflection the downwelling hemispheric flux at the
     ! bottom points is gotten (from FLUXES). There may also be thermal
     ! emission (depending on temperature and emissivity) or reflected
     ! collimated solar radiation (DIRFLUX).
+
     implicit none
     integer NBOTPTS, BCPTR(*), NSTOKES
     real DIRFLUX(*), FLUXES(2, *)
@@ -1370,6 +1373,7 @@ end subroutine
 subroutine VARIABLE_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR,&
     &DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS,&
     &NSTOKES, BCRAD)
+
     !   Returns the BCRAD array with the upwelling unpolarized radiance for a
     ! variable Lambertian surface for the bottom points (pointed to by BCPTR).
     ! SFCGRIDPARMS contains the interpolated surface properties for the
@@ -1378,6 +1382,7 @@ subroutine VARIABLE_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR,&
     ! flux (in FLUXES).  There may also be thermal emission (depending on
     ! temperature and emissivity) or reflected collimated solar radiation
     ! (from DIRFLUX).
+
     implicit none
     integer NBOTPTS, BCPTR(*), NSFCPAR, NSTOKES
     real DIRFLUX(*), FLUXES(2, *)
@@ -1406,6 +1411,7 @@ subroutine VARIABLE_LAMBERTIAN_BOUNDARY(NBOTPTS, BCPTR,&
         BCRAD(2:, IBC) = 0.0
     end do
     return
+
 end subroutine
 
 subroutine VARIABLE_BRDF_SURFACE(NBOTPTS, IBEG, IEND, BCPTR,&
@@ -1484,7 +1490,7 @@ subroutine VARIABLE_BRDF_SURFACE(NBOTPTS, IBEG, IEND, BCPTR,&
     return
 end subroutine
 
-subroutine MAKE_SFC_BRDF_DO_MATRIX(SFCTYPE, WAVELEN,&
+subroutine shd_solv__makeSurfDO(SFCTYPE, WAVELEN,&
     &NXSFC, NYSFC, NSFCPAR, SFCPARMS, NSTOKES,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
     &SFC_BRDF_DO)
@@ -1526,7 +1532,7 @@ subroutine MAKE_SFC_BRDF_DO_MATRIX(SFCTYPE, WAVELEN,&
         end do
     end do
     return
-end subroutine
+end subroutine shd_solv__makeSurfDO
 
 subroutine UNIFORM_BRDF_SURFACE(NBOTPTS, BCPTR,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, IMU, IPHI,&
@@ -2032,7 +2038,7 @@ subroutine DO_TO_SH_UNPOL(NPTS, ML, MM, NLM,&
     return
 end subroutine
 
-subroutine SWEEPING_ORDER(NX, NY, NZ, NPTS, NCELLS,&
+subroutine shd_solv__makeSweepOrder(NX, NY, NZ, NPTS, NCELLS,&
     &GRIDPTR, TREEPTR, CELLFLAGS,&
     &BCFLAG, IPFLAG, SWEEPORD, GRIDRAD)
 
@@ -2122,7 +2128,7 @@ subroutine SWEEPING_ORDER(NX, NY, NZ, NPTS, NCELLS,&
     end do
 
     return
-end subroutine
+end subroutine shd_solv__makeSweepOrder
 
 subroutine BACK_INT_GRID3D(NX, NY, NZ, NA, NPTS, NCELLS,&
     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&

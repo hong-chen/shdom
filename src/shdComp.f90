@@ -297,7 +297,7 @@ subroutine shd_init__makeCellStructure(&
     return
 end subroutine shd_init__makeCellStructure
 
-subroutine INTERP_GRID(&
+subroutine shd_comp__interpGrid(&
     &NPTS, NSTLEG, NLEG, GRIDPOS,&
     &TEMP, EXTINCT, ALBEDO, LEGEN, IPHASE)
 
@@ -324,9 +324,9 @@ subroutine INTERP_GRID(&
     end do
 
     return
-end subroutine
+end subroutine shd_comp__interpGrid
 
-subroutine MAKE_DIRECT(NPTS, BCFLAG, IPFLAG, DELTAM,&
+subroutine shd_comp__makeDirect(NPTS, BCFLAG, IPFLAG, DELTAM,&
     &ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
     &GRIDPOS, DIRFLUX)
 
@@ -361,7 +361,7 @@ subroutine MAKE_DIRECT(NPTS, BCFLAG, IPFLAG, DELTAM,&
     return
 end subroutine
 
-subroutine PREPARE_PROP(ML, MM, NSTLEG, NLEG, NPTS, DELTAM,&
+subroutine shd_init__prepProp(ML, MM, NSTLEG, NLEG, NPTS, DELTAM,&
     &NUMPHASE, SRCTYPE, UNITS, WAVENO, WAVELEN, ALBMAX,&
     &EXTINCT, ALBEDO, LEGEN, TEMP, PLANCK, IPHASE)
 
@@ -423,9 +423,9 @@ subroutine PREPARE_PROP(ML, MM, NSTLEG, NLEG, NPTS, DELTAM,&
         end if
     end do
     return
-end subroutine
+end subroutine shd_init__prepProp
 
-subroutine INIT_RADIANCE(NSTOKES, NXY, NZ, NSTLEG, NLEG,&
+subroutine shd_init__makeRad(NSTOKES, NXY, NZ, NSTLEG, NLEG,&
     &RSHPTR, ZGRID,&
     &EXTINCT, ALBEDO, LEGEN, TEMP, NUMPHASE, IPHASE,&
     &SRCTYPE, SOLARFLUX, SOLARMU, GNDALBEDO, GNDTEMP,&
@@ -520,7 +520,7 @@ subroutine INIT_RADIANCE(NSTOKES, NXY, NZ, NSTLEG, NLEG,&
     end do
     deallocate (OPTDEPTHS, ALBEDOS, ASYMMETRIES, TEMPS, FLUXES)
     return
-end subroutine
+end subroutine shd_init__makeRad
 
 subroutine EDDRTF(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
     &TEMPS, DELTAM, SRCTYPE, SOLARFLUX, SOLARMU,&
@@ -803,7 +803,7 @@ subroutine TRIDIAG(N, LOWER, DIAG, UPPER, RHS)
     stop 'Error [TRIDIAG]: Singular matrix in TRIDIAG.'
 end subroutine
 
-subroutine MAKE_ANGLE_SET(NMU, NPHI, ITYPE, NPHI0MAX,&
+subroutine shd_init__makeAngleSet(NMU, NPHI, ITYPE, NPHI0MAX,&
     &NPHI0, MU, PHI, WTMU, WTDO, FFTFLAG, NANG)
 
     ! Make the set of angles for the discrete space representation.
@@ -865,7 +865,7 @@ subroutine MAKE_ANGLE_SET(NMU, NPHI, ITYPE, NPHI0MAX,&
                 NPHI0(J) = NPHI0MAX
             else
                 if (NPHI0MAX .gt. MAXNPHI)&
-                    &stop 'Error [MAKE_ANGLE_SET]: Exceeded GOODNFFT.'
+                    &stop 'Error [_makeAngleSet]: Exceeded GOODNFFT.'
                 NPHI0(J) = int(0.9 + NPHI0MAX*sqrt(1 - MU(J)**2))
                 NPHI0(J) = min(NPHI0MAX, GOODNFFT(NPHI0(J)))
             end if
@@ -879,12 +879,12 @@ subroutine MAKE_ANGLE_SET(NMU, NPHI, ITYPE, NPHI0MAX,&
         end do
 
     else
-        stop 'Error [MAKE_ANGLE_SET]: Invalid discrete ordinate type.'
+        stop 'Error [_makeAngleSet]: Invalid discrete ordinate type.'
     end if
     return
 end subroutine
 
-subroutine MAKE_SH_DO_COEF(NSTLEG, ML, MM, NLM, NMU, NPHI0,&
+subroutine shd_solv__makeSHDO(NSTLEG, ML, MM, NLM, NMU, NPHI0,&
     &NPHI0MAX, MU, PHI, WTMU, WTDO, FFTFLAG,&
     &CMU1, CMU2, CPHI1, CPHI2, WPHISAVE)
 
@@ -937,7 +937,7 @@ subroutine MAKE_SH_DO_COEF(NSTLEG, ML, MM, NLM, NMU, NPHI0,&
             W = 1.0/WTMU(I)
             do K = 1, NPHI0(I)
                 if (NPHI0(I) .gt. 32 .or. MM .gt. 16) stop &
-                    &'Error [MAKE_SH_DO_COEF]: Fourier coefficients array exceeded.'
+                    &'Error [_makeSHDO]: Fourier coefficients array exceeded.'
                 CPHI1(0, K, I) = 1.0
                 CPHI2(K, 0, I) = WTDO(I, K)*W
                 do M = 1, MM
@@ -1150,7 +1150,7 @@ subroutine shd_comp__interpOutput(OLDNPTS, NPTS,&
     return
 end subroutine shd_comp__interpOutput
 
-subroutine INTERP_RADIANCE(NSTOKES, OLDNPTS, NPTS, RSHPTR,&
+subroutine shd_comp__interpRad(NSTOKES, OLDNPTS, NPTS, RSHPTR,&
     &RADIANCE, NBCELLS, NCELLS, TREEPTR, GRIDPTR, GRIDPOS)
 
     ! Interpolates the spherical harmonic radiance array to the new
@@ -1186,7 +1186,7 @@ subroutine INTERP_RADIANCE(NSTOKES, OLDNPTS, NPTS, RSHPTR,&
                             &GRIDPOS(DIR2, IP1) .eq. GRIDPOS(DIR2, IP)) goto 120
                     end do
                 end do
-                stop 'Error [_interpOutput]: Point not on an edge.'
+                stop 'Error [_interpRad]: Point not on an edge.'
 120             continue
                 ! Interpolate the data from the two parent points at the
                 !   ends of the edge; assume the cell was split in half.
@@ -1215,7 +1215,7 @@ subroutine INTERP_RADIANCE(NSTOKES, OLDNPTS, NPTS, RSHPTR,&
     end do
 
     return
-end subroutine
+end subroutine shd_comp__interpRad
 
 subroutine shd_comp__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
@@ -1279,7 +1279,7 @@ subroutine shd_comp__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     end if
 
     ! Make the isotropic radiances for the top boundary
-    call COMPUTE_TOP_RADIANCES(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
+    call shd_comp__computeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
         &UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
     ! Make the bottom boundary radiances for the Lambertian surfaces
     !   Compute the upwelling bottom radiances using the downwelling
@@ -2381,7 +2381,7 @@ subroutine shd_comp__computeRad(&
     !╰──────────────────────────────────────────────────────────────╯!
 
     ! Make the isotropic radiances for the top boundary
-    call COMPUTE_TOP_RADIANCES(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
+    call shd_comp__computeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
         &UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
 
     ! Make the bottom boundary radiances for the Lambertian surfaces.
@@ -3263,7 +3263,7 @@ subroutine LEGENDRE_ALL(COSSCAT, NLEG, P)
     return
 end subroutine
 
-subroutine YLMALL(TRANSPOSE, MU, PHI, ML, MM, NSTLEG, YR)
+subroutine YLMALL(TRANSPOSED, MU, PHI, ML, MM, NSTLEG, YR)
     !   This subroutine computes a set of normalized real generalized
     ! spherical harmonic functions (YR) for a particular direction mu,phi.
     ! (Doicu et al. 2013; http://dx.doi.org/10.1016/j.jqsrt.2012.12.009)
@@ -3275,7 +3275,7 @@ subroutine YLMALL(TRANSPOSE, MU, PHI, ML, MM, NSTLEG, YR)
     implicit none
     integer ML, MM, NSTLEG
     real MU, PHI
-    logical TRANSPOSE
+    logical TRANSPOSED
     real YR(NSTLEG, *)
     integer J, M, MABS, L
     double precision X, PI, FCT, P1, P2, P3, COSM, SINM, SIGN
@@ -3293,7 +3293,7 @@ subroutine YLMALL(TRANSPOSE, MU, PHI, ML, MM, NSTLEG, YR)
     FCT = 1.d0/DSQRT(2.d0*PI)
 
     ! sign accounting for transpose matrices
-    if (.not. TRANSPOSE) then
+    if (.not. TRANSPOSED) then
         SIGN = 1.d0
     else
         SIGN = -1.d0
@@ -3654,11 +3654,11 @@ subroutine WIGNERFCT(X, NRANK, M, M1, DMM1)
     return
 end subroutine
 
-subroutine PLMALL(TRANSPOSE, MU, ML, MM, PRC)
+subroutine PLMALL(TRANSPOSED, MU, ML, MM, PRC)
     implicit none
     integer ML, MM
     real MU
-    logical TRANSPOSE
+    logical TRANSPOSED
     real PRC(6, *)
     ! --- local variables ---
     integer J, M, MABS, L
@@ -3676,7 +3676,7 @@ subroutine PLMALL(TRANSPOSE, MU, ML, MM, PRC)
     FCT = 1.d0/DSQRT(2.d0*PI)
 
     ! --- sign accounting for transpose matrices ---
-    if (.not. TRANSPOSE) then
+    if (.not. TRANSPOSED) then
         SIGN = 1.d0
     else
         SIGN = -1.d0
