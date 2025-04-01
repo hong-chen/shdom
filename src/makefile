@@ -34,10 +34,12 @@ else
 endif
 
 ifeq ($(UseMPI),no)
-	SHDOMOBJS += shdom_nompi.o
+	SHDOMMPIOBJ = shdom_nompi.o
 else
-	SHDOMOBJS += shdom_mpi.o
+	SHDOMMPIOBJ = shdom_mpi.o
 endif
+
+SHDOMOBJS += $(SHDOMMPIOBJ)
 
 F90 = $(FC)
 F90FLAGS = $(FFLAGS)
@@ -62,16 +64,16 @@ shdom_: shdom_.o $(SHDOMOBJS)
 shdom_.o: shdom_.f90 $(SHDOMOBJS)
 	$(F90) -c $(F90FLAGS) shdom_.f90
 
-shdSolv.o: shdSolv.f90
+shdSolv.o: shdSolv.f90 $(SHDOMMPIOBJ)
 	$(F90) -c $(F90FLAGS) shdSolv.f90
 
-shdSolv_omp.o: dev/shdSolv_omp.f90
+shdSolv_omp.o: dev/shdSolv_omp.f90 $(SHDOMMPIOBJ)
 	$(F90) -c $(F90FLAGS) dev/shdSolv_omp.f90
 
-shdComp.o: shdComp.f90 globals.o
+shdComp.o: shdComp.f90 globals.o $(SHDOMMPIOBJ)
 	$(F90) -c $(F90FLAGS) shdComp.f90
 
-shdComp_omp.o: dev/shdComp_omp.f90 globals.o
+shdComp_omp.o: dev/shdComp_omp.f90 globals.o $(SHDOMMPIOBJ)
 	$(F90) -c $(F90FLAGS) dev/shdComp_omp.f90
 
 shdIO_inp.o: shdIO_inp.f90 globals.o
