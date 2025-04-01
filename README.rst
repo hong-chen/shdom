@@ -11,7 +11,7 @@ Spherical Harmonic Discrete Ordinate Method (SHDOM) for Atmospheric Radiative Tr
 
 |
 
-SHDOM was initially developed by `Frank Evans <evans@nit.colorado.edu>`_ and available `here <https://coloradolinux.com/shdom/>`_.
+SHDOM was originally developed by `Frank Evans <evans@nit.colorado.edu>`_ and is available `here <https://coloradolinux.com/shdom/>`_.
 
 **Documents**:
 
@@ -25,7 +25,7 @@ SHDOM was initially developed by `Frank Evans <evans@nit.colorado.edu>`_ and ava
 
 * Fixed "dead process issue" when running MPI version with 1D property field input;
 
-* Added ``CMake`` support (contributed by `Dr. Cheng Da <https://www.cdalab.org>`_);
+* Added ``CMake`` support and auto-build workflow on Github (contributed by `Dr. Cheng Da <https://www.cdalab.org>`_);
 
 * Fixed a segmentation error when saving "state" from calculation;
 
@@ -48,7 +48,7 @@ SHDOM was initially developed by `Frank Evans <evans@nit.colorado.edu>`_ and ava
 How to Install
 --------------
 
-If you encountered any issue, please feel free to reach out at `Discord SUPPORT/installation <https://discord.com/channels/681619528945500252/1123343093417119754>`__
+If you encounter any issue, please feel free to reach out at `Discord SUPPORT/installation <https://discord.com/channels/681619528945500252/1123343093417119754>`__
 for community support.
 
 **Dependencies**
@@ -77,20 +77,7 @@ for community support.
 
        make
 
-    * By default, neither ``netCDF`` nor ``MPI`` is chosen;
-
-    * If using the ``MPI``, run ``make mpi`` instead of ``make``;
-
-    * If using the ``netCDF``, run ``make nc`` instead of ``make``.
-
-      However, you will need
-      to modify ``-DNC_INC=<NETCDF_INCLUDE_DIR>`` and ``-DNC_LIBS=<NETCDF_LIBRARY_DIR> -lnetcdff``
-      within ``Makefile``, for example (current settings)
-
-        .. code-block:: bash
-
-           -DNC_INC="/opt/homebrew/Cellar/netcdf-fortran/4.6.1_1/include"
-           -DNC_LIBS="-L/opt/homebrew/Cellar/netcdf-fortran/4.6.1_1/lib -lnetcdff"
+    * For ``MPI`` use, run ``make mpi`` instead of ``make``;
 
 or **Build SHDOM (based on GNU Make)**
 
@@ -104,7 +91,7 @@ or **Build SHDOM (based on GNU Make)**
 
 **Post-Installation**
 
-#. Add the following to the system source file, e.g. ``~/.bashrc`` for ``bash`` (replace ``<shdom repo>`` with a valid path),
+#. Add the following to system source file, e.g. ``~/.bashrc`` for ``bash`` (replace ``<shdom repo>`` with the exact path),
 
     .. code-block:: bash
 
@@ -118,21 +105,21 @@ Tips
 ----
 
 * Warning messages are expected during the compilation process, and will not affect the installation of ``shdom``.
-  Once the ``shdom`` is successfully compiled, the following executables will be generated
+  Once the ``shdom`` is successfully compiled, the following executables will be generated under ``<shdom repo>/build/bin/``
 
-   * ``<shdom repo>/build/bin/shdom`` (namelist input)
+   * ``shdom`` (namelist input)
 
-   * ``<shdom repo>/build/bin/shdom_`` (user input)
+   * ``shdom_`` (user input)
 
-   * ``<shdom repo>/build/bin/propgen``
+   * ``propgen``
 
-   * ``<shdom repo>/build/bin/make_mie_table``
+   * ``make_mie_table``
 
-   * ``<shdom repo>/build/bin/make_tmatrix_table``
+   * ``make_tmatrix_table``
 
-   * ``<shdom repo>/build/bin/plotscattab``
+   * ``plotscattab``
 
-   * ``<shdom repo>/build/bin/put``
+   * ``put``
 
 
 * For Mac users, add the following to ``~/.bashrc``,

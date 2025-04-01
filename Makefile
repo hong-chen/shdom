@@ -9,13 +9,13 @@ all:
 		cmake $(CURRENT_DIR); \
 		make
 
-omp:
-	rm -rf $(BUILD_DIR)
-	mkdir $(BUILD_DIR)
-	cd $(BUILD_DIR); \
-		cmake $(CURRENT_DIR) \
-			-DUSE_OMP=on; \
-		make
+#omp:
+#    rm -rf $(BUILD_DIR)
+#    mkdir $(BUILD_DIR)
+#    cd $(BUILD_DIR); \
+#        cmake $(CURRENT_DIR) \
+#            -DUSE_OMP=on; \
+#        make
 
 mpi:
 	rm -rf $(BUILD_DIR)
@@ -25,15 +25,15 @@ mpi:
 			-DUSE_MPI=on; \
 		make
 
-nc:
-	rm -rf $(BUILD_DIR)
-	mkdir $(BUILD_DIR)
-	cd $(BUILD_DIR); \
-		cmake $(CURRENT_DIR) \
-			-DUSE_NETCDF=on \
-			-DNC_INC="/opt/homebrew/Cellar/netcdf-fortran/4.6.1_1/include" \
-			-DNC_LIBS="-L/opt/homebrew/Cellar/netcdf-fortran/4.6.1_1/lib -lnetcdff"; \
-		make VERBOSE=1
+#nc:
+#    rm -rf $(BUILD_DIR)
+#    mkdir $(BUILD_DIR)
+#    cd $(BUILD_DIR); \
+#        cmake $(CURRENT_DIR) \
+#            -DUSE_NETCDF=on \
+#            -DNC_INC="/opt/homebrew/Cellar/netcdf-fortran/4.6.1_1/include" \
+#            -DNC_LIBS="-L/opt/homebrew/Cellar/netcdf-fortran/4.6.1_1/lib -lnetcdff"; \
+#        make VERBOSE=1
 
 clean:
 	rm -rf $(BUILD_DIR)
