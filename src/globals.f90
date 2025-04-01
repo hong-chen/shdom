@@ -123,14 +123,14 @@ end module globals
 
 module globals_shdom
 
-    integer, save :: NPX, NPY, NPZ, NUMPHASE
-    real, save    :: DELX, DELY, XSTART, YSTART
+    integer, save :: NPX_, NPY_, NPZ_, NUMPHASE_
+    real, save    :: DELX_, DELY_, XSTART_, YSTART_
     real, save    :: XDOMAIN_, YDOMAIN_
-    real, save, allocatable :: ZLEVELS(:)
-    real, save, allocatable :: TEMPP(:), EXTINCTP(:), ALBEDOP(:)
-    real, save, allocatable :: LEGENP(:), EXTDIRP(:)
-    integer*2, save, allocatable :: IPHASEP(:)
-    integer, save :: NZCKD
-    real, save, allocatable :: ZCKD(:), GASABS(:)
+    real, save, allocatable :: ZLEVELS_(:)
+    real, save, allocatable :: TEMPP_(:), EXTINCTP_(:), ALBEDOP_(:)
+    real, save, allocatable :: LEGENP_(:), EXTDIRP_(:)
+    integer(2), save, allocatable :: IPHASEP_(:)
+    integer, save :: NZCKD_
+    real, save, allocatable :: ZCKD_(:), GASABS_(:)
 
 end module globals_shdom

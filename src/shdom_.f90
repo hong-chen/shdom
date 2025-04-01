@@ -175,25 +175,25 @@ program shdom_main
 
     ! Find out the size of the input property file grid
     if (MASTERPROC) then
-        call shd_io__readPropSize(PROPFILE, NSTLEG, NLEG, NPX, NPY, NPZ,&
-                                NUMPHASE, MAXLEG, MAXPGL, DELX, DELY)
+        call shd_io__readPropSize(PROPFILE, NSTLEG, NLEG, NPX_, NPY_, NPZ_,&
+                                NUMPHASE_, MAXLEG, MAXPGL, DELX_, DELY_)
     end if
-    call BROADCAST_PROPERTY_SIZE(NPX, NPY, NPZ, DELX, DELY,&
-                                 NUMPHASE, MAXLEG, MAXPGL)
+    call BROADCAST_PROPERTY_SIZE(NPX_, NPY_, NPZ_, DELX_, DELY_,&
+                                 NUMPHASE_, MAXLEG, MAXPGL)
 
     ! Set the full domain grid sizes (variables end in T)
-    NXT = NX; NYT = NY; NPXT = NPX; NPYT = NPY
+    NXT = NX; NYT = NY; NPXT = NPX_; NPYT = NPY_
 
-    XDOMAIN_ = NPXT*DELX
-    YDOMAIN_ = NPYT*DELY
+    XDOMAIN_ = NPXT*DELX_
+    YDOMAIN_ = NPYT*DELY_
 
     ! Map the full SHDOM domain onto the multiple processors:
     !   change NPX,NPY and NX,NY to the subdomain size, and output
     !   the X and Y starting position of this subdomain.  Set bits
     !   2 and 3 in BCFLAG to indicate multiple processors in X and Y.
     !   Also open the slave processor log files.
-    call MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
-        &XSTART, YSTART, RUNNAME)
+    call MAP_SHDOM_MPI(BCFLAG, NPX_, NPY_, NX, NY, NZ, DELX_, DELY_, PROPFILE,&
+        &XSTART_, YSTART_, RUNNAME)
 
     if (btest(BCFLAG, 2)) then
         mpiX = .true.
@@ -228,68 +228,68 @@ program shdom_main
         *(NY + ibits(BCFLAG, 1, 1) - ibits(BCFLAG, 3, 1))
 
     ! Determine the size of the property grid arrays so can allocate
-    MAXPG = NPX*NPY*NPZ
-    if (NUMPHASE .eq. 0) MAXPGL = MAXPG*(MAXLEG + 1)*NSTLEG
+    MAXPG = NPX_*NPY_*NPZ_
+    if (NUMPHASE_ .eq. 0) MAXPGL = MAXPG*(MAXLEG + 1)*NSTLEG
 
-    allocate (ZLEVELS(NPZ))
-    allocate (TEMPP(MAXPG), EXTINCTP(MAXPG), ALBEDOP(MAXPG))
-    allocate (EXTDIRP(MAXPG), IPHASEP(MAXPG), LEGENP(MAXPGL))
+    allocate (ZLEVELS_(NPZ_))
+    allocate (TEMPP_(MAXPG), EXTINCTP_(MAXPG), ALBEDOP_(MAXPG))
+    allocate (EXTDIRP_(MAXPG), IPHASEP_(MAXPG), LEGENP_(MAXPGL))
 
-    MEMWORD = MEMWORD + 4.5*MAXPG + MAXPGL + NUMPHASE*NSTLEG*(MAXLEG + 1)
+    MEMWORD = MEMWORD + 4.5*MAXPG + MAXPGL + NUMPHASE_*NSTLEG*(MAXLEG + 1)
 
-    MAXNZ = NPZ
+    MAXNZ = NPZ_
 
     if (mpiMode) then
 
         ! Read the properties of the medium to the master processor and
         !  distribute to all the processors
         if (MASTERPROC) then
-            MAXPGT = NPXT*NPYT*NPZ
+            MAXPGT = NPXT*NPYT*NPZ_
             MAXPGLT = MAXPGL
-            if (NUMPHASE .eq. 0) MAXPGLT = MAXPGT*(MAXLEG + 1)*NSTLEG
+            if (NUMPHASE_ .eq. 0) MAXPGLT = MAXPGT*(MAXLEG + 1)*NSTLEG
 
             allocate (TEMPPT(MAXPGT), EXTINCTPT(MAXPGT), ALBEDOPT(MAXPGT))
             allocate (IPHASEPT(MAXPGT), LEGENPT(MAXPGLT))
 
             ! only use DELX and DELY from initial read, DELX0 and DELY0 are discarded
-            call shd_io__readProp(PROPFILE, NPXT, NPYT, NPZ,&
+            call shd_io__readProp(PROPFILE, NPXT, NPYT, NPZ_,&
                 &NSTLEG, MAXLEG, NLEG, MAXNZ, MAXPGT, MAXPGLT, DELTAM,&
-                &PROPTYPE, DELX0, DELY0, ZLEVELS, MAXASYM,&
-                &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, NUMPHASE, IPHASEPT)
+                &PROPTYPE, DELX0, DELY0, ZLEVELS_, MAXASYM,&
+                &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, NUMPHASE_, IPHASEPT)
 
-            if (NUMPHASE == 0) then
+            if (NUMPHASE_ == 0) then
                 write (6, '(A)') 'Error [shdom_main]: Standard property file (with phase function Legendre series at every point)'
                 write (6, '(A)') '  is not allowed with multiple processors.'
                 stop
             end if
 
             ! Check values of medium properties
-            call shd_io__checkPropInput(NPXT, NPYT, NPZ, NSTLEG, NLEG,&
-                &DELX, DELY, ZLEVELS,&
-                &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, NUMPHASE, IPHASEPT)
+            call shd_io__checkPropInput(NPXT, NPYT, NPZ_, NSTLEG, NLEG,&
+                &DELX_, DELY_, ZLEVELS_,&
+                &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, NUMPHASE_, IPHASEPT)
 
         end if
 
-        call SCATTER_PROPERTIES(NPXT, NPYT, NPX, NPY, NPZ,&
-            &NSTLEG, NLEG, NUMPHASE,&
-            &ZLEVELS, MAXASYM,&
+        call SCATTER_PROPERTIES(NPXT, NPYT, NPX_, NPY_, NPZ_,&
+            &NSTLEG, NLEG, NUMPHASE_,&
+            &ZLEVELS_, MAXASYM,&
             &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, IPHASEPT,&
-            &TEMPP, EXTINCTP, ALBEDOP, LEGENP, IPHASEP)
+            &TEMPP_, EXTINCTP_, ALBEDOP_, LEGENP_, IPHASEP_)
 
         if (MASTERPROC) deallocate (TEMPPT, EXTINCTPT, ALBEDOPT, IPHASEPT)
 
     else
 
         ! Read the properties of the medium to the single processor
-        call shd_io__readProp(PROPFILE, NPX, NPY, NPZ,&
+        call shd_io__readProp(PROPFILE, NPX_, NPY_, NPZ_,&
             &NSTLEG, MAXLEG, NLEG, MAXNZ, MAXPG, MAXPGL, DELTAM,&
-            &PROPTYPE, DELX, DELY, ZLEVELS, MAXASYM,&
-            &TEMPP, EXTINCTP, ALBEDOP, LEGENP, NUMPHASE, IPHASEP)
+            &PROPTYPE, DELX_, DELY_, ZLEVELS_, MAXASYM,&
+            &TEMPP_, EXTINCTP_, ALBEDOP_, LEGENP_, NUMPHASE_, IPHASEP_)
 
         ! Check values of medium properties
-        call shd_io__checkPropInput(NPX, NPY, NPZ, NSTLEG, NLEG,&
-            &DELX, DELY, ZLEVELS,&
-            &TEMPP, EXTINCTP, ALBEDOP, LEGENP, NUMPHASE, IPHASEP)
+        call shd_io__checkPropInput(NPX_, NPY_, NPZ_, NSTLEG, NLEG,&
+            &DELX_, DELY_, ZLEVELS_,&
+            &TEMPP_, EXTINCTP_, ALBEDOP_, LEGENP_, NUMPHASE_, IPHASEP_)
 
     end if
 
@@ -346,8 +346,8 @@ program shdom_main
     MAXIC = nint(CELL_TO_POINT_RATIO*MAXIG)
     MAXIV = nint(NUM_SH_TERM_FACTOR*NLM*MAXIG)
     MAXIDO = MAXIG*NPHI0MAX
-    if (NUMPHASE .gt. 0) then
-        MAXIGL = NUMPHASE*NSTLEG*(MAXLEG + 1)
+    if (NUMPHASE_ .gt. 0) then
+        MAXIGL = NUMPHASE_*NSTLEG*(MAXLEG + 1)
     else
         MAXIGL = MAXIG*NSTLEG*(MAXLEG + 1)
     end if
@@ -416,23 +416,23 @@ program shdom_main
     ! If doing a k-distribution then get the band info from the CKD file
     if (KDIST) then
         if (MASTERPROC) then
-            call shd_io__readCkdSize(CKDFILE, WAVENO, NG, NZCKD)
+            call shd_io__readCkdSize(CKDFILE, WAVENO, NG, NZCKD_)
         end if
         ! Broadcast the k-distribution array sizes
-        call BROADCAST_KDIST_SIZE(NG, NZCKD)
-        allocate (ZCKD(NZCKD), GASABS(NZCKD), DELG(NG), KABS(NZCKD, NG))
+        call BROADCAST_KDIST_SIZE(NG, NZCKD_)
+        allocate (ZCKD_(NZCKD_), GASABS_(NZCKD_), DELG(NG), KABS(NZCKD_, NG))
         if (MASTERPROC) then
-            MAXNG = NG; MAXNZ = NZCKD
+            MAXNG = NG; MAXNZ = NZCKD_
             call shd_io__readCkd(MAXNG, MAXNZ, CKDFILE, WAVENO, SOLFLUX,&
-                &NG, DELG, NZCKD, ZCKD, KABS)
+                &NG, DELG, NZCKD_, ZCKD_, KABS)
         end if
-        call BROADCAST_KDIST_PARMS(SOLFLUX, NG, DELG, NZCKD, ZCKD, KABS)
+        call BROADCAST_KDIST_PARMS(SOLFLUX, NG, DELG, NZCKD_, ZCKD_, KABS)
         SOLARFLUX = SOLFLUX*SOLARFLUX*abs(SOLARMU)
     else
         NG = 1
         allocate (DELG(NG))
         DELG(1) = 1.0
-        NZCKD = 0
+        NZCKD_ = 0
         BASEOUT = .false.
     end if
 
@@ -461,13 +461,9 @@ program shdom_main
                 NYOUT = 1
             else
                 if (mpiY) then
-                    if (NPY .gt. 1) then
-                        NYOUT = max(1, nint(NPYT*DELY/OUTPARMS(3, I)))
-                    else
-                        NYOUT = max(1, nint(NPYT*DELY0/OUTPARMS(3, I)))
-                    end if
+                    NYOUT = max(1, nint(YDOMAIN_/OUTPARMS(3, I)))
                 else
-                    NYOUT = max(1, nint((NPY*DELY + 2*OUTPARMS(5, I))/OUTPARMS(3, I)))
+                    NYOUT = max(1, nint((YDOMAIN_ + 2*OUTPARMS(5, I))/OUTPARMS(3, I)))
                 end if
             end if
             NRAD = NRAD + NSTOKES*NXOUT*NYOUT*nint(OUTPARMS(6, I))
@@ -544,8 +540,8 @@ program shdom_main
     ! NEWGRIDFLAG is from shd_io__restoreState call
     if (NEWGRIDFLAG) then
         ! Make the internal base grid lines
-        call NEW_GRIDS(BCFLAG, GRIDTYPE, NPX, NPY, NPZ, NX, NY, NZ,&
-            &XSTART, YSTART, DELX, DELY, ZLEVELS,&
+        call NEW_GRIDS(BCFLAG, GRIDTYPE, NPX_, NPY_, NPZ_, NX, NY, NZ,&
+            &XSTART_, YSTART_, DELX_, DELY_, ZLEVELS_,&
             &XGRID, YGRID, ZGRID)
     end if
 
@@ -557,8 +553,8 @@ program shdom_main
     do IG = NG, 1, -1
         ! If doing k-distribution then get the gas absorption profile.
         if (KDIST) then
-            do I = 1, NZCKD
-                GASABS(I) = KABS(I, IG)
+            do I = 1, NZCKD_
+                GASABS_(I) = KABS(I, IG)
             end do
         end if
 
@@ -575,7 +571,7 @@ program shdom_main
         ! Find the monochromatic SHDOM solution: adaptive grid output
         !   in SOURCE (SHPTR), RADIANCE (RSHPTR), FLUXES, DIRFLUX.
         call shdSolv__solveRte(NSTOKES, NX, NY, NZ, NX1, NY1, NANG,&
-            &ML, MM, NLM, NMU, NPHI, NLEG, NSTLEG, NUMPHASE,&
+            &ML, MM, NLM, NMU, NPHI, NLEG, NSTLEG, NUMPHASE_,&
             &NPHI0, MU, PHI, WTDO,&
             &MAXIV, MAXIC, MAXIG, MAXIDO, INRADFLAG,&
             &BCFLAG, IPFLAG, DELTAM, SRCTYPE, HIGHORDERRAD,&
@@ -601,8 +597,8 @@ program shdom_main
             do I = 1, NUMOUT
                 if (OUTTYPES(I) .eq. 'R') then
                     if (mpiMode) then
-                        call COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, NPX, NPY,&
-                            &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
+                        call COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, NPX_, NPY_,&
+                            &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
                             &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                             &BCFLAG, XDOMAIN_, YDOMAIN_, IPFLAG,&
                             &SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
@@ -616,7 +612,7 @@ program shdom_main
                             &OUTPARMS(1, I), IRAD, WORK2)
                     else
                         call COMPUTE_RADIANCE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
-                            &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
+                            &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
                             &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                             &BCFLAG, IPFLAG, SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
                             &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
@@ -639,7 +635,7 @@ program shdom_main
                 if (OUTTYPES(I) .eq. 'V') then
                     if (mpiMode) then
                         call VISUALIZE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
-                            &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
+                            &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
                             &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                             &BCFLAG, XDOMAIN_, YDOMAIN_, IPFLAG,&
                             &SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
@@ -652,7 +648,7 @@ program shdom_main
                             &SHPTR, SOURCE, OUTPARMS(1, I), IVIS, WORK2)
                     else
                         call VISUALIZE_RADIANCE(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
-                            &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
+                            &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
                             &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                             &BCFLAG, IPFLAG, SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
                             &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
@@ -675,7 +671,7 @@ program shdom_main
                     MUOUT = OUTPARMS(2, I)
                     PHIOUT = OUTPARMS(3, I)*acos(-1.0)/180.0
                     call COMPUTE_ONE_SOURCE(NSTOKES, ML, MM, NLM,&
-                        &NSTLEG, NLEG, NUMPHASE,&
+                        &NSTLEG, NLEG, NUMPHASE_,&
                         &NPTS, DELTAM, MUOUT, PHIOUT,&
                         &SRCTYPE, SOLARMU, SOLARAZ, ALBEDO, LEGEN, IPHASE,&
                         &DIRFLUX, SHPTR, SOURCE, SOURCE1OUT)
@@ -781,7 +777,7 @@ program shdom_main
         do I = 1, NUMOUT
             if (OUTTYPES(I) /= 'V' .and. OUTFILES(I) /= 'NONE') then
                 call shd_io__outputResult(NSTOKES, NX, NY, NX1, NY1, NZ, NBPTS, NPTS, NCELLS,&
-                    NSH, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE, NMU, NPHI, NANG, NG,&
+                    NSH, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_, NMU, NPHI, NANG, NG,&
                     PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
                     BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
                     SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
@@ -815,7 +811,7 @@ program shdom_main
 
     ! Calculate the actual memory parameters and output them to the log file
     MAXMB_OUT = 4*(NMU*(2 + 2*NPHI + 2*NLM + 2*33*32)&
-        &+ 4.5*MAXPG + MAXPGL + NUMPHASE*(MAXLEG + 1)&
+        &+ 4.5*MAXPG + MAXPGL + NUMPHASE_*(MAXLEG + 1)&
         &+ 16.5*NCELLS + NPTS*(28 + NPHI0MAX*NSTOKES)&
         &+ NSTOKES*NSH*BIG_ARRAYS)/1024**2
     ADAPTGRIDFAC_OUT = float(NPTS)/NBPTS
@@ -824,7 +820,7 @@ program shdom_main
     write (6, '(A)')'Message [shdom_main]: Actual MAX_TOTAL_MB, ADAPT_GRID_FACTOR, NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO'
     write (6, '(28X,F7.2,6X,F7.3,14X,F5.3,15X,F5.3)') MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
 
-    call END_SHDOM_MPI(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART, XDOMAIN_, YDOMAIN_,&
+    call END_SHDOM_MPI(NPTS, GRIDPOS, NPX_, NPY_, XSTART_, YSTART_, XDOMAIN_, YDOMAIN_,&
         &NPXT, NPYT, PROPFILE, RUNNAME)
 
     if (SRCTYPE .ne. 'T') then
@@ -838,7 +834,7 @@ program shdom_main
     if (FLUXDIV_OUT) deallocate (SUMFLUXDIV)
     if (SH_OUT) deallocate (SUMSHTERMS)
     if (SOURCE_OUT) deallocate (SOURCE1OUT)
-    if (KDIST) deallocate (ZCKD, GASABS, KABS)
+    if (KDIST) deallocate (ZCKD_, GASABS_, KABS)
     deallocate (BCPTR, BCRAD, DELG)
     if (allocated(SFCPARMS)) deallocate (SFCPARMS, SFCGRIDPARMS)
     deallocate (RADIANCE, SOURCE)
@@ -847,7 +843,7 @@ program shdom_main
     deallocate (GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, GRIDPOS)
     deallocate (TEMP, PLANCK, EXTINCT, ALBEDO, IPHASE, LEGEN)
     deallocate (XGRID, YGRID, ZGRID)
-    deallocate (ZLEVELS, TEMPP, EXTINCTP, ALBEDOP, EXTDIRP, IPHASEP, LEGENP)
+    deallocate (ZLEVELS_, TEMPP_, EXTINCTP_, ALBEDOP_, EXTDIRP_, IPHASEP_, LEGENP_)
     deallocate (MU, WTDO, PHI, NPHI0)
 
 end program shdom_main
