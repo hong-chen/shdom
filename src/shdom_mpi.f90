@@ -20,25 +20,25 @@ module shd_ext_mpi
     public :: shd_ext__mpiStart
     public :: shd_ext__mpiMap
     public :: shd_ext__mpiBcastInput
-    public :: shd_ext__mpiBcastPrpSize
-    public :: shd_ext__mpiScatPrp
+    public :: shd_ext__mpiBcastPropSize
+    public :: shd_ext__mpiScatProp
     public :: shd_ext__mpiReadBcastMemParam
     public :: shd_ext__mpiBcastSurfSize
     public :: shd_ext__mpiBcastSurfParam
     public :: shd_ext__mpiBcastKdistSize
     public :: shd_ext__mpiBcastKdistParam
     public :: shd_ext__mpiGatherOutput
-    public :: shd_ext__mpiTotalSplitCritMax
     public :: shd_ext__mpiMakeDirect
-    public :: shd_ext__mpiFindBoundaryPnt
-    public :: shd_ext__mpiCalBoundaryRad
     public :: shd_ext__mpiComputeRad
     public :: shd_ext__mpiVisualizeRad
-    public :: shd_ext__mpiCalAccelSolCrit
     public :: shd_ext__mpiEnd
     public :: shd_ext__mpiAbort
 
     public :: shd_ext__mpiFindAlbMax
+    public :: shd_ext__mpiFindTotSplitCritMax
+    public :: shd_ext__mpiFindBoundaryPnt
+    public :: shd_ext__mpiCalBoundaryRad
+    public :: shd_ext__mpiCalAccelSolCrit
     public :: shd_ext__mpiUnifySplit
     public :: shd_ext__mpiSumCpuTime
 
@@ -523,7 +523,7 @@ subroutine shd_ext__mpiBcastInput(&
     if (OUTSAVEFILE(1:4) .ne. 'NONE') OUTSAVEFILE = trim(OUTSAVEFILE)//'.iproc-'//procstr
 end subroutine shd_ext__mpiBcastInput
 
-subroutine shd_ext__mpiBcastPrpSize(NPX, NPY, NPZ, DELX, DELY,&
+subroutine shd_ext__mpiBcastPropSize(NPX, NPY, NPZ, DELX, DELY,&
     &NUMPHASE, MAXLEG, MAXPGL)
 
     ! Broadcasts the property file size information from the master processor
@@ -545,9 +545,9 @@ subroutine shd_ext__mpiBcastPrpSize(NPX, NPY, NPZ, DELX, DELY,&
     realbuf(:) = (/DELX, DELY/)
     call MPI_BCAST(realbuf, 2, MPI_REAL, 0, MPI_COMM_WORLD, ierr)
     DELX = realbuf(1); DELY = realbuf(2)
-end subroutine shd_ext__mpiBcastPrpSize
+end subroutine shd_ext__mpiBcastPropSize
 
-subroutine shd_ext__mpiScatPrp(NPXT, NPYT, NPX, NPY, NPZ,&
+subroutine shd_ext__mpiScatProp(NPXT, NPYT, NPX, NPY, NPZ,&
     &NSTLEG, NLEG, NUMPHASE,&
     &ZLEVELS, MAXASYM,&
     &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, IPHASEPT,&
@@ -657,7 +657,7 @@ subroutine shd_ext__mpiScatPrp(NPXT, NPYT, NPX, NPY, NPZ,&
     if (myproc_ .eq. 0) deallocate (tempbuf, extbuf, albbuf, iphbuf, rbuf, ibuf)
     deallocate (requests, status, IXYALL, realbuf)
 
-end subroutine shd_ext__mpiScatPrp
+end subroutine shd_ext__mpiScatProp
 
 subroutine shd_ext__mpiBcastSurfSize(MAXSFCPTS, MAXSFCPARS)
 
@@ -1020,7 +1020,7 @@ subroutine shd_ext__mpiUnifySplit(DOSPLIT, STARTSPLITACC)
 
 end subroutine shd_ext__mpiUnifySplit
 
-subroutine shd_ext__mpiTotalSplitCritMax(SPLITCRIT)
+subroutine shd_ext__mpiFindTotSplitCritMax(SPLITCRIT)
 
     real, intent(INOUT) :: SPLITCRIT
     integer :: ierr
@@ -1033,7 +1033,7 @@ subroutine shd_ext__mpiTotalSplitCritMax(SPLITCRIT)
         if (ierr .ne. MPI_SUCCESS) call shd_ext__mpiAbort('TOTAL_SPLITCRIT_MAX: MPI_ALLREDUCE error')
     end if
 
-end subroutine shd_ext__mpiTotalSplitCritMax
+end subroutine shd_ext__mpiFindTotSplitCritMax
 
 subroutine shd_ext__mpiMakeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
     &DELTAM, ML, NSTLEG, NLEG,&

@@ -258,7 +258,7 @@ subroutine shdSolv__solveRte(&
                 if (SOLCRIT .gt. STARTADAPTSOL) STARTSPLITACC = SPLITCRIT
             end if
             ! Find the maximum splitting criterion over all processors
-            call shd_ext__mpiTotalSplitCritMax(SPLITCRIT)
+            call shd_ext__mpiFindTotSplitCritMax(SPLITCRIT)
             if (SOLCRIT .le. ENDADAPTSOL) SPLITTESTING = .false.
         end if
 

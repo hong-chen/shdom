@@ -179,7 +179,7 @@ program shdom_main
         call shd_io__readPropSize(PROPFILE, NSTLEG, NLEG, NPX_, NPY_, NPZ_,&
                                 NUMPHASE_, MAXLEG, MAXPGL, DELX_, DELY_)
     end if
-    call shd_ext__mpiBcastPrpSize(NPX_, NPY_, NPZ_, DELX_, DELY_,&
+    call shd_ext__mpiBcastPropSize(NPX_, NPY_, NPZ_, DELX_, DELY_,&
                                  NUMPHASE_, MAXLEG, MAXPGL)
 
     ! Set the full domain grid sizes (variables end in T)
@@ -271,7 +271,7 @@ program shdom_main
 
         end if
 
-        call shd_ext__mpiScatPrp(NPXT, NPYT, NPX_, NPY_, NPZ_,&
+        call shd_ext__mpiScatProp(NPXT, NPYT, NPX_, NPY_, NPZ_,&
             &NSTLEG, NLEG, NUMPHASE_,&
             &ZLEVELS_, MAXASYM,&
             &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, IPHASEPT,&
@@ -296,7 +296,7 @@ program shdom_main
 
     if (MASTERPROC) then
         ! Check input parameters
-        call shd_io__checkInputParams(NMU, NPHI, DELTAM, MAXASYM,&
+        call shd_io__checkInputParam(NMU, NPHI, DELTAM, MAXASYM,&
             &GRIDTYPE, SRCTYPE, UNITS, SOLARFLUX, SOLARMU,&
             &WAVENO, WAVELEN, GNDTEMP, GNDALBEDO,&
             &SPLITACC, SHACC)

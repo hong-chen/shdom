@@ -6,25 +6,25 @@ module shd_ext_mpi
     public :: shd_ext__mpiStart
     public :: shd_ext__mpiMap
     public :: shd_ext__mpiBcastInput
-    public :: shd_ext__mpiBcastPrpSize
-    public :: shd_ext__mpiScatPrp
+    public :: shd_ext__mpiBcastPropSize
+    public :: shd_ext__mpiScatProp
     public :: shd_ext__mpiReadBcastMemParam
     public :: shd_ext__mpiBcastSurfSize
     public :: shd_ext__mpiBcastSurfParam
     public :: shd_ext__mpiBcastKdistSize
     public :: shd_ext__mpiBcastKdistParam
     public :: shd_ext__mpiGatherOutput
-    public :: shd_ext__mpiTotalSplitCritMax
     public :: shd_ext__mpiMakeDirect
-    public :: shd_ext__mpiFindBoundaryPnt
-    public :: shd_ext__mpiCalBoundaryRad
     public :: shd_ext__mpiComputeRad
     public :: shd_ext__mpiVisualizeRad
-    public :: shd_ext__mpiCalAccelSolCrit
     public :: shd_ext__mpiEnd
     public :: shd_ext__mpiAbort
 
     public :: shd_ext__mpiFindAlbMax
+    public :: shd_ext__mpiFindTotSplitCritMax
+    public :: shd_ext__mpiFindBoundaryPnt
+    public :: shd_ext__mpiCalBoundaryRad
+    public :: shd_ext__mpiCalAccelSolCrit
     public :: shd_ext__mpiUnifySplit
     public :: shd_ext__mpiSumCpuTime
 
@@ -79,16 +79,16 @@ subroutine shd_ext__mpiBcastInput(RUNNAME,&
     return
 end subroutine shd_ext__mpiBcastInput
 
-subroutine shd_ext__mpiBcastPrpSize(NPX, NPY, NPZ, DELX, DELY,&
+subroutine shd_ext__mpiBcastPropSize(NPX, NPY, NPZ, DELX, DELY,&
     &NUMPHASE, MAXLEG, MAXPGL)
 
     integer NPX, NPY, NPZ, NUMPHASE, MAXLEG, MAXPGL
     real DELX, DELY
 
     return
-end subroutine shd_ext__mpiBcastPrpSize
+end subroutine shd_ext__mpiBcastPropSize
 
-subroutine shd_ext__mpiScatPrp(NPXT, NPYT, NPX, NPY, NPZ, NSTLEG,&
+subroutine shd_ext__mpiScatProp(NPXT, NPYT, NPX, NPY, NPZ, NSTLEG,&
     &NLEG, NUMPHASE, ZLEVELS, MAXASYM, TEMPPT,&
     &EXTINCTPT, ALBEDOPT, LEGENPT, IPHASEPT,&
     &TEMPP, EXTINCTP, ALBEDOP, LEGENP, IPHASEP)
@@ -103,7 +103,7 @@ subroutine shd_ext__mpiScatPrp(NPXT, NPYT, NPX, NPY, NPZ, NSTLEG,&
     integer*2 IPHASEP(NPZ, NPY, NPX)
 
     return
-end subroutine shd_ext__mpiScatPrp
+end subroutine shd_ext__mpiScatProp
 
 subroutine shd_ext__mpiReadBcastMemParam(MAX_TOTAL_MB,&
     &ADAPT_GRID_FACTOR, NUM_SH_TERM_FACTOR,&
@@ -190,11 +190,11 @@ subroutine shd_ext__mpiUnifySplit(DOSPLIT, STARTSPLITACC)
     return
 end subroutine shd_ext__mpiUnifySplit
 
-subroutine shd_ext__mpiTotalSplitCritMax(SPLITCRIT)
+subroutine shd_ext__mpiFindTotSplitCritMax(SPLITCRIT)
 
     real SPLITCRIT
     return
-end subroutine shd_ext__mpiTotalSplitCritMax
+end subroutine shd_ext__mpiFindTotSplitCritMax
 
 subroutine shd_ext__mpiMakeDirect(&
     &SPT, NPTS, BCFLAG, IPFLAG, DELTAM, ML,&
