@@ -77,7 +77,7 @@ for community support.
 
        make
 
-    * For ``MPI`` use, run ``make mpi`` instead of ``make``;
+    * For ``MPI`` use, run ``make mpi`` instead of ``make``.
 
 or **Build SHDOM (based on GNU Make)**
 
@@ -137,9 +137,7 @@ File-to-File Reference
 
 * ``src/shdom.f90`` and ``src/shdom_.f90``: was ``shdom.f90``
 
-* ``src/shdExt_mpi.f90``: was ``shdom_mpi.f90``
-
-* ``src/shdExt_mpi_.f90``: was ``shdom_nompi.f``
+* ``src/shdExt_mpi.f90`` and ``src/shdExt_mpi_.f90``: was ``shdom_mpi.f90`` and ``shdom_nompi.f``
 
 * ``src/shdSolv.f90``: was ``shdomsub1.f``
 
