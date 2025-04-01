@@ -2,9 +2,13 @@
 ! in this file.  If you do not have MPI, compile with shdom_nompi.f90
 ! instead.
 
-module globals_mpi
+module shd_ext_mpi
 
+    use globals
     use mpi_f08
+
+    implicit none
+    private
 
     integer :: numproc_, myproc_, iprocneigh_(4), IXYPRP_(2, 2), IXYOUT_(2, 2)
     logical, parameter :: LoadBalance_ = .false.
@@ -13,19 +17,40 @@ module globals_mpi
     real, allocatable :: BXYPOS_(:, :, :)
     type(MPI_Comm) :: comm2d_
 
-end module globals_mpi
+    public :: shd_ext__mpiStart
+    public :: shd_ext__mpiMap
+    public :: shd_ext__mpiBcastInput
+    public :: shd_ext__mpiBcastPrpSize
+    public :: shd_ext__mpiScatPrp
+    public :: shd_ext__mpiReadBcastMemParam
+    public :: shd_ext__mpiBcastSurfSize
+    public :: shd_ext__mpiBcastSurfParam
+    public :: shd_ext__mpiBcastKdistSize
+    public :: shd_ext__mpiBcastKdistParam
+    public :: shd_ext__mpiGatherOutput
+    public :: shd_ext__mpiTotalSplitCritMax
+    public :: shd_ext__mpiMakeDirect
+    public :: shd_ext__mpiFindBoundaryPnt
+    public :: shd_ext__mpiCalBoundaryRad
+    public :: shd_ext__mpiComputeRad
+    public :: shd_ext__mpiVisualizeRad
+    public :: shd_ext__mpiCalAccelSolCrit
+    public :: shd_ext__mpiEnd
+    public :: shd_ext__mpiAbort
 
-subroutine START_MPI(MASTERPROC)
+    public :: shd_ext__mpiFindAlbMax
+    public :: shd_ext__mpiUnifySplit
+    public :: shd_ext__mpiSumCpuTime
+
+contains
+
+subroutine shd_ext__mpiStart(MASTERPROC)
 
     ! Initializes the MPI system, and gets the number of processors in use
     ! and the current processor.  If this is processor 0 then MASTERPROC
     ! is returned true.  Also starts the logging files "shdom???.log"
     ! for the standard output from the non-master processors.
 
-    use mpi_f08
-    use globals_mpi
-
-    implicit none
     logical, intent(out) :: MASTERPROC
     integer :: ierr
 
@@ -49,9 +74,9 @@ subroutine START_MPI(MASTERPROC)
     else
         MASTERPROC = .false.
     end if
-end subroutine START_MPI
+end subroutine shd_ext__mpiStart
 
-subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
+subroutine shd_ext__mpiMap(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
     &XSTART, YSTART, RUNNAME)
 
     ! Sets up the mapping of processors for the SHDOM domain (creating the
@@ -70,11 +95,6 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
     ! of grid points of the internal base grid for this subdomain (for the
     ! output arrays).
 
-    use mpi_f08
-    use globals
-    use globals_mpi
-
-    implicit none
     integer, intent(inout) :: BCFLAG, NPX, NPY, NX, NY, NZ
     character(len=*), intent(in) :: PROPFILE, RUNNAME
     real, intent(inout) :: DELX, DELY
@@ -117,7 +137,7 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
     call MPI_CART_COORDS(comm2d_, myproc_, 2, coords, ierr)
 
     ! Make the optimal (or default) property grid divisions (in IXYPRP_)
-    call OPTIMIZE_PROCESSOR_DOMAINS(dims, coords, NPXT, NPYT, PROPFILE, RUNNAME)
+    call shd_ext__mpiOptimizeProcDomain(dims, coords, NPXT, NPYT, PROPFILE, RUNNAME)
 
     ! Make the new property and base grid sizes and the IXYOUT_ arrays
     if (dims(1) > 1) then
@@ -126,7 +146,7 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
             NPX = IXYPRP_(2, 1) - IXYPRP_(1, 1) + 1
             NX = nint(NXT*FLOAT(NPX - 1)/NPXT) + 1
             if (abs(NPXT/FLOAT(NXT) - (NPX - 1)/FLOAT(NX - 1)) > 0.0001) then
-                call ABORT_SHDOM_MPI('MAP_SHDOM_MPI: Even X base grid cannot be preserved&
+                call shd_ext__mpiAbort('MAP_SHDOM_MPI: Even X base grid cannot be preserved&
                     &for this NX and number of processors')
             end if
             IXYOUT_(1, 1) = nint(NXT*FLOAT(IXYPRP_(1, 1) - 1)/NPXT) + 1
@@ -164,7 +184,7 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
             NPY = IXYPRP_(2, 2) - IXYPRP_(1, 2) + 1
             NY = nint(NYT*FLOAT(NPY - 1)/NPYT) + 1
             if (abs(NPYT/FLOAT(NYT) - (NPY - 1)/FLOAT(NY - 1)) > 0.0001) then
-                call ABORT_SHDOM_MPI('MAP_SHDOM_MPI: Even Y base grid cannot be preserved for this NY and number of processors')
+                call shd_ext__mpiAbort('MAP_SHDOM_MPI: Even Y base grid cannot be preserved for this NY and number of processors')
             end if
             IXYOUT_(1, 2) = nint(NYT*FLOAT(IXYPRP_(1, 2) - 1)/NPYT) + 1
             IXYOUT_(2, 2) = nint(NYT*FLOAT(NPY - 1)/NPYT)
@@ -197,15 +217,15 @@ subroutine MAP_SHDOM_MPI(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
     call MPI_CART_SHIFT(comm2d_, 0, 1, iprocneigh_(1), iprocneigh_(2), ierr)
     call MPI_CART_SHIFT(comm2d_, 1, 1, iprocneigh_(3), iprocneigh_(4), ierr)
 
-    write (6, '(A)') 'Message [MAP_SHDOM_MPI]:'
+    write (6, '(A)') 'Message [_mpiMap]:'
     write (6, '(2X,A,2(1X,I2))') 'Number of processors in X and Y:', dims(1:2)
     write (6, '(2X,A,I3)') 'This processor: ', myproc_
     write (6, '(2X,A,4(1X,I3))') 'Neighbors:', iprocneigh_(1:4)
     write (6, '(2X,2(A,2F7.3))') 'Processor X range: ', XSTART, XEND, '   Y range: ', YSTART, YEND
 
-end subroutine MAP_SHDOM_MPI
+end subroutine shd_ext__mpiMap
 
-subroutine OPTIMIZE_PROCESSOR_DOMAINS(ProcDims, ProcCoord, NPXT, NPYT,&
+subroutine shd_ext__mpiOptimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
     &PROPFILE, RUNNAME)
 
     ! Calculates the location of this processor (subdomain) in the property
@@ -216,12 +236,6 @@ subroutine OPTIMIZE_PROCESSOR_DOMAINS(ProcDims, ProcCoord, NPXT, NPYT,&
     ! the optimization.  If the "shdom_proc_times.inp" file of relative
     ! processor times exists then the optimization uses this information on
     ! heterogeneous processors to try to give more work to faster processors.
-
-    use mpi_f08
-    use globals
-    use globals_mpi
-
-    implicit none
 
     integer, intent(in) :: ProcDims(2), ProcCoord(2), NPXT, NPYT
     character(len=*), intent(in) :: PROPFILE, RUNNAME
@@ -237,8 +251,8 @@ subroutine OPTIMIZE_PROCESSOR_DOMAINS(ProcDims, ProcCoord, NPXT, NPYT,&
     integer :: cycle, ITER, NITER
     integer :: TrialLines(ProcDims(1) + ProcDims(2) - 2), CurLines(ProcDims(1) + ProcDims(2) - 2)
     integer :: iseed = -3
-    real    :: Temp, DelLines, u, ran
-    real    :: LOAD_OBJ_FUNC, Energy, NewEnergy, LowestEnergy, DeltaE, Boltz
+    real    :: Temp, DelLines, u, shd_ext__mpiRan
+    real    :: shd_ext__mpiLoadObjFunc, Energy, NewEnergy, LowestEnergy, DeltaE, Boltz
     integer, allocatable :: ProcCoordAll(:, :), Ngrid(:, :)
     real, allocatable :: wtproc(:)
     character(len=FNAMEMAXLEN_) :: PROPFILEI
@@ -304,9 +318,9 @@ subroutine OPTIMIZE_PROCESSOR_DOMAINS(ProcDims, ProcCoord, NPXT, NPYT,&
             end if
 
             ! Do the simulated annealing to minimize the objective function
-            u = ran(iseed)
+            u = shd_ext__mpiRan(iseed)
             NITER = NiterFac*N
-            Energy = LOAD_OBJ_FUNC(BndLines, Nxd, Nyd, ProcCoordAll, wtproc, NPXT, NPYT, Ngrid)
+            Energy = shd_ext__mpiLoadObjFunc(BndLines, Nxd, Nyd, ProcCoordAll, wtproc, NPXT, NPYT, Ngrid)
             LowestEnergy = Energy
             CurLines(:) = BndLines(:)
             ! print *, 'Annealing cycles: Cycle Temp Energy  BndLines'
@@ -325,18 +339,18 @@ subroutine OPTIMIZE_PROCESSOR_DOMAINS(ProcDims, ProcCoord, NPXT, NPYT,&
                     TrialLines(:) = CurLines(:)
                     do while (all(TrialLines(:) .eq. CurLines(:)))
                         do I = 1, N
-                            TrialLines(I) = nint(CurLines(I) + (2*ran(iseed) - 1.0)*DelLines)
+                            TrialLines(I) = nint(CurLines(I) + (2*shd_ext__mpiRan(iseed) - 1.0)*DelLines)
                         end do
                     end do
                     ! Calculate the energy of these new boundary lines
-                    NewEnergy = LOAD_OBJ_FUNC(TrialLines, Nxd, Nyd, ProcCoordAll, wtproc, NPXT, NPYT, Ngrid)
+                    NewEnergy = shd_ext__mpiLoadObjFunc(TrialLines, Nxd, Nyd, ProcCoordAll, wtproc, NPXT, NPYT, Ngrid)
                     DeltaE = NewEnergy - Energy
                     if (DeltaE < 0.0) then ! If lower energy accept change
                         CurLines(:) = TrialLines(:)
                         Energy = NewEnergy
                     else !  otherwise sometimes accept it anyway
                         Boltz = exp(-DeltaE/Temp)
-                        if (ran(iseed) < Boltz) then
+                        if (shd_ext__mpiRan(iseed) < Boltz) then
                             CurLines(:) = TrialLines(:)
                             Energy = NewEnergy
                         end if
@@ -368,9 +382,9 @@ subroutine OPTIMIZE_PROCESSOR_DOMAINS(ProcDims, ProcCoord, NPXT, NPYT,&
     IXYPRP_(1:2, 1) = IDX(ProcCoord(1) + 1:ProcCoord(1) + 2)
     IXYPRP_(1:2, 2) = IDY(ProcCoord(2) + 1:ProcCoord(2) + 2)
 
-end subroutine OPTIMIZE_PROCESSOR_DOMAINS
+end subroutine shd_ext__mpiOptimizeProcDomain
 
-real function LOAD_OBJ_FUNC(BndLines, Nxd, Nyd, ProcCoordAll, wtproc,&
+real function shd_ext__mpiLoadObjFunc(BndLines, Nxd, Nyd, ProcCoordAll, wtproc,&
     &NPXT, NPYT, Ngrid)
 
     ! Calculates the objective function to minimize in doing the processor
@@ -403,16 +417,15 @@ real function LOAD_OBJ_FUNC(BndLines, Nxd, Nyd, ProcCoordAll, wtproc,&
         OBJA = OBJA + (1.0/Nxd*Nyd)*&
             &(a*wtproc(J)*sum(Ngrid(IDX(IX):IDX(IX + 1), IDY(IY):IDY(IY + 1))) - 1.0)**2
     end do
-    LOAD_OBJ_FUNC = OBJA
+    shd_ext__mpiLoadObjFunc = OBJA
 
-end function LOAD_OBJ_FUNC
+end function shd_ext__mpiLoadObjFunc
 
-real function ran(idum)
+real function shd_ext__mpiRan(idum)
 
     ! Returns uniform random deviate between 0.0 and 1.0 (exclusive of endpoints).
     ! Call ran with idum negative to initialize; thereafter, do not alter idum.
 
-    implicit none
     integer, parameter :: K4B = selected_int_kind(9)
     integer(K4B), intent(INOUT) :: idum
     integer(K4B), parameter :: IA = 16807, IM = 2147483647, IQ = 127773, IR = 2836
@@ -431,11 +444,11 @@ real function ran(idum)
     k = iy/IQ
     iy = IA*(iy - k*IQ) - IR*k
     if (iy < 0) iy = iy + IM
-    ran = am*ior(iand(IM, ieor(ix, iy)), 1)
+    shd_ext__mpiRan = am*ior(iand(IM, ieor(ix, iy)), 1)
 
-end function ran
+end function shd_ext__mpiRan
 
-subroutine BROADCAST_USER_INPUT(&
+subroutine shd_ext__mpiBcastInput(&
     &RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
     &INSAVEFILE, OUTSAVEFILE,&
     &NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
@@ -450,11 +463,6 @@ subroutine BROADCAST_USER_INPUT(&
     ! Broadcasts all the user input parameters (except unneeded file names)
     ! from the master processor to the slave processors.
 
-    use mpi_f08
-    use globals
-    use globals_mpi
-
-    implicit none
     integer, intent(INOUT) :: NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG, IPFLAG
     integer, intent(IN)    :: MAXOUT, MAXPAR
     integer, intent(INOUT) :: MAXITER, NUMOUT
@@ -513,18 +521,14 @@ subroutine BROADCAST_USER_INPUT(&
     write (procstr, '(I4.4)') myproc_
     if (INSAVEFILE(1:4) .ne. 'NONE') INSAVEFILE = trim(INSAVEFILE)//'.iproc-'//procstr
     if (OUTSAVEFILE(1:4) .ne. 'NONE') OUTSAVEFILE = trim(OUTSAVEFILE)//'.iproc-'//procstr
-end subroutine BROADCAST_USER_INPUT
+end subroutine shd_ext__mpiBcastInput
 
-subroutine BROADCAST_PROPERTY_SIZE(NPX, NPY, NPZ, DELX, DELY,&
+subroutine shd_ext__mpiBcastPrpSize(NPX, NPY, NPZ, DELX, DELY,&
     &NUMPHASE, MAXLEG, MAXPGL)
 
     ! Broadcasts the property file size information from the master processor
     ! to the slave processors.
 
-    use mpi_f08
-    use globals_mpi
-
-    implicit none
     integer, intent(INOUT) :: NPX, NPY, NPZ, NUMPHASE, MAXLEG, MAXPGL
     real, intent(INOUT) :: DELX, DELY
 
@@ -541,9 +545,9 @@ subroutine BROADCAST_PROPERTY_SIZE(NPX, NPY, NPZ, DELX, DELY,&
     realbuf(:) = (/DELX, DELY/)
     call MPI_BCAST(realbuf, 2, MPI_REAL, 0, MPI_COMM_WORLD, ierr)
     DELX = realbuf(1); DELY = realbuf(2)
-end subroutine BROADCAST_PROPERTY_SIZE
+end subroutine shd_ext__mpiBcastPrpSize
 
-subroutine SCATTER_PROPERTIES(NPXT, NPYT, NPX, NPY, NPZ,&
+subroutine shd_ext__mpiScatPrp(NPXT, NPYT, NPX, NPY, NPZ,&
     &NSTLEG, NLEG, NUMPHASE,&
     &ZLEVELS, MAXASYM,&
     &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, IPHASEPT,&
@@ -553,10 +557,6 @@ subroutine SCATTER_PROPERTIES(NPXT, NPYT, NPX, NPY, NPZ,&
     ! of the processors.  Deals with the duplicating the grid points on the
     ! boundaries between processors.
 
-    use mpi_f08
-    use globals_mpi
-
-    implicit none
     integer, intent(IN) :: NPXT, NPYT, NPX, NPY, NPZ, NSTLEG, NUMPHASE
     integer, intent(INOUT) :: NLEG
     real, intent(INOUT) :: ZLEVELS(NPZ), MAXASYM
@@ -657,16 +657,12 @@ subroutine SCATTER_PROPERTIES(NPXT, NPYT, NPX, NPY, NPZ,&
     if (myproc_ .eq. 0) deallocate (tempbuf, extbuf, albbuf, iphbuf, rbuf, ibuf)
     deallocate (requests, status, IXYALL, realbuf)
 
-end subroutine SCATTER_PROPERTIES
+end subroutine shd_ext__mpiScatPrp
 
-subroutine BROADCAST_SURFACE_SIZE(MAXSFCPTS, MAXSFCPARS)
+subroutine shd_ext__mpiBcastSurfSize(MAXSFCPTS, MAXSFCPARS)
 
     ! Broadcasts the surface array sizes from the master process to the others.
 
-    use mpi_f08
-    use globals_mpi
-
-    implicit none
     integer, intent(INOUT) :: MAXSFCPTS, MAXSFCPARS
     integer :: ierr, intbuf(2)
 
@@ -676,17 +672,13 @@ subroutine BROADCAST_SURFACE_SIZE(MAXSFCPTS, MAXSFCPARS)
     call MPI_BCAST(intbuf, 2, MPI_INTEGER, 0, comm2d_, ierr)
     MAXSFCPTS = intbuf(1); MAXSFCPARS = intbuf(2)
 
-end subroutine BROADCAST_SURFACE_SIZE
+end subroutine shd_ext__mpiBcastSurfSize
 
-subroutine BROADCAST_SURFACE_PARMS(SFCTYPE, NXSFC, NYSFC, NSFCPAR,&
+subroutine shd_ext__mpiBcastSurfParam(SFCTYPE, NXSFC, NYSFC, NSFCPAR,&
     &DELXSFC, DELYSFC, SFCPARMS, GNDTEMP, GNDALBEDO)
 
     ! Broadcasts the surface file parameters from the master process to the others.
 
-    use mpi_f08
-    use globals_mpi
-
-    implicit none
     character(LEN=2), intent(INOUT) :: SFCTYPE
     integer, intent(INOUT) :: NXSFC, NYSFC, NSFCPAR
     real, intent(INOUT) :: DELXSFC, DELYSFC, SFCPARMS(*), GNDTEMP, GNDALBEDO
@@ -709,16 +701,12 @@ subroutine BROADCAST_SURFACE_PARMS(SFCTYPE, NXSFC, NYSFC, NSFCPAR,&
     n = NSFCPAR*(NXSFC + 1)*(NYSFC + 1)
     call MPI_BCAST(SFCPARMS, n, MPI_REAL, 0, comm2d_, ierr)
 
-end subroutine BROADCAST_SURFACE_PARMS
+end subroutine shd_ext__mpiBcastSurfParam
 
-subroutine BROADCAST_KDIST_SIZE(NG, NZCKD)
+subroutine shd_ext__mpiBcastKdistSize(NG, NZCKD)
 
     ! Broadcasts the k-distribution array sizes from the master process to the others.
 
-    use mpi_f08
-    use globals_mpi
-
-    implicit none
     integer, intent(INOUT) :: NG, NZCKD
     integer :: ierr, intbuf(2)
 
@@ -728,17 +716,13 @@ subroutine BROADCAST_KDIST_SIZE(NG, NZCKD)
     call MPI_BCAST(intbuf, 2, MPI_INTEGER, 0, comm2d_, ierr)
     NG = intbuf(1); NZCKD = intbuf(2)
 
-end subroutine BROADCAST_KDIST_SIZE
+end subroutine shd_ext__mpiBcastKdistSize
 
-subroutine BROADCAST_KDIST_PARMS(SOLFLUX, NG, DELG, NZCKD, ZCKD, KABS)
+subroutine shd_ext__mpiBcastKdistParam(SOLFLUX, NG, DELG, NZCKD, ZCKD, KABS)
 
     ! Broadcasts the k-distribution file parameters from the master process
     ! to the other processes.
 
-    use mpi_f08
-    use globals_mpi
-
-    implicit none
     integer, intent(IN) :: NG, NZCKD
     real, intent(INOUT) :: SOLFLUX, DELG(NG), ZCKD(NZCKD), KABS(NZCKD, NG)
     integer :: ierr
@@ -755,19 +739,14 @@ subroutine BROADCAST_KDIST_PARMS(SOLFLUX, NG, DELG, NZCKD, ZCKD, KABS)
 
     call MPI_BCAST(KABS, NZCKD*NG, MPI_REAL, 0, comm2d_, ierr)
 
-end subroutine BROADCAST_KDIST_PARMS
+end subroutine shd_ext__mpiBcastKdistParam
 
-subroutine READ_BROADCAST_MEM_PARAMS(MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
+subroutine shd_ext__mpiReadBcastMemParam(MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
     &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, RUNNAME)
 
     ! The master process reads the RUNNAME//"_mem_params.inp" file (if there
     ! is one) and broadcasts the memory parameters to all the other processors.
 
-    use mpi_f08
-    use globals
-    use globals_mpi
-
-    implicit none
     real, intent(inout) :: MAX_TOTAL_MB, ADAPT_GRID_FACTOR
     real, intent(inout) :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
     character(len=*), intent(in) :: RUNNAME
@@ -806,27 +785,24 @@ subroutine READ_BROADCAST_MEM_PARAMS(MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
     write (6, '(2X,A,F7.2,1X,F7.3,2(1X,F5.3))') 'Memory parameters used: ', MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
         &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
 
-end subroutine READ_BROADCAST_MEM_PARAMS
+end subroutine shd_ext__mpiReadBcastMemParam
 
-real function SUM_CPU_TIME(cpuTimes)
+real function shd_ext__mpiSumCpuTime(cpuTimes)
 
     ! Sums the CPU time used across all processors
-
-    use mpi_f08
-    use globals_mpi
 
     real cpuTimes
     integer ierr
 
     if (numproc_ > 1) then
-        call MPI_REDUCE(cpuTimes, SUM_CPU_TIME, 1, MPI_REAL, MPI_SUM, 0, comm2d_, ierr)
+        call MPI_REDUCE(cpuTimes, shd_ext__mpiSumCpuTime, 1, MPI_REAL, MPI_SUM, 0, comm2d_, ierr)
     else
-        SUM_CPU_TIME = cpuTimes
+        shd_ext__mpiSumCpuTime = cpuTimes
     end if
 
-end function SUM_CPU_TIME
+end function shd_ext__mpiSumCpuTime
 
-subroutine GATHER_OUTPUT(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
+subroutine shd_ext__mpiGatherOutput(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
     &IPFLAG, BCFLAG, NBPTS, NXT, NYT, NZ, NSHOUT,&
     &SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV, SUMSHTERMS,&
     &XDOMAIN, YDOMAIN, XALLGRID, YALLGRID,&
@@ -839,9 +815,6 @@ subroutine GATHER_OUTPUT(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
     ! IXYOUT_ array from each processor to determine where each subdomain is.
     ! Also gathers the full base grid position arrays (XALLGRID/YALLGRID) and
     ! sums NCELLS,NPTS,NSH over all processors.
-
-    use mpi_f08
-    use globals_mpi
 
     logical, intent(in) :: FLUX_OUT, FLUXDIV_OUT, SH_OUT
     integer, intent(in) :: IPFLAG, BCFLAG, NBPTS, NXT, NYT, NZ, NSHOUT
@@ -1011,14 +984,10 @@ subroutine GATHER_OUTPUT(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
 
     deallocate (IXYALL, requests, status)
 
-end subroutine GATHER_OUTPUT
+end subroutine shd_ext__mpiGatherOutput
 
-subroutine TOTAL_ALBEDO_MAX(ALBMAX)
+subroutine shd_ext__mpiFindAlbMax(ALBMAX)
 
-    use mpi_f08
-    use globals_mpi
-
-    implicit none
     real, intent(INOUT) :: ALBMAX
     integer :: ierr
     real    :: sendrbuf
@@ -1027,17 +996,13 @@ subroutine TOTAL_ALBEDO_MAX(ALBMAX)
         ! Call MPI_ALLREDUCE to find the max ALBMAX over all processors
         sendrbuf = ALBMAX
         call MPI_ALLREDUCE(sendrbuf, ALBMAX, 1, MPI_REAL, MPI_MAX, comm2d_, ierr)
-        if (ierr .ne. MPI_SUCCESS) call ABORT_SHDOM_MPI('TOTAL_ALBEDO_MAX: MPI_ALLREDUCE error')
+        if (ierr .ne. MPI_SUCCESS) call shd_ext__mpiAbort('TOTAL_ALBEDO_MAX: MPI_ALLREDUCE error')
     end if
 
-end subroutine TOTAL_ALBEDO_MAX
+end subroutine shd_ext__mpiFindAlbMax
 
-subroutine UNIFY_SPLITTING(DOSPLIT, STARTSPLITACC)
+subroutine shd_ext__mpiUnifySplit(DOSPLIT, STARTSPLITACC)
 
-    use mpi_f08
-    use globals_mpi
-
-    implicit none
     logical, intent(INOUT) :: DOSPLIT
     real, intent(INOUT) :: STARTSPLITACC
     integer :: ierr(2)
@@ -1050,17 +1015,13 @@ subroutine UNIFY_SPLITTING(DOSPLIT, STARTSPLITACC)
         call MPI_ALLREDUCE(sendrbuf, STARTSPLITACC, 1, MPI_REAL, MPI_MAX, comm2d_, ierr(1))
         sendlbuf = DOSPLIT
         call MPI_ALLREDUCE(sendlbuf, DOSPLIT, 1, MPI_LOGICAL, MPI_LOR, comm2d_, ierr(2))
-        if (any(ierr(:) .ne. MPI_SUCCESS)) call ABORT_SHDOM_MPI('UNIFY_SPLITTING: MPI_ALLREDUCE error')
+        if (any(ierr(:) .ne. MPI_SUCCESS)) call shd_ext__mpiAbort('UNIFY_SPLITTING: MPI_ALLREDUCE error')
     end if
 
-end subroutine UNIFY_SPLITTING
+end subroutine shd_ext__mpiUnifySplit
 
-subroutine TOTAL_SPLITCRIT_MAX(SPLITCRIT)
+subroutine shd_ext__mpiTotalSplitCritMax(SPLITCRIT)
 
-    use mpi_f08
-    use globals_mpi
-
-    implicit none
     real, intent(INOUT) :: SPLITCRIT
     integer :: ierr
     real    :: sendrbuf
@@ -1069,12 +1030,12 @@ subroutine TOTAL_SPLITCRIT_MAX(SPLITCRIT)
         ! Call MPI_ALLREDUCE to find the max SPLITCRIT over all processors
         sendrbuf = SPLITCRIT
         call MPI_ALLREDUCE(sendrbuf, SPLITCRIT, 1, MPI_REAL, MPI_MAX, comm2d_, ierr)
-        if (ierr .ne. MPI_SUCCESS) call ABORT_SHDOM_MPI('TOTAL_SPLITCRIT_MAX: MPI_ALLREDUCE error')
+        if (ierr .ne. MPI_SUCCESS) call shd_ext__mpiAbort('TOTAL_SPLITCRIT_MAX: MPI_ALLREDUCE error')
     end if
 
-end subroutine TOTAL_SPLITCRIT_MAX
+end subroutine shd_ext__mpiTotalSplitCritMax
 
-subroutine MAKE_DIRECT_PAR(SPT, NPTS, BCFLAG, IPFLAG,&
+subroutine shd_ext__mpiMakeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
     &DELTAM, ML, NSTLEG, NLEG,&
     &SOLARFLUX, SOLARMU, SOLARAZ, GRIDPOS,&
     &NX, XGRID, NY, YGRID, DIRFLUX)
@@ -1083,10 +1044,6 @@ subroutine MAKE_DIRECT_PAR(SPT, NPTS, BCFLAG, IPFLAG,&
     ! index SPT having X/Y/Z positions in GRIDPOS.
     ! DIRFLUX is set to F*exp(-tau_sun).
 
-    use mpi_f08
-    use globals_mpi
-
-    implicit none
     integer, intent(IN) :: SPT, NPTS, BCFLAG, IPFLAG, ML, NSTLEG, NLEG, NX, NY
     logical, intent(IN) :: DELTAM
     real, intent(IN) :: SOLARFLUX, SOLARMU, SOLARAZ
@@ -1166,9 +1123,9 @@ subroutine MAKE_DIRECT_PAR(SPT, NPTS, BCFLAG, IPFLAG,&
         ! If we don't have a good direct beam then save the information
         !   needed to pass to two upstream processors
         if (.not. VALIDBEAM) then
-            if (SIDE .ne. Lupx .and. SIDE .ne. Lupy) call ABORT_SHDOM_MPI('MAKE_DIRECT_PAR: Bad SIDE 1')
+            if (SIDE .ne. Lupx .and. SIDE .ne. Lupy) call shd_ext__mpiAbort('MAKE_DIRECT_PAR: Bad SIDE 1')
             NINVALID(SIDE) = NINVALID(SIDE) + 1
-            if (NINVALID(SIDE) > MAXNBEAM) call ABORT_SHDOM_MPI('MAKE_DIRECT_PAR: NINVALID(SIDE) exceeds MAXNBEAM 1')
+            if (NINVALID(SIDE) > MAXNBEAM) call shd_ext__mpiAbort('MAKE_DIRECT_PAR: NINVALID(SIDE) exceeds MAXNBEAM 1')
             BndDirRealInfo(:, NINVALID(SIDE), SIDE) = (/XO, YO, ZO, DIRPATH/)
             BndDirIntInfo(:, NINVALID(SIDE), SIDE) = (/myproc_, IP/)
         end if
@@ -1239,14 +1196,14 @@ subroutine MAKE_DIRECT_PAR(SPT, NPTS, BCFLAG, IPFLAG,&
                     iproc = BndDirIntInfo(1, J, Ldownx)
                     Ndone(iproc) = Ndone(iproc) + 1
                     if (Ndone(iproc) > MAXNBEAM)&
-                        &call ABORT_SHDOM_MPI('MAKE_DIRECT_PAR: Ndone(iproc) exceeds MAXNBEAM x')
+                        &call shd_ext__mpiAbort('MAKE_DIRECT_PAR: Ndone(iproc) exceeds MAXNBEAM x')
                     DirAllOut(Ndone(iproc), iproc) = DIRPATH
                     DirPtrOut(Ndone(iproc), iproc) = BndDirIntInfo(2, J, Ldownx)
                 else
-                    if (SIDE .ne. Lupx .and. SIDE .ne. Lupy) call ABORT_SHDOM_MPI('MAKE_DIRECT_PAR: Bad SIDE 2x')
+                    if (SIDE .ne. Lupx .and. SIDE .ne. Lupy) call shd_ext__mpiAbort('MAKE_DIRECT_PAR: Bad SIDE 2x')
                     NINVALID(SIDE) = NINVALID(SIDE) + 1
                     if (NINVALID(SIDE) > MAXNBEAM)&
-                        &call ABORT_SHDOM_MPI('MAKE_DIRECT_PAR: NINVALID(SIDE) exceeds MAXNBEAM 2x')
+                        &call shd_ext__mpiAbort('MAKE_DIRECT_PAR: NINVALID(SIDE) exceeds MAXNBEAM 2x')
                     BndDirRealInfo(:, NINVALID(SIDE), SIDE) = (/XO, YO, ZO, DIRPATH/)
                     BndDirIntInfo(:, NINVALID(SIDE), SIDE) = BndDirIntInfo(:, J, Ldownx)
                 end if
@@ -1271,14 +1228,14 @@ subroutine MAKE_DIRECT_PAR(SPT, NPTS, BCFLAG, IPFLAG,&
                     iproc = BndDirIntInfo(1, J, Ldowny)
                     Ndone(iproc) = Ndone(iproc) + 1
                     if (Ndone(iproc) > MAXNBEAM)&
-                        &call ABORT_SHDOM_MPI('MAKE_DIRECT_PAR: Ndone(iproc) exceeds MAXNBEAM y')
+                        &call shd_ext__mpiAbort('MAKE_DIRECT_PAR: Ndone(iproc) exceeds MAXNBEAM y')
                     DirAllOut(Ndone(iproc), iproc) = DIRPATH
                     DirPtrOut(Ndone(iproc), iproc) = BndDirIntInfo(2, J, Ldowny)
                 else
-                    if (SIDE .ne. Lupx .and. SIDE .ne. Lupy) call ABORT_SHDOM_MPI('MAKE_DIRECT_PAR: Bad SIDE 2y')
+                    if (SIDE .ne. Lupx .and. SIDE .ne. Lupy) call shd_ext__mpiAbort('MAKE_DIRECT_PAR: Bad SIDE 2y')
                     NINVALID(SIDE) = NINVALID(SIDE) + 1
                     if (NINVALID(SIDE) > MAXNBEAM)&
-                        &call ABORT_SHDOM_MPI('MAKE_DIRECT_PAR: NINVALID(SIDE) exceeds MAXNBEAM 2x')
+                        &call shd_ext__mpiAbort('MAKE_DIRECT_PAR: NINVALID(SIDE) exceeds MAXNBEAM 2x')
                     BndDirRealInfo(:, NINVALID(SIDE), SIDE) = (/XO, YO, ZO, DIRPATH/)
                     BndDirIntInfo(:, NINVALID(SIDE), SIDE) = BndDirIntInfo(:, J, Ldowny)
                 end if
@@ -1291,7 +1248,7 @@ subroutine MAKE_DIRECT_PAR(SPT, NPTS, BCFLAG, IPFLAG,&
             &comm2d_, ierr)
         AllDone = all(intrecvbuf(1:2) .eq. 0)
         if (maxval(intrecvbuf(1:2)) > MAXNBEAM .or. maxval(Ndone(:)) > MAXNBEAM) then
-            call ABORT_SHDOM_MPI('MAKE_DIRECT_PAR: MAXNBEAM exceeded 2')
+            call shd_ext__mpiAbort('MAKE_DIRECT_PAR: MAXNBEAM exceeded 2')
         end if
     end do
 
@@ -1329,9 +1286,9 @@ subroutine MAKE_DIRECT_PAR(SPT, NPTS, BCFLAG, IPFLAG,&
     deallocate (DirAllOut, DirPtrOut, DirAllIn, DirPtrIn, Ndone)
     deallocate (BndDirRealInfo, BndDirIntInfo)
 
-end subroutine MAKE_DIRECT_PAR
+end subroutine shd_ext__mpiMakeDirect
 
-subroutine FIND_BOUNDARY_POINTS(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
+subroutine shd_ext__mpiFindBoundaryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
     &GRIDPOS, NX, NY, NZ, XGRID, YGRID, ZGRID)
 
     ! Makes the pointers to and positions of the horizontal boundary grid
@@ -1346,10 +1303,6 @@ subroutine FIND_BOUNDARY_POINTS(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
     ! boundary of this subdomain (SIDE: 1=-X, 2=+X, 3=-Y, 4=+Y).  BXYPOS_ holds
     ! the gridpoint positions (X,Y,Z) for these boundary points.
 
-    use mpi_f08
-    use globals_mpi
-
-    implicit none
     integer, intent(IN) :: BCFLAG, IPFLAG, NPTS, SWEEPORD(NPTS, *), GRIDPTR(8, *)
     integer, intent(IN) :: NX, NY, NZ
     real, intent(IN) :: GRIDPOS(3, NPTS), XGRID(NX), YGRID(NY), ZGRID(NZ)
@@ -1413,7 +1366,7 @@ subroutine FIND_BOUNDARY_POINTS(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
                     SIDE = 2 - ibits(JOCT - 1, 1, 1)
                     N(SIDE) = N(SIDE) + 1
                     if (N(SIDE) > MAXNBXY) then
-                        call ABORT_SHDOM_MPI('FIND_BOUNDARY_POINTS: MAXNBXY exceeded by N(SIDE) 1x')
+                        call shd_ext__mpiAbort('FIND_BOUNDARY_POINTS: MAXNBXY exceeded by N(SIDE) 1x')
                     end if
                     BNDPTR(JOCT, N(SIDE), 1, SIDE) = IPT
                     BNDPOS(:, JOCT, N(SIDE), 1, SIDE) = GRIDPOS(:, IPT)
@@ -1423,7 +1376,7 @@ subroutine FIND_BOUNDARY_POINTS(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
                     SIDE = 4 - ibits(JOCT - 1, 2, 1)
                     N(SIDE) = N(SIDE) + 1
                     if (N(SIDE) > MAXNBXY) then
-                        call ABORT_SHDOM_MPI('FIND_BOUNDARY_POINTS: MAXNBXY exceeded by N(SIDE) 1y')
+                        call shd_ext__mpiAbort('FIND_BOUNDARY_POINTS: MAXNBXY exceeded by N(SIDE) 1y')
                     end if
                     BNDPTR(JOCT, N(SIDE), 1, SIDE) = IPT
                     BNDPOS(:, JOCT, N(SIDE), 1, SIDE) = GRIDPOS(:, IPT)
@@ -1434,7 +1387,7 @@ subroutine FIND_BOUNDARY_POINTS(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
     end do
 
     NS = maxval(N1(:, :))
-    if (NS > MAXNBXY) call ABORT_SHDOM_MPI('FIND_BOUNDARY_POINTS: MAXNBXY might be exceeded')
+    if (NS > MAXNBXY) call shd_ext__mpiAbort('FIND_BOUNDARY_POINTS: MAXNBXY might be exceeded')
     N2(:, :) = 0
     irq = 0
     do L = 1, 4
@@ -1463,7 +1416,7 @@ subroutine FIND_BOUNDARY_POINTS(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
     ! Wait for the transfers among all the neighbors to resolve
     call MPI_WAITALL(irq, requests, status, ierr)
     NS = maxval(N2(:, :))
-    if (NS > MAXNBXY) call ABORT_SHDOM_MPI('FIND_BOUNDARY_POINTS: MAXNBXY was exceeded')
+    if (NS > MAXNBXY) call shd_ext__mpiAbort('FIND_BOUNDARY_POINTS: MAXNBXY was exceeded')
 
     if (allocated(BXYPTR_)) deallocate (BXYPTR_, BXYPOS_, IBXYPTR_)
     MAXBC = maxval((/N2(:, 1) + N2(:, 3), N2(:, 1) + N2(:, 4), N2(:, 2) + N2(:, 3), N2(:, 2) + N2(:, 4)/))
@@ -1523,9 +1476,9 @@ subroutine FIND_BOUNDARY_POINTS(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
 
     deallocate (BNDPTR, BNDPOS)
 
-end subroutine FIND_BOUNDARY_POINTS
+end subroutine shd_ext__mpiFindBoundaryPnt
 
-subroutine CALC_BOUNDARY_RADIANCES(BCFLAG, IPFLAG, JOCT, IZ,&
+subroutine shd_ext__mpiCalBoundaryRad(BCFLAG, IPFLAG, JOCT, IZ,&
     &NX, NY, NZ, XGRID, YGRID, ZGRID,&
     &NA, NPTS, NCELLS, GRIDPTR,&
     &NEIGHPTR, TREEPTR, CELLFLAGS, GRIDPOS,&
@@ -1553,10 +1506,6 @@ subroutine CALC_BOUNDARY_RADIANCES(BCFLAG, IPFLAG, JOCT, IZ,&
     ! the finished radiance and original grid points are exchanged with
     ! all the other processors.
 
-    use mpi_f08
-    use globals_mpi
-
-    implicit none
     integer, intent(IN) :: BCFLAG, IPFLAG, JOCT, IZ
     integer, intent(IN) :: NSTOKES, NX, NY, NZ, NA, NPTS, NCELLS, KANG
     real, intent(IN) :: XGRID(NX), YGRID(NY), ZGRID(NZ)
@@ -1615,7 +1564,7 @@ subroutine CALC_BOUNDARY_RADIANCES(BCFLAG, IPFLAG, JOCT, IZ,&
         iproc = BXYPTR_(1, IBC, JOCT); IPT = BXYPTR_(2, IBC, JOCT); SIDE = BXYPTR_(3, IBC, JOCT)
         RADIANCE(:) = 0.0; TRANSMIT = 1.0
         xo = x; yo = y; zo = z
-        call INTEGRATE_RAY(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
+        call shd_ext__mpiIntegrateRay(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
             &XGRID, YGRID, ZGRID, NPTS, NCELLS,&
             &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
             &GRIDPOS, EXTINCT, NSTOKES, SOURCE, KANG, GRIDRAD,&
@@ -1629,7 +1578,7 @@ subroutine CALC_BOUNDARY_RADIANCES(BCFLAG, IPFLAG, JOCT, IZ,&
         else
             if (SIDE .ne. Lupx .and. SIDE .ne. Lupy) then
                 write (6, *) 'Bad SIDE 1:', myproc_, mu, phi, SIDE, x, y, z, xo, yo, zo
-                call ABORT_SHDOM_MPI('CALC_BOUNDARY_RADIANCES')
+                call shd_ext__mpiAbort('CALC_BOUNDARY_RADIANCES')
             end if
             NINVALID(SIDE) = NINVALID(SIDE) + 1
             BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/X, Y, Z, TRANSMIT, RADIANCE(:)/)
@@ -1682,12 +1631,12 @@ subroutine CALC_BOUNDARY_RADIANCES(BCFLAG, IPFLAG, JOCT, IZ,&
         end if
         if (any(ierr(1:irq) .ne. MPI_SUCCESS)) then
             write (6, *) 'MPI error: ', ierr(1:irq)
-            call ABORT_SHDOM_MPI('CALC_BOUNDARY_RADIANCES: MPI error 1')
+            call shd_ext__mpiAbort('CALC_BOUNDARY_RADIANCES: MPI error 1')
         end if
         call MPI_WAITALL(irq, requests, status, ierr(1))
         if (ierr(1) .ne. MPI_SUCCESS) then
             write (6, *) 'MPI_WAITALL error: ', ierr(1)
-            call ABORT_SHDOM_MPI('CALC_BOUNDARY_RADIANCES: MPI error 2')
+            call shd_ext__mpiAbort('CALC_BOUNDARY_RADIANCES: MPI error 2')
         end if
 
         NINVALID(Lupx) = 0; NINVALID(Lupy) = 0
@@ -1700,7 +1649,7 @@ subroutine CALC_BOUNDARY_RADIANCES(BCFLAG, IPFLAG, JOCT, IZ,&
                 Z = BndRadRealInfo(3, J, Ldownx)
                 SIDE = Ldownx; TRANSMIT = BndRadRealInfo(4, J, Ldownx)
                 RADIANCE(:) = BndRadRealInfo(5:4 + NSTOKES, J, Ldownx)
-                call INTEGRATE_RAY(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
+                call shd_ext__mpiIntegrateRay(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
                     &XGRID, YGRID, ZGRID, NPTS, NCELLS,&
                     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
                     &GRIDPOS, EXTINCT, NSTOKES, SOURCE, KANG, GRIDRAD,&
@@ -1717,7 +1666,7 @@ subroutine CALC_BOUNDARY_RADIANCES(BCFLAG, IPFLAG, JOCT, IZ,&
                 else
                     if (SIDE .ne. Lupx .and. SIDE .ne. Lupy) then
                         write (6, *) 'Bad SIDE 2x:', myproc_, mu, phi, SIDE, x, y, z
-                        call ABORT_SHDOM_MPI('CALC_BOUNDARY_RADIANCES')
+                        call shd_ext__mpiAbort('CALC_BOUNDARY_RADIANCES')
                     end if
                     NINVALID(SIDE) = NINVALID(SIDE) + 1
                     BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/X, Y, Z, TRANSMIT, RADIANCE(:)/)
@@ -1735,7 +1684,7 @@ subroutine CALC_BOUNDARY_RADIANCES(BCFLAG, IPFLAG, JOCT, IZ,&
                 Z = BndRadRealInfo(3, J, Ldowny)
                 SIDE = Ldowny; TRANSMIT = BndRadRealInfo(4, J, Ldowny)
                 RADIANCE(:) = BndRadRealInfo(5:4 + NSTOKES, J, Ldowny)
-                call INTEGRATE_RAY(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
+                call shd_ext__mpiIntegrateRay(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
                     &XGRID, YGRID, ZGRID, NPTS, NCELLS,&
                     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
                     &GRIDPOS, EXTINCT, NSTOKES, SOURCE, KANG, GRIDRAD,&
@@ -1751,7 +1700,7 @@ subroutine CALC_BOUNDARY_RADIANCES(BCFLAG, IPFLAG, JOCT, IZ,&
                 else
                     if (SIDE .ne. Lupx .and. SIDE .ne. Lupy) then
                         write (6, *) 'Bad SIDE 2y:', myproc_, mu, phi, SIDE, x, y, z
-                        call ABORT_SHDOM_MPI('CALC_BOUNDARY_RADIANCES')
+                        call shd_ext__mpiAbort('CALC_BOUNDARY_RADIANCES')
                     end if
                     NINVALID(SIDE) = NINVALID(SIDE) + 1
                     BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/X, Y, Z, TRANSMIT, RADIANCE(:)/)
@@ -1785,7 +1734,7 @@ subroutine CALC_BOUNDARY_RADIANCES(BCFLAG, IPFLAG, JOCT, IZ,&
             call MPI_WAITALL(6, requests, status, ierr(7))
             if (any(ierr(1:7) .ne. MPI_SUCCESS)) then
                 write (6, *) 'MPI error: ', ierr(1:7)
-                call ABORT_SHDOM_MPI('CALC_BOUNDARY_RADIANCES: MPI error 3')
+                call shd_ext__mpiAbort('CALC_BOUNDARY_RADIANCES: MPI error 3')
             end if
             do I = 1, Nbcpnts
                 IPT = RadPtrIn(I)
@@ -1801,9 +1750,9 @@ subroutine CALC_BOUNDARY_RADIANCES(BCFLAG, IPFLAG, JOCT, IZ,&
 
     deallocate (RadAllOut, RadPtrOut, RadAllIn, RadPtrIn, Ndone)
     deallocate (BndRadRealInfo, BndRadIntInfo)
-end subroutine CALC_BOUNDARY_RADIANCES
+end subroutine shd_ext__mpiCalBoundaryRad
 
-subroutine INTEGRATE_RAY(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
+subroutine shd_ext__mpiIntegrateRay(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
     &XGRID, YGRID, ZGRID, NPTS, NCELLS,&
     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &GRIDPOS, EXTINCT, NSTOKES, SOURCE, KANG,&
@@ -1824,9 +1773,6 @@ subroutine INTEGRATE_RAY(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
     ! properly initialized on input).  The ending location X,Y,Z and the
     ! subdomain SIDE (1=-X,2=+X,3=-Y,4=+Y) are also returned.
 
-    use globals_mpi
-
-    implicit none
     integer, intent(IN) :: BCFLAG, IPFLAG, NX, NY, NZ, NA, NPTS, NCELLS
     integer, intent(IN) :: NSTOKES, KANG
     real, intent(IN) :: XGRID(NX), YGRID(NY), ZGRID(NZ)
@@ -1896,7 +1842,7 @@ subroutine INTEGRATE_RAY(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
     else if (CZ .gt. 1.0e-3) then
         BITZ = 0
     else
-        call ABORT_SHDOM_MPI('INTEGRATE_RAY: Bad MU')
+        call shd_ext__mpiAbort('Message [_mpiIntegrateRay]: Bad MU.')
     end if
     ! IOCT is the octant the ray come from or the discrete ordinate goes to.
     IOCT = 1 + BITX + 2*BITY + 4*BITZ
@@ -1932,7 +1878,7 @@ subroutine INTEGRATE_RAY(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
     if (ix < 1 .or. iy < 1 .or. ix > NX + 1 .or. iy > NY + 1) then
         write (6, *) 'Bad ix,iy', x, y, z, ix, iy, iz, xgrid(1), xgrid(nx), ygrid(1), ygrid(ny), myproc_
         write (6, *) 'Bad ix,iy', side, transmit
-        call ABORT_SHDOM_MPI('INTEGRATE_RAY:')
+        call shd_ext__mpiAbort('Message [_mpiIntegrateRay]:')
     end if
     IX = min(NXC, IX)
     IY = min(NYC, IY)
@@ -2020,8 +1966,8 @@ subroutine INTEGRATE_RAY(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
         SOZ = (GRIDPOS(3, IOPP) - ZE)*CZINV
         SO = min(SOX, SOY, SOZ)
         if (SO .lt. -EPS) then
-            write (6, *) 'INTEGRATE_RAY: SO<0  ', MU, PHI, X, Y, Z, SOX, SOY, SOZ, SO, ICELL, TRANS
-            call ABORT_SHDOM_MPI('INTEGRATE_RAY: SO<0')
+            write (6, *) 'Message [_mpiIntegrateRay]: SO<0  ', MU, PHI, X, Y, Z, SOX, SOY, SOZ, SO, ICELL, TRANS
+            call shd_ext__mpiAbort('Message [_mpiIntegrateRay]: SO<0.')
         end if
         ! Compute the coordinates of the cell exitting location
         if (.not. IPINX) XE = XE + SO*CX
@@ -2089,7 +2035,7 @@ subroutine INTEGRATE_RAY(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
         end if
         if (u < -1.0e-4 .or. v < -1.0e-4 .or. u > 1.0001 .or. v > 1.0001) then
             write (6, *) 'u,v<0 or u,v>1: ', mu, phi, x, y, z, xe, ye, ze, u, v, ipinx, ipiny
-            call ABORT_SHDOM_MPI('INTEGRATE_RAY:')
+            call shd_ext__mpiAbort('Message [_mpiIntegrateRay]:')
         end if
 
         ! Get the location coordinate (does the boundary wrapping)
@@ -2172,9 +2118,10 @@ subroutine INTEGRATE_RAY(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
     TRANSMIT = TRANS
     SIDE = IFACE
 
-end subroutine INTEGRATE_RAY
+end subroutine shd_ext__mpiIntegrateRay
 
-subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, NPX, NPY,&
+subroutine shd_ext__mpiComputeRad(&
+    &NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
     &BCFLAG, XDOMAIN, YDOMAIN, IPFLAG,&
@@ -2193,12 +2140,7 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, NPX, NPY,&
     ! the number of radiances output.  Does the radiative transfer integrations
     ! across multiple processors.
 
-    use mpi_f08
-    use globals_mpi
-
-    implicit none
     integer, intent(IN) :: NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG, NPTS, NCELLS
-    integer, intent(IN) :: NPX, NPY
     integer, intent(IN) :: ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
     integer, intent(IN) :: NMU, NPHI0MAX, NPHI0(NMU)
     integer, intent(INOUT) :: NRAD
@@ -2368,7 +2310,6 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, NPX, NPY,&
             ! Set up the upstream/downstream boundaries for this direction
             Lupx = 0; Lupy = 0; Ldownx = 0; Ldowny = 0
             if (btest(BCFLAG, 2)) then
-                !if ((cos(PHIOUT) .gt. 1.0e-5) .and. (NPX .gt. 1)) then
                 if ((cos(PHIOUT) .gt. 1.0e-5)) then
                     Ldownx = 2; Lupx = 1
                 else
@@ -2411,17 +2352,17 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, NPX, NPY,&
                         if (VALIDRAD) then
                             Ndone = Ndone + 1
                             if (Ndone > MAXNRAD)&
-                                &call ABORT_SHDOM_MPI('Error [COMPUTE_RADIANCE_PAR]: MAXNRAD exceeded by Ndone 1.')
+                                &call shd_ext__mpiAbort('Error [COMPUTE_RADIANCE_PAR]: MAXNRAD exceeded by Ndone 1.')
                             RadSend(:, Ndone) = RADIANCE(:)
                             IndexSend(Ndone) = NRAD
                         else
                             if ((SIDE .ne. Lupx .and. SIDE .ne. Lupy)) then
                                 write (6, *) 'Bad SIDE 1:', myproc_, muout, phiout, x0, y0, z0, SIDE, xe, ye, ze
-                                call ABORT_SHDOM_MPI('Error [COMPUTE_RADIANCE_PAR]: Bad SIDE 1')
+                                call shd_ext__mpiAbort('Error [COMPUTE_RADIANCE_PAR]: Bad SIDE 1')
                             end if
                             NINVALID(SIDE) = NINVALID(SIDE) + 1
                             if (NINVALID(SIDE) > MAXNRAD)&
-                                call ABORT_SHDOM_MPI('Error [COMPUTE_RADIANCE_PAR]: MAXNRAD exceeded by NINVALID(SIDE) 1.')
+                                call shd_ext__mpiAbort('Error [COMPUTE_RADIANCE_PAR]: MAXNRAD exceeded by NINVALID(SIDE) 1.')
 
                             BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, TRANSMIT, RADIANCE(:)/)
                             BndRadIntInfo(NINVALID(SIDE), SIDE) = NRAD
@@ -2498,17 +2439,17 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, NPX, NPY,&
                         if (VALIDRAD) then
                             Ndone = Ndone + 1
                             if (Ndone > MAXNRAD)&
-                                &call ABORT_SHDOM_MPI('Error [COMPUTE_RADIANCE_PAR]: MAXNRAD exceeded by Ndone 2.')
+                                &call shd_ext__mpiAbort('Error [COMPUTE_RADIANCE_PAR]: MAXNRAD exceeded by Ndone 2.')
                             RadSend(:, Ndone) = RADIANCE(:)
                             IndexSend(Ndone) = BndRadIntInfo(J, Ldownx)
                         else
                             if ((SIDE .ne. Lupx .and. SIDE .ne. Lupy)) then
                                 write (6, *) 'Bad SIDE 2x', myproc_, muout, phiout, x, y, z, SIDE, xe, ye, ze
-                                call ABORT_SHDOM_MPI('Error [COMPUTE_RADIANCE_PAR]: Bad SIDE 2x')
+                                call shd_ext__mpiAbort('Error [COMPUTE_RADIANCE_PAR]: Bad SIDE 2x')
                             end if
                             NINVALID(SIDE) = NINVALID(SIDE) + 1
                             if (NINVALID(SIDE) > MAXNRAD)&
-                                &call ABORT_SHDOM_MPI('Error [COMPUTE_RADIANCE_PAR]: MAXNRAD exceeded by NINVALID(SIDE) 2.')
+                                &call shd_ext__mpiAbort('Error [COMPUTE_RADIANCE_PAR]: MAXNRAD exceeded by NINVALID(SIDE) 2.')
                             BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, TRANSMIT, RADIANCE(:)/)
                             BndRadIntInfo(NINVALID(SIDE), SIDE) = BndRadIntInfo(J, Ldownx)
                         end if
@@ -2535,17 +2476,17 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, NPX, NPY,&
                         if (VALIDRAD) then
                             Ndone = Ndone + 1
                             if (Ndone > MAXNRAD)&
-                                &call ABORT_SHDOM_MPI('Error [COMPUTE_RADIANCE_PAR]: MAXNRAD exceeded by Ndone 3.')
+                                &call shd_ext__mpiAbort('Error [COMPUTE_RADIANCE_PAR]: MAXNRAD exceeded by Ndone 3.')
                             RadSend(:, Ndone) = RADIANCE(:)
                             IndexSend(Ndone) = BndRadIntInfo(J, Ldowny)
                         else
                             if ((SIDE .ne. Lupx .and. SIDE .ne. Lupy)) then
                                 write (6, *) 'Bad SIDE 2y', myproc_, muout, phiout, x, y, z, SIDE, xe, ye, ze
-                                call ABORT_SHDOM_MPI('Error [COMPUTE_RADIANCE_PAR]: Bad SIDE 2y')
+                                call shd_ext__mpiAbort('Error [COMPUTE_RADIANCE_PAR]: Bad SIDE 2y')
                             end if
                             NINVALID(SIDE) = NINVALID(SIDE) + 1
                             if (NINVALID(SIDE) > MAXNRAD)&
-                                &call ABORT_SHDOM_MPI('Error [COMPUTE_RADIANCE_PAR]: MAXNRAD exceeded by NINVALID(SIDE) 3.')
+                                &call shd_ext__mpiAbort('Error [COMPUTE_RADIANCE_PAR]: MAXNRAD exceeded by NINVALID(SIDE) 3.')
                             BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, TRANSMIT, RADIANCE(:)/)
                             BndRadIntInfo(NINVALID(SIDE), SIDE) = BndRadIntInfo(J, Ldowny)
                         end if
@@ -2595,9 +2536,9 @@ subroutine COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, NPX, NPY,&
     deallocate (requests, status, RadSend, IndexSend)
     if (myproc_ .eq. 0) deallocate (NradRecv, RadRecv, IndexRecv)
     deallocate (BndRadRealInfo, BndRadIntInfo)
-end subroutine COMPUTE_RADIANCE_PAR
+end subroutine shd_ext__mpiComputeRad
 
-subroutine VISUALIZE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+subroutine shd_ext__mpiVisualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
     &BCFLAG, XDOMAIN, YDOMAIN, IPFLAG,&
@@ -2613,10 +2554,6 @@ subroutine VISUALIZE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     ! Computes Stokes radiances (output in VISOUT) for the visualization
     ! modes: 1) camera mode, and 2) cross track scanning.
 
-    use mpi_f08
-    use globals_mpi
-
-    implicit none
     integer, intent(IN) :: NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG, NPTS, NCELLS
     integer, intent(IN) :: ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
     integer, intent(IN) :: NMU, NPHI0MAX, NPHI0(NMU)
@@ -2866,14 +2803,14 @@ subroutine VISUALIZE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 if (VALIDRAD) then
                     Ndone = Ndone + 1
                     if (Ndone > MAXNRAD)&
-                        &call ABORT_SHDOM_MPI('VISUALIZE_RADIANCE_PAR: MAXNRAD exceeded by Ndone 1')
+                        &call shd_ext__mpiAbort('VISUALIZE_RADIANCE_PAR: MAXNRAD exceeded by Ndone 1')
                     RadSend(:, Ndone) = RADIANCE(:)
                     IndexSend(Ndone) = IVIS
                 else
-                    if (SIDE < 1 .or. SIDE > 4) call ABORT_SHDOM_MPI('VISUALIZE_RADIANCE_PAR: invalid SIDE 1')
+                    if (SIDE < 1 .or. SIDE > 4) call shd_ext__mpiAbort('VISUALIZE_RADIANCE_PAR: invalid SIDE 1')
                     NINVALID(SIDE) = NINVALID(SIDE) + 1
                     if (NINVALID(SIDE) > MAXNRAD)&
-                        &call ABORT_SHDOM_MPI('VISUALIZE_RADIANCE_PAR: MAXNRAD exceeded by NINVALID(SIDE) 1')
+                        &call shd_ext__mpiAbort('VISUALIZE_RADIANCE_PAR: MAXNRAD exceeded by NINVALID(SIDE) 1')
                     BndSendRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, MU2, PHI2, TRANSMIT, RADIANCE(:)/)
                     BndSendRadIntInfo(NINVALID(SIDE), SIDE) = IVIS
                 end if
@@ -2953,14 +2890,14 @@ subroutine VISUALIZE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 if (VALIDRAD) then
                     Ndone = Ndone + 1
                     if (Ndone > MAXNRAD)&
-                        &call ABORT_SHDOM_MPI('VISUALIZE_RADIANCE_PAR: MAXNRAD exceeded by Ndone 2')
+                        &call shd_ext__mpiAbort('VISUALIZE_RADIANCE_PAR: MAXNRAD exceeded by Ndone 2')
                     RadSend(:, Ndone) = RADIANCE(:)
                     IndexSend(Ndone) = BndRecvRadIntInfo(J, IBND)
                 else
-                    if (SIDE < 1 .or. SIDE > 4) call ABORT_SHDOM_MPI('VISUALIZE_RADIANCE_PAR: invalid SIDE 2')
+                    if (SIDE < 1 .or. SIDE > 4) call shd_ext__mpiAbort('VISUALIZE_RADIANCE_PAR: invalid SIDE 2')
                     NINVALID(SIDE) = NINVALID(SIDE) + 1
                     if (NINVALID(SIDE) > MAXNRAD)&
-                        &call ABORT_SHDOM_MPI('VISUALIZE_RADIANCE_PAR: MAXNRAD exceeded by NINVALID(SIDE) 2')
+                        &call shd_ext__mpiAbort('VISUALIZE_RADIANCE_PAR: MAXNRAD exceeded by NINVALID(SIDE) 2')
                     BndSendRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, MU2, PHI2, TRANSMIT, RADIANCE(:)/)
                     BndSendRadIntInfo(NINVALID(SIDE), SIDE) = BndRecvRadIntInfo(J, IBND)
                 end if
@@ -3046,19 +2983,15 @@ subroutine VISUALIZE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
             deallocate (AOLP)
         end if
     end if
-end subroutine VISUALIZE_RADIANCE_PAR
+end subroutine shd_ext__mpiVisualizeRad
 
-subroutine CALC_ACCEL_SOLCRIT(DOACCEL, DELJDOT, DELJOLD, DELJNEW, JNORM,&
+subroutine shd_ext__mpiCalAccelSolCrit(DOACCEL, DELJDOT, DELJOLD, DELJNEW, JNORM,&
     &ACCELPAR, SOLCRIT)
 
     ! Does an MPI_ALLREDUCE to sum the delta source function vector dot
     ! products over all the processors, and from these calculates the
     ! full-domain-wide acceleration parameter and solution criterion.
 
-    use mpi_f08
-    use globals_mpi
-
-    implicit none
     logical, intent(IN) :: DOACCEL
     real, intent(INOUT) :: DELJDOT, DELJOLD, DELJNEW, JNORM
     real, intent(OUT) :: ACCELPAR, SOLCRIT
@@ -3070,7 +3003,7 @@ subroutine CALC_ACCEL_SOLCRIT(DOACCEL, DELJDOT, DELJOLD, DELJNEW, JNORM,&
         ! Call MPI_ALLREDUCE to sum up the four dot products
         sendbuf(:) = (/DELJDOT, DELJOLD, DELJNEW, JNORM/)
         call MPI_ALLREDUCE(sendbuf, recvbuf, 4, MPI_REAL, MPI_SUM, comm2d_, ierr)
-        if (ierr .ne. MPI_SUCCESS) call ABORT_SHDOM_MPI('CALC_ACCEL_SOLCRIT MPI_ALLREDUCE error')
+        if (ierr .ne. MPI_SUCCESS) call shd_ext__mpiAbort('CALC_ACCEL_SOLCRIT MPI_ALLREDUCE error')
         DELJDOT = recvbuf(1); DELJOLD = recvbuf(2)
         DELJNEW = recvbuf(3); JNORM = recvbuf(4)
     end if
@@ -3094,9 +3027,9 @@ subroutine CALC_ACCEL_SOLCRIT(DOACCEL, DELJDOT, DELJOLD, DELJNEW, JNORM,&
     else if (DELJNEW .eq. 0.0) then
         SOLCRIT = 0.0
     end if
-end subroutine CALC_ACCEL_SOLCRIT
+end subroutine shd_ext__mpiCalAccelSolCrit
 
-subroutine END_SHDOM_MPI(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART, XDOMAIN, YDOMAIN,&
+subroutine shd_ext__mpiEnd(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART, XDOMAIN, YDOMAIN,&
     &NPXT, NPYT, PROPFILE, RUNNAME)
 
     ! Shuts down MPI at the end, but mainly finds the number of gridpoints
@@ -3104,10 +3037,6 @@ subroutine END_SHDOM_MPI(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART, XDOMAIN, YDOMA
     ! process, and the master process write out the RUNNAME//"_load_balance.out"
     ! file.
 
-    use mpi_f08
-    use globals_mpi
-
-    implicit none
     integer, intent(in) :: NPTS, NPX, NPY, NPXT, NPYT
     real, intent(in) :: GRIDPOS(3, NPTS), XSTART, YSTART, XDOMAIN, YDOMAIN
     character(len=*), intent(in) :: PROPFILE, RUNNAME
@@ -3215,29 +3144,27 @@ subroutine END_SHDOM_MPI(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART, XDOMAIN, YDOMA
     ElapsedTime = MPI_WTIME() - StartTime_
 
     if (ElapsedTime .lt. 60.0) then
-        write (6, '(A,F6.2)') 'Message [END_SHDOM_MPI]: Total elapsed time (sec):', ElapsedTime
+        write (6, '(A,F6.2)') 'Message [_mpiEnd]: Total elapsed time (sec):', ElapsedTime
     else
-        write (6, '(A,F6.2)') 'Message [END_SHDOM_MPI]: Total elapsed time (min):', ElapsedTime/60.0
+        write (6, '(A,F6.2)') 'Message [_mpiEnd]: Total elapsed time (min):', ElapsedTime/60.0
     end if
 
-    write (6, '(A,"<",A,">")') 'Message [END_SHDOM_MPI]: Finished with SHDOM run: ', trim(adjustl(RUNNAME))
+    write (6, '(A,"<",A,">")') 'Message [_mpiEnd]: Finished with SHDOM run: ', trim(adjustl(RUNNAME))
 
     ! Shut down MPI
     if (allocated(BXYPTR_)) deallocate (BXYPTR_, IBXYPTR_, BXYPOS_)
     call MPI_FINALIZE(ierr)
 
-end subroutine END_SHDOM_MPI
+end subroutine shd_ext__mpiEnd
 
-subroutine ABORT_SHDOM_MPI(ERRSTR)
+subroutine shd_ext__mpiAbort(ERRSTR)
 
-    use mpi_f08
-    use globals_mpi
-
-    implicit none
-    character(LEN=*), intent(IN) :: ERRSTR
+    character(len=*), intent(in) :: ERRSTR
     integer :: ierr, errorcode = 7
 
     write (6, *) trim(adjustl(ERRSTR))
     call MPI_ABORT(comm2d_, errorcode, ierr)
 
-end subroutine ABORT_SHDOM_MPI
+end subroutine shd_ext__mpiAbort
+
+end module shd_ext_mpi

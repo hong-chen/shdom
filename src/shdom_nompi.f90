@@ -1,16 +1,47 @@
-subroutine START_MPI(MASTERPROC)
-    ! Dummy routines to allow parallel SHDOM to compile without MPI.
+module shd_ext_mpi
+
     implicit none
-    logical MASTERPROC
+    private
+
+    public :: shd_ext__mpiStart
+    public :: shd_ext__mpiMap
+    public :: shd_ext__mpiBcastInput
+    public :: shd_ext__mpiBcastPrpSize
+    public :: shd_ext__mpiScatPrp
+    public :: shd_ext__mpiReadBcastMemParam
+    public :: shd_ext__mpiBcastSurfSize
+    public :: shd_ext__mpiBcastSurfParam
+    public :: shd_ext__mpiBcastKdistSize
+    public :: shd_ext__mpiBcastKdistParam
+    public :: shd_ext__mpiGatherOutput
+    public :: shd_ext__mpiTotalSplitCritMax
+    public :: shd_ext__mpiMakeDirect
+    public :: shd_ext__mpiFindBoundaryPnt
+    public :: shd_ext__mpiCalBoundaryRad
+    public :: shd_ext__mpiComputeRad
+    public :: shd_ext__mpiVisualizeRad
+    public :: shd_ext__mpiCalAccelSolCrit
+    public :: shd_ext__mpiEnd
+    public :: shd_ext__mpiAbort
+
+    public :: shd_ext__mpiFindAlbMax
+    public :: shd_ext__mpiUnifySplit
+    public :: shd_ext__mpiSumCpuTime
+
+contains
+
+subroutine shd_ext__mpiStart(MASTERPROC)
+    ! Dummy routines to allow parallel SHDOM to compile without MPI.
+    logical, intent(out) :: MASTERPROC
 
     MASTERPROC = .true.
     return
-end subroutine
+end subroutine shd_ext__mpiStart
 
-subroutine MAP_SHDOM_MPI(&
+subroutine shd_ext__mpiMap(&
     &BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY,&
     &PROPFILE, XSTART, YSTART, RUNNAME)
-    implicit none
+
     integer BCFLAG, NPX, NPY, NX, NY, NZ
     character(len=*), intent(in) :: PROPFILE, RUNNAME
     real, intent(in) :: DELX, DELY
@@ -19,9 +50,9 @@ subroutine MAP_SHDOM_MPI(&
     XSTART = 0.0
     YSTART = 0.0
     return
-end subroutine
+end subroutine shd_ext__mpiMap
 
-subroutine BROADCAST_USER_INPUT(RUNNAME,&
+subroutine shd_ext__mpiBcastInput(RUNNAME,&
     &PROPFILE, SFCFILE, CKDFILE,&
     &INSAVEFILE, OUTSAVEFILE,&
     &NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
@@ -29,8 +60,10 @@ subroutine BROADCAST_USER_INPUT(RUNNAME,&
     &SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
     &GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,&
     &ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
-    &MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS, OUTFILES)
-    implicit none
+    &MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS,&
+    &MAX_TOTAL_MB, SPLITTING_FACTOR,&
+    &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
+
     integer NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG, IPFLAG
     integer MAXOUT, MAXPAR, MAXITER, NUMOUT
     logical KDIST, DELTAM, ACCELFLAG
@@ -39,25 +72,27 @@ subroutine BROADCAST_USER_INPUT(RUNNAME,&
     real SOLACC, SPLITACC, SHACC, OUTPARMS(MAXPAR, MAXOUT)
     character SRCTYPE*1, GRIDTYPE*1, UNITS*1, OUTTYPES(*)*1
     character RUNNAME*256, PROPFILE*256, SFCFILE*256, CKDFILE*256
-    character OUTFILES(*)*256, INSAVEFILE*256, OUTSAVEFILE*256
+    character INSAVEFILE*256, OUTSAVEFILE*256
+    real :: MAX_TOTAL_MB, SPLITTING_FACTOR
+    real :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
 
     return
-end subroutine
+end subroutine shd_ext__mpiBcastInput
 
-subroutine BROADCAST_PROPERTY_SIZE(NPX, NPY, NPZ, DELX, DELY,&
+subroutine shd_ext__mpiBcastPrpSize(NPX, NPY, NPZ, DELX, DELY,&
     &NUMPHASE, MAXLEG, MAXPGL)
-    implicit none
+
     integer NPX, NPY, NPZ, NUMPHASE, MAXLEG, MAXPGL
     real DELX, DELY
 
     return
-end subroutine
+end subroutine shd_ext__mpiBcastPrpSize
 
-subroutine SCATTER_PROPERTIES(NPXT, NPYT, NPX, NPY, NPZ, NSTLEG,&
+subroutine shd_ext__mpiScatPrp(NPXT, NPYT, NPX, NPY, NPZ, NSTLEG,&
     &NLEG, NUMPHASE, ZLEVELS, MAXASYM, TEMPPT,&
     &EXTINCTPT, ALBEDOPT, LEGENPT, IPHASEPT,&
     &TEMPP, EXTINCTP, ALBEDOP, LEGENP, IPHASEP)
-    implicit none
+
     integer NPXT, NPYT, NPX, NPY, NPZ, NUMPHASE, NLEG, NSTLEG
     real ZLEVELS(NPZ), MAXASYM
     real TEMPPT(NPZ, NPYT, NPXT), EXTINCTPT(NPZ, NPYT, NPXT)
@@ -68,59 +103,59 @@ subroutine SCATTER_PROPERTIES(NPXT, NPYT, NPX, NPY, NPZ, NSTLEG,&
     integer*2 IPHASEP(NPZ, NPY, NPX)
 
     return
-end subroutine
+end subroutine shd_ext__mpiScatPrp
 
-subroutine READ_BROADCAST_MEM_PARAMS(MAX_TOTAL_MB,&
+subroutine shd_ext__mpiReadBcastMemParam(MAX_TOTAL_MB,&
     &ADAPT_GRID_FACTOR, NUM_SH_TERM_FACTOR,&
     &CELL_TO_POINT_RATIO, RUNNAME)
-    implicit none
+
     real MAX_TOTAL_MB, ADAPT_GRID_FACTOR
     real NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
     character(*) RUNNAME
 
     return
-end subroutine
+end subroutine shd_ext__mpiReadBcastMemParam
 
-subroutine BROADCAST_SURFACE_SIZE(MAXSFCPTS, MAXSFCPARS)
-    implicit none
+subroutine shd_ext__mpiBcastSurfSize(MAXSFCPTS, MAXSFCPARS)
+
     integer MAXSFCPTS, MAXSFCPARS
 
     return
-end subroutine
+end subroutine shd_ext__mpiBcastSurfSize
 
-subroutine BROADCAST_SURFACE_PARMS(SFCTYPE, NXSFC, NYSFC, NSFCPAR,&
+subroutine shd_ext__mpiBcastSurfParam(SFCTYPE, NXSFC, NYSFC, NSFCPAR,&
     &DELXSFC, DELYSFC, SFCPARMS, GNDTEMP, GNDALBEDO)
-    implicit none
+
     character SFCTYPE*2
     integer NXSFC, NYSFC, NSFCPAR
     real DELXSFC, DELYSFC, SFCPARMS(*), GNDTEMP, GNDALBEDO
 
     return
-end subroutine
+end subroutine shd_ext__mpiBcastSurfParam
 
-subroutine BROADCAST_KDIST_SIZE(NG, NZCKD)
-    implicit none
+subroutine shd_ext__mpiBcastKdistSize(NG, NZCKD)
+
     integer NG, NZCKD
 
     return
-end subroutine
+end subroutine shd_ext__mpiBcastKdistSize
 
-subroutine BROADCAST_KDIST_PARMS(SOLFLUX, NG, DELG,&
+subroutine shd_ext__mpiBcastKdistParam(SOLFLUX, NG, DELG,&
     &NZCKD, ZCKD, KABS)
-    implicit none
+
     integer NG, NZCKD
     real SOLFLUX, DELG(NG), ZCKD(NZCKD), KABS(NZCKD, NG)
 
     return
-end subroutine
+end subroutine shd_ext__mpiBcastKdistParam
 
-subroutine GATHER_OUTPUT(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
+subroutine shd_ext__mpiGatherOutput(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
     &IPFLAG, BCFLAG, NBPTS, NXT, NYT, NZ, NSHOUT,&
     &SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV, SUMSHTERMS,&
     &XDOMAIN, YDOMAIN, XALLGRID, YALLGRID,&
     &ALLFLUXES, ALLFLUXDIV, ALLSHTERMS,&
     &NCELLS, NPTS, NSH, NCELLSTOT, NPTSTOT, NSHTOT)
-    implicit none
+
     logical FLUX_OUT, FLUXDIV_OUT, SH_OUT
     integer IPFLAG, BCFLAG, NBPTS, NXT, NYT, NZ, NSHOUT, NPX, NPY
     real, intent(in) :: XDOMAIN, YDOMAIN
@@ -133,39 +168,39 @@ subroutine GATHER_OUTPUT(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
     integer NCELLSTOT, NPTSTOT, NSHTOT
 
     return
-end subroutine
+end subroutine shd_ext__mpiGatherOutput
 
-real function SUM_CPU_TIME(cpuTimes)
-    implicit none
+real function shd_ext__mpiSumCpuTime(cpuTimes)
+
     real cpuTimes
-    SUM_CPU_TIME = cpuTimes
+    shd_ext__mpiSumCpuTime = cpuTimes
     return
-end function
+end function shd_ext__mpiSumCpuTime
 
-subroutine TOTAL_ALBEDO_MAX(ALBMAX)
-    implicit none
+subroutine shd_ext__mpiFindAlbMax(ALBMAX)
+
     real ALBMAX
     return
-end subroutine
+end subroutine shd_ext__mpiFindAlbMax
 
-subroutine UNIFY_SPLITTING(DOSPLIT, STARTSPLITACC)
-    implicit none
+subroutine shd_ext__mpiUnifySplit(DOSPLIT, STARTSPLITACC)
+
     logical DOSPLIT
     real STARTSPLITACC
     return
-end subroutine
+end subroutine shd_ext__mpiUnifySplit
 
-subroutine TOTAL_SPLITCRIT_MAX(SPLITCRIT)
-    implicit none
+subroutine shd_ext__mpiTotalSplitCritMax(SPLITCRIT)
+
     real SPLITCRIT
     return
-end subroutine
+end subroutine shd_ext__mpiTotalSplitCritMax
 
-subroutine MAKE_DIRECT_PAR(&
+subroutine shd_ext__mpiMakeDirect(&
     &SPT, NPTS, BCFLAG, IPFLAG, DELTAM, ML,&
     &NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ, GRIDPOS,&
     &NX, XGRID, NY, YGRID, DIRFLUX)
-    implicit none
+
     integer SPT, NPTS, BCFLAG, IPFLAG, ML, NSTLEG, NLEG, NX, NY
     logical DELTAM
     real SOLARFLUX, SOLARMU, SOLARAZ
@@ -173,27 +208,27 @@ subroutine MAKE_DIRECT_PAR(&
     real DIRFLUX(NPTS)
 
     return
-end subroutine
+end subroutine shd_ext__mpiMakeDirect
 
-subroutine FIND_BOUNDARY_POINTS(&
+subroutine shd_ext__mpiFindBoundaryPnt(&
     &BCFLAG, IPFLAG, NPTS, SWEEPORD,&
     &GRIDPTR, GRIDPOS, NX, NY, NZ, XGRID, YGRID, ZGRID)
-    implicit none
+
     integer BCFLAG, IPFLAG, NPTS, SWEEPORD(NPTS, *), GRIDPTR(8, *)
     integer NX, NY, NZ
     real GRIDPOS(3, NPTS), XGRID(NX), YGRID(NY), ZGRID(NZ)
 
     return
-end subroutine
+end subroutine shd_ext__mpiFindBoundaryPnt
 
-subroutine CALC_BOUNDARY_RADIANCES(&
+subroutine shd_ext__mpiCalBoundaryRad(&
     &BCFLAG, IPFLAG, JOCT, IZ,&
     &NX, NY, NZ, XGRID, YGRID, ZGRID,&
     &NA, NPTS, NCELLS, GRIDPTR,&
     &NEIGHPTR, TREEPTR, CELLFLAGS, GRIDPOS,&
     &MU, PHI, EXTINCT, NSTOKES, SOURCE,&
     &KANG, GRIDRAD)
-    implicit none
+
     integer BCFLAG, IPFLAG, JOCT, IZ
     integer NX, NY, NZ, NA, NPTS, NCELLS, NSTOKES, KANG
     real XGRID(NX), YGRID(NY), ZGRID(NZ)
@@ -204,11 +239,11 @@ subroutine CALC_BOUNDARY_RADIANCES(&
     real GRIDRAD(NSTOKES, NPTS)
 
     return
-end subroutine
+end subroutine shd_ext__mpiCalBoundaryRad
 
-subroutine COMPUTE_RADIANCE_PAR(&
+subroutine shd_ext__mpiComputeRad(&
     &NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
-    &ML, MM, NSTLEG, NLEG, NUMPHASE,&
+    &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
     &BCFLAG, XDOMAIN, YDOMAIN, IPFLAG,&
     &SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
@@ -220,31 +255,33 @@ subroutine COMPUTE_RADIANCE_PAR(&
     &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
     &SHPTR, SOURCE, SOURCE1, GRIDRAD,&
     &OUTPARMS, NRAD, RADOUT)
-    implicit none
-    integer NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG, NPTS, NCELLS
-    integer ML, MM, NSTLEG, NLEG, NUMPHASE
-    integer NMU, NPHI0MAX, NPHI0(NMU), NRAD
-    integer MAXNBC, NTOPPTS, NBOTPTS, NSFCPAR
-    integer GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
-    integer SHPTR(NPTS + 1), BCPTR(MAXNBC, 2)
-    integer*2 CELLFLAGS(NCELLS), IPHASE(NPTS)
-    logical DELTAM
-    real SOLARMU, SOLARAZ
-    real GNDTEMP, GNDALBEDO, SKYRAD, WAVENO(2), WAVELEN
-    real MU(NMU), PHI(NMU, NPHI0MAX), WTDO(NMU, NPHI0MAX)
-    real XDOMAIN, YDOMAIN, XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ)
-    real GRIDPOS(3, NPTS)
-    real SFCGRIDPARMS(*), BCRAD(NSTOKES, *)
-    real EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, NPTS)
-    real DIRFLUX(NPTS), FLUXES(2, NPTS), SOURCE(*)
-    real SOURCE1(NSTOKES, NPTS), GRIDRAD(NSTOKES, NPTS)
-    real OUTPARMS(*), RADOUT(NSTOKES, *)
-    character SRCTYPE*1, SFCTYPE*2, UNITS*1
+
+    integer, intent(IN) :: NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG, NPTS, NCELLS
+    integer, intent(IN) :: ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
+    integer, intent(IN) :: NMU, NPHI0MAX, NPHI0(NMU)
+    integer, intent(INOUT) :: NRAD
+    integer, intent(IN) :: MAXNBC, NTOPPTS, NBOTPTS, NSFCPAR
+    integer, intent(IN) :: GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
+    integer, intent(IN) :: SHPTR(NPTS + 1), BCPTR(MAXNBC, 2)
+    integer*2, intent(IN) :: CELLFLAGS(NCELLS), IPHASE(NPTS)
+    logical, intent(IN) :: DELTAM
+    real, intent(IN) :: SOLARMU, SOLARAZ
+    real, intent(IN) :: GNDTEMP, GNDALBEDO, SKYRAD, WAVENO(2), WAVELEN
+    real, intent(IN) :: MU(NMU), PHI(NMU, NPHI0MAX), WTDO(NMU, NPHI0MAX)
+    real, intent(IN) :: XDOMAIN, YDOMAIN, XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ)
+    real, intent(IN) :: GRIDPOS(3, NPTS)
+    real, intent(IN) :: SFCGRIDPARMS(*), BCRAD(NSTOKES, *)
+    real, intent(IN) :: EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, NPTS)
+    real, intent(IN) :: DIRFLUX(NPTS), FLUXES(2, NPTS), SOURCE(NSTOKES, *)
+    real, intent(INOUT) :: SOURCE1(NSTOKES, NPTS), GRIDRAD(NSTOKES, NPTS)
+    real, intent(IN) :: OUTPARMS(*)
+    real, intent(OUT) :: RADOUT(NSTOKES, *)
+    character, intent(IN) ::  SRCTYPE*1, SFCTYPE*2, UNITS*1
 
     return
-end subroutine
+end subroutine shd_ext__mpiComputeRad
 
-subroutine VISUALIZE_RADIANCE_PAR(&
+subroutine shd_ext__mpiVisualizeRad(&
     &NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
@@ -257,7 +294,7 @@ subroutine VISUALIZE_RADIANCE_PAR(&
     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
     &SHPTR, SOURCE, OUTPARMS, IVIS, VISOUT)
-    implicit none
+
     integer NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG, NPTS, NCELLS
     integer ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
     integer NMU, NPHI0MAX, NPHI0(NMU), IVIS
@@ -278,14 +315,14 @@ subroutine VISUALIZE_RADIANCE_PAR(&
     character SRCTYPE*1, SFCTYPE*2, UNITS*1
 
     return
-end subroutine
+end subroutine shd_ext__mpiVisualizeRad
 
-subroutine CALC_ACCEL_SOLCRIT(&
+subroutine shd_ext__mpiCalAccelSolCrit(&
     &DOACCEL, DELJDOT, DELJOLD, DELJNEW,&
     &JNORM, ACCELPAR, SOLCRIT)
     ! Calculates the acceleration parameter and solution criterion from
     ! the delta source function vector dot  products.
-    implicit none
+
     logical DOACCEL
     real DELJDOT, DELJOLD, DELJNEW, JNORM, ACCELPAR, SOLCRIT
     real R, THETA, A
@@ -312,22 +349,24 @@ subroutine CALC_ACCEL_SOLCRIT(&
         SOLCRIT = 0.0
     end if
     return
-end subroutine
+end subroutine shd_ext__mpiCalAccelSolCrit
 
-subroutine END_SHDOM_MPI(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART,&
+subroutine shd_ext__mpiEnd(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART,&
     &XDOMAIN, YDOMAIN, NPXT, NPYT, PROPFILE, RUNNAME)
-    implicit none
+
     integer NPTS, NPX, NPY, NPXT, NPYT
     real GRIDPOS(3, NPTS), XSTART, YSTART, XDOMAIN, YDOMAIN
     character(len=*), intent(in) :: PROPFILE, RUNNAME
 
     return
-end subroutine
+end subroutine shd_ext__mpiEnd
 
-subroutine ABORT_SHDOM_MPI(ERRSTR)
-    implicit none
+subroutine shd_ext__mpiAbort(ERRSTR)
+
     character(*) ERRSTR
 
     write (6, *) ERRSTR
     stop
-end subroutine
+end subroutine shd_ext__mpiAbort
+
+end module shd_ext_mpi

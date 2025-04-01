@@ -7,6 +7,7 @@ program shdom_main
     use globals_shdom
     use shd_io_inp
     use shd_io_out
+    use shd_ext_mpi
 
     implicit none
     ! Number of output files and inputs parameter per file
@@ -94,11 +95,11 @@ program shdom_main
     BASEOUT = .false.
 
     !call cpu_time(CPUTIME1)
-    call SYSTEM_CLOCK(count_start, count_rate, count_max)
+    call system_clock(count_start, count_rate, count_max)
 
     ! Start up MPI for multiple processors if available, and
     !   return flag for master process (procnum=0)
-    call START_MPI(MASTERPROC)
+    call shd_ext__mpiStart(MASTERPROC)
 
     if (MASTERPROC) then
         if (nmlMode) then
@@ -126,7 +127,7 @@ program shdom_main
         end if
     end if
 
-    call BROADCAST_USER_INPUT(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
+    call shd_ext__mpiBcastInput(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
         &INSAVEFILE, OUTSAVEFILE,&
         &NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
         &IPFLAG, KDIST, DELTAM, GRIDTYPE,&
@@ -178,7 +179,7 @@ program shdom_main
         call shd_io__readPropSize(PROPFILE, NSTLEG, NLEG, NPX_, NPY_, NPZ_,&
                                 NUMPHASE_, MAXLEG, MAXPGL, DELX_, DELY_)
     end if
-    call BROADCAST_PROPERTY_SIZE(NPX_, NPY_, NPZ_, DELX_, DELY_,&
+    call shd_ext__mpiBcastPrpSize(NPX_, NPY_, NPZ_, DELX_, DELY_,&
                                  NUMPHASE_, MAXLEG, MAXPGL)
 
     ! Set the full domain grid sizes (variables end in T)
@@ -192,7 +193,7 @@ program shdom_main
     !   the X and Y starting position of this subdomain.  Set bits
     !   2 and 3 in BCFLAG to indicate multiple processors in X and Y.
     !   Also open the slave processor log files.
-    call MAP_SHDOM_MPI(BCFLAG, NPX_, NPY_, NX, NY, NZ, DELX_, DELY_, PROPFILE,&
+    call shd_ext__mpiMap(BCFLAG, NPX_, NPY_, NX, NY, NZ, DELX_, DELY_, PROPFILE,&
         &XSTART_, YSTART_, RUNNAME)
 
     if (btest(BCFLAG, 2)) then
@@ -270,7 +271,7 @@ program shdom_main
 
         end if
 
-        call SCATTER_PROPERTIES(NPXT, NPYT, NPX_, NPY_, NPZ_,&
+        call shd_ext__mpiScatPrp(NPXT, NPYT, NPX_, NPY_, NPZ_,&
             &NSTLEG, NLEG, NUMPHASE_,&
             &ZLEVELS_, MAXASYM,&
             &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, IPHASEPT,&
@@ -304,7 +305,7 @@ program shdom_main
     if (mpiMode) then
         ! Read the memory parameters from a file, if it exists, and send
         !  the parameters to all processors. Otherwise use the input ones.
-        call READ_BROADCAST_MEM_PARAMS(MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
+        call shd_ext__mpiReadBcastMemParam(MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
             &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, RUNNAME)
     end if
 
@@ -393,7 +394,7 @@ program shdom_main
             call shd_io__readSurfSize(SFCFILE, MAXSFCPTS, MAXSFCPARS)
         end if
         ! Broadcast the surface array sizes
-        call BROADCAST_SURFACE_SIZE(MAXSFCPTS, MAXSFCPARS)
+        call shd_ext__mpiBcastSurfSize(MAXSFCPTS, MAXSFCPARS)
         allocate (SFCPARMS(MAXSFCPARS*MAXSFCPTS))
         if (MASTERPROC) then
             call shd_io__readSurf(SFCFILE, MAXSFCPTS, MAXSFCPARS,&
@@ -401,7 +402,7 @@ program shdom_main
                 &NSFCPAR, SFCPARMS, GNDTEMP, GNDALBEDO)
         end if
         ! Broadcast the surface array data
-        call BROADCAST_SURFACE_PARMS(SFCTYPE, NXSFC, NYSFC, NSFCPAR,&
+        call shd_ext__mpiBcastSurfParam(SFCTYPE, NXSFC, NYSFC, NSFCPAR,&
             &DELXSFC, DELYSFC, SFCPARMS, GNDTEMP, GNDALBEDO)
         allocate (SFCGRIDPARMS(MAXSFCPARS*MAXNBC))
     end if
@@ -419,14 +420,14 @@ program shdom_main
             call shd_io__readCkdSize(CKDFILE, WAVENO, NG, NZCKD_)
         end if
         ! Broadcast the k-distribution array sizes
-        call BROADCAST_KDIST_SIZE(NG, NZCKD_)
+        call shd_ext__mpiBcastKdistSize(NG, NZCKD_)
         allocate (ZCKD_(NZCKD_), GASABS_(NZCKD_), DELG(NG), KABS(NZCKD_, NG))
         if (MASTERPROC) then
             MAXNG = NG; MAXNZ = NZCKD_
             call shd_io__readCkd(MAXNG, MAXNZ, CKDFILE, WAVENO, SOLFLUX,&
                 &NG, DELG, NZCKD_, ZCKD_, KABS)
         end if
-        call BROADCAST_KDIST_PARMS(SOLFLUX, NG, DELG, NZCKD_, ZCKD_, KABS)
+        call shd_ext__mpiBcastKdistParam(SOLFLUX, NG, DELG, NZCKD_, ZCKD_, KABS)
         SOLARFLUX = SOLFLUX*SOLARFLUX*abs(SOLARMU)
     else
         NG = 1
@@ -597,7 +598,7 @@ program shdom_main
             do I = 1, NUMOUT
                 if (OUTTYPES(I) .eq. 'R') then
                     if (mpiMode) then
-                        call COMPUTE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS, NPX_, NPY_,&
+                        call shd_ext__mpiComputeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                             &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
                             &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                             &BCFLAG, XDOMAIN_, YDOMAIN_, IPFLAG,&
@@ -634,7 +635,7 @@ program shdom_main
             do I = 1, NUMOUT
                 if (OUTTYPES(I) .eq. 'V') then
                     if (mpiMode) then
-                        call VISUALIZE_RADIANCE_PAR(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+                        call shd_ext__mpiVisualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                             &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
                             &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                             &BCFLAG, XDOMAIN_, YDOMAIN_, IPFLAG,&
@@ -719,7 +720,7 @@ program shdom_main
         &NPTS, NCELLS, GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR,&
         &CELLFLAGS, FLUXES, SHPTR, SOURCE, RSHPTR, RADIANCE)
 
-    call SYSTEM_CLOCK(count_end, count_rate, count_max)
+    call system_clock(count_end, count_rate, count_max)
     elapsed_time = (real(count_end) - real(count_start)) / real(count_rate)
     if (MASTERPROC) then
         if (elapsed_time .lt. 60.0) then
@@ -741,7 +742,7 @@ program shdom_main
             allocate (XALLGRID(NXT), YALLGRID(NYT))
         end if
 
-        call GATHER_OUTPUT(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
+        call shd_ext__mpiGatherOutput(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
             &IPFLAG, BCFLAG, NBPTS, NXT, NYT, NZ, NSHOUT,&
             &SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV, SUMSHTERMS,&
             &XDOMAIN_, YDOMAIN_, XALLGRID, YALLGRID,&
@@ -820,7 +821,7 @@ program shdom_main
     write (6, '(A)')'Message [shdom_main]: Actual MAX_TOTAL_MB, ADAPT_GRID_FACTOR, NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO'
     write (6, '(28X,F7.2,6X,F7.3,14X,F5.3,15X,F5.3)') MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
 
-    call END_SHDOM_MPI(NPTS, GRIDPOS, NPX_, NPY_, XSTART_, YSTART_, XDOMAIN_, YDOMAIN_,&
+    call shd_ext__mpiEnd(NPTS, GRIDPOS, NPX_, NPY_, XSTART_, YSTART_, XDOMAIN_, YDOMAIN_,&
         &NPXT, NPYT, PROPFILE, RUNNAME)
 
     if (SRCTYPE .ne. 'T') then

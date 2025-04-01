@@ -23,6 +23,7 @@ subroutine shdSolv__solveRte(&
     ! The adaptive grid stucture (NCELLS,GRIDPTR,NEIGHPTR,TREEPTR,
     ! CELLFLAGS,NPTS,GRIDPOS) is input and modified for new grid
     ! cells and points on output.
+    use shd_ext_mpi
 
     implicit none
     integer, intent(in) :: NSTOKES, NX, NY, NZ, NX1, NY1, NXSFC, NYSFC, NSFCPAR
@@ -91,13 +92,13 @@ subroutine shdSolv__solveRte(&
         &SRCTYPE, UNITS, WAVENO, WAVELEN, ALBMAX,&
         &EXTINCT, ALBEDO, LEGEN, TEMP, PLANCK, IPHASE)
     ! Get the maximum single scattering albedo over all processors
-    call TOTAL_ALBEDO_MAX(ALBMAX)
+    call shd_ext__mpiFindAlbMax(ALBMAX)
 
     ! Compute the solar transmission in DIRFLUX.
     ! Precompute Ylm's for solar direction
     if (SRCTYPE .ne. 'T') then
         if (btest(BCFLAG, 2) .or. btest(BCFLAG, 3)) then
-            call MAKE_DIRECT_PAR(1, NPTS, BCFLAG, IPFLAG, DELTAM, ML,&
+            call shd_ext__mpiMakeDirect(1, NPTS, BCFLAG, IPFLAG, DELTAM, ML,&
                 &NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
                 &GRIDPOS, NX, XGRID, NY, YGRID, DIRFLUX)
         else
@@ -237,7 +238,7 @@ subroutine shdSolv__solveRte(&
                 &(SOLCRIT .gt. ENDADAPTSOL .or. CURSPLITACC .gt. SPLITACC)&
                 &.and. .not. OUTOFMEM
             ! Make sure all processors are going to split cells if any want to
-            call UNIFY_SPLITTING(DOSPLIT, STARTSPLITACC)
+            call shd_ext__mpiUnifySplit(DOSPLIT, STARTSPLITACC)
             BETA = log(STARTSPLITACC/SPLITACC)/log(ADAPTRANGE)
             CURSPLITACC = min(CURSPLITACC, max(SPLITACC,&
                 &SPLITACC*(AVGSOLCRIT/(3.0*ENDADAPTSOL))**BETA))
@@ -257,7 +258,7 @@ subroutine shdSolv__solveRte(&
                 if (SOLCRIT .gt. STARTADAPTSOL) STARTSPLITACC = SPLITCRIT
             end if
             ! Find the maximum splitting criterion over all processors
-            call TOTAL_SPLITCRIT_MAX(SPLITCRIT)
+            call shd_ext__mpiTotalSplitCritMax(SPLITCRIT)
             if (SOLCRIT .le. ENDADAPTSOL) SPLITTESTING = .false.
         end if
 
@@ -300,7 +301,7 @@ subroutine shdSolv__solveRte(&
 
         ! Calculate the acceleration parameter and solution criterion
         !   from all the processors
-        call CALC_ACCEL_SOLCRIT(ACCELFLAG, DELJDOT, DELJOLD, DELJNEW,&
+        call shd_ext__mpiCalAccelSolCrit(ACCELFLAG, DELJDOT, DELJOLD, DELJNEW,&
             &JNORM, ACCELPAR, SOLCRIT)
 
         ! Accelerate the convergence of the source function vector
@@ -905,6 +906,8 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
     ! downwelling radiances at all discrete ordinates for the bottom
     ! boundary points.
 
+    use shd_ext_mpi
+
     implicit none
     integer NX, NY, NZ, NSTOKES, NSTLEG, ML, MM, NLM
     integer NMU, NPHI0MAX, NPHI0(NMU), NANG
@@ -953,7 +956,7 @@ subroutine PATH_INTEGRATION(NX, NY, NZ, NSTOKES, NSTLEG,&
             &BCFLAG, IPFLAG, SWEEPORD, GRIDRAD)
     end if
 
-    call FIND_BOUNDARY_POINTS(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
+    call shd_ext__mpiFindBoundaryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
         &GRIDPOS, NX, NY, NZ, XGRID, YGRID, ZGRID)
 
     LAMBERTIAN = SFCTYPE(2:2) .eq. 'L'
@@ -2129,6 +2132,8 @@ subroutine BACK_INT_GRID3D(NX, NY, NZ, NA, NPTS, NCELLS,&
     ! at the end of the ray path is interpolated from the known grid point
     ! radiances on the face.  The resulting radiances are put in GRIDRAD.
 
+    use shd_ext_mpi
+
     implicit none
     integer NX, NY, NZ, NA, NPTS, NCELLS, NSTOKES, KANG
     integer BCFLAG, IPFLAG
@@ -2219,7 +2224,7 @@ subroutine BACK_INT_GRID3D(NX, NY, NZ, NA, NPTS, NCELLS,&
             if ((GRIDPOS(3, IPT) .lt. ZGRID(IZ) .and. BITZ .eq. 0) .or.&
                 &(GRIDPOS(3, IPT) .gt. ZGRID(IZ) .and. BITZ .eq. 1)) then
                 IZ = IZ + 2*BITZ - 1
-                call CALC_BOUNDARY_RADIANCES(BCFLAG, IPFLAG, JOCT, IZ,&
+                call shd_ext__mpiCalBoundaryRad(BCFLAG, IPFLAG, JOCT, IZ,&
                     &NX, NY, NZ, XGRID, YGRID, ZGRID,&
                     &NA, NPTS, NCELLS, GRIDPTR,&
                     &NEIGHPTR, TREEPTR, CELLFLAGS, GRIDPOS,&
@@ -2412,7 +2417,7 @@ subroutine BACK_INT_GRID3D(NX, NY, NZ, NA, NPTS, NCELLS,&
                     print '(A,3(1X,F6.4),8(1X,E12.5))',&
                         &'BACK_INT_GRID3D: RAD<0 ',&
                         &xe, ye, ze, ext0, ext1, so, tau, transmit, src, abscell, rad(:)
-                    call ABORT_SHDOM_MPI('The end')
+                    call shd_ext__mpiAbort('The end')
                 end if
                 VALIDFACE = (GRIDRAD(1, I1) .ge. -0.1 .and. GRIDRAD(1, I2) .ge. -0.1&
                     &.and. GRIDRAD(1, I3) .ge. -0.1 .and. GRIDRAD(1, I4) .ge. -0.1)
@@ -2469,6 +2474,8 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
     ! across the cell is done and added to the radiance.  The radiance
     ! at the end of the ray path is interpolated from the known grid point
     ! radiances on the face.  The resulting radiances are put in GRIDRAD.
+
+    use shd_ext_mpi
 
     integer NX, NY, NZ, NA, NPTS, NCELLS, KANG, BCFLAG, IPFLAG
     integer GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
@@ -2561,7 +2568,7 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
             if ((GRIDPOS(3, IPT) .lt. ZGRID(IZ) .and. BITZ .eq. 0) .or.&
                 &(GRIDPOS(3, IPT) .gt. ZGRID(IZ) .and. BITZ .eq. 1)) then
                 IZ = IZ + 2*BITZ - 1
-                call CALC_BOUNDARY_RADIANCES(BCFLAG, IPFLAG, JOCT, IZ,&
+                call shd_ext__mpiCalBoundaryRad(BCFLAG, IPFLAG, JOCT, IZ,&
                     &NX, NY, NZ, XGRID, YGRID, ZGRID,&
                     &NA, NPTS, NCELLS, GRIDPTR,&
                     &NEIGHPTR, TREEPTR, CELLFLAGS, GRIDPOS,&
@@ -2774,7 +2781,7 @@ subroutine BACK_INT_GRID3D_UNPOL(NX, NY, NZ, NA, NPTS, NCELLS,&
                     print '(A,3(1X,F6.4),8(1X,E12.5))',&
                         &'BACK_INT_GRID3D: RAD<0 ',&
                         &XE, YE, ZE, EXT0, EXT1, SO, TAU, TRANSMIT, SRC, ABSCELL, RAD
-                    call ABORT_SHDOM_MPI('The end')
+                    call shd_ext__mpiAbort('The end')
                 end if
 
                 VALIDFACE = (GRIDRAD(I1) .ge. -0.1 .and. GRIDRAD(I2) .ge. -0.1&
@@ -3478,6 +3485,8 @@ subroutine shdSolv__splitGrid(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
     ! grid point, grid cell, or spherical harmonic arrays (sizes given
     ! by MAXIG, MAXIC, MAXIV, MAXIDO) then the OUTOFMEM flag is returned true.
 
+    use shd_ext_mpi
+
     implicit none
     integer MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX
     integer NPTS, NCELLS, BCFLAG, IPFLAG
@@ -3610,7 +3619,7 @@ subroutine shdSolv__splitGrid(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
         ! If in parallel mode, calculate all the direct beam fluxes at once
         if (SRCTYPE .ne. 'T' .and.&
             &(btest(BCFLAG, 2) .or. btest(BCFLAG, 3))) then
-            call MAKE_DIRECT_PAR(OLDNPTS + 1, NPTS, BCFLAG,&
+            call shd_ext__mpiMakeDirect(OLDNPTS + 1, NPTS, BCFLAG,&
                 &IPFLAG, DELTAM, ML, NSTLEG, NLEG,&
                 &SOLARFLUX, SOLARMU, SOLARAZ, GRIDPOS,&
                 &NX, XGRID, NY, YGRID, DIRFLUX)
