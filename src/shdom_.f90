@@ -5,14 +5,16 @@ program shdom_main
 
     use globals
     use globals_shdom
+
     use shd_init
     use shd_io_inp
     use shd_io_out
-    use shd_ext_mpi
     use shd_dir
-    use shd_comp
     use shd_shdo
     use shd_src
+    use shd_comp
+    use shd_solv_rte
+    use shd_ext_mpi
 
     implicit none
     ! Number of output files and inputs parameter per file

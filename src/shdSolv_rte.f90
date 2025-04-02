@@ -1,3 +1,25 @@
+module shd_solv_rte
+
+    use shd_init
+    use shd_dir
+    use shd_pha
+    use shd_src
+    use shd_sfc
+    use shd_shdo
+    use shd_ext_mpi
+    use shd_grid_cal
+
+    use shd_solv_int
+
+    implicit none
+
+    public :: shd_solv__solveRte
+
+    private :: shd_solv__accelSol
+    private :: shd_solv__truncateRad
+
+contains
+
 subroutine shd_solv__solveRte(&
     &NSTOKES, NX, NY, NZ, NX1, NY1, NANG,&
     &ML, MM, NLM, NMU, NPHI, NLEG, NSTLEG, NUMPHASE,&
@@ -24,17 +46,6 @@ subroutine shd_solv__solveRte(&
     ! CELLFLAGS,NPTS,GRIDPOS) is input and modified for new grid
     ! cells and points on output.
 
-    use shd_init
-    use shd_ext_mpi
-    use shd_dir
-    use shd_grid_cal
-    use shd_pha
-    use shd_sfc
-    use shd_shdo
-    use shd_solv_int
-    use shd_src
-
-    implicit none
     integer, intent(in) :: NSTOKES, NX, NY, NZ, NX1, NY1, NXSFC, NYSFC, NSFCPAR
     integer, intent(in) :: ML, MM, NLM, NMU, NPHI, NANG, NLEG, NSTLEG, NUMPHASE
     integer NPHI0(*), MAXITER, ITER, BCFLAG, IPFLAG
@@ -144,7 +155,7 @@ subroutine shd_solv__solveRte(&
         NBPTS = NX1*NY1*NZ
         NBCELLS = (NZ - 1)*(NX + ibits(BCFLAG, 0, 1) - ibits(BCFLAG, 2, 1))&
             &*(NY + ibits(BCFLAG, 1, 1) - ibits(BCFLAG, 3, 1))
-        call shd_comp__interpRad(NSTOKES, NBPTS, NPTS, RSHPTR, RADIANCE,&
+        call shd_src__interpRad(NSTOKES, NBPTS, NPTS, RSHPTR, RADIANCE,&
             &NBCELLS, NCELLS, TREEPTR, GRIDPTR, GRIDPOS)
         ! Initialize the source function from the radiance field
         call shd_src__computeSrc(NSTOKES, ML, MM, NLM,&
@@ -163,7 +174,7 @@ subroutine shd_solv__solveRte(&
 
     LAMBERTIAN = SFCTYPE(2:2) .eq. 'L'
     ! Make the pointers to the grid points on the top and bottom boundaries
-    call shd_solv__findBoundaryPnt(NPTS, NANG, LAMBERTIAN, MAXNBC, MAXBCRAD,&
+    call shd_grid__findBoundaryPnt(NPTS, NANG, LAMBERTIAN, MAXNBC, MAXBCRAD,&
         &ZGRID(1), ZGRID(NZ), GRIDPOS,&
         &NTOPPTS, NBOTPTS, BCPTR)
     if (SFCTYPE(1:1) .eq. 'V') then
@@ -362,7 +373,6 @@ subroutine shd_solv__accelSol(&
     !   Accelerates the successive order of scattering series using the
     ! input acceleration parameter (ACCELPAR).
 
-    implicit none
     integer, intent(in) :: NPTS, SHPTR(*), OSHPTR(*), NSTOKES
     real, intent(in) :: ACCELPAR, DELSOURCE(NSTOKES, *)
     real, intent(inout) :: SOURCE(NSTOKES, *)
@@ -385,57 +395,128 @@ subroutine shd_solv__accelSol(&
     return
 end subroutine shd_solv__accelSol
 
-subroutine shd_solv__findBoundaryPnt(&
-    &NPTS, NANG, LAMBERTIAN, MAXNBC, MAXBCRAD,&
-    &ZBOT, ZTOP, GRIDPOS,&
-    &NTOPPTS, NBOTPTS, BCPTR)
+subroutine shd_solv__truncateRad(HIGHORDERRAD,&
+    &NSTOKES, ML, MM, NSTLEG, NLEG, NUMPHASE,&
+    &NPTS, ALBEDO, LEGEN, IPHASE, SHPTR, RADIANCE,&
+    &MAXIR, FIXSH, SHACC, RSHPTR)
 
-    !   Returns the BCPTR pointer array for the NTOPPTS top boundary
-    ! points (BCPTR(*,1)) and the NBOTPTS bottom boundary points (BCPTR(*,2)).
-    ! All the grid points are looked at to find the boundary ones.
+    ! Computes the next radiance spherical harmonic series truncation
+    ! to use based on the current source function truncation and the
+    ! scattering properties.  The radiance truncation is the smaller
+    ! of that based on a minimum SH term radiance and that needed for
+    ! the computation of the source function.  The truncation is always
+    ! made for a complete set in the L index.  The radiance SH truncation
+    ! is set to a few higher L index than the source function, so that
+    ! the source function truncation may grow (since initialized with
+    ! a low order truncation).  The minimum radiance truncation is
+    ! L=1 so that the mean radiance and net flux terms may be computed,
+    ! unless HIGHORDERRAD is on, in which case all terms are kept.
 
-    implicit none
-    integer, intent(in) :: NPTS, NANG, MAXNBC, MAXBCRAD
-    integer, intent(inout) :: NTOPPTS, NBOTPTS
-    logical, intent(in) :: LAMBERTIAN
-    real, intent(in) :: ZBOT, ZTOP, GRIDPOS(3, NPTS)
-    integer, intent(out) :: BCPTR(MAXNBC, 2)
-    integer :: I, IT, IB, NA
+    integer NPTS, NSTOKES, ML, MM, NSTLEG, NLEG, NUMPHASE, MAXIR
+    integer SHPTR(NPTS + 1), RSHPTR(NPTS + 2)
+    integer*2 IPHASE(NPTS)
+    logical HIGHORDERRAD, FIXSH
+    real ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, *), RADIANCE(NSTOKES, *)
+    real SHACC
+    integer IRO, IR, NRO, NR, I, J, K, L, LR, LS, M, MS, ME, NS, NLM
+    integer, allocatable :: LOFJ(:)
+    logical NOTEND
+    real RADMIN
 
-    ! Loop over all points finding the top and bottom ones
-    if (LAMBERTIAN) then
-        NA = 1
-    else
-        NA = NANG/2 + 1
-    end if
+    if (FIXSH) goto 190
 
-    IT = 0
-    IB = 0
-    do I = 1, NPTS
-
-        if (GRIDPOS(3, I) .ge. ZTOP) then
-            IT = IT + 1
-            if (IT .gt. MAXNBC .or. IT .gt. MAXBCRAD) then
-                write (6, *) 'Error [_findBoundaryPnt]: MAXNBC exceeded - top.'
-                stop
-            end if
-            BCPTR(IT, 1) = I
-        end if
-
-        if (GRIDPOS(3, I) .le. ZBOT) then
-            IB = IB + 1
-            if (IB .gt. MAXNBC .or. IT + IB*NA .gt. MAXBCRAD) then
-                write (6, *) 'Error [_findBoundaryPnt]: MAXNBC exceeded - bottom.'
-                stop
-            end if
-            BCPTR(IB, 2) = I
-        end if
-
+    RADMIN = SHACC
+    NOTEND = .true.
+    ! Make the l index as a function of SH term (J)
+    NLM = (2*MM + 1)*(ML + 1) - MM*(MM + 1)
+    allocate (LOFJ(NLM))
+    J = 0
+    do L = 0, ML
+        ME = min(L, MM)
+        MS = -ME
+        do M = MS, ME
+            J = J + 1
+            LOFJ(J) = L
+        end do
     end do
 
-    NTOPPTS = IT
-    NBOTPTS = IB
+    IRO = 0
+    IR = 0
+    RSHPTR(1) = 0
+    do I = 1, NPTS
+        ! Find how many terms wanted for the radiance based on the
+        !   radiance threshold (RADMIN) (use the mean radiance as an
+        !   upper limit to the SH term radiance).
+        !   We don't have radiances for any new points, so don't use them
+        NRO = RSHPTR(I + 1) - IRO
+        if (NRO .eq. 0) NOTEND = .false.
+        if (NOTEND) then
+            if (NUMPHASE .gt. 0) then
+                K = IPHASE(I)
+            else
+                K = I
+            end if
+            LR = 1
+            do L = 1, ML
+                if (ALBEDO(I)*LEGEN(1, L, K)*RADIANCE(1, IRO + 1) .gt. RADMIN) LR = L
+            end do
+        else
+            LR = ML
+        end if
+        IRO = IRO + NRO
 
+        ! The radiance L truncation is the smaller of the radiance cutoff
+        !   from above and a few more than the source truncation, but
+        !   it is at least 1 (so low order terms are always available).
+        !   For higher order radiance option, use all terms.
+        !   But if out of memory, use the source function truncation.
+        NS = max(1, SHPTR(I + 1) - SHPTR(I))
+        LS = LOFJ(NS)
+        LR = min(LR, LS + ML/8 + 2)
+        if (HIGHORDERRAD) LR = ML
+        if (LR .le. MM) then
+            NR = (LR*(LR + 1)) + LR + 1
+        else
+            NR = (2*MM + 1)*LR - (MM*(1 + (MM - 1))) + MM + 1
+        end if
+        IR = IR + NR
+        RSHPTR(I + 1) = IR
+        if (IR .gt. MAXIR) then
+            write (6, *)&
+                &'Message [_truncateRad]: Out of memory for more radiance terms.'
+            goto 190
+        end if
+    end do
+    RSHPTR(NPTS + 2) = IR
+    deallocate (LOFJ)
     return
 
-end subroutine shd_solv__findBoundaryPnt
+    ! If out of memory or the SH truncation is fixed then
+    ! just set the radiance truncation to that of the source.
+190 continue
+
+    RSHPTR(1) = 0
+    IR = 0
+    do I = 1, NPTS
+        NR = max(4, SHPTR(I + 1) - SHPTR(I))
+        if (HIGHORDERRAD) then
+            if (ML .le. MM) then
+                NR = (ML*(ML + 1)) + ML + 1
+            else
+                NR = (2*MM + 1)*ML - (MM*(1 + (MM - 1))) + MM + 1
+            end if
+        end if
+        IR = IR + NR
+        if (IR .gt. MAXIR) then
+            write (6, *) 'Error [_truncateRad]: Really out of memory ',&
+                &'for more radiance terms.'
+            write (6, *) '  Increase MAXIV.'
+            stop
+        end if
+        RSHPTR(I + 1) = IR
+    end do
+    RSHPTR(NPTS + 2) = IR
+    return
+end subroutine shd_solv__truncateRad
+
+end module shd_solv_rte

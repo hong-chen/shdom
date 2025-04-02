@@ -6,6 +6,7 @@ module shd_src
 
     implicit none
 
+    public :: shd_src__interpRad
     public :: shd_src__computeOneSrc
     public :: shd_src__integrateSrc
     public :: shd_src__computeSrc
@@ -15,6 +16,73 @@ module shd_src
     private :: shd_src__computeSolarStokesVect
 
 contains
+
+subroutine shd_src__interpRad(&
+    &NSTOKES, OLDNPTS, NPTS, RSHPTR,&
+    &RADIANCE, NBCELLS, NCELLS, TREEPTR, GRIDPTR, GRIDPOS)
+
+    ! Interpolates the spherical harmonic radiance array to the new
+    !   grid points (>OLDNPTS) from the old grid points.
+
+    integer NSTOKES, OLDNPTS, NPTS, NBCELLS, NCELLS
+    integer RSHPTR(NPTS + 1), GRIDPTR(8, NCELLS), TREEPTR(2, NCELLS)
+    real RADIANCE(NSTOKES, *), GRIDPOS(3, *)
+    integer IP, IC, ICELL, IPARENT, IDIR, I, J, K, DIR1, DIR2, IP1, IP2
+    integer IR, IR1, IR2, NR, NR1, NR2
+    integer GRIDCORNER(2, 4, 3)
+    real RAD1(NSTOKES), RAD2(NSTOKES)
+    data GRIDCORNER/1, 2, 3, 4, 5, 6, 7, 8, 1, 3, 2, 4, 5, 7, 6, 8,&
+        &1, 5, 2, 6, 3, 7, 4, 8/
+
+    if (OLDNPTS .le. 0) return
+
+    ! Go through all the non-base grid cells
+    do ICELL = NBCELLS + 1, NCELLS
+        do IC = 1, 8
+            IP = GRIDPTR(IC, ICELL)
+            if (IP .gt. OLDNPTS) then
+                IPARENT = TREEPTR(1, ICELL)
+                ! Go through all 12 edges of parent cell to find which one h
+                do IDIR = 1, 3
+                    DIR1 = mod(IDIR - 1 + 1, 3) + 1
+                    DIR2 = mod(IDIR - 1 + 2, 3) + 1
+                    do I = 1, 4
+                        IP1 = GRIDPTR(GRIDCORNER(1, I, IDIR), IPARENT)
+                        IP2 = GRIDPTR(GRIDCORNER(2, I, IDIR), IPARENT)
+                        if (GRIDPOS(DIR1, IP1) .eq. GRIDPOS(DIR1, IP) .and.&
+                            &GRIDPOS(DIR2, IP1) .eq. GRIDPOS(DIR2, IP)) goto 120
+                    end do
+                end do
+                stop 'Error [_interpRad]: Point not on an edge.'
+120             continue
+                ! Interpolate the data from the two parent points at the
+                !   ends of the edge; assume the cell was split in half.
+                IR1 = RSHPTR(IP1)
+                IR2 = RSHPTR(IP2)
+                NR1 = RSHPTR(IP1 + 1) - RSHPTR(IP1)
+                NR2 = RSHPTR(IP2 + 1) - RSHPTR(IP2)
+                NR = max(NR1, NR2)
+                IR = RSHPTR(IP)
+                RSHPTR(IP + 1) = IR + NR
+                do J = 1, NR
+                    if (J .le. NR1) then
+                        RAD1(:) = RADIANCE(:, IR1 + J)
+                    else
+                        RAD1(:) = 0.0
+                    end if
+                    if (J .le. NR2) then
+                        RAD2(:) = RADIANCE(:, IR2 + J)
+                    else
+                        RAD2(:) = 0.0
+                    end if
+                    RADIANCE(:, IR + J) = 0.5*(RAD1(:) + RAD2(:))
+                end do
+            end if
+        end do
+    end do
+
+    return
+end subroutine shd_src__interpRad
 
 subroutine shd_src__computeOneSrc(NSTOKES,&
     &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&

@@ -14,7 +14,6 @@ set(SHDOM_LIB_SRCS
     shdGrid_cal.f90
     shdSolv_rte.f90
     shdSolv_int.f90
-    shdSolv_rad.f90
     shdIO_inp.f90
     shdIO_out.f90
     shdSfc.f90

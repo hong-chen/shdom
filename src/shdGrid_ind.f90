@@ -6,6 +6,7 @@ module shd_grid_ind
   private
 
   public :: shd_grid__findGridCell
+  public :: shd_grid__findBoundaryPnt
   public :: shd_grid__matchGridPnt
   public :: shd_grid__makeNewGridPnt
 
@@ -186,6 +187,61 @@ subroutine shd_grid__findGridCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
     return
 
 end subroutine shd_grid__findGridCell
+
+subroutine shd_grid__findBoundaryPnt(&
+    &NPTS, NANG, LAMBERTIAN, MAXNBC, MAXBCRAD,&
+    &ZBOT, ZTOP, GRIDPOS,&
+    &NTOPPTS, NBOTPTS, BCPTR)
+
+    !   Returns the BCPTR pointer array for the NTOPPTS top boundary
+    ! points (BCPTR(*,1)) and the NBOTPTS bottom boundary points (BCPTR(*,2)).
+    ! All the grid points are looked at to find the boundary ones.
+
+    implicit none
+    integer, intent(in) :: NPTS, NANG, MAXNBC, MAXBCRAD
+    integer, intent(inout) :: NTOPPTS, NBOTPTS
+    logical, intent(in) :: LAMBERTIAN
+    real, intent(in) :: ZBOT, ZTOP, GRIDPOS(3, NPTS)
+    integer, intent(out) :: BCPTR(MAXNBC, 2)
+    integer :: I, IT, IB, NA
+
+    ! Loop over all points finding the top and bottom ones
+    if (LAMBERTIAN) then
+        NA = 1
+    else
+        NA = NANG/2 + 1
+    end if
+
+    IT = 0
+    IB = 0
+    do I = 1, NPTS
+
+        if (GRIDPOS(3, I) .ge. ZTOP) then
+            IT = IT + 1
+            if (IT .gt. MAXNBC .or. IT .gt. MAXBCRAD) then
+                write (6, *) 'Error [_findBoundaryPnt]: MAXNBC exceeded - top.'
+                stop
+            end if
+            BCPTR(IT, 1) = I
+        end if
+
+        if (GRIDPOS(3, I) .le. ZBOT) then
+            IB = IB + 1
+            if (IB .gt. MAXNBC .or. IT + IB*NA .gt. MAXBCRAD) then
+                write (6, *) 'Error [_findBoundaryPnt]: MAXNBC exceeded - bottom.'
+                stop
+            end if
+            BCPTR(IB, 2) = I
+        end if
+
+    end do
+
+    NTOPPTS = IT
+    NBOTPTS = IB
+
+    return
+
+end subroutine shd_grid__findBoundaryPnt
 
 subroutine shd_grid__matchGridPnt(&
     &XP, YP, ZP, ICELL, IFACE,&
