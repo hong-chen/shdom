@@ -1224,7 +1224,7 @@ subroutine shd_comp__integrateRay1(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
     YE = Y0
     ZE = Z0
     ! ZE = MAX(MIN(Z0,DBLE(ZGRID(NZ))),DBLE(ZGRID(1)))
-    call shd_comp__findGridCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
+    call shd_grid__findGridCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
         &NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS,&
         &BCFLAG, IPFLAG, XE, YE, ZE, ICELL)
     ! print '(A,5(1X,F8.5),1X,I6)',&
@@ -2438,7 +2438,7 @@ subroutine shd_comp__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
     XE = X0
     YE = Y0
     ZE = Z0
-    call shd_comp__findGridCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
+    call shd_grid__findGridCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
         &NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS,&
         &BCFLAG, IPFLAG, XE, YE, ZE, ICELL)
     ! print '(A,5(1X,F8.5),1X,I6)', &
@@ -2663,173 +2663,6 @@ subroutine shd_comp__interpField(ICELL, GRIDPTR, GRIDPOS,&
     end do
     return
 end subroutine
-
-subroutine shd_comp__findGridCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
-    &NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS,&
-    &BCFLAG, IPFLAG, X0, Y0, Z0, ICELL)
-
-    !   Locates the grid cell in the tree structure containing the
-    ! specified point (X0,Y0,Z0), and returns the cell pointer ICELL.
-    ! First the base grid cell is found (using NX,NY,NZ, XGRID,YGRID,ZGRID),
-    ! and the tree is traced down to find the smallest cell containing
-    ! the point.
-
-    implicit none
-    integer NX, NY, NZ, NCELLS, ICELL, BCFLAG, IPFLAG
-    integer GRIDPTR(8, NCELLS), TREEPTR(2, NCELLS)
-    integer*2 CELLFLAGS(NCELLS)
-    double precision X0, Y0, Z0
-    real XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ)
-    real GRIDPOS(3, *)
-    integer IL, IU, IM, IX, IY, IZ, NXC, NYC, IC, IPTR, DIR, IBITS
-    double precision XDOMAIN, YDOMAIN
-
-    ! Move point to within horizontal domain if periodic
-    if (.not. (btest(BCFLAG, 0) .or. btest(BCFLAG, 2))) then
-        XDOMAIN = XGRID(NX + 1) - XGRID(1)
-        if (X0 .lt. XGRID(1)) then
-            X0 = X0 - XDOMAIN*(int((X0 - XGRID(1))/XDOMAIN) - 1)
-        else if (X0 .gt. XGRID(NX + 1)) then
-            X0 = X0 - XDOMAIN*int((X0 - XGRID(1))/XDOMAIN)
-        end if
-    end if
-    if (.not. (btest(BCFLAG, 1) .or. btest(BCFLAG, 3))) then
-        YDOMAIN = YGRID(NY + 1) - YGRID(1)
-        if (Y0 .lt. YGRID(1)) then
-            Y0 = Y0 - YDOMAIN*(int((Y0 - YGRID(1))/YDOMAIN) - 1)
-        else if (Y0 .gt. YGRID(NY + 1)) then
-            Y0 = Y0 - YDOMAIN*int((Y0 - YGRID(1))/YDOMAIN)
-        end if
-    end if
-
-    ! Find the base grid cell (base grid does not have to be even sp
-    !   so do binary search in X, Y, and Z)
-    !   Special case for independent pixel: get closest grid column.
-    IL = 0
-    if (btest(IPFLAG, 0)) then
-        IU = NX
-        do while (IU - IL .gt. 1)
-            IM = (IU + IL)/2
-            if (X0 .ge. 0.5*(XGRID(IM) + XGRID(IM + 1))) then
-                IL = IM
-            else
-                IU = IM
-            end if
-        end do
-        IL = IL + 1
-    else
-        IU = NX + 1
-        do while (IU - IL .gt. 1)
-            IM = (IU + IL)/2
-            if (X0 .ge. XGRID(IM)) then
-                IL = IM
-            else
-                IU = IM
-            end if
-        end do
-    end if
-    IX = max(IL, 1)
-
-    IL = 0
-    if (btest(IPFLAG, 1)) then
-        IU = NY
-        do while (IU - IL .gt. 1)
-            IM = (IU + IL)/2
-            if (Y0 .ge. 0.5*(YGRID(IM) + YGRID(IM + 1))) then
-                IL = IM
-            else
-                IU = IM
-            end if
-        end do
-        IL = IL + 1
-    else
-        IU = NY + 1
-        do while (IU - IL .gt. 1)
-            IM = (IU + IL)/2
-            if (Y0 .ge. YGRID(IM)) then
-                IL = IM
-            else
-                IU = IM
-            end if
-        end do
-    end if
-    IY = max(IL, 1)
-
-    IL = 0
-    IU = NZ
-    do while (IU - IL .gt. 1)
-        IM = (IU + IL)/2
-        if (Z0 .ge. ZGRID(IM)) then
-            IL = IM
-        else
-            IU = IM
-        end if
-    end do
-    IZ = max(IL, 1)
-
-    ! Special case for open boundary conditions: if outside the 1 to
-    !   domain then use the IP grid cells at either end
-    NXC = NX
-    if (btest(BCFLAG, 0)) then
-        NXC = NX + 1
-        if (X0 .lt. XGRID(1)) then
-            ! X0 = XGRID(1)
-            IX = 1
-        else if (X0 .gt. XGRID(NX)) then
-            ! X0 = XGRID(NX)
-            IX = NX + 1
-        else
-            IX = IX + 1
-        end if
-    end if
-    if (btest(BCFLAG, 2) .and. .not. btest(IPFLAG, 0)) then
-        NXC = NX - 1
-        IX = min(IX, NXC)
-    end if
-    NYC = NY
-    if (btest(BCFLAG, 1)) then
-        NYC = NY + 1
-        if (Y0 .lt. YGRID(1)) then
-            ! Y0 = YGRID(1)
-            IY = 1
-        else if (Y0 .gt. YGRID(NY)) then
-            ! Y0 = YGRID(NY)
-            IY = NY + 1
-        else
-            IY = IY + 1
-        end if
-    end if
-    if (btest(BCFLAG, 3) .and. .not. btest(IPFLAG, 1)) then
-        NYC = NY - 1
-        IY = min(IY, NYC)
-    end if
-
-    ! Get the base grid cell pointer
-    ICELL = IZ + (NZ - 1)*(IY - 1) + (NZ - 1)*NYC*(IX - 1)
-
-    !   Trace down the tree: point to the positive child cell, get the
-    ! grid point that is on the negative (X,Y,Z) side, use the
-    ! flags to find which dimension (X,Y,Z) the parent cell was
-    ! split in, then compare the grid point with the test point
-    ! (X0,Y0,Z0) to find which child cell (pos or neg) the test
-    ! point is in.
-    do while (TREEPTR(2, ICELL) .gt. 0)
-        DIR = ibits(int(CELLFLAGS(ICELL)), 2, 2)
-        IC = TREEPTR(2, ICELL) + 1
-        IPTR = GRIDPTR(1, IC)
-        if (DIR .eq. 1) then
-            if (X0 .lt. GRIDPOS(1, IPTR)) IC = IC - 1
-        else if (DIR .eq. 2) then
-            if (Y0 .lt. GRIDPOS(2, IPTR)) IC = IC - 1
-        else if (DIR .eq. 3) then
-            if (Z0 .lt. GRIDPOS(3, IPTR)) IC = IC - 1
-        end if
-        ICELL = IC
-    end do
-
-    return
-
-end subroutine shd_comp__findGridCell
 
 subroutine shd_comp__computeLegendre(COSSCAT, NLEG, P)
 

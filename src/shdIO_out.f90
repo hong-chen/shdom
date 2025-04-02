@@ -476,7 +476,7 @@ subroutine shd_io__outputResult(&
                 X0 = XGRID(1)
                 do JX = 1, NXOUT
                     IDATA = IDATA + 1
-                    call shd_comp__findGridCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
+                    call shd_grid__findGridCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
                         & NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS,&
                         & BCFLAG, IPFLAG, X0, Y0, Z0, ICELL)
                     call shd_comp__interpField(ICELL, GRIDPTR, GRIDPOS,&
@@ -526,7 +526,7 @@ subroutine shd_io__outputResult(&
             !do JY = 1, NYOUT
             !    X0 = XGRID(1)
             !    do JX = 1, NXOUT
-            !        call shd_comp__findGridCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
+            !        call shd_grid__findGridCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
             !            & NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS,&
             !            & BCFLAG, IPFLAG, X0, Y0, Z0, ICELL)
             !        call shd_comp__interpField(ICELL, GRIDPTR, GRIDPOS,&
