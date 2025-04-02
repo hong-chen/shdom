@@ -1029,6 +1029,8 @@ logical function sweepCellBase(BCFLAG, NXC, NYC, NZ, IOCT, ICELL)
     ! Compute the base grid cell
     ICELL = IZ + (NZ - 1)*(IY - 1) + (NZ - 1)*NYC*(IX - 1)
 
+    return
+
 end function sweepCellBase
 
 logical function sweepCellNext(BCFLAG, NXC, NYC, NZ, IOCT,&
@@ -1101,6 +1103,8 @@ logical function sweepCellNext(BCFLAG, NXC, NYC, NZ, IOCT,&
 
     ICELL = IC
     sweepCellNext = .true.
+
+    return
 
 end function sweepCellNext
 
