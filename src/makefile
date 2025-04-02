@@ -23,10 +23,8 @@ TARGETS = bin shdom shdom_ propgen make_mie_table make_tmatrix_table plotscattab
 ifeq ($(useOMP), yes)
 	# openMPI
 	FFLAGS += -fopenmp
-	SHDOMOBJS = shdSolv.o shdComp.o shdIO_inp.o shdIO_out.o shdSurf_brdf.o fftpack.o globals.o
-else
-	SHDOMOBJS = shdSolv.o shdComp.o shdIO_inp.o shdIO_out.o shdSurf_brdf.o fftpack.o globals.o
 endif
+SHDOMOBJS = shdInit.o shdGrid.o shdSolv.o shdComp.o shdIO_inp.o shdIO_out.o shdSurf_brdf.o fftpack.o globals.o
 
 ifeq ($(FC), mpif90)
 	UseMPI = yes
@@ -65,7 +63,13 @@ shdom_: shdom_.o $(SHDOMOBJS)
 shdom_.o: shdom_.f90 $(SHDOMOBJS)
 	$(F90) -c $(F90FLAGS) shdom_.f90
 
-shdSolv.o: shdSolv.f90 $(SHDOMMPIOBJ) shdSurf_brdf.o
+shdInit.o: shdInit.f90 $(SHDOMMPIOBJ) globals.o
+	$(F90) -c $(F90FLAGS) shdInit.f90
+
+shdGrid.o: shdGrid.f90 $(SHDOMMPIOBJ) globals.o
+	$(F90) -c $(F90FLAGS) shdGrid.f90
+
+shdSolv.o: shdSolv.f90 $(SHDOMMPIOBJ) shdSurf_brdf.o shdInit.o
 	$(F90) -c $(F90FLAGS) shdSolv.f90
 
 shdComp.o: shdComp.f90 globals.o $(SHDOMMPIOBJ)

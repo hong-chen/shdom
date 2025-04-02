@@ -5,6 +5,7 @@ program shdom_main
 
     use globals
     use globals_shdom
+    use shd_init
     use shd_io_inp
     use shd_io_out
     use shd_ext_mpi
@@ -541,7 +542,7 @@ program shdom_main
     ! NEWGRIDFLAG is from shd_io__restoreState call
     if (NEWGRIDFLAG) then
         ! Make the internal base grid lines
-        call shd_init__makeNewGrids(BCFLAG, GRIDTYPE, NPX_, NPY_, NPZ_, NX, NY, NZ,&
+        call shd_init__makeGrid(BCFLAG, GRIDTYPE, NPX_, NPY_, NPZ_, NX, NY, NZ,&
             &XSTART_, YSTART_, DELX_, DELY_, ZLEVELS_,&
             &XGRID, YGRID, ZGRID)
     end if
@@ -562,7 +563,7 @@ program shdom_main
         ! If this is the first time through or we always want a base grid,
         !   then make the base grid point positions and grid cell structure.
         if (BASEOUT .or. (IG .eq. NG .and. NEWGRIDFLAG)) then
-            call shd_init__makeCellStructure(BCFLAG, IPFLAG,&
+            call shd_init__makeCell(BCFLAG, IPFLAG,&
                 &NX, NY, NZ, NX1, NY1, NPTS, NCELLS,&
                 &XGRID, YGRID, ZGRID, GRIDPOS,&
                 &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS)
@@ -682,7 +683,7 @@ program shdom_main
 
         if (BASEOUT) then
             ! If outputting only the base grid then throw out the other points
-            call shd_init__makeCellStructure(BCFLAG, IPFLAG,&
+            call shd_init__makeCell(BCFLAG, IPFLAG,&
                 &NX, NY, NZ, NX1, NY1,&
                 &NPTS, NCELLS, XGRID, YGRID, ZGRID, GRIDPOS,&
                 &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS)

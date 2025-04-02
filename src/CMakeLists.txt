@@ -3,6 +3,8 @@
 #
 set(SHDOM_LIB_SRCS
     globals.f90
+    shdInit.f90
+    shdGrid.f90
     shdIO_inp.f90
     shdIO_out.f90
     shdSurf_brdf.f90
