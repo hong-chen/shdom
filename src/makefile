@@ -24,7 +24,7 @@ ifeq ($(useOMP), yes)
 	# openMPI
 	FFLAGS += -fopenmp
 endif
-SHDOMOBJS = shdInit.o shdGrid.o shdSolv.o shdComp.o shdIO_inp.o shdIO_out.o shdSurf.o fftpack.o globals.o
+SHDOMOBJS = shdInit.o shdGrid.o shdSolv.o shdInteg.o shdComp.o shdIO_inp.o shdIO_out.o shdSurf.o fftpack.o globals.o
 
 ifeq ($(FC), mpif90)
 	UseMPI = yes
@@ -71,6 +71,9 @@ shdGrid.o: shdGrid.f90 $(SHDOMMPIOBJ) globals.o
 
 shdSolv.o: shdSolv.f90 $(SHDOMMPIOBJ) shdSurf.o shdInit.o
 	$(F90) -c $(F90FLAGS) shdSolv.f90
+
+shdInteg.o: shdInteg.f90 $(SHDOMMPIOBJ)
+	$(F90) -c $(F90FLAGS) shdInteg.f90
 
 shdComp.o: shdComp.f90 globals.o $(SHDOMMPIOBJ) shdGrid.o
 	$(F90) -c $(F90FLAGS) shdComp.f90
