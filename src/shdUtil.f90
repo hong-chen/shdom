@@ -10,6 +10,8 @@ module shd_util
     public :: shd_util__computeGausQuadDble
     public :: shd_util__computePlanck
 
+    !public :: shd_util__ssort
+
     private :: shd_util__integratePlanck
     private :: integralLow
     private :: integralHigh
