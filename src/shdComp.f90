@@ -739,7 +739,10 @@ subroutine shd_comp__integrateRay1(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
     ! ray location (XE,YE,ZE) and side of the domain (1=-X,2=+X,3=-Y,4=+
     ! 5=-Z,6=+Z).
 
+    use shd_grid
+
     implicit none
+
     integer BCFLAG, IPFLAG, NSTOKES, NSTLEG, NSTPHASE, NSCATANGLE
     integer NX, NY, NZ, NPTS, NCELLS, SIDE
     integer ML, MM, NLM, NLEG, NUMPHASE
@@ -1065,7 +1068,7 @@ subroutine shd_comp__integrateRay1(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
         ! Get the next cell to go to
         INEXTCELL = NEIGHPTR(IFACE, ICELL)
         if (INEXTCELL .lt. 0) then
-            call shd_comp__moveNextCell(XN, YN, ZN, IFACE, JFACE, ICELL, GRIDPOS,&
+            call shd_grid__getNextCell(XN, YN, ZN, IFACE, JFACE, ICELL, GRIDPOS,&
                 &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXTCELL)
         end if
         ! If going to same or larger face then use previous face
@@ -2016,7 +2019,10 @@ subroutine shd_comp__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
     ! ray location (XE,YE,ZE) and side of the domain (1=-X,2=+X,3=-Y,4=+Y,
     ! 5=-Z,6=+Z).
 
+    use shd_grid
+
     implicit none
+
     integer BCFLAG, IPFLAG, NSTOKES, NX, NY, NZ, NPTS, NCELLS, SIDE
     integer GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
     integer*2 CELLFLAGS(NCELLS)
@@ -2222,7 +2228,7 @@ subroutine shd_comp__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
         ! Get the next cell to go to
         INEXTCELL = NEIGHPTR(IFACE, ICELL)
         if (INEXTCELL .lt. 0) then
-            call shd_comp__moveNextCell(XN, YN, ZN, IFACE, JFACE, ICELL, GRIDPOS,&
+            call shd_grid__getNextCell(XN, YN, ZN, IFACE, JFACE, ICELL, GRIDPOS,&
                 &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXTCELL)
         end if
         ! Get the four grid points on the intersection face for

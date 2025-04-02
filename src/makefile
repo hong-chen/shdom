@@ -72,13 +72,13 @@ shdGrid.o: shdGrid.f90 $(SHDOMMPIOBJ) globals.o
 shdSolv.o: shdSolv.f90 $(SHDOMMPIOBJ) shdSurf_brdf.o shdInit.o
 	$(F90) -c $(F90FLAGS) shdSolv.f90
 
-shdComp.o: shdComp.f90 globals.o $(SHDOMMPIOBJ)
+shdComp.o: shdComp.f90 globals.o $(SHDOMMPIOBJ) shdGrid.o
 	$(F90) -c $(F90FLAGS) shdComp.f90
 
 shdIO_inp.o: shdIO_inp.f90 globals.o
 	$(F90) -c $(F90FLAGS) shdIO_inp.f90
 
-shdIO_out.o: shdIO_out.f90 globals.o
+shdIO_out.o: shdIO_out.f90 globals.o shdGrid.o
 	$(F90) -c $(F90FLAGS) shdIO_out.f90
 
 shdSurf_brdf.o: shdSurf_brdf.f90 globals.o

@@ -1,6 +1,7 @@
 module shd_io_out
 
   use globals
+  use shd_grid
 
   implicit none
   private
@@ -2309,8 +2310,8 @@ subroutine shd_io__outputCellSplit(&
     ! Loop over all the cells
     do ICELL = 1, NCELLS
         ! Get the adaptive grid criterion for the 3 directions
-        call shd_comp__testCellSplit(GRIDPTR, GRIDPOS, EXTINCT,&
-            &SHPTR, SOURCE, ICELL,&
+        call shd_grid__testCellSplit(GRIDPTR, GRIDPOS, EXTINCT,&
+            &SHPTR, NSTOKES, SOURCE, ICELL,&
             &ADAPTCRIT, MAXADAPT, IDIR)
         ! Compute the cell center location and mean extinction
         IP1 = GRIDPTR(1, ICELL)
