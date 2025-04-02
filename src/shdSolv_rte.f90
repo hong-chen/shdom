@@ -163,11 +163,11 @@ subroutine shd_solv__solveRte(&
         ! If this is a variable surface then bilinearly interpolate
         !   the surface temperature and reflection parameters to the
         !   bottom grid points.
-        call shd_comp__interpSurfParams(NBOTPTS, BCPTR(1, 2), GRIDPOS,&
+        call shd_sfc__interpSfc(NBOTPTS, BCPTR(1, 2), GRIDPOS,&
             &SRCTYPE, WAVENO, WAVELEN, UNITS,&
             &NXSFC, NYSFC, DELXSFC, DELYSFC, NSFCPAR, SFCPARMS,&
             &SFCGRIDPARMS)
-        call shd_init__checkSurfUnif(NXSFC, NYSFC, NSFCPAR, SFCPARMS,&
+        call shd_init__checkSfcU(NXSFC, NYSFC, NSFCPAR, SFCPARMS,&
             &UNIFORM_SFC_BRDF)
         if (UNIFORM_SFC_BRDF) then
             if (NSTOKES*(NMU/2)*NPHI0MAX .gt.&

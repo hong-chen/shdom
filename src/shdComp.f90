@@ -46,20 +46,20 @@ subroutine shd_comp__computeRad(&
     !╰──────────────────────────────────────────────────────────────╯!
 
     ! Make the isotropic radiances for the top boundary
-    call shd_comp__computeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
+    call shd_init__makeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
         &UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
 
     ! Make the bottom boundary radiances for the Lambertian surfaces.
     ! Compute the upwelling bottom radiances using the downwelling flu
     if (SFCTYPE .eq. 'FL') then
 
-        call shd_comp__computeRadSurfFL(NBOTPTS, BCPTR(1, 2),&
+        call shd_init__makeSfcRadFL(NBOTPTS, BCPTR(1, 2),&
             &DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO,&
             &WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1, 1 + NTOPPTS))
 
     else if (SFCTYPE .eq. 'VL') then
 
-        call shd_comp__computeRadSurfVL(NBOTPTS, BCPTR(1, 2),&
+        call shd_init__makeSfcRadVL(NBOTPTS, BCPTR(1, 2),&
             &DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS,&
             &NSTOKES, BCRAD(1, 1 + NTOPPTS))
 
@@ -132,7 +132,7 @@ subroutine shd_comp__computeRad(&
                 end do
             else
                 if (.not. LAMBERTIAN) then
-                    call shd_comp__computeRadSurfVari(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
+                    call shd_init__makeSfcRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
                         &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MUOUT, PHIOUT,&
                         &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
                         &SFCTYPE, NSFCPAR, SFCGRIDPARMS, NSTOKES,&
@@ -264,16 +264,16 @@ subroutine shd_comp__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     end if
 
     ! Make the isotropic radiances for the top boundary
-    call shd_comp__computeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
+    call shd_init__makeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
         &UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
     ! Make the bottom boundary radiances for the Lambertian surfaces
     !   Compute the upwelling bottom radiances using the downwelling
     if (SFCTYPE .eq. 'FL') then
-        call shd_comp__computeRadSurfFL(NBOTPTS, BCPTR(1, 2),&
+        call shd_init__makeSfcRadFL(NBOTPTS, BCPTR(1, 2),&
             &DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO,&
             &WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1, 1 + NTOPPTS))
     else if (SFCTYPE .eq. 'VL') then
-        call shd_comp__computeRadSurfVL(NBOTPTS, BCPTR(1, 2),&
+        call shd_init__makeSfcRadVL(NBOTPTS, BCPTR(1, 2),&
             &DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS,&
             &NSTOKES, BCRAD(1, 1 + NTOPPTS))
     end if
@@ -948,7 +948,7 @@ subroutine shd_comp__findBoundaryRad(NSTOKES, XB, YB, MU2, PHI2,&
                 &stop 'Error [_findBoundaryRad]: Not at boundary.'
 
             if (.not. LAMBERTIAN) then
-                call shd_comp__computeRadSurfVari(NBOTPTS, IBC, IBC, BCPTR(1, 2),&
+                call shd_init__makeSfcRadV(NBOTPTS, IBC, IBC, BCPTR(1, 2),&
                     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MU2, PHI2,&
                     &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
                     &SFCTYPE, NSFCPAR, SFCGRIDPARMS, NSTOKES,&

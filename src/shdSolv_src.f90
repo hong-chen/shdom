@@ -345,9 +345,9 @@ subroutine shd_comp__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
         &BCFLAG, IPFLAG, XE, YE, ZE, ICELL)
     ! print '(A,5(1X,F8.5),1X,I6)', &
     !     &'_integrateSrc:', X0, Y0, Z0, MU, PHI, ICELL
-    call shd_comp__interpField(ICELL, GRIDPTR, GRIDPOS,&
+    call shd_util__interpTriLin(ICELL, GRIDPTR, GRIDPOS,&
         &XE, YE, ZE, 1, EXTINCT, 1, 1, EXT1)
-    call shd_comp__interpField(ICELL, GRIDPTR, GRIDPOS,&
+    call shd_util__interpTriLin(ICELL, GRIDPTR, GRIDPOS,&
         &XE, YE, ZE, NSTOKES, SOURCE, 1, NSTOKES, SRCEXT1)
     SRCEXT1(1) = max(0.0, SRCEXT1(1))
 
@@ -401,7 +401,7 @@ subroutine shd_comp__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
 
         ! Find the optical path across the grid cell and figure how
         !   many subgrid intervals to use
-        call shd_comp__interpField(ICELL, GRIDPTR, GRIDPOS,&
+        call shd_util__interpTriLin(ICELL, GRIDPTR, GRIDPOS,&
             &XN, YN, ZN, 1, EXTINCT, 1, 1, EXTN)
         TAUGRID = SO*0.5*(EXT1(1) + EXTN(1))
         NTAU = max(1, 1 + int(TAUGRID/TAUTOL))
@@ -424,10 +424,10 @@ subroutine shd_comp__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
             if (IT .eq. NTAU) then
                 EXT0(1) = EXTN(1)
             else
-                call shd_comp__interpField(ICELL, GRIDPTR, GRIDPOS,&
+                call shd_util__interpTriLin(ICELL, GRIDPTR, GRIDPOS,&
                     &XI, YI, ZI, 1, EXTINCT, 1, 1, EXT0)
             end if
-            call shd_comp__interpField(ICELL, GRIDPTR, GRIDPOS,&
+            call shd_util__interpTriLin(ICELL, GRIDPTR, GRIDPOS,&
                 &XI, YI, ZI, NSTOKES, SOURCE, 1, NSTOKES, SRCEXT0)
             SRCEXT0(1) = max(0.0, SRCEXT0(1))
 
@@ -508,7 +508,7 @@ subroutine shd_comp__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
         else if (GRIDRAD(1, I1) .ge. 0.0 .and. GRIDRAD(1, I2) .ge. 0.0 .and.&
             &GRIDRAD(1, I3) .ge. 0.0 .and. GRIDRAD(1, I4) .ge. 0.0) then
             VALIDRAD = .true.
-            call shd_comp__interpField(ICELL, GRIDPTR, GRIDPOS, XI, YI, ZI,&
+            call shd_util__interpTriLin(ICELL, GRIDPTR, GRIDPOS, XI, YI, ZI,&
                 &NSTOKES, GRIDRAD, 1, NSTOKES, RAD0)
             RADIANCE(:) = RADIANCE(:) + TRANSMIT*RAD0(:)
         else

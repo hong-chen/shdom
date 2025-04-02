@@ -1,30 +1,24 @@
-subroutine shd_init__checkSurfUnif(NXSFC, NYSFC, NSFCPAR, SFCPARMS,&
-    &UNIFORM_SFC_BRDF)
+module shd_sfc
 
-    !   Checks to see if the surface reflection parameters are uniform,
-    ! and if so sets the UNIFORM_SFC_BRDF flag.  The temperature need
-    ! not be uniform.
+    use globals
+    use shd_util
 
-    integer NXSFC, NYSFC, NSFCPAR
-    real SFCPARMS(NSFCPAR, NXSFC + 1, NYSFC + 1)
-    logical UNIFORM_SFC_BRDF
-    integer IX, IY, J
+    implicit none
+    private
 
-    UNIFORM_SFC_BRDF = .true.
-    do IY = 1, NYSFC
-        do IX = 1, NXSFC
-            do J = 2, NSFCPAR
-                if (SFCPARMS(J, IX, IY) .ne. SFCPARMS(J, 1, 1)) then
-                    UNIFORM_SFC_BRDF = .false.
-                    return
-                end if
-            end do
-        end do
-    end do
-    return
-end subroutine shd_init__checkSurfUnif
+    public :: shd_sfc__interpSfc
 
-subroutine shd_comp__interpSurfParams(NBOTPTS, BCPTR, GRIDPOS,&
+    public :: shd_sfc__brdfSurface
+    public :: shd_sfc__brdfFresnel
+    public :: shd_sfc__brdfDiner
+    public :: shd_sfc__brdfRPV
+    public :: shd_sfc__brdfLSRT
+    public :: shd_sfc__brdfOcean
+
+contains
+
+subroutine shd_sfc__interpSfc(&
+    &NBOTPTS, BCPTR, GRIDPOS,&
     &SRCTYPE, WAVENO, WAVELEN, UNITS,&
     &NXSFC, NYSFC, DELXSFC, DELYSFC, NSFCPAR, SFCPARMS,&
     &SFCGRIDPARMS)
@@ -68,31 +62,16 @@ subroutine shd_comp__interpSurfParams(NBOTPTS, BCPTR, GRIDPOS,&
             PLANCK = 0.0
         else
             TEMP = SFCGRIDPARMS(1, IBC)
-            call shd_comp__computePlanck(TEMP, UNITS, WAVENO, WAVELEN, PLANCK)
+            call shd_util__computePlanck(TEMP, UNITS, WAVENO, WAVELEN, PLANCK)
         end if
         SFCGRIDPARMS(1, IBC) = PLANCK
     end do
+
     return
-end subroutine shd_comp__interpSurfParams
 
+end subroutine shd_sfc__interpSfc
 
-module shd_surf
-
-    use globals
-
-    implicit none
-    private
-
-    public :: shd_surf__brdfSurface
-    public :: shd_surf__brdfFresnel
-    public :: shd_surf__brdfDiner
-    public :: shd_surf__brdfRPV
-    public :: shd_surf__brdfLSRT
-    public :: shd_surf__brdfOcean
-
-contains
-
-subroutine shd_surf__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
+subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
     &MU2, PHI2, MU1, PHI1, NSTOKES, REFLECT)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
@@ -132,14 +111,14 @@ subroutine shd_surf__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
     else if (SFCTYPE .eq. 'W' .or. SFCTYPE .eq. 'w') then
 
         ! W: Fresnel reflection with Gaussian distribution of slopes
-        call shd_surf__brdfFresnel(REFPARMS(1), REFPARMS(2),&
+        call shd_sfc__brdfFresnel(REFPARMS(1), REFPARMS(2),&
             &REFPARMS(3), MU1, MU2, PHI1, PHI2, NSTOKES, REFLECT)
 
     else if (SFCTYPE .eq. 'D' .or. SFCTYPE .eq. 'd') then
 
         ! D: Diner et al., depolarizing modified RPV + Fresnel reflection
         !   from microfacets with uniform or Gaussian distribution of s
-        call shd_surf__brdfDiner(REFPARMS(1), REFPARMS(2), REFPARMS(3),&
+        call shd_sfc__brdfDiner(REFPARMS(1), REFPARMS(2), REFPARMS(3),&
             &REFPARMS(4), REFPARMS(5),&
             &-MU1, MU2, PHI2 - PHI1, NSTOKES, REFLECT)
 
@@ -150,7 +129,7 @@ subroutine shd_surf__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
             stop 'Error [_brdfSurface]: RPV BRDF is only for unpolarized case'
         end if
 
-        call shd_surf__brdfRPV(REFPARMS(1), REFPARMS(2),&
+        call shd_sfc__brdfRPV(REFPARMS(1), REFPARMS(2),&
             &REFPARMS(3), -MU1, MU2, PHI1-PHI2-PI_, REFLECT(1, 1))
 
     else if (SFCTYPE .eq. 'T' .or. SFCTYPE .eq. 't') then
@@ -161,7 +140,7 @@ subroutine shd_surf__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
         end if
 
         ! T: LSRT model
-        call shd_surf__brdfLSRT(REFPARMS(1), REFPARMS(2),&
+        call shd_sfc__brdfLSRT(REFPARMS(1), REFPARMS(2),&
             &REFPARMS(3), -MU1, MU2, PHI1-PHI2-PI_, REFLECT(1, 1))
 
     else if (SFCTYPE .eq. 'O' .or. SFCTYPE .eq. 'o') then
@@ -171,7 +150,7 @@ subroutine shd_surf__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
             stop 'Error [_brdfSurface]: Ocean BRDF from 6S is only for unpolarized case'
         end if
 
-        call shd_surf__brdfOcean(REFPARMS(1), -1., REFPARMS(2), WAVELEN,&
+        call shd_sfc__brdfOcean(REFPARMS(1), -1., REFPARMS(2), WAVELEN,&
             & -MU1, MU2, PHI1 - PHI2, PHI1, REFLECT(1, 1))
 
     else
@@ -179,9 +158,9 @@ subroutine shd_surf__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
     end if
 
     return
-end subroutine shd_surf__brdfSurface
+end subroutine shd_sfc__brdfSurface
 
-subroutine shd_surf__brdfFresnel(MRE, MIM, WINDSPEED,&
+subroutine shd_sfc__brdfFresnel(MRE, MIM, WINDSPEED,&
     &MUI, MUR, PHII, PHIR, NSTOKES, REFLECT)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
@@ -351,9 +330,9 @@ subroutine shd_surf__brdfFresnel(MRE, MIM, WINDSPEED,&
 
     return
 
-end subroutine shd_surf__brdfFresnel
+end subroutine shd_sfc__brdfFresnel
 
-subroutine shd_surf__brdfDiner(A, K, B, ZETA, SIGMA,&
+subroutine shd_sfc__brdfDiner(A, K, B, ZETA, SIGMA,&
     &MU1, MU2, PHI, NSTOKES, REFLECT)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
@@ -486,9 +465,9 @@ subroutine shd_surf__brdfDiner(A, K, B, ZETA, SIGMA,&
 
     return
 
-end subroutine shd_surf__brdfDiner
+end subroutine shd_sfc__brdfDiner
 
-subroutine shd_surf__brdfRPV(RHO0, K, THETA, MU1, MU2, PHI, REFLECT)
+subroutine shd_sfc__brdfRPV(RHO0, K, THETA, MU1, MU2, PHI, REFLECT)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
     !   Computes the Rahman, Pinty, Verstraete BRDF.  The incident
@@ -543,9 +522,9 @@ subroutine shd_surf__brdfRPV(RHO0, K, THETA, MU1, MU2, PHI, REFLECT)
 
     return
 
-end subroutine shd_surf__brdfRPV
+end subroutine shd_sfc__brdfRPV
 
-subroutine shd_surf__brdfLSRT(F_ISO, F_VOL, F_GEO, MU1, MU2, PHI, REFLECT)
+subroutine shd_sfc__brdfLSRT(F_ISO, F_VOL, F_GEO, MU1, MU2, PHI, REFLECT)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Computes the RossLi BRDF.
@@ -646,9 +625,9 @@ subroutine shd_surf__brdfLSRT(F_ISO, F_VOL, F_GEO, MU1, MU2, PHI, REFLECT)
 
     return
 
-end subroutine shd_surf__brdfLSRT
+end subroutine shd_sfc__brdfLSRT
 
-subroutine shd_surf__brdfOcean(&
+subroutine shd_sfc__brdfOcean(&
     & pws, xsal, pcl, pwl, xmuo, xmu, xphi, xpaw, REFLECT)
     !
     ! INPUT:  pws=wind speed (in m/s) [value not allowed below 0.25 m/s]
@@ -773,7 +752,7 @@ subroutine shd_surf__brdfOcean(&
     ! TOTAL REFLECTANCE OF SEA WATER
     REFLECT = Rwc + (1 - W)*Rog + (1 - Rwc)*Rwb
     return
-end subroutine shd_surf__brdfOcean
+end subroutine shd_sfc__brdfOcean
 
 subroutine morcasiwat(wl, C, R2)
     ! Spectral diffuse attenuation coefficient of Case I Waters as Predicted
@@ -1241,4 +1220,4 @@ subroutine getbound(xvals, ifirst, ilast, x, ind1, ind2)
     return
 end subroutine
 
-end module shd_surf
+end module shd_sfc

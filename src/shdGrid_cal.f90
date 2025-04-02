@@ -288,7 +288,7 @@ subroutine shd_grid__splitGrid(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
             ICELL1 = NCELLS + 1
 
             ! Sort the adaptive criterion in decreasing order
-            call shd_comp__ssort(ADAPTCRIT, ADAPTIND, N, -2)
+            call shd_util__ssort(ADAPTCRIT, ADAPTIND, N, -2)
 
             ! Figure how many cells we can split, leaving some room
             !   for cells split during grid smoothing
@@ -487,7 +487,7 @@ subroutine shd_grid__interpNewGridPnt(NEWPOINTS, NPTS,&
 
             ! Compute the new Planck source function (if needed)
             if (SRCTYPE .ne. 'S') then
-                call shd_comp__computePlanck(TEMP(IP), UNITS, WAVENO, WAVELEN, BB)
+                call shd_util__computePlanck(TEMP(IP), UNITS, WAVENO, WAVELEN, BB)
                 PLANCK(IP) = (1.0 - ALBEDO(IP))*BB
             end if
 

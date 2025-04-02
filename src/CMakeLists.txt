@@ -8,16 +8,16 @@ set(SHDOM_LIB_SRCS
     shdDir.f90
     shdUtil.f90
     shdComp.f90
-    shdGrid_indx.f90
-    shdGrid_calc.f90
+    shdGrid_ind.f90
+    shdGrid_cal.f90
     shdSolv_rte.f90
     shdSolv_shdo.f90
-    shdSolv_intg.f90
+    shdSolv_int.f90
     shdSolv_src.f90
     shdSolv_rad.f90
     shdIO_inp.f90
     shdIO_out.f90
-    shdSurf.f90
+    shdSfc.f90
     fftpack.f90)
 
 # dummy option

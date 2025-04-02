@@ -1443,7 +1443,7 @@ subroutine shd_ext__mpiFindBoundaryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
         INDX(1:NBX) = (/(J, J=1, NBX)/)
         ZARRAY(NBX + 1:NBX + NBY) = BNDPOS(3, JOCT, 1:NBY, 2, LY)
         INDX(NBX + 1:NBX + NBY) = (/(-J, J=1, NBY)/)
-        call shd_comp__ssort(ZARRAY, INDX, NBX + NBY, 2*DZ)
+        call shd_util__ssort(ZARRAY, INDX, NBX + NBY, 2*DZ)
 
         ! For each Z slab use Z sorted index to transfer the X or Y boundary points
         IBXYPTR_(:, :, JOCT) = 0
@@ -2193,11 +2193,11 @@ subroutine shd_ext__mpiComputeRad(&
     ! Make the bottom boundary radiances for the Lambertian surfaces.
     ! Compute the upwelling bottom radiances using the downwelling fluxes.
     if (SFCTYPE .eq. 'FL') then
-        call shd_comp__computeRadSurfFL(NBOTPTS, BCPTR(1, 2),&
+        call shd_init__makeSfcRadFL(NBOTPTS, BCPTR(1, 2),&
             &DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO,&
             &WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1, 1 + NTOPPTS))
     else if (SFCTYPE .eq. 'VL') then
-        call shd_comp__computeRadSurfVL(NBOTPTS, BCPTR(1, 2),&
+        call shd_init__makeSfcRadVL(NBOTPTS, BCPTR(1, 2),&
             &DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS,&
             &NSTOKES, BCRAD(1, 1 + NTOPPTS))
     end if
@@ -2297,7 +2297,7 @@ subroutine shd_ext__mpiComputeRad(&
                 end do
             else
                 if (.not. LAMBERTIAN) then
-                    call shd_comp__computeRadSurfVari(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
+                    call shd_init__makeSfcRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
                         &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MUOUT, PHIOUT,&
                         &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
                         &SFCTYPE, NSFCPAR, SFCGRIDPARMS, NSTOKES, BCRAD(1, 1 + NTOPPTS))
@@ -2626,11 +2626,11 @@ subroutine shd_ext__mpiVisualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     ! Make the bottom boundary radiances for the Lambertian surfaces.
     ! Compute the upwelling bottom radiances using the downwelling fluxes.
     if (SFCTYPE .eq. 'FL') then
-        call shd_comp__computeRadSurfFL(NBOTPTS, BCPTR(1, 2),&
+        call shd_init__makeSfcRadFL(NBOTPTS, BCPTR(1, 2),&
             &DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO,&
             &WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1, 1 + NTOPPTS))
     else if (SFCTYPE .eq. 'VL') then
-        call shd_comp__computeRadSurfVL(NBOTPTS, BCPTR(1, 2),&
+        call shd_init__makeSfcRadVL(NBOTPTS, BCPTR(1, 2),&
             &DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS,&
             &NSTOKES, BCRAD(1, 1 + NTOPPTS))
     end if

@@ -2,6 +2,7 @@ module shd_io_out
 
   use globals
   use shd_grid
+  use shd_util
 
   implicit none
   private
@@ -479,11 +480,11 @@ subroutine shd_io__outputResult(&
                     call shd_grid__findGridCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
                         & NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS,&
                         & BCFLAG, IPFLAG, X0, Y0, Z0, ICELL)
-                    call shd_comp__interpField(ICELL, GRIDPTR, GRIDPOS,&
+                    call shd_util__interpTriLin(ICELL, GRIDPTR, GRIDPOS,&
                         & X0, Y0, Z0, 2, FLUXES, 1, 1, FDN(IDATA))
-                    call shd_comp__interpField(ICELL, GRIDPTR, GRIDPOS,&
+                    call shd_util__interpTriLin(ICELL, GRIDPTR, GRIDPOS,&
                         & X0, Y0, Z0, 2, FLUXES, 2, 1, FUP(IDATA))
-                    call shd_comp__interpField(ICELL, GRIDPTR, GRIDPOS,&
+                    call shd_util__interpTriLin(ICELL, GRIDPTR, GRIDPOS,&
                         & X0, Y0, Z0, 1, DIRFLUX, 1, 1, FDIR(IDATA))
                     X0 = X0 + OUTPARMS(3)
                 end do
@@ -529,11 +530,11 @@ subroutine shd_io__outputResult(&
             !        call shd_grid__findGridCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
             !            & NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS,&
             !            & BCFLAG, IPFLAG, X0, Y0, Z0, ICELL)
-            !        call shd_comp__interpField(ICELL, GRIDPTR, GRIDPOS,&
+            !        call shd_util__interpTriLin(ICELL, GRIDPTR, GRIDPOS,&
             !            & X0, Y0, Z0, 2, FLUXES, 1, 1, FDN)
-            !        call shd_comp__interpField(ICELL, GRIDPTR, GRIDPOS,&
+            !        call shd_util__interpTriLin(ICELL, GRIDPTR, GRIDPOS,&
             !            & X0, Y0, Z0, 2, FLUXES, 2, 1, FUP)
-            !        call shd_comp__interpField(ICELL, GRIDPTR, GRIDPOS,&
+            !        call shd_util__interpTriLin(ICELL, GRIDPTR, GRIDPOS,&
             !            & X0, Y0, Z0, 1, DIRFLUX, 1, 1, FDIR)
             !        if (SRCTYPE .ne. 'T') then
             !            write (2, FORM) X0, Y0, C*FUP, C*FDN, FDIR

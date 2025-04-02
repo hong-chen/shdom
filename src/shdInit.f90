@@ -1,16 +1,27 @@
 module shd_init
 
   use globals
+  use shd_util
+  use shd_sfc
 
   implicit none
   private
 
   public :: shd_init__makeGrid
   public :: shd_init__makeCell
+
   public :: shd_init__makeProp
   public :: shd_init__makeRad
   public :: shd_init__makeFlux
   public :: shd_init__makeAngle
+
+  public :: shd_init__makeTopRad
+  public :: shd_init__makeSfcRadFL
+  public :: shd_init__makeSfcRadVL
+  public :: shd_init__makeSfcRadU
+  public :: shd_init__makeSfcRadV
+
+  public :: shd_init__checkSfcU
 
 contains
 
@@ -369,7 +380,7 @@ subroutine shd_init__makeProp(&
         end if
         ALBMAX = max(ALBMAX, ALBEDO(I))
         if (SRCTYPE .ne. 'S') then
-            call shd_comp__computePlanck(TEMP(I), UNITS, WAVENO, WAVELEN, BB)
+            call shd_util__computePlanck(TEMP(I), UNITS, WAVENO, WAVELEN, BB)
             PLANCK(I) = (1.0 - ALBEDO(I))*BB
         end if
     end do
@@ -475,7 +486,8 @@ subroutine shd_init__makeRad(&
 
 end subroutine shd_init__makeRad
 
-subroutine shd_init__makeFlux(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
+subroutine shd_init__makeFlux(&
+    &NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
     &TEMPS, DELTAM, SRCTYPE, SOLARFLUX, SOLARMU,&
     &GNDTEMP, GNDEMIS, SKYRAD, UNITS, WAVENO, WAVELEN,&
     &FLUXES)
@@ -555,7 +567,7 @@ subroutine shd_init__makeFlux(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
     !   coefficients for each layer for the diffuse Eddington
     !   two stream problem.
     if (SRCTYPE .eq. 'T') then
-        call shd_comp__computePlanck(TEMPS(1), UNITS, WAVENO, WAVELEN, BBRAD)
+        call shd_util__computePlanck(TEMPS(1), UNITS, WAVENO, WAVELEN, BBRAD)
         PLANCK1 = PI_*BBRAD
     end if
     MU0 = abs(SOLARMU)
@@ -599,7 +611,7 @@ subroutine shd_init__makeFlux(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
 
             if (SRCTYPE .eq. 'T') then
                 ! Calculate thermal source terms
-                call shd_comp__computePlanck(TEMPS(L + 1), UNITS, WAVENO, WAVELEN, BBRAD)
+                call shd_util__computePlanck(TEMPS(L + 1), UNITS, WAVENO, WAVELEN, BBRAD)
                 PLANCK2 = PI_*BBRAD
                 V = 2.0*(PLANCK2 - PLANCK1)/(3.0*(1.-OMEGA*G)*DELTAU)
                 RADP1P = -V + PLANCK1
@@ -663,9 +675,9 @@ subroutine shd_init__makeFlux(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
         SKYFLUX = PI_*SKYRAD
     else
         FLUXES(3, NLAYER + 1) = 0.0
-        call shd_comp__computePlanck(GNDTEMP, UNITS, WAVENO, WAVELEN, BBRAD)
+        call shd_util__computePlanck(GNDTEMP, UNITS, WAVENO, WAVELEN, BBRAD)
         GNDFLUX = PI_*BBRAD*GNDEMIS
-        call shd_comp__computePlanck(SKYRAD, UNITS, WAVENO, WAVELEN, BBRAD)
+        call shd_util__computePlanck(SKYRAD, UNITS, WAVENO, WAVELEN, BBRAD)
         SKYFLUX = PI_*BBRAD
     end if
     ! Setup for and call the tri-diagonal matrix solver
@@ -675,7 +687,7 @@ subroutine shd_init__makeFlux(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
     DIAG(N) = -(1.0 - GNDEMIS)
     LOWER(N) = 1.0
     RHS(N) = GNDFLUX
-    call shd_comp__computeTriDiag(N, LOWER, DIAG, UPPER, RHS)
+    call shd_util__computeTriDiag(N, LOWER, DIAG, UPPER, RHS)
 
     ! Put the fluxes in the output array
     if (UNITS .eq. 'T') then
@@ -748,9 +760,9 @@ subroutine shd_init__makeAngle(&
     NANG = 0
     if (ITYPE .ge. 1 .or. ITYPE .le. 3) then
         if (ITYPE .le. 2) then
-            call shd_comp__computeGausQuad(NMU, MU, WTMU)
+            call shd_util__computeGausQuad(NMU, MU, WTMU)
         else if (ITYPE .eq. 3) then
-            call shd_comp__computeGausQuadDble(NMU, MU, WTMU)
+            call shd_util__computeGausQuadDble(NMU, MU, WTMU)
         end if
         do J = 1, NMU
             NPHI0MAX = NPHI
@@ -779,13 +791,13 @@ subroutine shd_init__makeAngle(&
 
 end subroutine shd_init__makeAngle
 
-end module shd_init
-
-subroutine shd_comp__computeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
+subroutine shd_init__makeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
     &UNITS, NTOPPTS, NSTOKES, BCRAD)
+
     !   Returns the beginning of the BCRAD array with the downwelling
     ! radiance for the NTOPPTS top boundary points.  Currently all
     ! points have the same unpolarized isotropic radiance.
+
     implicit none
     integer NTOPPTS, NSTOKES
     real SKYRAD, WAVENO(2), WAVELEN
@@ -798,17 +810,19 @@ subroutine shd_comp__computeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
     if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
         SKYRAD2 = SKYRAD
     else
-        call shd_comp__computePlanck(SKYRAD, UNITS, WAVENO, WAVELEN, SKYRAD2)
+        call shd_util__computePlanck(SKYRAD, UNITS, WAVENO, WAVELEN, SKYRAD2)
     end if
     ! Loop over all points assigning the uniform radiance
     do IBC = 1, NTOPPTS
         BCRAD(1, IBC) = SKYRAD2
         BCRAD(2:, IBC) = 0.0
     end do
-    return
-end subroutine shd_comp__computeTopRad
 
-subroutine shd_comp__computeRadSurfFL(NBOTPTS, BCPTR,&
+    return
+
+end subroutine shd_init__makeTopRad
+
+subroutine shd_init__makeSfcRadFL(NBOTPTS, BCPTR,&
     &DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO,&
     &WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD)
 
@@ -830,7 +844,7 @@ subroutine shd_comp__computeRadSurfFL(NBOTPTS, BCPTR,&
 
     ALB = GNDALBEDO/acos(-1.0)
     if (SRCTYPE .eq. 'T' .or. SRCTYPE .eq. 'B') then
-        call shd_comp__computePlanck(GNDTEMP, UNITS, WAVENO, WAVELEN, GNDRAD)
+        call shd_util__computePlanck(GNDTEMP, UNITS, WAVENO, WAVELEN, GNDRAD)
         GNDRAD = GNDRAD*(1.0 - GNDALBEDO)
     end if
 
@@ -847,9 +861,9 @@ subroutine shd_comp__computeRadSurfFL(NBOTPTS, BCPTR,&
         BCRAD(2:, IBC) = 0.0
     end do
     return
-end subroutine shd_comp__computeRadSurfFL
+end subroutine shd_init__makeSfcRadFL
 
-subroutine shd_comp__computeRadSurfVL(NBOTPTS, BCPTR,&
+subroutine shd_init__makeSfcRadVL(NBOTPTS, BCPTR,&
     &DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS,&
     &NSTOKES, BCRAD)
 
@@ -891,85 +905,9 @@ subroutine shd_comp__computeRadSurfVL(NBOTPTS, BCPTR,&
     end do
     return
 
-end subroutine shd_comp__computeRadSurfVL
+end subroutine shd_init__makeSfcRadVL
 
-subroutine shd_comp__computeRadSurfVari(NBOTPTS, IBEG, IEND, BCPTR,&
-    &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MU2, PHI2,&
-    &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
-    &SFCTYPE, NSFCPAR, SFCGRIDPARMS, NSTOKES, BCRAD)
-    !   Computes the upwelling Stokes vector of the bottom boundary points
-    ! for one outgoing direction using the specified bidirectional
-    ! reflectance distribution function.  The upwelling Stokes vector
-    ! includes the reflection of the incident radiance, the thermal
-    ! emission (emissivity*Planck function), and the reflected direct
-    ! solar flux (if applicable).  The upwelling radiance vector is the
-    ! integral over all incident directions of the BRDF times the
-    ! downwelling radiance, so a discrete sum is done and the integral
-    ! weights (WTDO) are included. The general BRDF function is called
-    ! to compute the Stokes reflectance matrix for the particular BRDF
-    ! type (SFCTYPE) with parameters (SFCGRIDPARMS) for the incident and
-    ! outgoing directions.  The emissivity is computed implicitly from the
-    ! integral of the BRDF.  The outgoing direction is specified with
-    ! (MU2,PHI2), and the BRDF is computed for all incident directions
-    ! (loop over JMU,JPHI).  The incident downwelling radiance vectors are
-    ! input in BCRAD(*,*,2...) and the outgoing upwelling radiance vectors
-    ! are output in BCRAD(*,*,1).
-
-    use shd_surf
-
-    implicit none
-    integer NBOTPTS, IBEG, IEND, BCPTR(NBOTPTS)
-    integer NMU, NPHI0MAX, NPHI0(NMU), NSFCPAR, NSTOKES
-    real WTDO(NMU, NPHI0MAX), MU(NMU), PHI(NMU, NPHI0MAX)
-    real MU2, PHI2, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX(*)
-    real SFCGRIDPARMS(NSFCPAR, NBOTPTS), BCRAD(NSTOKES, NBOTPTS, *)
-    character(len=1) :: SRCTYPE
-    character(len=2) :: SFCTYPE
-    integer JMU, JPHI, IBC, I, JANG, K, K1, K2
-    real OPI, REFLECT(4, 4), W, SUM0, SUM1, RADSPEC(4)
-
-    OPI = 1.0/acos(-1.0)
-
-    do IBC = IBEG, IEND
-
-        ! Initialize the upwelling boundary radiances to zero or to
-        !   the reflection of direct unpolarized solar flux.
-        BCRAD(:, IBC, 1) = 0.0
-        if (SRCTYPE .ne. 'T') then
-            I = BCPTR(IBC)
-            call shd_surf__brdfSurface(SFCTYPE(2:2), SFCGRIDPARMS(2, IBC), WAVELEN,&
-                &MU2, PHI2, SOLARMU, SOLARAZ, NSTOKES, REFLECT)
-            BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1)&
-                &+ OPI*REFLECT(1:NSTOKES, 1)*DIRFLUX(I)
-        end if
-
-        ! Integrate over the incident discrete ordinate directions (JMU,JPHI)
-        JANG = 1
-        do JMU = 1, NMU/2
-            do JPHI = 1, NPHI0(JMU)
-                call shd_surf__brdfSurface(SFCTYPE(2:2), SFCGRIDPARMS(2, IBC),&
-                    &WAVELEN, MU2, PHI2, MU(JMU), PHI(JMU, JPHI),&
-                    &NSTOKES, REFLECT)
-                W = OPI*abs(MU(JMU))*WTDO(JMU, JPHI)
-                ! Add in the polarized reflection
-                do K1 = 1, NSTOKES
-                    BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1)&
-                        &+ W*REFLECT(1:NSTOKES, K1)*BCRAD(K1, IBC, JANG + 1)
-                end do
-                ! Add in the polarized thermal emission
-                BCRAD(1, IBC, 1) = BCRAD(1, IBC, 1)&
-                    &+ W*(1 - REFLECT(1, 1))*SFCGRIDPARMS(1, IBC)
-                BCRAD(2:, IBC, 1) = BCRAD(2:, IBC, 1)&
-                    &- W*REFLECT(2:NSTOKES, 1)*SFCGRIDPARMS(1, IBC)
-                JANG = JANG + 1
-            end do
-        end do
-
-    end do
-    return
-end subroutine
-
-subroutine shd_comp__computeRadSurfUnif(NBOTPTS, BCPTR,&
+subroutine shd_init__makeSfcRadU(NBOTPTS, BCPTR,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, IMU, IPHI,&
     &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
     &SFCTYPE, NSFCPAR, SFCGRIDPARMS, SFC_BRDF_DO,&
@@ -989,10 +927,6 @@ subroutine shd_comp__computeRadSurfUnif(NBOTPTS, BCPTR,&
     ! all incident directions (loop over JMU,JPHI).  The incident downwelling
     ! radiance vectors are input in BCRAD(*,*,2...) and the outgoing
     ! upwelling radiance vectors are output in BCRAD(*,*,1).
-
-    use shd_surf
-
-    implicit none
 
     integer NBOTPTS, BCPTR(NBOTPTS)
     integer NMU, NPHI0MAX, NPHI0(NMU), IMU, IPHI, NSFCPAR, NSTOKES
@@ -1015,7 +949,7 @@ subroutine shd_comp__computeRadSurfUnif(NBOTPTS, BCPTR,&
         BCRAD(:, IBC, 1) = 0.0
         if (SRCTYPE .ne. 'T') then
             I = BCPTR(IBC)
-            call shd_surf__brdfSurface(SFCTYPE(2:2), SFCGRIDPARMS(2, IBC), WAVELEN,&
+            call shd_sfc__brdfSurface(SFCTYPE(2:2), SFCGRIDPARMS(2, IBC), WAVELEN,&
                 &MU(IMU), PHI(IMU, IPHI), SOLARMU, SOLARAZ,&
                 &NSTOKES, REFLECT)
             BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1)&
@@ -1041,71 +975,113 @@ subroutine shd_comp__computeRadSurfUnif(NBOTPTS, BCPTR,&
             end do
         end do
     end do
+
     return
 
-end subroutine shd_comp__computeRadSurfUnif
+end subroutine shd_init__makeSfcRadU
 
-subroutine shd_comp__computeTriDiag(N, LOWER, DIAG, UPPER, RHS)
+subroutine shd_init__makeSfcRadV(&
+    &NBOTPTS, IBEG, IEND, BCPTR,&
+    &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MU2, PHI2,&
+    &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
+    &SFCTYPE, NSFCPAR, SFCGRIDPARMS, NSTOKES, BCRAD)
+    !   Computes the upwelling Stokes vector of the bottom boundary points
+    ! for one outgoing direction using the specified bidirectional
+    ! reflectance distribution function.  The upwelling Stokes vector
+    ! includes the reflection of the incident radiance, the thermal
+    ! emission (emissivity*Planck function), and the reflected direct
+    ! solar flux (if applicable).  The upwelling radiance vector is the
+    ! integral over all incident directions of the BRDF times the
+    ! downwelling radiance, so a discrete sum is done and the integral
+    ! weights (WTDO) are included. The general BRDF function is called
+    ! to compute the Stokes reflectance matrix for the particular BRDF
+    ! type (SFCTYPE) with parameters (SFCGRIDPARMS) for the incident and
+    ! outgoing directions.  The emissivity is computed implicitly from the
+    ! integral of the BRDF.  The outgoing direction is specified with
+    ! (MU2,PHI2), and the BRDF is computed for all incident directions
+    ! (loop over JMU,JPHI).  The incident downwelling radiance vectors are
+    ! input in BCRAD(*,*,2...) and the outgoing upwelling radiance vectors
+    ! are output in BCRAD(*,*,1).
 
-    ! Computes the solution to a tridiagonal system.
-    ! N is order of the matrix.  LOWER(2..N) is the subdiagonal,
-    ! DIAG(1..N) is the diagonal, and UPPER(1..N-1) is the
-    ! superdiagonal.  On input RHS is the right hand side, while
-    ! on output it is the solution vector. Everything is destroyed.
-    ! Hacked from Linpack DGTSL.
+    integer NBOTPTS, IBEG, IEND, BCPTR(NBOTPTS)
+    integer NMU, NPHI0MAX, NPHI0(NMU), NSFCPAR, NSTOKES
+    real WTDO(NMU, NPHI0MAX), MU(NMU), PHI(NMU, NPHI0MAX)
+    real MU2, PHI2, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX(*)
+    real SFCGRIDPARMS(NSFCPAR, NBOTPTS), BCRAD(NSTOKES, NBOTPTS, *)
+    character(len=1) :: SRCTYPE
+    character(len=2) :: SFCTYPE
+    integer JMU, JPHI, IBC, I, JANG, K, K1, K2
+    real OPI, REFLECT(4, 4), W, SUM0, SUM1, RADSPEC(4)
 
-    implicit none
-    integer N
-    double precision LOWER(*), DIAG(*), UPPER(*), RHS(*)
-    integer K, KB
-    double precision T
+    OPI = 1.0/acos(-1.0)
 
-    if (N .eq. 1) then
-        if (DIAG(1) .eq. 0.0) goto 990
-        RHS(1) = RHS(1)/DIAG(1)
-    end if
+    do IBC = IBEG, IEND
 
-    LOWER(1) = DIAG(1)
-    DIAG(1) = UPPER(1)
-    UPPER(1) = 0.0
-    UPPER(N) = 0.0
-    do K = 1, N - 1
-        ! Interchange this and next row to the get the largest pivo
-        if (abs(LOWER(K + 1)) .ge. abs(LOWER(K))) then
-            T = LOWER(K + 1)
-            LOWER(K + 1) = LOWER(K)
-            LOWER(K) = T
-            T = DIAG(K + 1)
-            DIAG(K + 1) = DIAG(K)
-            DIAG(K) = T
-            T = UPPER(K + 1)
-            UPPER(K + 1) = UPPER(K)
-            UPPER(K) = T
-            T = RHS(K + 1)
-            RHS(K + 1) = RHS(K)
-            RHS(K) = T
+        ! Initialize the upwelling boundary radiances to zero or to
+        !   the reflection of direct unpolarized solar flux.
+        BCRAD(:, IBC, 1) = 0.0
+        if (SRCTYPE .ne. 'T') then
+            I = BCPTR(IBC)
+            call shd_sfc__brdfSurface(SFCTYPE(2:2), SFCGRIDPARMS(2, IBC), WAVELEN,&
+                &MU2, PHI2, SOLARMU, SOLARAZ, NSTOKES, REFLECT)
+            BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1)&
+                &+ OPI*REFLECT(1:NSTOKES, 1)*DIRFLUX(I)
         end if
-        if (LOWER(K) .eq. 0.0) goto 990
-        T = -LOWER(K + 1)/LOWER(K)
-        LOWER(K + 1) = DIAG(K + 1) + T*DIAG(K)
-        DIAG(K + 1) = UPPER(K + 1) + T*UPPER(K)
-        UPPER(K + 1) = 0.0
-        RHS(K + 1) = RHS(K + 1) + T*RHS(K)
-    end do
 
-    if (LOWER(N) .eq. 0.0) goto 990
+        ! Integrate over the incident discrete ordinate directions (JMU,JPHI)
+        JANG = 1
+        do JMU = 1, NMU/2
+            do JPHI = 1, NPHI0(JMU)
+                call shd_sfc__brdfSurface(SFCTYPE(2:2), SFCGRIDPARMS(2, IBC),&
+                    &WAVELEN, MU2, PHI2, MU(JMU), PHI(JMU, JPHI),&
+                    &NSTOKES, REFLECT)
+                W = OPI*abs(MU(JMU))*WTDO(JMU, JPHI)
+                ! Add in the polarized reflection
+                do K1 = 1, NSTOKES
+                    BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1)&
+                        &+ W*REFLECT(1:NSTOKES, K1)*BCRAD(K1, IBC, JANG + 1)
+                end do
+                ! Add in the polarized thermal emission
+                BCRAD(1, IBC, 1) = BCRAD(1, IBC, 1)&
+                    &+ W*(1 - REFLECT(1, 1))*SFCGRIDPARMS(1, IBC)
+                BCRAD(2:, IBC, 1) = BCRAD(2:, IBC, 1)&
+                    &- W*REFLECT(2:NSTOKES, 1)*SFCGRIDPARMS(1, IBC)
+                JANG = JANG + 1
+            end do
+        end do
 
-    ! Back substitute
-    RHS(N) = RHS(N)/LOWER(N)
-    RHS(N - 1) = (RHS(N - 1) - DIAG(N - 1)*RHS(N))/LOWER(N - 1)
-    do KB = 1, N - 2
-        K = N - 2 - KB + 1
-        RHS(K) = (RHS(K) - DIAG(K)*RHS(K + 1) - UPPER(K)*RHS(K + 2))/LOWER(K)
     end do
     return
+end subroutine shd_init__makeSfcRadV
 
-990 continue
+subroutine shd_init__checkSfcU(&
+    &NXSFC, NYSFC, NSFCPAR, SFCPARMS,&
+    &UNIFORM_SFC_BRDF)
 
-    stop 'Error [_computeTriDiag]: Singular matrix.'
+    ! Checks to see if the surface reflection parameters are uniform,
+    ! and if so sets the UNIFORM_SFC_BRDF flag.  The temperature need
+    ! not be uniform.
 
-end subroutine shd_comp__computeTriDiag
+    integer NXSFC, NYSFC, NSFCPAR
+    real SFCPARMS(NSFCPAR, NXSFC + 1, NYSFC + 1)
+    logical UNIFORM_SFC_BRDF
+    integer IX, IY, J
+
+    UNIFORM_SFC_BRDF = .true.
+
+    do IY = 1, NYSFC
+        do IX = 1, NXSFC
+            do J = 2, NSFCPAR
+                if (SFCPARMS(J, IX, IY) .ne. SFCPARMS(J, 1, 1)) then
+                    UNIFORM_SFC_BRDF = .false.
+                    return
+                end if
+            end do
+        end do
+    end do
+
+    return
+
+end subroutine shd_init__checkSfcU
+
+end module shd_init

@@ -156,10 +156,10 @@ subroutine shd_solv__makeSurfDO(SFCTYPE, WAVELEN,&
 
     !   Makes the precomputed BRDF surface reflection matrix for
     ! discrete ordinate incident and outgoing directions.  For each
-    ! pair of discrete ordinates shd_surf__brdfSurface is called and the
+    ! pair of discrete ordinates shd_sfc__brdfSurface is called and the
     ! integration weights are included.
 
-    use shd_surf
+    use shd_sfc
 
     implicit none
 
@@ -181,7 +181,7 @@ subroutine shd_solv__makeSurfDO(SFCTYPE, WAVELEN,&
             do JMU = 1, NMU/2
                 do JPHI = 1, NPHI0(JMU)
                     ! Get the BRDF for this
-                    call shd_surf__brdfSurface(SFCTYPE(2:2), SFCPARMS(2, 1, 1),&
+                    call shd_sfc__brdfSurface(SFCTYPE(2:2), SFCPARMS(2, 1, 1),&
                         &WAVELEN, MU(IMU), PHI(IMU, IPHI),&
                         &MU(JMU), PHI(JMU, JPHI), NSTOKES, REFLECT)
                     W = OPI*abs(MU(JMU))*WTDO(JMU, JPHI)

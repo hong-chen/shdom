@@ -103,14 +103,14 @@ subroutine shd_solv__integratePath(&
             ! If this is a variable surface then bilinearly interpolate
             !   the surface temperature and reflection parameters to the
             !   bottom grid points.
-            call shd_comp__interpSurfParams(NBOTPTS, BCPTR(1, 2), GRIDPOS,&
+            call shd_sfc__interpSfc(NBOTPTS, BCPTR(1, 2), GRIDPOS,&
                 &SRCTYPE, WAVENO, WAVELEN, UNITS,&
                 &NXSFC, NYSFC, DELXSFC, DELYSFC, NSFCPAR, SFCPARMS,&
                 &SFCGRIDPARMS)
         end if
     end if
     ! Make the isotropic radiances for the top boundary
-    call shd_comp__computeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
+    call shd_init__makeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
         &UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
 
     ! Zero the flux arrays and set temporary radiance to -1 for not
@@ -138,11 +138,11 @@ subroutine shd_solv__integratePath(&
             !   for the Lambertian surfaces.  Compute the upwelling bottom
             !   radiances using the downwelling fluxes.
             if (SFCTYPE .eq. 'FL') then
-                call shd_comp__computeRadSurfFL(NBOTPTS, BCPTR(1, 2),&
+                call shd_init__makeSfcRadFL(NBOTPTS, BCPTR(1, 2),&
                     &DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO,&
                     &WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1, 1 + NTOPPTS))
             else if (SFCTYPE .eq. 'VL') then
-                call shd_comp__computeRadSurfVL(NBOTPTS, BCPTR(1, 2),&
+                call shd_init__makeSfcRadVL(NBOTPTS, BCPTR(1, 2),&
                     &DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS,&
                     &NSTOKES, BCRAD(1, 1 + NTOPPTS))
             end if
@@ -192,13 +192,13 @@ subroutine shd_solv__integratePath(&
                     ! If the surface reflection is uniform use the precomputed
                     !   BRDF matrix to do the integration.
                     if (UNIFORM_SFC_BRDF) then
-                        call shd_comp__computeRadSurfUnif(NBOTPTS, BCPTR(1, 2),&
+                        call shd_init__makeSfcRadU(NBOTPTS, BCPTR(1, 2),&
                             &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, IMU, IPHI,&
                             &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
                             &SFCTYPE, NSFCPAR, SFCGRIDPARMS, SFC_BRDF_DO,&
                             &NSTOKES, BCRAD(1, 1 + NTOPPTS))
                     else
-                        call shd_comp__computeRadSurfVari(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
+                        call shd_init__makeSfcRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
                             &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                             &MU(IMU), PHI(IMU, IPHI),&
                             &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&

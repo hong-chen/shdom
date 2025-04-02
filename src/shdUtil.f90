@@ -1,4 +1,21 @@
-subroutine shd_comp__interpField(ICELL, GRIDPTR, GRIDPOS,&
+module shd_util
+
+    use globals
+
+    implicit none
+    private
+
+    public :: shd_util__interpTriLin
+    public :: shd_util__computeTriDiag
+    public :: shd_util__computeGausQuad
+    public :: shd_util__computeGausQuadDble
+    public :: shd_util__computePlanck
+    public :: shd_util__ssort
+
+contains
+
+subroutine shd_util__interpTriLin(&
+    &ICELL, GRIDPTR, GRIDPOS,&
     &X, Y, Z, ND, FIELD, ID1, NV, VALUES)
 
     !   Trilinearly interpolates the field (FIELD) given a grid cell
@@ -7,7 +24,6 @@ subroutine shd_comp__interpField(ICELL, GRIDPTR, GRIDPOS,&
     ! scalar field), ID1 is the first element of the vector to interpolate,
     ! and NV elements are output.
 
-    implicit none
     integer ICELL, GRIDPTR(8, *), ND, ID1, NV
     double precision X, Y, Z
     real GRIDPOS(3, *), FIELD(ND, *), VALUES(NV)
@@ -41,9 +57,74 @@ subroutine shd_comp__interpField(ICELL, GRIDPTR, GRIDPOS,&
 
     return
 
-end subroutine shd_comp__interpField
+end subroutine shd_util__interpTriLin
 
-subroutine shd_comp__computeGausQuad(N, XA, WT)
+subroutine shd_util__computeTriDiag(&
+    &N, LOWER, DIAG, UPPER, RHS)
+
+    ! Computes the solution to a tridiagonal system.
+    ! N is order of the matrix.  LOWER(2..N) is the subdiagonal,
+    ! DIAG(1..N) is the diagonal, and UPPER(1..N-1) is the
+    ! superdiagonal.  On input RHS is the right hand side, while
+    ! on output it is the solution vector. Everything is destroyed.
+    ! Hacked from Linpack DGTSL.
+
+    integer N
+    double precision LOWER(*), DIAG(*), UPPER(*), RHS(*)
+    integer K, KB
+    double precision T
+
+    if (N .eq. 1) then
+        if (DIAG(1) .eq. 0.0) goto 990
+        RHS(1) = RHS(1)/DIAG(1)
+    end if
+
+    LOWER(1) = DIAG(1)
+    DIAG(1) = UPPER(1)
+    UPPER(1) = 0.0
+    UPPER(N) = 0.0
+    do K = 1, N - 1
+        ! Interchange this and next row to the get the largest pivo
+        if (abs(LOWER(K + 1)) .ge. abs(LOWER(K))) then
+            T = LOWER(K + 1)
+            LOWER(K + 1) = LOWER(K)
+            LOWER(K) = T
+            T = DIAG(K + 1)
+            DIAG(K + 1) = DIAG(K)
+            DIAG(K) = T
+            T = UPPER(K + 1)
+            UPPER(K + 1) = UPPER(K)
+            UPPER(K) = T
+            T = RHS(K + 1)
+            RHS(K + 1) = RHS(K)
+            RHS(K) = T
+        end if
+        if (LOWER(K) .eq. 0.0) goto 990
+        T = -LOWER(K + 1)/LOWER(K)
+        LOWER(K + 1) = DIAG(K + 1) + T*DIAG(K)
+        DIAG(K + 1) = UPPER(K + 1) + T*UPPER(K)
+        UPPER(K + 1) = 0.0
+        RHS(K + 1) = RHS(K + 1) + T*RHS(K)
+    end do
+
+    if (LOWER(N) .eq. 0.0) goto 990
+
+    ! Back substitute
+    RHS(N) = RHS(N)/LOWER(N)
+    RHS(N - 1) = (RHS(N - 1) - DIAG(N - 1)*RHS(N))/LOWER(N - 1)
+    do KB = 1, N - 2
+        K = N - 2 - KB + 1
+        RHS(K) = (RHS(K) - DIAG(K)*RHS(K + 1) - UPPER(K)*RHS(K + 2))/LOWER(K)
+    end do
+    return
+
+990 continue
+
+    stop 'Error [_computeTriDiag]: Singular matrix.'
+
+end subroutine shd_util__computeTriDiag
+
+subroutine shd_util__computeGausQuad(N, XA, WT)
 
     !╭──────────────────────────────────────────────────────────────╮!
     !   Generates the abscissas (X) and weights (W) for an N point
@@ -52,7 +133,6 @@ subroutine shd_comp__computeGausQuad(N, XA, WT)
     ! K=N/2, N must be even).
     !╰──────────────────────────────────────────────────────────────╯!
 
-    implicit none
     integer, intent(in) :: N
     real, intent(inout) :: XA(*), WT(*)
     integer :: K, I, J, L
@@ -85,9 +165,9 @@ subroutine shd_comp__computeGausQuad(N, XA, WT)
 
     return
 
-end subroutine shd_comp__computeGausQuad
+end subroutine shd_util__computeGausQuad
 
-subroutine shd_comp__computeGausQuadDble(N, XA, WT)
+subroutine shd_util__computeGausQuadDble(N, XA, WT)
 
     !╭──────────────────────────────────────────────────────────────╮!
     !   Generates the abscissas (X) and weights (W) for an N point
@@ -96,7 +176,6 @@ subroutine shd_comp__computeGausQuadDble(N, XA, WT)
     ! K=N/2, N must be even).
     !╰──────────────────────────────────────────────────────────────╯!
 
-    implicit none
     integer, intent(in) :: N
     real, intent(inout) :: XA(*), WT(*)
 
@@ -136,9 +215,126 @@ subroutine shd_comp__computeGausQuadDble(N, XA, WT)
 
     return
 
-end subroutine shd_comp__computeGausQuadDble
+end subroutine shd_util__computeGausQuadDble
 
-subroutine shd_comp__ssort(X, Y, N, KFLAG)
+subroutine shd_util__computePlanck(TEMP, UNITS, WAVENO, WAVELEN, PLANCK)
+
+    !    Calculates the Planck blackbody radiance. If UNITS='T' then
+    ! using brightness temperature units and the temperature is simply
+    ! returned. If UNITS='B' then doing a band integration and the
+    ! Planck blackbody radiance in [Watts /(meter^2 ster)] over a
+    ! wavenumber range [cm^-1] is returned. Otherwise, the Planck
+    ! blackbody radiance in [Watts /(meter^2 ster micron)] for a
+    ! temperature in [Kelvins] at a wavelength in [microns] is returned.
+
+    real TEMP, WAVENO(2), WAVELEN, PLANCK
+    character(len=1) :: UNITS
+    double precision X1, X2, F
+
+    if (UNITS .eq. 'T') then
+        PLANCK = TEMP
+    else if (UNITS .eq. 'B') then
+        if (TEMP .gt. 0.0) then
+            X1 = 1.4388d0*WAVENO(1)/TEMP
+            X2 = 1.4388d0*WAVENO(2)/TEMP
+            call shd_util__integratePlanck(X1, X2, F)
+            PLANCK = 1.1911d-8*(TEMP/1.4388d0)**4*F
+        else
+            PLANCK = 0.0
+        end if
+    else
+        if (TEMP .gt. 0.0) then
+            PLANCK = 1.1911e8/WAVELEN**5&
+                &/(exp(1.4388e4/(WAVELEN*TEMP)) - 1)
+        else
+            PLANCK = 0.0
+        end if
+    end if
+    return
+end subroutine shd_util__computePlanck
+
+subroutine shd_util__integratePlanck(X1, X2, F)
+
+    ! Returns integral of x**3/(exp(x)-1) from x1 to x2.
+    ! Accurate to better than 1 part in 10**9 for integral from
+    ! 0 to infinity (pi**4/15).
+
+    double precision X1, X2, F
+    double precision C
+
+    C = 1.0d0
+    if (X1 .lt. C .and. X2 .lt. C) then
+        F = integralLow(X2) - integralLow(X1)
+    else if (X1 .lt. C .and. X2 .ge. C) then
+        F = integralLow(C) - integralLow(X1) + integralHigh(C) - integralHigh(X2)
+    else if (X1 .ge. C .and. X2 .ge. C) then
+        F = integralHigh(X1) - integralHigh(X2)
+    else
+        stop 'Error [_integratePlanck]: X1 and X2 out of order.'
+    end if
+    return
+end subroutine shd_util__integratePlanck
+
+double precision function integralLow(X)
+
+    ! Integral of x**3/(exp(x)-1) from 0 to x.
+    ! Accurate for x less than about 1.
+    ! Uses Taylor series expansion around x=0.
+
+    double precision X
+    integer N
+    double precision SUM, F, A(29)
+    data A/0.0d0,&
+        &0.0d0, 0.333333333333333333333d0,&
+        &-0.125d0, 0.016666666666666666667d0,&
+        &0.0d0, -0.0001984126984126984127d0,&
+        &0.0d0, 0.36743092298647854203d-5,&
+        &0.0d0, -0.75156325156325156325d-7,&
+        &0.0d0, 0.16059043836821614599d-8,&
+        &0.0d0, -0.35227934257916621232d-10,&
+        &0.0d0, 0.78720803121674581370d-12,&
+        &0.0d0, -0.17840422612224120352d-13,&
+        &0.0d0, 0.40886009791799259829d-15,&
+        &0.0d0, -0.94559508632959211871d-17,&
+        &0.0d0, 0.22036011313440918061d-18,&
+        &0.0d0, -0.51683202540046382743d-20,&
+        &0.0d0, 0.12188644964239543006d-20/
+
+    SUM = A(4)*X**4
+    F = X
+    do N = 3, 29, 2
+        F = X*X*F
+        SUM = SUM + A(N)*F
+    end do
+
+    integralLow = SUM
+
+    return
+
+end function integralLow
+
+double precision function integralHigh(X)
+
+    ! Integral of x**3/(exp(x)-1) from x to infinity.
+    ! Accurate for x greater than about 1.
+
+    double precision X
+    integer N
+    double precision SUM
+
+    SUM = 0.0d0
+    do N = 1, 15
+        SUM = SUM + exp(-N*X)&
+            &*(X**3/N + 3*X**2/N**2 + 6*X/N**3 + 6.0d0/N**4)
+    end do
+
+    integralHigh = SUM
+
+    return
+
+end function integralHigh
+
+subroutine shd_util__ssort(X, Y, N, KFLAG)
 
     !╭──────────────────────────────────────────────────────────────╮!
     !***PURPOSE  Sort an array and optionally make the same interchanges in
@@ -428,122 +624,6 @@ subroutine shd_comp__ssort(X, Y, N, KFLAG)
 
     return
 
-end subroutine shd_comp__ssort
+end subroutine shd_util__ssort
 
-subroutine shd_comp__computePlanck(TEMP, UNITS, WAVENO, WAVELEN, PLANCK)
-    !    Calculates the Planck blackbody radiance. If UNITS='T' then
-    ! using brightness temperature units and the temperature is simply
-    ! returned. If UNITS='B' then doing a band integration and the
-    ! Planck blackbody radiance in [Watts /(meter^2 ster)] over a
-    ! wavenumber range [cm^-1] is returned. Otherwise, the Planck
-    ! blackbody radiance in [Watts /(meter^2 ster micron)] for a
-    ! temperature in [Kelvins] at a wavelength in [microns] is returned.
-    implicit none
-    real TEMP, WAVENO(2), WAVELEN, PLANCK
-    character(len=1) :: UNITS
-    double precision X1, X2, F
-
-    if (UNITS .eq. 'T') then
-        PLANCK = TEMP
-    else if (UNITS .eq. 'B') then
-        if (TEMP .gt. 0.0) then
-            X1 = 1.4388d0*WAVENO(1)/TEMP
-            X2 = 1.4388d0*WAVENO(2)/TEMP
-            call shd_comp__integratePlanck(X1, X2, F)
-            PLANCK = 1.1911d-8*(TEMP/1.4388d0)**4*F
-        else
-            PLANCK = 0.0
-        end if
-    else
-        if (TEMP .gt. 0.0) then
-            PLANCK = 1.1911e8/WAVELEN**5&
-                &/(exp(1.4388e4/(WAVELEN*TEMP)) - 1)
-        else
-            PLANCK = 0.0
-        end if
-    end if
-    return
-end subroutine shd_comp__computePlanck
-
-subroutine shd_comp__integratePlanck(X1, X2, F)
-    ! Returns integral of x**3/(exp(x)-1) from x1 to x2.
-    ! Accurate to better than 1 part in 10**9 for integral from
-    ! 0 to infinity (pi**4/15).
-    implicit none
-    double precision X1, X2, F
-    double precision integralLow, integralHigh
-    double precision C
-
-    C = 1.0d0
-    if (X1 .lt. C .and. X2 .lt. C) then
-        F = integralLow(X2) - integralLow(X1)
-    else if (X1 .lt. C .and. X2 .ge. C) then
-        F = integralLow(C) - integralLow(X1) + integralHigh(C) - integralHigh(X2)
-    else if (X1 .ge. C .and. X2 .ge. C) then
-        F = integralHigh(X1) - integralHigh(X2)
-    else
-        stop 'Error [_integratePlanck]: X1 and X2 out of order.'
-    end if
-    return
-end subroutine
-
-double precision function integralLow(X)
-
-    ! Integral of x**3/(exp(x)-1) from 0 to x.
-    ! Accurate for x less than about 1.
-    ! Uses Taylor series expansion around x=0.
-
-    implicit none
-    double precision X
-    integer N
-    double precision SUM, F, A(29)
-    data A/0.0d0,&
-        &0.0d0, 0.333333333333333333333d0,&
-        &-0.125d0, 0.016666666666666666667d0,&
-        &0.0d0, -0.0001984126984126984127d0,&
-        &0.0d0, 0.36743092298647854203d-5,&
-        &0.0d0, -0.75156325156325156325d-7,&
-        &0.0d0, 0.16059043836821614599d-8,&
-        &0.0d0, -0.35227934257916621232d-10,&
-        &0.0d0, 0.78720803121674581370d-12,&
-        &0.0d0, -0.17840422612224120352d-13,&
-        &0.0d0, 0.40886009791799259829d-15,&
-        &0.0d0, -0.94559508632959211871d-17,&
-        &0.0d0, 0.22036011313440918061d-18,&
-        &0.0d0, -0.51683202540046382743d-20,&
-        &0.0d0, 0.12188644964239543006d-20/
-
-    SUM = A(4)*X**4
-    F = X
-    do N = 3, 29, 2
-        F = X*X*F
-        SUM = SUM + A(N)*F
-    end do
-
-    integralLow = SUM
-
-    return
-
-end function integralLow
-
-double precision function integralHigh(X)
-
-    ! Integral of x**3/(exp(x)-1) from x to infinity.
-    ! Accurate for x greater than about 1.
-
-    implicit none
-    double precision X
-    integer N
-    double precision SUM
-
-    SUM = 0.0d0
-    do N = 1, 15
-        SUM = SUM + exp(-N*X)&
-            &*(X**3/N + 3*X**2/N**2 + 6*X/N**3 + 6.0d0/N**4)
-    end do
-
-    integralHigh = SUM
-
-    return
-
-end function integralHigh
+end module shd_util
