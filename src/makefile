@@ -24,7 +24,7 @@ ifeq ($(useOMP), yes)
 	# openMPI
 	FFLAGS += -fopenmp
 endif
-SHDOMOBJS = shdInit.o shdGrid.o shdSolv.o shdComp.o shdIO_inp.o shdIO_out.o shdSurf_brdf.o fftpack.o globals.o
+SHDOMOBJS = shdInit.o shdGrid.o shdSolv.o shdComp.o shdIO_inp.o shdIO_out.o shdSurf.o fftpack.o globals.o
 
 ifeq ($(FC), mpif90)
 	UseMPI = yes
@@ -69,7 +69,7 @@ shdInit.o: shdInit.f90 $(SHDOMMPIOBJ) globals.o shdGrid.o
 shdGrid.o: shdGrid.f90 $(SHDOMMPIOBJ) globals.o
 	$(F90) -c $(F90FLAGS) shdGrid.f90
 
-shdSolv.o: shdSolv.f90 $(SHDOMMPIOBJ) shdSurf_brdf.o shdInit.o
+shdSolv.o: shdSolv.f90 $(SHDOMMPIOBJ) shdSurf.o shdInit.o
 	$(F90) -c $(F90FLAGS) shdSolv.f90
 
 shdComp.o: shdComp.f90 globals.o $(SHDOMMPIOBJ) shdGrid.o
@@ -81,8 +81,8 @@ shdIO_inp.o: shdIO_inp.f90 globals.o
 shdIO_out.o: shdIO_out.f90 globals.o shdGrid.o
 	$(F90) -c $(F90FLAGS) shdIO_out.f90
 
-shdSurf_brdf.o: shdSurf_brdf.f90 globals.o
-	$(F90) -c $(F90FLAGS) shdSurf_brdf.f90
+shdSurf.o: shdSurf.f90 globals.o
+	$(F90) -c $(F90FLAGS) shdSurf.f90
 
 shdExt_mpi_.o: shdExt_mpi_.f90
 	$(F90) -c $(F90FLAGS) shdExt_mpi_.f90

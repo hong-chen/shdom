@@ -7,7 +7,7 @@ set(SHDOM_LIB_SRCS
     shdGrid.f90
     shdIO_inp.f90
     shdIO_out.f90
-    shdSurf_brdf.f90
+    shdSurf.f90
     fftpack.f90)
 
 # dummy option

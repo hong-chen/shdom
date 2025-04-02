@@ -5,13 +5,13 @@ module shd_grid
   implicit none
   private
 
+  public :: shd_grid__matchGridPnt
   public :: shd_grid__makeNewGridPnt
   public :: shd_grid__getNextCell
   public :: shd_grid__makeSweepOrder
   public :: shd_grid__divideCell
   public :: shd_grid__matchNeighFace
   public :: shd_grid__inheritNeighCell
-  public :: shd_grid__matchGridPnt
 
   public :: shd_grid__interpNewGridPnt
 
@@ -19,6 +19,106 @@ module shd_grid
   public :: shd_grid__testCellSplit
 
 contains
+
+subroutine shd_grid__matchGridPnt(&
+    &XP, YP, ZP, ICELL, IFACE,&
+    &GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+    &IPMATCH)
+
+    !   Determines whether the neighboring cells to ICELL adjacent to
+    ! face IFACE (1-6: -X,+X,-Y,+Y,-Z,+Z) have gridpoints that match
+    ! the point at XP,YP,ZP on face IFACE of cell ICELL.
+    ! If the face of ICELL has several neighboring cells, then the tree
+    ! is traced down to find those cells that might contain XP,YP,ZP.
+    ! IPMATCH is returned 0 if there is no match, otherwise it has the
+    ! number of the matching existing gridpoint.
+
+    real XP, YP, ZP
+    integer ICELL, IFACE
+    real GRIDPOS(3, *)
+    integer GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
+    integer*2 CELLFLAGS(*)
+    integer IPMATCH
+    integer, parameter :: MAXSTACK=64
+    integer CELLSTACK(MAXSTACK), SP
+    integer INEXT, IDIR, DIR, IC, IC1, KFACE, IPT, I
+    integer OPPFACE(6), GRIDFACE(4, 6)
+    data OPPFACE/2, 1, 4, 3, 6, 5/,&
+        &GRIDFACE/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8/
+
+    IPMATCH = 0
+    IDIR = (IFACE + 1)/2
+    KFACE = OPPFACE(IFACE)
+
+    ! Get the pointer to the neighbor cell
+    IC = abs(NEIGHPTR(IFACE, ICELL))
+    ! Don't process if the neighbor cell is a boundary
+    if (IC .eq. 0) return
+
+    ! Go down all relevant branches of the tree until there are no children
+    SP = 0
+    do while (.true.)
+
+        ! If at an end cell then check for a gridpoint match at the four
+        !   corners of the cell's face
+        do while (TREEPTR(2, IC) .eq. 0)
+            do I = 1, 4
+                IPT = GRIDPTR(GRIDFACE(I, KFACE), IC)
+                if (XP .eq. GRIDPOS(1, IPT) .and. YP .eq. GRIDPOS(2, IPT)&
+                    &.and. ZP .eq. GRIDPOS(3, IPT)) then
+                    IPMATCH = IPT
+                    return
+                end if
+            end do
+            ! Return if there are no more branches on the stack, otherwise pop
+            if (SP .eq. 0) return
+            IC = CELLSTACK(SP)
+            SP = SP - 1
+        end do
+
+        ! Get the direction current cell is split
+        DIR = ibits(int(CELLFLAGS(IC)), 2, 2)
+        if (DIR .eq. 0) stop 'Error [_matchGridPnt]: No split direction.'
+        ! If split is in direction of face then choose the near child cell
+        !   which is the negative side cell if this is a positive face.
+        IC1 = TREEPTR(2, IC)
+        if (DIR .eq. IDIR) then
+            IC = IC1 + 1 - mod(IFACE - 1, 2)
+        else
+            !   If split is not in direction of face then find which of two cells
+            ! has a face that contains the current location by comparing the
+            ! appropriate coordinate (X,Y,Z) of the grid point on the split line
+            ! with the current location.  If the split line matches a coordinate
+            ! then we have to trace down both cells so put one on the stack.
+            IC = IC1
+            if (DIR .eq. 1) then
+                if (XP .eq. GRIDPOS(1, GRIDPTR(8, IC1))) then
+                    SP = SP + 1
+                    CELLSTACK(SP) = IC + 1
+                else if (XP .gt. GRIDPOS(1, GRIDPTR(8, IC1))) then
+                    IC = IC + 1
+                end if
+            else if (DIR .eq. 2) then
+                if (YP .eq. GRIDPOS(2, GRIDPTR(8, IC1))) then
+                    SP = SP + 1
+                    CELLSTACK(SP) = IC + 1
+                else if (YP .gt. GRIDPOS(2, GRIDPTR(8, IC1))) then
+                    IC = IC + 1
+                end if
+            else
+                if (ZP .eq. GRIDPOS(3, GRIDPTR(8, IC1))) then
+                    SP = SP + 1
+                    CELLSTACK(SP) = IC + 1
+                else if (ZP .gt. GRIDPOS(3, GRIDPTR(8, IC1))) then
+                    IC = IC + 1
+                end if
+            end if
+            if (SP .ge. MAXSTACK)&
+                &stop 'Error [_matchGridPnt]: MAXSTACK exceeded.'
+        end if
+    end do
+
+end subroutine shd_grid__matchGridPnt
 
 subroutine shd_grid__makeNewGridPnt(IDIR, ICELL, NEWCELL, NPTS,&
     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
@@ -176,7 +276,7 @@ subroutine shd_grid__testGridSmooth(GRIDPTR, GRIDPOS, NEIGHPTR,&
     integer GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *), SHPTR(*)
     integer*2 CELLFLAGS(*)
     real GRIDPOS(3, *)
-    integer ID, IFACE, IP, IP1, IP2, IN, I, J, ISUM, IBITS
+    integer ID, IFACE, IP, IP1, IP2, INeigh, I, J, ISUM, IBITS
     integer INCELL(2), DIRSPLIT(2)
     integer FACECORNER(4, 6), EDGECORNER(2, 3)
     double precision XE, YE, ZE
@@ -231,9 +331,9 @@ subroutine shd_grid__testGridSmooth(GRIDPTR, GRIDPOS, NEIGHPTR,&
                 end if
                 ! If there are multiple neighboring cells then get
                 !   direction the neighbor cell was split
-                IN = NEIGHPTR(IFACE, ICELL)
-                if (IN .lt. 0) then
-                    DIRSPLIT(J) = ibits(int(CELLFLAGS(abs(IN))), 2, 2)
+                INeigh = NEIGHPTR(IFACE, ICELL)
+                if (INeigh .lt. 0) then
+                    DIRSPLIT(J) = ibits(int(CELLFLAGS(abs(INeigh))), 2, 2)
                 end if
             end do
 
@@ -468,7 +568,6 @@ subroutine shd_grid__divideCell(&
     integer*2 CELLFLAGS(*)
     real GRIDPOS(3, *)
     integer NEWCELL, IFACE, I
-    logical BTEST
 
     ! Only allow to divide an end cell (i.e. one not yet divided)
     if (TREEPTR(2, ICELL) .ne. 0) then
@@ -544,15 +643,15 @@ subroutine shd_grid__matchNeighFace(IFACE, IC, NEIGHPTR, CELLFLAGS,&
     integer IFACE, IC, NEIGHPTR(6, *), TREEPTR(2, *), GRIDPTR(8, *)
     integer*2 CELLFLAGS(*)
     real GRIDPOS(3, *)
-    integer IN, INN, JFACE, IC1, IC8, IN1, IN8, DIR, DIR1, DIR2
+    integer INeigh, INN, JFACE, IC1, IC8, IN1, IN8, DIR, DIR1, DIR2
     logical DONE
     real POS(3)
     integer OPPFACE(6)
     data OPPFACE/2, 1, 4, 3, 6, 5/
 
-    IN = abs(NEIGHPTR(IFACE, IC))
+    INeigh = abs(NEIGHPTR(IFACE, IC))
     ! If no neighbor then return
-    if (IN .eq. 0) return
+    if (INeigh .eq. 0) return
     JFACE = (IFACE + 1)/2
     ! Get the center of the new face
     IC1 = GRIDPTR(1, IC)
@@ -563,20 +662,20 @@ subroutine shd_grid__matchNeighFace(IFACE, IC, NEIGHPTR, CELLFLAGS,&
     POS(DIR2) = (GRIDPOS(DIR2, IC1) + GRIDPOS(DIR2, IC8))/2
     ! Go down the neighbors cell tree
     DONE = .false.
-    do while (.not. DONE .and. IC .ne. IN)
+    do while (.not. DONE .and. IC .ne. INeigh)
         ! Compare the coordinates of this neighbor cell to see
         !   if the new face is contained within the neighbor face.
-        IN1 = GRIDPTR(1, IN)
-        IN8 = GRIDPTR(8, IN)
+        IN1 = GRIDPTR(1, INeigh)
+        IN8 = GRIDPTR(8, INeigh)
         if (GRIDPOS(DIR1, IC1) .ge. GRIDPOS(DIR1, IN1) .and.&
             &GRIDPOS(DIR1, IC8) .le. GRIDPOS(DIR1, IN8) .and.&
             &GRIDPOS(DIR2, IC1) .ge. GRIDPOS(DIR2, IN1) .and.&
             &GRIDPOS(DIR2, IC8) .le. GRIDPOS(DIR2, IN8)) then
             ! If this is the bottom of the tree then we have a face match
-            if (TREEPTR(2, IN) .eq. 0) then
-                NEIGHPTR(IFACE, IC) = IN
+            if (TREEPTR(2, INeigh) .eq. 0) then
+                NEIGHPTR(IFACE, IC) = INeigh
             else
-                NEIGHPTR(IFACE, IC) = -IN
+                NEIGHPTR(IFACE, IC) = -INeigh
             end if
         end if
         ! Compare the size of the neighbor face with the new face.
@@ -587,26 +686,26 @@ subroutine shd_grid__matchNeighFace(IFACE, IC, NEIGHPTR, CELLFLAGS,&
             &GRIDPOS(DIR1, IN8) .le. GRIDPOS(DIR1, IC8) .and.&
             &GRIDPOS(DIR2, IN1) .ge. GRIDPOS(DIR2, IC1) .and.&
             &GRIDPOS(DIR2, IN8) .le. GRIDPOS(DIR2, IC8)) then
-            call shd_grid__inheritNeighCell(IN, OPPFACE(IFACE), IC,&
+            call shd_grid__inheritNeighCell(INeigh, OPPFACE(IFACE), IC,&
                 &NEIGHPTR, TREEPTR, CELLFLAGS)
         else
-            NEIGHPTR(OPPFACE(IFACE), IN) = -abs(NEIGHPTR(OPPFACE(IFACE), IN))
+            NEIGHPTR(OPPFACE(IFACE), INeigh) = -abs(NEIGHPTR(OPPFACE(IFACE), INeigh))
         end if
 
         ! Go down the neighbors cell tree until there is no children,
         !   finding the cell that contains the center of the new face.
-        if (TREEPTR(2, IN) .eq. 0) then
+        if (TREEPTR(2, INeigh) .eq. 0) then
             DONE = .true.
         else
-            DIR = ibits(int(CELLFLAGS(IN)), 2, 2)
-            INN = TREEPTR(2, IN)
+            DIR = ibits(int(CELLFLAGS(INeigh)), 2, 2)
+            INN = TREEPTR(2, INeigh)
             if (DIR .eq. JFACE) then
-                IN = INN + 1 - mod(IFACE - 1, 2)
+                INeigh = INN + 1 - mod(IFACE - 1, 2)
             else
                 if (POS(DIR) .gt. GRIDPOS(DIR, GRIDPTR(8, INN))) then
-                    IN = INN + 1
+                    INeigh = INN + 1
                 else
-                    IN = INN
+                    INeigh = INN
                 end if
             end if
         end if
@@ -615,13 +714,13 @@ subroutine shd_grid__matchNeighFace(IFACE, IC, NEIGHPTR, CELLFLAGS,&
     return
 end subroutine shd_grid__matchNeighFace
 
-subroutine shd_grid__inheritNeighCell(ICELL, IFACE, IN,&
+subroutine shd_grid__inheritNeighCell(ICELL, IFACE, INeigh,&
     &NEIGHPTR, TREEPTR, CELLFLAGS)
 
-    !   Updates the ICELL cell's new neighbor cell (IN) for all
+    !   Updates the ICELL cell's new neighbor cell (INeigh) for all
     ! children cells that border the face (IFACE).
 
-    integer ICELL, IFACE, IN, NEIGHPTR(6, *), TREEPTR(2, *)
+    integer ICELL, IFACE, INeigh, NEIGHPTR(6, *), TREEPTR(2, *)
     integer*2 CELLFLAGS(*)
     integer JFACE, IC, DIR, SP, STACK(50)
     logical DONE
@@ -634,7 +733,7 @@ subroutine shd_grid__inheritNeighCell(ICELL, IFACE, IN,&
     SP = 0
     DONE = .false.
     do while (.not. DONE)
-        NEIGHPTR(IFACE, IC) = IN
+        NEIGHPTR(IFACE, IC) = INeigh
         ! If this is an end cell then pop the stack
         if (TREEPTR(2, IC) .eq. 0) then
             ! If no more to pop then we are done
@@ -664,106 +763,6 @@ subroutine shd_grid__inheritNeighCell(ICELL, IFACE, IN,&
 
     return
 end subroutine shd_grid__inheritNeighCell
-
-subroutine shd_grid__matchGridPnt(&
-    &XP, YP, ZP, ICELL, IFACE,&
-    &GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-    &IPMATCH)
-
-    !   Determines whether the neighboring cells to ICELL adjacent to
-    ! face IFACE (1-6: -X,+X,-Y,+Y,-Z,+Z) have gridpoints that match
-    ! the point at XP,YP,ZP on face IFACE of cell ICELL.
-    ! If the face of ICELL has several neighboring cells, then the tree
-    ! is traced down to find those cells that might contain XP,YP,ZP.
-    ! IPMATCH is returned 0 if there is no match, otherwise it has the
-    ! number of the matching existing gridpoint.
-
-    real XP, YP, ZP
-    integer ICELL, IFACE
-    real GRIDPOS(3, *)
-    integer GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
-    integer*2 CELLFLAGS(*)
-    integer IPMATCH
-    integer, parameter :: MAXSTACK=64
-    integer CELLSTACK(MAXSTACK), SP
-    integer INEXT, IDIR, DIR, IC, IC1, KFACE, IPT, I
-    integer OPPFACE(6), GRIDFACE(4, 6)
-    data OPPFACE/2, 1, 4, 3, 6, 5/,&
-        &GRIDFACE/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8/
-
-    IPMATCH = 0
-    IDIR = (IFACE + 1)/2
-    KFACE = OPPFACE(IFACE)
-
-    ! Get the pointer to the neighbor cell
-    IC = abs(NEIGHPTR(IFACE, ICELL))
-    ! Don't process if the neighbor cell is a boundary
-    if (IC .eq. 0) return
-
-    ! Go down all relevant branches of the tree until there are no children
-    SP = 0
-    do while (.true.)
-
-        ! If at an end cell then check for a gridpoint match at the four
-        !   corners of the cell's face
-        do while (TREEPTR(2, IC) .eq. 0)
-            do I = 1, 4
-                IPT = GRIDPTR(GRIDFACE(I, KFACE), IC)
-                if (XP .eq. GRIDPOS(1, IPT) .and. YP .eq. GRIDPOS(2, IPT)&
-                    &.and. ZP .eq. GRIDPOS(3, IPT)) then
-                    IPMATCH = IPT
-                    return
-                end if
-            end do
-            ! Return if there are no more branches on the stack, otherwise pop
-            if (SP .eq. 0) return
-            IC = CELLSTACK(SP)
-            SP = SP - 1
-        end do
-
-        ! Get the direction current cell is split
-        DIR = ibits(int(CELLFLAGS(IC)), 2, 2)
-        if (DIR .eq. 0) stop 'Error [_matchGridPnt]: No split direction.'
-        ! If split is in direction of face then choose the near child cell
-        !   which is the negative side cell if this is a positive face.
-        IC1 = TREEPTR(2, IC)
-        if (DIR .eq. IDIR) then
-            IC = IC1 + 1 - mod(IFACE - 1, 2)
-        else
-            !   If split is not in direction of face then find which of two cells
-            ! has a face that contains the current location by comparing the
-            ! appropriate coordinate (X,Y,Z) of the grid point on the split line
-            ! with the current location.  If the split line matches a coordinate
-            ! then we have to trace down both cells so put one on the stack.
-            IC = IC1
-            if (DIR .eq. 1) then
-                if (XP .eq. GRIDPOS(1, GRIDPTR(8, IC1))) then
-                    SP = SP + 1
-                    CELLSTACK(SP) = IC + 1
-                else if (XP .gt. GRIDPOS(1, GRIDPTR(8, IC1))) then
-                    IC = IC + 1
-                end if
-            else if (DIR .eq. 2) then
-                if (YP .eq. GRIDPOS(2, GRIDPTR(8, IC1))) then
-                    SP = SP + 1
-                    CELLSTACK(SP) = IC + 1
-                else if (YP .gt. GRIDPOS(2, GRIDPTR(8, IC1))) then
-                    IC = IC + 1
-                end if
-            else
-                if (ZP .eq. GRIDPOS(3, GRIDPTR(8, IC1))) then
-                    SP = SP + 1
-                    CELLSTACK(SP) = IC + 1
-                else if (ZP .gt. GRIDPOS(3, GRIDPTR(8, IC1))) then
-                    IC = IC + 1
-                end if
-            end if
-            if (SP .ge. MAXSTACK)&
-                &stop 'Error [_matchGridPnt]: MAXSTACK exceeded.'
-        end if
-    end do
-
-end subroutine shd_grid__matchGridPnt
 
 subroutine shd_grid__interpNewGridPnt(NEWPOINTS, NPTS,&
     &NSTOKES, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
