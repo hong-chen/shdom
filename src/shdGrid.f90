@@ -10,7 +10,7 @@ module shd_grid
   public :: shd_grid__getNextCell
   public :: shd_grid__makeSweepOrder
   public :: shd_grid__divideCell
-  public :: shd_grid__matchNeighFace
+  public :: shd_grid__matchNeighCellFace
   public :: shd_grid__inheritNeighCell
 
   public :: shd_grid__interpNewGridPnt
@@ -623,16 +623,16 @@ subroutine shd_grid__divideCell(&
         end if
         ! Then see if we can match faces further down the neighbor's tree;
         !   also update the neighboring cells pointers
-        call shd_grid__matchNeighFace(IFACE, NEWCELL, NEIGHPTR,&
+        call shd_grid__matchNeighCellFace(IFACE, NEWCELL, NEIGHPTR,&
             &CELLFLAGS, TREEPTR, GRIDPTR, GRIDPOS)
-        call shd_grid__matchNeighFace(IFACE, NEWCELL + 1, NEIGHPTR,&
+        call shd_grid__matchNeighCellFace(IFACE, NEWCELL + 1, NEIGHPTR,&
             &CELLFLAGS, TREEPTR, GRIDPTR, GRIDPOS)
     end do
 
     return
 end subroutine shd_grid__divideCell
 
-subroutine shd_grid__matchNeighFace(IFACE, IC, NEIGHPTR, CELLFLAGS,&
+subroutine shd_grid__matchNeighCellFace(IFACE, IC, NEIGHPTR, CELLFLAGS,&
     &TREEPTR, GRIDPTR, GRIDPOS)
 
     !   Resolves the neighbor pointers for a new cell IC (from a subdivision)
@@ -712,7 +712,7 @@ subroutine shd_grid__matchNeighFace(IFACE, IC, NEIGHPTR, CELLFLAGS,&
     end do
 
     return
-end subroutine shd_grid__matchNeighFace
+end subroutine shd_grid__matchNeighCellFace
 
 subroutine shd_grid__inheritNeighCell(ICELL, IFACE, INeigh,&
     &NEIGHPTR, TREEPTR, CELLFLAGS)
