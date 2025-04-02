@@ -1,7 +1,6 @@
 module shd_solv_int
 
     use globals
-    use shd_util
     use shd_init
     use shd_sfc
     use shd_grid
@@ -12,7 +11,10 @@ module shd_solv_int
     implicit none
 
     public :: shd_solv__integratePath
-    public ::
+    public :: shd_solv__backIntegrate3D
+    public :: shd_solv__backIntegrate3D_
+    public :: shd_solv__backIntegrate2D
+    public :: shd_solv__backIntegrate1D
 
 contains
 
@@ -320,7 +322,8 @@ subroutine shd_solv__integratePath(&
 
 end subroutine shd_solv__integratePath
 
-subroutine shd_solv__backIntegrate3D(NX, NY, NZ, NA, NPTS, NCELLS,&
+subroutine shd_solv__backIntegrate3D(&
+    &NX, NY, NZ, NA, NPTS, NCELLS,&
     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &GRIDPOS, XGRID, YGRID, ZGRID, SWEEPORD,&
     &MU, PHI, TRANSMIN, BCFLAG, IPFLAG,&
@@ -660,7 +663,8 @@ subroutine shd_solv__backIntegrate3D(NX, NY, NZ, NA, NPTS, NCELLS,&
     return
 end subroutine shd_solv__backIntegrate3D
 
-subroutine shd_solv__backIntegrate3D_(NX, NY, NZ, NA, NPTS, NCELLS,&
+subroutine shd_solv__backIntegrate3D_(&
+    &NX, NY, NZ, NA, NPTS, NCELLS,&
     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &GRIDPOS, XGRID, YGRID, ZGRID, SWEEPORD,&
     &MU, PHI, TRANSMIN, BCFLAG, IPFLAG,&
@@ -677,9 +681,6 @@ subroutine shd_solv__backIntegrate3D_(NX, NY, NZ, NA, NPTS, NCELLS,&
     ! across the cell is done and added to the radiance.  The radiance
     ! at the end of the ray path is interpolated from the known grid point
     ! radiances on the face.  The resulting radiances are put in GRIDRAD.
-
-    use shd_grid
-    use shd_ext_mpi
 
     integer NX, NY, NZ, NA, NPTS, NCELLS, KANG, BCFLAG, IPFLAG
     integer GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
@@ -1024,10 +1025,13 @@ subroutine shd_solv__backIntegrate3D_(NX, NY, NZ, NA, NPTS, NCELLS,&
         end if
 
     end do
+
     return
+
 end subroutine shd_solv__backIntegrate3D_
 
-subroutine shd_solv__backIntegrate2D(NX, NY, NZ, NA, NPTS, NCELLS,&
+subroutine shd_solv__backIntegrate2D(&
+    &NX, NY, NZ, NA, NPTS, NCELLS,&
     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &GRIDPOS, SWEEPORD, MU, PHI, TRANSMIN,&
     &EXTINCT, NSTOKES, SOURCE, KANG, GRIDRAD)
@@ -1274,10 +1278,13 @@ subroutine shd_solv__backIntegrate2D(NX, NY, NZ, NA, NPTS, NCELLS,&
         end if
 
     end do
+
     return
+
 end subroutine shd_solv__backIntegrate2D
 
-subroutine shd_solv__backIntegrate1D(NX, NY, NZ, NA, NPTS, NCELLS,&
+subroutine shd_solv__backIntegrate1D(&
+    &NX, NY, NZ, NA, NPTS, NCELLS,&
     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &GRIDPOS, SWEEPORD, MU, PHI, TRANSMIN,&
     &EXTINCT, NSTOKES, SOURCE, KANG, GRIDRAD)
@@ -1444,6 +1451,7 @@ subroutine shd_solv__backIntegrate1D(NX, NY, NZ, NA, NPTS, NCELLS,&
             GRIDRAD(:, IPT) = RAD(:)
         end if
     end do
+
     return
 
 end subroutine shd_solv__backIntegrate1D
