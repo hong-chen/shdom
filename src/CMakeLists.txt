@@ -6,6 +6,7 @@ set(SHDOM_LIB_SRCS
     shdInit.f90
     shdPha.f90
     shdSHDO.f90
+    shdSrc.f90
     shdDir.f90
     shdUtil.f90
     shdComp.f90
@@ -13,7 +14,6 @@ set(SHDOM_LIB_SRCS
     shdGrid_cal.f90
     shdSolv_rte.f90
     shdSolv_int.f90
-    shdSolv_src.f90
     shdSolv_rad.f90
     shdIO_inp.f90
     shdIO_out.f90

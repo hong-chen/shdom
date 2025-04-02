@@ -140,7 +140,7 @@ subroutine shd_solv__solveRte(&
         call shd_comp__interpRad(NSTOKES, NBPTS, NPTS, RSHPTR, RADIANCE,&
             &NBCELLS, NCELLS, TREEPTR, GRIDPTR, GRIDPOS)
         ! Initialize the source function from the radiance field
-        call shd_comp__computeSrc(NSTOKES, ML, MM, NLM,&
+        call shd_src__computeSrc(NSTOKES, ML, MM, NLM,&
             &NSTLEG, NLEG, NUMPHASE, NPTS,&
             &FIXSH, SRCTYPE, SOLARMU, YLMSUN, ALBEDO, LEGEN,&
             &IPHASE, PLANCK, DIRFLUX, SHACC,&
@@ -294,7 +294,7 @@ subroutine shd_solv__solveRte(&
         !   do the adaptive spherical harmonics truncation, compute
         !   the solution criterion, and dot products for acceleration
         if (SOLCRIT .lt. ENDADAPTSOL .or. ITER .gt. 30) FIXSH = .true.
-        call shd_comp__computeSrc(NSTOKES, ML, MM, NLM,&
+        call shd_src__computeSrc(NSTOKES, ML, MM, NLM,&
             &NSTLEG, NLEG, NUMPHASE, NPTS,&
             &FIXSH, SRCTYPE, SOLARMU, YLMSUN, ALBEDO, LEGEN,&
             &IPHASE, PLANCK, DIRFLUX, SHACC,&

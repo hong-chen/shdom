@@ -4,6 +4,7 @@ module shd_comp
     use shd_util
     use shd_init
     use shd_pha
+    use shd_src
 
     implicit none
     private
@@ -135,7 +136,7 @@ subroutine shd_comp__computeRad(&
         else
 
             ! Compute the source function throughout grid for this angle
-            call shd_comp__computeOneSrc(NSTOKES, ML, MM, NLM, NSTLEG, NLEG,&
+            call shd_src__computeOneSrc(NSTOKES, ML, MM, NLM, NSTLEG, NLEG,&
                 &NUMPHASE, NPTS, DELTAM, MUOUT, PHIOUT, SRCTYPE,&
                 &SOLARMU, SOLARAZ, ALBEDO, LEGEN,&
                 &IPHASE, DIRFLUX, SHPTR, SOURCE, SOURCE1)
@@ -178,7 +179,7 @@ subroutine shd_comp__computeRad(&
                 do JX = 1, NXOUT
                     IRAD = IRAD + 1
                     TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
-                    call shd_comp__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
+                    call shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
                         &NX, NY, NZ, NPTS, NCELLS,&
                         &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
                         &XGRID, YGRID, ZGRID, GRIDPOS,&

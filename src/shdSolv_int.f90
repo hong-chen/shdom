@@ -3,7 +3,7 @@ module shd_solv_int
     use globals
     use shd_init
     use shd_sfc
-    use shd_grid
+    use shd_grid_ind
     use shd_ext_mpi
 
     use shd_shdo

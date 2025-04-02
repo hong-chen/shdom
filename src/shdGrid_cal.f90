@@ -241,7 +241,7 @@ subroutine shd_grid__splitGrid(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
     ! grid point, grid cell, or spherical harmonic arrays (sizes given
     ! by MAXIG, MAXIC, MAXIV, MAXIDO) then the OUTOFMEM flag is returned true.
 
-    use shd_grid
+    use shd_grid_ind
     use shd_ext_mpi
 
     implicit none
@@ -542,12 +542,12 @@ subroutine shd_grid__interpNewGridPnt(NEWPOINTS, NPTS,&
                 IPH = IP
             end if
             if (NSTOKES .eq. 1) then
-                call shd_solv__calSrcPnt_(NLM, NLEG, LOFJ,&
+                call shd_src__calSrcPnt_(NLM, NLEG, LOFJ,&
                     &SRCTYPE, DIRFLUX(IP)*SECMU0, YLMSUN,&
                     &PLANCK(IP), ALBEDO(IP), IPH, LEGEN,&
                     &NR, RADIANCE(1, IR + 1), SOURCET)
             else
-                call shd_solv__calSrcPnt(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
+                call shd_src__calSrcPnt(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
                     &SRCTYPE, DIRFLUX(IP)*SECMU0, YLMSUN,&
                     &PLANCK(IP), ALBEDO(IP), IPH, LEGEN,&
                     &NR, RADIANCE(1, IR + 1), SOURCET)

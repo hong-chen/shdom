@@ -6,7 +6,10 @@ module shd_ext_mpi
 
     use globals
     use mpi_f08
-    use shd_grid
+    use shd_util
+    use shd_grid_ind
+    use shd_src
+    use shd_sfc
 
     implicit none
     private
@@ -2273,7 +2276,7 @@ subroutine shd_ext__mpiComputeRad(&
         else
 
             ! Compute the source function throughout grid for this angle
-            call shd_comp__computeOneSrc(NSTOKES, ML, MM, NLM, NSTLEG,&
+            call shd_src__computeOneSrc(NSTOKES, ML, MM, NLM, NSTLEG,&
                 &NLEG, NUMPHASE, NPTS, DELTAM, MUOUT, PHIOUT,&
                 &SRCTYPE, SOLARMU, SOLARAZ, ALBEDO, LEGEN, IPHASE,&
                 &DIRFLUX, SHPTR, SOURCE, SOURCE1)
@@ -2340,7 +2343,7 @@ subroutine shd_ext__mpiComputeRad(&
                     if (X0 .ge. (XGRID(1) - EPS) .and. X0 .le. (XGRID(NX) + EPS) .and.&
                         Y0 .ge. (YGRID(1) - EPS) .and. Y0 .le. (YGRID(NY) + EPS)) then
                         TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
-                        call shd_comp__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
+                        call shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
                             &NX, NY, NZ, NPTS, NCELLS,&
                             &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
                             &XGRID, YGRID, ZGRID, GRIDPOS,&
@@ -2428,7 +2431,7 @@ subroutine shd_ext__mpiComputeRad(&
                         X = BndRadRealInfo(1, J, Ldownx); Y = BndRadRealInfo(2, J, Ldownx)
                         Z = BndRadRealInfo(3, J, Ldownx); TRANSMIT = BndRadRealInfo(4, J, Ldownx)
                         RADIANCE(:) = BndRadRealInfo(5:4 + NSTOKES, J, Ldownx)
-                        call shd_comp__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
+                        call shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
                             &NX, NY, NZ, NPTS, NCELLS,&
                             &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
                             &XGRID, YGRID, ZGRID, GRIDPOS,&
@@ -2465,7 +2468,7 @@ subroutine shd_ext__mpiComputeRad(&
                         X = BndRadRealInfo(1, J, Ldowny); Y = BndRadRealInfo(2, J, Ldowny)
                         Z = BndRadRealInfo(3, J, Ldowny); TRANSMIT = BndRadRealInfo(4, J, Ldowny)
                         RADIANCE(:) = BndRadRealInfo(5:4 + NSTOKES, J, Ldowny)
-                        call shd_comp__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
+                        call shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
                             &NX, NY, NZ, NPTS, NCELLS,&
                             &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
                             &XGRID, YGRID, ZGRID, GRIDPOS,&

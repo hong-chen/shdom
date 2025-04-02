@@ -1,4 +1,4 @@
-module shd_grid
+module shd_grid_ind
 
   use globals
 
@@ -1110,4 +1110,4 @@ logical function sweepCellNext(BCFLAG, NXC, NYC, NZ, IOCT,&
 
 end function sweepCellNext
 
-end module shd_grid
+end module shd_grid_ind

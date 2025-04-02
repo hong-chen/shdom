@@ -1,7 +1,7 @@
 module shd_io_out
 
   use globals
-  use shd_grid
+  use shd_grid_ind
   use shd_util
 
   implicit none
