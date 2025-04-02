@@ -1,4 +1,25 @@
-subroutine shd_comp__computeSH(NSHOUT, NSTOKES, NPTS, SRCTYPE,&
+module shd_shdo
+
+    use globals
+    use shd_pha
+    use shd_sfc
+
+    implicit none
+
+    public :: shd_shdo__computeSH
+
+    public :: shd_shdo__makeSHDO
+    public :: shd_shdo__makeSfcDO
+
+    public :: shd_shdo__transSHtoDO
+    public :: shd_shdo__transSHtoDO_
+    public :: shd_shdo__transDOtoSH
+    public :: shd_shdo__transDOtoSH_
+
+contains
+
+subroutine shd_shdo__computeSH(&
+    &NSHOUT, NSTOKES, NPTS, SRCTYPE,&
     &SOLARMU, SOLARAZ, DIRFLUX,&
     &RSHPTR, ML, MM, RADIANCE, SHTERMS)
 
@@ -8,7 +29,6 @@ subroutine shd_comp__computeSH(NSHOUT, NSTOKES, NPTS, SRCTYPE,&
     ! components.  If NSHOUT=5 then the HIGHORDERRAD flag is set and the
     ! rms of the higher order terms in the radiance series is computed.
 
-    implicit none
     integer NSTOKES, NPTS, RSHPTR(NPTS + 1), ML, MM, NSHOUT
     real SOLARMU, SOLARAZ, DIRFLUX(NPTS)
     real RADIANCE(NSTOKES, *), SHTERMS(NSHOUT, NPTS)
@@ -33,7 +53,7 @@ subroutine shd_comp__computeSH(NSHOUT, NSTOKES, NPTS, SRCTYPE,&
     SOLM = SECSOL/(4.0*PI)
     F0 = 0.0
     if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
-        call shd_comp__computeYLM(.true., SOLARMU, SOLARAZ, ML, MM, 1, YLMSUN)
+        call shd_pha__computeYLM(.true., SOLARMU, SOLARAZ, ML, MM, 1, YLMSUN)
     end if
     do I = 1, NPTS
         IR = RSHPTR(I)
@@ -75,10 +95,12 @@ subroutine shd_comp__computeSH(NSHOUT, NSTOKES, NPTS, SRCTYPE,&
         end if
     end do
     deallocate (YLMSUN)
-    return
-end subroutine shd_comp__computeSH
 
-subroutine shd_solv__makeSHDO(NSTLEG, ML, MM, NLM, NMU, NPHI0,&
+    return
+
+end subroutine shd_shdo__computeSH
+
+subroutine shd_shdo__makeSHDO(NSTLEG, ML, MM, NLM, NMU, NPHI0,&
     &NPHI0MAX, MU, PHI, WTMU, WTDO, FFTFLAG,&
     &CMU1, CMU2, CPHI1, CPHI2, WPHISAVE)
 
@@ -92,7 +114,6 @@ subroutine shd_solv__makeSHDO(NSTLEG, ML, MM, NLM, NMU, NPHI0,&
     ! The FFTPACK phase coefficients for the FFT in azimuth are also
     ! output in WPHISAVE.
 
-    implicit none
     integer NSTLEG, ML, MM, NLM, NMU, NPHI0(NMU), NPHI0MAX
     logical FFTFLAG(NMU)
     real MU(NMU), PHI(NMU, *), WTMU(NMU), WTDO(NMU, *)
@@ -108,14 +129,14 @@ subroutine shd_solv__makeSHDO(NSTLEG, ML, MM, NLM, NMU, NPHI0,&
     do I = 1, NMU
         X = MU(I)
         PRC(:, :) = 0.0
-        call shd_comp__computePLM(.false., X, ML, MM, PRC)
+        call shd_pha__computePLM(.false., X, ML, MM, PRC)
         do J = 1, NLM
             do Q = 1, NSTLEG
                 CMU1(Q, J, I) = PRC(Q, J)
             end do
         end do
         PRC(:, :) = 0.0
-        call shd_comp__computePLM(.true., X, ML, MM, PRC)
+        call shd_pha__computePLM(.true., X, ML, MM, PRC)
         do J = 1, NLM
             do Q = 1, NSTLEG
                 CMU2(Q, I, J) = PRC(Q, J)*WTMU(I)
@@ -147,9 +168,9 @@ subroutine shd_solv__makeSHDO(NSTLEG, ML, MM, NLM, NMU, NPHI0,&
         end if
     end do
     return
-end subroutine
+end subroutine shd_shdo__makeSHDO
 
-subroutine shd_solv__makeSurfDO(SFCTYPE, WAVELEN,&
+subroutine shd_shdo__makeSfcDO(SFCTYPE, WAVELEN,&
     &NXSFC, NYSFC, NSFCPAR, SFCPARMS, NSTOKES,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
     &SFC_BRDF_DO)
@@ -158,10 +179,6 @@ subroutine shd_solv__makeSurfDO(SFCTYPE, WAVELEN,&
     ! discrete ordinate incident and outgoing directions.  For each
     ! pair of discrete ordinates shd_sfc__brdfSurface is called and the
     ! integration weights are included.
-
-    use shd_sfc
-
-    implicit none
 
     integer NXSFC, NYSFC, NSFCPAR
     integer NSTOKES, NMU, NPHI0MAX, NPHI0(NMU)
@@ -191,10 +208,12 @@ subroutine shd_solv__makeSurfDO(SFCTYPE, WAVELEN,&
             end do
         end do
     end do
-    return
-end subroutine shd_solv__makeSurfDO
 
-subroutine shd_solv__SHtoDO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
+    return
+
+end subroutine shd_shdo__makeSfcDO
+
+subroutine shd_shdo__transSHtoDO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
     &NMU, NPHI0MAX, NPHI0,&
     &IMU, FFTFLAG, CMU1, CPHI1, WSAVE,&
     &SHPTR, INDATA, OUTDATA)
@@ -210,7 +229,6 @@ subroutine shd_solv__SHtoDO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
     ! input array is adaptive (with pointer SHPTR); the last term for
     ! each grid point must be the maximum m for the particular l term.
 
-    implicit none
     integer NPTS, NSTOKES, NSTLEG
     integer ML, MM, NLM, NMU, NPHI0MAX, NPHI0
     integer IMU, SHPTR(NPTS + 1)
@@ -321,13 +339,17 @@ subroutine shd_solv__SHtoDO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
         end if
     end do
     deallocate (MOFJ, SUMUV, SUMCS, TMP)
-    return
-end subroutine shd_solv__SHtoDO
 
-subroutine shd_solv__SHtoDO_(NPTS, ML, MM, NLM,&
+    return
+
+end subroutine shd_shdo__transSHtoDO
+
+subroutine shd_shdo__transSHtoDO_(&
+    &NPTS, ML, MM, NLM,&
     &NMU, NPHI0MAX, NPHI0,&
     &IMU, FFTFLAG, CMU1, CPHI1, WSAVE,&
     &SHPTR, INDATA, OUTDATA)
+
     !   Transforms the input data from spherical harmonic space to discrete
     ! ordinate space for one zenith angle (IMU) for the unpolarized case
     ! Successive transforms are done in zenith and then azimuth angle.
@@ -342,7 +364,7 @@ subroutine shd_solv__SHtoDO_(NPTS, ML, MM, NLM,&
     ! The number of floating point operations for the DFT is 2*Nmu*Nphi0*Nm.
     ! The number of floating point operations for the zenith angle transform
     ! is 2*Nmu*Nlm.
-    implicit none
+
     integer NPTS
     integer ML, MM, NLM, NMU, NPHI0MAX, NPHI0
     integer IMU, SHPTR(NPTS + 1)
@@ -422,19 +444,21 @@ subroutine shd_solv__SHtoDO_(NPTS, ML, MM, NLM,&
         end if
     end do
     deallocate (MOFJ, SUMUV, SUMCS, TMP)
-    return
-end subroutine shd_solv__SHtoDO_
 
-subroutine shd_solv__DOtoSH(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
+    return
+
+end subroutine shd_shdo__transSHtoDO_
+
+subroutine shd_shdo__transDOtoSH(&
+    &NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
     &NMU, NPHI0MAX, NPHI0,&
     &IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
     &RSHPTR, INDATA, OUTDATA)
 
     !   Transforms the input field from discrete ordinate space to spherical
     ! harmonic space for one zenith angle (IMU) by keeping a running
-    ! sum in OUTDATA between successive calls.  (See shd_solv__SHtoDO for more).
+    ! sum in OUTDATA between successive calls.  (See shd_shdo__transSHtoDO for more).
 
-    implicit none
     integer NPTS, NSTOKES, NSTLEG
     integer ML, MM, NLM, NMU, NPHI0MAX, NPHI0
     integer IMU, RSHPTR(NPTS + 1)
@@ -536,19 +560,20 @@ subroutine shd_solv__DOtoSH(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
         IS = IS + NSH
     end do
     deallocate (MOFJ, SUMUV, SUMCS, TMP)
-    return
-end subroutine shd_solv__DOtoSH
 
-subroutine shd_solv__DOtoSH_(NPTS, ML, MM, NLM,&
+    return
+
+end subroutine shd_shdo__transDOtoSH
+
+subroutine shd_shdo__transDOtoSH_(NPTS, ML, MM, NLM,&
     &NMU, NPHI0MAX, NPHI0,&
     &IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
     &RSHPTR, INDATA, OUTDATA)
 
     !   Transforms the input field from discrete ordinate space to spherical
     ! harmonic space for one zenith angle (IMU) by keeping a running
-    ! sum in OUTDATA between successive calls.  (See shd_solv__SHtoDO for more).
+    ! sum in OUTDATA between successive calls.  (See shd_shdo__transSHtoDO for more).
 
-    implicit none
     integer NPTS
     integer ML, MM, NLM, NMU, NPHI0MAX, NPHI0
     integer IMU, RSHPTR(NPTS + 1)
@@ -621,4 +646,6 @@ subroutine shd_solv__DOtoSH_(NPTS, ML, MM, NLM,&
     end do
     deallocate (MOFJ, SUMUV, SUMCS, TMP)
     return
-end subroutine shd_solv__DOtoSH_
+end subroutine shd_shdo__transDOtoSH_
+
+end module shd_shdo

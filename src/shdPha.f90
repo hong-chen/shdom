@@ -1,4 +1,25 @@
-subroutine shd_comp__computePhase(NSCATANGLE, NUMPHASE, NSTPHASE,&
+module shd_pha
+
+    use globals
+
+    implicit none
+
+    public :: shd_pha__computePhase
+    public :: shd_pha__computeLegendre
+    public :: shd_pha__computeYLM
+    public :: shd_pha__computePLM
+    public :: shd_pha__computeWigner
+
+    private :: shd_pha__computeYLM_
+    private :: shd_pha__computeWignerDM0
+    private :: shd_pha__computeWignerDM0DM2PDM2M
+
+    private :: wignerDMM1N0
+    private :: wignerDMM0N0
+
+contains
+
+subroutine shd_pha__computePhase(NSCATANGLE, NUMPHASE, NSTPHASE,&
     &NSTOKES, ML, NSTLEG, NLEG, LEGEN, PHASETAB)
 
     !   Precomputes the phase matrix elements I-I and I-Q as a function
@@ -6,7 +27,6 @@ subroutine shd_comp__computePhase(NSCATANGLE, NUMPHASE, NSTPHASE,&
     ! tabulated phase functions. Output is in PHASETAB.
     ! NSTPHASE=1 for NSTOKES=1 and NSTPHASE=2 for NSTOKES>1.
 
-    implicit none
     integer NSCATANGLE, NUMPHASE, NSTPHASE
     integer NSTOKES, NSTLEG, ML, NLEG
     real LEGEN(NSTLEG, 0:NLEG, NUMPHASE)
@@ -23,9 +43,9 @@ subroutine shd_comp__computePhase(NSCATANGLE, NUMPHASE, NSTPHASE,&
     do J = 1, NSCATANGLE
         COSSCAT = cos(PI*DFLOAT(J - 1)/(NSCATANGLE - 1))
         X = dble(COSSCAT)
-        call shd_comp__computeWigner(X, NLEG, 0, 0, DMM1)
+        call shd_pha__computeWigner(X, NLEG, 0, 0, DMM1)
         if (NSTOKES .gt. 1) then
-            call shd_comp__computeWigner(X, NLEG, 2, 0, DMM2)
+            call shd_pha__computeWigner(X, NLEG, 2, 0, DMM2)
         end if
 
         ! Unscaled the needed Legendre coefficients, but divide by 1-f
@@ -75,16 +95,15 @@ subroutine shd_comp__computePhase(NSCATANGLE, NUMPHASE, NSTPHASE,&
     deallocate (UNSCLEGEN, DMM1, DMM2)
     return
 
-end subroutine shd_comp__computePhase
+end subroutine shd_pha__computePhase
 
-subroutine shd_comp__computeLegendre(COSSCAT, NLEG, P)
+subroutine shd_pha__computeLegendre(COSSCAT, NLEG, P)
 
     !   This subroutine computes a set of Legendre polynomials for
     ! a particular scattering angle COSSCAT.  NLEG is the maximum term.
     ! The Legendre functions evaluated at COSSCAT are returned in
     ! P, starting at l=0 and ending with l=NLEG  (NLEG+1 terms).
 
-    implicit none
     integer, intent(in) :: NLEG
     double precision COSSCAT, P(0:NLEG)
     integer L
@@ -106,9 +125,9 @@ subroutine shd_comp__computeLegendre(COSSCAT, NLEG, P)
         PL1 = PL
     end do
     return
-end subroutine shd_comp__computeLegendre
+end subroutine shd_pha__computeLegendre
 
-subroutine shd_comp__computeYLM(TRANSPOSED, MU, PHI, ML, MM, NSTLEG, YR)
+subroutine shd_pha__computeYLM(TRANSPOSED, MU, PHI, ML, MM, NSTLEG, YR)
 
     !   This subroutine computes a set of normalized real generalized
     ! spherical harmonic functions (YR) for a particular direction mu,phi.
@@ -119,8 +138,6 @@ subroutine shd_comp__computeYLM(TRANSPOSED, MU, PHI, ML, MM, NSTLEG, YR)
     ! J = 2*(L*(L+1))/2 + M+1  for L<=MM
     ! J = (2*MM+1)*L-MM*(2+2*(MM-1))/2 + M+1  for L>MM
 
-    implicit none
-
     integer ML, MM, NSTLEG
     real MU, PHI
     logical TRANSPOSED
@@ -130,7 +147,7 @@ subroutine shd_comp__computeYLM(TRANSPOSED, MU, PHI, ML, MM, NSTLEG, YR)
     double precision, allocatable :: DM0(:), DM2P(:), DM2M(:)
 
     if (NSTLEG .eq. 1) then
-        call shd_comp__computeYLM_(MU, PHI, ML, MM, YR)
+        call shd_pha__computeYLM_(MU, PHI, ML, MM, YR)
         return
     end if
 
@@ -150,7 +167,7 @@ subroutine shd_comp__computeYLM(TRANSPOSED, MU, PHI, ML, MM, NSTLEG, YR)
     ! ..................................................................
     !                               M = 0
     M = 0
-    call shd_comp__computeWignerDM0DM2PDM2M(X, ML, M, DM0, DM2P, DM2M)
+    call shd_pha__computeWignerDM0DM2PDM2M(X, ML, M, DM0, DM2P, DM2M)
     do L = 0, ML
         if (L .le. MM) then
             J = L*(L + 1) + M + 1
@@ -175,7 +192,7 @@ subroutine shd_comp__computeYLM(TRANSPOSED, MU, PHI, ML, MM, NSTLEG, YR)
     ! ..................................................................
     !                               M =/ 0
     do MABS = 1, MM
-        call shd_comp__computeWignerDM0DM2PDM2M(X, ML, MABS, DM0, DM2P, DM2M)
+        call shd_pha__computeWignerDM0DM2PDM2M(X, ML, MABS, DM0, DM2P, DM2M)
         COSM = cos(MABS*PHI)
         SINM = sin(MABS*PHI)
         do L = MABS, ML
@@ -222,9 +239,9 @@ subroutine shd_comp__computeYLM(TRANSPOSED, MU, PHI, ML, MM, NSTLEG, YR)
     end do
     deallocate (DM0, DM2P, DM2M)
     return
-end subroutine shd_comp__computeYLM
+end subroutine shd_pha__computeYLM
 
-subroutine shd_comp__computeYLM_(MU, PHI, ML, MM, YR)
+subroutine shd_pha__computeYLM_(MU, PHI, ML, MM, YR)
 
     !   This subroutine computes a set of the unpolarized (I-I) element
     ! normalized real generalized spherical harmonic functions (YR) for
@@ -234,7 +251,6 @@ subroutine shd_comp__computeYLM_(MU, PHI, ML, MM, YR)
     !   J = 2*(L*(L+1))/2 + M+1  for L<=MM
     !   J = (2*MM+1)*L-MM*(2+2*(MM-1))/2 + M+1  for L>MM
 
-    implicit none
     integer ML, MM
     real MU, PHI
     real YR(*)
@@ -249,7 +265,7 @@ subroutine shd_comp__computeYLM_(MU, PHI, ML, MM, YR)
     FCT = 1.d0/DSQRT(2.d0*PI)
 
     do M = 0, MM
-        call shd_comp__computeWignerDM0(X, ML, M, DM0)
+        call shd_pha__computeWignerDM0(X, ML, M, DM0)
         DM0(:) = FCT*DM0(:)
         if (M .gt. 0) then
             COSM = cos(M*PHI)
@@ -275,11 +291,9 @@ subroutine shd_comp__computeYLM_(MU, PHI, ML, MM, YR)
     end do
     deallocate (DM0)
     return
-end subroutine shd_comp__computeYLM_
+end subroutine shd_pha__computeYLM_
 
-subroutine shd_comp__computePLM(TRANSPOSED, MU, ML, MM, PRC)
-
-    implicit none
+subroutine shd_pha__computePLM(TRANSPOSED, MU, ML, MM, PRC)
 
     integer ML, MM
     real MU
@@ -310,7 +324,7 @@ subroutine shd_comp__computePLM(TRANSPOSED, MU, ML, MM, PRC)
     !                            M = 0
     ! ..................................................................
     M = 0
-    call shd_comp__computeWignerDM0DM2PDM2M&
+    call shd_pha__computeWignerDM0DM2PDM2M&
         &(X, ML, M,&
         &DM0, DM2P, DM2M)
     do L = 0, ML
@@ -335,7 +349,7 @@ subroutine shd_comp__computePLM(TRANSPOSED, MU, ML, MM, PRC)
     !                               M =/ 0
     ! ..................................................................
     do MABS = 1, MM
-        call shd_comp__computeWignerDM0DM2PDM2M&
+        call shd_pha__computeWignerDM0DM2PDM2M&
             &(X, ML, MABS,&
             &DM0, DM2P, DM2M)
         do L = MABS, ML
@@ -379,10 +393,12 @@ subroutine shd_comp__computePLM(TRANSPOSED, MU, ML, MM, PRC)
         end do
     end do
     deallocate (DM0, DM2P, DM2M)
-    return
-end subroutine
 
-subroutine shd_comp__computeWigner(X, NRANK, M, M1, DMM1)
+    return
+
+end subroutine shd_pha__computePLM
+
+subroutine shd_pha__computeWigner(X, NRANK, M, M1, DMM1)
 
     ! ----------------------------------------------------------------
     ! |  The routine computes the DMM1N vector coefficients for
@@ -390,7 +406,6 @@ subroutine shd_comp__computeWigner(X, NRANK, M, M1, DMM1)
     ! |               -1 < X= COS(BETA) < 1
     ! ----------------------------------------------------------------
 
-    implicit none
     integer NRANK, M, M1
     double precision X, DMM1(0:NRANK)
 
@@ -425,10 +440,11 @@ subroutine shd_comp__computeWigner(X, NRANK, M, M1, DMM1)
         end do
     end if
     return
-end subroutine shd_comp__computeWigner
+end subroutine shd_pha__computeWigner
 
-subroutine shd_comp__computeWignerDM0DM2PDM2M(MIU, NRANK, M,&
-    &DM0, DM2P, DM2M)
+subroutine shd_pha__computeWignerDM0DM2PDM2M(&
+    &MIU, NRANK, M, DM0, DM2P, DM2M)
+
     ! ----------------------------------------------------------------
     ! |  The routine computes the DMM1N vector coefficients for
     ! |               M >= 0; M1 = 0, 2, -2; N = 0,...,NRANK, and
@@ -436,7 +452,7 @@ subroutine shd_comp__computeWignerDM0DM2PDM2M(MIU, NRANK, M,&
     ! |  For M1 = -2, we use the symmetry relation
     ! |               DM-M1(MIU) = (-1)**(N+M) * DMM1(-MIU)
     ! ----------------------------------------------------------------
-    implicit none
+
     integer NRANK, M
     double precision MIU
     double precision DM0(0:NRANK), DM2P(0:NRANK), DM2M(0:NRANK)
@@ -516,15 +532,16 @@ subroutine shd_comp__computeWignerDM0DM2PDM2M(MIU, NRANK, M,&
 
     return
 
-end subroutine shd_comp__computeWignerDM0DM2PDM2M
+end subroutine shd_pha__computeWignerDM0DM2PDM2M
 
-subroutine shd_comp__computeWignerDM0(X, NRANK, M, DM0)
+subroutine shd_pha__computeWignerDM0(X, NRANK, M, DM0)
+
     ! ----------------------------------------------------------------
     ! |  The routine computes the DMM1N vector coefficients for      |
     ! |               M >= 0; M1 = 0; N = 0,...,NRANK, and           |
     ! |              -1 <= X <= 1                                    |
     ! ----------------------------------------------------------------
-    implicit none
+
     integer NRANK, M
     double precision X
     double precision DM0(0:NRANK)
@@ -553,7 +570,7 @@ subroutine shd_comp__computeWignerDM0(X, NRANK, M, DM0)
         end do
     end if
     return
-end subroutine shd_comp__computeWignerDM0
+end subroutine shd_pha__computeWignerDM0
 
 function wignerDMM1N0(X, M, M1) result(DMM1N0)
 
@@ -561,8 +578,6 @@ function wignerDMM1N0(X, M, M1) result(DMM1N0)
     ! | THE ROUTINE COMPUTES THE WIGNER FUNCTIONS FOR               |
     ! |     M >= 0, M1 >= 0, AND N0 = MAX(M,M1)                     |
     ! ---------------------------------------------------------------
-
-    implicit none
 
     integer M, M1
     double precision X, DMM1N0
@@ -591,15 +606,15 @@ function wignerDMM1N0(X, M, M1) result(DMM1N0)
         FACT = DSQRT((1.d0 + X)/2.d0)
         DMM1N0 = DMM1N0*FACT**(MAXM + MINM)
     end if
+
     return
+
 end function wignerDMM1N0
 
 function wignerDMM0N0(X, M) result(DMM0N0)
 
     ! The routine computes the Wigner functions for M >= 0, M1 = 0, a
     ! N0 = M
-
-    implicit none
 
     integer M
     double precision X, DMM0N0
@@ -620,3 +635,5 @@ function wignerDMM0N0(X, M) result(DMM0N0)
     return
 
 end function wignerDMM0N0
+
+end module shd_pha

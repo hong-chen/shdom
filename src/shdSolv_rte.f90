@@ -108,7 +108,7 @@ subroutine shd_solv__solveRte(&
                 &NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
                 &GRIDPOS, DIRFLUX)
         end if
-        call shd_comp__computeYLM(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG,&
+        call shd_pha__computeYLM(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG,&
             &YLMSUN)
     end if
 
@@ -119,7 +119,7 @@ subroutine shd_solv__solveRte(&
         &NPHI0, MU, PHI, WTMU, WTDO, FFTFLAG, NANG)
 
     ! Make the Ylm transform coefficients
-    call shd_solv__makeSHDO(NSTLEG, ML, MM, NLM, NMU, NPHI0,&
+    call shd_shdo__makeSHDO(NSTLEG, ML, MM, NLM, NMU, NPHI0,&
         &NPHI0MAX, MU, PHI, WTMU, WTDO, FFTFLAG,&
         &CMU1, CMU2, CPHI1, CPHI2, WPHISAVE)
 
@@ -178,7 +178,7 @@ subroutine shd_solv__solveRte(&
                     &NSTOKES, NMU/2, NPHI0MAX), STAT=IERR)
             end if
             if (IERR .eq. 0) then
-                call shd_solv__makeSurfDO(SFCTYPE, WAVELEN,&
+                call shd_shdo__makeSfcDO(SFCTYPE, WAVELEN,&
                     &NXSFC, NYSFC, NSFCPAR, SFCPARMS, NSTOKES,&
                     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                     &SFC_BRDF_DO)

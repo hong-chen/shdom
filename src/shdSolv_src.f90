@@ -26,7 +26,7 @@ subroutine shd_comp__computeSolarStokesVect(&
 
     ! Sum the first Wigner function series, which is actually a Legend
     X = dble(COSSCAT)
-    call shd_comp__computeWigner(X, NLEG, 0, 0, DMM1)
+    call shd_pha__computeWigner(X, NLEG, 0, 0, DMM1)
     A1 = 0.0d0
     do L = 0, NLEG
         FCT = 2.0d0*L + 1.0d0
@@ -36,7 +36,7 @@ subroutine shd_comp__computeSolarStokesVect(&
 
     if (NSTOKES .gt. 1) then
         ! If doing polarization, sum the second Wigner function series
-        call shd_comp__computeWigner(X, NLEG, 2, 0, DMM1)
+        call shd_pha__computeWigner(X, NLEG, 2, 0, DMM1)
         B1 = 0.0d0
         do L = 0, NLEG
             FCT = 2.0d0*L + 1.0d0
@@ -109,10 +109,10 @@ subroutine shd_comp__computeOneSrc(NSTOKES,&
     ! TMS = .FALSE.
 
     ! Precompute Ylm's for output direction and solar direction
-    call shd_comp__computeYLM(.false., MU, PHI, ML, MM, NSTLEG, YLMDIR)
+    call shd_pha__computeYLM(.false., MU, PHI, ML, MM, NSTLEG, YLMDIR)
     if (SRCTYPE .ne. 'T') then
         OFOURPI = 1.0/(4.0*acos(-1.0))
-        call shd_comp__computeYLM(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG,&
+        call shd_pha__computeYLM(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG,&
             &YLMSUN)
         SECMU0 = 1.0/abs(SOLARMU)
         COSSCAT = SOLARMU*MU + sqrt((1.0d0 - SOLARMU**2)*(1.0d0 - MU**2))&

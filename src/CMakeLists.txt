@@ -5,13 +5,13 @@ set(SHDOM_LIB_SRCS
     globals.f90
     shdInit.f90
     shdPha.f90
+    shdSHDO.f90
     shdDir.f90
     shdUtil.f90
     shdComp.f90
     shdGrid_ind.f90
     shdGrid_cal.f90
     shdSolv_rte.f90
-    shdSolv_shdo.f90
     shdSolv_int.f90
     shdSolv_src.f90
     shdSolv_rad.f90

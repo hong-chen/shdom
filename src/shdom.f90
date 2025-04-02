@@ -708,7 +708,7 @@ program shdom_main
         end if
 
         if (SH_OUT) then
-            call shd_comp__computeSH(NSHOUT, NSTOKES, NPTS, SRCTYPE, SOLARMU, SOLARAZ,&
+            call shd_shdo__computeSH(NSHOUT, NSTOKES, NPTS, SRCTYPE, SOLARMU, SOLARAZ,&
                 &DIRFLUX, RSHPTR, ML, MM, RADIANCE, WORK)
             call shd_comp__sumOutput(NG - IG, DELG(IG), NSHOUT*NPTS, WORK, SUMSHTERMS)
         end if

@@ -1,3 +1,29 @@
+module shd_comp
+
+    use globals
+    use shd_util
+    use shd_init
+    use shd_pha
+
+    implicit none
+    private
+
+    public :: shd_comp__computeRad
+    public :: shd_comp__computeNetFluxDiv
+    public :: shd_comp__visualizeRad
+
+    public :: shd_comp__integrateOneRay
+
+    public :: shd_comp__sumOutput
+    public :: shd_comp__interpOutput
+
+    private :: shd_comp__findBoundaryRad
+    private :: shd_comp__computeSrcOneCell
+    private :: shd_comp__computeSrcOneCell_
+    private :: shd_comp__rotatePolarPlane
+
+contains
+
 subroutine shd_comp__computeRad(&
     &NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
@@ -11,8 +37,9 @@ subroutine shd_comp__computeRad(&
     &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
     &SHPTR, SOURCE, SOURCE1, GRIDRAD,&
     &OUTPARMS, IRAD, RADOUT)
+
     ! Computes the radiances for the specified locations and direction
-    implicit none
+
     integer NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG, NPTS, NCELLS
     integer ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
     integer NMU, NPHI0MAX, NPHI0(NMU), IRAD
@@ -173,8 +200,9 @@ end subroutine shd_comp__computeRad
 subroutine shd_comp__computeNetFluxDiv(NSTOKES, NPTS, RSHPTR, SRCTYPE,&
     &SOLARMU, EXTINCT, ALBEDO, PLANCK, DIRFLUX,&
     &RADIANCE, NETFLUXDIV)
+
     ! Computes the net flux divergence at every grid point.
-    implicit none
+
     integer NSTOKES, NPTS, RSHPTR(NPTS + 1)
     real PLANCK(NPTS), DIRFLUX(NPTS), SOLARMU
     real EXTINCT(NPTS), ALBEDO(NPTS)
@@ -197,7 +225,9 @@ subroutine shd_comp__computeNetFluxDiv(NSTOKES, NPTS, RSHPTR, SRCTYPE,&
         end if
         NETFLUXDIV(I) = -HR
     end do
+
     return
+
 end subroutine shd_comp__computeNetFluxDiv
 
 subroutine shd_comp__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
@@ -215,7 +245,6 @@ subroutine shd_comp__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     !   Computes Stokes radiances (output in VISOUT) for the visualization
     !  modes: 1) camera mode, and 2) cross track scanning.
 
-    implicit none
     integer NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG, NPTS, NCELLS
     integer ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
     integer NMU, NPHI0MAX, NPHI0(NMU), IVIS
@@ -253,12 +282,12 @@ subroutine shd_comp__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     allocate (YLMSUN(NSTLEG, NLM))
 
     if (SRCTYPE .ne. 'T') then
-        call shd_comp__computeYLM(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG, YLMSUN)
+        call shd_pha__computeYLM(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG, YLMSUN)
         if (DELTAM .and. NUMPHASE .gt. 0) then
             NSCATANGLE = max(36, min(MAXSCATANG, 2*NLEG))
             NSTPHASE = min(NSTLEG, 2)
             allocate (PHASETAB(NSTPHASE, NUMPHASE, NSCATANGLE))
-            call shd_comp__computePhase(NSCATANGLE, NUMPHASE, NSTPHASE,&
+            call shd_pha__computePhase(NSCATANGLE, NUMPHASE, NSTPHASE,&
                 &NSTOKES, ML, NSTLEG, NLEG, LEGEN, PHASETAB)
         end if
     end if
@@ -459,7 +488,8 @@ subroutine shd_comp__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     return
 end subroutine shd_comp__visualizeRad
 
-subroutine shd_comp__integrateOneRay(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
+subroutine shd_comp__integrateOneRay(&
+    &BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
     &NSTPHASE, NSCATANGLE, PHASETAB,&
     &NX, NY, NZ, NPTS, NCELLS,&
     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
@@ -481,10 +511,6 @@ subroutine shd_comp__integrateOneRay(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
     ! are input and returned after the integration along with the exitti
     ! ray location (XE,YE,ZE) and side of the domain (1=-X,2=+X,3=-Y,4=+
     ! 5=-Z,6=+Z).
-
-    use shd_grid
-
-    implicit none
 
     integer BCFLAG, IPFLAG, NSTOKES, NSTLEG, NSTPHASE, NSCATANGLE
     integer NX, NY, NZ, NPTS, NCELLS, SIDE
@@ -548,7 +574,7 @@ subroutine shd_comp__integrateOneRay(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
 
     ! Calculate the generalized spherical harmonics for this direction
     allocate (YLMDIR(NSTLEG, NLM))
-    call shd_comp__computeYLM(.false., SNGL(MU2), SNGL(PHI2), ML, MM, NSTLEG, YLMDIR)
+    call shd_pha__computeYLM(.false., SNGL(MU2), SNGL(PHI2), ML, MM, NSTLEG, YLMDIR)
 
     if (SRCTYPE .ne. 'T' .and. DELTAM) then
         ! Get the solar single scattering Stokes vector for the outgoin
@@ -571,7 +597,7 @@ subroutine shd_comp__integrateOneRay(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
             end do
         else
             allocate (SUNDIRLEG(0:NLEG))
-            call shd_comp__computeLegendre(COSSCAT, NLEG, SUNDIRLEG)
+            call shd_pha__computeLegendre(COSSCAT, NLEG, SUNDIRLEG)
             do L = 0, NLEG
                 SUNDIRLEG(L) = SUNDIRLEG(L)*(2*L + 1)/(4*PI)
             end do
@@ -872,18 +898,20 @@ subroutine shd_comp__integrateOneRay(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
     return
 end subroutine shd_comp__integrateOneRay
 
-subroutine shd_comp__findBoundaryRad(NSTOKES, XB, YB, MU2, PHI2,&
+subroutine shd_comp__findBoundaryRad(&
+    &NSTOKES, XB, YB, MU2, PHI2,&
     &ICELL, KFACE, GRIDPTR, GRIDPOS,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
     &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
     &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
     &RADBND)
+
     !   Returns the interpolated Stokes radiance at the boundary (RADBND)
     ! Inputs are the boundary location (XB,YB), ray direction away from
     ! boundary (MU2,PHI2), cell number (ICELL) and face (KFACE) at
     ! the boundary point.
-    implicit none
+
     integer NSTOKES, ICELL, KFACE, MAXNBC, NTOPPTS, NBOTPTS
     integer GRIDPTR(8, *), BCPTR(MAXNBC, 2)
     integer NMU, NPHI0MAX, NPHI0(NMU), NSFCPAR
@@ -972,13 +1000,15 @@ subroutine shd_comp__findBoundaryRad(NSTOKES, XB, YB, MU2, PHI2,&
     return
 end subroutine shd_comp__findBoundaryRad
 
-subroutine shd_comp__computeSrcOneCell(ICELL, GRIDPTR,&
+subroutine shd_comp__computeSrcOneCell(&
+    &ICELL, GRIDPTR,&
     &NSTOKES, NSTLEG, ML, MM, NLM, NLEG, NUMPHASE,&
     &NPTS, DELTAM, SRCTYPE, SOLARMU,&
     &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX,&
     &SHPTR, SOURCE, YLMDIR, YLMSUN, SUNDIRLEG, SINGSCAT,&
     &DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
     &EXTINCT8, SRCEXT8)
+
     !   Computes the source function times extinction for gridpoints
     ! belonging to cell ICELL in the direction (MU,PHI).  The results
     ! are returned in SRCEXT8 and EXTINCT8.
@@ -986,7 +1016,7 @@ subroutine shd_comp__computeSrcOneCell(ICELL, GRIDPTR,&
     ! For a solar source if delta-M then use Nakajima and Tanaka TMS
     ! procedure, replacing delta-M single scattering with single scattering
     ! for unscaled untruncated phase function.
-    implicit none
+
     integer ICELL, NSTOKES, NSTLEG, NPTS, ML, MM, NLM, NLEG, NUMPHASE
     integer GRIDPTR(8, *), SHPTR(NPTS + 1)
     integer DONETHIS(8), OLDIPTS(8)
@@ -1099,7 +1129,8 @@ subroutine shd_comp__computeSrcOneCell(ICELL, GRIDPTR,&
     return
 end subroutine shd_comp__computeSrcOneCell
 
-subroutine shd_comp__computeSrcOneCell_(ICELL, GRIDPTR,&
+subroutine shd_comp__computeSrcOneCell_(&
+    &ICELL, GRIDPTR,&
     &ML, MM, NLM, NLEG, NUMPHASE,&
     &NPTS, DELTAM, SRCTYPE, SOLARMU,&
     &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX,&
@@ -1115,7 +1146,6 @@ subroutine shd_comp__computeSrcOneCell_(ICELL, GRIDPTR,&
     ! procedure, replacing delta-M single scattering with single scattering
     ! for unscaled untruncated phase function.
 
-    implicit none
     integer ICELL, NPTS, ML, MM, NLM, NLEG, NUMPHASE
     integer GRIDPTR(8, *), SHPTR(NPTS + 1)
     integer DONETHIS(8), OLDIPTS(8)
@@ -1213,7 +1243,6 @@ subroutine shd_comp__rotatePolarPlane(NSTOKES, COSSCAT,&
     ! to the outgoing meridional plane for the solar single
     ! scattered Stokes vector in SINGSCAT.
 
-    implicit none
     integer NSTOKES
     double precision COSSCAT
     real SOLARMU, MU, DELPHI
@@ -1260,7 +1289,6 @@ subroutine shd_comp__interpOutput(OLDNPTS, NPTS,&
     ! Each new point is located in a cell, and the two parent grid points
     ! are found to interpolate the data from.
 
-    implicit none
     integer OLDNPTS, NPTS, NBCELLS, NCELLS
     integer GRIDPTR(8, NCELLS), TREEPTR(2, NCELLS)
     logical FLUX_OUT, FLUXDIV_OUT, SH_OUT
@@ -1321,7 +1349,7 @@ end subroutine shd_comp__interpOutput
 subroutine shd_comp__sumOutput(IFLAG, WT, N, data, SUMDATA)
     !     Sums an output array over the k-distribution.
     ! If IFLAG=0 then the output array is set to the input times the wei
-    implicit none
+
     integer IFLAG, N, I
     real WT, data(N), SUMDATA(N)
     if (IFLAG .eq. 0) then
@@ -1336,3 +1364,5 @@ subroutine shd_comp__sumOutput(IFLAG, WT, N, data, SUMDATA)
     return
 
 end subroutine shd_comp__sumOutput
+
+end module shd_comp

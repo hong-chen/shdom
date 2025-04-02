@@ -1,3 +1,21 @@
+module shd_solv_int
+
+    use globals
+    use shd_util
+    use shd_init
+    use shd_sfc
+    use shd_grid
+    use shd_ext_mpi
+
+    use shd_shdo
+
+    implicit none
+
+    public :: shd_solv__integratePath
+    public ::
+
+contains
+
 subroutine shd_solv__integratePath(&
     &NX, NY, NZ, NSTOKES, NSTLEG,&
     &ML, MM, NLM, NMU, NPHI0MAX, NPHI0, NANG,&
@@ -39,10 +57,6 @@ subroutine shd_solv__integratePath(&
     ! downwelling radiances at all discrete ordinates for the bottom
     ! boundary points.
 
-    use shd_grid
-    use shd_ext_mpi
-
-    implicit none
     integer NX, NY, NZ, NSTOKES, NSTLEG, ML, MM, NLM
     integer NMU, NPHI0MAX, NPHI0(NMU), NANG
     integer BCFLAG, IPFLAG
@@ -149,12 +163,12 @@ subroutine shd_solv__integratePath(&
         end if
 
         if (NSTOKES .eq. 1) then
-            call shd_solv__SHtoDO_(NPTS, ML, MM, NLM,&
+            call shd_shdo__transSHtoDO_(NPTS, ML, MM, NLM,&
                 &NMU, NPHI0MAX, NPHI0(IMU),&
                 &IMU, FFTFLAG, CMU1, CPHI1, WSAVE,&
                 &SHPTR, SOURCE, WORK)
         else
-            call shd_solv__SHtoDO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
+            call shd_shdo__transSHtoDO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
                 &NMU, NPHI0MAX, NPHI0(IMU),&
                 &IMU, FFTFLAG, CMU1, CPHI1, WSAVE,&
                 &SHPTR, SOURCE, WORK)
@@ -287,12 +301,12 @@ subroutine shd_solv__integratePath(&
 
         ! Transform the radiance to spherical harmonics for this zenit
         if (NSTOKES .eq. 1) then
-            call shd_solv__DOtoSH_(NPTS, ML, MM, NLM,&
+            call shd_shdo__transDOtoSH_(NPTS, ML, MM, NLM,&
                 &NMU, NPHI0MAX, NPHI0(IMU),&
                 &IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
                 &RSHPTR, WORK, RADIANCE)
         else
-            call shd_solv__DOtoSH(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
+            call shd_shdo__transDOtoSH(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
                 &NMU, NPHI0MAX, NPHI0(IMU),&
                 &IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
                 &RSHPTR, WORK, RADIANCE)
@@ -324,10 +338,6 @@ subroutine shd_solv__backIntegrate3D(NX, NY, NZ, NA, NPTS, NCELLS,&
     ! at the end of the ray path is interpolated from the known grid point
     ! radiances on the face.  The resulting radiances are put in GRIDRAD.
 
-    use shd_grid
-    use shd_ext_mpi
-
-    implicit none
     integer NX, NY, NZ, NA, NPTS, NCELLS, NSTOKES, KANG
     integer BCFLAG, IPFLAG
     integer GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
@@ -1033,10 +1043,6 @@ subroutine shd_solv__backIntegrate2D(NX, NY, NZ, NA, NPTS, NCELLS,&
     ! ad the end of the ray path is interpolated from the known grid point
     ! radiances on the face.  The resulting radiances are put in GRIDRAD.
 
-    use shd_grid
-
-    implicit none
-
     integer NX, NY, NZ, NA, NPTS, NCELLS, KANG, NSTOKES
     integer GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
     integer SWEEPORD(NPTS, *)
@@ -1287,7 +1293,6 @@ subroutine shd_solv__backIntegrate1D(NX, NY, NZ, NA, NPTS, NCELLS,&
     ! ad the end of the ray path is interpolated from the known grid point
     ! radiances on the face.  The resulting radiances are put in GRIDRAD.
 
-    implicit none
     integer NX, NY, NZ, NA, NPTS, NCELLS, KANG, NSTOKES
     integer GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
     integer SWEEPORD(NPTS, *)
@@ -1440,4 +1445,7 @@ subroutine shd_solv__backIntegrate1D(NX, NY, NZ, NA, NPTS, NCELLS,&
         end if
     end do
     return
+
 end subroutine shd_solv__backIntegrate1D
+
+end module shd_solv_int

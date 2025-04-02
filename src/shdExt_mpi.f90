@@ -2610,18 +2610,18 @@ subroutine shd_ext__mpiVisualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     allocate (YLMSUN(NSTLEG, NLM))
 
     if (SRCTYPE .ne. 'T') then
-        call shd_comp__computeYLM(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG, YLMSUN)
+        call shd_pha__computeYLM(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG, YLMSUN)
         if (DELTAM .and. NUMPHASE .gt. 0) then
             NSCATANGLE = max(36, min(MAXSCATANG, 2*NLEG))
             NSTPHASE = min(NSTLEG, 2)
             allocate (PHASETAB(NSTPHASE, NUMPHASE, NSCATANGLE))
-            call shd_comp__computePhase(NSCATANGLE, NUMPHASE, NSTPHASE,&
+            call shd_pha__computePhase(NSCATANGLE, NUMPHASE, NSTPHASE,&
                 &NSTOKES, ML, NSTLEG, NLEG, LEGEN, PHASETAB)
         end if
     end if
 
     ! Make the isotropic radiances for the top boundary
-    call shd_comp__computeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
+    call shd_init__makeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
         &UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
     ! Make the bottom boundary radiances for the Lambertian surfaces.
     ! Compute the upwelling bottom radiances using the downwelling fluxes.
