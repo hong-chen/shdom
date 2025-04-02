@@ -399,7 +399,6 @@ subroutine shd_grid__makeSweepOrder(&
     integer NOCT, IOCT, JOCT, NXC, NYC
     integer IPCELL, IPT, IORDER
     integer INDEXCORN, ICORNER, CORNDOG(8, 8), IOCTORDER(8)
-    logical :: sweepCellNext
     data CORNDOG/8, 7, 6, 5, 4, 3, 2, 1, 7, 8, 5, 6, 3, 4, 1, 2, 6, 5, 8, 7, 2, 1, 4, 3,&
         &5, 6, 7, 8, 1, 2, 3, 4, 4, 3, 2, 1, 8, 7, 6, 5, 3, 4, 1, 2, 7, 8, 5, 6,&
         &2, 1, 4, 3, 6, 5, 8, 7, 1, 2, 3, 4, 5, 6, 7, 8/
@@ -939,5 +938,170 @@ subroutine shd_grid__testCellSplit(GRIDPTR, GRIDPOS, EXTINCT,&
 
 end subroutine shd_grid__testCellSplit
 
-end module shd_grid
+logical function sweepCellBase(BCFLAG, NXC, NYC, NZ, IOCT, ICELL)
 
+    !   Returns the next base grid cell.  The octant the ray direction
+    ! is coming from (IOCT) determines the order of sweeping.  ICELL is 0
+    ! for the first call to set things up.  The function returns false if
+    ! we are done sweeping the grid.  Do loops over IZ, IY, and IX are
+    ! simulated.  For open boundary condition do the endpoint cells
+    ! (in X,Y) first, so the boundary grid points will be done with
+    ! independent pixel radiative transfer.
+
+    integer BCFLAG, NXC, NYC, NZ, IOCT, ICELL
+    integer IX, IY, IZ, SIX, SIY, SIZ, EIX, EIY, EIZ, DIX, DIY, DIZ
+    save IX, IY, IZ, SIX, SIY, SIZ, EIX, EIY, EIZ, DIX, DIY, DIZ
+
+    sweepCellBase = .true.
+
+    ! If first time here then set up the loops
+    if (ICELL .eq. 0) then
+        if (btest(IOCT - 1, 0)) then
+            DIX = +1
+            if (btest(BCFLAG, 0)) then
+                SIX = NXC
+                EIX = max(NXC - 1, 1)
+            else
+                SIX = 1
+                EIX = NXC
+            end if
+        else
+            DIX = -1
+            if (btest(BCFLAG, 0)) then
+                SIX = 1
+                EIX = min(2, NXC)
+            else
+                SIX = NXC
+                EIX = 1
+            end if
+        end if
+        if (btest(IOCT - 1, 1)) then
+            DIY = +1
+            if (btest(BCFLAG, 1)) then
+                SIY = NYC
+                EIY = max(NYC - 1, 1)
+            else
+                SIY = 1
+                EIY = NYC
+            end if
+        else
+            DIY = -1
+            if (btest(BCFLAG, 1)) then
+                SIY = 1
+                EIY = min(2, NYC)
+            else
+                SIY = NYC
+                EIY = 1
+            end if
+        end if
+        if (btest(IOCT - 1, 2)) then
+            DIZ = +1
+            SIZ = 1
+            EIZ = NZ - 1
+        else
+            DIZ = -1
+            SIZ = NZ - 1
+            EIZ = 1
+        end if
+        IX = SIX
+        IY = SIY
+        IZ = SIZ
+    else
+        ! Sweep through grid, first in X, in Y, then in Z
+        if (IX .eq. EIX) then
+            if (IY .eq. EIY) then
+                if (IZ .eq. EIZ) then
+                    sweepCellBase = .false.
+                    return
+                else
+                    IZ = IZ + DIZ
+                end if
+                IY = SIY
+            else
+                IY = mod(IY + DIY + NYC - 1, NYC) + 1
+            end if
+            IX = SIX
+        else
+            IX = mod(IX + DIX + NXC - 1, NXC) + 1
+        end if
+    end if
+
+    ! Compute the base grid cell
+    ICELL = IZ + (NZ - 1)*(IY - 1) + (NZ - 1)*NYC*(IX - 1)
+
+end function sweepCellBase
+
+logical function sweepCellNext(BCFLAG, NXC, NYC, NZ, IOCT,&
+    &ICELL, TREEPTR, CELLFLAGS)
+
+    !   Returns the next grid cell given the last cell (ICELL).  The
+    ! octant the ray direction is coming from (IOCT) determines the
+    ! order of sweeping.  ICELL is 0 for the first call to set things up
+    ! The function returns false if we are done sweeping the grid.
+    ! Within a base cell the tree structure is traced using a stack until
+    ! we get to a new end cell.
+
+    integer BCFLAG, NXC, NYC, NZ, IOCT, ICELL, TREEPTR(2, *)
+    integer*2 CELLFLAGS(*)
+    integer IC, IDIR, SP, STACK(50)
+    logical DONE
+    save SP, STACK
+
+    IC = ICELL
+
+    ! Special case for first time here
+    if (ICELL .eq. 0) then
+        IC = 0
+        sweepCellNext = sweepCellBase(BCFLAG, NXC, NYC, NZ, IOCT, IC)
+        SP = 0
+    end if
+
+    ! The scanning direction is the direction (pos or neg) for each
+    !   of X,Y,Z that the ray is going in (indicated by IOCT).
+
+    ! Go through the tree checking the cells:
+    ! The stack holds the second child cells, which are the
+    !   next cell to go to if at an end cell.
+    DONE = .false.
+    do while (.not. DONE)
+        ! If this is an end cell then we are either at the desired cell
+        !   or if this is the old cell then we need to pop the stack
+        if (TREEPTR(2, IC) .eq. 0) then
+            if (IC .ne. ICELL) then
+                DONE = .true.
+            else
+                ! If no more to pop then we are at the base cell, so go to
+                !   next base cell if there is one.
+                if (SP .eq. 0) then
+                    sweepCellNext=&
+                        &sweepCellBase(BCFLAG, NXC, NYC, NZ, IOCT, IC)
+                    if (.not. sweepCellNext) return
+                else
+                    ! Otherwise, pop the stack to get the next cell to go to.
+                    IC = STACK(SP)
+                    SP = SP - 1
+                end if
+            end if
+        else
+            ! Not an end cell, so this cell has children.
+            ! Depending on the ordinate octant, decide which child to
+            !   do first and put the second child on the stack.
+            SP = SP + 1
+            if (SP .gt. 50) stop 'Error [sweepCellNext]: Stack exceeded.'
+            IDIR = ibits(int(CELLFLAGS(IC)), 2, 2) - 1
+            if (btest(IOCT - 1, IDIR)) then
+                STACK(SP) = TREEPTR(2, IC) + 1
+                IC = TREEPTR(2, IC)
+            else
+                STACK(SP) = TREEPTR(2, IC)
+                IC = TREEPTR(2, IC) + 1
+            end if
+        end if
+    end do
+
+    ICELL = IC
+    sweepCellNext = .true.
+
+end function sweepCellNext
+
+end module shd_grid
