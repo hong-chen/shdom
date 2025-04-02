@@ -410,7 +410,7 @@ subroutine shd_pha__computeWigner(X, NRANK, M, M1, DMM1)
     double precision X, DMM1(0:NRANK)
 
     integer N0, N
-    double precision FACT1, FACT2, wignerDMM1N0
+    double precision FACT1, FACT2
 
     N0 = max(M, M1)
     DMM1 = 0.d0
@@ -457,7 +457,7 @@ subroutine shd_pha__computeWignerDM0DM2PDM2M(&
     double precision MIU
     double precision DM0(0:NRANK), DM2P(0:NRANK), DM2M(0:NRANK)
     integer N0, N
-    double precision XP, XM, FACT1, FACT2, FACTP, FACTM, wignerDMM1N0
+    double precision XP, XM, FACT1, FACT2, FACTP, FACTM
 
     !for M1 = 0 and M1 = 2
     XP = MIU
@@ -546,7 +546,6 @@ subroutine shd_pha__computeWignerDM0(X, NRANK, M, DM0)
     double precision X
     double precision DM0(0:NRANK)
     integer N
-    double precision wignerDMM0N0
 
     ! DM0 for M1 = 0
     DM0(:) = 0.d0

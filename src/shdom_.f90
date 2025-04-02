@@ -9,6 +9,10 @@ program shdom_main
     use shd_io_inp
     use shd_io_out
     use shd_ext_mpi
+    use shd_dir
+    use shd_comp
+    use shd_shdo
+    use shd_src
 
     implicit none
     ! Number of output files and inputs parameter per file
@@ -672,7 +676,7 @@ program shdom_main
                 if (OUTTYPES(I) .eq. 'J') then
                     MUOUT = OUTPARMS(2, I)
                     PHIOUT = OUTPARMS(3, I)*acos(-1.0)/180.0
-                    call shd_comp__computeOneSrc(NSTOKES, ML, MM, NLM,&
+                    call shd_src__computeOneSrc(NSTOKES, ML, MM, NLM,&
                         &NSTLEG, NLEG, NUMPHASE_,&
                         &NPTS, DELTAM, MUOUT, PHIOUT,&
                         &SRCTYPE, SOLARMU, SOLARAZ, ALBEDO, LEGEN, IPHASE,&
@@ -708,7 +712,7 @@ program shdom_main
         end if
 
         if (SH_OUT) then
-            call shd_comp__computeSH(NSHOUT, NSTOKES, NPTS, SRCTYPE, SOLARMU, SOLARAZ,&
+            call shd_shdo__computeSH(NSHOUT, NSTOKES, NPTS, SRCTYPE, SOLARMU, SOLARAZ,&
                 &DIRFLUX, RSHPTR, ML, MM, RADIANCE, WORK)
             call shd_comp__sumOutput(NG - IG, DELG(IG), NSHOUT*NPTS, WORK, SUMSHTERMS)
         end if
@@ -826,7 +830,7 @@ program shdom_main
         &NPXT, NPYT, PROPFILE, RUNNAME)
 
     if (SRCTYPE .ne. 'T') then
-        call shd_comp__computeDirectBeam(9, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
+        call shd_dir__computeDirect(9, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
             &DELTAM, ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
     end if

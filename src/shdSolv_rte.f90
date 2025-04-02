@@ -26,6 +26,13 @@ subroutine shd_solv__solveRte(&
 
     use shd_init
     use shd_ext_mpi
+    use shd_dir
+    use shd_grid_cal
+    use shd_pha
+    use shd_sfc
+    use shd_shdo
+    use shd_solv_int
+    use shd_src
 
     implicit none
     integer, intent(in) :: NSTOKES, NX, NY, NZ, NX1, NY1, NXSFC, NYSFC, NSFCPAR
@@ -104,7 +111,7 @@ subroutine shd_solv__solveRte(&
                 &NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
                 &GRIDPOS, NX, XGRID, NY, YGRID, DIRFLUX)
         else
-            call shd_comp__makeDirect(NPTS, BCFLAG, IPFLAG, DELTAM, ML,&
+            call shd_dir__makeDirect(NPTS, BCFLAG, IPFLAG, DELTAM, ML,&
                 &NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
                 &GRIDPOS, DIRFLUX)
         end if

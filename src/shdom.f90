@@ -9,6 +9,10 @@ program shdom_main
     use shd_io_inp
     use shd_io_out
     use shd_ext_mpi
+    use shd_dir
+    use shd_comp
+    use shd_shdo
+    use shd_src
 
     implicit none
     ! Number of output files and inputs parameter per file
@@ -826,7 +830,7 @@ program shdom_main
         &NPXT, NPYT, PROPFILE, RUNNAME)
 
     if (SRCTYPE .ne. 'T') then
-        call shd_comp__computeDirectBeam(9, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
+        call shd_dir__computeDirect(9, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
             &DELTAM, ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
     end if

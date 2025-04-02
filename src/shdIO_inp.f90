@@ -1,6 +1,7 @@
 module shd_io_inp
 
   use globals
+  use shd_util
 
   implicit none
   private

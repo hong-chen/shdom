@@ -9,7 +9,6 @@ module shd_util
     public :: shd_util__computeGausQuad
     public :: shd_util__computeGausQuadDble
     public :: shd_util__computePlanck
-    public :: shd_util__ssort
 
     private :: shd_util__integratePlanck
     private :: integralLow
@@ -337,6 +336,8 @@ double precision function integralHigh(X)
 
 end function integralHigh
 
+end module shd_util
+
 subroutine shd_util__ssort(X, Y, N, KFLAG)
 
     !╭──────────────────────────────────────────────────────────────╮!
@@ -371,11 +372,13 @@ subroutine shd_util__ssort(X, Y, N, KFLAG)
     !                 the ACM, 12, 3 (1969), pp. 185-187.
     !╰──────────────────────────────────────────────────────────────╯!
 
+    implicit none
+
     ! Scalar Arguments
     integer KFLAG, N
 
     ! Array Arguments
-    ! real X(*), Y(*)
+    !real X(*), Y(*)
     real, intent(inout) :: X(*)
     integer, intent(inout) :: Y(*)
 
@@ -628,5 +631,3 @@ subroutine shd_util__ssort(X, Y, N, KFLAG)
     return
 
 end subroutine shd_util__ssort
-
-end module shd_util

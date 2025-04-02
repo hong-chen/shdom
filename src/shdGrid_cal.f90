@@ -512,7 +512,7 @@ subroutine shd_grid__interpNewGridPnt(NEWPOINTS, NPTS,&
                 else
                     ! Otherwise, calculate the exact direct beam from property grid
                     DIRPATH = 0.0
-                    call shd_comp__computeDirectBeam(0, X, Y, Z, BCFLAG, IPFLAG, DELTAM,&
+                    call shd_dir__computeDirect(0, X, Y, Z, BCFLAG, IPFLAG, DELTAM,&
                         &ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
                         &DIRFLUX(IP),&
                         &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)

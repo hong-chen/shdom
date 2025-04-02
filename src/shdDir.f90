@@ -1,12 +1,21 @@
-subroutine shd_comp__makeDirect(NPTS, BCFLAG, IPFLAG, DELTAM,&
+module shd_dir
+
+    implicit none
+
+    public :: shd_dir__makeDirect
+    public :: shd_dir__computeDirect
+
+contains
+
+subroutine shd_dir__makeDirect(&
+    &NPTS, BCFLAG, IPFLAG, DELTAM,&
     &ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
     &GRIDPOS, DIRFLUX)
 
     ! Makes the direct beam solar flux for the internal base grid.
     !   DIRFLUX is set to F*exp(-tau_sun).
-    !   Actually calls shd_comp__computeDirectBeam to do all the hard work.
+    !   Actually calls shd_dir__computeDirect to do all the hard work.
 
-    implicit none
     integer NPTS, BCFLAG, IPFLAG, ML, NSTLEG, NLEG
     logical DELTAM
     real SOLARFLUX, SOLARMU, SOLARAZ
@@ -15,7 +24,7 @@ subroutine shd_comp__makeDirect(NPTS, BCFLAG, IPFLAG, DELTAM,&
     logical VALIDBEAM
     real UNIFZLEV, XO, YO, ZO, DIR, DIRPATH
 
-    call shd_comp__computeDirectBeam(&
+    call shd_dir__computeDirect(&
         &1, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
         &DELTAM, ML, NSTLEG, NLEG,&
         &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
@@ -23,7 +32,7 @@ subroutine shd_comp__makeDirect(NPTS, BCFLAG, IPFLAG, DELTAM,&
 
     do IP = 1, NPTS
         DIRPATH = 0.0
-        call shd_comp__computeDirectBeam&
+        call shd_dir__computeDirect&
             &(0, GRIDPOS(1, IP), GRIDPOS(2, IP), GRIDPOS(3, IP),&
             &BCFLAG, IPFLAG, DELTAM, ML, NSTLEG, NLEG,&
             &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(IP),&
@@ -31,9 +40,9 @@ subroutine shd_comp__makeDirect(NPTS, BCFLAG, IPFLAG, DELTAM,&
     end do
 
     return
-end subroutine
+end subroutine shd_dir__makeDirect
 
-subroutine shd_comp__computeDirectBeam(&
+subroutine shd_dir__computeDirect(&
     &INIT, XI, YI, ZI, BCFLAG, IPFLAG,&
     &DELTAM, ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
     &DIRFLUX, UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
@@ -66,7 +75,6 @@ subroutine shd_comp__computeDirectBeam(&
 
     use globals_shdom
 
-    implicit none
     integer INIT, BCFLAG, IPFLAG, ML, NSTLEG, NLEG, SIDE
     logical DELTAM, VALIDBEAM
     real XI, YI, ZI, SOLARFLUX, SOLARMU, SOLARAZ
@@ -536,5 +544,9 @@ subroutine shd_comp__computeDirectBeam(&
     XO = XE + XSTART_; YO = YE + YSTART_; ZO = ZE
     VALIDBEAM = abs(ZE - ZLEVELS_(NPZ_)) .lt. EPSZ
     if (VALIDBEAM) SIDE = 6
+
     return
-end subroutine shd_comp__computeDirectBeam
+
+end subroutine shd_dir__computeDirect
+
+end module shd_dir

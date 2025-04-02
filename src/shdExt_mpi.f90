@@ -6,10 +6,13 @@ module shd_ext_mpi
 
     use globals
     use mpi_f08
+    use shd_init
     use shd_util
     use shd_grid_ind
     use shd_src
     use shd_sfc
+    use shd_dir
+    use shd_comp
 
     implicit none
     private
@@ -1081,14 +1084,14 @@ subroutine shd_ext__mpiMakeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
 
     if (SPT .eq. 1) then
         ! Initialize the direct beam calculation
-        call shd_comp__computeDirectBeam(1, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
+        call shd_dir__computeDirect(1, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
             &DELTAM, ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
         ! Find the max lowest uniform Z level over all processors and then
-        !   tell shd_comp__computeDirectBeam about it
+        !   tell shd_dir__computeDirect about it
         UZLEV = UNIFZLEV
         call MPI_ALLREDUCE(UZLEV, UNIFZLEV, 1, MPI_REAL, MPI_MAX, COMM2D_, ierr)
-        call shd_comp__computeDirectBeam(2, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
+        call shd_dir__computeDirect(2, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
             &DELTAM, ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
     end if
@@ -1120,7 +1123,7 @@ subroutine shd_ext__mpiMakeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
     NINVALID(:) = 0
     do IP = SPT, NPTS
         DIRPATH = 0.0
-        call shd_comp__computeDirectBeam(0, GRIDPOS(1, IP), GRIDPOS(2, IP), GRIDPOS(3, IP),&
+        call shd_dir__computeDirect(0, GRIDPOS(1, IP), GRIDPOS(2, IP), GRIDPOS(3, IP),&
             &BCFLAG, IPFLAG, DELTAM, ML, NSTLEG, NLEG,&
             &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(IP),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
@@ -1190,7 +1193,7 @@ subroutine shd_ext__mpiMakeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
                 X = BndDirRealInfo(1, J, Ldownx); Y = BndDirRealInfo(2, J, Ldownx)
                 Z = BndDirRealInfo(3, J, Ldownx); DIRPATH = BndDirRealInfo(4, J, Ldownx)
                 if (Y < YGRID(1) - EPS) Y = YMAX; if (Y > YMAX + EPS) Y = YGRID(1)
-                call shd_comp__computeDirectBeam(0, X, Y, Z, BCFLAG, IPFLAG,&
+                call shd_dir__computeDirect(0, X, Y, Z, BCFLAG, IPFLAG,&
                     &DELTAM, ML, NSTLEG, NLEG,&
                     &SOLARFLUX, SOLARMU, SOLARAZ, DIRJUNK,&
                     &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
@@ -1222,7 +1225,7 @@ subroutine shd_ext__mpiMakeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
                 X = BndDirRealInfo(1, J, Ldowny); Y = BndDirRealInfo(2, J, Ldowny)
                 Z = BndDirRealInfo(3, J, Ldowny); DIRPATH = BndDirRealInfo(4, J, Ldowny)
                 if (X < XGRID(1) - EPS) X = XMAX; if (X > XMAX + EPS) X = XGRID(1)
-                call shd_comp__computeDirectBeam(0, X, Y, Z, BCFLAG, IPFLAG,&
+                call shd_dir__computeDirect(0, X, Y, Z, BCFLAG, IPFLAG,&
                     &DELTAM, ML, NSTLEG, NLEG,&
                     &SOLARFLUX, SOLARMU, SOLARAZ, DIRJUNK,&
                     &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
@@ -2191,7 +2194,7 @@ subroutine shd_ext__mpiComputeRad(&
     !╰──────────────────────────────────────────────────────────────╯!
 
     ! Make the isotropic radiances for the top boundary
-    call shd_comp__computeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
+    call shd_init__makeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
         &UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
     ! Make the bottom boundary radiances for the Lambertian surfaces.
     ! Compute the upwelling bottom radiances using the downwelling fluxes.
