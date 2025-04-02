@@ -85,7 +85,7 @@ subroutine shd_solv__solveRte(&
     ! Set up some things before solution loop
 
     ! Transfer the medium properties to the internal grid and add gas abs
-    call shd_comp__interpGrid(NPTS, NSTLEG, NLEG, GRIDPOS,&
+    call shd_grid__interpGrid(NPTS, NSTLEG, NLEG, GRIDPOS,&
         &TEMP, EXTINCT, ALBEDO, LEGEN, IPHASE)
 
     ! If Delta-M then scale the extinction, albedo, and Legendre terms

@@ -1,11 +1,28 @@
-subroutine shd_comp__interpGrid(&
+module shd_grid_cal
+
+    use shd_util
+    use shd_grid_ind
+    use shd_ext_mpi
+    use shd_src
+    use shd_dir
+
+    implicit none
+
+    public :: shd_grid__interpGrid
+    public :: shd_grid__splitGrid
+
+    private :: shd_grid__triInterpProp
+    private :: shd_grid__interpNewGridPnt
+
+contains
+
+subroutine shd_grid__interpGrid(&
     &NPTS, NSTLEG, NLEG, GRIDPOS,&
     &TEMP, EXTINCT, ALBEDO, LEGEN, IPHASE)
 
-    ! Calls shd_comp__triInterpProp to interpolate the input arrays from
+    ! Calls shd_grid__triInterpProp to interpolate the input arrays from
     !   the property grid to each internal grid point.
 
-    implicit none
     integer NPTS, NSTLEG, NLEG
     integer*2 IPHASE(*)
     real GRIDPOS(3, NPTS)
@@ -13,21 +30,21 @@ subroutine shd_comp__interpGrid(&
     integer IP
 
     ! Initialize: transfer the tabulated phase functions
-    call shd_comp__triInterpProp(0.0, 0.0, 0.0, .true., NSTLEG, NLEG,&
+    call shd_grid__triInterpProp(0.0, 0.0, 0.0, .true., NSTLEG, NLEG,&
         &TEMP(1), EXTINCT(1), ALBEDO(1), LEGEN(1, 0, 1), IPHASE(1))
 
     ! Trilinearly interpolate from the property grid to the adaptive
     do IP = 1, NPTS
-        call shd_comp__triInterpProp&
+        call shd_grid__triInterpProp&
             &(GRIDPOS(1, IP), GRIDPOS(2, IP), GRIDPOS(3, IP),&
             &.false., NSTLEG, NLEG, TEMP(IP), EXTINCT(IP),&
             &ALBEDO(IP), LEGEN(1, 0, IP), IPHASE(IP))
     end do
 
     return
-end subroutine shd_comp__interpGrid
+end subroutine shd_grid__interpGrid
 
-subroutine shd_comp__triInterpProp(X, Y, Z, INIT, NSTLEG, NLEG,&
+subroutine shd_grid__triInterpProp(X, Y, Z, INIT, NSTLEG, NLEG,&
     &TEMP, EXTINCT, ALBEDO, LEGEN, IPHASE)
     !  Trilinearly interpolates the quantities on the input property
     ! grid at the single point (X,Y,Z) to get the output TEMP,EXTINCT,
@@ -40,7 +57,6 @@ subroutine shd_comp__triInterpProp(X, Y, Z, INIT, NSTLEG, NLEG,&
 
     use globals_shdom
 
-    implicit none
     integer NSTLEG, NLEG
     integer*2 IPHASE
     logical INIT
@@ -221,7 +237,7 @@ subroutine shd_comp__triInterpProp(X, Y, Z, INIT, NSTLEG, NLEG,&
         EXTINCT = EXTINCT + KG
     end if
     return
-end subroutine shd_comp__triInterpProp
+end subroutine shd_grid__triInterpProp
 
 subroutine shd_grid__splitGrid(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
     &DOSPLIT, OUTOFMEM, CURSPLITACC, SPLITCRIT,&
@@ -241,10 +257,6 @@ subroutine shd_grid__splitGrid(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
     ! grid point, grid cell, or spherical harmonic arrays (sizes given
     ! by MAXIG, MAXIC, MAXIV, MAXIDO) then the OUTOFMEM flag is returned true.
 
-    use shd_grid_ind
-    use shd_ext_mpi
-
-    implicit none
     integer MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX
     integer NPTS, NCELLS, BCFLAG, IPFLAG
     integer NX, NY, NSTOKES, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
@@ -468,7 +480,7 @@ subroutine shd_grid__interpNewGridPnt(NEWPOINTS, NPTS,&
             X = GRIDPOS(1, IP)
             Y = GRIDPOS(2, IP)
             Z = GRIDPOS(3, IP)
-            call shd_comp__triInterpProp(X, Y, Z, .false., NSTLEG, NLEG,&
+            call shd_grid__triInterpProp(X, Y, Z, .false., NSTLEG, NLEG,&
                 &TEMP(IP), EXTINCT(IP), ALBEDO(IP),&
                 &LEGEN(1, 0, IP), IPHASE(IP))
             ! Do the Delta-M scaling of extinction and albedo for this point
@@ -562,3 +574,5 @@ subroutine shd_grid__interpNewGridPnt(NEWPOINTS, NPTS,&
     return
 
 end subroutine shd_grid__interpNewGridPnt
+
+end module shd_grid_cal
