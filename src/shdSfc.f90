@@ -9,6 +9,7 @@ module shd_sfc
     public :: shd_sfc__interpSfc
 
     public :: shd_sfc__brdfSurface
+
     public :: shd_sfc__brdfFresnel
     public :: shd_sfc__brdfDiner
     public :: shd_sfc__brdfRPV
