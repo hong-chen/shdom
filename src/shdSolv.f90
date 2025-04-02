@@ -715,7 +715,7 @@ subroutine shd_comp__computeSrc(&
     SHPTR(NPTS + 1) = IS
     deallocate (LOFJ, SOURCET)
     return
-end subroutine
+end subroutine shd_comp__computeSrc
 
 subroutine shd_solv__truncateRad(HIGHORDERRAD,&
     &NSTOKES, ML, MM, NSTLEG, NLEG, NUMPHASE,&
@@ -817,6 +817,7 @@ subroutine shd_solv__truncateRad(HIGHORDERRAD,&
     ! If out of memory or the SH truncation is fixed then
     ! just set the radiance truncation to that of the source.
 190 continue
+
     RSHPTR(1) = 0
     IR = 0
     do I = 1, NPTS
@@ -839,7 +840,7 @@ subroutine shd_solv__truncateRad(HIGHORDERRAD,&
     end do
     RSHPTR(NPTS + 2) = IR
     return
-end subroutine
+end subroutine shd_solv__truncateRad
 
 subroutine shd_solv__accelSol(&
     &ACCELPAR, NPTS, SHPTR, OSHPTR,&
@@ -869,7 +870,7 @@ subroutine shd_solv__accelSol(&
     end if
 
     return
-end subroutine
+end subroutine shd_solv__accelSol
 
 subroutine shd_solv__integratePath(&
     &NX, NY, NZ, NSTOKES, NSTLEG,&
@@ -1160,7 +1161,7 @@ subroutine shd_solv__integratePath(&
 
         ! Transform the radiance to spherical harmonics for this zenit
         if (NSTOKES .eq. 1) then
-            call shd_solv__DOtoSHx(NPTS, ML, MM, NLM,&
+            call shd_solv__DOtoSH_(NPTS, ML, MM, NLM,&
                 &NMU, NPHI0MAX, NPHI0(IMU),&
                 &IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
                 &RSHPTR, WORK, RADIANCE)
@@ -1176,6 +1177,7 @@ subroutine shd_solv__integratePath(&
     OLDNPTS = NPTS
 
     return
+
 end subroutine shd_solv__integratePath
 
 subroutine shd_solv__findBoundaryPnt(&
@@ -1623,7 +1625,7 @@ subroutine shd_solv__DOtoSH(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
     return
 end subroutine
 
-subroutine shd_solv__DOtoSHx(NPTS, ML, MM, NLM,&
+subroutine shd_solv__DOtoSH_(NPTS, ML, MM, NLM,&
     &NMU, NPHI0MAX, NPHI0,&
     &IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
     &RSHPTR, INDATA, OUTDATA)
