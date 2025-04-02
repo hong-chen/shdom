@@ -2784,7 +2784,7 @@ subroutine shd_ext__mpiVisualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 ! Integrate the extinction and source function along this ray
                 ! to calculate the Stokes radiance vector for this pixel
                 TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
-                call shd_comp__integrateRay1(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
+                call shd_comp__integrateOneRay(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
                     &NSTPHASE, NSCATANGLE, PHASETAB,&
                     &NX, NY, NZ, NPTS, NCELLS,&
                     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
@@ -2871,7 +2871,7 @@ subroutine shd_ext__mpiVisualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 PHI2 = BndRecvRadRealInfo(5, J, IBND)
                 TRANSMIT = BndRecvRadRealInfo(6, J, IBND)
                 RADIANCE(:) = BndRecvRadRealInfo(7:6 + NSTOKES, J, IBND)
-                call shd_comp__integrateRay1(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
+                call shd_comp__integrateOneRay(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
                     &NSTPHASE, NSCATANGLE, PHASETAB,&
                     &NX, NY, NZ, NPTS, NCELLS,&
                     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&

@@ -4,19 +4,28 @@
 set(SHDOM_LIB_SRCS
     globals.f90
     shdInit.f90
-    shdGrid.f90
-    shdInteg.f90
+    shdPha.f90
+    shdDir.f90
+    shdUtil.f90
+    shdComp.f90
+    shdGrid_indx.f90
+    shdGrid_calc.f90
+    shdSolv_rte.f90
+    shdSolv_shdo.f90
+    shdSolv_intg.f90
+    shdSolv_src.f90
+    shdSolv_rad.f90
     shdIO_inp.f90
     shdIO_out.f90
     shdSurf.f90
     fftpack.f90)
 
 # dummy option
-if (USE_OMP)
-    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} shdSolv.f90 shdComp.f90)
-else()
-    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} shdSolv.f90 shdComp.f90)
-endif()
+#if (USE_OMP)
+#    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} shdSolv.f90 shdComp.f90)
+#else()
+#    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} shdSolv.f90 shdComp.f90)
+#endif()
 
 if (USE_MPI)
     set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} shdExt_mpi.f90)

@@ -1,3 +1,81 @@
+subroutine shd_init__checkSurfUnif(NXSFC, NYSFC, NSFCPAR, SFCPARMS,&
+    &UNIFORM_SFC_BRDF)
+
+    !   Checks to see if the surface reflection parameters are uniform,
+    ! and if so sets the UNIFORM_SFC_BRDF flag.  The temperature need
+    ! not be uniform.
+
+    integer NXSFC, NYSFC, NSFCPAR
+    real SFCPARMS(NSFCPAR, NXSFC + 1, NYSFC + 1)
+    logical UNIFORM_SFC_BRDF
+    integer IX, IY, J
+
+    UNIFORM_SFC_BRDF = .true.
+    do IY = 1, NYSFC
+        do IX = 1, NXSFC
+            do J = 2, NSFCPAR
+                if (SFCPARMS(J, IX, IY) .ne. SFCPARMS(J, 1, 1)) then
+                    UNIFORM_SFC_BRDF = .false.
+                    return
+                end if
+            end do
+        end do
+    end do
+    return
+end subroutine shd_init__checkSurfUnif
+
+subroutine shd_comp__interpSurfParams(NBOTPTS, BCPTR, GRIDPOS,&
+    &SRCTYPE, WAVENO, WAVELEN, UNITS,&
+    &NXSFC, NYSFC, DELXSFC, DELYSFC, NSFCPAR, SFCPARMS,&
+    &SFCGRIDPARMS)
+
+    !   Bilinearly interpolates the surface properties from the regular
+    ! surface grid to the boundary points of the adaptive grid.
+    ! The locations of the NBOTPTS grid points on the bottom boundary
+    ! (pointed to by BCPTR) are in the GRIDPOS array.  The input regular
+    ! surface info is specified by the number of grid lines (NXSFC,NYSFC),
+    ! the grid spacing (DELXSFC,DELYSFC), the number of parameters at
+    ! each grid point (NSFCPAR), and the surface parameters (SFCPARMS).
+    ! The output interpolated surface parameters at the NBOTPTS boundary
+    ! points are in SFCGRIDPARMS.  The first parameter is input as
+    ! temperature, but converted to Planck function for output.
+
+    implicit none
+    integer NBOTPTS, BCPTR(*), NXSFC, NYSFC, NSFCPAR
+    real WAVENO(2), WAVELEN
+    real DELXSFC, DELYSFC
+    real GRIDPOS(3, *), SFCPARMS(NSFCPAR, NXSFC + 1, NYSFC + 1)
+    real SFCGRIDPARMS(NSFCPAR, NBOTPTS)
+    character(len=1) :: SRCTYPE, UNITS
+    integer I, IBC, IX, IY, J
+    real RX, RY, U, V, TEMP, PLANCK
+
+    ! Loop over all bottom points
+    do IBC = 1, NBOTPTS
+        I = BCPTR(IBC)
+        RX = GRIDPOS(1, I)/DELXSFC
+        RY = GRIDPOS(2, I)/DELYSFC
+        IX = max(1, min(NXSFC, int(RX) + 1))
+        IY = max(1, min(NYSFC, int(RY) + 1))
+        U = max(0.0, min(1.0, RX - (IX - 1)))
+        V = max(0.0, min(1.0, RY - (IY - 1)))
+        do J = 1, NSFCPAR
+            SFCGRIDPARMS(J, IBC) = (1 - U)*(1 - V)*SFCPARMS(J, IX, IY)&
+                &+ (1 - U)*V*SFCPARMS(J, IX, IY + 1)&
+                &+ U*(1 - V)*SFCPARMS(J, IX + 1, IY) + U*V*SFCPARMS(J, IX + 1, IY + 1)
+        end do
+        if (SRCTYPE .eq. 'S') then
+            PLANCK = 0.0
+        else
+            TEMP = SFCGRIDPARMS(1, IBC)
+            call shd_comp__computePlanck(TEMP, UNITS, WAVENO, WAVELEN, PLANCK)
+        end if
+        SFCGRIDPARMS(1, IBC) = PLANCK
+    end do
+    return
+end subroutine shd_comp__interpSurfParams
+
+
 module shd_surf
 
     use globals

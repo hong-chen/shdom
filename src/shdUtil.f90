@@ -1,0 +1,549 @@
+subroutine shd_comp__interpField(ICELL, GRIDPTR, GRIDPOS,&
+    &X, Y, Z, ND, FIELD, ID1, NV, VALUES)
+
+    !   Trilinearly interpolates the field (FIELD) given a grid cell
+    ! pointer (ICELL), to compute the field values (VALUES) at the desired
+    ! point (X,Y,Z). ND is the leading index of the FIELD (1 for a
+    ! scalar field), ID1 is the first element of the vector to interpolate,
+    ! and NV elements are output.
+
+    implicit none
+    integer ICELL, GRIDPTR(8, *), ND, ID1, NV
+    double precision X, Y, Z
+    real GRIDPOS(3, *), FIELD(ND, *), VALUES(NV)
+    integer IPT1, IPT2, ID
+    double precision U, V, W, UM, VM, WM, DELX, DELY, DELZ
+
+    IPT1 = GRIDPTR(1, ICELL)
+    IPT2 = GRIDPTR(8, ICELL)
+    DELX = GRIDPOS(1, IPT2) - GRIDPOS(1, IPT1)
+    if (DELX .le. 0.0) DELX = 1.0
+    DELY = GRIDPOS(2, IPT2) - GRIDPOS(2, IPT1)
+    if (DELY .le. 0.0) DELY = 1.0
+    DELZ = GRIDPOS(3, IPT2) - GRIDPOS(3, IPT1)
+    U = (X - GRIDPOS(1, IPT1))/DELX
+    V = (Y - GRIDPOS(2, IPT1))/DELY
+    W = (Z - GRIDPOS(3, IPT1))/DELZ
+    UM = 1 - U
+    VM = 1 - V
+    WM = 1 - W
+
+    do ID = ID1, ID1 + NV - 1
+        VALUES(ID - ID1 + 1) = WM*(VM*(UM*FIELD(ID, GRIDPTR(1, ICELL))&
+            &+ U*FIELD(ID, GRIDPTR(2, ICELL)))&
+            &+ V*(UM*FIELD(ID, GRIDPTR(3, ICELL))&
+            &+ U*FIELD(ID, GRIDPTR(4, ICELL))))&
+            &+ W*(VM*(UM*FIELD(ID, GRIDPTR(5, ICELL))&
+            &+ U*FIELD(ID, GRIDPTR(6, ICELL)))&
+            &+ V*(UM*FIELD(ID, GRIDPTR(7, ICELL))&
+            &+ U*FIELD(ID, GRIDPTR(8, ICELL))))
+    end do
+
+    return
+
+end subroutine shd_comp__interpField
+
+subroutine shd_comp__computeGausQuad(N, XA, WT)
+
+    !╭──────────────────────────────────────────────────────────────╮!
+    !   Generates the abscissas (X) and weights (W) for an N point
+    ! Gauss-Legendre quadrature.  The XA are returned in this order:
+    ! -mu1, -mu2, ..., -muK, mu1, mu2, ..., muK  (mu1 > mu2 > muK,
+    ! K=N/2, N must be even).
+    !╰──────────────────────────────────────────────────────────────╯!
+
+    implicit none
+    integer, intent(in) :: N
+    real, intent(inout) :: XA(*), WT(*)
+    integer :: K, I, J, L
+    double precision :: X, XP, PL, PL1, PL2, DPL, TINY
+    parameter(TINY=3.0d-7)
+
+    K = N/2
+    if (2*K .ne. N) stop 'Error [_computeGausQuad]: N must be even.'
+    do J = 1, K
+        X = cos(3.141592654*(J - .25)/(N + .5))
+        I = 0
+100     continue
+        PL1 = 1
+        PL = X
+        do L = 2, N
+            PL2 = PL1
+            PL1 = PL
+            PL = ((2*L - 1)*X*PL1 - (L - 1)*PL2)/L
+        end do
+        DPL = N*(X*PL - PL1)/(X*X - 1)
+        XP = X
+        X = XP - PL/DPL
+        I = I + 1
+        if (abs(X - XP) .gt. TINY .and. I .lt. 10) GO TO 100
+        XA(J) = -X
+        XA(J + K) = X
+        WT(J) = 2.0d0/((1.0d0 - X*X)*DPL*DPL)
+        WT(J + K) = WT(J)
+    end do
+
+    return
+
+end subroutine shd_comp__computeGausQuad
+
+subroutine shd_comp__computeGausQuadDble(N, XA, WT)
+
+    !╭──────────────────────────────────────────────────────────────╮!
+    !   Generates the abscissas (X) and weights (W) for an N point
+    ! Double-Gauss-Legendre quadrature.  The XA are returned in this o
+    ! -mu1, -mu2, ..., -muK, mu1, mu2, ..., muK  (mu1 > mu2 > muK,
+    ! K=N/2, N must be even).
+    !╰──────────────────────────────────────────────────────────────╯!
+
+    implicit none
+    integer, intent(in) :: N
+    real, intent(inout) :: XA(*), WT(*)
+
+    integer :: K, I, J, L, N2
+    double precision :: X, XP, PL, PL1, PL2, DPL, TINY
+    parameter(TINY=3.0d-7)
+
+    N2 = N/2
+    if (2*N2 .ne. N) stop 'Error [_computeGausQuadDble]: N must be even.'
+
+    K = (N2 + 1)/2
+    do J = 1, K
+        X = cos(3.141592654*(J - .25)/(N2 + .5))
+        I = 0
+100     continue
+        PL1 = 1
+        PL = X
+        do L = 2, N2
+            PL2 = PL1
+            PL1 = PL
+            PL = ((2*L - 1)*X*PL1 - (L - 1)*PL2)/L
+        end do
+        DPL = N2*(X*PL - PL1)/(X*X - 1)
+        XP = X
+        X = XP - PL/DPL
+        I = I + 1
+        if (abs(X - XP) .gt. TINY .and. I .lt. 10) GO TO 100
+        XA(J + N2) = (1 + X)/2
+        XA(N2 + 1 - J + N2) = (1 - X)/2
+        WT(J + N2) = 1/((1 - X*X)*DPL*DPL)
+        WT(N2 + 1 - J + N2) = WT(J + N2)
+        XA(J) = -XA(J + N2)
+        XA(N2 + 1 - J) = -XA(N2 + 1 - J + N2)
+        WT(J) = WT(J + N2)
+        WT(N2 + 1 - J) = WT(J + N2)
+    end do
+
+    return
+
+end subroutine shd_comp__computeGausQuadDble
+
+subroutine shd_comp__ssort(X, Y, N, KFLAG)
+
+    !╭──────────────────────────────────────────────────────────────╮!
+    !***PURPOSE  Sort an array and optionally make the same interchanges in
+    !            an auxiliary array.  The array may be sorted in increasing
+    !            or decreasing order.  A slightly modified QUICKSORT
+    !            algorithm is used.
+    !***LIBRARY   SLATEC
+    !***CATEGORY  N6A2B
+    !***TYPE      SINGLE PRECISION (SSORT-S, DSORT-D, ISORT-I)
+    !***KEYWORDS  SINGLETON QUICKSORT, SORT, SORTING
+    !***AUTHOR  Jones, R. E., (SNLA)
+    !           Wisniewski, J. A., (SNLA)
+    !***DESCRIPTION
+    !
+    !   SSORT sorts array X and optionally makes the same interchanges in
+    !   array Y.  The array X may be sorted in increasing order or
+    !   decreasing order.  A slightly modified quicksort algorithm is used.
+    !
+    !   Description of Parameters
+    !      X - array of values to be sorted   (usually abscissas)
+    !      Y - array to be (optionally) carried along
+    !      N - number of values in array X to be sorted
+    !      KFLAG - control parameter
+    !            =  2  means sort X in increasing order and carry Y along.
+    !            =  1  means sort X in increasing order (ignoring Y)
+    !            = -1  means sort X in decreasing order (ignoring Y)
+    !            = -2  means sort X in decreasing order and carry Y along.
+    !
+    !***REFERENCES  R. C. Singleton, Algorithm 347, An efficient algorithm
+    !                 for sorting with minimal storage, Communications of
+    !                 the ACM, 12, 3 (1969), pp. 185-187.
+    !╰──────────────────────────────────────────────────────────────╯!
+
+    ! Scalar Arguments
+    integer KFLAG, N
+
+    ! Array Arguments
+    ! real X(*), Y(*)
+    real, intent(inout) :: X(*)
+    integer, intent(inout) :: Y(*)
+
+    ! Local Scalars
+    ! real R, T, TT, TTY, TY
+    real R, T, TT
+    integer TY, TTY
+    integer I, IJ, J, K, KK, L, M, NN
+
+    ! Local Arrays
+    integer IL(51), IU(51)
+
+    ! External Subroutines
+    ! Intrinsic Functions
+    intrinsic abs, int
+
+    !***First executable statement  SSORT
+    NN = N
+    if (NN .lt. 1) then
+        stop 'Error [_ssort]: The number of values to be sorted is not positive.'
+    end if
+
+    KK = abs(KFLAG)
+    if (KK .ne. 1 .and. KK .ne. 2) then
+        stop 'Error [_ssort]: The sort control parameter, K, is not 2, 1, -1, or -2.'
+    end if
+
+    ! Alter array X to get decreasing order if needed
+    if (KFLAG .le. -1) then
+        do 10 I = 1, NN
+            X(I) = -X(I)
+10      continue
+     end if
+
+    if (KK .eq. 2) GO TO 100
+
+    ! Sort X only
+    M = 1
+    I = 1
+    J = NN
+    R = 0.375e0
+
+20  if (I .eq. J) GO TO 60
+    if (R .le. 0.5898437e0) then
+        R = R + 3.90625e-2
+    else
+        R = R - 0.21875e0
+    end if
+
+30  K = I
+
+    ! Select a central element of the array and save it in location T
+    IJ = I + int((J - I)*R)
+    T = X(IJ)
+
+    ! If first element of array is greater than T, interchange with T
+    if (X(I) .gt. T) then
+        X(IJ) = X(I)
+        X(I) = T
+        T = X(IJ)
+    end if
+    L = J
+
+    ! If last element of array is less than than T, interchange with T
+    if (X(J) .lt. T) then
+        X(IJ) = X(J)
+        X(J) = T
+        T = X(IJ)
+
+        ! If first element of array is greater than T, interchange with T
+        if (X(I) .gt. T) then
+            X(IJ) = X(I)
+            X(I) = T
+            T = X(IJ)
+        end if
+    end if
+
+    ! Find an element in the second half of the array which is smaller
+    ! than T
+40  L = L - 1
+    if (X(L) .gt. T) GO TO 40
+
+    ! Find an element in the first half of the array which is greater
+    ! than T
+50  K = K + 1
+    if (X(K) .lt. T) GO TO 50
+
+    ! Interchange these elements
+    if (K .le. L) then
+        TT = X(L)
+        X(L) = X(K)
+        X(K) = TT
+        GO TO 40
+    end if
+
+    ! Save upper and lower subscripts of the array yet to be sorted
+    if (L - I .gt. J - K) then
+        IL(M) = I
+        IU(M) = L
+        I = K
+        M = M + 1
+    else
+        IL(M) = K
+        IU(M) = J
+        J = L
+        M = M + 1
+    end if
+    GO TO 70
+
+    ! Begin again on another portion of the unsorted array
+60  M = M - 1
+    if (M .eq. 0) GO TO 190
+    I = IL(M)
+    J = IU(M)
+
+70  if (J - I .ge. 1) GO TO 30
+    if (I .eq. 1) GO TO 20
+    I = I - 1
+
+80  I = I + 1
+    if (I .eq. J) GO TO 60
+    T = X(I + 1)
+    if (X(I) .le. T) GO TO 80
+    K = I
+
+90  X(K + 1) = X(K)
+    K = K - 1
+    if (T .lt. X(K)) GO TO 90
+    X(K + 1) = T
+    GO TO 80
+
+    ! Sort X and carry Y along
+100 M = 1
+    I = 1
+    J = NN
+    R = 0.375e0
+
+110 if (I .eq. J) GO TO 150
+    if (R .le. 0.5898437e0) then
+        R = R + 3.90625e-2
+    else
+        R = R - 0.21875e0
+    end if
+
+120 K = I
+
+    ! Select a central element of the array and save it in location T
+    IJ = I + int((J - I)*R)
+    T = X(IJ)
+    TY = Y(IJ)
+
+    ! If first element of array is greater than T, interchange with T
+    if (X(I) .gt. T) then
+        X(IJ) = X(I)
+        X(I) = T
+        T = X(IJ)
+        Y(IJ) = Y(I)
+        Y(I) = TY
+        TY = Y(IJ)
+    end if
+    L = J
+
+    ! If last element of array is less than T, interchange with T
+    if (X(J) .lt. T) then
+        X(IJ) = X(J)
+        X(J) = T
+        T = X(IJ)
+        Y(IJ) = Y(J)
+        Y(J) = TY
+        TY = Y(IJ)
+
+    ! If first element of array is greater than T, interchange with T
+        if (X(I) .gt. T) then
+            X(IJ) = X(I)
+            X(I) = T
+            T = X(IJ)
+            Y(IJ) = Y(I)
+            Y(I) = TY
+            TY = Y(IJ)
+        end if
+    end if
+
+    ! Find an element in the second half of the array which is smaller
+    ! than T
+130 L = L - 1
+    if (X(L) .gt. T) GO TO 130
+
+    ! Find an element in the first half of the array which is greater
+    ! than T
+140 K = K + 1
+    if (X(K) .lt. T) GO TO 140
+
+    ! Interchange these elements
+    if (K .le. L) then
+        TT = X(L)
+        X(L) = X(K)
+        X(K) = TT
+        TTY = Y(L)
+        Y(L) = Y(K)
+        Y(K) = TTY
+        GO TO 130
+    end if
+
+    ! Save upper and lower subscripts of the array yet to be sorted
+    if (L - I .gt. J - K) then
+        IL(M) = I
+        IU(M) = L
+        I = K
+        M = M + 1
+    else
+        IL(M) = K
+        IU(M) = J
+        J = L
+        M = M + 1
+    end if
+    GO TO 160
+
+    ! Begin again on another portion of the unsorted array
+150 M = M - 1
+    if (M .eq. 0) GO TO 190
+    I = IL(M)
+    J = IU(M)
+
+160 if (J - I .ge. 1) GO TO 120
+    if (I .eq. 1) GO TO 110
+    I = I - 1
+
+170 I = I + 1
+    if (I .eq. J) GO TO 150
+    T = X(I + 1)
+    TY = Y(I + 1)
+    if (X(I) .le. T) GO TO 170
+    K = I
+
+180 X(K + 1) = X(K)
+    Y(K + 1) = Y(K)
+    K = K - 1
+    if (T .lt. X(K)) GO TO 180
+    X(K + 1) = T
+    Y(K + 1) = TY
+    GO TO 170
+
+    ! Clean up
+190 if (KFLAG .le. -1) then
+        do 200 I = 1, NN
+            X(I) = -X(I)
+200     continue
+    end if
+
+    return
+
+end subroutine shd_comp__ssort
+
+subroutine shd_comp__computePlanck(TEMP, UNITS, WAVENO, WAVELEN, PLANCK)
+    !    Calculates the Planck blackbody radiance. If UNITS='T' then
+    ! using brightness temperature units and the temperature is simply
+    ! returned. If UNITS='B' then doing a band integration and the
+    ! Planck blackbody radiance in [Watts /(meter^2 ster)] over a
+    ! wavenumber range [cm^-1] is returned. Otherwise, the Planck
+    ! blackbody radiance in [Watts /(meter^2 ster micron)] for a
+    ! temperature in [Kelvins] at a wavelength in [microns] is returned.
+    implicit none
+    real TEMP, WAVENO(2), WAVELEN, PLANCK
+    character(len=1) :: UNITS
+    double precision X1, X2, F
+
+    if (UNITS .eq. 'T') then
+        PLANCK = TEMP
+    else if (UNITS .eq. 'B') then
+        if (TEMP .gt. 0.0) then
+            X1 = 1.4388d0*WAVENO(1)/TEMP
+            X2 = 1.4388d0*WAVENO(2)/TEMP
+            call shd_comp__integratePlanck(X1, X2, F)
+            PLANCK = 1.1911d-8*(TEMP/1.4388d0)**4*F
+        else
+            PLANCK = 0.0
+        end if
+    else
+        if (TEMP .gt. 0.0) then
+            PLANCK = 1.1911e8/WAVELEN**5&
+                &/(exp(1.4388e4/(WAVELEN*TEMP)) - 1)
+        else
+            PLANCK = 0.0
+        end if
+    end if
+    return
+end subroutine shd_comp__computePlanck
+
+subroutine shd_comp__integratePlanck(X1, X2, F)
+    ! Returns integral of x**3/(exp(x)-1) from x1 to x2.
+    ! Accurate to better than 1 part in 10**9 for integral from
+    ! 0 to infinity (pi**4/15).
+    implicit none
+    double precision X1, X2, F
+    double precision integralLow, integralHigh
+    double precision C
+
+    C = 1.0d0
+    if (X1 .lt. C .and. X2 .lt. C) then
+        F = integralLow(X2) - integralLow(X1)
+    else if (X1 .lt. C .and. X2 .ge. C) then
+        F = integralLow(C) - integralLow(X1) + integralHigh(C) - integralHigh(X2)
+    else if (X1 .ge. C .and. X2 .ge. C) then
+        F = integralHigh(X1) - integralHigh(X2)
+    else
+        stop 'Error [_integratePlanck]: X1 and X2 out of order.'
+    end if
+    return
+end subroutine
+
+double precision function integralLow(X)
+
+    ! Integral of x**3/(exp(x)-1) from 0 to x.
+    ! Accurate for x less than about 1.
+    ! Uses Taylor series expansion around x=0.
+
+    implicit none
+    double precision X
+    integer N
+    double precision SUM, F, A(29)
+    data A/0.0d0,&
+        &0.0d0, 0.333333333333333333333d0,&
+        &-0.125d0, 0.016666666666666666667d0,&
+        &0.0d0, -0.0001984126984126984127d0,&
+        &0.0d0, 0.36743092298647854203d-5,&
+        &0.0d0, -0.75156325156325156325d-7,&
+        &0.0d0, 0.16059043836821614599d-8,&
+        &0.0d0, -0.35227934257916621232d-10,&
+        &0.0d0, 0.78720803121674581370d-12,&
+        &0.0d0, -0.17840422612224120352d-13,&
+        &0.0d0, 0.40886009791799259829d-15,&
+        &0.0d0, -0.94559508632959211871d-17,&
+        &0.0d0, 0.22036011313440918061d-18,&
+        &0.0d0, -0.51683202540046382743d-20,&
+        &0.0d0, 0.12188644964239543006d-20/
+
+    SUM = A(4)*X**4
+    F = X
+    do N = 3, 29, 2
+        F = X*X*F
+        SUM = SUM + A(N)*F
+    end do
+
+    integralLow = SUM
+
+    return
+
+end function integralLow
+
+double precision function integralHigh(X)
+
+    ! Integral of x**3/(exp(x)-1) from x to infinity.
+    ! Accurate for x greater than about 1.
+
+    implicit none
+    double precision X
+    integer N
+    double precision SUM
+
+    SUM = 0.0d0
+    do N = 1, 15
+        SUM = SUM + exp(-N*X)&
+            &*(X**3/N + 3*X**2/N**2 + 6*X/N**3 + 6.0d0/N**4)
+    end do
+
+    integralHigh = SUM
+
+    return
+
+end function integralHigh
