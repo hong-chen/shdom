@@ -1,3 +1,19 @@
+* 2024-04-02 v0.1.1
+
+    * Fixed "dead process issue" when running MPI version with 1D property field input;
+
+    * Fixed domain shift issue in 3D radiance calculations (also for MPI version);
+
+    * Added ``CMake`` support and auto-build workflow on Github (contributed by Dr. Cheng Da);
+
+    * Fixed a segmentation error when saving "state" from calculation;
+
+    * Changed ASCII output to binary format to reduce file size and accelerate processing speed;
+
+    * Added support for LSRT BRDF model;
+
+    * Added examples (including legacy cases) for benchmarking purpose.
+
 * 2024-03-05 v0.1.0
 
     * Converted the majority of the Fortran 77 code to Fortran 90.
