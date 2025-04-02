@@ -7,10 +7,16 @@ module shd_grid
 
   public :: shd_grid__makeNewGridPnt
   public :: shd_grid__getNextCell
+  public :: shd_grid__makeSweepOrder
+  public :: shd_grid__divideCell
+  public :: shd_grid__matchNeighFace
+  public :: shd_grid__inheritNeighCell
+  public :: shd_grid__matchGridPnt
+
+  public :: shd_grid__interpNewGridPnt
+
   public :: shd_grid__testGridSmooth
   public :: shd_grid__testCellSplit
-  public :: shd_grid__splitGrid
-  public :: shd_grid__makeSweepOrder
 
 contains
 
@@ -41,7 +47,7 @@ subroutine shd_grid__makeNewGridPnt(IDIR, ICELL, NEWCELL, NPTS,&
 
     !   In general, when subdividing a cell four new points may be made.
     ! Each of these points belongs to two faces of the original cell.
-    ! Use the shd_comp__matchGridPnt routine to try to find matches in cells
+    ! Use the shd_grid__matchGridPnt routine to try to find matches in cells
     ! across the two faces that contain the point; also cross the face of
     ! one of these to get the third bounding cell.  If any of the appropriate
     ! gridpoints of these three cells has the same coordinates then the point
@@ -67,17 +73,17 @@ subroutine shd_grid__makeNewGridPnt(IDIR, ICELL, NEWCELL, NPTS,&
         ! Look for gridpoints matching this new point in the three cell
         !   that border this edge
         IFACE1 = FACEGRID(1, I, IDIR)
-        call shd_comp__matchGridPnt(XP, YP, ZP, ICELL, IFACE1, GRIDPOS,&
+        call shd_grid__matchGridPnt(XP, YP, ZP, ICELL, IFACE1, GRIDPOS,&
             &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, IPMATCH)
         if (IPMATCH .eq. 0) then
             IFACE2 = FACEGRID(2, I, IDIR)
-            call shd_comp__matchGridPnt(XP, YP, ZP, ICELL, IFACE2, GRIDPOS,&
+            call shd_grid__matchGridPnt(XP, YP, ZP, ICELL, IFACE2, GRIDPOS,&
                 &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, IPMATCH)
         end if
         if (IPMATCH .eq. 0) then
             ICELL2 = abs(NEIGHPTR(IFACE1, ICELL))
             if (ICELL2 .gt. 0) then
-                call shd_comp__matchGridPnt(XP, YP, ZP, ICELL2, IFACE2, GRIDPOS,&
+                call shd_grid__matchGridPnt(XP, YP, ZP, ICELL2, IFACE2, GRIDPOS,&
                     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, IPMATCH)
             end if
         end if
@@ -355,345 +361,8 @@ subroutine shd_grid__testCellSplit(GRIDPTR, GRIDPOS, EXTINCT,&
     return
 end subroutine shd_grid__testCellSplit
 
-subroutine shd_grid__splitGrid(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
-    &DOSPLIT, OUTOFMEM, CURSPLITACC, SPLITCRIT,&
-    &NPTS, NCELLS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-    &GRIDPOS, NX, XGRID, NY, YGRID,&
-    &NSTOKES, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
-    &DELTAM, BCFLAG, IPFLAG, ACCELFLAG,&
-    &EXTINCT, ALBEDO, LEGEN, IPHASE,&
-    &RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR,&
-    &TEMP, PLANCK, DIRFLUX, SRCTYPE,&
-    &SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN,&
-    &UNITS, WAVENO, WAVELEN, ADAPTCRIT, ADAPTIND)
-
-    !   Splits the cells that have a cell dividing criterion greater than
-    ! CURSPLITACC if DOSPLIT is true.  The current splitting criterion
-    ! achieved is returned in SPLITCRIT.  If we are at the end of the
-    ! grid point, grid cell, or spherical harmonic arrays (sizes given
-    ! by MAXIG, MAXIC, MAXIV, MAXIDO) then the OUTOFMEM flag is returned true.
-
-    use shd_ext_mpi
-
-    integer MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX
-    integer NPTS, NCELLS, BCFLAG, IPFLAG
-    integer NX, NY, NSTOKES, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
-    integer GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
-    integer RSHPTR(*), SHPTR(*), OSHPTR(*)
-    real ADAPTIND(*)
-    integer*2 CELLFLAGS(*), IPHASE(*)
-    logical DELTAM, ACCELFLAG, DOSPLIT, OUTOFMEM
-    real CURSPLITACC, SPLITCRIT
-    real SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN(NSTLEG, NLM)
-    real WAVENO(2), WAVELEN
-    real GRIDPOS(3, *), XGRID(*), YGRID(*), ADAPTCRIT(*)
-    real EXTINCT(*), ALBEDO(*), LEGEN(NSTLEG, 0:NLEG, *)
-    real RADIANCE(NSTOKES, *), SOURCE(NSTOKES, *)
-    real TEMP(*), PLANCK(*), DIRFLUX(*)
-    character(len=1) :: SRCTYPE, UNITS
-    integer ICELL, ICELL1, IDIR, I, N, NEWPOINTS(3, 4), OLDNPTS
-    integer MAXCELLS, MAXPTS, MAXWORK, MAXSH, MAXRAD
-    logical OUTOFMEM0
-    real ADAPT(3), FRAC
-
-    if (DOSPLIT) then
-        OLDNPTS = NPTS
-        ! Do the cells in batchs, so the newly split cells can be tested
-        !   for further splitting
-        ICELL1 = 1
-        do while (ICELL1 .le. NCELLS)
-            ! For the current batch of cells, compute the adaptive grid
-            !   splitting criterion for 3 directions for each cell.
-            N = 0
-            do ICELL = ICELL1, NCELLS
-                if (TREEPTR(2, ICELL) .eq. 0) then
-                    ! If this is a end node cell then compute adaptive criterion
-                    call shd_grid__testCellSplit(GRIDPTR, GRIDPOS, EXTINCT,&
-                        &SHPTR, NSTOKES, SOURCE, ICELL,&
-                        &ADAPT, ADAPTCRIT(N + 1), IDIR)
-                    ADAPTIND(N+1) = 4*ICELL + IDIR
-                    N = N + 1
-                end if
-            end do
-            ICELL1 = NCELLS + 1
-
-            ! Sort the adaptive criterion in decreasing order
-            call shd_comp__ssort(ADAPTCRIT, ADAPTIND, N, -2)
-
-            ! Figure how many cells we can split, leaving some room
-            !   for cells split during grid smoothing
-            FRAC = 0.03
-            MAXCELLS = MAXIC - FRAC*(MAXIC - NCELLS) - 2
-            MAXPTS = MAXIG - FRAC*(MAXIG - NPTS) - 4
-            MAXWORK = MAXIDO - FRAC*(MAXIDO - NPHI0MAX*NPTS) - 4*NPHI0MAX
-            MAXSH = MAXIV - FRAC*(MAXIV - SHPTR(NPTS + 1)) - 4*NLM
-            MAXRAD = MAXIV + MAXIG - FRAC*(MAXIV + MAXIG - RSHPTR(NPTS + 1)) - 4*NLM
-
-            ! Go down the list from highest adaptive cell criterion on down
-            OUTOFMEM0 = OUTOFMEM
-            I = 1
-            do while (ADAPTCRIT(I) .gt. CURSPLITACC .and. .not. OUTOFMEM0&
-                &.and. I .le. N)
-                if (NCELLS .gt. MAXCELLS .or. NPTS .gt. MAXPTS .or.&
-                    &NPTS*NPHI0MAX .gt. MAXWORK .or.&
-                    &SHPTR(NPTS + 1) .gt. MAXSH .or.&
-                    &RSHPTR(NPTS + 1) .gt. MAXRAD) then
-                    OUTOFMEM0 = .true.
-                else
-                    ICELL = int(ADAPTIND(I))/4
-                    IDIR = iand(int(ADAPTIND(I)), 3)
-                    ! Create the new grid points and make pointers
-                    call shd_comp__divideCell(NPTS, NCELLS, GRIDPTR, NEIGHPTR,&
-                        &TREEPTR, CELLFLAGS, GRIDPOS, ICELL, IDIR, NEWPOINTS)
-                    ! Interpolate the medium properties, radiance, and source
-                    call shd_comp__interpPnt(NEWPOINTS, NPTS,&
-                        &NSTOKES, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
-                        &DELTAM, BCFLAG, IPFLAG, ACCELFLAG, GRIDPOS,&
-                        &SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN,&
-                        &UNITS, WAVENO, WAVELEN,&
-                        &EXTINCT, ALBEDO, LEGEN, IPHASE, TEMP, PLANCK, DIRFLUX,&
-                        &RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR)
-                end if
-                I = I + 1
-            end do
-
-            MAXCELLS = MAXIC - 2
-            MAXPTS = MAXIG - 4
-            MAXWORK = MAXIDO - 4*NPHI0MAX
-            MAXSH = MAXIV - 4*NLM
-            MAXRAD = MAXIV + MAXIG - 4*NLM
-
-            ! Split some more cells to make the adaptive grid "smoother"
-            do while (.not. OUTOFMEM .and. I .le. N)
-                if (NCELLS .gt. MAXCELLS .or. NPTS .gt. MAXPTS .or.&
-                    &NPTS*NPHI0MAX .gt. MAXWORK .or.&
-                    &SHPTR(NPTS + 1) .gt. MAXSH .or.&
-                    &RSHPTR(NPTS + 1) .gt. MAXRAD) then
-                    OUTOFMEM = .true.
-                else
-                    ! See if cell should be split to make better grid:
-                    !   IDIR=0 if no, IDIR=direction (1,2,3) otherwise
-                    ICELL = int(ADAPTIND(I))/4
-                    call shd_grid__testGridSmooth(GRIDPTR, GRIDPOS, NEIGHPTR,&
-                        &TREEPTR, CELLFLAGS, SHPTR, ICELL, IDIR)
-                    ! Set IDIR=0 to stop adaptive grid smoothing
-                    ! IDIR = 0
-                    if (IDIR .gt. 0) then
-                        ! Create the new grid points and make pointers
-                        call shd_comp__divideCell(NPTS, NCELLS, GRIDPTR, NEIGHPTR,&
-                            &TREEPTR, CELLFLAGS, GRIDPOS, ICELL, IDIR, NEWPOINTS)
-                        ! Interpolate the medium properties, radiance, and source
-                        call shd_comp__interpPnt(NEWPOINTS, NPTS,&
-                            &NSTOKES, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
-                            &DELTAM, BCFLAG, IPFLAG, ACCELFLAG, GRIDPOS,&
-                            &SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN,&
-                            &UNITS, WAVENO, WAVELEN,&
-                            &EXTINCT, ALBEDO, LEGEN, IPHASE, TEMP, PLANCK, DIRFLUX,&
-                            &RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR)
-                    end if
-                end if
-                I = I + 1
-            end do
-
-        end do
-        if (OUTOFMEM0) then
-            OUTOFMEM = .true.
-            write (6, '(2A,I8,A,I8)')&
-                &'Message [_splitGrid]: Further cell splitting requires larger array allocations: ',&
-                &'Ncells = ', NCELLS, ', Npnts = ', NPTS
-        end if
-
-        ! If in parallel mode, calculate all the direct beam fluxes at once
-        if (SRCTYPE .ne. 'T' .and.&
-            &(btest(BCFLAG, 2) .or. btest(BCFLAG, 3))) then
-            call shd_ext__mpiMakeDirect(OLDNPTS + 1, NPTS, BCFLAG,&
-                &IPFLAG, DELTAM, ML, NSTLEG, NLEG,&
-                &SOLARFLUX, SOLARMU, SOLARAZ, GRIDPOS,&
-                &NX, XGRID, NY, YGRID, DIRFLUX)
-        end if
-    end if
-
-    ! Find the max adaptive cell criterion after the cell divisions
-    SPLITCRIT = 0.0
-    do ICELL = 1, NCELLS
-        if (TREEPTR(2, ICELL) .eq. 0) then
-            call shd_grid__testCellSplit(GRIDPTR, GRIDPOS, EXTINCT,&
-                &SHPTR, NSTOKES, SOURCE, ICELL,&
-                &ADAPT, ADAPTCRIT(1), IDIR)
-            SPLITCRIT = max(SPLITCRIT, ADAPTCRIT(1))
-        end if
-    end do
-
-    return
-end subroutine shd_grid__splitGrid
-
-logical function sweepCellBase(BCFLAG, NXC, NYC, NZ, IOCT, ICELL)
-
-    !   Returns the next base grid cell.  The octant the ray direction
-    ! is coming from (IOCT) determines the order of sweeping.  ICELL is 0
-    ! for the first call to set things up.  The function returns false if
-    ! we are done sweeping the grid.  Do loops over IZ, IY, and IX are
-    ! simulated.  For open boundary condition do the endpoint cells
-    ! (in X,Y) first, so the boundary grid points will be done with
-    ! independent pixel radiative transfer.
-
-    integer BCFLAG, NXC, NYC, NZ, IOCT, ICELL
-    integer IX, IY, IZ, SIX, SIY, SIZ, EIX, EIY, EIZ, DIX, DIY, DIZ
-    save IX, IY, IZ, SIX, SIY, SIZ, EIX, EIY, EIZ, DIX, DIY, DIZ
-
-    sweepCellBase = .true.
-
-    ! If first time here then set up the loops
-    if (ICELL .eq. 0) then
-        if (btest(IOCT - 1, 0)) then
-            DIX = +1
-            if (btest(BCFLAG, 0)) then
-                SIX = NXC
-                EIX = max(NXC - 1, 1)
-            else
-                SIX = 1
-                EIX = NXC
-            end if
-        else
-            DIX = -1
-            if (btest(BCFLAG, 0)) then
-                SIX = 1
-                EIX = min(2, NXC)
-            else
-                SIX = NXC
-                EIX = 1
-            end if
-        end if
-        if (btest(IOCT - 1, 1)) then
-            DIY = +1
-            if (btest(BCFLAG, 1)) then
-                SIY = NYC
-                EIY = max(NYC - 1, 1)
-            else
-                SIY = 1
-                EIY = NYC
-            end if
-        else
-            DIY = -1
-            if (btest(BCFLAG, 1)) then
-                SIY = 1
-                EIY = min(2, NYC)
-            else
-                SIY = NYC
-                EIY = 1
-            end if
-        end if
-        if (btest(IOCT - 1, 2)) then
-            DIZ = +1
-            SIZ = 1
-            EIZ = NZ - 1
-        else
-            DIZ = -1
-            SIZ = NZ - 1
-            EIZ = 1
-        end if
-        IX = SIX
-        IY = SIY
-        IZ = SIZ
-    else
-        ! Sweep through grid, first in X, in Y, then in Z
-        if (IX .eq. EIX) then
-            if (IY .eq. EIY) then
-                if (IZ .eq. EIZ) then
-                    sweepCellBase = .false.
-                    return
-                else
-                    IZ = IZ + DIZ
-                end if
-                IY = SIY
-            else
-                IY = mod(IY + DIY + NYC - 1, NYC) + 1
-            end if
-            IX = SIX
-        else
-            IX = mod(IX + DIX + NXC - 1, NXC) + 1
-        end if
-    end if
-
-    ! Compute the base grid cell
-    ICELL = IZ + (NZ - 1)*(IY - 1) + (NZ - 1)*NYC*(IX - 1)
-    return
-end function sweepCellBase
-
-logical function sweepCellNext(BCFLAG, NXC, NYC, NZ, IOCT,&
-    &ICELL, TREEPTR, CELLFLAGS)
-
-    !   Returns the next grid cell given the last cell (ICELL).  The
-    ! octant the ray direction is coming from (IOCT) determines the
-    ! order of sweeping.  ICELL is 0 for the first call to set things up
-    ! The function returns false if we are done sweeping the grid.
-    ! Within a base cell the tree structure is traced using a stack until
-    ! we get to a new end cell.
-
-    integer BCFLAG, NXC, NYC, NZ, IOCT, ICELL, TREEPTR(2, *)
-    integer*2 CELLFLAGS(*)
-    integer IC, IDIR, SP, STACK(50)
-    logical DONE, sweepCellBase
-    save SP, STACK
-
-    IC = ICELL
-
-    ! Special case for first time here
-    if (ICELL .eq. 0) then
-        IC = 0
-        sweepCellNext = sweepCellBase(BCFLAG, NXC, NYC, NZ, IOCT, IC)
-        SP = 0
-    end if
-
-    ! The scanning direction is the direction (pos or neg) for each
-    !   of X,Y,Z that the ray is going in (indicated by IOCT).
-
-    ! Go through the tree checking the cells:
-    ! The stack holds the second child cells, which are the
-    !   next cell to go to if at an end cell.
-    DONE = .false.
-    do while (.not. DONE)
-        ! If this is an end cell then we are either at the desired cell
-        !   or if this is the old cell then we need to pop the stack
-        if (TREEPTR(2, IC) .eq. 0) then
-            if (IC .ne. ICELL) then
-                DONE = .true.
-            else
-                ! If no more to pop then we are at the base cell, so go to
-                !   next base cell if there is one.
-                if (SP .eq. 0) then
-                    sweepCellNext=&
-                        &sweepCellBase(BCFLAG, NXC, NYC, NZ, IOCT, IC)
-                    if (.not. sweepCellNext) return
-                else
-                    ! Otherwise, pop the stack to get the next cell to go to.
-                    IC = STACK(SP)
-                    SP = SP - 1
-                end if
-            end if
-        else
-            ! Not an end cell, so this cell has children.
-            ! Depending on the ordinate octant, decide which child to
-            !   do first and put the second child on the stack.
-            SP = SP + 1
-            if (SP .gt. 50) stop 'Error [sweepCellNext]: Stack exceeded.'
-            IDIR = ibits(int(CELLFLAGS(IC)), 2, 2) - 1
-            if (btest(IOCT - 1, IDIR)) then
-                STACK(SP) = TREEPTR(2, IC) + 1
-                IC = TREEPTR(2, IC)
-            else
-                STACK(SP) = TREEPTR(2, IC)
-                IC = TREEPTR(2, IC) + 1
-            end if
-        end if
-    end do
-
-    ICELL = IC
-    sweepCellNext = .true.
-    return
-end function sweepCellNext
-
-subroutine shd_grid__makeSweepOrder(NX, NY, NZ, NPTS, NCELLS,&
+subroutine shd_grid__makeSweepOrder(&
+    &NX, NY, NZ, NPTS, NCELLS,&
     &GRIDPTR, TREEPTR, CELLFLAGS,&
     &BCFLAG, IPFLAG, SWEEPORD, GRIDRAD)
 
@@ -714,7 +383,7 @@ subroutine shd_grid__makeSweepOrder(NX, NY, NZ, NPTS, NCELLS,&
     integer NOCT, IOCT, JOCT, NXC, NYC
     integer IPCELL, IPT, IORDER
     integer INDEXCORN, ICORNER, CORNDOG(8, 8), IOCTORDER(8)
-    logical sweepCellNext
+    logical :: sweepCellNext
     data CORNDOG/8, 7, 6, 5, 4, 3, 2, 1, 7, 8, 5, 6, 3, 4, 1, 2, 6, 5, 8, 7, 2, 1, 4, 3,&
         &5, 6, 7, 8, 1, 2, 3, 4, 4, 3, 2, 1, 8, 7, 6, 5, 3, 4, 1, 2, 7, 8, 5, 6,&
         &2, 1, 4, 3, 6, 5, 8, 7, 1, 2, 3, 4, 5, 6, 7, 8/
@@ -784,4 +453,481 @@ subroutine shd_grid__makeSweepOrder(NX, NY, NZ, NPTS, NCELLS,&
     return
 end subroutine shd_grid__makeSweepOrder
 
+subroutine shd_grid__divideCell(&
+    &NPTS, NCELLS, GRIDPTR, NEIGHPTR,&
+    &TREEPTR, CELLFLAGS, GRIDPOS, ICELL, IDIR, NEWPOINTS)
+
+    !   Divides a single cell (ICELL) in the IDIR direction (1=Z,2=Y,3=X)
+    ! Makes the pointers to the two new cells (TREEPTR), set the flags
+    ! (CELLFLAGS), creates the new grid points if they don't exist already,
+    ! and updates the neighbor pointers (NEIGHPTR) for the new cells and
+    ! their neighboring cells.
+
+    integer NPTS, NCELLS, ICELL, IDIR, NEWPOINTS(3, 4)
+    integer GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
+    integer*2 CELLFLAGS(*)
+    real GRIDPOS(3, *)
+    integer NEWCELL, IFACE, I
+    logical BTEST
+
+    ! Only allow to divide an end cell (i.e. one not yet divided)
+    if (TREEPTR(2, ICELL) .ne. 0) then
+        stop 'Error [_divideCell]: Cannot divide already split cell.'
+    end if
+
+    ! Do the tree pointers: parent points to negative child,
+    !   children point back to parent.
+    NEWCELL = NCELLS + 1
+    NCELLS = NCELLS + 2
+    TREEPTR(2, ICELL) = NEWCELL
+    TREEPTR(1, NEWCELL) = ICELL
+    TREEPTR(2, NEWCELL) = 0
+    TREEPTR(1, NEWCELL + 1) = ICELL
+    TREEPTR(2, NEWCELL + 1) = 0
+    ! Do the flags: put the splitting direction in the parent and
+    !   inherit the boundary flags for the children.
+    CELLFLAGS(ICELL) = ior(int(CELLFLAGS(ICELL)), ishft(IDIR, 2))
+    CELLFLAGS(NEWCELL) = 0
+    CELLFLAGS(NEWCELL + 1) = 0
+    do I = 0, 1
+        if (btest(int(CELLFLAGS(ICELL)), I)) then
+            CELLFLAGS(NEWCELL) = ibset(int(CELLFLAGS(NEWCELL)), I)
+            CELLFLAGS(NEWCELL + 1) = ibset(int(CELLFLAGS(NEWCELL + 1)), I)
+        end if
+    end do
+
+    ! Do the grid points:
+    call shd_grid__makeNewGridPnt(IDIR, ICELL, NEWCELL, NPTS,&
+        &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+        &GRIDPOS, NEWPOINTS)
+
+    ! Do the neighbor pointers:
+    do IFACE = 1, 6
+        ! Special case if the neighbor is the cell itself
+        if (NEIGHPTR(IFACE, ICELL) .eq. ICELL) then
+            NEIGHPTR(IFACE, NEWCELL) = NEWCELL
+            NEIGHPTR(IFACE, NEWCELL + 1) = NEWCELL + 1
+        ! For the faces in the split direction, the children either
+        !   point to the other child or inherit the parent's neighbor.
+        !   Also update the neighbor's neighbor pointer.
+        else if (IFACE .eq. 2*IDIR) then
+            NEIGHPTR(IFACE, NEWCELL) = NEWCELL + 1
+            NEIGHPTR(IFACE, NEWCELL + 1) = NEIGHPTR(IFACE, ICELL)
+        else if (IFACE .eq. 2*IDIR - 1) then
+            NEIGHPTR(IFACE, NEWCELL + 1) = NEWCELL
+            NEIGHPTR(IFACE, NEWCELL) = NEIGHPTR(IFACE, ICELL)
+        else
+            ! For the other four faces:
+            !   The children inherit the parent's neighbor pointers
+            NEIGHPTR(IFACE, NEWCELL) = NEIGHPTR(IFACE, ICELL)
+            NEIGHPTR(IFACE, NEWCELL + 1) = NEIGHPTR(IFACE, ICELL)
+        end if
+        ! Then see if we can match faces further down the neighbor's tree;
+        !   also update the neighboring cells pointers
+        call shd_grid__matchNeighFace(IFACE, NEWCELL, NEIGHPTR,&
+            &CELLFLAGS, TREEPTR, GRIDPTR, GRIDPOS)
+        call shd_grid__matchNeighFace(IFACE, NEWCELL + 1, NEIGHPTR,&
+            &CELLFLAGS, TREEPTR, GRIDPTR, GRIDPOS)
+    end do
+
+    return
+end subroutine shd_grid__divideCell
+
+subroutine shd_grid__matchNeighFace(IFACE, IC, NEIGHPTR, CELLFLAGS,&
+    &TREEPTR, GRIDPTR, GRIDPOS)
+
+    !   Resolves the neighbor pointers for a new cell IC (from a subdivision)
+    ! for the IFACE face.  Based on the size of this new face and
+    ! the corresponding faces of the neighboring cells (down its tree),
+    ! the new cell's NEIGHPTR and those of the neighboring cells are updated.
+
+    integer IFACE, IC, NEIGHPTR(6, *), TREEPTR(2, *), GRIDPTR(8, *)
+    integer*2 CELLFLAGS(*)
+    real GRIDPOS(3, *)
+    integer IN, INN, JFACE, IC1, IC8, IN1, IN8, DIR, DIR1, DIR2
+    logical DONE
+    real POS(3)
+    integer OPPFACE(6)
+    data OPPFACE/2, 1, 4, 3, 6, 5/
+
+    IN = abs(NEIGHPTR(IFACE, IC))
+    ! If no neighbor then return
+    if (IN .eq. 0) return
+    JFACE = (IFACE + 1)/2
+    ! Get the center of the new face
+    IC1 = GRIDPTR(1, IC)
+    IC8 = GRIDPTR(8, IC)
+    DIR1 = mod(JFACE - 1 + 1, 3) + 1
+    DIR2 = mod(JFACE - 1 + 2, 3) + 1
+    POS(DIR1) = (GRIDPOS(DIR1, IC1) + GRIDPOS(DIR1, IC8))/2
+    POS(DIR2) = (GRIDPOS(DIR2, IC1) + GRIDPOS(DIR2, IC8))/2
+    ! Go down the neighbors cell tree
+    DONE = .false.
+    do while (.not. DONE .and. IC .ne. IN)
+        ! Compare the coordinates of this neighbor cell to see
+        !   if the new face is contained within the neighbor face.
+        IN1 = GRIDPTR(1, IN)
+        IN8 = GRIDPTR(8, IN)
+        if (GRIDPOS(DIR1, IC1) .ge. GRIDPOS(DIR1, IN1) .and.&
+            &GRIDPOS(DIR1, IC8) .le. GRIDPOS(DIR1, IN8) .and.&
+            &GRIDPOS(DIR2, IC1) .ge. GRIDPOS(DIR2, IN1) .and.&
+            &GRIDPOS(DIR2, IC8) .le. GRIDPOS(DIR2, IN8)) then
+            ! If this is the bottom of the tree then we have a face match
+            if (TREEPTR(2, IN) .eq. 0) then
+                NEIGHPTR(IFACE, IC) = IN
+            else
+                NEIGHPTR(IFACE, IC) = -IN
+            end if
+        end if
+        ! Compare the size of the neighbor face with the new face.
+        !   Update the neighbor's neighbor pointer to the new face
+        !   if the neighbor face is smaller, otherwise make the
+        !   pointer negative, because it no longer points to an end node.
+        if (GRIDPOS(DIR1, IN1) .ge. GRIDPOS(DIR1, IC1) .and.&
+            &GRIDPOS(DIR1, IN8) .le. GRIDPOS(DIR1, IC8) .and.&
+            &GRIDPOS(DIR2, IN1) .ge. GRIDPOS(DIR2, IC1) .and.&
+            &GRIDPOS(DIR2, IN8) .le. GRIDPOS(DIR2, IC8)) then
+            call shd_grid__inheritNeighCell(IN, OPPFACE(IFACE), IC,&
+                &NEIGHPTR, TREEPTR, CELLFLAGS)
+        else
+            NEIGHPTR(OPPFACE(IFACE), IN) = -abs(NEIGHPTR(OPPFACE(IFACE), IN))
+        end if
+
+        ! Go down the neighbors cell tree until there is no children,
+        !   finding the cell that contains the center of the new face.
+        if (TREEPTR(2, IN) .eq. 0) then
+            DONE = .true.
+        else
+            DIR = ibits(int(CELLFLAGS(IN)), 2, 2)
+            INN = TREEPTR(2, IN)
+            if (DIR .eq. JFACE) then
+                IN = INN + 1 - mod(IFACE - 1, 2)
+            else
+                if (POS(DIR) .gt. GRIDPOS(DIR, GRIDPTR(8, INN))) then
+                    IN = INN + 1
+                else
+                    IN = INN
+                end if
+            end if
+        end if
+    end do
+
+    return
+end subroutine shd_grid__matchNeighFace
+
+subroutine shd_grid__inheritNeighCell(ICELL, IFACE, IN,&
+    &NEIGHPTR, TREEPTR, CELLFLAGS)
+
+    !   Updates the ICELL cell's new neighbor cell (IN) for all
+    ! children cells that border the face (IFACE).
+
+    integer ICELL, IFACE, IN, NEIGHPTR(6, *), TREEPTR(2, *)
+    integer*2 CELLFLAGS(*)
+    integer JFACE, IC, DIR, SP, STACK(50)
+    logical DONE
+
+    ! Go through the tree checking the cells:
+    ! The stack holds the second child cells, which are the
+    !   next cell to go to if at an end cell.
+    JFACE = (IFACE + 1)/2
+    IC = ICELL
+    SP = 0
+    DONE = .false.
+    do while (.not. DONE)
+        NEIGHPTR(IFACE, IC) = IN
+        ! If this is an end cell then pop the stack
+        if (TREEPTR(2, IC) .eq. 0) then
+            ! If no more to pop then we are done
+            if (SP .eq. 0) then
+                DONE = .true.
+            else
+                ! Otherwise, pop the stack to get the next cell to go to
+                IC = STACK(SP)
+                SP = SP - 1
+            end if
+        else
+            ! Not and end cell, so this cell has children.
+            ! If split is in same direction as face then do only close child
+            DIR = ibits(int(CELLFLAGS(IC)), 2, 2)
+            if (DIR .eq. JFACE) then
+                IC = TREEPTR(2, IC) + mod(IFACE - 1, 2)
+            else
+                ! Otherwise need to go to both children so put the second child
+                !   on the stack and set the pointer to go to the first child next.
+                SP = SP + 1
+                if (SP .gt. 50) stop 'Error [_inheritNeigh]: Stack exceeded.'
+                STACK(SP) = TREEPTR(2, IC) + 1
+                IC = TREEPTR(2, IC)
+            end if
+        end if
+    end do
+
+    return
+end subroutine shd_grid__inheritNeighCell
+
+subroutine shd_grid__matchGridPnt(&
+    &XP, YP, ZP, ICELL, IFACE,&
+    &GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+    &IPMATCH)
+
+    !   Determines whether the neighboring cells to ICELL adjacent to
+    ! face IFACE (1-6: -X,+X,-Y,+Y,-Z,+Z) have gridpoints that match
+    ! the point at XP,YP,ZP on face IFACE of cell ICELL.
+    ! If the face of ICELL has several neighboring cells, then the tree
+    ! is traced down to find those cells that might contain XP,YP,ZP.
+    ! IPMATCH is returned 0 if there is no match, otherwise it has the
+    ! number of the matching existing gridpoint.
+
+    real XP, YP, ZP
+    integer ICELL, IFACE
+    real GRIDPOS(3, *)
+    integer GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
+    integer*2 CELLFLAGS(*)
+    integer IPMATCH
+    integer, parameter :: MAXSTACK=64
+    integer CELLSTACK(MAXSTACK), SP
+    integer INEXT, IDIR, DIR, IC, IC1, KFACE, IPT, I
+    integer OPPFACE(6), GRIDFACE(4, 6)
+    data OPPFACE/2, 1, 4, 3, 6, 5/,&
+        &GRIDFACE/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8/
+
+    IPMATCH = 0
+    IDIR = (IFACE + 1)/2
+    KFACE = OPPFACE(IFACE)
+
+    ! Get the pointer to the neighbor cell
+    IC = abs(NEIGHPTR(IFACE, ICELL))
+    ! Don't process if the neighbor cell is a boundary
+    if (IC .eq. 0) return
+
+    ! Go down all relevant branches of the tree until there are no children
+    SP = 0
+    do while (.true.)
+
+        ! If at an end cell then check for a gridpoint match at the four
+        !   corners of the cell's face
+        do while (TREEPTR(2, IC) .eq. 0)
+            do I = 1, 4
+                IPT = GRIDPTR(GRIDFACE(I, KFACE), IC)
+                if (XP .eq. GRIDPOS(1, IPT) .and. YP .eq. GRIDPOS(2, IPT)&
+                    &.and. ZP .eq. GRIDPOS(3, IPT)) then
+                    IPMATCH = IPT
+                    return
+                end if
+            end do
+            ! Return if there are no more branches on the stack, otherwise pop
+            if (SP .eq. 0) return
+            IC = CELLSTACK(SP)
+            SP = SP - 1
+        end do
+
+        ! Get the direction current cell is split
+        DIR = ibits(int(CELLFLAGS(IC)), 2, 2)
+        if (DIR .eq. 0) stop 'Error [_matchGridPnt]: No split direction.'
+        ! If split is in direction of face then choose the near child cell
+        !   which is the negative side cell if this is a positive face.
+        IC1 = TREEPTR(2, IC)
+        if (DIR .eq. IDIR) then
+            IC = IC1 + 1 - mod(IFACE - 1, 2)
+        else
+            !   If split is not in direction of face then find which of two cells
+            ! has a face that contains the current location by comparing the
+            ! appropriate coordinate (X,Y,Z) of the grid point on the split line
+            ! with the current location.  If the split line matches a coordinate
+            ! then we have to trace down both cells so put one on the stack.
+            IC = IC1
+            if (DIR .eq. 1) then
+                if (XP .eq. GRIDPOS(1, GRIDPTR(8, IC1))) then
+                    SP = SP + 1
+                    CELLSTACK(SP) = IC + 1
+                else if (XP .gt. GRIDPOS(1, GRIDPTR(8, IC1))) then
+                    IC = IC + 1
+                end if
+            else if (DIR .eq. 2) then
+                if (YP .eq. GRIDPOS(2, GRIDPTR(8, IC1))) then
+                    SP = SP + 1
+                    CELLSTACK(SP) = IC + 1
+                else if (YP .gt. GRIDPOS(2, GRIDPTR(8, IC1))) then
+                    IC = IC + 1
+                end if
+            else
+                if (ZP .eq. GRIDPOS(3, GRIDPTR(8, IC1))) then
+                    SP = SP + 1
+                    CELLSTACK(SP) = IC + 1
+                else if (ZP .gt. GRIDPOS(3, GRIDPTR(8, IC1))) then
+                    IC = IC + 1
+                end if
+            end if
+            if (SP .ge. MAXSTACK)&
+                &stop 'Error [_matchGridPnt]: MAXSTACK exceeded.'
+        end if
+    end do
+
+end subroutine shd_grid__matchGridPnt
+
+subroutine shd_grid__interpNewGridPnt(NEWPOINTS, NPTS,&
+    &NSTOKES, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
+    &DELTAM, BCFLAG, IPFLAG, ACCELFLAG, GRIDPOS,&
+    &SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN,&
+    &UNITS, WAVENO, WAVELEN,&
+    &EXTINCT, ALBEDO, LEGEN, IPHASE, TEMP, PLANCK, DIRFLUX,&
+    &RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR)
+
+    !   Interpolates the medium properties, radiance, and source function for
+    ! new grid points (specified in NEWPOINTS).  The medium properties are
+    ! interpolated from the property grid, since interpolating from the
+    ! internal grid may not faithfully represent the true medium.
+    ! The delta-M scaling is done to the new grid point properties if needed.
+    ! The direct beam flux and the Planck function for the new points is
+    ! recomputed (rather than interpolated).  The radiance is averaged
+    ! from the two parent grid points, and used to compute the source
+    ! function for the new points.
+
+    integer NEWPOINTS(3, 4), NPTS
+    integer NSTOKES, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
+    integer BCFLAG, IPFLAG
+    integer RSHPTR(*), SHPTR(*), OSHPTR(*)
+    integer*2 IPHASE(NPTS)
+    logical DELTAM, ACCELFLAG
+    real SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN(NSTLEG, NLM)
+    real WAVENO(2), WAVELEN
+    real EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, NPTS)
+    real TEMP(NPTS), PLANCK(NPTS), DIRFLUX(NPTS)
+    real RADIANCE(NSTOKES, *), SOURCE(NSTOKES, *)
+    real GRIDPOS(3, *)
+    character(len=1) :: SRCTYPE, UNITS
+    integer I, IP1, IP2, IP, IPH, J, K, L, M, ME, MS
+    integer IS, NS, NS1, NS2
+    integer IR, IR1, IR2, NR, NR1, NR2, SIDE
+    logical VALIDBEAM
+    real X, Y, Z, F, BB, C, D, SECMU0
+    real RAD1(NSTOKES), RAD2(NSTOKES)
+    real UNIFZLEV, XO, YO, ZO, DIRPATH
+    integer, allocatable :: LOFJ(:)
+    real, allocatable :: SOURCET(:, :)
+
+    allocate (LOFJ(NLM), SOURCET(NSTOKES, NLM))
+    ! Make the l index as a function of SH term (J)
+    J = 0
+    do L = 0, ML
+        ME = min(L, MM)
+        MS = -ME
+        do M = MS, ME
+            J = J + 1
+            LOFJ(J) = L
+        end do
+    end do
+
+    C = sqrt(4.0*acos(-1.0))
+    if (SRCTYPE .ne. 'T') then
+        SECMU0 = 1.0/abs(SOLARMU)
+    end if
+
+    ! Loop over the (potentially) four new grid points
+    do I = 1, 4
+        if (NEWPOINTS(3, I) .gt. 0) then
+            ! Get the parent and new grid pointers
+            IP1 = NEWPOINTS(1, I)
+            IP2 = NEWPOINTS(2, I)
+            IP = NEWPOINTS(3, I)
+
+            ! Interpolate the medium properties from the property grid
+            X = GRIDPOS(1, IP)
+            Y = GRIDPOS(2, IP)
+            Z = GRIDPOS(3, IP)
+            call shd_comp__triInterpProp(X, Y, Z, .false., NSTLEG, NLEG,&
+                &TEMP(IP), EXTINCT(IP), ALBEDO(IP),&
+                &LEGEN(1, 0, IP), IPHASE(IP))
+            ! Do the Delta-M scaling of extinction and albedo for this point
+            if (DELTAM) then
+                if (NUMPHASE .gt. 0) then
+                    F = LEGEN(1, ML + 1, IPHASE(IP))
+                else
+                    F = LEGEN(1, ML + 1, IP)
+                    do L = 0, ML
+                        LEGEN(1, L, IP) = (LEGEN(1, L, IP) - F)/(1 - F)
+                    end do
+                end if
+                EXTINCT(IP) = (1.0 - ALBEDO(IP)*F)*EXTINCT(IP)
+                ALBEDO(IP) = (1.0 - F)*ALBEDO(IP)/(1.0 - ALBEDO(IP)*F)
+            end if
+
+            ! Compute the new Planck source function (if needed)
+            if (SRCTYPE .ne. 'S') then
+                call shd_comp__computePlanck(TEMP(IP), UNITS, WAVENO, WAVELEN, BB)
+                PLANCK(IP) = (1.0 - ALBEDO(IP))*BB
+            end if
+
+            ! Compute the new direct beam flux (if needed)
+            if (SRCTYPE .ne. 'T') then
+                if (btest(BCFLAG, 2) .or. btest(BCFLAG, 3)) then
+                    ! If parallel mode then calculate a temporary approximation
+                    !   to the direct flux (for source function calculation below)
+                    DIRFLUX(IP) = exp(0.5*(log(DIRFLUX(IP1)) + log(DIRFLUX(IP2))))
+                else
+                    ! Otherwise, calculate the exact direct beam from property grid
+                    DIRPATH = 0.0
+                    call shd_comp__computeDirectBeam(0, X, Y, Z, BCFLAG, IPFLAG, DELTAM,&
+                        &ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
+                        &DIRFLUX(IP),&
+                        &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
+                end if
+            end if
+
+            ! Interpolate the radiance
+            IR1 = RSHPTR(IP1)
+            IR2 = RSHPTR(IP2)
+            NR1 = RSHPTR(IP1 + 1) - RSHPTR(IP1)
+            NR2 = RSHPTR(IP2 + 1) - RSHPTR(IP2)
+            NR = max(NR1, NR2)
+            IR = RSHPTR(IP)
+            RSHPTR(IP + 1) = IR + NR
+            do J = 1, NR
+                if (J .le. NR1) then
+                    RAD1(:) = RADIANCE(:, IR1 + J)
+                else
+                    RAD1(:) = 0.0
+                end if
+                if (J .le. NR2) then
+                    RAD2(:) = RADIANCE(:, IR2 + J)
+                else
+                    RAD2(:) = 0.0
+                end if
+                RADIANCE(:, IR + J) = 0.5*(RAD1(:) + RAD2(:))
+            end do
+
+            ! Compute the source function for the new points
+            NS1 = SHPTR(IP1 + 1) - SHPTR(IP1)
+            NS2 = SHPTR(IP2 + 1) - SHPTR(IP2)
+            NS = max(NS1, NS2)
+            IS = SHPTR(IP)
+            SHPTR(IP + 1) = IS + NS
+            if (ACCELFLAG) OSHPTR(IP + 1) = OSHPTR(IP)
+            if (NUMPHASE .gt. 0) then
+                IPH = IPHASE(IP)
+            else
+                IPH = IP
+            end if
+            if (NSTOKES .eq. 1) then
+                call shd_solv__calSrcPnt_(NLM, NLEG, LOFJ,&
+                    &SRCTYPE, DIRFLUX(IP)*SECMU0, YLMSUN,&
+                    &PLANCK(IP), ALBEDO(IP), IPH, LEGEN,&
+                    &NR, RADIANCE(1, IR + 1), SOURCET)
+            else
+                call shd_solv__calSrcPnt(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
+                    &SRCTYPE, DIRFLUX(IP)*SECMU0, YLMSUN,&
+                    &PLANCK(IP), ALBEDO(IP), IPH, LEGEN,&
+                    &NR, RADIANCE(1, IR + 1), SOURCET)
+            end if
+            do J = 1, NS
+                SOURCE(:, IS + J) = SOURCET(:, J)
+            end do
+        end if
+    end do
+    deallocate (LOFJ, SOURCET)
+
+    return
+end subroutine shd_grid__interpNewGridPnt
+
 end module shd_grid
+

@@ -6,6 +6,7 @@ module shd_ext_mpi
 
     use globals
     use mpi_f08
+    use shd_grid
 
     implicit none
     private
@@ -28,12 +29,12 @@ module shd_ext_mpi
     public :: shd_ext__mpiBcastKdistSize
     public :: shd_ext__mpiBcastKdistParam
     public :: shd_ext__mpiGatherOutput
-    public :: shd_ext__mpiMakeDirect
-    public :: shd_ext__mpiComputeRad
-    public :: shd_ext__mpiVisualizeRad
     public :: shd_ext__mpiEnd
     public :: shd_ext__mpiAbort
 
+    public :: shd_ext__mpiMakeDirect
+    public :: shd_ext__mpiComputeRad
+    public :: shd_ext__mpiVisualizeRad
     public :: shd_ext__mpiFindAlbMax
     public :: shd_ext__mpiFindTotSplitCritMax
     public :: shd_ext__mpiFindBoundaryPnt
@@ -1988,7 +1989,7 @@ subroutine shd_ext__mpiIntegrateRay(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
         ! Get the next cell to go to
         INEXTCELL = NEIGHPTR(IFACE, ICELL)
         if (INEXTCELL .lt. 0) then
-            call shd_comp__moveNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
+            call shd_grid__getNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
                 &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXTCELL)
         end if
 

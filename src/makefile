@@ -63,7 +63,7 @@ shdom_: shdom_.o $(SHDOMOBJS)
 shdom_.o: shdom_.f90 $(SHDOMOBJS)
 	$(F90) -c $(F90FLAGS) shdom_.f90
 
-shdInit.o: shdInit.f90 $(SHDOMMPIOBJ) globals.o
+shdInit.o: shdInit.f90 $(SHDOMMPIOBJ) globals.o shdGrid.o
 	$(F90) -c $(F90FLAGS) shdInit.f90
 
 shdGrid.o: shdGrid.f90 $(SHDOMMPIOBJ) globals.o

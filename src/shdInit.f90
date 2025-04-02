@@ -12,9 +12,6 @@ module shd_init
   public :: shd_init__makeFlux
   public :: shd_init__makeAngle
 
-  public :: shd_init__checkSurfUnif
-  public :: shd_init__makeNewGridPnt
-
 contains
 
 subroutine shd_init__makeGrid(&
@@ -327,7 +324,6 @@ subroutine shd_init__makeProp(&
     ! the Planck function (meaning depends on UNITS).
     ! TEMP array is unchanged.
 
-    implicit none
     integer ML, MM, NSTLEG, NLEG, NPTS, NUMPHASE
     integer*2 IPHASE(NPTS)
     logical DELTAM
@@ -391,7 +387,7 @@ subroutine shd_init__makeRad(&
     ! system to tridiagonal and calling solver.
     ! Does the initialization for the NXY columns of the base grid.
     ! Only the I Stokes parameter is initialized, the rest are zeroed.
-    implicit none
+
     integer NSTOKES, NXY, NZ, NSTLEG, NLEG, NUMPHASE, RSHPTR(*)
     integer*2 IPHASE(NZ, NXY)
     real GNDALBEDO, GNDTEMP, SKYRAD, SOLARFLUX, SOLARMU
@@ -532,8 +528,6 @@ subroutine shd_init__makeFlux(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
     !                               FLUXES(2,L) is downwelling diffuse,
     !                               FLUXES(3,L) is downwelling direct,
     !                               L=1 is top, L=NUML+1 is bottom
-
-    implicit none
 
     integer NLAYER
     logical DELTAM
@@ -697,10 +691,13 @@ subroutine shd_init__makeFlux(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
     end do
 
     deallocate (LOWER, UPPER, DIAG, RHS)
+
     return
+
 end subroutine shd_init__makeFlux
 
-subroutine shd_init__makeAngle(NMU, NPHI, ITYPE, NPHI0MAX,&
+subroutine shd_init__makeAngle(&
+    &NMU, NPHI, ITYPE, NPHI0MAX,&
     &NPHI0, MU, PHI, WTMU, WTDO, FFTFLAG, NANG)
 
     ! Make the set of angles for the discrete space representation.
@@ -715,7 +712,6 @@ subroutine shd_init__makeAngle(NMU, NPHI, ITYPE, NPHI0MAX,&
     ! maximum number of azimuthal angles (NPHI0MAX), the flags for doing
     ! an azimuthal FFT for each mu and the total number of angles.
 
-    implicit none
     integer NMU, NPHI, ITYPE, NPHI0MAX, NPHI0(NMU), NANG
     logical FFTFLAG(NMU)
     real MU(NMU), PHI(NMU, *), WTMU(NMU), WTDO(NMU, *)
@@ -778,125 +774,9 @@ subroutine shd_init__makeAngle(NMU, NPHI, ITYPE, NPHI0MAX,&
     else
         stop 'Error [_makeAngle]: Invalid discrete ordinate type.'
     end if
+
     return
+
 end subroutine shd_init__makeAngle
-
-subroutine shd_init__checkSurfUnif(NXSFC, NYSFC, NSFCPAR, SFCPARMS,&
-    &UNIFORM_SFC_BRDF)
-
-    !   Checks to see if the surface reflection parameters are uniform,
-    ! and if so sets the UNIFORM_SFC_BRDF flag.  The temperature need
-    ! not be uniform.
-
-    implicit none
-    integer NXSFC, NYSFC, NSFCPAR
-    real SFCPARMS(NSFCPAR, NXSFC + 1, NYSFC + 1)
-    logical UNIFORM_SFC_BRDF
-    integer IX, IY, J
-
-    UNIFORM_SFC_BRDF = .true.
-    do IY = 1, NYSFC
-        do IX = 1, NXSFC
-            do J = 2, NSFCPAR
-                if (SFCPARMS(J, IX, IY) .ne. SFCPARMS(J, 1, 1)) then
-                    UNIFORM_SFC_BRDF = .false.
-                    return
-                end if
-            end do
-        end do
-    end do
-    return
-end subroutine
-
-subroutine shd_init__makeNewGridPnt(IDIR, ICELL, NEWCELL, NPTS,&
-    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-    &GRIDPOS, NEWPOINTS)
-
-    !   Sets up the pointers to the grid points for the two new cells.
-    ! Creates the four new points if they don't already exist, changing
-    ! NPTS and GRIDPOS accordingly.  Returns the NEWPOINTS(3,4) arrays
-    ! that gives information about the new points: NEWPOINTS(3,) is the
-    ! point address of the new points (or zero), and NEWPOINTS(1,) and
-    ! NEWPOINTS(2,) are the "parent" grid points these should be
-    ! interpolated from.
-
-    implicit none
-
-    integer IDIR, ICELL, NEWCELL, NPTS, NEWPOINTS(3, 4)
-    integer GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
-    integer*2 CELLFLAGS(*)
-    real GRIDPOS(3, *)
-    integer I, K, I1, I2, IP1, IP2, IPT, IPMATCH
-    integer IFACE1, IFACE2, ICELL2
-    integer GRIDCORNER(2, 4, 3), FACEGRID(2, 4, 3)
-    real XP, YP, ZP
-    data GRIDCORNER/1, 2, 3, 4, 5, 6, 7, 8, 1, 3, 2, 4, 5, 7, 6, 8,&
-        &1, 5, 2, 6, 3, 7, 4, 8/
-    data FACEGRID/3, 5, 4, 5, 3, 6, 4, 6, 1, 5, 2, 5, 1, 6, 2, 6,&
-        &1, 3, 2, 3, 1, 4, 2, 4/
-
-    !   In general, when subdividing a cell four new points may be made.
-    ! Each of these points belongs to two faces of the original cell.
-    ! Use the shd_comp__matchGridPnt routine to try to find matches in cells
-    ! across the two faces that contain the point; also cross the face of
-    ! one of these to get the third bounding cell.  If any of the appropriate
-    ! gridpoints of these three cells has the same coordinates then the point
-    ! already exists, otherwise create the point.
-
-    ! Temporarily set new cells' grid pointer to the parent cell's ones
-    do K = 1, 8
-        GRIDPTR(K, NEWCELL) = GRIDPTR(K, ICELL)
-        GRIDPTR(K, NEWCELL + 1) = GRIDPTR(K, ICELL)
-    end do
-
-    ! Loop over the four edges with potentially new points
-    do I = 1, 4
-        ! Get the grid corners and coordinates for this edge and split dir
-        I1 = GRIDCORNER(1, I, IDIR)
-        I2 = GRIDCORNER(2, I, IDIR)
-        IP1 = GRIDPTR(I1, ICELL)
-        IP2 = GRIDPTR(I2, ICELL)
-        XP = (GRIDPOS(1, IP1) + GRIDPOS(1, IP2))/2
-        YP = (GRIDPOS(2, IP1) + GRIDPOS(2, IP2))/2
-        ZP = (GRIDPOS(3, IP1) + GRIDPOS(3, IP2))/2
-
-        ! Look for gridpoints matching this new point in the three cell
-        !   that border this edge
-        IFACE1 = FACEGRID(1, I, IDIR)
-        call shd_comp__matchGridPnt(XP, YP, ZP, ICELL, IFACE1, GRIDPOS,&
-            &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, IPMATCH)
-        if (IPMATCH .eq. 0) then
-            IFACE2 = FACEGRID(2, I, IDIR)
-            call shd_comp__matchGridPnt(XP, YP, ZP, ICELL, IFACE2, GRIDPOS,&
-                &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, IPMATCH)
-        end if
-        if (IPMATCH .eq. 0) then
-            ICELL2 = abs(NEIGHPTR(IFACE1, ICELL))
-            if (ICELL2 .gt. 0) then
-                call shd_comp__matchGridPnt(XP, YP, ZP, ICELL2, IFACE2, GRIDPOS,&
-                    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, IPMATCH)
-            end if
-        end if
-
-        ! Set some new cells' grid pointers to the new or matching one
-        if (IPMATCH .eq. 0) then
-            NPTS = NPTS + 1
-            GRIDPTR(I2, NEWCELL) = NPTS
-            GRIDPTR(I1, NEWCELL + 1) = NPTS
-            GRIDPOS(1, NPTS) = XP
-            GRIDPOS(2, NPTS) = YP
-            GRIDPOS(3, NPTS) = ZP
-            NEWPOINTS(1, I) = IP1
-            NEWPOINTS(2, I) = IP2
-            NEWPOINTS(3, I) = NPTS
-        else
-            GRIDPTR(I2, NEWCELL) = IPMATCH
-            GRIDPTR(I1, NEWCELL + 1) = IPMATCH
-            NEWPOINTS(3, I) = 0
-        end if
-    end do
-
-    return
-end subroutine shd_init__makeNewGridPnt
 
 end module shd_init
