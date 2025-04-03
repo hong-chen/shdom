@@ -9,7 +9,7 @@ module shd_sfc
     public :: shd_sfc__interpSfc
     public :: shd_sfc__brdfSurface
 
-    ! surface brdf
+    ! surface brdf (including ocean brdf )
     !╭────────────────────────────────────────────────╮!
     public :: shd_sfc__brdfFresnel
     public :: shd_sfc__brdfDiner
@@ -18,7 +18,7 @@ module shd_sfc
     public :: shd_sfc__brdfOcean
     !╰────────────────────────────────────────────────╯!
 
-    ! ocean brdf
+    ! ocean brdf sub-modules
     !╭────────────────────────────────────────────────╮!
     private :: morcasiwat
     private :: indwat
