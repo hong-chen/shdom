@@ -96,7 +96,7 @@ subroutine shd_intg__integratePath(&
     real :: elapsed_time
 
 
-    ! Set the minimum transmission for the cell tracing (1 for singl
+    ! Set the minimum transmission for the cell tracing (1 for single cell)
     TRANSMIN = 1.00
 
     ! Make the new grid cell/point sweeping order if need to
@@ -111,7 +111,7 @@ subroutine shd_intg__integratePath(&
 
     LAMBERTIAN = SFCTYPE(2:2) .eq. 'L'
     if (NPTS .ne. OLDNPTS) then
-        ! Make the pointers to the grid points on the top and bottom bou
+        ! Make the pointers to the grid points on the top and bottom boundaries
         call shd_grid__findBoundaryPnt(NPTS, NANG, LAMBERTIAN, MAXNBC, MAXBCRAD,&
             &ZGRID(1), ZGRID(NZ), GRIDPOS,&
             &NTOPPTS, NBOTPTS, BCPTR)
@@ -129,7 +129,7 @@ subroutine shd_intg__integratePath(&
     call shd_init__makeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
         &UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
 
-    ! Zero the flux arrays and set temporary radiance to -1 for not
+    ! Zero the flux arrays and set temporary radiance to -1 for not valid
     do I = 1, NPTS
         FLUXES(1, I) = 0.0
         FLUXES(2, I) = 0.0
@@ -143,14 +143,14 @@ subroutine shd_intg__integratePath(&
     end do
 
     ! print *, 'Path integration:'
-    ! Loop over the zenith angles (downwelling angles must be first
+    ! Loop over the zenith angles (downwelling angles must be first)
     IANG = 1
 
 ! -- loop mu
     do IMU = 1, NMU
 
         if (IMU .eq. NMU/2 + 1) then
-            ! For the first upwelling angle, make the bottom boundary radi
+            ! For the first upwelling angle, make the bottom boundary radiances
             !   for the Lambertian surfaces.  Compute the upwelling bottom
             !   radiances using the downwelling fluxes.
             if (SFCTYPE .eq. 'FL') then
@@ -176,7 +176,7 @@ subroutine shd_intg__integratePath(&
                 &SHPTR, SOURCE, WORK)
         end if
 
-        ! Enforce the discrete ordinate I source function to be non-ne
+        ! Enforce the discrete ordinate I source function to be non-negative
         do I = 1, NPTS
             do IPHI = 1, NPHI0(IMU)
                 WORK(1, IPHI, I) = max(0.0, WORK(1, IPHI, I))
@@ -189,7 +189,7 @@ subroutine shd_intg__integratePath(&
 
             if (MU(IMU) .lt. 0.0) then
 
-                ! For downward ordinates, initialize the top boundary radi
+                ! For downward ordinates, initialize the top boundary radiances
                 IUPDOWN = 1
                 do IBC = 1, NTOPPTS
                     I = BCPTR(IBC, 1)
@@ -202,7 +202,7 @@ subroutine shd_intg__integratePath(&
                 IUPDOWN = 2
                 if (.not. LAMBERTIAN) then
 
-                    ! If a Lambertian surface, use the radiances computed abov
+                    ! If a Lambertian surface, use the radiances computed above
                     !   otherwise, compute the radiance for this angle
                     !   by integrating over the stored downwelling radiances.
                     ! If the surface reflection is uniform use the precomputed
@@ -230,7 +230,7 @@ subroutine shd_intg__integratePath(&
 
             end if
 
-            ! Do backward path integration from each grid point not done
+            ! Do backward path integration from each grid point not done yet
             if (btest(IPFLAG, 1) .and. btest(IPFLAG, 0)) then
 
                 call shd_intg__backIntegrate1D(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,&
@@ -267,7 +267,7 @@ subroutine shd_intg__integratePath(&
                 end if
             end if
 
-            ! Transfer the radiance for the (IMU,IPHI) discrete ordinate
+            ! Transfer the radiance for the (IMU,IPHI) discrete ordinate from
             !   GRIDRAD to the work array.
             do I = 1, NPTS
                 if (GRIDRAD(1, I) .lt. -0.0001) then
@@ -301,7 +301,7 @@ subroutine shd_intg__integratePath(&
             IANG = IANG + 1
         end do
 
-        ! Transform the radiance to spherical harmonics for this zenit
+        ! Transform the radiance to spherical harmonics for this zenith angle
         if (NSTOKES .eq. 1) then
             call shd_shdo__transDOtoSH_(NPTS, ML, MM, NLM,&
                 &NMU, NPHI0MAX, NPHI0(IMU),&
