@@ -64,29 +64,14 @@ shdom_: shdom_.o $(SHDOMOBJS)
 shdom_.o: shdom_.f90 $(SHDOMOBJS)
 	$(F90) -c $(F90FLAGS) shdom_.f90
 
-shdInit.o: shdInit.f90 globals.o shdGrid_ind.o shdUtil.o shdSfc.o
-	$(F90) -c $(F90FLAGS) shdInit.f90
-
-shdGrid_ind.o: shdGrid_ind.f90 globals.o
-	$(F90) -c $(F90FLAGS) shdGrid_ind.f90
-
-shdGrid_cal.o: shdGrid_cal.f90 globals.o shdUtil.o shdSrc.o shdDir.o shdGrid_ind.o $(SHDOMMPIOBJ)
-	$(F90) -c $(F90FLAGS) shdGrid_cal.f90
-
-shdDir.o: shdDir.f90 globals.o
-	$(F90) -c $(F90FLAGS) shdDir.f90
-
-shdSrc.o: shdSrc.f90 globals.o shdPha.o shdUtil.o shdGrid_ind.o
-	$(F90) -c $(F90FLAGS) shdSrc.f90
-
-shdSHDO.o: shdSHDO.f90 globals.o shdPha.o shdSfc.o
-	$(F90) -c $(F90FLAGS) shdSHDO.f90
+shdSolv_rte.o: shdSolv_rte.f90 $(SHDOMMPIOBJ) shdSfc.o shdInit.o shdGrid_ind.o shdSHDO.o shdDir.o shdPha.o shdSrc.o shdGrid_cal.o shdSolv_int.o
+	$(F90) -c $(F90FLAGS) shdSolv_rte.f90
 
 shdSolv_int.o: shdSolv_int.f90 $(SHDOMMPIOBJ) shdSfc.o shdInit.o shdGrid_ind.o shdSHDO.o
 	$(F90) -c $(F90FLAGS) shdSolv_int.f90
 
-shdSolv_rte.o: shdSolv_rte.f90 $(SHDOMMPIOBJ) shdSfc.o shdInit.o shdGrid_ind.o shdSHDO.o shdDir.o shdPha.o shdSrc.o shdGrid_cal.o shdSolv_int.o
-	$(F90) -c $(F90FLAGS) shdSolv_rte.f90
+shdGrid_cal.o: shdGrid_cal.f90 globals.o shdUtil.o shdSrc.o shdDir.o shdGrid_ind.o $(SHDOMMPIOBJ)
+	$(F90) -c $(F90FLAGS) shdGrid_cal.f90
 
 shdComp.o: shdComp.f90 globals.o shdPha.o shdUtil.o shdSrc.o shdInit.o
 	$(F90) -c $(F90FLAGS) shdComp.f90
@@ -97,17 +82,32 @@ shdIO_inp.o: shdIO_inp.f90 globals.o shdUtil.o
 shdIO_out.o: shdIO_out.f90 globals.o shdGrid_ind.o shdUtil.o
 	$(F90) -c $(F90FLAGS) shdIO_out.f90
 
-shdSfc.o: shdSfc.f90 globals.o
-	$(F90) -c $(F90FLAGS) shdSfc.f90
-
-shdPha.o: shdPha.f90 globals.o
-	$(F90) -c $(F90FLAGS) shdPha.f90
-
 shdExt_mpi_.o: shdExt_mpi_.f90
 	$(F90) -c $(F90FLAGS) shdExt_mpi_.f90
 
 shdExt_mpi.o: shdExt_mpi.f90
 	$(F90) -c $(F90FLAGS) shdExt_mpi.f90
+
+shdSrc.o: shdSrc.f90 globals.o shdUtil.o shdPha.o shdGrid_ind.o
+	$(F90) -c $(F90FLAGS) shdSrc.f90
+
+shdInit.o: shdInit.f90 globals.o shdUtil.o shdSfc.o shdGrid_ind.o
+	$(F90) -c $(F90FLAGS) shdInit.f90
+
+shdSHDO.o: shdSHDO.f90 globals.o shdPha.o shdSfc.o
+	$(F90) -c $(F90FLAGS) shdSHDO.f90
+
+shdGrid_ind.o: shdGrid_ind.f90 globals.o
+	$(F90) -c $(F90FLAGS) shdGrid_ind.f90
+
+shdDir.o: shdDir.f90 globals.o
+	$(F90) -c $(F90FLAGS) shdDir.f90
+
+shdSfc.o: shdSfc.f90 globals.o
+	$(F90) -c $(F90FLAGS) shdSfc.f90
+
+shdPha.o: shdPha.f90 globals.o
+	$(F90) -c $(F90FLAGS) shdPha.f90
 
 shdUtil.o: shdUtil.f90 globals.o
 	$(F90) -c $(F90FLAGS) shdUtil.f90
@@ -117,6 +117,8 @@ globals.o: globals.f90
 
 fftpack.o: fftpack.f90
 	$(F90) -c $(F90FLAGS) fftpack.f90
+
+# =============================================================
 
 propgen: tools/shdTool_propgen.f90
 	$(F90) $(F90FLAGS) tools/shdTool_propgen.f90 -o $(BIN_DIR)/propgen
