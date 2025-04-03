@@ -407,7 +407,7 @@ subroutine shd_intg__backIntegrate3D(&
     else if (CZ .gt. 1.0e-3) then
         BITZ = 0
     else
-        stop 'Error [BACK_INT_GRID]: Bad MU.'
+        stop 'Error [_backIntegrate3D]: Bad MU.'
     end if
     ! IOCT is the octant the ray come from or the discrete ordinate goes to.
     IOCT = 1 + BITX + 2*BITY + 4*BITZ
@@ -456,7 +456,7 @@ subroutine shd_intg__backIntegrate3D(&
             do while (.not. VALIDRAD)
                 ! Make sure current cell is valid
                 if (ICELL .le. 0) then
-                    write (6, *) 'Error [BACK_INT_GRID]: ICELL=0 ',&
+                    write (6, *) 'Error [_backIntegrate3D]: ICELL=0 ',&
                         &MU, PHI, IPT, INEXTCELL, xe, ye, ze,&
                         &gridpos(1, ipt), gridpos(2, ipt), gridpos(3, ipt)
                     stop
@@ -482,7 +482,7 @@ subroutine shd_intg__backIntegrate3D(&
                 SOZ = (GRIDPOS(3, IOPP) - ZE)*CZINV
                 SO = min(SOX, SOY, SOZ)
                 if (SO .lt. -EPS) then
-                    write (6, *) 'Error [BACK_INT_GRID]: SO<0 ',&
+                    write (6, *) 'Error [_backIntegrate3D]: SO<0 ',&
                         &MU, PHI, XE, YE, ZE, SOX, SOY, SOZ, SO, IPT, ICELL
                     stop
                 end if
@@ -746,7 +746,7 @@ subroutine shd_intg__backIntegrate3D_(&
     else if (CZ .gt. 1.0e-3) then
         BITZ = 0
     else
-        stop 'Error [BACK_INT_GRID]: Bad MU.'
+        stop 'Error [_backIntegrate3D_]: Bad MU.'
     end if
     ! IOCT is the octant the ray come from or the discrete ordinate goes to.
     IOCT = 1 + BITX + 2*BITY + 4*BITZ
@@ -765,7 +765,7 @@ subroutine shd_intg__backIntegrate3D_(&
         ICORNER = ibits(SWEEPORD(IORDER, JOCT), 0, 3) + 1
         IPT = GRIDPTR(ICORNER, IPCELL)
 
-        ! this is for mpi (e.g., shdom_mpi.f90, not OMP)
+        ! this is for mpi (e.g., shdMPI.f90, not OMP)
         !╭────────────────────────────────────────────────╮!
         if (btest(BCFLAG, 2) .or. btest(BCFLAG, 3)) then
             ! For multiple processors get the subdomain boundary radiances
@@ -801,7 +801,7 @@ subroutine shd_intg__backIntegrate3D_(&
 
                 ! Make sure current cell is valid
                 if (ICELL .le. 0) then
-                    write (6, *) 'Error [BACK_INT_GRID]: ICELL=0 ',&
+                    write (6, *) 'Error [_backIntegrate3D_]: ICELL=0 ',&
                         &MU, PHI, IPT, INEXTCELL, XE, YE, ZE,&
                         &GRIDPOS(1, IPT), GRIDPOS(2, IPT), GRIDPOS(3, IPT)
                     stop
@@ -835,7 +835,7 @@ subroutine shd_intg__backIntegrate3D_(&
                 !╰────────────────────────────────────────────────╯!
 
                 if (SO .lt. -EPS) then
-                    write (6, *) 'Error [BACK_INT_GRID]: SO<0 ',&
+                    write (6, *) 'Error [_backIntegrate3D_]: SO<0 ',&
                         &MU, PHI, XE, YE, ZE, SOX, SOY, SOZ, SO, IPT, ICELL
                     stop
                 end if
@@ -1100,7 +1100,7 @@ subroutine shd_intg__backIntegrate2D(&
     else if (CZ .gt. 1.0e-3) then
         BITZ = 0
     else
-        stop 'Error [BACK_INT_GRID]: Bad MU.'
+        stop 'Error [_backIntegrate2D]: Bad MU.'
     end if
     ! IOCT is the octant the ray come from or the discrete ordinate goes to.
     IOCT = 1 + BITX + 4*BITZ
@@ -1128,7 +1128,7 @@ subroutine shd_intg__backIntegrate2D(&
             do while (.not. VALIDRAD)
                 ! Make sure current cell is valid
                 if (ICELL .le. 0) then
-                    write (6, *) 'Error [BACK_INT_GRID]: ICELL=0 ',&
+                    write (6, *) 'Error [_backIntegrate2D]: ICELL=0 ',&
                         &MU, PHI, IPT, INEXTCELL
                     stop
                 end if
