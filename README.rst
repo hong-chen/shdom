@@ -23,7 +23,7 @@ SHDOM was originally developed by `Frank Evans <evans@nit.colorado.edu>`_ and is
 
 **Major changes:**
 
-* Modulized and restructured the code;
+* Modularize and restructured the code;
 
 * Fixed "dead process issue" when running MPI version with 1D property field input;
 
