@@ -3,7 +3,7 @@ module shd_src
     use globals
     use shd_pha
     use shd_util
-    use shd_grid_ind
+    use shd_grid
 
     implicit none
 
@@ -11,8 +11,13 @@ module shd_src
     public :: shd_src__computeOneSrc
     public :: shd_src__integrateSrc
     public :: shd_src__computeSrc
-    public :: shd_src__calSrcPnt
-    public :: shd_src__calSrcPnt_
+
+    ! the following two subroutines are placed outside module
+    ! for general access
+    !╭────────────────────────────────────────────────╮!
+    !public :: shd_src__computeSrcPnt
+    !public :: shd_src__computeSrcPnt_
+    !╰────────────────────────────────────────────────╯!
 
     private :: shd_src__computeSolarStokesVect
 
@@ -621,12 +626,12 @@ subroutine shd_src__computeSrc(&
                 stop
             end if
             if (NSTOKES .eq. 1) then
-                call shd_src__calSrcPnt_(NLM, NLEG, LOFJ,&
+                call shd_src__computeSrcPnt_(NLM, NLEG, LOFJ,&
                     &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
                     &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
                     &NR, RADIANCE(1, IR + 1), SOURCET)
             else
-                call shd_src__calSrcPnt(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
+                call shd_src__computeSrcPnt(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
                     &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
                     &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
                     &NR, RADIANCE(1, IR + 1), SOURCET)
@@ -672,12 +677,12 @@ subroutine shd_src__computeSrc(&
             IR = RSHPTR(I)
             NR = RSHPTR(I + 1) - IR
             if (NSTOKES .eq. 1) then
-                call shd_src__calSrcPnt_(NLM, NLEG, LOFJ,&
+                call shd_src__computeSrcPnt_(NLM, NLEG, LOFJ,&
                     &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
                     &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
                     &NR, RADIANCE(1, IR + 1), SOURCET)
             else
-                call shd_src__calSrcPnt(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
+                call shd_src__computeSrcPnt(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
                     &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
                     &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
                     &NR, RADIANCE(1, IR + 1), SOURCET)
@@ -709,12 +714,12 @@ subroutine shd_src__computeSrc(&
             stop
         end if
         if (NSTOKES .eq. 1) then
-            call shd_src__calSrcPnt_(NLM, NLEG, LOFJ,&
+            call shd_src__computeSrcPnt_(NLM, NLEG, LOFJ,&
                 &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
                 &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
                 &NR, RADIANCE(1, IR + 1), SOURCET)
         else
-            call shd_src__calSrcPnt(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
+            call shd_src__computeSrcPnt(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
                 &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
                 &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
                 &NR, RADIANCE(1, IR + 1), SOURCET)
@@ -764,7 +769,81 @@ subroutine shd_src__computeSrc(&
     return
 end subroutine shd_src__computeSrc
 
-subroutine shd_src__calSrcPnt(&
+subroutine shd_src__computeSolarStokesVect(&
+    &NLEG, SINGLEGEN, COSSCAT,&
+    &SOLARMU, MU, DELPHI, NSTOKES,&
+    &SCATVECT)
+
+    ! Calculates the Stokes vector for a single scattering of unpolarized
+    ! sunlight from the solar direction (SOLARMU) to the outgoing
+    ! direction (MU) and with cosine scattering angle (COSSCAT).
+    ! The A1 and B1 elements of the phase matrix are calculated from
+    ! the Wigner function expansion coefficients (SINGLEGEN).
+    ! The plane of polarization is rotated from the scattering plane to
+    ! the outgoing meridional plane.  Also divides the output vector by 4*pi.
+
+    integer NLEG, NSTOKES
+    real SINGLEGEN(2, 0:NLEG), COSSCAT, SOLARMU, MU, DELPHI
+    real SCATVECT(NSTOKES)
+    integer I, J, K, L
+    double precision OFOURPI, X, FCT, A1, B1
+    double precision, allocatable :: DMM1(:)
+    double precision SIN_SCAT, SIN_THETA1, SIN_THETA2
+    double precision SINPHI, COSPHI, SIN2, COS2, SIN22, COS22
+    parameter(OFOURPI=0.07957747151)
+
+    allocate (DMM1(0:NLEG))
+
+    ! Sum the first Wigner function series, which is actually a Legend
+    X = dble(COSSCAT)
+    call shd_pha__computeWigner(X, NLEG, 0, 0, DMM1)
+    A1 = 0.0d0
+    do L = 0, NLEG
+        FCT = 2.0d0*L + 1.0d0
+        A1 = A1 + FCT*dble(SINGLEGEN(1, L))*DMM1(L)
+    end do
+    SCATVECT(1) = A1*OFOURPI
+
+    if (NSTOKES .gt. 1) then
+        ! If doing polarization, sum the second Wigner function series
+        call shd_pha__computeWigner(X, NLEG, 2, 0, DMM1)
+        B1 = 0.0d0
+        do L = 0, NLEG
+            FCT = 2.0d0*L + 1.0d0
+            B1 = B1 - FCT*dble(SINGLEGEN(2, L))*DMM1(L)
+        end do
+
+        ! Rotate the plane of polarization from the scattering plane
+        !   to the outgoing meridional plane.
+        SIN_SCAT = DSQRT(max(0.0d0, 1.d0 - COSSCAT**2))
+        SIN_THETA1 = DSQRT(1.d0 - SOLARMU**2)
+        SIN_THETA2 = DSQRT(1.d0 - MU**2)
+        SINPHI = DSIN(dble(DELPHI))
+        COSPHI = DCOS(dble(DELPHI))
+        if (SIN_SCAT .eq. 0.0) then
+            SIN2 = 0.0d0
+            COS2 = -1.0d0
+        else
+            SIN2 = SIN_THETA1*SINPHI/SIN_SCAT
+            COS2 = (SIN_THETA2*SOLARMU - SIN_THETA1*MU*COSPHI)/SIN_SCAT
+        end if
+        SIN22 = 2.0d0*SIN2*COS2
+        COS22 = 1.0d0 - 2.0d0*SIN2**2
+        SCATVECT(2) = B1*COS22*OFOURPI
+        SCATVECT(3) = B1*SIN22*OFOURPI
+    end if
+    if (NSTOKES .eq. 4) then
+        SCATVECT(4) = 0.0
+    end if
+    deallocate (DMM1)
+
+    return
+
+end subroutine shd_src__computeSolarStokesVect
+
+end module shd_src
+
+subroutine shd_src__computeSrcPnt(&
     &NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
     &SRCTYPE, FLUX0, YLMSUN, PLANCK,&
     &ALBEDO, IPH, LEGEN, NR, RADIANCE,&
@@ -847,9 +926,9 @@ subroutine shd_src__calSrcPnt(&
 
     return
 
-end subroutine shd_src__calSrcPnt
+end subroutine shd_src__computeSrcPnt
 
-subroutine shd_src__calSrcPnt_(&
+subroutine shd_src__computeSrcPnt_(&
     &NLM, NLEG, LOFJ,&
     &SRCTYPE, FLUX0, YLMSUN, PLANCK,&
     &ALBEDO, IPH, LEGEN, NR, RADIANCE,&
@@ -895,78 +974,4 @@ subroutine shd_src__calSrcPnt_(&
 
     return
 
-end subroutine shd_src__calSrcPnt_
-
-subroutine shd_src__computeSolarStokesVect(&
-    &NLEG, SINGLEGEN, COSSCAT,&
-    &SOLARMU, MU, DELPHI, NSTOKES,&
-    &SCATVECT)
-
-    ! Calculates the Stokes vector for a single scattering of unpolarized
-    ! sunlight from the solar direction (SOLARMU) to the outgoing
-    ! direction (MU) and with cosine scattering angle (COSSCAT).
-    ! The A1 and B1 elements of the phase matrix are calculated from
-    ! the Wigner function expansion coefficients (SINGLEGEN).
-    ! The plane of polarization is rotated from the scattering plane to
-    ! the outgoing meridional plane.  Also divides the output vector by 4*pi.
-
-    integer NLEG, NSTOKES
-    real SINGLEGEN(2, 0:NLEG), COSSCAT, SOLARMU, MU, DELPHI
-    real SCATVECT(NSTOKES)
-    integer I, J, K, L
-    double precision OFOURPI, X, FCT, A1, B1
-    double precision, allocatable :: DMM1(:)
-    double precision SIN_SCAT, SIN_THETA1, SIN_THETA2
-    double precision SINPHI, COSPHI, SIN2, COS2, SIN22, COS22
-    parameter(OFOURPI=0.07957747151)
-
-    allocate (DMM1(0:NLEG))
-
-    ! Sum the first Wigner function series, which is actually a Legend
-    X = dble(COSSCAT)
-    call shd_pha__computeWigner(X, NLEG, 0, 0, DMM1)
-    A1 = 0.0d0
-    do L = 0, NLEG
-        FCT = 2.0d0*L + 1.0d0
-        A1 = A1 + FCT*dble(SINGLEGEN(1, L))*DMM1(L)
-    end do
-    SCATVECT(1) = A1*OFOURPI
-
-    if (NSTOKES .gt. 1) then
-        ! If doing polarization, sum the second Wigner function series
-        call shd_pha__computeWigner(X, NLEG, 2, 0, DMM1)
-        B1 = 0.0d0
-        do L = 0, NLEG
-            FCT = 2.0d0*L + 1.0d0
-            B1 = B1 - FCT*dble(SINGLEGEN(2, L))*DMM1(L)
-        end do
-
-        ! Rotate the plane of polarization from the scattering plane
-        !   to the outgoing meridional plane.
-        SIN_SCAT = DSQRT(max(0.0d0, 1.d0 - COSSCAT**2))
-        SIN_THETA1 = DSQRT(1.d0 - SOLARMU**2)
-        SIN_THETA2 = DSQRT(1.d0 - MU**2)
-        SINPHI = DSIN(dble(DELPHI))
-        COSPHI = DCOS(dble(DELPHI))
-        if (SIN_SCAT .eq. 0.0) then
-            SIN2 = 0.0d0
-            COS2 = -1.0d0
-        else
-            SIN2 = SIN_THETA1*SINPHI/SIN_SCAT
-            COS2 = (SIN_THETA2*SOLARMU - SIN_THETA1*MU*COSPHI)/SIN_SCAT
-        end if
-        SIN22 = 2.0d0*SIN2*COS2
-        COS22 = 1.0d0 - 2.0d0*SIN2**2
-        SCATVECT(2) = B1*COS22*OFOURPI
-        SCATVECT(3) = B1*SIN22*OFOURPI
-    end if
-    if (NSTOKES .eq. 4) then
-        SCATVECT(4) = 0.0
-    end if
-    deallocate (DMM1)
-
-    return
-
-end subroutine shd_src__computeSolarStokesVect
-
-end module shd_src
+end subroutine shd_src__computeSrcPnt_

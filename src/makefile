@@ -24,8 +24,9 @@ ifeq ($(useOMP), yes)
 	# openMPI
 	FFLAGS += -fopenmp
 endif
-SHDOMOBJS = globals.o shdUtil.o shdSfc.o shdPha.o shdInit.o shdGrid_ind.o shdGrid_cal.o \
-			shdDir.o shdSrc.o shdSHDO.o shdSolv_int.o shdSolv_rte.o shdComp.o shdIO_inp.o shdIO_out.o fftpack.o
+SHDOMOBJS = globals.o shdUtil.o shdSfc.o shdPha.o shdInit.o\
+			shdGrid.o shdSrc.o shdSHDO.o shdIntg.o shdSolv.o\
+			shdComp.o shdInp.o shdOut.o fftpack.o
 
 ifeq ($(FC), mpif90)
 	UseMPI = yes
@@ -34,9 +35,9 @@ else
 endif
 
 ifeq ($(UseMPI),no)
-	SHDOMMPIOBJ = shdExt_mpi_.o
+	SHDOMMPIOBJ = shdMPI_.o
 else
-	SHDOMMPIOBJ = shdExt_mpi.o
+	SHDOMMPIOBJ = shdMPI.o
 endif
 
 SHDOMOBJS += $(SHDOMMPIOBJ)
@@ -64,44 +65,38 @@ shdom_: shdom_.o $(SHDOMOBJS)
 shdom_.o: shdom_.f90 $(SHDOMOBJS)
 	$(F90) -c $(F90FLAGS) shdom_.f90
 
-shdSolv_rte.o: shdSolv_rte.f90 $(SHDOMMPIOBJ) shdSfc.o shdInit.o shdGrid_ind.o shdSHDO.o shdDir.o shdPha.o shdSrc.o shdGrid_cal.o shdSolv_int.o
-	$(F90) -c $(F90FLAGS) shdSolv_rte.f90
+shdSolv.o: shdSolv.f90 $(SHDOMMPIOBJ) shdSfc.o shdInit.o shdGrid.o shdSHDO.o shdPha.o shdSrc.o shdIntg.o shdComp.o
+	$(F90) -c $(F90FLAGS) shdSolv.f90
 
-shdSolv_int.o: shdSolv_int.f90 $(SHDOMMPIOBJ) shdSfc.o shdInit.o shdGrid_ind.o shdSHDO.o
-	$(F90) -c $(F90FLAGS) shdSolv_int.f90
+shdIntg.o: shdIntg.f90 $(SHDOMMPIOBJ) shdSfc.o shdInit.o shdGrid.o shdSHDO.o
+	$(F90) -c $(F90FLAGS) shdIntg.f90
 
-shdGrid_cal.o: shdGrid_cal.f90 globals.o shdUtil.o shdSrc.o shdDir.o shdGrid_ind.o $(SHDOMMPIOBJ)
-	$(F90) -c $(F90FLAGS) shdGrid_cal.f90
-
-shdComp.o: shdComp.f90 globals.o shdPha.o shdUtil.o shdSrc.o shdInit.o
+shdComp.o: shdComp.f90 globals.o shdPha.o shdSrc.o shdInit.o shdGrid.o
 	$(F90) -c $(F90FLAGS) shdComp.f90
 
-shdIO_inp.o: shdIO_inp.f90 globals.o shdUtil.o
-	$(F90) -c $(F90FLAGS) shdIO_inp.f90
+shdInp.o: shdInp.f90 globals.o shdUtil.o
+	$(F90) -c $(F90FLAGS) shdInp.f90
 
-shdIO_out.o: shdIO_out.f90 globals.o shdGrid_ind.o shdUtil.o
-	$(F90) -c $(F90FLAGS) shdIO_out.f90
+shdOut.o: shdOut.f90 globals.o shdGrid.o shdUtil.o
+	$(F90) -c $(F90FLAGS) shdOut.f90
 
-shdExt_mpi_.o: shdExt_mpi_.f90
-	$(F90) -c $(F90FLAGS) shdExt_mpi_.f90
+shdMPI_.o: shdMPI_.f90
+	$(F90) -c $(F90FLAGS) shdMPI_.f90
 
-shdExt_mpi.o: shdExt_mpi.f90
-	$(F90) -c $(F90FLAGS) shdExt_mpi.f90
+shdMPI.o: shdMPI.f90
+	$(F90) -c $(F90FLAGS) shdMPI.f90
 
-shdSrc.o: shdSrc.f90 globals.o shdUtil.o shdPha.o shdGrid_ind.o
+shdSrc.o: shdSrc.f90 globals.o shdUtil.o shdPha.o shdGrid.o
 	$(F90) -c $(F90FLAGS) shdSrc.f90
 
-shdInit.o: shdInit.f90 globals.o shdUtil.o shdSfc.o shdGrid_ind.o
+shdInit.o: shdInit.f90 globals.o shdUtil.o shdSfc.o
 	$(F90) -c $(F90FLAGS) shdInit.f90
 
 shdSHDO.o: shdSHDO.f90 globals.o shdPha.o shdSfc.o
 	$(F90) -c $(F90FLAGS) shdSHDO.f90
 
-shdGrid_ind.o: shdGrid_ind.f90 globals.o
-	$(F90) -c $(F90FLAGS) shdGrid_ind.f90
-
-shdDir.o: shdDir.f90 globals.o
-	$(F90) -c $(F90FLAGS) shdDir.f90
+shdGrid.o: shdGrid.f90 globals.o shdUtil.o
+	$(F90) -c $(F90FLAGS) shdGrid.f90
 
 shdSfc.o: shdSfc.f90 globals.o
 	$(F90) -c $(F90FLAGS) shdSfc.f90

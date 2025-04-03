@@ -1,44 +1,44 @@
-module shd_ext_mpi
+module shd_mpi
 
     implicit none
     private
 
-    public :: shd_ext__mpiStart
-    public :: shd_ext__mpiMap
-    public :: shd_ext__mpiBcastInput
-    public :: shd_ext__mpiBcastPropSize
-    public :: shd_ext__mpiScatProp
-    public :: shd_ext__mpiReadBcastMemParam
-    public :: shd_ext__mpiBcastSurfSize
-    public :: shd_ext__mpiBcastSurfParam
-    public :: shd_ext__mpiBcastKdistSize
-    public :: shd_ext__mpiBcastKdistParam
-    public :: shd_ext__mpiGatherOutput
-    public :: shd_ext__mpiMakeDirect
-    public :: shd_ext__mpiComputeRad
-    public :: shd_ext__mpiVisualizeRad
-    public :: shd_ext__mpiEnd
-    public :: shd_ext__mpiAbort
+    public :: shd_mpi__start
+    public :: shd_mpi__map
+    public :: shd_mpi__bcastInput
+    public :: shd_mpi__bcastPropSize
+    public :: shd_mpi__scatProp
+    public :: shd_mpi__readBcastMemParam
+    public :: shd_mpi__bcastSurfSize
+    public :: shd_mpi__bcastSurfParam
+    public :: shd_mpi__bcastKdistSize
+    public :: shd_mpi__bcastKdistParam
+    public :: shd_mpi__gatherOutput
+    public :: shd_mpi__makeDirect
+    public :: shd_mpi__computeRad
+    public :: shd_mpi__visualizeRad
+    public :: shd_mpi__end
+    public :: shd_mpi__abort
 
-    public :: shd_ext__mpiFindAlbMax
-    public :: shd_ext__mpiFindTotSplitCritMax
-    public :: shd_ext__mpiFindBoundaryPnt
-    public :: shd_ext__mpiCalBoundaryRad
-    public :: shd_ext__mpiCalAccelSolCrit
-    public :: shd_ext__mpiUnifySplit
-    public :: shd_ext__mpiSumCpuTime
+    public :: shd_mpi__findAlbMax
+    public :: shd_mpi__findTotSplitCritMax
+    public :: shd_mpi__findBoundaryPnt
+    public :: shd_mpi__calBoundaryRad
+    public :: shd_mpi__calAccelSolCrit
+    public :: shd_mpi__unifySplit
+    public :: shd_mpi__sumCpuTime
 
 contains
 
-subroutine shd_ext__mpiStart(MASTERPROC)
+subroutine shd_mpi__start(MASTERPROC)
     ! Dummy routines to allow parallel SHDOM to compile without MPI.
     logical, intent(out) :: MASTERPROC
 
     MASTERPROC = .true.
     return
-end subroutine shd_ext__mpiStart
+end subroutine shd_mpi__start
 
-subroutine shd_ext__mpiMap(&
+subroutine shd_mpi__map(&
     &BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY,&
     &PROPFILE, XSTART, YSTART, RUNNAME)
 
@@ -50,9 +50,9 @@ subroutine shd_ext__mpiMap(&
     XSTART = 0.0
     YSTART = 0.0
     return
-end subroutine shd_ext__mpiMap
+end subroutine shd_mpi__map
 
-subroutine shd_ext__mpiBcastInput(RUNNAME,&
+subroutine shd_mpi__bcastInput(RUNNAME,&
     &PROPFILE, SFCFILE, CKDFILE,&
     &INSAVEFILE, OUTSAVEFILE,&
     &NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
@@ -77,18 +77,18 @@ subroutine shd_ext__mpiBcastInput(RUNNAME,&
     real :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
 
     return
-end subroutine shd_ext__mpiBcastInput
+end subroutine shd_mpi__bcastInput
 
-subroutine shd_ext__mpiBcastPropSize(NPX, NPY, NPZ, DELX, DELY,&
+subroutine shd_mpi__bcastPropSize(NPX, NPY, NPZ, DELX, DELY,&
     &NUMPHASE, MAXLEG, MAXPGL)
 
     integer NPX, NPY, NPZ, NUMPHASE, MAXLEG, MAXPGL
     real DELX, DELY
 
     return
-end subroutine shd_ext__mpiBcastPropSize
+end subroutine shd_mpi__bcastPropSize
 
-subroutine shd_ext__mpiScatProp(NPXT, NPYT, NPX, NPY, NPZ, NSTLEG,&
+subroutine shd_mpi__scatProp(NPXT, NPYT, NPX, NPY, NPZ, NSTLEG,&
     &NLEG, NUMPHASE, ZLEVELS, MAXASYM, TEMPPT,&
     &EXTINCTPT, ALBEDOPT, LEGENPT, IPHASEPT,&
     &TEMPP, EXTINCTP, ALBEDOP, LEGENP, IPHASEP)
@@ -103,9 +103,9 @@ subroutine shd_ext__mpiScatProp(NPXT, NPYT, NPX, NPY, NPZ, NSTLEG,&
     integer*2 IPHASEP(NPZ, NPY, NPX)
 
     return
-end subroutine shd_ext__mpiScatProp
+end subroutine shd_mpi__scatProp
 
-subroutine shd_ext__mpiReadBcastMemParam(MAX_TOTAL_MB,&
+subroutine shd_mpi__readBcastMemParam(MAX_TOTAL_MB,&
     &ADAPT_GRID_FACTOR, NUM_SH_TERM_FACTOR,&
     &CELL_TO_POINT_RATIO, RUNNAME)
 
@@ -114,16 +114,16 @@ subroutine shd_ext__mpiReadBcastMemParam(MAX_TOTAL_MB,&
     character(*) RUNNAME
 
     return
-end subroutine shd_ext__mpiReadBcastMemParam
+end subroutine shd_mpi__readBcastMemParam
 
-subroutine shd_ext__mpiBcastSurfSize(MAXSFCPTS, MAXSFCPARS)
+subroutine shd_mpi__bcastSurfSize(MAXSFCPTS, MAXSFCPARS)
 
     integer MAXSFCPTS, MAXSFCPARS
 
     return
-end subroutine shd_ext__mpiBcastSurfSize
+end subroutine shd_mpi__bcastSurfSize
 
-subroutine shd_ext__mpiBcastSurfParam(SFCTYPE, NXSFC, NYSFC, NSFCPAR,&
+subroutine shd_mpi__bcastSurfParam(SFCTYPE, NXSFC, NYSFC, NSFCPAR,&
     &DELXSFC, DELYSFC, SFCPARMS, GNDTEMP, GNDALBEDO)
 
     character SFCTYPE*2
@@ -131,25 +131,25 @@ subroutine shd_ext__mpiBcastSurfParam(SFCTYPE, NXSFC, NYSFC, NSFCPAR,&
     real DELXSFC, DELYSFC, SFCPARMS(*), GNDTEMP, GNDALBEDO
 
     return
-end subroutine shd_ext__mpiBcastSurfParam
+end subroutine shd_mpi__bcastSurfParam
 
-subroutine shd_ext__mpiBcastKdistSize(NG, NZCKD)
+subroutine shd_mpi__bcastKdistSize(NG, NZCKD)
 
     integer NG, NZCKD
 
     return
-end subroutine shd_ext__mpiBcastKdistSize
+end subroutine shd_mpi__bcastKdistSize
 
-subroutine shd_ext__mpiBcastKdistParam(SOLFLUX, NG, DELG,&
+subroutine shd_mpi__bcastKdistParam(SOLFLUX, NG, DELG,&
     &NZCKD, ZCKD, KABS)
 
     integer NG, NZCKD
     real SOLFLUX, DELG(NG), ZCKD(NZCKD), KABS(NZCKD, NG)
 
     return
-end subroutine shd_ext__mpiBcastKdistParam
+end subroutine shd_mpi__bcastKdistParam
 
-subroutine shd_ext__mpiGatherOutput(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
+subroutine shd_mpi__gatherOutput(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
     &IPFLAG, BCFLAG, NBPTS, NXT, NYT, NZ, NSHOUT,&
     &SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV, SUMSHTERMS,&
     &XDOMAIN, YDOMAIN, XALLGRID, YALLGRID,&
@@ -168,35 +168,35 @@ subroutine shd_ext__mpiGatherOutput(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
     integer NCELLSTOT, NPTSTOT, NSHTOT
 
     return
-end subroutine shd_ext__mpiGatherOutput
+end subroutine shd_mpi__gatherOutput
 
-real function shd_ext__mpiSumCpuTime(cpuTimes)
+real function shd_mpi__sumCpuTime(cpuTimes)
 
     real cpuTimes
-    shd_ext__mpiSumCpuTime = cpuTimes
+    shd_mpi__sumCpuTime = cpuTimes
     return
-end function shd_ext__mpiSumCpuTime
+end function shd_mpi__sumCpuTime
 
-subroutine shd_ext__mpiFindAlbMax(ALBMAX)
+subroutine shd_mpi__findAlbMax(ALBMAX)
 
     real ALBMAX
     return
-end subroutine shd_ext__mpiFindAlbMax
+end subroutine shd_mpi__findAlbMax
 
-subroutine shd_ext__mpiUnifySplit(DOSPLIT, STARTSPLITACC)
+subroutine shd_mpi__unifySplit(DOSPLIT, STARTSPLITACC)
 
     logical DOSPLIT
     real STARTSPLITACC
     return
-end subroutine shd_ext__mpiUnifySplit
+end subroutine shd_mpi__unifySplit
 
-subroutine shd_ext__mpiFindTotSplitCritMax(SPLITCRIT)
+subroutine shd_mpi__findTotSplitCritMax(SPLITCRIT)
 
     real SPLITCRIT
     return
-end subroutine shd_ext__mpiFindTotSplitCritMax
+end subroutine shd_mpi__findTotSplitCritMax
 
-subroutine shd_ext__mpiMakeDirect(&
+subroutine shd_mpi__makeDirect(&
     &SPT, NPTS, BCFLAG, IPFLAG, DELTAM, ML,&
     &NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ, GRIDPOS,&
     &NX, XGRID, NY, YGRID, DIRFLUX)
@@ -208,9 +208,9 @@ subroutine shd_ext__mpiMakeDirect(&
     real DIRFLUX(NPTS)
 
     return
-end subroutine shd_ext__mpiMakeDirect
+end subroutine shd_mpi__makeDirect
 
-subroutine shd_ext__mpiFindBoundaryPnt(&
+subroutine shd_mpi__findBoundaryPnt(&
     &BCFLAG, IPFLAG, NPTS, SWEEPORD,&
     &GRIDPTR, GRIDPOS, NX, NY, NZ, XGRID, YGRID, ZGRID)
 
@@ -219,9 +219,9 @@ subroutine shd_ext__mpiFindBoundaryPnt(&
     real GRIDPOS(3, NPTS), XGRID(NX), YGRID(NY), ZGRID(NZ)
 
     return
-end subroutine shd_ext__mpiFindBoundaryPnt
+end subroutine shd_mpi__findBoundaryPnt
 
-subroutine shd_ext__mpiCalBoundaryRad(&
+subroutine shd_mpi__calBoundaryRad(&
     &BCFLAG, IPFLAG, JOCT, IZ,&
     &NX, NY, NZ, XGRID, YGRID, ZGRID,&
     &NA, NPTS, NCELLS, GRIDPTR,&
@@ -239,9 +239,9 @@ subroutine shd_ext__mpiCalBoundaryRad(&
     real GRIDRAD(NSTOKES, NPTS)
 
     return
-end subroutine shd_ext__mpiCalBoundaryRad
+end subroutine shd_mpi__calBoundaryRad
 
-subroutine shd_ext__mpiComputeRad(&
+subroutine shd_mpi__computeRad(&
     &NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
@@ -279,9 +279,9 @@ subroutine shd_ext__mpiComputeRad(&
     character, intent(IN) ::  SRCTYPE*1, SFCTYPE*2, UNITS*1
 
     return
-end subroutine shd_ext__mpiComputeRad
+end subroutine shd_mpi__computeRad
 
-subroutine shd_ext__mpiVisualizeRad(&
+subroutine shd_mpi__visualizeRad(&
     &NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
@@ -315,9 +315,9 @@ subroutine shd_ext__mpiVisualizeRad(&
     character SRCTYPE*1, SFCTYPE*2, UNITS*1
 
     return
-end subroutine shd_ext__mpiVisualizeRad
+end subroutine shd_mpi__visualizeRad
 
-subroutine shd_ext__mpiCalAccelSolCrit(&
+subroutine shd_mpi__calAccelSolCrit(&
     &DOACCEL, DELJDOT, DELJOLD, DELJNEW,&
     &JNORM, ACCELPAR, SOLCRIT)
     ! Calculates the acceleration parameter and solution criterion from
@@ -349,9 +349,9 @@ subroutine shd_ext__mpiCalAccelSolCrit(&
         SOLCRIT = 0.0
     end if
     return
-end subroutine shd_ext__mpiCalAccelSolCrit
+end subroutine shd_mpi__calAccelSolCrit
 
-subroutine shd_ext__mpiEnd(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART,&
+subroutine shd_mpi__end(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART,&
     &XDOMAIN, YDOMAIN, NPXT, NPYT, PROPFILE, RUNNAME)
 
     integer NPTS, NPX, NPY, NPXT, NPYT
@@ -359,14 +359,14 @@ subroutine shd_ext__mpiEnd(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART,&
     character(len=*), intent(in) :: PROPFILE, RUNNAME
 
     return
-end subroutine shd_ext__mpiEnd
+end subroutine shd_mpi__end
 
-subroutine shd_ext__mpiAbort(ERRSTR)
+subroutine shd_mpi__abort(ERRSTR)
 
     character(*) ERRSTR
 
     write (6, *) ERRSTR
     stop
-end subroutine shd_ext__mpiAbort
+end subroutine shd_mpi__abort
 
-end module shd_ext_mpi
+end module shd_mpi

@@ -1,4 +1,4 @@
-module shd_io_inp
+module shd_inp
 
   use globals
   use shd_util
@@ -1440,4 +1440,4 @@ subroutine shd_io__restoreState(&
 
 end subroutine shd_io__restoreState
 
-end module shd_io_inp
+end module shd_inp

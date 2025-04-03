@@ -6,17 +6,15 @@ set(SHDOM_LIB_SRCS
     shdUtil.f90
     shdSfc.f90
     shdPha.f90
-    shdGrid_ind.f90
-    shdGrid_cal.f90
+    shdGrid.f90
     shdInit.f90
-    shdDir.f90
     shdSrc.f90
     shdSHDO.f90
+    shdIntg.f90
+    shdSolv.f90
     shdComp.f90
-    shdSolv_int.f90
-    shdSolv_rte.f90
-    shdIO_inp.f90
-    shdIO_out.f90
+    shdInp.f90
+    shdOut.f90
     fftpack.f90)
 
 # dummy option
@@ -27,9 +25,9 @@ set(SHDOM_LIB_SRCS
 #endif()
 
 if (USE_MPI)
-    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} shdExt_mpi.f90)
+    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} shdMPI.f90)
 else()
-    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} shdExt_mpi_.f90)
+    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} shdMPI_.f90)
 endif()
 
 #if (USE_NETCDF)

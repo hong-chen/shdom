@@ -1,24 +1,24 @@
-module shd_solv_int
+module shd_intg
 
     use globals
-    use shd_init
     use shd_sfc
-    use shd_grid_ind
-    use shd_ext_mpi
-
+    use shd_init
+    use shd_grid
     use shd_shdo
+    use shd_mpi
 
     implicit none
 
-    public :: shd_solv__integratePath
-    public :: shd_solv__backIntegrate3D
-    public :: shd_solv__backIntegrate3D_
-    public :: shd_solv__backIntegrate2D
-    public :: shd_solv__backIntegrate1D
+    public :: shd_intg__integratePath
+
+    private :: shd_intg__backIntegrate3D
+    private :: shd_intg__backIntegrate3D_
+    private :: shd_intg__backIntegrate2D
+    private :: shd_intg__backIntegrate1D
 
 contains
 
-subroutine shd_solv__integratePath(&
+subroutine shd_intg__integratePath(&
     &NX, NY, NZ, NSTOKES, NSTLEG,&
     &ML, MM, NLM, NMU, NPHI0MAX, NPHI0, NANG,&
     &BCFLAG, IPFLAG,&
@@ -106,7 +106,7 @@ subroutine shd_solv__integratePath(&
             &BCFLAG, IPFLAG, SWEEPORD, GRIDRAD)
     end if
 
-    call shd_ext__mpiFindBoundaryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
+    call shd_mpi__findBoundaryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
         &GRIDPOS, NX, NY, NZ, XGRID, YGRID, ZGRID)
 
     LAMBERTIAN = SFCTYPE(2:2) .eq. 'L'
@@ -233,7 +233,7 @@ subroutine shd_solv__integratePath(&
             ! Do backward path integration from each grid point not done
             if (btest(IPFLAG, 1) .and. btest(IPFLAG, 0)) then
 
-                call shd_solv__backIntegrate1D(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,&
+                call shd_intg__backIntegrate1D(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,&
                     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
                     &GRIDPOS, SWEEPORD, MU(IMU), PHI(IMU, IPHI), TRANSMIN,&
                     &EXTINCT, NSTOKES, WORK, IPHI, GRIDRAD)
@@ -241,7 +241,7 @@ subroutine shd_solv__integratePath(&
             else if (btest(IPFLAG, 1) .and.&
                 &.not. (btest(BCFLAG, 2) .or. btest(BCFLAG, 3))) then
 
-                call shd_solv__backIntegrate2D(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,&
+                call shd_intg__backIntegrate2D(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,&
                     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
                     &GRIDPOS, SWEEPORD, MU(IMU), PHI(IMU, IPHI), TRANSMIN,&
                     &EXTINCT, NSTOKES, WORK, IPHI, GRIDRAD)
@@ -249,7 +249,7 @@ subroutine shd_solv__integratePath(&
             else
                 if (NSTOKES .eq. 1) then
 
-                    call shd_solv__backIntegrate3D_(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,&
+                    call shd_intg__backIntegrate3D_(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,&
                         &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
                         &GRIDPOS, XGRID, YGRID, ZGRID, SWEEPORD,&
                         &MU(IMU), PHI(IMU, IPHI), TRANSMIN, BCFLAG, IPFLAG,&
@@ -258,7 +258,7 @@ subroutine shd_solv__integratePath(&
 
                 else
 
-                    call shd_solv__backIntegrate3D(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,&
+                    call shd_intg__backIntegrate3D(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,&
                         &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
                         &GRIDPOS, XGRID, YGRID, ZGRID, SWEEPORD,&
                         &MU(IMU), PHI(IMU, IPHI), TRANSMIN, BCFLAG, IPFLAG,&
@@ -320,9 +320,9 @@ subroutine shd_solv__integratePath(&
 
     return
 
-end subroutine shd_solv__integratePath
+end subroutine shd_intg__integratePath
 
-subroutine shd_solv__backIntegrate3D(&
+subroutine shd_intg__backIntegrate3D(&
     &NX, NY, NZ, NA, NPTS, NCELLS,&
     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &GRIDPOS, XGRID, YGRID, ZGRID, SWEEPORD,&
@@ -430,7 +430,7 @@ subroutine shd_solv__backIntegrate3D(&
             if ((GRIDPOS(3, IPT) .lt. ZGRID(IZ) .and. BITZ .eq. 0) .or.&
                 &(GRIDPOS(3, IPT) .gt. ZGRID(IZ) .and. BITZ .eq. 1)) then
                 IZ = IZ + 2*BITZ - 1
-                call shd_ext__mpiCalBoundaryRad(BCFLAG, IPFLAG, JOCT, IZ,&
+                call shd_mpi__calBoundaryRad(BCFLAG, IPFLAG, JOCT, IZ,&
                     &NX, NY, NZ, XGRID, YGRID, ZGRID,&
                     &NA, NPTS, NCELLS, GRIDPTR,&
                     &NEIGHPTR, TREEPTR, CELLFLAGS, GRIDPOS,&
@@ -623,7 +623,7 @@ subroutine shd_solv__backIntegrate3D(&
                     print '(A,3(1X,F6.4),8(1X,E12.5))',&
                         &'_backIntegrate3D: RAD<0 ',&
                         &xe, ye, ze, ext0, ext1, so, tau, transmit, src, abscell, rad(:)
-                    call shd_ext__mpiAbort('The end')
+                    call shd_mpi__abort('The end')
                 end if
                 VALIDFACE = (GRIDRAD(1, I1) .ge. -0.1 .and. GRIDRAD(1, I2) .ge. -0.1&
                     &.and. GRIDRAD(1, I3) .ge. -0.1 .and. GRIDRAD(1, I4) .ge. -0.1)
@@ -661,9 +661,9 @@ subroutine shd_solv__backIntegrate3D(&
     end do
 
     return
-end subroutine shd_solv__backIntegrate3D
+end subroutine shd_intg__backIntegrate3D
 
-subroutine shd_solv__backIntegrate3D_(&
+subroutine shd_intg__backIntegrate3D_(&
     &NX, NY, NZ, NA, NPTS, NCELLS,&
     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &GRIDPOS, XGRID, YGRID, ZGRID, SWEEPORD,&
@@ -773,7 +773,7 @@ subroutine shd_solv__backIntegrate3D_(&
             if ((GRIDPOS(3, IPT) .lt. ZGRID(IZ) .and. BITZ .eq. 0) .or.&
                 &(GRIDPOS(3, IPT) .gt. ZGRID(IZ) .and. BITZ .eq. 1)) then
                 IZ = IZ + 2*BITZ - 1
-                call shd_ext__mpiCalBoundaryRad(BCFLAG, IPFLAG, JOCT, IZ,&
+                call shd_mpi__calBoundaryRad(BCFLAG, IPFLAG, JOCT, IZ,&
                     &NX, NY, NZ, XGRID, YGRID, ZGRID,&
                     &NA, NPTS, NCELLS, GRIDPTR,&
                     &NEIGHPTR, TREEPTR, CELLFLAGS, GRIDPOS,&
@@ -986,7 +986,7 @@ subroutine shd_solv__backIntegrate3D_(&
                     print '(A,3(1X,F6.4),8(1X,E12.5))',&
                         &'_backIntegrate3D_: RAD<0 ',&
                         &XE, YE, ZE, EXT0, EXT1, SO, TAU, TRANSMIT, SRC, ABSCELL, RAD
-                    call shd_ext__mpiAbort('The end')
+                    call shd_mpi__abort('The end')
                 end if
 
                 VALIDFACE = (GRIDRAD(I1) .ge. -0.1 .and. GRIDRAD(I2) .ge. -0.1&
@@ -1028,9 +1028,9 @@ subroutine shd_solv__backIntegrate3D_(&
 
     return
 
-end subroutine shd_solv__backIntegrate3D_
+end subroutine shd_intg__backIntegrate3D_
 
-subroutine shd_solv__backIntegrate2D(&
+subroutine shd_intg__backIntegrate2D(&
     &NX, NY, NZ, NA, NPTS, NCELLS,&
     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &GRIDPOS, SWEEPORD, MU, PHI, TRANSMIN,&
@@ -1281,9 +1281,9 @@ subroutine shd_solv__backIntegrate2D(&
 
     return
 
-end subroutine shd_solv__backIntegrate2D
+end subroutine shd_intg__backIntegrate2D
 
-subroutine shd_solv__backIntegrate1D(&
+subroutine shd_intg__backIntegrate1D(&
     &NX, NY, NZ, NA, NPTS, NCELLS,&
     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &GRIDPOS, SWEEPORD, MU, PHI, TRANSMIN,&
@@ -1454,6 +1454,6 @@ subroutine shd_solv__backIntegrate1D(&
 
     return
 
-end subroutine shd_solv__backIntegrate1D
+end subroutine shd_intg__backIntegrate1D
 
-end module shd_solv_int
+end module shd_intg
