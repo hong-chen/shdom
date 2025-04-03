@@ -7,14 +7,26 @@ module shd_sfc
     private
 
     public :: shd_sfc__interpSfc
-
     public :: shd_sfc__brdfSurface
 
+    ! surface brdf
+    !╭────────────────────────────────────────────────╮!
     public :: shd_sfc__brdfFresnel
     public :: shd_sfc__brdfDiner
     public :: shd_sfc__brdfRPV
     public :: shd_sfc__brdfLSRT
     public :: shd_sfc__brdfOcean
+    !╰────────────────────────────────────────────────╯!
+
+    ! ocean brdf
+    !╭────────────────────────────────────────────────╮!
+    private :: morcasiwat
+    private :: indwat
+    private :: sunglint
+    private :: Fresnel
+    private :: glitalbe
+    private :: getbound
+    !╰────────────────────────────────────────────────╯!
 
 contains
 

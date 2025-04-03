@@ -23,7 +23,7 @@ SHDOM was originally developed by `Frank Evans <evans@nit.colorado.edu>`_ and is
 
 **Major changes:**
 
-* Modulized the code;
+* Modularize and restructured the code;
 
 * Fixed "dead process issue" when running MPI version with 1D property field input;
 
@@ -139,17 +139,15 @@ File-to-File Reference
 
 * ``src/shdom.f90`` and ``src/shdom_.f90``: was ``shdom.f90``
 
-* ``src/shdExt_mpi.f90`` and ``src/shdExt_mpi_.f90``: was ``shdom_mpi.f90`` and ``shdom_nompi.f``
+* ``src/shdMPI.f90`` and ``src/shdMPI_.f90``: was ``shdom_mpi.f90`` and ``shdom_nompi.f``
 
-* ``src/shdGrid_ind.f90``: partially from ``shdomsub1.f``
-
-* ``src/shdGrid_cal.f90``: partially from ``shdomsub1.f``
+* ``src/shdGrid.f90``: partially from ``shdomsub1.f``
 
 * ``src/shdSHDO.f90``: partially from ``shdomsub1.f``
 
-* ``src/shdSolv_int.f90``: partially from ``shdomsub1.f``
+* ``src/shdIntg.f90``: partially from ``shdomsub1.f``
 
-* ``src/shdSolv_rte.f90``: partially from ``shdomsub1.f``
+* ``src/shdSolv.f90``: partially from ``shdomsub1.f``
 
 * ``src/shdInit.f90``: partially from ``shdomsub2.f``
 
@@ -157,17 +155,15 @@ File-to-File Reference
 
 * ``src/shdSrc.f90``: partially from ``shdomsub2.f``
 
-* ``src/shdDir.f90``: partially from ``shdomsub2.f``
-
 * ``src/shdSfc.f90``: partially from ``shdomsub2.f`` and combined with ``ocean_brdf.f``
 
 * ``src/shdUtil.f90``: partially from ``shdomsub2.f``
 
 * ``src/shdComp.f90``: partially from ``shdomsub2.f``
 
-* ``src/shdIO_inp.f90``: partially from ``shdomsub3.f``
+* ``src/shdInp.f90``: partially from ``shdomsub3.f``
 
-* ``src/shdIO_out.f90``: partially from ``shdomsub3.f``
+* ``src/shdOut.f90``: partially from ``shdomsub3.f``
 
 * ``src/globals.f90``: partially from ``shdom.f90`` and mostly from ``hparx`` (``MCARaTS`` related)
 

@@ -8,13 +8,17 @@ module shd_util
     public :: shd_util__computeTriDiag
     public :: shd_util__computeGausQuad
     public :: shd_util__computeGausQuadDble
+
     public :: shd_util__computePlanck
-
-    !public :: shd_util__ssort
-
     private :: shd_util__integratePlanck
     private :: integralLow
     private :: integralHigh
+
+    ! ssort has type mismatch issue, cannot work
+    !   if placed inside module, thus placed outside
+    !╭────────────────────────────────────────────────╮!
+    !public :: shd_util__ssort
+    !╰────────────────────────────────────────────────╯!
 
 contains
 

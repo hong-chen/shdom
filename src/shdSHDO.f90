@@ -11,11 +11,18 @@ module shd_shdo
     public :: shd_shdo__makeSHDO
     public :: shd_shdo__makeSfcDO
 
-    public :: shd_shdo__transSHtoDO
+    ! unpolarized
+    !╭────────────────────────────────────────────────╮!
     public :: shd_shdo__transSHtoDO_
-
-    public :: shd_shdo__transDOtoSH
     public :: shd_shdo__transDOtoSH_
+    !╰────────────────────────────────────────────────╯!
+
+    ! polarized
+    !╭────────────────────────────────────────────────╮!
+    public :: shd_shdo__transSHtoDO
+    public :: shd_shdo__transDOtoSH
+    !╰────────────────────────────────────────────────╯!
+
 
 contains
 

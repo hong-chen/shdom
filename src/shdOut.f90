@@ -1,7 +1,7 @@
-module shd_io_out
+module shd_out
 
   use globals
-  use shd_grid_ind
+  use shd_grid
   use shd_util
 
   implicit none
@@ -2534,4 +2534,4 @@ subroutine shd_io__saveState(&
     return
 end subroutine shd_io__saveState
 
-end module shd_io_out
+end module shd_out
