@@ -23,6 +23,8 @@ SHDOM was originally developed by `Frank Evans <evans@nit.colorado.edu>`_ and is
 
 **Major changes:**
 
+* Modulized the code;
+
 * Fixed "dead process issue" when running MPI version with 1D property field input;
 
 * Added ``CMake`` support and auto-build workflow on Github (contributed by `Dr. Cheng Da <https://www.cdalab.org>`_);
@@ -139,15 +141,15 @@ File-to-File Reference
 
 * ``src/shdExt_mpi.f90`` and ``src/shdExt_mpi_.f90``: was ``shdom_mpi.f90`` and ``shdom_nompi.f``
 
-* ``src/shdGrid_ind.f90``: partially ``shdomsub1.f``
+* ``src/shdGrid_ind.f90``: partially from ``shdomsub1.f``
 
-* ``src/shdGrid_cal.f90``: partially ``shdomsub1.f``
+* ``src/shdGrid_cal.f90``: partially from ``shdomsub1.f``
 
-* ``src/shdSHDO.f90``: partially ``shdomsub1.f``
+* ``src/shdSHDO.f90``: partially from ``shdomsub1.f``
 
-* ``src/shdSolv_int.f90``: partially ``shdomsub1.f``
+* ``src/shdSolv_int.f90``: partially from ``shdomsub1.f``
 
-* ``src/shdSolv_rte.f90``: partially ``shdomsub1.f``
+* ``src/shdSolv_rte.f90``: partially from ``shdomsub1.f``
 
 * ``src/shdInit.f90``: partially from ``shdomsub2.f``
 
