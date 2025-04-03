@@ -114,7 +114,7 @@ subroutine shd_src__computeOneSrc(NSTOKES,&
     integer I, J, JT, K, L, M, N, IPH, IS, NS, ME, MS
     real OFOURPI, DA, F, A, A1, B1, SECMU0, COSSCAT
     real, allocatable :: YLMDIR(:, :), YLMSUN(:, :)
-    double precision, allocatable :: SUNDIRLEG(:)
+    real(RD_), allocatable :: SUNDIRLEG(:)
     real, allocatable :: UNSCLEGEN(:, :), SINGSCAT(:, :)
     logical TMS
 
@@ -288,7 +288,7 @@ subroutine shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
     logical VALIDRAD
     real XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ), GRIDPOS(3, NPTS)
     real MU, PHI
-    double precision X0, Y0, Z0, XE, YE, ZE, TRANSMIT, RADIANCE(NSTOKES)
+    real(RD_) :: X0, Y0, Z0, XE, YE, ZE, TRANSMIT, RADIANCE(NSTOKES)
     real EXTINCT(NPTS)
     real SOURCE(NSTOKES, NPTS), GRIDRAD(NSTOKES, NPTS)
     integer BITX, BITY, BITZ, IOCT, ICELL, INEXTCELL, IFACE
@@ -298,12 +298,12 @@ subroutine shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
     real EXT0(1), EXT1(1), EXTN(1)
     real XM, YM
     real SRCEXT0(NSTOKES), SRCEXT1(NSTOKES), RAD0(NSTOKES)
-    double precision PI, CX, CY, CZ, CXINV, CYINV, CZINV
-    double precision XN, YN, ZN, XI, YI, ZI
-    double precision SO, SOX, SOY, SOZ, EPS
-    double precision TAUTOL, TAUGRID, S, DELS
-    double precision EXT, TAU, TRANSCELL, ABSCELL
-    double precision SRC(NSTOKES), RAD(NSTOKES)
+    real(RD_) :: PI, CX, CY, CZ, CXINV, CYINV, CZINV
+    real(RD_) :: XN, YN, ZN, XI, YI, ZI
+    real(RD_) :: SO, SOX, SOY, SOZ, EPS
+    real(RD_) :: TAUTOL, TAUGRID, S, DELS
+    real(RD_) :: EXT, TAU, TRANSCELL, ABSCELL
+    real(RD_) :: SRC(NSTOKES), RAD(NSTOKES)
     data GRIDFACE/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8,&
         &1, 2, 3, 4, 5, 6, 7, 8/, OPPFACE/2, 1, 4, 3, 6, 5/
 
@@ -786,11 +786,11 @@ subroutine shd_src__computeSolarStokesVect(&
     real SINGLEGEN(2, 0:NLEG), COSSCAT, SOLARMU, MU, DELPHI
     real SCATVECT(NSTOKES)
     integer I, J, K, L
-    double precision OFOURPI, X, FCT, A1, B1
-    double precision, allocatable :: DMM1(:)
-    double precision SIN_SCAT, SIN_THETA1, SIN_THETA2
-    double precision SINPHI, COSPHI, SIN2, COS2, SIN22, COS22
-    parameter(OFOURPI=0.07957747151)
+    real(RD_) :: X, FCT, A1, B1
+    real(RD_), allocatable :: DMM1(:)
+    real(RD_) :: SIN_SCAT, SIN_THETA1, SIN_THETA2
+    real(RD_) :: SINPHI, COSPHI, SIN2, COS2, SIN22, COS22
+    real(RD_), parameter :: OFOURPI = 0.07957747151
 
     allocate (DMM1(0:NLEG))
 
@@ -946,7 +946,7 @@ subroutine shd_src__computeSrcPnt_(&
 
     real, intent(out) :: SOURCET(NLM)
 
-    real, parameter :: C=3.544907703
+    real, parameter :: C = 3.544907703
     integer J
 
     SOURCET(:) = 0.0

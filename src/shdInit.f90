@@ -551,13 +551,13 @@ subroutine shd_init__makeFlux(&
     real FLUXES(3, *)
 
     integer N, L, I
-    double precision DELTAU, G, OMEGA, F
-    double precision LAMBDA, R, T, D, CP, CM, A, B, X1, X2
-    double precision REFLECT, TRANS, SOURCEP, SOURCEM
-    double precision RADP1P, RADP1M, RADP2P, RADP2M
-    double precision MU0, SKYFLUX, GNDFLUX, PLANCK1, PLANCK2, C, TAU
-    double precision EXLP, EXLM, V, DS, B1, B2, SOLPP, SOLPM
-    double precision, allocatable :: LOWER(:), UPPER(:), DIAG(:), RHS(:)
+    real(RD_) :: DELTAU, G, OMEGA, F
+    real(RD_) :: LAMBDA, R, T, D, CP, CM, A, B, X1, X2
+    real(RD_) :: REFLECT, TRANS, SOURCEP, SOURCEM
+    real(RD_) :: RADP1P, RADP1M, RADP2P, RADP2M
+    real(RD_) :: MU0, SKYFLUX, GNDFLUX, PLANCK1, PLANCK2, C, TAU
+    real(RD_) :: EXLP, EXLM, V, DS, B1, B2, SOLPP, SOLPM
+    real(RD_),  allocatable :: LOWER(:), UPPER(:), DIAG(:), RHS(:)
     real BBRAD
 
     N = 2*NLAYER + 2

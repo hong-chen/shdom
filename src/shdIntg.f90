@@ -356,15 +356,15 @@ subroutine shd_intg__backIntegrate3D(&
     integer GRIDFACE(4, 6), OPPFACE(6)
     integer IORDER, ICORNER, JOCTORDER3(8), JOCTORDER2(8)
     logical VALIDRAD, VALIDFACE, IPINX, IPINY, BTEST
-    double precision PI, CX, CY, CZ, CXINV, CYINV, CZINV
-    double precision XE, YE, ZE
-    double precision SO, SOX, SOY, SOZ, EPS, path
-    double precision U, V, F1, F2, F3, F4
-    double precision EXT, EXT0, EXT1
-    double precision SRC(NSTOKES), SRCEXT0(NSTOKES), SRCEXT1(NSTOKES)
-    double precision EXT0P, SRCEXT0P(NSTOKES)
-    double precision TAU, TRANSCELL, ABSCELL, TRANSMIT
-    double precision RAD(NSTOKES), RAD0(NSTOKES)
+    real(RD_) :: PI, CX, CY, CZ, CXINV, CYINV, CZINV
+    real(RD_) :: XE, YE, ZE
+    real(RD_) :: SO, SOX, SOY, SOZ, EPS, path
+    real(RD_) :: U, V, F1, F2, F3, F4
+    real(RD_) :: EXT, EXT0, EXT1
+    real(RD_) :: SRC(NSTOKES), SRCEXT0(NSTOKES), SRCEXT1(NSTOKES)
+    real(RD_) :: EXT0P, SRCEXT0P(NSTOKES)
+    real(RD_) :: TAU, TRANSCELL, ABSCELL, TRANSMIT
+    real(RD_) :: RAD(NSTOKES), RAD0(NSTOKES)
     data GRIDFACE/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8,&
         &1, 2, 3, 4, 5, 6, 7, 8/, OPPFACE/2, 1, 4, 3, 6, 5/
     data JOCTORDER3/1, 3, 5, 7, 2, 4, 6, 8/, JOCTORDER2/1, 3, 1, 3, 2, 4, 2, 4/
@@ -695,13 +695,13 @@ subroutine shd_intg__backIntegrate3D_(&
     integer GRIDFACE(4, 6), OPPFACE(6)
     integer IORDER, ICORNER, JOCTORDER3(8), JOCTORDER2(8)
     logical VALIDRAD, VALIDFACE, IPINX, IPINY, BTEST
-    double precision PI, CX, CY, CZ, CXINV, CYINV, CZINV
-    double precision XE, YE, ZE
-    double precision SO, SOX, SOY, SOZ, EPS, path
-    double precision U, V, F1, F2, F3, F4
-    double precision EXT, EXT0, EXT1, SRC, SRCEXT0, SRCEXT1
-    double precision EXT0P, SRCEXT0P
-    double precision TAU, TRANSCELL, ABSCELL, RAD, RAD0, TRANSMIT
+    real(RD_) :: PI, CX, CY, CZ, CXINV, CYINV, CZINV
+    real(RD_) :: XE, YE, ZE
+    real(RD_) :: SO, SOX, SOY, SOZ, EPS, path
+    real(RD_) :: U, V, F1, F2, F3, F4
+    real(RD_) :: EXT, EXT0, EXT1, SRC, SRCEXT0, SRCEXT1
+    real(RD_) :: EXT0P, SRCEXT0P
+    real(RD_) :: TAU, TRANSCELL, ABSCELL, RAD, RAD0, TRANSMIT
     data GRIDFACE/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8,&
         &1, 2, 3, 4, 5, 6, 7, 8/, OPPFACE/2, 1, 4, 3, 6, 5/
     data JOCTORDER3/1, 3, 5, 7, 2, 4, 6, 8/, JOCTORDER2/1, 3, 1, 3, 2, 4, 2, 4/
@@ -1061,15 +1061,15 @@ subroutine shd_intg__backIntegrate2D(&
     integer GRIDFACE(2, 6), OPPFACE(6)
     integer IORDER, ICORNER, JOCTORDER(8)
     logical VALIDRAD, VALIDFACE, IPINX, BTEST
-    double precision PI, CX, CZ, CXINV, CZINV
-    double precision XE, YE, ZE
-    double precision SO, SOX, SOZ, EPS
-    double precision U, F1, F2
-    double precision EXT, EXT0, EXT1
-    double precision SRC(NSTOKES), SRCEXT0(NSTOKES), SRCEXT1(NSTOKES)
-    double precision EXT0P, SRCEXT0P(NSTOKES)
-    double precision TAU, TRANSCELL, ABSCELL, TRANSMIT
-    double precision RAD(NSTOKES), RAD0(NSTOKES)
+    real(RD_) :: PI, CX, CZ, CXINV, CZINV
+    real(RD_) :: XE, YE, ZE
+    real(RD_) :: SO, SOX, SOZ, EPS
+    real(RD_) :: U, F1, F2
+    real(RD_) :: EXT, EXT0, EXT1
+    real(RD_) :: SRC(NSTOKES), SRCEXT0(NSTOKES), SRCEXT1(NSTOKES)
+    real(RD_) :: EXT0P, SRCEXT0P(NSTOKES)
+    real(RD_) :: TAU, TRANSCELL, ABSCELL, TRANSMIT
+    real(RD_) :: RAD(NSTOKES), RAD0(NSTOKES)
     data GRIDFACE/1, 5, 2, 6, 0, 0, 0, 0, 1, 2, 5, 6/
     data OPPFACE/2, 1, 4, 3, 6, 5/
     data JOCTORDER/1, 3, 1, 3, 2, 4, 2, 4/
@@ -1313,14 +1313,14 @@ subroutine shd_intg__backIntegrate1D(&
     integer GRIDFACE(6)
     integer IORDER, ICORNER, JOCTORDER(8)
     logical VALIDRAD
-    double precision PI, CZ, CZINV
-    double precision XE, YE, ZE
-    double precision SO, EPS
-    double precision EXT, EXT0, EXT1
-    double precision SRC(NSTOKES), SRCEXT0(NSTOKES), SRCEXT1(NSTOKES)
-    double precision EXT0P, SRCEXT0P(NSTOKES)
-    double precision TAU, TRANSCELL, ABSCELL, TRANSMIT
-    double precision RAD(NSTOKES), RAD0(NSTOKES)
+    real(RD_) :: PI, CZ, CZINV
+    real(RD_) :: XE, YE, ZE
+    real(RD_) :: SO, EPS
+    real(RD_) :: EXT, EXT0, EXT1
+    real(RD_) :: SRC(NSTOKES), SRCEXT0(NSTOKES), SRCEXT1(NSTOKES)
+    real(RD_) :: EXT0P, SRCEXT0P(NSTOKES)
+    real(RD_) :: TAU, TRANSCELL, ABSCELL, TRANSMIT
+    real(RD_) :: RAD(NSTOKES), RAD0(NSTOKES)
     data GRIDFACE/0, 0, 0, 0, 1, 5/
     data JOCTORDER/1, 1, 1, 1, 2, 2, 2, 2/
 

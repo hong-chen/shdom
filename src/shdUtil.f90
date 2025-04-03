@@ -10,12 +10,13 @@ module shd_util
     public :: shd_util__computeGausQuadDble
 
     public :: shd_util__computePlanck
-    private :: shd_util__integratePlanck
-    private :: integralLow
-    private :: integralHigh
 
     public :: shd_util__ssort_i
     public :: shd_util__ssort_r
+
+    private :: shd_util__integratePlanck
+    private :: integralLow
+    private :: integralHigh
 
 contains
 
@@ -29,11 +30,11 @@ subroutine shd_util__interpTriLin(&
     ! scalar field), ID1 is the first element of the vector to interpolate,
     ! and NV elements are output.
 
-    integer ICELL, GRIDPTR(8, *), ND, ID1, NV
-    double precision X, Y, Z
-    real GRIDPOS(3, *), FIELD(ND, *), VALUES(NV)
-    integer IPT1, IPT2, ID
-    double precision U, V, W, UM, VM, WM, DELX, DELY, DELZ
+    integer, intent(in) :: ICELL, GRIDPTR(8, *), ND, ID1, NV
+    real(RD_), intent(in) :: X, Y, Z
+    real(R_) :: GRIDPOS(3, *), FIELD(ND, *), VALUES(NV)
+    integer  :: IPT1, IPT2, ID
+    real(RD_) :: U, V, W, UM, VM, WM, DELX, DELY, DELZ
 
     IPT1 = GRIDPTR(1, ICELL)
     IPT2 = GRIDPTR(8, ICELL)
@@ -74,10 +75,10 @@ subroutine shd_util__computeTriDiag(&
     ! on output it is the solution vector. Everything is destroyed.
     ! Hacked from Linpack DGTSL.
 
-    integer N
-    double precision LOWER(*), DIAG(*), UPPER(*), RHS(*)
+    integer, intent(in) :: N
+    real(RD_) :: LOWER(*), DIAG(*), UPPER(*), RHS(*)
     integer K, KB
-    double precision T
+    real(RD_) :: T
 
     if (N .eq. 1) then
         if (DIAG(1) .eq. 0.0) goto 990
@@ -141,8 +142,8 @@ subroutine shd_util__computeGausQuad(N, XA, WT)
     integer, intent(in) :: N
     real, intent(inout) :: XA(*), WT(*)
     integer :: K, I, J, L
-    double precision :: X, XP, PL, PL1, PL2, DPL, TINY
-    parameter(TINY=3.0d-7)
+    real(RD_) :: X, XP, PL, PL1, PL2, DPL
+    real(RD_), parameter :: TINY=3.0d-7
 
     K = N/2
     if (2*K .ne. N) stop 'Error [_computeGausQuad]: N must be even.'
@@ -185,8 +186,8 @@ subroutine shd_util__computeGausQuadDble(N, XA, WT)
     real, intent(inout) :: XA(*), WT(*)
 
     integer :: K, I, J, L, N2
-    double precision :: X, XP, PL, PL1, PL2, DPL, TINY
-    parameter(TINY=3.0d-7)
+    real(RD_) :: X, XP, PL, PL1, PL2, DPL
+    real(RD_), parameter :: TINY=3.0d-7
 
     N2 = N/2
     if (2*N2 .ne. N) stop 'Error [_computeGausQuadDble]: N must be even.'
@@ -234,7 +235,7 @@ subroutine shd_util__computePlanck(TEMP, UNITS, WAVENO, WAVELEN, PLANCK)
 
     real TEMP, WAVENO(2), WAVELEN, PLANCK
     character(len=1) :: UNITS
-    double precision X1, X2, F
+    real(RD_) :: X1, X2, F
 
     if (UNITS .eq. 'T') then
         PLANCK = TEMP
@@ -264,8 +265,8 @@ subroutine shd_util__integratePlanck(X1, X2, F)
     ! Accurate to better than 1 part in 10**9 for integral from
     ! 0 to infinity (pi**4/15).
 
-    double precision X1, X2, F
-    double precision C
+    real(RD_) :: X1, X2, F
+    real(RD_) :: C
 
     C = 1.0d0
     if (X1 .lt. C .and. X2 .lt. C) then
@@ -280,15 +281,15 @@ subroutine shd_util__integratePlanck(X1, X2, F)
     return
 end subroutine shd_util__integratePlanck
 
-double precision function integralLow(X)
+real(RD_) function integralLow(X)
 
     ! Integral of x**3/(exp(x)-1) from 0 to x.
     ! Accurate for x less than about 1.
     ! Uses Taylor series expansion around x=0.
 
-    double precision X
+    real(RD_) :: X
     integer N
-    double precision SUM, F, A(29)
+    real(RD_) :: SUM, F, A(29)
     data A/0.0d0,&
         &0.0d0, 0.333333333333333333333d0,&
         &-0.125d0, 0.016666666666666666667d0,&
@@ -318,14 +319,14 @@ double precision function integralLow(X)
 
 end function integralLow
 
-double precision function integralHigh(X)
+real(RD_) function integralHigh(X)
 
     ! Integral of x**3/(exp(x)-1) from x to infinity.
     ! Accurate for x greater than about 1.
 
-    double precision X
-    integer N
-    double precision SUM
+    real(RD_) :: X
+    integer :: N
+    real(RD_) :: SUM
 
     SUM = 0.0d0
     do N = 1, 15

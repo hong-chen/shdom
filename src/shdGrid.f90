@@ -44,11 +44,11 @@ subroutine shd_grid__findGridCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
     integer NX, NY, NZ, NCELLS, ICELL, BCFLAG, IPFLAG
     integer GRIDPTR(8, NCELLS), TREEPTR(2, NCELLS)
     integer*2 CELLFLAGS(NCELLS)
-    double precision X0, Y0, Z0
+    real(RD_) :: X0, Y0, Z0
     real XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ)
     real GRIDPOS(3, *)
     integer IL, IU, IM, IX, IY, IZ, NXC, NYC, IC, IPTR, DIR, IBITS
-    double precision XDOMAIN, YDOMAIN
+    real(RD_) :: XDOMAIN, YDOMAIN
 
     ! Move point to within horizontal domain if periodic
     if (.not. (btest(BCFLAG, 0) .or. btest(BCFLAG, 2))) then
@@ -549,7 +549,7 @@ subroutine shd_grid__getNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
     integer GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
     integer*2 CELLFLAGS(*)
     real GRIDPOS(3, *)
-    double precision XE, YE, ZE
+    real(RD_) :: XE, YE, ZE
     integer IC, IC1, DIR
 
     ! Get the pointer to the neighbor cell
@@ -821,7 +821,7 @@ subroutine shd_grid__testGridSmooth(GRIDPTR, GRIDPOS, NEIGHPTR,&
     integer ID, IFACE, IP, IP1, IP2, INeigh, I, J, ISUM, IBITS
     integer INCELL(2), DIRSPLIT(2)
     integer FACECORNER(4, 6), EDGECORNER(2, 3)
-    double precision XE, YE, ZE
+    real(RD_) :: XE, YE, ZE
     real RATIO, SIZERATIO, CURGRIDSIZE(3), GRIDSIZE(2), GRIDSIZEINV
     data FACECORNER/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8,&
         &1, 2, 3, 4, 5, 6, 7, 8/
@@ -1218,6 +1218,7 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT, NSTLEG, NLEG,&
     ! is that of the maximum weighted scattering property grid point.
     ! If INIT=.TRUE. then transfers the tabulated phase functions.
 
+    use globals
     use globals_prp
 
     implicit none
@@ -1228,9 +1229,9 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT, NSTLEG, NLEG,&
     real X, Y, Z, TEMP, EXTINCT, ALBEDO, LEGEN(NSTLEG, 0:NLEG, *)
     integer IX, IXP, IY, IYP, IZ, L, IL, IM, IU, J
     integer I1, I2, I3, I4, I5, I6, I7, I8, I
-    double precision U, V, W, F1, F2, F3, F4, F5, F6, F7, F8, F
-    double precision SCAT1, SCAT2, SCAT3, SCAT4, SCAT5, SCAT6, SCAT7, SCAT8
-    double precision SCATTER, MAXSCAT, KG, EXTMIN, SCATMIN
+    real(RD_) :: U, V, W, F1, F2, F3, F4, F5, F6, F7, F8, F
+    real(RD_) :: SCAT1, SCAT2, SCAT3, SCAT4, SCAT5, SCAT6, SCAT7, SCAT8
+    real(RD_) :: SCATTER, MAXSCAT, KG, EXTMIN, SCATMIN
     save EXTMIN, SCATMIN
 
     if (INIT) then
@@ -1422,6 +1423,7 @@ subroutine shd_grid__interpNewGridPnt(NEWPOINTS, NPTS,&
     ! from the two parent grid points, and used to compute the source
     ! function for the new points.
 
+    use globals
     use shd_util
 
     implicit none

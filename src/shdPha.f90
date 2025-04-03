@@ -32,9 +32,9 @@ subroutine shd_pha__computePhase(NSCATANGLE, NUMPHASE, NSTPHASE,&
     real LEGEN(NSTLEG, 0:NLEG, NUMPHASE)
     real PHASETAB(NSTPHASE, NUMPHASE, NSCATANGLE)
     integer IPH, I, J, L
-    double precision PI, OFOURPI, COSSCAT, FCT, F, X, A1, B1
-    double precision, allocatable :: UNSCLEGEN(:, :)
-    double precision, allocatable :: DMM1(:), DMM2(:)
+    real(RD_) :: PI, OFOURPI, COSSCAT, FCT, F, X, A1, B1
+    real(RD_), allocatable :: UNSCLEGEN(:, :)
+    real(RD_), allocatable :: DMM1(:), DMM2(:)
 
     allocate (UNSCLEGEN(2, 0:NLEG), DMM1(0:NLEG), DMM2(0:NLEG))
     PI = acos(-1.0d0)
@@ -105,9 +105,9 @@ subroutine shd_pha__computeLegendre(COSSCAT, NLEG, P)
     ! P, starting at l=0 and ending with l=NLEG  (NLEG+1 terms).
 
     integer, intent(in) :: NLEG
-    double precision COSSCAT, P(0:NLEG)
+    real(RD_) :: COSSCAT, P(0:NLEG)
     integer L
-    double precision X, PL, PL1, PL2
+    real(RD_) :: X, PL, PL1, PL2
 
     X = dble(COSSCAT)
     if (X*X .gt. 1.) stop 'Error [_computeLegendre]: <COSSCAT> is greater than 1.'
@@ -143,8 +143,8 @@ subroutine shd_pha__computeYLM(TRANSPOSED, MU, PHI, ML, MM, NSTLEG, YR)
     logical TRANSPOSED
     real YR(NSTLEG, *)
     integer J, M, MABS, L
-    double precision X, PI, FCT, P1, P2, P3, COSM, SINM, SIGN
-    double precision, allocatable :: DM0(:), DM2P(:), DM2M(:)
+    real(RD_) :: X, PI, FCT, P1, P2, P3, COSM, SINM, SIGN
+    real(RD_), allocatable :: DM0(:), DM2P(:), DM2M(:)
 
     if (NSTLEG .eq. 1) then
         call shd_pha__computeYLM_(MU, PHI, ML, MM, YR)
@@ -255,8 +255,8 @@ subroutine shd_pha__computeYLM_(MU, PHI, ML, MM, YR)
     real MU, PHI
     real YR(*)
     integer J, M, L
-    double precision X, PI, FCT, COSM, SINM
-    double precision, allocatable :: DM0(:)
+    real(RD_) :: X, PI, FCT, COSM, SINM
+    real(RD_), allocatable :: DM0(:)
 
     allocate (DM0(0:ML))
     X = dble(MU)
@@ -301,8 +301,8 @@ subroutine shd_pha__computePLM(TRANSPOSED, MU, ML, MM, PRC)
     real PRC(6, *)
     ! --- local variables ---
     integer J, M, MABS, L
-    double precision X, PI, FCT, P1, P2, P3, SIGN
-    double precision, allocatable :: DM0(:), DM2P(:),&
+    real(RD_) :: X, PI, FCT, P1, P2, P3, SIGN
+    real(RD_), allocatable :: DM0(:), DM2P(:),&
         &DM2M(:)
 
     ! --- allocate ---
@@ -407,10 +407,10 @@ subroutine shd_pha__computeWigner(X, NRANK, M, M1, DMM1)
     ! ----------------------------------------------------------------
 
     integer NRANK, M, M1
-    double precision X, DMM1(0:NRANK)
+    real(RD_) :: X, DMM1(0:NRANK)
 
     integer N0, N
-    double precision FACT1, FACT2
+    real(RD_) :: FACT1, FACT2
 
     N0 = max(M, M1)
     DMM1 = 0.d0
@@ -454,10 +454,10 @@ subroutine shd_pha__computeWignerDM0DM2PDM2M(&
     ! ----------------------------------------------------------------
 
     integer NRANK, M
-    double precision MIU
-    double precision DM0(0:NRANK), DM2P(0:NRANK), DM2M(0:NRANK)
+    real(RD_) :: MIU
+    real(RD_) :: DM0(0:NRANK), DM2P(0:NRANK), DM2M(0:NRANK)
     integer N0, N
-    double precision XP, XM, FACT1, FACT2, FACTP, FACTM
+    real(RD_) :: XP, XM, FACT1, FACT2, FACTP, FACTM
 
     !for M1 = 0 and M1 = 2
     XP = MIU
@@ -543,8 +543,8 @@ subroutine shd_pha__computeWignerDM0(X, NRANK, M, DM0)
     ! ----------------------------------------------------------------
 
     integer NRANK, M
-    double precision X
-    double precision DM0(0:NRANK)
+    real(RD_) :: X
+    real(RD_) :: DM0(0:NRANK)
     integer N
 
     ! DM0 for M1 = 0
@@ -579,10 +579,10 @@ function wignerDMM1N0(X, M, M1) result(DMM1N0)
     ! ---------------------------------------------------------------
 
     integer M, M1
-    double precision X, DMM1N0
+    real(RD_) :: X, DMM1N0
 
     integer P, MAXM, MINM
-    double precision PROD, FACT, CMM1
+    real(RD_) :: PROD, FACT, CMM1
 
     if (M .eq. M1) then
         FACT = ((1.d0 + X)/2.d0)**M
@@ -616,9 +616,9 @@ function wignerDMM0N0(X, M) result(DMM0N0)
     ! N0 = M
 
     integer M
-    double precision X, DMM0N0
+    real(RD_) :: X, DMM0N0
     integer P
-    double precision CM, PROD
+    real(RD_) :: CM, PROD
 
     if (M .eq. 0) then
         DMM0N0 = 1.d0

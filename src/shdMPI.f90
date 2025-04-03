@@ -18,7 +18,7 @@ module shd_mpi
 
     integer :: NUMPROC_, MYPROC_, IPROCNEIGH_(4), IXYPRP_(2, 2), IXYOUT_(2, 2)
     logical, parameter :: LOADBALANCE_ = .false.
-    double precision :: STARTTIME_
+    real(RD_) :: STARTTIME_
     integer, allocatable :: BXYPTR_(:, :, :), IBXYPTR_(:, :, :)
     real, allocatable :: BXYPOS_(:, :, :)
     type(MPI_Comm) :: COMM2D_
@@ -1799,14 +1799,14 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
     integer :: I1, I2, I3, I4, IOPP, IFACE, JFACE, KFACE, IC
     integer :: GRIDFACE(4, 6), OPPFACE(6)
     logical :: IPINX, IPINY
-    double precision PI, CX, CY, CZ, CXINV, CYINV, CZINV
-    double precision XE, YE, ZE
-    double precision SO, SOX, SOY, SOZ, EPS
-    double precision U, V, F1, F2, F3, F4
-    double precision EXT, EXT0, EXT1
-    double precision SRC(NSTOKES), SRCEXT0(NSTOKES), SRCEXT1(NSTOKES)
-    double precision EXT0P, SRCEXT0P(NSTOKES)
-    double precision TAU, TRANSCELL, ABSCELL, TRANS, RAD(NSTOKES), RAD0(NSTOKES)
+    real(RD_) :: PI, CX, CY, CZ, CXINV, CYINV, CZINV
+    real(RD_) :: XE, YE, ZE
+    real(RD_) :: SO, SOX, SOY, SOZ, EPS
+    real(RD_) :: U, V, F1, F2, F3, F4
+    real(RD_) :: EXT, EXT0, EXT1
+    real(RD_) :: SRC(NSTOKES), SRCEXT0(NSTOKES), SRCEXT1(NSTOKES)
+    real(RD_) :: EXT0P, SRCEXT0P(NSTOKES)
+    real(RD_) :: TAU, TRANSCELL, ABSCELL, TRANS, RAD(NSTOKES), RAD0(NSTOKES)
     data GRIDFACE/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8/
     data OPPFACE/2, 1, 4, 3, 6, 5/
 
@@ -2171,7 +2171,7 @@ subroutine shd_mpi__computeRad(&
     integer :: IBC, JX, JY, K
     integer :: NANGOUT, NXOUT, NYOUT
     logical :: LAMBERTIAN, VALIDRAD
-    double precision :: X0, Y0, Z0, XE, YE, ZE, X, Y, Z, TRANSMIT, RADIANCE(NSTOKES)
+    real(RD_) :: X0, Y0, Z0, XE, YE, ZE, X, Y, Z, TRANSMIT, RADIANCE(NSTOKES)
     real    :: MUOUT, PHIOUT, PHID
     real    :: STARTX, STARTY, EPS = 1.0e-5
 
@@ -2585,12 +2585,12 @@ subroutine shd_mpi__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     integer :: NL, NS, LINE, SAMP
     logical :: CAMERA_MODE, VALIDRAD
     real, parameter  :: EPS = 1.0e-5
-    double precision :: XE, YE, ZE, TRANSMIT, VISRAD(NSTOKES), RADIANCE(NSTOKES)
-    double precision :: X0, Y0, Z0, X1, Y1, Z1, X2, Y2, Z2, X, Y, Z
-    double precision :: THETA0, THETA1, PHIR, PHI0, COSSCAT, MU2, PHI2
-    double precision :: COSTH, SINTH, SINTH0, SINTH1
-    double precision :: U, V, UP, VP, COSDELPHI, PI, ROTANG, DEGRAD, R
-    double precision :: DIST, D, RX, RY, RZ, SCANANG
+    real(RD_) :: XE, YE, ZE, TRANSMIT, VISRAD(NSTOKES), RADIANCE(NSTOKES)
+    real(RD_) :: X0, Y0, Z0, X1, Y1, Z1, X2, Y2, Z2, X, Y, Z
+    real(RD_) :: THETA0, THETA1, PHIR, PHI0, COSSCAT, MU2, PHI2
+    real(RD_) :: COSTH, SINTH, SINTH0, SINTH1
+    real(RD_) :: U, V, UP, VP, COSDELPHI, PI, ROTANG, DEGRAD, R
+    real(RD_) :: DIST, D, RX, RY, RZ, SCANANG
     integer, parameter :: MAXSCATANG = 721
     real, allocatable :: YLMSUN(:, :), PHASETAB(:, :, :)
     real              :: MEAN, STD1, STD2

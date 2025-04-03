@@ -140,7 +140,7 @@ subroutine shd_io__outputResult(&
     real, allocatable :: FUP(:), FDN(:), FDIR(:)
     real, allocatable :: SUM1(:), SUM2(:), SUM3(:)
     real, allocatable :: SHTERM5(:)
-    double precision X0, Y0, Z0
+    real(RD_) :: X0, Y0, Z0
     character(len=128) :: FORM
     character(len=128) :: GRIDNAME, SOURCENAME, UNITSNAME, OUTNAME, SFCNAME
 
@@ -1213,7 +1213,7 @@ subroutine shd_io__outputResultMpi(&
     integer NANGOUT, NXOUT, NYOUT
     real MUOUT, PHID, C, PI, SUM
     real STARTX, STARTY
-    double precision X0, Y0, Z0
+    real(RD_) :: X0, Y0, Z0
     character(len=128) :: FORM
     character(len=64) :: GRIDNAME, SOURCENAME, UNITSNAME, OUTNAME, SFCNAME
 

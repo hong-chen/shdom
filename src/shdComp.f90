@@ -71,7 +71,7 @@ subroutine shd_comp__computeRad(&
     integer I, IBC, IANG, JX, JY, K, SIDE
     integer NANGOUT, NXOUT, NYOUT
     logical LAMBERTIAN, VALIDRAD
-    double precision X0, Y0, Z0, XE, YE, ZE, TRANSMIT, RADIANCE(4)
+    real(RD_) :: X0, Y0, Z0, XE, YE, ZE, TRANSMIT, RADIANCE(4)
     real MUOUT, PHIOUT, PHID
     real XDOMAIN, YDOMAIN, STARTX, STARTY
 
@@ -275,12 +275,12 @@ subroutine shd_comp__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     integer NL, NS, LINE, SAMP
     logical CAMERA_MODE, VALIDRAD
     real MURAY, PHIRAY
-    double precision XE, YE, ZE, TRANSMIT, VISRAD(NSTOKES)
-    double precision X0, Y0, Z0, X1, Y1, Z1, X2, Y2, Z2
-    double precision THETA0, THETA1, PHIR, PHI0
-    double precision COSTH, SINTH, SINTH0, SINTH1, MU2, PHI2
-    double precision U, V, UP, VP, COSDELPHI, PI, ROTANG, DEGRAD, R
-    double precision DIST, D, RX, RY, RZ, SCANANG
+    real(RD_) :: XE, YE, ZE, TRANSMIT, VISRAD(NSTOKES)
+    real(RD_) :: X0, Y0, Z0, X1, Y1, Z1, X2, Y2, Z2
+    real(RD_) :: THETA0, THETA1, PHIR, PHI0
+    real(RD_) :: COSTH, SINTH, SINTH0, SINTH1, MU2, PHI2
+    real(RD_) :: U, V, UP, VP, COSDELPHI, PI, ROTANG, DEGRAD, R
+    real(RD_) :: DIST, D, RX, RY, RZ, SCANANG
     integer MAXSCATANG
     parameter(MAXSCATANG=721)
     real, allocatable :: YLMSUN(:, :), PHASETAB(:, :, :)
@@ -538,8 +538,8 @@ subroutine shd_comp__integrateOneRay(&
     real DIRFLUX(NPTS), SOURCE(NSTOKES, *)
     real YLMSUN(NSTLEG, NLM)
     real PHASETAB(NSTPHASE, NUMPHASE, NSCATANGLE)
-    double precision MU2, PHI2, X0, Y0, Z0, XE, YE, ZE
-    double precision TRANSMIT, RADIANCE(NSTOKES)
+    real(RD_) :: MU2, PHI2, X0, Y0, Z0, XE, YE, ZE
+    real(RD_) :: TRANSMIT, RADIANCE(NSTOKES)
     character(len=1) :: SRCTYPE
     character(len=2) :: SFCTYPE
 
@@ -554,16 +554,16 @@ subroutine shd_comp__integrateOneRay(&
     real EXT0, EXT1, EXTN
     real SRCEXT0(NSTOKES), SRCEXT1(NSTOKES), RADBND(NSTOKES)
     real XM, YM, F
-    double precision PI, CX, CY, CZ, CXINV, CYINV, CZINV
-    double precision XN, YN, ZN, XI, YI, ZI
-    double precision SO, SOX, SOY, SOZ, EPS
-    double precision TAUTOL, TAUGRID, S, DELS, TRANSCUT
-    double precision EXT, TAU, TRANSCELL, ABSCELL
-    double precision SRC(NSTOKES)
-    double precision U, V, W, DELX, DELY, DELZ, INVDELX, INVDELY, INVDELZ
-    double precision COSSCAT
+    real(RD_) :: PI, CX, CY, CZ, CXINV, CYINV, CZINV
+    real(RD_) :: XN, YN, ZN, XI, YI, ZI
+    real(RD_) :: SO, SOX, SOY, SOZ, EPS
+    real(RD_) :: TAUTOL, TAUGRID, S, DELS, TRANSCUT
+    real(RD_) :: EXT, TAU, TRANSCELL, ABSCELL
+    real(RD_) :: SRC(NSTOKES)
+    real(RD_) :: U, V, W, DELX, DELY, DELZ, INVDELX, INVDELY, INVDELZ
+    real(RD_) :: COSSCAT
     real, allocatable :: YLMDIR(:, :), SINGSCAT(:, :)
-    double precision, allocatable :: SUNDIRLEG(:)
+    real(RD_), allocatable :: SUNDIRLEG(:)
 
     data OPPFACE/2, 1, 4, 3, 6, 5/
     data ONEY/0, 0, -1, -2, 0, 0, -5, -6/, ONEX/0, -1, 0, -3, 0, -5, 0, -7/
@@ -924,7 +924,7 @@ subroutine shd_comp__findBoundaryRad(&
     integer GRIDPTR(8, *), BCPTR(MAXNBC, 2)
     integer NMU, NPHI0MAX, NPHI0(NMU), NSFCPAR
     real MU2, PHI2, RADBND(NSTOKES)
-    double precision XB, YB
+    real(RD_) :: XB, YB
     real GRIDPOS(3, *)
     real WTDO(NMU, NPHI0MAX), MU(NMU), PHI(NMU, NPHI0MAX)
     real WAVELEN, SOLARMU, SOLARAZ, DIRFLUX(*)
@@ -1037,7 +1037,7 @@ subroutine shd_comp__computeSrcOneCell(&
     real SINGSCAT(NSTOKES, NUMPHASE)
     real OEXTINCT8(8), OSRCEXT8(NSTOKES, 8)
     real EXTINCT8(8), SRCEXT8(NSTOKES, 8)
-    double precision SUNDIRLEG(0:NLEG)
+    real(RD_) :: SUNDIRLEG(0:NLEG)
     character(len=1) :: SRCTYPE
 
     integer IP, J, JT, L, M, MS, ME, IPH, IS, NS, N, I
@@ -1166,7 +1166,7 @@ subroutine shd_comp__computeSrcOneCell_(&
     real SINGSCAT(NUMPHASE)
     real OEXTINCT8(8), OSRCEXT8(8)
     real EXTINCT8(8), SRCEXT8(8)
-    double precision SUNDIRLEG(0:NLEG)
+    real(RD_) :: SUNDIRLEG(0:NLEG)
     character(len=1) :: SRCTYPE
 
     integer IP, J, JT, L, M, MS, ME, IPH, IS, NS, N, I
@@ -1252,12 +1252,12 @@ subroutine shd_comp__rotatePolarPlane(NSTOKES, COSSCAT,&
     ! scattered Stokes vector in SINGSCAT.
 
     integer NSTOKES
-    double precision COSSCAT
+    real(RD_) :: COSSCAT
     real SOLARMU, MU, DELPHI
     real SCATVECT(NSTOKES)
     real B1
-    double precision SIN_SCAT, SIN_THETA1, SIN_THETA2
-    double precision SINPHI, COSPHI, SIN2, COS2, SIN22, COS22
+    real(RD_) :: SIN_SCAT, SIN_THETA1, SIN_THETA2
+    real(RD_) :: SINPHI, COSPHI, SIN2, COS2, SIN22, COS22
 
     if (NSTOKES .gt. 1) then
         B1 = SCATVECT(2)
@@ -1443,6 +1443,7 @@ subroutine shd_comp__computeDirect(&
     !   and path is the optical path from XI,YI,ZI to the sun.
     !╰──────────────────────────────────────────────────────────────╯!
 
+    use globals
     use globals_prp
 
     implicit none
@@ -1456,20 +1457,20 @@ subroutine shd_comp__computeDirect(&
     integer I, J, K, L, IPH, IP, JP, I1, I2, I3, I4
     integer IPDIRECT, DI, DJ, DK
     logical CONSTX, CONSTY, HITBOUNDARY
-    double precision EXTINCT, ALBEDO, F
-    double precision SUNMU, SUNAZ, PATH
-    double precision EXTBEAMCUT, UNIFORMZLEV
-    double precision CX, CY, CZ, CXINV, CYINV, CZINV
-    double precision EPSS, EPSZ, XDOMAIN, YDOMAIN
-    double precision XOFFS, YOFFS, DELXD, DELYD
-    double precision X, Y, Z, XE, YE, ZE, XP, YP, ZP
-    double precision X0, X1, Y0, Y1, Z0, Z1, SO, SOX, SOY, SOZ
-    double precision U0, V0, W0, U1, V1, W1, AX, AY, AZ
-    double precision U0M, V0M, W0M, U1M, V1M, W1M, DU, DV, DW
-    double precision E1, E2, E3, E4, E5, E6, E7, E8, A, B, C, D
-    double precision B1, B2, B3, B4, B5, B6, B7, B8, C1, C2, C3, C4, C5, C6, C7, C8
-    double precision UV, UMV, UVM, UMVM, UW, UMW, UWM, UMWM, VW, VMW, VWM, VMWM
-    double precision VWU, VWUM, UWV, UWVM, UVW, UVWM
+    real(RD_) :: EXTINCT, ALBEDO, F
+    real(RD_) :: SUNMU, SUNAZ, PATH
+    real(RD_) :: EXTBEAMCUT, UNIFORMZLEV
+    real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV
+    real(RD_) :: EPSS, EPSZ, XDOMAIN, YDOMAIN
+    real(RD_) :: XOFFS, YOFFS, DELXD, DELYD
+    real(RD_) :: X, Y, Z, XE, YE, ZE, XP, YP, ZP
+    real(RD_) :: X0, X1, Y0, Y1, Z0, Z1, SO, SOX, SOY, SOZ
+    real(RD_) :: U0, V0, W0, U1, V1, W1, AX, AY, AZ
+    real(RD_) :: U0M, V0M, W0M, U1M, V1M, W1M, DU, DV, DW
+    real(RD_) :: E1, E2, E3, E4, E5, E6, E7, E8, A, B, C, D
+    real(RD_) :: B1, B2, B3, B4, B5, B6, B7, B8, C1, C2, C3, C4, C5, C6, C7, C8
+    real(RD_) :: UV, UMV, UVM, UMVM, UW, UMW, UWM, UMWM, VW, VMW, VWM, VMWM
+    real(RD_) :: VWU, VWUM, UWV, UWVM, UVW, UVWM
     real, save, allocatable :: GASEXT(:), EXTMIN(:), EXTMAX(:)
 
     save CX, CY, CZ, CXINV, CYINV, CZINV, DI, DJ, DK, IPDIRECT
