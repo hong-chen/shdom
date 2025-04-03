@@ -3,20 +3,20 @@
 #
 set(SHDOM_LIB_SRCS
     globals.f90
-    shdInit.f90
-    shdPha.f90
-    shdSHDO.f90
-    shdSrc.f90
-    shdDir.f90
     shdUtil.f90
-    shdComp.f90
+    shdSfc.f90
+    shdPha.f90
     shdGrid_ind.f90
     shdGrid_cal.f90
-    shdSolv_rte.f90
+    shdInit.f90
+    shdDir.f90
+    shdSrc.f90
+    shdSHDO.f90
+    shdComp.f90
     shdSolv_int.f90
+    shdSolv_rte.f90
     shdIO_inp.f90
     shdIO_out.f90
-    shdSfc.f90
     fftpack.f90)
 
 # dummy option

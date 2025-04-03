@@ -1,5 +1,7 @@
 module shd_dir
 
+    use globals
+
     implicit none
 
     public :: shd_dir__makeDirect

@@ -1,10 +1,10 @@
 module shd_comp
 
     use globals
-    use shd_util
-    use shd_init
     use shd_pha
+    use shd_util
     use shd_src
+    use shd_init
 
     implicit none
     private

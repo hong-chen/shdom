@@ -1,8 +1,9 @@
 module shd_src
 
-    use shd_grid_ind
-    use shd_util
+    use globals
     use shd_pha
+    use shd_util
+    use shd_grid_ind
 
     implicit none
 

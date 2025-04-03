@@ -1,10 +1,11 @@
 module shd_grid_cal
 
+    use globals
     use shd_util
-    use shd_grid_ind
-    use shd_ext_mpi
     use shd_src
     use shd_dir
+    use shd_grid_ind
+    use shd_ext_mpi
 
     implicit none
 

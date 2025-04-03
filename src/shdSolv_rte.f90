@@ -7,8 +7,8 @@ module shd_solv_rte
     use shd_sfc
     use shd_shdo
     use shd_ext_mpi
-    use shd_grid_cal
 
+    use shd_grid_cal
     use shd_solv_int
 
     implicit none
