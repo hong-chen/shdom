@@ -1131,8 +1131,8 @@ RUNNING SHDOM WITH MULTIPLE PROCESSORS
 SHDOM may be run on multiple processors, either in a shared memory
 system (e.g. SMP) or in a distributed memory system (e.g. a cluster),
 using the Message Passing Interface (MPI) version 1.  All of the SHDOM
-code that calls MPI routines is in the ``shdom_mpi.f90`` file.  A set of
-equivalent (mostly) dummy routines is provided in ``shdom_nompi.f90``, which
+code that calls MPI routines is in the ``shdMPI.f90`` file.  A set of
+equivalent (mostly) dummy routines is provided in ``shdMPI_.f90``, which
 allows SHDOM to be compiled without an MPI libarary.  Using the parallel
 processing aspects of SHDOM requires that the MPI system be installed on
 the target computer.  Then the usual way to compile and run a program
@@ -1140,7 +1140,7 @@ with MPI is:
 
 .. code-block:: bash
 
-   mpif90 -O2 -o shdom  shdom.f90 shdom_mpi.f90 shdom_nonetcdf.f90 \
+   mpif90 -O2 -o shdom  shdom.f90 shdMPI.f90 shdom_nonetcdf.f90 \
              shdSolv.f90 shdComp.f90 shdIO_inp.f90 shdIO_out.f90 fftpack.f90
 
    mpirun -np 4  shdom shdom.inp
@@ -1207,7 +1207,7 @@ points) are output for F, H, S output files; flux (F) format 2 (i.e.
 hemispheric fluxes interpolated to a user defined grid on one Z plane)
 is not allowed; and source function (J) and medium (M) outputs are not
 supported.  The output file formats do not change when using multiple
-processors.  The NPTS, NCELLS, and NSH parameters in the file headers
+processors.  The ``NPTS``, ``NCELLS``, and ``NSH`` parameters in the file headers
 are the sum of the number of grid points, grid cells, and spherical
 harmonic terms over all the processor subdomains.
 
@@ -1272,14 +1272,14 @@ This could occur, for example, if there is high cloud fraction on one
 side of the full domain, and low cloud fraction on the other side.
 SHDOM has the ability to perform processor load balancing.  Normally,
 this feature is turned off, but may be used by setting the logical
-parameter "LoadBalance=.TRUE." at the beginning of ``shdom_mpi.f90``.  The
+parameter "LoadBalance=.TRUE." at the beginning of ``shdMPI.f90``.  The
 load balancing procedure requires that a previous SHDOM run be made with
 the same property file, so that the total number of grid points can be
 estimated.  This prior run can be done at lower angular resolution
 (NMU/NPHI) and only needs to iterate until the cell splitting is
 finished (at SOLACC=1.0E-3).  If the load balancing is turned on, the
 master process of MPI-enabled SHDOM writes a file (in subroutine
-END_SHDOM_MPI), RUNNAME//"_load_balance.out", with the number of grid
+``shd_mpi__end``), RUNNAME//"_load_balance.out", with the number of grid
 points in a column around each property grid point.  To implement load
 balancing the user must copy the appropriate
 RUNNAME//"_load_balance.out" file to the input file
@@ -1361,7 +1361,7 @@ time may be somewhat longer, and the memory use (RADIANCE array) can be
 much larger.
 
 Multiple processor load balancing: Change ``LoadBalance=.TRUE.`` at the
-beginning of ``shdom_mpi.f90`` (see the last paragraph of the multiple
+beginning of ``shdMPI.f90`` (see the last paragraph of the multiple
 processing section).
 
 k-distribution initialization: at top of main program (``shdom.f90``);
@@ -1810,17 +1810,17 @@ LIST OF ROUTINES
 The following is a list of all the subroutines, where they are, and
 what they do.  The first column gives the file (0 is ``shdom.f90``,
 1 is ``shdSolv.f90``, 2 is ``shdComp.f90``, 3 is ``shdIO_inp.f90`` and ``shdIO_out.f90``,
-M is ``shdom_mpi.f90``, F is ``fftpack.f90``).  The second column indicates
+M is ``shdMPI.f90``, F is ``fftpack.f90``).  The second column indicates
 the calling routine.
 The major solving routines are in ``shdSolv.f90``, other routines are in
 ``shdComp.f90``, all the regular I/O routines are in ``shdIO_inp.f90`` and ``shdIO_out.f90``,
-the MPI calling routines are in ``shdom_mpi.f90``, and ``fftpack.f90`` has the FFTPACK
+the MPI calling routines are in ``shdMPI.f90``, and ``fftpack.f90`` has the FFTPACK
 routines from NCAR.
 
 .. code-block::
 
          Routine              Description
-   0   TRILIN_INTERP_PROP   Interpolates medium properties to base/adaptive grid
+   0   shd_grid__InterpTriLinGridPrp Interpolates medium properties to base/adaptive grid
 
    0   DIRECT_BEAM_PROP     Computes direct beam flux at a point
 
@@ -1928,69 +1928,71 @@ routines from NCAR.
 
    2   LSRT_REFLECTION      Function for RossThick-LiSparse reflection
 
-   2 0 SUM_OUTPUT           Sums an output array over the k-distribution.
+   2 0 shd_comp__sumOutput: Sums an output array over the k-distribution.
 
-   2 0 COMPUTE_NETFLUXDIV   Computes the net flux divergence everywhere
+   2 0 shd_comp__computeNetFluxDiv: Computes the net flux divergence everywhere
 
    2 0 COMPUTE_SH           Computes the SH output arrays
 
-   2 0 INTERP_OUTPUT        Interpolates the output data to the new grid points
+   2 0 shd_comp__interpOutput: Interpolates the output data to the new grid points
 
    2 S INTERP_RADIANCE      Interpolates SH radiance array to the new points
 
    2 0 VISUALIZE_RADIANCE   Computes radiances for the two visualization modes
 
-   2   INTEGRATE_1RAY       Integrates the source function for one ray
+   2   shd_src__integrateSrcOneRay: Integrates the source function for one ray
 
-   2   FIND_BOUNDARY_RADIANCE Gets the interpolated radiance at the boundary
+   2   shd_src__findBoundaryRad: Gets the interpolated radiance at the boundary
 
-   2   COMPUTE_SOURCE_1CELL Computes source times extinction for one cell
+   2   shd_src__computeSrcOneCell: Computes source times extinction for one cell
 
-   2   COMPUTE_SOURCE_1CELL_UNPOL   COMPUTE_SOURCE_1CELL for NSTOKES=1
+   2   shd_src__computeSrcOneCell_: COMPUTE_SOURCE_1CELL for NSTOKES=1
 
-   2   PRECOMPUTE_PHASE     Precomputes phase function for all tabulated functions
+   2   shd_pha__computePhase: Precomputes phase function for all tabulated functions
 
-   2   ROTATE_POL_PLANE     Rotates the plane of polarization for single scattered Stokes vector
+   2   shd_src__rotatePolarPlane: Rotates the plane of polarization for single scattered Stokes vector
 
-   2 0 COMPUTE_RADIANCE (R) Computes the desired output radiance values
+   2 0 shd_comp__computeRad: (R) Computes the desired output radiance values
 
-   2 R COMPUTE_ONE_SOURCE   Computes the source function for 1 angle
+   2 R shd_src__computeSrcOneDir: Computes the source function for 1 angle
 
-   2   SOLAR_SINGSCAT_VECT  Compute Stokes vector for a single scattering of sunlight
+   2   shd_src__computeSolarStokesVect: Compute Stokes vector for a single scattering of sunlight
 
-   2 R INTEGRATE_SOURCE     Integrates the source function backward for radiance
+   2 R shd_src__integrateSrc: Integrates the source function backward for radiance
 
-   2   INTERPOLATE_FIELD    Trilinearly interpolates field given a grid cell
+   2   shd_util__interpTriLin: Trilinearly interpolates field given a grid cell
 
-   2   LOCATE_GRID_CELL     Locates grid cell containing the specified point
+   2   shd_grid__findGridCell: Locates grid cell containing the specified point
 
-   2   LEGENDRE_ALL         Computes a set of Legendre polynomials for one angle
+   2   shd_pha__computeLegendre: Computes a set of Legendre polynomials for one angle
 
-   2 S YLMALL               Computes a set of real generalized spherical harmonic functions
+   2 S shd_pha__computeYLM: Computes a set of real generalized spherical harmonic functions
 
-   2 S YLMALL_UNPOL         YLMALL for NSTOKES=1
+   2 S shd_pha__computeYLM_: YLMALL for NSTOKES=1
 
-   2   WIGNERFCT02P2M_NORMALIZED  Computes some Wigner d-functions
+   2   shd_pha__computeWignerDM0DM2PDM2M: Computes some Wigner d-functions
 
-   2   DMM1_N0              Computes other Wigner d-functions
+   2   wignerDMM1N0: Computes other Wigner d-functions
 
-   2   WIGNERFCT_DM0        Computes more Wigner d-functions
+   2   shd_pha__computeWignerDM0: Computes more Wigner d-functions
 
-   2   DM_M10_N0            Computes more Wigner d-functions
+   2   wignerDMM0N0: Computes more Wigner d-functions
 
-   2   WIGNERFCT            Computes more Wigner d-functions
+   2   shd_pha__computeWigner: Computes more Wigner d-functions
 
-   2   PLMALL               Computes more Wigner d-functions
+   2   shd_pha__computePLM: Computes more Wigner d-functions
 
-   2   PLANCK_FUNCTION      Monochromatic Planck function routine
+   2   shd_util__computePlanck: Monochromatic Planck function routine
 
-   2   INTEGRATE_PLANCK     Band integrates the Planck function
+   2   shd_util__integratePlanck: Band integrates the Planck function
 
-   2   GAUSQUADS            Gaussian quadrature routine
+   2   shd_util__computeGausQuad: Gaussian quadrature routine
 
-   2   DGAUSQUADS           Double Gaussian quadrature routine
+   2   shd_util__computeGausQuadDble: Double Gaussian quadrature routine
 
-   2   SSORT                Sorting routine for adaptive cell criterion
+   2   shd_util__ssort_i: Sorting routine for adaptive cell criterion (integer input of Y)
+
+   2   shd_util__ssort_r: Sorting routine for adaptive cell criterion (real input of Y)
 
    3 0 shd_io__userInput: Gets the input parameters from stdin
 

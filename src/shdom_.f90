@@ -677,7 +677,7 @@ program shdom_main
                 if (OUTTYPES(I) .eq. 'J') then
                     MUOUT = OUTPARMS(2, I)
                     PHIOUT = OUTPARMS(3, I)*acos(-1.0)/180.0
-                    call shd_src__computeOneSrc(NSTOKES, ML, MM, NLM,&
+                    call shd_src__computeSrcOneDir(NSTOKES, ML, MM, NLM,&
                         &NSTLEG, NLEG, NUMPHASE_,&
                         &NPTS, DELTAM, MUOUT, PHIOUT,&
                         &SRCTYPE, SOLARMU, SOLARAZ, ALBEDO, LEGEN, IPHASE,&

@@ -2278,7 +2278,7 @@ subroutine shd_mpi__computeRad(&
         else
 
             ! Compute the source function throughout grid for this angle
-            call shd_src__computeOneSrc(NSTOKES, ML, MM, NLM, NSTLEG,&
+            call shd_src__computeSrcOneDir(NSTOKES, ML, MM, NLM, NSTLEG,&
                 &NLEG, NUMPHASE, NPTS, DELTAM, MUOUT, PHIOUT,&
                 &SRCTYPE, SOLARMU, SOLARAZ, ALBEDO, LEGEN, IPHASE,&
                 &DIRFLUX, SHPTR, SOURCE, SOURCE1)
@@ -2789,7 +2789,7 @@ subroutine shd_mpi__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 ! Integrate the extinction and source function along this ray
                 ! to calculate the Stokes radiance vector for this pixel
                 TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
-                call shd_comp__integrateOneRay(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
+                call shd_src__integrateSrcOneRay(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
                     &NSTPHASE, NSCATANGLE, PHASETAB,&
                     &NX, NY, NZ, NPTS, NCELLS,&
                     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
@@ -2876,7 +2876,7 @@ subroutine shd_mpi__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 PHI2 = BndRecvRadRealInfo(5, J, IBND)
                 TRANSMIT = BndRecvRadRealInfo(6, J, IBND)
                 RADIANCE(:) = BndRecvRadRealInfo(7:6 + NSTOKES, J, IBND)
-                call shd_comp__integrateOneRay(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
+                call shd_src__integrateSrcOneRay(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
                     &NSTPHASE, NSCATANGLE, PHASETAB,&
                     &NX, NY, NZ, NPTS, NCELLS,&
                     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&

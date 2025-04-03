@@ -1554,12 +1554,12 @@ subroutine shd_grid__interpNewGridPnt(NEWPOINTS, NPTS,&
                 IPH = IP
             end if
             if (NSTOKES .eq. 1) then
-                call shd_src__computeSrcPnt_(NLM, NLEG, LOFJ,&
+                call shd_src__computeSrcOnePnt_(NLM, NLEG, LOFJ,&
                     &SRCTYPE, DIRFLUX(IP)*SECMU0, YLMSUN,&
                     &PLANCK(IP), ALBEDO(IP), IPH, LEGEN,&
                     &NR, RADIANCE(1, IR + 1), SOURCET)
             else
-                call shd_src__computeSrcPnt(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
+                call shd_src__computeSrcOnePnt(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
                     &SRCTYPE, DIRFLUX(IP)*SECMU0, YLMSUN,&
                     &PLANCK(IP), ALBEDO(IP), IPH, LEGEN,&
                     &NR, RADIANCE(1, IR + 1), SOURCET)
