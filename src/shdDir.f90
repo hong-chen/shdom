@@ -75,7 +75,7 @@ subroutine shd_dir__computeDirect(&
     !   and path is the optical path from XI,YI,ZI to the sun.
     !╰──────────────────────────────────────────────────────────────╯!
 
-    use globals_shdom
+    use globals_prp
 
     integer INIT, BCFLAG, IPFLAG, ML, NSTLEG, NLEG, SIDE
     logical DELTAM, VALIDBEAM

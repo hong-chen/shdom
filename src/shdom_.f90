@@ -4,7 +4,7 @@
 program shdom_main
 
     use globals
-    use globals_shdom
+    use globals_prp
 
     use shd_init
     use shd_dir

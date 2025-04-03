@@ -121,7 +121,7 @@ contains
 end module globals
 
 
-module globals_shdom
+module globals_prp
 
     integer, save :: NPX_, NPY_, NPZ_, NUMPHASE_
     real, save    :: DELX_, DELY_, XSTART_, YSTART_
@@ -133,4 +133,4 @@ module globals_shdom
     integer, save :: NZCKD_
     real, save, allocatable :: ZCKD_(:), GASABS_(:)
 
-end module globals_shdom
+end module globals_prp

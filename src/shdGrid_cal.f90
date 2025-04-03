@@ -56,7 +56,7 @@ subroutine shd_grid__triInterpProp(X, Y, Z, INIT, NSTLEG, NLEG,&
     ! is that of the maximum weighted scattering property grid point.
     ! If INIT=.TRUE. then transfers the tabulated phase functions.
 
-    use globals_shdom
+    use globals_prp
 
     integer NSTLEG, NLEG
     integer*2 IPHASE

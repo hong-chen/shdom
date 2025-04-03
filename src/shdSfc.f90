@@ -7,7 +7,6 @@ module shd_sfc
     private
 
     public :: shd_sfc__interpSfc
-
     public :: shd_sfc__brdfSurface
 
     public :: shd_sfc__brdfFresnel
@@ -15,6 +14,13 @@ module shd_sfc
     public :: shd_sfc__brdfRPV
     public :: shd_sfc__brdfLSRT
     public :: shd_sfc__brdfOcean
+
+    private :: morcasiwat
+    private :: indwat
+    private :: sunglint
+    private :: Fresnel
+    private :: glitalbe
+    private :: getbound
 
 contains
 
