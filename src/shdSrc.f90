@@ -4,7 +4,6 @@ module shd_src
     use shd_pha
     use shd_util
     use shd_init
-    use shd_grid
 
     implicit none
 
@@ -16,12 +15,8 @@ module shd_src
     public :: shd_src__integrateSrcOneRay
     public :: shd_src__integrateSrc
 
-    ! the following two subroutines are placed outside module
-    ! for general access
-    !╭────────────────────────────────────────────────╮!
-    !public :: shd_src__computeSrcOnePnt
-    !public :: shd_src__computeSrcOnePnt_
-    !╰────────────────────────────────────────────────╯!
+    public :: shd_src__computeSrcOnePnt
+    public :: shd_src__computeSrcOnePnt_
 
     public :: shd_src__interpRad
 
@@ -836,7 +831,7 @@ subroutine shd_src__integrateSrcOneRay(&
     YE = Y0
     ZE = Z0
     ! ZE = MAX(MIN(Z0,DBLE(ZGRID(NZ))),DBLE(ZGRID(1)))
-    call shd_grid__findGridCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
+    call shd_util__findCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
         &NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS,&
         &BCFLAG, IPFLAG, XE, YE, ZE, ICELL)
     ! print '(A,5(1X,F8.5),1X,I6)',&
@@ -1021,7 +1016,7 @@ subroutine shd_src__integrateSrcOneRay(&
         ! Get the next cell to go to
         INEXTCELL = NEIGHPTR(IFACE, ICELL)
         if (INEXTCELL .lt. 0) then
-            call shd_grid__getNextCell(XN, YN, ZN, IFACE, JFACE, ICELL, GRIDPOS,&
+            call shd_util__findNextCell(XN, YN, ZN, IFACE, JFACE, ICELL, GRIDPOS,&
                 &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXTCELL)
         end if
         ! If going to same or larger face then use previous face
@@ -1173,7 +1168,7 @@ subroutine shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
     XE = X0
     YE = Y0
     ZE = Z0
-    call shd_grid__findGridCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
+    call shd_util__findCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
         &NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS,&
         &BCFLAG, IPFLAG, XE, YE, ZE, ICELL)
     ! print '(A,5(1X,F8.5),1X,I6)', &
@@ -1304,7 +1299,7 @@ subroutine shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
         ! Get the next cell to go to
         INEXTCELL = NEIGHPTR(IFACE, ICELL)
         if (INEXTCELL .lt. 0) then
-            call shd_grid__getNextCell(XN, YN, ZN, IFACE, JFACE, ICELL, GRIDPOS,&
+            call shd_util__findNextCell(XN, YN, ZN, IFACE, JFACE, ICELL, GRIDPOS,&
                 &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXTCELL)
         end if
         ! Get the four grid points on the intersection face for
@@ -1639,8 +1634,6 @@ subroutine shd_src__rotatePolarPlane(NSTOKES, COSSCAT,&
 
 end subroutine shd_src__rotatePolarPlane
 
-end module shd_src
-
 subroutine shd_src__computeSrcOnePnt(&
     &NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
     &SRCTYPE, FLUX0, YLMSUN, PLANCK,&
@@ -1773,3 +1766,6 @@ subroutine shd_src__computeSrcOnePnt_(&
     return
 
 end subroutine shd_src__computeSrcOnePnt_
+
+end module shd_src
+

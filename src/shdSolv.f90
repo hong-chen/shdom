@@ -8,6 +8,7 @@ module shd_solv
     use shd_grid
     use shd_comp
     use shd_intg
+    use shd_util
     use shd_mpi
 
     implicit none

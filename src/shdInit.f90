@@ -798,7 +798,6 @@ subroutine shd_init__makeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
     ! radiance for the NTOPPTS top boundary points.  Currently all
     ! points have the same unpolarized isotropic radiance.
 
-    implicit none
     integer NTOPPTS, NSTOKES
     real SKYRAD, WAVENO(2), WAVELEN
     real BCRAD(NSTOKES, *)
@@ -833,7 +832,6 @@ subroutine shd_init__makeSfcRadFL(NBOTPTS, BCPTR,&
     ! emission (depending on temperature and emissivity) or reflected
     ! collimated solar radiation (DIRFLUX).
 
-    implicit none
     integer NBOTPTS, BCPTR(*), NSTOKES
     real DIRFLUX(*), FLUXES(2, *)
     real GNDTEMP, GNDALBEDO, WAVENO(2), WAVELEN
@@ -876,7 +874,6 @@ subroutine shd_init__makeSfcRadVL(NBOTPTS, BCPTR,&
     ! temperature and emissivity) or reflected collimated solar radiation
     ! (from DIRFLUX).
 
-    implicit none
     integer NBOTPTS, BCPTR(*), NSFCPAR, NSTOKES
     real DIRFLUX(*), FLUXES(2, *)
     real SFCGRIDPARMS(NSFCPAR, NBOTPTS)

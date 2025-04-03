@@ -47,7 +47,6 @@ subroutine shd_sfc__interpSfc(&
     ! points are in SFCGRIDPARMS.  The first parameter is input as
     ! temperature, but converted to Planck function for output.
 
-    implicit none
     integer NBOTPTS, BCPTR(*), NXSFC, NYSFC, NSFCPAR
     real WAVENO(2), WAVELEN
     real DELXSFC, DELYSFC

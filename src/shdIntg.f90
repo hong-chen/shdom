@@ -4,6 +4,7 @@ module shd_intg
     use shd_sfc
     use shd_init
     use shd_grid
+    use shd_util
     use shd_shdo
     use shd_mpi
 
@@ -505,7 +506,7 @@ subroutine shd_intg__backIntegrate3D(&
                 ! Get the next cell to go to
                 INEXTCELL = NEIGHPTR(IFACE, ICELL)
                 if (INEXTCELL .lt. 0) then
-                    call shd_grid__getNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
+                    call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
                         &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXTCELL)
                 end if
 
@@ -860,7 +861,7 @@ subroutine shd_intg__backIntegrate3D_(&
                 ! Get the next cell to go to
                 INEXTCELL = NEIGHPTR(IFACE, ICELL)
                 if (INEXTCELL .lt. 0) then
-                    call shd_grid__getNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
+                    call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
                         &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXTCELL)
                 end if
 
@@ -1166,7 +1167,7 @@ subroutine shd_intg__backIntegrate2D(&
                 ! Get the next cell to go to
                 INEXTCELL = NEIGHPTR(IFACE, ICELL)
                 if (INEXTCELL .lt. 0) then
-                    call shd_grid__getNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
+                    call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
                         &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXTCELL)
                 end if
 

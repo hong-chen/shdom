@@ -4,6 +4,9 @@ module shd_util
 
     implicit none
 
+    public :: shd_util__findCell
+    public :: shd_util__findNextCell
+
     public :: shd_util__interpTriLin
     public :: shd_util__computeTriDiag
     public :: shd_util__computeGausQuad
@@ -19,6 +22,227 @@ module shd_util
     private :: integralHigh
 
 contains
+
+subroutine shd_util__findCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
+    &NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS,&
+    &BCFLAG, IPFLAG, X0, Y0, Z0, ICELL)
+
+    !   Locates the grid cell in the tree structure containing the
+    ! specified point (X0,Y0,Z0), and returns the cell pointer ICELL.
+    ! First the base grid cell is found (using NX,NY,NZ, XGRID,YGRID,ZGRID),
+    ! and the tree is traced down to find the smallest cell containing
+    ! the point.
+
+    integer NX, NY, NZ, NCELLS, ICELL, BCFLAG, IPFLAG
+    integer GRIDPTR(8, NCELLS), TREEPTR(2, NCELLS)
+    integer*2 CELLFLAGS(NCELLS)
+    real(RD_) :: X0, Y0, Z0
+    real XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ)
+    real GRIDPOS(3, *)
+    integer IL, IU, IM, IX, IY, IZ, NXC, NYC, IC, IPTR, DIR, IBITS
+    real(RD_) :: XDOMAIN, YDOMAIN
+
+    ! Move point to within horizontal domain if periodic
+    if (.not. (btest(BCFLAG, 0) .or. btest(BCFLAG, 2))) then
+        XDOMAIN = XGRID(NX + 1) - XGRID(1)
+        if (X0 .lt. XGRID(1)) then
+            X0 = X0 - XDOMAIN*(int((X0 - XGRID(1))/XDOMAIN) - 1)
+        else if (X0 .gt. XGRID(NX + 1)) then
+            X0 = X0 - XDOMAIN*int((X0 - XGRID(1))/XDOMAIN)
+        end if
+    end if
+    if (.not. (btest(BCFLAG, 1) .or. btest(BCFLAG, 3))) then
+        YDOMAIN = YGRID(NY + 1) - YGRID(1)
+        if (Y0 .lt. YGRID(1)) then
+            Y0 = Y0 - YDOMAIN*(int((Y0 - YGRID(1))/YDOMAIN) - 1)
+        else if (Y0 .gt. YGRID(NY + 1)) then
+            Y0 = Y0 - YDOMAIN*int((Y0 - YGRID(1))/YDOMAIN)
+        end if
+    end if
+
+    ! Find the base grid cell (base grid does not have to be even sp
+    !   so do binary search in X, Y, and Z)
+    !   Special case for independent pixel: get closest grid column.
+    IL = 0
+    if (btest(IPFLAG, 0)) then
+        IU = NX
+        do while (IU - IL .gt. 1)
+            IM = (IU + IL)/2
+            if (X0 .ge. 0.5*(XGRID(IM) + XGRID(IM + 1))) then
+                IL = IM
+            else
+                IU = IM
+            end if
+        end do
+        IL = IL + 1
+    else
+        IU = NX + 1
+        do while (IU - IL .gt. 1)
+            IM = (IU + IL)/2
+            if (X0 .ge. XGRID(IM)) then
+                IL = IM
+            else
+                IU = IM
+            end if
+        end do
+    end if
+    IX = max(IL, 1)
+
+    IL = 0
+    if (btest(IPFLAG, 1)) then
+        IU = NY
+        do while (IU - IL .gt. 1)
+            IM = (IU + IL)/2
+            if (Y0 .ge. 0.5*(YGRID(IM) + YGRID(IM + 1))) then
+                IL = IM
+            else
+                IU = IM
+            end if
+        end do
+        IL = IL + 1
+    else
+        IU = NY + 1
+        do while (IU - IL .gt. 1)
+            IM = (IU + IL)/2
+            if (Y0 .ge. YGRID(IM)) then
+                IL = IM
+            else
+                IU = IM
+            end if
+        end do
+    end if
+    IY = max(IL, 1)
+
+    IL = 0
+    IU = NZ
+    do while (IU - IL .gt. 1)
+        IM = (IU + IL)/2
+        if (Z0 .ge. ZGRID(IM)) then
+            IL = IM
+        else
+            IU = IM
+        end if
+    end do
+    IZ = max(IL, 1)
+
+    ! Special case for open boundary conditions: if outside the 1 to
+    !   domain then use the IP grid cells at either end
+    NXC = NX
+    if (btest(BCFLAG, 0)) then
+        NXC = NX + 1
+        if (X0 .lt. XGRID(1)) then
+            ! X0 = XGRID(1)
+            IX = 1
+        else if (X0 .gt. XGRID(NX)) then
+            ! X0 = XGRID(NX)
+            IX = NX + 1
+        else
+            IX = IX + 1
+        end if
+    end if
+    if (btest(BCFLAG, 2) .and. .not. btest(IPFLAG, 0)) then
+        NXC = NX - 1
+        IX = min(IX, NXC)
+    end if
+    NYC = NY
+    if (btest(BCFLAG, 1)) then
+        NYC = NY + 1
+        if (Y0 .lt. YGRID(1)) then
+            ! Y0 = YGRID(1)
+            IY = 1
+        else if (Y0 .gt. YGRID(NY)) then
+            ! Y0 = YGRID(NY)
+            IY = NY + 1
+        else
+            IY = IY + 1
+        end if
+    end if
+    if (btest(BCFLAG, 3) .and. .not. btest(IPFLAG, 1)) then
+        NYC = NY - 1
+        IY = min(IY, NYC)
+    end if
+
+    ! Get the base grid cell pointer
+    ICELL = IZ + (NZ - 1)*(IY - 1) + (NZ - 1)*NYC*(IX - 1)
+
+    !   Trace down the tree: point to the positive child cell, get the
+    ! grid point that is on the negative (X,Y,Z) side, use the
+    ! flags to find which dimension (X,Y,Z) the parent cell was
+    ! split in, then compare the grid point with the test point
+    ! (X0,Y0,Z0) to find which child cell (pos or neg) the test
+    ! point is in.
+    do while (TREEPTR(2, ICELL) .gt. 0)
+        DIR = ibits(int(CELLFLAGS(ICELL)), 2, 2)
+        IC = TREEPTR(2, ICELL) + 1
+        IPTR = GRIDPTR(1, IC)
+        if (DIR .eq. 1) then
+            if (X0 .lt. GRIDPOS(1, IPTR)) IC = IC - 1
+        else if (DIR .eq. 2) then
+            if (Y0 .lt. GRIDPOS(2, IPTR)) IC = IC - 1
+        else if (DIR .eq. 3) then
+            if (Z0 .lt. GRIDPOS(3, IPTR)) IC = IC - 1
+        end if
+        ICELL = IC
+    end do
+
+    return
+
+end subroutine shd_util__findCell
+
+subroutine shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
+    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXT)
+
+    !   Gets the next cell (INEXT) to go to that is adjacent to this face
+    ! IFACE (1-6) has which face (-X,+X,-Y,+Y,-Z,+Z) of the current cell
+    ! (ICELL) we are at, and JFACE (1-3) is the direction (X,Y,Z).
+    ! The current location (XE,YE,ZE) on the face is used to find the cell
+    ! if there are several adjacent to the current cell.
+
+    integer IFACE, JFACE, ICELL, INEXT
+    integer GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
+    integer*2 CELLFLAGS(*)
+    real GRIDPOS(3, *)
+    real(RD_) :: XE, YE, ZE
+    integer IC, IC1, DIR
+
+    ! Get the pointer to the neighbor cell
+    INEXT = NEIGHPTR(IFACE, ICELL)
+    if (INEXT .lt. 0) then
+        ! If neighbor pointer is negative then we are going into a cell
+        !   that has subcells, and the absolute value of the pointer is the
+        !   cell to start the tree search.
+        IC = abs(INEXT)
+        ! Go down the tree until there is no children
+        do while (TREEPTR(2, IC) .gt. 0)
+            ! Get the direction cell is split
+            DIR = ibits(int(CELLFLAGS(IC)), 2, 2)
+            if (DIR .eq. 0) stop 'Error [_moveNextCell]: No split direction.'
+            ! If split is in direction of face then choose the near child cell
+            !   which is the negative side cell if this is a positive face.
+            IC1 = TREEPTR(2, IC)
+            if (DIR .eq. JFACE) then
+                IC = IC1 + 1 - mod(IFACE - 1, 2)
+            else
+                ! If split is not in direction of face then find which of two cells
+                !   has a face that contains the current location.
+                ! Compare the appropriate coordinate (X,Y,Z) of the grid point
+                !   on the split line with the current location.
+                IC = IC1
+                if (DIR .eq. 1) then
+                    if (XE .gt. GRIDPOS(1, GRIDPTR(8, IC1))) IC = IC + 1
+                else if (DIR .eq. 2) then
+                    if (YE .gt. GRIDPOS(2, GRIDPTR(8, IC1))) IC = IC + 1
+                else
+                    if (ZE .gt. GRIDPOS(3, GRIDPTR(8, IC1))) IC = IC + 1
+                end if
+            end if
+        end do
+        INEXT = IC
+    end if
+
+    return
+
+end subroutine shd_util__findNextCell
 
 subroutine shd_util__interpTriLin(&
     &ICELL, GRIDPTR, GRIDPOS,&
@@ -374,8 +598,6 @@ subroutine shd_util__ssort_i(X, Y, N, KFLAG)
     !                 the ACM, 12, 3 (1969), pp. 185-187.
     !╰──────────────────────────────────────────────────────────────╯!
 
-    implicit none
-
     ! Scalar Arguments
     integer KFLAG, N
 
@@ -667,8 +889,6 @@ subroutine shd_util__ssort_r(X, Y, N, KFLAG)
     !                 for sorting with minimal storage, Communications of
     !                 the ACM, 12, 3 (1969), pp. 185-187.
     !╰──────────────────────────────────────────────────────────────╯!
-
-    implicit none
 
     ! Scalar Arguments
     integer KFLAG, N

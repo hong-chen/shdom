@@ -4,7 +4,6 @@ module shd_comp
     use shd_pha
     use shd_src
     use shd_init
-    use shd_grid
 
     implicit none
     private
@@ -16,12 +15,8 @@ module shd_comp
     public :: shd_comp__sumOutput
     public :: shd_comp__interpOutput
 
-    ! the following two subroutines are placed outside
-    ! module for general access
-    !╭────────────────────────────────────────────────╮!
-    !public :: shd_comp__makeDirect
-    !public :: shd_comp__computeDirect
-    !╰────────────────────────────────────────────────╯!
+    public :: shd_comp__makeDirect
+    public :: shd_comp__computeDirect
 
 contains
 
@@ -576,8 +571,6 @@ subroutine shd_comp__sumOutput(IFLAG, WT, N, data, SUMDATA)
 
 end subroutine shd_comp__sumOutput
 
-end module shd_comp
-
 subroutine shd_comp__makeDirect(&
     &NPTS, BCFLAG, IPFLAG, DELTAM,&
     &ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
@@ -586,8 +579,6 @@ subroutine shd_comp__makeDirect(&
     ! Makes the direct beam solar flux for the internal base grid.
     !   DIRFLUX is set to F*exp(-tau_sun).
     !   Actually calls shd_comp__computeDirect to do all the hard work.
-
-    implicit none
 
     integer NPTS, BCFLAG, IPFLAG, ML, NSTLEG, NLEG
     logical DELTAM
@@ -646,10 +637,7 @@ subroutine shd_comp__computeDirect(&
     !   and path is the optical path from XI,YI,ZI to the sun.
     !╰──────────────────────────────────────────────────────────────╯!
 
-    use globals
     use globals_prp
-
-    implicit none
 
     integer INIT, BCFLAG, IPFLAG, ML, NSTLEG, NLEG, SIDE
     logical DELTAM, VALIDBEAM
@@ -1124,3 +1112,5 @@ subroutine shd_comp__computeDirect(&
     return
 
 end subroutine shd_comp__computeDirect
+
+end module shd_comp
