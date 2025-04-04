@@ -851,7 +851,7 @@ subroutine morcasiwat(wl, C, R2)
         & 0.0007/
     if (wl .lt. 0.400 .or. wl .gt. 0.700) then
         R2 = 0.000
-        goto 60
+        return
     end if
 
     iwl = 1 + nint((wl - 0.400)/0.005)
@@ -876,10 +876,10 @@ subroutine morcasiwat(wl, C, R2)
 50  u2 = 0.90*(1.-R1)/(1.+2.25*R1)
     R2 = 0.33*bb/u2/Kd
     err = abs((R2 - R1)/R2)
-    if (err .lt. 0.0001) goto 60
+    if (err .lt. 0.0001) return
     R1 = R2
     goto 50
-60  return
+    return
 end subroutine
 
 subroutine indwat(wl, xsal, nr, ni)
@@ -1181,7 +1181,7 @@ subroutine getbound(xvals, ifirst, ilast, x, ind1, ind2)
                 if (xvals(i) .le. x .and. xvals(i + 1) .ge. x) then
                     ind1 = i
                     ind2 = i + 1
-                    goto 15
+                    return
                 end if
             end do
         else
@@ -1189,7 +1189,7 @@ subroutine getbound(xvals, ifirst, ilast, x, ind1, ind2)
                 if (xvals(i) .le. x .and. xvals(i + 1) .ge. x) then
                     ind1 = i
                     ind2 = i + 1
-                    goto 15
+                    return
                 end if
             end do
         end if
@@ -1208,7 +1208,7 @@ subroutine getbound(xvals, ifirst, ilast, x, ind1, ind2)
                 if (xvals(i) .ge. x .and. xvals(i + 1) .le. x) then
                     ind1 = i
                     ind2 = i + 1
-                    goto 15
+                    return
                 end if
             end do
         else
@@ -1216,7 +1216,7 @@ subroutine getbound(xvals, ifirst, ilast, x, ind1, ind2)
                 if (xvals(i) .ge. x .and. xvals(i + 1) .le. x) then
                     ind1 = i
                     ind2 = i + 1
-                    goto 15
+                    return
                 end if
             end do
         end if
@@ -1228,7 +1228,6 @@ subroutine getbound(xvals, ifirst, ilast, x, ind1, ind2)
             ind2 = ilast
         end if
     end if
-15  continue
     return
 end subroutine
 

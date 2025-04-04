@@ -399,7 +399,7 @@ subroutine shd_util__solveTriDiag(&
     real(RD_) :: T
 
     if (N .eq. 1) then
-        if (DIAG(1) .eq. 0.0) goto 990
+        if (DIAG(1) .eq. 0.0) stop 'Error [_solveTriDiag]: Singular matrix.'
         RHS(1) = RHS(1)/DIAG(1)
     end if
 
@@ -423,7 +423,7 @@ subroutine shd_util__solveTriDiag(&
             RHS(K + 1) = RHS(K)
             RHS(K) = T
         end if
-        if (LOWER(K) .eq. 0.0) goto 990
+        if (LOWER(K) .eq. 0.0) stop 'Error [_solveTriDiag]: Singular matrix.'
         T = -LOWER(K + 1)/LOWER(K)
         LOWER(K + 1) = DIAG(K + 1) + T*DIAG(K)
         DIAG(K + 1) = UPPER(K + 1) + T*UPPER(K)
@@ -431,7 +431,7 @@ subroutine shd_util__solveTriDiag(&
         RHS(K + 1) = RHS(K + 1) + T*RHS(K)
     end do
 
-    if (LOWER(N) .eq. 0.0) goto 990
+    if (LOWER(N) .eq. 0.0) stop 'Error [_solveTriDiag]: Singular matrix.'
 
     ! Back substitute
     RHS(N) = RHS(N)/LOWER(N)
@@ -440,11 +440,8 @@ subroutine shd_util__solveTriDiag(&
         K = N - 2 - KB + 1
         RHS(K) = (RHS(K) - DIAG(K)*RHS(K + 1) - UPPER(K)*RHS(K + 2))/LOWER(K)
     end do
+
     return
-
-990 continue
-
-    stop 'Error [_solveTriDiag]: Singular matrix.'
 
 end subroutine shd_util__solveTriDiag
 
