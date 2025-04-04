@@ -1460,11 +1460,11 @@ subroutine shd_src__computeSolarStokesVect(&
 
         ! Rotate the plane of polarization from the scattering plane
         !   to the outgoing meridional plane.
-        SIN_SCAT = DSQRT(max(0.0d0, 1.d0 - COSSCAT**2))
-        SIN_THETA1 = DSQRT(1.d0 - SOLARMU**2)
-        SIN_THETA2 = DSQRT(1.d0 - MU**2)
-        SINPHI = DSIN(dble(DELPHI))
-        COSPHI = DCOS(dble(DELPHI))
+        SIN_SCAT = dsqrt(max(0.0d0, 1.d0 - COSSCAT**2))
+        SIN_THETA1 = dsqrt(1.d0 - SOLARMU**2)
+        SIN_THETA2 = dsqrt(1.d0 - MU**2)
+        SINPHI = dsin(dble(DELPHI))
+        COSPHI = dcos(dble(DELPHI))
         if (SIN_SCAT .eq. 0.0) then
             SIN2 = 0.0d0
             COS2 = -1.0d0
@@ -1605,11 +1605,11 @@ subroutine shd_src__rotatePolarPlane(NSTOKES, COSSCAT,&
 
     if (NSTOKES .gt. 1) then
         B1 = SCATVECT(2)
-        SIN_SCAT = DSQRT(max(0.0d0, 1.d0 - COSSCAT**2))
-        SIN_THETA1 = DSQRT(1.d0 - SOLARMU**2)
-        SIN_THETA2 = DSQRT(1.d0 - MU**2)
-        SINPHI = DSIN(dble(DELPHI))
-        COSPHI = DCOS(dble(DELPHI))
+        SIN_SCAT = dsqrt(max(0.0d0, 1.d0 - COSSCAT**2))
+        SIN_THETA1 = dsqrt(1.d0 - SOLARMU**2)
+        SIN_THETA2 = dsqrt(1.d0 - MU**2)
+        SINPHI = dsin(dble(DELPHI))
+        COSPHI = dcos(dble(DELPHI))
         if (SIN_SCAT .eq. 0.0) then
             SIN2 = 0.0d0
             COS2 = -1.0d0
