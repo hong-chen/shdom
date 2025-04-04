@@ -1110,7 +1110,7 @@ subroutine shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
     real EXT0(1), EXT1(1), EXTN(1)
     real XM, YM
     real SRCEXT0(NSTOKES), SRCEXT1(NSTOKES), RAD0(NSTOKES)
-    real(RD_) :: PI, CX, CY, CZ, CXINV, CYINV, CZINV
+    real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV
     real(RD_) :: XN, YN, ZN, XI, YI, ZI
     real(RD_) :: SO, SOX, SOY, SOZ, EPS
     real(RD_) :: TAUTOL, TAUGRID, S, DELS
@@ -1124,9 +1124,8 @@ subroutine shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
     EPS = 1.0e-4*(GRIDPOS(3, GRIDPTR(8, 1)) - GRIDPOS(3, GRIDPTR(1, 1)))
 
     ! Make the ray direction (opposite to the discrete ordinate dire
-    PI = acos(-1.0)
-    CX = sqrt(1.0 - MU**2)*cos(PHI + PI)
-    CY = sqrt(1.0 - MU**2)*sin(PHI + PI)
+    CX = sqrt(1.0 - MU**2)*cos(PHI + DPI_)
+    CY = sqrt(1.0 - MU**2)*sin(PHI + DPI_)
     CZ = -MU
     if (abs(CX) .gt. 1.0e-5) then
         CXINV = 1.0d0/CX
