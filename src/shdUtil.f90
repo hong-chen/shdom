@@ -372,7 +372,7 @@ subroutine shd_util__computeGausQuad(N, XA, WT)
     K = N/2
     if (2*K .ne. N) stop 'Error [_computeGausQuad]: N must be even.'
     do J = 1, K
-        X = cos(3.141592654*(J - .25)/(N + .5))
+        X = cos(PI_*(J - .25)/(N + .5))
         I = 0
 100     continue
         PL1 = 1
@@ -418,7 +418,7 @@ subroutine shd_util__computeGausQuadDble(N, XA, WT)
 
     K = (N2 + 1)/2
     do J = 1, K
-        X = cos(3.141592654*(J - .25)/(N2 + .5))
+        X = cos(DPI_*(J - .25)/(N2 + .5))
         I = 0
 100     continue
         PL1 = 1

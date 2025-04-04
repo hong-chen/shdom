@@ -3017,7 +3017,7 @@ subroutine shd_mpi__calAccelSolCrit(DOACCEL, DELJDOT, DELJOLD, DELJNEW, JNORM,&
         ! Compute the acceleration extrapolation factor and apply it.
         R = sqrt(DELJNEW/DELJOLD)
         THETA = acos(DELJDOT/sqrt(DELJOLD*DELJNEW))
-        A = (1 - R*cos(THETA) + R**(1 + 0.5*3.14159/THETA))&
+        A = (1 - R*cos(THETA) + R**(1.0 + PIH_/THETA))&
             /(1 + R**2 - 2*R*cos(THETA)) - 1.0
         A = min(10.0, max(0.0, A))
         ! WRITE (6,'(1X,A,3(1X,F7.3))') '! Acceleration: ', A,R,THETA

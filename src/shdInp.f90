@@ -514,7 +514,7 @@ subroutine shd_io__checkInputParam(&
     ! Check for SPLITACC and SHACC magnitudes
     if (SRCTYPE .eq. 'T' .or. SRCTYPE .eq. 'B') then
         call shd_util__computePlanck(GNDTEMP, UNITS, WAVENO, WAVELEN, FLUX)
-        FLUX = 3.14*FLUX
+        FLUX = PI_*FLUX
     else
         FLUX = 0.0
     end if
