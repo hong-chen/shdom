@@ -787,6 +787,73 @@ def gen_lwc_les_zero(
 
     return
 
+def gen_lwc_les_full(
+        wavelength=650.0,
+        solver='3D',
+        overwrite=False,
+        plot=True
+        ):
+
+    _metadata   = {'Computer': os.uname()[1], 'Script': os.path.abspath(__file__), 'Function':sys._getframe().f_code.co_name, 'Date':datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+    fdir='%s/tmp-data/%s/%s' % (fdir0, name_tag, _metadata['Function'])
+
+    if not os.path.exists(fdir):
+        os.makedirs(fdir)
+
+    # define an atmosphere object
+    #╭────────────────────────────────────────────────────────────────────────────╮#
+    levels = np.linspace(0.0, 20.0, 21)
+    fname_atm = '%s/atm.pk' % fdir
+    atm0 = er3t.pre.atm.atm_atmmod(levels=levels, fname=fname_atm, overwrite=overwrite)
+    #╰────────────────────────────────────────────────────────────────────────────╯#
+
+
+    # define an absorption object
+    #╭────────────────────────────────────────────────────────────────────────────╮#
+    fname_abs = '%s/abs.pk' % fdir
+    abs0 = er3t.pre.abs.abs_16g(wavelength=wavelength, fname=fname_abs, atm_obj=atm0, overwrite=overwrite)
+    #╰────────────────────────────────────────────────────────────────────────────╯#
+
+
+    # define an cloud object
+    #╭────────────────────────────────────────────────────────────────────────────╮#
+    fname_nc  = '%s/data/00_er3t_mca/aux/les.nc' % (er3t.common.fdir_examples)
+    # fname_les = '%s/les.pk' % fdir
+    fname_les = '/Users/hchen/Work/mygit/er3t/examples/tmp-data/00_er3t_mca/example_05_rad_les_cloud_3d/les.pk'
+    cld0      = er3t.pre.cld.cld_les(fname_nc=fname_nc, fname=fname_les, coarsen=[1, 1, 25], overwrite=False)
+
+    cer = cld0.lay['cer']['data']
+
+    q_factor = 2.0
+    const0   = 0.75*q_factor/(1000.0*1e-6)
+    lwc = cld0.lay['extinction']['data']/(const0/cer) * 1000.0
+    #╰────────────────────────────────────────────────────────────────────────────╯#
+
+
+    # generate les_lwc.txt
+    #╭────────────────────────────────────────────────────────────────────────────╮#
+    # lwc = cld0.lay['lwc']['data']*1000.0
+    # cer[cer>=25.0] = 25.0
+    # cer[cer<=0.5] = 0.5
+    temp = cld0.lay['temperature']['data']
+
+    Nx, Ny, Nz = lwc.shape
+
+    with open('shdom-lwc_les-full.txt', 'w') as f:
+        f.write('2  parameter LWC file\n')
+        f.write('%d %d %d\n' % lwc.shape)
+        f.write('%.4f %.4f\n' % (cld0.lay['dx']['data'], cld0.lay['dy']['data']))
+        f.write('%s\n' % ' '.join([str('%.4f' % (alt0+0.5)) for alt0 in cld0.lay['altitude']['data']]))
+        f.write('%s\n' % ' '.join([str('%.4f' % np.mean(temp[:, :, iz])) for iz in range(Nz)]))
+        for ix in np.arange(Nx):
+            for iy in np.arange(Ny):
+                for iz in np.arange(Nz):
+                    f.write('%d %d %d %.6f %.2f\n' % ((ix+1), (iy+1), (iz+1), lwc[ix, iy, iz], cer[ix, iy, iz]))
+                    # f.write('%d %d %d %.6f %.2f\n' % ((ix+1), (iy+1), (iz+1), 0.0, cer[ix, iy, iz]))
+    #╰────────────────────────────────────────────────────────────────────────────╯#
+
+    return
+
 
 if __name__ == '__main__':
 
@@ -797,5 +864,6 @@ if __name__ == '__main__':
 
     # gen_lwc_les_fast(overwrite=False)
     # gen_sfc_land_lsrt_fast()
-    gen_lwc_les_zero(overwrite=False)
+    # gen_lwc_les_zero(overwrite=False)
+    gen_lwc_les_full()
     pass
