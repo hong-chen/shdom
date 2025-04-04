@@ -357,7 +357,7 @@ subroutine shd_intg__backIntegrate3D(&
     integer GRIDFACE(4, 6), OPPFACE(6)
     integer IORDER, ICORNER, JOCTORDER3(8), JOCTORDER2(8)
     logical VALIDRAD, VALIDFACE, IPINX, IPINY, BTEST
-    real(RD_) :: PI, CX, CY, CZ, CXINV, CYINV, CZINV
+    real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV
     real(RD_) :: XE, YE, ZE
     real(RD_) :: SO, SOX, SOY, SOZ, EPS, path
     real(RD_) :: U, V, F1, F2, F3, F4
@@ -373,9 +373,8 @@ subroutine shd_intg__backIntegrate3D(&
     EPS = 1.0e-3*(GRIDPOS(3, GRIDPTR(8, 1)) - GRIDPOS(3, GRIDPTR(1, 1)))
 
     ! Make the ray direction (opposite to the discrete ordinate direction)
-    PI = acos(-1.0)
-    CX = sqrt(1.0 - MU**2)*cos(PHI + PI)
-    CY = sqrt(1.0 - MU**2)*sin(PHI + PI)
+    CX = sqrt(1.0 - MU**2)*cos(PHI + DPI_)
+    CY = sqrt(1.0 - MU**2)*sin(PHI + DPI_)
     CZ = -MU
     if (abs(CX) .gt. 1.0e-5) then
         CXINV = 1.0d0/CX
@@ -696,7 +695,7 @@ subroutine shd_intg__backIntegrate3D_(&
     integer GRIDFACE(4, 6), OPPFACE(6)
     integer IORDER, ICORNER, JOCTORDER3(8), JOCTORDER2(8)
     logical VALIDRAD, VALIDFACE, IPINX, IPINY, BTEST
-    real(RD_) :: PI, CX, CY, CZ, CXINV, CYINV, CZINV
+    real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV
     real(RD_) :: XE, YE, ZE
     real(RD_) :: SO, SOX, SOY, SOZ, EPS, path
     real(RD_) :: U, V, F1, F2, F3, F4
@@ -712,9 +711,8 @@ subroutine shd_intg__backIntegrate3D_(&
     EPS = 1.0e-3*(GRIDPOS(3, GRIDPTR(8, 1)) - GRIDPOS(3, GRIDPTR(1, 1)))
 
     ! Make the ray direction (opposite to the discrete ordinate direction)
-    PI = acos(-1.0)
-    CX = sqrt(1.0 - MU**2)*cos(PHI + PI)
-    CY = sqrt(1.0 - MU**2)*sin(PHI + PI)
+    CX = sqrt(1.0 - MU**2)*cos(PHI + DPI_)
+    CY = sqrt(1.0 - MU**2)*sin(PHI + DPI_)
     CZ = -MU
     if (abs(CX) .gt. 1.0e-5) then
         CXINV = 1.0d0/CX
@@ -1062,7 +1060,7 @@ subroutine shd_intg__backIntegrate2D(&
     integer GRIDFACE(2, 6), OPPFACE(6)
     integer IORDER, ICORNER, JOCTORDER(8)
     logical VALIDRAD, VALIDFACE, IPINX, BTEST
-    real(RD_) :: PI, CX, CZ, CXINV, CZINV
+    real(RD_) :: CX, CZ, CXINV, CZINV
     real(RD_) :: XE, YE, ZE
     real(RD_) :: SO, SOX, SOZ, EPS
     real(RD_) :: U, F1, F2
@@ -1078,8 +1076,7 @@ subroutine shd_intg__backIntegrate2D(&
     EPS = 1.0e-3*(GRIDPOS(3, GRIDPTR(8, 1)) - GRIDPOS(3, GRIDPTR(1, 1)))
 
     ! Make the ray direction (opposite to the discrete ordinate direction)
-    PI = acos(-1.0)
-    CX = sqrt(1.0 - MU**2)*cos(PHI + PI)
+    CX = sqrt(1.0 - MU**2)*cos(PHI + DPI_)
     CZ = -MU
     if (abs(CX) .gt. 1.0e-5) then
         CXINV = 1.0d0/CX
@@ -1314,7 +1311,7 @@ subroutine shd_intg__backIntegrate1D(&
     integer GRIDFACE(6)
     integer IORDER, ICORNER, JOCTORDER(8)
     logical VALIDRAD
-    real(RD_) :: PI, CZ, CZINV
+    real(RD_) :: CZ, CZINV
     real(RD_) :: XE, YE, ZE
     real(RD_) :: SO, EPS
     real(RD_) :: EXT, EXT0, EXT1
@@ -1328,7 +1325,6 @@ subroutine shd_intg__backIntegrate1D(&
     EPS = 1.0e-3*(GRIDPOS(3, GRIDPTR(8, 1)) - GRIDPOS(3, GRIDPTR(1, 1)))
 
     ! Make the ray direction (opposite to the discrete ordinate direction)
-    PI = acos(-1.0)
     CZ = -MU
     CZINV = 1.0d0/CZ
 
