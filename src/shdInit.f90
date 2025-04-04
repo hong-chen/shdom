@@ -880,22 +880,20 @@ subroutine shd_init__makeSfcRadVL(NBOTPTS, BCPTR,&
     real BCRAD(NSTOKES, *)
     character(len=1) :: SRCTYPE
     integer I, IBC, K
-    real OPI, ALB, GNDRAD
-
-    OPI = 1.0/acos(-1.0)
+    real ALB, GNDRAD
 
     ! Loop over all bottom points
     do IBC = 1, NBOTPTS
         I = BCPTR(IBC)
         ALB = SFCGRIDPARMS(2, IBC)
         if (SRCTYPE .eq. 'S') then
-            BCRAD(1, IBC) = OPI*ALB*(DIRFLUX(I) + FLUXES(1, I))
+            BCRAD(1, IBC) = OPI_*ALB*(DIRFLUX(I) + FLUXES(1, I))
         else
             GNDRAD = SFCGRIDPARMS(1, IBC)*(1 - ALB)
             if (SRCTYPE .eq. 'T') then
-                BCRAD(1, IBC) = GNDRAD + OPI*ALB*FLUXES(1, I)
+                BCRAD(1, IBC) = GNDRAD + OPI_*ALB*FLUXES(1, I)
             else if (SRCTYPE .eq. 'B') then
-                BCRAD(1, IBC) = OPI*ALB*(DIRFLUX(I) + FLUXES(1, I)) + GNDRAD
+                BCRAD(1, IBC) = OPI_*ALB*(DIRFLUX(I) + FLUXES(1, I)) + GNDRAD
             end if
         end if
         BCRAD(2:, IBC) = 0.0
@@ -935,9 +933,8 @@ subroutine shd_init__makeSfcRadU(NBOTPTS, BCPTR,&
     character(len=1) :: SRCTYPE
     character(len=2) :: SFCTYPE
     integer IMU1, JMU, JPHI, IBC, I, JANG, K, K1, K2
-    real OPI, REFLECT(4, 4), W
+    real REFLECT(4, 4), W
 
-    OPI = 1.0/acos(-1.0)
     IMU1 = IMU - NMU/2
     do IBC = 1, NBOTPTS
 
@@ -950,7 +947,7 @@ subroutine shd_init__makeSfcRadU(NBOTPTS, BCPTR,&
                 &MU(IMU), PHI(IMU, IPHI), SOLARMU, SOLARAZ,&
                 &NSTOKES, REFLECT)
             BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1)&
-                &+ OPI*REFLECT(1:NSTOKES, 1)*DIRFLUX(I)
+                &+ OPI_*REFLECT(1:NSTOKES, 1)*DIRFLUX(I)
         end if
 
         ! Integrate over the incident discrete ordinate directions (JMU, JPHI)
@@ -963,7 +960,7 @@ subroutine shd_init__makeSfcRadU(NBOTPTS, BCPTR,&
                         &*SFC_BRDF_DO(:, IMU1, IPHI, K1, JMU, JPHI)
                 end do
                 ! Add in the polarized thermal emission
-                W = OPI*abs(MU(JMU))*WTDO(JMU, JPHI)
+                W = OPI_*abs(MU(JMU))*WTDO(JMU, JPHI)
                 BCRAD(1, IBC, 1) = BCRAD(1, IBC, 1) + SFCGRIDPARMS(1, IBC)&
                     &*(W - SFC_BRDF_DO(1, IMU1, IPHI, 1, JMU, JPHI))
                 BCRAD(2:, IBC, 1) = BCRAD(2:, IBC, 1) - SFCGRIDPARMS(1, IBC)&
@@ -1008,9 +1005,7 @@ subroutine shd_init__makeSfcRadV(&
     character(len=1) :: SRCTYPE
     character(len=2) :: SFCTYPE
     integer JMU, JPHI, IBC, I, JANG, K, K1, K2
-    real OPI, REFLECT(4, 4), W, SUM0, SUM1, RADSPEC(4)
-
-    OPI = 1.0/acos(-1.0)
+    real REFLECT(4, 4), W, SUM0, SUM1, RADSPEC(4)
 
     do IBC = IBEG, IEND
 
@@ -1022,7 +1017,7 @@ subroutine shd_init__makeSfcRadV(&
             call shd_sfc__brdfSurface(SFCTYPE(2:2), SFCGRIDPARMS(2, IBC), WAVELEN,&
                 &MU2, PHI2, SOLARMU, SOLARAZ, NSTOKES, REFLECT)
             BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1)&
-                &+ OPI*REFLECT(1:NSTOKES, 1)*DIRFLUX(I)
+                &+ OPI_*REFLECT(1:NSTOKES, 1)*DIRFLUX(I)
         end if
 
         ! Integrate over the incident discrete ordinate directions (JMU,JPHI)
@@ -1032,7 +1027,7 @@ subroutine shd_init__makeSfcRadV(&
                 call shd_sfc__brdfSurface(SFCTYPE(2:2), SFCGRIDPARMS(2, IBC),&
                     &WAVELEN, MU2, PHI2, MU(JMU), PHI(JMU, JPHI),&
                     &NSTOKES, REFLECT)
-                W = OPI*abs(MU(JMU))*WTDO(JMU, JPHI)
+                W = OPI_*abs(MU(JMU))*WTDO(JMU, JPHI)
                 ! Add in the polarized reflection
                 do K1 = 1, NSTOKES
                     BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1)&

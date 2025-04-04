@@ -417,8 +417,8 @@ subroutine shd_comp__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
 
             ! MURAY,PHRAY is camera pixel viewing direction;
             ! MU2,PHI2 is radiance travel direction (the opposite)
-            MURAY = SNGL(COSTH)
-            PHIRAY = SNGL(PHIR)
+            MURAY = sngl(COSTH)
+            PHIRAY = sngl(PHIR)
             MU2 = -COSTH
             PHI2 = PHIR + PI_
 
