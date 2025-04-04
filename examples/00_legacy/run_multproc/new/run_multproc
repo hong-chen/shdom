@@ -12,8 +12,8 @@
 
   # Run the three sections in order:
   #   (set flag to 1, run script, check that output files were made)
-set MakeMieTable=0
-set MakePropertyFile=0
+set MakeMieTable=1
+set MakePropertyFile=1
 set RunSHDOM=1
 
 set wavelen = 0.86   # wavelength (micron)
@@ -123,7 +123,7 @@ if ($RunSHDOM) then
   # Run SHDOM for solar radiative transfer on 160x160 sparse cumulus
   # LES field for one solar zenith/azimuth
 
-  set Nproc=8             # number of processors
+  set Nproc=4             # number of processors
 
   set solarmu=0.866       # cosine solar zenith angle
 
@@ -234,7 +234,7 @@ exit
      "$splitacc $shacc" "$accel $solacc $maxiter" \
      1 R $Routparm $radfile NONE \
      $MaxMB $SplittingFactor $NumSHtermFactor $CellPointRatio >! ${runname}.inp
-  mpirun -np $Nproc ${shdom_exe} < ${runname}.inp  >&! ${runname}000.log
+  mpirun -np $Nproc ${shdom_exe} < ${runname}.inp
   #rm -f ${runname}.inp
   #rm -f mempar.t oceansfc.t
 
