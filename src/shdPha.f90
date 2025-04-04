@@ -19,7 +19,8 @@ module shd_pha
 
 contains
 
-subroutine shd_pha__computePhase(NSCATANGLE, NUMPHASE, NSTPHASE,&
+subroutine shd_pha__computePhase(&
+    &NSCATANGLE, NUMPHASE, NSTPHASE,&
     &NSTOKES, ML, NSTLEG, NLEG, LEGEN, PHASETAB)
 
     !   Precomputes the phase matrix elements I-I and I-Q as a function
@@ -76,7 +77,7 @@ subroutine shd_pha__computePhase(NSCATANGLE, NUMPHASE, NSTPHASE,&
                     &' for tabulated phase function: ', IPH, J, A1
                 stop
             end if
-            PHASETAB(1, IPH, J) = SNGL(A1*DO4PI_)
+            PHASETAB(1, IPH, J) = sngl(A1*DO4PI_)
 
             if (NSTOKES .gt. 1) then
                 ! If doing polarization, sum the second Wigner function series
@@ -85,12 +86,13 @@ subroutine shd_pha__computePhase(NSCATANGLE, NUMPHASE, NSTPHASE,&
                     FCT = 2.0d0*L + 1.0d0
                     B1 = B1 - FCT*dble(UNSCLEGEN(2, L))*DMM2(L)
                 end do
-                PHASETAB(2, IPH, J) = SNGL(B1*DO4PI_)
+                PHASETAB(2, IPH, J) = sngl(B1*DO4PI_)
             end if
         end do
     end do
 
     deallocate (UNSCLEGEN, DMM1, DMM2)
+
     return
 
 end subroutine shd_pha__computePhase
@@ -109,6 +111,7 @@ subroutine shd_pha__computeLegendre(COSSCAT, NLEG, P)
 
     X = dble(COSSCAT)
     if (X*X .gt. 1.) stop 'Error [_computeLegendre]: <COSSCAT> is greater than 1.'
+
     ! Use the stable upward recursion on l, starting from P_0
     PL2 = 1.0d0
     P(0) = PL2
@@ -116,13 +119,16 @@ subroutine shd_pha__computeLegendre(COSSCAT, NLEG, P)
         PL1 = X
         P(1) = X
     end if
+
     do L = 2, NLEG
         PL = ((2*L - 1)*X*PL1 - (L - 1)*PL2)/L
         P(L) = PL
         PL2 = PL1
         PL1 = PL
     end do
+
     return
+
 end subroutine shd_pha__computeLegendre
 
 subroutine shd_pha__computeYLM(TRANSPOSED, MU, PHI, ML, MM, NSTLEG, YR)
@@ -152,7 +158,7 @@ subroutine shd_pha__computeYLM(TRANSPOSED, MU, PHI, ML, MM, NSTLEG, YR)
     allocate (DM0(0:ML), DM2P(0:ML), DM2M(0:ML))
     X = dble(MU)
 
-    FCT = 1.d0/DSQRT(2.d0*DPI_)
+    FCT = 1.d0/dsqrt(2.d0*DPI_)
 
     ! sign accounting for transpose matrices
     if (.not. TRANSPOSED) then
@@ -234,8 +240,11 @@ subroutine shd_pha__computeYLM(TRANSPOSED, MU, PHI, ML, MM, NSTLEG, YR)
             end if
         end do
     end do
+
     deallocate (DM0, DM2P, DM2M)
+
     return
+
 end subroutine shd_pha__computeYLM
 
 subroutine shd_pha__computeYLM_(MU, PHI, ML, MM, YR)
@@ -258,7 +267,7 @@ subroutine shd_pha__computeYLM_(MU, PHI, ML, MM, YR)
     allocate (DM0(0:ML))
     X = dble(MU)
 
-    FCT = 1.d0/DSQRT(2.d0*DPI_)
+    FCT = 1.d0/dsqrt(2.d0*DPI_)
 
     do M = 0, MM
         call shd_pha__computeWignerDM0(X, ML, M, DM0)
@@ -285,8 +294,11 @@ subroutine shd_pha__computeYLM_(MU, PHI, ML, MM, YR)
             YR(J) = (COSM + SINM)*DM0(L)
         end do
     end do
+
     deallocate (DM0)
+
     return
+
 end subroutine shd_pha__computeYLM_
 
 subroutine shd_pha__computePLM(TRANSPOSED, MU, ML, MM, PRC)
@@ -307,7 +319,7 @@ subroutine shd_pha__computePLM(TRANSPOSED, MU, ML, MM, PRC)
     X = dble(MU)
 
     ! --- normalization constant ---
-    FCT = 1.d0/DSQRT(2.d0*DPI_)
+    FCT = 1.d0/dsqrt(2.d0*DPI_)
 
     ! --- sign accounting for transpose matrices ---
     if (.not. TRANSPOSED) then
@@ -421,14 +433,14 @@ subroutine shd_pha__computeWigner(X, NRANK, M, M1, DMM1)
         DMM1(N0) = wignerDMM1N0(X, M, M1)
         do N = N0, NRANK - 1
             FACT1 = dble(N*(N + 1))*X - dble(M*M1)
-            FACT1 = FACT1/DSQRT(dble((N + 1)**2 - M**2))
-            FACT1 = FACT1/DSQRT(dble((N + 1)**2 - M1**2))
+            FACT1 = FACT1/dsqrt(dble((N + 1)**2 - M**2))
+            FACT1 = FACT1/dsqrt(dble((N + 1)**2 - M1**2))
             FACT1 = FACT1*dble(2*N + 1)/dble(N)
 
-            FACT2 = DSQRT(dble(N**2 - M**2))&
-                &*DSQRT(dble(N**2 - M1**2))
-            FACT2 = FACT2/DSQRT(dble((N + 1)**2 - M**2))
-            FACT2 = FACT2/DSQRT(dble((N + 1)**2 - M1**2))
+            FACT2 = dsqrt(dble(N**2 - M**2))&
+                &*dsqrt(dble(N**2 - M1**2))
+            FACT2 = FACT2/dsqrt(dble((N + 1)**2 - M**2))
+            FACT2 = FACT2/dsqrt(dble((N + 1)**2 - M1**2))
             FACT2 = FACT2*dble(N + 1)/dble(N)
 
             DMM1(N + 1) = FACT1*DMM1(N) - FACT2*DMM1(N - 1)
@@ -475,12 +487,12 @@ subroutine shd_pha__computeWignerDM0DM2PDM2M(&
             DM0(M) = wignerDMM1N0(XP, M, 0)
             do N = M, NRANK - 1
                 FACT1 = dble(N*(N + 1))*XP
-                FACT1 = FACT1/DSQRT(dble((N + 1)**2 - M**2))
+                FACT1 = FACT1/dsqrt(dble((N + 1)**2 - M**2))
                 FACT1 = FACT1/dble(N + 1)
                 FACT1 = FACT1*dble(2*N + 1)/dble(N)
 
-                FACT2 = DSQRT(dble(N**2 - M**2))*dble(N)
-                FACT2 = FACT2/DSQRT(dble((N + 1)**2 - M**2))
+                FACT2 = dsqrt(dble(N**2 - M**2))*dble(N)
+                FACT2 = FACT2/dsqrt(dble((N + 1)**2 - M**2))
                 FACT2 = FACT2/dble(N + 1)
                 FACT2 = FACT2*dble(N + 1)/dble(N)
 
@@ -488,7 +500,7 @@ subroutine shd_pha__computeWignerDM0DM2PDM2M(&
             end do
         end if
         do N = 0, NRANK
-            DM0(N) = DSQRT(N + 0.5d0)*DM0(N)
+            DM0(N) = dsqrt(N + 0.5d0)*DM0(N)
         end do
     end if
     ! ................................................................
@@ -504,14 +516,14 @@ subroutine shd_pha__computeWignerDM0DM2PDM2M(&
             FACTP = dble(N*(N + 1))*XP - dble(2*M)
             FACTM = dble(N*(N + 1))*XM - dble(2*M)
 
-            FACT1 = 1.d0/DSQRT(dble((N + 1)**2 - M**2))
-            FACT1 = FACT1/DSQRT(dble((N + 1)**2 - 4))
+            FACT1 = 1.d0/dsqrt(dble((N + 1)**2 - M**2))
+            FACT1 = FACT1/dsqrt(dble((N + 1)**2 - 4))
             FACT1 = FACT1*dble(2*N + 1)/dble(N)
 
-            FACT2 = DSQRT(dble(N**2 - M**2))&
-                &*DSQRT(dble(N**2 - 4))
-            FACT2 = FACT2/DSQRT(dble((N + 1)**2 - M**2))
-            FACT2 = FACT2/DSQRT(dble((N + 1)**2 - 4))
+            FACT2 = dsqrt(dble(N**2 - M**2))&
+                &*dsqrt(dble(N**2 - 4))
+            FACT2 = FACT2/dsqrt(dble((N + 1)**2 - M**2))
+            FACT2 = FACT2/dsqrt(dble((N + 1)**2 - 4))
             FACT2 = FACT2*dble(N + 1)/dble(N)
 
             DM2P(N + 1) = FACTP*FACT1*DM2P(N) - FACT2*DM2P(N - 1)
@@ -520,8 +532,8 @@ subroutine shd_pha__computeWignerDM0DM2PDM2M(&
         do N = 0, NRANK
             DM2M(N) = (-1.d0)**(N + M)*DM2M(N)
 
-            DM2P(N) = DSQRT(N + 0.5d0)*DM2P(N)
-            DM2M(N) = DSQRT(N + 0.5d0)*DM2M(N)
+            DM2P(N) = dsqrt(N + 0.5d0)*DM2P(N)
+            DM2M(N) = dsqrt(N + 0.5d0)*DM2M(N)
         end do
     end if
 
@@ -555,12 +567,12 @@ subroutine shd_pha__computeWignerDM0(X, NRANK, M, DM0)
             DM0(M) = wignerDMM0N0(X, M)
             do N = M, NRANK - 1
                 DM0(N + 1) = ((2*N + 1)*X*DM0(N)&
-                    &- DSQRT(dble(N**2 - M**2))*DM0(N - 1))&
-                    &/DSQRT(dble((N + 1)**2 - M**2))
+                    &- dsqrt(dble(N**2 - M**2))*DM0(N - 1))&
+                    &/dsqrt(dble((N + 1)**2 - M**2))
             end do
         end if
         do N = 0, NRANK
-            DM0(N) = DSQRT(N + 0.5d0)*DM0(N)
+            DM0(N) = dsqrt(N + 0.5d0)*DM0(N)
         end do
     end if
     return
@@ -592,12 +604,12 @@ function wignerDMM1N0(X, M, M1) result(DMM1N0)
         MINM = min(M, M1)
         PROD = 1.d0
         do P = 1, MAXM - MINM
-            FACT = DSQRT(dble(M + M1 + P)/dble(P))
+            FACT = dsqrt(dble(M + M1 + P)/dble(P))
             PROD = PROD*FACT
         end do
-        FACT = DSQRT((1.d0 - X)/2.d0)
+        FACT = dsqrt((1.d0 - X)/2.d0)
         DMM1N0 = CMM1*PROD*FACT**(MAXM - MINM)
-        FACT = DSQRT((1.d0 + X)/2.d0)
+        FACT = dsqrt((1.d0 + X)/2.d0)
         DMM1N0 = DMM1N0*FACT**(MAXM + MINM)
     end if
 
@@ -621,9 +633,9 @@ function wignerDMM0N0(X, M) result(DMM0N0)
         CM = (-1.d0)**M
         PROD = 1.d0
         do P = 1, M
-            PROD = PROD*DSQRT((M + P)/dble(P))
+            PROD = PROD*dsqrt((M + P)/dble(P))
         end do
-        DMM0N0 = CM*PROD*(0.5d0*DSQRT((1.d0 - X)*(1.d0 + X)))**M
+        DMM0N0 = CM*PROD*(0.5d0*dsqrt((1.d0 - X)*(1.d0 + X)))**M
     end if
 
     return

@@ -457,8 +457,9 @@ subroutine shd_util__computePlanck(TEMP, UNITS, WAVENO, WAVELEN, PLANCK)
     ! blackbody radiance in [Watts /(meter^2 ster micron)] for a
     ! temperature in [Kelvins] at a wavelength in [microns] is returned.
 
-    real TEMP, WAVENO(2), WAVELEN, PLANCK
-    character(len=1) :: UNITS
+    character(len=1), intent(in) :: UNITS
+    real, intent(in) :: TEMP, WAVENO(2), WAVELEN
+    real, intent(out) :: PLANCK
     real(RD_) :: X1, X2, F
 
     if (UNITS .eq. 'T') then
@@ -489,10 +490,12 @@ subroutine shd_util__integratePlanck(X1, X2, F)
     ! Accurate to better than 1 part in 10**9 for integral from
     ! 0 to infinity (pi**4/15).
 
-    real(RD_) :: X1, X2, F
+    real(RD_), intent(in)  :: X1, X2
+    real(RD_), intent(out) :: F
     real(RD_) :: C
 
     C = 1.0d0
+
     if (X1 .lt. C .and. X2 .lt. C) then
         F = integralLow(X2) - integralLow(X1)
     else if (X1 .lt. C .and. X2 .ge. C) then
@@ -502,7 +505,9 @@ subroutine shd_util__integratePlanck(X1, X2, F)
     else
         stop 'Error [_integratePlanck]: X1 and X2 out of order.'
     end if
+
     return
+
 end subroutine shd_util__integratePlanck
 
 real(RD_) function integralLow(X)
