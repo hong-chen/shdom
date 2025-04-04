@@ -28,6 +28,7 @@ module shd_mpi
     public :: shd_mpi__gatherOutput
     public :: shd_mpi__end
     public :: shd_mpi__abort
+    public :: shd_mpi__sumCpuTime
 
     public :: shd_mpi__makeDirect
     public :: shd_mpi__computeRad
@@ -38,7 +39,6 @@ module shd_mpi
     public :: shd_mpi__calBoundaryRad
     public :: shd_mpi__calAccelSolCrit
     public :: shd_mpi__unifySplit
-    public :: shd_mpi__sumCpuTime
 
     private :: shd_mpi__optimizeProcDomain
     private :: shd_mpi__ran
