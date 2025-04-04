@@ -284,7 +284,7 @@ subroutine shd_src__computeSrcOneDir(NSTOKES,&
     real SOURCE(NSTOKES, *), SOURCE1(NSTOKES, NPTS)
     character(len=1) :: SRCTYPE
     integer I, J, JT, K, L, M, N, IPH, IS, NS, ME, MS
-    real OFOURPI, DA, F, A, A1, B1, SECMU0, COSSCAT
+    real DA, F, A, A1, B1, SECMU0, COSSCAT
     real, allocatable :: YLMDIR(:, :), YLMSUN(:, :)
     real(RD_), allocatable :: SUNDIRLEG(:)
     real, allocatable :: UNSCLEGEN(:, :), SINGSCAT(:, :)
@@ -301,7 +301,6 @@ subroutine shd_src__computeSrcOneDir(NSTOKES,&
     ! Precompute Ylm's for output direction and solar direction
     call shd_pha__computeYLM(.false., MU, PHI, ML, MM, NSTLEG, YLMDIR)
     if (SRCTYPE .ne. 'T') then
-        OFOURPI = 1.0/(4.0*acos(-1.0))
         call shd_pha__computeYLM(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG,&
             &YLMSUN)
         SECMU0 = 1.0/abs(SOLARMU)
@@ -313,7 +312,7 @@ subroutine shd_src__computeSrcOneDir(NSTOKES,&
             !   for the untruncated solar single scattering computation.
             call shd_pha__computeLegendre(dble(COSSCAT), NLEG, SUNDIRLEG)
             do L = 0, NLEG
-                SUNDIRLEG(L) = SUNDIRLEG(L)*(2*L + 1)*OFOURPI
+                SUNDIRLEG(L) = SUNDIRLEG(L)*(2*L + 1)*O4PI_
             end do
         end if
     end if
@@ -1438,7 +1437,6 @@ subroutine shd_src__computeSolarStokesVect(&
     real(RD_), allocatable :: DMM1(:)
     real(RD_) :: SIN_SCAT, SIN_THETA1, SIN_THETA2
     real(RD_) :: SINPHI, COSPHI, SIN2, COS2, SIN22, COS22
-    real(RD_), parameter :: OFOURPI = 0.07957747151
 
     allocate (DMM1(0:NLEG))
 
@@ -1450,7 +1448,7 @@ subroutine shd_src__computeSolarStokesVect(&
         FCT = 2.0d0*L + 1.0d0
         A1 = A1 + FCT*dble(SINGLEGEN(1, L))*DMM1(L)
     end do
-    SCATVECT(1) = A1*OFOURPI
+    SCATVECT(1) = A1*DO4PI_
 
     if (NSTOKES .gt. 1) then
         ! If doing polarization, sum the second Wigner function series
@@ -1477,8 +1475,8 @@ subroutine shd_src__computeSolarStokesVect(&
         end if
         SIN22 = 2.0d0*SIN2*COS2
         COS22 = 1.0d0 - 2.0d0*SIN2**2
-        SCATVECT(2) = B1*COS22*OFOURPI
-        SCATVECT(3) = B1*SIN22*OFOURPI
+        SCATVECT(2) = B1*COS22*DO4PI_
+        SCATVECT(3) = B1*SIN22*DO4PI_
     end if
     if (NSTOKES .eq. 4) then
         SCATVECT(4) = 0.0

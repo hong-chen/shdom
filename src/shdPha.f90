@@ -32,16 +32,14 @@ subroutine shd_pha__computePhase(NSCATANGLE, NUMPHASE, NSTPHASE,&
     real LEGEN(NSTLEG, 0:NLEG, NUMPHASE)
     real PHASETAB(NSTPHASE, NUMPHASE, NSCATANGLE)
     integer IPH, I, J, L
-    real(RD_) :: PI, OFOURPI, COSSCAT, FCT, F, X, A1, B1
+    real(RD_) :: COSSCAT, FCT, F, X, A1, B1
     real(RD_), allocatable :: UNSCLEGEN(:, :)
     real(RD_), allocatable :: DMM1(:), DMM2(:)
 
     allocate (UNSCLEGEN(2, 0:NLEG), DMM1(0:NLEG), DMM2(0:NLEG))
-    PI = acos(-1.0d0)
-    OFOURPI = 1.0/(4.0*PI)
 
     do J = 1, NSCATANGLE
-        COSSCAT = cos(PI*DFLOAT(J - 1)/(NSCATANGLE - 1))
+        COSSCAT = cos(DPI_*DFLOAT(J - 1)/(NSCATANGLE - 1))
         X = dble(COSSCAT)
         call shd_pha__computeWigner(X, NLEG, 0, 0, DMM1)
         if (NSTOKES .gt. 1) then
@@ -78,7 +76,7 @@ subroutine shd_pha__computePhase(NSCATANGLE, NUMPHASE, NSTPHASE,&
                     &' for tabulated phase function: ', IPH, J, A1
                 stop
             end if
-            PHASETAB(1, IPH, J) = SNGL(A1*OFOURPI)
+            PHASETAB(1, IPH, J) = SNGL(A1*DO4PI_)
 
             if (NSTOKES .gt. 1) then
                 ! If doing polarization, sum the second Wigner function series
@@ -87,7 +85,7 @@ subroutine shd_pha__computePhase(NSCATANGLE, NUMPHASE, NSTPHASE,&
                     FCT = 2.0d0*L + 1.0d0
                     B1 = B1 - FCT*dble(UNSCLEGEN(2, L))*DMM2(L)
                 end do
-                PHASETAB(2, IPH, J) = SNGL(B1*OFOURPI)
+                PHASETAB(2, IPH, J) = SNGL(B1*DO4PI_)
             end if
         end do
     end do
@@ -143,7 +141,7 @@ subroutine shd_pha__computeYLM(TRANSPOSED, MU, PHI, ML, MM, NSTLEG, YR)
     logical TRANSPOSED
     real YR(NSTLEG, *)
     integer J, M, MABS, L
-    real(RD_) :: X, PI, FCT, P1, P2, P3, COSM, SINM, SIGN
+    real(RD_) :: X, FCT, P1, P2, P3, COSM, SINM, SIGN
     real(RD_), allocatable :: DM0(:), DM2P(:), DM2M(:)
 
     if (NSTLEG .eq. 1) then
@@ -154,8 +152,7 @@ subroutine shd_pha__computeYLM(TRANSPOSED, MU, PHI, ML, MM, NSTLEG, YR)
     allocate (DM0(0:ML), DM2P(0:ML), DM2M(0:ML))
     X = dble(MU)
 
-    PI = DACOS(-1.d0)
-    FCT = 1.d0/DSQRT(2.d0*PI)
+    FCT = 1.d0/DSQRT(2.d0*DPI_)
 
     ! sign accounting for transpose matrices
     if (.not. TRANSPOSED) then
@@ -255,14 +252,13 @@ subroutine shd_pha__computeYLM_(MU, PHI, ML, MM, YR)
     real MU, PHI
     real YR(*)
     integer J, M, L
-    real(RD_) :: X, PI, FCT, COSM, SINM
+    real(RD_) :: X, FCT, COSM, SINM
     real(RD_), allocatable :: DM0(:)
 
     allocate (DM0(0:ML))
     X = dble(MU)
 
-    PI = DACOS(-1.d0)
-    FCT = 1.d0/DSQRT(2.d0*PI)
+    FCT = 1.d0/DSQRT(2.d0*DPI_)
 
     do M = 0, MM
         call shd_pha__computeWignerDM0(X, ML, M, DM0)
@@ -301,7 +297,7 @@ subroutine shd_pha__computePLM(TRANSPOSED, MU, ML, MM, PRC)
     real PRC(6, *)
     ! --- local variables ---
     integer J, M, MABS, L
-    real(RD_) :: X, PI, FCT, P1, P2, P3, SIGN
+    real(RD_) :: X, FCT, P1, P2, P3, SIGN
     real(RD_), allocatable :: DM0(:), DM2P(:),&
         &DM2M(:)
 
@@ -311,8 +307,7 @@ subroutine shd_pha__computePLM(TRANSPOSED, MU, ML, MM, PRC)
     X = dble(MU)
 
     ! --- normalization constant ---
-    PI = DACOS(-1.d0)
-    FCT = 1.d0/DSQRT(2.d0*PI)
+    FCT = 1.d0/DSQRT(2.d0*DPI_)
 
     ! --- sign accounting for transpose matrices ---
     if (.not. TRANSPOSED) then
