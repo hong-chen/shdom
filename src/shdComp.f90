@@ -34,7 +34,7 @@ subroutine shd_comp__computeRad(&
     &SHPTR, SOURCE, SOURCE1, GRIDRAD,&
     &OUTPARMS, IRAD, RADOUT)
 
-    ! Computes the radiances for the specified locations and direction
+    ! Computes the radiances for the specified locations and directions
 
     integer NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG, NPTS, NCELLS
     integer ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
@@ -73,7 +73,7 @@ subroutine shd_comp__computeRad(&
         &UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
 
     ! Make the bottom boundary radiances for the Lambertian surfaces.
-    ! Compute the upwelling bottom radiances using the downwelling flu
+    ! Compute the upwelling bottom radiances using the downwelling fluxes.
     if (SFCTYPE .eq. 'FL') then
 
         call shd_init__makeSfcRadFL(NBOTPTS, BCPTR(1, 2),&
@@ -205,10 +205,9 @@ subroutine shd_comp__computeNetFluxDiv(NSTOKES, NPTS, RSHPTR, SRCTYPE,&
     real RADIANCE(NSTOKES, *), NETFLUXDIV(NPTS)
     character(len=1) :: SRCTYPE
     integer I, IR
-    real PI, C, SECMU, HR
+    real :: C, SECMU, HR
 
-    PI = acos(-1.0)
-    C = sqrt(4.0*PI)
+    C = sqrt(4.0*PI_)
     SECMU = 1.0/abs(SOLARMU)
     do I = 1, NPTS
         IR = RSHPTR(I)
@@ -217,7 +216,7 @@ subroutine shd_comp__computeNetFluxDiv(NSTOKES, NPTS, RSHPTR, SRCTYPE,&
             HR = HR + EXTINCT(I)*(1.0 - ALBEDO(I))*DIRFLUX(I)*SECMU
         end if
         if (SRCTYPE .eq. 'T' .or. SRCTYPE .eq. 'B') then
-            HR = HR - 4*PI*EXTINCT(I)*PLANCK(I)
+            HR = HR - 4*PI_*EXTINCT(I)*PLANCK(I)
         end if
         NETFLUXDIV(I) = -HR
     end do
@@ -267,7 +266,7 @@ subroutine shd_comp__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     real(RD_) :: X0, Y0, Z0, X1, Y1, Z1, X2, Y2, Z2
     real(RD_) :: THETA0, THETA1, PHIR, PHI0
     real(RD_) :: COSTH, SINTH, SINTH0, SINTH1, MU2, PHI2
-    real(RD_) :: U, V, UP, VP, COSDELPHI, PI, ROTANG, DEGRAD, R
+    real(RD_) :: U, V, UP, VP, COSDELPHI, ROTANG, R
     real(RD_) :: DIST, D, RX, RY, RZ, SCANANG
     integer MAXSCATANG
     parameter(MAXSCATANG=721)
@@ -313,8 +312,6 @@ subroutine shd_comp__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
             &+ (OUTPARMS(6) - OUTPARMS(9))**2)/OUTPARMS(10))
         NS = 1 + int(abs(OUTPARMS(12) - OUTPARMS(11))/OUTPARMS(13))
     end if
-    PI = acos(-1.0d0)
-    DEGRAD = PI/180.
 
     ! Loop over pixels in image
     do LINE = 1, NL
@@ -328,9 +325,9 @@ subroutine shd_comp__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 ! Use spherical trig to find the pixel direction (MURAY,PHIRAY
                 !   from the camera center (THETA0,PHI0) and the relative pixe
                 !   angles (U,V).
-                UP = (SAMP - NS/2 - 1)*OUTPARMS(13)*DEGRAD
-                VP = (LINE - NL/2 - 1)*OUTPARMS(12)*DEGRAD
-                ROTANG = OUTPARMS(9)*DEGRAD
+                UP = (SAMP - NS/2 - 1)*OUTPARMS(13)*DTOR_
+                VP = (LINE - NL/2 - 1)*OUTPARMS(12)*DTOR_
+                ROTANG = OUTPARMS(9)*DTOR_
                 if (ROTANG .eq. 0.0) then
                     U = UP
                     V = VP
@@ -338,8 +335,8 @@ subroutine shd_comp__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                     U = cos(ROTANG)*UP - sin(ROTANG)*VP
                     V = sin(ROTANG)*UP + cos(ROTANG)*VP
                 end if
-                THETA0 = DEGRAD*OUTPARMS(7)
-                PHI0 = DEGRAD*OUTPARMS(8)
+                THETA0 = DTOR_*OUTPARMS(7)
+                PHI0 = DTOR_*OUTPARMS(8)
                 THETA1 = THETA0 + V
                 if (V .eq. 0.0) then
                     COSTH = cos(U)*cos(THETA0)
@@ -394,8 +391,8 @@ subroutine shd_comp__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 X0 = X1 + D*RX
                 Y0 = Y1 + D*RY
                 Z0 = Z1 + D*RZ
-                SCANANG = DEGRAD*(OUTPARMS(11) + (SAMP - 1)*OUTPARMS(13))
-                COSTH = cos(PI - abs(SCANANG))
+                SCANANG = DTOR_*(OUTPARMS(11) + (SAMP - 1)*OUTPARMS(13))
+                COSTH = cos(PI_ - abs(SCANANG))
                 if (SCANANG .gt. 0.0) then
                     PHIR = atan2(-RX, RY)
                 else
@@ -423,7 +420,7 @@ subroutine shd_comp__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
             MURAY = SNGL(COSTH)
             PHIRAY = SNGL(PHIR)
             MU2 = -COSTH
-            PHI2 = PHIR + PI
+            PHI2 = PHIR + PI_
 
             ! Integrate the extinction and source function along this ray
             !   to calculate the Stokes radiance vector for this pixel
@@ -448,9 +445,9 @@ subroutine shd_comp__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
             VISOUT(1, IVIS) = VISRAD(1)
             if (VISRAD(1) .gt. 0.0) then
                 if (NSTOKES .gt. 1) then
-                    ! Output degree (0 to 1) and angle (-180 to 180) of linear pol
+                    ! Output degree (0 to 1) and angle (-180 to 180) of linear polarization
                     VISOUT(2, IVIS) = sqrt(VISRAD(2)**2 + VISRAD(3)**2)/VISRAD(1)
-                    VISOUT(3, IVIS) = (180/PI)*0.5*atan2(VISRAD(3), VISRAD(2))
+                    VISOUT(3, IVIS) = (180/PI_)*0.5*atan2(VISRAD(3), VISRAD(2))
                 end if
                 if (NSTOKES .eq. 4) then
                     ! Output degree of circular polarization (-1 to 1)
@@ -465,7 +462,7 @@ subroutine shd_comp__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     deallocate (YLMSUN)
     if (allocated(PHASETAB)) deallocate (PHASETAB)
     if (NSTOKES .gt. 1) then
-        ! Choose the best range for the angle of linear polarization (-90
+        ! Choose the best range for the angle of linear polarization (-90 to 90 or 0 to 180)
         N = NL*NS
         allocate (AOLP(N))
         AOLP(:) = VISOUT(3, IVIS - N + 1:IVIS)
@@ -514,7 +511,7 @@ subroutine shd_comp__interpOutput(OLDNPTS, NPTS,&
             IP = GRIDPTR(IC, ICELL)
             if (IP .gt. OLDNPTS) then
                 IPARENT = TREEPTR(1, ICELL)
-                ! Go through all 12 edges of parent cell to find which one h
+                ! Go through all 12 edges of parent cell to find which one has point
                 do IDIR = 1, 3
                     DIR1 = mod(IDIR - 1 + 1, 3) + 1
                     DIR2 = mod(IDIR - 1 + 2, 3) + 1
@@ -553,11 +550,13 @@ subroutine shd_comp__interpOutput(OLDNPTS, NPTS,&
 end subroutine shd_comp__interpOutput
 
 subroutine shd_comp__sumOutput(IFLAG, WT, N, data, SUMDATA)
-    !     Sums an output array over the k-distribution.
-    ! If IFLAG=0 then the output array is set to the input times the wei
 
-    integer IFLAG, N, I
-    real WT, data(N), SUMDATA(N)
+    ! Sums an output array over the k-distribution.
+    ! If IFLAG=0 then the output array is set to the input times the weight.
+
+    integer, intent(in) :: IFLAG, N, I
+    real, intent(in)  :: WT, data(N)
+    real, intent(out) ::SUMDATA(N)
     if (IFLAG .eq. 0) then
         do I = 1, N
             SUMDATA(I) = WT*data(I)
@@ -567,6 +566,7 @@ subroutine shd_comp__sumOutput(IFLAG, WT, N, data, SUMDATA)
             SUMDATA(I) = SUMDATA(I) + WT*data(I)
         end do
     end if
+
     return
 
 end subroutine shd_comp__sumOutput
@@ -830,14 +830,14 @@ subroutine shd_comp__computeDirect(&
     I = int(X/DELXD) + 1
     if (I .gt. NPX_ .and. abs(X - XDOMAIN) .lt. 0.001*DELXD) I = NPX_
     if (I .lt. 1 .or. I .gt. NPX_) then
-        write (6, *) '_computeDirectBeam: Beyond X domain', I, XI, YI, ZI
+        write (6, *) '_computeDirect: Beyond X domain', I, XI, YI, ZI
         stop
     end if
 
     J = int(Y/DELYD) + 1
     if (J .gt. NPY_ .and. abs(Y - YDOMAIN) .lt. 0.001*DELYD) J = NPY_
     if (J .lt. 1 .or. J .gt. NPY_) then
-        write (6, *) '_computeDirectBeam: Beyond Y domain', J, XI, YI, ZI
+        write (6, *) '_computeDirect: Beyond Y domain', J, XI, YI, ZI
         stop
     end if
     XE = X
@@ -906,7 +906,7 @@ subroutine shd_comp__computeDirect(&
         if  (I .lt. 1 .or. I .gt. NPX_ .or.&
             &J .lt. 1 .or. J .gt. NPY_ .or.&
             &K .lt. 1 .or. K .ge. NPZ_) then
-            write (6, '(A,3I4)') '_computeDirectBeam: beyond grid!', I, J, K
+            write (6, '(A,3I4)') '_computeDirect: beyond grid!', I, J, K
             write (6, '(1(2X,3F9.5))') X, Y, Z
             stop
         end if
@@ -1027,7 +1027,7 @@ subroutine shd_comp__computeDirect(&
             end if
         end if
         if (SO .lt. -EPSS) then
-            write (6, *) '_computeDirectBeam: SO<0', X, Y, Z,&
+            write (6, *) '_computeDirect: SO<0', X, Y, Z,&
                 &XE, YE, ZE, XP, YP, ZP, CX, CY, CZ, SOX, SOY, SOZ
             stop
         end if
