@@ -1,4 +1,4 @@
-module shd_comp
+module shd_rad
 
     use globals
     use shd_pha
@@ -8,19 +8,19 @@ module shd_comp
     implicit none
     private
 
-    public :: shd_comp__computeRad
-    public :: shd_comp__computeNetFluxDiv
-    public :: shd_comp__visualizeRad
+    public :: shd_rad__interpRad
 
-    public :: shd_comp__sumOutput
-    public :: shd_comp__interpOutput
+    public :: shd_rad__computeRad
 
-    public :: shd_comp__makeDirect
-    public :: shd_comp__computeDirect
+    public :: shd_rad__computeNetFluxDiv
+    public :: shd_rad__visualizeRad
+
+    public :: shd_rad__makeDirect
+    public :: shd_rad__computeDirect
 
 contains
 
-subroutine shd_comp__computeRad(&
+subroutine shd_rad__computeRad(&
     &NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
@@ -191,9 +191,76 @@ subroutine shd_comp__computeRad(&
 
     return
 
-end subroutine shd_comp__computeRad
+end subroutine shd_rad__computeRad
 
-subroutine shd_comp__computeNetFluxDiv(NSTOKES, NPTS, RSHPTR, SRCTYPE,&
+subroutine shd_rad__interpRad(&
+    &NSTOKES, OLDNPTS, NPTS, RSHPTR,&
+    &RADIANCE, NBCELLS, NCELLS, TREEPTR, GRIDPTR, GRIDPOS)
+
+    ! Interpolates the spherical harmonic radiance array to the new
+    !   grid points (>OLDNPTS) from the old grid points.
+
+    integer NSTOKES, OLDNPTS, NPTS, NBCELLS, NCELLS
+    integer RSHPTR(NPTS + 1), GRIDPTR(8, NCELLS), TREEPTR(2, NCELLS)
+    real RADIANCE(NSTOKES, *), GRIDPOS(3, *)
+    integer IP, IC, ICELL, IPARENT, IDIR, I, J, K, DIR1, DIR2, IP1, IP2
+    integer IR, IR1, IR2, NR, NR1, NR2
+    integer GRIDCORNER(2, 4, 3)
+    real RAD1(NSTOKES), RAD2(NSTOKES)
+    data GRIDCORNER/1, 2, 3, 4, 5, 6, 7, 8, 1, 3, 2, 4, 5, 7, 6, 8,&
+        &1, 5, 2, 6, 3, 7, 4, 8/
+
+    if (OLDNPTS .le. 0) return
+
+    ! Go through all the non-base grid cells
+    do ICELL = NBCELLS + 1, NCELLS
+        do IC = 1, 8
+            IP = GRIDPTR(IC, ICELL)
+            if (IP .gt. OLDNPTS) then
+                IPARENT = TREEPTR(1, ICELL)
+                ! Go through all 12 edges of parent cell to find which one h
+                do IDIR = 1, 3
+                    DIR1 = mod(IDIR - 1 + 1, 3) + 1
+                    DIR2 = mod(IDIR - 1 + 2, 3) + 1
+                    do I = 1, 4
+                        IP1 = GRIDPTR(GRIDCORNER(1, I, IDIR), IPARENT)
+                        IP2 = GRIDPTR(GRIDCORNER(2, I, IDIR), IPARENT)
+                        if (GRIDPOS(DIR1, IP1) .eq. GRIDPOS(DIR1, IP) .and.&
+                            &GRIDPOS(DIR2, IP1) .eq. GRIDPOS(DIR2, IP)) goto 120
+                    end do
+                end do
+                stop 'Error [_interpRad]: Point not on an edge.'
+120             continue
+                ! Interpolate the data from the two parent points at the
+                !   ends of the edge; assume the cell was split in half.
+                IR1 = RSHPTR(IP1)
+                IR2 = RSHPTR(IP2)
+                NR1 = RSHPTR(IP1 + 1) - RSHPTR(IP1)
+                NR2 = RSHPTR(IP2 + 1) - RSHPTR(IP2)
+                NR = max(NR1, NR2)
+                IR = RSHPTR(IP)
+                RSHPTR(IP + 1) = IR + NR
+                do J = 1, NR
+                    if (J .le. NR1) then
+                        RAD1(:) = RADIANCE(:, IR1 + J)
+                    else
+                        RAD1(:) = 0.0
+                    end if
+                    if (J .le. NR2) then
+                        RAD2(:) = RADIANCE(:, IR2 + J)
+                    else
+                        RAD2(:) = 0.0
+                    end if
+                    RADIANCE(:, IR + J) = 0.5*(RAD1(:) + RAD2(:))
+                end do
+            end if
+        end do
+    end do
+
+    return
+end subroutine shd_rad__interpRad
+
+subroutine shd_rad__computeNetFluxDiv(NSTOKES, NPTS, RSHPTR, SRCTYPE,&
     &SOLARMU, EXTINCT, ALBEDO, PLANCK, DIRFLUX,&
     &RADIANCE, NETFLUXDIV)
 
@@ -223,9 +290,9 @@ subroutine shd_comp__computeNetFluxDiv(NSTOKES, NPTS, RSHPTR, SRCTYPE,&
 
     return
 
-end subroutine shd_comp__computeNetFluxDiv
+end subroutine shd_rad__computeNetFluxDiv
 
-subroutine shd_comp__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+subroutine shd_rad__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
     &BCFLAG, IPFLAG, SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
@@ -479,107 +546,16 @@ subroutine shd_comp__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
         deallocate (AOLP)
     end if
     return
-end subroutine shd_comp__visualizeRad
+end subroutine shd_rad__visualizeRad
 
-subroutine shd_comp__interpOutput(OLDNPTS, NPTS,&
-    &FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
-    &FLUXES, DIRFLUX, FLUXDIV, SHTERMS,&
-    &NBCELLS, NCELLS, TREEPTR, GRIDPTR, GRIDPOS)
-
-    !   Interpolates the output data to the new grid points (those >OLDNPTS)
-    ! from the old grid points.  The output data is in FLUXES, DIRFLUX,
-    ! FLUXDIV, and SHTERMS.  OLDNPTS is set to zero to do no interpolation.
-    ! Each new point is located in a cell, and the two parent grid points
-    ! are found to interpolate the data from.
-
-    integer OLDNPTS, NPTS, NBCELLS, NCELLS
-    integer GRIDPTR(8, NCELLS), TREEPTR(2, NCELLS)
-    logical FLUX_OUT, FLUXDIV_OUT, SH_OUT
-    real FLUXES(2, NPTS), DIRFLUX(NPTS), FLUXDIV(NPTS)
-    real SHTERMS(5, NPTS)
-    real GRIDPOS(3, *)
-    integer IP, IC, ICELL, IPARENT, IDIR, I, J, DIR1, DIR2, IP1, IP2
-    integer GRIDCORNER(2, 4, 3)
-    data GRIDCORNER/1, 2, 3, 4, 5, 6, 7, 8, 1, 3, 2, 4, 5, 7, 6, 8,&
-        &1, 5, 2, 6, 3, 7, 4, 8/
-
-    if (OLDNPTS .le. 0) return
-
-    ! Go through all the non-base grid cells
-    do ICELL = NBCELLS + 1, NCELLS
-        do IC = 1, 8
-            IP = GRIDPTR(IC, ICELL)
-            if (IP .gt. OLDNPTS) then
-                IPARENT = TREEPTR(1, ICELL)
-                ! Go through all 12 edges of parent cell to find which one has point
-                do IDIR = 1, 3
-                    DIR1 = mod(IDIR - 1 + 1, 3) + 1
-                    DIR2 = mod(IDIR - 1 + 2, 3) + 1
-                    do I = 1, 4
-                        IP1 = GRIDPTR(GRIDCORNER(1, I, IDIR), IPARENT)
-                        IP2 = GRIDPTR(GRIDCORNER(2, I, IDIR), IPARENT)
-                        if (GRIDPOS(DIR1, IP1) .eq. GRIDPOS(DIR1, IP) .and.&
-                            &GRIDPOS(DIR2, IP1) .eq. GRIDPOS(DIR2, IP)) goto 120
-                    end do
-                end do
-
-                stop 'Error [_interpOutput]: Point not on an edge.'
-
-120             continue
-
-                ! Interpolate the data from the two parent points at the
-                !   ends of the edge; assume the cell was split in half.
-                if (FLUX_OUT) then
-                    FLUXES(1, IP) = 0.5*(FLUXES(1, IP1) + FLUXES(1, IP2))
-                    FLUXES(2, IP) = 0.5*(FLUXES(2, IP1) + FLUXES(2, IP2))
-                    DIRFLUX(IP) = 0.5*(DIRFLUX(IP1) + DIRFLUX(IP2))
-                end if
-                if (FLUXDIV_OUT) then
-                    FLUXDIV(IP) = 0.5*(FLUXDIV(IP1) + FLUXDIV(IP2))
-                end if
-                if (SH_OUT) then
-                    do J = 1, 5
-                        SHTERMS(J, IP) = 0.5*(SHTERMS(J, IP1) + SHTERMS(J, IP2))
-                    end do
-                end if
-            end if
-        end do
-    end do
-
-    return
-end subroutine shd_comp__interpOutput
-
-subroutine shd_comp__sumOutput(IFLAG, WT, N, data, SUMDATA)
-
-    ! Sums an output array over the k-distribution.
-    ! If IFLAG=0 then the output array is set to the input times the weight.
-
-    integer, intent(in) :: IFLAG, N
-    real, intent(in)  :: WT, data(N)
-    real, intent(out) :: SUMDATA(N)
-    integer :: I
-    if (IFLAG .eq. 0) then
-        do I = 1, N
-            SUMDATA(I) = WT*data(I)
-        end do
-    else
-        do I = 1, N
-            SUMDATA(I) = SUMDATA(I) + WT*data(I)
-        end do
-    end if
-
-    return
-
-end subroutine shd_comp__sumOutput
-
-subroutine shd_comp__makeDirect(&
+subroutine shd_rad__makeDirect(&
     &NPTS, BCFLAG, IPFLAG, DELTAM,&
     &ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
     &GRIDPOS, DIRFLUX)
 
     ! Makes the direct beam solar flux for the internal base grid.
     !   DIRFLUX is set to F*exp(-tau_sun).
-    !   Actually calls shd_comp__computeDirect to do all the hard work.
+    !   Actually calls shd_rad__computeDirect to do all the hard work.
 
     integer NPTS, BCFLAG, IPFLAG, ML, NSTLEG, NLEG
     logical DELTAM
@@ -589,7 +565,7 @@ subroutine shd_comp__makeDirect(&
     logical VALIDBEAM
     real UNIFZLEV, XO, YO, ZO, DIR, DIRPATH
 
-    call shd_comp__computeDirect(&
+    call shd_rad__computeDirect(&
         &1, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
         &DELTAM, ML, NSTLEG, NLEG,&
         &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
@@ -597,7 +573,7 @@ subroutine shd_comp__makeDirect(&
 
     do IP = 1, NPTS
         DIRPATH = 0.0
-        call shd_comp__computeDirect&
+        call shd_rad__computeDirect&
             &(0, GRIDPOS(1, IP), GRIDPOS(2, IP), GRIDPOS(3, IP),&
             &BCFLAG, IPFLAG, DELTAM, ML, NSTLEG, NLEG,&
             &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(IP),&
@@ -605,9 +581,9 @@ subroutine shd_comp__makeDirect(&
     end do
 
     return
-end subroutine shd_comp__makeDirect
+end subroutine shd_rad__makeDirect
 
-subroutine shd_comp__computeDirect(&
+subroutine shd_rad__computeDirect(&
     &INIT, XI, YI, ZI, BCFLAG, IPFLAG,&
     &DELTAM, ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
     &DIRFLUX, UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
@@ -1112,6 +1088,6 @@ subroutine shd_comp__computeDirect(&
 
     return
 
-end subroutine shd_comp__computeDirect
+end subroutine shd_rad__computeDirect
 
-end module shd_comp
+end module shd_rad

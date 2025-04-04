@@ -10,7 +10,7 @@ program shdom_main
     use shd_src
     use shd_shdo
     use shd_solv
-    use shd_comp
+    use shd_rad
     use shd_inp ! shd_io__
     use shd_out ! shd_io__
     use shd_mpi
@@ -618,7 +618,7 @@ program shdom_main
                             &SHPTR, SOURCE, WORK, WORK(1 + NPTS*NSTOKES),&
                             &OUTPARMS(1, I), IRAD, WORK2)
                     else
-                        call shd_comp__computeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+                        call shd_rad__computeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                             &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
                             &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                             &BCFLAG, IPFLAG, SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
@@ -633,7 +633,7 @@ program shdom_main
                     end if
                 end if
             end do
-            call shd_comp__sumOutput(NG - IG, DELG(IG), NRAD, WORK2, SUMRADOUT)
+            call shd_util__sumData(NG - IG, DELG(IG), NRAD, WORK2, SUMRADOUT)
         end if
 
         if (VISUAL_OUT) then
@@ -654,7 +654,7 @@ program shdom_main
                             &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
                             &SHPTR, SOURCE, OUTPARMS(1, I), IVIS, WORK2)
                     else
-                        call shd_comp__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+                        call shd_rad__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                             &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
                             &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                             &BCFLAG, IPFLAG, SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
@@ -668,7 +668,7 @@ program shdom_main
                     end if
                 end if
             end do
-            call shd_comp__sumOutput(NG-IG, DELG(IG), NVIS, WORK2, SUMVISOUT)
+            call shd_util__sumData(NG-IG, DELG(IG), NVIS, WORK2, SUMVISOUT)
         end if
 
         if (SOURCE_OUT) then
@@ -696,26 +696,26 @@ program shdom_main
             ! For the output from the grid point arrays (Flux, Net flux, SH)
             !   we may need to interpolate the running k-distribution sum
             !   to the newly created grid points.
-            call shd_comp__interpOutput(OLDNPTS, NPTS, FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
+            call shd_util__interpData(OLDNPTS, NPTS, FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
                 SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV, SUMSHTERMS,&
                 NBCELLS, NCELLS, TREEPTR, GRIDPTR, GRIDPOS)
         end if
 
         if (FLUX_OUT) then
-            call shd_comp__sumOutput(NG - IG, DELG(IG), 2*NPTS, FLUXES, SUMFLUXES)
-            call shd_comp__sumOutput(NG - IG, DELG(IG), NPTS, DIRFLUX, SUMDIRFLUX)
+            call shd_util__sumData(NG - IG, DELG(IG), 2*NPTS, FLUXES, SUMFLUXES)
+            call shd_util__sumData(NG - IG, DELG(IG), NPTS, DIRFLUX, SUMDIRFLUX)
         end if
         if (FLUXDIV_OUT) then
             ! Compute the net flux divergence at every point
-            call shd_comp__computeNetFluxDiv(NSTOKES, NPTS, RSHPTR, SRCTYPE, SOLARMU,&
+            call shd_rad__computeNetFluxDiv(NSTOKES, NPTS, RSHPTR, SRCTYPE, SOLARMU,&
                 &EXTINCT, ALBEDO, PLANCK, DIRFLUX, RADIANCE, WORK)
-            call shd_comp__sumOutput(NG - IG, DELG(IG), NPTS, WORK, SUMFLUXDIV)
+            call shd_util__sumData(NG - IG, DELG(IG), NPTS, WORK, SUMFLUXDIV)
         end if
 
         if (SH_OUT) then
             call shd_shdo__computeSH(NSHOUT, NSTOKES, NPTS, SRCTYPE, SOLARMU, SOLARAZ,&
                 &DIRFLUX, RSHPTR, ML, MM, RADIANCE, WORK)
-            call shd_comp__sumOutput(NG - IG, DELG(IG), NSHOUT*NPTS, WORK, SUMSHTERMS)
+            call shd_util__sumData(NG - IG, DELG(IG), NSHOUT*NPTS, WORK, SUMSHTERMS)
         end if
 
         OLDNPTS = NPTS
@@ -831,7 +831,7 @@ program shdom_main
         &NPXT, NPYT, PROPFILE, RUNNAME)
 
     if (SRCTYPE .ne. 'T') then
-        call shd_comp__computeDirect(9, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
+        call shd_rad__computeDirect(9, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
             &DELTAM, ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
     end if

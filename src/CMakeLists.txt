@@ -12,16 +12,16 @@ set(SHDOM_LIB_SRCS
     shdSHDO.f90
     shdIntg.f90
     shdSolv.f90
-    shdComp.f90
+    shdRad.f90
     shdInp.f90
     shdOut.f90
     fftpack.f90)
 
 # dummy option
 #if (USE_OMP)
-#    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} shdSolv.f90 shdComp.f90)
+#    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS})
 #else()
-#    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} shdSolv.f90 shdComp.f90)
+#    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS})
 #endif()
 
 if (USE_MPI)

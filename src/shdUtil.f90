@@ -4,6 +4,9 @@ module shd_util
 
     implicit none
 
+    public :: shd_util__sumData
+    public :: shd_util__interpData
+
     public :: shd_util__findCell
     public :: shd_util__findNextCell
 
@@ -22,6 +25,97 @@ module shd_util
     private :: integralHigh
 
 contains
+
+subroutine shd_util__sumData(IFLAG, WT, N, data, SUMDATA)
+
+    ! Sums an output array over the k-distribution.
+    ! If IFLAG=0 then the output array is set to the input times the weight.
+
+    integer, intent(in) :: IFLAG, N
+    real, intent(in)  :: WT, data(N)
+    real, intent(out) :: SUMDATA(N)
+    integer :: I
+    if (IFLAG .eq. 0) then
+        do I = 1, N
+            SUMDATA(I) = WT*data(I)
+        end do
+    else
+        do I = 1, N
+            SUMDATA(I) = SUMDATA(I) + WT*data(I)
+        end do
+    end if
+
+    return
+
+end subroutine shd_util__sumData
+
+subroutine shd_util__interpData(OLDNPTS, NPTS,&
+    &FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
+    &FLUXES, DIRFLUX, FLUXDIV, SHTERMS,&
+    &NBCELLS, NCELLS, TREEPTR, GRIDPTR, GRIDPOS)
+
+    !   Interpolates the output data to the new grid points (those >OLDNPTS)
+    ! from the old grid points.  The output data is in FLUXES, DIRFLUX,
+    ! FLUXDIV, and SHTERMS.  OLDNPTS is set to zero to do no interpolation.
+    ! Each new point is located in a cell, and the two parent grid points
+    ! are found to interpolate the data from.
+
+    integer OLDNPTS, NPTS, NBCELLS, NCELLS
+    integer GRIDPTR(8, NCELLS), TREEPTR(2, NCELLS)
+    logical FLUX_OUT, FLUXDIV_OUT, SH_OUT
+    real FLUXES(2, NPTS), DIRFLUX(NPTS), FLUXDIV(NPTS)
+    real SHTERMS(5, NPTS)
+    real GRIDPOS(3, *)
+    integer IP, IC, ICELL, IPARENT, IDIR, I, J, DIR1, DIR2, IP1, IP2
+    integer GRIDCORNER(2, 4, 3)
+    data GRIDCORNER/1, 2, 3, 4, 5, 6, 7, 8, 1, 3, 2, 4, 5, 7, 6, 8,&
+        &1, 5, 2, 6, 3, 7, 4, 8/
+
+    if (OLDNPTS .le. 0) return
+
+    ! Go through all the non-base grid cells
+    do ICELL = NBCELLS + 1, NCELLS
+        do IC = 1, 8
+            IP = GRIDPTR(IC, ICELL)
+            if (IP .gt. OLDNPTS) then
+                IPARENT = TREEPTR(1, ICELL)
+                ! Go through all 12 edges of parent cell to find which one has point
+                do IDIR = 1, 3
+                    DIR1 = mod(IDIR - 1 + 1, 3) + 1
+                    DIR2 = mod(IDIR - 1 + 2, 3) + 1
+                    do I = 1, 4
+                        IP1 = GRIDPTR(GRIDCORNER(1, I, IDIR), IPARENT)
+                        IP2 = GRIDPTR(GRIDCORNER(2, I, IDIR), IPARENT)
+                        if (GRIDPOS(DIR1, IP1) .eq. GRIDPOS(DIR1, IP) .and.&
+                            &GRIDPOS(DIR2, IP1) .eq. GRIDPOS(DIR2, IP)) goto 120
+                    end do
+                end do
+
+                stop 'Error [_interpOutput]: Point not on an edge.'
+
+120             continue
+
+                ! Interpolate the data from the two parent points at the
+                !   ends of the edge; assume the cell was split in half.
+                if (FLUX_OUT) then
+                    FLUXES(1, IP) = 0.5*(FLUXES(1, IP1) + FLUXES(1, IP2))
+                    FLUXES(2, IP) = 0.5*(FLUXES(2, IP1) + FLUXES(2, IP2))
+                    DIRFLUX(IP) = 0.5*(DIRFLUX(IP1) + DIRFLUX(IP2))
+                end if
+                if (FLUXDIV_OUT) then
+                    FLUXDIV(IP) = 0.5*(FLUXDIV(IP1) + FLUXDIV(IP2))
+                end if
+                if (SH_OUT) then
+                    do J = 1, 5
+                        SHTERMS(J, IP) = 0.5*(SHTERMS(J, IP1) + SHTERMS(J, IP2))
+                    end do
+                end if
+            end if
+        end do
+    end do
+
+    return
+end subroutine shd_util__interpData
 
 subroutine shd_util__findCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
     &NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS,&

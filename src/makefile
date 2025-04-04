@@ -26,7 +26,7 @@ ifeq ($(useOMP), yes)
 endif
 SHDOMOBJS = globals.o shdUtil.o shdSfc.o shdPha.o shdInit.o\
 			shdGrid.o shdSrc.o shdSHDO.o shdIntg.o shdSolv.o\
-			shdComp.o shdInp.o shdOut.o fftpack.o
+			shdRad.o shdInp.o shdOut.o fftpack.o
 
 ifeq ($(FC), mpif90)
 	UseMPI = yes
@@ -65,7 +65,7 @@ shdom_: shdom_.o $(SHDOMOBJS)
 shdom_.o: shdom_.f90 $(SHDOMOBJS)
 	$(F90) -c $(F90FLAGS) shdom_.f90
 
-shdSolv.o: shdSolv.f90 $(SHDOMMPIOBJ) shdSfc.o shdInit.o shdGrid.o shdSHDO.o shdPha.o shdSrc.o shdIntg.o shdComp.o shdUtil.o
+shdSolv.o: shdSolv.f90 $(SHDOMMPIOBJ) shdSfc.o shdInit.o shdGrid.o shdSHDO.o shdPha.o shdSrc.o shdIntg.o shdRad.o shdUtil.o
 	$(F90) -c $(F90FLAGS) shdSolv.f90
 
 shdIntg.o: shdIntg.f90 $(SHDOMMPIOBJ) shdSfc.o shdInit.o shdGrid.o shdUtil.o shdSHDO.o
@@ -80,17 +80,17 @@ shdOut.o: shdOut.f90 globals.o shdGrid.o shdUtil.o
 shdMPI_.o: shdMPI_.f90
 	$(F90) -c $(F90FLAGS) shdMPI_.f90
 
-shdMPI.o: shdMPI.f90 shdInit.o shdUtil.o shdSrc.o shdComp.o
+shdMPI.o: shdMPI.f90 shdInit.o shdUtil.o shdSrc.o shdRad.o
 	$(F90) -c $(F90FLAGS) shdMPI.f90
 
 shdSHDO.o: shdSHDO.f90 globals.o shdPha.o shdSfc.o
 	$(F90) -c $(F90FLAGS) shdSHDO.f90
 
-shdGrid.o: shdGrid.f90 $(SHDOMMPIOBJ) globals.o shdUtil.o shdComp.o shdSrc.o
+shdGrid.o: shdGrid.f90 $(SHDOMMPIOBJ) globals.o shdUtil.o shdRad.o shdSrc.o
 	$(F90) -c $(F90FLAGS) shdGrid.f90
 
-shdComp.o: shdComp.f90 globals.o shdPha.o shdSrc.o shdInit.o
-	$(F90) -c $(F90FLAGS) shdComp.f90
+shdRad.o: shdRad.f90 globals.o shdPha.o shdSrc.o shdInit.o
+	$(F90) -c $(F90FLAGS) shdRad.f90
 
 shdSrc.o: shdSrc.f90 globals.o shdUtil.o shdPha.o shdInit.o
 	$(F90) -c $(F90FLAGS) shdSrc.f90

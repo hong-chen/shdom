@@ -2,7 +2,7 @@ module shd_grid
 
     use globals
     use shd_util
-    use shd_comp
+    use shd_rad
     use shd_src
     use shd_mpi
 
@@ -1279,7 +1279,7 @@ subroutine shd_grid__interpNewGridPnt(NEWPOINTS, NPTS,&
                 else
                     ! Otherwise, calculate the exact direct beam from property grid
                     DIRPATH = 0.0
-                    call shd_comp__computeDirect(0, X, Y, Z, BCFLAG, IPFLAG, DELTAM,&
+                    call shd_rad__computeDirect(0, X, Y, Z, BCFLAG, IPFLAG, DELTAM,&
                         &ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
                         &DIRFLUX(IP),&
                         &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)

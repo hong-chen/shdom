@@ -3,10 +3,10 @@ module shd_solv
     use shd_init
     use shd_pha
     use shd_src
+    use shd_rad
     use shd_sfc
     use shd_shdo
     use shd_grid
-    use shd_comp
     use shd_intg
     use shd_util
     use shd_mpi
@@ -122,7 +122,7 @@ subroutine shd_solv__solveRte(&
                 &NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
                 &GRIDPOS, NX, XGRID, NY, YGRID, DIRFLUX)
         else
-            call shd_comp__makeDirect(NPTS, BCFLAG, IPFLAG, DELTAM, ML,&
+            call shd_rad__makeDirect(NPTS, BCFLAG, IPFLAG, DELTAM, ML,&
                 &NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
                 &GRIDPOS, DIRFLUX)
         end if
@@ -155,7 +155,7 @@ subroutine shd_solv__solveRte(&
         NBPTS = NX1*NY1*NZ
         NBCELLS = (NZ - 1)*(NX + ibits(BCFLAG, 0, 1) - ibits(BCFLAG, 2, 1))&
             &*(NY + ibits(BCFLAG, 1, 1) - ibits(BCFLAG, 3, 1))
-        call shd_src__interpRad(NSTOKES, NBPTS, NPTS, RSHPTR, RADIANCE,&
+        call shd_rad__interpRad(NSTOKES, NBPTS, NPTS, RSHPTR, RADIANCE,&
             &NBCELLS, NCELLS, TREEPTR, GRIDPTR, GRIDPOS)
         ! Initialize the source function from the radiance field
         call shd_src__computeSrc(NSTOKES, ML, MM, NLM,&
