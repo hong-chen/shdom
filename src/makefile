@@ -86,7 +86,7 @@ shdMPI.o: shdMPI.f90 shdInit.o shdUtil.o shdSrc.o shdComp.o
 shdSHDO.o: shdSHDO.f90 globals.o shdPha.o shdSfc.o
 	$(F90) -c $(F90FLAGS) shdSHDO.f90
 
-shdGrid.o: shdGrid.f90 globals.o shdUtil.o shdComp.o shdSrc.o
+shdGrid.o: shdGrid.f90 $(SHDOMMPIOBJ) globals.o shdUtil.o shdComp.o shdSrc.o
 	$(F90) -c $(F90FLAGS) shdGrid.f90
 
 shdComp.o: shdComp.f90 globals.o shdPha.o shdSrc.o shdInit.o
