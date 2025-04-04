@@ -400,10 +400,10 @@ real function loadObject(BndLines, Nxd, Nyd, ProcCoordAll, wtproc,&
     ! of each domain and the mean number, weighted by the relative processor
     ! times.
 
-    integer, intent(IN) :: Nxd, Nyd, BndLines(Nxd + Nyd - 2)
-    integer, intent(IN) :: ProcCoordAll(2, 0:Nxd*Nyd - 1)
-    real, intent(IN) :: wtproc(0:Nxd*Nyd)
-    integer, intent(IN) :: NPXT, NPYT, Ngrid(NPXT + 1, NPYT + 1)
+    integer, intent(in) :: Nxd, Nyd, BndLines(Nxd + Nyd - 2)
+    integer, intent(in) :: ProcCoordAll(2, 0:Nxd*Nyd - 1)
+    real, intent(in) :: wtproc(0:Nxd*Nyd)
+    integer, intent(in) :: NPXT, NPYT, Ngrid(NPXT + 1, NPYT + 1)
     integer :: N, I, J, IX, IY, IDX(Nxd + 1), IDY(Nyd + 1)
     real    :: OBJA
     real, save :: sumN = -1.0, a
@@ -432,7 +432,7 @@ real function shd_mpi__ran(idum)
     ! Call ran with idum negative to initialize; thereafter, do not alter idum.
 
     integer, parameter :: K4B = selected_int_kind(9)
-    integer(K4B), intent(INOUT) :: idum
+    integer(K4B), intent(inout) :: idum
     integer(K4B), parameter :: IA = 16807, IM = 2147483647, IQ = 127773, IR = 2836
     real, save :: am
     integer(K4B), save :: ix = -1, iy = -1, k
@@ -468,18 +468,18 @@ subroutine shd_mpi__bcastInput(&
     ! Broadcasts all the user input parameters (except unneeded file names)
     ! from the master processor to the slave processors.
 
-    integer, intent(INOUT) :: NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG, IPFLAG
-    integer, intent(IN)    :: MAXOUT, MAXPAR
-    integer, intent(INOUT) :: MAXITER, NUMOUT
-    logical, intent(INOUT) :: KDIST, DELTAM, ACCELFLAG
-    real, intent(INOUT) :: SOLARFLUX, SOLARMU, SOLARAZ
-    real, intent(INOUT) :: GNDTEMP, GNDALBEDO, SKYRAD, WAVENO(2), WAVELEN
-    real, intent(INOUT) :: SOLACC, SPLITACC, SHACC, OUTPARMS(MAXPAR, MAXOUT)
-    real, intent(INOUT) :: MAX_TOTAL_MB, SPLITTING_FACTOR
-    real, intent(INOUT) :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
-    character(LEN=1), intent(INOUT) :: SRCTYPE, GRIDTYPE, UNITS, OUTTYPES(*)
-    character(LEN=FNAMEMAXLEN_), intent(INOUT) :: RUNNAME, PROPFILE, SFCFILE, CKDFILE
-    character(LEN=FNAMEMAXLEN_), intent(INOUT) :: INSAVEFILE, OUTSAVEFILE
+    integer, intent(inout) :: NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG, IPFLAG
+    integer, intent(in)    :: MAXOUT, MAXPAR
+    integer, intent(inout) :: MAXITER, NUMOUT
+    logical, intent(inout) :: KDIST, DELTAM, ACCELFLAG
+    real, intent(inout) :: SOLARFLUX, SOLARMU, SOLARAZ
+    real, intent(inout) :: GNDTEMP, GNDALBEDO, SKYRAD, WAVENO(2), WAVELEN
+    real, intent(inout) :: SOLACC, SPLITACC, SHACC, OUTPARMS(MAXPAR, MAXOUT)
+    real, intent(inout) :: MAX_TOTAL_MB, SPLITTING_FACTOR
+    real, intent(inout) :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
+    character(LEN=1), intent(inout) :: SRCTYPE, GRIDTYPE, UNITS, OUTTYPES(*)
+    character(LEN=FNAMEMAXLEN_), intent(inout) :: RUNNAME, PROPFILE, SFCFILE, CKDFILE
+    character(LEN=FNAMEMAXLEN_), intent(inout) :: INSAVEFILE, OUTSAVEFILE
 
     integer :: ierr, intbuf(10)
     logical :: logbuf(3)
@@ -534,8 +534,8 @@ subroutine shd_mpi__bcastPrpSize(NPX, NPY, NPZ, DELX, DELY,&
     ! Broadcasts the property file size information from the master processor
     ! to the slave processors.
 
-    integer, intent(INOUT) :: NPX, NPY, NPZ, NUMPHASE, MAXLEG, MAXPGL
-    real, intent(INOUT) :: DELX, DELY
+    integer, intent(inout) :: NPX, NPY, NPZ, NUMPHASE, MAXLEG, MAXPGL
+    real, intent(inout) :: DELX, DELY
 
     integer :: ierr, intbuf(6)
     real    :: realbuf(2)
@@ -562,15 +562,15 @@ subroutine shd_mpi__scatPrp(NPXT, NPYT, NPX, NPY, NPZ,&
     ! of the processors.  Deals with the duplicating the grid points on the
     ! boundaries between processors.
 
-    integer, intent(IN) :: NPXT, NPYT, NPX, NPY, NPZ, NSTLEG, NUMPHASE
-    integer, intent(INOUT) :: NLEG
-    real, intent(INOUT) :: ZLEVELS(NPZ), MAXASYM
-    real, intent(IN) :: TEMPPT(NPZ, NPYT, NPXT), EXTINCTPT(NPZ, NPYT, NPXT)
-    real, intent(IN) :: ALBEDOPT(NPZ, NPYT, NPXT), LEGENPT(*)
-    integer*2, intent(IN) :: IPHASEPT(NPZ, NPYT, NPXT)
-    real, intent(OUT) :: TEMPP(NPZ, NPY, NPX), EXTINCTP(NPZ, NPY, NPX)
-    real, intent(OUT) :: ALBEDOP(NPZ, NPY, NPX), LEGENP(*)
-    integer*2, intent(OUT) :: IPHASEP(NPZ, NPY, NPX)
+    integer, intent(in) :: NPXT, NPYT, NPX, NPY, NPZ, NSTLEG, NUMPHASE
+    integer, intent(inout) :: NLEG
+    real, intent(inout) :: ZLEVELS(NPZ), MAXASYM
+    real, intent(in) :: TEMPPT(NPZ, NPYT, NPXT), EXTINCTPT(NPZ, NPYT, NPXT)
+    real, intent(in) :: ALBEDOPT(NPZ, NPYT, NPXT), LEGENPT(*)
+    integer*2, intent(in) :: IPHASEPT(NPZ, NPYT, NPXT)
+    real, intent(out) :: TEMPP(NPZ, NPY, NPX), EXTINCTP(NPZ, NPY, NPX)
+    real, intent(out) :: ALBEDOP(NPZ, NPY, NPX), LEGENP(*)
+    integer*2, intent(out) :: IPHASEP(NPZ, NPY, NPX)
 
     integer :: SX, EX, NX, SY, EY, NY, N, MAXN, MaxNX, MaxNY
     integer :: iproc, irq, ierr
@@ -668,7 +668,7 @@ subroutine shd_mpi__bcastSfcSize(MAXSFCPTS, MAXSFCPARS)
 
     ! Broadcasts the surface array sizes from the master process to the others.
 
-    integer, intent(INOUT) :: MAXSFCPTS, MAXSFCPARS
+    integer, intent(inout) :: MAXSFCPTS, MAXSFCPARS
     integer :: ierr, intbuf(2)
 
     if (NUMPROC_ <= 1) return
@@ -684,9 +684,9 @@ subroutine shd_mpi__bcastSfcParam(SFCTYPE, NXSFC, NYSFC, NSFCPAR,&
 
     ! Broadcasts the surface file parameters from the master process to the others.
 
-    character(LEN=2), intent(INOUT) :: SFCTYPE
-    integer, intent(INOUT) :: NXSFC, NYSFC, NSFCPAR
-    real, intent(INOUT) :: DELXSFC, DELYSFC, SFCPARMS(*), GNDTEMP, GNDALBEDO
+    character(LEN=2), intent(inout) :: SFCTYPE
+    integer, intent(inout) :: NXSFC, NYSFC, NSFCPAR
+    real, intent(inout) :: DELXSFC, DELYSFC, SFCPARMS(*), GNDTEMP, GNDALBEDO
     integer :: ierr, intbuf(3), n
     real    :: realbuf(4)
 
@@ -712,7 +712,7 @@ subroutine shd_mpi__bcastKdistSize(NG, NZCKD)
 
     ! Broadcasts the k-distribution array sizes from the master process to the others.
 
-    integer, intent(INOUT) :: NG, NZCKD
+    integer, intent(inout) :: NG, NZCKD
     integer :: ierr, intbuf(2)
 
     if (NUMPROC_ <= 1) return
@@ -728,8 +728,8 @@ subroutine shd_mpi__bcastKdistParam(SOLFLUX, NG, DELG, NZCKD, ZCKD, KABS)
     ! Broadcasts the k-distribution file parameters from the master process
     ! to the other processes.
 
-    integer, intent(IN) :: NG, NZCKD
-    real, intent(INOUT) :: SOLFLUX, DELG(NG), ZCKD(NZCKD), KABS(NZCKD, NG)
+    integer, intent(in) :: NG, NZCKD
+    real, intent(inout) :: SOLFLUX, DELG(NG), ZCKD(NZCKD), KABS(NZCKD, NG)
     integer :: ierr
     real, allocatable :: realbuf(:)
 
@@ -993,7 +993,7 @@ end subroutine shd_mpi__gatherOutput
 
 subroutine shd_mpi__findAlbMax(ALBMAX)
 
-    real, intent(INOUT) :: ALBMAX
+    real, intent(inout) :: ALBMAX
     integer :: ierr
     real    :: sendrbuf
 
@@ -1008,8 +1008,8 @@ end subroutine shd_mpi__findAlbMax
 
 subroutine shd_mpi__unifySplit(DOSPLIT, STARTSPLITACC)
 
-    logical, intent(INOUT) :: DOSPLIT
-    real, intent(INOUT) :: STARTSPLITACC
+    logical, intent(inout) :: DOSPLIT
+    real, intent(inout) :: STARTSPLITACC
     integer :: ierr(2)
     logical :: sendlbuf
     real    :: sendrbuf
@@ -1027,7 +1027,7 @@ end subroutine shd_mpi__unifySplit
 
 subroutine shd_mpi__findTotSplitCritMax(SPLITCRIT)
 
-    real, intent(INOUT) :: SPLITCRIT
+    real, intent(inout) :: SPLITCRIT
     integer :: ierr
     real    :: sendrbuf
 
@@ -1049,11 +1049,11 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
     ! index SPT having X/Y/Z positions in GRIDPOS.
     ! DIRFLUX is set to F*exp(-tau_sun).
 
-    integer, intent(IN) :: SPT, NPTS, BCFLAG, IPFLAG, ML, NSTLEG, NLEG, NX, NY
-    logical, intent(IN) :: DELTAM
-    real, intent(IN) :: SOLARFLUX, SOLARMU, SOLARAZ
-    real, intent(IN) :: GRIDPOS(3, NPTS), XGRID(NX + 1), YGRID(NY + 1)
-    real, intent(OUT) :: DIRFLUX(NPTS)
+    integer, intent(in) :: SPT, NPTS, BCFLAG, IPFLAG, ML, NSTLEG, NLEG, NX, NY
+    logical, intent(in) :: DELTAM
+    real, intent(in) :: SOLARFLUX, SOLARMU, SOLARAZ
+    real, intent(in) :: GRIDPOS(3, NPTS), XGRID(NX + 1), YGRID(NY + 1)
+    real, intent(out) :: DIRFLUX(NPTS)
 
     logical :: VALIDBEAM
     real    :: UNIFZLEV, UZLEV, DIRPATH
@@ -1308,15 +1308,15 @@ subroutine shd_mpi__findBoundaryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
     ! boundary of this subdomain (SIDE: 1=-X, 2=+X, 3=-Y, 4=+Y).  BXYPOS_ holds
     ! the gridpoint positions (X,Y,Z) for these boundary points.
 
-    integer, intent(IN) :: BCFLAG, IPFLAG, NPTS, SWEEPORD(NPTS, *), GRIDPTR(8, *)
-    integer, intent(IN) :: NX, NY, NZ
-    real, intent(IN) :: GRIDPOS(3, NPTS), XGRID(NX), YGRID(NY), ZGRID(NZ)
+    integer, intent(in) :: BCFLAG, IPFLAG, NPTS, SWEEPORD(NPTS, *), GRIDPTR(8, *)
+    integer, intent(in) :: NX, NY, NZ
+    real, intent(in) :: GRIDPOS(3, NPTS), XGRID(NX), YGRID(NY), ZGRID(NZ)
 
     integer :: tag, ierr, irq
     integer :: MAXNBXY, NOCT, JOCT, IORDER, IPCELL, ICORNER, IPT, SIDE
     integer :: L, LI, N(4), N1(8, 4), N2(8, 4), NS, NBX, NBY
     integer :: MAXBC, IBC, BITZ, SZ, EZ, DZ, LX, LY, IX, IY, IZ, J
-    integer :: INOUT(4) = (/2, 1, 4, 3/)
+    integer :: INOUT_ARR(4) = (/2, 1, 4, 3/)
     integer, save :: OLDNPTS = 0
     logical :: SAMEGRID
     real    :: XEDGE(8), YEDGE(8), XYB(4)
@@ -1399,7 +1399,7 @@ subroutine shd_mpi__findBoundaryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
         if ((btest(BCFLAG, 2) .and. (L .eq. 1 .or. L .eq. 2)) .or.&
             &(btest(BCFLAG, 3) .and. (L .eq. 3 .or. L .eq. 4))) then
             ! Exchange the lists of boundary points with neighbors
-            LI = INOUT(L)
+            LI = INOUT_ARR(L)
             tag = L
             call MPI_ISEND(N1(:, L), 8, MPI_INTEGER,&
                 &IPROCNEIGH_(L), tag, COMM2D_, requests(irq + 1), ierr)
@@ -1511,16 +1511,16 @@ subroutine shd_mpi__calBoundaryRad(BCFLAG, IPFLAG, JOCT, IZ,&
     ! the finished radiance and original grid points are exchanged with
     ! all the other processors.
 
-    integer, intent(IN) :: BCFLAG, IPFLAG, JOCT, IZ
-    integer, intent(IN) :: NSTOKES, NX, NY, NZ, NA, NPTS, NCELLS, KANG
-    real, intent(IN) :: XGRID(NX), YGRID(NY), ZGRID(NZ)
-    integer, intent(IN) :: GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS)
-    integer, intent(IN) :: TREEPTR(2, NCELLS)
-    integer*2, intent(IN) :: CELLFLAGS(NCELLS)
-    real, intent(IN) :: GRIDPOS(3, NPTS)
-    real, intent(IN) :: MU, PHI
-    real, intent(IN) :: EXTINCT(NPTS), SOURCE(NSTOKES, NA, NPTS)
-    real, intent(INOUT) :: GRIDRAD(NSTOKES, NPTS)
+    integer, intent(in) :: BCFLAG, IPFLAG, JOCT, IZ
+    integer, intent(in) :: NSTOKES, NX, NY, NZ, NA, NPTS, NCELLS, KANG
+    real, intent(in) :: XGRID(NX), YGRID(NY), ZGRID(NZ)
+    integer, intent(in) :: GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS)
+    integer, intent(in) :: TREEPTR(2, NCELLS)
+    integer*2, intent(in) :: CELLFLAGS(NCELLS)
+    real, intent(in) :: GRIDPOS(3, NPTS)
+    real, intent(in) :: MU, PHI
+    real, intent(in) :: EXTINCT(NPTS), SOURCE(NSTOKES, NA, NPTS)
+    real, intent(inout) :: GRIDRAD(NSTOKES, NPTS)
 
     integer :: MAXNBND, Nbcpnts, Lupx, Lupy, Ldownx, Ldowny
     integer :: SIDE, NINVALID(0:4)
@@ -1778,20 +1778,20 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
     ! properly initialized on input).  The ending location X,Y,Z and the
     ! subdomain SIDE (1=-X,2=+X,3=-Y,4=+Y) are also returned.
 
-    integer, intent(IN) :: BCFLAG, IPFLAG, NX, NY, NZ, NA, NPTS, NCELLS
-    integer, intent(IN) :: NSTOKES, KANG
-    real, intent(IN) :: XGRID(NX), YGRID(NY), ZGRID(NZ)
-    integer, intent(IN) :: GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS)
-    integer, intent(IN) :: TREEPTR(2, NCELLS)
-    integer*2, intent(IN) ::  CELLFLAGS(NCELLS)
-    real, intent(IN) :: GRIDPOS(3, NPTS)
-    real, intent(IN) :: EXTINCT(NPTS)
-    real, intent(IN) :: SOURCE(NSTOKES, NA, NPTS), GRIDRAD(NSTOKES, NPTS)
-    real, intent(IN) :: MU, PHI
-    real, intent(INOUT) :: X, Y, Z
-    integer, intent(INOUT) :: SIDE
-    real, intent(INOUT) :: TRANSMIT, RADIANCE(NSTOKES)
-    logical, intent(OUT) :: VALIDRAD
+    integer, intent(in) :: BCFLAG, IPFLAG, NX, NY, NZ, NA, NPTS, NCELLS
+    integer, intent(in) :: NSTOKES, KANG
+    real, intent(in) :: XGRID(NX), YGRID(NY), ZGRID(NZ)
+    integer, intent(in) :: GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS)
+    integer, intent(in) :: TREEPTR(2, NCELLS)
+    integer*2, intent(in) ::  CELLFLAGS(NCELLS)
+    real, intent(in) :: GRIDPOS(3, NPTS)
+    real, intent(in) :: EXTINCT(NPTS)
+    real, intent(in) :: SOURCE(NSTOKES, NA, NPTS), GRIDRAD(NSTOKES, NPTS)
+    real, intent(in) :: MU, PHI
+    real, intent(inout) :: X, Y, Z
+    integer, intent(inout) :: SIDE
+    real, intent(inout) :: TRANSMIT, RADIANCE(NSTOKES)
+    logical, intent(out) :: VALIDRAD
 
     integer :: BITX, BITY, BITZ, IOCT, NXC, NYC, BTEST
     integer :: IX, IY, IZ, IL, IM, IU, IPTR, DIR, ICELL, INEXTCELL
@@ -2144,27 +2144,27 @@ subroutine shd_mpi__computeRad(&
     ! the number of radiances output.  Does the radiative transfer integrations
     ! across multiple processors.
 
-    integer, intent(IN) :: NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG, NPTS, NCELLS
-    integer, intent(IN) :: ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
-    integer, intent(IN) :: NMU, NPHI0MAX, NPHI0(NMU)
-    integer, intent(INOUT) :: NRAD
-    integer, intent(IN) :: MAXNBC, NTOPPTS, NBOTPTS, NSFCPAR
-    integer, intent(IN) :: GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
-    integer, intent(IN) :: SHPTR(NPTS + 1), BCPTR(MAXNBC, 2)
-    integer*2, intent(IN) :: CELLFLAGS(NCELLS), IPHASE(NPTS)
-    logical, intent(IN) :: DELTAM
-    real, intent(IN) :: SOLARMU, SOLARAZ
-    real, intent(IN) :: GNDTEMP, GNDALBEDO, SKYRAD, WAVENO(2), WAVELEN
-    real, intent(IN) :: MU(NMU), PHI(NMU, NPHI0MAX), WTDO(NMU, NPHI0MAX)
-    real, intent(IN) :: XDOMAIN, YDOMAIN, XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ)
-    real, intent(IN) :: GRIDPOS(3, NPTS)
-    real, intent(IN) :: SFCGRIDPARMS(*), BCRAD(NSTOKES, *)
-    real, intent(IN) :: EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, NPTS)
-    real, intent(IN) :: DIRFLUX(NPTS), FLUXES(2, NPTS), SOURCE(NSTOKES, *)
-    real, intent(INOUT) :: SOURCE1(NSTOKES, NPTS), GRIDRAD(NSTOKES, NPTS)
-    real, intent(IN) :: OUTPARMS(*)
-    real, intent(OUT) :: RADOUT(NSTOKES, *)
-    character, intent(IN) ::  SRCTYPE*1, SFCTYPE*2, UNITS*1
+    integer, intent(in) :: NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG, NPTS, NCELLS
+    integer, intent(in) :: ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
+    integer, intent(in) :: NMU, NPHI0MAX, NPHI0(NMU)
+    integer, intent(inout) :: NRAD
+    integer, intent(in) :: MAXNBC, NTOPPTS, NBOTPTS, NSFCPAR
+    integer, intent(in) :: GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
+    integer, intent(in) :: SHPTR(NPTS + 1), BCPTR(MAXNBC, 2)
+    integer*2, intent(in) :: CELLFLAGS(NCELLS), IPHASE(NPTS)
+    logical, intent(in) :: DELTAM
+    real, intent(in) :: SOLARMU, SOLARAZ
+    real, intent(in) :: GNDTEMP, GNDALBEDO, SKYRAD, WAVENO(2), WAVELEN
+    real, intent(in) :: MU(NMU), PHI(NMU, NPHI0MAX), WTDO(NMU, NPHI0MAX)
+    real, intent(in) :: XDOMAIN, YDOMAIN, XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ)
+    real, intent(in) :: GRIDPOS(3, NPTS)
+    real, intent(in) :: SFCGRIDPARMS(*), BCRAD(NSTOKES, *)
+    real, intent(in) :: EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, NPTS)
+    real, intent(in) :: DIRFLUX(NPTS), FLUXES(2, NPTS), SOURCE(NSTOKES, *)
+    real, intent(inout) :: SOURCE1(NSTOKES, NPTS), GRIDRAD(NSTOKES, NPTS)
+    real, intent(in) :: OUTPARMS(*)
+    real, intent(out) :: RADOUT(NSTOKES, *)
+    character, intent(in) ::  SRCTYPE*1, SFCTYPE*2, UNITS*1
 
     integer :: IBC, JX, JY, K
     integer :: NANGOUT, NXOUT, NYOUT
@@ -2558,26 +2558,26 @@ subroutine shd_mpi__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     ! Computes Stokes radiances (output in VISOUT) for the visualization
     ! modes: 1) camera mode, and 2) cross track scanning.
 
-    integer, intent(IN) :: NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG, NPTS, NCELLS
-    integer, intent(IN) :: ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
-    integer, intent(IN) :: NMU, NPHI0MAX, NPHI0(NMU)
-    integer, intent(INOUT) :: IVIS
-    integer, intent(IN) :: MAXNBC, NTOPPTS, NBOTPTS, NSFCPAR
-    integer, intent(IN) :: GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
-    integer, intent(IN) :: SHPTR(NPTS + 1), BCPTR(MAXNBC, 2)
-    integer*2, intent(IN) :: CELLFLAGS(NCELLS), IPHASE(NPTS)
-    logical, intent(IN) :: DELTAM
-    real, intent(IN) :: SOLARMU, SOLARAZ
-    real, intent(IN) :: GNDTEMP, GNDALBEDO, SKYRAD, WAVENO(2), WAVELEN
-    real, intent(IN) :: MU(NMU), PHI(NMU, NPHI0MAX), WTDO(NMU, NPHI0MAX)
-    real, intent(IN) :: XDOMAIN, YDOMAIN, XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ)
-    real, intent(IN) :: GRIDPOS(3, NPTS)
-    real, intent(IN) :: SFCGRIDPARMS(*), BCRAD(NSTOKES, *)
-    real, intent(IN) :: EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, *)
-    real, intent(IN) :: DIRFLUX(NPTS), FLUXES(2, NPTS), SOURCE(NSTOKES, *)
-    real, intent(IN) :: OUTPARMS(*)
-    real, intent(OUT) :: VISOUT(NSTOKES, *)
-    character, intent(IN) :: SRCTYPE*1, SFCTYPE*2, UNITS*1
+    integer, intent(in) :: NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG, NPTS, NCELLS
+    integer, intent(in) :: ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
+    integer, intent(in) :: NMU, NPHI0MAX, NPHI0(NMU)
+    integer, intent(inout) :: IVIS
+    integer, intent(in) :: MAXNBC, NTOPPTS, NBOTPTS, NSFCPAR
+    integer, intent(in) :: GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
+    integer, intent(in) :: SHPTR(NPTS + 1), BCPTR(MAXNBC, 2)
+    integer*2, intent(in) :: CELLFLAGS(NCELLS), IPHASE(NPTS)
+    logical, intent(in) :: DELTAM
+    real, intent(in) :: SOLARMU, SOLARAZ
+    real, intent(in) :: GNDTEMP, GNDALBEDO, SKYRAD, WAVENO(2), WAVELEN
+    real, intent(in) :: MU(NMU), PHI(NMU, NPHI0MAX), WTDO(NMU, NPHI0MAX)
+    real, intent(in) :: XDOMAIN, YDOMAIN, XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ)
+    real, intent(in) :: GRIDPOS(3, NPTS)
+    real, intent(in) :: SFCGRIDPARMS(*), BCRAD(NSTOKES, *)
+    real, intent(in) :: EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, *)
+    real, intent(in) :: DIRFLUX(NPTS), FLUXES(2, NPTS), SOURCE(NSTOKES, *)
+    real, intent(in) :: OUTPARMS(*)
+    real, intent(out) :: VISOUT(NSTOKES, *)
+    character, intent(in) :: SRCTYPE*1, SFCTYPE*2, UNITS*1
 
     integer :: NSCATANGLE, NSTPHASE, I, J, L, N
     integer :: NL, NS, LINE, SAMP
@@ -2996,9 +2996,9 @@ subroutine shd_mpi__calAccelSolCrit(DOACCEL, DELJDOT, DELJOLD, DELJNEW, JNORM,&
     ! products over all the processors, and from these calculates the
     ! full-domain-wide acceleration parameter and solution criterion.
 
-    logical, intent(IN) :: DOACCEL
-    real, intent(INOUT) :: DELJDOT, DELJOLD, DELJNEW, JNORM
-    real, intent(OUT) :: ACCELPAR, SOLCRIT
+    logical, intent(in) :: DOACCEL
+    real, intent(inout) :: DELJDOT, DELJOLD, DELJNEW, JNORM
+    real, intent(out) :: ACCELPAR, SOLCRIT
     integer :: ierr
     real    ::  R, THETA, sendbuf(4), recvbuf(4)
     real, save :: A = 0.0

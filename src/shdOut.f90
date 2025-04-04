@@ -2351,7 +2351,7 @@ subroutine shd_io__plotCell(&
     real YVAL, XDOMAIN, ZDOMAIN, GRIDPOS(3, *)
     character(len=*), intent(in) :: OUTFILE
     integer IC
-    integer J, IN
+    integer J, INeigh
     real XSIZE, ZSIZE, S, DELX
     real X1, Z1, X2, Z2, X3, Z3, X4, Z4, XC, ZC
     real DX, DZ, XN, ZN, XA, ZA
@@ -2439,9 +2439,9 @@ subroutine shd_io__plotCell(&
                 DZ = 0.1*(Z4 - Z1)
                 do J = 1, 6
                     if (NEIGHPTR(J, IC) .ne. 0 .and. J .ne. 3 .and. J .ne. 4) then
-                        IN = abs(NEIGHPTR(J, IC))
-                        XN = (GRIDPOS(1, GRIDPTR(1, IN)) + GRIDPOS(1, GRIDPTR(8, IN)))/2
-                        ZN = (GRIDPOS(3, GRIDPTR(1, IN)) + GRIDPOS(3, GRIDPTR(8, IN)))/2
+                        INeigh = abs(NEIGHPTR(J, IC))
+                        XN = (GRIDPOS(1, GRIDPTR(1, INeigh)) + GRIDPOS(1, GRIDPTR(8, INeigh)))/2
+                        ZN = (GRIDPOS(3, GRIDPTR(1, INeigh)) + GRIDPOS(3, GRIDPTR(8, INeigh)))/2
                         XA = XC + 1.0*(XN - XC)
                         ZA = ZC + 1.0*(ZN - ZC)
                         if (.not. (XN - XC .gt. 0.0 .and. J .eq. 1 .or.&

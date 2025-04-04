@@ -256,27 +256,27 @@ subroutine shd_mpi__computeRad(&
     &SHPTR, SOURCE, SOURCE1, GRIDRAD,&
     &OUTPARMS, NRAD, RADOUT)
 
-    integer, intent(IN) :: NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG, NPTS, NCELLS
-    integer, intent(IN) :: ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
-    integer, intent(IN) :: NMU, NPHI0MAX, NPHI0(NMU)
-    integer, intent(INOUT) :: NRAD
-    integer, intent(IN) :: MAXNBC, NTOPPTS, NBOTPTS, NSFCPAR
-    integer, intent(IN) :: GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
-    integer, intent(IN) :: SHPTR(NPTS + 1), BCPTR(MAXNBC, 2)
-    integer*2, intent(IN) :: CELLFLAGS(NCELLS), IPHASE(NPTS)
-    logical, intent(IN) :: DELTAM
-    real, intent(IN) :: SOLARMU, SOLARAZ
-    real, intent(IN) :: GNDTEMP, GNDALBEDO, SKYRAD, WAVENO(2), WAVELEN
-    real, intent(IN) :: MU(NMU), PHI(NMU, NPHI0MAX), WTDO(NMU, NPHI0MAX)
-    real, intent(IN) :: XDOMAIN, YDOMAIN, XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ)
-    real, intent(IN) :: GRIDPOS(3, NPTS)
-    real, intent(IN) :: SFCGRIDPARMS(*), BCRAD(NSTOKES, *)
-    real, intent(IN) :: EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, NPTS)
-    real, intent(IN) :: DIRFLUX(NPTS), FLUXES(2, NPTS), SOURCE(NSTOKES, *)
-    real, intent(INOUT) :: SOURCE1(NSTOKES, NPTS), GRIDRAD(NSTOKES, NPTS)
-    real, intent(IN) :: OUTPARMS(*)
-    real, intent(OUT) :: RADOUT(NSTOKES, *)
-    character, intent(IN) ::  SRCTYPE*1, SFCTYPE*2, UNITS*1
+    integer, intent(in) :: NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG, NPTS, NCELLS
+    integer, intent(in) :: ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
+    integer, intent(in) :: NMU, NPHI0MAX, NPHI0(NMU)
+    integer, intent(inout) :: NRAD
+    integer, intent(in) :: MAXNBC, NTOPPTS, NBOTPTS, NSFCPAR
+    integer, intent(in) :: GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
+    integer, intent(in) :: SHPTR(NPTS + 1), BCPTR(MAXNBC, 2)
+    integer*2, intent(in) :: CELLFLAGS(NCELLS), IPHASE(NPTS)
+    logical, intent(in) :: DELTAM
+    real, intent(in) :: SOLARMU, SOLARAZ
+    real, intent(in) :: GNDTEMP, GNDALBEDO, SKYRAD, WAVENO(2), WAVELEN
+    real, intent(in) :: MU(NMU), PHI(NMU, NPHI0MAX), WTDO(NMU, NPHI0MAX)
+    real, intent(in) :: XDOMAIN, YDOMAIN, XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ)
+    real, intent(in) :: GRIDPOS(3, NPTS)
+    real, intent(in) :: SFCGRIDPARMS(*), BCRAD(NSTOKES, *)
+    real, intent(in) :: EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, NPTS)
+    real, intent(in) :: DIRFLUX(NPTS), FLUXES(2, NPTS), SOURCE(NSTOKES, *)
+    real, intent(inout) :: SOURCE1(NSTOKES, NPTS), GRIDRAD(NSTOKES, NPTS)
+    real, intent(in) :: OUTPARMS(*)
+    real, intent(out) :: RADOUT(NSTOKES, *)
+    character, intent(in) ::  SRCTYPE*1, SFCTYPE*2, UNITS*1
 
     return
 end subroutine shd_mpi__computeRad
