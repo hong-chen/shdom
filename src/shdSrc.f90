@@ -724,7 +724,7 @@ subroutine shd_src__integrateSrcOneRay(&
     real EXT0, EXT1, EXTN
     real SRCEXT0(NSTOKES), SRCEXT1(NSTOKES), RADBND(NSTOKES)
     real XM, YM, F
-    real(RD_) :: PI, CX, CY, CZ, CXINV, CYINV, CZINV
+    real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV
     real(RD_) :: XN, YN, ZN, XI, YI, ZI
     real(RD_) :: SO, SOX, SOY, SOZ, EPS
     real(RD_) :: TAUTOL, TAUGRID, S, DELS, TRANSCUT
@@ -748,7 +748,6 @@ subroutine shd_src__integrateSrcOneRay(&
 
     EPS = 1.0e-5*(GRIDPOS(3, GRIDPTR(8, 1)) - GRIDPOS(3, GRIDPTR(1, 1)))
     MAXCELLSCROSS = 50*max(NX, NY, NZ)
-    PI = acos(-1.0d0)
 
     ! Calculate the generalized spherical harmonics for this direction
     allocate (YLMDIR(NSTLEG, NLM))
@@ -762,7 +761,7 @@ subroutine shd_src__integrateSrcOneRay(&
             &*cos(SOLARAZ - PHI2)
         if (NUMPHASE .gt. 0) then
             allocate (SINGSCAT(NSTOKES, NUMPHASE))
-            F = (NSCATANGLE - 1)*(acos(COSSCAT)/PI) + 1
+            F = (NSCATANGLE - 1)*(acos(COSSCAT)/DPI_) + 1
             J = min(NSCATANGLE - 1, int(F))
             F = F - J
             do I = 1, NUMPHASE
@@ -777,14 +776,14 @@ subroutine shd_src__integrateSrcOneRay(&
             allocate (SUNDIRLEG(0:NLEG))
             call shd_pha__computeLegendre(COSSCAT, NLEG, SUNDIRLEG)
             do L = 0, NLEG
-                SUNDIRLEG(L) = SUNDIRLEG(L)*(2*L + 1)/(4*PI)
+                SUNDIRLEG(L) = SUNDIRLEG(L)*(2*L + 1)/(4*DPI_)
             end do
         end if
     end if
 
     ! Make the ray direction (opposite to the outgoing direction)
-    CX = sqrt(1.0d0 - MU2**2)*cos(PHI2 - PI)
-    CY = sqrt(1.0d0 - MU2**2)*sin(PHI2 - PI)
+    CX = sqrt(1.0d0 - MU2**2)*cos(PHI2 - DPI_)
+    CY = sqrt(1.0d0 - MU2**2)*sin(PHI2 - DPI_)
     CZ = -MU2
     if (abs(CX) .gt. 1.0e-6) then
         CXINV = 1.0d0/CX
