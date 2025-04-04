@@ -1141,7 +1141,7 @@ with MPI is:
 .. code-block:: bash
 
    mpif90 -O2 -o shdom  shdom.f90 shdMPI.f90 shdom_nonetcdf.f90 \
-             shdSolv.f90 shdComp.f90 shdIO_inp.f90 shdIO_out.f90 fftpack.f90
+             shdSolv.f90 shdComp.f90 shdInp.f90 shdOut.f90 fftpack.f90
 
    mpirun -np 4  shdom shdom.inp
 
@@ -1336,13 +1336,13 @@ Namelist input: main program (``shdom.f90``); ``nmlMode = .True.`` (by default)
 calls ``shd_io__nmlInput`` and ``nmlMode = .True.`` calls ``shd_io__userInput``.
 
 NetCDF property file input: main program (``shdom.f90``); Comment out
-calls to ``shd_io__readPropSize``, and ``shd_io__readProp`` and uncomment calls to
+calls to ``shd_io__readPrpSize``, and ``shd_io__readPrp`` and uncomment calls to
 ``read_property_size_netcdf`` and ``read_properties_netcdf``.  Use the ``makefile``
 to compile with the netcdf library.
 
 Adding surface reflection types: in ``shdComp.f90`` write a BRDF Fortran
 function modeled on ``RPV_REFLECTION`` and add a call in ``SURFACE_BRDF`` to the
-new function.  In ``shdIO_inp.f90`` modify subroutine ``shd_io__readSurf`` by adding a
+new function.  In ``shdInp.f90`` modify subroutine ``shd_io__readSfc`` by adding a
 block to read in the new surface type parameters.
 
 Discrete ordinate angle set: SOLVE_RTE (``shdSolv.f90``); The ``ORDINATESET``
@@ -1808,287 +1808,304 @@ LIST OF ROUTINES
 ----------------
 
 The following is a list of all the subroutines, where they are, and
-what they do.  The first column gives the file (0 is ``shdom.f90``,
-1 is ``shdSolv.f90``, 2 is ``shdComp.f90``, 3 is ``shdIO_inp.f90`` and ``shdIO_out.f90``,
-M is ``shdMPI.f90``, F is ``fftpack.f90``).  The second column indicates
-the calling routine.
-The major solving routines are in ``shdSolv.f90``, other routines are in
-``shdComp.f90``, all the regular I/O routines are in ``shdIO_inp.f90`` and ``shdIO_out.f90``,
+what they do.  The first column gives the file . The second column indicates
+the whether calling routine is public or private (indicated by ``x``).
+The major solving routines are in ``shdSolv.f90``, all the regular I/O
+routines are in ``shdInp.f90`` and ``shdOut.f90``,
 the MPI calling routines are in ``shdMPI.f90``, and ``fftpack.f90`` has the FFTPACK
 routines from NCAR.
 
 .. code-block::
 
          Routine              Description
-   0   shd_grid__InterpTriLinGridPrp Interpolates medium properties to base/adaptive grid
 
-   0   DIRECT_BEAM_PROP     Computes direct beam flux at a point
+   Util   shd_util__sumData            : Sums an output array over the k-distribution.
 
-   1 0 SOLVE_RTE (S)        Main solver routine
+   Util   shd_rad__interpData          : Interpolates the output data to the new grid points
 
-   1   CALC_SOURCE_PNT      Calculates the SH source function at one grid point
+   Util   shd_util__findCell           : Locates grid cell containing the specified point
 
-   1   CALC_SOURCE_PNT_UNPOL  CALC_SOURCE_PNT for NSTOKES=1
+   Util   shd_util__findNextCell       : Gets next cell to go to adjacent to this face
 
-   1 S COMPUTE_SOURCE       Computes the SH source function from the radiance
+   Util   shd_util__interpTriLin       : Trilinearly interpolates field given a grid cell
 
-   1 S RADIANCE_TRUNCATION  Computes the next radiance truncation to use
+   Util   shd_util__solveTriDiag       : Tridiagonal solver used by <shd_init__makeFlux>
 
-   1 S ACCELERATE_SOLUTION  Accelerates the solution sequence
+   Util   shd_util__computePlanck      : Monochromatic Planck function routine
 
-   1 S PATH_INTEGRATION (P) Integrates the source function to get radiance
+   Util   shd_util__computeGausQuad    : Gaussian quadrature routine
 
-   1 P BOUNDARY_PNTS        Makes BCPTR of list of top and bottom boundary points
+   Util   shd_util__computeGausQuadDble: Double Gaussian quadrature routine
 
-   1 P SURFACE_PARM_INTERP  Interpolates variable surface params to adaptive grid
+   Util   shd_util__ssort_i            : Sorting routine for adaptive cell criterion (integer input of Y)
 
-   1 S CHECK_UNIFORM_SFC    Determines if the surface file reflection is uniform
+   Util   shd_util__ssort_r            : Sorting routine for adaptive cell criterion (real input of Y)
 
-   1 P COMPUTE_TOP_RADIANCES  Makes the top boundary radiances
+   Util x shd_util__integratePlanck    : Band integrates the Planck function
 
-   1 P FIXED_LAMBERTIAN_BOUNDARY    Makes the bottom boundary upwelling radiances
+   Util x integralLow (shdUtil.f90)    : Integral of x**3/(exp(x)-1) from 0 to x
 
-   1 P VARIABLE_LAMBERTIAN_BOUNDARY Makes the bottom boundary upwelling radiances
+   Util x integralHigh (shdUtil.f90)   : Integral of x**3/(exp(x)-1) from x to infinity
 
-   1 P VARIABLE_BRDF_SURFACE  Makes the upwelling radiances for general BRDF
+   Sfc    shd_sfc__interpSfc     : Interpolates variable surface params to adaptive grid
 
-   1 S MAKE_SFC_BRDF_DO_MATRIX  Makes the uniform surface BRDF function for discrete ordinates
+   Sfc    shd_sfc__brdfSurface   : Computes the reflection for the one of the BRDF types
 
-   1 P UNIFORM_BRDF_SURFACE     Makes the upwelling radiances for uniform BRDFs
+   Sfc    shd_sfc__brdfFresnel   : Routine for Wave-Fresnel polarized reflection
 
-   1 P SH_TO_DO             Spherical harmonic to discrete ordinate transform
+   Sfc    shd_sfc__brdfDiner     : Routine for Diner polarized reflection
 
-   1 P SH_TO_DO_UNPOL       SH_TO_DO for NSTOKES=1
+   Sfc    shd_sfc__brdfRPV       : Routine for Rahman, Pinty, Verstraete reflection
 
-   1 P DO_TO_SH             Discrete ordinate to SH transform
+   Sfc    shd_sfc__brdfLSRT      : Routine for RossThick-LiSparse reflection
 
-   1 P DO_TO_SH_UNPOL       DO_TO_SH for NSTOKES=1
+   Sfc    shd_sfc__brdfOcean     : Routine for Ocean BRDF reflection
 
-   1 P SWEEPING_ORDER       Makes the point sweeping order for 2,4, or 8 octants
+   Sfc  x morcasiwat (shdSfc.f90):
 
-   1 P BACK_INT_GRID3D (B)  3D source function integration routine for one angle
+   Sfc  x indwat (shdSfc.f90)    :
 
-   1 P BACK_INT_GRID3D_UNPOL  BACK_INT_GRID3D for NSTOKES=1
+   Sfc  x sunglint (shdSfc.f90)  :
 
-   1 P BACK_INT_GRID2D (B)  2D source function integration routine for one angle
+   Sfc  x Fresnel (shdSfc.f90)   :
 
-   1 P BACK_INT_GRID1D (B)  1D source function integration routine for one angle
+   Sfc  x glitalbe (shdSfc.f90)  :
 
-   1 B NEXT_CELL            Gets next cell to go to adjacent to this face
+   Sfc  x getbound (shdSfc.f90)  :
 
-   1   SWEEP_BASE_CELL      Returns next base grid cell in sweep
+   Pha    shd_pha__computePhase            : Precomputes phase function for all tabulated functions
 
-   1   SWEEP_NEXT_CELL      Returns next grid cell in sweep
+   Pha    shd_pha__computeLegendre         : Computes a set of Legendre polynomials for one angle
 
-   1 S SPLIT_GRID (G)       Main routine for adaptive cell splitting
+   Pha    shd_pha__computeYLM              : Computes a set of real generalized spherical harmonic functions
 
-   1 G INTERPOLATE_POINT    Interpolates medium, source for new grid points
+   Pha    shd_pha__computePLM              : Computes more Wigner d-functions
 
-   1 G DIVIDE_CELL (D)      Divides a single cell, adjusts the adaptive structure
+   Pha    shd_pha__computeWigner           : Computes more Wigner d-functions
 
-   1 D MATCH_NEIGHBOR_FACE  Resolves the neighbor pointers for a new cell
+   Pha  x shd_pha__computeYLM_             : YLMALL for NSTOKES=1
 
-   1   INHERIT_NEIGHBOR     Updates a cell's new neighbor cell
+   Pha  x shd_pha__computeWignerDM0        : Computes more Wigner d-functions
 
-   1 D NEW_GRID_POINTS      Makes two new points and sets up the pointers
+   Pha  x shd_pha__computeWignerDM0DM2PDM2M: Computes some Wigner d-functions
 
-   1   MATCH_GRID_POINT     Find whether neighboring cells have matching gridpoints
+   Pha  x wignerDMM1N0 (shdPha.f90)        : Computes other Wigner d-functions
 
-   1 G CELL_SPLIT_TEST      Computes splitting criterion and direction to split
+   Pha  x wignerDMM0N0 (shdPha.f90)        : Computes more Wigner d-functions
 
-   1 G GRID_SMOOTH_TEST     Determines if cell will be split for a "smoother" grid
+   Init   shd_init__makeGrid    : Makes the internal X, Y, and Z grids
 
-   2   NEW_GRIDS            Makes the internal X, Y, and Z grids
+   Init   shd_init__makeCell    : Make initial grid data structure for the base grid
 
-   2 0 INIT_CELL_STRUCTURE  Make initial grid data structure for the base grid
+   Init   shd_init__makePrp     : Does delta-M scaling; makes PLANCK
 
-   2 S INTERP_GRID          Interpolates medium from property to internal grid
+   Init   shd_init__makeRad     : Does an Eddington (two-stream) initializatin
 
-   2 S MAKE_DIRECT          Makes direct beam solar flux (calls DIRECT_BEAM_PROP)
+   Init   shd_init__makeFlux    : Solves Eddington radiative transfer for flux
 
-   2 S PREPARE_PROP         Does delta-M scaling; makes PLANCK
+   Init   shd_init__makeAngle   : Makes angle set for the discrete representation
 
-   2 S INIT_RADIANCE        Does an Eddington (two-stream) initializatin
+   Init   shd_init__makeTopRad  : Makes the top boundary radiances
 
-   2   EDDRTF               Solves Eddington radiative transfer for flux
+   Init   shd_init__makeSfcRadFL: Makes the bottom boundary upwelling radiances
 
-   2   TRIDIAG              Tridiagonal solver used by EDDRTF
+   Init   shd_init__makeSfcRadVL: Makes the bottom boundary upwelling radiances
 
-   2 S MAKE_ANGLE_SET       Makes angle set for the discrete representation
+   Init   shd_init__makeSfcRadV : Makes the upwelling radiances for general varying BRDF
 
-   2 S MAKE_SH_DO_COEF      Makes the SH/DO transform coefficients
+   Init   shd_init__makeSfcRadU : Makes the upwelling radiances for uniform BRDFs
 
-   2   SURFACE_BRDF         Computes the reflection for the one of the BRDF types
+   Init   shd_init__checkSfcU   : Determines if the surface file reflection is uniform
 
-   2   WAVE_FRESNEL_REFLECTION  Routine for Wave-Fresnel polarized reflection
+   SHDO   shd_shdo__computeSH   : Computes the SH output arrays
 
-   2   DINER_REFLECTION     Routine for Diner polarized reflection
+   SHDO   shd_shdo__makeSHDO    : Makes the SH/DO transform coefficients
 
-   2   RPV_REFLECTION       Function for Rahman, Pinty, Verstraete reflection
+   SHDO   shd_shdo__makeSfcDO   : Makes the uniform surface BRDF function for discrete ordinates
 
-   2   LSRT_REFLECTION      Function for RossThick-LiSparse reflection
+   SHDO   shd_shdo__transSHtoDO_: SH_TO_DO for NSTOKES=1
 
-   2 0 shd_comp__sumOutput: Sums an output array over the k-distribution.
+   SHDO   shd_shdo__transDOtoSH_: DO_TO_SH for NSTOKES=1
 
-   2 0 shd_comp__computeNetFluxDiv: Computes the net flux divergence everywhere
+   SHDO   shd_shdo__transSHtoDO : Spherical harmonic to discrete ordinate transform
 
-   2 0 COMPUTE_SH           Computes the SH output arrays
+   SHDO   shd_shdo__transDOtoSH : Discrete ordinate to SH transform
 
-   2 0 shd_comp__interpOutput: Interpolates the output data to the new grid points
+   Src    shd_src__computeSrcOnePnt      : Calculates the SH source function at one grid point
 
-   2 S INTERP_RADIANCE      Interpolates SH radiance array to the new points
+   Src    shd_src__computeSrcOnePnt_     : CALC_SOURCE_PNT for NSTOKES=1
 
-   2 0 VISUALIZE_RADIANCE   Computes radiances for the two visualization modes
+   Src    shd_src__computeSrcOneCell     : Computes source times extinction for one cell
 
-   2   shd_src__integrateSrcOneRay: Integrates the source function for one ray
+   Src    shd_src__computeSrcOneCell_    : COMPUTE_SOURCE_1CELL for NSTOKES=1
 
-   2   shd_src__findBoundaryRad: Gets the interpolated radiance at the boundary
+   Src    shd_src__computeSrcOneDir      : Computes the source function for 1 angle
 
-   2   shd_src__computeSrcOneCell: Computes source times extinction for one cell
+   Src    shd_src__computeSrc            : Computes the SH source function from the radiance
 
-   2   shd_src__computeSrcOneCell_: COMPUTE_SOURCE_1CELL for NSTOKES=1
+   Src    shd_src__integrateSrcOneRay    : Integrates the source function for one ray
 
-   2   shd_pha__computePhase: Precomputes phase function for all tabulated functions
+   Src    shd_src__integrateSrc          : Integrates the source function backward for radiance
 
-   2   shd_src__rotatePolarPlane: Rotates the plane of polarization for single scattered Stokes vector
+   Src  x shd_src__computeSolarStokesVect: Compute Stokes vector for a single scattering of sunlight
 
-   2 0 shd_comp__computeRad: (R) Computes the desired output radiance values
+   Src  x shd_src__rotatePolarPlane      : Rotates the plane of polarization for single scattered Stokes vector
 
-   2 R shd_src__computeSrcOneDir: Computes the source function for 1 angle
+   Src  x shd_src__findBoundaryRad       : Gets the interpolated radiance at the boundary
 
-   2   shd_src__computeSolarStokesVect: Compute Stokes vector for a single scattering of sunlight
+   Rad    shd_rad__makeDirect       : Makes direct beam solar flux (calls DIRECT_BEAM_PROP)
 
-   2 R shd_src__integrateSrc: Integrates the source function backward for radiance
+   Rad    shd_rad__computeDirect    : Computes direct beam flux at a point
 
-   2   shd_util__interpTriLin: Trilinearly interpolates field given a grid cell
+   Rad    shd_rad__interpRad        : Interpolates SH radiance array to the new points
 
-   2   shd_grid__findGridCell: Locates grid cell containing the specified point
+   Rad    shd_rad__computeRad       : (R) Computes the desired output radiance values
 
-   2   shd_pha__computeLegendre: Computes a set of Legendre polynomials for one angle
+   Rad    shd_rad__visualizeRad     : Computes radiances for the two visualization modes
 
-   2 S shd_pha__computeYLM: Computes a set of real generalized spherical harmonic functions
+   Rad    shd_rad__computeNetFluxDiv   : Computes the net flux divergence everywhere
 
-   2 S shd_pha__computeYLM_: YLMALL for NSTOKES=1
+   Grid   shd_grid__findBoundaryPnt    : Makes BCPTR of list of top and bottom boundary points
 
-   2   shd_pha__computeWignerDM0DM2PDM2M: Computes some Wigner d-functions
+   Grid   shd_grid__matchGridPnt       : Find whether neighboring cells have matching gridpoints
 
-   2   wignerDMM1N0: Computes other Wigner d-functions
+   Grid   shd_grid__makeNewGridPnt     : Makes two new points and sets up the pointers
 
-   2   shd_pha__computeWignerDM0: Computes more Wigner d-functions
+   Grid   shd_grid__makeSweepOrder     : Makes the point sweeping order for 2,4, or 8 octants
 
-   2   wignerDMM0N0: Computes more Wigner d-functions
+   Grid   shd_grid__divideCell         : (D) Divides a single cell, adjusts the adaptive structure
 
-   2   shd_pha__computeWigner: Computes more Wigner d-functions
+   Grid   shd_grid__matchNeighCellFace : Resolves the neighbor pointers for a new cell
 
-   2   shd_pha__computePLM: Computes more Wigner d-functions
+   Grid   shd_grid__inheritNeighCell   : Updates a cell's new neighbor cell
 
-   2   shd_util__computePlanck: Monochromatic Planck function routine
+   Grid   shd_grid__testGridSmooth     : Determines if cell will be split for a "smoother" grid
 
-   2   shd_util__integratePlanck: Band integrates the Planck function
+   Grid   shd_grid__testCellSplit      : Computes splitting criterion and direction to split
 
-   2   shd_util__computeGausQuad: Gaussian quadrature routine
+   Grid   shd_grid__interpGrid         : Interpolates medium from property to internal grid
 
-   2   shd_util__computeGausQuadDble: Double Gaussian quadrature routine
+   Grid   shd_grid__interpNewGridPnt   : Interpolates medium, source for new grid points
 
-   2   shd_util__ssort_i: Sorting routine for adaptive cell criterion (integer input of Y)
+   Grid   shd_grid__splitGrid          : (G) Main routine for adaptive cell splitting
 
-   2   shd_util__ssort_r: Sorting routine for adaptive cell criterion (real input of Y)
+   Grid x shd_grid__InterpTriLinGridPrp: Interpolates medium properties to base/adaptive grid
 
-   3 0 shd_io__userInput: Gets the input parameters from stdin
+   Grid x sweepCellBase (shdGrid.f90)  : Returns next base grid cell in sweep
 
-   3 0 shd_io__nmlInput: Gets the input parameters from a namelist
+   Grid x sweepCellNext (shdGrid.f90)  : Returns next grid cell in sweep
 
-   3 0 shd_io__checkInputParams: Checks input parameters for validity/reasonableness
+   Intg   shd_intg__integratePath   : (P) Integrates the source function to get radiance
 
-   3 0 shd_io__readPropSize: Gets the size of the property file
+   Intg   shd_intg__backIntegrate3D : (B) 3D source function integration routine for one angle
 
-   3 0 shd_io__readProp: Reads the property file
+   Intg   shd_intg__backIntegrate3D_: BACK_INT_GRID3D for NSTOKES=1
 
-   3 0 shd_io__checkPropInput: Checks the values read in from the property file
+   Intg   shd_intg__backIntegrate2D : (B)  2D source function integration routine for one angle
 
-   3 0 shd_io__readSurfSize: Gets the size of the surfae file
+   Intg   shd_intg__backIntegrate1D : (B)  1D source function integration routine for one angle
 
-   3 0 shd_io__readSurf: Reads the surface file
+   Solv   shd_solv__solveRte   : (S) Main solver routine
 
-   3 0 shd_io__readCkdSize: Gets the size of the k-distribution file
+   Solv x shd_solv__truncateRad: Computes the next radiance truncation to use
 
-   3 0 shd_io__readCkd: Reads the correlated k-distribution file
+   Solv x shd_solv__accelSol   : Accelerates the solution sequence
 
-   3 0 shd_io__restoreState: Reads the binary state file
+   Inp    shd_io__userInput       : Gets the input parameters from stdin
 
-   3 0 shd_io__saveState: Writes the binary state file
+   Inp    shd_io__nmlInput        : Gets the input parameters from a namelist
 
-   3 S shd_io__outputCellSplit: Outputs the cell splitting criterion for every cell
+   Inp    shd_io__checkInputParams: Checks input parameters for validity/reasonableness
 
-   3 S shd_io__plotCell: Outputs GLE graphics of cell structure
+   Inp    shd_io__readPrpSize     : Gets the size of the property file
 
-   3 0 shd_io__outputResult: Selects and outputs the results
+   Inp    shd_io__readPrp         : Reads the property file
 
-   3 0 shd_io__outputResultMpi: Outputs results when using MPI
+   Inp    shd_io__checkPrpInput   : Checks the values read in from the property file
 
-   3 0 shd_io__outputImg: Outputs the visualization PGM images with labels
+   Inp    shd_io__readSfcSize     : Gets the size of the surfae file
 
-   M 0 START_MPI            Initializes the MPI system
+   Inp    shd_io__readSfc         : Reads the surface file
 
-   M 0 MAP_SHDOM_MPI        Sets the mapping of processors for the SHDOM domain
+   Inp    shd_io__readCkdSize     : Gets the size of the k-distribution file
 
-   M   OPTIMIZE_PROCESSOR_DOMAINS  Calculates the location of this processor
+   Inp    shd_io__readCkd         : Reads the correlated k-distribution file
 
-   M   LOAD_OBJ_FUNC        The objective function to minimize in the load balancing optimization
+   Inp    shd_io__restoreState    : Reads the binary state file
 
-   M   ran                  Uniform random number generator
+   Out    shd_io__outputResult   : Selects and outputs the results
 
-   M 0 BROADCAST_USER_INPUT Broadcasts the user input parameters from the master processor
+   Out    shd_io__outputResultMpi: Outputs results when using MPI
 
-   M 0 BROADCAST_PROPERTY_SIZE  Broadcasts the property file size information
+   Out    shd_io__outputImg      : Outputs the visualization PGM images with labels
 
-   M 0 SCATTER_PROPERTIES   Sends the subdomain of optical properties to each processor
+   Out    shd_io__outputCellSplit: Outputs the cell splitting criterion for every cell
 
-   M 0 BROADCAST_SURFACE_SIZE Broadcasts the surface array sizes from the master processor
+   Out    shd_io__plotCell       : Outputs GLE graphics of cell structure
 
-   M 0 BROADCAST_SURFACE_PARMS Broadcasts the surface file parameters from the master processor
+   Out    shd_io__saveState      : Writes the binary state file
 
-   M 0 BROADCAST_KDIST_SIZE Broadcasts the k-distribution array sizes from the master processor
+   MPI    shd_mpi__start            : Initializes the MPI system
 
-   M 0 BROADCAST_KDIST_PARMS Broadcasts the k-distribution file parameters from the master processor
+   MPI    shd_mpi__map              : Sets the mapping of processors for the SHDOM domain
 
-   M 0 READ_BROADCAST_MEM_PARAMS  Reads and broadcasts the *_mem_params.inp file
+   MPI    shd_mpi__bcastInput       : Broadcasts the user input parameters from the master processor
 
-   M 0 SUM_CPU_TIME         Sums the CPU time used across all processors
+   MPI    shd_mpi__bcastPrpSize     : Broadcasts the property file size information
 
-   M 0 GATHER_OUTPUT        Gathers the base grid output data from all the processors
+   MPI    shd_mpi__scatPrp          : Sends the subdomain of optical properties to each processor
 
-   M 1 TOTAL_ALBEDO_MAX     Finds the max ALBMAX over all processors
+   MPI    shd_mpi__readBcastMemParam: Reads and broadcasts the *_mem_params.inp file
 
-   M S UNIFY_SPLITTING      Turns on cell splitting (DOSPLIT=.TRUE.) for all processors if any want to
+   MPI    shd_mpi__bcastSfcSize     : Broadcasts the surface array sizes from the master processor
 
-   M 1 TOTAL_SPLITCRIT_MAX  Finds the max SPLITCRIT over all processors
+   MPI    shd_mpi__bcastSfcParam    : Broadcasts the surface file parameters from the master processor
 
-   M 2 MAKE_DIRECT_PAR      Calculates the grid point direct solar fluxes with multiple processors
+   MPI    shd_mpi__bcastKdistSize   : Broadcasts the k-distribution array sizes from the master processor
 
-   M P FIND_BOUNDARY_POINTS Makes the pointers to and positions of the boundary
-                              grid points of the neighboring processors
+   MPI    shd_mpi__bcastKdistParam  : Broadcasts the k-distribution file parameters from the master processor
 
-   M B CALC_BOUNDARY_RADIANCES Calculates the discrete ordinate boundary radiances
+   MPI    shd_mpi__gatherOutput     : Gathers the base grid output data from all the processors
 
-   M   INTEGRATE_RAY        Does the RTE integrations for CALC_BOUNDARY_RADIANCES
+   MPI    shd_mpi__end              : Shuts down MPI, writes load balancing file
 
-   M 0 COMPUTE_RADIANCE_PAR Computes the output radiances using multiple processors
+   MPI    shd_mpi__abort            : Prints error message and aborts MPI
 
-   M 0 VISUALIZE_RADIANCE_PAR Computes the visualization output using MPI
+   MPI    shd_mpi__sumCpuTime       : Sums the CPU time used across all processors
 
-   M S CALC_ACCEL_SOLCRIT   Calculates full domain acceleration parameter (& solcrit)
+   MPI    shd_mpi__makeDirect         : Calculates the grid point direct solar fluxes with multiple processors
 
-   M 0 END_SHDOM_MPI        Shuts down MPI, writes load balancing file
+   MPI    shd_mpi__computeRad         : Computes the output radiances using multiple processors
 
-   M M ABORT_SHDOM_MPI      Prints error message and aborts MPI
+   MPI    shd_mpi__visualizeRad       : Computes the visualization output using MPI
 
-   F   COSTI                Sets up for the cosine FFT
+   MPI    shd_mpi__findAlbMax         : Finds the max ALBMAX over all processors
 
-   F   COST                 Does the cosine transform FFT
+   MPI    shd_mpi__findTotSplitCritMax: Finds the max SPLITCRIT over all processors
 
-   F   RFFTI                Sets up for the real FFT
+   MPI    shd_mpi__findBoundaryPnt    : Makes the pointers to and positions of the boundary
+                                        grid points of the neighboring processors
 
-   F   RFFTB                Does the real FFT to discrete azimuths
+   MPI    shd_mpi__calBoundaryRad     : Calculates the discrete ordinate boundary radiances
 
-   F   RFFTF                Does the real FFT to Fourier coefficients
+   MPI    shd_mpi__calAccelSolCrit    : Calculates full domain acceleration parameter (& solcrit)
+
+   MPI    shd_mpi__unifySplit         : Turns on cell splitting (DOSPLIT=.TRUE.) for all processors if any want to
+
+   MPI  x shd_mpi__optimizeProcDomain : Calculates the location of this processor
+
+   MPI  x shd_mpi__ran                : Uniform random number generator
+
+   MPI  x shd_mpi__integrateRay       : Does the RTE integrations for CALC_BOUNDARY_RADIANCES
+
+   MPI  x loadObject (shdMPI.f90)     : The objective function to minimize in the load balancing optimization
+
+   FFT    COSTI (fftpack.f90): Sets up for the cosine FFT
+
+   FFT    COST (fftpack.f90) : Does the cosine transform FFT
+
+   FFT    RFFTI (fftpack.f90): Sets up for the real FFT
+
+   FFT    RFFTB (fftpack.f90): Does the real FFT to discrete azimuths
+
+   FFT    RFFTF (fftpack.f90): Does the real FFT to Fourier coefficients
