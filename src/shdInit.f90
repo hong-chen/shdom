@@ -687,7 +687,7 @@ subroutine shd_init__makeFlux(&
     DIAG(N) = -(1.0 - GNDEMIS)
     LOWER(N) = 1.0
     RHS(N) = GNDFLUX
-    call shd_util__computeTriDiag(N, LOWER, DIAG, UPPER, RHS)
+    call shd_util__solveTriDiag(N, LOWER, DIAG, UPPER, RHS)
 
     ! Put the fluxes in the output array
     if (UNITS .eq. 'T') then

@@ -8,7 +8,7 @@ module shd_util
     public :: shd_util__findNextCell
 
     public :: shd_util__interpTriLin
-    public :: shd_util__computeTriDiag
+    public :: shd_util__solveTriDiag
     public :: shd_util__computeGausQuad
     public :: shd_util__computeGausQuadDble
 
@@ -289,7 +289,7 @@ subroutine shd_util__interpTriLin(&
 
 end subroutine shd_util__interpTriLin
 
-subroutine shd_util__computeTriDiag(&
+subroutine shd_util__solveTriDiag(&
     &N, LOWER, DIAG, UPPER, RHS)
 
     ! Computes the solution to a tridiagonal system.
@@ -350,9 +350,9 @@ subroutine shd_util__computeTriDiag(&
 
 990 continue
 
-    stop 'Error [_computeTriDiag]: Singular matrix.'
+    stop 'Error [_solveTriDiag]: Singular matrix.'
 
-end subroutine shd_util__computeTriDiag
+end subroutine shd_util__solveTriDiag
 
 subroutine shd_util__computeGausQuad(N, XA, WT)
 

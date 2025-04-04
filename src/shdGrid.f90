@@ -27,6 +27,8 @@ module shd_grid
     public :: shd_grid__splitGrid
 
     private :: shd_grid__InterpTriLinGridPrp
+    private :: sweepCellNext
+    private :: sweepCellBase
 
 contains
 

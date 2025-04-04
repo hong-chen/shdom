@@ -15,13 +15,6 @@ module shd_mpi
     implicit none
     private
 
-    integer :: NUMPROC_, MYPROC_, IPROCNEIGH_(4), IXYPRP_(2, 2), IXYOUT_(2, 2)
-    logical, parameter :: LOADBALANCE_ = .false.
-    real(RD_) :: STARTTIME_
-    integer, allocatable :: BXYPTR_(:, :, :), IBXYPTR_(:, :, :)
-    real, allocatable :: BXYPOS_(:, :, :)
-    type(MPI_Comm) :: COMM2D_
-
     public :: shd_mpi__start
     public :: shd_mpi__map
     public :: shd_mpi__bcastInput
@@ -46,6 +39,18 @@ module shd_mpi
     public :: shd_mpi__calAccelSolCrit
     public :: shd_mpi__unifySplit
     public :: shd_mpi__sumCpuTime
+
+    private :: shd_mpi__optimizeProcDomain
+    private :: shd_mpi__ran
+    private :: shd_mpi__integrateRay
+    private :: loadObject
+
+    integer :: NUMPROC_, MYPROC_, IPROCNEIGH_(4), IXYPRP_(2, 2), IXYOUT_(2, 2)
+    logical, parameter :: LOADBALANCE_ = .false.
+    real(RD_) :: STARTTIME_
+    integer, allocatable :: BXYPTR_(:, :, :), IBXYPTR_(:, :, :)
+    real, allocatable :: BXYPOS_(:, :, :)
+    type(MPI_Comm) :: COMM2D_
 
 contains
 
@@ -1501,7 +1506,7 @@ subroutine shd_mpi__calBoundaryRad(BCFLAG, IPFLAG, JOCT, IZ,&
     ! processor, and need to be traced back along the discrete ordinate
     ! first within this subdomain.  The radiative transfer integrations
     ! with the extinction (EXTINCT) and source function (SOURCE) are done
-    ! with the INTEGRATE_RAY routine.  If the top or bottom boundary is
+    ! with the shd_mpi__integrateRay routine.  If the top or bottom boundary is
     ! hit when tracing back then the radiance is saved, otherwise the
     ! required information (X,Y,Z, transmission, partial radiance, original
     ! processor, and starting grid point) are saved to be sent to the
@@ -1564,7 +1569,7 @@ subroutine shd_mpi__calBoundaryRad(BCFLAG, IPFLAG, JOCT, IZ,&
     NINVALID(:) = 0
     ! Loop over the downstream boundary points from the neighbor subdomains
     do IBC = IBXYPTR_(1, IZ, JOCT), IBXYPTR_(2, IZ, JOCT)
-        ! Call INTEGRATE_RAY for this
+        ! Call shd_mpi__integrateRay for this
         X = BXYPOS_(1, IBC, JOCT); Y = BXYPOS_(2, IBC, JOCT); Z = BXYPOS_(3, IBC, JOCT)
         iproc = BXYPTR_(1, IBC, JOCT); IPT = BXYPTR_(2, IBC, JOCT); SIDE = BXYPTR_(3, IBC, JOCT)
         RADIANCE(:) = 0.0; TRANSMIT = 1.0
