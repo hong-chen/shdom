@@ -108,7 +108,7 @@ subroutine shd_solv__solveRte(&
 
     ! If Delta-M then scale the extinction, albedo, and Legendre terms
     ! Put the Planck blackbody source in PLANCK.
-    call shd_init__makeProp(ML, MM, NSTLEG, NLEG, NPTS, DELTAM, NUMPHASE,&
+    call shd_init__makePrp(ML, MM, NSTLEG, NLEG, NPTS, DELTAM, NUMPHASE,&
         &SRCTYPE, UNITS, WAVENO, WAVELEN, ALBMAX,&
         &EXTINCT, ALBEDO, LEGEN, TEMP, PLANCK, IPHASE)
     ! Get the maximum single scattering albedo over all processors

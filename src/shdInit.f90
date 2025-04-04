@@ -10,7 +10,7 @@ module shd_init
   public :: shd_init__makeGrid
   public :: shd_init__makeCell
 
-  public :: shd_init__makeProp
+  public :: shd_init__makePrp
   public :: shd_init__makeRad
   public :: shd_init__makeFlux
   public :: shd_init__makeAngle
@@ -323,7 +323,7 @@ subroutine shd_init__makeCell(&
 
 end subroutine shd_init__makeCell
 
-subroutine shd_init__makeProp(&
+subroutine shd_init__makePrp(&
     &ML, MM, NSTLEG, NLEG, NPTS, DELTAM,&
     &NUMPHASE, SRCTYPE, UNITS, WAVENO, WAVELEN, ALBMAX,&
     &EXTINCT, ALBEDO, LEGEN, TEMP, PLANCK, IPHASE)
@@ -385,7 +385,7 @@ subroutine shd_init__makeProp(&
         end if
     end do
     return
-end subroutine shd_init__makeProp
+end subroutine shd_init__makePrp
 
 subroutine shd_init__makeRad(&
     &NSTOKES, NXY, NZ, NSTLEG, NLEG,&
