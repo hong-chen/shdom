@@ -42,7 +42,7 @@ subroutine shd_shdo__computeSH(&
     real RADIANCE(NSTOKES, *), SHTERMS(NSHOUT, NPTS)
     character(len=1) :: SRCTYPE
     integer I, IR, J, NLM
-    real PI, A, C, C0, IMEAN, FX, FY, FZ, HORMS
+    real A, C, C0, IMEAN, FX, FY, FZ, HORMS
     real SECSOL, SINSOL, SOLX, SOLY, SOLM, F0
     real, allocatable :: YLMSUN(:)
 
@@ -50,15 +50,14 @@ subroutine shd_shdo__computeSH(&
     allocate (YLMSUN(NLM))
 
     ! Spherical Harmonic output: individual SH terms
-    PI = acos(-1.0)
-    A = sqrt(2.0*PI/3.0)
-    C = sqrt(4.0*PI/3.0)
-    C0 = 1.0/sqrt(4.0*PI)
+    A = sqrt(2.0*PI_/3.0)
+    C = sqrt(4.0*PI_/3.0)
+    C0 = 1.0/sqrt(4.0*PI_)
     SECSOL = 1.0/abs(SOLARMU)
     SINSOL = sqrt(1.0 - SOLARMU**2)
     SOLX = SINSOL*cos(SOLARAZ)*SECSOL
     SOLY = SINSOL*sin(SOLARAZ)*SECSOL
-    SOLM = SECSOL/(4.0*PI)
+    SOLM = SECSOL/(4.0*PI_)
     F0 = 0.0
     if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
         call shd_pha__computeYLM(.true., SOLARMU, SOLARAZ, ML, MM, 1, YLMSUN)
@@ -195,9 +194,8 @@ subroutine shd_shdo__makeSfcDO(SFCTYPE, WAVELEN,&
     real SFC_BRDF_DO(NSTOKES, NMU/2, NPHI0MAX, NSTOKES, NMU/2, NPHI0MAX)
     character(len=2) :: SFCTYPE
     integer IMU, IMU1, IPHI, JMU, JPHI, K1, K2
-    real OPI, REFLECT(4, 4), W
+    real :: REFLECT(4, 4), W
 
-    OPI = 1.0/acos(-1.0)
     ! Loop over outgoing discrete ordinates (IMU,IPHI)
     do IMU = NMU/2 + 1, NMU
         IMU1 = IMU - NMU/2
@@ -209,7 +207,7 @@ subroutine shd_shdo__makeSfcDO(SFCTYPE, WAVELEN,&
                     call shd_sfc__brdfSurface(SFCTYPE(2:2), SFCPARMS(2, 1, 1),&
                         &WAVELEN, MU(IMU), PHI(IMU, IPHI),&
                         &MU(JMU), PHI(JMU, JPHI), NSTOKES, REFLECT)
-                    W = OPI*abs(MU(JMU))*WTDO(JMU, JPHI)
+                    W = OPI_*abs(MU(JMU))*WTDO(JMU, JPHI)
                     SFC_BRDF_DO(:, IMU1, IPHI, :, JMU, JPHI)&
                         &= W*REFLECT(1:NSTOKES, 1:NSTOKES)
                 end do
