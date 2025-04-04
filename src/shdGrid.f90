@@ -595,7 +595,7 @@ subroutine shd_grid__testGridSmooth(GRIDPTR, GRIDPOS, NEIGHPTR,&
     integer GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *), SHPTR(*)
     integer*2 CELLFLAGS(*)
     real GRIDPOS(3, *)
-    integer ID, IFACE, IP, IP1, IP2, INeigh, I, J, ISUM, IBITS
+    integer ID, IFACE, IP, IP1, IP2, INeigh, I, J, ISUM
     integer INCELL(2), DIRSPLIT(2)
     integer FACECORNER(4, 6), EDGECORNER(2, 3)
     real(RD_) :: XE, YE, ZE

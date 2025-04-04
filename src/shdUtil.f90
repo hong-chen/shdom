@@ -39,7 +39,7 @@ subroutine shd_util__findCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
     real(RD_) :: X0, Y0, Z0
     real XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ)
     real GRIDPOS(3, *)
-    integer IL, IU, IM, IX, IY, IZ, NXC, NYC, IC, IPTR, DIR, IBITS
+    integer IL, IU, IM, IX, IY, IZ, NXC, NYC, IC, IPTR, DIR
     real(RD_) :: XDOMAIN, YDOMAIN
 
     ! Move point to within horizontal domain if periodic
