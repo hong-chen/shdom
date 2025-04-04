@@ -554,9 +554,10 @@ subroutine shd_comp__sumOutput(IFLAG, WT, N, data, SUMDATA)
     ! Sums an output array over the k-distribution.
     ! If IFLAG=0 then the output array is set to the input times the weight.
 
-    integer, intent(in) :: IFLAG, N, I
+    integer, intent(in) :: IFLAG, N
     real, intent(in)  :: WT, data(N)
-    real, intent(out) ::SUMDATA(N)
+    real, intent(out) :: SUMDATA(N)
+    integer :: I
     if (IFLAG .eq. 0) then
         do I = 1, N
             SUMDATA(I) = WT*data(I)

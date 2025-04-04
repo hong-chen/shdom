@@ -1211,7 +1211,7 @@ subroutine shd_io__outputResultMpi(&
 
     integer I, J, K, N, JX, JY, IZ
     integer NANGOUT, NXOUT, NYOUT
-    real MUOUT, PHID, C, PI, SUM
+    real MUOUT, PHID, C, SUM
     real STARTX, STARTY
     real(RD_) :: X0, Y0, Z0
     character(len=128) :: FORM

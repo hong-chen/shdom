@@ -1798,7 +1798,7 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
     integer :: I1, I2, I3, I4, IOPP, IFACE, JFACE, KFACE, IC
     integer :: GRIDFACE(4, 6), OPPFACE(6)
     logical :: IPINX, IPINY
-    real(RD_) :: PI, CX, CY, CZ, CXINV, CYINV, CZINV
+    real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV
     real(RD_) :: XE, YE, ZE
     real(RD_) :: SO, SOX, SOY, SOZ, EPS
     real(RD_) :: U, V, F1, F2, F3, F4
@@ -1812,9 +1812,8 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
     EPS = 1.0e-3*(GRIDPOS(3, GRIDPTR(8, 1)) - GRIDPOS(3, GRIDPTR(1, 1)))
 
     ! Make the ray direction (opposite to the discrete ordinate direction)
-    PI = acos(-1.0)
-    CX = sqrt(1.0 - MU**2)*cos(PHI + PI)
-    CY = sqrt(1.0 - MU**2)*sin(PHI + PI)
+    CX = sqrt(1.0 - MU**2)*cos(PHI + DPI_)
+    CY = sqrt(1.0 - MU**2)*sin(PHI + DPI_)
     CZ = -MU
     if (abs(CX) .gt. 1.0e-5) then
         CXINV = 1.0d0/CX
@@ -2588,7 +2587,7 @@ subroutine shd_mpi__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     real(RD_) :: X0, Y0, Z0, X1, Y1, Z1, X2, Y2, Z2, X, Y, Z
     real(RD_) :: THETA0, THETA1, PHIR, PHI0, COSSCAT, MU2, PHI2
     real(RD_) :: COSTH, SINTH, SINTH0, SINTH1
-    real(RD_) :: U, V, UP, VP, COSDELPHI, PI, ROTANG, DEGRAD, R
+    real(RD_) :: U, V, UP, VP, COSDELPHI, ROTANG, DEGRAD, R
     real(RD_) :: DIST, D, RX, RY, RZ, SCANANG
     integer, parameter :: MAXSCATANG = 721
     real, allocatable :: YLMSUN(:, :), PHASETAB(:, :, :)
@@ -2649,8 +2648,8 @@ subroutine shd_mpi__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
             &+ (OUTPARMS(6) - OUTPARMS(9))**2)/OUTPARMS(10))
         NS = 1 + int(abs(OUTPARMS(12) - OUTPARMS(11))/OUTPARMS(13))
     end if
-    PI = acos(-1.0d0)
-    DEGRAD = PI/180.
+
+    DEGRAD = DPI_/180.
 
     ! Allocate sending, receiving, etc. arrays for MPI
     MAXNRAD = NL*NS
@@ -2739,7 +2738,7 @@ subroutine shd_mpi__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 Y0 = Y1 + D*RY
                 Z0 = Z1 + D*RZ
                 SCANANG = DEGRAD*(OUTPARMS(11) + (SAMP - 1)*OUTPARMS(13))
-                COSTH = cos(PI - abs(SCANANG))
+                COSTH = cos(DPI_ - abs(SCANANG))
                 if (SCANANG .gt. 0.0) then
                     PHIR = atan2(-RX, RY)
                 else
@@ -2783,7 +2782,7 @@ subroutine shd_mpi__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
 
                 ! MU2,PHI2 is radiance travel direction (opposite the camera viewing direction)
                 MU2 = -COSTH
-                PHI2 = PHIR + PI
+                PHI2 = PHIR + DPI_
 
                 ! Integrate the extinction and source function along this ray
                 ! to calculate the Stokes radiance vector for this pixel
@@ -2964,7 +2963,7 @@ subroutine shd_mpi__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                     if (NSTOKES .gt. 1) then
                         ! Output degree (0 to 1) and angle (-180 to 180) of linear polarization
                         VISOUT(2, I) = sqrt(VISRAD(2)**2 + VISRAD(3)**2)/VISRAD(1)
-                        VISOUT(3, I) = (180/PI)*0.5*atan2(VISRAD(3), VISRAD(2))
+                        VISOUT(3, I) = (180.0/DPI_)*0.5*atan2(VISRAD(3), VISRAD(2))
                     end if
                     if (NSTOKES .eq. 4) then
                         ! Output degree of circular polarization (-1 to 1)
