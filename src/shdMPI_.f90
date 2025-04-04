@@ -6,20 +6,20 @@ module shd_mpi
     public :: shd_mpi__start
     public :: shd_mpi__map
     public :: shd_mpi__bcastInput
-    public :: shd_mpi__bcastPropSize
-    public :: shd_mpi__scatProp
+    public :: shd_mpi__bcastPrpSize
+    public :: shd_mpi__scatPrp
     public :: shd_mpi__readBcastMemParam
-    public :: shd_mpi__bcastSurfSize
-    public :: shd_mpi__bcastSurfParam
+    public :: shd_mpi__bcastSfcSize
+    public :: shd_mpi__bcastSfcParam
     public :: shd_mpi__bcastKdistSize
     public :: shd_mpi__bcastKdistParam
     public :: shd_mpi__gatherOutput
-    public :: shd_mpi__makeDirect
-    public :: shd_mpi__computeRad
-    public :: shd_mpi__visualizeRad
     public :: shd_mpi__end
     public :: shd_mpi__abort
 
+    public :: shd_mpi__makeDirect
+    public :: shd_mpi__computeRad
+    public :: shd_mpi__visualizeRad
     public :: shd_mpi__findAlbMax
     public :: shd_mpi__findTotSplitCritMax
     public :: shd_mpi__findBoundaryPnt
@@ -79,16 +79,16 @@ subroutine shd_mpi__bcastInput(RUNNAME,&
     return
 end subroutine shd_mpi__bcastInput
 
-subroutine shd_mpi__bcastPropSize(NPX, NPY, NPZ, DELX, DELY,&
+subroutine shd_mpi__bcastPrpSize(NPX, NPY, NPZ, DELX, DELY,&
     &NUMPHASE, MAXLEG, MAXPGL)
 
     integer NPX, NPY, NPZ, NUMPHASE, MAXLEG, MAXPGL
     real DELX, DELY
 
     return
-end subroutine shd_mpi__bcastPropSize
+end subroutine shd_mpi__bcastPrpSize
 
-subroutine shd_mpi__scatProp(NPXT, NPYT, NPX, NPY, NPZ, NSTLEG,&
+subroutine shd_mpi__scatPrp(NPXT, NPYT, NPX, NPY, NPZ, NSTLEG,&
     &NLEG, NUMPHASE, ZLEVELS, MAXASYM, TEMPPT,&
     &EXTINCTPT, ALBEDOPT, LEGENPT, IPHASEPT,&
     &TEMPP, EXTINCTP, ALBEDOP, LEGENP, IPHASEP)
@@ -103,7 +103,7 @@ subroutine shd_mpi__scatProp(NPXT, NPYT, NPX, NPY, NPZ, NSTLEG,&
     integer*2 IPHASEP(NPZ, NPY, NPX)
 
     return
-end subroutine shd_mpi__scatProp
+end subroutine shd_mpi__scatPrp
 
 subroutine shd_mpi__readBcastMemParam(MAX_TOTAL_MB,&
     &ADAPT_GRID_FACTOR, NUM_SH_TERM_FACTOR,&
@@ -116,14 +116,14 @@ subroutine shd_mpi__readBcastMemParam(MAX_TOTAL_MB,&
     return
 end subroutine shd_mpi__readBcastMemParam
 
-subroutine shd_mpi__bcastSurfSize(MAXSFCPTS, MAXSFCPARS)
+subroutine shd_mpi__bcastSfcSize(MAXSFCPTS, MAXSFCPARS)
 
     integer MAXSFCPTS, MAXSFCPARS
 
     return
-end subroutine shd_mpi__bcastSurfSize
+end subroutine shd_mpi__bcastSfcSize
 
-subroutine shd_mpi__bcastSurfParam(SFCTYPE, NXSFC, NYSFC, NSFCPAR,&
+subroutine shd_mpi__bcastSfcParam(SFCTYPE, NXSFC, NYSFC, NSFCPAR,&
     &DELXSFC, DELYSFC, SFCPARMS, GNDTEMP, GNDALBEDO)
 
     character SFCTYPE*2
@@ -131,7 +131,7 @@ subroutine shd_mpi__bcastSurfParam(SFCTYPE, NXSFC, NYSFC, NSFCPAR,&
     real DELXSFC, DELYSFC, SFCPARMS(*), GNDTEMP, GNDALBEDO
 
     return
-end subroutine shd_mpi__bcastSurfParam
+end subroutine shd_mpi__bcastSfcParam
 
 subroutine shd_mpi__bcastKdistSize(NG, NZCKD)
 

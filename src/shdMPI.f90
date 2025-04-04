@@ -25,11 +25,11 @@ module shd_mpi
     public :: shd_mpi__start
     public :: shd_mpi__map
     public :: shd_mpi__bcastInput
-    public :: shd_mpi__bcastPropSize
-    public :: shd_mpi__scatProp
+    public :: shd_mpi__bcastPrpSize
+    public :: shd_mpi__scatPrp
     public :: shd_mpi__readBcastMemParam
-    public :: shd_mpi__bcastSurfSize
-    public :: shd_mpi__bcastSurfParam
+    public :: shd_mpi__bcastSfcSize
+    public :: shd_mpi__bcastSfcParam
     public :: shd_mpi__bcastKdistSize
     public :: shd_mpi__bcastKdistParam
     public :: shd_mpi__gatherOutput
@@ -528,7 +528,7 @@ subroutine shd_mpi__bcastInput(&
     if (OUTSAVEFILE(1:4) .ne. 'NONE') OUTSAVEFILE = trim(OUTSAVEFILE)//'.iproc-'//procstr
 end subroutine shd_mpi__bcastInput
 
-subroutine shd_mpi__bcastPropSize(NPX, NPY, NPZ, DELX, DELY,&
+subroutine shd_mpi__bcastPrpSize(NPX, NPY, NPZ, DELX, DELY,&
     &NUMPHASE, MAXLEG, MAXPGL)
 
     ! Broadcasts the property file size information from the master processor
@@ -550,9 +550,9 @@ subroutine shd_mpi__bcastPropSize(NPX, NPY, NPZ, DELX, DELY,&
     realbuf(:) = (/DELX, DELY/)
     call MPI_BCAST(realbuf, 2, MPI_REAL, 0, MPI_COMM_WORLD, ierr)
     DELX = realbuf(1); DELY = realbuf(2)
-end subroutine shd_mpi__bcastPropSize
+end subroutine shd_mpi__bcastPrpSize
 
-subroutine shd_mpi__scatProp(NPXT, NPYT, NPX, NPY, NPZ,&
+subroutine shd_mpi__scatPrp(NPXT, NPYT, NPX, NPY, NPZ,&
     &NSTLEG, NLEG, NUMPHASE,&
     &ZLEVELS, MAXASYM,&
     &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, IPHASEPT,&
@@ -662,9 +662,9 @@ subroutine shd_mpi__scatProp(NPXT, NPYT, NPX, NPY, NPZ,&
     if (MYPROC_ .eq. 0) deallocate (tempbuf, extbuf, albbuf, iphbuf, rbuf, ibuf)
     deallocate (requests, status, IXYALL, realbuf)
 
-end subroutine shd_mpi__scatProp
+end subroutine shd_mpi__scatPrp
 
-subroutine shd_mpi__bcastSurfSize(MAXSFCPTS, MAXSFCPARS)
+subroutine shd_mpi__bcastSfcSize(MAXSFCPTS, MAXSFCPARS)
 
     ! Broadcasts the surface array sizes from the master process to the others.
 
@@ -677,9 +677,9 @@ subroutine shd_mpi__bcastSurfSize(MAXSFCPTS, MAXSFCPARS)
     call MPI_BCAST(intbuf, 2, MPI_INTEGER, 0, COMM2D_, ierr)
     MAXSFCPTS = intbuf(1); MAXSFCPARS = intbuf(2)
 
-end subroutine shd_mpi__bcastSurfSize
+end subroutine shd_mpi__bcastSfcSize
 
-subroutine shd_mpi__bcastSurfParam(SFCTYPE, NXSFC, NYSFC, NSFCPAR,&
+subroutine shd_mpi__bcastSfcParam(SFCTYPE, NXSFC, NYSFC, NSFCPAR,&
     &DELXSFC, DELYSFC, SFCPARMS, GNDTEMP, GNDALBEDO)
 
     ! Broadcasts the surface file parameters from the master process to the others.
@@ -706,7 +706,7 @@ subroutine shd_mpi__bcastSurfParam(SFCTYPE, NXSFC, NYSFC, NSFCPAR,&
     n = NSFCPAR*(NXSFC + 1)*(NYSFC + 1)
     call MPI_BCAST(SFCPARMS, n, MPI_REAL, 0, COMM2D_, ierr)
 
-end subroutine shd_mpi__bcastSurfParam
+end subroutine shd_mpi__bcastSfcParam
 
 subroutine shd_mpi__bcastKdistSize(NG, NZCKD)
 

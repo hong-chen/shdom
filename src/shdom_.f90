@@ -182,10 +182,10 @@ program shdom_main
 
     ! Find out the size of the input property file grid
     if (MASTERPROC) then
-        call shd_io__readPropSize(PROPFILE, NSTLEG, NLEG, NPX_, NPY_, NPZ_,&
+        call shd_io__readPrpSize(PROPFILE, NSTLEG, NLEG, NPX_, NPY_, NPZ_,&
                                 NUMPHASE_, MAXLEG, MAXPGL, DELX_, DELY_)
     end if
-    call shd_mpi__bcastPropSize(NPX_, NPY_, NPZ_, DELX_, DELY_,&
+    call shd_mpi__bcastPrpSize(NPX_, NPY_, NPZ_, DELX_, DELY_,&
                                  NUMPHASE_, MAXLEG, MAXPGL)
 
     ! Set the full domain grid sizes (variables end in T)
@@ -259,7 +259,7 @@ program shdom_main
             allocate (IPHASEPT(MAXPGT), LEGENPT(MAXPGLT))
 
             ! only use DELX and DELY from initial read, DELX0 and DELY0 are discarded
-            call shd_io__readProp(PROPFILE, NPXT, NPYT, NPZ_,&
+            call shd_io__readPrp(PROPFILE, NPXT, NPYT, NPZ_,&
                 &NSTLEG, MAXLEG, NLEG, MAXNZ, MAXPGT, MAXPGLT, DELTAM,&
                 &PROPTYPE, DELX0, DELY0, ZLEVELS_, MAXASYM,&
                 &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, NUMPHASE_, IPHASEPT)
@@ -271,13 +271,13 @@ program shdom_main
             end if
 
             ! Check values of medium properties
-            call shd_io__checkPropInput(NPXT, NPYT, NPZ_, NSTLEG, NLEG,&
+            call shd_io__checkPrpInput(NPXT, NPYT, NPZ_, NSTLEG, NLEG,&
                 &DELX_, DELY_, ZLEVELS_,&
                 &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, NUMPHASE_, IPHASEPT)
 
         end if
 
-        call shd_mpi__scatProp(NPXT, NPYT, NPX_, NPY_, NPZ_,&
+        call shd_mpi__scatPrp(NPXT, NPYT, NPX_, NPY_, NPZ_,&
             &NSTLEG, NLEG, NUMPHASE_,&
             &ZLEVELS_, MAXASYM,&
             &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, IPHASEPT,&
@@ -288,13 +288,13 @@ program shdom_main
     else
 
         ! Read the properties of the medium to the single processor
-        call shd_io__readProp(PROPFILE, NPX_, NPY_, NPZ_,&
+        call shd_io__readPrp(PROPFILE, NPX_, NPY_, NPZ_,&
             &NSTLEG, MAXLEG, NLEG, MAXNZ, MAXPG, MAXPGL, DELTAM,&
             &PROPTYPE, DELX_, DELY_, ZLEVELS_, MAXASYM,&
             &TEMPP_, EXTINCTP_, ALBEDOP_, LEGENP_, NUMPHASE_, IPHASEP_)
 
         ! Check values of medium properties
-        call shd_io__checkPropInput(NPX_, NPY_, NPZ_, NSTLEG, NLEG,&
+        call shd_io__checkPrpInput(NPX_, NPY_, NPZ_, NSTLEG, NLEG,&
             &DELX_, DELY_, ZLEVELS_,&
             &TEMPP_, EXTINCTP_, ALBEDOP_, LEGENP_, NUMPHASE_, IPHASEP_)
 
@@ -397,18 +397,18 @@ program shdom_main
         SFCTYPE = 'FL'
     else
         if (MASTERPROC) then
-            call shd_io__readSurfSize(SFCFILE, MAXSFCPTS, MAXSFCPARS)
+            call shd_io__readSfcSize(SFCFILE, MAXSFCPTS, MAXSFCPARS)
         end if
         ! Broadcast the surface array sizes
-        call shd_mpi__bcastSurfSize(MAXSFCPTS, MAXSFCPARS)
+        call shd_mpi__bcastSfcSize(MAXSFCPTS, MAXSFCPARS)
         allocate (SFCPARMS(MAXSFCPARS*MAXSFCPTS))
         if (MASTERPROC) then
-            call shd_io__readSurf(SFCFILE, MAXSFCPTS, MAXSFCPARS,&
+            call shd_io__readSfc(SFCFILE, MAXSFCPTS, MAXSFCPARS,&
                 &SFCTYPE, NXSFC, NYSFC, DELXSFC, DELYSFC,&
                 &NSFCPAR, SFCPARMS, GNDTEMP, GNDALBEDO)
         end if
         ! Broadcast the surface array data
-        call shd_mpi__bcastSurfParam(SFCTYPE, NXSFC, NYSFC, NSFCPAR,&
+        call shd_mpi__bcastSfcParam(SFCTYPE, NXSFC, NYSFC, NSFCPAR,&
             &DELXSFC, DELYSFC, SFCPARMS, GNDTEMP, GNDALBEDO)
         allocate (SFCGRIDPARMS(MAXSFCPARS*MAXNBC))
     end if

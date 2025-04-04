@@ -13,12 +13,12 @@ module shd_inp
 
   public :: shd_io__checkInputParam
 
-  public :: shd_io__readPropSize
-  public :: shd_io__readProp
-  public :: shd_io__checkPropInput
+  public :: shd_io__readPrpSize
+  public :: shd_io__readPrp
+  public :: shd_io__checkPrpInput
 
-  public :: shd_io__readSurfSize
-  public :: shd_io__readSurf
+  public :: shd_io__readSfcSize
+  public :: shd_io__readSfc
 
   public :: shd_io__readCkdSize
   public :: shd_io__readCkd
@@ -552,7 +552,7 @@ subroutine shd_io__checkInputParam(&
     return
 end subroutine shd_io__checkInputParam
 
-subroutine shd_io__readPropSize(PROPFILE, NSTLEG, NLEG, NPX, NPY, NPZ,&
+subroutine shd_io__readPrpSize(PROPFILE, NSTLEG, NLEG, NPX, NPY, NPZ,&
     &NUMPHASE, MAXLEG, MAXPGL, DELX, DELY)
 
     ! Reads parts of the property file to get the maximum array sizes
@@ -574,7 +574,7 @@ subroutine shd_io__readPropSize(PROPFILE, NSTLEG, NLEG, NPX, NPY, NPZ,&
     if (PROPTYPE .ne. 'E' .and. PROPTYPE .ne. 'T'&
         &.and. PROPTYPE .ne. 'P') rewind (1)
     if (PROPTYPE .ne. 'P' .and. NSTLEG .gt. 1) then
-        write (*, '(A,A)') 'Error [_readPropSize]: NSTOKES>1 requires ',&
+        write (*, '(A,A)') 'Error [_readPrpSize]: NSTOKES>1 requires ',&
             &'Polarized phase function property file'
         stop
     end if
@@ -624,9 +624,9 @@ subroutine shd_io__readPropSize(PROPFILE, NSTLEG, NLEG, NPX, NPY, NPZ,&
     end if
     close (1)
     return
-end subroutine shd_io__readPropSize
+end subroutine shd_io__readPrpSize
 
-subroutine shd_io__readProp(&
+subroutine shd_io__readPrp(&
     &PROPFILE, NPX, NPY, NPZ,&
     &NSTLEG, MAXLEG, NLEG, MAXNZ, MAXPG, MAXPGL, DELTAM,&
     &PROPTYPE, DELX, DELY, ZLEVELS, MAXASYM,&
@@ -668,12 +668,12 @@ subroutine shd_io__readProp(&
     if (PROPTYPE .ne. 'E' .and. PROPTYPE .ne. 'T'&
         &.and. PROPTYPE .ne. 'P') rewind (1)
     if (PROPTYPE .ne. 'P' .and. NSTLEG .gt. 1) then
-        write (*, '(A,A)') 'Error [_readProp]: NSTOKES>1 requires ',&
+        write (*, '(A,A)') 'Error [_readPrp]: NSTOKES>1 requires ',&
             &'Polarized phase function property file.'
         stop
     end if
     read (1, *) NPX, NPY, NPZ
-    if (NPZ .gt. MAXNZ) stop 'Error [_readProp]: MAXNZ exceeded.'
+    if (NPZ .gt. MAXNZ) stop 'Error [_readPrp]: MAXNZ exceeded.'
     read (1, *) DELX, DELY, (ZLEVELS(K), K=1, NPZ)
 
     ! Property file type E is for extinction only format
@@ -686,9 +686,9 @@ subroutine shd_io__readProp(&
             NLEG = min(NLEG, MAXLEG)
         end if
         if (NPX*NPY*NPZ .gt. MAXPG)&
-            &stop 'Error [_readProp]: MAXPG exceeded.'
+            &stop 'Error [_readPrp]: MAXPG exceeded.'
         if (NLEG + 1 .gt. MAXPGL)&
-            &stop 'Error [_readProp]: MAXPGL exceeded.'
+            &stop 'Error [_readPrp]: MAXPGL exceeded.'
         rewind (1)
         read (1, *)
         read (1, *) NPX, NPY, NPZ
@@ -740,7 +740,7 @@ subroutine shd_io__readProp(&
 
             if (NLEG .gt. MAXLEG) then
                 write (*, '(A,I4,A,I4,A)')&
-                    &'Warning [_readProp]: Truncating phase function from ',&
+                    &'Warning [_readPrp]: Truncating phase function from ',&
                     &NLEG, ' to ', MAXLEG, ' Legendre terms.'
             end if
             NLEG = min(NLEG, MAXLEG)
@@ -748,9 +748,9 @@ subroutine shd_io__readProp(&
         end if
 
         N = NPX*NPY*NPZ
-        if (N .gt. MAXPG) stop 'Error [_readProp]: MAXPG exceeded.'
+        if (N .gt. MAXPG) stop 'Error [_readPrp]: MAXPG exceeded.'
         if (NUMPHASE*(NLEG + 1)*NSTLEG .gt. MAXPGL)&
-            &stop 'Error [_readProp]: MAXPGL exceeded.'
+            &stop 'Error [_readPrp]: MAXPGL exceeded.'
         rewind (1)
         read (1, *)
         read (1, *) NPX, NPY, NPZ
@@ -814,9 +814,9 @@ subroutine shd_io__readProp(&
             read (1, *) DELX, DELY, (ZLEVELS(K), K=1, NPZ)
         end if
         N = NPX*NPY*NPZ
-        if (N .gt. MAXPG) stop 'Error [_readProp]: MAXPG exceeded.'
+        if (N .gt. MAXPG) stop 'Error [_readPrp]: MAXPG exceeded.'
         if (N*(NLEG + 1) .gt. MAXPGL)&
-            &stop 'Error [_readProp]: MAXPGL exceeded.'
+            &stop 'Error [_readPrp]: MAXPGL exceeded.'
         MAXASYM = -1.0
         do while (.true.)
             read (1, *, end=290) IX, IY, IZ, TMP, EXT, ALB, NUML
@@ -843,10 +843,10 @@ subroutine shd_io__readProp(&
     close (1)
     return
 
-end subroutine shd_io__readProp
+end subroutine shd_io__readPrp
 
 
-subroutine shd_io__checkPropInput(&
+subroutine shd_io__checkPrpInput(&
     &NPX, NPY, NPZ, NSTLEG, NLEG,&
     &DELX, DELY, ZLEVELS,&
     &TEMPP, EXTINCTP, ALBEDOP, LEGENP, NUMPHASE, IPHASEP)
@@ -870,13 +870,13 @@ subroutine shd_io__checkPropInput(&
 
     ! NPX and NPY must be 1 or greater, NPZ must be 2 or greater
     if (NPX .lt. 1 .or. NPY .lt. 1 .or. NPZ .lt. 2) then
-        write (*, *) 'Error [_checkPropInput]: Bad grid size - ',&
+        write (*, *) 'Error [_checkPrpInput]: Bad grid size - ',&
             &NPX, NPY, NPZ
         stop
     end if
 
     if (DELX .le. 0.0 .or. DELY .le. 0.0) then
-        write (*, *) 'Error [_checkPropInput]: Bad grid spacing - ',&
+        write (*, *) 'Error [_checkPrpInput]: Bad grid spacing - ',&
             &'DELX,DELY: ', DELX, DELY
         stop
     end if
@@ -884,7 +884,7 @@ subroutine shd_io__checkPropInput(&
     ! The vertical levels must be increasing
     do IZ = 1, NPZ - 1
         if (ZLEVELS(IZ + 1) .le. ZLEVELS(IZ)) then
-            write (*, *) 'Error [_checkPropInput]: ZLEVELS must increase : ',&
+            write (*, *) 'Error [_checkPrpInput]: ZLEVELS must increase : ',&
                 &IZ, ZLEVELS(IZ), ZLEVELS(IZ + 1)
             stop
         end if
@@ -901,19 +901,19 @@ subroutine shd_io__checkPropInput(&
     end do
 
     if (TMIN .lt. 150.0 .or. TMAX .gt. 350.0) then
-        write (*, *) 'Warning [_checkPropInput]: ',&
+        write (*, *) 'Warning [_checkPrpInput]: ',&
             &'temperature min and max (Kelvin): ', TMIN, TMAX
         write (*, *)
     end if
 
     do I = 1, N
         if (EXTINCTP(I) .lt. 0.0) then
-            write (*, *) 'Error [_checkPropInput]: Negative extinction - ',&
+            write (*, *) 'Error [_checkPrpInput]: Negative extinction - ',&
                 &EXTINCTP(I), ' at grid point ', I
             stop
         end if
         if (ALBEDOP(I) .lt. 0.0 .or. ALBEDOP(I) .gt. 1.0) then
-            write (*, *) 'Error [_checkPropInput]: Single scattering ',&
+            write (*, *) 'Error [_checkPrpInput]: Single scattering ',&
                 &'albedo out of range - ', ALBEDOP(I), ' at grid point ', I
             stop
         end if
@@ -923,7 +923,7 @@ subroutine shd_io__checkPropInput(&
     LEGWARN = .false.
     do I = 1, N
         if (LEGENP(1, 1, I) .lt. -3.0 .or. LEGENP(1, 1, I) .gt. 3.0) then
-            write (*, *) 'Error [_checkPropInput]: Asymmetry parameter ',&
+            write (*, *) 'Error [_checkPrpInput]: Asymmetry parameter ',&
                 &'out of range - ', LEGENP(1, 1, I)/3.0, ' at grid point ', I
             stop
         end if
@@ -931,7 +931,7 @@ subroutine shd_io__checkPropInput(&
     end do
 
     if (LEGWARN) then
-        write (*, *) 'Warning [_checkPropInput]: ',&
+        write (*, *) 'Warning [_checkPrpInput]: ',&
             &'an asymmetry parameter is 1/3 (Chi1=1); ',&
             &'  Chi0 should not be specified for Chi1.'
         write (*, *)
@@ -941,7 +941,7 @@ subroutine shd_io__checkPropInput(&
         N = NPX*NPY*NPZ
         do I = 1, N
             if (IPHASEP(I) .lt. 1 .or. IPHASEP(I) .gt. NUMPHASE) then
-                write (*, *) 'Error [_checkPropInput]: Phase function pointer',&
+                write (*, *) 'Error [_checkPrpInput]: Phase function pointer',&
                     &' out of range - ', IPHASEP(I), ' at grid point ', I
                 stop
             end if
@@ -963,17 +963,17 @@ subroutine shd_io__checkPropInput(&
     end do
 
     if (NTHICK .gt. 0) then
-        write (*, '(A)') 'Message [_checkPropInput]:'
+        write (*, '(A)') 'Message [_checkPrpInput]:'
         write (*, '(A,I8)') '  Number of property grid cells with optical depth greater than 2: ', NTHICK
         write (*, '(A,F8.2)') '  Max cell optical depth: ', MAXTAU
     end if
 
     return
 
-end subroutine shd_io__checkPropInput
+end subroutine shd_io__checkPrpInput
 
 
-subroutine shd_io__readSurfSize(SFCFILE, MAXSFCPTS, MAXSFCPARS)
+subroutine shd_io__readSfcSize(SFCFILE, MAXSFCPTS, MAXSFCPARS)
 
     ! Gets the size of the surface property inputs (temperature is
     ! always included).
@@ -1012,14 +1012,14 @@ subroutine shd_io__readSurfSize(SFCFILE, MAXSFCPTS, MAXSFCPARS)
         ! Surface file type D is for Diner polarized RPV surface:
         MAXSFCPARS = 6
     else
-        stop 'Error [_readSurfSize]: Unknown BRDF type.'
+        stop 'Error [_readSfcSize]: Unknown BRDF type.'
     end if
     close (1)
     return
 
-end subroutine shd_io__readSurfSize
+end subroutine shd_io__readSfcSize
 
-subroutine shd_io__readSurf(&
+subroutine shd_io__readSfc(&
     &SFCFILE, MAXSFCPTS, MAXSFCPARS,&
     &SFCTYPE, NXSFC, NYSFC, DELXSFC, DELYSFC,&
     &NSFCPAR, SFCPARMS, GNDTEMP, GNDALBEDO)
@@ -1061,7 +1061,7 @@ subroutine shd_io__readSurf(&
     read (1, '(A1)') SFCTYPE(2:2)
     read (1, *) NXSFC, NYSFC, DELXSFC, DELYSFC
     if ((NXSFC + 1)*(NYSFC + 1) .gt. MAXSFCPTS) then
-        write (*, *) 'Error [_readSurf]: MAXSFCPTS exceeded.'
+        write (*, *) 'Error [_readSfc]: MAXSFCPTS exceeded.'
         stop
     end if
 
@@ -1073,7 +1073,7 @@ subroutine shd_io__readSurf(&
     if (SFCTYPE .eq. 'VL' .or. SFCTYPE .eq. 'Vl') then
         NSFCPAR = 2
         if (NSFCPAR .gt. MAXSFCPARS) then
-            write (*, *) 'Error [_readSurf]: MAXSFCPARS exceeded.'
+            write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
             stop
         end if
         do while (.true.)
@@ -1084,7 +1084,7 @@ subroutine shd_io__readSurf(&
                 SFCPARMS(I + 1) = TEMP
                 SFCPARMS(I + 2) = ALB
                 if (ALB .lt. 0.0 .or. ALB .gt. 1.0)&
-                    &stop 'Error [_readSurf]: Illegal surface albedo.'
+                    &stop 'Error [_readSfc]: Illegal surface albedo.'
                 if (TEMP .lt. 150. .or. TEMP .gt. 350.)&
                     &write (*, *) 'Warning [READ_SURFACE]: ',&
                     &' surface temperature: ', IX, IY, TEMP
@@ -1098,7 +1098,7 @@ subroutine shd_io__readSurf(&
     else if (SFCTYPE .eq. 'VW') then
         NSFCPAR = 4
         if (NSFCPAR .gt. MAXSFCPARS) then
-            write (*, *) 'Error [_readSurf]: MAXSFCPARS exceeded.'
+            write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
             stop
         end if
         do while (.true.)
@@ -1120,7 +1120,7 @@ subroutine shd_io__readSurf(&
     else if (SFCTYPE .eq. 'VO') then
         NSFCPAR = 3
         if (NSFCPAR .gt. MAXSFCPARS) then
-            write (*, *) 'Error [_readSurf]: MAXSFCPARS exceeded.'
+            write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
             stop
         end if
         do while (.true.)
@@ -1144,7 +1144,7 @@ subroutine shd_io__readSurf(&
     else if (SFCTYPE .eq. 'VR') then
         NSFCPAR = 4
         if (NSFCPAR .gt. MAXSFCPARS) then
-            write (*, *) 'Error [_readSurf]: MAXSFCPARS exceeded.'
+            write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
             stop
         end if
         do while (.true.)
@@ -1166,7 +1166,7 @@ subroutine shd_io__readSurf(&
     else if (SFCTYPE .eq. 'VT') then
         NSFCPAR = 4
         if (NSFCPAR .gt. MAXSFCPARS) then
-            write (*, *) 'Error [_readSurf]: MAXSFCPARS exceeded.'
+            write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
             stop
         end if
         do while (.true.)
@@ -1193,7 +1193,7 @@ subroutine shd_io__readSurf(&
     else if (SFCTYPE .eq. 'VD') then
         NSFCPAR = 6
         if (NSFCPAR .gt. MAXSFCPARS) then
-            write (*, *) 'Error [_readSurf]: MAXSFCPARS exceeded.'
+            write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
             stop
         end if
         do while (.true.)
@@ -1214,7 +1214,7 @@ subroutine shd_io__readSurf(&
         end do
 
     else
-        stop 'Error [_readSurf]: Unknown BRDF type <'//trim(adjustl(SFCTYPE))//'>.'
+        stop 'Error [_readSfc]: Unknown BRDF type <'//trim(adjustl(SFCTYPE))//'>.'
     end if
 
 290 continue
@@ -1241,7 +1241,7 @@ subroutine shd_io__readSurf(&
     GNDTEMP = GNDTEMP/N
     return
 
-end subroutine shd_io__readSurf
+end subroutine shd_io__readSfc
 
 subroutine shd_io__readCkdSize(CKDFILE, WAVENO, NG, NZCKD)
 
