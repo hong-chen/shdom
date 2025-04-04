@@ -718,7 +718,7 @@ subroutine shd_grid__testCellSplit(GRIDPTR, GRIDPOS, EXTINCT,&
     integer ID, IE, IP1, IP2, IS1, IS2, NS1, NS2, NS
     integer J, NUM
     integer GRIDCORNER(2, 4, 3)
-    real SPLIT, SUM1, JAY, TAU, EXT
+    real TOSPLIT, SUM1, JAY, TAU, EXT
     real C0
     data GRIDCORNER/1, 2, 3, 4, 5, 6, 7, 8, 1, 3, 2, 4, 5, 7, 6, 8,&
         &1, 5, 2, 6, 3, 7, 4, 8/
@@ -762,8 +762,8 @@ subroutine shd_grid__testCellSplit(GRIDPTR, GRIDPOS, EXTINCT,&
                     JAY = 0.0
                 end if
                 TAU = abs(EXT*(GRIDPOS(ID, IP2) - GRIDPOS(ID, IP1)))
-                SPLIT = abs(JAY)*(1 - exp(-TAU))
-                SUM1 = SUM1 + SPLIT
+                TOSPLIT = abs(JAY)*(1 - exp(-TAU))
+                SUM1 = SUM1 + TOSPLIT
             end if
         end do
 
