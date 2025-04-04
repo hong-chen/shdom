@@ -85,6 +85,11 @@ module globals
   real(R_),  parameter :: FRAC53_ = 5.0_R_ / 3.0_R_    ! 5/3
   real(R_),  parameter :: FRAC16_ = 1.0_R_ / 6.0_R_    ! 1/6
 
+  real(R_) , parameter ::  OPI_   = 1.0_R_  / PI_      ! 1/PI
+  real(RD_), parameter :: DOPI_   = 1.0_RD_ / DPI_     ! 1/PI
+  real(R_) , parameter ::  O4PI_  = 1.0_R_  / (4.0_R_*PI_)      ! 1/(4*PI)
+  real(RD_), parameter :: DO4PI_  = 1.0_RD_ / (4.0_RD_*DPI_)    ! 1/(4*PI)
+
   ! Physical constants (SI unit)
   real(R_),  parameter :: CSPEED_ = 2.99792458e+8_R_     ! speed of light (m/s)
   real(R_),  parameter :: PLANCK_ = 6.6260689633e-34_R_  ! Planck's constant (J*s)
