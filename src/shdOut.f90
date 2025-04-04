@@ -2352,7 +2352,6 @@ subroutine shd_io__plotCell(&
     character(len=*), intent(in) :: OUTFILE
     integer IC
     integer J, IN
-    logical BTEST
     real XSIZE, ZSIZE, S, DELX
     real X1, Z1, X2, Z2, X3, Z3, X4, Z4, XC, ZC
     real DX, DZ, XN, ZN, XA, ZA

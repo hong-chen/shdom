@@ -1062,7 +1062,7 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
     integer :: IP, I, J, L
     integer :: ierr, irq, iproc
     integer :: intsendbuf(2), intrecvbuf(2)
-    logical :: VALIDRAD, BTEST, AllDone
+    logical :: VALIDRAD, AllDone
     real    :: XO, YO, ZO, X, Y, Z, XMAX, YMAX, EPS, DIRJUNK
     integer, allocatable :: Ndone(:)
     integer, allocatable :: BndDirIntInfo(:, :, :)
@@ -1527,7 +1527,7 @@ subroutine shd_mpi__calBoundaryRad(BCFLAG, IPFLAG, JOCT, IZ,&
     integer :: IBC, IPT, I, J, L
     integer :: ierr(12), irq, iproc
     integer :: intsendbuf(2), intrecvbuf(2)
-    logical :: VALIDRAD, BTEST, AllDone
+    logical :: VALIDRAD, AllDone
     real    :: X, Y, Z, RADIANCE(NSTOKES), TRANSMIT, xo, yo, zo
     integer, allocatable :: Ndone(:)
     integer, allocatable :: BndRadIntInfo(:, :, :)

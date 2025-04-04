@@ -88,7 +88,7 @@ subroutine shd_intg__integratePath(&
 
     integer I, I1, K, NR, IPHI, IMU, IBC, IANG, IUPDOWN, OLDNPTS
     integer joct, ipt, ip, iorder, ipcell, icorner
-    logical LAMBERTIAN, BTEST, theflag
+    logical :: LAMBERTIAN, theflag
     real A, TRANSMIN
     save OLDNPTS
 
@@ -356,7 +356,7 @@ subroutine shd_intg__backIntegrate3D(&
     integer I1, I2, I3, I4, IOPP, JFACE, KFACE, IC, IZ
     integer GRIDFACE(4, 6), OPPFACE(6)
     integer IORDER, ICORNER, JOCTORDER3(8), JOCTORDER2(8)
-    logical VALIDRAD, VALIDFACE, IPINX, IPINY, BTEST
+    logical VALIDRAD, VALIDFACE, IPINX, IPINY
     real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV
     real(RD_) :: XE, YE, ZE
     real(RD_) :: SO, SOX, SOY, SOZ, EPS, path
@@ -694,7 +694,7 @@ subroutine shd_intg__backIntegrate3D_(&
     integer I1, I2, I3, I4, IOPP, JFACE, KFACE, IC, IZ
     integer GRIDFACE(4, 6), OPPFACE(6)
     integer IORDER, ICORNER, JOCTORDER3(8), JOCTORDER2(8)
-    logical VALIDRAD, VALIDFACE, IPINX, IPINY, BTEST
+    logical :: VALIDRAD, VALIDFACE, IPINX, IPINY
     real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV
     real(RD_) :: XE, YE, ZE
     real(RD_) :: SO, SOX, SOY, SOZ, EPS, path
@@ -1059,7 +1059,7 @@ subroutine shd_intg__backIntegrate2D(&
     integer I1, I2, IOPP, JFACE, KFACE, IC, IZ
     integer GRIDFACE(2, 6), OPPFACE(6)
     integer IORDER, ICORNER, JOCTORDER(8)
-    logical VALIDRAD, VALIDFACE, IPINX, BTEST
+    logical :: VALIDRAD, VALIDFACE, IPINX
     real(RD_) :: CX, CZ, CXINV, CZINV
     real(RD_) :: XE, YE, ZE
     real(RD_) :: SO, SOX, SOZ, EPS

@@ -1103,7 +1103,7 @@ subroutine shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
     real SOURCE(NSTOKES, NPTS), GRIDRAD(NSTOKES, NPTS)
     integer BITX, BITY, BITZ, IOCT, ICELL, INEXTCELL, IFACE
     integer I1, I2, I3, I4, IOPP, NTAU, IT, K
-    logical IPINX, IPINY, OPENBCFACE, BTEST
+    logical IPINX, IPINY, OPENBCFACE
     integer GRIDFACE(4, 6), OPPFACE(6), JFACE, KFACE, IC
     real EXT0(1), EXT1(1), EXTN(1)
     real XM, YM
