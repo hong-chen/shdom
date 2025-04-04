@@ -51,7 +51,7 @@ if __name__ == '__main__':
 
     fdir_ref='data/output'
 
-    fnames = sorted(glob.glob('tmp-data/shdom-out*.sHdOm-out*'))
+    fnames = sorted(glob.glob('tmp-data/shdom-out*fast*.sHdOm-out*'))
 
     for fname in fnames:
         filename = os.path.basename(fname)

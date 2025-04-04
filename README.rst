@@ -159,7 +159,7 @@ File-to-File Reference
 
 * ``src/shdUtil.f90``: partially from ``shdomsub2.f``
 
-* ``src/shdComp.f90``: partially from ``shdomsub2.f``
+* ``src/shdRad.f90``: partially from ``shdomsub2.f``
 
 * ``src/shdInp.f90``: partially from ``shdomsub3.f``
 
