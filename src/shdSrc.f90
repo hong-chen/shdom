@@ -830,7 +830,7 @@ subroutine shd_src__integrateSrcOneRay(&
         &NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS,&
         &BCFLAG, IPFLAG, XE, YE, ZE, ICELL)
     ! print '(A,5(1X,F8.5),1X,I6)',&
-    !     &'_integrateRay1:',X0,Y0,Z0,MU2,PHI2,ICELL
+    !     &'_integrateSrcOneRay:',X0,Y0,Z0,MU2,PHI2,ICELL
     IFACE = 0
     NGRID = 0
 
@@ -839,7 +839,7 @@ subroutine shd_src__integrateSrcOneRay(&
     do while (.not. VALIDRAD .and. ICELL .gt. 0)
         ! Make sure current cell is valid
         if (ICELL .le. 0) then
-            write (6, *) 'Error [_integrateRay1]: ICELL=', ICELL,&
+            write (6, *) 'Error [_integrateSrcOneRay]: ICELL=', ICELL,&
                 &MU2, PHI2, XE, YE, ZE
             stop
         end if
@@ -930,7 +930,7 @@ subroutine shd_src__integrateSrcOneRay(&
         SOZ = (GRIDPOS(3, IOPP) - ZE)*CZINV
         SO = min(SOX, SOY, SOZ)
         if (SO .lt. -EPS) then
-            write (6, *) 'Error [_integrateRay1]: SO<0 ',&
+            write (6, *) 'Error [_integrateSrcOneRay]: SO<0 ',&
                 &MU2, PHI2, XE, YE, ZE, SO, ICELL
             stop
         end if

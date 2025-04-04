@@ -986,7 +986,7 @@ subroutine shd_rad__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 Y0 = Y0 + R*sqrt(1 - COSTH**2)*sin(PHIR)
                 Z0 = ZGRID(NZ)
             else if (Z0 .lt. ZGRID(1)) then
-                write (6, *) 'Error [VISUALIZE_RADIANCE]: Level below domain.'
+                write (6, *) 'Error [_visualizeRad]: Level below domain.'
                 stop
             end if
 

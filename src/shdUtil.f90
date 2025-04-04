@@ -310,7 +310,7 @@ subroutine shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
         do while (TREEPTR(2, IC) .gt. 0)
             ! Get the direction cell is split
             DIR = ibits(int(CELLFLAGS(IC)), 2, 2)
-            if (DIR .eq. 0) stop 'Error [_moveNextCell]: No split direction.'
+            if (DIR .eq. 0) stop 'Error [_findNextCell]: No split direction.'
             ! If split is in direction of face then choose the near child cell
             !   which is the negative side cell if this is a positive face.
             IC1 = TREEPTR(2, IC)
@@ -718,12 +718,12 @@ subroutine shd_util__ssort_i(X, Y, N, KFLAG)
     !***First executable statement  SSORT
     NN = N
     if (NN .lt. 1) then
-        stop 'Error [_ssort]: The number of values to be sorted is not positive.'
+        stop 'Error [_ssort_i]: The number of values to be sorted is not positive.'
     end if
 
     KK = abs(KFLAG)
     if (KK .ne. 1 .and. KK .ne. 2) then
-        stop 'Error [_ssort]: The sort control parameter, K, is not 2, 1, -1, or -2.'
+        stop 'Error [_ssort_i]: The sort control parameter, K, is not 2, 1, -1, or -2.'
     end if
 
     ! Alter array X to get decreasing order if needed
@@ -1010,12 +1010,12 @@ subroutine shd_util__ssort_r(X, Y, N, KFLAG)
     !***First executable statement  SSORT
     NN = N
     if (NN .lt. 1) then
-        stop 'Error [_ssort]: The number of values to be sorted is not positive.'
+        stop 'Error [_ssort_r]: The number of values to be sorted is not positive.'
     end if
 
     KK = abs(KFLAG)
     if (KK .ne. 1 .and. KK .ne. 2) then
-        stop 'Error [_ssort]: The sort control parameter, K, is not 2, 1, -1, or -2.'
+        stop 'Error [_ssort_r]: The sort control parameter, K, is not 2, 1, -1, or -2.'
     end if
 
     ! Alter array X to get decreasing order if needed

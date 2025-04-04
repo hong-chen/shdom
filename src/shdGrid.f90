@@ -573,7 +573,7 @@ subroutine shd_grid__inheritNeighCell(ICELL, IFACE, INeigh,&
                 ! Otherwise need to go to both children so put the second child
                 !   on the stack and set the pointer to go to the first child next.
                 SP = SP + 1
-                if (SP .gt. 50) stop 'Error [_inheritNeigh]: Stack exceeded.'
+                if (SP .gt. 50) stop 'Error [_inheritNeighCell]: Stack exceeded.'
                 STACK(SP) = TREEPTR(2, IC) + 1
                 IC = TREEPTR(2, IC)
             end if

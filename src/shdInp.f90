@@ -1086,7 +1086,7 @@ subroutine shd_io__readSfc(&
                 if (ALB .lt. 0.0 .or. ALB .gt. 1.0)&
                     &stop 'Error [_readSfc]: Illegal surface albedo.'
                 if (TEMP .lt. 150. .or. TEMP .gt. 350.)&
-                    &write (*, *) 'Warning [READ_SURFACE]: ',&
+                    &write (*, *) 'Warning [_readSfc]: ',&
                     &' surface temperature: ', IX, IY, TEMP
                 GNDTEMP = GNDTEMP + TEMP
                 GNDALBEDO = GNDALBEDO + ALB

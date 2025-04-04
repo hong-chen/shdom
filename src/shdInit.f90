@@ -75,7 +75,7 @@ subroutine shd_init__makeGrid(&
     if (GRIDTYPE .eq. 'P') then
         if (NZ .ne. NPZ) then
             write (6, *)&
-                &'Error [_makeNewGrids]: For internal Z grid same as property file grid,'
+                &'Error [_makeGrid]: For internal Z grid same as property file grid,'
             write (6, *) '  must have same number of grid points (NZ=NPZ).'
             stop
         end if
@@ -94,7 +94,7 @@ subroutine shd_init__makeGrid(&
         end do
         close (3)
     else
-        stop 'Error [_makeNewGrids]: Illegal grid type in Z.'
+        stop 'Error [_makeGrid]: Illegal grid type in Z.'
     end if
 
     return

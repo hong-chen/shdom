@@ -66,7 +66,7 @@ subroutine shd_mpi__start(MASTERPROC)
 
     call MPI_INIT(ierr)
     if (ierr .ne. MPI_SUCCESS) then
-        write (6, *) 'Error [START_MPI]: Terminating ...'
+        write (6, *) 'Error [mpi__start]: Terminating ...'
         stop
     end if
 
@@ -80,7 +80,7 @@ subroutine shd_mpi__start(MASTERPROC)
 
     if (MYPROC_ .eq. 0) then
         MASTERPROC = .true.
-        write (6, '(A)') 'Message [START_MPI]: Starting MPI version of SHDOM ...'
+        write (6, '(A)') 'Message [mpi__start]: Starting MPI version of SHDOM ...'
     else
         MASTERPROC = .false.
     end if
@@ -227,7 +227,7 @@ subroutine shd_mpi__map(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
     call MPI_CART_SHIFT(COMM2D_, 0, 1, IPROCNEIGH_(1), IPROCNEIGH_(2), ierr)
     call MPI_CART_SHIFT(COMM2D_, 1, 1, IPROCNEIGH_(3), IPROCNEIGH_(4), ierr)
 
-    write (6, '(A)') 'Message [_mpiMap]:'
+    write (6, '(A)') 'Message [mpi__map]:'
     write (6, '(2X,A,2(1X,I2))') 'Number of processors in X and Y:', dims(1:2)
     write (6, '(2X,A,I3)') 'This processor: ', MYPROC_
     write (6, '(2X,A,4(1X,I3))') 'Neighbors:', IPROCNEIGH_(1:4)
@@ -791,7 +791,7 @@ subroutine shd_mpi__readBcastMemParam(MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
     NUM_SH_TERM_FACTOR = MemParam(3, MYPROC_)
     CELL_TO_POINT_RATIO = MemParam(4, MYPROC_)
     deallocate (MemParam)
-    write (6, '(A)') 'Message [READ_BROADCAST_MEM_PARAMS]:'
+    write (6, '(A)') 'Message [mpi__readBcastMemParam]:'
     write (6, '(2X,A,F7.2,1X,F7.3,2(1X,F5.3))') 'Memory parameters used: ', MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
         &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
 
@@ -1006,7 +1006,7 @@ subroutine shd_mpi__findAlbMax(ALBMAX)
         ! Call MPI_ALLREDUCE to find the max ALBMAX over all processors
         sendrbuf = ALBMAX
         call MPI_ALLREDUCE(sendrbuf, ALBMAX, 1, MPI_REAL, MPI_MAX, COMM2D_, ierr)
-        if (ierr .ne. MPI_SUCCESS) call shd_mpi__abort('TOTAL_ALBEDO_MAX: MPI_ALLREDUCE error')
+        if (ierr .ne. MPI_SUCCESS) call shd_mpi__abort('Error [mpi__findAlbMax]: MPI_ALLREDUCE error.')
     end if
 
 end subroutine shd_mpi__findAlbMax
@@ -1025,7 +1025,7 @@ subroutine shd_mpi__unifySplit(DOSPLIT, STARTSPLITACC)
         call MPI_ALLREDUCE(sendrbuf, STARTSPLITACC, 1, MPI_REAL, MPI_MAX, COMM2D_, ierr(1))
         sendlbuf = DOSPLIT
         call MPI_ALLREDUCE(sendlbuf, DOSPLIT, 1, MPI_LOGICAL, MPI_LOR, COMM2D_, ierr(2))
-        if (any(ierr(:) .ne. MPI_SUCCESS)) call shd_mpi__abort('UNIFY_SPLITTING: MPI_ALLREDUCE error')
+        if (any(ierr(:) .ne. MPI_SUCCESS)) call shd_mpi__abort('Error [mpi__unifySplit]: MPI_ALLREDUCE error.')
     end if
 
 end subroutine shd_mpi__unifySplit
@@ -1040,7 +1040,7 @@ subroutine shd_mpi__findTotSplitCritMax(SPLITCRIT)
         ! Call MPI_ALLREDUCE to find the max SPLITCRIT over all processors
         sendrbuf = SPLITCRIT
         call MPI_ALLREDUCE(sendrbuf, SPLITCRIT, 1, MPI_REAL, MPI_MAX, COMM2D_, ierr)
-        if (ierr .ne. MPI_SUCCESS) call shd_mpi__abort('TOTAL_SPLITCRIT_MAX: MPI_ALLREDUCE error')
+        if (ierr .ne. MPI_SUCCESS) call shd_mpi__abort('Error [mpi__findTotSplitCritMax]: MPI_ALLREDUCE error.')
     end if
 
 end subroutine shd_mpi__findTotSplitCritMax
@@ -1641,12 +1641,12 @@ subroutine shd_mpi__calBoundaryRad(BCFLAG, IPFLAG, JOCT, IZ,&
         end if
         if (any(ierr(1:irq) .ne. MPI_SUCCESS)) then
             write (6, *) 'MPI error: ', ierr(1:irq)
-            call shd_mpi__abort('CALC_BOUNDARY_RADIANCES: MPI error 1')
+            call shd_mpi__abort('Error [mpi__calBoundaryRad]: MPI error 1.')
         end if
         call MPI_WAITALL(irq, requests, status, ierr(1))
         if (ierr(1) .ne. MPI_SUCCESS) then
             write (6, *) 'MPI_WAITALL error: ', ierr(1)
-            call shd_mpi__abort('CALC_BOUNDARY_RADIANCES: MPI error 2')
+            call shd_mpi__abort('Error [mpi__calBoundaryRad]: MPI error 2.')
         end if
 
         NINVALID(Lupx) = 0; NINVALID(Lupy) = 0
@@ -1744,7 +1744,7 @@ subroutine shd_mpi__calBoundaryRad(BCFLAG, IPFLAG, JOCT, IZ,&
             call MPI_WAITALL(6, requests, status, ierr(7))
             if (any(ierr(1:7) .ne. MPI_SUCCESS)) then
                 write (6, *) 'MPI error: ', ierr(1:7)
-                call shd_mpi__abort('CALC_BOUNDARY_RADIANCES: MPI error 3')
+                call shd_mpi__abort('Error [mpi__calBoundaryRad]: MPI error 3.')
             end if
             do I = 1, Nbcpnts
                 IPT = RadPtrIn(I)
@@ -1851,7 +1851,7 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
     else if (CZ .gt. 1.0e-3) then
         BITZ = 0
     else
-        call shd_mpi__abort('Message [_mpiIntegrateRay]: Bad MU.')
+        call shd_mpi__abort('Message [mpi__integrateRay]: Bad MU.')
     end if
     ! IOCT is the octant the ray come from or the discrete ordinate goes to.
     IOCT = 1 + BITX + 2*BITY + 4*BITZ
@@ -1887,7 +1887,7 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
     if (ix < 1 .or. iy < 1 .or. ix > NX + 1 .or. iy > NY + 1) then
         write (6, *) 'Bad ix,iy', x, y, z, ix, iy, iz, xgrid(1), xgrid(nx), ygrid(1), ygrid(ny), MYPROC_
         write (6, *) 'Bad ix,iy', side, transmit
-        call shd_mpi__abort('Message [_mpiIntegrateRay]:')
+        call shd_mpi__abort('Message [mpi_integrateRay]:')
     end if
     IX = min(NXC, IX)
     IY = min(NYC, IY)
@@ -1975,8 +1975,8 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
         SOZ = (GRIDPOS(3, IOPP) - ZE)*CZINV
         SO = min(SOX, SOY, SOZ)
         if (SO .lt. -EPS) then
-            write (6, *) 'Message [_mpiIntegrateRay]: SO<0  ', MU, PHI, X, Y, Z, SOX, SOY, SOZ, SO, ICELL, TRANS
-            call shd_mpi__abort('Message [_mpiIntegrateRay]: SO<0.')
+            write (6, *) 'Message [mpi__integrateRay]: SO<0  ', MU, PHI, X, Y, Z, SOX, SOY, SOZ, SO, ICELL, TRANS
+            call shd_mpi__abort('Message [mpi__integrateRay]: SO<0.')
         end if
         ! Compute the coordinates of the cell exitting location
         if (.not. IPINX) XE = XE + SO*CX
@@ -2044,7 +2044,7 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
         end if
         if (u < -1.0e-4 .or. v < -1.0e-4 .or. u > 1.0001 .or. v > 1.0001) then
             write (6, *) 'u,v<0 or u,v>1: ', mu, phi, x, y, z, xe, ye, ze, u, v, ipinx, ipiny
-            call shd_mpi__abort('Message [_mpiIntegrateRay]:')
+            call shd_mpi__abort('Message [mpi__integrateRay]:')
         end if
 
         ! Get the location coordinate (does the boundary wrapping)
@@ -2277,7 +2277,7 @@ subroutine shd_mpi__computeRad(&
         !╰────────────────────────────────────────────────╯!
 
         if (MUOUT .eq. 0.0 .or. abs(MUOUT) .gt. 1.0) then
-            write (6, *) 'Warning [COMPUTE_RADIANCE_PAR]: Bad mu for radiance', MUOUT
+            write (6, *) 'Warning [mpi__computeRad]: Bad mu for radiance', MUOUT
         else
 
             ! Compute the source function throughout grid for this angle
@@ -2361,17 +2361,17 @@ subroutine shd_mpi__computeRad(&
                         if (VALIDRAD) then
                             Ndone = Ndone + 1
                             if (Ndone > MAXNRAD)&
-                                &call shd_mpi__abort('Error [COMPUTE_RADIANCE_PAR]: MAXNRAD exceeded by Ndone 1.')
+                                &call shd_mpi__abort('Error [mpi__computeRad]: MAXNRAD exceeded by Ndone 1.')
                             RadSend(:, Ndone) = RADIANCE(:)
                             IndexSend(Ndone) = NRAD
                         else
                             if ((SIDE .ne. Lupx .and. SIDE .ne. Lupy)) then
                                 write (6, *) 'Bad SIDE 1:', MYPROC_, muout, phiout, x0, y0, z0, SIDE, xe, ye, ze
-                                call shd_mpi__abort('Error [COMPUTE_RADIANCE_PAR]: Bad SIDE 1')
+                                call shd_mpi__abort('Error [mpi__computeRad]: Bad SIDE 1')
                             end if
                             NINVALID(SIDE) = NINVALID(SIDE) + 1
                             if (NINVALID(SIDE) > MAXNRAD)&
-                                call shd_mpi__abort('Error [COMPUTE_RADIANCE_PAR]: MAXNRAD exceeded by NINVALID(SIDE) 1.')
+                                call shd_mpi__abort('Error [mpi__computeRad]: MAXNRAD exceeded by NINVALID(SIDE) 1.')
 
                             BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, TRANSMIT, RADIANCE(:)/)
                             BndRadIntInfo(NINVALID(SIDE), SIDE) = NRAD
@@ -2448,17 +2448,17 @@ subroutine shd_mpi__computeRad(&
                         if (VALIDRAD) then
                             Ndone = Ndone + 1
                             if (Ndone > MAXNRAD)&
-                                &call shd_mpi__abort('Error [COMPUTE_RADIANCE_PAR]: MAXNRAD exceeded by Ndone 2.')
+                                &call shd_mpi__abort('Error [mpi__computeRad]: MAXNRAD exceeded by Ndone 2.')
                             RadSend(:, Ndone) = RADIANCE(:)
                             IndexSend(Ndone) = BndRadIntInfo(J, Ldownx)
                         else
                             if ((SIDE .ne. Lupx .and. SIDE .ne. Lupy)) then
                                 write (6, *) 'Bad SIDE 2x', MYPROC_, muout, phiout, x, y, z, SIDE, xe, ye, ze
-                                call shd_mpi__abort('Error [COMPUTE_RADIANCE_PAR]: Bad SIDE 2x')
+                                call shd_mpi__abort('Error [mpi__computeRad]: Bad SIDE 2x')
                             end if
                             NINVALID(SIDE) = NINVALID(SIDE) + 1
                             if (NINVALID(SIDE) > MAXNRAD)&
-                                &call shd_mpi__abort('Error [COMPUTE_RADIANCE_PAR]: MAXNRAD exceeded by NINVALID(SIDE) 2.')
+                                &call shd_mpi__abort('Error [mpi__computeRad]: MAXNRAD exceeded by NINVALID(SIDE) 2.')
                             BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, TRANSMIT, RADIANCE(:)/)
                             BndRadIntInfo(NINVALID(SIDE), SIDE) = BndRadIntInfo(J, Ldownx)
                         end if
@@ -2485,17 +2485,17 @@ subroutine shd_mpi__computeRad(&
                         if (VALIDRAD) then
                             Ndone = Ndone + 1
                             if (Ndone > MAXNRAD)&
-                                &call shd_mpi__abort('Error [COMPUTE_RADIANCE_PAR]: MAXNRAD exceeded by Ndone 3.')
+                                &call shd_mpi__abort('Error [mpi__computeRad]: MAXNRAD exceeded by Ndone 3.')
                             RadSend(:, Ndone) = RADIANCE(:)
                             IndexSend(Ndone) = BndRadIntInfo(J, Ldowny)
                         else
                             if ((SIDE .ne. Lupx .and. SIDE .ne. Lupy)) then
                                 write (6, *) 'Bad SIDE 2y', MYPROC_, muout, phiout, x, y, z, SIDE, xe, ye, ze
-                                call shd_mpi__abort('Error [COMPUTE_RADIANCE_PAR]: Bad SIDE 2y')
+                                call shd_mpi__abort('Error [mpi__computeRad]: Bad SIDE 2y')
                             end if
                             NINVALID(SIDE) = NINVALID(SIDE) + 1
                             if (NINVALID(SIDE) > MAXNRAD)&
-                                &call shd_mpi__abort('Error [COMPUTE_RADIANCE_PAR]: MAXNRAD exceeded by NINVALID(SIDE) 3.')
+                                &call shd_mpi__abort('Error [mpi__computeRad]: MAXNRAD exceeded by NINVALID(SIDE) 3.')
                             BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, TRANSMIT, RADIANCE(:)/)
                             BndRadIntInfo(NINVALID(SIDE), SIDE) = BndRadIntInfo(J, Ldowny)
                         end if
@@ -2764,7 +2764,7 @@ subroutine shd_mpi__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 Y0 = Y0 + R*sqrt(1 - COSTH**2)*sin(PHIR)
                 Z0 = ZGRID(NZ)
             else if (Z0 .lt. ZGRID(1)) then
-                write (6, *) 'Error [VISUALIZE_RADIANCE]: Level below domain.'
+                write (6, *) 'Error [mpi__visualizeRad]: Level below domain.'
                 stop
             end if
 
@@ -3012,7 +3012,7 @@ subroutine shd_mpi__calAccelSolCrit(DOACCEL, DELJDOT, DELJOLD, DELJNEW, JNORM,&
         ! Call MPI_ALLREDUCE to sum up the four dot products
         sendbuf(:) = (/DELJDOT, DELJOLD, DELJNEW, JNORM/)
         call MPI_ALLREDUCE(sendbuf, recvbuf, 4, MPI_REAL, MPI_SUM, COMM2D_, ierr)
-        if (ierr .ne. MPI_SUCCESS) call shd_mpi__abort('CALC_ACCEL_SOLCRIT MPI_ALLREDUCE error')
+        if (ierr .ne. MPI_SUCCESS) call shd_mpi__abort('Error [mpi__calAccelSolCrit]: MPI_ALLREDUCE error.')
         DELJDOT = recvbuf(1); DELJOLD = recvbuf(2)
         DELJNEW = recvbuf(3); JNORM = recvbuf(4)
     end if
@@ -3153,12 +3153,12 @@ subroutine shd_mpi__end(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART, XDOMAIN, YDOMAI
     ElapsedTime = MPI_WTIME() - STARTTIME_
 
     if (ElapsedTime .lt. 60.0) then
-        write (6, '(A,F6.2)') 'Message [_mpiEnd]: Total elapsed time (sec):', ElapsedTime
+        write (6, '(A,F6.2)') 'Message [mpi__end]: Total elapsed time (sec):', ElapsedTime
     else
-        write (6, '(A,F6.2)') 'Message [_mpiEnd]: Total elapsed time (min):', ElapsedTime/60.0
+        write (6, '(A,F6.2)') 'Message [mpi__end]: Total elapsed time (min):', ElapsedTime/60.0
     end if
 
-    write (6, '(A,"<",A,">")') 'Message [_mpiEnd]: Finished with SHDOM run: ', trim(adjustl(RUNNAME))
+    write (6, '(A,"<",A,">")') 'Message [mpi__end]: Finished with SHDOM run: ', trim(adjustl(RUNNAME))
 
     ! Shut down MPI
     if (allocated(BXYPTR_)) deallocate (BXYPTR_, IBXYPTR_, BXYPOS_)
