@@ -14,7 +14,7 @@ module shd_out
   public :: shd_io__outputImg
 
   public :: shd_io__outputCellSplit
-  public :: shd_io__plotCell
+  public :: shd_io__visualizeCell
 
   public :: shd_io__saveState
   !╰────────────────────────────────────────────────╯!
@@ -2333,7 +2333,7 @@ subroutine shd_io__outputCellSplit(&
     return
 end subroutine shd_io__outputCellSplit
 
-subroutine shd_io__plotCell(&
+subroutine shd_io__visualizeCell(&
     & OUTFILE, YVAL, OUTTYPE,&
     & IPFLAG, NX, XDOMAIN, ZDOMAIN,&
     & NCELLS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, GRIDPOS)
@@ -2460,7 +2460,7 @@ subroutine shd_io__plotCell(&
 
     close (9)
     return
-end subroutine shd_io__plotCell
+end subroutine shd_io__visualizeCell
 
 subroutine shd_io__saveState(&
     &OUTSAVEFILE, NSTOKES, NX, NY, NZ,&

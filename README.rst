@@ -15,7 +15,7 @@ SHDOM was originally developed by `Frank Evans <evans@nit.colorado.edu>`_ and is
 
 **Documents**:
 
-* `shdom <https://github.com/hong-chen/shdom/blob/master/docs/shdom.rst>`_
+* `shdom <https://github.com/hong-chen/shdom/blob/master/docs>`_
 
 * `propgen <https://github.com/hong-chen/shdom/blob/master/docs/propgen.rst>`_
 
@@ -55,11 +55,11 @@ for community support.
 
 **Dependencies**
 
-* Require a ``fortran`` compiler, we recommend `GFortran <https://gcc.gnu.org/fortran>`_.
+* Require a ``fortran`` compiler, we recommend `GFortran <https://gcc.gnu.org/fortran>`_ (``gfortran``).
 
-* For MPI use, we recommend `OpenMPI <https://www.open-mpi.org>`_ (optional).
+* For MPI use, we recommend `OpenMPI <https://www.open-mpi.org>`_ (``mpif90``, optional).
 
-* For code compilation, we recommend `CMake <https://cmake.org>`_ (optional).
+* For code compilation, we recommend `CMake <https://cmake.org>`_ (``cmake``, optional).
 
 |
 
@@ -253,10 +253,6 @@ File-to-File Reference
 |
 
 * ``docs/README.rst``:
-
-  * was ``README``
-
-* ``docs/shdom.rst``:
 
   * was ``shdom.txt``
 
