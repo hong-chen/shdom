@@ -169,13 +169,13 @@ subroutine shd_mpi__map(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
         if (NPXT .gt. 1) then
 
             NPX = IXYPRP_(2, 1) - IXYPRP_(1, 1) + 1
-            NX = nint(NXT*FLOAT(NPX - 1)/NPXT) + 1
-            if (abs(NPXT/FLOAT(NXT) - (NPX - 1)/FLOAT(NX - 1)) > 0.0001) then
+            NX = nint(NXT*float(NPX - 1)/NPXT) + 1
+            if (abs(NPXT/float(NXT) - (NPX - 1)/float(NX - 1)) > 0.0001) then
                 call shd_mpi__abort('MAP_SHDOM_MPI: Even X base grid cannot be preserved&
                     &for this NX and number of processors')
             end if
-            IXYOUT_(1, 1) = nint(NXT*FLOAT(IXYPRP_(1, 1) - 1)/NPXT) + 1
-            IXYOUT_(2, 1) = nint(NXT*FLOAT(NPX - 1)/NPXT)
+            IXYOUT_(1, 1) = nint(NXT*float(IXYPRP_(1, 1) - 1)/NPXT) + 1
+            IXYOUT_(2, 1) = nint(NXT*float(NPX - 1)/NPXT)
             XSTART = (IXYPRP_(1, 1) - 1)*DELX
             XEND = (IXYPRP_(2, 1) - 1)*DELX
 
@@ -207,12 +207,12 @@ subroutine shd_mpi__map(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
         if (NPYT .gt. 1) then
 
             NPY = IXYPRP_(2, 2) - IXYPRP_(1, 2) + 1
-            NY = nint(NYT*FLOAT(NPY - 1)/NPYT) + 1
-            if (abs(NPYT/FLOAT(NYT) - (NPY - 1)/FLOAT(NY - 1)) > 0.0001) then
+            NY = nint(NYT*float(NPY - 1)/NPYT) + 1
+            if (abs(NPYT/float(NYT) - (NPY - 1)/float(NY - 1)) > 0.0001) then
                 call shd_mpi__abort('MAP_SHDOM_MPI: Even Y base grid cannot be preserved for this NY and number of processors')
             end if
-            IXYOUT_(1, 2) = nint(NYT*FLOAT(IXYPRP_(1, 2) - 1)/NPYT) + 1
-            IXYOUT_(2, 2) = nint(NYT*FLOAT(NPY - 1)/NPYT)
+            IXYOUT_(1, 2) = nint(NYT*float(IXYPRP_(1, 2) - 1)/NPYT) + 1
+            IXYOUT_(2, 2) = nint(NYT*float(NPY - 1)/NPYT)
             YSTART = (IXYPRP_(1, 2) - 1)*DELY
             YEND = (IXYPRP_(2, 2) - 1)*DELY
 
@@ -2744,8 +2744,8 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
 
     ! Initialize the subdomain boundary lines to evenly spaced
     Nxd = ProcDims(1); Nyd = ProcDims(2); N = Nxd + Nyd - 2
-    BndLines(1:Nxd - 1) = (/(nint(I*FLOAT(NPXT)/Nxd) + 1, I=1, Nxd - 1)/)
-    BndLines(Nxd:N) = (/(nint(I*FLOAT(NPYT)/Nyd) + 1, I=1, Nyd - 1)/)
+    BndLines(1:Nxd - 1) = (/(nint(I*float(NPXT)/Nxd) + 1, I=1, Nxd - 1)/)
+    BndLines(Nxd:N) = (/(nint(I*float(NPYT)/Nyd) + 1, I=1, Nyd - 1)/)
 
     if (LOADBALANCE_) then
         DoLoadBalancing = .false.
@@ -2815,7 +2815,7 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
             do cycle = 1, NCYCLE
                 Temp = Temp0*exp(-Tempfac*(cycle - 1)) ! lower the temp
                 ! Adjust the maximum distance a boundary line is perturbed with the cycle number
-                u = FLOAT(cycle - 1)/(NCYCLE - 1)
+                u = float(cycle - 1)/(NCYCLE - 1)
                 DelLines = (1 - u)*0.5*max(NPXT/Nxd, NPYT/Nyd) + u*1.0
 
                 ! Do NITER iterations per temp cycle
@@ -3283,7 +3283,7 @@ real function loadObject(BndLines, Nxd, Nyd, ProcCoordAll, wtproc,&
     real, save :: sumN = -1.0, a
 
     if (sumN < 0) then
-        sumN = sum(Ngrid(:, :)); a = FLOAT(Nxd*Nyd)/sumN
+        sumN = sum(Ngrid(:, :)); a = float(Nxd*Nyd)/sumN
     end if
     N = Nxd + Nyd - 2
     IDX(1) = 1; IDX(Nxd + 1) = NPXT + 1; if (Nxd .eq. 1) IDX(Nxd + 1) = NPXT
