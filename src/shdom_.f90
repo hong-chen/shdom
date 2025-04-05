@@ -1,5 +1,5 @@
 !   SHDOM: Spherical harmonic discrete ordinate radiative transfer method.
-!      See shdom.txt for documentation.
+!      See docs/README.rst for documentation.
 
 program shdom_main
 
@@ -426,14 +426,14 @@ program shdom_main
             call shd_io__readCkdSize(CKDFILE, WAVENO, NG, NZCKD_)
         end if
         ! Broadcast the k-distribution array sizes
-        call shd_mpi__bcastKdistSize(NG, NZCKD_)
+        call shd_mpi__bcastCkdSize(NG, NZCKD_)
         allocate (ZCKD_(NZCKD_), GASABS_(NZCKD_), DELG(NG), KABS(NZCKD_, NG))
         if (MASTERPROC) then
             MAXNG = NG; MAXNZ = NZCKD_
             call shd_io__readCkd(MAXNG, MAXNZ, CKDFILE, WAVENO, SOLFLUX,&
                 &NG, DELG, NZCKD_, ZCKD_, KABS)
         end if
-        call shd_mpi__bcastKdistParam(SOLFLUX, NG, DELG, NZCKD_, ZCKD_, KABS)
+        call shd_mpi__bcastCkdParam(SOLFLUX, NG, DELG, NZCKD_, ZCKD_, KABS)
         SOLARFLUX = SOLFLUX*SOLARFLUX*abs(SOLARMU)
     else
         NG = 1
@@ -782,7 +782,7 @@ program shdom_main
     else
 
         do I = 1, NUMOUT
-            if (OUTTYPES(I) .ne. 'V' .and. OUTFILES(I) .ne. 'NONE') then
+            if ((OUTTYPES(I) .ne. 'V') .and. (OUTFILES(I) .ne. 'NONE')) then
                 call shd_io__outputResult(NSTOKES, NX, NY, NX1, NY1, NZ, NBPTS, NPTS, NCELLS,&
                     NSH, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_, NMU, NPHI, NANG, NG,&
                     PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&

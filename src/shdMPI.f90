@@ -24,8 +24,8 @@ module shd_mpi
     public :: shd_mpi__readBcastMemParam
     public :: shd_mpi__bcastSfcSize
     public :: shd_mpi__bcastSfcParam
-    public :: shd_mpi__bcastKdistSize
-    public :: shd_mpi__bcastKdistParam
+    public :: shd_mpi__bcastCkdSize
+    public :: shd_mpi__bcastCkdParam
     public :: shd_mpi__gatherOutput
     public :: shd_mpi__end
     public :: shd_mpi__abort
@@ -67,6 +67,7 @@ subroutine shd_mpi__start(MASTERPROC)
     logical, intent(out) :: MASTERPROC
 
 #if HAS_MPI
+! note: this if clause has <else>
     integer :: ierr
 
     call MPI_INIT(ierr)
@@ -122,6 +123,7 @@ subroutine shd_mpi__map(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
     real, intent(out) :: XSTART, YSTART
 
 #if HAS_MPI
+! note: this if clause has <else>
     integer :: NPXT, NPYT, NXT, NYT
     integer :: i, ierr, dims(2), coords(2)
     logical :: periodic(2) = (/.true., .true./), reorder = .false.
@@ -532,7 +534,7 @@ subroutine shd_mpi__bcastSfcParam(SFCTYPE, NXSFC, NYSFC, NSFCPAR,&
 
 end subroutine shd_mpi__bcastSfcParam
 
-subroutine shd_mpi__bcastKdistSize(NG, NZCKD)
+subroutine shd_mpi__bcastCkdSize(NG, NZCKD)
 
     ! Broadcasts the k-distribution array sizes from the master process to the others.
 
@@ -550,9 +552,9 @@ subroutine shd_mpi__bcastKdistSize(NG, NZCKD)
 
     return
 
-end subroutine shd_mpi__bcastKdistSize
+end subroutine shd_mpi__bcastCkdSize
 
-subroutine shd_mpi__bcastKdistParam(SOLFLUX, NG, DELG, NZCKD, ZCKD, KABS)
+subroutine shd_mpi__bcastCkdParam(SOLFLUX, NG, DELG, NZCKD, ZCKD, KABS)
 
     ! Broadcasts the k-distribution file parameters from the master process
     ! to the other processes.
@@ -578,7 +580,7 @@ subroutine shd_mpi__bcastKdistParam(SOLFLUX, NG, DELG, NZCKD, ZCKD, KABS)
 
     return
 
-end subroutine shd_mpi__bcastKdistParam
+end subroutine shd_mpi__bcastCkdParam
 
 subroutine shd_mpi__readBcastMemParam(MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
     &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, RUNNAME)
@@ -2699,6 +2701,7 @@ subroutine shd_mpi__abort(ERRSTR)
     write (6, *) trim(adjustl(ERRSTR))
 
 #if HAS_MPI
+! note: this if clause has <else>
     call MPI_ABORT(COMM2D_, errorcode, ierr)
 #else
     stop
