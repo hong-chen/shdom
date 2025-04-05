@@ -17,7 +17,7 @@ SHDOM was originally developed by `Frank Evans <evans@nit.colorado.edu>`_ and is
 
 * `shdom <https://github.com/hong-chen/shdom/blob/master/docs>`_
 
-* `propgen <https://github.com/hong-chen/shdom/blob/master/docs/propgen.rst>`_
+* `propgen <https://github.com/hong-chen/shdom/blob/master/docs/tools/propgen.rst>`_
 
 |
 
