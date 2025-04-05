@@ -135,39 +135,73 @@ Tips
 File-to-File Reference
 ----------------------
 
-* ``src/makefile``: was ``makefile``
+* ``src/makefile``: Makefile for code compilation and installation
 
-* ``src/shdom.f90`` and ``src/shdom_.f90``: was ``shdom.f90``
+  * was ``makefile``
 
-* ``src/shdMPI.f90`` and ``src/shdMPI_.f90``: was ``shdom_mpi.f90`` and ``shdom_nompi.f``
+* ``src/shdom.f90`` and ``src/shdom_.f90``: main programs
 
-* ``src/shdGrid.f90``: partially from ``shdomsub1.f``
+  * was ``shdom.f90``
 
-* ``src/shdSHDO.f90``: partially from ``shdomsub1.f``
+* ``src/shdUtil.f90``: relates to utility functions
 
-* ``src/shdIntg.f90``: partially from ``shdomsub1.f``
+  * partially from ``shdomsub2.f``
 
-* ``src/shdSolv.f90``: partially from ``shdomsub1.f``
+* ``src/shdSfc.f90``: relates to surface (e.g., BRDF)
 
-* ``src/shdInit.f90``: partially from ``shdomsub2.f``
+  * partially from ``shdomsub2.f`` and combined with ``ocean_brdf.f``
 
-* ``src/shdPha.f90``: partially from ``shdomsub2.f``
+* ``src/shdPha.f90``: relates to phase function
 
-* ``src/shdSrc.f90``: partially from ``shdomsub2.f``
+  * partially from ``shdomsub2.f``
 
-* ``src/shdSfc.f90``: partially from ``shdomsub2.f`` and combined with ``ocean_brdf.f``
+* ``src/shdInit.f90``: relates to initialization
 
-* ``src/shdUtil.f90``: partially from ``shdomsub2.f``
+  * partially from ``shdomsub2.f``
 
-* ``src/shdRad.f90``: partially from ``shdomsub2.f``
+* ``src/shdSHDO.f90``: relates to SH (sperical harmonis) and DO (discrete ordinate) operations
 
-* ``src/shdInp.f90``: partially from ``shdomsub3.f``
+  * partially from ``shdomsub1.f``
 
-* ``src/shdOut.f90``: partially from ``shdomsub3.f``
+* ``src/shdSrc.f90``: relates to source function
 
-* ``src/globals.f90``: partially from ``shdom.f90`` and mostly from ``hparx`` (``MCARaTS`` related)
+  * partially from ``shdomsub2.f``
 
-* ``src/fftpack.f90``: was ``fftpack.f``
+* ``src/shdRad.f90``: relates to radiation (radiance/flux)
+
+  * partially from ``shdomsub2.f``
+
+* ``src/shdGrid.f90``: relates to Grid/cell/point operations
+
+  * partially from ``shdomsub1.f``
+
+* ``src/shdIntg.f90``: relates to source function integration
+
+  * partially from ``shdomsub1.f``
+
+* ``src/shdSolv.f90``: relates to solver
+
+  * partially from ``shdomsub1.f``
+
+* ``src/shdInp.f90``: relates to I/O input
+
+  * partially from ``shdomsub3.f``
+
+* ``src/shdOut.f90``: relates to I/O output
+
+  * partially from ``shdomsub3.f``
+
+* ``src/shdMPI.f90`` and ``src/shdMPI_.f90``: relate to MPI
+
+  * was ``shdom_mpi.f90`` and ``shdom_nompi.f``
+
+* ``src/globals.f90``: relates to global variables
+
+  * partially from ``shdom.f90`` and mostly from ``hparx`` (``MCARaTS`` related)
+
+* ``src/fftpack.f90``: relates to fast Fourier transform
+
+  * was ``fftpack.f``
 
 |
 
