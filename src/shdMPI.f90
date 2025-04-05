@@ -1,6 +1,5 @@
 ! All of the MPI routines for the parallel version of SHDOM are
-! in this file.  If you do not have MPI, compile with shdom_nompi.f90
-! instead.
+! in this file.
 
 module shd_mpi
 
