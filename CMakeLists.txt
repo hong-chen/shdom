@@ -5,6 +5,7 @@ project(SHDOM LANGUAGES Fortran)
 # Fortran Compiler and Flags
 if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
     set(CMAKE_Fortran_FLAGS ${CMAKE_Fortran_FLAGS} "-O3 -ffree-line-length-none")
+    add_definitions(-cpp)
     if(CMAKE_Fortran_COMPILER_VERSION VERSION_LESS 10.0)
         set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Wargument-mismatch")
     else()

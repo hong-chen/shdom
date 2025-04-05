@@ -25,9 +25,12 @@ set(SHDOM_LIB_SRCS
 #endif()
 
 if (USE_MPI)
+    set(HAS_MPI TRUE)
+    set(FPPS_FLAGS ${FPPS_FLAGS} HAS_MPI)
     set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} shdMPI.f90)
 else()
-    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} shdMPI_.f90)
+    set(HAS_MPI FALSE)
+    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} shdMPI.f90)
 endif()
 
 #if (USE_NETCDF)
@@ -56,6 +59,7 @@ endif()
 # build libraries
 #
 add_library(shdom_f90 ${SHDOM_LIB_SRCS})
+target_compile_definitions(shdom_f90 PUBLIC ${FPPS_FLAGS})
 target_include_directories(shdom_f90 PUBLIC "$<BUILD_INTERFACE:${SHDOM_INC}>")
 target_link_libraries(shdom_f90 PUBLIC ${SHDOM_LD_LIBS})
 

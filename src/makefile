@@ -1,6 +1,5 @@
 # Makefile for SHDOM and related programs in distribution
 
-useOMP = no
 # pick one of the following two
 #╭────────────────────────────────────────────────╮#
 FC = gfortran
@@ -15,32 +14,26 @@ else
 	FFLAGS = -O3 -fallow-argument-mismatch -ffree-line-length-none
 endif
 
+# dummy option, placeholder for OMP implementation in the future
+useOMP = no
+ifeq ($(useOMP), yes)
+	# openMP
+	FFLAGS += -fopenmp
+endif
+
 CURRENT_DIR = $(shell pwd)
 BIN_DIR     = $(abspath $(CURRENT_DIR)/../build/bin)
 TARGETS = bin shdom shdom_ propgen make_mie_table make_tmatrix_table plotscattab put
 
-# dummy option
-ifeq ($(useOMP), yes)
-	# openMPI
-	FFLAGS += -fopenmp
-endif
 SHDOMOBJS = globals.o shdUtil.o shdSfc.o shdPha.o shdInit.o\
 			shdGrid.o shdSrc.o shdSHDO.o shdIntg.o shdSolv.o\
-			shdRad.o shdInp.o shdOut.o fftpack.o
+			shdRad.o shdInp.o shdOut.o shdMPI.o fftpack.o
 
 ifeq ($(FC), mpif90)
-	UseMPI = yes
+	FFLAGS += -cpp -DHAS_MPI=TRUE
 else
-	UseMPI = no
+	FFLAGS += -cpp -DHAS_MPI=FALSE
 endif
-
-ifeq ($(UseMPI),no)
-	SHDOMMPIOBJ = shdMPI_.o
-else
-	SHDOMMPIOBJ = shdMPI.o
-endif
-
-SHDOMOBJS += $(SHDOMMPIOBJ)
 
 F90 = $(FC)
 F90FLAGS = $(FFLAGS)
@@ -65,10 +58,10 @@ shdom_: shdom_.o $(SHDOMOBJS)
 shdom_.o: shdom_.f90 $(SHDOMOBJS)
 	$(F90) -c $(F90FLAGS) shdom_.f90
 
-shdSolv.o: shdSolv.f90 $(SHDOMMPIOBJ) shdSfc.o shdInit.o shdGrid.o shdSHDO.o shdPha.o shdSrc.o shdIntg.o shdRad.o shdUtil.o
+shdSolv.o: shdSolv.f90 shdMPI.o shdSfc.o shdInit.o shdGrid.o shdSHDO.o shdPha.o shdSrc.o shdIntg.o shdRad.o shdUtil.o
 	$(F90) -c $(F90FLAGS) shdSolv.f90
 
-shdIntg.o: shdIntg.f90 $(SHDOMMPIOBJ) shdSfc.o shdInit.o shdGrid.o shdUtil.o shdSHDO.o
+shdIntg.o: shdIntg.f90 shdMPI.o shdSfc.o shdInit.o shdGrid.o shdUtil.o shdSHDO.o
 	$(F90) -c $(F90FLAGS) shdIntg.f90
 
 shdInp.o: shdInp.f90 globals.o shdUtil.o
@@ -77,16 +70,13 @@ shdInp.o: shdInp.f90 globals.o shdUtil.o
 shdOut.o: shdOut.f90 globals.o shdGrid.o shdUtil.o
 	$(F90) -c $(F90FLAGS) shdOut.f90
 
-shdMPI_.o: shdMPI_.f90
-	$(F90) -c $(F90FLAGS) shdMPI_.f90
-
 shdMPI.o: shdMPI.f90 shdInit.o shdUtil.o shdSrc.o shdRad.o
 	$(F90) -c $(F90FLAGS) shdMPI.f90
 
 shdSHDO.o: shdSHDO.f90 globals.o shdPha.o shdSfc.o
 	$(F90) -c $(F90FLAGS) shdSHDO.f90
 
-shdGrid.o: shdGrid.f90 $(SHDOMMPIOBJ) globals.o shdUtil.o shdRad.o shdSrc.o
+shdGrid.o: shdGrid.f90 shdMPI.o globals.o shdUtil.o shdRad.o shdSrc.o
 	$(F90) -c $(F90FLAGS) shdGrid.f90
 
 shdRad.o: shdRad.f90 globals.o shdPha.o shdSrc.o shdInit.o

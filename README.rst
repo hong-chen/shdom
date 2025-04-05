@@ -168,7 +168,7 @@ File-to-File Reference
 
   * partially from ``shdomsub2.f``
 
-* ``src/shdRad.f90``: relates to radiation (radiance/flux)
+* ``src/shdRad.f90``: relates to radiation quantities (radiance/flux)
 
   * partially from ``shdomsub2.f``
 
@@ -192,7 +192,7 @@ File-to-File Reference
 
   * partially from ``shdomsub3.f``
 
-* ``src/shdMPI.f90`` and ``src/shdMPI_.f90``: relate to MPI
+* ``src/shdMPI.f90``: relates to MPI
 
   * was ``shdom_mpi.f90`` and ``shdom_nompi.f``
 
