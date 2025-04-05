@@ -15,6 +15,7 @@ set(SHDOM_LIB_SRCS
     shdRad.f90
     shdInp.f90
     shdOut.f90
+    shdMPI.f90
     fftpack.f90)
 
 # dummy option
@@ -27,10 +28,8 @@ set(SHDOM_LIB_SRCS
 if (USE_MPI)
     set(HAS_MPI TRUE)
     set(FPPS_FLAGS ${FPPS_FLAGS} HAS_MPI)
-    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} shdMPI.f90)
 else()
     set(HAS_MPI FALSE)
-    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} shdMPI.f90)
 endif()
 
 #if (USE_NETCDF)
