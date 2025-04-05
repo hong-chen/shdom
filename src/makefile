@@ -44,19 +44,28 @@ all: $(TARGETS)
 bin:
 	mkdir -p $(BIN_DIR)
 
-# this for namelist input
+# this is for namelist input (exe: shdom)
 shdom: shdom.o $(SHDOMOBJS)
 	$(F90) $(F90FLAGS) shdom.o $(SHDOMOBJS) $(LIBS) -o $(BIN_DIR)/shdom
 
 shdom.o: shdom.f90 $(SHDOMOBJS)
 	$(F90) -c $(F90FLAGS) shdom.f90
 
-# this for user input
+# this is for user input (exe: shdom_)
 shdom_: shdom_.o $(SHDOMOBJS)
 	$(F90) $(F90FLAGS) shdom_.o $(SHDOMOBJS) $(LIBS) -o $(BIN_DIR)/shdom_
 
 shdom_.o: shdom_.f90 $(SHDOMOBJS)
 	$(F90) -c $(F90FLAGS) shdom_.f90
+
+shdMPI.o: shdMPI.f90 shdInit.o shdUtil.o shdSrc.o shdRad.o globals.o
+	$(F90) -c $(F90FLAGS) shdMPI.f90
+
+shdOut.o: shdOut.f90 globals.o shdGrid.o shdUtil.o
+	$(F90) -c $(F90FLAGS) shdOut.f90
+
+shdInp.o: shdInp.f90 globals.o shdUtil.o
+	$(F90) -c $(F90FLAGS) shdInp.f90
 
 shdSolv.o: shdSolv.f90 shdMPI.o shdSfc.o shdInit.o shdGrid.o shdSHDO.o shdPha.o shdSrc.o shdIntg.o shdRad.o shdUtil.o
 	$(F90) -c $(F90FLAGS) shdSolv.f90
@@ -64,35 +73,26 @@ shdSolv.o: shdSolv.f90 shdMPI.o shdSfc.o shdInit.o shdGrid.o shdSHDO.o shdPha.o 
 shdIntg.o: shdIntg.f90 shdMPI.o shdSfc.o shdInit.o shdGrid.o shdUtil.o shdSHDO.o
 	$(F90) -c $(F90FLAGS) shdIntg.f90
 
-shdInp.o: shdInp.f90 globals.o shdUtil.o
-	$(F90) -c $(F90FLAGS) shdInp.f90
-
-shdOut.o: shdOut.f90 globals.o shdGrid.o shdUtil.o
-	$(F90) -c $(F90FLAGS) shdOut.f90
-
-shdMPI.o: shdMPI.f90 shdInit.o shdUtil.o shdSrc.o shdRad.o
-	$(F90) -c $(F90FLAGS) shdMPI.f90
+shdGrid.o: shdGrid.f90 shdMPI.o globals.o shdUtil.o shdRad.o shdSrc.o
+	$(F90) -c $(F90FLAGS) shdGrid.f90
 
 shdSHDO.o: shdSHDO.f90 globals.o shdPha.o shdSfc.o
 	$(F90) -c $(F90FLAGS) shdSHDO.f90
 
-shdGrid.o: shdGrid.f90 shdMPI.o globals.o shdUtil.o shdRad.o shdSrc.o
-	$(F90) -c $(F90FLAGS) shdGrid.f90
+shdSrc.o: shdSrc.f90 globals.o shdUtil.o shdPha.o shdInit.o
+	$(F90) -c $(F90FLAGS) shdSrc.f90
 
 shdRad.o: shdRad.f90 globals.o shdPha.o shdSrc.o shdInit.o
 	$(F90) -c $(F90FLAGS) shdRad.f90
 
-shdSrc.o: shdSrc.f90 globals.o shdUtil.o shdPha.o shdInit.o
-	$(F90) -c $(F90FLAGS) shdSrc.f90
-
 shdInit.o: shdInit.f90 globals.o shdUtil.o shdSfc.o
 	$(F90) -c $(F90FLAGS) shdInit.f90
 
-shdSfc.o: shdSfc.f90 globals.o shdUtil.o
-	$(F90) -c $(F90FLAGS) shdSfc.f90
-
 shdPha.o: shdPha.f90 globals.o
 	$(F90) -c $(F90FLAGS) shdPha.f90
+
+shdSfc.o: shdSfc.f90 globals.o shdUtil.o
+	$(F90) -c $(F90FLAGS) shdSfc.f90
 
 shdUtil.o: shdUtil.f90 globals.o
 	$(F90) -c $(F90FLAGS) shdUtil.f90
@@ -103,8 +103,9 @@ globals.o: globals.f90
 fftpack.o: fftpack.f90
 	$(F90) -c $(F90FLAGS) fftpack.f90
 
+# this block is for tools that pre-process/post-process radiative properties
+# for SHDOM - plan to replace them by EaR³T in the future
 # =============================================================
-
 propgen: tools/shdTool_propgen.f90
 	$(F90) $(F90FLAGS) tools/shdTool_propgen.f90 -o $(BIN_DIR)/propgen
 
@@ -119,8 +120,7 @@ plotscattab: tools/shdTool_plot_sca_tab.f90
 
 put: tools/shdTool_put.f90
 	$(F90) $(F90FLAGS) tools/shdTool_put.f90 -o $(BIN_DIR)/put
-
-.f.o :; $(FC) -c $(FFLAGS) $*.f
+# =============================================================
 
 clean:
 	@ rm -f *.o *.mod $(TARGETS) *~
