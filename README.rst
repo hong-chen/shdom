@@ -55,9 +55,11 @@ for community support.
 
 **Dependencies**
 
-* Require a ``fortran`` compiler, we recommend `GFortran <https://fortran-lang.org/learn/os_setup/install_gfortran/>`_.
+* Require a ``fortran`` compiler, we recommend `GFortran <https://gcc.gnu.org/fortran>`_.
 
-* We recommend ``CMake``, but it is optional.
+* For MPI use, we recommend `OpenMPI <https://www.open-mpi.org>`_ (optional).
+
+* For code compilation, we recommend `CMake <https://cmake.org>`_ (optional).
 
 |
 
@@ -106,6 +108,12 @@ or **Build SHDOM (based on GNU Make)**
 Tips
 ----
 
+* For Mac users, add the following to ``~/.bashrc``,
+
+  .. code-block:: bash
+
+     export LIBRARY_PATH="$LIBRARY_PATH:/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib"
+
 * Warning messages are expected during the compilation process, and will not affect the installation of ``shdom``.
   Once the ``shdom`` is successfully compiled, the following executables will be generated under ``<shdom repo>/build/bin/``
 
@@ -122,13 +130,6 @@ Tips
    * ``plotscattab``
 
    * ``put``
-
-
-* For Mac users, add the following to ``~/.bashrc``,
-
-  .. code-block:: bash
-
-     export LIBRARY_PATH="$LIBRARY_PATH:/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib"
 
 |
 
@@ -159,7 +160,7 @@ File-to-File Reference
 
   * partially from ``shdomsub2.f``
 
-* ``src/shdSHDO.f90``: relates to SH (sperical harmonis) and DO (discrete ordinate) operations
+* ``src/shdSHDO.f90``: relates to SH (spherical harmonic) and DO (discrete ordinate) operations
 
   * partially from ``shdomsub1.f``
 
@@ -171,11 +172,11 @@ File-to-File Reference
 
   * partially from ``shdomsub2.f``
 
-* ``src/shdGrid.f90``: relates to Grid/cell/point operations
+* ``src/shdGrid.f90``: relates to grid/cell/point operations
 
   * partially from ``shdomsub1.f``
 
-* ``src/shdIntg.f90``: relates to source function integration
+* ``src/shdIntg.f90``: relates to source function integration for solver
 
   * partially from ``shdomsub1.f``
 
@@ -205,25 +206,45 @@ File-to-File Reference
 
 |
 
-* ``src/tools/shdTool_propgen.f90``: was ``propgen.f90``
+* ``src/tools/shdTool_propgen.f90``:
 
-* ``src/tools/shdTool_make_mie_tab.f90``: was ``make_mie_table.f90``
+  * was ``propgen.f90``
 
-* ``src/tools/shdScat_ind_wat.f90``: was ``indexwatice.f``
+* ``src/tools/shdTool_make_mie_tab.f90``:
 
-* ``src/tools/shdScat_mie_wig.f90``: was ``miewig.f``
+  * was ``make_mie_table.f90``
 
-* ``src/tools/shdTool_make_tmx_tab.f90``: was ``make_tmatrix_table.f90``
+* ``src/tools/shdScat_ind_wat.f90``:
 
-* ``src/tools/shdScat_tmx_wig.f90``: was ``tmatrixwig.f``
+  * was ``indexwatice.f``
 
-* ``src/tools/shdScat_tmx_par.f90``: was ``tmd.par.f``
+* ``src/tools/shdScat_mie_wig.f90``:
 
-* ``src/tools/_lapack.f``: was ``lpd.f``
+  * was ``miewig.f``
 
-* ``src/tools/shdTool_plot_sca_tab.f90``: was ``plotscattab.f90``
+* ``src/tools/shdTool_make_tmx_tab.f90``:
 
-* ``src/tools/shdTool_put.f90``: was ``put.c``
+  * was ``make_tmatrix_table.f90``
+
+* ``src/tools/shdScat_tmx_wig.f90``:
+
+  * was ``tmatrixwig.f``
+
+* ``src/tools/shdScat_tmx_par.f90``:
+
+  * was ``tmd.par.f``
+
+* ``src/tools/_lapack.f``:
+
+  * was ``lpd.f``
+
+* ``src/tools/shdTool_plot_sca_tab.f90``:
+
+  * was ``plotscattab.f90``
+
+* ``src/tools/shdTool_put.f90``:
+
+  * was ``put.c``
 
 |
 
@@ -231,13 +252,21 @@ File-to-File Reference
 
 |
 
-* ``docs/README.rst``: was ``README``
+* ``docs/README.rst``:
 
-* ``docs/shdom.rst``: was ``shdom.txt``
+  * was ``README``
 
-* ``docs/propgen.rst``: was ``propgen.txt``
+* ``docs/shdom.rst``:
 
-* ``HISTORY.rst``: was ``Updatelist.txt``
+  * was ``shdom.txt``
+
+* ``docs/propgen.rst``:
+
+  * was ``propgen.txt``
+
+* ``HISTORY.rst``:
+
+  * was ``Updatelist.txt``
 
 |
 
