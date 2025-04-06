@@ -139,7 +139,7 @@ subroutine shd_mpi__map(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
         return
     end if
 
-    if (MYPROC_ > 0) then
+    if (MYPROC_ .gt. 0) then
         write (procstr, '(I4.4)') MYPROC_
         logfile = trim(adjustl(RUNNAME))//'.sHdOm-log.iproc-'//procstr
         open (UNIT=6, FILE=trim(adjustl(logfile)), STATUS='UNKNOWN')
@@ -153,8 +153,8 @@ subroutine shd_mpi__map(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
     call MPI_CART_CREATE(MPI_COMM_WORLD, 2, dims, periodic, reorder,&
         &COMM2D_, ierr)
 
-    if (dims(1) > 1) BCFLAG = ibset(BCFLAG, 2)
-    if (dims(2) > 1) BCFLAG = ibset(BCFLAG, 3)
+    if (dims(1) .gt. 1) BCFLAG = ibset(BCFLAG, 2)
+    if (dims(2) .gt. 1) BCFLAG = ibset(BCFLAG, 3)
     ! Multi-processor BC takes precedence over open BCs
     if (btest(BCFLAG, 2) .or. btest(BCFLAG, 3)) BCFLAG = iand(BCFLAG, 12)
 
@@ -165,12 +165,12 @@ subroutine shd_mpi__map(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
     call shd_mpi__optimizeProcDomain(dims, coords, NPXT, NPYT, PROPFILE, RUNNAME)
 
     ! Make the new property and base grid sizes and the IXYOUT_ arrays
-    if (dims(1) > 1) then
+    if (dims(1) .gt. 1) then
         if (NPXT .gt. 1) then
 
             NPX = IXYPRP_(2, 1) - IXYPRP_(1, 1) + 1
             NX = nint(NXT*float(NPX - 1)/NPXT) + 1
-            if (abs(NPXT/float(NXT) - (NPX - 1)/float(NX - 1)) > 0.0001) then
+            if (abs(NPXT/float(NXT) - (NPX - 1)/float(NX - 1)) .gt. 0.0001) then
                 call shd_mpi__abort('MAP_SHDOM_MPI: Even X base grid cannot be preserved&
                     &for this NX and number of processors')
             end if
@@ -202,13 +202,13 @@ subroutine shd_mpi__map(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
         XEND = NPXT*DELX
     end if
 
-    if (dims(2) > 1) then
+    if (dims(2) .gt. 1) then
 
         if (NPYT .gt. 1) then
 
             NPY = IXYPRP_(2, 2) - IXYPRP_(1, 2) + 1
             NY = nint(NYT*float(NPY - 1)/NPYT) + 1
-            if (abs(NPYT/float(NYT) - (NPY - 1)/float(NY - 1)) > 0.0001) then
+            if (abs(NPYT/float(NYT) - (NPY - 1)/float(NY - 1)) .gt. 0.0001) then
                 call shd_mpi__abort('MAP_SHDOM_MPI: Even Y base grid cannot be preserved for this NY and number of processors')
             end if
             IXYOUT_(1, 2) = nint(NYT*float(IXYPRP_(1, 2) - 1)/NPYT) + 1
@@ -292,7 +292,7 @@ subroutine shd_mpi__bcastInput(&
     character(LEN=FNAMEMAXLEN_) :: char256buf(6)
     character(LEN=4) :: procstr
 
-    if (NUMPROC_ <= 1) return
+    if (NUMPROC_ .le. 1) return
 
     intbuf(:) = (/NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG, IPFLAG, MAXITER, NUMOUT/)
     call MPI_BCAST(intbuf, 10, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
@@ -349,7 +349,7 @@ subroutine shd_mpi__bcastPrpSize(NPX, NPY, NPZ, DELX, DELY,&
     integer :: ierr, intbuf(6)
     real    :: realbuf(2)
 
-    if (NUMPROC_ <= 1) return
+    if (NUMPROC_ .le. 1) return
 
     intbuf(:) = (/NPX, NPY, NPZ, NUMPHASE, MAXLEG, MAXPGL/)
     call MPI_BCAST(intbuf, 6, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
@@ -403,7 +403,7 @@ subroutine shd_mpi__scatPrp(NPXT, NPYT, NPX, NPY, NPZ,&
     ZLEVELS(1:NPZ) = realbuf(1:NPZ); MAXASYM = realbuf(NPZ + 1)
 
     ! If we have a tabulated phase function, then broadcast to all processors
-    if (NUMPHASE > 0) then
+    if (NUMPHASE .gt. 0) then
         if (MYPROC_ .eq. 0) LEGENP(1:NUMPHASE*(NLEG + 1)*NSTLEG) =&
             &LEGENPT(1:NUMPHASE*(NLEG + 1)*NSTLEG)
         call MPI_BCAST(NLEG, 1, MPI_INTEGER, 0, COMM2D_, ierr)
@@ -490,7 +490,7 @@ subroutine shd_mpi__bcastSfcSize(MAXSFCPTS, MAXSFCPARS)
 #if HAS_MPI
     integer :: ierr, intbuf(2)
 
-    if (NUMPROC_ <= 1) return
+    if (NUMPROC_ .le. 1) return
 
     intbuf(1:2) = (/MAXSFCPTS, MAXSFCPARS/)
     call MPI_BCAST(intbuf, 2, MPI_INTEGER, 0, COMM2D_, ierr)
@@ -514,7 +514,7 @@ subroutine shd_mpi__bcastSfcParam(SFCTYPE, NXSFC, NYSFC, NSFCPAR,&
     integer :: ierr, intbuf(3), n
     real    :: realbuf(4)
 
-    if (NUMPROC_ <= 1) return
+    if (NUMPROC_ .le. 1) return
 
     call MPI_BCAST(SFCTYPE, 2, MPI_CHARACTER, 0, COMM2D_, ierr)
 
@@ -544,7 +544,7 @@ subroutine shd_mpi__bcastCkdSize(NG, NZCKD)
 #if HAS_MPI
     integer :: ierr, intbuf(2)
 
-    if (NUMPROC_ <= 1) return
+    if (NUMPROC_ .le. 1) return
 
     intbuf(1:2) = (/NG, NZCKD/)
     call MPI_BCAST(intbuf, 2, MPI_INTEGER, 0, COMM2D_, ierr)
@@ -567,7 +567,7 @@ subroutine shd_mpi__bcastCkdParam(SOLFLUX, NG, DELG, NZCKD, ZCKD, KABS)
     integer :: ierr
     real, allocatable :: realbuf(:)
 
-    if (NUMPROC_ <= 1) return
+    if (NUMPROC_ .le. 1) return
 
     allocate (realbuf(NG + NZCKD + 1))
     realbuf(1) = SOLFLUX; realbuf(2:NG + 1) = DELG(:)
@@ -644,7 +644,7 @@ real function shd_mpi__sumCpuTime(cpuTimes)
     shd_mpi__sumCpuTime = cpuTimes
 
 #if HAS_MPI
-    if (NUMPROC_ > 1) then
+    if (NUMPROC_ .gt. 1) then
         call MPI_REDUCE(cpuTimes, shd_mpi__sumCpuTime, 1, MPI_REAL, MPI_SUM, 0, COMM2D_, ierr)
     end if
 #endif
@@ -694,7 +694,7 @@ subroutine shd_mpi__gatherOutput(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
 
     if (FLUX_OUT) then
         irq = 0
-        if (MYPROC_ > 0) then
+        if (MYPROC_ .gt. 0) then
             allocate (sendbuf(3, NBPTS))
             sendbuf(1:2, :) = SUMFLUXES(:, :); sendbuf(3, :) = SUMDIRFLUX(:)
             irq = irq + 1
@@ -741,7 +741,7 @@ subroutine shd_mpi__gatherOutput(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
 
     if (FLUXDIV_OUT) then
         irq = 0
-        if (MYPROC_ > 0) then
+        if (MYPROC_ .gt. 0) then
             irq = irq + 1
             call MPI_ISEND(SUMFLUXDIV, NBPTS, MPI_REAL, 0, 2, COMM2D_,&
                 &requests(irq), ierr)
@@ -783,7 +783,7 @@ subroutine shd_mpi__gatherOutput(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
 
     if (SH_OUT) then
         irq = 0
-        if (MYPROC_ > 0) then
+        if (MYPROC_ .gt. 0) then
             irq = irq + 1
             call MPI_ISEND(SUMSHTERMS, NSHOUT*NBPTS, MPI_REAL, 0, 3, COMM2D_,&
                 &requests(irq), ierr)
@@ -849,7 +849,7 @@ subroutine shd_mpi__findAlbMax(ALBMAX)
     integer :: ierr
     real    :: sendrbuf
 
-    if (NUMPROC_ > 1) then
+    if (NUMPROC_ .gt. 1) then
         ! Call MPI_ALLREDUCE to find the max ALBMAX over all processors
         sendrbuf = ALBMAX
         call MPI_ALLREDUCE(sendrbuf, ALBMAX, 1, MPI_REAL, MPI_MAX, COMM2D_, ierr)
@@ -871,7 +871,7 @@ subroutine shd_mpi__unifySplit(DOSPLIT, STARTSPLITACC)
     logical :: sendlbuf
     real    :: sendrbuf
 
-    if (NUMPROC_ > 1) then
+    if (NUMPROC_ .gt. 1) then
         ! Call MPI_ALLREDUCE to
         sendrbuf = STARTSPLITACC
         call MPI_ALLREDUCE(sendrbuf, STARTSPLITACC, 1, MPI_REAL, MPI_MAX, COMM2D_, ierr(1))
@@ -893,7 +893,7 @@ subroutine shd_mpi__findTotSplitCritMax(SPLITCRIT)
     integer :: ierr
     real    :: sendrbuf
 
-    if (NUMPROC_ > 1) then
+    if (NUMPROC_ .gt. 1) then
         ! Call MPI_ALLREDUCE to find the max SPLITCRIT over all processors
         sendrbuf = SPLITCRIT
         call MPI_ALLREDUCE(sendrbuf, SPLITCRIT, 1, MPI_REAL, MPI_MAX, COMM2D_, ierr)
@@ -994,9 +994,9 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
         ! If we don't have a good direct beam then save the information
         !   needed to pass to two upstream processors
         if (.not. VALIDBEAM) then
-            if (SIDE .ne. Lupx .and. SIDE .ne. Lupy) call shd_mpi__abort('MAKE_DIRECT_PAR: Bad SIDE 1')
+            if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) call shd_mpi__abort('Error [mpi__makeDirect]: Bad SIDE 1.')
             NINVALID(SIDE) = NINVALID(SIDE) + 1
-            if (NINVALID(SIDE) > MAXNBEAM) call shd_mpi__abort('MAKE_DIRECT_PAR: NINVALID(SIDE) exceeds MAXNBEAM 1')
+            if (NINVALID(SIDE) .gt. MAXNBEAM) call shd_mpi__abort('Error [mpi__makeDirect]: NINVALID(SIDE) exceeds MAXNBEAM 1.')
             BndDirRealInfo(:, NINVALID(SIDE), SIDE) = (/XO, YO, ZO, DIRPATH/)
             BndDirIntInfo(:, NINVALID(SIDE), SIDE) = (/MYPROC_, IP/)
         end if
@@ -1056,7 +1056,7 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
                 if (Ldownx .eq. 2) BndDirRealInfo(1, J, Ldownx) = XGRID(NX)
                 X = BndDirRealInfo(1, J, Ldownx); Y = BndDirRealInfo(2, J, Ldownx)
                 Z = BndDirRealInfo(3, J, Ldownx); DIRPATH = BndDirRealInfo(4, J, Ldownx)
-                if (Y < YGRID(1) - EPS) Y = YMAX; if (Y > YMAX + EPS) Y = YGRID(1)
+                if (Y .lt. (YGRID(1) - EPS)) Y = YMAX; if (Y .gt. (YMAX + EPS)) Y = YGRID(1)
                 call shd_rad__computeDirect(0, X, Y, Z, BCFLAG, IPFLAG,&
                     &DELTAM, ML, NSTLEG, NLEG,&
                     &SOLARFLUX, SOLARMU, SOLARAZ, DIRJUNK,&
@@ -1066,15 +1066,15 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
                 if (VALIDBEAM) then
                     iproc = BndDirIntInfo(1, J, Ldownx)
                     Ndone(iproc) = Ndone(iproc) + 1
-                    if (Ndone(iproc) > MAXNBEAM)&
-                        &call shd_mpi__abort('MAKE_DIRECT_PAR: Ndone(iproc) exceeds MAXNBEAM x')
+                    if (Ndone(iproc) .gt. MAXNBEAM)&
+                        &call shd_mpi__abort('Error [mpi__makeDirect]: Ndone(iproc) exceeds MAXNBEAM x.')
                     DirAllOut(Ndone(iproc), iproc) = DIRPATH
                     DirPtrOut(Ndone(iproc), iproc) = BndDirIntInfo(2, J, Ldownx)
                 else
-                    if (SIDE .ne. Lupx .and. SIDE .ne. Lupy) call shd_mpi__abort('MAKE_DIRECT_PAR: Bad SIDE 2x')
+                    if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) call shd_mpi__abort('Error [mpi__makeDirect]: Bad SIDE 2x.')
                     NINVALID(SIDE) = NINVALID(SIDE) + 1
-                    if (NINVALID(SIDE) > MAXNBEAM)&
-                        &call shd_mpi__abort('MAKE_DIRECT_PAR: NINVALID(SIDE) exceeds MAXNBEAM 2x')
+                    if (NINVALID(SIDE) .gt. MAXNBEAM)&
+                        &call shd_mpi__abort('Error [mpi__makeDirect]: NINVALID(SIDE) exceeds MAXNBEAM 2x.')
                     BndDirRealInfo(:, NINVALID(SIDE), SIDE) = (/XO, YO, ZO, DIRPATH/)
                     BndDirIntInfo(:, NINVALID(SIDE), SIDE) = BndDirIntInfo(:, J, Ldownx)
                 end if
@@ -1088,7 +1088,7 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
                 if (Ldowny .eq. 4) BndDirRealInfo(2, J, Ldowny) = YGRID(NY)
                 X = BndDirRealInfo(1, J, Ldowny); Y = BndDirRealInfo(2, J, Ldowny)
                 Z = BndDirRealInfo(3, J, Ldowny); DIRPATH = BndDirRealInfo(4, J, Ldowny)
-                if (X < XGRID(1) - EPS) X = XMAX; if (X > XMAX + EPS) X = XGRID(1)
+                if (X .lt. (XGRID(1) - EPS)) X = XMAX; if (X .gt. (XMAX + EPS)) X = XGRID(1)
                 call shd_rad__computeDirect(0, X, Y, Z, BCFLAG, IPFLAG,&
                     &DELTAM, ML, NSTLEG, NLEG,&
                     &SOLARFLUX, SOLARMU, SOLARAZ, DIRJUNK,&
@@ -1098,15 +1098,15 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
                 if (VALIDBEAM) then
                     iproc = BndDirIntInfo(1, J, Ldowny)
                     Ndone(iproc) = Ndone(iproc) + 1
-                    if (Ndone(iproc) > MAXNBEAM)&
-                        &call shd_mpi__abort('MAKE_DIRECT_PAR: Ndone(iproc) exceeds MAXNBEAM y')
+                    if (Ndone(iproc) .gt. MAXNBEAM)&
+                        &call shd_mpi__abort('Error [mpi__makeDirect]: Ndone(iproc) exceeds MAXNBEAM y.')
                     DirAllOut(Ndone(iproc), iproc) = DIRPATH
                     DirPtrOut(Ndone(iproc), iproc) = BndDirIntInfo(2, J, Ldowny)
                 else
-                    if (SIDE .ne. Lupx .and. SIDE .ne. Lupy) call shd_mpi__abort('MAKE_DIRECT_PAR: Bad SIDE 2y')
+                    if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) call shd_mpi__abort('Error [mpi__makeDirect]: Bad SIDE 2y.')
                     NINVALID(SIDE) = NINVALID(SIDE) + 1
-                    if (NINVALID(SIDE) > MAXNBEAM)&
-                        &call shd_mpi__abort('MAKE_DIRECT_PAR: NINVALID(SIDE) exceeds MAXNBEAM 2x')
+                    if (NINVALID(SIDE) .gt. MAXNBEAM)&
+                        &call shd_mpi__abort('Error [mpi__makeDirect]: NINVALID(SIDE) exceeds MAXNBEAM 2x.')
                     BndDirRealInfo(:, NINVALID(SIDE), SIDE) = (/XO, YO, ZO, DIRPATH/)
                     BndDirIntInfo(:, NINVALID(SIDE), SIDE) = BndDirIntInfo(:, J, Ldowny)
                 end if
@@ -1118,8 +1118,8 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
         call MPI_ALLREDUCE(intsendbuf, intrecvbuf, 2, MPI_INTEGER, MPI_MAX,&
             &COMM2D_, ierr)
         AllDone = all(intrecvbuf(1:2) .eq. 0)
-        if (maxval(intrecvbuf(1:2)) > MAXNBEAM .or. maxval(Ndone(:)) > MAXNBEAM) then
-            call shd_mpi__abort('MAKE_DIRECT_PAR: MAXNBEAM exceeded 2')
+        if ((maxval(intrecvbuf(1:2)) .gt. MAXNBEAM) .or. (maxval(Ndone(:)) .gt. MAXNBEAM)) then
+            call shd_mpi__abort('Error [mpi__makeDirect]: MAXNBEAM exceeded 2.')
         end if
     end do
 
@@ -1234,14 +1234,14 @@ subroutine shd_mpi__findBoundaryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
             ICORNER = ibits(SWEEPORD(IORDER, JOCT), 0, 3) + 1
             IPT = GRIDPTR(ICORNER, IPCELL)
 
-            if ((GRIDPOS(3, IPT) < ZGRID(NZ) .and. BITZ .eq. 0) .or.&
-                &(GRIDPOS(3, IPT) > ZGRID(1) .and. BITZ .eq. 1)) then
+            if ((GRIDPOS(3, IPT) .lt. ZGRID(NZ) .and. BITZ .eq. 0) .or.&
+                &(GRIDPOS(3, IPT) .gt. ZGRID(1) .and. BITZ .eq. 1)) then
                 if (btest(BCFLAG, 2) .and. GRIDPOS(1, IPT) .eq. XEDGE(JOCT)&
                     &.and. .not. btest(IPFLAG, 0)) then
                     SIDE = 2 - ibits(JOCT - 1, 1, 1)
                     N(SIDE) = N(SIDE) + 1
-                    if (N(SIDE) > MAXNBXY) then
-                        call shd_mpi__abort('FIND_BOUNDARY_POINTS: MAXNBXY exceeded by N(SIDE) 1x')
+                    if (N(SIDE) .gt. MAXNBXY) then
+                        call shd_mpi__abort('Error [mpi__findBoundaryPnt]: MAXNBXY exceeded by N(SIDE) 1x.')
                     end if
                     BNDPTR(JOCT, N(SIDE), 1, SIDE) = IPT
                     BNDPOS(:, JOCT, N(SIDE), 1, SIDE) = GRIDPOS(:, IPT)
@@ -1250,8 +1250,8 @@ subroutine shd_mpi__findBoundaryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
                     &.and. .not. btest(IPFLAG, 1)) then
                     SIDE = 4 - ibits(JOCT - 1, 2, 1)
                     N(SIDE) = N(SIDE) + 1
-                    if (N(SIDE) > MAXNBXY) then
-                        call shd_mpi__abort('FIND_BOUNDARY_POINTS: MAXNBXY exceeded by N(SIDE) 1y')
+                    if (N(SIDE) .gt. MAXNBXY) then
+                        call shd_mpi__abort('Error [mpi__findBoundaryPnt]: MAXNBXY exceeded by N(SIDE) 1y.')
                     end if
                     BNDPTR(JOCT, N(SIDE), 1, SIDE) = IPT
                     BNDPOS(:, JOCT, N(SIDE), 1, SIDE) = GRIDPOS(:, IPT)
@@ -1262,7 +1262,7 @@ subroutine shd_mpi__findBoundaryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
     end do
 
     NS = maxval(N1(:, :))
-    if (NS > MAXNBXY) call shd_mpi__abort('FIND_BOUNDARY_POINTS: MAXNBXY might be exceeded')
+    if (NS .gt. MAXNBXY) call shd_mpi__abort('Error [mpi__findBoundaryPnt]: MAXNBXY might be exceeded.')
     N2(:, :) = 0
     irq = 0
     do L = 1, 4
@@ -1291,7 +1291,7 @@ subroutine shd_mpi__findBoundaryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
     ! Wait for the transfers among all the neighbors to resolve
     call MPI_WAITALL(irq, requests, status, ierr)
     NS = maxval(N2(:, :))
-    if (NS > MAXNBXY) call shd_mpi__abort('FIND_BOUNDARY_POINTS: MAXNBXY was exceeded')
+    if (NS .gt. MAXNBXY) call shd_mpi__abort('Error [mpi__findBoundaryPnt]: MAXNBXY was exceeded.')
 
     if (allocated(BXYPTR_)) deallocate (BXYPTR_, BXYPOS_, IBXYPTR_)
     MAXBC = maxval((/N2(:, 1) + N2(:, 3), N2(:, 1) + N2(:, 4), N2(:, 2) + N2(:, 3), N2(:, 2) + N2(:, 4)/))
@@ -1327,11 +1327,11 @@ subroutine shd_mpi__findBoundaryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
         do IZ = SZ, EZ, DZ
             IBXYPTR_(1, IZ, JOCT) = IBC + 1
             ! Store the boundary point info for this Z slab
-            do while (J <= NBX + NBY .and.&
-                &((ZARRAY(J) >= ZGRID(IZ) .and. BITZ .eq. 0) .or.&
-                &(ZARRAY(J) <= ZGRID(IZ) .and. BITZ .eq. 1)))
+            do while ((J .le. (NBX + NBY)) .and.&
+                &(((ZARRAY(J) .ge. ZGRID(IZ)) .and. (BITZ .eq. 0)) .or.&
+                &((ZARRAY(J) .le. ZGRID(IZ)) .and. (BITZ .eq. 1))))
                 IBC = IBC + 1
-                if (INDX(J) > 0) then
+                if (INDX(J) .gt. 0) then
                     IX = INDX(J)
                     BXYPTR_(:, IBC, JOCT) = (/IPROCNEIGH_(LX), BNDPTR(JOCT, IX, 2, LX), LX/)
                     BXYPOS_(:, IBC, JOCT) = BNDPOS(:, JOCT, IX, 2, LX)
@@ -1365,7 +1365,7 @@ subroutine shd_mpi__calBoundaryRad(BCFLAG, IPFLAG, JOCT, IZ,&
 
     ! Calculates the discrete ordinate boundary radiances for the KANG discrete
     ! ordinate (going in direction MU/PHI) for the grid points in the IZ slab.
-    ! FIND_BOUNDARY_POINTS has already been called to set up the BXYPTR_ and
+    ! shd_mpi__findBoundaryPnt has already been called to set up the BXYPTR_ and
     ! BXYPOS_ arrays for the grid points on the boundaries, and the IBXYPTR_
     ! array which has the starting and ending points for the IZ slab.  The
     ! grid points are done in the sweeping order, and so the octant (JOCT)
@@ -1455,9 +1455,9 @@ subroutine shd_mpi__calBoundaryRad(BCFLAG, IPFLAG, JOCT, IZ,&
             RadAllOut(:, Ndone(iproc), iproc) = RADIANCE(:)
             RadPtrOut(Ndone(iproc), iproc) = IPT
         else
-            if (SIDE .ne. Lupx .and. SIDE .ne. Lupy) then
+            if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
                 write (6, *) 'Bad SIDE 1:', MYPROC_, mu, phi, SIDE, x, y, z, xo, yo, zo
-                call shd_mpi__abort('CALC_BOUNDARY_RADIANCES')
+                call shd_mpi__abort('Error [mpi__calBoundaryRad]')
             end if
             NINVALID(SIDE) = NINVALID(SIDE) + 1
             BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/X, Y, Z, TRANSMIT, RADIANCE(:)/)
@@ -1543,9 +1543,9 @@ subroutine shd_mpi__calBoundaryRad(BCFLAG, IPFLAG, JOCT, IZ,&
                     RadAllOut(:, Ndone(iproc), iproc) = RADIANCE(:)
                     RadPtrOut(Ndone(iproc), iproc) = BndRadIntInfo(2, J, Ldownx)
                 else
-                    if (SIDE .ne. Lupx .and. SIDE .ne. Lupy) then
+                    if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
                         write (6, *) 'Bad SIDE 2x:', MYPROC_, mu, phi, SIDE, x, y, z
-                        call shd_mpi__abort('CALC_BOUNDARY_RADIANCES')
+                        call shd_mpi__abort('Error [mpi__calBoundaryRad]')
                     end if
                     NINVALID(SIDE) = NINVALID(SIDE) + 1
                     BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/X, Y, Z, TRANSMIT, RADIANCE(:)/)
@@ -1577,9 +1577,9 @@ subroutine shd_mpi__calBoundaryRad(BCFLAG, IPFLAG, JOCT, IZ,&
                     RadAllOut(:, Ndone(iproc), iproc) = RADIANCE(:)
                     RadPtrOut(Ndone(iproc), iproc) = BndRadIntInfo(2, J, Ldowny)
                 else
-                    if (SIDE .ne. Lupx .and. SIDE .ne. Lupy) then
+                    if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
                         write (6, *) 'Bad SIDE 2y:', MYPROC_, mu, phi, SIDE, x, y, z
-                        call shd_mpi__abort('CALC_BOUNDARY_RADIANCES')
+                        call shd_mpi__abort('Error [mpi__calBoundaryRad]')
                     end if
                     NINVALID(SIDE) = NINVALID(SIDE) + 1
                     BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/X, Y, Z, TRANSMIT, RADIANCE(:)/)
@@ -1867,17 +1867,17 @@ subroutine shd_mpi__computeRad(&
                         !  the information needed to pass to other processors
                         if (VALIDRAD) then
                             Ndone = Ndone + 1
-                            if (Ndone > MAXNRAD)&
+                            if (Ndone .gt. MAXNRAD)&
                                 &call shd_mpi__abort('Error [mpi__computeRad]: MAXNRAD exceeded by Ndone 1.')
                             RadSend(:, Ndone) = RADIANCE(:)
                             IndexSend(Ndone) = NRAD
                         else
-                            if ((SIDE .ne. Lupx .and. SIDE .ne. Lupy)) then
+                            if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
                                 write (6, *) 'Bad SIDE 1:', MYPROC_, muout, phiout, x0, y0, z0, SIDE, xe, ye, ze
                                 call shd_mpi__abort('Error [mpi__computeRad]: Bad SIDE 1')
                             end if
                             NINVALID(SIDE) = NINVALID(SIDE) + 1
-                            if (NINVALID(SIDE) > MAXNRAD)&
+                            if (NINVALID(SIDE) .gt. MAXNRAD)&
                                 call shd_mpi__abort('Error [mpi__computeRad]: MAXNRAD exceeded by NINVALID(SIDE) 1.')
 
                             BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, TRANSMIT, RADIANCE(:)/)
@@ -1954,17 +1954,17 @@ subroutine shd_mpi__computeRad(&
                         ! save information needed to pass to neighboring processors
                         if (VALIDRAD) then
                             Ndone = Ndone + 1
-                            if (Ndone > MAXNRAD)&
+                            if (Ndone .gt. MAXNRAD)&
                                 &call shd_mpi__abort('Error [mpi__computeRad]: MAXNRAD exceeded by Ndone 2.')
                             RadSend(:, Ndone) = RADIANCE(:)
                             IndexSend(Ndone) = BndRadIntInfo(J, Ldownx)
                         else
-                            if ((SIDE .ne. Lupx .and. SIDE .ne. Lupy)) then
+                            if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
                                 write (6, *) 'Bad SIDE 2x', MYPROC_, muout, phiout, x, y, z, SIDE, xe, ye, ze
                                 call shd_mpi__abort('Error [mpi__computeRad]: Bad SIDE 2x')
                             end if
                             NINVALID(SIDE) = NINVALID(SIDE) + 1
-                            if (NINVALID(SIDE) > MAXNRAD)&
+                            if (NINVALID(SIDE) .gt. MAXNRAD)&
                                 &call shd_mpi__abort('Error [mpi__computeRad]: MAXNRAD exceeded by NINVALID(SIDE) 2.')
                             BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, TRANSMIT, RADIANCE(:)/)
                             BndRadIntInfo(NINVALID(SIDE), SIDE) = BndRadIntInfo(J, Ldownx)
@@ -1991,17 +1991,17 @@ subroutine shd_mpi__computeRad(&
                         ! save information needed to pass to neighboring processors
                         if (VALIDRAD) then
                             Ndone = Ndone + 1
-                            if (Ndone > MAXNRAD)&
+                            if (Ndone .gt. MAXNRAD)&
                                 &call shd_mpi__abort('Error [mpi__computeRad]: MAXNRAD exceeded by Ndone 3.')
                             RadSend(:, Ndone) = RADIANCE(:)
                             IndexSend(Ndone) = BndRadIntInfo(J, Ldowny)
                         else
-                            if ((SIDE .ne. Lupx .and. SIDE .ne. Lupy)) then
+                            if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
                                 write (6, *) 'Bad SIDE 2y', MYPROC_, muout, phiout, x, y, z, SIDE, xe, ye, ze
                                 call shd_mpi__abort('Error [mpi__computeRad]: Bad SIDE 2y')
                             end if
                             NINVALID(SIDE) = NINVALID(SIDE) + 1
-                            if (NINVALID(SIDE) > MAXNRAD)&
+                            if (NINVALID(SIDE) .gt. MAXNRAD)&
                                 &call shd_mpi__abort('Error [mpi__computeRad]: MAXNRAD exceeded by NINVALID(SIDE) 3.')
                             BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, TRANSMIT, RADIANCE(:)/)
                             BndRadIntInfo(NINVALID(SIDE), SIDE) = BndRadIntInfo(J, Ldowny)
@@ -2016,7 +2016,7 @@ subroutine shd_mpi__computeRad(&
                 AllDone = all(intrecvbuf(1:2) .eq. 0)
             end do
 
-            if (MYPROC_ > 0) then
+            if (MYPROC_ .gt. 0) then
                 ! Send the finished radiances to the master processor
                 call MPI_ISEND(Ndone, 1, MPI_INTEGER, 0, 6*K + 7, COMM2D_, requests(1), ierr)
                 call MPI_ISEND(RadSend, NSTOKES*Ndone, MPI_REAL, 0, 6*K + 8, COMM2D_, requests(2), ierr)
@@ -2282,12 +2282,12 @@ subroutine shd_mpi__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
 
             ! Relocate the starting point in the overall periodic domain
             ! (we know we have a periodic domain if doing MPI)
-            if (X0 >= 0.0) then
+            if (X0 .ge. 0.0) then
                 X0 = mod(X0, dble(XDOMAIN))
             else
                 X0 = mod(X0 + XDOMAIN*int(1.0 - X0/XDOMAIN), dble(XDOMAIN))
             end if
-            if (Y0 >= 0.0) then
+            if (Y0 .ge. 0.0) then
                 Y0 = mod(Y0, dble(YDOMAIN))
             else
                 Y0 = mod(Y0 + YDOMAIN*int(1.0 - Y0/YDOMAIN), dble(YDOMAIN))
@@ -2323,14 +2323,14 @@ subroutine shd_mpi__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 !  the information needed to pass to other processors
                 if (VALIDRAD) then
                     Ndone = Ndone + 1
-                    if (Ndone > MAXNRAD)&
+                    if (Ndone .gt. MAXNRAD)&
                         &call shd_mpi__abort('VISUALIZE_RADIANCE_PAR: MAXNRAD exceeded by Ndone 1')
                     RadSend(:, Ndone) = RADIANCE(:)
                     IndexSend(Ndone) = IVIS
                 else
-                    if (SIDE < 1 .or. SIDE > 4) call shd_mpi__abort('VISUALIZE_RADIANCE_PAR: invalid SIDE 1')
+                    if (SIDE .lt. 1 .or. SIDE .gt. 4) call shd_mpi__abort('VISUALIZE_RADIANCE_PAR: invalid SIDE 1')
                     NINVALID(SIDE) = NINVALID(SIDE) + 1
-                    if (NINVALID(SIDE) > MAXNRAD)&
+                    if (NINVALID(SIDE) .gt. MAXNRAD)&
                         &call shd_mpi__abort('VISUALIZE_RADIANCE_PAR: MAXNRAD exceeded by NINVALID(SIDE) 1')
                     BndSendRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, MU2, PHI2, TRANSMIT, RADIANCE(:)/)
                     BndSendRadIntInfo(NINVALID(SIDE), SIDE) = IVIS
@@ -2410,14 +2410,14 @@ subroutine shd_mpi__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 ! save information needed to pass to neighboring processors
                 if (VALIDRAD) then
                     Ndone = Ndone + 1
-                    if (Ndone > MAXNRAD)&
+                    if (Ndone .gt. MAXNRAD)&
                         &call shd_mpi__abort('VISUALIZE_RADIANCE_PAR: MAXNRAD exceeded by Ndone 2')
                     RadSend(:, Ndone) = RADIANCE(:)
                     IndexSend(Ndone) = BndRecvRadIntInfo(J, IBND)
                 else
-                    if (SIDE < 1 .or. SIDE > 4) call shd_mpi__abort('VISUALIZE_RADIANCE_PAR: invalid SIDE 2')
+                    if (SIDE .lt. 1 .or. SIDE .gt. 4) call shd_mpi__abort('VISUALIZE_RADIANCE_PAR: invalid SIDE 2')
                     NINVALID(SIDE) = NINVALID(SIDE) + 1
-                    if (NINVALID(SIDE) > MAXNRAD)&
+                    if (NINVALID(SIDE) .gt. MAXNRAD)&
                         &call shd_mpi__abort('VISUALIZE_RADIANCE_PAR: MAXNRAD exceeded by NINVALID(SIDE) 2')
                     BndSendRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, MU2, PHI2, TRANSMIT, RADIANCE(:)/)
                     BndSendRadIntInfo(NINVALID(SIDE), SIDE) = BndRecvRadIntInfo(J, IBND)
@@ -2432,7 +2432,7 @@ subroutine shd_mpi__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     end do
     !print *,'Done with ray tracing.', Ndone
 
-    if (MYPROC_ > 0) then
+    if (MYPROC_ .gt. 0) then
         ! Send the finished radiances to the master processor
         call MPI_ISEND(Ndone, 1, MPI_INTEGER, 0, 21, COMM2D_, requests(1), ierr)
         call MPI_ISEND(RadSend, NSTOKES*Ndone, MPI_REAL, 0, 22, COMM2D_, requests(2), ierr)
@@ -2476,7 +2476,7 @@ subroutine shd_mpi__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
             N = NL*NS
             do I = IVIS - N + 1, IVIS
                 VISRAD(:) = VISOUT(:, I)
-                if (VISRAD(1) > 0.0) then
+                if (VISRAD(1) .gt. 0.0) then
                     if (NSTOKES .gt. 1) then
                         ! Output degree (0 to 1) and angle (-180 to 180) of linear polarization
                         VISOUT(2, I) = sqrt(VISRAD(2)**2 + VISRAD(3)**2)/VISRAD(1)
@@ -2493,12 +2493,12 @@ subroutine shd_mpi__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
             AOLP(:) = VISOUT(3, IVIS - N + 1:IVIS)
             MEAN = sum(AOLP(:))/N
             STD1 = sqrt(sum((AOLP(:) - MEAN)**2)/N)
-            where (AOLP(:) < 0.0)
+            where (AOLP(:) .lt. 0.0)
                 AOLP(:) = AOLP(:) + 180.0
             end where
             MEAN = sum(AOLP(:))/N
             STD2 = sqrt(sum((AOLP(:) - MEAN)**2)/N)
-            if (STD2 < STD1) then
+            if (STD2 .lt. STD1) then
                 VISOUT(3, IVIS - N + 1:IVIS) = AOLP(:)
             end if
             deallocate (AOLP)
@@ -2527,7 +2527,7 @@ subroutine shd_mpi__calAccelSolCrit(DOACCEL, DELJDOT, DELJOLD, DELJNEW, JNORM,&
     integer :: ierr
     real :: sendbuf(4), recvbuf(4)
 
-    if (NUMPROC_ > 1) then
+    if (NUMPROC_ .gt. 1) then
         ! Call MPI_ALLREDUCE to sum up the four dot products
         sendbuf(:) = (/DELJDOT, DELJOLD, DELJNEW, JNORM/)
         call MPI_ALLREDUCE(sendbuf, recvbuf, 4, MPI_REAL, MPI_SUM, COMM2D_, ierr)
@@ -2593,12 +2593,12 @@ subroutine shd_mpi__end(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART, XDOMAIN, YDOMAI
         do I = 1, NPTS
             IX = nint((GRIDPOS(1, I) - XSTART)/DELX) + 1
             IY = nint((GRIDPOS(2, I) - YSTART)/DELY) + 1
-            if (IX <= NPX .and. IY <= NPY) then
+            if ((IX .le. NPX) .and. (IY .le. NPY)) then
                 NUMGRID(IX, IY) = NUMGRID(IX, IY) + 1
             end if
         end do
 
-        if (NUMPROC_ > 1) then
+        if (NUMPROC_ .gt. 1) then
             ! Have the master process collect the property grid locations of all
             allocate (IXYALL(2, 2, 0:NUMPROC_ - 1))
             call MPI_GATHER(IXYPRP_, 4, MPI_INTEGER, IXYALL, 4, MPI_INTEGER, 0, COMM2D_, ierr)
@@ -2606,7 +2606,7 @@ subroutine shd_mpi__end(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART, XDOMAIN, YDOMAI
             ! Send the NUMGRIDs to the master processor
             allocate (requests(NUMPROC_), status(NUMPROC_))
             irq = 0
-            if (MYPROC_ > 0) then
+            if (MYPROC_ .gt. 0) then
                 irq = irq + 1
                 call MPI_ISEND(NUMGRID, NPX*NPY, MPI_INTEGER, 0, 777, COMM2D_,&
                     &requests(irq), ierr)
@@ -2757,7 +2757,7 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
                 read (10, *)
                 read (10, '(A)') PROPFILEI
                 read (10, *) NPXTI, NPYTI
-                if (NPXTI .ne. NPXT .or. NPYTI .ne. NPYT .or. PROPFILEI .ne. PROPFILE) then
+                if ((NPXTI .ne. NPXT) .or. (NPYTI .ne. NPYT) .or. (PROPFILEI .ne. PROPFILE)) then
                     write (6, '(A,A,A)') 'Load balancing file ', trim(RUNNAME),&
                         &'_load_balance.inp is not compatible with property file:'
                     write (6, *) PROPFILE
@@ -2831,17 +2831,17 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
                     ! Calculate the energy of these new boundary lines
                     NewEnergy = loadObject(TrialLines, Nxd, Nyd, ProcCoordAll, wtproc, NPXT, NPYT, Ngrid)
                     DeltaE = NewEnergy - Energy
-                    if (DeltaE < 0.0) then ! If lower energy accept change
+                    if (DeltaE .lt. 0.0) then ! If lower energy accept change
                         CurLines(:) = TrialLines(:)
                         Energy = NewEnergy
                     else !  otherwise sometimes accept it anyway
                         Boltz = exp(-DeltaE/Temp)
-                        if (shd_mpi__ran(iseed) < Boltz) then
+                        if (shd_mpi__ran(iseed) .lt. Boltz) then
                             CurLines(:) = TrialLines(:)
                             Energy = NewEnergy
                         end if
                     end if
-                    if (Energy < LowestEnergy) then
+                    if (Energy .lt. LowestEnergy) then
                         BndLines(:) = CurLines(:)
                         LowestEnergy = Energy
                     end if
@@ -2881,7 +2881,7 @@ real function shd_mpi__ran(idum)
     real, save :: am
     integer(K4B), save :: ix = -1, iy = -1, k
 
-    if (idum <= 0 .or. iy < 0) then
+    if ((idum .le. 0) .or. (iy .lt. 0)) then
         am = nearest(1.0, -1.0)/IM
         iy = ior(ieor(888889999, abs(idum)), 1)
         ix = ieor(777755555, abs(idum))
@@ -2892,7 +2892,7 @@ real function shd_mpi__ran(idum)
     ix = ieor(ix, ishft(ix, 5))
     k = iy/IQ
     iy = IA*(iy - k*IQ) - IR*k
-    if (iy < 0) iy = iy + IM
+    if (iy .lt. 0) iy = iy + IM
     shd_mpi__ran = am*ior(iand(IM, ieor(ix, iy)), 1)
 
 end function shd_mpi__ran
@@ -3019,7 +3019,7 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
     else
         IY = 1 + int((NY - 1)*(Y - YGRID(1))/(YGRID(NY) - YGRID(1)))
     end if
-    if (ix < 1 .or. iy < 1 .or. ix > NX + 1 .or. iy > NY + 1) then
+    if ((ix .lt. 1) .or. (iy .lt. 1) .or. (ix .gt. (NX + 1)) .or. (iy .gt. (NY + 1))) then
         write (6, *) 'Bad ix,iy', x, y, z, ix, iy, iz, xgrid(1), xgrid(nx), ygrid(1), ygrid(ny), MYPROC_
         write (6, *) 'Bad ix,iy', side, transmit
         call shd_mpi__abort('Message [mpi_integrateRay]:')
@@ -3110,8 +3110,8 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
         SOZ = (GRIDPOS(3, IOPP) - ZE)*CZINV
         SO = min(SOX, SOY, SOZ)
         if (SO .lt. -EPS) then
-            write (6, *) 'Message [mpi__integrateRay]: SO<0  ', MU, PHI, X, Y, Z, SOX, SOY, SOZ, SO, ICELL, TRANS
-            call shd_mpi__abort('Message [mpi__integrateRay]: SO<0.')
+            write (6, *) 'Message [mpi__integrateRay]: SO<0 ', MU, PHI, X, Y, Z, SOX, SOY, SOZ, SO, ICELL, TRANS
+            call shd_mpi__abort('Error [mpi__integrateRay]: SO<0.')
         end if
         ! Compute the coordinates of the cell exitting location
         if (.not. IPINX) XE = XE + SO*CX
@@ -3177,7 +3177,7 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
                 V = (XE - GRIDPOS(1, I1))/(GRIDPOS(1, I2) - GRIDPOS(1, I1))
             end if
         end if
-        if (u < -1.0e-4 .or. v < -1.0e-4 .or. u > 1.0001 .or. v > 1.0001) then
+        if ((u .lt. -1.0e-4) .or. (v .lt. -1.0e-4) .or. (u .gt. 1.0001) .or. (v .gt. 1.0001)) then
             write (6, *) 'u,v<0 or u,v>1: ', mu, phi, x, y, z, xe, ye, ze, u, v, ipinx, ipiny
             call shd_mpi__abort('Message [mpi__integrateRay]:')
         end if
@@ -3239,7 +3239,7 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
         !  to stop the tracing and add in the interpolated face radiance.
         RAD(:) = RAD(:) + TRANS*SRC(:)*ABSCELL
         TRANS = TRANS*TRANSCELL
-        if (RAD(1) < -1.0e-5) then
+        if (RAD(1) .lt. -1.0e-5) then
             write (6, '(3(1X,F5.3),8(1X,E12.5))')&
                 &xe, ye, ze, ext0, ext1, so, tau, trans, src, abscell, rad(:)
         end if
@@ -3283,7 +3283,7 @@ real function loadObject(BndLines, Nxd, Nyd, ProcCoordAll, wtproc,&
     real    :: OBJA
     real, save :: sumN = -1.0, a
 
-    if (sumN < 0) then
+    if (sumN .lt. 0) then
         sumN = sum(Ngrid(:, :)); a = float(Nxd*Nyd)/sumN
     end if
     N = Nxd + Nyd - 2
