@@ -35,7 +35,7 @@ SHDOM was originally developed by `Frank Evans <evans@nit.colorado.edu>`_ and is
 
 * Added support for LSRT BRDF model;
 
-* Fixed domain shift issue in 3D radiance calculations (also for MPI version);
+* Fixed "domain shift issue" in 3D radiance calculations (also for MPI version);
 
 * Added examples (including legacy cases) for benchmarking purpose;
 
@@ -90,6 +90,8 @@ or **Build SHDOM (based on GNU Make)**
     .. code-block:: bash
 
        make
+
+    * For ``MPI`` use, comment out ``FC = gfortran`` and uncomment ``FC = mpif90`` in ``makefile``, and then run ``make``.
 
 |
 
