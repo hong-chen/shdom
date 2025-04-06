@@ -7,8 +7,7 @@ module shd_out
   implicit none
   private
 
-  ! public modules
-  !╭────────────────────────────────────────────────╮!
+  public :: shd_io__outputData
   public :: shd_io__outputResult
   public :: shd_io__outputResultMpi
   public :: shd_io__outputImg
@@ -17,7 +16,6 @@ module shd_out
   public :: shd_io__visualizeCell
 
   public :: shd_io__saveState
-  !╰────────────────────────────────────────────────╯!
 
 contains
 
@@ -63,10 +61,10 @@ subroutine shd_io__outputData(&
         DATA_SIZE = DATA_BYTE/1000000.0
 
         if ((present(MODE)) .and. (MODE .eq. 'ADD')) then
-            write(*, '(A,F6.2,A)') 'Message [_outputData]: Data added to <'//trim(adjustl(OUTFILE_DATA))//'> (',&
+            write(*, '(A,F0.2,A)') 'Message [_outputData]: Data added to <'//trim(adjustl(OUTFILE_DATA))//'> (',&
                 &DATA_SIZE, 'MB).'
         else
-            write(*, '(A,F6.2,A)') 'Message [_outputData]: Data saved at <'//trim(adjustl(OUTFILE_DATA))//'> (',&
+            write(*, '(A,F0.2,A)') 'Message [_outputData]: Data saved at <'//trim(adjustl(OUTFILE_DATA))//'> (',&
                 &DATA_SIZE, 'MB).'
         end if
 

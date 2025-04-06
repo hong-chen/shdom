@@ -7,7 +7,6 @@ module shd_grid
     use shd_mpi
 
     implicit none
-    private
 
     public :: shd_grid__findBoundaryPnt
     public :: shd_grid__matchGridPnt

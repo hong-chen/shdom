@@ -6,8 +6,6 @@ module shd_inp
   implicit none
   private
 
-  ! public modules
-  !╭────────────────────────────────────────────────╮!
   public :: shd_io__userInput
   public :: shd_io__nmlInput
 
@@ -24,7 +22,6 @@ module shd_inp
   public :: shd_io__readCkd
 
   public :: shd_io__restoreState
-  !╰────────────────────────────────────────────────╯!
 
 contains
 
@@ -964,8 +961,8 @@ subroutine shd_io__checkPrpInput(&
 
     if (NTHICK .gt. 0) then
         write (*, '(A)') 'Message [_checkPrpInput]:'
-        write (*, '(A,I8)') '  Number of property grid cells with optical depth greater than 2: ', NTHICK
-        write (*, '(A,F8.2)') '  Max cell optical depth: ', MAXTAU
+        write (*, '(A,I0)')   '  Npoints (optical depth > 2): ', NTHICK
+        write (*, '(A,F0.2)') '       Max cell optical depth: ', MAXTAU
     end if
 
     return

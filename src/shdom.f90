@@ -319,7 +319,9 @@ program shdom_main
     ! but don't let MAX_TOTAL_MB be exceeded
     if (MAX_TOTAL_MB*1024.0**2 .gt. 1.80*huge(MAXIV)) then
         MAX_TOTAL_MB = 1.80*huge(MAXIV)/1024.0**2
-        write (6, '(A,F10.2)') 'Message [shdom_main]: MAX_TOTAL_MB reduced to fit memory model:', MAX_TOTAL_MB
+        write (6, '(A,F0.2," MB")') 'Message [shdom_main]: MAX_TOTAL_MB reduced to: ', MAX_TOTAL_MB
+    else
+        write (6, '(A,F0.2," MB")') 'Message [shdom_main]: MAX_TOTAL_MB is set to: ', MAX_TOTAL_MB
     end if
 
     if (SPLITACC .le. 0.0 .and. INSAVEFILE(1:4) .eq. 'NONE') then
