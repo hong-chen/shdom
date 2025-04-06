@@ -243,10 +243,11 @@ subroutine shd_mpi__map(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
     call MPI_CART_SHIFT(COMM2D_, 1, 1, IPROCNEIGH_(3), IPROCNEIGH_(4), ierr)
 
     write (6, '(A)') 'Message [mpi__map]:'
-    write (6, '(2X,A,2(1X,I2))') 'Number of processors in X and Y:', dims(1:2)
-    write (6, '(2X,A,I3)') 'This processor: ', MYPROC_
-    write (6, '(2X,A,4(1X,I3))') 'Neighbors:', IPROCNEIGH_(1:4)
-    write (6, '(2X,2(A,2F7.3))') 'Processor X range: ', XSTART, XEND, '   Y range: ', YSTART, YEND
+    write (6, '(2X,A,2(I0,2X))')    'Nproc in X and Y: ', dims(1:2)
+    write (6, '(2X,A,I0)')          '  This processor: ', MYPROC_
+    write (6, '(2X,A,4(I0,2X))')    '       Neighbors: ', IPROCNEIGH_(1:4)
+    write (6, '(2X,A,2(F0.2," km",2X))') '         X range: ', XSTART, XEND
+    write (6, '(2X,A,2(F0.2," km",2X))') '         Y range: ', YSTART, YEND
 #else
     XSTART = 0.0; YSTART = 0.0
 #endif
@@ -625,7 +626,7 @@ subroutine shd_mpi__readBcastMemParam(MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
     CELL_TO_POINT_RATIO = MemParam(4, MYPROC_)
     deallocate (MemParam)
     write (6, '(A)') 'Message [mpi__readBcastMemParam]:'
-    write (6, '(2X,A,F7.2,1X,F7.3,2(1X,F5.3))') 'Memory parameters used: ', MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
+    write (6, '(2X,A,F0.2,"MB",3(2X,F0.3))') 'Memory parameters used: ', MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
         &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
 #endif
 
@@ -2677,9 +2678,9 @@ subroutine shd_mpi__end(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART, XDOMAIN, YDOMAI
     ElapsedTime = MPI_WTIME() - STARTTIME_
 
     if (ElapsedTime .lt. 60.0) then
-        write (6, '(A,F6.2)') 'Message [mpi__end]: Total elapsed time (sec):', ElapsedTime
+        write (6, '(A,F0.2,A)') 'Message [mpi__end]: Total time used: ', ElapsedTime, ' sec'
     else
-        write (6, '(A,F6.2)') 'Message [mpi__end]: Total elapsed time (min):', ElapsedTime/60.0
+        write (6, '(A,F0.2,A)') 'Message [mpi__end]: Total time used: ', ElapsedTime/60.0, ' min'
     end if
 
     write (6, '(A,"<",A,">")') 'Message [mpi__end]: Finished with SHDOM run: ', trim(adjustl(RUNNAME))

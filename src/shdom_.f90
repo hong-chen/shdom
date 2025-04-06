@@ -732,9 +732,9 @@ program shdom_main
     elapsed_time = (real(count_end) - real(count_start)) / real(count_rate)
     if (MASTERPROC) then
         if (elapsed_time .lt. 60.0) then
-            write (6, '(A,F6.2,A)') 'Message [shdom_main]: Total time used:', elapsed_time, ' sec'
+            write (6, '(A,F0.2,A)') 'Message [shdom_main]: Total time used: ', elapsed_time, ' sec'
         else
-            write (6, '(A,F6.2,A)') 'Message [shdom_main]: Total time used:', elapsed_time/60.0, ' min'
+            write (6, '(A,F0.2,A)') 'Message [shdom_main]: Total time used: ', elapsed_time/60.0, ' min'
         endif
     end if
 
