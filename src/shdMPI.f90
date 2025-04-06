@@ -52,7 +52,7 @@ module shd_mpi
     real(RD_) :: STARTTIME_
     integer, allocatable :: BXYPTR_(:, :, :), IBXYPTR_(:, :, :)
     real, allocatable :: BXYPOS_(:, :, :)
-    type(MPI_Comm) :: COMM2D_
+    type(MPI_COMM) :: COMM2D_
 #endif
 
 contains
@@ -70,19 +70,19 @@ subroutine shd_mpi__start(MASTERPROC)
 ! note: this if clause has <else>
     integer :: ierr
 
-    call MPI_INIT(ierr)
+    call mpi_init(ierr)
     if (ierr .ne. MPI_SUCCESS) then
         write (6, *) 'Error [mpi__start]: Terminating ...'
         stop
     end if
 
-    call MPI_COMM_SIZE(MPI_COMM_WORLD, NUMPROC_, ierr)
-    call MPI_COMM_RANK(MPI_COMM_WORLD, MYPROC_, ierr)
+    call mpi_comm_size(MPI_COMM_WORLD, NUMPROC_, ierr)
+    call mpi_comm_rank(MPI_COMM_WORLD, MYPROC_, ierr)
 
-    call MPI_Errhandler_set(MPI_COMM_WORLD, MPI_ERRORS_RETURN, ierr)
-    !call MPI_Errhandler_set (MPI_COMM_WORLD, MPI_ERRORS_ARE_FATAL, ierr)
+    call mpi_errhandler_set(MPI_COMM_WORLD, MPI_ERRORS_RETURN, ierr)
+    !call mpi_errhandler_set (MPI_COMM_WORLD, MPI_ERRORS_ARE_FATAL, ierr)
 
-    STARTTIME_ = MPI_WTIME()
+    STARTTIME_ = mpi_wtime()
 
     if (MYPROC_ .eq. 0) then
         MASTERPROC = .true.
@@ -147,10 +147,10 @@ subroutine shd_mpi__map(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
 
     ! Partition 2D Cartesian topology:
     dims(:) = 0
-    call MPI_DIMS_CREATE(NUMPROC_, 2, dims, ierr)
+    call mpi_dims_create(NUMPROC_, 2, dims, ierr)
 
     ! Create 2D Cartesian mapping of processors:
-    call MPI_CART_CREATE(MPI_COMM_WORLD, 2, dims, periodic, reorder,&
+    call mpi_cart_create(MPI_COMM_WORLD, 2, dims, periodic, reorder,&
         &COMM2D_, ierr)
 
     if (dims(1) .gt. 1) BCFLAG = ibset(BCFLAG, 2)
@@ -159,7 +159,7 @@ subroutine shd_mpi__map(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
     if (btest(BCFLAG, 2) .or. btest(BCFLAG, 3)) BCFLAG = iand(BCFLAG, 12)
 
     ! Find where in the 2D grid of processors this is is at:
-    call MPI_CART_COORDS(COMM2D_, MYPROC_, 2, coords, ierr)
+    call mpi_cart_coords(COMM2D_, MYPROC_, 2, coords, ierr)
 
     ! Make the optimal (or default) property grid divisions (in IXYPRP_)
     call shd_mpi__optimizeProcDomain(dims, coords, NPXT, NPYT, PROPFILE, RUNNAME)
@@ -239,8 +239,8 @@ subroutine shd_mpi__map(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
     end if
 
     ! Get the processors (rank numbers) of the neighbors
-    call MPI_CART_SHIFT(COMM2D_, 0, 1, IPROCNEIGH_(1), IPROCNEIGH_(2), ierr)
-    call MPI_CART_SHIFT(COMM2D_, 1, 1, IPROCNEIGH_(3), IPROCNEIGH_(4), ierr)
+    call mpi_cart_shift(COMM2D_, 0, 1, IPROCNEIGH_(1), IPROCNEIGH_(2), ierr)
+    call mpi_cart_shift(COMM2D_, 1, 1, IPROCNEIGH_(3), IPROCNEIGH_(4), ierr)
 
     write (6, '(A)') 'Message [mpi__map]:'
     write (6, '(2X,A,2(I0,2X))')    'Nproc in X and Y: ', dims(1:2)
@@ -280,34 +280,34 @@ subroutine shd_mpi__bcastInput(&
     real, intent(inout) :: SOLACC, SPLITACC, SHACC, OUTPARMS(MAXPAR, MAXOUT)
     real, intent(inout) :: MAX_TOTAL_MB, SPLITTING_FACTOR
     real, intent(inout) :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
-    character(LEN=1), intent(inout) :: SRCTYPE, GRIDTYPE, UNITS, OUTTYPES(*)
-    character(LEN=FNAMEMAXLEN_), intent(inout) :: RUNNAME, PROPFILE, SFCFILE, CKDFILE
-    character(LEN=FNAMEMAXLEN_), intent(inout) :: INSAVEFILE, OUTSAVEFILE
+    character(len=1), intent(inout) :: SRCTYPE, GRIDTYPE, UNITS, OUTTYPES(*)
+    character(len=FNAMEMAXLEN_), intent(inout) :: RUNNAME, PROPFILE, SFCFILE, CKDFILE
+    character(len=FNAMEMAXLEN_), intent(inout) :: INSAVEFILE, OUTSAVEFILE
 
 #if HAS_MPI
     integer :: ierr, intbuf(10)
     logical :: logbuf(3)
     real    :: realbuf(16)
-    character(LEN=1) :: char1buf(3)
-    character(LEN=FNAMEMAXLEN_) :: char256buf(6)
-    character(LEN=4) :: procstr
+    character(len=1) :: char1buf(3)
+    character(len=FNAMEMAXLEN_) :: char256buf(6)
+    character(len=4) :: procstr
 
     if (NUMPROC_ .le. 1) return
 
     intbuf(:) = (/NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG, IPFLAG, MAXITER, NUMOUT/)
-    call MPI_BCAST(intbuf, 10, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
+    call mpi_bcast(intbuf, 10, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
     NSTOKES = intbuf(1); NX = intbuf(2); NY = intbuf(3); NZ = intbuf(4)
     NMU = intbuf(5); NPHI = intbuf(6); BCFLAG = intbuf(7); IPFLAG = intbuf(8)
     MAXITER = intbuf(9); NUMOUT = intbuf(10)
 
     logbuf(:) = (/KDIST, DELTAM, ACCELFLAG/)
-    call MPI_BCAST(logbuf, 3, MPI_LOGICAL, 0, MPI_COMM_WORLD, ierr)
+    call mpi_bcast(logbuf, 3, MPI_LOGICAL, 0, MPI_COMM_WORLD, ierr)
     KDIST = logbuf(1); DELTAM = logbuf(2); ACCELFLAG = logbuf(3)
 
     realbuf(:) = (/SOLARFLUX, SOLARMU, SOLARAZ, GNDTEMP, GNDALBEDO, SKYRAD,&
         &WAVENO(1:2), WAVELEN, SOLACC, SPLITACC, SHACC,&
         &MAX_TOTAL_MB, SPLITTING_FACTOR, NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO/)
-    call MPI_BCAST(realbuf, 16, MPI_REAL, 0, MPI_COMM_WORLD, ierr)
+    call mpi_bcast(realbuf, 16, MPI_REAL, 0, MPI_COMM_WORLD, ierr)
     SOLARFLUX = realbuf(1); SOLARMU = realbuf(2); SOLARAZ = realbuf(3)
     GNDTEMP = realbuf(4); GNDALBEDO = realbuf(5); SKYRAD = realbuf(6)
     WAVENO(1:2) = realbuf(7:8); WAVELEN = realbuf(9)
@@ -316,16 +316,16 @@ subroutine shd_mpi__bcastInput(&
     NUM_SH_TERM_FACTOR = realbuf(15); CELL_TO_POINT_RATIO = realbuf(16)
 
     char1buf(:) = (/SRCTYPE, GRIDTYPE, UNITS/)
-    call MPI_BCAST(char1buf, 3, MPI_CHARACTER, 0, MPI_COMM_WORLD, ierr)
+    call mpi_bcast(char1buf, 3, MPI_CHARACTER, 0, MPI_COMM_WORLD, ierr)
     SRCTYPE = char1buf(1); GRIDTYPE = char1buf(2); UNITS = char1buf(3)
 
     char256buf(:) = (/PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE, RUNNAME/)
-    call MPI_BCAST(char256buf, 6*256, MPI_CHARACTER, 0, MPI_COMM_WORLD, ierr)
+    call mpi_bcast(char256buf, 6*256, MPI_CHARACTER, 0, MPI_COMM_WORLD, ierr)
     PROPFILE = char256buf(1); SFCFILE = char256buf(2); CKDFILE = char256buf(3)
     INSAVEFILE = char256buf(4); OUTSAVEFILE = char256buf(5); RUNNAME = char256buf(6)
 
-    call MPI_BCAST(OUTPARMS, MAXPAR*NUMOUT, MPI_REAL, 0, MPI_COMM_WORLD, ierr)
-    call MPI_BCAST(OUTTYPES, NUMOUT*1, MPI_CHARACTER, 0, MPI_COMM_WORLD, ierr)
+    call mpi_bcast(OUTPARMS, MAXPAR*NUMOUT, MPI_REAL, 0, MPI_COMM_WORLD, ierr)
+    call mpi_bcast(OUTTYPES, NUMOUT*1, MPI_CHARACTER, 0, MPI_COMM_WORLD, ierr)
 
     write (procstr, '(I4.4)') MYPROC_
     if (INSAVEFILE(1:4) .ne. 'NONE') INSAVEFILE = trim(INSAVEFILE)//'.iproc-'//procstr
@@ -352,12 +352,12 @@ subroutine shd_mpi__bcastPrpSize(NPX, NPY, NPZ, DELX, DELY,&
     if (NUMPROC_ .le. 1) return
 
     intbuf(:) = (/NPX, NPY, NPZ, NUMPHASE, MAXLEG, MAXPGL/)
-    call MPI_BCAST(intbuf, 6, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
+    call mpi_bcast(intbuf, 6, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
     NPX = intbuf(1); NPY = intbuf(2); NPZ = intbuf(3)
     NUMPHASE = intbuf(4); MAXLEG = intbuf(5); MAXPGL = intbuf(6)
 
     realbuf(:) = (/DELX, DELY/)
-    call MPI_BCAST(realbuf, 2, MPI_REAL, 0, MPI_COMM_WORLD, ierr)
+    call mpi_bcast(realbuf, 2, MPI_REAL, 0, MPI_COMM_WORLD, ierr)
     DELX = realbuf(1); DELY = realbuf(2)
 #endif
 
@@ -393,26 +393,26 @@ subroutine shd_mpi__scatPrp(NPXT, NPYT, NPX, NPY, NPZ,&
     real, allocatable :: tempbuf(:, :), extbuf(:, :), albbuf(:, :)
     integer*2, allocatable :: ibuf(:, :, :), iphbuf(:, :)
 
-    type(MPI_Request), allocatable :: requests(:)
-    type(MPI_Status), allocatable :: status(:)
+    type(MPI_REQUEST), allocatable :: requests(:)
+    type(MPI_STATUS), allocatable :: status(:)
 
     ! Broadcast the small stuff that is going to all processors
     allocate (realbuf(NPZ + 1))
     realbuf(1:NPZ + 1) = (/ZLEVELS(1:NPZ), MAXASYM/)
-    call MPI_BCAST(realbuf, NPZ + 1, MPI_REAL, 0, COMM2D_, ierr)
+    call mpi_bcast(realbuf, NPZ + 1, MPI_REAL, 0, COMM2D_, ierr)
     ZLEVELS(1:NPZ) = realbuf(1:NPZ); MAXASYM = realbuf(NPZ + 1)
 
     ! If we have a tabulated phase function, then broadcast to all processors
     if (NUMPHASE .gt. 0) then
         if (MYPROC_ .eq. 0) LEGENP(1:NUMPHASE*(NLEG + 1)*NSTLEG) =&
             &LEGENPT(1:NUMPHASE*(NLEG + 1)*NSTLEG)
-        call MPI_BCAST(NLEG, 1, MPI_INTEGER, 0, COMM2D_, ierr)
-        call MPI_BCAST(LEGENP, NSTLEG*(NLEG + 1)*NUMPHASE, MPI_REAL, 0, COMM2D_, ierr)
+        call mpi_bcast(NLEG, 1, MPI_INTEGER, 0, COMM2D_, ierr)
+        call mpi_bcast(LEGENP, NSTLEG*(NLEG + 1)*NUMPHASE, MPI_REAL, 0, COMM2D_, ierr)
     end if
 
     ! Get the IXYPRP_ arrays from all processors to tell where they are in property grid
     allocate (IXYALL(2, 2, 0:NUMPROC_ - 1))
-    call MPI_GATHER(IXYPRP_, 4, MPI_INTEGER, IXYALL, 4, MPI_INTEGER, 0, COMM2D_, ierr)
+    call mpi_gather(IXYPRP_, 4, MPI_INTEGER, IXYALL, 4, MPI_INTEGER, 0, COMM2D_, ierr)
 
     allocate (requests(4*NUMPROC_ + 4), status(4*NUMPROC_ + 4))
 
@@ -439,39 +439,39 @@ subroutine shd_mpi__scatPrp(NPXT, NPYT, NPX, NPY, NPZ,&
             rbuf(:, NY, 1:NX - 1) = TEMPPT(:, mod(EY - 1, NPYT) + 1, SX:EX - 1)
             rbuf(:, NY, NX) = TEMPPT(:, mod(EY - 1, NPYT) + 1, mod(EX - 1, NPXT) + 1)
             tempbuf(1:N, iproc) = reshape(rbuf(1:NPZ, 1:NY, 1:NX), (/N/))
-            call MPI_ISEND(tempbuf(1:N, iproc), N, MPI_REAL, iproc, 1, COMM2D_, requests(irq + 1), ierr)
+            call mpi_isend(tempbuf(1:N, iproc), N, MPI_REAL, iproc, 1, COMM2D_, requests(irq + 1), ierr)
 
             rbuf(:, 1:NY - 1, 1:NX - 1) = EXTINCTPT(:, SY:EY - 1, SX:EX - 1)
             rbuf(:, 1:NY - 1, NX) = EXTINCTPT(:, SY:EY - 1, mod(EX - 1, NPXT) + 1)
             rbuf(:, NY, 1:NX - 1) = EXTINCTPT(:, mod(EY - 1, NPYT) + 1, SX:EX - 1)
             rbuf(:, NY, NX) = EXTINCTPT(:, mod(EY - 1, NPYT) + 1, mod(EX - 1, NPXT) + 1)
             extbuf(1:N, iproc) = reshape(rbuf(1:NPZ, 1:NY, 1:NX), (/N/))
-            call MPI_ISEND(extbuf(1:N, iproc), N, MPI_REAL, iproc, 2, COMM2D_, requests(irq + 2), ierr)
+            call mpi_isend(extbuf(1:N, iproc), N, MPI_REAL, iproc, 2, COMM2D_, requests(irq + 2), ierr)
 
             rbuf(:, 1:NY - 1, 1:NX - 1) = ALBEDOPT(:, SY:EY - 1, SX:EX - 1)
             rbuf(:, 1:NY - 1, NX) = ALBEDOPT(:, SY:EY - 1, mod(EX - 1, NPXT) + 1)
             rbuf(:, NY, 1:NX - 1) = ALBEDOPT(:, mod(EY - 1, NPYT) + 1, SX:EX - 1)
             rbuf(:, NY, NX) = ALBEDOPT(:, mod(EY - 1, NPYT) + 1, mod(EX - 1, NPXT) + 1)
             albbuf(1:N, iproc) = reshape(rbuf(1:NPZ, 1:NY, 1:NX), (/N/))
-            call MPI_ISEND(albbuf(1:N, iproc), N, MPI_REAL, iproc, 3, COMM2D_, requests(irq + 3), ierr)
+            call mpi_isend(albbuf(1:N, iproc), N, MPI_REAL, iproc, 3, COMM2D_, requests(irq + 3), ierr)
 
             ibuf(:, 1:NY - 1, 1:NX - 1) = IPHASEPT(:, SY:EY - 1, SX:EX - 1)
             ibuf(:, 1:NY - 1, NX) = IPHASEPT(:, SY:EY - 1, mod(EX - 1, NPXT) + 1)
             ibuf(:, NY, 1:NX - 1) = IPHASEPT(:, mod(EY - 1, NPYT) + 1, SX:EX - 1)
             ibuf(:, NY, NX) = IPHASEPT(:, mod(EY - 1, NPYT) + 1, mod(EX - 1, NPXT) + 1)
             iphbuf(1:N, iproc) = reshape(ibuf(1:NPZ, 1:NY, 1:NX), (/N/))
-            call MPI_ISEND(iphbuf(1:N, iproc), N, MPI_INTEGER2, iproc, 4, COMM2D_, requests(irq + 4), ierr)
+            call mpi_isend(iphbuf(1:N, iproc), N, MPI_INTEGER2, iproc, 4, COMM2D_, requests(irq + 4), ierr)
             irq = irq + 4
         end do
     end if
 
     N = NPX*NPY*NPZ
-    call MPI_IRECV(TEMPP   , N, MPI_REAL    , 0, 1, COMM2D_, requests(irq + 1), ierr)
-    call MPI_IRECV(EXTINCTP, N, MPI_REAL    , 0, 2, COMM2D_, requests(irq + 2), ierr)
-    call MPI_IRECV(ALBEDOP , N, MPI_REAL    , 0, 3, COMM2D_, requests(irq + 3), ierr)
-    call MPI_IRECV(IPHASEP , N, MPI_INTEGER2, 0, 4, COMM2D_, requests(irq + 4), ierr)
+    call mpi_irecv(TEMPP   , N, MPI_REAL    , 0, 1, COMM2D_, requests(irq + 1), ierr)
+    call mpi_irecv(EXTINCTP, N, MPI_REAL    , 0, 2, COMM2D_, requests(irq + 2), ierr)
+    call mpi_irecv(ALBEDOP , N, MPI_REAL    , 0, 3, COMM2D_, requests(irq + 3), ierr)
+    call mpi_irecv(IPHASEP , N, MPI_INTEGER2, 0, 4, COMM2D_, requests(irq + 4), ierr)
     irq = irq + 4
-    call MPI_WAITALL(irq, requests, status, ierr)
+    call mpi_waitall(irq, requests, status, ierr)
 
     if (MYPROC_ .eq. 0) deallocate (tempbuf, extbuf, albbuf, iphbuf, rbuf, ibuf)
     deallocate (requests, status, IXYALL, realbuf)
@@ -493,7 +493,7 @@ subroutine shd_mpi__bcastSfcSize(MAXSFCPTS, MAXSFCPARS)
     if (NUMPROC_ .le. 1) return
 
     intbuf(1:2) = (/MAXSFCPTS, MAXSFCPARS/)
-    call MPI_BCAST(intbuf, 2, MPI_INTEGER, 0, COMM2D_, ierr)
+    call mpi_bcast(intbuf, 2, MPI_INTEGER, 0, COMM2D_, ierr)
     MAXSFCPTS = intbuf(1); MAXSFCPARS = intbuf(2)
 #endif
 
@@ -506,7 +506,7 @@ subroutine shd_mpi__bcastSfcParam(SFCTYPE, NXSFC, NYSFC, NSFCPAR,&
 
     ! Broadcasts the surface file parameters from the master process to the others.
 
-    character(LEN=2), intent(inout) :: SFCTYPE
+    character(len=2), intent(inout) :: SFCTYPE
     integer, intent(inout) :: NXSFC, NYSFC, NSFCPAR
     real, intent(inout) :: DELXSFC, DELYSFC, SFCPARMS(*), GNDTEMP, GNDALBEDO
 
@@ -516,19 +516,19 @@ subroutine shd_mpi__bcastSfcParam(SFCTYPE, NXSFC, NYSFC, NSFCPAR,&
 
     if (NUMPROC_ .le. 1) return
 
-    call MPI_BCAST(SFCTYPE, 2, MPI_CHARACTER, 0, COMM2D_, ierr)
+    call mpi_bcast(SFCTYPE, 2, MPI_CHARACTER, 0, COMM2D_, ierr)
 
     intbuf(1:3) = (/NXSFC, NYSFC, NSFCPAR/)
-    call MPI_BCAST(intbuf, 3, MPI_INTEGER, 0, COMM2D_, ierr)
+    call mpi_bcast(intbuf, 3, MPI_INTEGER, 0, COMM2D_, ierr)
     NXSFC = intbuf(1); NYSFC = intbuf(2); NSFCPAR = intbuf(3)
 
     realbuf(1:4) = (/DELXSFC, DELYSFC, GNDTEMP, GNDALBEDO/)
-    call MPI_BCAST(realbuf, 4, MPI_REAL, 0, COMM2D_, ierr)
+    call mpi_bcast(realbuf, 4, MPI_REAL, 0, COMM2D_, ierr)
     DELXSFC = realbuf(1); DELYSFC = realbuf(2)
     GNDTEMP = realbuf(3); GNDALBEDO = realbuf(4)
 
     n = NSFCPAR*(NXSFC + 1)*(NYSFC + 1)
-    call MPI_BCAST(SFCPARMS, n, MPI_REAL, 0, COMM2D_, ierr)
+    call mpi_bcast(SFCPARMS, n, MPI_REAL, 0, COMM2D_, ierr)
 #endif
 
     return
@@ -547,7 +547,7 @@ subroutine shd_mpi__bcastCkdSize(NG, NZCKD)
     if (NUMPROC_ .le. 1) return
 
     intbuf(1:2) = (/NG, NZCKD/)
-    call MPI_BCAST(intbuf, 2, MPI_INTEGER, 0, COMM2D_, ierr)
+    call mpi_bcast(intbuf, 2, MPI_INTEGER, 0, COMM2D_, ierr)
     NG = intbuf(1); NZCKD = intbuf(2)
 #endif
 
@@ -572,11 +572,11 @@ subroutine shd_mpi__bcastCkdParam(SOLFLUX, NG, DELG, NZCKD, ZCKD, KABS)
     allocate (realbuf(NG + NZCKD + 1))
     realbuf(1) = SOLFLUX; realbuf(2:NG + 1) = DELG(:)
     realbuf(NG + 2:NG + NZCKD + 1) = ZCKD(:)
-    call MPI_BCAST(realbuf, NG + NZCKD + 1, MPI_REAL, 0, COMM2D_, ierr)
+    call mpi_bcast(realbuf, NG + NZCKD + 1, MPI_REAL, 0, COMM2D_, ierr)
     SOLFLUX = realbuf(1); DELG(:) = realbuf(2:NG + 1)
     ZCKD(:) = realbuf(NG + 2:NG + NZCKD + 1)
 
-    call MPI_BCAST(KABS, NZCKD*NG, MPI_REAL, 0, COMM2D_, ierr)
+    call mpi_bcast(KABS, NZCKD*NG, MPI_REAL, 0, COMM2D_, ierr)
 #endif
 
     return
@@ -619,7 +619,7 @@ subroutine shd_mpi__readBcastMemParam(MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
         end if
     end if
 
-    call MPI_BCAST(MemParam, 4*NUMPROC_, MPI_REAL, 0, COMM2D_, ierr)
+    call mpi_bcast(MemParam, 4*NUMPROC_, MPI_REAL, 0, COMM2D_, ierr)
     MAX_TOTAL_MB = MemParam(1, MYPROC_)
     ADAPT_GRID_FACTOR = MemParam(2, MYPROC_)
     NUM_SH_TERM_FACTOR = MemParam(3, MYPROC_)
@@ -645,7 +645,7 @@ real function shd_mpi__sumCpuTime(cpuTimes)
 
 #if HAS_MPI
     if (NUMPROC_ .gt. 1) then
-        call MPI_REDUCE(cpuTimes, shd_mpi__sumCpuTime, 1, MPI_REAL, MPI_SUM, 0, COMM2D_, ierr)
+        call mpi_reduce(cpuTimes, shd_mpi__sumCpuTime, 1, MPI_REAL, MPI_SUM, 0, COMM2D_, ierr)
     end if
 #endif
 
@@ -684,11 +684,11 @@ subroutine shd_mpi__gatherOutput(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
     integer, allocatable :: IXYALL(:, :, :)
     real, allocatable :: sendbuf(:, :), recvbuf(:, :, :), buf(:, :, :, :)
 
-    type(MPI_Request), allocatable :: requests(:)
-    type(MPI_Status), allocatable :: status(:)
+    type(MPI_REQUEST), allocatable :: requests(:)
+    type(MPI_STATUS), allocatable :: status(:)
 
     allocate (IXYALL(2, 2, 0:NUMPROC_ - 1))
-    call MPI_GATHER(IXYOUT_, 4, MPI_INTEGER, IXYALL, 4, MPI_INTEGER, 0, COMM2D_, ierr)
+    call mpi_gather(IXYOUT_, 4, MPI_INTEGER, IXYALL, 4, MPI_INTEGER, 0, COMM2D_, ierr)
 
     allocate (requests(NUMPROC_), status(NUMPROC_))
 
@@ -698,18 +698,18 @@ subroutine shd_mpi__gatherOutput(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
             allocate (sendbuf(3, NBPTS))
             sendbuf(1:2, :) = SUMFLUXES(:, :); sendbuf(3, :) = SUMDIRFLUX(:)
             irq = irq + 1
-            call MPI_ISEND(sendbuf, 3*NBPTS, MPI_REAL, 0, 1, COMM2D_,&
+            call mpi_isend(sendbuf, 3*NBPTS, MPI_REAL, 0, 1, COMM2D_,&
                 &requests(irq), ierr)
         else
             MAXN = (maxval(IXYALL(2, 1, :)) + 1)*(maxval(IXYALL(2, 2, :)) + 1)*NZ
             allocate (recvbuf(3, MAXN, 1:NUMPROC_ - 1))
             do iproc = 1, NUMPROC_ - 1
                 irq = irq + 1
-                call MPI_IRECV(recvbuf(:, :, iproc), 3*MAXN, MPI_REAL, iproc, 1,&
+                call mpi_irecv(recvbuf(:, :, iproc), 3*MAXN, MPI_REAL, iproc, 1,&
                     &COMM2D_, requests(irq), ierr)
             end do
         end if
-        call MPI_WAITALL(irq, requests, status, ierr)
+        call mpi_waitall(irq, requests, status, ierr)
 
         if (MYPROC_ .eq. 0) then
             IX = IXYALL(1, 1, 0); NX = IXYALL(2, 1, 0)
@@ -743,18 +743,18 @@ subroutine shd_mpi__gatherOutput(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
         irq = 0
         if (MYPROC_ .gt. 0) then
             irq = irq + 1
-            call MPI_ISEND(SUMFLUXDIV, NBPTS, MPI_REAL, 0, 2, COMM2D_,&
+            call mpi_isend(SUMFLUXDIV, NBPTS, MPI_REAL, 0, 2, COMM2D_,&
                 &requests(irq), ierr)
         else
             MAXN = (maxval(IXYALL(2, 1, :)) + 1)*(maxval(IXYALL(2, 2, :)) + 1)*NZ
             allocate (recvbuf(1, MAXN, 1:NUMPROC_ - 1))
             do iproc = 1, NUMPROC_ - 1
                 irq = irq + 1
-                call MPI_IRECV(recvbuf(:, :, iproc), MAXN, MPI_REAL, iproc, 2,&
+                call mpi_irecv(recvbuf(:, :, iproc), MAXN, MPI_REAL, iproc, 2,&
                     &COMM2D_, requests(irq), ierr)
             end do
         end if
-        call MPI_WAITALL(irq, requests, status, ierr)
+        call mpi_waitall(irq, requests, status, ierr)
 
         if (MYPROC_ .eq. 0) then
             IX = IXYALL(1, 1, 0); NX = IXYALL(2, 1, 0)
@@ -785,18 +785,18 @@ subroutine shd_mpi__gatherOutput(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
         irq = 0
         if (MYPROC_ .gt. 0) then
             irq = irq + 1
-            call MPI_ISEND(SUMSHTERMS, NSHOUT*NBPTS, MPI_REAL, 0, 3, COMM2D_,&
+            call mpi_isend(SUMSHTERMS, NSHOUT*NBPTS, MPI_REAL, 0, 3, COMM2D_,&
                 &requests(irq), ierr)
         else
             MAXN = (maxval(IXYALL(2, 1, :)) + 1)*(maxval(IXYALL(2, 2, :)) + 1)*NZ
             allocate (recvbuf(NSHOUT, MAXN, 1:NUMPROC_ - 1))
             do iproc = 1, NUMPROC_ - 1
                 irq = irq + 1
-                call MPI_IRECV(recvbuf(:, :, iproc), NSHOUT*MAXN, MPI_REAL, iproc, 3,&
+                call mpi_irecv(recvbuf(:, :, iproc), NSHOUT*MAXN, MPI_REAL, iproc, 3,&
                     &COMM2D_, requests(irq), ierr)
             end do
         end if
-        call MPI_WAITALL(irq, requests, status, ierr)
+        call mpi_waitall(irq, requests, status, ierr)
 
         if (MYPROC_ .eq. 0) then
             IX = IXYALL(1, 1, 0); NX = IXYALL(2, 1, 0)
@@ -831,7 +831,7 @@ subroutine shd_mpi__gatherOutput(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
 
     ! Get the sum of the NCELLS, NPTS, and NSH over the processors
     send3int = (/NCELLS, NPTS, NSH/)
-    call MPI_REDUCE(send3int, recv3int, 3, MPI_INTEGER, MPI_SUM, 0, COMM2D_, ierr)
+    call mpi_reduce(send3int, recv3int, 3, MPI_INTEGER, MPI_SUM, 0, COMM2D_, ierr)
     NCELLSTOT = recv3int(1); NPTSTOT = recv3int(2); NSHTOT = recv3int(3)
 
     deallocate (IXYALL, requests, status)
@@ -850,10 +850,10 @@ subroutine shd_mpi__findAlbMax(ALBMAX)
     real    :: sendrbuf
 
     if (NUMPROC_ .gt. 1) then
-        ! Call MPI_ALLREDUCE to find the max ALBMAX over all processors
+        ! Call mpi_allreduce to find the max ALBMAX over all processors
         sendrbuf = ALBMAX
-        call MPI_ALLREDUCE(sendrbuf, ALBMAX, 1, MPI_REAL, MPI_MAX, COMM2D_, ierr)
-        if (ierr .ne. MPI_SUCCESS) call shd_mpi__abort('Error [mpi__findAlbMax]: MPI_ALLREDUCE error.')
+        call mpi_allreduce(sendrbuf, ALBMAX, 1, MPI_REAL, MPI_MAX, COMM2D_, ierr)
+        if (ierr .ne. MPI_SUCCESS) call shd_mpi__abort('Error [mpi__findAlbMax]: mpi_allreduce error.')
     end if
 #endif
 
@@ -872,12 +872,12 @@ subroutine shd_mpi__unifySplit(DOSPLIT, STARTSPLITACC)
     real    :: sendrbuf
 
     if (NUMPROC_ .gt. 1) then
-        ! Call MPI_ALLREDUCE to
+        ! Call mpi_allreduce to
         sendrbuf = STARTSPLITACC
-        call MPI_ALLREDUCE(sendrbuf, STARTSPLITACC, 1, MPI_REAL, MPI_MAX, COMM2D_, ierr(1))
+        call mpi_allreduce(sendrbuf, STARTSPLITACC, 1, MPI_REAL, MPI_MAX, COMM2D_, ierr(1))
         sendlbuf = DOSPLIT
-        call MPI_ALLREDUCE(sendlbuf, DOSPLIT, 1, MPI_LOGICAL, MPI_LOR, COMM2D_, ierr(2))
-        if (any(ierr(:) .ne. MPI_SUCCESS)) call shd_mpi__abort('Error [mpi__unifySplit]: MPI_ALLREDUCE error.')
+        call mpi_allreduce(sendlbuf, DOSPLIT, 1, MPI_LOGICAL, MPI_LOR, COMM2D_, ierr(2))
+        if (any(ierr(:) .ne. MPI_SUCCESS)) call shd_mpi__abort('Error [mpi__unifySplit]: mpi_allreduce error.')
     end if
 #endif
 
@@ -894,10 +894,10 @@ subroutine shd_mpi__findTotSplitCritMax(SPLITCRIT)
     real    :: sendrbuf
 
     if (NUMPROC_ .gt. 1) then
-        ! Call MPI_ALLREDUCE to find the max SPLITCRIT over all processors
+        ! Call mpi_allreduce to find the max SPLITCRIT over all processors
         sendrbuf = SPLITCRIT
-        call MPI_ALLREDUCE(sendrbuf, SPLITCRIT, 1, MPI_REAL, MPI_MAX, COMM2D_, ierr)
-        if (ierr .ne. MPI_SUCCESS) call shd_mpi__abort('Error [mpi__findTotSplitCritMax]: MPI_ALLREDUCE error.')
+        call mpi_allreduce(sendrbuf, SPLITCRIT, 1, MPI_REAL, MPI_MAX, COMM2D_, ierr)
+        if (ierr .ne. MPI_SUCCESS) call shd_mpi__abort('Error [mpi__findTotSplitCritMax]: mpi_allreduce error.')
     end if
 #endif
 
@@ -936,8 +936,8 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
     integer, allocatable :: DirPtrOut(:, :), DirPtrIn(:)
     real, allocatable    :: DirAllOut(:, :), DirAllIn(:)
 
-    type(MPI_Request) :: requests(12)
-    type(MPI_Status) :: status(12)
+    type(MPI_REQUEST) :: requests(12)
+    type(MPI_STATUS) :: status(12)
 
     MAXNBEAM = 2*NPTS
     allocate (BndDirRealInfo(4, MAXNBEAM, 4), BndDirIntInfo(2, MAXNBEAM, 4))
@@ -954,7 +954,7 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
         ! Find the max lowest uniform Z level over all processors and then
         !   tell shd_rad__computeDirect about it
         UZLEV = UNIFZLEV
-        call MPI_ALLREDUCE(UZLEV, UNIFZLEV, 1, MPI_REAL, MPI_MAX, COMM2D_, ierr)
+        call mpi_allreduce(UZLEV, UNIFZLEV, 1, MPI_REAL, MPI_MAX, COMM2D_, ierr)
         call shd_rad__computeDirect(2, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
             &DELTAM, ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
@@ -1011,42 +1011,42 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
         !   the real and integer info needed about the radiance integrations
         irq = 0
         if (btest(BCFLAG, 2)) then
-            call MPI_ISEND(NINVALID(Lupx), 1, MPI_INTEGER,&
+            call mpi_isend(NINVALID(Lupx), 1, MPI_INTEGER,&
                 &IPROCNEIGH_(Lupx), 1, COMM2D_, requests(irq + 1), ierr)
-            call MPI_ISEND(BndDirRealInfo(:, :, Lupx), 4*NINVALID(Lupx), MPI_REAL,&
+            call mpi_isend(BndDirRealInfo(:, :, Lupx), 4*NINVALID(Lupx), MPI_REAL,&
                 &IPROCNEIGH_(Lupx), 2, COMM2D_, requests(irq + 2), ierr)
-            call MPI_ISEND(BndDirIntInfo(:, :, Lupx), 2*NINVALID(Lupx), MPI_INTEGER,&
+            call mpi_isend(BndDirIntInfo(:, :, Lupx), 2*NINVALID(Lupx), MPI_INTEGER,&
                 &IPROCNEIGH_(Lupx), 3, COMM2D_, requests(irq + 3), ierr)
             irq = irq + 3
         end if
         if (btest(BCFLAG, 3)) then
-            call MPI_ISEND(NINVALID(Lupy), 1, MPI_INTEGER,&
+            call mpi_isend(NINVALID(Lupy), 1, MPI_INTEGER,&
                 &IPROCNEIGH_(Lupy), 4, COMM2D_, requests(irq + 1), ierr)
-            call MPI_ISEND(BndDirRealInfo(:, :, Lupy), 4*NINVALID(Lupy), MPI_REAL,&
+            call mpi_isend(BndDirRealInfo(:, :, Lupy), 4*NINVALID(Lupy), MPI_REAL,&
                 &IPROCNEIGH_(Lupy), 5, COMM2D_, requests(irq + 2), ierr)
-            call MPI_ISEND(BndDirIntInfo(:, :, Lupy), 2*NINVALID(Lupy), MPI_INTEGER,&
+            call mpi_isend(BndDirIntInfo(:, :, Lupy), 2*NINVALID(Lupy), MPI_INTEGER,&
                 &IPROCNEIGH_(Lupy), 6, COMM2D_, requests(irq + 3), ierr)
             irq = irq + 3
         end if
         if (btest(BCFLAG, 2)) then
-            call MPI_IRECV(NINVALID(Ldownx), 1, MPI_INTEGER,&
+            call mpi_irecv(NINVALID(Ldownx), 1, MPI_INTEGER,&
                 &IPROCNEIGH_(Ldownx), 1, COMM2D_, requests(irq + 1), ierr)
-            call MPI_IRECV(BndDirRealInfo(:, :, Ldownx), 4*MAXNBEAM, MPI_REAL,&
+            call mpi_irecv(BndDirRealInfo(:, :, Ldownx), 4*MAXNBEAM, MPI_REAL,&
                 &IPROCNEIGH_(Ldownx), 2, COMM2D_, requests(irq + 2), ierr)
-            call MPI_IRECV(BndDirIntInfo(:, :, Ldownx), 2*MAXNBEAM, MPI_INTEGER,&
+            call mpi_irecv(BndDirIntInfo(:, :, Ldownx), 2*MAXNBEAM, MPI_INTEGER,&
                 &IPROCNEIGH_(Ldownx), 3, COMM2D_, requests(irq + 3), ierr)
             irq = irq + 3
         end if
         if (btest(BCFLAG, 3)) then
-            call MPI_IRECV(NINVALID(Ldowny), 1, MPI_INTEGER,&
+            call mpi_irecv(NINVALID(Ldowny), 1, MPI_INTEGER,&
                 &IPROCNEIGH_(Ldowny), 4, COMM2D_, requests(irq + 1), ierr)
-            call MPI_IRECV(BndDirRealInfo(:, :, Ldowny), 4*MAXNBEAM, MPI_REAL,&
+            call mpi_irecv(BndDirRealInfo(:, :, Ldowny), 4*MAXNBEAM, MPI_REAL,&
                 &IPROCNEIGH_(Ldowny), 5, COMM2D_, requests(irq + 2), ierr)
-            call MPI_IRECV(BndDirIntInfo(:, :, Ldowny), 2*MAXNBEAM, MPI_INTEGER,&
+            call mpi_irecv(BndDirIntInfo(:, :, Ldowny), 2*MAXNBEAM, MPI_INTEGER,&
                 &IPROCNEIGH_(Ldowny), 6, COMM2D_, requests(irq + 3), ierr)
             irq = irq + 3
         end if
-        call MPI_WAITALL(irq, requests, status, ierr)
+        call mpi_waitall(irq, requests, status, ierr)
 
         NINVALID(Lupx) = 0; NINVALID(Lupy) = 0
         if (btest(BCFLAG, 2)) then
@@ -1115,7 +1115,7 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
 
         ! See if there are any more invalid radiance rays on all the processors
         intsendbuf = (/NINVALID(Lupx), NINVALID(Lupy)/)
-        call MPI_ALLREDUCE(intsendbuf, intrecvbuf, 2, MPI_INTEGER, MPI_MAX,&
+        call mpi_allreduce(intsendbuf, intrecvbuf, 2, MPI_INTEGER, MPI_MAX,&
             &COMM2D_, ierr)
         AllDone = all(intrecvbuf(1:2) .eq. 0)
         if ((maxval(intrecvbuf(1:2)) .gt. MAXNBEAM) .or. (maxval(Ndone(:)) .gt. MAXNBEAM)) then
@@ -1126,19 +1126,19 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
     ! Exchange the finished direct beam paths with all of the other processors
     do iproc = 0, NUMPROC_ - 1
         if (iproc .ne. MYPROC_) then
-            call MPI_ISEND(Ndone(iproc), 1, MPI_INTEGER,&
+            call mpi_isend(Ndone(iproc), 1, MPI_INTEGER,&
                 &iproc, 7, COMM2D_, requests(1), ierr)
-            call MPI_ISEND(DirAllOut(:, iproc), Ndone(iproc), MPI_REAL,&
+            call mpi_isend(DirAllOut(:, iproc), Ndone(iproc), MPI_REAL,&
                 &iproc, 8, COMM2D_, requests(2), ierr)
-            call MPI_ISEND(DirPtrOut(:, iproc), Ndone(iproc), MPI_INTEGER,&
+            call mpi_isend(DirPtrOut(:, iproc), Ndone(iproc), MPI_INTEGER,&
                 &iproc, 9, COMM2D_, requests(3), ierr)
-            call MPI_IRECV(Nbeam, 1, MPI_INTEGER,&
+            call mpi_irecv(Nbeam, 1, MPI_INTEGER,&
                 &iproc, 7, COMM2D_, requests(4), ierr)
-            call MPI_IRECV(DirAllIn, MAXNBEAM, MPI_REAL,&
+            call mpi_irecv(DirAllIn, MAXNBEAM, MPI_REAL,&
                 &iproc, 8, COMM2D_, requests(5), ierr)
-            call MPI_IRECV(DirPtrIn, MAXNBEAM, MPI_INTEGER,&
+            call mpi_irecv(DirPtrIn, MAXNBEAM, MPI_INTEGER,&
                 &iproc, 9, COMM2D_, requests(6), ierr)
-            call MPI_WAITALL(6, requests, status, ierr)
+            call mpi_waitall(6, requests, status, ierr)
             ! Put the direct beam flux in the correct grid point
             do I = 1, Nbeam
                 IP = DirPtrIn(I)
@@ -1193,12 +1193,12 @@ subroutine shd_mpi__findBoundaryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
     integer, allocatable :: BNDPTR(:, :, :, :), INDX(:)
     real, allocatable :: BNDPOS(:, :, :, :, :), ZARRAY(:)
 
-    type(MPI_Request) :: requests(24)
-    type(MPI_Status) :: status(24)
+    type(MPI_REQUEST) :: requests(24)
+    type(MPI_STATUS) :: status(24)
 
     if (.not. (btest(BCFLAG, 2) .or. btest(BCFLAG, 3))) return
     if (btest(IPFLAG, 0) .and. btest(IPFLAG, 1)) return
-    call MPI_ALLREDUCE(NPTS .eq. OLDNPTS, SAMEGRID, 1, MPI_LOGICAL, MPI_LAND, COMM2D_, ierr)
+    call mpi_allreduce(NPTS .eq. OLDNPTS, SAMEGRID, 1, MPI_LOGICAL, MPI_LAND, COMM2D_, ierr)
     OLDNPTS = NPTS
     if (SAMEGRID) return
 
@@ -1271,25 +1271,25 @@ subroutine shd_mpi__findBoundaryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
             ! Exchange the lists of boundary points with neighbors
             LI = INOUT_ARR(L)
             tag = L
-            call MPI_ISEND(N1(:, L), 8, MPI_INTEGER,&
+            call mpi_isend(N1(:, L), 8, MPI_INTEGER,&
                 &IPROCNEIGH_(L), tag, COMM2D_, requests(irq + 1), ierr)
-            call MPI_IRECV(N2(:, LI), 8, MPI_INTEGER,&
+            call mpi_irecv(N2(:, LI), 8, MPI_INTEGER,&
                 &IPROCNEIGH_(LI), tag, COMM2D_, requests(irq + 2), ierr)
             tag = 1000 + L
-            call MPI_ISEND(BNDPTR(:, :, 1, L), NOCT*NS, MPI_INTEGER,&
+            call mpi_isend(BNDPTR(:, :, 1, L), NOCT*NS, MPI_INTEGER,&
                 &IPROCNEIGH_(L), tag, COMM2D_, requests(irq + 3), ierr)
-            call MPI_IRECV(BNDPTR(:, :, 2, LI), NOCT*MAXNBXY, MPI_INTEGER,&
+            call mpi_irecv(BNDPTR(:, :, 2, LI), NOCT*MAXNBXY, MPI_INTEGER,&
                 &IPROCNEIGH_(LI), tag, COMM2D_, requests(irq + 4), ierr)
             tag = 2000 + L
-            call MPI_ISEND(BNDPOS(:, :, :, 1, L), 3*NOCT*NS, MPI_REAL,&
+            call mpi_isend(BNDPOS(:, :, :, 1, L), 3*NOCT*NS, MPI_REAL,&
                 &IPROCNEIGH_(L), tag, COMM2D_, requests(irq + 5), ierr)
-            call MPI_IRECV(BNDPOS(:, :, :, 2, LI), 3*NOCT*MAXNBXY, MPI_REAL,&
+            call mpi_irecv(BNDPOS(:, :, :, 2, LI), 3*NOCT*MAXNBXY, MPI_REAL,&
                 &IPROCNEIGH_(LI), tag, COMM2D_, requests(irq + 6), ierr)
             irq = irq + 6
         end if
     end do
     ! Wait for the transfers among all the neighbors to resolve
-    call MPI_WAITALL(irq, requests, status, ierr)
+    call mpi_waitall(irq, requests, status, ierr)
     NS = maxval(N2(:, :))
     if (NS .gt. MAXNBXY) call shd_mpi__abort('Error [mpi__findBoundaryPnt]: MAXNBXY was exceeded.')
 
@@ -1409,8 +1409,8 @@ subroutine shd_mpi__calBoundaryRad(BCFLAG, IPFLAG, JOCT, IZ,&
     integer, allocatable :: RadPtrOut(:, :), RadPtrIn(:)
     real, allocatable    :: RadAllOut(:, :, :), RadAllIn(:, :)
 
-    type(MPI_Request) :: requests(12)
-    type(MPI_Status) :: status(12)
+    type(MPI_REQUEST) :: requests(12)
+    type(MPI_STATUS) :: status(12)
 
     MAXNBND = NUMPROC_*maxval(IBXYPTR_(2, :, :) - IBXYPTR_(1, :, :) + 1)
     allocate (BndRadRealInfo(4 + NSTOKES, MAXNBND, 4), BndRadIntInfo(2, MAXNBND, 4))
@@ -1473,38 +1473,38 @@ subroutine shd_mpi__calBoundaryRad(BCFLAG, IPFLAG, JOCT, IZ,&
         !   the real and integer info needed about the radiance integrations
         irq = 0
         if (btest(BCFLAG, 2)) then
-            call MPI_ISEND(NINVALID(Lupx), 1, MPI_INTEGER,&
+            call mpi_isend(NINVALID(Lupx), 1, MPI_INTEGER,&
                 &IPROCNEIGH_(Lupx), 1, COMM2D_, requests(irq + 1), ierr(irq + 1))
-            call MPI_ISEND(BndRadRealInfo(:, :, Lupx), (4 + NSTOKES)*NINVALID(Lupx), MPI_REAL,&
+            call mpi_isend(BndRadRealInfo(:, :, Lupx), (4 + NSTOKES)*NINVALID(Lupx), MPI_REAL,&
                 &IPROCNEIGH_(Lupx), 2, COMM2D_, requests(irq + 2), ierr(irq + 2))
-            call MPI_ISEND(BndRadIntInfo(:, :, Lupx), 2*NINVALID(Lupx), MPI_INTEGER,&
+            call mpi_isend(BndRadIntInfo(:, :, Lupx), 2*NINVALID(Lupx), MPI_INTEGER,&
                 &IPROCNEIGH_(Lupx), 3, COMM2D_, requests(irq + 3), ierr(irq + 3))
             irq = irq + 3
         end if
         if (btest(BCFLAG, 3)) then
-            call MPI_ISEND(NINVALID(Lupy), 1, MPI_INTEGER,&
+            call mpi_isend(NINVALID(Lupy), 1, MPI_INTEGER,&
                 &IPROCNEIGH_(Lupy), 4, COMM2D_, requests(irq + 1), ierr(irq + 1))
-            call MPI_ISEND(BndRadRealInfo(:, :, Lupy), (4 + NSTOKES)*NINVALID(Lupy), MPI_REAL,&
+            call mpi_isend(BndRadRealInfo(:, :, Lupy), (4 + NSTOKES)*NINVALID(Lupy), MPI_REAL,&
                 &IPROCNEIGH_(Lupy), 5, COMM2D_, requests(irq + 2), ierr(irq + 2))
-            call MPI_ISEND(BndRadIntInfo(:, :, Lupy), 2*NINVALID(Lupy), MPI_INTEGER,&
+            call mpi_isend(BndRadIntInfo(:, :, Lupy), 2*NINVALID(Lupy), MPI_INTEGER,&
                 &IPROCNEIGH_(Lupy), 6, COMM2D_, requests(irq + 3), ierr(irq + 3))
             irq = irq + 3
         end if
         if (btest(BCFLAG, 2)) then
-            call MPI_IRECV(NINVALID(Ldownx), 1, MPI_INTEGER,&
+            call mpi_irecv(NINVALID(Ldownx), 1, MPI_INTEGER,&
                 &IPROCNEIGH_(Ldownx), 1, COMM2D_, requests(irq + 1), ierr(irq + 1))
-            call MPI_IRECV(BndRadRealInfo(:, :, Ldownx), (4 + NSTOKES)*MAXNBND, MPI_REAL,&
+            call mpi_irecv(BndRadRealInfo(:, :, Ldownx), (4 + NSTOKES)*MAXNBND, MPI_REAL,&
                 &IPROCNEIGH_(Ldownx), 2, COMM2D_, requests(irq + 2), ierr(irq + 2))
-            call MPI_IRECV(BndRadIntInfo(:, :, Ldownx), 2*MAXNBND, MPI_INTEGER,&
+            call mpi_irecv(BndRadIntInfo(:, :, Ldownx), 2*MAXNBND, MPI_INTEGER,&
                 &IPROCNEIGH_(Ldownx), 3, COMM2D_, requests(irq + 3), ierr(irq + 3))
             irq = irq + 3
         end if
         if (btest(BCFLAG, 3)) then
-            call MPI_IRECV(NINVALID(Ldowny), 1, MPI_INTEGER,&
+            call mpi_irecv(NINVALID(Ldowny), 1, MPI_INTEGER,&
                 &IPROCNEIGH_(Ldowny), 4, COMM2D_, requests(irq + 1), ierr(irq + 1))
-            call MPI_IRECV(BndRadRealInfo(:, :, Ldowny), (4 + NSTOKES)*MAXNBND, MPI_REAL,&
+            call mpi_irecv(BndRadRealInfo(:, :, Ldowny), (4 + NSTOKES)*MAXNBND, MPI_REAL,&
                 &IPROCNEIGH_(Ldowny), 5, COMM2D_, requests(irq + 2), ierr(irq + 2))
-            call MPI_IRECV(BndRadIntInfo(:, :, Ldowny), 2*MAXNBND, MPI_INTEGER,&
+            call mpi_irecv(BndRadIntInfo(:, :, Ldowny), 2*MAXNBND, MPI_INTEGER,&
                 &IPROCNEIGH_(Ldowny), 6, COMM2D_, requests(irq + 3), ierr(irq + 3))
             irq = irq + 3
         end if
@@ -1512,9 +1512,9 @@ subroutine shd_mpi__calBoundaryRad(BCFLAG, IPFLAG, JOCT, IZ,&
             write (6, *) 'MPI error: ', ierr(1:irq)
             call shd_mpi__abort('Error [mpi__calBoundaryRad]: MPI error 1.')
         end if
-        call MPI_WAITALL(irq, requests, status, ierr(1))
+        call mpi_waitall(irq, requests, status, ierr(1))
         if (ierr(1) .ne. MPI_SUCCESS) then
-            write (6, *) 'MPI_WAITALL error: ', ierr(1)
+            write (6, *) 'mpi_waitall error: ', ierr(1)
             call shd_mpi__abort('Error [mpi__calBoundaryRad]: MPI error 2.')
         end if
 
@@ -1590,7 +1590,7 @@ subroutine shd_mpi__calBoundaryRad(BCFLAG, IPFLAG, JOCT, IZ,&
 
         ! See if there are any more invalid radiance rays on all the processors
         intsendbuf = (/NINVALID(Lupx), NINVALID(Lupy)/)
-        call MPI_ALLREDUCE(intsendbuf, intrecvbuf, 2, MPI_INTEGER, MPI_MAX,&
+        call mpi_allreduce(intsendbuf, intrecvbuf, 2, MPI_INTEGER, MPI_MAX,&
             &COMM2D_, ierr(1))
         AllDone = all(intrecvbuf(1:2) .eq. 0)
     end do
@@ -1598,19 +1598,19 @@ subroutine shd_mpi__calBoundaryRad(BCFLAG, IPFLAG, JOCT, IZ,&
     ! Exchange the finished boundary radiances with all of the other processors
     do iproc = 0, NUMPROC_ - 1
         if (iproc .ne. MYPROC_) then
-            call MPI_ISEND(Ndone(iproc), 1, MPI_INTEGER,&
+            call mpi_isend(Ndone(iproc), 1, MPI_INTEGER,&
                 &iproc, 7, COMM2D_, requests(1), ierr(1))
-            call MPI_ISEND(RadAllOut(:, :, iproc), NSTOKES*Ndone(iproc), MPI_REAL,&
+            call mpi_isend(RadAllOut(:, :, iproc), NSTOKES*Ndone(iproc), MPI_REAL,&
                 &iproc, 8, COMM2D_, requests(2), ierr(2))
-            call MPI_ISEND(RadPtrOut(:, iproc), Ndone(iproc), MPI_INTEGER,&
+            call mpi_isend(RadPtrOut(:, iproc), Ndone(iproc), MPI_INTEGER,&
                 &iproc, 9, COMM2D_, requests(3), ierr(3))
-            call MPI_IRECV(Nbcpnts, 1, MPI_INTEGER,&
+            call mpi_irecv(Nbcpnts, 1, MPI_INTEGER,&
                 &iproc, 7, COMM2D_, requests(4), ierr(4))
-            call MPI_IRECV(RadAllIn, NSTOKES*MAXNBND, MPI_REAL,&
+            call mpi_irecv(RadAllIn, NSTOKES*MAXNBND, MPI_REAL,&
                 &iproc, 8, COMM2D_, requests(5), ierr(5))
-            call MPI_IRECV(RadPtrIn, MAXNBND, MPI_INTEGER,&
+            call mpi_irecv(RadPtrIn, MAXNBND, MPI_INTEGER,&
                 &iproc, 9, COMM2D_, requests(6), ierr(6))
-            call MPI_WAITALL(6, requests, status, ierr(7))
+            call mpi_waitall(6, requests, status, ierr(7))
             if (any(ierr(1:7) .ne. MPI_SUCCESS)) then
                 write (6, *) 'MPI error: ', ierr(1:7)
                 call shd_mpi__abort('Error [mpi__calBoundaryRad]: MPI error 3.')
@@ -1694,8 +1694,8 @@ subroutine shd_mpi__computeRad(&
     integer, allocatable :: IndexSend(:), IndexRecv(:, :), BndRadIntInfo(:, :)
     real, allocatable    :: RadSend(:, :), RadRecv(:, :, :), BndRadRealInfo(:, :, :)
 
-    type(MPI_Request), allocatable :: requests(:)
-    type(MPI_Status), allocatable :: status(:)
+    type(MPI_REQUEST), allocatable :: requests(:)
+    type(MPI_STATUS), allocatable :: status(:)
 
     ! added for fixing the "domain shift" issue
     !╭──────────────────────────────────────────────────────────────╮!
@@ -1897,42 +1897,42 @@ subroutine shd_mpi__computeRad(&
                 !   the real and integer info needed about the radiance integrations
                 irq = 0
                 if (btest(BCFLAG, 2)) then
-                    call MPI_ISEND(NINVALID(Lupx), 1, MPI_INTEGER,&
+                    call mpi_isend(NINVALID(Lupx), 1, MPI_INTEGER,&
                         &IPROCNEIGH_(Lupx), 6*K + 1, COMM2D_, requests(irq + 1), ierr)
-                    call MPI_ISEND(BndRadRealInfo(:, :, Lupx), (4 + NSTOKES)*NINVALID(Lupx), MPI_DOUBLE_PRECISION,&
+                    call mpi_isend(BndRadRealInfo(:, :, Lupx), (4 + NSTOKES)*NINVALID(Lupx), MPI_DOUBLE_PRECISION,&
                         &IPROCNEIGH_(Lupx), 6*K + 2, COMM2D_, requests(irq + 2), ierr)
-                    call MPI_ISEND(BndRadIntInfo(:, Lupx), NINVALID(Lupx), MPI_INTEGER,&
+                    call mpi_isend(BndRadIntInfo(:, Lupx), NINVALID(Lupx), MPI_INTEGER,&
                         &IPROCNEIGH_(Lupx), 6*K + 3, COMM2D_, requests(irq + 3), ierr)
                     irq = irq + 3
                 end if
                 if (btest(BCFLAG, 3)) then
-                    call MPI_ISEND(NINVALID(Lupy), 1, MPI_INTEGER,&
+                    call mpi_isend(NINVALID(Lupy), 1, MPI_INTEGER,&
                         &IPROCNEIGH_(Lupy), 6*K + 4, COMM2D_, requests(irq + 1), ierr)
-                    call MPI_ISEND(BndRadRealInfo(:, :, Lupy), (4 + NSTOKES)*NINVALID(Lupy), MPI_DOUBLE_PRECISION,&
+                    call mpi_isend(BndRadRealInfo(:, :, Lupy), (4 + NSTOKES)*NINVALID(Lupy), MPI_DOUBLE_PRECISION,&
                         &IPROCNEIGH_(Lupy), 6*K + 5, COMM2D_, requests(irq + 2), ierr)
-                    call MPI_ISEND(BndRadIntInfo(:, Lupy), NINVALID(Lupy), MPI_INTEGER,&
+                    call mpi_isend(BndRadIntInfo(:, Lupy), NINVALID(Lupy), MPI_INTEGER,&
                         &IPROCNEIGH_(Lupy), 6*K + 6, COMM2D_, requests(irq + 3), ierr)
                     irq = irq + 3
                 end if
                 if (btest(BCFLAG, 2)) then
-                    call MPI_IRECV(NINVALID(Ldownx), 1, MPI_INTEGER,&
+                    call mpi_irecv(NINVALID(Ldownx), 1, MPI_INTEGER,&
                         &IPROCNEIGH_(Ldownx), 6*K + 1, COMM2D_, requests(irq + 1), ierr)
-                    call MPI_IRECV(BndRadRealInfo(:, :, Ldownx), (4 + NSTOKES)*MAXNRAD, MPI_DOUBLE_PRECISION,&
+                    call mpi_irecv(BndRadRealInfo(:, :, Ldownx), (4 + NSTOKES)*MAXNRAD, MPI_DOUBLE_PRECISION,&
                         &IPROCNEIGH_(Ldownx), 6*K + 2, COMM2D_, requests(irq + 2), ierr)
-                    call MPI_IRECV(BndRadIntInfo(:, Ldownx), MAXNRAD, MPI_INTEGER,&
+                    call mpi_irecv(BndRadIntInfo(:, Ldownx), MAXNRAD, MPI_INTEGER,&
                         &IPROCNEIGH_(Ldownx), 6*K + 3, COMM2D_, requests(irq + 3), ierr)
                     irq = irq + 3
                 end if
                 if (btest(BCFLAG, 3)) then
-                    call MPI_IRECV(NINVALID(Ldowny), 1, MPI_INTEGER,&
+                    call mpi_irecv(NINVALID(Ldowny), 1, MPI_INTEGER,&
                         &IPROCNEIGH_(Ldowny), 6*K + 4, COMM2D_, requests(irq + 1), ierr)
-                    call MPI_IRECV(BndRadRealInfo(:, :, Ldowny), (4 + NSTOKES)*MAXNRAD, MPI_DOUBLE_PRECISION,&
+                    call mpi_irecv(BndRadRealInfo(:, :, Ldowny), (4 + NSTOKES)*MAXNRAD, MPI_DOUBLE_PRECISION,&
                         &IPROCNEIGH_(Ldowny), 6*K + 5, COMM2D_, requests(irq + 2), ierr)
-                    call MPI_IRECV(BndRadIntInfo(:, Ldowny), MAXNRAD, MPI_INTEGER,&
+                    call mpi_irecv(BndRadIntInfo(:, Ldowny), MAXNRAD, MPI_INTEGER,&
                         &IPROCNEIGH_(Ldowny), 6*K + 6, COMM2D_, requests(irq + 3), ierr)
                     irq = irq + 3
                 end if
-                call MPI_WAITALL(irq, requests, status, ierr)
+                call mpi_waitall(irq, requests, status, ierr)
 
                 NINVALID(Lupx) = 0; NINVALID(Lupy) = 0
                 if (btest(BCFLAG, 2)) then
@@ -2011,17 +2011,17 @@ subroutine shd_mpi__computeRad(&
 
                 ! See if there are any more invalid radiance rays on all the processors
                 intsendbuf = (/NINVALID(Lupx), NINVALID(Lupy)/)
-                call MPI_ALLREDUCE(intsendbuf, intrecvbuf, 2, MPI_INTEGER, MPI_MAX,&
+                call mpi_allreduce(intsendbuf, intrecvbuf, 2, MPI_INTEGER, MPI_MAX,&
                     &COMM2D_, ierr)
                 AllDone = all(intrecvbuf(1:2) .eq. 0)
             end do
 
             if (MYPROC_ .gt. 0) then
                 ! Send the finished radiances to the master processor
-                call MPI_ISEND(Ndone, 1, MPI_INTEGER, 0, 6*K + 7, COMM2D_, requests(1), ierr)
-                call MPI_ISEND(RadSend, NSTOKES*Ndone, MPI_REAL, 0, 6*K + 8, COMM2D_, requests(2), ierr)
-                call MPI_ISEND(IndexSend, Ndone, MPI_INTEGER, 0, 6*K + 9, COMM2D_, requests(3), ierr)
-                call MPI_WAITALL(3, requests, status, ierr)
+                call mpi_isend(Ndone, 1, MPI_INTEGER, 0, 6*K + 7, COMM2D_, requests(1), ierr)
+                call mpi_isend(RadSend, NSTOKES*Ndone, MPI_REAL, 0, 6*K + 8, COMM2D_, requests(2), ierr)
+                call mpi_isend(IndexSend, Ndone, MPI_INTEGER, 0, 6*K + 9, COMM2D_, requests(3), ierr)
+                call mpi_waitall(3, requests, status, ierr)
             else
                 ! Put the radiances finished by the master processor in the list
                 do i = 1, Ndone
@@ -2030,15 +2030,15 @@ subroutine shd_mpi__computeRad(&
                 ! Receive the radiances from all the other processors
                 irq = 0
                 do iproc = 1, NUMPROC_ - 1
-                    call MPI_IRECV(NradRecv(iproc), 1, MPI_INTEGER, iproc,&
+                    call mpi_irecv(NradRecv(iproc), 1, MPI_INTEGER, iproc,&
                         &6*K + 7, COMM2D_, requests(irq + 1), ierr)
-                    call MPI_IRECV(RadRecv(:, :, iproc), NSTOKES*MAXNRAD, MPI_REAL, iproc,&
+                    call mpi_irecv(RadRecv(:, :, iproc), NSTOKES*MAXNRAD, MPI_REAL, iproc,&
                         &6*K + 8, COMM2D_, requests(irq + 2), ierr)
-                    call MPI_IRECV(IndexRecv(:, iproc), MAXNRAD, MPI_INTEGER, iproc,&
+                    call mpi_irecv(IndexRecv(:, iproc), MAXNRAD, MPI_INTEGER, iproc,&
                         &6*K + 9, COMM2D_, requests(irq + 3), ierr)
                     irq = irq + 3
                 end do
-                call MPI_WAITALL(irq, requests, status, ierr)
+                call mpi_waitall(irq, requests, status, ierr)
                 do iproc = 1, NUMPROC_ - 1
                     do i = 1, NradRecv(iproc)
                         RADOUT(:, IndexRecv(i, iproc)) = RadRecv(:, i, iproc)
@@ -2124,8 +2124,8 @@ subroutine shd_mpi__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     real, allocatable    :: RadSend(:, :), RadRecv(:, :, :)
     real, allocatable    :: BndSendRadRealInfo(:, :, :), BndRecvRadRealInfo(:, :, :)
 
-    type(MPI_Request), allocatable :: requests(:)
-    type(MPI_Status), allocatable :: status(:)
+    type(MPI_REQUEST), allocatable :: requests(:)
+    type(MPI_STATUS), allocatable :: status(:)
 
     allocate (YLMSUN(NSTLEG, NLM))
 
@@ -2351,11 +2351,11 @@ subroutine shd_mpi__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
             if ((btest(BCFLAG, 2) .and. (SIDE .eq. 1 .or. SIDE .eq. 2)) .or.&
                 (btest(BCFLAG, 3) .and. (SIDE .eq. 3 .or. SIDE .eq. 4))) then
                 K = 3*SIDE
-                call MPI_ISEND(NINVALID(SIDE), 1, MPI_INTEGER,&
+                call mpi_isend(NINVALID(SIDE), 1, MPI_INTEGER,&
                     &IPROCNEIGH_(SIDE), K + 1, COMM2D_, requests(irq + 1), ierr)
-                call MPI_ISEND(BndSendRadRealInfo(:, :, SIDE), (6 + NSTOKES)*NINVALID(SIDE), MPI_DOUBLE_PRECISION,&
+                call mpi_isend(BndSendRadRealInfo(:, :, SIDE), (6 + NSTOKES)*NINVALID(SIDE), MPI_DOUBLE_PRECISION,&
                     &IPROCNEIGH_(SIDE), K + 2, COMM2D_, requests(irq + 2), ierr)
-                call MPI_ISEND(BndSendRadIntInfo(:, SIDE), NINVALID(SIDE), MPI_INTEGER,&
+                call mpi_isend(BndSendRadIntInfo(:, SIDE), NINVALID(SIDE), MPI_INTEGER,&
                     &IPROCNEIGH_(SIDE), K + 3, COMM2D_, requests(irq + 3), ierr)
                 irq = irq + 3
             end if
@@ -2365,16 +2365,16 @@ subroutine shd_mpi__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
             if ((btest(BCFLAG, 2) .and. (SIDE .eq. 1 .or. SIDE .eq. 2)) .or.&
                 (btest(BCFLAG, 3) .and. (SIDE .eq. 3 .or. SIDE .eq. 4))) then
                 K = 3*RECVSIDE(SIDE)
-                call MPI_IRECV(NINCOMING(SIDE), 1, MPI_INTEGER,&
+                call mpi_irecv(NINCOMING(SIDE), 1, MPI_INTEGER,&
                     &IPROCNEIGH_(SIDE), K + 1, COMM2D_, requests(irq + 1), ierr)
-                call MPI_IRECV(BndRecvRadRealInfo(:, :, SIDE), (6 + NSTOKES)*MAXNRAD, MPI_DOUBLE_PRECISION,&
+                call mpi_irecv(BndRecvRadRealInfo(:, :, SIDE), (6 + NSTOKES)*MAXNRAD, MPI_DOUBLE_PRECISION,&
                     &IPROCNEIGH_(SIDE), K + 2, COMM2D_, requests(irq + 2), ierr)
-                call MPI_IRECV(BndRecvRadIntInfo(:, SIDE), MAXNRAD, MPI_INTEGER,&
+                call mpi_irecv(BndRecvRadIntInfo(:, SIDE), MAXNRAD, MPI_INTEGER,&
                     &IPROCNEIGH_(SIDE), K + 3, COMM2D_, requests(irq + 3), ierr)
                 irq = irq + 3
             end if
         end do
-        call MPI_WAITALL(irq, requests, status, ierr)
+        call mpi_waitall(irq, requests, status, ierr)
 
         ! Continue the backwards ray integrations for the four boundaries
         NINVALID(:) = 0
@@ -2426,7 +2426,7 @@ subroutine shd_mpi__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
         end do
 
         ! See if there are any more invalid radiance rays on all the processors
-        call MPI_ALLREDUCE(NINVALID, intrecvbuf, 4, MPI_INTEGER, MPI_MAX,&
+        call mpi_allreduce(NINVALID, intrecvbuf, 4, MPI_INTEGER, MPI_MAX,&
             &COMM2D_, ierr)
         AllDone = all(intrecvbuf(1:4) .eq. 0)
     end do
@@ -2434,10 +2434,10 @@ subroutine shd_mpi__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
 
     if (MYPROC_ .gt. 0) then
         ! Send the finished radiances to the master processor
-        call MPI_ISEND(Ndone, 1, MPI_INTEGER, 0, 21, COMM2D_, requests(1), ierr)
-        call MPI_ISEND(RadSend, NSTOKES*Ndone, MPI_REAL, 0, 22, COMM2D_, requests(2), ierr)
-        call MPI_ISEND(IndexSend, Ndone, MPI_INTEGER, 0, 23, COMM2D_, requests(3), ierr)
-        call MPI_WAITALL(3, requests, status, ierr)
+        call mpi_isend(Ndone, 1, MPI_INTEGER, 0, 21, COMM2D_, requests(1), ierr)
+        call mpi_isend(RadSend, NSTOKES*Ndone, MPI_REAL, 0, 22, COMM2D_, requests(2), ierr)
+        call mpi_isend(IndexSend, Ndone, MPI_INTEGER, 0, 23, COMM2D_, requests(3), ierr)
+        call mpi_waitall(3, requests, status, ierr)
     else
         ! Put the radiances finished by the master processor in the list
         do i = 1, Ndone
@@ -2446,15 +2446,15 @@ subroutine shd_mpi__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
         ! Receive the radiances from all the other processors
         irq = 0
         do iproc = 1, NUMPROC_ - 1
-            call MPI_IRECV(NradRecv(iproc), 1, MPI_INTEGER, iproc,&
+            call mpi_irecv(NradRecv(iproc), 1, MPI_INTEGER, iproc,&
                 &21, COMM2D_, requests(irq + 1), ierr)
-            call MPI_IRECV(RadRecv(:, :, iproc), NSTOKES*MAXNRAD, MPI_REAL, iproc,&
+            call mpi_irecv(RadRecv(:, :, iproc), NSTOKES*MAXNRAD, MPI_REAL, iproc,&
                 &22, COMM2D_, requests(irq + 2), ierr)
-            call MPI_IRECV(IndexRecv(:, iproc), MAXNRAD, MPI_INTEGER, iproc,&
+            call mpi_irecv(IndexRecv(:, iproc), MAXNRAD, MPI_INTEGER, iproc,&
                 &23, COMM2D_, requests(irq + 3), ierr)
             irq = irq + 3
         end do
-        call MPI_WAITALL(irq, requests, status, ierr)
+        call mpi_waitall(irq, requests, status, ierr)
         do iproc = 1, NUMPROC_ - 1
             do i = 1, NradRecv(iproc)
                 VISOUT(:, IndexRecv(i, iproc)) = RadRecv(:, i, iproc)
@@ -2513,7 +2513,7 @@ end subroutine shd_mpi__visualizeRad
 subroutine shd_mpi__calAccelSolCrit(DOACCEL, DELJDOT, DELJOLD, DELJNEW, JNORM,&
     &ACCELPAR, SOLCRIT)
 
-    ! Does an MPI_ALLREDUCE to sum the delta source function vector dot
+    ! Does an mpi_allreduce to sum the delta source function vector dot
     ! products over all the processors, and from these calculates the
     ! full-domain-wide acceleration parameter and solution criterion.
 
@@ -2528,10 +2528,10 @@ subroutine shd_mpi__calAccelSolCrit(DOACCEL, DELJDOT, DELJOLD, DELJNEW, JNORM,&
     real :: sendbuf(4), recvbuf(4)
 
     if (NUMPROC_ .gt. 1) then
-        ! Call MPI_ALLREDUCE to sum up the four dot products
+        ! Call mpi_allreduce to sum up the four dot products
         sendbuf(:) = (/DELJDOT, DELJOLD, DELJNEW, JNORM/)
-        call MPI_ALLREDUCE(sendbuf, recvbuf, 4, MPI_REAL, MPI_SUM, COMM2D_, ierr)
-        if (ierr .ne. MPI_SUCCESS) call shd_mpi__abort('Error [mpi__calAccelSolCrit]: MPI_ALLREDUCE error.')
+        call mpi_allreduce(sendbuf, recvbuf, 4, MPI_REAL, MPI_SUM, COMM2D_, ierr)
+        if (ierr .ne. MPI_SUCCESS) call shd_mpi__abort('Error [mpi__calAccelSolCrit]: mpi_allreduce error.')
         DELJDOT = recvbuf(1); DELJOLD = recvbuf(2)
         DELJNEW = recvbuf(3); JNORM = recvbuf(4)
     end if
@@ -2580,8 +2580,8 @@ subroutine shd_mpi__end(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART, XDOMAIN, YDOMAI
     integer, allocatable :: recvbuf(:, :), buf(:, :)
     real :: DELX, DELY
     real :: ElapsedTime
-    type(MPI_Request), allocatable :: requests(:)
-    type(MPI_Status), allocatable :: status(:)
+    type(MPI_REQUEST), allocatable :: requests(:)
+    type(MPI_STATUS), allocatable :: status(:)
 
     DELX = real(XDOMAIN)/real(NPXT)
     DELY = real(YDOMAIN)/real(NPYT)
@@ -2601,25 +2601,25 @@ subroutine shd_mpi__end(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART, XDOMAIN, YDOMAI
         if (NUMPROC_ .gt. 1) then
             ! Have the master process collect the property grid locations of all
             allocate (IXYALL(2, 2, 0:NUMPROC_ - 1))
-            call MPI_GATHER(IXYPRP_, 4, MPI_INTEGER, IXYALL, 4, MPI_INTEGER, 0, COMM2D_, ierr)
+            call mpi_gather(IXYPRP_, 4, MPI_INTEGER, IXYALL, 4, MPI_INTEGER, 0, COMM2D_, ierr)
 
             ! Send the NUMGRIDs to the master processor
             allocate (requests(NUMPROC_), status(NUMPROC_))
             irq = 0
             if (MYPROC_ .gt. 0) then
                 irq = irq + 1
-                call MPI_ISEND(NUMGRID, NPX*NPY, MPI_INTEGER, 0, 777, COMM2D_,&
+                call mpi_isend(NUMGRID, NPX*NPY, MPI_INTEGER, 0, 777, COMM2D_,&
                     &requests(irq), ierr)
             else
                 MAXN = (maxval(IXYALL(2, 1, :) - IXYALL(1, 1, :)) + 1)*(maxval(IXYALL(2, 2, :) - IXYALL(1, 2, :)) + 1)
                 allocate (recvbuf(MAXN, 1:NUMPROC_ - 1))
                 do iproc = 1, NUMPROC_ - 1
                     irq = irq + 1
-                    call MPI_IRECV(recvbuf(:, iproc), MAXN, MPI_INTEGER, iproc, 777,&
+                    call mpi_irecv(recvbuf(:, iproc), MAXN, MPI_INTEGER, iproc, 777,&
                         &COMM2D_, requests(irq), ierr)
                 end do
             end if
-            call MPI_WAITALL(irq, requests, status, ierr)
+            call mpi_waitall(irq, requests, status, ierr)
 
             ! Put the NUMGRIDS into the full domain array on the master processor.
             !   Use a normalization counter (NORM) to deal with grid points that
@@ -2675,7 +2675,7 @@ subroutine shd_mpi__end(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART, XDOMAIN, YDOMAI
         end if
     end if
 
-    ElapsedTime = MPI_WTIME() - STARTTIME_
+    ElapsedTime = mpi_wtime() - STARTTIME_
 
     if (ElapsedTime .lt. 60.0) then
         write (6, '(A,F0.2,A)') 'Message [mpi__end]: Total time used: ', ElapsedTime, ' sec'
@@ -2771,7 +2771,7 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
 
         ! Have the master process collect the locations of all
         allocate (ProcCoordAll(2, 0:NUMPROC_ - 1))
-        call MPI_GATHER(ProcCoord, 2, MPI_INTEGER, ProcCoordAll, 2, MPI_INTEGER, 0, COMM2D_, ierr)
+        call mpi_gather(ProcCoord, 2, MPI_INTEGER, ProcCoordAll, 2, MPI_INTEGER, 0, COMM2D_, ierr)
 
         if (MYPROC_ .eq. 0 .and. DoLoadBalancing) then
             ! Read the load balancing file to get array of number of grid points
@@ -2852,7 +2852,7 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
             deallocate (Ngrid)
         end if
 
-        call MPI_BCAST(BndLines, N, MPI_INTEGER, 0, COMM2D_, ierr)
+        call mpi_bcast(BndLines, N, MPI_INTEGER, 0, COMM2D_, ierr)
         deallocate (ProcCoordAll)
         if (MYPROC_ .eq. 0 .and. DoLoadBalancing) then
             write (6, '(A)') 'Optimum load balanced boundary lines in the property grid:'
