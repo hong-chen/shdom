@@ -234,7 +234,7 @@ subroutine shd_solv__solveRte(&
     SPLITCRIT = 0.0
 
     write (6, '(A)') 'Message [_solveRte]:'
-    write (6, '(A)') '+ Iter  Log(Sol)  SplitCrit  Npoints  Nsh(avg)'
+    write (6, '(A)') '+ Iter  Log(Sol)  SplitCrit  Npoints   Ncells  Nsh(avg)'
 
     ! Main solution loop
     !   Iterate until the iterations exceed the limit, or the desired
@@ -336,11 +336,36 @@ subroutine shd_solv__solveRte(&
 
         ! Print out the log solution criterion, number of points,
         !   and average SH truncation.
-        write (6, '(2X,I4,2X,F7.3,2X,E10.3,1X,I8,1X,F8.2,2X,F6.2," sec")')&
-            &ITER, log10(max(SOLCRIT, 1.0e-20)), SPLITCRIT,&
-            &NPTS, FLOAT(SHPTR(NPTS + 1))/NPTS,&
-            &elapsed_time
-            !&FLOAT(SHPTR(NPTS + 1))/(NPTS*NLM)
+        if (SPLITTESTING) then
+            write (6, '("S",1X,I4,2X,F7.3,2X,E10.3,1X,I8,1X,I8,1X,F8.2,2X,F6.2," sec")')&
+                &ITER, log10(max(SOLCRIT, 1.0e-20)),&
+                &SPLITCRIT,&
+                &NPTS,&
+                &NCELLS,&
+                &float(SHPTR(NPTS + 1))/NPTS,&
+                &elapsed_time
+                !&float(SHPTR(NPTS + 1))/(NPTS*NLM)
+        else
+            if (OUTOFMEM) then
+                write (6, '("M",1X,I4,2X,F7.3,2X,E10.3,1X,I8,1X,I8,1X,F8.2,2X,F6.2," sec")')&
+                    &ITER, log10(max(SOLCRIT, 1.0e-20)),&
+                    &SPLITCRIT,&
+                    &NPTS,&
+                    &NCELLS,&
+                    &float(SHPTR(NPTS + 1))/NPTS,&
+                    &elapsed_time
+                    !&float(SHPTR(NPTS + 1))/(NPTS*NLM)
+            else
+                write (6, '(2X,I4,2X,F7.3,2X,E10.3,1X,I8,1X,I8,1X,F8.2,2X,F6.2," sec")')&
+                    &ITER, log10(max(SOLCRIT, 1.0e-20)),&
+                    &SPLITCRIT,&
+                    &NPTS,&
+                    &NCELLS,&
+                    &float(SHPTR(NPTS + 1))/NPTS,&
+                    &elapsed_time
+                    !&float(SHPTR(NPTS + 1))/(NPTS*NLM)
+            end if
+        end if
     end do
 
     write (6, '(A,I4,A,F9.6)') '- Iterations: ', ITER,&

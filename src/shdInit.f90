@@ -46,14 +46,14 @@ subroutine shd_init__makeGrid(&
     if (btest(BCFLAG, 2)) then
         do IX = 1, NX
             if (NPX .gt. 1) then
-                XGRID(IX) = XSTART + (IX - 1)*(DELXP*(NPX - 1))/FLOAT(NX - 1)
+                XGRID(IX) = XSTART + (IX - 1)*(DELXP*(NPX - 1))/float(NX - 1)
             else
-                XGRID(IX) = XSTART + (IX - 1)*(DELXP*NPX)/FLOAT(NX - 1)
+                XGRID(IX) = XSTART + (IX - 1)*(DELXP*NPX)/float(NX - 1)
             end if
         end do
     else
         do IX = 1, NX + 1
-            XGRID(IX) = XSTART + (IX - 1)*(DELXP*NPX)/FLOAT(NX)
+            XGRID(IX) = XSTART + (IX - 1)*(DELXP*NPX)/float(NX)
         end do
     end if
 
@@ -61,14 +61,14 @@ subroutine shd_init__makeGrid(&
     if (btest(BCFLAG, 3)) then
         do IY = 1, NY
             if (NPY .gt. 1) then
-                YGRID(IY) = YSTART + (IY - 1)*(DELYP*(NPY - 1))/FLOAT(NY - 1)
+                YGRID(IY) = YSTART + (IY - 1)*(DELYP*(NPY - 1))/float(NY - 1)
             else
-                YGRID(IY) = YSTART + (IY - 1)*(DELYP*NPY)/FLOAT(NY - 1)
+                YGRID(IY) = YSTART + (IY - 1)*(DELYP*NPY)/float(NY - 1)
             end if
         end do
     else
         do IY = 1, NY + 1
-            YGRID(IY) = YSTART + (IY - 1)*(DELYP*NPY)/FLOAT(NY)
+            YGRID(IY) = YSTART + (IY - 1)*(DELYP*NPY)/float(NY)
         end do
     end if
 
@@ -85,7 +85,7 @@ subroutine shd_init__makeGrid(&
     else if (GRIDTYPE .eq. 'E') then
         do IZ = 1, NZ
             ZGRID(IZ) = ZLEVELS(1)&
-                &+ (IZ - 1)*(ZLEVELS(NPZ) - ZLEVELS(1))/FLOAT(NZ - 1)
+                &+ (IZ - 1)*(ZLEVELS(NPZ) - ZLEVELS(1))/float(NZ - 1)
         end do
     else if (GRIDTYPE .eq. 'F') then
         open (UNIT=3, FILE='zgrid.inp', STATUS='OLD')

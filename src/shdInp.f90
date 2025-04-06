@@ -215,7 +215,7 @@ subroutine shd_io__userInput(&
                 stop
             end if
             N = min(N, (MAXPAR - 6)/2)
-            OUTPARMS(6, I) = FLOAT(N)
+            OUTPARMS(6, I) = float(N)
             write (*, *) (OUTPARMS(J, I), J=1, 2*N + 6)
         else if (OUTTYPES(I) (1:1) .eq. 'V') then
             write (*, '(1X,A,A)')&
@@ -228,7 +228,7 @@ subroutine shd_io__userInput(&
             write (*, '(1X,A)')&
                 &'Format (1,2,3,4,5), [Z, del X, del Y for format 2]'
             read (*, *) N, (OUTPARMS(1 + J, I), J=1, 3*max(0, 1 - abs(N - 2)))
-            OUTPARMS(1, I) = FLOAT(N)
+            OUTPARMS(1, I) = float(N)
             if (N .eq. 2) then
                 write (*, *) N, (OUTPARMS(1 + J, I), J=1, 3)
             else

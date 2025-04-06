@@ -1342,7 +1342,8 @@ subroutine shd_grid__interpNewGridPnt(NEWPOINTS, NPTS,&
 
 end subroutine shd_grid__interpNewGridPnt
 
-subroutine shd_grid__splitGrid(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
+subroutine shd_grid__splitGrid(&
+    &MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
     &DOSPLIT, OUTOFMEM, CURSPLITACC, SPLITCRIT,&
     &NPTS, NCELLS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &GRIDPOS, NX, XGRID, NY, YGRID,&
@@ -1483,9 +1484,9 @@ subroutine shd_grid__splitGrid(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
         end do
         if (OUTOFMEM0) then
             OUTOFMEM = .true.
-            write (6, '(2A,I8,A,I8)')&
-                &'Message [_splitGrid]: Further cell splitting requires larger array allocations: ',&
-                &'Ncells = ', NCELLS, ', Npnts = ', NPTS
+            !write (6, '(2A,I8,A,I8)')&
+            !    &'Message [_splitGrid]: Further cell splitting requires larger array allocations: ',&
+            !    &'Ncells = ', NCELLS, ', Npnts = ', NPTS
         end if
 
         ! If in parallel mode, calculate all the direct beam fluxes at once
