@@ -2006,27 +2006,27 @@ routines from NCAR.
 
    Solv x shd_solv__accelSol   : Accelerates the solution sequence
 
-   Inp    shd_io__userInput       : Gets the input parameters from stdin
+   Inp    shd_io__userInput      : Gets the input parameters from stdin
 
-   Inp    shd_io__nmlInput        : Gets the input parameters from a namelist
+   Inp    shd_io__nmlInput       : Gets the input parameters from a namelist
 
-   Inp    shd_io__checkInputParams: Checks input parameters for validity/reasonableness
+   Inp    shd_io__checkInputParam: Checks input parameters for validity/reasonableness
 
-   Inp    shd_io__readPrpSize     : Gets the size of the property file
+   Inp    shd_io__readPrpSize    : Gets the size of the property file
 
-   Inp    shd_io__readPrp         : Reads the property file
+   Inp    shd_io__readPrp        : Reads the property file
 
-   Inp    shd_io__checkPrpInput   : Checks the values read in from the property file
+   Inp    shd_io__checkPrpInput  : Checks the values read in from the property file
 
-   Inp    shd_io__readSfcSize     : Gets the size of the surfae file
+   Inp    shd_io__readSfcSize    : Gets the size of the surfae file
 
-   Inp    shd_io__readSfc         : Reads the surface file
+   Inp    shd_io__readSfc        : Reads the surface file
 
-   Inp    shd_io__readCkdSize     : Gets the size of the k-distribution file
+   Inp    shd_io__readCkdSize    : Gets the size of the k-distribution file
 
-   Inp    shd_io__readCkd         : Reads the correlated k-distribution file
+   Inp    shd_io__readCkd        : Reads the correlated k-distribution file
 
-   Inp    shd_io__restoreState    : Reads the binary state file
+   Inp    shd_io__restoreState   : Reads the binary state file
 
    Out    shd_io__outputResult   : Selects and outputs the results
 
@@ -2056,9 +2056,9 @@ routines from NCAR.
 
    MPI    shd_mpi__bcastSfcParam    : Broadcasts the surface file parameters from the master processor
 
-   MPI    shd_mpi__bcastKdistSize   : Broadcasts the k-distribution array sizes from the master processor
+   MPI    shd_mpi__bcastCkdSize   : Broadcasts the k-distribution array sizes from the master processor
 
-   MPI    shd_mpi__bcastKdistParam  : Broadcasts the k-distribution file parameters from the master processor
+   MPI    shd_mpi__bcastCkdParam  : Broadcasts the k-distribution file parameters from the master processor
 
    MPI    shd_mpi__gatherOutput     : Gathers the base grid output data from all the processors
 
