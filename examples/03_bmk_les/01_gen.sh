@@ -10,7 +10,7 @@
 
 set AWK=awk
 
-set fdir_data="/Users/hchen/Work/mygit/shdom/data"
+set fdir_data="../../data"
 set fdir_data_tmp="tmp-data"
 mkdir $fdir_data_tmp
 
