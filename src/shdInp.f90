@@ -788,45 +788,54 @@ subroutine shd_io__readPrp(&
         end do
 
         read (1, '(A)') TMP_CHAR ! skip one line
-        read (1, '(A)') DATA_POSTFIX
-        read (1, '(A)') DIMS_CHAR
 
-        read (DIMS_CHAR( 3: 8), '(I6)') NXX
-        read (DIMS_CHAR(10:15), '(I6)') NYY
-        read (DIMS_CHAR(17:22), '(I6)') NZZ
-        read (DIMS_CHAR(24:29), '(I6)') NPP
+        if (TMP_CHAR(1:1) .eq. '!') then
 
-        OUTFILE_DATA = trim(adjustl(PROPFILE))//trim(adjustl(DATA_POSTFIX(2:)))
+            read (1, '(A)') DATA_POSTFIX
+            read (1, '(A)') DIMS_CHAR
 
-        open (UNIT=88, FILE=trim(adjustl(OUTFILE_DATA)), STATUS='OLD',&
-            &ACCESS='STREAM', FORM='UNFORMATTED')
+            read (DIMS_CHAR( 3: 8), '(I6)') NXX
+            read (DIMS_CHAR(10:15), '(I6)') NYY
+            read (DIMS_CHAR(17:22), '(I6)') NZZ
+            read (DIMS_CHAR(24:29), '(I6)') NPP
 
-        ! TEMPP: real(4)
-        read (88) (((   TEMPP(IZ+NPZ*(IY-1)+NPZ*NPY*(IX-1)), IZ=1,NZZ), IY=1,NYY), IX=1,NXX)
-        ! EXTINCTP: real(4)
-        read (88) (((EXTINCTP(IZ+NPZ*(IY-1)+NPZ*NPY*(IX-1)), IZ=1,NZZ), IY=1,NYY), IX=1,NXX)
-        ! ALBEDOP: real(4)
-        read (88) ((( ALBEDOP(IZ+NPZ*(IY-1)+NPZ*NPY*(IX-1)), IZ=1,NZZ), IY=1,NYY), IX=1,NXX)
-        ! IPHASEP: integer(2)
-        read (88) ((( IPHASEP(IZ+NPZ*(IY-1)+NPZ*NPY*(IX-1)), IZ=1,NZZ), IY=1,NYY), IX=1,NXX)
+            OUTFILE_DATA = trim(adjustl(PROPFILE))//trim(adjustl(DATA_POSTFIX(2:)))
 
-        close (88)
+            open (UNIT=88, FILE=trim(adjustl(OUTFILE_DATA)), STATUS='OLD',&
+                &ACCESS='STREAM', FORM='UNFORMATTED')
 
-        ! original
-        !╭────────────────────────────────────────────────╮!
-        !do while (.true.)
-        !    read (1, *, end=290) IX, IY, IZ, TMP, EXT, ALB, IPH
-        !    if (IX .ge. 1 .and. IX .le. NPX .and.&
-        !       &IY .ge. 1 .and. IY .le. NPY .and.&
-        !       &IZ .ge. 1 .and. IZ .le. NPZ) then
-        !        K = IZ + NPZ*(IY - 1) + NPZ*NPY*(IX - 1)
-        !        TEMPP(K) = TMP
-        !        EXTINCTP(K) = EXT
-        !        ALBEDOP(K) = ALB
-        !        IPHASEP(K) = IPH
-        !    end if
-        !end do
-        !╰────────────────────────────────────────────────╯!
+            ! TEMPP: real(4)
+            read (88) (((   TEMPP(IZ+NPZ*(IY-1)+NPZ*NPY*(IX-1)), IZ=1,NZZ), IY=1,NYY), IX=1,NXX)
+            ! EXTINCTP: real(4)
+            read (88) (((EXTINCTP(IZ+NPZ*(IY-1)+NPZ*NPY*(IX-1)), IZ=1,NZZ), IY=1,NYY), IX=1,NXX)
+            ! ALBEDOP: real(4)
+            read (88) ((( ALBEDOP(IZ+NPZ*(IY-1)+NPZ*NPY*(IX-1)), IZ=1,NZZ), IY=1,NYY), IX=1,NXX)
+            ! IPHASEP: integer(2)
+            read (88) ((( IPHASEP(IZ+NPZ*(IY-1)+NPZ*NPY*(IX-1)), IZ=1,NZZ), IY=1,NYY), IX=1,NXX)
+
+            close (88)
+
+        else
+
+            backspace(1)
+
+            ! original
+            !╭────────────────────────────────────────────────╮!
+            do while (.true.)
+                read (1, *, end=290) IX, IY, IZ, TMP, EXT, ALB, IPH
+                if (IX .ge. 1 .and. IX .le. NPX .and.&
+                   &IY .ge. 1 .and. IY .le. NPY .and.&
+                   &IZ .ge. 1 .and. IZ .le. NPZ) then
+                    K = IZ + NPZ*(IY - 1) + NPZ*NPY*(IX - 1)
+                    TEMPP(K) = TMP
+                    EXTINCTP(K) = EXT
+                    ALBEDOP(K) = ALB
+                    IPHASEP(K) = IPH
+                end if
+            end do
+            !╰────────────────────────────────────────────────╯!
+
+        end if
 
     else
 
