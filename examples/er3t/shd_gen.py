@@ -393,7 +393,7 @@ def gen_lwc_modis(
     Xs = 150
     Ys = 150
 
-    with open('shdom-lwc_modis.txt', 'w') as f:
+    with open('../04_bmk_modis/data/shdom-lwc_modis.txt', 'w') as f:
         f.write('2  parameter LWC file\n')
         f.write('%d %d %d\n' % (Nx, Ny, Nz))
         f.write('%.4f %.4f\n' % (cld0.lay['dx']['data'], cld0.lay['dy']['data']))
@@ -402,7 +402,7 @@ def gen_lwc_modis(
         for ix in np.arange(Xs, Xs+Nx):
             for iy in np.arange(Ys, Ys+Ny):
                 for iz in np.arange(Nz):
-                    f.write('%d %d %d %.6f %.2f\n' % ((ix+1-Xs), (iy+1-Ys), (iz+1), lwc[ix, iy, iz], cer[ix, iy, iz]))
+                    f.write('%d %d %d %.6e %.6e\n' % ((ix+1-Xs), (iy+1-Ys), (iz+1), lwc[ix, iy, iz], cer[ix, iy, iz]))
                     # f.write('%d %d %d %.6f %.2f\n' % ((ix+1), (iy+1), (iz+1), 0.0, cer[ix, iy, iz]))
     #╰────────────────────────────────────────────────────────────────────────────╯#
 
@@ -437,13 +437,13 @@ def gen_sfc_modis(
     Ys = 150
 
     # with open('shdom-sfc_land-lsrt.txt', 'w') as f:
-    with open('shdom-sfc_modis.txt', 'w') as f:
+    with open('../04_bmk_modis/data/shdom-sfc_modis.txt', 'w') as f:
         f.write('T\n')
         # f.write('%d %d %.4f %.4f\n' % (Nx, Ny, (48.0/Nx), (48.0/Ny)))
         f.write('%d %d %.4f %.4f\n' % (Nx, Ny, 0.25, 0.25))
         for ix in np.arange(Xs, Xs+Nx):
             for iy in np.arange(Ys, Ys+Ny):
-                f.write('%d %d %.2f %.6f %.6f %.6f\n' % ((ix+1-Xs), (iy+1-Ys), 285.0, f_iso[ix, iy], f_vol[ix, iy], f_geo[ix, iy]))
+                f.write('%d %d %.2f %.6e %.6e %.6e\n' % ((ix+1-Xs), (iy+1-Ys), 285.0, f_iso[ix, iy], f_vol[ix, iy], f_geo[ix, iy]))
     #╰────────────────────────────────────────────────────────────────────────────╯#
 
     return
@@ -884,9 +884,9 @@ if __name__ == '__main__':
     # gen_ckd_file()
     # gen_lwc_les(overwrite=False)
     # gen_sfc_modis()
-    # gen_lwc_modis()
+    gen_lwc_modis()
 
-    gen_lwc_les_fast(overwrite=False)
+    # gen_lwc_les_fast(overwrite=False)
     # gen_sfc_land_lsrt()
     # gen_sfc_land_lsrt_fast()
     # gen_lwc_les_zero(overwrite=False)
