@@ -748,7 +748,7 @@ contains
 
         ! description for binary data
         !╭────────────────────────────────────────────────╮!
-        write (3, '(A)') '! The following contains information for binary data intepretation:'
+        write (3, '(A)') '! The following provides information for interpreting binary data:'
         write (3, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
         write (3, '(A, 4(I6,A))') '! ', NX, ',', NY, ',', NZT, ',', 4, ''
         !╰────────────────────────────────────────────────╯!

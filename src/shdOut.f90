@@ -345,7 +345,7 @@ subroutine shd_io__outputResult(&
 
         ! description for binary data
         !╭────────────────────────────────────────────────╮!
-        write (2, '(A)') '! The following contains information for binary data intepretation:'
+        write (2, '(A)') '! The following provides information for interpreting binary data:'
         write (2, '(A)') '! R'
         write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
         write (2, '(A, 5(I6,A))') '! ', NXOUT, ',', NYOUT, ',', 1, ',', NANGOUT, ',', NSTOKES, ''
