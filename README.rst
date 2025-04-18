@@ -31,7 +31,7 @@ SHDOM was originally developed by `Frank Evans <evans@nit.colorado.edu>`_ and is
 
 * Fixed a segmentation error when saving "state" from calculation;
 
-* Changed ASCII output to binary format to reduce file size and accelerate processing speed;
+* Converted most I/O from ASCII to binary format and replaced floating-point number representation with exponential notation;
 
 * Added support for LSRT BRDF model;
 
