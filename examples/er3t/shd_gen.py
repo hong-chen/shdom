@@ -653,7 +653,7 @@ def gen_lwc_les_fast(
     Nx, Ny, Nz = lwc.shape
 
     # with open('shdom-lwc_les.txt', 'w') as f:
-    with open('shdom-lwc_les-fast.txt', 'w') as f:
+    with open('../../data/shdom-lwc_les-fast.txt', 'w') as f:
         f.write('2  parameter LWC file\n')
         f.write('%d %d %d\n' % lwc.shape)
         f.write('%.4f %.4f\n' % (cld0.lay['dx']['data'], cld0.lay['dy']['data']))
@@ -662,8 +662,43 @@ def gen_lwc_les_fast(
         for ix in np.arange(Nx):
             for iy in np.arange(Ny):
                 for iz in np.arange(Nz):
-                    f.write('%d %d %d %.6f %.2f\n' % ((ix+1), (iy+1), (iz+1), lwc[ix, iy, iz], cer[ix, iy, iz]))
+                    f.write('%d %d %d %.6e %.6e\n' % ((ix+1), (iy+1), (iz+1), lwc[ix, iy, iz], cer[ix, iy, iz]))
                     # f.write('%d %d %d %.6f %.2f\n' % ((ix+1), (iy+1), (iz+1), 0.0, cer[ix, iy, iz]))
+    #╰────────────────────────────────────────────────────────────────────────────╯#
+
+    return
+
+def gen_sfc_land_lsrt(
+        wavelength=650.0,
+        solver='3D',
+        overwrite=False,
+        plot=True
+        ):
+
+    _metadata   = {'Computer': os.uname()[1], 'Script': os.path.abspath(__file__), 'Function':sys._getframe().f_code.co_name, 'Date':datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+    fdir='%s/tmp-data/%s/%s' % (fdir0, name_tag, _metadata['Function'])
+
+    if not os.path.exists(fdir):
+        os.makedirs(fdir)
+
+    # generate sfc_lanb.txt
+    #╭────────────────────────────────────────────────────────────────────────────╮#
+    # f = h5py.File('/Users/hchen/Work/01_libera/06_mod-lrt-bmk/aux/surface_albedo_land.h5', 'r')
+    f = h5py.File('/Users/hchen/Work/mygit/er3t/projects/data/02_modis_rad-sim/pre-data.h5', 'r')
+    f_iso = f['mod/sfc/fiso_43_0650'][...][:400, :480]
+    f_vol = f['mod/sfc/fvol_43_0650'][...][:400, :480]
+    f_geo = f['mod/sfc/fgeo_43_0650'][...][:400, :480]
+    f.close()
+
+    Nx, Ny = f_iso.shape
+
+    # with open('shdom-sfc_land-lsrt.txt', 'w') as f:
+    with open('../../data/shdom-sfc_land-lsrt.txt', 'w') as f:
+        f.write('T\n')
+        f.write('%d %d %.4f %.4f\n' % (Nx, Ny, 0.12, 0.1))
+        for ix in np.arange(Nx):
+            for iy in np.arange(Ny):
+                f.write('%d %d %.2f %.6e %.6e %.6e\n' % ((ix+1), (iy+1), 285.0, f_iso[ix, iy], f_vol[ix, iy], f_geo[ix, iy]))
     #╰────────────────────────────────────────────────────────────────────────────╯#
 
     return
@@ -693,12 +728,12 @@ def gen_sfc_land_lsrt_fast(
     Nx, Ny = f_iso.shape
 
     # with open('shdom-sfc_land-lsrt.txt', 'w') as f:
-    with open('shdom-sfc_land-lsrt-fast.txt', 'w') as f:
+    with open('../../data/shdom-sfc_land-lsrt-fast.txt', 'w') as f:
         f.write('T\n')
         f.write('%d %d %.4f %.4f\n' % (Nx, Ny, 0.6, 0.5))
         for ix in np.arange(Nx):
             for iy in np.arange(Ny):
-                f.write('%d %d %.2f %.6f %.6f %.6f\n' % ((ix+1), (iy+1), 285.0, f_iso[ix, iy], f_vol[ix, iy], f_geo[ix, iy]))
+                f.write('%d %d %.2f %.6e %.6e %.6e\n' % ((ix+1), (iy+1), 285.0, f_iso[ix, iy], f_vol[ix, iy], f_geo[ix, iy]))
     #╰────────────────────────────────────────────────────────────────────────────╯#
 
     return
@@ -851,9 +886,10 @@ if __name__ == '__main__':
     # gen_sfc_modis()
     # gen_lwc_modis()
 
-    # gen_lwc_les_fast(overwrite=False)
+    gen_lwc_les_fast(overwrite=False)
+    # gen_sfc_land_lsrt()
     # gen_sfc_land_lsrt_fast()
     # gen_lwc_les_zero(overwrite=False)
     # gen_lwc_les_full()
-    gen_clear_sky_1d()
+    # gen_clear_sky_1d()
     pass
