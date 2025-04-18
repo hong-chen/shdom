@@ -25,7 +25,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 import er3t
 
-def figure_check(filename='brdf_L1f.out', plot=False):
+def figure_check(filename='brdf_L1f.out', plot=True):
 
     fname_ori = 'ori/%s' % filename
     data_ori = er3t.rtm.shd.get_shd_data_out_ori(fname_ori)

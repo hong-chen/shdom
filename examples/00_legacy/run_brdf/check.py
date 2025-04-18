@@ -26,7 +26,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 import er3t
 
-_plot_ = False
+_plot_ = True
 
 def figure_check(filename='brdf_L1f.out', plot=False):
 

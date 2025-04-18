@@ -11,6 +11,11 @@
 set AWK=awk
 
 set fdir_data="../../data"
+set basefile="les-fast"
+
+#set fdir_data="tmp-data"
+#set basefile="les-full"
+
 set fdir_data_tmp="tmp-data"
 mkdir $fdir_data_tmp
 
@@ -22,7 +27,6 @@ set RunSHDOMsolve=0
 set SingleFrames=0
 set RunCameraVisual=0
 
-set basefile="les-fast"
 set prpfile="${fdir_data_tmp}/shdom-prp_${basefile}.txt"
 set savefile=${basefile}a.bin
 set outbase=${basefile}a

@@ -657,7 +657,13 @@ subroutine shd_io__readPrp(&
     character(len=*), intent(in) :: PROPFILE
     character(len=1) :: PROPTYPE
     integer I, IX, IY, IZ, J, JS, K, KL, L, IL, NUML, IPH, N
-    real TMP, EXT, ALB, CHI
+    real :: TMP, EXT, ALB, CHI
+
+    character(len=FNAMEMAXLEN_) :: OUTFILE_DATA
+    character(len=FNAMEMAXLEN_) :: TEMP_CHAR
+    character(len=FNAMEMAXLEN_) :: DIMS_CHAR
+    character(len=20)  :: DATA_POSTFIX
+    integer :: NXX, NYY, NZZ, NPP
 
     ! Open the file, figure out the type, and get the grid size
     open (UNIT=1, FILE=trim(adjustl(PROPFILE)), STATUS='OLD')
@@ -718,8 +724,9 @@ subroutine shd_io__readPrp(&
             end if
         end do
 
-    ! Property file type T or P is for tabulated phase function fo
+    ! Property file type T or P is for tabulated phase function format
     else if (PROPTYPE .eq. 'T' .or. PROPTYPE .eq. 'P') then
+
         read (1, *) NUMPHASE
         ! If delta-M then find the largest number of Legendre terms
         if (DELTAM) then
@@ -780,18 +787,39 @@ subroutine shd_io__readPrp(&
             MAXASYM = max(MAXASYM, LEGENP((IL + 1)*NSTLEG + 1)/3.0)
         end do
 
-        do while (.true.)
-            read (1, *, end=290) IX, IY, IZ, TMP, EXT, ALB, IPH
-            if (IX .ge. 1 .and. IX .le. NPX .and.&
-               &IY .ge. 1 .and. IY .le. NPY .and.&
-               &IZ .ge. 1 .and. IZ .le. NPZ) then
-                K = IZ + NPZ*(IY - 1) + NPZ*NPY*(IX - 1)
-                TEMPP(K) = TMP
-                EXTINCTP(K) = EXT
-                ALBEDOP(K) = ALB
-                IPHASEP(K) = IPH
-            end if
-        end do
+        read (1, '(A)') TEMP_CHAR ! skip one line
+        read (1, '(A)') DATA_POSTFIX
+        read (1, '(A)') DIMS_CHAR
+
+        read (DIMS_CHAR( 3: 8), '(I6)') NXX
+        read (DIMS_CHAR(10:15), '(I6)') NYY
+        read (DIMS_CHAR(17:22), '(I6)') NZZ
+        read (DIMS_CHAR(24:29), '(I6)') NPP
+
+        OUTFILE_DATA = trim(adjustl(PROPFILE))//trim(adjustl(DATA_POSTFIX(2:)))
+
+        open (UNIT=88, FILE=trim(adjustl(OUTFILE_DATA)), STATUS='OLD',&
+            &ACCESS='STREAM', FORM='UNFORMATTED')
+
+        read (88) (((   TEMPP(IZ+NPZ*(IY-1)+NPZ*NPY*(IX-1)), IZ=1,NZZ), IY=1,NYY), IX=1,NXX) ! real(4)
+        read (88) (((EXTINCTP(IZ+NPZ*(IY-1)+NPZ*NPY*(IX-1)), IZ=1,NZZ), IY=1,NYY), IX=1,NXX) ! real(4)
+        read (88) ((( ALBEDOP(IZ+NPZ*(IY-1)+NPZ*NPY*(IX-1)), IZ=1,NZZ), IY=1,NYY), IX=1,NXX) ! real(4)
+        read (88) ((( IPHASEP(IZ+NPZ*(IY-1)+NPZ*NPY*(IX-1)), IZ=1,NZZ), IY=1,NYY), IX=1,NXX) ! integer(2)
+
+        close (88)
+
+        !do while (.true.)
+        !    read (1, *, end=290) IX, IY, IZ, TMP, EXT, ALB, IPH
+        !    if (IX .ge. 1 .and. IX .le. NPX .and.&
+        !       &IY .ge. 1 .and. IY .le. NPY .and.&
+        !       &IZ .ge. 1 .and. IZ .le. NPZ) then
+        !        K = IZ + NPZ*(IY - 1) + NPZ*NPY*(IX - 1)
+        !        TEMPP(K) = TMP
+        !        EXTINCTP(K) = EXT
+        !        ALBEDOP(K) = ALB
+        !        IPHASEP(K) = IPH
+        !    end if
+        !end do
 
     else
 

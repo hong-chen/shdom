@@ -693,14 +693,20 @@ contains
                                  NPHASE, MAXCOEF, NCOEF, WIGCOEF, &
                                  EXTINCT, SSALB, IPHASE)
         implicit none
-        character(LEN=256), intent(IN) :: PROPFILE
+        character(LEN=*), intent(in) :: PROPFILE
         integer, intent(IN) :: NPHASEPOL, NX, NY, NZT, NPHASE, MAXCOEF
         integer, intent(IN) :: NCOEF(0:NPHASE), IPHASE(NZT, NY, NX)
         real, intent(IN) :: DELX, DELY, ZLEVELS(NZT), TEMP(NZT)
         real, intent(IN) :: WIGCOEF(NPHASEPOL, 0:MAXCOEF, 0:NPHASE)
         real, intent(IN) :: EXTINCT(NZT, NY, NX), SSALB(NZT, NY, NX)
         integer :: NPHASEOUT, I, IX, IY, IZ, J, K, L, NL
-        integer, allocatable :: PHASECONV(:)
+        integer*2, allocatable :: PHASECONV(:)
+
+        character(len=256) :: OUTFILE_DATA
+        character(len=20)  :: DATA_POSTFIX
+
+        DATA_POSTFIX = '.sHdOm-prp'
+        OUTFILE_DATA = trim(adjustl(PROPFILE))//trim(adjustl(DATA_POSTFIX))
 
         ! Make a phase function index conversion array to output only the ones used.
         allocate (PHASECONV(0:NPHASE))
@@ -740,16 +746,38 @@ contains
             end if
         end do
 
-        ! Write one line of optical properties for each grid point
-        do IX = 1, NX
-            do IY = 1, NY
-                do IZ = 1, NZT
-                    write (3, '(3(1X,I4),1X,F5.1,1X,F9.4,1X,F8.6,1X,I3)') IX, IY, IZ, &
-                        TEMP(IZ), EXTINCT(IZ, IY, IX), SSALB(IZ, IY, IX), PHASECONV(IPHASE(IZ, IY, IX))
-                end do
-            end do
-        end do
+        ! description for binary data
+        !╭────────────────────────────────────────────────╮!
+        write (3, '(A)') '! The following contains information for binary data intepretation:'
+        write (3, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
+        write (3, '(A, 4(I6,A))') '! ', NX, ',', NY, ',', NZT, ',', 4, ''
+        !╰────────────────────────────────────────────────╯!
+
+        ! Write one line of optical properties for each grid point (binary)
+        !╭────────────────────────────────────────────────╮!
+        open (UNIT=88, FILE=trim(adjustl(OUTFILE_DATA)), STATUS='REPLACE',&
+            &form='UNFORMATTED', access='STREAM')
+        write (88) (((                     TEMP(IZ), IZ=1,NZT), IY=1,NY), IX=1,NX)
+        write (88) (((          EXTINCT(IZ, IY, IX), IZ=1,NZT), IY=1,NY), IX=1,NX)
+        write (88) (((            SSALB(IZ, IY, IX), IZ=1,NZT), IY=1,NY), IX=1,NX)
+        write (88) (((PHASECONV(IPHASE(IZ, IY, IX)), IZ=1,NZT), IY=1,NY), IX=1,NX)
+        close (88)
+        !╰────────────────────────────────────────────────╯!
+
+        ! original
+        !╭────────────────────────────────────────────────╮!
+        !do IX = 1, NX
+        !    do IY = 1, NY
+        !        do IZ = 1, NZT
+        !            write (3, '(3(1X,I4),1X,F5.1,1X,F9.4,1X,F8.6,1X,I3)') IX, IY, IZ, &
+        !                TEMP(IZ), EXTINCT(IZ, IY, IX), SSALB(IZ, IY, IX), PHASECONV(IPHASE(IZ, IY, IX))
+        !        end do
+        !    end do
+        !end do
+        !╰────────────────────────────────────────────────╯!
+
         close (3)
+
     end subroutine OUTPUT_PROPERTIES
 
 end module propgen_comb
