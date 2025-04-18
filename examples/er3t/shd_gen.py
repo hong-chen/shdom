@@ -33,7 +33,7 @@ Ncpu    = 12
 rcParams['font.size'] = 14
 #╰────────────────────────────────────────────────────────────────────────────╯#
 
-_FDIR_BIN_ = '/Users/hchen/Work/mygit/shdom/bin'
+_FDIR_BIN_ = '/Users/hchen/Work/mygit/shdom/build/bin'
 _PUT_ = '%s/put' % _FDIR_BIN_
 _PROPGEN_ = '%s/propgen' % _FDIR_BIN_
 
@@ -139,16 +139,6 @@ def gen_sfc_file(
 
     return
 
-def gen_prop_1d(
-        name_exe='propgen',
-        fdir_bin=_FDIR_BIN_,
-        ):
-
-    fname_exe = os.path.join(fdir_bin, name_exe)
-
-    command = '%s '
-    pass
-
 def gen_ckd_file(atm0, abs0):
 
     Nband = 1
@@ -196,7 +186,7 @@ def gen_ckd_file(atm0, abs0):
 
 def gen_atm_file_1d(atm0):
 
-    fname_prp = 'data/shdom-prp_atm-clear.txt'
+    fname_prp = '../../data/shdom-prp_atm-clear.txt'
 
     parfile = 'NONE'
 
@@ -268,10 +258,9 @@ def gen_clear_sky_1d(
     abs0 = er3t.pre.abs.abs_rep(wavelength=wavelength, fname=fname_abs, target='modis', band_name='modis_aqua_b01', atm_obj=atm0, overwrite=overwrite)
     #╰────────────────────────────────────────────────────────────────────────────╯#
 
-    # gen_atm_file_1d(atm0)
+    gen_atm_file_1d(atm0)
 
-    gen_ckd_file(atm0, abs0)
-
+    # gen_ckd_file(atm0, abs0)
 
 def gen_lwc_les(
         wavelength=650.0,
@@ -857,7 +846,7 @@ def gen_lwc_les_full(
 
 if __name__ == '__main__':
 
-    # gen_clear_sky_1d()
+    # gen_ckd_file()
     # gen_lwc_les(overwrite=False)
     # gen_sfc_modis()
     # gen_lwc_modis()
@@ -865,5 +854,6 @@ if __name__ == '__main__':
     # gen_lwc_les_fast(overwrite=False)
     # gen_sfc_land_lsrt_fast()
     # gen_lwc_les_zero(overwrite=False)
-    gen_lwc_les_full()
+    # gen_lwc_les_full()
+    gen_clear_sky_1d()
     pass
