@@ -607,14 +607,17 @@ subroutine WRITE_MIE_TABLE(MIETABFILE, POLTAB, WAVELEN1, WAVELEN2, DELTAWAVE,&
         write (3, '(1X,F8.4,1X,E12.5,1X,F8.6,1X,I6,A)')&
             & REFF, EXTINCT(I), SSALB(I), NRANK(I), '  Reff  Ext  Alb  Nrank'
         do J = 1, NPHASEPOL
+
             if (POLTAB) then
-                write (3, '(I1,1X,201(1X,F10.5))') J, (WIGCOEF(J, L, I), L=0, min(NRANK(I), 200))
+                write (3, '(I1,1X,201(1X,E15.6))') J, (WIGCOEF(J, L, I), L=0, min(NRANK(I), 200))
             else
-                write (3, '(2X,201(1X,F10.5))') (WIGCOEF(J, L, I), L=0, min(NRANK(I), 200))
+                write (3, '(2X,201(1X,E15.6))') (WIGCOEF(J, L, I), L=0, min(NRANK(I), 200))
             end if
+
             do K = 200, NRANK(I) - 1, 200
-                write (3, '(2X,200(1X,F10.5))') (WIGCOEF(J, K + L, I), L=1, min(200, NRANK(I) - K))
+                write (3, '(2X,200(1X,E15.6))') (WIGCOEF(J, K + L, I), L=1, min(200, NRANK(I) - K))
             end do
+
         end do
     end do
     close (3)

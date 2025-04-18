@@ -801,10 +801,14 @@ subroutine shd_io__readPrp(&
         open (UNIT=88, FILE=trim(adjustl(OUTFILE_DATA)), STATUS='OLD',&
             &ACCESS='STREAM', FORM='UNFORMATTED')
 
-        read (88) (((   TEMPP(IZ+NPZ*(IY-1)+NPZ*NPY*(IX-1)), IZ=1,NZZ), IY=1,NYY), IX=1,NXX) ! real(4)
-        read (88) (((EXTINCTP(IZ+NPZ*(IY-1)+NPZ*NPY*(IX-1)), IZ=1,NZZ), IY=1,NYY), IX=1,NXX) ! real(4)
-        read (88) ((( ALBEDOP(IZ+NPZ*(IY-1)+NPZ*NPY*(IX-1)), IZ=1,NZZ), IY=1,NYY), IX=1,NXX) ! real(4)
-        read (88) ((( IPHASEP(IZ+NPZ*(IY-1)+NPZ*NPY*(IX-1)), IZ=1,NZZ), IY=1,NYY), IX=1,NXX) ! integer(2)
+        ! TEMPP: real(4)
+        read (88) (((   TEMPP(IZ+NPZ*(IY-1)+NPZ*NPY*(IX-1)), IZ=1,NZZ), IY=1,NYY), IX=1,NXX)
+        ! EXTINCTP: real(4)
+        read (88) (((EXTINCTP(IZ+NPZ*(IY-1)+NPZ*NPY*(IX-1)), IZ=1,NZZ), IY=1,NYY), IX=1,NXX)
+        ! ALBEDOP: real(4)
+        read (88) ((( ALBEDOP(IZ+NPZ*(IY-1)+NPZ*NPY*(IX-1)), IZ=1,NZZ), IY=1,NYY), IX=1,NXX)
+        ! IPHASEP: integer(2)
+        read (88) ((( IPHASEP(IZ+NPZ*(IY-1)+NPZ*NPY*(IX-1)), IZ=1,NZZ), IY=1,NYY), IX=1,NXX)
 
         close (88)
 
