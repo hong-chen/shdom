@@ -660,9 +660,9 @@ subroutine shd_io__readPrp(&
     real :: TMP, EXT, ALB, CHI
 
     character(len=FNAMEMAXLEN_) :: OUTFILE_DATA
-    character(len=FNAMEMAXLEN_) :: TEMP_CHAR
+    character(len=FNAMEMAXLEN_) :: TMP_CHAR
     character(len=FNAMEMAXLEN_) :: DIMS_CHAR
-    character(len=20)  :: DATA_POSTFIX
+    character(len=20) :: DATA_POSTFIX
     integer :: NXX, NYY, NZZ, NPP
 
     ! Open the file, figure out the type, and get the grid size
@@ -787,7 +787,7 @@ subroutine shd_io__readPrp(&
             MAXASYM = max(MAXASYM, LEGENP((IL + 1)*NSTLEG + 1)/3.0)
         end do
 
-        read (1, '(A)') TEMP_CHAR ! skip one line
+        read (1, '(A)') TMP_CHAR ! skip one line
         read (1, '(A)') DATA_POSTFIX
         read (1, '(A)') DIMS_CHAR
 
@@ -808,6 +808,8 @@ subroutine shd_io__readPrp(&
 
         close (88)
 
+        ! original
+        !╭────────────────────────────────────────────────╮!
         !do while (.true.)
         !    read (1, *, end=290) IX, IY, IZ, TMP, EXT, ALB, IPH
         !    if (IX .ge. 1 .and. IX .le. NPX .and.&
@@ -820,6 +822,7 @@ subroutine shd_io__readPrp(&
         !        IPHASEP(K) = IPH
         !    end if
         !end do
+        !╰────────────────────────────────────────────────╯!
 
     else
 
