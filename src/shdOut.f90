@@ -2523,12 +2523,16 @@ subroutine shd_io__saveState(&
 
     close (3)
 
+    ! display file size
+    !╭────────────────────────────────────────────────╮!
     inquire(FILE=trim(adjustl(OUTSAVEFILE)), SIZE=DATA_BYTE)
     DATA_SIZE = DATA_BYTE/1000000.0
     write(*, '(A,F6.2,A)') 'Message [_saveState]: Data saved at <'//trim(adjustl(OUTSAVEFILE))//'> (',&
         &DATA_SIZE, 'MB).'
+    !╰────────────────────────────────────────────────╯!
 
     return
+
 end subroutine shd_io__saveState
 
 end module shd_out

@@ -1473,6 +1473,7 @@ subroutine shd_io__restoreState(&
     return
 
 900 continue
+
     write (6, '(A)') 'Warning [_restoreState]: Failed to restore state file from <'//trim(adjustl(INSAVEFILE))//'>.'
     INRADFLAG = .false.
     NEWGRIDFLAG = .true.
