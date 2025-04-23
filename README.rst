@@ -1,7 +1,7 @@
 Spherical Harmonic Discrete Ordinate Method (SHDOM) for Atmospheric Radiative Transfer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. image:: https://github.com/hong-chen/shdom/actions/workflows/build_gfortran.yml/badge.svg
+.. image:: https://img.shields.io/github/actions/workflow/status/hong-chen/shdom/build_gfortran.yml?style=flat-square&label=build&logo=fortran
    :target: https://github.com/hong-chen/shdom/actions/workflows/build_gfortran.yml
    :alt: Build Status
 
