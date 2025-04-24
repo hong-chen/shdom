@@ -72,7 +72,7 @@ if ($MakePropertyFile) then
   # old type 2 LWC file for the 64x64x16 stratocumulus LES field.
   # Adds in six other levels.
 
-  set lwcfile="${fdir_data}/shdom-lwc_${basefile}.txt"
+  set lwcfile="${fdir_data}/shdom-ext_${basefile}.txt"
 
   set scattable="${fdir_data_tmp}/shdom-sca-${wavename}_${basefile}.txt"
 

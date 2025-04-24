@@ -1,8 +1,8 @@
-2 parameter LWC file for SHDOM
+2 parameter Extinction file for SHDOM
 96 80 4
 0.5000 0.6000
-1.0000 2.0000 3.0000 4.0000
+0.5000 1.5000 2.5000 3.5000
 294.6153 287.6383 282.5377 279.7852
 ! The following provides information for interpreting binary data:
-! .sHdOm-lwc
+! .sHdOm-ext
 !     96,    80,     4,     2

@@ -241,7 +241,7 @@ contains
 
     subroutine READ_PARTICLE_FILE(PARFILE, NX, NY, NZP, NSCATTAB, PARTYPES, &
                                   DELX, DELY, ZPAR, TEMPPAR, &
-                                  NCOMP, PTYPE, MASSCONT, REFF)
+                                  NCOMP, PTYPE, MASSCONT, REFF, ISEXT)
         ! Reads the particle physical properties file.  The file contains a header
         ! containing the array size (NX,NY,NZP), heights (ZPAR), and
         ! temperature profile (TEMPPAR).  Then each row has format:
@@ -256,6 +256,7 @@ contains
         real, intent(OUT) :: DELX, DELY, ZPAR(NZP), TEMPPAR(NZP)
         integer, intent(OUT) :: NCOMP(NZP, NY, NX), PTYPE(NSCATTAB, NZP, NY, NX)
         real, intent(OUT) :: MASSCONT(NSCATTAB, NZP, NY, NX), REFF(NSCATTAB, NZP, NY, NX)
+        logical, intent(out) :: ISEXT
         integer :: I, FILEKIND, IX, IY, IZ, NC, PT(NSCATTAB)
         real    :: MASS(NSCATTAB), RE(NSCATTAB)
 
@@ -263,6 +264,7 @@ contains
         character(len=20) :: DATA_POSTFIX
         integer :: NXX, NYY, NZZ, NPP
 
+        ISEXT = .FALSE.
 
         ! Initialize the output arrays (in case there are missing grid points)
         NCOMP(:, :, :) = 0
@@ -306,6 +308,8 @@ contains
 
                 NCOMP = 1
                 PTYPE(1, :, :, :) = PARTYPES(1)
+
+                ISEXT = .True.
 
             else
 
@@ -834,6 +838,7 @@ program PROPGEN
     integer :: NX, NY, NZP, NZT, IX, IY, IZ, IZP, NC, NL, IL, IM, IU, L, IPH
     real    :: RAYLCOEF
     real    :: DELX, DELY, EXT, SCAT, SCATTER, ASYM0, F, ERR, MINERR
+    logical :: ISEXT
     integer, allocatable :: NRE(:), NCOEF(:)
     integer, allocatable :: PARTYPES(:), TYPECONV(:)
     integer, allocatable :: NCOMP(:, :, :), PTYPE(:, :, :, :), IPARLEV(:)
@@ -914,7 +919,7 @@ program PROPGEN
         allocate (MASSCONT(NSCATTAB, NZP, NY, NX), REFF(NSCATTAB, NZP, NY, NX))
         call READ_PARTICLE_FILE(PARFILE, NX, NY, NZP, NSCATTAB, PARTYPES, &
                                 DELX, DELY, ZPAR, TEMPPAR, &
-                                NCOMP, PTYPE, MASSCONT, REFF)
+                                NCOMP, PTYPE, MASSCONT, REFF, ISEXT)
     else
         NX = 1; NY = 1; NZP = 0
         DELX = 1.0; DELY = 1.0
@@ -993,10 +998,16 @@ program PROPGEN
                         print '(4(1X,I3),1X,F6.2)', IX, IY, IZP, PTYPE(J, IZP, IY, IX), REFF(J, IZP, IY, IX)
                             F = max(min(F, 1.0), 0.0)
                         end if
-                        ! Interpolate optical properties in Reff for this component
-                        !   and sum over the components.
-                        EXT = MASSCONT(J, IZP, IY, IX)* &
-                              exp((1 - F)*log(EXTINCTTAB(IL)) + F*log(EXTINCTTAB(IU)))
+
+                        if (ISEXT) then
+                            EXT = MASSCONT(J, IZP, IY, IX)
+                        else
+                            ! Interpolate optical properties in Reff for this component
+                            !   and sum over the components.
+                            EXT = MASSCONT(J, IZP, IY, IX)* &
+                                  exp((1 - F)*log(EXTINCTTAB(IL)) + F*log(EXTINCTTAB(IU)))
+                        end if
+
                         SCAT = EXT*((1 - F)*SSALBTAB(IL) + F*SSALBTAB(IU))
                         ASYM0 = ASYM0 + SCAT*((1 - F)*ASYM(IL) + F*ASYM(IU))
                         PHASE0(:) = PHASE0(:) + SCAT*((1 - F)*PHASE(:, IL) + F*PHASE(:, IU))
@@ -1005,6 +1016,7 @@ program PROPGEN
                                         + SCAT*((1 - F)*WIGCOEFTAB(:, 0:NL, IL) + F*WIGCOEFTAB(:, 0:NL, IU))
                         SCATTER = SCATTER + SCAT
                         EXTINCT(IZ, IY, IX) = EXTINCT(IZ, IY, IX) + EXT
+
                     end do ! end of component loop
 
                     ! Normalize to get the combined optical properties
