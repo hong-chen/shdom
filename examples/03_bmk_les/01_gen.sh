@@ -68,11 +68,8 @@ endif
 
 
 if ($MakePropertyFile) then
-  # Runs propgen to make the SHDOM optical property file from the
-  # old type 2 LWC file for the 64x64x16 stratocumulus LES field.
-  # Adds in six other levels.
 
-  set lwcfile="${fdir_data}/shdom-ext_${basefile}.txt"
+  set extfile="${fdir_data}/shdom-ext_${basefile}.txt"
 
   set scattable="${fdir_data_tmp}/shdom-sca-${wavename}_${basefile}.txt"
 
@@ -92,7 +89,7 @@ if ($MakePropertyFile) then
 
   set polout=U
 
-  put 1 $scattable 1 "$poltabs" "$lwcfile" \
+  put 1 $scattable 1 "$poltabs" "$extfile" \
       $maxnewphase $asymtol $fracphasetol $wavelen $sfcpres \
       $Nzother $ZTother $polout $prpfile  | propgen
 
