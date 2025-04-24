@@ -259,6 +259,11 @@ contains
         integer :: I, FILEKIND, IX, IY, IZ, NC, PT(NSCATTAB)
         real    :: MASS(NSCATTAB), RE(NSCATTAB)
 
+        character(len=256) :: TMP_CHAR, OUTFILE_DATA, DIMS_CHAR
+        character(len=20) :: DATA_POSTFIX
+        integer :: NXX, NYY, NZZ, NPP
+
+
         ! Initialize the output arrays (in case there are missing grid points)
         NCOMP(:, :, :) = 0
         PTYPE(:, :, :, :) = 0
@@ -278,17 +283,47 @@ contains
                 print *, 'Error [READ_PARTICLE_FILE]: Must have only one scattering table to use 2 parameter LWC file.'
                 stop
             end if
-            ! Read in the data
-            do while (.true.)
-                read (2, *, end=190) IX, IY, IZ, MASS(1), RE(1)
-                if (IX >= 1 .and. IX <= NX .and. IY >= 1 .and. IY <= NY .and. &
-                    IZ >= 1 .and. IZ <= NZP) then
-                    NCOMP(IZ, IY, IX) = 1
-                    PTYPE(1, IZ, IY, IX) = PARTYPES(1)
-                    MASSCONT(1, IZ, IY, IX) = MASS(1)
-                    REFF(1, IZ, IY, IX) = RE(1)
-                end if
-            end do
+
+            read (2, '(A)') TMP_CHAR ! skip one line
+
+            if (TMP_CHAR(1:1) .eq. '!') then
+
+                read (2, '(A)') DATA_POSTFIX
+                read (2, '(A)') DIMS_CHAR
+
+                read (DIMS_CHAR( 3: 8), '(I6)') NXX
+                read (DIMS_CHAR(10:15), '(I6)') NYY
+                read (DIMS_CHAR(17:22), '(I6)') NZZ
+                read (DIMS_CHAR(24:29), '(I6)') NPP
+
+                OUTFILE_DATA = trim(adjustl(PARFILE))//trim(adjustl(DATA_POSTFIX(2:)))
+
+                open (UNIT=88, FILE=trim(adjustl(OUTFILE_DATA)), STATUS='OLD',&
+                    &ACCESS='STREAM', FORM='UNFORMATTED')
+                read (88) (((MASSCONT(1, IZ, IY, IX), IZ=1,NZZ), IY=1,NYY), IX=1,NXX)
+                read (88) (((    REFF(1, IZ, IY, IX), IZ=1,NZZ), IY=1,NYY), IX=1,NXX)
+                close (88)
+
+                NCOMP = 1
+                PTYPE(1, :, :, :) = PARTYPES(1)
+
+            else
+
+                backspace(2)
+
+                ! Read in the data
+                do while (.true.)
+                    read (2, *, end=190) IX, IY, IZ, MASS(1), RE(1)
+                    if (IX >= 1 .and. IX <= NX .and. IY >= 1 .and. IY <= NY .and. &
+                        IZ >= 1 .and. IZ <= NZP) then
+                        NCOMP(IZ, IY, IX) = 1
+                        PTYPE(1, IZ, IY, IX) = PARTYPES(1)
+                        MASSCONT(1, IZ, IY, IX) = MASS(1)
+                        REFF(1, IZ, IY, IX) = RE(1)
+                    end if
+                end do
+
+            end if
 
         else if (FILEKIND == 3) then
             ! Read in the data
