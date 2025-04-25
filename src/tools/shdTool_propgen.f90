@@ -1,4 +1,4 @@
-! PROGRAM PROPGEN
+! PROGRAM propgen
 !
 !   Makes an SHDOM tabulated phase function optical properties file
 ! from a particle properties file specifying the 3D distribution of mass
@@ -50,67 +50,68 @@ contains
         character(LEN=256), pointer :: SCATTABFILES(:)
         character(LEN=1) :: POLOUT
         integer :: I
+        logical :: VERBOSE=.FALSE.
 
-        write (*, *) 'Number of input scattering tables'
+        if (VERBOSE) write (*, *) 'Number of input scattering tables'
         read (*, *) NSCATTAB
-        write (*, *) NSCATTAB
+        if (VERBOSE) write (*, *) NSCATTAB
 
         allocate (SCATTABFILES(NSCATTAB), SCATNUMS(NSCATTAB), POLTABS(NSCATTAB))
         if (NSCATTAB > 0) then
-            write (*, *) 'Name of each scattering table'
+            if (VERBOSE) write (*, *) 'Name of each scattering table'
             do I = 1, NSCATTAB
                 read (*, '(A)') SCATTABFILES(I)
-                write (*, '(A256)') SCATTABFILES(I)
+                if (VERBOSE) write (*, '(A256)') SCATTABFILES(I)
             end do
-            write (*, *) 'Index or type of each scattering table'
+            if (VERBOSE) write (*, *) 'Index or type of each scattering table'
             read (*, *) SCATNUMS(1:NSCATTAB)
-            write (*, '(20(1X,I2))') SCATNUMS(1:NSCATTAB)
-            write (*, *) 'Polarization flag (T or F) for each scattering table'
+            if (VERBOSE) write (*, '(20(1X,I2))') SCATNUMS(1:NSCATTAB)
+            if (VERBOSE) write (*, *) 'Polarization flag (T or F) for each scattering table'
             read (*, *) POLTABS(1:NSCATTAB)
-            write (*, '(20(1X,L1))') POLTABS(1:NSCATTAB)
+            if (VERBOSE) write (*, '(20(1X,L1))') POLTABS(1:NSCATTAB)
         end if
 
-        write (*, *) 'Input particle properties filename (or NONE for Rayleigh only)'
+        if (VERBOSE) write (*, *) 'Input particle properties filename (or NONE for Rayleigh only)'
         read (*, '(A)') PARFILE
-        write (*, '(A256)') PARFILE
+        if (VERBOSE) write (*, '(A256)') PARFILE
 
-        write (*, *) 'Maximum number of new phase functions created'
+        if (VERBOSE) write (*, *) 'Maximum number of new phase functions created'
         read (*, *) MAXNEWPHASE
-        write (*, '(1X,I4)') MAXNEWPHASE
+        if (VERBOSE) write (*, '(1X,I4)') MAXNEWPHASE
 
-        write (*, *) 'Tolerance in asymmetry parameter for creating a new phase function'
+        if (VERBOSE) write (*, *) 'Tolerance in asymmetry parameter for creating a new phase function'
         read (*, *) ASYMTOL
-        write (*, '(1X,F6.4)') ASYMTOL
+        if (VERBOSE) write (*, '(1X,F6.4)') ASYMTOL
 
-        write (*, *) 'Maximum fractional error tolerance in value for creating a new phase function'
+        if (VERBOSE) write (*, *) 'Maximum fractional error tolerance in value for creating a new phase function'
         read (*, *) FRACPHASETOL
-        write (*, '(1X,F6.3)') FRACPHASETOL
+        if (VERBOSE) write (*, '(1X,F6.3)') FRACPHASETOL
 
-        write (*, *) 'Wavelength for Rayleigh molecular scattering (micron)'
+        if (VERBOSE) write (*, *) 'Wavelength for Rayleigh molecular scattering (micron)'
         read (*, *) RAYWAVELEN
-        write (*, *) RAYWAVELEN
+        if (VERBOSE) write (*, *) RAYWAVELEN
 
-        write (*, *) 'Surface pressure for Rayleigh molecular scattering (mb or hPa)'
+        if (VERBOSE) write (*, *) 'Surface pressure for Rayleigh molecular scattering (mb or hPa)'
         read (*, *) RAYSFCPRES
-        write (*, *) RAYSFCPRES
+        if (VERBOSE) write (*, *) RAYSFCPRES
 
-        write (*, *) 'Number of extra Z levels'
+        if (VERBOSE) write (*, *) 'Number of extra Z levels'
         read (*, *) NZO
-        write (*, '(1X,I3)') NZO
+        if (VERBOSE) write (*, '(1X,I3)') NZO
         allocate (ZOTHER(NZO), TEMPOTHER(NZO))
         do I = 1, NZO
-            write (*, *) 'Height (km) and temperature (K) :', I
+            if (VERBOSE) write (*, *) 'Height (km) and temperature (K) :', I
             read (*, *) ZOTHER(I), TEMPOTHER(I)
-            write (*, '(1X,F7.3,1X,F6.2)') ZOTHER(I), TEMPOTHER(I)
+            if (VERBOSE) write (*, '(1X,F7.3,1X,F6.2)') ZOTHER(I), TEMPOTHER(I)
         end do
 
-        write (*, *) 'Output polarized (P) or unpolarized (U) SHDOM property file'
+        if (VERBOSE) write (*, *) 'Output polarized (P) or unpolarized (U) SHDOM property file'
         read (*, '(A)') POLOUT
-        write (*, *) POLOUT
+        if (VERBOSE) write (*, *) POLOUT
 
-        write (*, *) 'Output property file name'
+        if (VERBOSE) write (*, *) 'Output property file name'
         read (*, '(A)') PROPFILE
-        write (*, '(A256)') PROPFILE
+        if (VERBOSE) write (*, '(A256)') PROPFILE
     end subroutine USER_INPUT
 
     subroutine READ_SCAT_TABLE_SIZE(SCATTABFILE, POLTAB, WAVELEN1, WAVELEN2, &
@@ -203,11 +204,11 @@ contains
                 end if
             end if
             if (abs(WIGCOEF(1, 0, I) - 1.0) > 0.0001) then
-                print *, 'Error [READ_SCAT_TABLE]: Incorrect Legendre series; chi_0 is not 1.'
+                write (*, *) 'Error [READ_SCAT_TABLE]: Incorrect Legendre series; chi_0 is not 1.'
                 stop
             end if
             if (I > 1 .and. RETAB(I) <= RETAB(I - 1)) then
-                print *, 'Error [READ_SCAT_TABLE]: Effective radius not increasing in table:', SCATTABFILE
+                write (*, *) 'Error [READ_SCAT_TABLE]: Effective radius not increasing in table:', SCATTABFILE
                 stop
             end if
         end do
@@ -282,7 +283,7 @@ contains
 
         if (FILEKIND == 2) then
             if (NSCATTAB /= 1) then
-                print *, 'Error [READ_PARTICLE_FILE]: Must have only one scattering table to use 2 parameter LWC file.'
+                write (*, *) 'Error [READ_PARTICLE_FILE]: Must have only one scattering table to use 2 parameter LWC file.'
                 stop
             end if
 
@@ -335,7 +336,7 @@ contains
                 read (2, *, end=190) IX, IY, IZ, NC, &
                     (PT(I), MASS(I), RE(I), I=1, min(NC, NSCATTAB))
                 if (NC > NSCATTAB) then
-                    print *, 'Error [READ_PARTICLE_FILE]: More particle components than scattering tables.'
+                    write (*, *) 'Error [READ_PARTICLE_FILE]: More particle components than scattering tables.'
                     stop
                 end if
                 if (IX >= 1 .and. IX <= NX .and. IY >= 1 .and. IY <= NY .and. &
@@ -348,7 +349,7 @@ contains
             end do
 
         else
-            print *, 'Error [READ_PARTICLE_FILE]: Must be type 2 or 3 particle properties file.'
+            write (*, *) 'Error [READ_PARTICLE_FILE]: Must be type 2 or 3 particle properties file.'
             stop
         end if
 
@@ -378,8 +379,8 @@ contains
         if (NZP > 0) then
             do J = 1, NZO
                 if (ZOTHER(J) >= ZPAR(1) .and. ZOTHER(J) <= ZPAR(NZP)) then
-                    print '(1X,A,F7.3)', 'Warning [ORGANIZE_LEVELS]: Other Z level inside range of particle levels:', ZOTHER(J)
-                    print *, '         The other Z levels have only Rayleigh scattering.'
+                    write (*, '(1X,A,F7.3)') 'Warning [ORGANIZE_LEVELS]: Other Z level inside range of particle levels:', ZOTHER(J)
+                    write (*, *) '         The other Z levels have only Rayleigh scattering.'
                 end if
             end do
         end if
@@ -390,7 +391,7 @@ contains
         ! Check to see if two Z levels are same
         do K = 1, NZT - 1
             if (ZLEVELS(K) == ZLEVELS(K + 1)) then
-                print *, 'Error [ORGANIZE_LEVELS]: Same Z levels: ', ZLEVELS(K)
+                write (*, *) 'Error [ORGANIZE_LEVELS]: Same Z levels: ', ZLEVELS(K)
                 stop
             end if
         end do
@@ -821,7 +822,7 @@ contains
 
 end module propgen_comb
 
-program PROPGEN
+program propgen
     use propgen_comb
     implicit none
     integer :: NSCATTAB, MAXNEWPHASE, NZO
@@ -880,7 +881,7 @@ program PROPGEN
         MAXCOEF = max(MAXCOEF, MAXNCOEF)
         if (I > 1 .and. abs((WAVELEN1(I) - WAVELEN1(1))/WAVELEN1(1)) > 0.01 &
             .or. abs((WAVELEN2(I) - WAVELEN2(1))/WAVELEN2(1)) > 0.01) then
-            print *, 'Warning [PROPGEN]: Scattering table wavelengths do not agree for table', I
+            write (*, *) 'Warning [PROPGEN]: Scattering table wavelengths do not agree for table', I
         end if
     end do
     deallocate (WAVELEN1, WAVELEN2)
@@ -937,7 +938,7 @@ program PROPGEN
     RAYLCOEF = 0.03370*(RAYSFCPRES/1013.25)*0.0021520 &
                *(1.0455996 - 341.29061/RAYWAVELEN**2 - 0.90230850*RAYWAVELEN**2) &
                /(1 + 0.0027059889/RAYWAVELEN**2 - 85.968563*RAYWAVELEN**2)
-    print *, 'Rayleigh total atmosphere optical depth: ', RAYLCOEF/0.03370
+    write (*, *) 'Rayleigh total atmosphere optical depth: ', RAYLCOEF/0.03370
     ! Compute the molecular Rayleigh scattering extinction profile
     call RAYLEIGH_EXTINCT(NZT, ZLEVELS, TEMP, RAYSFCPRES, RAYLCOEF, EXTRAYL)
 
@@ -994,8 +995,8 @@ program PROPGEN
                             F = -1.0
                         end if
                         if (F < 0.0 .or. F > 1.0) then
-                            print *, 'Warning [PROPGEN]: Effective radius outside of table (IX,IY,IZ,type,Reff):'
-                        print '(4(1X,I3),1X,F6.2)', IX, IY, IZP, PTYPE(J, IZP, IY, IX), REFF(J, IZP, IY, IX)
+                            write (*, *) 'Warning [PROPGEN]: Effective radius outside of table (IX,IY,IZ,type,Reff):'
+                            write (*, '(4(1X,I3),1X,F6.2)') IX, IY, IZP, PTYPE(J, IZP, IY, IX), REFF(J, IZP, IY, IX)
                             F = max(min(F, 1.0), 0.0)
                         end if
 
@@ -1051,7 +1052,7 @@ program PROPGEN
                         else
                             NPHASE = NPHASE + 1
                             if (NPHASE > MAXNPHASE) then
-                                print *, 'Error [PROPGEN]: Maximum number of new phase functions exceeded', NPHASE - NENTRIES
+                                write (*, *) 'Error [PROPGEN]: Maximum number of new phase functions exceeded', NPHASE - NENTRIES
                                 stop
                             end if
                             NCOEF(NPHASE) = NL
@@ -1070,7 +1071,7 @@ program PROPGEN
         end do
     end do
 
-    print *, 'Number of new phase functions added: ', NPHASE - NENTRIES
+    write (*, *) 'Number of new phase functions added: ', NPHASE - NENTRIES
 
     call OUTPUT_PROPERTIES(PROPFILE, NPHASEPOL, NX, NY, NZT, &
                            DELX, DELY, ZLEVELS, TEMP, &

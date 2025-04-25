@@ -1,4 +1,4 @@
-program MAKE_MIE_TABLE
+program make_mie_table
 
     ! Does Mie computations to create a scattering table as a function of
     ! effective radius for gamma, modified gamma, or lognormal size distributions
@@ -111,7 +111,7 @@ program MAKE_MIE_TABLE
             if (WIGCOEF(1, L, I) .gt. 0.5e-5) NRANK(I) = L
         end do
         if (abs(WIGCOEF(1, 0, I) - 1.0) > 0.0001) then
-            print *, 'Error [MAKE_MIE_TABLE]: Phase function not normalized for Reff=', REFF, WIGCOEF(1, 0, I)
+            write (*, *) 'Error [make_mie_table]: Phase function not normalized for Reff=', REFF, WIGCOEF(1, 0, I)
             stop
         end if
         if (EXTINCT(I) > 0.0) then
@@ -143,80 +143,82 @@ subroutine USER_INPUT(POLTAB, WAVELEN1, WAVELEN2, PARTYPE, RINDEX, PARDENS,&
     character(LEN=1), intent(OUT) :: PARTYPE, AVGFLAG, DISTFLAG
     character(LEN=256), intent(OUT) :: MIETABFILE
 
-    write (*, *) 'Making Mie scattering tables for spherical particles'
+    logical :: VERBOSE=.FALSE.
 
-    write (*, *) 'Make polarized Mie table (T or F)'
+    if (VERBOSE) write (*, *) 'Making Mie scattering tables for spherical particles'
+
+    if (VERBOSE) write (*, *) 'Make polarized Mie table (T or F)'
     read (*, *) POLTAB
-    write (*, '(L)') POLTAB
+    if (VERBOSE) write (*, '(L)') POLTAB
 
-    write (*, *) 'Wavelength range (micron)'
+    if (VERBOSE) write (*, *) 'Wavelength range (micron)'
     read (*, *) WAVELEN1, WAVELEN2
-    write (*, '(2(1X,F9.3))') WAVELEN1, WAVELEN2
+    if (VERBOSE) write (*, '(2(1X,F9.3))') WAVELEN1, WAVELEN2
     if (WAVELEN1 > WAVELEN2) stop 'Error [USER_INPUT]: wavelength1 must be <= wavelength2.'
 
-    write (*, *) 'Water, Ice, or Aerosol spherical particles (W,I,A)'
+    if (VERBOSE) write (*, *) 'Water, Ice, or Aerosol spherical particles (W,I,A)'
     read (*, '(A1)') PARTYPE
-    write (*, '(1X,A1)') PARTYPE
+    if (VERBOSE) write (*, '(1X,A1)') PARTYPE
 
     if (PARTYPE == 'W' .or. PARTYPE == 'I') then
-        write (*, *) 'Average Mie properties over wavelength or use Planck weighted'
-        write (*, *) '  index of refraction at center wavelength (A or C)'
+        if (VERBOSE) write (*, *) 'Average Mie properties over wavelength or use Planck weighted'
+        if (VERBOSE) write (*, *) '  index of refraction at center wavelength (A or C)'
         read (*, '(A1)') AVGFLAG
-        write (*, '(1X,A1)') AVGFLAG
+        if (VERBOSE) write (*, '(1X,A1)') AVGFLAG
         if (AVGFLAG == 'A') then
-            write (*, *) 'Wavelength interval for averaging (micron)'
+            if (VERBOSE) write (*, *) 'Wavelength interval for averaging (micron)'
             read (*, *) DELTAWAVE
-            write (*, '(1X,F6.3)') DELTAWAVE
+            if (VERBOSE) write (*, '(1X,F6.3)') DELTAWAVE
         else
             AVGFLAG = 'C'
             DELTAWAVE = -1.0
         end if
     else
         PARTYPE = 'A'
-        write (*, *) 'Aerosol complex index of refraction (negative imaginary part)'
+        if (VERBOSE) write (*, *) 'Aerosol complex index of refraction (negative imaginary part)'
         read (*, *) RINDEX
-        write (*, *) RINDEX
-        write (*, *) 'Aerosol particle bulk density (g/cm^3)'
+        if (VERBOSE) write (*, *) RINDEX
+        if (VERBOSE) write (*, *) 'Aerosol particle bulk density (g/cm^3)'
         read (*, *) PARDENS
-        write (*, '(1X,F5.3)') PARDENS
+        if (VERBOSE) write (*, '(1X,F5.3)') PARDENS
         AVGFLAG = 'C'
     end if
 
-    write (*, *) 'Particle size distribution type: G = Gamma, M = modified gamma, L = Lognormal'
+    if (VERBOSE) write (*, *) 'Particle size distribution type: G = Gamma, M = modified gamma, L = Lognormal'
     read (*, *) DISTFLAG
-    write (*, *) DISTFLAG
+    if (VERBOSE) write (*, *) DISTFLAG
     if (DISTFLAG == 'L') then
-        write (*, *) 'Log normal size distribution log standard deviation'
+        if (VERBOSE) write (*, *) 'Log normal size distribution log standard deviation'
         read (*, *) ALPHA
-        write (*, '(1X,F6.3)') ALPHA
+        if (VERBOSE) write (*, '(1X,F6.3)') ALPHA
     else if (DISTFLAG == 'G') then
-        write (*, *) 'Gamma size distribution shape parameter (alpha)'
+        if (VERBOSE) write (*, *) 'Gamma size distribution shape parameter (alpha)'
         read (*, *) ALPHA
-        write (*, '(1X,F6.3)') ALPHA
+        if (VERBOSE) write (*, '(1X,F6.3)') ALPHA
     else if (DISTFLAG == 'M') then
-        write (*, *) 'Modified gamma size distribution shape parameters (alpha & gamma)'
+        if (VERBOSE) write (*, *) 'Modified gamma size distribution shape parameters (alpha & gamma)'
         read (*, *) ALPHA, GAMMA
-        write (*, '(2(1X,F6.3))') ALPHA, GAMMA
+        if (VERBOSE) write (*, '(2(1X,F6.3))') ALPHA, GAMMA
     else
         write (*, *) 'Error [USER_INPUT]: Unrecognized size distribution type.'
         stop
     end if
 
-    write (*, *) 'Number, starting, and ending tabulated effective radius (micron)'
+    if (VERBOSE) write (*, *) 'Number, starting, and ending tabulated effective radius (micron)'
     read (*, *) NRETAB, SRETAB, ERETAB
-    write (*, '(1X,I3,2(1X,F7.2))') NRETAB, SRETAB, ERETAB
+    if (VERBOSE) write (*, '(1X,I3,2(1X,F7.2))') NRETAB, SRETAB, ERETAB
 
-    write (*, *) 'Log-spaced effective radius (T or F) (F for evenly spaced)'
+    if (VERBOSE) write (*, *) 'Log-spaced effective radius (T or F) (F for evenly spaced)'
     read (*, *) LOGRE
-    write (*, '(L)') LOGRE
+    if (VERBOSE) write (*, '(L)') LOGRE
 
-    write (*, *) 'Maximum particle radius in size distribution (micron)'
+    if (VERBOSE) write (*, *) 'Maximum particle radius in size distribution (micron)'
     read (*, *) MAXRADIUS
-    write (*, '(1X, F7.2)') MAXRADIUS
+    if (VERBOSE) write (*, '(1X, F7.2)') MAXRADIUS
 
-    write (*, *) 'Output Mie scattering table name'
+    if (VERBOSE) write (*, *) 'Output Mie scattering table name'
     read (*, '(A)') MIETABFILE
-    write (*, '(A)') MIETABFILE
+    if (VERBOSE) write (*, '(A)') MIETABFILE
 end subroutine USER_INPUT
 
 subroutine GET_NSIZE(SRETAB, MAXRADIUS, WAVELEN, NSIZE)
@@ -468,7 +470,7 @@ subroutine MAKE_SIZE_DIST(DISTFLAG, PARDENS, NSIZE, RADII, REFF, ALPHA, GAMMA,&
                 & NSIZE, RADII, ND, TRUERE)
         end do
         if (TRUERE <= REFF) then
-            print *, 'Error [MAKE_SIZE_DIST]: Effective radius cannot be achieved', REFF, TRUERE
+            write (*, *) 'Error [MAKE_SIZE_DIST]: Effective radius cannot be achieved', REFF, TRUERE
             stop
         end if
     else
@@ -484,7 +486,7 @@ subroutine MAKE_SIZE_DIST(DISTFLAG, PARDENS, NSIZE, RADII, REFF, ALPHA, GAMMA,&
                 & NSIZE, RADII, ND, TRUERE)
         end do
         if (TRUERE >= REFF) then
-            print *, 'Error [MAKE_SIZE_DIST]: effective radius cannot be achieved', REFF, TRUERE
+            write (*, *) 'Error [MAKE_SIZE_DIST]: effective radius cannot be achieved', REFF, TRUERE
             stop
         end if
     end if
