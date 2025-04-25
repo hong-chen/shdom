@@ -60,7 +60,7 @@ contains
             write (*, *) 'Name of each scattering table'
             do I = 1, NSCATTAB
                 read (*, '(A)') SCATTABFILES(I)
-                write (*, '(A72)') SCATTABFILES(I)
+                write (*, '(A256)') SCATTABFILES(I)
             end do
             write (*, *) 'Index or type of each scattering table'
             read (*, *) SCATNUMS(1:NSCATTAB)
@@ -72,7 +72,7 @@ contains
 
         write (*, *) 'Input particle properties filename (or NONE for Rayleigh only)'
         read (*, '(A)') PARFILE
-        write (*, '(A72)') PARFILE
+        write (*, '(A256)') PARFILE
 
         write (*, *) 'Maximum number of new phase functions created'
         read (*, *) MAXNEWPHASE
@@ -110,7 +110,7 @@ contains
 
         write (*, *) 'Output property file name'
         read (*, '(A)') PROPFILE
-        write (*, '(A72)') PROPFILE
+        write (*, '(A256)') PROPFILE
     end subroutine USER_INPUT
 
     subroutine READ_SCAT_TABLE_SIZE(SCATTABFILE, POLTAB, WAVELEN1, WAVELEN2, &
