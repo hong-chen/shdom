@@ -108,6 +108,7 @@ module globals
   real(R_),  parameter :: RHOICE0_ = 0.917e+3_R_         ! density (kg/m^3) of water ice (0 deg.C)
 
   integer, parameter :: FNAMEMAXLEN_ = 256 ! file name max length (number of characters)
+  logical, parameter :: VERBOSE_ = .FALSE.
 
 contains
 

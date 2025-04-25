@@ -852,6 +852,8 @@ program propgen
     real, allocatable    :: EXTINCT(:, :, :), SSALB(:, :, :)
     integer, allocatable :: IPHASE(:, :, :)
 
+    logical :: VERBOSE=.FALSE.
+
     ! Data structures:
 
     call USER_INPUT(NSCATTAB, SCATTABFILES, SCATNUMS, POLTABS, PARFILE, &
@@ -938,7 +940,9 @@ program propgen
     RAYLCOEF = 0.03370*(RAYSFCPRES/1013.25)*0.0021520 &
                *(1.0455996 - 341.29061/RAYWAVELEN**2 - 0.90230850*RAYWAVELEN**2) &
                /(1 + 0.0027059889/RAYWAVELEN**2 - 85.968563*RAYWAVELEN**2)
-    write (*, *) 'Rayleigh total atmosphere optical depth: ', RAYLCOEF/0.03370
+
+    if (VERBOSE) write (*, *) 'Rayleigh total atmosphere optical depth: ', RAYLCOEF/0.03370
+
     ! Compute the molecular Rayleigh scattering extinction profile
     call RAYLEIGH_EXTINCT(NZT, ZLEVELS, TEMP, RAYSFCPRES, RAYLCOEF, EXTRAYL)
 
@@ -1071,7 +1075,7 @@ program propgen
         end do
     end do
 
-    write (*, *) 'Number of new phase functions added: ', NPHASE - NENTRIES
+    if (VERBOSE) write (*, *) 'Number of new phase functions added: ', NPHASE - NENTRIES
 
     call OUTPUT_PROPERTIES(PROPFILE, NPHASEPOL, NX, NY, NZT, &
                            DELX, DELY, ZLEVELS, TEMP, &
