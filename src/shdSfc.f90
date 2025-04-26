@@ -536,7 +536,7 @@ subroutine shd_sfc__brdfRPV(RHO0, K, THETA, MU1, MU2, PHI, REFLECT)
 
 end subroutine shd_sfc__brdfRPV
 
-subroutine shd_sfc__brdfLSRT(F_ISO, F_VOL, F_GEO, MU1, MU2, PHI, REFLECT)
+subroutine shd_sfc__brdfLSRT(F_ISO, F_GEO, F_VOL, MU1, MU2, PHI, REFLECT)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Computes the RossLi BRDF.

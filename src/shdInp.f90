@@ -1083,7 +1083,7 @@ subroutine shd_io__readSfc(&
     !   O  Ocean         Wind speed (m/s), Pigmentation (mg/m^3)
     !   D  Diner et al   a, k, b, zeta, sigma
     !   R  RPV           rho0, k, Theta
-    !   T  LSRT          f_iso, f_vol, f_geo
+    !   T  LSRT          f_iso, f_geo, f_vol
 
     integer MAXSFCPTS, MAXSFCPARS, NXSFC, NYSFC, NSFCPAR
     real DELXSFC, DELYSFC
@@ -1211,14 +1211,14 @@ subroutine shd_io__readSfc(&
             stop
         end if
         do while (.true.)
-            read (1, *, end=290) IX, IY, TEMP, F_ISO, F_VOL, F_GEO
+            read (1, *, end=290) IX, IY, TEMP, F_ISO, F_GEO, F_VOL
             if (IX .ge. 1 .and. IX .le. NXSFC .and.&
                 &IY .ge. 1 .and. IY .le. NYSFC) then
                 I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
                 SFCPARMS(I + 1) = TEMP
                 SFCPARMS(I + 2) = F_ISO
-                SFCPARMS(I + 3) = F_VOL
-                SFCPARMS(I + 4) = F_GEO
+                SFCPARMS(I + 3) = F_GEO
+                SFCPARMS(I + 4) = F_VOL
                 GNDTEMP = GNDTEMP + TEMP
                 GNDALBEDO = GNDALBEDO + F_ISO
                 N = N + 1
