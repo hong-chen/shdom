@@ -143,7 +143,9 @@ subroutine shd_grid__matchGridPnt(&
 
         ! Get the direction current cell is split
         DIR = ibits(int(CELLFLAGS(IC)), 2, 2)
+
         if (DIR .eq. 0) stop 'Error [_matchGridPnt]: No split direction.'
+
         ! If split is in direction of face then choose the near child cell
         !   which is the negative side cell if this is a positive face.
         IC1 = TREEPTR(2, IC)
