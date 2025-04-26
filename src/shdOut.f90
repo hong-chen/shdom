@@ -132,7 +132,8 @@ subroutine shd_io__outputResult(&
     integer IZ, I, K, N, NX2, NY2, J, JX, JY, ICELL
     integer NANGOUT, NXOUT, NYOUT
     logical ALLGRID
-    real MUOUT, PHID, C, SUM
+    real(RD_) :: MUOUT, PHID
+    real :: C, SUM
     real XDOMAIN, YDOMAIN, STARTX, STARTY
     real, allocatable :: ASYM(:)
     real, allocatable :: FUP(:), FDN(:), FDIR(:)
@@ -1118,10 +1119,11 @@ subroutine shd_io__radShiftCorr(&
     real, intent(in) :: DX, DY, XDOMAIN, YDOMAIN
     real, intent(in) :: MU_SET(*), PHI_SET(*)
 
-    real(8) :: DS_Z
-    real :: DS_VZA_RAD, DS_XOFFSET, DS_YOFFSET, MUOUT, PHIOUT
+    real(RD_) :: DS_Z
+    real(RD_) :: DS_VZA_RAD, DS_XOFFSET, DS_YOFFSET
+    real ::MUOUT, PHIOUT
+    real(RD_) :: STARTX, STARTY
     integer :: XSHIFT, YSHIFT, ISET, IVAR
-    real :: STARTX, STARTY
     real, allocatable :: DATA_COPY(:, :, :, :)
 
     allocate(DATA_COPY(NX, NY, NSET, NVAR))
@@ -1134,18 +1136,18 @@ subroutine shd_io__radShiftCorr(&
         PHIOUT = PHI_SET(ISET)
 
         DS_VZA_RAD = acos(MUOUT)
-        DS_XOFFSET = DS_Z*tan(DS_VZA_RAD)*cos(PHIOUT)
-        DS_YOFFSET = DS_Z*tan(DS_VZA_RAD)*sin(PHIOUT)
+        DS_XOFFSET = DS_Z*dtan(DS_VZA_RAD)*cos(PHIOUT)
+        DS_YOFFSET = DS_Z*dtan(DS_VZA_RAD)*sin(PHIOUT)
 
         STARTX = DS_XOFFSET - DX*nint(DS_XOFFSET/DX)
         XSHIFT = nint(DS_XOFFSET/DX)
-        if (STARTX .lt. 0.0) then
+        if (STARTX .lt. 0.0d0) then
             XSHIFT = XSHIFT - 1
         end if
 
         STARTY = DS_YOFFSET - DY*nint(DS_YOFFSET/DY)
         YSHIFT = nint(DS_YOFFSET/DY)
-        if (STARTY .lt. 0.0) then
+        if (STARTY .lt. 0.0d0) then
             YSHIFT = YSHIFT - 1
         end if
 
@@ -1209,8 +1211,9 @@ subroutine shd_io__outputResultMpi(&
 
     integer I, J, K, N, JX, JY, IZ
     integer NANGOUT, NXOUT, NYOUT
-    real MUOUT, PHID, C, SUM
-    real STARTX, STARTY
+    real :: MUOUT, PHID
+    real :: C, SUM
+    real(RD_) :: STARTX, STARTY
     real(RD_) :: X0, Y0, Z0
     character(len=128) :: FORM
     character(len=64) :: GRIDNAME, SOURCENAME, UNITSNAME, OUTNAME, SFCNAME

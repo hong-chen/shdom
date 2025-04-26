@@ -1699,7 +1699,7 @@ subroutine shd_mpi__computeRad(&
 
     ! added for fixing the "domain shift" issue
     !╭──────────────────────────────────────────────────────────────╮!
-    real :: DS_Z0, DS_VZA_RAD, DS_XOFFSET, DS_YOFFSET, TOT_XOFFSET, TOT_YOFFSET
+    real(RD_) :: DS_Z0, DS_VZA_RAD, DS_XOFFSET, DS_YOFFSET, TOT_XOFFSET, TOT_YOFFSET
     !╰──────────────────────────────────────────────────────────────╯!
 
     ! Make the isotropic radiances for the top boundary
@@ -1757,10 +1757,10 @@ subroutine shd_mpi__computeRad(&
         !   <shd_io__radShiftCorr> in shdIO_out.f90
         !╭────────────────────────────────────────────────╮!
         if (IPFLAG .eq. 0) then
-            DS_Z0 = Z0-ZGRID(1)
+            DS_Z0 = Z0 - ZGRID(1)
             DS_VZA_RAD = acos(MUOUT)
-            DS_XOFFSET = DS_Z0*tan(DS_VZA_RAD)*cos(PHIOUT)
-            DS_YOFFSET = DS_Z0*tan(DS_VZA_RAD)*sin(PHIOUT)
+            DS_XOFFSET = DS_Z0*dtan(DS_VZA_RAD)*cos(PHIOUT)
+            DS_YOFFSET = DS_Z0*dtan(DS_VZA_RAD)*sin(PHIOUT)
             TOT_XOFFSET = DS_XOFFSET
             TOT_YOFFSET = DS_YOFFSET
         else
@@ -1771,14 +1771,14 @@ subroutine shd_mpi__computeRad(&
         ! to avoid vertical stripes
         ! this extra pixel shift is considered in the data output (second step correction)
         STARTX = TOT_XOFFSET - OUTPARMS(2)*nint(TOT_XOFFSET/OUTPARMS(2))
-        if (STARTX .lt. 0.0) then
+        if (STARTX .lt. 0.0d0) then
             STARTX = STARTX + OUTPARMS(2)
         end if
 
         ! to avoid horizontal stripes
         ! this extra pixel shift is considered in the data output (second step correction)
         STARTY = TOT_YOFFSET - OUTPARMS(3)*nint(TOT_YOFFSET/OUTPARMS(3))
-        if (STARTY .lt. 0.0) then
+        if (STARTY .lt. 0.0d0) then
             STARTY = STARTY + OUTPARMS(3)
         end if
         !╰────────────────────────────────────────────────╯!
