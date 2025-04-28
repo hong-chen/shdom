@@ -280,6 +280,8 @@ subroutine shd_solv__solveRte(&
             ! Find the maximum splitting criterion over all processors
             call shd_mpi__findTotSplitCritMax(SPLITCRIT)
             if (SOLCRIT .le. ENDADAPTSOL) SPLITTESTING = .false.
+        else
+            DOSPLIT = .false.
         end if
 
         ! Find the SH truncation to use for the radiance (RSHPTR)
@@ -336,7 +338,7 @@ subroutine shd_solv__solveRte(&
 
         ! Print out the log solution criterion, number of points,
         !   and average SH truncation.
-        if (SPLITTESTING) then
+        if (DOSPLIT) then
             write (6, '("S",1X,I4,2X,F7.3,2X,E10.3,1X,I8,1X,I8,1X,F8.2,2X,F6.2," sec")')&
                 &ITER, log10(max(SOLCRIT, 1.0e-20)),&
                 &SPLITCRIT,&
