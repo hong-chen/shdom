@@ -336,7 +336,7 @@ program shdom_main
     REDUCE_RATIO = min(1.0, ((MAX_TOTAL_MB*1024**2)/4 - MEMWORD)/WANTMEM)
 
     ADAPT_GRID_FACTOR = ADAPT_GRID_FACTOR*REDUCE_RATIO
-    if (ADAPT_GRID_FACTOR .lt. 1.0) then
+    if (ADAPT_GRID_FACTOR .lt. 0.999999999d0) then
         write (6, '(A)') 'Error [shdom_main]: MAX_TOTAL_MB memory limit exceeded with just base grid.'
         stop
     end if
