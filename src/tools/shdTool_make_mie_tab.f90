@@ -25,8 +25,8 @@ program make_mie_table
     real    :: WAVELEN1, WAVELEN2, DELTAWAVE, PARDENS
     real    :: SRETAB, ERETAB, ALPHA, GAMMA, MAXRADIUS
     complex :: RINDEX
-    character(LEN=1) :: PARTYPE, AVGFLAG, DISTFLAG
-    character(LEN=256) :: MIETABFILE
+    character(len=1) :: PARTYPE, AVGFLAG, DISTFLAG
+    character(len=256) :: MIETABFILE
     integer :: NSIZE, MAXRANK, I, J, L, NL
     real    :: PI, WAVELENCEN, XMAX, REFF, SCATTER
     integer, allocatable :: NRANK1(:), NRANK(:)
@@ -135,13 +135,13 @@ subroutine USER_INPUT(POLTAB, WAVELEN1, WAVELEN2, PARTYPE, RINDEX, PARDENS,&
     & NRETAB, SRETAB, ERETAB, LOGRE, MAXRADIUS, MIETABFILE)
     ! Reads the input parameters from the standard input
     implicit none
-    integer, intent(OUT) :: NRETAB
-    logical, intent(OUT) :: POLTAB, LOGRE
-    real, intent(OUT) :: WAVELEN1, WAVELEN2, DELTAWAVE, PARDENS
-    real, intent(OUT) :: SRETAB, ERETAB, ALPHA, GAMMA, MAXRADIUS
-    complex, intent(OUT) :: RINDEX
-    character(LEN=1), intent(OUT) :: PARTYPE, AVGFLAG, DISTFLAG
-    character(LEN=256), intent(OUT) :: MIETABFILE
+    integer, intent(out) :: NRETAB
+    logical, intent(out) :: POLTAB, LOGRE
+    real, intent(out) :: WAVELEN1, WAVELEN2, DELTAWAVE, PARDENS
+    real, intent(out) :: SRETAB, ERETAB, ALPHA, GAMMA, MAXRADIUS
+    complex, intent(out) :: RINDEX
+    character(len=1), intent(out) :: PARTYPE, AVGFLAG, DISTFLAG
+    character(len=256), intent(out) :: MIETABFILE
 
     logical :: VERBOSE=.FALSE.
 
@@ -226,8 +226,8 @@ subroutine GET_NSIZE(SRETAB, MAXRADIUS, WAVELEN, NSIZE)
     ! The formula and spacing in size parameter can be changed to trade
     ! off size distribution integration accuracy vs. computer time.
     implicit none
-    real, intent(IN)  :: SRETAB, MAXRADIUS, WAVELEN
-    integer, intent(OUT) :: NSIZE
+    real, intent(in)  :: SRETAB, MAXRADIUS, WAVELEN
+    integer, intent(out) :: NSIZE
     real    :: TWOPI, RADMIN, RAD, X, DELX, DELRAD, DELRADMAX
 
     TWOPI = 2.0*acos(-1.0)
@@ -251,9 +251,9 @@ subroutine GET_SIZES(SRETAB, MAXRADIUS, WAVELEN, NSIZE, RADII)
     ! The formula and spacing in size parameter can be changed to trade
     ! off size distribution integration accuracy vs. computer time.
     implicit none
-    integer, intent(IN) :: NSIZE
-    real, intent(IN) :: SRETAB, MAXRADIUS, WAVELEN
-    real, intent(OUT) :: RADII(NSIZE)
+    integer, intent(in) :: NSIZE
+    real, intent(in) :: SRETAB, MAXRADIUS, WAVELEN
+    real, intent(out) :: RADII(NSIZE)
     integer :: N
     real    :: TWOPI, RADMIN, RAD, X, DELX, DELRAD, DELRADMAX
 
@@ -280,8 +280,8 @@ subroutine GET_CENTER_WAVELEN(WAVELEN1, WAVELEN2, WAVELENCEN)
     ! blackbody temperature of 270 K is done for an average wavelength
     ! greater than 5 microns.
     implicit none
-    real, intent(IN)  :: WAVELEN1, WAVELEN2
-    real, intent(OUT) :: WAVELENCEN
+    real, intent(in)  :: WAVELEN1, WAVELEN2
+    real, intent(out) :: WAVELENCEN
     real :: WAVECEN, DELWAVE, WAVE, BBTEMP, PLANCK, SUMP, SUMW
 
     if (WAVELEN1 == WAVELEN2) then
@@ -320,9 +320,9 @@ subroutine GET_REFRACT_INDEX(PARTYPE, WAVELEN1, WAVELEN2, RINDEX)
     ! The index of refraction is at -30 C for ice and +10 C for water
     ! (the temperature dependence is important in the microwave).
     implicit none
-    character(LEN=1), intent(IN) :: PARTYPE
-    real, intent(IN) :: WAVELEN1, WAVELEN2
-    complex, intent(OUT) :: RINDEX
+    character(len=1), intent(in) :: PARTYPE
+    real, intent(in) :: WAVELEN1, WAVELEN2
+    complex, intent(out) :: RINDEX
     real :: WAVECEN, WAVECUT, DELWAVE, WAVE, BBTEMP, PLANCK
     real :: MRE, MIM, SUMP, SUMMR, SUMMI, A
 
@@ -374,14 +374,14 @@ subroutine COMPUTE_MIE_ALL_SIZES(AVGFLAG, WAVELEN1, WAVELEN2, DELTAWAVE,&
     ! returned with the product of the phase function times the scattering
     ! coefficient.
     implicit none
-    integer, intent(IN) :: NSIZE, MAXRANK
-    real, intent(IN) :: WAVELEN1, WAVELEN2, DELTAWAVE, WAVELENCEN
-    real, intent(IN) :: RADII(NSIZE)
-    complex, intent(IN) :: RINDEX
-    character(LEN=1), intent(IN) :: AVGFLAG, PARTYPE
-    integer, intent(OUT) :: NRANK1(NSIZE)
-    real, intent(OUT) :: EXTINCT1(NSIZE), SCATTER1(NSIZE)
-    real, intent(OUT) :: WIGCOEF1(6, 0:MAXRANK, NSIZE)
+    integer, intent(in) :: NSIZE, MAXRANK
+    real, intent(in) :: WAVELEN1, WAVELEN2, DELTAWAVE, WAVELENCEN
+    real, intent(in) :: RADII(NSIZE)
+    complex, intent(in) :: RINDEX
+    character(len=1), intent(in) :: AVGFLAG, PARTYPE
+    integer, intent(out) :: NRANK1(NSIZE)
+    real, intent(out) :: EXTINCT1(NSIZE), SCATTER1(NSIZE)
+    real, intent(out) :: WIGCOEF1(6, 0:MAXRANK, NSIZE)
     integer :: I, NL
     real    :: WAVECEN, WAVE, BBTEMP, PLANCK, SUMP, A
     real    :: MRE, MIM, EXT, SCAT, COEF(6, 0:MAXRANK)
@@ -443,10 +443,10 @@ subroutine MAKE_SIZE_DIST(DISTFLAG, PARDENS, NSIZE, RADII, REFF, ALPHA, GAMMA,&
     ! lognormal standard deviation of ALPHA, and mass content of 1 g/m^3.
     ! Also handles modified gamma distributions specified by ALPHA and GAMMA.
     implicit none
-    integer, intent(IN)  :: NSIZE
-    real, intent(IN)  :: RADII(NSIZE), REFF, ALPHA, GAMMA, PARDENS
-    real, intent(OUT) :: ND(NSIZE)
-    character(LEN=1), intent(IN) :: DISTFLAG
+    integer, intent(in)  :: NSIZE
+    real, intent(in)  :: RADII(NSIZE), REFF, ALPHA, GAMMA, PARDENS
+    real, intent(out) :: ND(NSIZE)
+    character(len=1), intent(in) :: DISTFLAG
     real, parameter :: TOL = 0.001 ! fractional tolerance in achieving Reff
     integer :: I
     real    :: TRUERE, F, REHI, RELO, REMID
@@ -510,10 +510,10 @@ subroutine DO_SIZE_DIST(PARDENS, DISTFLAG, ALPHA, GAMMA, RE, NSIZE, RADII,&
     ! gamma, modified gamma, or lognormal size distribution with mass content
     ! of 1 g/m^3.
     implicit none
-    integer, intent(IN) :: NSIZE
-    real, intent(IN) :: PARDENS, ALPHA, GAMMA, RE, RADII(NSIZE)
-    character(LEN=1), intent(IN) :: DISTFLAG
-    real, intent(OUT) :: ND(NSIZE), TRUERE
+    integer, intent(in) :: NSIZE
+    real, intent(in) :: PARDENS, ALPHA, GAMMA, RE, RADII(NSIZE)
+    character(len=1), intent(in) :: DISTFLAG
+    real, intent(out) :: ND(NSIZE), TRUERE
     integer :: J
     real    :: DENS, PI, A, B, LWC, R, DELR, SUM2, SUM3, GAMMLN
 
@@ -561,15 +561,15 @@ subroutine WRITE_MIE_TABLE(MIETABFILE, POLTAB, WAVELEN1, WAVELEN2, DELTAWAVE,&
     ! matrix element (P11) or polarized with six Wigner d-function series
     ! of the Mie phase matrix elements.
     implicit none
-    integer, intent(IN) :: NRETAB, MAXRANK, NRANK(NRETAB)
-    logical, intent(IN) :: POLTAB, LOGRE
-    complex, intent(IN) :: RINDEX
-    real, intent(IN) :: WAVELEN1, WAVELEN2, DELTAWAVE
-    real, intent(IN) :: PARDENS, SRETAB, ERETAB, ALPHA, GAMMA
-    real, intent(IN) :: EXTINCT(NRETAB), SSALB(NRETAB)
-    real, intent(IN) :: WIGCOEF(6, 0:MAXRANK, NRETAB)
-    character(LEN=1), intent(IN) :: PARTYPE, DISTFLAG
-    character(LEN=256), intent(IN) :: MIETABFILE
+    integer, intent(in) :: NRETAB, MAXRANK, NRANK(NRETAB)
+    logical, intent(in) :: POLTAB, LOGRE
+    complex, intent(in) :: RINDEX
+    real, intent(in) :: WAVELEN1, WAVELEN2, DELTAWAVE
+    real, intent(in) :: PARDENS, SRETAB, ERETAB, ALPHA, GAMMA
+    real, intent(in) :: EXTINCT(NRETAB), SSALB(NRETAB)
+    real, intent(in) :: WIGCOEF(6, 0:MAXRANK, NRETAB)
+    character(len=1), intent(in) :: PARTYPE, DISTFLAG
+    character(len=256), intent(in) :: MIETABFILE
     integer :: I, J, JP, K, L, NL, NPHASEPOL
     real REFF
 

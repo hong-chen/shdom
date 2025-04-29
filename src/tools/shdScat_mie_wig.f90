@@ -24,7 +24,7 @@ subroutine MIE_ONE(WAVELENGTH, MINDEX, RADIUS,&
     save MU, WTS, LASTNQUAD
     data LASTNQUAD/-1/
 
-    PI = acos(-1.0d0)
+    PI = dacos(-1.0d0)
     X = 2.0d0*PI*RADIUS/WAVELENGTH
     GEOMAREA = PI*RADIUS**2
     MSPHERE = MINDEX
@@ -62,10 +62,10 @@ subroutine MIE_ONE(WAVELENGTH, MINDEX, RADIUS,&
 
         ! Calculate the Wigner functions D20, D22, D2-2 and D00 for
         !   l=0 to NRANK for MU(I)
-        call WIGNERFCT(MU(I), NRANK, 0, 0, D00)
-        call WIGNERFCT(MU(I), NRANK, 2, 2, D22P)
+        call WIGNERFCT( MU(I), NRANK, 0, 0, D00)
+        call WIGNERFCT( MU(I), NRANK, 2, 2, D22P)
         call WIGNERFCT(-MU(I), NRANK, 2, 2, D22M)
-        call WIGNERFCT(MU(I), NRANK, 2, 0, D20)
+        call WIGNERFCT( MU(I), NRANK, 2, 0, D20)
         ! Calculate the series expansion coefficients
         do L = 0, NRANK
             F = (-1.0d0)**L
@@ -105,7 +105,7 @@ subroutine MIECALC(NTERMS, X, MN, A, B)
     integer MAXTERMS, NSTOP, N, NN
     parameter(MAXTERMS=10000)
     double precision PSIN, PSIM, CHIN, CHIM, TMP
-    double precision DCOS, DSIN
+    double precision dcos, dsin
     double complex M, Y, D(MAXTERMS + 15), XIN, XIM, CTMP
     double complex DCMPLX
 
@@ -122,16 +122,16 @@ subroutine MIECALC(NTERMS, X, MN, A, B)
     NN = NTERMS + 15
     D(NN) = DCMPLX(0.0d0, 0.0d0)
     do N = NN, 2, -1
-        D(N - 1) = N/Y - 1.0/(D(N) + N/Y)
+        D(N - 1) = N/Y - 1.0d0/(D(N) + N/Y)
     end do
 
     ! Generate the PSIn's and XIn'S by upward recurrence
     !   and calculate the An's and Bn's from them.
     !   (PSIN = PSI(n), PSIM = PSI(n-1), same for CHI)
-    PSIM = DCOS(X)
-    PSIN = DSIN(X)
-    CHIM = -DSIN(X)
-    CHIN = DCOS(X)
+    PSIM =  dcos(X)
+    PSIN =  dsin(X)
+    CHIM = -dsin(X)
+    CHIN =  dcos(X)
     do N = 1, NTERMS
         TMP = PSIN
         PSIN = (2*N - 1)/X*PSIN - PSIM
@@ -168,7 +168,7 @@ subroutine MIECROSS(NTERMS, X, A, B, QEXT, QSCAT)
         SUM2 = SUM2 + (2*N + 1)*(DREAL(A(N)*DCONJG(A(N)))&
             & + DREAL(B(N)*DCONJG(B(N))))
     end do
-    QEXT = 2.0d0/X**2*SUM1
+    QEXT  = 2.0d0/X**2*SUM1
     QSCAT = 2.0d0/X**2*SUM2
 
     return
@@ -191,8 +191,8 @@ subroutine MIEANGLE(NTERMS, A, B, MU, P1, P2, P3, P4)
     S1 = DCMPLX(0.0, 0.0)
     S2 = DCMPLX(0.0, 0.0)
     ! Sum up the series using the An's and Bn's
-    PIN = 1.0
-    PIM = 0.0
+    PIN = 1.0d0
+    PIM = 0.0d0
     do N = 1, NTERMS
         TAUN = N*MU*PIN - (N + 1)*PIM
         ! Calculate the scattering functions at +mu and -mu
@@ -206,9 +206,9 @@ subroutine MIEANGLE(NTERMS, A, B, MU, P1, P2, P3, P4)
         PIM = TMP
     end do
     ! Calculate the first Stokes parameter scattering matrix eleme
-    P1 = 0.5*(CDABS(S2)**2 + CDABS(S1)**2)
-    P2 = 0.5*(CDABS(S2)**2 - CDABS(S1)**2)
-    P3 = DREAL(DCONJG(S1)*S2)
+    P1 = 0.5d0*(CDABS(S2)**2 + CDABS(S1)**2)
+    P2 = 0.5d0*(CDABS(S2)**2 - CDABS(S1)**2)
+    P3 =  DREAL(DCONJG(S1)*S2)
     P4 = -DIMAG(DCONJG(S1)*S2)
     return
 end subroutine
