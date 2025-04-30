@@ -59,9 +59,16 @@ subroutine shd_sfc__interpSfc(&
 
     ! Loop over all bottom points
     do IBC = 1, NBOTPTS
+
         I = BCPTR(IBC)
+
+        ! added half dx,dy (DELX_/2.0, DELY_/2.0) to
+        ! find surface point that is closest to grid center
+        !╭────────────────────────────────────────────────╮!
         RX = (GRIDPOS(1, I) + DELX_/2.0) / DELXSFC
         RY = (GRIDPOS(2, I) + DELY_/2.0) / DELYSFC
+        !╰────────────────────────────────────────────────╯!
+
         IX = max(1, min(NXSFC, int(RX) + 1))
         IY = max(1, min(NYSFC, int(RY) + 1))
         U = max(0.0, min(1.0, RX - (IX - 1)))
@@ -71,15 +78,15 @@ subroutine shd_sfc__interpSfc(&
             ! bi-linear interpolation
             !╭────────────────────────────────────────────────╮!
             SFCGRIDPARMS(J, IBC) =&
-                &  (1 - U)*(1 - V)*SFCPARMS(J,   IX, IY)&
-                &+ (1 - U)*      V*SFCPARMS(J,   IX, IY+1)&
-                &+       U*(1 - V)*SFCPARMS(J, IX+1, IY)&
-                &+       U*      V*SFCPARMS(J, IX+1, IY+1)
+                &  (1.0 - U)*(1.0 - V)*SFCPARMS(J, IX  , IY)&
+                &+ (1.0 - U)*       V *SFCPARMS(J, IX  , IY+1)&
+                &+        U *(1.0 - V)*SFCPARMS(J, IX+1, IY)&
+                &+        U *       V *SFCPARMS(J, IX+1, IY+1)
             !╰────────────────────────────────────────────────╯!
 
-            ! placeholder for nearest interpolation
+            ! nearest interpolation
             !╭────────────────────────────────────────────────╮!
-            !SFCGRIDPARMS(J, IBC) = SFCPARMS(J,   IX, IY)
+            !SFCGRIDPARMS(J, IBC) = SFCPARMS(J, IX, IY)
             !╰────────────────────────────────────────────────╯!
         end do
 
