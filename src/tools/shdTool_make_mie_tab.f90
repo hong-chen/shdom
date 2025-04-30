@@ -84,9 +84,9 @@ program make_mie_table
         if (NRETAB <= 1) then
             REFF = SRETAB
         else if (LOGRE) then
-            REFF = exp((log(ERETAB) - log(SRETAB))*FLOAT(I - 1)/(NRETAB - 1) + log(SRETAB))
+            REFF = exp((log(ERETAB) - log(SRETAB))*float(I - 1)/(NRETAB - 1) + log(SRETAB))
         else
-            REFF = (ERETAB - SRETAB)*FLOAT(I - 1)/(NRETAB - 1) + SRETAB
+            REFF = (ERETAB - SRETAB)*float(I - 1)/(NRETAB - 1) + SRETAB
         end if
 
         ! Calculate the discrete size number concentrations (ND), which vary
@@ -602,9 +602,9 @@ subroutine WRITE_MIE_TABLE(MIETABFILE, POLTAB, WAVELEN1, WAVELEN2, DELTAWAVE,&
         if (NRETAB <= 1) then
             REFF = SRETAB
         else if (LOGRE) then
-            REFF = exp((log(ERETAB) - log(SRETAB))*FLOAT(I - 1)/(NRETAB - 1) + log(SRETAB))
+            REFF = exp((log(ERETAB) - log(SRETAB))*float(I - 1)/(NRETAB - 1) + log(SRETAB))
         else
-            REFF = (ERETAB - SRETAB)*FLOAT(I - 1)/(NRETAB - 1) + SRETAB
+            REFF = (ERETAB - SRETAB)*float(I - 1)/(NRETAB - 1) + SRETAB
         end if
         write (3, '(1X,F8.4,1X,E12.5,1X,F8.6,1X,I6,A)')&
             & REFF, EXTINCT(I), SSALB(I), NRANK(I), '  Reff  Ext  Alb  Nrank'
