@@ -651,17 +651,17 @@ contains
         PRES = RAYSFCPRES
         TS = TEMP(1)
         LAPSE = 6.5*0.001
-        PRES = PRES*(TS/(TS + LAPSE*ZLEVELS(1)*1000.))**(9.8/(287.*LAPSE))
+        PRES = PRES*(TS/(TS + LAPSE*ZLEVELS(1)*1000.0))**(9.80665/(287.052874*LAPSE))
 
         ! Use layer mean temperature to compute fractional pressure change.
         do I = 1, NZT - 1
             EXTRAYL(I) = RAYLCOEF*PRES/TEMP(I)
-            DZ = 1000.*(ZLEVELS(I + 1) - ZLEVELS(I))
+            DZ = 1000.0*(ZLEVELS(I + 1) - ZLEVELS(I))
             LAPSE = (TEMP(I) - TEMP(I + 1))/DZ
             if (abs(LAPSE) .gt. 0.00001) then
-                PRES = PRES*(TEMP(I + 1)/TEMP(I))**(9.8/(287.*LAPSE))
+                PRES = PRES*(TEMP(I + 1)/TEMP(I))**(9.80665/(287.052874*LAPSE))
             else
-                PRES = PRES*exp(-9.8*DZ/(287.*TEMP(I)))
+                PRES = PRES*exp(-9.80665*DZ/(287.052874*TEMP(I)))
             end if
         end do
         EXTRAYL(NZT) = RAYLCOEF*PRES/TEMP(NZT)
