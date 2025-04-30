@@ -1,6 +1,7 @@
 module shd_sfc
 
     use globals
+    use globals_prp
     use shd_util
 
     implicit none
@@ -50,7 +51,7 @@ subroutine shd_sfc__interpSfc(&
     integer NBOTPTS, BCPTR(*), NXSFC, NYSFC, NSFCPAR
     real WAVENO(2), WAVELEN
     real DELXSFC, DELYSFC
-    real GRIDPOS(3, *), SFCPARMS(NSFCPAR, NXSFC + 1, NYSFC + 1)
+    real GRIDPOS(3, *), SFCPARMS(NSFCPAR, NXSFC+1, NYSFC+1)
     real SFCGRIDPARMS(NSFCPAR, NBOTPTS)
     character(len=1) :: SRCTYPE, UNITS
     integer I, IBC, IX, IY, J
@@ -59,30 +60,38 @@ subroutine shd_sfc__interpSfc(&
     ! Loop over all bottom points
     do IBC = 1, NBOTPTS
         I = BCPTR(IBC)
-        RX = GRIDPOS(1, I)/DELXSFC
-        RY = GRIDPOS(2, I)/DELYSFC
+        RX = (GRIDPOS(1, I) + DELX_/2.0) / DELXSFC
+        RY = (GRIDPOS(2, I) + DELY_/2.0) / DELYSFC
         IX = max(1, min(NXSFC, int(RX) + 1))
         IY = max(1, min(NYSFC, int(RY) + 1))
-        !IX = max(1, min(NXSFC, int(RX)))
-        !IY = max(1, min(NYSFC, int(RY)))
         U = max(0.0, min(1.0, RX - (IX - 1)))
         V = max(0.0, min(1.0, RY - (IY - 1)))
 
         do J = 1, NSFCPAR
+            ! bi-linear interpolation
+            !╭────────────────────────────────────────────────╮!
             SFCGRIDPARMS(J, IBC) =&
                 &  (1 - U)*(1 - V)*SFCPARMS(J,   IX, IY)&
                 &+ (1 - U)*      V*SFCPARMS(J,   IX, IY+1)&
                 &+       U*(1 - V)*SFCPARMS(J, IX+1, IY)&
                 &+       U*      V*SFCPARMS(J, IX+1, IY+1)
-            !SFCGRIDPARMS(J, IBC) = SFCPARMS(J, IX, IY)
+            !╰────────────────────────────────────────────────╯!
+
+            ! placeholder for nearest interpolation
+            !╭────────────────────────────────────────────────╮!
+            !SFCGRIDPARMS(J, IBC) = SFCPARMS(J,   IX, IY)
+            !╰────────────────────────────────────────────────╯!
         end do
+
         if (SRCTYPE .eq. 'S') then
             PLANCK = 0.0
         else
             TEMP = SFCGRIDPARMS(1, IBC)
             call shd_util__computePlanck(TEMP, UNITS, WAVENO, WAVELEN, PLANCK)
         end if
+
         SFCGRIDPARMS(1, IBC) = PLANCK
+
     end do
 
     return
