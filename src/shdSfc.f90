@@ -63,12 +63,18 @@ subroutine shd_sfc__interpSfc(&
         RY = GRIDPOS(2, I)/DELYSFC
         IX = max(1, min(NXSFC, int(RX) + 1))
         IY = max(1, min(NYSFC, int(RY) + 1))
+        !IX = max(1, min(NXSFC, int(RX)))
+        !IY = max(1, min(NYSFC, int(RY)))
         U = max(0.0, min(1.0, RX - (IX - 1)))
         V = max(0.0, min(1.0, RY - (IY - 1)))
+
         do J = 1, NSFCPAR
-            SFCGRIDPARMS(J, IBC) = (1 - U)*(1 - V)*SFCPARMS(J, IX, IY)&
-                &+ (1 - U)*V*SFCPARMS(J, IX, IY + 1)&
-                &+ U*(1 - V)*SFCPARMS(J, IX + 1, IY) + U*V*SFCPARMS(J, IX + 1, IY + 1)
+            SFCGRIDPARMS(J, IBC) =&
+                &  (1 - U)*(1 - V)*SFCPARMS(J,   IX, IY)&
+                &+ (1 - U)*      V*SFCPARMS(J,   IX, IY+1)&
+                &+       U*(1 - V)*SFCPARMS(J, IX+1, IY)&
+                &+       U*      V*SFCPARMS(J, IX+1, IY+1)
+            !SFCGRIDPARMS(J, IBC) = SFCPARMS(J, IX, IY)
         end do
         if (SRCTYPE .eq. 'S') then
             PLANCK = 0.0

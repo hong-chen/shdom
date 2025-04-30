@@ -711,13 +711,13 @@ contains
         integer :: J, L
         real(8) :: RD, MU, SUM, PL, PL1, PL2
 
-        RD = acos(-1.0d0)/180.d0
+        RD = dacos(-1.0d0)/180.d0
         do J = 1, NANGLES
-            MU = cos(RD*J*180.d0/NANGLES)
-            SUM = 0.0
+            MU = dcos(RD*J*180.d0/NANGLES)
+            SUM = 0.0d0
             ! Use upward recurrence to find Legendre polynomials
-            PL1 = 1.0
-            PL = 1.0
+            PL1 = 1.0d0
+            PL = 1.0d0
             do L = 0, NCOEF
                 if (L .gt. 0) PL = (2*L - 1)*MU*PL1/L - (L - 1)*PL2/L
                 SUM = SUM + LEGCOEF(L)*PL
