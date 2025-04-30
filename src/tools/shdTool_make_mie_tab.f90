@@ -606,7 +606,7 @@ subroutine WRITE_MIE_TABLE(MIETABFILE, POLTAB, WAVELEN1, WAVELEN2, DELTAWAVE,&
         else
             REFF = (ERETAB - SRETAB)*float(I - 1)/(NRETAB - 1) + SRETAB
         end if
-        write (3, '(1X,F8.4,1X,E12.5,1X,F8.6,1X,I6,A)')&
+        write (3, '(1X,F8.4,1X,E15.6,1X,F15.12,1X,I6,A)')&
             & REFF, EXTINCT(I), SSALB(I), NRANK(I), '  Reff  Ext  Alb  Nrank'
         do J = 1, NPHASEPOL
 
