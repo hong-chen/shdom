@@ -242,7 +242,7 @@ contains
 
     subroutine READ_PARTICLE_FILE(PARFILE, NX, NY, NZP, NSCATTAB, PARTYPES, &
                                   DELX, DELY, ZPAR, TEMPPAR, &
-                                  NCOMP, PTYPE, MASSCONT, REFF, ISEXT)
+                                  NCOMP, PTYPE, MASSCONT, REFF, CKDFILE, ISEXT)
         ! Reads the particle physical properties file.  The file contains a header
         ! containing the array size (NX,NY,NZP), heights (ZPAR), and
         ! temperature profile (TEMPPAR).  Then each row has format:
@@ -257,6 +257,7 @@ contains
         real, intent(out) :: DELX, DELY, ZPAR(NZP), TEMPPAR(NZP)
         integer, intent(out) :: NCOMP(NZP, NY, NX), PTYPE(NSCATTAB, NZP, NY, NX)
         real, intent(out) :: MASSCONT(NSCATTAB, NZP, NY, NX), REFF(NSCATTAB, NZP, NY, NX)
+        character(len=256), intent(out) :: CKDFILE
         logical, intent(out) :: ISEXT
         integer :: I, FILEKIND, IX, IY, IZ, NC, PT(NSCATTAB)
         real    :: MASS(NSCATTAB), RE(NSCATTAB)
@@ -266,6 +267,7 @@ contains
         integer :: NXX, NYY, NZZ, NPP
 
         ISEXT = .FALSE.
+        CKDFILE = 'NONE'
 
         ! Initialize the output arrays (in case there are missing grid points)
         NCOMP(:, :, :) = 0
@@ -298,6 +300,9 @@ contains
                 read (DIMS_CHAR(10:15), '(I6)') NYY
                 read (DIMS_CHAR(17:22), '(I6)') NZZ
                 read (DIMS_CHAR(24:29), '(I6)') NPP
+
+                read (2, '(A)') CKDFILE
+                CKDFILE = trim(adjustl(CKDFILE(2:)))
 
                 OUTFILE_DATA = trim(adjustl(PARFILE))//trim(adjustl(DATA_POSTFIX(2:)))
 
@@ -665,7 +670,73 @@ contains
             end if
         end do
         EXTRAYL(NZT) = RAYLCOEF*PRES/TEMP(NZT)
+
     end subroutine RAYLEIGH_EXTINCT
+
+    subroutine RAYLEIGH_EXTINCT_FROM_CKD(CKDFILE, NZT, ZLEVELS, EXTRAYL)
+        ! Computes the molecular Rayleigh extinction profile EXTRAYL [/km]
+        ! from the temperature profile TEMP [K] at ZLEVELS [km].  Assumes
+        ! a linear lapse rate between levels to compute the pressure at
+        ! each level starting with the SFCPRES [mb].  The Rayleigh extinction is
+        ! proportional to air density, with the coefficient RAYLCOEF in [K/(mb km)].
+        implicit none
+        character(len=*), intent(in) :: CKDFILE
+        integer, intent(in) :: NZT
+        real, intent(in) :: ZLEVELS(NZT)
+        real, intent(out) :: EXTRAYL(NZT)
+        integer :: I, IZ, IL, IU, IM, NZCKD
+        real, allocatable :: ZCKD(:), EXTRAY(:)
+        double precision :: W0
+
+        EXTRAYL = 0.0
+
+        ! read rayleigh extinction from CKDFILE
+        !╭────────────────────────────────────────────────╮!
+        open (UNIT=1, FILE=trim(adjustl(CKDFILE)), STATUS='OLD')
+        read (1, *)
+        read (1, *)
+        read (1, *)
+        read (1, *)
+        read (1, *) NZCKD
+
+        allocate(ZCKD(NZCKD), EXTRAY(NZCKD))
+
+        read (1, *)
+        read (1, *)
+        do IZ = 1, NZCKD
+            read (1, *) ZCKD(IZ), EXTRAY(IZ)
+        end do
+
+        close(1)
+        !╰────────────────────────────────────────────────╯!
+
+        ! interpolate
+        !╭────────────────────────────────────────────────╮!
+        do IZ = 1, NZT
+            if (NZCKD .gt. 0) then
+                IL = 1
+                IU = NZCKD
+                do while (IU - IL .gt. 1)
+                    IM = (IU + IL)/2
+                    if (ZLEVELS(IZ) .le. ZCKD(IM)) then
+                        IL = IM
+                    else
+                        IU = IM
+                    end if
+                end do
+                I = min(max(IL, 1), NZCKD - 1)
+                W0 = (ZLEVELS(IZ) - ZCKD(I))/(ZCKD(I + 1) - ZCKD(I))
+                W0 = min(max(W0, 0.0d0), 1.0d0)
+                EXTRAYL(IZ) = (1.0 - W0)*EXTRAY(I) + W0*EXTRAY(I + 1)
+            else
+                EXTRAYL(IZ) = 0.0
+            end if
+        end do
+        !╰────────────────────────────────────────────────╯!
+
+        deallocate(ZCKD, EXTRAY)
+
+    end subroutine RAYLEIGH_EXTINCT_FROM_CKD
 
     subroutine RAYLEIGH_PHASE_FUNCTION(WAVELEN, NPHASEPOL, MAXCOEF, &
                                        NCOEF, RAYWIGCOEF)
@@ -823,7 +894,9 @@ contains
 end module propgen_comb
 
 program propgen
+
     use propgen_comb
+
     implicit none
     integer :: NSCATTAB, MAXNEWPHASE, NZO
     real    :: ASYMTOL, FRACPHASETOL, RAYWAVELEN, RAYSFCPRES
@@ -832,6 +905,7 @@ program propgen
     real, pointer :: ZOTHER(:), TEMPOTHER(:)
     character(len=256), pointer :: SCATTABFILES(:)
     character(len=256) :: PARFILE, PROPFILE
+    character(len=256) :: CKDFILE
     character(len=1) :: POLOUT
     integer, parameter :: NANGLES = 90
     integer :: NTYPES, NENTRIES, MAXNPHASE, NPHASE, NPHASEPOL
@@ -922,7 +996,7 @@ program propgen
         allocate (MASSCONT(NSCATTAB, NZP, NY, NX), REFF(NSCATTAB, NZP, NY, NX))
         call READ_PARTICLE_FILE(PARFILE, NX, NY, NZP, NSCATTAB, PARTYPES, &
                                 DELX, DELY, ZPAR, TEMPPAR, &
-                                NCOMP, PTYPE, MASSCONT, REFF, ISEXT)
+                                NCOMP, PTYPE, MASSCONT, REFF, CKDFILE, ISEXT)
     else
         NX = 1; NY = 1; NZP = 0
         DELX = 1.0; DELY = 1.0
@@ -934,17 +1008,25 @@ program propgen
     call ORGANIZE_LEVELS(NZP, ZPAR, TEMPPAR, NZO, ZOTHER, TEMPOTHER, &
                          NZT, ZLEVELS, TEMP, IPARLEV)
 
-    ! Use the parameterization of Bodhaine et al. (1999) eq 30 for tau_R at
-    ! sea level and convert to Rayleigh density coefficient:
-    !   k = 0.03370*(p_sfc/1013.25)*tau_R  for k in K/(mb km) (from assumptions in RAYLEIGH_EXTINCT)
-    RAYLCOEF = 0.03370*(RAYSFCPRES/1013.25)*0.0021520 &
-               *(1.0455996 - 341.29061/RAYWAVELEN**2 - 0.90230850*RAYWAVELEN**2) &
-               /(1 + 0.0027059889/RAYWAVELEN**2 - 85.968563*RAYWAVELEN**2)
+    if (ISEXT) then
 
-    if (VERBOSE) write (*, *) 'Rayleigh total atmosphere optical depth: ', RAYLCOEF/0.03370
+        call RAYLEIGH_EXTINCT_FROM_CKD(CKDFILE, NZT, ZLEVELS, EXTRAYL)
 
-    ! Compute the molecular Rayleigh scattering extinction profile
-    call RAYLEIGH_EXTINCT(NZT, ZLEVELS, TEMP, RAYSFCPRES, RAYLCOEF, EXTRAYL)
+    else
+
+        ! Use the parameterization of Bodhaine et al. (1999) eq 30 for tau_R at
+        ! sea level and convert to Rayleigh density coefficient:
+        !   k = 0.03370*(p_sfc/1013.25)*tau_R  for k in K/(mb km) (from assumptions in RAYLEIGH_EXTINCT)
+        RAYLCOEF = 0.03370*(RAYSFCPRES/1013.25)*0.0021520 &
+                   *(1.0455996 - 341.29061/RAYWAVELEN**2 - 0.90230850*RAYWAVELEN**2) &
+                   /(1 + 0.0027059889/RAYWAVELEN**2 - 85.968563*RAYWAVELEN**2)
+
+        if (VERBOSE) write (*, *) 'Rayleigh total atmosphere optical depth: ', RAYLCOEF/0.03370
+
+        ! Compute the molecular Rayleigh scattering extinction profile
+        call RAYLEIGH_EXTINCT(NZT, ZLEVELS, TEMP, RAYSFCPRES, RAYLCOEF, EXTRAYL)
+
+    end if
 
     allocate (ASYM(0:MAXNPHASE), PHASE(NANGLES, 0:MAXNPHASE))
     NPHASE = NENTRIES
