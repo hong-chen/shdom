@@ -688,8 +688,6 @@ contains
         real, allocatable :: ZCKD(:), EXTRAY(:)
         double precision :: W0
 
-        EXTRAYL = 0.0
-
         ! read rayleigh extinction from CKDFILE
         !╭────────────────────────────────────────────────╮!
         open (UNIT=1, FILE=trim(adjustl(CKDFILE)), STATUS='OLD')
@@ -712,6 +710,8 @@ contains
 
         ! interpolate
         !╭────────────────────────────────────────────────╮!
+        EXTRAYL = 0.0
+
         do IZ = 1, NZT
             if (NZCKD .gt. 0) then
                 IL = 1
