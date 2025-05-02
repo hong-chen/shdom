@@ -48,15 +48,15 @@ if ($MakeMieTable) then
 
   set alpha=7 i       # gamma dist shape parameter
 
-  set Nretab=50       # number of effective radius in table
+  set Nretab=25       # number of effective radius in table
 
-  set Sretab=0.5
+  set Sretab=1
 
   set Eretab=25       # starting, ending effective radius (micron)
 
   set logre=F         # evenly spaced r_e
 
-  set maxradius=75
+  set maxradius=50
 
   set avgflag=C       #  C for using central wavelength
 
@@ -83,9 +83,9 @@ if ($MakePropertyFile) then
 
   set sfcpres=1013.0
 
-  set Nzother=6
+  set Nzother=5
 
-  set ZTother=(0.0 286.3  5.0 285.1  6.0 283.8  8.0 287.0 12.0 260.0  20.0 180.0)
+  set ZTother=(0.0000e+00 2.8820e+02 8.0000e+00 2.4920e+02  1.2000e+01 2.2330e+02  1.6000e+01 2.1670e+02  2.0000e+01 2.1670e+02)
 
   set polout=U
 
@@ -95,11 +95,5 @@ if ($MakePropertyFile) then
 
 endif
 
-set Nx=`$AWK 'BEGIN {getline; getline; print $1;}' $prpfile`
-set Ny=`$AWK 'BEGIN {getline; getline; print $2;}' $prpfile`
-set Nz=`$AWK 'BEGIN {getline; getline; print $3;}' $prpfile`
-
-echo $Nx
-echo $Ny
-echo $Nz
+echo "Message [01_gen.sh]: Auxiliary files have been successfully generated under <tmp-data>."
 exit
