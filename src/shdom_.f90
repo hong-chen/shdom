@@ -560,6 +560,9 @@ program shdom_main
 
     ! Loop over the k-distribution g's from high to low absorption
     do IG = NG, 1, -1
+
+        write (6, '(A,I2,A,I2,A)') 'Message [shdom_main]: Starting ', IG, '/', NG, ' (ig/Ng) ...'
+
         ! If doing k-distribution then get the gas absorption profile.
         if (KDIST) then
             do I = 1, NZCKD_
