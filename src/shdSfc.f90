@@ -62,12 +62,17 @@ subroutine shd_sfc__interpSfc(&
 
         I = BCPTR(IBC)
 
-        ! added half dx,dy (DELX_/2.0, DELY_/2.0) to
-        ! find surface point that is closest to grid center
-        !╭────────────────────────────────────────────────╮!
-        RX = (GRIDPOS(1, I) + DELX_/2.0) / DELXSFC
-        RY = (GRIDPOS(2, I) + DELY_/2.0) / DELYSFC
-        !╰────────────────────────────────────────────────╯!
+        if ((NPX_ .gt. 1) .and. (NPY_ .gt. 1) .and. (NXSFC .gt. 1) .and. (NYSFC .gt. 1)) then
+            ! added half dx,dy (DELX_/2.0, DELY_/2.0) to
+            ! find surface point that is closest to grid center
+            !╭────────────────────────────────────────────────╮!
+            RX = (GRIDPOS(1, I) + DELX_/2.0) / DELXSFC
+            RY = (GRIDPOS(2, I) + DELY_/2.0) / DELYSFC
+            !╰────────────────────────────────────────────────╯!
+        else
+            RX = (GRIDPOS(1, I)) / DELXSFC
+            RY = (GRIDPOS(2, I)) / DELYSFC
+        end if
 
         IX = max(1, min(NXSFC, int(RX) + 1))
         IY = max(1, min(NYSFC, int(RY) + 1))

@@ -1000,6 +1000,8 @@ program propgen
     else
         NX = 1; NY = 1; NZP = 0
         DELX = 1.0; DELY = 1.0
+        ISEXT = .FALSE.
+        CKDFILE = 'NONE'
     end if
 
     ! Combine the particle levels and extra levels
