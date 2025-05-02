@@ -6,4 +6,3 @@ Tabulated phase function property file
 ! The following provides information for interpreting binary data:
 ! .sHdOm-prp
 !      1,     1,    10,     4
-! ../../data/shdom-ckd_modis-aqua-b01.txt
