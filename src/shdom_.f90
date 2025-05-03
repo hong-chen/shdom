@@ -17,7 +17,7 @@ program shdom_main
 
     implicit none
     ! Number of output files and inputs parameter per file
-    integer, parameter :: MAXOUT = 20, MAXPAR = 500
+    integer, parameter :: MAXOUT = 20, MAXPAR = 88888
     real      :: OUTPARMS(MAXPAR, MAXOUT)
     character(len=1) :: OUTTYPES(MAXOUT)
     character(len=FNAMEMAXLEN_) :: OUTFILES(MAXOUT)

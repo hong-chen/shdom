@@ -734,7 +734,7 @@ subroutine shd_rad__computeRad(&
         !╰────────────────────────────────────────────────╯!
 
         if (MUOUT .eq. 0.0 .or. abs(MUOUT) .gt. 1.0) then
-            write (6, *) 'Warning [_computeRad]: Bad mu for radiance', MUOUT
+            write (6, *) 'Warning [_computeRad]: Bad mu for radiance', IANG, MUOUT, PHID
         else
 
             ! Compute the source function throughout grid for this angle
