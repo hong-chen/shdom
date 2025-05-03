@@ -66,11 +66,11 @@ subroutine shd_sfc__interpSfc(&
             &(NXSFC .gt. 1) .and. (NYSFC .gt. 1) .and.&
             &(abs(DELX_-DELXSFC) .gt. 1.0e-6) .or.&
             &(abs(DELY_-DELYSFC) .gt. 1.0e-6)) then
-            ! added half dx,dy (DELX_/2.0, DELY_/2.0) to
+            ! added half dx,dy (DELX_/2.0-DELXSFC/2.0, DELY_/2.0-DELYSFC/2.0) to
             ! find surface point that is closest to grid center
             !╭────────────────────────────────────────────────╮!
-            RX = (GRIDPOS(1, I) + DELX_/2.0) / DELXSFC
-            RY = (GRIDPOS(2, I) + DELY_/2.0) / DELYSFC
+            RX = (GRIDPOS(1, I) + DELX_/2.0 - DELXSFC/2.0) / DELXSFC
+            RY = (GRIDPOS(2, I) + DELY_/2.0 - DELYSFC/2.0) / DELYSFC
             !╰────────────────────────────────────────────────╯!
         else
             RX = (GRIDPOS(1, I)) / DELXSFC
