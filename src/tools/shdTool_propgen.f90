@@ -747,6 +747,10 @@ contains
         ! Radiative Transfer and Coherent Backscattering", Cambridge, 2006.
         ! Thanks to Adrian Doicu.   WAVELEN is the wavelength in microns.
         ! NPHASEPOL=1 for the scalar case, and 6 for the phase matrix case.
+        ! Reference:
+        ! Section 5.1.1.3, Eq(5.13 - 5.23) in Stefano Corradini's PHD thesis:
+        !   Aerosol extinction coefficient profile retrieval procedure for satellite
+        !   measurements in multiple scattering atmosphere
         implicit none
         integer, intent(in) :: NPHASEPOL, MAXCOEF
         real, intent(in) :: WAVELEN
@@ -758,16 +762,23 @@ contains
 
         NCOEF = 2
         RAYWIGCOEF(1:NPHASEPOL, :) = 0.0
+
         FKING = AKING + BKING/WAVELEN**2 + CKING/WAVELEN**4
         DEPOL = 6.d0*(FKING - 1.d0)/(3.d0 + 7.d0*FKING)
-        DELTA = (1.0 - DEPOL)/(1.0 + 0.5*DEPOL)
+
+        DELTA  = (1.0 - DEPOL)/(1.0 + 0.5*DEPOL)
         DELTAP = (1.0 - 2.0*DEPOL)/(1.0 - DEPOL)
-        RAYWIGCOEF(1, 0) = 1.0; RAYWIGCOEF(1, 2) = 0.5*DELTA
+
+        RAYWIGCOEF(1, 0) = 1.0
+        !RAYWIGCOEF(1, 2) = 0.5*DELTA ! original
+        RAYWIGCOEF(1, 2) = 0.1 * DELTA ! correction, see Corradini 2004 Eq 5.20
+
         if (NPHASEPOL == 6) then
             RAYWIGCOEF(2, 2) = 3.0*DELTA
             RAYWIGCOEF(4, 1) = 1.5*DELTAP*DELTA
             RAYWIGCOEF(5, 2) = sqrt(1.5)*DELTA
         end if
+
     end subroutine RAYLEIGH_PHASE_FUNCTION
 
     subroutine PHASEFUNC_FROM_LEGENDRE(NANGLES, NCOEF, LEGCOEF, PHASE)
