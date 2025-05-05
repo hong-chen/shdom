@@ -757,8 +757,8 @@ contains
         integer, intent(out) :: NCOEF
         real, intent(out) :: RAYWIGCOEF(NPHASEPOL, 0:MAXCOEF)
         double precision, parameter :: AKING = 1.0469541d0, &
-            BKING = 3.2503153d-04, CKING = 3.8622851d-05
-        real :: FKING, DEPOL, DELTA, DELTAP
+            &BKING = 3.2503153d-04, CKING = 3.8622851d-05
+        double precision :: FKING, DEPOL, DELTA, DELTAP
 
         NCOEF = 2
         RAYWIGCOEF(1:NPHASEPOL, :) = 0.0
@@ -766,17 +766,17 @@ contains
         FKING = AKING + BKING/WAVELEN**2 + CKING/WAVELEN**4
         DEPOL = 6.d0*(FKING - 1.d0)/(3.d0 + 7.d0*FKING)
 
-        DELTA  = (1.0 - DEPOL)/(1.0 + 0.5*DEPOL)
-        DELTAP = (1.0 - 2.0*DEPOL)/(1.0 - DEPOL)
+        DELTA  = (1.0d0 - DEPOL)/(1.0d0 + 0.5d0*DEPOL)
+        DELTAP = (1.0d0 - 2.0d0*DEPOL)/(1.0d0 - DEPOL)
 
         RAYWIGCOEF(1, 0) = 1.0
-        !RAYWIGCOEF(1, 2) = 0.5*DELTA ! original
-        RAYWIGCOEF(1, 2) = 0.1 * DELTA ! correction, see Corradini 2004 Eq 5.20
+        !RAYWIGCOEF(1, 2) = 0.5d0 * DELTA ! original
+        RAYWIGCOEF(1, 2) = 0.1d0 * DELTA ! correction, see Corradini 2004 Eq 5.20
 
         if (NPHASEPOL == 6) then
-            RAYWIGCOEF(2, 2) = 3.0*DELTA
-            RAYWIGCOEF(4, 1) = 1.5*DELTAP*DELTA
-            RAYWIGCOEF(5, 2) = sqrt(1.5)*DELTA
+            RAYWIGCOEF(2, 2) = 3.0d0*DELTA
+            RAYWIGCOEF(4, 1) = 1.5d0*DELTAP*DELTA
+            RAYWIGCOEF(5, 2) = dsqrt(1.5d0)*DELTA
         end if
 
     end subroutine RAYLEIGH_PHASE_FUNCTION
@@ -981,15 +981,15 @@ program propgen
     WIGCOEFTAB(:, :, :) = 0.0
     ! Put the Rayleigh phase matrix in the zero index
     call RAYLEIGH_PHASE_FUNCTION(RAYWAVELEN, NPHASEPOL, MAXCOEF, &
-                                 NCOEF(0), WIGCOEFTAB(:, :, 0))
+        &NCOEF(0), WIGCOEFTAB(:, 0:, 0))
 
     ! Read in the optical properties from the scattering table files
     do I = 1, NSCATTAB
         N1 = NRE(I - 1); N2 = NRE(I) - 1
         call READ_SCAT_TABLE(SCATTABFILES(I), POLTABS(I), NPHASEPOL, &
-                             N2 - N1 + 1, RETAB(N1:N2), &
-                             EXTINCTTAB(N1:N2), SSALBTAB(N1:N2), &
-                             MAXCOEF, NCOEF(N1:N2), WIGCOEFTAB(:, 0:, N1:N2))
+            &N2 - N1 + 1, RETAB(N1:N2), &
+            &EXTINCTTAB(N1:N2), SSALBTAB(N1:N2), &
+            &MAXCOEF, NCOEF(N1:N2), WIGCOEFTAB(:, 0:, N1:N2))
     end do
     PARTYPES(:) = SCATNUMS(:)
     deallocate (SCATNUMS, SCATTABFILES)
@@ -1045,7 +1045,7 @@ program propgen
     NPHASE = NENTRIES
     ! Make the asymmetry param and angle space low resolution phase functions
     do I = 0, NPHASE
-        ASYM(I) = WIGCOEFTAB(1, 1, I)/3
+        ASYM(I) = WIGCOEFTAB(1, 1, I)/3.0
         call PHASEFUNC_FROM_LEGENDRE(NANGLES, NCOEF(I), WIGCOEFTAB(1, :, I), PHASE(:, I))
     end do
 
@@ -1072,6 +1072,7 @@ program propgen
                     PHASE0(:) = EXTRAYL(IZ)*PHASE(:, 0)
                     NL = 2
                     WIGCOEF(:, :) = EXTRAYL(IZ)*WIGCOEFTAB(:, :, 0)
+
                     do J = 1, NC
                         L = TYPECONV(PTYPE(J, IZP, IY, IX))
                         ! Do binary search to find effective radius entry in table
@@ -1109,11 +1110,12 @@ program propgen
                         end if
 
                         SCAT = EXT*((1 - F)*SSALBTAB(IL) + F*SSALBTAB(IU))
+
                         ASYM0 = ASYM0 + SCAT*((1 - F)*ASYM(IL) + F*ASYM(IU))
                         PHASE0(:) = PHASE0(:) + SCAT*((1 - F)*PHASE(:, IL) + F*PHASE(:, IU))
                         NL = max(NL, NCOEF(IL), NCOEF(IU))
                         WIGCOEF(:, 0:NL) = WIGCOEF(:, 0:NL) &
-                                        + SCAT*((1 - F)*WIGCOEFTAB(:, 0:NL, IL) + F*WIGCOEFTAB(:, 0:NL, IU))
+                            &+ SCAT*((1 - F)*WIGCOEFTAB(:, 0:NL, IL) + F*WIGCOEFTAB(:, 0:NL, IU))
                         SCATTER = SCATTER + SCAT
                         EXTINCT(IZ, IY, IX) = EXTINCT(IZ, IY, IX) + EXT
 
@@ -1125,6 +1127,7 @@ program propgen
                     else
                         SSALB(IZ, IY, IX) = 1.0
                     end if
+
                     if (SCATTER > 0.0) then
                         ASYM0 = ASYM0/SCATTER
                         PHASE0(:) = PHASE0(:)/SCATTER
@@ -1134,10 +1137,10 @@ program propgen
                         !   and max fractional function value error normalized by user tolerances
                         IPH = 0 ! initialize with the Rayleigh phase function
                         MINERR = abs(ASYM0 - ASYM(IPH))/ASYMTOL &
-                             + maxval(abs((PHASE0(:) - PHASE(:, IPH))/(0.001 + PHASE(:, IPH))))/FRACPHASETOL
+                            &+ maxval(abs((PHASE0(:) - PHASE(:, IPH))/(0.001 + PHASE(:, IPH))))/FRACPHASETOL
                         do I = 1, NPHASE ! search all phase functions
                             ERR = abs(ASYM0 - ASYM(I))/ASYMTOL &
-                               + maxval(abs((PHASE0(:) - PHASE(:, I))/max(0.001, PHASE(:, I))))/FRACPHASETOL
+                                &+ maxval(abs((PHASE0(:) - PHASE(:, I))/max(0.001, PHASE(:, I))))/FRACPHASETOL
                             if (ERR < MINERR) then
                                 MINERR = ERR
                                 IPH = I
