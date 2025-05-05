@@ -751,6 +751,8 @@ contains
         ! Section 5.1.1.3, Eq(5.13 - 5.23) in Stefano Corradini's PHD thesis:
         !   Aerosol extinction coefficient profile retrieval procedure for satellite
         !   measurements in multiple scattering atmosphere
+        ! The coefficients here are normalized Legendre moments times (2*np.arange(NLegendre)+1)
+        !   thus RAYWIGCOEF(1, 2) = 0.1d0 * DELTA * 5 = 0.5d0 * DELTA
         implicit none
         integer, intent(in) :: NPHASEPOL, MAXCOEF
         real, intent(in) :: WAVELEN
@@ -769,9 +771,8 @@ contains
         DELTA  = (1.0d0 - DEPOL)/(1.0d0 + 0.5d0*DEPOL)
         DELTAP = (1.0d0 - 2.0d0*DEPOL)/(1.0d0 - DEPOL)
 
-        RAYWIGCOEF(1, 0) = 1.0
-        !RAYWIGCOEF(1, 2) = 0.5d0 * DELTA ! original
-        RAYWIGCOEF(1, 2) = 0.1d0 * DELTA ! correction, see Corradini 2004 Eq 5.20
+        RAYWIGCOEF(1, 0) = 1.0d0
+        RAYWIGCOEF(1, 2) = 0.5d0 * DELTA
 
         if (NPHASEPOL == 6) then
             RAYWIGCOEF(2, 2) = 3.0d0*DELTA
