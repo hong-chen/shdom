@@ -41,8 +41,8 @@ module globals
   ! Programmer-dependent kinds of real/complex variables
   !// Note: The R_ is default and RD_ should be used only when needed.
   !    One's choice of precision for R_ and RD_ may depend on required accuracy and used memory size.
-  integer,   parameter :: R_  = selected_real_kind(6)  ! default precision
-  !integer,   parameter :: R_  = selected_real_kind(13) ! default precision
+  !integer,   parameter :: R_  = selected_real_kind(6)  ! default precision
+  integer,   parameter :: R_  = selected_real_kind(13) ! default precision
   integer,   parameter :: RD_ = selected_real_kind(13) ! higher  precision
 
   ! System-specific kinds of variables (no freedom for programmers)
@@ -84,11 +84,14 @@ module globals
   real(R_),  parameter :: SQRT3_  = 1.732050807568877293527446341505872366942_R_   ! sqrt(3)
   real(R_),  parameter :: SQRT2A_ = 0.7071067811865475244008443621048490392848_R_  ! 1/sqrt(2)
   real(R_),  parameter :: SQRT3A_ = 0.5773502691896257645091487805019574556476_R_  ! 1/sqrt(3)
-  real(R_),  parameter :: FRAC13_ = 1.0_R_ / 3.0_R_    ! 1/3
-  real(R_),  parameter :: FRAC23_ = 2.0_R_ / 3.0_R_    ! 2/3
-  real(R_),  parameter :: FRAC43_ = 4.0_R_ / 3.0_R_    ! 4/3
-  real(R_),  parameter :: FRAC53_ = 5.0_R_ / 3.0_R_    ! 5/3
-  real(R_),  parameter :: FRAC16_ = 1.0_R_ / 6.0_R_    ! 1/6
+
+  real(R_),  parameter :: FRAC12_  = 1.0_R_ / 2.0_R_    ! 1/2
+  real(R_),  parameter :: FRAC13_  = 1.0_R_ / 3.0_R_    ! 1/3
+  real(R_),  parameter :: FRAC23_  = 2.0_R_ / 3.0_R_    ! 2/3
+  real(R_),  parameter :: FRAC43_  = 4.0_R_ / 3.0_R_    ! 4/3
+  real(R_),  parameter :: FRAC53_  = 5.0_R_ / 3.0_R_    ! 5/3
+  real(R_),  parameter :: FRAC16_  = 1.0_R_ / 6.0_R_    ! 1/6
+  real(R_),  parameter :: FRAC112_ = 1.0_R_ / 12.0_R_   ! 1/12
 
   ! Physical constants (SI unit)
   real(R_),  parameter :: CSPEED_ = 2.99792458e+8_R_     ! speed of light (m/s)

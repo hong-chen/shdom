@@ -588,7 +588,7 @@ subroutine shd_intg__backIntegrate3D(&
                     ABSCELL = 1.0 - TRANSCELL
                 else
                     ABSCELL = TAU*(1.0 - 0.5*TAU*&
-                        &(1.0 - 0.33333333333*TAU*(1 - 0.25*TAU)))
+                        &(1.0 - FRAC13_*TAU*(1 - 0.25*TAU)))
                     TRANSCELL = 1.0 - ABSCELL
                 end if
                 if (TAU .le. 2.0) then
@@ -596,7 +596,7 @@ subroutine shd_intg__backIntegrate3D(&
                         SRC(:) = 0.0
                     else
                         ! Linear extinction, linear source*extinction, to first order
-                        SRC(:) = (0.5*(SRCEXT0(:) + SRCEXT1(:)) + 0.08333333333&
+                        SRC(:) = (0.5d0*(SRCEXT0(:) + SRCEXT1(:)) + FRAC112_&
                             &*(EXT0*SRCEXT1(:) - EXT1*SRCEXT0(:))*SO)/EXT
                     end if
                 else
@@ -604,12 +604,12 @@ subroutine shd_intg__backIntegrate3D(&
                     EXT0P = EXT0
                     SRCEXT0P(:) = SRCEXT0(:)
                     if (TAU .gt. 4.0) then
-                        EXT0P = EXT1 + (EXT0 - EXT1)*4.0/TAU
+                        EXT0P = EXT1 + (EXT0 - EXT1)*4.0d0/TAU
                         if (EXT0 .gt. 0.0) SRCEXT0P(:) = SRCEXT0(:)*EXT0P/EXT0
                     end if
-                    SRC(:) = 1.0/(EXT0P + EXT1)*(SRCEXT0P(:) + SRCEXT1(:)&
-                        &+ (EXT0P*SRCEXT1(:) - EXT1*SRCEXT0P(:))*2.0/(EXT0P + EXT1)&
-                        &*(1 - 2/TAU + 2*TRANSCELL/ABSCELL))
+                    SRC(:) = 1.0d0/(EXT0P + EXT1)*(SRCEXT0P(:) + SRCEXT1(:)&
+                        &+ (EXT0P*SRCEXT1(:) - EXT1*SRCEXT0P(:))*2.0d0/(EXT0P + EXT1)&
+                        &*(1.0d0 - 2.0d0/TAU + 2.0d0*TRANSCELL/ABSCELL))
                 end if
                 SRC(1) = max(SRC(1), 0.0d0)
 
@@ -938,15 +938,15 @@ subroutine shd_intg__backIntegrate3D_(&
                     &+ F3*SOURCE(KANG, I3)*EXTINCT(I3)&
                     &+ F4*SOURCE(KANG, I4)*EXTINCT(I4))
                 ! Compute the cell radiance: integration of the source function
-                EXT = 0.5*(EXT0 + EXT1)
+                EXT = 0.5d0*(EXT0 + EXT1)
 
                 TAU = EXT*SO
                 if (TAU .ge. 0.5) then
                     TRANSCELL = exp(-TAU)
                     ABSCELL = 1.0 - TRANSCELL
                 else
-                    ABSCELL = TAU*(1.0 - 0.5*TAU*&
-                        &(1.0 - 0.33333333333*TAU*(1 - 0.25*TAU)))
+                    ABSCELL = TAU*(1.0d0 - 0.5d0*TAU*&
+                        &(1.0d0 - 1.0d0/3.0d0*TAU*(1.0d0 - 0.25d0*TAU)))
                     TRANSCELL = 1.0 - ABSCELL
                 end if
 
@@ -955,8 +955,8 @@ subroutine shd_intg__backIntegrate3D_(&
                         SRC = 0.0
                     else
                         ! Linear extinction, linear source*extinction, to first order
-                        SRC = (0.5*(SRCEXT0 + SRCEXT1)&
-                            &+ 0.08333333333*(EXT0*SRCEXT1 - EXT1*SRCEXT0)*SO)/EXT
+                        SRC = (0.5d0*(SRCEXT0 + SRCEXT1)&
+                            &+ FRAC112_*(EXT0*SRCEXT1 - EXT1*SRCEXT0)*SO)/EXT
                     end if
                 else
                     ! Combined first order expansion and constant extinction formula
@@ -966,12 +966,12 @@ subroutine shd_intg__backIntegrate3D_(&
                     EXT0P = EXT0
                     SRCEXT0P = SRCEXT0
                     if (TAU .gt. 4.0) then
-                        EXT0P = EXT1 + (EXT0 - EXT1)*4.0/TAU
+                        EXT0P = EXT1 + (EXT0 - EXT1)*4.0d0/TAU
                         if (EXT0 .gt. 0.0) SRCEXT0P = SRCEXT0*EXT0P/EXT0
                     end if
-                    SRC = 1.0/(EXT0P + EXT1)*(SRCEXT0P + SRCEXT1&
-                        &+ (EXT0P*SRCEXT1 - EXT1*SRCEXT0P)*2.0/(EXT0P + EXT1)&
-                        &*(1 - 2/TAU + 2*TRANSCELL/ABSCELL))
+                    SRC = 1.0d0/(EXT0P + EXT1)*(SRCEXT0P + SRCEXT1&
+                        &+ (EXT0P*SRCEXT1 - EXT1*SRCEXT0P)*2.0d0/(EXT0P + EXT1)&
+                        &*(1.0d0 - 2.0d0/TAU + 2.0d0*TRANSCELL/ABSCELL))
                 end if
                 SRC = max(SRC, 0.0d0)
 
@@ -1215,7 +1215,7 @@ subroutine shd_intg__backIntegrate2D(&
                     ABSCELL = 1.0 - TRANSCELL
                 else
                     ABSCELL = TAU*(1.0 - 0.5*TAU*&
-                        &(1.0 - 0.33333333333*TAU*(1 - 0.25*TAU)))
+                        &(1.0 - FRAC13_*TAU*(1 - 0.25*TAU)))
                     TRANSCELL = 1.0 - ABSCELL
                 end if
                 if (TAU .le. 2.0) then
@@ -1223,7 +1223,7 @@ subroutine shd_intg__backIntegrate2D(&
                         SRC(:) = 0.0
                     else
                         ! Linear extinction, linear source*extinction, to first order
-                        SRC(:) = (0.5*(SRCEXT0(:) + SRCEXT1(:)) + 0.08333333333&
+                        SRC(:) = (0.5*(SRCEXT0(:) + SRCEXT1(:)) + FRAC112_&
                             &*(EXT0*SRCEXT1(:) - EXT1*SRCEXT0(:))*SO)/EXT
                     end if
                 else
@@ -1403,7 +1403,7 @@ subroutine shd_intg__backIntegrate1D(&
                     ABSCELL = 1.0 - TRANSCELL
                 else
                     ABSCELL = TAU*(1.0 - 0.5*TAU*&
-                        &(1.0 - 0.33333333333*TAU*(1 - 0.25*TAU)))
+                        &(1.0 - FRAC13_*TAU*(1 - 0.25*TAU)))
                     TRANSCELL = 1.0 - ABSCELL
                 end if
                 if (TAU .le. 2.0) then
@@ -1411,7 +1411,7 @@ subroutine shd_intg__backIntegrate1D(&
                         SRC(:) = 0.0
                     else
                         ! Linear extinction, linear source*extinction, to first order
-                        SRC(:) = (0.5*(SRCEXT0(:) + SRCEXT1(:)) + 0.08333333333&
+                        SRC(:) = (0.5d0*(SRCEXT0(:) + SRCEXT1(:)) + FRAC112_&
                             &*(EXT0*SRCEXT1(:) - EXT1*SRCEXT0(:))*SO)/EXT
                     end if
                 else

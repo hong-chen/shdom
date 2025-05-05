@@ -544,7 +544,7 @@ subroutine shd_rad__computeDirect(&
         C = C1*E1 + C2*E2 + C3*E3 + C4*E4 + C5*E5 + C6*E6 + C7*E7 + C8*E8
         D = DU*DV*DW*(E2 + E3 + E5 + E8 - E1 - E4 - E6 - E7)
         ! Compute the path through the cell: integration of extinction
-        PATH = PATH + SO*(A + 0.5d0*B + 0.3333333333333333d0*C + 0.25d0*D)
+        PATH = PATH + SO*(A + 0.5d0*B + FRAC13_*C + 0.25d0*D)
 
         XE = XP + XOFFS
         YE = YP + YOFFS
@@ -618,7 +618,7 @@ subroutine shd_rad__interpRad(&
                     else
                         RAD2(:) = 0.0
                     end if
-                    RADIANCE(:, IR + J) = 0.5*(RAD1(:) + RAD2(:))
+                    RADIANCE(:, IR + J) = FRAC12_*(RAD1(:) + RAD2(:))
                 end do
             end if
         end do
@@ -1022,7 +1022,7 @@ subroutine shd_rad__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 if (NSTOKES .gt. 1) then
                     ! Output degree (0 to 1) and angle (-180 to 180) of linear polarization
                     VISOUT(2, IVIS) = sqrt(VISRAD(2)**2 + VISRAD(3)**2)/VISRAD(1)
-                    VISOUT(3, IVIS) = (180/PI_)*0.5*atan2(VISRAD(3), VISRAD(2))
+                    VISOUT(3, IVIS) = (180.0d0/PI_)*FRAC12_*atan2(VISRAD(3), VISRAD(2))
                 end if
                 if (NSTOKES .eq. 4) then
                     ! Output degree of circular polarization (-1 to 1)

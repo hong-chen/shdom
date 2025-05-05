@@ -141,6 +141,7 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
     integer :: NSTOKES
     integer :: K1, K2
     real    :: REFPARMS(*), WAVELEN, MU1, PHI1, MU2, PHI2, REFLECT(4, 4)
+    real    :: PHIDIFF
     character(len=1) :: SFCTYPE
 
     if (SFCTYPE .eq. 'L' .or. SFCTYPE .eq. 'l') then
@@ -160,9 +161,10 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
 
         ! D: Diner et al., depolarizing modified RPV + Fresnel reflection
         !   from microfacets with uniform or Gaussian distribution of s
+        PHIDIFF = PHI2 - PHI1
         call shd_sfc__brdfDiner(REFPARMS(1), REFPARMS(2), REFPARMS(3),&
             &REFPARMS(4), REFPARMS(5),&
-            &-MU1, MU2, PHI2 - PHI1, NSTOKES, REFLECT)
+            &-MU1, MU2, PHIDIFF, NSTOKES, REFLECT)
 
     else if (SFCTYPE .eq. 'R' .or. SFCTYPE .eq. 'r') then
 
@@ -171,8 +173,9 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
             stop 'Error [_brdfSurface]: RPV BRDF is only for unpolarized case'
         end if
 
+        PHIDIFF = PHI1-PHI2-PI_
         call shd_sfc__brdfRPV(REFPARMS(1), REFPARMS(2),&
-            &REFPARMS(3), -MU1, MU2, PHI1-PHI2-PI_, REFLECT(1, 1))
+            &REFPARMS(3), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
 
     else if (SFCTYPE .eq. 'T' .or. SFCTYPE .eq. 't') then
 
@@ -181,9 +184,10 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
             stop 'Error [_brdfSurface]: LSRT BRDF is only for unpolarized case'
         end if
 
+        PHIDIFF = PHI1-PHI2-PI_
         ! T: LSRT model
         call shd_sfc__brdfLSRT(REFPARMS(1), REFPARMS(2),&
-            &REFPARMS(3), -MU1, MU2, PHI1-PHI2-PI_, REFLECT(1, 1))
+            &REFPARMS(3), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
 
     else if (SFCTYPE .eq. 'O' .or. SFCTYPE .eq. 'o') then
 
@@ -192,8 +196,9 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
             stop 'Error [_brdfSurface]: Ocean BRDF from 6S is only for unpolarized case'
         end if
 
+        PHIDIFF = PHI1-PHI2
         call shd_sfc__brdfOcean(REFPARMS(1), -1., REFPARMS(2), WAVELEN,&
-            & -MU1, MU2, PHI1 - PHI2, PHI1, REFLECT(1, 1))
+            & -MU1, MU2, PHIDIFF, PHI1, REFLECT(1, 1))
 
     else
         stop 'Error [_brdfSurface]: Unknown BRDF type.'
@@ -366,7 +371,7 @@ subroutine shd_sfc__brdfFresnel(MRE, MIM, WINDSPEED,&
     DCOT = DMUR/DSQRT(1d0 - DMUR**2)
     T1 = DEXP(-S2*DCOT**2)
     T2 = DERFC(DCOT*S3)
-    SHADOWR = 0.5*(S1*T1/DCOT - T2)
+    SHADOWR = 0.5d0*(S1*T1/DCOT - T2)
     SHADOW = 1d0/(1d0 + SHADOWI + SHADOWR)
     REFLECT(1:NSTOKES, 1:NSTOKES) = REFLECT(1:NSTOKES, 1:NSTOKES)*SHADOW
 
@@ -435,7 +440,7 @@ subroutine shd_sfc__brdfDiner(A, K, B, ZETA, SIGMA,&
     if (ZETA .lt. 0.0) return
 
     ! Calculate incident/reflectance angle relative to microfacet (eq 1
-    GAMMA = 0.5*acos(-COSSCATANG)
+    GAMMA = 0.5d0*acos(-COSSCATANG)
     COSGAMMA = cos(GAMMA)
 
     ! Calculate the Fresnel reflection coefficients (equivalent to eq 1
@@ -446,19 +451,19 @@ subroutine shd_sfc__brdfDiner(A, K, B, ZETA, SIGMA,&
     RS = (COSGAMMA - D)/(COSGAMMA + D)
 
     ! Calculate the Mueller matrix elements for Fresnel reflection (eq
-    F11 = 0.5*(CABS(RP)**2 + CABS(RS)**2)
-    F12 = 0.5*(CABS(RP)**2 - CABS(RS)**2)
+    F11 = 0.5d0*(CABS(RP)**2 + CABS(RS)**2)
+    F12 = 0.5d0*(CABS(RP)**2 - CABS(RS)**2)
     F33 = real(RP*conjg(RS))
     F34 = -IMAG(RP*conjg(RS))
 
     ! Calculate facet tilt angle, beta (eq 16b)
-    COSBETA = 0.5*(MU1 + MU2)/COSGAMMA
+    COSBETA = 0.5d0*(MU1 + MU2)/COSGAMMA
 
     ! Calculate the factor before the M*P*M matrix including the distri
     !   of microfacet orientations (Gaussian for SIGMA>0) (eq 13 & 14)
     !   Note: Diner's BRDF is multiplied by pi here
     if (SIGMA .gt. 0.0) then
-        H = ZETA*exp(-0.5*(1/COSBETA**2 - 1)/SIGMA**2)&
+        H = ZETA*exp(-0.5d0*(1/COSBETA**2 - 1)/SIGMA**2)&
             & /(8*SIGMA**2*MU2*MU1*COSBETA**4)
     else
         H = ZETA/(8*MU2*MU1*COSBETA)
@@ -658,7 +663,7 @@ subroutine shd_sfc__brdfLSRT(F_ISO, F_GEO, F_VOL, MU1, MU2, PHI, REFLECT)
 
     O = (1.0/PI_) * (T - SIN_T*COS_T) * (SEC1_ + SEC2_)
 
-    K_GEO = O - SEC1_ - SEC2_ + 0.5*(1.0+COS_XI_)*SEC1_*SEC2_
+    K_GEO = O - SEC1_ - SEC2_ + 0.5d0*(1.0+COS_XI_)*SEC1_*SEC2_
     !╰────────────────────────────────────────────────╯!
 
     REFLECT = F_ISO + F_VOL*K_VOL + F_GEO*K_GEO
@@ -768,7 +773,7 @@ subroutine shd_sfc__brdfOcean(&
     ! COMPUTE WHITECAPS REFLECTANCE (LAMBERTIAN)
     W = 2.95e-06*(wspd**3.52)
     iwl = 1 + int((wl - 0.2)/0.1)
-    wlp = 0.5 + (iwl - 1)*0.1
+    wlp = 0.5d0 + (iwl - 1)*0.1d0
     Ref_i = ref(iwl + 1) + (wl - wlp)/0.1*(ref(iwl) - ref(iwl + 1))
     Rwc = W*Ref_i
 
@@ -891,12 +896,12 @@ subroutine morcasiwat(wl, C, R2)
     bw = tbw(iwl)
 
     if (abs(C) .lt. 0.0001) then
-        bb = 0.5*bw
+        bb = 0.5d0*bw
         Kd = Kw
     else
         b = 0.30*C**0.62
-        bbt = 0.002 + 0.02*(0.5 - 0.25*alog10(C))*0.550/wl
-        bb = 0.5*bw + bbt*b
+        bbt = 0.002 + 0.02*(0.5d0 - 0.25*alog10(C))*0.550d0/wl
+        bb = 0.5d0*bw + bbt*b
         Kd = Kw + Xc*C**e
     end if
 
@@ -1043,8 +1048,8 @@ subroutine sunglint(wspd, nr, ni, azw, ts, tv, fi, rog)
     cos2chi = cv*cs + sv*ss*cos(phi)
     if (cos2chi .gt. 1.0) cos2chi = 0.99999999999
     if (cos2chi .lt. -1.0) cos2chi = -0.99999999999
-    coschi = sqrt(0.5*(1 + cos2chi))
-    sinchi = sqrt(0.5*(1 - cos2chi))
+    coschi = sqrt(0.5d0*(1 + cos2chi))
+    sinchi = sqrt(0.5d0*(1 - cos2chi))
     call Fresnel(nr, ni, coschi, sinchi, R1)
     ! Compute Reflectance of the sun glint
     Rog = PI_*R1*proba/4./cs/cv/(cos(tilt)**4)
@@ -1066,8 +1071,8 @@ subroutine Fresnel(nr, ni, coschi, sinchi, R1)
     ! absolute value for a1 to get v=0 when ni=0
     a1 = abs(nr*nr - ni*ni - sinchi*sinchi)
     a2 = sqrt((nr*nr - ni*ni - sinchi*sinchi)**2.+4*nr*nr*ni*ni)
-    u = sqrt(0.5*(a1 + a2))
-    v = sqrt(max(0.0, 0.5*(-a1 + a2)))
+    u = sqrt(0.5d0*(a1 + a2))
+    v = sqrt(max(0.0, 0.5d0*(-a1 + a2)))
     Rr2 = ((coschi - u)**2 + v*v)/((coschi + u)**2 + v*v)
     b1 = (nr*nr - ni*ni)*coschi
     b2 = 2*nr*ni*coschi
@@ -1178,7 +1183,7 @@ subroutine glitalbe(wspd, nr, ni, azw, rge)
                 coef = coef + c40/24.*(xe2*xe2 - 6*xe2 + 3)
                 coef = coef + C04/24.*(xn2*xn2 - 6*xn2 + 3)
                 coef = coef + C22/4.*(xe2 - 1)*(xn2 - 1)
-                fonc0 = 0.5*coschi*coef*exp(-(xe2 + xn2)/2.)/(costetn**4)
+                fonc0 = 0.5d0*coschi*coef*exp(-(xe2 + xn2)/2.)/(costetn**4)
                 pr = pr + r1*fonc0*cofa*cota*cotb
                 pp = pp + fonc0*cofa*cota*cotb
             end do

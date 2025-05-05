@@ -317,8 +317,8 @@ subroutine shd_shdo__transSHtoDO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
                     TMP(1) = SUMCS(N, 0)
                     MR = 2
                     do M = 1, ME
-                        TMP(MR) = 0.5*SUMCS(N, M)
-                        TMP(MR + 1) = -0.5*SUMCS(N, -M)
+                        TMP(MR) = FRAC12_*SUMCS(N, M)
+                        TMP(MR + 1) = -FRAC12_*SUMCS(N, -M)
                         MR = MR + 2
                     end do
                     do M2 = MR, NPHI0
@@ -426,8 +426,8 @@ subroutine shd_shdo__transSHtoDO_(&
                 TMP(1) = SUMCS(0)
                 MR = 2
                 do M = 1, ME
-                    TMP(MR) = 0.5*SUMCS(M)
-                    TMP(MR + 1) = -0.5*SUMCS(-M)
+                    TMP(MR) = FRAC12_*SUMCS(M)
+                    TMP(MR + 1) = -FRAC12_*SUMCS(-M)
                     MR = MR + 2
                 end do
                 do M2 = MR, NPHI0

@@ -350,8 +350,8 @@ subroutine shd_util__interpTriLin(&
 
     integer, intent(in) :: ICELL, GRIDPTR(8, *), ND, ID1, NV
     real(RD_), intent(in) :: X, Y, Z
-    real(R_) :: GRIDPOS(3, *), FIELD(ND, *), VALUES(NV)
-    integer  :: IPT1, IPT2, ID
+    real :: GRIDPOS(3, *), FIELD(ND, *), VALUES(NV)
+    integer :: IPT1, IPT2, ID
     real(RD_) :: U, V, W, UM, VM, WM, DELX, DELY, DELZ
 
     IPT1 = GRIDPTR(1, ICELL)

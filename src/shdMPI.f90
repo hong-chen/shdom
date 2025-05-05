@@ -3208,7 +3208,7 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
             TRANSCELL = exp(-TAU)
             ABSCELL = 1.0 - TRANSCELL
         else
-            ABSCELL = TAU*(1.0 - 0.5*TAU*(1.0 - 0.33333333333*TAU*(1 - 0.25*TAU)))
+            ABSCELL = TAU*(1.0 - 0.5*TAU*(1.0 - FRAC13_*TAU*(1 - 0.25*TAU)))
             TRANSCELL = 1.0 - ABSCELL
         end if
         if (TAU .le. 2.0) then
@@ -3217,7 +3217,7 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
             else
                 ! Linear extinction, linear source*extinction, to first order
                 SRC(:) = (0.5*(SRCEXT0(:) + SRCEXT1(:))&
-                    &+ 0.08333333333*(EXT0*SRCEXT1(:) - EXT1*SRCEXT0(:))*SO)/EXT
+                    &+ FRAC112_*(EXT0*SRCEXT1(:) - EXT1*SRCEXT0(:))*SO)/EXT
             end if
         else
             ! Combined first order expansion and constant extinction formula

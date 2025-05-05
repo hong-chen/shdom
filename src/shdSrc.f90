@@ -818,8 +818,8 @@ subroutine shd_src__integrateSrcOneRay(&
         BITZ = 0
     end if
     IOCT = 1 + BITX + 2*BITY + 4*BITZ
-    XM = 0.5*(XGRID(1) + XGRID(NX))
-    YM = 0.5*(YGRID(1) + YGRID(NY))
+    XM = 0.5d0*(XGRID(1) + XGRID(NX))
+    YM = 0.5d0*(YGRID(1) + YGRID(NY))
 
     ! Start at the desired point, getting the extinction and source
     XE = X0
@@ -975,12 +975,12 @@ subroutine shd_src__integrateSrcOneRay(&
             EXT = 0.5*(EXT0 + EXT1)
             if (EXT .ne. 0.0) then
                 TAU = EXT*DELS
-                ABSCELL = TAU*(1.0 - 0.5*TAU*(1.0 - 0.33333333333*TAU))
-                TRANSCELL = 1.0 - ABSCELL
+                ABSCELL = TAU*(1.0d0 - 0.5d0*TAU*(1.0d0 - FRAC13_*TAU))
+                TRANSCELL = 1.0d0 - ABSCELL
                 ! Linear extinction, linear source*extinction, to second
-                SRC(:) = (0.5*(SRCEXT0(:) + SRCEXT1(:))&
-                    &+ 0.08333333333*(EXT0*SRCEXT1(:) - EXT1*SRCEXT0(:))*DELS&
-                    &*(1.0 - 0.05*(EXT1 - EXT0)*DELS))/EXT
+                SRC(:) = (0.5d0*(SRCEXT0(:) + SRCEXT1(:))&
+                    &+ FRAC112_*(EXT0*SRCEXT1(:) - EXT1*SRCEXT0(:))*DELS&
+                    &*(1.0d0 - 0.05d0*(EXT1 - EXT0)*DELS))/EXT
             else
                 ABSCELL = 0.0
                 TRANSCELL = 1.0
@@ -1257,10 +1257,10 @@ subroutine shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
             EXT = 0.5*(EXT0(1) + EXT1(1))
             if (EXT .ne. 0.0) then
                 TAU = EXT*DELS
-                ABSCELL = TAU*(1.0 - 0.5*TAU*(1.0 - 0.33333333333*TAU))
+                ABSCELL = TAU*(1.0 - 0.5*TAU*(1.0 - FRAC13_*TAU))
                 TRANSCELL = 1.0 - ABSCELL
                 ! Linear extinction, linear source*extinction, to second
-                SRC(:) = (0.5*(SRCEXT0(:) + SRCEXT1(:)) + 0.08333333333*&
+                SRC(:) = (0.5*(SRCEXT0(:) + SRCEXT1(:)) + FRAC112_*&
                     &(EXT0(1)*SRCEXT1(:) - EXT1(1)*SRCEXT0(:))*DELS&
                     &*(1.0 - 0.05*(EXT1(1) - EXT0(1))*DELS))/EXT
             else
