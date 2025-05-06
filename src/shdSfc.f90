@@ -771,7 +771,7 @@ subroutine shd_sfc__brdfOcean(&
     call indwat(wl, xsal, nr, ni)
     n12 = sqrt(nr*nr + ni*ni)
     ! COMPUTE WHITECAPS REFLECTANCE (LAMBERTIAN)
-    W = 2.95e-06*(wspd**3.52)
+    W = 2.95d-6*(wspd**3.52d0)
     iwl = 1 + int((wl - 0.2)/0.1)
     wlp = 0.5d0 + (iwl - 1)*0.1d0
     Ref_i = ref(iwl + 1) + (wl - wlp)/0.1*(ref(iwl) - ref(iwl + 1))
@@ -779,7 +779,7 @@ subroutine shd_sfc__brdfOcean(&
 
     ! COMPUTE BACKSCATTERED REFLECTANCE FROM THE SEA WATER (LAMBERTIAN)
     !  water reflectance below the sea surface
-    call MORCASIWAT(wl, C, Rw)
+    call morcasiwat(wl, C, Rw)
 
     call getbound(wsbnd, 1, 6, wspd, iws1, iws2)
     call getbound(angbnd, 1, 5, tetas, isz1, isz2)
@@ -899,17 +899,17 @@ subroutine morcasiwat(wl, C, R2)
         bb = 0.5d0*bw
         Kd = Kw
     else
-        b = 0.30*C**0.62
-        bbt = 0.002 + 0.02*(0.5d0 - 0.25*alog10(C))*0.550d0/wl
+        b = 0.30d0*C**0.62d0
+        bbt = 0.002d0 + 0.02d0*(0.5d0 - 0.25d0*alog10(C))*0.550d0/wl
         bb = 0.5d0*bw + bbt*b
         Kd = Kw + Xc*C**e
     end if
 
     u1 = 0.75
-    R1 = 0.33*bb/u1/Kd
+    R1 = 0.33d0*bb/u1/Kd
 
-50  u2 = 0.90*(1.-R1)/(1.+2.25*R1)
-    R2 = 0.33*bb/u2/Kd
+50  u2 = 0.90d0*(1.0-R1)/(1.0+2.25*R1)
+    R2 = 0.33d0*bb/u2/Kd
     err = abs((R2 - R1)/R2)
     if (err .lt. 0.0001) return
     R1 = R2
@@ -1015,7 +1015,7 @@ subroutine sunglint(wspd, nr, ni, azw, ts, tv, fi, rog)
     real coef, cos2chi, coschi, sinchi
     real r1, sigmaC, sigmaU, C21, C03, C40, C04, C22
 
-    fac = PI_/180.
+    fac = PI_/180.0
     phw = azw*fac
     cs = cos(ts*fac)
     cv = cos(tv*fac)
@@ -1028,31 +1028,31 @@ subroutine sunglint(wspd, nr, ni, azw, ts, tv, fi, rog)
     tilt = atan(tantilt)
     !  Anisotropic Gaussian distribution
     !    phw=phi_sun-phi_wind
-    sigmaC = 0.003 + 0.00192*wspd
-    sigmaU = 0.00316*wspd
-    C21 = 0.01 - 0.0086*wspd
-    C03 = 0.04 - 0.033*wspd
+    sigmaC = 0.003d0 + 0.00192d0*wspd
+    sigmaU = 0.00316d0*wspd
+    C21 = 0.01d0 - 0.0086d0*wspd
+    C03 = 0.04d0 - 0.033d0*wspd
     C40 = 0.40
     C22 = 0.12
     C04 = 0.23
-    xe = (cos(phw)*Zx + sin(phw)*Zy)/sqrt(SigmaC)
+    xe = ( cos(phw)*Zx + sin(phw)*Zy)/sqrt(SigmaC)
     xn = (-sin(phw)*Zx + cos(phw)*Zy)/sqrt(SigmaU)
     xe2 = xe*xe
     xn2 = xn*xn
-    coef = 1 - C21/2.*(xe2 - 1)*xn - C03/6.*(xn2 - 3)*xn
-    coef = coef + c40/24.*(xe2*xe2 - 6*xe2 + 3)
-    coef = coef + C04/24.*(xn2*xn2 - 6*xn2 + 3)
-    coef = coef + C22/4.*(xe2 - 1)*(xn2 - 1)
-    proba = coef/2./PI_/sqrt(sigmaU)/sqrt(sigmaC)*exp(-(xe2 + xn2)/2.)
+    coef = 1.0 - C21/2.0*(xe2 - 1.0)*xn - C03/6.0*(xn2 - 3.0)*xn
+    coef = coef + c40/24.0*(xe2*xe2 - 6.0*xe2 + 3.0)
+    coef = coef + C04/24.0*(xn2*xn2 - 6.0*xn2 + 3.0)
+    coef = coef + C22/4.0*(xe2 - 1)*(xn2 - 1)
+    proba = coef/2.0/PI_/sqrt(sigmaU)/sqrt(sigmaC)*exp(-(xe2 + xn2)/2.0)
     ! Compute Fresnel's coefficient R1
     cos2chi = cv*cs + sv*ss*cos(phi)
-    if (cos2chi .gt. 1.0) cos2chi = 0.99999999999
+    if (cos2chi .gt.  1.0) cos2chi = 0.99999999999
     if (cos2chi .lt. -1.0) cos2chi = -0.99999999999
     coschi = sqrt(0.5d0*(1 + cos2chi))
     sinchi = sqrt(0.5d0*(1 - cos2chi))
     call Fresnel(nr, ni, coschi, sinchi, R1)
     ! Compute Reflectance of the sun glint
-    Rog = PI_*R1*proba/4./cs/cv/(cos(tilt)**4)
+    Rog = PI_*R1*proba/4.0/cs/cv/(cos(tilt)**4)
     return
 end subroutine
 
@@ -1075,9 +1075,9 @@ subroutine Fresnel(nr, ni, coschi, sinchi, R1)
     v = sqrt(max(0.0, 0.5d0*(-a1 + a2)))
     Rr2 = ((coschi - u)**2 + v*v)/((coschi + u)**2 + v*v)
     b1 = (nr*nr - ni*ni)*coschi
-    b2 = 2*nr*ni*coschi
+    b2 = 2.0*nr*ni*coschi
     Rl2 = ((b1 - u)**2 + (b2 - v)**2)/((b1 + u)**2 + (b2 + v)**2)
-    R1 = (Rr2 + Rl2)/2.
+    R1 = (Rr2 + Rl2)/2.0
     return
 end subroutine
 
@@ -1101,26 +1101,26 @@ subroutine glitalbe(wspd, nr, ni, azw, rge)
     integer km, i, j
     integer :: nfa, nta, ntb
 
-    fac = PI_/180.
-    sigma = 0.003 + 0.00512*wspd
-    sigmaC = 0.003 + 0.00192*wspd
-    sigmaU = 0.00316*wspd
-    C21 = 0.01 - 0.0086*wspd
-    C03 = 0.04 - 0.033*wspd
+    fac = PI_/180.0
+    sigma  = 0.003d0 + 0.00512d0*wspd
+    sigmaC = 0.003d0 + 0.00192d0*wspd
+    sigmaU = 0.00316d0*wspd
+    C21 = 0.01d0 - 0.0086d0*wspd
+    C03 = 0.04d0 -  0.033d0*wspd
     C40 = 0.40
     C22 = 0.12
     C04 = 0.23
     ! costt to minimize the time of the computation
     !     integration between 1 and costt instead of 1 and 0
     q = 50
-    costt = 1./sqrt(1 + q*sigma/4.)
+    costt = 1.0/sqrt(1.0 + q*sigma/4.0)
     phw = azw*fac
 
-    prefl = 0.
-    proba = 0.
+    prefl = 0.0
+    proba = 0.0
 
     ntb = 31
-    htb = 1./float(ntb - 1)
+    htb = 1.0/float(ntb - 1)
     ! loops on the zenith angle of the emitted radiation
     do km = 1, ntb
         costet = (km - 1)*htb
@@ -1128,9 +1128,9 @@ subroutine glitalbe(wspd, nr, ni, azw, rge)
         sintet = sin(tet)
         tet = tet/fac
         ! Simpson's rules for the angle of the emitted radiation teta
-        cotb = 2.
-        diff = abs(km/2 - km/2.)
-        if (diff .lt. 0.00001) cotb = 4.
+        cotb = 2.0
+        diff = abs(km/2 - km/2.0)
+        if (diff .lt. 0.00001) cotb = 4.0
         if (km .eq. 1 .or. km .eq. ntb) cotb = 1.0
         !  loops step for phiN and tetaN (N is the facet unit normal vector)
         if (tet .lt. 91) nta = 801
@@ -1141,16 +1141,16 @@ subroutine glitalbe(wspd, nr, ni, azw, rge)
         hta = (1.-costt)/float(nta - 1)
         hfa = PI_/float(nfa - 1)
         ! loops on phiN (azimuth angle of the facet normal vector)
-        pr = 0.
-        pp = 0.
+        pr = 0.0
+        pp = 0.0
         do i = 1, nfa
             phin = (i - 1)*hfa
             cosphin = cos(phin)
             sinphin = sin(phin)
             !  Simpson's rules for phin
-            cofa = 2.
-            diff = abs(i/2 - i/2.)
-            if (diff .lt. 0.00001) cofa = 4.
+            cofa = 2.0
+            diff = abs(i/2 - i/2.0)
+            if (diff .lt. 0.00001) cofa = 4.0
             if (i .eq. 1 .or. i .eq. nfa) cofa = 1.0
             ! loops on tetaN (zenith angle of the facet normal vector)
             do j = 1, nta
@@ -1158,17 +1158,17 @@ subroutine glitalbe(wspd, nr, ni, azw, rge)
                 sintetn = sqrt(1 - costetn*costetn)
                 tantetn = sintetn/costetn
                 !  Simpson's rules for tetaN
-                cota = 2.
-                diff = abs(j/2 - j/2.)
-                if (diff .lt. 0.00001) cota = 4.
+                cota = 2.0
+                diff = abs(j/2 - j/2.0)
+                if (diff .lt. 0.00001) cota = 4.0
                 if (j .eq. 1 .or. j .eq. nta) cota = 1.0
                 ! Fresnel's reflection coefficient R1
                 coschi = costet*costetn + sintet*sintetn*cosphin
                 if (coschi*coschi .gt. 1.0) coschi = 0.99999999999
                 sinchi = sqrt(1 - coschi*coschi)
                 if (coschi .lt. 0.0) then
-                    r1 = 0.
-                    cota = 0.
+                    r1 = 0.0
+                    cota = 0.0
                 else
                     call Fresnel(nr, ni, coschi, sinchi, r1)
                 end if
@@ -1179,17 +1179,18 @@ subroutine glitalbe(wspd, nr, ni, azw, rge)
                 xn = (-sin(phw)*Zx + cos(phw)*Zy)/sqrt(SigmaU)
                 xe2 = xe*xe
                 xn2 = xn*xn
-                coef = 1 - C21/2.*(xe2 - 1)*xn - C03/6.*(xn2 - 3)*xn
-                coef = coef + c40/24.*(xe2*xe2 - 6*xe2 + 3)
-                coef = coef + C04/24.*(xn2*xn2 - 6*xn2 + 3)
-                coef = coef + C22/4.*(xe2 - 1)*(xn2 - 1)
-                fonc0 = 0.5d0*coschi*coef*exp(-(xe2 + xn2)/2.)/(costetn**4)
+                coef = 1.0 - C21/2.0*(xe2 - 1.0)*xn - C03/6.0*(xn2 - 3.0)*xn
+                coef = coef + c40/24.0*(xe2*xe2 - 6.0*xe2 + 3.0)
+                coef = coef + C04/24.0*(xn2*xn2 - 6.0*xn2 + 3.0)
+                coef = coef + C22/4.0*(xe2 - 1.0)*(xn2 - 1.0)
+                fonc0 = 0.5d0*coschi*coef*exp(-(xe2 + xn2)/2.0)/(costetn**4)
                 pr = pr + r1*fonc0*cofa*cota*cotb
                 pp = pp + fonc0*cofa*cota*cotb
             end do
         end do
 
-        pond = 2.*hta*hfa*htb/PI_/sqrt(sigmaC)/sqrt(sigmaU)/3./3./3.
+        !pond = 2.0*hta*hfa*htb/PI_/sqrt(sigmaC)/sqrt(sigmaU)/3./3./3.
+        pond = 2.0*hta*hfa*htb/PI_/sqrt(sigmaC)/sqrt(sigmaU)/27.0
         prefl = prefl + pr*pond
         proba = proba + pp*pond
     end do
