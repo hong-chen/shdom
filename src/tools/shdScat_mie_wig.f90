@@ -292,12 +292,13 @@ subroutine GAUSQUAD(N, XA, WT)
     integer N
     double precision XA(*), WT(*)
     integer K, I, J, L
-    real*8 X, XP, PL, PL1, PL2, DPL, TINY
+    double precision :: X, XP, PL, PL1, PL2, DPL, TINY
     parameter(TINY=3.0d-13)
+    double precision, parameter :: PI = 3.141592653589793238462643383279502884197d0
 
     K = (N + 1)/2
     do 130 J = 1, K
-        X = cos(3.141592654*(J - .25)/(N + .5))
+        X = cos(PI*(J - 0.25)/(N + 0.5))
         I = 0
 100     continue
         PL1 = 1
