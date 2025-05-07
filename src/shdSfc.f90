@@ -774,14 +774,15 @@ subroutine shd_sfc__brdfOcean(&
     W = 2.95d-6*(wspd**3.52d0)
     iwl = 1 + int((wl - 0.2)/0.1)
     wlp = 0.5d0 + (iwl - 1)*0.1d0
-    Ref_i = ref(iwl + 1) + (wl - wlp)/0.1*(ref(iwl) - ref(iwl + 1))
+    !Ref_i = ref(iwl + 1) + (wl - wlp)/0.1*(ref(iwl) - ref(iwl + 1))
+    Ref_i = ref(iwl + 1) + (wl - wlp)*10.0*(ref(iwl) - ref(iwl + 1))
     Rwc = W*Ref_i
 
     ! COMPUTE BACKSCATTERED REFLECTANCE FROM THE SEA WATER (LAMBERTIAN)
     !  water reflectance below the sea surface
     call morcasiwat(wl, C, Rw)
 
-    call getbound(wsbnd, 1, 6, wspd, iws1, iws2)
+    call getbound( wsbnd, 1, 6,  wspd, iws1, iws2)
     call getbound(angbnd, 1, 5, tetas, isz1, isz2)
     call getbound(angbnd, 1, 5, tetav, ivz1, ivz2)
     tds = tdsbnd(isz1, iws1)
@@ -791,13 +792,13 @@ subroutine shd_sfc__brdfOcean(&
     call sunglint(wspd, nr, ni, azw, tetas, tetav, fi, rog)
     ! water reflectance above the sea surface
     ! for explanation on value of a see OCEAALBE.f
-    a = 0.485
+    a = 0.485d0
     ! add change in solid angle from under to above to surface
     ! that account for 1/(n12*n12) decrease in sea water directional
     ! reflectance
-    Rwb = (1/(n12*n12))*tds*tdv*Rw/(1 - a*Rw)
+    Rwb = (1.0d0/(n12*n12))*tds*tdv*Rw/(1.0d0 - a*Rw)
     ! TOTAL REFLECTANCE OF SEA WATER
-    REFLECT = Rwc + (1 - W)*Rog + (1 - Rwc)*Rwb
+    REFLECT = Rwc + (1.0d0 - W)*Rog + (1.0d0 - Rwc)*Rwb
     return
 end subroutine shd_sfc__brdfOcean
 
