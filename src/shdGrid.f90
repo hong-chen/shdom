@@ -1059,16 +1059,16 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT, NSTLEG, NLEG,&
     if (V .gt. 1.0d0 - 1.0d-5) V = 1.0d0
 
     F1 = (1 - U)*(1 - V)*(1 - W)
-    F2 = U*(1 - V)*(1 - W)
-    F3 = (1 - U)*V*(1 - W)
-    F4 = U*V*(1 - W)
-    F5 = (1 - U)*(1 - V)*W
-    F6 = U*(1 - V)*W
-    F7 = (1 - U)*V*W
-    F8 = U*V*W
-    I1 = IZ + NPZ_*(IY - 1) + NPZ_*NPY_*(IX - 1)
-    I2 = IZ + NPZ_*(IY - 1) + NPZ_*NPY_*(IXP - 1)
-    I3 = IZ + NPZ_*(IYP - 1) + NPZ_*NPY_*(IX - 1)
+    F2 =      U *(1 - V)*(1 - W)
+    F3 = (1 - U)*      V*(1 - W)
+    F4 =      U *      V*(1 - W)
+    F5 = (1 - U)*(1 - V)*     W
+    F6 =      U *(1 - V)*     W
+    F7 = (1 - U)*     V *     W
+    F8 =      U *     V *     W
+    I1 = IZ + NPZ_*( IY - 1) + NPZ_*NPY_*( IX - 1)
+    I2 = IZ + NPZ_*( IY - 1) + NPZ_*NPY_*(IXP - 1)
+    I3 = IZ + NPZ_*(IYP - 1) + NPZ_*NPY_*( IX - 1)
     I4 = IZ + NPZ_*(IYP - 1) + NPZ_*NPY_*(IXP - 1)
     I5 = I1 + 1
     I6 = I2 + 1

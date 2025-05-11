@@ -613,18 +613,18 @@ subroutine shd_init__makeFlux(&
                 ! Calculate thermal source terms
                 call shd_util__computePlanck(TEMPS(L + 1), UNITS, WAVENO, WAVELEN, BBRAD)
                 PLANCK2 = PI_*BBRAD
-                V = 2.0*(PLANCK2 - PLANCK1)/(3.0*(1.-OMEGA*G)*DELTAU)
+                V = 2.0*(PLANCK2 - PLANCK1)/(3.0*(1.0-OMEGA*G)*DELTAU)
                 RADP1P = -V + PLANCK1
-                RADP2M = V + PLANCK2
+                RADP2M =  V + PLANCK2
                 RADP2P = -V + PLANCK2
-                RADP1M = V + PLANCK1
+                RADP1M =  V + PLANCK1
                 if (LAMBDA .eq. 0.0) then
                     A = (R*DELTAU*RADP1P - RADP2M)*D
                     B = -(R*RADP1P + T*RADP2M)*D
                     SOURCEP = (B - T*(A + B*DELTAU))/R + RADP2P
                     SOURCEM = A + RADP1M
                 else
-                    CP = (X1*EXLM*RADP1P - X2*RADP2M)*D
+                    CP = ( X1*EXLM*RADP1P - X2*RADP2M)*D
                     CM = (-X2*EXLP*RADP1P + X1*RADP2M)*D
                     SOURCEP = X1*CP*EXLP + X2*CM*EXLM + RADP2P
                     SOURCEM = X2*CP + X1*CM + RADP1M
@@ -637,15 +637,15 @@ subroutine shd_init__makeFlux(&
                 DS = 1.0/(LAMBDA**2 - 1.0/MU0**2)
                 B1 = 0.5*OMEGA*(SOLARFLUX/MU0)*exp(-TAU/MU0)*DS
                 B2 = 0.5*OMEGA*(SOLARFLUX/MU0)*exp(-(TAU + DELTAU)/MU0)*DS
-                SOLPP = 1.0 + 1.5*G*MU0
+                SOLPP =  1.0 + 1.5*G*MU0
                 SOLPM = -1.0 + 1.5*G*MU0
-                RADP1P = ((T + 1.0/MU0)*SOLPP + R*SOLPM)*B1
+                RADP1P = (( T + 1.0/MU0)*SOLPP + R*SOLPM)*B1
                 RADP2M = ((-T + 1.0/MU0)*SOLPM - R*SOLPP)*B2
-                RADP2P = ((T + 1.0/MU0)*SOLPP + R*SOLPM)*B2
+                RADP2P = (( T + 1.0/MU0)*SOLPP + R*SOLPM)*B2
                 RADP1M = ((-T + 1.0/MU0)*SOLPM - R*SOLPP)*B1
                 if (LAMBDA .eq. 0.0) then
-                    A = (R*DELTAU*RADP1P - RADP2M)*D
-                    B = -(R*RADP1P + T*RADP2M)*D
+                    A =  (R*DELTAU*RADP1P -   RADP2M)*D
+                    B = -(R*RADP1P        + T*RADP2M)*D
                     SOURCEP = (B - T*(A + B*DELTAU))/R + RADP2P
                     SOURCEM = A + RADP1M
                 else
