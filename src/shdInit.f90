@@ -415,11 +415,10 @@ subroutine shd_init__makeRad(&
     integer NLAYER, I, IZ, IR, J, K, L
     logical DELTAM
     real C0, C1
-    real EXT0, EXT1, SCAT0, SCAT1, G0, G1, GNDEMIS
+    real EXT0, EXT1, ALB0, ALB1, SCAT0, SCAT1, G0, G1, GNDEMIS
     real, allocatable :: OPTDEPTHS(:), ALBEDOS(:), ASYMMETRIES(:)
     real, allocatable :: TEMPS(:), FLUXES(:, :)
     character(len=1) :: SRCT
-    integer :: ZINDEX
 
     allocate (OPTDEPTHS(NZ), ALBEDOS(NZ), ASYMMETRIES(NZ))
     allocate (TEMPS(NZ), FLUXES(3, NZ))
@@ -440,9 +439,13 @@ subroutine shd_init__makeRad(&
             L = NZ - IZ
             EXT0 = EXTINCT(IZ, I)
             EXT1 = EXTINCT(IZ + 1, I)
-            SCAT0 = ALBEDO(IZ, I)*EXT0
-            SCAT1 = ALBEDO(IZ + 1, I)*EXT1
+            ALB0 = ALBEDO(IZ, I)
+            ALB1 = ALBEDO(IZ + 1, I)
+            SCAT0 = ALB0*EXT0
+            SCAT1 = ALB1*EXT1
+
             OPTDEPTHS(L) = (ZGRID(IZ + 1) - ZGRID(IZ))*(EXT0 + EXT1)/2.0
+
             if (EXT0 + EXT1 .gt. 0.0) then
                 ALBEDOS(L) = (SCAT0 + SCAT1)/(EXT0 + EXT1)
             else
