@@ -1395,6 +1395,15 @@ subroutine shd_intg__backIntegrate1D(&
                 ! Get extinction and source function at face intersection
                 EXT0 = EXTINCT(I1)
                 SRCEXT0(:) = EXTINCT(I1)*SOURCE(:, KANG, I1)
+
+                ! check if property medium intersection is encountered
+                !╭────────────────────────────────────────────────╮!
+                !if (abs(EXT0-EXT1) .gt. 100*min(EXT0, EXT1)) then
+                !    EXT1 = EXT0
+                !    SRCEXT1(:) = SRCEXT0(:)
+                !end if
+                !╰────────────────────────────────────────────────╯!
+
                 ! Compute the cell radiance: integration of the source function
                 EXT = 0.5*(EXT0 + EXT1)
                 TAU = EXT*SO
@@ -1410,7 +1419,6 @@ subroutine shd_intg__backIntegrate1D(&
                     if (EXT .eq. 0.0) then
                         SRC(:) = 0.0
                     else
-                        ! Linear extinction, linear source*extinction, to first order
                         SRC(:) = (0.5d0*(SRCEXT0(:) + SRCEXT1(:)) + FRAC112_&
                             &*(EXT0*SRCEXT1(:) - EXT1*SRCEXT0(:))*SO)/EXT
                     end if

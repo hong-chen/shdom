@@ -166,10 +166,8 @@ subroutine shd_rad__computeDirect(&
                         L = ML + 1
                         F = LEGENP_(1 + NSTLEG*(L + (NLEG + 1)*(IPH - 1)))/(2*L + 1)
                         EXTINCT = (1.0 - ALBEDO*F)*EXTINCT
-                        !ALBEDO = ALBEDO * (1.0 - F) / (1.0 - ALBEDO*F)
                     end if
                     EXTDIRP_(IP) = EXTINCT
-                    !ALBEDOP_(IP) = ALBEDO
                 end do
             end do
         end do
@@ -368,6 +366,10 @@ subroutine shd_rad__computeDirect(&
         E2 = EXTDIRP_(I2)
         E3 = EXTDIRP_(I3)
         E4 = EXTDIRP_(I4)
+        !E1 = EXTDIRP_(I1 + 1)
+        !E2 = EXTDIRP_(I2 + 1)
+        !E3 = EXTDIRP_(I3 + 1)
+        !E4 = EXTDIRP_(I4 + 1)
         E5 = EXTDIRP_(I1 + 1)
         E6 = EXTDIRP_(I2 + 1)
         E7 = EXTDIRP_(I3 + 1)

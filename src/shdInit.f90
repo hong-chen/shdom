@@ -369,21 +369,25 @@ subroutine shd_init__makePrp(&
             if (NUMPHASE .gt. 0) then
                 F = LEGEN(1, ML + 1, IPHASE(I))
             else
-                ! NUMPHASE=0 is standard property format, which is unpolariz
+                ! NUMPHASE=0 is standard property format, which is unpolarized
                 F = LEGEN(1, ML + 1, I)
                 do L = 0, ML
                     LEGEN(1, L, I) = (LEGEN(1, L, I) - F)/(1 - F)
                 end do
             end if
+
             EXTINCT(I) = (1.0 - ALBEDO(I)*F)*EXTINCT(I)
             ALBEDO(I) = (1.0 - F)*ALBEDO(I)/(1.0 - ALBEDO(I)*F)
+
         end if
+
         ALBMAX = max(ALBMAX, ALBEDO(I))
         if (SRCTYPE .ne. 'S') then
             call shd_util__computePlanck(TEMP(I), UNITS, WAVENO, WAVELEN, BB)
             PLANCK(I) = (1.0 - ALBEDO(I))*BB
         end if
     end do
+
     return
 end subroutine shd_init__makePrp
 
@@ -415,6 +419,7 @@ subroutine shd_init__makeRad(&
     real, allocatable :: OPTDEPTHS(:), ALBEDOS(:), ASYMMETRIES(:)
     real, allocatable :: TEMPS(:), FLUXES(:, :)
     character(len=1) :: SRCT
+    integer :: ZINDEX
 
     allocate (OPTDEPTHS(NZ), ALBEDOS(NZ), ASYMMETRIES(NZ))
     allocate (TEMPS(NZ), FLUXES(3, NZ))
@@ -430,7 +435,44 @@ subroutine shd_init__makeRad(&
     IR = 0
     RSHPTR(1) = 0
     do I = 1, NXY
+
         ! Make layer properties for the Eddington routine
+        ! new: accounting for property medium intersection
+        !╭────────────────────────────────────────────────╮!
+        !do IZ = 1, NLAYER
+        !    L = NZ - IZ
+
+        !    ZINDEX = IZ+1
+
+        !    EXT0 = EXTINCT(ZINDEX, I)
+        !    SCAT0 = ALBEDO(ZINDEX, I)*EXT0
+        !    OPTDEPTHS(L) = (ZGRID(IZ + 1) - ZGRID(IZ))*EXT0
+
+        !    if (EXT0 .gt. 0.0) then
+        !        ALBEDOS(L) = ALBEDO(ZINDEX, I)
+        !    else
+        !        ALBEDOS(L) = 0.0
+        !    end if
+
+        !    if (NUMPHASE .gt. 0) then
+        !        J = IPHASE(ZINDEX, I)
+        !    else
+        !        J = NZ*(I - 1) + IZ
+        !    end if
+        !    G0 = LEGEN(1, 1, J)
+
+        !    if (SCAT0 .gt. 0.0) then
+        !        ASYMMETRIES(L) = SCAT0
+        !    else
+        !        ASYMMETRIES(L) = 0.0
+        !    end if
+
+        !    TEMPS(L + 1) = TEMP(ZINDEX, I)
+        !end do
+        !╰────────────────────────────────────────────────╯!
+
+        ! original
+        !╭────────────────────────────────────────────────╮!
         do IZ = 1, NLAYER
             L = NZ - IZ
             EXT0 = EXTINCT(IZ, I)
@@ -460,6 +502,7 @@ subroutine shd_init__makeRad(&
             end if
             TEMPS(L + 1) = TEMP(IZ, I)
         end do
+        !╰────────────────────────────────────────────────╯!
         TEMPS(1) = TEMP(NZ, I)
         GNDEMIS = 1.0 - GNDALBEDO
         ! Call the Eddington flux routine
@@ -591,6 +634,7 @@ subroutine shd_init__makeFlux(&
                 OMEGA = (1 - F)*OMEGA/(1 - OMEGA*F)
                 G = (G - F)/(1 - F)
             end if
+
             R = (1.0 - OMEGA*(4.0 - 3.0*G))/4.0
             T = (7.0 - OMEGA*(4.0 + 3.0*G))/4.0
             LAMBDA = sqrt(3.0*(1.0 - OMEGA)*(1.0 - OMEGA*G))
