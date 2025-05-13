@@ -1396,21 +1396,6 @@ subroutine shd_intg__backIntegrate1D(&
                 EXT0 = EXTINCT(I1)
                 SRCEXT0(:) = EXTINCT(I1)*SOURCE(:, KANG, I1)
 
-                ! check if property medium intersection is encountered
-                !╭────────────────────────────────────────────────╮!
-                ! will need a better criteria to determine property
-                ! medium intersections (rather than difference in extinction)
-                if (abs(EXT0-EXT1) .gt. 8*min(EXT0, EXT1)) then
-                    if (BITZ .eq. 0) then
-                        EXT1 = EXT0
-                        SRCEXT1(:) = SRCEXT0(:)
-                    else
-                        EXT0 = EXT1
-                        SRCEXT0(:) = SRCEXT1(:)
-                    end if
-                end if
-                !╰────────────────────────────────────────────────╯!
-
                 ! Compute the cell radiance: integration of the source function
                 EXT = 0.5*(EXT0 + EXT1)
                 TAU = EXT*SO

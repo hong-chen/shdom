@@ -436,73 +436,36 @@ subroutine shd_init__makeRad(&
     RSHPTR(1) = 0
     do I = 1, NXY
 
-        ! Make layer properties for the Eddington routine
-        ! new: accounting for property medium intersection
-        !╭────────────────────────────────────────────────╮!
         do IZ = 1, NLAYER
             L = NZ - IZ
-
-            ZINDEX = IZ
-
-            EXT0 = EXTINCT(ZINDEX, I)
-            SCAT0 = ALBEDO(ZINDEX, I)*EXT0
-            OPTDEPTHS(L) = (ZGRID(IZ + 1) - ZGRID(IZ))*EXT0
-
-            if (EXT0 .gt. 0.0) then
-                ALBEDOS(L) = ALBEDO(ZINDEX, I)
+            EXT0 = EXTINCT(IZ, I)
+            EXT1 = EXTINCT(IZ + 1, I)
+            SCAT0 = ALBEDO(IZ, I)*EXT0
+            SCAT1 = ALBEDO(IZ + 1, I)*EXT1
+            OPTDEPTHS(L) = (ZGRID(IZ + 1) - ZGRID(IZ))*(EXT0 + EXT1)/2.0
+            if (EXT0 + EXT1 .gt. 0.0) then
+                ALBEDOS(L) = (SCAT0 + SCAT1)/(EXT0 + EXT1)
             else
                 ALBEDOS(L) = 0.0
             end if
-
             if (NUMPHASE .gt. 0) then
-                J = IPHASE(ZINDEX, I)
+                J = IPHASE(IZ, I)
+                G0 = LEGEN(1, 1, J)
+                J = IPHASE(IZ + 1, I)
+                G1 = LEGEN(1, 1, J)
             else
                 J = NZ*(I - 1) + IZ
+                G0 = LEGEN(1, 1, J)
+                G1 = LEGEN(1, 1, J + 1)
             end if
-            G0 = LEGEN(1, 1, J)
-
-            if (SCAT0 .gt. 0.0) then
-                ASYMMETRIES(L) = SCAT0
+            if (SCAT0 + SCAT1 .gt. 0.0) then
+                ASYMMETRIES(L) = (SCAT0*G0 + SCAT1*G1)/(SCAT0 + SCAT1)
             else
                 ASYMMETRIES(L) = 0.0
             end if
-
-            TEMPS(L + 1) = TEMP(ZINDEX, I)
+            TEMPS(L + 1) = TEMP(IZ, I)
         end do
-        !╰────────────────────────────────────────────────╯!
 
-        ! original
-        !╭────────────────────────────────────────────────╮!
-        !do IZ = 1, NLAYER
-        !    L = NZ - IZ
-        !    EXT0 = EXTINCT(IZ, I)
-        !    EXT1 = EXTINCT(IZ + 1, I)
-        !    SCAT0 = ALBEDO(IZ, I)*EXT0
-        !    SCAT1 = ALBEDO(IZ + 1, I)*EXT1
-        !    OPTDEPTHS(L) = (ZGRID(IZ + 1) - ZGRID(IZ))*(EXT0 + EXT1)/2
-        !    if (EXT0 + EXT1 .gt. 0.0) then
-        !        ALBEDOS(L) = (SCAT0 + SCAT1)/(EXT0 + EXT1)
-        !    else
-        !        ALBEDOS(L) = 0.0
-        !    end if
-        !    if (NUMPHASE .gt. 0) then
-        !        J = IPHASE(IZ, I)
-        !        G0 = LEGEN(1, 1, J)
-        !        J = IPHASE(IZ + 1, I)
-        !        G1 = LEGEN(1, 1, J)
-        !    else
-        !        J = NZ*(I - 1) + IZ
-        !        G0 = LEGEN(1, 1, J)
-        !        G1 = LEGEN(1, 1, J + 1)
-        !    end if
-        !    if (SCAT0 + SCAT1 .gt. 0.0) then
-        !        ASYMMETRIES(L) = (SCAT0*G0 + SCAT1*G1)/(SCAT0 + SCAT1)
-        !    else
-        !        ASYMMETRIES(L) = 0.0
-        !    end if
-        !    TEMPS(L + 1) = TEMP(IZ, I)
-        !end do
-        !╰────────────────────────────────────────────────╯!
         TEMPS(1) = TEMP(NZ, I)
         GNDEMIS = 1.0 - GNDALBEDO
         ! Call the Eddington flux routine
