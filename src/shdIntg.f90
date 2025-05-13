@@ -1398,10 +1398,15 @@ subroutine shd_intg__backIntegrate1D(&
 
                 ! check if property medium intersection is encountered
                 !╭────────────────────────────────────────────────╮!
-                !if (abs(EXT0-EXT1) .gt. 100*min(EXT0, EXT1)) then
-                !    EXT1 = EXT0
-                !    SRCEXT1(:) = SRCEXT0(:)
-                !end if
+                if (abs(EXT0-EXT1) .gt. 8*min(EXT0, EXT1)) then
+                    if (BITZ .eq. 0) then
+                        EXT1 = EXT0
+                        SRCEXT1(:) = SRCEXT0(:)
+                    else
+                        EXT0 = EXT1
+                        SRCEXT0(:) = SRCEXT1(:)
+                    end if
+                end if
                 !╰────────────────────────────────────────────────╯!
 
                 ! Compute the cell radiance: integration of the source function
