@@ -1070,10 +1070,18 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT, NSTLEG, NLEG,&
     I2 = IZ + NPZ_*( IY - 1) + NPZ_*NPY_*(IXP - 1)
     I3 = IZ + NPZ_*(IYP - 1) + NPZ_*NPY_*( IX - 1)
     I4 = IZ + NPZ_*(IYP - 1) + NPZ_*NPY_*(IXP - 1)
-    I5 = I1 + 1
-    I6 = I2 + 1
-    I7 = I3 + 1
-    I8 = I4 + 1
+
+    ! zgrid correction (to address layer averaging issue in z direction)
+    !╭────────────────────────────────────────────────╮!
+    I1 = I1 + 1
+    I2 = I2 + 1
+    I3 = I3 + 1
+    I4 = I4 + 1
+    I5 = I1
+    I6 = I2
+    I7 = I3
+    I8 = I4
+    !╰────────────────────────────────────────────────╯!
 
     ! Trilinearly interpolate the temperature, extinction, scattering
     TEMP = F1*TEMPP_(I1) + F2*TEMPP_(I2) + F3*TEMPP_(I3) + F4*TEMPP_(I4)&
@@ -1491,12 +1499,13 @@ subroutine shd_grid__splitGrid(&
         end if
 
         ! If in parallel mode, calculate all the direct beam fluxes at once
-        if (SRCTYPE .ne. 'T' .and.&
-            &(btest(BCFLAG, 2) .or. btest(BCFLAG, 3))) then
-            call shd_mpi__makeDirect(OLDNPTS + 1, NPTS, BCFLAG,&
-                &IPFLAG, DELTAM, ML, NSTLEG, NLEG,&
-                &SOLARFLUX, SOLARMU, SOLARAZ, GRIDPOS,&
-                &NX, XGRID, NY, YGRID, DIRFLUX)
+        if (SRCTYPE .ne. 'T') then
+            if (btest(BCFLAG, 2) .or. btest(BCFLAG, 3)) then
+                call shd_mpi__makeDirect(OLDNPTS + 1, NPTS, BCFLAG,&
+                    &IPFLAG, DELTAM, ML, NSTLEG, NLEG,&
+                    &SOLARFLUX, SOLARMU, SOLARAZ, GRIDPOS,&
+                    &NX, XGRID, NY, YGRID, DIRFLUX)
+            end if
         end if
     end if
 

@@ -362,14 +362,17 @@ subroutine shd_rad__computeDirect(&
         I2 = K + NPZ_*(J - 1) + NPZ_*NPY_*(IP - 1)
         I3 = K + NPZ_*(JP - 1) + NPZ_*NPY_*(I - 1)
         I4 = K + NPZ_*(JP - 1) + NPZ_*NPY_*(IP - 1)
-        E1 = EXTDIRP_(I1)
-        E2 = EXTDIRP_(I2)
-        E3 = EXTDIRP_(I3)
-        E4 = EXTDIRP_(I4)
+        ! zgrid correction (to address layer averaging issue in z direction)
+        !╭────────────────────────────────────────────────╮!
+        E1 = EXTDIRP_(I1 + 1)
+        E2 = EXTDIRP_(I2 + 1)
+        E3 = EXTDIRP_(I3 + 1)
+        E4 = EXTDIRP_(I4 + 1)
         E5 = EXTDIRP_(I1 + 1)
         E6 = EXTDIRP_(I2 + 1)
         E7 = EXTDIRP_(I3 + 1)
         E8 = EXTDIRP_(I4 + 1)
+        !╰────────────────────────────────────────────────╯!
 
         ! Compute the distance to the next grid plane in  X, Y, and Z
         !   If in horizontal uniform region or doing IP then fix X and/or Y.

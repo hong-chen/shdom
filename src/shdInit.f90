@@ -412,10 +412,10 @@ subroutine shd_init__makeRad(&
     real TEMP(NZ, NXY)
     real RADIANCE(NSTOKES, *)
     character(len=1) :: SRCTYPE, UNITS
-    integer NLAYER, I, IZ, IR, J, K, L
+    integer NLAYER, I, IZ, IR, J, K, L, ZINDEX
     logical DELTAM
     real C0, C1
-    real EXT0, EXT1, ALB0, ALB1, SCAT0, SCAT1, G0, G1, GNDEMIS
+    real EXT0, ALB0, SCAT0, G0, GNDEMIS
     real, allocatable :: OPTDEPTHS(:), ALBEDOS(:), ASYMMETRIES(:)
     real, allocatable :: TEMPS(:), FLUXES(:, :)
     character(len=1) :: SRCT
@@ -435,41 +435,44 @@ subroutine shd_init__makeRad(&
     RSHPTR(1) = 0
     do I = 1, NXY
 
+        ! this is modified to address layer averaging issue
+        !╭────────────────────────────────────────────────╮!
         do IZ = 1, NLAYER
+
             L = NZ - IZ
-            EXT0 = EXTINCT(IZ, I)
-            EXT1 = EXTINCT(IZ + 1, I)
-            ALB0 = ALBEDO(IZ, I)
-            ALB1 = ALBEDO(IZ + 1, I)
+
+            ZINDEX = IZ + 1
+
+            EXT0 = EXTINCT(ZINDEX, I)
+            ALB0 = ALBEDO(ZINDEX, I)
             SCAT0 = ALB0*EXT0
-            SCAT1 = ALB1*EXT1
 
-            OPTDEPTHS(L) = (ZGRID(IZ + 1) - ZGRID(IZ))*(EXT0 + EXT1)/2.0
+            OPTDEPTHS(L) = (ZGRID(IZ + 1) - ZGRID(IZ))*EXT0
 
-            if (EXT0 + EXT1 .gt. 0.0) then
-                ALBEDOS(L) = (SCAT0 + SCAT1)/(EXT0 + EXT1)
+            if (EXT0 .gt. 0.0) then
+                ALBEDOS(L) = ALB0
             else
                 ALBEDOS(L) = 0.0
             end if
+
             if (NUMPHASE .gt. 0) then
-                J = IPHASE(IZ, I)
-                G0 = LEGEN(1, 1, J)
-                J = IPHASE(IZ + 1, I)
-                G1 = LEGEN(1, 1, J)
+                J = IPHASE(ZINDEX, I)
             else
                 J = NZ*(I - 1) + IZ
-                G0 = LEGEN(1, 1, J)
-                G1 = LEGEN(1, 1, J + 1)
             end if
-            if (SCAT0 + SCAT1 .gt. 0.0) then
-                ASYMMETRIES(L) = (SCAT0*G0 + SCAT1*G1)/(SCAT0 + SCAT1)
+            G0 = LEGEN(1, 1, J)
+
+            if (SCAT0 .gt. 0.0) then
+                ASYMMETRIES(L) = G0
             else
                 ASYMMETRIES(L) = 0.0
             end if
             TEMPS(L + 1) = TEMP(IZ, I)
         end do
+        !╰────────────────────────────────────────────────╯!
 
         TEMPS(1) = TEMP(NZ, I)
+
         GNDEMIS = 1.0 - GNDALBEDO
         ! Call the Eddington flux routine
         call shd_init__makeFlux(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
