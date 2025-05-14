@@ -157,8 +157,10 @@ program shdom_main
     ! Make ML and MM from NMU and NPHI
     NMU = max(2, 2*int((NMU + 1)/2))
     NPHI = max(1, NPHI)
+
     ML = NMU - 1
     MM = max(0, int(NPHI/2) - 1)
+
     NLEG = ML
     if (DELTAM) NLEG = ML + 1
 
