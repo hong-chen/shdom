@@ -362,8 +362,13 @@ subroutine shd_rad__computeDirect(&
         I2 = K + NPZ_*(J - 1) + NPZ_*NPY_*(IP - 1)
         I3 = K + NPZ_*(JP - 1) + NPZ_*NPY_*(I - 1)
         I4 = K + NPZ_*(JP - 1) + NPZ_*NPY_*(IP - 1)
+
         ! zgrid correction (to address layer averaging issue in z direction)
         !╭────────────────────────────────────────────────╮!
+        !E1 = EXTDIRP_(I1)
+        !E2 = EXTDIRP_(I2)
+        !E3 = EXTDIRP_(I3)
+        !E4 = EXTDIRP_(I4)
         E1 = EXTDIRP_(I1 + 1)
         E2 = EXTDIRP_(I2 + 1)
         E3 = EXTDIRP_(I3 + 1)

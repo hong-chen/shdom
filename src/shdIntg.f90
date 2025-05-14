@@ -1396,17 +1396,6 @@ subroutine shd_intg__backIntegrate1D(&
                 EXT0 = EXTINCT(I1)
                 SRCEXT0(:) = EXTINCT(I1)*SOURCE(:, KANG, I1)
 
-                ! this is added to address layer averging issue
-                !╭────────────────────────────────────────────────╮!
-                !if (BITZ .eq. 0) then
-                !    EXT1 = EXT0
-                !    SRCEXT1(:) = SRCEXT0(:)
-                !else
-                !    EXT0 = EXT1
-                !    SRCEXT0(:) = SRCEXT1(:)
-                !end if
-                !╰────────────────────────────────────────────────╯!
-
                 ! Compute the cell radiance: integration of the source function
                 EXT = 0.5*(EXT0 + EXT1)
                 TAU = EXT*SO

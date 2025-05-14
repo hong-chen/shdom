@@ -1058,29 +1058,30 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT, NSTLEG, NLEG,&
     if (V .lt. 1.0d-5) V = 0.0d0
     if (V .gt. 1.0d0 - 1.0d-5) V = 1.0d0
 
-    F1 = (1 - U)*(1 - V)*(1 - W)
-    F2 =      U *(1 - V)*(1 - W)
-    F3 = (1 - U)*      V*(1 - W)
-    F4 =      U *      V*(1 - W)
-    F5 = (1 - U)*(1 - V)*     W
-    F6 =      U *(1 - V)*     W
-    F7 = (1 - U)*     V *     W
-    F8 =      U *     V *     W
+    F1 = (1.0d0 - U)*(1.0d0 - V)*(1.0d0 - W)
+    F2 =          U *(1.0d0 - V)*(1.0d0 - W)
+    F3 = (1.0d0 - U)*         V *(1.0d0 - W)
+    F4 =          U *         V *(1.0d0 - W)
+    F5 = (1.0d0 - U)*(1.0d0 - V)*         W
+    F6 =          U *(1.0d0 - V)*         W
+    F7 = (1.0d0 - U)*         V *         W
+    F8 =          U *         V *         W
     I1 = IZ + NPZ_*( IY - 1) + NPZ_*NPY_*( IX - 1)
     I2 = IZ + NPZ_*( IY - 1) + NPZ_*NPY_*(IXP - 1)
     I3 = IZ + NPZ_*(IYP - 1) + NPZ_*NPY_*( IX - 1)
     I4 = IZ + NPZ_*(IYP - 1) + NPZ_*NPY_*(IXP - 1)
 
+    I5 = I1 + 1
+    I6 = I2 + 1
+    I7 = I3 + 1
+    I8 = I4 + 1
+
     ! zgrid correction (to address layer averaging issue in z direction)
     !╭────────────────────────────────────────────────╮!
-    I1 = I1 + 1
-    I2 = I2 + 1
-    I3 = I3 + 1
-    I4 = I4 + 1
-    I5 = I1
-    I6 = I2
-    I7 = I3
-    I8 = I4
+    I1 = I5
+    I2 = I6
+    I3 = I7
+    I4 = I8
     !╰────────────────────────────────────────────────╯!
 
     ! Trilinearly interpolate the temperature, extinction, scattering
@@ -1183,6 +1184,7 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT, NSTLEG, NLEG,&
         end if
         EXTINCT = EXTINCT + KG
     end if
+
     return
 end subroutine shd_grid__InterpTriLinGridPrp
 
@@ -1314,7 +1316,11 @@ subroutine shd_grid__interpNewGridPnt(NEWPOINTS, NPTS,&
                 else
                     RAD2(:) = 0.0
                 end if
-                RADIANCE(:, IR + J) = 0.5*(RAD1(:) + RAD2(:))
+                ! this is modified to address the layer averaging issue
+                !╭────────────────────────────────────────────────╮!
+                !RADIANCE(:, IR + J) = 0.5*(RAD1(:) + RAD2(:))
+                RADIANCE(:, IR + J) = RAD2(:)
+                !╰────────────────────────────────────────────────╯!
             end do
 
             ! Compute the source function for the new points
