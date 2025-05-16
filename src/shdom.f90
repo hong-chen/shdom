@@ -837,27 +837,44 @@ program shdom_main
     call shd_mpi__end(NPTS, GRIDPOS, NPX_, NPY_, XSTART_, YSTART_, XDOMAIN_, YDOMAIN_,&
         &NPXT, NPYT, PROPFILE, RUNNAME)
 
-    if (SRCTYPE .ne. 'T') then
-        call shd_rad__computeDirect(9, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
-            &DELTAM, ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
-            &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
-    end if
+    !if (SRCTYPE .ne. 'T') then
+    !    call shd_rad__computeDirect(9, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
+    !        &DELTAM, ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
+    !        &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
+    !end if
 
+    print *, "deallocating 1..."
     deallocate (SUMRADOUT, SUMVISOUT, WORK2)
+    print *, "deallocating 2..."
     if (FLUX_OUT) deallocate (SUMFLUXES, SUMDIRFLUX)
+    print *, "deallocating 3..."
     if (FLUXDIV_OUT) deallocate (SUMFLUXDIV)
+    print *, "deallocating 4..."
     if (SH_OUT) deallocate (SUMSHTERMS)
+    print *, "deallocating 5..."
     if (SOURCE_OUT) deallocate (SOURCE1OUT)
+    print *, "deallocating 6..."
     if (KDIST) deallocate (ZCKD_, GASABS_, KABS)
+    print *, "deallocating 7..."
     deallocate (BCPTR, BCRAD, DELG)
+    print *, "deallocating 8..."
     if (allocated(SFCPARMS)) deallocate (SFCPARMS, SFCGRIDPARMS)
+    print *, "deallocating 9..."
     deallocate (RADIANCE, SOURCE)
+    print *, "deallocating 10..."
     if (ACCELFLAG) deallocate (DELSOURCE)
+    print *, "deallocating 11..."
     deallocate (RSHPTR, SHPTR, OSHPTR, WORK, WORK1, FLUXES, DIRFLUX)
+    print *, "deallocating 12..."
     deallocate (GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, GRIDPOS)
+    print *, "deallocating 13..."
     deallocate (TEMP, PLANCK, EXTINCT, ALBEDO, IPHASE, LEGEN)
+    print *, "deallocating 14..."
     deallocate (XGRID, YGRID, ZGRID)
+    print *, "deallocating 15..."
     deallocate (ZLEVELS_, TEMPP_, EXTINCTP_, ALBEDOP_, EXTDIRP_, IPHASEP_, LEGENP_)
+    print *, "deallocating 16..."
     deallocate (MU, WTDO, PHI, NPHI0)
+    print *, "deallocated!"
 
 end program shdom_main
