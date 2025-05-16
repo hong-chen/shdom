@@ -2653,18 +2653,28 @@ subroutine shd_mpi__end(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART, XDOMAIN, YDOMAI
                     NORM(SX:EX - 1, IY) = NORM(SX:EX - 1, IY) + reshape((/1/), (/NX - 1/), (/1/))
                     NUMGRIDALL(IX, IY) = NUMGRIDALL(IX, IY) + buf(NX, NY)
                     NORM(IX, IY) = NORM(IX, IY) + 1
+
+                    ! checked
                     deallocate (buf)
                 end do
+
+                ! checked
                 deallocate (recvbuf)
                 NUMGRIDALL(:, :) = NUMGRIDALL(:, :)/NORM(:, :)
+
+                ! checked
                 deallocate (NORM)
             end if
+
+            ! checked
             deallocate (requests, status, IXYALL)
 
         else
             allocate (NUMGRIDALL(NPXT, NPYT))
             NUMGRIDALL(1:NPX, 1:NPY) = NUMGRID(:, :)
         end if
+
+        ! checked
         deallocate (NUMGRID)
 
         if (MYPROC_ .eq. 0) then
@@ -2679,6 +2689,8 @@ subroutine shd_mpi__end(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART, XDOMAIN, YDOMAI
                 end do
             end do
             close (10)
+
+            ! checked
             deallocate (NUMGRIDALL)
         end if
     end if
@@ -2694,7 +2706,10 @@ subroutine shd_mpi__end(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART, XDOMAIN, YDOMAI
     write (6, '(A,"<",A,">")') 'Message [mpi__end]: Finished with SHDOM run: ', trim(adjustl(RUNNAME))
 
     ! Shut down MPI
-    if (allocated(BXYPTR_)) deallocate (BXYPTR_, IBXYPTR_, BXYPOS_)
+    if (allocated(BXYPTR_)) deallocate(BXYPTR_)
+    if (allocated(IBXYPTR_)) deallocate(IBXYPTR_)
+    if (allocated(BXYPOS_)) deallocate(BXYPOS_)
+
     call MPI_FINALIZE(ierr)
 #endif
 
