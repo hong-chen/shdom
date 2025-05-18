@@ -1410,9 +1410,18 @@ subroutine shd_grid__interpNewGridPnt(NEWPOINTS, NPTS,&
                 end if
                 ! this is modified to address the layer averaging issue
                 !╭────────────────────────────────────────────────╮!
-                !RADIANCE(:, IR + J) = 0.5*(RAD1(:) + RAD2(:))
-                RADIANCE(:, IR + J) = RAD2(:)
+                !if ((abs(GRIDPOS(1, IP1)-GRIDPOS(1, IP2)) .lt. 1.0e-6) .and.&
+                !    &(abs(GRIDPOS(2, IP1)-GRIDPOS(2, IP2)) .lt. 1.0e-6)) then
+                !    if (GRIDPOS(3, IP2) .gt. GRIDPOS(3, IP1)) then
+                !        RADIANCE(:, IR + J) = RAD2(:)
+                !    else
+                !        RADIANCE(:, IR + J) = RAD1(:)
+                !    end if
+                !else
+                    !RADIANCE(:, IR + J) = 0.5*(RAD1(:) + RAD2(:))
+                !end if
                 !╰────────────────────────────────────────────────╯!
+                RADIANCE(:, IR + J) = 0.5*(RAD1(:) + RAD2(:))
             end do
 
             ! Compute the source function for the new points
