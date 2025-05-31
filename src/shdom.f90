@@ -164,13 +164,6 @@ program shdom_main
     NLEG = ML
     if (DELTAM) NLEG = ML + 1
 
-    ! Make ML and MM from NMU and NPHI
-    ! Compute NLM, NPHI0MAX.
-    if (SRCTYPE .eq. 'T') SOLARAZ = 0.0
-    NPHI0MAX = NPHI
-    NLM = (2*MM + 1)*(ML + 1) - MM*(MM + 1)
-    MEMWORD = NMU*(2 + 2*NPHI + 2*NLM + 2*33*32)
-
     ! NSTLEG is the number of phase function elements used (1 or 6)
     ! Also used for the number of unique elements of the generalized
     !   spherical harmonics matrices.
@@ -180,15 +173,34 @@ program shdom_main
         NSTLEG = 6
     end if
 
-    allocate (MU(NMU), WTDO(NMU*NPHI), PHI(NMU*NPHI), NPHI0(NMU))
-
     ! Find out the size of the input property file grid
     if (MASTERPROC) then
         call shd_io__readPrpSize(PROPFILE, NSTLEG, NLEG, NPX_, NPY_, NPZ_,&
-                                NUMPHASE_, MAXLEG, MAXPGL, DELX_, DELY_)
+            &NUMPHASE_, MAXLEG, MAXPGL, DELX_, DELY_)
     end if
     call shd_mpi__bcastPrpSize(NPX_, NPY_, NPZ_, DELX_, DELY_,&
-                                 NUMPHASE_, MAXLEG, MAXPGL)
+        &NUMPHASE_, MAXLEG, MAXPGL)
+
+    ! added to address inaccurate downwelling diffuse flux
+    !╭────────────────────────────────────────────────╮!
+    !FLUX_OUT = .false.
+    !do I = 1, NUMOUT
+    !    if (OUTTYPES(I) .eq. 'F') then
+    !        FLUX_OUT = .true.
+    !    end if
+    !end do
+
+    !if (DELTAM .and. FLUX_OUT .and. (ML .le. (MAXLEG-1))) ML = MAXLEG - 1
+    !╰────────────────────────────────────────────────╯!
+
+    ! Make ML and MM from NMU and NPHI
+    ! Compute NLM, NPHI0MAX.
+    if (SRCTYPE .eq. 'T') SOLARAZ = 0.0
+    NPHI0MAX = NPHI
+    NLM = (2*MM + 1)*(ML + 1) - MM*(MM + 1)
+    MEMWORD = NMU*(2 + 2*NPHI + 2*NLM + 2*33*32)
+
+    allocate (MU(NMU), WTDO(NMU*NPHI), PHI(NMU*NPHI), NPHI0(NMU))
 
     ! Set the full domain grid sizes (variables end in T)
     NXT = NX; NYT = NY; NPXT = NPX_; NPYT = NPY_
