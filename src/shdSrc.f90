@@ -444,7 +444,7 @@ subroutine shd_src__computeSrc(&
     ! Computes the source function (SOURCE) in spherical harmonic space
     !   for all the grid points.  The thermal source and/or solar
     !   pseudo-source (in PLANCK or DIRFLUX) is added to the scattering source
-    !   (computed from LEGEN and the spherical harmonic expansion in RADIAIANCE).
+    !   (computed from LEGEN and the spherical harmonic expansion in RADIANCE).
     !   Also computes the adaptive spherical harmonic truncation for
     !   the source function, unless FIXSH is true.  The SH truncation is set
     !   so that the higher terms of the source function are smaller in

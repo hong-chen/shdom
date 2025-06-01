@@ -111,6 +111,7 @@ subroutine shd_solv__solveRte(&
     call shd_init__makePrp(ML, MM, NSTLEG, NLEG, NPTS, DELTAM, NUMPHASE,&
         &SRCTYPE, UNITS, WAVENO, WAVELEN, ALBMAX,&
         &EXTINCT, ALBEDO, LEGEN, TEMP, PLANCK, IPHASE)
+
     ! Get the maximum single scattering albedo over all processors
     call shd_mpi__findAlbMax(ALBMAX)
 
