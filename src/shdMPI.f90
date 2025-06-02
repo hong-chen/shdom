@@ -2709,8 +2709,8 @@ subroutine shd_mpi__end(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART, XDOMAIN, YDOMAI
     if (allocated(BXYPTR_)) deallocate(BXYPTR_)
     if (allocated(IBXYPTR_)) deallocate(IBXYPTR_)
     if (allocated(BXYPOS_)) deallocate(BXYPOS_)
+    call mpi_finalize(ierr)
 
-    call MPI_FINALIZE(ierr)
 #endif
 
     return

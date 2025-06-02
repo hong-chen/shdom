@@ -39,7 +39,7 @@ SHDOM was originally developed by `Frank Evans <evans@nit.colorado.edu>`_ and is
 
 * Fixed a segmentation error when saving "state" from calculation;
 
-* Replaced floating-point number representation with exponential notation;
+* Replaced floating-point number representation with scientific notation;
 
 * Converted most I/O from ASCII to binary format;
 

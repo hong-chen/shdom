@@ -368,7 +368,7 @@ program shdom_main
     MAXIG = nint(ADAPT_GRID_FACTOR*NBPTS)
     MAXIC = nint(CELL_TO_POINT_RATIO*MAXIG)
     MAXIV = nint(NUM_SH_TERM_FACTOR*NLM*MAXIG)
-    MAXIDO = MAXIG*NPHI0MAX
+    MAXIDO = MAXIG*max(NPHI0MAX, 4) ! to fix an segmentation error
     if (NUMPHASE_ .gt. 0) then
         MAXIGL = NUMPHASE_*NSTLEG*(MAXLEG + 1)
     else
@@ -394,7 +394,8 @@ program shdom_main
     allocate (RSHPTR(MAXIG + 2), SHPTR(MAXIG + 1), OSHPTR(MAXIG + 1))
     allocate (RADIANCE(NSTOKES, MAXIV + MAXIG), SOURCE(NSTOKES, MAXIV))
     if (ACCELFLAG) allocate (DELSOURCE(NSTOKES, MAXIV))
-    allocate (WORK(NSTOKES*MAXIDO), WORK1(8*MAXIG))
+    allocate (WORK(NSTOKES*MAXIDO))
+    allocate (WORK1(8*MAXIG))
     allocate (FLUXES(2*MAXIG), DIRFLUX(MAXIG))
 
     ! print dimension parameters
@@ -846,47 +847,32 @@ program shdom_main
     write (6, '(A)')'Message [shdom_main]: Actual MAX_TOTAL_MB, ADAPT_GRID_FACTOR, NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO'
     write (6, '(28X,F7.2,6X,F7.3,14X,F5.3,15X,F5.3)') MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
 
-    call shd_mpi__end(NPTS, GRIDPOS, NPX_, NPY_, XSTART_, YSTART_, XDOMAIN_, YDOMAIN_,&
-        &NPXT, NPYT, PROPFILE, RUNNAME)
-
     !if (SRCTYPE .ne. 'T') then
     !    call shd_rad__computeDirect(9, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
     !        &DELTAM, ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
     !        &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
     !end if
 
-    print *, "deallocating 1..."
-    deallocate (SUMRADOUT, SUMVISOUT, WORK2)
-    print *, "deallocating 2..."
+    deallocate (WORK, WORK1, WORK2)
+    deallocate (SUMRADOUT, SUMVISOUT)
     if (FLUX_OUT) deallocate (SUMFLUXES, SUMDIRFLUX)
-    print *, "deallocating 3..."
     if (FLUXDIV_OUT) deallocate (SUMFLUXDIV)
-    print *, "deallocating 4..."
     if (SH_OUT) deallocate (SUMSHTERMS)
-    print *, "deallocating 5..."
     if (SOURCE_OUT) deallocate (SOURCE1OUT)
-    print *, "deallocating 6..."
     if (KDIST) deallocate (ZCKD_, GASABS_, KABS)
-    print *, "deallocating 7..."
     deallocate (BCPTR, BCRAD, DELG)
-    print *, "deallocating 8..."
     if (allocated(SFCPARMS)) deallocate (SFCPARMS, SFCGRIDPARMS)
-    print *, "deallocating 9..."
     deallocate (RADIANCE, SOURCE)
-    print *, "deallocating 10..."
     if (ACCELFLAG) deallocate (DELSOURCE)
-    print *, "deallocating 11..."
-    deallocate (RSHPTR, SHPTR, OSHPTR, WORK, WORK1, FLUXES, DIRFLUX)
-    print *, "deallocating 12..."
+    deallocate (RSHPTR, SHPTR, OSHPTR)
+    deallocate (FLUXES, DIRFLUX)
     deallocate (GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, GRIDPOS)
-    print *, "deallocating 13..."
     deallocate (TEMP, PLANCK, EXTINCT, ALBEDO, IPHASE, LEGEN)
-    print *, "deallocating 14..."
     deallocate (XGRID, YGRID, ZGRID)
-    print *, "deallocating 15..."
     deallocate (ZLEVELS_, TEMPP_, EXTINCTP_, ALBEDOP_, EXTDIRP_, IPHASEP_, LEGENP_)
-    print *, "deallocating 16..."
     deallocate (MU, WTDO, PHI, NPHI0)
-    print *, "deallocated!"
+
+    call shd_mpi__end(NPTS, GRIDPOS, NPX_, NPY_, XSTART_, YSTART_, XDOMAIN_, YDOMAIN_,&
+        &NPXT, NPYT, PROPFILE, RUNNAME)
 
 end program shdom_main

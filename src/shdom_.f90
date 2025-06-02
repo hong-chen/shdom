@@ -164,13 +164,6 @@ program shdom_main
     NLEG = ML
     if (DELTAM) NLEG = ML + 1
 
-    ! Make ML and MM from NMU and NPHI
-    ! Compute NLM, NPHI0MAX.
-    if (SRCTYPE .eq. 'T') SOLARAZ = 0.0
-    NPHI0MAX = NPHI
-    NLM = (2*MM + 1)*(ML + 1) - MM*(MM + 1)
-    MEMWORD = NMU*(2 + 2*NPHI + 2*NLM + 2*33*32)
-
     ! NSTLEG is the number of phase function elements used (1 or 6)
     ! Also used for the number of unique elements of the generalized
     !   spherical harmonics matrices.
@@ -180,15 +173,34 @@ program shdom_main
         NSTLEG = 6
     end if
 
-    allocate (MU(NMU), WTDO(NMU*NPHI), PHI(NMU*NPHI), NPHI0(NMU))
-
     ! Find out the size of the input property file grid
     if (MASTERPROC) then
         call shd_io__readPrpSize(PROPFILE, NSTLEG, NLEG, NPX_, NPY_, NPZ_,&
-                                NUMPHASE_, MAXLEG, MAXPGL, DELX_, DELY_)
+            &NUMPHASE_, MAXLEG, MAXPGL, DELX_, DELY_)
     end if
     call shd_mpi__bcastPrpSize(NPX_, NPY_, NPZ_, DELX_, DELY_,&
-                                 NUMPHASE_, MAXLEG, MAXPGL)
+        &NUMPHASE_, MAXLEG, MAXPGL)
+
+    ! added to address inaccurate downwelling diffuse flux
+    !╭────────────────────────────────────────────────╮!
+    !FLUX_OUT = .false.
+    !do I = 1, NUMOUT
+    !    if (OUTTYPES(I) .eq. 'F') then
+    !        FLUX_OUT = .true.
+    !    end if
+    !end do
+
+    !if (DELTAM .and. FLUX_OUT .and. (ML .le. (MAXLEG-1))) ML = MAXLEG - 1
+    !╰────────────────────────────────────────────────╯!
+
+    ! Make ML and MM from NMU and NPHI
+    ! Compute NLM, NPHI0MAX.
+    if (SRCTYPE .eq. 'T') SOLARAZ = 0.0
+    NPHI0MAX = NPHI
+    NLM = (2*MM + 1)*(ML + 1) - MM*(MM + 1)
+    MEMWORD = NMU*(2 + 2*NPHI + 2*NLM + 2*33*32)
+
+    allocate (MU(NMU), WTDO(NMU*NPHI), PHI(NMU*NPHI), NPHI0(NMU))
 
     ! Set the full domain grid sizes (variables end in T)
     NXT = NX; NYT = NY; NPXT = NPX_; NPYT = NPY_
@@ -356,7 +368,7 @@ program shdom_main
     MAXIG = nint(ADAPT_GRID_FACTOR*NBPTS)
     MAXIC = nint(CELL_TO_POINT_RATIO*MAXIG)
     MAXIV = nint(NUM_SH_TERM_FACTOR*NLM*MAXIG)
-    MAXIDO = MAXIG*NPHI0MAX
+    MAXIDO = MAXIG*max(NPHI0MAX, 4) ! to fix an segmentation error
     if (NUMPHASE_ .gt. 0) then
         MAXIGL = NUMPHASE_*NSTLEG*(MAXLEG + 1)
     else
@@ -382,7 +394,8 @@ program shdom_main
     allocate (RSHPTR(MAXIG + 2), SHPTR(MAXIG + 1), OSHPTR(MAXIG + 1))
     allocate (RADIANCE(NSTOKES, MAXIV + MAXIG), SOURCE(NSTOKES, MAXIV))
     if (ACCELFLAG) allocate (DELSOURCE(NSTOKES, MAXIV))
-    allocate (WORK(NSTOKES*MAXIDO), WORK1(8*MAXIG))
+    allocate (WORK(NSTOKES*MAXIDO))
+    allocate (WORK1(8*MAXIG))
     allocate (FLUXES(2*MAXIG), DIRFLUX(MAXIG))
 
     ! print dimension parameters
@@ -834,16 +847,14 @@ program shdom_main
     write (6, '(A)')'Message [shdom_main]: Actual MAX_TOTAL_MB, ADAPT_GRID_FACTOR, NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO'
     write (6, '(28X,F7.2,6X,F7.3,14X,F5.3,15X,F5.3)') MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
 
-    call shd_mpi__end(NPTS, GRIDPOS, NPX_, NPY_, XSTART_, YSTART_, XDOMAIN_, YDOMAIN_,&
-        &NPXT, NPYT, PROPFILE, RUNNAME)
+    !if (SRCTYPE .ne. 'T') then
+    !    call shd_rad__computeDirect(9, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
+    !        &DELTAM, ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
+    !        &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
+    !end if
 
-    if (SRCTYPE .ne. 'T') then
-        call shd_rad__computeDirect(9, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
-            &DELTAM, ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
-            &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
-    end if
-
-    deallocate (SUMRADOUT, SUMVISOUT, WORK2)
+    deallocate (WORK, WORK1, WORK2)
+    deallocate (SUMRADOUT, SUMVISOUT)
     if (FLUX_OUT) deallocate (SUMFLUXES, SUMDIRFLUX)
     if (FLUXDIV_OUT) deallocate (SUMFLUXDIV)
     if (SH_OUT) deallocate (SUMSHTERMS)
@@ -853,11 +864,15 @@ program shdom_main
     if (allocated(SFCPARMS)) deallocate (SFCPARMS, SFCGRIDPARMS)
     deallocate (RADIANCE, SOURCE)
     if (ACCELFLAG) deallocate (DELSOURCE)
-    deallocate (RSHPTR, SHPTR, OSHPTR, WORK, WORK1, FLUXES, DIRFLUX)
+    deallocate (RSHPTR, SHPTR, OSHPTR)
+    deallocate (FLUXES, DIRFLUX)
     deallocate (GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, GRIDPOS)
     deallocate (TEMP, PLANCK, EXTINCT, ALBEDO, IPHASE, LEGEN)
     deallocate (XGRID, YGRID, ZGRID)
     deallocate (ZLEVELS_, TEMPP_, EXTINCTP_, ALBEDOP_, EXTDIRP_, IPHASEP_, LEGENP_)
     deallocate (MU, WTDO, PHI, NPHI0)
+
+    call shd_mpi__end(NPTS, GRIDPOS, NPX_, NPY_, XSTART_, YSTART_, XDOMAIN_, YDOMAIN_,&
+        &NPXT, NPYT, PROPFILE, RUNNAME)
 
 end program shdom_main
