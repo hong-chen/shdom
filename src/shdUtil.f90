@@ -12,6 +12,7 @@ module shd_util
 
     public :: shd_util__interpTriLin
     public :: shd_util__solveTriDiag
+    public :: shd_util__computeGausQuad_new
     public :: shd_util__computeGausQuad
     public :: shd_util__computeGausQuadDble
 
@@ -444,6 +445,73 @@ subroutine shd_util__solveTriDiag(&
     return
 
 end subroutine shd_util__solveTriDiag
+
+subroutine shd_util__computeGausQuad_new(m, gmu, gwt)
+
+    ! this is adapted from libRadtran/libsrc_c/cdisort.c <c_gaussian_quadrature> for testing
+
+    integer, intent(in) :: m
+    real, intent(out) :: gmu(*), gwt(*)
+    integer :: iter, k, lim, nn, np1, MAXIT
+    double precision :: cona, t, en, nnp1, p, p2pri, pm1, pm2, ppr, prod, tmp, x, xi
+    double precision :: tol
+    logical :: initialized
+
+    MAXIT = 1000
+    initialized = .false.
+
+    if (.not. initialized) then
+        tol = 10.0d0 * epsilon(1.0d0)
+        initialized = .true.
+    end if
+
+    lim = m / 2
+    if (2*lim .ne. m) stop 'Error [_computeGausQuad_new]: N must be even.'
+
+    en = real(m)
+    np1 = m + 1
+    nnp1 = m * np1
+    cona = real(m - 1) / (8.0d0 * m**3)
+
+    do k = 1, lim
+        t = real(4 * k - 1) * PI_ / (4.0d0 * m + 2.0d0)
+        x = cos(t + cona / tan(t))
+
+        do iter = 1, MAXIT
+
+            if (iter > MAXIT) then
+                stop "Error [_computeGausQuad_new]: Max iteration count."
+            end if
+
+            pm2 = 1.0d0
+            pm1 = x
+            do nn = 2, m
+                p = (real(2 * nn - 1) * x * pm1 - real(nn - 1) * pm2) / nn
+                pm2 = pm1
+                pm1 = p
+            end do
+
+            tmp = 1.0d0 / (1.0d0 - x**2)
+            ppr = en * (pm2 - x * p) * tmp
+            p2pri = (2.0d0 * x * ppr - nnp1 * p) * tmp
+            xi = x - p / ppr * (1.0d0 + p / ppr * p2pri / (2.0d0 * ppr))
+
+            if (abs(xi - x) .le. tol) then
+                exit
+            else
+                x = xi
+            end if
+        end do
+
+        gmu(k) = -x
+        gwt(k) = 2.0d0 / (tmp * en**2 * pm2**2)
+        gmu(lim + k) = -gmu(k)
+        gwt(lim + k) = gwt(k)
+    end do
+
+    return
+end subroutine shd_util__computeGausQuad_new
+
 
 subroutine shd_util__computeGausQuad(N, XA, WT)
 

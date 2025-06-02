@@ -774,6 +774,7 @@ subroutine shd_init__makeAngle(&
     if (ITYPE .ge. 1 .or. ITYPE .le. 3) then
         if (ITYPE .le. 2) then
             call shd_util__computeGausQuad(NMU, MU, WTMU)
+            !call shd_util__computeGausQuad_new(NMU, MU, WTMU)
         else if (ITYPE .eq. 3) then
             call shd_util__computeGausQuadDble(NMU, MU, WTMU)
         end if
@@ -787,7 +788,7 @@ subroutine shd_init__makeAngle(&
                 NPHI0(J) = int(0.9 + NPHI0MAX*sqrt(1 - MU(J)**2))
                 NPHI0(J) = min(NPHI0MAX, GOODNFFT(NPHI0(J)))
             end if
-            DELPHI = 2.0*acos(-1.0)/NPHI0(J)
+            DELPHI = 2.0*PI_/NPHI0(J)
             do K = 1, NPHI0(J)
                 PHI(J, K) = (K - 1)*DELPHI
                 WTDO(J, K) = DELPHI*WTMU(J)

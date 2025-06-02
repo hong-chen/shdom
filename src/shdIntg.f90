@@ -96,6 +96,7 @@ subroutine shd_intg__integratePath(&
     integer :: count_end
     real :: elapsed_time
 
+    real :: A_UP_TOT, A_DOWN_TOT
 
     ! Set the minimum transmission for the cell tracing (1 for single cell)
     TRANSMIN = 1.00
@@ -146,6 +147,10 @@ subroutine shd_intg__integratePath(&
     ! print *, 'Path integration:'
     ! Loop over the zenith angles (downwelling angles must be first)
     IANG = 1
+
+    A_UP_TOT = 0.0
+    A_DOWN_TOT = 0.0
+
 ! -- loop mu
     do IMU = 1, NMU
 
@@ -285,6 +290,13 @@ subroutine shd_intg__integratePath(&
             A = abs(MU(IMU))*WTDO(IMU, IPHI)
             do I = 1, NPTS
                 FLUXES(IUPDOWN, I) = FLUXES(IUPDOWN, I) + A*WORK(1, IPHI, I)
+                if (I .eq. 1) then
+                    if (IUPDOWN .eq. 1) then
+                        A_DOWN_TOT = A_DOWN_TOT + A
+                    else
+                        A_UP_TOT = A_UP_TOT + A
+                    end if
+                end if
             end do
 
             ! For a general BRDF surface save the downwelling radiance
@@ -316,6 +328,9 @@ subroutine shd_intg__integratePath(&
     end do
 
     OLDNPTS = NPTS
+
+    print *, 'A_DOWN_TOT', A_DOWN_TOT
+    print *, 'A_UP_TOT', A_UP_TOT
 
     return
 
