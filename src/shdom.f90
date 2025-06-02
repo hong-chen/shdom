@@ -92,14 +92,6 @@ program shdom_main
     logical :: mpiX, mpiY, mpiMode
     logical :: nmlMode = .true.
 
-    ! Choose the option to compute higher order radiance SH terms
-    HIGHORDERRAD = .false.
-    NSHOUT = 4
-    if (HIGHORDERRAD) NSHOUT = 5
-    ! Choose type of initialization/output for k-distributions:
-    !   True means initiatize with and output only the base grid.
-    BASEOUT = .false.
-
     !call cpu_time(CPUTIME1)
     call system_clock(count_start, count_rate, count_max)
 
@@ -180,6 +172,17 @@ program shdom_main
     end if
     call shd_mpi__bcastPrpSize(NPX_, NPY_, NPZ_, DELX_, DELY_,&
         &NUMPHASE_, MAXLEG, MAXPGL)
+
+    ! Choose the option to compute higher order radiance SH terms
+    HIGHORDERRAD = .false.
+    if ((NPX_ .eq. 1) .and. (NPY_ .eq. 1)) HIGHORDERRAD = .true.
+
+    NSHOUT = 4
+    if (HIGHORDERRAD) NSHOUT = 5
+
+    ! Choose type of initialization/output for k-distributions:
+    !   True means initiatize with and output only the base grid.
+    BASEOUT = .false.
 
     ! added to address inaccurate downwelling diffuse flux
     !╭────────────────────────────────────────────────╮!

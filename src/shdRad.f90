@@ -741,7 +741,7 @@ subroutine shd_rad__computeRad(&
         endif
         !╰────────────────────────────────────────────────╯!
 
-        if (MUOUT .le. 0.0) then
+        if (MUOUT .eq. 0.0) then
             write (6, *) 'Warning [_computeRad]: Bad MUOUT for radiance', IANG, MUOUT, PHID
             MUOUT = 1.0e-6
             write (6, *) '                       New MUOUT=', MUOUT

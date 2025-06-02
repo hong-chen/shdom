@@ -1783,7 +1783,7 @@ subroutine shd_mpi__computeRad(&
         end if
         !╰────────────────────────────────────────────────╯!
 
-        if (MUOUT .le. 0.0) then
+        if (MUOUT .eq. 0.0) then
             write (6, *) 'Warning [mpi__computeRad]: Bad MUOUT for radiance', K, MUOUT, PHID
             MUOUT = 1.0e-6
             write (6, *) '                           New MUOUT=', MUOUT

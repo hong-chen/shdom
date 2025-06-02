@@ -146,7 +146,6 @@ subroutine shd_intg__integratePath(&
     ! print *, 'Path integration:'
     ! Loop over the zenith angles (downwelling angles must be first)
     IANG = 1
-
 ! -- loop mu
     do IMU = 1, NMU
 
@@ -286,9 +285,6 @@ subroutine shd_intg__integratePath(&
             A = abs(MU(IMU))*WTDO(IMU, IPHI)
             do I = 1, NPTS
                 FLUXES(IUPDOWN, I) = FLUXES(IUPDOWN, I) + A*WORK(1, IPHI, I)
-                !if (IUPDOWN .eq. 1) then
-                !    print *, IMU, IPHI, I, FLUXES(IUPDOWN, I)
-                !end if
             end do
 
             ! For a general BRDF surface save the downwelling radiance
