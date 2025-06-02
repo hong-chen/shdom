@@ -1084,6 +1084,7 @@ subroutine shd_io__readSfc(&
     !   D  Diner et al   a, k, b, zeta, sigma
     !   R  RPV           rho0, k, Theta
     !   T  LSRT          f_iso, f_geo, f_vol
+    !   J  LSRT-Jiao     f_iso, f_geo, f_vol, f_jiao, alpha
 
     integer MAXSFCPTS, MAXSFCPARS, NXSFC, NYSFC, NSFCPAR
     real DELXSFC, DELYSFC
@@ -1092,8 +1093,8 @@ subroutine shd_io__readSfc(&
     character(len=2) :: SFCTYPE
     integer N, I, I0, IX, IY, J
     real ALB, TEMP, MRE, MIM, RHO0, KR, THETA, WSPD, PCL
-    real F_ISO, F_VOL, F_GEO
-    real A, B, ZETA, SIGMA
+    real F_ISO, F_VOL, F_GEO, F_JIAO
+    real A, B, ZETA, SIGMA, ALPHA
 
     ! Surface type is variable something
     SFCTYPE(1:1) = 'V'
@@ -1219,6 +1220,30 @@ subroutine shd_io__readSfc(&
                 SFCPARMS(I + 2) = F_ISO
                 SFCPARMS(I + 3) = F_GEO
                 SFCPARMS(I + 4) = F_VOL
+                GNDTEMP = GNDTEMP + TEMP
+                GNDALBEDO = GNDALBEDO + F_ISO
+                N = N + 1
+            end if
+        end do
+
+    ! Surface file type J is for LSRT-Jiao surface:
+    else if (SFCTYPE .eq. 'VJ') then
+        NSFCPAR = 5
+        if (NSFCPAR .gt. MAXSFCPARS) then
+            write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
+            stop
+        end if
+        do while (.true.)
+            read (1, *, end=290) IX, IY, TEMP, F_ISO, F_GEO, F_VOL, F_JIAO, ALPHA
+            if (IX .ge. 1 .and. IX .le. NXSFC .and.&
+                &IY .ge. 1 .and. IY .le. NYSFC) then
+                I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
+                SFCPARMS(I + 1) = TEMP
+                SFCPARMS(I + 2) = F_ISO
+                SFCPARMS(I + 3) = F_GEO
+                SFCPARMS(I + 4) = F_VOL
+                SFCPARMS(I + 5) = F_JIAO
+                SFCPARMS(I + 6) = ALPHA
                 GNDTEMP = GNDTEMP + TEMP
                 GNDALBEDO = GNDALBEDO + F_ISO
                 N = N + 1
