@@ -198,7 +198,8 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
             stop 'Error [_brdfSurface]: LSRT-Jiao BRDF is only for unpolarized case'
         end if
 
-        PHIDIFF = PHI1-PHI2-PI_
+        !PHIDIFF = PHI1-PHI2-PI_
+        PHIDIFF = PHI1-PHI2
         ! J: LSRT-Jiao model
         call shd_sfc__brdfLSRTJ(REFPARMS(1), REFPARMS(2),&
             &REFPARMS(3), REFPARMS(4), REFPARMS(5), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
