@@ -34,14 +34,14 @@ program shdom_main
     real, allocatable :: RADIANCE(:, :), SOURCE(:, :), DELSOURCE(:, :)
     integer, allocatable :: WORK1(:)
     real, allocatable :: WORK(:), WORK2(:)
-    real, allocatable :: FLUXES(:), DIRFLUX(:)
+    real, allocatable :: FLUXES(:, :), DIRFLUX(:), DIRFLUX_TMP(:)
     integer, allocatable :: NPHI0(:)
     real, allocatable :: MU(:), WTDO(:), PHI(:)
     integer, allocatable :: BCPTR(:)
     real, allocatable :: BCRAD(:, :)
     real, allocatable :: SFCPARMS(:)
     real, allocatable :: SFCGRIDPARMS(:)
-    real, allocatable :: SUMFLUXES(:), SUMDIRFLUX(:), SUMFLUXDIV(:)
+    real, allocatable :: SUMFLUXES(:, :), SUMDIRFLUX(:), SUMFLUXDIV(:)
     real, allocatable :: SUMSHTERMS(:), SOURCE1OUT(:)
     real, allocatable :: SUMRADOUT(:), SUMVISOUT(:)
     real, allocatable :: TEMPPT(:), EXTINCTPT(:), ALBEDOPT(:)
@@ -91,14 +91,6 @@ program shdom_main
     real :: DELX0, DELY0
     logical :: mpiX, mpiY, mpiMode
     logical :: nmlMode = .false.
-
-    ! Choose the option to compute higher order radiance SH terms
-    HIGHORDERRAD = .false.
-    NSHOUT = 4
-    if (HIGHORDERRAD) NSHOUT = 5
-    ! Choose type of initialization/output for k-distributions:
-    !   True means initiatize with and output only the base grid.
-    BASEOUT = .false.
 
     !call cpu_time(CPUTIME1)
     call system_clock(count_start, count_rate, count_max)
@@ -181,17 +173,16 @@ program shdom_main
     call shd_mpi__bcastPrpSize(NPX_, NPY_, NPZ_, DELX_, DELY_,&
         &NUMPHASE_, MAXLEG, MAXPGL)
 
-    ! added to address inaccurate downwelling diffuse flux
-    !╭────────────────────────────────────────────────╮!
-    !FLUX_OUT = .false.
-    !do I = 1, NUMOUT
-    !    if (OUTTYPES(I) .eq. 'F') then
-    !        FLUX_OUT = .true.
-    !    end if
-    !end do
+    ! Choose the option to compute higher order radiance SH terms
+    HIGHORDERRAD = .false.
+    !if ((NPX_ .eq. 1) .and. (NPY_ .eq. 1)) HIGHORDERRAD = .true.
 
-    !if (DELTAM .and. FLUX_OUT .and. (ML .le. (MAXLEG-1))) ML = MAXLEG - 1
-    !╰────────────────────────────────────────────────╯!
+    NSHOUT = 4
+    if (HIGHORDERRAD) NSHOUT = 5
+
+    ! Choose type of initialization/output for k-distributions:
+    !   True means initiatize with and output only the base grid.
+    BASEOUT = .false.
 
     ! Make ML and MM from NMU and NPHI
     ! Compute NLM, NPHI0MAX.
@@ -396,7 +387,7 @@ program shdom_main
     if (ACCELFLAG) allocate (DELSOURCE(NSTOKES, MAXIV))
     allocate (WORK(NSTOKES*MAXIDO))
     allocate (WORK1(8*MAXIG))
-    allocate (FLUXES(2*MAXIG), DIRFLUX(MAXIG))
+    allocate (FLUXES(2, MAXIG), DIRFLUX(MAXIG))
 
     ! print dimension parameters
     !╭────────────────────────────────────────────────╮!
@@ -504,7 +495,7 @@ program shdom_main
             end if
         else if (OUTTYPES(I) .eq. 'F') then
             if (.not. FLUX_OUT) then
-                allocate (SUMFLUXES(2*MAXIG), SUMDIRFLUX(MAXIG))
+                allocate (SUMFLUXES(2, MAXIG), SUMDIRFLUX(MAXIG))
             end if
             FLUX_OUT = .true.
         else if (OUTTYPES(I) .eq. 'H') then
@@ -722,6 +713,31 @@ program shdom_main
         end if
 
         if (FLUX_OUT) then
+
+            ! unscale delta-m fluxes
+            !╭────────────────────────────────────────────────╮!
+            if ((SRCTYPE .ne. 'T') .and. DELTAM) then
+
+                allocate(DIRFLUX_TMP(NPTS))
+
+                if (mpiMode) then
+                    call shd_mpi__makeDirect(1, NPTS, BCFLAG, IPFLAG, .false., ML,&
+                        &NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
+                        &GRIDPOS, NX, XGRID, NY, YGRID, DIRFLUX_TMP)
+                else
+                    call shd_rad__makeDirect(NPTS, BCFLAG, IPFLAG, .false., ML,&
+                        &NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
+                        &GRIDPOS, DIRFLUX_TMP)
+                end if
+
+                FLUXES(1, 1:NPTS) = FLUXES(1, 1:NPTS) + DIRFLUX(1:NPTS) - DIRFLUX_TMP(1:NPTS)
+                DIRFLUX(1:NPTS) = DIRFLUX_TMP(1:NPTS)
+
+                deallocate(DIRFLUX_TMP)
+
+            end if
+            !╰────────────────────────────────────────────────╯!
+
             call shd_util__sumData(NG - IG, DELG(IG), 2*NPTS, FLUXES, SUMFLUXES)
             call shd_util__sumData(NG - IG, DELG(IG), NPTS, DIRFLUX, SUMDIRFLUX)
         end if
