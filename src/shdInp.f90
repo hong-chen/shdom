@@ -1049,6 +1049,9 @@ subroutine shd_io__readSfcSize(SFCFILE, MAXSFCPTS, MAXSFCPARS)
     else if (SFCTYPE .eq. 'VT') then
         ! Surface file type T is for LSRT surface
         MAXSFCPARS = 4
+    else if (SFCTYPE .eq. 'VJ') then
+        ! Surface file type J is for LSRT-Jiao surface
+        MAXSFCPARS = 6
     else if (SFCTYPE .eq. 'VD') then
         ! Surface file type D is for Diner polarized RPV surface:
         MAXSFCPARS = 6
@@ -1228,7 +1231,7 @@ subroutine shd_io__readSfc(&
 
     ! Surface file type J is for LSRT-Jiao surface:
     else if (SFCTYPE .eq. 'VJ') then
-        NSFCPAR = 5
+        NSFCPAR = 6
         if (NSFCPAR .gt. MAXSFCPARS) then
             write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
             stop

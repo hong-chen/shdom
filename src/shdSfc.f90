@@ -137,6 +137,7 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
     ! O  Ocean         Wind speed (m/s), Pigmentation (mg/m^3)
     ! R  RPV-original  rho0, k, Theta
     ! T  LSRT          k_iso, k_geo, k_vol
+    ! J  LSRT-Jiao     k_iso, k_geo, k_vol, k_j, alpha
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     integer :: NSTOKES
@@ -189,6 +190,18 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
         ! T: LSRT model
         call shd_sfc__brdfLSRT(REFPARMS(1), REFPARMS(2),&
             &REFPARMS(3), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
+
+    else if (SFCTYPE .eq. 'J' .or. SFCTYPE .eq. 'j') then
+
+        ! J: LSRT-Jiao model
+        if (NSTOKES .gt. 1) then
+            stop 'Error [_brdfSurface]: LSRT-Jiao BRDF is only for unpolarized case'
+        end if
+
+        PHIDIFF = PHI1-PHI2-PI_
+        ! J: LSRT-Jiao model
+        call shd_sfc__brdfLSRTJ(REFPARMS(1), REFPARMS(2),&
+            &REFPARMS(3), REFPARMS(4), REFPARMS(5), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
 
     else if (SFCTYPE .eq. 'O' .or. SFCTYPE .eq. 'o') then
 
@@ -818,7 +831,7 @@ end subroutine shd_sfc__brdfLSRT
 
 ! end subroutine shd_sfc__brdfLSRTKZ
 
-subroutine shd_sfc__brdfLSRTJ(F_ISO, F_GEO, F_VOL, F_J, MU1, MU2, PHI, ALPHA, REFLECT)
+subroutine shd_sfc__brdfLSRTJ(F_ISO, F_GEO, F_VOL, F_J, ALPHA, MU1, MU2, PHI, REFLECT)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Computes the RossLi-Jiao BRDF (combines LSRT model above with a fourth kernel for snow from Jiao et al.).
@@ -836,7 +849,7 @@ subroutine shd_sfc__brdfLSRTJ(F_ISO, F_GEO, F_VOL, F_J, MU1, MU2, PHI, ALPHA, RE
     !    Jiao et al. (2019) https://doi.org/10.1016/j.rse.2018.11.001
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    real(4), intent(in)  :: F_ISO, F_GEO, F_VOL, F_J, MU1, MU2, PHI, ALPHA
+    real(4), intent(in)  :: F_ISO, F_GEO, F_VOL, F_J, ALPHA, MU1, MU2, PHI
     real(4), intent(out) :: REFLECT
     real(4) :: COS1, COS2, SIN1, SIN2, TAN1, TAN2, COS_PHI, SIN_PHI
     real(4) :: K_GEO, K_VOL, K_J
