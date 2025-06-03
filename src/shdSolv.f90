@@ -87,7 +87,7 @@ subroutine shd_solv__solveRte(&
     real, allocatable :: CMU1(:, :, :), CMU2(:, :, :)
     real, allocatable :: CPHI1(:, :, :), CPHI2(:, :, :)
     real, allocatable :: YLMSUN(:, :), WTMU(:), WPHISAVE(:)
-    real, allocatable :: SFC_BRDF_DO(:, :, :, :, :, :)
+    real, allocatable :: SFC_BRDF_DO(:, :, :, :, :, :), DIRFLUX_TMP(:)
 
     integer :: count_start, count_rate, count_max
     integer :: count_end
@@ -389,6 +389,30 @@ subroutine shd_solv__solveRte(&
     ! Comment in for output of cell splitting criterion for every cell
     ! call shdUtil_io_outputCellSplit ('cellsplit.dat',GRIDPTR,&
     !     &GRIDPOS, EXTINCT, SHPTR, SOURCE, NCELLS)
+
+    ! unscale delta-m fluxes
+    !╭────────────────────────────────────────────────╮!
+    if ((SRCTYPE .ne. 'T') .and. DELTAM) then
+
+        allocate(DIRFLUX_TMP(NPTS))
+
+        if (btest(BCFLAG, 2) .or. btest(BCFLAG, 3)) then
+            call shd_mpi__makeDirect(1, NPTS, BCFLAG, IPFLAG, .false., ML,&
+                &NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
+                &GRIDPOS, NX, XGRID, NY, YGRID, DIRFLUX_TMP)
+        else
+            call shd_rad__makeDirect(NPTS, BCFLAG, IPFLAG, .false., ML,&
+                &NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
+                &GRIDPOS, DIRFLUX_TMP)
+        end if
+
+        FLUXES(1, 1:NPTS) = FLUXES(1, 1:NPTS) + DIRFLUX(1:NPTS) - DIRFLUX_TMP(1:NPTS)
+        DIRFLUX(1:NPTS) = DIRFLUX_TMP(1:NPTS)
+
+        deallocate(DIRFLUX_TMP)
+
+    end if
+    !╰────────────────────────────────────────────────╯!
 
     return
 
