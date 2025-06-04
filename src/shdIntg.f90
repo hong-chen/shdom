@@ -1438,7 +1438,8 @@ subroutine shd_intg__backIntegrate1D(&
                         &+ (EXT0P*SRCEXT1(:) - EXT1*SRCEXT0P(:))*2.0/(EXT0P + EXT1)&
                         &*(1 - 2/TAU + 2*TRANSCELL/ABSCELL))
                 end if
-                SRC(1) = max(SRC(1), REPS_)
+
+                SRC(1) = max(SRC(1), 0.0)
 
                 ! See if there are valid radiances for the intersection face:
                 ! If so, set flag, interpolate radiance, and add to
