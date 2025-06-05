@@ -74,9 +74,9 @@ module globals
   real(RD_), parameter :: DPI_    = 3.141592653589793238462643383279502884197_RD_  ! pi
   real(RD_), parameter :: DPIH_   = 1.570796326794896619231321691639751442098_RD_  ! pi/2
   real(RD_), parameter :: DPI2_   = 6.283185307179586476925286766559005768394_RD_  ! pi*2
-  real(R_) , parameter ::  OPI_   = 1.0_R_  / PI_      ! 1/PI
+  real(R_) , parameter :: OPI_    = 1.0_R_  / PI_      ! 1/PI
   real(RD_), parameter :: DOPI_   = 1.0_RD_ / DPI_     ! 1/PI
-  real(R_) , parameter ::  O4PI_  = 1.0_R_  / (4.0_R_*PI_)      ! 1/(4*PI)
+  real(R_) , parameter :: O4PI_   = 1.0_R_  / (4.0_R_*PI_)      ! 1/(4*PI)
   real(RD_), parameter :: DO4PI_  = 1.0_RD_ / (4.0_RD_*DPI_)    ! 1/(4*PI)
   real(R_),  parameter :: DTOR_   = PI_ / 180.0_R_     ! degree-to-radian factor
 
