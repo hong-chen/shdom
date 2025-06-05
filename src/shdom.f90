@@ -175,7 +175,7 @@ program shdom_main
 
     ! Choose the option to compute higher order radiance SH terms
     HIGHORDERRAD = .false.
-    !if ((NPX_ .eq. 1) .and. (NPY_ .eq. 1)) HIGHORDERRAD = .true.
+    if ((NPX_ .eq. 1) .and. (NPY_ .eq. 1)) HIGHORDERRAD = .true.
 
     NSHOUT = 4
     if (HIGHORDERRAD) NSHOUT = 5
