@@ -315,7 +315,7 @@ subroutine shd_solv__solveRte(&
         !   do the adaptive spherical harmonics truncation, compute
         !   the solution criterion, and dot products for acceleration
         if (((SOLCRIT .lt. ENDADAPTSOL) .or. (ITER .gt. 30)) .and.&
-            &((NPX_ .gt. 10) .and. (NPY_ .gt. 10))) FIXSH = .true.
+            &((NX .gt. 10) .and. (NY .gt. 10))) FIXSH = .true.
         call shd_src__computeSrc(NSTOKES, ML, MM, NLM,&
             &NSTLEG, NLEG, NUMPHASE, NPTS,&
             &FIXSH, SRCTYPE, SOLARMU, YLMSUN, ALBEDO, LEGEN,&
