@@ -339,8 +339,14 @@ subroutine shd_io__outputResult(&
         do K = 1, NANGOUT
             MUOUT = OUTPARMS(2*K + 5)
             PHID = OUTPARMS(2*K + 6)
-            write (2, '(A,1X,F8.5,1X,F7.2,2X,A)')&
-                &'! ', MUOUT, PHID, '<- (mu,phi)'
+
+            if ((K .lt. 5) .or. (K .gt. (NANGOUT-5))) then
+                write (2, '(A,1X,I8,F8.5,1X,F7.2,2X,A)')&
+                    &'! ', K, MUOUT, PHID, '<- (mu,phi)'
+            else if (K .eq. 11) then
+                write (2, '(A)') '! ...'
+            end if
+
         end do
         !╰────────────────────────────────────────────────╯!
 
@@ -1391,8 +1397,14 @@ subroutine shd_io__outputResultMpi(&
         do K = 1, NANGOUT
             MUOUT = OUTPARMS(2*K + 5)
             PHID = OUTPARMS(2*K + 6)
-            write (2, '(A,1X,F8.5,1X,F7.2,2X,A)')&
-                &'! ', MUOUT, PHID, '<- (mu,phi)'
+
+            if ((K .lt. 5) .or. (K .gt. (NANGOUT-5))) then
+                write (2, '(A,1X,I8,F8.5,1X,F7.2,2X,A)')&
+                    &'! ', K, MUOUT, PHID, '<- (mu,phi)'
+            else if (K .eq. 11) then
+                write (2, '(A)') '! ...'
+            end if
+
             MU_SET(K) = MUOUT
             PHI_SET(K) = PHID*acos(-1.0)/180.0
         end do
