@@ -561,7 +561,7 @@ subroutine shd_mpi__bcastCkdParam(SOLFLUX, NG, DELG, NZCKD, ZCKD, KABS)
     ! to the other processes.
 
     integer, intent(in) :: NG, NZCKD
-    real, intent(inout) :: SOLFLUX, DELG(NG), ZCKD(NZCKD), KABS(NZCKD, NG)
+    real, intent(inout) :: SOLFLUX(NG), DELG(NG), ZCKD(NZCKD), KABS(NZCKD, NG)
 
 #if HAS_MPI
     integer :: ierr
@@ -569,12 +569,19 @@ subroutine shd_mpi__bcastCkdParam(SOLFLUX, NG, DELG, NZCKD, ZCKD, KABS)
 
     if (NUMPROC_ .le. 1) return
 
-    allocate (realbuf(NG + NZCKD + 1))
-    realbuf(1) = SOLFLUX; realbuf(2:NG + 1) = DELG(:)
-    realbuf(NG + 2:NG + NZCKD + 1) = ZCKD(:)
-    call mpi_bcast(realbuf, NG + NZCKD + 1, MPI_REAL, 0, COMM2D_, ierr)
-    SOLFLUX = realbuf(1); DELG(:) = realbuf(2:NG + 1)
-    ZCKD(:) = realbuf(NG + 2:NG + NZCKD + 1)
+    ! before
+    !allocate (realbuf(1 + NG + NZCKD))
+    allocate (realbuf(2*NG+NZCKD))
+
+    realbuf(1 : NG) = SOLFLUX(:)
+    realbuf(NG+1 : 2*NG) = DELG(:)
+
+    realbuf(2*NG+1 : 2*NG+NZCKD) = ZCKD(:)
+    call mpi_bcast(realbuf, 2*NG+NZCKD, MPI_REAL, 0, COMM2D_, ierr)
+
+    SOLFLUX(:) = realbuf(1 : NG)
+    DELG(:) = realbuf(NG+1 : 2*NG)
+    ZCKD(:) = realbuf(2*NG+1 : 2*NG+NZCKD)
 
     call mpi_bcast(KABS, NZCKD*NG, MPI_REAL, 0, COMM2D_, ierr)
 #endif

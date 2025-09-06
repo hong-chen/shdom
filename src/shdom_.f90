@@ -22,7 +22,7 @@ program shdom_main
     character(len=1) :: OUTTYPES(MAXOUT)
     character(len=FNAMEMAXLEN_) :: OUTFILES(MAXOUT)
 
-    real, allocatable :: DELG(:), KABS(:, :)
+    real, allocatable :: SOLFLUX(:), DELG(:), KABS(:, :)
     real, allocatable :: XGRID(:), YGRID(:), ZGRID(:)
     real, allocatable :: TEMP(:), PLANCK(:), EXTINCT(:), ALBEDO(:)
     real, allocatable :: LEGEN(:)
@@ -73,7 +73,7 @@ program shdom_main
     logical :: BASEOUT, HIGHORDERRAD, MASTERPROC, VALIDBEAM
     logical :: RADIANCE_OUT, VISUAL_OUT
     logical :: FLUX_OUT, FLUXDIV_OUT, SH_OUT, SOURCE_OUT
-    real :: SOLARFLUX, SOLARMU, SOLARAZ, SOLFLUX
+    real :: SOLARFLUX0, SOLARFLUX, SOLARMU, SOLARAZ
     real :: GNDTEMP, GNDALBEDO, SKYRAD, WAVENO(2), WAVELEN
     real :: SOLACC, SOLCRIT, SPLITACC, SHACC
     real :: DELXSFC, DELYSFC, MAXASYM, REDUCE_RATIO
@@ -105,7 +105,7 @@ program shdom_main
                 INSAVEFILE, OUTSAVEFILE,&
                 NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
                 IPFLAG, KDIST, DELTAM, GRIDTYPE,&
-                SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+                SRCTYPE, SOLARFLUX0, SOLARMU, SOLARAZ, SKYRAD,&
                 GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,&
                 ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
                 MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS, OUTFILES,&
@@ -116,7 +116,7 @@ program shdom_main
                 INSAVEFILE, OUTSAVEFILE,&
                 NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
                 IPFLAG, KDIST, DELTAM, GRIDTYPE,&
-                SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+                SRCTYPE, SOLARFLUX0, SOLARMU, SOLARAZ, SKYRAD,&
                 GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,&
                 ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
                 MAXOUT,MAXPAR, NUMOUT,OUTTYPES,OUTPARMS,OUTFILES,&
@@ -129,7 +129,7 @@ program shdom_main
         &INSAVEFILE, OUTSAVEFILE,&
         &NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
         &IPFLAG, KDIST, DELTAM, GRIDTYPE,&
-        &SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+        &SRCTYPE, SOLARFLUX0, SOLARMU, SOLARAZ, SKYRAD,&
         &GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,&
         &ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
         &MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS,&
@@ -175,7 +175,7 @@ program shdom_main
 
     ! Choose the option to compute higher order radiance SH terms
     HIGHORDERRAD = .false.
-    !if ((NPX_ .eq. 1) .and. (NPY_ .eq. 1)) HIGHORDERRAD = .true.
+    if ((NPX_ .eq. 1) .and. (NPY_ .eq. 1)) HIGHORDERRAD = .true.
 
     NSHOUT = 4
     if (HIGHORDERRAD) NSHOUT = 5
@@ -308,7 +308,7 @@ program shdom_main
     if (MASTERPROC) then
         ! Check input parameters
         call shd_io__checkInputParam(NMU, NPHI, DELTAM, MAXASYM,&
-            &GRIDTYPE, SRCTYPE, UNITS, SOLARFLUX, SOLARMU,&
+            &GRIDTYPE, SRCTYPE, UNITS, SOLARFLUX0, SOLARMU,&
             &WAVENO, WAVELEN, GNDTEMP, GNDALBEDO,&
             &SPLITACC, SHACC)
     end if
@@ -435,17 +435,17 @@ program shdom_main
         end if
         ! Broadcast the k-distribution array sizes
         call shd_mpi__bcastCkdSize(NG, NZCKD_)
-        allocate (ZCKD_(NZCKD_), GASABS_(NZCKD_), DELG(NG), KABS(NZCKD_, NG))
+        allocate (ZCKD_(NZCKD_), GASABS_(NZCKD_), SOLFLUX(NG), DELG(NG), KABS(NZCKD_, NG))
         if (MASTERPROC) then
             MAXNG = NG; MAXNZ = NZCKD_
             call shd_io__readCkd(MAXNG, MAXNZ, CKDFILE, WAVENO, SOLFLUX,&
                 &NG, DELG, NZCKD_, ZCKD_, KABS)
         end if
         call shd_mpi__bcastCkdParam(SOLFLUX, NG, DELG, NZCKD_, ZCKD_, KABS)
-        SOLARFLUX = SOLFLUX*SOLARFLUX*abs(SOLARMU)
     else
         NG = 1
-        allocate (DELG(NG))
+        allocate (SOLFLUX(NG), DELG(NG))
+        SOLFLUX(1) = 1.0
         DELG(1) = 1.0
         NZCKD_ = 0
         BASEOUT = .false.
@@ -566,6 +566,8 @@ program shdom_main
 
     ! Loop over the k-distribution g's from high to low absorption
     do IG = NG, 1, -1
+
+        SOLARFLUX = SOLFLUX(IG)*SOLARFLUX0*abs(SOLARMU)
 
         write (6, '(A,I2,A,I2,A)') 'Message [shdom_main]: Starting ', IG, '/', NG, ' (ig/Ng) ...'
 
@@ -755,7 +757,13 @@ program shdom_main
         end if
 
         OLDNPTS = NPTS
-    end do
+    end do ! CKD Ng loop
+
+
+    SOLARFLUX = 0.0d0
+    do IG = NG, 1, -1
+        SOLARFLUX = SOLARFLUX + SOLFLUX(IG)*DELG(IG)*SOLARFLUX0*abs(SOLARMU)
+    end do ! CKD Ng loop
 
     call shd_io__saveState(OUTSAVEFILE, NSTOKES, NX, NY, NZ, ML, MM, NLM,&
         &WORK, XGRID, YGRID, ZGRID,&
@@ -876,7 +884,7 @@ program shdom_main
     if (SH_OUT) deallocate (SUMSHTERMS)
     if (SOURCE_OUT) deallocate (SOURCE1OUT)
     if (KDIST) deallocate (ZCKD_, GASABS_, KABS)
-    deallocate (BCPTR, BCRAD, DELG)
+    deallocate (BCPTR, BCRAD, DELG, SOLFLUX)
     if (allocated(SFCPARMS)) deallocate (SFCPARMS, SFCGRIDPARMS)
     deallocate (RADIANCE, SOURCE)
     if (ACCELFLAG) deallocate (DELSOURCE)

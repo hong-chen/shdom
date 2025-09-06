@@ -1292,7 +1292,7 @@ subroutine shd_io__readCkdSize(CKDFILE, WAVENO, NG, NZCKD)
     real WAVENO(2)
     character(len=*), intent(in) :: CKDFILE
     integer NB, IB, JB, KB, N
-    real WAVENUM1, WAVENUM2, SF
+    real WAVENUM1, WAVENUM2
 
     open (UNIT=1, FILE=trim(adjustl(CKDFILE)), STATUS='OLD')
     read (1, *)
@@ -1302,12 +1302,12 @@ subroutine shd_io__readCkdSize(CKDFILE, WAVENO, NG, NZCKD)
     ! Read band information until the right one is found
     JB = 0
     do IB = 1, NB
-        read (1, *) KB, WAVENUM1, WAVENUM2, SF, N
+        read (1, *) KB, WAVENUM1, WAVENUM2, N
         if (abs(WAVENUM1 - WAVENO(1)) .lt. 1.0 .and.&
             &abs(WAVENUM2 - WAVENO(2)) .lt. 1.0) then
             backspace (1)
             NG = N
-            read (1, *) JB, WAVENUM1, WAVENUM2, SF, N
+            read (1, *) JB, WAVENUM1, WAVENUM2, N
         end if
     end do
 
@@ -1337,7 +1337,7 @@ subroutine shd_io__readCkd(&
     ! are checked.
 
     integer MAXNG, MAXNZ, NG, NZCKD
-    real WAVENO(2), SOLFLUX, DELG(*), ZCKD(*), KABS(*)
+    real WAVENO(2), SOLFLUX(*), DELG(*), ZCKD(*), KABS(*)
     character(len=*), intent(in) :: CKDFILE
     integer NB, IB, JB, KB, IG, I, J, N
     real WAVENUM1, WAVENUM2, SF
@@ -1349,14 +1349,14 @@ subroutine shd_io__readCkd(&
     ! Read band information until the right one is found
     JB = 0
     do IB = 1, NB
-        read (1, *) KB, WAVENUM1, WAVENUM2, SF, N
+        read (1, *) KB, WAVENUM1, WAVENUM2, N
         if (abs(WAVENUM1 - WAVENO(1)) .lt. 1.0 .and.&
             &abs(WAVENUM2 - WAVENO(2)) .lt. 1.0) then
             backspace (1)
             NG = N
             if (NG .gt. MAXNG) stop 'Error [_readCkd]: MAXNG exceeded.'
-            read (1, *) JB, WAVENO(1), WAVENO(2), SOLFLUX,&
-                &N, (DELG(IG), IG=1, NG)
+            read (1, *) JB, WAVENO(1), WAVENO(2),&
+                &N, (SOLFLUX(IG), IG=1, NG), (DELG(IG), IG=1, NG)
         end if
     end do
     if (JB .eq. 0) then
