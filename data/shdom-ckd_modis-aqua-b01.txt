@@ -1,6 +1,6 @@
 ! correlated k-distribution file for SHDOM
 1 ! number of bands
-! Band# | Wave#1 [690.0000 nm] | Wave#2 [610.0000 nm] | SolFlx | Ng | g1 | g2 | ...
+! Band# | Wave#1 [690.0000 nm] | Wave#2 [610.0000 nm] | Ng | SolFlx1 | SolFlx2 | ... | g1 | g2 | ...
 1 14492.75 16393.44 1 1.576411815958 1.000000000000
 9
 !
