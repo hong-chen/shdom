@@ -1298,7 +1298,7 @@ subroutine shd_io__readSfc(&
         end do
 
     ! Surface file type X is for Mixed-type surface:
-    else if (SFCTYPE .eq. 'VX') then
+    else if ((SFCTYPE .eq. 'VX') .or. (SFCTYPE .eq. 'Vx')) then
 
         NSFCPAR = 8
         if (NSFCPAR .gt. MAXSFCPARS) then
