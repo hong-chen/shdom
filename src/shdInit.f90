@@ -369,21 +369,25 @@ subroutine shd_init__makePrp(&
             if (NUMPHASE .gt. 0) then
                 F = LEGEN(1, ML + 1, IPHASE(I))
             else
-                ! NUMPHASE=0 is standard property format, which is unpolariz
+                ! NUMPHASE=0 is standard property format, which is unpolarized
                 F = LEGEN(1, ML + 1, I)
                 do L = 0, ML
                     LEGEN(1, L, I) = (LEGEN(1, L, I) - F)/(1 - F)
                 end do
             end if
+
             EXTINCT(I) = (1.0 - ALBEDO(I)*F)*EXTINCT(I)
             ALBEDO(I) = (1.0 - F)*ALBEDO(I)/(1.0 - ALBEDO(I)*F)
+
         end if
+
         ALBMAX = max(ALBMAX, ALBEDO(I))
         if (SRCTYPE .ne. 'S') then
             call shd_util__computePlanck(TEMP(I), UNITS, WAVENO, WAVELEN, BB)
             PLANCK(I) = (1.0 - ALBEDO(I))*BB
         end if
     end do
+
     return
 end subroutine shd_init__makePrp
 
@@ -408,10 +412,10 @@ subroutine shd_init__makeRad(&
     real TEMP(NZ, NXY)
     real RADIANCE(NSTOKES, *)
     character(len=1) :: SRCTYPE, UNITS
-    integer NLAYER, I, IZ, IR, J, K, L
+    integer NLAYER, I, IZ, IR, J, K, L, ZINDEX
     logical DELTAM
     real C0, C1
-    real EXT0, EXT1, SCAT0, SCAT1, G0, G1, GNDEMIS
+    real EXT0, ALB0, SCAT0, G0, GNDEMIS
     real, allocatable :: OPTDEPTHS(:), ALBEDOS(:), ASYMMETRIES(:)
     real, allocatable :: TEMPS(:), FLUXES(:, :)
     character(len=1) :: SRCT
@@ -430,37 +434,45 @@ subroutine shd_init__makeRad(&
     IR = 0
     RSHPTR(1) = 0
     do I = 1, NXY
-        ! Make layer properties for the Eddington routine
+
+        ! this is modified to address layer averaging issue
+        !╭────────────────────────────────────────────────╮!
         do IZ = 1, NLAYER
+
             L = NZ - IZ
-            EXT0 = EXTINCT(IZ, I)
-            EXT1 = EXTINCT(IZ + 1, I)
-            SCAT0 = ALBEDO(IZ, I)*EXT0
-            SCAT1 = ALBEDO(IZ + 1, I)*EXT1
-            OPTDEPTHS(L) = (ZGRID(IZ + 1) - ZGRID(IZ))*(EXT0 + EXT1)/2
-            if (EXT0 + EXT1 .gt. 0.0) then
-                ALBEDOS(L) = (SCAT0 + SCAT1)/(EXT0 + EXT1)
+
+            ZINDEX = IZ + 1
+
+            EXT0 = EXTINCT(ZINDEX, I)
+            ALB0 = ALBEDO(ZINDEX, I)
+            SCAT0 = ALB0*EXT0
+
+            OPTDEPTHS(L) = (ZGRID(IZ + 1) - ZGRID(IZ))*EXT0
+
+            if (EXT0 .gt. 0.0) then
+                ALBEDOS(L) = ALB0
             else
                 ALBEDOS(L) = 0.0
             end if
+
             if (NUMPHASE .gt. 0) then
-                J = IPHASE(IZ, I)
-                G0 = LEGEN(1, 1, J)
-                J = IPHASE(IZ + 1, I)
-                G1 = LEGEN(1, 1, J)
+                J = IPHASE(ZINDEX, I)
             else
                 J = NZ*(I - 1) + IZ
-                G0 = LEGEN(1, 1, J)
-                G1 = LEGEN(1, 1, J + 1)
             end if
-            if (SCAT0 + SCAT1 .gt. 0.0) then
-                ASYMMETRIES(L) = (SCAT0*G0 + SCAT1*G1)/(SCAT0 + SCAT1)
+            G0 = LEGEN(1, 1, J)
+
+            if (SCAT0 .gt. 0.0) then
+                ASYMMETRIES(L) = G0
             else
                 ASYMMETRIES(L) = 0.0
             end if
             TEMPS(L + 1) = TEMP(IZ, I)
         end do
+        !╰────────────────────────────────────────────────╯!
+
         TEMPS(1) = TEMP(NZ, I)
+
         GNDEMIS = 1.0 - GNDALBEDO
         ! Call the Eddington flux routine
         call shd_init__makeFlux(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
@@ -591,6 +603,7 @@ subroutine shd_init__makeFlux(&
                 OMEGA = (1 - F)*OMEGA/(1 - OMEGA*F)
                 G = (G - F)/(1 - F)
             end if
+
             R = (1.0 - OMEGA*(4.0 - 3.0*G))/4.0
             T = (7.0 - OMEGA*(4.0 + 3.0*G))/4.0
             LAMBDA = sqrt(3.0*(1.0 - OMEGA)*(1.0 - OMEGA*G))
@@ -613,18 +626,18 @@ subroutine shd_init__makeFlux(&
                 ! Calculate thermal source terms
                 call shd_util__computePlanck(TEMPS(L + 1), UNITS, WAVENO, WAVELEN, BBRAD)
                 PLANCK2 = PI_*BBRAD
-                V = 2.0*(PLANCK2 - PLANCK1)/(3.0*(1.-OMEGA*G)*DELTAU)
+                V = 2.0*(PLANCK2 - PLANCK1)/(3.0*(1.0-OMEGA*G)*DELTAU)
                 RADP1P = -V + PLANCK1
-                RADP2M = V + PLANCK2
+                RADP2M =  V + PLANCK2
                 RADP2P = -V + PLANCK2
-                RADP1M = V + PLANCK1
+                RADP1M =  V + PLANCK1
                 if (LAMBDA .eq. 0.0) then
                     A = (R*DELTAU*RADP1P - RADP2M)*D
                     B = -(R*RADP1P + T*RADP2M)*D
                     SOURCEP = (B - T*(A + B*DELTAU))/R + RADP2P
                     SOURCEM = A + RADP1M
                 else
-                    CP = (X1*EXLM*RADP1P - X2*RADP2M)*D
+                    CP = ( X1*EXLM*RADP1P - X2*RADP2M)*D
                     CM = (-X2*EXLP*RADP1P + X1*RADP2M)*D
                     SOURCEP = X1*CP*EXLP + X2*CM*EXLM + RADP2P
                     SOURCEM = X2*CP + X1*CM + RADP1M
@@ -637,15 +650,15 @@ subroutine shd_init__makeFlux(&
                 DS = 1.0/(LAMBDA**2 - 1.0/MU0**2)
                 B1 = 0.5*OMEGA*(SOLARFLUX/MU0)*exp(-TAU/MU0)*DS
                 B2 = 0.5*OMEGA*(SOLARFLUX/MU0)*exp(-(TAU + DELTAU)/MU0)*DS
-                SOLPP = 1.0 + 1.5*G*MU0
+                SOLPP =  1.0 + 1.5*G*MU0
                 SOLPM = -1.0 + 1.5*G*MU0
-                RADP1P = ((T + 1.0/MU0)*SOLPP + R*SOLPM)*B1
+                RADP1P = (( T + 1.0/MU0)*SOLPP + R*SOLPM)*B1
                 RADP2M = ((-T + 1.0/MU0)*SOLPM - R*SOLPP)*B2
-                RADP2P = ((T + 1.0/MU0)*SOLPP + R*SOLPM)*B2
+                RADP2P = (( T + 1.0/MU0)*SOLPP + R*SOLPM)*B2
                 RADP1M = ((-T + 1.0/MU0)*SOLPM - R*SOLPP)*B1
                 if (LAMBDA .eq. 0.0) then
-                    A = (R*DELTAU*RADP1P - RADP2M)*D
-                    B = -(R*RADP1P + T*RADP2M)*D
+                    A =  (R*DELTAU*RADP1P -   RADP2M)*D
+                    B = -(R*RADP1P        + T*RADP2M)*D
                     SOURCEP = (B - T*(A + B*DELTAU))/R + RADP2P
                     SOURCEM = A + RADP1M
                 else
@@ -761,6 +774,7 @@ subroutine shd_init__makeAngle(&
     if (ITYPE .ge. 1 .or. ITYPE .le. 3) then
         if (ITYPE .le. 2) then
             call shd_util__computeGausQuad(NMU, MU, WTMU)
+            !call shd_util__computeGausQuad_new(NMU, MU, WTMU)
         else if (ITYPE .eq. 3) then
             call shd_util__computeGausQuadDble(NMU, MU, WTMU)
         end if
@@ -774,7 +788,7 @@ subroutine shd_init__makeAngle(&
                 NPHI0(J) = int(0.9 + NPHI0MAX*sqrt(1 - MU(J)**2))
                 NPHI0(J) = min(NPHI0MAX, GOODNFFT(NPHI0(J)))
             end if
-            DELPHI = 2.0*acos(-1.0)/NPHI0(J)
+            DELPHI = 2.0*PI_/NPHI0(J)
             do K = 1, NPHI0(J)
                 PHI(J, K) = (K - 1)*DELPHI
                 WTDO(J, K) = DELPHI*WTMU(J)

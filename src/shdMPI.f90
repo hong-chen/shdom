@@ -561,7 +561,7 @@ subroutine shd_mpi__bcastCkdParam(SOLFLUX, NG, DELG, NZCKD, ZCKD, KABS)
     ! to the other processes.
 
     integer, intent(in) :: NG, NZCKD
-    real, intent(inout) :: SOLFLUX, DELG(NG), ZCKD(NZCKD), KABS(NZCKD, NG)
+    real, intent(inout) :: SOLFLUX(NG), DELG(NG), ZCKD(NZCKD), KABS(NZCKD, NG)
 
 #if HAS_MPI
     integer :: ierr
@@ -569,12 +569,19 @@ subroutine shd_mpi__bcastCkdParam(SOLFLUX, NG, DELG, NZCKD, ZCKD, KABS)
 
     if (NUMPROC_ .le. 1) return
 
-    allocate (realbuf(NG + NZCKD + 1))
-    realbuf(1) = SOLFLUX; realbuf(2:NG + 1) = DELG(:)
-    realbuf(NG + 2:NG + NZCKD + 1) = ZCKD(:)
-    call mpi_bcast(realbuf, NG + NZCKD + 1, MPI_REAL, 0, COMM2D_, ierr)
-    SOLFLUX = realbuf(1); DELG(:) = realbuf(2:NG + 1)
-    ZCKD(:) = realbuf(NG + 2:NG + NZCKD + 1)
+    ! before
+    !allocate (realbuf(1 + NG + NZCKD))
+    allocate (realbuf(2*NG+NZCKD))
+
+    realbuf(1 : NG) = SOLFLUX(:)
+    realbuf(NG+1 : 2*NG) = DELG(:)
+
+    realbuf(2*NG+1 : 2*NG+NZCKD) = ZCKD(:)
+    call mpi_bcast(realbuf, 2*NG+NZCKD, MPI_REAL, 0, COMM2D_, ierr)
+
+    SOLFLUX(:) = realbuf(1 : NG)
+    DELG(:) = realbuf(NG+1 : 2*NG)
+    ZCKD(:) = realbuf(2*NG+1 : 2*NG+NZCKD)
 
     call mpi_bcast(KABS, NZCKD*NG, MPI_REAL, 0, COMM2D_, ierr)
 #endif
@@ -1783,271 +1790,279 @@ subroutine shd_mpi__computeRad(&
         end if
         !╰────────────────────────────────────────────────╯!
 
-        if (MUOUT .eq. 0.0 .or. abs(MUOUT) .gt. 1.0) then
-            write (6, *) 'Warning [mpi__computeRad]: Bad mu for radiance', MUOUT
-        else
+        if (MUOUT .eq. 0.0) then
+            write (6, *) 'Warning [mpi__computeRad]: Bad MUOUT for radiance', K, MUOUT, PHID
+            MUOUT = 1.0e-6
+            write (6, *) '                           New MUOUT=', MUOUT
+        end if
 
-            ! Compute the source function throughout grid for this angle
-            call shd_src__computeSrcOneDir(NSTOKES, ML, MM, NLM, NSTLEG,&
-                &NLEG, NUMPHASE, NPTS, DELTAM, MUOUT, PHIOUT,&
-                &SRCTYPE, SOLARMU, SOLARAZ, ALBEDO, LEGEN, IPHASE,&
-                &DIRFLUX, SHPTR, SOURCE, SOURCE1)
+        if (abs(MUOUT) .gt. 1.0) then
+            write (6, *) 'Warning [mpi__computeRad]: Bad MUOUT for radiance', K, MUOUT, PHID
+            if (MUOUT .gt.  1.0) MUOUT =  1.0
+            if (MUOUT .lt. -1.0) MUOUT = -1.0
+            write (6, *) '                           New MUOUT=', MUOUT
+        end if
 
-            ! Set the radiance field to -1, so we can determine valid radiances
-            !   Also set the source array to the extinction times the source
-            !   function, so the grid interpolation is correct.
-            do I = 1, NPTS
-                GRIDRAD(1, I) = -1.0
-                SOURCE1(:, I) = SOURCE1(:, I)*EXTINCT(I)
+        ! Compute the source function throughout grid for this angle
+        call shd_src__computeSrcOneDir(NSTOKES, ML, MM, NLM, NSTLEG,&
+            &NLEG, NUMPHASE, NPTS, DELTAM, MUOUT, PHIOUT,&
+            &SRCTYPE, SOLARMU, SOLARAZ, ALBEDO, LEGEN, IPHASE,&
+            &DIRFLUX, SHPTR, SOURCE, SOURCE1)
+
+        ! Set the radiance field to -1, so we can determine valid radiances
+        !   Also set the source array to the extinction times the source
+        !   function, so the grid interpolation is correct.
+        do I = 1, NPTS
+            GRIDRAD(1, I) = -1.0
+            SOURCE1(:, I) = SOURCE1(:, I)*EXTINCT(I)
+        end do
+        ! Get boundary radiances: either top or bottom
+        ! Isotropic top boundary or Lambertian bottom boundary can use
+        !   the previously computed boundary radiances in BCRAD,
+        !   otherwise, compute the radiance for this angle
+        !   by integrating over the stored downwelling radiances.
+        if (MUOUT .lt. 0.0) then
+            do IBC = 1, NTOPPTS
+                I = BCPTR(IBC, 1)
+                GRIDRAD(:, I) = BCRAD(:, IBC)
             end do
-            ! Get boundary radiances: either top or bottom
-            ! Isotropic top boundary or Lambertian bottom boundary can use
-            !   the previously computed boundary radiances in BCRAD,
-            !   otherwise, compute the radiance for this angle
-            !   by integrating over the stored downwelling radiances.
-            if (MUOUT .lt. 0.0) then
-                do IBC = 1, NTOPPTS
-                    I = BCPTR(IBC, 1)
-                    GRIDRAD(:, I) = BCRAD(:, IBC)
-                end do
-            else
-                if (.not. LAMBERTIAN) then
-                    call shd_init__makeSfcRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
-                        &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MUOUT, PHIOUT,&
-                        &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
-                        &SFCTYPE, NSFCPAR, SFCGRIDPARMS, NSTOKES, BCRAD(1, 1 + NTOPPTS))
-                end if
-                do IBC = 1, NBOTPTS
-                    I = BCPTR(IBC, 2)
-                    GRIDRAD(:, I) = BCRAD(:, NTOPPTS + IBC)
-                end do
+        else
+            if (.not. LAMBERTIAN) then
+                call shd_init__makeSfcRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
+                    &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MUOUT, PHIOUT,&
+                    &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
+                    &SFCTYPE, NSFCPAR, SFCGRIDPARMS, NSTOKES, BCRAD(1, 1 + NTOPPTS))
             end if
+            do IBC = 1, NBOTPTS
+                I = BCPTR(IBC, 2)
+                GRIDRAD(:, I) = BCRAD(:, NTOPPTS + IBC)
+            end do
+        end if
 
-            ! Set up the upstream/downstream boundaries for this direction
-            Lupx = 0; Lupy = 0; Ldownx = 0; Ldowny = 0
-            if (btest(BCFLAG, 2)) then
-                if ((cos(PHIOUT) .gt. 1.0e-5)) then
-                    Ldownx = 2; Lupx = 1
-                else
-                    Ldownx = 1; Lupx = 2
+        ! Set up the upstream/downstream boundaries for this direction
+        Lupx = 0; Lupy = 0; Ldownx = 0; Ldowny = 0
+        if (btest(BCFLAG, 2)) then
+            if ((cos(PHIOUT) .gt. 1.0e-5)) then
+                Ldownx = 2; Lupx = 1
+            else
+                Ldownx = 1; Lupx = 2
+            end if
+        end if
+        if (btest(BCFLAG, 3)) then
+            !if ((sin(PHIOUT) .gt. 1.0e-5) .and. (NPY .gt. 1)) then
+            if ((sin(PHIOUT) .gt. 1.0e-5)) then
+                Ldowny = 4; Lupy = 3
+            else
+                Ldowny = 3; Lupy = 4
+            end if
+        end if
+
+        NINVALID(:) = 0
+        Ndone = 0
+
+        ! Loop over all the radiance starting locations and integrate
+        !   backwards for those in this subdomain.
+        Y0 = STARTY
+        do JY = 1, NYOUT
+            X0 = STARTX
+            do JX = 1, NXOUT
+                NRAD = NRAD + 1
+
+                if (X0 .ge. (XGRID(1) - EPS) .and. X0 .le. (XGRID(NX) + EPS) .and.&
+                    Y0 .ge. (YGRID(1) - EPS) .and. Y0 .le. (YGRID(NY) + EPS)) then
+                    TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
+                    call shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
+                        &NX, NY, NZ, NPTS, NCELLS,&
+                        &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+                        &XGRID, YGRID, ZGRID, GRIDPOS,&
+                        &MUOUT, PHIOUT, GRIDRAD, EXTINCT, SOURCE1,&
+                        &X0, Y0, Z0, XE, YE, ZE, SIDE,&
+                        &TRANSMIT, RADIANCE, VALIDRAD)
+
+                    ! If we got a radiance then store it in RadSend otherwise save
+                    !  the information needed to pass to other processors
+                    if (VALIDRAD) then
+                        Ndone = Ndone + 1
+                        if (Ndone .gt. MAXNRAD)&
+                            &call shd_mpi__abort('Error [mpi__computeRad]: MAXNRAD exceeded by Ndone 1.')
+                        RadSend(:, Ndone) = RADIANCE(:)
+                        IndexSend(Ndone) = NRAD
+                    else
+                        if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
+                            write (6, *) 'Bad SIDE 1:', MYPROC_, muout, phiout, x0, y0, z0, SIDE, xe, ye, ze
+                            call shd_mpi__abort('Error [mpi__computeRad]: Bad SIDE 1')
+                        end if
+                        NINVALID(SIDE) = NINVALID(SIDE) + 1
+                        if (NINVALID(SIDE) .gt. MAXNRAD)&
+                            call shd_mpi__abort('Error [mpi__computeRad]: MAXNRAD exceeded by NINVALID(SIDE) 1.')
+
+                        BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, TRANSMIT, RADIANCE(:)/)
+                        BndRadIntInfo(NINVALID(SIDE), SIDE) = NRAD
+                    end if
                 end if
+                X0 = X0 + OUTPARMS(2)
+            end do
+            Y0 = Y0 + OUTPARMS(3)
+        end do
+
+        ! Cycle over the passing of info between processors and doing more
+        !  partial radiance integrations until all rays have been finished
+        AllDone = .false.
+        do while (.not. AllDone)
+            ! Do the send and receives of the number of incomplete rays and
+            !   the real and integer info needed about the radiance integrations
+            irq = 0
+            if (btest(BCFLAG, 2)) then
+                call mpi_isend(NINVALID(Lupx), 1, MPI_INTEGER,&
+                    &IPROCNEIGH_(Lupx), 6*K + 1, COMM2D_, requests(irq + 1), ierr)
+                call mpi_isend(BndRadRealInfo(:, :, Lupx), (4 + NSTOKES)*NINVALID(Lupx), MPI_DOUBLE_PRECISION,&
+                    &IPROCNEIGH_(Lupx), 6*K + 2, COMM2D_, requests(irq + 2), ierr)
+                call mpi_isend(BndRadIntInfo(:, Lupx), NINVALID(Lupx), MPI_INTEGER,&
+                    &IPROCNEIGH_(Lupx), 6*K + 3, COMM2D_, requests(irq + 3), ierr)
+                irq = irq + 3
             end if
             if (btest(BCFLAG, 3)) then
-                !if ((sin(PHIOUT) .gt. 1.0e-5) .and. (NPY .gt. 1)) then
-                if ((sin(PHIOUT) .gt. 1.0e-5)) then
-                    Ldowny = 4; Lupy = 3
-                else
-                    Ldowny = 3; Lupy = 4
-                end if
+                call mpi_isend(NINVALID(Lupy), 1, MPI_INTEGER,&
+                    &IPROCNEIGH_(Lupy), 6*K + 4, COMM2D_, requests(irq + 1), ierr)
+                call mpi_isend(BndRadRealInfo(:, :, Lupy), (4 + NSTOKES)*NINVALID(Lupy), MPI_DOUBLE_PRECISION,&
+                    &IPROCNEIGH_(Lupy), 6*K + 5, COMM2D_, requests(irq + 2), ierr)
+                call mpi_isend(BndRadIntInfo(:, Lupy), NINVALID(Lupy), MPI_INTEGER,&
+                    &IPROCNEIGH_(Lupy), 6*K + 6, COMM2D_, requests(irq + 3), ierr)
+                irq = irq + 3
             end if
+            if (btest(BCFLAG, 2)) then
+                call mpi_irecv(NINVALID(Ldownx), 1, MPI_INTEGER,&
+                    &IPROCNEIGH_(Ldownx), 6*K + 1, COMM2D_, requests(irq + 1), ierr)
+                call mpi_irecv(BndRadRealInfo(:, :, Ldownx), (4 + NSTOKES)*MAXNRAD, MPI_DOUBLE_PRECISION,&
+                    &IPROCNEIGH_(Ldownx), 6*K + 2, COMM2D_, requests(irq + 2), ierr)
+                call mpi_irecv(BndRadIntInfo(:, Ldownx), MAXNRAD, MPI_INTEGER,&
+                    &IPROCNEIGH_(Ldownx), 6*K + 3, COMM2D_, requests(irq + 3), ierr)
+                irq = irq + 3
+            end if
+            if (btest(BCFLAG, 3)) then
+                call mpi_irecv(NINVALID(Ldowny), 1, MPI_INTEGER,&
+                    &IPROCNEIGH_(Ldowny), 6*K + 4, COMM2D_, requests(irq + 1), ierr)
+                call mpi_irecv(BndRadRealInfo(:, :, Ldowny), (4 + NSTOKES)*MAXNRAD, MPI_DOUBLE_PRECISION,&
+                    &IPROCNEIGH_(Ldowny), 6*K + 5, COMM2D_, requests(irq + 2), ierr)
+                call mpi_irecv(BndRadIntInfo(:, Ldowny), MAXNRAD, MPI_INTEGER,&
+                    &IPROCNEIGH_(Ldowny), 6*K + 6, COMM2D_, requests(irq + 3), ierr)
+                irq = irq + 3
+            end if
+            call mpi_waitall(irq, requests, status, ierr)
 
-            NINVALID(:) = 0
-            Ndone = 0
-
-            ! Loop over all the radiance starting locations and integrate
-            !   backwards for those in this subdomain.
-            Y0 = STARTY
-            do JY = 1, NYOUT
-                X0 = STARTX
-                do JX = 1, NXOUT
-                    NRAD = NRAD + 1
-
-                    if (X0 .ge. (XGRID(1) - EPS) .and. X0 .le. (XGRID(NX) + EPS) .and.&
-                        Y0 .ge. (YGRID(1) - EPS) .and. Y0 .le. (YGRID(NY) + EPS)) then
-                        TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
-                        call shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
-                            &NX, NY, NZ, NPTS, NCELLS,&
-                            &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-                            &XGRID, YGRID, ZGRID, GRIDPOS,&
-                            &MUOUT, PHIOUT, GRIDRAD, EXTINCT, SOURCE1,&
-                            &X0, Y0, Z0, XE, YE, ZE, SIDE,&
-                            &TRANSMIT, RADIANCE, VALIDRAD)
-
-                        ! If we got a radiance then store it in RadSend otherwise save
-                        !  the information needed to pass to other processors
-                        if (VALIDRAD) then
-                            Ndone = Ndone + 1
-                            if (Ndone .gt. MAXNRAD)&
-                                &call shd_mpi__abort('Error [mpi__computeRad]: MAXNRAD exceeded by Ndone 1.')
-                            RadSend(:, Ndone) = RADIANCE(:)
-                            IndexSend(Ndone) = NRAD
-                        else
-                            if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
-                                write (6, *) 'Bad SIDE 1:', MYPROC_, muout, phiout, x0, y0, z0, SIDE, xe, ye, ze
-                                call shd_mpi__abort('Error [mpi__computeRad]: Bad SIDE 1')
-                            end if
-                            NINVALID(SIDE) = NINVALID(SIDE) + 1
-                            if (NINVALID(SIDE) .gt. MAXNRAD)&
-                                call shd_mpi__abort('Error [mpi__computeRad]: MAXNRAD exceeded by NINVALID(SIDE) 1.')
-
-                            BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, TRANSMIT, RADIANCE(:)/)
-                            BndRadIntInfo(NINVALID(SIDE), SIDE) = NRAD
+            NINVALID(Lupx) = 0; NINVALID(Lupy) = 0
+            if (btest(BCFLAG, 2)) then
+                ! Continue the backwards ray integrations for the X boundary
+                do J = 1, NINVALID(Ldownx)
+                    if (Ldownx .eq. 1) BndRadRealInfo(1, J, Ldownx) = XGRID(1)
+                    if (Ldownx .eq. 2) BndRadRealInfo(1, J, Ldownx) = XGRID(NX)
+                    X = BndRadRealInfo(1, J, Ldownx); Y = BndRadRealInfo(2, J, Ldownx)
+                    Z = BndRadRealInfo(3, J, Ldownx); TRANSMIT = BndRadRealInfo(4, J, Ldownx)
+                    RADIANCE(:) = BndRadRealInfo(5:4 + NSTOKES, J, Ldownx)
+                    call shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
+                        &NX, NY, NZ, NPTS, NCELLS,&
+                        &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+                        &XGRID, YGRID, ZGRID, GRIDPOS,&
+                        &MUOUT, PHIOUT, GRIDRAD, EXTINCT, SOURCE1,&
+                        &X, Y, Z, XE, YE, ZE, SIDE,&
+                        &TRANSMIT, RADIANCE, VALIDRAD)
+                    ! If we got a radiance then store it in RadSend, otherwise
+                    ! save information needed to pass to neighboring processors
+                    if (VALIDRAD) then
+                        Ndone = Ndone + 1
+                        if (Ndone .gt. MAXNRAD)&
+                            &call shd_mpi__abort('Error [mpi__computeRad]: MAXNRAD exceeded by Ndone 2.')
+                        RadSend(:, Ndone) = RADIANCE(:)
+                        IndexSend(Ndone) = BndRadIntInfo(J, Ldownx)
+                    else
+                        if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
+                            write (6, *) 'Bad SIDE 2x', MYPROC_, muout, phiout, x, y, z, SIDE, xe, ye, ze
+                            call shd_mpi__abort('Error [mpi__computeRad]: Bad SIDE 2x')
                         end if
+                        NINVALID(SIDE) = NINVALID(SIDE) + 1
+                        if (NINVALID(SIDE) .gt. MAXNRAD)&
+                            &call shd_mpi__abort('Error [mpi__computeRad]: MAXNRAD exceeded by NINVALID(SIDE) 2.')
+                        BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, TRANSMIT, RADIANCE(:)/)
+                        BndRadIntInfo(NINVALID(SIDE), SIDE) = BndRadIntInfo(J, Ldownx)
                     end if
-                    X0 = X0 + OUTPARMS(2)
-                end do
-                Y0 = Y0 + OUTPARMS(3)
-            end do
-
-            ! Cycle over the passing of info between processors and doing more
-            !  partial radiance integrations until all rays have been finished
-            AllDone = .false.
-            do while (.not. AllDone)
-                ! Do the send and receives of the number of incomplete rays and
-                !   the real and integer info needed about the radiance integrations
-                irq = 0
-                if (btest(BCFLAG, 2)) then
-                    call mpi_isend(NINVALID(Lupx), 1, MPI_INTEGER,&
-                        &IPROCNEIGH_(Lupx), 6*K + 1, COMM2D_, requests(irq + 1), ierr)
-                    call mpi_isend(BndRadRealInfo(:, :, Lupx), (4 + NSTOKES)*NINVALID(Lupx), MPI_DOUBLE_PRECISION,&
-                        &IPROCNEIGH_(Lupx), 6*K + 2, COMM2D_, requests(irq + 2), ierr)
-                    call mpi_isend(BndRadIntInfo(:, Lupx), NINVALID(Lupx), MPI_INTEGER,&
-                        &IPROCNEIGH_(Lupx), 6*K + 3, COMM2D_, requests(irq + 3), ierr)
-                    irq = irq + 3
-                end if
-                if (btest(BCFLAG, 3)) then
-                    call mpi_isend(NINVALID(Lupy), 1, MPI_INTEGER,&
-                        &IPROCNEIGH_(Lupy), 6*K + 4, COMM2D_, requests(irq + 1), ierr)
-                    call mpi_isend(BndRadRealInfo(:, :, Lupy), (4 + NSTOKES)*NINVALID(Lupy), MPI_DOUBLE_PRECISION,&
-                        &IPROCNEIGH_(Lupy), 6*K + 5, COMM2D_, requests(irq + 2), ierr)
-                    call mpi_isend(BndRadIntInfo(:, Lupy), NINVALID(Lupy), MPI_INTEGER,&
-                        &IPROCNEIGH_(Lupy), 6*K + 6, COMM2D_, requests(irq + 3), ierr)
-                    irq = irq + 3
-                end if
-                if (btest(BCFLAG, 2)) then
-                    call mpi_irecv(NINVALID(Ldownx), 1, MPI_INTEGER,&
-                        &IPROCNEIGH_(Ldownx), 6*K + 1, COMM2D_, requests(irq + 1), ierr)
-                    call mpi_irecv(BndRadRealInfo(:, :, Ldownx), (4 + NSTOKES)*MAXNRAD, MPI_DOUBLE_PRECISION,&
-                        &IPROCNEIGH_(Ldownx), 6*K + 2, COMM2D_, requests(irq + 2), ierr)
-                    call mpi_irecv(BndRadIntInfo(:, Ldownx), MAXNRAD, MPI_INTEGER,&
-                        &IPROCNEIGH_(Ldownx), 6*K + 3, COMM2D_, requests(irq + 3), ierr)
-                    irq = irq + 3
-                end if
-                if (btest(BCFLAG, 3)) then
-                    call mpi_irecv(NINVALID(Ldowny), 1, MPI_INTEGER,&
-                        &IPROCNEIGH_(Ldowny), 6*K + 4, COMM2D_, requests(irq + 1), ierr)
-                    call mpi_irecv(BndRadRealInfo(:, :, Ldowny), (4 + NSTOKES)*MAXNRAD, MPI_DOUBLE_PRECISION,&
-                        &IPROCNEIGH_(Ldowny), 6*K + 5, COMM2D_, requests(irq + 2), ierr)
-                    call mpi_irecv(BndRadIntInfo(:, Ldowny), MAXNRAD, MPI_INTEGER,&
-                        &IPROCNEIGH_(Ldowny), 6*K + 6, COMM2D_, requests(irq + 3), ierr)
-                    irq = irq + 3
-                end if
-                call mpi_waitall(irq, requests, status, ierr)
-
-                NINVALID(Lupx) = 0; NINVALID(Lupy) = 0
-                if (btest(BCFLAG, 2)) then
-                    ! Continue the backwards ray integrations for the X boundary
-                    do J = 1, NINVALID(Ldownx)
-                        if (Ldownx .eq. 1) BndRadRealInfo(1, J, Ldownx) = XGRID(1)
-                        if (Ldownx .eq. 2) BndRadRealInfo(1, J, Ldownx) = XGRID(NX)
-                        X = BndRadRealInfo(1, J, Ldownx); Y = BndRadRealInfo(2, J, Ldownx)
-                        Z = BndRadRealInfo(3, J, Ldownx); TRANSMIT = BndRadRealInfo(4, J, Ldownx)
-                        RADIANCE(:) = BndRadRealInfo(5:4 + NSTOKES, J, Ldownx)
-                        call shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
-                            &NX, NY, NZ, NPTS, NCELLS,&
-                            &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-                            &XGRID, YGRID, ZGRID, GRIDPOS,&
-                            &MUOUT, PHIOUT, GRIDRAD, EXTINCT, SOURCE1,&
-                            &X, Y, Z, XE, YE, ZE, SIDE,&
-                            &TRANSMIT, RADIANCE, VALIDRAD)
-                        ! If we got a radiance then store it in RadSend, otherwise
-                        ! save information needed to pass to neighboring processors
-                        if (VALIDRAD) then
-                            Ndone = Ndone + 1
-                            if (Ndone .gt. MAXNRAD)&
-                                &call shd_mpi__abort('Error [mpi__computeRad]: MAXNRAD exceeded by Ndone 2.')
-                            RadSend(:, Ndone) = RADIANCE(:)
-                            IndexSend(Ndone) = BndRadIntInfo(J, Ldownx)
-                        else
-                            if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
-                                write (6, *) 'Bad SIDE 2x', MYPROC_, muout, phiout, x, y, z, SIDE, xe, ye, ze
-                                call shd_mpi__abort('Error [mpi__computeRad]: Bad SIDE 2x')
-                            end if
-                            NINVALID(SIDE) = NINVALID(SIDE) + 1
-                            if (NINVALID(SIDE) .gt. MAXNRAD)&
-                                &call shd_mpi__abort('Error [mpi__computeRad]: MAXNRAD exceeded by NINVALID(SIDE) 2.')
-                            BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, TRANSMIT, RADIANCE(:)/)
-                            BndRadIntInfo(NINVALID(SIDE), SIDE) = BndRadIntInfo(J, Ldownx)
-                        end if
-                    end do
-                end if
-
-                if (btest(BCFLAG, 3)) then
-                    ! Continue the backwards ray integrations for the Y boundary
-                    do J = 1, NINVALID(Ldowny)
-                        if (Ldowny .eq. 3) BndRadRealInfo(2, J, Ldowny) = YGRID(1)
-                        if (Ldowny .eq. 4) BndRadRealInfo(2, J, Ldowny) = YGRID(NY)
-                        X = BndRadRealInfo(1, J, Ldowny); Y = BndRadRealInfo(2, J, Ldowny)
-                        Z = BndRadRealInfo(3, J, Ldowny); TRANSMIT = BndRadRealInfo(4, J, Ldowny)
-                        RADIANCE(:) = BndRadRealInfo(5:4 + NSTOKES, J, Ldowny)
-                        call shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
-                            &NX, NY, NZ, NPTS, NCELLS,&
-                            &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-                            &XGRID, YGRID, ZGRID, GRIDPOS,&
-                            &MUOUT, PHIOUT, GRIDRAD, EXTINCT, SOURCE1,&
-                            &X, Y, Z, XE, YE, ZE, SIDE,&
-                            &TRANSMIT, RADIANCE, VALIDRAD)
-                        ! If we got a radiance then store it in RadSend, otherwise
-                        ! save information needed to pass to neighboring processors
-                        if (VALIDRAD) then
-                            Ndone = Ndone + 1
-                            if (Ndone .gt. MAXNRAD)&
-                                &call shd_mpi__abort('Error [mpi__computeRad]: MAXNRAD exceeded by Ndone 3.')
-                            RadSend(:, Ndone) = RADIANCE(:)
-                            IndexSend(Ndone) = BndRadIntInfo(J, Ldowny)
-                        else
-                            if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
-                                write (6, *) 'Bad SIDE 2y', MYPROC_, muout, phiout, x, y, z, SIDE, xe, ye, ze
-                                call shd_mpi__abort('Error [mpi__computeRad]: Bad SIDE 2y')
-                            end if
-                            NINVALID(SIDE) = NINVALID(SIDE) + 1
-                            if (NINVALID(SIDE) .gt. MAXNRAD)&
-                                &call shd_mpi__abort('Error [mpi__computeRad]: MAXNRAD exceeded by NINVALID(SIDE) 3.')
-                            BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, TRANSMIT, RADIANCE(:)/)
-                            BndRadIntInfo(NINVALID(SIDE), SIDE) = BndRadIntInfo(J, Ldowny)
-                        end if
-                    end do
-                end if
-
-                ! See if there are any more invalid radiance rays on all the processors
-                intsendbuf = (/NINVALID(Lupx), NINVALID(Lupy)/)
-                call mpi_allreduce(intsendbuf, intrecvbuf, 2, MPI_INTEGER, MPI_MAX,&
-                    &COMM2D_, ierr)
-                AllDone = all(intrecvbuf(1:2) .eq. 0)
-            end do
-
-            if (MYPROC_ .gt. 0) then
-                ! Send the finished radiances to the master processor
-                call mpi_isend(Ndone, 1, MPI_INTEGER, 0, 6*K + 7, COMM2D_, requests(1), ierr)
-                call mpi_isend(RadSend, NSTOKES*Ndone, MPI_REAL, 0, 6*K + 8, COMM2D_, requests(2), ierr)
-                call mpi_isend(IndexSend, Ndone, MPI_INTEGER, 0, 6*K + 9, COMM2D_, requests(3), ierr)
-                call mpi_waitall(3, requests, status, ierr)
-            else
-                ! Put the radiances finished by the master processor in the list
-                do i = 1, Ndone
-                    RADOUT(:, IndexSend(i)) = RadSend(:, i)
-                end do
-                ! Receive the radiances from all the other processors
-                irq = 0
-                do iproc = 1, NUMPROC_ - 1
-                    call mpi_irecv(NradRecv(iproc), 1, MPI_INTEGER, iproc,&
-                        &6*K + 7, COMM2D_, requests(irq + 1), ierr)
-                    call mpi_irecv(RadRecv(:, :, iproc), NSTOKES*MAXNRAD, MPI_REAL, iproc,&
-                        &6*K + 8, COMM2D_, requests(irq + 2), ierr)
-                    call mpi_irecv(IndexRecv(:, iproc), MAXNRAD, MPI_INTEGER, iproc,&
-                        &6*K + 9, COMM2D_, requests(irq + 3), ierr)
-                    irq = irq + 3
-                end do
-                call mpi_waitall(irq, requests, status, ierr)
-                do iproc = 1, NUMPROC_ - 1
-                    do i = 1, NradRecv(iproc)
-                        RADOUT(:, IndexRecv(i, iproc)) = RadRecv(:, i, iproc)
-                    end do
                 end do
             end if
 
+            if (btest(BCFLAG, 3)) then
+                ! Continue the backwards ray integrations for the Y boundary
+                do J = 1, NINVALID(Ldowny)
+                    if (Ldowny .eq. 3) BndRadRealInfo(2, J, Ldowny) = YGRID(1)
+                    if (Ldowny .eq. 4) BndRadRealInfo(2, J, Ldowny) = YGRID(NY)
+                    X = BndRadRealInfo(1, J, Ldowny); Y = BndRadRealInfo(2, J, Ldowny)
+                    Z = BndRadRealInfo(3, J, Ldowny); TRANSMIT = BndRadRealInfo(4, J, Ldowny)
+                    RADIANCE(:) = BndRadRealInfo(5:4 + NSTOKES, J, Ldowny)
+                    call shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
+                        &NX, NY, NZ, NPTS, NCELLS,&
+                        &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+                        &XGRID, YGRID, ZGRID, GRIDPOS,&
+                        &MUOUT, PHIOUT, GRIDRAD, EXTINCT, SOURCE1,&
+                        &X, Y, Z, XE, YE, ZE, SIDE,&
+                        &TRANSMIT, RADIANCE, VALIDRAD)
+                    ! If we got a radiance then store it in RadSend, otherwise
+                    ! save information needed to pass to neighboring processors
+                    if (VALIDRAD) then
+                        Ndone = Ndone + 1
+                        if (Ndone .gt. MAXNRAD)&
+                            &call shd_mpi__abort('Error [mpi__computeRad]: MAXNRAD exceeded by Ndone 3.')
+                        RadSend(:, Ndone) = RADIANCE(:)
+                        IndexSend(Ndone) = BndRadIntInfo(J, Ldowny)
+                    else
+                        if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
+                            write (6, *) 'Bad SIDE 2y', MYPROC_, muout, phiout, x, y, z, SIDE, xe, ye, ze
+                            call shd_mpi__abort('Error [mpi__computeRad]: Bad SIDE 2y')
+                        end if
+                        NINVALID(SIDE) = NINVALID(SIDE) + 1
+                        if (NINVALID(SIDE) .gt. MAXNRAD)&
+                            &call shd_mpi__abort('Error [mpi__computeRad]: MAXNRAD exceeded by NINVALID(SIDE) 3.')
+                        BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, TRANSMIT, RADIANCE(:)/)
+                        BndRadIntInfo(NINVALID(SIDE), SIDE) = BndRadIntInfo(J, Ldowny)
+                    end if
+                end do
+            end if
+
+            ! See if there are any more invalid radiance rays on all the processors
+            intsendbuf = (/NINVALID(Lupx), NINVALID(Lupy)/)
+            call mpi_allreduce(intsendbuf, intrecvbuf, 2, MPI_INTEGER, MPI_MAX,&
+                &COMM2D_, ierr)
+            AllDone = all(intrecvbuf(1:2) .eq. 0)
+        end do
+
+        if (MYPROC_ .gt. 0) then
+            ! Send the finished radiances to the master processor
+            call mpi_isend(Ndone, 1, MPI_INTEGER, 0, 6*K + 7, COMM2D_, requests(1), ierr)
+            call mpi_isend(RadSend, NSTOKES*Ndone, MPI_REAL, 0, 6*K + 8, COMM2D_, requests(2), ierr)
+            call mpi_isend(IndexSend, Ndone, MPI_INTEGER, 0, 6*K + 9, COMM2D_, requests(3), ierr)
+            call mpi_waitall(3, requests, status, ierr)
+        else
+            ! Put the radiances finished by the master processor in the list
+            do i = 1, Ndone
+                RADOUT(:, IndexSend(i)) = RadSend(:, i)
+            end do
+            ! Receive the radiances from all the other processors
+            irq = 0
+            do iproc = 1, NUMPROC_ - 1
+                call mpi_irecv(NradRecv(iproc), 1, MPI_INTEGER, iproc,&
+                    &6*K + 7, COMM2D_, requests(irq + 1), ierr)
+                call mpi_irecv(RadRecv(:, :, iproc), NSTOKES*MAXNRAD, MPI_REAL, iproc,&
+                    &6*K + 8, COMM2D_, requests(irq + 2), ierr)
+                call mpi_irecv(IndexRecv(:, iproc), MAXNRAD, MPI_INTEGER, iproc,&
+                    &6*K + 9, COMM2D_, requests(irq + 3), ierr)
+                irq = irq + 3
+            end do
+            call mpi_waitall(irq, requests, status, ierr)
+            do iproc = 1, NUMPROC_ - 1
+                do i = 1, NradRecv(iproc)
+                    RADOUT(:, IndexRecv(i, iproc)) = RadRecv(:, i, iproc)
+                end do
+            end do
         end if
-    end do
+
+    end do ! K (angle loop)
 
     deallocate (requests, status, RadSend, IndexSend)
     if (MYPROC_ .eq. 0) deallocate (NradRecv, RadRecv, IndexRecv)
@@ -2645,18 +2660,28 @@ subroutine shd_mpi__end(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART, XDOMAIN, YDOMAI
                     NORM(SX:EX - 1, IY) = NORM(SX:EX - 1, IY) + reshape((/1/), (/NX - 1/), (/1/))
                     NUMGRIDALL(IX, IY) = NUMGRIDALL(IX, IY) + buf(NX, NY)
                     NORM(IX, IY) = NORM(IX, IY) + 1
+
+                    ! checked
                     deallocate (buf)
                 end do
+
+                ! checked
                 deallocate (recvbuf)
                 NUMGRIDALL(:, :) = NUMGRIDALL(:, :)/NORM(:, :)
+
+                ! checked
                 deallocate (NORM)
             end if
+
+            ! checked
             deallocate (requests, status, IXYALL)
 
         else
             allocate (NUMGRIDALL(NPXT, NPYT))
             NUMGRIDALL(1:NPX, 1:NPY) = NUMGRID(:, :)
         end if
+
+        ! checked
         deallocate (NUMGRID)
 
         if (MYPROC_ .eq. 0) then
@@ -2671,6 +2696,8 @@ subroutine shd_mpi__end(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART, XDOMAIN, YDOMAI
                 end do
             end do
             close (10)
+
+            ! checked
             deallocate (NUMGRIDALL)
         end if
     end if
@@ -2686,8 +2713,11 @@ subroutine shd_mpi__end(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART, XDOMAIN, YDOMAI
     write (6, '(A,"<",A,">")') 'Message [mpi__end]: Finished with SHDOM run: ', trim(adjustl(RUNNAME))
 
     ! Shut down MPI
-    if (allocated(BXYPTR_)) deallocate (BXYPTR_, IBXYPTR_, BXYPOS_)
-    call MPI_FINALIZE(ierr)
+    if (allocated(BXYPTR_)) deallocate(BXYPTR_)
+    if (allocated(IBXYPTR_)) deallocate(IBXYPTR_)
+    if (allocated(BXYPOS_)) deallocate(BXYPOS_)
+    call mpi_finalize(ierr)
+
 #endif
 
     return

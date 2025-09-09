@@ -49,14 +49,20 @@ subroutine shd_sfc__interpSfc(&
     ! points are in SFCGRIDPARMS.  The first parameter is input as
     ! temperature, but converted to Planck function for output.
 
-    integer NBOTPTS, BCPTR(*), NXSFC, NYSFC, NSFCPAR
-    real WAVENO(2), WAVELEN
-    real DELXSFC, DELYSFC
-    real GRIDPOS(3, *), SFCPARMS(NSFCPAR, NXSFC+1, NYSFC+1)
-    real SFCGRIDPARMS(NSFCPAR, NBOTPTS)
+    integer :: NBOTPTS, BCPTR(*), NXSFC, NYSFC, NSFCPAR
+    real :: WAVENO(2), WAVELEN
+    real :: DELXSFC, DELYSFC
+    real :: GRIDPOS(3, *), SFCPARMS(NSFCPAR, NXSFC+1, NYSFC+1)
+    real :: SFCGRIDPARMS(NSFCPAR, NBOTPTS)
     character(len=1) :: SRCTYPE, UNITS
-    integer I, IBC, IX, IY, J
-    real RX, RY, U, V, TEMP, PLANCK
+    integer :: I, IBC, IX, IY, J
+    real :: RX, RY, U, V, TEMP, PLANCK
+    logical :: INTERP
+
+    INTERP = .true.
+    if (NSFCPAR .gt. 6) then
+        INTERP = .false.
+    end if
 
     ! Loop over all bottom points
     do IBC = 1, NBOTPTS
@@ -84,19 +90,22 @@ subroutine shd_sfc__interpSfc(&
         V = max(0.0, min(1.0, RY - (IY - 1)))
 
         do J = 1, NSFCPAR
-            ! bi-linear interpolation
-            !╭────────────────────────────────────────────────╮!
-            SFCGRIDPARMS(J, IBC) =&
-                &  (1.0 - U)*(1.0 - V)*SFCPARMS(J, IX  , IY)&
-                &+ (1.0 - U)*       V *SFCPARMS(J, IX  , IY+1)&
-                &+        U *(1.0 - V)*SFCPARMS(J, IX+1, IY)&
-                &+        U *       V *SFCPARMS(J, IX+1, IY+1)
-            !╰────────────────────────────────────────────────╯!
-
-            ! nearest interpolation
-            !╭────────────────────────────────────────────────╮!
-            !SFCGRIDPARMS(J, IBC) = SFCPARMS(J, IX, IY)
-            !╰────────────────────────────────────────────────╯!
+            ! only interpolate BRDF parameter, not surface type ID (currently stored at 8)
+            if (INTERP) then
+                ! bi-linear interpolation
+                !╭────────────────────────────────────────────────╮!
+                SFCGRIDPARMS(J, IBC) =&
+                    &  (1.0 - U)*(1.0 - V)*SFCPARMS(J, IX  , IY)&
+                    &+ (1.0 - U)*       V *SFCPARMS(J, IX  , IY+1)&
+                    &+        U *(1.0 - V)*SFCPARMS(J, IX+1, IY)&
+                    &+        U *       V *SFCPARMS(J, IX+1, IY+1)
+                !╰────────────────────────────────────────────────╯!
+            else
+                ! nearest interpolation
+                !╭────────────────────────────────────────────────╮!
+                SFCGRIDPARMS(J, IBC) = SFCPARMS(J, IX, IY)
+                !╰────────────────────────────────────────────────╯!
+            end if
         end do
 
         if (SRCTYPE .eq. 'S') then
@@ -138,6 +147,7 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
     ! R  RPV-original  rho0, k, Theta
     ! T  LSRT          k_iso, k_geo, k_vol
     ! J  LSRT-Jiao     k_iso, k_geo, k_vol, k_j, alpha
+    ! M  Mixed surface
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     integer :: NSTOKES
@@ -145,21 +155,44 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
     real    :: REFPARMS(*), WAVELEN, MU1, PHI1, MU2, PHI2, REFLECT(4, 4)
     real    :: PHIDIFF
     character(len=1) :: SFCTYPE
+    integer, parameter :: iSFC_ID=7
 
-    if (SFCTYPE .eq. 'L' .or. SFCTYPE .eq. 'l') then
+    if ((SFCTYPE .eq. 'L') .or. (SFCTYPE .eq. 'l')) then
 
         ! L or l: Lambertian surface BRDF is constant.
         !   (for testing, as done more efficiently by Lambertian routine
         REFLECT(1:NSTOKES, 1:NSTOKES) = 0.0
         REFLECT(1, 1) = REFPARMS(1)
 
-    else if (SFCTYPE .eq. 'W' .or. SFCTYPE .eq. 'w') then
+    else if ((SFCTYPE .eq. 'W') .or. (SFCTYPE .eq. 'w')) then
 
         ! W: Fresnel reflection with Gaussian distribution of slopes
         call shd_sfc__brdfFresnel(REFPARMS(1), REFPARMS(2),&
             &REFPARMS(3), MU1, MU2, PHI1, PHI2, NSTOKES, REFLECT)
 
-    else if (SFCTYPE .eq. 'D' .or. SFCTYPE .eq. 'd') then
+    else if ((SFCTYPE .eq. 'O') .or. (SFCTYPE .eq. 'o')) then
+
+        ! O: Ocean BRDF from 6S modified by Norm Loeb
+        if (NSTOKES .gt. 1) then
+            stop 'Error [_brdfSurface]: Ocean BRDF from 6S is only for unpolarized case.'
+        end if
+
+        PHIDIFF = PHI1-PHI2
+        call shd_sfc__brdfOcean(REFPARMS(1), -1., REFPARMS(2), WAVELEN,&
+            & -MU1, MU2, PHIDIFF, PHI1, REFLECT(1, 1))
+
+    else if ((SFCTYPE .eq. 'R') .or. (SFCTYPE .eq. 'r')) then
+
+        ! R: Rahman, Pinty, and Verstraete
+        if (NSTOKES .gt. 1) then
+            stop 'Error [_brdfSurface]: RPV BRDF is only for unpolarized case.'
+        end if
+
+        PHIDIFF = PHI1-PHI2-PI_
+        call shd_sfc__brdfRPV(REFPARMS(1), REFPARMS(2),&
+            &REFPARMS(3), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
+
+    else if ((SFCTYPE .eq. 'D') .or. (SFCTYPE .eq. 'd')) then
 
         ! D: Diner et al., depolarizing modified RPV + Fresnel reflection
         !   from microfacets with uniform or Gaussian distribution of s
@@ -168,26 +201,14 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
             &REFPARMS(4), REFPARMS(5),&
             &-MU1, MU2, PHIDIFF, NSTOKES, REFLECT)
 
-    else if (SFCTYPE .eq. 'R' .or. SFCTYPE .eq. 'r') then
-
-        ! R: Rahman, Pinty, and Verstraete
-        if (NSTOKES .gt. 1) then
-            stop 'Error [_brdfSurface]: RPV BRDF is only for unpolarized case'
-        end if
-
-        PHIDIFF = PHI1-PHI2-PI_
-        call shd_sfc__brdfRPV(REFPARMS(1), REFPARMS(2),&
-            &REFPARMS(3), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
-
-    else if (SFCTYPE .eq. 'T' .or. SFCTYPE .eq. 't') then
+    else if ((SFCTYPE .eq. 'T') .or. (SFCTYPE .eq. 't')) then
 
         ! T: LSRT model
         if (NSTOKES .gt. 1) then
-            stop 'Error [_brdfSurface]: LSRT BRDF is only for unpolarized case'
+            stop 'Error [_brdfSurface]: LSRT BRDF is only for unpolarized case.'
         end if
 
         PHIDIFF = PHI1-PHI2-PI_
-        ! T: LSRT model
         call shd_sfc__brdfLSRT(REFPARMS(1), REFPARMS(2),&
             &REFPARMS(3), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
 
@@ -204,19 +225,72 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
         call shd_sfc__brdfLSRTJ(REFPARMS(1), REFPARMS(2),&
             &REFPARMS(3), REFPARMS(4), REFPARMS(5), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
 
-    else if (SFCTYPE .eq. 'O' .or. SFCTYPE .eq. 'o') then
+    else if ((SFCTYPE .eq. 'X') .or. (SFCTYPE .eq. 'x')) then
 
-        ! O: Ocean BRDF from 6S modified by Norm Loeb
+        ! for Lambertian   (VL):IX, IY, TEMP,   ALB,    -999.0, -999.0, -999.0, -999.0, -999.0, 999.0
+        ! for Wave-Fresnel (VW):IX, IY, TEMP,   MRE,    MIM,    WSPD,   -999.0, -999.0, -999.0, 998.0
+        ! for Ocean        (VO):IX, IY, TEMP,   WSPD,   PCL,    -999.0, -999.0, -999.0, -999.0, 997.0
+        ! for RPV          (VR):IX, IY, TEMP,   RHO0,   KR,     THETA,  -999.0, -999.0, -999.0, 996.0
+        ! for Diner        (VD):IX, IY, TEMP,   A,      KR,     B,      ZETA,   SIGMA,  -999.0, 995.0
+        ! for LSRT         (VT):IX, IY, TEMP,   F_ISO,  F_GEO,  F_VOL,  -999.0, -999.0, -999.0, 994.0
+        ! for LSRT-J       (VJ):IX, IY, TEMP,   F_ISO,  F_GEO,  F_VOL,  F_JIAO, ALPHA,  -999.0, 993.0
+        
         if (NSTOKES .gt. 1) then
-            stop 'Error [_brdfSurface]: Ocean BRDF from 6S is only for unpolarized case'
+            stop 'Error [_brdfSurface]: Mixed surface is only for unpolarized case.'
         end if
 
-        PHIDIFF = PHI1-PHI2
-        call shd_sfc__brdfOcean(REFPARMS(1), -1., REFPARMS(2), WAVELEN,&
-            & -MU1, MU2, PHIDIFF, PHI1, REFLECT(1, 1))
+        if (abs(REFPARMS(iSFC_ID)-999.0) .le. 0.01) then
+
+            REFLECT(1:NSTOKES, 1:NSTOKES) = 0.0
+            REFLECT(1, 1) = REFPARMS(1)
+
+        else if (abs(REFPARMS(iSFC_ID)-998.0) .le. 0.01) then
+
+            call shd_sfc__brdfFresnel(REFPARMS(1), REFPARMS(2),&
+                &REFPARMS(3), MU1, MU2, PHI1, PHI2, NSTOKES, REFLECT)
+
+        else if (abs(REFPARMS(iSFC_ID)-997.0) .le. 0.01) then
+
+            PHIDIFF = PHI1-PHI2
+            call shd_sfc__brdfOcean(REFPARMS(1), -1., REFPARMS(2), WAVELEN,&
+                & -MU1, MU2, PHIDIFF, PHI1, REFLECT(1, 1))
+
+        else if (abs(REFPARMS(iSFC_ID)-996.0) .le. 0.01) then
+
+            PHIDIFF = PHI1-PHI2-PI_
+            call shd_sfc__brdfRPV(REFPARMS(1), REFPARMS(2),&
+                &REFPARMS(3), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
+
+        else if (abs(REFPARMS(iSFC_ID)-995.0) .le. 0.01) then
+
+            PHIDIFF = PHI2 - PHI1
+            call shd_sfc__brdfDiner(REFPARMS(1), REFPARMS(2), REFPARMS(3),&
+                &REFPARMS(4), REFPARMS(5),&
+                &-MU1, MU2, PHIDIFF, NSTOKES, REFLECT)
+
+        else if (abs(REFPARMS(iSFC_ID)-994.0) .le. 0.01) then
+
+            PHIDIFF = PHI1-PHI2-PI_
+            call shd_sfc__brdfLSRT(REFPARMS(1), REFPARMS(2),&
+                &REFPARMS(3), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
+                
+        else if (abs(REFPARMS(iSFC_ID)-993.0) .le. 0.01) then
+
+            PHIDIFF = PHI1-PHI2
+            ! J: LSRT-Jiao model
+            call shd_sfc__brdfLSRTJ(REFPARMS(1), REFPARMS(2),&
+                &REFPARMS(3), REFPARMS(4), REFPARMS(5), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
+                
+        else
+
+            stop 'Error [_brdfSurface]: Unknown BRDF type.'
+
+        end if
 
     else
+
         stop 'Error [_brdfSurface]: Unknown BRDF type.'
+
     end if
 
     return
@@ -1075,17 +1149,13 @@ subroutine shd_sfc__brdfOcean(&
         & 0.8678726, 0.8797889, 0.8878716, 0.9091171, 0.7294627,&
         & 0.8137348, 0.8453338, 0.8629867, 0.8745421, 0.9036854/
 
-    fac = PI_/180.
-    ! paw= azim. of sun - azim. of wind (in deg.)
-    paw = xpaw/fac
+    fac = PI_/180.0d0
+
+    ! paw= azim. of sun - azim. of wind (in radian)
+    paw = xpaw
+
     ! Conversion of parameter
-    if (xphi .lt. 0.0) then
-        phi = -xphi
-    else if (xphi .ge. 2.0*PI_) then
-        phi = xphi - 2.0*PI_
-    else
-        phi = xphi
-    end if
+    phi = xphi
 
     if (xmuo .le. 0.028) then
         tetas = acos(0.028)/fac
@@ -1232,18 +1302,19 @@ subroutine morcasiwat(wl, C, R2)
         & 0.0010, 0.0009, 0.0008, 0.0008, 0.0008,&
         & 0.0007, 0.0007, 0.0007, 0.0007, 0.0007,&
         & 0.0007/
-    if (wl .lt. 0.400 .or. wl .gt. 0.700) then
+
+    if (wl .lt. 0.400d0 .or. wl .gt. 0.700d0) then
         R2 = 0.000
         return
     end if
 
-    iwl = 1 + nint((wl - 0.400)/0.005)
+    iwl = 1 + nint((wl - 0.400d0)/0.005d0)
     Kw = tKw(iwl)
     Xc = tXc(iwl)
     e = te(iwl)
     bw = tbw(iwl)
 
-    if (abs(C) .lt. 0.0001) then
+    if (abs(C) .lt. 0.0001d0) then
         bb = 0.5d0*bw
         Kd = Kw
     else
@@ -1253,13 +1324,13 @@ subroutine morcasiwat(wl, C, R2)
         Kd = Kw + Xc*C**e
     end if
 
-    u1 = 0.75
+    u1 = 0.75d0
     R1 = 0.33d0*bb/u1/Kd
 
-50  u2 = 0.90d0*(1.0-R1)/(1.0+2.25*R1)
+50  u2 = 0.90d0*(1.0d0-R1)/(1.0d0+2.25d0*R1)
     R2 = 0.33d0*bb/u2/Kd
     err = abs((R2 - R1)/R2)
-    if (err .lt. 0.0001) return
+    if (err .lt. 0.0001d0) return
     R1 = R2
     goto 50
     return
@@ -1347,11 +1418,12 @@ subroutine indwat(wl, xsal, nr, ni)
     return
 end subroutine
 
+
 subroutine sunglint(wspd, nr, ni, azw, ts, tv, fi, rog)
     ! input parameters:   wspd=speed of the wind (in m/s)
     !                     nr=index of refraction of the sea water
     !                     ni=extinction coefficient of the sea water
-    !                     azw=azim. of the sun - azim. of the wind (in deg.)
+    !                     azw=azim. of the sun - azim. of the wind (in radian)
     !                     ts=solar zenith angle (in deg.)
     !                     tv=view zenith angle (in deg.)
     !                     fi=relative azimuth (sun-satellite)
@@ -1363,8 +1435,12 @@ subroutine sunglint(wspd, nr, ni, azw, ts, tv, fi, rog)
     real coef, cos2chi, coschi, sinchi
     real r1, sigmaC, sigmaU, C21, C03, C40, C04, C22
 
-    fac = PI_/180.0
-    phw = azw*fac
+    real :: co4
+
+    fac = PI_/180.0d0
+
+    phw = azw
+
     cs = cos(ts*fac)
     cv = cos(tv*fac)
     ss = sin(ts*fac)
@@ -1399,8 +1475,12 @@ subroutine sunglint(wspd, nr, ni, azw, ts, tv, fi, rog)
     coschi = sqrt(0.5d0*(1 + cos2chi))
     sinchi = sqrt(0.5d0*(1 - cos2chi))
     call Fresnel(nr, ni, coschi, sinchi, R1)
+
     ! Compute Reflectance of the sun glint
-    Rog = PI_*R1*proba/4.0/cs/cv/(cos(tilt)**4)
+    co4 = cos(tilt)
+    co4 = co4*co4
+    co4 = co4*co4
+    Rog = PI_*R1*proba/4.0/cs/cv/co4
     return
 end subroutine
 
@@ -1416,16 +1496,35 @@ subroutine Fresnel(nr, ni, coschi, sinchi, R1)
     ! output parameter: R1=Fresnel's coefficient for reflection
     !
     real nr, ni, a1, a2, u, v, Rr2, Rl2, b1, b2, R1, coschi, sinchi
+    real :: nr2, ni2
+
     ! absolute value for a1 to get v=0 when ni=0
-    a1 = abs(nr*nr - ni*ni - sinchi*sinchi)
-    a2 = sqrt((nr*nr - ni*ni - sinchi*sinchi)**2.+4*nr*nr*ni*ni)
+    nr2=nr*nr
+    ni2=ni*ni
+
+    a1 = abs(nr2-ni2-sinchi*sinchi)
+    !a1 = abs(nr*nr - ni*ni - sinchi*sinchi)
+
+    a2=sqrt(a1*a1+4.0*nr2*ni2)
+    !a2 = sqrt((nr*nr - ni*ni - sinchi*sinchi)**2 + 4.0d0*nr*nr*ni*ni)
+
     u = sqrt(0.5d0*(a1 + a2))
-    v = sqrt(max(0.0, 0.5d0*(-a1 + a2)))
-    Rr2 = ((coschi - u)**2 + v*v)/((coschi + u)**2 + v*v)
-    b1 = (nr*nr - ni*ni)*coschi
-    b2 = 2.0*nr*ni*coschi
-    Rl2 = ((b1 - u)**2 + (b2 - v)**2)/((b1 + u)**2 + (b2 + v)**2)
-    R1 = (Rr2 + Rl2)/2.0
+
+    v = sqrt(0.5d0*(-a1 + a2))
+    !v = sqrt(max(0.0, 0.5d0*(-a1 + a2)))
+
+    Rr2 = ((coschi-u)*(coschi-u)+v*v)/((coschi+u)*(coschi+u)+v*v)
+    !Rr2 = ((coschi - u)**2 + v*v)/((coschi + u)**2 + v*v)
+
+    b1 = (nr2 - ni2)*coschi
+    !b1 = (nr*nr - ni*ni)*coschi
+
+    b2 = 2.0d0*nr*ni*coschi
+
+    Rl2 = ((b1-u)*(b1-u)+(b2-v)*(b2-v))/((b1+u)*(b1+u)+(b2+v)*(b2+v))
+    !Rl2 = ((b1 - u)**2 + (b2 - v)**2)/((b1 + u)**2 + (b2 + v)**2)
+
+    R1 = (Rr2 + Rl2) * 0.5d0
     return
 end subroutine
 

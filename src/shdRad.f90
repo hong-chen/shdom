@@ -362,14 +362,22 @@ subroutine shd_rad__computeDirect(&
         I2 = K + NPZ_*(J - 1) + NPZ_*NPY_*(IP - 1)
         I3 = K + NPZ_*(JP - 1) + NPZ_*NPY_*(I - 1)
         I4 = K + NPZ_*(JP - 1) + NPZ_*NPY_*(IP - 1)
-        E1 = EXTDIRP_(I1)
-        E2 = EXTDIRP_(I2)
-        E3 = EXTDIRP_(I3)
-        E4 = EXTDIRP_(I4)
+
+        ! zgrid correction (to address layer averaging issue in z direction)
+        !╭────────────────────────────────────────────────╮!
+        !E1 = EXTDIRP_(I1)
+        !E2 = EXTDIRP_(I2)
+        !E3 = EXTDIRP_(I3)
+        !E4 = EXTDIRP_(I4)
+        E1 = EXTDIRP_(I1 + 1)
+        E2 = EXTDIRP_(I2 + 1)
+        E3 = EXTDIRP_(I3 + 1)
+        E4 = EXTDIRP_(I4 + 1)
         E5 = EXTDIRP_(I1 + 1)
         E6 = EXTDIRP_(I2 + 1)
         E7 = EXTDIRP_(I3 + 1)
         E8 = EXTDIRP_(I4 + 1)
+        !╰────────────────────────────────────────────────╯!
 
         ! Compute the distance to the next grid plane in  X, Y, and Z
         !   If in horizontal uniform region or doing IP then fix X and/or Y.
@@ -733,67 +741,76 @@ subroutine shd_rad__computeRad(&
         endif
         !╰────────────────────────────────────────────────╯!
 
-        if (MUOUT .eq. 0.0 .or. abs(MUOUT) .gt. 1.0) then
-            write (6, *) 'Warning [_computeRad]: Bad mu for radiance', IANG, MUOUT, PHID
-        else
+        if (MUOUT .eq. 0.0) then
+            write (6, *) 'Warning [_computeRad]: Bad MUOUT for radiance', IANG, MUOUT, PHID
+            MUOUT = 1.0e-6
+            write (6, *) '                       New MUOUT=', MUOUT
+        end if
 
-            ! Compute the source function throughout grid for this angle
-            call shd_src__computeSrcOneDir(NSTOKES, ML, MM, NLM, NSTLEG, NLEG,&
-                &NUMPHASE, NPTS, DELTAM, MUOUT, PHIOUT, SRCTYPE,&
-                &SOLARMU, SOLARAZ, ALBEDO, LEGEN,&
-                &IPHASE, DIRFLUX, SHPTR, SOURCE, SOURCE1)
+        if (abs(MUOUT) .gt. 1.0) then
+            write (6, *) 'Warning [_computeRad]: Bad MUOUT for radiance', IANG, MUOUT, PHID
+            if (MUOUT .gt.  1.0) MUOUT =  1.0
+            if (MUOUT .lt. -1.0) MUOUT = -1.0
+            write (6, *) '                       New MUOUT=', MUOUT
+        end if
 
-            ! Set the radiance field to -1, so we can determine valid ra
-            !   Also set the source array to the extinction times the so
-            !   function, so the grid interpolation is correct.
-            do I = 1, NPTS
-                GRIDRAD(1, I) = -1.0
-                SOURCE1(:, I) = SOURCE1(:, I)*EXTINCT(I)
+        ! Compute the source function throughout grid for this angle
+        call shd_src__computeSrcOneDir(NSTOKES, ML, MM, NLM, NSTLEG, NLEG,&
+            &NUMPHASE, NPTS, DELTAM, MUOUT, PHIOUT, SRCTYPE,&
+            &SOLARMU, SOLARAZ, ALBEDO, LEGEN,&
+            &IPHASE, DIRFLUX, SHPTR, SOURCE, SOURCE1)
+
+        ! Set the radiance field to -1, so we can determine valid ra
+        !   Also set the source array to the extinction times the so
+        !   function, so the grid interpolation is correct.
+        do I = 1, NPTS
+            GRIDRAD(1, I) = -1.0
+            SOURCE1(:, I) = SOURCE1(:, I)*EXTINCT(I)
+        end do
+        ! Get boundary radiances: either top or bottom
+        ! Isotropic top boundary or Lambertian bottom boundary can u
+        !   the previously computed boundary radiances in BCRAD,
+        !   otherwise, compute the radiance for this angle
+        !   by integrating over the stored downwelling radiances.
+        if (MUOUT .lt. 0.0) then
+            do IBC = 1, NTOPPTS
+                I = BCPTR(IBC, 1)
+                GRIDRAD(:, I) = BCRAD(:, IBC)
             end do
-            ! Get boundary radiances: either top or bottom
-            ! Isotropic top boundary or Lambertian bottom boundary can u
-            !   the previously computed boundary radiances in BCRAD,
-            !   otherwise, compute the radiance for this angle
-            !   by integrating over the stored downwelling radiances.
-            if (MUOUT .lt. 0.0) then
-                do IBC = 1, NTOPPTS
-                    I = BCPTR(IBC, 1)
-                    GRIDRAD(:, I) = BCRAD(:, IBC)
-                end do
-            else
-                if (.not. LAMBERTIAN) then
-                    call shd_init__makeSfcRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
-                        &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MUOUT, PHIOUT,&
-                        &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
-                        &SFCTYPE, NSFCPAR, SFCGRIDPARMS, NSTOKES,&
-                        &BCRAD(1, 1 + NTOPPTS))
-                end if
-                do IBC = 1, NBOTPTS
-                    I = BCPTR(IBC, 2)
-                    GRIDRAD(:, I) = BCRAD(:, NTOPPTS + IBC)
-                end do
+        else
+            if (.not. LAMBERTIAN) then
+                call shd_init__makeSfcRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
+                    &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MUOUT, PHIOUT,&
+                    &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
+                    &SFCTYPE, NSFCPAR, SFCGRIDPARMS, NSTOKES,&
+                    &BCRAD(1, 1 + NTOPPTS))
             end if
-
-            ! Integrate backward from the location to get the radiance
-            Y0 = STARTY
-            do JY = 1, NYOUT
-                X0 = STARTX
-                do JX = 1, NXOUT
-                    IRAD = IRAD + 1
-                    TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
-                    call shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
-                        &NX, NY, NZ, NPTS, NCELLS,&
-                        &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-                        &XGRID, YGRID, ZGRID, GRIDPOS,&
-                        &MUOUT, PHIOUT, GRIDRAD, EXTINCT, SOURCE1,&
-                        &X0, Y0, Z0, XE, YE, ZE, SIDE,&
-                        &TRANSMIT, RADIANCE, VALIDRAD)
-                    RADOUT(:, IRAD) = RADIANCE(1:NSTOKES)
-                    X0 = X0 + OUTPARMS(2)
-                end do
-                Y0 = Y0 + OUTPARMS(3)
+            do IBC = 1, NBOTPTS
+                I = BCPTR(IBC, 2)
+                GRIDRAD(:, I) = BCRAD(:, NTOPPTS + IBC)
             end do
         end if
+
+        ! Integrate backward from the location to get the radiance
+        Y0 = STARTY
+        do JY = 1, NYOUT
+            X0 = STARTX
+            do JX = 1, NXOUT
+                IRAD = IRAD + 1
+                TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
+                call shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
+                    &NX, NY, NZ, NPTS, NCELLS,&
+                    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+                    &XGRID, YGRID, ZGRID, GRIDPOS,&
+                    &MUOUT, PHIOUT, GRIDRAD, EXTINCT, SOURCE1,&
+                    &X0, Y0, Z0, XE, YE, ZE, SIDE,&
+                    &TRANSMIT, RADIANCE, VALIDRAD)
+                RADOUT(:, IRAD) = RADIANCE(1:NSTOKES)
+                X0 = X0 + OUTPARMS(2)
+            end do
+            Y0 = Y0 + OUTPARMS(3)
+        end do
+
     end do
 
     return

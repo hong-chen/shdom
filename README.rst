@@ -23,7 +23,9 @@ SHDOM was originally developed by `Frank Evans <evans@nit.colorado.edu>`_ and is
 
 **Major changes:**
 
-* Conducted benchmarking of radiance calculations (EaR³T+SHDOM vs EaR³T+MCARaTS);
+* Conducted benchmarking of radiance (by `Yu-Wen Chen <https://lasp.colorado.edu/people/yu-wen-chen/>`_) and irradiance (by `Ken Hirata <https://kenhira.gitlab.io>`_) calculations (SHDOM vs MCARaTS vs libRadtran [DISORT]);
+
+* Removed layer averaging in the z-direction to ensure consistency in model-to-model comparisons;
 
 * Modified ``propgen`` to accept direct inputs for atmospheric extinction coefficients;
 
@@ -37,7 +39,7 @@ SHDOM was originally developed by `Frank Evans <evans@nit.colorado.edu>`_ and is
 
 * Fixed a segmentation error when saving "state" from calculation;
 
-* Replaced floating-point number representation with exponential notation;
+* Replaced floating-point number representation with scientific notation;
 
 * Converted most I/O from ASCII to binary format;
 

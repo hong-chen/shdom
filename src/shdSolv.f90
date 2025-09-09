@@ -111,6 +111,7 @@ subroutine shd_solv__solveRte(&
     call shd_init__makePrp(ML, MM, NSTLEG, NLEG, NPTS, DELTAM, NUMPHASE,&
         &SRCTYPE, UNITS, WAVENO, WAVELEN, ALBMAX,&
         &EXTINCT, ALBEDO, LEGEN, TEMP, PLANCK, IPHASE)
+
     ! Get the maximum single scattering albedo over all processors
     call shd_mpi__findAlbMax(ALBMAX)
 
@@ -313,7 +314,8 @@ subroutine shd_solv__solveRte(&
         ! Compute the source function from the radiance field,
         !   do the adaptive spherical harmonics truncation, compute
         !   the solution criterion, and dot products for acceleration
-        if (SOLCRIT .lt. ENDADAPTSOL .or. ITER .gt. 30) FIXSH = .true.
+        if (((SOLCRIT .lt. ENDADAPTSOL) .or. (ITER .gt. 30)) .and.&
+            &((NX .gt. 10) .or. (NY .gt. 10))) FIXSH = .true.
         call shd_src__computeSrc(NSTOKES, ML, MM, NLM,&
             &NSTLEG, NLEG, NUMPHASE, NPTS,&
             &FIXSH, SRCTYPE, SOLARMU, YLMSUN, ALBEDO, LEGEN,&

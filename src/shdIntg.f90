@@ -96,7 +96,6 @@ subroutine shd_intg__integratePath(&
     integer :: count_end
     real :: elapsed_time
 
-
     ! Set the minimum transmission for the cell tracing (1 for single cell)
     TRANSMIN = 1.00
 
@@ -146,7 +145,6 @@ subroutine shd_intg__integratePath(&
     ! print *, 'Path integration:'
     ! Loop over the zenith angles (downwelling angles must be first)
     IANG = 1
-
 ! -- loop mu
     do IMU = 1, NMU
 
@@ -256,7 +254,6 @@ subroutine shd_intg__integratePath(&
                         &MU(IMU), PHI(IMU, IPHI), TRANSMIN, BCFLAG, IPFLAG,&
                         &EXTINCT, WORK, IPHI, GRIDRAD)
 
-
                 else
 
                     call shd_intg__backIntegrate3D(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,&
@@ -271,7 +268,8 @@ subroutine shd_intg__integratePath(&
             ! Transfer the radiance for the (IMU,IPHI) discrete ordinate from
             !   GRIDRAD to the work array.
             do I = 1, NPTS
-                if (GRIDRAD(1, I) .lt. -0.0001) then
+                !if (GRIDRAD(1, I) .lt. -0.0001) then
+                if (GRIDRAD(1, I) .lt. -1.0e-5) then
                     write (6, *) 'Warning [_integratePath]: Grid point has no value',&
                         &I, MU(IMU), PHI(IMU, IPHI), GRIDRAD(1, I), XGRID(1), YGRID(1),&
                         &GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I)
@@ -1395,6 +1393,22 @@ subroutine shd_intg__backIntegrate1D(&
                 ! Get extinction and source function at face intersection
                 EXT0 = EXTINCT(I1)
                 SRCEXT0(:) = EXTINCT(I1)*SOURCE(:, KANG, I1)
+
+                ! this is added to address layer averaging issue
+                ! a more robust criteria should be developed in the future
+                !   to distinguish the atmopheric medium intersection
+                !╭────────────────────────────────────────────────╮!
+                if (abs(EXT0-EXT1) .gt. min(EXT0, EXT1)*10.0) then
+                    if (BITZ .eq. 0) then
+                        EXT0 = EXT1
+                        SRCEXT0(:) = SRCEXT1(:)
+                    else
+                        EXT1 = EXT0
+                        SRCEXT1(:) = SRCEXT0(:)
+                    endif
+                end if
+                !╰────────────────────────────────────────────────╯!
+
                 ! Compute the cell radiance: integration of the source function
                 EXT = 0.5*(EXT0 + EXT1)
                 TAU = EXT*SO
@@ -1410,7 +1424,6 @@ subroutine shd_intg__backIntegrate1D(&
                     if (EXT .eq. 0.0) then
                         SRC(:) = 0.0
                     else
-                        ! Linear extinction, linear source*extinction, to first order
                         SRC(:) = (0.5d0*(SRCEXT0(:) + SRCEXT1(:)) + FRAC112_&
                             &*(EXT0*SRCEXT1(:) - EXT1*SRCEXT0(:))*SO)/EXT
                     end if
@@ -1426,13 +1439,15 @@ subroutine shd_intg__backIntegrate1D(&
                         &+ (EXT0P*SRCEXT1(:) - EXT1*SRCEXT0P(:))*2.0/(EXT0P + EXT1)&
                         &*(1 - 2/TAU + 2*TRANSCELL/ABSCELL))
                 end if
-                SRC(1) = max(SRC(1), 0.0d0)
+
+                SRC(1) = max(SRC(1), 0.0)
 
                 ! See if there are valid radiances for the intersection face:
                 ! If so, set flag, interpolate radiance, and add to
                 !   radiance from source function in cell
                 ! If not, only add in cell radiance and prepare for next cell
-                if (GRIDRAD(1, I1) .ge. -0.1) then
+                !if (GRIDRAD(1, I1) .ge. -0.1) then
+                if (GRIDRAD(1, I1) .ge. -1.0e-5) then
                     VALIDRAD = .true.
                     RAD0(:) = GRIDRAD(:, I1)
                     RAD(:) = RAD(:) + TRANSMIT*(RAD0(:)*TRANSCELL + SRC(:)*ABSCELL)

@@ -22,7 +22,7 @@ program shdom_main
     character(len=1) :: OUTTYPES(MAXOUT)
     character(len=FNAMEMAXLEN_) :: OUTFILES(MAXOUT)
 
-    real, allocatable :: DELG(:), KABS(:, :)
+    real, allocatable :: SOLFLUX(:), DELG(:), KABS(:, :)
     real, allocatable :: XGRID(:), YGRID(:), ZGRID(:)
     real, allocatable :: TEMP(:), PLANCK(:), EXTINCT(:), ALBEDO(:)
     real, allocatable :: LEGEN(:)
@@ -34,14 +34,14 @@ program shdom_main
     real, allocatable :: RADIANCE(:, :), SOURCE(:, :), DELSOURCE(:, :)
     integer, allocatable :: WORK1(:)
     real, allocatable :: WORK(:), WORK2(:)
-    real, allocatable :: FLUXES(:), DIRFLUX(:)
+    real, allocatable :: FLUXES(:, :), DIRFLUX(:), DIRFLUX_TMP(:)
     integer, allocatable :: NPHI0(:)
     real, allocatable :: MU(:), WTDO(:), PHI(:)
     integer, allocatable :: BCPTR(:)
     real, allocatable :: BCRAD(:, :)
     real, allocatable :: SFCPARMS(:)
     real, allocatable :: SFCGRIDPARMS(:)
-    real, allocatable :: SUMFLUXES(:), SUMDIRFLUX(:), SUMFLUXDIV(:)
+    real, allocatable :: SUMFLUXES(:, :), SUMDIRFLUX(:), SUMFLUXDIV(:)
     real, allocatable :: SUMSHTERMS(:), SOURCE1OUT(:)
     real, allocatable :: SUMRADOUT(:), SUMVISOUT(:)
     real, allocatable :: TEMPPT(:), EXTINCTPT(:), ALBEDOPT(:)
@@ -73,7 +73,7 @@ program shdom_main
     logical :: BASEOUT, HIGHORDERRAD, MASTERPROC, VALIDBEAM
     logical :: RADIANCE_OUT, VISUAL_OUT
     logical :: FLUX_OUT, FLUXDIV_OUT, SH_OUT, SOURCE_OUT
-    real :: SOLARFLUX, SOLARMU, SOLARAZ, SOLFLUX
+    real :: SOLARFLUX0, SOLARFLUX, SOLARMU, SOLARAZ
     real :: GNDTEMP, GNDALBEDO, SKYRAD, WAVENO(2), WAVELEN
     real :: SOLACC, SOLCRIT, SPLITACC, SHACC
     real :: DELXSFC, DELYSFC, MAXASYM, REDUCE_RATIO
@@ -92,14 +92,6 @@ program shdom_main
     logical :: mpiX, mpiY, mpiMode
     logical :: nmlMode = .true.
 
-    ! Choose the option to compute higher order radiance SH terms
-    HIGHORDERRAD = .false.
-    NSHOUT = 4
-    if (HIGHORDERRAD) NSHOUT = 5
-    ! Choose type of initialization/output for k-distributions:
-    !   True means initiatize with and output only the base grid.
-    BASEOUT = .false.
-
     !call cpu_time(CPUTIME1)
     call system_clock(count_start, count_rate, count_max)
 
@@ -113,7 +105,7 @@ program shdom_main
                 INSAVEFILE, OUTSAVEFILE,&
                 NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
                 IPFLAG, KDIST, DELTAM, GRIDTYPE,&
-                SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+                SRCTYPE, SOLARFLUX0, SOLARMU, SOLARAZ, SKYRAD,&
                 GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,&
                 ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
                 MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS, OUTFILES,&
@@ -124,7 +116,7 @@ program shdom_main
                 INSAVEFILE, OUTSAVEFILE,&
                 NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
                 IPFLAG, KDIST, DELTAM, GRIDTYPE,&
-                SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+                SRCTYPE, SOLARFLUX0, SOLARMU, SOLARAZ, SKYRAD,&
                 GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,&
                 ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
                 MAXOUT,MAXPAR, NUMOUT,OUTTYPES,OUTPARMS,OUTFILES,&
@@ -137,7 +129,7 @@ program shdom_main
         &INSAVEFILE, OUTSAVEFILE,&
         &NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
         &IPFLAG, KDIST, DELTAM, GRIDTYPE,&
-        &SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+        &SRCTYPE, SOLARFLUX0, SOLARMU, SOLARAZ, SKYRAD,&
         &GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,&
         &ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
         &MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS,&
@@ -157,17 +149,12 @@ program shdom_main
     ! Make ML and MM from NMU and NPHI
     NMU = max(2, 2*int((NMU + 1)/2))
     NPHI = max(1, NPHI)
+
     ML = NMU - 1
     MM = max(0, int(NPHI/2) - 1)
+
     NLEG = ML
     if (DELTAM) NLEG = ML + 1
-
-    ! Make ML and MM from NMU and NPHI
-    ! Compute NLM, NPHI0MAX.
-    if (SRCTYPE .eq. 'T') SOLARAZ = 0.0
-    NPHI0MAX = NPHI
-    NLM = (2*MM + 1)*(ML + 1) - MM*(MM + 1)
-    MEMWORD = NMU*(2 + 2*NPHI + 2*NLM + 2*33*32)
 
     ! NSTLEG is the number of phase function elements used (1 or 6)
     ! Also used for the number of unique elements of the generalized
@@ -178,15 +165,33 @@ program shdom_main
         NSTLEG = 6
     end if
 
-    allocate (MU(NMU), WTDO(NMU*NPHI), PHI(NMU*NPHI), NPHI0(NMU))
-
     ! Find out the size of the input property file grid
     if (MASTERPROC) then
         call shd_io__readPrpSize(PROPFILE, NSTLEG, NLEG, NPX_, NPY_, NPZ_,&
-                                NUMPHASE_, MAXLEG, MAXPGL, DELX_, DELY_)
+            &NUMPHASE_, MAXLEG, MAXPGL, DELX_, DELY_)
     end if
     call shd_mpi__bcastPrpSize(NPX_, NPY_, NPZ_, DELX_, DELY_,&
-                                 NUMPHASE_, MAXLEG, MAXPGL)
+        &NUMPHASE_, MAXLEG, MAXPGL)
+
+    ! Choose the option to compute higher order radiance SH terms
+    HIGHORDERRAD = .false.
+    if ((NPX_ .eq. 1) .and. (NPY_ .eq. 1)) HIGHORDERRAD = .true.
+
+    NSHOUT = 4
+    if (HIGHORDERRAD) NSHOUT = 5
+
+    ! Choose type of initialization/output for k-distributions:
+    !   True means initiatize with and output only the base grid.
+    BASEOUT = .false.
+
+    ! Make ML and MM from NMU and NPHI
+    ! Compute NLM, NPHI0MAX.
+    if (SRCTYPE .eq. 'T') SOLARAZ = 0.0
+    NPHI0MAX = NPHI
+    NLM = (2*MM + 1)*(ML + 1) - MM*(MM + 1)
+    MEMWORD = NMU*(2 + 2*NPHI + 2*NLM + 2*33*32)
+
+    allocate (MU(NMU), WTDO(NMU*NPHI), PHI(NMU*NPHI), NPHI0(NMU))
 
     ! Set the full domain grid sizes (variables end in T)
     NXT = NX; NYT = NY; NPXT = NPX_; NPYT = NPY_
@@ -303,7 +308,7 @@ program shdom_main
     if (MASTERPROC) then
         ! Check input parameters
         call shd_io__checkInputParam(NMU, NPHI, DELTAM, MAXASYM,&
-            &GRIDTYPE, SRCTYPE, UNITS, SOLARFLUX, SOLARMU,&
+            &GRIDTYPE, SRCTYPE, UNITS, SOLARFLUX0, SOLARMU,&
             &WAVENO, WAVELEN, GNDTEMP, GNDALBEDO,&
             &SPLITACC, SHACC)
     end if
@@ -354,7 +359,7 @@ program shdom_main
     MAXIG = nint(ADAPT_GRID_FACTOR*NBPTS)
     MAXIC = nint(CELL_TO_POINT_RATIO*MAXIG)
     MAXIV = nint(NUM_SH_TERM_FACTOR*NLM*MAXIG)
-    MAXIDO = MAXIG*NPHI0MAX
+    MAXIDO = MAXIG*max(NPHI0MAX, 4) ! to fix an segmentation error
     if (NUMPHASE_ .gt. 0) then
         MAXIGL = NUMPHASE_*NSTLEG*(MAXLEG + 1)
     else
@@ -380,8 +385,9 @@ program shdom_main
     allocate (RSHPTR(MAXIG + 2), SHPTR(MAXIG + 1), OSHPTR(MAXIG + 1))
     allocate (RADIANCE(NSTOKES, MAXIV + MAXIG), SOURCE(NSTOKES, MAXIV))
     if (ACCELFLAG) allocate (DELSOURCE(NSTOKES, MAXIV))
-    allocate (WORK(NSTOKES*MAXIDO), WORK1(8*MAXIG))
-    allocate (FLUXES(2*MAXIG), DIRFLUX(MAXIG))
+    allocate (WORK(NSTOKES*MAXIDO))
+    allocate (WORK1(8*MAXIG))
+    allocate (FLUXES(2, MAXIG), DIRFLUX(MAXIG))
 
     ! print dimension parameters
     !╭────────────────────────────────────────────────╮!
@@ -429,17 +435,17 @@ program shdom_main
         end if
         ! Broadcast the k-distribution array sizes
         call shd_mpi__bcastCkdSize(NG, NZCKD_)
-        allocate (ZCKD_(NZCKD_), GASABS_(NZCKD_), DELG(NG), KABS(NZCKD_, NG))
+        allocate (ZCKD_(NZCKD_), GASABS_(NZCKD_), SOLFLUX(NG), DELG(NG), KABS(NZCKD_, NG))
         if (MASTERPROC) then
             MAXNG = NG; MAXNZ = NZCKD_
             call shd_io__readCkd(MAXNG, MAXNZ, CKDFILE, WAVENO, SOLFLUX,&
                 &NG, DELG, NZCKD_, ZCKD_, KABS)
         end if
         call shd_mpi__bcastCkdParam(SOLFLUX, NG, DELG, NZCKD_, ZCKD_, KABS)
-        SOLARFLUX = SOLFLUX*SOLARFLUX*abs(SOLARMU)
     else
         NG = 1
-        allocate (DELG(NG))
+        allocate (SOLFLUX(NG), DELG(NG))
+        SOLFLUX(1) = 1.0
         DELG(1) = 1.0
         NZCKD_ = 0
         BASEOUT = .false.
@@ -489,7 +495,7 @@ program shdom_main
             end if
         else if (OUTTYPES(I) .eq. 'F') then
             if (.not. FLUX_OUT) then
-                allocate (SUMFLUXES(2*MAXIG), SUMDIRFLUX(MAXIG))
+                allocate (SUMFLUXES(2, MAXIG), SUMDIRFLUX(MAXIG))
             end if
             FLUX_OUT = .true.
         else if (OUTTYPES(I) .eq. 'H') then
@@ -560,6 +566,8 @@ program shdom_main
 
     ! Loop over the k-distribution g's from high to low absorption
     do IG = NG, 1, -1
+
+        SOLARFLUX = SOLFLUX(IG)*SOLARFLUX0*abs(SOLARMU)
 
         write (6, '(A,I2,A,I2,A)') 'Message [shdom_main]: Starting ', IG, '/', NG, ' (ig/Ng) ...'
 
@@ -707,6 +715,31 @@ program shdom_main
         end if
 
         if (FLUX_OUT) then
+
+            ! unscale delta-m fluxes
+            !╭────────────────────────────────────────────────╮!
+            if ((SRCTYPE .ne. 'T') .and. DELTAM) then
+
+                allocate(DIRFLUX_TMP(NPTS))
+
+                if (mpiMode) then
+                    call shd_mpi__makeDirect(1, NPTS, BCFLAG, IPFLAG, .false., ML,&
+                        &NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
+                        &GRIDPOS, NX, XGRID, NY, YGRID, DIRFLUX_TMP)
+                else
+                    call shd_rad__makeDirect(NPTS, BCFLAG, IPFLAG, .false., ML,&
+                        &NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
+                        &GRIDPOS, DIRFLUX_TMP)
+                end if
+
+                FLUXES(1, 1:NPTS) = FLUXES(1, 1:NPTS) + DIRFLUX(1:NPTS) - DIRFLUX_TMP(1:NPTS)
+                DIRFLUX(1:NPTS) = DIRFLUX_TMP(1:NPTS)
+
+                deallocate(DIRFLUX_TMP)
+
+            end if
+            !╰────────────────────────────────────────────────╯!
+
             call shd_util__sumData(NG - IG, DELG(IG), 2*NPTS, FLUXES, SUMFLUXES)
             call shd_util__sumData(NG - IG, DELG(IG), NPTS, DIRFLUX, SUMDIRFLUX)
         end if
@@ -724,7 +757,13 @@ program shdom_main
         end if
 
         OLDNPTS = NPTS
-    end do
+    end do ! CKD Ng loop
+
+
+    SOLARFLUX = 0.0d0
+    do IG = NG, 1, -1
+        SOLARFLUX = SOLARFLUX + SOLFLUX(IG)*DELG(IG)*SOLARFLUX0*abs(SOLARMU)
+    end do ! CKD Ng loop
 
     call shd_io__saveState(OUTSAVEFILE, NSTOKES, NX, NY, NZ, ML, MM, NLM,&
         &WORK, XGRID, YGRID, ZGRID,&
@@ -832,30 +871,32 @@ program shdom_main
     write (6, '(A)')'Message [shdom_main]: Actual MAX_TOTAL_MB, ADAPT_GRID_FACTOR, NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO'
     write (6, '(28X,F7.2,6X,F7.3,14X,F5.3,15X,F5.3)') MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
 
-    call shd_mpi__end(NPTS, GRIDPOS, NPX_, NPY_, XSTART_, YSTART_, XDOMAIN_, YDOMAIN_,&
-        &NPXT, NPYT, PROPFILE, RUNNAME)
+    !if (SRCTYPE .ne. 'T') then
+    !    call shd_rad__computeDirect(9, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
+    !        &DELTAM, ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
+    !        &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
+    !end if
 
-    if (SRCTYPE .ne. 'T') then
-        call shd_rad__computeDirect(9, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
-            &DELTAM, ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
-            &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
-    end if
-
-    deallocate (SUMRADOUT, SUMVISOUT, WORK2)
+    deallocate (WORK, WORK1, WORK2)
+    deallocate (SUMRADOUT, SUMVISOUT)
     if (FLUX_OUT) deallocate (SUMFLUXES, SUMDIRFLUX)
     if (FLUXDIV_OUT) deallocate (SUMFLUXDIV)
     if (SH_OUT) deallocate (SUMSHTERMS)
     if (SOURCE_OUT) deallocate (SOURCE1OUT)
     if (KDIST) deallocate (ZCKD_, GASABS_, KABS)
-    deallocate (BCPTR, BCRAD, DELG)
+    deallocate (BCPTR, BCRAD, DELG, SOLFLUX)
     if (allocated(SFCPARMS)) deallocate (SFCPARMS, SFCGRIDPARMS)
     deallocate (RADIANCE, SOURCE)
     if (ACCELFLAG) deallocate (DELSOURCE)
-    deallocate (RSHPTR, SHPTR, OSHPTR, WORK, WORK1, FLUXES, DIRFLUX)
+    deallocate (RSHPTR, SHPTR, OSHPTR)
+    deallocate (FLUXES, DIRFLUX)
     deallocate (GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, GRIDPOS)
     deallocate (TEMP, PLANCK, EXTINCT, ALBEDO, IPHASE, LEGEN)
     deallocate (XGRID, YGRID, ZGRID)
     deallocate (ZLEVELS_, TEMPP_, EXTINCTP_, ALBEDOP_, EXTDIRP_, IPHASEP_, LEGENP_)
     deallocate (MU, WTDO, PHI, NPHI0)
+
+    call shd_mpi__end(NPTS, GRIDPOS, NPX_, NPY_, XSTART_, YSTART_, XDOMAIN_, YDOMAIN_,&
+        &NPXT, NPYT, PROPFILE, RUNNAME)
 
 end program shdom_main
