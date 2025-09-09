@@ -234,7 +234,7 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
         ! for Diner        (VD):IX, IY, TEMP,   A,      KR,     B,      ZETA,   SIGMA,  -999.0, 995.0
         ! for LSRT         (VT):IX, IY, TEMP,   F_ISO,  F_GEO,  F_VOL,  -999.0, -999.0, -999.0, 994.0
         ! for LSRT-J       (VJ):IX, IY, TEMP,   F_ISO,  F_GEO,  F_VOL,  F_JIAO, ALPHA,  -999.0, 993.0
-        
+
         if (NSTOKES .gt. 1) then
             stop 'Error [_brdfSurface]: Mixed surface is only for unpolarized case.'
         end if
@@ -273,14 +273,14 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
             PHIDIFF = PHI1-PHI2-PI_
             call shd_sfc__brdfLSRT(REFPARMS(1), REFPARMS(2),&
                 &REFPARMS(3), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
-                
+
         else if (abs(REFPARMS(iSFC_ID)-993.0) .le. 0.01) then
 
             PHIDIFF = PHI1-PHI2
             ! J: LSRT-Jiao model
             call shd_sfc__brdfLSRTJ(REFPARMS(1), REFPARMS(2),&
                 &REFPARMS(3), REFPARMS(4), REFPARMS(5), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
-                
+
         else
 
             stop 'Error [_brdfSurface]: Unknown BRDF type.'
