@@ -16,6 +16,7 @@ module shd_sfc
     public :: shd_sfc__brdfDiner
     public :: shd_sfc__brdfRPV
     public :: shd_sfc__brdfLSRT
+    public :: shd_sfc__brdfJiao
     public :: shd_sfc__brdfOcean
     !╰────────────────────────────────────────────────╯!
 
@@ -145,6 +146,7 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
     ! O  Ocean         Wind speed (m/s), Pigmentation (mg/m^3)
     ! R  RPV-original  rho0, k, Theta
     ! T  LSRT          k_iso, k_geo, k_vol
+    ! J  LSRT-Jiao     k_iso, k_geo, k_vol, k_j, alpha
     ! M  Mixed surface
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
@@ -210,6 +212,19 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
         call shd_sfc__brdfLSRT(REFPARMS(1), REFPARMS(2),&
             &REFPARMS(3), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
 
+    else if (SFCTYPE .eq. 'J' .or. SFCTYPE .eq. 'j') then
+
+        ! J: LSRT-Jiao model
+        if (NSTOKES .gt. 1) then
+            stop 'Error [_brdfSurface]: LSRT-Jiao BRDF is only for unpolarized case'
+        end if
+
+        !PHIDIFF = PHI1-PHI2-PI_
+        PHIDIFF = PHI1-PHI2
+        ! J: LSRT-Jiao model
+        call shd_sfc__brdfLSRTJ(REFPARMS(1), REFPARMS(2),&
+            &REFPARMS(3), REFPARMS(4), REFPARMS(5), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
+
     else if ((SFCTYPE .eq. 'X') .or. (SFCTYPE .eq. 'x')) then
 
         ! for Lambertian   (VL):IX, IY, TEMP,   ALB,    -999.0, -999.0, -999.0, -999.0, -999.0, 999.0
@@ -218,7 +233,8 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
         ! for RPV          (VR):IX, IY, TEMP,   RHO0,   KR,     THETA,  -999.0, -999.0, -999.0, 996.0
         ! for Diner        (VD):IX, IY, TEMP,   A,      KR,     B,      ZETA,   SIGMA,  -999.0, 995.0
         ! for LSRT         (VT):IX, IY, TEMP,   F_ISO,  F_GEO,  F_VOL,  -999.0, -999.0, -999.0, 994.0
-
+        ! for LSRT-J       (VJ):IX, IY, TEMP,   F_ISO,  F_GEO,  F_VOL,  F_JIAO, ALPHA,  -999.0, 993.0
+        
         if (NSTOKES .gt. 1) then
             stop 'Error [_brdfSurface]: Mixed surface is only for unpolarized case.'
         end if
@@ -257,6 +273,14 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
             PHIDIFF = PHI1-PHI2-PI_
             call shd_sfc__brdfLSRT(REFPARMS(1), REFPARMS(2),&
                 &REFPARMS(3), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
+                
+        else if (abs(REFPARMS(iSFC_ID)-993.0) .le. 0.01) then
+
+            PHIDIFF = PHI1-PHI2
+            ! J: LSRT-Jiao model
+            call shd_sfc__brdfLSRTJ(REFPARMS(1), REFPARMS(2),&
+                &REFPARMS(3), REFPARMS(4), REFPARMS(5), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
+                
         else
 
             stop 'Error [_brdfSurface]: Unknown BRDF type.'
@@ -739,6 +763,337 @@ subroutine shd_sfc__brdfLSRT(F_ISO, F_GEO, F_VOL, MU1, MU2, PHI, REFLECT)
 
 end subroutine shd_sfc__brdfLSRT
 
+
+! subroutine shd_sfc__brdfLSRTKZ(F_ISO, F_GEO, F_VOL, F_KZ, MU1, MU2, PHI, REFLECT)
+
+!     !╭────────────────────────────────────────────────────────────────────────────╮!
+!     ! Computes the RossLi-KokhanovskyZege BRDF (combines LSRT model above with a fourth kernel for snow from Kokhanovsky-Zege).
+!     ! MU1: cosine of zenith angle of the incident light (solar zenith angle)
+!     ! MU2: cosine of zenith angle of the receiver (viewing zenith angle)
+!     ! PHI: relative azimuth angle, 0 pointing east, positive counter-clockwise
+!     !
+!     ! When MU1>0 and the hot spot is MU2=MU1 and PHI=0
+!     !
+!     ! Code reference:
+!     !   https://github.com/vikasnataraja/sif-sat/blob/master/sifsat/kernels.py
+!     !
+!     ! Formula reference:
+!     !    KZ04: Kokhanovsky & Zege (2004), doi:10.1364/ao.43.001589
+!     !    KB12: Kokhanovsky & Breon (2012), doi:10.1109/lgrs.2012.2185775
+!     !╰────────────────────────────────────────────────────────────────────────────╯!
+
+!     real(4), intent(in)  :: F_ISO, F_GEO, F_VOL, F_KZ, MU1, MU2, PHI
+!     real(4), intent(out) :: REFLECT
+!     real(4) :: COS1, COS2, SIN1, SIN2, TAN1, TAN2, COS_PHI, SIN_PHI
+!     real(4) :: K_GEO, K_VOL, K_KZ
+!     real(4) :: XI, COS_XI, SIN_XI
+!     real(4) :: B2R, H2B
+!     real(4) :: THETA1_, COS1_, SIN1_, TAN1_, SEC1_
+!     real(4) :: THETA2_, COS2_, SIN2_, TAN2_, SEC2_
+!     real(4) :: COS_XI_, D_2, COS_T, SIN_T, T, O
+!     real(4) :: COS_MIN
+!     parameter(4) :: a, b, c, b_snow_grain
+
+!     ! calculate trigonometry
+!     !╭────────────────────────────────────────────────╮!
+!     COS_MIN = 0.03
+
+!     COS1 = MU1
+!     COS2 = MU2
+
+!     if (COS1 .lt. COS_MIN) COS1 = COS_MIN
+!     if (COS2 .lt. COS_MIN) COS2 = COS_MIN
+
+!     SIN1 = sqrt(1.0 - COS1**2)
+!     SIN2 = sqrt(1.0 - COS2**2)
+!     TAN1 = SIN1/COS1
+!     TAN2 = SIN2/COS2
+!     COS_PHI = cos(PHI)
+!     SIN_PHI = sin(PHI)
+!     !╰────────────────────────────────────────────────╯!
+
+!     ! K_VOL
+!     !╭────────────────────────────────────────────────╮!
+!     COS_XI = (COS1*COS2) + (SIN1*SIN2*COS_PHI)
+!     if (COS_XI .lt. -1.0) COS_XI = -1.0
+!     if (COS_XI .gt.  1.0) COS_XI =  1.0
+
+!     SIN_XI = sqrt(1.0 - COS_XI**2)
+!     XI = acos(COS_XI)
+
+!     K_VOL = ((PI_/2.0 - XI)*COS_XI + SIN_XI)/(COS1+COS2) - (PI_/4.0)
+!     !╰────────────────────────────────────────────────╯!
+
+!     ! K_GEO
+!     !╭────────────────────────────────────────────────╮!
+!     B2R = 1.0
+!     H2B = 2.0
+
+!     THETA1_ = atan(B2R*TAN2)
+!     COS1_ = cos(THETA1_)
+!     if (COS1_ .lt. -1.0) COS1_ = -1.0
+!     if (COS1_ .gt.  1.0) COS1_ =  1.0
+!     SIN1_ = sqrt(1.0 - COS1_**2)
+!     TAN1_ = SIN1_/COS1_
+!     SEC1_ = 1.0/COS1_
+
+!     THETA2_ = atan(B2R*TAN1)
+!     COS2_ = cos(THETA2_)
+!     if (COS2_ .lt. -1.0) COS2_ = -1.0
+!     if (COS2_ .gt.  1.0) COS2_ =  1.0
+!     SIN2_ = sqrt(1.0 - COS2_**2)
+!     TAN2_ = SIN2_/COS2_
+!     SEC2_ = 1.0/COS2_
+
+!     COS_XI_ = (COS1_*COS2_) + (SIN1_*SIN2_*COS_PHI)
+
+!     D_2 = TAN1_**2 + TAN2_**2 - 2.0*TAN1_*TAN2_*COS_PHI
+!     if (D_2 .lt. 0.0) D_2 = 0.0
+
+!     COS_T = H2B * (sqrt(D_2 + (TAN1_*TAN2_*SIN_PHI)**2))/(SEC1_ + SEC2_)
+!     if (COS_T .lt. -1.0) COS_T = -1.0
+!     if (COS_T .gt.  1.0) COS_T =  1.0
+!     SIN_T = sqrt(1.0 - COS_T**2)
+!     T = acos(COS_T)
+
+!     O = (1.0/PI_) * (T - SIN_T*COS_T) * (SEC1_ + SEC2_)
+
+!     K_GEO = O - SEC1_ - SEC2_ + 0.5d0*(1.0+COS_XI_)*SEC1_*SEC2_
+!     !╰────────────────────────────────────────────────╯!
+
+!     ! K_KZ
+!     !╭────────────────────────────────────────────────╮!
+!     PHI_ = 180.0 - PHI ! because KZ defines RAA with sun at RAA=0, forward scattering denotes 0-90 RAA.
+
+!     ! ensure PHI_ is in [0, 360] range
+!     PHI_ = change_range(PHI_, 0.0, 360.0)
+!     if (PHI_ .eq. 360.0) PHI_ = 0.0
+
+!     ! set constants for parameterized escape function
+!     a = 1.247
+!     b = 1.186
+!     c = 5.157
+!     b_snow_grain = 3.62 ! called b in KZ, 3.62 for fractals, 4.53 for spheres
+!     COS_PHI_ = cos(PHI_)
+
+!     ! to calculate R0 (reflectance at 0 absorption by snow medium),
+!     ! we need phase function p of scattering angle xi.
+!     COS_XI_KZ = (SIN1*SIN2*COS_PHI_) - (COS1*COS2)
+!     if (COS_XI_KZ .lt. -1.0) COS_XI_KZ = -1.0
+!     if (COS_XI_KZ .gt.  1.0) COS_XI_KZ =  1.0
+!     XI_KZ = acos(COS_XI_KZ)
+!     XI_KZ_DEG = XI_KZ * 180.0 / PI_ ! convert to degrees to calculate phase function
+
+!     ! calculate phase function p of scattering angle xi
+!     P_pha = 11.1 * exp(-0.087 * XI_KZ_DEG) + 1.1 * exp(-0.014 * XI_KZ_DEG)
+
+!     ! calculate R0 (reflectance at 0 absorption by snow medium)
+!     R0 = (a + (b * (MU1 + MU2)) + (c * MU1 * MU2) + P_pha) / (4 * (MU1 + MU2))
+
+!     ! calculate f (escape function)
+!     ! note that this is a parameterization of the escape function
+!     ! but one can run RT simulation to get the full escape function
+!     K0_sza  = (3/7) * (1 + (2 * MU1))
+!     K0_vza  = (3/7) * (1 + (2 * MU2))
+!     f = K0_sza * K0_vza / R0
+
+
+!     REFLECT = F_ISO + F_VOL*K_VOL + F_GEO*K_GEO + F_KZ*K_KZ
+
+!     if (REFLECT .lt. 0.0) REFLECT = 0.0 ! relfectance cannot be negative
+
+!     return
+
+! end subroutine shd_sfc__brdfLSRTKZ
+
+subroutine shd_sfc__brdfLSRTJ(F_ISO, F_GEO, F_VOL, F_J, ALPHA, MU1, MU2, PHI, REFLECT)
+
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    ! Computes the RossLi-Jiao BRDF (combines LSRT model above with a fourth kernel for snow from Jiao et al.).
+    ! MU1: cosine of zenith angle of the incident light (solar zenith angle)
+    ! MU2: cosine of zenith angle of the receiver (viewing zenith angle)
+    ! PHI: relative azimuth angle, 0 pointing east, positive counter-clockwise
+    ! ALPHA: parameter for the empirical function to control the forward scattering. Jiao et al. (2019) suggest ALPHA=0.2-0.3.
+    !
+    ! When MU1>0 and the hot spot is MU2=MU1 and PHI=0
+    !
+    ! Code reference:
+    !   https://github.com/vikasnataraja/sif-sat/blob/master/sifsat/kernels.py
+    !
+    ! Formula reference:
+    !    Jiao et al. (2019) https://doi.org/10.1016/j.rse.2018.11.001
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+    real(4), intent(in)  :: F_ISO, F_GEO, F_VOL, F_J, ALPHA, MU1, MU2, PHI
+    real(4), intent(out) :: REFLECT
+    real(4) :: COS1, COS2, SIN1, SIN2, TAN1, TAN2, COS_PHI, SIN_PHI
+    real(4) :: K_GEO, K_VOL, K_J
+    real(4) :: XI, COS_XI, SIN_XI
+    real(4) :: B2R, H2B
+    real(4) :: THETA1_, COS1_, SIN1_, TAN1_, SEC1_
+    real(4) :: THETA2_, COS2_, SIN2_, TAN2_, SEC2_
+    real(4) :: COS_XI_, D_2, COS_T, SIN_T, T, O
+    real(4) :: COS_MIN
+
+    ! calculate trigonometry
+    !╭────────────────────────────────────────────────╮!
+    COS_MIN = 0.03
+
+    COS1 = MU1
+    COS2 = MU2
+
+    if (COS1 .lt. COS_MIN) COS1 = COS_MIN
+    if (COS2 .lt. COS_MIN) COS2 = COS_MIN
+
+    SIN1 = sqrt(1.0 - COS1**2)
+    SIN2 = sqrt(1.0 - COS2**2)
+    TAN1 = SIN1/COS1
+    TAN2 = SIN2/COS2
+    COS_PHI = cos(PHI)
+    SIN_PHI = sin(PHI)
+    !╰────────────────────────────────────────────────╯!
+
+    ! K_VOL
+    !╭────────────────────────────────────────────────╮!
+    COS_XI = (COS1*COS2) + (SIN1*SIN2*COS_PHI)
+    if (COS_XI .lt. -1.0) COS_XI = -1.0
+    if (COS_XI .gt.  1.0) COS_XI =  1.0
+
+    SIN_XI = sqrt(1.0 - COS_XI**2)
+    XI = acos(COS_XI)
+
+    K_VOL = ((PI_/2.0 - XI)*COS_XI + SIN_XI)/(COS1+COS2) - (PI_/4.0)
+    !╰────────────────────────────────────────────────╯!
+
+    ! K_GEO
+    !╭────────────────────────────────────────────────╮!
+    B2R = 1.0
+    H2B = 2.0
+
+    THETA1_ = atan(B2R*TAN2)
+    COS1_ = cos(THETA1_)
+    if (COS1_ .lt. -1.0) COS1_ = -1.0
+    if (COS1_ .gt.  1.0) COS1_ =  1.0
+    SIN1_ = sqrt(1.0 - COS1_**2)
+    TAN1_ = SIN1_/COS1_
+    SEC1_ = 1.0/COS1_
+
+    THETA2_ = atan(B2R*TAN1)
+    COS2_ = cos(THETA2_)
+    if (COS2_ .lt. -1.0) COS2_ = -1.0
+    if (COS2_ .gt.  1.0) COS2_ =  1.0
+    SIN2_ = sqrt(1.0 - COS2_**2)
+    TAN2_ = SIN2_/COS2_
+    SEC2_ = 1.0/COS2_
+
+    COS_XI_ = (COS1_*COS2_) + (SIN1_*SIN2_*COS_PHI)
+
+    D_2 = TAN1_**2 + TAN2_**2 - 2.0*TAN1_*TAN2_*COS_PHI
+    if (D_2 .lt. 0.0) D_2 = 0.0
+
+    COS_T = H2B * (sqrt(D_2 + (TAN1_*TAN2_*SIN_PHI)**2))/(SEC1_ + SEC2_)
+    if (COS_T .lt. -1.0) COS_T = -1.0
+    if (COS_T .gt.  1.0) COS_T =  1.0
+    SIN_T = sqrt(1.0 - COS_T**2)
+    T = acos(COS_T)
+
+    O = (1.0/PI_) * (T - SIN_T*COS_T) * (SEC1_ + SEC2_)
+
+    K_GEO = O - SEC1_ - SEC2_ + 0.5d0*(1.0+COS_XI_)*SEC1_*SEC2_
+    !╰────────────────────────────────────────────────╯!
+
+    ! get Jiao kernel value K_J with normalization
+    !╭────────────────────────────────────────────────╮!
+    call shd_sfc__brdfJiao(MU1, MU2, PHI, ALPHA, 1, K_J)
+    !╰────────────────────────────────────────────────╯!
+
+
+    REFLECT = F_ISO + F_VOL*K_VOL + F_GEO*K_GEO + F_J*K_J
+
+    if (REFLECT .lt. 0.0) REFLECT = 0.0 ! relfectance cannot be negative
+
+    return
+
+end subroutine shd_sfc__brdfLSRTJ
+
+
+
+subroutine shd_sfc__brdfJiao(MU1, MU2, PHI, ALPHA, NORMALIZE, K_J)
+
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    ! Computes the Jiao BRDF for snow.
+    ! MU1: cosine of zenith angle of the incident light (solar zenith angle)
+    ! MU2: cosine of zenith angle of the receiver (viewing zenith angle)
+    ! PHI: relative azimuth angle, 0 pointing east, positive counter-clockwise
+    ! ALPHA: parameter for the empirical function to control the forward scattering. Jiao et al. (2019) suggest ALPHA=0.2-0.3.
+    ! NORMALIZE: whether to add a normalizer term to the reflectance (1 for yes, 0 for no). If combining this kernel with an isotropic kernel (such as the case with RTLSR/LSRT), set NORMALIZE=1.
+    !
+    ! When MU1>0 and the hot spot is MU2=MU1 and PHI=0
+    !
+    ! Code reference:
+    !   https://github.com/vikasnataraja/sif-sat/blob/master/sifsat/kernels.py
+    !
+    ! Formula reference:
+    !    Jiao et al. (2019) https://doi.org/10.1016/j.rse.2018.11.001
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+    real(4), intent(in)  :: MU1, MU2, PHI, ALPHA
+    integer, intent(in)  :: NORMALIZE
+    real(4), intent(out) :: K_J
+    real(4) :: COS1, COS2, SIN1, SIN2, TAN1, TAN2, COS_PHI, SIN_PHI
+    real(4) :: R0, F_G, K0
+    real(4) :: COS_MIN
+    real(4) :: COS_XI_J, XI_J, XI_J_DEG, P_PHA
+    real(4) :: K1, K2, K3 ! called a, b, c in Kokhanovsky-Zege
+
+    ! set constants for parameterized escape function
+    K1 = 1.247
+    K2 = 1.186
+    K3 = 5.157
+
+    ! calculate trigonometry
+    COS_MIN = 0.03
+
+    COS1 = MU1
+    COS2 = MU2
+
+    if (COS1 .lt. COS_MIN) COS1 = COS_MIN
+    if (COS2 .lt. COS_MIN) COS2 = COS_MIN
+
+    SIN1 = sqrt(1.0 - COS1**2)
+    SIN2 = sqrt(1.0 - COS2**2)
+    COS_PHI = cos(PHI)
+
+    ! to calculate R0 (reflectance at 0 absorption by snow medium),
+    ! we need phase function p of scattering angle xi.
+    COS_XI_J = (SIN1*SIN2*COS_PHI) + (COS1*COS2)
+    if (COS_XI_J .lt. -1.0) COS_XI_J = -1.0
+    if (COS_XI_J .gt.  1.0) COS_XI_J =  1.0
+    XI_J = acos(COS_XI_J)
+    XI_J_DEG = XI_J * 180.0 / PI_ ! convert to degrees to calculate phase function
+
+    ! calculate phase function p of scattering angle xi
+    P_PHA = 11.1 * exp(-0.087 * (180.0 - XI_J_DEG)) + 1.1 * exp(-0.014 * (180.0 - XI_J_DEG))
+
+    ! calculate R0 (reflectance at 0 absorption by snow medium)
+    R0 = (K1 + (K2 * (COS1 + COS2)) + (K3 * COS1 * COS2) + P_PHA) / (4 * (COS1 + COS2))
+
+    ! calculate f_g (approximated, empirical function)
+    F_G = COS_XI_J * exp(-COS_XI_J)
+
+    ! normalizer term
+    if (NORMALIZE .eq. 1) then
+        K0 = (0.4076 * ALPHA) - 1.1081
+    else
+        K0 = 0.0
+    end if
+
+    K_J = (R0 * (1.0 - (ALPHA * F_G))) + K0
+
+    return
+
+end subroutine shd_sfc__brdfJiao
+
+
 subroutine shd_sfc__brdfOcean(&
     & pws, xsal, pcl, pwl, xmuo, xmu, xphi, xpaw, REFLECT)
     !
@@ -862,6 +1217,7 @@ subroutine shd_sfc__brdfOcean(&
     REFLECT = Rwc + (1.0d0 - W)*Rog + (1.0d0 - Rwc)*Rwb
     return
 end subroutine shd_sfc__brdfOcean
+
 
 subroutine morcasiwat(wl, C, R2)
     ! Spectral diffuse attenuation coefficient of Case I Waters as Predicted
