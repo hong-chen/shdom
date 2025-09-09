@@ -1031,36 +1031,36 @@ subroutine shd_io__readSfcSize(SFCFILE, MAXSFCPTS, MAXSFCPARS)
     read (1, *) NXSFC, NYSFC
     MAXSFCPTS = (NXSFC + 1)*(NYSFC + 1)
 
-    ! 999
+    ! 0
     if ((SFCTYPE .eq. 'VL') .or. (SFCTYPE .eq. 'Vl')) then
         ! Surface file type L is for variable Lambertian surface
         MAXSFCPARS = 2
-    ! 998
-    else if ((SFCTYPE .eq. 'VW') .or. (SFCTYPE .eq. 'Vw')) then
-        ! Surface file type W is for Wave-Fresnel surface
-        MAXSFCPARS = 4
-    ! 997
+    ! 1
     else if ((SFCTYPE .eq. 'VO') .or. (SFCTYPE .eq. 'Vo')) then
         ! Surface file type O is for Ocean BRDF surface
         MAXSFCPARS = 3
-    ! 996
+    ! 2
     else if ((SFCTYPE .eq. 'VR') .or. (SFCTYPE .eq. 'Vr')) then
         ! Surface file type R is for RPV surface
         MAXSFCPARS = 4
-    ! 995
-    else if ((SFCTYPE .eq. 'VD') .or. (SFCTYPE .eq. 'Vd')) then
-        ! Surface file type D is for Diner polarized RPV surface:
-        MAXSFCPARS = 6
-    ! 994
+    ! 3
     else if ((SFCTYPE .eq. 'VT') .or. (SFCTYPE .eq. 'Vt')) then
         ! Surface file type T is for LSRT surface
         MAXSFCPARS = 4
-    ! 993
+    ! 4
     else if ((SFCTYPE .eq. 'VJ') .or. (SFCTYPE .eq. 'Vj')) then
         ! Surface file type J is for LSRT-Jiao surface
         MAXSFCPARS = 6
+    ! -1
+    else if ((SFCTYPE .eq. 'VW') .or. (SFCTYPE .eq. 'Vw')) then
+        ! Surface file type W is for Wave-Fresnel surface
+        MAXSFCPARS = 4
+    ! -2
+    else if ((SFCTYPE .eq. 'VD') .or. (SFCTYPE .eq. 'Vd')) then
+        ! Surface file type D is for Diner polarized RPV surface:
+        MAXSFCPARS = 6
     else if ((SFCTYPE .eq. 'VX') .or. (SFCTYPE .eq. 'Vx')) then
-        ! Surface file type M is for Mixed-surface type:
+        ! Surface file type X is for Mixed-surface type:
         MAXSFCPARS = 8
     else
         stop 'Error [_readSfcSize]: Unknown BRDF type.'
@@ -1149,28 +1149,6 @@ subroutine shd_io__readSfc(&
             end if
         end do
 
-    ! Surface file type W is for Wave-Fresnel surface
-    else if ((SFCTYPE .eq. 'VW') .or. (SFCTYPE .eq. 'Vw')) then
-
-        NSFCPAR = 4
-        if (NSFCPAR .gt. MAXSFCPARS) then
-            write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
-            stop
-        end if
-        do while (.true.)
-            read (1, *, end=290) IX, IY, TEMP, MRE, MIM, WSPD
-            if (IX .ge. 1 .and. IX .le. NXSFC .and.&
-                &IY .ge. 1 .and. IY .le. NYSFC) then
-                I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
-                SFCPARMS(I + 1) = TEMP
-                SFCPARMS(I + 2) = MRE
-                SFCPARMS(I + 3) = MIM
-                SFCPARMS(I + 4) = WSPD
-                GNDTEMP = GNDTEMP + TEMP
-                N = N + 1
-            end if
-        end do
-
     ! Surface file type O is for Ocean surface BRDF
     !   Norm Loeb's modification of 6S ocean reflectance module.
     else if ((SFCTYPE .eq. 'VO') .or. (SFCTYPE .eq. 'Vo')) then
@@ -1216,36 +1194,6 @@ subroutine shd_io__readSfc(&
                 SFCPARMS(I + 4) = THETA
                 GNDTEMP = GNDTEMP + TEMP
                 GNDALBEDO = GNDALBEDO + RHO0
-                N = N + 1
-            end if
-        end do
-
-    ! Surface file type D is for Diner et al surface reflection:
-    ! (Diner, D. J., F. Xu, J. V. Martonchik, B. E. Rheingans, S. Geier,
-    ! V. M. Jovanovic, A. Davis, R. A. Chipman, S. C. McClain, 2012:
-    ! Exploration of a polarized surface bidirectional reflectance model
-    ! using the ground-based multiangle spectropolarimetric imager.
-    ! Atmosphere 2012, 3, 591-619; doi:10.3390/atmos3040591.)
-    else if ((SFCTYPE .eq. 'VD') .or. (SFCTYPE .eq. 'Vd')) then
-
-        NSFCPAR = 6
-        if (NSFCPAR .gt. MAXSFCPARS) then
-            write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
-            stop
-        end if
-        do while (.true.)
-            read (1, *, end=290) IX, IY, TEMP, A, KR, B, ZETA, SIGMA
-            if (IX .ge. 1 .and. IX .le. NXSFC .and.&
-                &IY .ge. 1 .and. IY .le. NYSFC) then
-                I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
-                SFCPARMS(I + 1) = TEMP
-                SFCPARMS(I + 2) = A
-                SFCPARMS(I + 3) = KR
-                SFCPARMS(I + 4) = B
-                SFCPARMS(I + 5) = ZETA
-                SFCPARMS(I + 6) = SIGMA
-                GNDTEMP = GNDTEMP + TEMP
-                GNDALBEDO = GNDALBEDO + A
                 N = N + 1
             end if
         end do
@@ -1297,6 +1245,58 @@ subroutine shd_io__readSfc(&
             end if
         end do
 
+    ! Surface file type W is for Wave-Fresnel surface
+    else if ((SFCTYPE .eq. 'VW') .or. (SFCTYPE .eq. 'Vw')) then
+
+        NSFCPAR = 4
+        if (NSFCPAR .gt. MAXSFCPARS) then
+            write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
+            stop
+        end if
+        do while (.true.)
+            read (1, *, end=290) IX, IY, TEMP, MRE, MIM, WSPD
+            if (IX .ge. 1 .and. IX .le. NXSFC .and.&
+                &IY .ge. 1 .and. IY .le. NYSFC) then
+                I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
+                SFCPARMS(I + 1) = TEMP
+                SFCPARMS(I + 2) = MRE
+                SFCPARMS(I + 3) = MIM
+                SFCPARMS(I + 4) = WSPD
+                GNDTEMP = GNDTEMP + TEMP
+                N = N + 1
+            end if
+        end do
+
+    ! Surface file type D is for Diner et al surface reflection:
+    ! (Diner, D. J., F. Xu, J. V. Martonchik, B. E. Rheingans, S. Geier,
+    ! V. M. Jovanovic, A. Davis, R. A. Chipman, S. C. McClain, 2012:
+    ! Exploration of a polarized surface bidirectional reflectance model
+    ! using the ground-based multiangle spectropolarimetric imager.
+    ! Atmosphere 2012, 3, 591-619; doi:10.3390/atmos3040591.)
+    else if ((SFCTYPE .eq. 'VD') .or. (SFCTYPE .eq. 'Vd')) then
+
+        NSFCPAR = 6
+        if (NSFCPAR .gt. MAXSFCPARS) then
+            write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
+            stop
+        end if
+        do while (.true.)
+            read (1, *, end=290) IX, IY, TEMP, A, KR, B, ZETA, SIGMA
+            if (IX .ge. 1 .and. IX .le. NXSFC .and.&
+                &IY .ge. 1 .and. IY .le. NYSFC) then
+                I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
+                SFCPARMS(I + 1) = TEMP
+                SFCPARMS(I + 2) = A
+                SFCPARMS(I + 3) = KR
+                SFCPARMS(I + 4) = B
+                SFCPARMS(I + 5) = ZETA
+                SFCPARMS(I + 6) = SIGMA
+                GNDTEMP = GNDTEMP + TEMP
+                GNDALBEDO = GNDALBEDO + A
+                N = N + 1
+            end if
+        end do
+
     ! Surface file type X is for Mixed-type surface:
     else if (SFCTYPE .eq. 'VX') then
 
@@ -1307,13 +1307,13 @@ subroutine shd_io__readSfc(&
         end if
         do while (.true.)
             read (1, *, end=290)    IX, IY, PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7, PARAM8
-            ! for Lambertian   (VL):IX, IY, TEMP,   ALB,    -999.0, -999.0, -999.0, -999.0, -999.0, 999.0
-            ! for Wave-Fresnel (VW):IX, IY, TEMP,   MRE,    MIM,    WSPD,   -999.0, -999.0, -999.0, 998.0
-            ! for Ocean        (VO):IX, IY, TEMP,   WSPD,   PCL,    -999.0, -999.0, -999.0, -999.0, 997.0
-            ! for RPV          (VR):IX, IY, TEMP,   RHO0,   KR,     THETA,  -999.0, -999.0, -999.0, 996.0
-            ! for Diner        (VD):IX, IY, TEMP,   A,      KR,     B,      ZETA,   SIGMA,  -999.0, 995.0
-            ! for LSRT         (VT):IX, IY, TEMP,   F_ISO,  F_GEO,  F_VOL,  -999.0, -999.0, -999.0, 994.0
-            ! for LSRT-J       (VJ):IX, IY, TEMP,   F_ISO,  F_GEO,  F_VOL,  F_JIAO, ALPHA,  -999.0, 993.0
+            ! for Lambertian   (VL):IX, IY, TEMP,   ALB,    -999.0, -999.0, -999.0, -999.0, -999.0,  0.0
+            ! for Ocean        (VO):IX, IY, TEMP,   WSPD,   PCL,    -999.0, -999.0, -999.0, -999.0,  1.0
+            ! for RPV          (VR):IX, IY, TEMP,   RHO0,   KR,     THETA,  -999.0, -999.0, -999.0,  2.0
+            ! for LSRT         (VT):IX, IY, TEMP,   F_ISO,  F_GEO,  F_VOL,  -999.0, -999.0, -999.0,  3.0
+            ! for LSRT-J       (VJ):IX, IY, TEMP,   F_ISO,  F_GEO,  F_VOL,  F_JIAO, ALPHA,  -999.0,  4.0
+            ! for Wave-Fresnel (VW):IX, IY, TEMP,   MRE,    MIM,    WSPD,   -999.0, -999.0, -999.0, -1.0
+            ! for Diner        (VD):IX, IY, TEMP,   A,      KR,     B,      ZETA,   SIGMA,  -999.0, -2.0
 
             if (IX .ge. 1 .and. IX .le. NXSFC .and.&
                 &IY .ge. 1 .and. IY .le. NYSFC) then
@@ -1325,11 +1325,15 @@ subroutine shd_io__readSfc(&
                 SFCPARMS(I + 5) = PARAM5
                 SFCPARMS(I + 6) = PARAM6
                 SFCPARMS(I + 7) = PARAM7
-                SFCPARMS(I + 8) = PARAM8
+                SFCPARMS(I + 8) = PARAM8 ! surface identification
+
                 GNDTEMP = GNDTEMP + PARAM1
-                if ((PARAM1 .gt. 998.1) .or. (PARAM1 .lt. 996.9)) then
+
+                ! no albedo for polarized (W) and unpolarized (O) Ocean parameterization
+                if ((abs(PARAM8)-1.0) .gt. 0.01) then
                     GNDALBEDO = GNDALBEDO + PARAM2
                 end if
+
                 N = N + 1
             end if
         end do

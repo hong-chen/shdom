@@ -164,12 +164,6 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
         REFLECT(1:NSTOKES, 1:NSTOKES) = 0.0
         REFLECT(1, 1) = REFPARMS(1)
 
-    else if ((SFCTYPE .eq. 'W') .or. (SFCTYPE .eq. 'w')) then
-
-        ! W: Fresnel reflection with Gaussian distribution of slopes
-        call shd_sfc__brdfFresnel(REFPARMS(1), REFPARMS(2),&
-            &REFPARMS(3), MU1, MU2, PHI1, PHI2, NSTOKES, REFLECT)
-
     else if ((SFCTYPE .eq. 'O') .or. (SFCTYPE .eq. 'o')) then
 
         ! O: Ocean BRDF from 6S modified by Norm Loeb
@@ -191,15 +185,6 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
         PHIDIFF = PHI1-PHI2-PI_
         call shd_sfc__brdfRPV(REFPARMS(1), REFPARMS(2),&
             &REFPARMS(3), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
-
-    else if ((SFCTYPE .eq. 'D') .or. (SFCTYPE .eq. 'd')) then
-
-        ! D: Diner et al., depolarizing modified RPV + Fresnel reflection
-        !   from microfacets with uniform or Gaussian distribution of s
-        PHIDIFF = PHI2 - PHI1
-        call shd_sfc__brdfDiner(REFPARMS(1), REFPARMS(2), REFPARMS(3),&
-            &REFPARMS(4), REFPARMS(5),&
-            &-MU1, MU2, PHIDIFF, NSTOKES, REFLECT)
 
     else if ((SFCTYPE .eq. 'T') .or. (SFCTYPE .eq. 't')) then
 
@@ -225,61 +210,84 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
         call shd_sfc__brdfLSRTJ(REFPARMS(1), REFPARMS(2),&
             &REFPARMS(3), REFPARMS(4), REFPARMS(5), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
 
+    else if ((SFCTYPE .eq. 'W') .or. (SFCTYPE .eq. 'w')) then
+
+        ! W: Fresnel reflection with Gaussian distribution of slopes
+        call shd_sfc__brdfFresnel(REFPARMS(1), REFPARMS(2),&
+            &REFPARMS(3), MU1, MU2, PHI1, PHI2, NSTOKES, REFLECT)
+
+    else if ((SFCTYPE .eq. 'D') .or. (SFCTYPE .eq. 'd')) then
+
+        ! D: Diner et al., depolarizing modified RPV + Fresnel reflection
+        !   from microfacets with uniform or Gaussian distribution of s
+        PHIDIFF = PHI2 - PHI1
+        call shd_sfc__brdfDiner(REFPARMS(1), REFPARMS(2), REFPARMS(3),&
+            &REFPARMS(4), REFPARMS(5),&
+            &-MU1, MU2, PHIDIFF, NSTOKES, REFLECT)
+
+
     else if ((SFCTYPE .eq. 'X') .or. (SFCTYPE .eq. 'x')) then
 
-        ! for Lambertian   (VL):IX, IY, TEMP,   ALB,    -999.0, -999.0, -999.0, -999.0, -999.0, 999.0
-        ! for Wave-Fresnel (VW):IX, IY, TEMP,   MRE,    MIM,    WSPD,   -999.0, -999.0, -999.0, 998.0
-        ! for Ocean        (VO):IX, IY, TEMP,   WSPD,   PCL,    -999.0, -999.0, -999.0, -999.0, 997.0
-        ! for RPV          (VR):IX, IY, TEMP,   RHO0,   KR,     THETA,  -999.0, -999.0, -999.0, 996.0
-        ! for Diner        (VD):IX, IY, TEMP,   A,      KR,     B,      ZETA,   SIGMA,  -999.0, 995.0
-        ! for LSRT         (VT):IX, IY, TEMP,   F_ISO,  F_GEO,  F_VOL,  -999.0, -999.0, -999.0, 994.0
-        ! for LSRT-J       (VJ):IX, IY, TEMP,   F_ISO,  F_GEO,  F_VOL,  F_JIAO, ALPHA,  -999.0, 993.0
+        ! for Lambertian   (VL):IX, IY, TEMP,   ALB,    -999.0, -999.0, -999.0, -999.0, -999.0,  0.0
+        ! for Ocean        (VO):IX, IY, TEMP,   WSPD,   PCL,    -999.0, -999.0, -999.0, -999.0,  1.0
+        ! for RPV          (VR):IX, IY, TEMP,   RHO0,   KR,     THETA,  -999.0, -999.0, -999.0,  2.0
+        ! for LSRT         (VT):IX, IY, TEMP,   F_ISO,  F_GEO,  F_VOL,  -999.0, -999.0, -999.0,  3.0
+        ! for LSRT-J       (VJ):IX, IY, TEMP,   F_ISO,  F_GEO,  F_VOL,  F_JIAO, ALPHA,  -999.0,  4.0
+        ! for Wave-Fresnel (VW):IX, IY, TEMP,   MRE,    MIM,    WSPD,   -999.0, -999.0, -999.0, -1.0
+        ! for Diner        (VD):IX, IY, TEMP,   A,      KR,     B,      ZETA,   SIGMA,  -999.0, -2.0
 
-        if (NSTOKES .gt. 1) then
+        if ((REFPARMS(iSFC_ID) .gt. -0.01) .and. (NSTOKES .gt. 1)) then
             stop 'Error [_brdfSurface]: Mixed surface is only for unpolarized case.'
         end if
 
-        if (abs(REFPARMS(iSFC_ID)-999.0) .le. 0.01) then
+        ! 0.0
+        if (abs(REFPARMS(iSFC_ID)) .lt. 0.01) then
 
             REFLECT(1:NSTOKES, 1:NSTOKES) = 0.0
             REFLECT(1, 1) = REFPARMS(1)
 
-        else if (abs(REFPARMS(iSFC_ID)-998.0) .le. 0.01) then
-
-            call shd_sfc__brdfFresnel(REFPARMS(1), REFPARMS(2),&
-                &REFPARMS(3), MU1, MU2, PHI1, PHI2, NSTOKES, REFLECT)
-
-        else if (abs(REFPARMS(iSFC_ID)-997.0) .le. 0.01) then
+        ! 1.0
+        else if (abs(REFPARMS(iSFC_ID)-1.0) .lt. 0.01) then
 
             PHIDIFF = PHI1-PHI2
             call shd_sfc__brdfOcean(REFPARMS(1), -1., REFPARMS(2), WAVELEN,&
                 & -MU1, MU2, PHIDIFF, PHI1, REFLECT(1, 1))
 
-        else if (abs(REFPARMS(iSFC_ID)-996.0) .le. 0.01) then
+        ! 2.0
+        else if (abs(REFPARMS(iSFC_ID)-2.0) .lt. 0.01) then
 
             PHIDIFF = PHI1-PHI2-PI_
             call shd_sfc__brdfRPV(REFPARMS(1), REFPARMS(2),&
                 &REFPARMS(3), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
 
-        else if (abs(REFPARMS(iSFC_ID)-995.0) .le. 0.01) then
-
-            PHIDIFF = PHI2 - PHI1
-            call shd_sfc__brdfDiner(REFPARMS(1), REFPARMS(2), REFPARMS(3),&
-                &REFPARMS(4), REFPARMS(5),&
-                &-MU1, MU2, PHIDIFF, NSTOKES, REFLECT)
-
-        else if (abs(REFPARMS(iSFC_ID)-994.0) .le. 0.01) then
+        ! 3.0
+        else if (abs(REFPARMS(iSFC_ID)-3.0) .lt. 0.01) then
 
             PHIDIFF = PHI1-PHI2-PI_
             call shd_sfc__brdfLSRT(REFPARMS(1), REFPARMS(2),&
                 &REFPARMS(3), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
 
-        else if (abs(REFPARMS(iSFC_ID)-993.0) .le. 0.01) then
+        ! 4.0
+        else if (abs(REFPARMS(iSFC_ID)-4.0) .lt. 0.01) then
 
             PHIDIFF = PHI1-PHI2
             ! J: LSRT-Jiao model
             call shd_sfc__brdfLSRTJ(REFPARMS(1), REFPARMS(2),&
                 &REFPARMS(3), REFPARMS(4), REFPARMS(5), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
+
+        ! -1.0
+        else if (abs(REFPARMS(iSFC_ID)+1.0) .lt. 0.01) then
+
+            call shd_sfc__brdfFresnel(REFPARMS(1), REFPARMS(2),&
+                &REFPARMS(3), MU1, MU2, PHI1, PHI2, NSTOKES, REFLECT)
+
+        ! -2.0
+        else if (abs(REFPARMS(iSFC_ID)+2.0) .lt. 0.01) then
+
+            PHIDIFF = PHI2 - PHI1
+            call shd_sfc__brdfDiner(REFPARMS(1), REFPARMS(2), REFPARMS(3),&
+                &REFPARMS(4), REFPARMS(5),&
+                &-MU1, MU2, PHIDIFF, NSTOKES, REFLECT)
 
         else
 
