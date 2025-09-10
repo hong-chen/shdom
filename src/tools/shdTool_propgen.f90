@@ -851,7 +851,7 @@ contains
             write (3, '(A)') 'Polarized tabulated phase function property file'
         end if
         write (3, '(3(1X,I5))') NX, NY, NZT
-        write (3, '(2(1X,F10.4),202(1X,F12.6))') DELX, DELY, (ZLEVELS(I), I=1, NZT)
+        write (3, '(2(1X,F15.8),202(1X,F12.6))') DELX, DELY, (ZLEVELS(I), I=1, NZT)
         write (3, '(1X,I4)') NPHASEOUT
         do I = 0, NPHASE
             if (PHASECONV(I) > 0) then

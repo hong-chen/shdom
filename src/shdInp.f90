@@ -1031,27 +1031,37 @@ subroutine shd_io__readSfcSize(SFCFILE, MAXSFCPTS, MAXSFCPARS)
     read (1, *) NXSFC, NYSFC
     MAXSFCPTS = (NXSFC + 1)*(NYSFC + 1)
 
-    if (SFCTYPE .eq. 'VL' .or. SFCTYPE .eq. 'Vl') then
+    ! 0
+    if ((SFCTYPE .eq. 'VL') .or. (SFCTYPE .eq. 'Vl')) then
         ! Surface file type L is for variable Lambertian surface
         MAXSFCPARS = 2
-    else if (SFCTYPE .eq. 'VW') then
-        ! Surface file type W is for Wave-Fresnel surface
-        MAXSFCPARS = 4
-    else if (SFCTYPE .eq. 'VD') then
-        ! Surface file type D is for Diner polarized reflection model
-        MAXSFCPARS = 6
-    else if (SFCTYPE .eq. 'VO') then
+    ! 1
+    else if ((SFCTYPE .eq. 'VO') .or. (SFCTYPE .eq. 'Vo')) then
         ! Surface file type O is for Ocean BRDF surface
         MAXSFCPARS = 3
-    else if (SFCTYPE .eq. 'VR') then
+    ! 2
+    else if ((SFCTYPE .eq. 'VR') .or. (SFCTYPE .eq. 'Vr')) then
         ! Surface file type R is for RPV surface
         MAXSFCPARS = 4
-    else if (SFCTYPE .eq. 'VT') then
+    ! 3
+    else if ((SFCTYPE .eq. 'VT') .or. (SFCTYPE .eq. 'Vt')) then
         ! Surface file type T is for LSRT surface
         MAXSFCPARS = 4
-    else if (SFCTYPE .eq. 'VD') then
+    ! 4
+    else if ((SFCTYPE .eq. 'VJ') .or. (SFCTYPE .eq. 'Vj')) then
+        ! Surface file type J is for LSRT-Jiao surface
+        MAXSFCPARS = 6
+    ! -1
+    else if ((SFCTYPE .eq. 'VW') .or. (SFCTYPE .eq. 'Vw')) then
+        ! Surface file type W is for Wave-Fresnel surface
+        MAXSFCPARS = 4
+    ! -2
+    else if ((SFCTYPE .eq. 'VD') .or. (SFCTYPE .eq. 'Vd')) then
         ! Surface file type D is for Diner polarized RPV surface:
         MAXSFCPARS = 6
+    else if ((SFCTYPE .eq. 'VX') .or. (SFCTYPE .eq. 'Vx')) then
+        ! Surface file type X is for Mixed-surface type:
+        MAXSFCPARS = 8
     else
         stop 'Error [_readSfcSize]: Unknown BRDF type.'
     end if
@@ -1084,16 +1094,19 @@ subroutine shd_io__readSfc(&
     !   D  Diner et al   a, k, b, zeta, sigma
     !   R  RPV           rho0, k, Theta
     !   T  LSRT          f_iso, f_geo, f_vol
+    !   J  LSRT-Jiao     f_iso, f_geo, f_vol, f_jiao, alpha
+    !   M  Mixed
 
-    integer MAXSFCPTS, MAXSFCPARS, NXSFC, NYSFC, NSFCPAR
-    real DELXSFC, DELYSFC
-    real SFCPARMS(*), GNDTEMP, GNDALBEDO
+    integer :: MAXSFCPTS, MAXSFCPARS, NXSFC, NYSFC, NSFCPAR
+    real :: DELXSFC, DELYSFC
+    real :: SFCPARMS(*), GNDTEMP, GNDALBEDO
     character(len=*), intent(in) :: SFCFILE
     character(len=2) :: SFCTYPE
-    integer N, I, I0, IX, IY, J
-    real ALB, TEMP, MRE, MIM, RHO0, KR, THETA, WSPD, PCL
-    real F_ISO, F_VOL, F_GEO
-    real A, B, ZETA, SIGMA
+    integer :: N, I, I0, IX, IY, J
+    real :: ALB, TEMP, MRE, MIM, RHO0, KR, THETA, WSPD, PCL
+    real :: PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7, PARAM8
+    real F_ISO, F_VOL, F_GEO, F_JIAO
+    real A, B, ZETA, SIGMA, ALPHA
 
     ! Surface type is variable something
     SFCTYPE(1:1) = 'V'
@@ -1111,7 +1124,8 @@ subroutine shd_io__readSfc(&
     N = 0
 
     ! Surface file type L is for variable Lambertian surface
-    if (SFCTYPE .eq. 'VL' .or. SFCTYPE .eq. 'Vl') then
+    if ((SFCTYPE .eq. 'VL') .or. (SFCTYPE .eq. 'Vl')) then
+
         NSFCPAR = 2
         if (NSFCPAR .gt. MAXSFCPARS) then
             write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
@@ -1135,30 +1149,10 @@ subroutine shd_io__readSfc(&
             end if
         end do
 
-    ! Surface file type W is for Wave-Fresnel surface
-    else if (SFCTYPE .eq. 'VW') then
-        NSFCPAR = 4
-        if (NSFCPAR .gt. MAXSFCPARS) then
-            write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
-            stop
-        end if
-        do while (.true.)
-            read (1, *, end=290) IX, IY, TEMP, MRE, MIM, WSPD
-            if (IX .ge. 1 .and. IX .le. NXSFC .and.&
-                &IY .ge. 1 .and. IY .le. NYSFC) then
-                I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
-                SFCPARMS(I + 1) = TEMP
-                SFCPARMS(I + 2) = MRE
-                SFCPARMS(I + 3) = MIM
-                SFCPARMS(I + 4) = WSPD
-                GNDTEMP = GNDTEMP + TEMP
-                N = N + 1
-            end if
-        end do
-
     ! Surface file type O is for Ocean surface BRDF
     !   Norm Loeb's modification of 6S ocean reflectance module.
-    else if (SFCTYPE .eq. 'VO') then
+    else if ((SFCTYPE .eq. 'VO') .or. (SFCTYPE .eq. 'Vo')) then
+
         NSFCPAR = 3
         if (NSFCPAR .gt. MAXSFCPARS) then
             write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
@@ -1182,7 +1176,8 @@ subroutine shd_io__readSfc(&
     !   Reflectance (CSAR) Model. 2. Semiempirical Surface Model
     !   Usable With NOAA Advanced Very High Resolution Radiometer
     !   Data, J. Geophys. Res., 98, 20791-20801.)
-    else if (SFCTYPE .eq. 'VR') then
+    else if ((SFCTYPE .eq. 'VR') .or. (SFCTYPE .eq. 'Vr')) then
+
         NSFCPAR = 4
         if (NSFCPAR .gt. MAXSFCPARS) then
             write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
@@ -1204,7 +1199,8 @@ subroutine shd_io__readSfc(&
         end do
 
     ! Surface file type T is for LSRT surface:
-    else if (SFCTYPE .eq. 'VT') then
+    else if ((SFCTYPE .eq. 'VT') .or. (SFCTYPE .eq. 'Vt')) then
+
         NSFCPAR = 4
         if (NSFCPAR .gt. MAXSFCPARS) then
             write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
@@ -1225,13 +1221,60 @@ subroutine shd_io__readSfc(&
             end if
         end do
 
+    ! Surface file type J is for LSRT-Jiao surface:
+    else if ((SFCTYPE .eq. 'VJ') .or. (SFCTYPE .eq. 'Vj')) then
+        NSFCPAR = 6
+        if (NSFCPAR .gt. MAXSFCPARS) then
+            write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
+            stop
+        end if
+        do while (.true.)
+            read (1, *, end=290) IX, IY, TEMP, F_ISO, F_GEO, F_VOL, F_JIAO, ALPHA
+            if (IX .ge. 1 .and. IX .le. NXSFC .and.&
+                &IY .ge. 1 .and. IY .le. NYSFC) then
+                I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
+                SFCPARMS(I + 1) = TEMP
+                SFCPARMS(I + 2) = F_ISO
+                SFCPARMS(I + 3) = F_GEO
+                SFCPARMS(I + 4) = F_VOL
+                SFCPARMS(I + 5) = F_JIAO
+                SFCPARMS(I + 6) = ALPHA
+                GNDTEMP = GNDTEMP + TEMP
+                GNDALBEDO = GNDALBEDO + F_ISO
+                N = N + 1
+            end if
+        end do
+
+    ! Surface file type W is for Wave-Fresnel surface
+    else if ((SFCTYPE .eq. 'VW') .or. (SFCTYPE .eq. 'Vw')) then
+
+        NSFCPAR = 4
+        if (NSFCPAR .gt. MAXSFCPARS) then
+            write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
+            stop
+        end if
+        do while (.true.)
+            read (1, *, end=290) IX, IY, TEMP, MRE, MIM, WSPD
+            if (IX .ge. 1 .and. IX .le. NXSFC .and.&
+                &IY .ge. 1 .and. IY .le. NYSFC) then
+                I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
+                SFCPARMS(I + 1) = TEMP
+                SFCPARMS(I + 2) = MRE
+                SFCPARMS(I + 3) = MIM
+                SFCPARMS(I + 4) = WSPD
+                GNDTEMP = GNDTEMP + TEMP
+                N = N + 1
+            end if
+        end do
+
     ! Surface file type D is for Diner et al surface reflection:
     ! (Diner, D. J., F. Xu, J. V. Martonchik, B. E. Rheingans, S. Geier,
     ! V. M. Jovanovic, A. Davis, R. A. Chipman, S. C. McClain, 2012:
     ! Exploration of a polarized surface bidirectional reflectance model
     ! using the ground-based multiangle spectropolarimetric imager.
     ! Atmosphere 2012, 3, 591-619; doi:10.3390/atmos3040591.)
-    else if (SFCTYPE .eq. 'VD') then
+    else if ((SFCTYPE .eq. 'VD') .or. (SFCTYPE .eq. 'Vd')) then
+
         NSFCPAR = 6
         if (NSFCPAR .gt. MAXSFCPARS) then
             write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
@@ -1254,8 +1297,51 @@ subroutine shd_io__readSfc(&
             end if
         end do
 
+    ! Surface file type X is for Mixed-type surface:
+    else if ((SFCTYPE .eq. 'VX') .or. (SFCTYPE .eq. 'Vx')) then
+
+        NSFCPAR = 8
+        if (NSFCPAR .gt. MAXSFCPARS) then
+            write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
+            stop
+        end if
+        do while (.true.)
+            read (1, *, end=290)    IX, IY, PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7, PARAM8
+            ! for Lambertian   (VL):IX, IY, TEMP,   ALB,    -999.0, -999.0, -999.0, -999.0, -999.0,  0.0
+            ! for Ocean        (VO):IX, IY, TEMP,   WSPD,   PCL,    -999.0, -999.0, -999.0, -999.0,  1.0
+            ! for RPV          (VR):IX, IY, TEMP,   RHO0,   KR,     THETA,  -999.0, -999.0, -999.0,  2.0
+            ! for LSRT         (VT):IX, IY, TEMP,   F_ISO,  F_GEO,  F_VOL,  -999.0, -999.0, -999.0,  3.0
+            ! for LSRT-J       (VJ):IX, IY, TEMP,   F_ISO,  F_GEO,  F_VOL,  F_JIAO, ALPHA,  -999.0,  4.0
+            ! for Wave-Fresnel (VW):IX, IY, TEMP,   MRE,    MIM,    WSPD,   -999.0, -999.0, -999.0, -1.0
+            ! for Diner        (VD):IX, IY, TEMP,   A,      KR,     B,      ZETA,   SIGMA,  -999.0, -2.0
+
+            if (IX .ge. 1 .and. IX .le. NXSFC .and.&
+                &IY .ge. 1 .and. IY .le. NYSFC) then
+                I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
+                SFCPARMS(I + 1) = PARAM1
+                SFCPARMS(I + 2) = PARAM2
+                SFCPARMS(I + 3) = PARAM3
+                SFCPARMS(I + 4) = PARAM4
+                SFCPARMS(I + 5) = PARAM5
+                SFCPARMS(I + 6) = PARAM6
+                SFCPARMS(I + 7) = PARAM7
+                SFCPARMS(I + 8) = PARAM8 ! surface identification
+
+                GNDTEMP = GNDTEMP + PARAM1
+
+                ! no albedo for polarized (W) and unpolarized (O) Ocean parameterization
+                if ((abs(PARAM8)-1.0) .gt. 0.01) then
+                    GNDALBEDO = GNDALBEDO + PARAM2
+                end if
+
+                N = N + 1
+            end if
+        end do
+
     else
+
         stop 'Error [_readSfc]: Unknown BRDF type <'//trim(adjustl(SFCTYPE))//'>.'
+
     end if
 
 290 continue

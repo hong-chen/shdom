@@ -1312,4 +1312,136 @@ subroutine shd_util__ssort_r(X, Y, N, KFLAG)
 
 end subroutine shd_util__ssort_r
 
+FUNCTION change_range(angle, min_value, max_value) RESULT(output_angle)
+    !╭──────────────────────────────────────────────────────────────╮!
+    !***PURPOSE  Change the range of an angle to a specified range.
+    !            This function is similar to Python's modulo operator
+    !            but works with real numbers and allows for a specified
+    !            minimum and maximum value.
+    !***LIBRARY   SHD_UTIL
+    !***CATEGORY  N6A2B
+    !***TYPE      REAL
+
+    IMPLICIT NONE
+
+    REAL, INTENT(IN) :: angle
+    REAL, INTENT(IN) :: min_value
+    REAL, INTENT(IN) :: max_value
+    REAL             :: output_angle
+
+    REAL :: current_range_span
+
+    current_range_span = max_value - min_value
+
+    ! This implementation assumes current_range_span is not zero.
+    ! If current_range_span is zero, Python's % operator would raise a ZeroDivisionError.
+    ! Fortran's MODULO intrinsic function would similarly result in a runtime error.
+    ! The MODULO intrinsic behaves like Python's % operator for real numbers:
+    ! result = x - FLOOR(x / y) * y
+    output_angle = MODULO(angle - min_value, current_range_span) + min_value
+
+END FUNCTION change_range
+
+SUBROUTINE read_ice_refractive_index(filepath, wavelengths, n_real, n_imag, num_entries)
+    !╭──────────────────────────────────────────────────────────────╮!
+    !***PURPOSE  Read ice refractive index data from a file.
+    !            The file is expected to contain three columns (delimted by commas only, no spaces):
+    !            wavelength, real part of refractive index, and imaginary part.
+    !***LIBRARY   SHD_UTIL
+    !***CATEGORY  N6A2B
+    !***TYPE      REAL
+    !***KEYWORDS  Refractive Index, Ice, File I/O
+    !***DESCRIPTION
+    !   This subroutine reads ice refractive index data from a specified file.
+    !   The file reference used is from Warren and Brandt (2008), doi:10.1029/2007JD009744
+
+    IMPLICIT NONE
+
+    CHARACTER(LEN=*), INTENT(IN) :: filepath
+    REAL, ALLOCATABLE, INTENT(OUT) :: wavelengths(:)
+    REAL, ALLOCATABLE, INTENT(OUT) :: n_real(:)
+    REAL, ALLOCATABLE, INTENT(OUT) :: n_imag(:)
+    INTEGER, INTENT(OUT) :: num_entries
+
+    INTEGER :: unit_num, io_status, count
+    CHARACTER(LEN=200) :: line_buffer
+
+    ! Find a free unit number
+    CALL shd_util__get_free_unit(unit_num)
+
+    ! First pass: Count the number of lines/entries
+    OPEN(UNIT=unit_num, FILE=filepath, STATUS='OLD', ACTION='READ', IOSTAT=io_status)
+    IF (io_status /= 0) THEN
+        WRITE(*,*) 'Error opening file for counting: ', filepath
+        num_entries = 0
+        RETURN
+    END IF
+
+    count = 0
+    DO
+        READ(unit_num, FMT='(A)', IOSTAT=io_status) line_buffer
+        IF (io_status /= 0) EXIT ! Exit on EOF or error
+        count = count + 1
+    END DO
+    CLOSE(unit_num)
+    num_entries = count
+
+    IF (num_entries == 0) THEN
+        WRITE(*,*) 'No data found in file: ', filepath
+        RETURN
+    END IF
+
+    ! Allocate arrays
+    ALLOCATE(wavelengths(num_entries), n_real(num_entries), n_imag(num_entries), STAT=io_status)
+    IF (io_status /= 0) THEN
+        WRITE(*,*) 'Error allocating memory for refractive index data.'
+        num_entries = 0
+        RETURN
+    END IF
+
+    ! Second pass: Read the data
+    OPEN(UNIT=unit_num, FILE=filepath, STATUS='OLD', ACTION='READ', IOSTAT=io_status)
+    IF (io_status /= 0) THEN
+        WRITE(*,*) 'Error opening file for reading: ', filepath
+        DEALLOCATE(wavelengths, n_real, n_imag)
+        num_entries = 0
+        RETURN
+    END IF
+
+    DO count = 1, num_entries
+        READ(unit_num, *, IOSTAT=io_status) wavelengths(count), n_real(count), n_imag(count)
+        IF (io_status /= 0) THEN
+            WRITE(*,*) 'Error reading data from file at line: ', count
+            CLOSE(unit_num)
+            DEALLOCATE(wavelengths, n_real, n_imag)
+            num_entries = 0
+            RETURN
+        END IF
+    END DO
+
+    CLOSE(unit_num)
+
+CONTAINS
+    ! Subroutine to find a free file unit number
+    SUBROUTINE shd_util__get_free_unit(unit)
+        INTEGER, INTENT(OUT) :: unit
+        LOGICAL :: unit_exists
+        INTEGER :: test_unit
+        unit = 10 ! Starting unit number to check
+        DO
+            INQUIRE(UNIT=unit, OPENED=unit_exists)
+            IF (.NOT. unit_exists) THEN
+                INQUIRE(UNIT=unit, IOSTAT=test_unit) ! Check if unit number is valid at all
+                IF (test_unit == 0) EXIT
+            END IF
+            unit = unit + 1
+            IF (unit > 99) THEN ! Avoid standard units and very high numbers
+                WRITE(*,*) "Could not find a free file unit."
+                STOP
+            END IF
+        END DO
+    END SUBROUTINE shd_util__get_free_unit
+
+END SUBROUTINE read_ice_refractive_index
+
 end module shd_util
