@@ -680,11 +680,11 @@ subroutine shd_src__integrateSrcOneRay(&
     &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
 
     !   Integrates the source function through the extinction field
-    ! (EXTINCT) backward from the outgoing direction (MU2,PHI2) to find
+    ! (EXTINCT) backward from the outgoing direction (MU2,PHI2) to find the
     ! radiance (RADIANCE) at the point X0,Y0,Z0.
-    ! The transmission and radiance of the ray so far (TRANSMIT, RADIANC
-    ! are input and returned after the integration along with the exitti
-    ! ray location (XE,YE,ZE) and side of the domain (1=-X,2=+X,3=-Y,4=+
+    ! The transmission and radiance of the ray so far (TRANSMIT, RADIANCE)
+    ! are input and returned after the integration along with the exitting
+    ! ray location (XE,YE,ZE) and side of the domain (1=-X,2=+X,3=-Y,4=+Y,
     ! 5=-Z,6=+Z).
 
     integer BCFLAG, IPFLAG, NSTOKES, NSTLEG, NSTPHASE, NSCATANGLE
