@@ -1105,4 +1105,236 @@ subroutine shd_rad__computeNetFluxDiv(NSTOKES, NPTS, RSHPTR, SRCTYPE,&
 
 end subroutine shd_rad__computeNetFluxDiv
 
+subroutine shd_rad__computeSensorRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+    &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
+    &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
+    &BCFLAG, IPFLAG, SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
+    &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
+    &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
+    &GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, UNITS,&
+    &XGRID, YGRID, ZGRID, GRIDPOS,&
+    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+    &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
+    &SHPTR, SOURCE, OUTPARMS, IVIS, VISOUT)
+
+    !   Computes Stokes radiances (output in VISOUT) for the sensor-specific
+    !  modes: 1) camera mode, and 2) cross track scanning.
+
+    integer NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG, NPTS, NCELLS
+    integer ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
+    integer NMU, NPHI0MAX, NPHI0(NMU), IVIS
+    integer MAXNBC, NTOPPTS, NBOTPTS, NSFCPAR
+    integer GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
+    integer SHPTR(NPTS + 1), BCPTR(MAXNBC, 2)
+    integer*2 CELLFLAGS(NCELLS), IPHASE(NPTS)
+    logical DELTAM
+    real SOLARMU, SOLARAZ
+    real GNDTEMP, GNDALBEDO, SKYRAD, WAVENO(2), WAVELEN
+    real MU(NMU), PHI(NMU, NPHI0MAX), WTDO(NMU, NPHI0MAX)
+    real XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ), GRIDPOS(3, NPTS)
+    real SFCGRIDPARMS(*), BCRAD(NSTOKES, *)
+    real EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, *)
+    real DIRFLUX(NPTS), FLUXES(2, NPTS), SOURCE(NSTOKES, *)
+    real OUTPARMS(*), VISOUT(NSTOKES, *)
+    character(len=1) :: SRCTYPE, UNITS
+    character(len=2) :: SFCTYPE
+    integer NSCATANGLE, NSTPHASE, I, J, L, N, SIDE
+    integer NL, NS, LINE, SAMP
+    logical AUTO_MODE, VALIDRAD
+    real MURAY, PHIRAY
+    real(RD_) :: XE, YE, ZE, TRANSMIT, VISRAD(NSTOKES)
+    real(RD_) :: X0, Y0, Z0, X1, Y1, Z1, X2, Y2, Z2
+    real(RD_) :: THETA0, THETA1, PHIR, PHI0
+    real(RD_) :: COSTH, SINTH, SINTH0, SINTH1, MU2, PHI2
+    real(RD_) :: U, V, UP, VP, COSDELPHI, ROTANG, R
+    real(RD_) :: DIST, D, RX, RY, RZ, SCANANG
+    integer MAXSCATANG
+    parameter(MAXSCATANG=721)
+    real, allocatable :: YLMSUN(:, :), PHASETAB(:, :, :)
+    real              :: MEAN, STD1, STD2
+    real, allocatable :: AOLP(:)
+
+    allocate (YLMSUN(NSTLEG, NLM))
+
+    if (SRCTYPE .ne. 'T') then
+        call shd_pha__computeYLM(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG, YLMSUN)
+        if (DELTAM .and. NUMPHASE .gt. 0) then
+            NSCATANGLE = max(36, min(MAXSCATANG, 2*NLEG))
+            NSTPHASE = min(NSTLEG, 2)
+            allocate (PHASETAB(NSTPHASE, NUMPHASE, NSCATANGLE))
+            call shd_pha__computePhase(NSCATANGLE, NUMPHASE, NSTPHASE,&
+                &NSTOKES, ML, NSTLEG, NLEG, LEGEN, PHASETAB)
+        end if
+    end if
+
+    ! Make the isotropic radiances for the top boundary
+    call shd_init__makeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
+        &UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
+
+    ! Make the bottom boundary radiances for the Lambertian surfaces
+    !   Compute the upwelling bottom radiances using the downwelling
+    if (SFCTYPE .eq. 'FL') then
+        call shd_init__makeSfcRadFL(NBOTPTS, BCPTR(1, 2),&
+            &DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO,&
+            &WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1, 1 + NTOPPTS))
+    else if (SFCTYPE .eq. 'VL') then
+        call shd_init__makeSfcRadVL(NBOTPTS, BCPTR(1, 2),&
+            &DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS,&
+            &NSTOKES, BCRAD(1, 1 + NTOPPTS))
+    end if
+
+    AUTO_MODE = nint(OUTPARMS(1)) .eq. 1
+    if (AUTO_MODE) then
+        NL = nint(OUTPARMS(10))
+        NS = nint(OUTPARMS(11))
+    else
+        NL = 1 + int(sqrt((OUTPARMS(4) - OUTPARMS(7))**2&
+            &+ (OUTPARMS(5) - OUTPARMS(8))**2&
+            &+ (OUTPARMS(6) - OUTPARMS(9))**2)/OUTPARMS(10))
+        NS = 1 + int(abs(OUTPARMS(12) - OUTPARMS(11))/OUTPARMS(13))
+    end if
+
+    ! Loop over pixels in image
+    do LINE = 1, NL
+        do SAMP = 1, NS
+            IVIS = IVIS + 1
+
+            if (AUTO_MODE) then
+
+                ! Camera mode:
+                !   1, 2,     3,     4,5,6, 7,     8,   9,      10, 11, 12,      13
+                !   1, bytes, scale, X,Y,Z, theta, phi, rotang, NL, NS, delline, delsamp
+                !
+                ! Use spherical trig to find the pixel direction (MURAY,PHIRAY)
+                !   from the camera center (THETA0,PHI0) and the relative pixel
+                !   angles (U,V).
+                UP = (SAMP - NS/2 - 1)*OUTPARMS(13)*DTOR_
+                VP = (LINE - NL/2 - 1)*OUTPARMS(12)*DTOR_
+                ROTANG = OUTPARMS(9)*DTOR_
+                if (ROTANG .eq. 0.0) then
+                    U = UP
+                    V = VP
+                else
+                    U = cos(ROTANG)*UP - sin(ROTANG)*VP
+                    V = sin(ROTANG)*UP + cos(ROTANG)*VP
+                end if
+
+                THETA0 = DTOR_*OUTPARMS(7)
+                PHI0 = DTOR_*OUTPARMS(8)
+                THETA1 = THETA0 + V
+                if (V .eq. 0.0) then
+                    COSTH = cos(U)*cos(THETA0)
+                else
+                    COSTH = cos(U)*(sin(THETA1)*cos(V) - sin(THETA0))/sin(V)
+                    COSTH = min(+1.0d0, max(-1.0d0, COSTH))
+                end if
+                SINTH = sqrt(1 - COSTH**2)
+                SINTH0 = sin(THETA0)
+                SINTH1 = sin(THETA1)
+                if (abs(SINTH) .lt. 1.0e-6) then
+                    PHIR = 0.0
+                else
+                    if (abs(SINTH0) .lt. 1e-6 .and. abs(SINTH1) .le. 1e-6) then
+                        COSDELPHI = 0.0d0
+                    else if (abs(SINTH1) .gt. 1.0e-6) then
+                        COSDELPHI = (cos(U) - COSTH*cos(THETA1))/(SINTH1*SINTH)
+                    else if (abs(SINTH0) .gt. 1.0e-6) then
+                        COSDELPHI = (cos(U)*cos(V) - COSTH*cos(THETA0))&
+                            &/(SINTH0*SINTH)
+                    end if
+                    COSDELPHI = min(+1.0d0, max(-1.0d0, COSDELPHI))
+                    if (U .ge. 0.0) then
+                        PHIR = PHI0 - acos(COSDELPHI)
+                    else
+                        PHIR = PHI0 + acos(COSDELPHI)
+                    end if
+                end if
+
+                X0 = OUTPARMS(4)
+                Y0 = OUTPARMS(5)
+                Z0 = OUTPARMS(6)
+
+            end if
+
+            ! Extrapolate ray to domain top if above
+            if (Z0 .gt. ZGRID(NZ)) then
+                if (COSTH .ge. 0.0) then
+                    VISRAD(:) = 0.0
+                    goto 900
+                end if
+                R = (ZGRID(NZ) - Z0)/COSTH
+                X0 = X0 + R*sqrt(1 - COSTH**2)*cos(PHIR)
+                Y0 = Y0 + R*sqrt(1 - COSTH**2)*sin(PHIR)
+                Z0 = ZGRID(NZ)
+            else if (Z0 .lt. ZGRID(1)) then
+                write (6, *) 'Error [_visualizeRad]: Level below domain.'
+                stop
+            end if
+
+            ! MURAY,PHRAY is camera pixel viewing direction;
+            ! MU2,PHI2 is radiance travel direction (the opposite)
+            MURAY = sngl(COSTH)
+            PHIRAY = sngl(PHIR)
+            MU2 = -COSTH
+            PHI2 = PHIR + PI_
+
+            ! Integrate the extinction and source function along this ray
+            !   to calculate the Stokes radiance vector for this pixel
+            TRANSMIT = 1.0d0; VISRAD(:) = 0.0d0
+            call shd_src__integrateSrcOneRay(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
+                &NSTPHASE, NSCATANGLE, PHASETAB,&
+                &NX, NY, NZ, NPTS, NCELLS,&
+                &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+                &XGRID, YGRID, ZGRID, GRIDPOS,&
+                &ML, MM, NLM, NLEG, NUMPHASE,&
+                &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
+                &DELTAM, SRCTYPE, WAVELEN, SOLARMU, SOLARAZ,&
+                &EXTINCT, ALBEDO, LEGEN, IPHASE,&
+                &DIRFLUX, SHPTR, SOURCE, YLMSUN,&
+                &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
+                &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
+                &MU2, PHI2, X0, Y0, Z0,&
+                &XE, YE, ZE, SIDE, TRANSMIT, VISRAD, VALIDRAD)
+900         continue
+            ! write (6,'(1X,2F8.4,1X,2F11.7,4(1X,F11.6))')&
+            !     &X0,Y0,MURAY,PHIRAY,VISRAD(:)
+            VISOUT(1, IVIS) = VISRAD(1)
+            if (VISRAD(1) .gt. 0.0) then
+                if (NSTOKES .gt. 1) then
+                    ! Output degree (0 to 1) and angle (-180 to 180) of linear polarization
+                    VISOUT(2, IVIS) = sqrt(VISRAD(2)**2 + VISRAD(3)**2)/VISRAD(1)
+                    VISOUT(3, IVIS) = (180.0d0/PI_)*FRAC12_*atan2(VISRAD(3), VISRAD(2))
+                end if
+                if (NSTOKES .eq. 4) then
+                    ! Output degree of circular polarization (-1 to 1)
+                    VISOUT(4, IVIS) = VISRAD(4)/VISRAD(1)
+                end if
+            else
+                VISOUT(2:, IVIS) = 0.0
+            end if
+        end do
+    end do
+
+    deallocate (YLMSUN)
+    if (allocated(PHASETAB)) deallocate (PHASETAB)
+    if (NSTOKES .gt. 1) then
+        ! Choose the best range for the angle of linear polarization (-90 to 90 or 0 to 180)
+        N = NL*NS
+        allocate (AOLP(N))
+        AOLP(:) = VISOUT(3, IVIS - N + 1:IVIS)
+        MEAN = sum(AOLP(:))/N
+        STD1 = sqrt(sum((AOLP(:) - MEAN)**2)/N)
+        where (AOLP(:) < 0.0)
+            AOLP(:) = AOLP(:) + 180.0
+        end where
+        MEAN = sum(AOLP(:))/N
+        STD2 = sqrt(sum((AOLP(:) - MEAN)**2)/N)
+        if (STD2 < STD1) then
+            VISOUT(3, IVIS - N + 1:IVIS) = AOLP(:)
+        end if
+        deallocate (AOLP)
+    end if
+    return
+end subroutine shd_rad__computeSensorRad
+
 end module shd_rad
