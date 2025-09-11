@@ -21,6 +21,9 @@ module shd_inp
   public :: shd_io__readCkdSize
   public :: shd_io__readCkd
 
+  public :: shd_io__readSenSize
+  public :: shd_io__readSen
+
   public :: shd_io__restoreState
 
 contains
@@ -39,8 +42,8 @@ subroutine shd_io__userInput(&
 
     ! Obtains the input parameters for the program by writing prompts
     ! to and reading responses from the terminal.  Echos the inputs to
-    ! make a useful log file when running non-interactively.  See the ov
-    ! program documentation for the list of input parameters.
+    ! make a useful log file when running non-interactively.  See the
+    ! overall program documentation for the list of input parameters.
 
     integer NSTOKES, NX, NY, NZ, NMU, NPHI
     integer BCFLAG, IPFLAG
@@ -292,7 +295,7 @@ subroutine shd_io__nmlInput(&
     &dGNDTEMP, dGNDALBEDO, dUNITS, dWAVENO, dWAVELEN,&
     &dACCELFLAG, dSOLACC, dMAXITER, dSPLITACC, dSHACC,&
     &dMAXOUT, dMAXPAR, dNUMOUT, dOUTTYPES, dOUTPARMS, dOUTFILES,&
-    &dOutFileNC, dMAX_TOTAL_MB, dADAPT_GRID_FACTOR,&
+    &dSENFILE, dOutFileNC, dMAX_TOTAL_MB, dADAPT_GRID_FACTOR,&
     &dNUM_SH_TERM_FACTOR, dCELL_TO_POINT_RATIO)
 
     ! Obtains the input parameters for the program from a namelist
@@ -314,7 +317,7 @@ subroutine shd_io__nmlInput(&
     character(len=1) :: dSRCTYPE, dGRIDTYPE, dUNITS
     character(len=1) ::  dOUTTYPES(*)
     character(len=FNAMEMAXLEN_) :: dOUTFILES(*)
-    character(len=FNAMEMAXLEN_) :: dOutFileNC, dRUNNAME
+    character(len=FNAMEMAXLEN_) :: dSENFILE, dOutFileNC, dRUNNAME
     character(len=FNAMEMAXLEN_) :: dPROPFILE, dSFCFILE, dCKDFILE
     character(len=FNAMEMAXLEN_) :: dINSAVEFILE, dOUTSAVEFILE
     integer I, J, N
@@ -334,7 +337,7 @@ subroutine shd_io__nmlInput(&
     character(len=1) :: OUTTYPES(MAXOUT)
     character(len=FNAMEMAXLEN_) :: OUTFILES(MAXOUT)
     character(len=FNAMEMAXLEN_) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
-    character(len=FNAMEMAXLEN_) :: OutFileNC, RUNNAME
+    character(len=FNAMEMAXLEN_) :: SENFILE, OutFileNC, RUNNAME
     namelist /SHDOMINPUT/&
         &RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
         &INSAVEFILE, OUTSAVEFILE,&
@@ -343,7 +346,7 @@ subroutine shd_io__nmlInput(&
         &SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
         &GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,&
         &ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
-        &NUMOUT, OUTTYPES, OUTPARMS, OUTFILES, OutFileNC,&
+        &NUMOUT, OUTTYPES, OUTPARMS, OUTFILES, SENFILE, OutFileNC,&
         &MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
         &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
 
@@ -427,9 +430,14 @@ subroutine shd_io__nmlInput(&
                 dOUTPARMS(J, I) = OUTPARMS(J, I)
             end do
         else if (OUTTYPES(I) (1:1) .eq. 'V') then
-            do J = 1, 13
-                dOUTPARMS(J, I) = OUTPARMS(J, I)
-            end do
+            dOUTPARMS(1, I) = OUTPARMS(1, I)
+            dOUTPARMS(2, I) = OUTPARMS(2, I)
+            ! new user-specified sensor mode is with number "3"
+            if (nint(OUTPARMS(1, I)) .le. 2) then
+                do J = 3, 13
+                    dOUTPARMS(J, I) = OUTPARMS(J, I)
+                end do
+            end if
         else if (OUTTYPES(I) (1:1) .eq. 'F') then
             dOUTPARMS(1, I) = OUTPARMS(1, I)
             if (nint(OUTPARMS(1, I)) .eq. 2) then
@@ -450,6 +458,9 @@ subroutine shd_io__nmlInput(&
         end if
         dOUTFILES(I) = OUTFILES(I)
     end do
+
+    dSENFILE = SENFILE ! this is added for user-specified sensor option, output type "X"
+
     dOutFileNC = OutFileNC
 
     if (dOutFileNC .ne. 'NONE') then
@@ -477,7 +488,7 @@ subroutine shd_io__checkInputParam(&
     ! Delta-M should be used for solar transfer with forward peaked
     ! phase functions.
     ! Check for reasonable ranges on SPLITACC and SHACC.
-    ! Check for reasonable range of GNDTEMP and valid range of GNDALBEDO
+    ! Check for reasonable range of GNDTEMP and valid range of GNDALBEDO.
     ! Check for SOLARMU=0.
     ! Check for NPHI<NMU.
 
@@ -629,20 +640,20 @@ subroutine shd_io__readPrp(&
     &PROPTYPE, DELX, DELY, ZLEVELS, MAXASYM,&
     &TEMPP, EXTINCTP, ALBEDOP, LEGENP, NUMPHASE, IPHASEP)
 
-    ! Reads the medium properties from the file into the property arra
-    ! There are four formats: the standard format specifies the extincti
-    ! scattering albedo, temperature, and Legendre phase function expans
+    ! Reads the medium properties from the file into the property arrays.
+    ! There are four formats: the standard format specifies the extinction,
+    ! scattering albedo, temperature, and Legendre phase function expansion
     ! at every grid point; the extinction only format only specifies
-    ! extinction at every grid point, while the other quantities are giv
+    ! extinction at every grid point, while the other quantities are given
     ! in the header part; and the tabulated and polarized phase function
     ! format specifies all properties except the phase function for each
     ! grid point, while the phase functions are tabulated in the header.
-    ! The polarized format specifies the six unique elements of the phas
+    ! The polarized format specifies the six unique elements of the phase
     ! (Mueller) matrix in the header and includes the l=0 term.
     ! If the format is extinction only or tabulated phase function then
     ! NUMPHASE is the number of phase functions, otherwise NUMPHASE=0.
-    ! If doing delta-M then NLEG is the minimum number of Legendre terms
-    ! input and the actual maximum number of terms on output, except tha
+    ! If doing delta-M then NLEG is the minimum number of Legendre terms on
+    ! input and the actual maximum number of terms on output, except that
     ! it may not exceed MAXLEG; otherwise NLEG is the number of Legendre
     ! terms to be used (regardless of what is in property file).
     ! See the overall program documentation for the four file formats.
@@ -886,7 +897,6 @@ subroutine shd_io__readPrp(&
 
 end subroutine shd_io__readPrp
 
-
 subroutine shd_io__checkPrpInput(&
     &NPX, NPY, NPZ, NSTLEG, NLEG,&
     &DELX, DELY, ZLEVELS,&
@@ -1013,7 +1023,6 @@ subroutine shd_io__checkPrpInput(&
 
 end subroutine shd_io__checkPrpInput
 
-
 subroutine shd_io__readSfcSize(SFCFILE, MAXSFCPTS, MAXSFCPARS)
 
     ! Gets the size of the surface property inputs (temperature is
@@ -1074,10 +1083,10 @@ subroutine shd_io__readSfc(&
     &SFCFILE, MAXSFCPTS, MAXSFCPARS,&
     &SFCTYPE, NXSFC, NYSFC, DELXSFC, DELYSFC,&
     &NSFCPAR, SFCPARMS, GNDTEMP, GNDALBEDO)
-    ! Reads the surface properties from the file into the surface arra
+    ! Reads the surface properties from the file into the surface arrays.
     ! There are currently six surface types (Lambertian, Wave-Fresnel,
-    ! Ocean, RPV, and Diner polarized RPV), though it is simple to add m
-    ! In all cases the surface properties are specified on a regular, ev
+    ! Ocean, RPV, and Diner polarized RPV), though it is simple to add more
+    ! In all cases the surface properties are specified on a regular, evenly.
     ! spaced grid of size NXSFC by NYSFC and spacing DELXSFC by DELYSFC.
     ! The properties are returned on a NXSFC+1 by NYSFC+1 grid that is
     ! periodic (NX+1 same as 1, etc).  The surface properties at each
@@ -1085,16 +1094,16 @@ subroutine shd_io__readSfc(&
     ! be temperature.  The number of parameters for each grid point
     ! (including temperature) are returned in NSFCPAR.
     ! Also returned are the domain average ground albedo and temperature
-    ! (GNDALBEDO, GNDTEMP) for use with initialization (hence they can b
+    ! (GNDALBEDO, GNDTEMP) for use with initialization (hence they can be
     ! highly approximate).
     !        Type        Parameters
     !   L  Lambertian    albedo
-    !   W  Wave-Fresnel  Real, Imaginary index of refraction, wind speed
     !   O  Ocean         Wind speed (m/s), Pigmentation (mg/m^3)
-    !   D  Diner et al   a, k, b, zeta, sigma
     !   R  RPV           rho0, k, Theta
     !   T  LSRT          f_iso, f_geo, f_vol
     !   J  LSRT-Jiao     f_iso, f_geo, f_vol, f_jiao, alpha
+    !   W  Wave-Fresnel  Real, Imaginary index of refraction, wind speed (m/s)
+    !   D  Diner et al   a, k, b, zeta, sigma
     !   M  Mixed
 
     integer :: MAXSFCPTS, MAXSFCPARS, NXSFC, NYSFC, NSFCPAR
@@ -1372,7 +1381,7 @@ end subroutine shd_io__readSfc
 
 subroutine shd_io__readCkdSize(CKDFILE, WAVENO, NG, NZCKD)
 
-    ! Find the size of the k-distribution arrays for this wavenumber b
+    ! Find the size of the k-distribution arrays for this wavenumber band
 
     integer NG, NZCKD
     real WAVENO(2)
@@ -1476,6 +1485,74 @@ subroutine shd_io__readCkd(&
     close (1)
     return
 end subroutine shd_io__readCkd
+
+subroutine shd_io__readSenSize(&
+    &SENFILE, NSENDATA, NSENPAR)
+
+    ! Reads the user-specified sensor data size information
+
+    character(len=*), intent(in) :: SENFILE
+    integer, intent(out) :: NSENDATA, NSENPAR
+
+    character(len=FNAMEMAXLEN_) :: TMP_CHAR
+    character(len=FNAMEMAXLEN_) :: DIMS_CHAR
+
+    ! Open the file, figure out the type, and get the grid size
+    open (UNIT=1, FILE=trim(adjustl(SENFILE)), STATUS='OLD')
+    read (1, '(A)') TMP_CHAR ! skip one line
+    read (1, '(A)') TMP_CHAR ! skip one line
+    read (1, '(A)') TMP_CHAR ! skip one line
+    read (1, '(A)') DIMS_CHAR
+
+    read (DIMS_CHAR( 3: 8), '(I6)') NSENDATA
+    read (DIMS_CHAR(10:15), '(I6)') NSENPAR
+
+    close (1)
+
+    return
+
+end subroutine shd_io__readSenSize
+
+subroutine shd_io__readSen(&
+    &SENFILE, NSENDATA, NSENPAR,&
+    &SENPARMS)
+
+    ! Reads the user-specified sensor information
+
+    character(len=*), intent(in) :: SENFILE
+    real, intent(inout) :: SENPARMS(*)
+    integer :: NSENDATA, NSENPAR, ISENDATA, ISENPAR
+
+    character(len=FNAMEMAXLEN_) :: OUTFILE_DATA
+    character(len=FNAMEMAXLEN_) :: TMP_CHAR
+    character(len=FNAMEMAXLEN_) :: DIMS_CHAR
+    character(len=20) :: DATA_POSTFIX
+
+    ! Open the file, figure out the type, and get the grid size
+    open (UNIT=1, FILE=trim(adjustl(SENFILE)), STATUS='OLD')
+    read (1, '(A)') TMP_CHAR ! skip one line
+    read (1, '(A)') TMP_CHAR ! skip one line
+    read (1, '(A)') DATA_POSTFIX
+    read (1, '(A)') DIMS_CHAR
+
+    read (DIMS_CHAR( 3: 8), '(I6)') NSENDATA
+    read (DIMS_CHAR(10:15), '(I6)') NSENPAR
+
+    OUTFILE_DATA = trim(adjustl(SENFILE))//trim(adjustl(DATA_POSTFIX(2:)))
+
+    open (UNIT=88, FILE=trim(adjustl(OUTFILE_DATA)), STATUS='OLD',&
+        &ACCESS='STREAM', FORM='UNFORMATTED')
+
+    !read (88) ((SENPARMS(ISENDATA+NSENDATA*(ISENPAR-1)), ISENPAR=1,NSENPAR), ISENDATA=1,NSENDATA)
+    read (88) ((SENPARMS(ISENDATA+NSENDATA*(ISENPAR-1)), ISENDATA=1,NSENDATA), ISENPAR=1,NSENPAR)
+
+    close (88)
+
+    close (1)
+
+    return
+
+end subroutine shd_io__readSen
 
 subroutine shd_io__restoreState(&
     &INSAVEFILE, NSTOKES, NX, NY, NZ,&

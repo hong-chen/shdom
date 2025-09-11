@@ -26,6 +26,8 @@ module shd_mpi
     public :: shd_mpi__bcastSfcParam
     public :: shd_mpi__bcastCkdSize
     public :: shd_mpi__bcastCkdParam
+    public :: shd_mpi__bcastSenSize
+    public :: shd_mpi__bcastSenParam
     public :: shd_mpi__gatherOutput
     public :: shd_mpi__end
     public :: shd_mpi__abort
@@ -589,6 +591,53 @@ subroutine shd_mpi__bcastCkdParam(SOLFLUX, NG, DELG, NZCKD, ZCKD, KABS)
     return
 
 end subroutine shd_mpi__bcastCkdParam
+
+subroutine shd_mpi__bcastSenSize(NSENDATA, NSENPAR)
+
+    ! Broadcasts the user-specified sensor data array sizes from
+    ! the master process to the others.
+
+    integer, intent(inout) :: NSENDATA, NSENPAR
+
+#if HAS_MPI
+    integer :: ierr, intbuf(2)
+
+    if (NUMPROC_ .le. 1) return
+
+    intbuf(1:2) = (/NSENDATA, NSENPAR/)
+    call mpi_bcast(intbuf, 2, MPI_INTEGER, 0, COMM2D_, ierr)
+    NSENDATA = intbuf(1); NSENPAR = intbuf(2)
+#endif
+
+    return
+
+end subroutine shd_mpi__bcastSenSize
+
+subroutine shd_mpi__bcastSenParam(NSENDATA, NSENPAR, SENPARMS)
+
+    ! Broadcasts the user-specified sensor data array from
+    ! the master process to the others.
+
+    integer, intent(inout) :: NSENDATA, NSENPAR
+    real, intent(inout) :: SENPARMS(*)
+
+#if HAS_MPI
+    integer :: ierr, intbuf(2), n
+    real    :: realbuf(4)
+
+    if (NUMPROC_ .le. 1) return
+
+    intbuf(1:2) = (/NSENDATA, NSENPAR/)
+    call mpi_bcast(intbuf, 2, MPI_INTEGER, 0, COMM2D_, ierr)
+    NSENDATA = intbuf(1); NSENPAR = intbuf(2)
+
+    n = NSENDATA*NSENPAR
+    call mpi_bcast(SENPARMS, n, MPI_REAL, 0, COMM2D_, ierr)
+#endif
+
+    return
+
+end subroutine shd_mpi__bcastSenParam
 
 subroutine shd_mpi__readBcastMemParam(MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
     &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, RUNNAME)
@@ -2087,7 +2136,9 @@ subroutine shd_mpi__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     &SHPTR, SOURCE, OUTPARMS, IVIS, VISOUT)
 
     ! Computes Stokes radiances (output in VISOUT) for the visualization
-    ! modes: 1) camera mode, and 2) cross track scanning.
+    !   modes: 1) camera mode,
+    !          2) cross track scanning,
+    !          3) user-specified sensor mode.
 
     integer, intent(in) :: NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG, NPTS, NCELLS
     integer, intent(in) :: ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
@@ -2113,7 +2164,7 @@ subroutine shd_mpi__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
 #if HAS_MPI
     integer :: NSCATANGLE, NSTPHASE, I, J, L, N
     integer :: NL, NS, LINE, SAMP
-    logical :: CAMERA_MODE, VALIDRAD
+    logical :: CAMERA_MODE, SENSOR_MODE, VALIDRAD
     real, parameter  :: EPS = 1.0e-5
     real(RD_) :: XE, YE, ZE, TRANSMIT, VISRAD(NSTOKES), RADIANCE(NSTOKES)
     real(RD_) :: X0, Y0, Z0, X1, Y1, Z1, X2, Y2, Z2, X, Y, Z
@@ -2171,9 +2222,13 @@ subroutine shd_mpi__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     end if
 
     CAMERA_MODE = nint(OUTPARMS(1)) .eq. 1
+    SENSOR_MODE = nint(OUTPARMS(1)) .eq. 3
     if (CAMERA_MODE) then
         NL = nint(OUTPARMS(10))
         NS = nint(OUTPARMS(11))
+    else if (SENSOR_MODE) then
+        NL = 1
+        NS = OUTPARMS(2)
     else
         NL = 1 + int(sqrt((OUTPARMS(4) - OUTPARMS(7))**2&
             &+ (OUTPARMS(5) - OUTPARMS(8))**2&
@@ -2248,6 +2303,10 @@ subroutine shd_mpi__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 X0 = OUTPARMS(4)
                 Y0 = OUTPARMS(5)
                 Z0 = OUTPARMS(6)
+
+            else if (SENSOR_MODE) then
+
+                print *, 'haha'
 
             else
 

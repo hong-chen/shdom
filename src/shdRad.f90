@@ -1117,8 +1117,10 @@ subroutine shd_rad__computeSensorRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
     &SHPTR, SOURCE, OUTPARMS, IVIS, VISOUT)
 
-    !   Computes Stokes radiances (output in VISOUT) for the sensor-specific
-    !  modes: 1) camera mode, and 2) cross track scanning.
+    !  Computes Stokes radiances (output in VISOUT) for the sensor-specific
+    !    modes:
+    !    1) user-specified mode,
+    !    2) auto mode (placeholder).
 
     integer NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG, NPTS, NCELLS
     integer ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
@@ -1183,7 +1185,7 @@ subroutine shd_rad__computeSensorRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
             &NSTOKES, BCRAD(1, 1 + NTOPPTS))
     end if
 
-    AUTO_MODE = nint(OUTPARMS(1)) .eq. 1
+    AUTO_MODE = nint(OUTPARMS(1)) .eq. 0
     if (AUTO_MODE) then
         NL = nint(OUTPARMS(10))
         NS = nint(OUTPARMS(11))
@@ -1254,6 +1256,35 @@ subroutine shd_rad__computeSensorRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 Y0 = OUTPARMS(5)
                 Z0 = OUTPARMS(6)
 
+            else
+
+                ! Cross track scanning in the vertical plane:
+                !   2, bytes, scale, X1,Y1,Z1, X2,Y2,Z2, spacing, scan1, scan2, delscan
+                ! Start and end of scan angle (scan1, scan2) are +/- relative
+                !   to nadir, and positive is on right side.
+                X1 = OUTPARMS(4)
+                Y1 = OUTPARMS(5)
+                Z1 = OUTPARMS(6)
+                X2 = OUTPARMS(7)
+                Y2 = OUTPARMS(8)
+                Z2 = OUTPARMS(9)
+                DIST = sqrt((X2 - X1)**2 + (Y2 - Y1)**2 + (Z2 - Z1)**2)
+                RX = (X2 - X1)/DIST
+                RY = (Y2 - Y1)/DIST
+                RZ = (Z2 - Z1)/DIST
+                ! D = (LINE-1)*OUTPARMS(10)
+                D = (NL - LINE)*OUTPARMS(10)
+                X0 = X1 + D*RX
+                Y0 = Y1 + D*RY
+                Z0 = Z1 + D*RZ
+                SCANANG = DTOR_*(OUTPARMS(11) + (SAMP - 1)*OUTPARMS(13))
+                COSTH = cos(PI_ - abs(SCANANG))
+                if (SCANANG .gt. 0.0) then
+                    PHIR = atan2(-RX, RY)
+                else
+                    PHIR = atan2(RX, -RY)
+                end if
+
             end if
 
             ! Extrapolate ray to domain top if above
@@ -1295,9 +1326,12 @@ subroutine shd_rad__computeSensorRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
                 &MU2, PHI2, X0, Y0, Z0,&
                 &XE, YE, ZE, SIDE, TRANSMIT, VISRAD, VALIDRAD)
+
 900         continue
+
             ! write (6,'(1X,2F8.4,1X,2F11.7,4(1X,F11.6))')&
             !     &X0,Y0,MURAY,PHIRAY,VISRAD(:)
+
             VISOUT(1, IVIS) = VISRAD(1)
             if (VISRAD(1) .gt. 0.0) then
                 if (NSTOKES .gt. 1) then

@@ -83,7 +83,7 @@ program shdom_main
     character(len=1) :: GRIDTYPE, PROPTYPE
     character(len=2) :: SFCTYPE
     character(len=FNAMEMAXLEN_) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
-    character(len=FNAMEMAXLEN_) :: OutFileNC, RUNNAME
+    character(len=FNAMEMAXLEN_) :: SENFILE, OutFileNC, RUNNAME
 
     integer :: count_start, count_rate, count_max
     integer :: count_end
@@ -109,7 +109,7 @@ program shdom_main
                 GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,&
                 ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
                 MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS, OUTFILES,&
-                OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
+                SENFILE, OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
                 NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
         else
             call shd_io__userInput(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
