@@ -41,6 +41,7 @@ program shdom_main
     real, allocatable :: BCRAD(:, :)
     real, allocatable :: SFCPARMS(:)
     real, allocatable :: SFCGRIDPARMS(:)
+    real, allocatable :: SENPARMS(:)
     real, allocatable :: SUMFLUXES(:, :), SUMDIRFLUX(:), SUMFLUXDIV(:)
     real, allocatable :: SUMSHTERMS(:), SOURCE1OUT(:)
     real, allocatable :: SUMRADOUT(:), SUMVISOUT(:)
@@ -84,6 +85,7 @@ program shdom_main
     character(len=2) :: SFCTYPE
     character(len=FNAMEMAXLEN_) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
     character(len=FNAMEMAXLEN_) :: SENFILE, OutFileNC, RUNNAME
+    integer :: NSENDATA, NSENPAR
 
     integer :: count_start, count_rate, count_max
     integer :: count_end
@@ -451,6 +453,20 @@ program shdom_main
         BASEOUT = .false.
     end if
 
+    ! Read in user-specified sensor properties if given
+    if (SENFILE(1:2) .ne. 'NO') then
+        if (MASTERPROC) then
+            call shd_io__readSenSize(SENFILE, NSENDATA, NSENPAR)
+        end if
+        call shd_mpi__bcastSenSize(NSENDATA, NSENPAR)
+        allocate (SENPARMS(NSENDATA*NSENPAR))
+        if (MASTERPROC) then
+            call shd_io__readSen(SENFILE, NSENDATA, NSENPAR,&
+                &SENPARMS)
+        end if
+        call shd_mpi__bcastSenParam(NSENDATA, NSENPAR, SENPARMS)
+    end if
+
     ! Figure out what type of output we will be generating
     NRAD = 0
     NVIS = 0
@@ -486,12 +502,15 @@ program shdom_main
             VISUAL_OUT = .true.
             if (nint(OUTPARMS(1, I)) .eq. 1) then
                 NVIS = NVIS + NSTOKES*nint(OUTPARMS(10, I))*nint(OUTPARMS(11, I))
-            else
+            else if (nint(OUTPARMS(1, I)) .eq. 2) then
                 NSCAN = 1 + sqrt((OUTPARMS(4, I) - OUTPARMS(7, I))**2&
                     &+ (OUTPARMS(5, I) - OUTPARMS(8, I))**2&
                     &+ (OUTPARMS(6, I) - OUTPARMS(9, I))**2)/OUTPARMS(10, I)
                 NPIX = 1 + abs(OUTPARMS(12, I) - OUTPARMS(11, I))/OUTPARMS(13, I)
                 NVIS = NVIS + NSTOKES*NSCAN*NPIX
+            ! user-specified sensor
+            else if (nint(OUTPARMS(1, I)) .eq. 3) then
+                NVIS = NVIS + NSTOKES*nint(OUTPARMS(2, I))
             end if
         else if (OUTTYPES(I) .eq. 'F') then
             if (.not. FLUX_OUT) then
@@ -649,12 +668,14 @@ program shdom_main
             call shd_util__sumData(NG - IG, DELG(IG), NRAD, WORK2, SUMRADOUT)
         end if
 
+        ! stopped here
+        stop
         if (VISUAL_OUT) then
             IVIS = 0
             do I = 1, NUMOUT
                 if (OUTTYPES(I) .eq. 'V') then
                     if (mpiMode) then
-                        call shd_mpi__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+                        call shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                             &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
                             &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                             &BCFLAG, XDOMAIN_, YDOMAIN_, IPFLAG,&
@@ -667,7 +688,7 @@ program shdom_main
                             &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
                             &SHPTR, SOURCE, OUTPARMS(1, I), IVIS, WORK2)
                     else
-                        call shd_rad__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+                        call shd_rad__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                             &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
                             &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                             &BCFLAG, IPFLAG, SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
@@ -774,11 +795,12 @@ program shdom_main
     elapsed_time = (real(count_end) - real(count_start)) / real(count_rate)
     if (MASTERPROC) then
         if (elapsed_time .lt. 60.0) then
-            write (6, '(A,F0.2,A)') 'Message [shdom_main]: Total time used: ', elapsed_time, ' sec'
+            write (6, '(A,F0.2,A)') 'Message [shdom_main]: Total time used for runs: ', elapsed_time, ' sec'
         else
-            write (6, '(A,F0.2,A)') 'Message [shdom_main]: Total time used: ', elapsed_time/60.0, ' min'
+            write (6, '(A,F0.2,A)') 'Message [shdom_main]: Total time used for runs: ', elapsed_time/60.0, ' min'
         endif
     end if
+    count_start = count_end
 
     NSH = SHPTR(NPTS + 1)
     IRAD = 0
@@ -860,6 +882,16 @@ program shdom_main
         end do
     end if
 
+    call system_clock(count_end, count_rate, count_max)
+    elapsed_time = (real(count_end) - real(count_start)) / real(count_rate)
+    if (MASTERPROC) then
+        if (elapsed_time .lt. 60.0) then
+            write (6, '(A,F0.2,A)') 'Message [shdom_main]: Total time used for output: ', elapsed_time, ' sec'
+        else
+            write (6, '(A,F0.2,A)') 'Message [shdom_main]: Total time used for output: ', elapsed_time/60.0, ' min'
+        endif
+    end if
+
     ! Calculate the actual memory parameters and output them to the log file
     MAXMB_OUT = 4*(NMU*(2 + 2*NPHI + 2*NLM + 2*33*32)&
         &+ 4.5*MAXPG + MAXPGL + NUMPHASE_*(MAXLEG + 1)&
@@ -886,6 +918,7 @@ program shdom_main
     if (KDIST) deallocate (ZCKD_, GASABS_, KABS)
     deallocate (BCPTR, BCRAD, DELG, SOLFLUX)
     if (allocated(SFCPARMS)) deallocate (SFCPARMS, SFCGRIDPARMS)
+    if (allocated(SENPARMS)) deallocate (SENPARMS)
     deallocate (RADIANCE, SOURCE)
     if (ACCELFLAG) deallocate (DELSOURCE)
     deallocate (RSHPTR, SHPTR, OSHPTR)

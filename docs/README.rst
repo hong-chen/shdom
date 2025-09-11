@@ -1956,7 +1956,7 @@ routines from NCAR.
 
    Rad    shd_rad__computeRad       : (R) Computes the desired output radiance values
 
-   Rad    shd_rad__visualizeRad     : Computes radiances for the two visualization modes
+   Rad    shd_rad__computeCamRad    : Computes radiances for the two camera modes
 
    Rad    shd_rad__computeNetFluxDiv   : Computes the net flux divergence everywhere
 
@@ -2072,7 +2072,7 @@ routines from NCAR.
 
    MPI    shd_mpi__computeRad         : Computes the output radiances using multiple processors
 
-   MPI    shd_mpi__visualizeRad       : Computes the visualization output using MPI
+   MPI    shd_mpi__computeCamRad      : Computes the camera output using MPI
 
    MPI    shd_mpi__findAlbMax         : Finds the max ALBMAX over all processors
 

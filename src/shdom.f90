@@ -675,7 +675,7 @@ program shdom_main
             do I = 1, NUMOUT
                 if (OUTTYPES(I) .eq. 'V') then
                     if (mpiMode) then
-                        call shd_mpi__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+                        call shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                             &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
                             &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                             &BCFLAG, XDOMAIN_, YDOMAIN_, IPFLAG,&
@@ -688,7 +688,7 @@ program shdom_main
                             &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
                             &SHPTR, SOURCE, OUTPARMS(1, I), IVIS, WORK2)
                     else
-                        call shd_rad__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+                        call shd_rad__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                             &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
                             &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                             &BCFLAG, IPFLAG, SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&

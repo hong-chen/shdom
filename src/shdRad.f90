@@ -12,8 +12,8 @@ module shd_rad
 
     public :: shd_rad__interpRad
     public :: shd_rad__computeRad
+    public :: shd_rad__computeCamRad
 
-    public :: shd_rad__visualizeRad
     public :: shd_rad__computeNetFluxDiv
 
 contains
@@ -817,7 +817,7 @@ subroutine shd_rad__computeRad(&
 
 end subroutine shd_rad__computeRad
 
-subroutine shd_rad__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+subroutine shd_rad__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
     &BCFLAG, IPFLAG, SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
@@ -1071,7 +1071,7 @@ subroutine shd_rad__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
         deallocate (AOLP)
     end if
     return
-end subroutine shd_rad__visualizeRad
+end subroutine shd_rad__computeCamRad
 
 subroutine shd_rad__computeNetFluxDiv(NSTOKES, NPTS, RSHPTR, SRCTYPE,&
     &SOLARMU, EXTINCT, ALBEDO, PLANCK, DIRFLUX,&

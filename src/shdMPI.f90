@@ -35,7 +35,7 @@ module shd_mpi
 
     public :: shd_mpi__makeDirect
     public :: shd_mpi__computeRad
-    public :: shd_mpi__visualizeRad
+    public :: shd_mpi__computeCamRad
     public :: shd_mpi__findAlbMax
     public :: shd_mpi__findTotSplitCritMax
     public :: shd_mpi__findBoundaryPnt
@@ -2122,7 +2122,7 @@ subroutine shd_mpi__computeRad(&
 
 end subroutine shd_mpi__computeRad
 
-subroutine shd_mpi__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+subroutine shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
     &BCFLAG, XDOMAIN, YDOMAIN, IPFLAG,&
@@ -2582,7 +2582,7 @@ subroutine shd_mpi__visualizeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
 
     return
 
-end subroutine shd_mpi__visualizeRad
+end subroutine shd_mpi__computeCamRad
 
 subroutine shd_mpi__calAccelSolCrit(DOACCEL, DELJDOT, DELJOLD, DELJNEW, JNORM,&
     &ACCELPAR, SOLCRIT)
