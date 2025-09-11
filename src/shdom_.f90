@@ -668,8 +668,6 @@ program shdom_main
             call shd_util__sumData(NG - IG, DELG(IG), NRAD, WORK2, SUMRADOUT)
         end if
 
-        ! stopped here
-        stop
         if (VISUAL_OUT) then
             IVIS = 0
             do I = 1, NUMOUT
@@ -686,7 +684,7 @@ program shdom_main
                             &XGRID, YGRID, ZGRID, GRIDPOS,&
                             &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
                             &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
-                            &SHPTR, SOURCE, OUTPARMS(1, I), IVIS, WORK2)
+                            &SHPTR, SOURCE, OUTPARMS(1, I), SENPARMS, IVIS, WORK2)
                     else
                         call shd_rad__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                             &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
@@ -785,6 +783,7 @@ program shdom_main
     do IG = NG, 1, -1
         SOLARFLUX = SOLARFLUX + SOLFLUX(IG)*DELG(IG)*SOLARFLUX0*abs(SOLARMU)
     end do ! CKD Ng loop
+    stop
 
     call shd_io__saveState(OUTSAVEFILE, NSTOKES, NX, NY, NZ, ML, MM, NLM,&
         &WORK, XGRID, YGRID, ZGRID,&

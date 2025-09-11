@@ -2133,7 +2133,7 @@ subroutine shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     &XGRID, YGRID, ZGRID, GRIDPOS,&
     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
-    &SHPTR, SOURCE, OUTPARMS, IVIS, VISOUT)
+    &SHPTR, SOURCE, OUTPARMS, SENPARMS, IVIS, VISOUT)
 
     ! Computes Stokes radiances (output in VISOUT) for the visualization
     !   modes: 1) camera mode,
@@ -2157,7 +2157,7 @@ subroutine shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     real, intent(in) :: SFCGRIDPARMS(*), BCRAD(NSTOKES, *)
     real, intent(in) :: EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, *)
     real, intent(in) :: DIRFLUX(NPTS), FLUXES(2, NPTS), SOURCE(NSTOKES, *)
-    real, intent(in) :: OUTPARMS(*)
+    real, intent(in) :: OUTPARMS(*), SENPARMS(*)
     real, intent(out) :: VISOUT(NSTOKES, *)
     character, intent(in) :: SRCTYPE*1, SFCTYPE*2, UNITS*1
 
@@ -2306,7 +2306,12 @@ subroutine shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
 
             else if (SENSOR_MODE) then
 
-                print *, 'haha'
+                X0    = SENPARMS(SAMP+(LINE-1)*NS)
+                Y0    = SENPARMS(SAMP+(LINE-1)*NS +   NS*NL)
+                Z0    = SENPARMS(SAMP+(LINE-1)*NS + 2*NS*NL)
+                COSTH = SENPARMS(SAMP+(LINE-1)*NS + 3*NS*NL)
+                PHIR  = SENPARMS(SAMP+(LINE-1)*NS + 4*NS*NL)
+                print *, SAMP+(LINE-1)*NS, X0, Y0, Z0, COSTH, PHIR
 
             else
 
