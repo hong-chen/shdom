@@ -296,10 +296,10 @@ contains
                 read (2, '(A)') DATA_POSTFIX
                 read (2, '(A)') DIMS_CHAR
 
-                read (DIMS_CHAR( 3: 8), '(I6)') NXX
-                read (DIMS_CHAR(10:15), '(I6)') NYY
-                read (DIMS_CHAR(17:22), '(I6)') NZZ
-                read (DIMS_CHAR(24:29), '(I6)') NPP
+                read (DIMS_CHAR( 3:12), '(I10)') NXX
+                read (DIMS_CHAR(14:23), '(I10)') NYY
+                read (DIMS_CHAR(25:34), '(I10)') NZZ
+                read (DIMS_CHAR(36:45), '(I10)') NPP
 
                 read (2, '(A)') CKDFILE
                 CKDFILE = trim(adjustl(CKDFILE(2:)))
@@ -873,7 +873,7 @@ contains
         !╭────────────────────────────────────────────────╮!
         write (3, '(A)') '! The following provides information for interpreting binary data:'
         write (3, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-        write (3, '(A, 4(I6,A))') '! ', NX, ',', NY, ',', NZT, ',', 4, ''
+        write (3, '(A, 4(I10,A))') '! ', NX, ',', NY, ',', NZT, ',', 4, ''
         !╰────────────────────────────────────────────────╯!
 
         ! Write one line of optical properties for each grid point (binary)

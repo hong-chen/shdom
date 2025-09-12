@@ -771,7 +771,6 @@ subroutine shd_sfc__brdfLSRT(F_ISO, F_GEO, F_VOL, MU1, MU2, PHI, REFLECT)
 
 end subroutine shd_sfc__brdfLSRT
 
-
 ! subroutine shd_sfc__brdfLSRTKZ(F_ISO, F_GEO, F_VOL, F_KZ, MU1, MU2, PHI, REFLECT)
 
 !     !╭────────────────────────────────────────────────────────────────────────────╮!
@@ -1024,8 +1023,6 @@ subroutine shd_sfc__brdfLSRTJ(F_ISO, F_GEO, F_VOL, F_J, ALPHA, MU1, MU2, PHI, RE
 
 end subroutine shd_sfc__brdfLSRTJ
 
-
-
 subroutine shd_sfc__brdfJiao(MU1, MU2, PHI, ALPHA, NORMALIZE, K_J)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
@@ -1100,7 +1097,6 @@ subroutine shd_sfc__brdfJiao(MU1, MU2, PHI, ALPHA, NORMALIZE, K_J)
     return
 
 end subroutine shd_sfc__brdfJiao
-
 
 subroutine shd_sfc__brdfOcean(&
     & pws, xsal, pcl, pwl, xmuo, xmu, xphi, xpaw, REFLECT)
@@ -1225,7 +1221,6 @@ subroutine shd_sfc__brdfOcean(&
     REFLECT = Rwc + (1.0d0 - W)*Rog + (1.0d0 - Rwc)*Rwb
     return
 end subroutine shd_sfc__brdfOcean
-
 
 subroutine morcasiwat(wl, C, R2)
     ! Spectral diffuse attenuation coefficient of Case I Waters as Predicted
@@ -1425,7 +1420,6 @@ subroutine indwat(wl, xsal, nr, ni)
     end if
     return
 end subroutine
-
 
 subroutine sunglint(wspd, nr, ni, azw, ts, tv, fi, rog)
     ! input parameters:   wspd=speed of the wind (in m/s)

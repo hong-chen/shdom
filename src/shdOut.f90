@@ -330,7 +330,7 @@ subroutine shd_io__outputResult(&
         NANGOUT = nint(OUTPARMS(6))
         !╰────────────────────────────────────────────────╯!
 
-        write (2, '(A,F7.3,3(A,I6))') '!    RADIANCE AT Z=', Z0,&
+        write (2, '(A,F7.3,3(A,I10))') '!    RADIANCE AT Z=', Z0,&
             &'    NXO=', NXOUT, '    NYO=', NYOUT, '    NDIR=', NANGOUT
         if (UNITS .eq. 'T') then
             FORM = '(2(1X,F7.3),1X,4(1X,F6.2))'
@@ -688,7 +688,7 @@ subroutine shd_io__outputResult(&
                 write (2, '(A)') '! F5'
                 write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
                 ! added x, y, z (NVAR+3)
-                write (2, '(A, 2(I6,A))') '! ', N, ',', NVAR+3, ''
+                write (2, '(A, 2(I10,A))') '! ', N, ',', NVAR+3, ''
             else
                 write (2, '(A)') '! F4'
                 write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
@@ -822,7 +822,7 @@ subroutine shd_io__outputResult(&
                 write (2, '(A)') '! H3'
                 write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
                 ! added x, y, z (NVAR+3)
-                write (2, '(A, 2(I6,A))') '! ', N, ',', NVAR+3, ''
+                write (2, '(A, 2(I10,A))') '! ', N, ',', NVAR+3, ''
             else
                 write (2, '(A)') '! H2'
                 write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
@@ -899,7 +899,7 @@ subroutine shd_io__outputResult(&
             write (2, '(A)') '! S2'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
             ! added x, y, z (NVAR+3)
-            write (2, '(A, 2(I6,A))') '! ', N, ',', NVAR+3, ''
+            write (2, '(A, 2(I10,A))') '! ', N, ',', NVAR+3, ''
         else
             write (2, '(A)') '! S1'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
@@ -988,7 +988,7 @@ subroutine shd_io__outputResult(&
             write (2, '(A)') '! J2'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
             ! added x, y, z (NVAR+3)
-            write (2, '(A, 2(I6,A))') '! ', N, ',', NVAR+3, ''
+            write (2, '(A, 2(I10,A))') '! ', N, ',', NVAR+3, ''
         else
             write (2, '(A)') '! J1'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
@@ -1065,7 +1065,7 @@ subroutine shd_io__outputResult(&
             write (2, '(A)') '! M2'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
             ! added x, y, z (NVAR+3)
-            write (2, '(A, 2(I6,A))') '! ', N, ',', NVAR+3, ''
+            write (2, '(A, 2(I10,A))') '! ', N, ',', NVAR+3, ''
         else
             write (2, '(A)') '! M1'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
@@ -1391,7 +1391,7 @@ subroutine shd_io__outputResultMpi(&
         Z0 = min(max(OUTPARMS(1), ZGRID(1)), ZGRID(NZ))
         NANGOUT = nint(OUTPARMS(6))
 
-        write (2, '(A,F7.3,3(A,I6))') '!    RADIANCE AT Z=', Z0,&
+        write (2, '(A,F7.3,3(A,I10))') '!    RADIANCE AT Z=', Z0,&
             & '    NXO=', NXOUT, '    NYO=', NYOUT, '    NDIR=', NANGOUT
         if (UNITS .eq. 'T') then
             FORM = '(2(1X,F7.3),1X,4(1X,F6.2))'

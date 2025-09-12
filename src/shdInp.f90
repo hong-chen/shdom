@@ -806,10 +806,10 @@ subroutine shd_io__readPrp(&
             read (1, '(A)') DATA_POSTFIX
             read (1, '(A)') DIMS_CHAR
 
-            read (DIMS_CHAR( 3: 8), '(I6)') NXX
-            read (DIMS_CHAR(10:15), '(I6)') NYY
-            read (DIMS_CHAR(17:22), '(I6)') NZZ
-            read (DIMS_CHAR(24:29), '(I6)') NPP
+            read (DIMS_CHAR( 3:12), '(I10)') NXX
+            read (DIMS_CHAR(14:23), '(I10)') NYY
+            read (DIMS_CHAR(25:34), '(I10)') NZZ
+            read (DIMS_CHAR(36:45), '(I10)') NPP
 
             OUTFILE_DATA = trim(adjustl(PROPFILE))//trim(adjustl(DATA_POSTFIX(2:)))
 
