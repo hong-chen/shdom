@@ -10,6 +10,7 @@ module shd_out
   public :: shd_io__outputData
   public :: shd_io__outputResult
   public :: shd_io__outputResultMpi
+  public :: shd_io__outputCamRad
   public :: shd_io__outputImg
 
   public :: shd_io__outputCellSplit
@@ -96,6 +97,7 @@ subroutine shd_io__outputResult(&
     &FLUXES, DIRFLUX, FLUXDIV,&
     &IRAD, RADOUT, NSHOUT, SHTERMS, SOURCE1OUT,&
     &OUTTYPE, OUTPARMS, OUTFILE)
+
     !   Writes the desired type of output file from the output fields
     ! with a header giving the input parameters.
     ! There are five types (OUTTYPE) of output: 'R' - for radiance,
@@ -179,6 +181,12 @@ subroutine shd_io__outputResult(&
         SFCNAME = 'VARIABLE OCEAN'
     else if (SFCTYPE .eq. 'VR') then
         SFCNAME = 'VARIABLE RPV'
+    else if (SFCTYPE .eq. 'VT') then
+        SFCNAME = 'VARIABLE LSRT'
+    else if (SFCTYPE .eq. 'VJ') then
+        SFCNAME = 'VARIABLE LSRT-J'
+    else if (SFCTYPE .eq. 'VX') then
+        SFCNAME = 'VARIABLE MIXED'
     else if (SFCTYPE(1:1) .eq. 'V') then
         SFCNAME = 'VARIABLE OTHER'
     end if
@@ -355,7 +363,7 @@ subroutine shd_io__outputResult(&
         write (2, '(A)') '! The following provides information for interpreting binary data:'
         write (2, '(A)') '! R'
         write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-        write (2, '(A, 5(I6,A))') '! ', NXOUT, ',', NYOUT, ',', 1, ',', NANGOUT, ',', NSTOKES, ''
+        write (2, '(A, 5(I10,A))') '! ', NXOUT, ',', NYOUT, ',', 1, ',', NANGOUT, ',', NSTOKES, ''
         !╰────────────────────────────────────────────────╯!
 
         ! binary data
@@ -406,7 +414,7 @@ subroutine shd_io__outputResult(&
             write (2, '(A)') '! The following contains information for binary data intepretation:'
             write (2, '(A)') '! F1'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-            write (2, '(A, 5(I6,A))') '! ', NX1, ',', NY1, ',', 1, ',', 1, ',', NVAR, ''
+            write (2, '(A, 5(I10,A))') '! ', NX1, ',', NY1, ',', 1, ',', 1, ',', NVAR, ''
             !╰────────────────────────────────────────────────╯!
 
             ! binary data
@@ -502,7 +510,7 @@ subroutine shd_io__outputResult(&
             write (2, '(A)') '! The following contains information for binary data intepretation:'
             write (2, '(A)') '! F2'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-            write (2, '(A, 5(I6,A))') '! ', NXOUT, ',', NYOUT, ',', 1, ',', 1, ',', NVAR, ''
+            write (2, '(A, 5(I10,A))') '! ', NXOUT, ',', NYOUT, ',', 1, ',', 1, ',', NVAR, ''
             !╰────────────────────────────────────────────────╯!
 
             ! binary data
@@ -598,7 +606,7 @@ subroutine shd_io__outputResult(&
             write (2, '(A)') '! The following contains information for binary data intepretation:'
             write (2, '(A)') '! F3'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-            write (2, '(A, 5(I6,A))') '! ', 1, ',', 1, ',', NZ, ',', 1, ',', NVAR, ''
+            write (2, '(A, 5(I10,A))') '! ', 1, ',', 1, ',', NZ, ',', 1, ',', NVAR, ''
             !╰────────────────────────────────────────────────╯!
 
             ! binary data
@@ -684,7 +692,7 @@ subroutine shd_io__outputResult(&
             else
                 write (2, '(A)') '! F4'
                 write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-                write (2, '(A, 5(I6,A))') '! ', NX1, ',', NY1, ',', NZ, ',', 1, ',', NVAR, ''
+                write (2, '(A, 5(I10,A))') '! ', NX1, ',', NY1, ',', NZ, ',', 1, ',', NVAR, ''
             end if
             !╰────────────────────────────────────────────────╯!
 
@@ -764,7 +772,7 @@ subroutine shd_io__outputResult(&
             write (2, '(A)') '! The following contains information for binary data intepretation:'
             write (2, '(A)') '! H1'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-            write (2, '(A, 5(I6,A))') '! ', 1, ',', 1, ',', NZ, ',', 1, ',', NVAR, ''
+            write (2, '(A, 5(I10,A))') '! ', 1, ',', 1, ',', NZ, ',', 1, ',', NVAR, ''
             !╰────────────────────────────────────────────────╯!
 
             ! binary data
@@ -818,7 +826,7 @@ subroutine shd_io__outputResult(&
             else
                 write (2, '(A)') '! H2'
                 write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-                write (2, '(A, 5(I6,A))') '! ', NX1, ',', NY1, ',', NZ, ',', 1, ',', NVAR, ''
+                write (2, '(A, 5(I10,A))') '! ', NX1, ',', NY1, ',', NZ, ',', 1, ',', NVAR, ''
             end if
             !╰────────────────────────────────────────────────╯!
 
@@ -895,7 +903,7 @@ subroutine shd_io__outputResult(&
         else
             write (2, '(A)') '! S1'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-            write (2, '(A, 5(I6,A))') '! ', NX1, ',', NY1, ',', NZ, ',', 1, ',', NVAR, ''
+            write (2, '(A, 5(I10,A))') '! ', NX1, ',', NY1, ',', NZ, ',', 1, ',', NVAR, ''
         end if
         !╰────────────────────────────────────────────────╯!
 
@@ -984,7 +992,7 @@ subroutine shd_io__outputResult(&
         else
             write (2, '(A)') '! J1'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-            write (2, '(A, 5(I6,A))') '! ', NX1, ',', NY1, ',', NZ, ',', 1, ',', NVAR, ''
+            write (2, '(A, 5(I10,A))') '! ', NX1, ',', NY1, ',', NZ, ',', 1, ',', NVAR, ''
         end if
         !╰────────────────────────────────────────────────╯!
 
@@ -1061,7 +1069,7 @@ subroutine shd_io__outputResult(&
         else
             write (2, '(A)') '! M1'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-            write (2, '(A, 5(I6,A))') '! ', NX1, ',', NY1, ',', NZ, ',', 1, ',', NVAR, ''
+            write (2, '(A, 5(I10,A))') '! ', NX1, ',', NY1, ',', NZ, ',', 1, ',', NVAR, ''
         end if
         !╰────────────────────────────────────────────────╯!
 
@@ -1263,6 +1271,12 @@ subroutine shd_io__outputResultMpi(&
         SFCNAME = 'VARIABLE OCEAN'
     else if (SFCTYPE .eq. 'VR') then
         SFCNAME = 'VARIABLE RPV'
+    else if (SFCTYPE .eq. 'VT') then
+        SFCNAME = 'VARIABLE LSRT'
+    else if (SFCTYPE .eq. 'VJ') then
+        SFCNAME = 'VARIABLE LSRT-J'
+    else if (SFCTYPE .eq. 'VX') then
+        SFCNAME = 'VARIABLE MIXED'
     else if (SFCTYPE(1:1) .eq. 'V') then
         SFCNAME = 'VARIABLE OTHER'
     end if
@@ -1422,7 +1436,7 @@ subroutine shd_io__outputResultMpi(&
         write (2, '(A)') '! The following contains information for binary data intepretation:'
         write (2, '(A)') '! R'
         write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-        write (2, '(A, 5(I6,A))') '! ', NXOUT, ',', NYOUT, ',', 1, ',', NANGOUT, ',', NSTOKES, ''
+        write (2, '(A, 5(I10,A))') '! ', NXOUT, ',', NYOUT, ',', 1, ',', NANGOUT, ',', NSTOKES, ''
         !╰────────────────────────────────────────────────╯!
 
         ! binary data
@@ -1491,7 +1505,7 @@ subroutine shd_io__outputResultMpi(&
             write (2, '(A)') '! The following contains information for binary data intepretation:'
             write (2, '(A)') '! F1'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-            write (2, '(A, 5(I6,A))') '! ', NX, ',', NY, ',', 1, ',', 1, ',', NVAR, ''
+            write (2, '(A, 5(I10,A))') '! ', NX, ',', NY, ',', 1, ',', 1, ',', NVAR, ''
             !╰────────────────────────────────────────────────╯!
 
             ! binary data
@@ -1578,7 +1592,7 @@ subroutine shd_io__outputResultMpi(&
             write (2, '(A)') '! The following contains information for binary data intepretation:'
             write (2, '(A)') '! F3'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-            write (2, '(A, 5(I6,A))') '! ', 1, ',', 1, ',', NZ, ',', 1, ',', NVAR, ''
+            write (2, '(A, 5(I10,A))') '! ', 1, ',', 1, ',', NZ, ',', 1, ',', NVAR, ''
             !╰────────────────────────────────────────────────╯!
 
             ! binary data
@@ -1649,7 +1663,7 @@ subroutine shd_io__outputResultMpi(&
             write (2, '(A)') '! The following contains information for binary data intepretation:'
             write (2, '(A)') '! F4'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-            write (2, '(A, 5(I6,A))') '! ', NX, ',', NY, ',', NZ, ',', 1, ',', NVAR, ''
+            write (2, '(A, 5(I10,A))') '! ', NX, ',', NY, ',', NZ, ',', 1, ',', NVAR, ''
             !╰────────────────────────────────────────────────╯!
 
             ! binary data
@@ -1723,7 +1737,7 @@ subroutine shd_io__outputResultMpi(&
             write (2, '(A)') '! The following contains information for binary data intepretation:'
             write (2, '(A)') '! H1'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-            write (2, '(A, 5(I6,A))') '! ', 1, ',', 1, ',', NZ, ',', 1, ',', NVAR, ''
+            write (2, '(A, 5(I10,A))') '! ', 1, ',', 1, ',', NZ, ',', 1, ',', NVAR, ''
             !╰────────────────────────────────────────────────╯!
 
             ! binary data
@@ -1760,7 +1774,7 @@ subroutine shd_io__outputResultMpi(&
             write (2, '(A)') '! The following contains information for binary data intepretation:'
             write (2, '(A)') '! H2'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-            write (2, '(A, 5(I6,A))') '! ', NX, ',', NY, ',', NZ, ',', 1, ',', NVAR, ''
+            write (2, '(A, 5(I10,A))') '! ', NX, ',', NY, ',', NZ, ',', 1, ',', NVAR, ''
             !╰────────────────────────────────────────────────╯!
 
             ! binary data
@@ -1833,7 +1847,7 @@ subroutine shd_io__outputResultMpi(&
             write (2, '(A)') '! The following contains information for binary data intepretation:'
             write (2, '(A)') '! S1'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-            write (2, '(A, 5(I6,A))') '! ', NX, ',', NY, ',', NZ, ',', 1, ',', NVAR, ''
+            write (2, '(A, 5(I10,A))') '! ', NX, ',', NY, ',', NZ, ',', 1, ',', NVAR, ''
             !╰────────────────────────────────────────────────╯!
 
             ! binary data
@@ -1910,6 +1924,241 @@ subroutine shd_io__outputResultMpi(&
     return
 end subroutine shd_io__outputResultMpi
 
+subroutine shd_io__outputCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+    & NSH, ML, MM, NLM, NMU, NPHI, NANG, NG,&
+    & PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
+    & BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
+    & SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+    & SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS,&
+    & SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
+    & IVIS, VISOUT, OUTPARMS, OUTFILE)
+
+    ! Writes the visualization image in PGM binary format with either
+    ! one byte or two byte pixels.  The PGM binary format (P5) has an
+    ! ascii header which has the image parameters amd can include comments
+    ! (here the SHDOM input parameters), followed by the byte or two byte
+    ! image pixels.
+
+    integer NSTOKES, NX, NY, NZ, NPTS, NCELLS, NSH
+    integer ML, MM, NLM, NMU, NPHI, NANG, NG
+    integer BCFLAG, IPFLAG
+    integer MAXITER, TOTITER, IVIS
+    logical, intent(in) :: DELTAM
+    real SOLARFLUX, SOLARMU, SOLARAZ
+    real GNDTEMP, GNDALBEDO, SKYRAD
+    real SOLACC, SPLITACC, SHACC
+    real WAVENO(2), WAVELEN
+    real OUTPARMS(*)
+    character(len=1), intent(in) :: SRCTYPE, UNITS, GRIDTYPE
+    character(len=2), intent(in) :: SFCTYPE
+    character(len=*), intent(in) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
+    character(len=*), intent(in) :: OUTFILE
+    real VISOUT(NSTOKES, *)
+
+    character(len=128) :: GRIDNAME, SOURCENAME, UNITSNAME, SFCNAME, OUTNAME
+    character(len=FNAMEMAXLEN_) :: OUTFILE_DATA
+    character(len=20)  :: DATA_POSTFIX
+    integer :: N, IDATA
+
+    DATA_POSTFIX = '.sHdOm-out'
+    OUTFILE_DATA = trim(adjustl(OUTFILE))//trim(adjustl(DATA_POSTFIX))
+
+    GRIDNAME = 'EVEN (X,Y)  '
+    if (GRIDTYPE .eq. 'P') then
+        GRIDNAME = GRIDNAME(1:14)//'PROPERTY-FILE (Z) '
+    else if (GRIDTYPE .eq. 'F') then
+        GRIDNAME = GRIDNAME(1:14)//'INPUT-FILE (Z)    '
+    else
+        GRIDNAME = GRIDNAME(1:14)//'EVEN (Z)          '
+    end if
+
+    if (SRCTYPE .eq. 'S') then
+        SOURCENAME = 'SOLAR'
+    else if (SRCTYPE .eq. 'T') then
+        SOURCENAME = 'THERMAL'
+    else if (SRCTYPE .eq. 'B') then
+        SOURCENAME = 'SOLAR/THERMAL'
+    end if
+
+    if (SFCTYPE .eq. 'FL') then
+        SFCNAME = 'FIXED LAMBERTIAN'
+    else if (SFCTYPE .eq. 'VL') then
+        SFCNAME = 'VARIABLE LAMBERTIAN'
+    else if (SFCTYPE .eq. 'VW') then
+        SFCNAME = 'VARIABLE WAVE-FRESNEL'
+    else if (SFCTYPE .eq. 'VD') then
+        SFCNAME = 'VARIABLE DINER'
+    else if (SFCTYPE .eq. 'VO') then
+        SFCNAME = 'VARIABLE OCEAN'
+    else if (SFCTYPE .eq. 'VR') then
+        SFCNAME = 'VARIABLE RPV'
+    else if (SFCTYPE .eq. 'VT') then
+        SFCNAME = 'VARIABLE LSRT'
+    else if (SFCTYPE .eq. 'VJ') then
+        SFCNAME = 'VARIABLE LSRT-J'
+    else if (SFCTYPE .eq. 'VX') then
+        SFCNAME = 'VARIABLE MIXED'
+    else if (SFCTYPE(1:1) .eq. 'V') then
+        SFCNAME = 'VARIABLE OTHER'
+    end if
+
+    if (UNITS .eq. 'T') then
+        UNITSNAME = 'KELVIN'
+    else if (UNITS .eq. 'B') then
+        UNITSNAME = 'WATTS/(M^2 STER)'
+    else
+        UNITSNAME = 'WATTS/(M^2 MICRON STER)'
+    end if
+
+    OUTNAME = 'CAMERA RADIANCE'
+
+    open (UNIT=2, FILE=trim(adjustl(OUTFILE)), STATUS='UNKNOWN')
+    write (2, '(A,A)')&
+        &'! Polarized Spherical Harmonic Discrete Ordinate',&
+        &' Radiative Transfer Output'
+    write (2, '(2(A,I3),A,I5,2(A,I3),A,I5,A,I10)')&
+        &'!  L=', ML, '  M=', MM, '  NLM=', NLM,&
+        &'   NMU=', NMU, '  NPHI=', NPHI, '  NANG=', NANG,&
+        &'   NSH=', NSH
+    write (2, '(A,I1,3(A,I4),2(A,I8))') '!  NSTOKES=', NSTOKES,&
+        &'   NX=', NX, '   NY=', NY, '   NZ=', NZ,&
+        &'    NPTS=', NPTS, '   NCELLS=', NCELLS
+    write (2, '(A,A)') '!  PROPERTY_FILE=', trim(PROPFILE)
+    write (2, '(A,A,A,I2)') '!  CORRELATED_K-DIST_FILE=',&
+        &trim(CKDFILE), '   NUM_G=', NG
+    write (2, '(A,A)') '!  INPUT_SAVE_FILE=', trim(INSAVEFILE)
+    write (2, '(A,A)') '!  OUTPUT_SAVE_FILE=', trim(OUTSAVEFILE)
+
+    if (DELTAM) then
+        write (2, '(A,A14,A)') '!  SOURCE_TYPE=', SOURCENAME,&
+            &'      DELTA-M METHOD'
+    else
+        write (2, '(A,A14)') '!  SOURCE_TYPE=', SOURCENAME
+    end if
+
+    write (2, '(A,A32,A,I1)') '!  GRID_TYPE=', GRIDNAME,&
+        &'   INDEPENDENT_PIXEL=', IPFLAG
+    write (2, '(A,A22,A,I1)') '!  SURFACE_TYPE=', SFCNAME,&
+        &'   HORIZ_BOUNDARY_COND=', BCFLAG
+
+    if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
+
+        if (SFCTYPE(1:1) .eq. 'V') then
+            write (2, '(A,A,A,E12.5)') '!  SURFACE_FILE=', trim(SFCFILE),&
+                &'  SKY_RAD=', SKYRAD
+        else
+            if (SRCTYPE .eq. 'B') then
+                write (2, '(A,F9.7,A,F8.3,A,E12.5)')&
+                    &'!  GROUND_ALBEDO=', GNDALBEDO, '  GROUND_TEMP=', GNDTEMP,&
+                    &'  SKY_RAD=', SKYRAD
+            else
+                write (2, '(A,F9.7,A,E12.5)')&
+                    &'!  GROUND_ALBEDO=', GNDALBEDO, '  SKY_RAD=', SKYRAD
+            end if
+        end if
+
+        write (2, '(A,E13.6,A,F10.7,A,F8.3)')&
+            &'!  SOLAR_FLUX=', SOLARFLUX, '   SOLAR_MU=', SOLARMU,&
+            &'   SOLAR_AZ=', SOLARAZ*180.0/acos(-1.0)
+
+    else
+
+        if (SFCTYPE(1:1) .eq. 'V') then
+            write (2, '(A,A)') '!  SURFACE_FILE=', trim(SFCFILE)
+        else
+            write (2, '(A,F8.3,A,F9.7)')&
+                &'!  GROUND_TEMP=', GNDTEMP, '  GROUND_EMIS=', 1.0 - GNDALBEDO
+        end if
+        write (2, '(A,F8.3)') '!  SKY_TEMP=', SKYRAD
+
+    end if
+
+    if (UNITS .eq. 'T') then
+        write (2, '(A,A24)') '!  UNITS=', UNITSNAME
+    else if (UNITS .eq. 'B') then
+        write (2, '(A,A24,A,2(1X,F10.2))') '!  UNITS=', UNITSNAME,&
+            &'   WAVENUMBER_RANGE=', WAVENO(1), WAVENO(2)
+    else
+        write (2, '(A,A24,A,F10.2)') '!  UNITS=', UNITSNAME,&
+            &'   WAVELENGTH=', WAVELEN
+    end if
+
+    write (2, '(2(A,E10.3))') '!  SPLITTING_ACCURACY=', SPLITACC,&
+        &'   SPHERICAL_HARMONIC_ACCURACY=', SHACC
+    write (2, '(A,E10.3)') '!  SOLUTION_ACCURACY=', SOLACC
+    write (2, '(2(A,I4))') '!  MAXIMUM_ITERATIONS=', MAXITER,&
+        &'   NUMBER_ITERATIONS=', TOTITER
+    write (2, '(A,A)') '!  OUTPUT_TYPE=', trim(adjustl(OUTNAME))
+
+    if (OUTPARMS(1) .eq. 3) then
+
+!        ! Radiance output
+!        ! NXOUT
+!        !╭────────────────────────────────────────────────╮!
+!        XDOMAIN = XGRID(NX + 1 - ibits(BCFLAG, 0, 1)) - XGRID(1) + 2*OUTPARMS(4)
+!        STARTX = -OUTPARMS(4)
+!        if (OUTPARMS(2) .eq. 0.0) then
+!            NXOUT = 1
+!        else
+!            NXOUT = max(1, nint(XDOMAIN/OUTPARMS(2)))
+!        end if
+!        !╰────────────────────────────────────────────────╯!
+
+!        ! NYOUT
+!        !╭────────────────────────────────────────────────╮!
+!        YDOMAIN = YGRID(NY + 1 - ibits(BCFLAG, 1, 1)) - YGRID(1) + 2*OUTPARMS(5)
+!        STARTY = -OUTPARMS(5)
+!        if (OUTPARMS(3) .eq. 0.0) then
+!            NYOUT = 1
+!        else
+!            NYOUT = max(1, nint(YDOMAIN/OUTPARMS(3)))
+!        end if
+!        !╰────────────────────────────────────────────────╯!
+
+!        ! Z0
+!        !╭────────────────────────────────────────────────╮!
+!        Z0 = min(max(OUTPARMS(1), ZGRID(1)), ZGRID(NZ))
+!        !╰────────────────────────────────────────────────╯!
+
+!        ! NANGOUT
+!        !╭────────────────────────────────────────────────╮!
+!        NANGOUT = nint(OUTPARMS(6))
+!        !╰────────────────────────────────────────────────╯!
+
+!        write (2, '(A,F7.3,3(A,I6))') '!    RADIANCE AT Z=', Z0,&
+!            &'    NXO=', NXOUT, '    NYO=', NYOUT, '    NDIR=', NANGOUT
+!        if (UNITS .eq. 'T') then
+!            FORM = '(2(1X,F7.3),1X,4(1X,F6.2))'
+!            write (2, '(A)')&
+!                &'!   X       Y       RADIANCE (STOKES I, Q, U, V)'
+!        else
+!            FORM = '(2(1X,F7.3),1X,4(1X,E12.5))'
+!            write (2, '(A)')&
+!                &'!   X       Y       RADIANCE (STOKES I, Q, U, V)'
+!        end if
+
+        ! description for binary data
+        !╭────────────────────────────────────────────────╮!
+        write (2, '(A)') '! The following provides information for interpreting binary data:'
+        write (2, '(A)') '! R'
+        write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
+        write (2, '(A, 5(I10,A))') '! ', int(OUTPARMS(2)), ',', 1, ',', 1, ',', 1, ',', NSTOKES, ''
+        !╰────────────────────────────────────────────────╯!
+
+        ! binary data
+        !╭────────────────────────────────────────────────╮!
+        write(*, '(A)') 'Message [_outputResult]: <V> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+        N = OUTPARMS(2)
+        IDATA = 0
+        call shd_io__outputData(VISOUT, NSTOKES, N, IDATA, OUTFILE_DATA)
+        !╰────────────────────────────────────────────────╯!
+
+    end if
+
+    close (2)
+    return
+end subroutine shd_io__outputCamRad
+
 subroutine shd_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     & NSH, ML, MM, NLM, NMU, NPHI, NANG, NG,&
     & PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
@@ -1918,10 +2167,11 @@ subroutine shd_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     & SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS,&
     & SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
     & IVIS, VISOUT, OUTPARMS, OUTFILE)
+
     ! Writes the visualization image in PGM binary format with either
     ! one byte or two byte pixels.  The PGM binary format (P5) has an
-    ! ascii header which has the image parameters amd can include commen
-    ! (here the SHDOM input parameters), followed by the byte or two byt
+    ! ascii header which has the image parameters amd can include comments
+    ! (here the SHDOM input parameters), followed by the byte or two byte
     ! image pixels.
 
     integer NSTOKES, NX, NY, NZ, NPTS, NCELLS, NSH
@@ -2061,6 +2311,12 @@ subroutine shd_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
         SFCNAME = 'VARIABLE OCEAN'
     else if (SFCTYPE .eq. 'VR') then
         SFCNAME = 'VARIABLE RPV'
+    else if (SFCTYPE .eq. 'VT') then
+        SFCNAME = 'VARIABLE LSRT'
+    else if (SFCTYPE .eq. 'VJ') then
+        SFCNAME = 'VARIABLE LSRT-J'
+    else if (SFCTYPE .eq. 'VX') then
+        SFCNAME = 'VARIABLE MIXED'
     else if (SFCTYPE(1:1) .eq. 'V') then
         SFCNAME = 'VARIABLE OTHER'
     end if
@@ -2085,17 +2341,17 @@ subroutine shd_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
         & '# NSTOKES=', NSTOKES, '  NX=', NX, '   NY=', NY, '  NZ=', NZ,&
         & '    NPTS=', NPTS, '   NCELLS=', NCELLS, LF
     I = I + index(BUF(I:I + 79), LF)
-    write (BUF(I:I + 79), '(A,A,A1)')&
-        & '# PROPERTY_FILE=', trim(PROPFILE), LF
+    !write (BUF(I:I + 79), '(A,A,A1)')&
+    !    & '# PROPERTY_FILE=', trim(PROPFILE), LF
     I = I + index(BUF(I:I + 79), LF)
-    write (BUF(I:I + 79), '(A,A,A,I2,A1)')&
-        & '# CORRELATED_K-DIST_FILE=', trim(CKDFILE), '   NUM_G=', NG, LF
+    !write (BUF(I:I + 79), '(A,A,A,I2,A1)')&
+    !    & '# CORRELATED_K-DIST_FILE=', trim(CKDFILE), '   NUM_G=', NG, LF
     I = I + index(BUF(I:I + 79), LF)
-    write (BUF(I:I + 79), '(A,A,A1)')&
-        & '# INPUT_SAVE_FILE=', trim(INSAVEFILE), LF
+    !write (BUF(I:I + 79), '(A,A,A1)')&
+    !    & '# INPUT_SAVE_FILE=', trim(INSAVEFILE), LF
     I = I + index(BUF(I:I + 79), LF)
-    write (BUF(I:I + 79), '(A,A,A1)')&
-        & '# OUTPUT_SAVE_FILE=', trim(OUTSAVEFILE), LF
+    !write (BUF(I:I + 79), '(A,A,A1)')&
+    !    & '# OUTPUT_SAVE_FILE=', trim(OUTSAVEFILE), LF
     I = I + index(BUF(I:I + 79), LF)
     if (DELTAM) then
         write (BUF(I:I + 79), '(A,A14,A,A1)')&
@@ -2114,9 +2370,9 @@ subroutine shd_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     I = I + index(BUF(I:I + 79), LF)
     if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
         if (SFCTYPE(1:1) .eq. 'V') then
-            write (BUF(I:I + 79), '(A,A,A,E12.5,A1)')&
-                & '# SURFACE_FILE=', trim(SFCFILE),&
-                & '  SKY_RAD=', SKYRAD, LF
+            !write (BUF(I:I + 79), '(A,A,A,E12.5,A1)')&
+            !    & '# SURFACE_FILE=', trim(SFCFILE),&
+            !    & '  SKY_RAD=', SKYRAD, LF
             I = I + index(BUF(I:I + 79), LF)
         else
             if (SRCTYPE .eq. 'B') then
@@ -2136,8 +2392,8 @@ subroutine shd_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
         I = I + index(BUF(I:I + 79), LF)
     else
         if (SFCTYPE(1:1) .eq. 'V') then
-            write (BUF(I:I + 79), '(A,A,A1)')&
-                &'# SURFACE_FILE=', trim(SFCFILE), LF
+            !write (BUF(I:I + 79), '(A,A,A1)')&
+            !    &'# SURFACE_FILE=', trim(SFCFILE), LF
             I = I + index(BUF(I:I + 79), LF)
         else
             write (BUF(I:I + 79), '(A,F8.3,A,F9.7,A1)')&
@@ -2480,6 +2736,7 @@ subroutine shd_io__saveState(&
     &ML, MM, NLM, WORK, XGRID, YGRID, ZGRID,&
     &NPTS, NCELLS, GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR,&
     &CELLFLAGS, FLUXES, SHPTR, SOURCE, RSHPTR, RADIANCE)
+
     ! Write a binary save file containing the current state of
     ! the SHDOM solution. This includes the cell tree structure,
     ! the spherical harmonic expansion of the source function,

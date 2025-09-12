@@ -127,7 +127,7 @@ program shdom_main
         end if
     end if
 
-    call shd_mpi__bcastInput(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
+    call shd_mpi__bcastInput(RUNNAME, PROPFILE, SFCFILE, CKDFILE, SENFILE,&
         &INSAVEFILE, OUTSAVEFILE,&
         &NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
         &IPFLAG, KDIST, DELTAM, GRIDTYPE,&
@@ -783,7 +783,6 @@ program shdom_main
     do IG = NG, 1, -1
         SOLARFLUX = SOLARFLUX + SOLFLUX(IG)*DELG(IG)*SOLARFLUX0*abs(SOLARMU)
     end do ! CKD Ng loop
-    stop
 
     call shd_io__saveState(OUTSAVEFILE, NSTOKES, NX, NY, NZ, ML, MM, NLM,&
         &WORK, XGRID, YGRID, ZGRID,&
@@ -868,8 +867,17 @@ program shdom_main
     ! Output visualization images if there are any
     if (MASTERPROC) then
         do I = 1, NUMOUT
-            if (OUTTYPES(I) .eq. 'V') then
+            if ((OUTTYPES(I) .eq. 'V') .and. (OUTPARMS(1, I) .lt. 2.01)) then
                 call shd_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+                    &NSH, ML, MM, NLM, NMU, NPHI, NANG, NG,&
+                    &PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
+                    &BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
+                    &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+                    &SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS,&
+                    &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
+                    &IVIS, SUMVISOUT, OUTPARMS(1, I), OUTFILES(I))
+            else
+                call shd_io__outputCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                     &NSH, ML, MM, NLM, NMU, NPHI, NANG, NG,&
                     &PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
                     &BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&

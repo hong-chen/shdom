@@ -259,7 +259,7 @@ subroutine shd_mpi__map(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
 end subroutine shd_mpi__map
 
 subroutine shd_mpi__bcastInput(&
-    &RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
+    &RUNNAME, PROPFILE, SFCFILE, CKDFILE, SENFILE,&
     &INSAVEFILE, OUTSAVEFILE,&
     &NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
     &IPFLAG, KDIST, DELTAM, GRIDTYPE,&
@@ -283,7 +283,7 @@ subroutine shd_mpi__bcastInput(&
     real, intent(inout) :: MAX_TOTAL_MB, SPLITTING_FACTOR
     real, intent(inout) :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
     character(len=1), intent(inout) :: SRCTYPE, GRIDTYPE, UNITS, OUTTYPES(*)
-    character(len=FNAMEMAXLEN_), intent(inout) :: RUNNAME, PROPFILE, SFCFILE, CKDFILE
+    character(len=FNAMEMAXLEN_), intent(inout) :: RUNNAME, PROPFILE, SFCFILE, CKDFILE, SENFILE
     character(len=FNAMEMAXLEN_), intent(inout) :: INSAVEFILE, OUTSAVEFILE
 
 #if HAS_MPI
@@ -291,7 +291,7 @@ subroutine shd_mpi__bcastInput(&
     logical :: logbuf(3)
     real    :: realbuf(16)
     character(len=1) :: char1buf(3)
-    character(len=FNAMEMAXLEN_) :: char256buf(6)
+    character(len=FNAMEMAXLEN_) :: char256buf(7)
     character(len=4) :: procstr
 
     if (NUMPROC_ .le. 1) return
@@ -321,10 +321,10 @@ subroutine shd_mpi__bcastInput(&
     call mpi_bcast(char1buf, 3, MPI_CHARACTER, 0, MPI_COMM_WORLD, ierr)
     SRCTYPE = char1buf(1); GRIDTYPE = char1buf(2); UNITS = char1buf(3)
 
-    char256buf(:) = (/PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE, RUNNAME/)
-    call mpi_bcast(char256buf, 6*256, MPI_CHARACTER, 0, MPI_COMM_WORLD, ierr)
-    PROPFILE = char256buf(1); SFCFILE = char256buf(2); CKDFILE = char256buf(3)
-    INSAVEFILE = char256buf(4); OUTSAVEFILE = char256buf(5); RUNNAME = char256buf(6)
+    char256buf(:) = (/PROPFILE, SFCFILE, CKDFILE, SENFILE, INSAVEFILE, OUTSAVEFILE, RUNNAME/)
+    call mpi_bcast(char256buf, 7*256, MPI_CHARACTER, 0, MPI_COMM_WORLD, ierr)
+    PROPFILE = char256buf(1); SFCFILE = char256buf(2); CKDFILE = char256buf(3); SENFILE = char256buf(4)
+    INSAVEFILE = char256buf(5); OUTSAVEFILE = char256buf(6); RUNNAME = char256buf(7)
 
     call mpi_bcast(OUTPARMS, MAXPAR*NUMOUT, MPI_REAL, 0, MPI_COMM_WORLD, ierr)
     call mpi_bcast(OUTTYPES, NUMOUT*1, MPI_CHARACTER, 0, MPI_COMM_WORLD, ierr)
@@ -2256,6 +2256,7 @@ subroutine shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
             IVIS = IVIS + 1
 
             if (CAMERA_MODE) then
+
                 ! Camera mode:
                 !   1, bytes, scale, X,Y,Z, theta, phi, rotang, NL, NS, delline, delsamp
                 ! Use spherical trig to find the pixel direction (MURAY,PHIRAY)
@@ -2306,12 +2307,11 @@ subroutine shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
 
             else if (SENSOR_MODE) then
 
-                X0    = SENPARMS(SAMP+(LINE-1)*NS)
-                Y0    = SENPARMS(SAMP+(LINE-1)*NS +   NS*NL)
-                Z0    = SENPARMS(SAMP+(LINE-1)*NS + 2*NS*NL)
-                COSTH = SENPARMS(SAMP+(LINE-1)*NS + 3*NS*NL)
-                PHIR  = SENPARMS(SAMP+(LINE-1)*NS + 4*NS*NL)
-                print *, SAMP+(LINE-1)*NS, X0, Y0, Z0, COSTH, PHIR
+                X0    =  SENPARMS(SAMP+(LINE-1)*NS)
+                Y0    =  SENPARMS(SAMP+(LINE-1)*NS +   NS*NL)
+                Z0    =  SENPARMS(SAMP+(LINE-1)*NS + 2*NS*NL)
+                COSTH =  SENPARMS(SAMP+(LINE-1)*NS + 3*NS*NL)
+                PHIR  =  SENPARMS(SAMP+(LINE-1)*NS + 4*NS*NL)
 
             else
 
@@ -2340,7 +2340,10 @@ subroutine shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 else
                     PHIR = atan2(RX, -RY)
                 end if
+
             end if
+
+            print *, SAMP, X0, Y0, Z0, COSTH, PHIR
 
             ! Extrapolate ray to domain top if above
             if (Z0 .gt. ZGRID(NZ)) then
@@ -2358,6 +2361,8 @@ subroutine shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 write (6, *) 'Error [mpi__visualizeRad]: Level below domain.'
                 stop
             end if
+            print *, SAMP, X0, Y0, Z0, COSTH, PHIR
+            print *
 
             ! Relocate the starting point in the overall periodic domain
             ! (we know we have a periodic domain if doing MPI)

@@ -432,9 +432,10 @@ subroutine shd_io__nmlInput(&
         else if (OUTTYPES(I) (1:1) .eq. 'V') then
             dOUTPARMS(1, I) = OUTPARMS(1, I)
             dOUTPARMS(2, I) = OUTPARMS(2, I)
+            dOUTPARMS(3, I) = OUTPARMS(3, I)
             ! new user-specified sensor mode is with number "3"
             if (nint(OUTPARMS(1, I)) .le. 2) then
-                do J = 3, 13
+                do J = 4, 13
                     dOUTPARMS(J, I) = OUTPARMS(J, I)
                 end do
             end if
@@ -459,7 +460,7 @@ subroutine shd_io__nmlInput(&
         dOUTFILES(I) = OUTFILES(I)
     end do
 
-    dSENFILE = SENFILE ! this is added for user-specified sensor option, output type "X"
+    dSENFILE = SENFILE ! this is added for user-specified sensor option, output type "V3"
 
     dOutFileNC = OutFileNC
 
@@ -1504,8 +1505,8 @@ subroutine shd_io__readSenSize(&
     read (1, '(A)') TMP_CHAR ! skip one line
     read (1, '(A)') DIMS_CHAR
 
-    read (DIMS_CHAR( 3: 8), '(I6)') NSENDATA
-    read (DIMS_CHAR(10:15), '(I6)') NSENPAR
+    read (DIMS_CHAR( 3:12), '(I10)') NSENDATA
+    read (DIMS_CHAR(14:23), '(I10)') NSENPAR
 
     close (1)
 
@@ -1535,8 +1536,8 @@ subroutine shd_io__readSen(&
     read (1, '(A)') DATA_POSTFIX
     read (1, '(A)') DIMS_CHAR
 
-    read (DIMS_CHAR( 3: 8), '(I6)') NSENDATA
-    read (DIMS_CHAR(10:15), '(I6)') NSENPAR
+    read (DIMS_CHAR( 3:12), '(I10)') NSENDATA
+    read (DIMS_CHAR(14:23), '(I10)') NSENPAR
 
     OUTFILE_DATA = trim(adjustl(SENFILE))//trim(adjustl(DATA_POSTFIX(2:)))
 
