@@ -2306,7 +2306,7 @@ subroutine shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 Z0 = OUTPARMS(6)
 
                 !           0,    1,  2,  3,  4,  5,  6, 7, 8,      9,   10,     11,    12,   13
-                print *, LINE, SAMP, X0, Y0, Z0, UP, VP, U, V, THETA0, PHI0, THETA1, COSTH, PHIR
+                !print *, LINE, SAMP, X0, Y0, Z0, UP, VP, U, V, THETA0, PHI0, THETA1, COSTH, PHIR
 
             else if (SENSOR_MODE) then
 
@@ -2316,7 +2316,7 @@ subroutine shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 COSTH =  SENPARMS(SAMP+(LINE-1)*NS + 3*NS*NL)
                 PHIR  =  SENPARMS(SAMP+(LINE-1)*NS + 4*NS*NL)
 
-                print *, LINE, SAMP, X0, Y0, Z0, COSTH, PHIR
+                !print *, LINE, SAMP, X0, Y0, Z0, COSTH, PHIR
 
             else
 

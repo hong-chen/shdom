@@ -864,19 +864,10 @@ program shdom_main
         end do
     end if
 
-    ! Output visualization images if there are any
+    ! Output camera radiance if there are any
     if (MASTERPROC) then
         do I = 1, NUMOUT
-            if ((OUTTYPES(I) .eq. 'V') .and. (OUTPARMS(1, I) .lt. 2.01)) then
-                call shd_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
-                    &NSH, ML, MM, NLM, NMU, NPHI, NANG, NG,&
-                    &PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
-                    &BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
-                    &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
-                    &SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS,&
-                    &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
-                    &IVIS, SUMVISOUT, OUTPARMS(1, I), OUTFILES(I))
-            else
+            if ((OUTTYPES(I) .eq. 'V')) then
                 call shd_io__outputCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                     &NSH, ML, MM, NLM, NMU, NPHI, NANG, NG,&
                     &PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&

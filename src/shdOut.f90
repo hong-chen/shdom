@@ -1958,7 +1958,7 @@ subroutine shd_io__outputCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     character(len=128) :: GRIDNAME, SOURCENAME, UNITSNAME, SFCNAME, OUTNAME
     character(len=FNAMEMAXLEN_) :: OUTFILE_DATA
     character(len=20)  :: DATA_POSTFIX
-    integer :: N, IDATA
+    integer :: N, IDATA, NL, NS, CAMID
 
     DATA_POSTFIX = '.sHdOm-out'
     OUTFILE_DATA = trim(adjustl(OUTFILE))//trim(adjustl(DATA_POSTFIX))
@@ -2010,7 +2010,26 @@ subroutine shd_io__outputCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
         UNITSNAME = 'WATTS/(M^2 MICRON STER)'
     end if
 
-    OUTNAME = 'CAMERA RADIANCE'
+
+    CAMID = nint(OUTPARMS(1))
+    if (CAMID .eq. 1) then ! camera mode
+        NL = nint(OUTPARMS(10))
+        NS = nint(OUTPARMS(11))
+        OUTNAME = 'CAMERA RADIANCE (V1 Camera Mode)'
+    else if (CAMID .eq. 2) then ! cross track mode
+        NL = 1 + sqrt((OUTPARMS(4) - OUTPARMS(7))**2&
+                  & + (OUTPARMS(5) - OUTPARMS(8))**2&
+                  & + (OUTPARMS(6) - OUTPARMS(9))**2)/OUTPARMS(10)
+        NS = 1 + abs(OUTPARMS(12) - OUTPARMS(11))/OUTPARMS(13)
+        OUTNAME = 'CAMERA RADIANCE (V2 Crosstrack Mode)'
+    else if (CAMID .eq. 3) then ! user-specified sensor mode
+        NL = 1
+        NS = nint(OUTPARMS(2))
+        OUTNAME = 'CAMERA RADIANCE (V3 User-Specified Sensor Mode)'
+    else
+        write(*, '(A)') 'Error [_outputCamRad]: Unkown camera mode.'
+        stop
+    end if
 
     open (UNIT=2, FILE=trim(adjustl(OUTFILE)), STATUS='UNKNOWN')
     write (2, '(A,A)')&
@@ -2090,65 +2109,20 @@ subroutine shd_io__outputCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
         &'   NUMBER_ITERATIONS=', TOTITER
     write (2, '(A,A)') '!  OUTPUT_TYPE=', trim(adjustl(OUTNAME))
 
-    if (OUTPARMS(1) .eq. 3) then
-
-!        ! Radiance output
-!        ! NXOUT
-!        !╭────────────────────────────────────────────────╮!
-!        XDOMAIN = XGRID(NX + 1 - ibits(BCFLAG, 0, 1)) - XGRID(1) + 2*OUTPARMS(4)
-!        STARTX = -OUTPARMS(4)
-!        if (OUTPARMS(2) .eq. 0.0) then
-!            NXOUT = 1
-!        else
-!            NXOUT = max(1, nint(XDOMAIN/OUTPARMS(2)))
-!        end if
-!        !╰────────────────────────────────────────────────╯!
-
-!        ! NYOUT
-!        !╭────────────────────────────────────────────────╮!
-!        YDOMAIN = YGRID(NY + 1 - ibits(BCFLAG, 1, 1)) - YGRID(1) + 2*OUTPARMS(5)
-!        STARTY = -OUTPARMS(5)
-!        if (OUTPARMS(3) .eq. 0.0) then
-!            NYOUT = 1
-!        else
-!            NYOUT = max(1, nint(YDOMAIN/OUTPARMS(3)))
-!        end if
-!        !╰────────────────────────────────────────────────╯!
-
-!        ! Z0
-!        !╭────────────────────────────────────────────────╮!
-!        Z0 = min(max(OUTPARMS(1), ZGRID(1)), ZGRID(NZ))
-!        !╰────────────────────────────────────────────────╯!
-
-!        ! NANGOUT
-!        !╭────────────────────────────────────────────────╮!
-!        NANGOUT = nint(OUTPARMS(6))
-!        !╰────────────────────────────────────────────────╯!
-
-!        write (2, '(A,F7.3,3(A,I6))') '!    RADIANCE AT Z=', Z0,&
-!            &'    NXO=', NXOUT, '    NYO=', NYOUT, '    NDIR=', NANGOUT
-!        if (UNITS .eq. 'T') then
-!            FORM = '(2(1X,F7.3),1X,4(1X,F6.2))'
-!            write (2, '(A)')&
-!                &'!   X       Y       RADIANCE (STOKES I, Q, U, V)'
-!        else
-!            FORM = '(2(1X,F7.3),1X,4(1X,E12.5))'
-!            write (2, '(A)')&
-!                &'!   X       Y       RADIANCE (STOKES I, Q, U, V)'
-!        end if
+    if (OUTPARMS(1) .gt. 0.0) then ! placeholder for treating camera mode differently if needed
 
         ! description for binary data
         !╭────────────────────────────────────────────────╮!
         write (2, '(A)') '! The following provides information for interpreting binary data:'
         write (2, '(A)') '! R'
         write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-        write (2, '(A, 5(I10,A))') '! ', int(OUTPARMS(2)), ',', 1, ',', 1, ',', 1, ',', NSTOKES, ''
+        write (2, '(A, 5(I10,A))') '! ', NS, ',', NL, ',', 1, ',', 1, ',', NSTOKES, ''
         !╰────────────────────────────────────────────────╯!
 
         ! binary data
         !╭────────────────────────────────────────────────╮!
         write(*, '(A)') 'Message [_outputResult]: <V> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
-        N = OUTPARMS(2)
+        N = NL*NS
         IDATA = 0
         call shd_io__outputData(VISOUT, NSTOKES, N, IDATA, OUTFILE_DATA)
         !╰────────────────────────────────────────────────╯!
