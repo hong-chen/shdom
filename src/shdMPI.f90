@@ -2305,6 +2305,9 @@ subroutine shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 Y0 = OUTPARMS(5)
                 Z0 = OUTPARMS(6)
 
+                !           0,    1,  2,  3,  4,  5,  6, 7, 8,      9,   10,     11,    12,   13
+                print *, LINE, SAMP, X0, Y0, Z0, UP, VP, U, V, THETA0, PHI0, THETA1, COSTH, PHIR
+
             else if (SENSOR_MODE) then
 
                 X0    =  SENPARMS(SAMP+(LINE-1)*NS)
@@ -2312,6 +2315,8 @@ subroutine shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 Z0    =  SENPARMS(SAMP+(LINE-1)*NS + 2*NS*NL)
                 COSTH =  SENPARMS(SAMP+(LINE-1)*NS + 3*NS*NL)
                 PHIR  =  SENPARMS(SAMP+(LINE-1)*NS + 4*NS*NL)
+
+                print *, LINE, SAMP, X0, Y0, Z0, COSTH, PHIR
 
             else
 
@@ -2343,7 +2348,7 @@ subroutine shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
 
             end if
 
-            print *, SAMP, X0, Y0, Z0, COSTH, PHIR
+            !print *, SAMP, X0, Y0, Z0, COSTH, PHIR
 
             ! Extrapolate ray to domain top if above
             if (Z0 .gt. ZGRID(NZ)) then
@@ -2361,8 +2366,8 @@ subroutine shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 write (6, *) 'Error [mpi__visualizeRad]: Level below domain.'
                 stop
             end if
-            print *, SAMP, X0, Y0, Z0, COSTH, PHIR
-            print *
+            !print *, SAMP, X0, Y0, Z0, COSTH, PHIR
+            !print *
 
             ! Relocate the starting point in the overall periodic domain
             ! (we know we have a periodic domain if doing MPI)
