@@ -881,7 +881,7 @@ program shdom_main
                     &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
                     &SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS,&
                     &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
-                    &IVIS, SUMVISOUT, OUTPARMS(1, I), OUTFILES(I))
+                    &IVIS, SUMVISOUT, OUTPARMS(1, I), SENPARMS, OUTFILES(I))
             end if
         end do
     end if

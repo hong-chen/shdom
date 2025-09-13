@@ -1931,7 +1931,7 @@ subroutine shd_io__outputCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     & SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
     & SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS,&
     & SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
-    & IVIS, VISOUT, OUTPARMS, OUTFILE)
+    & IVIS, VISOUT, OUTPARMS, SENPARMS, OUTFILE)
 
     ! Writes the visualization image in PGM binary format with either
     ! one byte or two byte pixels.  The PGM binary format (P5) has an
@@ -1948,7 +1948,7 @@ subroutine shd_io__outputCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     real GNDTEMP, GNDALBEDO, SKYRAD
     real SOLACC, SPLITACC, SHACC
     real WAVENO(2), WAVELEN
-    real OUTPARMS(*)
+    real OUTPARMS(*), SENPARMS(*)
     character(len=1), intent(in) :: SRCTYPE, UNITS, GRIDTYPE
     character(len=2), intent(in) :: SFCTYPE
     character(len=*), intent(in) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
