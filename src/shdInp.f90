@@ -360,6 +360,7 @@ subroutine shd_io__nmlInput(&
     WAVELEN = 1.0
     WAVENO(1) = 10000.
     WAVENO(2) = 10001.
+    SENFILE = 'NONE'
 
     ! Read in the namelist
     call get_command_argument(1, NMLFILE)
@@ -1169,19 +1170,20 @@ subroutine shd_io__readSfc(&
     !   Norm Loeb's modification of 6S ocean reflectance module.
     else if ((SFCTYPE .eq. 'VO') .or. (SFCTYPE .eq. 'Vo')) then
 
-        NSFCPAR = 3
+        NSFCPAR = 4
         if (NSFCPAR .gt. MAXSFCPARS) then
             write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
             stop
         end if
         do while (.true.)
-            read (1, *, end=290) IX, IY, TEMP, WSPD, PCL
+            read (1, *, end=290) IX, IY, TEMP, ALB, WSPD, PCL
             if (IX .ge. 1 .and. IX .le. NXSFC .and.&
                 &IY .ge. 1 .and. IY .le. NYSFC) then
                 I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
                 SFCPARMS(I + 1) = TEMP
-                SFCPARMS(I + 2) = WSPD
-                SFCPARMS(I + 3) = PCL
+                SFCPARMS(I + 2) = ALB
+                SFCPARMS(I + 3) = WSPD
+                SFCPARMS(I + 4) = PCL
                 GNDTEMP = GNDTEMP + TEMP
                 N = N + 1
             end if
@@ -1280,20 +1282,21 @@ subroutine shd_io__readSfc(&
     ! Surface file type W is for Wave-Fresnel surface
     else if ((SFCTYPE .eq. 'VW') .or. (SFCTYPE .eq. 'Vw')) then
 
-        NSFCPAR = 4
+        NSFCPAR = 5
         if (NSFCPAR .gt. MAXSFCPARS) then
             write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
             stop
         end if
         do while (.true.)
-            read (1, *, end=290) IX, IY, TEMP, MRE, MIM, WSPD
+            read (1, *, end=290) IX, IY, TEMP, ALB, MRE, MIM, WSPD
             if (IX .ge. 1 .and. IX .le. NXSFC .and.&
                 &IY .ge. 1 .and. IY .le. NYSFC) then
                 I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
                 SFCPARMS(I + 1) = TEMP
-                SFCPARMS(I + 2) = MRE
-                SFCPARMS(I + 3) = MIM
-                SFCPARMS(I + 4) = WSPD
+                SFCPARMS(I + 2) = ALB
+                SFCPARMS(I + 3) = MRE
+                SFCPARMS(I + 4) = MIM
+                SFCPARMS(I + 5) = WSPD
                 GNDTEMP = GNDTEMP + TEMP
                 N = N + 1
             end if
@@ -1337,38 +1340,54 @@ subroutine shd_io__readSfc(&
             write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
             stop
         end if
-        do while (.true.)
-            read (1, *, end=290)    IX, IY, PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7, PARAM8
-            ! for Lambertian   (VL):IX, IY, TEMP,   ALB,    -999.0, -999.0, -999.0, -999.0, -999.0,  0.0
-            ! for Ocean        (VO):IX, IY, TEMP,   WSPD,   PCL,    -999.0, -999.0, -999.0, -999.0,  1.0
-            ! for RPV          (VR):IX, IY, TEMP,   RHO0,   KR,     THETA,  -999.0, -999.0, -999.0,  2.0
-            ! for LSRT         (VT):IX, IY, TEMP,   F_ISO,  F_GEO,  F_VOL,  -999.0, -999.0, -999.0,  3.0
-            ! for LSRT-J       (VJ):IX, IY, TEMP,   F_ISO,  F_GEO,  F_VOL,  F_JIAO, ALPHA,  -999.0,  4.0
-            ! for Wave-Fresnel (VW):IX, IY, TEMP,   MRE,    MIM,    WSPD,   -999.0, -999.0, -999.0, -1.0
-            ! for Diner        (VD):IX, IY, TEMP,   A,      KR,     B,      ZETA,   SIGMA,  -999.0, -2.0
 
-            if (IX .ge. 1 .and. IX .le. NXSFC .and.&
-                &IY .ge. 1 .and. IY .le. NYSFC) then
-                I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
-                SFCPARMS(I + 1) = PARAM1
-                SFCPARMS(I + 2) = PARAM2
-                SFCPARMS(I + 3) = PARAM3
-                SFCPARMS(I + 4) = PARAM4
-                SFCPARMS(I + 5) = PARAM5
-                SFCPARMS(I + 6) = PARAM6
-                SFCPARMS(I + 7) = PARAM7
-                SFCPARMS(I + 8) = PARAM8 ! surface identification
+        read (1, '(A)') TMP_CHAR ! skip one line
+        read (1, '(A)') DATA_POSTFIX
+        read (1, '(A)') DIMS_CHAR
 
-                GNDTEMP = GNDTEMP + PARAM1
+        read (DIMS_CHAR( 3:12), '(I10)') NXX
+        read (DIMS_CHAR(14:23), '(I10)') NYY
+        read (DIMS_CHAR(25:34), '(I10)') NPP
 
-                ! no albedo for polarized (W) and unpolarized (O) Ocean parameterization
-                if ((abs(PARAM8)-1.0) .gt. 0.01) then
-                    GNDALBEDO = GNDALBEDO + PARAM2
-                end if
+        OUTFILE_DATA = trim(adjustl(SFCFILE))//trim(adjustl(DATA_POSTFIX(2:)))
+        open (UNIT=88, FILE=trim(adjustl(OUTFILE_DATA)), STATUS='OLD',&
+            &ACCESS='STREAM', FORM='UNFORMATTED')
+        NDATA = NXX*NYY*NPP
+        read (88) (SFCPARMS(IDATA), IDATA=1,NDATA)
+        close (88)
 
-                N = N + 1
-            end if
-        end do
+        !do while (.true.)
+        !    read (1, *, end=290)    IX, IY, PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7, PARAM8
+        !    ! for Lambertian   (VL):IX, IY, TEMP,   ALB,    -999.0, -999.0, -999.0, -999.0, -999.0,  0.0
+        !    ! for Ocean        (VO):IX, IY, TEMP,   WSPD,   PCL,    -999.0, -999.0, -999.0, -999.0,  1.0
+        !    ! for RPV          (VR):IX, IY, TEMP,   RHO0,   KR,     THETA,  -999.0, -999.0, -999.0,  2.0
+        !    ! for LSRT         (VT):IX, IY, TEMP,   F_ISO,  F_GEO,  F_VOL,  -999.0, -999.0, -999.0,  3.0
+        !    ! for LSRT-J       (VJ):IX, IY, TEMP,   F_ISO,  F_GEO,  F_VOL,  F_JIAO, ALPHA,  -999.0,  4.0
+        !    ! for Wave-Fresnel (VW):IX, IY, TEMP,   MRE,    MIM,    WSPD,   -999.0, -999.0, -999.0, -1.0
+        !    ! for Diner        (VD):IX, IY, TEMP,   A,      KR,     B,      ZETA,   SIGMA,  -999.0, -2.0
+
+        !    if (IX .ge. 1 .and. IX .le. NXSFC .and.&
+        !        &IY .ge. 1 .and. IY .le. NYSFC) then
+        !        I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
+        !        SFCPARMS(I + 1) = PARAM1
+        !        SFCPARMS(I + 2) = PARAM2
+        !        SFCPARMS(I + 3) = PARAM3
+        !        SFCPARMS(I + 4) = PARAM4
+        !        SFCPARMS(I + 5) = PARAM5
+        !        SFCPARMS(I + 6) = PARAM6
+        !        SFCPARMS(I + 7) = PARAM7
+        !        SFCPARMS(I + 8) = PARAM8 ! surface identification
+
+        !        GNDTEMP = GNDTEMP + PARAM1
+
+        !        ! no albedo for polarized (W) and unpolarized (O) Ocean parameterization
+        !        if ((abs(PARAM8)-1.0) .gt. 0.01) then
+        !            GNDALBEDO = GNDALBEDO + PARAM2
+        !        end if
+
+        !        N = N + 1
+        !    end if
+        !end do
 
     else
 
