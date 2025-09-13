@@ -1118,6 +1118,12 @@ subroutine shd_io__readSfc(&
     real F_ISO, F_VOL, F_GEO, F_JIAO
     real A, B, ZETA, SIGMA, ALPHA
 
+    character(len=FNAMEMAXLEN_) :: OUTFILE_DATA
+    character(len=FNAMEMAXLEN_) :: TMP_CHAR
+    character(len=FNAMEMAXLEN_) :: DIMS_CHAR
+    character(len=20) :: DATA_POSTFIX
+    integer :: NXX, NYY, NPP, IDATA, NDATA
+
     ! Surface type is variable something
     SFCTYPE(1:1) = 'V'
     ! Open the file, figure out the type, and get the grid size
@@ -1216,20 +1222,36 @@ subroutine shd_io__readSfc(&
             write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
             stop
         end if
-        do while (.true.)
-            read (1, *, end=290) IX, IY, TEMP, F_ISO, F_GEO, F_VOL
-            if (IX .ge. 1 .and. IX .le. NXSFC .and.&
-                &IY .ge. 1 .and. IY .le. NYSFC) then
-                I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
-                SFCPARMS(I + 1) = TEMP
-                SFCPARMS(I + 2) = F_ISO
-                SFCPARMS(I + 3) = F_GEO
-                SFCPARMS(I + 4) = F_VOL
-                GNDTEMP = GNDTEMP + TEMP
-                GNDALBEDO = GNDALBEDO + F_ISO
-                N = N + 1
-            end if
-        end do
+
+        read (1, '(A)') TMP_CHAR ! skip one line
+        read (1, '(A)') DATA_POSTFIX
+        read (1, '(A)') DIMS_CHAR
+
+        read (DIMS_CHAR( 3:12), '(I10)') NXX
+        read (DIMS_CHAR(14:23), '(I10)') NYY
+        read (DIMS_CHAR(25:34), '(I10)') NPP
+
+        OUTFILE_DATA = trim(adjustl(SFCFILE))//trim(adjustl(DATA_POSTFIX(2:)))
+        open (UNIT=88, FILE=trim(adjustl(OUTFILE_DATA)), STATUS='OLD',&
+            &ACCESS='STREAM', FORM='UNFORMATTED')
+        NDATA = NXX*NYY*NPP
+        read (88) (SFCPARMS(IDATA), IDATA=1,NDATA)
+        close (88)
+
+        !do while (.true.)
+        !    read (1, *, end=290) IX, IY, TEMP, F_ISO, F_GEO, F_VOL
+        !    if (IX .ge. 1 .and. IX .le. NXSFC .and.&
+        !        &IY .ge. 1 .and. IY .le. NYSFC) then
+        !        I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
+        !        SFCPARMS(I + 1) = TEMP
+        !        SFCPARMS(I + 2) = F_ISO
+        !        SFCPARMS(I + 3) = F_GEO
+        !        SFCPARMS(I + 4) = F_VOL
+        !        GNDTEMP = GNDTEMP + TEMP
+        !        GNDALBEDO = GNDALBEDO + F_ISO
+        !        N = N + 1
+        !    end if
+        !end do
 
     ! Surface file type J is for LSRT-Jiao surface:
     else if ((SFCTYPE .eq. 'VJ') .or. (SFCTYPE .eq. 'Vj')) then
@@ -1374,8 +1396,8 @@ subroutine shd_io__readSfc(&
         end do
     end do
 
-    GNDALBEDO = GNDALBEDO/N
-    GNDTEMP = GNDTEMP/N
+    GNDALBEDO = GNDALBEDO + SUM(SFCPARMS(2:NDATA:NPP))/(NXX*NYY)
+    GNDTEMP   = GNDTEMP   + SUM(SFCPARMS(1:NDATA:NPP))/(NXX*NYY)
     return
 
 end subroutine shd_io__readSfc
