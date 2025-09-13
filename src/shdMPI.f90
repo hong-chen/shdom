@@ -1803,6 +1803,9 @@ subroutine shd_mpi__computeRad(&
     do K = 1, NANGOUT
         MUOUT = SENPARMS(K)
         PHID  = SENPARMS(K+NANGOUT)
+        if (K .le. 10) then
+            print *, MUOUT, PHID
+        end if
         PHIOUT = PHID*acos(-1.0)/180.0
 
         ! added for fixing the "domain shift" issue (only for 3D)

@@ -667,7 +667,7 @@ program shdom_main
                             &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
                             &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
                             &SHPTR, SOURCE, WORK(1), WORK(1 + NPTS*NSTOKES),&
-                            &OUTPARMS(1, I), IRAD, WORK2)
+                            &OUTPARMS(1, I), SENPARMS, IRAD, WORK2)
                     end if
                 end if
             end do
@@ -702,7 +702,7 @@ program shdom_main
                             &XGRID, YGRID, ZGRID, GRIDPOS,&
                             &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
                             &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
-                            &SHPTR, SOURCE, OUTPARMS(1, I), IVIS, WORK2)
+                            &SHPTR, SOURCE, OUTPARMS(1, I), SENPARMS, IVIS, WORK2)
                     end if
                 end if
             end do
@@ -865,7 +865,7 @@ program shdom_main
                     EXTINCT, ALBEDO, LEGEN, IPHASE, TEMP,&
                     SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV,&
                     IRAD, SUMRADOUT, NSHOUT, SUMSHTERMS, SOURCE1OUT,&
-                    OUTTYPES(I), OUTPARMS(1, I), OUTFILES(I))
+                    OUTTYPES(I), OUTPARMS(1, I), SENPARMS, OUTFILES(I))
             end if
         end do
     end if
