@@ -1704,7 +1704,7 @@ subroutine shd_mpi__computeRad(&
     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
     &SHPTR, SOURCE, SOURCE1, GRIDRAD,&
-    &OUTPARMS, NRAD, RADOUT)
+    &OUTPARMS, SENPARMS, NRAD, RADOUT)
 
     ! Computes the radiances for the locations and directions specified
     ! in OUTPARMS, putting the results in RADOUT and increasing NRAD by
@@ -1729,7 +1729,7 @@ subroutine shd_mpi__computeRad(&
     real, intent(in) :: EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, NPTS)
     real, intent(in) :: DIRFLUX(NPTS), FLUXES(2, NPTS), SOURCE(NSTOKES, *)
     real, intent(inout) :: SOURCE1(NSTOKES, NPTS), GRIDRAD(NSTOKES, NPTS)
-    real, intent(in) :: OUTPARMS(*)
+    real, intent(in) :: OUTPARMS(*), SENPARMS(*)
     real, intent(out) :: RADOUT(NSTOKES, *)
     character, intent(in) ::  SRCTYPE*1, SFCTYPE*2, UNITS*1
 
@@ -1801,8 +1801,8 @@ subroutine shd_mpi__computeRad(&
 
     ! Loop over the radiance directions
     do K = 1, NANGOUT
-        MUOUT = OUTPARMS(2*K + 5)
-        PHID = OUTPARMS(2*K + 6)
+        MUOUT = SENPARMS(K)
+        PHID  = SENPARMS(K+NANGOUT)
         PHIOUT = PHID*acos(-1.0)/180.0
 
         ! added for fixing the "domain shift" issue (only for 3D)

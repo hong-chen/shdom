@@ -1197,7 +1197,7 @@ subroutine shd_io__outputResultMpi(&
     &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
     &XDOMAIN, YDOMAIN, XGRID, YGRID, ZGRID,&
     &FLUXES, FLUXDIV, NSHOUT, SHTERMS, IRAD, RADOUT,&
-    &OUTTYPE, OUTPARMS, OUTFILE)
+    &OUTTYPE, OUTPARMS, SENPARMS, OUTFILE)
     ! Writes the desired type of output file from the output fields
     ! with a header giving the input parameters.
     ! There are four supported types (OUTTYPE) of output: 'R' - for radi
@@ -1215,7 +1215,7 @@ subroutine shd_io__outputResultMpi(&
     real SOLACC, SPLITACC, SHACC
     real WAVENO(2), WAVELEN
     real XDOMAIN, YDOMAIN, XGRID(NX), YGRID(NY), ZGRID(NZ)
-    real OUTPARMS(*)
+    real OUTPARMS(*), SENPARMS(*)
     character(len=1), intent(in) :: SRCTYPE, UNITS, GRIDTYPE, OUTTYPE
     character(len=2), intent(in) :: SFCTYPE
     character(len=*), intent(in) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
@@ -1409,8 +1409,8 @@ subroutine shd_io__outputResultMpi(&
         allocate(PHI_SET(NANGOUT))
 
         do K = 1, NANGOUT
-            MUOUT = OUTPARMS(2*K + 5)
-            PHID = OUTPARMS(2*K + 6)
+            MUOUT = SENPARMS(K)
+            PHID  = SENPARMS(K+NANGOUT)
 
             if ((K .lt. 5) .or. (K .gt. (NANGOUT-5))) then
                 write (2, '(A,1X,I8,F8.5,1X,F7.2,2X,A)')&

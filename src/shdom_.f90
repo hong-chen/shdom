@@ -17,7 +17,7 @@ program shdom_main
 
     implicit none
     ! Number of output files and inputs parameter per file
-    integer, parameter :: MAXOUT = 20, MAXPAR = 88888
+    integer, parameter :: MAXOUT = 20, MAXPAR = 100
     real      :: OUTPARMS(MAXPAR, MAXOUT)
     character(len=1) :: OUTTYPES(MAXOUT)
     character(len=FNAMEMAXLEN_) :: OUTFILES(MAXOUT)
@@ -465,6 +465,12 @@ program shdom_main
                 &SENPARMS)
         end if
         call shd_mpi__bcastSenParam(NSENDATA, NSENPAR, SENPARMS)
+    else
+        NSENDATA = 1
+        SENPARMS = 1
+        allocate (SENPARMS(1)) ! dummy
+        SENPARMS(1) = -999.0
+        call shd_mpi__bcastSenParam(NSENDATA, NSENPAR, SENPARMS)
     end if
 
     ! Figure out what type of output we will be generating
@@ -648,7 +654,7 @@ program shdom_main
                             &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
                             &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
                             &SHPTR, SOURCE, WORK, WORK(1 + NPTS*NSTOKES),&
-                            &OUTPARMS(1, I), IRAD, WORK2)
+                            &OUTPARMS(1, I), SENPARMS, IRAD, WORK2)
                     else
                         call shd_rad__computeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                             &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
@@ -833,7 +839,7 @@ program shdom_main
                         &XDOMAIN_, YDOMAIN_, XALLGRID, YALLGRID, ZGRID,&
                         &ALLFLUXES, ALLFLUXDIV,&
                         &NSHOUT, ALLSHTERMS, IRAD, SUMRADOUT,&
-                        &OUTTYPES(I), OUTPARMS(1, I), OUTFILES(I))
+                        &OUTTYPES(I), OUTPARMS(1, I), SENPARMS, OUTFILES(I))
                 end if
             end do
 

@@ -323,7 +323,7 @@ subroutine shd_io__nmlInput(&
     integer I, J, N
 
     integer MAXOUT, MAXPAR
-    parameter(MAXOUT=20, MAXPAR=88888)
+    parameter(MAXOUT=20, MAXPAR=100)
     integer NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG, IPFLAG
     integer MAXITER, NUMOUT
     logical DELTAM, ACCELFLAG
