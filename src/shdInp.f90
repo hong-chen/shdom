@@ -1049,7 +1049,7 @@ subroutine shd_io__readSfcSize(SFCFILE, MAXSFCPTS, MAXSFCPARS)
     ! 1
     else if ((SFCTYPE .eq. 'VO') .or. (SFCTYPE .eq. 'Vo')) then
         ! Surface file type O is for Ocean BRDF surface
-        MAXSFCPARS = 4
+        MAXSFCPARS = 3
     ! 2
     else if ((SFCTYPE .eq. 'VR') .or. (SFCTYPE .eq. 'Vr')) then
         ! Surface file type R is for RPV surface
@@ -1065,7 +1065,7 @@ subroutine shd_io__readSfcSize(SFCFILE, MAXSFCPTS, MAXSFCPARS)
     ! -1
     else if ((SFCTYPE .eq. 'VW') .or. (SFCTYPE .eq. 'Vw')) then
         ! Surface file type W is for Wave-Fresnel surface
-        MAXSFCPARS = 5
+        MAXSFCPARS = 4
     ! -2
     else if ((SFCTYPE .eq. 'VD') .or. (SFCTYPE .eq. 'Vd')) then
         ! Surface file type D is for Diner polarized RPV surface:
@@ -1173,7 +1173,7 @@ subroutine shd_io__readSfc(&
     !   Norm Loeb's modification of 6S ocean reflectance module.
     else if ((SFCTYPE .eq. 'VO') .or. (SFCTYPE .eq. 'Vo')) then
 
-        NSFCPAR = 4
+        NSFCPAR = 3
 
         !if (NSFCPAR .gt. MAXSFCPARS) then
         !    write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
@@ -1274,7 +1274,7 @@ subroutine shd_io__readSfc(&
     ! Surface file type W is for Wave-Fresnel surface
     else if ((SFCTYPE .eq. 'VW') .or. (SFCTYPE .eq. 'Vw')) then
 
-        NSFCPAR = 5
+        NSFCPAR = 4
 
         !if (NSFCPAR .gt. MAXSFCPARS) then
         !    write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'

@@ -45,7 +45,7 @@ def figure_les(fname):
                 # plot1
                 #╭──────────────────────────────────────────────────────────────╮#
                 ax1 = fig.add_subplot(111)
-                cs = ax1.imshow(data_shd.T, origin='lower', cmap='Greys_r', zorder=0, vmin=0.0, vmax=0.55, extent=extent)
+                cs = ax1.imshow(data_shd.T, origin='lower', cmap='Greys_r', zorder=0, vmin=0.0, vmax=0.4, extent=extent)
                 ax1.axis('off')
                 #╰──────────────────────────────────────────────────────────────╯#
                 # save figure

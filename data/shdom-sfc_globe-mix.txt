@@ -1,5 +1,5 @@
 X
 360 180  1.11317100e+02  2.22634199e+02
 ! The following provides information for interpreting binary data:
-! sHdOm-sfc
+! .sHdOm-sfc
 !        361,       181,         8
