@@ -512,7 +512,6 @@ subroutine shd_util__computeGausQuad_new(m, gmu, gwt)
     return
 end subroutine shd_util__computeGausQuad_new
 
-
 subroutine shd_util__computeGausQuad(N, XA, WT)
 
     !╭──────────────────────────────────────────────────────────────╮!
