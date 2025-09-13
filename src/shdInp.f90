@@ -1049,7 +1049,7 @@ subroutine shd_io__readSfcSize(SFCFILE, MAXSFCPTS, MAXSFCPARS)
     ! 1
     else if ((SFCTYPE .eq. 'VO') .or. (SFCTYPE .eq. 'Vo')) then
         ! Surface file type O is for Ocean BRDF surface
-        MAXSFCPARS = 3
+        MAXSFCPARS = 4
     ! 2
     else if ((SFCTYPE .eq. 'VR') .or. (SFCTYPE .eq. 'Vr')) then
         ! Surface file type R is for RPV surface
@@ -1065,7 +1065,7 @@ subroutine shd_io__readSfcSize(SFCFILE, MAXSFCPTS, MAXSFCPARS)
     ! -1
     else if ((SFCTYPE .eq. 'VW') .or. (SFCTYPE .eq. 'Vw')) then
         ! Surface file type W is for Wave-Fresnel surface
-        MAXSFCPARS = 4
+        MAXSFCPARS = 5
     ! -2
     else if ((SFCTYPE .eq. 'VD') .or. (SFCTYPE .eq. 'Vd')) then
         ! Surface file type D is for Diner polarized RPV surface:
@@ -1134,7 +1134,7 @@ subroutine shd_io__readSfc(&
     read (1, '(A1)') SFCTYPE(2:2)
     read (1, *) NXSFC, NYSFC, DELXSFC, DELYSFC
     if ((NXSFC + 1)*(NYSFC + 1) .gt. MAXSFCPTS) then
-        write (*, *) 'Error [_readSfc]: MAXSFCPTS exceeded.'
+        write (*, *) 'Error [_readSfc]: MAXSFCPTS exceeded.', (NXSFC + 1)*(NYSFC + 1), MAXSFCPTS
         stop
     end if
 
@@ -1375,7 +1375,7 @@ subroutine shd_io__readSfc(&
     end if
 
     if (NSFCPAR .gt. MAXSFCPARS) then
-        write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
+        write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.', NSFCPAR, MAXSFCPARS
         stop
     end if
 
