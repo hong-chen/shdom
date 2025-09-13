@@ -172,7 +172,7 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
         end if
 
         PHIDIFF = PHI1-PHI2
-        call shd_sfc__brdfOcean(REFPARMS(1), -1., REFPARMS(2), WAVELEN,&
+        call shd_sfc__brdfOcean(REFPARMS(2), -1., REFPARMS(3), WAVELEN,&
             & -MU1, MU2, PHIDIFF, PHI1, REFLECT(1, 1))
 
     else if ((SFCTYPE .eq. 'R') .or. (SFCTYPE .eq. 'r')) then
@@ -213,8 +213,8 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
     else if ((SFCTYPE .eq. 'W') .or. (SFCTYPE .eq. 'w')) then
 
         ! W: Fresnel reflection with Gaussian distribution of slopes
-        call shd_sfc__brdfFresnel(REFPARMS(1), REFPARMS(2),&
-            &REFPARMS(3), MU1, MU2, PHI1, PHI2, NSTOKES, REFLECT)
+        call shd_sfc__brdfFresnel(REFPARMS(2), REFPARMS(3),&
+            &REFPARMS(4), MU1, MU2, PHI1, PHI2, NSTOKES, REFLECT)
 
     else if ((SFCTYPE .eq. 'D') .or. (SFCTYPE .eq. 'd')) then
 
@@ -250,7 +250,7 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
         else if (abs(REFPARMS(iSFC_ID)-1.0) .lt. 0.01) then
 
             PHIDIFF = PHI1-PHI2
-            call shd_sfc__brdfOcean(REFPARMS(1), -1., REFPARMS(2), WAVELEN,&
+            call shd_sfc__brdfOcean(REFPARMS(2), -1., REFPARMS(3), WAVELEN,&
                 & -MU1, MU2, PHIDIFF, PHI1, REFLECT(1, 1))
 
         ! 2.0
@@ -278,8 +278,8 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
         ! -1.0
         else if (abs(REFPARMS(iSFC_ID)+1.0) .lt. 0.01) then
 
-            call shd_sfc__brdfFresnel(REFPARMS(1), REFPARMS(2),&
-                &REFPARMS(3), MU1, MU2, PHI1, PHI2, NSTOKES, REFLECT)
+            call shd_sfc__brdfFresnel(REFPARMS(2), REFPARMS(3),&
+                &REFPARMS(4), MU1, MU2, PHI1, PHI2, NSTOKES, REFLECT)
 
         ! -2.0
         else if (abs(REFPARMS(iSFC_ID)+2.0) .lt. 0.01) then
