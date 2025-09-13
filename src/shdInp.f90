@@ -1420,7 +1420,8 @@ subroutine shd_io__readSfc(&
 
     GNDTEMP   = GNDTEMP   + SUM(SFCPARMS(1:NDATA:NPP))/(NXX*NYY)
     ! Ocean [O] and Wave-Fresnel [W] have been modified for albedo calculation
-    GNDALBEDO = GNDALBEDO + SUM(SFCPARMS(2:NDATA:NPP))/(NXX*NYY)
+    N = COUNT((abs(SFCPARMS(8:NDATA:NPP))-1.0) .lt. 0.01) ! get rid of [O] and [W]
+    GNDALBEDO = GNDALBEDO + SUM(SFCPARMS(2:NDATA:NPP))/(NXX*NYY-N)
     return
 
 end subroutine shd_io__readSfc
