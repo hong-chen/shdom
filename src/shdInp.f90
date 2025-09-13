@@ -1115,7 +1115,7 @@ subroutine shd_io__readSfc(&
     real :: SFCPARMS(*), GNDTEMP, GNDALBEDO
     character(len=*), intent(in) :: SFCFILE
     character(len=2) :: SFCTYPE
-    integer :: N, I, I0, IX, IY, J
+    integer :: N, NALB, I, I0, IX, IY, J
     real :: ALB, TEMP, MRE, MIM, RHO0, KR, THETA, WSPD, PCL
     real :: PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7, PARAM8
     real F_ISO, F_VOL, F_GEO, F_JIAO
@@ -1141,6 +1141,7 @@ subroutine shd_io__readSfc(&
     GNDTEMP = 0.0
     GNDALBEDO = 0.0
     N = 0
+    NALB = 0
 
     ! Surface file type L is for variable Lambertian surface
     if ((SFCTYPE .eq. 'VL') .or. (SFCTYPE .eq. 'Vl')) then
@@ -1418,10 +1419,38 @@ subroutine shd_io__readSfc(&
         end do
     end do
 
-    GNDTEMP   = GNDTEMP   + SUM(SFCPARMS(1:NDATA:NPP))/(NXX*NYY)
+    do IY = 1, NYSFC + 1
+        do IX = 1, NXSFC + 1
+            if (IX .ge. 1 .and. IX .le. NXSFC .and.&
+                &IY .ge. 1 .and. IY .le. NYSFC) then
+
+                I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
+
+                GNDTEMP = GNDTEMP + SFCPARMS(I + 1)
+                N = N + 1
+
+                if (((SFCTYPE .ne. 'VO') .and. (SFCTYPE .ne. 'Vo')) .and.&
+                    &((SFCTYPE .ne. 'VW') .and. (SFCTYPE .ne. 'Vw'))) then
+                    if ((SFCTYPE .eq. 'VX') .or. (SFCTYPE .eq. 'Vx')) then
+                        if ((abs(SFCPARMS(I+8))-1.0) .gt. 0.01) then
+                            GNDALBEDO = GNDALBEDO + SFCPARMS(I + 2)
+                            NALB = NALB + 1
+                        end if
+                    else
+                        GNDALBEDO = GNDALBEDO + SFCPARMS(I + 2)
+                        NALB = NALB + 1
+                    end if
+                end if
+            end if
+        end do
+    end do
+
+    GNDTEMP   = GNDTEMP/N
     ! Ocean [O] and Wave-Fresnel [W] have been modified for albedo calculation
-    N = COUNT((abs(SFCPARMS(8:NDATA:NPP))-1.0) .lt. 0.01) ! get rid of [O] and [W]
-    GNDALBEDO = GNDALBEDO + SUM(SFCPARMS(2:NDATA:NPP))/(NXX*NYY-N)
+    !N = COUNT((abs(SFCPARMS(8:NDATA:NPP))-1.0) .lt. 0.01) ! get rid of [O] and [W]
+    !GNDALBEDO = GNDALBEDO + SUM(SFCPARMS(2:NDATA:NPP))/(NXX*NYY-N)
+    GNDALBEDO = GNDALBEDO/NALB
+    print *, GNDTEMP, GNDALBEDO
     return
 
 end subroutine shd_io__readSfc
