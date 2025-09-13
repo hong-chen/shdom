@@ -426,15 +426,20 @@ subroutine shd_io__nmlInput(&
     do I = 1, NUMOUT
         dOUTTYPES(I) = OUTTYPES(I)
         if (OUTTYPES(I) (1:1) .eq. 'R') then
-            N = nint(OUTPARMS(6, I))
-            do J = 1, min(2*N + 6, MAXPAR)
+            !N = nint(OUTPARMS(6, I))
+            !do J = 1, min(2*N + 6, MAXPAR)
+            !    dOUTPARMS(J, I) = OUTPARMS(J, I)
+            !end do
+            ! new binary angle input do not need the loop above
+            do J = 1, 6
                 dOUTPARMS(J, I) = OUTPARMS(J, I)
             end do
         else if (OUTTYPES(I) (1:1) .eq. 'V') then
             dOUTPARMS(1, I) = OUTPARMS(1, I)
             dOUTPARMS(2, I) = OUTPARMS(2, I)
             dOUTPARMS(3, I) = OUTPARMS(3, I)
-            ! new user-specified sensor mode is with number "3"
+            ! new user-specified sensor mode V3 only need 3 parameters
+            ! read more parameters if for V1 and V2
             if (nint(OUTPARMS(1, I)) .le. 2) then
                 do J = 4, 13
                     dOUTPARMS(J, I) = OUTPARMS(J, I)
