@@ -1,5 +1,5 @@
 !   SHDOM: Spherical harmonic discrete ordinate radiative transfer method.
-!      See docs/README.rst for documentation.
+!     See docs/README.rst for documentation.
 
 program shdom_main
 
@@ -159,7 +159,7 @@ program shdom_main
     if (DELTAM) NLEG = ML + 1
 
     ! NSTLEG is the number of phase function elements used (1 or 6)
-    ! Also used for the number of unique elements of the generalized
+    !   Also used for the number of unique elements of the generalized
     !   spherical harmonics matrices.
     if (NSTOKES .eq. 1) then
         NSTLEG = 1
@@ -187,7 +187,7 @@ program shdom_main
     BASEOUT = .false.
 
     ! Make ML and MM from NMU and NPHI
-    ! Compute NLM, NPHI0MAX.
+    !   Compute NLM, NPHI0MAX.
     if (SRCTYPE .eq. 'T') SOLARAZ = 0.0
     NPHI0MAX = NPHI
     NLM = (2*MM + 1)*(ML + 1) - MM*(MM + 1)
@@ -256,7 +256,7 @@ program shdom_main
     if (mpiMode) then
 
         ! Read the properties of the medium to the master processor and
-        !  distribute to all the processors
+        !   distribute to all the processors
         if (MASTERPROC) then
             MAXPGT = NPXT*NPYT*NPZ_
             MAXPGLT = MAXPGL
@@ -265,7 +265,7 @@ program shdom_main
             allocate (TEMPPT(MAXPGT), EXTINCTPT(MAXPGT), ALBEDOPT(MAXPGT))
             allocate (IPHASEPT(MAXPGT), LEGENPT(MAXPGLT))
 
-            ! only use DELX and DELY from initial read, DELX0 and DELY0 are discarded
+            ! Only use DELX and DELY from initial read, DELX0 and DELY0 are discarded
             call shd_io__readPrp(PROPFILE, NPXT, NPYT, NPZ_,&
                 &NSTLEG, MAXLEG, NLEG, MAXNZ, MAXPGT, MAXPGLT, DELTAM,&
                 &PROPTYPE, DELX0, DELY0, ZLEVELS_, MAXASYM,&
@@ -317,13 +317,13 @@ program shdom_main
 
     if (mpiMode) then
         ! Read the memory parameters from a file, if it exists, and send
-        !  the parameters to all processors. Otherwise use the input ones.
+        !   the parameters to all processors. Otherwise use the input ones.
         call shd_mpi__readBcastMemParam(MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
             &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, RUNNAME)
     end if
 
     ! Guess maximum number of grid points, cells, SH vector size needed
-    ! but don't let MAX_TOTAL_MB be exceeded
+    !   but don't let MAX_TOTAL_MB be exceeded
     if (MAX_TOTAL_MB*1024.0**2 .gt. 1.80*huge(MAXIV)) then
         MAX_TOTAL_MB = 1.80*huge(MAXIV)/1024.0**2
         write (6, '(A,F0.2," MB")') 'Message [shdom_main]: MAX_TOTAL_MB reduced to: ', MAX_TOTAL_MB
@@ -391,16 +391,6 @@ program shdom_main
     allocate (WORK1(8*MAXIG))
     allocate (FLUXES(2, MAXIG), DIRFLUX(MAXIG))
 
-    ! print dimension parameters
-    !╭────────────────────────────────────────────────╮!
-    !print *, 'NSTOKES                :', NSTOKES
-    !print *, 'MAXIG (grid)           :', MAXIG
-    !print *, 'MAXIC (cell)           :', MAXIC
-    !print *, 'MAXIGL (Legendre)      :', MAXIGL
-    !print *, 'MAXIDO (grid x nphi)   :', MAXIDO
-    !print *, 'MAXIV (harmonic terms) :', MAXIV
-    !╰────────────────────────────────────────────────╯!
-
     MAXNBC = MAXIG*3/NZ
     ! Read in the surface properties
     if (SFCFILE(1:2) .eq. 'NO') then
@@ -454,7 +444,7 @@ program shdom_main
     end if
 
     ! Read in user-specified sensor properties if given
-    ! this is a binary angle input implemented for 'R' and 'V3'
+    !   this is a binary angle input implemented for 'R' and 'V3'
     if (SENFILE(1:2) .ne. 'NO') then
         if (MASTERPROC) then
             call shd_io__readSenSize(SENFILE, NSENDATA, NSENPAR)
@@ -468,7 +458,7 @@ program shdom_main
         call shd_mpi__bcastSenParam(NSENDATA, NSENPAR, SENPARMS)
 
     else
-        ! this is to accommodate old text angle input for radiance [R]
+        ! This is to accommodate legacy text angle input for radiance [R]
         NSENDATA = (MAXPAR-6)/2
         NSENPAR = 2
         allocate (SENPARMS(NSENDATA*NSENPAR))
@@ -581,8 +571,8 @@ program shdom_main
         &NPTS, NCELLS, GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR,&
         &CELLFLAGS, FLUXES, SHPTR, SOURCE, RSHPTR, RADIANCE)
 
-    ! check if we can use pre-calculated "state", if not, generate new grids
-    ! NEWGRIDFLAG is from shd_io__restoreState call
+    ! Check if we can use pre-calculated "state", if not, generate new grids
+    !   NEWGRIDFLAG is from shd_io__restoreState call
     if (NEWGRIDFLAG) then
         ! Make the internal base grid lines
         call shd_init__makeGrid(BCFLAG, GRIDTYPE, NPX_, NPY_, NPZ_, NX, NY, NZ,&
@@ -790,6 +780,7 @@ program shdom_main
     end do ! CKD Ng loop
 
 
+    ! Re-calculate Ng averaged TOA flux for output use
     SOLARFLUX = 0.0d0
     do IG = NG, 1, -1
         SOLARFLUX = SOLARFLUX + SOLFLUX(IG)*DELG(IG)*SOLARFLUX0*abs(SOLARMU)
