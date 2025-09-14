@@ -1154,27 +1154,32 @@ subroutine shd_io__readSfc(&
 
         NSFCPAR = 2
 
-        !if (NSFCPAR .gt. MAXSFCPARS) then
-        !    write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
-        !    stop
-        !end if
-        !do while (.true.)
-        !    read (1, *, end=290) IX, IY, TEMP, ALB
-        !    if (IX .ge. 1 .and. IX .le. NXSFC .and.&
-        !        &IY .ge. 1 .and. IY .le. NYSFC) then
-        !        I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
-        !        SFCPARMS(I + 1) = TEMP
-        !        SFCPARMS(I + 2) = ALB
-        !        if (ALB .lt. 0.0 .or. ALB .gt. 1.0)&
-        !            &stop 'Error [_readSfc]: Illegal surface albedo.'
-        !        if (TEMP .lt. 150. .or. TEMP .gt. 350.)&
-        !            &write (*, *) 'Warning [_readSfc]: ',&
-        !            &' surface temperature: ', IX, IY, TEMP
-        !        GNDTEMP = GNDTEMP + TEMP
-        !        GNDALBEDO = GNDALBEDO + ALB
-        !        N = N + 1
-        !    end if
-        !end do
+        if (NSFCPAR .gt. MAXSFCPARS) then
+            write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
+            stop
+        end if
+
+        read (1, '(A)') TMP_CHAR
+        if (TMP_CHAR(1:1) .ne. '!') then ! check if binary input,
+            backspace(1)                 ! if not, go back one line
+            do while (.true.)
+                read (1, *, end=290) IX, IY, TEMP, ALB
+                if (IX .ge. 1 .and. IX .le. NXSFC .and.&
+                    &IY .ge. 1 .and. IY .le. NYSFC) then
+                    I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
+                    SFCPARMS(I + 1) = TEMP
+                    SFCPARMS(I + 2) = ALB
+                    if (ALB .lt. 0.0 .or. ALB .gt. 1.0)&
+                        &stop 'Error [_readSfc]: Illegal surface albedo.'
+                    if (TEMP .lt. 150. .or. TEMP .gt. 350.)&
+                        &write (*, *) 'Warning [_readSfc]: ',&
+                        &' surface temperature: ', IX, IY, TEMP
+                    GNDTEMP = GNDTEMP + TEMP
+                    GNDALBEDO = GNDALBEDO + ALB
+                    N = N + 1
+                end if
+            end do
+        end if
 
     ! Surface file type O is for Ocean surface BRDF
     !   Norm Loeb's modification of 6S ocean reflectance module.
@@ -1182,23 +1187,27 @@ subroutine shd_io__readSfc(&
 
         NSFCPAR = 3
 
-        !if (NSFCPAR .gt. MAXSFCPARS) then
-        !    write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
-        !    stop
-        !end if
-        !do while (.true.)
-        !    read (1, *, end=290) IX, IY, TEMP, ALB, WSPD, PCL
-        !    if (IX .ge. 1 .and. IX .le. NXSFC .and.&
-        !        &IY .ge. 1 .and. IY .le. NYSFC) then
-        !        I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
-        !        SFCPARMS(I + 1) = TEMP
-        !        SFCPARMS(I + 2) = ALB
-        !        SFCPARMS(I + 3) = WSPD
-        !        SFCPARMS(I + 4) = PCL
-        !        GNDTEMP = GNDTEMP + TEMP
-        !        N = N + 1
-        !    end if
-        !end do
+        if (NSFCPAR .gt. MAXSFCPARS) then
+            write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
+            stop
+        end if
+
+        read (1, '(A)') TMP_CHAR
+        if (TMP_CHAR(1:1) .ne. '!') then ! check if binary input,
+            backspace(1)                 ! if not, go back one line
+            do while (.true.)
+                read (1, *, end=290) IX, IY, TEMP, WSPD, PCL
+                if (IX .ge. 1 .and. IX .le. NXSFC .and.&
+                    &IY .ge. 1 .and. IY .le. NYSFC) then
+                    I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
+                    SFCPARMS(I + 1) = TEMP
+                    SFCPARMS(I + 2) = WSPD
+                    SFCPARMS(I + 3) = PCL
+                    GNDTEMP = GNDTEMP + TEMP
+                    N = N + 1
+                end if
+            end do
+        end if
 
     ! Surface file type R is for RPV surface:
     !   (Rahman, Pinty, Verstraete, 1993: Coupled Surface-Atmosphe
@@ -1209,98 +1218,117 @@ subroutine shd_io__readSfc(&
 
         NSFCPAR = 4
 
-        !if (NSFCPAR .gt. MAXSFCPARS) then
-        !    write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
-        !    stop
-        !end if
-        !do while (.true.)
-        !    read (1, *, end=290) IX, IY, TEMP, RHO0, KR, THETA
-        !    if (IX .ge. 1 .and. IX .le. NXSFC .and.&
-        !        &IY .ge. 1 .and. IY .le. NYSFC) then
-        !        I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
-        !        SFCPARMS(I + 1) = TEMP
-        !        SFCPARMS(I + 2) = RHO0
-        !        SFCPARMS(I + 3) = KR
-        !        SFCPARMS(I + 4) = THETA
-        !        GNDTEMP = GNDTEMP + TEMP
-        !        GNDALBEDO = GNDALBEDO + RHO0
-        !        N = N + 1
-        !    end if
-        !end do
+        if (NSFCPAR .gt. MAXSFCPARS) then
+            write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
+            stop
+        end if
+
+        read (1, '(A)') TMP_CHAR
+        if (TMP_CHAR(1:1) .ne. '!') then ! check if binary input,
+            backspace(1)                 ! if not, go back one line
+            do while (.true.)
+                read (1, *, end=290) IX, IY, TEMP, RHO0, KR, THETA
+                if (IX .ge. 1 .and. IX .le. NXSFC .and.&
+                    &IY .ge. 1 .and. IY .le. NYSFC) then
+                    I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
+                    SFCPARMS(I + 1) = TEMP
+                    SFCPARMS(I + 2) = RHO0
+                    SFCPARMS(I + 3) = KR
+                    SFCPARMS(I + 4) = THETA
+                    GNDTEMP = GNDTEMP + TEMP
+                    GNDALBEDO = GNDALBEDO + RHO0
+                    N = N + 1
+                end if
+            end do
+        end if
 
     ! Surface file type T is for LSRT surface:
     else if ((SFCTYPE .eq. 'VT') .or. (SFCTYPE .eq. 'Vt')) then
 
         NSFCPAR = 4
 
-        !if (NSFCPAR .gt. MAXSFCPARS) then
-        !    write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
-        !    stop
-        !end if
-        !do while (.true.)
-        !    read (1, *, end=290) IX, IY, TEMP, F_ISO, F_GEO, F_VOL
-        !    if (IX .ge. 1 .and. IX .le. NXSFC .and.&
-        !        &IY .ge. 1 .and. IY .le. NYSFC) then
-        !        I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
-        !        SFCPARMS(I + 1) = TEMP
-        !        SFCPARMS(I + 2) = F_ISO
-        !        SFCPARMS(I + 3) = F_GEO
-        !        SFCPARMS(I + 4) = F_VOL
-        !        GNDTEMP = GNDTEMP + TEMP
-        !        GNDALBEDO = GNDALBEDO + F_ISO
-        !        N = N + 1
-        !    end if
-        !end do
+        if (NSFCPAR .gt. MAXSFCPARS) then
+            write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
+            stop
+        end if
+
+        read (1, '(A)') TMP_CHAR
+        if (TMP_CHAR(1:1) .ne. '!') then ! check if binary input,
+            backspace(1)                 ! if not, go back one line
+            do while (.true.)
+                read (1, *, end=290) IX, IY, TEMP, F_ISO, F_GEO, F_VOL
+                if (IX .ge. 1 .and. IX .le. NXSFC .and.&
+                    &IY .ge. 1 .and. IY .le. NYSFC) then
+                    I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
+                    SFCPARMS(I + 1) = TEMP
+                    SFCPARMS(I + 2) = F_ISO
+                    SFCPARMS(I + 3) = F_GEO
+                    SFCPARMS(I + 4) = F_VOL
+                    GNDTEMP = GNDTEMP + TEMP
+                    GNDALBEDO = GNDALBEDO + F_ISO
+                    N = N + 1
+                end if
+            end do
+        end if
 
     ! Surface file type J is for LSRT-Jiao surface:
     else if ((SFCTYPE .eq. 'VJ') .or. (SFCTYPE .eq. 'Vj')) then
 
         NSFCPAR = 6
 
-        !if (NSFCPAR .gt. MAXSFCPARS) then
-        !    write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
-        !    stop
-        !end if
-        !do while (.true.)
-        !    read (1, *, end=290) IX, IY, TEMP, F_ISO, F_GEO, F_VOL, F_JIAO, ALPHA
-        !    if (IX .ge. 1 .and. IX .le. NXSFC .and.&
-        !        &IY .ge. 1 .and. IY .le. NYSFC) then
-        !        I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
-        !        SFCPARMS(I + 1) = TEMP
-        !        SFCPARMS(I + 2) = F_ISO
-        !        SFCPARMS(I + 3) = F_GEO
-        !        SFCPARMS(I + 4) = F_VOL
-        !        SFCPARMS(I + 5) = F_JIAO
-        !        SFCPARMS(I + 6) = ALPHA
-        !        GNDTEMP = GNDTEMP + TEMP
-        !        GNDALBEDO = GNDALBEDO + F_ISO
-        !        N = N + 1
-        !    end if
-        !end do
+        if (NSFCPAR .gt. MAXSFCPARS) then
+            write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
+            stop
+        end if
+
+        read (1, '(A)') TMP_CHAR
+        if (TMP_CHAR(1:1) .ne. '!') then ! check if binary input,
+            backspace(1)                 ! if not, go back one line
+            do while (.true.)
+                read (1, *, end=290) IX, IY, TEMP, F_ISO, F_GEO, F_VOL, F_JIAO, ALPHA
+                if (IX .ge. 1 .and. IX .le. NXSFC .and.&
+                    &IY .ge. 1 .and. IY .le. NYSFC) then
+                    I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
+                    SFCPARMS(I + 1) = TEMP
+                    SFCPARMS(I + 2) = F_ISO
+                    SFCPARMS(I + 3) = F_GEO
+                    SFCPARMS(I + 4) = F_VOL
+                    SFCPARMS(I + 5) = F_JIAO
+                    SFCPARMS(I + 6) = ALPHA
+                    GNDTEMP = GNDTEMP + TEMP
+                    GNDALBEDO = GNDALBEDO + F_ISO
+                    N = N + 1
+                end if
+            end do
+        end if
 
     ! Surface file type W is for Wave-Fresnel surface
     else if ((SFCTYPE .eq. 'VW') .or. (SFCTYPE .eq. 'Vw')) then
 
         NSFCPAR = 4
 
-        !if (NSFCPAR .gt. MAXSFCPARS) then
-        !    write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
-        !    stop
-        !end if
-        !do while (.true.)
-        !    read (1, *, end=290) IX, IY, TEMP, ALB, MRE, MIM, WSPD
-        !    if (IX .ge. 1 .and. IX .le. NXSFC .and.&
-        !        &IY .ge. 1 .and. IY .le. NYSFC) then
-        !        I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
-        !        SFCPARMS(I + 1) = TEMP
-        !        SFCPARMS(I + 2) = ALB
-        !        SFCPARMS(I + 3) = MRE
-        !        SFCPARMS(I + 4) = MIM
-        !        SFCPARMS(I + 5) = WSPD
-        !        GNDTEMP = GNDTEMP + TEMP
-        !        N = N + 1
-        !    end if
-        !end do
+        if (NSFCPAR .gt. MAXSFCPARS) then
+            write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
+            stop
+        end if
+
+        read (1, '(A)') TMP_CHAR
+        if (TMP_CHAR(1:1) .ne. '!') then ! check if binary input,
+            backspace(1)                 ! if not, go back one line
+            do while (.true.)
+                read (1, *, end=290) IX, IY, TEMP, MRE, MIM, WSPD
+                if (IX .ge. 1 .and. IX .le. NXSFC .and.&
+                    &IY .ge. 1 .and. IY .le. NYSFC) then
+                    I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
+                    SFCPARMS(I + 1) = TEMP
+                    SFCPARMS(I + 2) = MRE
+                    SFCPARMS(I + 3) = MIM
+                    SFCPARMS(I + 4) = WSPD
+                    GNDTEMP = GNDTEMP + TEMP
+                    N = N + 1
+                end if
+            end do
+        end if
 
     ! Surface file type D is for Diner et al surface reflection:
     ! (Diner, D. J., F. Xu, J. V. Martonchik, B. E. Rheingans, S. Geier,
@@ -1312,83 +1340,93 @@ subroutine shd_io__readSfc(&
 
         NSFCPAR = 6
 
-        !if (NSFCPAR .gt. MAXSFCPARS) then
-        !    write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
-        !    stop
-        !end if
-        !do while (.true.)
-        !    read (1, *, end=290) IX, IY, TEMP, A, KR, B, ZETA, SIGMA
-        !    if (IX .ge. 1 .and. IX .le. NXSFC .and.&
-        !        &IY .ge. 1 .and. IY .le. NYSFC) then
-        !        I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
-        !        SFCPARMS(I + 1) = TEMP
-        !        SFCPARMS(I + 2) = A
-        !        SFCPARMS(I + 3) = KR
-        !        SFCPARMS(I + 4) = B
-        !        SFCPARMS(I + 5) = ZETA
-        !        SFCPARMS(I + 6) = SIGMA
-        !        GNDTEMP = GNDTEMP + TEMP
-        !        GNDALBEDO = GNDALBEDO + A
-        !        N = N + 1
-        !    end if
-        !end do
+        if (NSFCPAR .gt. MAXSFCPARS) then
+            write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
+            stop
+        end if
+
+        read (1, '(A)') TMP_CHAR
+        if (TMP_CHAR(1:1) .ne. '!') then ! check if binary input,
+            backspace(1)                 ! if not, go back one line
+            do while (.true.)
+                read (1, *, end=290) IX, IY, TEMP, A, KR, B, ZETA, SIGMA
+                if (IX .ge. 1 .and. IX .le. NXSFC .and.&
+                    &IY .ge. 1 .and. IY .le. NYSFC) then
+                    I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
+                    SFCPARMS(I + 1) = TEMP
+                    SFCPARMS(I + 2) = A
+                    SFCPARMS(I + 3) = KR
+                    SFCPARMS(I + 4) = B
+                    SFCPARMS(I + 5) = ZETA
+                    SFCPARMS(I + 6) = SIGMA
+                    GNDTEMP = GNDTEMP + TEMP
+                    GNDALBEDO = GNDALBEDO + A
+                    N = N + 1
+                end if
+            end do
+        end if
 
     ! Surface file type X is for Mixed-type surface:
     else if ((SFCTYPE .eq. 'VX') .or. (SFCTYPE .eq. 'Vx')) then
 
         NSFCPAR = 8
 
-        !if (NSFCPAR .gt. MAXSFCPARS) then
-        !    write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
-        !    stop
-        !end if
-        !do while (.true.)
-        !    read (1, *, end=290)    IX, IY, PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7, PARAM8
-        !    ! for Lambertian   (VL):IX, IY, TEMP,   ALB,    -999.0, -999.0, -999.0, -999.0, -999.0,  0.0
-        !    ! for Ocean        (VO):IX, IY, TEMP,   WSPD,   PCL,    -999.0, -999.0, -999.0, -999.0,  1.0
-        !    ! for RPV          (VR):IX, IY, TEMP,   RHO0,   KR,     THETA,  -999.0, -999.0, -999.0,  2.0
-        !    ! for LSRT         (VT):IX, IY, TEMP,   F_ISO,  F_GEO,  F_VOL,  -999.0, -999.0, -999.0,  3.0
-        !    ! for LSRT-J       (VJ):IX, IY, TEMP,   F_ISO,  F_GEO,  F_VOL,  F_JIAO, ALPHA,  -999.0,  4.0
-        !    ! for Wave-Fresnel (VW):IX, IY, TEMP,   MRE,    MIM,    WSPD,   -999.0, -999.0, -999.0, -1.0
-        !    ! for Diner        (VD):IX, IY, TEMP,   A,      KR,     B,      ZETA,   SIGMA,  -999.0, -2.0
+        if (NSFCPAR .gt. MAXSFCPARS) then
+            write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
+            stop
+        end if
 
-        !    if (IX .ge. 1 .and. IX .le. NXSFC .and.&
-        !        &IY .ge. 1 .and. IY .le. NYSFC) then
-        !        I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
-        !        SFCPARMS(I + 1) = PARAM1
-        !        SFCPARMS(I + 2) = PARAM2
-        !        SFCPARMS(I + 3) = PARAM3
-        !        SFCPARMS(I + 4) = PARAM4
-        !        SFCPARMS(I + 5) = PARAM5
-        !        SFCPARMS(I + 6) = PARAM6
-        !        SFCPARMS(I + 7) = PARAM7
-        !        SFCPARMS(I + 8) = PARAM8 ! surface identification
+        read (1, '(A)') TMP_CHAR
+        if (TMP_CHAR(1:1) .ne. '!') then ! check if binary input,
+            backspace(1)                 ! if not, go back one line
+            do while (.true.)
+                read (1, *, end=290)    IX, IY, PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7, PARAM8
+                ! for Lambertian   (VL):IX, IY, TEMP,   ALB,    -999.0, -999.0, -999.0, -999.0, -999.0,  0.0
+                ! for Ocean        (VO):IX, IY, TEMP,   WSPD,   PCL,    -999.0, -999.0, -999.0, -999.0,  1.0
+                ! for RPV          (VR):IX, IY, TEMP,   RHO0,   KR,     THETA,  -999.0, -999.0, -999.0,  2.0
+                ! for LSRT         (VT):IX, IY, TEMP,   F_ISO,  F_GEO,  F_VOL,  -999.0, -999.0, -999.0,  3.0
+                ! for LSRT-J       (VJ):IX, IY, TEMP,   F_ISO,  F_GEO,  F_VOL,  F_JIAO, ALPHA,  -999.0,  4.0
+                ! for Wave-Fresnel (VW):IX, IY, TEMP,   MRE,    MIM,    WSPD,   -999.0, -999.0, -999.0, -1.0
+                ! for Diner        (VD):IX, IY, TEMP,   A,      KR,     B,      ZETA,   SIGMA,  -999.0, -2.0
 
-        !        GNDTEMP = GNDTEMP + PARAM1
+                if (IX .ge. 1 .and. IX .le. NXSFC .and.&
+                    &IY .ge. 1 .and. IY .le. NYSFC) then
+                    I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
+                    SFCPARMS(I + 1) = PARAM1
+                    SFCPARMS(I + 2) = PARAM2
+                    SFCPARMS(I + 3) = PARAM3
+                    SFCPARMS(I + 4) = PARAM4
+                    SFCPARMS(I + 5) = PARAM5
+                    SFCPARMS(I + 6) = PARAM6
+                    SFCPARMS(I + 7) = PARAM7
+                    SFCPARMS(I + 8) = PARAM8 ! surface identification
 
-        !        ! no albedo for polarized (W) and unpolarized (O) Ocean parameterization
-        !        if ((abs(PARAM8)-1.0) .gt. 0.01) then
-        !            GNDALBEDO = GNDALBEDO + PARAM2
-        !        end if
+                    GNDTEMP = GNDTEMP + PARAM1
 
-        !        N = N + 1
-        !    end if
-        !end do
+                    ! no albedo for polarized (W) and unpolarized (O) Ocean parameterization
+                    if ((abs(PARAM8)-1.0) .gt. 0.01) then
+                        GNDALBEDO = GNDALBEDO + PARAM2
+                    end if
+
+                    N = N + 1
+                end if
+            end do
+        end if
 
     else
 
+        close (1)
         stop 'Error [_readSfc]: Unknown BRDF type <'//trim(adjustl(SFCTYPE))//'>.'
 
     end if
 
+    ! read binary
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     if (NSFCPAR .gt. MAXSFCPARS) then
         write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.', NSFCPAR, MAXSFCPARS
         stop
     end if
 
-    ! read binary
-    !╭────────────────────────────────────────────────────────────────────────────╮!
-    read (1, '(A)') TMP_CHAR ! skip one line
     read (1, '(A)') DATA_POSTFIX
     read (1, '(A)') DIMS_CHAR
 
@@ -1400,30 +1438,8 @@ subroutine shd_io__readSfc(&
     open (UNIT=88, FILE=trim(adjustl(OUTFILE_DATA)), STATUS='OLD',&
         &ACCESS='STREAM', FORM='UNFORMATTED')
     NDATA = NXX*NYY*NPP
-    read (88) (SFCPARMS(IDATA), IDATA=1,NDATA)
+    read (88) (SFCPARMS(IDATA), IDATA=1, NDATA)
     close (88)
-    !╰────────────────────────────────────────────────────────────────────────────╯!
-
-290 continue
-
-    close (1)
-
-    ! Copy the edge points to the opposite side for periodic boundar
-    do IX = 1, NXSFC
-        I0 = NSFCPAR*(IX - 1 + (NXSFC + 1)*(1 - 1))
-        I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(NYSFC + 1 - 1))
-        do J = 1, NSFCPAR
-            SFCPARMS(I + J) = SFCPARMS(I0 + J)
-        end do
-    end do
-
-    do IY = 1, NYSFC + 1
-        I0 = NSFCPAR*((NXSFC + 1)*(IY - 1))
-        I = NSFCPAR*(NXSFC + (NXSFC + 1)*(IY - 1))
-        do J = 1, NSFCPAR
-            SFCPARMS(I + J) = SFCPARMS(I0 + J)
-        end do
-    end do
 
     do IY = 1, NYSFC + 1
         do IX = 1, NXSFC + 1
@@ -1450,6 +1466,28 @@ subroutine shd_io__readSfc(&
 
             end if
 
+        end do
+    end do
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+290 continue
+
+    close (1)
+
+    ! Copy the edge points to the opposite side for periodic boundar
+    do IX = 1, NXSFC
+        I0 = NSFCPAR*(IX - 1 + (NXSFC + 1)*(1 - 1))
+        I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(NYSFC + 1 - 1))
+        do J = 1, NSFCPAR
+            SFCPARMS(I + J) = SFCPARMS(I0 + J)
+        end do
+    end do
+
+    do IY = 1, NYSFC + 1
+        I0 = NSFCPAR*((NXSFC + 1)*(IY - 1))
+        I = NSFCPAR*(NXSFC + (NXSFC + 1)*(IY - 1))
+        do J = 1, NSFCPAR
+            SFCPARMS(I + J) = SFCPARMS(I0 + J)
         end do
     end do
 
