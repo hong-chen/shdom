@@ -23,9 +23,11 @@ SHDOM was originally developed by `Frank Evans <evans@nit.colorado.edu>`_ and is
 
 **Major changes:**
 
-* Added support for snow BRDF model (by `Vikas Nataraja <https://github.com/vikasnataraja>`_) and for mixed BRDF surface;
+* Added mixed BRDF surface type support;
 
-* Conducted benchmarking of radiance (by `Yu-Wen Chen <https://lasp.colorado.edu/people/yu-wen-chen/>`_) and irradiance (by `Ken Hirata <https://kenhira.gitlab.io>`_) calculations (SHDOM vs MCARaTS vs libRadtran [DISORT]);
+* Added support for snow BRDF model (by `Vikas Nataraja <https://github.com/vikasnataraja>`_);
+
+* Conducted benchmarking of radiance (by `Yu-Wen Chen <https://lasp.colorado.edu/people/yu-wen-chen/>`_ and `Vikas Nataraja <https://github.com/vikasnataraja>`_) and irradiance (by `Ken Hirata <https://kenhira.gitlab.io>`_) calculations (SHDOM vs MCARaTS vs libRadtran [DISORT]);
 
 * Removed layer averaging in the z-direction to ensure consistency in model-to-model comparisons;
 
