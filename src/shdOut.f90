@@ -345,8 +345,8 @@ subroutine shd_io__outputResult(&
         ! data processing
         !╭────────────────────────────────────────────────╮!
         do K = 1, NANGOUT
-            MUOUT = SENPARMS(K)
-            PHID  = SENPARMS(K+NANGOUT)
+            MUOUT = SENPARMS(2*K - 1)
+            PHID  = SENPARMS(2*K)
 
             if ((K .lt. 5) .or. (K .gt. (NANGOUT-5))) then
                 write (2, '(A,1X,I8,F8.5,1X,F7.2,2X,A)')&
@@ -1409,8 +1409,8 @@ subroutine shd_io__outputResultMpi(&
         allocate(PHI_SET(NANGOUT))
 
         do K = 1, NANGOUT
-            MUOUT = SENPARMS(K)
-            PHID  = SENPARMS(K+NANGOUT)
+            MUOUT = SENPARMS(2*K - 1)
+            PHID  = SENPARMS(2*K)
 
             if ((K .lt. 5) .or. (K .gt. (NANGOUT-5))) then
                 write (2, '(A,1X,I8,F8.5,1X,F7.2,2X,A)')&

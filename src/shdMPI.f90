@@ -1801,11 +1801,8 @@ subroutine shd_mpi__computeRad(&
 
     ! Loop over the radiance directions
     do K = 1, NANGOUT
-        MUOUT = SENPARMS(K)
-        PHID  = SENPARMS(K+NANGOUT)
-        if (K .le. 10) then
-            print *, MUOUT, PHID
-        end if
+        MUOUT = SENPARMS(2*K - 1)
+        PHID  = SENPARMS(2*K)
         PHIOUT = PHID*acos(-1.0)/180.0
 
         ! added for fixing the "domain shift" issue (only for 3D)
@@ -2313,11 +2310,11 @@ subroutine shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
 
             else if (SENSOR_MODE) then
 
-                X0    =  SENPARMS(SAMP+(LINE-1)*NS)
-                Y0    =  SENPARMS(SAMP+(LINE-1)*NS +   NS*NL)
-                Z0    =  SENPARMS(SAMP+(LINE-1)*NS + 2*NS*NL)
-                COSTH =  SENPARMS(SAMP+(LINE-1)*NS + 3*NS*NL)
-                PHIR  =  SENPARMS(SAMP+(LINE-1)*NS + 4*NS*NL)
+                X0    =  SENPARMS(5*SAMP - 4)
+                Y0    =  SENPARMS(5*SAMP - 3)
+                Z0    =  SENPARMS(5*SAMP - 2)
+                COSTH =  SENPARMS(5*SAMP - 1)
+                PHIR  =  SENPARMS(5*SAMP)
 
                 !print *, LINE, SAMP, X0, Y0, Z0, COSTH, PHIR
 

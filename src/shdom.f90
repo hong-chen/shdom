@@ -454,6 +454,7 @@ program shdom_main
     end if
 
     ! Read in user-specified sensor properties if given
+    ! this is a binary angle input implemented for 'R' and 'V3'
     if (SENFILE(1:2) .ne. 'NO') then
         if (MASTERPROC) then
             call shd_io__readSenSize(SENFILE, NSENDATA, NSENPAR)
@@ -465,11 +466,17 @@ program shdom_main
                 &SENPARMS)
         end if
         call shd_mpi__bcastSenParam(NSENDATA, NSENPAR, SENPARMS)
+
     else
-        NSENDATA = 1
-        SENPARMS = 1
-        allocate (SENPARMS(1)) ! dummy
-        SENPARMS(1) = -999.0
+        ! this is to accommodate old text angle input for radiance [R]
+        NSENDATA = (MAXPAR-6)/2
+        NSENPAR = 2
+        !end if
+        !call shd_mpi__bcastSenSize(NSENDATA, NSENPAR)
+        allocate (SENPARMS(NSENDATA*NSENPAR))
+        if (MASTERPROC) then
+            SENPARMS(:) = OUTPARMS(7:MAXPAR, 1)
+        end if
         call shd_mpi__bcastSenParam(NSENDATA, NSENPAR, SENPARMS)
     end if
 

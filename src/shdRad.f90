@@ -725,8 +725,8 @@ subroutine shd_rad__computeRad(&
 
     ! Loop over the radiance directions
     do IANG = 1, NANGOUT
-        MUOUT = SENPARMS(IANG)
-        PHID  = SENPARMS(IANG+NANGOUT)
+        MUOUT = SENPARMS(2*IANG - 1)
+        PHID  = SENPARMS(2*IANG)
         PHIOUT = PHID*acos(-1.0)/180.0
 
         ! added for fixing the "domain shift" issue (only for 3D)

@@ -422,18 +422,22 @@ subroutine shd_io__nmlInput(&
     dMAXITER = MAXITER
 
     dNUMOUT = NUMOUT
+    dSENFILE = SENFILE ! this is added for user-specified sensor option, output type "V3"
     if (NUMOUT .gt. MAXOUT) stop 'Error [_nmlInput]: MAXOUT exceeded.'
     do I = 1, NUMOUT
         dOUTTYPES(I) = OUTTYPES(I)
         if (OUTTYPES(I) (1:1) .eq. 'R') then
-            !N = nint(OUTPARMS(6, I))
-            !do J = 1, min(2*N + 6, MAXPAR)
-            !    dOUTPARMS(J, I) = OUTPARMS(J, I)
-            !end do
             ! new binary angle input do not need the loop above
-            do J = 1, 6
-                dOUTPARMS(J, I) = OUTPARMS(J, I)
-            end do
+            if (SENFILE(1:2) .ne. 'NO') then
+                do J = 1, 6
+                    dOUTPARMS(J, I) = OUTPARMS(J, I)
+                end do
+            else
+                N = nint(OUTPARMS(6, I))
+                do J = 1, min(2*N + 6, MAXPAR)
+                    dOUTPARMS(J, I) = OUTPARMS(J, I)
+                end do
+            end if
         else if (OUTTYPES(I) (1:1) .eq. 'V') then
             dOUTPARMS(1, I) = OUTPARMS(1, I)
             dOUTPARMS(2, I) = OUTPARMS(2, I)
@@ -465,8 +469,6 @@ subroutine shd_io__nmlInput(&
         end if
         dOUTFILES(I) = OUTFILES(I)
     end do
-
-    dSENFILE = SENFILE ! this is added for user-specified sensor option, output type "V3"
 
     dOutFileNC = OutFileNC
 
@@ -1582,8 +1584,8 @@ subroutine shd_io__readSenSize(&
     read (1, '(A)') TMP_CHAR ! skip one line
     read (1, '(A)') DIMS_CHAR
 
-    read (DIMS_CHAR( 3:12), '(I10)') NSENDATA
-    read (DIMS_CHAR(14:23), '(I10)') NSENPAR
+    read (DIMS_CHAR( 3:12), '(I10)') NSENPAR
+    read (DIMS_CHAR(14:23), '(I10)') NSENDATA
 
     close (1)
 
@@ -1599,7 +1601,7 @@ subroutine shd_io__readSen(&
 
     character(len=*), intent(in) :: SENFILE
     real, intent(inout) :: SENPARMS(*)
-    integer :: NSENDATA, NSENPAR, ISENDATA, ISENPAR
+    integer :: NSENDATA, NSENPAR, ISENDATA
 
     character(len=FNAMEMAXLEN_) :: OUTFILE_DATA
     character(len=FNAMEMAXLEN_) :: TMP_CHAR
@@ -1613,16 +1615,15 @@ subroutine shd_io__readSen(&
     read (1, '(A)') DATA_POSTFIX
     read (1, '(A)') DIMS_CHAR
 
-    read (DIMS_CHAR( 3:12), '(I10)') NSENDATA
-    read (DIMS_CHAR(14:23), '(I10)') NSENPAR
+    read (DIMS_CHAR( 3:12), '(I10)') NSENPAR
+    read (DIMS_CHAR(14:23), '(I10)') NSENDATA
 
     OUTFILE_DATA = trim(adjustl(SENFILE))//trim(adjustl(DATA_POSTFIX(2:)))
 
     open (UNIT=88, FILE=trim(adjustl(OUTFILE_DATA)), STATUS='OLD',&
         &ACCESS='STREAM', FORM='UNFORMATTED')
 
-    !read (88) ((SENPARMS(ISENDATA+NSENDATA*(ISENPAR-1)), ISENPAR=1,NSENPAR), ISENDATA=1,NSENDATA)
-    read (88) ((SENPARMS(ISENDATA+NSENDATA*(ISENPAR-1)), ISENDATA=1,NSENDATA), ISENPAR=1,NSENPAR)
+    read (88) (SENPARMS(ISENDATA), ISENDATA=1,NSENDATA*NSENPAR)
 
     close (88)
 
