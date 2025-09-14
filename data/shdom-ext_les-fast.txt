@@ -5,5 +5,5 @@
 294.6153 287.6383 282.5377 279.7852
 ! The following provides information for interpreting binary data:
 ! .sHdOm-ext
-!     96,    80,     4,     2
+!         96,        80,         4,         2
 ! ../../data/shdom-ckd_modis-aqua-b01.txt
