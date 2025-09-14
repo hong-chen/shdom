@@ -104,14 +104,14 @@ program shdom_main
     if (MASTERPROC) then
         if (nmlMode) then
             call shd_io__nmlInput(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
-                INSAVEFILE, OUTSAVEFILE,&
+                INSAVEFILE, OUTSAVEFILE, SENFILE,&
                 NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
                 IPFLAG, KDIST, DELTAM, GRIDTYPE,&
                 SRCTYPE, SOLARFLUX0, SOLARMU, SOLARAZ, SKYRAD,&
                 GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,&
                 ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
                 MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS, OUTFILES,&
-                SENFILE, OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
+                OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
                 NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
         else
             call shd_io__userInput(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
@@ -127,8 +127,8 @@ program shdom_main
         end if
     end if
 
-    call shd_mpi__bcastInput(RUNNAME, PROPFILE, SFCFILE, CKDFILE, SENFILE,&
-        &INSAVEFILE, OUTSAVEFILE,&
+    call shd_mpi__bcastInput(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
+        &INSAVEFILE, OUTSAVEFILE, SENFILE,&
         &NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
         &IPFLAG, KDIST, DELTAM, GRIDTYPE,&
         &SRCTYPE, SOLARFLUX0, SOLARMU, SOLARAZ, SKYRAD,&
@@ -471,8 +471,6 @@ program shdom_main
         ! this is to accommodate old text angle input for radiance [R]
         NSENDATA = (MAXPAR-6)/2
         NSENPAR = 2
-        !end if
-        !call shd_mpi__bcastSenSize(NSENDATA, NSENPAR)
         allocate (SENPARMS(NSENDATA*NSENPAR))
         if (MASTERPROC) then
             SENPARMS(:) = OUTPARMS(7:MAXPAR, 1)

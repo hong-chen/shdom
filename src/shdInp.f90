@@ -287,7 +287,7 @@ end subroutine shd_io__userInput
 
 subroutine shd_io__nmlInput(&
     &dRUNNAME, dPROPFILE, dSFCFILE, dCKDFILE,&
-    &dINSAVEFILE, dOUTSAVEFILE,&
+    &dINSAVEFILE, dOUTSAVEFILE, dSENFILE,&
     &dNSTOKES, dNX, dNY, dNZ, dNMU, dNPHI,&
     &dBCFLAG, dIPFLAG,&
     &dKDIST, dDELTAM, dGRIDTYPE,&
@@ -295,7 +295,7 @@ subroutine shd_io__nmlInput(&
     &dGNDTEMP, dGNDALBEDO, dUNITS, dWAVENO, dWAVELEN,&
     &dACCELFLAG, dSOLACC, dMAXITER, dSPLITACC, dSHACC,&
     &dMAXOUT, dMAXPAR, dNUMOUT, dOUTTYPES, dOUTPARMS, dOUTFILES,&
-    &dSENFILE, dOutFileNC, dMAX_TOTAL_MB, dADAPT_GRID_FACTOR,&
+    &dOutFileNC, dMAX_TOTAL_MB, dADAPT_GRID_FACTOR,&
     &dNUM_SH_TERM_FACTOR, dCELL_TO_POINT_RATIO)
 
     ! Obtains the input parameters for the program from a namelist
@@ -317,9 +317,9 @@ subroutine shd_io__nmlInput(&
     character(len=1) :: dSRCTYPE, dGRIDTYPE, dUNITS
     character(len=1) ::  dOUTTYPES(*)
     character(len=FNAMEMAXLEN_) :: dOUTFILES(*)
-    character(len=FNAMEMAXLEN_) :: dSENFILE, dOutFileNC, dRUNNAME
+    character(len=FNAMEMAXLEN_) :: dOutFileNC, dRUNNAME
     character(len=FNAMEMAXLEN_) :: dPROPFILE, dSFCFILE, dCKDFILE
-    character(len=FNAMEMAXLEN_) :: dINSAVEFILE, dOUTSAVEFILE
+    character(len=FNAMEMAXLEN_) :: dINSAVEFILE, dOUTSAVEFILE, dSENFILE
     integer I, J, N
 
     integer MAXOUT, MAXPAR
@@ -340,13 +340,13 @@ subroutine shd_io__nmlInput(&
     character(len=FNAMEMAXLEN_) :: SENFILE, OutFileNC, RUNNAME
     namelist /SHDOMINPUT/&
         &RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
-        &INSAVEFILE, OUTSAVEFILE,&
+        &INSAVEFILE, OUTSAVEFILE, SENFILE,&
         &NSTOKES, NX, NY, NZ, NMU, NPHI,&
         &BCFLAG, IPFLAG, DELTAM, GRIDTYPE,&
         &SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
         &GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,&
         &ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
-        &NUMOUT, OUTTYPES, OUTPARMS, OUTFILES, SENFILE, OutFileNC,&
+        &NUMOUT, OUTTYPES, OUTPARMS, OUTFILES, OutFileNC,&
         &MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
         &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
 
@@ -377,6 +377,7 @@ subroutine shd_io__nmlInput(&
     dKDIST = CKDFILE(1:2) .ne. 'NO'
     dINSAVEFILE = INSAVEFILE
     dOUTSAVEFILE = OUTSAVEFILE
+    dSENFILE = SENFILE ! this is added for user-specified sensor option, output type [R] and [V3]
     dNSTOKES = NSTOKES
     dNX = NX
     dNY = NY
@@ -422,7 +423,6 @@ subroutine shd_io__nmlInput(&
     dMAXITER = MAXITER
 
     dNUMOUT = NUMOUT
-    dSENFILE = SENFILE ! this is added for user-specified sensor option, output type "V3"
     if (NUMOUT .gt. MAXOUT) stop 'Error [_nmlInput]: MAXOUT exceeded.'
     do I = 1, NUMOUT
         dOUTTYPES(I) = OUTTYPES(I)

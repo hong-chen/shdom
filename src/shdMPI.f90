@@ -259,8 +259,8 @@ subroutine shd_mpi__map(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
 end subroutine shd_mpi__map
 
 subroutine shd_mpi__bcastInput(&
-    &RUNNAME, PROPFILE, SFCFILE, CKDFILE, SENFILE,&
-    &INSAVEFILE, OUTSAVEFILE,&
+    &RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
+    &INSAVEFILE, OUTSAVEFILE, SENFILE,&
     &NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
     &IPFLAG, KDIST, DELTAM, GRIDTYPE,&
     &SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
@@ -283,8 +283,8 @@ subroutine shd_mpi__bcastInput(&
     real, intent(inout) :: MAX_TOTAL_MB, SPLITTING_FACTOR
     real, intent(inout) :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
     character(len=1), intent(inout) :: SRCTYPE, GRIDTYPE, UNITS, OUTTYPES(*)
-    character(len=FNAMEMAXLEN_), intent(inout) :: RUNNAME, PROPFILE, SFCFILE, CKDFILE, SENFILE
-    character(len=FNAMEMAXLEN_), intent(inout) :: INSAVEFILE, OUTSAVEFILE
+    character(len=FNAMEMAXLEN_), intent(inout) :: RUNNAME, PROPFILE, SFCFILE, CKDFILE
+    character(len=FNAMEMAXLEN_), intent(inout) :: INSAVEFILE, OUTSAVEFILE, SENFILE
 
 #if HAS_MPI
     integer :: ierr, intbuf(10)
@@ -321,10 +321,10 @@ subroutine shd_mpi__bcastInput(&
     call mpi_bcast(char1buf, 3, MPI_CHARACTER, 0, MPI_COMM_WORLD, ierr)
     SRCTYPE = char1buf(1); GRIDTYPE = char1buf(2); UNITS = char1buf(3)
 
-    char256buf(:) = (/PROPFILE, SFCFILE, CKDFILE, SENFILE, INSAVEFILE, OUTSAVEFILE, RUNNAME/)
+    char256buf(:) = (/PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE, SENFILE, RUNNAME/)
     call mpi_bcast(char256buf, 7*256, MPI_CHARACTER, 0, MPI_COMM_WORLD, ierr)
-    PROPFILE = char256buf(1); SFCFILE = char256buf(2); CKDFILE = char256buf(3); SENFILE = char256buf(4)
-    INSAVEFILE = char256buf(5); OUTSAVEFILE = char256buf(6); RUNNAME = char256buf(7)
+    PROPFILE = char256buf(1); SFCFILE = char256buf(2); CKDFILE = char256buf(3)
+    INSAVEFILE = char256buf(4); OUTSAVEFILE = char256buf(5); SENFILE = char256buf(6); RUNNAME = char256buf(7)
 
     call mpi_bcast(OUTPARMS, MAXPAR*NUMOUT, MPI_REAL, 0, MPI_COMM_WORLD, ierr)
     call mpi_bcast(OUTTYPES, NUMOUT*1, MPI_CHARACTER, 0, MPI_COMM_WORLD, ierr)
