@@ -407,7 +407,7 @@ subroutine shd_io__nmlInput(&
         dUNITS = 'B'
         dWAVENO(1) = WAVENO(1)
         dWAVENO(2) = WAVENO(2)
-        dWAVELEN = 1.0e4/(0.5*(WAVENO(1) + WAVENO(2)))
+        dWAVELEN = 1.0d4/(0.5d0*(WAVENO(1) + WAVENO(2)))
     else
         dUNITS = UNITS
         dWAVELEN = WAVELEN
