@@ -115,13 +115,13 @@ program shdom_main
                 NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
         else
             call shd_io__userInput(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
-                INSAVEFILE, OUTSAVEFILE,&
+                INSAVEFILE, OUTSAVEFILE, SENFILE,&
                 NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
                 IPFLAG, KDIST, DELTAM, GRIDTYPE,&
                 SRCTYPE, SOLARFLUX0, SOLARMU, SOLARAZ, SKYRAD,&
                 GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,&
                 ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
-                MAXOUT,MAXPAR, NUMOUT,OUTTYPES,OUTPARMS,OUTFILES,&
+                MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS, OUTFILES,&
                 OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
                 NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
         end if
@@ -393,7 +393,7 @@ program shdom_main
 
     MAXNBC = MAXIG*3/NZ
     ! Read in the surface properties
-    if (SFCFILE(1:2) .eq. 'NO') then
+    if (SFCFILE(1:4) .eq. 'NONE') then
         SFCTYPE = 'FL'
     else
         if (MASTERPROC) then
@@ -445,7 +445,7 @@ program shdom_main
 
     ! Read in user-specified sensor properties if given
     !   this is a binary angle input implemented for 'R' and 'V3'
-    if (SENFILE(1:2) .ne. 'NO') then
+    if (SENFILE(1:4) .ne. 'NONE') then
         if (MASTERPROC) then
             call shd_io__readSenSize(SENFILE, NSENDATA, NSENPAR)
         end if
@@ -454,16 +454,6 @@ program shdom_main
         if (MASTERPROC) then
             call shd_io__readSen(SENFILE, NSENDATA, NSENPAR,&
                 &SENPARMS)
-        end if
-        call shd_mpi__bcastSenParam(NSENDATA, NSENPAR, SENPARMS)
-
-    else
-        ! This is to accommodate legacy text angle input for radiance [R]
-        NSENDATA = (MAXPAR-6)/2
-        NSENPAR = 2
-        allocate (SENPARMS(NSENDATA*NSENPAR))
-        if (MASTERPROC) then
-            SENPARMS(:) = OUTPARMS(7:MAXPAR, 1)
         end if
         call shd_mpi__bcastSenParam(NSENDATA, NSENPAR, SENPARMS)
     end if
@@ -637,32 +627,63 @@ program shdom_main
             do I = 1, NUMOUT
                 if (OUTTYPES(I) .eq. 'R') then
                     if (mpiMode) then
-                        call shd_mpi__computeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
-                            &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
-                            &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-                            &BCFLAG, XDOMAIN_, YDOMAIN_, IPFLAG,&
-                            &SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
-                            &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
-                            &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-                            &GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, UNITS,&
-                            &XGRID, YGRID, ZGRID, GRIDPOS,&
-                            &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-                            &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
-                            &SHPTR, SOURCE, WORK, WORK(1 + NPTS*NSTOKES),&
-                            &OUTPARMS(1, I), SENPARMS, IRAD, WORK2)
+                        if (SENFILE(1:4) .ne. 'NONE') then
+                            call shd_mpi__computeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+                                &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
+                                &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
+                                &BCFLAG, XDOMAIN_, YDOMAIN_, IPFLAG,&
+                                &SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
+                                &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
+                                &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
+                                &GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, UNITS,&
+                                &XGRID, YGRID, ZGRID, GRIDPOS,&
+                                &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+                                &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
+                                &SHPTR, SOURCE, WORK, WORK(1 + NPTS*NSTOKES),&
+                                &OUTPARMS(1, I), IRAD, WORK2, SENPARMS)
+                        else
+                            call shd_mpi__computeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+                                &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
+                                &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
+                                &BCFLAG, XDOMAIN_, YDOMAIN_, IPFLAG,&
+                                &SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
+                                &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
+                                &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
+                                &GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, UNITS,&
+                                &XGRID, YGRID, ZGRID, GRIDPOS,&
+                                &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+                                &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
+                                &SHPTR, SOURCE, WORK, WORK(1 + NPTS*NSTOKES),&
+                                &OUTPARMS(1, I), IRAD, WORK2)
+                        end if
                     else
-                        call shd_rad__computeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
-                            &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
-                            &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-                            &BCFLAG, IPFLAG, SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
-                            &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
-                            &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-                            &GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, UNITS,&
-                            &XGRID, YGRID, ZGRID, GRIDPOS,&
-                            &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-                            &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
-                            &SHPTR, SOURCE, WORK(1), WORK(1 + NPTS*NSTOKES),&
-                            &OUTPARMS(1, I), SENPARMS, IRAD, WORK2)
+                        if (SENFILE(1:4) .ne. 'NONE') then
+                            call shd_rad__computeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+                                &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
+                                &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
+                                &BCFLAG, IPFLAG, SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
+                                &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
+                                &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
+                                &GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, UNITS,&
+                                &XGRID, YGRID, ZGRID, GRIDPOS,&
+                                &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+                                &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
+                                &SHPTR, SOURCE, WORK(1), WORK(1 + NPTS*NSTOKES),&
+                                &OUTPARMS(1, I), IRAD, WORK2, SENPARMS)
+                        else
+                            call shd_rad__computeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+                                &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
+                                &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
+                                &BCFLAG, IPFLAG, SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
+                                &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
+                                &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
+                                &GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, UNITS,&
+                                &XGRID, YGRID, ZGRID, GRIDPOS,&
+                                &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+                                &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
+                                &SHPTR, SOURCE, WORK(1), WORK(1 + NPTS*NSTOKES),&
+                                &OUTPARMS(1, I), IRAD, WORK2)
+                        end if
                     end if
                 end if
             end do
@@ -674,30 +695,59 @@ program shdom_main
             do I = 1, NUMOUT
                 if (OUTTYPES(I) .eq. 'V') then
                     if (mpiMode) then
-                        call shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
-                            &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
-                            &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-                            &BCFLAG, XDOMAIN_, YDOMAIN_, IPFLAG,&
-                            &SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
-                            &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
-                            &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-                            &GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, UNITS,&
-                            &XGRID, YGRID, ZGRID, GRIDPOS,&
-                            &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-                            &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
-                            &SHPTR, SOURCE, OUTPARMS(1, I), SENPARMS, IVIS, WORK2)
+                        if (SENFILE(1:4) .ne. 'NONE') then
+                            call shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+                                &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
+                                &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
+                                &BCFLAG, XDOMAIN_, YDOMAIN_, IPFLAG,&
+                                &SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
+                                &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
+                                &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
+                                &GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, UNITS,&
+                                &XGRID, YGRID, ZGRID, GRIDPOS,&
+                                &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+                                &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
+                                &SHPTR, SOURCE, OUTPARMS(1, I), IVIS, WORK2, SENPARMS)
+                        else
+                            call shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+                                &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
+                                &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
+                                &BCFLAG, XDOMAIN_, YDOMAIN_, IPFLAG,&
+                                &SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
+                                &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
+                                &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
+                                &GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, UNITS,&
+                                &XGRID, YGRID, ZGRID, GRIDPOS,&
+                                &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+                                &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
+                                &SHPTR, SOURCE, OUTPARMS(1, I), IVIS, WORK2)
+                        end if
                     else
-                        call shd_rad__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
-                            &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
-                            &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-                            &BCFLAG, IPFLAG, SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
-                            &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
-                            &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-                            &GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, UNITS,&
-                            &XGRID, YGRID, ZGRID, GRIDPOS,&
-                            &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-                            &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
-                            &SHPTR, SOURCE, OUTPARMS(1, I), SENPARMS, IVIS, WORK2)
+                        if (SENFILE(1:4) .ne. 'NONE') then
+                            call shd_rad__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+                                &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
+                                &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
+                                &BCFLAG, IPFLAG, SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
+                                &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
+                                &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
+                                &GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, UNITS,&
+                                &XGRID, YGRID, ZGRID, GRIDPOS,&
+                                &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+                                &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
+                                &SHPTR, SOURCE, OUTPARMS(1, I), IVIS, WORK2, SENPARMS)
+                        else
+                            call shd_rad__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+                                &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
+                                &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
+                                &BCFLAG, IPFLAG, SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
+                                &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
+                                &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
+                                &GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, UNITS,&
+                                &XGRID, YGRID, ZGRID, GRIDPOS,&
+                                &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+                                &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
+                                &SHPTR, SOURCE, OUTPARMS(1, I), IVIS, WORK2)
+                        end if
                     end if
                 end if
             end do
@@ -823,19 +873,34 @@ program shdom_main
 
         if (MASTERPROC) then
             do I = 1, NUMOUT
-                if (OUTTYPES(I) .ne. 'V' .and. OUTFILES(I) .ne. 'NONE') then
-                    call shd_io__outputResultMpi(NSTOKES, NXT, NYT, NZ,&
-                        &NPTSTOT, NCELLSTOT, NSHTOT,&
-                        &ML, MM, NLM, NMU, NPHI, NANG, NG,&
-                        &PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
-                        &BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
-                        &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
-                        &SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS,&
-                        &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
-                        &XDOMAIN_, YDOMAIN_, XALLGRID, YALLGRID, ZGRID,&
-                        &ALLFLUXES, ALLFLUXDIV,&
-                        &NSHOUT, ALLSHTERMS, IRAD, SUMRADOUT,&
-                        &OUTTYPES(I), OUTPARMS(1, I), SENPARMS, OUTFILES(I))
+                if (OUTTYPES(I) .ne. 'V' .and. OUTFILES(I)(1:4) .ne. 'NONE') then
+                    if (SENFILE(1:4) .ne. 'NONE') then
+                        call shd_io__outputResultMpi(NSTOKES, NXT, NYT, NZ,&
+                            &NPTSTOT, NCELLSTOT, NSHTOT,&
+                            &ML, MM, NLM, NMU, NPHI, NANG, NG,&
+                            &PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
+                            &BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
+                            &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+                            &SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS,&
+                            &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
+                            &XDOMAIN_, YDOMAIN_, XALLGRID, YALLGRID, ZGRID,&
+                            &ALLFLUXES, ALLFLUXDIV,&
+                            &NSHOUT, ALLSHTERMS, IRAD, SUMRADOUT,&
+                            &OUTTYPES(I), OUTPARMS(1, I), OUTFILES(I), SENPARMS)
+                    else
+                        call shd_io__outputResultMpi(NSTOKES, NXT, NYT, NZ,&
+                            &NPTSTOT, NCELLSTOT, NSHTOT,&
+                            &ML, MM, NLM, NMU, NPHI, NANG, NG,&
+                            &PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
+                            &BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
+                            &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+                            &SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS,&
+                            &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
+                            &XDOMAIN_, YDOMAIN_, XALLGRID, YALLGRID, ZGRID,&
+                            &ALLFLUXES, ALLFLUXDIV,&
+                            &NSHOUT, ALLSHTERMS, IRAD, SUMRADOUT,&
+                            &OUTTYPES(I), OUTPARMS(1, I), OUTFILES(I))
+                    end if
                 end if
             end do
 
@@ -848,20 +913,36 @@ program shdom_main
     else
 
         do I = 1, NUMOUT
-            if ((OUTTYPES(I) .ne. 'V') .and. (OUTFILES(I) .ne. 'NONE')) then
-                call shd_io__outputResult(NSTOKES, NX, NY, NX1, NY1, NZ, NBPTS, NPTS, NCELLS,&
-                    NSH, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_, NMU, NPHI, NANG, NG,&
-                    PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
-                    BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
-                    SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
-                    SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS,&
-                    SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
-                    XGRID, YGRID, ZGRID, GRIDPOS,&
-                    TREEPTR, GRIDPTR, CELLFLAGS,&
-                    EXTINCT, ALBEDO, LEGEN, IPHASE, TEMP,&
-                    SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV,&
-                    IRAD, SUMRADOUT, NSHOUT, SUMSHTERMS, SOURCE1OUT,&
-                    OUTTYPES(I), OUTPARMS(1, I), SENPARMS, OUTFILES(I))
+            if ((OUTTYPES(I) .ne. 'V') .and. (OUTFILES(I)(1:4) .ne. 'NONE')) then
+                if (SENFILE(1:4) .ne. 'NONE') then
+                    call shd_io__outputResult(NSTOKES, NX, NY, NX1, NY1, NZ, NBPTS, NPTS, NCELLS,&
+                        NSH, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_, NMU, NPHI, NANG, NG,&
+                        PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
+                        BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
+                        SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+                        SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS,&
+                        SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
+                        XGRID, YGRID, ZGRID, GRIDPOS,&
+                        TREEPTR, GRIDPTR, CELLFLAGS,&
+                        EXTINCT, ALBEDO, LEGEN, IPHASE, TEMP,&
+                        SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV,&
+                        IRAD, SUMRADOUT, NSHOUT, SUMSHTERMS, SOURCE1OUT,&
+                        OUTTYPES(I), OUTPARMS(1, I), OUTFILES(I), SENPARMS)
+                else
+                    call shd_io__outputResult(NSTOKES, NX, NY, NX1, NY1, NZ, NBPTS, NPTS, NCELLS,&
+                        NSH, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_, NMU, NPHI, NANG, NG,&
+                        PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
+                        BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
+                        SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+                        SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS,&
+                        SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
+                        XGRID, YGRID, ZGRID, GRIDPOS,&
+                        TREEPTR, GRIDPTR, CELLFLAGS,&
+                        EXTINCT, ALBEDO, LEGEN, IPHASE, TEMP,&
+                        SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV,&
+                        IRAD, SUMRADOUT, NSHOUT, SUMSHTERMS, SOURCE1OUT,&
+                        OUTTYPES(I), OUTPARMS(1, I), OUTFILES(I))
+                end if
             end if
         end do
     end if
@@ -870,14 +951,25 @@ program shdom_main
     if (MASTERPROC) then
         do I = 1, NUMOUT
             if ((OUTTYPES(I) .eq. 'V')) then
-                call shd_io__outputCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
-                    &NSH, ML, MM, NLM, NMU, NPHI, NANG, NG,&
-                    &PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
-                    &BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
-                    &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
-                    &SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS,&
-                    &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
-                    &IVIS, SUMVISOUT, OUTPARMS(1, I), SENPARMS, OUTFILES(I))
+                if (SENFILE(1:4) .ne. 'NONE') then
+                    call shd_io__outputCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+                        &NSH, ML, MM, NLM, NMU, NPHI, NANG, NG,&
+                        &PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
+                        &BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
+                        &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+                        &SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS,&
+                        &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
+                        &IVIS, SUMVISOUT, OUTPARMS(1, I), OUTFILES(I), SENPARMS)
+                else
+                    call shd_io__outputCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+                        &NSH, ML, MM, NLM, NMU, NPHI, NANG, NG,&
+                        &PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
+                        &BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
+                        &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+                        &SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS,&
+                        &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
+                        &IVIS, SUMVISOUT, OUTPARMS(1, I), OUTFILES(I))
+                end if
             end if
         end do
     end if

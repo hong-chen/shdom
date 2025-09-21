@@ -96,7 +96,7 @@ subroutine shd_io__outputResult(&
     &EXTINCT, ALBEDO, LEGEN, IPHASE, TEMP,&
     &FLUXES, DIRFLUX, FLUXDIV,&
     &IRAD, RADOUT, NSHOUT, SHTERMS, SOURCE1OUT,&
-    &OUTTYPE, OUTPARMS, SENPARMS, OUTFILE)
+    &OUTTYPE, OUTPARMS, OUTFILE, SENPARMS)
 
     !   Writes the desired type of output file from the output fields
     ! with a header giving the input parameters.
@@ -118,7 +118,8 @@ subroutine shd_io__outputResult(&
     real, intent(in) :: SOLACC, SPLITACC, SHACC
     real, intent(in) :: WAVENO(2), WAVELEN
     real, intent(in) :: XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ), GRIDPOS(3, NPTS)
-    real, intent(inout) :: OUTPARMS(*), SENPARMS(*)
+    real, intent(inout) :: OUTPARMS(*)
+    real, optional :: SENPARMS(*)
     character(len=1), intent(in) :: SRCTYPE, UNITS, GRIDTYPE, OUTTYPE
     character(len=2), intent(in) :: SFCTYPE
     character(len=*), intent(in) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
@@ -345,8 +346,13 @@ subroutine shd_io__outputResult(&
         ! data processing
         !╭────────────────────────────────────────────────╮!
         do K = 1, NANGOUT
-            MUOUT = SENPARMS(2*K - 1)
-            PHID  = SENPARMS(2*K)
+            if (present(SENPARMS)) then
+                MUOUT = SENPARMS(2*K - 1)
+                PHID  = SENPARMS(2*K)
+            else
+                MUOUT = OUTPARMS(2*K + 5)
+                PHID  = OUTPARMS(2*K + 6)
+            end if
 
             if ((K .lt. 5) .or. (K .gt. (NANGOUT-5))) then
                 write (2, '(A,1X,I8,F8.5,1X,F7.2,2X,A)')&
@@ -1197,7 +1203,7 @@ subroutine shd_io__outputResultMpi(&
     &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
     &XDOMAIN, YDOMAIN, XGRID, YGRID, ZGRID,&
     &FLUXES, FLUXDIV, NSHOUT, SHTERMS, IRAD, RADOUT,&
-    &OUTTYPE, OUTPARMS, SENPARMS, OUTFILE)
+    &OUTTYPE, OUTPARMS, OUTFILE, SENPARMS)
     ! Writes the desired type of output file from the output fields
     ! with a header giving the input parameters.
     ! There are four supported types (OUTTYPE) of output: 'R' - for radi
@@ -1215,7 +1221,8 @@ subroutine shd_io__outputResultMpi(&
     real SOLACC, SPLITACC, SHACC
     real WAVENO(2), WAVELEN
     real XDOMAIN, YDOMAIN, XGRID(NX), YGRID(NY), ZGRID(NZ)
-    real OUTPARMS(*), SENPARMS(*)
+    real OUTPARMS(*)
+    real, optional :: SENPARMS(*)
     character(len=1), intent(in) :: SRCTYPE, UNITS, GRIDTYPE, OUTTYPE
     character(len=2), intent(in) :: SFCTYPE
     character(len=*), intent(in) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
@@ -1409,8 +1416,13 @@ subroutine shd_io__outputResultMpi(&
         allocate(PHI_SET(NANGOUT))
 
         do K = 1, NANGOUT
-            MUOUT = SENPARMS(2*K - 1)
-            PHID  = SENPARMS(2*K)
+            if (present(SENPARMS)) then
+                MUOUT = SENPARMS(2*K - 1)
+                PHID  = SENPARMS(2*K)
+            else
+                MUOUT = OUTPARMS(2*K + 5)
+                PHID  = OUTPARMS(2*K + 6)
+            endif
 
             if ((K .lt. 5) .or. (K .gt. (NANGOUT-5))) then
                 write (2, '(A,1X,I8,F8.5,1X,F7.2,2X,A)')&
@@ -1931,7 +1943,7 @@ subroutine shd_io__outputCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     & SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
     & SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS,&
     & SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
-    & IVIS, VISOUT, OUTPARMS, SENPARMS, OUTFILE)
+    & IVIS, VISOUT, OUTPARMS, OUTFILE, SENPARMS)
 
     ! Writes the visualization image in PGM binary format with either
     ! one byte or two byte pixels.  The PGM binary format (P5) has an
@@ -1948,7 +1960,8 @@ subroutine shd_io__outputCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     real GNDTEMP, GNDALBEDO, SKYRAD
     real SOLACC, SPLITACC, SHACC
     real WAVENO(2), WAVELEN
-    real OUTPARMS(*), SENPARMS(*)
+    real OUTPARMS(*)
+    real, optional :: SENPARMS(*)
     character(len=1), intent(in) :: SRCTYPE, UNITS, GRIDTYPE
     character(len=2), intent(in) :: SFCTYPE
     character(len=*), intent(in) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE

@@ -1704,7 +1704,7 @@ subroutine shd_mpi__computeRad(&
     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
     &SHPTR, SOURCE, SOURCE1, GRIDRAD,&
-    &OUTPARMS, SENPARMS, NRAD, RADOUT)
+    &OUTPARMS, NRAD, RADOUT, SENPARMS)
 
     ! Computes the radiances for the locations and directions specified
     ! in OUTPARMS, putting the results in RADOUT and increasing NRAD by
@@ -1729,7 +1729,8 @@ subroutine shd_mpi__computeRad(&
     real, intent(in) :: EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, NPTS)
     real, intent(in) :: DIRFLUX(NPTS), FLUXES(2, NPTS), SOURCE(NSTOKES, *)
     real, intent(inout) :: SOURCE1(NSTOKES, NPTS), GRIDRAD(NSTOKES, NPTS)
-    real, intent(in) :: OUTPARMS(*), SENPARMS(*)
+    real, intent(in) :: OUTPARMS(*)
+    real, intent(in), optional :: SENPARMS(*)
     real, intent(out) :: RADOUT(NSTOKES, *)
     character, intent(in) ::  SRCTYPE*1, SFCTYPE*2, UNITS*1
 
@@ -1801,8 +1802,13 @@ subroutine shd_mpi__computeRad(&
 
     ! Loop over the radiance directions
     do K = 1, NANGOUT
-        MUOUT = SENPARMS(2*K - 1)
-        PHID  = SENPARMS(2*K)
+        if (present(SENPARMS)) then
+            MUOUT = SENPARMS(2*K - 1)
+            PHID  = SENPARMS(2*K)
+        else
+            MUOUT = OUTPARMS(2*K + 5)
+            PHID  = OUTPARMS(2*K + 6)
+        endif
         PHIOUT = PHID*acos(-1.0)/180.0
 
         ! added for fixing the "domain shift" issue (only for 3D)
@@ -2133,7 +2139,7 @@ subroutine shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     &XGRID, YGRID, ZGRID, GRIDPOS,&
     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
-    &SHPTR, SOURCE, OUTPARMS, SENPARMS, IVIS, VISOUT)
+    &SHPTR, SOURCE, OUTPARMS, IVIS, VISOUT, SENPARMS)
 
     ! Computes Stokes radiances (output in VISOUT) for the visualization
     !   modes: 1) camera mode,
@@ -2157,7 +2163,8 @@ subroutine shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     real, intent(in) :: SFCGRIDPARMS(*), BCRAD(NSTOKES, *)
     real, intent(in) :: EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, *)
     real, intent(in) :: DIRFLUX(NPTS), FLUXES(2, NPTS), SOURCE(NSTOKES, *)
-    real, intent(in) :: OUTPARMS(*), SENPARMS(*)
+    real, intent(in) :: OUTPARMS(*)
+    real, intent(in), optional :: SENPARMS(*)
     real, intent(out) :: VISOUT(NSTOKES, *)
     character, intent(in) :: SRCTYPE*1, SFCTYPE*2, UNITS*1
 
@@ -2310,11 +2317,15 @@ subroutine shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
 
             else if (SENSOR_MODE) then
 
-                X0    =  SENPARMS(5*SAMP - 4)
-                Y0    =  SENPARMS(5*SAMP - 3)
-                Z0    =  SENPARMS(5*SAMP - 2)
-                COSTH =  SENPARMS(5*SAMP - 1)
-                PHIR  =  SENPARMS(5*SAMP)
+                if (present(SENPARMS)) then
+                    X0    =  SENPARMS(5*SAMP - 4)
+                    Y0    =  SENPARMS(5*SAMP - 3)
+                    Z0    =  SENPARMS(5*SAMP - 2)
+                    COSTH =  SENPARMS(5*SAMP - 1)
+                    PHIR  =  SENPARMS(5*SAMP)
+                else
+                    stop
+                end if
 
                 !print *, LINE, SAMP, X0, Y0, Z0, COSTH, PHIR
 

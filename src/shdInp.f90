@@ -30,7 +30,7 @@ contains
 
 subroutine shd_io__userInput(&
     &RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
-    &INSAVEFILE, OUTSAVEFILE,&
+    &INSAVEFILE, OUTSAVEFILE, SENFILE,&
     &NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
     &IPFLAG, KDIST, DELTAM, GRIDTYPE,&
     &SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
@@ -58,7 +58,7 @@ subroutine shd_io__userInput(&
     character(len=1) :: SRCTYPE, GRIDTYPE, UNITS
     character(len=1) :: OUTTYPES(*)
     character(len=FNAMEMAXLEN_) :: OUTFILES(*)
-    character(len=FNAMEMAXLEN_) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
+    character(len=FNAMEMAXLEN_) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE, SENFILE
     character(len=FNAMEMAXLEN_) :: OutFileNC, RUNNAME
     integer I, J, N
     real GNDEMIS
@@ -68,6 +68,7 @@ subroutine shd_io__userInput(&
     WAVELEN = 1.0
     WAVENO(1) = 10000.
     WAVENO(2) = 10001.
+    SENFILE = 'NONE'
 
     write (*, *)
     write (*, '(1X,A)') 'Name of this SHDOM run:'
@@ -84,7 +85,7 @@ subroutine shd_io__userInput(&
         &'Correlated k-distribution file name (or NONE)'
     read (*, '(A)') CKDFILE
     write (*, *) CKDFILE
-    KDIST = CKDFILE(1:2) .ne. 'NO'
+    KDIST = CKDFILE(1:4) .ne. 'NONE'
     write (*, '(1X,A)') 'Input binary save file name'
     read (*, '(A)') INSAVEFILE
     write (*, *) INSAVEFILE
@@ -127,7 +128,7 @@ subroutine shd_io__userInput(&
         write (*, '(1X,A)') 'Isotropic sky radiance'
         read (*, *) SKYRAD
         write (*, *) SKYRAD
-        if (SFCFILE(1:2) .eq. 'NO') then
+        if (SFCFILE(1:4) .eq. 'NONE') then
             write (*, '(1X,A)') 'Ground albedo'
             read (*, *) GNDALBEDO
             write (*, *) GNDALBEDO
@@ -136,7 +137,7 @@ subroutine shd_io__userInput(&
         SOLARAZ = SOLARAZ*acos(-1.0)/180.0
     end if
     GNDTEMP = 300.
-    if (SFCFILE(1:2) .eq. 'NO') then
+    if (SFCFILE(1:4) .eq. 'NONE') then
         if (SRCTYPE .eq. 'T' .or. SRCTYPE .eq. 'B') then
             write (*, '(1X,A)') 'Ground temperature'
             read (*, *) GNDTEMP
@@ -259,7 +260,7 @@ subroutine shd_io__userInput(&
     write (*, '(1X,A)') 'Output netcdf file name (or NONE or "")'
     read (*, '(A)') OutFileNC
     write (*, '(A)') OutFileNC
-    if (OutFileNC .ne. 'NONE') then
+    if (OutFileNC(1:4) .ne. 'NONE') then
         write(*, '(A)') 'Warning [_userInput]: Removed support for netCDF, set <OUTFILENC="NONE">.'
         OutFileNC = 'NONE'
     end if
@@ -374,7 +375,7 @@ subroutine shd_io__nmlInput(&
     dPROPFILE = PROPFILE
     dSFCFILE = SFCFILE
     dCKDFILE = CKDFILE
-    dKDIST = CKDFILE(1:2) .ne. 'NO'
+    dKDIST = CKDFILE(1:4) .ne. 'NONE'
     dINSAVEFILE = INSAVEFILE
     dOUTSAVEFILE = OUTSAVEFILE
     dSENFILE = SENFILE ! this is added for user-specified sensor option, output type [R] and [V3]
@@ -428,7 +429,7 @@ subroutine shd_io__nmlInput(&
         dOUTTYPES(I) = OUTTYPES(I)
         if (OUTTYPES(I) (1:1) .eq. 'R') then
             ! new binary angle input do not need the loop above
-            if (SENFILE(1:2) .ne. 'NO') then
+            if (SENFILE(1:4) .ne. 'NONE') then
                 do J = 1, 6
                     dOUTPARMS(J, I) = OUTPARMS(J, I)
                 end do
@@ -472,7 +473,7 @@ subroutine shd_io__nmlInput(&
 
     dOutFileNC = OutFileNC
 
-    if (dOutFileNC .ne. 'NONE') then
+    if (dOutFileNC(1:4) .ne. 'NONE') then
         write(*, '(A)') 'Warning [_nmlInput]: Removed support for netCDF, set <OUTFILENC="NONE">.'
         dOutFileNC = 'NONE'
     end if
