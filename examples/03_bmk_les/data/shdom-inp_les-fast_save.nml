@@ -1,5 +1,5 @@
  $SHDOMINPUT
- RUNNAME         = 'les-fast'
+ RUNNAME         = 'LES'
  PROPFILE        = 'tmp-data/shdom-prp_les-fast.txt'
  SFCFILE         = '../../data/shdom-sfc_land-lsrt.txt'
  CKDFILE         = '../../data/shdom-ckd_modis-aqua-b01.txt'
