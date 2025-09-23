@@ -1520,7 +1520,7 @@ subroutine shd_grid__splitGrid(&
             ICELL1 = NCELLS + 1
 
             ! Sort the adaptive criterion in decreasing order
-            call shd_util__ssort_r(ADAPTCRIT, ADAPTIND, N, -2)
+            call shd_util__ssort(ADAPTCRIT, ADAPTIND, N, -2)
 
             ! Figure how many cells we can split, leaving some room
             !   for cells split during grid smoothing

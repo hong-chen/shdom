@@ -1373,7 +1373,7 @@ subroutine shd_mpi__findBoundaryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
         INDX(1:NBX) = (/(J, J=1, NBX)/)
         ZARRAY(NBX + 1:NBX + NBY) = BNDPOS(3, JOCT, 1:NBY, 2, LY)
         INDX(NBX + 1:NBX + NBY) = (/(-J, J=1, NBY)/)
-        call shd_util__ssort_i(ZARRAY, INDX, NBX + NBY, 2*DZ)
+        call shd_util__ssort(ZARRAY, INDX, NBX + NBY, 2*DZ)
 
         ! For each Z slab use Z sorted index to transfer the X or Y boundary points
         IBXYPTR_(:, :, JOCT) = 0

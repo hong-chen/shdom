@@ -18,12 +18,18 @@ module shd_util
 
     public :: shd_util__computePlanck
 
+    public :: shd_util__ssort
     public :: shd_util__ssort_i
     public :: shd_util__ssort_r
 
     private :: shd_util__integratePlanck
     private :: integralLow
     private :: integralHigh
+
+    interface shd_util__ssort
+        module procedure shd_util__ssort_i
+        module procedure shd_util__ssort_r
+    end interface
 
 contains
 
