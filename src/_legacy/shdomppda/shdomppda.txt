@@ -1,0 +1,365 @@
+ 
+    SHDOMPPDA - Plane-Parallel SHDOM for Data Assimilation
+
+
+
+                        OVERVIEW
+
+SHDOMPPDA computes unpolarized radiative transfer in a plane-parallel
+medium for either collimated solar and/or thermal emission sources of
+radiation.  The shdomppda_fwd_tl_adj module contains subroutines that
+perform the forward, tangent linear, and adjoint radiative transfer
+models.  The forward model outputs top of atmosphere monochromatic
+radiances (in reflectance units or brightness temperature) for a number
+of specified directions.  SHDOMPPDA inputs mixing ratio and number
+concentration profiles for any number of hydrometeor species.  It
+performs optical property calculations from the hydrometeor profiles
+(and a pressure profile) using scattering tables as a function of mass
+mean radius.  SHDOMPPDA also inputs pressure, temperature, water vapor
+and ozone profiles, which are passed to user provided molecular
+absorption routines.  Molecular Rayleigh scattering is calculated for
+wavelengths shorter than 1 micron.  Currently only Lambertian surface
+reflection is supported, though the underlying routines also support
+the RPV BRDF model.
+
+
+           Using the SHDOMPPDA_FWD_TL_ADJ Module 
+
+The shdomppda_fwd_tl_adj module contains six subroutines:
+  READ_SCATTERING_TABLES     reads all scattering table files
+  FORWARD_COLUMN_RADIANCE    forward radiative transfer for one column
+  TANLIN_COLUMN_RADIANCE     tangent linear of forward RT
+  ADJOINT_COLUMN_RADIANCE    adjoint of forward RT
+  DEALLOC_COLUMN_RADIANCE    releases memory allocated by forward RT routine
+  DEALLOC_SCATTERING_TABLES  releases memory allocated for scattering tables
+
+READ_SCATTERING_TABLES reads the single scattering information for all
+the hydrometeor components and channels that are subsequently used.  It
+is called once before the radiative transfer routines are used.
+FORWARD_COLUMN_RADIANCE is called once for each channel and set of
+column and surface parameters.  It allocates arrays that may be used by
+the tangent linear or adjoint routines.  The TANLIN_COLUMN_RADIANCE and
+ADJOINT_COLUMN_RADIANCE routines MUST be called after
+FORWARD_COLUMN_RADIANCE and with the same data for the input parameters
+(with the same names).  DEALLOC_COLUMN_RADIANCE should be called after
+finishing with one column, that is, after the last of the forward,
+tangent linear, or adjoint routines is called.
+
+For a list of the specific input and output parameters for each
+subroutine, see the comments at the beginning of each routine in
+shdomppda_fwd_tl_adj.f90.  See demo_shdomppda.f90 for an example of the
+use of most of the above routines, and see the run_demo_shdomppda.csh
+script on how to run the demonstration program.  The comments for the
+two key subroutines are copied below (the tangent linear and adjoint
+routines have similar argument lists).
+
+
+SUBROUTINE READ_SCATTERING_TABLES (NCOMP, NCHAN, SPECIESZRANGE, &
+                                   SCATTABDIR, SCATTABFILES)
+ ! Reads the tables of single scattering properties as a function of
+ ! mean mass radius for the needed hydrometeor species and all the  
+ ! NCHAN channels (over all platforms).  If the SPECIESZRANGE(2,I) is
+ ! negative for a component than those scattering table files are not read.
+ ! The SPECIES2TABLE module array is made, which converts from hydrometeor 
+ ! species number (1 to NCOMP) to the scattering table number (1 to NSCATTAB)
+ ! in the tabulated properties arrays.  The module arrays for the tabulated  
+ ! scattering properties (NRTAB, RTAB, WAVELEN1, WAVELEN2,  PARDENS,
+ ! EXTINCTTAB, SSALBTAB, NLEGTAB, LEGENTAB) are allocated and filled in here.
+ ! 
+ ! Inputs:
+ !  NCOMP          number of hydrometeor components or species
+ !  NCHAN          number of wavelengths
+ !  SPECIESZRANGE  height range (in km) for each hydrometeor species
+ !  SCATTABDIR     scattering table directory for all files
+ !  SCATTABFILES   scattering table files for all components and channels
+ !  
+ ! Outputs:
+ !  No output arguments.  Routine sets global variables in module.
+
+
+SUBROUTINE FORWARD_COLUMN_RADIANCE (NZ, ZLEV, TEMP, PRES, VAPMIXR, O3MIXR, &
+                                    TOPMOLECTAU, TOPTEMP, INDEXABS, &
+                                    NCOMP, MIXR, CONC, SPECIESZRANGE, &
+                                    SFCPRES, TEMPSKIN, SFCALBEDO, &
+                                    ICHANSCAT, NOUT, MUOBS, PHIOBSREL, &
+                                    SRCTYPE, SOLARFLUX, SOLARMU, WAVELEN, &
+                                    NMU, NPHI, SPLITACC, SOLACC, &
+                                    UNITS, RADOUT)
+ ! Computes the upwelling radiance for the specified atmospheric state
+ ! in the specified directions.
+ ! Allocates many of the module global arrays (deallocate with
+ ! DEALLOC_COLUMN_RADIANCE).
+ ! Model levels are treated as SHDOMPP layer boundary levels with the
+ ! cloud mixing ratio linearly interpolated and integrated to get the
+ ! hydrometeor mass in each layer.  The hydrometeor water paths are  
+ ! obtained from the mixing ratios and pressure profiles; ZLEV is    
+ ! used only for speciesZrange, not for optical properties.
+ ! 
+ ! Inputs:
+ !  NZ         number of model levels
+ !  ZLEV       model height levels (km) (from bottom to top of atmosphere)
+ !  TEMP       model temperature profile (K)
+ !  PRES       model pressure profile (mb)  
+ !  VAPMIXR    model water vapor mass mixing ratio (g/kg)
+ !  O3MIXR     ozone mixing ratio (ppmv) at model levels 
+ !  TOPMOLECTAU equivalent top layer (above model top) molecular optical depth
+ !  TOPTEMP     equivalent top layer temperature (K)
+ !  INDEXABS    absorption channel index number (<=0 for no absorption call)
+ !  NCOMP      number of hydrometeor species input
+ !  MIXR       model hydrometeor mass mixing ratio profiles (g/kg)
+ !  CONC       model hydrometeor concentration profile for each species (#/kg)
+ !  SPECIESZRANGE  lower and upper range of layers to allow each species (km) 
+ !  SFCPRES    model surface pressure (mb)
+ !  TEMPSKIN   model surface skin temperature (K)
+ !  SFCALBEDO  surface Lambertian albedo
+ !  ICHANSCAT  channel number for indexing into scattering tables
+ !  NOUT       number of output radiance directions
+ !  MUOBS      viewing cosine zenith angles
+ !  PHIOBSREL  viewing azimuth angles relative to solar azimuth (deg; 0 is forw$
+ !  SRCTYPE    radiation source type: 'S'=solar, 'T'=thermal, 'B'=both
+ !  SOLARFLUX  solar flux on a *horizontal* surface (W/m^2 um)
+ !  SOLARMU    cosine solar zenith angle (must be < 0)
+ !  WAVELEN    wavelength (microns) for thermal source
+ !  NMU        number of discrete ordinate zenith angles in both hemispheres
+ !  NPHI       number of discrete ordinate azimuth angles in 2\pi
+ !  SPLITACC   adaptive layer splitting accuracy (0.03 to 0.0003 recommended)
+ !  SOLACC     SHDOMPP solution accuracy (1E-6 to 1E-7 recommended for adjoint
+ !               accuracy even though that is not needed for radiance accuracy)
+ !  UNITS      output units: 'R' for reflectance (relative to SOLARFLUX),
+ !                           'T' for EBB brightness temperature
+ !                           'W' for radiance output (W/(m^2 ster um))
+ ! Outputs:
+ !  RADOUT     reflectance or brightness temperature vector
+
+
+
+                      ACCURACY ISSUES
+
+The accuracy of SHDOMPPDA output radiances is determined by the angular
+resolution, chosen by NMU and NPHI, the spatial resolution, chosen by
+SPLITACC (and the MAXDELTAU parameter), and the solution convergence,
+chosen by SOLACC.  A good choice for solar reflection problems is
+NPHI=2*NMU, but for high Sun or low viewing zenith angles or a more
+isotropic phase function a smaller NPHI could be accurate.  For thermal
+emission problems set NPHI=1.  Note: NPHI is the number of azimuth
+angles in 0 to 2*pi, but only the range 0 to pi is actually used
+internally.   There is seldom any point in having the SPLITACC and
+SOLACC parameters set very small if the accuracy is limited by low
+angular resolution (small NMU).  However, a smaller SOLACC parameter is
+required for good tangent linear and adjoint accuracy than is required
+for good forward model accuracy.  How the actual accuracy depends on the
+input parameters should be investigated with a convergence test for
+problems similiar to the ones you want to carry out.  Also see the
+SHDOMPPDA journal article for results that offer some guidance.
+
+
+
+                  MAKING SCATTERING TABLES
+
+Two programs are provided for making the scattering tables input to
+SHDOMPPDA: make_mie_table2 and make_ice_table2.  These tables give the
+optical properties (extinction, single scattering albedo, and Legendre
+coefficients of the phase function) as a function of the particle size
+distribution mean mass radius.  Mass mean radius is chosen for SHDOMPPDA
+instead of effective radius because it can be directly calculated from
+the input hydrometeor mass mixing ratio and number concentration without
+further assumptions about the particle size distribution and shape.
+
+
+                       MAKE_MIE_TABLE2
+
+Make_mie_table calculates the single scattering properties of gamma or
+lognormal distributions of spherical particles and outputs the results
+in a scattering table.  If the particle type is water or ice then an
+integration across the specified wavelength band may be performed.  If
+an aerosol particle type is chosen then the index of refraction of the
+aerosol is specified.
+
+For water or ice particles an integration across the wavelength range
+may be done.  In this case a series of Mie calculations are performed at
+a specified wavelength spacing using the correct index of refraction for
+each wavelength.  The alternative is to use the Planck function averaged
+index of refraction and central wavelength, which takes less computation
+but may be less accurate (depending on the spectral band width).  For
+solar wavelengths (< 3 um) the Planck function is for a solar
+temperature (5800 K), for longwave wavelengths (> 5 um) the Planck
+function is for an atmospheric temperature (270 K), while between 3 and
+5 um a straight average is used.
+
+If an aerosol particle type is chosen then the particle bulk density of
+the aerosol is specified.  The density is needed because the output
+scattering table extinction is normalized for a mass content of 1 g/m^3.
+
+The gamma distribution of cloud droplet sizes is
+     n(r) = a r^alpha exp(-b*r)
+ where r is the droplet radius, and a, b, alpha specify the gamma
+distribution.  The number concentration of droplets is 
+ N = a Gamma(alpha+1)/ b^(alpha+1), where Gamma is the gamma function.
+The effective radius of the distribution is r_eff = (alpha+3)/b, while
+the effective variance is v_eff = 1/(alpha+3).  A typical value for 
+water clouds is v_eff=0.1 or alpha=7.  For ice clouds a typical value is
+alpha=1 or 2.  An exponential distribution is obtained with alpha=0.  A
+large value of alpha gives close to a monodisperse distribution.
+
+The lognormal distribution of cloud droplet sizes is
+     n(r) = a/r exp( -[ln(r/r0)]^2 / (2*sigma^2) )
+ where r0 is the logarithmic mode of the distribution and sigma is the
+standard deviation of the log.  The number concentration of droplets is
+N = sqrt(2*pi)*sigma*a.  The effective radius of the distribution is
+r_eff = r0*exp(2.5*sigma^2) and the effective variance of the
+distribution is v_eff = exp(sigma^2)-1.  A common value for water clouds
+is sigma=.35, or v_eff=0.130, and a common value for aerosol distributions
+is sigma=0.7.
+
+The maximum radius of the distribution is specified by the user because
+it is the critical determinant of the Mie calculation computer time.
+There are often microphysical reasons for truncating the theoretical
+size distribution; for example, one might say that the cloud droplet
+mode ends at a radius of 50 microns.  For a narrow gamma distribution
+(alpha=7) of cloud droplets, a maximum radius of only twice the largest
+effective radius gives virtually the same optical properties as the 
+untruncated gamma distribution.  For a wide lognormal distribution, as
+might be used for an aerosol distribution, a much larger maximum radius
+relative to the largest effective radius would be required if no
+truncation was desired.  If there is truncation make_mie_table uses an
+iterative procedure to adjust the size distribution modal radius to
+achieve the desired mean mass radius.  Thus one can be assured that the
+size distributions have the mean mass radii reported in the output
+scattering table even if there is truncation of the theoretical
+distribution.  The number and spacing of the integration steps over the
+size distribution is controlled by the GET_NSIZE and GET_SIZES
+subroutines.  The default formula is DELX = max(0.01,0.03*X**0.5),
+where X is the size parameter (2*pi*r/lambda, lambda=wavelength)
+and DELX is the integration step.  This integration spacing is
+adequate for most purposes, but can be easily changed if higher
+accuracy is sought.
+
+             Make_mie_table2 Input Parameters
+
+Parameter   Description
+WAVELEN1    wavelength range (microns) for this band
+WAVELEN2       for monochromatic choose WAVELEN1=WAVELEN2
+PARTYPE     particle type: W=water, I=ice, A=aerosol
+              if PARTTYPE='A' then the index of refraction is input,
+              otherwise tables for water and ice index are used.
+AVGFLAG     'A' for spectral average over the wavelength range (for
+              PARTYPE='W' or 'I'), 'C' to use the central wavelength.
+DELTAWAVE   wavelength interval for averaging (micron)
+RINDEX      aerosol complex index of refraction (negative imaginary part)
+PARDENS     aerosol particle bulk density (g/cm^3)
+DISTFLAG    'G' for gamma distribution or 'L' for lognormal distribution
+ALPHA       distribution shape parameter (either alpha in gamma distribution
+              or sigma in lognormal distribution).  Effective variance
+              = 1/(alpha+3) for gamma, exp(alpha^2)-1 for lognormal.
+NRTAB       number of effective radii entries in Mie table
+SRTAB       starting effective radius (micron) in Mie table
+ERTAB       ending effective radius (micron) in Mie table
+MAXRADIUS   maxium particle radius in size distribution (micron)
+MIEFILE     output Mie scattering table file name
+
+
+
+                     MAKE_ICE_TABLE2
+
+Make_ice_table2 calculates the shortwave single scattering properties of
+gamma distributions of mixtures of six shapes of ice crystals and outputs
+the results in a scattering table.  The ice crystal scattering properties
+were produced by Ping Yang and are described in these articles:
+   Yang, Ping,  K. N. Liou, Klaus Wyser, David Mitchell, 2000:
+     Parameterization of the scattering and absorption properties of
+     individual ice crystals.  J. Geophys. Res., 105 (D4), 4699-4718.
+   Yang, P., H. Wei, H.-L. Huang, B. A. Baum, Y. X. Hu, G. W. Kattawar,
+     M. I. Mischenko, and Q. Fu, 2005: Scattering and absorption property 
+     database for nonspherical ice particles in the near-through 
+     far-infrared spectral region. Appl. Optics, 44,5512-5523.
+ The scattering properties are tabulated in "yang2005_ice_scatter.db"
+for 65 wavelength from 0.20 to 100 microns and 45 particle lengths from
+2 to 9500 microns.  The six ice crystal shapes are 1=aggregate, 2=solid
+column, 3=droxtal, 4=hollow column, 5=hexagonal plate, 6=bullet rosette.
+(see the second article for pictures of these shapes and more information).
+
+The phase functions have been modified for this distribution by 
+convolving the portions with scattering angles less than 10 degrees by a
+gaussian with 0.25 degree rms width and by adjusting the forward peak
+height to normalize each phase function.  The reasons for doing this is
+that the original phase functions with the largest size parameters would
+require a huge number of Legendre series terms to be represented for
+SHDOM and also were not properly normalized.  The number of Legendre
+terms required for the smoothed forward peak phase functions is 2500.
+The smoothing of the forward peak will not affect the radiative transfer
+results significantly for nearly all applications (one application where
+it could be an issue is sun photometry, but the TMS approximation in
+SHDOMPP is already poor for that application).  
+
+Make_ice_table2 reads the "yang2005_ice_scatter.db" database file to
+produce a scattering table file for gamma size distributions with a
+sequence of mean mass radii for a mixture of particle shapes.  The shape
+mixture can vary throughout the size distribution because the mixing
+fractions depend on the particle maximum diameter.  The mixing fractions
+of the six particle shapes are specified with a mixture file.  The
+format of the shape mixture files is:
+     one header line
+     Dmax  F1 F2 F3 F4 F5 F6    (Fn are the fractions for each shape)
+ Dmax is the maximum particle diameter (e.g. the length of a column).
+Dmax must increase in the file.  The mixing fractions are interpolated
+in Dmax between entries in the mixing table.  The mixing fractions of
+the smallest Dmax in the table are used for smaller Dmax database
+values, and fractions for the largest Dmax in the table are used for
+larger Dmax database values. 
+
+The scattering properties are averaged over the desired spectral range
+using linear interpolation between wavelengths in the database. The
+gamma distributions are in terms of the equivalent volume spherical
+diameter (Dv), not the particle length.  The "b" parameter of the gamma
+distribution [n(D) = a Dv^alpha exp(-b*Dv)] is adjusted iteratively to
+achieve the correct mean mass radius.  The user specified mean mass
+radius may not be achievable for a particular particle shape and size
+distribution width, in which case a different range of mean mass radius
+or a narrower distribution (larger alpha) will have to be chosen.  The
+extinction in the output scattering table is normalized for
+distributions with an ice water content of 1 g/m^3 assuming an ice
+density of 0.916 g/cm^3.  The output mean mass radii are logarithmically
+spaced between SRTAB and ERTAB.
+
+              Make_ice_table2 Input Parameters
+
+Parameter   Description
+ICESCATDB    filename of the ice scattering database 
+                (i.e. yang2005_ice_scatter.db)
+WAVELEN1     wavelength range (microns) for this band
+WAVELEN2       for monochromatic choose WAVELEN1=WAVELEN2
+SHAPEMIXFILE input ice particle shape mixing file name
+NRTAB        number of mean mass radii entries in scattering table
+SRTAB        starting mean mass radius (micron) in scattering table
+ERTAB        ending mean mass radius (micron) in scattering table
+ALPHA        gamma distribution shape parameter 
+ICETABFILE   output scattering table file name
+
+
+
+
+           SHDOMPPDA DISTRIBUTION FILES
+
+shdomppda.txt              this documentation file
+demo_shdomppda.f90         demonstration program calls forward and adjoint
+shdomppda_fwd_tl_adj.f90   SHDOMPPDA module with main routines to use
+molec_absorption_interface.f90  dummy molecular absorption module
+shdomppda.f90              forward SHDOMPPDA subroutines
+shdomppda_ftls.f90         tangent linear SHDOMPPDA subroutines
+shdomppda_ads.f90          adjoint SHDOMPPDA subroutines
+make_mie_table2.f90        Mie program to make scattering tables
+mieindsub.f                subroutines for Mie code
+make_ice_table2.f90        program to make ice crystal scattering tables
+makefile                   make file to compile distribution programs
+run_demo_shdomppda.csh     example script to run demo_shdomppda
+make_scat_tables.csh       example script to 
+put.c                      utility program for the scripts
+rams_twomom2_y360.dat      RAMS X-Z slice used in JAS paper
+goes_ch1_cloud.scat        GOES channel 1 scattering table for cloud droplets
+goes_ch1_ice.scat          GOES channel 1 scattering table for pristine ice
+goes_ch4_cloud.scat        GOES channel 4 scattering table for cloud droplets
+goes_ch4_ice.scat          GOES channel 4 scattering table for pristine ice
+Baum_MODIS_shape_mixture.dat    Bryan Baum's MODIS ice crystal mixture recipe
+yang2005_ice_scatter.db    database for making ice scattering tables
+                              (not in distribution, obtain separately)
+
