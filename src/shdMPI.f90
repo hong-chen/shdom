@@ -3364,7 +3364,8 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
             RAD0(:) = F1*GRIDRAD(:, I1) + F2*GRIDRAD(:, I2)&
                 &+ F3*GRIDRAD(:, I3) + F4*GRIDRAD(:, I4)
             RAD(:) = RAD(:) + TRANS*RAD0(:)
-        else if (TRANS .lt. 1.0e-5) then
+        !else if (TRANS .lt. 1.0e-5) then
+        else if (TRANS .lt. RACC_) then
             VALIDRAD = .true.
         else
             EXT1 = EXT0

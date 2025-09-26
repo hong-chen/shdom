@@ -110,6 +110,7 @@ module globals
   real(R_),  parameter :: RHOWAT0_ = 0.99984e+3_R_       ! density (kg/m^3) of liquid water (0 deg.C)
   real(R_),  parameter :: RHOICE0_ = 0.917e+3_R_         ! density (kg/m^3) of water ice (0 deg.C)
 
+  real(R_),  parameter :: RACC_   = epsilon(1.0_R_)    ! 1.0e-7, typically
   integer, parameter :: FNAMEMAXLEN_ = 256 ! file name max length (number of characters)
   logical, parameter :: VERBOSE_ = .FALSE.
 

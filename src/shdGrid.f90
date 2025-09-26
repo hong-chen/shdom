@@ -1018,8 +1018,9 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT, NSTLEG, NLEG,&
                 end do
             end do
         end do
-        EXTMIN = 1.0e-5/((ZLEVELS_(NPZ_) - ZLEVELS_(1))/NPZ_)
-        SCATMIN = 0.1*EXTMIN
+        !EXTMIN = 1.0d-5/((ZLEVELS_(NPZ_) - ZLEVELS_(1))/NPZ_)
+        EXTMIN  = RACC_/((ZLEVELS_(NPZ_) - ZLEVELS_(1))/NPZ_) ! attempt to improve agreement between libRadtran in water vapor abosprtion bands
+        SCATMIN = 0.1d0*EXTMIN
         return
     end if
 

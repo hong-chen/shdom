@@ -739,7 +739,8 @@ subroutine shd_src__integrateSrcOneRay(&
         &0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 0, 0, 0, 0/
 
     ! TRANSCUT is the transmission to stop the integration at
-    TRANSCUT = 5.0e-5
+    !TRANSCUT = 5.0e-5
+    TRANSCUT = RACC_
     ! TAUTOL is the maximum optical path for the subgrid intervals
     TAUTOL = 0.2
 
@@ -1325,7 +1326,9 @@ subroutine shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
         ! See if there are valid radiances for the intersection face:
         !   If so, set flag, interpolate radiance, and add in
         !   If not, only prepare for next cell
-        if (TRANSMIT .lt. 1.0e-5) then
+
+        !if (TRANSMIT .lt. 1.0e-5) then
+        if (TRANSMIT .lt. RACC_) then
             VALIDRAD = .true.
         else if (GRIDRAD(1, I1) .ge. 0.0 .and. GRIDRAD(1, I2) .ge. 0.0 .and.&
             &GRIDRAD(1, I3) .ge. 0.0 .and. GRIDRAD(1, I4) .ge. 0.0) then

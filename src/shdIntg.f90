@@ -269,7 +269,7 @@ subroutine shd_intg__integratePath(&
             !   GRIDRAD to the work array.
             do I = 1, NPTS
                 !if (GRIDRAD(1, I) .lt. -0.0001) then
-                if (GRIDRAD(1, I) .lt. -1.0e-5) then
+                if (GRIDRAD(1, I) .lt. -RACC_) then
                     write (6, *) 'Warning [_integratePath]: Grid point has no value',&
                         &I, MU(IMU), PHI(IMU, IPHI), GRIDRAD(1, I), XGRID(1), YGRID(1),&
                         &GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I)
@@ -617,7 +617,8 @@ subroutine shd_intg__backIntegrate3D(&
                 !   to stop the tracing and add in the interpolated face radiance.
                 RAD(:) = RAD(:) + TRANSMIT*SRC(:)*ABSCELL
                 TRANSMIT = TRANSMIT*TRANSCELL
-                if (RAD(1) < -1.0e-5) then
+                !if (RAD(1) < -1.0e-5) then
+                if (RAD(1) < -RACC_) then
                     print '(A,3(1X,F6.4),8(1X,E12.5))',&
                         &'_backIntegrate3D: RAD<0 ',&
                         &xe, ye, ze, ext0, ext1, so, tau, transmit, src, abscell, rad(:)
@@ -979,7 +980,8 @@ subroutine shd_intg__backIntegrate3D_(&
                 ! to stop the tracing and add in the interpolated face radiance.
                 RAD = RAD + TRANSMIT*SRC*ABSCELL
                 TRANSMIT = TRANSMIT*TRANSCELL
-                if (RAD < -1.0e-5) then
+                !if (RAD < -1.0e-5) then
+                if (RAD < -RACC_) then
                     print '(A,3(1X,F6.4),8(1X,E12.5))',&
                         &'_backIntegrate3D_: RAD<0 ',&
                         &XE, YE, ZE, EXT0, EXT1, SO, TAU, TRANSMIT, SRC, ABSCELL, RAD
@@ -1446,8 +1448,9 @@ subroutine shd_intg__backIntegrate1D(&
                 ! If so, set flag, interpolate radiance, and add to
                 !   radiance from source function in cell
                 ! If not, only add in cell radiance and prepare for next cell
+
                 !if (GRIDRAD(1, I1) .ge. -0.1) then
-                if (GRIDRAD(1, I1) .ge. -1.0e-5) then
+                if (GRIDRAD(1, I1) .ge. -RACC_) then
                     VALIDRAD = .true.
                     RAD0(:) = GRIDRAD(:, I1)
                     RAD(:) = RAD(:) + TRANSMIT*(RAD0(:)*TRANSCELL + SRC(:)*ABSCELL)
