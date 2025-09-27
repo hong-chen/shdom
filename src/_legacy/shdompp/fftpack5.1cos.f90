@@ -436,7 +436,14 @@ subroutine costb1 ( n, inc, x, wsave, work, ier )
       np1 = n+1
       ns2 = n/2
 
-      if (n-2) 106,101,102
+      if ((n-2) .lt. 0) then
+          go to 106
+      else if ((n-2) .eq. 0) then
+          go to 101
+      else
+          go to 102
+      end if
+
   101 x1h = x(1,1)+x(1,2)
       x(1,2) = x(1,1)-x(1,2)
       x(1,1) = x1h
@@ -570,7 +577,14 @@ subroutine costf1 ( n, inc, x, wsave, work, ier )
   np1 = n+1
   ns2 = n/2
 
-      if (n-2) 200,101,102
+      if ((n-2) .lt. 0) then
+          go to 200
+      else if ((n-2) .eq. 0) then
+          go to 101
+      else
+          go to 102
+      end if
+
   101 x1h = x(1,1)+x(1,2)
       x(1,2) = 0.5E+00 * (x(1,1)-x(1,2))
       x(1,1) = 0.5E+00 * x1h
@@ -1049,13 +1063,25 @@ subroutine rffti1 ( n, wa, fac )
       nf = 0
       j = 0
   101 j = j+1
-      if (j-4) 102,102,103
+
+      if ((j-4) .le. 0) then
+          go to 102
+      else
+          go to 103
+      end if
+
   102 ntry = ntryh(j)
       go to 104
   103 ntry = ntry+2
   104 nq = nl/ntry
       nr = nl-ntry*nq
-      if (nr) 101,105,101
+
+      if (nr .eq. 0) then
+          go to 105
+      else
+          go to 101
+      end if
+
   105 nf = nf+1
       fac(nf+2) = ntry
       nl = nq
@@ -1157,7 +1183,14 @@ subroutine r1f2kf (ido,l1,cc,in1,ch,in2,wa1)
     ch(1,ido,2,k) = cc(1,1,k,1)-cc(1,1,k,2)
   end do
 
-      if (ido-2) 107,105,102
+      if ((ido-2) .lt. 0) then
+          go to 107
+      else if ((ido-2) .eq. 0) then
+          go to 105
+      else
+          go to 102
+      end if
+
   102 idp2 = ido+2
       do 104 k=1,l1
          do i=3,ido,2
@@ -1356,7 +1389,14 @@ subroutine r1f4kf (ido,l1,cc,in1,ch,in2,wa1,wa2,wa3)
     ch(1,1,3,k) = cc(1,1,k,4)-cc(1,1,k,2)
   end do
 
-      if (ido-2) 107,105,102
+      if ((ido-2) .lt. 0) then
+          go to 107
+      else if ((ido-2) .eq. 0) then
+          go to 105
+      else
+          go to 102
+      end if
+
   102 idp2 = ido+2
       do 104 k=1,l1
          do 103 i=3,ido,2
