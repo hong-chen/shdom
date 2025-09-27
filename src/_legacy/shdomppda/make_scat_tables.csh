@@ -78,11 +78,11 @@ while ($k <= $Nchan)   # Loop over channels (k)
 
 
       if ($avgflag == "A") then
-        put "$wavelen1 $wavelen2" $partype[$i] $avgflag $deltawave $distflag  \
+        bin/put "$wavelen1 $wavelen2" $partype[$i] $avgflag $deltawave $distflag  \
           $alpha[$i] "$Nrtab[$i] $Srtab[$i] $Ertab[$i]" $maxradius[$i] $scatfile \
          | bin/make_mie_table2
       else
-        put "$wavelen1 $wavelen2" $partype[$i] $avgflag  $distflag  \
+        bin/put "$wavelen1 $wavelen2" $partype[$i] $avgflag  $distflag  \
           $alpha[$i] "$Nrtab[$i] $Srtab[$i] $Ertab[$i]" $maxradius[$i] $scatfile \
          | bin/make_mie_table2
       endif
@@ -93,7 +93,7 @@ while ($k <= $Nchan)   # Loop over channels (k)
       #  Makes scattering tables for several ice particle shapes for 
       # gamma size distributions with a range of effective radius. 
       #    Shape index:
-      put  yang2005_ice_scatter.db  "$wavelen1 $wavelen2" $shapemixfile[$i] \
+      bin/put  yang2005_ice_scatter.db  "$wavelen1 $wavelen2" $shapemixfile[$i] \
         "$Nrtab[$i] $Srtab[$i] $Ertab[$i]" $alpha[$i] $scatfile \
        | bin/make_ice_table2
     endif

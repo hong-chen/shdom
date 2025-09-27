@@ -8,7 +8,6 @@ BIN_DIR     = $(abspath $(CURRENT_DIR)/bin)
 
 all: bin demo_shdomppda make_mie_table2 make_ice_table2
 
-
 Objs =  molec_absorption_interface.o shdomppda_fwd_tl_adj.o \
         shdomppda.o shdomppda_ftls.o shdomppda_ads.o
 
@@ -33,18 +32,14 @@ shdomppda_ftls.o: shdomppda_ftls.f90
 shdomppda_ads.o: shdomppda_ads.f90
 	$(CompileF90)  $<
 
-
-
 make_mie_table2: make_mie_table2.f90 mieindsub.o
 	$(LinkF90) -o $(BIN_DIR)/$@ $< mieindsub.o
-        
+
 mieindsub.o: mieindsub.f
 	$(CompileF90) $<
 
-
 make_ice_table2: make_ice_table2.f90
-	$(LinkF90) -o $(BIN_DIR)/$@ $< 
+	$(LinkF90) -o $(BIN_DIR)/$@ $<
 
-clean::
-	-/bin/rm -rf  *.mod *.o bin/demo_shdomppda bin/make_mie_table2 bin/make_ice_table2 bin
-
+clean:
+	-/bin/rm -rf  *.mod *.o bin/put bin/demo_shdomppda bin/make_mie_table2 bin/make_ice_table2 bin

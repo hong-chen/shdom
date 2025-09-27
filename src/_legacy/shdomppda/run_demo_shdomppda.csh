@@ -16,7 +16,7 @@ set ThermalAdjointDemo=0
 
 
  # Compile the "put" command
-if (!(-e put))  cc -o put  put.c
+if (!(-e bin/put))  cc -o bin/put  put.c
 
 
 if ($SolarAdjointDemo) then
@@ -47,7 +47,7 @@ if ($SolarAdjointDemo) then
   set units=R            # reflectance units
 
    # Run demo_shdomppda
-  put $instatefile $outradfile $outstatefile  \
+  bin/put $instatefile $outradfile $outstatefile  \
       $ncomp $icomps  $scatfiles $speciesZrange \
       S "$solarflux $solarmu" $sfcalb $wavelen $units \
       "$Nmu $Nphi"  $splitacc $solacc \
@@ -84,7 +84,7 @@ if ($ThermalAdjointDemo) then
   set Nphi=1
 
    # Run demo_shdomppda
-  put $instatefile $outradfile $outstatefile  \
+  bin/put $instatefile $outradfile $outstatefile  \
       $ncomp $icomps  $scatfiles $speciesZrange \
       T $sfctemp $sfcalb $wavelen $units \
       "$Nmu $Nphi"  $splitacc $solacc \
