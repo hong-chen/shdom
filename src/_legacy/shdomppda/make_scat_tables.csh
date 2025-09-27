@@ -80,11 +80,11 @@ while ($k <= $Nchan)   # Loop over channels (k)
       if ($avgflag == "A") then
         put "$wavelen1 $wavelen2" $partype[$i] $avgflag $deltawave $distflag  \
           $alpha[$i] "$Nrtab[$i] $Srtab[$i] $Ertab[$i]" $maxradius[$i] $scatfile \
-         | make_mie_table2
+         | bin/make_mie_table2
       else
         put "$wavelen1 $wavelen2" $partype[$i] $avgflag  $distflag  \
           $alpha[$i] "$Nrtab[$i] $Srtab[$i] $Ertab[$i]" $maxradius[$i] $scatfile \
-         | make_mie_table2
+         | bin/make_mie_table2
       endif
     endif
 
@@ -95,7 +95,7 @@ while ($k <= $Nchan)   # Loop over channels (k)
       #    Shape index:
       put  yang2005_ice_scatter.db  "$wavelen1 $wavelen2" $shapemixfile[$i] \
         "$Nrtab[$i] $Srtab[$i] $Ertab[$i]" $alpha[$i] $scatfile \
-       | make_ice_table2
+       | bin/make_ice_table2
     endif
 
     echo; echo

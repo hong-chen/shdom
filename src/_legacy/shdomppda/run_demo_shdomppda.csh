@@ -11,8 +11,8 @@
 
 
  # Set variable to 1 to run that section:
-set SolarAdjointDemo=0
-set ThermalAdjointDemo=1
+set SolarAdjointDemo=1
+set ThermalAdjointDemo=0
 
 
  # Compile the "put" command
@@ -52,7 +52,7 @@ if ($SolarAdjointDemo) then
       S "$solarflux $solarmu" $sfcalb $wavelen $units \
       "$Nmu $Nphi"  $splitacc $solacc \
       $#muobs "$muobs" "$phiobs"  "$radpertvect"  \
-    | /usr/bin/time demo_shdomppda
+    | /usr/bin/time bin/demo_shdomppda
 endif
 
 
@@ -89,6 +89,6 @@ if ($ThermalAdjointDemo) then
       T $sfctemp $sfcalb $wavelen $units \
       "$Nmu $Nphi"  $splitacc $solacc \
       $#muobs "$muobs" "$phiobs"  "$radpertvect" \
-    | demo_shdomppda
+    | bin/demo_shdomppda
 endif
 
