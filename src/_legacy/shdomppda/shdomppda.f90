@@ -1140,7 +1140,7 @@ END SUBROUTINE CALC_SOURCE
 
 SUBROUTINE CALC_SOURCE2 (ML,MM, NLM, NLAY, NPTS, IXP, LOFJ, &
                          ALBEDOSC, LEGENSC, SHRADIANCE, CONSTSOURCE, &
-                         SOURCE, DELSOURCE)
+                         SOURCE)
  ! Computes the source function (SOURCE) in spherical harmonic space 
  ! for all the grid levels in all the input layers.  
  ! The thermal source and/or solar pseudo-sources in CONSTSOURCE is
@@ -1152,7 +1152,7 @@ SUBROUTINE CALC_SOURCE2 (ML,MM, NLM, NLAY, NPTS, IXP, LOFJ, &
   INTEGER, INTENT(IN) :: IXP(2,NLAY), LOFJ(NLM)
   REAL,    INTENT(IN) :: ALBEDOSC(NLAY), LEGENSC(1:ML,NLAY)
   REAL,    INTENT(IN) :: SHRADIANCE(NLM,NPTS), CONSTSOURCE(NLM,NPTS)
-  REAL,    INTENT(INOUT) :: SOURCE(NLM,NPTS), DELSOURCE(NLM,NPTS)
+  REAL,    INTENT(INOUT) :: SOURCE(NLM,NPTS)
   INTEGER :: J, K, L, LAY
 
   DO LAY = 1, NLAY
