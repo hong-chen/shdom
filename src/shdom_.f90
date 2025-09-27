@@ -138,6 +138,9 @@ program shdom_main
         &MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
         &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
 
+    ! set calculation accuracy (1.0e-4 to 1.0e-8)
+    RACC_ = max(REPS_, min(SOLACC*0.1, 1.0e-4))
+
     ! The number of Stokes parameters (and components of the real
     !   generalized spherical harmonics vectors) can be 1, 3, or 4.
     NSTOKES = max(1, min(4, NSTOKES))
