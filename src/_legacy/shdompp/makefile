@@ -6,7 +6,7 @@ FC= gfortran
 CURRENT_DIR = $(shell pwd)
 BIN_DIR     = $(abspath $(CURRENT_DIR)/bin)
 
-all: bin shdompp disortsh ppmieprp
+all: bin shdompp disortsh ppmieprp put
 
 bin:
 	mkdir -p $(BIN_DIR)
@@ -23,7 +23,10 @@ disortsh: disortsh.f90 disort2.o
 ppmieprp: ppmieprp.f90
 	$(FC) $(FFLAGS) ppmieprp.f90 -o $(BIN_DIR)/ppmieprp
 
+put:
+	$(FC) $(FFLAGS) put.f90 -o $(BIN_DIR)/put
+
 .f.o :; $(FC) -c $(FFLAGS) $*.f
 
 clean:
-	-/bin/rm -rf *.mod *.o *~ bin/put bin/shdompp bin/disortsh bin/ppmieprp bin
+	-/bin/rm -rf *.mod *.o *~ bin
