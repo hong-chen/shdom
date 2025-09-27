@@ -3,14 +3,20 @@
 CompileF90 = gfortran -c -Ofast -fallow-argument-mismatch
 LinkF90    = gfortran -Ofast
 
-all: demo_shdomppda make_mie_table2 make_ice_table2
+CURRENT_DIR = $(shell pwd)
+BIN_DIR     = $(abspath $(CURRENT_DIR)/bin)
+
+all: bin demo_shdomppda make_mie_table2 make_ice_table2
 
 
 Objs =  molec_absorption_interface.o shdomppda_fwd_tl_adj.o \
         shdomppda.o shdomppda_ftls.o shdomppda_ads.o
 
+bin:
+	mkdir -p $(BIN_DIR)
+
 demo_shdomppda: demo_shdomppda.f90  $(Objs)
-	$(LinkF90)  -o $@ $< $(Objs)
+	$(LinkF90)  -o $(BIN_DIR)/$@ $< $(Objs)
 
 molec_absorption_interface.o: molec_absorption_interface.f90
 	$(CompileF90)  $<
@@ -30,15 +36,15 @@ shdomppda_ads.o: shdomppda_ads.f90
 
 
 make_mie_table2: make_mie_table2.f90 mieindsub.o
-	$(LinkF90) -o $@ $< mieindsub.o
+	$(LinkF90) -o $(BIN_DIR)/$@ $< mieindsub.o
         
 mieindsub.o: mieindsub.f
 	$(CompileF90) $<
 
 
 make_ice_table2: make_ice_table2.f90
-	$(LinkF90) -o $@ $< 
+	$(LinkF90) -o $(BIN_DIR)/$@ $< 
 
 clean::
-	-/bin/rm  *.mod *.o  demo_shdomppda make_mie_table2 make_ice_table2
+	-/bin/rm -rf  *.mod *.o bin/demo_shdomppda bin/make_mie_table2 bin/make_ice_table2 bin
 

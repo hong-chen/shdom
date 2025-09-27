@@ -4,23 +4,30 @@ FFLAGS= -O2 -fallow-argument-mismatch
 FC= gfortran
 
 
-all: shdompp disortsh ppmieprp
+CURRENT_DIR = $(shell pwd)
+BIN_DIR     = $(abspath $(CURRENT_DIR)/bin)
+
+
+all: bin shdompp disortsh ppmieprp
+
+bin:
+	mkdir -p $(BIN_DIR)
 
 shdompp: shdompp.f90 fftpack5.1cos.o
-	$(FC) $(FFLAGS) shdompp.f90 fftpack5.1cos.o -o shdompp
+	$(FC) $(FFLAGS) shdompp.f90 fftpack5.1cos.o -o $(BIN_DIR)/shdompp
 
 fftpack5.1cos.o: fftpack5.1cos.f90
 	$(FC) $(FFLAGS) -c fftpack5.1cos.f90
 
 
 disortsh: disortsh.f90 disort2.o
-	$(FC) $(FFLAGS) disortsh.f90 disort2.o  -o disortsh
+	$(FC) $(FFLAGS) disortsh.f90 disort2.o  -o $(BIN_DIR)/disortsh
 
 ppmieprp: ppmieprp.f90 
-	$(FC) $(FFLAGS) ppmieprp.f90 -o ppmieprp
+	$(FC) $(FFLAGS) ppmieprp.f90 -o $(BIN_DIR)/ppmieprp
 
 
 .f.o :; $(FC) -c $(FFLAGS) $*.f
 
 clean:
-	@ rm -f *.o *.mod *~ shdompp disortsh ppmieprp
+	@ rm -rf *.o *.mod *~ bin/shdompp bin/disortsh bin/ppmieprp bin
