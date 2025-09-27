@@ -69,14 +69,14 @@ IMPLICIT NONE
     CALL READ_CKD_SIZE (CKDFILE, WAVENO, NG, NZCKD)
     ALLOCATE (DELG(NG), ZCKD(NZCKD), KABS(NZCKD,NG))
     CALL READ_CKD (CKDFILE, WAVENO, NG, NZCKD, SOLFLUX, DELG, ZCKD, KABS)
-    SOLARFLUX = SOLFLUX*SOLARFLUX*ABS(SOLARMU) 
+    SOLARFLUX = SOLFLUX*SOLARFLUX*ABS(SOLARMU)
   ELSE
     NG = 1
     NZCKD = 0
     ALLOCATE (DELG(NG), ZCKD(NZCKD), KABS(NZCKD,NG))
     DELG(1) = 1.0
   ENDIF
-      
+
 
 !  WRITE (*,*) 'Number of times to run SHDOMPP routine for timing'
 !  READ (*,*) NCASES
@@ -117,7 +117,7 @@ IMPLICIT NONE
 
   CALL OUTPUT_RESULTS (NLAY, NPTS, NMU, NPHI,  NG, &
                      PROPFILE, CKDFILE, SRCTYPE, SOLARFLUX, SOLARMU, &
-                     SKYRAD, SFCTYPE, SFCTEMP, SFCPARMS, WAVELEN, WAVENO, & 
+                     SKYRAD, SFCTYPE, SFCTEMP, SFCPARMS, WAVELEN, WAVENO, &
                      SPLITACC, SOLACC, MAXITER, NUMITER, &
                      IXP, HEIGHTG, FLUXUP, FLUXDN, MEANRAD, FLUXPARM, &
                      NZOUT, ZOUT, NMUOUT, MUOUT, NPHIOUT, PHIOUT, RADOUT, &
@@ -126,7 +126,7 @@ IMPLICIT NONE
   IF (NZOUT*NMUOUT*NPHIOUT > 0) THEN
     CALL OUTPUT_RESULTS (NLAY, NPTS, NMU, NPHI,  NG, &
                      PROPFILE, CKDFILE, SRCTYPE, SOLARFLUX, SOLARMU, &
-                     SKYRAD, SFCTYPE, SFCTEMP, SFCPARMS, WAVELEN, WAVENO, & 
+                     SKYRAD, SFCTYPE, SFCTEMP, SFCPARMS, WAVELEN, WAVENO, &
                      SPLITACC, SOLACC, MAXITER, NUMITER, &
                      IXP, HEIGHTG, FLUXUP, FLUXDN, MEANRAD, FLUXPARM, &
                      NZOUT, ZOUT, NMUOUT, MUOUT, NPHIOUT, PHIOUT, RADOUT, &
@@ -152,7 +152,7 @@ SUBROUTINE SOLVE_SHDOMPP (NLAY, MAXLEG, HEIGHTP, TEMPP, TAUP, ALBEDOP, &
                           RADOUT)
  ! Performs the SHDOMPP solution procedure to calculate plane-parallel
  ! monochromatic, unpolarized radiative transfer.  The optical properties,
- ! uniform in each layer, are input.  The output are the upwelling and 
+ ! uniform in each layer, are input.  The output are the upwelling and
  ! downwelling fluxes and mean radiance at the adaptive grid optical depth
  ! levels (TAUG), and the radiances in the NMUOUT*NPHIOUT specified
  ! directions at each of NZOUT radiance output levels.
@@ -193,7 +193,7 @@ SUBROUTINE SOLVE_SHDOMPP (NLAY, MAXLEG, HEIGHTP, TEMPP, TAUP, ALBEDOP, &
  !  NPHIOUT   number of azimuth angles for radiance output
  !  PHIOUT    azimuth angles (degrees) for radiance output
  !
- ! Outputs: 
+ ! Outputs:
  !  SOLCRIT   actual solution accuracy achieved
  !  ITER      actual number of iterations
  !  NPTS      number of adaptive grid points
@@ -204,7 +204,7 @@ SUBROUTINE SOLVE_SHDOMPP (NLAY, MAXLEG, HEIGHTP, TEMPP, TAUP, ALBEDOP, &
  !  FLUXDN    downward hemispheric fluxes (includes direct solar) at each level
  !  MEANRAD   mean radiance (includes direct solar) at each level
  !  RADOUT    array of output radiances
- ! 
+ !
  !  TAUG(IXP(1,layer)) is the optical depth at the top of the input layer
  !  TAUG(IXP(2,layer)) is the optical depth at the bottom of the input layer
  !  FLUXUP(IXP(1,layer)) is the upwelling flux at the top of the layer
@@ -264,7 +264,7 @@ SUBROUTINE SOLVE_SHDOMPP (NLAY, MAXLEG, HEIGHTP, TEMPP, TAUP, ALBEDOP, &
 
 
   ! Set up some things before solution loop
- 
+
   ! If Delta-M then scale the optical depth, albedo, and Legendre terms.
   IF (DELTAM) THEN
     CALL DELTA_SCALE (NLAY, ML, TAUP, ALBEDOP, MAXLEG, NLEGP, LEGENP, &
@@ -292,7 +292,7 @@ SUBROUTINE SOLVE_SHDOMPP (NLAY, MAXLEG, HEIGHTP, TEMPP, TAUP, ALBEDOP, &
                        SOLARFLUX, SOLARMU, YLMSUN, WAVELEN, WAVENO, &
                        CONSTSOURCE)
 
-  ! Make the discrete ordinates (angles) 
+  ! Make the discrete ordinates (angles)
   !   (set 2 is reduced gaussian, 3 is reduced double gauss)
   ORDINATESET = 3
   CALL MAKE_ANGLE_SET (NMU, NPHI, 1, NPHI0MAX, ORDINATESET, &
@@ -303,7 +303,7 @@ SUBROUTINE SOLVE_SHDOMPP (NLAY, MAXLEG, HEIGHTP, TEMPP, TAUP, ALBEDOP, &
                         NPHI0MAX, MU, PHI, WTMU, WTDO, FFTFLAG, &
                         CMU1, CMU2, CPHI1, CPHI2, WPHISAVE)
 
-  ! Initialize the radiance on the base grid using Eddington 
+  ! Initialize the radiance on the base grid using Eddington
   !   two-stream plane-parallel
   IF (SFCTYPE == 'L') THEN
     GNDALB = SFCPARMS(1)
@@ -312,7 +312,7 @@ SUBROUTINE SOLVE_SHDOMPP (NLAY, MAXLEG, HEIGHTP, TEMPP, TAUP, ALBEDOP, &
   ENDIF
   ALLOCATE (SHRADIANCE(NLM,NPTS))
   CALL INIT_RADIANCE (NLAY, ML, TAUPSC, ALBEDOSC, LEGENSC, TEMPP, &
-                      SRCTYPE, SOLARFLUX, SOLARMU, GNDALB, SFCTEMP, & 
+                      SRCTYPE, SOLARFLUX, SOLARMU, GNDALB, SFCTEMP, &
                       SKYRAD, WAVELEN,  WAVENO, NPTS, TAUGSC, IXP, NLM, &
                       SHRADIANCE)
 
@@ -338,10 +338,10 @@ SUBROUTINE SOLVE_SHDOMPP (NLAY, MAXLEG, HEIGHTP, TEMPP, TAUP, ALBEDOP, &
   IF (MAXITER <= ITER) RETURN
 
   IF (PRNT) WRITE (*,*) '! Iter Log(Sol)  Log(True)  Npoints'
- 
+
   ! Main solution loop
     ! Iterate until the iterations exceed the limit, or the desired
-    ! solution criterion is reached 
+    ! solution criterion is reached
   DO WHILE (ITER < MAXITER .AND. (SOLCRIT > SOLACC .OR. NPTS /= OLDNPTS))
     ITER = ITER + 1
 
@@ -358,7 +358,7 @@ SUBROUTINE SOLVE_SHDOMPP (NLAY, MAXLEG, HEIGHTP, TEMPP, TAUP, ALBEDOP, &
     PREVNPTS = 0
     DO WHILE (NPTS > PREVNPTS)
       ! Integrate the source function along discrete ordinates to
-      ! compute the radiance field.  
+      ! compute the radiance field.
       CALL PATH_INTEGRATION (NLAY, NPTS, IXP, IXG, TAUGSC, &
                              NMU, NPHI0MAX, NPHI0, &
                              SRCTYPE, SOLARFLUX, SOLARMU, SKYRAD, &
@@ -449,7 +449,7 @@ SUBROUTINE SOLVE_SHDOMPP (NLAY, MAXLEG, HEIGHTP, TEMPP, TAUP, ALBEDOP, &
   DEALLOCATE (SOURCE, RADIANCE, CONSTSOURCE, DELSOURCE, SRCINT)
 END SUBROUTINE SOLVE_SHDOMPP
 
- 
+
 
 
 SUBROUTINE DELTA_SCALE (NLAY, ML, TAUP, ALBEDOP, MAXLEG, NLEGP, LEGENP, &
@@ -480,7 +480,7 @@ END SUBROUTINE DELTA_SCALE
 
 
 SUBROUTINE UNDELTA_SCALE (NLAY, TAUPSC, TAUP, IXP, NPTS, TAUGSC, TAUG)
- ! Undoes the delta scaling to get the optical depth grid in the 
+ ! Undoes the delta scaling to get the optical depth grid in the
  ! original scale.  Uses the scaled and unscaled input layer optical depths.
   IMPLICIT NONE
   INTEGER, INTENT(IN) :: NLAY, IXP(2,NLAY), NPTS
@@ -506,7 +506,7 @@ END SUBROUTINE UNDELTA_SCALE
 
 
 SUBROUTINE OUTPUT_HEIGHT_GRID (NLAY, TAUP, IXP, NPTS, TAUG, HEIGHTP, HEIGHTG)
- ! Makes the output height grid (HEIGHTG) by interpolating between the 
+ ! Makes the output height grid (HEIGHTG) by interpolating between the
  ! levels in the input height grid (HEIGHTP) according to the optical depth
  ! grid (TAUG) assuming constant extinction in each input layer.
  ! The levels in HEIGHTG correspond to the optical depths in TAUG.
@@ -540,12 +540,12 @@ SUBROUTINE MAKE_TAU_GRID (NLAY, TAUPSC, ALBEDOSC, MAXDELTAU, MINDELTAUSPLIT, &
                           NPTS, TAUGSC, IXP, IXG)
  ! Makes the initial optical depth grid, TAUGSC, of increasing values
  ! (representing decreasing altitudes in the atmosphere). TAUGSC(1) is zero.
- ! The "base" tau grid is the input property grid boundaries and even 
- ! subdivision of each of these layers so that the sublayers are less 
+ ! The "base" tau grid is the input property grid boundaries and even
+ ! subdivision of each of these layers so that the sublayers are less
  ! than MAXDELTAU scattering optical depth.   All layers with scaled
  ! optical depth greater than MINDELTAUSPLIT are split into two sublayers.
- ! The IXP index array points to the top and bottom TAUGSC levels for each 
- ! property layer. The IXG index array points to the source and 
+ ! The IXP index array points to the top and bottom TAUGSC levels for each
+ ! property layer. The IXG index array points to the source and
  ! radiance arrays for each TAUGSC level.
   IMPLICIT NONE
   INTEGER, INTENT(IN)  :: NLAY
@@ -593,7 +593,7 @@ SUBROUTINE PREPARE_SOURCE (NLAY, TAUPSC, ALBEDOSC, TEMPP, LEGENSC, &
  ! adaptive grid points are added.
  ! The thermal emission source is \sqrt{4\pi}(1-\omega)B(T), where the
  ! temperature T is assumed to vary linearly in optical depth.
- ! The solar source is 
+ ! The solar source is
  !   S_0/\mu_0 e^{-\tau/\mu_0} Y_{lm}(\mu_0,\phi_0) {\omega \chi_l \over 2l+1}
  ! where S_0 is the solar flux on a horizontal plane, \chi_l are the Legendre
  ! coefficients, and \tau is the optical depth at the level.
@@ -651,11 +651,11 @@ END SUBROUTINE PREPARE_SOURCE
 
 
 FUNCTION PLANCKFUNC (WAVELEN, WAVENO, TEMP)
- ! Calculates the Planck blackbody radiance. If WAVELEN<=0 then doing a 
- ! spectral band integration and the Planck blackbody radiance in 
- ! [Watts /(meter^2 ster)] over a wavenumber range [cm^-1] (WAVENO) is 
- ! returned.  Otherwise, the Planck blackbody radiance in 
- ! [Watts /(meter^2 ster micron)] for a temperature in [Kelvins] at 
+ ! Calculates the Planck blackbody radiance. If WAVELEN<=0 then doing a
+ ! spectral band integration and the Planck blackbody radiance in
+ ! [Watts /(meter^2 ster)] over a wavenumber range [cm^-1] (WAVENO) is
+ ! returned.  Otherwise, the Planck blackbody radiance in
+ ! [Watts /(meter^2 ster micron)] for a temperature in [Kelvins] at
  ! a wavelength (WAVELEN) in [microns] is returned.
   IMPLICIT NONE
   REAL, INTENT(IN) :: WAVELEN, WAVENO(2), TEMP
@@ -682,14 +682,14 @@ SUBROUTINE MAKE_ANGLE_SET (NMU, NPHI, NCS, NPHI0MAX, ITYPE, &
                            NPHI0, MU, PHI, WTMU, WTDO, FFTFLAG, NANG)
  ! Make the set of angles for the discrete space representation.
  ! The number of mu's (cosine zenith angles) and maximum number of
- ! phi's (azimuth angles) is input.  The actual number of azimuthal 
+ ! phi's (azimuth angles) is input.  The actual number of azimuthal
  ! angles for each mu is output (NPHI0).  There are three types of
  ! discrete ordinate sets: ITYPE=1 is a gaussian grid, 2 is a reduced
  ! gaussian grid, and 3 is a reduced double gaussian set.
- ! If NCS=1 then only about half the azimuthal angles (from 0 to pi) 
- ! are used because the radiance is even in phi (cosine terms).  
+ ! If NCS=1 then only about half the azimuthal angles (from 0 to pi)
+ ! are used because the radiance is even in phi (cosine terms).
  ! The output is the NMU mu values, the NPHI0 phi values for each mu,
- ! and the integration weight for each ordinate. The first NMU/2 mu 
+ ! and the integration weight for each ordinate. The first NMU/2 mu
  ! angles are the downwelling (mu<0) angles.  Also output are the
  ! the flags for doing an azimuthal FFT for each mu and the total
  ! number of angles (NANG).
@@ -755,7 +755,7 @@ SUBROUTINE MAKE_ANGLE_SET (NMU, NPHI, NCS, NPHI0MAX, ITYPE, &
       NANG = NANG + NPHI0(J)
       FFTFLAG(J) = (NPHI0(J) .GT. 14) .OR. (MM .GT. 16)
     ENDDO
-        
+
   ELSE
     STOP 'MAKE_ANGLE_SET: invalid discrete ordinate type'
   ENDIF
@@ -813,7 +813,7 @@ SUBROUTINE GOOD_FFT_LENGTHS (NMAX, GOODNFFT)
   IF (GOODNFFT(ILAST) == 0)  STOP 'GOOD_FFT_LENGTHS: NMAX not good'
   DO I = NMAX, 1, -1
     IF (GOODNFFT(I) == 0) THEN
-      GOODNFFT(I) = ILAST 
+      GOODNFFT(I) = ILAST
     ELSE
       ILAST = I
     ENDIF
@@ -830,10 +830,10 @@ SUBROUTINE MAKE_SH_DO_COEF (ML, MM, NLM, NMU, NPHI0, &
  ! transform.  The main coefficients are output in four arrays: 1 is for
  ! the SH_TO_DO forward transform, 2 is for the DO_TO_SH back transform,
  ! which contains the discrete angle integration weights.
- ! The coefficients are divided up into the mu dependent set CMUn 
- ! (function of l, m, mu_j), and the phi dependent set CPHIn 
+ ! The coefficients are divided up into the mu dependent set CMUn
+ ! (function of l, m, mu_j), and the phi dependent set CPHIn
  ! (function of m, phi_k) for each mu_j.
- ! The FFTPACK phase coefficients for the FFT in azimuth are also 
+ ! The FFTPACK phase coefficients for the FFT in azimuth are also
  ! output in WPHISAVE.
   IMPLICIT NONE
   INTEGER, INTENT(IN) :: ML, MM, NLM, NMU, NPHI0(NMU), NPHI0MAX
@@ -846,7 +846,7 @@ SUBROUTINE MAKE_SH_DO_COEF (ML, MM, NLM, NMU, NPHI0, &
   INTEGER :: I, K, M, ier
   REAL    :: W
 
-  ! Make the to and from associate Legendre coefficients       
+  ! Make the to and from associate Legendre coefficients
   DO I = 1, NMU
     CALL YLMALL (MU(I), 0.0, ML, MM, -1, CMU1(1,I))
   ENDDO
@@ -874,22 +874,22 @@ SUBROUTINE MAKE_SH_DO_COEF (ML, MM, NLM, NMU, NPHI0, &
     ENDIF
   ENDDO
 END SUBROUTINE MAKE_SH_DO_COEF
- 
+
 
 
 
 
 SUBROUTINE SH_TO_DO (NPTS, ML, MM, NLM, NMU, NPHI0MAX, NPHI0, &
                      FFTFLAG, CMU1, CPHI1, WSAVE, INDATA, OUTDATA)
- ! Transforms the input data from spherical harmonic space to discrete 
- ! ordinate space for all points in the array.  Successive transforms are 
- ! done in zenith and then azimuth angle.  The Fourier transform in 
- ! azimuth is done using a matrix multiply DFT for smaller number of 
- ! angles (NPHI0*(MM+1)<160) and with an FFT for larger number of 
- ! angles.  The FFT is used for any number of angles above the limit, 
+ ! Transforms the input data from spherical harmonic space to discrete
+ ! ordinate space for all points in the array.  Successive transforms are
+ ! done in zenith and then azimuth angle.  The Fourier transform in
+ ! azimuth is done using a matrix multiply DFT for smaller number of
+ ! angles (NPHI0*(MM+1)<160) and with an FFT for larger number of
+ ! angles.  The FFT is used for any number of angles above the limit,
  ! but is much more efficient for NPHI0 whose factors are small primes
- ! (powers of 2 are best).  The number of floating point operations for 
- ! the DFT is 2*Nmu*Nphi0*Nm. The number of floating point operations for 
+ ! (powers of 2 are best).  The number of floating point operations for
+ ! the DFT is 2*Nmu*Nphi0*Nm. The number of floating point operations for
  ! the zenith angle transform is 2*Nmu*Nlm.
   IMPLICIT NONE
   INTEGER, INTENT(IN) :: NPTS, ML, MM, NLM, NMU, NPHI0MAX, NPHI0(NMU)
@@ -944,9 +944,9 @@ END SUBROUTINE SH_TO_DO
 
 SUBROUTINE DO_TO_SH (NPTS, ML, MM, NLM, NMU, NPHI0MAX, NPHI0, &
                      FFTFLAG, CMU2, CPHI2, WSAVE, INDATA, OUTDATA)
- ! Transforms the input field from discrete ordinate space to spherical 
+ ! Transforms the input field from discrete ordinate space to spherical
  ! harmonic space for all the points.  (See SH_TO_DO for more).
- ! The SELECTPNTS logical array indicates whether a point should be 
+ ! The SELECTPNTS logical array indicates whether a point should be
  ! transformed or to use the previous points (for the input layer interfaces).
   IMPLICIT NONE
   INTEGER, INTENT(IN) :: NPTS, ML, MM, NLM, NMU, NPHI0MAX, NPHI0(NMU)
@@ -1010,15 +1010,15 @@ SUBROUTINE COMPUTE_SOURCE (ML,MM, NLM, NLAY, NPTS, IXP, IXG, &
                            SHRADIANCE, CONSTSOURCE, SOURCE, &
                            OLDNPTS, DELSOURCE, &
                            DELJDOT, DELJOLD, DELJNEW, SOLCRIT)
- ! Computes the source function (SOURCE) in spherical harmonic space 
- ! for all the grid levels in all the input layers.  
+ ! Computes the source function (SOURCE) in spherical harmonic space
+ ! for all the grid levels in all the input layers.
  ! The thermal source and/or solar pseudo-sources in CONSTSOURCE is
- ! added to the scattering source (computed from LEGENP and the spherical 
+ ! added to the scattering source (computed from LEGENP and the spherical
  ! harmonic expansion in SHRADIANCE).
  ! To save memory this routine also computes some things for the sequence
- ! acceleration: the dot products of the difference in source function 
- ! between successive iterations and the new difference source function 
- ! vector (DELSOURCE).  
+ ! acceleration: the dot products of the difference in source function
+ ! between successive iterations and the new difference source function
+ ! vector (DELSOURCE).
  ! Computes the new solution criterion (SOLCRIT, the RMS difference
  ! in succesive source function fields normalized by the RMS of the field
   IMPLICIT NONE
@@ -1041,7 +1041,7 @@ SUBROUTINE COMPUTE_SOURCE (ML,MM, NLM, NLAY, NPTS, IXP, IXG, &
     ENDDO
   ENDDO
 
-  
+
   DELJDOT = 0.0
   DELJOLD = 0.0
   DELJNEW = 0.0
@@ -1070,7 +1070,7 @@ SUBROUTINE COMPUTE_SOURCE (ML,MM, NLM, NLAY, NPTS, IXP, IXG, &
     SOLCRIT = 1.0
   ENDIF
 END SUBROUTINE COMPUTE_SOURCE
- 
+
 
 
 
@@ -1089,8 +1089,8 @@ SUBROUTINE ACCELERATE_SOLUTION (NLM, NPTS, OLDNPTS, SOURCE, DELSOURCE, &
   INTEGER :: I, J, IS, ISD, NS, NSD, NSC
   REAL, SAVE :: A, R, THETA
 
-  ! Accelerate if the grids are the same, didn't last time, and 
-  !   things are converging. 
+  ! Accelerate if the grids are the same, didn't last time, and
+  !   things are converging.
   IF (NPTS == OLDNPTS .AND. A == 0.0 .AND. DELJNEW < DELJOLD) THEN
     ! Compute the acceleration extrapolation factor and apply it.
     R = SQRT(DELJNEW/DELJOLD)
@@ -1117,19 +1117,19 @@ SUBROUTINE PATH_INTEGRATION (NLAY, NPTS, IXP, IXG, TAUGSC, &
  ! Performs the path integrations through the medium specified by
  ! the optical depth (TAUGSC) and source function (DOSOURCE) in
  ! discrete ordinates.  The integrations are done from the top boundary
- ! (with no reflection) down to the bottom boundary for the downwelling 
- ! angles, and then up from the bottom to the top after computing the 
+ ! (with no reflection) down to the bottom boundary for the downwelling
+ ! angles, and then up from the bottom to the top after computing the
  ! surface reflection/emission.   The hemispheric flux (FLUXES) and mean
  ! radiance (MEANRAD) are also computed.
  ! The discrete ordinates in MU, PHI must be a complete set with the
  ! downwelling (mu<0) angles first and downwelling and upwelling matching
  ! [MU(J) = -MU(NMU/2+J)].
- ! The surface reflection is handled differently for Lambertian surfaces 
- ! and more general surfaces specified by bidirectional reflection 
- ! distribution functions (BRDF).  For the general BRDF, the bottom 
- ! boundary radiance must be computed for each upwelling ordinate, while 
- ! for the Lambertian surface the boundary radiances can be computed just 
- ! once, since they are isotropic.  
+ ! The surface reflection is handled differently for Lambertian surfaces
+ ! and more general surfaces specified by bidirectional reflection
+ ! distribution functions (BRDF).  For the general BRDF, the bottom
+ ! boundary radiance must be computed for each upwelling ordinate, while
+ ! for the Lambertian surface the boundary radiances can be computed just
+ ! once, since they are isotropic.
   IMPLICIT NONE
   INTEGER, INTENT(IN) :: NLAY, NPTS, IXP(2,NLAY), IXG(NPTS)
   INTEGER, INTENT(IN) :: NMU, NPHI0MAX, NPHI0(NMU)
@@ -1142,7 +1142,7 @@ SUBROUTINE PATH_INTEGRATION (NLAY, NPTS, IXP, IXG, TAUGSC, &
   REAL,    INTENT(OUT) :: FLUXUP(NPTS), FLUXDN(NPTS), MEANRAD(NPTS)
   REAL,    INTENT(OUT) :: RADIANCE(NPHI0MAX,NMU,NPTS)
   CHARACTER(LEN=1), INTENT(IN) :: SRCTYPE, SFCTYPE
- 
+
   INTEGER :: LAY, I, I1, I2, J, K, IPHI, IMU, M, N
   REAL    :: PI, TEMP, SFCPLANCK, PLANCKFUNC, ALB
   REAL    :: DIRFLUXSFC, TOPRAD, BOTRAD
@@ -1152,7 +1152,7 @@ SUBROUTINE PATH_INTEGRATION (NLAY, NPTS, IXP, IXG, TAUGSC, &
   PI = ACOS(-1.0)
 
   M=NMU/2
-  
+
   IF (LASTNPTS /= NPTS) THEN
     ! Calculate and store the source function integration coefficients
     ALLOCATE (A(4,M),B(4,M),C(4,M),D(4,M),E(M), T(M),T1(M),T3(M),T4(M), TR(M))
@@ -1189,7 +1189,7 @@ SUBROUTINE PATH_INTEGRATION (NLAY, NPTS, IXP, IXG, TAUGSC, &
             T4(:) = (TAUGSC(I+2)-TAUGSC(I))/ABS(MU(1:M))
             E=T1*(T1-T3)*(T1-T4) ; A(1,:)=1/E
             B(1,:)=-(T3+T4)/E ; C(1,:)=T3*T4/E ; D(1,:)=0.0
-            E=-T1*T3*T4 ; A(2,:)=1/E 
+            E=-T1*T3*T4 ; A(2,:)=1/E
             B(2,:)=-(T1+T3+T4)/E ; C(2,:)=(T1*T3+T1*T4+T3*T4)/E ; D(2,:)=1.0
             E=T3*(T3-T1)*(T3-T4) ; A(3,:)=1/E
             B(3,:)=-(T1+T4)/E ; C(3,:)=T1*T4/E ; D(3,:)=0.0
@@ -1273,7 +1273,7 @@ SUBROUTINE PATH_INTEGRATION (NLAY, NPTS, IXP, IXG, TAUGSC, &
     ENDDO
   ENDDO
 
- 
+
     ! Now do all the surface reflection stuff
   IF (SRCTYPE /= 'T') THEN
     DIRFLUXSFC = SOLARFLUX*EXP(-TAUGSC(IXP(2,NLAY))/ABS(SOLARMU))
@@ -1284,7 +1284,7 @@ SUBROUTINE PATH_INTEGRATION (NLAY, NPTS, IXP, IXG, TAUGSC, &
   ENDIF
 
   ! For a Lambertian surface calculate the isotropic surface radiance
-  !   from the thermal emission or direct reflection and the reflected 
+  !   from the thermal emission or direct reflection and the reflected
   !   downwelling flux at the surface.
   IF (SFCTYPE == 'L') THEN
     ALB = SFCPARMS(1)
@@ -1299,7 +1299,7 @@ SUBROUTINE PATH_INTEGRATION (NLAY, NPTS, IXP, IXG, TAUGSC, &
     RADIANCE(:,NMU/2+1:NMU,IXG(IXP(2,NLAY))) = BOTRAD
   ELSE
     ! If not a Lambertian surface, compute the radiance for each of the
-    !   upwelling ordinates by integrating the BRDF over the stored 
+    !   upwelling ordinates by integrating the BRDF over the stored
     !   downwelling radiances.
     DO IMU = NMU/2+1, NMU
       DO IPHI = 1, NPHI0(IMU)
@@ -1356,7 +1356,7 @@ SUBROUTINE PATH_INTEGRATION (NLAY, NPTS, IXP, IXG, TAUGSC, &
 
   LASTNPTS=NPTS
 END SUBROUTINE PATH_INTEGRATION
- 
+
 
 
 
@@ -1365,11 +1365,11 @@ SUBROUTINE SPLIT_CELLS (NLAY, NPTS, MAXIG, IXP, IXG, TAUGSC, &
                         SPLITACC, TRUESOLCRIT, CURSPLITACC)
  ! Determines the current cell splitting accuracy (CURSPLITACC) from the
  ! solution accuracy (SOLCRIT) and the desired final cell splitting accuracy
- ! (SPLITACC).  Calculates the cell splitting criterion for each sublayer, 
- ! The cell splitting criterion for a sublayer is the rms difference over 
+ ! (SPLITACC).  Calculates the cell splitting criterion for each sublayer,
+ ! The cell splitting criterion for a sublayer is the rms difference over
  ! outgoing ordinates in radiance between the original cubic source function
- ! interpolation integration (in RADIANCE) and a linear interpolation 
- ! integration, normalized by the rms of RADIANCE over all ordinates and 
+ ! interpolation integration (in RADIANCE) and a linear interpolation
+ ! integration, normalized by the rms of RADIANCE over all ordinates and
  ! levels.  Splits cells with criterion greater than the current splitting
  ! accuracy.  Interpolates the discrete ordinate source function to the new
  ! levels.  The number of levels (NPTS), the adaptive index arrays (IXP, IXG),
@@ -1420,7 +1420,7 @@ SUBROUTINE SPLIT_CELLS (NLAY, NPTS, MAXIG, IXP, IXG, TAUGSC, &
   ENDDO
 
   ! For each sublayer integrate the downwelling zenith angles from top to
-  ! bottom and the upwelling angles from bottom to top using linear 
+  ! bottom and the upwelling angles from bottom to top using linear
   ! source function interpolation and difference from the previous
   ! cubic/quadratic interpolation results.
   NEWNPTS = NPTS
@@ -1446,7 +1446,7 @@ SUBROUTINE SPLIT_CELLS (NLAY, NPTS, MAXIG, IXP, IXG, TAUGSC, &
         !   end of the radiance array and update the pointers.
       IF (SPLITCRIT>CURSPLITACC) THEN
         IF (NEWNPTS>=MAXIG) THEN
-          WRITE (*,*) 
+          WRITE (*,*)
           WRITE (*,*) 'Adaptive grid exceeded MAXIG=',MAXIG
           WRITE (*,*) 'Increase SPLITTING_FACTOR'
           STOP
@@ -1484,13 +1484,13 @@ SUBROUTINE SPLIT_CELLS (NLAY, NPTS, MAXIG, IXP, IXG, TAUGSC, &
   ENDIF
   DEALLOCATE (SRCINT1, DIFFRAD)
 END SUBROUTINE SPLIT_CELLS
- 
+
 
 
 SUBROUTINE INTERP_SOURCE (NPH, NMU, T1,S1, T2,S2, T3,S3, T4,S4, T,S)
  ! Does either quadratic or cubic polynomial interpolation of the discrete
- ! ordinate source function as a function of optical depth.  The source 
- ! function (S1,S2,S3,S4) is specified at three or four optical depths 
+ ! ordinate source function as a function of optical depth.  The source
+ ! function (S1,S2,S3,S4) is specified at three or four optical depths
  ! (T1,T2,T3,T4), interpolated to T, and output in S.
   IMPLICIT NONE
   INTEGER, INTENT(IN) :: NPH, NMU
@@ -1520,20 +1520,20 @@ SUBROUTINE VARIABLE_BRDF_SURFACE (NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, &
                                   MU2, PHI2, SRCTYPE, SOLARMU, DIRFLUXSFC, &
                                   SFCTYPE, SFCPARMS, SFCPLANCK, &
                                   SFCRADIANCE, BOTRAD)
- ! Computes the upwelling radiance at the bottom boundary for one 
- ! outgoing direction using the specified bidirectional reflectance 
+ ! Computes the upwelling radiance at the bottom boundary for one
+ ! outgoing direction using the specified bidirectional reflectance
  ! distribution function.  The upwelling radiance includes the reflection of
  ! the incident radiance, the thermal emission (emissivity*Planck function),
- ! and the reflected direct solar flux (if applicable).  The upwelling 
- ! radiance is the integral over all incident directions of the BRDF times 
- ! the downwelling radiance, so a discrete sum is done and the integral 
- ! weights (WTDO) are included.  The general BRDF function is called 
- ! to compute the reflectance for the particular BRDF type (SFCTYPE) 
- ! with parameters (SFCPARMS) for the incident and outgoing directions.  
- ! The emissivity is computed implicitly from the integral of the BRDF.  
- ! The outgoing direction is specified with (MU2,PHI2), and the BRDF is 
- ! computed for all incident directions (loop over JMU,JPHI).  The incident 
- ! downwelling radiances are input in SFCRADIANCE(:,:) and the outgoing 
+ ! and the reflected direct solar flux (if applicable).  The upwelling
+ ! radiance is the integral over all incident directions of the BRDF times
+ ! the downwelling radiance, so a discrete sum is done and the integral
+ ! weights (WTDO) are included.  The general BRDF function is called
+ ! to compute the reflectance for the particular BRDF type (SFCTYPE)
+ ! with parameters (SFCPARMS) for the incident and outgoing directions.
+ ! The emissivity is computed implicitly from the integral of the BRDF.
+ ! The outgoing direction is specified with (MU2,PHI2), and the BRDF is
+ ! computed for all incident directions (loop over JMU,JPHI).  The incident
+ ! downwelling radiances are input in SFCRADIANCE(:,:) and the outgoing
  ! upwelling radiance is output in BOTRAD.
   IMPLICIT NONE
   INTEGER, INTENT(IN) :: NMU, NPHI0MAX, NPHI0(NMU)
@@ -1580,12 +1580,12 @@ SUBROUTINE SURFACE_BRDF (SFCTYPE, REFPARMS, &
  ! reflection distribution function of the specified type (SFCTYPE).
  ! The incident direction is (MU1,PHI1), and the outgoing direction
  ! is (MU2,PHI2) (MU is cosine of zenith angle, and PHI is the azimuthal
- ! angle in radians).  The incident directions have mu<0 (downward), 
- ! while the outgoing directions have mu>0 (upward). The reflection 
- ! function is normalized so that for a Lambertian surface (uniform 
+ ! angle in radians).  The incident directions have mu<0 (downward),
+ ! while the outgoing directions have mu>0 (upward). The reflection
+ ! function is normalized so that for a Lambertian surface (uniform
  ! reflection) the returned value (REFLECT) is simply the albedo.
- ! This routine calls the desired BRDF function, passing the 
- ! appropriate parameters.  More BRDF surface types may be added easily 
+ ! This routine calls the desired BRDF function, passing the
+ ! appropriate parameters.  More BRDF surface types may be added easily
  ! by putting in the appropriate function calls.
  !        Type        Parameters
  !    R  Rahman et al  rho0, k, Theta
@@ -1616,8 +1616,8 @@ FUNCTION RPV_REFLECTION (RHO0, K, THETA, MU1, MU2, PHI)
  ! direction is where the radiation is coming from (i.e. opposite of the
  ! discrete ordinate), so MU1>0 and the hot spot is MU2=MU1 and PHI=0.
  ! The reference is:
- !    Rahman, Pinty, Verstraete, 1993: Coupled Surface-Atmosphere 
- !    Reflectance (CSAR) Model. 2. Semiempirical Surface Model Usable 
+ !    Rahman, Pinty, Verstraete, 1993: Coupled Surface-Atmosphere
+ !    Reflectance (CSAR) Model. 2. Semiempirical Surface Model Usable
  !    With NOAA Advanced Very High Resolution Radiometer Data,
  !    J. Geophys. Res., 98, 20791-20801.
   IMPLICIT NONE
@@ -1712,7 +1712,7 @@ SUBROUTINE COMPUTE_RADIANCE (NLAY, ALBEDOSC, LEGENSC, &
         WRITE (*,*) 'COMPUTE_RADIANCE: Bad mu for radiance',MUOUT(J)
         RADOUT(:,J,K) = -999.0
         CYCLE
-      ENDIF      
+      ENDIF
 
       ! Compute the source function throughout grid for this angle
       CALL COMPUTE_ONE_SOURCE (NLAY, ALBEDOSC, LEGENSC, &
@@ -1724,7 +1724,7 @@ SUBROUTINE COMPUTE_RADIANCE (NLAY, ALBEDOSC, LEGENSC, &
       ! Get boundary radiances: either top or bottom
       !  Isotropic top boundary or Lambertian bottom boundary can use
       !  the previously computed boundary radiances in RADIANCE,
-      !  otherwise, compute the radiance for this angle by integrating 
+      !  otherwise, compute the radiance for this angle by integrating
       !  over the stored downwelling radiances.
       IF (MUOUT(J) < 0.0) THEN
         BNDRAD = RADIANCE(1,1,IXG(IXP(1,1)))
@@ -1762,7 +1762,7 @@ SUBROUTINE COMPUTE_ONE_SOURCE (NLAY, ALBEDOSC, LEGENSC, &
                                SOLARMU, DIRFLUX, SOURCE, SOURCE1)
  ! Computes the source function (SOURCE1) in the direction (MUO,PHIO)
  ! for all levels (NPTS).  The spherical harmonic source function
- ! series is input in SOURCE.  DIRFLUX is the attenuated direct beam 
+ ! series is input in SOURCE.  DIRFLUX is the attenuated direct beam
  ! perpendicular flux.
  ! For a solar source if delta-M then use Nakajima and Tanaka TMS
  ! procedure, replacing delta-M single scattering with single scattering
@@ -1789,16 +1789,16 @@ SUBROUTINE COMPUTE_ONE_SOURCE (NLAY, ALBEDOSC, LEGENSC, &
 
   ! Special case for solar source and Delta-M
   IF (SRCTYPE /= 'T' .AND. DELTAM) THEN
-    ! Compute the Legendre polynomials for the scattering angle 
+    ! Compute the Legendre polynomials for the scattering angle
     !   for the untruncated solar single scattering computation.
     COSSCAT = SOLARMU*MUO + SQRT((1.0D0-SOLARMU**2)*(1.0D0-MUO**2))*COS(PHIO)
     CALL LEGENDRE_ALL (COSSCAT, MAXLEG, SUNDIRLEG)
     SUNDIRLEG(:) = SUNDIRLEG(:)/(4.0D0*ACOS(-1.0D0))
     CALL YLMALL (SOLARMU, 0.0, ML, MM, 1, YLMSUN)
 
-    ! Precompute the single scattering contribution for the original 
+    ! Precompute the single scattering contribution for the original
     ! unscaled phase function (except for the direct beam transmission).
-    ! Need to put the inverse of the tau scaling in the source function 
+    ! Need to put the inverse of the tau scaling in the source function
     ! because tau is still scaled.
     DO LAY = 1, NLAY
       SINGSCAT(LAY) = 0.0
@@ -1808,7 +1808,7 @@ SUBROUTINE COMPUTE_ONE_SOURCE (NLAY, ALBEDOSC, LEGENSC, &
         F = LEGENP(ML+1,LAY)/(2*(ML+1)+1)
       ENDIF
       DO L = 0, NLEGP(LAY)
-        SINGSCAT(LAY) = SINGSCAT(LAY) & 
+        SINGSCAT(LAY) = SINGSCAT(LAY) &
                        + SUNDIRLEG(L) *ALBEDOSC(LAY)*LEGENP(L,LAY)/(1-F)
       ENDDO
       IF (SINGSCAT(LAY) < 0.0) THEN
@@ -1817,14 +1817,14 @@ SUBROUTINE COMPUTE_ONE_SOURCE (NLAY, ALBEDOSC, LEGENSC, &
       ENDIF
     ENDDO
 
-    ! Loop over all the grid points, computing the source function 
+    ! Loop over all the grid points, computing the source function
     !   at the viewing angle from the spherical harmonic source function.
     DO LAY = 1, NLAY
       DO I = IXP(1,LAY), IXP(2,LAY)
         K = IXG(I)
         ! Sum over the spherical harmonic series of the source function
         SOURCE1(K) = SUM(SOURCE(:,K)*YLMDIR(:))
-        ! First subtract off the truncated single scattering 
+        ! First subtract off the truncated single scattering
         J = 1
         DO L = 0, ML
           ME = MIN(L,MM)
@@ -1848,17 +1848,17 @@ SUBROUTINE COMPUTE_ONE_SOURCE (NLAY, ALBEDOSC, LEGENSC, &
 
   DEALLOCATE (YLMDIR, YLMSUN, SUNDIRLEG, SINGSCAT)
 END SUBROUTINE COMPUTE_ONE_SOURCE
- 
+
 
 
 
 SUBROUTINE INTEGRATE_SOURCE (NLAY, NPTS, IXP, IXG, TAUGSC, &
                              MUO, BNDRAD, SOURCE1, RADVEC)
- ! Integrates the radiative transfer equation through the medium specified 
+ ! Integrates the radiative transfer equation through the medium specified
  ! by the optical depth (TAUGSC) and source function (SOURCE1) in direction
  ! cosine MUO.  The radiance at the approprate boundary (top or bottom
  ! depending on the sign of MUO) is input (BNDRAD).  The radiance for
- ! the direction the source function was made at all the adaptive grid 
+ ! the direction the source function was made at all the adaptive grid
  ! levels is output (RADVEC with indexing corresponding to TAUGSC).
  ! Uses the same quadratic/cubic polynomial source function interpolation
  ! as in PATH_INTEGRATION.
@@ -1908,7 +1908,7 @@ SUBROUTINE INTEGRATE_SOURCE (NLAY, NPTS, IXP, IXG, TAUGSC, &
           T4 = (TAUGSC(I+2)-TAUGSC(I))/ABS(MUO)
           E=T1*(T1-T3)*(T1-T4) ; A(1)=1/E
           B(1)=-(T3+T4)/E    ; C(1)=T3*T4/E ; D(1)=0.0
-          E=-T1*T3*T4 ; A(2)=1/E 
+          E=-T1*T3*T4 ; A(2)=1/E
           B(2)=-(T1+T3+T4)/E ; C(2)=(T1*T3+T1*T4+T3*T4)/E ; D(2)=1.0
           E=T3*(T3-T1)*(T3-T4) ; A(3)=1/E
           B(3)=-(T1+T4)/E    ; C(3)=T1*T4/E ; D(3)=0.0
@@ -1926,9 +1926,9 @@ SUBROUTINE INTEGRATE_SOURCE (NLAY, NPTS, IXP, IXG, TAUGSC, &
         IF (MUO < 0.0) THEN
           SRCINT(1:4,I) = A(:)*(6*TR+T**3-3*T**2+6*T-6) + D(:)*(1-TR) &
                         + B(:)*(-2*TR+T**2-2*T+2) + C(:)*(TR+T-1)
-        ELSE        
+        ELSE
           SRCINT(1:4,I) = A(:)*(6-TR*(T**3+3*T**2+6*T+6)) + D(:)*(1-TR) &
-                        + B(:)*(2-TR*(T**2+2*T+2)) + C(:)*(1-TR*(T+1)) 
+                        + B(:)*(2-TR*(T**2+2*T+2)) + C(:)*(1-TR*(T+1))
         ENDIF
       ENDDO
     ENDIF
@@ -1982,7 +1982,7 @@ SUBROUTINE INTEGRATE_SOURCE (NLAY, NPTS, IXP, IXG, TAUGSC, &
   ENDIF
   DEALLOCATE (SRCINT)
 END SUBROUTINE INTEGRATE_SOURCE
- 
+
 
 
 
@@ -2062,25 +2062,25 @@ SUBROUTINE INIT_RADIANCE (NLAY, ML, TAUPSC, ALBEDOSC, LEGENSC, TEMPP, &
 END SUBROUTINE INIT_RADIANCE
 
 
- 
- 
+
+
 SUBROUTINE EDDRTF (NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES, &
                    TEMPS, DELTAM, SRCTYPE, SOLARFLUX, SOLARMU, &
                    SFCTEMP, GNDEMIS, SKYRAD, WAVELEN, WAVENO,  FLUXES)
  ! EDDRTF computes the layer interface fluxes for a plane-parallel
- ! atmosphere with either solar or thermal source of radiation using 
- ! the Eddington approximation.  The medium is specified by a number 
+ ! atmosphere with either solar or thermal source of radiation using
+ ! the Eddington approximation.  The medium is specified by a number
  ! of homogeneous layers.  For a thermal source the Planck function is
  ! linear with optical depth, while for a solar source it is exponential.
- ! The temperatures, optical depth, single scattering albedo, and 
+ ! The temperatures, optical depth, single scattering albedo, and
  ! asymmetry parameter are specified for each layer.  The boundary
- ! conditions such as the solar flux, and reflection and/or emission from 
- ! ground surface are also specified. Delta Eddington scaling may be 
- ! used.  The diffuse Eddington fluxes and the solar direct flux at 
+ ! conditions such as the solar flux, and reflection and/or emission from
+ ! ground surface are also specified. Delta Eddington scaling may be
+ ! used.  The diffuse Eddington fluxes and the solar direct flux at
  ! each level are returned.
  ! The model works by calculating the reflection, transmission, and
  ! source terms for each layer from the input properties.  A
- ! tri-diagonal matrix solver is then used to compute the diffuse fluxes 
+ ! tri-diagonal matrix solver is then used to compute the diffuse fluxes
  ! at each layer interface from the applied boundary conditions.
  !
  ! Parameters:
@@ -2091,7 +2091,7 @@ SUBROUTINE EDDRTF (NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES, &
  ! ALBEDOS        real array   Single scattering albedos
  ! ASYMMETRIES    real array   Asymmetry parameters
  ! TEMPS          real array   Temperatures (K) at layer interfaces
- !                              (e.g. TEMPS(1) is at top of top layer, 
+ !                              (e.g. TEMPS(1) is at top of top layer,
  !                               TEMPS(2) is at bottom of top layer).
  ! DELTAM         logical      True for delta-Eddington scaling
  ! SRCTYPE        character    'S' for solar source, 'T' for thermal source
@@ -2099,15 +2099,15 @@ SUBROUTINE EDDRTF (NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES, &
  ! SOLARMU        real         Cosine of the solar zenith angle
  ! SFCTEMP        real         Surface temperature (Kelvin)
  ! GNDEMIS        real         Ground emissivity (1-albedo)
- ! SKYRAD         real         Radiance (for solar) or brightness 
- !                              temperature (for thermal) of isotropic 
+ ! SKYRAD         real         Radiance (for solar) or brightness
+ !                              temperature (for thermal) of isotropic
  !                              incident radiation from above
  ! WAVELEN        real         Wavelength (micron)
  ! WAVENO(2)      real         Wavenumber range (cm^-1) (if WAVELEN=0)
  !
  !   Output:
  ! FLUXES         real         Eddington fluxes at layer interfaces.
- !                               FLUXES(1,L) is upwelling diffuse, 
+ !                               FLUXES(1,L) is upwelling diffuse,
  !                               FLUXES(2,L) is downwelling diffuse,
  !                               FLUXES(3,L) is downwelling direct,
  !                               L=1 is top, L=NLAYER+1 is bottom
@@ -2120,7 +2120,7 @@ SUBROUTINE EDDRTF (NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES, &
   REAL,    INTENT(IN) :: WAVELEN, WAVENO(2)
   CHARACTER(LEN=1), INTENT(IN) ::  SRCTYPE
   REAL,    INTENT(OUT) :: FLUXES(3,NLAYER+1)
- 
+
   INTEGER :: N, L, I
   DOUBLE PRECISION :: DELTAU, G, OMEGA, F
   DOUBLE PRECISION :: LAMBDA, R, T, D, CP, CM, A, B, X1, X2
@@ -2132,7 +2132,7 @@ SUBROUTINE EDDRTF (NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES, &
   PARAMETER (PI=3.1415926535)
   REAL :: PLANCKFUNC
 
-  ! Compute the reflection, transmission, and source coefficients 
+  ! Compute the reflection, transmission, and source coefficients
   !   for each layer for the diffuse Eddington two stream problem.
   N = 2*NLAYER+2
   ALLOCATE (LOWER(N), UPPER(N), DIAG(N), RHS(N))
@@ -2256,26 +2256,26 @@ SUBROUTINE EDDRTF (NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES, &
   CALL TRIDIAG (N, LOWER, DIAG, UPPER, RHS)
   ! Put the fluxes in the output array
   I = 1
-  DO L = 1, NLAYER+1 
+  DO L = 1, NLAYER+1
     FLUXES(1,L) = RHS(I)
     FLUXES(2,L) = RHS(I+1)
     I = I + 2
   ENDDO
- 
+
   DEALLOCATE (LOWER, UPPER, DIAG, RHS)
 END SUBROUTINE EDDRTF
- 
+
 
 
 SUBROUTINE TRIDIAG (N, LOWER, DIAG, UPPER, RHS)
- ! Computes the solution to a tridiagonal system. 
+ ! Computes the solution to a tridiagonal system.
  ! N is order of the matrix.  LOWER(2..N) is the subdiagonal,
- ! DIAG(1..N) is the diagonal, and UPPER(1..N-1) is the 
+ ! DIAG(1..N) is the diagonal, and UPPER(1..N-1) is the
  ! superdiagonal.  On input RHS is the right hand side, while
  ! on output it is the solution vector.  Everything is destroyed.
  ! Hacked from Linpack DGTSL.
   IMPLICIT NONE
-  INTEGER :: N 
+  INTEGER :: N
   DOUBLE PRECISION :: LOWER(*), DIAG(*), UPPER(*), RHS(*)
   INTEGER :: K, KB
   DOUBLE PRECISION :: T
@@ -2323,16 +2323,16 @@ SUBROUTINE TRIDIAG (N, LOWER, DIAG, UPPER, RHS)
 990 CONTINUE
     STOP 'Singular matrix in TRIDIAG'
 END SUBROUTINE TRIDIAG
- 
 
- 
+
+
 
 
 
 SUBROUTINE LEGENDRE_ALL (COSSCAT, NLEG, P)
  ! This subroutine computes a set of Legendre polynomials for
  ! a particular scattering angle COSSCAT.  NLEG is the maximum term.
- ! The Legendre functions evaluated at COSSCAT are returned in 
+ ! The Legendre functions evaluated at COSSCAT are returned in
  ! P, starting at l=0 and ending with l=NLEG  (NLEG+1 terms).
   IMPLICIT NONE
       INTEGER NLEG
@@ -2361,12 +2361,12 @@ END SUBROUTINE LEGENDRE_ALL
 
 
 SUBROUTINE YLMALL (MU, PHI, ML, MM, NCS, P)
- ! This subroutine computes a set of normalized spherical harmonic 
- ! functions, P(J), for a particular direction mu,phi. 
+ ! This subroutine computes a set of normalized spherical harmonic
+ ! functions, P(J), for a particular direction mu,phi.
  ! ML is the maximum meridional mode, MM is the maximum azimuthal mode,
- ! and NCS is the azimuthal mode flag (|NCS|=1 for cosine only, |NCS|=2 for 
- ! sines and cosines).  Returns normalized associated Legendre functions 
- ! only if NCS<0. The set is returned for triangular truncation: 
+ ! and NCS is the azimuthal mode flag (|NCS|=1 for cosine only, |NCS|=2 for
+ ! sines and cosines).  Returns normalized associated Legendre functions
+ ! only if NCS<0. The set is returned for triangular truncation:
  ! J = NCS*(L*(L+1))/2 + M+1  for L<=MM
  ! J = (NCS*MM+1)*L-MM*(2+NCS*(MM-1))/2 + M+1  for L>MM
   IMPLICIT NONE
@@ -2441,15 +2441,15 @@ SUBROUTINE YLMALL (MU, PHI, ML, MM, NCS, P)
 END SUBROUTINE YLMALL
 
 
- 
+
 
 
 
 
 SUBROUTINE GAUSQUADS (N, XA, WT)
  ! Generates the abscissas (X) and weights (W) for an N point
- ! Gauss-Legendre quadrature.  The XA are returned in this order: 
- ! -mu1, -mu2, ..., -muK, mu1, mu2, ..., muK  (mu1 > mu2 > muK, 
+ ! Gauss-Legendre quadrature.  The XA are returned in this order:
+ ! -mu1, -mu2, ..., -muK, mu1, mu2, ..., muK  (mu1 > mu2 > muK,
  ! K=N/2, N must be even).
   IMPLICIT NONE
       INTEGER  N
@@ -2488,8 +2488,8 @@ END SUBROUTINE GAUSQUADS
 
 SUBROUTINE DGAUSQUADS (N, XA, WT)
  ! Generates the abscissas (X) and weights (W) for an N point
- ! Double-Gauss-Legendre quadrature.  The XA are returned in this order: 
- ! -mu1, -mu2, ..., -muK, mu1, mu2, ..., muK  (mu1 > mu2 > muK, 
+ ! Double-Gauss-Legendre quadrature.  The XA are returned in this order:
+ ! -mu1, -mu2, ..., -muK, mu1, mu2, ..., muK  (mu1 > mu2 > muK,
  ! K=N/2, N must be even).
   IMPLICIT NONE
       INTEGER  N
@@ -2532,7 +2532,7 @@ END SUBROUTINE DGAUSQUADS
 
 
 SUBROUTINE INTEGRATE_PLANCK (X1, X2, F)
- ! Returns integral of x**3/(exp(x)-1) from x1 to x2.  Accurate to better 
+ ! Returns integral of x**3/(exp(x)-1) from x1 to x2.  Accurate to better
  ! than 1 part in 10**9 for integral from 0 to infinity (pi**4/15).
   IMPLICIT NONE
   DOUBLE PRECISION :: X1, X2, F
@@ -2554,7 +2554,7 @@ END SUBROUTINE INTEGRATE_PLANCK
 FUNCTION INTLOW (X)
  ! Integral of x**3/(exp(x)-1) from 0 to x.  Accurate for x less than about 1.
  ! Uses Taylor series expansion around x=0.
-  IMPLICIT NONE 
+  IMPLICIT NONE
   DOUBLE PRECISION :: X, INTLOW
   INTEGER :: N
   DOUBLE PRECISION :: SUM, F, A(29)
@@ -2607,11 +2607,11 @@ END FUNCTION INTHIGH
 ! ***AUTHOR  Jones, R. E., (SNLA)
 !            Wisniewski, J. A., (SNLA)
 ! ***DESCRIPTION
-! 
+!
 !    SSORT sorts array X and optionally makes the same interchanges in
 !    array Y.  The array X may be sorted in increasing order or
 !    decreasing order.  A slightly modified quicksort algorithm is used.
-! 
+!
 !    Description of Parameters
 !       X - array of values to be sorted   (usually abscissas)
 !       Y - array to be (optionally) carried along
@@ -2621,7 +2621,7 @@ END FUNCTION INTHIGH
 !             =  1  means sort X in increasing order (ignoring Y)
 !             = -1  means sort X in decreasing order (ignoring Y)
 !             = -2  means sort X in decreasing order and carry Y along.
-! 
+!
 ! ***REFERENCES  R. C. Singleton, Algorithm 347, An efficient algorithm
 !                  for sorting with minimal storage, Communications of
 !                  the ACM, 12, 3 (1969), pp. 185-187.
@@ -2769,7 +2769,7 @@ END FUNCTION INTHIGH
       ELSE
          R = R-0.21875E0
       ENDIF
-! 
+!
   120 K = I
 
 !      Select a central element of the array and save it in location T
@@ -2902,7 +2902,7 @@ SUBROUTINE ADD_IN_KDIST (NLAY, HEIGHTP, TAUP, ALBEDOP, &
     ENDIF
     I = 1
     DO LAY = 1, NLAY
-      ! First, use trapezoidal integration to get optical depth of 
+      ! First, use trapezoidal integration to get optical depth of
       ! gaseous absorption assuming linear interpolation.
       GASTAU = 0.0
       Z1 = HEIGHTP(LAY)
@@ -2959,7 +2959,7 @@ SUBROUTINE SUM_KDIST_OUTPUT (IG, WT, NLAY, TAUP, IXP, NPTS, TAUG, &
     MEANRAD(1:NLAY+1) = 0.0
     RADOUT(:,:,:) = 0.0
   ENDIF
-  
+
   DO L = 1, NLAY
     FLUXUP(L) = FLUXUP(L) + WT*FLUXUPM(IXP(1,L))
     FLUXDN(L) = FLUXDN(L) + WT*FLUXDNM(IXP(1,L))
@@ -3004,7 +3004,7 @@ SUBROUTINE USER_INPUT (PROPFILE, CKDFILE, KDIST, NMU, NPHI, &
   REAL,    INTENT(OUT) :: SFCPARMS(MAXPAR)
   REAL,    INTENT(OUT) :: ZOUT(MAXPAR), MUOUT(MAXPAR), PHIOUT(MAXPAR)
   CHARACTER(LEN=1),  INTENT(OUT) :: SRCTYPE, SFCTYPE
-  CHARACTER(LEN=80), INTENT(OUT) :: PROPFILE, CKDFILE, FLUXFILE, RADFILE 
+  CHARACTER(LEN=80), INTENT(OUT) :: PROPFILE, CKDFILE, FLUXFILE, RADFILE
 
   WRITE (*,*)
   WRITE (*,'(1X,A)') 'Atmospheric optical properties file name'
@@ -3079,7 +3079,7 @@ SUBROUTINE USER_INPUT (PROPFILE, CKDFILE, KDIST, NMU, NPHI, &
   WRITE (*,'(1X,A,A)') 'Solution accuracy'
   READ (*,*) SOLACC
     WRITE (*,*) SOLACC
- 
+
   WRITE (*,'(1X,A,A)') 'Acceleration flag (T or F) and max iterations'
   READ (*,*) ACCELFLAG, MAXITER
     WRITE (*,*) ACCELFLAG, MAXITER
@@ -3120,17 +3120,17 @@ SUBROUTINE USER_INPUT (PROPFILE, CKDFILE, KDIST, NMU, NPHI, &
 END SUBROUTINE USER_INPUT
 
 
- 
+
 
 SUBROUTINE READ_PROPERTY_SIZE (PROPFILE, NLAY, MAXLEG)
 !       Reads parts of the property file to get the maximum array sizes
-!     needed for allocatable arrays.  
+!     needed for allocatable arrays.
   IMPLICIT NONE
   INTEGER, INTENT(OUT) :: NLAY, MAXLEG
   CHARACTER(LEN=*), INTENT(IN) :: PROPFILE
   INTEGER :: I, NLEG
   REAL    :: TAU, Z, TTOP, TBOT, SSALB
- 
+
   ! Open the file, get the number of layers and the max number Legendre terms
   OPEN (UNIT=1, FILE=PROPFILE, STATUS='OLD')
   READ (1,*) NLAY
@@ -3174,7 +3174,7 @@ SUBROUTINE READ_PROPERTIES (PROPFILE, NLAY, MAXLEG, &
   ENDDO
   CLOSE (1)
 END SUBROUTINE READ_PROPERTIES
- 
+
 
 
 SUBROUTINE READ_CKD_SIZE (CKDFILE, WAVENO, NG, NZCKD)
@@ -3184,11 +3184,11 @@ SUBROUTINE READ_CKD_SIZE (CKDFILE, WAVENO, NG, NZCKD)
   CHARACTER(LEN=*), INTENT(IN) :: CKDFILE
   INTEGER :: NB, IB, JB, KB, N
   REAL    :: WAVENUM1, WAVENUM2, SF
-      
+
   OPEN (UNIT=1, FILE=CKDFILE, STATUS='OLD')
   READ (1,*)
   READ (1,*) NB
-  READ (1,*)   
+  READ (1,*)
   ! Read band information until the right one is found
   JB = 0
   DO IB = 1, NB
@@ -3199,41 +3199,41 @@ SUBROUTINE READ_CKD_SIZE (CKDFILE, WAVENO, NG, NZCKD)
       NG = N
       READ (1,*) JB, WAVENUM1, WAVENUM2, SF, N
     ENDIF
-  ENDDO  
+  ENDDO
   IF (JB == 0) THEN
     WRITE (*,*) ' Wavenumber range not found in CKD file : ', &
                 WAVENO(1), WAVENO(2), CKDFILE
     STOP
-  ENDIF 
+  ENDIF
   READ (1,*) NZCKD
   CLOSE (1)
 END SUBROUTINE READ_CKD_SIZE
-               
-               
-               
+
+
+
 SUBROUTINE READ_CKD (CKDFILE, WAVENO, NG, NZCKD, SOLFLUX, DELG, ZCKD, KABS)
  ! Reads the information appropriate for one band from a
  ! correlated k-distribution file.   The number of "g"'s are input in NG,
  ! and the number of levels are input in NZCKD. The wavenumber range (cm^-1)
- ! in the file must match the desired in WAVENO.  The solar flux 
+ ! in the file must match the desired in WAVENO.  The solar flux
  ! is returned in SOLFLUX, the weights or delta g's in DELG, the
  ! levels from the top down in ZCKD, and the absorption coefficients
- ! for each g and level in KABS. 
+ ! for each g and level in KABS.
   INTEGER, INTENT(IN) :: NG, NZCKD
   REAL,    INTENT(INOUT) :: WAVENO(2)
   REAL,    INTENT(OUT) :: SOLFLUX, DELG(NG), ZCKD(NZCKD), KABS(NZCKD,NG)
   CHARACTER(LEN=*), INTENT(IN) :: CKDFILE
   INTEGER :: NB, IB, JB, KB, IG, I, J, N
   REAL    :: WAVENUM1, WAVENUM2, SF
-      
+
   OPEN (UNIT=1, FILE=CKDFILE, STATUS='OLD')
   READ (1,*)
   READ (1,*) NB
-  READ (1,*)   
+  READ (1,*)
   ! Read band information until the right one is found
   JB = 0
   DO IB = 1, NB
-    READ (1,*) KB, WAVENUM1, WAVENUM2, SF, N   
+    READ (1,*) KB, WAVENUM1, WAVENUM2, SF, N
     IF ( ABS(WAVENUM1-WAVENO(1)) < 1.0 .AND. &
          ABS(WAVENUM2-WAVENO(2)) < 1.0 ) THEN
       BACKSPACE (1)
@@ -3260,8 +3260,8 @@ SUBROUTINE READ_CKD (CKDFILE, WAVENO, NG, NZCKD, SOLFLUX, DELG, ZCKD, KABS)
         WRITE (*,'(1X,A,A,I3,A,I3,A,I2)') 'Negative absorption in CKD file. ', &
             'Band: ',IB, '   Level: ',I, '   k: ',IG
       ENDIF
-    ENDDO  
-  ENDDO    
+    ENDDO
+  ENDDO
   CLOSE (1)
 END SUBROUTINE READ_CKD
 
@@ -3270,14 +3270,14 @@ END SUBROUTINE READ_CKD
 
 SUBROUTINE OUTPUT_RESULTS (NLAY, NPTS, NMU, NPHI, NG, &
                            PROPFILE, CKDFILE, SRCTYPE, SOLARFLUX, SOLARMU, &
-                           SKYRAD, SFCTYPE, SFCTEMP, SFCPARMS, WAVELEN, WAVENO, & 
+                           SKYRAD, SFCTYPE, SFCTEMP, SFCPARMS, WAVELEN, WAVENO, &
                            SPLITACC, SOLACC, MAXITER, ITER, &
                            IXP, HEIGHTG, FLUXUP, FLUXDN, MEANRAD, FLUXPARM, &
                            NZOUT, ZOUT, NMUOUT, MUOUT, NPHIOUT, PHIOUT, &
                            RADOUT, OUTTYPE, OUTFILE)
 !       Writes the desired type of output file from the output fields
 !     with a header giving the input parameters.
-!     There are two types (OUTTYPE) of output: 'R' - for radiance,  
+!     There are two types (OUTTYPE) of output: 'R' - for radiance,
 !     'F' - for hemispheric/actinic flux.
 !     See the overall program documentation for output parameters.
   IMPLICIT NONE
@@ -3305,9 +3305,9 @@ SUBROUTINE OUTPUT_RESULTS (NLAY, NPTS, NMU, NPHI, NG, &
     SOURCENAME = 'SOLAR/THERMAL'
   ENDIF
 
-  IF (SFCTYPE == 'L') THEN 
+  IF (SFCTYPE == 'L') THEN
     SFCNAME = 'LAMBERTIAN'
-  ELSE IF (SFCTYPE == 'R') THEN 
+  ELSE IF (SFCTYPE == 'R') THEN
     SFCNAME = 'RPV-BRDF'
   ENDIF
 
@@ -3333,7 +3333,7 @@ SUBROUTINE OUTPUT_RESULTS (NLAY, NPTS, NMU, NPHI, NG, &
   WRITE (2,'(2(A,I3))') '!  NMU=',NMU, '  NPHI=',NPHI
   WRITE (2,'(2(A,I4))') '!  NLAYER(input)=',NLAY, '    NPTS=',NPTS
   WRITE (2,'(A,A32)')     '!  PROPERTY_FILE=', PROPFILE
-  WRITE (2,'(A,A32,A,I2)') '!  CORRELATED_K-DIST_FILE=', CKDFILE, & 
+  WRITE (2,'(A,A32,A,I2)') '!  CORRELATED_K-DIST_FILE=', CKDFILE, &
                            '   NUM_G=', NG
   WRITE (2,'(A,A14)')    '!  SOURCE_TYPE=', SOURCENAME
   WRITE (2,'(A,A20)') '!  SURFACE_TYPE=', SFCNAME
@@ -3407,4 +3407,4 @@ SUBROUTINE OUTPUT_RESULTS (NLAY, NPTS, NMU, NPHI, NG, &
   ENDIF
   CLOSE (2)
 END SUBROUTINE OUTPUT_RESULTS
- 
+
