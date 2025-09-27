@@ -2,7 +2,7 @@
 
 program put
     integer :: i
-    character(len=1000) :: arg
+    character(len=1200) :: arg
 
     do i = 1, command_argument_count()
         call get_command_argument(i, arg)
