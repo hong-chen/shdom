@@ -3,31 +3,27 @@ CURRENT_DIR = $(shell pwd)
 BUILD_DIR = $(abspath $(CURRENT_DIR)/build)
 
 all:
-	rm -rf $(BUILD_DIR)
-	mkdir $(BUILD_DIR)
+	mkdir -p $(BUILD_DIR)
 	cd $(BUILD_DIR); \
 		cmake $(CURRENT_DIR); \
 		make
 
 #omp:
-#    rm -rf $(BUILD_DIR)
-#    mkdir $(BUILD_DIR)
+#    mkdir -p $(BUILD_DIR)
 #    cd $(BUILD_DIR); \
 #        cmake $(CURRENT_DIR) \
 #            -DUSE_OMP=on; \
 #        make
 
 mpi:
-	rm -rf $(BUILD_DIR)
-	mkdir $(BUILD_DIR)
+	mkdir -p $(BUILD_DIR)
 	cd $(BUILD_DIR); \
 		cmake $(CURRENT_DIR) \
 			-DUSE_MPI=on; \
 		make
 
 #nc:
-#    rm -rf $(BUILD_DIR)
-#    mkdir $(BUILD_DIR)
+#    mkdir -p $(BUILD_DIR)
 #    cd $(BUILD_DIR); \
 #        cmake $(CURRENT_DIR) \
 #            -DUSE_NETCDF=on \
