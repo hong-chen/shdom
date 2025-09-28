@@ -6,7 +6,7 @@ LinkF90    = gfortran -Ofast
 CURRENT_DIR = $(shell pwd)
 BIN_DIR     = $(abspath $(CURRENT_DIR)/bin)
 
-all: bin demo_shdomppda make_mie_table2 make_ice_table2
+all: bin demo_shdomppda make_mie_table2 make_ice_table2 put
 
 Objs =  molec_absorption_interface.o shdomppda_fwd_tl_adj.o \
         shdomppda.o shdomppda_ftls.o shdomppda_ads.o
@@ -41,5 +41,8 @@ mieindsub.o: mieindsub.f
 make_ice_table2: make_ice_table2.f90
 	$(LinkF90) -o $(BIN_DIR)/$@ $<
 
+put:
+	$(CompileF90) $(FFLAGS) put.f90 -o $(BIN_DIR)/put
+
 clean:
-	-/bin/rm -rf  *.mod *.o bin/put bin/demo_shdomppda bin/make_mie_table2 bin/make_ice_table2 bin
+	-/bin/rm -rf  *.mod *.o bin
