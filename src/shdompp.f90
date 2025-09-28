@@ -99,10 +99,10 @@ program SHDOMPP
         DELG(1) = 1.0
     end if
 
-!  WRITE (*,*) 'Number of times to run SHDOMPP routine for timing'
-!  READ (*,*) NCASES
-!    WRITE (*,*) NCASES
-!  DO ICASE = 1, NCASES
+    !WRITE (*,*) 'Number of times to run SHDOMPP routine for timing'
+    !READ (*,*) NCASES
+    !WRITE (*,*) NCASES
+    !DO ICASE = 1, NCASES
 
     ! Loop over the k-distribution g's from low to high absorption
     NUMITER = 0
@@ -134,7 +134,7 @@ program SHDOMPP
         end if
     end do
 
-!  ENDDO
+    !ENDDO
 
     call OUTPUT_RESULTS(NLAY, NPTS, NMU, NPHI, NG, &
                         PROPFILE, CKDFILE, SRCTYPE, SOLARFLUX, SOLARMU, &
