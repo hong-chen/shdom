@@ -6,10 +6,13 @@ FC= gfortran
 CURRENT_DIR = $(shell pwd)
 BIN_DIR     = $(abspath $(CURRENT_DIR)/bin)
 
-all: bin shdompp disortsh ppmieprp put
+all: bin shdompp_new shdompp disortsh ppmieprp put
 
 bin:
 	mkdir -p $(BIN_DIR)
+
+shdompp_new: shdompp_new.f90 fftpack5.1cos.o
+	$(FC) $(FFLAGS) shdompp_new.f90 fftpack5.1cos.o -o $(BIN_DIR)/shdompp_new
 
 shdompp: shdompp.f90 fftpack5.1cos.o
 	$(FC) $(FFLAGS) shdompp.f90 fftpack5.1cos.o -o $(BIN_DIR)/shdompp
