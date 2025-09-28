@@ -146,18 +146,29 @@ program shdom_main
     NSTOKES = max(1, min(4, NSTOKES))
     if (NSTOKES .eq. 2) NSTOKES = 3
 
+    ! X, Y, Z grids
     NX = max(1, NX); NY = max(1, NY); NZ = max(2, NZ)
+
     ! If single plane or column then force IP mode
-    if (NX .eq. 1) IPFLAG = ior(IPFLAG, 1)
-    if (NY .eq. 1) IPFLAG = ior(IPFLAG, 2)
+    !   if   3D IPFLAG=0, bit representation '0000'
+    !   if NX=1 IPFLAG=1, bit representation '0001'
+    !   if NY=1 IPFLAG=2, bit representation '0010'
+    !   if  IPA IPFLAG=3, bit representation '0011'
+    if (NX .eq. 1) IPFLAG = ior(IPFLAG, 1) ! '0000'(3D,   0) + '0001'(NX=1, 1) = '0001' (NX=1, 1)
+    if (NY .eq. 1) IPFLAG = ior(IPFLAG, 2) ! '0001'(NX=1, 1) + '0010'(NY=1, 2) = '0011' (IPA,  3)
 
     ! Make ML and MM from NMU and NPHI
-    NMU = max(2, 2*int((NMU + 1)/2))
+    !   NMU : number of discrete ordinate zenith angles in both hemispheres
+    !   NPHI: number of discrete ordinate azimuth angles in 2*pi
+    !   ML  : The maximum L of the spherical harmonic truncation
+    !   MM  : The maximum M of the spherical harmonic truncation
+    NMU  = max(2, 2*int((NMU + 1)/2)) ! force NMU an even number
     NPHI = max(1, NPHI)
 
     ML = NMU - 1
     MM = max(0, int(NPHI/2) - 1)
 
+    ! NLEG: The number of Legendre series phase function terms used in the solution procedure
     NLEG = ML
     if (DELTAM) NLEG = ML + 1
 
@@ -191,7 +202,9 @@ program shdom_main
 
     ! Make ML and MM from NMU and NPHI
     !   Compute NLM, NPHI0MAX.
-    if (SRCTYPE .eq. 'T') SOLARAZ = 0.0
+    !   NPHI0MAX: The maximum number of azimuth angles actually used
+    !   NLM: The number of spherical harmonic terms
+    if (SRCTYPE .eq. 'T') SOLARAZ = 0.0d0
     NPHI0MAX = NPHI
     NLM = (2*MM + 1)*(ML + 1) - MM*(MM + 1)
     MEMWORD = NMU*(2 + 2*NPHI + 2*NLM + 2*33*32)
