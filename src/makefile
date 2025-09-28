@@ -9,9 +9,9 @@ FC = gfortran
 FORTRAN_VERSION = $(shell $(FC) -dumpversion)
 VERSION_LIMIT = 10
 ifeq ($(shell test $(FORTRAN_VERSION) -lt $(VERSION_LIMIT); echo $$?), 0)
-	FFLAGS = -O3 -Wargument-mismatch -ffree-line-length-none
+	FFLAGS = -O3 -Ofast -Wargument-mismatch -ffree-line-length-none
 else
-	FFLAGS = -O3 -fallow-argument-mismatch -ffree-line-length-none
+	FFLAGS = -O3 -Ofast -fallow-argument-mismatch -ffree-line-length-none
 endif
 
 # dummy option, placeholder for OMP implementation in the future
@@ -76,7 +76,7 @@ shdIntg.o: shdIntg.f90 shdMPI.o shdSfc.o shdInit.o shdGrid.o shdUtil.o shdSHDO.o
 shdGrid.o: shdGrid.f90 shdMPI.o globals.o shdUtil.o shdRad.o shdSrc.o
 	$(F90) -c $(F90FLAGS) shdGrid.f90
 
-shdSHDO.o: shdSHDO.f90 globals.o shdPha.o shdSfc.o
+shdSHDO.o: shdSHDO.f90 globals.o shdPha.o shdSfc.o fftpack.o
 	$(F90) -c $(F90FLAGS) shdSHDO.f90
 
 shdSrc.o: shdSrc.f90 globals.o shdUtil.o shdPha.o shdInit.o
