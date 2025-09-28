@@ -23,7 +23,7 @@ endif
 
 CURRENT_DIR = $(shell pwd)
 BIN_DIR     = $(abspath $(CURRENT_DIR)/../build/bin)
-TARGETS = bin shdom shdom_ propgen make_mie_table make_tmatrix_table plotscattab put
+TARGETS = bin shdom shdom_ shdompp propgen make_mie_table make_tmatrix_table plotscattab put
 
 SHDOMOBJS = globals.o shdUtil.o shdSfc.o shdPha.o shdInit.o\
 			shdGrid.o shdSrc.o shdSHDO.o shdIntg.o shdSolv.o\
@@ -57,6 +57,13 @@ shdom_: shdom_.o $(SHDOMOBJS)
 
 shdom_.o: shdom_.f90 $(SHDOMOBJS)
 	$(F90) -c $(F90FLAGS) shdom_.f90
+
+# this is for user input (exe: shdom_)
+shdompp: shdompp.o $(SHDOMOBJS)
+	$(F90) $(F90FLAGS) shdompp.o $(SHDOMOBJS) $(LIBS) -o $(BIN_DIR)/shdompp
+
+shdompp.o: shdompp.f90 $(SHDOMOBJS)
+	$(F90) -c $(F90FLAGS) shdompp.f90
 
 shdMPI.o: shdMPI.f90 shdInit.o shdUtil.o shdSrc.o shdRad.o globals.o
 	$(F90) -c $(F90FLAGS) shdMPI.f90

@@ -5,12 +5,7 @@
 program SHDOMPP
 
     use globals
-
-    use shd_init
-    use shd_src
-    use shd_shdo
-    use shd_solv
-    use shd_rad
+    use globals_prp
     use shd_inp ! shd_io__
     use shd_out ! shd_io__
 
@@ -29,17 +24,54 @@ program SHDOMPP
     real                 :: ZOUT(MAXPAR), MUOUT(MAXPAR), PHIOUT(MAXPAR)
     real                 :: SFCPARMS(MAXPAR)
 
-    integer :: NLAY, MAXLEG, NPTS, MAXIG
-    integer :: NMU, NPHI, MAXITER, ITER, NUMITER
+    integer, parameter :: MAXOUT = 20
+    real      :: OUTPARMS(MAXPAR, MAXOUT)
+    character(len=1) :: OUTTYPES(MAXOUT)
+    character(len=FNAMEMAXLEN_) :: OUTFILES(MAXOUT)
+
+    integer :: NLAY
+    integer :: NUMITER
     integer :: NZOUT, NMUOUT, NPHIOUT, FLUXPARM
-    integer :: NCASES, ICASE, NG, NZCKD, IG
-    logical :: KDIST, ACCELFLAG
-    real    :: SOLARFLUX, SOLFLUX, SOLARMU
-    real    :: SFCTEMP, SKYRAD, WAVELEN, WAVENO(2)
-    real    :: SOLACC, SOLCRIT, SPLITACC
-    character(LEN=1) :: SRCTYPE, SFCTYPE
-    character(LEN=FNAMEMAXLEN_) :: PROPFILE, SFCFILE, CKDFILE, FLUXFILE, RADFILE
-    character(LEN=FNAMEMAXLEN_) :: SENFILE, OutFileNC, RUNNAME
+    integer :: NCASES, ICASE
+    real    :: SFCTEMP
+
+    real, allocatable :: SOLFLUX(:)
+    real, allocatable :: XGRID(:), YGRID(:), ZGRID(:)
+    real, allocatable :: TEMP(:), PLANCK(:), EXTINCT(:), ALBEDO(:)
+    real, allocatable :: LEGEN(:)
+    integer*2, allocatable:: IPHASE(:)
+    integer, allocatable :: GRIDPTR(:, :), NEIGHPTR(:, :), TREEPTR(:, :)
+    integer*2, allocatable:: CELLFLAGS(:)
+    real, allocatable :: GRIDPOS(:, :)
+    integer, allocatable :: RSHPTR(:), SHPTR(:), OSHPTR(:)
+    real, allocatable :: RADIANCE(:, :), SOURCE(:, :), DELSOURCE(:, :)
+    integer, allocatable :: WORK1(:)
+    real, allocatable :: WORK(:), WORK2(:)
+    real, allocatable :: FLUXES(:, :), DIRFLUX(:), DIRFLUX_TMP(:)
+    integer, allocatable :: NPHI0(:)
+    real, allocatable :: MU(:), WTDO(:), PHI(:)
+    integer, allocatable :: BCPTR(:)
+    real, allocatable :: BCRAD(:, :)
+    real, allocatable :: SFCGRIDPARMS(:)
+    real, allocatable :: SENPARMS(:)
+    real, allocatable :: SUMFLUXES(:, :), SUMDIRFLUX(:), SUMFLUXDIV(:)
+    real, allocatable :: SUMSHTERMS(:), SOURCE1OUT(:)
+    real, allocatable :: SUMRADOUT(:), SUMVISOUT(:)
+    real, allocatable :: TEMPPT(:), EXTINCTPT(:), ALBEDOPT(:)
+    real, allocatable :: LEGENPT(:)
+    integer*2, allocatable :: IPHASEPT(:)
+    real, allocatable :: ALLFLUXES(:, :, :, :)
+    real, allocatable :: ALLFLUXDIV(:, :, :), ALLSHTERMS(:, :, :, :)
+    real, allocatable :: XALLGRID(:), YALLGRID(:)
+
+    integer :: MAXPG, MAXIG, MAXIC, MAXIV, MAXIDO, MAXNZ, MAXNG
+    integer :: MAXLEG, MAXPGL, MAXIGL
+    integer :: MAXNBC, MAXBCRAD
+    integer :: MAXSFCPTS, MAXSFCPARS, BIG_ARRAYS
+    real :: MEMWORD, WANTMEM
+    real :: MAX_TOTAL_MB, ADAPT_GRID_FACTOR
+    real :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
+    real :: MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
 
     integer :: NSTOKES, NX, NY, NZ, NX1, NY1
     integer :: NXT, NYT, NPXT, NPYT, MAXPGT, MAXPGLT
@@ -58,7 +90,6 @@ program SHDOMPP
     real :: GNDTEMP, GNDALBEDO, SKYRAD, WAVENO(2), WAVELEN
     real :: SOLACC, SOLCRIT, SPLITACC, SHACC
     real :: DELXSFC, DELYSFC, MAXASYM, REDUCE_RATIO
-    real :: MUOUT, PHIOUT
     real :: UNIFZLEV, XO, YO, ZO, DIRPATH
     character(len=1) :: SRCTYPE, UNITS
     character(len=1) :: GRIDTYPE, PROPTYPE
@@ -133,16 +164,15 @@ program SHDOMPP
         !call READ_CKD_SIZE(CKDFILE, WAVENO, NG, NZCKD)
         call shd_io__readCkdSize(CKDFILE, WAVENO, NG, NZCKD_)
 
-        allocate (DELG(NG), ZCKD(NZCKD), KABS(NZCKD, NG))
+        allocate (DELG(NG), ZCKD(NZCKD_), KABS(NZCKD_, NG))
         !call READ_CKD(CKDFILE, WAVENO, NG, NZCKD, SOLFLUX, DELG, ZCKD, KABS)
         call shd_io__readCkd(MAXNG, MAXNZ, CKDFILE, WAVENO, SOLFLUX,&
             &NG, DELG, NZCKD_, ZCKD_, KABS)
 
-        SOLARFLUX = SOLFLUX*SOLARFLUX*abs(SOLARMU)
     else
         NG = 1
-        NZCKD = 0
-        allocate (DELG(NG), ZCKD(NZCKD), KABS(NZCKD, NG))
+        NZCKD_ = 0
+        allocate (DELG(NG), ZCKD(NZCKD_), KABS(NZCKD_, NG))
         DELG(1) = 1.0
     end if
 
@@ -154,6 +184,7 @@ program SHDOMPP
     ! Loop over the k-distribution g's from low to high absorption
     !NUMITER = 0
     !do IG = 1, NG
+    !    SOLARFLUX = SOLFLUX(IG)*SOLARFLUX*abs(SOLARMU)
     !    ! Add in the layer gaseous absorption if doing a k-distribution
     !    call ADD_IN_KDIST(NLAY, HEIGHTP, TAUP, ALBEDOP, &
     !                      NZCKD, ZCKD, KABS(:, IG), TAUPM, ALBEDOPM)
@@ -1491,7 +1522,7 @@ subroutine SPLIT_CELLS(NLAY, NPTS, MAXIG, IXP, IXG, TAUGSC, &
     end do
 
     if (NEWNPTS > NPTS) then
-        call shd_util__ssort(TAUGSC, IXG, NEWNPTS, 2)
+        call ssort(TAUGSC, IXG, NEWNPTS, 2)
         NPTS = NEWNPTS
         IXP(:, :) = IXPN(:, :)
         ! Make sure that the IXG pointers are in the correct order
@@ -1505,6 +1536,291 @@ subroutine SPLIT_CELLS(NLAY, NPTS, MAXIG, IXP, IXG, TAUGSC, &
     end if
     deallocate (SRCINT1, DIFFRAD)
 end subroutine SPLIT_CELLS
+
+subroutine ssort (X, Y, N, KFLAG)
+    ! ***BEGIN PROLOGUE  SSORT
+    ! ***PURPOSE  Sort an array and optionally make the same interchanges in
+    !             an auxiliary array.  The array may be sorted in increasing
+    !             or decreasing order.  A slightly modified QUICKSORT
+    !             algorithm is used.
+    ! ***LIBRARY   SLATEC
+    ! ***CATEGORY  N6A2B
+    ! ***TYPE      SINGLE PRECISION (SSORT-S, DSORT-D, ISORT-I)
+    ! ***KEYWORDS  SINGLETON QUICKSORT, SORT, SORTING
+    ! ***AUTHOR  Jones, R. E., (SNLA)
+    !            Wisniewski, J. A., (SNLA)
+    ! ***DESCRIPTION
+    !
+    !    SSORT sorts array X and optionally makes the same interchanges in
+    !    array Y.  The array X may be sorted in increasing order or
+    !    decreasing order.  A slightly modified quicksort algorithm is used.
+    !
+    !    Description of Parameters
+    !       X - array of values to be sorted   (usually abscissas)
+    !       Y - array to be (optionally) carried along
+    !       N - number of values in array X to be sorted
+    !       KFLAG - control parameter
+    !             =  2  means sort X in increasing order and carry Y along.
+    !             =  1  means sort X in increasing order (ignoring Y)
+    !             = -1  means sort X in decreasing order (ignoring Y)
+    !             = -2  means sort X in decreasing order and carry Y along.
+    !
+    ! ***REFERENCES  R. C. Singleton, Algorithm 347, An efficient algorithm
+    !                  for sorting with minimal storage, Communications of
+    !                  the ACM, 12, 3 (1969), pp. 185-187.
+    ! ***END PROLOGUE  SSORT
+!      .. Scalar Arguments ..
+      INTEGER KFLAG, N
+!      .. Array Arguments ..
+!       REAL X(*), Y(*)
+      REAL X(*)
+      INTEGER Y(*)
+!      .. Local Scalars ..
+!       REAL R, T, TT, TTY, TY
+      REAL R, T, TT
+      INTEGER TY, TTY
+      INTEGER I, IJ, J, K, KK, L, M, NN
+!      .. Local Arrays ..
+      INTEGER IL(51), IU(51)
+!      .. External Subroutines ..
+!      .. Intrinsic Functions ..
+      INTRINSIC ABS, INT
+! ***First executable statement  SSORT
+      NN = N
+      IF (NN .LT. 1) THEN
+         STOP 'The number of values to be sorted is not positive.'
+      ENDIF
+
+      KK = ABS(KFLAG)
+      IF (KK.NE.1 .AND. KK.NE.2) THEN
+        STOP 'The sort control parameter, K, is not 2, 1, -1, or -2.'
+      ENDIF
+
+!      Alter array X to get decreasing order if needed
+      IF (KFLAG .LE. -1) THEN
+         DO 10 I=1,NN
+            X(I) = -X(I)
+   10    CONTINUE
+      ENDIF
+
+      IF (KK .EQ. 2) GO TO 100
+
+!      Sort X only
+      M = 1
+      I = 1
+      J = NN
+      R = 0.375E0
+
+   20 IF (I .EQ. J) GO TO 60
+      IF (R .LE. 0.5898437E0) THEN
+         R = R+3.90625E-2
+      ELSE
+         R = R-0.21875E0
+      ENDIF
+
+   30 K = I
+
+!      Select a central element of the array and save it in location T
+      IJ = I + INT((J-I)*R)
+      T = X(IJ)
+
+!      If first element of array is greater than T, interchange with T
+      IF (X(I) .GT. T) THEN
+         X(IJ) = X(I)
+         X(I) = T
+         T = X(IJ)
+      ENDIF
+      L = J
+
+!      If last element of array is less than than T, interchange with T
+      IF (X(J) .LT. T) THEN
+         X(IJ) = X(J)
+         X(J) = T
+         T = X(IJ)
+
+!         If first element of array is greater than T, interchange with T
+         IF (X(I) .GT. T) THEN
+            X(IJ) = X(I)
+            X(I) = T
+            T = X(IJ)
+         ENDIF
+      ENDIF
+
+!      Find an element in the second half of the array which is smaller
+!      than T
+   40 L = L-1
+      IF (X(L) .GT. T) GO TO 40
+
+!      Find an element in the first half of the array which is greater
+!      than T
+   50 K = K+1
+      IF (X(K) .LT. T) GO TO 50
+
+!      Interchange these elements
+      IF (K .LE. L) THEN
+         TT = X(L)
+         X(L) = X(K)
+         X(K) = TT
+         GO TO 40
+      ENDIF
+
+!      Save upper and lower subscripts of the array yet to be sorted
+      IF (L-I .GT. J-K) THEN
+         IL(M) = I
+         IU(M) = L
+         I = K
+         M = M+1
+      ELSE
+         IL(M) = K
+         IU(M) = J
+         J = L
+         M = M+1
+      ENDIF
+      GO TO 70
+
+!      Begin again on another portion of the unsorted array
+   60 M = M-1
+      IF (M .EQ. 0) GO TO 190
+      I = IL(M)
+      J = IU(M)
+
+   70 IF (J-I .GE. 1) GO TO 30
+      IF (I .EQ. 1) GO TO 20
+      I = I-1
+
+   80 I = I+1
+      IF (I .EQ. J) GO TO 60
+      T = X(I+1)
+      IF (X(I) .LE. T) GO TO 80
+      K = I
+
+   90 X(K+1) = X(K)
+      K = K-1
+      IF (T .LT. X(K)) GO TO 90
+      X(K+1) = T
+      GO TO 80
+
+!      Sort X and carry Y along
+  100 M = 1
+      I = 1
+      J = NN
+      R = 0.375E0
+
+  110 IF (I .EQ. J) GO TO 150
+      IF (R .LE. 0.5898437E0) THEN
+         R = R+3.90625E-2
+      ELSE
+         R = R-0.21875E0
+      ENDIF
+!
+  120 K = I
+
+!      Select a central element of the array and save it in location T
+      IJ = I + INT((J-I)*R)
+      T = X(IJ)
+      TY = Y(IJ)
+
+!      If first element of array is greater than T, interchange with T
+      IF (X(I) .GT. T) THEN
+         X(IJ) = X(I)
+         X(I) = T
+         T = X(IJ)
+         Y(IJ) = Y(I)
+         Y(I) = TY
+         TY = Y(IJ)
+      ENDIF
+      L = J
+
+!      If last element of array is less than T, interchange with T
+      IF (X(J) .LT. T) THEN
+         X(IJ) = X(J)
+         X(J) = T
+         T = X(IJ)
+         Y(IJ) = Y(J)
+         Y(J) = TY
+         TY = Y(IJ)
+
+!         If first element of array is greater than T, interchange with T
+         IF (X(I) .GT. T) THEN
+            X(IJ) = X(I)
+            X(I) = T
+            T = X(IJ)
+            Y(IJ) = Y(I)
+            Y(I) = TY
+            TY = Y(IJ)
+         ENDIF
+      ENDIF
+
+!      Find an element in the second half of the array which is smaller
+!      than T
+  130 L = L-1
+      IF (X(L) .GT. T) GO TO 130
+
+!      Find an element in the first half of the array which is greater
+!      than T
+  140 K = K+1
+      IF (X(K) .LT. T) GO TO 140
+
+!      Interchange these elements
+      IF (K .LE. L) THEN
+         TT = X(L)
+         X(L) = X(K)
+         X(K) = TT
+         TTY = Y(L)
+         Y(L) = Y(K)
+         Y(K) = TTY
+         GO TO 130
+      ENDIF
+
+!      Save upper and lower subscripts of the array yet to be sorted
+      IF (L-I .GT. J-K) THEN
+         IL(M) = I
+         IU(M) = L
+         I = K
+         M = M+1
+      ELSE
+         IL(M) = K
+         IU(M) = J
+         J = L
+         M = M+1
+      ENDIF
+      GO TO 160
+
+!      Begin again on another portion of the unsorted array
+  150 M = M-1
+      IF (M .EQ. 0) GO TO 190
+      I = IL(M)
+      J = IU(M)
+
+  160 IF (J-I .GE. 1) GO TO 120
+      IF (I .EQ. 1) GO TO 110
+      I = I-1
+
+  170 I = I+1
+      IF (I .EQ. J) GO TO 150
+      T = X(I+1)
+      TY = Y(I+1)
+      IF (X(I) .LE. T) GO TO 170
+      K = I
+
+  180 X(K+1) = X(K)
+      Y(K+1) = Y(K)
+      K = K-1
+      IF (T .LT. X(K)) GO TO 180
+      X(K+1) = T
+      Y(K+1) = TY
+      GO TO 170
+
+!      Clean up
+  190 IF (KFLAG .LE. -1) THEN
+         DO 200 I=1,NN
+            X(I) = -X(I)
+  200    CONTINUE
+      ENDIF
+      RETURN
+end subroutine ssort
+
+
 
 subroutine INTERP_SOURCE(NPH, NMU, T1, S1, T2, S2, T3, S3, T4, S4, T, S)
     ! Does either quadratic or cubic polynomial interpolation of the discrete
