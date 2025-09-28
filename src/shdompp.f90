@@ -22,7 +22,7 @@ program SHDOMPP
 
     real, parameter :: MAXDELTAU = 1.0
     real, parameter :: SPLITTING_FACTOR = 10.0
-    logical, parameter :: PRNT = .true. ! True for interation printing
+    logical, parameter :: PRNT = .true. ! True for iteration printing
     !LOGICAL, PARAMETER :: PRNT=.FALSE.
 
     integer, parameter   :: MAXPAR = 100 ! Max array size for user input arrays
@@ -41,6 +41,39 @@ program SHDOMPP
     character(LEN=FNAMEMAXLEN_) :: PROPFILE, SFCFILE, CKDFILE, FLUXFILE, RADFILE
     character(LEN=FNAMEMAXLEN_) :: SENFILE, OutFileNC, RUNNAME
 
+    integer :: NSTOKES, NX, NY, NZ, NX1, NY1
+    integer :: NXT, NYT, NPXT, NPYT, MAXPGT, MAXPGLT
+    integer :: NXSFC, NYSFC, NSFCPAR, NTOPPTS, NBOTPTS
+    integer :: NG, SIDE
+    integer :: ML, MM, NLM, NSTLEG, NLEG, NANG, NMU, NPHI, NPHI0MAX
+    integer :: NBPTS, NPTS, NCELLS, NSH, NBCELLS, OLDNPTS
+    integer :: MAXITER, ITER, TOTITER, IG, I, NUMOUT, BCFLAG, IPFLAG
+    integer :: NRAD, IRAD, NXOUT, NYOUT, NVIS, IVIS, NSCAN, NPIX, NSHOUT
+    integer :: NCELLSTOT, NPTSTOT, NSHTOT
+    logical :: KDIST, INRADFLAG, NEWGRIDFLAG, DELTAM, ACCELFLAG
+    logical :: BASEOUT, HIGHORDERRAD, MASTERPROC, VALIDBEAM
+    logical :: RADIANCE_OUT, VISUAL_OUT
+    logical :: FLUX_OUT, FLUXDIV_OUT, SH_OUT, SOURCE_OUT
+    real :: SOLARFLUX0, SOLARFLUX, SOLARMU, SOLARAZ
+    real :: GNDTEMP, GNDALBEDO, SKYRAD, WAVENO(2), WAVELEN
+    real :: SOLACC, SOLCRIT, SPLITACC, SHACC
+    real :: DELXSFC, DELYSFC, MAXASYM, REDUCE_RATIO
+    real :: MUOUT, PHIOUT
+    real :: UNIFZLEV, XO, YO, ZO, DIRPATH
+    character(len=1) :: SRCTYPE, UNITS
+    character(len=1) :: GRIDTYPE, PROPTYPE
+    character(len=2) :: SFCTYPE
+    character(len=FNAMEMAXLEN_) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
+    character(len=FNAMEMAXLEN_) :: SENFILE, OutFileNC, RUNNAME
+    integer :: NSENDATA, NSENPAR
+
+    integer :: count_start, count_rate, count_max
+    integer :: count_end
+    real :: elapsed_time
+    real :: DELX0, DELY0
+    logical :: mpiX, mpiY, mpiMode
+    logical :: nmlMode = .true.
+
     integer, allocatable :: NLEGP(:), IXP(:, :)
     real, allocatable :: TAUP(:), ALBEDOP(:), LEGENP(:, :)
     real, allocatable :: TAUPM(:), ALBEDOPM(:)
@@ -50,35 +83,44 @@ program SHDOMPP
     real, allocatable :: FLUXUP(:), FLUXDN(:), MEANRAD(:), RADOUT(:, :, :)
     real, allocatable :: FLUXUPM(:), FLUXDNM(:), MEANRADM(:), RADOUTM(:, :, :)
 
-    call USER_INPUT(PROPFILE, CKDFILE, KDIST, NMU, NPHI, &
-                    SRCTYPE, SOLARFLUX, SOLARMU, SKYRAD, &
-                    SFCTEMP, SFCTYPE, SFCPARMS, WAVELEN, WAVENO, &
-                    ACCELFLAG, SOLACC, MAXITER, SPLITACC, &
-                    FLUXFILE, FLUXPARM, RADFILE, MAXPAR, NZOUT, ZOUT, &
-                    NMUOUT, MUOUT, NPHIOUT, PHIOUT)
+    !call USER_INPUT(PROPFILE, CKDFILE, KDIST, NMU, NPHI, &
+    !                SRCTYPE, SOLARFLUX, SOLARMU, SKYRAD, &
+    !                SFCTEMP, SFCTYPE, SFCPARMS, WAVELEN, WAVENO, &
+    !                ACCELFLAG, SOLACC, MAXITER, SPLITACC, &
+    !                FLUXFILE, FLUXPARM, RADFILE, MAXPAR, NZOUT, ZOUT, &
+    !                NMUOUT, MUOUT, NPHIOUT, PHIOUT)
 
-    !call shd_io__nmlInput(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
-    !    INSAVEFILE, OUTSAVEFILE, SENFILE,&
-    !    NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
-    !    IPFLAG, KDIST, DELTAM, GRIDTYPE,&
-    !    SRCTYPE, SOLARFLUX0, SOLARMU, SOLARAZ, SKYRAD,&
-    !    GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,&
-    !    ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
-    !    MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS, OUTFILES,&
-    !    OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
-    !    NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
+    call shd_io__nmlInput(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
+        INSAVEFILE, OUTSAVEFILE, SENFILE,&
+        NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
+        IPFLAG, KDIST, DELTAM, GRIDTYPE,&
+        SRCTYPE, SOLARFLUX0, SOLARMU, SOLARAZ, SKYRAD,&
+        GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,&
+        ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
+        MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS, OUTFILES,&
+        OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
+        NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
 
     allocate (RADOUT(NZOUT, NMUOUT, NPHIOUT), RADOUTM(NZOUT, NMUOUT, NPHIOUT))
 
     ! Find out the size of the property grid arrays for allocating arrays
-    call READ_PROPERTY_SIZE(PROPFILE, NLAY, MAXLEG)
+    !call READ_PROPERTY_SIZE(PROPFILE, NLAY, MAXLEG)
+
+    call shd_io__readPrpSize(PROPFILE, NSTLEG, NLEG, NPX_, NPY_, NPZ_,&
+        &NUMPHASE_, MAXLEG, MAXPGL, DELX_, DELY_)
+
     allocate (HEIGHTP(NLAY + 1), TEMPP(NLAY + 1))
     allocate (TAUP(NLAY), ALBEDOP(NLAY), TAUPM(NLAY), ALBEDOPM(NLAY))
     allocate (NLEGP(NLAY), LEGENP(0:MAXLEG, NLAY), IXP(2, NLAY))
 
     ! Read in the properties of the medium
-    call READ_PROPERTIES(PROPFILE, NLAY, MAXLEG, &
-                         HEIGHTP, TEMPP, TAUP, ALBEDOP, NLEGP, LEGENP)
+    !call READ_PROPERTIES(PROPFILE, NLAY, MAXLEG, &
+    !                     HEIGHTP, TEMPP, TAUP, ALBEDOP, NLEGP, LEGENP)
+
+    call shd_io__readPrp(PROPFILE, NPXT, NPYT, NPZ_,&
+        &NSTLEG, MAXLEG, NLEG, MAXNZ, MAXPGT, MAXPGLT, DELTAM,&
+        &PROPTYPE, DELX0, DELY0, ZLEVELS_, MAXASYM,&
+        &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, NUMPHASE_, IPHASEPT)
 
     ! Guess the maximum size of the adaptive grid and allocate arrays
     MAXIG = nint(SPLITTING_FACTOR*(NLAY + sum(TAUP(:)*ALBEDOP(:))/MAXDELTAU))
@@ -88,9 +130,14 @@ program SHDOMPP
 
     ! If doing a k-distribution then get the band info from the CKD file
     if (KDIST) then
-        call READ_CKD_SIZE(CKDFILE, WAVENO, NG, NZCKD)
+        !call READ_CKD_SIZE(CKDFILE, WAVENO, NG, NZCKD)
+        call shd_io__readCkdSize(CKDFILE, WAVENO, NG, NZCKD_)
+
         allocate (DELG(NG), ZCKD(NZCKD), KABS(NZCKD, NG))
-        call READ_CKD(CKDFILE, WAVENO, NG, NZCKD, SOLFLUX, DELG, ZCKD, KABS)
+        !call READ_CKD(CKDFILE, WAVENO, NG, NZCKD, SOLFLUX, DELG, ZCKD, KABS)
+        call shd_io__readCkd(MAXNG, MAXNZ, CKDFILE, WAVENO, SOLFLUX,&
+            &NG, DELG, NZCKD_, ZCKD_, KABS)
+
         SOLARFLUX = SOLFLUX*SOLARFLUX*abs(SOLARMU)
     else
         NG = 1
@@ -105,54 +152,54 @@ program SHDOMPP
     !DO ICASE = 1, NCASES
 
     ! Loop over the k-distribution g's from low to high absorption
-    NUMITER = 0
-    do IG = 1, NG
-        ! Add in the layer gaseous absorption if doing a k-distribution
-        call ADD_IN_KDIST(NLAY, HEIGHTP, TAUP, ALBEDOP, &
-                          NZCKD, ZCKD, KABS(:, IG), TAUPM, ALBEDOPM)
+    !NUMITER = 0
+    !do IG = 1, NG
+    !    ! Add in the layer gaseous absorption if doing a k-distribution
+    !    call ADD_IN_KDIST(NLAY, HEIGHTP, TAUP, ALBEDOP, &
+    !                      NZCKD, ZCKD, KABS(:, IG), TAUPM, ALBEDOPM)
 
-        call SOLVE_SHDOMPP(NLAY, MAXLEG, HEIGHTP, TEMPP, TAUPM, ALBEDOPM, &
-                           NLEGP, LEGENP, SRCTYPE, SOLARFLUX, SOLARMU, &
-                           WAVELEN, WAVENO, SKYRAD, SFCTYPE, SFCPARMS, SFCTEMP, &
-                           NMU, NPHI, MAXIG, MAXDELTAU, SPLITACC, SOLACC, &
-                           MAXITER, ACCELFLAG, PRNT, SOLCRIT, ITER, &
-                           NPTS, HEIGHTG, TAUG, IXP, FLUXUPM, FLUXDNM, MEANRADM, &
-                           NZOUT, ZOUT, NMUOUT, MUOUT, NPHIOUT, PHIOUT, &
-                           RADOUTM)
+    !    call SOLVE_SHDOMPP(NLAY, MAXLEG, HEIGHTP, TEMPP, TAUPM, ALBEDOPM, &
+    !                       NLEGP, LEGENP, SRCTYPE, SOLARFLUX, SOLARMU, &
+    !                       WAVELEN, WAVENO, SKYRAD, SFCTYPE, SFCPARMS, SFCTEMP, &
+    !                       NMU, NPHI, MAXIG, MAXDELTAU, SPLITACC, SOLACC, &
+    !                       MAXITER, ACCELFLAG, PRNT, SOLCRIT, ITER, &
+    !                       NPTS, HEIGHTG, TAUG, IXP, FLUXUPM, FLUXDNM, MEANRADM, &
+    !                       NZOUT, ZOUT, NMUOUT, MUOUT, NPHIOUT, PHIOUT, &
+    !                       RADOUTM)
 
-        NUMITER = NUMITER + ITER
-        if (KDIST) then
-            call SUM_KDIST_OUTPUT(IG, DELG(IG), NLAY, TAUP, IXP, NPTS, TAUG, &
-                                  HEIGHTP, HEIGHTG, FLUXUPM, FLUXUP, &
-                                  FLUXDNM, FLUXDN, MEANRADM, MEANRAD, &
-                                  NZOUT, NMUOUT, NPHIOUT, RADOUTM, RADOUT)
-        else
-            FLUXUP(1:NPTS) = FLUXUPM(1:NPTS)
-            FLUXDN(1:NPTS) = FLUXDNM(1:NPTS)
-            MEANRAD(1:NPTS) = MEANRADM(1:NPTS)
-            RADOUT(:, :, :) = RADOUTM(:, :, :)
-        end if
-    end do
+    !    NUMITER = NUMITER + ITER
+    !    if (KDIST) then
+    !        call SUM_KDIST_OUTPUT(IG, DELG(IG), NLAY, TAUP, IXP, NPTS, TAUG, &
+    !                              HEIGHTP, HEIGHTG, FLUXUPM, FLUXUP, &
+    !                              FLUXDNM, FLUXDN, MEANRADM, MEANRAD, &
+    !                              NZOUT, NMUOUT, NPHIOUT, RADOUTM, RADOUT)
+    !    else
+    !        FLUXUP(1:NPTS) = FLUXUPM(1:NPTS)
+    !        FLUXDN(1:NPTS) = FLUXDNM(1:NPTS)
+    !        MEANRAD(1:NPTS) = MEANRADM(1:NPTS)
+    !        RADOUT(:, :, :) = RADOUTM(:, :, :)
+    !    end if
+    !end do
 
     !ENDDO
 
-    call OUTPUT_RESULTS(NLAY, NPTS, NMU, NPHI, NG, &
-                        PROPFILE, CKDFILE, SRCTYPE, SOLARFLUX, SOLARMU, &
-                        SKYRAD, SFCTYPE, SFCTEMP, SFCPARMS, WAVELEN, WAVENO, &
-                        SPLITACC, SOLACC, MAXITER, NUMITER, &
-                        IXP, HEIGHTG, FLUXUP, FLUXDN, MEANRAD, FLUXPARM, &
-                        NZOUT, ZOUT, NMUOUT, MUOUT, NPHIOUT, PHIOUT, RADOUT, &
-                        'F', FLUXFILE)
+    !call OUTPUT_RESULTS(NLAY, NPTS, NMU, NPHI, NG, &
+    !                    PROPFILE, CKDFILE, SRCTYPE, SOLARFLUX, SOLARMU, &
+    !                    SKYRAD, SFCTYPE, SFCTEMP, SFCPARMS, WAVELEN, WAVENO, &
+    !                    SPLITACC, SOLACC, MAXITER, NUMITER, &
+    !                    IXP, HEIGHTG, FLUXUP, FLUXDN, MEANRAD, FLUXPARM, &
+    !                    NZOUT, ZOUT, NMUOUT, MUOUT, NPHIOUT, PHIOUT, RADOUT, &
+    !                    'F', FLUXFILE)
 
-    if (NZOUT*NMUOUT*NPHIOUT > 0) then
-        call OUTPUT_RESULTS(NLAY, NPTS, NMU, NPHI, NG, &
-                            PROPFILE, CKDFILE, SRCTYPE, SOLARFLUX, SOLARMU, &
-                            SKYRAD, SFCTYPE, SFCTEMP, SFCPARMS, WAVELEN, WAVENO, &
-                            SPLITACC, SOLACC, MAXITER, NUMITER, &
-                            IXP, HEIGHTG, FLUXUP, FLUXDN, MEANRAD, FLUXPARM, &
-                            NZOUT, ZOUT, NMUOUT, MUOUT, NPHIOUT, PHIOUT, RADOUT, &
-                            'R', RADFILE)
-    end if
+    !if (NZOUT*NMUOUT*NPHIOUT > 0) then
+    !    call OUTPUT_RESULTS(NLAY, NPTS, NMU, NPHI, NG, &
+    !                        PROPFILE, CKDFILE, SRCTYPE, SOLARFLUX, SOLARMU, &
+    !                        SKYRAD, SFCTYPE, SFCTEMP, SFCPARMS, WAVELEN, WAVENO, &
+    !                        SPLITACC, SOLACC, MAXITER, NUMITER, &
+    !                        IXP, HEIGHTG, FLUXUP, FLUXDN, MEANRAD, FLUXPARM, &
+    !                        NZOUT, ZOUT, NMUOUT, MUOUT, NPHIOUT, PHIOUT, RADOUT, &
+    !                        'R', RADFILE)
+    !end if
 
     deallocate (HEIGHTP, TEMPP, TAUP, ALBEDOP, TAUPM, ALBEDOPM, NLEGP, LEGENP)
     deallocate (IXP, HEIGHTG, TAUG, FLUXUP, FLUXDN, MEANRAD, RADOUT)
