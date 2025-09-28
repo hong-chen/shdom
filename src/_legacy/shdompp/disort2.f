@@ -354,7 +354,7 @@ c     .. Parameters ..
 
       INTEGER   MXCLY, MXULV, MXCMU, MXUMU, MXPHI, MI, MI9M2, NNLYRI,
      &          MXSQT
-      PARAMETER ( MXCLY = 20, MXULV = 21, MXCMU = 8, MXUMU = 10,
+      PARAMETER ( MXCLY = 20, MXULV = 21, MXCMU = 16, MXUMU = 10,
      &          MXPHI = 10, MI = MXCMU / 2, MI9M2 = 9*MI - 2,
      &          NNLYRI = MXCMU*MXCLY, MXSQT = 1000 )
 c     ..
