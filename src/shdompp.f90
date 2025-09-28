@@ -3,6 +3,17 @@
 !     See shdompp.doc for documentation.
 
 program SHDOMPP
+
+    use globals
+
+    use shd_init
+    use shd_src
+    use shd_shdo
+    use shd_solv
+    use shd_rad
+    use shd_inp ! shd_io__
+    use shd_out ! shd_io__
+
     implicit none
 
     !  MAXDELTAU  maximum scattering optical depth allowed in initial sublayers
@@ -27,7 +38,8 @@ program SHDOMPP
     real    :: SFCTEMP, SKYRAD, WAVELEN, WAVENO(2)
     real    :: SOLACC, SOLCRIT, SPLITACC
     character(LEN=1) :: SRCTYPE, SFCTYPE
-    character(LEN=80) :: PROPFILE, CKDFILE, FLUXFILE, RADFILE
+    character(LEN=FNAMEMAXLEN_) :: PROPFILE, SFCFILE, CKDFILE, FLUXFILE, RADFILE
+    character(LEN=FNAMEMAXLEN_) :: SENFILE, OutFileNC, RUNNAME
 
     integer, allocatable :: NLEGP(:), IXP(:, :)
     real, allocatable :: TAUP(:), ALBEDOP(:), LEGENP(:, :)
@@ -44,6 +56,17 @@ program SHDOMPP
                     ACCELFLAG, SOLACC, MAXITER, SPLITACC, &
                     FLUXFILE, FLUXPARM, RADFILE, MAXPAR, NZOUT, ZOUT, &
                     NMUOUT, MUOUT, NPHIOUT, PHIOUT)
+
+    !call shd_io__nmlInput(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
+    !    INSAVEFILE, OUTSAVEFILE, SENFILE,&
+    !    NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
+    !    IPFLAG, KDIST, DELTAM, GRIDTYPE,&
+    !    SRCTYPE, SOLARFLUX0, SOLARMU, SOLARAZ, SKYRAD,&
+    !    GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,&
+    !    ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
+    !    MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS, OUTFILES,&
+    !    OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
+    !    NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
 
     allocate (RADOUT(NZOUT, NMUOUT, NPHIOUT), RADOUTM(NZOUT, NMUOUT, NPHIOUT))
 
@@ -1421,7 +1444,7 @@ subroutine SPLIT_CELLS(NLAY, NPTS, MAXIG, IXP, IXG, TAUGSC, &
     end do
 
     if (NEWNPTS > NPTS) then
-        call SSORT(TAUGSC, IXG, NEWNPTS, 2)
+        call shd_util__ssort(TAUGSC, IXG, NEWNPTS, 2)
         NPTS = NEWNPTS
         IXP(:, :) = IXPN(:, :)
         ! Make sure that the IXG pointers are in the correct order
@@ -2491,289 +2514,6 @@ function INTHIGH(X)
     end do
     INTHIGH = SUM
 end function INTHIGH
-
-subroutine SSORT(X, Y, N, KFLAG)
-    ! ***BEGIN PROLOGUE  SSORT
-    ! ***PURPOSE  Sort an array and optionally make the same interchanges in
-    !             an auxiliary array.  The array may be sorted in increasing
-    !             or decreasing order.  A slightly modified QUICKSORT
-    !             algorithm is used.
-    ! ***LIBRARY   SLATEC
-    ! ***CATEGORY  N6A2B
-    ! ***TYPE      SINGLE PRECISION (SSORT-S, DSORT-D, ISORT-I)
-    ! ***KEYWORDS  SINGLETON QUICKSORT, SORT, SORTING
-    ! ***AUTHOR  Jones, R. E., (SNLA)
-    !            Wisniewski, J. A., (SNLA)
-    ! ***DESCRIPTION
-    !
-    !    SSORT sorts array X and optionally makes the same interchanges in
-    !    array Y.  The array X may be sorted in increasing order or
-    !    decreasing order.  A slightly modified quicksort algorithm is used.
-    !
-    !    Description of Parameters
-    !       X - array of values to be sorted   (usually abscissas)
-    !       Y - array to be (optionally) carried along
-    !       N - number of values in array X to be sorted
-    !       KFLAG - control parameter
-    !             =  2  means sort X in increasing order and carry Y along.
-    !             =  1  means sort X in increasing order (ignoring Y)
-    !             = -1  means sort X in decreasing order (ignoring Y)
-    !             = -2  means sort X in decreasing order and carry Y along.
-    !
-    ! ***REFERENCES  R. C. Singleton, Algorithm 347, An efficient algorithm
-    !                  for sorting with minimal storage, Communications of
-    !                  the ACM, 12, 3 (1969), pp. 185-187.
-    ! ***END PROLOGUE  SSORT
-    !      .. Scalar Arguments ..
-    integer KFLAG, N
-    !      .. Array Arguments ..
-    !       REAL X(*), Y(*)
-    real X(*)
-    integer Y(*)
-    !      .. Local Scalars ..
-    !       REAL R, T, TT, TTY, TY
-    real R, T, TT
-    integer TY, TTY
-    integer I, IJ, J, K, KK, L, M, NN
-    !      .. Local Arrays ..
-    integer IL(51), IU(51)
-    !      .. External Subroutines ..
-    !      .. Intrinsic Functions ..
-    intrinsic ABS, INT
-    ! ***First executable statement  SSORT
-    NN = N
-    if (NN .lt. 1) then
-        stop 'The number of values to be sorted is not positive.'
-    end if
-
-    KK = abs(KFLAG)
-    if (KK .ne. 1 .and. KK .ne. 2) then
-        stop 'The sort control parameter, K, is not 2, 1, -1, or -2.'
-    end if
-
-    !      Alter array X to get decreasing order if needed
-    if (KFLAG .le. -1) then
-        do 10 I = 1, NN
-            X(I) = -X(I)
-10      continue
-    end if
-
-    if (KK .eq. 2) GO TO 100
-
-    !      Sort X only
-    M = 1
-    I = 1
-    J = NN
-    R = 0.375e0
-
-20  if (I .eq. J) GO TO 60
-    if (R .le. 0.5898437e0) then
-        R = R + 3.90625e-2
-    else
-        R = R - 0.21875e0
-    end if
-
-30  K = I
-
-    !      Select a central element of the array and save it in location T
-    IJ = I + int((J - I)*R)
-    T = X(IJ)
-
-    !      If first element of array is greater than T, interchange with T
-    if (X(I) .gt. T) then
-        X(IJ) = X(I)
-        X(I) = T
-        T = X(IJ)
-    end if
-    L = J
-
-    !      If last element of array is less than than T, interchange with T
-    if (X(J) .lt. T) then
-        X(IJ) = X(J)
-        X(J) = T
-        T = X(IJ)
-
-        !         If first element of array is greater than T, interchange with T
-        if (X(I) .gt. T) then
-            X(IJ) = X(I)
-            X(I) = T
-            T = X(IJ)
-        end if
-    end if
-
-    !      Find an element in the second half of the array which is smaller
-    !      than T
-40  L = L - 1
-    if (X(L) .gt. T) GO TO 40
-
-    !      Find an element in the first half of the array which is greater
-    !      than T
-50  K = K + 1
-    if (X(K) .lt. T) GO TO 50
-
-    !      Interchange these elements
-    if (K .le. L) then
-        TT = X(L)
-        X(L) = X(K)
-        X(K) = TT
-        GO TO 40
-    end if
-
-    !      Save upper and lower subscripts of the array yet to be sorted
-    if (L - I .gt. J - K) then
-        IL(M) = I
-        IU(M) = L
-        I = K
-        M = M + 1
-    else
-        IL(M) = K
-        IU(M) = J
-        J = L
-        M = M + 1
-    end if
-    GO TO 70
-
-    !      Begin again on another portion of the unsorted array
-60  M = M - 1
-    if (M .eq. 0) GO TO 190
-    I = IL(M)
-    J = IU(M)
-
-70  if (J - I .ge. 1) GO TO 30
-    if (I .eq. 1) GO TO 20
-    I = I - 1
-
-80  I = I + 1
-    if (I .eq. J) GO TO 60
-    T = X(I + 1)
-    if (X(I) .le. T) GO TO 80
-    K = I
-
-90  X(K + 1) = X(K)
-    K = K - 1
-    if (T .lt. X(K)) GO TO 90
-    X(K + 1) = T
-    GO TO 80
-
-    !      Sort X and carry Y along
-100 M = 1
-    I = 1
-    J = NN
-    R = 0.375e0
-
-110 if (I .eq. J) GO TO 150
-    if (R .le. 0.5898437e0) then
-        R = R + 3.90625e-2
-    else
-        R = R - 0.21875e0
-    end if
-
-120 K = I
-
-    !      Select a central element of the array and save it in location T
-    IJ = I + int((J - I)*R)
-    T = X(IJ)
-    TY = Y(IJ)
-
-    !      If first element of array is greater than T, interchange with T
-    if (X(I) .gt. T) then
-        X(IJ) = X(I)
-        X(I) = T
-        T = X(IJ)
-        Y(IJ) = Y(I)
-        Y(I) = TY
-        TY = Y(IJ)
-    end if
-    L = J
-
-    !      If last element of array is less than T, interchange with T
-    if (X(J) .lt. T) then
-        X(IJ) = X(J)
-        X(J) = T
-        T = X(IJ)
-        Y(IJ) = Y(J)
-        Y(J) = TY
-        TY = Y(IJ)
-
-        !         If first element of array is greater than T, interchange with T
-        if (X(I) .gt. T) then
-            X(IJ) = X(I)
-            X(I) = T
-            T = X(IJ)
-            Y(IJ) = Y(I)
-            Y(I) = TY
-            TY = Y(IJ)
-        end if
-    end if
-
-    !      Find an element in the second half of the array which is smaller
-    !      than T
-130 L = L - 1
-    if (X(L) .gt. T) GO TO 130
-
-    !      Find an element in the first half of the array which is greater
-    !      than T
-140 K = K + 1
-    if (X(K) .lt. T) GO TO 140
-
-    !      Interchange these elements
-    if (K .le. L) then
-        TT = X(L)
-        X(L) = X(K)
-        X(K) = TT
-        TTY = Y(L)
-        Y(L) = Y(K)
-        Y(K) = TTY
-        GO TO 130
-    end if
-
-    !      Save upper and lower subscripts of the array yet to be sorted
-    if (L - I .gt. J - K) then
-        IL(M) = I
-        IU(M) = L
-        I = K
-        M = M + 1
-    else
-        IL(M) = K
-        IU(M) = J
-        J = L
-        M = M + 1
-    end if
-    GO TO 160
-
-    !      Begin again on another portion of the unsorted array
-150 M = M - 1
-    if (M .eq. 0) GO TO 190
-    I = IL(M)
-    J = IU(M)
-
-160 if (J - I .ge. 1) GO TO 120
-    if (I .eq. 1) GO TO 110
-    I = I - 1
-
-170 I = I + 1
-    if (I .eq. J) GO TO 150
-    T = X(I + 1)
-    TY = Y(I + 1)
-    if (X(I) .le. T) GO TO 170
-    K = I
-
-180 X(K + 1) = X(K)
-    Y(K + 1) = Y(K)
-    K = K - 1
-    if (T .lt. X(K)) GO TO 180
-    X(K + 1) = T
-    Y(K + 1) = TY
-    GO TO 170
-
-!      Clean up
-190 if (KFLAG .le. -1) then
-        do 200 I = 1, NN
-            X(I) = -X(I)
-200     continue
-    end if
-    return
-end
 
 subroutine ADD_IN_KDIST(NLAY, HEIGHTP, TAUP, ALBEDOP, &
                         NZCKD, ZCKD, GASABS, TAUPM, ALBEDOPM)

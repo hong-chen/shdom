@@ -681,7 +681,7 @@ real(RD_) function integralLow(X)
     ! Uses Taylor series expansion around x=0.
 
     real(RD_) :: X
-    integer N
+    integer :: N
     real(RD_) :: SUM, F, A(29)
     data A/0.0d0,&
         &0.0d0, 0.333333333333333333333d0,&
