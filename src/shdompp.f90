@@ -28,15 +28,12 @@ program SHDOMPP
     real, allocatable :: SFCPARMS(:), SFCPARMS_TMP(:)
 
     integer :: NLAY, ILAY, IPHASE
-    integer :: NUMITER
     integer :: NZOUT, NMUOUT, NPHIOUT, FLUXPARM
     integer :: NCASES, ICASE
     real    :: SFCTEMP
 
     real, allocatable :: SOLFLUX(:)
     real, allocatable :: XGRID(:), YGRID(:), ZGRID(:)
-    real, allocatable :: TEMP(:), PLANCK(:), EXTINCT(:), ALBEDO(:)
-    real, allocatable :: LEGEN(:)
     integer, allocatable :: GRIDPTR(:, :), NEIGHPTR(:, :), TREEPTR(:, :)
     integer*2, allocatable:: CELLFLAGS(:)
     real, allocatable :: GRIDPOS(:, :)
@@ -54,7 +51,6 @@ program SHDOMPP
     real, allocatable :: SUMFLUXES(:, :), SUMDIRFLUX(:), SUMFLUXDIV(:)
     real, allocatable :: SUMSHTERMS(:), SOURCE1OUT(:)
     real, allocatable :: SUMRADOUT(:), SUMVISOUT(:)
-    real, allocatable :: EXTINCTP(:)
     real, allocatable :: ALLFLUXES(:, :, :, :)
     real, allocatable :: ALLFLUXDIV(:, :, :), ALLSHTERMS(:, :, :, :)
     real, allocatable :: XALLGRID(:), YALLGRID(:)
@@ -71,9 +67,9 @@ program SHDOMPP
     integer :: NXSFC, NYSFC, NSFCPAR, NTOPPTS, NBOTPTS
     integer :: NG, SIDE, IG, ITER, I
     integer :: ML, MM, NLM, NSTLEG, NLEG, NANG, NPHI0MAX, NX1, NY1
-    integer :: NBPTS, NPTS, NCELLS, NSH, NBCELLS, OLDNPTS
+    integer :: NBPTS, NPTS, NSH, NBCELLS, OLDNPTS
     integer :: NRAD, IRAD, NXOUT, NYOUT, NVIS, IVIS, NSCAN, NPIX, NSHOUT
-    integer :: NCELLSTOT, NPTSTOT, NSHTOT
+    integer :: NPTSTOT, NSHTOT
     logical :: INRADFLAG, NEWGRIDFLAG
     logical :: BASEOUT, HIGHORDERRAD, MASTERPROC, VALIDBEAM
     logical :: RADIANCE_OUT, VISUAL_OUT
@@ -91,7 +87,7 @@ program SHDOMPP
     real :: SOLARFLUX0, SOLARMU, SOLARAZ, SKYRAD
     real :: GNDTEMP, GNDALBEDO, WAVENO(2), WAVELEN
     real :: SOLACC, SOLCRIT, SPLITACC, SHACC
-    integer :: MAXITER, NUMOUT
+    integer :: TOTITER, MAXITER, NUMOUT
     real :: MAX_TOTAL_MB, ADAPT_GRID_FACTOR
     real :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
 
@@ -169,6 +165,10 @@ program SHDOMPP
 
     NLEG = ML
     if (DELTAM) NLEG = ML + 1
+
+    NX1 = 1; NY1 = 1
+    NBPTS = NX1*NY1*NZ
+    NLM = (2*MM + 1)*(ML + 1) - MM*(MM + 1)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
@@ -225,13 +225,13 @@ program SHDOMPP
     allocate (ZOUT(NZOUT))
     ZOUT(1) = ZLEVELS_(NPZ_)
 
-    NMUOUT = 89
+    NMUOUT = 10
     allocate (MUOUT(NMUOUT))
     do I = 1, NMUOUT
         MUOUT(I) = cos(DTOR_*real(I))
     end do
 
-    NPHIOUT = 360
+    NPHIOUT = 10
     allocate (PHIOUT(NPHIOUT))
     do I = 1, NPHIOUT
         PHIOUT(I) = real(I)
@@ -311,7 +311,7 @@ program SHDOMPP
 
     ! picard iteration
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    NUMITER = 0
+    TOTITER = 0
 
     ! Loop over the k-distribution g's from low to high absorption
     do IG = 1, NG
@@ -322,7 +322,7 @@ program SHDOMPP
         call ADD_IN_KDIST(NLAY, HEIGHTP, TAUP, ALBEDOP, &
                           NZCKD_, ZCKD_, KABS(:, IG), TAUPM, ALBEDOPM)
 
-        call SOLVE_SHDOMPP(NLAY, MAXLEG, HEIGHTP, TEMPP, TAUPM, ALBEDOPM, &
+        call SOLVE_SHDOMPP(NLAY, NANG, MAXLEG, HEIGHTP, TEMPP, TAUPM, ALBEDOPM, &
                            NLEGP, LEGENP, SRCTYPE, SOLARFLUX, SOLARMU, &
                            UNITS, WAVELEN, WAVENO, SKYRAD, SFCTYPE(2:2), SFCPARMS, SFCTEMP, &
                            NMU, NPHI, MAXIG, MAXDELTAU, SPLITACC, SOLACC, &
@@ -331,7 +331,7 @@ program SHDOMPP
                            NZOUT, ZOUT, NMUOUT, MUOUT, NPHIOUT, PHIOUT, &
                            RADOUTM)
 
-        NUMITER = NUMITER + ITER
+        TOTITER = TOTITER + ITER
         if (KDIST) then
             call SUM_KDIST_OUTPUT(IG, DELG(IG), NLAY, TAUP, IXP, NPTS, TAUG, &
                                   HEIGHTP, HEIGHTG, FLUXUPM, FLUXUP, &
@@ -352,7 +352,7 @@ program SHDOMPP
     !call OUTPUT_RESULTS(NLAY, NPTS, NMU, NPHI, NG, &
     !                    PROPFILE, CKDFILE, SRCTYPE, SOLARFLUX, SOLARMU, &
     !                    SKYRAD, SFCTYPE, SFCTEMP, SFCPARMS, WAVELEN, WAVENO, &
-    !                    SPLITACC, SOLACC, MAXITER, NUMITER, &
+    !                    SPLITACC, SOLACC, MAXITER, TOTITER, &
     !                    IXP, HEIGHTG, FLUXUP, FLUXDN, MEANRAD, FLUXPARM, &
     !                    NZOUT, ZOUT, NMUOUT, MUOUT, NPHIOUT, PHIOUT, RADOUT, &
     !                    'F', FLUXFILE)
@@ -361,11 +361,54 @@ program SHDOMPP
     !    call OUTPUT_RESULTS(NLAY, NPTS, NMU, NPHI, NG, &
     !                        PROPFILE, CKDFILE, SRCTYPE, SOLARFLUX, SOLARMU, &
     !                        SKYRAD, SFCTYPE, SFCTEMP, SFCPARMS, WAVELEN, WAVENO, &
-    !                        SPLITACC, SOLACC, MAXITER, NUMITER, &
+    !                        SPLITACC, SOLACC, MAXITER, TOTITER, &
     !                        IXP, HEIGHTG, FLUXUP, FLUXDN, MEANRAD, FLUXPARM, &
     !                        NZOUT, ZOUT, NMUOUT, MUOUT, NPHIOUT, PHIOUT, RADOUT, &
     !                        'R', RADFILE)
     !end if
+
+    do I = 1, NUMOUT
+        if ((OUTTYPES(I) .eq. 'F') .or. (OUTTYPES(I) .eq. 'R')) then
+            if (SENFILE(1:4) .ne. 'NONE') then
+                NSH = 0
+                !print *, XGRID, YGRID, ZGRID, GRIDPOS
+                !print *, TREEPTR, GRIDPTR, CELLFLAGS
+                !print *, SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV
+                !print *, IRAD, SUMRADOUT, NSHOUT, SUMSHTERMS, SOURCE1OUT
+                print *, 'haha'
+
+                !call shd_io__outputResult(NSTOKES, NX, NY, NX1, NY1, NZ, NBPTS, NPTS, NPTS,&
+                !    NSH, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_, NMU, NPHI, NANG, NG,&
+                !    PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
+                !    BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
+                !    SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+                !    SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS,&
+                !    SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
+                !    XGRID, YGRID, ZGRID, GRIDPOS,&
+                !    TREEPTR, GRIDPTR, CELLFLAGS,&
+                !    EXTINCTPT, ALBEDOPT, LEGENPT, IPHASEPT, TEMPPT,&
+                !    SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV,&
+                !    IRAD, SUMRADOUT, NSHOUT, SUMSHTERMS, SOURCE1OUT,&
+                !    OUTTYPES(I), OUTPARMS(1, I), OUTFILES(I), SENPARMS)
+            !else
+            !    call shd_io__outputResult(NSTOKES, NX, NY, NX1, NY1, NZ, NBPTS, NPTS, NPTS,&
+            !        NSH, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_, NMU, NPHI, NANG, NG,&
+            !        PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
+            !        BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
+            !        SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+            !        SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS,&
+            !        SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
+            !        XGRID, YGRID, ZGRID, GRIDPOS,&
+            !        TREEPTR, GRIDPTR, CELLFLAGS,&
+            !        EXTINCTPT, ALBEDOPT, LEGENPT, IPHASEPT, TEMPPT,&
+            !        SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV,&
+            !        IRAD, SUMRADOUT, NSHOUT, SUMSHTERMS, SOURCE1OUT,&
+            !        OUTTYPES(I), OUTPARMS(1, I), OUTFILES(I))
+            end if
+        else
+            write (*, *) "Warning [shdompp]: shdompp does not support output type - ", OUTTYPES(I), ", skipping output ..."
+        end if
+    end do
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
@@ -396,7 +439,7 @@ program SHDOMPP
 
 end program SHDOMPP
 
-subroutine SOLVE_SHDOMPP(NLAY, MAXLEG, HEIGHTP, TEMPP, TAUP, ALBEDOP, &
+subroutine SOLVE_SHDOMPP(NLAY, NANG, MAXLEG, HEIGHTP, TEMPP, TAUP, ALBEDOP, &
                          NLEGP, LEGENP, SRCTYPE, SOLARFLUX, SOLARMU, &
                          UNITS, WAVELEN, WAVENO, SKYRAD, SFCTYPE, SFCPARMS, SFCTEMP, &
                          NMU, NPHI, MAXIG, MAXDELTAU, SPLITACC, SOLACC, &
