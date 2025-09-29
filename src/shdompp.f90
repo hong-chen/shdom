@@ -180,9 +180,7 @@ program SHDOMPP
     if (NUMPHASE_ .eq. 0) MAXPGL = MAXPG*(MAXLEG + 1)*NSTLEG
     MAXNZ = NPZ_
 
-    allocate (ZLEVELS_(NPZ_))
-    allocate (TEMPPT(MAXPG), EXTINCTPT(MAXPG), ALBEDOPT(MAXPG))
-    allocate (IPHASEPT(MAXPG), LEGENPT(MAXPGL))
+    allocate (ZLEVELS_(NPZ_), TEMPPT(MAXPG), EXTINCTPT(MAXPG), ALBEDOPT(MAXPG), LEGENPT(MAXPGL), IPHASEPT(MAXPG))
 
     call shd_io__readPrp(PROPFILE, NPX_, NPY_, NPZ_,&
         &NSTLEG, MAXLEG, NLEG, MAXNZ, MAXPG, MAXPGL, DELTAM,&
@@ -236,15 +234,14 @@ program SHDOMPP
     do I = 1, NPHIOUT
         PHIOUT(I) = real(I)
     end do
-
-    allocate (TAUPM(NLAY), ALBEDOPM(NLAY), IXP(2, NLAY))
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
+    allocate (TAUPM(NLAY), ALBEDOPM(NLAY))
     allocate (RADOUT(NZOUT, NMUOUT, NPHIOUT), RADOUTM(NZOUT, NMUOUT, NPHIOUT))
 
     ! Guess the maximum size of the adaptive grid and allocate arrays
     MAXIG = nint(SPLITTING_FACTOR*(NLAY + sum(TAUP(:)*ALBEDOP(:))/MAXDELTAU))
-    allocate (HEIGHTG(MAXIG), TAUG(MAXIG))
+    allocate (IXP(2, NLAY), HEIGHTG(MAXIG), TAUG(MAXIG))
     allocate (FLUXUP(MAXIG), FLUXDN(MAXIG), MEANRAD(MAXIG))
     allocate (FLUXUPM(MAXIG), FLUXDNM(MAXIG), MEANRADM(MAXIG))
 
@@ -253,6 +250,8 @@ program SHDOMPP
     if (SFCFILE(1:4) .eq. 'NONE') then
         SFCTYPE = 'FL'
         SFCTEMP = GNDTEMP
+        allocate (SFCPARMS(1))
+        SFCPARMS(1) = GNDALBEDO
     else
         call shd_io__readSfcSize(SFCFILE, MAXSFCPTS, MAXSFCPARS)
         allocate (SFCPARMS_TMP(MAXSFCPARS*MAXSFCPTS), SFCPARMS(MAXSFCPARS-1))
@@ -269,6 +268,10 @@ program SHDOMPP
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! If doing a k-distribution then get the band info from the CKD file
     if (KDIST) then
+
+        !call READ_CKD_SIZE(CKDFILE, WAVENO, NG, NZCKD)
+        !call READ_CKD(CKDFILE, WAVENO, NG, NZCKD, SOLFLUX, DELG, ZCKD, KABS)
+
         call shd_io__readCkdSize(CKDFILE, WAVENO, NG, NZCKD_)
 
         allocate (ZCKD_(NZCKD_), GASABS_(NZCKD_), SOLFLUX(NG), DELG(NG), KABS(NZCKD_, NG))
@@ -296,16 +299,12 @@ program SHDOMPP
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-        !call READ_CKD_SIZE(CKDFILE, WAVENO, NG, NZCKD)
-        !call READ_CKD(CKDFILE, WAVENO, NG, NZCKD, SOLFLUX, DELG, ZCKD, KABS)
 
-    !WRITE (*,*) 'Number of times to run SHDOMPP routine for timing'
-    !READ (*,*) NCASES
-    !WRITE (*,*) NCASES
-    !DO ICASE = 1, NCASES
+    ! picard iteration
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    NUMITER = 0
 
     ! Loop over the k-distribution g's from low to high absorption
-    NUMITER = 0
     do IG = 1, NG
         SOLARFLUX = SOLFLUX(IG)*SOLARFLUX0*abs(SOLARMU)
         write (6, '(A,I2,A,I2,A)') 'Message [shdompp]: Starting ', IG, '/', NG, ' (ig/Ng) ...'
@@ -336,8 +335,7 @@ program SHDOMPP
             RADOUT(:, :, :) = RADOUTM(:, :, :)
         end if
     end do
-
-    !end do
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
     !call OUTPUT_RESULTS(NLAY, NPTS, NMU, NPHI, NG, &
     !                    PROPFILE, CKDFILE, SRCTYPE, SOLARFLUX, SOLARMU, &
@@ -357,15 +355,27 @@ program SHDOMPP
     !                        'R', RADFILE)
     !end if
 
-    deallocate (HEIGHTP, TEMPP, TAUP, ALBEDOP, TAUPM, ALBEDOPM, NLEGP, LEGENP)
-    deallocate (IXP, HEIGHTG, TAUG, FLUXUP, FLUXDN, MEANRAD, RADOUT)
-    deallocate (FLUXUPM, FLUXDNM, MEANRADM, RADOUTM)
-    deallocate (DELG, KABS)
+    ! layer property
+    deallocate (HEIGHTP, TEMPP, TAUP, ALBEDOP, NLEGP, LEGENP, TAUPM, ALBEDOPM)
 
+    ! grid property
+    deallocate (IXP, HEIGHTG, TAUG, FLUXUP, FLUXDN, MEANRAD, RADOUT)
+
+    ! mean property
+    deallocate (FLUXUPM, FLUXDNM, MEANRADM, RADOUTM)
+
+    ! CKD
+    deallocate (SOLFLUX, DELG)
+    if (KDIST) deallocate (ZCKD_, GASABS_, KABS)
+
+    ! SFC
     if (allocated(SFCPARMS)) deallocate (SFCPARMS)
+
+    ! SEN
     if (allocated(SENPARMS)) deallocate (SENPARMS)
-    deallocate (TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, IPHASEPT)
-    deallocate (ZLEVELS_)
+
+    ! PRP
+    deallocate (ZLEVELS_, TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, IPHASEPT)
 
 end program SHDOMPP
 
