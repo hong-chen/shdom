@@ -593,7 +593,7 @@ subroutine SOLVE_SHDOMPP(NLAY, MAXLEG, HEIGHTP, TEMPP, TAUP, ALBEDOP, &
             call PATH_INTEGRATION(NLAY, NPTS, IXP, IXG, TAUGSC, &
                                   NMU, NPHI0MAX, NPHI0, &
                                   SRCTYPE, SOLARFLUX, SOLARMU, SKYRAD, &
-                                  SFCTYPE, SFCPARMS, SFCTEMP, WAVELEN, WAVENO, &
+                                  SFCTYPE, SFCPARMS, SFCTEMP, UNITS, WAVELEN, WAVENO, &
                                   MU, PHI, WTDO, SRCINT, LASTNPTS, &
                                   FLUXUP, FLUXDN, MEANRAD, DOSOURCE, RADIANCE)
             PREVNPTS = NPTS
@@ -667,7 +667,7 @@ subroutine SOLVE_SHDOMPP(NLAY, MAXLEG, HEIGHTP, TEMPP, TAUP, ALBEDOP, &
                               NPTS, HEIGHTG, TAUG, TAUGSC, IXP, IXG, &
                               ML, MM, NLM, NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, &
                               SRCTYPE, SOLARFLUX, SOLARMU, &
-                              SKYRAD, WAVELEN, WAVENO, SFCTEMP, &
+                              SKYRAD, UNITS, WAVELEN, WAVENO, SFCTEMP, &
                               SFCTYPE, SFCPARMS, SOURCE, RADIANCE, &
                               NZOUT, ZOUT, NMUOUT, MUOUT, NPHIOUT, PHIOUT, &
                               RADOUT)
@@ -816,6 +816,9 @@ subroutine PREPARE_SOURCE(NLAY, TAUPSC, ALBEDOSC, TEMPP, LEGENSC, &
     !   S_0/\mu_0 e^{-\tau/\mu_0} Y_{lm}(\mu_0,\phi_0) {\omega \chi_l \over 2l+1}
     ! where S_0 is the solar flux on a horizontal plane, \chi_l are the Legendre
     ! coefficients, and \tau is the optical depth at the level.
+
+    use shd_util
+
     implicit none
     integer, intent(IN) :: NLAY, ML, MM, NLM, NPTS
     integer, intent(IN) :: IXP(2, NLAY), IXG(NPTS)
@@ -852,8 +855,9 @@ subroutine PREPARE_SOURCE(NLAY, TAUPSC, ALBEDOSC, TEMPP, LEGENSC, &
                         U = (I - IXP(1, LAY))/FLOAT(IXP(2, LAY) - IXP(1, LAY))
                     end if
                     TEMP = TEMPP(LAY) + U*(TEMPP(LAY + 1) - TEMPP(LAY))
+                    call shd_util__computePlanck(TEMP, UNITS, WAVENO, WAVELEN, PLANCKFUNC)
                     CONSTSOURCE(1, K) = C*(1.0 - ALBEDOSC(LAY)) &
-                                        *PLANCKFUNC(WAVELEN, WAVENO, TEMP)
+                                        *PLANCKFUNC
                 end if
                 if (SRCTYPE /= 'T') then
                     D = S0*exp(-TAUGSC(I)/abs(SOLARMU))
@@ -867,35 +871,6 @@ subroutine PREPARE_SOURCE(NLAY, TAUPSC, ALBEDOSC, TEMPP, LEGENSC, &
         end do
     end do
 end subroutine PREPARE_SOURCE
-
-function PLANCKFUNC(WAVELEN, WAVENO, TEMP)
-    ! Calculates the Planck blackbody radiance. If WAVELEN<=0 then doing a
-    ! spectral band integration and the Planck blackbody radiance in
-    ! [Watts /(meter^2 ster)] over a wavenumber range [cm^-1] (WAVENO) is
-    ! returned.  Otherwise, the Planck blackbody radiance in
-    ! [Watts /(meter^2 ster micron)] for a temperature in [Kelvins] at
-    ! a wavelength (WAVELEN) in [microns] is returned.
-
-    use shd_util
-
-    implicit none
-    real, intent(IN) :: WAVELEN, WAVENO(2), TEMP
-    real :: PLANCKFUNC
-    double precision :: X1, X2, F
-
-    if (TEMP > 0.0) then
-        if (WAVELEN > 0) then
-            PLANCKFUNC = 1.1911e8/WAVELEN**5/(exp(1.4388e4/(WAVELEN*TEMP)) - 1)
-        else
-            X1 = 1.4388d0*WAVENO(1)/TEMP
-            X2 = 1.4388d0*WAVENO(2)/TEMP
-            call shd_util__integratePlanck(X1, X2, F)
-            PLANCKFUNC = 1.1911d-8*(TEMP/1.4388d0)**4*F
-        end if
-    else
-        PLANCKFUNC = 0.0
-    end if
-end function PLANCKFUNC
 
 subroutine MAKE_ANGLE_SET(NMU, NPHI, NCS, NPHI0MAX, ITYPE, &
                           NPHI0, MU, PHI, WTMU, WTDO, FFTFLAG, NANG)
@@ -1312,7 +1287,7 @@ end subroutine ACCELERATE_SOLUTION
 subroutine PATH_INTEGRATION(NLAY, NPTS, IXP, IXG, TAUGSC, &
                             NMU, NPHI0MAX, NPHI0, &
                             SRCTYPE, SOLARFLUX, SOLARMU, SKYRAD, &
-                            SFCTYPE, SFCPARMS, SFCTEMP, WAVELEN, WAVENO, &
+                            SFCTYPE, SFCPARMS, SFCTEMP, UNITS, WAVELEN, WAVENO, &
                             MU, PHI, WTDO, SRCINT, LASTNPTS, &
                             FLUXUP, FLUXDN, MEANRAD, DOSOURCE, RADIANCE)
     ! Performs the path integrations through the medium specified by
@@ -1331,6 +1306,9 @@ subroutine PATH_INTEGRATION(NLAY, NPTS, IXP, IXG, TAUGSC, &
     ! boundary radiance must be computed for each upwelling ordinate, while
     ! for the Lambertian surface the boundary radiances can be computed just
     ! once, since they are isotropic.
+
+    use shd_util
+
     implicit none
     integer, intent(IN) :: NLAY, NPTS, IXP(2, NLAY), IXG(NPTS)
     integer, intent(IN) :: NMU, NPHI0MAX, NPHI0(NMU)
@@ -1342,10 +1320,10 @@ subroutine PATH_INTEGRATION(NLAY, NPTS, IXP, IXG, TAUGSC, &
     real, intent(IN) :: TAUGSC(NPTS), DOSOURCE(NPHI0MAX, NMU, NPTS)
     real, intent(OUT) :: FLUXUP(NPTS), FLUXDN(NPTS), MEANRAD(NPTS)
     real, intent(OUT) :: RADIANCE(NPHI0MAX, NMU, NPTS)
-    character(LEN=1), intent(IN) :: SRCTYPE, SFCTYPE
+    character(LEN=1), intent(IN) :: SRCTYPE, SFCTYPE, UNITS
 
     integer :: LAY, I, I1, I2, J, K, IPHI, IMU, M, N
-    real    :: PI, TEMP, SFCPLANCK, PLANCKFUNC, ALB
+    real    :: PI, TEMP, SFCPLANCK, ALB
     real    :: DIRFLUXSFC, TOPRAD, BOTRAD
     double precision, allocatable :: A(:, :), B(:, :), C(:, :), D(:, :), E(:)
     double precision, allocatable :: T(:), T1(:), T3(:), T4(:), TR(:)
@@ -1426,7 +1404,7 @@ subroutine PATH_INTEGRATION(NLAY, NPTS, IXP, IXG, TAUGSC, &
     ! Make the isotropic radiances for the top boundary
     if (SRCTYPE .eq. 'T') then
         TEMP = SKYRAD
-        TOPRAD = PLANCKFUNC(WAVELEN, WAVENO, TEMP)
+        call shd_util__computePlanck(TEMP, UNITS, WAVENO, WAVELEN, TOPRAD)
     else
         TOPRAD = SKYRAD
     end if
@@ -1479,7 +1457,7 @@ subroutine PATH_INTEGRATION(NLAY, NPTS, IXP, IXG, TAUGSC, &
     end if
     SFCPLANCK = 0.0
     if (SRCTYPE /= 'S') then
-        SFCPLANCK = PLANCKFUNC(WAVELEN, WAVENO, SFCTEMP)
+        call shd_util__computePlanck(SFCTEMP, UNITS, WAVENO, WAVELEN, SFCPLANCK)
     end if
 
     ! For a Lambertian surface calculate the isotropic surface radiance
@@ -1775,18 +1753,21 @@ subroutine COMPUTE_RADIANCE(NLAY, ALBEDOSC, LEGENSC, &
                             NPTS, HEIGHTG, TAUG, TAUGSC, IXP, IXG, &
                             ML, MM, NLM, NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, &
                             SRCTYPE, SOLARFLUX, SOLARMU, &
-                            SKYRAD, WAVELEN, WAVENO, SFCTEMP, &
+                            SKYRAD, UNITS, WAVELEN, WAVENO, SFCTEMP, &
                             SFCTYPE, SFCPARMS, SOURCE, RADIANCE, &
                             NZOUT, ZOUT, NMUOUT, MUOUT, NPHIOUT, PHIOUT, &
                             RADOUT)
     ! Computes the radiances for the specified tau's, mu's, and phi's.
+
+    use shd_util
+
     implicit none
     integer, intent(IN) :: NLAY, MAXLEG, NLEGP(NLAY)
     integer, intent(IN) :: NPTS, IXP(2, NLAY), IXG(NPTS)
     integer, intent(IN) :: ML, MM, NLM, NMU, NPHI0MAX, NPHI0(NMU)
     integer, intent(IN) :: NZOUT, NMUOUT, NPHIOUT
     logical, intent(IN) :: DELTAM
-    character(LEN=1), intent(IN) :: SRCTYPE, SFCTYPE
+    character(LEN=1), intent(IN) :: SRCTYPE, SFCTYPE, UNITS
     real, intent(IN) :: ALBEDOSC(NLAY), LEGENSC(0:Ml, NLAY)
     real, intent(IN) :: LEGENP(0:MAXLEG, NLAY)
     real, intent(IN) :: HEIGHTG(NPTS), TAUG(NPTS), TAUGSC(NPTS)
@@ -1799,7 +1780,7 @@ subroutine COMPUTE_RADIANCE(NLAY, ALBEDOSC, LEGENSC, &
 
     integer :: I, J, K, L
     real    :: ZDIF, RADDEG, PHIRAD
-    real    :: DIRFLUXSFC, SFCPLANCK, BNDRAD, PLANCKFUNC
+    real    :: DIRFLUXSFC, SFCPLANCK, BNDRAD
     integer, allocatable :: LZOUT(:)
     real, allocatable :: DIRFLUX(:), SOURCE1(:), RADVEC(:)
 
@@ -1828,7 +1809,7 @@ subroutine COMPUTE_RADIANCE(NLAY, ALBEDOSC, LEGENSC, &
             DIRFLUXSFC = SOLARFLUX*exp(-TAUGSC(IXP(2, NLAY))/abs(SOLARMU))
             SFCPLANCK = 0.0
         else
-            SFCPLANCK = PLANCKFUNC(WAVELEN, WAVENO, SFCTEMP)
+            call shd_util__computePlanck(SFCTEMP, UNITS, WAVENO, WAVELEN, SFCPLANCK)
         end if
     end if
 
