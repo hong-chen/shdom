@@ -18,7 +18,6 @@ program SHDOMPP
     real, parameter :: MAXDELTAU = 1.0
     real, parameter :: SPLITTING_FACTOR = 10.0
     logical, parameter :: PRNT = .true. ! True for iteration printing
-    !LOGICAL, PARAMETER :: PRNT=.FALSE.
 
     integer, parameter :: MAXPAR = 100 ! Max array size for user input arrays
     integer, parameter :: MAXOUT = 20
@@ -347,6 +346,9 @@ program SHDOMPP
     end do
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
+
+    ! output data
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     !call OUTPUT_RESULTS(NLAY, NPTS, NMU, NPHI, NG, &
     !                    PROPFILE, CKDFILE, SRCTYPE, SOLARFLUX, SOLARMU, &
     !                    SKYRAD, SFCTYPE, SFCTEMP, SFCPARMS, WAVELEN, WAVENO, &
@@ -364,7 +366,11 @@ program SHDOMPP
     !                        NZOUT, ZOUT, NMUOUT, MUOUT, NPHIOUT, PHIOUT, RADOUT, &
     !                        'R', RADFILE)
     !end if
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
+
+    ! deallocate array
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     ! layer property
     deallocate (HEIGHTP, TEMPP, TAUP, ALBEDOP, NLEGP, LEGENP, TAUPM, ALBEDOPM)
 
@@ -386,6 +392,7 @@ program SHDOMPP
 
     ! PRP
     deallocate (ZLEVELS_, TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, IPHASEPT)
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
 end program SHDOMPP
 
