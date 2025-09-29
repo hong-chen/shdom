@@ -129,6 +129,7 @@ program SHDOMPP
         NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
+
     ! process input parameters
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! set calculation accuracy (1.0e-4 to 1.0e-8)
@@ -171,6 +172,7 @@ program SHDOMPP
     if (DELTAM) NLEG = ML + 1
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
+
     ! read PROPFILE
     !╭────────────────────────────────────────────────────────────────────────────╮!
     call shd_io__readPrpSize(PROPFILE, NSTLEG, NLEG, NPX_, NPY_, NPZ_,&
@@ -187,6 +189,7 @@ program SHDOMPP
         &PROPTYPE, DELX_, DELY_, ZLEVELS_, MAXASYM,&
         &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, NUMPHASE_, IPHASEPT)
     !╰────────────────────────────────────────────────────────────────────────────╯!
+
 
     ! process layer property
     !╭────────────────────────────────────────────────────────────────────────────╮!
@@ -236,6 +239,9 @@ program SHDOMPP
     end do
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
+
+    ! allocate array
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     allocate (TAUPM(NLAY), ALBEDOPM(NLAY))
     allocate (RADOUT(NZOUT, NMUOUT, NPHIOUT), RADOUTM(NZOUT, NMUOUT, NPHIOUT))
 
@@ -244,6 +250,8 @@ program SHDOMPP
     allocate (IXP(2, NLAY), HEIGHTG(MAXIG), TAUG(MAXIG))
     allocate (FLUXUP(MAXIG), FLUXDN(MAXIG), MEANRAD(MAXIG))
     allocate (FLUXUPM(MAXIG), FLUXDNM(MAXIG), MEANRADM(MAXIG))
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
 
     ! read SFCFILE
     !╭────────────────────────────────────────────────────────────────────────────╮!
@@ -263,6 +271,7 @@ program SHDOMPP
         deallocate (SFCPARMS_TMP)
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
+
 
     ! read CKDFILE
     !╭────────────────────────────────────────────────────────────────────────────╮!
@@ -289,6 +298,7 @@ program SHDOMPP
         NZCKD_ = 0
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
+
 
     ! read SENFILE
     !╭────────────────────────────────────────────────────────────────────────────╮!
