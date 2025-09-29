@@ -211,7 +211,7 @@ program SHDOMPP
     TEMPP(1:NPZ_) = TEMPPT(NPZ_:1:-1)
 
     allocate (TAUP(NLAY), ALBEDOP(NLAY))
-    TAUP(1:NLAY) = EXTINCTPT(NLAY:1:-1)*(HEIGHTP(1:NLAY)-HEIGHTP(2:NPZ_))
+    TAUP(1:NLAY) = EXTINCTPT(NLAY+1:2:-1)*(HEIGHTP(1:NLAY)-HEIGHTP(2:NPZ_))
     ALBEDOP(1:NLAY) = ALBEDOPT(NLAY:1:-1)
 
     allocate (NLEGP(NLAY), LEGENP(0:MAXLEG, NLAY))
@@ -252,13 +252,15 @@ program SHDOMPP
     !╭────────────────────────────────────────────────────────────────────────────╮!
     if (SFCFILE(1:4) .eq. 'NONE') then
         SFCTYPE = 'FL'
+        SFCTEMP = GNDTEMP
     else
         call shd_io__readSfcSize(SFCFILE, MAXSFCPTS, MAXSFCPARS)
-        allocate (SFCPARMS_TMP(MAXSFCPARS*MAXSFCPTS), SFCPARMS(MAXSFCPARS))
+        allocate (SFCPARMS_TMP(MAXSFCPARS*MAXSFCPTS), SFCPARMS(MAXSFCPARS-1))
         call shd_io__readSfc(SFCFILE, MAXSFCPTS, MAXSFCPARS,&
             &SFCTYPE, NXSFC, NYSFC, DELXSFC, DELYSFC,&
             &NSFCPAR, SFCPARMS_TMP, GNDTEMP, GNDALBEDO)
-        SFCPARMS(1:MAXSFCPARS) = SFCPARMS_TMP(1:MAXSFCPARS)
+        SFCTEMP = SFCPARMS_TMP(1)
+        SFCPARMS(1:MAXSFCPARS-1) = SFCPARMS_TMP(2:MAXSFCPARS)
         deallocate (SFCPARMS_TMP)
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
@@ -2015,8 +2017,6 @@ subroutine VARIABLE_BRDF_SURFACE(NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, &
     if (SRCTYPE == 'T') then
         BOTRAD = 0.0
     else
-        !call SURFACE_BRDF(SFCTYPE, SFCPARMS, MU2, PHI2, SOLARMU, SOLARAZ, &
-        !                  REFLECT)
         call shd_sfc__brdfSurface(SFCTYPE, SFCPARMS, WAVELEN, MU2, PHI2, SOLARMU, SOLARAZ, 1, REFLECT_TMP)
         REFLECT = REFLECT_TMP(1, 1)
         BOTRAD = OPI*REFLECT*DIRFLUXSFC
@@ -2025,8 +2025,6 @@ subroutine VARIABLE_BRDF_SURFACE(NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, &
     ! Integrate over the incident discrete ordinate directions (JMU,JPHI)
     do JMU = 1, NMU/2
         do JPHI = 1, NPHI0(JMU)
-            !call SURFACE_BRDF(SFCTYPE, SFCPARMS, MU2, PHI2, &
-            !                  MU(JMU), PHI(JPHI, JMU), REFLECT)
             call shd_sfc__brdfSurface(SFCTYPE, SFCPARMS, WAVELEN, MU2, PHI2, MU(JMU), PHI(JPHI, JMU), 1, REFLECT_TMP)
             REFLECT = REFLECT_TMP(1, 1)
             W = OPI*abs(MU(JMU))*WTDO(JMU, JPHI)
@@ -2034,6 +2032,8 @@ subroutine VARIABLE_BRDF_SURFACE(NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, &
                      + W*(1 - REFLECT)*SFCPLANCK
         end do
     end do
+
+    return
 
 end subroutine VARIABLE_BRDF_SURFACE
 
@@ -3005,7 +3005,7 @@ subroutine ADD_IN_KDIST(NLAY, HEIGHTP, TAUP, ALBEDOP, &
             else
                 ALBEDOPM(LAY) = 0.0
             end if
-            !print *, 'add_kdist: ',LAY,GASTAU,TAUPM(LAY),ALBEDOPM(LAY)
+            print *, 'add_kdist: ',LAY,GASTAU,TAUPM(LAY),ALBEDOPM(LAY)
         end do
     end if
 
