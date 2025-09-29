@@ -20,14 +20,14 @@ program SHDOMPP
     logical, parameter :: PRNT = .true. ! True for iteration printing
     !LOGICAL, PARAMETER :: PRNT=.FALSE.
 
-    integer, parameter   :: MAXPAR = 100 ! Max array size for user input arrays
-    real                 :: ZOUT(MAXPAR), MUOUT(MAXPAR), PHIOUT(MAXPAR)
-    real                 :: SFCPARMS(MAXPAR)
-
+    integer, parameter :: MAXPAR = 100 ! Max array size for user input arrays
     integer, parameter :: MAXOUT = 20
-    real      :: OUTPARMS(MAXPAR, MAXOUT)
+    real :: OUTPARMS(MAXPAR, MAXOUT)
     character(len=1) :: OUTTYPES(MAXOUT)
     character(len=FNAMEMAXLEN_) :: OUTFILES(MAXOUT)
+
+    real :: ZOUT(MAXPAR), MUOUT(MAXPAR), PHIOUT(MAXPAR)
+    real, allocatable :: SFCPARMS(:), SFCPARMS_TMP(:)
 
     integer :: NLAY
     integer :: NUMITER
@@ -57,46 +57,48 @@ program SHDOMPP
     real, allocatable :: SUMFLUXES(:, :), SUMDIRFLUX(:), SUMFLUXDIV(:)
     real, allocatable :: SUMSHTERMS(:), SOURCE1OUT(:)
     real, allocatable :: SUMRADOUT(:), SUMVISOUT(:)
-    real, allocatable :: TEMPPT(:), EXTINCTPT(:), ALBEDOPT(:)
-    real, allocatable :: LEGENPT(:)
-    integer*2, allocatable :: IPHASEPT(:)
+    real, allocatable :: EXTINCTP(:)
     real, allocatable :: ALLFLUXES(:, :, :, :)
     real, allocatable :: ALLFLUXDIV(:, :, :), ALLSHTERMS(:, :, :, :)
     real, allocatable :: XALLGRID(:), YALLGRID(:)
+    real, allocatable :: TEMPPT(:), EXTINCTPT(:), ALBEDOPT(:), LEGENPT(:)
+    integer*2, allocatable :: IPHASEPT(:)
 
     integer :: MAXPG, MAXIG, MAXIC, MAXIV, MAXIDO, MAXNZ, MAXNG
     integer :: MAXLEG, MAXPGL, MAXIGL
     integer :: MAXNBC, MAXBCRAD
     integer :: MAXSFCPTS, MAXSFCPARS, BIG_ARRAYS
     real :: MEMWORD, WANTMEM
-    real :: MAX_TOTAL_MB, ADAPT_GRID_FACTOR
-    real :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
     real :: MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
 
-    integer :: NSTOKES, NX, NY, NZ, NX1, NY1
-    integer :: NXT, NYT, NPXT, NPYT, MAXPGT, MAXPGLT
     integer :: NXSFC, NYSFC, NSFCPAR, NTOPPTS, NBOTPTS
-    integer :: NG, SIDE
-    integer :: ML, MM, NLM, NSTLEG, NLEG, NANG, NMU, NPHI, NPHI0MAX
+    integer :: NG, SIDE, IG, ITER, I
+    integer :: ML, MM, NLM, NSTLEG, NLEG, NANG, NPHI0MAX, NX1, NY1
     integer :: NBPTS, NPTS, NCELLS, NSH, NBCELLS, OLDNPTS
-    integer :: MAXITER, ITER, TOTITER, IG, I, NUMOUT, BCFLAG, IPFLAG
     integer :: NRAD, IRAD, NXOUT, NYOUT, NVIS, IVIS, NSCAN, NPIX, NSHOUT
     integer :: NCELLSTOT, NPTSTOT, NSHTOT
-    logical :: KDIST, INRADFLAG, NEWGRIDFLAG, DELTAM, ACCELFLAG
+    logical :: INRADFLAG, NEWGRIDFLAG
     logical :: BASEOUT, HIGHORDERRAD, MASTERPROC, VALIDBEAM
     logical :: RADIANCE_OUT, VISUAL_OUT
     logical :: FLUX_OUT, FLUXDIV_OUT, SH_OUT, SOURCE_OUT
-    real :: SOLARFLUX0, SOLARFLUX, SOLARMU, SOLARAZ
-    real :: GNDTEMP, GNDALBEDO, SKYRAD, WAVENO(2), WAVELEN
-    real :: SOLACC, SOLCRIT, SPLITACC, SHACC
     real :: DELXSFC, DELYSFC, MAXASYM, REDUCE_RATIO
     real :: UNIFZLEV, XO, YO, ZO, DIRPATH
-    character(len=1) :: SRCTYPE, UNITS
-    character(len=1) :: GRIDTYPE, PROPTYPE
     character(len=2) :: SFCTYPE
-    character(len=FNAMEMAXLEN_) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
-    character(len=FNAMEMAXLEN_) :: SENFILE, OutFileNC, RUNNAME
     integer :: NSENDATA, NSENPAR
+
+    character(len=FNAMEMAXLEN_) :: RUNNAME, PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE, SENFILE, OutFileNC
+    integer :: NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG, IPFLAG
+    logical :: KDIST, DELTAM, ACCELFLAG
+    character(len=1) :: GRIDTYPE, SRCTYPE, UNITS
+    character(len=1) :: PROPTYPE
+    real :: SOLARFLUX0, SOLARMU, SOLARAZ, SKYRAD
+    real :: GNDTEMP, GNDALBEDO, WAVENO(2), WAVELEN
+    real :: SOLACC, SOLCRIT, SPLITACC, SHACC
+    integer :: MAXITER, NUMOUT
+    real :: MAX_TOTAL_MB, ADAPT_GRID_FACTOR
+    real :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
+
+    real :: SOLARFLUX
 
     integer :: count_start, count_rate, count_max
     integer :: count_end
@@ -114,13 +116,8 @@ program SHDOMPP
     real, allocatable :: FLUXUP(:), FLUXDN(:), MEANRAD(:), RADOUT(:, :, :)
     real, allocatable :: FLUXUPM(:), FLUXDNM(:), MEANRADM(:), RADOUTM(:, :, :)
 
-    !call USER_INPUT(PROPFILE, CKDFILE, KDIST, NMU, NPHI, &
-    !                SRCTYPE, SOLARFLUX, SOLARMU, SKYRAD, &
-    !                SFCTEMP, SFCTYPE, SFCPARMS, WAVELEN, WAVENO, &
-    !                ACCELFLAG, SOLACC, MAXITER, SPLITACC, &
-    !                FLUXFILE, FLUXPARM, RADFILE, MAXPAR, NZOUT, ZOUT, &
-    !                NMUOUT, MUOUT, NPHIOUT, PHIOUT)
-
+    ! namelist input
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     call shd_io__nmlInput(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
         INSAVEFILE, OUTSAVEFILE, SENFILE,&
         NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
@@ -131,27 +128,99 @@ program SHDOMPP
         MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS, OUTFILES,&
         OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
         NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    allocate (RADOUT(NZOUT, NMUOUT, NPHIOUT), RADOUTM(NZOUT, NMUOUT, NPHIOUT))
+    ! process input parameters
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    ! set calculation accuracy (1.0e-4 to 1.0e-8)
+    RACC_ = max(REPS_, min(SOLACC*0.1, 1.0e-4))
 
-    ! Find out the size of the property grid arrays for allocating arrays
-    !call READ_PROPERTY_SIZE(PROPFILE, NLAY, MAXLEG)
+    ! The number of Stokes parameters (and components of the real
+    !   generalized spherical harmonics vectors) can be 1, 3, or 4.
+    NSTOKES = max(1, min(4, NSTOKES))
+    if (NSTOKES .eq. 2) NSTOKES = 3
 
+    ! X, Y, Z grids (force NX&NY to 1 and IPFLAG to 3)
+    NX = 1; NY = 1; NZ = max(2, NZ)
+    IPFLAG = 3
+
+    ! Make ML and MM from NMU and NPHI
+    !   NMU : number of discrete ordinate zenith angles in both hemispheres
+    !   NPHI: number of discrete ordinate azimuth angles in 2*pi
+    !   ML  : The maximum L of the spherical harmonic truncation
+    !   MM  : The maximum M of the spherical harmonic truncation
+    NMU  = max(2, 2*int((NMU + 1)/2)) ! force NMU an even number
+    NPHI = max(1, NPHI)
+
+    ML = NMU - 1
+    MM = max(0, int(NPHI/2) - 1)
+
+    ! NLEG: The number of Legendre series phase function terms used in the solution procedure
+    NLEG = ML
+    if (DELTAM) NLEG = ML + 1
+
+    ! NSTLEG is the number of phase function elements used (1 or 6)
+    !   Also used for the number of unique elements of the generalized
+    !   spherical harmonics matrices.
+    if (NSTOKES .eq. 1) then
+        NSTLEG = 1
+    else
+        NSTLEG = 6
+    end if
+
+    NLEG = ML
+    if (DELTAM) NLEG = ML + 1
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+    ! read PROPFILE
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     call shd_io__readPrpSize(PROPFILE, NSTLEG, NLEG, NPX_, NPY_, NPZ_,&
         &NUMPHASE_, MAXLEG, MAXPGL, DELX_, DELY_)
 
-    allocate (HEIGHTP(NLAY + 1), TEMPP(NLAY + 1))
-    allocate (TAUP(NLAY), ALBEDOP(NLAY), TAUPM(NLAY), ALBEDOPM(NLAY))
-    allocate (NLEGP(NLAY), LEGENP(0:MAXLEG, NLAY), IXP(2, NLAY))
+    MAXPG = NPZ_
+    if (NUMPHASE_ .eq. 0) MAXPGL = MAXPG*(MAXLEG + 1)*NSTLEG
+    MAXNZ = NPZ_
+
+    allocate (ZLEVELS_(NPZ_))
+    allocate (TEMPPT(MAXPG), EXTINCTPT(MAXPG), ALBEDOPT(MAXPG))
+    allocate (IPHASEPT(MAXPG), LEGENPT(MAXPGL))
+
+    call shd_io__readPrp(PROPFILE, NPX_, NPY_, NPZ_,&
+        &NSTLEG, MAXLEG, NLEG, MAXNZ, MAXPG, MAXPGL, DELTAM,&
+        &PROPTYPE, DELX_, DELY_, ZLEVELS_, MAXASYM,&
+        &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, NUMPHASE_, IPHASEPT)
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+    ! process layer property
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    NLAY = NPZ_ - 1
+    allocate (HEIGHTP(NLAY+1), TEMPP(NLAY+1))
+    HEIGHTP(1:NPZ_) = ZLEVELS_(1:NPZ_)
+    TEMPP(1:NPZ_)   = TEMPPT(1:NPZ_)
+
+    allocate (TAUP(NLAY), ALBEDOP(NLAY))
+    TAUP(1:NLAY) = EXTINCTPT(1:NLAY)*(HEIGHTP(2:NPZ_)-HEIGHTP(1:NLAY))
+    ALBEDOP(1:NLAY) = ALBEDOPT(1:NLAY)
+
+    allocate (NLEGP(NLAY), LEGENP(0:MAXLEG, NLAY))
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+    allocate (TAUPM(NLAY), ALBEDOPM(NLAY), IXP(2, NLAY))
+
+    !call USER_INPUT(PROPFILE, CKDFILE, KDIST, NMU, NPHI, &
+    !                SRCTYPE, SOLARFLUX, SOLARMU, SKYRAD, &
+    !                SFCTEMP, SFCTYPE, SFCPARMS, WAVELEN, WAVENO, &
+    !                ACCELFLAG, SOLACC, MAXITER, SPLITACC, &
+    !                FLUXFILE, FLUXPARM, RADFILE, MAXPAR, NZOUT, ZOUT, &
+    !                NMUOUT, MUOUT, NPHIOUT, PHIOUT)
+
+    ! Find out the size of the property grid arrays for allocating arrays
+    !call READ_PROPERTY_SIZE(PROPFILE, NLAY, MAXLEG)
 
     ! Read in the properties of the medium
     !call READ_PROPERTIES(PROPFILE, NLAY, MAXLEG, &
     !                     HEIGHTP, TEMPP, TAUP, ALBEDOP, NLEGP, LEGENP)
 
-    call shd_io__readPrp(PROPFILE, NPXT, NPYT, NPZ_,&
-        &NSTLEG, MAXLEG, NLEG, MAXNZ, MAXPGT, MAXPGLT, DELTAM,&
-        &PROPTYPE, DELX0, DELY0, ZLEVELS_, MAXASYM,&
-        &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, NUMPHASE_, IPHASEPT)
+    !allocate (RADOUT(NZOUT, NMUOUT, NPHIOUT), RADOUTM(NZOUT, NMUOUT, NPHIOUT))
 
     ! Guess the maximum size of the adaptive grid and allocate arrays
     MAXIG = nint(SPLITTING_FACTOR*(NLAY + sum(TAUP(:)*ALBEDOP(:))/MAXDELTAU))
@@ -159,22 +228,54 @@ program SHDOMPP
     allocate (FLUXUP(MAXIG), FLUXDN(MAXIG), MEANRAD(MAXIG))
     allocate (FLUXUPM(MAXIG), FLUXDNM(MAXIG), MEANRADM(MAXIG))
 
+    ! read SFCFILE
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    if (SFCFILE(1:4) .eq. 'NONE') then
+        SFCTYPE = 'FL'
+    else
+        call shd_io__readSfcSize(SFCFILE, MAXSFCPTS, MAXSFCPARS)
+        allocate (SFCPARMS_TMP(MAXSFCPARS*MAXSFCPTS), SFCPARMS(MAXSFCPARS))
+        call shd_io__readSfc(SFCFILE, MAXSFCPTS, MAXSFCPARS,&
+            &SFCTYPE, NXSFC, NYSFC, DELXSFC, DELYSFC,&
+            &NSFCPAR, SFCPARMS_TMP, GNDTEMP, GNDALBEDO)
+        SFCPARMS(1:MAXSFCPARS) = SFCPARMS_TMP(1:MAXSFCPARS)
+        deallocate (SFCPARMS_TMP)
+    end if
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+    ! read CKDFILE
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     ! If doing a k-distribution then get the band info from the CKD file
     if (KDIST) then
-        !call READ_CKD_SIZE(CKDFILE, WAVENO, NG, NZCKD)
         call shd_io__readCkdSize(CKDFILE, WAVENO, NG, NZCKD_)
 
-        allocate (DELG(NG), ZCKD(NZCKD_), KABS(NZCKD_, NG))
-        !call READ_CKD(CKDFILE, WAVENO, NG, NZCKD, SOLFLUX, DELG, ZCKD, KABS)
+        allocate (ZCKD_(NZCKD_), GASABS_(NZCKD_), SOLFLUX(NG), DELG(NG), KABS(NZCKD_, NG))
+
+        MAXNG = NG
+        MAXNZ = NZCKD_
+
         call shd_io__readCkd(MAXNG, MAXNZ, CKDFILE, WAVENO, SOLFLUX,&
             &NG, DELG, NZCKD_, ZCKD_, KABS)
-
     else
         NG = 1
-        NZCKD_ = 0
-        allocate (DELG(NG), ZCKD(NZCKD_), KABS(NZCKD_, NG))
+        allocate (SOLFLUX(NG), DELG(NG))
+        SOLFLUX(1) = 1.0
         DELG(1) = 1.0
+        NZCKD_ = 0
     end if
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+    ! read SENFILE
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    if (SENFILE(1:4) .ne. 'NONE') then
+        call shd_io__readSenSize(SENFILE, NSENDATA, NSENPAR)
+        allocate (SENPARMS(NSENDATA*NSENPAR))
+        call shd_io__readSen(SENFILE, NSENDATA, NSENPAR, SENPARMS)
+    end if
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+        !call READ_CKD_SIZE(CKDFILE, WAVENO, NG, NZCKD)
+        !call READ_CKD(CKDFILE, WAVENO, NG, NZCKD, SOLFLUX, DELG, ZCKD, KABS)
 
     !WRITE (*,*) 'Number of times to run SHDOMPP routine for timing'
     !READ (*,*) NCASES
@@ -182,9 +283,10 @@ program SHDOMPP
     !DO ICASE = 1, NCASES
 
     ! Loop over the k-distribution g's from low to high absorption
-    !NUMITER = 0
-    !do IG = 1, NG
-    !    SOLARFLUX = SOLFLUX(IG)*SOLARFLUX*abs(SOLARMU)
+    NUMITER = 0
+    do IG = 1, NG
+        SOLARFLUX = SOLFLUX(IG)*SOLARFLUX0*abs(SOLARMU)
+        write (6, '(A,I2,A,I2,A)') 'Message [shdompp]: Starting ', IG, '/', NG, ' (ig/Ng) ...'
     !    ! Add in the layer gaseous absorption if doing a k-distribution
     !    call ADD_IN_KDIST(NLAY, HEIGHTP, TAUP, ALBEDOP, &
     !                      NZCKD, ZCKD, KABS(:, IG), TAUPM, ALBEDOPM)
@@ -198,7 +300,7 @@ program SHDOMPP
     !                       NZOUT, ZOUT, NMUOUT, MUOUT, NPHIOUT, PHIOUT, &
     !                       RADOUTM)
 
-    !    NUMITER = NUMITER + ITER
+        NUMITER = NUMITER + ITER
     !    if (KDIST) then
     !        call SUM_KDIST_OUTPUT(IG, DELG(IG), NLAY, TAUP, IXP, NPTS, TAUG, &
     !                              HEIGHTP, HEIGHTG, FLUXUPM, FLUXUP, &
@@ -210,9 +312,12 @@ program SHDOMPP
     !        MEANRAD(1:NPTS) = MEANRADM(1:NPTS)
     !        RADOUT(:, :, :) = RADOUTM(:, :, :)
     !    end if
-    !end do
+    end do
+    print *, 'hahaha'
+    stop
 
-    !ENDDO
+
+    !end do
 
     !call OUTPUT_RESULTS(NLAY, NPTS, NMU, NPHI, NG, &
     !                    PROPFILE, CKDFILE, SRCTYPE, SOLARFLUX, SOLARMU, &
@@ -236,6 +341,11 @@ program SHDOMPP
     deallocate (IXP, HEIGHTG, TAUG, FLUXUP, FLUXDN, MEANRAD, RADOUT)
     deallocate (FLUXUPM, FLUXDNM, MEANRADM, RADOUTM)
     deallocate (DELG, ZCKD, KABS)
+
+    if (allocated(SFCPARMS)) deallocate (SFCPARMS)
+    if (allocated(SENPARMS)) deallocate (SENPARMS)
+    deallocate (TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, IPHASEPT)
+    deallocate (ZLEVELS_, TEMPP_, EXTINCTP_, ALBEDOP_, EXTDIRP_, IPHASEP_, LEGENP_)
 
 end program SHDOMPP
 
