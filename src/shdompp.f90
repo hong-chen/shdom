@@ -868,6 +868,9 @@ function PLANCKFUNC(WAVELEN, WAVENO, TEMP)
     ! returned.  Otherwise, the Planck blackbody radiance in
     ! [Watts /(meter^2 ster micron)] for a temperature in [Kelvins] at
     ! a wavelength (WAVELEN) in [microns] is returned.
+
+    use shd_util
+
     implicit none
     real, intent(IN) :: WAVELEN, WAVENO(2), TEMP
     real :: PLANCKFUNC
@@ -879,7 +882,7 @@ function PLANCKFUNC(WAVELEN, WAVENO, TEMP)
         else
             X1 = 1.4388d0*WAVENO(1)/TEMP
             X2 = 1.4388d0*WAVENO(2)/TEMP
-            call INTEGRATE_PLANCK(X1, X2, F)
+            call shd_util__integratePlanck(X1, X2, F)
             PLANCKFUNC = 1.1911d-8*(TEMP/1.4388d0)**4*F
         end if
     else
@@ -902,6 +905,9 @@ subroutine MAKE_ANGLE_SET(NMU, NPHI, NCS, NPHI0MAX, ITYPE, &
     ! angles are the downwelling (mu<0) angles.  Also output are the
     ! the flags for doing an azimuthal FFT for each mu and the total
     ! number of angles (NANG).
+
+    use shd_util
+
     implicit none
     integer, intent(IN)  :: NMU, NPHI, NCS, NPHI0MAX, ITYPE
     integer, intent(OUT) :: NPHI0(NMU), NANG
@@ -920,9 +926,9 @@ subroutine MAKE_ANGLE_SET(NMU, NPHI, NCS, NPHI0MAX, ITYPE, &
     NANG = 0
     if (ITYPE .ge. 1 .or. ITYPE .le. 3) then
         if (ITYPE .le. 2) then
-            call GAUSQUADS(NMU, MU, WTMU)
+            call shd_util__computeGausQuad(NMU, MU, WTMU)
         else if (ITYPE .eq. 3) then
-            call DGAUSQUADS(NMU, MU, WTMU)
+            call shd_util__computeGausQuadDble(NMU, MU, WTMU)
         end if
         do J = 1, NMU
             if (NCS .eq. 1) then
@@ -1561,6 +1567,9 @@ subroutine SPLIT_CELLS(NLAY, NPTS, MAXIG, IXP, IXG, TAUGSC, &
     ! SPLITCRITRATIO is the factor needed to divide the cell splitting criterion
     ! to convert it to a typical radiance accuracy of the split sublayer with
     ! the cubic interpolation integration.
+
+    use shd_util
+
     implicit none
     integer, intent(IN) :: NLAY, MAXIG
     integer, intent(INOUT) :: NPTS, IXP(2, NLAY), IXG(*)
@@ -1652,7 +1661,7 @@ subroutine SPLIT_CELLS(NLAY, NPTS, MAXIG, IXP, IXG, TAUGSC, &
     end do
 
     if (NEWNPTS > NPTS) then
-        call ssort(TAUGSC, IXG, NEWNPTS, 2)
+        call shd_util__ssort(TAUGSC, IXG, NEWNPTS, 2)
         NPTS = NEWNPTS
         IXP(:, :) = IXPN(:, :)
         ! Make sure that the IXG pointers are in the correct order
@@ -1666,291 +1675,6 @@ subroutine SPLIT_CELLS(NLAY, NPTS, MAXIG, IXP, IXG, TAUGSC, &
     end if
     deallocate (SRCINT1, DIFFRAD)
 end subroutine SPLIT_CELLS
-
-subroutine ssort (X, Y, N, KFLAG)
-    ! ***BEGIN PROLOGUE  SSORT
-    ! ***PURPOSE  Sort an array and optionally make the same interchanges in
-    !             an auxiliary array.  The array may be sorted in increasing
-    !             or decreasing order.  A slightly modified QUICKSORT
-    !             algorithm is used.
-    ! ***LIBRARY   SLATEC
-    ! ***CATEGORY  N6A2B
-    ! ***TYPE      SINGLE PRECISION (SSORT-S, DSORT-D, ISORT-I)
-    ! ***KEYWORDS  SINGLETON QUICKSORT, SORT, SORTING
-    ! ***AUTHOR  Jones, R. E., (SNLA)
-    !            Wisniewski, J. A., (SNLA)
-    ! ***DESCRIPTION
-    !
-    !    SSORT sorts array X and optionally makes the same interchanges in
-    !    array Y.  The array X may be sorted in increasing order or
-    !    decreasing order.  A slightly modified quicksort algorithm is used.
-    !
-    !    Description of Parameters
-    !       X - array of values to be sorted   (usually abscissas)
-    !       Y - array to be (optionally) carried along
-    !       N - number of values in array X to be sorted
-    !       KFLAG - control parameter
-    !             =  2  means sort X in increasing order and carry Y along.
-    !             =  1  means sort X in increasing order (ignoring Y)
-    !             = -1  means sort X in decreasing order (ignoring Y)
-    !             = -2  means sort X in decreasing order and carry Y along.
-    !
-    ! ***REFERENCES  R. C. Singleton, Algorithm 347, An efficient algorithm
-    !                  for sorting with minimal storage, Communications of
-    !                  the ACM, 12, 3 (1969), pp. 185-187.
-    ! ***END PROLOGUE  SSORT
-!      .. Scalar Arguments ..
-      INTEGER KFLAG, N
-!      .. Array Arguments ..
-!       REAL X(*), Y(*)
-      REAL X(*)
-      INTEGER Y(*)
-!      .. Local Scalars ..
-!       REAL R, T, TT, TTY, TY
-      REAL R, T, TT
-      INTEGER TY, TTY
-      INTEGER I, IJ, J, K, KK, L, M, NN
-!      .. Local Arrays ..
-      INTEGER IL(51), IU(51)
-!      .. External Subroutines ..
-!      .. Intrinsic Functions ..
-      INTRINSIC ABS, INT
-! ***First executable statement  SSORT
-      NN = N
-      IF (NN .LT. 1) THEN
-         STOP 'The number of values to be sorted is not positive.'
-      ENDIF
-
-      KK = ABS(KFLAG)
-      IF (KK.NE.1 .AND. KK.NE.2) THEN
-        STOP 'The sort control parameter, K, is not 2, 1, -1, or -2.'
-      ENDIF
-
-!      Alter array X to get decreasing order if needed
-      IF (KFLAG .LE. -1) THEN
-         DO 10 I=1,NN
-            X(I) = -X(I)
-   10    CONTINUE
-      ENDIF
-
-      IF (KK .EQ. 2) GO TO 100
-
-!      Sort X only
-      M = 1
-      I = 1
-      J = NN
-      R = 0.375E0
-
-   20 IF (I .EQ. J) GO TO 60
-      IF (R .LE. 0.5898437E0) THEN
-         R = R+3.90625E-2
-      ELSE
-         R = R-0.21875E0
-      ENDIF
-
-   30 K = I
-
-!      Select a central element of the array and save it in location T
-      IJ = I + INT((J-I)*R)
-      T = X(IJ)
-
-!      If first element of array is greater than T, interchange with T
-      IF (X(I) .GT. T) THEN
-         X(IJ) = X(I)
-         X(I) = T
-         T = X(IJ)
-      ENDIF
-      L = J
-
-!      If last element of array is less than than T, interchange with T
-      IF (X(J) .LT. T) THEN
-         X(IJ) = X(J)
-         X(J) = T
-         T = X(IJ)
-
-!         If first element of array is greater than T, interchange with T
-         IF (X(I) .GT. T) THEN
-            X(IJ) = X(I)
-            X(I) = T
-            T = X(IJ)
-         ENDIF
-      ENDIF
-
-!      Find an element in the second half of the array which is smaller
-!      than T
-   40 L = L-1
-      IF (X(L) .GT. T) GO TO 40
-
-!      Find an element in the first half of the array which is greater
-!      than T
-   50 K = K+1
-      IF (X(K) .LT. T) GO TO 50
-
-!      Interchange these elements
-      IF (K .LE. L) THEN
-         TT = X(L)
-         X(L) = X(K)
-         X(K) = TT
-         GO TO 40
-      ENDIF
-
-!      Save upper and lower subscripts of the array yet to be sorted
-      IF (L-I .GT. J-K) THEN
-         IL(M) = I
-         IU(M) = L
-         I = K
-         M = M+1
-      ELSE
-         IL(M) = K
-         IU(M) = J
-         J = L
-         M = M+1
-      ENDIF
-      GO TO 70
-
-!      Begin again on another portion of the unsorted array
-   60 M = M-1
-      IF (M .EQ. 0) GO TO 190
-      I = IL(M)
-      J = IU(M)
-
-   70 IF (J-I .GE. 1) GO TO 30
-      IF (I .EQ. 1) GO TO 20
-      I = I-1
-
-   80 I = I+1
-      IF (I .EQ. J) GO TO 60
-      T = X(I+1)
-      IF (X(I) .LE. T) GO TO 80
-      K = I
-
-   90 X(K+1) = X(K)
-      K = K-1
-      IF (T .LT. X(K)) GO TO 90
-      X(K+1) = T
-      GO TO 80
-
-!      Sort X and carry Y along
-  100 M = 1
-      I = 1
-      J = NN
-      R = 0.375E0
-
-  110 IF (I .EQ. J) GO TO 150
-      IF (R .LE. 0.5898437E0) THEN
-         R = R+3.90625E-2
-      ELSE
-         R = R-0.21875E0
-      ENDIF
-!
-  120 K = I
-
-!      Select a central element of the array and save it in location T
-      IJ = I + INT((J-I)*R)
-      T = X(IJ)
-      TY = Y(IJ)
-
-!      If first element of array is greater than T, interchange with T
-      IF (X(I) .GT. T) THEN
-         X(IJ) = X(I)
-         X(I) = T
-         T = X(IJ)
-         Y(IJ) = Y(I)
-         Y(I) = TY
-         TY = Y(IJ)
-      ENDIF
-      L = J
-
-!      If last element of array is less than T, interchange with T
-      IF (X(J) .LT. T) THEN
-         X(IJ) = X(J)
-         X(J) = T
-         T = X(IJ)
-         Y(IJ) = Y(J)
-         Y(J) = TY
-         TY = Y(IJ)
-
-!         If first element of array is greater than T, interchange with T
-         IF (X(I) .GT. T) THEN
-            X(IJ) = X(I)
-            X(I) = T
-            T = X(IJ)
-            Y(IJ) = Y(I)
-            Y(I) = TY
-            TY = Y(IJ)
-         ENDIF
-      ENDIF
-
-!      Find an element in the second half of the array which is smaller
-!      than T
-  130 L = L-1
-      IF (X(L) .GT. T) GO TO 130
-
-!      Find an element in the first half of the array which is greater
-!      than T
-  140 K = K+1
-      IF (X(K) .LT. T) GO TO 140
-
-!      Interchange these elements
-      IF (K .LE. L) THEN
-         TT = X(L)
-         X(L) = X(K)
-         X(K) = TT
-         TTY = Y(L)
-         Y(L) = Y(K)
-         Y(K) = TTY
-         GO TO 130
-      ENDIF
-
-!      Save upper and lower subscripts of the array yet to be sorted
-      IF (L-I .GT. J-K) THEN
-         IL(M) = I
-         IU(M) = L
-         I = K
-         M = M+1
-      ELSE
-         IL(M) = K
-         IU(M) = J
-         J = L
-         M = M+1
-      ENDIF
-      GO TO 160
-
-!      Begin again on another portion of the unsorted array
-  150 M = M-1
-      IF (M .EQ. 0) GO TO 190
-      I = IL(M)
-      J = IU(M)
-
-  160 IF (J-I .GE. 1) GO TO 120
-      IF (I .EQ. 1) GO TO 110
-      I = I-1
-
-  170 I = I+1
-      IF (I .EQ. J) GO TO 150
-      T = X(I+1)
-      TY = Y(I+1)
-      IF (X(I) .LE. T) GO TO 170
-      K = I
-
-  180 X(K+1) = X(K)
-      Y(K+1) = Y(K)
-      K = K-1
-      IF (T .LT. X(K)) GO TO 180
-      X(K+1) = T
-      Y(K+1) = TY
-      GO TO 170
-
-!      Clean up
-  190 IF (KFLAG .LE. -1) THEN
-         DO 200 I=1,NN
-            X(I) = -X(I)
-  200    CONTINUE
-      ENDIF
-      RETURN
-end subroutine ssort
-
-
 
 subroutine INTERP_SOURCE(NPH, NMU, T1, S1, T2, S2, T3, S3, T4, S4, T, S)
     ! Does either quadratic or cubic polynomial interpolation of the discrete
@@ -1998,7 +1722,9 @@ subroutine VARIABLE_BRDF_SURFACE(NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, &
     ! computed for all incident directions (loop over JMU,JPHI).  The incident
     ! downwelling radiances are input in SFCRADIANCE(:,:) and the outgoing
     ! upwelling radiance is output in BOTRAD.
+
     use shd_sfc
+
     implicit none
     integer, intent(IN) :: NMU, NPHI0MAX, NPHI0(NMU)
     real, intent(IN) :: MU(NMU), PHI(NPHI0MAX, NMU), WTDO(NMU, NPHI0MAX)
@@ -2812,144 +2538,6 @@ subroutine YLMALL(MU, PHI, ML, MM, NCS, P)
     end if
 end subroutine YLMALL
 
-subroutine GAUSQUADS(N, XA, WT)
-    ! Generates the abscissas (X) and weights (W) for an N point
-    ! Gauss-Legendre quadrature.  The XA are returned in this order:
-    ! -mu1, -mu2, ..., -muK, mu1, mu2, ..., muK  (mu1 > mu2 > muK,
-    ! K=N/2, N must be even).
-    implicit none
-    integer N
-    real XA(*), WT(*)
-    integer K, I, J, L
-    double precision X, XP, PL, PL1, PL2, DPL, TINY
-    parameter(TINY=3.0d-7)
-
-    K = N/2
-    if (2*K .ne. N) stop 'GAUSQUADS: N must be even'
-    do J = 1, K
-        X = cos(3.141592654*(J - .25)/(N + .5))
-        I = 0
-100     continue
-        PL1 = 1
-        PL = X
-        do L = 2, N
-            PL2 = PL1
-            PL1 = PL
-            PL = ((2*L - 1)*X*PL1 - (L - 1)*PL2)/L
-        end do
-        DPL = N*(X*PL - PL1)/(X*X - 1)
-        XP = X
-        X = XP - PL/DPL
-        I = I + 1
-        if (abs(X - XP) .gt. TINY .and. I .lt. 10) GO TO 100
-        XA(J) = -X
-        XA(J + K) = X
-        WT(J) = 2.0d0/((1.0d0 - X*X)*DPL*DPL)
-        WT(J + K) = WT(J)
-    end do
-end subroutine GAUSQUADS
-
-subroutine DGAUSQUADS(N, XA, WT)
-    ! Generates the abscissas (X) and weights (W) for an N point
-    ! Double-Gauss-Legendre quadrature.  The XA are returned in this order:
-    ! -mu1, -mu2, ..., -muK, mu1, mu2, ..., muK  (mu1 > mu2 > muK,
-    ! K=N/2, N must be even).
-    implicit none
-    integer N
-    real XA(*), WT(*)
-    integer K, I, J, L, N2
-    double precision X, XP, PL, PL1, PL2, DPL, TINY
-    parameter(TINY=3.0d-7)
-
-    N2 = N/2
-    if (2*N2 .ne. N) stop 'DGAUSQUADS: N must be even'
-    K = (N2 + 1)/2
-    do J = 1, K
-        X = cos(3.141592654*(J - .25)/(N2 + .5))
-        I = 0
-100     continue
-        PL1 = 1
-        PL = X
-        do L = 2, N2
-            PL2 = PL1
-            PL1 = PL
-            PL = ((2*L - 1)*X*PL1 - (L - 1)*PL2)/L
-        end do
-        DPL = N2*(X*PL - PL1)/(X*X - 1)
-        XP = X
-        X = XP - PL/DPL
-        I = I + 1
-        if (abs(X - XP) .gt. TINY .and. I .lt. 10) GO TO 100
-        XA(J + N2) = (1 + X)/2
-        XA(N2 + 1 - J + N2) = (1 - X)/2
-        WT(J + N2) = 1/((1 - X*X)*DPL*DPL)
-        WT(N2 + 1 - J + N2) = WT(J + N2)
-        XA(J) = -XA(J + N2)
-        XA(N2 + 1 - J) = -XA(N2 + 1 - J + N2)
-        WT(J) = WT(J + N2)
-        WT(N2 + 1 - J) = WT(J + N2)
-    end do
-end subroutine DGAUSQUADS
-
-subroutine INTEGRATE_PLANCK(X1, X2, F)
-    ! Returns integral of x**3/(exp(x)-1) from x1 to x2.  Accurate to better
-    ! than 1 part in 10**9 for integral from 0 to infinity (pi**4/15).
-    implicit none
-    double precision :: X1, X2, F
-    double precision :: INTLOW, INTHIGH, C
-
-    C = 1.0d0
-    if (X1 < C .and. X2 < C) then
-        F = INTLOW(X2) - INTLOW(X1)
-    else if (X1 < C .and. X2 >= C) then
-        F = INTLOW(C) - INTLOW(X1) + INTHIGH(C) - INTHIGH(X2)
-    else if (X1 >= C .and. X2 >= C) then
-        F = INTHIGH(X1) - INTHIGH(X2)
-    else
-        stop 'X1 and X2 out of order'
-    end if
-end subroutine INTEGRATE_PLANCK
-
-function INTLOW(X)
-    ! Integral of x**3/(exp(x)-1) from 0 to x.  Accurate for x less than about 1.
-    ! Uses Taylor series expansion around x=0.
-    implicit none
-    double precision :: X, INTLOW
-    integer :: N
-    double precision :: SUM, F, A(29)
-    data A/0.0d0, 0.0d0, 0.333333333333333333333d0, &
-        -0.125d0, 0.016666666666666666667d0, 0.0d0, -0.0001984126984126984127d0, &
-        0.0d0, 0.36743092298647854203d-5, 0.0d0, -0.75156325156325156325d-7, &
-        0.0d0, 0.16059043836821614599d-8, 0.0d0, -0.35227934257916621232d-10, &
-        0.0d0, 0.78720803121674581370d-12, 0.0d0, -0.17840422612224120352d-13, &
-        0.0d0, 0.40886009791799259829d-15, 0.0d0, -0.94559508632959211871d-17, &
-        0.0d0, 0.22036011313440918061d-18, 0.0d0, -0.51683202540046382743d-20, &
-        0.0d0, 0.12188644964239543006d-20/
-
-    SUM = A(4)*X**4
-    F = X
-    do N = 3, 29, 2
-        F = X*X*F
-        SUM = SUM + A(N)*F
-    end do
-    INTLOW = SUM
-end function INTLOW
-
-function INTHIGH(X)
-    ! Integral of x**3/(exp(x)-1) from x to infinity.
-    ! Accurate for x greater than about 1.
-    implicit none
-    double precision :: X, INTHIGH
-    integer :: N
-    double precision :: SUM
-
-    SUM = 0.0d0
-    do N = 1, 15
-        SUM = SUM + exp(-N*X)*(X**3/N + 3*X**2/N**2 + 6*X/N**3 + 6.0d0/N**4)
-    end do
-    INTHIGH = SUM
-end function INTHIGH
-
 subroutine ADD_IN_KDIST(NLAY, HEIGHTP, TAUP, ALBEDOP, &
                         NZCKD, ZCKD, GASABS, TAUPM, ALBEDOPM)
     ! Adds the gaseous absorption in with the particle optical properties.
@@ -3238,92 +2826,6 @@ subroutine READ_PROPERTIES(PROPFILE, NLAY, MAXLEG, &
     end do
     close (1)
 end subroutine READ_PROPERTIES
-
-subroutine READ_CKD_SIZE(CKDFILE, WAVENO, NG, NZCKD)
-    ! Find the size of the k-distribution arrays for this wavenumber band.
-    integer, intent(OUT) :: NG, NZCKD
-    real, intent(IN)  :: WAVENO(2)
-    character(LEN=*), intent(IN) :: CKDFILE
-    integer :: NB, IB, JB, KB, N
-    real    :: WAVENUM1, WAVENUM2, SF
-
-    open (UNIT=1, FILE=CKDFILE, STATUS='OLD')
-    read (1, *)
-    read (1, *) NB
-    read (1, *)
-    ! Read band information until the right one is found
-    JB = 0
-    do IB = 1, NB
-        read (1, *) KB, WAVENUM1, WAVENUM2, SF, N
-        if (abs(WAVENUM1 - WAVENO(1)) < 1.0 .and. &
-            abs(WAVENUM2 - WAVENO(2)) < 1.0) then
-            backspace (1)
-            NG = N
-            read (1, *) JB, WAVENUM1, WAVENUM2, SF, N
-        end if
-    end do
-    if (JB == 0) then
-        write (*, *) ' Wavenumber range not found in CKD file : ', &
-            WAVENO(1), WAVENO(2), CKDFILE
-        stop
-    end if
-    read (1, *) NZCKD
-    close (1)
-end subroutine READ_CKD_SIZE
-
-subroutine READ_CKD(CKDFILE, WAVENO, NG, NZCKD, SOLFLUX, DELG, ZCKD, KABS)
-    ! Reads the information appropriate for one band from a
-    ! correlated k-distribution file.   The number of "g"'s are input in NG,
-    ! and the number of levels are input in NZCKD. The wavenumber range (cm^-1)
-    ! in the file must match the desired in WAVENO.  The solar flux
-    ! is returned in SOLFLUX, the weights or delta g's in DELG, the
-    ! levels from the top down in ZCKD, and the absorption coefficients
-    ! for each g and level in KABS.
-    integer, intent(IN) :: NG, NZCKD
-    real, intent(INOUT) :: WAVENO(2)
-    real, intent(OUT) :: SOLFLUX, DELG(NG), ZCKD(NZCKD), KABS(NZCKD, NG)
-    character(LEN=*), intent(IN) :: CKDFILE
-    integer :: NB, IB, JB, KB, IG, I, J, N
-    real    :: WAVENUM1, WAVENUM2, SF
-
-    open (UNIT=1, FILE=CKDFILE, STATUS='OLD')
-    read (1, *)
-    read (1, *) NB
-    read (1, *)
-    ! Read band information until the right one is found
-    JB = 0
-    do IB = 1, NB
-        read (1, *) KB, WAVENUM1, WAVENUM2, SF, N
-        if (abs(WAVENUM1 - WAVENO(1)) < 1.0 .and. &
-            abs(WAVENUM2 - WAVENO(2)) < 1.0) then
-            backspace (1)
-            read (1, *) JB, WAVENO(1), WAVENO(2), SOLFLUX, &
-                N, (DELG(IG), IG=1, NG)
-        end if
-    end do
-    ! Read the Z level heights
-    read (1, *) N
-    read (1, *)
-    read (1, *)
-    do I = 1, NZCKD
-        read (1, *) ZCKD(I)
-    end do
-    ! Skip over the irrelevant bands and read the absorption coefficients
-    read (1, *)
-    do I = 1, (JB - 1)*NZCKD
-        read (1, *)
-    end do
-    do I = 1, NZCKD
-        read (1, *) IB, J, (KABS(I, IG), IG=1, NG)
-        do IG = 1, NG
-            if (KABS(I, IG) < 0.0) then
-                write (*, '(1X,A,A,I3,A,I3,A,I2)') 'Negative absorption in CKD file. ', &
-                    'Band: ', IB, '   Level: ', I, '   k: ', IG
-            end if
-        end do
-    end do
-    close (1)
-end subroutine READ_CKD
 
 subroutine OUTPUT_RESULTS(NLAY, NPTS, NMU, NPHI, NG, &
                           PROPFILE, CKDFILE, SRCTYPE, SOLARFLUX, SOLARMU, &
