@@ -316,7 +316,7 @@ program SHDOMPP
 
         call SOLVE_SHDOMPP(NLAY, MAXLEG, HEIGHTP, TEMPP, TAUPM, ALBEDOPM, &
                            NLEGP, LEGENP, SRCTYPE, SOLARFLUX, SOLARMU, &
-                           WAVELEN, WAVENO, SKYRAD, SFCTYPE(2:2), SFCPARMS, SFCTEMP, &
+                           UNITS, WAVELEN, WAVENO, SKYRAD, SFCTYPE(2:2), SFCPARMS, SFCTEMP, &
                            NMU, NPHI, MAXIG, MAXDELTAU, SPLITACC, SOLACC, &
                            MAXITER, ACCELFLAG, PRNT, SOLCRIT, ITER, &
                            NPTS, HEIGHTG, TAUG, IXP, FLUXUPM, FLUXDNM, MEANRADM, &
@@ -371,7 +371,7 @@ end program SHDOMPP
 
 subroutine SOLVE_SHDOMPP(NLAY, MAXLEG, HEIGHTP, TEMPP, TAUP, ALBEDOP, &
                          NLEGP, LEGENP, SRCTYPE, SOLARFLUX, SOLARMU, &
-                         WAVELEN, WAVENO, SKYRAD, SFCTYPE, SFCPARMS, SFCTEMP, &
+                         UNITS, WAVELEN, WAVENO, SKYRAD, SFCTYPE, SFCPARMS, SFCTEMP, &
                          NMU, NPHI, MAXIG, MAXDELTAU, SPLITACC, SOLACC, &
                          MAXITER, ACCELFLAG, PRNT, SOLCRIT, ITER, &
                          NPTS, HEIGHTG, TAUG, IXP, FLUXUP, FLUXDN, MEANRAD, &
@@ -398,6 +398,7 @@ subroutine SOLVE_SHDOMPP(NLAY, MAXLEG, HEIGHTP, TEMPP, TAUP, ALBEDOP, &
     !  SOLARFLUX solar flux on a *horizontal* surface
     !  SOLARMU   negative of cosine of solar zenith angle (< 0)
     !              direct beam is assumed to be going in phi=0 azimuth
+    !  UNITS     units for radiation output
     !  WAVELEN   wavelength (microns) for thermal emission
     !  WAVENO(2) starting and ending wavenumber (cm^-1) for thermal (if WAVELEN=0)
     !  SKYRAD    top of atmosphere downward sky radiance (or temp for SRCTYPE='T')
@@ -437,6 +438,9 @@ subroutine SOLVE_SHDOMPP(NLAY, MAXLEG, HEIGHTP, TEMPP, TAUP, ALBEDOP, &
     !  FLUXUP(IXP(1,layer)) is the upwelling flux at the top of the layer
     !  FLUXDN(IXP(2,layer)) is the downwelling flux at the bottom of the layer
     !
+
+    use shd_shdo
+
     implicit none
     integer, intent(IN)  :: NLAY, MAXLEG, NLEGP(NLAY), MAXIG
     integer, intent(IN)  :: NMU, NPHI, MAXITER
@@ -448,7 +452,7 @@ subroutine SOLVE_SHDOMPP(NLAY, MAXLEG, HEIGHTP, TEMPP, TAUP, ALBEDOP, &
     real, intent(IN)  :: SFCPARMS(*), SFCTEMP
     real, intent(IN)  :: MAXDELTAU, SPLITACC, SOLACC
     real, intent(INOUT)  :: ZOUT(NZOUT), MUOUT(NMUOUT), PHIOUT(NPHIOUT)
-    character(LEN=1), intent(IN) :: SRCTYPE, SFCTYPE
+    character(LEN=1), intent(IN) :: SRCTYPE, SFCTYPE, UNITS
     integer, intent(OUT) :: ITER, NPTS, IXP(2, NLAY)
     real, intent(OUT) :: SOLCRIT
     real, intent(OUT) :: HEIGHTG(MAXIG), TAUG(MAXIG)
@@ -515,7 +519,7 @@ subroutine SOLVE_SHDOMPP(NLAY, MAXLEG, HEIGHTP, TEMPP, TAUP, ALBEDOP, &
     CONSTSOURCE(1, 1:NPTS) = -1.0
     call PREPARE_SOURCE(NLAY, TAUPSC, ALBEDOSC, TEMPP, LEGENSC, &
                         SRCTYPE, ML, MM, NLM, NPTS, TAUGSC, IXP, IXG, &
-                        SOLARFLUX, SOLARMU, YLMSUN, WAVELEN, WAVENO, &
+                        SOLARFLUX, SOLARMU, YLMSUN, UNITS, WAVELEN, WAVENO, &
                         CONSTSOURCE)
 
     ! Make the discrete ordinates (angles)
@@ -525,7 +529,10 @@ subroutine SOLVE_SHDOMPP(NLAY, MAXLEG, HEIGHTP, TEMPP, TAUP, ALBEDOP, &
                         NPHI0, MU, PHI, WTMU, WTDO, FFTFLAG, NANG)
 
     ! Make the Ylm transform coefficients
-    call MAKE_SH_DO_COEF(ML, MM, NLM, NMU, NPHI0, &
+    !call MAKE_SH_DO_COEF(ML, MM, NLM, NMU, NPHI0, &
+    !                     NPHI0MAX, MU, PHI, WTMU, WTDO, FFTFLAG, &
+    !                     CMU1, CMU2, CPHI1, CPHI2, WPHISAVE)
+    call shd_shdo__makeSHDO(1, ML, MM, NLM, NMU, NPHI0, &
                          NPHI0MAX, MU, PHI, WTMU, WTDO, FFTFLAG, &
                          CMU1, CMU2, CPHI1, CPHI2, WPHISAVE)
 
@@ -539,7 +546,7 @@ subroutine SOLVE_SHDOMPP(NLAY, MAXLEG, HEIGHTP, TEMPP, TAUP, ALBEDOP, &
     allocate (SHRADIANCE(NLM, NPTS))
     call INIT_RADIANCE(NLAY, ML, TAUPSC, ALBEDOSC, LEGENSC, TEMPP, &
                        SRCTYPE, SOLARFLUX, SOLARMU, GNDALB, SFCTEMP, &
-                       SKYRAD, WAVELEN, WAVENO, NPTS, TAUGSC, IXP, NLM, &
+                       SKYRAD, UNITS, WAVELEN, WAVENO, NPTS, TAUGSC, IXP, NLM, &
                        SHRADIANCE)
 
     ! Initialize the SH source function from the SH radiance field
@@ -598,7 +605,7 @@ subroutine SOLVE_SHDOMPP(NLAY, MAXLEG, HEIGHTP, TEMPP, TAUP, ALBEDOP, &
                 CONSTSOURCE(1, PREVNPTS + 1:NPTS) = -1.0
                 call PREPARE_SOURCE(NLAY, TAUPSC, ALBEDOSC, TEMPP, LEGENSC, &
                                     SRCTYPE, ML, MM, NLM, NPTS, TAUGSC, IXP, IXG, &
-                                    SOLARFLUX, SOLARMU, YLMSUN, WAVELEN, WAVENO, &
+                                    SOLARFLUX, SOLARMU, YLMSUN, UNITS, WAVELEN, WAVENO, &
                                     CONSTSOURCE)
             end if
         end do
@@ -796,7 +803,7 @@ end subroutine MAKE_TAU_GRID
 
 subroutine PREPARE_SOURCE(NLAY, TAUPSC, ALBEDOSC, TEMPP, LEGENSC, &
                           SRCTYPE, ML, MM, NLM, NPTS, TAUGSC, IXP, IXG, &
-                          SOLARFLUX, SOLARMU, YLMSUN, WAVELEN, WAVENO, &
+                          SOLARFLUX, SOLARMU, YLMSUN, UNITS, WAVELEN, WAVENO, &
                           CONSTSOURCE)
     ! Prepares the constant part of the source function for each level.
     ! This is either or both thermal emission or the single scattering
@@ -816,7 +823,7 @@ subroutine PREPARE_SOURCE(NLAY, TAUPSC, ALBEDOSC, TEMPP, LEGENSC, &
     real, intent(IN) :: TAUPSC(NLAY), ALBEDOSC(NLAY), LEGENSC(0:ML, NLAY)
     real, intent(IN) :: TEMPP(NLAY + 1), TAUGSC(NPTS)
     real, intent(INOUT) :: CONSTSOURCE(NLM, NPTS)
-    character(LEN=1), intent(IN) :: SRCTYPE
+    character(LEN=1), intent(IN) :: SRCTYPE, UNITS
     integer :: I, J, K, L, LAY, ME, M, LOFJ(NLM)
     real    :: S0, C, TAU1, U, TEMP, BB, D, PLANCKFUNC
 
@@ -1886,6 +1893,9 @@ subroutine COMPUTE_ONE_SOURCE(NLAY, ALBEDOSC, LEGENSC, &
     ! For a solar source if delta-M then use Nakajima and Tanaka TMS
     ! procedure, replacing delta-M single scattering with single scattering
     ! for unscaled untruncated phase function.
+
+    use shd_pha
+
     implicit none
     integer, intent(IN) :: NLAY, MAXLEG, NLEGP(NLAY), NPTS
     integer, intent(IN) :: ML, MM, NLM, IXP(2, NLAY), IXG(NPTS)
@@ -1911,7 +1921,7 @@ subroutine COMPUTE_ONE_SOURCE(NLAY, ALBEDOSC, LEGENSC, &
         ! Compute the Legendre polynomials for the scattering angle
         !   for the untruncated solar single scattering computation.
         COSSCAT = SOLARMU*MUO + sqrt((1.0d0 - SOLARMU**2)*(1.0d0 - MUO**2))*cos(PHIO)
-        call LEGENDRE_ALL(COSSCAT, MAXLEG, SUNDIRLEG)
+        call shd_pha__computeLegendre(COSSCAT, MAXLEG, SUNDIRLEG)
         SUNDIRLEG(:) = SUNDIRLEG(:)/(4.0d0*acos(-1.0d0))
         call YLMALL(SOLARMU, 0.0, ML, MM, 1, YLMSUN)
 
@@ -2100,18 +2110,21 @@ end subroutine INTEGRATE_SOURCE
 
 subroutine INIT_RADIANCE(NLAY, ML, TAUPSC, ALBEDOSC, LEGENSC, TEMPP, &
                          SRCTYPE, SOLARFLUX, SOLARMU, GNDALB, SFCTEMP, &
-                         SKYRAD, WAVELEN, WAVENO, NPTS, TAUGSC, IXP, NLM, &
+                         SKYRAD, UNITS, WAVELEN, WAVENO, NPTS, TAUGSC, IXP, NLM, &
                          SHRADIANCE)
     ! Initializes the spherical harmonic radiance field by solving the
     ! plane-parallel Eddington system to give the first two terms of the
     ! spherical harmonic series at the NPTS sublayer interfaces.
+
+    use shd_init
+
     implicit none
     integer, intent(IN) :: NLAY, ML, NPTS, IXP(2, NLAY), NLM
     real, intent(IN) :: TAUPSC(NLAY), ALBEDOSC(NLAY), LEGENSC(0:ML, NLAY)
     real, intent(IN) :: TEMPP(NLAY + 1)
     real, intent(IN) :: SOLARFLUX, SOLARMU, GNDALB, SFCTEMP
     real, intent(IN) :: SKYRAD, WAVELEN, WAVENO(2), TAUGSC(NPTS)
-    character(LEN=1), intent(IN) :: SRCTYPE
+    character(LEN=1), intent(IN) :: SRCTYPE, UNITS
     real, intent(OUT):: SHRADIANCE(NLM, NPTS)
 
     integer :: NLAYER, LAY, I, L
@@ -2153,9 +2166,9 @@ subroutine INIT_RADIANCE(NLAY, ML, TAUPSC, ALBEDOSC, LEGENSC, TEMPP, &
 
     ! Call the Eddington flux routine
     GNDEMIS = 1.0 - GNDALB
-    call EDDRTF(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES, &
+    call shd_init__makeFlux(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES, &
                 TEMPS, DELTAM, SRCTYPE2, SOLARFLUX, SOLARMU, &
-                SFCTEMP, GNDEMIS, SKYRAD, WAVELEN, WAVENO, FLUXES)
+                SFCTEMP, GNDEMIS, SKYRAD, UNITS, WAVENO, WAVELEN, FLUXES)
 
     ! Convert fluxes to first two moments of spherical harmonics
     SHRADIANCE(:, :) = 0.0
@@ -2170,293 +2183,10 @@ subroutine INIT_RADIANCE(NLAY, ML, TAUPSC, ALBEDOSC, LEGENSC, TEMPP, &
     end do
 
     deallocate (OPTDEPTHS, ALBEDOS, ASYMMETRIES, TEMPS, FLUXES)
-end subroutine INIT_RADIANCE
 
-subroutine EDDRTF(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES, &
-                  TEMPS, DELTAM, SRCTYPE, SOLARFLUX, SOLARMU, &
-                  SFCTEMP, GNDEMIS, SKYRAD, WAVELEN, WAVENO, FLUXES)
-    ! EDDRTF computes the layer interface fluxes for a plane-parallel
-    ! atmosphere with either solar or thermal source of radiation using
-    ! the Eddington approximation.  The medium is specified by a number
-    ! of homogeneous layers.  For a thermal source the Planck function is
-    ! linear with optical depth, while for a solar source it is exponential.
-    ! The temperatures, optical depth, single scattering albedo, and
-    ! asymmetry parameter are specified for each layer.  The boundary
-    ! conditions such as the solar flux, and reflection and/or emission from
-    ! ground surface are also specified. Delta Eddington scaling may be
-    ! used.  The diffuse Eddington fluxes and the solar direct flux at
-    ! each level are returned.
-    ! The model works by calculating the reflection, transmission, and
-    ! source terms for each layer from the input properties.  A
-    ! tri-diagonal matrix solver is then used to compute the diffuse fluxes
-    ! at each layer interface from the applied boundary conditions.
-    !
-    ! Parameters:
-    !   Input:
-    ! NLAYER         integer      Number of homogenous layers
-    !                              (layers are specified from the top down)
-    ! OPTDEPTHS      real array   Optical thickness of layers
-    ! ALBEDOS        real array   Single scattering albedos
-    ! ASYMMETRIES    real array   Asymmetry parameters
-    ! TEMPS          real array   Temperatures (K) at layer interfaces
-    !                              (e.g. TEMPS(1) is at top of top layer,
-    !                               TEMPS(2) is at bottom of top layer).
-    ! DELTAM         logical      True for delta-Eddington scaling
-    ! SRCTYPE        character    'S' for solar source, 'T' for thermal source
-    ! SOLARFLUX      real         Incident solar flux on horizonal plane
-    ! SOLARMU        real         Cosine of the solar zenith angle
-    ! SFCTEMP        real         Surface temperature (Kelvin)
-    ! GNDEMIS        real         Ground emissivity (1-albedo)
-    ! SKYRAD         real         Radiance (for solar) or brightness
-    !                              temperature (for thermal) of isotropic
-    !                              incident radiation from above
-    ! WAVELEN        real         Wavelength (micron)
-    ! WAVENO(2)      real         Wavenumber range (cm^-1) (if WAVELEN=0)
-    !
-    !   Output:
-    ! FLUXES         real         Eddington fluxes at layer interfaces.
-    !                               FLUXES(1,L) is upwelling diffuse,
-    !                               FLUXES(2,L) is downwelling diffuse,
-    !                               FLUXES(3,L) is downwelling direct,
-    !                               L=1 is top, L=NLAYER+1 is bottom
-    implicit none
-    integer, intent(IN) :: NLAYER
-    logical, intent(IN) :: DELTAM
-    real, intent(IN) :: TEMPS(NLAYER + 1)
-    real, intent(IN) :: OPTDEPTHS(NLAYER), ALBEDOS(NLAYER), ASYMMETRIES(NLAYER)
-    real, intent(IN) :: SFCTEMP, GNDEMIS, SKYRAD, SOLARFLUX, SOLARMU
-    real, intent(IN) :: WAVELEN, WAVENO(2)
-    character(LEN=1), intent(IN) ::  SRCTYPE
-    real, intent(OUT) :: FLUXES(3, NLAYER + 1)
-
-    integer :: N, L, I
-    double precision :: DELTAU, G, OMEGA, F
-    double precision :: LAMBDA, R, T, D, CP, CM, A, B, X1, X2
-    double precision :: REFLECT, TRANS, SOURCEP, SOURCEM
-    double precision :: RADP1P, RADP1M, RADP2P, RADP2M
-    double precision :: PI, MU0, SKYFLUX, GNDFLUX, PLANCK1, PLANCK2, C, TAU
-    double precision :: EXLP, EXLM, V, DS, B1, B2, SOLPP, SOLPM
-    double precision, allocatable :: LOWER(:), UPPER(:), DIAG(:), RHS(:)
-    parameter(PI=3.1415926535)
-    real :: PLANCKFUNC
-
-    ! Compute the reflection, transmission, and source coefficients
-    !   for each layer for the diffuse Eddington two stream problem.
-    N = 2*NLAYER + 2
-    allocate (LOWER(N), UPPER(N), DIAG(N), RHS(N))
-    if (SRCTYPE == 'T') then
-        PLANCK1 = PI*PLANCKFUNC(WAVELEN, WAVENO, TEMPS(1))
-    end if
-    MU0 = abs(SOLARMU)
-    TAU = 0.0
-    I = 2
-    do L = 1, NLAYER
-        DELTAU = OPTDEPTHS(L)
-        if (DELTAU < 0.0) stop 'EDDRTF: TAU<0'
-        ! Special case for zero optical depth
-        if (DELTAU == 0.0) then
-            TRANS = 1.0
-            REFLECT = 0.0
-            SOURCEP = 0.0
-            SOURCEM = 0.0
-        else
-            OMEGA = ALBEDOS(L)
-            G = ASYMMETRIES(L)
-            if (DELTAM) then
-                F = G**2
-                DELTAU = (1 - OMEGA*F)*DELTAU
-                OMEGA = (1 - F)*OMEGA/(1 - OMEGA*F)
-                G = (G - F)/(1 - F)
-            end if
-            R = (1.0 - OMEGA*(4.0 - 3.0*G))/4.0
-            T = (7.0 - OMEGA*(4.0 + 3.0*G))/4.0
-            LAMBDA = sqrt(3.0*(1.0 - OMEGA)*(1.0 - OMEGA*G))
-            ! Special case for conservative scattering (lambda=0)
-            if (LAMBDA == 0.0) then
-                D = 1.0/(1.0 + T*DELTAU)
-                TRANS = D
-                REFLECT = -R*DELTAU*D
-            else
-                X1 = -R
-                X2 = LAMBDA + T
-                EXLP = DEXP(min(LAMBDA*DELTAU, 75.d0))
-                EXLM = 1.0/EXLP
-                TRANS = 2.*LAMBDA/(X2*EXLP + (LAMBDA - T)*EXLM)
-                REFLECT = X1*(EXLP - EXLM)*TRANS/(2.*LAMBDA)
-                D = 1.0/(X2**2*EXLP - X1**2*EXLM)
-            end if
-
-            if (SRCTYPE == 'T') then
-                ! Calculate thermal source terms
-                PLANCK2 = PI*PLANCKFUNC(WAVELEN, WAVENO, TEMPS(L + 1))
-                V = 2.0*(PLANCK2 - PLANCK1)/(3.0*(1.-OMEGA*G)*DELTAU)
-                RADP1P = -V + PLANCK1
-                RADP2M = V + PLANCK2
-                RADP2P = -V + PLANCK2
-                RADP1M = V + PLANCK1
-                if (LAMBDA .eq. 0.0) then
-                    A = (R*DELTAU*RADP1P - RADP2M)*D
-                    B = -(R*RADP1P + T*RADP2M)*D
-                    SOURCEP = (B - T*(A + B*DELTAU))/R + RADP2P
-                    SOURCEM = A + RADP1M
-                else
-                    CP = (X1*EXLM*RADP1P - X2*RADP2M)*D
-                    CM = (-X2*EXLP*RADP1P + X1*RADP2M)*D
-                    SOURCEP = X1*CP*EXLP + X2*CM*EXLM + RADP2P
-                    SOURCEM = X2*CP + X1*CM + RADP1M
-                end if
-                PLANCK1 = PLANCK2
-                FLUXES(3, L) = 0.0
-            else
-                ! Calculate solar source terms
-                FLUXES(3, L) = SOLARFLUX*exp(-TAU/MU0)
-                DS = 1.0/(LAMBDA**2 - 1.0/MU0**2)
-                B1 = 0.5*OMEGA*(SOLARFLUX/MU0)*exp(-TAU/MU0)*DS
-                B2 = 0.5*OMEGA*(SOLARFLUX/MU0)*exp(-(TAU + DELTAU)/MU0)*DS
-                SOLPP = 1.0 + 1.5*G*MU0
-                SOLPM = -1.0 + 1.5*G*MU0
-                RADP1P = ((T + 1.0/MU0)*SOLPP + R*SOLPM)*B1
-                RADP2M = ((-T + 1.0/MU0)*SOLPM - R*SOLPP)*B2
-                RADP2P = ((T + 1.0/MU0)*SOLPP + R*SOLPM)*B2
-                RADP1M = ((-T + 1.0/MU0)*SOLPM - R*SOLPP)*B1
-                if (LAMBDA .eq. 0.0) then
-                    A = (R*DELTAU*RADP1P - RADP2M)*D
-                    B = -(R*RADP1P + T*RADP2M)*D
-                    SOURCEP = (B - T*(A + B*DELTAU))/R + RADP2P
-                    SOURCEM = A + RADP1M
-                else
-                    CP = (X1*EXLM*RADP1P - X2*RADP2M)*D
-                    CM = (-X2*EXLP*RADP1P + X1*RADP2M)*D
-                    SOURCEP = X1*CP*EXLP + X2*CM*EXLM + RADP2P
-                    SOURCEM = X2*CP + X1*CM + RADP1M
-                end if
-                TAU = TAU + DELTAU
-            end if
-        end if
-        DIAG(I) = -REFLECT
-        DIAG(I + 1) = -REFLECT
-        LOWER(I) = 1.0
-        LOWER(I + 1) = -TRANS
-        UPPER(I) = -TRANS
-        UPPER(I + 1) = 1.0
-        RHS(I) = SOURCEM
-        RHS(I + 1) = SOURCEP
-        I = I + 2
-    end do
-
-    ! Set up boundary radiances
-    if (SRCTYPE == 'S') then
-        FLUXES(3, NLAYER + 1) = SOLARFLUX*exp(-TAU/MU0)
-        GNDFLUX = (1.0 - GNDEMIS)*SOLARFLUX*exp(-TAU/MU0)
-        SKYFLUX = PI*SKYRAD
-    else
-        FLUXES(3, NLAYER + 1) = 0.0
-        GNDFLUX = PI*GNDEMIS*PLANCKFUNC(WAVELEN, WAVENO, SFCTEMP)
-        SKYFLUX = PI*PLANCKFUNC(WAVELEN, WAVENO, SKYRAD)
-    end if
-    ! Setup for and call the tri-diagonal matrix solver
-    RHS(1) = SKYFLUX
-    DIAG(1) = 0.0
-    UPPER(1) = 1.0
-    DIAG(N) = -(1.0 - GNDEMIS)
-    LOWER(N) = 1.0
-    RHS(N) = GNDFLUX
-    call TRIDIAG(N, LOWER, DIAG, UPPER, RHS)
-    ! Put the fluxes in the output array
-    I = 1
-    do L = 1, NLAYER + 1
-        FLUXES(1, L) = RHS(I)
-        FLUXES(2, L) = RHS(I + 1)
-        I = I + 2
-    end do
-
-    deallocate (LOWER, UPPER, DIAG, RHS)
-end subroutine EDDRTF
-
-subroutine TRIDIAG(N, LOWER, DIAG, UPPER, RHS)
-    ! Computes the solution to a tridiagonal system.
-    ! N is order of the matrix.  LOWER(2..N) is the subdiagonal,
-    ! DIAG(1..N) is the diagonal, and UPPER(1..N-1) is the
-    ! superdiagonal.  On input RHS is the right hand side, while
-    ! on output it is the solution vector.  Everything is destroyed.
-    ! Hacked from Linpack DGTSL.
-    implicit none
-    integer :: N
-    double precision :: LOWER(*), DIAG(*), UPPER(*), RHS(*)
-    integer :: K, KB
-    double precision :: T
-
-    if (N .eq. 1) then
-        if (DIAG(1) .eq. 0.0) goto 990
-        RHS(1) = RHS(1)/DIAG(1)
-    end if
-    LOWER(1) = DIAG(1)
-    DIAG(1) = UPPER(1)
-    UPPER(1) = 0.0
-    UPPER(N) = 0.0
-    do K = 1, N - 1
-        ! Interchange this and next row to the get the largest pivot.
-        if (abs(LOWER(K + 1)) .ge. abs(LOWER(K))) then
-            T = LOWER(K + 1)
-            LOWER(K + 1) = LOWER(K)
-            LOWER(K) = T
-            T = DIAG(K + 1)
-            DIAG(K + 1) = DIAG(K)
-            DIAG(K) = T
-            T = UPPER(K + 1)
-            UPPER(K + 1) = UPPER(K)
-            UPPER(K) = T
-            T = RHS(K + 1)
-            RHS(K + 1) = RHS(K)
-            RHS(K) = T
-        end if
-        if (LOWER(K) .eq. 0.0) goto 990
-        T = -LOWER(K + 1)/LOWER(K)
-        LOWER(K + 1) = DIAG(K + 1) + T*DIAG(K)
-        DIAG(K + 1) = UPPER(K + 1) + T*UPPER(K)
-        UPPER(K + 1) = 0.0
-        RHS(K + 1) = RHS(K + 1) + T*RHS(K)
-    end do
-    if (LOWER(N) .eq. 0.0) goto 990
-    ! Back substitute
-    RHS(N) = RHS(N)/LOWER(N)
-    RHS(N - 1) = (RHS(N - 1) - DIAG(N - 1)*RHS(N))/LOWER(N - 1)
-    do KB = 1, N - 2
-        K = N - 2 - KB + 1
-        RHS(K) = (RHS(K) - DIAG(K)*RHS(K + 1) - UPPER(K)*RHS(K + 2))/LOWER(K)
-    end do
     return
-990 continue
-    stop 'Singular matrix in TRIDIAG'
-end subroutine TRIDIAG
 
-subroutine LEGENDRE_ALL(COSSCAT, NLEG, P)
-    ! This subroutine computes a set of Legendre polynomials for
-    ! a particular scattering angle COSSCAT.  NLEG is the maximum term.
-    ! The Legendre functions evaluated at COSSCAT are returned in
-    ! P, starting at l=0 and ending with l=NLEG  (NLEG+1 terms).
-    implicit none
-    integer NLEG
-    double precision COSSCAT, P(0:NLEG)
-    integer L
-    double precision X, PL, PL1, PL2
-
-    X = dble(COSSCAT)
-    if (X*X .gt. 1.) stop 'LEGENDRE_ALL: |COSSCAT| larger than 1'
-    ! Use the stable upward recursion on l, starting from P_0
-    PL2 = 1.0d0
-    P(0) = PL2
-    if (NLEG .gt. 1) then
-        PL1 = X
-        P(1) = X
-    end if
-    do L = 2, NLEG
-        PL = ((2*L - 1)*X*PL1 - (L - 1)*PL2)/L
-        P(L) = PL
-        PL2 = PL1
-        PL1 = PL
-    end do
-end subroutine LEGENDRE_ALL
+end subroutine INIT_RADIANCE
 
 subroutine YLMALL(MU, PHI, ML, MM, NCS, P)
     ! This subroutine computes a set of normalized spherical harmonic
