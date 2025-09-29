@@ -205,8 +205,6 @@ program SHDOMPP
     ! Read in the properties of the medium
     !call READ_PROPERTIES(PROPFILE, NLAY, MAXLEG, &
     !                     HEIGHTP, TEMPP, TAUP, ALBEDOP, NLEGP, LEGENP)
-    allocate (TAUPM(NLAY), ALBEDOPM(NLAY), IXP(2, NLAY))
-
     NLAY = NPZ_ - 1
     allocate (HEIGHTP(NLAY+1), TEMPP(NLAY+1))
     HEIGHTP(1:NPZ_) = ZLEVELS_(NPZ_:1:-1)
@@ -238,6 +236,8 @@ program SHDOMPP
     do I = 1, NPHIOUT
         PHIOUT(I) = real(I)
     end do
+
+    allocate (TAUPM(NLAY), ALBEDOPM(NLAY), IXP(2, NLAY))
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     allocate (RADOUT(NZOUT, NMUOUT, NPHIOUT), RADOUTM(NZOUT, NMUOUT, NPHIOUT))
@@ -2997,12 +2997,15 @@ subroutine ADD_IN_KDIST(NLAY, HEIGHTP, TAUP, ALBEDOP, &
             GASTAU = GASTAU - 0.5*(ABS + GASABS(I + 1))*(Z2 - ZCKD(I + 1))
             ! Then, add the gaseous optical depth to the particle properties
             TAUPM(LAY) = TAUP(LAY) + GASTAU
+
+            !print *, TAUPM(LAY), TAUP(LAY), GASTAU
+
             if (TAUPM(LAY) > 0.0) then
                 ALBEDOPM(LAY) = ALBEDOP(LAY)*TAUP(LAY)/TAUPM(LAY)
             else
                 ALBEDOPM(LAY) = 0.0
             end if
-             print *, 'add_kdist: ',LAY,GASTAU,TAUPM(LAY),ALBEDOPM(LAY)
+            !print *, 'add_kdist: ',LAY,GASTAU,TAUPM(LAY),ALBEDOPM(LAY)
         end do
     end if
 
