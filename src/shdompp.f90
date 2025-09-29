@@ -26,10 +26,9 @@ program SHDOMPP
     character(len=1) :: OUTTYPES(MAXOUT)
     character(len=FNAMEMAXLEN_) :: OUTFILES(MAXOUT)
 
-    real :: ZOUT(MAXPAR), MUOUT(MAXPAR), PHIOUT(MAXPAR)
     real, allocatable :: SFCPARMS(:), SFCPARMS_TMP(:)
 
-    integer :: NLAY
+    integer :: NLAY, ILAY, IPHASE
     integer :: NUMITER
     integer :: NZOUT, NMUOUT, NPHIOUT, FLUXPARM
     integer :: NCASES, ICASE
@@ -39,7 +38,6 @@ program SHDOMPP
     real, allocatable :: XGRID(:), YGRID(:), ZGRID(:)
     real, allocatable :: TEMP(:), PLANCK(:), EXTINCT(:), ALBEDO(:)
     real, allocatable :: LEGEN(:)
-    integer*2, allocatable:: IPHASE(:)
     integer, allocatable :: GRIDPTR(:, :), NEIGHPTR(:, :), TREEPTR(:, :)
     integer*2, allocatable:: CELLFLAGS(:)
     real, allocatable :: GRIDPOS(:, :)
@@ -107,6 +105,7 @@ program SHDOMPP
     logical :: mpiX, mpiY, mpiMode
     logical :: nmlMode = .true.
 
+    real, allocatable :: ZOUT(:), MUOUT(:), PHIOUT(:)
     integer, allocatable :: NLEGP(:), IXP(:, :)
     real, allocatable :: TAUP(:), ALBEDOP(:), LEGENP(:, :)
     real, allocatable :: TAUPM(:), ALBEDOPM(:)
@@ -193,19 +192,6 @@ program SHDOMPP
 
     ! process layer property
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    NLAY = NPZ_ - 1
-    allocate (HEIGHTP(NLAY+1), TEMPP(NLAY+1))
-    HEIGHTP(1:NPZ_) = ZLEVELS_(1:NPZ_)
-    TEMPP(1:NPZ_)   = TEMPPT(1:NPZ_)
-
-    allocate (TAUP(NLAY), ALBEDOP(NLAY))
-    TAUP(1:NLAY) = EXTINCTPT(1:NLAY)*(HEIGHTP(2:NPZ_)-HEIGHTP(1:NLAY))
-    ALBEDOP(1:NLAY) = ALBEDOPT(1:NLAY)
-
-    allocate (NLEGP(NLAY), LEGENP(0:MAXLEG, NLAY))
-    !╰────────────────────────────────────────────────────────────────────────────╯!
-    allocate (TAUPM(NLAY), ALBEDOPM(NLAY), IXP(2, NLAY))
-
     !call USER_INPUT(PROPFILE, CKDFILE, KDIST, NMU, NPHI, &
     !                SRCTYPE, SOLARFLUX, SOLARMU, SKYRAD, &
     !                SFCTEMP, SFCTYPE, SFCPARMS, WAVELEN, WAVENO, &
@@ -219,8 +205,42 @@ program SHDOMPP
     ! Read in the properties of the medium
     !call READ_PROPERTIES(PROPFILE, NLAY, MAXLEG, &
     !                     HEIGHTP, TEMPP, TAUP, ALBEDOP, NLEGP, LEGENP)
+    allocate (TAUPM(NLAY), ALBEDOPM(NLAY), IXP(2, NLAY))
 
-    !allocate (RADOUT(NZOUT, NMUOUT, NPHIOUT), RADOUTM(NZOUT, NMUOUT, NPHIOUT))
+    NLAY = NPZ_ - 1
+    allocate (HEIGHTP(NLAY+1), TEMPP(NLAY+1))
+    HEIGHTP(1:NPZ_) = ZLEVELS_(NPZ_:1:-1)
+    TEMPP(1:NPZ_) = TEMPPT(NPZ_:1:-1)
+
+    allocate (TAUP(NLAY), ALBEDOP(NLAY))
+    TAUP(1:NLAY) = EXTINCTPT(NLAY:1:-1)*(HEIGHTP(1:NLAY)-HEIGHTP(2:NPZ_))
+    ALBEDOP(1:NLAY) = ALBEDOPT(NLAY:1:-1)
+
+    allocate (NLEGP(NLAY), LEGENP(0:MAXLEG, NLAY))
+    do ILAY = 1, NLAY
+        IPHASE = IPHASEPT(NLAY-ILAY+1)
+        NLEGP(ILAY) = NLEG
+        LEGENP(0:MAXLEG, ILAY) = LEGENPT(1+(MAXLEG+1)*(IPHASE-1):(MAXLEG+1)*IPHASE)
+    end do
+
+    NZOUT = 1
+    allocate (ZOUT(NZOUT))
+    ZOUT(1) = ZLEVELS_(NPZ_)
+
+    NMUOUT = 89
+    allocate (MUOUT(NMUOUT))
+    do I = 1, NMUOUT
+        MUOUT(I) = cos(DTOR_*real(I))
+    end do
+
+    NPHIOUT = 360
+    allocate (PHIOUT(NPHIOUT))
+    do I = 1, NPHIOUT
+        PHIOUT(I) = real(I)
+    end do
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+    allocate (RADOUT(NZOUT, NMUOUT, NPHIOUT), RADOUTM(NZOUT, NMUOUT, NPHIOUT))
 
     ! Guess the maximum size of the adaptive grid and allocate arrays
     MAXIG = nint(SPLITTING_FACTOR*(NLAY + sum(TAUP(:)*ALBEDOP(:))/MAXDELTAU))
@@ -287,35 +307,33 @@ program SHDOMPP
     do IG = 1, NG
         SOLARFLUX = SOLFLUX(IG)*SOLARFLUX0*abs(SOLARMU)
         write (6, '(A,I2,A,I2,A)') 'Message [shdompp]: Starting ', IG, '/', NG, ' (ig/Ng) ...'
-    !    ! Add in the layer gaseous absorption if doing a k-distribution
-    !    call ADD_IN_KDIST(NLAY, HEIGHTP, TAUP, ALBEDOP, &
-    !                      NZCKD, ZCKD, KABS(:, IG), TAUPM, ALBEDOPM)
 
-    !    call SOLVE_SHDOMPP(NLAY, MAXLEG, HEIGHTP, TEMPP, TAUPM, ALBEDOPM, &
-    !                       NLEGP, LEGENP, SRCTYPE, SOLARFLUX, SOLARMU, &
-    !                       WAVELEN, WAVENO, SKYRAD, SFCTYPE, SFCPARMS, SFCTEMP, &
-    !                       NMU, NPHI, MAXIG, MAXDELTAU, SPLITACC, SOLACC, &
-    !                       MAXITER, ACCELFLAG, PRNT, SOLCRIT, ITER, &
-    !                       NPTS, HEIGHTG, TAUG, IXP, FLUXUPM, FLUXDNM, MEANRADM, &
-    !                       NZOUT, ZOUT, NMUOUT, MUOUT, NPHIOUT, PHIOUT, &
-    !                       RADOUTM)
+        ! Add in the layer gaseous absorption if doing a k-distribution
+        call ADD_IN_KDIST(NLAY, HEIGHTP, TAUP, ALBEDOP, &
+                          NZCKD_, ZCKD_, KABS(:, IG), TAUPM, ALBEDOPM)
+
+        call SOLVE_SHDOMPP(NLAY, MAXLEG, HEIGHTP, TEMPP, TAUPM, ALBEDOPM, &
+                           NLEGP, LEGENP, SRCTYPE, SOLARFLUX, SOLARMU, &
+                           WAVELEN, WAVENO, SKYRAD, SFCTYPE(2:2), SFCPARMS, SFCTEMP, &
+                           NMU, NPHI, MAXIG, MAXDELTAU, SPLITACC, SOLACC, &
+                           MAXITER, ACCELFLAG, PRNT, SOLCRIT, ITER, &
+                           NPTS, HEIGHTG, TAUG, IXP, FLUXUPM, FLUXDNM, MEANRADM, &
+                           NZOUT, ZOUT, NMUOUT, MUOUT, NPHIOUT, PHIOUT, &
+                           RADOUTM)
 
         NUMITER = NUMITER + ITER
-    !    if (KDIST) then
-    !        call SUM_KDIST_OUTPUT(IG, DELG(IG), NLAY, TAUP, IXP, NPTS, TAUG, &
-    !                              HEIGHTP, HEIGHTG, FLUXUPM, FLUXUP, &
-    !                              FLUXDNM, FLUXDN, MEANRADM, MEANRAD, &
-    !                              NZOUT, NMUOUT, NPHIOUT, RADOUTM, RADOUT)
-    !    else
-    !        FLUXUP(1:NPTS) = FLUXUPM(1:NPTS)
-    !        FLUXDN(1:NPTS) = FLUXDNM(1:NPTS)
-    !        MEANRAD(1:NPTS) = MEANRADM(1:NPTS)
-    !        RADOUT(:, :, :) = RADOUTM(:, :, :)
-    !    end if
+        if (KDIST) then
+            call SUM_KDIST_OUTPUT(IG, DELG(IG), NLAY, TAUP, IXP, NPTS, TAUG, &
+                                  HEIGHTP, HEIGHTG, FLUXUPM, FLUXUP, &
+                                  FLUXDNM, FLUXDN, MEANRADM, MEANRAD, &
+                                  NZOUT, NMUOUT, NPHIOUT, RADOUTM, RADOUT)
+        else
+            FLUXUP(1:NPTS) = FLUXUPM(1:NPTS)
+            FLUXDN(1:NPTS) = FLUXDNM(1:NPTS)
+            MEANRAD(1:NPTS) = MEANRADM(1:NPTS)
+            RADOUT(:, :, :) = RADOUTM(:, :, :)
+        end if
     end do
-    print *, 'hahaha'
-    stop
-
 
     !end do
 
@@ -340,12 +358,12 @@ program SHDOMPP
     deallocate (HEIGHTP, TEMPP, TAUP, ALBEDOP, TAUPM, ALBEDOPM, NLEGP, LEGENP)
     deallocate (IXP, HEIGHTG, TAUG, FLUXUP, FLUXDN, MEANRAD, RADOUT)
     deallocate (FLUXUPM, FLUXDNM, MEANRADM, RADOUTM)
-    deallocate (DELG, ZCKD, KABS)
+    deallocate (DELG, KABS)
 
     if (allocated(SFCPARMS)) deallocate (SFCPARMS)
     if (allocated(SENPARMS)) deallocate (SENPARMS)
     deallocate (TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, IPHASEPT)
-    deallocate (ZLEVELS_, TEMPP_, EXTINCTP_, ALBEDOP_, EXTDIRP_, IPHASEP_, LEGENP_)
+    deallocate (ZLEVELS_)
 
 end program SHDOMPP
 
@@ -1470,7 +1488,7 @@ subroutine PATH_INTEGRATION(NLAY, NPTS, IXP, IXG, TAUGSC, &
         do IMU = NMU/2 + 1, NMU
             do IPHI = 1, NPHI0(IMU)
                 call VARIABLE_BRDF_SURFACE(NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, &
-                                           MU(IMU), PHI(IPHI, IMU), &
+                                           MU(IMU), PHI(IPHI, IMU), WAVELEN, &
                                            SRCTYPE, SOLARMU, DIRFLUXSFC, &
                                            SFCTYPE, SFCPARMS, SFCPLANCK, &
                                            RADIANCE(:, :, IXG(IXP(2, NLAY))), BOTRAD)
@@ -1960,7 +1978,7 @@ subroutine INTERP_SOURCE(NPH, NMU, T1, S1, T2, S2, T3, S3, T4, S4, T, S)
 end subroutine INTERP_SOURCE
 
 subroutine VARIABLE_BRDF_SURFACE(NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, &
-                                 MU2, PHI2, SRCTYPE, SOLARMU, DIRFLUXSFC, &
+                                 MU2, PHI2, WAVELEN, SRCTYPE, SOLARMU, DIRFLUXSFC, &
                                  SFCTYPE, SFCPARMS, SFCPLANCK, &
                                  SFCRADIANCE, BOTRAD)
     ! Computes the upwelling radiance at the bottom boundary for one
@@ -1978,15 +1996,16 @@ subroutine VARIABLE_BRDF_SURFACE(NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, &
     ! computed for all incident directions (loop over JMU,JPHI).  The incident
     ! downwelling radiances are input in SFCRADIANCE(:,:) and the outgoing
     ! upwelling radiance is output in BOTRAD.
+    use shd_sfc
     implicit none
     integer, intent(IN) :: NMU, NPHI0MAX, NPHI0(NMU)
     real, intent(IN) :: MU(NMU), PHI(NPHI0MAX, NMU), WTDO(NMU, NPHI0MAX)
-    real, intent(IN) :: MU2, PHI2, SOLARMU, DIRFLUXSFC, SFCPLANCK
+    real, intent(IN) :: MU2, PHI2, WAVELEN, SOLARMU, DIRFLUXSFC, SFCPLANCK
     real, intent(IN) :: SFCPARMS(*), SFCRADIANCE(NPHI0MAX, NMU)
     real, intent(OUT):: BOTRAD
     character(LEN=1), intent(IN) :: SRCTYPE, SFCTYPE
     integer :: JMU, JPHI
-    real    :: OPI, SOLARAZ, REFLECT, W
+    real    :: OPI, SOLARAZ, REFLECT, W, REFLECT_TMP(4, 4)
 
     OPI = 1.0/acos(-1.0)
     SOLARAZ = 0.0
@@ -1996,16 +2015,20 @@ subroutine VARIABLE_BRDF_SURFACE(NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, &
     if (SRCTYPE == 'T') then
         BOTRAD = 0.0
     else
-        call SURFACE_BRDF(SFCTYPE, SFCPARMS, MU2, PHI2, SOLARMU, SOLARAZ, &
-                          REFLECT)
+        !call SURFACE_BRDF(SFCTYPE, SFCPARMS, MU2, PHI2, SOLARMU, SOLARAZ, &
+        !                  REFLECT)
+        call shd_sfc__brdfSurface(SFCTYPE, SFCPARMS, WAVELEN, MU2, PHI2, SOLARMU, SOLARAZ, 1, REFLECT_TMP)
+        REFLECT = REFLECT_TMP(1, 1)
         BOTRAD = OPI*REFLECT*DIRFLUXSFC
     end if
 
     ! Integrate over the incident discrete ordinate directions (JMU,JPHI)
     do JMU = 1, NMU/2
         do JPHI = 1, NPHI0(JMU)
-            call SURFACE_BRDF(SFCTYPE, SFCPARMS, MU2, PHI2, &
-                              MU(JMU), PHI(JPHI, JMU), REFLECT)
+            !call SURFACE_BRDF(SFCTYPE, SFCPARMS, MU2, PHI2, &
+            !                  MU(JMU), PHI(JPHI, JMU), REFLECT)
+            call shd_sfc__brdfSurface(SFCTYPE, SFCPARMS, WAVELEN, MU2, PHI2, MU(JMU), PHI(JPHI, JMU), 1, REFLECT_TMP)
+            REFLECT = REFLECT_TMP(1, 1)
             W = OPI*abs(MU(JMU))*WTDO(JMU, JPHI)
             BOTRAD = BOTRAD + W*REFLECT*SFCRADIANCE(JPHI, JMU) &
                      + W*(1 - REFLECT)*SFCPLANCK
@@ -2013,67 +2036,6 @@ subroutine VARIABLE_BRDF_SURFACE(NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, &
     end do
 
 end subroutine VARIABLE_BRDF_SURFACE
-
-subroutine SURFACE_BRDF(SFCTYPE, REFPARMS, &
-                        MU2, PHI2, MU1, PHI1, REFLECT)
-    !  Returns the reflection coefficient for the general bidirectional
-    ! reflection distribution function of the specified type (SFCTYPE).
-    ! The incident direction is (MU1,PHI1), and the outgoing direction
-    ! is (MU2,PHI2) (MU is cosine of zenith angle, and PHI is the azimuthal
-    ! angle in radians).  The incident directions have mu<0 (downward),
-    ! while the outgoing directions have mu>0 (upward). The reflection
-    ! function is normalized so that for a Lambertian surface (uniform
-    ! reflection) the returned value (REFLECT) is simply the albedo.
-    ! This routine calls the desired BRDF function, passing the
-    ! appropriate parameters.  More BRDF surface types may be added easily
-    ! by putting in the appropriate function calls.
-    !        Type        Parameters
-    !    R  Rahman et al  rho0, k, Theta
-    implicit none
-    real, intent(IN) :: REFPARMS(*), MU1, PHI1, MU2, PHI2
-    real, intent(OUT):: REFLECT
-    character(LEN=1), intent(IN) :: SFCTYPE
-    real  :: PI
-    real  :: RPV_REFLECTION
-
-    PI = acos(-1.0)
-    if (SFCTYPE == 'R') then
-        ! R: Rahman, Pinty, and Verstraete
-        REFLECT = RPV_REFLECTION(REFPARMS(1), REFPARMS(2), REFPARMS(3), &
-                                 -MU1, MU2, PHI1 - PHI2 - PI)
-    else
-        stop 'SURFACE_BRDF: Unknown BRDF type'
-    end if
-end subroutine SURFACE_BRDF
-
-function RPV_REFLECTION(RHO0, K, THETA, MU1, MU2, PHI)
-    !  Computes the Rahman, Pinty, Verstraete BRDF.  The incident
-    ! and outgoing cosine zenith angles are MU1 and MU2, respectively,
-    ! and the relative azimuthal angle is PHI.  In this case the incident
-    ! direction is where the radiation is coming from (i.e. opposite of the
-    ! discrete ordinate), so MU1>0 and the hot spot is MU2=MU1 and PHI=0.
-    ! The reference is:
-    !    Rahman, Pinty, Verstraete, 1993: Coupled Surface-Atmosphere
-    !    Reflectance (CSAR) Model. 2. Semiempirical Surface Model Usable
-    !    With NOAA Advanced Very High Resolution Radiometer Data,
-    !    J. Geophys. Res., 98, 20791-20801.
-    implicit none
-    real, intent(IN) :: RHO0, K, THETA, MU1, MU2, PHI
-    real :: RPV_REFLECTION
-    real M, F, H, COSPHI, SIN1, SIN2, COSG, TAN1, TAN2, CAPG
-
-    M = MU1**(K - 1)*MU2**(K - 1)/(MU1 + MU2)**(1 - K)
-    COSPHI = cos(PHI)
-    SIN1 = sqrt(1.0 - MU1**2)
-    SIN2 = sqrt(1.0 - MU2**2)
-    COSG = MU1*MU2 + SIN1*SIN2*COSPHI
-    F = (1 - THETA**2)/(1 + 2*THETA*COSG + THETA**2)**1.5
-    TAN1 = SIN1/MU1
-    TAN2 = SIN2/MU2
-    CAPG = sqrt(TAN1**2 + TAN2**2 - 2*TAN1*TAN2*COSPHI)
-    H = 1 + (1 - RHO0)/(1 + CAPG)
-    RPV_REFLECTION = RHO0*M*F*H
-end function RPV_REFLECTION
 
 subroutine COMPUTE_RADIANCE(NLAY, ALBEDOSC, LEGENSC, &
                             MAXLEG, NLEGP, LEGENP, DELTAM, &
@@ -2166,7 +2128,7 @@ subroutine COMPUTE_RADIANCE(NLAY, ALBEDOSC, LEGENSC, &
                     BNDRAD = RADIANCE(1, NMU/2 + 1, IXG(IXP(2, NLAY)))
                 else
                     call VARIABLE_BRDF_SURFACE(NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, &
-                                               MUOUT(J), PHIRAD, &
+                                               MUOUT(J), PHIRAD, WAVELEN, &
                                                SRCTYPE, SOLARMU, DIRFLUXSFC, &
                                                SFCTYPE, SFCPARMS, SFCPLANCK, &
                                                RADIANCE(:, :, IXG(IXP(2, NLAY))), BNDRAD)
@@ -3009,6 +2971,7 @@ subroutine ADD_IN_KDIST(NLAY, HEIGHTP, TAUP, ALBEDOP, &
             write (*, *) 'Layer heights outside of CKD file height range.'
             stop
         end if
+
         I = 1
         do LAY = 1, NLAY
             ! First, use trapezoidal integration to get optical depth of
@@ -3039,9 +3002,11 @@ subroutine ADD_IN_KDIST(NLAY, HEIGHTP, TAUP, ALBEDOP, &
             else
                 ALBEDOPM(LAY) = 0.0
             end if
-            ! print *, 'add_kdist: ',LAY,GASTAU,TAUPM(LAY),ALBEDOPM(LAY)
+             print *, 'add_kdist: ',LAY,GASTAU,TAUPM(LAY),ALBEDOPM(LAY)
         end do
     end if
+
+    return
 end subroutine ADD_IN_KDIST
 
 subroutine SUM_KDIST_OUTPUT(IG, WT, NLAY, TAUP, IXP, NPTS, TAUG, &
