@@ -2997,15 +2997,12 @@ subroutine ADD_IN_KDIST(NLAY, HEIGHTP, TAUP, ALBEDOP, &
             GASTAU = GASTAU - 0.5*(ABS + GASABS(I + 1))*(Z2 - ZCKD(I + 1))
             ! Then, add the gaseous optical depth to the particle properties
             TAUPM(LAY) = TAUP(LAY) + GASTAU
-
-            !print *, TAUPM(LAY), TAUP(LAY), GASTAU
-
             if (TAUPM(LAY) > 0.0) then
                 ALBEDOPM(LAY) = ALBEDOP(LAY)*TAUP(LAY)/TAUPM(LAY)
             else
                 ALBEDOPM(LAY) = 0.0
             end if
-            print *, 'add_kdist: ',LAY,GASTAU,TAUPM(LAY),ALBEDOPM(LAY)
+            !print *, 'add_kdist: ',LAY,GASTAU,TAUPM(LAY),ALBEDOPM(LAY)
         end do
     end if
 
