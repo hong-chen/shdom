@@ -6,6 +6,7 @@ program SHDOMPP
 
     use globals
     use globals_prp
+    use shd_init
     use shd_inp ! shd_io__
     use shd_out ! shd_io__
 
@@ -33,10 +34,10 @@ program SHDOMPP
     real    :: SFCTEMP
 
     real, allocatable :: SOLFLUX(:)
-    real, allocatable :: XGRID(:), YGRID(:), ZGRID(:)
+    real, allocatable :: XGRID(:), YGRID(:), ZGRID(:), GRIDPOS(:, :)
+
     integer, allocatable :: GRIDPTR(:, :), NEIGHPTR(:, :), TREEPTR(:, :)
     integer*2, allocatable:: CELLFLAGS(:)
-    real, allocatable :: GRIDPOS(:, :)
     integer, allocatable :: RSHPTR(:), SHPTR(:), OSHPTR(:)
     real, allocatable :: RADIANCE(:, :), SOURCE(:, :), DELSOURCE(:, :)
     integer, allocatable :: WORK1(:)
@@ -67,7 +68,7 @@ program SHDOMPP
     integer :: NXSFC, NYSFC, NSFCPAR, NTOPPTS, NBOTPTS
     integer :: NG, SIDE, IG, ITER, I
     integer :: ML, MM, NLM, NSTLEG, NLEG, NANG, NPHI0MAX, NX1, NY1
-    integer :: NBPTS, NPTS, NSH, NBCELLS, OLDNPTS
+    integer :: NBPTS, NPTS, NSH, NCELLS, NBCELLS, OLDNPTS
     integer :: NRAD, IRAD, NXOUT, NYOUT, NVIS, IVIS, NSCAN, NPIX, NSHOUT
     integer :: NPTSTOT, NSHTOT
     logical :: INRADFLAG, NEWGRIDFLAG
@@ -147,8 +148,11 @@ program SHDOMPP
     NMU  = max(2, 2*int((NMU + 1)/2)) ! force NMU an even number
     NPHI = max(1, NPHI)
 
+    ! Make NPHI0MAX, ML, MM, and NLM from NMU and NPHI
+    NPHI0MAX = int((NPHI + 2)/2)
     ML = NMU - 1
     MM = max(0, int(NPHI/2) - 1)
+    NLM = (MM + 1)*(ML + 1) - (MM*(MM + 1))/2
 
     ! NLEG: The number of Legendre series phase function terms used in the solution procedure
     NLEG = ML
@@ -166,9 +170,9 @@ program SHDOMPP
     NLEG = ML
     if (DELTAM) NLEG = ML + 1
 
+    ! dummy variables for output
     NX1 = 1; NY1 = 1
     NBPTS = NX1*NY1*NZ
-    NLM = (2*MM + 1)*(ML + 1) - MM*(MM + 1)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
@@ -191,26 +195,15 @@ program SHDOMPP
 
 
     ! process layer property
+    ! reverse order (first value at top)
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    !call USER_INPUT(PROPFILE, CKDFILE, KDIST, NMU, NPHI, &
-    !                SRCTYPE, SOLARFLUX, SOLARMU, SKYRAD, &
-    !                SFCTEMP, SFCTYPE, SFCPARMS, WAVELEN, WAVENO, &
-    !                ACCELFLAG, SOLACC, MAXITER, SPLITACC, &
-    !                FLUXFILE, FLUXPARM, RADFILE, MAXPAR, NZOUT, ZOUT, &
-    !                NMUOUT, MUOUT, NPHIOUT, PHIOUT)
-
-    ! Find out the size of the property grid arrays for allocating arrays
-    !call READ_PROPERTY_SIZE(PROPFILE, NLAY, MAXLEG)
-
-    ! Read in the properties of the medium
-    !call READ_PROPERTIES(PROPFILE, NLAY, MAXLEG, &
-    !                     HEIGHTP, TEMPP, TAUP, ALBEDOP, NLEGP, LEGENP)
     NLAY = NPZ_ - 1
     allocate (HEIGHTP(NLAY+1), TEMPP(NLAY+1))
     HEIGHTP(1:NPZ_) = ZLEVELS_(NPZ_:1:-1)
     TEMPP(1:NPZ_) = TEMPPT(NPZ_:1:-1)
 
     allocate (TAUP(NLAY), ALBEDOP(NLAY))
+    ! needs further investigation on the layer averaging issue
     TAUP(1:NLAY) = EXTINCTPT(NLAY+1:2:-1)*(HEIGHTP(1:NLAY)-HEIGHTP(2:NPZ_))
     ALBEDOP(1:NLAY) = ALBEDOPT(NLAY:1:-1)
 
@@ -221,21 +214,30 @@ program SHDOMPP
         LEGENP(0:MAXLEG, ILAY) = LEGENPT(1+(MAXLEG+1)*(IPHASE-1):(MAXLEG+1)*IPHASE)
     end do
 
-    NZOUT = 1
-    allocate (ZOUT(NZOUT))
-    ZOUT(1) = ZLEVELS_(NPZ_)
+    FLUX_OUT = .false.
+    RADIANCE_OUT = .false.
+    NRAD = 0
+    do I = 1, NUMOUT
+        if (OUTTYPES(I) .eq. 'R') then
+            RADIANCE_OUT = .true.
+            NXOUT = 1
+            NYOUT = 1
+            NRAD = NRAD + NSTOKES*NXOUT*NYOUT*nint(OUTPARMS(6, I))
+            IRAD = I
 
-    NMUOUT = 10
-    allocate (MUOUT(NMUOUT))
-    do I = 1, NMUOUT
-        MUOUT(I) = cos(DTOR_*real(I))
+            NZOUT = 1
+            allocate (ZOUT(NZOUT))
+            ZOUT(1) = OUTPARMS(1, I)
+
+        else if (OUTTYPES(I) .eq. 'F') then
+            if (.not. FLUX_OUT) then
+                allocate (SUMFLUXES(2, MAXIG), SUMDIRFLUX(MAXIG))
+            end if
+            FLUX_OUT = .true.
+        end if
     end do
 
-    NPHIOUT = 10
-    allocate (PHIOUT(NPHIOUT))
-    do I = 1, NPHIOUT
-        PHIOUT(I) = real(I)
-    end do
+    allocate (SUMRADOUT(NRAD))
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
@@ -276,10 +278,6 @@ program SHDOMPP
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! If doing a k-distribution then get the band info from the CKD file
     if (KDIST) then
-
-        !call READ_CKD_SIZE(CKDFILE, WAVENO, NG, NZCKD)
-        !call READ_CKD(CKDFILE, WAVENO, NG, NZCKD, SOLFLUX, DELG, ZCKD, KABS)
-
         call shd_io__readCkdSize(CKDFILE, WAVENO, NG, NZCKD_)
 
         allocate (ZCKD_(NZCKD_), GASABS_(NZCKD_), SOLFLUX(NG), DELG(NG), KABS(NZCKD_, NG))
@@ -301,11 +299,38 @@ program SHDOMPP
 
     ! read SENFILE
     !╭────────────────────────────────────────────────────────────────────────────╮!
+    allocate (MUOUT(NRAD), PHIOUT(NRAD))
     if (SENFILE(1:4) .ne. 'NONE') then
         call shd_io__readSenSize(SENFILE, NSENDATA, NSENPAR)
         allocate (SENPARMS(NSENDATA*NSENPAR))
         call shd_io__readSen(SENFILE, NSENDATA, NSENPAR, SENPARMS)
+        MUOUT(:) = SENPARMS(1:2*NRAD-1:2)
+        PHIOUT(:) = SENPARMS(2:2*NRAD:2)
+    else
+        MUOUT(:) = OUTPARMS(7:2*NRAD+5:2, IRAD)
+        PHIOUT(:) = OUTPARMS(8:2*NRAD+6:2, IRAD)
     end if
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+
+    ! grids
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    XSTART_ = 0.0
+    YSTART_ = 0.0
+    allocate (XGRID(1), YGRID(1), ZGRID(NZ), GRIDPOS(3, NZ))
+    call shd_init__makeGrid(BCFLAG, GRIDTYPE,&
+        &NPX_, NPY_, NPZ_, NX, NY, NZ,&
+        &XSTART_, YSTART_, DELX_, DELY_, ZLEVELS_,&
+        &XGRID, YGRID, ZGRID)
+
+    NPTS = NZ
+    NCELLS = NZ
+    allocate (GRIDPTR(8, NZ), NEIGHPTR(6, NZ), TREEPTR(2, NZ), CELLFLAGS(NZ))
+    call shd_init__makeCell(BCFLAG, IPFLAG,&
+        &NX, NY, NZ, NX1, NY1, NPTS, NCELLS,&
+        &XGRID, YGRID, ZGRID, GRIDPOS,&
+        &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS)
+    NBCELLS = NCELLS
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
@@ -322,27 +347,64 @@ program SHDOMPP
         call ADD_IN_KDIST(NLAY, HEIGHTP, TAUP, ALBEDOP, &
                           NZCKD_, ZCKD_, KABS(:, IG), TAUPM, ALBEDOPM)
 
-        call SOLVE_SHDOMPP(NLAY, NANG, MAXLEG, HEIGHTP, TEMPP, TAUPM, ALBEDOPM, &
-                           NLEGP, LEGENP, SRCTYPE, SOLARFLUX, SOLARMU, &
-                           UNITS, WAVELEN, WAVENO, SKYRAD, SFCTYPE(2:2), SFCPARMS, SFCTEMP, &
-                           NMU, NPHI, MAXIG, MAXDELTAU, SPLITACC, SOLACC, &
-                           MAXITER, ACCELFLAG, PRNT, SOLCRIT, ITER, &
-                           NPTS, HEIGHTG, TAUG, IXP, FLUXUPM, FLUXDNM, MEANRADM, &
-                           NZOUT, ZOUT, NMUOUT, MUOUT, NPHIOUT, PHIOUT, &
-                           RADOUTM)
+        !call SOLVE_SHDOMPP(NLAY, NANG, MAXLEG, HEIGHTP, TEMPP, TAUPM, ALBEDOPM, &
+        !                   NLEGP, LEGENP, SRCTYPE, SOLARFLUX, SOLARMU, &
+        !                   UNITS, WAVELEN, WAVENO, SKYRAD, SFCTYPE(2:2), SFCPARMS, SFCTEMP, &
+        !                   NMU, NPHI, MAXIG, MAXDELTAU, SPLITACC, SOLACC, &
+        !                   MAXITER, ACCELFLAG, PRNT, SOLCRIT, ITER, &
+        !                   NPTS, HEIGHTG, TAUG, IXP, FLUXUPM, FLUXDNM, MEANRADM, &
+        !                   NZOUT, ZOUT, NMUOUT, MUOUT, NPHIOUT, PHIOUT, &
+        !                   )
+        !stop
 
         TOTITER = TOTITER + ITER
-        if (KDIST) then
-            call SUM_KDIST_OUTPUT(IG, DELG(IG), NLAY, TAUP, IXP, NPTS, TAUG, &
-                                  HEIGHTP, HEIGHTG, FLUXUPM, FLUXUP, &
-                                  FLUXDNM, FLUXDN, MEANRADM, MEANRAD, &
-                                  NZOUT, NMUOUT, NPHIOUT, RADOUTM, RADOUT)
-        else
-            FLUXUP(1:NPTS) = FLUXUPM(1:NPTS)
-            FLUXDN(1:NPTS) = FLUXDNM(1:NPTS)
-            MEANRAD(1:NPTS) = MEANRADM(1:NPTS)
-            RADOUT(:, :, :) = RADOUTM(:, :, :)
-        end if
+
+        ! post processing
+        !╭────────────────────────────────────────────────────────────────────────────╮!
+        !! Add the direct solar component to the downwelling flux and mean radiance
+        !if (SRCTYPE /= 'T') then
+        !    PI = acos(-1.0)
+        !    do I = 1, NPTS
+        !        DIRFLUX = SOLARFLUX*exp(-TAUGSC(I)/abs(SOLARMU))
+        !        FLUXDN(I) = FLUXDN(I) + DIRFLUX
+        !        MEANRAD(I) = MEANRAD(I) + DIRFLUX/(4*PI*abs(SOLARMU))
+        !    end do
+        !end if
+
+        !! Make an unscaled optical depth grid for the output file
+        !if (DELTAM) then
+        !    call UNDELTA_SCALE(NLAY, TAUPSC, TAUP, IXP, NPTS, TAUGSC, TAUG)
+        !else
+        !    TAUG(:) = TAUGSC(:)
+        !end if
+        !call OUTPUT_HEIGHT_GRID(NLAY, TAUP, IXP, NPTS, TAUG, HEIGHTP, HEIGHTG)
+
+        !if (NZOUT*NMUOUT*NPHIOUT > 0) then
+        !    ! Compute the radiance output and put in array
+        !    call COMPUTE_RADIANCE(NLAY, ALBEDOSC, LEGENSC, &
+        !                          MAXLEG, NLEGP, LEGENP, DELTAM, &
+        !                          NPTS, HEIGHTG, TAUG, TAUGSC, IXP, IXG, &
+        !                          ML, MM, NLM, NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, &
+        !                          SRCTYPE, SOLARFLUX, SOLARMU, &
+        !                          SKYRAD, UNITS, WAVELEN, WAVENO, SFCTEMP, &
+        !                          SFCTYPE, SFCPARMS, SOURCE, RADIANCE, &
+        !                          NZOUT, ZOUT, NMUOUT, MUOUT, NPHIOUT, PHIOUT, &
+        !                          RADOUT)
+        !end if
+        !╰────────────────────────────────────────────────────────────────────────────╯!
+
+        !if (KDIST) then
+        !    call SUM_KDIST_OUTPUT(IG, DELG(IG), NLAY, TAUP, IXP, NPTS, TAUG, &
+        !                          HEIGHTP, HEIGHTG, FLUXUPM, FLUXUP, &
+        !                          FLUXDNM, FLUXDN, MEANRADM, MEANRAD, &
+        !                          NZOUT, NMUOUT, NPHIOUT, RADOUTM, RADOUT)
+        !else
+        !    FLUXUP(1:NPTS) = FLUXUPM(1:NPTS)
+        !    FLUXDN(1:NPTS) = FLUXDNM(1:NPTS)
+        !    MEANRAD(1:NPTS) = MEANRADM(1:NPTS)
+        !    RADOUT(:, :, :) = RADOUTM(:, :, :)
+        !end if
+
     end do
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
@@ -371,8 +433,6 @@ program SHDOMPP
         if ((OUTTYPES(I) .eq. 'F') .or. (OUTTYPES(I) .eq. 'R')) then
             if (SENFILE(1:4) .ne. 'NONE') then
                 NSH = 0
-                !print *, XGRID, YGRID, ZGRID, GRIDPOS
-                !print *, TREEPTR, GRIDPTR, CELLFLAGS
                 !print *, SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV
                 !print *, IRAD, SUMRADOUT, NSHOUT, SUMSHTERMS, SOURCE1OUT
                 print *, 'haha'
@@ -414,6 +474,9 @@ program SHDOMPP
 
     ! deallocate array
     !╭────────────────────────────────────────────────────────────────────────────╮!
+    !deallocate (TAUPSC, ALBEDOSC, LEGENSC, TAUGSC)
+    !deallocate (SOURCE, RADIANCE, CONSTSOURCE, DELSOURCE, SRCINT)
+
     ! layer property
     deallocate (HEIGHTP, TEMPP, TAUP, ALBEDOP, NLEGP, LEGENP, TAUPM, ALBEDOPM)
 
@@ -422,6 +485,10 @@ program SHDOMPP
 
     ! mean property
     deallocate (FLUXUPM, FLUXDNM, MEANRADM, RADOUTM)
+
+    ! grids
+    deallocate (XGRID, YGRID, ZGRID, GRIDPOS)
+    deallocate (GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS)
 
     ! CKD
     deallocate (SOLFLUX, DELG)
@@ -521,13 +588,13 @@ subroutine SOLVE_SHDOMPP(NLAY, NANG, MAXLEG, HEIGHTP, TEMPP, TAUP, ALBEDOP, &
     real, intent(IN)  :: SOLARFLUX, SOLARMU, WAVELEN, WAVENO(2), SKYRAD
     real, intent(IN)  :: SFCPARMS(*), SFCTEMP
     real, intent(IN)  :: MAXDELTAU, SPLITACC, SOLACC
-    real, intent(INOUT)  :: ZOUT(NZOUT), MUOUT(NMUOUT), PHIOUT(NPHIOUT)
+    real, intent(INOUT)  :: ZOUT(NZOUT)
     character(LEN=1), intent(IN) :: SRCTYPE, SFCTYPE, UNITS
     integer, intent(OUT) :: ITER, NPTS, IXP(2, NLAY)
     real, intent(OUT) :: SOLCRIT
     real, intent(OUT) :: HEIGHTG(MAXIG), TAUG(MAXIG)
     real, intent(OUT) :: FLUXUP(MAXIG), FLUXDN(MAXIG), MEANRAD(MAXIG)
-    real, intent(OUT) :: RADOUT(NZOUT, NMUOUT, NPHIOUT)
+    real, intent(INOUT) :: RADOUT(*), MUOUT(*), PHIOUT(*)
 
     integer :: ML, MM, NLM, NPHI0MAX
     integer :: ORDINATESET, OLDNPTS, PREVNPTS, LASTNPTS, NANG, I
@@ -540,25 +607,21 @@ subroutine SOLVE_SHDOMPP(NLAY, NANG, MAXLEG, HEIGHTP, TEMPP, TAUP, ALBEDOP, &
     integer, allocatable :: IXG(:), NPHI0(:)
     real, allocatable :: TAUPSC(:), ALBEDOSC(:), LEGENSC(:, :)
     real, allocatable :: TAUGSC(:), RADIANCE(:, :, :), SOURCE(:, :)
+
     real, allocatable :: MU(:), WTDO(:, :), PHI(:, :), WTMU(:), YLMSUN(:)
     real, allocatable :: CMU1(:, :), CMU2(:, :), CPHI1(:, :, :), CPHI2(:, :, :)
     real, allocatable :: WPHISAVE(:, :), SRCINT(:, :, :)
     real, allocatable :: CONSTSOURCE(:, :), SHRADIANCE(:, :), DOSOURCE(:, :, :)
     real, allocatable :: DELSOURCE(:, :)
 
-    ! Make NPHI0MAX, ML, MM, and NLM from NMU and NPHI
-    if (NMU /= max(2, 2*int((NMU + 1)/2))) stop 'SOLVE_SHDOMPP: Bad NMU'
-    if (NPHI < 1) stop 'SOLVE_SHDOMPP: NPHI must be greater than 0'
-    NPHI0MAX = int((NPHI + 2)/2)
-    ML = NMU - 1
-    MM = max(0, int(NPHI/2) - 1)
-    NLM = (MM + 1)*(ML + 1) - (MM*(MM + 1))/2
 
     allocate (TAUPSC(NLAY), ALBEDOSC(NLAY), LEGENSC(0:ML, NLAY))
     allocate (TAUGSC(MAXIG), IXG(MAXIG))
+
     allocate (MU(NMU), PHI(NPHI0MAX, NMU), NPHI0(NMU), WTDO(NMU, NPHI0MAX))
     allocate (YLMSUN(NLM), WTMU(NMU), CMU1(NLM, NMU), CMU2(NMU, NLM))
     allocate (CPHI1(0:16, 32, NMU), CPHI2(32, 0:16, NMU), WPHISAVE(3*NPHI0MAX + 15, NMU))
+
     allocate (SOURCE(NLM, MAXIG), RADIANCE(NPHI0MAX, NMU, MAXIG))
     allocate (CONSTSOURCE(NLM, MAXIG), DELSOURCE(NLM, MAXIG))
     allocate (SRCINT(0:4, NMU, MAXIG))
@@ -712,41 +775,10 @@ subroutine SOLVE_SHDOMPP(NLAY, NANG, MAXLEG, HEIGHTP, TEMPP, TAUP, ALBEDOP, &
     if (PRNT) write (*, '(1X,A,I6,A,F9.6)') &
         '! Iterations: ', ITER, '     Final Criterion: ', SOLCRIT
 
-    ! Add the direct solar component to the downwelling flux and mean radiance
-    if (SRCTYPE /= 'T') then
-        PI = acos(-1.0)
-        do I = 1, NPTS
-            DIRFLUX = SOLARFLUX*exp(-TAUGSC(I)/abs(SOLARMU))
-            FLUXDN(I) = FLUXDN(I) + DIRFLUX
-            MEANRAD(I) = MEANRAD(I) + DIRFLUX/(4*PI*abs(SOLARMU))
-        end do
-    end if
 
-    ! Make an unscaled optical depth grid for the output file
-    if (DELTAM) then
-        call UNDELTA_SCALE(NLAY, TAUPSC, TAUP, IXP, NPTS, TAUGSC, TAUG)
-    else
-        TAUG(:) = TAUGSC(:)
-    end if
-    call OUTPUT_HEIGHT_GRID(NLAY, TAUP, IXP, NPTS, TAUG, HEIGHTP, HEIGHTG)
-
-    if (NZOUT*NMUOUT*NPHIOUT > 0) then
-        ! Compute the radiance output and put in array
-        call COMPUTE_RADIANCE(NLAY, ALBEDOSC, LEGENSC, &
-                              MAXLEG, NLEGP, LEGENP, DELTAM, &
-                              NPTS, HEIGHTG, TAUG, TAUGSC, IXP, IXG, &
-                              ML, MM, NLM, NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, &
-                              SRCTYPE, SOLARFLUX, SOLARMU, &
-                              SKYRAD, UNITS, WAVELEN, WAVENO, SFCTEMP, &
-                              SFCTYPE, SFCPARMS, SOURCE, RADIANCE, &
-                              NZOUT, ZOUT, NMUOUT, MUOUT, NPHIOUT, PHIOUT, &
-                              RADOUT)
-    end if
-
-    deallocate (TAUPSC, ALBEDOSC, LEGENSC, TAUGSC)
     deallocate (MU, PHI, NPHI0, WTDO, YLMSUN, WTMU)
     deallocate (CPHI1, CPHI2, WPHISAVE, CMU1, CMU2)
-    deallocate (SOURCE, RADIANCE, CONSTSOURCE, DELSOURCE, SRCINT)
+
 end subroutine SOLVE_SHDOMPP
 
 subroutine DELTA_SCALE(NLAY, ML, TAUP, ALBEDOP, MAXLEG, NLEGP, LEGENP, &
@@ -1827,6 +1859,7 @@ subroutine COMPUTE_RADIANCE(NLAY, ALBEDOSC, LEGENSC, &
                             SFCTYPE, SFCPARMS, SOURCE, RADIANCE, &
                             NZOUT, ZOUT, NMUOUT, MUOUT, NPHIOUT, PHIOUT, &
                             RADOUT)
+
     ! Computes the radiances for the specified tau's, mu's, and phi's.
 
     use shd_util
@@ -1845,10 +1878,10 @@ subroutine COMPUTE_RADIANCE(NLAY, ALBEDOSC, LEGENSC, &
     real, intent(IN) :: SOLARFLUX, SOLARMU, SKYRAD
     real, intent(IN) :: SFCPARMS(*), SFCTEMP, WAVELEN, WAVENO(2)
     real, intent(IN) :: SOURCE(NLM, NPTS), RADIANCE(NPHI0MAX, NMU, NPTS)
-    real, intent(INOUT) :: ZOUT(NZOUT), MUOUT(NMUOUT), PHIOUT(NPHIOUT)
-    real, intent(OUT) :: RADOUT(NZOUT, NMUOUT, NPHIOUT)
+    real, intent(INOUT) :: ZOUT(NZOUT)
+    real, intent(INOUT) :: RADOUT(*), MUOUT(*), PHIOUT(*)
 
-    integer :: I, J, K, L
+    integer :: I, J, K, L, IRAD
     real    :: ZDIF, RADDEG, PHIRAD
     real    :: DIRFLUXSFC, SFCPLANCK, BNDRAD
     integer, allocatable :: LZOUT(:)
@@ -1884,52 +1917,54 @@ subroutine COMPUTE_RADIANCE(NLAY, ALBEDOSC, LEGENSC, &
     end if
 
     ! Loop over the output radiance directions
-    do J = 1, NMUOUT
-        do K = 1, NPHIOUT
-            PHIRAD = PHIOUT(K)*RADDEG
-            if (MUOUT(J) == 0.0 .or. abs(MUOUT(J)) > 1.0) then
-                write (*, *) 'COMPUTE_RADIANCE: Bad mu for radiance', MUOUT(J)
-                RADOUT(:, J, K) = -999.0
-                cycle
-            end if
+    do IRAD = 1, NPTS
 
-            ! Compute the source function throughout grid for this angle
-            call COMPUTE_ONE_SOURCE(NLAY, ALBEDOSC, LEGENSC, &
-                                    MAXLEG, NLEGP, LEGENP, &
-                                    NPTS, IXP, IXG, ML, MM, NLM, &
-                                    MUOUT(J), PHIRAD, SRCTYPE, DELTAM, &
-                                    SOLARMU, DIRFLUX, SOURCE, SOURCE1)
+        PHIRAD = PHIOUT(IRAD)*RADDEG
+        if (MUOUT(IRAD) == 0.0 .or. abs(MUOUT(IRAD)) > 1.0) then
+            write (*, *) 'COMPUTE_RADIANCE: Bad mu for radiance', MUOUT(IRAD)
+            RADOUT(IRAD) = -999.0
+            cycle
+        end if
 
-            ! Get boundary radiances: either top or bottom
-            !  Isotropic top boundary or Lambertian bottom boundary can use
-            !  the previously computed boundary radiances in RADIANCE,
-            !  otherwise, compute the radiance for this angle by integrating
-            !  over the stored downwelling radiances.
-            if (MUOUT(J) < 0.0) then
-                BNDRAD = RADIANCE(1, 1, IXG(IXP(1, 1)))
+        ! Compute the source function throughout grid for this angle
+        call COMPUTE_ONE_SOURCE(NLAY, ALBEDOSC, LEGENSC, &
+                                MAXLEG, NLEGP, LEGENP, &
+                                NPTS, IXP, IXG, ML, MM, NLM, &
+                                MUOUT(IRAD), PHIRAD, SRCTYPE, DELTAM, &
+                                SOLARMU, DIRFLUX, SOURCE, SOURCE1)
+
+        ! Get boundary radiances: either top or bottom
+        !  Isotropic top boundary or Lambertian bottom boundary can use
+        !  the previously computed boundary radiances in RADIANCE,
+        !  otherwise, compute the radiance for this angle by integrating
+        !  over the stored downwelling radiances.
+        if (MUOUT(IRAD) < 0.0) then
+            BNDRAD = RADIANCE(1, 1, IXG(IXP(1, 1)))
+        else
+            if (SFCTYPE == 'L') then
+                BNDRAD = RADIANCE(1, NMU/2 + 1, IXG(IXP(2, NLAY)))
             else
-                if (SFCTYPE == 'L') then
-                    BNDRAD = RADIANCE(1, NMU/2 + 1, IXG(IXP(2, NLAY)))
-                else
-                    call VARIABLE_BRDF_SURFACE(NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, &
-                                               MUOUT(J), PHIRAD, WAVELEN, &
-                                               SRCTYPE, SOLARMU, DIRFLUXSFC, &
-                                               SFCTYPE, SFCPARMS, SFCPLANCK, &
-                                               RADIANCE(:, :, IXG(IXP(2, NLAY))), BNDRAD)
-                end if
+                call VARIABLE_BRDF_SURFACE(NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, &
+                                           MUOUT(IRAD), PHIRAD, WAVELEN, &
+                                           SRCTYPE, SOLARMU, DIRFLUXSFC, &
+                                           SFCTYPE, SFCPARMS, SFCPLANCK, &
+                                           RADIANCE(:, :, IXG(IXP(2, NLAY))), BNDRAD)
             end if
+        end if
 
-            ! Integrate the source function for this direction to get the radiances
-            !   at all the levels (RADVEC), then pull out the desired one.
-            call INTEGRATE_SOURCE(NLAY, NPTS, IXP, IXG, TAUGSC, &
-                                  MUOUT(J), BNDRAD, SOURCE1, RADVEC)
-            do I = 1, NZOUT
-                RADOUT(I, J, K) = RADVEC(LZOUT(I))
-            end do
+        ! Integrate the source function for this direction to get the radiances
+        !   at all the levels (RADVEC), then pull out the desired one.
+        call INTEGRATE_SOURCE(NLAY, NPTS, IXP, IXG, TAUGSC, &
+                              MUOUT(IRAD), BNDRAD, SOURCE1, RADVEC)
+        do I = 1, NZOUT
+            RADOUT(IRAD) = RADVEC(LZOUT(I))
         end do
     end do
 
     deallocate (RADVEC, SOURCE1, DIRFLUX, LZOUT)
+
+    return
+
 end subroutine COMPUTE_RADIANCE
 
 subroutine COMPUTE_ONE_SOURCE(NLAY, ALBEDOSC, LEGENSC, &
