@@ -1,3 +1,34 @@
+!╭────────────────────────────────────────────────────────────────────────────╮!
+! @LICENSE_HEADER_START@
+!
+!   This file is part of SHDOMNG.
+!
+!   --
+!   SHDOMNG: Spherical Harmonic Discrete Ordinate Method - Next Generation
+!
+!
+!   Copyright (C) 2025-
+!   Hong Chen, hong.chen-1@colorado.edu
+!
+!   SHDOMNG is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU General Public License as published by
+!   the Free Software Foundation, either version 3 of the License, or
+!   (at your option) any later version.
+!
+!   SHDOMNG is distributed in the hope that it will be useful,
+!   but WITHOUT ANY WARRANTY; without even the implied warranty of
+!   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+!   GNU General Public License for more details.
+!
+!   You should have received a copy of the GNU General Public License
+!   along with SHDOMNG. If not, see <http://www.gnu.org/licenses/>.
+!
+! @LICENSE_HEADER_END@
+!
+! Acknowledgement:
+! SHDOM was originally developed by Frank Evans and is available at https://coloradolinux.com/shdom.
+!╰────────────────────────────────────────────────────────────────────────────╯!
+
 ! SHDOMPP: Spherical harmonic discrete ordinate radiative transfer method
 !          for plane-parallel atmospheres.
 !     See shdompp.doc for documentation.
@@ -33,6 +64,13 @@ program SHDOMPP
     integer :: NCASES, ICASE
     real    :: SFCTEMP
 
+    integer :: MAXPG, MAXIG, MAXIC, MAXIV, MAXIDO, MAXNZ, MAXNG
+    integer :: MAXLEG, MAXPGL, MAXIGL
+    integer :: MAXNBC, MAXBCRAD
+    integer :: MAXSFCPTS, MAXSFCPARS, BIG_ARRAYS
+
+    real :: MEMWORD, WANTMEM
+    real :: MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
     real, allocatable :: SOLFLUX(:)
     real, allocatable :: XGRID(:), YGRID(:), ZGRID(:), GRIDPOS(:, :)
 
@@ -40,15 +78,13 @@ program SHDOMPP
     integer*2, allocatable:: CELLFLAGS(:)
     integer, allocatable :: RSHPTR(:), SHPTR(:), OSHPTR(:)
     real, allocatable :: RADIANCE(:, :), SOURCE(:, :), DELSOURCE(:, :)
-    integer, allocatable :: WORK1(:)
-    real, allocatable :: WORK(:), WORK2(:)
     real, allocatable :: FLUXES(:, :), DIRFLUX(:), DIRFLUX_TMP(:)
     integer, allocatable :: NPHI0(:)
     real, allocatable :: MU(:), WTDO(:), PHI(:)
     integer, allocatable :: BCPTR(:)
     real, allocatable :: BCRAD(:, :)
-    real, allocatable :: SFCGRIDPARMS(:)
     real, allocatable :: SENPARMS(:)
+
     real, allocatable :: SUMFLUXES(:, :), SUMDIRFLUX(:), SUMFLUXDIV(:)
     real, allocatable :: SUMSHTERMS(:), SOURCE1OUT(:)
     real, allocatable :: SUMRADOUT(:), SUMVISOUT(:)
@@ -57,13 +93,6 @@ program SHDOMPP
     real, allocatable :: XALLGRID(:), YALLGRID(:)
     real, allocatable :: TEMPPT(:), EXTINCTPT(:), ALBEDOPT(:), LEGENPT(:)
     integer*2, allocatable :: IPHASEPT(:)
-
-    integer :: MAXPG, MAXIG, MAXIC, MAXIV, MAXIDO, MAXNZ, MAXNG
-    integer :: MAXLEG, MAXPGL, MAXIGL
-    integer :: MAXNBC, MAXBCRAD
-    integer :: MAXSFCPTS, MAXSFCPARS, BIG_ARRAYS
-    real :: MEMWORD, WANTMEM
-    real :: MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
 
     integer :: NXSFC, NYSFC, NSFCPAR, NTOPPTS, NBOTPTS
     integer :: NG, SIDE, IG, ITER, I
@@ -94,13 +123,6 @@ program SHDOMPP
 
     real :: SOLARFLUX
 
-    integer :: count_start, count_rate, count_max
-    integer :: count_end
-    real :: elapsed_time
-    real :: DELX0, DELY0
-    logical :: mpiX, mpiY, mpiMode
-    logical :: nmlMode = .true.
-
     real, allocatable :: ZOUT(:), MUOUT(:), PHIOUT(:)
     integer, allocatable :: NLEGP(:), IXP(:, :)
     real, allocatable :: TAUP(:), ALBEDOP(:), LEGENP(:, :)
@@ -110,6 +132,13 @@ program SHDOMPP
     real, allocatable :: HEIGHTG(:), TAUG(:)
     real, allocatable :: FLUXUP(:), FLUXDN(:), MEANRAD(:), RADOUT(:, :, :)
     real, allocatable :: FLUXUPM(:), FLUXDNM(:), MEANRADM(:), RADOUTM(:, :, :)
+
+    integer :: count_start, count_rate, count_max
+    integer :: count_end
+    real :: elapsed_time
+    real :: DELX0, DELY0
+    logical :: mpiX, mpiY, mpiMode
+    logical :: nmlMode = .true.
 
     ! namelist input
     !╭────────────────────────────────────────────────────────────────────────────╮!
@@ -347,7 +376,10 @@ program SHDOMPP
         call ADD_IN_KDIST(NLAY, HEIGHTP, TAUP, ALBEDOP, &
                           NZCKD_, ZCKD_, KABS(:, IG), TAUPM, ALBEDOPM)
 
-        !call SOLVE_SHDOMPP(NLAY, NANG, MAXLEG, HEIGHTP, TEMPP, TAUPM, ALBEDOPM, &
+        !call SOLVE_SHDOMPP(NSTOKES, NLAY, NANG,&
+        !                   &ML, MM, NLM, NMU, NPHI, NLEG, NSTLEG, NUMPHASE_,&
+        !                   &NPHI0, MU, PHI, WTDO,&
+        !                   MAXLEG, HEIGHTP, TEMPP, TAUPM, ALBEDOPM, &
         !                   NLEGP, LEGENP, SRCTYPE, SOLARFLUX, SOLARMU, &
         !                   UNITS, WAVELEN, WAVENO, SKYRAD, SFCTYPE(2:2), SFCPARMS, SFCTEMP, &
         !                   NMU, NPHI, MAXIG, MAXDELTAU, SPLITACC, SOLACC, &
@@ -356,6 +388,29 @@ program SHDOMPP
         !                   NZOUT, ZOUT, NMUOUT, MUOUT, NPHIOUT, PHIOUT, &
         !                   )
         !stop
+
+        ! Find the monochromatic SHDOM solution: adaptive grid output
+        !   in SOURCE (SHPTR), RADIANCE (RSHPTR), FLUXES, DIRFLUX.
+        !call SOLVE_SHDOMPP(NSTOKES, NX, NY, NZ, NX1, NY1, NANG,&
+        !    &ML, MM, NLM, NMU, NPHI, NLEG, NSTLEG, NUMPHASE_,&
+        !    &NPHI0, MU, PHI, WTDO,&
+        !    &MAXIV, MAXIC, MAXIG, MAXIDO, INRADFLAG,&
+        !    &BCFLAG, IPFLAG, DELTAM, SRCTYPE, HIGHORDERRAD,&
+        !    &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+        !    &SFCTYPE, GNDTEMP, GNDALBEDO,&
+        !    &NXSFC, NYSFC, DELXSFC, DELYSFC,&
+        !    &NSFCPAR, SFCPARMS, SFCGRIDPARMS,&
+        !    &UNITS, WAVENO, WAVELEN,&
+        !    &ACCELFLAG, SOLACC, MAXITER, SOLCRIT, ITER,&
+        !    &SPLITACC, SHACC, XGRID, YGRID, ZGRID,&
+        !    &TEMP, PLANCK, EXTINCT, ALBEDO, LEGEN, IPHASE,&
+        !    &MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
+        !    &NPTS, GRIDPOS,&
+        !    &NCELLS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+        !    &RSHPTR, SHPTR, OSHPTR, WORK, WORK1, WORK2,&
+        !    &SOURCE, DELSOURCE, RADIANCE, FLUXES, DIRFLUX)
+        !INRADFLAG = .false.
+        !TOTITER = TOTITER + ITER
 
         TOTITER = TOTITER + ITER
 
@@ -506,7 +561,10 @@ program SHDOMPP
 
 end program SHDOMPP
 
-subroutine SOLVE_SHDOMPP(NLAY, NANG, MAXLEG, HEIGHTP, TEMPP, TAUP, ALBEDOP, &
+subroutine SOLVE_SHDOMPP(NSTOKES, NLAY, NANG,&
+                         !ML, MM, NLM, NMU, NPHI, NLEG, NSTLEG, NUMPHASE_,&
+                         !NPHI0, MU, PHI, WTDO,&
+                         MAXLEG, HEIGHTP, TEMPP, TAUP, ALBEDOP, &
                          NLEGP, LEGENP, SRCTYPE, SOLARFLUX, SOLARMU, &
                          UNITS, WAVELEN, WAVENO, SKYRAD, SFCTYPE, SFCPARMS, SFCTEMP, &
                          NMU, NPHI, MAXIG, MAXDELTAU, SPLITACC, SOLACC, &
@@ -579,7 +637,7 @@ subroutine SOLVE_SHDOMPP(NLAY, NANG, MAXLEG, HEIGHTP, TEMPP, TAUP, ALBEDOP, &
     use shd_shdo
 
     implicit none
-    integer, intent(IN)  :: NLAY, MAXLEG, NLEGP(NLAY), MAXIG
+    integer, intent(IN)  :: NSTOKES, NLAY, MAXLEG, NLEGP(NLAY), MAXIG
     integer, intent(IN)  :: NMU, NPHI, MAXITER
     integer, intent(IN)  :: NZOUT, NMUOUT, NPHIOUT
     logical, intent(IN)  :: ACCELFLAG, PRNT
