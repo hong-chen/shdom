@@ -174,7 +174,7 @@ subroutine shd_mpi__map(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
 
     if (MYPROC_ .gt. 0) then
         write (procstr, '(I4.4)') MYPROC_
-        logfile = trim(adjustl(RUNNAME))//'.sHdOm-log.iproc-'//procstr
+        logfile = trim(adjustl(RUNNAME))//'.sHdOmNG-log.iproc-'//procstr
         open (UNIT=6, FILE=trim(adjustl(logfile)), STATUS='UNKNOWN')
     end if
 

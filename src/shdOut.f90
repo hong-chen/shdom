@@ -181,7 +181,7 @@ subroutine shd_io__outputResult(&
     character(len=20)  :: DATA_POSTFIX
     integer :: NVAR, NDATA, IDATA
 
-    DATA_POSTFIX = '.sHdOm-out'
+    DATA_POSTFIX = '.sHdOmNG-out'
     OUTFILE_DATA = trim(adjustl(OUTFILE))//trim(adjustl(DATA_POSTFIX))
 
     GRIDNAME = 'EVEN (X,Y)  '
@@ -1277,7 +1277,7 @@ subroutine shd_io__outputResultMpi(&
     real, allocatable :: SUM1(:), SUM2(:), SUM3(:)
     real, allocatable :: SHTERM5(:, :, :)
 
-    DATA_POSTFIX = '.mpi.sHdOm-out'
+    DATA_POSTFIX = '.mpi.sHdOmNG-out'
     OUTFILE_DATA = trim(adjustl(OUTFILE))//trim(adjustl(DATA_POSTFIX))
 
     GRIDNAME = 'EVEN (X,Y)  '
@@ -2004,7 +2004,7 @@ subroutine shd_io__outputCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     character(len=20)  :: DATA_POSTFIX
     integer :: N, IDATA, NL, NS, CAMID
 
-    DATA_POSTFIX = '.sHdOm-out'
+    DATA_POSTFIX = '.sHdOmNG-out'
     OUTFILE_DATA = trim(adjustl(OUTFILE))//trim(adjustl(DATA_POSTFIX))
 
     GRIDNAME = 'EVEN (X,Y)  '
