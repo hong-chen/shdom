@@ -1,4 +1,4 @@
-Spherical Harmonic Discrete Ordinate Method (SHDOM) for Atmospheric Radiative Transfer
+Spherical Harmonic Discrete Ordinate Method - Next Generation (SHDOMNG)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. image:: https://github.com/hong-chen/shdom/actions/workflows/build_gfortran.yml/badge.svg?branch=master
