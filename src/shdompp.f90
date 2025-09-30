@@ -5,9 +5,9 @@
 !
 !   --
 !   SHDOMNG: Spherical Harmonic Discrete Ordinate Method - Next Generation
+!   --
 !
-!
-!   Copyright (C) 2025-
+!   Copyright (C) 2025
 !   Hong Chen, hong.chen-1@colorado.edu
 !
 !   SHDOMNG is free software: you can redistribute it and/or modify
@@ -29,9 +29,14 @@
 ! SHDOM was originally developed by Frank Evans and is available at https://coloradolinux.com/shdom.
 !╰────────────────────────────────────────────────────────────────────────────╯!
 
+!╭────────────────────────────────────────────────────────────────────────────╮!
+! Additional notes:
+!
+! from original SHDOM:
 ! SHDOMPP: Spherical harmonic discrete ordinate radiative transfer method
 !          for plane-parallel atmospheres.
 !     See shdompp.doc for documentation.
+!╰────────────────────────────────────────────────────────────────────────────╯!
 
 program SHDOMPP
 

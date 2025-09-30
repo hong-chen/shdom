@@ -5,7 +5,7 @@
 #
 #   --
 #   SHDOMNG: Spherical Harmonic Discrete Ordinate Method - Next Generation
-#
+#   --
 #
 #   Copyright (C) 2025-
 #   Hong Chen, hong.chen-1@colorado.edu
