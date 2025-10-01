@@ -40,6 +40,7 @@ module shd_grid
     use shd_mpi
 
     implicit none
+    private
 
     integer, parameter :: R__  = selected_real_kind(6) ! default precision for float
     integer, parameter :: I__  = selected_int_kind(9)  ! default precision for integer

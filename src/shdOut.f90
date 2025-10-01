@@ -2766,62 +2766,69 @@ subroutine shd_io__saveState(&
     ! the low order terms of the radiance expansion, and the flux array.
     ! If the file name is 'NONE' then no file is written.
 
-    character(len=*), intent(in) :: OUTSAVEFILE
-    integer, intent(in) :: NSTOKES, NX, NY, NZ, ML, MM, NLM, NPTS, NCELLS
-    integer, intent(in) :: SHPTR(NPTS+1), RSHPTR(NPTS)
-    integer, intent(in) :: GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
-    integer(2), intent(in) :: CELLFLAGS(NCELLS)
-    real, intent(in) :: XGRID(NX+1), YGRID(NY+1), ZGRID(NZ)
-    real, intent(inout) :: WORK(*)
-    real, intent(in) :: GRIDPOS(3, NPTS), FLUXES(2, NPTS), SOURCE(*), RADIANCE(*)
+    character(len=*) , intent(in) :: OUTSAVEFILE
+    integer(kind=I__), intent(in) :: NSTOKES, NX, NY, NZ, ML, MM, NLM, NPTS, NCELLS
+    integer(kind=I__), intent(in) :: SHPTR(NPTS+1), RSHPTR(NPTS)
+    integer(kind=I__), intent(in) :: GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
+    integer(kind=2)  , intent(in) :: CELLFLAGS(NCELLS)
+    real(kind=R__)   , intent(in) :: XGRID(NX+1), YGRID(NY+1), ZGRID(NZ)
+    real(kind=R__)   , intent(inout) :: WORK(*)
+    real(kind=R__)   , intent(in) :: GRIDPOS(3, NPTS), FLUXES(2, NPTS), SOURCE(*), RADIANCE(*)
 
-    integer :: I, J, K, IR, NS, NR
-    integer :: DATA_BYTE
-    real :: DATA_SIZE
+    integer(kind=4) :: I, J, K, IR, NS, NR
+    integer(kind=4) :: DATA_BYTE
+    real(kind=4) :: DATA_SIZE
 
     if (OUTSAVEFILE(1:4) .eq. 'NONE') return
 
-    open (UNIT=3, FILE=trim(adjustl(OUTSAVEFILE)), STATUS='REPLACE',&
-        &FORM='UNFORMATTED')
-    write (3) NSTOKES, NX, NY, NZ, ML, MM, NLM, NPTS, NCELLS
+    open (unit=91, file=trim(adjustl(OUTSAVEFILE)), status='REPLACE',&
+        &form='UNFORMATTED')
 
-    write (3) (XGRID(I), I=1, NX+1)
-    write (3) (YGRID(I), I=1, NY+1)
-    write (3) (ZGRID(I), I=1, NZ)
-    write (3) ((GRIDPTR(J, I) , J=1, 8), I=1, NCELLS)
-    write (3) ((NEIGHPTR(J, I), J=1, 6), I=1, NCELLS)
-    write (3) ((TREEPTR(J, I) , J=1, 2), I=1, NCELLS)
-    write (3) (CELLFLAGS(I)   , I=1, NCELLS)
+    write (91) NSTOKES, NX, NY, NZ, ML, MM, NLM, NPTS, NCELLS
 
-    write (3) ((GRIDPOS(J, I), J=1, 3), I=1, NPTS)
-    write (3) ((FLUXES(J, I) , J=1, 2), I=1, NPTS)
+    write (91) (XGRID(I), I=1, NX+1)
+    write (91) (YGRID(I), I=1, NY+1)
+    write (91) (ZGRID(I), I=1, NZ)
 
-    write (3) (SHPTR(I), I=1, NPTS + 1)
+    write (91) ((GRIDPTR(J, I) , J=1, 8), I=1, NCELLS)
+    write (91) ((NEIGHPTR(J, I), J=1, 6), I=1, NCELLS)
+    write (91) ((TREEPTR(J, I) , J=1, 2), I=1, NCELLS)
+    write (91) (CELLFLAGS(I)   , I=1, NCELLS)
+
+    write (91) ((GRIDPOS(J, I), J=1, 3), I=1, NPTS)
+    write (91) ((FLUXES(J, I) , J=1, 2), I=1, NPTS)
+
+    write (91) (SHPTR(I), I=1, NPTS + 1)
 
     NS = SHPTR(NPTS + 1)
-    write (3) (SOURCE(I), I=1, NSTOKES*NS)
+    write (91) (SOURCE(I), I=1, NSTOKES*NS)
 
     K = 1
     do I = 1, NPTS
         IR = RSHPTR(I)
         do J = 1, NSTOKES*4
+
             ! the following is an attempt to fix the segmentation issue
             !╭────────────────────────────────────────────────╮!
-            !WORK(K) = RADIANCE(NSTOKES*(IR-1)+J)
+            ! RSHPTR(1) = 0 (from shd_init__makeRad)
+            ! originally it was:
+            ! WORK(K) = RADIANCE(NSTOKES*(IR-1)+J)
+            ! when I=1, IR=0, NSTOKES*(IR-1)+J is 0 when J=1 (NSTOKES=1)
             WORK(K) = RADIANCE(NSTOKES*(IR)+J)
             !╰────────────────────────────────────────────────╯!
+
             K = K + 1
         end do
     end do
 
     NR = 4*NPTS
-    write (3) (WORK(I), I=1, NSTOKES*NR)
+    write (91) (WORK(I), I=1, NSTOKES*NR)
 
-    close (3)
+    close (unit=91)
 
     ! display file size
     !╭────────────────────────────────────────────────╮!
-    inquire(FILE=trim(adjustl(OUTSAVEFILE)), SIZE=DATA_BYTE)
+    inquire(FILE=trim(adjustl(OUTSAVEFILE)), size=DATA_BYTE)
     DATA_SIZE = DATA_BYTE/1000000.0
     write(*, '(A,F6.2,A)') 'Message [_saveState]: Data saved at <'//trim(adjustl(OUTSAVEFILE))//'> (',&
         &DATA_SIZE, 'MB).'
