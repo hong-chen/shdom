@@ -217,8 +217,8 @@ program SHDOMPP
 
     ! read PROPFILE
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    call shd_io__readPrpSize(PROPFILE, NSTLEG, NLEG, NPX_, NPY_, NPZ_,&
-        &NUMPHASE_, MAXLEG, MAXPGL, DELX_, DELY_)
+    call shd_io__readPrpSize(PROPFILE, NSTLEG, NLEG, NPX_, NPY_, NPZ_, DELX_, DELY_,&
+        &NUMPHASE_, MAXLEG, MAXPGL)
 
     MAXPG = NPZ_
     if (NUMPHASE_ .eq. 0) MAXPGL = MAXPG*(MAXLEG + 1)*NSTLEG

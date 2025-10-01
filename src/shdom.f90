@@ -134,9 +134,10 @@ program shdom_main
     !   return flag for master process (procnum=0)
     call shd_mpi__start(MASTERPROC)
 
+
+    ! Read input from namelist or user input
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    ! Read input from namelist or command line input
-    !   In MPI, the master processor performs the main computation,
+    ! In MPI, the master processor performs the main computation,
     !   and the results are then broadcast to the child processors.
     if (MASTERPROC) then
         if (nmlMode) then
@@ -176,39 +177,13 @@ program shdom_main
         &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    ! set calculation accuracy (1.0e-4 to 1.0e-8)
-    RACC_ = max(REPS_, min(SOLACC*0.1, 1.0e-4))
 
+    ! post-process parameters from input
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     ! The number of Stokes parameters (and components of the real
     !   generalized spherical harmonics vectors) can be 1, 3, or 4.
     NSTOKES = max(1, min(4, NSTOKES))
     if (NSTOKES .eq. 2) NSTOKES = 3
-
-    ! X, Y, Z grids
-    NX = max(1, NX); NY = max(1, NY); NZ = max(2, NZ)
-
-    ! If single plane or column then force IP mode
-    !   if   3D IPFLAG=0, bit representation '0000'
-    !   if NX=1 IPFLAG=1, bit representation '0001'
-    !   if NY=1 IPFLAG=2, bit representation '0010'
-    !   if  IPA IPFLAG=3, bit representation '0011'
-    if (NX .eq. 1) IPFLAG = ior(IPFLAG, 1) ! '0000'(3D,   0) + '0001'(NX=1, 1) = '0001' (NX=1, 1)
-    if (NY .eq. 1) IPFLAG = ior(IPFLAG, 2) ! '0001'(NX=1, 1) + '0010'(NY=1, 2) = '0011' (IPA,  3)
-
-    ! Make ML and MM from NMU and NPHI
-    !   NMU : number of discrete ordinate zenith angles in both hemispheres
-    !   NPHI: number of discrete ordinate azimuth angles in 2*pi
-    !   ML  : The maximum L of the spherical harmonic truncation
-    !   MM  : The maximum M of the spherical harmonic truncation
-    NMU  = max(2, 2*int((NMU + 1)/2)) ! force NMU an even number
-    NPHI = max(1, NPHI)
-
-    ML = NMU - 1
-    MM = max(0, int(NPHI/2) - 1)
-
-    ! NLEG: The number of Legendre series phase function terms used in the solution procedure
-    NLEG = ML
-    if (DELTAM) NLEG = ML + 1
 
     ! NSTLEG is the number of phase function elements used (1 or 6)
     !   Also used for the number of unique elements of the generalized
@@ -219,10 +194,36 @@ program shdom_main
         NSTLEG = 6
     end if
 
+    ! Make ML and MM from NMU and NPHI (for discrete ordinate)
+    !   NMU : number of discrete ordinate zenith angles in both hemispheres
+    !   NPHI: number of discrete ordinate azimuth angles in 2*pi
+    !   ML  : The maximum L of the spherical harmonic truncation
+    !   MM  : The maximum M of the spherical harmonic truncation
+    NMU  = max(2, 2*int((NMU + 1)/2)) ! force NMU an even number
+    NPHI = max(1, NPHI)
+
+    ML = NMU - 1
+    MM = max(0, int(NPHI/2) - 1)
+
+    ! Compute NLM, NPHI0MAX.
+    !   NPHI0MAX: The maximum number of azimuth angles actually used
+    !   NLM: The number of spherical harmonic terms
+    NPHI0MAX = NPHI
+    NLM = (2*MM + 1)*(ML + 1) - MM*(MM + 1)
+
+    ! NLEG: The number of Legendre series phase function terms used in the solution procedure
+    NLEG = ML
+    if (DELTAM) NLEG = ML + 1
+
+    ! set calculation accuracy (1.0e-4 to 1.0e-8)
+    RACC_ = max(REPS_, min(SOLACC*0.1, 1.0e-4))
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+
     ! Find out the size of the input property file grid
     if (MASTERPROC) then
-        call shd_io__readPrpSize(PROPFILE, NSTLEG, NLEG, NPX_, NPY_, NPZ_,&
-            &NUMPHASE_, MAXLEG, MAXPGL, DELX_, DELY_)
+        call shd_io__readPrpSize(PROPFILE, NSTLEG, NLEG, NPX_, NPY_, NPZ_, DELX_, DELY_,&
+            &NUMPHASE_, MAXLEG, MAXPGL)
     end if
     call shd_mpi__bcastPrpSize(NPX_, NPY_, NPZ_, DELX_, DELY_,&
         &NUMPHASE_, MAXLEG, MAXPGL)
@@ -238,16 +239,18 @@ program shdom_main
     !   True means initiatize with and output only the base grid.
     BASEOUT = .false.
 
-    ! Make ML and MM from NMU and NPHI
-    !   Compute NLM, NPHI0MAX.
-    !   NPHI0MAX: The maximum number of azimuth angles actually used
-    !   NLM: The number of spherical harmonic terms
     if (SRCTYPE .eq. 'T') SOLARAZ = 0.0d0
-    NPHI0MAX = NPHI
-    NLM = (2*MM + 1)*(ML + 1) - MM*(MM + 1)
-    MEMWORD = NMU*(2 + 2*NPHI + 2*NLM + 2*33*32)
 
-    allocate (MU(NMU), WTDO(NMU*NPHI), PHI(NMU*NPHI), NPHI0(NMU))
+    ! X, Y, Z grids
+    NX = max(1, NX); NY = max(1, NY); NZ = max(2, NZ)
+
+    ! If single plane or column then force IP mode
+    !   if   3D IPFLAG=0, bit representation '0000'
+    !   if NX=1 IPFLAG=1, bit representation '0001'
+    !   if NY=1 IPFLAG=2, bit representation '0010'
+    !   if  IPA IPFLAG=3, bit representation '0011'
+    if (NX .eq. 1) IPFLAG = ior(IPFLAG, 1) ! '0000'(3D,   0) + '0001'(NX=1, 1) = '0001' (NX=1, 1)
+    if (NY .eq. 1) IPFLAG = ior(IPFLAG, 2) ! '0001'(NX=1, 1) + '0010'(NY=1, 2) = '0011' (IPA,  3)
 
     ! Set the full domain grid sizes (variables end in T)
     NXT = NX; NYT = NY; NPXT = NPX_; NPYT = NPY_
@@ -299,10 +302,13 @@ program shdom_main
     MAXPG = NPX_*NPY_*NPZ_
     if (NUMPHASE_ .eq. 0) MAXPGL = MAXPG*(MAXLEG + 1)*NSTLEG
 
+    allocate (MU(NMU), WTDO(NMU*NPHI), PHI(NMU*NPHI), NPHI0(NMU))
+
     allocate (ZLEVELS_(NPZ_))
     allocate (TEMPP_(MAXPG), EXTINCTP_(MAXPG), ALBEDOP_(MAXPG))
     allocate (EXTDIRP_(MAXPG), IPHASEP_(MAXPG), LEGENP_(MAXPGL))
 
+    MEMWORD = NMU*(2 + 2*NPHI + 2*NLM + 2*33*32)
     MEMWORD = MEMWORD + 4.5*MAXPG + MAXPGL + NUMPHASE_*NSTLEG*(MAXLEG + 1)
 
     MAXNZ = NPZ_
