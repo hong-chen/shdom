@@ -144,7 +144,7 @@ subroutine shd_intg__integratePath(&
     LAMBERTIAN = SFCTYPE(2:2) .eq. 'L'
     if (NPTS .ne. OLDNPTS) then
         ! Make the pointers to the grid points on the top and bottom boundaries
-        call shd_grid__findBoundaryPnt(NPTS, NANG, LAMBERTIAN, MAXNBC, MAXBCRAD,&
+        call shd_grid__findBoundaryPnt(NPTS, NANG, MAXNBC, MAXBCRAD, LAMBERTIAN, &
             &ZGRID(1), ZGRID(NZ), GRIDPOS,&
             &NTOPPTS, NBOTPTS, BCPTR)
         if (SFCTYPE(1:1) .eq. 'V') then

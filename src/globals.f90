@@ -80,6 +80,7 @@ module globals
   ! System-specific kinds of variables (no freedom for programmers)
   integer,   parameter :: R4_ = selected_real_kind(6)  ! 4-byte real
   integer,   parameter :: R8_ = selected_real_kind(13) ! 8-byte real
+  integer,   parameter :: I_  = selected_int_kind(9)   ! 4-byte integer
   integer,   parameter :: I4_ = selected_int_kind(9)   ! 4-byte integer
   integer,   parameter :: I8_ = selected_int_kind(18)  ! 8-byte integer
 

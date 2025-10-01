@@ -64,7 +64,7 @@ module shd_grid
 contains
 
 subroutine shd_grid__findBoundaryPnt(&
-    &NPTS, NANG, LAMBERTIAN, MAXNBC, MAXBCRAD,&
+    &NPTS, NANG, MAXNBC, MAXBCRAD, LAMBERTIAN, &
     &ZBOT, ZTOP, GRIDPOS,&
     &NTOPPTS, NBOTPTS, BCPTR)
 
@@ -77,28 +77,28 @@ subroutine shd_grid__findBoundaryPnt(&
     ! Input:
     !   NPTS      : integer, total number of grid points
     !   NANG      : integer, number of discrete ordinate angles (NMU and NPHI)
-    !   LAMBERTIAN: logical, lambertian surface or not
     !   MAXNBC    : integer, maximum number of boundary grid points
     !   MAXBCRAD  : integer, maximum number of radiances at boundary grid points
+    !   LAMBERTIAN: logical, lambertian surface or not
     !   ZBOT      : real, altitude of bottom boundary
     !   ZTOP      : real, altitude of bottom boundary
-    !   GRIDPOS   : real array, (x,y,z) coordinate values of grid point locations
+    !   GRIDPOS(3, NPTS): real array, (x,y,z) coordinate values of grid point locations
     !
     ! Output:
     !   NTOPPTS   : integer, number of top boundary points
     !   NBOTPTS   : integer, number of bottom boundary points
-    !   BCPTR     : integer array, pointer array for NTOPPTS (top boundary points)
+    !   BCPTR(MAXNBC, 2): integer array, pointer array for NTOPPTS (top boundary points)
     !               and NBOTPTS (bottom boundary points)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    integer, intent(in) :: NPTS, NANG, MAXNBC, MAXBCRAD
+    integer(kind=I4_), intent(in) :: NPTS, NANG, MAXNBC, MAXBCRAD
+    real(kind=R4_)   , intent(in) :: ZBOT, ZTOP, GRIDPOS(3, NPTS)
     logical, intent(in) :: LAMBERTIAN
-    real, intent(in) :: ZBOT, ZTOP, GRIDPOS(3, NPTS)
 
-    integer, intent(out) :: NTOPPTS, NBOTPTS
-    integer, intent(out) :: BCPTR(MAXNBC, 2)
+    integer(kind=I4_), intent(out) :: NTOPPTS, NBOTPTS
+    integer(kind=I4_), intent(out) :: BCPTR(MAXNBC, 2)
 
-    integer :: I, IT, IB, NA
+    integer(kind=I4_) :: I, IT, IB, NA
 
     if (LAMBERTIAN) then
         NA = 1
@@ -141,6 +141,7 @@ subroutine shd_grid__matchGridPnt(&
     &GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &IPMATCH)
 
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Description:
     !   Determines whether the neighboring cells to ICELL adjacent to
     !   face IFACE (1-6: -X,+X,-Y,+Y,-Z,+Z) have gridpoints that match
@@ -149,6 +150,23 @@ subroutine shd_grid__matchGridPnt(&
     !   is traced down to find those cells that might contain XP,YP,ZP.
     !   IPMATCH is returned 0 if there is no match, otherwise it has the
     !   number of the matching existing gridpoint.
+    !
+    ! Input:
+    !   XP        : real, total number of grid points
+    !   NANG      : integer, number of discrete ordinate angles (NMU and NPHI)
+    !   LAMBERTIAN: logical, lambertian surface or not
+    !   MAXNBC    : integer, maximum number of boundary grid points
+    !   MAXBCRAD  : integer, maximum number of radiances at boundary grid points
+    !   ZBOT      : real, altitude of bottom boundary
+    !   ZTOP      : real, altitude of bottom boundary
+    !   GRIDPOS   : real array, (x,y,z) coordinate values of grid point locations
+    !
+    ! Output:
+    !   NTOPPTS   : integer, number of top boundary points
+    !   NBOTPTS   : integer, number of bottom boundary points
+    !   BCPTR     : integer array, pointer array for NTOPPTS (top boundary points)
+    !               and NBOTPTS (bottom boundary points)
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
     real XP, YP, ZP
     integer ICELL, IFACE
