@@ -32,7 +32,8 @@
 
 module shd_pha
 
-    use globals
+    use globals_const
+    use globals_cfg
 
     implicit none
 

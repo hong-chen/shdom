@@ -33,7 +33,8 @@
 
 module shd_inp
 
-  use globals
+  use globals_const
+  use globals_cfg
   use shd_util
 
   implicit none

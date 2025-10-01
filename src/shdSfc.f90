@@ -33,7 +33,8 @@
 
 module shd_sfc
 
-    use globals
+    use globals_const
+    use globals_cfg
     use globals_prp
     use shd_util
 

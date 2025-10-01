@@ -32,8 +32,8 @@
 
 module shd_src
 
-    use globals
-    use globals_set
+    use globals_const
+    use globals_cfg
     use shd_pha
     use shd_util
     use shd_init

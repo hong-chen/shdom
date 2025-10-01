@@ -32,7 +32,8 @@
 
 module shd_grid
 
-    use globals
+    use globals_const
+    use globals_cfg
     use shd_util
     use shd_rad
     use shd_src

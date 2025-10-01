@@ -32,7 +32,8 @@
 
 module shd_out
 
-  use globals
+  use globals_const
+  use globals_cfg
   use shd_grid
   use shd_util
 

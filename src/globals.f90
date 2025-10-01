@@ -65,7 +65,7 @@
 !+
 ! Global constants
 !-
-module globals
+module globals_const
 
   implicit none
   public            ! all in this module are public!
@@ -80,6 +80,7 @@ module globals
   ! System-specific kinds of variables (no freedom for programmers)
   integer,   parameter :: R4_ = selected_real_kind(6)  ! 4-byte real
   integer,   parameter :: R8_ = selected_real_kind(13) ! 8-byte real
+
   integer,   parameter :: I_  = selected_int_kind(9)   ! 4-byte integer
   integer,   parameter :: I4_ = selected_int_kind(9)   ! 4-byte integer
   integer,   parameter :: I8_ = selected_int_kind(18)  ! 8-byte integer
@@ -143,36 +144,26 @@ module globals
   real(R_),  parameter :: RHOWAT0_ = 0.99984e+3_R_       ! density (kg/m^3) of liquid water (0 deg.C)
   real(R_),  parameter :: RHOICE0_ = 0.917e+3_R_         ! density (kg/m^3) of water ice (0 deg.C)
 
-  integer, parameter :: FNAMEMAXLEN_ = 256 ! file name max length (number of characters)
-  logical, parameter :: VERBOSE_ = .FALSE.
-
-contains
-
-  !+
-  ! Print values of some global constants
-  !-
-  subroutine globals__print()
-
-    write (*,*) R_, RD_, R4_, R8_
-    write (*,*) I4_, I8_
-    write (*,*) REPS_, RTINY_, RHUGE_
-    write (*,*) IMIN_, IMAX_
-
-  end subroutine globals__print
-
-end module globals
+end module globals_const
 
 
-module globals_set
+module globals_cfg
 
+    implicit none
+    public
+
+    integer, parameter :: FNAMEMAXLEN_ = 256 ! file name max length (number of characters)
     logical, save :: HIGHORDERRAD_
-    real(kind=8), save :: RACC_
+    real(kind=8), save    :: RACC_
     integer(kind=1), save :: VERBOSE_
 
-end module globals_set
+end module globals_cfg
 
 
 module globals_prp
+
+    implicit none
+    public
 
     integer, save :: NPX_, NPY_, NPZ_, NUMPHASE_
     real, save    :: DELX_, DELY_, XSTART_, YSTART_

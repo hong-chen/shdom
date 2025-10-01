@@ -35,9 +35,9 @@
 
 program shdom_main
 
-    use globals
+    use globals_const
+    use globals_cfg
     use globals_prp
-    use globals_set
 
     use shd_init
     use shd_src

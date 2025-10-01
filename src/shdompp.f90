@@ -41,9 +41,9 @@
 
 program SHDOMPP
 
-    use globals
+    use globals_const
+    use globals_cfg
     use globals_prp
-    use globals_set
     use shd_init
     use shd_inp ! shd_io__
     use shd_out ! shd_io__

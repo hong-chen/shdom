@@ -32,7 +32,8 @@
 
 module shd_rad
 
-    use globals
+    use globals_const
+    use globals_cfg
     use shd_pha
     use shd_src
     use shd_init
