@@ -390,7 +390,7 @@ program shdom_main
 
         end if
 
-        call shd_mpi__scatPrp(NPXT, NPYT, NPX_, NPY_, NPZ_,&
+        call shd_mpi__distPrp(NPXT, NPYT, NPX_, NPY_, NPZ_,&
             &NSTLEG, NLEG, NUMPHASE_,&
             &ZLEVELS_, MAXASYM,&
             &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, IPHASEPT,&
