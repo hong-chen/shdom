@@ -301,7 +301,7 @@ program SHDOMPP
         allocate (SFCPARMS(1))
         SFCPARMS(1) = GNDALBEDO
     else
-        call shd_io__readSfcSize(SFCFILE, MAXSFCPTS, MAXSFCPARS)
+        call shd_io__readSfcSize(SFCFILE, NXSFC, NYSFC, DELXSFC, DELYSFC, MAXSFCPTS, MAXSFCPARS)
         allocate (SFCPARMS_TMP(MAXSFCPARS*MAXSFCPTS), SFCPARMS(MAXSFCPARS-1))
         call shd_io__readSfc(SFCFILE, MAXSFCPTS, MAXSFCPARS,&
             &SFCTYPE, NXSFC, NYSFC, DELXSFC, DELYSFC,&

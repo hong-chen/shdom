@@ -1093,21 +1093,41 @@ subroutine shd_io__checkPrpInput(&
 
 end subroutine shd_io__checkPrpInput
 
-subroutine shd_io__readSfcSize(SFCFILE, MAXSFCPTS, MAXSFCPARS)
+subroutine shd_io__readSfcSize(SFCFILE,&
+    &NXSFC, NYSFC, DELXSFC, DELYSFC,&
+    &MAXSFCPTS, MAXSFCPARS)
 
-    ! Gets the size of the surface property inputs (temperature is
-    ! always included).
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    ! Description:
+    !   Gets the size of the surface property inputs (temperature is
+    !   always included).
+    !
+    ! Input:
+    !   SFCFILE: string, file path for the surface file (contains BRDF coefficients)
+    !
+    ! Output:
+    !   NXSFC: integer, number of grid points in X
+    !   NYSFC: integer, number of grid points in Y
+    !   DELXSFC: real, X grid resolution
+    !   DELYSFC: real, Y grid resolution
+    !   MAXSFCPTS: integer, maximum surface points (including extra one line of grids for both X and Y)
+    !   MAXSFCPARS: integer, maximum surface parameters
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    integer MAXSFCPTS, MAXSFCPARS
     character(len=*), intent(in) :: SFCFILE
-    integer NXSFC, NYSFC
+
+    integer(kind=I__), intent(out) :: NXSFC, NYSFC
+    real(kind=R__)   , intent(out) :: DELXSFC, DELYSFC
+    integer(kind=I__), intent(out) :: MAXSFCPTS, MAXSFCPARS
+
     character(len=2) :: SFCTYPE
 
     ! Open the file, figure out the type, and get the grid size
     SFCTYPE(1:1) = 'V'
-    open (UNIT=1, FILE=trim(adjustl(SFCFILE)), STATUS='OLD')
-    read (1, '(A1)') SFCTYPE(2:2)
-    read (1, *) NXSFC, NYSFC
+
+    open (unit=21, file=trim(adjustl(SFCFILE)), status='OLD')
+    read (21, '(A1)') SFCTYPE(2:2)
+    read (21, *) NXSFC, NYSFC, DELXSFC, DELYSFC
     MAXSFCPTS = (NXSFC + 1)*(NYSFC + 1)
 
     ! 0
@@ -1144,7 +1164,9 @@ subroutine shd_io__readSfcSize(SFCFILE, MAXSFCPTS, MAXSFCPARS)
     else
         stop 'Error [_readSfcSize]: Unknown BRDF type.'
     end if
-    close (1)
+
+    close (unit=21)
+
     return
 
 end subroutine shd_io__readSfcSize

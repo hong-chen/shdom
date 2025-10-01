@@ -127,8 +127,10 @@ program shdom_main
     logical :: mpiX, mpiY, mpiMode
     logical :: nmlMode = .true.
 
+
     ! start timing
     call system_clock(count_start, count_rate, count_max)
+
 
     ! Start up MPI for multiple processors if available, and
     !   return flag for master process (procnum=0)
@@ -215,32 +217,47 @@ program shdom_main
     NLEG = ML
     if (DELTAM) NLEG = ML + 1
 
+    ! for thermal, reset solar azimuth angle
+    if (SRCTYPE .eq. 'T') SOLARAZ = 0.0d0
+
     ! set calculation accuracy (1.0e-4 to 1.0e-8)
     RACC_ = max(REPS_, min(SOLACC*0.1, 1.0e-4))
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
-    ! Find out the size of the input property file grid
+    ! read PROPFILE (property file) to get data size info, if MPI, broadcast.
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     if (MASTERPROC) then
+        ! Find out the size of the input property file grid
         call shd_io__readPrpSize(PROPFILE, NSTLEG, NLEG, NPX_, NPY_, NPZ_, DELX_, DELY_,&
             &NUMPHASE_, MAXLEG, MAXPGL)
     end if
     call shd_mpi__bcastPrpSize(NPX_, NPY_, NPZ_, DELX_, DELY_,&
         &NUMPHASE_, MAXLEG, MAXPGL)
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    ! Choose the option to compute higher order radiance SH terms
-    HIGHORDERRAD_ = .false.
-    if ((NPX_ .eq. 1) .and. (NPY_ .eq. 1)) HIGHORDERRAD_ = .true.
 
-    NSHOUT = 4
-    if (HIGHORDERRAD_) NSHOUT = 5
+    ! read SFCFILE (surface file), if MPI, broadcast
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    if (SFCFILE(1:4) .eq. 'NONE') then
+        SFCTYPE = 'FL'
+        NXSFC = 1
+        NYSFC = 1
+        DELXSFC = DELX_
+        DELYSFC = DELY_
+    else
+        if (MASTERPROC) then
+            ! find out the size of the surface file grid
+            call shd_io__readSfcSize(SFCFILE, NXSFC, NYSFC, DELXSFC, DELYSFC, MAXSFCPTS, MAXSFCPARS)
+        end if
+        ! Broadcast the surface array sizes
+        call shd_mpi__bcastSfcSize(NXSFC, NYSFC, DELXSFC, DELYSFC, MAXSFCPTS, MAXSFCPARS)
+    end if
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    ! Choose type of initialization/output for k-distributions:
-    !   True means initiatize with and output only the base grid.
-    BASEOUT = .false.
 
-    if (SRCTYPE .eq. 'T') SOLARAZ = 0.0d0
-
+    ! process grids
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     ! X, Y, Z grids
     NX = max(1, NX); NY = max(1, NY); NZ = max(2, NZ)
 
@@ -255,9 +272,23 @@ program shdom_main
     ! Set the full domain grid sizes (variables end in T)
     NXT = NX; NYT = NY; NPXT = NPX_; NPYT = NPY_
 
+    if (NPXT .eq. 1) DELX_ = NXSFC*DELXSFC ! overwrite DELX_ if only 1 grid in X direction
+    if (NPYT .eq. 1) DELY_ = NYSFC*DELYSFC ! overwrite DELY_ if only 1 grid in Y direction
+
     XDOMAIN_ = NPXT*DELX_
     YDOMAIN_ = NPYT*DELY_
 
+    ! Choose the option to compute higher order radiance SH terms
+    HIGHORDERRAD_ = .false.
+    if ((NPXT .eq. 1) .and. (NPYT .eq. 1)) HIGHORDERRAD_ = .true.
+
+    NSHOUT = 4
+    if (HIGHORDERRAD_) NSHOUT = 5
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+
+    ! if MPI, divide domain into mini-domains
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Map the full SHDOM domain onto the multiple processors:
     !   change NPX,NPY and NX,NY to the subdomain size, and output
     !   the X and Y starting position of this subdomain.  Set bits
@@ -283,26 +314,41 @@ program shdom_main
     else
         mpiMode = .false.
     end if
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
 
     ! Set up base grid point actual size (NX1xNY1xNZ)
+    ! base grids setup after MPI map
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    ! Choose type of initialization/output for k-distributions:
+    !   True means initiatize with and output only the base grid.
+    BASEOUT = .false.
+
+    ! btest(IPFLAG, 0) checks whether IPFLAG=1 or IPFLAG=0 ('...0001' [IPA in X] or '...0000' [3D in X])
+    ! btest(BCFLAG, 0) checks whether BCFLAG=1 or BCFLAG=0 ('...0001' [open in X] or '...0000' [periodic in X])
     NX1 = NX + 1
     if (btest(IPFLAG, 0) .or. btest(BCFLAG, 0) .or. mpiX) NX1 = NX
+
+    ! btest(IPFLAG, 1) checks whether IPFLAG=2 [or 3] or IPFLAG=0 [or 1]
+    !   ('...0010' [or '...0011', IPA in Y] or '...0000' [or '...0001', 3D in Y])
+    ! btest(BCFLAG, 1) checks whether BCFLAG=2 [or 3] or BCFLAG=0 [or 1]
+    !   ('...0010' [or '...0011', open in Y] or '...0000' [or '...0001', periodic in Y])
     NY1 = NY + 1
     if (btest(IPFLAG, 1) .or. btest(BCFLAG, 1) .or. mpiY) NY1 = NY
-    if (NZ .le. 1) then
-        write (6, '(A)') 'Error [shdom_main]: NZ < 2.'
-        stop
-    end if
+
     NBPTS = NX1*NY1*NZ
+
     ! Calculate the number of base grid cells depending on the BCFLAG
     NBCELLS = (NZ - 1)*(NX + ibits(BCFLAG, 0, 1) - ibits(BCFLAG, 2, 1))&
         *(NY + ibits(BCFLAG, 1, 1) - ibits(BCFLAG, 3, 1))
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+
+    allocate (MU(NMU), WTDO(NMU*NPHI), PHI(NMU*NPHI), NPHI0(NMU))
 
     ! Determine the size of the property grid arrays so can allocate
     MAXPG = NPX_*NPY_*NPZ_
     if (NUMPHASE_ .eq. 0) MAXPGL = MAXPG*(MAXLEG + 1)*NSTLEG
-
-    allocate (MU(NMU), WTDO(NMU*NPHI), PHI(NMU*NPHI), NPHI0(NMU))
 
     allocate (ZLEVELS_(NPZ_))
     allocate (TEMPP_(MAXPG), EXTINCTP_(MAXPG), ALBEDOP_(MAXPG))
@@ -375,6 +421,8 @@ program shdom_main
             &SPLITACC, SHACC)
     end if
 
+    ! memory settings
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     if (mpiMode) then
         ! Read the memory parameters from a file, if it exists, and send
         !   the parameters to all processors. Otherwise use the input ones.
@@ -390,6 +438,7 @@ program shdom_main
     else
         write (6, '(A,F0.2," MB")') 'Message [shdom_main]: MAX_TOTAL_MB is set to: ', MAX_TOTAL_MB
     end if
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
     if (SPLITACC .le. 0.0 .and. INSAVEFILE(1:4) .eq. 'NONE') then
         ADAPT_GRID_FACTOR = 1.0
@@ -447,8 +496,13 @@ program shdom_main
     allocate (RSHPTR(MAXIG + 2), SHPTR(MAXIG + 1), OSHPTR(MAXIG + 1))
     allocate (RADIANCE(NSTOKES, MAXIV + MAXIG), SOURCE(NSTOKES, MAXIV))
     if (ACCELFLAG) allocate (DELSOURCE(NSTOKES, MAXIV))
+
+    ! WORK: Work array for path integration; radiance field, Nazimuth*Npts
     allocate (WORK(NSTOKES*MAXIDO))
+
+    ! WORK1: Work array for path integration; grid point sweeping order
     allocate (WORK1(8*MAXIG))
+
     allocate (FLUXES(2, MAXIG), DIRFLUX(MAXIG))
 
     MAXNBC = MAXIG*3/NZ
@@ -456,11 +510,6 @@ program shdom_main
     if (SFCFILE(1:4) .eq. 'NONE') then
         SFCTYPE = 'FL'
     else
-        if (MASTERPROC) then
-            call shd_io__readSfcSize(SFCFILE, MAXSFCPTS, MAXSFCPARS)
-        end if
-        ! Broadcast the surface array sizes
-        call shd_mpi__bcastSfcSize(MAXSFCPTS, MAXSFCPARS)
         allocate (SFCPARMS(MAXSFCPARS*MAXSFCPTS))
         if (MASTERPROC) then
             call shd_io__readSfc(SFCFILE, MAXSFCPTS, MAXSFCPARS,&
@@ -468,8 +517,8 @@ program shdom_main
                 &NSFCPAR, SFCPARMS, GNDTEMP, GNDALBEDO)
         end if
         ! Broadcast the surface array data
-        call shd_mpi__bcastSfcParam(SFCTYPE, NXSFC, NYSFC, NSFCPAR,&
-            &DELXSFC, DELYSFC, SFCPARMS, GNDTEMP, GNDALBEDO)
+        call shd_mpi__bcastSfcParam(SFCTYPE, NXSFC, NYSFC,&
+            &NSFCPAR, SFCPARMS, GNDTEMP, GNDALBEDO)
         allocate (SFCGRIDPARMS(MAXSFCPARS*MAXNBC))
     end if
 
@@ -519,6 +568,7 @@ program shdom_main
     end if
 
     ! Figure out what type of output we will be generating
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     NRAD = 0
     NVIS = 0
     RADIANCE_OUT = .false.
@@ -587,7 +637,10 @@ program shdom_main
     end do
 
     allocate (SUMRADOUT(NRAD), SUMVISOUT(NVIS))
+
+    ! WORK2: Work array for path integration; single angle radiance
     allocate (WORK2(max(NVIS, NRAD, NSTOKES*MAXIG)))
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! Notify user that certain outputs are not supported with multiple processors
     if (mpiMode .and. MASTERPROC) then

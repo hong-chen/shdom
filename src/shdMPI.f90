@@ -516,51 +516,55 @@ subroutine shd_mpi__scatPrp(NPXT, NPYT, NPX, NPY, NPZ,&
 
 end subroutine shd_mpi__scatPrp
 
-subroutine shd_mpi__bcastSfcSize(MAXSFCPTS, MAXSFCPARS)
+subroutine shd_mpi__bcastSfcSize(NXSFC, NYSFC, DELXSFC, DELYSFC, MAXSFCPTS, MAXSFCPARS)
 
     ! Broadcasts the surface array sizes from the master process to the others.
 
-    integer, intent(inout) :: MAXSFCPTS, MAXSFCPARS
+    integer, intent(inout) :: NXSFC, NYSFC, MAXSFCPTS, MAXSFCPARS
+    real, intent(inout) :: DELXSFC, DELYSFC
 
 #if HAS_MPI
-    integer :: ierr, intbuf(2)
+    integer :: ierr, intbuf(4)
+    real :: realbuf(2)
 
     if (NUMPROC_ .le. 1) return
 
-    intbuf(1:2) = (/MAXSFCPTS, MAXSFCPARS/)
-    call mpi_bcast(intbuf, 2, MPI_INTEGER, 0, COMM2D_, ierr)
-    MAXSFCPTS = intbuf(1); MAXSFCPARS = intbuf(2)
+    intbuf(1:4) = (/NXSFC, NYSFC, MAXSFCPTS, MAXSFCPARS/)
+    call mpi_bcast(intbuf, 4, MPI_INTEGER, 0, COMM2D_, ierr)
+    NXSFC = intbuf(1); NYSFC = intbuf(2); MAXSFCPTS = intbuf(3); MAXSFCPARS = intbuf(4)
+
+    realbuf(1:2) = (/DELXSFC, DELYSFC/)
+    call mpi_bcast(realbuf, 2, MPI_REAL, 0, COMM2D_, ierr)
+    DELXSFC = realbuf(1); DELYSFC = realbuf(2)
 #endif
 
     return
 
 end subroutine shd_mpi__bcastSfcSize
 
-subroutine shd_mpi__bcastSfcParam(SFCTYPE, NXSFC, NYSFC, NSFCPAR,&
-    &DELXSFC, DELYSFC, SFCPARMS, GNDTEMP, GNDALBEDO)
+subroutine shd_mpi__bcastSfcParam(SFCTYPE, NXSFC, NYSFC,&
+    &NSFCPAR, SFCPARMS, GNDTEMP, GNDALBEDO)
 
     ! Broadcasts the surface file parameters from the master process to the others.
 
     character(len=2), intent(inout) :: SFCTYPE
-    integer, intent(inout) :: NXSFC, NYSFC, NSFCPAR
-    real, intent(inout) :: DELXSFC, DELYSFC, SFCPARMS(*), GNDTEMP, GNDALBEDO
+    integer, intent(in) :: NXSFC, NYSFC
+    integer, intent(inout) :: NSFCPAR
+    real, intent(inout) :: SFCPARMS(*), GNDTEMP, GNDALBEDO
 
 #if HAS_MPI
-    integer :: ierr, intbuf(3), n
-    real    :: realbuf(4)
+    integer :: ierr, n
+    real    :: realbuf(2)
 
     if (NUMPROC_ .le. 1) return
 
     call mpi_bcast(SFCTYPE, 2, MPI_CHARACTER, 0, COMM2D_, ierr)
 
-    intbuf(1:3) = (/NXSFC, NYSFC, NSFCPAR/)
-    call mpi_bcast(intbuf, 3, MPI_INTEGER, 0, COMM2D_, ierr)
-    NXSFC = intbuf(1); NYSFC = intbuf(2); NSFCPAR = intbuf(3)
+    call mpi_bcast(NSFCPAR, 1, MPI_INTEGER, 0, COMM2D_, ierr)
 
-    realbuf(1:4) = (/DELXSFC, DELYSFC, GNDTEMP, GNDALBEDO/)
-    call mpi_bcast(realbuf, 4, MPI_REAL, 0, COMM2D_, ierr)
-    DELXSFC = realbuf(1); DELYSFC = realbuf(2)
-    GNDTEMP = realbuf(3); GNDALBEDO = realbuf(4)
+    realbuf(1:2) = (/GNDTEMP, GNDALBEDO/)
+    call mpi_bcast(realbuf, 2, MPI_REAL, 0, COMM2D_, ierr)
+    GNDTEMP = realbuf(1); GNDALBEDO = realbuf(2)
 
     n = NSFCPAR*(NXSFC + 1)*(NYSFC + 1)
     call mpi_bcast(SFCPARMS, n, MPI_REAL, 0, COMM2D_, ierr)
