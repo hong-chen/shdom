@@ -121,7 +121,7 @@ subroutine shd_mpi__start(MASTERPROC)
 
     if (MYPROC_ .eq. 0) then
         MASTERPROC = .true.
-        write (6, '(A)') 'Message [mpi__start]: Starting MPI version of SHDOM ...'
+        if (VERBOSE_ .gt. 1) write (6, '(A)') 'Message [mpi__start]: Starting MPI version of SHDOM ...'
     else
         MASTERPROC = .false.
     end if

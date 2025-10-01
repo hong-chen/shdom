@@ -403,7 +403,7 @@ subroutine shd_io__nmlInput(&
 
     ! Read in the namelist
     call get_command_argument(1, NMLFILE)
-    write (*, '(A,"<",A,">")') 'Message [_nmlInput]: ', trim(adjustl(NMLFILE))
+    if (VERBOSE_ .ge. 2) write (*, '(A,"<",A,">")') 'Message [_nmlInput]: ', trim(adjustl(NMLFILE))
     open (UNIT=5, FILE=trim(adjustl(NMLFILE)), STATUS='OLD')
     read (5, NML=SHDOMINPUT)
     close (5)
@@ -555,16 +555,14 @@ subroutine shd_io__checkInputParam(&
         &stop 'Error [_checkInputParam]: Illegal grid type.'
 
     if (SRCTYPE .ne. 'T' .and. SOLARMU .eq. 0.0) then
-        write (*, *) 'Error [_checkInputParam]: Cosine solar zenith angle'
-        write (*, *) ' (SOLARMU) cannot be zero.'
-        stop
+        stop 'Error [_checkInputParam]: Cosine solar zenith angle&
+            & (SOLARMU) cannot be 0.'
     end if
 
     if (.not. DELTAM .and. SRCTYPE .ne. 'T' .and. MAXASYM .gt. 0.5) then
-        write (*, *) 'Warning [_checkInputParam]: Delta-M should be used'
-        write (*, *) ' (DELTAM=.TRUE.) for solar radiative transfer'
-        write (*, *) ' with highly peaked phase functions.'
-        write (*, *)
+        if (VERBOSE_ .ge. 1) write (*, *) 'Warning [_checkInputParam]: Delta-M should be used&
+            & (DELTAM=.TRUE.) for solar radiative transfer&
+            & with highly peaked phase functions.'
     end if
 
     ! Check for SPLITACC and SHACC magnitudes
@@ -579,30 +577,25 @@ subroutine shd_io__checkInputParam(&
     end if
     if (SPLITACC .gt. 0.0 .and.&
         &(SPLITACC .lt. 0.001*FLUX .or. SPLITACC .gt. 0.1*FLUX)) then
-        write (*, *) 'Warning [_checkInputParam]: Splitting accuracy parameter'
-        write (*, *) ' is not a fraction, but scales with fluxes'
-        write (*, *)
+        if (VERBOSE_ .ge. 1) write (*, *) 'Warning [_checkInputParam]: Splitting accuracy parameter&
+            & is not a fraction, but scales with fluxes'
     end if
     if (SHACC .gt. 0.0 .and. SHACC .gt. 0.03*FLUX) then
-        write (*, *) 'Warning [_checkInputParam]: Spherical harmonic accuracy'
-        write (*, *) ' (SHACC) is not a fraction, but scales with fluxes'
-        write (*, *)
+        if (VERBOSE_ .ge. 1) write (*, *) 'Warning [_checkInputParam]: Spherical harmonic accuracy&
+            & (SHACC) is not a fraction, but scales with fluxes'
     end if
 
     if (SRCTYPE .ne. 'S' .and.&
         &(GNDTEMP .lt. 150. .or. GNDTEMP .gt. 350.)) then
-        write (*, *) 'Warning [_checkInputParam]: '
-        write (*, *) '  ground temperature out of Earth range.'
-        write (*, *)
+        if (VERBOSE_ .ge. 1) write (*, *) 'Warning [_checkInputParam]:&
+            & ground temperature out of Earth range.'
     end if
     if (GNDALBEDO .lt. 0.0 .or. GNDALBEDO .gt. 1.0) then
-        write (*, *) 'Error [_checkInputParam]: Ground albedo must be 0 to 1.'
-        stop
+        stop 'Error [_checkInputParam]: Ground albedo must be 0 to 1.'
     end if
 
     if (NPHI .lt. NMU) then
-        write (*, *) 'Warning [_checkInputParam]: Usually want NPHI >= NMU.'
-        write (*, *)
+      if (VERBOSE_ .ge. 1) write (*, *) 'Warning [_checkInputParam]: Usually want NPHI >= NMU.'
     end if
 
     return

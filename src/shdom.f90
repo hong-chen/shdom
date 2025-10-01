@@ -222,6 +222,9 @@ program shdom_main
 
     ! set calculation accuracy (1.0e-4 to 1.0e-8)
     RACC_ = max(REPS_, min(SOLACC*0.1, 1.0e-4))
+
+    ! set verbose
+    VERBOSE_ = 0 ! 0 for quiet, 1 for warnings, 2 for all, error will always be printed
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
@@ -497,16 +500,28 @@ program shdom_main
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    ! Allocate the internal adaptable grid arrays, including the BIG 3
+    ! Array allocation
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    ! angle grids for DO
     allocate (MU(NMU), WTDO(NMU*NPHI), PHI(NMU*NPHI), NPHI0(NMU))
+
     allocate (XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ))
+
     allocate (TEMP(MAXIG), PLANCK(MAXIG))
+
     allocate (EXTINCT(MAXIG), ALBEDO(MAXIG), IPHASE(MAXIG))
+
     allocate (LEGEN(MAXIGL))
+
     allocate (GRIDPTR(8, MAXIC), NEIGHPTR(6, MAXIC), TREEPTR(2, MAXIC))
+
     allocate (CELLFLAGS(MAXIC))
+
     allocate (GRIDPOS(3, MAXIG))
+
+    ! SH related array
     allocate (RSHPTR(MAXIG + 2), SHPTR(MAXIG + 1), OSHPTR(MAXIG + 1))
+
     allocate (RADIANCE(NSTOKES, MAXIV + MAXIG), SOURCE(NSTOKES, MAXIV))
     if (ACCELFLAG) allocate (DELSOURCE(NSTOKES, MAXIV))
 
@@ -517,7 +532,11 @@ program shdom_main
     allocate (WORK1(8*MAXIG))
 
     allocate (FLUXES(2, MAXIG), DIRFLUX(MAXIG))
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
+
+    ! Read SFCFILE and derive maximum number for boundary points and boundary radiances
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     MAXNBC = MAXIG*3/NZ
     ! Read in the surface properties
     if (SFCFILE(1:4) .eq. 'NONE') then
@@ -540,8 +559,13 @@ program shdom_main
     else
         MAXBCRAD = (2 + NMU*NPHI0MAX/2)*MAXNBC
     end if
-    allocate (BCPTR(2*MAXNBC), BCRAD(NSTOKES, MAXBCRAD))
 
+    allocate (BCPTR(2*MAXNBC), BCRAD(NSTOKES, MAXBCRAD))
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+
+    ! Read CKDFILE and broadcast if MPI
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     ! If doing a k-distribution then get the band info from the CKD file
     if (KDIST) then
         if (MASTERPROC) then
@@ -564,7 +588,11 @@ program shdom_main
         NZCKD_ = 0
         BASEOUT = .false.
     end if
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
+
+    ! Read SENFILE and broadcast if MPI
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Read in user-specified sensor properties if given
     !   this is a binary angle input implemented for 'R' and 'V3'
     if (SENFILE(1:4) .ne. 'NONE') then
@@ -579,6 +607,8 @@ program shdom_main
         end if
         call shd_mpi__bcastSenParam(NSENDATA, NSENPAR, SENPARMS)
     end if
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
 
     ! Figure out what type of output we will be generating
     !╭────────────────────────────────────────────────────────────────────────────╮!
@@ -718,9 +748,9 @@ program shdom_main
     ! Loop over the k-distribution g's from high to low absorption
     do IG = NG, 1, -1
 
-        SOLARFLUX = SOLFLUX(IG)*SOLARFLUX0*abs(SOLARMU)
-
         write (6, '(A,I2,A,I2,A)') 'Message [shdom_main]: Starting ', IG, '/', NG, ' (ig/Ng) ...'
+
+        SOLARFLUX = SOLFLUX(IG)*SOLARFLUX0*abs(SOLARMU)
 
         ! If doing k-distribution then get the gas absorption profile.
         if (KDIST) then
@@ -731,7 +761,7 @@ program shdom_main
 
         ! If this is the first time through or we always want a base grid,
         !   then make the base grid point positions and grid cell structure.
-        if (BASEOUT .or. (IG .eq. NG .and. NEWGRIDFLAG)) then
+        if (BASEOUT .or. ((IG .eq. NG) .and. NEWGRIDFLAG)) then
             call shd_init__makeCell(BCFLAG, IPFLAG,&
                 &NX, NY, NZ, NX1, NY1, NPTS, NCELLS,&
                 &XGRID, YGRID, ZGRID, GRIDPOS,&
