@@ -37,6 +37,7 @@ program shdom_main
 
     use globals
     use globals_prp
+    use globals_set
 
     use shd_init
     use shd_src
@@ -103,7 +104,7 @@ program shdom_main
     integer :: NRAD, IRAD, NXOUT, NYOUT, NVIS, IVIS, NSCAN, NPIX, NSHOUT
     integer :: NCELLSTOT, NPTSTOT, NSHTOT
     logical :: KDIST, INRADFLAG, NEWGRIDFLAG, DELTAM, ACCELFLAG
-    logical :: BASEOUT, HIGHORDERRAD, MASTERPROC, VALIDBEAM
+    logical :: BASEOUT, MASTERPROC, VALIDBEAM
     logical :: RADIANCE_OUT, VISUAL_OUT
     logical :: FLUX_OUT, FLUXDIV_OUT, SH_OUT, SOURCE_OUT
     real :: SOLARFLUX0, SOLARFLUX, SOLARMU, SOLARAZ
@@ -222,11 +223,11 @@ program shdom_main
         &NUMPHASE_, MAXLEG, MAXPGL)
 
     ! Choose the option to compute higher order radiance SH terms
-    HIGHORDERRAD = .false.
-    if ((NPX_ .eq. 1) .and. (NPY_ .eq. 1)) HIGHORDERRAD = .true.
+    HIGHORDERRAD_ = .false.
+    if ((NPX_ .eq. 1) .and. (NPY_ .eq. 1)) HIGHORDERRAD_ = .true.
 
     NSHOUT = 4
-    if (HIGHORDERRAD) NSHOUT = 5
+    if (HIGHORDERRAD_) NSHOUT = 5
 
     ! Choose type of initialization/output for k-distributions:
     !   True means initiatize with and output only the base grid.
@@ -652,7 +653,7 @@ program shdom_main
             &ML, MM, NLM, NMU, NPHI, NLEG, NSTLEG, NUMPHASE_,&
             &NPHI0, MU, PHI, WTDO,&
             &MAXIV, MAXIC, MAXIG, MAXIDO, INRADFLAG,&
-            &BCFLAG, IPFLAG, DELTAM, SRCTYPE, HIGHORDERRAD,&
+            &BCFLAG, IPFLAG, DELTAM, SRCTYPE, HIGHORDERRAD_,&
             &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
             &SFCTYPE, GNDTEMP, GNDALBEDO,&
             &NXSFC, NYSFC, DELXSFC, DELYSFC,&

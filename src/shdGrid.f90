@@ -40,6 +40,9 @@ module shd_grid
 
     implicit none
 
+    integer, parameter :: R__  = selected_real_kind(6) ! default precision for float
+    integer, parameter :: I__  = selected_int_kind(9)  ! default precision for integer
+
     public :: shd_grid__findBoundaryPnt
     public :: shd_grid__matchGridPnt
     public :: shd_grid__makeNewGridPnt
@@ -91,14 +94,14 @@ subroutine shd_grid__findBoundaryPnt(&
     !               and NBOTPTS (bottom boundary points)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    integer(kind=I4_), intent(in) :: NPTS, NANG, MAXNBC, MAXBCRAD
-    real(kind=R4_)   , intent(in) :: ZBOT, ZTOP, GRIDPOS(3, NPTS)
+    integer(kind=I__), intent(in) :: NPTS, NANG, MAXNBC, MAXBCRAD
+    real(kind=R__)   , intent(in) :: ZBOT, ZTOP, GRIDPOS(3, NPTS)
     logical, intent(in) :: LAMBERTIAN
 
-    integer(kind=I4_), intent(out) :: NTOPPTS, NBOTPTS
-    integer(kind=I4_), intent(out) :: BCPTR(MAXNBC, 2)
+    integer(kind=I__), intent(out) :: NTOPPTS, NBOTPTS
+    integer(kind=I__), intent(out) :: BCPTR(MAXNBC, 2)
 
-    integer(kind=I4_) :: I, IT, IB, NA
+    integer(kind=I__) :: I, IT, IB, NA
 
     if (LAMBERTIAN) then
         NA = 1
@@ -160,16 +163,16 @@ subroutine shd_grid__matchGridPnt(&
     !               and NBOTPTS (bottom boundary points)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    real(kind=R4_)   , intent(in)  :: XP, YP, ZP
-    integer(kind=I4_), intent(in)  :: ICELL, IFACE
-    real(kind=R4_)   , intent(in)  :: GRIDPOS(3, *)
-    integer(kind=I4_), intent(in)  :: GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
+    real(kind=R__)   , intent(in)  :: XP, YP, ZP
+    integer(kind=I__), intent(in)  :: ICELL, IFACE
+    real(kind=R__)   , intent(in)  :: GRIDPOS(3, *)
+    integer(kind=I__), intent(in)  :: GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
     integer(kind=2)  , intent(in)  :: CELLFLAGS(*)
-    integer(kind=I4_), intent(out) :: IPMATCH
+    integer(kind=I__), intent(out) :: IPMATCH
 
     ! if MAXSTACK is greater than 128, kind=2 is needed
     integer(kind=1), parameter :: MAXSTACK=64
-    integer(kind=I4_) :: CELLSTACK(MAXSTACK), SP
+    integer(kind=I__) :: CELLSTACK(MAXSTACK), SP
     integer(kind=1)   :: OPPFACE(6), GRIDFACE(4, 6)
     data OPPFACE /2, 1, 4, 3, 6, 5/
     data GRIDFACE /1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8/

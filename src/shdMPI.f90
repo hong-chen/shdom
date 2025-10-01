@@ -36,6 +36,7 @@
 module shd_mpi
 
     use globals
+    use globals_set
 
 #if HAS_MPI
     use mpi_f08

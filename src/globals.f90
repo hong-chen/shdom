@@ -145,7 +145,6 @@ module globals
 
   integer, parameter :: FNAMEMAXLEN_ = 256 ! file name max length (number of characters)
   logical, parameter :: VERBOSE_ = .FALSE.
-  real(R_) :: RACC_
 
 contains
 
@@ -162,6 +161,14 @@ contains
   end subroutine globals__print
 
 end module globals
+
+
+module globals_set
+
+    logical, save :: HIGHORDERRAD_
+    real(kind=8), save :: RACC_
+
+end module globals_set
 
 
 module globals_prp

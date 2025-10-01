@@ -33,6 +33,7 @@
 module shd_src
 
     use globals
+    use globals_set
     use shd_pha
     use shd_util
     use shd_init

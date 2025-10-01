@@ -33,6 +33,7 @@
 module shd_intg
 
     use globals
+    use globals_set
     use shd_sfc
     use shd_init
     use shd_grid
