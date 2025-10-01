@@ -26,7 +26,8 @@
 ! @LICENSE_HEADER_END@
 !
 ! Acknowledgement:
-! SHDOM was originally developed by Frank Evans and is available at https://coloradolinux.com/shdom.
+!   SHDOM was originally developed by K. Franklin Evans and is available
+!   at https://coloradolinux.com/shdom.
 !╰────────────────────────────────────────────────────────────────────────────╯!
 
 PARAMETER (NPN1=150, NPNG1=450, NPNG2=2*NPNG1, NPN2=2*NPN1,&

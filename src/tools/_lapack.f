@@ -26,7 +26,8 @@
 ! @LICENSE_HEADER_END@
 !
 ! Acknowledgement:
-! SHDOM was originally developed by Frank Evans and is available at https://coloradolinux.com/shdom.
+!   SHDOM was originally developed by K. Franklin Evans and is available
+!   at https://coloradolinux.com/shdom.
 !╰────────────────────────────────────────────────────────────────────────────╯!
 
       SUBROUTINE ZGETF2( M, N, A, LDA, IPIV, INFO )
