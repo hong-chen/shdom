@@ -167,6 +167,7 @@ module globals_set
 
     logical, save :: HIGHORDERRAD_
     real(kind=8), save :: RACC_
+    integer(kind=1), save :: VERBOSE_
 
 end module globals_set
 
