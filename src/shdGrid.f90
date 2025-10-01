@@ -68,6 +68,7 @@ subroutine shd_grid__findBoundaryPnt(&
     &ZBOT, ZTOP, GRIDPOS,&
     &NTOPPTS, NBOTPTS, BCPTR)
 
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Description:
     !   Returns the BCPTR pointer array for the NTOPPTS top boundary
     !   points (BCPTR(*,1)) and the NBOTPTS bottom boundary points (BCPTR(*,2)).
@@ -88,6 +89,7 @@ subroutine shd_grid__findBoundaryPnt(&
     !   NBOTPTS   : integer, number of bottom boundary points
     !   BCPTR     : integer array, pointer array for NTOPPTS (top boundary points)
     !               and NBOTPTS (bottom boundary points)
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
     integer, intent(in) :: NPTS, NANG, MAXNBC, MAXBCRAD
     logical, intent(in) :: LAMBERTIAN
@@ -98,7 +100,6 @@ subroutine shd_grid__findBoundaryPnt(&
 
     integer :: I, IT, IB, NA
 
-    ! Loop over all points finding the top and bottom ones
     if (LAMBERTIAN) then
         NA = 1
     else
@@ -107,6 +108,7 @@ subroutine shd_grid__findBoundaryPnt(&
 
     IT = 0
     IB = 0
+    ! Loop over all points finding the top and bottom ones
     do I = 1, NPTS
 
         if (GRIDPOS(3, I) .ge. ZTOP) then
@@ -119,7 +121,7 @@ subroutine shd_grid__findBoundaryPnt(&
 
         if (GRIDPOS(3, I) .le. ZBOT) then
             IB = IB + 1
-            if (IB .gt. MAXNBC .or. IT + IB*NA .gt. MAXBCRAD) then
+            if ((IB .gt. MAXNBC) .or. (IT + IB*NA .gt. MAXBCRAD)) then
                 stop 'Error [_findBoundaryPnt]: MAXNBC exceeded - bottom.'
             end if
             BCPTR(IB, 2) = I
@@ -139,13 +141,14 @@ subroutine shd_grid__matchGridPnt(&
     &GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &IPMATCH)
 
+    ! Description:
     !   Determines whether the neighboring cells to ICELL adjacent to
-    ! face IFACE (1-6: -X,+X,-Y,+Y,-Z,+Z) have gridpoints that match
-    ! the point at XP,YP,ZP on face IFACE of cell ICELL.
-    ! If the face of ICELL has several neighboring cells, then the tree
-    ! is traced down to find those cells that might contain XP,YP,ZP.
-    ! IPMATCH is returned 0 if there is no match, otherwise it has the
-    ! number of the matching existing gridpoint.
+    !   face IFACE (1-6: -X,+X,-Y,+Y,-Z,+Z) have gridpoints that match
+    !   the point at XP,YP,ZP on face IFACE of cell ICELL.
+    !   If the face of ICELL has several neighboring cells, then the tree
+    !   is traced down to find those cells that might contain XP,YP,ZP.
+    !   IPMATCH is returned 0 if there is no match, otherwise it has the
+    !   number of the matching existing gridpoint.
 
     real XP, YP, ZP
     integer ICELL, IFACE
