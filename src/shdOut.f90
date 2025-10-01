@@ -32,24 +32,27 @@
 
 module shd_out
 
-  use globals_const
-  use globals_cfg
-  use shd_grid
-  use shd_util
+    use globals_const
+    use globals_cfg
+    use shd_grid
+    use shd_util
 
-  implicit none
-  private
+    implicit none
+    private
 
-  public :: shd_io__outputData
-  public :: shd_io__outputResult
-  public :: shd_io__outputResultMpi
-  public :: shd_io__outputCamRad
-  public :: shd_io__outputImg
+    integer, parameter :: R__  = selected_real_kind(6) ! default precision for float
+    integer, parameter :: I__  = selected_int_kind(9)  ! default precision for integer
 
-  public :: shd_io__outputCellSplit
-  public :: shd_io__visualizeCell
+    public :: shd_io__outputData
+    public :: shd_io__outputResult
+    public :: shd_io__outputResultMpi
+    public :: shd_io__outputCamRad
+    public :: shd_io__outputImg
 
-  public :: shd_io__saveState
+    public :: shd_io__outputCellSplit
+    public :: shd_io__visualizeCell
+
+    public :: shd_io__saveState
 
 contains
 
@@ -2785,15 +2788,16 @@ subroutine shd_io__saveState(&
     write (3) (XGRID(I), I=1, NX+1)
     write (3) (YGRID(I), I=1, NY+1)
     write (3) (ZGRID(I), I=1, NZ)
-    write (3) ((GRIDPTR(J, I), J=1, 8), I=1, NCELLS)
+    write (3) ((GRIDPTR(J, I) , J=1, 8), I=1, NCELLS)
     write (3) ((NEIGHPTR(J, I), J=1, 6), I=1, NCELLS)
-    write (3) ((TREEPTR(J, I), J=1, 2), I=1, NCELLS)
-    write (3) (CELLFLAGS(I), I=1, NCELLS)
+    write (3) ((TREEPTR(J, I) , J=1, 2), I=1, NCELLS)
+    write (3) (CELLFLAGS(I)   , I=1, NCELLS)
 
     write (3) ((GRIDPOS(J, I), J=1, 3), I=1, NPTS)
-    write (3) ((FLUXES(J, I), J=1, 2), I=1, NPTS)
+    write (3) ((FLUXES(J, I) , J=1, 2), I=1, NPTS)
 
     write (3) (SHPTR(I), I=1, NPTS + 1)
+
     NS = SHPTR(NPTS + 1)
     write (3) (SOURCE(I), I=1, NSTOKES*NS)
 

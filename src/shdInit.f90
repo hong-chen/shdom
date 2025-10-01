@@ -32,29 +32,29 @@
 
 module shd_init
 
-  use globals_const
-  use globals_cfg
-  use shd_util
-  use shd_sfc
+    use globals_const
+    use globals_cfg
+    use shd_util
+    use shd_sfc
 
-  implicit none
-  private
+    implicit none
+    private
 
-  public :: shd_init__makeGrid
-  public :: shd_init__makeCell
+    public :: shd_init__makeGrid
+    public :: shd_init__makeCell
 
-  public :: shd_init__makePrp
-  public :: shd_init__makeRad
-  public :: shd_init__makeFlux
-  public :: shd_init__makeAngle
+    public :: shd_init__makePrp
+    public :: shd_init__makeRad
+    public :: shd_init__makeFlux
+    public :: shd_init__makeAngle
 
-  public :: shd_init__makeTopRad
-  public :: shd_init__makeSfcRadFL
-  public :: shd_init__makeSfcRadVL
-  public :: shd_init__makeSfcRadU
-  public :: shd_init__makeSfcRadV
+    public :: shd_init__makeTopRad
+    public :: shd_init__makeSfcRadFL
+    public :: shd_init__makeSfcRadVL
+    public :: shd_init__makeSfcRadU
+    public :: shd_init__makeSfcRadV
 
-  public :: shd_init__checkSfcU
+    public :: shd_init__checkSfcU
 
 contains
 

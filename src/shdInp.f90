@@ -33,36 +33,36 @@
 
 module shd_inp
 
-  use globals_const
-  use globals_cfg
-  use shd_util
+    use globals_const
+    use globals_cfg
+    use shd_util
 
-  implicit none
-  private
+    implicit none
+    private
 
-  integer, parameter :: R__  = selected_real_kind(6) ! default precision for float
-  integer, parameter :: I__  = selected_int_kind(9)  ! default precision for integer
+    integer, parameter :: R__  = selected_real_kind(6) ! default precision for float
+    integer, parameter :: I__  = selected_int_kind(9)  ! default precision for integer
 
 
-  public :: shd_io__userInput
-  public :: shd_io__nmlInput
+    public :: shd_io__userInput
+    public :: shd_io__nmlInput
 
-  public :: shd_io__checkInputParam
+    public :: shd_io__checkInputParam
 
-  public :: shd_io__readPrpSize
-  public :: shd_io__readPrp
-  public :: shd_io__checkPrpInput
+    public :: shd_io__readPrpSize
+    public :: shd_io__readPrp
+    public :: shd_io__checkPrpInput
 
-  public :: shd_io__readSfcSize
-  public :: shd_io__readSfc
+    public :: shd_io__readSfcSize
+    public :: shd_io__readSfc
 
-  public :: shd_io__readCkdSize
-  public :: shd_io__readCkd
+    public :: shd_io__readCkdSize
+    public :: shd_io__readCkd
 
-  public :: shd_io__readSenSize
-  public :: shd_io__readSen
+    public :: shd_io__readSenSize
+    public :: shd_io__readSen
 
-  public :: shd_io__restoreState
+    public :: shd_io__restoreState
 
 contains
 

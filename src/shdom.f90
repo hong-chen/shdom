@@ -345,7 +345,6 @@ program shdom_main
 
 
     ! Read in property data from PRPFILE (property file)
-    ! if MPI, redistribute file data to grids (different CPU processes different grids)
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Determine the size of the property grid arrays so can allocate
     MAXNZ = NPZ_
@@ -387,6 +386,7 @@ program shdom_main
 
         end if
 
+        ! redistribute file grid data to working grids (different CPU processes different grids)
         call shd_mpi__distPrp(NPXT, NPYT, NPX_, NPY_, NPZ_,&
             &NSTLEG, NLEG, NUMPHASE_,&
             &ZLEVELS_, MAXASYM,&
@@ -645,7 +645,9 @@ program shdom_main
     allocate (WORK2(max(NVIS, NRAD, NSTOKES*MAXIG)))
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
+
     ! Notify user that certain outputs are not supported with multiple processors
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     if (mpiMode .and. MASTERPROC) then
         do I = 1, NUMOUT
             if (OUTTYPES(I) .eq. 'F') then
@@ -670,6 +672,8 @@ program shdom_main
             end if
         end do
     end if
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
 
     ! Read in previous run from binary file if desired
     call shd_io__restoreState(INSAVEFILE, NSTOKES, NX, NY, NZ, ML, MM, NLM,&
@@ -685,6 +689,17 @@ program shdom_main
             &XSTART_, YSTART_, DELX_, DELY_, ZLEVELS_,&
             &XGRID, YGRID, ZGRID)
     end if
+
+    call system_clock(count_end, count_rate, count_max)
+    elapsed_time = (real(count_end) - real(count_start)) / real(count_rate)
+    if (MASTERPROC) then
+        if (elapsed_time .lt. 60.0) then
+            write (6, '(A,F0.2,A)') 'Message [shdom_main]: Total time used for preparation: ', elapsed_time, ' sec'
+        else
+            write (6, '(A,F0.2,A)') 'Message [shdom_main]: Total time used for preparation: ', elapsed_time/60.0, ' min'
+        endif
+    end if
+    count_start = count_end
 
     write (6, '(A,"<",A,">")') 'Message [shdom_main]: Starting solution iterations for SHDOM run: ', trim(adjustl(RUNNAME))
     TOTITER = 0
