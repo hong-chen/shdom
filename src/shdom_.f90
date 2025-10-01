@@ -127,13 +127,17 @@ program shdom_main
     logical :: mpiX, mpiY, mpiMode
     logical :: nmlMode = .false.
 
-    !call cpu_time(CPUTIME1)
+    ! start timing
     call system_clock(count_start, count_rate, count_max)
 
     ! Start up MPI for multiple processors if available, and
     !   return flag for master process (procnum=0)
     call shd_mpi__start(MASTERPROC)
 
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    ! Read input from namelist or command line input
+    !   In MPI, the master processor performs the main computation,
+    !   and the results are then broadcast to the child processors.
     if (MASTERPROC) then
         if (nmlMode) then
             call shd_io__nmlInput(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
@@ -170,6 +174,7 @@ program shdom_main
         &MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS,&
         &MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
         &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! set calculation accuracy (1.0e-4 to 1.0e-8)
     RACC_ = max(REPS_, min(SOLACC*0.1, 1.0e-4))
