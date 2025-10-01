@@ -859,7 +859,7 @@ contains
         character(len=256) :: OUTFILE_DATA
         character(len=20)  :: DATA_POSTFIX
 
-        DATA_POSTFIX = '.sHdOm-prp'
+        DATA_POSTFIX = '.sHdOmNG-prp'
         OUTFILE_DATA = trim(adjustl(PROPFILE))//trim(adjustl(DATA_POSTFIX))
 
         ! Make a phase function index conversion array to output only the ones used.
