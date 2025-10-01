@@ -180,7 +180,7 @@ program shdom_main
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
-    ! post-process parameters from input
+    ! Post-process parameters from input
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! The number of Stokes parameters (and components of the real
     !   generalized spherical harmonics vectors) can be 1, 3, or 4.
@@ -225,7 +225,7 @@ program shdom_main
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
-    ! read PROPFILE (property file) to get data size info, if MPI, broadcast.
+    ! Read PROPFILE (property file) to get data size info, if MPI, broadcast.
     !╭────────────────────────────────────────────────────────────────────────────╮!
     if (MASTERPROC) then
         ! Find out the size of the input property file grid
@@ -237,7 +237,7 @@ program shdom_main
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
-    ! read SFCFILE (surface file), if MPI, broadcast
+    ! Read SFCFILE (surface file) to get data size info, if MPI, broadcast
     !╭────────────────────────────────────────────────────────────────────────────╮!
     if (SFCFILE(1:4) .eq. 'NONE') then
         SFCTYPE = 'FL'
@@ -256,7 +256,7 @@ program shdom_main
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
-    ! process grids
+    ! Process grids
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! X, Y, Z grids
     NX = max(1, NX); NY = max(1, NY); NZ = max(2, NZ)
@@ -287,7 +287,7 @@ program shdom_main
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
-    ! if MPI, divide domain into mini-domains
+    ! If MPI, divide domain into mini-domains
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Map the full SHDOM domain onto the multiple processors:
     !   change NPX,NPY and NX,NY to the subdomain size, and output
@@ -317,15 +317,15 @@ program shdom_main
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
-    ! Set up base grid point actual size (NX1xNY1xNZ)
-    ! base grids setup after MPI map
+    ! Base grids setup after MPI map
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Choose type of initialization/output for k-distributions:
     !   True means initiatize with and output only the base grid.
     BASEOUT = .false.
 
-    ! btest(IPFLAG, 0) checks whether IPFLAG=1 or IPFLAG=0 ('...0001' [IPA in X] or '...0000' [3D in X])
-    ! btest(BCFLAG, 0) checks whether BCFLAG=1 or BCFLAG=0 ('...0001' [open in X] or '...0000' [periodic in X])
+    ! Set up base grid point actual size (NX1xNY1xNZ)
+    !   btest(IPFLAG, 0) checks whether IPFLAG=1 or IPFLAG=0 ('...0001' [IPA in X] or '...0000' [3D in X])
+    !   btest(BCFLAG, 0) checks whether BCFLAG=1 or BCFLAG=0 ('...0001' [open in X] or '...0000' [periodic in X])
     NX1 = NX + 1
     if (btest(IPFLAG, 0) .or. btest(BCFLAG, 0) .or. mpiX) NX1 = NX
 
@@ -344,20 +344,17 @@ program shdom_main
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
-    allocate (MU(NMU), WTDO(NMU*NPHI), PHI(NMU*NPHI), NPHI0(NMU))
-
+    ! Read in property data from PRPFILE (property file)
+    ! if MPI, redistribute file data to grids (different CPU processes different grids)
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Determine the size of the property grid arrays so can allocate
+    MAXNZ = NPZ_
     MAXPG = NPX_*NPY_*NPZ_
     if (NUMPHASE_ .eq. 0) MAXPGL = MAXPG*(MAXLEG + 1)*NSTLEG
 
     allocate (ZLEVELS_(NPZ_))
     allocate (TEMPP_(MAXPG), EXTINCTP_(MAXPG), ALBEDOP_(MAXPG))
     allocate (EXTDIRP_(MAXPG), IPHASEP_(MAXPG), LEGENP_(MAXPGL))
-
-    MEMWORD = NMU*(2 + 2*NPHI + 2*NLM + 2*33*32)
-    MEMWORD = MEMWORD + 4.5*MAXPG + MAXPGL + NUMPHASE_*NSTLEG*(MAXLEG + 1)
-
-    MAXNZ = NPZ_
 
     if (mpiMode) then
 
@@ -420,9 +417,14 @@ program shdom_main
             &WAVENO, WAVELEN, GNDTEMP, GNDALBEDO,&
             &SPLITACC, SHACC)
     end if
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
 
     ! memory settings
     !╭────────────────────────────────────────────────────────────────────────────╮!
+    MEMWORD = NMU*(2 + 2*NPHI + 2*NLM + 2*33*32)
+    MEMWORD = MEMWORD + 4.5*MAXPG + MAXPGL + NUMPHASE_*NSTLEG*(MAXLEG + 1)
+
     if (mpiMode) then
         ! Read the memory parameters from a file, if it exists, and send
         !   the parameters to all processors. Otherwise use the input ones.
@@ -486,6 +488,7 @@ program shdom_main
     end if
 
     ! Allocate the internal adaptable grid arrays, including the BIG 3
+    allocate (MU(NMU), WTDO(NMU*NPHI), PHI(NMU*NPHI), NPHI0(NMU))
     allocate (XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ))
     allocate (TEMP(MAXIG), PLANCK(MAXIG))
     allocate (EXTINCT(MAXIG), ALBEDO(MAXIG), IPHASE(MAXIG))
