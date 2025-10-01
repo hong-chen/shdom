@@ -11,7 +11,7 @@ Spherical Harmonic Discrete Ordinate Method - Next Generation (SHDOMNG)
 
 |
 
-SHDOM was originally developed by `Frank Evans <evans@nit.colorado.edu>`_ and is available `here <https://coloradolinux.com/shdom/>`_.
+SHDOM was originally developed by `K. Franklin Evans <evans@nit.colorado.edu>`_ and is available `here <https://coloradolinux.com/shdom/>`_.
 
 **Documents**:
 
