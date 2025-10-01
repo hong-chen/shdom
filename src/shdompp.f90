@@ -85,7 +85,7 @@ program SHDOMPP
     real, allocatable :: RADIANCE(:, :), SOURCE(:, :), DELSOURCE(:, :)
     real, allocatable :: FLUXES(:, :), DIRFLUX(:), DIRFLUX_TMP(:)
     integer, allocatable :: NPHI0(:)
-    real, allocatable :: MU(:), WTDO(:), PHI(:)
+    real, allocatable :: MU(:), WTDO(:, :), PHI(:, :)
     integer, allocatable :: BCPTR(:)
     real, allocatable :: BCRAD(:, :)
     real, allocatable :: SENPARMS(:)
@@ -207,6 +207,9 @@ program SHDOMPP
     ! dummy variables for output
     NX1 = 1; NY1 = 1
     NBPTS = NX1*NY1*NZ
+
+
+    allocate (MU(NMU), PHI(NPHI0MAX, NMU), NPHI0(NMU), WTDO(NMU, NPHI0MAX))
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
@@ -382,16 +385,17 @@ program SHDOMPP
                           NZCKD_, ZCKD_, KABS(:, IG), TAUPM, ALBEDOPM)
 
         !call SOLVE_SHDOMPP(NSTOKES, NLAY, NANG,&
-        !                   &ML, MM, NLM, NMU, NPHI, NLEG, NSTLEG, NUMPHASE_,&
-        !                   &NPHI0, MU, PHI, WTDO,&
+        !                   ML, MM, NLM, NMU, NPHI, NLEG, NSTLEG, NUMPHASE_,&
+        !                   NPHI0MAX, NPHI0, MU, PHI, WTDO,&
         !                   MAXLEG, HEIGHTP, TEMPP, TAUPM, ALBEDOPM, &
         !                   NLEGP, LEGENP, SRCTYPE, SOLARFLUX, SOLARMU, &
         !                   UNITS, WAVELEN, WAVENO, SKYRAD, SFCTYPE(2:2), SFCPARMS, SFCTEMP, &
-        !                   NMU, NPHI, MAXIG, MAXDELTAU, SPLITACC, SOLACC, &
+        !                   MAXIG, MAXDELTAU, SPLITACC, SOLACC, &
         !                   MAXITER, ACCELFLAG, PRNT, SOLCRIT, ITER, &
         !                   NPTS, HEIGHTG, TAUG, IXP, FLUXUPM, FLUXDNM, MEANRADM, &
         !                   NZOUT, ZOUT, NMUOUT, MUOUT, NPHIOUT, PHIOUT, &
-        !                   )
+        !                   TAUPSC, ALBEDOSC, LEGENSC, TAUGSC, &
+        !                   SOURCE, DELSOURCE, RADIANCE, FLUXES, DIRFLUX)
         !stop
 
         ! Find the monochromatic SHDOM solution: adaptive grid output
@@ -534,6 +538,7 @@ program SHDOMPP
 
     ! deallocate array
     !╭────────────────────────────────────────────────────────────────────────────╮!
+    !deallocate (MU, WTDO, PHI, NPHI0)
     !deallocate (TAUPSC, ALBEDOSC, LEGENSC, TAUGSC)
     !deallocate (SOURCE, RADIANCE, CONSTSOURCE, DELSOURCE, SRCINT)
 
@@ -566,292 +571,295 @@ program SHDOMPP
 
 end program SHDOMPP
 
-subroutine SOLVE_SHDOMPP(NSTOKES, NLAY, NANG,&
-                         !ML, MM, NLM, NMU, NPHI, NLEG, NSTLEG, NUMPHASE_,&
-                         !NPHI0, MU, PHI, WTDO,&
-                         MAXLEG, HEIGHTP, TEMPP, TAUP, ALBEDOP, &
-                         NLEGP, LEGENP, SRCTYPE, SOLARFLUX, SOLARMU, &
-                         UNITS, WAVELEN, WAVENO, SKYRAD, SFCTYPE, SFCPARMS, SFCTEMP, &
-                         NMU, NPHI, MAXIG, MAXDELTAU, SPLITACC, SOLACC, &
-                         MAXITER, ACCELFLAG, PRNT, SOLCRIT, ITER, &
-                         NPTS, HEIGHTG, TAUG, IXP, FLUXUP, FLUXDN, MEANRAD, &
-                         NZOUT, ZOUT, NMUOUT, MUOUT, NPHIOUT, PHIOUT, &
-                         RADOUT)
-    ! Performs the SHDOMPP solution procedure to calculate plane-parallel
-    ! monochromatic, unpolarized radiative transfer.  The optical properties,
-    ! uniform in each layer, are input.  The output are the upwelling and
-    ! downwelling fluxes and mean radiance at the adaptive grid optical depth
-    ! levels (TAUG), and the radiances in the NMUOUT*NPHIOUT specified
-    ! directions at each of NZOUT radiance output levels.
-    !
-    ! Inputs:
-    !  NLAY      number of input property layers (TAUP, ALBEDOP, etc.)
-    !  MAXLEG    maximum Legendre series order for phase functions
-    !  HEIGHTP   heights (e.g. km) of input layer interfaces (NLAY+1 values)
-    !  TEMPP     temperatures (K) of input layer interfaces (NLAY+1 values)
-    !              temperature is linearly interpolated in tau within each layer
-    !  TAUP      optical depths of the input layers (each layer from top down)
-    !  ALBEDOP   single scattering albedo of the inputs layers
-    !  NLEGP     order of each layer Legendre series phase function
-    !  LEGENP    phase function Legendre series coefficients for each layer
-    !  SRCTYPE   'S' for solar source, 'T' for thermal source, 'B' for both
-    !  SOLARFLUX solar flux on a *horizontal* surface
-    !  SOLARMU   negative of cosine of solar zenith angle (< 0)
-    !              direct beam is assumed to be going in phi=0 azimuth
-    !  UNITS     units for radiation output
-    !  WAVELEN   wavelength (microns) for thermal emission
-    !  WAVENO(2) starting and ending wavenumber (cm^-1) for thermal (if WAVELEN=0)
-    !  SKYRAD    top of atmosphere downward sky radiance (or temp for SRCTYPE='T')
-    !  SFCTYPE   surface type (currently 'L' for Lambertian, 'R' for RPV
-    !  SFCPARMS  array of surface parameters (first is albedo for Lambertian)
-    !  SFCTEMP   surface temperature (K)
-    !  NMU       number of discrete ordinate zenith angles in both hemispheres
-    !  NPHI      number of discrete ordinate azimuth angles in 2\pi
-    !  MAXIG     maximum possible size of adaptive grid arrays
-    !  MAXDELTAU max sublayer scattering optical depth in adaptive grid
-    !  SPLITACC  adaptive layer splitting accuracy
-    !  SOLACC    desired solution accuracy (try 1E-4 or less)
-    !  MAXITER   maximum number of iterations allowed
-    !  ACCELFLAG logical flag: true to perform iteration acceleration
-    !  PRNT      logical flat: true to printer iteration information
-    !  NZOUT     number of radiance output height levels
-    !  ZOUT      height levels of radiance output (set to closest adaptive level)
-    !  NMUOUT    number of cosine zenith angles for radiance output
-    !  MUOUT     cosine zenith angles for radiance output
-    !  NPHIOUT   number of azimuth angles for radiance output
-    !  PHIOUT    azimuth angles (degrees) for radiance output
-    !
-    ! Outputs:
-    !  SOLCRIT   actual solution accuracy achieved
-    !  ITER      actual number of iterations
-    !  NPTS      number of adaptive grid points
-    !  HEIGHTG   heights of the adaptive grid levels (same units as HEIGHTP)
-    !  TAUG      sorted grid point optical depth array for the adaptive grid
-    !  IXP       index of starting and ending point in TAUG for each input layer
-    !  FLUXUP    upward hemispheric flux at each adaptive grid level
-    !  FLUXDN    downward hemispheric fluxes (includes direct solar) at each level
-    !  MEANRAD   mean radiance (includes direct solar) at each level
-    !  RADOUT    array of output radiances
-    !
-    !  TAUG(IXP(1,layer)) is the optical depth at the top of the input layer
-    !  TAUG(IXP(2,layer)) is the optical depth at the bottom of the input layer
-    !  FLUXUP(IXP(1,layer)) is the upwelling flux at the top of the layer
-    !  FLUXDN(IXP(2,layer)) is the downwelling flux at the bottom of the layer
-    !
+!subroutine SOLVE_SHDOMPP(NSTOKES, NLAY, NANG,&
+!                         ML, MM, NLM, NMU, NPHI, NLEG, NSTLEG, NUMPHASE_,&
+!                         NPHI0MAX, NPHI0, MU, PHI, WTDO,&
+!                         MAXLEG, HEIGHTP, TEMPP, TAUP, ALBEDOP, &
+!                         NLEGP, LEGENP, SRCTYPE, SOLARFLUX, SOLARMU, &
+!                         UNITS, WAVELEN, WAVENO, SKYRAD, SFCTYPE, SFCPARMS, SFCTEMP, &
+!                         MAXIG, MAXDELTAU, SPLITACC, SOLACC, &
+!                         MAXITER, ACCELFLAG, PRNT, SOLCRIT, ITER, &
+!                         NPTS, HEIGHTG, TAUG, IXP, FLUXUP, FLUXDN, MEANRAD, &
+!                         NZOUT, ZOUT, NMUOUT, MUOUT, NPHIOUT, PHIOUT, &
+!                         TAUPSC, ALBEDOSC, LEGENSC, TAUGSC, &
+!                         SOURCE, DELSOURCE, RADIANCE, FLUXES, DIRFLUX)
+!    ! Performs the SHDOMPP solution procedure to calculate plane-parallel
+!    ! monochromatic, unpolarized radiative transfer.  The optical properties,
+!    ! uniform in each layer, are input.  The output are the upwelling and
+!    ! downwelling fluxes and mean radiance at the adaptive grid optical depth
+!    ! levels (TAUG), and the radiances in the NMUOUT*NPHIOUT specified
+!    ! directions at each of NZOUT radiance output levels.
+!    !
+!    ! Inputs:
+!    !  NLAY      number of input property layers (TAUP, ALBEDOP, etc.)
+!    !  MAXLEG    maximum Legendre series order for phase functions
+!    !  HEIGHTP   heights (e.g. km) of input layer interfaces (NLAY+1 values)
+!    !  TEMPP     temperatures (K) of input layer interfaces (NLAY+1 values)
+!    !              temperature is linearly interpolated in tau within each layer
+!    !  TAUP      optical depths of the input layers (each layer from top down)
+!    !  ALBEDOP   single scattering albedo of the inputs layers
+!    !  NLEGP     order of each layer Legendre series phase function
+!    !  LEGENP    phase function Legendre series coefficients for each layer
+!    !  SRCTYPE   'S' for solar source, 'T' for thermal source, 'B' for both
+!    !  SOLARFLUX solar flux on a *horizontal* surface
+!    !  SOLARMU   negative of cosine of solar zenith angle (< 0)
+!    !              direct beam is assumed to be going in phi=0 azimuth
+!    !  UNITS     units for radiation output
+!    !  WAVELEN   wavelength (microns) for thermal emission
+!    !  WAVENO(2) starting and ending wavenumber (cm^-1) for thermal (if WAVELEN=0)
+!    !  SKYRAD    top of atmosphere downward sky radiance (or temp for SRCTYPE='T')
+!    !  SFCTYPE   surface type (currently 'L' for Lambertian, 'R' for RPV
+!    !  SFCPARMS  array of surface parameters (first is albedo for Lambertian)
+!    !  SFCTEMP   surface temperature (K)
+!    !  NMU       number of discrete ordinate zenith angles in both hemispheres
+!    !  NPHI      number of discrete ordinate azimuth angles in 2\pi
+!    !  MAXIG     maximum possible size of adaptive grid arrays
+!    !  MAXDELTAU max sublayer scattering optical depth in adaptive grid
+!    !  SPLITACC  adaptive layer splitting accuracy
+!    !  SOLACC    desired solution accuracy (try 1E-4 or less)
+!    !  MAXITER   maximum number of iterations allowed
+!    !  ACCELFLAG logical flag: true to perform iteration acceleration
+!    !  PRNT      logical flat: true to printer iteration information
+!    !  NZOUT     number of radiance output height levels
+!    !  ZOUT      height levels of radiance output (set to closest adaptive level)
+!    !  NMUOUT    number of cosine zenith angles for radiance output
+!    !  MUOUT     cosine zenith angles for radiance output
+!    !  NPHIOUT   number of azimuth angles for radiance output
+!    !  PHIOUT    azimuth angles (degrees) for radiance output
+!    !
+!    ! Outputs:
+!    !  SOLCRIT   actual solution accuracy achieved
+!    !  ITER      actual number of iterations
+!    !  NPTS      number of adaptive grid points
+!    !  HEIGHTG   heights of the adaptive grid levels (same units as HEIGHTP)
+!    !  TAUG      sorted grid point optical depth array for the adaptive grid
+!    !  IXP       index of starting and ending point in TAUG for each input layer
+!    !  FLUXUP    upward hemispheric flux at each adaptive grid level
+!    !  FLUXDN    downward hemispheric fluxes (includes direct solar) at each level
+!    !  MEANRAD   mean radiance (includes direct solar) at each level
+!    !  RADOUT    array of output radiances
+!    !
+!    !  TAUG(IXP(1,layer)) is the optical depth at the top of the input layer
+!    !  TAUG(IXP(2,layer)) is the optical depth at the bottom of the input layer
+!    !  FLUXUP(IXP(1,layer)) is the upwelling flux at the top of the layer
+!    !  FLUXDN(IXP(2,layer)) is the downwelling flux at the bottom of the layer
+!    !
 
-    use shd_shdo
+!    use shd_shdo
 
-    implicit none
-    integer, intent(IN)  :: NSTOKES, NLAY, MAXLEG, NLEGP(NLAY), MAXIG
-    integer, intent(IN)  :: NMU, NPHI, MAXITER
-    integer, intent(IN)  :: NZOUT, NMUOUT, NPHIOUT
-    logical, intent(IN)  :: ACCELFLAG, PRNT
-    real, intent(IN)  :: TAUP(NLAY), ALBEDOP(NLAY), LEGENP(0:MAXLEG, NLAY)
-    real, intent(IN)  :: HEIGHTP(NLAY + 1), TEMPP(NLAY + 1)
-    real, intent(IN)  :: SOLARFLUX, SOLARMU, WAVELEN, WAVENO(2), SKYRAD
-    real, intent(IN)  :: SFCPARMS(*), SFCTEMP
-    real, intent(IN)  :: MAXDELTAU, SPLITACC, SOLACC
-    real, intent(INOUT)  :: ZOUT(NZOUT)
-    character(LEN=1), intent(IN) :: SRCTYPE, SFCTYPE, UNITS
-    integer, intent(OUT) :: ITER, NPTS, IXP(2, NLAY)
-    real, intent(OUT) :: SOLCRIT
-    real, intent(OUT) :: HEIGHTG(MAXIG), TAUG(MAXIG)
-    real, intent(OUT) :: FLUXUP(MAXIG), FLUXDN(MAXIG), MEANRAD(MAXIG)
-    real, intent(INOUT) :: RADOUT(*), MUOUT(*), PHIOUT(*)
+!    implicit none
+!    integer, intent(in) :: NSTOKES, NLAY, MAXLEG, NLEGP(NLAY), MAXIG
+!    integer, intent(in) :: ML, MM, NLM, NMU, NPHI, NLEG, NSTLEG, NUMPHASE_, NPHI0MAX
+!    integer, intent(inout) :: NPHI0(*)
+!    real, intent(inout) :: MU(*), WTDO(*), PHI(*)
 
-    integer :: ML, MM, NLM, NPHI0MAX
-    integer :: ORDINATESET, OLDNPTS, PREVNPTS, LASTNPTS, NANG, I
-    logical, parameter :: DELTAM = .true.
-    logical :: FFTFLAG(NMU)
-    real, parameter :: MINDELTAUSPLIT = 1.0e-3
-    real    :: DELJDOT, DELJOLD, DELJNEW
-    real    :: SOLARAZ, PI, GNDALB, DIRFLUX
-    real    :: TRUESOLCRIT, CURSPLITACC
-    integer, allocatable :: IXG(:), NPHI0(:)
-    real, allocatable :: TAUPSC(:), ALBEDOSC(:), LEGENSC(:, :)
-    real, allocatable :: TAUGSC(:), RADIANCE(:, :, :), SOURCE(:, :)
+!    integer, intent(in)  :: MAXITER
+!    integer, intent(in)  :: NZOUT, NMUOUT, NPHIOUT
+!    logical, intent(in)  :: ACCELFLAG, PRNT
+!    real, intent(in)  :: TAUP(NLAY), ALBEDOP(NLAY), LEGENP(0:MAXLEG, NLAY)
+!    real, intent(in)  :: HEIGHTP(NLAY + 1), TEMPP(NLAY + 1)
+!    real, intent(in)  :: SOLARFLUX, SOLARMU, WAVELEN, WAVENO(2), SKYRAD
+!    real, intent(in)  :: SFCPARMS(*), SFCTEMP
+!    real, intent(in)  :: MAXDELTAU, SPLITACC, SOLACC
+!    real, intent(inout)  :: ZOUT(NZOUT)
+!    character(len=1), intent(in) :: SRCTYPE, SFCTYPE, UNITS
+!    integer, intent(out) :: ITER, NPTS, IXP(2, NLAY)
+!    real, intent(out) :: SOLCRIT
+!    real, intent(out) :: HEIGHTG(MAXIG), TAUG(MAXIG)
+!    real, intent(out) :: FLUXUP(MAXIG), FLUXDN(MAXIG), MEANRAD(MAXIG)
+!    real, intent(inout) :: RADOUT(*), MUOUT(*), PHIOUT(*)
 
-    real, allocatable :: MU(:), WTDO(:, :), PHI(:, :), WTMU(:), YLMSUN(:)
-    real, allocatable :: CMU1(:, :), CMU2(:, :), CPHI1(:, :, :), CPHI2(:, :, :)
-    real, allocatable :: WPHISAVE(:, :), SRCINT(:, :, :)
-    real, allocatable :: CONSTSOURCE(:, :), SHRADIANCE(:, :), DOSOURCE(:, :, :)
-    real, allocatable :: DELSOURCE(:, :)
+!    integer :: ORDINATESET, OLDNPTS, PREVNPTS, LASTNPTS, NANG, I
+!    logical, parameter :: DELTAM = .true.
+!    logical :: FFTFLAG(NMU)
+!    real, parameter :: MINDELTAUSPLIT = 1.0e-3
+!    real    :: DELJDOT, DELJOLD, DELJNEW
+!    real    :: SOLARAZ, PI, GNDALB, DIRFLUX
+!    real    :: TRUESOLCRIT, CURSPLITACC
+!    integer, allocatable :: IXG(:)
+!    real, intent (inout) :: TAUPSC(*), ALBEDOSC(*), LEGENSC(*)
+!    real, allocatable :: TAUGSC(:), RADIANCE(:, :, :), SOURCE(:, :)
+
+!    real, allocatable :: WTMU(:), YLMSUN(:)
+!    real, allocatable :: CMU1(:, :), CMU2(:, :), CPHI1(:, :, :), CPHI2(:, :, :)
+!    real, allocatable :: WPHISAVE(:, :), SRCINT(:, :, :)
+!    real, allocatable :: CONSTSOURCE(:, :), SHRADIANCE(:, :), DOSOURCE(:, :, :)
+!    real, allocatable :: DELSOURCE(:, :)
+
+!    allocate (TAUPSC(NLAY), ALBEDOSC(NLAY), LEGENSC(0:ML, NLAY))
+!    allocate (TAUGSC(MAXIG), IXG(MAXIG))
+
+!    allocate (YLMSUN(NLM), WTMU(NMU), CMU1(NLM, NMU), CMU2(NMU, NLM))
+!    allocate (CPHI1(0:16, 32, NMU), CPHI2(32, 0:16, NMU), WPHISAVE(3*NPHI0MAX + 15, NMU))
+
+!    allocate (SOURCE(NLM, MAXIG), RADIANCE(NPHI0MAX, NMU, MAXIG))
+!    allocate (CONSTSOURCE(NLM, MAXIG), DELSOURCE(NLM, MAXIG))
+!    allocate (SRCINT(0:4, NMU, MAXIG))
+
+!    ! Set up some things before solution loop
+
+!    ! If Delta-M then scale the optical depth, albedo, and Legendre terms.
+!    if (DELTAM) then
+!        call DELTA_SCALE(NLAY, ML, TAUP, ALBEDOP, MAXLEG, NLEGP, LEGENP, &
+!                         TAUPSC, ALBEDOSC, LEGENSC)
+!    else
+!        TAUPSC(:) = TAUP(:)
+!        ALBEDOSC(:) = ALBEDOP(:)
+!        LEGENSC(0:ML, :) = LEGENP(0:ML, :)
+!    end if
+
+!    call MAKE_TAU_GRID(NLAY, TAUPSC, ALBEDOSC, MAXDELTAU, MINDELTAUSPLIT, &
+!                       NPTS, TAUGSC, IXP, IXG)
+
+!    ! Precompute Ylm's for solar direction
+!    if (SRCTYPE /= 'T') then
+!        SOLARAZ = 0.0
+!        call YLMALL(SOLARMU, SOLARAZ, ML, MM, 1, YLMSUN)
+!    end if
+!    ! Prepare the constant part of the level source function, which are
+!    !   the Planck blackbody source and the solar attenuated single scattered
+!    !   radiance, as a function of level.
+!    CONSTSOURCE(1, 1:NPTS) = -1.0
+!    call PREPARE_SOURCE(NLAY, TAUPSC, ALBEDOSC, TEMPP, LEGENSC, &
+!                        SRCTYPE, ML, MM, NLM, NPTS, TAUGSC, IXP, IXG, &
+!                        SOLARFLUX, SOLARMU, YLMSUN, UNITS, WAVELEN, WAVENO, &
+!                        CONSTSOURCE)
+
+!    ! Make the discrete ordinates (angles)
+!    !   (set 2 is reduced gaussian, 3 is reduced double gauss)
+!    ORDINATESET = 3
+!    call MAKE_ANGLE_SET(NMU, NPHI, 1, NPHI0MAX, ORDINATESET, &
+!                        NPHI0, MU, PHI, WTMU, WTDO, FFTFLAG, NANG)
+
+!    ! Make the Ylm transform coefficients
+!    !call MAKE_SH_DO_COEF(ML, MM, NLM, NMU, NPHI0, &
+!    !                     NPHI0MAX, MU, PHI, WTMU, WTDO, FFTFLAG, &
+!    !                     CMU1, CMU2, CPHI1, CPHI2, WPHISAVE)
+!    call shd_shdo__makeSHDO(1, ML, MM, NLM, NMU, NPHI0, &
+!                         NPHI0MAX, MU, PHI, WTMU, WTDO, FFTFLAG, &
+!                         CMU1, CMU2, CPHI1, CPHI2, WPHISAVE)
+
+!    ! Initialize the radiance on the base grid using Eddington
+!    !   two-stream plane-parallel
+!    if (SFCTYPE == 'L') then
+!        GNDALB = SFCPARMS(1)
+!    else
+!        GNDALB = 0.2
+!    end if
+!    allocate (SHRADIANCE(NLM, NPTS))
+!    call INIT_RADIANCE(NLAY, ML, TAUPSC, ALBEDOSC, LEGENSC, TEMPP, &
+!                       SRCTYPE, SOLARFLUX, SOLARMU, GNDALB, SFCTEMP, &
+!                       SKYRAD, UNITS, WAVELEN, WAVENO, NPTS, TAUGSC, IXP, NLM, &
+!                       SHRADIANCE)
+
+!    ! Initialize the SH source function from the SH radiance field
+!    OLDNPTS = 0
+!    SOURCE(:, :) = 0.0
+!    call COMPUTE_SOURCE(ML, MM, NLM, NLAY, NPTS, IXP, IXG, &
+!                        ALBEDOSC, LEGENSC, &
+!                        SHRADIANCE, CONSTSOURCE, SOURCE, &
+!                        OLDNPTS, DELSOURCE, &
+!                        DELJDOT, DELJOLD, DELJNEW, SOLCRIT)
+!    deallocate (SHRADIANCE)
+
+!    SOLCRIT = 1.0
+!    TRUESOLCRIT = 1.0
+!    CURSPLITACC = 1.0
+!    LASTNPTS = -1
+!    OLDNPTS = NPTS
+!    RADIANCE(:, :, :) = 0.0
+!    DELSOURCE(:, :) = 0.0
+!    ITER = 0
+!    if (MAXITER <= ITER) return
+
+!    if (PRNT) write (*, *) '! Iter Log(Sol)  Log(True)  Npoints'
+
+!    ! Main solution loop
+!    ! Iterate until the iterations exceed the limit, or the desired
+!    ! solution criterion is reached
+!    do while (ITER < MAXITER .and. (SOLCRIT > SOLACC .or. NPTS /= OLDNPTS))
+!        ITER = ITER + 1
+
+!        ! Transform the source from spherical harmonics to discrete ordinates
+!        allocate (DOSOURCE(NPHI0MAX, NMU, MAXIG))
+!        call SH_TO_DO(NPTS, ML, MM, NLM, NMU, NPHI0MAX, NPHI0, &
+!                      FFTFLAG, CMU1, CPHI1, WPHISAVE, SOURCE, DOSOURCE)
+!        ! Enforce the discrete ordinate source function to be non-negative
+!        DOSOURCE(:, :, :) = max(0.0, DOSOURCE(:, :, :))
+
+!        ! Keep on doing integrations as long as new levels are added
+!        OLDNPTS = NPTS
+!        PREVNPTS = 0
+!        do while (NPTS > PREVNPTS)
+!            ! Integrate the source function along discrete ordinates to
+!            ! compute the radiance field.
+!            call PATH_INTEGRATION(NLAY, NPTS, IXP, IXG, TAUGSC, &
+!                                  NMU, NPHI0MAX, NPHI0, &
+!                                  SRCTYPE, SOLARFLUX, SOLARMU, SKYRAD, &
+!                                  SFCTYPE, SFCPARMS, SFCTEMP, UNITS, WAVELEN, WAVENO, &
+!                                  MU, PHI, WTDO, SRCINT, LASTNPTS, &
+!                                  FLUXUP, FLUXDN, MEANRAD, DOSOURCE, RADIANCE)
+!            PREVNPTS = NPTS
+!            ! Do the adaptive grid cell splitting stuff if desired
+!            call SPLIT_CELLS(NLAY, NPTS, MAXIG, IXP, IXG, TAUGSC, &
+!                             NMU, NPHI0MAX, NPHI0, MU, DOSOURCE, RADIANCE, &
+!                             SPLITACC, TRUESOLCRIT, CURSPLITACC)
+!            if (NPTS > PREVNPTS) then
+!                CONSTSOURCE(1, PREVNPTS + 1:NPTS) = -1.0
+!                call PREPARE_SOURCE(NLAY, TAUPSC, ALBEDOSC, TEMPP, LEGENSC, &
+!                                    SRCTYPE, ML, MM, NLM, NPTS, TAUGSC, IXP, IXG, &
+!                                    SOLARFLUX, SOLARMU, YLMSUN, UNITS, WAVELEN, WAVENO, &
+!                                    CONSTSOURCE)
+!            end if
+!        end do
+!        deallocate (DOSOURCE)
+
+!        ! Transform the radiance from discrete ordinates to spherical harmonics
+!        allocate (SHRADIANCE(NLM, NPTS))
+!        call DO_TO_SH(NPTS, ML, MM, NLM, NMU, NPHI0MAX, NPHI0, &
+!                      FFTFLAG, CMU2, CPHI2, WPHISAVE, RADIANCE, SHRADIANCE)
+
+!        ! Calculate the source function from the radiance in spherical harmonics.
+!        !   Also computes the solution criterion and the series acceleration
+!        !   stuff (DELJDOT, DELJOLD, DELJNEW, DELSOURCE).
+!        call COMPUTE_SOURCE(ML, MM, NLM, NLAY, NPTS, IXP, IXG, &
+!                            ALBEDOSC, LEGENSC, &
+!                            SHRADIANCE, CONSTSOURCE, SOURCE, &
+!                            OLDNPTS, DELSOURCE, &
+!                            DELJDOT, DELJOLD, DELJNEW, SOLCRIT)
+!        deallocate (SHRADIANCE)
+
+!        ! Accelerate the convergence of the source function vector
+!        if (ACCELFLAG) then
+!            call ACCELERATE_SOLUTION(NLM, NPTS, OLDNPTS, SOURCE, DELSOURCE, &
+!                                     DELJDOT, DELJOLD, DELJNEW)
+!        end if
+!        if (DELJNEW < DELJOLD) &
+!            TRUESOLCRIT = SOLCRIT/(1.0 - sqrt(DELJNEW/DELJOLD))
+
+!        ! Print out the iteration, log solution criterion, and number of points
+!        if (PRNT) write (*, '(2X,I4,2F8.3,1X,I6)') ITER, &
+!            log10(max(SOLCRIT, 1.0e-20)), log10(max(TRUESOLCRIT, 1.0e-20)), NPTS
+!    end do
+
+!    if (PRNT) write (*, '(1X,A,I6,A,F9.6)') &
+!        '! Iterations: ', ITER, '     Final Criterion: ', SOLCRIT
 
 
-    allocate (TAUPSC(NLAY), ALBEDOSC(NLAY), LEGENSC(0:ML, NLAY))
-    allocate (TAUGSC(MAXIG), IXG(MAXIG))
+!    deallocate (MU, PHI, NPHI0, WTDO, YLMSUN, WTMU)
+!    deallocate (CPHI1, CPHI2, WPHISAVE, CMU1, CMU2)
+!    return
 
-    allocate (MU(NMU), PHI(NPHI0MAX, NMU), NPHI0(NMU), WTDO(NMU, NPHI0MAX))
-    allocate (YLMSUN(NLM), WTMU(NMU), CMU1(NLM, NMU), CMU2(NMU, NLM))
-    allocate (CPHI1(0:16, 32, NMU), CPHI2(32, 0:16, NMU), WPHISAVE(3*NPHI0MAX + 15, NMU))
-
-    allocate (SOURCE(NLM, MAXIG), RADIANCE(NPHI0MAX, NMU, MAXIG))
-    allocate (CONSTSOURCE(NLM, MAXIG), DELSOURCE(NLM, MAXIG))
-    allocate (SRCINT(0:4, NMU, MAXIG))
-
-    ! Set up some things before solution loop
-
-    ! If Delta-M then scale the optical depth, albedo, and Legendre terms.
-    if (DELTAM) then
-        call DELTA_SCALE(NLAY, ML, TAUP, ALBEDOP, MAXLEG, NLEGP, LEGENP, &
-                         TAUPSC, ALBEDOSC, LEGENSC)
-    else
-        TAUPSC(:) = TAUP(:)
-        ALBEDOSC(:) = ALBEDOP(:)
-        LEGENSC(0:ML, :) = LEGENP(0:ML, :)
-    end if
-
-    call MAKE_TAU_GRID(NLAY, TAUPSC, ALBEDOSC, MAXDELTAU, MINDELTAUSPLIT, &
-                       NPTS, TAUGSC, IXP, IXG)
-
-    ! Precompute Ylm's for solar direction
-    if (SRCTYPE /= 'T') then
-        SOLARAZ = 0.0
-        call YLMALL(SOLARMU, SOLARAZ, ML, MM, 1, YLMSUN)
-    end if
-    ! Prepare the constant part of the level source function, which are
-    !   the Planck blackbody source and the solar attenuated single scattered
-    !   radiance, as a function of level.
-    CONSTSOURCE(1, 1:NPTS) = -1.0
-    call PREPARE_SOURCE(NLAY, TAUPSC, ALBEDOSC, TEMPP, LEGENSC, &
-                        SRCTYPE, ML, MM, NLM, NPTS, TAUGSC, IXP, IXG, &
-                        SOLARFLUX, SOLARMU, YLMSUN, UNITS, WAVELEN, WAVENO, &
-                        CONSTSOURCE)
-
-    ! Make the discrete ordinates (angles)
-    !   (set 2 is reduced gaussian, 3 is reduced double gauss)
-    ORDINATESET = 3
-    call MAKE_ANGLE_SET(NMU, NPHI, 1, NPHI0MAX, ORDINATESET, &
-                        NPHI0, MU, PHI, WTMU, WTDO, FFTFLAG, NANG)
-
-    ! Make the Ylm transform coefficients
-    !call MAKE_SH_DO_COEF(ML, MM, NLM, NMU, NPHI0, &
-    !                     NPHI0MAX, MU, PHI, WTMU, WTDO, FFTFLAG, &
-    !                     CMU1, CMU2, CPHI1, CPHI2, WPHISAVE)
-    call shd_shdo__makeSHDO(1, ML, MM, NLM, NMU, NPHI0, &
-                         NPHI0MAX, MU, PHI, WTMU, WTDO, FFTFLAG, &
-                         CMU1, CMU2, CPHI1, CPHI2, WPHISAVE)
-
-    ! Initialize the radiance on the base grid using Eddington
-    !   two-stream plane-parallel
-    if (SFCTYPE == 'L') then
-        GNDALB = SFCPARMS(1)
-    else
-        GNDALB = 0.2
-    end if
-    allocate (SHRADIANCE(NLM, NPTS))
-    call INIT_RADIANCE(NLAY, ML, TAUPSC, ALBEDOSC, LEGENSC, TEMPP, &
-                       SRCTYPE, SOLARFLUX, SOLARMU, GNDALB, SFCTEMP, &
-                       SKYRAD, UNITS, WAVELEN, WAVENO, NPTS, TAUGSC, IXP, NLM, &
-                       SHRADIANCE)
-
-    ! Initialize the SH source function from the SH radiance field
-    OLDNPTS = 0
-    SOURCE(:, :) = 0.0
-    call COMPUTE_SOURCE(ML, MM, NLM, NLAY, NPTS, IXP, IXG, &
-                        ALBEDOSC, LEGENSC, &
-                        SHRADIANCE, CONSTSOURCE, SOURCE, &
-                        OLDNPTS, DELSOURCE, &
-                        DELJDOT, DELJOLD, DELJNEW, SOLCRIT)
-    deallocate (SHRADIANCE)
-
-    SOLCRIT = 1.0
-    TRUESOLCRIT = 1.0
-    CURSPLITACC = 1.0
-    LASTNPTS = -1
-    OLDNPTS = NPTS
-    RADIANCE(:, :, :) = 0.0
-    DELSOURCE(:, :) = 0.0
-    ITER = 0
-    if (MAXITER <= ITER) return
-
-    if (PRNT) write (*, *) '! Iter Log(Sol)  Log(True)  Npoints'
-
-    ! Main solution loop
-    ! Iterate until the iterations exceed the limit, or the desired
-    ! solution criterion is reached
-    do while (ITER < MAXITER .and. (SOLCRIT > SOLACC .or. NPTS /= OLDNPTS))
-        ITER = ITER + 1
-
-        ! Transform the source from spherical harmonics to discrete ordinates
-        allocate (DOSOURCE(NPHI0MAX, NMU, MAXIG))
-        call SH_TO_DO(NPTS, ML, MM, NLM, NMU, NPHI0MAX, NPHI0, &
-                      FFTFLAG, CMU1, CPHI1, WPHISAVE, SOURCE, DOSOURCE)
-        ! Enforce the discrete ordinate source function to be non-negative
-        DOSOURCE(:, :, :) = max(0.0, DOSOURCE(:, :, :))
-
-        ! Keep on doing integrations as long as new levels are added
-        OLDNPTS = NPTS
-        PREVNPTS = 0
-        do while (NPTS > PREVNPTS)
-            ! Integrate the source function along discrete ordinates to
-            ! compute the radiance field.
-            call PATH_INTEGRATION(NLAY, NPTS, IXP, IXG, TAUGSC, &
-                                  NMU, NPHI0MAX, NPHI0, &
-                                  SRCTYPE, SOLARFLUX, SOLARMU, SKYRAD, &
-                                  SFCTYPE, SFCPARMS, SFCTEMP, UNITS, WAVELEN, WAVENO, &
-                                  MU, PHI, WTDO, SRCINT, LASTNPTS, &
-                                  FLUXUP, FLUXDN, MEANRAD, DOSOURCE, RADIANCE)
-            PREVNPTS = NPTS
-            ! Do the adaptive grid cell splitting stuff if desired
-            call SPLIT_CELLS(NLAY, NPTS, MAXIG, IXP, IXG, TAUGSC, &
-                             NMU, NPHI0MAX, NPHI0, MU, DOSOURCE, RADIANCE, &
-                             SPLITACC, TRUESOLCRIT, CURSPLITACC)
-            if (NPTS > PREVNPTS) then
-                CONSTSOURCE(1, PREVNPTS + 1:NPTS) = -1.0
-                call PREPARE_SOURCE(NLAY, TAUPSC, ALBEDOSC, TEMPP, LEGENSC, &
-                                    SRCTYPE, ML, MM, NLM, NPTS, TAUGSC, IXP, IXG, &
-                                    SOLARFLUX, SOLARMU, YLMSUN, UNITS, WAVELEN, WAVENO, &
-                                    CONSTSOURCE)
-            end if
-        end do
-        deallocate (DOSOURCE)
-
-        ! Transform the radiance from discrete ordinates to spherical harmonics
-        allocate (SHRADIANCE(NLM, NPTS))
-        call DO_TO_SH(NPTS, ML, MM, NLM, NMU, NPHI0MAX, NPHI0, &
-                      FFTFLAG, CMU2, CPHI2, WPHISAVE, RADIANCE, SHRADIANCE)
-
-        ! Calculate the source function from the radiance in spherical harmonics.
-        !   Also computes the solution criterion and the series acceleration
-        !   stuff (DELJDOT, DELJOLD, DELJNEW, DELSOURCE).
-        call COMPUTE_SOURCE(ML, MM, NLM, NLAY, NPTS, IXP, IXG, &
-                            ALBEDOSC, LEGENSC, &
-                            SHRADIANCE, CONSTSOURCE, SOURCE, &
-                            OLDNPTS, DELSOURCE, &
-                            DELJDOT, DELJOLD, DELJNEW, SOLCRIT)
-        deallocate (SHRADIANCE)
-
-        ! Accelerate the convergence of the source function vector
-        if (ACCELFLAG) then
-            call ACCELERATE_SOLUTION(NLM, NPTS, OLDNPTS, SOURCE, DELSOURCE, &
-                                     DELJDOT, DELJOLD, DELJNEW)
-        end if
-        if (DELJNEW < DELJOLD) &
-            TRUESOLCRIT = SOLCRIT/(1.0 - sqrt(DELJNEW/DELJOLD))
-
-        ! Print out the iteration, log solution criterion, and number of points
-        if (PRNT) write (*, '(2X,I4,2F8.3,1X,I6)') ITER, &
-            log10(max(SOLCRIT, 1.0e-20)), log10(max(TRUESOLCRIT, 1.0e-20)), NPTS
-    end do
-
-    if (PRNT) write (*, '(1X,A,I6,A,F9.6)') &
-        '! Iterations: ', ITER, '     Final Criterion: ', SOLCRIT
-
-
-    deallocate (MU, PHI, NPHI0, WTDO, YLMSUN, WTMU)
-    deallocate (CPHI1, CPHI2, WPHISAVE, CMU1, CMU2)
-
-end subroutine SOLVE_SHDOMPP
+!end subroutine SOLVE_SHDOMPP
 
 subroutine DELTA_SCALE(NLAY, ML, TAUP, ALBEDOP, MAXLEG, NLEGP, LEGENP, &
                        TAUPSC, ALBEDOSC, LEGENSC)
     ! Delta scales the layer optical depth, albedo, and Legendre terms;
     ! only the 0 to ML LEGEN terms are scaled.
     implicit none
-    integer, intent(IN) :: NLAY, ML, MAXLEG, NLEGP(NLAY)
-    real, intent(IN) ::  TAUP(NLAY), ALBEDOP(NLAY), LEGENP(0:MAXLEG, NLAY)
-    real, intent(OUT) ::  TAUPSC(NLAY), ALBEDOSC(NLAY), LEGENSC(0:ML, NLAY)
+    integer, intent(in) :: NLAY, ML, MAXLEG, NLEGP(NLAY)
+    real, intent(in) ::  TAUP(NLAY), ALBEDOP(NLAY), LEGENP(0:MAXLEG, NLAY)
+    real, intent(out) ::  TAUPSC(NLAY), ALBEDOSC(NLAY), LEGENSC(0:ML, NLAY)
     integer :: I, L
     real    :: F
 
@@ -874,9 +882,9 @@ subroutine UNDELTA_SCALE(NLAY, TAUPSC, TAUP, IXP, NPTS, TAUGSC, TAUG)
     ! Undoes the delta scaling to get the optical depth grid in the
     ! original scale.  Uses the scaled and unscaled input layer optical depths.
     implicit none
-    integer, intent(IN) :: NLAY, IXP(2, NLAY), NPTS
-    real, intent(IN) :: TAUPSC(NLAY), TAUP(NLAY), TAUGSC(NPTS)
-    real, intent(OUT) :: TAUG(NPTS)
+    integer, intent(in) :: NLAY, IXP(2, NLAY), NPTS
+    real, intent(in) :: TAUPSC(NLAY), TAUP(NLAY), TAUGSC(NPTS)
+    real, intent(out) :: TAUG(NPTS)
     integer :: LAY, I
     real    :: R
 
@@ -900,9 +908,9 @@ subroutine OUTPUT_HEIGHT_GRID(NLAY, TAUP, IXP, NPTS, TAUG, HEIGHTP, HEIGHTG)
     ! grid (TAUG) assuming constant extinction in each input layer.
     ! The levels in HEIGHTG correspond to the optical depths in TAUG.
     implicit none
-    integer, intent(IN) :: NLAY, IXP(2, NLAY), NPTS
-    real, intent(IN) :: TAUP(NLAY), TAUG(NPTS), HEIGHTP(NLAY + 1)
-    real, intent(OUT) :: HEIGHTG(NPTS)
+    integer, intent(in) :: NLAY, IXP(2, NLAY), NPTS
+    real, intent(in) :: TAUP(NLAY), TAUG(NPTS), HEIGHTP(NLAY + 1)
+    real, intent(out) :: HEIGHTG(NPTS)
     integer :: LAY, I
     real    :: E
 
@@ -935,11 +943,11 @@ subroutine MAKE_TAU_GRID(NLAY, TAUPSC, ALBEDOSC, MAXDELTAU, MINDELTAUSPLIT, &
     ! property layer. The IXG index array points to the source and
     ! radiance arrays for each TAUGSC level.
     implicit none
-    integer, intent(IN)  :: NLAY
-    real, intent(IN)  :: TAUPSC(NLAY), ALBEDOSC(NLAY)
-    real, intent(IN)  :: MAXDELTAU, MINDELTAUSPLIT
-    real, intent(OUT) :: TAUGSC(*)
-    integer, intent(OUT) :: NPTS, IXP(2, NLAY), IXG(*)
+    integer, intent(in)  :: NLAY
+    real, intent(in)  :: TAUPSC(NLAY), ALBEDOSC(NLAY)
+    real, intent(in)  :: MAXDELTAU, MINDELTAUSPLIT
+    real, intent(out) :: TAUGSC(*)
+    integer, intent(out) :: NPTS, IXP(2, NLAY), IXG(*)
     integer :: I, L, N
     real    :: TAU
 
@@ -985,13 +993,13 @@ subroutine PREPARE_SOURCE(NLAY, TAUPSC, ALBEDOSC, TEMPP, LEGENSC, &
     use shd_util
 
     implicit none
-    integer, intent(IN) :: NLAY, ML, MM, NLM, NPTS
-    integer, intent(IN) :: IXP(2, NLAY), IXG(NPTS)
-    real, intent(IN) :: SOLARFLUX, SOLARMU, YLMSUN(NLM), WAVELEN, WAVENO(2)
-    real, intent(IN) :: TAUPSC(NLAY), ALBEDOSC(NLAY), LEGENSC(0:ML, NLAY)
-    real, intent(IN) :: TEMPP(NLAY + 1), TAUGSC(NPTS)
-    real, intent(INOUT) :: CONSTSOURCE(NLM, NPTS)
-    character(LEN=1), intent(IN) :: SRCTYPE, UNITS
+    integer, intent(in) :: NLAY, ML, MM, NLM, NPTS
+    integer, intent(in) :: IXP(2, NLAY), IXG(NPTS)
+    real, intent(in) :: SOLARFLUX, SOLARMU, YLMSUN(NLM), WAVELEN, WAVENO(2)
+    real, intent(in) :: TAUPSC(NLAY), ALBEDOSC(NLAY), LEGENSC(0:ML, NLAY)
+    real, intent(in) :: TEMPP(NLAY + 1), TAUGSC(NPTS)
+    real, intent(inout) :: CONSTSOURCE(NLM, NPTS)
+    character(len=1), intent(in) :: SRCTYPE, UNITS
     integer :: I, J, K, L, LAY, ME, M, LOFJ(NLM)
     real    :: S0, C, TAU1, U, TEMP, BB, D, PLANCKFUNC
 
@@ -1056,11 +1064,11 @@ subroutine MAKE_ANGLE_SET(NMU, NPHI, NCS, NPHI0MAX, ITYPE, &
     use shd_util
 
     implicit none
-    integer, intent(IN)  :: NMU, NPHI, NCS, NPHI0MAX, ITYPE
-    integer, intent(OUT) :: NPHI0(NMU), NANG
-    logical, intent(OUT) :: FFTFLAG(NMU)
-    real, intent(OUT) :: MU(NMU), WTMU(NMU)
-    real, intent(OUT) :: PHI(NPHI0MAX, NMU), WTDO(NMU, NPHI0MAX)
+    integer, intent(in)  :: NMU, NPHI, NCS, NPHI0MAX, ITYPE
+    integer, intent(out) :: NPHI0(NMU), NANG
+    logical, intent(out) :: FFTFLAG(NMU)
+    real, intent(out) :: MU(NMU), WTMU(NMU)
+    real, intent(out) :: PHI(NPHI0MAX, NMU), WTDO(NMU, NPHI0MAX)
     integer :: J, K, MM
     real    :: DELPHI
     integer, parameter :: MAXNPHI = 1024
@@ -1127,8 +1135,8 @@ subroutine GOOD_FFT_LENGTHS(NMAX, GOODNFFT)
     ! Returns a list in GOODNFFT(I) that rounds up to the nearest I that
     ! has only divisors of 2 or 3.
     implicit none
-    integer, intent(IN)  :: NMAX
-    integer, intent(OUT) :: GOODNFFT(NMAX)
+    integer, intent(in)  :: NMAX
+    integer, intent(out) :: GOODNFFT(NMAX)
     integer :: I, J, ILAST
     integer, parameter :: PRIMES(310) = &
                           (/2, 3, 5, 7, 11, 13, 17, 19, 23, 29, &
@@ -1193,13 +1201,13 @@ subroutine MAKE_SH_DO_COEF(ML, MM, NLM, NMU, NPHI0, &
     ! The FFTPACK phase coefficients for the FFT in azimuth are also
     ! output in WPHISAVE.
     implicit none
-    integer, intent(IN) :: ML, MM, NLM, NMU, NPHI0(NMU), NPHI0MAX
-    logical, intent(IN) :: FFTFLAG(NMU)
-    real, intent(IN) :: MU(NMU), WTMU(NMU)
-    real, intent(IN) :: PHI(NPHI0MAX, NMU), WTDO(NMU, NPHI0MAX)
-    real, intent(OUT) :: CMU1(NLM, NMU), CMU2(NMU, NLM)
-    real, intent(OUT) :: CPHI1(0:16, 32, NMU), CPHI2(32, 0:16, NMU)
-    real, intent(OUT) :: WPHISAVE(3*NPHI0MAX + 15, NMU)
+    integer, intent(in) :: ML, MM, NLM, NMU, NPHI0(NMU), NPHI0MAX
+    logical, intent(in) :: FFTFLAG(NMU)
+    real, intent(in) :: MU(NMU), WTMU(NMU)
+    real, intent(in) :: PHI(NPHI0MAX, NMU), WTDO(NMU, NPHI0MAX)
+    real, intent(out) :: CMU1(NLM, NMU), CMU2(NMU, NLM)
+    real, intent(out) :: CPHI1(0:16, 32, NMU), CPHI2(32, 0:16, NMU)
+    real, intent(out) :: WPHISAVE(3*NPHI0MAX + 15, NMU)
     integer :: I, K, M, ier
     real    :: W
 
@@ -1245,12 +1253,12 @@ subroutine SH_TO_DO(NPTS, ML, MM, NLM, NMU, NPHI0MAX, NPHI0, &
     ! the DFT is 2*Nmu*Nphi0*Nm. The number of floating point operations for
     ! the zenith angle transform is 2*Nmu*Nlm.
     implicit none
-    integer, intent(IN) :: NPTS, ML, MM, NLM, NMU, NPHI0MAX, NPHI0(NMU)
-    logical, intent(IN) :: FFTFLAG(NMU)
-    real, intent(IN) :: INDATA(NLM, NPTS)
-    real, intent(IN) :: CMU1(NLM, NMU), CPHI1(0:16, 32, NMU)
-    real, intent(IN) :: WSAVE(3*NPHI0MAX + 15, NMU)
-    real, intent(OUT) :: OUTDATA(NPHI0MAX, NMU, NPTS)
+    integer, intent(in) :: NPTS, ML, MM, NLM, NMU, NPHI0MAX, NPHI0(NMU)
+    logical, intent(in) :: FFTFLAG(NMU)
+    real, intent(in) :: INDATA(NLM, NPTS)
+    real, intent(in) :: CMU1(NLM, NMU), CPHI1(0:16, 32, NMU)
+    real, intent(in) :: WSAVE(3*NPHI0MAX + 15, NMU)
+    real, intent(out) :: OUTDATA(NPHI0MAX, NMU, NPTS)
     integer :: I, J, L, M, ME, IMU, IPHI, ier
     integer :: MOFJ(NLM)
     real    :: S(0:MM), WORK(NPHI0MAX)
@@ -1300,12 +1308,12 @@ subroutine DO_TO_SH(NPTS, ML, MM, NLM, NMU, NPHI0MAX, NPHI0, &
     ! The SELECTPNTS logical array indicates whether a point should be
     ! transformed or to use the previous points (for the input layer interfaces).
     implicit none
-    integer, intent(IN) :: NPTS, ML, MM, NLM, NMU, NPHI0MAX, NPHI0(NMU)
-    logical, intent(IN) :: FFTFLAG(NMU)
-    real, intent(IN) :: INDATA(NPHI0MAX, NMU, NPTS)
-    real, intent(IN) :: CMU2(NMU, NLM), CPHI2(32, 0:16, NMU)
-    real, intent(IN) :: WSAVE(3*NPHI0MAX + 15, NMU)
-    real, intent(OUT) :: OUTDATA(NLM, NPTS)
+    integer, intent(in) :: NPTS, ML, MM, NLM, NMU, NPHI0MAX, NPHI0(NMU)
+    logical, intent(in) :: FFTFLAG(NMU)
+    real, intent(in) :: INDATA(NPHI0MAX, NMU, NPTS)
+    real, intent(in) :: CMU2(NMU, NLM), CPHI2(32, 0:16, NMU)
+    real, intent(in) :: WSAVE(3*NPHI0MAX + 15, NMU)
+    real, intent(out) :: OUTDATA(NLM, NPTS)
     integer :: I, IMU, IPHI, J, L, M, ME, N, ier
     real    :: PI, DELPHI
     integer :: MOFJ(NLM)
@@ -1371,12 +1379,12 @@ subroutine COMPUTE_SOURCE(ML, MM, NLM, NLAY, NPTS, IXP, IXG, &
     ! Computes the new solution criterion (SOLCRIT, the RMS difference
     ! in succesive source function fields normalized by the RMS of the field
     implicit none
-    integer, intent(IN) :: ML, MM, NLM, NLAY, NPTS, OLDNPTS
-    integer, intent(IN) :: IXP(2, NLAY), IXG(NPTS)
-    real, intent(IN) :: ALBEDOSC(NLAY), LEGENSC(0:ML, NLAY)
-    real, intent(IN) :: SHRADIANCE(NLM, NPTS), CONSTSOURCE(NLM, NPTS)
-    real, intent(INOUT) :: SOURCE(NLM, NPTS), DELSOURCE(NLM, OLDNPTS)
-    real, intent(OUT) :: DELJDOT, DELJOLD, DELJNEW, SOLCRIT
+    integer, intent(in) :: ML, MM, NLM, NLAY, NPTS, OLDNPTS
+    integer, intent(in) :: IXP(2, NLAY), IXG(NPTS)
+    real, intent(in) :: ALBEDOSC(NLAY), LEGENSC(0:ML, NLAY)
+    real, intent(in) :: SHRADIANCE(NLM, NPTS), CONSTSOURCE(NLM, NPTS)
+    real, intent(inout) :: SOURCE(NLM, NPTS), DELSOURCE(NLM, OLDNPTS)
+    real, intent(out) :: DELJDOT, DELJOLD, DELJNEW, SOLCRIT
     integer :: LOFJ(NLM), I, J, K, L, LAY, M, ME
     real    :: SOURCET, NORM
 
@@ -1426,10 +1434,10 @@ subroutine ACCELERATE_SOLUTION(NLM, NPTS, OLDNPTS, SOURCE, DELSOURCE, &
     ! source function differences to decide how far along the current
     ! source function difference to extrapolate.
     implicit none
-    integer, intent(IN) :: NLM, NPTS, OLDNPTS
-    real, intent(IN) :: DELSOURCE(NLM, OLDNPTS)
-    real, intent(INOUT) :: SOURCE(NLM, NPTS)
-    real, intent(IN) :: DELJDOT, DELJOLD, DELJNEW
+    integer, intent(in) :: NLM, NPTS, OLDNPTS
+    real, intent(in) :: DELSOURCE(NLM, OLDNPTS)
+    real, intent(inout) :: SOURCE(NLM, NPTS)
+    real, intent(in) :: DELJDOT, DELJOLD, DELJNEW
     integer :: I, J, IS, ISD, NS, NSD, NSC
     real, save :: A, R, THETA
 
@@ -1475,17 +1483,17 @@ subroutine PATH_INTEGRATION(NLAY, NPTS, IXP, IXG, TAUGSC, &
     use shd_util
 
     implicit none
-    integer, intent(IN) :: NLAY, NPTS, IXP(2, NLAY), IXG(NPTS)
-    integer, intent(IN) :: NMU, NPHI0MAX, NPHI0(NMU)
-    integer, intent(INOUT) :: LASTNPTS
-    real, intent(IN) :: SOLARFLUX, SOLARMU, SKYRAD
-    real, intent(IN) :: SFCPARMS(*), SFCTEMP, WAVELEN, WAVENO(2)
-    real, intent(IN) :: MU(NMU), PHI(NPHI0MAX, NMU), WTDO(NMU, NPHI0MAX)
-    real, intent(INOUT) :: SRCINT(0:4, NMU, NPTS)
-    real, intent(IN) :: TAUGSC(NPTS), DOSOURCE(NPHI0MAX, NMU, NPTS)
-    real, intent(OUT) :: FLUXUP(NPTS), FLUXDN(NPTS), MEANRAD(NPTS)
-    real, intent(OUT) :: RADIANCE(NPHI0MAX, NMU, NPTS)
-    character(LEN=1), intent(IN) :: SRCTYPE, SFCTYPE, UNITS
+    integer, intent(in) :: NLAY, NPTS, IXP(2, NLAY), IXG(NPTS)
+    integer, intent(in) :: NMU, NPHI0MAX, NPHI0(NMU)
+    integer, intent(inout) :: LASTNPTS
+    real, intent(in) :: SOLARFLUX, SOLARMU, SKYRAD
+    real, intent(in) :: SFCPARMS(*), SFCTEMP, WAVELEN, WAVENO(2)
+    real, intent(in) :: MU(NMU), PHI(NPHI0MAX, NMU), WTDO(NMU, NPHI0MAX)
+    real, intent(inout) :: SRCINT(0:4, NMU, NPTS)
+    real, intent(in) :: TAUGSC(NPTS), DOSOURCE(NPHI0MAX, NMU, NPTS)
+    real, intent(out) :: FLUXUP(NPTS), FLUXDN(NPTS), MEANRAD(NPTS)
+    real, intent(out) :: RADIANCE(NPHI0MAX, NMU, NPTS)
+    character(len=1), intent(in) :: SRCTYPE, SFCTYPE, UNITS
 
     integer :: LAY, I, I1, I2, J, K, IPHI, IMU, M, N
     real    :: PI, TEMP, SFCPLANCK, ALB
@@ -1721,14 +1729,14 @@ subroutine SPLIT_CELLS(NLAY, NPTS, MAXIG, IXP, IXG, TAUGSC, &
     use shd_util
 
     implicit none
-    integer, intent(IN) :: NLAY, MAXIG
-    integer, intent(INOUT) :: NPTS, IXP(2, NLAY), IXG(*)
-    integer, intent(IN) :: NMU, NPHI0MAX, NPHI0(NMU)
-    real, intent(IN) :: MU(NMU)
-    real, intent(IN) :: SPLITACC, TRUESOLCRIT
-    real, intent(IN) :: RADIANCE(NPHI0MAX, NMU, NPTS)
-    real, intent(INOUT) :: CURSPLITACC
-    real, intent(INOUT) :: TAUGSC(*), DOSOURCE(NPHI0MAX, NMU, *)
+    integer, intent(in) :: NLAY, MAXIG
+    integer, intent(inout) :: NPTS, IXP(2, NLAY), IXG(*)
+    integer, intent(in) :: NMU, NPHI0MAX, NPHI0(NMU)
+    real, intent(in) :: MU(NMU)
+    real, intent(in) :: SPLITACC, TRUESOLCRIT
+    real, intent(in) :: RADIANCE(NPHI0MAX, NMU, NPTS)
+    real, intent(inout) :: CURSPLITACC
+    real, intent(inout) :: TAUGSC(*), DOSOURCE(NPHI0MAX, NMU, *)
     integer :: LAY, I, IMU, IMU2, N
     integer :: IXPN(2, NLAY), NEWNPTS, I1, I2, I3, I4
     real    :: SPLITCRIT, NORM, T1, T2, T3, T4
@@ -1832,10 +1840,10 @@ subroutine INTERP_SOURCE(NPH, NMU, T1, S1, T2, S2, T3, S3, T4, S4, T, S)
     ! function (S1,S2,S3,S4) is specified at three or four optical depths
     ! (T1,T2,T3,T4), interpolated to T, and output in S.
     implicit none
-    integer, intent(IN) :: NPH, NMU
-    real, intent(IN) :: T1, T2, T3, T4, T
-    real, intent(IN) :: S1(NPH, NMU), S2(NPH, NMU), S3(NPH, NMU), S4(NPH, NMU)
-    real, intent(OUT) :: S(NPH, NMU)
+    integer, intent(in) :: NPH, NMU
+    real, intent(in) :: T1, T2, T3, T4, T
+    real, intent(in) :: S1(NPH, NMU), S2(NPH, NMU), S3(NPH, NMU), S4(NPH, NMU)
+    real, intent(out) :: S(NPH, NMU)
 
     if (abs(T1 - T2) < 4*spacing(T1)) then
         S = (T - T3)*(T - T4)*S2/((T2 - T3)*(T2 - T4)) &
@@ -1876,12 +1884,12 @@ subroutine VARIABLE_BRDF_SURFACE(NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, &
     use shd_sfc
 
     implicit none
-    integer, intent(IN) :: NMU, NPHI0MAX, NPHI0(NMU)
-    real, intent(IN) :: MU(NMU), PHI(NPHI0MAX, NMU), WTDO(NMU, NPHI0MAX)
-    real, intent(IN) :: MU2, PHI2, WAVELEN, SOLARMU, DIRFLUXSFC, SFCPLANCK
-    real, intent(IN) :: SFCPARMS(*), SFCRADIANCE(NPHI0MAX, NMU)
-    real, intent(OUT):: BOTRAD
-    character(LEN=1), intent(IN) :: SRCTYPE, SFCTYPE
+    integer, intent(in) :: NMU, NPHI0MAX, NPHI0(NMU)
+    real, intent(in) :: MU(NMU), PHI(NPHI0MAX, NMU), WTDO(NMU, NPHI0MAX)
+    real, intent(in) :: MU2, PHI2, WAVELEN, SOLARMU, DIRFLUXSFC, SFCPLANCK
+    real, intent(in) :: SFCPARMS(*), SFCRADIANCE(NPHI0MAX, NMU)
+    real, intent(out):: BOTRAD
+    character(len=1), intent(in) :: SRCTYPE, SFCTYPE
     integer :: JMU, JPHI
     real    :: OPI, SOLARAZ, REFLECT, W, REFLECT_TMP(4, 4)
 
@@ -1928,21 +1936,21 @@ subroutine COMPUTE_RADIANCE(NLAY, ALBEDOSC, LEGENSC, &
     use shd_util
 
     implicit none
-    integer, intent(IN) :: NLAY, MAXLEG, NLEGP(NLAY)
-    integer, intent(IN) :: NPTS, IXP(2, NLAY), IXG(NPTS)
-    integer, intent(IN) :: ML, MM, NLM, NMU, NPHI0MAX, NPHI0(NMU)
-    integer, intent(IN) :: NZOUT, NMUOUT, NPHIOUT
-    logical, intent(IN) :: DELTAM
-    character(LEN=1), intent(IN) :: SRCTYPE, SFCTYPE, UNITS
-    real, intent(IN) :: ALBEDOSC(NLAY), LEGENSC(0:Ml, NLAY)
-    real, intent(IN) :: LEGENP(0:MAXLEG, NLAY)
-    real, intent(IN) :: HEIGHTG(NPTS), TAUG(NPTS), TAUGSC(NPTS)
-    real, intent(IN) :: MU(NMU), PHI(NPHI0MAX, NMU), WTDO(NMU, NPHI0MAX)
-    real, intent(IN) :: SOLARFLUX, SOLARMU, SKYRAD
-    real, intent(IN) :: SFCPARMS(*), SFCTEMP, WAVELEN, WAVENO(2)
-    real, intent(IN) :: SOURCE(NLM, NPTS), RADIANCE(NPHI0MAX, NMU, NPTS)
-    real, intent(INOUT) :: ZOUT(NZOUT)
-    real, intent(INOUT) :: RADOUT(*), MUOUT(*), PHIOUT(*)
+    integer, intent(in) :: NLAY, MAXLEG, NLEGP(NLAY)
+    integer, intent(in) :: NPTS, IXP(2, NLAY), IXG(NPTS)
+    integer, intent(in) :: ML, MM, NLM, NMU, NPHI0MAX, NPHI0(NMU)
+    integer, intent(in) :: NZOUT, NMUOUT, NPHIOUT
+    logical, intent(in) :: DELTAM
+    character(len=1), intent(in) :: SRCTYPE, SFCTYPE, UNITS
+    real, intent(in) :: ALBEDOSC(NLAY), LEGENSC(0:Ml, NLAY)
+    real, intent(in) :: LEGENP(0:MAXLEG, NLAY)
+    real, intent(in) :: HEIGHTG(NPTS), TAUG(NPTS), TAUGSC(NPTS)
+    real, intent(in) :: MU(NMU), PHI(NPHI0MAX, NMU), WTDO(NMU, NPHI0MAX)
+    real, intent(in) :: SOLARFLUX, SOLARMU, SKYRAD
+    real, intent(in) :: SFCPARMS(*), SFCTEMP, WAVELEN, WAVENO(2)
+    real, intent(in) :: SOURCE(NLM, NPTS), RADIANCE(NPHI0MAX, NMU, NPTS)
+    real, intent(inout) :: ZOUT(NZOUT)
+    real, intent(inout) :: RADOUT(*), MUOUT(*), PHIOUT(*)
 
     integer :: I, J, K, L, IRAD
     real    :: ZDIF, RADDEG, PHIRAD
@@ -2046,15 +2054,15 @@ subroutine COMPUTE_ONE_SOURCE(NLAY, ALBEDOSC, LEGENSC, &
     use shd_pha
 
     implicit none
-    integer, intent(IN) :: NLAY, MAXLEG, NLEGP(NLAY), NPTS
-    integer, intent(IN) :: ML, MM, NLM, IXP(2, NLAY), IXG(NPTS)
-    logical, intent(IN) :: DELTAM
-    character(LEN=1), intent(IN) :: SRCTYPE
-    real, intent(IN) :: ALBEDOSC(NLAY), LEGENSC(0:ML, NLAY)
-    real, intent(IN) :: LEGENP(0:MAXLEG, NLAY)
-    real, intent(IN) :: MUO, PHIO, SOLARMU, DIRFLUX(NPTS)
-    real, intent(IN) :: SOURCE(NLM, NPTS)
-    real, intent(OUT) :: SOURCE1(NPTS)
+    integer, intent(in) :: NLAY, MAXLEG, NLEGP(NLAY), NPTS
+    integer, intent(in) :: ML, MM, NLM, IXP(2, NLAY), IXG(NPTS)
+    logical, intent(in) :: DELTAM
+    character(len=1), intent(in) :: SRCTYPE
+    real, intent(in) :: ALBEDOSC(NLAY), LEGENSC(0:ML, NLAY)
+    real, intent(in) :: LEGENP(0:MAXLEG, NLAY)
+    real, intent(in) :: MUO, PHIO, SOLARMU, DIRFLUX(NPTS)
+    real, intent(in) :: SOURCE(NLM, NPTS)
+    real, intent(out) :: SOURCE1(NPTS)
     integer :: I, J, K, L, LAY, M, ME
     double precision  :: F, A, COSSCAT
     real, allocatable :: YLMDIR(:), YLMSUN(:)
@@ -2138,10 +2146,10 @@ subroutine INTEGRATE_SOURCE(NLAY, NPTS, IXP, IXG, TAUGSC, &
     ! Uses the same quadratic/cubic polynomial source function interpolation
     ! as in PATH_INTEGRATION.
     implicit none
-    integer, intent(IN) :: NLAY, NPTS, IXP(2, NLAY), IXG(NPTS)
-    real, intent(IN) :: MUO, BNDRAD
-    real, intent(IN) :: TAUGSC(NPTS), SOURCE1(NPTS)
-    real, intent(OUT) :: RADVEC(NPTS)
+    integer, intent(in) :: NLAY, NPTS, IXP(2, NLAY), IXG(NPTS)
+    real, intent(in) :: MUO, BNDRAD
+    real, intent(in) :: TAUGSC(NPTS), SOURCE1(NPTS)
+    real, intent(out) :: RADVEC(NPTS)
     integer :: LAY, I, I1, I2
     real, allocatable :: SRCINT(:, :)
     double precision :: A(4), B(4), C(4), D(4), E, T, T1, T3, T4, TR
@@ -2268,20 +2276,20 @@ subroutine INIT_RADIANCE(NLAY, ML, TAUPSC, ALBEDOSC, LEGENSC, TEMPP, &
     use shd_init
 
     implicit none
-    integer, intent(IN) :: NLAY, ML, NPTS, IXP(2, NLAY), NLM
-    real, intent(IN) :: TAUPSC(NLAY), ALBEDOSC(NLAY), LEGENSC(0:ML, NLAY)
-    real, intent(IN) :: TEMPP(NLAY + 1)
-    real, intent(IN) :: SOLARFLUX, SOLARMU, GNDALB, SFCTEMP
-    real, intent(IN) :: SKYRAD, WAVELEN, WAVENO(2), TAUGSC(NPTS)
-    character(LEN=1), intent(IN) :: SRCTYPE, UNITS
-    real, intent(OUT):: SHRADIANCE(NLM, NPTS)
+    integer, intent(in) :: NLAY, ML, NPTS, IXP(2, NLAY), NLM
+    real, intent(in) :: TAUPSC(NLAY), ALBEDOSC(NLAY), LEGENSC(0:ML, NLAY)
+    real, intent(in) :: TEMPP(NLAY + 1)
+    real, intent(in) :: SOLARFLUX, SOLARMU, GNDALB, SFCTEMP
+    real, intent(in) :: SKYRAD, WAVELEN, WAVENO(2), TAUGSC(NPTS)
+    character(len=1), intent(in) :: SRCTYPE, UNITS
+    real, intent(out):: SHRADIANCE(NLM, NPTS)
 
     integer :: NLAYER, LAY, I, L
     logical, parameter :: DELTAM = .false.
     real    :: PI, C0, C1, GNDEMIS, TAU1, U
     real, allocatable :: OPTDEPTHS(:), ALBEDOS(:), ASYMMETRIES(:)
     real, allocatable :: TEMPS(:), FLUXES(:, :)
-    character(LEN=1) :: SRCTYPE2
+    character(len=1) :: SRCTYPE2
 
     NLAYER = sum(IXP(2, :) - IXP(1, :))
     allocate (OPTDEPTHS(NLAYER), ALBEDOS(NLAYER), ASYMMETRIES(NLAYER))
@@ -2423,10 +2431,10 @@ subroutine ADD_IN_KDIST(NLAY, HEIGHTP, TAUP, ALBEDOP, &
     ! The gaseous absorption optical depth is found for each of the NLAY
     ! optical property layers by interpolated the absorption linearly
     ! between the levels in ZCKD.
-    integer, intent(IN) :: NLAY, NZCKD
-    real, intent(IN) :: HEIGHTP(NLAY + 1), TAUP(NLAY), ALBEDOP(NLAY)
-    real, intent(IN) :: ZCKD(NZCKD), GASABS(NZCKD)
-    real, intent(OUT) :: TAUPM(NLAY), ALBEDOPM(NLAY)
+    integer, intent(in) :: NLAY, NZCKD
+    real, intent(in) :: HEIGHTP(NLAY + 1), TAUP(NLAY), ALBEDOP(NLAY)
+    real, intent(in) :: ZCKD(NZCKD), GASABS(NZCKD)
+    real, intent(out) :: TAUPM(NLAY), ALBEDOPM(NLAY)
     integer :: LAY, I
     real    :: GASTAU, Z, Z1, Z2, F, ABS
 
@@ -2483,14 +2491,14 @@ subroutine SUM_KDIST_OUTPUT(IG, WT, NLAY, TAUP, IXP, NPTS, TAUG, &
     ! Sums the output arrays over the k-distribution.  Only sums the output
     ! at the input layer interfaces because the adaptive grid changes for
     ! each k.  Also fixes up the tau grid and height grid accordingly.
-    integer, intent(IN) :: IG, NLAY, NZOUT, NMUOUT, NPHIOUT
-    integer, intent(INOUT) :: NPTS, IXP(2, NLAY)
-    real, intent(IN) :: WT, TAUP(NLAY), HEIGHTP(NLAY + 1)
-    real, intent(INOUT) :: TAUG(*), HEIGHTG(*)
-    real, intent(IN) :: FLUXUPM(*), FLUXDNM(*), MEANRADM(*)
-    real, intent(IN) :: RADOUTM(NZOUT, NMUOUT, NPHIOUT)
-    real, intent(OUT) :: FLUXUP(*), FLUXDN(*), MEANRAD(*)
-    real, intent(OUT) :: RADOUT(NZOUT, NMUOUT, NPHIOUT)
+    integer, intent(in) :: IG, NLAY, NZOUT, NMUOUT, NPHIOUT
+    integer, intent(inout) :: NPTS, IXP(2, NLAY)
+    real, intent(in) :: WT, TAUP(NLAY), HEIGHTP(NLAY + 1)
+    real, intent(inout) :: TAUG(*), HEIGHTG(*)
+    real, intent(in) :: FLUXUPM(*), FLUXDNM(*), MEANRADM(*)
+    real, intent(in) :: RADOUTM(NZOUT, NMUOUT, NPHIOUT)
+    real, intent(out) :: FLUXUP(*), FLUXDN(*), MEANRAD(*)
+    real, intent(out) :: RADOUT(NZOUT, NMUOUT, NPHIOUT)
 
     if (IG == 1) then
         FLUXUP(1:NLAY + 1) = 0.0
@@ -2530,17 +2538,17 @@ subroutine USER_INPUT(PROPFILE, CKDFILE, KDIST, NMU, NPHI, &
     ! make a useful log file when running non-interactively.  See the overall
     ! program documentation for the list of input parameters.
     implicit none
-    integer, intent(IN)  :: MAXPAR
-    integer, intent(OUT) :: NMU, NPHI
-    integer, intent(OUT) :: MAXITER, FLUXPARM, NZOUT, NMUOUT, NPHIOUT
-    logical, intent(OUT) :: KDIST, ACCELFLAG
-    real, intent(OUT) :: SOLARFLUX, SOLARMU
-    real, intent(OUT) :: SFCTEMP, SKYRAD, WAVELEN, WAVENO(2)
-    real, intent(OUT) :: SOLACC, SPLITACC
-    real, intent(OUT) :: SFCPARMS(MAXPAR)
-    real, intent(OUT) :: ZOUT(MAXPAR), MUOUT(MAXPAR), PHIOUT(MAXPAR)
-    character(LEN=1), intent(OUT) :: SRCTYPE, SFCTYPE
-    character(LEN=80), intent(OUT) :: PROPFILE, CKDFILE, FLUXFILE, RADFILE
+    integer, intent(in)  :: MAXPAR
+    integer, intent(out) :: NMU, NPHI
+    integer, intent(out) :: MAXITER, FLUXPARM, NZOUT, NMUOUT, NPHIOUT
+    logical, intent(out) :: KDIST, ACCELFLAG
+    real, intent(out) :: SOLARFLUX, SOLARMU
+    real, intent(out) :: SFCTEMP, SKYRAD, WAVELEN, WAVENO(2)
+    real, intent(out) :: SOLACC, SPLITACC
+    real, intent(out) :: SFCPARMS(MAXPAR)
+    real, intent(out) :: ZOUT(MAXPAR), MUOUT(MAXPAR), PHIOUT(MAXPAR)
+    character(len=1), intent(out) :: SRCTYPE, SFCTYPE
+    character(len=80), intent(out) :: PROPFILE, CKDFILE, FLUXFILE, RADFILE
 
     write (*, *)
     write (*, '(1X,A)') 'Atmospheric optical properties file name'
@@ -2659,8 +2667,8 @@ subroutine READ_PROPERTY_SIZE(PROPFILE, NLAY, MAXLEG)
     !   Reads parts of the property file to get the maximum array sizes
     ! needed for allocatable arrays.
     implicit none
-    integer, intent(OUT) :: NLAY, MAXLEG
-    character(LEN=*), intent(IN) :: PROPFILE
+    integer, intent(out) :: NLAY, MAXLEG
+    character(len=*), intent(in) :: PROPFILE
     integer :: I, NLEG
     real    :: TAU, Z, TTOP, TBOT, SSALB
 
@@ -2682,11 +2690,11 @@ subroutine READ_PROPERTIES(PROPFILE, NLAY, MAXLEG, &
     ! property arrays.  The optical properties are uniform within each layer.
     ! The heights must decrease (top of atmosphere downward).
     implicit none
-    integer, intent(IN)  :: NLAY, MAXLEG
-    integer, intent(OUT) :: NLEGP(NLAY)
-    real, intent(OUT) :: TAUP(NLAY), ALBEDOP(NLAY), LEGENP(0:MAXLEG, NLAY)
-    real, intent(OUT) :: HEIGHTP(NLAY + 1), TEMPP(NLAY + 1)
-    character(LEN=*), intent(IN) :: PROPFILE
+    integer, intent(in)  :: NLAY, MAXLEG
+    integer, intent(out) :: NLEGP(NLAY)
+    real, intent(out) :: TAUP(NLAY), ALBEDOP(NLAY), LEGENP(0:MAXLEG, NLAY)
+    real, intent(out) :: HEIGHTP(NLAY + 1), TEMPP(NLAY + 1)
+    character(len=*), intent(in) :: PROPFILE
     integer :: NL, I, L
 
     ! Open the file, get the number of layers and the max number Legendre terms
@@ -2719,20 +2727,20 @@ subroutine OUTPUT_RESULTS(NLAY, NPTS, NMU, NPHI, NG, &
     ! 'F' - for hemispheric/actinic flux.
     ! See the overall program documentation for output parameters.
     implicit none
-    integer, intent(IN) :: NLAY, NPTS, NMU, NPHI, NG
-    integer, intent(IN) :: NZOUT, NMUOUT, NPHIOUT, FLUXPARM
-    integer, intent(IN) :: MAXITER, ITER, IXP(2, NLAY)
-    real, intent(IN) :: SOLARFLUX, SOLARMU, SFCTEMP, SFCPARMS(*), SKYRAD
-    real, intent(IN) :: SOLACC, SPLITACC, WAVELEN, WAVENO(2)
-    real, intent(IN) :: HEIGHTG(NPTS)
-    real, intent(IN) :: FLUXUP(NPTS), FLUXDN(NPTS), MEANRAD(NPTS)
-    real, intent(IN) :: ZOUT(NZOUT), MUOUT(NMUOUT), PHIOUT(NPHIOUT)
-    real, intent(IN) :: RADOUT(NZOUT, NMUOUT, NPHIOUT)
-    character(LEN=1), intent(IN) :: SRCTYPE, SFCTYPE, OUTTYPE
-    character(LEN=*), intent(IN) :: PROPFILE, CKDFILE, OUTFILE
+    integer, intent(in) :: NLAY, NPTS, NMU, NPHI, NG
+    integer, intent(in) :: NZOUT, NMUOUT, NPHIOUT, FLUXPARM
+    integer, intent(in) :: MAXITER, ITER, IXP(2, NLAY)
+    real, intent(in) :: SOLARFLUX, SOLARMU, SFCTEMP, SFCPARMS(*), SKYRAD
+    real, intent(in) :: SOLACC, SPLITACC, WAVELEN, WAVENO(2)
+    real, intent(in) :: HEIGHTG(NPTS)
+    real, intent(in) :: FLUXUP(NPTS), FLUXDN(NPTS), MEANRAD(NPTS)
+    real, intent(in) :: ZOUT(NZOUT), MUOUT(NMUOUT), PHIOUT(NPHIOUT)
+    real, intent(in) :: RADOUT(NZOUT, NMUOUT, NPHIOUT)
+    character(len=1), intent(in) :: SRCTYPE, SFCTYPE, OUTTYPE
+    character(len=*), intent(in) :: PROPFILE, CKDFILE, OUTFILE
     integer :: I, J, K, L, N
     real    :: FOURPI
-    character(LEN=32) :: SOURCENAME, UNITSNAME, OUTNAME, SFCNAME
+    character(len=32) :: SOURCENAME, UNITSNAME, OUTNAME, SFCNAME
 
     FOURPI = 4*acos(-1.0)
     if (SRCTYPE == 'S') then
