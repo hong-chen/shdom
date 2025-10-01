@@ -125,7 +125,7 @@ program shdom_main
     real :: elapsed_time
     real :: DELX0, DELY0
     logical :: mpiX, mpiY, mpiMode
-    logical :: nmlMode = .true.
+    logical :: nmlMode = .false.
 
 
     ! start timing
@@ -472,7 +472,7 @@ program shdom_main
     MAXIG = nint(ADAPT_GRID_FACTOR*NBPTS)
     MAXIC = nint(CELL_TO_POINT_RATIO*MAXIG)
     MAXIV = nint(NUM_SH_TERM_FACTOR*NLM*MAXIG)
-    MAXIDO = MAXIG*max(NPHI0MAX, 4) ! to fix an segmentation error
+    MAXIDO = MAXIG*max(NPHI0MAX, 4) ! to fix an segmentation error when NPHI is smaller than 4
     if (NUMPHASE_ .gt. 0) then
         MAXIGL = NUMPHASE_*NSTLEG*(MAXLEG + 1)
     else
