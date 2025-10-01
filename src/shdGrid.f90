@@ -144,7 +144,7 @@ subroutine shd_grid__matchGridPnt(&
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Description:
     !   Determines whether the neighboring cells to ICELL adjacent to
-    !   face IFACE (1-6: -X,+X,-Y,+Y,-Z,+Z) have gridpoints that match
+    !   face IFACE (1-6: -X,+X,-Y,+Y,-Z,+Z) have grid points that match
     !   the point at XP,YP,ZP on face IFACE of cell ICELL.
     !   If the face of ICELL has several neighboring cells, then the tree
     !   is traced down to find those cells that might contain XP,YP,ZP.
@@ -153,33 +153,28 @@ subroutine shd_grid__matchGridPnt(&
     !
     ! Input:
     !   XP        : real, total number of grid points
-    !   NANG      : integer, number of discrete ordinate angles (NMU and NPHI)
-    !   LAMBERTIAN: logical, lambertian surface or not
-    !   MAXNBC    : integer, maximum number of boundary grid points
-    !   MAXBCRAD  : integer, maximum number of radiances at boundary grid points
-    !   ZBOT      : real, altitude of bottom boundary
-    !   ZTOP      : real, altitude of bottom boundary
     !   GRIDPOS   : real array, (x,y,z) coordinate values of grid point locations
     !
     ! Output:
-    !   NTOPPTS   : integer, number of top boundary points
-    !   NBOTPTS   : integer, number of bottom boundary points
-    !   BCPTR     : integer array, pointer array for NTOPPTS (top boundary points)
+    !   IPMATCH   : integer, pointer array for NTOPPTS (top boundary points)
     !               and NBOTPTS (bottom boundary points)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    real XP, YP, ZP
-    integer ICELL, IFACE
-    real GRIDPOS(3, *)
-    integer GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
-    integer*2 CELLFLAGS(*)
-    integer IPMATCH
-    integer, parameter :: MAXSTACK=64
-    integer CELLSTACK(MAXSTACK), SP
-    integer INEXT, IDIR, DIR, IC, IC1, KFACE, IPT, I
-    integer OPPFACE(6), GRIDFACE(4, 6)
-    data OPPFACE/2, 1, 4, 3, 6, 5/,&
-        &GRIDFACE/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8/
+    real(kind=R4_)   , intent(in)  :: XP, YP, ZP
+    integer(kind=I4_), intent(in)  :: ICELL, IFACE
+    real(kind=R4_)   , intent(in)  :: GRIDPOS(3, *)
+    integer(kind=I4_), intent(in)  :: GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
+    integer(kind=2)  , intent(in)  :: CELLFLAGS(*)
+    integer(kind=I4_), intent(out) :: IPMATCH
+
+    ! if MAXSTACK is greater than 128, kind=2 is needed
+    integer(kind=1), parameter :: MAXSTACK=64
+    integer(kind=I4_) :: CELLSTACK(MAXSTACK), SP
+    integer(kind=1)   :: OPPFACE(6), GRIDFACE(4, 6)
+    data OPPFACE /2, 1, 4, 3, 6, 5/
+    data GRIDFACE /1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8/
+
+    integer(kind=I4_) :: INEXT, IDIR, DIR, IC, IC1, KFACE, IPT, I
 
     IPMATCH = 0
     IDIR = (IFACE + 1)/2
