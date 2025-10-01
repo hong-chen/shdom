@@ -420,7 +420,7 @@ program shdom_main
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
-    ! memory settings
+    ! Memory check
     !╭────────────────────────────────────────────────────────────────────────────╮!
     MEMWORD = NMU*(2 + 2*NPHI + 2*NLM + 2*33*32)
     MEMWORD = MEMWORD + 4.5*MAXPG + MAXPGL + NUMPHASE_*NSTLEG*(MAXLEG + 1)
@@ -440,9 +440,8 @@ program shdom_main
     else
         write (6, '(A,F0.2," MB")') 'Message [shdom_main]: MAX_TOTAL_MB is set to: ', MAX_TOTAL_MB
     end if
-    !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    if (SPLITACC .le. 0.0 .and. INSAVEFILE(1:4) .eq. 'NONE') then
+    if ((SPLITACC .le. 1.0d-12) .and. (INSAVEFILE(1:4) .eq. 'NONE')) then
         ADAPT_GRID_FACTOR = 1.0
     end if
 
@@ -451,14 +450,13 @@ program shdom_main
 
     WANTMEM = ADAPT_GRID_FACTOR*NBPTS*(28 + 16.5*CELL_TO_POINT_RATIO&
         &+ NPHI0MAX*NSTOKES + NUM_SH_TERM_FACTOR*NSTOKES*NLM*BIG_ARRAYS)
-    REDUCE_RATIO = min(1.0, ((MAX_TOTAL_MB*1024**2)/4 - MEMWORD)/WANTMEM)
 
+    REDUCE_RATIO = min(1.0, ((MAX_TOTAL_MB*1024**2)/4 - MEMWORD)/WANTMEM)
     ADAPT_GRID_FACTOR = ADAPT_GRID_FACTOR*REDUCE_RATIO
     if (ADAPT_GRID_FACTOR .lt. 0.999999999d0) then
         write (6, '(A)') 'Error [shdom_main]: MAX_TOTAL_MB memory limit exceeded with just base grid.'
         stop
     end if
-
     if (REDUCE_RATIO .lt. 1.0) then
         write (6, '(A,F8.2)') 'Message [shdom_main]: ADAPT_GRID_FACTOR reduced to:', ADAPT_GRID_FACTOR
     end if
@@ -469,23 +467,35 @@ program shdom_main
         stop
     end if
 
-    MAXIG = nint(ADAPT_GRID_FACTOR*NBPTS)
-    MAXIC = nint(CELL_TO_POINT_RATIO*MAXIG)
-    MAXIV = nint(NUM_SH_TERM_FACTOR*NLM*MAXIG)
-    MAXIDO = MAXIG*max(NPHI0MAX, 4) ! to fix an segmentation error when NPHI is smaller than 4
+    ! max number of legendre coefficients
     if (NUMPHASE_ .gt. 0) then
         MAXIGL = NUMPHASE_*NSTLEG*(MAXLEG + 1)
     else
         MAXIGL = MAXIG*NSTLEG*(MAXLEG + 1)
     end if
+
+    ! max number of internal grid points
+    MAXIG = nint(ADAPT_GRID_FACTOR*NBPTS)
+
+    ! max number of grid cells, between 1 and 2 times grid points
+    MAXIC = nint(CELL_TO_POINT_RATIO*MAXIG)
+
+    ! max words for source function and radiance arrays
+    MAXIV = nint(NUM_SH_TERM_FACTOR*NLM*MAXIG)
+
+    ! max words for temporary discrete ordinate azimuthal array
+    MAXIDO = MAXIG*max(NPHI0MAX, 4)
+
     if (4.0*(MAXIV + MAXIG)*NSTOKES .gt. huge(MAXIV)) then
         write (6, '(A,F8.2)') 'Error [shdom_main]: Size of big SH arrays (MAXIV) probably exceeds max integer number of bytes:', MAXIV
         stop
     end if
+
     if (4.0*8.0*MAXIC .gt. huge(MAXIV)) then
         write (6, '(A,F8.2)') 'Error [shdom_main]: Size of GRIDPTR array (8*MAXIC) probably exceeds max integer number of bytes:', 8*MAXIC
         stop
     end if
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! Allocate the internal adaptable grid arrays, including the BIG 3
     allocate (MU(NMU), WTDO(NMU*NPHI), PHI(NMU*NPHI), NPHI0(NMU))
