@@ -237,7 +237,7 @@ program shdom
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
-    ! Read PROPFILE (property file) to get data size info, if MPI, broadcast.
+    ! Read PROPFILE (property file) to get data size info, broadcast data if MPI
     !╭────────────────────────────────────────────────────────────────────────────╮!
     if (MASTERPROC) then
         ! Find out the size of the input property file grid
@@ -249,7 +249,7 @@ program shdom
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
-    ! Read SFCFILE (surface file) to get data size info, if MPI, broadcast
+    ! Read SFCFILE (surface file) to get data size info, broadcast data if MPI
     !╭────────────────────────────────────────────────────────────────────────────╮!
     if (SFCFILE(1:4) .eq. 'NONE') then
         SFCTYPE = 'FL'
@@ -309,12 +309,14 @@ program shdom
     call shd_mpi__map(BCFLAG, NPX_, NPY_, NX, NY, NZ, DELX_, DELY_, PROPFILE,&
         &XSTART_, YSTART_, RUNNAME)
 
+    ! BCFLAG bit-representation '...01xx' mpiX
     if (btest(BCFLAG, 2)) then
         mpiX = .true.
     else
         mpiX = .false.
     end if
 
+    ! BCFLAG bit-representation '...1xxx' mpiY
     if (btest(BCFLAG, 3)) then
         mpiY = .true.
     else
@@ -348,6 +350,7 @@ program shdom
     NY1 = NY + 1
     if (btest(IPFLAG, 1) .or. btest(BCFLAG, 1) .or. mpiY) NY1 = NY
 
+    ! Number of base points
     NBPTS = NX1*NY1*NZ
 
     ! Calculate the number of base grid cells depending on the BCFLAG
@@ -372,6 +375,7 @@ program shdom
         ! Read the properties of the medium to the master processor and
         !   distribute to all the processors
         if (MASTERPROC) then
+
             MAXPGT = NPXT*NPYT*NPZ_
             MAXPGLT = MAXPGL
             if (NUMPHASE_ .eq. 0) MAXPGLT = MAXPGT*(MAXLEG + 1)*NSTLEG
@@ -512,16 +516,24 @@ program shdom
     ! angle grids for DO
     allocate (MU(NMU), WTDO(NMU*NPHI), PHI(NMU*NPHI), NPHI0(NMU))
 
+    ! x, y, z grids
     allocate (XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ))
 
+    ! temperature and planck radiance (maybe we don't need this for shortwave)
     allocate (TEMP(MAXIG), PLANCK(MAXIG))
 
+    ! extinction, single scattering albedo, and phase function indices
     allocate (EXTINCT(MAXIG), ALBEDO(MAXIG), IPHASE(MAXIG))
 
+    ! legendre coefficients
     allocate (LEGEN(MAXIGL))
 
+    ! pointer to 8 grid points belonging to a cell
+    ! pointer to 6 neighboring cells of a cell
+    ! pointer to parent and children cells in tree structure
     allocate (GRIDPTR(8, MAXIC), NEIGHPTR(6, MAXIC), TREEPTR(2, MAXIC))
 
+    ! a collection of binary flags for the cells
     allocate (CELLFLAGS(MAXIC))
 
     allocate (GRIDPOS(3, MAXIG))

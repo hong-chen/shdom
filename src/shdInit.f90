@@ -212,10 +212,10 @@ subroutine shd_init__makeCell(&
 
     NXC = NX
     if (btest(BCFLAG, 0)) NXC = NX + 1
-    if (btest(BCFLAG, 2) .and. .not. btest(IPFLAG, 0)) NXC = NX - 1
+    if (btest(BCFLAG, 2) .and. (.not. btest(IPFLAG, 0))) NXC = NX - 1
     NYC = NY
     if (btest(BCFLAG, 1)) NYC = NY + 1
-    if (btest(BCFLAG, 3) .and. .not. btest(IPFLAG, 1)) NYC = NY - 1
+    if (btest(BCFLAG, 3) .and. (.not. btest(IPFLAG, 1))) NYC = NY - 1
 
     ! Then setup the cell structures
     I = 0
