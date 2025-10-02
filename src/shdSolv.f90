@@ -267,8 +267,10 @@ subroutine shd_solv__solveRte(&
     AVGSOLCRIT = SOLCRIT
     SPLITCRIT = 0.0
 
-    write (6, '(A)') 'Message [_solveRte]:'
-    write (6, '(A)') '+ Iter  Log(Sol)  SplitCrit  Npoints   Ncells  Nsh(avg)'
+    if (VERBOSE_ .ge. 5) then
+        write (6, '(A)') 'Message [_solveRte]:'
+        write (6, '(A)') '+ Iter  Log(Sol)  SplitCrit  Npoints   Ncells  Nsh(avg)'
+    end if
 
     ! Main solution loop
     !   Iterate until the iterations exceed the limit, or the desired
@@ -374,7 +376,7 @@ subroutine shd_solv__solveRte(&
         ! Print out the log solution criterion, number of points,
         !   and average SH truncation.
         if (DOSPLIT) then
-            write (6, '("S",1X,I4,2X,F7.3,2X,E10.3,1X,I8,1X,I8,1X,F8.2,2X,F6.2," sec")')&
+            if (VERBOSE_ .ge. 5) write (6, '("S",1X,I4,2X,F7.3,2X,E10.3,1X,I8,1X,I8,1X,F8.2,2X,F6.2," sec")')&
                 &ITER, log10(max(SOLCRIT, 1.0e-20)),&
                 &SPLITCRIT,&
                 &NPTS,&
@@ -384,7 +386,7 @@ subroutine shd_solv__solveRte(&
                 !&float(SHPTR(NPTS + 1))/(NPTS*NLM)
         else
             if (OUTOFMEM) then
-                write (6, '("M",1X,I4,2X,F7.3,2X,E10.3,1X,I8,1X,I8,1X,F8.2,2X,F6.2," sec")')&
+                if (VERBOSE_ .ge. 5) write (6, '("M",1X,I4,2X,F7.3,2X,E10.3,1X,I8,1X,I8,1X,F8.2,2X,F6.2," sec")')&
                     &ITER, log10(max(SOLCRIT, 1.0e-20)),&
                     &SPLITCRIT,&
                     &NPTS,&
@@ -393,7 +395,7 @@ subroutine shd_solv__solveRte(&
                     &elapsed_time
                     !&float(SHPTR(NPTS + 1))/(NPTS*NLM)
             else
-                write (6, '(2X,I4,2X,F7.3,2X,E10.3,1X,I8,1X,I8,1X,F8.2,2X,F6.2," sec")')&
+                if (VERBOSE_ .ge. 5) write (6, '(2X,I4,2X,F7.3,2X,E10.3,1X,I8,1X,I8,1X,F8.2,2X,F6.2," sec")')&
                     &ITER, log10(max(SOLCRIT, 1.0e-20)),&
                     &SPLITCRIT,&
                     &NPTS,&
@@ -405,7 +407,7 @@ subroutine shd_solv__solveRte(&
         end if
     end do
 
-    write (6, '(A,I4,A,F9.6)') '- Iterations: ', ITER,&
+    if (VERBOSE_ .ge. 5) write (6, '(A,I4,A,F9.6)') '- Iterations: ', ITER,&
         &', Final Criterion: ', SOLCRIT
 
     if (SFCTYPE(1:1) .eq. 'V' .and. UNIFORM_SFC_BRDF) then
@@ -544,8 +546,8 @@ subroutine shd_solv__truncateRad(HIGHORDERRAD,&
         IR = IR + NR
         RSHPTR(I + 1) = IR
         if (IR .gt. MAXIR) then
-            write (6, *)&
-                &'Message [_truncateRad]: Out of memory for more radiance terms.'
+            if (VERBOSE_ .ge. 4) write (6, *)&
+                &'Warning [_truncateRad]: Out of memory for more radiance terms.'
             goto 190
         end if
     end do

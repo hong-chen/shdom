@@ -155,7 +155,17 @@ module globals_cfg
     integer, parameter :: FNAMEMAXLEN_ = 256 ! file name max length (number of characters)
     logical, save :: HIGHORDERRAD_
     real(kind=8), save    :: RACC_
+
     integer(kind=1), save :: VERBOSE_
+    !Severity    Level  Description
+    !Emergency     0      System unusable
+    !Alert         1      Action must be taken immediately
+    !Critical      2      Critical conditions
+    !Error         3      Error conditions
+    !Warning       4      Warning conditions
+    !Notice        5      Normal but significant condition
+    !Informational 6      Informational messages
+    !All           7      All-level messages
 
 end module globals_cfg
 

@@ -403,7 +403,7 @@ subroutine shd_io__nmlInput(&
 
     ! Read in the namelist
     call get_command_argument(1, NMLFILE)
-    if (VERBOSE_ .ge. 2) write (*, '(A,"<",A,">")') 'Message [_nmlInput]: ', trim(adjustl(NMLFILE))
+    if (VERBOSE_ .ge. 6) write (*, '(A,"<",A,">")') 'Message [_nmlInput]: ', trim(adjustl(NMLFILE))
     open (UNIT=5, FILE=trim(adjustl(NMLFILE)), STATUS='OLD')
     read (5, NML=SHDOMINPUT)
     close (5)
@@ -560,7 +560,7 @@ subroutine shd_io__checkInputParam(&
     end if
 
     if (.not. DELTAM .and. SRCTYPE .ne. 'T' .and. MAXASYM .gt. 0.5) then
-        if (VERBOSE_ .ge. 1) write (*, *) 'Warning [_checkInputParam]: Delta-M should be used&
+        if (VERBOSE_ .ge. 4) write (*, *) 'Warning [_checkInputParam]: Delta-M should be used&
             & (DELTAM=.TRUE.) for solar radiative transfer&
             & with highly peaked phase functions.'
     end if
@@ -577,17 +577,17 @@ subroutine shd_io__checkInputParam(&
     end if
     if (SPLITACC .gt. 0.0 .and.&
         &(SPLITACC .lt. 0.001*FLUX .or. SPLITACC .gt. 0.1*FLUX)) then
-        if (VERBOSE_ .ge. 1) write (*, *) 'Warning [_checkInputParam]: Splitting accuracy parameter&
+        if (VERBOSE_ .ge. 4) write (*, *) 'Warning [_checkInputParam]: Splitting accuracy parameter&
             & is not a fraction, but scales with fluxes'
     end if
     if (SHACC .gt. 0.0 .and. SHACC .gt. 0.03*FLUX) then
-        if (VERBOSE_ .ge. 1) write (*, *) 'Warning [_checkInputParam]: Spherical harmonic accuracy&
+        if (VERBOSE_ .ge. 4) write (*, *) 'Warning [_checkInputParam]: Spherical harmonic accuracy&
             & (SHACC) is not a fraction, but scales with fluxes'
     end if
 
     if (SRCTYPE .ne. 'S' .and.&
         &(GNDTEMP .lt. 150. .or. GNDTEMP .gt. 350.)) then
-        if (VERBOSE_ .ge. 1) write (*, *) 'Warning [_checkInputParam]:&
+        if (VERBOSE_ .ge. 4) write (*, *) 'Warning [_checkInputParam]:&
             & ground temperature out of Earth range.'
     end if
     if (GNDALBEDO .lt. 0.0 .or. GNDALBEDO .gt. 1.0) then
@@ -595,7 +595,7 @@ subroutine shd_io__checkInputParam(&
     end if
 
     if (NPHI .lt. NMU) then
-      if (VERBOSE_ .ge. 1) write (*, *) 'Warning [_checkInputParam]: Usually want NPHI >= NMU.'
+      if (VERBOSE_ .ge. 4) write (*, *) 'Warning [_checkInputParam]: Usually want NPHI >= NMU.'
     end if
 
     return
@@ -1077,9 +1077,9 @@ subroutine shd_io__checkPrpInput(&
     end do
 
     if (NTHICK .gt. 0) then
-        write (*, '(A)') 'Message [_checkPrpInput]:'
-        write (*, '(A,I0)')   '  Npoints (optical depth > 2): ', NTHICK
-        write (*, '(A,F0.2)') '       Max cell optical depth: ', MAXTAU
+        if (VERBOSE_ .ge. 5) write (*, '(A)') 'Message [_checkPrpInput]:'
+        if (VERBOSE_ .ge. 5) write (*, '(A,I0)')   '  Npoints (optical depth > 2): ', NTHICK
+        if (VERBOSE_ .ge. 5) write (*, '(A,F0.2)') '       Max cell optical depth: ', MAXTAU
     end if
 
     return
@@ -1822,7 +1822,7 @@ subroutine shd_io__restoreState(&
 
     close (3)
 
-    write (6, '(A)') 'Message [_restoreState]: State restored from <'//trim(adjustl(INSAVEFILE))//'> ...'
+    if (VERBOSE_ .ge. 5) write (6, '(A)') 'Message [_restoreState]: State restored from <'//trim(adjustl(INSAVEFILE))//'> ...'
 
     INRADFLAG = .true.
     NEWGRIDFLAG = .false.
@@ -1830,7 +1830,7 @@ subroutine shd_io__restoreState(&
 
 900 continue
 
-    write (6, '(A)') 'Warning [_restoreState]: Failed to restore state file from <'//trim(adjustl(INSAVEFILE))//'>.'
+    if (VERBOSE_ .ge. 4) write (6, '(A)') 'Warning [_restoreState]: Failed to restore state file from <'//trim(adjustl(INSAVEFILE))//'>.'
     INRADFLAG = .false.
     NEWGRIDFLAG = .true.
 

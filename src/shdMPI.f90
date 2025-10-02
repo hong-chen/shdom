@@ -121,7 +121,7 @@ subroutine shd_mpi__start(MASTERPROC)
 
     if (MYPROC_ .eq. 0) then
         MASTERPROC = .true.
-        if (VERBOSE_ .gt. 1) write (6, '(A)') 'Message [mpi__start]: Starting MPI version of SHDOM ...'
+        if (VERBOSE_ .gt. 5) write (6, '(A)') 'Message [mpi__start]: Starting MPI version of SHDOM ...'
     else
         MASTERPROC = .false.
     end if
@@ -277,12 +277,12 @@ subroutine shd_mpi__map(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
     call mpi_cart_shift(COMM2D_, 0, 1, IPROCNEIGH_(1), IPROCNEIGH_(2), ierr)
     call mpi_cart_shift(COMM2D_, 1, 1, IPROCNEIGH_(3), IPROCNEIGH_(4), ierr)
 
-    write (6, '(A)') 'Message [mpi__map]:'
-    write (6, '(2X,A,2(I0,2X))')    'Nproc in X and Y: ', dims(1:2)
-    write (6, '(2X,A,I0)')          '  This processor: ', MYPROC_
-    write (6, '(2X,A,4(I0,2X))')    '       Neighbors: ', IPROCNEIGH_(1:4)
-    write (6, '(2X,A,2(F0.2," km",2X))') '         X range: ', XSTART, XEND
-    write (6, '(2X,A,2(F0.2," km",2X))') '         Y range: ', YSTART, YEND
+    if (VERBOSE_ .ge. 5) write (6, '(A)') 'Message [mpi__map]:'
+    if (VERBOSE_ .ge. 5) write (6, '(2X,A,2(I0,2X))')    'Nproc in X and Y: ', dims(1:2)
+    if (VERBOSE_ .ge. 5) write (6, '(2X,A,I0)')          '  This processor: ', MYPROC_
+    if (VERBOSE_ .ge. 5) write (6, '(2X,A,4(I0,2X))')    '       Neighbors: ', IPROCNEIGH_(1:4)
+    if (VERBOSE_ .ge. 5) write (6, '(2X,A,2(F0.2," km",2X))') '         X range: ', XSTART, XEND
+    if (VERBOSE_ .ge. 5) write (6, '(2X,A,2(F0.2," km",2X))') '         Y range: ', YSTART, YEND
 #else
     XSTART = 0.0; YSTART = 0.0
 #endif
@@ -718,8 +718,8 @@ subroutine shd_mpi__readBcastMemParam(MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
     NUM_SH_TERM_FACTOR = MemParam(3, MYPROC_)
     CELL_TO_POINT_RATIO = MemParam(4, MYPROC_)
     deallocate (MemParam)
-    write (6, '(A)') 'Message [mpi__readBcastMemParam]:'
-    write (6, '(2X,A,F0.2,"MB",3(2X,F0.3))') 'Memory parameters used: ', MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
+    if (VERBOSE_ .ge. 5) write (6, '(A)') 'Message [mpi__readBcastMemParam]:'
+    if (VERBOSE_ .ge. 5) write (6, '(2X,A,F0.2,"MB",3(2X,F0.3))') 'Memory parameters used: ', MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
         &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
 #endif
 
@@ -2827,12 +2827,12 @@ subroutine shd_mpi__end(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART, XDOMAIN, YDOMAI
     ElapsedTime = mpi_wtime() - STARTTIME_
 
     if (ElapsedTime .lt. 60.0) then
-        write (6, '(A,F0.2,A)') 'Message [mpi__end]: Total time used: ', ElapsedTime, ' sec'
+        if (VERBOSE_ .ge. 5) write (6, '(A,F0.2,A)') 'Message [mpi__end]: Total time used: ', ElapsedTime, ' sec'
     else
-        write (6, '(A,F0.2,A)') 'Message [mpi__end]: Total time used: ', ElapsedTime/60.0, ' min'
+        if (VERBOSE_ .ge. 5) write (6, '(A,F0.2,A)') 'Message [mpi__end]: Total time used: ', ElapsedTime/60.0, ' min'
     end if
 
-    write (6, '(A,"<",A,">")') 'Message [mpi__end]: Finished with SHDOM run: ', trim(adjustl(RUNNAME))
+    if (VERBOSE_ .ge. 5) write (6, '(A,"<",A,">")') 'Message [mpi__end]: Finished with SHDOM run: ', trim(adjustl(RUNNAME))
 
     ! Shut down MPI
     if (allocated(BXYPTR_)) deallocate(BXYPTR_)
@@ -3138,7 +3138,7 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
     else if (CZ .gt. 1.0e-3) then
         BITZ = 0
     else
-        call shd_mpi__abort('Message [mpi__integrateRay]: Bad MU.')
+        call shd_mpi__abort('Error [mpi__integrateRay]: Bad MU.')
     end if
     ! IOCT is the octant the ray come from or the discrete ordinate goes to.
     IOCT = 1 + BITX + 2*BITY + 4*BITZ
@@ -3174,7 +3174,7 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
     if ((ix .lt. 1) .or. (iy .lt. 1) .or. (ix .gt. (NX + 1)) .or. (iy .gt. (NY + 1))) then
         write (6, *) 'Bad ix,iy', x, y, z, ix, iy, iz, xgrid(1), xgrid(nx), ygrid(1), ygrid(ny), MYPROC_
         write (6, *) 'Bad ix,iy', side, transmit
-        call shd_mpi__abort('Message [mpi_integrateRay]:')
+        call shd_mpi__abort('Error [mpi_integrateRay]: See above.')
     end if
     IX = min(NXC, IX)
     IY = min(NYC, IY)
@@ -3262,8 +3262,8 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
         SOZ = (GRIDPOS(3, IOPP) - ZE)*CZINV
         SO = min(SOX, SOY, SOZ)
         if (SO .lt. -EPS) then
-            write (6, *) 'Message [mpi__integrateRay]: SO<0 ', MU, PHI, X, Y, Z, SOX, SOY, SOZ, SO, ICELL, TRANS
-            call shd_mpi__abort('Error [mpi__integrateRay]: SO<0.')
+            write (6, *) MU, PHI, X, Y, Z, SOX, SOY, SOZ, SO, ICELL, TRANS
+            call shd_mpi__abort('Error [mpi__integrateRay]: SO<0, see above.')
         end if
         ! Compute the coordinates of the cell exitting location
         if (.not. IPINX) XE = XE + SO*CX
@@ -3331,7 +3331,7 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
         end if
         if ((u .lt. -1.0e-4) .or. (v .lt. -1.0e-4) .or. (u .gt. 1.0001) .or. (v .gt. 1.0001)) then
             write (6, *) 'u,v<0 or u,v>1: ', mu, phi, x, y, z, xe, ye, ze, u, v, ipinx, ipiny
-            call shd_mpi__abort('Message [mpi__integrateRay]:')
+            call shd_mpi__abort('Error [mpi__integrateRay]: u,v<0 or u,v>1, see above.')
         end if
 
         ! Get the location coordinate (does the boundary wrapping)
