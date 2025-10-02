@@ -108,7 +108,7 @@ program shdom
     logical :: BASEOUT, MASTERPROC, VALIDBEAM
     logical :: RADIANCE_OUT, VISUAL_OUT
     logical :: FLUX_OUT, FLUXDIV_OUT, SH_OUT, SOURCE_OUT
-    real :: SOLARFLUX0, SOLARFLUX, SOLARMU, SOLARAZ
+    real :: SOLARFLUX0, SOLARFLUXCKD, SOLARFLUX, SOLARMU, SOLARAZ
     real :: GNDTEMP, GNDALBEDO, SKYRAD, WAVENO(2), WAVELEN
     real :: SOLACC, SOLCRIT, SPLITACC, SHACC
     real :: DELXSFC, DELYSFC, MAXASYM, REDUCE_RATIO
@@ -359,7 +359,7 @@ program shdom
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
-    ! Read in property data from PRPFILE (property file)
+    ! Read PRPFILE and distribute data if MPI
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Determine the size of the property grid arrays so can allocate
     MAXNZ = NPZ_
@@ -435,7 +435,7 @@ program shdom
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
-    ! Read SFCFILE and derive maximum number for boundary points and boundary radiances
+    ! Read SFCFILE and broadcast data if MPI
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Read in the surface properties
     if (SFCFILE(1:4) .eq. 'NONE') then
@@ -454,7 +454,7 @@ program shdom
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
-    ! Read CKDFILE and broadcast if MPI
+    ! Read CKDFILE and broadcast data if MPI
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! If doing a k-distribution then get the band info from the CKD file
     if (KDIST) then
@@ -627,8 +627,10 @@ program shdom
     ! WORK1: Work array for path integration; grid point sweeping order
     allocate (WORK1(8*MAXIG))
 
+    ! fluxes
     allocate (FLUXES(2, MAXIG), DIRFLUX(MAXIG))
 
+    ! boundary points pointers and radiances
     if (SFCFILE(1:4) .ne. 'NONE') allocate (SFCGRIDPARMS(MAXSFCPARS*MAXNBC))
     allocate (BCPTR(2*MAXNBC), BCRAD(NSTOKES, MAXBCRAD))
     !╰────────────────────────────────────────────────────────────────────────────╯!
@@ -760,16 +762,27 @@ program shdom
         if (VERBOSE_ .ge. 5) write (6, '(A)') message
     end if
 
+
+    ! solve radiative transfer equation
+    !   1. Use Picard iteration to solve radiance and source
+    !   2. Compute actual radiance (and/or other radiative quantities specified by user)
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     if (VERBOSE_ .ge. 5) write (6, '(A,"<",A,">")') 'Message [shdom]: Starting solution iterations for SHDOM run: ', trim(adjustl(RUNNAME))
+
     TOTITER = 0
     OLDNPTS = 0
+    SOLARFLUX = 0.0d0
 
     ! Loop over the k-distribution g's from high to low absorption
     do IG = NG, 1, -1
 
         if (VERBOSE_ .ge. 5) write (6, '(A,I2,A,I2,A)') 'Message [shdom]: Starting ', IG, '/', NG, ' (ig/Ng) ...'
 
-        SOLARFLUX = SOLFLUX(IG)*SOLARFLUX0*abs(SOLARMU)
+        ! solar flux for given g of CKD
+        SOLARFLUXCKD = SOLFLUX(IG)*SOLARFLUX0*abs(SOLARMU)
+
+        ! weighted average solar flux
+        SOLARFLUX = SOLARFLUX + SOLFLUX(IG)*DELG(IG)*SOLARFLUX0*abs(SOLARMU)
 
         ! If doing k-distribution then get the gas absorption profile.
         if (KDIST) then
@@ -795,7 +808,7 @@ program shdom
             &NPHI0, MU, PHI, WTDO,&
             &MAXIV, MAXIC, MAXIG, MAXIDO, INRADFLAG,&
             &BCFLAG, IPFLAG, DELTAM, SRCTYPE, HIGHORDERRAD_,&
-            &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+            &SOLARFLUXCKD, SOLARMU, SOLARAZ, SKYRAD,&
             &SFCTYPE, GNDTEMP, GNDALBEDO,&
             &NXSFC, NYSFC, DELXSFC, DELYSFC,&
             &NSFCPAR, SFCPARMS, SFCGRIDPARMS,&
@@ -984,11 +997,11 @@ program shdom
 
                 if (mpiMode) then
                     call shd_mpi__makeDirect(1, NPTS, BCFLAG, IPFLAG, .false., ML,&
-                        &NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
+                        &NSTLEG, NLEG, SOLARFLUXCKD, SOLARMU, SOLARAZ,&
                         &GRIDPOS, NX, XGRID, NY, YGRID, DIRFLUX_TMP)
                 else
                     call shd_rad__makeDirect(NPTS, BCFLAG, IPFLAG, .false., ML,&
-                        &NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
+                        &NSTLEG, NLEG, SOLARFLUXCKD, SOLARMU, SOLARAZ,&
                         &GRIDPOS, DIRFLUX_TMP)
                 end if
 
@@ -1020,13 +1033,8 @@ program shdom
         OLDNPTS = NPTS
 
     end do ! CKD Ng loop
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
-
-    ! Re-calculate Ng averaged TOA flux for output use
-    SOLARFLUX = 0.0d0
-    do IG = NG, 1, -1
-        SOLARFLUX = SOLARFLUX + SOLFLUX(IG)*DELG(IG)*SOLARFLUX0*abs(SOLARMU)
-    end do ! CKD Ng loop
 
     call shd_io__saveState(OUTSAVEFILE, NSTOKES, NX, NY, NZ, ML, MM, NLM,&
         &WORK, XGRID, YGRID, ZGRID,&
@@ -1038,6 +1046,7 @@ program shdom
     if (MASTERPROC) then
         if (VERBOSE_ .ge. 5) write (6, '(A)') message
     end if
+
 
     NSH = SHPTR(NPTS + 1)
     IRAD = 0
