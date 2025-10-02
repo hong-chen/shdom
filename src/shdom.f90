@@ -991,6 +991,7 @@ program shdom_main
             call shd_util__sumData(NG - IG, DELG(IG), 2*NPTS, FLUXES, SUMFLUXES)
             call shd_util__sumData(NG - IG, DELG(IG), NPTS, DIRFLUX, SUMDIRFLUX)
         end if
+
         if (FLUXDIV_OUT) then
             ! Compute the net flux divergence at every point
             call shd_rad__computeNetFluxDiv(NSTOKES, NPTS, RSHPTR, SRCTYPE, SOLARMU,&
@@ -1005,6 +1006,7 @@ program shdom_main
         end if
 
         OLDNPTS = NPTS
+
     end do ! CKD Ng loop
 
 
