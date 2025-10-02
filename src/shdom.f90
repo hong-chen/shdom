@@ -33,7 +33,7 @@
 !   SHDOM: Spherical harmonic discrete ordinate radiative transfer method.
 !     See docs/README.rst for documentation.
 
-program shdom_main
+program shdom
 
     use globals_const
     use globals_cfg
@@ -47,6 +47,7 @@ program shdom_main
     use shd_inp ! shd_io__
     use shd_out ! shd_io__
     use shd_mpi
+    use shd_util
 
     implicit none
     ! Number of output files and inputs parameter per file
@@ -121,8 +122,7 @@ program shdom_main
     integer :: NSENDATA, NSENPAR
 
     integer :: count_start, count_rate, count_max
-    integer :: count_end
-    real :: elapsed_time
+    character(len=FNAMEMAXLEN_) :: message
     real :: DELX0, DELY0
     logical :: mpiX, mpiY, mpiMode
     logical :: nmlMode = .true.
@@ -386,7 +386,7 @@ program shdom_main
                 &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, NUMPHASE_, IPHASEPT)
 
             if (NUMPHASE_ .eq. 0) then
-                stop 'Error [shdom_main]: Standard property file (with phase function Legendre series at every point)&
+                stop 'Error [shdom]: Standard property file (with phase function Legendre series at every point)&
                     & is not allowed with multiple processors.'
             end if
 
@@ -447,9 +447,9 @@ program shdom_main
     !   but don't let MAX_TOTAL_MB be exceeded
     if (MAX_TOTAL_MB*1024.0**2 .gt. 1.80*huge(MAXIV)) then
         MAX_TOTAL_MB = 1.80*huge(MAXIV)/1024.0**2
-        if (VERBOSE_ .ge. 5) write (6, '(A,F0.2," MB")') 'Message [shdom_main]: MAX_TOTAL_MB reduced to: ', MAX_TOTAL_MB
+        if (VERBOSE_ .ge. 5) write (6, '(A,F0.2," MB")') 'Message [shdom]: MAX_TOTAL_MB reduced to: ', MAX_TOTAL_MB
     else
-        if (VERBOSE_ .ge. 5) write (6, '(A,F0.2," MB")') 'Message [shdom_main]: MAX_TOTAL_MB is set to: ', MAX_TOTAL_MB
+        if (VERBOSE_ .ge. 5) write (6, '(A,F0.2," MB")') 'Message [shdom]: MAX_TOTAL_MB is set to: ', MAX_TOTAL_MB
     end if
 
     if ((SPLITACC .le. 1.0d-12) .and. (INSAVEFILE(1:4) .eq. 'NONE')) then
@@ -465,15 +465,15 @@ program shdom_main
     REDUCE_RATIO = min(1.0, ((MAX_TOTAL_MB*1024**2)/4 - MEMWORD)/WANTMEM)
     ADAPT_GRID_FACTOR = ADAPT_GRID_FACTOR*REDUCE_RATIO
     if (ADAPT_GRID_FACTOR .lt. 0.999999999d0) then
-        stop 'Error [shdom_main]: MAX_TOTAL_MB memory limit exceeded with just base grid.'
+        stop 'Error [shdom]: MAX_TOTAL_MB memory limit exceeded with just base grid.'
     end if
     if (REDUCE_RATIO .lt. 1.0) then
-        if (VERBOSE_ .ge. 5) write (6, '(A,F8.2)') 'Message [shdom_main]: ADAPT_GRID_FACTOR reduced to:', ADAPT_GRID_FACTOR
+        if (VERBOSE_ .ge. 5) write (6, '(A,F8.2)') 'Message [shdom]: ADAPT_GRID_FACTOR reduced to:', ADAPT_GRID_FACTOR
     end if
 
     WANTMEM = REDUCE_RATIO*WANTMEM
     if (WANTMEM .gt. huge(MAXIV)) then
-        write (6, '(A,F8.2)') 'Error [shdom_main]: Number of words of memory exceeds max integer size:', WANTMEM
+        write (6, '(A,F8.2)') 'Error [shdom]: Number of words of memory exceeds max integer size:', WANTMEM
         stop
     end if
 
@@ -497,12 +497,12 @@ program shdom_main
     MAXIDO = MAXIG*max(NPHI0MAX, 4)
 
     if (4.0*(MAXIV + MAXIG)*NSTOKES .gt. huge(MAXIV)) then
-        write (6, '(A,F8.2)') 'Error [shdom_main]: Size of big SH arrays (MAXIV) probably exceeds max integer number of bytes:', MAXIV
+        write (6, '(A,F8.2)') 'Error [shdom]: Size of big SH arrays (MAXIV) probably exceeds max integer number of bytes:', MAXIV
         stop
     end if
 
     if (4.0*8.0*MAXIC .gt. huge(MAXIV)) then
-        write (6, '(A,F8.2)') 'Error [shdom_main]: Size of GRIDPTR array (8*MAXIC) probably exceeds max integer number of bytes:', 8*MAXIC
+        write (6, '(A,F8.2)') 'Error [shdom]: Size of GRIDPTR array (8*MAXIC) probably exceeds max integer number of bytes:', 8*MAXIC
         stop
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
@@ -737,25 +737,31 @@ program shdom_main
             &XGRID, YGRID, ZGRID)
     end if
 
-    call system_clock(count_end, count_rate, count_max)
-    elapsed_time = (real(count_end) - real(count_start)) / real(count_rate)
+    message = 'Message [shdom]: Total time used for preparation: '
+    call shd_util__ticktock(message, count_start)
     if (MASTERPROC) then
-        if (elapsed_time .lt. 60.0) then
-            if (VERBOSE_ .ge. 5) write (6, '(A,F0.2,A)') 'Message [shdom_main]: Total time used for preparation: ', elapsed_time, ' sec'
-        else
-            if (VERBOSE_ .ge. 5) write (6, '(A,F0.2,A)') 'Message [shdom_main]: Total time used for preparation: ', elapsed_time/60.0, ' min'
-        endif
+        if (VERBOSE_ .ge. 5) write (6, '(A)') message
     end if
-    count_start = count_end
 
-    if (VERBOSE_ .ge. 5) write (6, '(A,"<",A,">")') 'Message [shdom_main]: Starting solution iterations for SHDOM run: ', trim(adjustl(RUNNAME))
+    !call system_clock(count_end, count_rate, count_max)
+    !elapsed_time = (real(count_end) - real(count_start)) / real(count_rate)
+    !if (MASTERPROC) then
+    !    if (elapsed_time .lt. 60.0) then
+    !        if (VERBOSE_ .ge. 5) write (6, '(A,F0.2,A)') 'Message [shdom]: Total time used for preparation: ', elapsed_time, ' sec'
+    !    else
+    !        if (VERBOSE_ .ge. 5) write (6, '(A,F0.2,A)') 'Message [shdom]: Total time used for preparation: ', elapsed_time/60.0, ' min'
+    !    endif
+    !end if
+    !count_start = count_end
+
+    if (VERBOSE_ .ge. 5) write (6, '(A,"<",A,">")') 'Message [shdom]: Starting solution iterations for SHDOM run: ', trim(adjustl(RUNNAME))
     TOTITER = 0
     OLDNPTS = 0
 
     ! Loop over the k-distribution g's from high to low absorption
     do IG = NG, 1, -1
 
-        if (VERBOSE_ .ge. 5) write (6, '(A,I2,A,I2,A)') 'Message [shdom_main]: Starting ', IG, '/', NG, ' (ig/Ng) ...'
+        if (VERBOSE_ .ge. 5) write (6, '(A,I2,A,I2,A)') 'Message [shdom]: Starting ', IG, '/', NG, ' (ig/Ng) ...'
 
         SOLARFLUX = SOLFLUX(IG)*SOLARFLUX0*abs(SOLARMU)
 
@@ -1021,16 +1027,22 @@ program shdom_main
         &NPTS, NCELLS, GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR,&
         &CELLFLAGS, FLUXES, SHPTR, SOURCE, RSHPTR, RADIANCE)
 
-    call system_clock(count_end, count_rate, count_max)
-    elapsed_time = (real(count_end) - real(count_start)) / real(count_rate)
+    message = 'Message [shdom]: Total time used for runs: '
+    call shd_util__ticktock(message, count_start)
     if (MASTERPROC) then
-        if (elapsed_time .lt. 60.0) then
-            if (VERBOSE_ .ge. 5) write (6, '(A,F0.2,A)') 'Message [shdom_main]: Total time used for runs: ', elapsed_time, ' sec'
-        else
-            if (VERBOSE_ .ge. 5) write (6, '(A,F0.2,A)') 'Message [shdom_main]: Total time used for runs: ', elapsed_time/60.0, ' min'
-        endif
+        if (VERBOSE_ .ge. 5) write (6, '(A)') message
     end if
-    count_start = count_end
+
+    !call system_clock(count_end, count_rate, count_max)
+    !elapsed_time = (real(count_end) - real(count_start)) / real(count_rate)
+    !if (MASTERPROC) then
+    !    if (elapsed_time .lt. 60.0) then
+    !        if (VERBOSE_ .ge. 5) write (6, '(A,F0.2,A)') 'Message [shdom]: Total time used for runs: ', elapsed_time, ' sec'
+    !    else
+    !        if (VERBOSE_ .ge. 5) write (6, '(A,F0.2,A)') 'Message [shdom]: Total time used for runs: ', elapsed_time/60.0, ' min'
+    !    endif
+    !end if
+    !count_start = count_end
 
     NSH = SHPTR(NPTS + 1)
     IRAD = 0
@@ -1052,6 +1064,7 @@ program shdom_main
             &NCELLS, NPTS, NSH, NCELLSTOT, NPTSTOT, NSHTOT)
 
         if (MASTERPROC) then
+
             do I = 1, NUMOUT
                 if (OUTTYPES(I) .ne. 'V' .and. OUTFILES(I)(1:4) .ne. 'NONE') then
                     if (SENFILE(1:4) .ne. 'NONE') then
@@ -1127,7 +1140,9 @@ program shdom_main
         end do
     end if
 
+
     ! Output camera radiance if there are any
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     if (MASTERPROC) then
         do I = 1, NUMOUT
             if ((OUTTYPES(I) .eq. 'V')) then
@@ -1153,18 +1168,29 @@ program shdom_main
             end if
         end do
     end if
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    call system_clock(count_end, count_rate, count_max)
-    elapsed_time = (real(count_end) - real(count_start)) / real(count_rate)
+
+    message = 'Message [shdom]: Total time used for output: '
+    call shd_util__ticktock(message, count_start)
     if (MASTERPROC) then
-        if (elapsed_time .lt. 60.0) then
-            if (VERBOSE_ .ge. 5) write (6, '(A,F0.2,A)') 'Message [shdom_main]: Total time used for output: ', elapsed_time, ' sec'
-        else
-            if (VERBOSE_ .ge. 5) write (6, '(A,F0.2,A)') 'Message [shdom_main]: Total time used for output: ', elapsed_time/60.0, ' min'
-        endif
+        if (VERBOSE_ .ge. 5) write (6, '(A)') message
     end if
 
+
+    !call system_clock(count_end, count_rate, count_max)
+    !elapsed_time = (real(count_end) - real(count_start)) / real(count_rate)
+    !if (MASTERPROC) then
+    !    if (elapsed_time .lt. 60.0) then
+    !        if (VERBOSE_ .ge. 5) write (6, '(A,F0.2,A)') 'Message [shdom]: Total time used for output: ', elapsed_time, ' sec'
+    !    else
+    !        if (VERBOSE_ .ge. 5) write (6, '(A,F0.2,A)') 'Message [shdom]: Total time used for output: ', elapsed_time/60.0, ' min'
+    !    endif
+    !end if
+
+
     ! Calculate the actual memory parameters and output them to the log file
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     MAXMB_OUT = 4*(NMU*(2 + 2*NPHI + 2*NLM + 2*33*32)&
         &+ 4.5*MAXPG + MAXPGL + NUMPHASE_*(MAXLEG + 1)&
         &+ 16.5*NCELLS + NPTS*(28 + NPHI0MAX*NSTOKES)&
@@ -1172,15 +1198,13 @@ program shdom_main
     ADAPTGRIDFAC_OUT = float(NPTS)/NBPTS
     SHTERM_FAC_OUT = float(NSH)/(NLM*NPTS)
     CELL_POINT_OUT = float(NCELLS)/NPTS
-    if (VERBOSE_ .ge. 5) write (6, '(A)')'Message [shdom_main]: Actual MAX_TOTAL_MB, ADAPT_GRID_FACTOR, NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO'
+    if (VERBOSE_ .ge. 5) write (6, '(A)')'Message [shdom]: Actual MAX_TOTAL_MB, ADAPT_GRID_FACTOR, NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO'
     if (VERBOSE_ .ge. 5) write (6, '(28X,F7.2,6X,F7.3,14X,F5.3,15X,F5.3)') MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    !if (SRCTYPE .ne. 'T') then
-    !    call shd_rad__computeDirect(9, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
-    !        &DELTAM, ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
-    !        &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
-    !end if
 
+    ! Deallocate array
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     deallocate (WORK, WORK1, WORK2)
     deallocate (SUMRADOUT, SUMVISOUT)
     if (FLUX_OUT) deallocate (SUMFLUXES, SUMDIRFLUX)
@@ -1200,8 +1224,10 @@ program shdom_main
     deallocate (XGRID, YGRID, ZGRID)
     deallocate (ZLEVELS_, TEMPP_, EXTINCTP_, ALBEDOP_, EXTDIRP_, IPHASEP_, LEGENP_)
     deallocate (MU, WTDO, PHI, NPHI0)
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
 
     call shd_mpi__end(NPTS, GRIDPOS, NPX_, NPY_, XSTART_, YSTART_, XDOMAIN_, YDOMAIN_,&
         &NPXT, NPYT, PROPFILE, RUNNAME)
 
-end program shdom_main
+end program shdom

@@ -37,6 +37,10 @@ module shd_util
     use globals_cfg
 
     implicit none
+    private
+
+    integer, parameter :: R__  = selected_real_kind(6) ! default precision for float
+    integer, parameter :: I__  = selected_int_kind(9)  ! default precision for integer
 
     public :: shd_util__sumData
     public :: shd_util__interpData
@@ -56,6 +60,8 @@ module shd_util
     public :: shd_util__ssort
     public :: shd_util__ssort_i
     public :: shd_util__ssort_r
+
+    public :: shd_util__ticktock
 
     private :: integralLow
     private :: integralHigh
@@ -1350,6 +1356,45 @@ subroutine shd_util__ssort_r(X, Y, N, KFLAG)
     return
 
 end subroutine shd_util__ssort_r
+
+subroutine shd_util__ticktock(message, count_start, more_digits)
+
+    character(len=*), intent(inout) :: message
+    integer(I__), intent(inout) :: count_start
+    logical, intent(in), optional :: more_digits
+
+    integer(I__) :: count_rate, count_max, count_end
+    real(R__) :: elapsed_time
+
+    call system_clock(count_end, count_rate, count_max)
+    elapsed_time = (real(count_end) - real(count_start)) / real(count_rate)
+    count_start = count_end
+
+    if (elapsed_time .lt. 60.0) then
+        if (present(more_digits)) then
+            if (more_digits) then
+                write (message, '(A,1X,F0.4,A)') trim(adjustl(message)), elapsed_time, ' sec.'
+            else
+                write (message, '(A,1X,F0.2,A)') trim(adjustl(message)), elapsed_time, ' sec.'
+            end if
+        else
+            write (message, '(A,1X,F0.2,A)') trim(adjustl(message)), elapsed_time, ' sec.'
+        end if
+    else
+        if (present(more_digits)) then
+            if (more_digits) then
+                write (message, '(A,1X,F0.4,A)') trim(adjustl(message)), elapsed_time/60.0, ' min.'
+            else
+                write (message, '(A,1X,F0.2,A)') trim(adjustl(message)), elapsed_time/60.0, ' min.'
+            end if
+        else
+            write (message, '(A,1X,F0.2,A)') trim(adjustl(message)), elapsed_time/60.0, ' min.'
+        end if
+    end if
+
+    return
+
+end subroutine shd_util__ticktock
 
 FUNCTION change_range(angle, min_value, max_value) RESULT(output_angle)
     !╭──────────────────────────────────────────────────────────────╮!
