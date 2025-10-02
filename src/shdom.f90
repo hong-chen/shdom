@@ -435,6 +435,71 @@ program shdom
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
+    ! Read SFCFILE and derive maximum number for boundary points and boundary radiances
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    ! Read in the surface properties
+    if (SFCFILE(1:4) .eq. 'NONE') then
+        SFCTYPE = 'FL'
+    else
+        allocate (SFCPARMS(MAXSFCPARS*MAXSFCPTS))
+        if (MASTERPROC) then
+            call shd_io__readSfc(SFCFILE, MAXSFCPTS, MAXSFCPARS,&
+                &SFCTYPE, NXSFC, NYSFC, DELXSFC, DELYSFC,&
+                &NSFCPAR, SFCPARMS, GNDTEMP, GNDALBEDO)
+        end if
+        ! Broadcast the surface array data
+        call shd_mpi__bcastSfcParam(SFCTYPE, NXSFC, NYSFC,&
+            &NSFCPAR, SFCPARMS, GNDTEMP, GNDALBEDO)
+    end if
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+
+    ! Read CKDFILE and broadcast if MPI
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    ! If doing a k-distribution then get the band info from the CKD file
+    if (KDIST) then
+        if (MASTERPROC) then
+            call shd_io__readCkdSize(CKDFILE, WAVENO, NG, NZCKD_)
+        end if
+        ! Broadcast the k-distribution array sizes
+        call shd_mpi__bcastCkdSize(NG, NZCKD_)
+        allocate (ZCKD_(NZCKD_), GASABS_(NZCKD_), SOLFLUX(NG), DELG(NG), KABS(NZCKD_, NG))
+        if (MASTERPROC) then
+            MAXNG = NG; MAXNZ = NZCKD_
+            call shd_io__readCkd(MAXNG, MAXNZ, CKDFILE, WAVENO, SOLFLUX,&
+                &NG, DELG, NZCKD_, ZCKD_, KABS)
+        end if
+        call shd_mpi__bcastCkdParam(SOLFLUX, NG, DELG, NZCKD_, ZCKD_, KABS)
+    else
+        NG = 1
+        allocate (SOLFLUX(NG), DELG(NG))
+        SOLFLUX(1) = 1.0
+        DELG(1) = 1.0
+        NZCKD_ = 0
+        BASEOUT = .false.
+    end if
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+
+    ! Read SENFILE and broadcast if MPI
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    ! Read in user-specified sensor properties if given
+    !   this is a binary angle input implemented for 'R' and 'V3'
+    if (SENFILE(1:4) .ne. 'NONE') then
+        if (MASTERPROC) then
+            call shd_io__readSenSize(SENFILE, NSENDATA, NSENPAR)
+        end if
+        call shd_mpi__bcastSenSize(NSENDATA, NSENPAR)
+        allocate (SENPARMS(NSENDATA*NSENPAR))
+        if (MASTERPROC) then
+            call shd_io__readSen(SENFILE, NSENDATA, NSENPAR,&
+                &SENPARMS)
+        end if
+        call shd_mpi__bcastSenParam(NSENDATA, NSENPAR, SENPARMS)
+    end if
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+
     ! Memory check
     !╭────────────────────────────────────────────────────────────────────────────╮!
     MEMWORD = NMU*(2 + 2*NPHI + 2*NLM + 2*33*32)
@@ -509,9 +574,17 @@ program shdom
         write (6, '(A,F8.2)') 'Error [shdom]: Size of GRIDPTR array (8*MAXIC) probably exceeds max integer number of bytes:', 8*MAXIC
         stop
     end if
+
+    MAXNBC = MAXIG*3/NZ
+    if (SFCTYPE(2:2) .eq. 'L') then ! Lambertian surface
+        MAXBCRAD = 2*MAXNBC
+    else
+        MAXBCRAD = (2 + NMU*NPHI0MAX/2)*MAXNBC
+    end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    ! Array allocation
+
+    ! Allocate array
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! angle grids for DO
     allocate (MU(NMU), WTDO(NMU*NPHI), PHI(NMU*NPHI), NPHI0(NMU))
@@ -536,12 +609,16 @@ program shdom
     ! a collection of binary flags for the cells
     allocate (CELLFLAGS(MAXIC))
 
+    ! x,y,z coordinate values of grid point locations
     allocate (GRIDPOS(3, MAXIG))
 
     ! SH related array
     allocate (RSHPTR(MAXIG + 2), SHPTR(MAXIG + 1), OSHPTR(MAXIG + 1))
 
+    ! radiance and source
     allocate (RADIANCE(NSTOKES, MAXIV + MAXIG), SOURCE(NSTOKES, MAXIV))
+
+    ! delta source
     if (ACCELFLAG) allocate (DELSOURCE(NSTOKES, MAXIV))
 
     ! WORK: Work array for path integration; radiance field, Nazimuth*Npts
@@ -551,81 +628,9 @@ program shdom
     allocate (WORK1(8*MAXIG))
 
     allocate (FLUXES(2, MAXIG), DIRFLUX(MAXIG))
-    !╰────────────────────────────────────────────────────────────────────────────╯!
 
-
-    ! Read SFCFILE and derive maximum number for boundary points and boundary radiances
-    !╭────────────────────────────────────────────────────────────────────────────╮!
-    MAXNBC = MAXIG*3/NZ
-    ! Read in the surface properties
-    if (SFCFILE(1:4) .eq. 'NONE') then
-        SFCTYPE = 'FL'
-    else
-        allocate (SFCPARMS(MAXSFCPARS*MAXSFCPTS))
-        if (MASTERPROC) then
-            call shd_io__readSfc(SFCFILE, MAXSFCPTS, MAXSFCPARS,&
-                &SFCTYPE, NXSFC, NYSFC, DELXSFC, DELYSFC,&
-                &NSFCPAR, SFCPARMS, GNDTEMP, GNDALBEDO)
-        end if
-        ! Broadcast the surface array data
-        call shd_mpi__bcastSfcParam(SFCTYPE, NXSFC, NYSFC,&
-            &NSFCPAR, SFCPARMS, GNDTEMP, GNDALBEDO)
-        allocate (SFCGRIDPARMS(MAXSFCPARS*MAXNBC))
-    end if
-
-    if (SFCTYPE(2:2) .eq. 'L') then
-        MAXBCRAD = 2*MAXNBC
-    else
-        MAXBCRAD = (2 + NMU*NPHI0MAX/2)*MAXNBC
-    end if
-
+    if (SFCFILE(1:4) .ne. 'NONE') allocate (SFCGRIDPARMS(MAXSFCPARS*MAXNBC))
     allocate (BCPTR(2*MAXNBC), BCRAD(NSTOKES, MAXBCRAD))
-    !╰────────────────────────────────────────────────────────────────────────────╯!
-
-
-    ! Read CKDFILE and broadcast if MPI
-    !╭────────────────────────────────────────────────────────────────────────────╮!
-    ! If doing a k-distribution then get the band info from the CKD file
-    if (KDIST) then
-        if (MASTERPROC) then
-            call shd_io__readCkdSize(CKDFILE, WAVENO, NG, NZCKD_)
-        end if
-        ! Broadcast the k-distribution array sizes
-        call shd_mpi__bcastCkdSize(NG, NZCKD_)
-        allocate (ZCKD_(NZCKD_), GASABS_(NZCKD_), SOLFLUX(NG), DELG(NG), KABS(NZCKD_, NG))
-        if (MASTERPROC) then
-            MAXNG = NG; MAXNZ = NZCKD_
-            call shd_io__readCkd(MAXNG, MAXNZ, CKDFILE, WAVENO, SOLFLUX,&
-                &NG, DELG, NZCKD_, ZCKD_, KABS)
-        end if
-        call shd_mpi__bcastCkdParam(SOLFLUX, NG, DELG, NZCKD_, ZCKD_, KABS)
-    else
-        NG = 1
-        allocate (SOLFLUX(NG), DELG(NG))
-        SOLFLUX(1) = 1.0
-        DELG(1) = 1.0
-        NZCKD_ = 0
-        BASEOUT = .false.
-    end if
-    !╰────────────────────────────────────────────────────────────────────────────╯!
-
-
-    ! Read SENFILE and broadcast if MPI
-    !╭────────────────────────────────────────────────────────────────────────────╮!
-    ! Read in user-specified sensor properties if given
-    !   this is a binary angle input implemented for 'R' and 'V3'
-    if (SENFILE(1:4) .ne. 'NONE') then
-        if (MASTERPROC) then
-            call shd_io__readSenSize(SENFILE, NSENDATA, NSENPAR)
-        end if
-        call shd_mpi__bcastSenSize(NSENDATA, NSENPAR)
-        allocate (SENPARMS(NSENDATA*NSENPAR))
-        if (MASTERPROC) then
-            call shd_io__readSen(SENFILE, NSENDATA, NSENPAR,&
-                &SENPARMS)
-        end if
-        call shd_mpi__bcastSenParam(NSENDATA, NSENPAR, SENPARMS)
-    end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
@@ -754,17 +759,6 @@ program shdom
     if (MASTERPROC) then
         if (VERBOSE_ .ge. 5) write (6, '(A)') message
     end if
-
-    !call system_clock(count_end, count_rate, count_max)
-    !elapsed_time = (real(count_end) - real(count_start)) / real(count_rate)
-    !if (MASTERPROC) then
-    !    if (elapsed_time .lt. 60.0) then
-    !        if (VERBOSE_ .ge. 5) write (6, '(A,F0.2,A)') 'Message [shdom]: Total time used for preparation: ', elapsed_time, ' sec'
-    !    else
-    !        if (VERBOSE_ .ge. 5) write (6, '(A,F0.2,A)') 'Message [shdom]: Total time used for preparation: ', elapsed_time/60.0, ' min'
-    !    endif
-    !end if
-    !count_start = count_end
 
     if (VERBOSE_ .ge. 5) write (6, '(A,"<",A,">")') 'Message [shdom]: Starting solution iterations for SHDOM run: ', trim(adjustl(RUNNAME))
     TOTITER = 0
@@ -1045,17 +1039,6 @@ program shdom
         if (VERBOSE_ .ge. 5) write (6, '(A)') message
     end if
 
-    !call system_clock(count_end, count_rate, count_max)
-    !elapsed_time = (real(count_end) - real(count_start)) / real(count_rate)
-    !if (MASTERPROC) then
-    !    if (elapsed_time .lt. 60.0) then
-    !        if (VERBOSE_ .ge. 5) write (6, '(A,F0.2,A)') 'Message [shdom]: Total time used for runs: ', elapsed_time, ' sec'
-    !    else
-    !        if (VERBOSE_ .ge. 5) write (6, '(A,F0.2,A)') 'Message [shdom]: Total time used for runs: ', elapsed_time/60.0, ' min'
-    !    endif
-    !end if
-    !count_start = count_end
-
     NSH = SHPTR(NPTS + 1)
     IRAD = 0
     IVIS = 0
@@ -1188,17 +1171,6 @@ program shdom
     if (MASTERPROC) then
         if (VERBOSE_ .ge. 5) write (6, '(A)') message
     end if
-
-
-    !call system_clock(count_end, count_rate, count_max)
-    !elapsed_time = (real(count_end) - real(count_start)) / real(count_rate)
-    !if (MASTERPROC) then
-    !    if (elapsed_time .lt. 60.0) then
-    !        if (VERBOSE_ .ge. 5) write (6, '(A,F0.2,A)') 'Message [shdom]: Total time used for output: ', elapsed_time, ' sec'
-    !    else
-    !        if (VERBOSE_ .ge. 5) write (6, '(A,F0.2,A)') 'Message [shdom]: Total time used for output: ', elapsed_time/60.0, ' min'
-    !    endif
-    !end if
 
 
     ! Calculate the actual memory parameters and output them to the log file
