@@ -777,7 +777,7 @@ program shdom
     ! Loop over the k-distribution g's from high to low absorption
     do IG = NG, 1, -1
 
-        if (VERBOSE_ .ge. 5) write (6, '(A,I2,A,I2,A)') 'Message [shdom]: Starting ', IG, '/', NG, ' (ig/Ng) ...'
+        if (VERBOSE_ .ge. 5) write (6, '(A,I2,A,I2,A)') 'Message [shdom]: Starting ', NG-IG+1, '/', NG, ' (ig/Ng) ...'
 
         ! solar flux for given g of CKD
         SOLARFLUXCKD = SOLFLUX(IG)*SOLARFLUX0*abs(SOLARMU)
@@ -991,7 +991,6 @@ program shdom
         if (FLUX_OUT) then
 
             ! unscale delta-m fluxes
-            !╭────────────────────────────────────────────────╮!
             if ((SRCTYPE .ne. 'T') .and. DELTAM) then
 
                 allocate(DIRFLUX_TMP(NPTS))
@@ -1012,7 +1011,6 @@ program shdom
                 deallocate(DIRFLUX_TMP)
 
             end if
-            !╰────────────────────────────────────────────────╯!
 
             call shd_util__sumData(NG - IG, DELG(IG), 2*NPTS, FLUXES, SUMFLUXES)
             call shd_util__sumData(NG - IG, DELG(IG), NPTS, DIRFLUX, SUMDIRFLUX)
