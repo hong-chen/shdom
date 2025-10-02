@@ -457,10 +457,13 @@ subroutine shd_init__makeRad(&
 
     NLAYER = NZ - 1
     DELTAM = .false.
+
     SRCT = SRCTYPE
     if (SRCT .eq. 'B') SRCT = 'T'
-    C0 = sqrt(1.0/PI_)
-    C1 = sqrt(3.0/(4.0*PI_))
+
+    ! SH coefficients
+    C0 = sqrt(1.0d0/PI_)
+    C1 = sqrt(3.0d0/(4.0d0*PI_))
 
     ! Loop over all the columns in the base grid
     IR = 0
@@ -506,11 +509,13 @@ subroutine shd_init__makeRad(&
         TEMPS(1) = TEMP(NZ, I)
 
         GNDEMIS = 1.0 - GNDALBEDO
+
         ! Call the Eddington flux routine
         call shd_init__makeFlux(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
             &TEMPS, DELTAM, SRCTYPE, SOLARFLUX, SOLARMU,&
             &GNDTEMP, GNDEMIS, SKYRAD, UNITS, WAVENO, WAVELEN,&
             &FLUXES)
+
         ! Convert fluxes to first two moments of spherical harmonics
         do IZ = 1, NZ
             L = NZ + 1 - IZ
@@ -524,6 +529,7 @@ subroutine shd_init__makeRad(&
             RSHPTR(IZ + NZ*(I - 1) + 1) = IR
         end do
     end do
+
     deallocate (OPTDEPTHS, ALBEDOS, ASYMMETRIES, TEMPS, FLUXES)
 
     return
@@ -536,26 +542,27 @@ subroutine shd_init__makeFlux(&
     &GNDTEMP, GNDEMIS, SKYRAD, UNITS, WAVENO, WAVELEN,&
     &FLUXES)
 
-    ! shd_init__makeFlux (EDDRTF) computes the layer interface fluxes for a plane-parallel
+    ! shd_init__makeFlux (EDDRTF)
+    ! Computes the layer interface fluxes for a plane-parallel
     ! atmosphere with either solar or thermal source of radiation using
     ! the Eddington approximation.  The medium is specified by a number
-    ! of homogeneous layers.  For a thermal source the Planck function is
+    ! of homogeneous layers. For a thermal source the Planck function is
     ! linear with optical depth, while for a solar source it is exponential.
     ! The temperatures, optical depth, single scattering albedo, and
-    ! asymmetry parameter are specified for each layer.  The boundary
+    ! asymmetry parameter are specified for each layer. The boundary
     ! conditions such as the solar flux, and reflection and/or emission from
     ! ground surface are also specified. Delta Eddington scaling may be
-    ! used.  The diffuse Eddington fluxes and the solar direct flux at
+    ! used. The diffuse Eddington fluxes and the solar direct flux at
     ! each level are returned.
     ! The model works by calculating the reflection, transmission, and
-    ! source terms for each layer from the input properties.  A
+    ! source terms for each layer from the input properties. A
     ! tri-diagonal matrix solver is then used to compute the diffuse fluxes
     ! at each layer interface from the applied boundary conditions.
     !
     ! Parameters:
     !   Input:
     ! NLAYER         integer      Number of homogenous layers
-    !                              (layers are specified from the top do
+    !                             (layers are specified from the top down)
     ! OPTDEPTHS      real array   Optical thickness of layers
     ! ALBEDOS        real array   Single scattering albedos
     ! ASYMMETRIES    real array   Asymmetry parameters
