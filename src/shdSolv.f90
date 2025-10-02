@@ -160,14 +160,14 @@ subroutine shd_solv__solveRte(&
                 &NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
                 &GRIDPOS, DIRFLUX)
         end if
-        call shd_pha__computeYLM(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG,&
+        call shd_shdo__computeYLM(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG,&
             &YLMSUN)
     end if
 
     ! Make the discrete ordinates (angles)
     !   (set 2 is reduced gaussian, 3 is reduced double gauss)
     ORDINATESET = 2
-    call shd_init__makeAngle(NMU, NPHI, ORDINATESET, NPHI0MAX,&
+    call shd_shdo__makeAngle(NMU, NPHI, ORDINATESET, NPHI0MAX,&
         &NPHI0, MU, PHI, WTMU, WTDO, FFTFLAG, NANG)
 
     ! Make the Ylm transform coefficients

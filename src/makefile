@@ -101,11 +101,11 @@ shdIntg.o: shdIntg.f90 shdMPI.o shdSfc.o shdInit.o shdGrid.o shdUtil.o shdSHDO.o
 shdGrid.o: shdGrid.f90 shdMPI.o globals.o shdUtil.o shdRad.o shdSrc.o
 	$(F90) -c $(F90FLAGS) shdGrid.f90
 
-shdSHDO.o: shdSHDO.f90 globals.o shdPha.o shdSfc.o fftpack.o
-	$(F90) -c $(F90FLAGS) shdSHDO.f90
-
-shdSrc.o: shdSrc.f90 globals.o shdUtil.o shdPha.o shdInit.o
+shdSrc.o: shdSrc.f90 globals.o shdUtil.o shdPha.o shdSHDO.o shdInit.o
 	$(F90) -c $(F90FLAGS) shdSrc.f90
+
+shdSHDO.o: shdSHDO.f90 globals.o shdPha.o shdSfc.o shdUtil.o fftpack.o
+	$(F90) -c $(F90FLAGS) shdSHDO.f90
 
 shdRad.o: shdRad.f90 globals.o shdPha.o shdSrc.o shdInit.o
 	$(F90) -c $(F90FLAGS) shdRad.f90

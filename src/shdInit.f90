@@ -46,7 +46,6 @@ module shd_init
     public :: shd_init__makePrp
     public :: shd_init__makeRad
     public :: shd_init__makeFlux
-    public :: shd_init__makeAngle
 
     public :: shd_init__makeTopRad
     public :: shd_init__makeSfcRadFL
@@ -753,90 +752,6 @@ subroutine shd_init__makeFlux(&
     return
 
 end subroutine shd_init__makeFlux
-
-subroutine shd_init__makeAngle(&
-    &NMU, NPHI, ITYPE, NPHI0MAX,&
-    &NPHI0, MU, PHI, WTMU, WTDO, FFTFLAG, NANG)
-
-    ! Make the set of angles for the discrete space representation.
-    ! The number of mu's (cosine zenith angles) and maximum number of
-    ! phi's (azimuth angles) is input.  The actual number of azimuthal
-    ! angles for each mu is output (NPHI0).  There are three types of
-    ! discrete ordinate sets: ITYPE=1 is a gaussian grid, 2 is a reduced
-    ! gaussian grid, and 3 is a reduced double gaussian set.
-    ! The output is the NMU mu values, the NPHI0 phi values for each mu,
-    ! and the integration weight for each ordinate. The first NMU/2 mu
-    ! angles are the downwelling (mu<0) angles.  Also output are the
-    ! maximum number of azimuthal angles (NPHI0MAX), the flags for doing
-    ! an azimuthal FFT for each mu and the total number of angles.
-
-    integer NMU, NPHI, ITYPE, NPHI0MAX, NPHI0(NMU), NANG
-    logical FFTFLAG(NMU)
-    real MU(NMU), PHI(NMU, *), WTMU(NMU), WTDO(NMU, *)
-    integer MAXNPHI, J, K, MM
-    real DELPHI
-    parameter(MAXNPHI=256)
-    integer GOODNFFT(MAXNPHI)
-    data GOODNFFT/1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 16,&
-        &18, 18, 20, 20, 24, 24, 24, 24, 25, 27, 27, 30, 30, 30, 32, 32,&
-        &36, 36, 36, 36, 40, 40, 40, 40, 45, 45, 45, 45, 45, 48, 48, 48,&
-        &50, 50, 54, 54, 54, 54, 60, 60, 60, 60, 60, 60, 64, 64, 64, 64,&
-        &72, 72, 72, 72, 72, 72, 72, 72, 80, 80, 80, 80, 80, 80, 80, 80,&
-        &81, 90, 90, 90, 90, 90, 90, 90, 90, 90, 96, 96, 96, 96, 96, 96,&
-        &100, 100, 100, 100, 108, 108, 108, 108,&
-        &108, 108, 108, 108, 120, 120, 120, 120,&
-        &120, 120, 120, 120, 120, 120, 120, 120,&
-        &128, 128, 128, 128, 128, 128, 128, 128,&
-        &144, 144, 144, 144, 144, 144, 144, 144,&
-        &144, 144, 144, 144, 144, 144, 144, 144,&
-        &160, 160, 160, 160, 160, 160, 160, 160,&
-        &160, 160, 160, 160, 160, 160, 160, 160,&
-        &180, 180, 180, 180, 180, 180, 180, 180, 180, 180,&
-        &180, 180, 180, 180, 180, 180, 180, 180, 180, 180,&
-        &192, 192, 192, 192, 192, 192, 192, 192, 192, 192, 192, 192,&
-        &200, 200, 200, 200, 200, 200, 200, 200,&
-        &216, 216, 216, 216, 216, 216, 216, 216,&
-        &216, 216, 216, 216, 216, 216, 216, 216,&
-        &240, 240, 240, 240, 240, 240, 240, 240, 240, 240, 240, 240,&
-        &240, 240, 240, 240, 240, 240, 240, 240, 240, 240, 240, 240,&
-        &256, 256, 256, 256, 256, 256, 256, 256,&
-        &256, 256, 256, 256, 256, 256, 256, 256/
-
-    MM = max(0, int(NPHI/2) - 1)
-    NANG = 0
-    if (ITYPE .ge. 1 .or. ITYPE .le. 3) then
-        if (ITYPE .le. 2) then
-            call shd_util__computeGausQuad(NMU, MU, WTMU)
-            !call shd_util__computeGausQuad_new(NMU, MU, WTMU)
-        else if (ITYPE .eq. 3) then
-            call shd_util__computeGausQuadDble(NMU, MU, WTMU)
-        end if
-        do J = 1, NMU
-            NPHI0MAX = NPHI
-            if (ITYPE .eq. 1) then
-                NPHI0(J) = NPHI0MAX
-            else
-                if (NPHI0MAX .gt. MAXNPHI)&
-                    &stop 'Error [_makeAngle]: Exceeded GOODNFFT.'
-                NPHI0(J) = int(0.9 + NPHI0MAX*sqrt(1 - MU(J)**2))
-                NPHI0(J) = min(NPHI0MAX, GOODNFFT(NPHI0(J)))
-            end if
-            DELPHI = 2.0*PI_/NPHI0(J)
-            do K = 1, NPHI0(J)
-                PHI(J, K) = (K - 1)*DELPHI
-                WTDO(J, K) = DELPHI*WTMU(J)
-            end do
-            NANG = NANG + NPHI0(J)
-            FFTFLAG(J) = (NPHI0(J) .gt. 14) .or. (MM .gt. 15)
-        end do
-
-    else
-        stop 'Error [_makeAngle]: Invalid discrete ordinate type.'
-    end if
-
-    return
-
-end subroutine shd_init__makeAngle
 
 subroutine shd_init__makeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
     &UNITS, NTOPPTS, NSTOKES, BCRAD)

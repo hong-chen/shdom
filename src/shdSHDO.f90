@@ -34,6 +34,7 @@ module shd_shdo
 
     use globals_const
     use globals_cfg
+    use shd_util
     use shd_pha
     use shd_sfc
 
@@ -45,16 +46,19 @@ module shd_shdo
     public :: shd_shdo__makeSfcDO
 
     ! unpolarized
-    !╭────────────────────────────────────────────────╮!
     public :: shd_shdo__transSHtoDO_
     public :: shd_shdo__transDOtoSH_
-    !╰────────────────────────────────────────────────╯!
 
     ! polarized
-    !╭────────────────────────────────────────────────╮!
     public :: shd_shdo__transSHtoDO
     public :: shd_shdo__transDOtoSH
-    !╰────────────────────────────────────────────────╯!
+
+    public :: shd_shdo__makeAngle
+
+    public :: shd_shdo__computeYLM
+    public :: shd_shdo__computePLM
+
+    private :: shd_shdo__computeYLM_
 
 
 contains
@@ -93,7 +97,7 @@ subroutine shd_shdo__computeSH(&
     SOLM = SECSOL/(4.0*PI_)
     F0 = 0.0
     if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
-        call shd_pha__computeYLM(.true., SOLARMU, SOLARAZ, ML, MM, 1, YLMSUN)
+        call shd_shdo__computeYLM(.true., SOLARMU, SOLARAZ, ML, MM, 1, YLMSUN)
     end if
     do I = 1, NPTS
         IR = RSHPTR(I)
@@ -169,14 +173,14 @@ subroutine shd_shdo__makeSHDO(NSTLEG, ML, MM, NLM, NMU, NPHI0,&
     do I = 1, NMU
         X = MU(I)
         PRC(:, :) = 0.0
-        call shd_pha__computePLM(.false., X, ML, MM, PRC)
+        call shd_shdo__computePLM(.false., X, ML, MM, PRC)
         do J = 1, NLM
             do Q = 1, NSTLEG
                 CMU1(Q, J, I) = PRC(Q, J)
             end do
         end do
         PRC(:, :) = 0.0
-        call shd_pha__computePLM(.true., X, ML, MM, PRC)
+        call shd_shdo__computePLM(.true., X, ML, MM, PRC)
         do J = 1, NLM
             do Q = 1, NSTLEG
                 CMU2(Q, I, J) = PRC(Q, J)*WTMU(I)
@@ -687,4 +691,362 @@ subroutine shd_shdo__transDOtoSH_(NPTS, ML, MM, NLM,&
     return
 end subroutine shd_shdo__transDOtoSH_
 
+subroutine shd_shdo__makeAngle(&
+    &NMU, NPHI, ITYPE, NPHI0MAX,&
+    &NPHI0, MU, PHI, WTMU, WTDO, FFTFLAG, NANG)
+
+    ! Make the set of angles for the discrete space representation.
+    ! The number of mu's (cosine zenith angles) and maximum number of
+    ! phi's (azimuth angles) is input.  The actual number of azimuthal
+    ! angles for each mu is output (NPHI0).  There are three types of
+    ! discrete ordinate sets: ITYPE=1 is a gaussian grid, 2 is a reduced
+    ! gaussian grid, and 3 is a reduced double gaussian set.
+    ! The output is the NMU mu values, the NPHI0 phi values for each mu,
+    ! and the integration weight for each ordinate. The first NMU/2 mu
+    ! angles are the downwelling (mu<0) angles.  Also output are the
+    ! maximum number of azimuthal angles (NPHI0MAX), the flags for doing
+    ! an azimuthal FFT for each mu and the total number of angles.
+
+    integer NMU, NPHI, ITYPE, NPHI0MAX, NPHI0(NMU), NANG
+    logical FFTFLAG(NMU)
+    real MU(NMU), PHI(NMU, *), WTMU(NMU), WTDO(NMU, *)
+    integer MAXNPHI, J, K, MM
+    real DELPHI
+    parameter(MAXNPHI=256)
+    integer GOODNFFT(MAXNPHI)
+    data GOODNFFT/1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 16,&
+        &18, 18, 20, 20, 24, 24, 24, 24, 25, 27, 27, 30, 30, 30, 32, 32,&
+        &36, 36, 36, 36, 40, 40, 40, 40, 45, 45, 45, 45, 45, 48, 48, 48,&
+        &50, 50, 54, 54, 54, 54, 60, 60, 60, 60, 60, 60, 64, 64, 64, 64,&
+        &72, 72, 72, 72, 72, 72, 72, 72, 80, 80, 80, 80, 80, 80, 80, 80,&
+        &81, 90, 90, 90, 90, 90, 90, 90, 90, 90, 96, 96, 96, 96, 96, 96,&
+        &100, 100, 100, 100, 108, 108, 108, 108,&
+        &108, 108, 108, 108, 120, 120, 120, 120,&
+        &120, 120, 120, 120, 120, 120, 120, 120,&
+        &128, 128, 128, 128, 128, 128, 128, 128,&
+        &144, 144, 144, 144, 144, 144, 144, 144,&
+        &144, 144, 144, 144, 144, 144, 144, 144,&
+        &160, 160, 160, 160, 160, 160, 160, 160,&
+        &160, 160, 160, 160, 160, 160, 160, 160,&
+        &180, 180, 180, 180, 180, 180, 180, 180, 180, 180,&
+        &180, 180, 180, 180, 180, 180, 180, 180, 180, 180,&
+        &192, 192, 192, 192, 192, 192, 192, 192, 192, 192, 192, 192,&
+        &200, 200, 200, 200, 200, 200, 200, 200,&
+        &216, 216, 216, 216, 216, 216, 216, 216,&
+        &216, 216, 216, 216, 216, 216, 216, 216,&
+        &240, 240, 240, 240, 240, 240, 240, 240, 240, 240, 240, 240,&
+        &240, 240, 240, 240, 240, 240, 240, 240, 240, 240, 240, 240,&
+        &256, 256, 256, 256, 256, 256, 256, 256,&
+        &256, 256, 256, 256, 256, 256, 256, 256/
+
+    MM = max(0, int(NPHI/2) - 1)
+    NANG = 0
+    if (ITYPE .ge. 1 .or. ITYPE .le. 3) then
+        if (ITYPE .le. 2) then
+            call shd_util__computeGausQuad(NMU, MU, WTMU)
+            !call shd_util__computeGausQuad_new(NMU, MU, WTMU)
+        else if (ITYPE .eq. 3) then
+            call shd_util__computeGausQuadDble(NMU, MU, WTMU)
+        end if
+        do J = 1, NMU
+            NPHI0MAX = NPHI
+            if (ITYPE .eq. 1) then
+                NPHI0(J) = NPHI0MAX
+            else
+                if (NPHI0MAX .gt. MAXNPHI)&
+                    &stop 'Error [_makeAngle]: Exceeded GOODNFFT.'
+                NPHI0(J) = int(0.9 + NPHI0MAX*sqrt(1 - MU(J)**2))
+                NPHI0(J) = min(NPHI0MAX, GOODNFFT(NPHI0(J)))
+            end if
+            DELPHI = 2.0*PI_/NPHI0(J)
+            do K = 1, NPHI0(J)
+                PHI(J, K) = (K - 1)*DELPHI
+                WTDO(J, K) = DELPHI*WTMU(J)
+            end do
+            NANG = NANG + NPHI0(J)
+            FFTFLAG(J) = (NPHI0(J) .gt. 14) .or. (MM .gt. 15)
+        end do
+
+    else
+        stop 'Error [_makeAngle]: Invalid discrete ordinate type.'
+    end if
+
+    return
+
+end subroutine shd_shdo__makeAngle
+
+subroutine shd_shdo__computeYLM(TRANSPOSED, MU, PHI, ML, MM, NSTLEG, YR)
+
+    !   This subroutine computes a set of normalized real generalized
+    ! spherical harmonic functions (YR) for a particular direction mu,phi.
+    ! (Doicu et al. 2013; http://dx.doi.org/10.1016/j.jqsrt.2012.12.009)
+    ! ML is the maximum meridional mode, MM is the maximum azimuthal mode.
+    ! NSTLEG is the number of matrix elements returned, either 1 for the
+    ! 1,1 term or 6 for the 6 unique elements of the 4x4 matrix.
+    ! J = 2*(L*(L+1))/2 + M+1  for L<=MM
+    ! J = (2*MM+1)*L-MM*(2+2*(MM-1))/2 + M+1  for L>MM
+
+    integer ML, MM, NSTLEG
+    real MU, PHI
+    logical TRANSPOSED
+    real YR(NSTLEG, *)
+    integer J, M, MABS, L
+    real(RD_) :: X, FCT, P1, P2, P3, COSM, SINM, SIGN
+    real(RD_), allocatable :: DM0(:), DM2P(:), DM2M(:)
+
+    if (NSTLEG .eq. 1) then
+        call shd_shdo__computeYLM_(MU, PHI, ML, MM, YR)
+        return
+    end if
+
+    allocate (DM0(0:ML), DM2P(0:ML), DM2M(0:ML))
+    X = dble(MU)
+
+    FCT = 1.d0/dsqrt(2.d0*DPI_)
+
+    ! sign accounting for transpose matrices
+    if (.not. TRANSPOSED) then
+        SIGN = 1.d0
+    else
+        SIGN = -1.d0
+    end if
+
+    ! ..................................................................
+    !                               M = 0
+    M = 0
+    call shd_pha__computeWignerDM0DM2PDM2M(X, ML, M, DM0, DM2P, DM2M)
+    do L = 0, ML
+        if (L .le. MM) then
+            J = L*(L + 1) + M + 1
+        else
+            J = (2*MM + 1)*L - MM**2 + M + 1
+        end if
+        P1 = FCT*DM0(L)
+        P2 = -0.5d0*FCT*(DM2P(L) + DM2M(L))
+        P3 = -0.5d0*FCT*(DM2P(L) - DM2M(L))
+
+    ! --- Unm = Pnm*cos(m*phi) ---
+        YR(1, J) = P1
+        if (NSTLEG .eq. 6) then
+            YR(2, J) = P2
+            YR(3, J) = P2
+            YR(4, J) = P1
+            YR(5, J) = P3
+            YR(6, J) = P3
+        end if
+    end do
+
+    ! ..................................................................
+    !                               M =/ 0
+    do MABS = 1, MM
+        call shd_pha__computeWignerDM0DM2PDM2M(X, ML, MABS, DM0, DM2P, DM2M)
+        COSM = cos(MABS*PHI)
+        SINM = sin(MABS*PHI)
+        do L = MABS, ML
+    ! ..............................................................
+    !                               M > 0
+            M = MABS
+            if (L .le. MM) then
+                J = L*(L + 1) + M + 1
+            else
+                J = (2*MM + 1)*L - MM**2 + M + 1
+            end if
+            P1 = FCT*DM0(L)
+            P2 = -0.5d0*FCT*(DM2P(L) + DM2M(L))
+            P3 = -0.5d0*FCT*(DM2P(L) - DM2M(L))
+
+            ! --- Unm = Pnm*cos(m*phi) - D*Pnm*sin(m*phi) ---
+            YR(1, J) = P1*COSM - P1*SINM
+            if (NSTLEG .eq. 6) then
+                YR(2, J) = P2*COSM - P2*SINM
+                YR(3, J) = P2*COSM + P2*SINM
+                YR(4, J) = P1*COSM + P1*SINM
+                YR(5, J) = P3*COSM - SIGN*P3*SINM
+                YR(6, J) = P3*COSM + SIGN*P3*SINM
+            end if
+    ! ..............................................................
+    !                               M < 0
+            M = -MABS
+            if (L .le. MM) then
+                J = L*(L + 1) + M + 1
+            else
+                J = (2*MM + 1)*L - MM**2 + M + 1
+            end if
+
+            ! --- Vnm = Pnm*sin(m*phi) + D*Pnm*cos(m*phi) ---
+            YR(1, J) = P1*SINM + P1*COSM
+            if (NSTLEG .eq. 6) then
+                YR(2, J) = P2*SINM + P2*COSM
+                YR(3, J) = P2*SINM - P2*COSM
+                YR(4, J) = P1*SINM - P1*COSM
+                YR(5, J) = P3*SINM + SIGN*P3*COSM
+                YR(6, J) = P3*SINM - SIGN*P3*COSM
+            end if
+        end do
+    end do
+
+    deallocate (DM0, DM2P, DM2M)
+
+    return
+
+end subroutine shd_shdo__computeYLM
+
+subroutine shd_shdo__computeYLM_(MU, PHI, ML, MM, YR)
+
+    !   This subroutine computes a set of the unpolarized (I-I) element
+    ! normalized real generalized spherical harmonic functions (YR) for
+    ! a particular direction mu,phi.  (Doicu et al. 2013;
+    ! http://dx.doi.org/10.1016/j.jqsrt.2012.12.009)
+    ! ML is the maximum meridional mode, MM is the maximum azimuthal mod
+    !   J = 2*(L*(L+1))/2 + M+1  for L<=MM
+    !   J = (2*MM+1)*L-MM*(2+2*(MM-1))/2 + M+1  for L>MM
+
+    integer ML, MM
+    real MU, PHI
+    real YR(*)
+    integer J, M, L
+    real(RD_) :: X, FCT, COSM, SINM
+    real(RD_), allocatable :: DM0(:)
+
+    allocate (DM0(0:ML))
+    X = dble(MU)
+
+    FCT = 1.d0/dsqrt(2.d0*DPI_)
+
+    do M = 0, MM
+        call shd_pha__computeWignerDM0(X, ML, M, DM0)
+        DM0(:) = FCT*DM0(:)
+        if (M .gt. 0) then
+            COSM = cos(M*PHI)
+            SINM = sin(M*PHI)
+        else
+            COSM = 1.0d0
+            SINM = 0.0d0
+        end if
+        do L = M, ML
+            if (L .le. MM) then
+                J = L*(L + 1) + M + 1
+            else
+                J = (2*MM + 1)*L - MM**2 + M + 1
+            end if
+
+            ! M>=0:  Unm = Pnm*cos(m*phi) - D*Pnm*sin(m*phi)
+            YR(J) = (COSM - SINM)*DM0(L)
+
+            J = J - 2*M
+            ! M<0:  Vnm = Pnm*sin(m*phi) + D*Pnm*cos(m*phi)
+            YR(J) = (COSM + SINM)*DM0(L)
+        end do
+    end do
+
+    deallocate (DM0)
+
+    return
+
+end subroutine shd_shdo__computeYLM_
+
+subroutine shd_shdo__computePLM(TRANSPOSED, MU, ML, MM, PRC)
+
+    integer ML, MM
+    real MU
+    logical TRANSPOSED
+    real PRC(6, *)
+    ! --- local variables ---
+    integer J, M, MABS, L
+    real(RD_) :: X, FCT, P1, P2, P3, SIGN
+    real(RD_), allocatable :: DM0(:), DM2P(:),&
+        &DM2M(:)
+
+    ! --- allocate ---
+    allocate (DM0(0:ML), DM2P(0:ML), DM2M(0:ML))
+
+    X = dble(MU)
+
+    ! --- normalization constant ---
+    FCT = 1.d0/dsqrt(2.d0*DPI_)
+
+    ! --- sign accounting for transpose matrices ---
+    if (.not. TRANSPOSED) then
+        SIGN = 1.d0
+    else
+        SIGN = -1.d0
+    end if
+    ! ..................................................................
+    !                            M = 0
+    ! ..................................................................
+    M = 0
+    call shd_pha__computeWignerDM0DM2PDM2M&
+        &(X, ML, M,&
+        &DM0, DM2P, DM2M)
+    do L = 0, ML
+        if (L .le. MM) then
+            J = L*(L + 1) + M + 1
+        else
+            J = (2*MM + 1)*L - MM**2 + M + 1
+        end if
+        P1 = FCT*DM0(L)
+        P2 = -0.5d0*FCT*(DM2P(L) + DM2M(L))
+        P3 = -0.5d0*FCT*(DM2P(L) - DM2M(L))
+
+        ! --- PRCnm = Pnm ---
+        PRC(1, J) = P1
+        PRC(2, J) = P2
+        PRC(3, J) = P2
+        PRC(4, J) = P1
+        PRC(5, J) = P3
+        PRC(6, J) = P3
+    end do
+    ! ..................................................................
+    !                               M =/ 0
+    ! ..................................................................
+    do MABS = 1, MM
+        call shd_pha__computeWignerDM0DM2PDM2M&
+            &(X, ML, MABS,&
+            &DM0, DM2P, DM2M)
+        do L = MABS, ML
+    ! ..................................................................
+    !                               M > 0
+    ! ..................................................................
+            M = MABS
+            if (L .le. MM) then
+                J = L*(L + 1) + M + 1
+            else
+                J = (2*MM + 1)*L - MM**2 + M + 1
+            end if
+            P1 = FCT*DM0(L)
+            P2 = -0.5d0*FCT*(DM2P(L) + DM2M(L))
+            P3 = -0.5d0*FCT*(DM2P(L) - DM2M(L))
+
+            ! --- PRCnm = Pnm ---
+            PRC(1, J) = P1
+            PRC(2, J) = P2
+            PRC(3, J) = P2
+            PRC(4, J) = P1
+            PRC(5, J) = P3
+            PRC(6, J) = P3
+    ! ..................................................................
+    !                               M < 0
+    ! ..................................................................
+            M = -MABS
+            if (L .le. MM) then
+                J = L*(L + 1) + M + 1
+            else
+                J = (2*MM + 1)*L - MM**2 + M + 1
+            end if
+
+            ! --- PRCnm = D*Pnm ---
+            PRC(1, J) = P1
+            PRC(2, J) = P2
+            PRC(3, J) = -P2
+            PRC(4, J) = -P1
+            PRC(5, J) = SIGN*P3
+            PRC(6, J) = -SIGN*P3
+        end do
+    end do
+    deallocate (DM0, DM2P, DM2M)
+
+    return
+
+end subroutine shd_shdo__computePLM
+ 
 end module shd_shdo

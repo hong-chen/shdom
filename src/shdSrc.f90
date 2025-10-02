@@ -35,6 +35,7 @@ module shd_src
     use globals_const
     use globals_cfg
     use shd_pha
+    use shd_shdo
     use shd_util
     use shd_init
 
@@ -329,9 +330,9 @@ subroutine shd_src__computeSrcOneDir(NSTOKES,&
     ! TMS = .FALSE.
 
     ! Precompute Ylm's for output direction and solar direction
-    call shd_pha__computeYLM(.false., MU, PHI, ML, MM, NSTLEG, YLMDIR)
+    call shd_shdo__computeYLM(.false., MU, PHI, ML, MM, NSTLEG, YLMDIR)
     if (SRCTYPE .ne. 'T') then
-        call shd_pha__computeYLM(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG,&
+        call shd_shdo__computeYLM(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG,&
             &YLMSUN)
         SECMU0 = 1.0/abs(SOLARMU)
         COSSCAT = SOLARMU*MU + sqrt((1.0d0 - SOLARMU**2)*(1.0d0 - MU**2))&
@@ -782,7 +783,7 @@ subroutine shd_src__integrateSrcOneRay(&
 
     ! Calculate the generalized spherical harmonics for this direction
     allocate (YLMDIR(NSTLEG, NLM))
-    call shd_pha__computeYLM(.false., sngl(MU2), sngl(PHI2), ML, MM, NSTLEG, YLMDIR)
+    call shd_shdo__computeYLM(.false., sngl(MU2), sngl(PHI2), ML, MM, NSTLEG, YLMDIR)
 
     if (SRCTYPE .ne. 'T' .and. DELTAM) then
         ! Get the solar single scattering Stokes vector for the outgoin

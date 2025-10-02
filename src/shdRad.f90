@@ -35,6 +35,7 @@ module shd_rad
     use globals_const
     use globals_cfg
     use shd_pha
+    use shd_shdo
     use shd_src
     use shd_init
 
@@ -909,7 +910,7 @@ subroutine shd_rad__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     allocate (YLMSUN(NSTLEG, NLM))
 
     if (SRCTYPE .ne. 'T') then
-        call shd_pha__computeYLM(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG, YLMSUN)
+        call shd_shdo__computeYLM(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG, YLMSUN)
         if (DELTAM .and. NUMPHASE .gt. 0) then
             NSCATANGLE = max(36, min(MAXSCATANG, 2*NLEG))
             NSTPHASE = min(NSTLEG, 2)
@@ -1199,7 +1200,7 @@ subroutine shd_rad__computeSensorRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     allocate (YLMSUN(NSTLEG, NLM))
 
     if (SRCTYPE .ne. 'T') then
-        call shd_pha__computeYLM(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG, YLMSUN)
+        call shd_shdo__computeYLM(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG, YLMSUN)
         if (DELTAM .and. NUMPHASE .gt. 0) then
             NSCATANGLE = max(36, min(MAXSCATANG, 2*NLEG))
             NSTPHASE = min(NSTLEG, 2)
