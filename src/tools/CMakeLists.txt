@@ -36,7 +36,7 @@
 #
 set(MIE_LIB_SRCS shdScat_ind_wat.f90 shdScat_mie_wig.f90)
 
-set(TMTX_LIB_SRCS shdScat_ind_wat.f90 shdScat_tmx_wig.f90 _lapack.f)
+set(TMX_LIB_SRCS shdScat_ind_wat.f90 shdScat_tmx_wig.f90 _lapack.f)
 
 #
 # libraries
@@ -44,14 +44,14 @@ set(TMTX_LIB_SRCS shdScat_ind_wat.f90 shdScat_tmx_wig.f90 _lapack.f)
 add_library(mie ${MIE_LIB_SRCS})
 target_link_libraries(mie PUBLIC ${SHDOM_LD_LIBS})
 
-add_library(tmtx ${TMTX_LIB_SRCS})
-target_link_libraries(tmtx PUBLIC ${SHDOM_LD_LIBS})
+add_library(tmx ${TMX_LIB_SRCS})
+target_link_libraries(tmx PUBLIC ${SHDOM_LD_LIBS})
 
 #
 # executables
 #
 add_executable(make_tmatrix_table shdTool_make_tmx_tab.f90)
-target_link_libraries(make_tmatrix_table PRIVATE tmtx ${SHDOM_LD_LIBS})
+target_link_libraries(make_tmatrix_table PRIVATE tmx ${SHDOM_LD_LIBS})
 
 add_executable(make_mie_table shdTool_make_mie_tab.f90)
 target_link_libraries(make_mie_table PRIVATE mie ${SHDOM_LD_LIBS})

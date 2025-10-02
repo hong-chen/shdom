@@ -90,10 +90,10 @@ endif()
 #
 # build libraries
 #
-add_library(shdom_f90 ${SHDOM_LIB_SRCS})
-target_compile_definitions(shdom_f90 PUBLIC ${FPPS_FLAGS})
-target_include_directories(shdom_f90 PUBLIC "$<BUILD_INTERFACE:${SHDOM_INC}>")
-target_link_libraries(shdom_f90 PUBLIC ${SHDOM_LD_LIBS})
+add_library(shdomNG ${SHDOM_LIB_SRCS})
+target_compile_definitions(shdomNG PUBLIC ${FPPS_FLAGS})
+target_include_directories(shdomNG PUBLIC "$<BUILD_INTERFACE:${SHDOM_INC}>")
+target_link_libraries(shdomNG PUBLIC ${SHDOM_LD_LIBS})
 
 #
 # build executables
@@ -104,7 +104,7 @@ set(exes shdom)
 foreach (x ${exes})
     add_executable(${x} ${x}.f90)
     target_include_directories(${x} PUBLIC "$<BUILD_INTERFACE:${SHDOM_INC}>")
-    target_link_libraries(${x} PRIVATE shdom_f90 ${SHDOM_LD_LIBS})
+    target_link_libraries(${x} PRIVATE shdomNG ${SHDOM_LD_LIBS})
     install(TARGETS ${x})
 endforeach()
 
