@@ -1173,10 +1173,14 @@ program shdom
 
 
     ! save state
-    call shd_io__saveState(OUTSAVEFILE, NSTOKES, NX, NY, NZ, ML, MM, NLM,&
-        &WORK, XGRID, YGRID, ZGRID,&
-        &NPTS, NCELLS, GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR,&
-        &CELLFLAGS, FLUXES, SHPTR, SOURCE, RSHPTR, RADIANCE)
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    if (MAXITER .gt. 0) then
+        call shd_io__saveState(OUTSAVEFILE, NSTOKES, NX, NY, NZ, ML, MM, NLM,&
+            &WORK, XGRID, YGRID, ZGRID,&
+            &NPTS, NCELLS, GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR,&
+            &CELLFLAGS, FLUXES, SHPTR, SOURCE, RSHPTR, RADIANCE)
+    end if
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
     message = 'Message [shdom]: Total time used for output: '
