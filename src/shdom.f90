@@ -756,6 +756,7 @@ program shdom
             &XGRID, YGRID, ZGRID)
     end if
 
+
     message = 'Message [shdom]: Total time used for preparation: '
     call shd_util__ticktock(message, count_start)
     if (MASTERPROC) then
@@ -1036,11 +1037,6 @@ program shdom
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
-    call shd_io__saveState(OUTSAVEFILE, NSTOKES, NX, NY, NZ, ML, MM, NLM,&
-        &WORK, XGRID, YGRID, ZGRID,&
-        &NPTS, NCELLS, GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR,&
-        &CELLFLAGS, FLUXES, SHPTR, SOURCE, RSHPTR, RADIANCE)
-
     message = 'Message [shdom]: Total time used for runs: '
     call shd_util__ticktock(message, count_start)
     if (MASTERPROC) then
@@ -1048,6 +1044,8 @@ program shdom
     end if
 
 
+    ! Output radiance and/or flux (and/or other radiative quantities)
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     NSH = SHPTR(NPTS + 1)
     IRAD = 0
     IVIS = 0
@@ -1143,6 +1141,7 @@ program shdom
             end if
         end do
     end if
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
     ! Output camera radiance if there are any
@@ -1173,6 +1172,13 @@ program shdom
         end do
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
+
+
+    ! save state
+    call shd_io__saveState(OUTSAVEFILE, NSTOKES, NX, NY, NZ, ML, MM, NLM,&
+        &WORK, XGRID, YGRID, ZGRID,&
+        &NPTS, NCELLS, GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR,&
+        &CELLFLAGS, FLUXES, SHPTR, SOURCE, RSHPTR, RADIANCE)
 
 
     message = 'Message [shdom]: Total time used for output: '
