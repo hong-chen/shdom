@@ -292,7 +292,7 @@ program shdom
 
     ! Choose the option to compute higher order radiance SH terms
     HIGHORDERRAD_ = .false.
-    if ((NPXT .eq. 1) .and. (NPYT .eq. 1)) HIGHORDERRAD_ = .true.
+    if ((NPXT .eq. 1) .and. (NPYT .eq. 1) .and. (NXSFC .lt. 32) .and. (NXSFC .lt. 32)) HIGHORDERRAD_ = .true.
 
     NSHOUT = 4
     if (HIGHORDERRAD_) NSHOUT = 5
@@ -514,8 +514,8 @@ program shdom
 
     ! Guess maximum number of grid points, cells, SH vector size needed
     !   but don't let MAX_TOTAL_MB be exceeded
-    if (MAX_TOTAL_MB*1024.0**2 .gt. 1.80*huge(MAXIV)) then
-        MAX_TOTAL_MB = 1.80*huge(MAXIV)/1024.0**2
+    if (MAX_TOTAL_MB*1024.0**2 .gt. 1.8*huge(MAXIV)) then
+        MAX_TOTAL_MB = 1.8*huge(MAXIV)/1024.0**2
         if (VERBOSE_ .ge. 5) write (6, '(A,F0.2," MB")') 'Message [shdom]: MAX_TOTAL_MB reduced to: ', MAX_TOTAL_MB
     else
         if (VERBOSE_ .ge. 5) write (6, '(A,F0.2," MB")') 'Message [shdom]: MAX_TOTAL_MB is set to: ', MAX_TOTAL_MB
@@ -566,7 +566,7 @@ program shdom
     MAXIDO = MAXIG*max(NPHI0MAX, 4)
 
     if (4.0*(MAXIV + MAXIG)*NSTOKES .gt. huge(MAXIV)) then
-        write (6, '(A,F8.2)') 'Error [shdom]: Size of big SH arrays (MAXIV) probably exceeds max integer number of bytes:', MAXIV
+        write (6, '(A,I12)') 'Error [shdom]: Size of big SH arrays (MAXIV) probably exceeds max integer number of bytes:', MAXIV
         stop
     end if
 
@@ -580,6 +580,98 @@ program shdom
         MAXBCRAD = 2*MAXNBC
     else
         MAXBCRAD = (2 + NMU*NPHI0MAX/2)*MAXNBC
+    end if
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+
+    ! Check outputs
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    ! Figure out what type of output we will be generating
+    NRAD = 0
+    NVIS = 0
+    RADIANCE_OUT = .false.
+    VISUAL_OUT = .false.
+    SOURCE_OUT = .false.
+    FLUX_OUT = .false.
+    FLUXDIV_OUT = .false.
+    SH_OUT = .false.
+    do I = 1, NUMOUT
+        if (OUTTYPES(I) .eq. 'R') then
+            RADIANCE_OUT = .true.
+            if (OUTPARMS(2, I) .le. 0.0) then
+                NXOUT = 1
+            else
+                if (mpiX) then
+                    NXOUT = max(1, nint(XDOMAIN_/OUTPARMS(2, I)))
+                else
+                    NXOUT = max(1, nint((XDOMAIN_ + 2*OUTPARMS(4, I))/OUTPARMS(2, I)))
+                end if
+            end if
+            if (OUTPARMS(3, I) .le. 0.0) then
+                NYOUT = 1
+            else
+                if (mpiY) then
+                    NYOUT = max(1, nint(YDOMAIN_/OUTPARMS(3, I)))
+                else
+                    NYOUT = max(1, nint((YDOMAIN_ + 2*OUTPARMS(5, I))/OUTPARMS(3, I)))
+                end if
+            end if
+            NRAD = NRAD + NSTOKES*NXOUT*NYOUT*nint(OUTPARMS(6, I))
+        else if (OUTTYPES(I) .eq. 'V') then
+            VISUAL_OUT = .true.
+            if (nint(OUTPARMS(1, I)) .eq. 1) then
+                NVIS = NVIS + NSTOKES*nint(OUTPARMS(10, I))*nint(OUTPARMS(11, I))
+            else if (nint(OUTPARMS(1, I)) .eq. 2) then
+                NSCAN = 1 + sqrt((OUTPARMS(4, I) - OUTPARMS(7, I))**2&
+                    &+ (OUTPARMS(5, I) - OUTPARMS(8, I))**2&
+                    &+ (OUTPARMS(6, I) - OUTPARMS(9, I))**2)/OUTPARMS(10, I)
+                NPIX = 1 + abs(OUTPARMS(12, I) - OUTPARMS(11, I))/OUTPARMS(13, I)
+                NVIS = NVIS + NSTOKES*NSCAN*NPIX
+            ! user-specified sensor
+            else if (nint(OUTPARMS(1, I)) .eq. 3) then
+                NVIS = NVIS + NSTOKES*nint(OUTPARMS(2, I))
+            end if
+        else if (OUTTYPES(I) .eq. 'F') then
+            FLUX_OUT = .true.
+        else if (OUTTYPES(I) .eq. 'H') then
+            FLUXDIV_OUT = .true.
+        else if (OUTTYPES(I) .eq. 'S') then
+            SH_OUT = .true.
+        else if (OUTTYPES(I) .eq. 'J') then
+            SOURCE_OUT = .true.
+        end if
+    end do
+
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+
+    ! Notify user that certain outputs are not supported with multiple processors
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    if (mpiMode .and. MASTERPROC) then
+        do I = 1, NUMOUT
+            if (OUTTYPES(I) .eq. 'F') then
+                if (nint(OUTPARMS(1, I)) .eq. 2 .or. nint(OUTPARMS(1, I)) .eq. 5) then
+                    write (6, '(A,I1,A,A)') 'Warning [shdom]: F output format ', nint(OUTPARMS(1, I)),&
+                        &' not supported for multiple processors: ', trim(adjustl(OUTFILES(I)))
+                end if
+            else if (OUTTYPES(I) .eq. 'H') then
+                if (nint(OUTPARMS(1, I)) .eq. 3) then
+                    write (6, '(A,I1,A,A)') 'Warning [shdom]: H output format ', nint(OUTPARMS(1, I)),&
+                        &' not supported for multiple processors: ', trim(adjustl(OUTFILES(I)))
+                end if
+            else if (OUTTYPES(I) .eq. 'S') then
+                if (nint(OUTPARMS(1, I)) .eq. 2) then
+                    write (6, '(A,I1,A,A)') 'Warning [shdom]: S output format ', nint(OUTPARMS(1, I)),&
+                        &' not supported for multiple processors: ', trim(adjustl(OUTFILES(I)))
+                end if
+            else if (OUTTYPES(I) .eq. 'J') then
+                write (6, '(A,A)') 'Warning [shdom]: J output format not supported for multiple processors: ',&
+                    &trim(adjustl(OUTFILES(I)))
+            else if (OUTTYPES(I) .eq. 'M') then
+                write (6, '(A,A)') 'Warning [shdom]: M output format not supported for multiple processors: ',&
+                    &trim(adjustl(OUTFILES(I)))
+            end if
+        end do
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
@@ -633,113 +725,18 @@ program shdom
     ! boundary points pointers and radiances
     if (SFCFILE(1:4) .ne. 'NONE') allocate (SFCGRIDPARMS(MAXSFCPARS*MAXNBC))
     allocate (BCPTR(2*MAXNBC), BCRAD(NSTOKES, MAXBCRAD))
-    !╰────────────────────────────────────────────────────────────────────────────╯!
 
-
-    ! Figure out what type of output we will be generating
-    !╭────────────────────────────────────────────────────────────────────────────╮!
-    NRAD = 0
-    NVIS = 0
-    RADIANCE_OUT = .false.
-    VISUAL_OUT = .false.
-    SOURCE_OUT = .false.
-    FLUX_OUT = .false.
-    FLUXDIV_OUT = .false.
-    SH_OUT = .false.
-    do I = 1, NUMOUT
-        if (OUTTYPES(I) .eq. 'R') then
-            RADIANCE_OUT = .true.
-            if (OUTPARMS(2, I) .le. 0.0) then
-                NXOUT = 1
-            else
-                if (mpiX) then
-                    NXOUT = max(1, nint(XDOMAIN_/OUTPARMS(2, I)))
-                else
-                    NXOUT = max(1, nint((XDOMAIN_ + 2*OUTPARMS(4, I))/OUTPARMS(2, I)))
-                end if
-            end if
-            if (OUTPARMS(3, I) .le. 0.0) then
-                NYOUT = 1
-            else
-                if (mpiY) then
-                    NYOUT = max(1, nint(YDOMAIN_/OUTPARMS(3, I)))
-                else
-                    NYOUT = max(1, nint((YDOMAIN_ + 2*OUTPARMS(5, I))/OUTPARMS(3, I)))
-                end if
-            end if
-            NRAD = NRAD + NSTOKES*NXOUT*NYOUT*nint(OUTPARMS(6, I))
-        else if (OUTTYPES(I) .eq. 'V') then
-            VISUAL_OUT = .true.
-            if (nint(OUTPARMS(1, I)) .eq. 1) then
-                NVIS = NVIS + NSTOKES*nint(OUTPARMS(10, I))*nint(OUTPARMS(11, I))
-            else if (nint(OUTPARMS(1, I)) .eq. 2) then
-                NSCAN = 1 + sqrt((OUTPARMS(4, I) - OUTPARMS(7, I))**2&
-                    &+ (OUTPARMS(5, I) - OUTPARMS(8, I))**2&
-                    &+ (OUTPARMS(6, I) - OUTPARMS(9, I))**2)/OUTPARMS(10, I)
-                NPIX = 1 + abs(OUTPARMS(12, I) - OUTPARMS(11, I))/OUTPARMS(13, I)
-                NVIS = NVIS + NSTOKES*NSCAN*NPIX
-            ! user-specified sensor
-            else if (nint(OUTPARMS(1, I)) .eq. 3) then
-                NVIS = NVIS + NSTOKES*nint(OUTPARMS(2, I))
-            end if
-        else if (OUTTYPES(I) .eq. 'F') then
-            if (.not. FLUX_OUT) then
-                allocate (SUMFLUXES(2, MAXIG), SUMDIRFLUX(MAXIG))
-            end if
-            FLUX_OUT = .true.
-        else if (OUTTYPES(I) .eq. 'H') then
-            if (.not. FLUXDIV_OUT) then
-                allocate (SUMFLUXDIV(MAXIG))
-            end if
-            FLUXDIV_OUT = .true.
-        else if (OUTTYPES(I) .eq. 'S') then
-            if (.not. SH_OUT) then
-                allocate (SUMSHTERMS(NSHOUT*MAXIG))
-            end if
-            SH_OUT = .true.
-        else if (OUTTYPES(I) .eq. 'J') then
-            if (.not. SOURCE_OUT) then
-                allocate (SOURCE1OUT(MAXIG*NSTOKES))
-            end if
-            SOURCE_OUT = .true.
-        end if
-    end do
+    ! output
+    if (FLUX_OUT)    allocate (SUMFLUXES(2, MAXIG), SUMDIRFLUX(MAXIG))
+    if (FLUXDIV_OUT) allocate (SUMFLUXDIV(MAXIG))
+    if (SH_OUT)      allocate (SUMSHTERMS(NSHOUT*MAXIG))
+    if (SOURCE_OUT)  allocate (SOURCE1OUT(MAXIG*NSTOKES))
 
     allocate (SUMRADOUT(NRAD), SUMVISOUT(NVIS))
 
     ! WORK2: Work array for path integration; single angle radiance
     allocate (WORK2(max(NVIS, NRAD, NSTOKES*MAXIG)))
     !╰────────────────────────────────────────────────────────────────────────────╯!
-
-
-    ! Notify user that certain outputs are not supported with multiple processors
-    !╭────────────────────────────────────────────────────────────────────────────╮!
-    if (mpiMode .and. MASTERPROC) then
-        do I = 1, NUMOUT
-            if (OUTTYPES(I) .eq. 'F') then
-                if (nint(OUTPARMS(1, I)) .eq. 2 .or. nint(OUTPARMS(1, I)) .eq. 5) then
-                    write (6, '(A,I1,A,A)') 'F output format ', nint(OUTPARMS(1, I)),&
-                        &' not supported for multiple processors: ', trim(adjustl(OUTFILES(I)))
-                end if
-            else if (OUTTYPES(I) .eq. 'H') then
-                if (nint(OUTPARMS(1, I)) .eq. 3) then
-                    write (6, '(A,I1,A,A)') 'H output format ', nint(OUTPARMS(1, I)),&
-                        &' not supported for multiple processors: ', trim(adjustl(OUTFILES(I)))
-                end if
-            else if (OUTTYPES(I) .eq. 'S') then
-                if (nint(OUTPARMS(1, I)) .eq. 2) then
-                    write (6, '(A,I1,A,A)') 'S output format ', nint(OUTPARMS(1, I)),&
-                        &' not supported for multiple processors: ', trim(adjustl(OUTFILES(I)))
-                end if
-            else if (OUTTYPES(I) .eq. 'J') then
-                write (6, '(A,A)') 'J output format not supported for multiple processors: ', trim(adjustl(OUTFILES(I)))
-            else if (OUTTYPES(I) .eq. 'M') then
-                write (6, '(A,A)') 'M output format not supported for multiple processors: ', trim(adjustl(OUTFILES(I)))
-            end if
-        end do
-    end if
-    !╰────────────────────────────────────────────────────────────────────────────╯!
-
 
     ! Read in previous run from binary file if desired
     call shd_io__restoreState(INSAVEFILE, NSTOKES, NX, NY, NZ, ML, MM, NLM,&
@@ -760,7 +757,7 @@ program shdom
     message = 'Message [shdom]: Total time used for preparation: '
     call shd_util__ticktock(message, count_start)
     if (MASTERPROC) then
-        if (VERBOSE_ .ge. 5) write (6, '(A)') message
+        if (VERBOSE_ .ge. 5) write (6, '(A)') trim(adjustl(message))
     end if
 
 
@@ -1038,7 +1035,7 @@ program shdom
     message = 'Message [shdom]: Total time used for runs: '
     call shd_util__ticktock(message, count_start)
     if (MASTERPROC) then
-        if (VERBOSE_ .ge. 5) write (6, '(A)') message
+        if (VERBOSE_ .ge. 5) write (6, '(A)') trim(adjustl(message))
     end if
 
 
@@ -1186,7 +1183,7 @@ program shdom
     message = 'Message [shdom]: Total time used for output: '
     call shd_util__ticktock(message, count_start)
     if (MASTERPROC) then
-        if (VERBOSE_ .ge. 5) write (6, '(A)') message
+        if (VERBOSE_ .ge. 5) write (6, '(A)') trim(adjustl(message))
     end if
 
 
