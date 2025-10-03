@@ -502,9 +502,6 @@ program shdom
 
     ! Memory check
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    MEMWORD = NMU*(2 + 2*NPHI + 2*NLM + 2*33*32)
-    MEMWORD = MEMWORD + 4.5*MAXPG + MAXPGL + NUMPHASE_*NSTLEG*(MAXLEG + 1)
-
     if (mpiMode) then
         ! Read the memory parameters from a file, if it exists, and send
         !   the parameters to all processors. Otherwise use the input ones.
@@ -527,6 +524,9 @@ program shdom
 
     BIG_ARRAYS = 3
     if (.not. ACCELFLAG) BIG_ARRAYS = 2
+
+    MEMWORD = NMU*(2 + 2*NPHI + 2*NLM + 2*33*32)
+    MEMWORD = MEMWORD + 4.5*MAXPG + MAXPGL + NUMPHASE_*NSTLEG*(MAXLEG + 1)
 
     WANTMEM = ADAPT_GRID_FACTOR*NBPTS*(28 + 16.5*CELL_TO_POINT_RATIO&
         &+ NPHI0MAX*NSTOKES + NUM_SH_TERM_FACTOR*NSTOKES*NLM*BIG_ARRAYS)
