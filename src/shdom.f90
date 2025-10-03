@@ -641,7 +641,6 @@ program shdom
             SOURCE_OUT = .true.
         end if
     end do
-
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
@@ -737,6 +736,7 @@ program shdom
     ! WORK2: Work array for path integration; single angle radiance
     allocate (WORK2(max(NVIS, NRAD, NSTOKES*MAXIG)))
     !╰────────────────────────────────────────────────────────────────────────────╯!
+
 
     ! Read in previous run from binary file if desired
     call shd_io__restoreState(INSAVEFILE, NSTOKES, NX, NY, NZ, ML, MM, NLM,&
