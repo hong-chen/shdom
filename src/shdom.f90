@@ -641,7 +641,11 @@ program shdom
     BIG_ARRAYS = 3
     if (.not. ACCELFLAG) BIG_ARRAYS = 2
 
-    ! this needs to be revised
+    ! MEMWORD is now more accurate than before
+    ! before:
+    !   MEMWORD = NMU*(2 + 2*NPHI + 2*NLM + 2*33*32)&            ! SHDO allocation
+    !       + 4.5*MAXPG + MAXPGL + NUMPHASE_*NSTLEG*(MAXLEG + 1) ! phase allocation
+    ! now: update MEMWORD after every allocation step
     !╭──────────────────────────────────────────────────────────────╮!
     ! additional 4
     ! scaled with MAXIG
@@ -661,10 +665,6 @@ program shdom
     ! 5
 
     !NMAXIG = CELL_TO_POINT_RATIO +
-
-    ! the following will be removed as gradual add up is more accurate
-    !MEMWORD = NMU*(2 + 2*NPHI + 2*NLM + 2*33*32) +&         ! SHDO allocation
-    !    &4.5*MAXPG + MAXPGL + NUMPHASE_*NSTLEG*(MAXLEG + 1) ! phase allocation
 
     WANTMEM = ADAPT_GRID_FACTOR*NBPTS*(28 + 16.5*CELL_TO_POINT_RATIO&
         + NPHI0MAX*NSTOKES + NUM_SH_TERM_FACTOR*NSTOKES*NLM*BIG_ARRAYS)
