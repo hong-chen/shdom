@@ -43,7 +43,6 @@ module shd_inp
     integer, parameter :: R__  = selected_real_kind(6) ! default precision for float
     integer, parameter :: I__  = selected_int_kind(9)  ! default precision for integer
 
-
     public :: shd_io__userInput
     public :: shd_io__nmlInput
 
@@ -1763,15 +1762,15 @@ subroutine shd_io__restoreState(&
     ! The flag NEWGRIDFLAG is set to false if reading succeeds.
 
     character(*), intent(in) :: INSAVEFILE
-    integer, intent(in) :: NSTOKES, NX, NY, NZ, ML, MM, NLM
+    integer(kind=I__), intent(in) :: NSTOKES, NX, NY, NZ, ML, MM, NLM
 
-    integer, intent(out) :: NPTS, NCELLS
-    integer, intent(out) :: SHPTR(*), RSHPTR(*)
-    integer, intent(out) :: GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
-    integer(2), intent(out) :: CELLFLAGS(*)
+    integer(kind=I__), intent(out) :: NPTS, NCELLS
+    integer(kind=I__), intent(out) :: SHPTR(*), RSHPTR(*)
+    integer(kind=I__), intent(out) :: GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
+    integer(kind=2), intent(out) :: CELLFLAGS(*)
     logical, intent(out) :: INRADFLAG, NEWGRIDFLAG
-    real, intent(out) :: XGRID(NX+1), YGRID(NY+1), ZGRID(NZ)
-    real, intent(out) :: GRIDPOS(3, *), FLUXES(2, *), SOURCE(*), RADIANCE(*)
+    real(kind=R__), intent(out) :: XGRID(NX+1), YGRID(NY+1), ZGRID(NZ)
+    real(kind=R__), intent(out) :: GRIDPOS(3, *), FLUXES(2, *), SOURCE(*), RADIANCE(*)
 
     integer :: NSTI, NXI, NYI, NZI, MLI, MMI, NLMI
     integer :: I, J, NS, NR

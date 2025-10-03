@@ -89,7 +89,7 @@ program shdom
     integer :: MAXPG, MAXIG, MAXIC, MAXIV, MAXIDO, MAXNZ, MAXNG
     integer :: MAXLEG, MAXPGL, MAXIGL
     integer :: MAXNBC, MAXBCRAD
-    integer :: MAXSFCPTS, MAXSFCPARS, BIG_ARRAYS
+    integer :: MAXSFCPTS, MAXSFCPARS, BIG_ARRAYS, NMAXIG
     real :: MEMWORD, WANTMEM
     real :: MAX_TOTAL_MB, ADAPT_GRID_FACTOR
     real :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
@@ -180,6 +180,10 @@ program shdom
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
+    ! account for initialization
+    MEMWORD = 2000.0 + MAXOUT * (MAXPAR + 0.25 + (FNAMEMAXLEN_/4.0))
+
+
     ! Post-process parameters from input
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! The number of Stokes parameters (and components of the real
@@ -199,19 +203,19 @@ program shdom
     ! Make ML and MM from NMU and NPHI (for discrete ordinate)
     !   NMU : number of discrete ordinate zenith angles in both hemispheres
     !   NPHI: number of discrete ordinate azimuth angles in 2*pi
-    !   ML  : The maximum L of the spherical harmonic truncation
-    !   MM  : The maximum M of the spherical harmonic truncation
     NMU  = max(2, 2*int((NMU + 1)/2)) ! force NMU an even number
     NPHI = max(1, NPHI)
 
+    ! ML  : The maximum L of the spherical harmonic truncation
+    ! MM  : The maximum M of the spherical harmonic truncation
     ML = NMU - 1
     MM = max(0, int(NPHI/2) - 1)
 
     ! Compute NLM, NPHI0MAX.
-    !   NPHI0MAX: The maximum number of azimuth angles actually used
     !   NLM: The number of spherical harmonic terms
-    NPHI0MAX = NPHI
+    !   NPHI0MAX: The maximum number of azimuth angles actually used
     NLM = (2*MM + 1)*(ML + 1) - MM*(MM + 1)
+    NPHI0MAX = NPHI
 
     ! NLEG: The number of Legendre series phase function terms used in the solution procedure
     NLEG = ML
@@ -234,6 +238,10 @@ program shdom
     !Notice        5      Normal but significant condition
     !Informational 6      Informational messages
     !All           7      All-level messages
+
+    ! angle grids for DO
+    allocate (MU(NMU), WTDO(NMU*NPHI), PHI(NMU*NPHI), NPHI0(NMU))
+    MEMWORD = MEMWORD + 2.0*NMU*(1.0 + NPHI)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
@@ -282,7 +290,8 @@ program shdom
     if (NY .eq. 1) IPFLAG = ior(IPFLAG, 2) ! '0001'(NX=1, 1) + '0010'(NY=1, 2) = '0011' (IPA,  3)
 
     ! Set the full domain grid sizes (variables end in T)
-    NXT = NX; NYT = NY; NPXT = NPX_; NPYT = NPY_
+    NXT  = NX  ; NYT  = NY
+    NPXT = NPX_; NPYT = NPY_
 
     if (NPXT .eq. 1) DELX_ = NXSFC*DELXSFC ! overwrite DELX_ if only 1 grid in X direction
     if (NPYT .eq. 1) DELY_ = NYSFC*DELYSFC ! overwrite DELY_ if only 1 grid in Y direction
@@ -292,10 +301,14 @@ program shdom
 
     ! Choose the option to compute higher order radiance SH terms
     HIGHORDERRAD_ = .false.
-    if ((NPXT .eq. 1) .and. (NPYT .eq. 1) .and. (NXSFC .lt. 32) .and. (NXSFC .lt. 32)) HIGHORDERRAD_ = .true.
+    if ((NPXT .eq. 1) .and. (NPYT .eq. 1) .and. (NXSFC .le. 32) .and. (NXSFC .le. 32)) HIGHORDERRAD_ = .true.
 
     NSHOUT = 4
     if (HIGHORDERRAD_) NSHOUT = 5
+
+    ! x, y, z grids
+    allocate (XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ))
+    MEMWORD = MEMWORD + (NX+1) + (NY+1) + (NZ)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
@@ -367,8 +380,9 @@ program shdom
     if (NUMPHASE_ .eq. 0) MAXPGL = MAXPG*(MAXLEG + 1)*NSTLEG
 
     allocate (ZLEVELS_(NPZ_))
-    allocate (TEMPP_(MAXPG), EXTINCTP_(MAXPG), ALBEDOP_(MAXPG))
-    allocate (EXTDIRP_(MAXPG), IPHASEP_(MAXPG), LEGENP_(MAXPGL))
+    allocate (TEMPP_(MAXPG), EXTINCTP_(MAXPG), EXTDIRP_(MAXPG), ALBEDOP_(MAXPG))
+    allocate (IPHASEP_(MAXPG), LEGENP_(MAXPGL))
+    MEMWORD = MEMWORD + NPZ_ + 6.0*MAXPG + MAXPGL
 
     if (mpiMode) then
 
@@ -408,7 +422,7 @@ program shdom
             &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, IPHASEPT,&
             &TEMPP_, EXTINCTP_, ALBEDOP_, LEGENP_, IPHASEP_)
 
-        if (MASTERPROC) deallocate (TEMPPT, EXTINCTPT, ALBEDOPT, IPHASEPT)
+        if (MASTERPROC) deallocate (TEMPPT, EXTINCTPT, ALBEDOPT, IPHASEPT, LEGENPT)
 
     else
 
@@ -442,6 +456,8 @@ program shdom
         SFCTYPE = 'FL'
     else
         allocate (SFCPARMS(MAXSFCPARS*MAXSFCPTS))
+        MEMWORD = MEMWORD + MAXSFCPARS*MAXSFCPTS
+
         if (MASTERPROC) then
             call shd_io__readSfc(SFCFILE, MAXSFCPTS, MAXSFCPARS,&
                 &SFCTYPE, NXSFC, NYSFC, DELXSFC, DELYSFC,&
@@ -463,7 +479,10 @@ program shdom
         end if
         ! Broadcast the k-distribution array sizes
         call shd_mpi__bcastCkdSize(NG, NZCKD_)
-        allocate (ZCKD_(NZCKD_), GASABS_(NZCKD_), SOLFLUX(NG), DELG(NG), KABS(NZCKD_, NG))
+        allocate (ZCKD_(NZCKD_), GASABS_(NZCKD_), KABS(NZCKD_, NG))
+        allocate (SOLFLUX(NG), DELG(NG))
+        MEMWORD = MEMWORD + NZCKD_*(2.0+NG) + 2.0*NG
+
         if (MASTERPROC) then
             MAXNG = NG; MAXNZ = NZCKD_
             call shd_io__readCkd(MAXNG, MAXNZ, CKDFILE, WAVENO, SOLFLUX,&
@@ -473,6 +492,8 @@ program shdom
     else
         NG = 1
         allocate (SOLFLUX(NG), DELG(NG))
+        MEMWORD = MEMWORD + 2.0*NG
+
         SOLFLUX(1) = 1.0
         DELG(1) = 1.0
         NZCKD_ = 0
@@ -491,95 +512,13 @@ program shdom
         end if
         call shd_mpi__bcastSenSize(NSENDATA, NSENPAR)
         allocate (SENPARMS(NSENDATA*NSENPAR))
+        MEMWORD = MEMWORD + NSENDATA*NSENPAR
+
         if (MASTERPROC) then
             call shd_io__readSen(SENFILE, NSENDATA, NSENPAR,&
                 &SENPARMS)
         end if
         call shd_mpi__bcastSenParam(NSENDATA, NSENPAR, SENPARMS)
-    end if
-    !╰────────────────────────────────────────────────────────────────────────────╯!
-
-
-    ! Memory check
-    !╭────────────────────────────────────────────────────────────────────────────╮!
-    if (mpiMode) then
-        ! Read the memory parameters from a file, if it exists, and send
-        !   the parameters to all processors. Otherwise use the input ones.
-        call shd_mpi__readBcastMemParam(MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
-            &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, RUNNAME)
-    end if
-
-    ! Guess maximum number of grid points, cells, SH vector size needed
-    !   but don't let MAX_TOTAL_MB be exceeded
-    if (MAX_TOTAL_MB*1024.0**2 .gt. 1.8*huge(MAXIV)) then
-        MAX_TOTAL_MB = 1.8*huge(MAXIV)/1024.0**2
-        if (VERBOSE_ .ge. 5) write (6, '(A,F0.2," MB")') 'Message [shdom]: MAX_TOTAL_MB reduced to: ', MAX_TOTAL_MB
-    else
-        if (VERBOSE_ .ge. 5) write (6, '(A,F0.2," MB")') 'Message [shdom]: MAX_TOTAL_MB is set to: ', MAX_TOTAL_MB
-    end if
-
-    if ((SPLITACC .le. 1.0d-12) .and. (INSAVEFILE(1:4) .eq. 'NONE')) then
-        ADAPT_GRID_FACTOR = 1.0
-    end if
-
-    BIG_ARRAYS = 3
-    if (.not. ACCELFLAG) BIG_ARRAYS = 2
-
-    MEMWORD = NMU*(2 + 2*NPHI + 2*NLM + 2*33*32)
-    MEMWORD = MEMWORD + 4.5*MAXPG + MAXPGL + NUMPHASE_*NSTLEG*(MAXLEG + 1)
-
-    WANTMEM = ADAPT_GRID_FACTOR*NBPTS*(28 + 16.5*CELL_TO_POINT_RATIO&
-        &+ NPHI0MAX*NSTOKES + NUM_SH_TERM_FACTOR*NSTOKES*NLM*BIG_ARRAYS)
-
-    REDUCE_RATIO = min(1.0, ((MAX_TOTAL_MB*1024**2)/4 - MEMWORD)/WANTMEM)
-    ADAPT_GRID_FACTOR = ADAPT_GRID_FACTOR*REDUCE_RATIO
-    if (ADAPT_GRID_FACTOR .lt. 0.999999999d0) then
-        stop 'Error [shdom]: MAX_TOTAL_MB memory limit exceeded with just base grid.'
-    end if
-    if (REDUCE_RATIO .lt. 1.0) then
-        if (VERBOSE_ .ge. 5) write (6, '(A,F8.2)') 'Message [shdom]: ADAPT_GRID_FACTOR reduced to:', ADAPT_GRID_FACTOR
-    end if
-
-    WANTMEM = REDUCE_RATIO*WANTMEM
-    if (WANTMEM .gt. huge(MAXIV)) then
-        write (6, '(A,F8.2)') 'Error [shdom]: Number of words of memory exceeds max integer size:', WANTMEM
-        stop
-    end if
-
-    ! max number of legendre coefficients
-    if (NUMPHASE_ .gt. 0) then
-        MAXIGL = NUMPHASE_*NSTLEG*(MAXLEG + 1)
-    else
-        MAXIGL = MAXIG*NSTLEG*(MAXLEG + 1)
-    end if
-
-    ! max number of internal grid points
-    MAXIG = nint(ADAPT_GRID_FACTOR*NBPTS)
-
-    ! max number of grid cells, between 1 and 2 times grid points
-    MAXIC = nint(CELL_TO_POINT_RATIO*MAXIG)
-
-    ! max words for source function and radiance arrays
-    MAXIV = nint(NUM_SH_TERM_FACTOR*NLM*MAXIG)
-
-    ! max words for temporary discrete ordinate azimuthal array
-    MAXIDO = MAXIG*max(NPHI0MAX, 4)
-
-    if (4.0*(MAXIV + MAXIG)*NSTOKES .gt. huge(MAXIV)) then
-        write (6, '(A,I12)') 'Error [shdom]: Size of big SH arrays (MAXIV) probably exceeds max integer number of bytes:', MAXIV
-        stop
-    end if
-
-    if (4.0*8.0*MAXIC .gt. huge(MAXIV)) then
-        write (6, '(A,F8.2)') 'Error [shdom]: Size of GRIDPTR array (8*MAXIC) probably exceeds max integer number of bytes:', 8*MAXIC
-        stop
-    end if
-
-    MAXNBC = MAXIG*3/NZ
-    if (SFCTYPE(2:2) .eq. 'L') then ! Lambertian surface
-        MAXBCRAD = 2*MAXNBC
-    else
-        MAXBCRAD = (2 + NMU*NPHI0MAX/2)*MAXNBC
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
@@ -590,11 +529,11 @@ program shdom
     NRAD = 0
     NVIS = 0
     RADIANCE_OUT = .false.
-    VISUAL_OUT = .false.
-    SOURCE_OUT = .false.
-    FLUX_OUT = .false.
-    FLUXDIV_OUT = .false.
-    SH_OUT = .false.
+    VISUAL_OUT   = .false.
+    SOURCE_OUT   = .false.
+    FLUX_OUT     = .false.
+    FLUXDIV_OUT  = .false.
+    SH_OUT       = .false.
     do I = 1, NUMOUT
         if (OUTTYPES(I) .eq. 'R') then
             RADIANCE_OUT = .true.
@@ -623,8 +562,8 @@ program shdom
                 NVIS = NVIS + NSTOKES*nint(OUTPARMS(10, I))*nint(OUTPARMS(11, I))
             else if (nint(OUTPARMS(1, I)) .eq. 2) then
                 NSCAN = 1 + sqrt((OUTPARMS(4, I) - OUTPARMS(7, I))**2&
-                    &+ (OUTPARMS(5, I) - OUTPARMS(8, I))**2&
-                    &+ (OUTPARMS(6, I) - OUTPARMS(9, I))**2)/OUTPARMS(10, I)
+                    + (OUTPARMS(5, I) - OUTPARMS(8, I))**2&
+                    + (OUTPARMS(6, I) - OUTPARMS(9, I))**2)/OUTPARMS(10, I)
                 NPIX = 1 + abs(OUTPARMS(12, I) - OUTPARMS(11, I))/OUTPARMS(13, I)
                 NVIS = NVIS + NSTOKES*NSCAN*NPIX
             ! user-specified sensor
@@ -675,13 +614,130 @@ program shdom
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
+    ! Memory check
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    if (mpiMode) then
+        ! Read the memory parameters from a file, if it exists, and send
+        !   the parameters to all processors. Otherwise use the input ones.
+        call shd_mpi__readBcastMemParam(MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
+            &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, RUNNAME)
+    end if
+
+    ! Guess maximum number of grid points, cells, SH vector size needed
+    !   but don't let MAX_TOTAL_MB be exceeded
+    !if (MAX_TOTAL_MB*1024.0**2 .gt. 1.8*huge(MAXIV)) then
+    !    MAX_TOTAL_MB = 1.8*huge(MAXIV)/1024.0**2
+    if (MAX_TOTAL_MB .gt. 3800.0) then
+        MAX_TOTAL_MB = 3800.0
+        if (VERBOSE_ .ge. 5) write (6, '(A,F0.2," MB")') 'Message [shdom]: MAX_TOTAL_MB reduced to: ', MAX_TOTAL_MB
+    else
+        if (VERBOSE_ .ge. 5) write (6, '(A,F0.2," MB")') 'Message [shdom]: MAX_TOTAL_MB is set to: ', MAX_TOTAL_MB
+    end if
+
+    if ((SPLITACC .le. 1.0d-12) .and. (INSAVEFILE(1:4) .eq. 'NONE')) then
+        ADAPT_GRID_FACTOR = 1.0
+    end if
+
+    BIG_ARRAYS = 3
+    if (.not. ACCELFLAG) BIG_ARRAYS = 2
+
+    ! this needs to be revised
+    !╭──────────────────────────────────────────────────────────────╮!
+    ! additional 4
+    ! scaled with MAXIG
+    ! if surface, real(3)/real(NZ) * MAXSFCPARS
+    ! if not lambertian, real(3)/real(NZ) * (2 + NSTOKES*(2+ NMU*NPHI0MAX/2))
+    !   or real(3)/real(NZ) * 2 (lambertian)
+    ! if FLUX_OUT, 3
+    ! if FLUXDIV_OUT, 1
+    ! if SH_OUT, NSHOUT
+    ! if SOURCE_OUT, NSTOKES
+    ! 2
+    ! 3
+    ! if NUMPHASE_, NUMPHASE_*NSTLEG*(MAXLEG + 1)
+    !   or NSTLEG*(MAXLEG + 1)
+    ! cellpointratio * 17
+    ! 3
+    ! 5
+
+    !NMAXIG = CELL_TO_POINT_RATIO +
+
+    ! the following will be removed as gradual add up is more accurate
+    !MEMWORD = NMU*(2 + 2*NPHI + 2*NLM + 2*33*32) +&         ! SHDO allocation
+    !    &4.5*MAXPG + MAXPGL + NUMPHASE_*NSTLEG*(MAXLEG + 1) ! phase allocation
+
+    WANTMEM = ADAPT_GRID_FACTOR*NBPTS*(28 + 16.5*CELL_TO_POINT_RATIO&
+        + NPHI0MAX*NSTOKES + NUM_SH_TERM_FACTOR*NSTOKES*NLM*BIG_ARRAYS)
+    !╰──────────────────────────────────────────────────────────────╯!
+
+    REDUCE_RATIO = min(1.0, ((MAX_TOTAL_MB*1024**2)/4 - MEMWORD)/WANTMEM)
+    ADAPT_GRID_FACTOR = ADAPT_GRID_FACTOR*REDUCE_RATIO
+    if (ADAPT_GRID_FACTOR .lt. 0.999999999d0) then
+        stop 'Error [shdom]: MAX_TOTAL_MB memory limit exceeded with just base grid.'
+    end if
+    if (REDUCE_RATIO .lt. 1.0) then
+        if (VERBOSE_ .ge. 5) write (6, '(A,F8.2)') 'Message [shdom]: ADAPT_GRID_FACTOR reduced to:', ADAPT_GRID_FACTOR
+    end if
+
+    WANTMEM = REDUCE_RATIO*WANTMEM
+    if (WANTMEM .gt. huge(MAXIV)) then
+        write (6, '(A,F8.2)') 'Error [shdom]: Number of words of memory exceeds max integer size:', WANTMEM
+        stop
+    end if
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+
+    ! Retrieve max numbers for array allocation after memory check
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    ! max number of internal grid points
+    MAXIG = nint(ADAPT_GRID_FACTOR*NBPTS)
+
+    ! max number of grid cells, between 1 and 2 times grid points
+    MAXIC = nint(CELL_TO_POINT_RATIO*MAXIG)
+
+    ! max words for source function and radiance arrays
+    MAXIV = nint(NUM_SH_TERM_FACTOR*NLM*MAXIG)
+
+    ! max words for temporary discrete ordinate azimuthal array
+    MAXIDO = MAXIG*max(NPHI0MAX, 4)
+
+    if (4.0*(MAXIV + MAXIG)*NSTOKES .gt. huge(MAXIV)) then
+        write (6, '(A,I12)') 'Error [shdom]: Size of big SH arrays (MAXIV) probably exceeds max integer number of bytes:', MAXIV
+        stop
+    end if
+
+    if (4.0*8.0*MAXIC .gt. huge(MAXIV)) then
+        write (6, '(A,F8.2)') 'Error [shdom]: Size of GRIDPTR array (8*MAXIC) probably exceeds max integer number of bytes:', 8*MAXIC
+        stop
+    end if
+
+    ! max number of legendre coefficients
+    if (NUMPHASE_ .gt. 0) then
+        MAXIGL = NUMPHASE_*NSTLEG*(MAXLEG + 1)
+    else
+        MAXIGL = MAXIG*NSTLEG*(MAXLEG + 1)
+    end if
+
+    MAXNBC = MAXIG*3/NZ
+    if (SFCTYPE(2:2) .eq. 'L') then ! Lambertian surface
+        MAXBCRAD = 2*MAXNBC
+    else
+        MAXBCRAD = (2 + NMU*NPHI0MAX/2)*MAXNBC
+    end if
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+
     ! Allocate array
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    ! angle grids for DO
-    allocate (MU(NMU), WTDO(NMU*NPHI), PHI(NMU*NPHI), NPHI0(NMU))
+    ! boundary points pointers and radiances
+    if (SFCFILE(1:4) .ne. 'NONE') allocate (SFCGRIDPARMS(MAXSFCPARS*MAXNBC))
+    allocate (BCPTR(2*MAXNBC), BCRAD(NSTOKES, MAXBCRAD))
 
-    ! x, y, z grids
-    allocate (XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ))
+    ! output
+    if (FLUX_OUT)    allocate (SUMFLUXES(2, MAXIG), SUMDIRFLUX(MAXIG))
+    if (FLUXDIV_OUT) allocate (SUMFLUXDIV(MAXIG))
+    if (SH_OUT)      allocate (SUMSHTERMS(MAXIG*NSHOUT))
+    if (SOURCE_OUT)  allocate (SOURCE1OUT(MAXIG*NSTOKES))
 
     ! temperature and planck radiance (maybe we don't need this for shortwave)
     allocate (TEMP(MAXIG), PLANCK(MAXIG))
@@ -712,26 +768,17 @@ program shdom
     ! delta source
     if (ACCELFLAG) allocate (DELSOURCE(NSTOKES, MAXIV))
 
+    ! fluxes
+    allocate (FLUXES(2, MAXIG), DIRFLUX(MAXIG))
+
+    ! output radiances to be summed over g
+    allocate (SUMRADOUT(NRAD), SUMVISOUT(NVIS))
+
     ! WORK: Work array for path integration; radiance field, Nazimuth*Npts
     allocate (WORK(NSTOKES*MAXIDO))
 
     ! WORK1: Work array for path integration; grid point sweeping order
     allocate (WORK1(8*MAXIG))
-
-    ! fluxes
-    allocate (FLUXES(2, MAXIG), DIRFLUX(MAXIG))
-
-    ! boundary points pointers and radiances
-    if (SFCFILE(1:4) .ne. 'NONE') allocate (SFCGRIDPARMS(MAXSFCPARS*MAXNBC))
-    allocate (BCPTR(2*MAXNBC), BCRAD(NSTOKES, MAXBCRAD))
-
-    ! output
-    if (FLUX_OUT)    allocate (SUMFLUXES(2, MAXIG), SUMDIRFLUX(MAXIG))
-    if (FLUXDIV_OUT) allocate (SUMFLUXDIV(MAXIG))
-    if (SH_OUT)      allocate (SUMSHTERMS(NSHOUT*MAXIG))
-    if (SOURCE_OUT)  allocate (SOURCE1OUT(MAXIG*NSTOKES))
-
-    allocate (SUMRADOUT(NRAD), SUMVISOUT(NVIS))
 
     ! WORK2: Work array for path integration; single angle radiance
     allocate (WORK2(max(NVIS, NRAD, NSTOKES*MAXIG)))
@@ -743,6 +790,7 @@ program shdom
         &INRADFLAG, NEWGRIDFLAG, XGRID, YGRID, ZGRID,&
         &NPTS, NCELLS, GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR,&
         &CELLFLAGS, FLUXES, SHPTR, SOURCE, RSHPTR, RADIANCE)
+
 
     ! Check if we can use pre-calculated "state", if not, generate new grids
     !   NEWGRIDFLAG is from shd_io__restoreState call
@@ -1190,38 +1238,45 @@ program shdom
     ! Calculate the actual memory parameters and output them to the log file
     !╭────────────────────────────────────────────────────────────────────────────╮!
     MAXMB_OUT = 4*(NMU*(2 + 2*NPHI + 2*NLM + 2*33*32)&
-        &+ 4.5*MAXPG + MAXPGL + NUMPHASE_*(MAXLEG + 1)&
-        &+ 16.5*NCELLS + NPTS*(28 + NPHI0MAX*NSTOKES)&
-        &+ NSTOKES*NSH*BIG_ARRAYS)/1024**2
+        + 4.5*MAXPG + MAXPGL + NUMPHASE_*NSTLEG*(MAXLEG + 1)&
+        + 16.5*NCELLS + NPTS*(28 + NPHI0MAX*NSTOKES)&
+        + NSTOKES*NSH*BIG_ARRAYS)/1024**2
+
     ADAPTGRIDFAC_OUT = float(NPTS)/NBPTS
     SHTERM_FAC_OUT = float(NSH)/(NLM*NPTS)
     CELL_POINT_OUT = float(NCELLS)/NPTS
     if (VERBOSE_ .ge. 5) write (6, '(A)')'Message [shdom]: Actual MAX_TOTAL_MB, ADAPT_GRID_FACTOR, NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO'
-    if (VERBOSE_ .ge. 5) write (6, '(28X,F7.2,6X,F7.3,14X,F5.3,15X,F5.3)') MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
+    if (VERBOSE_ .ge. 5) write (6, '(26X,F9.2,6X,F7.3,14X,F5.3,15X,F5.3)') MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
     ! Deallocate array
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    deallocate (WORK, WORK1, WORK2)
-    deallocate (SUMRADOUT, SUMVISOUT)
+    deallocate (ZLEVELS_, TEMPP_, EXTINCTP_, ALBEDOP_, EXTDIRP_, IPHASEP_, LEGENP_)
     if (FLUX_OUT) deallocate (SUMFLUXES, SUMDIRFLUX)
     if (FLUXDIV_OUT) deallocate (SUMFLUXDIV)
     if (SH_OUT) deallocate (SUMSHTERMS)
     if (SOURCE_OUT) deallocate (SOURCE1OUT)
     if (KDIST) deallocate (ZCKD_, GASABS_, KABS)
-    deallocate (BCPTR, BCRAD, DELG, SOLFLUX)
     if (allocated(SFCPARMS)) deallocate (SFCPARMS, SFCGRIDPARMS)
     if (allocated(SENPARMS)) deallocate (SENPARMS)
+    deallocate (DELG, SOLFLUX)
+    deallocate (BCPTR, BCRAD)
+
+    deallocate (MU, WTDO, PHI, NPHI0)
+    deallocate (XGRID, YGRID, ZGRID)
+    deallocate (TEMP, PLANCK)
+    deallocate (EXTINCT, ALBEDO, IPHASE)
+    deallocate (LEGEN)
+    deallocate (GRIDPTR, NEIGHPTR, TREEPTR)
+    deallocate (CELLFLAGS)
+    deallocate (GRIDPOS)
+    deallocate (RSHPTR, SHPTR, OSHPTR)
     deallocate (RADIANCE, SOURCE)
     if (ACCELFLAG) deallocate (DELSOURCE)
-    deallocate (RSHPTR, SHPTR, OSHPTR)
     deallocate (FLUXES, DIRFLUX)
-    deallocate (GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, GRIDPOS)
-    deallocate (TEMP, PLANCK, EXTINCT, ALBEDO, IPHASE, LEGEN)
-    deallocate (XGRID, YGRID, ZGRID)
-    deallocate (ZLEVELS_, TEMPP_, EXTINCTP_, ALBEDOP_, EXTDIRP_, IPHASEP_, LEGENP_)
-    deallocate (MU, WTDO, PHI, NPHI0)
+    deallocate (SUMRADOUT, SUMVISOUT)
+    deallocate (WORK, WORK1, WORK2)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
