@@ -1605,12 +1605,13 @@ subroutine shd_grid__splitGrid(&
             ! Go down the list from highest adaptive cell criterion on down
             OUTOFMEM0 = OUTOFMEM
             I = 1
-            do while (ADAPTCRIT(I) .gt. CURSPLITACC .and. .not. OUTOFMEM0&
-                &.and. I .le. N)
-                if (NCELLS .gt. MAXCELLS .or. NPTS .gt. MAXPTS .or.&
-                    &NPTS*NPHI0MAX .gt. MAXWORK .or.&
-                    &SHPTR(NPTS + 1) .gt. MAXSH .or.&
-                    &RSHPTR(NPTS + 1) .gt. MAXRAD) then
+            do while ((.not. OUTOFMEM0) .and. (ADAPTCRIT(I) .gt. CURSPLITACC)&
+                &.and. (I .le. N))
+                if ((NCELLS .gt. MAXCELLS) .or.&
+                    &(NPTS .gt. MAXPTS) .or.&
+                    &(NPTS*NPHI0MAX .gt. MAXWORK) .or.&
+                    &(SHPTR(NPTS + 1) .gt. MAXSH) .or.&
+                    &(RSHPTR(NPTS + 1) .gt. MAXRAD)) then
                     OUTOFMEM0 = .true.
                 else
                     ICELL = int(ADAPTIND(I))/4
@@ -1637,11 +1638,12 @@ subroutine shd_grid__splitGrid(&
             MAXRAD = MAXIV + MAXIG - 4*NLM
 
             ! Split some more cells to make the adaptive grid "smoother"
-            do while (.not. OUTOFMEM .and. I .le. N)
-                if (NCELLS .gt. MAXCELLS .or. NPTS .gt. MAXPTS .or.&
-                    &NPTS*NPHI0MAX .gt. MAXWORK .or.&
-                    &SHPTR(NPTS + 1) .gt. MAXSH .or.&
-                    &RSHPTR(NPTS + 1) .gt. MAXRAD) then
+            do while ((.not. OUTOFMEM) .and. (I .le. N))
+                if ((NCELLS .gt. MAXCELLS) .or.&
+                    &(NPTS .gt. MAXPTS) .or.&
+                    &(NPTS*NPHI0MAX .gt. MAXWORK) .or.&
+                    &(SHPTR(NPTS + 1) .gt. MAXSH) .or.&
+                    &(RSHPTR(NPTS + 1) .gt. MAXRAD)) then
                     OUTOFMEM = .true.
                 else
                     ! See if cell should be split to make better grid:
