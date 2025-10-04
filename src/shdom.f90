@@ -91,36 +91,36 @@ program shdom
     real(kind=R__), allocatable :: ALLFLUXDIV(:, :, :), ALLSHTERMS(:, :, :, :)
     real(kind=R__), allocatable :: XALLGRID(:), YALLGRID(:)
 
-    integer :: MAXPG, MAXIG, MAXIC, MAXIV, MAXIDO, MAXNZ, MAXNG
-    integer :: MAXLEG, MAXPGL, MAXIGL
-    integer :: MAXNBC, MAXBCRAD
-    integer :: MAXSFCPTS, MAXSFCPARS, BIG_ARRAYS
-    real :: MEMWORD, WANTMEM, NMAXIG
-    real :: MAX_TOTAL_MB, ADAPT_GRID_FACTOR
-    real :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
-    real :: MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
+    integer(kind=I__) :: MAXPG, MAXIG, MAXIC, MAXIV, MAXIDO, MAXNZ, MAXNG
+    integer(kind=I__) :: MAXLEG, MAXPGL, MAXIGL
+    integer(kind=I__) :: MAXNBC, MAXBCRAD
+    integer(kind=I__) :: MAXSFCPTS, MAXSFCPARS, BIG_ARRAYS
 
-    integer :: NSTOKES, NX, NY, NZ, NX1, NY1
-    integer :: NXT, NYT, NPXT, NPYT, MAXPGT, MAXPGLT
-    integer :: NXSFC, NYSFC, NSFCPAR, NTOPPTS, NBOTPTS
-    integer :: NSENDATA, NSENPAR
-    integer :: NG, SIDE
-    integer :: ML, MM, NLM, NSTLEG, NLEG, NANG, NMU, NPHI, NPHI0MAX
-    integer :: NBPTS, NPTS, NCELLS, NSH, NBCELLS, OLDNPTS
-    integer :: MAXITER, ITER, TOTITER, IG, I, NUMOUT, BCFLAG, IPFLAG
-    integer :: NRAD, IRAD, NXOUT, NYOUT, NVIS, IVIS, NSCAN, NPIX, NSHOUT
-    integer :: NCELLSTOT, NPTSTOT, NSHTOT
-    logical :: KDIST, INRADFLAG, NEWGRIDFLAG, DELTAM, ACCELFLAG
-    logical :: BASEOUT, MASTERPROC, VALIDBEAM
-    logical :: RADIANCE_OUT, VISUAL_OUT
-    logical :: FLUX_OUT, FLUXDIV_OUT, SH_OUT, SOURCE_OUT
-    real :: SOLARFLUX0, SOLARFLUXCKD, SOLARFLUX, SOLARMU, SOLARAZ
-    real :: GNDTEMP, GNDALBEDO, SKYRAD, WAVENO(2), WAVELEN
-    real :: SOLACC, SOLCRIT, SPLITACC, SHACC
-    real :: DELXSFC, DELYSFC, MAXASYM, REDUCE_RATIO
-    real :: MUOUT, PHIOUT
-    real :: UNIFZLEV, XO, YO, ZO, DIRPATH
-    real :: DELX0, DELY0
+    real(kind=R__) :: MEMWORD, WANTMEM, NMAXIG
+    real(kind=R__) :: MAX_TOTAL_MB, ADAPT_GRID_FACTOR
+    real(kind=R__) :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
+    real(kind=R__) :: MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
+
+    integer(kind=I__) :: NSTOKES, NX, NY, NZ, NX1, NY1
+    integer(kind=I__) :: NXT, NYT, NPXT, NPYT, MAXPGT, MAXPGLT
+    integer(kind=I__) :: NXSFC, NYSFC, NSFCPAR, NTOPPTS, NBOTPTS
+    integer(kind=I__) :: NSENDATA, NSENPAR
+    integer(kind=I__) :: NG, SIDE
+    integer(kind=I__) :: ML, MM, NLM, NSTLEG, NLEG, NANG, NMU, NPHI, NPHI0MAX
+    integer(kind=I__) :: NBPTS, NPTS, NCELLS, NSH, NBCELLS, OLDNPTS
+    integer(kind=I__) :: MAXITER, ITER, TOTITER, IG, I, NUMOUT, BCFLAG, IPFLAG
+    integer(kind=I__) :: NRAD, IRAD, NXOUT, NYOUT, NVIS, IVIS, NSCAN, NPIX, NSHOUT
+    integer(kind=I__) :: NCELLSTOT, NPTSTOT, NSHTOT
+    integer(kind=I__) :: COUNT_START, COUNT_RATE, COUNT_MAX
+
+    real(kind=R__) :: SOLARFLUX0, SOLARFLUXCKD, SOLARFLUX, SOLARMU, SOLARAZ
+    real(kind=R__) :: GNDTEMP, GNDALBEDO, SKYRAD, WAVENO(2), WAVELEN
+    real(kind=R__) :: SOLACC, SOLCRIT, SPLITACC, SHACC
+    real(kind=R__) :: DELXSFC, DELYSFC, MAXASYM, REDUCE_RATIO
+    real(kind=R__) :: MUOUT, PHIOUT
+    real(kind=R__) :: UNIFZLEV, XO, YO, ZO, DIRPATH
+    real(kind=R__) :: DELX0, DELY0
+
     character(len=1) :: SRCTYPE, UNITS
     character(len=1) :: GRIDTYPE, PROPTYPE
     character(len=2) :: SFCTYPE
@@ -128,13 +128,17 @@ program shdom
     character(len=FNAMEMAXLEN_) :: SENFILE, OutFileNC, RUNNAME
     character(len=FNAMEMAXLEN_) :: MESSAGE
 
-    integer :: count_start, count_rate, count_max
-    logical :: mpiX, mpiY, mpiMode
-    logical :: nmlMode = .true.
+    logical :: KDIST, INRADFLAG, NEWGRIDFLAG, DELTAM, ACCELFLAG
+    logical :: BASEOUT, MASTERPROC, VALIDBEAM
+    logical :: RADIANCE_OUT, VISUAL_OUT
+    logical :: FLUX_OUT, FLUXDIV_OUT, SH_OUT, SOURCE_OUT
+    logical :: NMLMODE = .true.
+    logical :: MPIX, MPIY, MPIMODE
+
 
 
     ! start timing
-    call system_clock(count_start, count_rate, count_max)
+    call system_clock(COUNT_START, COUNT_RATE, COUNT_MAX)
 
 
     ! Start up MPI for multiple processors if available, and
@@ -147,7 +151,7 @@ program shdom
     ! In MPI, the master processor performs the main computation,
     !   and the results are then broadcast to the child processors.
     if (MASTERPROC) then
-        if (nmlMode) then
+        if (NMLMODE) then
             call shd_io__nmlInput(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
                 INSAVEFILE, OUTSAVEFILE, SENFILE,&
                 NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
@@ -343,24 +347,24 @@ program shdom
     call shd_mpi__map(BCFLAG, NPX_, NPY_, NX, NY, NZ, DELX_, DELY_, PROPFILE,&
         &XSTART_, YSTART_, RUNNAME)
 
-    ! BCFLAG bit-representation '...01xx' mpiX
+    ! BCFLAG bit-representation '...01xx' MPIX
     if (btest(BCFLAG, 2)) then
-        mpiX = .true.
+        MPIX = .true.
     else
-        mpiX = .false.
+        MPIX = .false.
     end if
 
-    ! BCFLAG bit-representation '...1xxx' mpiY
+    ! BCFLAG bit-representation '...1xxx' MPIY
     if (btest(BCFLAG, 3)) then
-        mpiY = .true.
+        MPIY = .true.
     else
-        mpiY = .false.
+        MPIY = .false.
     end if
 
-    if (mpiX .or. mpiY) then
-        mpiMode = .true.
+    if (MPIX .or. MPIY) then
+        MPIMODE = .true.
     else
-        mpiMode = .false.
+        MPIMODE = .false.
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
@@ -375,14 +379,14 @@ program shdom
     !   btest(IPFLAG, 0) checks whether IPFLAG=1 or IPFLAG=0 ('...0001' [IPA in X] or '...0000' [3D in X])
     !   btest(BCFLAG, 0) checks whether BCFLAG=1 or BCFLAG=0 ('...0001' [open in X] or '...0000' [periodic in X])
     NX1 = NX + 1
-    if (btest(IPFLAG, 0) .or. btest(BCFLAG, 0) .or. mpiX) NX1 = NX
+    if (btest(IPFLAG, 0) .or. btest(BCFLAG, 0) .or. MPIX) NX1 = NX
 
     ! btest(IPFLAG, 1) checks whether IPFLAG=2 [or 3] or IPFLAG=0 [or 1]
     !   ('...0010' [or '...0011', IPA in Y] or '...0000' [or '...0001', 3D in Y])
     ! btest(BCFLAG, 1) checks whether BCFLAG=2 [or 3] or BCFLAG=0 [or 1]
     !   ('...0010' [or '...0011', open in Y] or '...0000' [or '...0001', periodic in Y])
     NY1 = NY + 1
-    if (btest(IPFLAG, 1) .or. btest(BCFLAG, 1) .or. mpiY) NY1 = NY
+    if (btest(IPFLAG, 1) .or. btest(BCFLAG, 1) .or. MPIY) NY1 = NY
 
     ! Number of base points
     NBPTS = NX1*NY1*NZ
@@ -405,7 +409,7 @@ program shdom
     allocate (IPHASEP_(MAXPG), LEGENP_(MAXPGL))
     MEMWORD = MEMWORD + NPZ_ + 6.0*MAXPG + MAXPGL
 
-    if (mpiMode) then
+    if (MPIMODE) then
 
         ! Read the properties of the medium to the master processor and
         !   distribute to all the processors
@@ -561,7 +565,7 @@ program shdom
             if (OUTPARMS(2, I) .le. 0.0) then
                 NXOUT = 1
             else
-                if (mpiX) then
+                if (MPIX) then
                     NXOUT = max(1, nint(XDOMAIN_/OUTPARMS(2, I)))
                 else
                     NXOUT = max(1, nint((XDOMAIN_ + 2*OUTPARMS(4, I))/OUTPARMS(2, I)))
@@ -570,7 +574,7 @@ program shdom
             if (OUTPARMS(3, I) .le. 0.0) then
                 NYOUT = 1
             else
-                if (mpiY) then
+                if (MPIY) then
                     NYOUT = max(1, nint(YDOMAIN_/OUTPARMS(3, I)))
                 else
                     NYOUT = max(1, nint((YDOMAIN_ + 2*OUTPARMS(5, I))/OUTPARMS(3, I)))
@@ -606,7 +610,7 @@ program shdom
 
     ! Notify user that certain outputs are not supported with multiple processors
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    if (mpiMode .and. MASTERPROC) then
+    if (MPIMODE .and. MASTERPROC) then
         do I = 1, NUMOUT
             if (OUTTYPES(I) .eq. 'F') then
                 if (nint(OUTPARMS(1, I)) .eq. 2 .or. nint(OUTPARMS(1, I)) .eq. 5) then
@@ -637,7 +641,7 @@ program shdom
 
     ! Memory check
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    if (mpiMode) then
+    if (MPIMODE) then
         ! Read the memory parameters from a file, if it exists, and send
         !   the parameters to all processors. Otherwise use the input ones.
         call shd_mpi__readBcastMemParam(MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
@@ -854,7 +858,7 @@ program shdom
 
 
     MESSAGE = 'Message [shdom]: Total time used for preparation: '
-    call shd_util__ticktock(MESSAGE, count_start)
+    call shd_util__ticktock(MESSAGE, COUNT_START)
     if (MASTERPROC) then
         if (VERBOSE_ .ge. 5) write (6, '(A)') trim(adjustl(MESSAGE))
     end if
@@ -926,7 +930,7 @@ program shdom
             IRAD = 0
             do I = 1, NUMOUT
                 if (OUTTYPES(I) .eq. 'R') then
-                    if (mpiMode) then
+                    if (MPIMODE) then
                         if (SENFILE(1:4) .ne. 'NONE') then
                             call shd_mpi__computeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                                 &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
@@ -994,7 +998,7 @@ program shdom
             IVIS = 0
             do I = 1, NUMOUT
                 if (OUTTYPES(I) .eq. 'V') then
-                    if (mpiMode) then
+                    if (MPIMODE) then
                         if (SENFILE(1:4) .ne. 'NONE') then
                             call shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                                 &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
@@ -1091,7 +1095,7 @@ program shdom
 
                 allocate(DIRFLUX_TMP(NPTS))
 
-                if (mpiMode) then
+                if (MPIMODE) then
                     call shd_mpi__makeDirect(1, NPTS, BCFLAG, IPFLAG, .false., ML,&
                         &NSTLEG, NLEG, SOLARFLUXCKD, SOLARMU, SOLARAZ,&
                         &GRIDPOS, NX, XGRID, NY, YGRID, DIRFLUX_TMP)
@@ -1132,7 +1136,7 @@ program shdom
 
 
     MESSAGE = 'Message [shdom]: Total time used for runs: '
-    call shd_util__ticktock(MESSAGE, count_start)
+    call shd_util__ticktock(MESSAGE, COUNT_START)
     if (MASTERPROC) then
         if (VERBOSE_ .ge. 5) write (6, '(A)') trim(adjustl(MESSAGE))
     end if
@@ -1143,7 +1147,7 @@ program shdom
     NSH = SHPTR(NPTS + 1)
     IRAD = 0
     IVIS = 0
-    if (mpiMode) then
+    if (MPIMODE) then
 
         if (MASTERPROC) then
             if (FLUX_OUT) allocate (ALLFLUXES(3, NZ, NYT, NXT))
@@ -1280,7 +1284,7 @@ program shdom
 
 
     MESSAGE = 'Message [shdom]: Total time used for output: '
-    call shd_util__ticktock(MESSAGE, count_start)
+    call shd_util__ticktock(MESSAGE, COUNT_START)
     if (MASTERPROC) then
         if (VERBOSE_ .ge. 5) write (6, '(A)') trim(adjustl(MESSAGE))
     end if
