@@ -89,8 +89,8 @@ program shdom
     integer :: MAXPG, MAXIG, MAXIC, MAXIV, MAXIDO, MAXNZ, MAXNG
     integer :: MAXLEG, MAXPGL, MAXIGL
     integer :: MAXNBC, MAXBCRAD
-    integer :: MAXSFCPTS, MAXSFCPARS, BIG_ARRAYS, NMAXIG
-    real :: MEMWORD, WANTMEM
+    integer :: MAXSFCPTS, MAXSFCPARS, BIG_ARRAYS
+    real :: MEMWORD, WANTMEM, NMAXIG
     real :: MAX_TOTAL_MB, ADAPT_GRID_FACTOR
     real :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
     real :: MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
@@ -641,34 +641,64 @@ program shdom
     BIG_ARRAYS = 3
     if (.not. ACCELFLAG) BIG_ARRAYS = 2
 
+    ! NMAXIG
+    !╭──────────────────────────────────────────────────────────────╮!
+    NMAXIG = 0.0
+
+    NMAXIG = NMAXIG + 4.5 ! TEMP, PLANCK, EXTINCT, ALBEDO, IPHASE[0.5, integer(kind=2)]
+
+    if (NUMPHASE_ .gt. 0) then
+        MEMWORD = MEMWORD + NUMPHASE_*NSTLEG*(MAXLEG + 1) ! offset phase table
+    else
+        NMAXIG = NMAXIG + NSTLEG*(MAXLEG + 1)
+    end if
+
+    if (SFCFILE(1:4) .ne. 'NONE') then
+        if (SFCTYPE(2:2) .eq. 'L') then
+            NMAXIG = real(3)/real(NZ) * (MAXSFCPARS + 2.0 + NSTOKES*2.0)
+        else
+            NMAXIG = real(3)/real(NZ) * (MAXSFCPARS + 2.0 + NSTOKES*(2.0+ NMU*NPHI0MAX/2))
+        end if
+    end if
+
+    if (FLUX_OUT)    NMAXIG = NMAXIG + 3.0
+    if (FLUXDIV_OUT) NMAXIG = NMAXIG + 1.0
+    if (SH_OUT)      NMAXIG = NMAXIG + NSHOUT
+    if (SOURCE_OUT)  NMAXIG = NMAXIG + NSTOKES
+
+    NMAXIG = NMAXIG + 16.5*CELL_TO_POINT_RATIO ! GRIDPTR[8.0], NEIGHPTR[6.0], TREEPTR[2.0], CELLFLAGS[0.5]
+
+    NMAXIG = NMAXIG + 6.0   ! GRIDPOS[3.0], RSHPTR[1.0], SHPTR[1.0], OSHPTR[1.0]
+    MEMWORD = MEMWORD + 4.0 ! offset RSHPTR[+2], SHPTR[+1], OSHPTR[+1]
+
+    if (ACCELFLAG) then
+        NMAXIG = NMAXIG + NSTOKES*(1.0+3.0*NUM_SH_TERM_FACTOR*NLM) ! RADIANCE, SOURCE, DELSOURCE
+    else
+        NMAXIG = NMAXIG + NSTOKES*(1.0+2.0*NUM_SH_TERM_FACTOR*NLM) ! RADIANCE, SOURCE
+    end if
+
+    NMAXIG = NMAXIG + 3.0 ! FLUXES[2.0], DIRFLUX[1.0]
+
+    MEMWORD = MEMWORD + (NRAD+NVIS) ! offset SUMRADOUT[NRAD] and SUMVISOUT[NVIS]
+
+    NMAXIG = NMAXIG + (NSTOKES*(max(NPHI0MAX, 4)+1.0) + 8.0) !WORK, WORK1, WORK2
+
+    MEMWORD = MEMWORD + NRAD + NVIS ! WORK2 (over-count but memory safe)
+    !╰──────────────────────────────────────────────────────────────╯!
+
     ! MEMWORD is now more accurate than before
     ! before:
     !   MEMWORD = NMU*(2 + 2*NPHI + 2*NLM + 2*33*32)&            ! SHDO allocation
     !       + 4.5*MAXPG + MAXPGL + NUMPHASE_*NSTLEG*(MAXLEG + 1) ! phase allocation
     ! now: update MEMWORD after every allocation step
-    !╭──────────────────────────────────────────────────────────────╮!
-    ! additional 4
-    ! scaled with MAXIG
-    ! if surface, real(3)/real(NZ) * MAXSFCPARS
-    ! if not lambertian, real(3)/real(NZ) * (2 + NSTOKES*(2+ NMU*NPHI0MAX/2))
-    !   or real(3)/real(NZ) * 2 (lambertian)
-    ! if FLUX_OUT, 3
-    ! if FLUXDIV_OUT, 1
-    ! if SH_OUT, NSHOUT
-    ! if SOURCE_OUT, NSTOKES
-    ! 2
-    ! 3
-    ! if NUMPHASE_, NUMPHASE_*NSTLEG*(MAXLEG + 1)
-    !   or NSTLEG*(MAXLEG + 1)
-    ! cellpointratio * 17
-    ! 3
-    ! 5
+    !
+    ! NMAXIG is now more accurate than before
+    ! before:
+    !   NMAXIG = 28.0 + 16.5*CELL_TO_POINT_RATIO&
+    !       + NPHI0MAX*NSTOKES + NUM_SH_TERM_FACTOR*NSTOKES*NLM*BIG_ARRAYS
+    ! now: update NMAXIG from every allocation step
 
-    !NMAXIG = CELL_TO_POINT_RATIO +
-
-    WANTMEM = ADAPT_GRID_FACTOR*NBPTS*(28 + 16.5*CELL_TO_POINT_RATIO&
-        + NPHI0MAX*NSTOKES + NUM_SH_TERM_FACTOR*NSTOKES*NLM*BIG_ARRAYS)
-    !╰──────────────────────────────────────────────────────────────╯!
+    WANTMEM = ADAPT_GRID_FACTOR*NBPTS*NMAXIG
 
     REDUCE_RATIO = min(1.0, ((MAX_TOTAL_MB*1024**2)/4 - MEMWORD)/WANTMEM)
     ADAPT_GRID_FACTOR = ADAPT_GRID_FACTOR*REDUCE_RATIO
@@ -711,24 +741,33 @@ program shdom
         stop
     end if
 
-    ! max number of legendre coefficients
-    if (NUMPHASE_ .gt. 0) then
-        MAXIGL = NUMPHASE_*NSTLEG*(MAXLEG + 1)
-    else
-        MAXIGL = MAXIG*NSTLEG*(MAXLEG + 1)
-    end if
-
     MAXNBC = MAXIG*3/NZ
     if (SFCTYPE(2:2) .eq. 'L') then ! Lambertian surface
         MAXBCRAD = 2*MAXNBC
     else
         MAXBCRAD = (2 + NMU*NPHI0MAX/2)*MAXNBC
     end if
+
+    ! max number of legendre coefficients
+    if (NUMPHASE_ .gt. 0) then
+        MAXIGL = NUMPHASE_*NSTLEG*(MAXLEG + 1)
+    else
+        MAXIGL = MAXIG*NSTLEG*(MAXLEG + 1)
+    end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
     ! Allocate array
     !╭────────────────────────────────────────────────────────────────────────────╮!
+    ! temperature and planck radiance (maybe we don't need this for shortwave)
+    allocate (TEMP(MAXIG), PLANCK(MAXIG))
+
+    ! extinction, single scattering albedo, and phase function indices
+    allocate (EXTINCT(MAXIG), ALBEDO(MAXIG), IPHASE(MAXIG))
+
+    ! legendre coefficients
+    allocate (LEGEN(MAXIGL))
+
     ! boundary points pointers and radiances
     if (SFCFILE(1:4) .ne. 'NONE') allocate (SFCGRIDPARMS(MAXSFCPARS*MAXNBC))
     allocate (BCPTR(2*MAXNBC), BCRAD(NSTOKES, MAXBCRAD))
@@ -738,15 +777,6 @@ program shdom
     if (FLUXDIV_OUT) allocate (SUMFLUXDIV(MAXIG))
     if (SH_OUT)      allocate (SUMSHTERMS(MAXIG*NSHOUT))
     if (SOURCE_OUT)  allocate (SOURCE1OUT(MAXIG*NSTOKES))
-
-    ! temperature and planck radiance (maybe we don't need this for shortwave)
-    allocate (TEMP(MAXIG), PLANCK(MAXIG))
-
-    ! extinction, single scattering albedo, and phase function indices
-    allocate (EXTINCT(MAXIG), ALBEDO(MAXIG), IPHASE(MAXIG))
-
-    ! legendre coefficients
-    allocate (LEGEN(MAXIGL))
 
     ! pointer to 8 grid points belonging to a cell
     ! pointer to 6 neighboring cells of a cell
@@ -1237,10 +1267,16 @@ program shdom
 
     ! Calculate the actual memory parameters and output them to the log file
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    MAXMB_OUT = 4*(NMU*(2 + 2*NPHI + 2*NLM + 2*33*32)&
-        + 4.5*MAXPG + MAXPGL + NUMPHASE_*NSTLEG*(MAXLEG + 1)&
-        + 16.5*NCELLS + NPTS*(28 + NPHI0MAX*NSTOKES)&
-        + NSTOKES*NSH*BIG_ARRAYS)/1024**2
+    ! MAXMB is now more accurate than before
+    ! before:
+    !  MAXMB_OUT = 4*(NMU*(2 + 2*NPHI + 2*NLM + 2*33*32)&
+    !      + 4.5*MAXPG + MAXPGL + NUMPHASE_*NSTLEG*(MAXLEG + 1)&
+    !      + 16.5*NCELLS + NPTS*(28 + NPHI0MAX*NSTOKES)&
+    !      + NSTOKES*NSH*BIG_ARRAYS)/1024**2
+    ! now:
+    !   use NMAXIG
+    MAXMB_OUT = 4*(MEMWORD + 16.5*NCELLS&
+        + NPTS*(NMAXIG-16.5*CELL_TO_POINT_RATIO))/1024**2
 
     ADAPTGRIDFAC_OUT = float(NPTS)/NBPTS
     SHTERM_FAC_OUT = float(NSH)/(NLM*NPTS)
