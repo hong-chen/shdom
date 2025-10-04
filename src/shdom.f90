@@ -52,7 +52,7 @@ program shdom
     implicit none
     ! Number of output files and inputs parameter per file
     integer, parameter :: MAXOUT = 20, MAXPAR = 100
-    real      :: OUTPARMS(MAXPAR, MAXOUT)
+    real :: OUTPARMS(MAXPAR, MAXOUT)
     character(len=1) :: OUTTYPES(MAXOUT)
     character(len=FNAMEMAXLEN_) :: OUTFILES(MAXOUT)
 
@@ -286,22 +286,38 @@ program shdom
     !   if NX=1 IPFLAG=1, bit representation '0001'
     !   if NY=1 IPFLAG=2, bit representation '0010'
     !   if  IPA IPFLAG=3, bit representation '0011'
-    if (NX .eq. 1) IPFLAG = ior(IPFLAG, 1) ! '0000'(3D,   0) + '0001'(NX=1, 1) = '0001' (NX=1, 1)
-    if (NY .eq. 1) IPFLAG = ior(IPFLAG, 2) ! '0001'(NX=1, 1) + '0010'(NY=1, 2) = '0011' (IPA,  3)
+    if (NX .eq. 1) then
+        IPFLAG = ior(IPFLAG, 1) ! '0000'(3D,   0) + '0001'(NX=1, 1) = '0001' (NX=1, 1)
+        if (VERBOSE_ .ge. 4) write (6, '(A)') 'Warning [shdom]: NX=1, reset IPFLAG=1.'
+    end if
+    if (NY .eq. 1) then
+        IPFLAG = ior(IPFLAG, 2) ! '0001'(NX=1, 1) + '0010'(NY=1, 2) = '0011' (IPA,  3)
+        if (VERBOSE_ .ge. 4) write (6, '(A)') 'Warning [shdom]: NY=1, reset IPFLAG=2 (or 3).'
+    end if
 
     ! Set the full domain grid sizes (variables end in T)
     NXT  = NX  ; NYT  = NY
     NPXT = NPX_; NPYT = NPY_
 
-    if (NPXT .eq. 1) DELX_ = NXSFC*DELXSFC ! overwrite DELX_ if only 1 grid in X direction
-    if (NPYT .eq. 1) DELY_ = NYSFC*DELYSFC ! overwrite DELY_ if only 1 grid in Y direction
+    if (NPXT .eq. 1) then
+        DELX_ = NXSFC*DELXSFC ! overwrite DELX_ if only 1 grid in X direction
+        if (VERBOSE_ .ge. 4) write (6, '(A)') 'Warning [shdom]: NPXT=1, reset DELX_ by surface.'
+    end if
+    if (NPYT .eq. 1) then
+        DELY_ = NYSFC*DELYSFC ! overwrite DELY_ if only 1 grid in Y direction
+        if (VERBOSE_ .ge. 4) write (6, '(A)') 'Warning [shdom]: NPYT=1, reset DELY_ by surface.'
+    end if
 
     XDOMAIN_ = NPXT*DELX_
     YDOMAIN_ = NPYT*DELY_
 
     ! Choose the option to compute higher order radiance SH terms
     HIGHORDERRAD_ = .false.
-    if ((NPXT .eq. 1) .and. (NPYT .eq. 1) .and. (NXSFC .le. 32) .and. (NXSFC .le. 32)) HIGHORDERRAD_ = .true.
+    if ((NPXT .eq. 1) .and. (NPYT .eq. 1) .and.&
+        &(NXSFC .le. 32) .and. (NXSFC .le. 32)) then
+        HIGHORDERRAD_ = .true.
+        if (VERBOSE_ .ge. 4) write (6, '(A)') 'Warning [shdom]: 1D calculation, set HIGHORDERRAD_ to .TRUE.'
+    end if
 
     NSHOUT = 4
     if (HIGHORDERRAD_) NSHOUT = 5
@@ -502,7 +518,7 @@ program shdom
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
-    ! Read SENFILE and broadcast if MPI
+    ! Read SENFILE and broadcast data if MPI
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Read in user-specified sensor properties if given
     !   this is a binary angle input implemented for 'R' and 'V3'
@@ -589,24 +605,24 @@ program shdom
         do I = 1, NUMOUT
             if (OUTTYPES(I) .eq. 'F') then
                 if (nint(OUTPARMS(1, I)) .eq. 2 .or. nint(OUTPARMS(1, I)) .eq. 5) then
-                    write (6, '(A,I1,A,A)') 'Warning [shdom]: F output format ', nint(OUTPARMS(1, I)),&
+                    if (VERBOSE_ .ge. 4) write (6, '(A,I1,A,A)') 'Warning [shdom]: F output format ', nint(OUTPARMS(1, I)),&
                         &' not supported for multiple processors: ', trim(adjustl(OUTFILES(I)))
                 end if
             else if (OUTTYPES(I) .eq. 'H') then
                 if (nint(OUTPARMS(1, I)) .eq. 3) then
-                    write (6, '(A,I1,A,A)') 'Warning [shdom]: H output format ', nint(OUTPARMS(1, I)),&
+                    if (VERBOSE_ .ge. 4) write (6, '(A,I1,A,A)') 'Warning [shdom]: H output format ', nint(OUTPARMS(1, I)),&
                         &' not supported for multiple processors: ', trim(adjustl(OUTFILES(I)))
                 end if
             else if (OUTTYPES(I) .eq. 'S') then
                 if (nint(OUTPARMS(1, I)) .eq. 2) then
-                    write (6, '(A,I1,A,A)') 'Warning [shdom]: S output format ', nint(OUTPARMS(1, I)),&
+                    if (VERBOSE_ .ge. 4) write (6, '(A,I1,A,A)') 'Warning [shdom]: S output format ', nint(OUTPARMS(1, I)),&
                         &' not supported for multiple processors: ', trim(adjustl(OUTFILES(I)))
                 end if
             else if (OUTTYPES(I) .eq. 'J') then
-                write (6, '(A,A)') 'Warning [shdom]: J output format not supported for multiple processors: ',&
+                if (VERBOSE_ .ge. 4) write (6, '(A,A)') 'Warning [shdom]: J output format not supported for multiple processors: ',&
                     &trim(adjustl(OUTFILES(I)))
             else if (OUTTYPES(I) .eq. 'M') then
-                write (6, '(A,A)') 'Warning [shdom]: M output format not supported for multiple processors: ',&
+                if (VERBOSE_ .ge. 4) write (6, '(A,A)') 'Warning [shdom]: M output format not supported for multiple processors: ',&
                     &trim(adjustl(OUTFILES(I)))
             end if
         end do
