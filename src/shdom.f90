@@ -136,7 +136,6 @@ program shdom
     logical :: MPIX, MPIY, MPIMODE
 
 
-
     ! start timing
     call system_clock(COUNT_START, COUNT_RATE, COUNT_MAX)
 
