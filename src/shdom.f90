@@ -50,41 +50,46 @@ program shdom
     use shd_util
 
     implicit none
+
+    integer, parameter :: R__  = selected_real_kind(6) ! default precision for float
+    integer, parameter :: I__  = selected_int_kind(9)  ! default precision for integer
+
     ! Number of output files and inputs parameter per file
-    integer, parameter :: MAXOUT = 20, MAXPAR = 100
-    real :: OUTPARMS(MAXPAR, MAXOUT)
+    integer(kind=I__), parameter :: MAXOUT = 20, MAXPAR = 100
+    real(kind=R__)   :: OUTPARMS(MAXPAR, MAXOUT)
     character(len=1) :: OUTTYPES(MAXOUT)
     character(len=FNAMEMAXLEN_) :: OUTFILES(MAXOUT)
 
-    real, allocatable :: SOLFLUX(:), DELG(:), KABS(:, :)
-    real, allocatable :: XGRID(:), YGRID(:), ZGRID(:)
-    real, allocatable :: TEMP(:), PLANCK(:), EXTINCT(:), ALBEDO(:)
-    real, allocatable :: LEGEN(:)
-    integer*2, allocatable:: IPHASE(:)
-    integer, allocatable :: GRIDPTR(:, :), NEIGHPTR(:, :), TREEPTR(:, :)
-    integer*2, allocatable:: CELLFLAGS(:)
-    real, allocatable :: GRIDPOS(:, :)
-    integer, allocatable :: RSHPTR(:), SHPTR(:), OSHPTR(:)
-    real, allocatable :: RADIANCE(:, :), SOURCE(:, :), DELSOURCE(:, :)
-    integer, allocatable :: WORK1(:)
-    real, allocatable :: WORK(:), WORK2(:)
-    real, allocatable :: FLUXES(:, :), DIRFLUX(:), DIRFLUX_TMP(:)
-    integer, allocatable :: NPHI0(:)
-    real, allocatable :: MU(:), WTDO(:), PHI(:)
-    integer, allocatable :: BCPTR(:)
-    real, allocatable :: BCRAD(:, :)
-    real, allocatable :: SFCPARMS(:)
-    real, allocatable :: SFCGRIDPARMS(:)
-    real, allocatable :: SENPARMS(:)
-    real, allocatable :: SUMFLUXES(:, :), SUMDIRFLUX(:), SUMFLUXDIV(:)
-    real, allocatable :: SUMSHTERMS(:), SOURCE1OUT(:)
-    real, allocatable :: SUMRADOUT(:), SUMVISOUT(:)
-    real, allocatable :: TEMPPT(:), EXTINCTPT(:), ALBEDOPT(:)
-    real, allocatable :: LEGENPT(:)
-    integer*2, allocatable :: IPHASEPT(:)
-    real, allocatable :: ALLFLUXES(:, :, :, :)
-    real, allocatable :: ALLFLUXDIV(:, :, :), ALLSHTERMS(:, :, :, :)
-    real, allocatable :: XALLGRID(:), YALLGRID(:)
+    integer(kind=2)  , allocatable :: IPHASE(:)
+    integer(kind=2)  , allocatable :: IPHASEPT(:)
+    integer(kind=2)  , allocatable :: CELLFLAGS(:)
+    integer(kind=I__), allocatable :: GRIDPTR(:, :), NEIGHPTR(:, :), TREEPTR(:, :)
+    integer(kind=I__), allocatable :: RSHPTR(:), SHPTR(:), OSHPTR(:)
+    integer(kind=I__), allocatable :: WORK1(:)
+    integer(kind=I__), allocatable :: NPHI0(:)
+    integer(kind=I__), allocatable :: BCPTR(:)
+
+    real(kind=R__), allocatable :: SOLFLUX(:), DELG(:), KABS(:, :)
+    real(kind=R__), allocatable :: XGRID(:), YGRID(:), ZGRID(:)
+    real(kind=R__), allocatable :: TEMP(:), PLANCK(:), EXTINCT(:), ALBEDO(:)
+    real(kind=R__), allocatable :: LEGEN(:)
+    real(kind=R__), allocatable :: GRIDPOS(:, :)
+    real(kind=R__), allocatable :: RADIANCE(:, :), SOURCE(:, :), DELSOURCE(:, :)
+    real(kind=R__), allocatable :: WORK(:), WORK2(:)
+    real(kind=R__), allocatable :: FLUXES(:, :), DIRFLUX(:), DIRFLUX_TMP(:)
+    real(kind=R__), allocatable :: MU(:), WTDO(:), PHI(:)
+    real(kind=R__), allocatable :: BCRAD(:, :)
+    real(kind=R__), allocatable :: SFCPARMS(:)
+    real(kind=R__), allocatable :: SFCGRIDPARMS(:)
+    real(kind=R__), allocatable :: SENPARMS(:)
+    real(kind=R__), allocatable :: SUMFLUXES(:, :), SUMDIRFLUX(:), SUMFLUXDIV(:)
+    real(kind=R__), allocatable :: SUMSHTERMS(:), SOURCE1OUT(:)
+    real(kind=R__), allocatable :: SUMRADOUT(:), SUMVISOUT(:)
+    real(kind=R__), allocatable :: TEMPPT(:), EXTINCTPT(:), ALBEDOPT(:)
+    real(kind=R__), allocatable :: LEGENPT(:)
+    real(kind=R__), allocatable :: ALLFLUXES(:, :, :, :)
+    real(kind=R__), allocatable :: ALLFLUXDIV(:, :, :), ALLSHTERMS(:, :, :, :)
+    real(kind=R__), allocatable :: XALLGRID(:), YALLGRID(:)
 
     integer :: MAXPG, MAXIG, MAXIC, MAXIV, MAXIDO, MAXNZ, MAXNG
     integer :: MAXLEG, MAXPGL, MAXIGL
@@ -98,6 +103,7 @@ program shdom
     integer :: NSTOKES, NX, NY, NZ, NX1, NY1
     integer :: NXT, NYT, NPXT, NPYT, MAXPGT, MAXPGLT
     integer :: NXSFC, NYSFC, NSFCPAR, NTOPPTS, NBOTPTS
+    integer :: NSENDATA, NSENPAR
     integer :: NG, SIDE
     integer :: ML, MM, NLM, NSTLEG, NLEG, NANG, NMU, NPHI, NPHI0MAX
     integer :: NBPTS, NPTS, NCELLS, NSH, NBCELLS, OLDNPTS
@@ -114,16 +120,15 @@ program shdom
     real :: DELXSFC, DELYSFC, MAXASYM, REDUCE_RATIO
     real :: MUOUT, PHIOUT
     real :: UNIFZLEV, XO, YO, ZO, DIRPATH
+    real :: DELX0, DELY0
     character(len=1) :: SRCTYPE, UNITS
     character(len=1) :: GRIDTYPE, PROPTYPE
     character(len=2) :: SFCTYPE
     character(len=FNAMEMAXLEN_) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
     character(len=FNAMEMAXLEN_) :: SENFILE, OutFileNC, RUNNAME
-    integer :: NSENDATA, NSENPAR
+    character(len=FNAMEMAXLEN_) :: MESSAGE
 
     integer :: count_start, count_rate, count_max
-    character(len=FNAMEMAXLEN_) :: message
-    real :: DELX0, DELY0
     logical :: mpiX, mpiY, mpiMode
     logical :: nmlMode = .true.
 
@@ -848,10 +853,10 @@ program shdom
     end if
 
 
-    message = 'Message [shdom]: Total time used for preparation: '
-    call shd_util__ticktock(message, count_start)
+    MESSAGE = 'Message [shdom]: Total time used for preparation: '
+    call shd_util__ticktock(MESSAGE, count_start)
     if (MASTERPROC) then
-        if (VERBOSE_ .ge. 5) write (6, '(A)') trim(adjustl(message))
+        if (VERBOSE_ .ge. 5) write (6, '(A)') trim(adjustl(MESSAGE))
     end if
 
 
@@ -1126,10 +1131,10 @@ program shdom
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
-    message = 'Message [shdom]: Total time used for runs: '
-    call shd_util__ticktock(message, count_start)
+    MESSAGE = 'Message [shdom]: Total time used for runs: '
+    call shd_util__ticktock(MESSAGE, count_start)
     if (MASTERPROC) then
-        if (VERBOSE_ .ge. 5) write (6, '(A)') trim(adjustl(message))
+        if (VERBOSE_ .ge. 5) write (6, '(A)') trim(adjustl(MESSAGE))
     end if
 
 
@@ -1274,10 +1279,10 @@ program shdom
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
-    message = 'Message [shdom]: Total time used for output: '
-    call shd_util__ticktock(message, count_start)
+    MESSAGE = 'Message [shdom]: Total time used for output: '
+    call shd_util__ticktock(MESSAGE, count_start)
     if (MASTERPROC) then
-        if (VERBOSE_ .ge. 5) write (6, '(A)') trim(adjustl(message))
+        if (VERBOSE_ .ge. 5) write (6, '(A)') trim(adjustl(MESSAGE))
     end if
 
 
