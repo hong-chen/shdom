@@ -94,7 +94,7 @@ module shd_mpi
 
 contains
 
-subroutine shd_mpi__start(MASTERPROC)
+subroutine shd_mpi__start(MASTERPROC, NUMPROC)
 
     ! Initializes the MPI system, and gets the number of processors in use
     ! and the current processor.  If this is processor 0 then MASTERPROC
@@ -102,6 +102,7 @@ subroutine shd_mpi__start(MASTERPROC)
     ! for the standard output from the non-master processors.
 
     logical, intent(out) :: MASTERPROC
+    integer, intent(out) :: NUMPROC
 
 #if HAS_MPI
 ! note: this if clause has <else>
@@ -127,8 +128,11 @@ subroutine shd_mpi__start(MASTERPROC)
     else
         MASTERPROC = .false.
     end if
+
+    NUMPROC = NUMPROC_
 #else
     MASTERPROC = .true.
+    NUMPROC = 1
 #endif
 
     return

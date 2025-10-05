@@ -155,6 +155,7 @@ module globals_cfg
     integer, parameter :: FNAMEMAXLEN_ = 256 ! file name max length (number of characters)
     logical, save :: HIGHORDERRAD_
     real(kind=8), save    :: RACC_
+    real(kind=4), save    :: TOTSYSMEM_MB_ = 16000.0
 
     integer(kind=1), save :: VERBOSE_
     !Severity    Level  Description

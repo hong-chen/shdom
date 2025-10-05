@@ -101,7 +101,7 @@ program shdom
     real(kind=R__) :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
     real(kind=R__) :: MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
 
-    integer(kind=I__) :: NSTOKES, NX, NY, NZ, NX1, NY1
+    integer(kind=I__) :: NUMPROC, NSTOKES, NX, NY, NZ, NX1, NY1
     integer(kind=I__) :: NXT, NYT, NPXT, NPYT, MAXPGT, MAXPGLT
     integer(kind=I__) :: NXSFC, NYSFC, NSFCPAR, NTOPPTS, NBOTPTS
     integer(kind=I__) :: NSENDATA, NSENPAR
@@ -129,11 +129,11 @@ program shdom
     character(len=FNAMEMAXLEN_) :: MESSAGE
 
     logical :: KDIST, INRADFLAG, NEWGRIDFLAG, DELTAM, ACCELFLAG
-    logical :: BASEOUT, MASTERPROC, VALIDBEAM
+    logical :: BASEOUT, MASTERPROC,  VALIDBEAM
     logical :: RADIANCE_OUT, VISUAL_OUT
     logical :: FLUX_OUT, FLUXDIV_OUT, SH_OUT, SOURCE_OUT
-    logical :: NMLMODE = .true.
     logical :: MPIX, MPIY, MPIMODE
+    logical :: NMLMODE = .true.
 
 
     ! start timing
@@ -142,7 +142,7 @@ program shdom
 
     ! Start up MPI for multiple processors if available, and
     !   return flag for master process (procnum=0)
-    call shd_mpi__start(MASTERPROC)
+    call shd_mpi__start(MASTERPROC, NUMPROC)
 
 
     ! Read input from namelist or user input
@@ -649,10 +649,8 @@ program shdom
 
     ! Guess maximum number of grid points, cells, SH vector size needed
     !   but don't let MAX_TOTAL_MB be exceeded
-    !if (MAX_TOTAL_MB*1024.0**2 .gt. 1.8*huge(MAXIV)) then
-    !    MAX_TOTAL_MB = 1.8*huge(MAXIV)/1024.0**2
-    if (MAX_TOTAL_MB .gt. 3800.0) then
-        MAX_TOTAL_MB = 3800.0
+    if (MAX_TOTAL_MB .gt. 0.9*TOTSYSMEM_MB_/real(NUMPROC)) then
+        MAX_TOTAL_MB = 0.9*TOTSYSMEM_MB_/real(NUMPROC)
         if (VERBOSE_ .ge. 5) write (6, '(A,F0.2," MB")') 'Message [shdom]: MAX_TOTAL_MB reduced to: ', MAX_TOTAL_MB
     else
         if (VERBOSE_ .ge. 5) write (6, '(A,F0.2," MB")') 'Message [shdom]: MAX_TOTAL_MB is set to: ', MAX_TOTAL_MB
