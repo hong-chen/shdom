@@ -301,9 +301,8 @@ subroutine shd_intg__integratePath(&
             ! Transfer the radiance for the (IMU,IPHI) discrete ordinate from
             !   GRIDRAD to the work array.
             do I = 1, NPTS
-                !if (GRIDRAD(1, I) .lt. -0.0001) then
                 if (GRIDRAD(1, I) .lt. -RACC_) then
-                    write (6, *) 'Warning [_integratePath]: Grid point has no value',&
+                    if (VERBOSE_ .ge. 4) write (6, *) 'Warning [_integratePath]: Grid point has no value',&
                         &I, MU(IMU), PHI(IMU, IPHI), GRIDRAD(1, I), XGRID(1), YGRID(1),&
                         &GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I)
                     ! stop

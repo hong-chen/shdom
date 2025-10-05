@@ -298,7 +298,7 @@ subroutine shd_io__userInput(&
     read (*, '(A)') OutFileNC
     write (*, '(A)') OutFileNC
     if (OutFileNC(1:4) .ne. 'NONE') then
-        write(*, '(A)') 'Warning [_userInput]: Removed support for netCDF, set <OUTFILENC="NONE">.'
+        if (VERBOSE_ .ge. 4) write(*, '(A)') 'Warning [_userInput]: Removed support for netCDF, set <OUTFILENC="NONE">.'
         OutFileNC = 'NONE'
     end if
 
@@ -511,7 +511,7 @@ subroutine shd_io__nmlInput(&
     dOutFileNC = OutFileNC
 
     if (dOutFileNC(1:4) .ne. 'NONE') then
-        write(*, '(A)') 'Warning [_nmlInput]: Removed support for netCDF, set <OUTFILENC="NONE">.'
+        if (VERBOSE_ .ge. 4) write(*, '(A)') 'Warning [_nmlInput]: Removed support for netCDF, set <OUTFILENC="NONE">.'
         dOutFileNC = 'NONE'
     end if
 
@@ -816,7 +816,7 @@ subroutine shd_io__readPrp(&
             end do
 
             if (NLEG .gt. MAXLEG) then
-                write (*, '(A,I4,A,I4,A)')&
+                if (VERBOSE_ .ge. 4) write (*, '(A,I4,A,I4,A)')&
                     &'Warning [_readPrp]: Truncating phase function from ',&
                     &NLEG, ' to ', MAXLEG, ' Legendre terms.'
             end if
@@ -1014,7 +1014,7 @@ subroutine shd_io__checkPrpInput(&
     end do
 
     if (TMIN .lt. 150.0 .or. TMAX .gt. 350.0) then
-        write (*, *) 'Warning [_checkPrpInput]: ',&
+        if (VERBOSE_ .ge. 4) write (*, *) 'Warning [_checkPrpInput]: ',&
             &'temperature min and max (Kelvin): ', TMIN, TMAX
         write (*, *)
     end if
@@ -1044,7 +1044,7 @@ subroutine shd_io__checkPrpInput(&
     end do
 
     if (LEGWARN) then
-        write (*, *) 'Warning [_checkPrpInput]: ',&
+        if (VERBOSE_ .ge. 4) write (*, *) 'Warning [_checkPrpInput]: ',&
             &'an asymmetry parameter is 1/3 (Chi1=1); ',&
             &'  Chi0 should not be specified for Chi1.'
         write (*, *)
@@ -1246,9 +1246,10 @@ subroutine shd_io__readSfc(&
                     SFCPARMS(I + 2) = ALB
                     if (ALB .lt. 0.0 .or. ALB .gt. 1.0)&
                         &stop 'Error [_readSfc]: Illegal surface albedo.'
-                    if (TEMP .lt. 150. .or. TEMP .gt. 350.)&
-                        &write (*, *) 'Warning [_readSfc]: ',&
-                        &' surface temperature: ', IX, IY, TEMP
+                    if (TEMP .lt. 150. .or. TEMP .gt. 350.) then
+                        if (VERBOSE_ .ge. 4) write (*, *) 'Warning [_readSfc]: ',&
+                            &' surface temperature: ', IX, IY, TEMP
+                    end if
                     GNDTEMP = GNDTEMP + TEMP
                     GNDALBEDO = GNDALBEDO + ALB
                     N = N + 1
@@ -1785,14 +1786,14 @@ subroutine shd_io__restoreState(&
     read (3) NSTI, NXI, NYI, NZI, MLI, MMI, NLMI, NPTS, NCELLS
 
     if (NXI .ne. NX .or. NYI .ne. NY .or. NZI .ne. NZ) then
-        write (6, '(A, 3I6)') 'Warning [_restoreState]: wrong grid size:', NXI, NYI, NZI
+        if (VERBOSE_ .ge. 4) write (6, '(A, 3I6)') 'Warning [_restoreState]: wrong grid size:', NXI, NYI, NZI
         close (3)
         return
     end if
 
     if (NSTI .ne. NSTOKES .or.&
         &MLI .gt. ML .or. MMI .gt. MM) then
-        write (6, '(A, 3I6)') 'Warning [_restoreState]: incompatible SH:', NSTI, MLI, MMI
+        if (VERBOSE_ .ge. 4) write (6, '(A, 3I6)') 'Warning [_restoreState]: incompatible SH:', NSTI, MLI, MMI
         close (3)
         return
     end if

@@ -782,13 +782,13 @@ subroutine shd_rad__computeRad(&
         !╰────────────────────────────────────────────────╯!
 
         if (MUOUT .eq. 0.0) then
-            write (6, *) 'Warning [_computeRad]: Bad MUOUT for radiance', IANG, MUOUT, PHID
-            MUOUT = 1.0e-6
+            if (VERBOSE_ .ge. 4) write (6, *) 'Warning [_computeRad]: Bad MUOUT for radiance', IANG, MUOUT, PHID
+            MUOUT = RACC_
             write (6, *) '                       New MUOUT=', MUOUT
         end if
 
         if (abs(MUOUT) .gt. 1.0) then
-            write (6, *) 'Warning [_computeRad]: Bad MUOUT for radiance', IANG, MUOUT, PHID
+            if (VERBOSE_ .ge. 4) write (6, *) 'Warning [_computeRad]: Bad MUOUT for radiance', IANG, MUOUT, PHID
             if (MUOUT .gt.  1.0) MUOUT =  1.0
             if (MUOUT .lt. -1.0) MUOUT = -1.0
             write (6, *) '                       New MUOUT=', MUOUT
@@ -980,14 +980,14 @@ subroutine shd_rad__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 SINTH = sqrt(1 - COSTH**2)
                 SINTH0 = sin(THETA0)
                 SINTH1 = sin(THETA1)
-                if (abs(SINTH) .lt. 1.0e-6) then
+                if (abs(SINTH) .lt. RACC_) then
                     PHIR = 0.0
                 else
-                    if (abs(SINTH0) .lt. 1e-6 .and. abs(SINTH1) .le. 1e-6) then
+                    if ((abs(SINTH0) .lt. RACC_) .and. (abs(SINTH1) .le. RACC_)) then
                         COSDELPHI = 0.0d0
-                    else if (abs(SINTH1) .gt. 1.0e-6) then
+                    else if (abs(SINTH1) .gt. RACC_) then
                         COSDELPHI = (cos(U) - COSTH*cos(THETA1))/(SINTH1*SINTH)
-                    else if (abs(SINTH0) .gt. 1.0e-6) then
+                    else if (abs(SINTH0) .gt. RACC_) then
                         COSDELPHI = (cos(U)*cos(V) - COSTH*cos(THETA0))&
                             &/(SINTH0*SINTH)
                     end if
@@ -1274,14 +1274,14 @@ subroutine shd_rad__computeSensorRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 SINTH = sqrt(1 - COSTH**2)
                 SINTH0 = sin(THETA0)
                 SINTH1 = sin(THETA1)
-                if (abs(SINTH) .lt. 1.0e-6) then
+                if (abs(SINTH) .lt. RACC_) then
                     PHIR = 0.0
                 else
-                    if (abs(SINTH0) .lt. 1e-6 .and. abs(SINTH1) .le. 1e-6) then
+                    if ((abs(SINTH0) .lt. RACC_) .and. (abs(SINTH1) .le. RACC_)) then
                         COSDELPHI = 0.0d0
-                    else if (abs(SINTH1) .gt. 1.0e-6) then
+                    else if (abs(SINTH1) .gt. RACC_) then
                         COSDELPHI = (cos(U) - COSTH*cos(THETA1))/(SINTH1*SINTH)
-                    else if (abs(SINTH0) .gt. 1.0e-6) then
+                    else if (abs(SINTH0) .gt. RACC_) then
                         COSDELPHI = (cos(U)*cos(V) - COSTH*cos(THETA0))&
                             &/(SINTH0*SINTH)
                     end if
