@@ -194,10 +194,28 @@ program shdom
 
     ! Post-process parameters from input
     !╭────────────────────────────────────────────────────────────────────────────╮!
+    ! set verbose
+    VERBOSE_ = 7
+    !Severity    Level  Description
+    !Emergency     0      System unusable
+    !Alert         1      Action must be taken immediately
+    !Critical      2      Critical conditions
+    !Error         3      Error conditions
+    !Warning       4      Warning conditions
+    !Notice        5      Normal but significant condition
+    !Informational 6      Informational messages
+    !All           7      All-level messages
+
+    ! set calculation accuracy (1.0e-4 to 1.0e-8)
+    RACC_ = max(REPS_, min(SOLACC*0.1, 1.0e-4))
+
     ! The number of Stokes parameters (and components of the real
     !   generalized spherical harmonics vectors) can be 1, 3, or 4.
     NSTOKES = max(1, min(4, NSTOKES))
-    if (NSTOKES .eq. 2) NSTOKES = 3
+    if (NSTOKES .eq. 2) then
+        NSTOKES = 3
+        if (VERBOSE_ .ge. 4) write (6, '(A)') 'Warning [shdom]: NSTOKES cannot be 2, reset NSTOKES to 3.'
+    end if
 
     ! NSTLEG is the number of phase function elements used (1 or 6)
     !   Also used for the number of unique elements of the generalized
@@ -231,21 +249,6 @@ program shdom
 
     ! for thermal, reset solar azimuth angle
     if (SRCTYPE .eq. 'T') SOLARAZ = 0.0d0
-
-    ! set calculation accuracy (1.0e-4 to 1.0e-8)
-    RACC_ = max(REPS_, min(SOLACC*0.1, 1.0e-4))
-
-    ! set verbose
-    VERBOSE_ = 7
-    !Severity    Level  Description
-    !Emergency     0      System unusable
-    !Alert         1      Action must be taken immediately
-    !Critical      2      Critical conditions
-    !Error         3      Error conditions
-    !Warning       4      Warning conditions
-    !Notice        5      Normal but significant condition
-    !Informational 6      Informational messages
-    !All           7      All-level messages
 
     ! angle grids for DO
     allocate (MU(NMU), WTDO(NMU*NPHI), PHI(NMU*NPHI), NPHI0(NMU))
@@ -296,11 +299,11 @@ program shdom
     !   if  IPA IPFLAG=3, bit representation '0011'
     if (NX .eq. 1) then
         IPFLAG = ior(IPFLAG, 1) ! '0000'(3D,   0) + '0001'(NX=1, 1) = '0001' (NX=1, 1)
-        if (VERBOSE_ .ge. 4) write (6, '(A)') 'Warning [shdom]: NX=1, reset IPFLAG=1.'
+        if (VERBOSE_ .ge. 4) write (6, '(A)') 'Warning [shdom]: NX=1, reset IPFLAG to 1.'
     end if
     if (NY .eq. 1) then
         IPFLAG = ior(IPFLAG, 2) ! '0001'(NX=1, 1) + '0010'(NY=1, 2) = '0011' (IPA,  3)
-        if (VERBOSE_ .ge. 4) write (6, '(A)') 'Warning [shdom]: NY=1, reset IPFLAG=2 (or 3).'
+        if (VERBOSE_ .ge. 4) write (6, '(A)') 'Warning [shdom]: NY=1, reset IPFLAG to 2 (or 3).'
     end if
 
     ! Set the full domain grid sizes (variables end in T)
@@ -309,11 +312,11 @@ program shdom
 
     if (NPXT .eq. 1) then
         DELX_ = NXSFC*DELXSFC ! overwrite DELX_ if only 1 grid in X direction
-        if (VERBOSE_ .ge. 4) write (6, '(A)') 'Warning [shdom]: NPXT=1, reset DELX_ by surface.'
+        if (VERBOSE_ .ge. 4) write (6, '(A)') 'Warning [shdom]: NPXT=1, reset DELX_ to match surface domain.'
     end if
     if (NPYT .eq. 1) then
         DELY_ = NYSFC*DELYSFC ! overwrite DELY_ if only 1 grid in Y direction
-        if (VERBOSE_ .ge. 4) write (6, '(A)') 'Warning [shdom]: NPYT=1, reset DELY_ by surface.'
+        if (VERBOSE_ .ge. 4) write (6, '(A)') 'Warning [shdom]: NPYT=1, reset DELY_ to match surface domain.'
     end if
 
     XDOMAIN_ = NPXT*DELX_
