@@ -1855,10 +1855,10 @@ subroutine shd_mpi__computeRad(&
         PHIOUT = PHID*acos(-1.0)/180.0
 
         ! added for fixing the "domain shift" issue (only for 3D)
-        ! this is a first step correction:
-        !   single-pixel-wise mini adjustment, adding
+        ! this is the first step correction:
+        !   single-pixel-wise mini adjustment, giving
         !   interpolation effect
-        ! second step correction is done in the data output
+        ! the second step correction is done in the data output
         !   <shd_io__radShiftCorr> in shdIO_out.f90
         !╭────────────────────────────────────────────────╮!
         if (IPFLAG .eq. 0) then
