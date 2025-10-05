@@ -135,7 +135,7 @@ subroutine shd_solv__solveRte(&
 
     ! Set up some things before solution loop
 
-    ! Transfer the medium properties to the internal grid and add gas abs
+    ! Transfer the medium properties to the internal grid and add gas absorption
     call shd_grid__interpGrid(NPTS, NSTLEG, NLEG, GRIDPOS,&
         &TEMP, EXTINCT, ALBEDO, LEGEN, IPHASE)
 
@@ -350,7 +350,7 @@ subroutine shd_solv__solveRte(&
         !   do the adaptive spherical harmonics truncation, compute
         !   the solution criterion, and dot products for acceleration
         if (((SOLCRIT .lt. ENDADAPTSOL) .or. (ITER .gt. 30)) .and.&
-            &((NX .gt. 10) .or. (NY .gt. 10))) FIXSH = .true.
+            &((NX .gt. 36) .or. (NY .gt. 36))) FIXSH = .true.
         call shd_src__computeSrc(NSTOKES, ML, MM, NLM,&
             &NSTLEG, NLEG, NUMPHASE, NPTS,&
             &FIXSH, SRCTYPE, SOLARMU, YLMSUN, ALBEDO, LEGEN,&
