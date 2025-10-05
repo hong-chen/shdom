@@ -652,8 +652,9 @@ program shdom
 
     ! Guess maximum number of grid points, cells, SH vector size needed
     !   but don't let MAX_TOTAL_MB be exceeded
-    if (MAX_TOTAL_MB .gt. 0.9*TOTSYSMEM_MB_/real(NUMPROC)) then
-        MAX_TOTAL_MB = 0.9*TOTSYSMEM_MB_/real(NUMPROC)
+    MAXCPUMEM_MB_ = 0.9*TOTSYSMEM_MB_/real(NUMPROC)
+    if (MAX_TOTAL_MB .gt. MAXCPUMEM_MB_) then
+        MAX_TOTAL_MB = MAXCPUMEM_MB_
         if (VERBOSE_ .ge. 5) write (6, '(A,F0.2," MB")') 'Message [shdom]: MAX_TOTAL_MB reduced to: ', MAX_TOTAL_MB
     else
         if (VERBOSE_ .ge. 5) write (6, '(A,F0.2," MB")') 'Message [shdom]: MAX_TOTAL_MB is set to: ', MAX_TOTAL_MB

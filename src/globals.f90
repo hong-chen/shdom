@@ -156,6 +156,7 @@ module globals_cfg
     logical, save :: HIGHORDERRAD_
     real(kind=8), save    :: RACC_
     real(kind=4), save    :: TOTSYSMEM_MB_ = 16000.0
+    real(kind=4), save    :: MAXCPUMEM_MB_
 
     integer(kind=1), save :: VERBOSE_
     !Severity    Level  Description
