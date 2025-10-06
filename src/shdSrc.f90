@@ -908,8 +908,8 @@ subroutine shd_src__integrateSrcOneRay(&
         end if
 
         ! Interpolate the source and extinction to the current point
-        IPT1 = GRIDPTR(1, ICELL)
-        IPT2 = GRIDPTR(8, ICELL)
+        IPT1 = GRIDPTR(1, ICELL) ! (-x, -y, -z)
+        IPT2 = GRIDPTR(8, ICELL) ! (+x, +y, +z)
         DELX = GRIDPOS(1, IPT2) - GRIDPOS(1, IPT1)
         if (DELX .le. 0.0) then
             INVDELX = 1.0

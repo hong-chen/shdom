@@ -166,6 +166,8 @@ subroutine shd_init__makeCell(&
     !                  Order of pointers is based on binary digits zyx:
     !                  IOCT = 1 + BITX + 2*BITY + 4*BITZ, where
     !                  BITc is 0 for negative side and 1 for positive side.
+    !                  1: (-x, -y, -z), 2: (+x, -y, -z), 3: (-x, +y, -z), 4: (+x, +y, -z)
+    !                  5: (-x, -y, +z), 6: (+x, -y, +z), 7: (-x, +y, +z), 8: (+x, +y, +z)
     ! NEIGHPTR(6,IC) pointer to 6 neighboring cells of a cell.
     !                  Order of pointers are -X,+X,-Y,+Y,-Z,+Z (1-6).
     !                  Is 0 if there is no neighbor cell (boundary).
