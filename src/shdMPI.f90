@@ -2286,7 +2286,7 @@ subroutine shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
         NS = 1 + int(abs(OUTPARMS(12) - OUTPARMS(11))/OUTPARMS(13))
     end if
 
-    DEGRAD = DPI_/180.
+    DEGRAD = DPI_/180.0d0
 
     ! Allocate sending, receiving, etc. arrays for MPI
     MAXNRAD = NL*NS
@@ -2437,8 +2437,8 @@ subroutine shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
             end if
 
             ! Start the radiance calculation for those rays starting in this subdomain
-            if (X0 .ge. XGRID(1) .and. X0 .le. XGRID(NX) .and.&
-                Y0 .ge. YGRID(1) .and. Y0 .le. YGRID(NY)) then
+            if ((X0 .ge. XGRID(1)) .and. (X0 .le. XGRID(NX)).and.&
+                (Y0 .ge. YGRID(1)) .and. (Y0 .le. YGRID(NY))) then
 
                 ! MU2,PHI2 is radiance travel direction (opposite the camera viewing direction)
                 MU2 = -COSTH
@@ -2533,7 +2533,7 @@ subroutine shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 MU2 = BndRecvRadRealInfo(4, J, IBND)
                 PHI2 = BndRecvRadRealInfo(5, J, IBND)
                 TRANSMIT = BndRecvRadRealInfo(6, J, IBND)
-                RADIANCE(:) = BndRecvRadRealInfo(7:6 + NSTOKES, J, IBND)
+                RADIANCE(:) = BndRecvRadRealInfo(7 : 6+NSTOKES, J, IBND)
                 call shd_src__integrateSrcOneRay(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
                     &NSTPHASE, NSCATANGLE, PHASETAB,&
                     &NX, NY, NZ, NPTS, NCELLS,&

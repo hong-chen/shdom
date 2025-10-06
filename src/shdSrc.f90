@@ -785,15 +785,15 @@ subroutine shd_src__integrateSrcOneRay(&
     allocate (YLMDIR(NSTLEG, NLM))
     call shd_shdo__computeYLM(.false., sngl(MU2), sngl(PHI2), ML, MM, NSTLEG, YLMDIR)
 
-    if (SRCTYPE .ne. 'T' .and. DELTAM) then
+    if ((SRCTYPE .ne. 'T') .and. (DELTAM)) then
         ! Get the solar single scattering Stokes vector for the outgoin
         !   direction my interpolating in scattering angle in the PHASETA
         !   table and then rotating the Q/U polarization to the outgoing
-        COSSCAT = SOLARMU*MU2 + sqrt((1.0 - SOLARMU**2)*(1.0 - MU2**2))&
-            &*cos(SOLARAZ - PHI2)
+        COSSCAT = SOLARMU*MU2 + dsqrt((1.0d0 - SOLARMU**2)*(1.0d0 - MU2**2))&
+            &*dcos(SOLARAZ - PHI2)
         if (NUMPHASE .gt. 0) then
             allocate (SINGSCAT(NSTOKES, NUMPHASE))
-            F = (NSCATANGLE - 1)*(acos(COSSCAT)/DPI_) + 1
+            F = (NSCATANGLE - 1)*(dacos(COSSCAT)/DPI_) + 1
             J = min(NSCATANGLE - 1, int(F))
             F = F - J
             do I = 1, NUMPHASE
@@ -814,22 +814,22 @@ subroutine shd_src__integrateSrcOneRay(&
     end if
 
     ! Make the ray direction (opposite to the outgoing direction)
-    CX = sqrt(1.0d0 - MU2**2)*cos(PHI2 - DPI_)
-    CY = sqrt(1.0d0 - MU2**2)*sin(PHI2 - DPI_)
+    CX = dsqrt(1.0d0 - MU2**2)*dcos(PHI2 - DPI_)
+    CY = dsqrt(1.0d0 - MU2**2)*dsin(PHI2 - DPI_)
     CZ = -MU2
-    if (abs(CX) .gt. 1.0e-6) then
+    if (abs(CX) .gt. RACC_) then
         CXINV = 1.0d0/CX
     else
         CX = 0.0
         CXINV = 1.0e6
     end if
-    if (abs(CY) .gt. 1.0e-6) then
+    if (abs(CY) .gt. RACC_) then
         CYINV = 1.0d0/CY
     else
         CY = 0.0
         CYINV = 1.0e6
     end if
-    if (abs(CZ) .gt. 1.0e-6) then
+    if (abs(CZ) .gt. RACC_) then
         CZINV = 1.0d0/CZ
     else
         CZ = 0.0
@@ -871,7 +871,7 @@ subroutine shd_src__integrateSrcOneRay(&
 
     ! Loop until reach a Z boundary or transmission is very small
     VALIDRAD = .false.
-    do while (.not. VALIDRAD .and. ICELL .gt. 0)
+    do while ((.not. VALIDRAD) .and. (ICELL .gt. 0))
         ! Make sure current cell is valid
         if (ICELL .le. 0) then
             write (6, *) 'Error [_integrateSrcOneRay]: ICELL=', ICELL,&
@@ -1030,7 +1030,7 @@ subroutine shd_src__integrateSrcOneRay(&
         end do
 
         ! Get the intersection face number (i.e. neighptr index)
-        if (SOX .le. SOZ .and. SOX .le. SOY) then
+        if ((SOX .le. SOZ) .and. (SOX .le. SOY)) then
             IFACE = 2 - BITX
             JFACE = 1
             OPENBCFACE = btest(int(CELLFLAGS(ICELL)), 0) .and. btest(BCFLAG, 0)
@@ -1050,7 +1050,7 @@ subroutine shd_src__integrateSrcOneRay(&
                 &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXTCELL)
         end if
         ! If going to same or larger face then use previous face
-        if (NEIGHPTR(IFACE, ICELL) .ge. 0 .and. .not. OPENBCFACE) then
+        if ((NEIGHPTR(IFACE, ICELL) .ge. 0) .and. (.not. OPENBCFACE)) then
             KFACE = IFACE
             IC = ICELL
         else
@@ -1072,9 +1072,9 @@ subroutine shd_src__integrateSrcOneRay(&
 
         ! If the transmission is greater than zero and not at a
         !   boundary then prepare for next cell
-        if (TRANSMIT .lt. TRANSCUT .or. NGRID .gt. MAXCELLSCROSS) then
+        if ((TRANSMIT .lt. TRANSCUT) .or. (NGRID .gt. MAXCELLSCROSS)) then
             VALIDRAD = .true.
-        else if (INEXTCELL .eq. 0 .and. IFACE .ge. 5) then
+        else if ((INEXTCELL .eq. 0) .and. (IFACE .ge. 5)) then
             VALIDRAD = .true.
             call shd_src__findBoundaryRad(NSTOKES, XN, YN,&
                 &sngl(MU2), sngl(PHI2),&
@@ -1103,7 +1103,9 @@ subroutine shd_src__integrateSrcOneRay(&
             deallocate (SUNDIRLEG)
         end if
     end if
+
     deallocate (YLMDIR)
+
     return
 end subroutine shd_src__integrateSrcOneRay
 
