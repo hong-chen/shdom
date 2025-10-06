@@ -212,8 +212,8 @@ subroutine shd_mpi__map(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
             NPX = IXYPRP_(2, 1) - IXYPRP_(1, 1) + 1
             NX = nint(NXT*float(NPX - 1)/NPXT) + 1
             if (abs(NPXT/float(NXT) - (NPX - 1)/float(NX - 1)) .gt. 0.0001) then
-                call shd_mpi__abort('MAP_SHDOM_MPI: Even X base grid cannot be preserved&
-                    &for this NX and number of processors')
+                call shd_mpi__abort('Error [mpi__map]: Even X base grid cannot be preserved&
+                    & for this NX and number of processors')
             end if
             IXYOUT_(1, 1) = nint(NXT*float(IXYPRP_(1, 1) - 1)/NPXT) + 1
             IXYOUT_(2, 1) = nint(NXT*float(NPX - 1)/NPXT)
@@ -250,7 +250,8 @@ subroutine shd_mpi__map(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
             NPY = IXYPRP_(2, 2) - IXYPRP_(1, 2) + 1
             NY = nint(NYT*float(NPY - 1)/NPYT) + 1
             if (abs(NPYT/float(NYT) - (NPY - 1)/float(NY - 1)) .gt. 0.0001) then
-                call shd_mpi__abort('MAP_SHDOM_MPI: Even Y base grid cannot be preserved for this NY and number of processors')
+                call shd_mpi__abort('Error [mpi__map]: Even Y base grid cannot be preserved&
+                    & for this NY and number of processors')
             end if
             IXYOUT_(1, 2) = nint(NYT*float(IXYPRP_(1, 2) - 1)/NPYT) + 1
             IXYOUT_(2, 2) = nint(NYT*float(NPY - 1)/NPYT)
@@ -1644,7 +1645,7 @@ subroutine shd_mpi__calBoundaryRad(BCFLAG, IPFLAG, JOCT, IZ,&
                 else
                     if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
                         write (6, *) 'Bad SIDE 2x:', MYPROC_, mu, phi, SIDE, x, y, z
-                        call shd_mpi__abort('Error [mpi__calBoundaryRad]')
+                        call shd_mpi__abort('Error [mpi__calBoundaryRad]: Bad SIDE 2x, see above.')
                     end if
                     NINVALID(SIDE) = NINVALID(SIDE) + 1
                     BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/X, Y, Z, TRANSMIT, RADIANCE(:)/)
@@ -1678,7 +1679,7 @@ subroutine shd_mpi__calBoundaryRad(BCFLAG, IPFLAG, JOCT, IZ,&
                 else
                     if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
                         write (6, *) 'Bad SIDE 2y:', MYPROC_, mu, phi, SIDE, x, y, z
-                        call shd_mpi__abort('Error [mpi__calBoundaryRad]')
+                        call shd_mpi__abort('Error [mpi__calBoundaryRad]: Bad SIDE 2y, see above.')
                     end if
                     NINVALID(SIDE) = NINVALID(SIDE) + 1
                     BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/X, Y, Z, TRANSMIT, RADIANCE(:)/)
@@ -1988,7 +1989,7 @@ subroutine shd_mpi__computeRad(&
                     else
                         if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
                             write (6, *) 'Bad SIDE 1:', MYPROC_, muout, phiout, x0, y0, z0, SIDE, xe, ye, ze
-                            call shd_mpi__abort('Error [mpi__computeRad]: Bad SIDE 1')
+                            call shd_mpi__abort('Error [mpi__computeRad]: Bad SIDE 1, see above.')
                         end if
                         NINVALID(SIDE) = NINVALID(SIDE) + 1
                         if (NINVALID(SIDE) .gt. MAXNRAD)&
@@ -2075,7 +2076,7 @@ subroutine shd_mpi__computeRad(&
                     else
                         if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
                             write (6, *) 'Bad SIDE 2x', MYPROC_, muout, phiout, x, y, z, SIDE, xe, ye, ze
-                            call shd_mpi__abort('Error [mpi__computeRad]: Bad SIDE 2x')
+                            call shd_mpi__abort('Error [mpi__computeRad]: Bad SIDE 2x, see above.')
                         end if
                         NINVALID(SIDE) = NINVALID(SIDE) + 1
                         if (NINVALID(SIDE) .gt. MAXNRAD)&
@@ -2112,7 +2113,7 @@ subroutine shd_mpi__computeRad(&
                     else
                         if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
                             write (6, *) 'Bad SIDE 2y', MYPROC_, muout, phiout, x, y, z, SIDE, xe, ye, ze
-                            call shd_mpi__abort('Error [mpi__computeRad]: Bad SIDE 2y')
+                            call shd_mpi__abort('Error [mpi__computeRad]: Bad SIDE 2y, see above.')
                         end if
                         NINVALID(SIDE) = NINVALID(SIDE) + 1
                         if (NINVALID(SIDE) .gt. MAXNRAD)&
@@ -2467,14 +2468,14 @@ subroutine shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 if (VALIDRAD) then
                     Ndone = Ndone + 1
                     if (Ndone .gt. MAXNRAD)&
-                        &call shd_mpi__abort('VISUALIZE_RADIANCE_PAR: MAXNRAD exceeded by Ndone 1')
+                        &call shd_mpi__abort('Error [mpi__visualizeRad]: MAXNRAD exceeded by Ndone 1')
                     RadSend(:, Ndone) = RADIANCE(:)
                     IndexSend(Ndone) = IVIS
                 else
-                    if (SIDE .lt. 1 .or. SIDE .gt. 4) call shd_mpi__abort('VISUALIZE_RADIANCE_PAR: invalid SIDE 1')
+                    if (SIDE .lt. 1 .or. SIDE .gt. 4) call shd_mpi__abort('Error [mpi__visualizeRad]: invalid SIDE 1')
                     NINVALID(SIDE) = NINVALID(SIDE) + 1
                     if (NINVALID(SIDE) .gt. MAXNRAD)&
-                        &call shd_mpi__abort('VISUALIZE_RADIANCE_PAR: MAXNRAD exceeded by NINVALID(SIDE) 1')
+                        &call shd_mpi__abort('Error [mpi__visualizeRad]: MAXNRAD exceeded by NINVALID(SIDE) 1')
                     BndSendRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, MU2, PHI2, TRANSMIT, RADIANCE(:)/)
                     BndSendRadIntInfo(NINVALID(SIDE), SIDE) = IVIS
                 end if
@@ -3178,9 +3179,9 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
         IY = 1 + int((NY - 1)*(Y - YGRID(1))/(YGRID(NY) - YGRID(1)))
     end if
     if ((ix .lt. 1) .or. (iy .lt. 1) .or. (ix .gt. (NX + 1)) .or. (iy .gt. (NY + 1))) then
-        write (6, *) 'Bad ix,iy', x, y, z, ix, iy, iz, xgrid(1), xgrid(nx), ygrid(1), ygrid(ny), MYPROC_
-        write (6, *) 'Bad ix,iy', side, transmit
-        call shd_mpi__abort('Error [mpi_integrateRay]: See above.')
+        write (6, *) 'Bad ix and/or iy', x, y, z, ix, iy, iz, xgrid(1), xgrid(nx), ygrid(1), ygrid(ny), MYPROC_
+        write (6, *) 'Bad ix and/or iy', side, transmit
+        call shd_mpi__abort('Error [mpi_integrateRay]: Bad ix and/or iy, see above.')
     end if
     IX = min(NXC, IX)
     IY = min(NYC, IY)
@@ -3268,7 +3269,7 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
         SOZ = (GRIDPOS(3, IOPP) - ZE)*CZINV
         SO = min(SOX, SOY, SOZ)
         if (SO .lt. -EPS) then
-            write (6, *) MU, PHI, X, Y, Z, SOX, SOY, SOZ, SO, ICELL, TRANS
+            write (6, *) 'SO<0: ', MU, PHI, X, Y, Z, SOX, SOY, SOZ, SO, ICELL, TRANS
             call shd_mpi__abort('Error [mpi__integrateRay]: SO<0, see above.')
         end if
         ! Compute the coordinates of the cell exitting location
@@ -3336,8 +3337,8 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
             end if
         end if
         if ((u .lt. -1.0e-4) .or. (v .lt. -1.0e-4) .or. (u .gt. 1.0001) .or. (v .gt. 1.0001)) then
-            write (6, *) 'u,v<0 or u,v>1: ', mu, phi, x, y, z, xe, ye, ze, u, v, ipinx, ipiny
-            call shd_mpi__abort('Error [mpi__integrateRay]: u,v<0 or u,v>1, see above.')
+            write (6, *) 'u,v<0 and/or u,v>1: ', mu, phi, x, y, z, xe, ye, ze, u, v, ipinx, ipiny
+            call shd_mpi__abort('Error [mpi__integrateRay]: u,v<0 and/or u,v>1, see above.')
         end if
 
         ! Get the location coordinate (does the boundary wrapping)
