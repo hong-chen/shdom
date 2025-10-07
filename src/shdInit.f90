@@ -40,6 +40,9 @@ module shd_init
     implicit none
     private
 
+    integer, parameter :: R__  = selected_real_kind(6) ! default precision for float
+    integer, parameter :: I__  = selected_int_kind(9)  ! default precision for integer
+
     public :: shd_init__makeGrid
     public :: shd_init__makeCell
 
@@ -62,20 +65,47 @@ subroutine shd_init__makeGrid(&
     &XSTART, YSTART, DELXP, DELYP, ZLEVELS,&
     &XGRID, YGRID, ZGRID)
 
-    ! Makes the XGRID, YGRID, and ZGRID arrays from the input Z levels
+    ! Description:
+    !   Makes the XGRID, YGRID, and ZGRID arrays from the input Z levels
     !   and X and Y spacing from the property file according to the GRIDTYPE.
+    !
+    ! Input:
+    !   BCFLAG  : integer, bit flags to specify the horizontal boundary conditions
+    !             0: periodic in X&Y; 1: open in x; 2: open in y; 3: open in X&Y
+    !   GRIDTYPE: character(len=1), grid type
+    !             "E": even Z base grid between bottom and top;
+    !             "P": Z base grid levels from property file;
+    !             "F": Z base grid levels from file: shdom-zgrid.txt
+    !   NPX, NPY, NPZ : integer, size of the input property arrays
+    !   NX, NY, NZ    : integer, base grid size in X, Y and Z
+    !   XSTART, YSTART: real, starting X and Y
+    !   DELXP, DELYP  : real, horizontal grid spacing of the property arrays
+    !   ZLEVELS       : real array, input Z levels from the property file
+    !
+    ! Output:
+    !   XGRID, YGRID, ZGRID: real array, grid locations for each dimension.
+    !                        To facilitate the periodic horizontal boundaries,
+    !                        there are NX+1 values in XGRID, NY+1 in YGRID,
+    !                        NZ values in ZGRID. Currently the grid locations
+    !                        are evenly spaced in X and Y.
 
-    integer BCFLAG, NPX, NPY, NPZ, NX, NY, NZ
-    real XSTART, YSTART, DELXP, DELYP, ZLEVELS(NPZ)
-    real XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ)
-    character(len=1) :: GRIDTYPE
-    integer IX, IY, IZ
+    integer(kind=I__), intent(in) :: BCFLAG, NPX, NPY, NPZ, NX, NY, NZ
+    character(len=1) , intent(in) :: GRIDTYPE
+    real(kind=R__), intent(in)    :: XSTART, YSTART, ZLEVELS(NPZ)
+    real(kind=R__), intent(inout) :: DELXP, DELYP
+    real(kind=R__), intent(out)   :: XGRID(NX+1), YGRID(NY+1), ZGRID(NZ)
+
+    integer(kind=I__) :: IX, IY, IZ
 
     ! Make the X, Y, and Z grids, depending on type:
     !   E for evenly spaced, P from property file, F from zgrid.inp
     !   Only Even allowed horizontally
-    if (DELXP .le. 0.0) DELXP = 1.0
-    if (btest(BCFLAG, 2)) then
+    if (DELXP .le. 0.0) then
+        DELXP = 1.0
+        if (VERBOSE_ .ge. 4) write(*, '(A)') 'Warning [_makeGrid]: Found DELXP<=0.0, reset DELXP to 1.0.'
+    end if
+
+    if (btest(BCFLAG, 2)) then ! open in X
         do IX = 1, NX
             if (NPX .gt. 1) then
                 XGRID(IX) = XSTART + (IX - 1)*(DELXP*(NPX - 1))/float(NX - 1)
@@ -83,14 +113,18 @@ subroutine shd_init__makeGrid(&
                 XGRID(IX) = XSTART + (IX - 1)*(DELXP*NPX)/float(NX - 1)
             end if
         end do
-    else
+    else ! periodic in X
         do IX = 1, NX + 1
             XGRID(IX) = XSTART + (IX - 1)*(DELXP*NPX)/float(NX)
         end do
     end if
 
-    if (DELYP .le. 0.0) DELYP = 1.0
-    if (btest(BCFLAG, 3)) then
+    if (DELYP .le. 0.0) then
+        DELYP = 1.0
+        if (VERBOSE_ .ge. 4) write(*, '(A)') 'Warning [_makeGrid]: Found DELYP<=0.0, reset DELYP to 1.0.'
+    end if
+
+    if (btest(BCFLAG, 3)) then ! open in Y
         do IY = 1, NY
             if (NPY .gt. 1) then
                 YGRID(IY) = YSTART + (IY - 1)*(DELYP*(NPY - 1))/float(NY - 1)
@@ -98,7 +132,7 @@ subroutine shd_init__makeGrid(&
                 YGRID(IY) = YSTART + (IY - 1)*(DELYP*NPY)/float(NY - 1)
             end if
         end do
-    else
+    else ! periodic in Y
         do IY = 1, NY + 1
             YGRID(IY) = YSTART + (IY - 1)*(DELYP*NPY)/float(NY)
         end do
@@ -117,10 +151,11 @@ subroutine shd_init__makeGrid(&
     else if (GRIDTYPE .eq. 'E') then
         do IZ = 1, NZ
             ZGRID(IZ) = ZLEVELS(1)&
-                &+ (IZ - 1)*(ZLEVELS(NPZ) - ZLEVELS(1))/float(NZ - 1)
+                + (IZ - 1)*(ZLEVELS(NPZ) - ZLEVELS(1))/float(NZ - 1)
         end do
     else if (GRIDTYPE .eq. 'F') then
-        open (UNIT=3, FILE='zgrid.inp', STATUS='OLD')
+        if (VERBOSE_ .ge. 5) write(*, '(A)') 'Message [_makeGrid]: Reading ZGRID from <shdom-zgrid.txt> ...'
+        open (UNIT=3, FILE='shdom-zgrid.txt', STATUS='OLD')
         do IZ = 1, NZ
             read (3, *) ZGRID(IZ)
         end do
@@ -130,6 +165,7 @@ subroutine shd_init__makeGrid(&
     end if
 
     return
+
 end subroutine shd_init__makeGrid
 
 subroutine shd_init__makeCell(&
@@ -138,21 +174,23 @@ subroutine shd_init__makeCell(&
     &XGRID, YGRID, ZGRID, GRIDPOS,&
     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS)
 
-    ! Make the initial grid cell data structure for the base grid.
-    ! For periodic boundary conditions there are NX*NY*(NZ-1) grid cells
-    ! and (NX+1)*(NY+1)*NZ grid points.  The IX=NX+1 column is the same
-    ! as the IX=1 column, because of the periodicity, but the grid points
-    ! are repeated.  The last grid cell on the "right" has the last column
-    ! of grid points on the "left" and the repeated "virtual" set of grid
-    ! points on the "right".  For open boundary conditions in X and Y
-    ! there are (NX+1)*(NY+1)*(NZ-1) grid cells and NX*NY*NZ grid points.
-    ! Open boundary conditions are done with the lowest "left most" and
-    ! "right most" X and Y columns being independent pixels with
-    ! their own grid cells (zero width), therefore one extra grid cell
-    ! is required.   Multiple processor boundary conditions have
-    ! (NX-1)*(NY-1)*(NZ-1) grid cells and NX*NY*NZ grid points.
-    ! Independent pixel mode has NX*NY*(NZ-1) grid cells and NX*NY*NZ
-    ! grid points
+    ! Description:
+    !   Make the initial grid cell data structure for the base grid.
+    !   For periodic boundary conditions there are NX*NY*(NZ-1) grid cells
+    !   and (NX+1)*(NY+1)*NZ grid points. The IX=NX+1 column is the same
+    !   as the IX=1 column, because of the periodicity, but the grid points
+    !   are repeated.  The last grid cell on the "right" has the last column
+    !   of grid points on the "left" and the repeated "virtual" set of grid
+    !   points on the "right". For open boundary conditions in X and Y
+    !   there are (NX+1)*(NY+1)*(NZ-1) grid cells and NX*NY*NZ grid points.
+    !   Open boundary conditions are done with the lowest "left most" and
+    !   "right most" X and Y columns being independent pixels with
+    !   their own grid cells (zero width), therefore one extra grid cell
+    !   is required.   Multiple processor boundary conditions have
+    !   (NX-1)*(NY-1)*(NZ-1) grid cells and NX*NY*NZ grid points.
+    !   Independent pixel mode has NX*NY*(NZ-1) grid cells and NX*NY*NZ
+    !   grid points
+    !
     !   Variable       Description
     ! IPFLAG         Independent pixel flag - 0 for none, 1 for X, 2 for Y,
     !                  3 for X&Y.
@@ -169,7 +207,7 @@ subroutine shd_init__makeCell(&
     !                  1: (-x, -y, -z), 2: (+x, -y, -z), 3: (-x, +y, -z), 4: (+x, +y, -z)
     !                  5: (-x, -y, +z), 6: (+x, -y, +z), 7: (-x, +y, +z), 8: (+x, +y, +z)
     ! NEIGHPTR(6,IC) pointer to 6 neighboring cells of a cell.
-    !                  Order of pointers are -X,+X,-Y,+Y,-Z,+Z (1-6).
+    !                  Order of pointers are 1:-X, 2:+X, 3:-Y, 4:+Y, 5:-Z, 6:+Z.
     !                  Is 0 if there is no neighbor cell (boundary).
     !                  Is positive if there is just one cell across face
     !                  of current cell (unique neighbor).  Is negative
@@ -182,7 +220,7 @@ subroutine shd_init__makeCell(&
     !                  Second is pointer to first of the two children cells.
     !                  This pointer is 0 if there are no children cells.
     !                  The children cells are in successive order, with
-    !                  the negative side first.  See CELLFLAGS for direction
+    !                  the negative side first. See CELLFLAGS for direction
     !                  of division of split.
     ! CELLFLAGS(IC)  a collection of binary flags for the cells:
     !                  bit  For bit set
