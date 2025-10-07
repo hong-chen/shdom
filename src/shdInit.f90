@@ -213,7 +213,7 @@ subroutine shd_init__makeCell(&
     !                  BITc is 0 for negative side and 1 for positive side.
     !                  1: (-X, -Y, -Z), 2: (+X, -Y, -Z), 3: (-X, +Y, -Z), 4: (+X, +Y, -Z)
     !                  5: (-X, -Y, +Z), 6: (+X, -Y, +Z), 7: (-X, +Y, +Z), 8: (+X, +Y, +Z)
-    ! NEIGHPTR(6,IC) : pointer to 6 neighboring cells of a cell.
+    !   NEIGHPTR(6,IC):pointer to 6 neighboring cells of a cell.
     !                  Order of pointers are 1:-X, 2:+X, 3:-Y, 4:+Y, 5:-Z, 6:+Z.
     !                  Is 0 if there is no neighbor cell (boundary).
     !                  Is positive if there is just one cell across face
@@ -222,18 +222,18 @@ subroutine shd_init__makeCell(&
     !                  the face of current cell.  In this case the
     !                  cell pointed to is the parent cell that has a
     !                  has same or larger face adjoining current cell.
-    ! TREEPTR(2,IC)  pointer to parent and children cells in tree structure.
+    !   TREEPTR(2,IC): pointer to parent and children cells in tree structure.
     !                  First is pointer to parent cell, 0 for a base cell.
     !                  Second is pointer to first of the two children cells.
     !                  This pointer is 0 if there are no children cells.
     !                  The children cells are in successive order, with
     !                  the negative side first. See CELLFLAGS for direction
     !                  of division of split.
-    ! CELLFLAGS(IC)  a collection of binary flags for the cells:
+    !   CELLFLAGS(IC): a collection of binary flags for the cells:
     !                  bit  For bit set
-    !                   0  Do independent pixel for X
-    !                   1  Do independent pixel for Y
-    !                  2,3 Direction cell is split (0=no split, 1=X, 2=Y, 3=Z)
+    !                  0:  Do independent pixel for X
+    !                  1:  Do independent pixel for Y
+    !                  2,3: Direction cell is split (0=no split, 1=X, 2=Y, 3=Z)
     ! IP is a grid point index, IC is a cell index.
 
     integer(kind=I__), intent(in)    :: IPFLAG, BCFLAG, NX, NY, NZ, NX1, NY1
