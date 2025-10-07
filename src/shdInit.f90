@@ -72,6 +72,9 @@ subroutine shd_init__makeGrid(&
     ! Input:
     !   BCFLAG  : integer, bit flags to specify the horizontal boundary conditions
     !             0: periodic in X&Y; 1: open in x; 2: open in y; 3: open in X&Y
+    !             4: for MPI in X (perodic)
+    !             8: for MPI in Y (perodic)
+    !            12: for MPI in both (perodic)
     !   GRIDTYPE: character(len=1), grid type
     !             "E": even Z base grid between bottom and top;
     !             "P": Z base grid levels from property file;
@@ -191,22 +194,26 @@ subroutine shd_init__makeCell(&
     !   Independent pixel mode has NX*NY*(NZ-1) grid cells and NX*NY*NZ
     !   grid points
     !
-    !   Variable       Description
-    ! IPFLAG         Independent pixel flag - 0 for none, 1 for X, 2 for Y,
-    !                  3 for X&Y.
-    ! BCFLAG         Boundary condition flag - 0 for periodic, 1 for open in X,
-    !                  2 for open in Y, 3 for open in X&Y.  4 for multiple
-    !                  processor in X, 8 for MP in Y, 12 for MP in both.
-    ! NPTS           total number of grid points
-    ! NCELLS         total number of cells
-    ! GRIDPOS(3,IP)  x,y,z coordinate values of grid point locations
-    ! GRIDPTR(8,IC)  pointer to 8 grid points belonging to a cell.
-    !                  Order of pointers is based on binary digits zyx:
+    ! Input:
+    !   IPFLAG: Independent pixel flag
+    !           0: 3D, 1: IPA in X, 2: IPA in Y, 3: IPA in X&Y.
+    !   BCFLAG  : integer, bit flags to specify the horizontal boundary conditions
+    !             0: periodic in X&Y; 1: open in x; 2: open in y; 3: open in X&Y
+    !             4: for MPI in X (perodic)
+    !             8: for MPI in Y (perodic)
+    !            12: for MPI in both (perodic)
+    !
+    ! Output:
+    !   NPTS: total number of grid points
+    !   NCELLS: total number of cells
+    !   GRIDPOS(3,IP): X,Y,Z coordinate values of grid point locations
+    !   GRIDPTR(8,IC): pointer to 8 grid points belonging to a cell.
+    !                  Order of pointers is based on binary digits Z-Y-X:
     !                  IOCT = 1 + BITX + 2*BITY + 4*BITZ, where
     !                  BITc is 0 for negative side and 1 for positive side.
-    !                  1: (-x, -y, -z), 2: (+x, -y, -z), 3: (-x, +y, -z), 4: (+x, +y, -z)
-    !                  5: (-x, -y, +z), 6: (+x, -y, +z), 7: (-x, +y, +z), 8: (+x, +y, +z)
-    ! NEIGHPTR(6,IC) pointer to 6 neighboring cells of a cell.
+    !                  1: (-X, -Y, -Z), 2: (+X, -Y, -Z), 3: (-X, +Y, -Z), 4: (+X, +Y, -Z)
+    !                  5: (-X, -Y, +Z), 6: (+X, -Y, +Z), 7: (-X, +Y, +Z), 8: (+X, +Y, +Z)
+    ! NEIGHPTR(6,IC) : pointer to 6 neighboring cells of a cell.
     !                  Order of pointers are 1:-X, 2:+X, 3:-Y, 4:+Y, 5:-Z, 6:+Z.
     !                  Is 0 if there is no neighbor cell (boundary).
     !                  Is positive if there is just one cell across face
@@ -229,11 +236,15 @@ subroutine shd_init__makeCell(&
     !                  2,3 Direction cell is split (0=no split, 1=X, 2=Y, 3=Z)
     ! IP is a grid point index, IC is a cell index.
 
-    integer IPFLAG, BCFLAG, NX, NY, NZ, NX1, NY1, NPTS, NCELLS
-    integer GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
-    integer*2 CELLFLAGS(*)
-    real XGRID(NX1), YGRID(NY1), ZGRID(NZ), GRIDPOS(3, *)
-    integer IX, IY, IZ, IX0, IX1, IY0, IY1, I, NXC, NYC
+    integer(kind=I__), intent(in)    :: IPFLAG, BCFLAG, NX, NY, NZ, NX1, NY1
+    real(kind=R__)   , intent(in)    :: XGRID(NX1), YGRID(NY1), ZGRID(NZ)
+
+    real(kind=R__)   , intent(out)   :: GRIDPOS(3, *)
+    integer(kind=I__), intent(inout) :: NPTS, NCELLS
+    integer(kind=I__), intent(out)   :: GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
+    integer(kind=2)  , intent(out)   :: CELLFLAGS(*)
+
+    integer(kind=I__) :: IX, IY, IZ, IX0, IX1, IY0, IY1, I, NXC, NYC
 
     ! First, make the grid point positions
     I = 0
@@ -282,10 +293,10 @@ subroutine shd_init__makeCell(&
             end if
             do IZ = 1, NZ - 1
                 I = I + 1
-                GRIDPTR(1, I) = IZ + NZ*(IY0 - 1) + NZ*NY1*(IX0 - 1)
-                GRIDPTR(2, I) = IZ + NZ*(IY0 - 1) + NZ*NY1*(IX1 - 1)
-                GRIDPTR(3, I) = IZ + NZ*(IY1 - 1) + NZ*NY1*(IX0 - 1)
-                GRIDPTR(4, I) = IZ + NZ*(IY1 - 1) + NZ*NY1*(IX1 - 1)
+                GRIDPTR(1, I) = IZ +     NZ*(IY0 - 1) + NZ*NY1*(IX0 - 1)
+                GRIDPTR(2, I) = IZ +     NZ*(IY0 - 1) + NZ*NY1*(IX1 - 1)
+                GRIDPTR(3, I) = IZ +     NZ*(IY1 - 1) + NZ*NY1*(IX0 - 1)
+                GRIDPTR(4, I) = IZ +     NZ*(IY1 - 1) + NZ*NY1*(IX1 - 1)
                 GRIDPTR(5, I) = IZ + 1 + NZ*(IY0 - 1) + NZ*NY1*(IX0 - 1)
                 GRIDPTR(6, I) = IZ + 1 + NZ*(IY0 - 1) + NZ*NY1*(IX1 - 1)
                 GRIDPTR(7, I) = IZ + 1 + NZ*(IY1 - 1) + NZ*NY1*(IX0 - 1)
