@@ -172,9 +172,8 @@ subroutine shd_init__makeGrid(&
 end subroutine shd_init__makeGrid
 
 subroutine shd_init__makeCell(&
-    &BCFLAG, IPFLAG,&
-    &NX, NY, NZ, NX1, NY1, NPTS, NCELLS,&
-    &XGRID, YGRID, ZGRID, GRIDPOS,&
+    &BCFLAG, IPFLAG, NX, NY, NZ, NX1, NY1,&
+    &NPTS, NCELLS, XGRID, YGRID, ZGRID, GRIDPOS,&
     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS)
 
     ! Description:
@@ -195,45 +194,47 @@ subroutine shd_init__makeCell(&
     !   grid points
     !
     ! Input:
-    !   IPFLAG: Independent pixel flag
-    !           0: 3D, 1: IPA in X, 2: IPA in Y, 3: IPA in X&Y.
-    !   BCFLAG  : integer, bit flags to specify the horizontal boundary conditions
-    !             0: periodic in X&Y; 1: open in x; 2: open in y; 3: open in X&Y
-    !             4: for MPI in X (perodic)
-    !             8: for MPI in Y (perodic)
-    !            12: for MPI in both (perodic)
+    !   IPFLAG    : Independent pixel flag
+    !                0: 3D, 1: IPA in X, 2: IPA in Y, 3: IPA in X&Y.
+    !   BCFLAG    : integer, bit flags to specify the horizontal boundary conditions
+    !               0: periodic in X&Y; 1: open in x; 2: open in y; 3: open in X&Y
+    !               4: for MPI in X (perodic)
+    !               8: for MPI in Y (perodic)
+    !              12: for MPI in both (perodic)
+    !   NX, NY, NZ: integer, base grid size in X, Y and Z
+    !   NX1, NY1  : integer, base grid actual size in X, Y
     !
     ! Output:
-    !   NPTS: total number of grid points
-    !   NCELLS: total number of cells
-    !   GRIDPOS(3,IP): X,Y,Z coordinate values of grid point locations
-    !   GRIDPTR(8,IC): pointer to 8 grid points belonging to a cell.
-    !                  Order of pointers is based on binary digits Z-Y-X:
-    !                  IOCT = 1 + BITX + 2*BITY + 4*BITZ, where
-    !                  BITc is 0 for negative side and 1 for positive side.
-    !                  1: (-X, -Y, -Z), 2: (+X, -Y, -Z), 3: (-X, +Y, -Z), 4: (+X, +Y, -Z)
-    !                  5: (-X, -Y, +Z), 6: (+X, -Y, +Z), 7: (-X, +Y, +Z), 8: (+X, +Y, +Z)
-    !   NEIGHPTR(6,IC):pointer to 6 neighboring cells of a cell.
-    !                  Order of pointers are 1:-X, 2:+X, 3:-Y, 4:+Y, 5:-Z, 6:+Z.
-    !                  Is 0 if there is no neighbor cell (boundary).
-    !                  Is positive if there is just one cell across face
-    !                  of current cell (unique neighbor).  Is negative
-    !                  (-index) if there is more than one cell across
-    !                  the face of current cell.  In this case the
-    !                  cell pointed to is the parent cell that has a
-    !                  has same or larger face adjoining current cell.
-    !   TREEPTR(2,IC): pointer to parent and children cells in tree structure.
-    !                  First is pointer to parent cell, 0 for a base cell.
-    !                  Second is pointer to first of the two children cells.
-    !                  This pointer is 0 if there are no children cells.
-    !                  The children cells are in successive order, with
-    !                  the negative side first. See CELLFLAGS for direction
-    !                  of division of split.
-    !   CELLFLAGS(IC): a collection of binary flags for the cells:
-    !                  bit  For bit set
-    !                  0:  Do independent pixel for X
-    !                  1:  Do independent pixel for Y
-    !                  2,3: Direction cell is split (0=no split, 1=X, 2=Y, 3=Z)
+    !   NPTS          : total number of grid points
+    !   NCELLS        : total number of cells
+    !   GRIDPOS(3,IP) : X,Y,Z coordinate values of grid point locations
+    !   GRIDPTR(8,IC) : pointer to 8 grid points belonging to a cell.
+    !                   Order of pointers is based on binary digits Z-Y-X:
+    !                   IOCT = 1 + BITX + 2*BITY + 4*BITZ, where
+    !                   BITc is 0 for negative side and 1 for positive side.
+    !                   1: (-X, -Y, -Z), 2: (+X, -Y, -Z), 3: (-X, +Y, -Z), 4: (+X, +Y, -Z)
+    !                   5: (-X, -Y, +Z), 6: (+X, -Y, +Z), 7: (-X, +Y, +Z), 8: (+X, +Y, +Z)
+    !   NEIGHPTR(6,IC): pointer to 6 neighboring cells of a cell.
+    !                   Order of pointers are 1:-X, 2:+X, 3:-Y, 4:+Y, 5:-Z, 6:+Z.
+    !                   Is 0 if there is no neighbor cell (boundary).
+    !                   Is positive if there is just one cell across face
+    !                   of current cell (unique neighbor).  Is negative
+    !                   (-index) if there is more than one cell across
+    !                   the face of current cell.  In this case the
+    !                   cell pointed to is the parent cell that has a
+    !                   has same or larger face adjoining current cell.
+    !   TREEPTR(2,IC) : pointer to parent and children cells in tree structure.
+    !                   First is pointer to parent cell, 0 for a base cell.
+    !                   Second is pointer to first of the two children cells.
+    !                   This pointer is 0 if there are no children cells.
+    !                   The children cells are in successive order, with
+    !                   the negative side first. See CELLFLAGS for direction
+    !                   of division of split.
+    !   CELLFLAGS(IC) : a collection of binary flags for the cells:
+    !                   bit  For bit set
+    !                   0:  Do independent pixel for X
+    !                   1:  Do independent pixel for Y
+    !                   2,3: Direction cell is split (0=no split, 1=X, 2=Y, 3=Z)
     ! IP is a grid point index, IC is a cell index.
 
     integer(kind=I__), intent(in)    :: IPFLAG, BCFLAG, NX, NY, NZ, NX1, NY1
@@ -878,7 +879,9 @@ subroutine shd_init__makeSfcRadFL(NBOTPTS, BCPTR,&
         end if
         BCRAD(2:, IBC) = 0.0
     end do
+
     return
+
 end subroutine shd_init__makeSfcRadFL
 
 subroutine shd_init__makeSfcRadVL(NBOTPTS, BCPTR,&
@@ -933,13 +936,13 @@ subroutine shd_init__makeSfcRadU(NBOTPTS, BCPTR,&
     ! reflectance distribution matrix for the discrete ordinates.
     ! The upwelling Stokes vector includes the reflection of the incident
     ! radiance, the thermal emission (emissivity*Planck function), and the
-    ! reflected direct solar flux (if applicable).  The upwelling radiance
+    ! reflected direct solar flux (if applicable). The upwelling radiance
     ! vector is the integral over all incident directions of the BRDF times
     ! the downwelling radiance, so a discrete sum is done using the SFC_BRDF_DO
-    ! matrix, which includes the integral weights (WTDO).  The emissivity
-    ! is computed implicitly from the integral of the BRDF.  The outgoing
+    ! matrix, which includes the integral weights (WTDO). The emissivity
+    ! is computed implicitly from the integral of the BRDF. The outgoing
     ! direction is specified with (IMU,IPHI), and the BRDF is computed for
-    ! all incident directions (loop over JMU,JPHI).  The incident downwelling
+    ! all incident directions (loop over JMU,JPHI). The incident downwelling
     ! radiance vectors are input in BCRAD(*,*,2...) and the outgoing
     ! upwelling radiance vectors are output in BCRAD(*,*,1).
 
@@ -999,6 +1002,7 @@ subroutine shd_init__makeSfcRadV(&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MU2, PHI2,&
     &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
     &SFCTYPE, NSFCPAR, SFCGRIDPARMS, NSTOKES, BCRAD)
+
     !   Computes the upwelling Stokes vector of the bottom boundary points
     ! for one outgoing direction using the specified bidirectional
     ! reflectance distribution function.  The upwelling Stokes vector

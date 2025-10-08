@@ -795,6 +795,12 @@ program shdom
     allocate (LEGEN(MAXIGL))
 
     ! boundary points pointers and radiances
+    !   BCPTR(:, 1): pointers to grid points that are on top
+    !   BCPTR(:, 2): pointers to grid points that are on bottom
+    !   BCRAD(:[NSTOKES], 1:NTOPPTS): isotropic top radiances
+    !   BCRAD(:[NSTOKES], NTOPPTS+1:NTOPPTS+NBOTPTS): upwelling bottom radiances
+    !   BCRAD(:[NSTOKES], NTOPPTS+NBOTPTS+1:NTOPPTS+NBOTPTS+NBOTPTS*NANG/2):
+    !         downwelling bottom radiances at discrete ordinates
     if (SFCFILE(1:4) .ne. 'NONE') allocate (SFCGRIDPARMS(MAXSFCPARS*MAXNBC))
     allocate (BCPTR(2*MAXNBC), BCRAD(NSTOKES, MAXBCRAD))
 
