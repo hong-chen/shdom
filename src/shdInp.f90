@@ -49,7 +49,7 @@ module shd_inp
 
     public :: shd_io__readPrpSize
     public :: shd_io__readPrp
-    public :: shd_io__checkPrpInput
+    public :: shd_io__checkPrp
 
     public :: shd_io__readSfcSize
     public :: shd_io__readSfc
@@ -958,7 +958,7 @@ subroutine shd_io__readPrp(&
 
 end subroutine shd_io__readPrp
 
-subroutine shd_io__checkPrpInput(&
+subroutine shd_io__checkPrp(&
     &NPX, NPY, NPZ, NSTLEG, NLEG,&
     &DELX, DELY, ZLEVELS,&
     &TEMPP, EXTINCTP, ALBEDOP, LEGENP, NUMPHASE, IPHASEP)
@@ -982,13 +982,13 @@ subroutine shd_io__checkPrpInput(&
 
     ! NPX and NPY must be 1 or greater, NPZ must be 2 or greater
     if (NPX .lt. 1 .or. NPY .lt. 1 .or. NPZ .lt. 2) then
-        write (*, *) 'Error [_checkPrpInput]: Bad grid size - ',&
+        write (*, *) 'Error [_checkPrp]: Bad grid size - ',&
             &NPX, NPY, NPZ
         stop
     end if
 
     if (DELX .le. 0.0 .or. DELY .le. 0.0) then
-        write (*, *) 'Error [_checkPrpInput]: Bad grid spacing - ',&
+        write (*, *) 'Error [_checkPrp]: Bad grid spacing - ',&
             &'DELX,DELY: ', DELX, DELY
         stop
     end if
@@ -996,7 +996,7 @@ subroutine shd_io__checkPrpInput(&
     ! The vertical levels must be increasing
     do IZ = 1, NPZ - 1
         if (ZLEVELS(IZ + 1) .le. ZLEVELS(IZ)) then
-            write (*, *) 'Error [_checkPrpInput]: ZLEVELS must increase : ',&
+            write (*, *) 'Error [_checkPrp]: ZLEVELS must increase : ',&
                 &IZ, ZLEVELS(IZ), ZLEVELS(IZ + 1)
             stop
         end if
@@ -1013,19 +1013,19 @@ subroutine shd_io__checkPrpInput(&
     end do
 
     if (TMIN .lt. 150.0 .or. TMAX .gt. 350.0) then
-        if (VERBOSE_ .ge. 4) write (*, *) 'Warning [_checkPrpInput]: ',&
+        if (VERBOSE_ .ge. 4) write (*, *) 'Warning [_checkPrp]: ',&
             &'temperature min and max (Kelvin): ', TMIN, TMAX
         write (*, *)
     end if
 
     do I = 1, N
         if (EXTINCTP(I) .lt. 0.0) then
-            write (*, *) 'Error [_checkPrpInput]: Negative extinction - ',&
+            write (*, *) 'Error [_checkPrp]: Negative extinction - ',&
                 &EXTINCTP(I), ' at grid point ', I
             stop
         end if
         if (ALBEDOP(I) .lt. 0.0 .or. ALBEDOP(I) .gt. 1.0) then
-            write (*, *) 'Error [_checkPrpInput]: Single scattering ',&
+            write (*, *) 'Error [_checkPrp]: Single scattering ',&
                 &'albedo out of range - ', ALBEDOP(I), ' at grid point ', I
             stop
         end if
@@ -1035,7 +1035,7 @@ subroutine shd_io__checkPrpInput(&
     LEGWARN = .false.
     do I = 1, N
         if (LEGENP(1, 1, I) .lt. -3.0 .or. LEGENP(1, 1, I) .gt. 3.0) then
-            write (*, *) 'Error [_checkPrpInput]: Asymmetry parameter ',&
+            write (*, *) 'Error [_checkPrp]: Asymmetry parameter ',&
                 &'out of range - ', LEGENP(1, 1, I)/3.0, ' at grid point ', I
             stop
         end if
@@ -1043,7 +1043,7 @@ subroutine shd_io__checkPrpInput(&
     end do
 
     if (LEGWARN) then
-        if (VERBOSE_ .ge. 4) write (*, *) 'Warning [_checkPrpInput]: ',&
+        if (VERBOSE_ .ge. 4) write (*, *) 'Warning [_checkPrp]: ',&
             &'an asymmetry parameter is 1/3 (Chi1=1); ',&
             &'  Chi0 should not be specified for Chi1.'
         write (*, *)
@@ -1053,7 +1053,7 @@ subroutine shd_io__checkPrpInput(&
         N = NPX*NPY*NPZ
         do I = 1, N
             if (IPHASEP(I) .lt. 1 .or. IPHASEP(I) .gt. NUMPHASE) then
-                write (*, *) 'Error [_checkPrpInput]: Phase function pointer',&
+                write (*, *) 'Error [_checkPrp]: Phase function pointer',&
                     &' out of range - ', IPHASEP(I), ' at grid point ', I
                 stop
             end if
@@ -1075,14 +1075,14 @@ subroutine shd_io__checkPrpInput(&
     end do
 
     if (NTHICK .gt. 0) then
-        if (VERBOSE_ .ge. 5) write (*, '(A)') 'Message [_checkPrpInput]:'
+        if (VERBOSE_ .ge. 5) write (*, '(A)') 'Message [_checkPrp]:'
         if (VERBOSE_ .ge. 5) write (*, '(A,I0)')   '  Npoints (optical depth > 2): ', NTHICK
         if (VERBOSE_ .ge. 5) write (*, '(A,F0.2)') '       Max cell optical depth: ', MAXTAU
     end if
 
     return
 
-end subroutine shd_io__checkPrpInput
+end subroutine shd_io__checkPrp
 
 subroutine shd_io__readSfcSize(SFCFILE,&
     &NXSFC, NYSFC, DELXSFC, DELYSFC,&

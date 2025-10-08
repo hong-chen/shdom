@@ -2020,7 +2020,7 @@ routines from NCAR.
 
    Inp    shd_io__readPrp        : Reads the property file
 
-   Inp    shd_io__checkPrpInput  : Checks the values read in from the property file
+   Inp    shd_io__checkPrp       : Checks the values read in from the property file
 
    Inp    shd_io__readSfcSize    : Gets the size of the surfae file
 

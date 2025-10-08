@@ -436,7 +436,7 @@ program shdom
             end if
 
             ! Check values of medium properties
-            call shd_io__checkPrpInput(NPXT, NPYT, NPZ_, NSTLEG, NLEG,&
+            call shd_io__checkPrp(NPXT, NPYT, NPZ_, NSTLEG, NLEG,&
                 &DELX_, DELY_, ZLEVELS_,&
                 &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, NUMPHASE_, IPHASEPT)
 
@@ -460,7 +460,7 @@ program shdom
             &TEMPP_, EXTINCTP_, ALBEDOP_, LEGENP_, NUMPHASE_, IPHASEP_)
 
         ! Check values of medium properties
-        call shd_io__checkPrpInput(NPX_, NPY_, NPZ_, NSTLEG, NLEG,&
+        call shd_io__checkPrp(NPX_, NPY_, NPZ_, NSTLEG, NLEG,&
             &DELX_, DELY_, ZLEVELS_,&
             &TEMPP_, EXTINCTP_, ALBEDOP_, LEGENP_, NUMPHASE_, IPHASEP_)
 
