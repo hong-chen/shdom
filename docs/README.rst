@@ -2044,6 +2044,8 @@ routines from NCAR.
 
    Out    shd_io__saveState      : Writes the binary state file
 
+   Out  x shd_io__outputDataBin  : Writes the binary data file
+
    MPI    shd_mpi__start            : Initializes the MPI system
 
    MPI    shd_mpi__map              : Sets the mapping of processors for the SHDOM domain

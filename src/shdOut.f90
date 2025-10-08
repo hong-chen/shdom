@@ -43,7 +43,6 @@ module shd_out
     integer, parameter :: R__  = selected_real_kind(6) ! default precision for float
     integer, parameter :: I__  = selected_int_kind(9)  ! default precision for integer
 
-    public :: shd_io__outputData
     public :: shd_io__outputResult
     public :: shd_io__outputResultMpi
     public :: shd_io__outputCamRad
@@ -54,69 +53,9 @@ module shd_out
 
     public :: shd_io__saveState
 
+    private :: shd_io__outputDataBin
+
 contains
-
-subroutine shd_io__outputData(&
-    &DATA_OUT, NVAR, NDATA,&
-    &IDATA, OUTFILE_DATA, MODE)
-
-    ! Writes data into binary file
-
-    real, intent(in) :: DATA_OUT(NVAR, *)
-    integer :: NVAR, NDATA
-    integer, intent(inout) :: IDATA
-    character(len=*), intent(in) :: OUTFILE_DATA
-    character(len=*), intent(in), optional :: MODE
-    integer :: ivar, icount, idata_start, istat
-    integer :: DATA_BYTE
-    real :: DATA_SIZE
-
-    if ((present(MODE)) .and. (MODE .eq. 'ADD')) then
-        open (UNIT=88, FILE=trim(adjustl(OUTFILE_DATA)), STATUS='OLD', position='APPEND',&
-            &form='UNFORMATTED', access='STREAM', iostat=istat)
-    else
-        open (UNIT=88, FILE=trim(adjustl(OUTFILE_DATA)), STATUS='REPLACE',&
-            &form='UNFORMATTED', access='STREAM', iostat=istat)
-    end if
-
-    idata_start = IDATA
-
-    if (istat .eq. 0) then
-
-        do ivar = 1, NVAR
-            ! rewind for each column variable
-            IDATA = idata_start
-            do icount = 1, NDATA
-                 IDATA = IDATA + 1
-                 write (88) DATA_OUT(ivar, IDATA)
-            end do
-        end do
-
-        close(88, iostat=istat)
-
-        inquire(FILE=trim(adjustl(OUTFILE_DATA)), SIZE=DATA_BYTE)
-        DATA_SIZE = DATA_BYTE/1000000.0
-
-        if ((present(MODE)) .and. (MODE .eq. 'ADD')) then
-            if (VERBOSE_ .ge. 5) write(*, '(A,F0.2,A)') 'Message [_outputData]: Data added to <'//trim(adjustl(OUTFILE_DATA))//'> (',&
-                &DATA_SIZE, 'MB).'
-        else
-            if (VERBOSE_ .ge. 5) write(*, '(A,F0.2,A)') 'Message [_outputData]: Data saved at <'//trim(adjustl(OUTFILE_DATA))//'> (',&
-                &DATA_SIZE, 'MB).'
-        end if
-
-    else
-
-        close(88, iostat=istat)
-
-        write(*, '(A)') 'Error [_outputData]: Failed to open file <'//trim(adjustl(OUTFILE_DATA))//'>.'
-        stop
-
-    end if
-
-    return
-
-end subroutine shd_io__outputData
 
 subroutine shd_io__outputResult(&
     &NSTOKES, NX, NY, NX1, NY1, NZ, NBPTS, NPTS, NCELLS,&
@@ -412,7 +351,7 @@ subroutine shd_io__outputResult(&
         !╭────────────────────────────────────────────────╮!
         if (VERBOSE_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <R> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
         N = NANGOUT*NXOUT*NYOUT
-        call shd_io__outputData(RADOUT, NSTOKES, N, IRAD, OUTFILE_DATA)
+        call shd_io__outputDataBin(RADOUT, NSTOKES, N, IRAD, OUTFILE_DATA)
         !╰────────────────────────────────────────────────╯!
 
     else if (OUTTYPE .eq. 'F') then
@@ -465,14 +404,14 @@ subroutine shd_io__outputResult(&
 
             N = NX1*NY1
             IDATA = 0
-            call shd_io__outputData(C*FLUXES(2, NZ:NBPTS:NZ), 1, N, IDATA, OUTFILE_DATA)
+            call shd_io__outputDataBin(C*FLUXES(2, NZ:NBPTS:NZ), 1, N, IDATA, OUTFILE_DATA)
 
             IDATA = 0
-            call shd_io__outputData(C*FLUXES(1, 1:NBPTS:NZ), 1, N, IDATA, OUTFILE_DATA, 'ADD')
+            call shd_io__outputDataBin(C*FLUXES(1, 1:NBPTS:NZ), 1, N, IDATA, OUTFILE_DATA, 'ADD')
 
             if (SRCTYPE .ne. 'T') then
                 IDATA = 0
-                call shd_io__outputData(DIRFLUX(1:NBPTS:NZ), 1, N, IDATA, OUTFILE_DATA, 'ADD')
+                call shd_io__outputDataBin(DIRFLUX(1:NBPTS:NZ), 1, N, IDATA, OUTFILE_DATA, 'ADD')
             end if
             !╰────────────────────────────────────────────────╯!
 
@@ -561,14 +500,14 @@ subroutine shd_io__outputResult(&
 
             N = NXOUT*NYOUT
             IDATA = 0
-            call shd_io__outputData(C*FUP, 1, N, IDATA, OUTFILE_DATA)
+            call shd_io__outputDataBin(C*FUP, 1, N, IDATA, OUTFILE_DATA)
 
             IDATA = 0
-            call shd_io__outputData(C*FDN, 1, N, IDATA, OUTFILE_DATA, 'ADD')
+            call shd_io__outputDataBin(C*FDN, 1, N, IDATA, OUTFILE_DATA, 'ADD')
 
             if (SRCTYPE .ne. 'T') then
                 IDATA = 0
-                call shd_io__outputData(FDIR, 1, N, IDATA, OUTFILE_DATA, 'ADD')
+                call shd_io__outputDataBin(FDIR, 1, N, IDATA, OUTFILE_DATA, 'ADD')
             end if
 
             deallocate(FUP)
@@ -656,14 +595,14 @@ subroutine shd_io__outputResult(&
             if (VERBOSE_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <F3> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
 
             IDATA = 0
-            call shd_io__outputData(C*SUM2/N, 1, NZ, IDATA, OUTFILE_DATA)
+            call shd_io__outputDataBin(C*SUM2/N, 1, NZ, IDATA, OUTFILE_DATA)
 
             IDATA = 0
-            call shd_io__outputData(C*SUM1/N, 1, NZ, IDATA, OUTFILE_DATA, 'ADD')
+            call shd_io__outputDataBin(C*SUM1/N, 1, NZ, IDATA, OUTFILE_DATA, 'ADD')
 
             if (SRCTYPE .ne. 'T') then
                 IDATA = 0
-                call shd_io__outputData(SUM3/N, 1, NZ, IDATA, OUTFILE_DATA, 'ADD')
+                call shd_io__outputDataBin(SUM3/N, 1, NZ, IDATA, OUTFILE_DATA, 'ADD')
             end if
 
             deallocate(SUM1)
@@ -747,20 +686,20 @@ subroutine shd_io__outputResult(&
             end if
 
             IDATA = 0
-            call shd_io__outputData(C*FLUXES(2, :), 1, N, IDATA, OUTFILE_DATA)
+            call shd_io__outputDataBin(C*FLUXES(2, :), 1, N, IDATA, OUTFILE_DATA)
 
             IDATA = 0
-            call shd_io__outputData(C*FLUXES(1, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
+            call shd_io__outputDataBin(C*FLUXES(1, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
 
             if (SRCTYPE .ne. 'T') then
                 IDATA = 0
-                call shd_io__outputData(DIRFLUX(:), 1, N, IDATA, OUTFILE_DATA, 'ADD')
+                call shd_io__outputDataBin(DIRFLUX(:), 1, N, IDATA, OUTFILE_DATA, 'ADD')
             end if
 
             ! add grid positions (or binary data cannot be reconstructed)
             if (ALLGRID) then
                 IDATA = 0
-                call shd_io__outputData(GRIDPOS(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
+                call shd_io__outputDataBin(GRIDPOS(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
             end if
             !╰────────────────────────────────────────────────╯!
 
@@ -822,7 +761,7 @@ subroutine shd_io__outputResult(&
             if (VERBOSE_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <H1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
 
             IDATA = 0
-            call shd_io__outputData(-SUM1/N, 1, NZ, IDATA, OUTFILE_DATA)
+            call shd_io__outputDataBin(-SUM1/N, 1, NZ, IDATA, OUTFILE_DATA)
 
             deallocate(SUM1)
             !╰────────────────────────────────────────────────╯!
@@ -881,12 +820,12 @@ subroutine shd_io__outputResult(&
             end if
 
             IDATA = 0
-            call shd_io__outputData(-FLUXDIV, 1, N, IDATA, OUTFILE_DATA)
+            call shd_io__outputDataBin(-FLUXDIV, 1, N, IDATA, OUTFILE_DATA)
 
             ! add grid positions (or binary data cannot be reconstructed)
             if (ALLGRID) then
                 IDATA = 0
-                call shd_io__outputData(GRIDPOS(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
+                call shd_io__outputDataBin(GRIDPOS(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
             end if
             !╰────────────────────────────────────────────────╯!
 
@@ -958,17 +897,17 @@ subroutine shd_io__outputResult(&
         end if
 
         IDATA = 0
-        call shd_io__outputData(SHTERMS(1:4, :), 4, N, IDATA, OUTFILE_DATA)
+        call shd_io__outputDataBin(SHTERMS(1:4, :), 4, N, IDATA, OUTFILE_DATA)
 
         if (NSHOUT .eq. 5) then
             IDATA = 0
-            call shd_io__outputData(SHTERM5, 1, N, IDATA, OUTFILE_DATA, 'ADD')
+            call shd_io__outputDataBin(SHTERM5, 1, N, IDATA, OUTFILE_DATA, 'ADD')
         end if
 
         ! add grid positions (or binary data cannot be reconstructed)
         if (ALLGRID) then
             IDATA = 0
-            call shd_io__outputData(GRIDPOS(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
+            call shd_io__outputDataBin(GRIDPOS(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
         end if
 
         deallocate(SHTERM5)
@@ -1047,14 +986,14 @@ subroutine shd_io__outputResult(&
         end if
 
         IDATA = 0
-        call shd_io__outputData(EXTINCT, 1, N, IDATA, OUTFILE_DATA)
+        call shd_io__outputDataBin(EXTINCT, 1, N, IDATA, OUTFILE_DATA)
         IDATA = 0
-        call shd_io__outputData(SOURCE1OUT, 4, N, IDATA, OUTFILE_DATA, 'ADD')
+        call shd_io__outputDataBin(SOURCE1OUT, 4, N, IDATA, OUTFILE_DATA, 'ADD')
 
         ! add grid positions (or binary data cannot be reconstructed)
         if (ALLGRID) then
             IDATA = 0
-            call shd_io__outputData(GRIDPOS(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
+            call shd_io__outputDataBin(GRIDPOS(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
         end if
         !╰────────────────────────────────────────────────╯!
 
@@ -1124,18 +1063,18 @@ subroutine shd_io__outputResult(&
         end if
 
         IDATA = 0
-        call shd_io__outputData(EXTINCT, 1, N, IDATA, OUTFILE_DATA)
+        call shd_io__outputDataBin(EXTINCT, 1, N, IDATA, OUTFILE_DATA)
         IDATA = 0
-        call shd_io__outputData(ALBEDO, 1, N, IDATA, OUTFILE_DATA, 'ADD')
+        call shd_io__outputDataBin(ALBEDO, 1, N, IDATA, OUTFILE_DATA, 'ADD')
         IDATA = 0
-        call shd_io__outputData(ASYM, 1, N, IDATA, OUTFILE_DATA, 'ADD')
+        call shd_io__outputDataBin(ASYM, 1, N, IDATA, OUTFILE_DATA, 'ADD')
         IDATA = 0
-        call shd_io__outputData(TEMP, 1, N, IDATA, OUTFILE_DATA, 'ADD')
+        call shd_io__outputDataBin(TEMP, 1, N, IDATA, OUTFILE_DATA, 'ADD')
 
         ! add grid positions (or binary data cannot be reconstructed)
         if (ALLGRID) then
             IDATA = 0
-            call shd_io__outputData(GRIDPOS(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
+            call shd_io__outputDataBin(GRIDPOS(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
         end if
 
         deallocate(ASYM)
@@ -1491,7 +1430,7 @@ subroutine shd_io__outputResultMpi(&
         !╭────────────────────────────────────────────────╮!
         if (VERBOSE_ .ge. 5) write(*, '(A)') 'Message [_outputResultMpi]: <R> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
         N = NANGOUT*NXOUT*NYOUT
-        call shd_io__outputData(RADOUT, NSTOKES, N, IRAD, OUTFILE_DATA)
+        call shd_io__outputDataBin(RADOUT, NSTOKES, N, IRAD, OUTFILE_DATA)
         !╰────────────────────────────────────────────────╯!
 
         ! original
@@ -1562,14 +1501,14 @@ subroutine shd_io__outputResultMpi(&
 
             N = NX*NY
             IDATA = 0
-            call shd_io__outputData(C*FLUXES(2, NZ, :, :), 1, N, IDATA, OUTFILE_DATA)
+            call shd_io__outputDataBin(C*FLUXES(2, NZ, :, :), 1, N, IDATA, OUTFILE_DATA)
 
             IDATA = 0
-            call shd_io__outputData(C*FLUXES(1,  1, :, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
+            call shd_io__outputDataBin(C*FLUXES(1,  1, :, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
 
             if (SRCTYPE .ne. 'T') then
                 IDATA = 0
-                call shd_io__outputData(FLUXES(3,  1, :, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
+                call shd_io__outputDataBin(FLUXES(3,  1, :, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
             end if
             !╰────────────────────────────────────────────────╯!
 
@@ -1649,14 +1588,14 @@ subroutine shd_io__outputResultMpi(&
 
             N = NX*NY
             IDATA = 0
-            call shd_io__outputData(C*SUM2/N, 1, NZ, IDATA, OUTFILE_DATA)
+            call shd_io__outputDataBin(C*SUM2/N, 1, NZ, IDATA, OUTFILE_DATA)
 
             IDATA = 0
-            call shd_io__outputData(C*SUM1/N, 1, NZ, IDATA, OUTFILE_DATA, 'ADD')
+            call shd_io__outputDataBin(C*SUM1/N, 1, NZ, IDATA, OUTFILE_DATA, 'ADD')
 
             if (SRCTYPE .ne. 'T') then
                 IDATA = 0
-                call shd_io__outputData(SUM3/N, 1, NZ, IDATA, OUTFILE_DATA, 'ADD')
+                call shd_io__outputDataBin(SUM3/N, 1, NZ, IDATA, OUTFILE_DATA, 'ADD')
             end if
 
             deallocate(SUM1)
@@ -1720,14 +1659,14 @@ subroutine shd_io__outputResultMpi(&
 
             N = NX*NY*NZ
             IDATA = 0
-            call shd_io__outputData(C*FLUXES(2, :, :, :), 1, N, IDATA, OUTFILE_DATA)
+            call shd_io__outputDataBin(C*FLUXES(2, :, :, :), 1, N, IDATA, OUTFILE_DATA)
 
             IDATA = 0
-            call shd_io__outputData(C*FLUXES(1, :, :, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
+            call shd_io__outputDataBin(C*FLUXES(1, :, :, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
 
             if (SRCTYPE .ne. 'T') then
                 IDATA = 0
-                call shd_io__outputData(FLUXES(3, :, :, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
+                call shd_io__outputDataBin(FLUXES(3, :, :, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
             end if
             !╰────────────────────────────────────────────────╯!
 
@@ -1794,7 +1733,7 @@ subroutine shd_io__outputResultMpi(&
 
             N = NX*NY
             IDATA = 0
-            call shd_io__outputData(-SUM1/N, 1, NZ, IDATA, OUTFILE_DATA)
+            call shd_io__outputDataBin(-SUM1/N, 1, NZ, IDATA, OUTFILE_DATA)
 
             deallocate(SUM1)
             !╰────────────────────────────────────────────────╯!
@@ -1831,7 +1770,7 @@ subroutine shd_io__outputResultMpi(&
 
             N = NX*NY*NZ
             IDATA = 0
-            call shd_io__outputData(-FLUXDIV, 1, N, IDATA, OUTFILE_DATA)
+            call shd_io__outputDataBin(-FLUXDIV, 1, N, IDATA, OUTFILE_DATA)
             !╰────────────────────────────────────────────────╯!
 
             ! original
@@ -1903,11 +1842,11 @@ subroutine shd_io__outputResultMpi(&
             if (VERBOSE_ .ge. 5) write(*, '(A)') 'Message [_outputResultMpi]: <S1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
 
             IDATA = 0
-            call shd_io__outputData(SHTERMS(1:4, :, :, :), 4, N, IDATA, OUTFILE_DATA)
+            call shd_io__outputDataBin(SHTERMS(1:4, :, :, :), 4, N, IDATA, OUTFILE_DATA)
 
             if (NSHOUT .eq. 5) then
                 IDATA = 0
-                call shd_io__outputData(SHTERM5, 1, N, IDATA, OUTFILE_DATA, 'ADD')
+                call shd_io__outputDataBin(SHTERM5, 1, N, IDATA, OUTFILE_DATA, 'ADD')
             end if
 
             deallocate(SHTERM5)
@@ -2173,7 +2112,7 @@ subroutine shd_io__outputCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
         if (VERBOSE_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <V> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
         N = NL*NS
         IDATA = 0
-        call shd_io__outputData(VISOUT, NSTOKES, N, IDATA, OUTFILE_DATA)
+        call shd_io__outputDataBin(VISOUT, NSTOKES, N, IDATA, OUTFILE_DATA)
         !╰────────────────────────────────────────────────╯!
 
     end if
@@ -2837,5 +2776,67 @@ subroutine shd_io__saveState(&
     return
 
 end subroutine shd_io__saveState
+
+subroutine shd_io__outputDataBin(&
+    &DATA_OUT, NVAR, NDATA,&
+    &IDATA, OUTFILE_DATA, MODE)
+
+    ! Writes data into binary file
+
+    real, intent(in) :: DATA_OUT(NVAR, *)
+    integer :: NVAR, NDATA
+    integer, intent(inout) :: IDATA
+    character(len=*), intent(in) :: OUTFILE_DATA
+    character(len=*), intent(in), optional :: MODE
+    integer :: ivar, icount, idata_start, istat
+    integer :: DATA_BYTE
+    real :: DATA_SIZE
+
+    if ((present(MODE)) .and. (MODE .eq. 'ADD')) then
+        open (UNIT=88, FILE=trim(adjustl(OUTFILE_DATA)), STATUS='OLD', position='APPEND',&
+            &form='UNFORMATTED', access='STREAM', iostat=istat)
+    else
+        open (UNIT=88, FILE=trim(adjustl(OUTFILE_DATA)), STATUS='REPLACE',&
+            &form='UNFORMATTED', access='STREAM', iostat=istat)
+    end if
+
+    idata_start = IDATA
+
+    if (istat .eq. 0) then
+
+        do ivar = 1, NVAR
+            ! rewind for each column variable
+            IDATA = idata_start
+            do icount = 1, NDATA
+                 IDATA = IDATA + 1
+                 write (88) DATA_OUT(ivar, IDATA)
+            end do
+        end do
+
+        close(88, iostat=istat)
+
+        inquire(FILE=trim(adjustl(OUTFILE_DATA)), SIZE=DATA_BYTE)
+        DATA_SIZE = DATA_BYTE/1000000.0
+
+        if ((present(MODE)) .and. (MODE .eq. 'ADD')) then
+            if (VERBOSE_ .ge. 5) write(*, '(A,F0.2,A)') 'Message [_outputDataBin]: Data added to <'//trim(adjustl(OUTFILE_DATA))//'> (',&
+                &DATA_SIZE, 'MB).'
+        else
+            if (VERBOSE_ .ge. 5) write(*, '(A,F0.2,A)') 'Message [_outputDataBin]: Data saved at <'//trim(adjustl(OUTFILE_DATA))//'> (',&
+                &DATA_SIZE, 'MB).'
+        end if
+
+    else
+
+        close(88, iostat=istat)
+
+        write(*, '(A)') 'Error [_outputDataBin]: Failed to open file <'//trim(adjustl(OUTFILE_DATA))//'>.'
+        stop
+
+    end if
+
+    return
+
+end subroutine shd_io__outputDataBin
 
 end module shd_out
