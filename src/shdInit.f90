@@ -65,6 +65,7 @@ subroutine shd_init__makeGrid(&
     &XSTART, YSTART, DELXP, DELYP, ZLEVELS,&
     &XGRID, YGRID, ZGRID)
 
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Description:
     !   Makes the XGRID, YGRID, and ZGRID arrays from the input Z levels
     !   and X and Y spacing from the property file according to the GRIDTYPE.
@@ -91,6 +92,7 @@ subroutine shd_init__makeGrid(&
     !                        there are NX+1 values in XGRID, NY+1 in YGRID,
     !                        NZ values in ZGRID. Currently the grid locations
     !                        are evenly spaced in X and Y.
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
     integer(kind=I__), intent(in) :: BCFLAG, NPX, NPY, NPZ, NX, NY, NZ
     character(len=1) , intent(in) :: GRIDTYPE
@@ -176,6 +178,7 @@ subroutine shd_init__makeCell(&
     &NPTS, NCELLS, XGRID, YGRID, ZGRID, GRIDPOS,&
     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS)
 
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Description:
     !   Make the initial grid cell data structure for the base grid.
     !   For periodic boundary conditions there are NX*NY*(NZ-1) grid cells
@@ -236,6 +239,7 @@ subroutine shd_init__makeCell(&
     !                   1:  Do independent pixel for Y
     !                   2,3: Direction cell is split (0=no split, 1=X, 2=Y, 3=Z)
     ! IP is a grid point index, IC is a cell index.
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
     integer(kind=I__), intent(in)    :: IPFLAG, BCFLAG, NX, NY, NZ, NX1, NY1
     real(kind=R__)   , intent(in)    :: XGRID(NX1), YGRID(NY1), ZGRID(NZ)
@@ -473,6 +477,7 @@ subroutine shd_init__makePrp(&
     end do
 
     return
+
 end subroutine shd_init__makePrp
 
 subroutine shd_init__makeRad(&
@@ -1074,14 +1079,25 @@ subroutine shd_init__checkSfcU(&
     &NXSFC, NYSFC, NSFCPAR, SFCPARMS,&
     &UNIFORM_SFC_BRDF)
 
-    ! Checks to see if the surface reflection parameters are uniform,
-    ! and if so sets the UNIFORM_SFC_BRDF flag.  The temperature need
-    ! not be uniform.
+    ! Description:
+    !   Checks to see if the surface reflection parameters are uniform,
+    !   and if so sets the UNIFORM_SFC_BRDF flag.  The temperature need
+    !   not be uniform.
+    !
+    ! Input:
+    !   NXSFC, NYSFC: integer, size of surface arrays (internally NXSFC+1 by NYSFC+1)
+    !   NSFCPAR: integer, number of surface parameters for modeling different BRDF
+    !   SFCPARMS: real array, surface parameters for modeling different BRDF
+    !
+    ! Output:
+    !   UNIFORM_SFC_BRDF: logical, whether surface reflection parameters are uniform
 
-    integer NXSFC, NYSFC, NSFCPAR
-    real SFCPARMS(NSFCPAR, NXSFC + 1, NYSFC + 1)
-    logical UNIFORM_SFC_BRDF
-    integer IX, IY, J
+    integer(kind=I__), intent(in) :: NXSFC, NYSFC, NSFCPAR
+    real(kind=R__)   , intent(in) :: SFCPARMS(NSFCPAR, NXSFC + 1, NYSFC + 1)
+
+    logical, intent(out) :: UNIFORM_SFC_BRDF
+
+    integer(kind=I__) :: IX, IY, J
 
     UNIFORM_SFC_BRDF = .true.
 

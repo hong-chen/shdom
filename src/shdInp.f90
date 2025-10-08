@@ -45,8 +45,7 @@ module shd_inp
 
     public :: shd_io__userInput
     public :: shd_io__nmlInput
-
-    public :: shd_io__checkInputParam
+    public :: shd_io__checkInput
 
     public :: shd_io__readPrpSize
     public :: shd_io__readPrp
@@ -523,7 +522,7 @@ subroutine shd_io__nmlInput(&
     return
 end subroutine shd_io__nmlInput
 
-subroutine shd_io__checkInputParam(&
+subroutine shd_io__checkInput(&
     &NMU, NPHI, DELTAM, MAXASYM,&
     &GRIDTYPE, SRCTYPE, UNITS, SOLARFLUX, SOLARMU,&
     &WAVENO, WAVELEN, GNDTEMP, GNDALBEDO,&
@@ -547,19 +546,19 @@ subroutine shd_io__checkInputParam(&
     real FLUX
 
     if (SRCTYPE .ne. 'S' .and. SRCTYPE .ne. 'T' .and. SRCTYPE .ne. 'B')&
-        &stop 'Error [_checkInputParam]: Illegal source type.'
+        &stop 'Error [_checkInput]: Illegal source type.'
     if (UNITS .ne. 'R' .and. UNITS .ne. 'T' .and. UNITS .ne. 'B')&
-        &stop 'Error [_checkInputParam]: Illegal units.'
+        &stop 'Error [_checkInput]: Illegal units.'
     if (GRIDTYPE .ne. 'E' .and. GRIDTYPE .ne. 'P' .and. GRIDTYPE .ne. 'F')&
-        &stop 'Error [_checkInputParam]: Illegal grid type.'
+        &stop 'Error [_checkInput]: Illegal grid type.'
 
     if (SRCTYPE .ne. 'T' .and. SOLARMU .eq. 0.0) then
-        stop 'Error [_checkInputParam]: Cosine solar zenith angle&
+        stop 'Error [_checkInput]: Cosine solar zenith angle&
             & (SOLARMU) cannot be 0.'
     end if
 
     if (.not. DELTAM .and. SRCTYPE .ne. 'T' .and. MAXASYM .gt. 0.5) then
-        if (VERBOSE_ .ge. 4) write (*, '(A)') 'Warning [_checkInputParam]: Delta-M should be used&
+        if (VERBOSE_ .ge. 4) write (*, '(A)') 'Warning [_checkInput]: Delta-M should be used&
             & (DELTAM=.TRUE.) for solar radiative transfer&
             & with highly peaked phase functions.'
     end if
@@ -576,29 +575,29 @@ subroutine shd_io__checkInputParam(&
     end if
     if (SPLITACC .gt. 0.0 .and.&
         &(SPLITACC .lt. 0.001*FLUX .or. SPLITACC .gt. 0.1*FLUX)) then
-        if (VERBOSE_ .ge. 4) write (*, '(A)') 'Warning [_checkInputParam]: Splitting accuracy parameter&
+        if (VERBOSE_ .ge. 4) write (*, '(A)') 'Warning [_checkInput]: Splitting accuracy parameter&
             & is not a fraction, but scales with fluxes.'
     end if
     if (SHACC .gt. 0.0 .and. SHACC .gt. 0.03*FLUX) then
-        if (VERBOSE_ .ge. 4) write (*, '(A)') 'Warning [_checkInputParam]: Spherical harmonic accuracy&
+        if (VERBOSE_ .ge. 4) write (*, '(A)') 'Warning [_checkInput]: Spherical harmonic accuracy&
             & (SHACC) is not a fraction, but scales with fluxes.'
     end if
 
     if (SRCTYPE .ne. 'S' .and.&
         &(GNDTEMP .lt. 150. .or. GNDTEMP .gt. 350.)) then
-        if (VERBOSE_ .ge. 4) write (*, '(A)') 'Warning [_checkInputParam]:&
+        if (VERBOSE_ .ge. 4) write (*, '(A)') 'Warning [_checkInput]:&
             & ground temperature out of Earth range.'
     end if
     if (GNDALBEDO .lt. 0.0 .or. GNDALBEDO .gt. 1.0) then
-        stop 'Error [_checkInputParam]: Ground albedo must be 0 to 1.'
+        stop 'Error [_checkInput]: Ground albedo must be 0 to 1.'
     end if
 
     if (NPHI .lt. NMU) then
-      if (VERBOSE_ .ge. 4) write (*, '(A)') 'Warning [_checkInputParam]: Usually want NPHI >= NMU.'
+      if (VERBOSE_ .ge. 4) write (*, '(A)') 'Warning [_checkInput]: Usually want NPHI >= NMU.'
     end if
 
     return
-end subroutine shd_io__checkInputParam
+end subroutine shd_io__checkInput
 
 subroutine shd_io__readPrpSize(PROPFILE, NSTLEG,&
     &NLEG, NPX, NPY, NPZ, DELX, DELY,&
