@@ -1857,10 +1857,10 @@ subroutine shd_mpi__computeRad(&
 
         ! added for fixing the "domain shift" issue (only for 3D)
         ! this is the first step correction:
-        !   single-pixel-wise mini adjustment, giving
+        !   single-pixel-wise mini adjustment, addressing
         !   interpolation effect
         ! the second step correction is done in the data output
-        !   <shd_io__radShiftCorr> in shdIO_out.f90
+        !   <shd_io__radShiftCorr> in shdOut.f90
         !╭────────────────────────────────────────────────╮!
         if (IPFLAG .eq. 0) then
             DS_Z0 = Z0 - ZGRID(1)
