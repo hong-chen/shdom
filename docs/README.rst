@@ -1,6 +1,6 @@
-==========================================================================================
-SHDOM -  Spherical Harmonic Discrete Ordinate Method for 3D Atmospheric Radiative Transfer
-==========================================================================================
+=============================================================================================================
+SHDOMNG - Spherical Harmonic Discrete Ordinate Method (Next Generation) for 3D Atmospheric Radiative Transfer
+=============================================================================================================
 
 OVERVIEW
 --------
@@ -36,7 +36,7 @@ METHOD IN BRIEF
 ---------------
 
 SHDOM uses an iterative process to compute the source function
-(including the scattering integral) on a grid of points in space.  The
+(including the scattering integral) on a grid of points in space. The
 angular part of the source function is represented with a spherical
 harmonic expansion. Solving for the source function instead of the
 radiance field saves memory, because there are often parts of a medium
@@ -76,7 +76,7 @@ are input at grid points from a "property file". These fields are
 defined spatially (``X``, ``Y``, and ``Z`` spacing) by the "property grid", which is
 defined by the input file and is not the actual spatial grid used for
 computatations. The internal grid used for computation has two
-components: the "base grid" is  regularly spaced (even in ``X`` and ``Y``, even
+components: the "base grid" is regularly spaced (even in ``X`` and ``Y``, even
 or not in ``Z``) and is defined by input parameters ``NX``, ``NY``, ``NZ``, and
 ``GRIDTYPE``. The "adaptive grid" is all the grid cells including those
 defined by subdividing the base grid cells. New cells are made by "cell
@@ -109,7 +109,7 @@ POLARIZATION
 Polarization in SHDOM has been implemented with the standard Stokes
 parameters: ``I``, ``Q``, ``U``, and ``V``. ``I`` is the regular radiance or intensity, ``Q``
 and ``U`` measured the amount and orientation of linear polarization, and ``V``
-measures the amount and sign of circular polarization.  The particular
+measures the amount and sign of circular polarization. The particular
 definitions of the Stokes parameters are as in Mishchenko and Travis 1997.
 The ``Q`` and ``U`` parameters depend on their reference plane, which
 rotates from the incoming meridional plane, to the scattering plane, and
@@ -125,21 +125,21 @@ azimuth angle basis).
 
 For polarized radiative transfer with randomly oriented particles
 having a plane of symmetry, there are six unique elements of the ``4x4``
-scattering phase matrix.  One aspect of using the real generalized
+scattering phase matrix. One aspect of using the real generalized
 spherical harmonics basis is that the phase matrix elements as a
 function of scattering angle are expressed in Wigner d-function series.
 
-For the I-I (P11) and V-V (P44) elements of the phase  matrix these
+For the I-I (P11) and V-V (P44) elements of the phase matrix these
 series are the same as Legendre series, while for the other four
 elements (P22, P33, P12, P34) the Wigner d-function series are not
 equivalent to Legendre series. There is a new polarized property file
 input format for SHDOM, which is based on the tabulated phase function
 format, but including the coefficients for the six Wigner d-function
-series expansions of the phase matrix elements.  The old SHDOM property
+series expansions of the phase matrix elements. The old SHDOM property
 file formats may still be used for unpolarized (``NSTOKE=1``) calculations.
 
 The SHDOM output types that output polarized results are radiance (``R``),
-visualization images (``V``), and source function (``J``).  The hemispheric flux
+visualization images (``V``), and source function (``J``). The hemispheric flux
 (``F``), heating rate (``H``), spherical harmonics (``S``), and medium properties
 (``M``) output unpolarized results as before.
 
@@ -157,13 +157,13 @@ INPUT PARAMETERS
 
 The parameters are input in the routine ``shd_io__userInput`` or
 ``shd_io__nmlInput``. ``shd_io__userInput`` uses ``READ`` statements from stdin in response
-to written messages.  Because not all parameters are relevant at once,
-the complete list is not input.  Run shdom interactively for the actual
+to written messages. Because not all parameters are relevant at once,
+the complete list is not input. Run shdom interactively for the actual
 sequence. The ``shd_io__userInput`` routine echos the input values so that a
-useful "log" file output is produced when run non-interactively.  To use
+useful "log" file output is produced when run non-interactively. To use
 the namelist style input, change ``nmlMode = .True.`` in the
 main routine. On some computers the NAMELIST input requires a space
-before the parameters.  All file name strings are a maximum of 256
+before the parameters. All file name strings are a maximum of 256
 characters.
 
 .. code-block::
@@ -390,13 +390,13 @@ See Unix scripts included with the distribution for examples of running
 SHDOM. Also read propgen.txt for how to prepare optical property files.
 
 The main difficulty in choosing parameters is determining the desired
-tradeoff between accuracy and computation cost.  The angular resolution
+tradeoff between accuracy and computation cost. The angular resolution
 parameters (NMU, NPHI, SHACC) and the spatial resolution parameters (NX,
 NY, NZ, SPLITACC) are the primary ones that determine both the accuracy
-and the running time.  See ACCURACY ISSUES for a discussion of this.
-NMU must be even (rounded up internally).  For NPHI greater than about
+and the running time. See ACCURACY ISSUES for a discussion of this.
+NMU must be even (rounded up internally). For NPHI greater than about
 14, SHDOM will run faster if NPHI has small prime factors, due to the
-FFT part of the spherical harmonic transform.  The base grid size is
+FFT part of the spherical harmonic transform. The base grid size is
 often the same size as the property grid, but can have more grid points
 for higher spatial resolution or even can have less grid points than the
 property grid.
@@ -436,7 +436,7 @@ for doubling the vertical resolution use ``NZ=2*(NZP-1)+1`` where ``NZP`` is
 the number of grid points vertically in the property file.
 
 The ``SKYRAD`` parameter is usually 0, but is nonzero when the problem
-includes diffuse radiation incident on the top boundary.  This could be
+includes diffuse radiation incident on the top boundary. This could be
 the cosmic background radiation for microwave wavelengths, or diffuse
 skylight for solar problems where the domain top is actually in the
 lower atmosphere.
@@ -461,7 +461,7 @@ See section on ARRAY SIZES AND MEMORY MANAGEMENT for how to choose the
 four memory parameters (``MAX_TOTAL_MB``, ``ADAPT_GRID_FACTOR``,
 ``NUM_SH_TERM_FACTOR``, ``CELL_TO_POINT_RATIO``) used in ``shdom.f90`` or to
 adjust the array sizes in ``shdom.f90`` to accomodate your problem size and
-computer memory.  The four memory parameters do not affect the SHDOM
+computer memory. The four memory parameters do not affect the SHDOM
 solution (unless SHDOM runs out of memory); they only control the array
 sizes.
 
@@ -497,13 +497,13 @@ with the surface albedo.
 The RPV parameterization is used to model the general bidirectional
 reflectance function (BRF) characteristics of land surfaces (soils and
 vegetation) with three parameters (rho0, k, Theta) (Rahman, Pinty,
-Verstraete, 1993:  J. Geophys. Res., 98, 20791).
+Verstraete, 1993: J. Geophys. Res., 98, 20791).
 
 The Ocean BRDF parameterization models the glint specular reflection
 averaged over wave facets and the internal reflection from sea water,
 and is specified by the wind speed and chlorophyl-alpha pigment
-concentration.  The Ocean reflectance model is obtained from the 6S
-model and modified by Norman Loeb at NASA Langley.  High SHDOM angular
+concentration. The Ocean reflectance model is obtained from the 6S
+model and modified by Norman Loeb at NASA Langley. High SHDOM angular
 resolution (Nmu, Nphi) is needed at low wind speeds to resolve the
 broadened specular reflection peak, so it is important to do a test
 with increasing angular resolution until the reflection is stable.
@@ -512,34 +512,34 @@ The Wave-Fresnel model calculates the polarized Fresnel reflection
 from a dielectric interface with a Gaussian distribution of slopes,
 including shadowing. The complex index of refraction of the dielectric
 (negative imaginary part for an absorbing medium) and the wind speed are
-input.  The mean square surface slope (s^2 or SIGMA2 in Mishchenko and
+input. The mean square surface slope (s^2 or SIGMA2 in Mishchenko and
 Travis) is obtained from the Cox and Munk formula in the paper.
 (Mishchenko, M. I., and L. D. Travis, 1997: Satellite retrieval of
 aerosol properties over the ocean using polarization as well as
-intensity of reflected sunlight.  J. Geophys. Res. 102, 16989-17013.)
+intensity of reflected sunlight. J. Geophys. Res. 102, 16989-17013.)
 As with the Ocean model it is important to do a test with increasing
 angular resolution until the reflection is stable for low wind speeds,
 due to the nearly specular sunglint peak.
 
 The Diner et al. model is used to calculate polarized reflection from
-land surfaces.  It has two terms:  1) completely depolarizing volumetric
+land surfaces. It has two terms: 1) completely depolarizing volumetric
 scattering with the modified RPV model, and 2) Fresnel reflection from
 randomly oriented microfacets with either a uniform or Gaussian
-distribution of slopes.  The three parameters of the modified-RPV model
-are A, K, and B.  The weight given to the Fresnel-microfacet term is
-ZETA (if  ZETA=0 then only the REFLECT(1,1) element is non-zero with the
-modified-RPV model).  SIGMA is the standard deviation of microfacet
+distribution of slopes. The three parameters of the modified-RPV model
+are A, K, and B. The weight given to the Fresnel-microfacet term is
+ZETA (if ZETA=0 then only the REFLECT(1,1) element is non-zero with the
+modified-RPV model). SIGMA is the standard deviation of microfacet
 slopes for the Gaussian orientation distribution, but if SIGMA<=0 the
-uniform orientation distribution is used.  The complex index of
+uniform orientation distribution is used. The complex index of
 refraction of the Fresnel microfacets is fixed in the subroutine at
-m=1.5+0i.  The Diner et al. (2012) model leaves out the hotspot factor
+m=1.5+0i. The Diner et al. (2012) model leaves out the hotspot factor
 of the modified RPV model (and the original RPV), but the hotspot factor
-is included here.  The model is described in Diner, D. J., F. Xu, J. V.
+is included here. The model is described in Diner, D. J., F. Xu, J. V.
 Martonchik, B. E. Rheingans, S. Geier, V. M. Jovanovic, A. Davis, R. A.
 Chipman, S. C. McClain, 2012: Exploration of a polarized surface
 bidirectional reflectance model using the ground-based multiangle
 spectropolarimetric imager. Atmosphere 2012, 3, 591-619;
-doi:10.3390/atmos3040591.  The modified RPV model is from Martonchik et
+doi:10.3390/atmos3040591. The modified RPV model is from Martonchik et
 al., 1998 (IEEE-TGARS, 36, 1266).
 
 See the <SURFACE FILE FORMAT> section for how to specify the parameters.
@@ -550,7 +550,7 @@ If the surface reflection parameters in the surface file are constant,
 and thus the surface has horizontally uniform reflection, then the
 surface reflection matrix is precomputed for the discrete ordinate
 incident and outgoing directions, which can save considerable
-computation.  The temperature does not need to be uniform for this.
+computation. The temperature does not need to be uniform for this.
 Lambertian surfaces are always computationally efficient, and so this
 precomputation is not performed in that case.
 
@@ -562,7 +562,7 @@ The upper boundary condition is open, i.e. there is no reflection from
 the top of the domain. Isotropic incident radiance at the top boundary
 may be specified. The surface reflection models are described above.
 
-There are two options for the horizontal boundary conditions.  The
+There are two options for the horizontal boundary conditions. The
 first is periodic and the second is open. These are specified for X and
 Y directions independently using the BCFLAG: bit 0 for X and bit 1 for Y.
 Thus ``BCFLAG=0`` is periodic in X and Y, ``BCFLAG=1`` is open in X and
@@ -576,7 +576,7 @@ by NY*DELY; for example if ``NX=64`` and ``DELX=0.050`` km, then ``X=3.2``
 km is equivalent to ``X=0`` km (left hand side).
 
 The open horizontal boundary condition means that radiation leaving
-the sides does not wrap around and is not reflected back in.  However,
+the sides does not wrap around and is not reflected back in. However,
 there may be radiation entering the sides. For open BCs the property
 file grid points on the edges are used in independent pixel mode to
 compute the boundary radiation. For example, in 2D (X and Z) the first
@@ -587,12 +587,12 @@ radiances for the interior of the domain. The interior domain is
 (plane-parallel) radiative transfer, while the four side slices are done
 with 2D radiative transfer. If you want the boundary columns to produce
 plane-parallel results, simply make sure the input optical properties
-for the columns on the boundaries are the same.  The radiance output
+for the columns on the boundaries are the same. The radiance output
 calculation can be done for locations beyond the horizontal domain; this is
 the purpose of the "X and Y offsets" in the radiance output
 specification. For the open boundary conditions the rays are traced
 back through the regions beyond the domain using plane-parallel
-radiative transfer, and then may enter the domain.  This allows the
+radiative transfer, and then may enter the domain. This allows the
 lower part of the domain to be seen through the domain "sides" for
 slanted paths. Open boundary conditions are not allowed with MPI.
 
@@ -612,15 +612,15 @@ cells in half (in any direction) and using pointers to parent and
 child cells. See <VARIABLES> section for details.
 
 For periodic boundary conditions there are ``NX*NY*(NZ-1)`` grid cells
-and ``(NX+1)*(NY+1)*NZ`` grid points. The ``IX=NX+1`` column is the same  as
+and ``(NX+1)*(NY+1)*NZ`` grid points. The ``IX=NX+1`` column is the same as
 the ``IX=1`` column, because of the periodicity, but the grid points are
-repeated.  The last grid cell on the "right" has the last column of
-grid points on the "left" and the repeated "virtual" set of grid  points
-on the "right".  For open boundary conditions in X and Y there are
+repeated. The last grid cell on the "right" has the last column of
+grid points on the "left" and the repeated "virtual" set of grid points
+on the "right". For open boundary conditions in X and Y there are
 ``(NX+1)*(NY+1)*(NZ-1)`` grid cells and ``NX*NY*NZ`` grid points. Open boundary
 conditions are done with the lowest "left most" and "right most" X and Y
 columns being independent "pixels" with their own grid cells (zero
-width), therefore one extra grid cell is required.  Independent pixel
+width), therefore one extra grid cell is required. Independent pixel
 mode has ``NX*NY*(NZ-1)`` grid cells and ``NX*NY*NZ`` grid points
 
 
@@ -631,7 +631,7 @@ The output goes to a number of plain text files (except for the
 visualization and netcdf output), each containing a header listing the
 input parameters. The header also lists the number of iterations taken,
 which for a k-distribution is the total number over the distribution
-sum.  There are seven output types:
+sum. There are seven output types:
 
 .. code-block::
 
@@ -649,16 +649,16 @@ A single netcdf output file may be specified in addition to, or instead
 of, the ascii output files. The netcdf file contains all the output
 types of the specified ascii files. If the ascii files are not desired,
 then use NONE for each of the ascii file names. The output in the
-netcdf file is arranged somewhat differently from the ascii files.  For
+netcdf file is arranged somewhat differently from the ascii files. For
 all of the output on a grid, X is the fastest moving index, and Z is the
 slowest. The total downward flux and downward diffuse flux are output,
 rather than the downward diffuse and direct flux separately, as in the
 ascii files. Only those output formats allowed with multiple processors
 are supported in the netcdf output. Specifically, the V, J, and M
 formats are not supported, nor is the F 2 format, nor any output on the
-adaptive grid (i.e. F, H, and S outputs are only on the base grid).  All
+adaptive grid (i.e. F, H, and S outputs are only on the base grid). All
 of the information in the header of the ascii files is included as
-global attributes in the netcdf file.  The original unpolarized
+global attributes in the netcdf file. The original unpolarized
 shdom_netcdf module was written by Robert Pincus (December 2008).
 
 The radiance output computes the radiance at a single vertical level for
@@ -676,26 +676,26 @@ ascii header with the SHDOM input parameters listed, followed by the
 pixel values in straight binary format (from left to right and then top
 to the bottom of the image). The pixel format may be byte (values 0
 to 255) or two byte integers. PGM images may be viewed with many image
-viewers, such as "display" from ImageMagick. For polarized output  with
+viewers, such as "display" from ImageMagick. For polarized output with
 NSTOKES>1, the NSTOKES output images are stacked in the line (Y)
 direction: I (radiance) on top, then degree of linear polarization (0 to
 1), angle of linear polarization (-180 to 180 degrees), and (for
-``NSTOKES=4``) degree of circular polarization (-1 to +1).  The scaling to
+``NSTOKES=4``) degree of circular polarization (-1 to +1). The scaling to
 the pixel values is done automatically (see the PGM header for the
 scaling for each polarization component).
 
 There are several ways to output hemispheric flux, including at the top
 and bottom of the domain, on a regular horizontal grid at any level, or
 for every grid point. The net flux convergence may be output for each
-grid point or for a domain averaged vertical profile.  The spherical
-harmonic output is the mean  radiance and net flux vector (proportional
+grid point or for a domain averaged vertical profile. The spherical
+harmonic output is the mean radiance and net flux vector (proportional
 to the first 4 terms in the spherical harmonic expansion) and for solar
 problems includes the direct beam contribution.
 
 The source function output lists the extinction and source function
 computed for a specified direction at every grid point. This can be
 useful for use by another program such as to compute limb radiances in a
-spherical geometry.  The medium properties output lists the (potentially
+spherical geometry. The medium properties output lists the (potentially
 delta-M scaled) extinction, single scattering albedo, asymmetry
 parameter, and temperature at the grid points, and is useful for making
 sure the medium was input correctly.
@@ -733,8 +733,8 @@ specifies all properties except the phase function for each grid point,
 while many phase functions are tabulated in the header; and 4) the
 polarized tabulated phase function format tabulates the six Wigner
 d-function expansion coefficients for each phase matrix in the header.
-All file types are plain ascii and read by  Fortran free format (so most
-"lines" may be broken across lines).  With a small code change
+All file types are plain ascii and read by Fortran free format (so most
+"lines" may be broken across lines). With a small code change
 (commenting in calls to ``read_property_size_netcdf`` and
 ``read_properties_netcdf`` in ``shdom.f90``) the two tabulated phase function
 format property files may be read in netcdf format.
@@ -743,8 +743,8 @@ Note: Chi1 is 3 times the asymmetry parameter.
 
 The standard file format has two header lines: the first line has
 the size of the grid; the second line contains the X and Y grid
-spacing and the Z levels.  There is then one line per grid point
-giving the properties.  The format is as follows:
+spacing and the Z levels. There is then one line per grid point
+giving the properties. The format is as follows:
 
 .. code-block::
 
@@ -767,7 +767,7 @@ of the Z levels; the fifth has the single scattering albedo, the degree
 of the Legendre expansion of the phase function, and then the Legendre
 coefficients. There is one line for every grid point containing the
 grid point indices and the extinction; if the NY is 1 then only the
-X and Z indices are given.  The format is as follows:
+X and Z indices are given. The format is as follows:
 
 .. code-block::
 
@@ -780,7 +780,7 @@ X and Z indices are given.  The format is as follows:
    . . .
 
 The tabulated phase function format has 4+NUMPHASE header lines,
-where NUMPHASE is the number of phase functions:  the first line must
+where NUMPHASE is the number of phase functions: the first line must
 begin with 'T'; the second has the grid size; the third has the grid
 spacing and Z levels; the fourth has the number of phase functions;
 and the following "lines" have the phase functions containing the
@@ -805,14 +805,14 @@ tabulated phase function format, but has has 4+6*NUMPHASE header lines:
 the first line must begin with 'P'; the second has the grid size; the
 third has the grid spacing and Z levels; the fourth has the number of
 phase functions; and the rest of the header has six "lines" for each
-phase matrix.  These six lines start with number 1 to 6, indicating
+phase matrix. These six lines start with number 1 to 6, indicating
 which Wigner series, then the degree of the Wigner expansion, followed
 by the Wigner d-function coefficients, starting with the zeroth term
 (i.e. Chi0, not Chi1 as for the other formats).
 
 The first Z level is the bottom surface and the last is the top
-surface.  The Legendre coefficients are normalized so that Chi0 (which
-is not listed) is always 1.  The phase function coefficients do not
+surface. The Legendre coefficients are normalized so that Chi0 (which
+is not listed) is always 1. The phase function coefficients do not
 actually need to be all on one line; in fact, propgen uses multiple
 lines for phase functions with more than 200 terms.
 
@@ -821,16 +821,16 @@ SURFACE FILE FORMAT
 -------------------
 
 There are currently five types of surface property files:
-Lambertian, RPV-original, Ocean, Wave-Fresnel, and Diner.  The file
+Lambertian, RPV-original, Ocean, Wave-Fresnel, and Diner. The file
 format allows the temperature and reflection properties to vary
-arbitrarily across the surface.  The surface properties are specified on
-a regular, evenly spaced grid.  There should be ``Nx*Ny`` points in the
-surface file.  The properties are bilinearly interpolated to the domain
-bottom grid point locations.  The surface domain is also periodic in X
-and Y, so that the domain is ``delX*Nx`` by ``delY*Ny`` in size.  Thus there are
+arbitrarily across the surface. The surface properties are specified on
+a regular, evenly spaced grid. There should be ``Nx*Ny`` points in the
+surface file. The properties are bilinearly interpolated to the domain
+bottom grid point locations. The surface domain is also periodic in X
+and Y, so that the domain is ``delX*Nx`` by ``delY*Ny`` in size. Thus there are
 Nx cells across, and the routine that reads in the surface properties
 assigns the properties of the left side of the domain (``IX=1``) to the
-right side of the last cell (``IX=NX+1``).  A uniform surface can be
+right side of the last cell (``IX=NX+1``). A uniform surface can be
 specified by having ``Nx=1`` and ``Ny=1`` and making ``delX`` and ``delY`` large enough
 to cover the whole domain.
 
@@ -882,7 +882,7 @@ The Diner surface is specified with five parameters (a, k, b, zeta, sigma)
    IX IY  SfcTemp  a  k  b  zeta  sigma
    . . .
 
-The IX and IY are the surface grid numbers (1 to Nx, 1 to Ny).  The surface
+The IX and IY are the surface grid numbers (1 to Nx, 1 to Ny). The surface
 temperature is specified in Kelvin.
 
 
@@ -891,15 +891,15 @@ CORRELATED K-DISTRIBUTION FILE FORMAT
 
 The CKD file has the correlated k-distribution information for a
 series of spectral bands for a particular atmospheric profile. This file
-is made by another program from a profile.  Each band, i.e. a range of
-wavenumbers, has a k-distribution associated with it.  The k-distibution
+is made by another program from a profile. Each band, i.e. a range of
+wavenumbers, has a k-distribution associated with it. The k-distibution
 is performed as a discrete sum over probability intervals (the delta g
-in the notation of Fu and Liou, 1993).  A radiative transfer calculation
+in the notation of Fu and Liou, 1993). A radiative transfer calculation
 is done for each "k" in the sum, which represents the gaseous
-absorption.  The distribution of gases in the atmosphere is assumed to
+absorption. The distribution of gases in the atmosphere is assumed to
 horizontally uniform, and so the absorption coefficients depend only on
 height. Thus the CKD file specifies the absorption coefficient (in
-km^-1) for each height, "k" in the sum, and each band.  The delta g's
+km^-1) for each height, "k" in the sum, and each band. The delta g's
 are the weights with which the separate radiative transfer results are
 added together.
 
@@ -933,10 +933,10 @@ The format is:
 
 Notes: waveno1 and waveno2 are the starting and ending wave numbers in
 cm^-1 of the bands; solar flux is the top of the atmosphere solar
-irradiance in W/m^2 for overhead sun.  The level numbers start with 1
-at the top of the atmosphere.  The levels in the CKD file are completely
+irradiance in W/m^2 for overhead sun. The level numbers start with 1
+at the top of the atmosphere. The levels in the CKD file are completely
 independent of the levels in the SHDOM run, though they should cover the
-SHDOM levels.  The k-distributions should start with the lowest k's
+SHDOM levels. The k-distributions should start with the lowest k's
 (they are used in the reverse order in the program).
 
 
@@ -951,7 +951,7 @@ See the journal papers:
 
 * Pincus, R., and K. F. Evans, 2009: Computational cost and accuracy in
   calculating three-dimensional radiative transfer: Results for new
-  implementations of Monte Carlo and SHDOM.  J. Atmos. Sci., 66,
+  implementations of Monte Carlo and SHDOM. J. Atmos. Sci., 66,
   3131-3146.
 
 * Doicu, A., D. Efremenko, T. Trautmann, 2013: A multi-dimensional
@@ -960,13 +960,13 @@ See the journal papers:
 
 * Mishchenko, M. I., and L. D. Travis, 1997: Satellite retrieval of
   aerosol properties over the ocean using polarization as well as
-  intensity of reflected sunlight.  J. Geophys. Res. 102, 16989-17013.
+  intensity of reflected sunlight. J. Geophys. Res. 102, 16989-17013.
 
 
 OPERATING STRATEGY
 ------------------
 
-The first step is to compile the code.  A makefile is provided, with
+The first step is to compile the code. A makefile is provided, with
 options to compile with or without MPI (for multiple processors) and
 with or without the netcdf library. SHDOM was originally written in
 Fortran 77 with common extensions. Later, parts of SHDOM were written
@@ -979,7 +979,7 @@ While a few algorithm and coding bugs may be left in the code, the
 most common source of errors is incorrect input. Be sure to check the
 input parameters against the documentation and the ``shd_io__userInput`` routine.
 The correctness of the input property file format can be found by using
-the 'M' - medium property output option.  There are routines that
+the 'M' - medium property output option. There are routines that
 check the input parameters and property file for validity and issue
 warnings for common mistakes.
 
@@ -1016,8 +1016,8 @@ Six terms are output on a line each iteration:
 
 .. code-block::
 
-   Iterations,  Log10(solution criterion),  Cell splitting criterion,
-      Number of grid points,  Average number of SH terms,
+   Iterations, Log10(solution criterion), Cell splitting criterion,
+      Number of grid points, Average number of SH terms,
       Ratio of number of SH terms to total possible
 
 Using these parameters you can track the convergence towards the
@@ -1076,7 +1076,7 @@ cloud top grid cell is very large.
 The accuracy is also determined by the angular resolution, specified
 by the number of discrete ordinates (``NMU`` and ``NPHI``). To a lesser degree
 the adaptive spherical harmonic truncation parameter ``SHACC`` also
-determines the angular resolution.  Most of the benefit from the
+determines the angular resolution. Most of the benefit from the
 adaptive truncation occurs for low values of SHACC, so it is recommended
 to keep this parameter small. A value of ``SHACC=0`` still gives the
 benefit of not allocating source function spherical harmonic terms where
@@ -1092,7 +1092,7 @@ Choosing the cell splitting accuracy: Remember that the adaptive
 parameters are in absolute units, not relative! The actual accuracy is
 not linearly related to the cell splitting accuracy. The cell splitting
 accuracy usually should be set substantially higher than the desired
-absolute flux accuracy.  Look at the examples in the 1998 journal paper
+absolute flux accuracy. Look at the examples in the 1998 journal paper
 for guidance.
 
 The only sure way to know how to set the spatial and angular
@@ -1118,14 +1118,14 @@ rates.
 
 Because of the thresholding nature of the cell splitting and the
 spherical harmonic truncation, very small changes in the inputs can
-amplify into larger changes in the output results.  For example, running
+amplify into larger changes in the output results. For example, running
 the same case on different machines can lead to noticeably different
-results.  These variations, however, should be within the overall
+results. These variations, however, should be within the overall
 accuracy of the results governed by the angular and spatial resolution.
 
 Upwelling hemispheric fluxes are slightly more accurately computed
-by using the double Gaussian quadrature discrete ordinate set.  This is
-choosen by setting ORDINATESET=3 in SOLVE_RTE.  With this option,
+by using the double Gaussian quadrature discrete ordinate set. This is
+choosen by setting ORDINATESET=3 in SOLVE_RTE. With this option,
 radiances, heating rates, and net fluxes may be slightly less accurate.
 
 
@@ -1134,7 +1134,7 @@ RUNNING SHDOM WITH MULTIPLE PROCESSORS
 
 SHDOM may be run on multiple processors, either in a shared memory
 system (e.g. SMP) or in a distributed memory system (e.g. a cluster),
-using the Message Passing Interface (MPI) version 1.  All of the SHDOM
+using the Message Passing Interface (MPI) version 1. All of the SHDOM
 code that calls MPI routines is in the ``shdMPI.f90`` file. Using the parallel
 processing aspects of SHDOM requires that the MPI system be installed on
 the target computer. Then the usual way to compile and run a program
@@ -1142,32 +1142,32 @@ with MPI is:
 
 .. code-block:: bash
 
-   mpif90 -O2 -o shdom  shdom.f90 shdMPI.f90 shdom_nonetcdf.f90 \
+   mpif90 -O2 -o shdom shdom.f90 shdMPI.f90 shdom_nonetcdf.f90 \
              shdSolv.f90 shdComp.f90 shdInp.f90 shdOut.f90 fftpack.f90
 
-   mpirun -np 4  shdom shdom.inp
+   mpirun -np 4 shdom shdom.inp
 
 where shdom.inp has the user input parameters and ``-np 4`` specifies
-that four processors will be used.  The MPI shared memory device (e.g.
+that four processors will be used. The MPI shared memory device (e.g.
 ch_shmem from the MPICH implementation) will be somewhat more efficient
 on an SMP machine than a device (e.g. ch_p4) that uses a network
 communication protocol (such as ssh).
 
 The SHDOM computation is divided up on the multiple processors with
 domain decomposition, meaning that each processor works on a portion of
-the horizontal domain.  MPI routines determine the 2D Cartesian topology
+the horizontal domain. MPI routines determine the 2D Cartesian topology
 that maps the full domain onto the processors, but usually four
-processors will be mapped to two in X by two in Y.  The boundaries
+processors will be mapped to two in X by two in Y. The boundaries
 between processors are at property grid lines, and the internal base
-grid points are repeated on both sides of the boundaries.  Thus a
+grid points are repeated on both sides of the boundaries. Thus a
 specified 128x128 base grid (NX=128, NY=128) run on four processors will
-result in a 65x65xNZ base grid in each processor.  The SHDOM output to
+result in a 65x65xNZ base grid in each processor. The SHDOM output to
 stdout includes the position of each processor in the horizontal domain.
 Using SHDOM with multiple processors requires a periodic domain in X and
-Y; open boundary conditions will be turned off if specified.  The BCFLAG
+Y; open boundary conditions will be turned off if specified. The BCFLAG
 parameter (user input for open boundary conditions) is also used
 internally to indicate if there are multiple processors in the X (BCFLAG
-bit 2) and Y (BCFLAG bit 3) directions.  Thus, multiple processors in
+bit 2) and Y (BCFLAG bit 3) directions. Thus, multiple processors in
 both directions will output BCFLAG=12.
 
 MPI calls are needed to pass data between neighboring processors for
@@ -1175,66 +1175,66 @@ three parts of the SHDOM algorithm: 1) the direct beam solar flux
 calculation at each internal grid point, 2) the radiative transfer
 equation integrations along each discrete ordinate during the solution
 iterations, and 3) the integrations along the viewing directions for the
-radiance output.  MPI calls are also made to move data between the
-master processor (MPI "rank" 0) and all the other processors.  The
+radiance output. MPI calls are also made to move data between the
+master processor (MPI "rank" 0) and all the other processors. The
 master processor performs all the file input/output, except for the
-save/restore files.  The binary save/restore files are written and read
+save/restore files. The binary save/restore files are written and read
 locally by each processor, using names with the processor number
-appended to the specified file names.  Thus the slave processors do not
-need to share disk files with the master processor.  The master
+appended to the specified file names. Thus the slave processors do not
+need to share disk files with the master processor. The master
 processor reads the user input parameters, and the surface parameter and
 k-distribution files (if specified) and broadcasts the parameters to the
-other processors.  The master processor reads the property input file
+other processors. The master processor reads the property input file
 and sends the appropriate subdomain of the optical properties to each
-processor.  The master processor also gathers the output (e.g. fluxes,
+processor. The master processor also gathers the output (e.g. fluxes,
 net flux convegence, and radiances) from the other processors and writes
 the output files.
 
 The user input parameters or namelist format is the same whether using
-multiple processors or using a single processor.  The input files for
+multiple processors or using a single processor. The input files for
 multiprocessing are all the same, but the "standard" format input
 property files, with the phase function Legendre series specified at
-every point, are not allowed.  The "log" output is written to stdout by
-the master processor.  The other processors write their output to
+every point, are not allowed. The "log" output is written to stdout by
+the master processor. The other processors write their output to
 ``<RUNNAME>.sHdOm-log.iproc-????`` (where ``<RUNNAME>`` is a user input string and ``????`` is the
-processor number).  The lines written each iteration during the solution
+processor number). The lines written each iteration during the solution
 procedure are for the subdomain operated on by each processor; therefore
-the number of grid points decreases as more processors are used.  The
+the number of grid points decreases as more processors are used. The
 solution criterion (represented in the "Log(Sol)" column), however, is
 the global solution criterion, calculated from the source function
 vectors in all processors (so that all the processors stop at the same
-iteration).  For programming convenience, not all output formats are
+iteration). For programming convenience, not all output formats are
 allowed for multiple processors: only base grid points (no adaptive grid
 points) are output for F, H, S output files; flux (F) format 2 (i.e.
 hemispheric fluxes interpolated to a user defined grid on one Z plane)
 is not allowed; and source function (J) and medium (M) outputs are not
-supported.  The output file formats do not change when using multiple
-processors.  The ``NPTS``, ``NCELLS``, and ``NSH`` parameters in the file headers
+supported. The output file formats do not change when using multiple
+processors. The ``NPTS``, ``NCELLS``, and ``NSH`` parameters in the file headers
 are the sum of the number of grid points, grid cells, and spherical
 harmonic terms over all the processor subdomains.
 
 Running SHDOM on N processors does not mean that the elapsed time will
 be a factor of N smaller because there is overhead to the
-parallelization.  One aspect of the parallelization overhead is the
+parallelization. One aspect of the parallelization overhead is the
 increase in the number of grid points due to the repeated boundary points.
 Another aspect is the time needed to pass data between processors using
-MPI and to wait for the data to arrive at all processors.  The third
+MPI and to wait for the data to arrive at all processors. The third
 overhead source is that the discrete ordinate radiances (computed during
 the solution iterations) at *all* the processor boundaries need to be
 traced back to the previous Z level; while this only occurs at one X and
-one Y boundary for a single processor.  This latter source of overhead
+one Y boundary for a single processor. This latter source of overhead
 is larger for domains with large Z grid spacing and small horizontal
-grid spacing.  All these sources of parallelization overhead are reduced
+grid spacing. All these sources of parallelization overhead are reduced
 in a fractional sense by having the processor boundary grid points be a
-smaller fraction of the total number of grid points.  Tests on an SMP
+smaller fraction of the total number of grid points. Tests on an SMP
 machine with boundary layer cloud domains show that the overhead is
 reasonable (<30%) for processor subdomains having 32x32 or more
 horizontal grid points.
 
 SHDOM running on multiple processors does not give exactly the same
 results as on a single processor due to differences in the discrete
-ordinate integrations in the iterative solver.  The differences,
-however, are small compared to the overall SHDOM accuracy.  Since small
+ordinate integrations in the iterative solver. The differences,
+however, are small compared to the overall SHDOM accuracy. Since small
 computational differences result in different cell splitting patterns,
 even the number of iterations can change slightly with the number of
 processors SHDOM uses.
@@ -1243,9 +1243,9 @@ For optimal memory use on an SMP machine it is necessary to specify the
 four memory parameters (MAX_TOTAL_MB, ADAPT_GRID_FACTOR,
 NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO) separately for each processor
 because a processor subdomain with more cloud will have more adaptive
-grid points and thus larger values of the memory parameters.  When SHDOM
+grid points and thus larger values of the memory parameters. When SHDOM
 is run on multiple processors it tries to read a file with the name
-``<RUNNAME>_mem_params.inp``.  The format of this file is
+``<RUNNAME>_mem_params.inp``. The format of this file is
 
 .. code-block::
 
@@ -1256,52 +1256,52 @@ is run on multiple processors it tries to read a file with the name
 
 If there is no input memory parameter file, or it is for a different
 number of processors, then the default memory parameters input by the
-user are used.  At the end of the SHDOM computation the actual memory
+user are used. At the end of the SHDOM computation the actual memory
 used and the three memory ratios are output to the log file for each
-processor.  These may be used as guidance for selecting the memory
+processor. These may be used as guidance for selecting the memory
 parameters for another similar calculation using the same number of
-processors.  A Unix script (run_multproc) illustrating this procedure
+processors. A Unix script (run_multproc) illustrating this procedure
 is in the distribution.
 
 If some processors have more computation to do than the others, then
 there is a loss of efficiency because the other processors spend much of
-their time waiting.  The relative load on each processor in SHDOM is
+their time waiting. The relative load on each processor in SHDOM is
 nearly proportional to the total number of grid points (base plus
-adaptive) in each subdomain.  If a substantial fraction of the total
+adaptive) in each subdomain. If a substantial fraction of the total
 number of grid points are adaptive, and the adaptive grid points are
 very unevenly distributed, then the processor load will be unbalanced.
 This could occur, for example, if there is high cloud fraction on one
 side of the full domain, and low cloud fraction on the other side.
-SHDOM has the ability to perform processor load balancing.  Normally,
+SHDOM has the ability to perform processor load balancing. Normally,
 this feature is turned off, but may be used by setting the logical
-parameter "LoadBalance=.TRUE." at the beginning of ``shdMPI.f90``.  The
+parameter "LoadBalance=.TRUE." at the beginning of ``shdMPI.f90``. The
 load balancing procedure requires that a previous SHDOM run be made with
 the same property file, so that the total number of grid points can be
-estimated.  This prior run can be done at lower angular resolution
+estimated. This prior run can be done at lower angular resolution
 (NMU/NPHI) and only needs to iterate until the cell splitting is
-finished (at SOLACC=1.0E-3).  If the load balancing is turned on, the
+finished (at SOLACC=1.0E-3). If the load balancing is turned on, the
 master process of MPI-enabled SHDOM writes a file (in subroutine
 ``shd_mpi__end``), RUNNAME//"_load_balance.out", with the number of grid
-points in a column around each property grid point.  To implement load
+points in a column around each property grid point. To implement load
 balancing the user must copy the appropriate
 RUNNAME//"_load_balance.out" file to the input file
 RUNNAME//"_load_balance.inp", which SHDOM reads (in subroutine
 OPTIMIZE_PROCESSOR_DOMAINS) and uses if the file exists and is
-compatible with the input property file.  SHDOM uses a simulated
+compatible with the input property file. SHDOM uses a simulated
 annealing algorithm to try to equalize the number of grid points in each
 processor subdomain by adjusting the boundary lines between the
-processors.  If a load balance optimization is performed, each processor
+processors. If a load balance optimization is performed, each processor
 writes the optimum boundary lines (in the property grid) to stdout.
 
 In a heterogeneous clustered environment, the processors on different
-machines may have different speeds.  If load balancing is being used (by
+machines may have different speeds. If load balancing is being used (by
 setting LoadBalance=.TRUE.), then another file with the relative speeds
-of the processors may be input to SHDOM.  This file has the name
+of the processors may be input to SHDOM. This file has the name
 "shdom_proc_times.inp", and lists the relative times (one processor time
-per line) running SHDOM takes on each processor.  It is important to
+per line) running SHDOM takes on each processor. It is important to
 understand the order in which MPI allocates the processors in your
-cluster.  For example, suppose the cluster has two computers, each with
-two SMP processors.  Then the MPI machine file might look like this:
+cluster. For example, suppose the cluster has two computers, each with
+two SMP processors. Then the MPI machine file might look like this:
 
 .. code-block::
 
@@ -1309,7 +1309,7 @@ two SMP processors.  Then the MPI machine file might look like this:
    slow:2
 
 Typically, MPI will allocate the processors as follows: 0 on "fast", 1
-on "slow", 2 on "fast", and 3 on "slow".  If SHDOM is twice as fast on
+on "slow", 2 on "fast", and 3 on "slow". If SHDOM is twice as fast on
 "fast" as on "slow", then shdom_proc_times.inp could be
 
 .. code-block::
@@ -1328,7 +1328,7 @@ SOURCE CODE OPTIONS
 -------------------
 
 This is a list of options in the operation of SHDOM that one may select
-by making trivial code changes.  Except for selecting the ``NAMELIST``
+by making trivial code changes. Except for selecting the ``NAMELIST``
 option, choosing netcdf property file input, adding a new surface type,
 the higher order radiance terms, or turning on processor load balancing,
 most of these would only be changed to experiment with the operation of
@@ -1339,7 +1339,7 @@ calls ``shd_io__nmlInput`` and ``nmlMode = .True.`` calls ``shd_io__userInput``.
 
 Adding surface reflection types: in ``shdSfc.f90`` write a BRDF Fortran
 function modeled on ``shd_sfc__brdfRPV`` and add a call in ``shd_sfc__brdfSurface`` to the
-new function.  In ``shdInp.f90`` modify subroutine ``shd_io__readSfc`` by adding a
+new function. In ``shdInp.f90`` modify subroutine ``shd_io__readSfc`` by adding a
 block to read in the new surface type parameters.
 
 Discrete ordinate angle set: ``shd_solv__solveRte`` (``shdSolv.f90``); The ``ORDINATESET``
@@ -1351,7 +1351,7 @@ fluxes, e.g. from a Lambertian surface.
 Output rms of higher order radiance spherical harmonic terms:
 at top of main program (``shdom.f90``); set ``HIGHORDERRAD=.TRUE.`` for outputing
 the rms of the higher order radiance terms (above L=1,M=1) normalized by
-the mean radiance (S output mode).  This is useful for determining
+the mean radiance (S output mode). This is useful for determining
 regions in the diffusion domain, where the higher order terms are zero.
 Since all the radiance spherical harmonic terms are kept the running
 time may be somewhat longer, and the memory use (RADIANCE array) can be
@@ -1378,8 +1378,8 @@ make a somewhat more irregular grid.
 
 Cell splitting visualization: ``shd_solv__solveRte`` (``shdSolv.f90``); The
 subroutine ``shd_io__visualizeCell`` may be commented in after the solution loop
-to produce  a GLE graphics file showing the adaptive cell structure.
-This can be changed easily for other graphics languagues.  The
+to produce a GLE graphics file showing the adaptive cell structure.
+This can be changed easily for other graphics languagues. The
 subroutine ``shd_io__outputCellSplit`` may be commented in to output the medium
 extinction and adaptive cell splitting criterion for X, Y, and Z.
 
@@ -1394,13 +1394,13 @@ ARRAY SIZES AND MEMORY MANAGEMENT
 ---------------------------------
 
 The main program (``shdom.f90``) determines the sizes of most arrays and
-allocates memory for them.  Thus the user does not usually have to
-recompile the program for different problems.  As there is no way to
+allocates memory for them. Thus the user does not usually have to
+recompile the program for different problems. As there is no way to
 determine the OUTPARM array size before calling ``shd_io__userInput``, the MAXOUT
 and MAXPAR constants are still defined. Since the adaptive grid grows
 during the solution procedure, the maximum size of many arrays can only
-be guessed at.  The approach taken is to define the maximum adaptive
-grid array sizes in terms of the base grid.  Thus the following three
+be guessed at. The approach taken is to define the maximum adaptive
+grid array sizes in terms of the base grid. Thus the following three
 parameters must be input:
 
 .. code-block::
@@ -1414,14 +1414,14 @@ parameters must be input:
 In addition, to prevent SHDOM from grabbing all the available memory,
 the maximum memory is specified with MAX_TOTAL_MB, which is the maximum
 total megabytes SHDOM should take (per processor), where a memory word
-is assumed to by 4 bytes.  The splitting factor is reduced to fit within
-the total memory limit.  The appropriate value of these parameters for a
-particular problem can be estimated from previous SHDOM output.  At the
+is assumed to by 4 bytes. The splitting factor is reduced to fit within
+the total memory limit. The appropriate value of these parameters for a
+particular problem can be estimated from previous SHDOM output. At the
 end of a run, shdom outputs the actual values needed for the four memory
 parameter values followed by the string ``Actual MAX_TOTAL_MB,
-ADAPT_GRID_FACTOR, NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO``.  These
+ADAPT_GRID_FACTOR, NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO``. These
 values can then be used for the input memory parameters for similar
-SHDOM runs.  The memory parameters may also be estimated from a fast
+SHDOM runs. The memory parameters may also be estimated from a fast
 lower angular resolution run (smaller NMU/NPHI), though the MAX_TOTAL_MB
 will then have to be multiplied by the ratio (high res to low res) of
 the number of spherical harmonics terms (NLM), and all the memory
@@ -1805,7 +1805,7 @@ LIST OF ROUTINES
 ----------------
 
 The following is a list of all the subroutines, where they are, and
-what they do.  The first column gives the file . The second column indicates
+what they do. The first column gives the file . The second column indicates
 the whether calling routine is public or private (indicated by ``x``).
 The major solving routines are in ``shdSolv.f90``, all the regular I/O
 routines are in ``shdInp.f90`` and ``shdOut.f90``,
