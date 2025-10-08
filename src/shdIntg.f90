@@ -140,13 +140,13 @@ subroutine shd_intg__integratePath(&
             &BCFLAG, IPFLAG, SWEEPORD, GRIDRAD)
     end if
 
-    call shd_mpi__findBoundaryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
+    call shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
         &GRIDPOS, NX, NY, NZ, XGRID, YGRID, ZGRID)
 
     LAMBERTIAN = SFCTYPE(2:2) .eq. 'L'
     if (NPTS .ne. OLDNPTS) then
         ! Make the pointers to the grid points on the top and bottom boundaries
-        call shd_grid__findBoundaryPnt(NPTS, NANG, MAXNBC, MAXBCRAD, LAMBERTIAN, &
+        call shd_grid__findBndryPnt(NPTS, NANG, MAXNBC, MAXBCRAD, LAMBERTIAN, &
             &ZGRID(1), ZGRID(NZ), GRIDPOS,&
             &NTOPPTS, NBOTPTS, BCPTR)
         if (SFCTYPE(1:1) .eq. 'V') then
@@ -461,7 +461,7 @@ subroutine shd_intg__backIntegrate3D(&
             if ((GRIDPOS(3, IPT) .lt. ZGRID(IZ) .and. BITZ .eq. 0) .or.&
                 &(GRIDPOS(3, IPT) .gt. ZGRID(IZ) .and. BITZ .eq. 1)) then
                 IZ = IZ + 2*BITZ - 1
-                call shd_mpi__calBoundaryRad(BCFLAG, IPFLAG, JOCT, IZ,&
+                call shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
                     &NX, NY, NZ, XGRID, YGRID, ZGRID,&
                     &NA, NPTS, NCELLS, GRIDPTR,&
                     &NEIGHPTR, TREEPTR, CELLFLAGS, GRIDPOS,&
@@ -804,7 +804,7 @@ subroutine shd_intg__backIntegrate3D_(&
             if ((GRIDPOS(3, IPT) .lt. ZGRID(IZ) .and. BITZ .eq. 0) .or.&
                 &(GRIDPOS(3, IPT) .gt. ZGRID(IZ) .and. BITZ .eq. 1)) then
                 IZ = IZ + 2*BITZ - 1
-                call shd_mpi__calBoundaryRad(BCFLAG, IPFLAG, JOCT, IZ,&
+                call shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
                     &NX, NY, NZ, XGRID, YGRID, ZGRID,&
                     &NA, NPTS, NCELLS, GRIDPTR,&
                     &NEIGHPTR, TREEPTR, CELLFLAGS, GRIDPOS,&

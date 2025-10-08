@@ -1950,7 +1950,7 @@ routines from NCAR.
 
    Src  x shd_src__rotatePolarPlane      : Rotates the plane of polarization for single scattered Stokes vector
 
-   Src  x shd_src__findBoundaryRad       : Gets the interpolated radiance at the boundary
+   Src  x shd_src__findBndryRad          : Gets the interpolated radiance at the boundary
 
    Rad    shd_rad__makeDirect       : Makes direct beam solar flux (calls DIRECT_BEAM_PROP)
 
@@ -1964,7 +1964,7 @@ routines from NCAR.
 
    Rad    shd_rad__computeNetFluxDiv   : Computes the net flux divergence everywhere
 
-   Grid   shd_grid__findBoundaryPnt    : Makes BCPTR of list of top and bottom boundary points
+   Grid   shd_grid__findBndryPnt       : Makes BCPTR of list of top and bottom boundary points
 
    Grid   shd_grid__matchGridPnt       : Find whether neighboring cells have matching gridpoints
 
@@ -2084,10 +2084,10 @@ routines from NCAR.
 
    MPI    shd_mpi__findTotSplitCritMax: Finds the max SPLITCRIT over all processors
 
-   MPI    shd_mpi__findBoundaryPnt    : Makes the pointers to and positions of the boundary
+   MPI    shd_mpi__findBndryPnt       : Makes the pointers to and positions of the boundary
                                         grid points of the neighboring processors
 
-   MPI    shd_mpi__calBoundaryRad     : Calculates the discrete ordinate boundary radiances
+   MPI    shd_mpi__calBndryRad        : Calculates the discrete ordinate boundary radiances
 
    MPI    shd_mpi__calAccelSolCrit    : Calculates full domain acceleration parameter (& solcrit)
 

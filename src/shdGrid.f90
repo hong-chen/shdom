@@ -45,7 +45,7 @@ module shd_grid
     integer, parameter :: R__  = selected_real_kind(6) ! default precision for float
     integer, parameter :: I__  = selected_int_kind(9)  ! default precision for integer
 
-    public :: shd_grid__findBoundaryPnt
+    public :: shd_grid__findBndryPnt
     public :: shd_grid__matchGridPnt
     public :: shd_grid__makeNewGridPnt
 
@@ -68,7 +68,7 @@ module shd_grid
 
 contains
 
-subroutine shd_grid__findBoundaryPnt(&
+subroutine shd_grid__findBndryPnt(&
     &NPTS, NANG, MAXNBC, MAXBCRAD, LAMBERTIAN, &
     &ZBOT, ZTOP, GRIDPOS,&
     &NTOPPTS, NBOTPTS, BCPTR)
@@ -119,7 +119,7 @@ subroutine shd_grid__findBoundaryPnt(&
         if (GRIDPOS(3, I) .ge. ZTOP) then
             IT = IT + 1
             if (IT .gt. MAXNBC .or. IT .gt. MAXBCRAD) then
-                stop 'Error [_findBoundaryPnt]: MAXNBC exceeded - top.'
+                stop 'Error [_findBndryPnt]: MAXNBC exceeded - top.'
             end if
             BCPTR(IT, 1) = I
         end if
@@ -127,7 +127,7 @@ subroutine shd_grid__findBoundaryPnt(&
         if (GRIDPOS(3, I) .le. ZBOT) then
             IB = IB + 1
             if ((IB .gt. MAXNBC) .or. (IT + IB*NA .gt. MAXBCRAD)) then
-                stop 'Error [_findBoundaryPnt]: MAXNBC exceeded - bottom.'
+                stop 'Error [_findBndryPnt]: MAXNBC exceeded - bottom.'
             end if
             BCPTR(IB, 2) = I
         end if
@@ -139,7 +139,7 @@ subroutine shd_grid__findBoundaryPnt(&
 
     return
 
-end subroutine shd_grid__findBoundaryPnt
+end subroutine shd_grid__findBndryPnt
 
 subroutine shd_grid__matchGridPnt(&
     &XP, YP, ZP, ICELL, IFACE,&

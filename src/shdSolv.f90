@@ -208,7 +208,7 @@ subroutine shd_solv__solveRte(&
 
     LAMBERTIAN = SFCTYPE(2:2) .eq. 'L'
     ! Make the pointers to the grid points on the top and bottom boundaries
-    call shd_grid__findBoundaryPnt(NPTS, NANG, MAXNBC, MAXBCRAD, LAMBERTIAN, &
+    call shd_grid__findBndryPnt(NPTS, NANG, MAXNBC, MAXBCRAD, LAMBERTIAN, &
         &ZGRID(1), ZGRID(NZ), GRIDPOS,&
         &NTOPPTS, NBOTPTS, BCPTR)
     if (SFCTYPE(1:1) .eq. 'V') then

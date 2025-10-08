@@ -54,7 +54,7 @@ module shd_src
 
     private :: shd_src__computeSolarStokesVect
     private :: shd_src__rotatePolarPlane
-    private :: shd_src__findBoundaryRad
+    private :: shd_src__findBndryRad
 
 contains
 
@@ -1077,7 +1077,7 @@ subroutine shd_src__integrateSrcOneRay(&
             VALIDRAD = .true.
         else if ((INEXTCELL .eq. 0) .and. (IFACE .ge. 5)) then
             VALIDRAD = .true.
-            call shd_src__findBoundaryRad(NSTOKES, XN, YN,&
+            call shd_src__findBndryRad(NSTOKES, XN, YN,&
                 &sngl(MU2), sngl(PHI2),&
                 &IC, KFACE, GRIDPTR, GRIDPOS,&
                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
@@ -1456,7 +1456,7 @@ subroutine shd_src__computeSolarStokesVect(&
 
 end subroutine shd_src__computeSolarStokesVect
 
-subroutine shd_src__findBoundaryRad(&
+subroutine shd_src__findBndryRad(&
     &NSTOKES, XB, YB, MU2, PHI2,&
     &ICELL, KFACE, GRIDPTR, GRIDPOS,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
@@ -1512,7 +1512,7 @@ subroutine shd_src__findBoundaryRad(&
             IBC = IL
             if (BCPTR(IBC, 1) .ne. IP) IBC = IU
             if (BCPTR(IBC, 1) .ne. IP)&
-                &stop 'Error [_findBoundaryRad]: Not at boundary.'
+                &stop 'Error [_findBndryRad]: Not at boundary.'
             RAD(:, J) = BCRAD(:, IBC)
 
         else
@@ -1531,7 +1531,7 @@ subroutine shd_src__findBoundaryRad(&
             IBC = IL
             if (BCPTR(IBC, 2) .ne. IP) IBC = IU
             if (BCPTR(IBC, 2) .ne. IP)&
-                &stop 'Error [_findBoundaryRad]: Not at boundary.'
+                &stop 'Error [_findBndryRad]: Not at boundary.'
 
             if (.not. LAMBERTIAN) then
                 call shd_init__makeSfcRadV(NBOTPTS, IBC, IBC, BCPTR(1, 2),&
@@ -1556,7 +1556,7 @@ subroutine shd_src__findBoundaryRad(&
     RADBND(:) = (1 - U)*(1 - V)*RAD(:, 1) + U*(1 - V)*RAD(:, 2)&
         &+ (1 - U)*V*RAD(:, 3) + U*V*RAD(:, 4)
     return
-end subroutine shd_src__findBoundaryRad
+end subroutine shd_src__findBndryRad
 
 subroutine shd_src__rotatePolarPlane(NSTOKES, COSSCAT,&
     &SOLARMU, MU, DELPHI, SCATVECT)
