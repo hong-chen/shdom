@@ -8,7 +8,7 @@ OVERVIEW
 This implementation of SHDOM computes polarized monochromatic or
 spectral band radiative transfer in a one, two, or three-dimensional
 medium for either collimated solar and/or thermal emission sources of
-radiation.  The properties of the medium can be specified completely
+radiation. The properties of the medium can be specified completely
 generally, i.e. the extinction, single scattering albedo, coefficients
 of the scattering phase matrix, and temperature for the particular
 wavelength or spectral band may be specified at each input grid point.
@@ -41,7 +41,7 @@ angular part of the source function is represented with a spherical
 harmonic expansion. Solving for the source function instead of the
 radiance field saves memory, because there are often parts of a medium
 where the source function is zero or angularly very smooth (hence few
-spherical harmonic terms).  The other reason for using spherical
+spherical harmonic terms). The other reason for using spherical
 harmonics is that the scattering integral is more efficiently computed
 than in discrete ordinates. A discrete ordinate representation is used
 in the solution process because the streaming of radiation is more
@@ -56,7 +56,7 @@ ordinates at every grid point, 2) the integral form of the radiative
 transfer equation is used to compute the discrete ordinate radiance at
 every grid point, 3) the radiance is transformed back to spherical
 harmonics, and 4) the new source function is computed from the radiance
-in spherical harmonics.  As with all order of scattering methods the
+in spherical harmonics. As with all order of scattering methods the
 number of iterations increases with the single scattering albedo and
 optical depth. A sequence acceleration method is used to speed up
 convergence, which is typically achieved in under 50 iterations. During
@@ -72,19 +72,19 @@ TERMINOLOGY
 
 The medium properties (extinction, single scattering albedo, expansion
 coefficients of the phase function/phase matrix elements, temperature)
-are input at grid points from a "property file".  These fields are
+are input at grid points from a "property file". These fields are
 defined spatially (``X``, ``Y``, and ``Z`` spacing) by the "property grid", which is
 defined by the input file and is not the actual spatial grid used for
-computatations.  The internal grid used for computation has two
+computatations. The internal grid used for computation has two
 components: the "base grid" is  regularly spaced (even in ``X`` and ``Y``, even
 or not in ``Z``) and is defined by input parameters ``NX``, ``NY``, ``NZ``, and
-``GRIDTYPE``.  The "adaptive grid" is all the grid cells including those
-defined by subdividing the base grid cells.  New cells are made by "cell
-splitting", which is the process of  figuring out which cells need to be
-subdivided and dividing them in half to create new grid points.  The
+``GRIDTYPE``. The "adaptive grid" is all the grid cells including those
+defined by subdividing the base grid cells. New cells are made by "cell
+splitting", which is the process of figuring out which cells need to be
+subdivided and dividing them in half to create new grid points. The
 "sequence acceleration" is a method to reduce the number of iterations
 by extrapolating the source function to where it is hoped the ultimate
-solution is.  The iterations proceed until the "solution criterion" is
+solution is. The iterations proceed until the "solution criterion" is
 reached, when the source function is changing by sufficiently small
 amounts that convergence is declared.
 
@@ -110,13 +110,13 @@ Polarization in SHDOM has been implemented with the standard Stokes
 parameters: ``I``, ``Q``, ``U``, and ``V``. ``I`` is the regular radiance or intensity, ``Q``
 and ``U`` measured the amount and orientation of linear polarization, and ``V``
 measures the amount and sign of circular polarization.  The particular
-definitions of the Stokes parameters are as in Mishchenko and Travis
-1997. The ``Q`` and ``U`` parameters depend on their reference plane, which
+definitions of the Stokes parameters are as in Mishchenko and Travis 1997.
+The ``Q`` and ``U`` parameters depend on their reference plane, which
 rotates from the incoming meridional plane, to the scattering plane, and
 then to the outgoing meridional plane. This coupling between ``Q`` and ``U``
 causes most of the complexity in implementing polarization in spherical
 harmonics. The spherical harmonics basis implemented in SHDOM is the
-"real generalized spherical harmonics" of Doicu et al. 2013.  The key
+"real generalized spherical harmonics" of Doicu et al. 2013. The key
 subroutines implementing this spherical harmonics basis were adapted
 from a research code kindly provided by Adrian Doicu. Even for
 unpolarized calculations the spherical harmonics terms are different in
@@ -127,12 +127,12 @@ For polarized radiative transfer with randomly oriented particles
 having a plane of symmetry, there are six unique elements of the ``4x4``
 scattering phase matrix.  One aspect of using the real generalized
 spherical harmonics basis is that the phase matrix elements as a
-function of scattering angle are expressed in Wigner d-function  series.
+function of scattering angle are expressed in Wigner d-function series.
 
 For the I-I (P11) and V-V (P44) elements of the phase  matrix these
 series are the same as Legendre series, while for the other four
 elements (P22, P33, P12, P34) the Wigner d-function series are not
-equivalent to Legendre series.  There is a new polarized property file
+equivalent to Legendre series. There is a new polarized property file
 input format for SHDOM, which is based on the tabulated phase function
 format, but including the coefficients for the six Wigner d-function
 series expansions of the phase matrix elements.  The old SHDOM property
@@ -146,10 +146,10 @@ visualization images (``V``), and source function (``J``).  The hemispheric flux
 An unpolarized radiative transfer calculation is chosen with
 ``NSTOKES=1``, in which case special subroutines are used so there is little
 loss of efficiency compared to the old (unpolarized) SHDOM for 3D
-problems.  Polarized radiative transfer is chosen with ``NSTOKES=3`` for ``I``,
-``Q``, ``U`` or ``NSTOKES=4`` for ``I``, ``Q``, ``U``, ``V`` Stokes parameters.  For most
-atmospheric radiative transfer problems the ``NSTOKES=3`` approximation is
-very good because ``V`` is very small.
+problems. Polarized radiative transfer is chosen with ``NSTOKES=3`` for ``I``,
+``Q``, ``U`` or ``NSTOKES=4`` for ``I``, ``Q``, ``U``, ``V`` Stokes parameters.
+For most atmospheric radiative transfer problems the ``NSTOKES=3`` approximation
+is very good because ``V`` is very small.
 
 
 INPUT PARAMETERS
@@ -181,6 +181,8 @@ characters.
    INSAVEFILE  name of the input binary save file (or NONE)
 
    OUTSAVEFILE name of the output binary save file (or NONE)
+
+   SENFILE     name of the sensor specifics file (or NONE)
 
    NSTOKES     number of Stokes parameters (1 for I, i.e. unpolarized;
                  3 for I, Q, U; or 4 for I, Q, U, V)
@@ -327,6 +329,8 @@ For each output file there are three variables:
                      scan2 is the max cross track scan angle [deg] (right side)
                      delscan is the angle [deg] between pixels in the scan
 
+                V  user-specified sensor: 3, sensor specifics are included in SENFILE
+
                 F  Format  [, Z level, X spacing, Y spacing]
                      Format:
                        1 - flux at top (up) and bottom (down) of medium
@@ -383,7 +387,7 @@ CHOOSING INPUT PARAMETERS
 -------------------------
 
 See Unix scripts included with the distribution for examples of running
-SHDOM.  Also read propgen.txt for how to prepare optical property files.
+SHDOM. Also read propgen.txt for how to prepare optical property files.
 
 The main difficulty in choosing parameters is determining the desired
 tradeoff between accuracy and computation cost.  The angular resolution
@@ -398,7 +402,7 @@ for higher spatial resolution or even can have less grid points than the
 property grid.
 
 ``PROPFILE`` always needs to be specified, but ``INSAVEFILE`` and ``OUTSAVEFILE``
-seldom do, and ``CKDFILE`` is only for doing a k-distribution.  ``SFCFILE`` is
+seldom do, and ``CKDFILE`` is only for doing a k-distribution. ``SFCFILE`` is
 given for a Lambertian surface with variable albedo or temperature or a
 different BRDF, but otherwise is NONE or NO.
 
@@ -406,28 +410,28 @@ Set ``BCFLAG=0`` for periodic boundary conditions, and ``BCFLAG=3`` for open
 boundary conditions. See boundary condition section for explanation.
 
 Set ``IPFLAG=0`` for normal radiative transfer. ``IPFLAG=3`` is for the
-independent pixel approximation.  The independent scanline approximation
+independent pixel approximation. The independent scanline approximation
 is 2D radiative transfer in the solar plane for a 3D medium; it can be
 chosen by setting the solar azimuth to 0 and ``IPFLAG=2`` (or ``SOLARAZ=90``
-degrees and ``IPFLAG=1``).  Bit 2 of ``IPFLAG`` can be set to try an
+degrees and ``IPFLAG=1``). Bit 2 of ``IPFLAG`` can be set to try an
 approximation where the direct beam is computed in 3D, but the diffuse
-transfer is done on indendent pixels or 2D slices.  Note, ``IPFLAG=4`` is
-the same as IPFLAG=0.
+transfer is done on indendent pixels or 2D slices. Note, ``IPFLAG=4`` is
+the same as ``IPFLAG=0``.
 
 Generally for solar (collimated) problems with highly peaked phase
-functions DELTAM should be set to True; this is because the phase
-function must be truncated because a limited number of discrete
+functions ``DELTAM`` should be set to ``True``; this is because the
+phase function must be truncated because a limited number of discrete
 ordinates can be used.
 
 If you want the internal base grid to have the same height levels as the
 input property grid then ``GRIDTYPE='P'``. This option allows the vertical
 grid spacing to be nonuniform, e.g. more in a cloud layer and less in
-clear sky.  Another way to have the vertical base grid not be uniform is
+clear sky. Another way to have the vertical base grid not be uniform is
 the ``GRIDTYPE='F'`` (file) option which will read the Z levels free format
-from a file with the name "zgrid.inp".  The other alternative is to
+from a file with the name "shdom-zgrid.txt". The other alternative is to
 have the base grid levels evenly spaced between the bottom and top of
-the domain (first and last level in property grid).  For an even grid
-``GRIDTYPE='E'``, but keep in mind that there are NZ-1 grid cells, so that
+the domain (first and last level in property grid). For an even grid
+``GRIDTYPE='E'``, but keep in mind that there are ``NZ-1`` grid cells, so that
 for doubling the vertical resolution use ``NZ=2*(NZP-1)+1`` where ``NZP`` is
 the number of grid points vertically in the property file.
 
@@ -443,11 +447,11 @@ k-distribution.
 The solution acceleration is usually turned on (``ACCELFLAG=.TRUE.``).
 If the number of iterations is small because the problem is optically
 thin or highly absorbing, then the sequence acceleration can be turned
-off, and the memory for the DELSOURCE array freed up (by giving the array
+off, and the memory for the ``DELSOURCE`` array freed up (by giving the array
 a length of 1).
 
 The solution accuracy (``SOLACC``) is the RMS change in the source function
-during an iteration normalized by the RMS of the source function.  There
+during an iteration normalized by the RMS of the source function. There
 is no need to make this much, much smaller than the general level of
 accuracy (related to the spatial and angular resolution). Because it is
 the rms change in an iteration, it should be smaller than the desired
@@ -461,17 +465,17 @@ computer memory.  The four memory parameters do not affect the SHDOM
 solution (unless SHDOM runs out of memory); they only control the array
 sizes.
 
-See section on PROPERTY FILE FORMAT for how the medium properties are
-input.  The medium properties are specified at points on a grid and are
-assumed to vary linearly in between.  This is different from how Monte
+See section on <PROPERTY FILE FORMAT> for how the medium properties are
+input. The medium properties are specified at points on a grid and are
+assumed to vary linearly in between. This is different from how Monte
 Carlo radiative transfer codes usually define the medium, which is by
-grid cells of uniform properties.  The medium properties in the model
-vary trilinearly across the grid cells.  The internal representation of
+grid cells of uniform properties. The medium properties in the model
+vary trilinearly across the grid cells. The internal representation of
 the medium (on the base grid) is trilinearly interpolated from the input
-properties of the medium.  So if a sharp boundary is desired in the
+properties of the medium. So if a sharp boundary is desired in the
 medium (e.g. at cloud top) it is a good idea to have the two different
 optical properties (e.g. cloud and clear) specified at two very close
-grid levels.  Otherwise the linear interpolation of the medium will
+grid levels. Otherwise the linear interpolation of the medium will
 smear the transition over the resolution of the input property file
 (nature is seldom perfectly sharp).
 
@@ -479,12 +483,13 @@ smear the transition over the resolution of the input property file
 SURFACE REFLECTION MODELS
 -------------------------
 
-There are currently five types of surface reflection:  Lambertian,
-RPV-original, LSRT, Ocean, Wave-Fresnel, and Diner.  The RPV, LSRT, and Ocean
-reflection models are unpolarized, so NSTOKES must be 1.  Wave-Fresnel
-is used for polarized ocean modeling, and Diner for polarized land
-surface modeling.  It is simple to add other surface types (see SOURCE
-CODE OPTIONS).
+There are currently 7 types of surface reflection: Lambertian,
+RPV-original, LSRT, LSRT-Jiao, Ocean, Wave-Fresnel, and Diner.
+The RPV, LSRT, LSRT-Jiao, and Ocean reflection models are unpolarized,
+so NSTOKES must be 1. Wave-Fresnel is used for polarized ocean modeling,
+and Diner for polarized land surface modeling. It is simple to add other
+surface types (see SOURCE CODE OPTIONS). Mixed-surface is also supported,
+e.g., surface contains both land and ocean.
 
 A Lambertian surface reflects radiance isotropically, and is specified
 with the surface albedo.
@@ -537,7 +542,7 @@ spectropolarimetric imager. Atmosphere 2012, 3, 591-619;
 doi:10.3390/atmos3040591.  The modified RPV model is from Martonchik et
 al., 1998 (IEEE-TGARS, 36, 1266).
 
-See the SURFACE FILE FORMAT section for how to specify the parameters.
+See the <SURFACE FILE FORMAT> section for how to specify the parameters.
 The temperature and reflection properties of these models may vary
 arbitrarily across the surface.
 
@@ -554,60 +559,60 @@ BOUNDARY CONDITIONS
 -------------------
 
 The upper boundary condition is open, i.e. there is no reflection from
-the top of the domain.  Isotropic incident radiance at the top boundary
-may be specified.  The surface reflection models are described above.
+the top of the domain. Isotropic incident radiance at the top boundary
+may be specified. The surface reflection models are described above.
 
 There are two options for the horizontal boundary conditions.  The
-first is periodic and the second is open.  These are specified for X and
-Y directions independently using the BCFLAG: bit 0 for X and bit 1 for
-Y.  Thus ``BCFLAG=0`` is periodic in X and Y, ``BCFLAG=1`` is open in X and
-periodic in Y, and ``BCFLAG=3`` is open in X and Y.  The independent pixel
+first is periodic and the second is open. These are specified for X and
+Y directions independently using the BCFLAG: bit 0 for X and bit 1 for Y.
+Thus ``BCFLAG=0`` is periodic in X and Y, ``BCFLAG=1`` is open in X and
+periodic in Y, and ``BCFLAG=3`` is open in X and Y. The independent pixel
 flag (``IPFLAG``) overrides the boundary condition flag, since an
 independent pixel does not have a horizontal boundary condition.
 
 Periodic boundaries mean that when rays exit one side they wrap
 around to enter the opposite side. The periodic domain size is ``NX*DELX``
-by NY*DELY; for example if ``NX=64`` and ``DELX=0.050`` km, then ``X=3.2`` km is
-equivalent to ``X=0`` km (left hand side).
+by NY*DELY; for example if ``NX=64`` and ``DELX=0.050`` km, then ``X=3.2``
+km is equivalent to ``X=0`` km (left hand side).
 
 The open horizontal boundary condition means that radiation leaving
 the sides does not wrap around and is not reflected back in.  However,
-there may be radiation entering the sides.  For open BCs the property
+there may be radiation entering the sides. For open BCs the property
 file grid points on the edges are used in independent pixel mode to
-compute the boundary radiation.  For example, in 2D (X and Z) the first
+compute the boundary radiation. For example, in 2D (X and Z) the first
 and last X property grid columns are computed with plane-parallel (IPA)
 radiative transfer. These grid columns then provide the boundary
-radiances for the interior of the domain.  The interior domain is
-``(NX-1)*DELX`` wide.  In 3D the four corner columns are computed with 1D
+radiances for the interior of the domain. The interior domain is
+``(NX-1)*DELX`` wide. In 3D the four corner columns are computed with 1D
 (plane-parallel) radiative transfer, while the four side slices are done
-with 2D radiative transfer.  If you want the boundary columns to produce
+with 2D radiative transfer. If you want the boundary columns to produce
 plane-parallel results, simply make sure the input optical properties
 for the columns on the boundaries are the same.  The radiance output
 calculation can be done for locations beyond the horizontal domain; this is
 the purpose of the "X and Y offsets" in the radiance output
-specification.  For the open boundary conditions the rays are traced
-back through the  regions beyond the domain using plane-parallel
+specification. For the open boundary conditions the rays are traced
+back through the regions beyond the domain using plane-parallel
 radiative transfer, and then may enter the domain.  This allows the
 lower part of the domain to be seen through the domain "sides" for
-slanted paths.  Open boundary conditions are not allowed with MPI.
+slanted paths. Open boundary conditions are not allowed with MPI.
 
 
 GRID CELL STRUCTURE
 -------------------
 
 To implement the adaptive grid there is a data structure that
-specifies the relation between grid cells and grid points.  Grid cells
-are rectangular volumes (e.g. cubes in 3D, rectangles in 2D).  Grid points
+specifies the relation between grid cells and grid points. Grid cells
+are rectangular volumes (e.g. cubes in 3D, rectangles in 2D). Grid points
 are the points at which the medium properties and the radiances are
 defined. Each grid cell has 8 grid points at its corners (in 1D and 2D
 there are still 8 pointers to grid points though they are redundant).
 Grid cells have pointers to neighboring cells, so that rays may be
-traced from cell to cell.  The adaptive grid is implemented by splitting
+traced from cell to cell. The adaptive grid is implemented by splitting
 cells in half (in any direction) and using pointers to parent and
-child cells.  See VARIABLES section for details.
+child cells. See <VARIABLES> section for details.
 
 For periodic boundary conditions there are ``NX*NY*(NZ-1)`` grid cells
-and ``(NX+1)*(NY+1)*NZ`` grid points.  The ``IX=NX+1`` column is the same  as
+and ``(NX+1)*(NY+1)*NZ`` grid points. The ``IX=NX+1`` column is the same  as
 the ``IX=1`` column, because of the periodicity, but the grid points are
 repeated.  The last grid cell on the "right" has the last column of
 grid points on the "left" and the repeated "virtual" set of grid  points
@@ -622,10 +627,9 @@ mode has ``NX*NY*(NZ-1)`` grid cells and ``NX*NY*NZ`` grid points
 OUTPUT FORMATS
 --------------
 
-
 The output goes to a number of plain text files (except for the
 visualization and netcdf output), each containing a header listing the
-input parameters.  The header also lists the number of iterations taken,
+input parameters. The header also lists the number of iterations taken,
 which for a k-distribution is the total number over the distribution
 sum.  There are seven output types:
 
@@ -642,15 +646,15 @@ sum.  There are seven output types:
 Any number of ascii files maybe output during a single run.
 
 A single netcdf output file may be specified in addition to, or instead
-of, the ascii output files.  The netcdf file contains all the output
-types of the specified ascii files.  If the ascii files are not desired,
-then use NONE for each of the ascii file names.  The output in the
+of, the ascii output files. The netcdf file contains all the output
+types of the specified ascii files. If the ascii files are not desired,
+then use NONE for each of the ascii file names. The output in the
 netcdf file is arranged somewhat differently from the ascii files.  For
 all of the output on a grid, X is the fastest moving index, and Z is the
-slowest.  The total downward flux and downward diffuse flux are output,
+slowest. The total downward flux and downward diffuse flux are output,
 rather than the downward diffuse and direct flux separately, as in the
-ascii files.  Only those output formats allowed with multiple processors
-are supported in the netcdf output.  Specifically, the V, J, and M
+ascii files. Only those output formats allowed with multiple processors
+are supported in the netcdf output. Specifically, the V, J, and M
 formats are not supported, nor is the F 2 format, nor any output on the
 adaptive grid (i.e. F, H, and S outputs are only on the base grid).  All
 of the information in the header of the ascii files is included as
@@ -658,31 +662,31 @@ global attributes in the netcdf file.  The original unpolarized
 shdom_netcdf module was written by Robert Pincus (December 2008).
 
 The radiance output computes the radiance at a single vertical level for
-a regular grid of locations for a series of directions.  There are two
+a regular grid of locations for a series of directions. There are two
 visualization output modes, both of which make binary (P5) PGM format
 images. The first one simulates a fixed position camera, while the
 second simulates a cross track scanning instrument flying on an
-airplane.  For the camera mode the inputs are the position and pointing
+airplane. For the camera mode the inputs are the position and pointing
 direction of the camera, the number of pixels vertically and
 horizontally, and the pixel spacing. For the cross track scanning mode
 the inputs are the starting and ending aircraft positions, the distance
 along track beween scans, and the range of scan angles (<0 for left
-side, > 0 for right side).  The PGM image format has a human readable
+side, > 0 for right side). The PGM image format has a human readable
 ascii header with the SHDOM input parameters listed, followed by the
 pixel values in straight binary format (from left to right and then top
-to the bottom of the image).  The pixel format may be byte (values 0 to
-255) or two byte integers.  PGM images may be viewed with many image
-viewers, such as "display" from ImageMagick.  For polarized output  with
+to the bottom of the image). The pixel format may be byte (values 0
+to 255) or two byte integers. PGM images may be viewed with many image
+viewers, such as "display" from ImageMagick. For polarized output  with
 NSTOKES>1, the NSTOKES output images are stacked in the line (Y)
 direction: I (radiance) on top, then degree of linear polarization (0 to
 1), angle of linear polarization (-180 to 180 degrees), and (for
-NSTOKES=4) degree of circular polarization (-1 to +1).  The scaling to
+``NSTOKES=4``) degree of circular polarization (-1 to +1).  The scaling to
 the pixel values is done automatically (see the PGM header for the
 scaling for each polarization component).
 
 There are several ways to output hemispheric flux, including at the top
 and bottom of the domain, on a regular horizontal grid at any level, or
-for every grid point.  The net flux convergence may be output for each
+for every grid point. The net flux convergence may be output for each
 grid point or for a domain averaged vertical profile.  The spherical
 harmonic output is the mean  radiance and net flux vector (proportional
 to the first 4 terms in the spherical harmonic expansion) and for solar
@@ -699,16 +703,16 @@ sure the medium was input correctly.
 There is a debugging output file format containing GLE graphics
 commands to draw the grid cells and arrows showing the neighboring cell
 relationships for an XZ plane. If this is desired, comment in the call
-to VISUALIZE_CELLS after the solution iteration loop.
+to ``VISUALIZE_CELLS`` after the solution iteration loop.
 
 
 BINARY SAVE FILES
 -----------------
 
 The source function solution and associated state may be saved in
-binary files.  The adaptive grid cell structure, the source function,
+binary files. The adaptive grid cell structure, the source function,
 upwelling and downwelling fluxes, and lowest order terms of the
-spherical harmonic radiance field are stored.  These files can be
+spherical harmonic radiance field are stored. These files can be
 used to continue a run to higher accuracy or to save the solution
 so more output files can be generated (e.g. radiances at more angles).
 For a k-distribution, the input save file is used for the first k and
@@ -964,15 +968,15 @@ OPERATING STRATEGY
 
 The first step is to compile the code.  A makefile is provided, with
 options to compile with or without MPI (for multiple processors) and
-with or without the netcdf library.  SHDOM was originally written in
-Fortran 77 with common extensions.  Later, parts of SHDOM were written
+with or without the netcdf library. SHDOM was originally written in
+Fortran 77 with common extensions. Later, parts of SHDOM were written
 in Fortran 90, and now all of the SHDOM-specific code (``shdom.f90``,
-``shdSolv.f90``, ``shdComp.f90``) requires a Fortran 90 compiler.  Fortran 90 uses
-allocatable arrays and frees the user from having to set most of the
-parameters controlling the array sizes.
+``shdSolv.f90``, ``shdIntg.f90``) requires a Fortran 90 compiler.
+Fortran 90 uses allocatable arrays and frees the user from having to
+set most of the parameters controlling the array sizes.
 
 While a few algorithm and coding bugs may be left in the code, the
-most common source of errors is incorrect input.  Be sure to check the
+most common source of errors is incorrect input. Be sure to check the
 input parameters against the documentation and the ``shd_io__userInput`` routine.
 The correctness of the input property file format can be found by using
 the 'M' - medium property output option.  There are routines that
@@ -981,17 +985,17 @@ warnings for common mistakes.
 
 Conservation of energy can be used as a check for conservatively
 scattering medium, but remember that the multiple reflections between
-the surface and medium will introduce "extra" flux.  The collimated
+the surface and medium will introduce "extra" flux. The collimated
 (solar) flux input parameter is the flux on a horizontal surface
 (rather than the flux perpendicular to the beam), so for conservative
 scattering and no surface reflection the reflected plus transmitted
 flux over the domain should equal this parameter.
 
 The delta-M scaling procedure is very useful for reducing the
-angular resolution needed.  It is generally used for collimated (solar)
-source problems.  One should remember that the delta-M scaling procedure
+angular resolution needed. It is generally used for collimated (solar)
+source problems. One should remember that the delta-M scaling procedure
 changes the extinction, single scattering albedo, and Legendre phase
-function fields, as can be seen with the medium output option.  This
+function fields, as can be seen with the medium output option. This
 means that the direct solar flux is increased with delta-M scaling and
 must be added to the diffuse transmitted flux for meaningful results.
 
@@ -999,7 +1003,7 @@ For putting in the rest of the atmosphere: a coarse grid outside the
 cloud region works because the rest of the atmosphere does not interact
 much with the cloud layer (little reflection back to the cloud layer).
 The fluxes, which depend on the cell-to-cell discrete ordinate
-integration, will not be as reliable above the cloud level.  The
+integration, will not be as reliable above the cloud level. The
 radiances, however, which are computed by integrating the source
 function back all the way to the boundary will be fine at any level.
 
@@ -1017,22 +1021,22 @@ Six terms are output on a line each iteration:
       Ratio of number of SH terms to total possible
 
 Using these parameters you can track the convergence towards the
-solution and the behavior of the adaptive grid process.  As the current
+solution and the behavior of the adaptive grid process. As the current
 cell splitting accuracy parameter is reduced the number of grid points
 increases and the cell splitting criterion decreases. The cell splitting
-criterion is the maximum over the whole medium.  The adaptive spherical
+criterion is the maximum over the whole medium. The adaptive spherical
 harmonic truncation may also be monitored with the average number of SH
 terms.
 
-The solution criterion often does not converge monotonically.  When
+The solution criterion often does not converge monotonically. When
 the cell splitting accuracy parameter is lowered and many adaptive cells
-are created the solution criterion typically increases.  The sequence
+are created the solution criterion typically increases. The sequence
 acceleration method may cause the solution criterion to increase at a
-particular step, though the overall convergence is usually speeded.  The
-adaptive spherical harmonic truncation (parameter SHACC) may also
-interfer with a smooth convergence.  If you have trouble with
-convergence try adusting one of these parameters (SPLITACC, SHACC,
-ACCEL).
+particular step, though the overall convergence is usually speeded. The
+adaptive spherical harmonic truncation (parameter ``SHACC``) may also
+interfer with a smooth convergence. If you have trouble with
+convergence try adusting one of these parameters (``SPLITACC``,
+``SHACC``, ``ACCEL``).
 
 
 ACCURACY ISSUES
@@ -1040,53 +1044,53 @@ ACCURACY ISSUES
 
 Like all numerical solutions to the radiative transfer equation, the
 operation of SHDOM entails a tradeoff between computational speed and
-accuracy.  One difference between 1D and 3D radiative transfer is that
+accuracy. One difference between 1D and 3D radiative transfer is that
 it is very expensive to get very high accuracy (better than 1%) in 3D.
 This is a result of the five dimensional nature of the problem. This is
 also the case for Monte Carlo methods, but it is worse for explicit
-radiative transfer methods.  The strategy issues for running SHDOM
+radiative transfer methods. The strategy issues for running SHDOM
 involve how to achieve a required accuracy in a minimum CPU time.
 
-The grid spacing needed is determined by some assumptions of SHDOM:
-1) the variation in the extinction and the product of the source
+The grid spacing needed is determined by some assumptions of SHDOM: 1)
+the variation in the extinction and the product of the source
 function and extinction across a grid cell is linear, 2) the source
 function across a grid face is accurately interpolated with the bilinear
 method, and 3) the radiance across a grid face is accurately
 interpolated with the bilinear method. The first and second
 assumptions should be satisfied by the source function based adaptive
 cell splitting algorithm, and also would be by having the optical depth
-across the grid cells small compared to one.  The third assumption is
+across the grid cells small compared to one. The third assumption is
 satisfied by not using too coarse a base grid, and probably only matters
-as it affects the computation of the source function.  It can make sense
+as it affects the computation of the source function. It can make sense
 to have a coarse base grid where there is little scattering (clear sky),
 but then the output fluxes in those regions will be of low accuracy,
 though the output radiances (computed by tracing back) will be good.
 Because the accuracy can be compromised if the optical depth across a
 grid cell is too large, a warning is given if the property grid has
-cells with optical depth larger than 2.  It is the internal grid that
+cells with optical depth larger than 2. It is the internal grid that
 matters, but most people use the same grid so the check is done there.
 There are pathological cases in which a completely erroneous solar
 radiative transfer solution can occur if the optical depth across the
 cloud top grid cell is very large.
 
 The accuracy is also determined by the angular resolution, specified
-by the number of discrete ordinates (NMU and NPHI). To a lesser degree
-the adaptive spherical harmonic truncation parameter SHACC also
+by the number of discrete ordinates (``NMU`` and ``NPHI``). To a lesser degree
+the adaptive spherical harmonic truncation parameter ``SHACC`` also
 determines the angular resolution.  Most of the benefit from the
 adaptive truncation occurs for low values of SHACC, so it is recommended
-to keep this parameter small.  A value of SHACC=0 still gives the
+to keep this parameter small. A value of ``SHACC=0`` still gives the
 benefit of not allocating source function spherical harmonic terms where
-there is no scattering.  Then NMU and NPHI will determine the angular
-resolution.  The angular resolution needed depends on the desired
+there is no scattering. Then ``NMU`` and ``NPHI`` will determine the angular
+resolution. The angular resolution needed depends on the desired
 output: for solar beam problems, net flux convergence (heating rates)
 requires the least, followed by hemispheric fluxes, and then radiances.
-For heating rates Nmu=8, Nphi=16 is enough, for hemispheric fluxes
-Nmu=8, Nphi=16 is often adequate, and radiances may need Nmu=16,
-Nphi=32 or more depending on the phase function.
+For heating rates ``Nmu=8``, ``Nphi=16`` is enough, for hemispheric fluxes
+``Nmu=8``, ``Nphi=16`` is often adequate, and radiances may need ``Nmu=16``,
+``Nphi=32`` or more depending on the phase function.
 
 Choosing the cell splitting accuracy: Remember that the adaptive
-parameters are in absolute units, not relative!  The actual accuracy is
-not linearly related to the cell splitting accuracy.  The cell splitting
+parameters are in absolute units, not relative! The actual accuracy is
+not linearly related to the cell splitting accuracy. The cell splitting
 accuracy usually should be set substantially higher than the desired
 absolute flux accuracy.  Look at the examples in the 1998 journal paper
 for guidance.
@@ -1094,19 +1098,19 @@ for guidance.
 The only sure way to know how to set the spatial and angular
 resolution is to test how the desired solution behaves with increasing
 resolution, or make selected comparisons with an independent radiative
-transfer method.  It is not useful to increase the angular and spatial
-accuracy much beyond one another.  Tests have shown that the accuracy is
+transfer method. It is not useful to increase the angular and spatial
+accuracy much beyond one another. Tests have shown that the accuracy is
 not controlled by the cell splitting accuracy alone; both the base grid
-(NX,NY,NZ) and the splitting accuracy (SPLITACC) have to be considered.
-Thus, setting the splitting accuracy so small that the number of
-adaptive grid points is many times the number of base grid points, will
-probably not achieve any higher accuracy.
+(``NX``, ``NY``, ``NZ``) and the splitting accuracy (``SPLITACC``)
+have to be considered. Thus, setting the splitting accuracy so small
+that the number of adaptive grid points is many times the number of
+base grid points, will probably not achieve any higher accuracy.
 
 Unlike for plane-parallel situations, the delta-M method does not
 assure high accuracy for downwelling solar flux in 2D and 3D as it does
 for 1D, thus the distribution of downwelling solar flux may not be
 accurate for highly peaked phase functions unless high angular
-resolution is used.  This is because in 3D, sharp variations in the
+resolution is used. This is because in 3D, sharp variations in the
 extinction field mean that the downwelling solar flux is not averaged
 over all angles in the same way as for a uniform medium. This limitation
 appears to not affect upwelling flux, upwelling radiance, or heating
@@ -1131,11 +1135,9 @@ RUNNING SHDOM WITH MULTIPLE PROCESSORS
 SHDOM may be run on multiple processors, either in a shared memory
 system (e.g. SMP) or in a distributed memory system (e.g. a cluster),
 using the Message Passing Interface (MPI) version 1.  All of the SHDOM
-code that calls MPI routines is in the ``shdMPI.f90`` file.  A set of
-equivalent (mostly) dummy routines is provided in ``shdMPI_.f90``, which
-allows SHDOM to be compiled without an MPI libarary.  Using the parallel
+code that calls MPI routines is in the ``shdMPI.f90`` file. Using the parallel
 processing aspects of SHDOM requires that the MPI system be installed on
-the target computer.  Then the usual way to compile and run a program
+the target computer. Then the usual way to compile and run a program
 with MPI is:
 
 .. code-block:: bash
