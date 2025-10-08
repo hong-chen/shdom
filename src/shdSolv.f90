@@ -166,7 +166,7 @@ subroutine shd_solv__solveRte(&
 
     ! Make the discrete ordinates (angles)
     !   (set 2 is reduced gaussian, 3 is reduced double gauss)
-    ORDINATESET = 2
+    ORDINATESET = 3
     call shd_shdo__makeAngle(NMU, NPHI, ORDINATESET, NPHI0MAX,&
         &NPHI0, MU, PHI, WTMU, WTDO, FFTFLAG, NANG)
 

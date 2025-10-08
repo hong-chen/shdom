@@ -162,6 +162,7 @@ subroutine shd_util__interpData(OLDNPTS, NPTS,&
     end do
 
     return
+
 end subroutine shd_util__interpData
 
 subroutine shd_util__findCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
@@ -556,6 +557,7 @@ subroutine shd_util__computeGausQuad_new(m, gmu, gwt)
     end do
 
     return
+
 end subroutine shd_util__computeGausQuad_new
 
 subroutine shd_util__computeGausQuad(N, XA, WT)
@@ -576,7 +578,7 @@ subroutine shd_util__computeGausQuad(N, XA, WT)
     K = N/2
     if (2*K .ne. N) stop 'Error [_computeGausQuad]: N must be even.'
     do J = 1, K
-        X = cos(PI_*(J - .25)/(N + .5))
+        X = dcos(PI_*(J - 0.25d0)/(N + 0.5d0))
         I = 0
 100     continue
         PL1 = 1
@@ -622,7 +624,7 @@ subroutine shd_util__computeGausQuadDble(N, XA, WT)
 
     K = (N2 + 1)/2
     do J = 1, K
-        X = cos(DPI_*(J - .25)/(N2 + .5))
+        X = cos(DPI_*(J - 0.25d0)/(N2 + 0.5d0))
         I = 0
 100     continue
         PL1 = 1
@@ -685,7 +687,9 @@ subroutine shd_util__computePlanck(TEMP, UNITS, WAVENO, WAVELEN, PLANCK)
             PLANCK = 0.0
         end if
     end if
+
     return
+
 end subroutine shd_util__computePlanck
 
 subroutine shd_util__integratePlanck(X1, X2, F)
@@ -723,21 +727,21 @@ real(RD_) function integralLow(X)
     real(RD_) :: X
     integer :: N
     real(RD_) :: SUM, F, A(29)
-    data A/0.0d0,&
-        &0.0d0, 0.333333333333333333333d0,&
-        &-0.125d0, 0.016666666666666666667d0,&
-        &0.0d0, -0.0001984126984126984127d0,&
-        &0.0d0, 0.36743092298647854203d-5,&
-        &0.0d0, -0.75156325156325156325d-7,&
-        &0.0d0, 0.16059043836821614599d-8,&
-        &0.0d0, -0.35227934257916621232d-10,&
-        &0.0d0, 0.78720803121674581370d-12,&
-        &0.0d0, -0.17840422612224120352d-13,&
-        &0.0d0, 0.40886009791799259829d-15,&
-        &0.0d0, -0.94559508632959211871d-17,&
-        &0.0d0, 0.22036011313440918061d-18,&
-        &0.0d0, -0.51683202540046382743d-20,&
-        &0.0d0, 0.12188644964239543006d-20/
+    data A/ 0.0d0,&
+        &   0.0d0,  0.333333333333333333333d0,&
+        &-0.125d0,  0.016666666666666666667d0,&
+        &   0.0d0, -0.0001984126984126984127d0,&
+        &   0.0d0,  0.36743092298647854203d-5,&
+        &   0.0d0, -0.75156325156325156325d-7,&
+        &   0.0d0,  0.16059043836821614599d-8,&
+        &   0.0d0, -0.35227934257916621232d-10,&
+        &   0.0d0,  0.78720803121674581370d-12,&
+        &   0.0d0, -0.17840422612224120352d-13,&
+        &   0.0d0,  0.40886009791799259829d-15,&
+        &   0.0d0, -0.94559508632959211871d-17,&
+        &   0.0d0,  0.22036011313440918061d-18,&
+        &   0.0d0, -0.51683202540046382743d-20,&
+        &   0.0d0,  0.12188644964239543006d-20/
 
     SUM = A(4)*X**4
     F = X
