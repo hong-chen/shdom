@@ -55,7 +55,7 @@ module shd_mpi
     public :: shd_mpi__map
     public :: shd_mpi__bcastInput
     public :: shd_mpi__bcastPrpSize
-    public :: shd_mpi__distPrp
+    public :: shd_mpi__distPrpParam
     public :: shd_mpi__readBcastMemParam
     public :: shd_mpi__bcastSfcSize
     public :: shd_mpi__bcastSfcParam
@@ -407,7 +407,7 @@ subroutine shd_mpi__bcastPrpSize(NPX, NPY, NPZ, DELX, DELY,&
 
 end subroutine shd_mpi__bcastPrpSize
 
-subroutine shd_mpi__distPrp(NPXT, NPYT, NPX, NPY, NPZ,&
+subroutine shd_mpi__distPrpParam(NPXT, NPYT, NPX, NPY, NPZ,&
     &NSTLEG, NLEG, NUMPHASE,&
     &ZLEVELS, MAXASYM,&
     &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, IPHASEPT,&
@@ -521,7 +521,7 @@ subroutine shd_mpi__distPrp(NPXT, NPYT, NPX, NPY, NPZ,&
 
     return
 
-end subroutine shd_mpi__distPrp
+end subroutine shd_mpi__distPrpParam
 
 subroutine shd_mpi__bcastSfcSize(NXSFC, NYSFC, DELXSFC, DELYSFC, MAXSFCPTS, MAXSFCPARS)
 

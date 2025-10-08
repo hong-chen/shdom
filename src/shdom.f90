@@ -442,8 +442,8 @@ program shdom
 
         end if
 
-        ! redistribute file grid data to working grids (different CPU processes different grids)
-        call shd_mpi__distPrp(NPXT, NPYT, NPX_, NPY_, NPZ_,&
+        ! distribute file grid data to working grids (different CPU processes different grids)
+        call shd_mpi__distPrpParam(NPXT, NPYT, NPX_, NPY_, NPZ_,&
             &NSTLEG, NLEG, NUMPHASE_,&
             &ZLEVELS_, MAXASYM,&
             &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, IPHASEPT,&
