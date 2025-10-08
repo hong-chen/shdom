@@ -44,7 +44,7 @@ module shd_mpi
     use shd_util
     use shd_src
     use shd_rad
-    use shd_pha
+    use shd_scat
     use shd_shdo
 #endif
 
@@ -2252,7 +2252,7 @@ subroutine shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
             NSCATANGLE = max(36, min(MAXSCATANG, 2*NLEG))
             NSTPHASE = min(NSTLEG, 2)
             allocate (PHASETAB(NSTPHASE, NUMPHASE, NSCATANGLE))
-            call shd_pha__computePhase(NSCATANGLE, NUMPHASE, NSTPHASE,&
+            call shd_scat__computePhase(NSCATANGLE, NUMPHASE, NSTPHASE,&
                 &NSTOKES, ML, NSTLEG, NLEG, LEGEN, PHASETAB)
         end if
     end if

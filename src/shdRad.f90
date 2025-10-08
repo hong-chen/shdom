@@ -34,7 +34,7 @@ module shd_rad
 
     use globals_const
     use globals_cfg
-    use shd_pha
+    use shd_scat
     use shd_shdo
     use shd_src
     use shd_init
@@ -915,7 +915,7 @@ subroutine shd_rad__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
             NSCATANGLE = max(36, min(MAXSCATANG, 2*NLEG))
             NSTPHASE = min(NSTLEG, 2)
             allocate (PHASETAB(NSTPHASE, NUMPHASE, NSCATANGLE))
-            call shd_pha__computePhase(NSCATANGLE, NUMPHASE, NSTPHASE,&
+            call shd_scat__computePhase(NSCATANGLE, NUMPHASE, NSTPHASE,&
                 &NSTOKES, ML, NSTLEG, NLEG, LEGEN, PHASETAB)
         end if
     end if
@@ -1205,7 +1205,7 @@ subroutine shd_rad__computeSensorRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
             NSCATANGLE = max(36, min(MAXSCATANG, 2*NLEG))
             NSTPHASE = min(NSTLEG, 2)
             allocate (PHASETAB(NSTPHASE, NUMPHASE, NSCATANGLE))
-            call shd_pha__computePhase(NSCATANGLE, NUMPHASE, NSTPHASE,&
+            call shd_scat__computePhase(NSCATANGLE, NUMPHASE, NSTPHASE,&
                 &NSTOKES, ML, NSTLEG, NLEG, LEGEN, PHASETAB)
         end if
     end if

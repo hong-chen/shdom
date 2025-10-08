@@ -35,7 +35,7 @@ module shd_shdo
     use globals_const
     use globals_cfg
     use shd_util
-    use shd_pha
+    use shd_scat
     use shd_sfc
 
     implicit none
@@ -814,7 +814,7 @@ subroutine shd_shdo__computeYLM(TRANSPOSED, MU, PHI, ML, MM, NSTLEG, YR)
     ! ..................................................................
     !                               M = 0
     M = 0
-    call shd_pha__computeWignerDM0DM2PDM2M(X, ML, M, DM0, DM2P, DM2M)
+    call shd_scat__computeWignerDM0DM2PDM2M(X, ML, M, DM0, DM2P, DM2M)
     do L = 0, ML
         if (L .le. MM) then
             J = L*(L + 1) + M + 1
@@ -839,7 +839,7 @@ subroutine shd_shdo__computeYLM(TRANSPOSED, MU, PHI, ML, MM, NSTLEG, YR)
     ! ..................................................................
     !                               M =/ 0
     do MABS = 1, MM
-        call shd_pha__computeWignerDM0DM2PDM2M(X, ML, MABS, DM0, DM2P, DM2M)
+        call shd_scat__computeWignerDM0DM2PDM2M(X, ML, MABS, DM0, DM2P, DM2M)
         COSM = cos(MABS*PHI)
         SINM = sin(MABS*PHI)
         do L = MABS, ML
@@ -914,7 +914,7 @@ subroutine shd_shdo__computeYLM_(MU, PHI, ML, MM, YR)
     FCT = 1.d0/dsqrt(2.d0*DPI_)
 
     do M = 0, MM
-        call shd_pha__computeWignerDM0(X, ML, M, DM0)
+        call shd_scat__computeWignerDM0(X, ML, M, DM0)
         DM0(:) = FCT*DM0(:)
         if (M .gt. 0) then
             COSM = cos(M*PHI)
@@ -975,7 +975,7 @@ subroutine shd_shdo__computePLM(TRANSPOSED, MU, ML, MM, PRC)
     !                            M = 0
     ! ..................................................................
     M = 0
-    call shd_pha__computeWignerDM0DM2PDM2M&
+    call shd_scat__computeWignerDM0DM2PDM2M&
         &(X, ML, M,&
         &DM0, DM2P, DM2M)
     do L = 0, ML
@@ -1000,7 +1000,7 @@ subroutine shd_shdo__computePLM(TRANSPOSED, MU, ML, MM, PRC)
     !                               M =/ 0
     ! ..................................................................
     do MABS = 1, MM
-        call shd_pha__computeWignerDM0DM2PDM2M&
+        call shd_scat__computeWignerDM0DM2PDM2M&
             &(X, ML, MABS,&
             &DM0, DM2P, DM2M)
         do L = MABS, ML

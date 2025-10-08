@@ -38,7 +38,7 @@ set(SHDOM_LIB_SRCS
     globals.f90
     shdUtil.f90
     shdSfc.f90
-    shdPha.f90
+    shdScat.f90
     shdGrid.f90
     shdInit.f90
     shdSrc.f90

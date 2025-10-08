@@ -1856,6 +1856,8 @@ routines from NCAR.
 
    Sfc    shd_sfc__brdfLSRT      : Routine for RossThick-LiSparse reflection
 
+   Sfc    shd_sfc__brdfLSRTJiao  : Routine for snow LSRT-Jiao reflection
+
    Sfc    shd_sfc__brdfOcean     : Routine for Ocean BRDF reflection
 
    Sfc  x morcasiwat (shdSfc.f90):
@@ -1870,25 +1872,19 @@ routines from NCAR.
 
    Sfc  x getbound (shdSfc.f90)  :
 
-   Pha    shd_pha__computePhase            : Precomputes phase function for all tabulated functions
+   Scat   shd_scat__computePhase            : Precomputes phase function for all tabulated functions
 
-   Pha    shd_pha__computeLegendre         : Computes a set of Legendre polynomials for one angle
+   Scat   shd_scat__computeLegendre         : Computes a set of Legendre polynomials for one angle
 
-   Pha    shd_pha__computeYLM              : Computes a set of real generalized spherical harmonic functions
+   Scat   shd_scat__computeWigner           : Computes more Wigner d-functions
 
-   Pha    shd_pha__computePLM              : Computes more Wigner d-functions
+   Scat   shd_scat__computeWignerDM0        : Computes more Wigner d-functions
 
-   Pha    shd_pha__computeWigner           : Computes more Wigner d-functions
+   Scat   shd_scat__computeWignerDM0DM2PDM2M: Computes some Wigner d-functions
 
-   Pha  x shd_pha__computeYLM_             : YLMALL for NSTOKES=1
+   Scat x wignerDMM1N0 (shdScat.f90)        : Computes other Wigner d-functions
 
-   Pha  x shd_pha__computeWignerDM0        : Computes more Wigner d-functions
-
-   Pha  x shd_pha__computeWignerDM0DM2PDM2M: Computes some Wigner d-functions
-
-   Pha  x wignerDMM1N0 (shdPha.f90)        : Computes other Wigner d-functions
-
-   Pha  x wignerDMM0N0 (shdPha.f90)        : Computes more Wigner d-functions
+   Scat x wignerDMM0N0 (shdScat.f90)        : Computes more Wigner d-functions
 
    Init   shd_init__makeGrid    : Makes the internal X, Y, and Z grids
 
@@ -1899,8 +1895,6 @@ routines from NCAR.
    Init   shd_init__makeRad     : Does an Eddington (two-stream) initializatin
 
    Init   shd_init__makeFlux    : Solves Eddington radiative transfer for flux
-
-   Init   shd_init__makeAngle   : Makes angle set for the discrete representation
 
    Init   shd_init__makeTopRad  : Makes the top boundary radiances
 
@@ -1913,6 +1907,14 @@ routines from NCAR.
    Init   shd_init__makeSfcRadU : Makes the upwelling radiances for uniform BRDFs
 
    Init   shd_init__checkSfcU   : Determines if the surface file reflection is uniform
+
+   SHDO   shd_shdo__makeAngle   : Makes angle set for the discrete representation
+
+   SHDO   shd_shdo__computeYLM  : Computes a set of real generalized spherical harmonic functions
+
+   SHDO   shd_shdo__computePLM  : Computes more Wigner d-functions
+
+   SHDO x shd_shdo__computeYLM_ : YLMALL for NSTOKES=1
 
    SHDO   shd_shdo__computeSH   : Computes the SH output arrays
 
@@ -2006,13 +2008,13 @@ routines from NCAR.
 
    Solv x shd_solv__truncateRad: Computes the next radiance truncation to use
 
-   Solv x shd_solv__accelSol   : Accelerates the solution sequence
+   Solv x shd_solv__accelSol     : Accelerates the solution sequence
 
    Inp    shd_io__userInput      : Gets the input parameters from stdin
 
    Inp    shd_io__nmlInput       : Gets the input parameters from a namelist
 
-   Inp    shd_io__checkInputParam: Checks input parameters for validity/reasonableness
+   Inp    shd_io__checkInput     : Checks input parameters for validity/reasonableness
 
    Inp    shd_io__readPrpSize    : Gets the size of the property file
 

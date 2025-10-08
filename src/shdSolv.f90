@@ -34,7 +34,6 @@ module shd_solv
 
     use globals_cfg
     use shd_init
-    use shd_pha
     use shd_src
     use shd_rad
     use shd_sfc

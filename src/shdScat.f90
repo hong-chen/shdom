@@ -30,26 +30,26 @@
 !   at https://coloradolinux.com/shdom.
 !╰────────────────────────────────────────────────────────────────────────────╯!
 
-module shd_pha
+module shd_scat
 
     use globals_const
     use globals_cfg
 
     implicit none
 
-    public :: shd_pha__computePhase
-    public :: shd_pha__computeLegendre
+    public :: shd_scat__computePhase
+    public :: shd_scat__computeLegendre
 
-    public :: shd_pha__computeWigner
-    public :: shd_pha__computeWignerDM0
-    public :: shd_pha__computeWignerDM0DM2PDM2M
+    public :: shd_scat__computeWigner
+    public :: shd_scat__computeWignerDM0
+    public :: shd_scat__computeWignerDM0DM2PDM2M
 
     private :: wignerDMM1N0
     private :: wignerDMM0N0
 
 contains
 
-subroutine shd_pha__computePhase(&
+subroutine shd_scat__computePhase(&
     &NSCATANGLE, NUMPHASE, NSTPHASE,&
     &NSTOKES, ML, NSTLEG, NLEG, LEGEN, PHASETAB)
 
@@ -72,9 +72,9 @@ subroutine shd_pha__computePhase(&
     do J = 1, NSCATANGLE
         COSSCAT = cos(DPI_*DFLOAT(J - 1)/(NSCATANGLE - 1))
         X = dble(COSSCAT)
-        call shd_pha__computeWigner(X, NLEG, 0, 0, DMM1)
+        call shd_scat__computeWigner(X, NLEG, 0, 0, DMM1)
         if (NSTOKES .gt. 1) then
-            call shd_pha__computeWigner(X, NLEG, 2, 0, DMM2)
+            call shd_scat__computeWigner(X, NLEG, 2, 0, DMM2)
         end if
 
         ! Unscaled the needed Legendre coefficients, but divide by 1-f
@@ -125,9 +125,9 @@ subroutine shd_pha__computePhase(&
 
     return
 
-end subroutine shd_pha__computePhase
+end subroutine shd_scat__computePhase
 
-subroutine shd_pha__computeLegendre(COSSCAT, NLEG, P)
+subroutine shd_scat__computeLegendre(COSSCAT, NLEG, P)
 
     !   This subroutine computes a set of Legendre polynomials for
     ! a particular scattering angle COSSCAT.  NLEG is the maximum term.
@@ -159,9 +159,9 @@ subroutine shd_pha__computeLegendre(COSSCAT, NLEG, P)
 
     return
 
-end subroutine shd_pha__computeLegendre
+end subroutine shd_scat__computeLegendre
 
-subroutine shd_pha__computeWigner(X, NRANK, M, M1, DMM1)
+subroutine shd_scat__computeWigner(X, NRANK, M, M1, DMM1)
 
     ! ----------------------------------------------------------------
     ! |  The routine computes the DMM1N vector coefficients for
@@ -203,9 +203,9 @@ subroutine shd_pha__computeWigner(X, NRANK, M, M1, DMM1)
         end do
     end if
     return
-end subroutine shd_pha__computeWigner
+end subroutine shd_scat__computeWigner
 
-subroutine shd_pha__computeWignerDM0DM2PDM2M(&
+subroutine shd_scat__computeWignerDM0DM2PDM2M(&
     &MIU, NRANK, M, DM0, DM2P, DM2M)
 
     ! ----------------------------------------------------------------
@@ -295,9 +295,9 @@ subroutine shd_pha__computeWignerDM0DM2PDM2M(&
 
     return
 
-end subroutine shd_pha__computeWignerDM0DM2PDM2M
+end subroutine shd_scat__computeWignerDM0DM2PDM2M
 
-subroutine shd_pha__computeWignerDM0(X, NRANK, M, DM0)
+subroutine shd_scat__computeWignerDM0(X, NRANK, M, DM0)
 
     ! ----------------------------------------------------------------
     ! |  The routine computes the DMM1N vector coefficients for      |
@@ -332,7 +332,7 @@ subroutine shd_pha__computeWignerDM0(X, NRANK, M, DM0)
         end do
     end if
     return
-end subroutine shd_pha__computeWignerDM0
+end subroutine shd_scat__computeWignerDM0
 
 function wignerDMM1N0(X, M, M1) result(DMM1N0)
 
@@ -398,4 +398,4 @@ function wignerDMM0N0(X, M) result(DMM0N0)
 
 end function wignerDMM0N0
 
-end module shd_pha
+end module shd_scat

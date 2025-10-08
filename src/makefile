@@ -57,7 +57,7 @@ CURRENT_DIR = $(shell pwd)
 BIN_DIR     = $(abspath $(CURRENT_DIR)/../build/bin)
 TARGETS = bin shdom propgen make_mie_table make_tmatrix_table plotscattab put
 
-SHDOMOBJS = globals.o shdUtil.o shdSfc.o shdPha.o shdInit.o\
+SHDOMOBJS = globals.o shdUtil.o shdSfc.o shdScat.o shdInit.o\
 			shdGrid.o shdSrc.o shdSHDO.o shdIntg.o shdSolv.o\
 			shdRad.o shdInp.o shdOut.o shdMPI.o fftpack.o
 
@@ -92,7 +92,7 @@ shdOut.o: shdOut.f90 globals.o shdGrid.o shdUtil.o
 shdInp.o: shdInp.f90 globals.o shdUtil.o
 	$(F90) -c $(F90FLAGS) shdInp.f90
 
-shdSolv.o: shdSolv.f90 shdMPI.o shdSfc.o shdInit.o shdGrid.o shdSHDO.o shdPha.o shdSrc.o shdIntg.o shdRad.o shdUtil.o
+shdSolv.o: shdSolv.f90 shdMPI.o shdSfc.o shdInit.o shdGrid.o shdSHDO.o shdScat.o shdSrc.o shdIntg.o shdRad.o shdUtil.o
 	$(F90) -c $(F90FLAGS) shdSolv.f90
 
 shdIntg.o: shdIntg.f90 shdMPI.o shdSfc.o shdInit.o shdGrid.o shdUtil.o shdSHDO.o
@@ -101,20 +101,20 @@ shdIntg.o: shdIntg.f90 shdMPI.o shdSfc.o shdInit.o shdGrid.o shdUtil.o shdSHDO.o
 shdGrid.o: shdGrid.f90 shdMPI.o globals.o shdUtil.o shdRad.o shdSrc.o
 	$(F90) -c $(F90FLAGS) shdGrid.f90
 
-shdSrc.o: shdSrc.f90 globals.o shdUtil.o shdPha.o shdSHDO.o shdInit.o
+shdSrc.o: shdSrc.f90 globals.o shdUtil.o shdScat.o shdSHDO.o shdInit.o
 	$(F90) -c $(F90FLAGS) shdSrc.f90
 
-shdSHDO.o: shdSHDO.f90 globals.o shdPha.o shdSfc.o shdUtil.o fftpack.o
+shdSHDO.o: shdSHDO.f90 globals.o shdScat.o shdSfc.o shdUtil.o fftpack.o
 	$(F90) -c $(F90FLAGS) shdSHDO.f90
 
-shdRad.o: shdRad.f90 globals.o shdPha.o shdSrc.o shdInit.o
+shdRad.o: shdRad.f90 globals.o shdScat.o shdSrc.o shdInit.o
 	$(F90) -c $(F90FLAGS) shdRad.f90
 
 shdInit.o: shdInit.f90 globals.o shdUtil.o shdSfc.o
 	$(F90) -c $(F90FLAGS) shdInit.f90
 
-shdPha.o: shdPha.f90 globals.o
-	$(F90) -c $(F90FLAGS) shdPha.f90
+shdScat.o: shdScat.f90 globals.o
+	$(F90) -c $(F90FLAGS) shdScat.f90
 
 shdSfc.o: shdSfc.f90 globals.o shdUtil.o
 	$(F90) -c $(F90FLAGS) shdSfc.f90

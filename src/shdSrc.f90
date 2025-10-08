@@ -34,7 +34,7 @@ module shd_src
 
     use globals_const
     use globals_cfg
-    use shd_pha
+    use shd_scat
     use shd_shdo
     use shd_util
     use shd_init
@@ -341,7 +341,7 @@ subroutine shd_src__computeSrcOneDir(NSTOKES,&
             ! If non-tabulate phase functions (unpolarized) then
             !   compute the Legendre polynomials for the scattering angle
             !   for the untruncated solar single scattering computation.
-            call shd_pha__computeLegendre(dble(COSSCAT), NLEG, SUNDIRLEG)
+            call shd_scat__computeLegendre(dble(COSSCAT), NLEG, SUNDIRLEG)
             do L = 0, NLEG
                 SUNDIRLEG(L) = SUNDIRLEG(L)*(2*L + 1)*O4PI_
             end do
@@ -806,7 +806,7 @@ subroutine shd_src__integrateSrcOneRay(&
             end do
         else
             allocate (SUNDIRLEG(0:NLEG))
-            call shd_pha__computeLegendre(COSSCAT, NLEG, SUNDIRLEG)
+            call shd_scat__computeLegendre(COSSCAT, NLEG, SUNDIRLEG)
             do L = 0, NLEG
                 SUNDIRLEG(L) = SUNDIRLEG(L)*(2*L + 1)/(4*DPI_)
             end do
@@ -1410,7 +1410,7 @@ subroutine shd_src__computeSolarStokesVect(&
 
     ! Sum the first Wigner function series, which is actually a Legend
     X = dble(COSSCAT)
-    call shd_pha__computeWigner(X, NLEG, 0, 0, DMM1)
+    call shd_scat__computeWigner(X, NLEG, 0, 0, DMM1)
     A1 = 0.0d0
     do L = 0, NLEG
         FCT = 2.0d0*L + 1.0d0
@@ -1420,7 +1420,7 @@ subroutine shd_src__computeSolarStokesVect(&
 
     if (NSTOKES .gt. 1) then
         ! If doing polarization, sum the second Wigner function series
-        call shd_pha__computeWigner(X, NLEG, 2, 0, DMM1)
+        call shd_scat__computeWigner(X, NLEG, 2, 0, DMM1)
         B1 = 0.0d0
         do L = 0, NLEG
             FCT = 2.0d0*L + 1.0d0

@@ -2053,7 +2053,7 @@ subroutine COMPUTE_ONE_SOURCE(NLAY, ALBEDOSC, LEGENSC, &
     ! procedure, replacing delta-M single scattering with single scattering
     ! for unscaled untruncated phase function.
 
-    use shd_pha
+    use shd_scat
 
     implicit none
     integer, intent(in) :: NLAY, MAXLEG, NLEGP(NLAY), NPTS
@@ -2080,7 +2080,7 @@ subroutine COMPUTE_ONE_SOURCE(NLAY, ALBEDOSC, LEGENSC, &
         ! Compute the Legendre polynomials for the scattering angle
         !   for the untruncated solar single scattering computation.
         COSSCAT = SOLARMU*MUO + sqrt((1.0d0 - SOLARMU**2)*(1.0d0 - MUO**2))*cos(PHIO)
-        call shd_pha__computeLegendre(COSSCAT, MAXLEG, SUNDIRLEG)
+        call shd_scat__computeLegendre(COSSCAT, MAXLEG, SUNDIRLEG)
         SUNDIRLEG(:) = SUNDIRLEG(:)/(4.0d0*acos(-1.0d0))
         call YLMALL(SOLARMU, 0.0, ML, MM, 1, YLMSUN)
 
