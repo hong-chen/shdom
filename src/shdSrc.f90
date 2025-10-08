@@ -40,6 +40,7 @@ module shd_src
     use shd_init
 
     implicit none
+    private
 
     public :: shd_src__computeSrcOnePnt
     public :: shd_src__computeSrcOnePnt_

@@ -44,6 +44,7 @@ module shd_solv
     use shd_mpi
 
     implicit none
+    private
 
     public :: shd_solv__solveRte
 

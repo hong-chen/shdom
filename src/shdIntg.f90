@@ -42,6 +42,7 @@ module shd_intg
     use shd_mpi
 
     implicit none
+    private
 
     public :: shd_intg__integratePath
 

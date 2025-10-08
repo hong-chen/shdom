@@ -39,6 +39,7 @@ module shd_shdo
     use shd_sfc
 
     implicit none
+    private
 
     public :: shd_shdo__computeSH
 

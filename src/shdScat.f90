@@ -36,6 +36,7 @@ module shd_scat
     use globals_cfg
 
     implicit none
+    private
 
     public :: shd_scat__computePhase
     public :: shd_scat__computeLegendre

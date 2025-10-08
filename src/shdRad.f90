@@ -40,6 +40,7 @@ module shd_rad
     use shd_init
 
     implicit none
+    private
 
     public :: shd_rad__makeDirect
     public :: shd_rad__computeDirect
