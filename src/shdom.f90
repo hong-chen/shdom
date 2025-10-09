@@ -51,8 +51,8 @@ program shdom
 
     implicit none
 
-    integer, parameter :: R__  = selected_real_kind(6) ! default precision for float
-    integer, parameter :: I__  = selected_int_kind(9)  ! default precision for integer
+    integer, parameter :: R__ = selected_real_kind(6) ! default precision for float
+    integer, parameter :: I__ = selected_int_kind(9)  ! default precision for integer
 
     ! Number of output files and inputs parameter per file
     integer(kind=I__), parameter :: MAXOUT = 20, MAXPAR = 100
@@ -129,7 +129,7 @@ program shdom
     character(len=FNAMEMAXLEN_) :: MESSAGE
 
     logical :: KDIST, INRADFLAG, NEWGRIDFLAG, DELTAM, ACCELFLAG
-    logical :: BASEOUT, MASTERPROC,  VALIDBEAM
+    logical :: BASEOUT, MASTERPROC, VALIDBEAM
     logical :: RADIANCE_OUT, VISUAL_OUT
     logical :: FLUX_OUT, FLUXDIV_OUT, SH_OUT, SOURCE_OUT
     logical :: MPIX, MPIY, MPIMODE
@@ -343,7 +343,7 @@ program shdom
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Map the full SHDOM domain onto the multiple processors:
     !   change NPX,NPY and NX,NY to the subdomain size, and output
-    !   the X and Y starting position of this subdomain.  Set bits
+    !   the X and Y starting position of this subdomain. Set bits
     !   2 and 3 in BCFLAG to indicate multiple processors in X and Y.
     !   Also open the slave processor log files.
     call shd_mpi__map(BCFLAG, NPX_, NPY_, NX, NY, NZ, DELX_, DELY_, PROPFILE,&
@@ -932,7 +932,7 @@ program shdom
         INRADFLAG = .false.
         TOTITER = TOTITER + ITER
 
-        ! Compute the output and put in arrays.  First the radiance.
+        ! Compute the output and put in arrays. First the radiance.
         if (RADIANCE_OUT) then
             IRAD = 0
             do I = 1, NUMOUT
