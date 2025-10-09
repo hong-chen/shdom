@@ -607,7 +607,7 @@ subroutine shd_util__computeGausQuadDble(N, XA, WT)
 
     !╭──────────────────────────────────────────────────────────────╮!
     !   Generates the abscissas (X) and weights (W) for an N point
-    ! Double-Gauss-Legendre quadrature.  The XA are returned in this o
+    ! Double-Gauss-Legendre quadrature. The XA are returned in this order
     ! -mu1, -mu2, ..., -muK, mu1, mu2, ..., muK  (mu1 > mu2 > muK,
     ! K=N/2, N must be even).
     !╰──────────────────────────────────────────────────────────────╯!
