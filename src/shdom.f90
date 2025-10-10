@@ -157,7 +157,7 @@ program shdom
                 ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
                 MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS, OUTFILES,&
                 OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
-                NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
+                NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, VERBOSE_)
         else
             call shd_io__userInput(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
                 INSAVEFILE, OUTSAVEFILE, SENFILE,&
@@ -168,7 +168,7 @@ program shdom
                 ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
                 MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS, OUTFILES,&
                 OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
-                NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
+                NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, VERBOSE_)
         end if
     end if
 
@@ -191,18 +191,6 @@ program shdom
 
     ! Post-process parameters from input
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    ! set verbose
-    VERBOSE_ = 7
-    !Severity    Level  Description
-    !Emergency     0      System unusable
-    !Alert         1      Action must be taken immediately
-    !Critical      2      Critical conditions
-    !Error         3      Error conditions
-    !Warning       4      Warning conditions
-    !Notice        5      Normal but significant condition
-    !Informational 6      Informational messages
-    !All           7      All-level messages
-
     ! set calculation accuracy (1.0e-4 to 1.0e-8)
     RACC_ = max(REPS_, min(SOLACC*0.1, 1.0e-4))
 

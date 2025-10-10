@@ -76,7 +76,7 @@ subroutine shd_io__userInput(&
     &ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
     &MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS, OUTFILES,&
     &OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
-    &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
+    &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, VERBOSE)
 
     ! Obtains the input parameters for the program by writing prompts
     ! to and reading responses from the terminal.  Echos the inputs to
@@ -98,6 +98,7 @@ subroutine shd_io__userInput(&
     character(len=FNAMEMAXLEN_) :: OUTFILES(*)
     character(len=FNAMEMAXLEN_) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE, SENFILE
     character(len=FNAMEMAXLEN_) :: OutFileNC, RUNNAME
+    integer(kind=1) :: VERBOSE
     integer I, J, N
     real GNDEMIS
 
@@ -107,6 +108,7 @@ subroutine shd_io__userInput(&
     WAVENO(1) = 10000.
     WAVENO(2) = 10001.
     SENFILE = 'NONE'
+    VERBOSE = VERBOSE_
 
     write (*, *)
     write (*, '(1X,A)') 'Name of this SHDOM run:'
@@ -335,7 +337,8 @@ subroutine shd_io__nmlInput(&
     &dACCELFLAG, dSOLACC, dMAXITER, dSPLITACC, dSHACC,&
     &dMAXOUT, dMAXPAR, dNUMOUT, dOUTTYPES, dOUTPARMS, dOUTFILES,&
     &dOutFileNC, dMAX_TOTAL_MB, dADAPT_GRID_FACTOR,&
-    &dNUM_SH_TERM_FACTOR, dCELL_TO_POINT_RATIO)
+    &dNUM_SH_TERM_FACTOR, dCELL_TO_POINT_RATIO,&
+    &dVERBOSE)
 
     ! Obtains the input parameters for the program from a namelist
     ! read from stdin.  See the overall program documentation for the
@@ -359,6 +362,7 @@ subroutine shd_io__nmlInput(&
     character(len=FNAMEMAXLEN_) :: dOutFileNC, dRUNNAME
     character(len=FNAMEMAXLEN_) :: dPROPFILE, dSFCFILE, dCKDFILE
     character(len=FNAMEMAXLEN_) :: dINSAVEFILE, dOUTSAVEFILE, dSENFILE
+    integer(kind=1) :: dVERBOSE
     integer I, J, N
 
     integer MAXOUT, MAXPAR
@@ -377,6 +381,7 @@ subroutine shd_io__nmlInput(&
     character(len=FNAMEMAXLEN_) :: OUTFILES(MAXOUT)
     character(len=FNAMEMAXLEN_) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
     character(len=FNAMEMAXLEN_) :: SENFILE, OutFileNC, RUNNAME
+    integer(kind=1) :: VERBOSE
     namelist /SHDOMINPUT/&
         &RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
         &INSAVEFILE, OUTSAVEFILE, SENFILE,&
@@ -387,7 +392,8 @@ subroutine shd_io__nmlInput(&
         &ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
         &NUMOUT, OUTTYPES, OUTPARMS, OUTFILES, OutFileNC,&
         &MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
-        &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
+        &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO,&
+        &VERBOSE
 
     character(len=FNAMEMAXLEN_) :: NMLFILE
 
@@ -400,6 +406,7 @@ subroutine shd_io__nmlInput(&
     WAVENO(1) = 10000.
     WAVENO(2) = 10001.
     SENFILE = 'NONE'
+    VERBOSE = VERBOSE_
 
     ! Read in the namelist
     call get_command_argument(1, NMLFILE)
@@ -520,6 +527,7 @@ subroutine shd_io__nmlInput(&
     dADAPT_GRID_FACTOR = ADAPT_GRID_FACTOR
     dNUM_SH_TERM_FACTOR = NUM_SH_TERM_FACTOR
     dCELL_TO_POINT_RATIO = CELL_TO_POINT_RATIO
+    dVERBOSE = VERBOSE
 
     return
 end subroutine shd_io__nmlInput
