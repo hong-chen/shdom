@@ -8,8 +8,7 @@
 #   --
 #
 #   Copyright (C) 2025-
-#   Cheng Da, cda@umd.edu
-#   Hong Chen, hong.chen-1@colorado.edu
+#   EaR³T Community: https://discord.gg/ntqsguwaWv
 #
 #   SHDOMNG is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -29,32 +28,34 @@
 # Acknowledgement:
 #   SHDOM was originally developed by K. Franklin Evans and is available
 #   at https://coloradolinux.com/shdom.
+#
+#   CMake related contribution was from Cheng Da (cda@umd.edu).
 #╰────────────────────────────────────────────────────────────────────────────╯!
 
 #
 # src codes
 #
-set(MIE_LIB_SRCS shdScat_ind_wat.f90 shdScat_mie_wig.f90)
+set(MIE_LIB_SRCS shdPha_ind_wat.f90 shdPha_mie_wig.f90)
 
-set(TMX_LIB_SRCS shdScat_ind_wat.f90 shdScat_tmx_wig.f90 _lapack.f)
+set(TMX_LIB_SRCS shdPha_ind_wat.f90 shdPha_tmx_wig.f90 _lapack.f)
 
 #
 # libraries
 #
 add_library(mie ${MIE_LIB_SRCS})
-target_link_libraries(mie PUBLIC ${SHDOM_LD_LIBS})
+target_link_libraries(mie PUBLIC ${SHDOMNG_LD_LIBS})
 
 add_library(tmx ${TMX_LIB_SRCS})
-target_link_libraries(tmx PUBLIC ${SHDOM_LD_LIBS})
+target_link_libraries(tmx PUBLIC ${SHDOMNG_LD_LIBS})
 
 #
 # executables
 #
 add_executable(make_tmatrix_table shdTool_make_tmx_tab.f90)
-target_link_libraries(make_tmatrix_table PRIVATE tmx ${SHDOM_LD_LIBS})
+target_link_libraries(make_tmatrix_table PRIVATE tmx ${SHDOMNG_LD_LIBS})
 
 add_executable(make_mie_table shdTool_make_mie_tab.f90)
-target_link_libraries(make_mie_table PRIVATE mie ${SHDOM_LD_LIBS})
+target_link_libraries(make_mie_table PRIVATE mie ${SHDOMNG_LD_LIBS})
 
 add_executable(propgen shdTool_propgen.f90)
 
@@ -66,8 +67,8 @@ set (exes make_tmatrix_table make_mie_table propgen plotscattab put)
 
 if (USE_NETCDF)
     add_executable(txt2nc shdTool_txt2nc.f90 shdExt_nc.f90)
-    target_include_directories(txt2nc PUBLIC "$<BUILD_INTERFACE:${SHDOM_INC}>")
-    target_link_libraries(txt2nc PRIVATE ${SHDOM_LD_LIBS})
+    target_include_directories(txt2nc PUBLIC "$<BUILD_INTERFACE:${SHDOMNG_INC}>")
+    target_link_libraries(txt2nc PRIVATE ${SHDOMNG_LD_LIBS})
 
     set(exes ${exes} txt2nc)
 endif()

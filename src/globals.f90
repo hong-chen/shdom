@@ -8,7 +8,7 @@
 !   --
 !
 !   Copyright (C) 2025-
-!   Hong Chen, hong.chen-1@colorado.edu
+!   EaR³T Community: https://discord.gg/ntqsguwaWv
 !
 !   SHDOMNG is free software: you can redistribute it and/or modify
 !   it under the terms of the GNU General Public License as published by
@@ -28,43 +28,12 @@
 ! Acknowledgement:
 !   SHDOM was originally developed by K. Franklin Evans and is available
 !   at https://coloradolinux.com/shdom.
+!
+!   This file was adapted from HPARX by
+!   Hironobu Iwabuchi(hironobu.iwabuchi.c4@tohoku.ac.jp), Souichiro Hioki,
+!   and Rintaro Okamura.
 !╰────────────────────────────────────────────────────────────────────────────╯!
 
-!-*-f90-*-
-
-! @LICENSE_HEADER_START@
-!
-!   This file is part of HPARX.
-!
-!   --
-!   HPARX: Fortran code library for atmospheric sciences
-!
-!   Copyright (C) 2006-2016
-!   Hironobu Iwabuchi, Souichiro Hioki, and Rintaro Okamura
-!
-!   HPARX is free software: you can redistribute it and/or modify
-!   it under the terms of the GNU General Public License as published by
-!   the Free Software Foundation, either version 3 of the License, or
-!   (at your option) any later version.
-!
-!   HPARX is distributed in the hope that it will be useful,
-!   but WITHOUT ANY WARRANTY; without even the implied warranty of
-!   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-!   GNU General Public License for more details.
-!
-!   You should have received a copy of the GNU General Public License
-!   along with HPARX. If not, see <http://www.gnu.org/licenses/>.
-!
-! @LICENSE_HEADER_END@
-
-
-
-
-
-
-!+
-! Global constants
-!-
 module globals_const
 
   implicit none

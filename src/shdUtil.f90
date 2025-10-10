@@ -8,8 +8,7 @@
 !   --
 !
 !   Copyright (C) 2025-
-!   Hong Chen, hong.chen-1@colorado.edu
-!   Vikas Nataraja, vikas.hanasogenataraja@lasp.colorado.edu
+!   EaR³T Community: https://discord.gg/ntqsguwaWv
 !
 !   SHDOMNG is free software: you can redistribute it and/or modify
 !   it under the terms of the GNU General Public License as published by
@@ -29,6 +28,8 @@
 ! Acknowledgement:
 !   SHDOM was originally developed by K. Franklin Evans and is available
 !   at https://coloradolinux.com/shdom.
+
+!   Snow BRDF related contribution was from Vikas Nataraja (vikas.hanasogenataraja@lasp.colorado.edu).
 !╰────────────────────────────────────────────────────────────────────────────╯!
 
 module shd_util

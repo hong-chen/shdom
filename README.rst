@@ -168,7 +168,7 @@ File-to-File Reference
 
   * partially from ``shdomsub2.f`` and combined with ``ocean_brdf.f``
 
-* ``src/shdPha.f90``: relates to phase function
+* ``src/shdScat.f90``: relates to phase function
 
   * partially from ``shdomsub2.f``
 
@@ -230,11 +230,11 @@ File-to-File Reference
 
   * was ``make_mie_table.f90``
 
-* ``src/tools/shdScat_ind_wat.f90``:
+* ``src/tools/shdPha_ind_wat.f90``:
 
   * was ``indexwatice.f``
 
-* ``src/tools/shdScat_mie_wig.f90``:
+* ``src/tools/shdPha_mie_wig.f90``:
 
   * was ``miewig.f``
 
@@ -242,11 +242,11 @@ File-to-File Reference
 
   * was ``make_tmatrix_table.f90``
 
-* ``src/tools/shdScat_tmx_wig.f90``:
+* ``src/tools/shdPha_tmx_wig.f90``:
 
   * was ``tmatrixwig.f``
 
-* ``src/tools/shdScat_tmx_par.f90``:
+* ``src/tools/shdPha_tmx_par.f90``:
 
   * was ``tmd.par.f``
 

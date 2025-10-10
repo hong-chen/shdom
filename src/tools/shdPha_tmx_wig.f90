@@ -8,7 +8,7 @@
 !   --
 !
 !   Copyright (C) 2025-
-!   Hong Chen, hong.chen-1@colorado.edu
+!   EaR³T Community: https://discord.gg/ntqsguwaWv
 !
 !   SHDOMNG is free software: you can redistribute it and/or modify
 !   it under the terms of the GNU General Public License as published by
@@ -48,7 +48,7 @@
 ! This interface was written by Frank Evans  (May 2011)
 !   Modified for Wigner d-functions  (January 2014)
 !
-! Compile: pgf77 -c tmatrixdwig.f lpd.f  (shdScat_tmx_par.f90 include file
+! Compile: pgf77 -c tmatrixdwig.f lpd.f  (shdPha_tmx_par.f90 include file
 !
 ! The main code was modified to put in the subroutine interface at
 ! the beginning, set parameters for a single particle, and calculat
@@ -70,7 +70,7 @@
 !   ORIENTED PARTICLES OF IDENTICAL AXIALLY SYMMETRIC SHAPE
 
 !   This version of the code uses DOUBLE PRECISION variables
-!   and must be used along with the accompanying files shdScat_tmx_par.f90
+!   and must be used along with the accompanying files shdPha_tmx_par.f90
 !   and lpd.f.
 
 !   Last update 08/06/2005
@@ -328,13 +328,13 @@
 
 !   The message "WARNING: NGAUSS=NPNG1" means that convergence over
 !   the parameter NG (see Ref. 2) cannot be obtained for the NPNG1
-!   value specified in the PARAMETER statement in the file shdScat_tmx_par.f90
+!   value specified in the PARAMETER statement in the file shdPha_tmx_par.f90
 !   Often this is not a serious problem, especially for compact
 !   particles.
 
 !   Larger and/or more aspherical particles may require larger
 !   values of the parameters NPN1, NPN4, and NPNG1 in the file
-!   shdScat_tmx_par.f90.  It is recommended to keep NPN1=NPN4+25 and
+!   shdPha_tmx_par.f90.  It is recommended to keep NPN1=NPN4+25 and
 !   NPNG1=3*NPN1.  Note that the memory requirement increases
 !   as the third power of NPN4. If the memory of
 !   a computer is too small to accomodate the code in its current
@@ -416,7 +416,7 @@ subroutine TMATRIXWIG(wavelength, mindex, radius,&
       & extcross, scatcross, ssalbedo, asymmetry,&
       & nrank, wigcoef)
 
-      include 'shdScat_tmx_par.f90'
+      include 'shdPha_tmx_par.f90'
 
       implicit real*8(A - H, O - Z)
       integer maxrank, nrank
@@ -884,7 +884,7 @@ end subroutine
 
 subroutine CONST(NGAUSS, NMAX, MMAX, P, X, W, AN, ANN, S, SS, NP, EPS)
 
-      include 'shdScat_tmx_par.f90'
+      include 'shdPha_tmx_par.f90'
 
       implicit real*8(A - H, O - Z)
 
@@ -942,7 +942,7 @@ end subroutine
 subroutine VARY(LAM, MRR, MRI, A, EPS, NP, NGAUSS, X, P, PPI, PIR, PII,&
       & R, DR, DDR, DRR, DRI, NMAX)
 
-      include 'shdScat_tmx_par.f90'
+      include 'shdPha_tmx_par.f90'
 
       implicit real*8(A - H, O - Z)
       real*8 X(NPNG2), R(NPNG2), DR(NPNG2), MRR, MRI, LAM,&
@@ -1066,7 +1066,7 @@ end subroutine
 
 subroutine BESS(X, XR, XI, NG, NMAX, NNMAX1, NNMAX2)
 
-      include 'shdScat_tmx_par.f90'
+      include 'shdPha_tmx_par.f90'
 
       implicit real*8(A - H, O - Z)
       real*8 X(NG), XR(NG), XI(NG),&
@@ -1161,7 +1161,7 @@ end subroutine
 
 subroutine CJB(XR, XI, YR, YI, UR, UI, NMAX, NNMAX)
 
-      include 'shdScat_tmx_par.f90'
+      include 'shdPha_tmx_par.f90'
 
       implicit real*8(A - H, O - Z)
       real*8 YR(NMAX), YI(NMAX), UR(NMAX), UI(NMAX)
@@ -1236,7 +1236,7 @@ end subroutine
 subroutine TMATR0(NGAUSS, X, W, AN, ANN, S, SS, PPI, PIR, PII, R, DR, DDR,&
       & DRR, DRI, NMAX, NCHECK)
 
-      include 'shdScat_tmx_par.f90'
+      include 'shdPha_tmx_par.f90'
 
       implicit real*8(A - H, O - Z)
 
@@ -1457,7 +1457,7 @@ end subroutine
 subroutine TMATR(M, NGAUSS, X, W, AN, ANN, S, SS, PPI, PIR, PII, R, DR, DDR,&
       & DRR, DRI, NMAX, NCHECK)
 
-      include 'shdScat_tmx_par.f90'
+      include 'shdPha_tmx_par.f90'
 
       implicit real*8(A - H, O - Z)
       real*8 X(NPNG2), W(NPNG2), AN(NPN1), S(NPNG2), SS(NPNG2),&
@@ -1742,7 +1742,7 @@ end subroutine
 
 subroutine VIG(X, NMAX, M, DV1, DV2)
 
-      include 'shdScat_tmx_par.f90'
+      include 'shdPha_tmx_par.f90'
 
       implicit real*8(A - H, O - Z)
       real*8 DV1(NPN1), DV2(NPN1)
@@ -1803,7 +1803,7 @@ end subroutine
 
 subroutine TT(NMAX, NCHECK)
 
-      include 'shdScat_tmx_par.f90'
+      include 'shdPha_tmx_par.f90'
 
       implicit real*8(A - H, O - Z)
       real*8 F(NPN2, NPN2), B(NPN2), WORK(NPN2),&
@@ -1873,7 +1873,7 @@ end subroutine
 
 subroutine GSP(NMAX, CSCA, LAM, ALF1, ALF2, ALF3, ALF4, BET1, BET2, LMAX)
 
-      include 'shdScat_tmx_par.f90'
+      include 'shdPha_tmx_par.f90'
 
       implicit real*8(A - B, D - H, O - Z), complex*16(C)
 
@@ -2285,7 +2285,7 @@ end subroutine
 
 subroutine CCG(N, N1, NMAX, K1, K2, GG)
 
-      include 'shdScat_tmx_par.f90'
+      include 'shdPha_tmx_par.f90'
 
       implicit real*8(A - H, O - Z)
       real*8 GG(NPL1, NPN6), CD(0:NPN5), CU(0:NPN5)
@@ -2809,7 +2809,7 @@ end subroutine
 
 subroutine MATR(A1, A2, A3, A4, B1, B2, LMAX, Nang, muang, scatmat)
 
-      include 'shdScat_tmx_par.f90'
+      include 'shdPha_tmx_par.f90'
 
       implicit real*8(A - H, O - Z)
       integer Nang

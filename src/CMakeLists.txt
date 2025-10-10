@@ -8,8 +8,7 @@
 #   --
 #
 #   Copyright (C) 2025-
-#   Cheng Da, cda@umd.edu
-#   Hong Chen, hong.chen-1@colorado.edu
+#   EaR³T Community: https://discord.gg/ntqsguwaWv
 #
 #   SHDOMNG is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -29,12 +28,14 @@
 # Acknowledgement:
 #   SHDOM was originally developed by K. Franklin Evans and is available
 #   at https://coloradolinux.com/shdom.
+#
+#   CMake related contribution was from Cheng Da (cda@umd.edu).
 #╰────────────────────────────────────────────────────────────────────────────╯!
 
 #
 # src codes
 #
-set(SHDOM_LIB_SRCS
+set(SHDOMNG_LIB_SRCS
     globals.f90
     shdUtil.f90
     shdSfc.f90
@@ -53,9 +54,9 @@ set(SHDOM_LIB_SRCS
 
 # dummy option
 #if (USE_OMP)
-#    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS})
+#    set(SHDOMNG_LIB_SRCS ${SHDOMNG_LIB_SRCS})
 #else()
-#    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS})
+#    set(SHDOMNG_LIB_SRCS ${SHDOMNG_LIB_SRCS})
 #endif()
 
 if (USE_MPI)
@@ -66,34 +67,34 @@ else()
 endif()
 
 #if (USE_NETCDF)
-#    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} tools/shdExt_nc.f90)
+#    set(SHDOMNG_LIB_SRCS ${SHDOMNG_LIB_SRCS} tools/shdExt_nc.f90)
 #else()
-#    set(SHDOM_LIB_SRCS ${SHDOM_LIB_SRCS} tools/shdExt_nc_.f90)
+#    set(SHDOMNG_LIB_SRCS ${SHDOMNG_LIB_SRCS} tools/shdExt_nc_.f90)
 #endif()
 
 #
 # set compiling & linking flags
 #
-set(SHDOM_LD_LIBS "")
-set(SHDOM_INC "")
+set(SHDOMNG_LD_LIBS "")
+set(SHDOMNG_INC "")
 if (USE_OMP)
-    set(SHDOM_LD_LIBS ${SHDOM_LD_LIBS} OpenMP::OpenMP_Fortran)
+    set(SHDOMNG_LD_LIBS ${SHDOMNG_LD_LIBS} OpenMP::OpenMP_Fortran)
 endif()
 if (USE_MPI)
-    set(SHDOM_LD_LIBS ${SHDOM_LD_LIBS} MPI::MPI_Fortran)
+    set(SHDOMNG_LD_LIBS ${SHDOMNG_LD_LIBS} MPI::MPI_Fortran)
 endif()
 if (USE_NETCDF)
-    set(SHDOM_LD_LIBS ${SHDOM_LD_LIBS} ${NC_LIBS})
-    set(SHDOM_INC ${SHDOM_INC} ${NC_INC})
+    set(SHDOMNG_LD_LIBS ${SHDOMNG_LD_LIBS} ${NC_LIBS})
+    set(SHDOMNG_INC ${SHDOMNG_INC} ${NC_INC})
 endif()
 
 #
 # build libraries
 #
-add_library(shdomNG ${SHDOM_LIB_SRCS})
+add_library(shdomNG ${SHDOMNG_LIB_SRCS})
 target_compile_definitions(shdomNG PUBLIC ${FPPS_FLAGS})
-target_include_directories(shdomNG PUBLIC "$<BUILD_INTERFACE:${SHDOM_INC}>")
-target_link_libraries(shdomNG PUBLIC ${SHDOM_LD_LIBS})
+target_include_directories(shdomNG PUBLIC "$<BUILD_INTERFACE:${SHDOMNG_INC}>")
+target_link_libraries(shdomNG PUBLIC ${SHDOMNG_LD_LIBS})
 
 #
 # build executables
@@ -103,8 +104,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(exes shdom)
 foreach (x ${exes})
     add_executable(${x} ${x}.f90)
-    target_include_directories(${x} PUBLIC "$<BUILD_INTERFACE:${SHDOM_INC}>")
-    target_link_libraries(${x} PRIVATE shdomNG ${SHDOM_LD_LIBS})
+    target_include_directories(${x} PUBLIC "$<BUILD_INTERFACE:${SHDOMNG_INC}>")
+    target_link_libraries(${x} PRIVATE shdomNG ${SHDOMNG_LD_LIBS})
     install(TARGETS ${x})
 endforeach()
 

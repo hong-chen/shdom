@@ -8,7 +8,7 @@
 !   --
 !
 !   Copyright (C) 2025-
-!   Hong Chen, hong.chen-1@colorado.edu
+!   EaR³T Community: https://discord.gg/ntqsguwaWv
 !
 !   SHDOMNG is free software: you can redistribute it and/or modify
 !   it under the terms of the GNU General Public License as published by
@@ -29,9 +29,6 @@
 !   SHDOM was originally developed by K. Franklin Evans and is available
 !   at https://coloradolinux.com/shdom.
 !╰────────────────────────────────────────────────────────────────────────────╯!
-
-!   SHDOM: Spherical harmonic discrete ordinate radiative transfer method.
-!     See docs/README.rst for documentation.
 
 program shdom
 

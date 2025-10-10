@@ -8,7 +8,7 @@
 #   --
 #
 #   Copyright (C) 2025-
-#   Hong Chen, hong.chen-1@colorado.edu
+#   EaR³T Community: https://discord.gg/ntqsguwaWv
 #
 #   SHDOMNG is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -28,9 +28,10 @@
 # Acknowledgement:
 #   SHDOM was originally developed by K. Franklin Evans and is available
 #   at https://coloradolinux.com/shdom.
+#
+#   This file was referenced from https://github.com/cd10kfsu/F90GIO
 #╰────────────────────────────────────────────────────────────────────────────╯!
 
-# This file is referenced from https://github.com/cd10kfsu/F90GIO
 CURRENT_DIR = $(shell pwd)
 BUILD_DIR = $(abspath $(CURRENT_DIR)/build)
 

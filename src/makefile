@@ -8,7 +8,7 @@
 #   --
 #
 #   Copyright (C) 2025-
-#   Hong Chen, hong.chen-1@colorado.edu
+#   EaR³T Community: https://discord.gg/ntqsguwaWv
 #
 #   SHDOMNG is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -135,10 +135,10 @@ propgen: tools/shdTool_propgen.f90
 	$(F90) $(F90FLAGS) tools/shdTool_propgen.f90 -o $(BIN_DIR)/propgen
 
 make_tmatrix_table: tools/shdTool_make_tmx_tab.f90
-	$(F90) $(F90FLAGS) tools/shdTool_make_tmx_tab.f90 tools/shdScat_ind_wat.f90 tools/shdScat_tmx_wig.f90 tools/_lapack.f -o $(BIN_DIR)/make_tmatrix_table
+	$(F90) $(F90FLAGS) tools/shdTool_make_tmx_tab.f90 tools/shdPha_ind_wat.f90 tools/shdPha_tmx_wig.f90 tools/_lapack.f -o $(BIN_DIR)/make_tmatrix_table
 
 make_mie_table: tools/shdTool_make_mie_tab.f90
-	$(F90) $(F90FLAGS) tools/shdTool_make_mie_tab.f90 tools/shdScat_ind_wat.f90 tools/shdScat_mie_wig.f90 -o $(BIN_DIR)/make_mie_table
+	$(F90) $(F90FLAGS) tools/shdTool_make_mie_tab.f90 tools/shdPha_ind_wat.f90 tools/shdPha_mie_wig.f90 -o $(BIN_DIR)/make_mie_table
 
 plotscattab: tools/shdTool_plot_sca_tab.f90
 	$(F90) $(F90FLAGS) tools/shdTool_plot_sca_tab.f90 -o $(BIN_DIR)/plotscattab

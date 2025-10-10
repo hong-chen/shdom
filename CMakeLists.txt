@@ -8,8 +8,7 @@
 #   --
 #
 #   Copyright (C) 2025-
-#   Cheng Da, cda@umd.edu
-#   Hong Chen, hong.chen-1@colorado.edu
+#   EaR³T Community: https://discord.gg/ntqsguwaWv
 #
 #   SHDOMNG is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -29,11 +28,13 @@
 # Acknowledgement:
 #   SHDOM was originally developed by K. Franklin Evans and is available
 #   at https://coloradolinux.com/shdom.
+#
+#   CMake related contribution was from Cheng Da (cda@umd.edu).
 #╰────────────────────────────────────────────────────────────────────────────╯!
 
 cmake_minimum_required(VERSION 3.10)
 
-project(SHDOM LANGUAGES Fortran)
+project(SHDOMNG LANGUAGES Fortran)
 
 # Fortran Compiler and Flags
 if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")

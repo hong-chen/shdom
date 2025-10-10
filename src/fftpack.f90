@@ -8,7 +8,7 @@
 !   --
 !
 !   Copyright (C) 2025-
-!   Hong Chen, hong.chen-1@colorado.edu
+!   EaR³T Community: https://discord.gg/ntqsguwaWv
 !
 !   SHDOMNG is free software: you can redistribute it and/or modify
 !   it under the terms of the GNU General Public License as published by
@@ -28,17 +28,15 @@
 ! Acknowledgement:
 !   SHDOM was originally developed by K. Franklin Evans and is available
 !   at https://coloradolinux.com/shdom.
-!╰────────────────────────────────────────────────────────────────────────────╯!
-
-!╭────────────────────────────────────────────────────────────────────────────╮!
-! Additional notes:
-! This file is used to upgrade <SHDOM>/fftpack.f from F77 to F90
-! All the subroutines here are from
-! https://github.com/fortran-lang/fftpack/tree/main/src/fftpack/<subroutine name>.f90
-! Please refer to https://fortran-lang.github.io/fftpack for further information
 !
-! Command used:
-! cat rk.f90 dffti.f90 dfftb.f90 dfftf.f90 rffti1.f90 rfftb1.f90 rfftf1.f90 radb2.f90 radb3.f90 radb4.f90 radb5.f90 radbg.f90 radf2.f90 radf3.f90 radf4.f90 radf5.f90 radfg.f90 > fftpack.f90
+!   All the subroutines here are from
+!   https://github.com/fortran-lang/fftpack/tree/main/src/fftpack/<subroutine name>.f90
+!   Please refer to https://fortran-lang.github.io/fftpack for further information
+!
+! Additional notes:
+!   This file is used to upgrade <SHDOM>/fftpack.f from F77 to F90
+!   Command used:
+!   cat rk.f90 dffti.f90 dfftb.f90 dfftf.f90 rffti1.f90 rfftb1.f90 rfftf1.f90 radb2.f90 radb3.f90 radb4.f90 radb5.f90 radbg.f90 radf2.f90 radf3.f90 radf4.f90 radf5.f90 radfg.f90 > fftpack.f90
 !╰────────────────────────────────────────────────────────────────────────────╯!
 
   module fftpack_kind
