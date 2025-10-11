@@ -65,8 +65,8 @@ BIN_DIR     = $(abspath $(CURRENT_DIR)/../build/bin)
 TARGETS = bin shdom propgen make_mie_table make_tmatrix_table plotscattab put
 
 SHDOMOBJS = globals.o shdUtil.o shdSfc.o shdScat.o shdInit.o\
-			shdGrid.o shdSrc.o shdSHDO.o shdIntg.o shdSolv.o\
-			shdRad.o shdInp.o shdOut.o shdMPI.o fftpack.o
+			shdGrid.o shdSrc.o shdShdo.o shdIntg.o shdSolv.o\
+			shdRad.o shdInp.o shdOut.o shdMpi.o fftpack.o
 
 ifeq ($(FC), mpif90)
 	FFLAGS += -cpp -DHAS_MPI=TRUE
@@ -90,8 +90,8 @@ shdom: shdom.o $(SHDOMOBJS)
 shdom.o: shdom.f90 $(SHDOMOBJS)
 	$(F90) -c $(F90FLAGS) shdom.f90
 
-shdMPI.o: shdMPI.f90 shdInit.o shdUtil.o shdSrc.o shdRad.o globals.o
-	$(F90) -c $(F90FLAGS) shdMPI.f90
+shdMpi.o: shdMpi.f90 shdInit.o shdUtil.o shdSrc.o shdRad.o globals.o
+	$(F90) -c $(F90FLAGS) shdMpi.f90
 
 shdOut.o: shdOut.f90 globals.o shdGrid.o shdUtil.o
 	$(F90) -c $(F90FLAGS) shdOut.f90
@@ -99,20 +99,20 @@ shdOut.o: shdOut.f90 globals.o shdGrid.o shdUtil.o
 shdInp.o: shdInp.f90 globals.o shdUtil.o
 	$(F90) -c $(F90FLAGS) shdInp.f90
 
-shdSolv.o: shdSolv.f90 shdMPI.o shdSfc.o shdInit.o shdGrid.o shdSHDO.o shdScat.o shdSrc.o shdIntg.o shdRad.o shdUtil.o
+shdSolv.o: shdSolv.f90 shdMpi.o shdSfc.o shdInit.o shdGrid.o shdShdo.o shdScat.o shdSrc.o shdIntg.o shdRad.o shdUtil.o
 	$(F90) -c $(F90FLAGS) shdSolv.f90
 
-shdIntg.o: shdIntg.f90 shdMPI.o shdSfc.o shdInit.o shdGrid.o shdUtil.o shdSHDO.o
+shdIntg.o: shdIntg.f90 shdMpi.o shdSfc.o shdInit.o shdGrid.o shdUtil.o shdShdo.o
 	$(F90) -c $(F90FLAGS) shdIntg.f90
 
-shdGrid.o: shdGrid.f90 shdMPI.o globals.o shdUtil.o shdRad.o shdSrc.o
+shdGrid.o: shdGrid.f90 shdMpi.o globals.o shdUtil.o shdRad.o shdSrc.o
 	$(F90) -c $(F90FLAGS) shdGrid.f90
 
-shdSrc.o: shdSrc.f90 globals.o shdUtil.o shdScat.o shdSHDO.o shdInit.o
+shdSrc.o: shdSrc.f90 globals.o shdUtil.o shdScat.o shdShdo.o shdInit.o
 	$(F90) -c $(F90FLAGS) shdSrc.f90
 
-shdSHDO.o: shdSHDO.f90 globals.o shdScat.o shdSfc.o shdUtil.o fftpack.o
-	$(F90) -c $(F90FLAGS) shdSHDO.f90
+shdShdo.o: shdShdo.f90 globals.o shdScat.o shdSfc.o shdUtil.o fftpack.o
+	$(F90) -c $(F90FLAGS) shdShdo.f90
 
 shdRad.o: shdRad.f90 globals.o shdScat.o shdSrc.o shdInit.o
 	$(F90) -c $(F90FLAGS) shdRad.f90

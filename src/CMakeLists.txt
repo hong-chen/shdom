@@ -54,7 +54,7 @@ set(SHDOMNG_LIB_SRCS
     shdRad.f90
     shdInp.f90
     shdOut.f90
-    shdMPI.f90
+    shdMpi.f90
     fftpack.f90)
 
 # dummy option
