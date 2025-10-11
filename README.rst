@@ -135,8 +135,6 @@ Tips
 
    * ``shdom`` (namelist input)
 
-   * ``shdom_`` (user input)
-
    * ``propgen``
 
    * ``make_mie_table``
@@ -156,7 +154,7 @@ File-to-File Reference
 
   * was ``makefile``
 
-* ``src/shdom.f90`` and ``src/shdom_.f90``: main programs
+* ``src/shdom.f90``: main programs
 
   * was ``shdom.f90``
 
@@ -168,7 +166,7 @@ File-to-File Reference
 
   * partially from ``shdomsub2.f`` and combined with ``ocean_brdf.f``
 
-* ``src/shdScat.f90``: relates to phase function
+* ``src/shdScat.f90``: relates to scattering functions
 
   * partially from ``shdomsub2.f``
 
@@ -246,7 +244,7 @@ File-to-File Reference
 
   * was ``tmatrixwig.f``
 
-* ``src/tools/shdPha_tmx_par.f90``:
+* ``src/tools/shdPha_tmx_par.inc``:
 
   * was ``tmd.par.f``
 
