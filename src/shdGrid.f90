@@ -28,6 +28,13 @@
 ! Acknowledgement:
 !   SHDOM was originally developed by K. Franklin Evans and is available
 !   at https://coloradolinux.com/shdom.
+!
+! History:
+!   Created by:  K. Franklin Evans
+!                evans@nit.colorado.edu
+!
+!   Modified by: Hong Chen
+!                hong.chen-1@colorado.edu
 !╰────────────────────────────────────────────────────────────────────────────╯!
 
 module shd_grid

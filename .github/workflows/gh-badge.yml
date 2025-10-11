@@ -30,6 +30,10 @@
 #   at https://coloradolinux.com/shdom.
 #
 #   This file is adapted from https://github.com/MShawon/github-clone-count-badge.
+#
+# History:
+#   Created by:  Hong Chen
+#                hong.chen-1@colorado.edu
 #╰────────────────────────────────────────────────────────────────────────────╯!
 
 name: GitHub Clone Count Update

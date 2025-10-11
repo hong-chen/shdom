@@ -29,8 +29,15 @@
 !   SHDOM was originally developed by K. Franklin Evans and is available
 !   at https://coloradolinux.com/shdom.
 !
-!   Snow BRDF related contribution was from
-!   Vikas Nataraja (vikas.hanasogenataraja@lasp.colorado.edu).
+! History:
+!   Created by:  K. Franklin Evans
+!                evans@nit.colorado.edu
+!
+!   Modified by: Hong Chen
+!                hong.chen-1@colorado.edu
+!
+!                Vikas Nataraja
+!                vikas.hanasogenataraja@lasp.colorado.edu
 !╰────────────────────────────────────────────────────────────────────────────╯!
 
 module shd_inp

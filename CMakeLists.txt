@@ -29,7 +29,12 @@
 #   SHDOM was originally developed by K. Franklin Evans and is available
 #   at https://coloradolinux.com/shdom.
 #
-#   CMake related contribution was from Cheng Da (cda@umd.edu).
+# History:
+#   Created by:  Cheng Da
+#                cda@umd.edu
+#
+#   Modified by: Hong Chen
+#                hong.chen-1@colorado.edu
 #╰────────────────────────────────────────────────────────────────────────────╯!
 
 cmake_minimum_required(VERSION 3.10)

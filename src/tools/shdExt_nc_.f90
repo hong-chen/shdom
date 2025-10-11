@@ -28,6 +28,16 @@
 ! Acknowledgement:
 !   SHDOM was originally developed by K. Franklin Evans and is available
 !   at https://coloradolinux.com/shdom.
+!
+! History:
+!   Created by:  Robert Pincus
+!                robert.pincus@columbia.edu
+!
+!   Modified by: K. Franklin Evans
+!                evans@nit.colorado.edu
+!
+!                Hong Chen
+!                hong.chen-1@colorado.edu
 !╰────────────────────────────────────────────────────────────────────────────╯!
 
 module shdom_nc

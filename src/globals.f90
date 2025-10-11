@@ -32,6 +32,10 @@
 !   This file was adapted from HPARX by
 !   Hironobu Iwabuchi(hironobu.iwabuchi.c4@tohoku.ac.jp), Souichiro Hioki,
 !   and Rintaro Okamura.
+!
+! History:
+!   Created by: Hong Chen
+!               hong.chen-1@colorado.edu
 !╰────────────────────────────────────────────────────────────────────────────╯!
 
 module globals_const
