@@ -129,9 +129,9 @@ subroutine shd_solv__solveRte(&
     real, allocatable :: YLMSUN(:, :), WTMU(:), WPHISAVE(:)
     real, allocatable :: SFC_BRDF_DO(:, :, :, :, :, :)
 
-    integer :: count_start, count_rate, count_max
-    integer :: count_end
-    real :: elapsed_time
+    integer :: COUNT_START, COUNT_RATE, COUNT_MAX
+    integer :: COUNT_END
+    real :: ELAPSED_TIME
 
     ! Allocate local arrays
     ! NSTLEG=1 for NSTOKES=1, otherwise NSTLEG=6
@@ -213,6 +213,9 @@ subroutine shd_solv__solveRte(&
     end if
     SOLCRIT = 1.0
 
+
+    ! Surface initialization
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     LAMBERTIAN = SFCTYPE(2:2) .eq. 'L'
     ! Make the pointers to the grid points on the top and bottom boundaries
     call shd_grid__findBndryPnt(NPTS, NANG, MAXNBC, MAXBCRAD, LAMBERTIAN, &
@@ -249,7 +252,11 @@ subroutine shd_solv__solveRte(&
             end if
         end if
     end if
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
+
+    ! Picard iteration
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     ITER = 0
 
     if (MAXITER .le. ITER) return
@@ -283,11 +290,11 @@ subroutine shd_solv__solveRte(&
     !   Iterate until the iterations exceed the limit, or the desired
     !   solution criterion is reached and the current splitting accuracy
     !   is down to the desired level.
-    do while (ITER .lt. MAXITER .and. (SOLCRIT .gt. SOLACC&
+    ITER_LOOP: do while (ITER .lt. MAXITER .and. (SOLCRIT .gt. SOLACC&
         &.or. (SPLITCRIT .gt. SPLITACC .and.&
         &CURSPLITACC .gt. SPLITACC .and. .not. OUTOFMEM)))
 
-        call system_clock(count_start, count_rate, count_max)
+        call system_clock(COUNT_START, COUNT_RATE, COUNT_MAX)
 
         ITER = ITER + 1
 
@@ -377,8 +384,8 @@ subroutine shd_solv__solveRte(&
         ! If it is a not scattering medium then do only one iteration
         if (ALBMAX .lt. SOLACC) SOLCRIT = SOLACC
 
-        call system_clock(count_end, count_rate, count_max)
-        elapsed_time = (real(count_end) - real(count_start)) / real(count_rate)
+        call system_clock(COUNT_END, COUNT_RATE, COUNT_MAX)
+        ELAPSED_TIME = (real(COUNT_END) - real(COUNT_START)) / real(COUNT_RATE)
 
         ! Print out the log solution criterion, number of points,
         !   and average SH truncation.
@@ -389,7 +396,7 @@ subroutine shd_solv__solveRte(&
                 &NPTS,&
                 &NCELLS,&
                 &float(SHPTR(NPTS + 1))/NPTS,&
-                &elapsed_time
+                &ELAPSED_TIME
                 !&float(SHPTR(NPTS + 1))/(NPTS*NLM)
         else
             if (OUTOFMEM) then
@@ -399,7 +406,7 @@ subroutine shd_solv__solveRte(&
                     &NPTS,&
                     &NCELLS,&
                     &float(SHPTR(NPTS + 1))/NPTS,&
-                    &elapsed_time
+                    &ELAPSED_TIME
                     !&float(SHPTR(NPTS + 1))/(NPTS*NLM)
             else
                 if (VERBOSE_ .ge. 5) write (6, '(2X,I4,2X,F7.3,2X,E10.3,1X,I8,1X,I8,1X,F8.2,2X,F6.2," sec")')&
@@ -408,30 +415,25 @@ subroutine shd_solv__solveRte(&
                     &NPTS,&
                     &NCELLS,&
                     &float(SHPTR(NPTS + 1))/NPTS,&
-                    &elapsed_time
+                    &ELAPSED_TIME
                     !&float(SHPTR(NPTS + 1))/(NPTS*NLM)
             end if
         end if
-    end do
+    end do ITER_LOOP
 
     if (VERBOSE_ .ge. 5) write (6, '(A,I4,A,F9.6)') '- Iterations: ', ITER,&
         &', Final Criterion: ', SOLCRIT
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
+
+    ! Deallocate arrays
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     if (SFCTYPE(1:1) .eq. 'V' .and. UNIFORM_SFC_BRDF) then
         deallocate (SFC_BRDF_DO)
     end if
     deallocate (YLMSUN, FFTFLAG, WTMU, WPHISAVE)
     deallocate (CMU1, CMU2, CPHI1, CPHI2)
-
-    ! Comment in for GLE graphics output of cell structure (see routine)
-    ! call shdUtil_io__plotCell('cellfinal.gle', YGRID(1), 1, IPFLAG,&
-    !     &NX, XGRID(NX+1)-XGRID(1), ZGRID(NZ)-ZGRID(1),&
-    !     &NCELLS, GRIDPTR, NEIGHPTR, TREEPTR,&
-    !     &CELLFLAGS, GRIDPOS)
-
-    ! Comment in for output of cell splitting criterion for every cell
-    ! call shdUtil_io_outputCellSplit ('cellsplit.dat',GRIDPTR,&
-    !     &GRIDPOS, EXTINCT, SHPTR, SOURCE, NCELLS)
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
     return
 
