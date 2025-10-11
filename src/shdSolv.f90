@@ -290,7 +290,7 @@ subroutine shd_solv__solveRte(&
     !   Iterate until the iterations exceed the limit, or the desired
     !   solution criterion is reached and the current splitting accuracy
     !   is down to the desired level.
-    ITER_LOOP: do while (ITER .lt. MAXITER .and. (SOLCRIT .gt. SOLACC&
+    PICARD_ITER_LOOP: do while (ITER .lt. MAXITER .and. (SOLCRIT .gt. SOLACC&
         &.or. (SPLITCRIT .gt. SPLITACC .and.&
         &CURSPLITACC .gt. SPLITACC .and. .not. OUTOFMEM)))
 
@@ -419,7 +419,7 @@ subroutine shd_solv__solveRte(&
                     !&float(SHPTR(NPTS + 1))/(NPTS*NLM)
             end if
         end if
-    end do ITER_LOOP
+    end do PICARD_ITER_LOOP
 
     if (VERBOSE_ .ge. 5) write (6, '(A,I4,A,F9.6)') '- Iterations: ', ITER,&
         &', Final Criterion: ', SOLCRIT
@@ -447,9 +447,11 @@ subroutine shd_solv__accelSol(&
     ! input acceleration parameter (ACCELPAR).
 
     integer, intent(in) :: NPTS, SHPTR(*), OSHPTR(*), NSTOKES
-    real, intent(in) :: ACCELPAR, DELSOURCE(NSTOKES, *)
+    real, intent(in)    :: ACCELPAR, DELSOURCE(NSTOKES, *)
+
     real, intent(inout) :: SOURCE(NSTOKES, *)
-    integer I, J, IS, ISD, K, NS, NSD, NSC
+
+    integer :: I, J, IS, ISD, K, NS, NSD, NSC
 
     if (ACCELPAR .gt. 0.0) then
         do I = 1, NPTS
@@ -589,7 +591,9 @@ subroutine shd_solv__truncateRad(HIGHORDERRAD,&
         RSHPTR(I + 1) = IR
     end do
     RSHPTR(NPTS + 2) = IR
+
     return
+
 end subroutine shd_solv__truncateRad
 
 end module shd_solv
