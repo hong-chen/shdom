@@ -174,7 +174,7 @@ File-to-File Reference
 
   * partially from ``shdomsub2.f``
 
-* ``src/shdSHDO.f90``: relates to SH (spherical harmonic) and DO (discrete ordinate) operations
+* ``src/shdShdo.f90``: relates to SH (spherical harmonic) and DO (discrete ordinate) operations
 
   * partially from ``shdomsub1.f``
 
@@ -206,7 +206,7 @@ File-to-File Reference
 
   * partially from ``shdomsub3.f``
 
-* ``src/shdMPI.f90``: relates to MPI
+* ``src/shdMpi.f90``: relates to MPI
 
   * was ``shdom_mpi.f90`` and ``shdom_nompi.f``
 

@@ -1135,14 +1135,14 @@ RUNNING SHDOM WITH MULTIPLE PROCESSORS
 SHDOM may be run on multiple processors, either in a shared memory
 system (e.g. SMP) or in a distributed memory system (e.g. a cluster),
 using the Message Passing Interface (MPI) version 1. All of the SHDOM
-code that calls MPI routines is in the ``shdMPI.f90`` file. Using the parallel
+code that calls MPI routines is in the ``shdMpi.f90`` file. Using the parallel
 processing aspects of SHDOM requires that the MPI system be installed on
 the target computer. Then the usual way to compile and run a program
 with MPI is:
 
 .. code-block:: bash
 
-   mpif90 -O2 -o shdom shdom.f90 shdMPI.f90 shdom_nonetcdf.f90 \
+   mpif90 -O2 -o shdom shdom.f90 shdMpi.f90 shdom_nonetcdf.f90 \
              shdSolv.f90 shdComp.f90 shdInp.f90 shdOut.f90 fftpack.f90
 
    mpirun -np 4 shdom shdom.inp
@@ -1274,7 +1274,7 @@ This could occur, for example, if there is high cloud fraction on one
 side of the full domain, and low cloud fraction on the other side.
 SHDOM has the ability to perform processor load balancing. Normally,
 this feature is turned off, but may be used by setting the logical
-parameter "LoadBalance=.TRUE." at the beginning of ``shdMPI.f90``. The
+parameter "LoadBalance=.TRUE." at the beginning of ``shdMpi.f90``. The
 load balancing procedure requires that a previous SHDOM run be made with
 the same property file, so that the total number of grid points can be
 estimated. This prior run can be done at lower angular resolution
@@ -1358,7 +1358,7 @@ time may be somewhat longer, and the memory use (RADIANCE array) can be
 much larger.
 
 Multiple processor load balancing: Change ``LoadBalance=.TRUE.`` at the
-beginning of ``shdMPI.f90`` (see the last paragraph of the multiple
+beginning of ``shdMpi.f90`` (see the last paragraph of the multiple
 processing section).
 
 k-distribution initialization: at top of main program (``shdom.f90``);
@@ -1809,7 +1809,7 @@ what they do. The first column gives the file . The second column indicates
 the whether calling routine is public or private (indicated by ``x``).
 The major solving routines are in ``shdSolv.f90``, all the regular I/O
 routines are in ``shdInp.f90`` and ``shdOut.f90``,
-the MPI calling routines are in ``shdMPI.f90``, and ``fftpack.f90`` has the FFTPACK
+the MPI calling routines are in ``shdMpi.f90``, and ``fftpack.f90`` has the FFTPACK
 routines from NCAR.
 
 .. code-block::
@@ -2099,7 +2099,7 @@ routines from NCAR.
 
    MPI  x shd_mpi__integrateRay       : Does the RTE integrations for CALC_BOUNDARY_RADIANCES
 
-   MPI  x loadObject (shdMPI.f90)     : The objective function to minimize in the load balancing optimization
+   MPI  x loadObject (shdMpi.f90)     : The objective function to minimize in the load balancing optimization
 
    FFT    COSTI (fftpack.f90): Sets up for the cosine FFT
 
