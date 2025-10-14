@@ -61,10 +61,11 @@ subroutine shd_scat__computePhase(&
     &NSCATANGLE, NUMPHASE, NSTPHASE,&
     &NSTOKES, ML, NSTLEG, NLEG, LEGEN, PHASETAB)
 
-    !   Precomputes the phase matrix elements I-I and I-Q as a function
-    ! of scattering angle for solar direct scattering for all the
-    ! tabulated phase functions. Output is in PHASETAB.
-    ! NSTPHASE=1 for NSTOKES=1 and NSTPHASE=2 for NSTOKES>1.
+    ! Description:
+    !   Compute the phase matrix elements I-I and I-Q as a function
+    !   of scattering angle for solar direct scattering for all the
+    !   tabulated phase functions. Output is in PHASETAB.
+    !   NSTPHASE=1 for NSTOKES=1 and NSTPHASE=2 for NSTOKES>1.
 
     integer NSCATANGLE, NUMPHASE, NSTPHASE
     integer NSTOKES, NSTLEG, ML, NLEG
@@ -202,7 +203,7 @@ subroutine shd_scat__computeWigner(X, NRANK, M, M1, DMM1)
             FACT1 = FACT1*dble(2*N + 1)/dble(N)
 
             FACT2 = dsqrt(dble(N**2 - M**2))&
-                &*dsqrt(dble(N**2 - M1**2))
+                  * dsqrt(dble(N**2 - M1**2))
             FACT2 = FACT2/dsqrt(dble((N + 1)**2 - M**2))
             FACT2 = FACT2/dsqrt(dble((N + 1)**2 - M1**2))
             FACT2 = FACT2*dble(N + 1)/dble(N)
@@ -285,7 +286,7 @@ subroutine shd_scat__computeWignerDM0DM2PDM2M(&
             FACT1 = FACT1*dble(2*N + 1)/dble(N)
 
             FACT2 = dsqrt(dble(N**2 - M**2))&
-                &*dsqrt(dble(N**2 - 4))
+                  * dsqrt(dble(N**2 - 4))
             FACT2 = FACT2/dsqrt(dble((N + 1)**2 - M**2))
             FACT2 = FACT2/dsqrt(dble((N + 1)**2 - 4))
             FACT2 = FACT2*dble(N + 1)/dble(N)
