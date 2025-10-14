@@ -75,7 +75,7 @@ subroutine shd_src__computeSrcOneCell(&
     &EXTINCT8, SRCEXT8)
 
     !   Computes the source function times extinction for gridpoints
-    ! belonging to cell ICELL in the direction (MU,PHI).  The results
+    ! belonging to cell ICELL in the direction (MU,PHI). The results
     ! are returned in SRCEXT8 and EXTINCT8.
     ! The spherical harmonic source function series is input in SOURCE.
     ! For a solar source if delta-M then use Nakajima and Tanaka TMS
@@ -358,7 +358,7 @@ subroutine shd_src__computeSrcOneDir(NSTOKES,&
 
     ! If solar source and tabulated phase functions then precompute
     !   the single scattered solar Stokes vector to outgoing direction
-    if (SRCTYPE .ne. 'T' .and. TMS .and. NUMPHASE .gt. 0) then
+    if ((SRCTYPE .ne. 'T') .and. TMS .and. (NUMPHASE .gt. 0)) then
         do IPH = 1, NUMPHASE
             ! Unscaled the needed Legendre coefficients, but divide by 1-f
             !   because extinction is still scaled (for TMS method)
@@ -416,7 +416,7 @@ subroutine shd_src__computeSrcOneDir(NSTOKES,&
         end if
 
         ! Special case for solar source and Delta-M
-        if (SRCTYPE .ne. 'T' .and. TMS) then
+        if ((SRCTYPE .ne. 'T') .and. TMS) then
             if (NUMPHASE .gt. 0) then
                 IPH = IPHASE(I)
             else
