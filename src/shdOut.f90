@@ -39,10 +39,13 @@
 
 module shd_out
 
-    use globals_const
-    use globals_cfg
-    use shd_grid
-    use shd_util
+    use globals_const, only: RD_, PI_
+    use globals_cfg,   only: VERBOSE_, FNAMEMAXLEN_
+
+    use shd_grid,      only: shd_grid__testCellSplit
+
+    use shd_util,      only: shd_util__findCell,&
+                            &shd_util__interpTriLin
 
     implicit none
     private
