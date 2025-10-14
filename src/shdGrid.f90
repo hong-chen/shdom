@@ -825,7 +825,7 @@ subroutine shd_grid__testCellSplit(GRIDPTR, GRIDPOS, EXTINCT,&
     integer ID, IE, IP1, IP2, IS1, IS2, NS1, NS2, NS
     integer J, NUM
     real TOSPLIT, SUM1, JAY, TAU, EXT
-    real, parameter :: C0 = 0.282095
+    real, parameter :: C0 = 0.28209479177387814 ! sqrt(1.0/(4.0*PI_)), Y00 (l=0, m=0)
 
     MAXADAPT = -1.0
     ! Loop over the three possible directions to do the split (X,Y,Z)
