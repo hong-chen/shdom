@@ -290,9 +290,11 @@ subroutine shd_solv__solveRte(&
     !   Iterate until the iterations exceed the limit, or the desired
     !   solution criterion is reached and the current splitting accuracy
     !   is down to the desired level.
-    PICARD_ITER_LOOP: do while (ITER .lt. MAXITER .and. (SOLCRIT .gt. SOLACC&
-        &.or. (SPLITCRIT .gt. SPLITACC .and.&
-        &CURSPLITACC .gt. SPLITACC .and. .not. OUTOFMEM)))
+    PICARD_ITER_LOOP: do while ((ITER .lt. MAXITER) .and.&
+                               &((SOLCRIT .gt. SOLACC) .or.&
+                                &((SPLITCRIT .gt. SPLITACC) .and.&
+                                 &(CURSPLITACC .gt. SPLITACC) .and.&
+                                 &(.not. OUTOFMEM))))
 
         call system_clock(COUNT_START, COUNT_RATE, COUNT_MAX)
 
@@ -304,9 +306,10 @@ subroutine shd_solv__solveRte(&
             !   interpolate the medium and source functions to the new points.
             ! The current splitting accuracy is started high and then lowered.
             AVGSOLCRIT = sqrt(AVGSOLCRIT*SOLCRIT)
-            DOSPLIT = SOLCRIT .le. STARTADAPTSOL .and.&
-                &(SOLCRIT .gt. ENDADAPTSOL .or. CURSPLITACC .gt. SPLITACC)&
-                &.and. .not. OUTOFMEM
+            DOSPLIT = (SOLCRIT .le. STARTADAPTSOL) .and.&
+                     &((SOLCRIT .gt. ENDADAPTSOL) .or.&
+                      &(CURSPLITACC .gt. SPLITACC)) .and.&
+                     &(.not. OUTOFMEM)
             ! Make sure all processors are going to split cells if any want to
             call shd_mpi__unifySplit(DOSPLIT, STARTSPLITACC)
             BETA = log(STARTSPLITACC/SPLITACC)/log(ADAPTRANGE)

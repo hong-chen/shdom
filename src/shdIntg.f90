@@ -777,8 +777,9 @@ subroutine shd_intg__backIntegrate3D_(&
     integer IPCELL, ICELL, INEXTCELL, IPT, IFACE
     integer I1, I2, I3, I4, IOPP, JFACE, KFACE, IC, IZ
     integer GRIDFACE(4, 6), OPPFACE(6)
-    integer IORDER, ICORNER, JOCTORDER3(8), JOCTORDER2(8)
+    integer IORDER, ICORNER, JOCTORDER2(8), JOCTORDER3(8)
     logical :: VALIDRAD, VALIDFACE, IPINX, IPINY
+
     real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV
     real(RD_) :: XE, YE, ZE
     real(RD_) :: SO, SOX, SOY, SOZ, EPS, path
@@ -786,9 +787,16 @@ subroutine shd_intg__backIntegrate3D_(&
     real(RD_) :: EXT, EXT0, EXT1, SRC, SRCEXT0, SRCEXT1
     real(RD_) :: EXT0P, SRCEXT0P
     real(RD_) :: TAU, TRANSCELL, ABSCELL, RAD, RAD0, TRANSMIT
-    data GRIDFACE/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8,&
-        &1, 2, 3, 4, 5, 6, 7, 8/, OPPFACE/2, 1, 4, 3, 6, 5/
-    data JOCTORDER3/1, 3, 5, 7, 2, 4, 6, 8/, JOCTORDER2/1, 3, 1, 3, 2, 4, 2, 4/
+    data GRIDFACE /&
+      &1, 3, 5, 7,&
+      &2, 4, 6, 8,&
+      &1, 2, 5, 6,&
+      &3, 4, 7, 8,&
+      &1, 2, 3, 4,&
+      &5, 6, 7, 8/
+    data OPPFACE /2, 1, 4, 3, 6, 5/
+    data JOCTORDER2 /1, 3, 1, 3, 2, 4, 2, 4/
+    data JOCTORDER3 /1, 3, 5, 7, 2, 4, 6, 8/
 
     integer :: iwhile, ibreak
 
@@ -798,18 +806,21 @@ subroutine shd_intg__backIntegrate3D_(&
     CX = sqrt(1.0 - MU**2)*cos(PHI + DPI_)
     CY = sqrt(1.0 - MU**2)*sin(PHI + DPI_)
     CZ = -MU
+
     if (abs(CX) .gt. 1.0e-5) then
         CXINV = 1.0d0/CX
     else
         CX = 0.0
         CXINV = 1.0e6
     end if
+
     if (abs(CY) .gt. 1.0e-5) then
         CYINV = 1.0d0/CY
     else
         CY = 0.0
         CYINV = 1.0e6
     end if
+
     CZINV = 1.0d0/CZ
 
     ! Setup the sweeping direction and the gridpoint location
@@ -819,11 +830,13 @@ subroutine shd_intg__backIntegrate3D_(&
     else
         BITX = 0
     end if
+
     if (CY .lt. 0.0) then
         BITY = 1
     else
         BITY = 0
     end if
+
     if (CZ .lt. -1.0e-3) then
         BITZ = 1
     else if (CZ .gt. 1.0e-3) then
@@ -831,6 +844,7 @@ subroutine shd_intg__backIntegrate3D_(&
     else
         stop 'Error [_backIntegrate3D_]: Bad MU.'
     end if
+
     ! IOCT is the octant the ray come from or the discrete ordinate goes to.
     IOCT = 1 + BITX + 2*BITY + 4*BITZ
     if (btest(IPFLAG, 1)) then
@@ -844,16 +858,16 @@ subroutine shd_intg__backIntegrate3D_(&
     ! Sweep through all the grid points
     do IORDER = 1, NPTS
 
-        IPCELL = ishft(SWEEPORD(IORDER, JOCT), -3)
+        IPCELL  = ishft(SWEEPORD(IORDER, JOCT), -3)
         ICORNER = ibits(SWEEPORD(IORDER, JOCT), 0, 3) + 1
         IPT = GRIDPTR(ICORNER, IPCELL)
 
-        ! this is for mpi (e.g., shdMPI.f90, not OMP)
+        ! this is for mpi (e.g., shdMpi.f90, not OMP)
         !╭────────────────────────────────────────────────╮!
         if (btest(BCFLAG, 2) .or. btest(BCFLAG, 3)) then
             ! For multiple processors get the subdomain boundary radiances
             !   for each Z slab
-            if ((GRIDPOS(3, IPT) .lt. ZGRID(IZ) .and. BITZ .eq. 0) .or.&
+            if ( (GRIDPOS(3, IPT) .lt. ZGRID(IZ) .and. BITZ .eq. 0) .or.&
                 &(GRIDPOS(3, IPT) .gt. ZGRID(IZ) .and. BITZ .eq. 1)) then
                 IZ = IZ + 2*BITZ - 1
                 call shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
@@ -1074,9 +1088,9 @@ subroutine shd_intg__backIntegrate3D_(&
                 end if
 
                 VALIDFACE = (GRIDRAD(I1) .ge. -0.1 .and. GRIDRAD(I2) .ge. -0.1&
-                    &.and. GRIDRAD(I3) .ge. -0.1 .and. GRIDRAD(I4) .ge. -0.1)
-                if (INEXTCELL .le. 0 .or.&
-                    &(TRANSMIT .le. TRANSMIN .and. VALIDFACE)) then
+                      &.and. GRIDRAD(I3) .ge. -0.1 .and. GRIDRAD(I4) .ge. -0.1)
+                if ( (INEXTCELL .le. 0) .or.&
+                    &((TRANSMIT .le. TRANSMIN) .and. VALIDFACE)) then
                     if (VALIDFACE) then
                         VALIDRAD = .true.
                         RAD0 = F1*GRIDRAD(I1) + F2*GRIDRAD(I2)&
