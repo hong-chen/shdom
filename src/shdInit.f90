@@ -213,6 +213,11 @@ subroutine shd_init__makeCell(&
     !              12: for MPI in both (perodic)
     !   NX, NY, NZ: integer, base grid size in X, Y and Z
     !   NX1, NY1  : integer, base grid actual size in X, Y
+    !   XGRID, YGRID, ZGRID: real array, grid locations for each dimension.
+    !                        To facilitate the periodic horizontal boundaries,
+    !                        there are NX+1 values in XGRID, NY+1 in YGRID,
+    !                        NZ values in ZGRID. Currently the grid locations
+    !                        are evenly spaced in X and Y.
     !
     ! Output:
     !   NPTS          : total number of grid points

@@ -51,6 +51,9 @@ module shd_intg
     implicit none
     private
 
+    integer, parameter :: R__  = selected_real_kind(6) ! default precision for float
+    integer, parameter :: I__  = selected_int_kind(9)  ! default precision for integer
+
     public :: shd_intg__integratePath
 
     private :: shd_intg__backIntegrate3D
@@ -709,23 +712,65 @@ subroutine shd_intg__backIntegrate3D_(&
     &MU, PHI, TRANSMIN, BCFLAG, IPFLAG,&
     &EXTINCT, SOURCE, KANG, GRIDRAD)
 
+    ! Description:
     !   Sweeps through the spatial grid computing radiances for the
-    ! discrete ordinate direction (MU,PHI) by integrating the source
-    ! function and extinction backward from each point.  The sweeping
-    ! order through the grid points is in SWEEPORD. If a point is
-    ! already done (nonnegative in GRIDRAD) then it is skipped.
-    ! For each grid point a ray opposite to the ordinate direction is traced
-    ! back to a face containing known (valid) radiances.  As each cell is
-    ! crossed (usually only one) the integration of the source function
-    ! across the cell is done and added to the radiance.  The radiance
-    ! at the end of the ray path is interpolated from the known grid point
-    ! radiances on the face.  The resulting radiances are put in GRIDRAD.
+    !   discrete ordinate direction (MU,PHI) by integrating the source
+    !   function and extinction backward from each point. The sweeping
+    !   order through the grid points is in SWEEPORD. If a point is
+    !   already done (nonnegative in GRIDRAD) then it is skipped.
+    !   For each grid point a ray opposite to the ordinate direction is traced
+    !   back to a face containing known (valid) radiances. As each cell is
+    !   crossed (usually only one) the integration of the source function
+    !   across the cell is done and added to the radiance. The radiance
+    !   at the end of the ray path is interpolated from the known grid point
+    !   radiances on the face. The resulting radiances are put in GRIDRAD.
+    !
+    ! Input:
+    !   NX, NY, NZ: integer, base grid size in X, Y and Z
+    !   NA        : integer, total number of angles (MU and PHI)
+    !   NPTS      : integer, total number of grid points
+    !   NCELLS    : integer, total number of cells
+    !   GRIDPTR(8,NCELLS) : integer array, pointer to 8 grid points belonging to a cell.
+    !                       Order of pointers is based on binary digits Z-Y-X:
+    !                       IOCT = 1 + BITX + 2*BITY + 4*BITZ, where
+    !                       BITc is 0 for negative side and 1 for positive side.
+    !                       1: (-X, -Y, -Z), 2: (+X, -Y, -Z), 3: (-X, +Y, -Z), 4: (+X, +Y, -Z)
+    !                       5: (-X, -Y, +Z), 6: (+X, -Y, +Z), 7: (-X, +Y, +Z), 8: (+X, +Y, +Z)
+    !   NEIGHPTR(6,NCELLS): integer array, pointer to 6 neighboring cells of a cell.
+    !                       Order of pointers are 1:-X, 2:+X, 3:-Y, 4:+Y, 5:-Z, 6:+Z.
+    !                       Is 0 if there is no neighbor cell (boundary).
+    !                       Is positive if there is just one cell across face
+    !                       of current cell (unique neighbor).  Is negative
+    !                       (-index) if there is more than one cell across
+    !                       the face of current cell.  In this case the
+    !                       cell pointed to is the parent cell that has a
+    !                       has same or larger face adjoining current cell.
+    !   TREEPTR(2,NCELLS) : integer array, pointer to parent and children cells in tree structure.
+    !                       First is pointer to parent cell, 0 for a base cell.
+    !                       Second is pointer to first of the two children cells.
+    !                       This pointer is 0 if there are no children cells.
+    !                       The children cells are in successive order, with
+    !                       the negative side first. See CELLFLAGS for direction
+    !                       of division of split.
+    !   CELLFLAGS(NCELLS) : integer array, a collection of binary flags for the cells:
+    !                       bit  For bit set
+    !                       0:  Do independent pixel for X
+    !                       1:  Do independent pixel for Y
+    !                       2,3: Direction cell is split (0=no split, 1=X, 2=Y, 3=Z)
+    !   GRIDPOS(3,NPTS)    : real array, X,Y,Z coordinate values of grid point locations
+    !   XGRID, YGRID, ZGRID: real array, grid locations for each dimension.
+    !                        To facilitate the periodic horizontal boundaries,
+    !                        there are NX+1 values in XGRID, NY+1 in YGRID,
+    !                        NZ values in ZGRID. Currently the grid locations
+    !                        are evenly spaced in X and Y.
+    !   SWEEPORD(NPTS,*)   : integer array, grid point sweeping order
 
-    integer NX, NY, NZ, NA, NPTS, NCELLS, KANG, BCFLAG, IPFLAG
-    integer GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
-    integer SWEEPORD(NPTS, *)
-    integer*2 CELLFLAGS(NCELLS)
-    real GRIDPOS(3, NPTS), XGRID(*), YGRID(*), ZGRID(NZ)
+
+    integer(kind=I__), intent(in) :: NX, NY, NZ, NA, NPTS, NCELLS, KANG, BCFLAG, IPFLAG
+    integer(kind=I__), intent(in) :: GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
+    integer(kind=I__), intent(in) :: SWEEPORD(NPTS, *)
+    integer(kind=2)  , intent(in) :: CELLFLAGS(NCELLS)
+    real(kind=R__)   , intent(in) :: GRIDPOS(3, NPTS), XGRID(*), YGRID(*), ZGRID(NZ)
     real MU, PHI, TRANSMIN
     real EXTINCT(NPTS), SOURCE(NA, NPTS), GRIDRAD(NPTS)
     integer BITX, BITY, BITZ, IOCT, JOCT

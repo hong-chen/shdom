@@ -52,6 +52,13 @@ module shd_grid
     integer, parameter :: R__  = selected_real_kind(6) ! default precision for float
     integer, parameter :: I__  = selected_int_kind(9)  ! default precision for integer
 
+    integer(kind=I__) :: GRIDCORNER(2, 4, 3)
+    data GRIDCORNER /1, 2, 3, 4, 5, 6, 7, 8, 1, 3, 2, 4, 5, 7, 6, 8,&
+        &1, 5, 2, 6, 3, 7, 4, 8/
+
+    integer(kind=I__) :: OPPFACE(6)
+    data OPPFACE /2, 1, 4, 3, 6, 5/
+
     public :: shd_grid__findBndryPnt
     public :: shd_grid__matchGridPnt
     public :: shd_grid__makeNewGridPnt
@@ -179,14 +186,13 @@ subroutine shd_grid__matchGridPnt(&
     integer(kind=2)  , intent(in)  :: CELLFLAGS(*)
     integer(kind=I__), intent(out) :: IPMATCH
 
-    ! if MAXSTACK is greater than 128, kind=2 is needed
-    integer(kind=1), parameter :: MAXSTACK=64
+    integer(kind=2), parameter :: MAXSTACK=64
     integer(kind=I__) :: CELLSTACK(MAXSTACK), SP
-    integer(kind=1)   :: OPPFACE(6), GRIDFACE(4, 6)
-    data OPPFACE /2, 1, 4, 3, 6, 5/
-    data GRIDFACE /1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8/
 
     integer(kind=I4_) :: INEXT, IDIR, DIR, IC, IC1, KFACE, IPT, I
+
+    integer(kind=I__) :: GRIDFACE(4, 6)
+    data GRIDFACE /1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8/
 
     IPMATCH = 0
     IDIR = (IFACE + 1)/2
@@ -284,11 +290,10 @@ subroutine shd_grid__makeNewGridPnt(IDIR, ICELL, NEWCELL, NPTS,&
     real GRIDPOS(3, *)
     integer I, K, I1, I2, IP1, IP2, IPT, IPMATCH
     integer IFACE1, IFACE2, ICELL2
-    integer GRIDCORNER(2, 4, 3), FACEGRID(2, 4, 3)
     real XP, YP, ZP
-    data GRIDCORNER/1, 2, 3, 4, 5, 6, 7, 8, 1, 3, 2, 4, 5, 7, 6, 8,&
-        &1, 5, 2, 6, 3, 7, 4, 8/
-    data FACEGRID/3, 5, 4, 5, 3, 6, 4, 6, 1, 5, 2, 5, 1, 6, 2, 6,&
+
+    integer(kind=I__) :: FACEGRID(2, 4, 3)
+    data FACEGRID /3, 5, 4, 5, 3, 6, 4, 6, 1, 5, 2, 5, 1, 6, 2, 6,&
         &1, 3, 2, 3, 1, 4, 2, 4/
 
     !   In general, when subdividing a cell four new points may be made.
@@ -359,29 +364,47 @@ end subroutine shd_grid__makeNewGridPnt
 subroutine shd_grid__makeSweepOrder(&
     &NX, NY, NZ, NPTS, NCELLS,&
     &GRIDPTR, TREEPTR, CELLFLAGS,&
-    &BCFLAG, IPFLAG, SWEEPORD, GRIDRAD)
+    &BCFLAG, IPFLAG,&
+    &SWEEPORD, GRIDRAD)
 
+    ! Description:
     !   Make the array of grid point sweeping order for each discrete
-    ! ordinate octant (SWEEPORD).  Rather than pointing to the grid points
-    ! directly, the elements of SWEEPORD point to the cell (bits 3-30) and
-    ! the corner of the cell (bits 0-2).  The first index is the grid
-    ! point visiting order (1-NPTS), and the second index refers to the
-    ! octant, but is not the octant number.  The octant index is translated
-    ! to the octant number with IOCTORDER - this complication arises because
-    ! of the desire to use just 2 or 4 octants in 1D or 2D.
+    !   ordinate octant (SWEEPORD). Rather than pointing to the grid points
+    !   directly, the elements of SWEEPORD point to the cell (bits 3-30) and
+    !   the corner of the cell (bits 0-2). The first index is the grid
+    !   point visiting order (1-NPTS), and the second index refers to the
+    !   octant, but is not the octant number. The octant index is translated
+    !   to the octant number with IOCTORDER - this complication arises because
+    !   of the desire to use just 2 or 4 octants in 1D or 2D.
+    !
+    ! Input:
+    !
 
-    integer NX, NY, NZ, NPTS, NCELLS, BCFLAG, IPFLAG
-    integer GRIDPTR(8, NCELLS), TREEPTR(2, NCELLS)
-    integer SWEEPORD(NPTS, *)
-    integer*2 CELLFLAGS(NCELLS)
-    real GRIDRAD(NPTS)
-    integer NOCT, IOCT, JOCT, NXC, NYC
-    integer IPCELL, IPT, IORDER
-    integer INDEXCORN, ICORNER, CORNDOG(8, 8), IOCTORDER(8)
-    data CORNDOG/8, 7, 6, 5, 4, 3, 2, 1, 7, 8, 5, 6, 3, 4, 1, 2, 6, 5, 8, 7, 2, 1, 4, 3,&
-        &5, 6, 7, 8, 1, 2, 3, 4, 4, 3, 2, 1, 8, 7, 6, 5, 3, 4, 1, 2, 7, 8, 5, 6,&
-        &2, 1, 4, 3, 6, 5, 8, 7, 1, 2, 3, 4, 5, 6, 7, 8/
-    data IOCTORDER/1, 5, 2, 6, 3, 7, 4, 8/
+    integer(kind=I__), intent(in) :: NX, NY, NZ, NPTS, NCELLS, BCFLAG, IPFLAG
+    integer(kind=I__), intent(in) :: GRIDPTR(8, NCELLS), TREEPTR(2, NCELLS)
+    integer(kind=2)  , intent(in) :: CELLFLAGS(NCELLS)
+
+    integer(kind=I__), intent(out) :: SWEEPORD(NPTS, *)
+    real(kind=R__)   , intent(out) :: GRIDRAD(NPTS)
+
+    integer(kind=I__) :: NOCT, IOCT, JOCT, NXC, NYC
+    integer(kind=I__) :: IPCELL, IPT, IORDER
+    integer(kind=I__) :: INDEXCORN, ICORNER
+
+    integer(kind=I__) :: CORNDOG(8, 8)
+    data CORNDOG /&
+        &8, 7, 6, 5, 4, 3, 2, 1,&
+        &7, 8, 5, 6, 3, 4, 1, 2,&
+        &6, 5, 8, 7, 2, 1, 4, 3,&
+        &5, 6, 7, 8, 1, 2, 3, 4,&
+        &4, 3, 2, 1, 8, 7, 6, 5,&
+        &3, 4, 1, 2, 7, 8, 5, 6,&
+        &2, 1, 4, 3, 6, 5, 8, 7,&
+        &1, 2, 3, 4, 5, 6, 7, 8/
+
+    integer(kind=I__) :: IOCTORDER(8)
+    data IOCTORDER /1, 5, 2, 6, 3, 7, 4, 8/
+
 
     ! IOCT is the octant the ray come from or the discrete ordinate
     !   IOCT = 1 + BITX + 2*BITY + 4*BITZ
@@ -393,9 +416,11 @@ subroutine shd_grid__makeSweepOrder(&
     else
         NOCT = 8
     end if
+
     NXC = NX
     if (btest(BCFLAG, 0)) NXC = NX + 1
     if (btest(BCFLAG, 2) .and. .not. btest(IPFLAG, 0)) NXC = NX - 1
+
     NYC = NY
     if (btest(BCFLAG, 1)) NYC = NY + 1
     if (btest(BCFLAG, 3) .and. .not. btest(IPFLAG, 1)) NYC = NY - 1
@@ -413,7 +438,9 @@ subroutine shd_grid__makeSweepOrder(&
         IORDER = 1
         IPCELL = 0
         INDEXCORN = 8
+
 100     continue
+
         ! INDEXCORN is a logical ordering index to the 8 corners in a cell;
         !   it is not the actual corner. ICORNER is the actual corner and
         !   depends on the ray direction (IOCT) and INDEXCORN.
@@ -428,13 +455,15 @@ subroutine shd_grid__makeSweepOrder(&
         else
             INDEXCORN = INDEXCORN + 1
         end if
+
         ! Compute the corresponding point
-        !   ICORNER = IAND(NOT(IEOR(INDEXCORN-1,IOCT-1)),7) + 1
+        ! ICORNER = IAND(NOT(IEOR(INDEXCORN-1,IOCT-1)),7) + 1
         ICORNER = CORNDOG(INDEXCORN, IOCT)
         IPT = GRIDPTR(ICORNER, IPCELL)
         if (GRIDRAD(IPT) .ge. 0.0) goto 100
 
         GRIDRAD(IPT) = 1.0
+
         ! Fill in the next entry with the grid cell and corner of this point
         SWEEPORD(IORDER, JOCT) = ior(ishft(IPCELL, 3), ICORNER - 1)
         IORDER = IORDER + 1
@@ -542,8 +571,6 @@ subroutine shd_grid__matchNeighCellFace(IFACE, IC, NEIGHPTR, CELLFLAGS,&
     integer INeigh, INN, JFACE, IC1, IC8, IN1, IN8, DIR, DIR1, DIR2
     logical DONE
     real POS(3)
-    integer OPPFACE(6)
-    data OPPFACE/2, 1, 4, 3, 6, 5/
 
     INeigh = abs(NEIGHPTR(IFACE, IC))
     ! If no neighbor then return
@@ -797,12 +824,8 @@ subroutine shd_grid__testCellSplit(GRIDPTR, GRIDPOS, EXTINCT,&
     real ADAPTCRIT(3), MAXADAPT
     integer ID, IE, IP1, IP2, IS1, IS2, NS1, NS2, NS
     integer J, NUM
-    integer GRIDCORNER(2, 4, 3)
     real TOSPLIT, SUM1, JAY, TAU, EXT
-    real C0
-    data GRIDCORNER/1, 2, 3, 4, 5, 6, 7, 8, 1, 3, 2, 4, 5, 7, 6, 8,&
-        &1, 5, 2, 6, 3, 7, 4, 8/
-    data C0/0.282095/
+    real, parameter :: C0 = 0.282095
 
     MAXADAPT = -1.0
     ! Loop over the three possible directions to do the split (X,Y,Z)
