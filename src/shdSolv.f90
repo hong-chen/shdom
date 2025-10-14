@@ -39,24 +39,46 @@
 
 module shd_solv
 
-    use globals_cfg
-    use shd_init
-    use shd_src
-    use shd_rad
-    use shd_sfc
-    use shd_shdo
-    use shd_grid
-    use shd_intg
-    use shd_util
-    use shd_mpi
+    use globals_cfg, only: VERBOSE_
+
+    use shd_init,    only: shd_init__makePrp,&
+                          &shd_init__makeRad,&
+                          &shd_init__checkSfcU
+
+    use shd_src,     only: shd_src__computeSrc
+
+    use shd_rad,     only: shd_rad__makeDirect,&
+                          &shd_rad__interpRad
+
+    use shd_sfc,     only: shd_sfc__interpSfc
+
+    use shd_shdo,    only: shd_shdo__computeYLM,&
+                          &shd_shdo__makeAngle,&
+                          &shd_shdo__makeSHDO,&
+                          &shd_shdo__makeSfcDO
+
+    use shd_grid,    only: shd_grid__interpGrid,&
+                          &shd_grid__findBndryPnt,&
+                          &shd_grid__splitGrid
+
+    use shd_intg,    only: shd_intg__integratePath
+
+    use shd_mpi,     only: shd_mpi__findAlbMax,&
+                          &shd_mpi__makeDirect,&
+                          &shd_mpi__unifySplit,&
+                          &shd_mpi__findTotSplitCritMax,&
+                          &shd_mpi__calAccelSolCrit
 
     implicit none
     private
 
-    public :: shd_solv__solveRte
+    integer, parameter :: R__  = selected_real_kind(6) ! default precision for float
+    integer, parameter :: I__  = selected_int_kind(9)  ! default precision for integer
+
+    public  :: shd_solv__solveRte
 
     private :: shd_solv__accelSol
-    private :: shd_solv__truncateRad
+    private :: shd_solv__truncRad
 
 contains
 
@@ -338,7 +360,7 @@ subroutine shd_solv__solveRte(&
         end if
 
         ! Find the SH truncation to use for the radiance (RSHPTR)
-        call shd_solv__truncateRad(HIGHORDERRAD,&
+        call shd_solv__truncRad(HIGHORDERRAD,&
             &NSTOKES, ML, MM, NSTLEG, NLEG, NUMPHASE,&
             &NPTS, ALBEDO, LEGEN, IPHASE, SHPTR, RADIANCE,&
             &MAXIV + MAXIG, FIXSH, SHACC, RSHPTR)
@@ -473,7 +495,7 @@ subroutine shd_solv__accelSol(&
     return
 end subroutine shd_solv__accelSol
 
-subroutine shd_solv__truncateRad(HIGHORDERRAD,&
+subroutine shd_solv__truncRad(HIGHORDERRAD,&
     &NSTOKES, ML, MM, NSTLEG, NLEG, NUMPHASE,&
     &NPTS, ALBEDO, LEGEN, IPHASE, SHPTR, RADIANCE,&
     &MAXIR, FIXSH, SHACC, RSHPTR)
@@ -561,7 +583,7 @@ subroutine shd_solv__truncateRad(HIGHORDERRAD,&
         RSHPTR(I + 1) = IR
         if (IR .gt. MAXIR) then
             if (VERBOSE_ .ge. 4) write (6, *)&
-                &'Warning [_truncateRad]: Out of memory for more radiance terms.'
+                &'Warning [_truncRad]: Out of memory for more radiance terms.'
             goto 190
         end if
     end do
@@ -586,7 +608,7 @@ subroutine shd_solv__truncateRad(HIGHORDERRAD,&
         end if
         IR = IR + NR
         if (IR .gt. MAXIR) then
-            write (6, *) 'Error [_truncateRad]: Really out of memory ',&
+            write (6, *) 'Error [_truncRad]: Really out of memory ',&
                 &'for more radiance terms.'
             write (6, *) '  Increase MAXIV.'
             stop
@@ -597,6 +619,6 @@ subroutine shd_solv__truncateRad(HIGHORDERRAD,&
 
     return
 
-end subroutine shd_solv__truncateRad
+end subroutine shd_solv__truncRad
 
 end module shd_solv
