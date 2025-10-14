@@ -192,7 +192,7 @@ program shdom
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
-    ! account for initialization
+    ! Memory used for initialization (rough estimate, 1 WORD = 4 bytes)
     MEMWORD = 2000.0 + MAXOUT * (MAXPAR + 0.25 + (FNAMEMAXLEN_/4.0))
 
 
