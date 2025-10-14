@@ -58,9 +58,9 @@ module shd_mpi
     public :: shd_mpi__start
     public :: shd_mpi__map
     public :: shd_mpi__bcastInput
+    public :: shd_mpi__bcastMemParam
     public :: shd_mpi__bcastPrpSize
-    public :: shd_mpi__distPrpParam
-    public :: shd_mpi__readBcastMemParam
+    public :: shd_mpi__bcastPrpParam
     public :: shd_mpi__bcastSfcSize
     public :: shd_mpi__bcastSfcParam
     public :: shd_mpi__bcastCkdSize
@@ -411,7 +411,7 @@ subroutine shd_mpi__bcastPrpSize(NPX, NPY, NPZ, DELX, DELY,&
 
 end subroutine shd_mpi__bcastPrpSize
 
-subroutine shd_mpi__distPrpParam(NPXT, NPYT, NPX, NPY, NPZ,&
+subroutine shd_mpi__bcastPrpParam(NPXT, NPYT, NPX, NPY, NPZ,&
     &NSTLEG, NLEG, NUMPHASE,&
     &ZLEVELS, MAXASYM,&
     &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, IPHASEPT,&
@@ -525,7 +525,7 @@ subroutine shd_mpi__distPrpParam(NPXT, NPYT, NPX, NPY, NPZ,&
 
     return
 
-end subroutine shd_mpi__distPrpParam
+end subroutine shd_mpi__bcastPrpParam
 
 subroutine shd_mpi__bcastSfcSize(NXSFC, NYSFC, DELXSFC, DELYSFC, MAXSFCPTS, MAXSFCPARS)
 
@@ -687,7 +687,7 @@ subroutine shd_mpi__bcastSenParam(NSENDATA, NSENPAR, SENPARMS)
 
 end subroutine shd_mpi__bcastSenParam
 
-subroutine shd_mpi__readBcastMemParam(MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
+subroutine shd_mpi__bcastMemParam(MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
     &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, RUNNAME)
 
     ! The master process reads the RUNNAME//"_mem_params.inp" file (if there
@@ -729,14 +729,14 @@ subroutine shd_mpi__readBcastMemParam(MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
     NUM_SH_TERM_FACTOR = MemParam(3, MYPROC_)
     CELL_TO_POINT_RATIO = MemParam(4, MYPROC_)
     deallocate (MemParam)
-    if (VERBOSE_ .ge. 5) write (6, '(A)') 'Message [mpi__readBcastMemParam]:'
+    if (VERBOSE_ .ge. 5) write (6, '(A)') 'Message [mpi__bcastMemParam]:'
     if (VERBOSE_ .ge. 5) write (6, '(2X,A,F0.2,"MB",3(2X,F0.3))') 'Memory parameters used: ', MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
         &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
 #endif
 
     return
 
-end subroutine shd_mpi__readBcastMemParam
+end subroutine shd_mpi__bcastMemParam
 
 real function shd_mpi__sumCpuTime(cpuTimes)
 

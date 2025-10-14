@@ -435,7 +435,7 @@ program shdom
         end if
 
         ! distribute file grid data to working grids (different CPU processes different grids)
-        call shd_mpi__distPrpParam(NPXT, NPYT, NPX_, NPY_, NPZ_,&
+        call shd_mpi__bcastPrpParam(NPXT, NPYT, NPX_, NPY_, NPZ_,&
             &NSTLEG, NLEG, NUMPHASE_,&
             &ZLEVELS_, MAXASYM,&
             &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, IPHASEPT,&
@@ -638,7 +638,7 @@ program shdom
     if (MPIMODE) then
         ! Read the memory parameters from a file, if it exists, and send
         !   the parameters to all processors. Otherwise use the input ones.
-        call shd_mpi__readBcastMemParam(MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
+        call shd_mpi__bcastMemParam(MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
             &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, RUNNAME)
     end if
 
