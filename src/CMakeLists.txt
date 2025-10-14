@@ -48,7 +48,7 @@ set(SHDOMNG_LIB_SRCS
     shdGrid.f90
     shdInit.f90
     shdSrc.f90
-    shdSHDO.f90
+    shdShdo.f90
     shdIntg.f90
     shdSolv.f90
     shdRad.f90
