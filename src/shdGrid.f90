@@ -39,12 +39,19 @@
 
 module shd_grid
 
-    use globals_const
-    use globals_cfg
-    use shd_util
-    use shd_rad
-    use shd_src
-    use shd_mpi
+    use globals_const, only: RD_
+    use globals_cfg,   only: VERBOSE_, RACC_
+
+    use shd_util,      only: shd_util__findNextCell,&
+                            &shd_util__computePlanck,&
+                            &shd_util__ssort
+
+    use shd_rad,       only: shd_rad__computeDirect
+
+    use shd_src,       only: shd_src__computeSrcOnePnt_,&
+                            &shd_src__computeSrcOnePnt
+
+    use shd_mpi,       only: shd_mpi__makeDirect
 
     implicit none
     private
@@ -189,7 +196,7 @@ subroutine shd_grid__matchGridPnt(&
     integer(kind=2), parameter :: MAXSTACK=64
     integer(kind=I__) :: CELLSTACK(MAXSTACK), SP
 
-    integer(kind=I4_) :: INEXT, IDIR, DIR, IC, IC1, KFACE, IPT, I
+    integer(kind=I__) :: INEXT, IDIR, DIR, IC, IC1, KFACE, IPT, I
 
     integer(kind=I__) :: GRIDFACE(4, 6)
     data GRIDFACE /1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8/
