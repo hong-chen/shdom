@@ -39,14 +39,32 @@
 
 module shd_intg
 
-    use globals_const
-    use globals_cfg
-    use shd_sfc
-    use shd_init
-    use shd_grid
-    use shd_util
-    use shd_shdo
-    use shd_mpi
+    use globals_const, only: RD_, DPI_, &
+                             FRAC13_, FRAC112_
+    use globals_cfg,   only: VERBOSE_, RACC_
+
+    use shd_sfc,  only: shd_sfc__interpSfc
+
+    use shd_init, only: shd_init__makeTopRad, &
+                        shd_init__makeSfcRadFL, &
+                        shd_init__makeSfcRadVL, &
+                        shd_init__makeSfcRadV, &
+                        shd_init__makeSfcRadU
+
+    use shd_grid, only: shd_grid__makeSweepOrder, &
+                        shd_grid__findBndryPnt
+
+    use shd_util, only: shd_util__findNextCell
+
+    use shd_shdo, only: shd_shdo__transSHtoDO_, &
+                        shd_shdo__transSHtoDO, &
+                        shd_shdo__transDOtoSH_, &
+                        shd_shdo__transDOtoSH
+
+    use shd_mpi,  only: shd_mpi__findBndryPnt, &
+                        shd_mpi__calBndryRad, &
+                        shd_mpi__abort
+
 
     implicit none
     private
