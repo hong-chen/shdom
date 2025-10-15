@@ -39,12 +39,22 @@
 
 module shd_rad
 
-    use globals_const
-    use globals_cfg
-    use shd_scat
-    use shd_shdo
-    use shd_src
-    use shd_init
+    use globals_const, only: RD_, PI_, DTOR_, &
+                             FRAC12_, FRAC13_
+    use globals_cfg,   only: VERBOSE_, RACC_
+
+    use shd_scat, only: shd_scat__computePhase
+
+    use shd_shdo, only: shd_shdo__computeYLM
+
+    use shd_src,  only: shd_src__computeSrcOneDir, &
+                        shd_src__integrateSrc, &
+                        shd_src__integrateSrcOneRay
+
+    use shd_init, only: shd_init__makeTopRad, &
+                        shd_init__makeSfcRadFL, &
+                        shd_init__makeSfcRadVL, &
+                        shd_init__makeSfcRadV
 
     implicit none
     private

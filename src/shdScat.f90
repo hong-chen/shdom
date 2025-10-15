@@ -39,8 +39,7 @@
 
 module shd_scat
 
-    use globals_const
-    use globals_cfg
+    use globals_const, only: RD_, DPI_, DOPI_, DO4PI_
 
     implicit none
     private
