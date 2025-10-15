@@ -63,8 +63,8 @@ program shdom
                         shd_rad__makeDirect, &
                         shd_rad__computeNetFluxDiv
 
-    use shd_inp,  only: shd_io__nmlInput,    shd_io__userInput, shd_io__checkInput, &
-                        shd_io__readPrpSize, shd_io__readPrp,   shd_io__checkPrp, &
+    use shd_inp,  only: shd_io__nmlInp,      shd_io__userInp, shd_io__checkInp, &
+                        shd_io__readPrpSize, shd_io__readPrp, shd_io__checkPrp, &
                         shd_io__readSfcSize, shd_io__readSfc, &
                         shd_io__readCkdSize, shd_io__readCkd, &
                         shd_io__readSenSize, shd_io__readSen, &
@@ -76,7 +76,7 @@ program shdom
                         shd_io__saveState
 
     use shd_mpi,  only: shd_mpi__start, shd_mpi__map, shd_mpi__end, &
-                        shd_mpi__bcastInput, &
+                        shd_mpi__bcastInp, &
                         shd_mpi__bcastMem, &
                         shd_mpi__bcastPrpSize, shd_mpi__bcastPrp, &
                         shd_mpi__bcastSfcSize, shd_mpi__bcastSfc, &
@@ -85,11 +85,11 @@ program shdom
                         shd_mpi__computeRad, &
                         shd_mpi__computeCamRad, &
                         shd_mpi__makeDirect, &
-                        shd_mpi__gatherOutput
+                        shd_mpi__gatherOut
 
     use shd_util, only: shd_util__sumData, &
                         shd_util__interpData, &
-                        shd_util__ticktock
+                        shd_util__tickTock
 
     implicit none
 
@@ -193,7 +193,7 @@ program shdom
     !   and the results are then broadcast to the child processors.
     if (MASTERPROC) then
         if (NMLMODE) then
-            call shd_io__nmlInput(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
+            call shd_io__nmlInp(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
                 INSAVEFILE, OUTSAVEFILE, SENFILE,&
                 NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
                 IPFLAG, KDIST, DELTAM, GRIDTYPE,&
@@ -204,7 +204,7 @@ program shdom
                 OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
                 NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, VERBOSE_)
         else
-            call shd_io__userInput(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
+            call shd_io__userInp(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
                 INSAVEFILE, OUTSAVEFILE, SENFILE,&
                 NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
                 IPFLAG, KDIST, DELTAM, GRIDTYPE,&
@@ -217,7 +217,7 @@ program shdom
         end if
     end if
 
-    call shd_mpi__bcastInput(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
+    call shd_mpi__bcastInp(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
         &INSAVEFILE, OUTSAVEFILE, SENFILE,&
         &NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
         &IPFLAG, KDIST, DELTAM, GRIDTYPE,&
@@ -498,7 +498,7 @@ program shdom
 
     if (MASTERPROC) then
         ! Check input parameters
-        call shd_io__checkInput(NMU, NPHI, DELTAM, MAXASYM,&
+        call shd_io__checkInp(NMU, NPHI, DELTAM, MAXASYM,&
             &GRIDTYPE, SRCTYPE, UNITS, SOLARFLUX0, SOLARMU,&
             &WAVENO, WAVELEN, GNDTEMP, GNDALBEDO,&
             &SPLITACC, SHACC)
@@ -903,7 +903,7 @@ program shdom
 
 
     MESSAGE = 'Message [shdom]: Total time used for preparation: '
-    call shd_util__ticktock(MESSAGE, COUNT_START)
+    call shd_util__tickTock(MESSAGE, COUNT_START)
     if (MASTERPROC) then
         if (VERBOSE_ .ge. 5) write (6, '(A)') trim(adjustl(MESSAGE))
     end if
@@ -1181,7 +1181,7 @@ program shdom
 
 
     MESSAGE = 'Message [shdom]: Total time used for runs: '
-    call shd_util__ticktock(MESSAGE, COUNT_START)
+    call shd_util__tickTock(MESSAGE, COUNT_START)
     if (MASTERPROC) then
         if (VERBOSE_ .ge. 5) write (6, '(A)') trim(adjustl(MESSAGE))
     end if
@@ -1201,7 +1201,7 @@ program shdom
             allocate (XALLGRID(NXT), YALLGRID(NYT))
         end if
 
-        call shd_mpi__gatherOutput(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
+        call shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
             &IPFLAG, BCFLAG, NBPTS, NXT, NYT, NZ, NSHOUT,&
             &SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV, SUMSHTERMS,&
             &XDOMAIN_, YDOMAIN_, XALLGRID, YALLGRID,&
@@ -1329,7 +1329,7 @@ program shdom
 
 
     MESSAGE = 'Message [shdom]: Total time used for output: '
-    call shd_util__ticktock(MESSAGE, COUNT_START)
+    call shd_util__tickTock(MESSAGE, COUNT_START)
     if (MASTERPROC) then
         if (VERBOSE_ .ge. 5) write (6, '(A)') trim(adjustl(MESSAGE))
     end if

@@ -53,9 +53,9 @@ module shd_inp
     integer, parameter :: R__  = selected_real_kind(6) ! default precision for float
     integer, parameter :: I__  = selected_int_kind(9)  ! default precision for integer
 
-    public :: shd_io__userInput
-    public :: shd_io__nmlInput
-    public :: shd_io__checkInput
+    public :: shd_io__userInp
+    public :: shd_io__nmlInp
+    public :: shd_io__checkInp
 
     public :: shd_io__readPrpSize
     public :: shd_io__readPrp
@@ -74,7 +74,7 @@ module shd_inp
 
 contains
 
-subroutine shd_io__userInput(&
+subroutine shd_io__userInp(&
     &RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
     &INSAVEFILE, OUTSAVEFILE, SENFILE,&
     &NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
@@ -245,7 +245,7 @@ subroutine shd_io__userInput(&
     write (*, '(1X,A)') 'Number of output files'
     read (*, *) NUMOUT
     write (*, *) NUMOUT
-    if (NUMOUT .gt. MAXOUT) stop 'Error [_userInput]: MAXOUT exceeded.'
+    if (NUMOUT .gt. MAXOUT) stop 'Error [_userInp]: MAXOUT exceeded.'
     do I = 1, NUMOUT
         write (*, '(1X,A,A)') 'Output type (R-radiance, ',&
             &'V-visualization, F-flux, H-heating,'
@@ -260,7 +260,7 @@ subroutine shd_io__userInput(&
                 &OUTPARMS(4, I), OUTPARMS(5, I),&
                 &N, (OUTPARMS(J + 6, I), J=1, min(2*N, MAXPAR - 6))
             if (N .gt. (MAXPAR - 6)/2) then
-                print *, 'Error [_userInput]: Number of radiance angles is too large for MAXPAR'
+                print *, 'Error [_userInp]: Number of radiance angles is too large for MAXPAR'
                 stop
             end if
             N = min(N, (MAXPAR - 6)/2)
@@ -309,7 +309,7 @@ subroutine shd_io__userInput(&
     read (*, '(A)') OutFileNC
     write (*, '(A)') OutFileNC
     if (OutFileNC(1:4) .ne. 'NONE') then
-        if (VERBOSE_ .ge. 4) write(*, '(A)') 'Warning [_userInput]: Removed support for netCDF, set <OUTFILENC="NONE">.'
+        if (VERBOSE_ .ge. 4) write(*, '(A)') 'Warning [_userInp]: Removed support for netCDF, set <OUTFILENC="NONE">.'
         OutFileNC = 'NONE'
     end if
 
@@ -332,9 +332,9 @@ subroutine shd_io__userInput(&
 
     write (*, *)
     return
-end subroutine shd_io__userInput
+end subroutine shd_io__userInp
 
-subroutine shd_io__nmlInput(&
+subroutine shd_io__nmlInp(&
     &dRUNNAME, dPROPFILE, dSFCFILE, dCKDFILE,&
     &dINSAVEFILE, dOUTSAVEFILE, dSENFILE,&
     &dNSTOKES, dNX, dNY, dNZ, dNMU, dNPHI,&
@@ -405,8 +405,8 @@ subroutine shd_io__nmlInput(&
 
     character(len=FNAMEMAXLEN_) :: NMLFILE
 
-    if (dMAXOUT .ne. MAXOUT) stop 'Error [_nmlInput]: MAXOUT not the same.'
-    if (dMAXPAR .ne. MAXPAR) stop 'Error [_nmlInput]: MAXPAR not the same.'
+    if (dMAXOUT .ne. MAXOUT) stop 'Error [_nmlInp]: MAXOUT not the same.'
+    if (dMAXPAR .ne. MAXPAR) stop 'Error [_nmlInp]: MAXPAR not the same.'
 
     SOLARMU = -1.0
     GNDALBEDO = 0.0
@@ -418,7 +418,7 @@ subroutine shd_io__nmlInput(&
 
     ! Read in the namelist
     call get_command_argument(1, NMLFILE)
-    if (VERBOSE_ .ge. 6) write (*, '(A,"<",A,">")') 'Message [_nmlInput]: ', trim(adjustl(NMLFILE))
+    if (VERBOSE_ .ge. 6) write (*, '(A,"<",A,">")') 'Message [_nmlInp]: ', trim(adjustl(NMLFILE))
     open (UNIT=5, FILE=trim(adjustl(NMLFILE)), STATUS='OLD')
     read (5, NML=SHDOMINPUT)
     close (5)
@@ -477,7 +477,7 @@ subroutine shd_io__nmlInput(&
     dMAXITER = MAXITER
 
     dNUMOUT = NUMOUT
-    if (NUMOUT .gt. MAXOUT) stop 'Error [_nmlInput]: MAXOUT exceeded.'
+    if (NUMOUT .gt. MAXOUT) stop 'Error [_nmlInp]: MAXOUT exceeded.'
     do I = 1, NUMOUT
         dOUTTYPES(I) = OUTTYPES(I)
         if (OUTTYPES(I) (1:1) .eq. 'R') then
@@ -527,7 +527,7 @@ subroutine shd_io__nmlInput(&
     dOutFileNC = OutFileNC
 
     if (dOutFileNC(1:4) .ne. 'NONE') then
-        if (VERBOSE_ .ge. 4) write(*, '(A)') 'Warning [_nmlInput]: Removed support for netCDF, set <OUTFILENC="NONE">.'
+        if (VERBOSE_ .ge. 4) write(*, '(A)') 'Warning [_nmlInp]: Removed support for netCDF, set <OUTFILENC="NONE">.'
         dOutFileNC = 'NONE'
     end if
 
@@ -538,9 +538,9 @@ subroutine shd_io__nmlInput(&
     dVERBOSE = VERBOSE
 
     return
-end subroutine shd_io__nmlInput
+end subroutine shd_io__nmlInp
 
-subroutine shd_io__checkInput(&
+subroutine shd_io__checkInp(&
     &NMU, NPHI, DELTAM, MAXASYM,&
     &GRIDTYPE, SRCTYPE, UNITS, SOLARFLUX, SOLARMU,&
     &WAVENO, WAVELEN, GNDTEMP, GNDALBEDO,&
@@ -564,19 +564,19 @@ subroutine shd_io__checkInput(&
     real FLUX
 
     if (SRCTYPE .ne. 'S' .and. SRCTYPE .ne. 'T' .and. SRCTYPE .ne. 'B')&
-        &stop 'Error [_checkInput]: Illegal source type.'
+        &stop 'Error [_checkInp]: Illegal source type.'
     if (UNITS .ne. 'R' .and. UNITS .ne. 'T' .and. UNITS .ne. 'B')&
-        &stop 'Error [_checkInput]: Illegal units.'
+        &stop 'Error [_checkInp]: Illegal units.'
     if (GRIDTYPE .ne. 'E' .and. GRIDTYPE .ne. 'P' .and. GRIDTYPE .ne. 'F')&
-        &stop 'Error [_checkInput]: Illegal grid type.'
+        &stop 'Error [_checkInp]: Illegal grid type.'
 
     if (SRCTYPE .ne. 'T' .and. SOLARMU .eq. 0.0) then
-        stop 'Error [_checkInput]: Cosine solar zenith angle&
+        stop 'Error [_checkInp]: Cosine solar zenith angle&
             & (SOLARMU) cannot be 0.'
     end if
 
     if (.not. DELTAM .and. SRCTYPE .ne. 'T' .and. MAXASYM .gt. 0.5) then
-        if (VERBOSE_ .ge. 4) write (*, '(A)') 'Warning [_checkInput]: Delta-M should be used&
+        if (VERBOSE_ .ge. 4) write (*, '(A)') 'Warning [_checkInp]: Delta-M should be used&
             & (DELTAM=.TRUE.) for solar radiative transfer&
             & with highly peaked phase functions.'
     end if
@@ -593,29 +593,29 @@ subroutine shd_io__checkInput(&
     end if
     if (SPLITACC .gt. 0.0 .and.&
         &(SPLITACC .lt. 0.001*FLUX .or. SPLITACC .gt. 0.1*FLUX)) then
-        if (VERBOSE_ .ge. 4) write (*, '(A)') 'Warning [_checkInput]: Splitting accuracy parameter&
+        if (VERBOSE_ .ge. 4) write (*, '(A)') 'Warning [_checkInp]: Splitting accuracy parameter&
             & is not a fraction, but scales with fluxes.'
     end if
     if (SHACC .gt. 0.0 .and. SHACC .gt. 0.03*FLUX) then
-        if (VERBOSE_ .ge. 4) write (*, '(A)') 'Warning [_checkInput]: Spherical harmonic accuracy&
+        if (VERBOSE_ .ge. 4) write (*, '(A)') 'Warning [_checkInp]: Spherical harmonic accuracy&
             & (SHACC) is not a fraction, but scales with fluxes.'
     end if
 
     if (SRCTYPE .ne. 'S' .and.&
         &(GNDTEMP .lt. 150. .or. GNDTEMP .gt. 350.)) then
-        if (VERBOSE_ .ge. 4) write (*, '(A)') 'Warning [_checkInput]:&
+        if (VERBOSE_ .ge. 4) write (*, '(A)') 'Warning [_checkInp]:&
             & ground temperature out of Earth range.'
     end if
     if (GNDALBEDO .lt. 0.0 .or. GNDALBEDO .gt. 1.0) then
-        stop 'Error [_checkInput]: Ground albedo must be 0 to 1.'
+        stop 'Error [_checkInp]: Ground albedo must be 0 to 1.'
     end if
 
     if (NPHI .lt. NMU) then
-      if (VERBOSE_ .ge. 4) write (*, '(A)') 'Warning [_checkInput]: Usually want NPHI >= NMU.'
+      if (VERBOSE_ .ge. 4) write (*, '(A)') 'Warning [_checkInp]: Usually want NPHI >= NMU.'
     end if
 
     return
-end subroutine shd_io__checkInput
+end subroutine shd_io__checkInp
 
 subroutine shd_io__readPrpSize(PROPFILE, NSTLEG,&
     &NLEG, NPX, NPY, NPZ, DELX, DELY,&

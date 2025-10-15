@@ -69,7 +69,7 @@ module shd_util
     public :: shd_util__ssort_i
     public :: shd_util__ssort_r
 
-    public :: shd_util__ticktock
+    public :: shd_util__tickTock
 
     private :: integralLow
     private :: integralHigh
@@ -1369,7 +1369,7 @@ subroutine shd_util__ssort_r(X, Y, N, KFLAG)
 
 end subroutine shd_util__ssort_r
 
-subroutine shd_util__ticktock(message, count_start, more_digits)
+subroutine shd_util__tickTock(message, count_start, more_digits)
 
     character(len=*), intent(inout) :: message
     integer(I__), intent(inout) :: count_start
@@ -1406,7 +1406,7 @@ subroutine shd_util__ticktock(message, count_start, more_digits)
 
     return
 
-end subroutine shd_util__ticktock
+end subroutine shd_util__tickTock
 
 FUNCTION change_range(angle, min_value, max_value) RESULT(output_angle)
     !╭──────────────────────────────────────────────────────────────╮!

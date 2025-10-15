@@ -155,11 +155,11 @@ is very good because ``V`` is very small.
 INPUT PARAMETERS
 ----------------
 
-The parameters are input in the routine ``shd_io__userInput`` or
-``shd_io__nmlInput``. ``shd_io__userInput`` uses ``READ`` statements from stdin in response
+The parameters are input in the routine ``shd_io__userInp`` or
+``shd_io__nmlInp``. ``shd_io__userInp`` uses ``READ`` statements from stdin in response
 to written messages. Because not all parameters are relevant at once,
 the complete list is not input. Run shdom interactively for the actual
-sequence. The ``shd_io__userInput`` routine echos the input values so that a
+sequence. The ``shd_io__userInp`` routine echos the input values so that a
 useful "log" file output is produced when run non-interactively. To use
 the namelist style input, change ``nmlMode = .True.`` in the
 main routine. On some computers the NAMELIST input requires a space
@@ -977,7 +977,7 @@ set most of the parameters controlling the array sizes.
 
 While a few algorithm and coding bugs may be left in the code, the
 most common source of errors is incorrect input. Be sure to check the
-input parameters against the documentation and the ``shd_io__userInput`` routine.
+input parameters against the documentation and the ``shd_io__userInp`` routine.
 The correctness of the input property file format can be found by using
 the 'M' - medium property output option. There are routines that
 check the input parameters and property file for validity and issue
@@ -1335,7 +1335,7 @@ most of these would only be changed to experiment with the operation of
 the SHDOM algorithm.
 
 Namelist input: main program (``shdom.f90``); ``nmlMode = .True.`` (by default)
-calls ``shd_io__nmlInput`` and ``nmlMode = .True.`` calls ``shd_io__userInput``.
+calls ``shd_io__nmlInp`` and ``nmlMode = .True.`` calls ``shd_io__userInp``.
 
 Adding surface reflection types: in ``shdSfc.f90`` write a BRDF Fortran
 function modeled on ``shd_sfc__brdfRPV`` and add a call in ``shd_sfc__brdfSurface`` to the
@@ -1396,7 +1396,7 @@ ARRAY SIZES AND MEMORY MANAGEMENT
 The main program (``shdom.f90``) determines the sizes of most arrays and
 allocates memory for them. Thus the user does not usually have to
 recompile the program for different problems. As there is no way to
-determine the OUTPARM array size before calling ``shd_io__userInput``, the MAXOUT
+determine the OUTPARM array size before calling ``shd_io__userInp``, the MAXOUT
 and MAXPAR constants are still defined. Since the adaptive grid grows
 during the solution procedure, the maximum size of many arrays can only
 be guessed at. The approach taken is to define the maximum adaptive
@@ -2010,11 +2010,11 @@ routines from NCAR.
 
    Solv x shd_solv__accelSol     : Accelerates the solution sequence
 
-   Inp    shd_io__userInput      : Gets the input parameters from stdin
+   Inp    shd_io__userInp        : Gets the input parameters from stdin
 
-   Inp    shd_io__nmlInput       : Gets the input parameters from a namelist
+   Inp    shd_io__nmlInp         : Gets the input parameters from a namelist
 
-   Inp    shd_io__checkInput     : Checks input parameters for validity/reasonableness
+   Inp    shd_io__checkInp       : Checks input parameters for validity/reasonableness
 
    Inp    shd_io__readPrpSize    : Gets the size of the property file
 
@@ -2050,23 +2050,23 @@ routines from NCAR.
 
    MPI    shd_mpi__map              : Sets the mapping of processors for the SHDOM domain
 
-   MPI    shd_mpi__bcastInput       : Broadcasts the user input parameters from the master processor
+   MPI    shd_mpi__bcastInp         : Broadcasts the user input parameters from the master processor
 
    MPI    shd_mpi__bcastPrpSize     : Broadcasts the property file size information
 
-   MPI    shd_mpi__scatPrp          : Sends the subdomain of optical properties to each processor
+   MPI    shd_mpi__bcastPrp         : Sends the subdomain of optical properties to each processor
 
-   MPI    shd_mpi__readBcastMemParam: Reads and broadcasts the *_mem_params.inp file
+   MPI    shd_mpi__bcastMem         : Reads and broadcasts the *_mem_params.inp file
 
    MPI    shd_mpi__bcastSfcSize     : Broadcasts the surface array sizes from the master processor
 
-   MPI    shd_mpi__bcastSfcParam    : Broadcasts the surface file parameters from the master processor
+   MPI    shd_mpi__bcastSfc         : Broadcasts the surface file parameters from the master processor
 
-   MPI    shd_mpi__bcastCkdSize   : Broadcasts the k-distribution array sizes from the master processor
+   MPI    shd_mpi__bcastCkdSize     : Broadcasts the k-distribution array sizes from the master processor
 
-   MPI    shd_mpi__bcastCkdParam  : Broadcasts the k-distribution file parameters from the master processor
+   MPI    shd_mpi__bcastCkd         : Broadcasts the k-distribution file parameters from the master processor
 
-   MPI    shd_mpi__gatherOutput     : Gathers the base grid output data from all the processors
+   MPI    shd_mpi__gatherOut        : Gathers the base grid output data from all the processors
 
    MPI    shd_mpi__end              : Shuts down MPI, writes load balancing file
 

@@ -76,7 +76,7 @@ module shd_mpi
 
     public :: shd_mpi__start
     public :: shd_mpi__map
-    public :: shd_mpi__bcastInput
+    public :: shd_mpi__bcastInp
     public :: shd_mpi__bcastMem
     public :: shd_mpi__bcastPrpSize
     public :: shd_mpi__bcastPrp
@@ -86,7 +86,7 @@ module shd_mpi
     public :: shd_mpi__bcastCkd
     public :: shd_mpi__bcastSenSize
     public :: shd_mpi__bcastSen
-    public :: shd_mpi__gatherOutput
+    public :: shd_mpi__gatherOut
     public :: shd_mpi__end
     public :: shd_mpi__abort
     public :: shd_mpi__sumCpuTime
@@ -320,7 +320,7 @@ subroutine shd_mpi__map(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
 
 end subroutine shd_mpi__map
 
-subroutine shd_mpi__bcastInput(&
+subroutine shd_mpi__bcastInp(&
     &RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
     &INSAVEFILE, OUTSAVEFILE, SENFILE,&
     &NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
@@ -398,7 +398,7 @@ subroutine shd_mpi__bcastInput(&
 
     return
 
-end subroutine shd_mpi__bcastInput
+end subroutine shd_mpi__bcastInp
 
 subroutine shd_mpi__bcastPrpSize(NPX, NPY, NPZ, DELX, DELY,&
     &NUMPHASE, MAXLEG, MAXPGL)
@@ -775,7 +775,7 @@ real function shd_mpi__sumCpuTime(cpuTimes)
 
 end function shd_mpi__sumCpuTime
 
-subroutine shd_mpi__gatherOutput(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
+subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
     &IPFLAG, BCFLAG, NBPTS, NXT, NYT, NZ, NSHOUT,&
     &SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV, SUMSHTERMS,&
     &XDOMAIN, YDOMAIN, XALLGRID, YALLGRID,&
@@ -961,7 +961,7 @@ subroutine shd_mpi__gatherOutput(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
 
     return
 
-end subroutine shd_mpi__gatherOutput
+end subroutine shd_mpi__gatherOut
 
 subroutine shd_mpi__findAlbMax(ALBMAX)
 
