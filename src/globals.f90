@@ -131,7 +131,7 @@ module globals_cfg
     real(kind=4), save :: TOTSYSMEM_MB_ = 16000.0
     real(kind=4), save :: MAXCPUMEM_MB_
 
-    integer(kind=1), save :: VERBOSE_ = 7
+    integer(kind=1), save :: VERBOSE_ = 5
     !Severity    Level  Description
     !Emergency     0      System unusable
     !Alert         1      Action must be taken immediately

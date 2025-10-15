@@ -787,13 +787,15 @@ subroutine shd_intg__backIntegrate3D_(&
     integer(kind=I__), intent(in) :: SWEEPORD(NPTS, *)
     integer(kind=2)  , intent(in) :: CELLFLAGS(NCELLS)
     real(kind=R__)   , intent(in) :: GRIDPOS(3, NPTS), XGRID(*), YGRID(*), ZGRID(NZ)
-    real MU, PHI, TRANSMIN
-    real EXTINCT(NPTS), SOURCE(NA, NPTS), GRIDRAD(NPTS)
-    integer BITX, BITY, BITZ, IOCT, JOCT
-    integer IPCELL, ICELL, INEXTCELL, IPT, IFACE
-    integer I1, I2, I3, I4, IOPP, JFACE, KFACE, IC, IZ
-    integer GRIDFACE(4, 6), OPPFACE(6)
-    integer IORDER, ICORNER, JOCTORDER2(8), JOCTORDER3(8)
+    real(kind=R__)   , intent(in) :: MU, PHI, TRANSMIN
+    real(kind=R__)   , intent(in) :: EXTINCT(NPTS), SOURCE(NA, NPTS)
+
+    real   (kind=R__), intent(inout) :: GRIDRAD(NPTS)
+
+    integer(kind=I__) :: BITX, BITY, BITZ, IOCT, JOCT
+    integer(kind=I__) :: IPCELL, ICELL, INEXTCELL, IPT, IFACE
+    integer(kind=I__) :: I1, I2, I3, I4, IOPP, JFACE, KFACE, IC, IZ
+    integer(kind=I__) :: IORDER, ICORNER
     logical :: VALIDRAD, VALIDFACE, IPINX, IPINY
 
     real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV
@@ -803,38 +805,44 @@ subroutine shd_intg__backIntegrate3D_(&
     real(RD_) :: EXT, EXT0, EXT1, SRC, SRCEXT0, SRCEXT1
     real(RD_) :: EXT0P, SRCEXT0P
     real(RD_) :: TAU, TRANSCELL, ABSCELL, RAD, RAD0, TRANSMIT
+
+    integer(kind=I__) :: GRIDFACE(4, 6), OPPFACE(6), JOCTORDER_1D(8), JOCTORDER_3D(8)
     data GRIDFACE /&
-      &1, 3, 5, 7,&
-      &2, 4, 6, 8,&
-      &1, 2, 5, 6,&
-      &3, 4, 7, 8,&
-      &1, 2, 3, 4,&
-      &5, 6, 7, 8/
+        &1, 3, 5, 7,&
+        &2, 4, 6, 8,&
+        &1, 2, 5, 6,&
+        &3, 4, 7, 8,&
+        &1, 2, 3, 4,&
+        &5, 6, 7, 8/
     data OPPFACE /2, 1, 4, 3, 6, 5/
-    data JOCTORDER2 /1, 3, 1, 3, 2, 4, 2, 4/
-    data JOCTORDER3 /1, 3, 5, 7, 2, 4, 6, 8/
+    data JOCTORDER_1D /1, 3, 1, 3, 2, 4, 2, 4/
+    data JOCTORDER_3D /1, 3, 5, 7, 2, 4, 6, 8/
 
     integer :: iwhile, ibreak
 
     EPS = 1.0e-3*(GRIDPOS(3, GRIDPTR(8, 1)) - GRIDPOS(3, GRIDPTR(1, 1)))
 
     ! Make the ray direction (opposite to the discrete ordinate direction)
-    CX = sqrt(1.0 - MU**2)*cos(PHI + DPI_)
-    CY = sqrt(1.0 - MU**2)*sin(PHI + DPI_)
-    CZ = -MU
+    CX = dsqrt(dble(1.0d0 - MU**2))*dcos(dble(PHI + DPI_))
+    CY = dsqrt(dble(1.0d0 - MU**2))*dsin(dble(PHI + DPI_))
+    CZ = dble(-MU)
 
-    if (abs(CX) .gt. 1.0e-5) then
+    if (abs(CX) .gt. 1.0e-7) then
         CXINV = 1.0d0/CX
     else
+        if (VERBOSE_ .ge. 7) write (6, *) &
+            'Message [_backIntegrate3D_]: CX too small, reset CX to 0, CXINV to 1e8.'
         CX = 0.0
-        CXINV = 1.0e6
+        CXINV = 1.0e8
     end if
 
-    if (abs(CY) .gt. 1.0e-5) then
+    if (abs(CY) .gt. 1.0e-7) then
         CYINV = 1.0d0/CY
     else
+        if (VERBOSE_ .ge. 7) write (6, *) &
+            'Message [_backIntegrate3D_]: CY too small, reset CY to 0, CYINV to 1e8.'
         CY = 0.0
-        CYINV = 1.0e6
+        CYINV = 1.0e8
     end if
 
     CZINV = 1.0d0/CZ
@@ -864,9 +872,9 @@ subroutine shd_intg__backIntegrate3D_(&
     ! IOCT is the octant the ray come from or the discrete ordinate goes to.
     IOCT = 1 + BITX + 2*BITY + 4*BITZ
     if (btest(IPFLAG, 1)) then
-        JOCT = JOCTORDER2(IOCT)
+        JOCT = JOCTORDER_1D(IOCT)
     else
-        JOCT = JOCTORDER3(IOCT)
+        JOCT = JOCTORDER_3D(IOCT)
     end if
 
     IZ = (NZ - 1)*(1 - BITZ) + 1
