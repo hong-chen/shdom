@@ -319,7 +319,7 @@ subroutine shd_grid__makeNewGridPnt(IDIR, ICELL, NEWCELL, NPTS,&
 
     ! Loop over the four edges with potentially new points
     do I = 1, 4
-        ! Get the grid corners and coordinates for this edge and split dir
+        ! Get the grid corners and coordinates for this edge and split direction
         I1 = GRIDCORNER(1, I, IDIR)
         I2 = GRIDCORNER(2, I, IDIR)
         IP1 = GRIDPTR(I1, ICELL)
