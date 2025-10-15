@@ -42,10 +42,10 @@
 
 module shd_sfc
 
-    use globals_const
-    use globals_cfg
-    use globals_prp
-    use shd_util
+    use globals_const, only: PI_
+    use globals_prp,   only: NPX_, NPY_, DELX_, DELY_
+
+    use shd_util, only: shd_util__computePlanck
 
     implicit none
     private

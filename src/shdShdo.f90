@@ -40,7 +40,6 @@
 module shd_shdo
 
     use globals_const, only: RD_, PI_, DPI_, OPI_, FRAC12_
-    use globals_cfg,   only: VERBOSE_
 
     use shd_util, only: shd_util__computeGausQuad, &
                         shd_util__computeGausQuadDble
