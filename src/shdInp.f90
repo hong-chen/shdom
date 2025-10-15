@@ -42,9 +42,10 @@
 
 module shd_inp
 
-    use globals_const
-    use globals_cfg
-    use shd_util
+    use globals_const, only: PI_
+    use globals_cfg,   only: VERBOSE_, FNAMEMAXLEN_
+
+    use shd_util, only: shd_util__computePlanck
 
     implicit none
     private
