@@ -39,17 +39,36 @@
 
 module shd_mpi
 
-    use globals_const
-    use globals_cfg
+    use globals_const, only: RD_, PI_, DPI_, PIH_, FRAC13_, FRAC112_
+    use globals_cfg,   only: VERBOSE_, FNAMEMAXLEN_, RACC_
 
 #if HAS_MPI
-    use mpi_f08
-    use shd_init
-    use shd_util
-    use shd_src
-    use shd_rad
-    use shd_scat
-    use shd_shdo
+    use mpi_f08,  only: MPI_COMM_WORLD, MPI_COMM, MPI_REQUEST, &
+                        MPI_STATUS, MPI_SUCCESS, MPI_ERRORS_RETURN, &
+                        MPI_INTEGER, MPI_REAL, MPI_LOGICAL, MPI_CHARACTER, &
+                        MPI_INTEGER2, MPI_DOUBLE_PRECISION, &
+                        MPI_MAX, MPI_SUM, MPI_LOR, MPI_LAND, &
+                        mpi_isend, mpi_irecv, mpi_reduce, mpi_allreduce, &
+                        mpi_bcast, mpi_wtime, &
+                        mpi_comm_set_errhandler
+
+    use shd_init, only: shd_init__makeTopRad, &
+                        shd_init__makeSfcRadFL, &
+                        shd_init__makeSfcRadVL, &
+                        shd_init__makeSfcRadV
+
+    use shd_util, only: shd_util__ssort, &
+                        shd_util__findNextCell
+
+    use shd_src,  only: shd_src__computeSrcOneDir, &
+                        shd_src__integrateSrc, &
+                        shd_src__integrateSrcOneRay
+
+    use shd_rad,  only: shd_rad__computeDirect
+
+    use shd_scat, only: shd_scat__computePhase
+
+    use shd_shdo, only: shd_shdo__computeYLM
 #endif
 
     implicit none
@@ -121,8 +140,7 @@ subroutine shd_mpi__start(MASTERPROC, NUMPROC)
     call mpi_comm_size(MPI_COMM_WORLD, NUMPROC_, ierr)
     call mpi_comm_rank(MPI_COMM_WORLD, MYPROC_, ierr)
 
-    call mpi_errhandler_set(MPI_COMM_WORLD, MPI_ERRORS_RETURN, ierr)
-    !call mpi_errhandler_set (MPI_COMM_WORLD, MPI_ERRORS_ARE_FATAL, ierr)
+    call mpi_comm_set_errhandler(MPI_COMM_WORLD, MPI_ERRORS_RETURN)
 
     STARTTIME_ = mpi_wtime()
 
