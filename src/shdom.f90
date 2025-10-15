@@ -49,47 +49,47 @@ program shdom
                             &LEGENP_, IPHASEP_,&
                             &NZCKD_, ZCKD_, GASABS_
 
-    use shd_init,      only: shd_init__makeGrid,&
-                            &shd_init__makeCell
+    use shd_init, only: shd_init__makeGrid,&
+                       &shd_init__makeCell
 
-    use shd_src,       only: shd_src__computeSrcOneDir
+    use shd_src,  only: shd_src__computeSrcOneDir
 
-    use shd_shdo,      only: shd_shdo__computeSH
+    use shd_shdo, only: shd_shdo__computeSH
 
-    use shd_solv,      only: shd_solv__solveRte
+    use shd_solv, only: shd_solv__solveRte
 
-    use shd_rad,       only: shd_rad__computeRad,&
-                            &shd_rad__computeCamRad,&
-                            &shd_rad__makeDirect,&
-                            &shd_rad__computeNetFluxDiv
+    use shd_rad,  only: shd_rad__computeRad,&
+                       &shd_rad__computeCamRad,&
+                       &shd_rad__makeDirect,&
+                       &shd_rad__computeNetFluxDiv
 
-    use shd_inp,       only: shd_io__nmlInput,    shd_io__userInput, shd_io__checkInput,&
-                            &shd_io__readPrpSize, shd_io__readPrp,   shd_io__checkPrp,&
-                            &shd_io__readSfcSize, shd_io__readSfc,&
-                            &shd_io__readCkdSize, shd_io__readCkd,&
-                            &shd_io__readSenSize, shd_io__readSen,&
-                            &shd_io__restoreState
+    use shd_inp,  only: shd_io__nmlInput,    shd_io__userInput, shd_io__checkInput,&
+                       &shd_io__readPrpSize, shd_io__readPrp,   shd_io__checkPrp,&
+                       &shd_io__readSfcSize, shd_io__readSfc,&
+                       &shd_io__readCkdSize, shd_io__readCkd,&
+                       &shd_io__readSenSize, shd_io__readSen,&
+                       &shd_io__restoreState
 
-    use shd_out,       only: shd_io__outputResult,&
-                            &shd_io__outputResultMpi,&
-                            &shd_io__outputCamRad,&
-                            &shd_io__saveState
+    use shd_out,  only: shd_io__outputResult,&
+                       &shd_io__outputResultMpi,&
+                       &shd_io__outputCamRad,&
+                       &shd_io__saveState
 
-    use shd_mpi,       only: shd_mpi__start, shd_mpi__map, shd_mpi__end,&
-                            &shd_mpi__bcastInput,&
-                            &shd_mpi__bcastMemParam,&
-                            &shd_mpi__bcastPrpSize, shd_mpi__bcastPrpParam,&
-                            &shd_mpi__bcastSfcSize, shd_mpi__bcastSfcParam,&
-                            &shd_mpi__bcastCkdSize, shd_mpi__bcastCkdParam,&
-                            &shd_mpi__bcastSenSize, shd_mpi__bcastSenParam,&
-                            &shd_mpi__computeRad,&
-                            &shd_mpi__computeCamRad,&
-                            &shd_mpi__makeDirect,&
-                            &shd_mpi__gatherOutput
+    use shd_mpi,  only: shd_mpi__start, shd_mpi__map, shd_mpi__end,&
+                       &shd_mpi__bcastInput,&
+                       &shd_mpi__bcastMemParam,&
+                       &shd_mpi__bcastPrpSize, shd_mpi__bcastPrpParam,&
+                       &shd_mpi__bcastSfcSize, shd_mpi__bcastSfcParam,&
+                       &shd_mpi__bcastCkdSize, shd_mpi__bcastCkdParam,&
+                       &shd_mpi__bcastSenSize, shd_mpi__bcastSenParam,&
+                       &shd_mpi__computeRad,&
+                       &shd_mpi__computeCamRad,&
+                       &shd_mpi__makeDirect,&
+                       &shd_mpi__gatherOutput
 
-    use shd_util,      only: shd_util__sumData,&
-                            &shd_util__interpData,&
-                            &shd_util__ticktock
+    use shd_util, only: shd_util__sumData,&
+                       &shd_util__interpData,&
+                       &shd_util__ticktock
 
     implicit none
 

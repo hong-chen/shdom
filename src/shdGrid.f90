@@ -42,16 +42,16 @@ module shd_grid
     use globals_const, only: RD_
     use globals_cfg,   only: VERBOSE_, RACC_
 
-    use shd_util,      only: shd_util__findNextCell,&
-                            &shd_util__computePlanck,&
-                            &shd_util__ssort
+    use shd_util, only: shd_util__findNextCell,&
+                       &shd_util__computePlanck,&
+                       &shd_util__ssort
 
-    use shd_rad,       only: shd_rad__computeDirect
+    use shd_rad,  only: shd_rad__computeDirect
 
-    use shd_src,       only: shd_src__computeSrcOnePnt_,&
-                            &shd_src__computeSrcOnePnt
+    use shd_src,  only: shd_src__computeSrcOnePnt_,&
+                       &shd_src__computeSrcOnePnt
 
-    use shd_mpi,       only: shd_mpi__makeDirect
+    use shd_mpi,  only: shd_mpi__makeDirect
 
     implicit none
     private
