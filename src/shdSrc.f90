@@ -39,12 +39,20 @@
 
 module shd_src
 
-    use globals_const
-    use globals_cfg
-    use shd_scat
-    use shd_shdo
-    use shd_util
-    use shd_init
+    use globals_const, only: RD_, DPI_, O4PI_, DO4PI_, &
+                             FRAC12_, FRAC13_, FRAC112_
+    use globals_cfg,   only: RACC_
+
+    use shd_scat, only: shd_scat__computeLegendre, &
+                        shd_scat__computeWigner
+
+    use shd_shdo, only: shd_shdo__computeYLM
+
+    use shd_util, only: shd_util__findCell, &
+                        shd_util__findNextCell, &
+                        shd_util__interpTriLin
+
+    use shd_init, only: shd_init__makeSfcRadV
 
     implicit none
     private
