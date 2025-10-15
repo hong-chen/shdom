@@ -42,8 +42,8 @@
 
 module shd_util
 
-    use globals_const
-    use globals_cfg
+    use globals_const, only: RD_, PI_, DPI_
+    use globals_cfg,   only: VERBOSE_
 
     implicit none
     private
