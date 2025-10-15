@@ -189,8 +189,7 @@ subroutine shd_intg__integratePath(&
     ! print *, 'Path integration:'
     ! Loop over the zenith angles (downwelling angles must be first)
     IANG = 1
-! -- loop mu
-    do IMU = 1, NMU
+    DO_MU_LOOP: do IMU = 1, NMU
 
         if (IMU .eq. NMU/2 + 1) then
             ! For the first upwelling angle, make the bottom boundary radiances
@@ -226,9 +225,8 @@ subroutine shd_intg__integratePath(&
             end do
         end do
 
-! -- loop phi
         ! Loop over the azimuthal angles
-        do IPHI = 1, NPHI0(IMU)
+        DO_PHI_LOOP: do IPHI = 1, NPHI0(IMU)
 
             if (MU(IMU) .lt. 0.0) then
 
@@ -341,7 +339,7 @@ subroutine shd_intg__integratePath(&
             end if
 
             IANG = IANG + 1
-        end do
+        end do DO_PHI_LOOP
 
         ! Transform the radiance to spherical harmonics for this zenith angle
         if (NSTOKES .eq. 1) then
@@ -356,7 +354,7 @@ subroutine shd_intg__integratePath(&
                 &RSHPTR, WORK, RADIANCE)
         end if
 
-    end do
+    end do DO_MU_LOOP
 
     OLDNPTS = NPTS
 

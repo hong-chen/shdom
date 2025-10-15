@@ -39,14 +39,22 @@
 
 module shd_shdo
 
-    use globals_const
-    use globals_cfg
-    use shd_util
-    use shd_scat
-    use shd_sfc
+    use globals_const, only: RD_, PI_, DPI_, OPI_, FRAC12_
+    use globals_cfg,   only: VERBOSE_
+
+    use shd_util, only: shd_util__computeGausQuad, &
+                        shd_util__computeGausQuadDble
+
+    use shd_scat, only: shd_scat__computeWignerDM0, &
+                        shd_scat__computeWignerDM0DM2PDM2M
+
+    use shd_sfc,  only: shd_sfc__brdfSurface
 
     implicit none
     private
+
+    integer, parameter :: R__  = selected_real_kind(6) ! default precision for float
+    integer, parameter :: I__  = selected_int_kind(9)  ! default precision for integer
 
     public :: shd_shdo__computeSH
 
@@ -696,7 +704,9 @@ subroutine shd_shdo__transDOtoSH_(NPTS, ML, MM, NLM,&
         IS = IS + NSH
     end do
     deallocate (MOFJ, SUMUV, SUMCS, TMP)
+
     return
+
 end subroutine shd_shdo__transDOtoSH_
 
 subroutine shd_shdo__makeAngle(&
@@ -715,13 +725,18 @@ subroutine shd_shdo__makeAngle(&
     ! maximum number of azimuthal angles (NPHI0MAX), the flags for doing
     ! an azimuthal FFT for each mu and the total number of angles.
 
-    integer NMU, NPHI, ITYPE, NPHI0MAX, NPHI0(NMU), NANG
-    logical FFTFLAG(NMU)
-    real MU(NMU), PHI(NMU, *), WTMU(NMU), WTDO(NMU, *)
-    integer MAXNPHI, J, K, MM
-    real DELPHI
-    parameter(MAXNPHI=256)
-    integer GOODNFFT(MAXNPHI)
+    integer(kind=I__), intent(in)    :: NMU, NPHI, ITYPE
+    integer(kind=I__), intent(inout) :: NPHI0MAX
+
+    integer(kind=I__), intent(out) :: NPHI0(NMU), NANG
+    real(kind=R__)   , intent(out) :: MU(NMU), PHI(NMU, *), WTMU(NMU), WTDO(NMU, *)
+    logical          , intent(out) :: FFTFLAG(NMU)
+
+    integer(kind=I__) :: J, K, MM
+    real(kind=R__)    :: DELPHI
+    integer(kind=I__), parameter :: MAXNPHI = 256
+
+    integer(kind=I__) :: GOODNFFT(MAXNPHI)
     data GOODNFFT/1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 16,&
         &18, 18, 20, 20, 24, 24, 24, 24, 25, 27, 27, 30, 30, 30, 32, 32,&
         &36, 36, 36, 36, 40, 40, 40, 40, 45, 45, 45, 45, 45, 48, 48, 48,&
