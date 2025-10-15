@@ -77,15 +77,15 @@ module shd_mpi
     public :: shd_mpi__start
     public :: shd_mpi__map
     public :: shd_mpi__bcastInput
-    public :: shd_mpi__bcastMemParam
+    public :: shd_mpi__bcastMem
     public :: shd_mpi__bcastPrpSize
-    public :: shd_mpi__bcastPrpParam
+    public :: shd_mpi__bcastPrp
     public :: shd_mpi__bcastSfcSize
-    public :: shd_mpi__bcastSfcParam
+    public :: shd_mpi__bcastSfc
     public :: shd_mpi__bcastCkdSize
-    public :: shd_mpi__bcastCkdParam
+    public :: shd_mpi__bcastCkd
     public :: shd_mpi__bcastSenSize
-    public :: shd_mpi__bcastSenParam
+    public :: shd_mpi__bcastSen
     public :: shd_mpi__gatherOutput
     public :: shd_mpi__end
     public :: shd_mpi__abort
@@ -429,7 +429,7 @@ subroutine shd_mpi__bcastPrpSize(NPX, NPY, NPZ, DELX, DELY,&
 
 end subroutine shd_mpi__bcastPrpSize
 
-subroutine shd_mpi__bcastPrpParam(NPXT, NPYT, NPX, NPY, NPZ,&
+subroutine shd_mpi__bcastPrp(NPXT, NPYT, NPX, NPY, NPZ,&
     &NSTLEG, NLEG, NUMPHASE,&
     &ZLEVELS, MAXASYM,&
     &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, IPHASEPT,&
@@ -543,7 +543,7 @@ subroutine shd_mpi__bcastPrpParam(NPXT, NPYT, NPX, NPY, NPZ,&
 
     return
 
-end subroutine shd_mpi__bcastPrpParam
+end subroutine shd_mpi__bcastPrp
 
 subroutine shd_mpi__bcastSfcSize(NXSFC, NYSFC, DELXSFC, DELYSFC, MAXSFCPTS, MAXSFCPARS)
 
@@ -571,7 +571,7 @@ subroutine shd_mpi__bcastSfcSize(NXSFC, NYSFC, DELXSFC, DELYSFC, MAXSFCPTS, MAXS
 
 end subroutine shd_mpi__bcastSfcSize
 
-subroutine shd_mpi__bcastSfcParam(SFCTYPE, NXSFC, NYSFC,&
+subroutine shd_mpi__bcastSfc(SFCTYPE, NXSFC, NYSFC,&
     &NSFCPAR, SFCPARMS, GNDTEMP, GNDALBEDO)
 
     ! Broadcasts the surface file parameters from the master process to the others.
@@ -601,7 +601,7 @@ subroutine shd_mpi__bcastSfcParam(SFCTYPE, NXSFC, NYSFC,&
 
     return
 
-end subroutine shd_mpi__bcastSfcParam
+end subroutine shd_mpi__bcastSfc
 
 subroutine shd_mpi__bcastCkdSize(NG, NZCKD)
 
@@ -623,7 +623,7 @@ subroutine shd_mpi__bcastCkdSize(NG, NZCKD)
 
 end subroutine shd_mpi__bcastCkdSize
 
-subroutine shd_mpi__bcastCkdParam(SOLFLUX, NG, DELG, NZCKD, ZCKD, KABS)
+subroutine shd_mpi__bcastCkd(SOLFLUX, NG, DELG, NZCKD, ZCKD, KABS)
 
     ! Broadcasts the k-distribution file parameters from the master process
     ! to the other processes.
@@ -656,7 +656,7 @@ subroutine shd_mpi__bcastCkdParam(SOLFLUX, NG, DELG, NZCKD, ZCKD, KABS)
 
     return
 
-end subroutine shd_mpi__bcastCkdParam
+end subroutine shd_mpi__bcastCkd
 
 subroutine shd_mpi__bcastSenSize(NSENDATA, NSENPAR)
 
@@ -679,7 +679,7 @@ subroutine shd_mpi__bcastSenSize(NSENDATA, NSENPAR)
 
 end subroutine shd_mpi__bcastSenSize
 
-subroutine shd_mpi__bcastSenParam(NSENDATA, NSENPAR, SENPARMS)
+subroutine shd_mpi__bcastSen(NSENDATA, NSENPAR, SENPARMS)
 
     ! Broadcasts the user-specified sensor data array from
     ! the master process to the others.
@@ -703,9 +703,9 @@ subroutine shd_mpi__bcastSenParam(NSENDATA, NSENPAR, SENPARMS)
 
     return
 
-end subroutine shd_mpi__bcastSenParam
+end subroutine shd_mpi__bcastSen
 
-subroutine shd_mpi__bcastMemParam(MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
+subroutine shd_mpi__bcastMem(MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
     &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, RUNNAME)
 
     ! The master process reads the RUNNAME//"_mem_params.inp" file (if there
@@ -754,7 +754,7 @@ subroutine shd_mpi__bcastMemParam(MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
 
     return
 
-end subroutine shd_mpi__bcastMemParam
+end subroutine shd_mpi__bcastMem
 
 real function shd_mpi__sumCpuTime(cpuTimes)
 

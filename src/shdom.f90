@@ -77,11 +77,11 @@ program shdom
 
     use shd_mpi,  only: shd_mpi__start, shd_mpi__map, shd_mpi__end, &
                         shd_mpi__bcastInput, &
-                        shd_mpi__bcastMemParam, &
-                        shd_mpi__bcastPrpSize, shd_mpi__bcastPrpParam, &
-                        shd_mpi__bcastSfcSize, shd_mpi__bcastSfcParam, &
-                        shd_mpi__bcastCkdSize, shd_mpi__bcastCkdParam, &
-                        shd_mpi__bcastSenSize, shd_mpi__bcastSenParam, &
+                        shd_mpi__bcastMem, &
+                        shd_mpi__bcastPrpSize, shd_mpi__bcastPrp, &
+                        shd_mpi__bcastSfcSize, shd_mpi__bcastSfc, &
+                        shd_mpi__bcastCkdSize, shd_mpi__bcastCkd, &
+                        shd_mpi__bcastSenSize, shd_mpi__bcastSen, &
                         shd_mpi__computeRad, &
                         shd_mpi__computeCamRad, &
                         shd_mpi__makeDirect, &
@@ -473,7 +473,7 @@ program shdom
         end if
 
         ! distribute file grid data to working grids (different CPU processes different grids)
-        call shd_mpi__bcastPrpParam(NPXT, NPYT, NPX_, NPY_, NPZ_,&
+        call shd_mpi__bcastPrp(NPXT, NPYT, NPX_, NPY_, NPZ_,&
             &NSTLEG, NLEG, NUMPHASE_,&
             &ZLEVELS_, MAXASYM,&
             &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, IPHASEPT,&
@@ -521,7 +521,7 @@ program shdom
                 &NSFCPAR, SFCPARMS, GNDTEMP, GNDALBEDO)
         end if
         ! Broadcast the surface array data
-        call shd_mpi__bcastSfcParam(SFCTYPE, NXSFC, NYSFC,&
+        call shd_mpi__bcastSfc(SFCTYPE, NXSFC, NYSFC,&
             &NSFCPAR, SFCPARMS, GNDTEMP, GNDALBEDO)
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
@@ -545,7 +545,7 @@ program shdom
             call shd_io__readCkd(MAXNG, MAXNZ, CKDFILE, WAVENO, SOLFLUX,&
                 &NG, DELG, NZCKD_, ZCKD_, KABS)
         end if
-        call shd_mpi__bcastCkdParam(SOLFLUX, NG, DELG, NZCKD_, ZCKD_, KABS)
+        call shd_mpi__bcastCkd(SOLFLUX, NG, DELG, NZCKD_, ZCKD_, KABS)
     else
         NG = 1
         allocate (SOLFLUX(NG), DELG(NG))
@@ -575,7 +575,7 @@ program shdom
             call shd_io__readSen(SENFILE, NSENDATA, NSENPAR,&
                 &SENPARMS)
         end if
-        call shd_mpi__bcastSenParam(NSENDATA, NSENPAR, SENPARMS)
+        call shd_mpi__bcastSen(NSENDATA, NSENPAR, SENPARMS)
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
@@ -676,7 +676,7 @@ program shdom
     if (MPIMODE) then
         ! Read the memory parameters from a file, if it exists, and send
         !   the parameters to all processors. Otherwise use the input ones.
-        call shd_mpi__bcastMemParam(MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
+        call shd_mpi__bcastMem(MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
             &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, RUNNAME)
     end if
 
