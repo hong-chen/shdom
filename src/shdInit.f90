@@ -39,10 +39,13 @@
 
 module shd_init
 
-    use globals_const
-    use globals_cfg
-    use shd_util
-    use shd_sfc
+    use globals_const, only: RD_, PI_, OPI_
+    use globals_cfg,   only: VERBOSE_
+
+    use shd_util, only: shd_util__computePlanck, &
+                        shd_util__solveTriDiag
+
+    use shd_sfc,  only: shd_sfc__brdfSurface
 
     implicit none
     private
