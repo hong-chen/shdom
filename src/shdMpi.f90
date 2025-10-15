@@ -68,7 +68,7 @@ module shd_mpi
 
     use shd_scat, only: shd_scat__computePhase
 
-    use shd_shdo, only: shd_shdo__computeYLM
+    use shd_shdo, only: shd_shdo__computeYlm
 #endif
 
     implicit none
@@ -2269,7 +2269,7 @@ subroutine shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     allocate (YLMSUN(NSTLEG, NLM))
 
     if (SRCTYPE .ne. 'T') then
-        call shd_shdo__computeYLM(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG, YLMSUN)
+        call shd_shdo__computeYlm(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG, YLMSUN)
         if (DELTAM .and. NUMPHASE .gt. 0) then
             NSCATANGLE = max(36, min(MAXSCATANG, 2*NLEG))
             NSTPHASE = min(NSTLEG, 2)

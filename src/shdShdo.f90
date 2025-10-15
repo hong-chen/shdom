@@ -70,10 +70,10 @@ module shd_shdo
 
     public :: shd_shdo__makeAngle
 
-    public :: shd_shdo__computeYLM
-    public :: shd_shdo__computePLM
+    public :: shd_shdo__computeYlm
+    public :: shd_shdo__computePlm
 
-    private :: shd_shdo__computeYLM_
+    private :: shd_shdo__computeYlm_
 
 
 contains
@@ -112,7 +112,7 @@ subroutine shd_shdo__computeSH(&
     SOLM = SECSOL/(4.0*PI_)
     F0 = 0.0
     if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
-        call shd_shdo__computeYLM(.true., SOLARMU, SOLARAZ, ML, MM, 1, YLMSUN)
+        call shd_shdo__computeYlm(.true., SOLARMU, SOLARAZ, ML, MM, 1, YLMSUN)
     end if
     do I = 1, NPTS
         IR = RSHPTR(I)
@@ -188,14 +188,14 @@ subroutine shd_shdo__makeSHDO(NSTLEG, ML, MM, NLM, NMU, NPHI0,&
     do I = 1, NMU
         X = MU(I)
         PRC(:, :) = 0.0
-        call shd_shdo__computePLM(.false., X, ML, MM, PRC)
+        call shd_shdo__computePlm(.false., X, ML, MM, PRC)
         do J = 1, NLM
             do Q = 1, NSTLEG
                 CMU1(Q, J, I) = PRC(Q, J)
             end do
         end do
         PRC(:, :) = 0.0
-        call shd_shdo__computePLM(.true., X, ML, MM, PRC)
+        call shd_shdo__computePlm(.true., X, ML, MM, PRC)
         do J = 1, NLM
             do Q = 1, NSTLEG
                 CMU2(Q, I, J) = PRC(Q, J)*WTMU(I)
@@ -797,7 +797,7 @@ subroutine shd_shdo__makeAngle(&
 
 end subroutine shd_shdo__makeAngle
 
-subroutine shd_shdo__computeYLM(TRANSPOSED, MU, PHI, ML, MM, NSTLEG, YR)
+subroutine shd_shdo__computeYlm(TRANSPOSED, MU, PHI, ML, MM, NSTLEG, YR)
 
     !   This subroutine computes a set of normalized real generalized
     ! spherical harmonic functions (YR) for a particular direction mu,phi.
@@ -817,7 +817,7 @@ subroutine shd_shdo__computeYLM(TRANSPOSED, MU, PHI, ML, MM, NSTLEG, YR)
     real(RD_), allocatable :: DM0(:), DM2P(:), DM2M(:)
 
     if (NSTLEG .eq. 1) then
-        call shd_shdo__computeYLM_(MU, PHI, ML, MM, YR)
+        call shd_shdo__computeYlm_(MU, PHI, ML, MM, YR)
         return
     end if
 
@@ -911,9 +911,9 @@ subroutine shd_shdo__computeYLM(TRANSPOSED, MU, PHI, ML, MM, NSTLEG, YR)
 
     return
 
-end subroutine shd_shdo__computeYLM
+end subroutine shd_shdo__computeYlm
 
-subroutine shd_shdo__computeYLM_(MU, PHI, ML, MM, YR)
+subroutine shd_shdo__computeYlm_(MU, PHI, ML, MM, YR)
 
     !   This subroutine computes a set of the unpolarized (I-I) element
     ! normalized real generalized spherical harmonic functions (YR) for
@@ -965,9 +965,9 @@ subroutine shd_shdo__computeYLM_(MU, PHI, ML, MM, YR)
 
     return
 
-end subroutine shd_shdo__computeYLM_
+end subroutine shd_shdo__computeYlm_
 
-subroutine shd_shdo__computePLM(TRANSPOSED, MU, ML, MM, PRC)
+subroutine shd_shdo__computePlm(TRANSPOSED, MU, ML, MM, PRC)
 
     integer ML, MM
     real MU
@@ -1069,6 +1069,6 @@ subroutine shd_shdo__computePLM(TRANSPOSED, MU, ML, MM, PRC)
 
     return
 
-end subroutine shd_shdo__computePLM
+end subroutine shd_shdo__computePlm
  
 end module shd_shdo

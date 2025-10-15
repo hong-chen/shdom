@@ -46,7 +46,7 @@ module shd_src
     use shd_scat, only: shd_scat__computeLegendre, &
                         shd_scat__computeWigner
 
-    use shd_shdo, only: shd_shdo__computeYLM
+    use shd_shdo, only: shd_shdo__computeYlm
 
     use shd_util, only: shd_util__findCell, &
                         shd_util__findNextCell, &
@@ -346,9 +346,9 @@ subroutine shd_src__computeSrcOneDir(NSTOKES,&
     ! TMS = .FALSE.
 
     ! Precompute Ylm's for output direction and solar direction
-    call shd_shdo__computeYLM(.false., MU, PHI, ML, MM, NSTLEG, YLMDIR)
+    call shd_shdo__computeYlm(.false., MU, PHI, ML, MM, NSTLEG, YLMDIR)
     if (SRCTYPE .ne. 'T') then
-        call shd_shdo__computeYLM(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG,&
+        call shd_shdo__computeYlm(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG,&
             &YLMSUN)
         SECMU0 = 1.0/abs(SOLARMU)
         COSSCAT = SOLARMU*MU + sqrt((1.0d0 - SOLARMU**2)*(1.0d0 - MU**2))&
@@ -799,7 +799,7 @@ subroutine shd_src__integrateSrcOneRay(&
 
     ! Calculate the generalized spherical harmonics for this direction
     allocate (YLMDIR(NSTLEG, NLM))
-    call shd_shdo__computeYLM(.false., sngl(MU2), sngl(PHI2), ML, MM, NSTLEG, YLMDIR)
+    call shd_shdo__computeYlm(.false., sngl(MU2), sngl(PHI2), ML, MM, NSTLEG, YLMDIR)
 
     if ((SRCTYPE .ne. 'T') .and. (DELTAM)) then
         ! Get the solar single scattering Stokes vector for the outgoin

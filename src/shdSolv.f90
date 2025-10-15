@@ -52,7 +52,7 @@ module shd_solv
 
     use shd_sfc,  only: shd_sfc__interpSfc
 
-    use shd_shdo, only: shd_shdo__computeYLM, &
+    use shd_shdo, only: shd_shdo__computeYlm, &
                         shd_shdo__makeAngle, &
                         shd_shdo__makeSHDO, &
                         shd_shdo__makeSfcDO
@@ -189,7 +189,7 @@ subroutine shd_solv__solveRte(&
                 &NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
                 &GRIDPOS, DIRFLUX)
         end if
-        call shd_shdo__computeYLM(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG,&
+        call shd_shdo__computeYlm(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG,&
             &YLMSUN)
     end if
 
