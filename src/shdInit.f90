@@ -1131,4 +1131,69 @@ subroutine shd_init__checkSfcU(&
 
 end subroutine shd_init__checkSfcU
 
+subroutine shd_init__Chapman(nlyr, umu0, r0, h_lyr, umu0p)
+
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    ! Description:
+    !   Apply Chapman function for psuedo spherical correction
+    !
+    ! Input:
+    !   nlyr: number of layers
+    !   umu0: cosine of incident angle
+    !   r0: planet radius
+    !   h_lyr: layer height
+    !
+    ! Output:
+    !   umu0p: corrected mu
+    !
+    ! Notes:
+    !   This subroutine is adopted from DISORT 4.0.99 (http://www.rtatmocn.com/disort/)
+    !   subroutine <chapman> in <disort.f>
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+    integer(kind=I__), intent(in) :: nlyr
+    real(kind=R__)   , intent(in) :: r0, h_lyr(0:nlyr), umu0
+
+    real(kind=R__), intent(out) :: umu0p(nlyr, nlyr)
+
+    integer(kind=I__) :: lc, n
+    real(kind=R__)    :: cos_theta0, sin_theta0, cos_theta, sin_theta
+    real(kind=R__)    :: s1, s2
+    real(kind=R__)    :: h(0:nlyr)
+
+    cos_theta0 = umu0
+    sin_theta0 = sqrt(1.0 - umu0*umu0)
+    h = h_lyr + r0
+
+    do lc = 1, nlyr
+
+        sin_theta = sin_theta0 * h(lc) / h(0)
+        cos_theta = sqrt(1.0 - sin_theta*sin_theta)
+        s1 = 0.0
+
+        do n = 1, lc
+
+            s2 = h(0)*cos_theta - sqrt(h(n)*h(n) - h(0)*h(0)*sin_theta*sin_theta)
+
+            !consider special case for delta h = 0
+            if ((s1 .ne. s2) .and. (h(n-1) .ne. h(n))) then
+                umu0p(lc,n) = ( h(n-1) - h(n) ) / ( s2 - s1 )
+            else
+                if (n .gt. 1) then
+                    umu0p(lc,n) = umu0p(lc,n-1)
+                else
+                    umu0p(lc,n) = umu0
+                end if
+            endif
+            s1 = s2
+
+        end do
+
+    end do
+
+    return
+
+end subroutine shd_init__Chapman
+
+
 end module shd_init
