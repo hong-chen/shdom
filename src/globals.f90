@@ -142,11 +142,22 @@ module globals_cfg
     !Informational 6      Informational messages
     !All           7      All-level messages
 
+    ! High order radiance (use more SH terms)
     logical, save :: isHighOrder_
+
+    ! Boundary conditions (BCFLAG)
     logical, save :: isOpenX_, isOpenYx_, isMpiX_, isMpiY_, isMpi_
+
+    ! Indepedent pixel conditions (IPFLAG)
     logical, save :: is1DX_, is1DYx_, is1D_, is3Ddir1Ddif_
+
+    ! Pure 1D calculation
     logical, save :: is1D1_
+
+    ! Polarization
     logical, save :: isPol_, isPol4_
+
+    ! Radiation sources (SRCTYPE)
     logical, save :: isSolar_, isThermal_
 
 
