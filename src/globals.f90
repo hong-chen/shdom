@@ -143,8 +143,7 @@ module globals_cfg
     !All           7      All-level messages
 
     logical, save :: isHighOrder_
-    logical, save :: isOpenX_, isOpenYx_
-    logical, save :: isMpiX_, isMpiY_, isMpi_
+    logical, save :: isOpenX_, isOpenYx_, isMpiX_, isMpiY_, isMpi_
     logical, save :: is1DX_, is1DYx_, is1D_, is3Ddir1Ddif_
     logical, save :: is1D1_
     logical, save :: isPol_, isPol4_
