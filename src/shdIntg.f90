@@ -41,7 +41,8 @@ module shd_intg
 
     use globals_const, only: RD_, DPI_, &
                              FRAC13_, FRAC112_
-    use globals_cfg,   only: VERBOSE_, RACC_
+    use globals_cfg,   only: VERBOSE_, RACC_, &
+                             isMpi_
 
     use shd_sfc,  only: shd_sfc__interpSfc
 
@@ -297,8 +298,7 @@ subroutine shd_intg__integratePath(&
                     &GRIDPOS, SWEEPORD, MU(IMU), PHI(IMU, IPHI), TRANSMIN,&
                     &EXTINCT, NSTOKES, WORK, IPHI, GRIDRAD)
 
-            else if (btest(IPFLAG, 1) .and.&
-                &.not. (btest(BCFLAG, 2) .or. btest(BCFLAG, 3))) then
+            else if (btest(IPFLAG, 1) .and. (.not. isMpi_)) then
 
                 call shd_intg__backIntegrate2D(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,&
                     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
@@ -481,7 +481,7 @@ subroutine shd_intg__backIntegrate3D(&
         ICORNER = ibits(SWEEPORD(IORDER, JOCT), 0, 3) + 1
         IPT = GRIDPTR(ICORNER, IPCELL)
 
-        if (btest(BCFLAG, 2) .or. btest(BCFLAG, 3)) then
+        if (isMpi_) then
             ! For multiple processors get the subdomain boundary radiances
             !   for each Z slab
             if ((GRIDPOS(3, IPT) .lt. ZGRID(IZ) .and. BITZ .eq. 0) .or.&
@@ -888,7 +888,7 @@ subroutine shd_intg__backIntegrate3D_(&
 
         ! this is for mpi (e.g., shdMpi.f90, not OMP)
         !╭────────────────────────────────────────────────╮!
-        if (btest(BCFLAG, 2) .or. btest(BCFLAG, 3)) then
+        if (isMpi_) then
             ! For multiple processors get the subdomain boundary radiances
             !   for each Z slab
             if ( (GRIDPOS(3, IPT) .lt. ZGRID(IZ) .and. BITZ .eq. 0) .or.&

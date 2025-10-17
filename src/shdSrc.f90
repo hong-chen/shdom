@@ -41,7 +41,7 @@ module shd_src
 
     use globals_const, only: RD_, DPI_, O4PI_, DO4PI_, &
                              FRAC12_, FRAC13_, FRAC112_
-    use globals_cfg,   only: RACC_
+    use globals_cfg,   only: RACC_, isOpenBndryX_, isOpenBndryY_
 
     use shd_scat, only: shd_scat__computeLegendre, &
                         shd_scat__computeWigner
@@ -956,10 +956,10 @@ subroutine shd_src__integrateSrcOneRay(&
         ! This cell is independent pixel if IP mode or open boundary
         !   conditions and ray is leaving domain (i.e. not entering)
         IPINX = btest(int(CELLFLAGS(ICELL)), 0) .and.&
-            &.not. (btest(BCFLAG, 0) .and.&
+            &.not. (isOpenBndryX_ .and.&
             &((CX .gt. 0 .and. XE .lt. XM) .or. (CX .lt. 0 .and. XE .gt. XM)))
         IPINY = btest(int(CELLFLAGS(ICELL)), 1) .and.&
-            &.not. (btest(BCFLAG, 1) .and.&
+            &.not. (isOpenBndryY_ .and.&
             &((CY .gt. 0 .and. YE .lt. YM) .or. (CY .lt. 0 .and. YE .gt. YM)))
 
         ! Find boundaries of the current cell
@@ -1049,11 +1049,11 @@ subroutine shd_src__integrateSrcOneRay(&
         if ((SOX .le. SOZ) .and. (SOX .le. SOY)) then
             IFACE = 2 - BITX
             JFACE = 1
-            OPENBCFACE = btest(int(CELLFLAGS(ICELL)), 0) .and. btest(BCFLAG, 0)
+            OPENBCFACE = btest(int(CELLFLAGS(ICELL)), 0) .and. isOpenBndryX_
         else if (SOY .le. SOZ) then
             IFACE = 4 - BITY
             JFACE = 2
-            OPENBCFACE = btest(int(CELLFLAGS(ICELL)), 1) .and. btest(BCFLAG, 1)
+            OPENBCFACE = btest(int(CELLFLAGS(ICELL)), 1) .and. isOpenBndryY_
         else
             IFACE = 6 - BITZ
             JFACE = 3
@@ -1232,10 +1232,10 @@ subroutine shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
         ! This cell is independent pixel if IP mode or open boundary
         !   conditions and ray is leaving domain (i.e. not entering)
         IPINX = btest(int(CELLFLAGS(ICELL)), 0) .and.&
-            &.not. (btest(BCFLAG, 0) .and.&
+            &.not. (isOpenBndryX_ .and.&
             &((CX .gt. 0 .and. XE .lt. XM) .or. (CX .lt. 0 .and. XE .gt. XM)))
         IPINY = btest(int(CELLFLAGS(ICELL)), 1) .and.&
-            &.not. (btest(BCFLAG, 1) .and.&
+            &.not. (isOpenBndryY_ .and.&
             &((CY .gt. 0 .and. YE .lt. YM) .or. (CY .lt. 0 .and. YE .gt. YM)))
 
         ! Find boundaries of the current cell
@@ -1333,11 +1333,11 @@ subroutine shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
         if (SOX .le. SOZ .and. SOX .le. SOY) then
             IFACE = 2 - BITX
             JFACE = 1
-            OPENBCFACE = btest(int(CELLFLAGS(ICELL)), 0) .and. btest(BCFLAG, 0)
+            OPENBCFACE = btest(int(CELLFLAGS(ICELL)), 0) .and. isOpenBndryX_
         else if (SOY .le. SOZ) then
             IFACE = 4 - BITY
             JFACE = 2
-            OPENBCFACE = btest(int(CELLFLAGS(ICELL)), 1) .and. btest(BCFLAG, 1)
+            OPENBCFACE = btest(int(CELLFLAGS(ICELL)), 1) .and. isOpenBndryY_
         else
             IFACE = 6 - BITZ
             JFACE = 3

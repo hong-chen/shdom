@@ -43,6 +43,7 @@
 module shd_util
 
     use globals_const, only: RD_, PI_, DPI_
+    use globals_cfg,   only: isOpenBndryX_, isOpenBndryY_, isMpiX_, isMpiY_
 
     implicit none
     private
@@ -193,7 +194,7 @@ subroutine shd_util__findCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
     real(RD_) :: XDOMAIN, YDOMAIN
 
     ! Move point to within horizontal domain if periodic
-    if (.not. (btest(BCFLAG, 0) .or. btest(BCFLAG, 2))) then
+    if (.not. (isOpenBndryX_ .or. isMpiX_)) then
         XDOMAIN = XGRID(NX + 1) - XGRID(1)
         if (X0 .lt. XGRID(1)) then
             X0 = X0 - XDOMAIN*(int((X0 - XGRID(1))/XDOMAIN) - 1)
@@ -201,7 +202,7 @@ subroutine shd_util__findCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
             X0 = X0 - XDOMAIN*int((X0 - XGRID(1))/XDOMAIN)
         end if
     end if
-    if (.not. (btest(BCFLAG, 1) .or. btest(BCFLAG, 3))) then
+    if (.not. (isOpenBndryY_ .or. isMpiY_)) then
         YDOMAIN = YGRID(NY + 1) - YGRID(1)
         if (Y0 .lt. YGRID(1)) then
             Y0 = Y0 - YDOMAIN*(int((Y0 - YGRID(1))/YDOMAIN) - 1)
@@ -278,7 +279,7 @@ subroutine shd_util__findCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
     ! Special case for open boundary conditions: if outside the 1 to
     !   domain then use the IP grid cells at either end
     NXC = NX
-    if (btest(BCFLAG, 0)) then
+    if (isOpenBndryX_) then
         NXC = NX + 1
         if (X0 .lt. XGRID(1)) then
             ! X0 = XGRID(1)
@@ -290,12 +291,12 @@ subroutine shd_util__findCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
             IX = IX + 1
         end if
     end if
-    if (btest(BCFLAG, 2) .and. .not. btest(IPFLAG, 0)) then
+    if (isMpiX_ .and. .not. btest(IPFLAG, 0)) then
         NXC = NX - 1
         IX = min(IX, NXC)
     end if
     NYC = NY
-    if (btest(BCFLAG, 1)) then
+    if (isOpenBndryY_) then
         NYC = NY + 1
         if (Y0 .lt. YGRID(1)) then
             ! Y0 = YGRID(1)
@@ -307,7 +308,7 @@ subroutine shd_util__findCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
             IY = IY + 1
         end if
     end if
-    if (btest(BCFLAG, 3) .and. .not. btest(IPFLAG, 1)) then
+    if (isMpiY_ .and. .not. btest(IPFLAG, 1)) then
         NYC = NY - 1
         IY = min(IY, NYC)
     end if

@@ -1349,7 +1349,7 @@ Using the double Gaussian angular set will give more accurate hemispheric
 fluxes, e.g. from a Lambertian surface.
 
 Output rms of higher order radiance spherical harmonic terms:
-at top of main program (``shdom.f90``); set ``HIGHORDERRAD=.TRUE.`` for outputing
+at top of main program (``shdom.f90``); set ``isHighOrder=.TRUE.`` for outputing
 the rms of the higher order radiance terms (above L=1,M=1) normalized by
 the mean radiance (S output mode). This is useful for determining
 regions in the diffusion domain, where the higher order terms are zero.

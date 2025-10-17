@@ -39,7 +39,7 @@
 
 module shd_solv
 
-    use globals_cfg, only: VERBOSE_
+    use globals_cfg, only: VERBOSE_, isMpi_
 
     use shd_init, only: shd_init__makePrp, &
                         shd_init__makeRad, &
@@ -87,7 +87,7 @@ subroutine shd_solv__solveRte(&
     &ML, MM, NLM, NMU, NPHI, NLEG, NSTLEG, NUMPHASE,&
     &NPHI0, MU, PHI, WTDO,&
     &MAXIV, MAXIC, MAXIG, MAXIDO, INRADFLAG,&
-    &BCFLAG, IPFLAG, DELTAM, SRCTYPE, HIGHORDERRAD,&
+    &BCFLAG, IPFLAG, DELTAM, SRCTYPE, isHighOrder,&
     &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
     &SFCTYPE, GNDTEMP, GNDALBEDO,&
     &NXSFC, NYSFC, DELXSFC, DELYSFC,&
@@ -118,7 +118,7 @@ subroutine shd_solv__solveRte(&
     integer GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
     integer*2 CELLFLAGS(*), IPHASE(*)
     integer WORK1(*)
-    logical INRADFLAG, DELTAM, ACCELFLAG, HIGHORDERRAD
+    logical INRADFLAG, DELTAM, ACCELFLAG, isHighOrder
     real SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD
     real GNDTEMP, GNDALBEDO
     real DELXSFC, DELYSFC, SFCPARMS(*), SFCGRIDPARMS(*)
@@ -180,7 +180,7 @@ subroutine shd_solv__solveRte(&
     ! Compute the solar transmission in DIRFLUX.
     ! Precompute Ylm's for solar direction
     if (SRCTYPE .ne. 'T') then
-        if (btest(BCFLAG, 2) .or. btest(BCFLAG, 3)) then
+        if (isMpi_) then
             call shd_mpi__makeDirect(1, NPTS, BCFLAG, IPFLAG, DELTAM, ML,&
                 &NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
                 &GRIDPOS, NX, XGRID, NY, YGRID, DIRFLUX)
@@ -360,7 +360,7 @@ subroutine shd_solv__solveRte(&
         end if
 
         ! Find the SH truncation to use for the radiance (RSHPTR)
-        call shd_solv__truncRad(HIGHORDERRAD,&
+        call shd_solv__truncRad(isHighOrder,&
             &NSTOKES, ML, MM, NSTLEG, NLEG, NUMPHASE,&
             &NPTS, ALBEDO, LEGEN, IPHASE, SHPTR, RADIANCE,&
             &MAXIV + MAXIG, FIXSH, SHACC, RSHPTR)
@@ -495,7 +495,7 @@ subroutine shd_solv__accelSol(&
     return
 end subroutine shd_solv__accelSol
 
-subroutine shd_solv__truncRad(HIGHORDERRAD,&
+subroutine shd_solv__truncRad(isHighOrder,&
     &NSTOKES, ML, MM, NSTLEG, NLEG, NUMPHASE,&
     &NPTS, ALBEDO, LEGEN, IPHASE, SHPTR, RADIANCE,&
     &MAXIR, FIXSH, SHACC, RSHPTR)
@@ -510,12 +510,12 @@ subroutine shd_solv__truncRad(HIGHORDERRAD,&
     ! the source function truncation may grow (since initialized with
     ! a low order truncation).  The minimum radiance truncation is
     ! L=1 so that the mean radiance and net flux terms may be computed,
-    ! unless HIGHORDERRAD is on, in which case all terms are kept.
+    ! unless isHighOrder is on, in which case all terms are kept.
 
     integer NPTS, NSTOKES, ML, MM, NSTLEG, NLEG, NUMPHASE, MAXIR
     integer SHPTR(NPTS + 1), RSHPTR(NPTS + 2)
     integer*2 IPHASE(NPTS)
-    logical HIGHORDERRAD, FIXSH
+    logical isHighOrder, FIXSH
     real ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, *), RADIANCE(NSTOKES, *)
     real SHACC
     integer IRO, IR, NRO, NR, I, J, K, L, LR, LS, M, MS, ME, NS, NLM
@@ -573,7 +573,7 @@ subroutine shd_solv__truncRad(HIGHORDERRAD,&
         NS = max(1, SHPTR(I + 1) - SHPTR(I))
         LS = LOFJ(NS)
         LR = min(LR, LS + ML/8 + 2)
-        if (HIGHORDERRAD) LR = ML
+        if (isHighOrder) LR = ML
         if (LR .le. MM) then
             NR = (LR*(LR + 1)) + LR + 1
         else
@@ -599,7 +599,7 @@ subroutine shd_solv__truncRad(HIGHORDERRAD,&
     IR = 0
     do I = 1, NPTS
         NR = max(4, SHPTR(I + 1) - SHPTR(I))
-        if (HIGHORDERRAD) then
+        if (isHighOrder) then
             if (ML .le. MM) then
                 NR = (ML*(ML + 1)) + ML + 1
             else

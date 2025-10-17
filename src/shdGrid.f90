@@ -40,7 +40,8 @@
 module shd_grid
 
     use globals_const, only: RD_
-    use globals_cfg,   only: VERBOSE_, RACC_
+    use globals_cfg,   only: VERBOSE_, RACC_, &
+                             isOpenBndryX_, isOpenBndryY_, isMpiX_, isMpiY_, isMpi_
 
     use shd_util, only: shd_util__findNextCell, &
                         shd_util__computePlanck, &
@@ -425,12 +426,12 @@ subroutine shd_grid__makeSweepOrder(&
     end if
 
     NXC = NX
-    if (btest(BCFLAG, 0)) NXC = NX + 1
-    if (btest(BCFLAG, 2) .and. .not. btest(IPFLAG, 0)) NXC = NX - 1
+    if (isOpenBndryX_) NXC = NX + 1
+    if (isMpiX_ .and. .not. btest(IPFLAG, 0)) NXC = NX - 1
 
     NYC = NY
-    if (btest(BCFLAG, 1)) NYC = NY + 1
-    if (btest(BCFLAG, 3) .and. .not. btest(IPFLAG, 1)) NYC = NY - 1
+    if (isOpenBndryY_) NYC = NY + 1
+    if (isMpiY_ .and. .not. btest(IPFLAG, 1)) NYC = NY - 1
 
     ! Loop over the number of octants needed; get the octant number
     do JOCT = 1, NOCT
@@ -912,7 +913,7 @@ logical function sweepCellBase(BCFLAG, NXC, NYC, NZ, IOCT, ICELL)
     if (ICELL .eq. 0) then
         if (btest(IOCT - 1, 0)) then
             DIX = +1
-            if (btest(BCFLAG, 0)) then
+            if (isOpenBndryX_) then
                 SIX = NXC
                 EIX = max(NXC - 1, 1)
             else
@@ -921,7 +922,7 @@ logical function sweepCellBase(BCFLAG, NXC, NYC, NZ, IOCT, ICELL)
             end if
         else
             DIX = -1
-            if (btest(BCFLAG, 0)) then
+            if (isOpenBndryX_) then
                 SIX = 1
                 EIX = min(2, NXC)
             else
@@ -931,7 +932,7 @@ logical function sweepCellBase(BCFLAG, NXC, NYC, NZ, IOCT, ICELL)
         end if
         if (btest(IOCT - 1, 1)) then
             DIY = +1
-            if (btest(BCFLAG, 1)) then
+            if (isOpenBndryY_) then
                 SIY = NYC
                 EIY = max(NYC - 1, 1)
             else
@@ -940,7 +941,7 @@ logical function sweepCellBase(BCFLAG, NXC, NYC, NZ, IOCT, ICELL)
             end if
         else
             DIY = -1
-            if (btest(BCFLAG, 1)) then
+            if (isOpenBndryY_) then
                 SIY = 1
                 EIY = min(2, NYC)
             else
@@ -1483,8 +1484,8 @@ subroutine shd_grid__interpNewGridPnt(NEWPOINTS, NPTS,&
 
             ! Compute the new direct beam flux (if needed)
             if (SRCTYPE .ne. 'T') then
-                if (btest(BCFLAG, 2) .or. btest(BCFLAG, 3)) then
-                    ! If parallel mode then calculate a temporary approximation
+                if (isMpi_) then
+                    ! If MPI mode then calculate a temporary approximation
                     !   to the direct flux (for source function calculation below)
                     DIRFLUX(IP) = exp(0.5*(log(DIRFLUX(IP1)) + log(DIRFLUX(IP2))))
                 else
@@ -1717,7 +1718,7 @@ subroutine shd_grid__splitGrid(&
 
         ! If in parallel mode, calculate all the direct beam fluxes at once
         if (SRCTYPE .ne. 'T') then
-            if (btest(BCFLAG, 2) .or. btest(BCFLAG, 3)) then
+            if (isMpi_) then
                 call shd_mpi__makeDirect(OLDNPTS + 1, NPTS, BCFLAG,&
                     &IPFLAG, DELTAM, ML, NSTLEG, NLEG,&
                     &SOLARFLUX, SOLARMU, SOLARAZ, GRIDPOS,&

@@ -40,7 +40,8 @@
 module shd_mpi
 
     use globals_const, only: RD_, PI_, DPI_, PIH_, FRAC13_, FRAC112_
-    use globals_cfg,   only: VERBOSE_, FNAMEMAXLEN_, RACC_
+    use globals_cfg,   only: VERBOSE_, FNAMEMAXLEN_, RACC_, &
+                             isMpiX_, isMpiY_, isMpi_, isOpenBndryX_, isOpenBndryY_
 
 #if HAS_MPI
     use mpi_f08,  only: MPI_COMM_WORLD, MPI_COMM, MPI_REQUEST, &
@@ -216,10 +217,27 @@ subroutine shd_mpi__map(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
     call mpi_cart_create(MPI_COMM_WORLD, 2, dims, periodic, reorder,&
         &COMM2D_, ierr)
 
-    if (dims(1) .gt. 1) BCFLAG = ibset(BCFLAG, 2)
-    if (dims(2) .gt. 1) BCFLAG = ibset(BCFLAG, 3)
+    if (dims(1) .gt. 1) then
+        BCFLAG = ibset(BCFLAG, 2)
+        isMpiX_ = .true.
+    else
+        isMpiX_ = .false.
+    end if
+
+    if (dims(2) .gt. 1) then
+        BCFLAG = ibset(BCFLAG, 3)
+        isMpiY_ = .true.
+    else
+        isMpiY_ = .false.
+    end if
+
     ! Multi-processor BC takes precedence over open BCs
-    if (btest(BCFLAG, 2) .or. btest(BCFLAG, 3)) BCFLAG = iand(BCFLAG, 12)
+    if (isMpiX_ .or. isMpiY_) then
+        BCFLAG = iand(BCFLAG, 12)
+        isMpi_ = .true.
+    else
+        isMpi_ = .false.
+    end if
 
     ! Find where in the 2D grid of processors this is is at:
     call mpi_cart_coords(COMM2D_, MYPROC_, 2, coords, ierr)
@@ -837,8 +855,8 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
             IX = IXYALL(1, 1, 0); NX = IXYALL(2, 1, 0)
             IY = IXYALL(1, 2, 0); NY = IXYALL(2, 2, 0)
             NX1 = NX + 1; NY1 = NY + 1
-            if (btest(IPFLAG, 0) .and. .not. btest(BCFLAG, 2)) NX1 = NX
-            if (btest(IPFLAG, 1) .and. .not. btest(BCFLAG, 3)) NY1 = NY
+            if (btest(IPFLAG, 0) .and. .not. isMpiX_) NX1 = NX
+            if (btest(IPFLAG, 1) .and. .not. isMpiY_) NY1 = NY
             allocate (buf(3, NZ, NY1, NX1))
             buf(1:2, :, :, :) = reshape(SUMFLUXES(1:2, :), (/2, NZ, NY1, NX1/))
             buf(3, :, :, :) = reshape(SUMDIRFLUX(:), (/NZ, NY1, NX1/))
@@ -848,8 +866,8 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
                 IX = IXYALL(1, 1, iproc); NX = IXYALL(2, 1, iproc)
                 IY = IXYALL(1, 2, iproc); NY = IXYALL(2, 2, iproc)
                 NX1 = NX + 1; NY1 = NY + 1
-                if (btest(IPFLAG, 0) .and. .not. btest(BCFLAG, 2)) NX1 = NX
-                if (btest(IPFLAG, 1) .and. .not. btest(BCFLAG, 3)) NY1 = NY
+                if (btest(IPFLAG, 0) .and. .not. isMpiX_) NX1 = NX
+                if (btest(IPFLAG, 1) .and. .not. isMpiY_) NY1 = NY
                 allocate (buf(3, NZ, NY1, NX1))
                 buf(:, :, :, :) = reshape(recvbuf(:, 1:NZ*NY1*NX1, iproc), (/3, NZ, NY1, NX1/))
                 ALLFLUXES(1:3, 1:NZ, IY:IY + NY - 1, IX:IX + NX - 1) = buf(:, 1:NZ, 1:NY, 1:NX)
@@ -882,8 +900,8 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
             IX = IXYALL(1, 1, 0); NX = IXYALL(2, 1, 0)
             IY = IXYALL(1, 2, 0); NY = IXYALL(2, 2, 0)
             NX1 = NX + 1; NY1 = NY + 1
-            if (btest(IPFLAG, 0) .and. .not. btest(BCFLAG, 2)) NX1 = NX
-            if (btest(IPFLAG, 1) .and. .not. btest(BCFLAG, 3)) NY1 = NY
+            if (btest(IPFLAG, 0) .and. .not. isMpiX_) NX1 = NX
+            if (btest(IPFLAG, 1) .and. .not. isMpiY_) NY1 = NY
             allocate (buf(1, NZ, NY1, NX1))
             buf(1, :, :, :) = reshape(SUMFLUXDIV(:), (/NZ, NY1, NX1/))
             ALLFLUXDIV(1:NZ, IY:IY + NY - 1, IX:IX + NX - 1) = buf(1, 1:NZ, 1:NY, 1:NX)
@@ -892,8 +910,8 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
                 IX = IXYALL(1, 1, iproc); NX = IXYALL(2, 1, iproc)
                 IY = IXYALL(1, 2, iproc); NY = IXYALL(2, 2, iproc)
                 NX1 = NX + 1; NY1 = NY + 1
-                if (btest(IPFLAG, 0) .and. .not. btest(BCFLAG, 2)) NX1 = NX
-                if (btest(IPFLAG, 1) .and. .not. btest(BCFLAG, 3)) NY1 = NY
+                if (btest(IPFLAG, 0) .and. .not. isMpiX_) NX1 = NX
+                if (btest(IPFLAG, 1) .and. .not. isMpiY_) NY1 = NY
                 allocate (buf(1, NZ, NY1, NX1))
                 buf(:, :, :, :) = reshape(recvbuf(:, 1:NZ*NY1*NX1, iproc), (/1, NZ, NY1, NX1/))
                 ALLFLUXDIV(1:NZ, IY:IY + NY - 1, IX:IX + NX - 1) = buf(1, 1:NZ, 1:NY, 1:NX)
@@ -924,8 +942,8 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
             IX = IXYALL(1, 1, 0); NX = IXYALL(2, 1, 0)
             IY = IXYALL(1, 2, 0); NY = IXYALL(2, 2, 0)
             NX1 = NX + 1; NY1 = NY + 1
-            if (btest(IPFLAG, 0) .and. .not. btest(BCFLAG, 2)) NX1 = NX
-            if (btest(IPFLAG, 1) .and. .not. btest(BCFLAG, 3)) NY1 = NY
+            if (btest(IPFLAG, 0) .and. .not. isMpiX_) NX1 = NX
+            if (btest(IPFLAG, 1) .and. .not. isMpiY_) NY1 = NY
             allocate (buf(NSHOUT, NZ, NY1, NX1))
             buf(:, :, :, :) = reshape(SUMSHTERMS(:, :), (/NSHOUT, NZ, NY1, NX1/))
             ALLSHTERMS(:, 1:NZ, IY:IY + NY - 1, IX:IX + NX - 1) = buf(:, 1:NZ, 1:NY, 1:NX)
@@ -934,8 +952,8 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
                 IX = IXYALL(1, 1, iproc); NX = IXYALL(2, 1, iproc)
                 IY = IXYALL(1, 2, iproc); NY = IXYALL(2, 2, iproc)
                 NX1 = NX + 1; NY1 = NY + 1
-                if (btest(IPFLAG, 0) .and. .not. btest(BCFLAG, 2)) NX1 = NX
-                if (btest(IPFLAG, 1) .and. .not. btest(BCFLAG, 3)) NY1 = NY
+                if (btest(IPFLAG, 0) .and. .not. isMpiX_) NX1 = NX
+                if (btest(IPFLAG, 1) .and. .not. isMpiY_) NY1 = NY
                 allocate (buf(NSHOUT, NZ, NY1, NX1))
                 buf(:, :, :, :) = reshape(recvbuf(:, 1:NZ*NY1*NX1, iproc), (/NSHOUT, NZ, NY1, NX1/))
                 ALLSHTERMS(:, 1:NZ, IY:IY + NY - 1, IX:IX + NX - 1) = buf(:, 1:NZ, 1:NY, 1:NX)
@@ -1083,7 +1101,7 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
     end if
 
     Lupx = 0; Lupy = 0; Ldownx = 0; Ldowny = 0
-    if (btest(BCFLAG, 2)) then
+    if (isMpiX_) then
         if (cos(SOLARAZ) .gt. 1.0e-5) then
             Ldownx = 2; Lupx = 1
         else
@@ -1093,7 +1111,7 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
     else
         XMAX = XGRID(NX + 1)
     end if
-    if (btest(BCFLAG, 3)) then
+    if (isMpiY_) then
         if (sin(SOLARAZ) .gt. 1.0e-5) then
             Ldowny = 4; Lupy = 3
         else
@@ -1132,7 +1150,7 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
         ! Do the send and receives of the number of incomplete rays and
         !   the real and integer info needed about the radiance integrations
         irq = 0
-        if (btest(BCFLAG, 2)) then
+        if (isMpiX_) then
             call mpi_isend(NINVALID(Lupx), 1, MPI_INTEGER,&
                 &IPROCNEIGH_(Lupx), 1, COMM2D_, requests(irq + 1), ierr)
             call mpi_isend(BndDirRealInfo(:, :, Lupx), 4*NINVALID(Lupx), MPI_REAL,&
@@ -1141,7 +1159,7 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
                 &IPROCNEIGH_(Lupx), 3, COMM2D_, requests(irq + 3), ierr)
             irq = irq + 3
         end if
-        if (btest(BCFLAG, 3)) then
+        if (isMpiY_) then
             call mpi_isend(NINVALID(Lupy), 1, MPI_INTEGER,&
                 &IPROCNEIGH_(Lupy), 4, COMM2D_, requests(irq + 1), ierr)
             call mpi_isend(BndDirRealInfo(:, :, Lupy), 4*NINVALID(Lupy), MPI_REAL,&
@@ -1150,7 +1168,7 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
                 &IPROCNEIGH_(Lupy), 6, COMM2D_, requests(irq + 3), ierr)
             irq = irq + 3
         end if
-        if (btest(BCFLAG, 2)) then
+        if (isMpiX_) then
             call mpi_irecv(NINVALID(Ldownx), 1, MPI_INTEGER,&
                 &IPROCNEIGH_(Ldownx), 1, COMM2D_, requests(irq + 1), ierr)
             call mpi_irecv(BndDirRealInfo(:, :, Ldownx), 4*MAXNBEAM, MPI_REAL,&
@@ -1159,7 +1177,7 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
                 &IPROCNEIGH_(Ldownx), 3, COMM2D_, requests(irq + 3), ierr)
             irq = irq + 3
         end if
-        if (btest(BCFLAG, 3)) then
+        if (isMpiY_) then
             call mpi_irecv(NINVALID(Ldowny), 1, MPI_INTEGER,&
                 &IPROCNEIGH_(Ldowny), 4, COMM2D_, requests(irq + 1), ierr)
             call mpi_irecv(BndDirRealInfo(:, :, Ldowny), 4*MAXNBEAM, MPI_REAL,&
@@ -1171,7 +1189,7 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
         call mpi_waitall(irq, requests, status, ierr)
 
         NINVALID(Lupx) = 0; NINVALID(Lupy) = 0
-        if (btest(BCFLAG, 2)) then
+        if (isMpiX_) then
             ! Continue the backwards ray integrations from the X boundary
             do J = 1, NINVALID(Ldownx)
                 if (Ldownx .eq. 1) BndDirRealInfo(1, J, Ldownx) = XGRID(1)
@@ -1203,7 +1221,7 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
             end do
         end if
 
-        if (btest(BCFLAG, 3)) then
+        if (isMpiY_) then
             ! Continue the backwards ray integrations for the Y boundary
             do J = 1, NINVALID(Ldowny)
                 if (Ldowny .eq. 3) BndDirRealInfo(2, J, Ldowny) = YGRID(1)
@@ -1318,7 +1336,7 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
     type(MPI_REQUEST) :: requests(24)
     type(MPI_STATUS) :: status(24)
 
-    if (.not. (btest(BCFLAG, 2) .or. btest(BCFLAG, 3))) return
+    if (.not. (isMpi_)) return
     if (btest(IPFLAG, 0) .and. btest(IPFLAG, 1)) return
     call mpi_allreduce(NPTS .eq. OLDNPTS, SAMEGRID, 1, MPI_LOGICAL, MPI_LAND, COMM2D_, ierr)
     OLDNPTS = NPTS
@@ -1358,7 +1376,7 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
 
             if ((GRIDPOS(3, IPT) .lt. ZGRID(NZ) .and. BITZ .eq. 0) .or.&
                 &(GRIDPOS(3, IPT) .gt. ZGRID(1) .and. BITZ .eq. 1)) then
-                if (btest(BCFLAG, 2) .and. GRIDPOS(1, IPT) .eq. XEDGE(JOCT)&
+                if (isMpiX_ .and. GRIDPOS(1, IPT) .eq. XEDGE(JOCT)&
                     &.and. .not. btest(IPFLAG, 0)) then
                     SIDE = 2 - ibits(JOCT - 1, 1, 1)
                     N(SIDE) = N(SIDE) + 1
@@ -1368,7 +1386,7 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
                     BNDPTR(JOCT, N(SIDE), 1, SIDE) = IPT
                     BNDPOS(:, JOCT, N(SIDE), 1, SIDE) = GRIDPOS(:, IPT)
                 end if
-                if (btest(BCFLAG, 3) .and. GRIDPOS(2, IPT) .eq. YEDGE(JOCT)&
+                if (isMpiY_ .and. GRIDPOS(2, IPT) .eq. YEDGE(JOCT)&
                     &.and. .not. btest(IPFLAG, 1)) then
                     SIDE = 4 - ibits(JOCT - 1, 2, 1)
                     N(SIDE) = N(SIDE) + 1
@@ -1388,8 +1406,8 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
     N2(:, :) = 0
     irq = 0
     do L = 1, 4
-        if ((btest(BCFLAG, 2) .and. (L .eq. 1 .or. L .eq. 2)) .or.&
-            &(btest(BCFLAG, 3) .and. (L .eq. 3 .or. L .eq. 4))) then
+        if ((isMpiX_ .and. (L .eq. 1 .or. L .eq. 2)) .or.&
+            &(isMpiY_ .and. (L .eq. 3 .or. L .eq. 4))) then
             ! Exchange the lists of boundary points with neighbors
             LI = INOUT_ARR(L)
             tag = L
@@ -1432,8 +1450,8 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
         LX = 1 + ibits(JOCT - 1, 1, 1)
         LY = 3 + ibits(JOCT - 1, 2, 1)
         ! Combine the indices to the X and Y boundary points and sort on Z
-        NBX = 0; if (btest(BCFLAG, 2)) NBX = N2(JOCT, LX)
-        NBY = 0; if (btest(BCFLAG, 3)) NBY = N2(JOCT, LY)
+        NBX = 0; if (isMpiX_) NBX = N2(JOCT, LX)
+        NBY = 0; if (isMpiY_) NBY = N2(JOCT, LY)
         allocate (ZARRAY(NBX + NBY), INDX(NBX + NBY))
         ZARRAY(1:NBX) = BNDPOS(3, JOCT, 1:NBX, 2, LX)
         INDX(1:NBX) = (/(J, J=1, NBX)/)
@@ -1540,14 +1558,14 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
     allocate (RadAllIn(NSTOKES, MAXNBND), RadPtrIn(MAXNBND), Ndone(0:NUMPROC_ - 1))
 
     Lupx = 0; Lupy = 0; Ldownx = 0; Ldowny = 0
-    if (btest(BCFLAG, 2)) then
+    if (isMpiX_) then
         if (cos(PHI) .gt. 1.0e-5) then
             Ldownx = 2; Lupx = 1
         else
             Ldownx = 1; Lupx = 2
         end if
     end if
-    if (btest(BCFLAG, 3)) then
+    if (isMpiY_) then
         if (sin(PHI) .gt. 1.0e-5) then
             Ldowny = 4; Lupy = 3
         else
@@ -1594,7 +1612,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
         ! Do the send and receives of the number of incomplete rays and
         !   the real and integer info needed about the radiance integrations
         irq = 0
-        if (btest(BCFLAG, 2)) then
+        if (isMpiX_) then
             call mpi_isend(NINVALID(Lupx), 1, MPI_INTEGER,&
                 &IPROCNEIGH_(Lupx), 1, COMM2D_, requests(irq + 1), ierr(irq + 1))
             call mpi_isend(BndRadRealInfo(:, :, Lupx), (4 + NSTOKES)*NINVALID(Lupx), MPI_REAL,&
@@ -1603,7 +1621,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
                 &IPROCNEIGH_(Lupx), 3, COMM2D_, requests(irq + 3), ierr(irq + 3))
             irq = irq + 3
         end if
-        if (btest(BCFLAG, 3)) then
+        if (isMpiY_) then
             call mpi_isend(NINVALID(Lupy), 1, MPI_INTEGER,&
                 &IPROCNEIGH_(Lupy), 4, COMM2D_, requests(irq + 1), ierr(irq + 1))
             call mpi_isend(BndRadRealInfo(:, :, Lupy), (4 + NSTOKES)*NINVALID(Lupy), MPI_REAL,&
@@ -1612,7 +1630,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
                 &IPROCNEIGH_(Lupy), 6, COMM2D_, requests(irq + 3), ierr(irq + 3))
             irq = irq + 3
         end if
-        if (btest(BCFLAG, 2)) then
+        if (isMpiX_) then
             call mpi_irecv(NINVALID(Ldownx), 1, MPI_INTEGER,&
                 &IPROCNEIGH_(Ldownx), 1, COMM2D_, requests(irq + 1), ierr(irq + 1))
             call mpi_irecv(BndRadRealInfo(:, :, Ldownx), (4 + NSTOKES)*MAXNBND, MPI_REAL,&
@@ -1621,7 +1639,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
                 &IPROCNEIGH_(Ldownx), 3, COMM2D_, requests(irq + 3), ierr(irq + 3))
             irq = irq + 3
         end if
-        if (btest(BCFLAG, 3)) then
+        if (isMpiY_) then
             call mpi_irecv(NINVALID(Ldowny), 1, MPI_INTEGER,&
                 &IPROCNEIGH_(Ldowny), 4, COMM2D_, requests(irq + 1), ierr(irq + 1))
             call mpi_irecv(BndRadRealInfo(:, :, Ldowny), (4 + NSTOKES)*MAXNBND, MPI_REAL,&
@@ -1641,7 +1659,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
         end if
 
         NINVALID(Lupx) = 0; NINVALID(Lupy) = 0
-        if (btest(BCFLAG, 2)) then
+        if (isMpiX_) then
             ! Continue the backwards ray integrations for the X boundary
             do J = 1, NINVALID(Ldownx)
                 if (Ldownx .eq. 1) BndRadRealInfo(1, J, Ldownx) = XGRID(1)
@@ -1676,7 +1694,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
             end do
         end if
 
-        if (btest(BCFLAG, 3)) then
+        if (isMpiY_) then
             ! Continue the backwards ray integrations for the Y boundary
             do J = 1, NINVALID(Ldowny)
                 if (Ldowny .eq. 3) BndRadRealInfo(2, J, Ldowny) = YGRID(1)
@@ -1962,14 +1980,14 @@ subroutine shd_mpi__computeRad(&
 
         ! Set up the upstream/downstream boundaries for this direction
         Lupx = 0; Lupy = 0; Ldownx = 0; Ldowny = 0
-        if (btest(BCFLAG, 2)) then
+        if (isMpiX_) then
             if ((cos(PHIOUT) .gt. 1.0e-5)) then
                 Ldownx = 2; Lupx = 1
             else
                 Ldownx = 1; Lupx = 2
             end if
         end if
-        if (btest(BCFLAG, 3)) then
+        if (isMpiY_) then
             !if ((sin(PHIOUT) .gt. 1.0e-5) .and. (NPY .gt. 1)) then
             if ((sin(PHIOUT) .gt. 1.0e-5)) then
                 Ldowny = 4; Lupy = 3
@@ -2033,7 +2051,7 @@ subroutine shd_mpi__computeRad(&
             ! Do the send and receives of the number of incomplete rays and
             !   the real and integer info needed about the radiance integrations
             irq = 0
-            if (btest(BCFLAG, 2)) then
+            if (isMpiX_) then
                 call mpi_isend(NINVALID(Lupx), 1, MPI_INTEGER,&
                     &IPROCNEIGH_(Lupx), 6*K + 1, COMM2D_, requests(irq + 1), ierr)
                 call mpi_isend(BndRadRealInfo(:, :, Lupx), (4 + NSTOKES)*NINVALID(Lupx), MPI_DOUBLE_PRECISION,&
@@ -2042,7 +2060,7 @@ subroutine shd_mpi__computeRad(&
                     &IPROCNEIGH_(Lupx), 6*K + 3, COMM2D_, requests(irq + 3), ierr)
                 irq = irq + 3
             end if
-            if (btest(BCFLAG, 3)) then
+            if (isMpiY_) then
                 call mpi_isend(NINVALID(Lupy), 1, MPI_INTEGER,&
                     &IPROCNEIGH_(Lupy), 6*K + 4, COMM2D_, requests(irq + 1), ierr)
                 call mpi_isend(BndRadRealInfo(:, :, Lupy), (4 + NSTOKES)*NINVALID(Lupy), MPI_DOUBLE_PRECISION,&
@@ -2051,7 +2069,7 @@ subroutine shd_mpi__computeRad(&
                     &IPROCNEIGH_(Lupy), 6*K + 6, COMM2D_, requests(irq + 3), ierr)
                 irq = irq + 3
             end if
-            if (btest(BCFLAG, 2)) then
+            if (isMpiX_) then
                 call mpi_irecv(NINVALID(Ldownx), 1, MPI_INTEGER,&
                     &IPROCNEIGH_(Ldownx), 6*K + 1, COMM2D_, requests(irq + 1), ierr)
                 call mpi_irecv(BndRadRealInfo(:, :, Ldownx), (4 + NSTOKES)*MAXNRAD, MPI_DOUBLE_PRECISION,&
@@ -2060,7 +2078,7 @@ subroutine shd_mpi__computeRad(&
                     &IPROCNEIGH_(Ldownx), 6*K + 3, COMM2D_, requests(irq + 3), ierr)
                 irq = irq + 3
             end if
-            if (btest(BCFLAG, 3)) then
+            if (isMpiY_) then
                 call mpi_irecv(NINVALID(Ldowny), 1, MPI_INTEGER,&
                     &IPROCNEIGH_(Ldowny), 6*K + 4, COMM2D_, requests(irq + 1), ierr)
                 call mpi_irecv(BndRadRealInfo(:, :, Ldowny), (4 + NSTOKES)*MAXNRAD, MPI_DOUBLE_PRECISION,&
@@ -2072,7 +2090,7 @@ subroutine shd_mpi__computeRad(&
             call mpi_waitall(irq, requests, status, ierr)
 
             NINVALID(Lupx) = 0; NINVALID(Lupy) = 0
-            if (btest(BCFLAG, 2)) then
+            if (isMpiX_) then
                 ! Continue the backwards ray integrations for the X boundary
                 do J = 1, NINVALID(Ldownx)
                     if (Ldownx .eq. 1) BndRadRealInfo(1, J, Ldownx) = XGRID(1)
@@ -2109,7 +2127,7 @@ subroutine shd_mpi__computeRad(&
                 end do
             end if
 
-            if (btest(BCFLAG, 3)) then
+            if (isMpiY_) then
                 ! Continue the backwards ray integrations for the Y boundary
                 do J = 1, NINVALID(Ldowny)
                     if (Ldowny .eq. 3) BndRadRealInfo(2, J, Ldowny) = YGRID(1)
@@ -2514,8 +2532,8 @@ subroutine shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
         ! incomplete rays and the real and integer info needed about the
         ! radiance integrations is sent.
         do SIDE = 1, 4
-            if ((btest(BCFLAG, 2) .and. (SIDE .eq. 1 .or. SIDE .eq. 2)) .or.&
-                (btest(BCFLAG, 3) .and. (SIDE .eq. 3 .or. SIDE .eq. 4))) then
+            if ((isMpiX_ .and. (SIDE .eq. 1 .or. SIDE .eq. 2)) .or.&
+                (isMpiY_ .and. (SIDE .eq. 3 .or. SIDE .eq. 4))) then
                 K = 3*SIDE
                 call mpi_isend(NINVALID(SIDE), 1, MPI_INTEGER,&
                     &IPROCNEIGH_(SIDE), K + 1, COMM2D_, requests(irq + 1), ierr)
@@ -2528,8 +2546,8 @@ subroutine shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
         end do
         ! Do the receives for all four sides of the subdomain.
         do SIDE = 1, 4
-            if ((btest(BCFLAG, 2) .and. (SIDE .eq. 1 .or. SIDE .eq. 2)) .or.&
-                (btest(BCFLAG, 3) .and. (SIDE .eq. 3 .or. SIDE .eq. 4))) then
+            if ((isMpiX_ .and. (SIDE .eq. 1 .or. SIDE .eq. 2)) .or.&
+                (isMpiY_ .and. (SIDE .eq. 3 .or. SIDE .eq. 4))) then
                 K = 3*RECVSIDE(SIDE)
                 call mpi_irecv(NINCOMING(SIDE), 1, MPI_INTEGER,&
                     &IPROCNEIGH_(SIDE), K + 1, COMM2D_, requests(irq + 1), ierr)
@@ -3187,9 +3205,9 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
 
     ! Then get the base grid cell in X and Y assuming evenly spaced grid
     NXC = NX
-    if (btest(BCFLAG, 2) .and. .not. btest(IPFLAG, 0)) NXC = NX - 1
+    if (isMpiX_ .and. .not. btest(IPFLAG, 0)) NXC = NX - 1
     NYC = NY
-    if (btest(BCFLAG, 3) .and. .not. btest(IPFLAG, 1)) NYC = NY - 1
+    if (isMpiY_ .and. .not. btest(IPFLAG, 1)) NYC = NY - 1
     if (btest(IPFLAG, 0)) then
         IX = 1 + nint((NX - 1)*(X - XGRID(1))/(XGRID(NX) - XGRID(1)))
     else

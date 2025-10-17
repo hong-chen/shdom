@@ -86,7 +86,7 @@ subroutine shd_shdo__computeSH(&
     !   Computes the quantities for the spherical harmonic output.
     ! At each grid point the mean radiance and net flux (Fx, Fy, Fz)
     ! are computed.  The output includes the diffuse and direct solar
-    ! components.  If NSHOUT=5 then the HIGHORDERRAD flag is set and the
+    ! components.  If NSHOUT=5 then the isHighOrder flag is set and the
     ! rms of the higher order terms in the radiance series is computed.
 
     integer NSTOKES, NPTS, RSHPTR(NPTS + 1), ML, MM, NSHOUT

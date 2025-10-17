@@ -126,7 +126,6 @@ module globals_cfg
     public
 
     integer, parameter :: FNAMEMAXLEN_ = 256 ! file name max length (number of characters)
-    logical, save :: HIGHORDERRAD_
     real(kind=8), save :: RACC_
     real(kind=4), save :: TOTSYSMEM_MB_ = 16000.0
     real(kind=4), save :: MAXCPUMEM_MB_
@@ -142,6 +141,10 @@ module globals_cfg
     !Notice        5      Normal but significant condition
     !Informational 6      Informational messages
     !All           7      All-level messages
+
+    logical, save :: isHighOrder_ = .false.
+    logical, save :: isMpiX_, isMpiY_, isMpi_
+    logical, save :: isOpenBndryX_, isOpenBndryY_
 
 end module globals_cfg
 

@@ -40,8 +40,11 @@
 program shdom
 
     use globals_const, only: REPS_
-    use globals_cfg,   only: VERBOSE_, FNAMEMAXLEN_, HIGHORDERRAD_, RACC_, &
-                             TOTSYSMEM_MB_, MAXCPUMEM_MB_
+    use globals_cfg,   only: VERBOSE_, FNAMEMAXLEN_, RACC_, &
+                             TOTSYSMEM_MB_, MAXCPUMEM_MB_, &
+                             isHighOrder_, isMpiX_, isMpiY_, isMpi_, &
+                             isOpenBndryX_, isOpenBndryY_
+
     use globals_prp,   only: NPX_, NPY_, NPZ_, NUMPHASE_, &
                              DELX_, DELY_, XSTART_, YSTART_, XDOMAIN_, YDOMAIN_, &
                              ZLEVELS_, TEMPP_, &
@@ -174,7 +177,6 @@ program shdom
     logical :: BASEOUT, MASTERPROC, VALIDBEAM
     logical :: RADIANCE_OUT, VISUAL_OUT
     logical :: FLUX_OUT, FLUXDIV_OUT, SH_OUT, SOURCE_OUT
-    logical :: MPIX, MPIY, MPIMODE
     logical :: NMLMODE = .true.
 
 
@@ -353,15 +355,14 @@ program shdom
     YDOMAIN_ = NPYT*DELY_
 
     ! Choose the option to compute higher order radiance SH terms
-    HIGHORDERRAD_ = .false.
     if ((NPXT .eq. 1) .and. (NPYT .eq. 1) .and.&
         &(NXSFC .le. 32) .and. (NXSFC .le. 32)) then
-        HIGHORDERRAD_ = .true.
-        if (VERBOSE_ .ge. 4) write (6, '(A)') 'Warning [shdom]: 1D calculation, set HIGHORDERRAD_ to .TRUE.'
+        isHighOrder_ = .true.
+        if (VERBOSE_ .ge. 4) write (6, '(A)') 'Warning [shdom]: 1D calculation, set isHighOrder_ to .TRUE.'
     end if
 
     NSHOUT = 4
-    if (HIGHORDERRAD_) NSHOUT = 5
+    if (isHighOrder_) NSHOUT = 5
 
     ! x, y, z grids
     allocate (XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ))
@@ -379,24 +380,38 @@ program shdom
     call shd_mpi__map(BCFLAG, NPX_, NPY_, NX, NY, NZ, DELX_, DELY_, PROPFILE,&
         &XSTART_, YSTART_, RUNNAME)
 
-    ! BCFLAG bit-representation '...01xx' MPIX
+    ! BCFLAG bit-representation '...0001' isOpenBndryX_
+    if (btest(BCFLAG, 0)) then
+        isOpenBndryX_ = .true.
+    else
+        isOpenBndryX_ = .false.
+    end if
+
+    ! BCFLAG bit-representation '...001x' isOpenBndryY_
+    if (btest(BCFLAG, 1)) then
+        isOpenBndryY_ = .true.
+    else
+        isOpenBndryY_ = .false.
+    end if
+
+    ! BCFLAG bit-representation '...01xx' isMpiX_
     if (btest(BCFLAG, 2)) then
-        MPIX = .true.
+        isMpiX_ = .true.
     else
-        MPIX = .false.
+        isMpiX_ = .false.
     end if
 
-    ! BCFLAG bit-representation '...1xxx' MPIY
+    ! BCFLAG bit-representation '...1xxx' isMpiY_
     if (btest(BCFLAG, 3)) then
-        MPIY = .true.
+        isMpiY_ = .true.
     else
-        MPIY = .false.
+        isMpiY_ = .false.
     end if
 
-    if (MPIX .or. MPIY) then
-        MPIMODE = .true.
+    if (isMpiX_ .or. isMpiY_) then
+        isMpi_ = .true.
     else
-        MPIMODE = .false.
+        isMpi_ = .false.
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
@@ -411,14 +426,14 @@ program shdom
     !   btest(IPFLAG, 0) checks whether IPFLAG=1 or IPFLAG=0 ('...0001' [IPA in X] or '...0000' [3D in X])
     !   btest(BCFLAG, 0) checks whether BCFLAG=1 or BCFLAG=0 ('...0001' [open in X] or '...0000' [periodic in X])
     NX1 = NX + 1
-    if (btest(IPFLAG, 0) .or. btest(BCFLAG, 0) .or. MPIX) NX1 = NX
+    if (btest(IPFLAG, 0) .or. isOpenBndryX_ .or. isMpiX_) NX1 = NX
 
     ! btest(IPFLAG, 1) checks whether IPFLAG=2 [or 3] or IPFLAG=0 [or 1]
     !   ('...0010' [or '...0011', IPA in Y] or '...0000' [or '...0001', 3D in Y])
     ! btest(BCFLAG, 1) checks whether BCFLAG=2 [or 3] or BCFLAG=0 [or 1]
     !   ('...0010' [or '...0011', open in Y] or '...0000' [or '...0001', periodic in Y])
     NY1 = NY + 1
-    if (btest(IPFLAG, 1) .or. btest(BCFLAG, 1) .or. MPIY) NY1 = NY
+    if (btest(IPFLAG, 1) .or. isOpenBndryY_ .or. isMpiY_) NY1 = NY
 
     ! Number of base points
     NBPTS = NX1*NY1*NZ
@@ -441,7 +456,7 @@ program shdom
     allocate (IPHASEP_(MAXPG), LEGENP_(MAXPGL))
     MEMWORD = MEMWORD + NPZ_ + 6.0*MAXPG + MAXPGL
 
-    if (MPIMODE) then
+    if (isMpi_) then
 
         ! Read the properties of the medium to the master processor and
         !   distribute to all the processors
@@ -597,7 +612,7 @@ program shdom
             if (OUTPARMS(2, I) .le. 0.0) then
                 NXOUT = 1
             else
-                if (MPIX) then
+                if (isMpiX_) then
                     NXOUT = max(1, nint(XDOMAIN_/OUTPARMS(2, I)))
                 else
                     NXOUT = max(1, nint((XDOMAIN_ + 2*OUTPARMS(4, I))/OUTPARMS(2, I)))
@@ -606,7 +621,7 @@ program shdom
             if (OUTPARMS(3, I) .le. 0.0) then
                 NYOUT = 1
             else
-                if (MPIY) then
+                if (isMpiY_) then
                     NYOUT = max(1, nint(YDOMAIN_/OUTPARMS(3, I)))
                 else
                     NYOUT = max(1, nint((YDOMAIN_ + 2*OUTPARMS(5, I))/OUTPARMS(3, I)))
@@ -642,7 +657,7 @@ program shdom
 
     ! Notify user that certain outputs are not supported with multiple processors
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    if (MPIMODE .and. MASTERPROC) then
+    if (isMpi_ .and. MASTERPROC) then
         do I = 1, NUMOUT
             if (OUTTYPES(I) .eq. 'F') then
                 if (nint(OUTPARMS(1, I)) .eq. 2 .or. nint(OUTPARMS(1, I)) .eq. 5) then
@@ -673,7 +688,7 @@ program shdom
 
     ! Memory check
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    if (MPIMODE) then
+    if (isMpi_) then
         ! Read the memory parameters from a file, if it exists, and send
         !   the parameters to all processors. Otherwise use the input ones.
         call shd_mpi__bcastMem(MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
@@ -756,7 +771,7 @@ program shdom
 
     WANTMEM = ADAPT_GRID_FACTOR*NBPTS*NMAXIG
 
-    if (HIGHORDERRAD_) then
+    if (isHighOrder_) then
         REDUCE_RATIO = min(2.0, ((MAX_TOTAL_MB*1024**2)/4 - MEMWORD)/WANTMEM)
     else
         REDUCE_RATIO = min(1.5, ((MAX_TOTAL_MB*1024**2)/4 - MEMWORD)/WANTMEM)
@@ -953,7 +968,7 @@ program shdom
             &ML, MM, NLM, NMU, NPHI, NLEG, NSTLEG, NUMPHASE_,&
             &NPHI0, MU, PHI, WTDO,&
             &MAXIV, MAXIC, MAXIG, MAXIDO, INRADFLAG,&
-            &BCFLAG, IPFLAG, DELTAM, SRCTYPE, HIGHORDERRAD_,&
+            &BCFLAG, IPFLAG, DELTAM, SRCTYPE, isHighOrder_,&
             &SOLARFLUXCKD, SOLARMU, SOLARAZ, SKYRAD,&
             &SFCTYPE, GNDTEMP, GNDALBEDO,&
             &NXSFC, NYSFC, DELXSFC, DELYSFC,&
@@ -975,7 +990,7 @@ program shdom
             IRAD = 0
             do I = 1, NUMOUT
                 if (OUTTYPES(I) .eq. 'R') then
-                    if (MPIMODE) then
+                    if (isMpi_) then
                         if (SENFILE(1:4) .ne. 'NONE') then
                             call shd_mpi__computeRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                                 &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
@@ -1043,7 +1058,7 @@ program shdom
             IVIS = 0
             do I = 1, NUMOUT
                 if (OUTTYPES(I) .eq. 'V') then
-                    if (MPIMODE) then
+                    if (isMpi_) then
                         if (SENFILE(1:4) .ne. 'NONE') then
                             call shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                                 &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
@@ -1140,7 +1155,7 @@ program shdom
 
                 allocate(DIRFLUX_TMP(NPTS))
 
-                if (MPIMODE) then
+                if (isMpi_) then
                     call shd_mpi__makeDirect(1, NPTS, BCFLAG, IPFLAG, .false., ML,&
                         &NSTLEG, NLEG, SOLARFLUXCKD, SOLARMU, SOLARAZ,&
                         &GRIDPOS, NX, XGRID, NY, YGRID, DIRFLUX_TMP)
@@ -1192,7 +1207,7 @@ program shdom
     NSH = SHPTR(NPTS + 1)
     IRAD = 0
     IVIS = 0
-    if (MPIMODE) then
+    if (isMpi_) then
 
         if (MASTERPROC) then
             if (FLUX_OUT) allocate (ALLFLUXES(3, NZ, NYT, NXT))

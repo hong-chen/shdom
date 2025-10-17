@@ -40,7 +40,8 @@
 module shd_init
 
     use globals_const, only: RD_, PI_, OPI_
-    use globals_cfg,   only: VERBOSE_, PLANET_RADIUS_
+    use globals_cfg,   only: VERBOSE_, PLANET_RADIUS_, &
+                             isOpenBndryX_, isOpenBndryY_, isMpiX_, isMpiY_
 
     use shd_util, only: shd_util__computePlanck, &
                         shd_util__solveTriDiag
@@ -120,7 +121,7 @@ subroutine shd_init__makeGrid(&
         if (VERBOSE_ .ge. 4) write(*, '(A)') 'Warning [_makeGrid]: Found DELXP<=0.0, reset DELXP to 1.0.'
     end if
 
-    if (btest(BCFLAG, 2)) then ! open in X
+    if (isMpiX_) then ! open in X
         do IX = 1, NX
             if (NPX .gt. 1) then
                 XGRID(IX) = XSTART + (IX - 1)*(DELXP*(NPX - 1))/float(NX - 1)
@@ -139,7 +140,7 @@ subroutine shd_init__makeGrid(&
         if (VERBOSE_ .ge. 4) write(*, '(A)') 'Warning [_makeGrid]: Found DELYP<=0.0, reset DELYP to 1.0.'
     end if
 
-    if (btest(BCFLAG, 3)) then ! open in Y
+    if (isMpiY_) then ! open in Y
         do IY = 1, NY
             if (NPY .gt. 1) then
                 YGRID(IY) = YSTART + (IY - 1)*(DELYP*(NPY - 1))/float(NY - 1)
@@ -281,11 +282,11 @@ subroutine shd_init__makeCell(&
     NPTS = I
 
     NXC = NX
-    if (btest(BCFLAG, 0)) NXC = NX + 1
-    if (btest(BCFLAG, 2) .and. (.not. btest(IPFLAG, 0))) NXC = NX - 1
+    if (isOpenBndryX_) NXC = NX + 1
+    if (isMpiX_ .and. (.not. btest(IPFLAG, 0))) NXC = NX - 1
     NYC = NY
-    if (btest(BCFLAG, 1)) NYC = NY + 1
-    if (btest(BCFLAG, 3) .and. (.not. btest(IPFLAG, 1))) NYC = NY - 1
+    if (isOpenBndryY_) NYC = NY + 1
+    if (isMpiY_ .and. (.not. btest(IPFLAG, 1))) NYC = NY - 1
 
     ! Then setup the cell structures
     I = 0
@@ -293,7 +294,7 @@ subroutine shd_init__makeCell(&
         if (btest(IPFLAG, 0)) then
             IX0 = IX
             IX1 = IX
-        else if (btest(BCFLAG, 0)) then
+        else if (isOpenBndryX_) then
             IX0 = max(1, IX - 1)
             IX1 = min(NX, IX)
         else
@@ -304,7 +305,7 @@ subroutine shd_init__makeCell(&
             if (btest(IPFLAG, 1)) then
                 IY0 = IY
                 IY1 = IY
-            else if (btest(BCFLAG, 1)) then
+            else if (isOpenBndryY_) then
                 IY0 = max(1, IY - 1)
                 IY1 = min(NY, IY)
             else
@@ -328,7 +329,7 @@ subroutine shd_init__makeCell(&
                     NEIGHPTR(1, I) = I
                     NEIGHPTR(2, I) = I
                     CELLFLAGS(I) = ibset(int(CELLFLAGS(I)), 0)
-                else if (btest(BCFLAG, 0)) then
+                else if (isOpenBndryX_) then
                     if (IX .eq. 1) then
                         NEIGHPTR(1, I) = I
                         NEIGHPTR(2, I) = I + (NZ - 1)*NYC
@@ -341,7 +342,7 @@ subroutine shd_init__makeCell(&
                         NEIGHPTR(1, I) = I - (NZ - 1)*NYC
                         NEIGHPTR(2, I) = I + (NZ - 1)*NYC
                     end if
-                else if (btest(BCFLAG, 2)) then
+                else if (isMpiX_) then
                     if (IX .eq. 1) then
                         NEIGHPTR(1, I) = 0
                         NEIGHPTR(2, I) = I + (NZ - 1)*NYC
@@ -368,7 +369,7 @@ subroutine shd_init__makeCell(&
                     NEIGHPTR(3, I) = I
                     NEIGHPTR(4, I) = I
                     CELLFLAGS(I) = ibset(int(CELLFLAGS(I)), 1)
-                else if (btest(BCFLAG, 1)) then
+                else if (isOpenBndryY_) then
                     if (IY .eq. 1) then
                         NEIGHPTR(3, I) = I
                         NEIGHPTR(4, I) = I + (NZ - 1)
@@ -381,7 +382,7 @@ subroutine shd_init__makeCell(&
                         NEIGHPTR(3, I) = I - (NZ - 1)
                         NEIGHPTR(4, I) = I + (NZ - 1)
                     end if
-                else if (btest(BCFLAG, 3)) then
+                else if (isMpiY_) then
                     if (IY .eq. 1) then
                         NEIGHPTR(3, I) = 0
                         NEIGHPTR(4, I) = I + (NZ - 1)

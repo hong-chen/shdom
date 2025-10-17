@@ -41,7 +41,8 @@ module shd_rad
 
     use globals_const, only: RD_, PI_, DTOR_, &
                              FRAC12_, FRAC13_
-    use globals_cfg,   only: VERBOSE_, RACC_
+    use globals_cfg,   only: VERBOSE_, RACC_, &
+                             isOpenBndryX_, isOpenBndryY_, isMpiX_, isMpiY_
 
     use shd_scat, only: shd_scat__computePhase
 
@@ -264,13 +265,13 @@ subroutine shd_rad__computeDirect(&
         DELYD = dble(DELY_)
         EPSS = max(0.001*DELXD, 0.001*DELYD, EPSS)
 
-        if (btest(BCFLAG, 2) .and. (NPX_ .gt. 1)) then
+        if (isMpiX_ .and. (NPX_ .gt. 1)) then
             XDOMAIN = DELXD*(NPX_ - 1)
         else
             XDOMAIN = DELXD*NPX_
         end if
 
-        if (btest(BCFLAG, 3) .and. (NPY_ .gt. 1)) then
+        if (isMpiY_ .and. (NPY_ .gt. 1)) then
             YDOMAIN = DELYD*(NPY_ - 1)
         else
             YDOMAIN = DELYD*NPY_
@@ -349,15 +350,15 @@ subroutine shd_rad__computeDirect(&
     CONSTY = btest(IPDIRECT, 1)
     if (CX .eq. 0.0) CONSTX = .true.
     if (CY .eq. 0.0) CONSTY = .true.
-    if (btest(BCFLAG, 0) .and. (abs(X) .lt. 0.01*DELXD&
+    if (isOpenBndryX_ .and. (abs(X) .lt. 0.01*DELXD&
         &.or. abs(X - (NPX_ - 1)*DELXD) .lt. 0.01*DELXD)) CONSTX = .true.
-    if (btest(BCFLAG, 1) .and. (abs(Y) .lt. 0.01*DELYD&
+    if (isOpenBndryY_ .and. (abs(Y) .lt. 0.01*DELYD&
         &.or. abs(Y - (NPY_ - 1)*DELYD) .lt. 0.01*DELYD)) CONSTY = .true.
 
     ! If have multiple subdomains (processors) and ray is going outwards
     !   from a boundary then set the HITBOUNDARY flag
     HITBOUNDARY = .false.
-    if (btest(BCFLAG, 2)) then
+    if (isMpiX_) then
         if (CX .gt. 0.0 .and. abs(X - XDOMAIN) .lt. 0.001*DELXD) then
             SIDE = 2
             HITBOUNDARY = .true.
@@ -366,7 +367,7 @@ subroutine shd_rad__computeDirect(&
             HITBOUNDARY = .true.
         end if
     end if
-    if (btest(BCFLAG, 3)) then
+    if (isMpiY_) then
         if (CY .gt. 0.0 .and. abs(Y - YDOMAIN) .lt. 0.001*DELYD) then
             SIDE = 4
             HITBOUNDARY = .true.
@@ -382,7 +383,7 @@ subroutine shd_rad__computeDirect(&
     do while (.not. HITBOUNDARY .and. abs(ZE - ZLEVELS_(NPZ_)) .gt. EPSZ)
         IP = I + 1
         if (I .eq. NPX_) then
-            if (btest(BCFLAG, 0) .or. btest(BCFLAG, 2)) then
+            if (isOpenBndryX_ .or. isMpiX_) then
                 IP = NPX_
             else
                 IP = 1
@@ -390,7 +391,7 @@ subroutine shd_rad__computeDirect(&
         end if
         JP = J + 1
         if (J .eq. NPY_) then
-            if (btest(BCFLAG, 1) .or. btest(BCFLAG, 3)) then
+            if (isOpenBndryY_ .or. isMpiY_) then
                 JP = NPY_
             else
                 JP = 1
@@ -482,21 +483,21 @@ subroutine shd_rad__computeDirect(&
             ! If have reached a horizontal boundary then either wrap around
             !   (periodic) or go into IP mode (open boundaries).
             if (I .eq. 0) then
-                if (btest(BCFLAG, 0)) then
+                if (isOpenBndryX_) then
                     I = 1
                     CONSTX = .true.
-                else if (btest(BCFLAG, 2)) then
+                else if (isMpiX_) then
                     HITBOUNDARY = .true.
                     SIDE = 1
                 else
                     I = NPX_
                     XOFFS = XDOMAIN
                 end if
-            else if (I .ge. NPX_ .and. btest(BCFLAG, 2)) then
+            else if (I .ge. NPX_ .and. isMpiX_) then
                 HITBOUNDARY = .true.
                 SIDE = 2
             else if (I .eq. NPX_ + 1) then
-                if (btest(BCFLAG, 0)) then
+                if (isOpenBndryX_) then
                     I = NPX_
                     CONSTX = .true.
                 else
@@ -510,21 +511,21 @@ subroutine shd_rad__computeDirect(&
             ZP = ZE + SO*CZ
             J = J + DJ
             if (J .eq. 0) then
-                if (btest(BCFLAG, 1)) then
+                if (isOpenBndryY_) then
                     J = 1
                     CONSTY = .true.
-                else if (btest(BCFLAG, 3)) then
+                else if (isMpiY_) then
                     HITBOUNDARY = .true.
                     SIDE = 3
                 else
                     J = NPY_
                     YOFFS = YDOMAIN
                 end if
-            else if (J .ge. NPY_ .and. btest(BCFLAG, 3)) then
+            else if (J .ge. NPY_ .and. isMpiY_) then
                 HITBOUNDARY = .true.
                 SIDE = 4
             else if (J .eq. NPY_ + 1) then
-                if (btest(BCFLAG, 1)) then
+                if (isOpenBndryY_) then
                     J = NPY_
                     CONSTY = .true.
                 else
