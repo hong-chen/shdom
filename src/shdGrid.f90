@@ -41,7 +41,7 @@ module shd_grid
 
     use globals_const, only: RD_
     use globals_cfg,   only: VERBOSE_, RACC_, &
-                             isOpenBndryX_, isOpenBndryY_, isMpiX_, isMpiY_, isMpi_, &
+                             isOpenX_, isOpenYorOpen_, isMpiX_, isMpiY_, isMpi_, &
                              is1DX_, is1DYor1D_, is1D_
 
     use shd_util, only: shd_util__findNextCell, &
@@ -427,11 +427,11 @@ subroutine shd_grid__makeSweepOrder(&
     end if
 
     NXC = NX
-    if (isOpenBndryX_) NXC = NX + 1
+    if (isOpenX_) NXC = NX + 1
     if (isMpiX_ .and. (.not. is1DX_)) NXC = NX - 1
 
     NYC = NY
-    if (isOpenBndryY_) NYC = NY + 1
+    if (isOpenYorOpen_) NYC = NY + 1
     if (isMpiY_ .and. (.not. is1DYor1D_)) NYC = NY - 1
 
     ! Loop over the number of octants needed; get the octant number
@@ -914,7 +914,7 @@ logical function sweepCellBase(BCFLAG, NXC, NYC, NZ, IOCT, ICELL)
     if (ICELL .eq. 0) then
         if (btest(IOCT - 1, 0)) then
             DIX = +1
-            if (isOpenBndryX_) then
+            if (isOpenX_) then
                 SIX = NXC
                 EIX = max(NXC - 1, 1)
             else
@@ -923,7 +923,7 @@ logical function sweepCellBase(BCFLAG, NXC, NYC, NZ, IOCT, ICELL)
             end if
         else
             DIX = -1
-            if (isOpenBndryX_) then
+            if (isOpenX_) then
                 SIX = 1
                 EIX = min(2, NXC)
             else
@@ -933,7 +933,7 @@ logical function sweepCellBase(BCFLAG, NXC, NYC, NZ, IOCT, ICELL)
         end if
         if (btest(IOCT - 1, 1)) then
             DIY = +1
-            if (isOpenBndryY_) then
+            if (isOpenYorOpen_) then
                 SIY = NYC
                 EIY = max(NYC - 1, 1)
             else
@@ -942,7 +942,7 @@ logical function sweepCellBase(BCFLAG, NXC, NYC, NZ, IOCT, ICELL)
             end if
         else
             DIY = -1
-            if (isOpenBndryY_) then
+            if (isOpenYorOpen_) then
                 SIY = 1
                 EIY = min(2, NYC)
             else

@@ -43,7 +43,7 @@
 module shd_util
 
     use globals_const, only: RD_, PI_, DPI_
-    use globals_cfg,   only: isOpenBndryX_, isOpenBndryY_, isMpiX_, isMpiY_, &
+    use globals_cfg,   only: isOpenX_, isOpenYorOpen_, isMpiX_, isMpiY_, &
                              is1DX_, is1DYor1D_
 
     implicit none
@@ -195,7 +195,7 @@ subroutine shd_util__findCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
     real(RD_) :: XDOMAIN, YDOMAIN
 
     ! Move point to within horizontal domain if periodic
-    if (.not. (isOpenBndryX_ .or. isMpiX_)) then
+    if (.not. (isOpenX_ .or. isMpiX_)) then
         XDOMAIN = XGRID(NX + 1) - XGRID(1)
         if (X0 .lt. XGRID(1)) then
             X0 = X0 - XDOMAIN*(int((X0 - XGRID(1))/XDOMAIN) - 1)
@@ -203,7 +203,7 @@ subroutine shd_util__findCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
             X0 = X0 - XDOMAIN*int((X0 - XGRID(1))/XDOMAIN)
         end if
     end if
-    if (.not. (isOpenBndryY_ .or. isMpiY_)) then
+    if (.not. (isOpenYorOpen_ .or. isMpiY_)) then
         YDOMAIN = YGRID(NY + 1) - YGRID(1)
         if (Y0 .lt. YGRID(1)) then
             Y0 = Y0 - YDOMAIN*(int((Y0 - YGRID(1))/YDOMAIN) - 1)
@@ -280,7 +280,7 @@ subroutine shd_util__findCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
     ! Special case for open boundary conditions: if outside the 1 to
     !   domain then use the IP grid cells at either end
     NXC = NX
-    if (isOpenBndryX_) then
+    if (isOpenX_) then
         NXC = NX + 1
         if (X0 .lt. XGRID(1)) then
             ! X0 = XGRID(1)
@@ -297,7 +297,7 @@ subroutine shd_util__findCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
         IX = min(IX, NXC)
     end if
     NYC = NY
-    if (isOpenBndryY_) then
+    if (isOpenYorOpen_) then
         NYC = NY + 1
         if (Y0 .lt. YGRID(1)) then
             ! Y0 = YGRID(1)

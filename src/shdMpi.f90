@@ -41,7 +41,7 @@ module shd_mpi
 
     use globals_const, only: RD_, PI_, DPI_, PIH_, FRAC13_, FRAC112_
     use globals_cfg,   only: VERBOSE_, FNAMEMAXLEN_, RACC_, &
-                             isOpenBndryX_, isOpenBndryY_, isMpiX_, isMpiY_, isMpi_, &
+                             isMpiX_, isMpiY_, isMpi_, &
                              is1DX_, is1DYor1D_, is1D_
 
 #if HAS_MPI

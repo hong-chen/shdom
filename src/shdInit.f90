@@ -41,7 +41,7 @@ module shd_init
 
     use globals_const, only: RD_, PI_, OPI_
     use globals_cfg,   only: VERBOSE_, PLANET_RADIUS_, &
-                             isOpenBndryX_, isOpenBndryY_, isMpiX_, isMpiY_, &
+                             isOpenX_, isOpenYorOpen_, isMpiX_, isMpiY_, &
                              is1DX_, is1DYor1D_
 
     use shd_util, only: shd_util__computePlanck, &
@@ -283,10 +283,10 @@ subroutine shd_init__makeCell(&
     NPTS = I
 
     NXC = NX
-    if (isOpenBndryX_) NXC = NX + 1
+    if (isOpenX_) NXC = NX + 1
     if (isMpiX_ .and. (.not. is1DX_)) NXC = NX - 1
     NYC = NY
-    if (isOpenBndryY_) NYC = NY + 1
+    if (isOpenYorOpen_) NYC = NY + 1
     if (isMpiY_ .and. (.not. is1DYor1D_)) NYC = NY - 1
 
     ! Then setup the cell structures
@@ -295,7 +295,7 @@ subroutine shd_init__makeCell(&
         if (is1DX_) then
             IX0 = IX
             IX1 = IX
-        else if (isOpenBndryX_) then
+        else if (isOpenX_) then
             IX0 = max(1, IX - 1)
             IX1 = min(NX, IX)
         else
@@ -306,7 +306,7 @@ subroutine shd_init__makeCell(&
             if (is1DYor1D_) then
                 IY0 = IY
                 IY1 = IY
-            else if (isOpenBndryY_) then
+            else if (isOpenYorOpen_) then
                 IY0 = max(1, IY - 1)
                 IY1 = min(NY, IY)
             else
@@ -330,7 +330,7 @@ subroutine shd_init__makeCell(&
                     NEIGHPTR(1, I) = I
                     NEIGHPTR(2, I) = I
                     CELLFLAGS(I) = ibset(int(CELLFLAGS(I)), 0)
-                else if (isOpenBndryX_) then
+                else if (isOpenX_) then
                     if (IX .eq. 1) then
                         NEIGHPTR(1, I) = I
                         NEIGHPTR(2, I) = I + (NZ - 1)*NYC
@@ -370,7 +370,7 @@ subroutine shd_init__makeCell(&
                     NEIGHPTR(3, I) = I
                     NEIGHPTR(4, I) = I
                     CELLFLAGS(I) = ibset(int(CELLFLAGS(I)), 1)
-                else if (isOpenBndryY_) then
+                else if (isOpenYorOpen_) then
                     if (IY .eq. 1) then
                         NEIGHPTR(3, I) = I
                         NEIGHPTR(4, I) = I + (NZ - 1)

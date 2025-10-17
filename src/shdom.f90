@@ -43,7 +43,7 @@ program shdom
     use globals_cfg,   only: VERBOSE_, FNAMEMAXLEN_, RACC_, &
                              TOTSYSMEM_MB_, MAXCPUMEM_MB_, &
                              isHighOrder_, &
-                             isOpenBndryX_, isOpenBndryY_, isMpiX_, isMpiY_, isMpi_, &
+                             isOpenX_, isOpenYorOpen_, isMpiX_, isMpiY_, isMpi_, &
                              is1DX_, is1DYor1D_, is1D_, is3Ddir1Ddif_
 
     use globals_prp,   only: NPX_, NPY_, NPZ_, NUMPHASE_, &
@@ -381,18 +381,18 @@ program shdom
     call shd_mpi__map(BCFLAG, NPX_, NPY_, NX, NY, NZ, DELX_, DELY_, PROPFILE,&
         &XSTART_, YSTART_, RUNNAME)
 
-    ! BCFLAG bit-representation '...0001' isOpenBndryX_
+    ! BCFLAG bit-representation '...0001' isOpenX_
     if (btest(BCFLAG, 0)) then
-        isOpenBndryX_ = .true.
+        isOpenX_ = .true.
     else
-        isOpenBndryX_ = .false.
+        isOpenX_ = .false.
     end if
 
-    ! BCFLAG bit-representation '...001x' isOpenBndryY_
+    ! BCFLAG bit-representation '...001x' isOpenYorOpen_
     if (btest(BCFLAG, 1)) then
-        isOpenBndryY_ = .true.
+        isOpenYorOpen_ = .true.
     else
-        isOpenBndryY_ = .false.
+        isOpenYorOpen_ = .false.
     end if
 
     ! BCFLAG bit-representation '...01xx' isMpiX_
@@ -455,12 +455,12 @@ program shdom
     ! Set up base grid point actual size (NX1xNY1xNZ)
     !   btest(BCFLAG, 0) checks whether BCFLAG=1 or BCFLAG=0 ('...0001' [open in X] or '...0000' [periodic in X])
     NX1 = NX + 1
-    if (is1DX_ .or. isOpenBndryX_ .or. isMpiX_) NX1 = NX
+    if (is1DX_ .or. isOpenX_ .or. isMpiX_) NX1 = NX
 
     ! btest(BCFLAG, 1) checks whether BCFLAG=2 [or 3] or BCFLAG=0 [or 1]
     !   ('...0010' [or '...0011', open in Y] or '...0000' [or '...0001', periodic in Y])
     NY1 = NY + 1
-    if (is1DYor1D_ .or. isOpenBndryY_ .or. isMpiY_) NY1 = NY
+    if (is1DYor1D_ .or. isOpenYorOpen_ .or. isMpiY_) NY1 = NY
 
     ! Number of base points
     NBPTS = NX1*NY1*NZ
