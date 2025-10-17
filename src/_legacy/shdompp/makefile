@@ -20,8 +20,8 @@ shdompp: shdompp.f90 fftpack5.1cos.o
 fftpack5.1cos.o: fftpack5.1cos.f90
 	$(FC) $(FFLAGS) -c fftpack5.1cos.f90
 
-disortsh: disortsh.f90 disort2.o
-	$(FC) $(FFLAGS) disortsh.f90 disort2.o  -o $(BIN_DIR)/disortsh
+disortsh: disortsh.f90 disort4.o
+	$(FC) $(FFLAGS) disortsh.f90 disort4.o  -o $(BIN_DIR)/disortsh
 
 ppmieprp: ppmieprp.f90
 	$(FC) $(FFLAGS) ppmieprp.f90 -o $(BIN_DIR)/ppmieprp
