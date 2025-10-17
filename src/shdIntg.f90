@@ -1410,40 +1410,47 @@ subroutine shd_intg__backIntegrate1D(&
     &GRIDPOS, SWEEPORD, MU, PHI, TRANSMIN,&
     &EXTINCT, NSTOKES, SOURCE, KANG, GRIDRAD)
 
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    ! Description:
     !   Sweeps through the spatial grid computing radiances for the
-    ! discrete ordinate direction (MU,PHI) by integrating the source
-    ! function and extinction backward from each point.  If a point is
-    ! already done (nonnegative in GRIDRAD) then it is skipped.
-    ! For each grid point a ray opposite to the ordinate direction is traced
-    ! back to a face containing known (valid) radiances.  As each cell is
-    ! crossed (usually only one) the integration of the source function
-    ! across the cell is done and added to the radiance.  The radiance
-    ! ad the end of the ray path is interpolated from the known grid point
-    ! radiances on the face.  The resulting radiances are put in GRIDRAD.
+    !   discrete ordinate direction (MU,PHI) by integrating the source
+    !   function and extinction backward from each point. If a point is
+    !   already done (nonnegative in GRIDRAD) then it is skipped.
+    !   For each grid point a ray opposite to the ordinate direction is traced
+    !   back to a face containing known (valid) radiances. As each cell is
+    !   crossed (usually only one) the integration of the source function
+    !   across the cell is done and added to the radiance. The radiance
+    !   at the end of the ray path is interpolated from the known grid point
+    !   radiances on the face. The resulting radiances are put in GRIDRAD.
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    integer NX, NY, NZ, NA, NPTS, NCELLS, KANG, NSTOKES
-    integer GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
-    integer SWEEPORD(NPTS, *)
-    integer*2 CELLFLAGS(NCELLS)
-    real GRIDPOS(3, NPTS)
-    real MU, PHI, TRANSMIN
-    real EXTINCT(NPTS), SOURCE(NSTOKES, NA, NPTS)
-    real GRIDRAD(NSTOKES, NPTS)
-    integer BITZ, IOCT, JOCT
-    integer IPCELL, ICELL, INEXTCELL, IPT, IFACE, I1, IOPP
-    integer GRIDFACE(6)
-    integer IORDER, ICORNER, JOCTORDER(8)
-    logical VALIDRAD
-    real(RD_) :: CZ, CZINV
-    real(RD_) :: XE, YE, ZE
-    real(RD_) :: SO, EPS
-    real(RD_) :: EXT, EXT0, EXT1
-    real(RD_) :: SRC(NSTOKES), SRCEXT0(NSTOKES), SRCEXT1(NSTOKES)
-    real(RD_) :: EXT0P, SRCEXT0P(NSTOKES)
-    real(RD_) :: TAU, TRANSCELL, ABSCELL, TRANSMIT
-    real(RD_) :: RAD(NSTOKES), RAD0(NSTOKES)
-    data GRIDFACE/0, 0, 0, 0, 1, 5/
-    data JOCTORDER/1, 1, 1, 1, 2, 2, 2, 2/
+    integer(kind=I__), intent(in) :: NX, NY, NZ, NA, NPTS, NCELLS, KANG, NSTOKES
+    integer(kind=I__), intent(in) :: GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
+    integer(kind=I__), intent(in) :: SWEEPORD(NPTS, *)
+    integer(kind=2)  , intent(in) :: CELLFLAGS(NCELLS)
+    real(kind=R__)   , intent(in) :: GRIDPOS(3, NPTS)
+    real(kind=R__)   , intent(in) :: MU, PHI, TRANSMIN
+    real(kind=R__)   , intent(in) :: EXTINCT(NPTS), SOURCE(NSTOKES, NA, NPTS)
+
+    real(kind=R__), intent(inout) :: GRIDRAD(NSTOKES, NPTS)
+
+    real(kind=RD_) :: CZ, CZINV
+    real(kind=RD_) :: XE, YE, ZE
+    real(kind=RD_) :: SO, EPS
+    real(kind=RD_) :: EXT, EXT0, EXT1
+    real(kind=RD_) :: SRC(NSTOKES), SRCEXT0(NSTOKES), SRCEXT1(NSTOKES)
+    real(kind=RD_) :: EXT0P, SRCEXT0P(NSTOKES)
+    real(kind=RD_) :: TAU, TRANSCELL, ABSCELL, TRANSMIT
+    real(kind=RD_) :: RAD(NSTOKES), RAD0(NSTOKES)
+
+    integer(kind=I__) :: BITZ, IOCT, JOCT
+    integer(kind=I__) :: IPCELL, ICELL, INEXTCELL, IPT, IFACE, I1, IOPP
+    integer(kind=I__) :: IORDER, ICORNER
+    logical :: VALIDRAD
+
+    integer(kind=I__) :: GRIDFACE(6), JOCTORDER(8)
+    data GRIDFACE /0, 0, 0, 0, 1, 5/
+    data JOCTORDER /1, 1, 1, 1, 2, 2, 2, 2/
 
     EPS = 1.0e-3*(GRIDPOS(3, GRIDPTR(8, 1)) - GRIDPOS(3, GRIDPTR(1, 1)))
 
@@ -1460,6 +1467,7 @@ subroutine shd_intg__backIntegrate1D(&
     else
         stop 'Error [_backIntegrate1D]: Bad MU.'
     end if
+
     ! IOCT is the octant the ray come from or the discrete ordinate goes to.
     IOCT = 1 + 4*BITZ
     JOCT = JOCTORDER(IOCT)
