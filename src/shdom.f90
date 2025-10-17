@@ -45,7 +45,9 @@ program shdom
                              isHighOrder_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, isMpi_, &
                              is1DX_, is1DYx_, is1D_, is3Ddir1Ddif_, &
-                             is1D1_, isPol_, isPol4_
+                             is1D1_, isPol_, isPol4_, &
+                             isSolar_, isThermal_
+
 
     use globals_prp,   only: NPX_, NPY_, NPZ_, NUMPHASE_, &
                              DELX_, DELY_, XSTART_, YSTART_, XDOMAIN_, YDOMAIN_, &
@@ -288,6 +290,21 @@ program shdom
     ! NLEG: The number of Legendre series phase function terms used in the solution procedure
     NLEG = ML
     if (DELTAM) NLEG = ML + 1
+
+    if (SRCTYPE .eq. 'B') then
+        isSolar_ = .true.
+        isThermal_ = .true.
+    else
+        if (SRCTYPE .eq. 'S') then
+            isSolar_ = .true.
+            isThermal_ = .false.
+        else if (SRCTYPE .eq. 'T') then
+            isSolar_ = .false.
+            isThermal_ = .true.
+        else
+            stop 'Error [shdom]: Unknown SRCTYPE.'
+        end if
+    end if
 
     ! for thermal, reset solar azimuth angle
     if (SRCTYPE .eq. 'T') SOLARAZ = 0.0d0

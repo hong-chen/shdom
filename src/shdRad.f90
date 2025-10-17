@@ -44,7 +44,8 @@ module shd_rad
     use globals_cfg,   only: VERBOSE_, RACC_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
                              is3Ddir1Ddif_, &
-                             isPol_, isPol4_
+                             isPol_, isPol4_, &
+                             isSolar_, isThermal_
 
     use shd_scat, only: shd_scat__computePhase
 
@@ -930,7 +931,7 @@ subroutine shd_rad__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
 
     allocate (YLMSUN(NSTLEG, NLM))
 
-    if (SRCTYPE .ne. 'T') then
+    if (isSolar_) then
         call shd_shdo__computeYlm(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG, YLMSUN)
         if (DELTAM .and. NUMPHASE .gt. 0) then
             NSCATANGLE = max(36, min(MAXSCATANG, 2*NLEG))
@@ -1154,10 +1155,10 @@ subroutine shd_rad__computeNetFluxDiv(NSTOKES, NPTS, RSHPTR, SRCTYPE,&
     do I = 1, NPTS
         IR = RSHPTR(I)
         HR = C*EXTINCT(I)*(1 - ALBEDO(I))*RADIANCE(1, IR + 1)
-        if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
+        if (isSolar_) then
             HR = HR + EXTINCT(I)*(1.0 - ALBEDO(I))*DIRFLUX(I)*SECMU
         end if
-        if (SRCTYPE .eq. 'T' .or. SRCTYPE .eq. 'B') then
+        if (isThermal_) then
             HR = HR - 4*PI_*EXTINCT(I)*PLANCK(I)
         end if
         NETFLUXDIV(I) = -HR
@@ -1220,7 +1221,7 @@ subroutine shd_rad__computeSensorRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
 
     allocate (YLMSUN(NSTLEG, NLM))
 
-    if (SRCTYPE .ne. 'T') then
+    if (isSolar_) then
         call shd_shdo__computeYlm(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG, YLMSUN)
         if (DELTAM .and. NUMPHASE .gt. 0) then
             NSCATANGLE = max(36, min(MAXSCATANG, 2*NLEG))

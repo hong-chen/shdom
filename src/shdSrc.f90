@@ -42,7 +42,8 @@ module shd_src
     use globals_const, only: RD_, DPI_, O4PI_, DO4PI_, &
                              FRAC12_, FRAC13_, FRAC112_
     use globals_cfg,   only: RACC_, isOpenX_, isOpenYx_, &
-                             isPol_, isPol4_
+                             isPol_, isPol4_, &
+                             isSolar_, isThermal_
 
     use shd_scat, only: shd_scat__computeLegendre, &
                         shd_scat__computeWigner
@@ -148,7 +149,7 @@ subroutine shd_src__computeSrcOneCell(&
             end if
 
             ! Special case for solar source and Delta-M
-            if (SRCTYPE .ne. 'T' .and. DELTAM) then
+            if (isSolar_ .and. DELTAM) then
                 if (NUMPHASE .gt. 0) then
                     IPH = IPHASE(IP)
                 else
@@ -264,7 +265,7 @@ subroutine shd_src__computeSrcOneCell_(&
             end do
 
             ! Special case for solar source and Delta-M
-            if (SRCTYPE .ne. 'T' .and. DELTAM) then
+            if (isSolar_ .and. DELTAM) then
                 if (NUMPHASE .gt. 0) then
                     IPH = IPHASE(IP)
                 else
@@ -348,7 +349,7 @@ subroutine shd_src__computeSrcOneDir(NSTOKES,&
 
     ! Precompute Ylm's for output direction and solar direction
     call shd_shdo__computeYlm(.false., MU, PHI, ML, MM, NSTLEG, YLMDIR)
-    if (SRCTYPE .ne. 'T') then
+    if (isSolar_) then
         call shd_shdo__computeYlm(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG,&
             &YLMSUN)
         SECMU0 = 1.0/abs(SOLARMU)
@@ -1113,7 +1114,7 @@ subroutine shd_src__integrateSrcOneRay(&
 
     SIDE = IFACE
 
-    if (SRCTYPE .ne. 'T' .and. DELTAM) then
+    if (isSolar_ .and. DELTAM) then
         if (NUMPHASE .gt. 0) then
             deallocate (SINGSCAT)
         else
@@ -1676,7 +1677,7 @@ subroutine shd_src__computeSrcOnePnt(&
 
     ! Calculate the generalized spherical harmonics source function
     ! from the solar direct beam
-    if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
+    if (isSolar_) then
 
         do J = 1, NLM
             SOURCET(1, J) = SOURCET(1, J)&
@@ -1693,7 +1694,7 @@ subroutine shd_src__computeSrcOnePnt(&
     end if
 
     ! Add in the isotropic unpolarized thermal emission
-    if (SRCTYPE .eq. 'T' .or. SRCTYPE .eq. 'B') then
+    if (isThermal_) then
         SOURCET(1, 1) = SOURCET(1, 1) + C*PLANCK
     end if
 
@@ -1726,7 +1727,7 @@ subroutine shd_src__computeSrcOnePnt_(&
 
     ! Calculate the generalized spherical harmonics source function
     ! from the solar direct beam
-    if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
+    if (isSolar_) then
 
         do J = 1, NLM
             SOURCET(J) = FLUX0*ALBEDO*LEGEN(LOFJ(J), IPH)*YLMSUN(J)
@@ -1735,7 +1736,7 @@ subroutine shd_src__computeSrcOnePnt_(&
     end if
 
     ! Add in the isotropic unpolarized thermal emission
-    if (SRCTYPE .eq. 'T' .or. SRCTYPE .eq. 'B') then
+    if (isThermal_) then
         SOURCET(1) = SOURCET(1) + C*PLANCK
     end if
 

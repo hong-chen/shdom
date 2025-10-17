@@ -40,7 +40,7 @@
 module shd_shdo
 
     use globals_const, only: RD_, PI_, DPI_, OPI_, FRAC12_
-    use globals_cfg,   only: isPol_, isPol4_
+    use globals_cfg,   only: isPol_, isPol4_, isSolar_
 
     use shd_util, only: shd_util__computeGausQuad, &
                         shd_util__computeGausQuadDble
@@ -112,7 +112,7 @@ subroutine shd_shdo__computeSH(&
     SOLY = SINSOL*sin(SOLARAZ)*SECSOL
     SOLM = SECSOL/(4.0*PI_)
     F0 = 0.0
-    if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
+    if (isSolar_) then
         call shd_shdo__computeYlm(.true., SOLARMU, SOLARAZ, ML, MM, 1, YLMSUN)
     end if
     do I = 1, NPTS
@@ -133,7 +133,7 @@ subroutine shd_shdo__computeSH(&
         else
             FY = 0.0
         end if
-        if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
+        if (isSolar_) then
             IMEAN = IMEAN + DIRFLUX(I)*SOLM
             FX = FX + DIRFLUX(I)*SOLX
             FY = FY + DIRFLUX(I)*SOLY
@@ -145,7 +145,7 @@ subroutine shd_shdo__computeSH(&
         SHTERMS(4, I) = FZ
         if (NSHOUT .eq. 5) then
             HORMS = 0.0
-            if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
+            if (isSolar_) then
                 F0 = SECSOL*DIRFLUX(I)
             end if
             do J = 5, RSHPTR(I + 1) - IR

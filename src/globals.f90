@@ -147,6 +147,7 @@ module globals_cfg
     logical, save :: is1DX_, is1DYx_, is1D_, is3Ddir1Ddif_
     logical, save :: is1D1_
     logical, save :: isPol_, isPol4_
+    logical, save :: isSolar_, isThermal_
 
 
 end module globals_cfg

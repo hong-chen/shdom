@@ -39,7 +39,8 @@
 
 module shd_solv
 
-    use globals_cfg, only: VERBOSE_, isMpi_
+    use globals_cfg, only: VERBOSE_, isMpi_, &
+                           isSolar_
 
     use shd_init, only: shd_init__makePrp, &
                         shd_init__makeRad, &
@@ -179,7 +180,7 @@ subroutine shd_solv__solveRte(&
 
     ! Compute the solar transmission in DIRFLUX.
     ! Precompute Ylm's for solar direction
-    if (SRCTYPE .ne. 'T') then
+    if (isSolar_) then
         if (isMpi_) then
             call shd_mpi__makeDirect(1, NPTS, BCFLAG, IPFLAG, DELTAM, ML,&
                 &NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&

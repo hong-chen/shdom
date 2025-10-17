@@ -43,7 +43,8 @@ module shd_mpi
     use globals_cfg,   only: VERBOSE_, FNAMEMAXLEN_, RACC_, &
                              isMpiX_, isMpiY_, isMpi_, &
                              is1DX_, is1DYx_, is1D_, &
-                             isPol_, isPol4_
+                             isPol_, isPol4_, &
+                             isSolar_
 
 #if HAS_MPI
     use mpi_f08,  only: MPI_COMM_WORLD, MPI_COMM, MPI_REQUEST, &
@@ -2288,7 +2289,7 @@ subroutine shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
 
     allocate (YLMSUN(NSTLEG, NLM))
 
-    if (SRCTYPE .ne. 'T') then
+    if (isSolar_) then
         call shd_shdo__computeYlm(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG, YLMSUN)
         if (DELTAM .and. NUMPHASE .gt. 0) then
             NSCATANGLE = max(36, min(MAXSCATANG, 2*NLEG))

@@ -42,7 +42,8 @@ module shd_init
     use globals_const, only: RD_, PI_, OPI_
     use globals_cfg,   only: VERBOSE_, PLANET_RADIUS_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
-                             is1DX_, is1DYx_
+                             is1DX_, is1DYx_, &
+                             isSolar_, isThermal_
 
     use shd_util, only: shd_util__computePlanck, &
                         shd_util__solveTriDiag
@@ -487,7 +488,7 @@ subroutine shd_init__makePrp(&
         end if
 
         ALBMAX = max(ALBMAX, ALBEDO(I))
-        if (SRCTYPE .ne. 'S') then
+        if (isThermal_) then
             call shd_util__computePlanck(TEMP(I), UNITS, WAVENO, WAVELEN, BB)
             PLANCK(I) = (1.0 - ALBEDO(I))*BB
         end if
@@ -855,7 +856,7 @@ subroutine shd_init__makeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
     real SKYRAD2
 
     ! At top, boundary radiance is any isotropic sky radiation
-    if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
+    if (isSolar_) then
         SKYRAD2 = SKYRAD
     else
         call shd_util__computePlanck(SKYRAD, UNITS, WAVENO, WAVELEN, SKYRAD2)
@@ -890,7 +891,7 @@ subroutine shd_init__makeSfcRadFL(NBOTPTS, BCPTR,&
     real ALB, GNDRAD
 
     ALB = GNDALBEDO/acos(-1.0)
-    if (SRCTYPE .eq. 'T' .or. SRCTYPE .eq. 'B') then
+    if (isThermal_) then
         call shd_util__computePlanck(GNDTEMP, UNITS, WAVENO, WAVELEN, GNDRAD)
         GNDRAD = GNDRAD*(1.0 - GNDALBEDO)
     end if
@@ -992,7 +993,7 @@ subroutine shd_init__makeSfcRadU(NBOTPTS, BCPTR,&
         ! Initialize the upwelling boundary radiances to zero or to
         !   the reflection of direct unpolarized solar flux.
         BCRAD(:, IBC, 1) = 0.0
-        if (SRCTYPE .ne. 'T') then
+        if (isSolar_) then
             I = BCPTR(IBC)
             call shd_sfc__brdfSurface(SFCTYPE(2:2), SFCGRIDPARMS(2, IBC), WAVELEN,&
                 &MU(IMU), PHI(IMU, IPHI), SOLARMU, SOLARAZ,&
@@ -1064,7 +1065,7 @@ subroutine shd_init__makeSfcRadV(&
         ! Initialize the upwelling boundary radiances to zero or to
         !   the reflection of direct unpolarized solar flux.
         BCRAD(:, IBC, 1) = 0.0
-        if (SRCTYPE .ne. 'T') then
+        if (isSolar_) then
             I = BCPTR(IBC)
             call shd_sfc__brdfSurface(SFCTYPE(2:2), SFCGRIDPARMS(2, IBC), WAVELEN,&
                 &MU2, PHI2, SOLARMU, SOLARAZ, NSTOKES, REFLECT)

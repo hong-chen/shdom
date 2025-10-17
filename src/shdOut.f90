@@ -41,7 +41,8 @@ module shd_out
 
     use globals_const, only: RD_, PI_
     use globals_cfg,   only: VERBOSE_, FNAMEMAXLEN_, is1DX_, &
-                             isPol_, isPol4_
+                             isPol_, isPol4_, &
+                             isSolar_, isThermal_
 
     use shd_grid, only: shd_grid__testCellSplit
 
@@ -233,7 +234,7 @@ subroutine shd_io__outputResult(&
     write (2, '(A,A22,A,I1)') '!  SURFACE_TYPE=', SFCNAME,&
         &'   HORIZ_BOUNDARY_COND=', BCFLAG
 
-    if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
+    if (isSolar_) then
 
         if (SFCTYPE(1:1) .eq. 'V') then
             write (2, '(A,A,A,E12.5)') '!  SURFACE_FILE=', trim(SFCFILE),&
@@ -373,7 +374,7 @@ subroutine shd_io__outputResult(&
             C = 1.0
         end if
 
-        if (SRCTYPE .ne. 'T') then
+        if (isSolar_) then
             NVAR = 3
         else
             NVAR = 2
@@ -391,7 +392,7 @@ subroutine shd_io__outputResult(&
                 FORM = '(2(1X,F7.3),1X,2(2X,F6.2))'
                 write (2, '(A)') '!   X       Y        UP     DOWN'
             else
-                if (SRCTYPE .ne. 'T') then
+                if (isSolar_) then
                     FORM = '(2(1X,F7.3),1X,3(2X,E12.5))'
                     write (2, '(A)')&
                         & '!   X       Y           UP       DOWN_DIFFUSE   DOWN_DIRECT'
@@ -420,7 +421,7 @@ subroutine shd_io__outputResult(&
             IDATA = 0
             call shd_io__outputDataBin(C*FLUXES(1, 1:NBPTS:NZ), 1, N, IDATA, OUTFILE_DATA, 'ADD')
 
-            if (SRCTYPE .ne. 'T') then
+            if (isSolar_) then
                 IDATA = 0
                 call shd_io__outputDataBin(DIRFLUX(1:NBPTS:NZ), 1, N, IDATA, OUTFILE_DATA, 'ADD')
             end if
@@ -460,7 +461,7 @@ subroutine shd_io__outputResult(&
                 FORM = '(2(1X,F7.3),1X,2(2X,F6.2))'
                 write (2, '(A)') '!   X       Y        UP     DOWN'
             else
-                if (SRCTYPE .ne. 'T') then
+                if (isSolar_) then
                     FORM = '(2(1X,F7.3),1X,3(2X,E12.5))'
                     write (2, '(A)')&
                         & '!   X       Y           UP       DOWN_DIFFUSE   DOWN_DIRECT'
@@ -516,7 +517,7 @@ subroutine shd_io__outputResult(&
             IDATA = 0
             call shd_io__outputDataBin(C*FDN, 1, N, IDATA, OUTFILE_DATA, 'ADD')
 
-            if (SRCTYPE .ne. 'T') then
+            if (isSolar_) then
                 IDATA = 0
                 call shd_io__outputDataBin(FDIR, 1, N, IDATA, OUTFILE_DATA, 'ADD')
             end if
@@ -560,7 +561,7 @@ subroutine shd_io__outputResult(&
                 FORM = '(1X,F7.3,1X,2(2X,F6.2))'
                 write (2, '(A)') '!   Z        UP     DOWN'
             else
-                if (SRCTYPE .ne. 'T') then
+                if (isSolar_) then
                     FORM = '(1X,F7.3,1X,3(2X,E12.5))'
                     write (2, '(A)')&
                         & '!    Z          UP       DOWN_DIFFUSE   DOWN_DIRECT'
@@ -611,7 +612,7 @@ subroutine shd_io__outputResult(&
             IDATA = 0
             call shd_io__outputDataBin(C*SUM1/N, 1, NZ, IDATA, OUTFILE_DATA, 'ADD')
 
-            if (SRCTYPE .ne. 'T') then
+            if (isSolar_) then
                 IDATA = 0
                 call shd_io__outputDataBin(SUM3/N, 1, NZ, IDATA, OUTFILE_DATA, 'ADD')
             end if
@@ -662,7 +663,7 @@ subroutine shd_io__outputResult(&
                 FORM = '(3(1X,F7.3),1X,2(2X,F6.2))'
                 write (2, '(A)') '!   X       Y       Z        UP     DOWN'
             else
-                if (SRCTYPE .ne. 'T') then
+                if (isSolar_) then
                     FORM = '(3(1X,F7.3),1X,3(2X,E12.5))'
                     write (2, '(A,A)') '!   X       Y       Z',&
                         & '           UP       DOWN_DIFFUSE   DOWN_DIRECT'
@@ -702,7 +703,7 @@ subroutine shd_io__outputResult(&
             IDATA = 0
             call shd_io__outputDataBin(C*FLUXES(1, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
 
-            if (SRCTYPE .ne. 'T') then
+            if (isSolar_) then
                 IDATA = 0
                 call shd_io__outputDataBin(DIRFLUX(:), 1, N, IDATA, OUTFILE_DATA, 'ADD')
             end if
@@ -1324,7 +1325,7 @@ subroutine shd_io__outputResultMpi(&
         & '   INDEPENDENT_PIXEL=', IPFLAG
     write (2, '(A,A22,A,I2)') '!  SURFACE_TYPE=', SFCNAME,&
         & '   HORIZ_BOUNDARY_COND=', BCFLAG
-    if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
+    if (isSolar_) then
         if (SFCTYPE(1:1) .eq. 'V') then
             write (2, '(A,A,A,E12.5)') '!  SURFACE_FILE=', trim(SFCFILE),&
                 & '  SKY_RAD=', SKYRAD
@@ -1474,7 +1475,7 @@ subroutine shd_io__outputResultMpi(&
             C = 1.0
         end if
 
-        if (SRCTYPE .ne. 'T') then
+        if (isSolar_) then
             NVAR = 3
         else
             NVAR = 2
@@ -1488,7 +1489,7 @@ subroutine shd_io__outputResultMpi(&
                 FORM = '(2(1X,F7.3),1X,2(2X,F6.2))'
                 write (2, '(A)') '!   X       Y        UP     DOWN'
             else
-                if (SRCTYPE .ne. 'T') then
+                if (isSolar_) then
                     FORM = '(2(1X,F7.3),1X,3(2X,E12.5))'
                     write (2, '(A)')&
                         & '!   X       Y           UP       DOWN_DIFFUSE   DOWN_DIRECT'
@@ -1517,7 +1518,7 @@ subroutine shd_io__outputResultMpi(&
             IDATA = 0
             call shd_io__outputDataBin(C*FLUXES(1,  1, :, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
 
-            if (SRCTYPE .ne. 'T') then
+            if (isSolar_) then
                 IDATA = 0
                 call shd_io__outputDataBin(FLUXES(3,  1, :, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
             end if
@@ -1553,7 +1554,7 @@ subroutine shd_io__outputResultMpi(&
                 FORM = '(1X,F7.3,1X,2(2X,F6.2))'
                 write (2, '(A)') '!   Z        UP     DOWN'
             else
-                if (SRCTYPE .ne. 'T') then
+                if (isSolar_) then
                     FORM = '(1X,F7.3,1X,3(2X,E12.5))'
                     write (2, '(A)')&
                         & '!    Z          UP       DOWN_DIFFUSE   DOWN_DIRECT'
@@ -1604,7 +1605,7 @@ subroutine shd_io__outputResultMpi(&
             IDATA = 0
             call shd_io__outputDataBin(C*SUM1/N, 1, NZ, IDATA, OUTFILE_DATA, 'ADD')
 
-            if (SRCTYPE .ne. 'T') then
+            if (isSolar_) then
                 IDATA = 0
                 call shd_io__outputDataBin(SUM3/N, 1, NZ, IDATA, OUTFILE_DATA, 'ADD')
             end if
@@ -1645,7 +1646,7 @@ subroutine shd_io__outputResultMpi(&
                 FORM = '(3(1X,F7.3),1X,2(2X,F6.2))'
                 write (2, '(A)') '!   X       Y       Z        UP     DOWN'
             else
-                if (SRCTYPE .ne. 'T') then
+                if (isSolar_) then
                     FORM = '(3(1X,F7.3),1X,3(2X,E12.5))'
                     write (2, '(A,A)') '!   X       Y       Z',&
                         & '           UP       DOWN_DIFFUSE   DOWN_DIRECT'
@@ -1675,7 +1676,7 @@ subroutine shd_io__outputResultMpi(&
             IDATA = 0
             call shd_io__outputDataBin(C*FLUXES(1, :, :, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
 
-            if (SRCTYPE .ne. 'T') then
+            if (isSolar_) then
                 IDATA = 0
                 call shd_io__outputDataBin(FLUXES(3, :, :, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
             end if
@@ -2059,7 +2060,7 @@ subroutine shd_io__outputCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     write (2, '(A,A22,A,I1)') '!  SURFACE_TYPE=', SFCNAME,&
         &'   HORIZ_BOUNDARY_COND=', BCFLAG
 
-    if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
+    if (isSolar_) then
 
         if (SFCTYPE(1:1) .eq. 'V') then
             write (2, '(A,A,A,E12.5)') '!  SURFACE_FILE=', trim(SFCFILE),&
@@ -2341,7 +2342,7 @@ subroutine shd_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     write (BUF(I:I + 79), '(A,A22,A,I2,A1)')&
         & '# SURFACE_TYPE=', SFCNAME, '   HORIZ_BOUNDARY_COND=', BCFLAG, LF
     I = I + index(BUF(I:I + 79), LF)
-    if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
+    if (isSolar_) then
         if (SFCTYPE(1:1) .eq. 'V') then
             !write (BUF(I:I + 79), '(A,A,A,E12.5,A1)')&
             !    & '# SURFACE_FILE=', trim(SFCFILE),&
