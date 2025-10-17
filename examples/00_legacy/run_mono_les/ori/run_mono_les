@@ -12,7 +12,7 @@ set MakeMieTable=1
 set MakePropertyFile=1
 set RunSHDOM=1
 
-set fdir_bin="../../../../src/_legacy/bin"
+set fdir_bin="../../../../src/_legacy/shdom/bin"
 set put_exe="${fdir_bin}/put"
 set propgen_exe="${fdir_bin}/propgen"
 set shdom_exe="${fdir_bin}/shdom"

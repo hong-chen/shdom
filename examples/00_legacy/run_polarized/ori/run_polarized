@@ -12,7 +12,7 @@ set Run_SHDOM=1
 set Parse_SHDOM_radiance=1
 
 
-set fdir_bin="../../../../src/_legacy/bin"
+set fdir_bin="../../../../src/_legacy/shdom/bin"
 set put_exe="${fdir_bin}/put"
 set propgen_exe="${fdir_bin}/propgen"
 set shdom_exe="${fdir_bin}/shdom"

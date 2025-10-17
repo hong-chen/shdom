@@ -27,7 +27,7 @@ set scattable=water_w${wavelen}.scat
 set outbase = ${basename}w${wavelen}
 set prpfile = ${outbase}.prp
 
-set fdir_bin="../../../../src/_legacy/bin"
+set fdir_bin="../../../../src/_legacy/shdom/bin"
 set put_exe="${fdir_bin}/put"
 set propgen_exe="${fdir_bin}/propgen"
 set shdom_exe="${fdir_bin}/shdom"
