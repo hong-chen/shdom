@@ -294,6 +294,7 @@ program shdom
 
     ! angle grids for DO
     allocate (MU(NMU), WTDO(NMU*NPHI), PHI(NMU*NPHI), NPHI0(NMU))
+
     MEMWORD = MEMWORD + 2.0*NMU*(1.0 + NPHI)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
