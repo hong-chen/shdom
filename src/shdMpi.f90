@@ -42,7 +42,8 @@ module shd_mpi
     use globals_const, only: RD_, PI_, DPI_, PIH_, FRAC13_, FRAC112_
     use globals_cfg,   only: VERBOSE_, FNAMEMAXLEN_, RACC_, &
                              isMpiX_, isMpiY_, isMpi_, &
-                             is1DX_, is1DYx_, is1D_
+                             is1DX_, is1DYx_, is1D_, &
+                             isPol_, isPol4_
 
 #if HAS_MPI
     use mpi_f08,  only: MPI_COMM_WORLD, MPI_COMM, MPI_REQUEST, &
@@ -2657,17 +2658,15 @@ subroutine shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     ! On the master processor convert VISOUT(2:,*) from Stokes parameters
     ! to DOLP, AOLP, DOCP
     if (MYPROC_ .eq. 0) then
-        if (NSTOKES .gt. 1) then
+        if (isPol_) then
             N = NL*NS
             do I = IVIS - N + 1, IVIS
                 VISRAD(:) = VISOUT(:, I)
                 if (VISRAD(1) .gt. 0.0) then
-                    if (NSTOKES .gt. 1) then
-                        ! Output degree (0 to 1) and angle (-180 to 180) of linear polarization
-                        VISOUT(2, I) = sqrt(VISRAD(2)**2 + VISRAD(3)**2)/VISRAD(1)
-                        VISOUT(3, I) = (180.0/DPI_)*0.5*atan2(VISRAD(3), VISRAD(2))
-                    end if
-                    if (NSTOKES .eq. 4) then
+                    ! Output degree (0 to 1) and angle (-180 to 180) of linear polarization
+                    VISOUT(2, I) = sqrt(VISRAD(2)**2 + VISRAD(3)**2)/VISRAD(1)
+                    VISOUT(3, I) = (180.0/DPI_)*0.5*atan2(VISRAD(3), VISRAD(2))
+                    if (isPol4_) then
                         ! Output degree of circular polarization (-1 to 1)
                         VISOUT(4, I) = VISRAD(4)/VISRAD(1)
                     end if

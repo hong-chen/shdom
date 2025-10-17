@@ -43,6 +43,7 @@
 module shd_sfc
 
     use globals_const, only: PI_
+    use globals_cfg,   only: isPol_
     use globals_prp,   only: NPX_, NPY_, DELX_, DELY_
 
     use shd_util, only: shd_util__computePlanck
@@ -210,7 +211,7 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
     else if ((SFCTYPE .eq. 'O') .or. (SFCTYPE .eq. 'o')) then
 
         ! O: Ocean BRDF from 6S modified by Norm Loeb
-        if (NSTOKES .gt. 1) then
+        if (isPol_) then
             stop 'Error [_brdfSurface]: Ocean BRDF from 6S is only for unpolarized case.'
         end if
 
@@ -221,7 +222,7 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
     else if ((SFCTYPE .eq. 'R') .or. (SFCTYPE .eq. 'r')) then
 
         ! R: Rahman, Pinty, and Verstraete
-        if (NSTOKES .gt. 1) then
+        if (isPol_) then
             stop 'Error [_brdfSurface]: RPV BRDF is only for unpolarized case.'
         end if
 
@@ -232,7 +233,7 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
     else if ((SFCTYPE .eq. 'T') .or. (SFCTYPE .eq. 't')) then
 
         ! T: LSRT model
-        if (NSTOKES .gt. 1) then
+        if (isPol_) then
             stop 'Error [_brdfSurface]: LSRT BRDF is only for unpolarized case.'
         end if
 
@@ -243,7 +244,7 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
     else if (SFCTYPE .eq. 'J' .or. SFCTYPE .eq. 'j') then
 
         ! J: LSRT-Jiao model
-        if (NSTOKES .gt. 1) then
+        if (isPol_) then
             stop 'Error [_brdfSurface]: LSRT-Jiao BRDF is only for unpolarized case'
         end if
 

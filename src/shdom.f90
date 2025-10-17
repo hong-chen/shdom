@@ -44,7 +44,8 @@ program shdom
                              TOTSYSMEM_MB_, MAXCPUMEM_MB_, &
                              isHighOrder_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, isMpi_, &
-                             is1DX_, is1DYx_, is1D_, is3Ddir1Ddif_
+                             is1DX_, is1DYx_, is1D_, is3Ddir1Ddif_, &
+                             is1D1_, isPol_, isPol4_
 
     use globals_prp,   only: NPX_, NPY_, NPZ_, NUMPHASE_, &
                              DELX_, DELY_, XSTART_, YSTART_, XDOMAIN_, YDOMAIN_, &
@@ -255,8 +256,16 @@ program shdom
     !   spherical harmonics matrices.
     if (NSTOKES .eq. 1) then
         NSTLEG = 1
+        isPol_ = .false.
     else
         NSTLEG = 6
+        isPol_ = .true.
+    end if
+
+    if (NSTOKES .eq. 4) then
+        isPol4_ = .true.
+    else
+        isPol4_ = .false.
     end if
 
     ! Make ML and MM from NMU and NPHI (for discrete ordinate)
@@ -339,6 +348,12 @@ program shdom
         if (VERBOSE_ .ge. 4) write (6, '(A)') 'Warning [shdom]: NY=1, reset IPFLAG to 2 (or 3).'
     end if
 
+    if ((NX .eq. 1) .and. (NY .eq. 1)) then
+        is1D1_ = .true.
+    else
+        is1D1_ = .false.
+    end if
+
     ! Set the full domain grid sizes (variables end in T)
     NXT  = NX  ; NYT  = NY
     NPXT = NPX_; NPYT = NPY_
@@ -360,6 +375,8 @@ program shdom
         &(NXSFC .le. 32) .and. (NXSFC .le. 32)) then
         isHighOrder_ = .true.
         if (VERBOSE_ .ge. 4) write (6, '(A)') 'Warning [shdom]: 1D calculation, set isHighOrder_ to .TRUE.'
+    else
+        isHighOrder_ = .false.
     end if
 
     NSHOUT = 4

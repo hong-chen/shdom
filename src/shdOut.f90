@@ -40,7 +40,8 @@
 module shd_out
 
     use globals_const, only: RD_, PI_
-    use globals_cfg,   only: VERBOSE_, FNAMEMAXLEN_, is1DX_
+    use globals_cfg,   only: VERBOSE_, FNAMEMAXLEN_, is1DX_, &
+                             isPol_, isPol4_
 
     use shd_grid, only: shd_grid__testCellSplit
 
@@ -2205,7 +2206,7 @@ subroutine shd_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     VISSCALE(1) = OUTPARMS(3)
     if (NBYTES .eq. 1) then
         VISMAX(1) = 255./OUTPARMS(3)
-        if (NSTOKES .gt. 1) then
+        if (isPol_) then
             MAXLINPOL = max(0.01, maxval(VISOUT(2, IVIS + 1:IVIS + NL*NS)))
             MINANGPOL = minval(VISOUT(3, IVIS + 1:IVIS + NL*NS))
             MAXANGPOL = maxval(VISOUT(3, IVIS + 1:IVIS + NL*NS))
@@ -2216,7 +2217,7 @@ subroutine shd_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
             VISMAX(3) = max(MAXANGPOL, MINANGPOL + 1.0)
             VISSCALE(3) = 255./(VISMAX(3) - VISMIN(3))
         end if
-        if (NSTOKES .eq. 4) then
+        if (isPol4_) then
             MAXCIRCPOL = max(0.01, maxval(abs(VISOUT(4, IVIS + 1:IVIS + NL*NS))))
             VISMIN(4) = -MAXCIRCPOL
             VISMAX(4) = MAXCIRCPOL

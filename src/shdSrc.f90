@@ -41,7 +41,8 @@ module shd_src
 
     use globals_const, only: RD_, DPI_, O4PI_, DO4PI_, &
                              FRAC12_, FRAC13_, FRAC112_
-    use globals_cfg,   only: RACC_, isOpenX_, isOpenYx_
+    use globals_cfg,   only: RACC_, isOpenX_, isOpenYx_, &
+                             isPol_, isPol4_
 
     use shd_scat, only: shd_scat__computeLegendre, &
                         shd_scat__computeWigner
@@ -132,7 +133,7 @@ subroutine shd_src__computeSrcOneCell(&
             do J = 1, NS
                 SRCEXT8(1, N) = SRCEXT8(1, N) + SOURCE(1, IS + J)*YLMDIR(1, J)
             end do
-            if (NSTOKES .gt. 1) then
+            if (isPol_) then
                 do J = 1, NS
                     SRCEXT8(2, N) = SRCEXT8(2, N) + SOURCE(2, IS + J)*YLMDIR(2, J)&
                         &+ SOURCE(3, IS + J)*YLMDIR(5, J)
@@ -140,7 +141,7 @@ subroutine shd_src__computeSrcOneCell(&
                         &+ SOURCE(3, IS + J)*YLMDIR(3, J)
                 end do
             end if
-            if (NSTOKES .eq. 4) then
+            if (isPol4_) then
                 do J = 1, NS
                     SRCEXT8(4, N) = SRCEXT8(4, N) + SOURCE(4, IS + J)*YLMDIR(4, J)
                 end do
@@ -167,7 +168,7 @@ subroutine shd_src__computeSrcOneCell(&
                             SRCEXT8(1, N) = SRCEXT8(1, N) - A1*YLMDIR(1, J)*YLMSUN(1, J)
                             J = J + 1
                         end do
-                        if (NSTOKES .gt. 1) then
+                        if (isPol_) then
                             J = JT
                             do M = MS, ME
                                 SRCEXT8(2, N) = SRCEXT8(2, N) - B1*YLMDIR(2, J)*YLMSUN(1, J)
@@ -181,7 +182,7 @@ subroutine shd_src__computeSrcOneCell(&
                 !   original unscaled phase function.
                 if (NUMPHASE .gt. 0) then
                     SRCEXT8(:, N) = SRCEXT8(:, N) + DA*SINGSCAT(:, IPH)
-                else if (NSTOKES .eq. 1) then
+                else if (.not. isPol_) then
                     F = LEGEN(1, ML + 1, IPH)
                     do L = 0, NLEG
                         if (L .le. ML) then
@@ -409,7 +410,7 @@ subroutine shd_src__computeSrcOneDir(NSTOKES,&
         do J = 1, NS
             SOURCE1(1, I) = SOURCE1(1, I) + SOURCE(1, IS + J)*YLMDIR(1, J)
         end do
-        if (NSTOKES .gt. 1) then
+        if (isPol_) then
             do J = 1, NS
                 SOURCE1(2, I) = SOURCE1(2, I) + SOURCE(2, IS + J)*YLMDIR(2, J)&
                     &+ SOURCE(3, IS + J)*YLMDIR(5, J)
@@ -417,7 +418,7 @@ subroutine shd_src__computeSrcOneDir(NSTOKES,&
                     &+ SOURCE(3, IS + J)*YLMDIR(3, J)
             end do
         end if
-        if (NSTOKES .eq. 4) then
+        if (isPol4_) then
             do J = 1, NS
                 SOURCE1(4, I) = SOURCE1(4, I) + SOURCE(4, IS + J)*YLMDIR(4, J)
             end do
@@ -444,7 +445,7 @@ subroutine shd_src__computeSrcOneDir(NSTOKES,&
                         SOURCE1(1, I) = SOURCE1(1, I) - A1*YLMDIR(1, J)*YLMSUN(1, J)
                         J = J + 1
                     end do
-                    if (NSTOKES .gt. 1) then
+                    if (isPol_) then
                         J = JT
                         do M = MS, ME
                             SOURCE1(2, I) = SOURCE1(2, I) - B1*YLMDIR(2, J)*YLMSUN(1, J)
@@ -459,7 +460,7 @@ subroutine shd_src__computeSrcOneDir(NSTOKES,&
             !   original unscaled phase matrix.
             if (NUMPHASE .gt. 0) then
                 SOURCE1(:, I) = SOURCE1(:, I) + DA*SINGSCAT(:, IPH)
-            else if (NSTOKES .eq. 1) then
+            else if (.not. isPol_) then
                 ! If we have a phase function for each grid point (which
                 !   should be the unpolarized case) then unscale the Legendre
                 !   coefficients for L<=ML and sum over the Legendre series
@@ -569,13 +570,13 @@ subroutine shd_src__computeSrc(&
                 write (6, *) 'Error [_computeSrc]: NR>NLM 1', I, IR, RSHPTR(I + 1)
                 stop
             end if
-            if (NSTOKES .eq. 1) then
-                call shd_src__computeSrcOnePnt_(NLM, NLEG, LOFJ,&
+            if (isPol_) then
+                call shd_src__computeSrcOnePnt(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
                     &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
                     &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
                     &NR, RADIANCE(1, IR + 1), SOURCET)
             else
-                call shd_src__computeSrcOnePnt(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
+                call shd_src__computeSrcOnePnt_(NLM, NLEG, LOFJ,&
                     &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
                     &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
                     &NR, RADIANCE(1, IR + 1), SOURCET)
@@ -620,13 +621,13 @@ subroutine shd_src__computeSrc(&
             end if
             IR = RSHPTR(I)
             NR = RSHPTR(I + 1) - IR
-            if (NSTOKES .eq. 1) then
-                call shd_src__computeSrcOnePnt_(NLM, NLEG, LOFJ,&
+            if (isPol_) then
+                call shd_src__computeSrcOnePnt(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
                     &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
                     &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
                     &NR, RADIANCE(1, IR + 1), SOURCET)
             else
-                call shd_src__computeSrcOnePnt(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
+                call shd_src__computeSrcOnePnt_(NLM, NLEG, LOFJ,&
                     &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
                     &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
                     &NR, RADIANCE(1, IR + 1), SOURCET)
@@ -657,13 +658,13 @@ subroutine shd_src__computeSrc(&
             write (6, *) 'Error [_computeSrc]: NR>NLM 3', I, IR, RSHPTR(I + 1)
             stop
         end if
-        if (NSTOKES .eq. 1) then
-            call shd_src__computeSrcOnePnt_(NLM, NLEG, LOFJ,&
+        if (isPol_) then
+            call shd_src__computeSrcOnePnt(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
                 &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
                 &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
                 &NR, RADIANCE(1, IR + 1), SOURCET)
         else
-            call shd_src__computeSrcOnePnt(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
+            call shd_src__computeSrcOnePnt_(NLM, NLEG, LOFJ,&
                 &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
                 &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
                 &NR, RADIANCE(1, IR + 1), SOURCET)
@@ -815,7 +816,7 @@ subroutine shd_src__integrateSrcOneRay(&
             do I = 1, NUMPHASE
                 SINGSCAT(1:NSTPHASE, I)&
                     &= (1 - F)*PHASETAB(:, I, J) + F*PHASETAB(:, I, J + 1)
-                if (NSTOKES .gt. 1) then
+                if (isPol_) then
                     call shd_src__rotatePolarPlane(NSTOKES, COSSCAT, SOLARMU,&
                         &sngl(MU2), SOLARAZ - sngl(PHI2), SINGSCAT(:, I))
                 end if
@@ -905,17 +906,17 @@ subroutine shd_src__integrateSrcOneRay(&
             OSRCEXT8(:, I) = SRCEXT8(:, I)
         end do
         ! Compute the source function times extinction in direction (MU2
-        if (NSTOKES .eq. 1) then
-            call shd_src__computeSrcOneCell_(ICELL, GRIDPTR,&
-                &ML, MM, NLM, NLEG, NUMPHASE,&
+        if (isPol_) then
+            call shd_src__computeSrcOneCell(ICELL, GRIDPTR,&
+                &NSTOKES, NSTLEG, ML, MM, NLM, NLEG, NUMPHASE,&
                 &NPTS, DELTAM, SRCTYPE, SOLARMU,&
                 &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX,&
                 &SHPTR, SOURCE, YLMDIR, YLMSUN, SUNDIRLEG, SINGSCAT,&
                 &DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
                 &EXTINCT8, SRCEXT8)
         else
-            call shd_src__computeSrcOneCell(ICELL, GRIDPTR,&
-                &NSTOKES, NSTLEG, ML, MM, NLM, NLEG, NUMPHASE,&
+            call shd_src__computeSrcOneCell_(ICELL, GRIDPTR,&
+                &ML, MM, NLM, NLEG, NUMPHASE,&
                 &NPTS, DELTAM, SRCTYPE, SOLARMU,&
                 &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX,&
                 &SHPTR, SOURCE, YLMDIR, YLMSUN, SUNDIRLEG, SINGSCAT,&
@@ -1434,7 +1435,7 @@ subroutine shd_src__computeSolarStokesVect(&
     end do
     SCATVECT(1) = A1*DO4PI_
 
-    if (NSTOKES .gt. 1) then
+    if (isPol_) then
         ! If doing polarization, sum the second Wigner function series
         call shd_scat__computeWigner(X, NLEG, 2, 0, DMM1)
         B1 = 0.0d0
@@ -1462,7 +1463,7 @@ subroutine shd_src__computeSolarStokesVect(&
         SCATVECT(2) = B1*COS22*DO4PI_
         SCATVECT(3) = B1*SIN22*DO4PI_
     end if
-    if (NSTOKES .eq. 4) then
+    if (isPol4_) then
         SCATVECT(4) = 0.0
     end if
     deallocate (DMM1)
@@ -1588,7 +1589,7 @@ subroutine shd_src__rotatePolarPlane(NSTOKES, COSSCAT,&
     real(RD_) :: SIN_SCAT, SIN_THETA1, SIN_THETA2
     real(RD_) :: SINPHI, COSPHI, SIN2, COS2, SIN22, COS22
 
-    if (NSTOKES .gt. 1) then
+    if (isPol_) then
         B1 = SCATVECT(2)
         SIN_SCAT = dsqrt(max(0.0d0, 1.d0 - COSSCAT**2))
         SIN_THETA1 = dsqrt(1.d0 - SOLARMU**2)
@@ -1607,7 +1608,7 @@ subroutine shd_src__rotatePolarPlane(NSTOKES, COSSCAT,&
         SCATVECT(2) = B1*COS22
         SCATVECT(3) = B1*SIN22
     end if
-    if (NSTOKES .eq. 4) then
+    if (isPol4_) then
         SCATVECT(4) = 0.0
     end if
 
@@ -1646,7 +1647,7 @@ subroutine shd_src__computeSrcOnePnt(&
         SOURCET(1, J) = SOURCET(1, J) + LEGEN(1, LOFJ(J), IPH)*RADIANCE(1, J)
     end do
 
-    if (NSTOKES .gt. 1) then
+    if (isPol_) then
 
         do J = 1, NR
             SOURCET(1, J) = SOURCET(1, J) + LEGEN(5, LOFJ(J), IPH)*RADIANCE(2, J)
@@ -1660,7 +1661,7 @@ subroutine shd_src__computeSrcOnePnt(&
 
     end if
 
-    if (NSTOKES .eq. 4) then
+    if (isPol4_) then
 
         do J = 1, NR
             SOURCET(3, J) = SOURCET(3, J) + LEGEN(6, LOFJ(J), IPH)*RADIANCE(4, J)
@@ -1682,7 +1683,7 @@ subroutine shd_src__computeSrcOnePnt(&
                 &+ FLUX0*ALBEDO*LEGEN(1, LOFJ(J), IPH)*YLMSUN(1, J)
         end do
 
-        if (NSTOKES .gt. 1) then
+        if (isPol_) then
             do J = 5, NLM
                 SOURCET(2, J) = SOURCET(2, J)&
                     &+ FLUX0*ALBEDO*LEGEN(5, LOFJ(J), IPH)*YLMSUN(1, J)

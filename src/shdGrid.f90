@@ -42,7 +42,8 @@ module shd_grid
     use globals_const, only: RD_
     use globals_cfg,   only: VERBOSE_, RACC_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, isMpi_, &
-                             is1DX_, is1DYx_, is1D_
+                             is1DX_, is1DYx_, is1D_, &
+                             isPol_
 
     use shd_util, only: shd_util__findNextCell, &
                         shd_util__computePlanck, &
@@ -1546,13 +1547,13 @@ subroutine shd_grid__interpNewGridPnt(NEWPOINTS, NPTS,&
             else
                 IPH = IP
             end if
-            if (NSTOKES .eq. 1) then
-                call shd_src__computeSrcOnePnt_(NLM, NLEG, LOFJ,&
+            if (isPol_) then
+                call shd_src__computeSrcOnePnt(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
                     &SRCTYPE, DIRFLUX(IP)*SECMU0, YLMSUN,&
                     &PLANCK(IP), ALBEDO(IP), IPH, LEGEN,&
                     &NR, RADIANCE(1, IR + 1), SOURCET)
             else
-                call shd_src__computeSrcOnePnt(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
+                call shd_src__computeSrcOnePnt_(NLM, NLEG, LOFJ,&
                     &SRCTYPE, DIRFLUX(IP)*SECMU0, YLMSUN,&
                     &PLANCK(IP), ALBEDO(IP), IPH, LEGEN,&
                     &NR, RADIANCE(1, IR + 1), SOURCET)

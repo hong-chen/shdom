@@ -43,7 +43,8 @@ module shd_rad
                              FRAC12_, FRAC13_
     use globals_cfg,   only: VERBOSE_, RACC_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
-                             is3Ddir1Ddif_
+                             is3Ddir1Ddif_, &
+                             isPol_, isPol4_
 
     use shd_scat, only: shd_scat__computePhase
 
@@ -1097,12 +1098,12 @@ subroutine shd_rad__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
             !     &X0,Y0,MURAY,PHIRAY,VISRAD(:)
             VISOUT(1, IVIS) = VISRAD(1)
             if (VISRAD(1) .gt. 0.0) then
-                if (NSTOKES .gt. 1) then
+                if (isPol_) then
                     ! Output degree (0 to 1) and angle (-180 to 180) of linear polarization
                     VISOUT(2, IVIS) = sqrt(VISRAD(2)**2 + VISRAD(3)**2)/VISRAD(1)
                     VISOUT(3, IVIS) = (180.0d0/PI_)*FRAC12_*atan2(VISRAD(3), VISRAD(2))
                 end if
-                if (NSTOKES .eq. 4) then
+                if (isPol4_) then
                     ! Output degree of circular polarization (-1 to 1)
                     VISOUT(4, IVIS) = VISRAD(4)/VISRAD(1)
                 end if
@@ -1114,7 +1115,7 @@ subroutine shd_rad__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
 
     deallocate (YLMSUN)
     if (allocated(PHASETAB)) deallocate (PHASETAB)
-    if (NSTOKES .gt. 1) then
+    if (isPol_) then
         ! Choose the best range for the angle of linear polarization (-90 to 90 or 0 to 180)
         N = NL*NS
         allocate (AOLP(N))
@@ -1395,12 +1396,12 @@ subroutine shd_rad__computeSensorRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
 
             VISOUT(1, IVIS) = VISRAD(1)
             if (VISRAD(1) .gt. 0.0) then
-                if (NSTOKES .gt. 1) then
+                if (isPol_) then
                     ! Output degree (0 to 1) and angle (-180 to 180) of linear polarization
                     VISOUT(2, IVIS) = sqrt(VISRAD(2)**2 + VISRAD(3)**2)/VISRAD(1)
                     VISOUT(3, IVIS) = (180.0d0/PI_)*FRAC12_*atan2(VISRAD(3), VISRAD(2))
                 end if
-                if (NSTOKES .eq. 4) then
+                if (isPol4_) then
                     ! Output degree of circular polarization (-1 to 1)
                     VISOUT(4, IVIS) = VISRAD(4)/VISRAD(1)
                 end if
@@ -1412,7 +1413,7 @@ subroutine shd_rad__computeSensorRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
 
     deallocate (YLMSUN)
     if (allocated(PHASETAB)) deallocate (PHASETAB)
-    if (NSTOKES .gt. 1) then
+    if (isPol_) then
         ! Choose the best range for the angle of linear polarization (-90 to 90 or 0 to 180)
         N = NL*NS
         allocate (AOLP(N))

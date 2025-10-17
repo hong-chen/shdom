@@ -42,7 +42,8 @@ module shd_intg
     use globals_const, only: RD_, DPI_, &
                              FRAC13_, FRAC112_
     use globals_cfg,   only: VERBOSE_, RACC_, &
-                             isMpi_, is1DX_, is1DYx_, is1D_
+                             isMpi_, is1DX_, is1DYx_, is1D_, &
+                             isPol_
 
     use shd_sfc,  only: shd_sfc__interpSfc
 
@@ -225,13 +226,13 @@ subroutine shd_intg__integratePath(&
             end if
         end if
 
-        if (NSTOKES .eq. 1) then
-            call shd_shdo__transSHtoDO_(NPTS, ML, MM, NLM,&
+        if (isPol_) then
+            call shd_shdo__transSHtoDO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
                 &NMU, NPHI0MAX, NPHI0(IMU),&
                 &IMU, FFTFLAG, CMU1, CPHI1, WSAVE,&
                 &SHPTR, SOURCE, WORK)
         else
-            call shd_shdo__transSHtoDO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
+            call shd_shdo__transSHtoDO_(NPTS, ML, MM, NLM,&
                 &NMU, NPHI0MAX, NPHI0(IMU),&
                 &IMU, FFTFLAG, CMU1, CPHI1, WSAVE,&
                 &SHPTR, SOURCE, WORK)
@@ -306,21 +307,21 @@ subroutine shd_intg__integratePath(&
                     &EXTINCT, NSTOKES, WORK, IPHI, GRIDRAD)
 
             else
-                if (NSTOKES .eq. 1) then
-
-                    call shd_intg__backIntegrate3D_(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,&
-                        &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-                        &GRIDPOS, XGRID, YGRID, ZGRID, SWEEPORD,&
-                        &MU(IMU), PHI(IMU, IPHI), TRANSMIN, BCFLAG, IPFLAG,&
-                        &EXTINCT, WORK, IPHI, GRIDRAD)
-
-                else
+                if (isPol_) then
 
                     call shd_intg__backIntegrate3D(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,&
                         &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
                         &GRIDPOS, XGRID, YGRID, ZGRID, SWEEPORD,&
                         &MU(IMU), PHI(IMU, IPHI), TRANSMIN, BCFLAG, IPFLAG,&
                         &EXTINCT, NSTOKES, WORK, IPHI, GRIDRAD)
+
+                else
+
+                    call shd_intg__backIntegrate3D_(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,&
+                        &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
+                        &GRIDPOS, XGRID, YGRID, ZGRID, SWEEPORD,&
+                        &MU(IMU), PHI(IMU, IPHI), TRANSMIN, BCFLAG, IPFLAG,&
+                        &EXTINCT, WORK, IPHI, GRIDRAD)
 
                 end if
             end if
@@ -360,13 +361,13 @@ subroutine shd_intg__integratePath(&
         end do DO_PHI_LOOP
 
         ! Transform the radiance to spherical harmonics for this zenith angle
-        if (NSTOKES .eq. 1) then
-            call shd_shdo__transDOtoSH_(NPTS, ML, MM, NLM,&
+        if (isPol_) then
+            call shd_shdo__transDOtoSH(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
                 &NMU, NPHI0MAX, NPHI0(IMU),&
                 &IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
                 &RSHPTR, WORK, RADIANCE)
         else
-            call shd_shdo__transDOtoSH(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
+            call shd_shdo__transDOtoSH_(NPTS, ML, MM, NLM,&
                 &NMU, NPHI0MAX, NPHI0(IMU),&
                 &IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
                 &RSHPTR, WORK, RADIANCE)

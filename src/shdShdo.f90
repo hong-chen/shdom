@@ -40,6 +40,7 @@
 module shd_shdo
 
     use globals_const, only: RD_, PI_, DPI_, OPI_, FRAC12_
+    use globals_cfg,   only: isPol_, isPol4_
 
     use shd_util, only: shd_util__computeGausQuad, &
                         shd_util__computeGausQuadDble
@@ -330,7 +331,7 @@ subroutine shd_shdo__transSHtoDO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
             do J = 1, NSH
                 M = MOFJ(J)
                 SUMUV(1, M) = SUMUV(1, M) + CMU1(1, J, IMU)*INDATA(1, IS + J)
-                if (NSTOKES .gt. 1) then
+                if (isPol_) then
                     SUMUV(2, M) = SUMUV(2, M)&
                         &+ CMU1(2, J, IMU)*INDATA(2, IS + J)&
                         &+ CMU1(5, J, IMU)*INDATA(3, IS + J)
@@ -338,7 +339,7 @@ subroutine shd_shdo__transSHtoDO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
                         &+ CMU1(6, J, IMU)*INDATA(2, IS + J)&
                         &+ CMU1(3, J, IMU)*INDATA(3, IS + J)
                 end if
-                if (NSTOKES .eq. 4) then
+                if (isPol4_) then
                     SUMUV(4, M) = SUMUV(4, M) + CMU1(4, J, IMU)*INDATA(4, IS + J)
                 end if
             end do
@@ -347,7 +348,7 @@ subroutine shd_shdo__transSHtoDO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
                 SUMCS(1, M) = SUMUV(1, M) + SUMUV(1, -M)
                 SUMCS(1, -M) = SUMUV(1, -M) - SUMUV(1, M)
             end do
-            if (NSTOKES .gt. 1) then
+            if (isPol_) then
                 do M = 1, ME
                     SUMCS(2, M) = SUMUV(2, M) + SUMUV(2, -M)
                     SUMCS(2, -M) = SUMUV(2, -M) - SUMUV(2, M)
@@ -355,7 +356,7 @@ subroutine shd_shdo__transSHtoDO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
                     SUMCS(3, M) = SUMUV(3, M) + SUMUV(3, -M)
                 end do
             end if
-            if (NSTOKES .eq. 4) then
+            if (isPol4_) then
                 do M = 1, ME
                     SUMCS(4, -M) = SUMUV(4, M) - SUMUV(4, -M)
                     SUMCS(4, M) = SUMUV(4, M) + SUMUV(4, -M)
@@ -588,7 +589,7 @@ subroutine shd_shdo__transDOtoSH(&
             SUMUV(1, M) = SUMCS(1, M) - SUMCS(1, -M)
             SUMUV(1, -M) = SUMCS(1, M) + SUMCS(1, -M)
         end do
-        if (NSTOKES .gt. 1) then
+        if (isPol_) then
             do M = 1, ME
                 SUMUV(2, M) = SUMCS(2, M) - SUMCS(2, -M)
                 SUMUV(2, -M) = SUMCS(2, M) + SUMCS(2, -M)
@@ -596,7 +597,7 @@ subroutine shd_shdo__transDOtoSH(&
                 SUMUV(3, -M) = SUMCS(3, M) - SUMCS(3, -M)
             end do
         end if
-        if (NSTOKES .eq. 4) then
+        if (isPol4_) then
             do M = 1, ME
                 SUMUV(4, M) = SUMCS(4, M) + SUMCS(4, -M)
                 SUMUV(4, -M) = SUMCS(4, M) - SUMCS(4, -M)
@@ -605,13 +606,13 @@ subroutine shd_shdo__transDOtoSH(&
         do J = 1, NSH
             M = MOFJ(J)
             OUTDATA(1, IS + J) = OUTDATA(1, IS + J) + CMU2(1, IMU, J)*SUMUV(1, M)
-            if (NSTOKES .gt. 1) then
+            if (isPol_) then
                 OUTDATA(2, IS + J) = OUTDATA(2, IS + J) + CMU2(2, IMU, J)*SUMUV(2, M)&
                     &+ CMU2(5, IMU, J)*SUMUV(3, M)
                 OUTDATA(3, IS + J) = OUTDATA(3, IS + J) + CMU2(6, IMU, J)*SUMUV(2, M)&
                     &+ CMU2(3, IMU, J)*SUMUV(3, M)
             end if
-            if (NSTOKES .eq. 4) then
+            if (isPol4_) then
                 OUTDATA(4, IS + J) = OUTDATA(4, IS + J) + CMU2(4, IMU, J)*SUMUV(4, M)
             end if
         end do

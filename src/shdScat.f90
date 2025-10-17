@@ -40,6 +40,7 @@
 module shd_scat
 
     use globals_const, only: RD_, DPI_, DOPI_, DO4PI_
+    use globals_cfg,   only: isPol_
 
     implicit none
     private
@@ -81,7 +82,7 @@ subroutine shd_scat__computePhase(&
         COSSCAT = cos(DPI_*DFLOAT(J - 1)/(NSCATANGLE - 1))
         X = dble(COSSCAT)
         call shd_scat__computeWigner(X, NLEG, 0, 0, DMM1)
-        if (NSTOKES .gt. 1) then
+        if (isPol_) then
             call shd_scat__computeWigner(X, NLEG, 2, 0, DMM2)
         end if
 
@@ -117,7 +118,7 @@ subroutine shd_scat__computePhase(&
             end if
             PHASETAB(1, IPH, J) = sngl(A1*DO4PI_)
 
-            if (NSTOKES .gt. 1) then
+            if (isPol_) then
                 ! If doing polarization, sum the second Wigner function series
                 B1 = 0.0d0
                 do L = 0, NLEG
