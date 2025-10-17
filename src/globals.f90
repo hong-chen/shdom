@@ -130,6 +130,7 @@ module globals_cfg
     real(kind=8), save :: RACC_
     real(kind=4), save :: TOTSYSMEM_MB_ = 16000.0
     real(kind=4), save :: MAXCPUMEM_MB_
+    real(kind=4), save :: PLANET_RADIUS_ = 6371.009
 
     integer(kind=1), save :: VERBOSE_ = 5
     !Severity    Level  Description

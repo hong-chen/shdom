@@ -40,7 +40,7 @@
 module shd_init
 
     use globals_const, only: RD_, PI_, OPI_
-    use globals_cfg,   only: VERBOSE_
+    use globals_cfg,   only: VERBOSE_, PLANET_RADIUS_
 
     use shd_util, only: shd_util__computePlanck, &
                         shd_util__solveTriDiag
@@ -501,6 +501,7 @@ subroutine shd_init__makeRad(&
     &EXTINCT, ALBEDO, LEGEN, TEMP, NUMPHASE, IPHASE,&
     &SRCTYPE, SOLARFLUX, SOLARMU, GNDALBEDO, GNDTEMP,&
     &SKYRAD, UNITS, WAVENO, WAVELEN, RADIANCE)
+
     ! Initializes radiance field by solving plane-parallel two-stream.
     ! Solves the L=1 M=0 SH system by transforming the pentadiagonal
     ! system to tridiagonal and calling solver.
@@ -524,10 +525,15 @@ subroutine shd_init__makeRad(&
     real, allocatable :: TEMPS(:), FLUXES(:, :)
     character(len=1) :: SRCT
 
+    NLAYER = NZ - 1
+
     allocate (OPTDEPTHS(NZ), ALBEDOS(NZ), ASYMMETRIES(NZ))
     allocate (TEMPS(NZ), FLUXES(3, NZ))
 
-    NLAYER = NZ - 1
+    !real, allocatable :: CH(:, :)
+    !allocate (CH(NLAYER, NLAYER))
+    !call shd_init__chapman(NLAYER, SOLARMU, PLANET_RADIUS_, ZGRID(NZ:1:-1), CH)
+
     DELTAM = .false.
 
     SRCT = SRCTYPE
@@ -1131,41 +1137,49 @@ subroutine shd_init__checkSfcU(&
 
 end subroutine shd_init__checkSfcU
 
-subroutine shd_init__Chapman(nlyr, umu0, r0, h_lyr, umu0p)
+subroutine shd_init__chapman(&
+    &NLAYER, SOLARMU, PLANET_RADIUS, ZLEVELS,&
+    &CH)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Description:
     !   Apply Chapman function for psuedo spherical correction
     !
     ! Input:
-    !   nlyr: number of layers
-    !   umu0: cosine of incident angle
-    !   r0: planet radius
-    !   h_lyr: layer height
+    !   NLAYER : integer, number of layers
+    !   SOLARMU: real, cosine of incident angle
+    !   PLANET_RADIUS: real, planet radius in km
+    !   ZLEVELS: real array, layer height, go from top to surface
     !
     ! Output:
-    !   umu0p: corrected mu
+    !   CH: Chapman function (see Eq. 9 in Dahlback and Stamnes, 1990)
     !
     ! Notes:
     !   This subroutine is adopted from DISORT 4.0.99 (http://www.rtatmocn.com/disort/)
     !   subroutine <chapman> in <disort.f>
+    !   Reference: Dahlback and Stamnes, 1990 - A NEW SPHERICAL MODEL FOR COMPUTING
+    !              THE RADIATION FIELD AVAILABLE FOR PHOTOLYSIS AND HEATING AT TWILIGHT
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    integer(kind=I__), intent(in) :: nlyr
-    real(kind=R__)   , intent(in) :: r0, h_lyr(0:nlyr), umu0
+    integer(kind=I__), intent(in) :: NLAYER
+    real(kind=R__)   , intent(in) :: PLANET_RADIUS, ZLEVELS(0:NLAYER), SOLARMU
 
-    real(kind=R__), intent(out) :: umu0p(nlyr, nlyr)
+    real(kind=R__), intent(out) :: CH(NLAYER, NLAYER)
 
     integer(kind=I__) :: lc, n
     real(kind=R__)    :: cos_theta0, sin_theta0, cos_theta, sin_theta
     real(kind=R__)    :: s1, s2
-    real(kind=R__)    :: h(0:nlyr)
+    real(kind=R__)    :: h(0:NLAYER)
 
-    cos_theta0 = umu0
-    sin_theta0 = sqrt(1.0 - umu0*umu0)
-    h = h_lyr + r0
+    if (h(0) .lt. h(NLAYER)) stop 'Error [_chapman]: Input ZLEVELS should go from top to bottom.'
 
-    do lc = 1, nlyr
+    cos_theta0 = SOLARMU
+    sin_theta0 = sqrt(1.0 - SOLARMU*SOLARMU)
+    h = ZLEVELS + PLANET_RADIUS
+
+    CH(:, :) = -1.0
+
+    do lc = 1, NLAYER
 
         sin_theta = sin_theta0 * h(lc) / h(0)
         cos_theta = sqrt(1.0 - sin_theta*sin_theta)
@@ -1177,12 +1191,12 @@ subroutine shd_init__Chapman(nlyr, umu0, r0, h_lyr, umu0p)
 
             !consider special case for delta h = 0
             if ((s1 .ne. s2) .and. (h(n-1) .ne. h(n))) then
-                umu0p(lc,n) = ( h(n-1) - h(n) ) / ( s2 - s1 )
+                CH(lc,n) = (h(n-1) - h(n)) / (s2 - s1)
             else
                 if (n .gt. 1) then
-                    umu0p(lc,n) = umu0p(lc,n-1)
+                    CH(lc,n) = CH(lc, n-1)
                 else
-                    umu0p(lc,n) = umu0
+                    CH(lc,n) = SOLARMU
                 end if
             endif
             s1 = s2
@@ -1191,9 +1205,15 @@ subroutine shd_init__Chapman(nlyr, umu0, r0, h_lyr, umu0p)
 
     end do
 
+    do n = 1, NLAYER
+        print *, n
+        print *, CH(n, :)
+        print *
+    end do
+
     return
 
-end subroutine shd_init__Chapman
+end subroutine shd_init__chapman
 
 
 end module shd_init
