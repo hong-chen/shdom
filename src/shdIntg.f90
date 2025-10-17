@@ -42,7 +42,7 @@ module shd_intg
     use globals_const, only: RD_, DPI_, &
                              FRAC13_, FRAC112_
     use globals_cfg,   only: VERBOSE_, RACC_, &
-                             isMpi_
+                             isMpi_, is1DX_, is1DYor1D_, is1D_
 
     use shd_sfc,  only: shd_sfc__interpSfc
 
@@ -291,14 +291,14 @@ subroutine shd_intg__integratePath(&
             end if
 
             ! Do backward path integration from each grid point not done yet
-            if (btest(IPFLAG, 1) .and. btest(IPFLAG, 0)) then
+            if (is1D_) then
 
                 call shd_intg__backIntegrate1D(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,&
                     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
                     &GRIDPOS, SWEEPORD, MU(IMU), PHI(IMU, IPHI), TRANSMIN,&
                     &EXTINCT, NSTOKES, WORK, IPHI, GRIDRAD)
 
-            else if (btest(IPFLAG, 1) .and. (.not. isMpi_)) then
+            else if (is1DYor1D_ .and. (.not. isMpi_)) then
 
                 call shd_intg__backIntegrate2D(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,&
                     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
@@ -468,7 +468,7 @@ subroutine shd_intg__backIntegrate3D(&
     end if
     ! IOCT is the octant the ray come from or the discrete ordinate goes to.
     IOCT = 1 + BITX + 2*BITY + 4*BITZ
-    if (btest(IPFLAG, 1)) then
+    if (is1DYor1D_) then
         JOCT = JOCTORDER2(IOCT)
     else
         JOCT = JOCTORDER3(IOCT)
@@ -871,7 +871,7 @@ subroutine shd_intg__backIntegrate3D_(&
 
     ! IOCT is the octant the ray come from or the discrete ordinate goes to.
     IOCT = 1 + BITX + 2*BITY + 4*BITZ
-    if (btest(IPFLAG, 1)) then
+    if (is1DYor1D_) then
         JOCT = JOCTORDER_1D(IOCT)
     else
         JOCT = JOCTORDER_3D(IOCT)

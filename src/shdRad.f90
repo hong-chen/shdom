@@ -42,7 +42,8 @@ module shd_rad
     use globals_const, only: RD_, PI_, DTOR_, &
                              FRAC12_, FRAC13_
     use globals_cfg,   only: VERBOSE_, RACC_, &
-                             isOpenBndryX_, isOpenBndryY_, isMpiX_, isMpiY_
+                             isOpenBndryX_, isOpenBndryY_, isMpiX_, isMpiY_, &
+                             is3Ddir1Ddif_
 
     use shd_scat, only: shd_scat__computePhase
 
@@ -227,7 +228,7 @@ subroutine shd_rad__computeDirect(&
 
         ! Bit 2 of IPFLAG means do the direct beam in 3D
         IPDIRECT = IPFLAG
-        if (btest(IPFLAG, 2)) IPDIRECT = 0
+        if (is3Ddir1Ddif_) IPDIRECT = 0
 
         ! Make the ray direction (opposite to the solar beam)
         !   SOLAR?? is direction of beam, SUN?? is direction to sun (opposite)

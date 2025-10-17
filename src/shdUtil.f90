@@ -43,7 +43,8 @@
 module shd_util
 
     use globals_const, only: RD_, PI_, DPI_
-    use globals_cfg,   only: isOpenBndryX_, isOpenBndryY_, isMpiX_, isMpiY_
+    use globals_cfg,   only: isOpenBndryX_, isOpenBndryY_, isMpiX_, isMpiY_, &
+                             is1DX_, is1DYor1D_
 
     implicit none
     private
@@ -215,7 +216,7 @@ subroutine shd_util__findCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
     !   so do binary search in X, Y, and Z)
     !   Special case for independent pixel: get closest grid column.
     IL = 0
-    if (btest(IPFLAG, 0)) then
+    if (is1DX_) then
         IU = NX
         do while (IU - IL .gt. 1)
             IM = (IU + IL)/2
@@ -240,7 +241,7 @@ subroutine shd_util__findCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
     IX = max(IL, 1)
 
     IL = 0
-    if (btest(IPFLAG, 1)) then
+    if (is1DYor1D_) then
         IU = NY
         do while (IU - IL .gt. 1)
             IM = (IU + IL)/2
@@ -291,7 +292,7 @@ subroutine shd_util__findCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
             IX = IX + 1
         end if
     end if
-    if (isMpiX_ .and. .not. btest(IPFLAG, 0)) then
+    if (isMpiX_ .and. .not. is1DX_) then
         NXC = NX - 1
         IX = min(IX, NXC)
     end if
@@ -308,7 +309,7 @@ subroutine shd_util__findCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
             IY = IY + 1
         end if
     end if
-    if (isMpiY_ .and. .not. btest(IPFLAG, 1)) then
+    if (isMpiY_ .and. .not. is1DYor1D_) then
         NYC = NY - 1
         IY = min(IY, NYC)
     end if

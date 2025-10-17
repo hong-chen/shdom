@@ -41,7 +41,8 @@ module shd_init
 
     use globals_const, only: RD_, PI_, OPI_
     use globals_cfg,   only: VERBOSE_, PLANET_RADIUS_, &
-                             isOpenBndryX_, isOpenBndryY_, isMpiX_, isMpiY_
+                             isOpenBndryX_, isOpenBndryY_, isMpiX_, isMpiY_, &
+                             is1DX_, is1DYor1D_
 
     use shd_util, only: shd_util__computePlanck, &
                         shd_util__solveTriDiag
@@ -283,15 +284,15 @@ subroutine shd_init__makeCell(&
 
     NXC = NX
     if (isOpenBndryX_) NXC = NX + 1
-    if (isMpiX_ .and. (.not. btest(IPFLAG, 0))) NXC = NX - 1
+    if (isMpiX_ .and. (.not. is1DX_)) NXC = NX - 1
     NYC = NY
     if (isOpenBndryY_) NYC = NY + 1
-    if (isMpiY_ .and. (.not. btest(IPFLAG, 1))) NYC = NY - 1
+    if (isMpiY_ .and. (.not. is1DYor1D_)) NYC = NY - 1
 
     ! Then setup the cell structures
     I = 0
     do IX = 1, NXC
-        if (btest(IPFLAG, 0)) then
+        if (is1DX_) then
             IX0 = IX
             IX1 = IX
         else if (isOpenBndryX_) then
@@ -302,7 +303,7 @@ subroutine shd_init__makeCell(&
             IX1 = IX + 1
         end if
         do IY = 1, NYC
-            if (btest(IPFLAG, 1)) then
+            if (is1DYor1D_) then
                 IY0 = IY
                 IY1 = IY
             else if (isOpenBndryY_) then
@@ -325,7 +326,7 @@ subroutine shd_init__makeCell(&
                 CELLFLAGS(I) = 0
                 ! Initialize the neighbor pointer; to self for IP mode or
                 !   if open boundary conditions and at either end
-                if (btest(IPFLAG, 0)) then
+                if (is1DX_) then
                     NEIGHPTR(1, I) = I
                     NEIGHPTR(2, I) = I
                     CELLFLAGS(I) = ibset(int(CELLFLAGS(I)), 0)
@@ -365,7 +366,7 @@ subroutine shd_init__makeCell(&
                         NEIGHPTR(2, I) = I + (NZ - 1)*NYC
                     end if
                 end if
-                if (btest(IPFLAG, 1)) then
+                if (is1DYor1D_) then
                     NEIGHPTR(3, I) = I
                     NEIGHPTR(4, I) = I
                     CELLFLAGS(I) = ibset(int(CELLFLAGS(I)), 1)

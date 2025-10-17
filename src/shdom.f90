@@ -42,8 +42,9 @@ program shdom
     use globals_const, only: REPS_
     use globals_cfg,   only: VERBOSE_, FNAMEMAXLEN_, RACC_, &
                              TOTSYSMEM_MB_, MAXCPUMEM_MB_, &
-                             isHighOrder_, isMpiX_, isMpiY_, isMpi_, &
-                             isOpenBndryX_, isOpenBndryY_
+                             isHighOrder_, &
+                             isOpenBndryX_, isOpenBndryY_, isMpiX_, isMpiY_, isMpi_, &
+                             is1DX_, is1DYor1D_, is1D_, is3Ddir1Ddif_
 
     use globals_prp,   only: NPX_, NPY_, NPZ_, NUMPHASE_, &
                              DELX_, DELY_, XSTART_, YSTART_, XDOMAIN_, YDOMAIN_, &
@@ -413,6 +414,35 @@ program shdom
     else
         isMpi_ = .false.
     end if
+
+    ! btest(IPFLAG, 0) checks whether IPFLAG=1 or IPFLAG=0 ('...0001' [IPA in X] or '...0000' [3D in X])
+    if (btest(IPFLAG, 0)) then
+        is1DX_ = .true.
+    else
+        is1DX_ = .false.
+    end if
+
+    ! btest(IPFLAG, 1) checks whether IPFLAG=2 [or 3] or IPFLAG=0 [or 1]
+    !   ('...0010' [or '...0011', IPA in Y] or '...0000' [or '...0001', 3D in Y])
+    if (btest(IPFLAG, 1)) then
+        is1DYor1D_ = .true.
+    else
+        is1DYor1D_ = .false.
+    end if
+
+    ! btest(IPFLAG, 1) checks whether IPFLAG=7 [or 8]
+    !   ('...0110' [or '...0111'], 3D direct beam but IP diffuse radiative transfer)
+    if (btest(IPFLAG, 2)) then
+        is3Ddir1Ddif_ = .true.
+    else
+        is3Ddir1Ddif_ = .false.
+    end if
+
+    if (is1DX_ .and. is1DYor1D_) then
+        is1D_ = .true.
+    else
+        is1D_ = .false.
+    end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
@@ -423,17 +453,14 @@ program shdom
     BASEOUT = .false.
 
     ! Set up base grid point actual size (NX1xNY1xNZ)
-    !   btest(IPFLAG, 0) checks whether IPFLAG=1 or IPFLAG=0 ('...0001' [IPA in X] or '...0000' [3D in X])
     !   btest(BCFLAG, 0) checks whether BCFLAG=1 or BCFLAG=0 ('...0001' [open in X] or '...0000' [periodic in X])
     NX1 = NX + 1
-    if (btest(IPFLAG, 0) .or. isOpenBndryX_ .or. isMpiX_) NX1 = NX
+    if (is1DX_ .or. isOpenBndryX_ .or. isMpiX_) NX1 = NX
 
-    ! btest(IPFLAG, 1) checks whether IPFLAG=2 [or 3] or IPFLAG=0 [or 1]
-    !   ('...0010' [or '...0011', IPA in Y] or '...0000' [or '...0001', 3D in Y])
     ! btest(BCFLAG, 1) checks whether BCFLAG=2 [or 3] or BCFLAG=0 [or 1]
     !   ('...0010' [or '...0011', open in Y] or '...0000' [or '...0001', periodic in Y])
     NY1 = NY + 1
-    if (btest(IPFLAG, 1) .or. isOpenBndryY_ .or. isMpiY_) NY1 = NY
+    if (is1DYor1D_ .or. isOpenBndryY_ .or. isMpiY_) NY1 = NY
 
     ! Number of base points
     NBPTS = NX1*NY1*NZ

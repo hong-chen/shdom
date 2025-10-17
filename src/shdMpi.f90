@@ -41,7 +41,8 @@ module shd_mpi
 
     use globals_const, only: RD_, PI_, DPI_, PIH_, FRAC13_, FRAC112_
     use globals_cfg,   only: VERBOSE_, FNAMEMAXLEN_, RACC_, &
-                             isMpiX_, isMpiY_, isMpi_, isOpenBndryX_, isOpenBndryY_
+                             isOpenBndryX_, isOpenBndryY_, isMpiX_, isMpiY_, isMpi_, &
+                             is1DX_, is1DYor1D_, is1D_
 
 #if HAS_MPI
     use mpi_f08,  only: MPI_COMM_WORLD, MPI_COMM, MPI_REQUEST, &
@@ -855,8 +856,8 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
             IX = IXYALL(1, 1, 0); NX = IXYALL(2, 1, 0)
             IY = IXYALL(1, 2, 0); NY = IXYALL(2, 2, 0)
             NX1 = NX + 1; NY1 = NY + 1
-            if (btest(IPFLAG, 0) .and. .not. isMpiX_) NX1 = NX
-            if (btest(IPFLAG, 1) .and. .not. isMpiY_) NY1 = NY
+            if (is1DX_ .and. .not. isMpiX_) NX1 = NX
+            if (is1DYor1D_ .and. .not. isMpiY_) NY1 = NY
             allocate (buf(3, NZ, NY1, NX1))
             buf(1:2, :, :, :) = reshape(SUMFLUXES(1:2, :), (/2, NZ, NY1, NX1/))
             buf(3, :, :, :) = reshape(SUMDIRFLUX(:), (/NZ, NY1, NX1/))
@@ -866,8 +867,8 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
                 IX = IXYALL(1, 1, iproc); NX = IXYALL(2, 1, iproc)
                 IY = IXYALL(1, 2, iproc); NY = IXYALL(2, 2, iproc)
                 NX1 = NX + 1; NY1 = NY + 1
-                if (btest(IPFLAG, 0) .and. .not. isMpiX_) NX1 = NX
-                if (btest(IPFLAG, 1) .and. .not. isMpiY_) NY1 = NY
+                if (is1DX_ .and. .not. isMpiX_) NX1 = NX
+                if (is1DYor1D_ .and. .not. isMpiY_) NY1 = NY
                 allocate (buf(3, NZ, NY1, NX1))
                 buf(:, :, :, :) = reshape(recvbuf(:, 1:NZ*NY1*NX1, iproc), (/3, NZ, NY1, NX1/))
                 ALLFLUXES(1:3, 1:NZ, IY:IY + NY - 1, IX:IX + NX - 1) = buf(:, 1:NZ, 1:NY, 1:NX)
@@ -900,8 +901,8 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
             IX = IXYALL(1, 1, 0); NX = IXYALL(2, 1, 0)
             IY = IXYALL(1, 2, 0); NY = IXYALL(2, 2, 0)
             NX1 = NX + 1; NY1 = NY + 1
-            if (btest(IPFLAG, 0) .and. .not. isMpiX_) NX1 = NX
-            if (btest(IPFLAG, 1) .and. .not. isMpiY_) NY1 = NY
+            if (is1DX_ .and. .not. isMpiX_) NX1 = NX
+            if (is1DYor1D_ .and. .not. isMpiY_) NY1 = NY
             allocate (buf(1, NZ, NY1, NX1))
             buf(1, :, :, :) = reshape(SUMFLUXDIV(:), (/NZ, NY1, NX1/))
             ALLFLUXDIV(1:NZ, IY:IY + NY - 1, IX:IX + NX - 1) = buf(1, 1:NZ, 1:NY, 1:NX)
@@ -910,8 +911,8 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
                 IX = IXYALL(1, 1, iproc); NX = IXYALL(2, 1, iproc)
                 IY = IXYALL(1, 2, iproc); NY = IXYALL(2, 2, iproc)
                 NX1 = NX + 1; NY1 = NY + 1
-                if (btest(IPFLAG, 0) .and. .not. isMpiX_) NX1 = NX
-                if (btest(IPFLAG, 1) .and. .not. isMpiY_) NY1 = NY
+                if (is1DX_ .and. .not. isMpiX_) NX1 = NX
+                if (is1DYor1D_ .and. .not. isMpiY_) NY1 = NY
                 allocate (buf(1, NZ, NY1, NX1))
                 buf(:, :, :, :) = reshape(recvbuf(:, 1:NZ*NY1*NX1, iproc), (/1, NZ, NY1, NX1/))
                 ALLFLUXDIV(1:NZ, IY:IY + NY - 1, IX:IX + NX - 1) = buf(1, 1:NZ, 1:NY, 1:NX)
@@ -942,8 +943,8 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
             IX = IXYALL(1, 1, 0); NX = IXYALL(2, 1, 0)
             IY = IXYALL(1, 2, 0); NY = IXYALL(2, 2, 0)
             NX1 = NX + 1; NY1 = NY + 1
-            if (btest(IPFLAG, 0) .and. .not. isMpiX_) NX1 = NX
-            if (btest(IPFLAG, 1) .and. .not. isMpiY_) NY1 = NY
+            if (is1DX_ .and. .not. isMpiX_) NX1 = NX
+            if (is1DYor1D_ .and. .not. isMpiY_) NY1 = NY
             allocate (buf(NSHOUT, NZ, NY1, NX1))
             buf(:, :, :, :) = reshape(SUMSHTERMS(:, :), (/NSHOUT, NZ, NY1, NX1/))
             ALLSHTERMS(:, 1:NZ, IY:IY + NY - 1, IX:IX + NX - 1) = buf(:, 1:NZ, 1:NY, 1:NX)
@@ -952,8 +953,8 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
                 IX = IXYALL(1, 1, iproc); NX = IXYALL(2, 1, iproc)
                 IY = IXYALL(1, 2, iproc); NY = IXYALL(2, 2, iproc)
                 NX1 = NX + 1; NY1 = NY + 1
-                if (btest(IPFLAG, 0) .and. .not. isMpiX_) NX1 = NX
-                if (btest(IPFLAG, 1) .and. .not. isMpiY_) NY1 = NY
+                if (is1DX_ .and. .not. isMpiX_) NX1 = NX
+                if (is1DYor1D_ .and. .not. isMpiY_) NY1 = NY
                 allocate (buf(NSHOUT, NZ, NY1, NX1))
                 buf(:, :, :, :) = reshape(recvbuf(:, 1:NZ*NY1*NX1, iproc), (/NSHOUT, NZ, NY1, NX1/))
                 ALLSHTERMS(:, 1:NZ, IY:IY + NY - 1, IX:IX + NX - 1) = buf(:, 1:NZ, 1:NY, 1:NX)
@@ -1337,7 +1338,7 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
     type(MPI_STATUS) :: status(24)
 
     if (.not. (isMpi_)) return
-    if (btest(IPFLAG, 0) .and. btest(IPFLAG, 1)) return
+    if (is1D_) return
     call mpi_allreduce(NPTS .eq. OLDNPTS, SAMEGRID, 1, MPI_LOGICAL, MPI_LAND, COMM2D_, ierr)
     OLDNPTS = NPTS
     if (SAMEGRID) return
@@ -1349,9 +1350,9 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
     XYB(1) = XGRID(1); XYB(2) = XGRID(NX)
     XYB(3) = YGRID(1); XYB(4) = YGRID(NY)
 
-    if (btest(IPFLAG, 1) .and. btest(IPFLAG, 0)) then
+    if (is1D_) then
         NOCT = 2
-    else if (btest(IPFLAG, 1)) then
+    else if (is1DYor1D_) then
         NOCT = 4
     else
         NOCT = 8
@@ -1377,7 +1378,7 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
             if ((GRIDPOS(3, IPT) .lt. ZGRID(NZ) .and. BITZ .eq. 0) .or.&
                 &(GRIDPOS(3, IPT) .gt. ZGRID(1) .and. BITZ .eq. 1)) then
                 if (isMpiX_ .and. GRIDPOS(1, IPT) .eq. XEDGE(JOCT)&
-                    &.and. .not. btest(IPFLAG, 0)) then
+                    &.and. .not. is1DX_) then
                     SIDE = 2 - ibits(JOCT - 1, 1, 1)
                     N(SIDE) = N(SIDE) + 1
                     if (N(SIDE) .gt. MAXNBXY) then
@@ -1387,7 +1388,7 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
                     BNDPOS(:, JOCT, N(SIDE), 1, SIDE) = GRIDPOS(:, IPT)
                 end if
                 if (isMpiY_ .and. GRIDPOS(2, IPT) .eq. YEDGE(JOCT)&
-                    &.and. .not. btest(IPFLAG, 1)) then
+                    &.and. .not. is1DYor1D_) then
                     SIDE = 4 - ibits(JOCT - 1, 2, 1)
                     N(SIDE) = N(SIDE) + 1
                     if (N(SIDE) .gt. MAXNBXY) then
@@ -3205,15 +3206,15 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
 
     ! Then get the base grid cell in X and Y assuming evenly spaced grid
     NXC = NX
-    if (isMpiX_ .and. .not. btest(IPFLAG, 0)) NXC = NX - 1
+    if (isMpiX_ .and. .not. is1DX_) NXC = NX - 1
     NYC = NY
-    if (isMpiY_ .and. .not. btest(IPFLAG, 1)) NYC = NY - 1
-    if (btest(IPFLAG, 0)) then
+    if (isMpiY_ .and. .not. is1DYor1D_) NYC = NY - 1
+    if (is1DX_) then
         IX = 1 + nint((NX - 1)*(X - XGRID(1))/(XGRID(NX) - XGRID(1)))
     else
         IX = 1 + int((NX - 1)*(X - XGRID(1))/(XGRID(NX) - XGRID(1)))
     end if
-    if (btest(IPFLAG, 1)) then
+    if (is1DYor1D_) then
         IY = 1 + nint((NY - 1)*(Y - YGRID(1))/(YGRID(NY) - YGRID(1)))
     else
         IY = 1 + int((NY - 1)*(Y - YGRID(1))/(YGRID(NY) - YGRID(1)))

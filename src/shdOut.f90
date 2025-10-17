@@ -40,7 +40,7 @@
 module shd_out
 
     use globals_const, only: RD_, PI_
-    use globals_cfg,   only: VERBOSE_, FNAMEMAXLEN_
+    use globals_cfg,   only: VERBOSE_, FNAMEMAXLEN_, is1DX_
 
     use shd_grid, only: shd_grid__testCellSplit
 
@@ -2608,7 +2608,7 @@ subroutine shd_io__visualizeCell(&
     write (9, '(A)') 'begin scale 1 1'
     write (9, '(A,1X,F7.3)') '! Y value: ', YVAL
     write (9, '(A)')
-    if (btest(IPFLAG, 0)) then
+    if (is1DX_) then
         DELX = 0.5*XDOMAIN/NX
         write (9, '(A)') 'sub drawbox x1 y1 x3 y3 xc yc n'
         write (9, '(A)') ' set color black'
@@ -2667,7 +2667,7 @@ subroutine shd_io__visualizeCell(&
             Z3 = GRIDPOS(3, GRIDPTR(6, IC))
             X4 = GRIDPOS(1, GRIDPTR(5, IC))
             Z4 = GRIDPOS(3, GRIDPTR(5, IC))
-            if (btest(IPFLAG, 0)) then
+            if (is1DX_) then
                 write (9, '(A,6(1X,F6.3),I8)') '@drawbox ',&
                     & S*X1, S*Z1, S*X3, S*Z3, S*XC, S*ZC, IC
             else

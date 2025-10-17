@@ -41,7 +41,8 @@ module shd_grid
 
     use globals_const, only: RD_
     use globals_cfg,   only: VERBOSE_, RACC_, &
-                             isOpenBndryX_, isOpenBndryY_, isMpiX_, isMpiY_, isMpi_
+                             isOpenBndryX_, isOpenBndryY_, isMpiX_, isMpiY_, isMpi_, &
+                             is1DX_, is1DYor1D_, is1D_
 
     use shd_util, only: shd_util__findNextCell, &
                         shd_util__computePlanck, &
@@ -417,9 +418,9 @@ subroutine shd_grid__makeSweepOrder(&
     ! IOCT is the octant the ray come from or the discrete ordinate
     !   IOCT = 1 + BITX + 2*BITY + 4*BITZ
 
-    if (btest(IPFLAG, 1) .and. btest(IPFLAG, 0)) then
+    if (is1D_) then
         NOCT = 2
-    else if (btest(IPFLAG, 1)) then
+    else if (is1DYor1D_) then
         NOCT = 4
     else
         NOCT = 8
@@ -427,11 +428,11 @@ subroutine shd_grid__makeSweepOrder(&
 
     NXC = NX
     if (isOpenBndryX_) NXC = NX + 1
-    if (isMpiX_ .and. .not. btest(IPFLAG, 0)) NXC = NX - 1
+    if (isMpiX_ .and. (.not. is1DX_)) NXC = NX - 1
 
     NYC = NY
     if (isOpenBndryY_) NYC = NY + 1
-    if (isMpiY_ .and. .not. btest(IPFLAG, 1)) NYC = NY - 1
+    if (isMpiY_ .and. (.not. is1DYor1D_)) NYC = NY - 1
 
     ! Loop over the number of octants needed; get the octant number
     do JOCT = 1, NOCT
