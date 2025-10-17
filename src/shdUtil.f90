@@ -43,8 +43,8 @@
 module shd_util
 
     use globals_const, only: RD_, PI_, DPI_
-    use globals_cfg,   only: isOpenX_, isOpenYorOpen_, isMpiX_, isMpiY_, &
-                             is1DX_, is1DYor1D_
+    use globals_cfg,   only: isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
+                             is1DX_, is1DYx_
 
     implicit none
     private
@@ -203,7 +203,7 @@ subroutine shd_util__findCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
             X0 = X0 - XDOMAIN*int((X0 - XGRID(1))/XDOMAIN)
         end if
     end if
-    if (.not. (isOpenYorOpen_ .or. isMpiY_)) then
+    if (.not. (isOpenYx_ .or. isMpiY_)) then
         YDOMAIN = YGRID(NY + 1) - YGRID(1)
         if (Y0 .lt. YGRID(1)) then
             Y0 = Y0 - YDOMAIN*(int((Y0 - YGRID(1))/YDOMAIN) - 1)
@@ -241,7 +241,7 @@ subroutine shd_util__findCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
     IX = max(IL, 1)
 
     IL = 0
-    if (is1DYor1D_) then
+    if (is1DYx_) then
         IU = NY
         do while (IU - IL .gt. 1)
             IM = (IU + IL)/2
@@ -297,7 +297,7 @@ subroutine shd_util__findCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
         IX = min(IX, NXC)
     end if
     NYC = NY
-    if (isOpenYorOpen_) then
+    if (isOpenYx_) then
         NYC = NY + 1
         if (Y0 .lt. YGRID(1)) then
             ! Y0 = YGRID(1)
@@ -309,7 +309,7 @@ subroutine shd_util__findCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
             IY = IY + 1
         end if
     end if
-    if (isMpiY_ .and. .not. is1DYor1D_) then
+    if (isMpiY_ .and. .not. is1DYx_) then
         NYC = NY - 1
         IY = min(IY, NYC)
     end if

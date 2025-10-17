@@ -41,7 +41,7 @@ module shd_src
 
     use globals_const, only: RD_, DPI_, O4PI_, DO4PI_, &
                              FRAC12_, FRAC13_, FRAC112_
-    use globals_cfg,   only: RACC_, isOpenX_, isOpenYorOpen_
+    use globals_cfg,   only: RACC_, isOpenX_, isOpenYx_
 
     use shd_scat, only: shd_scat__computeLegendre, &
                         shd_scat__computeWigner
@@ -959,7 +959,7 @@ subroutine shd_src__integrateSrcOneRay(&
             &.not. (isOpenX_ .and.&
             &((CX .gt. 0 .and. XE .lt. XM) .or. (CX .lt. 0 .and. XE .gt. XM)))
         IPINY = btest(int(CELLFLAGS(ICELL)), 1) .and.&
-            &.not. (isOpenYorOpen_ .and.&
+            &.not. (isOpenYx_ .and.&
             &((CY .gt. 0 .and. YE .lt. YM) .or. (CY .lt. 0 .and. YE .gt. YM)))
 
         ! Find boundaries of the current cell
@@ -1053,7 +1053,7 @@ subroutine shd_src__integrateSrcOneRay(&
         else if (SOY .le. SOZ) then
             IFACE = 4 - BITY
             JFACE = 2
-            OPENBCFACE = btest(int(CELLFLAGS(ICELL)), 1) .and. isOpenYorOpen_
+            OPENBCFACE = btest(int(CELLFLAGS(ICELL)), 1) .and. isOpenYx_
         else
             IFACE = 6 - BITZ
             JFACE = 3
@@ -1235,7 +1235,7 @@ subroutine shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
             &.not. (isOpenX_ .and.&
             &((CX .gt. 0 .and. XE .lt. XM) .or. (CX .lt. 0 .and. XE .gt. XM)))
         IPINY = btest(int(CELLFLAGS(ICELL)), 1) .and.&
-            &.not. (isOpenYorOpen_ .and.&
+            &.not. (isOpenYx_ .and.&
             &((CY .gt. 0 .and. YE .lt. YM) .or. (CY .lt. 0 .and. YE .gt. YM)))
 
         ! Find boundaries of the current cell
@@ -1337,7 +1337,7 @@ subroutine shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
         else if (SOY .le. SOZ) then
             IFACE = 4 - BITY
             JFACE = 2
-            OPENBCFACE = btest(int(CELLFLAGS(ICELL)), 1) .and. isOpenYorOpen_
+            OPENBCFACE = btest(int(CELLFLAGS(ICELL)), 1) .and. isOpenYx_
         else
             IFACE = 6 - BITZ
             JFACE = 3

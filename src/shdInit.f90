@@ -41,8 +41,8 @@ module shd_init
 
     use globals_const, only: RD_, PI_, OPI_
     use globals_cfg,   only: VERBOSE_, PLANET_RADIUS_, &
-                             isOpenX_, isOpenYorOpen_, isMpiX_, isMpiY_, &
-                             is1DX_, is1DYor1D_
+                             isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
+                             is1DX_, is1DYx_
 
     use shd_util, only: shd_util__computePlanck, &
                         shd_util__solveTriDiag
@@ -286,8 +286,8 @@ subroutine shd_init__makeCell(&
     if (isOpenX_) NXC = NX + 1
     if (isMpiX_ .and. (.not. is1DX_)) NXC = NX - 1
     NYC = NY
-    if (isOpenYorOpen_) NYC = NY + 1
-    if (isMpiY_ .and. (.not. is1DYor1D_)) NYC = NY - 1
+    if (isOpenYx_) NYC = NY + 1
+    if (isMpiY_ .and. (.not. is1DYx_)) NYC = NY - 1
 
     ! Then setup the cell structures
     I = 0
@@ -303,10 +303,10 @@ subroutine shd_init__makeCell(&
             IX1 = IX + 1
         end if
         do IY = 1, NYC
-            if (is1DYor1D_) then
+            if (is1DYx_) then
                 IY0 = IY
                 IY1 = IY
-            else if (isOpenYorOpen_) then
+            else if (isOpenYx_) then
                 IY0 = max(1, IY - 1)
                 IY1 = min(NY, IY)
             else
@@ -366,11 +366,11 @@ subroutine shd_init__makeCell(&
                         NEIGHPTR(2, I) = I + (NZ - 1)*NYC
                     end if
                 end if
-                if (is1DYor1D_) then
+                if (is1DYx_) then
                     NEIGHPTR(3, I) = I
                     NEIGHPTR(4, I) = I
                     CELLFLAGS(I) = ibset(int(CELLFLAGS(I)), 1)
-                else if (isOpenYorOpen_) then
+                else if (isOpenYx_) then
                     if (IY .eq. 1) then
                         NEIGHPTR(3, I) = I
                         NEIGHPTR(4, I) = I + (NZ - 1)

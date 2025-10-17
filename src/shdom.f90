@@ -43,8 +43,8 @@ program shdom
     use globals_cfg,   only: VERBOSE_, FNAMEMAXLEN_, RACC_, &
                              TOTSYSMEM_MB_, MAXCPUMEM_MB_, &
                              isHighOrder_, &
-                             isOpenX_, isOpenYorOpen_, isMpiX_, isMpiY_, isMpi_, &
-                             is1DX_, is1DYor1D_, is1D_, is3Ddir1Ddif_
+                             isOpenX_, isOpenYx_, isMpiX_, isMpiY_, isMpi_, &
+                             is1DX_, is1DYx_, is1D_, is3Ddir1Ddif_
 
     use globals_prp,   only: NPX_, NPY_, NPZ_, NUMPHASE_, &
                              DELX_, DELY_, XSTART_, YSTART_, XDOMAIN_, YDOMAIN_, &
@@ -388,11 +388,11 @@ program shdom
         isOpenX_ = .false.
     end if
 
-    ! BCFLAG bit-representation '...001x' isOpenYorOpen_
+    ! BCFLAG bit-representation '...001x' isOpenYx_
     if (btest(BCFLAG, 1)) then
-        isOpenYorOpen_ = .true.
+        isOpenYx_ = .true.
     else
-        isOpenYorOpen_ = .false.
+        isOpenYx_ = .false.
     end if
 
     ! BCFLAG bit-representation '...01xx' isMpiX_
@@ -425,9 +425,9 @@ program shdom
     ! btest(IPFLAG, 1) checks whether IPFLAG=2 [or 3] or IPFLAG=0 [or 1]
     !   ('...0010' [or '...0011', IPA in Y] or '...0000' [or '...0001', 3D in Y])
     if (btest(IPFLAG, 1)) then
-        is1DYor1D_ = .true.
+        is1DYx_ = .true.
     else
-        is1DYor1D_ = .false.
+        is1DYx_ = .false.
     end if
 
     ! btest(IPFLAG, 1) checks whether IPFLAG=7 [or 8]
@@ -438,7 +438,7 @@ program shdom
         is3Ddir1Ddif_ = .false.
     end if
 
-    if (is1DX_ .and. is1DYor1D_) then
+    if (is1DX_ .and. is1DYx_) then
         is1D_ = .true.
     else
         is1D_ = .false.
@@ -460,7 +460,7 @@ program shdom
     ! btest(BCFLAG, 1) checks whether BCFLAG=2 [or 3] or BCFLAG=0 [or 1]
     !   ('...0010' [or '...0011', open in Y] or '...0000' [or '...0001', periodic in Y])
     NY1 = NY + 1
-    if (is1DYor1D_ .or. isOpenYorOpen_ .or. isMpiY_) NY1 = NY
+    if (is1DYx_ .or. isOpenYx_ .or. isMpiY_) NY1 = NY
 
     ! Number of base points
     NBPTS = NX1*NY1*NZ

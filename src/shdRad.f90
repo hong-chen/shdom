@@ -42,7 +42,7 @@ module shd_rad
     use globals_const, only: RD_, PI_, DTOR_, &
                              FRAC12_, FRAC13_
     use globals_cfg,   only: VERBOSE_, RACC_, &
-                             isOpenX_, isOpenYorOpen_, isMpiX_, isMpiY_, &
+                             isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
                              is3Ddir1Ddif_
 
     use shd_scat, only: shd_scat__computePhase
@@ -353,7 +353,7 @@ subroutine shd_rad__computeDirect(&
     if (CY .eq. 0.0) CONSTY = .true.
     if (isOpenX_ .and. (abs(X) .lt. 0.01*DELXD&
         &.or. abs(X - (NPX_ - 1)*DELXD) .lt. 0.01*DELXD)) CONSTX = .true.
-    if (isOpenYorOpen_ .and. (abs(Y) .lt. 0.01*DELYD&
+    if (isOpenYx_ .and. (abs(Y) .lt. 0.01*DELYD&
         &.or. abs(Y - (NPY_ - 1)*DELYD) .lt. 0.01*DELYD)) CONSTY = .true.
 
     ! If have multiple subdomains (processors) and ray is going outwards
@@ -392,7 +392,7 @@ subroutine shd_rad__computeDirect(&
         end if
         JP = J + 1
         if (J .eq. NPY_) then
-            if (isOpenYorOpen_ .or. isMpiY_) then
+            if (isOpenYx_ .or. isMpiY_) then
                 JP = NPY_
             else
                 JP = 1
@@ -512,7 +512,7 @@ subroutine shd_rad__computeDirect(&
             ZP = ZE + SO*CZ
             J = J + DJ
             if (J .eq. 0) then
-                if (isOpenYorOpen_) then
+                if (isOpenYx_) then
                     J = 1
                     CONSTY = .true.
                 else if (isMpiY_) then
@@ -526,7 +526,7 @@ subroutine shd_rad__computeDirect(&
                 HITBOUNDARY = .true.
                 SIDE = 4
             else if (J .eq. NPY_ + 1) then
-                if (isOpenYorOpen_) then
+                if (isOpenYx_) then
                     J = NPY_
                     CONSTY = .true.
                 else

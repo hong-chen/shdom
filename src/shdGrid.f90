@@ -41,8 +41,8 @@ module shd_grid
 
     use globals_const, only: RD_
     use globals_cfg,   only: VERBOSE_, RACC_, &
-                             isOpenX_, isOpenYorOpen_, isMpiX_, isMpiY_, isMpi_, &
-                             is1DX_, is1DYor1D_, is1D_
+                             isOpenX_, isOpenYx_, isMpiX_, isMpiY_, isMpi_, &
+                             is1DX_, is1DYx_, is1D_
 
     use shd_util, only: shd_util__findNextCell, &
                         shd_util__computePlanck, &
@@ -420,7 +420,7 @@ subroutine shd_grid__makeSweepOrder(&
 
     if (is1D_) then
         NOCT = 2
-    else if (is1DYor1D_) then
+    else if (is1DYx_) then
         NOCT = 4
     else
         NOCT = 8
@@ -431,8 +431,8 @@ subroutine shd_grid__makeSweepOrder(&
     if (isMpiX_ .and. (.not. is1DX_)) NXC = NX - 1
 
     NYC = NY
-    if (isOpenYorOpen_) NYC = NY + 1
-    if (isMpiY_ .and. (.not. is1DYor1D_)) NYC = NY - 1
+    if (isOpenYx_) NYC = NY + 1
+    if (isMpiY_ .and. (.not. is1DYx_)) NYC = NY - 1
 
     ! Loop over the number of octants needed; get the octant number
     do JOCT = 1, NOCT
@@ -933,7 +933,7 @@ logical function sweepCellBase(BCFLAG, NXC, NYC, NZ, IOCT, ICELL)
         end if
         if (btest(IOCT - 1, 1)) then
             DIY = +1
-            if (isOpenYorOpen_) then
+            if (isOpenYx_) then
                 SIY = NYC
                 EIY = max(NYC - 1, 1)
             else
@@ -942,7 +942,7 @@ logical function sweepCellBase(BCFLAG, NXC, NYC, NZ, IOCT, ICELL)
             end if
         else
             DIY = -1
-            if (isOpenYorOpen_) then
+            if (isOpenYx_) then
                 SIY = 1
                 EIY = min(2, NYC)
             else
