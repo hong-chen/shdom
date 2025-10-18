@@ -174,7 +174,7 @@ program shdom
     character(len=1) :: gridType, prpType
     character(len=2) :: sfcType
     character(len=fnameMaxLen_) :: prpFile, sfcFile, ckdFile, inSaveFile, outSaveFile
-    character(len=fnameMaxLen_) :: senFile, OutFileNC, runName
+    character(len=fnameMaxLen_) :: senFile, outNCFile, runName
     character(len=fnameMaxLen_) :: message
 
     logical :: isCKD, INRADFLAG, NEWGRIDFLAG, isDeltaM, isAccel
@@ -205,7 +205,7 @@ program shdom
                 GNDTEMP, GNDALBEDO, units, WAVENO, WAVELEN,&
                 isAccel, SOLACC, MAXITER, SPLITACC, SHACC,&
                 NmaxOut, NmaxPar, NUMOUT, OUTTYPES, OUTPARMS, OUTFILES,&
-                OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
+                outNCFile, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
                 NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, verbose_)
         else
             call shd_io__userInp(runName, prpFile, sfcFile, ckdFile,&
@@ -216,7 +216,7 @@ program shdom
                 GNDTEMP, GNDALBEDO, units, WAVENO, WAVELEN,&
                 isAccel, SOLACC, MAXITER, SPLITACC, SHACC,&
                 NmaxOut, NmaxPar, NUMOUT, OUTTYPES, OUTPARMS, OUTFILES,&
-                OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
+                outNCFile, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
                 NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, verbose_)
         end if
     end if
