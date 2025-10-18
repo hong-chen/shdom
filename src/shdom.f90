@@ -104,10 +104,10 @@ program shdom
     integer, parameter :: I__ = selected_int_kind(9)  ! default precision for integer
 
     ! Number of output files and inputs parameter per file
-    integer(kind=I__), parameter :: NmaxOut = 20, NmaxPar= 100
-    real(kind=R__)   :: OUTPARMS(NmaxPar, NmaxOut)
-    character(len=1) :: OUTTYPES(NmaxOut)
-    character(len=fnameMaxLen_) :: OUTFILES(NmaxOut)
+    integer(kind=I__), parameter :: NmaxOut = 20, NmaxPar = 100
+    real(kind=R__)   :: outParms(NmaxPar, NmaxOut)
+    character(len=1) :: outTypes(NmaxOut)
+    character(len=fnameMaxLen_) :: outFiles(NmaxOut)
 
     integer(kind=2)  , allocatable :: iPhase(:)
     integer(kind=2)  , allocatable :: iPhasePT(:)
@@ -204,7 +204,7 @@ program shdom
                 srcType, SOLARFLUX0, SOLARMU, SOLARAZ, SKYRAD,&
                 GNDTEMP, GNDALBEDO, units, WAVENO, WAVELEN,&
                 isAccel, SOLACC, MAXITER, SPLITACC, SHACC,&
-                NmaxOut, NmaxPar, NUMOUT, OUTTYPES, OUTPARMS, OUTFILES,&
+                NmaxOut, NmaxPar, NUMOUT, outTypes, outParms, outFiles,&
                 outNCFile, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
                 NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, verbose_)
         else
@@ -215,7 +215,7 @@ program shdom
                 srcType, SOLARFLUX0, SOLARMU, SOLARAZ, SKYRAD,&
                 GNDTEMP, GNDALBEDO, units, WAVENO, WAVELEN,&
                 isAccel, SOLACC, MAXITER, SPLITACC, SHACC,&
-                NmaxOut, NmaxPar, NUMOUT, OUTTYPES, OUTPARMS, OUTFILES,&
+                NmaxOut, NmaxPar, NUMOUT, outTypes, outParms, outFiles,&
                 outNCFile, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
                 NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, verbose_)
         end if
@@ -228,7 +228,7 @@ program shdom
         &srcType, SOLARFLUX0, SOLARMU, SOLARAZ, SKYRAD,&
         &GNDTEMP, GNDALBEDO, units, WAVENO, WAVELEN,&
         &isAccel, SOLACC, MAXITER, SPLITACC, SHACC,&
-        &NmaxOut, NmaxPar, NUMOUT, OUTTYPES, OUTPARMS,&
+        &NmaxOut, NmaxPar, NUMOUT, outTypes, outParms,&
         &MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
         &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
     !╰────────────────────────────────────────────────────────────────────────────╯!
@@ -667,48 +667,48 @@ program shdom
     isHROut  = .false.
     isSHOut  = .false.
     do I = 1, NUMOUT
-        if (OUTTYPES(I) .eq. 'R') then
+        if (outTypes(I) .eq. 'R') then
             isRadOut = .true.
-            if (OUTPARMS(2, I) .le. 0.0) then
+            if (outParms(2, I) .le. 0.0) then
                 NXOUT = 1
             else
                 if (isMpiX_) then
-                    NXOUT = max(1, nint(XDOMAIN_/OUTPARMS(2, I)))
+                    NXOUT = max(1, nint(XDOMAIN_/outParms(2, I)))
                 else
-                    NXOUT = max(1, nint((XDOMAIN_ + 2*OUTPARMS(4, I))/OUTPARMS(2, I)))
+                    NXOUT = max(1, nint((XDOMAIN_ + 2*outParms(4, I))/outParms(2, I)))
                 end if
             end if
-            if (OUTPARMS(3, I) .le. 0.0) then
+            if (outParms(3, I) .le. 0.0) then
                 NYOUT = 1
             else
                 if (isMpiY_) then
-                    NYOUT = max(1, nint(YDOMAIN_/OUTPARMS(3, I)))
+                    NYOUT = max(1, nint(YDOMAIN_/outParms(3, I)))
                 else
-                    NYOUT = max(1, nint((YDOMAIN_ + 2*OUTPARMS(5, I))/OUTPARMS(3, I)))
+                    NYOUT = max(1, nint((YDOMAIN_ + 2*outParms(5, I))/outParms(3, I)))
                 end if
             end if
-            NRAD = NRAD + NStokes*NXOUT*NYOUT*nint(OUTPARMS(6, I))
-        else if (OUTTYPES(I) .eq. 'V') then
+            NRAD = NRAD + NStokes*NXOUT*NYOUT*nint(outParms(6, I))
+        else if (outTypes(I) .eq. 'V') then
             isCamOut = .true.
-            if (nint(OUTPARMS(1, I)) .eq. 1) then
-                NVIS = NVIS + NStokes*nint(OUTPARMS(10, I))*nint(OUTPARMS(11, I))
-            else if (nint(OUTPARMS(1, I)) .eq. 2) then
-                NSCAN = 1 + sqrt((OUTPARMS(4, I) - OUTPARMS(7, I))**2&
-                    + (OUTPARMS(5, I) - OUTPARMS(8, I))**2&
-                    + (OUTPARMS(6, I) - OUTPARMS(9, I))**2)/OUTPARMS(10, I)
-                NPIX = 1 + abs(OUTPARMS(12, I) - OUTPARMS(11, I))/OUTPARMS(13, I)
+            if (nint(outParms(1, I)) .eq. 1) then
+                NVIS = NVIS + NStokes*nint(outParms(10, I))*nint(outParms(11, I))
+            else if (nint(outParms(1, I)) .eq. 2) then
+                NSCAN = 1 + sqrt((outParms(4, I) - outParms(7, I))**2&
+                    + (outParms(5, I) - outParms(8, I))**2&
+                    + (outParms(6, I) - outParms(9, I))**2)/outParms(10, I)
+                NPIX = 1 + abs(outParms(12, I) - outParms(11, I))/outParms(13, I)
                 NVIS = NVIS + NStokes*NSCAN*NPIX
             ! user-specified sensor
-            else if (nint(OUTPARMS(1, I)) .eq. 3) then
-                NVIS = NVIS + NStokes*nint(OUTPARMS(2, I))
+            else if (nint(outParms(1, I)) .eq. 3) then
+                NVIS = NVIS + NStokes*nint(outParms(2, I))
             end if
-        else if (OUTTYPES(I) .eq. 'F') then
+        else if (outTypes(I) .eq. 'F') then
             isFlxOut = .true.
-        else if (OUTTYPES(I) .eq. 'H') then
+        else if (outTypes(I) .eq. 'H') then
             isHROut = .true.
-        else if (OUTTYPES(I) .eq. 'S') then
+        else if (outTypes(I) .eq. 'S') then
             isSHOut = .true.
-        else if (OUTTYPES(I) .eq. 'J') then
+        else if (outTypes(I) .eq. 'J') then
             isSrcOut = .true.
         end if
     end do
@@ -719,27 +719,27 @@ program shdom
     !╭────────────────────────────────────────────────────────────────────────────╮!
     if (isMpi_ .and. isMasterProc) then
         do I = 1, NUMOUT
-            if (OUTTYPES(I) .eq. 'F') then
-                if (nint(OUTPARMS(1, I)) .eq. 2 .or. nint(OUTPARMS(1, I)) .eq. 5) then
-                    if (verbose_ .ge. 4) write (6, '(A,I1,A,A)') 'Warning [shdom]: F output format ', nint(OUTPARMS(1, I)),&
-                        &' not supported for multiple processors: ', trim(adjustl(OUTFILES(I)))
+            if (outTypes(I) .eq. 'F') then
+                if (nint(outParms(1, I)) .eq. 2 .or. nint(outParms(1, I)) .eq. 5) then
+                    if (verbose_ .ge. 4) write (6, '(A,I1,A,A)') 'Warning [shdom]: F output format ', nint(outParms(1, I)),&
+                        &' not supported for multiple processors: ', trim(adjustl(outFiles(I)))
                 end if
-            else if (OUTTYPES(I) .eq. 'H') then
-                if (nint(OUTPARMS(1, I)) .eq. 3) then
-                    if (verbose_ .ge. 4) write (6, '(A,I1,A,A)') 'Warning [shdom]: H output format ', nint(OUTPARMS(1, I)),&
-                        &' not supported for multiple processors: ', trim(adjustl(OUTFILES(I)))
+            else if (outTypes(I) .eq. 'H') then
+                if (nint(outParms(1, I)) .eq. 3) then
+                    if (verbose_ .ge. 4) write (6, '(A,I1,A,A)') 'Warning [shdom]: H output format ', nint(outParms(1, I)),&
+                        &' not supported for multiple processors: ', trim(adjustl(outFiles(I)))
                 end if
-            else if (OUTTYPES(I) .eq. 'S') then
-                if (nint(OUTPARMS(1, I)) .eq. 2) then
-                    if (verbose_ .ge. 4) write (6, '(A,I1,A,A)') 'Warning [shdom]: S output format ', nint(OUTPARMS(1, I)),&
-                        &' not supported for multiple processors: ', trim(adjustl(OUTFILES(I)))
+            else if (outTypes(I) .eq. 'S') then
+                if (nint(outParms(1, I)) .eq. 2) then
+                    if (verbose_ .ge. 4) write (6, '(A,I1,A,A)') 'Warning [shdom]: S output format ', nint(outParms(1, I)),&
+                        &' not supported for multiple processors: ', trim(adjustl(outFiles(I)))
                 end if
-            else if (OUTTYPES(I) .eq. 'J') then
+            else if (outTypes(I) .eq. 'J') then
                 if (verbose_ .ge. 4) write (6, '(A,A)') 'Warning [shdom]: J output format not supported for multiple processors: ',&
-                    &trim(adjustl(OUTFILES(I)))
-            else if (OUTTYPES(I) .eq. 'M') then
+                    &trim(adjustl(outFiles(I)))
+            else if (outTypes(I) .eq. 'M') then
                 if (verbose_ .ge. 4) write (6, '(A,A)') 'Warning [shdom]: M output format not supported for multiple processors: ',&
-                    &trim(adjustl(OUTFILES(I)))
+                    &trim(adjustl(outFiles(I)))
             end if
         end do
     end if
@@ -1049,7 +1049,7 @@ program shdom
         if (isRadOut) then
             IRAD = 0
             do I = 1, NUMOUT
-                if (OUTTYPES(I) .eq. 'R') then
+                if (outTypes(I) .eq. 'R') then
                     if (isMpi_) then
                         if (senFile(1:4) .ne. 'NONE') then
                             call shd_mpi__computeRad(NStokes, NX, NY, NZ, NPTS, NCELLS,&
@@ -1064,7 +1064,7 @@ program shdom
                                 &gridPtr, neighPtr, treePtr, cellFlags,&
                                 &EXTINCT, ALBEDO, LEGEN, iPhase, DIRFLUX, FLUXES,&
                                 &SHPTR, SOURCE, WORK, WORK(1 + NPTS*NStokes),&
-                                &OUTPARMS(1, I), IRAD, WORK2, SENPARMS)
+                                &outParms(1, I), IRAD, WORK2, SENPARMS)
                         else
                             call shd_mpi__computeRad(NStokes, NX, NY, NZ, NPTS, NCELLS,&
                                 &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
@@ -1078,7 +1078,7 @@ program shdom
                                 &gridPtr, neighPtr, treePtr, cellFlags,&
                                 &EXTINCT, ALBEDO, LEGEN, iPhase, DIRFLUX, FLUXES,&
                                 &SHPTR, SOURCE, WORK, WORK(1 + NPTS*NStokes),&
-                                &OUTPARMS(1, I), IRAD, WORK2)
+                                &outParms(1, I), IRAD, WORK2)
                         end if
                     else
                         if (senFile(1:4) .ne. 'NONE') then
@@ -1093,7 +1093,7 @@ program shdom
                                 &gridPtr, neighPtr, treePtr, cellFlags,&
                                 &EXTINCT, ALBEDO, LEGEN, iPhase, DIRFLUX, FLUXES,&
                                 &SHPTR, SOURCE, WORK(1), WORK(1 + NPTS*NStokes),&
-                                &OUTPARMS(1, I), IRAD, WORK2, SENPARMS)
+                                &outParms(1, I), IRAD, WORK2, SENPARMS)
                         else
                             call shd_rad__computeRad(NStokes, NX, NY, NZ, NPTS, NCELLS,&
                                 &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
@@ -1106,7 +1106,7 @@ program shdom
                                 &gridPtr, neighPtr, treePtr, cellFlags,&
                                 &EXTINCT, ALBEDO, LEGEN, iPhase, DIRFLUX, FLUXES,&
                                 &SHPTR, SOURCE, WORK(1), WORK(1 + NPTS*NStokes),&
-                                &OUTPARMS(1, I), IRAD, WORK2)
+                                &outParms(1, I), IRAD, WORK2)
                         end if
                     end if
                 end if
@@ -1117,7 +1117,7 @@ program shdom
         if (isCamOut) then
             IVIS = 0
             do I = 1, NUMOUT
-                if (OUTTYPES(I) .eq. 'V') then
+                if (outTypes(I) .eq. 'V') then
                     if (isMpi_) then
                         if (senFile(1:4) .ne. 'NONE') then
                             call shd_mpi__computeCamRad(NStokes, NX, NY, NZ, NPTS, NCELLS,&
@@ -1131,7 +1131,7 @@ program shdom
                                 &XGRID, YGRID, ZGRID, GRIDPOS,&
                                 &gridPtr, neighPtr, treePtr, cellFlags,&
                                 &EXTINCT, ALBEDO, LEGEN, iPhase, DIRFLUX, FLUXES,&
-                                &SHPTR, SOURCE, OUTPARMS(1, I), IVIS, WORK2, SENPARMS)
+                                &SHPTR, SOURCE, outParms(1, I), IVIS, WORK2, SENPARMS)
                         else
                             call shd_mpi__computeCamRad(NStokes, NX, NY, NZ, NPTS, NCELLS,&
                                 &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
@@ -1144,7 +1144,7 @@ program shdom
                                 &XGRID, YGRID, ZGRID, GRIDPOS,&
                                 &gridPtr, neighPtr, treePtr, cellFlags,&
                                 &EXTINCT, ALBEDO, LEGEN, iPhase, DIRFLUX, FLUXES,&
-                                &SHPTR, SOURCE, OUTPARMS(1, I), IVIS, WORK2)
+                                &SHPTR, SOURCE, outParms(1, I), IVIS, WORK2)
                         end if
                     else
                         if (senFile(1:4) .ne. 'NONE') then
@@ -1158,7 +1158,7 @@ program shdom
                                 &XGRID, YGRID, ZGRID, GRIDPOS,&
                                 &gridPtr, neighPtr, treePtr, cellFlags,&
                                 &EXTINCT, ALBEDO, LEGEN, iPhase, DIRFLUX, FLUXES,&
-                                &SHPTR, SOURCE, OUTPARMS(1, I), IVIS, WORK2, SENPARMS)
+                                &SHPTR, SOURCE, outParms(1, I), IVIS, WORK2, SENPARMS)
                         else
                             call shd_rad__computeCamRad(NStokes, NX, NY, NZ, NPTS, NCELLS,&
                                 &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
@@ -1170,7 +1170,7 @@ program shdom
                                 &XGRID, YGRID, ZGRID, GRIDPOS,&
                                 &gridPtr, neighPtr, treePtr, cellFlags,&
                                 &EXTINCT, ALBEDO, LEGEN, iPhase, DIRFLUX, FLUXES,&
-                                &SHPTR, SOURCE, OUTPARMS(1, I), IVIS, WORK2)
+                                &SHPTR, SOURCE, outParms(1, I), IVIS, WORK2)
                         end if
                     end if
                 end if
@@ -1181,9 +1181,9 @@ program shdom
         if (isSrcOut) then
             ! Compute source function throughout grid for this one angle
             do I = 1, NUMOUT
-                if (OUTTYPES(I) .eq. 'J') then
-                    MUOUT = OUTPARMS(2, I)
-                    PHIOUT = OUTPARMS(3, I)*acos(-1.0)/180.0
+                if (outTypes(I) .eq. 'J') then
+                    MUOUT = outParms(2, I)
+                    PHIOUT = outParms(3, I)*acos(-1.0)/180.0
                     call shd_src__computeSrcOneDir(NStokes, ML, MM, NLM,&
                         &NSTLEG, NLEG, NUMPHASE_,&
                         &NPTS, isDeltaM, MUOUT, PHIOUT,&
@@ -1286,7 +1286,7 @@ program shdom
         if (isMasterProc) then
 
             do I = 1, NUMOUT
-                if (OUTTYPES(I) .ne. 'V' .and. OUTFILES(I)(1:4) .ne. 'NONE') then
+                if (outTypes(I) .ne. 'V' .and. outFiles(I)(1:4) .ne. 'NONE') then
                     if (senFile(1:4) .ne. 'NONE') then
                         call shd_io__outputResultMpi(NStokes, NXT, NYT, NZ,&
                             &NPTSTOT, NCELLSTOT, NSHTOT,&
@@ -1299,7 +1299,7 @@ program shdom
                             &XDOMAIN_, YDOMAIN_, XALLGRID, YALLGRID, ZGRID,&
                             &ALLFLUXES, ALLFLUXDIV,&
                             &NSHOUT, ALLSHTERMS, IRAD, SUMRADOUT,&
-                            &OUTTYPES(I), OUTPARMS(1, I), OUTFILES(I), SENPARMS)
+                            &outTypes(I), outParms(1, I), outFiles(I), SENPARMS)
                     else
                         call shd_io__outputResultMpi(NStokes, NXT, NYT, NZ,&
                             &NPTSTOT, NCELLSTOT, NSHTOT,&
@@ -1312,7 +1312,7 @@ program shdom
                             &XDOMAIN_, YDOMAIN_, XALLGRID, YALLGRID, ZGRID,&
                             &ALLFLUXES, ALLFLUXDIV,&
                             &NSHOUT, ALLSHTERMS, IRAD, SUMRADOUT,&
-                            &OUTTYPES(I), OUTPARMS(1, I), OUTFILES(I))
+                            &outTypes(I), outParms(1, I), outFiles(I))
                     end if
                 end if
             end do
@@ -1326,7 +1326,7 @@ program shdom
     else
 
         do I = 1, NUMOUT
-            if ((OUTTYPES(I) .ne. 'V') .and. (OUTFILES(I)(1:4) .ne. 'NONE')) then
+            if ((outTypes(I) .ne. 'V') .and. (outFiles(I)(1:4) .ne. 'NONE')) then
                 if (senFile(1:4) .ne. 'NONE') then
                     call shd_io__outputResult(NStokes, NX, NY, NX1, NY1, NZ, NBPTS, NPTS, NCELLS,&
                         NSH, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_, NMU, NPHI, NANG, NG,&
@@ -1340,7 +1340,7 @@ program shdom
                         EXTINCT, ALBEDO, LEGEN, iPhase, TEMP,&
                         SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV,&
                         IRAD, SUMRADOUT, NSHOUT, SUMSHTERMS, SOURCE1OUT,&
-                        OUTTYPES(I), OUTPARMS(1, I), OUTFILES(I), SENPARMS)
+                        outTypes(I), outParms(1, I), outFiles(I), SENPARMS)
                 else
                     call shd_io__outputResult(NStokes, NX, NY, NX1, NY1, NZ, NBPTS, NPTS, NCELLS,&
                         NSH, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_, NMU, NPHI, NANG, NG,&
@@ -1354,7 +1354,7 @@ program shdom
                         EXTINCT, ALBEDO, LEGEN, iPhase, TEMP,&
                         SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV,&
                         IRAD, SUMRADOUT, NSHOUT, SUMSHTERMS, SOURCE1OUT,&
-                        OUTTYPES(I), OUTPARMS(1, I), OUTFILES(I))
+                        outTypes(I), outParms(1, I), outFiles(I))
                 end if
             end if
         end do
@@ -1366,7 +1366,7 @@ program shdom
     !╭────────────────────────────────────────────────────────────────────────────╮!
     if (isMasterProc) then
         do I = 1, NUMOUT
-            if ((OUTTYPES(I) .eq. 'V')) then
+            if ((outTypes(I) .eq. 'V')) then
                 if (senFile(1:4) .ne. 'NONE') then
                     call shd_io__outputCamRad(NStokes, NX, NY, NZ, NPTS, NCELLS,&
                         &NSH, ML, MM, NLM, NMU, NPHI, NANG, NG,&
@@ -1375,7 +1375,7 @@ program shdom
                         &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
                         &sfcType, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, units,&
                         &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
-                        &IVIS, SUMVISOUT, OUTPARMS(1, I), OUTFILES(I), SENPARMS)
+                        &IVIS, SUMVISOUT, outParms(1, I), outFiles(I), SENPARMS)
                 else
                     call shd_io__outputCamRad(NStokes, NX, NY, NZ, NPTS, NCELLS,&
                         &NSH, ML, MM, NLM, NMU, NPHI, NANG, NG,&
@@ -1384,7 +1384,7 @@ program shdom
                         &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
                         &sfcType, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, units,&
                         &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
-                        &IVIS, SUMVISOUT, OUTPARMS(1, I), OUTFILES(I))
+                        &IVIS, SUMVISOUT, outParms(1, I), outFiles(I))
                 end if
             end if
         end do
