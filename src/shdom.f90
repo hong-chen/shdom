@@ -128,9 +128,8 @@ program shdom
     real(kind=R__), allocatable :: FLUXES(:, :), DIRFLUX(:), DIRFLUX_TMP(:)
     real(kind=R__), allocatable :: MU(:), WTDO(:), PHI(:)
     real(kind=R__), allocatable :: BCRAD(:, :)
-    real(kind=R__), allocatable :: SFCPARMS(:)
-    real(kind=R__), allocatable :: SFCGRIDPARMS(:)
-    real(kind=R__), allocatable :: SENPARMS(:)
+    real(kind=R__), allocatable :: sfcParms(:), sfcGridParms(:)
+    real(kind=R__), allocatable :: senParms(:)
     real(kind=R__), allocatable :: SUMFLUXES(:, :), SUMDIRFLUX(:), SUMFLUXDIV(:)
     real(kind=R__), allocatable :: SUMSHTERMS(:), SOURCE1OUT(:)
     real(kind=R__), allocatable :: SUMRADOUT(:), SUMVISOUT(:)
@@ -153,14 +152,14 @@ program shdom
     integer(kind=I__) :: NProc, NStokes, NX, NY, NZ, NX1, NY1
     integer(kind=I__) :: NXT, NYT, NPXT, NPYT, MAXPGT, MAXPGLT
     integer(kind=I__) :: NXSFC, NYSFC, NSFCPAR, NTOPPTS, NBOTPTS
-    integer(kind=I__) :: NSENDATA, NSENPAR
+    integer(kind=I__) :: NsenData, NsenPar
     integer(kind=I__) :: NG, SIDE
     integer(kind=I__) :: ML, MM, NLM, NSTLEG, NLEG, NANG, NMU, NPHI, NPHI0MAX
     integer(kind=I__) :: NBPTS, NPTS, NCELLS, NSH, NBCELLS, OLDNPTS
     integer(kind=I__) :: MAXITER, ITER, TOTITER, IG, I, NUMOUT, BCFLAG, IPFLAG
     integer(kind=I__) :: NRAD, IRAD, NXOUT, NYOUT, NVIS, IVIS, NSCAN, NPIX, NSHOUT
     integer(kind=I__) :: NCELLSTOT, NPTSTOT, NSHTOT
-    integer(kind=I__) :: COUNT_START, COUNT_RATE, COUNT_MAX
+    integer(kind=I__) :: countStart, countRate, countMax
 
     real(kind=R__) :: SOLARFLUX0, SOLARFLUXCKD, SOLARFLUX, SOLARMU, SOLARAZ
     real(kind=R__) :: GNDTEMP, GNDALBEDO, SKYRAD, WAVENO(2), WAVELEN
@@ -183,7 +182,7 @@ program shdom
 
 
     ! start timing
-    call system_clock(COUNT_START, COUNT_RATE, COUNT_MAX)
+    call system_clock(countStart, countRate, countMax)
 
 
     ! Start up MPI for multiple processors if available, and
@@ -587,17 +586,17 @@ program shdom
     if (sfcFile(1:4) .eq. 'NONE') then
         sfcType = 'FL'
     else
-        allocate (SFCPARMS(MAXSFCPARS*MAXSFCPTS))
+        allocate (sfcParms(MAXSFCPARS*MAXSFCPTS))
         memUsed = memUsed + MAXSFCPARS*MAXSFCPTS
 
         if (isMasterProc) then
             call shd_io__readSfc(sfcFile, MAXSFCPTS, MAXSFCPARS,&
                 &sfcType, NXSFC, NYSFC, delXSfc, delYSfc,&
-                &NSFCPAR, SFCPARMS, GNDTEMP, GNDALBEDO)
+                &NSFCPAR, sfcParms, GNDTEMP, GNDALBEDO)
         end if
         ! Broadcast the surface array data
         call shd_mpi__bcastSfc(sfcType, NXSFC, NYSFC,&
-            &NSFCPAR, SFCPARMS, GNDTEMP, GNDALBEDO)
+            &NSFCPAR, sfcParms, GNDTEMP, GNDALBEDO)
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
@@ -640,17 +639,17 @@ program shdom
     !   this is a binary angle input implemented for 'R' and 'V3'
     if (senFile(1:4) .ne. 'NONE') then
         if (isMasterProc) then
-            call shd_io__readSenSize(senFile, NSENDATA, NSENPAR)
+            call shd_io__readSenSize(senFile, NsenData, NsenPar)
         end if
-        call shd_mpi__bcastSenSize(NSENDATA, NSENPAR)
-        allocate (SENPARMS(NSENDATA*NSENPAR))
-        memUsed = memUsed + NSENDATA*NSENPAR
+        call shd_mpi__bcastSenSize(NsenData, NsenPar)
+        allocate (senParms(NsenData*NsenPar))
+        memUsed = memUsed + NsenData*NsenPar
 
         if (isMasterProc) then
-            call shd_io__readSen(senFile, NSENDATA, NSENPAR,&
-                &SENPARMS)
+            call shd_io__readSen(senFile, NsenData, NsenPar,&
+                &senParms)
         end if
-        call shd_mpi__bcastSen(NSENDATA, NSENPAR, SENPARMS)
+        call shd_mpi__bcastSen(NsenData, NsenPar, senParms)
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
@@ -914,7 +913,7 @@ program shdom
     !   BCRAD(:[NStokes], NTOPPTS+1:NTOPPTS+NBOTPTS): upwelling bottom radiances
     !   BCRAD(:[NStokes], NTOPPTS+NBOTPTS+1:NTOPPTS+NBOTPTS+NBOTPTS*NANG/2):
     !         downwelling bottom radiances at discrete ordinates
-    if (sfcFile(1:4) .ne. 'NONE') allocate (SFCGRIDPARMS(MAXSFCPARS*MAXNBC))
+    if (sfcFile(1:4) .ne. 'NONE') allocate (sfcGridParms(MAXSFCPARS*MAXNBC))
     allocate (BCPTR(2*MAXNBC), BCRAD(NStokes, MAXBCRAD))
 
     ! output
@@ -978,7 +977,7 @@ program shdom
 
 
     message = 'Message [shdom]: Total time used for preparation: '
-    call shd_util__tickTock(message, COUNT_START)
+    call shd_util__tickTock(message, countStart)
     if (isMasterProc) then
         if (verbose_ .ge. 5) write (6, '(A)') trim(adjustl(message))
     end if
@@ -1032,7 +1031,7 @@ program shdom
             &SOLARFLUXCKD, SOLARMU, SOLARAZ, SKYRAD,&
             &sfcType, GNDTEMP, GNDALBEDO,&
             &NXSFC, NYSFC, delXSfc, delYSfc,&
-            &NSFCPAR, SFCPARMS, SFCGRIDPARMS,&
+            &NSFCPAR, sfcParms, sfcGridParms,&
             &units, WAVENO, WAVELEN,&
             &isAccel, SOLACC, MAXITER, SOLCRIT, ITER,&
             &SPLITACC, SHACC, XGRID, YGRID, ZGRID,&
@@ -1057,21 +1056,21 @@ program shdom
                                 &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                                 &BCFLAG, XDOMAIN_, YDOMAIN_, IPFLAG,&
                                 &srcType, isDeltaM, SOLARMU, SOLARAZ,&
-                                &sfcType, NSFCPAR, SFCGRIDPARMS,&
+                                &sfcType, NSFCPAR, sfcGridParms,&
                                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                                 &GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, units,&
                                 &XGRID, YGRID, ZGRID, GRIDPOS,&
                                 &gridPtr, neighPtr, treePtr, cellFlags,&
                                 &EXTINCT, ALBEDO, LEGEN, iPhase, DIRFLUX, FLUXES,&
                                 &SHPTR, SOURCE, WORK, WORK(1 + NPTS*NStokes),&
-                                &outParms(1, I), IRAD, WORK2, SENPARMS)
+                                &outParms(1, I), IRAD, WORK2, senParms)
                         else
                             call shd_mpi__computeRad(NStokes, NX, NY, NZ, NPTS, NCELLS,&
                                 &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
                                 &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                                 &BCFLAG, XDOMAIN_, YDOMAIN_, IPFLAG,&
                                 &srcType, isDeltaM, SOLARMU, SOLARAZ,&
-                                &sfcType, NSFCPAR, SFCGRIDPARMS,&
+                                &sfcType, NSFCPAR, sfcGridParms,&
                                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                                 &GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, units,&
                                 &XGRID, YGRID, ZGRID, GRIDPOS,&
@@ -1086,20 +1085,20 @@ program shdom
                                 &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
                                 &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                                 &BCFLAG, IPFLAG, srcType, isDeltaM, SOLARMU, SOLARAZ,&
-                                &sfcType, NSFCPAR, SFCGRIDPARMS,&
+                                &sfcType, NSFCPAR, sfcGridParms,&
                                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                                 &GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, units,&
                                 &XGRID, YGRID, ZGRID, GRIDPOS,&
                                 &gridPtr, neighPtr, treePtr, cellFlags,&
                                 &EXTINCT, ALBEDO, LEGEN, iPhase, DIRFLUX, FLUXES,&
                                 &SHPTR, SOURCE, WORK(1), WORK(1 + NPTS*NStokes),&
-                                &outParms(1, I), IRAD, WORK2, SENPARMS)
+                                &outParms(1, I), IRAD, WORK2, senParms)
                         else
                             call shd_rad__computeRad(NStokes, NX, NY, NZ, NPTS, NCELLS,&
                                 &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
                                 &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                                 &BCFLAG, IPFLAG, srcType, isDeltaM, SOLARMU, SOLARAZ,&
-                                &sfcType, NSFCPAR, SFCGRIDPARMS,&
+                                &sfcType, NSFCPAR, sfcGridParms,&
                                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                                 &GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, units,&
                                 &XGRID, YGRID, ZGRID, GRIDPOS,&
@@ -1125,20 +1124,20 @@ program shdom
                                 &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                                 &BCFLAG, XDOMAIN_, YDOMAIN_, IPFLAG,&
                                 &srcType, isDeltaM, SOLARMU, SOLARAZ,&
-                                &sfcType, NSFCPAR, SFCGRIDPARMS,&
+                                &sfcType, NSFCPAR, sfcGridParms,&
                                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                                 &GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, units,&
                                 &XGRID, YGRID, ZGRID, GRIDPOS,&
                                 &gridPtr, neighPtr, treePtr, cellFlags,&
                                 &EXTINCT, ALBEDO, LEGEN, iPhase, DIRFLUX, FLUXES,&
-                                &SHPTR, SOURCE, outParms(1, I), IVIS, WORK2, SENPARMS)
+                                &SHPTR, SOURCE, outParms(1, I), IVIS, WORK2, senParms)
                         else
                             call shd_mpi__computeCamRad(NStokes, NX, NY, NZ, NPTS, NCELLS,&
                                 &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
                                 &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                                 &BCFLAG, XDOMAIN_, YDOMAIN_, IPFLAG,&
                                 &srcType, isDeltaM, SOLARMU, SOLARAZ,&
-                                &sfcType, NSFCPAR, SFCGRIDPARMS,&
+                                &sfcType, NSFCPAR, sfcGridParms,&
                                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                                 &GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, units,&
                                 &XGRID, YGRID, ZGRID, GRIDPOS,&
@@ -1152,19 +1151,19 @@ program shdom
                                 &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
                                 &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                                 &BCFLAG, IPFLAG, srcType, isDeltaM, SOLARMU, SOLARAZ,&
-                                &sfcType, NSFCPAR, SFCGRIDPARMS,&
+                                &sfcType, NSFCPAR, sfcGridParms,&
                                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                                 &GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, units,&
                                 &XGRID, YGRID, ZGRID, GRIDPOS,&
                                 &gridPtr, neighPtr, treePtr, cellFlags,&
                                 &EXTINCT, ALBEDO, LEGEN, iPhase, DIRFLUX, FLUXES,&
-                                &SHPTR, SOURCE, outParms(1, I), IVIS, WORK2, SENPARMS)
+                                &SHPTR, SOURCE, outParms(1, I), IVIS, WORK2, senParms)
                         else
                             call shd_rad__computeCamRad(NStokes, NX, NY, NZ, NPTS, NCELLS,&
                                 &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_,&
                                 &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                                 &BCFLAG, IPFLAG, srcType, isDeltaM, SOLARMU, SOLARAZ,&
-                                &sfcType, NSFCPAR, SFCGRIDPARMS,&
+                                &sfcType, NSFCPAR, sfcGridParms,&
                                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                                 &GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, units,&
                                 &XGRID, YGRID, ZGRID, GRIDPOS,&
@@ -1256,7 +1255,7 @@ program shdom
 
 
     message = 'Message [shdom]: Total time used for runs: '
-    call shd_util__tickTock(message, COUNT_START)
+    call shd_util__tickTock(message, countStart)
     if (isMasterProc) then
         if (verbose_ .ge. 5) write (6, '(A)') trim(adjustl(message))
     end if
@@ -1299,7 +1298,7 @@ program shdom
                             &XDOMAIN_, YDOMAIN_, XALLGRID, YALLGRID, ZGRID,&
                             &ALLFLUXES, ALLFLUXDIV,&
                             &NSHOUT, ALLSHTERMS, IRAD, SUMRADOUT,&
-                            &outTypes(I), outParms(1, I), outFiles(I), SENPARMS)
+                            &outTypes(I), outParms(1, I), outFiles(I), senParms)
                     else
                         call shd_io__outputResultMpi(NStokes, NXT, NYT, NZ,&
                             &NPTSTOT, NCELLSTOT, NSHTOT,&
@@ -1340,7 +1339,7 @@ program shdom
                         EXTINCT, ALBEDO, LEGEN, iPhase, TEMP,&
                         SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV,&
                         IRAD, SUMRADOUT, NSHOUT, SUMSHTERMS, SOURCE1OUT,&
-                        outTypes(I), outParms(1, I), outFiles(I), SENPARMS)
+                        outTypes(I), outParms(1, I), outFiles(I), senParms)
                 else
                     call shd_io__outputResult(NStokes, NX, NY, NX1, NY1, NZ, NBPTS, NPTS, NCELLS,&
                         NSH, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE_, NMU, NPHI, NANG, NG,&
@@ -1375,7 +1374,7 @@ program shdom
                         &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
                         &sfcType, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, units,&
                         &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
-                        &IVIS, SUMVISOUT, outParms(1, I), outFiles(I), SENPARMS)
+                        &IVIS, SUMVISOUT, outParms(1, I), outFiles(I), senParms)
                 else
                     call shd_io__outputCamRad(NStokes, NX, NY, NZ, NPTS, NCELLS,&
                         &NSH, ML, MM, NLM, NMU, NPHI, NANG, NG,&
@@ -1404,7 +1403,7 @@ program shdom
 
 
     message = 'Message [shdom]: Total time used for output: '
-    call shd_util__tickTock(message, COUNT_START)
+    call shd_util__tickTock(message, countStart)
     if (isMasterProc) then
         if (verbose_ .ge. 5) write (6, '(A)') trim(adjustl(message))
     end if
@@ -1439,8 +1438,8 @@ program shdom
     if (isSHOut)  deallocate (SUMSHTERMS)
     if (isSrcOut) deallocate (SOURCE1OUT)
     if (isCKD) deallocate (ZCKD_, GASABS_, KABS)
-    if (allocated(SFCPARMS)) deallocate (SFCPARMS, SFCGRIDPARMS)
-    if (allocated(SENPARMS)) deallocate (SENPARMS)
+    if (allocated(sfcParms)) deallocate (sfcParms, sfcGridParms)
+    if (allocated(senParms)) deallocate (senParms)
     deallocate (DELG, SOLFLUX)
     deallocate (BCPTR, BCRAD)
 
