@@ -47,11 +47,11 @@ module shd_mpi
                              isSolar_
 
 #if HAS_MPI
-    use mpi_f08,  only: MPI_COMM_WORLD, MPI_COMM, MPI_REQUEST, &
-                        MPI_STATUS, MPI_SUCCESS, MPI_ERRORS_RETURN, &
-                        MPI_INTEGER, MPI_REAL, MPI_LOGICAL, MPI_CHARACTER, &
-                        MPI_INTEGER2, MPI_DOUBLE_PRECISION, &
-                        MPI_MAX, MPI_SUM, MPI_LOR, MPI_LAND, &
+    use mpi_f08,  only: MPI_comm_world, MPI_comm, MPI_request, &
+                        MPI_status, MPI_success, MPI_errors_return, &
+                        MPI_integer, MPI_real, MPI_logical, MPI_character, &
+                        MPI_integer2, MPI_double_precision, &
+                        MPI_max, MPI_sum, MPI_lor, MPI_land, &
                         mpi_isend, mpi_irecv, mpi_reduce, mpi_allreduce, &
                         mpi_bcast, mpi_wtime, &
                         mpi_comm_set_errhandler
@@ -111,17 +111,17 @@ module shd_mpi
     private :: shd_mpi__integrateRay
     private :: loadObject
 
-    integer :: numProc_, MYPROC_, IPROCNEIGH_(4), IXYPRP_(2, 2), IXYOUT_(2, 2)
-    logical, parameter :: LOADBALANCE_ = .false.
-    real(RD_) :: STARTTIME_
-    integer, allocatable :: BXYPTR_(:, :, :), IBXYPTR_(:, :, :)
-    real, allocatable :: BXYPOS_(:, :, :)
-    type(MPI_COMM) :: COMM2D_
+    integer :: NProc_, myProc_, iProcNeigh_(4), ixyPrp_(2, 2), ixyOut_(2, 2)
+    logical, parameter :: loadBalance_ = .false.
+    real(RD_) :: startTime_
+    integer, allocatable :: BxyPtr_(:, :, :), iBxyPtr_(:, :, :)
+    real, allocatable :: BxyPos_(:, :, :)
+    type(MPI_comm) :: comm2D_
 #endif
 
 contains
 
-subroutine shd_mpi__start(isMasterProc, numProc)
+subroutine shd_mpi__start(isMasterProc, NProc)
 
     ! Initializes the MPI system, and gets the number of processors in use
     ! and the current processor.  If this is processor 0 then isMasterProc
@@ -129,36 +129,36 @@ subroutine shd_mpi__start(isMasterProc, numProc)
     ! for the standard output from the non-master processors.
 
     logical, intent(out) :: isMasterProc
-    integer, intent(out) :: numProc
+    integer, intent(out) :: NProc
 
 #if HAS_MPI
 ! note: this if clause has <else>
-    integer :: ierr
+    integer :: iErr
 
-    call mpi_init(ierr)
-    if (ierr .ne. MPI_SUCCESS) then
+    call mpi_init(iErr)
+    if (iErr .ne. MPI_success) then
         write (6, *) 'Error [mpi__start]: Terminating ...'
         stop
     end if
 
-    call mpi_comm_size(MPI_COMM_WORLD, numProc_, ierr)
-    call mpi_comm_rank(MPI_COMM_WORLD, MYPROC_, ierr)
+    call mpi_comm_size(MPI_comm_world, NProc_, iErr)
+    call mpi_comm_rank(MPI_comm_world, myProc_, iErr)
 
-    call mpi_comm_set_errhandler(MPI_COMM_WORLD, MPI_ERRORS_RETURN)
+    call mpi_comm_set_errhandler(MPI_comm_world, MPI_errors_return)
 
-    STARTTIME_ = mpi_wtime()
+    startTime_ = mpi_wtime()
 
-    if (MYPROC_ .eq. 0) then
+    if (myProc_ .eq. 0) then
         isMasterProc = .true.
         if (VERBOSE_ .gt. 5) write (6, '(A)') 'Message [mpi__start]: Starting MPI version of SHDOM ...'
     else
         isMasterProc = .false.
     end if
 
-    numProc = numProc_
+    NProc = NProc_
 #else
     isMasterProc = .true.
-    numProc = 1
+    NProc = 1
 #endif
 
     return
@@ -169,18 +169,18 @@ subroutine shd_mpi__map(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
     &XSTART, YSTART, RUNNAME)
 
     ! Sets up the mapping of processors for the SHDOM domain (creating the
-    ! 2D communicator, COMM2D_).  Determines the subdomain property grid
+    ! 2D communicator, comm2D_).  Determines the subdomain property grid
     ! (NPX,NPY) and internal base grid (NX,NY) sizes, and outputs the
     ! starting position of this subdomain (XSTART,YSTART).  Bits 2 and 3
     ! of BCFLAG are set to indicate multiple processors in the X and Y
     ! directions, respectively.  Open boundary conditions (bits 0 and 1 in
     ! BCFLAG) are overridden by the multiple processor flags (i.e. multiple
     ! processor requires a periodic full domain).
-    !   The neighboring processors are stored in iprocneigh_(:), with the
-    ! following indexing scheme: 1=-X, 2=+X, 3-=-Y, 4=+Y.   The IXYPRP_ array
+    !   The neighboring processors are stored in iProcNeigh_(:), with the
+    ! following indexing scheme: 1=-X, 2=+X, 3-=-Y, 4=+Y.   The ixyPrp_ array
     ! (module global variable) is set with the starting and ending property
-    ! grid indices of this subdomain (IXYPRP_(:,1) is for X, and IXYPRP_(:,2)
-    ! is for Y).  The IXYOUT_ array is set with the starting index and number
+    ! grid indices of this subdomain (ixyPrp_(:,1) is for X, and ixyPrp_(:,2)
+    ! is for Y).  The ixyOut_ array is set with the starting index and number
     ! of grid points of the internal base grid for this subdomain (for the
     ! output arrays).
 
@@ -192,7 +192,7 @@ subroutine shd_mpi__map(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
 #if HAS_MPI
 ! note: this if clause has <else>
     integer :: NPXT, NPYT, NXT, NYT
-    integer :: i, ierr, dims(2), coords(2)
+    integer :: i, iErr, dims(2), coords(2)
     logical :: periodic(2) = (/.true., .true./), reorder = .false.
     real    :: XEND, YEND
     character(len=4) :: procstr
@@ -200,25 +200,25 @@ subroutine shd_mpi__map(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
 
     NPXT = NPX; NPYT = NPY; NXT = NX; NYT = NY
 
-    !if ((numProc_ .eq. 1) .or. ((NPXT .eq. 1) .and. (NPYT .eq. 1))) then
-    if (numProc_ .eq. 1) then
+    !if ((NProc_ .eq. 1) .or. ((NPXT .eq. 1) .and. (NPYT .eq. 1))) then
+    if (NProc_ .eq. 1) then
         XSTART = 0.0; YSTART = 0.0
         return
     end if
 
-    if (MYPROC_ .gt. 0) then
-        write (procstr, '(I4.4)') MYPROC_
+    if (myProc_ .gt. 0) then
+        write (procstr, '(I4.4)') myProc_
         logfile = trim(adjustl(RUNNAME))//'.sHdOmNG-log.iproc-'//procstr
         open (UNIT=6, FILE=trim(adjustl(logfile)), STATUS='UNKNOWN')
     end if
 
     ! Partition 2D Cartesian topology:
     dims(:) = 0
-    call mpi_dims_create(numProc_, 2, dims, ierr)
+    call mpi_dims_create(NProc_, 2, dims, iErr)
 
     ! Create 2D Cartesian mapping of processors:
-    call mpi_cart_create(MPI_COMM_WORLD, 2, dims, periodic, reorder,&
-        &COMM2D_, ierr)
+    call mpi_cart_create(MPI_comm_world, 2, dims, periodic, reorder,&
+        &comm2D_, iErr)
 
     if (dims(1) .gt. 1) then
         BCFLAG = ibset(BCFLAG, 2)
@@ -243,45 +243,45 @@ subroutine shd_mpi__map(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
     end if
 
     ! Find where in the 2D grid of processors this is is at:
-    call mpi_cart_coords(COMM2D_, MYPROC_, 2, coords, ierr)
+    call mpi_cart_coords(comm2D_, myProc_, 2, coords, iErr)
 
-    ! Make the optimal (or default) property grid divisions (in IXYPRP_)
+    ! Make the optimal (or default) property grid divisions (in ixyPrp_)
     call shd_mpi__optimizeProcDomain(dims, coords, NPXT, NPYT, PROPFILE, RUNNAME)
 
-    ! Make the new property and base grid sizes and the IXYOUT_ arrays
+    ! Make the new property and base grid sizes and the ixyOut_ arrays
     if (dims(1) .gt. 1) then
         if (NPXT .gt. 1) then
 
-            NPX = IXYPRP_(2, 1) - IXYPRP_(1, 1) + 1
+            NPX = ixyPrp_(2, 1) - ixyPrp_(1, 1) + 1
             NX = nint(NXT*float(NPX - 1)/NPXT) + 1
             if (abs(NPXT/float(NXT) - (NPX - 1)/float(NX - 1)) .gt. 0.0001) then
                 call shd_mpi__abort('Error [mpi__map]: Even X base grid cannot be preserved&
                     & for this NX and number of processors')
             end if
-            IXYOUT_(1, 1) = nint(NXT*float(IXYPRP_(1, 1) - 1)/NPXT) + 1
-            IXYOUT_(2, 1) = nint(NXT*float(NPX - 1)/NPXT)
-            XSTART = (IXYPRP_(1, 1) - 1)*DELX
-            XEND = (IXYPRP_(2, 1) - 1)*DELX
+            ixyOut_(1, 1) = nint(NXT*float(ixyPrp_(1, 1) - 1)/NPXT) + 1
+            ixyOut_(2, 1) = nint(NXT*float(NPX - 1)/NPXT)
+            XSTART = (ixyPrp_(1, 1) - 1)*DELX
+            XEND = (ixyPrp_(2, 1) - 1)*DELX
 
         else
 
             NPX = 1
 
-            IXYOUT_(1, 1) = nint(real(NXT)/real(dims(1)))*coords(1) + 1
-            IXYOUT_(2, 1) = min(nint(real(NXT)/real(dims(1)))*(coords(1)+1), NXT)
+            ixyOut_(1, 1) = nint(real(NXT)/real(dims(1)))*coords(1) + 1
+            ixyOut_(2, 1) = min(nint(real(NXT)/real(dims(1)))*(coords(1)+1), NXT)
 
-            NX = IXYOUT_(2, 1) - IXYOUT_(1, 1) + 2
+            NX = ixyOut_(2, 1) - ixyOut_(1, 1) + 2
 
-            XSTART = real(DELX)/real(NXT) * real((IXYOUT_(1, 1)-1))
-            XEND   = real(DELX)/real(NXT) * real((IXYOUT_(2, 1)))
+            XSTART = real(DELX)/real(NXT) * real((ixyOut_(1, 1)-1))
+            XEND   = real(DELX)/real(NXT) * real((ixyOut_(2, 1)))
 
             DELX = XEND - XSTART
 
 
         end if
     else
-        IXYOUT_(1, 1) = 1
-        IXYOUT_(2, 1) = NXT
+        ixyOut_(1, 1) = 1
+        ixyOut_(2, 1) = NXT
         XSTART = 0.0
         XEND = NPXT*DELX
     end if
@@ -290,47 +290,47 @@ subroutine shd_mpi__map(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
 
         if (NPYT .gt. 1) then
 
-            NPY = IXYPRP_(2, 2) - IXYPRP_(1, 2) + 1
+            NPY = ixyPrp_(2, 2) - ixyPrp_(1, 2) + 1
             NY = nint(NYT*float(NPY - 1)/NPYT) + 1
             if (abs(NPYT/float(NYT) - (NPY - 1)/float(NY - 1)) .gt. 0.0001) then
                 call shd_mpi__abort('Error [mpi__map]: Even Y base grid cannot be preserved&
                     & for this NY and number of processors')
             end if
-            IXYOUT_(1, 2) = nint(NYT*float(IXYPRP_(1, 2) - 1)/NPYT) + 1
-            IXYOUT_(2, 2) = nint(NYT*float(NPY - 1)/NPYT)
-            YSTART = (IXYPRP_(1, 2) - 1)*DELY
-            YEND = (IXYPRP_(2, 2) - 1)*DELY
+            ixyOut_(1, 2) = nint(NYT*float(ixyPrp_(1, 2) - 1)/NPYT) + 1
+            ixyOut_(2, 2) = nint(NYT*float(NPY - 1)/NPYT)
+            YSTART = (ixyPrp_(1, 2) - 1)*DELY
+            YEND = (ixyPrp_(2, 2) - 1)*DELY
 
         else
 
             NPY = 1
 
-            IXYOUT_(1, 2) = nint(real(NYT)/real(dims(2)))*coords(2) + 1
-            IXYOUT_(2, 2) = min(nint(real(NYT)/real(dims(2)))*(coords(2)+1), NYT)
+            ixyOut_(1, 2) = nint(real(NYT)/real(dims(2)))*coords(2) + 1
+            ixyOut_(2, 2) = min(nint(real(NYT)/real(dims(2)))*(coords(2)+1), NYT)
 
-            NY = IXYOUT_(2, 2) - IXYOUT_(1, 2) + 2
+            NY = ixyOut_(2, 2) - ixyOut_(1, 2) + 2
 
-            YSTART = real(DELY)/real(NYT) * real((IXYOUT_(1, 2)-1))
-            YEND   = real(DELY)/real(NYT) * real((IXYOUT_(2, 2)))
+            YSTART = real(DELY)/real(NYT) * real((ixyOut_(1, 2)-1))
+            YEND   = real(DELY)/real(NYT) * real((ixyOut_(2, 2)))
 
             DELY = YEND - YSTART
 
         end if
     else
-        IXYOUT_(1, 2) = 1
-        IXYOUT_(2, 2) = NYT
+        ixyOut_(1, 2) = 1
+        ixyOut_(2, 2) = NYT
         YSTART = 0.0
         YEND = NPYT*DELY
     end if
 
     ! Get the processors (rank numbers) of the neighbors
-    call mpi_cart_shift(COMM2D_, 0, 1, IPROCNEIGH_(1), IPROCNEIGH_(2), ierr)
-    call mpi_cart_shift(COMM2D_, 1, 1, IPROCNEIGH_(3), IPROCNEIGH_(4), ierr)
+    call mpi_cart_shift(comm2D_, 0, 1, iProcNeigh_(1), iProcNeigh_(2), iErr)
+    call mpi_cart_shift(comm2D_, 1, 1, iProcNeigh_(3), iProcNeigh_(4), iErr)
 
     if (VERBOSE_ .ge. 5) write (6, '(A)') 'Message [mpi__map]:'
-    if (VERBOSE_ .ge. 5) write (6, '(2X,A,2(I0,2X))')    'Nproc in X and Y: ', dims(1:2)
-    if (VERBOSE_ .ge. 5) write (6, '(2X,A,I0)')          '  This processor: ', MYPROC_
-    if (VERBOSE_ .ge. 5) write (6, '(2X,A,4(I0,2X))')    '       Neighbors: ', IPROCNEIGH_(1:4)
+    if (VERBOSE_ .ge. 5) write (6, '(2X,A,2(I0,2X))')    'NProc in X and Y: ', dims(1:2)
+    if (VERBOSE_ .ge. 5) write (6, '(2X,A,I0)')          '  This processor: ', myProc_
+    if (VERBOSE_ .ge. 5) write (6, '(2X,A,4(I0,2X))')    '       Neighbors: ', iProcNeigh_(1:4)
     if (VERBOSE_ .ge. 5) write (6, '(2X,A,2(F0.2," km",2X))') '         X range: ', XSTART, XEND
     if (VERBOSE_ .ge. 5) write (6, '(2X,A,2(F0.2," km",2X))') '         Y range: ', YSTART, YEND
 #else
@@ -370,29 +370,29 @@ subroutine shd_mpi__bcastInp(&
     character(len=FNAMEMAXLEN_), intent(inout) :: INSAVEFILE, OUTSAVEFILE, SENFILE
 
 #if HAS_MPI
-    integer :: ierr, intbuf(10)
+    integer :: iErr, intbuf(10)
     logical :: logbuf(3)
     real    :: realbuf(16)
     character(len=1) :: char1buf(3)
     character(len=FNAMEMAXLEN_) :: char256buf(7)
     character(len=4) :: procstr
 
-    if (numProc_ .le. 1) return
+    if (NProc_ .le. 1) return
 
     intbuf(:) = (/NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG, IPFLAG, MAXITER, NUMOUT/)
-    call mpi_bcast(intbuf, 10, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
+    call mpi_bcast(intbuf, 10, MPI_integer, 0, MPI_comm_world, iErr)
     NSTOKES = intbuf(1); NX = intbuf(2); NY = intbuf(3); NZ = intbuf(4)
     NMU = intbuf(5); NPHI = intbuf(6); BCFLAG = intbuf(7); IPFLAG = intbuf(8)
     MAXITER = intbuf(9); NUMOUT = intbuf(10)
 
     logbuf(:) = (/KDIST, DELTAM, ACCELFLAG/)
-    call mpi_bcast(logbuf, 3, MPI_LOGICAL, 0, MPI_COMM_WORLD, ierr)
+    call mpi_bcast(logbuf, 3, MPI_logical, 0, MPI_comm_world, iErr)
     KDIST = logbuf(1); DELTAM = logbuf(2); ACCELFLAG = logbuf(3)
 
     realbuf(:) = (/SOLARFLUX, SOLARMU, SOLARAZ, GNDTEMP, GNDALBEDO, SKYRAD,&
         &WAVENO(1:2), WAVELEN, SOLACC, SPLITACC, SHACC,&
         &MAX_TOTAL_MB, SPLITTING_FACTOR, NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO/)
-    call mpi_bcast(realbuf, 16, MPI_REAL, 0, MPI_COMM_WORLD, ierr)
+    call mpi_bcast(realbuf, 16, MPI_real, 0, MPI_comm_world, iErr)
     SOLARFLUX = realbuf(1); SOLARMU = realbuf(2); SOLARAZ = realbuf(3)
     GNDTEMP = realbuf(4); GNDALBEDO = realbuf(5); SKYRAD = realbuf(6)
     WAVENO(1:2) = realbuf(7:8); WAVELEN = realbuf(9)
@@ -401,18 +401,18 @@ subroutine shd_mpi__bcastInp(&
     NUM_SH_TERM_FACTOR = realbuf(15); CELL_TO_POINT_RATIO = realbuf(16)
 
     char1buf(:) = (/SRCTYPE, GRIDTYPE, UNITS/)
-    call mpi_bcast(char1buf, 3, MPI_CHARACTER, 0, MPI_COMM_WORLD, ierr)
+    call mpi_bcast(char1buf, 3, MPI_character, 0, MPI_comm_world, iErr)
     SRCTYPE = char1buf(1); GRIDTYPE = char1buf(2); UNITS = char1buf(3)
 
     char256buf(:) = (/PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE, SENFILE, RUNNAME/)
-    call mpi_bcast(char256buf, 7*256, MPI_CHARACTER, 0, MPI_COMM_WORLD, ierr)
+    call mpi_bcast(char256buf, 7*256, MPI_character, 0, MPI_comm_world, iErr)
     PROPFILE = char256buf(1); SFCFILE = char256buf(2); CKDFILE = char256buf(3)
     INSAVEFILE = char256buf(4); OUTSAVEFILE = char256buf(5); SENFILE = char256buf(6); RUNNAME = char256buf(7)
 
-    call mpi_bcast(OUTPARMS, MAXPAR*NUMOUT, MPI_REAL, 0, MPI_COMM_WORLD, ierr)
-    call mpi_bcast(OUTTYPES, NUMOUT*1, MPI_CHARACTER, 0, MPI_COMM_WORLD, ierr)
+    call mpi_bcast(OUTPARMS, MAXPAR*NUMOUT, MPI_real, 0, MPI_comm_world, iErr)
+    call mpi_bcast(OUTTYPES, NUMOUT*1, MPI_character, 0, MPI_comm_world, iErr)
 
-    write (procstr, '(I4.4)') MYPROC_
+    write (procstr, '(I4.4)') myProc_
     if (INSAVEFILE(1:4) .ne. 'NONE') INSAVEFILE = trim(INSAVEFILE)//'.iproc-'//procstr
     if (OUTSAVEFILE(1:4) .ne. 'NONE') OUTSAVEFILE = trim(OUTSAVEFILE)//'.iproc-'//procstr
 #endif
@@ -431,18 +431,18 @@ subroutine shd_mpi__bcastPrpSize(NPX, NPY, NPZ, DELX, DELY,&
     real, intent(inout) :: DELX, DELY
 
 #if HAS_MPI
-    integer :: ierr, intbuf(6)
+    integer :: iErr, intbuf(6)
     real    :: realbuf(2)
 
-    if (numProc_ .le. 1) return
+    if (NProc_ .le. 1) return
 
     intbuf(:) = (/NPX, NPY, NPZ, NUMPHASE, MAXLEG, MAXPGL/)
-    call mpi_bcast(intbuf, 6, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
+    call mpi_bcast(intbuf, 6, MPI_integer, 0, MPI_comm_world, iErr)
     NPX = intbuf(1); NPY = intbuf(2); NPZ = intbuf(3)
     NUMPHASE = intbuf(4); MAXLEG = intbuf(5); MAXPGL = intbuf(6)
 
     realbuf(:) = (/DELX, DELY/)
-    call mpi_bcast(realbuf, 2, MPI_REAL, 0, MPI_COMM_WORLD, ierr)
+    call mpi_bcast(realbuf, 2, MPI_real, 0, MPI_comm_world, iErr)
     DELX = realbuf(1); DELY = realbuf(2)
 #endif
 
@@ -472,93 +472,93 @@ subroutine shd_mpi__bcastPrp(NPXT, NPYT, NPX, NPY, NPZ,&
 
 #if HAS_MPI
     integer :: SX, EX, NX, SY, EY, NY, N, MAXN, MaxNX, MaxNY
-    integer :: iproc, irq, ierr
+    integer :: iProc, irq, iErr
     integer, allocatable :: IXYALL(:, :, :)
     real, allocatable :: realbuf(:), rbuf(:, :, :)
     real, allocatable :: tempbuf(:, :), extbuf(:, :), albbuf(:, :)
     integer*2, allocatable :: ibuf(:, :, :), iphbuf(:, :)
 
-    type(MPI_REQUEST), allocatable :: requests(:)
-    type(MPI_STATUS), allocatable :: status(:)
+    type(MPI_request), allocatable :: requests(:)
+    type(MPI_status), allocatable :: status(:)
 
     ! Broadcast the small stuff that is going to all processors
     allocate (realbuf(NPZ + 1))
     realbuf(1:NPZ + 1) = (/ZLEVELS(1:NPZ), MAXASYM/)
-    call mpi_bcast(realbuf, NPZ + 1, MPI_REAL, 0, COMM2D_, ierr)
+    call mpi_bcast(realbuf, NPZ + 1, MPI_real, 0, comm2D_, iErr)
     ZLEVELS(1:NPZ) = realbuf(1:NPZ); MAXASYM = realbuf(NPZ + 1)
 
     ! If we have a tabulated phase function, then broadcast to all processors
     if (NUMPHASE .gt. 0) then
-        if (MYPROC_ .eq. 0) LEGENP(1:NUMPHASE*(NLEG + 1)*NSTLEG) =&
+        if (myProc_ .eq. 0) LEGENP(1:NUMPHASE*(NLEG + 1)*NSTLEG) =&
             &LEGENPT(1:NUMPHASE*(NLEG + 1)*NSTLEG)
-        call mpi_bcast(NLEG, 1, MPI_INTEGER, 0, COMM2D_, ierr)
-        call mpi_bcast(LEGENP, NSTLEG*(NLEG + 1)*NUMPHASE, MPI_REAL, 0, COMM2D_, ierr)
+        call mpi_bcast(NLEG, 1, MPI_integer, 0, comm2D_, iErr)
+        call mpi_bcast(LEGENP, NSTLEG*(NLEG + 1)*NUMPHASE, MPI_real, 0, comm2D_, iErr)
     end if
 
-    ! Get the IXYPRP_ arrays from all processors to tell where they are in property grid
-    allocate (IXYALL(2, 2, 0:numProc_ - 1))
-    call mpi_gather(IXYPRP_, 4, MPI_INTEGER, IXYALL, 4, MPI_INTEGER, 0, COMM2D_, ierr)
+    ! Get the ixyPrp_ arrays from all processors to tell where they are in property grid
+    allocate (IXYALL(2, 2, 0:NProc_ - 1))
+    call mpi_gather(ixyPrp_, 4, MPI_integer, IXYALL, 4, MPI_integer, 0, comm2D_, iErr)
 
-    allocate (requests(4*numProc_ + 4), status(4*numProc_ + 4))
+    allocate (requests(4*NProc_ + 4), status(4*NProc_ + 4))
 
     irq = 0
-    if (MYPROC_ .eq. 0) then
+    if (myProc_ .eq. 0) then
         ! Allocate the send buffers for each processor
         MAXN = 1; MaxNX = 1; MaxNY = 1
-        do iproc = 0, numProc_ - 1
-            NX = IXYALL(2, 1, iproc) - IXYALL(1, 1, iproc) + 1; MaxNX = max(MaxNX, NX)
-            NY = IXYALL(2, 2, iproc) - IXYALL(1, 2, iproc) + 1; MaxNY = max(MaxNY, NY)
+        do iProc = 0, NProc_ - 1
+            NX = IXYALL(2, 1, iProc) - IXYALL(1, 1, iProc) + 1; MaxNX = max(MaxNX, NX)
+            NY = IXYALL(2, 2, iProc) - IXYALL(1, 2, iProc) + 1; MaxNY = max(MaxNY, NY)
             MAXN = max(MAXN, NPZ*NY*NX)
         end do
         allocate (rbuf(NPZ, MaxNY, MaxNX), ibuf(NPZ, MaxNY, MaxNX))
-        allocate (tempbuf(MAXN, 0:numProc_ - 1), extbuf(MAXN, 0:numProc_ - 1))
-        allocate (albbuf(MAXN, 0:numProc_ - 1), iphbuf(MAXN, 0:numProc_ - 1))
+        allocate (tempbuf(MAXN, 0:NProc_ - 1), extbuf(MAXN, 0:NProc_ - 1))
+        allocate (albbuf(MAXN, 0:NProc_ - 1), iphbuf(MAXN, 0:NProc_ - 1))
         ! The master processor reformats the four property arrays (to deal with
         ! the wrap around at the full domain edge) and sends the arrays with MPI.
-        do iproc = 0, numProc_ - 1
-            SX = IXYALL(1, 1, iproc); EX = IXYALL(2, 1, iproc)
-            SY = IXYALL(1, 2, iproc); EY = IXYALL(2, 2, iproc)
+        do iProc = 0, NProc_ - 1
+            SX = IXYALL(1, 1, iProc); EX = IXYALL(2, 1, iProc)
+            SY = IXYALL(1, 2, iProc); EY = IXYALL(2, 2, iProc)
             NX = EX - SX + 1; NY = EY - SY + 1; N = NX*NY*NPZ
             rbuf(:, 1:NY - 1, 1:NX - 1) = TEMPPT(:, SY:EY - 1, SX:EX - 1)
             rbuf(:, 1:NY - 1, NX) = TEMPPT(:, SY:EY - 1, mod(EX - 1, NPXT) + 1)
             rbuf(:, NY, 1:NX - 1) = TEMPPT(:, mod(EY - 1, NPYT) + 1, SX:EX - 1)
             rbuf(:, NY, NX) = TEMPPT(:, mod(EY - 1, NPYT) + 1, mod(EX - 1, NPXT) + 1)
-            tempbuf(1:N, iproc) = reshape(rbuf(1:NPZ, 1:NY, 1:NX), (/N/))
-            call mpi_isend(tempbuf(1:N, iproc), N, MPI_REAL, iproc, 1, COMM2D_, requests(irq + 1), ierr)
+            tempbuf(1:N, iProc) = reshape(rbuf(1:NPZ, 1:NY, 1:NX), (/N/))
+            call mpi_isend(tempbuf(1:N, iProc), N, MPI_real, iProc, 1, comm2D_, requests(irq + 1), iErr)
 
             rbuf(:, 1:NY - 1, 1:NX - 1) = EXTINCTPT(:, SY:EY - 1, SX:EX - 1)
             rbuf(:, 1:NY - 1, NX) = EXTINCTPT(:, SY:EY - 1, mod(EX - 1, NPXT) + 1)
             rbuf(:, NY, 1:NX - 1) = EXTINCTPT(:, mod(EY - 1, NPYT) + 1, SX:EX - 1)
             rbuf(:, NY, NX) = EXTINCTPT(:, mod(EY - 1, NPYT) + 1, mod(EX - 1, NPXT) + 1)
-            extbuf(1:N, iproc) = reshape(rbuf(1:NPZ, 1:NY, 1:NX), (/N/))
-            call mpi_isend(extbuf(1:N, iproc), N, MPI_REAL, iproc, 2, COMM2D_, requests(irq + 2), ierr)
+            extbuf(1:N, iProc) = reshape(rbuf(1:NPZ, 1:NY, 1:NX), (/N/))
+            call mpi_isend(extbuf(1:N, iProc), N, MPI_real, iProc, 2, comm2D_, requests(irq + 2), iErr)
 
             rbuf(:, 1:NY - 1, 1:NX - 1) = ALBEDOPT(:, SY:EY - 1, SX:EX - 1)
             rbuf(:, 1:NY - 1, NX) = ALBEDOPT(:, SY:EY - 1, mod(EX - 1, NPXT) + 1)
             rbuf(:, NY, 1:NX - 1) = ALBEDOPT(:, mod(EY - 1, NPYT) + 1, SX:EX - 1)
             rbuf(:, NY, NX) = ALBEDOPT(:, mod(EY - 1, NPYT) + 1, mod(EX - 1, NPXT) + 1)
-            albbuf(1:N, iproc) = reshape(rbuf(1:NPZ, 1:NY, 1:NX), (/N/))
-            call mpi_isend(albbuf(1:N, iproc), N, MPI_REAL, iproc, 3, COMM2D_, requests(irq + 3), ierr)
+            albbuf(1:N, iProc) = reshape(rbuf(1:NPZ, 1:NY, 1:NX), (/N/))
+            call mpi_isend(albbuf(1:N, iProc), N, MPI_real, iProc, 3, comm2D_, requests(irq + 3), iErr)
 
             ibuf(:, 1:NY - 1, 1:NX - 1) = IPHASEPT(:, SY:EY - 1, SX:EX - 1)
             ibuf(:, 1:NY - 1, NX) = IPHASEPT(:, SY:EY - 1, mod(EX - 1, NPXT) + 1)
             ibuf(:, NY, 1:NX - 1) = IPHASEPT(:, mod(EY - 1, NPYT) + 1, SX:EX - 1)
             ibuf(:, NY, NX) = IPHASEPT(:, mod(EY - 1, NPYT) + 1, mod(EX - 1, NPXT) + 1)
-            iphbuf(1:N, iproc) = reshape(ibuf(1:NPZ, 1:NY, 1:NX), (/N/))
-            call mpi_isend(iphbuf(1:N, iproc), N, MPI_INTEGER2, iproc, 4, COMM2D_, requests(irq + 4), ierr)
+            iphbuf(1:N, iProc) = reshape(ibuf(1:NPZ, 1:NY, 1:NX), (/N/))
+            call mpi_isend(iphbuf(1:N, iProc), N, MPI_integer2, iProc, 4, comm2D_, requests(irq + 4), iErr)
             irq = irq + 4
         end do
     end if
 
     N = NPX*NPY*NPZ
-    call mpi_irecv(TEMPP   , N, MPI_REAL    , 0, 1, COMM2D_, requests(irq + 1), ierr)
-    call mpi_irecv(EXTINCTP, N, MPI_REAL    , 0, 2, COMM2D_, requests(irq + 2), ierr)
-    call mpi_irecv(ALBEDOP , N, MPI_REAL    , 0, 3, COMM2D_, requests(irq + 3), ierr)
-    call mpi_irecv(IPHASEP , N, MPI_INTEGER2, 0, 4, COMM2D_, requests(irq + 4), ierr)
+    call mpi_irecv(TEMPP   , N, MPI_real    , 0, 1, comm2D_, requests(irq + 1), iErr)
+    call mpi_irecv(EXTINCTP, N, MPI_real    , 0, 2, comm2D_, requests(irq + 2), iErr)
+    call mpi_irecv(ALBEDOP , N, MPI_real    , 0, 3, comm2D_, requests(irq + 3), iErr)
+    call mpi_irecv(IPHASEP , N, MPI_integer2, 0, 4, comm2D_, requests(irq + 4), iErr)
     irq = irq + 4
-    call mpi_waitall(irq, requests, status, ierr)
+    call mpi_waitall(irq, requests, status, iErr)
 
-    if (MYPROC_ .eq. 0) deallocate (tempbuf, extbuf, albbuf, iphbuf, rbuf, ibuf)
+    if (myProc_ .eq. 0) deallocate (tempbuf, extbuf, albbuf, iphbuf, rbuf, ibuf)
     deallocate (requests, status, IXYALL, realbuf)
 #endif
 
@@ -574,17 +574,17 @@ subroutine shd_mpi__bcastSfcSize(NXSFC, NYSFC, DELXSFC, DELYSFC, MAXSFCPTS, MAXS
     real, intent(inout) :: DELXSFC, DELYSFC
 
 #if HAS_MPI
-    integer :: ierr, intbuf(4)
+    integer :: iErr, intbuf(4)
     real :: realbuf(2)
 
-    if (numProc_ .le. 1) return
+    if (NProc_ .le. 1) return
 
     intbuf(1:4) = (/NXSFC, NYSFC, MAXSFCPTS, MAXSFCPARS/)
-    call mpi_bcast(intbuf, 4, MPI_INTEGER, 0, COMM2D_, ierr)
+    call mpi_bcast(intbuf, 4, MPI_integer, 0, comm2D_, iErr)
     NXSFC = intbuf(1); NYSFC = intbuf(2); MAXSFCPTS = intbuf(3); MAXSFCPARS = intbuf(4)
 
     realbuf(1:2) = (/DELXSFC, DELYSFC/)
-    call mpi_bcast(realbuf, 2, MPI_REAL, 0, COMM2D_, ierr)
+    call mpi_bcast(realbuf, 2, MPI_real, 0, comm2D_, iErr)
     DELXSFC = realbuf(1); DELYSFC = realbuf(2)
 #endif
 
@@ -603,21 +603,21 @@ subroutine shd_mpi__bcastSfc(SFCTYPE, NXSFC, NYSFC,&
     real, intent(inout) :: SFCPARMS(*), GNDTEMP, GNDALBEDO
 
 #if HAS_MPI
-    integer :: ierr, n
+    integer :: iErr, n
     real    :: realbuf(2)
 
-    if (numProc_ .le. 1) return
+    if (NProc_ .le. 1) return
 
-    call mpi_bcast(SFCTYPE, 2, MPI_CHARACTER, 0, COMM2D_, ierr)
+    call mpi_bcast(SFCTYPE, 2, MPI_character, 0, comm2D_, iErr)
 
-    call mpi_bcast(NSFCPAR, 1, MPI_INTEGER, 0, COMM2D_, ierr)
+    call mpi_bcast(NSFCPAR, 1, MPI_integer, 0, comm2D_, iErr)
 
     realbuf(1:2) = (/GNDTEMP, GNDALBEDO/)
-    call mpi_bcast(realbuf, 2, MPI_REAL, 0, COMM2D_, ierr)
+    call mpi_bcast(realbuf, 2, MPI_real, 0, comm2D_, iErr)
     GNDTEMP = realbuf(1); GNDALBEDO = realbuf(2)
 
     n = NSFCPAR*(NXSFC + 1)*(NYSFC + 1)
-    call mpi_bcast(SFCPARMS, n, MPI_REAL, 0, COMM2D_, ierr)
+    call mpi_bcast(SFCPARMS, n, MPI_real, 0, comm2D_, iErr)
 #endif
 
     return
@@ -631,12 +631,12 @@ subroutine shd_mpi__bcastCkdSize(NG, NZCKD)
     integer, intent(inout) :: NG, NZCKD
 
 #if HAS_MPI
-    integer :: ierr, intbuf(2)
+    integer :: iErr, intbuf(2)
 
-    if (numProc_ .le. 1) return
+    if (NProc_ .le. 1) return
 
     intbuf(1:2) = (/NG, NZCKD/)
-    call mpi_bcast(intbuf, 2, MPI_INTEGER, 0, COMM2D_, ierr)
+    call mpi_bcast(intbuf, 2, MPI_integer, 0, comm2D_, iErr)
     NG = intbuf(1); NZCKD = intbuf(2)
 #endif
 
@@ -653,10 +653,10 @@ subroutine shd_mpi__bcastCkd(SOLFLUX, NG, DELG, NZCKD, ZCKD, KABS)
     real, intent(inout) :: SOLFLUX(NG), DELG(NG), ZCKD(NZCKD), KABS(NZCKD, NG)
 
 #if HAS_MPI
-    integer :: ierr
+    integer :: iErr
     real, allocatable :: realbuf(:)
 
-    if (numProc_ .le. 1) return
+    if (NProc_ .le. 1) return
 
     ! before
     !allocate (realbuf(1 + NG + NZCKD))
@@ -666,13 +666,13 @@ subroutine shd_mpi__bcastCkd(SOLFLUX, NG, DELG, NZCKD, ZCKD, KABS)
     realbuf(NG+1 : 2*NG) = DELG(:)
 
     realbuf(2*NG+1 : 2*NG+NZCKD) = ZCKD(:)
-    call mpi_bcast(realbuf, 2*NG+NZCKD, MPI_REAL, 0, COMM2D_, ierr)
+    call mpi_bcast(realbuf, 2*NG+NZCKD, MPI_real, 0, comm2D_, iErr)
 
     SOLFLUX(:) = realbuf(1 : NG)
     DELG(:) = realbuf(NG+1 : 2*NG)
     ZCKD(:) = realbuf(2*NG+1 : 2*NG+NZCKD)
 
-    call mpi_bcast(KABS, NZCKD*NG, MPI_REAL, 0, COMM2D_, ierr)
+    call mpi_bcast(KABS, NZCKD*NG, MPI_real, 0, comm2D_, iErr)
 #endif
 
     return
@@ -687,12 +687,12 @@ subroutine shd_mpi__bcastSenSize(NSENDATA, NSENPAR)
     integer, intent(inout) :: NSENDATA, NSENPAR
 
 #if HAS_MPI
-    integer :: ierr, intbuf(2)
+    integer :: iErr, intbuf(2)
 
-    if (numProc_ .le. 1) return
+    if (NProc_ .le. 1) return
 
     intbuf(1:2) = (/NSENDATA, NSENPAR/)
-    call mpi_bcast(intbuf, 2, MPI_INTEGER, 0, COMM2D_, ierr)
+    call mpi_bcast(intbuf, 2, MPI_integer, 0, comm2D_, iErr)
     NSENDATA = intbuf(1); NSENPAR = intbuf(2)
 #endif
 
@@ -709,17 +709,17 @@ subroutine shd_mpi__bcastSen(NSENDATA, NSENPAR, SENPARMS)
     real, intent(inout) :: SENPARMS(*)
 
 #if HAS_MPI
-    integer :: ierr, intbuf(2), n
+    integer :: iErr, intbuf(2), n
     real    :: realbuf(4)
 
-    if (numProc_ .le. 1) return
+    if (NProc_ .le. 1) return
 
     intbuf(1:2) = (/NSENDATA, NSENPAR/)
-    call mpi_bcast(intbuf, 2, MPI_INTEGER, 0, COMM2D_, ierr)
+    call mpi_bcast(intbuf, 2, MPI_integer, 0, comm2D_, iErr)
     NSENDATA = intbuf(1); NSENPAR = intbuf(2)
 
     n = NSENDATA*NSENPAR
-    call mpi_bcast(SENPARMS, n, MPI_REAL, 0, COMM2D_, ierr)
+    call mpi_bcast(SENPARMS, n, MPI_real, 0, comm2D_, iErr)
 #endif
 
     return
@@ -737,24 +737,24 @@ subroutine shd_mpi__bcastMem(MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
     character(len=*), intent(in) :: RUNNAME
 
 #if HAS_MPI
-    integer :: Nproc, ierr, i, j
+    integer :: NProc, iErr, i, j
     real, allocatable :: MemParam(:, :)
 
-    allocate (MemParam(4, 0:numProc_ - 1))
+    allocate (MemParam(4, 0:NProc_ - 1))
     MemParam(1, :) = MAX_TOTAL_MB; MemParam(2, :) = ADAPT_GRID_FACTOR
     MemParam(3, :) = NUM_SH_TERM_FACTOR; MemParam(4, :) = CELL_TO_POINT_RATIO
 
-    if (MYPROC_ .eq. 0) then
+    if (myProc_ .eq. 0) then
         ! See if we can read the memory parameter file and number of processors matches
-        open (UNIT=11, FILE=trim(RUNNAME)//'_mem_params.inp', STATUS='OLD', IOSTAT=ierr)
-        if (ierr .eq. 0) then
+        open (UNIT=11, FILE=trim(RUNNAME)//'_mem_params.inp', STATUS='OLD', IOSTAT=iErr)
+        if (iErr .eq. 0) then
             read (11, *)
-            read (11, *) Nproc
-            if (Nproc .ne. numProc_) then
+            read (11, *) NProc
+            if (NProc .ne. NProc_) then
                 write (6, '(A,A,A)') 'Memory parameter file ', trim(RUNNAME),&
                     &'_mem_params.inp is for a different number of processors.'
             else
-                do i = 0, Nproc - 1
+                do i = 0, NProc - 1
                     read (11, *) MemParam(:, i)
                 end do
             end if
@@ -762,11 +762,11 @@ subroutine shd_mpi__bcastMem(MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
         end if
     end if
 
-    call mpi_bcast(MemParam, 4*numProc_, MPI_REAL, 0, COMM2D_, ierr)
-    MAX_TOTAL_MB = MemParam(1, MYPROC_)
-    ADAPT_GRID_FACTOR = MemParam(2, MYPROC_)
-    NUM_SH_TERM_FACTOR = MemParam(3, MYPROC_)
-    CELL_TO_POINT_RATIO = MemParam(4, MYPROC_)
+    call mpi_bcast(MemParam, 4*NProc_, MPI_real, 0, comm2D_, iErr)
+    MAX_TOTAL_MB = MemParam(1, myProc_)
+    ADAPT_GRID_FACTOR = MemParam(2, myProc_)
+    NUM_SH_TERM_FACTOR = MemParam(3, myProc_)
+    CELL_TO_POINT_RATIO = MemParam(4, myProc_)
     deallocate (MemParam)
     if (VERBOSE_ .ge. 5) write (6, '(A)') 'Message [mpi__bcastMemParam]:'
     if (VERBOSE_ .ge. 5) write (6, '(2X,A,F0.2,"MB",3(2X,F0.3))') 'Memory parameters used: ', MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
@@ -782,13 +782,13 @@ real function shd_mpi__sumCpuTime(cpuTimes)
     ! Sums the CPU time used across all processors
 
     real :: cpuTimes
-    integer :: ierr
+    integer :: iErr
 
     shd_mpi__sumCpuTime = cpuTimes
 
 #if HAS_MPI
-    if (numProc_ .gt. 1) then
-        call mpi_reduce(cpuTimes, shd_mpi__sumCpuTime, 1, MPI_REAL, MPI_SUM, 0, COMM2D_, ierr)
+    if (NProc_ .gt. 1) then
+        call mpi_reduce(cpuTimes, shd_mpi__sumCpuTime, 1, MPI_real, MPI_sum, 0, comm2D_, iErr)
     end if
 #endif
 
@@ -806,7 +806,7 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
     ! Gathers the base grid output data in SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV,
     ! and SUMSHTERMS from all the processors and assembles in the master
     ! processor output arrays ALLFLUXES, ALLFLUXDIV, ALLSHTERMS.  Gathers the
-    ! IXYOUT_ array from each processor to determine where each subdomain is.
+    ! ixyOut_ array from each processor to determine where each subdomain is.
     ! Also gathers the full base grid position arrays (XALLGRID/YALLGRID) and
     ! sums NCELLS,NPTS,NSH over all processors.
 
@@ -823,38 +823,38 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
 
 #if HAS_MPI
     integer :: IX, IY, NX, NY, NX1, NY1, MAXN, I, send3int(3), recv3int(3)
-    integer :: iproc, ierr, irq
+    integer :: iProc, iErr, irq
     integer, allocatable :: IXYALL(:, :, :)
     real, allocatable :: sendbuf(:, :), recvbuf(:, :, :), buf(:, :, :, :)
 
-    type(MPI_REQUEST), allocatable :: requests(:)
-    type(MPI_STATUS), allocatable :: status(:)
+    type(MPI_request), allocatable :: requests(:)
+    type(MPI_status), allocatable :: status(:)
 
-    allocate (IXYALL(2, 2, 0:numProc_ - 1))
-    call mpi_gather(IXYOUT_, 4, MPI_INTEGER, IXYALL, 4, MPI_INTEGER, 0, COMM2D_, ierr)
+    allocate (IXYALL(2, 2, 0:NProc_ - 1))
+    call mpi_gather(ixyOut_, 4, MPI_integer, IXYALL, 4, MPI_integer, 0, comm2D_, iErr)
 
-    allocate (requests(numProc_), status(numProc_))
+    allocate (requests(NProc_), status(NProc_))
 
     if (FLUX_OUT) then
         irq = 0
-        if (MYPROC_ .gt. 0) then
+        if (myProc_ .gt. 0) then
             allocate (sendbuf(3, NBPTS))
             sendbuf(1:2, :) = SUMFLUXES(:, :); sendbuf(3, :) = SUMDIRFLUX(:)
             irq = irq + 1
-            call mpi_isend(sendbuf, 3*NBPTS, MPI_REAL, 0, 1, COMM2D_,&
-                &requests(irq), ierr)
+            call mpi_isend(sendbuf, 3*NBPTS, MPI_real, 0, 1, comm2D_,&
+                &requests(irq), iErr)
         else
             MAXN = (maxval(IXYALL(2, 1, :)) + 1)*(maxval(IXYALL(2, 2, :)) + 1)*NZ
-            allocate (recvbuf(3, MAXN, 1:numProc_ - 1))
-            do iproc = 1, numProc_ - 1
+            allocate (recvbuf(3, MAXN, 1:NProc_ - 1))
+            do iProc = 1, NProc_ - 1
                 irq = irq + 1
-                call mpi_irecv(recvbuf(:, :, iproc), 3*MAXN, MPI_REAL, iproc, 1,&
-                    &COMM2D_, requests(irq), ierr)
+                call mpi_irecv(recvbuf(:, :, iProc), 3*MAXN, MPI_real, iProc, 1,&
+                    &comm2D_, requests(irq), iErr)
             end do
         end if
-        call mpi_waitall(irq, requests, status, ierr)
+        call mpi_waitall(irq, requests, status, iErr)
 
-        if (MYPROC_ .eq. 0) then
+        if (myProc_ .eq. 0) then
             IX = IXYALL(1, 1, 0); NX = IXYALL(2, 1, 0)
             IY = IXYALL(1, 2, 0); NY = IXYALL(2, 2, 0)
             NX1 = NX + 1; NY1 = NY + 1
@@ -865,14 +865,14 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
             buf(3, :, :, :) = reshape(SUMDIRFLUX(:), (/NZ, NY1, NX1/))
             ALLFLUXES(1:3, 1:NZ, IY:IY + NY - 1, IX:IX + NX - 1) = buf(:, 1:NZ, 1:NY, 1:NX)
             deallocate (buf)
-            do iproc = 1, numProc_ - 1
-                IX = IXYALL(1, 1, iproc); NX = IXYALL(2, 1, iproc)
-                IY = IXYALL(1, 2, iproc); NY = IXYALL(2, 2, iproc)
+            do iProc = 1, NProc_ - 1
+                IX = IXYALL(1, 1, iProc); NX = IXYALL(2, 1, iProc)
+                IY = IXYALL(1, 2, iProc); NY = IXYALL(2, 2, iProc)
                 NX1 = NX + 1; NY1 = NY + 1
                 if (is1DX_ .and. .not. isMpiX_) NX1 = NX
                 if (is1DYx_ .and. .not. isMpiY_) NY1 = NY
                 allocate (buf(3, NZ, NY1, NX1))
-                buf(:, :, :, :) = reshape(recvbuf(:, 1:NZ*NY1*NX1, iproc), (/3, NZ, NY1, NX1/))
+                buf(:, :, :, :) = reshape(recvbuf(:, 1:NZ*NY1*NX1, iProc), (/3, NZ, NY1, NX1/))
                 ALLFLUXES(1:3, 1:NZ, IY:IY + NY - 1, IX:IX + NX - 1) = buf(:, 1:NZ, 1:NY, 1:NX)
                 deallocate (buf)
             end do
@@ -884,22 +884,22 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
 
     if (FLUXDIV_OUT) then
         irq = 0
-        if (MYPROC_ .gt. 0) then
+        if (myProc_ .gt. 0) then
             irq = irq + 1
-            call mpi_isend(SUMFLUXDIV, NBPTS, MPI_REAL, 0, 2, COMM2D_,&
-                &requests(irq), ierr)
+            call mpi_isend(SUMFLUXDIV, NBPTS, MPI_real, 0, 2, comm2D_,&
+                &requests(irq), iErr)
         else
             MAXN = (maxval(IXYALL(2, 1, :)) + 1)*(maxval(IXYALL(2, 2, :)) + 1)*NZ
-            allocate (recvbuf(1, MAXN, 1:numProc_ - 1))
-            do iproc = 1, numProc_ - 1
+            allocate (recvbuf(1, MAXN, 1:NProc_ - 1))
+            do iProc = 1, NProc_ - 1
                 irq = irq + 1
-                call mpi_irecv(recvbuf(:, :, iproc), MAXN, MPI_REAL, iproc, 2,&
-                    &COMM2D_, requests(irq), ierr)
+                call mpi_irecv(recvbuf(:, :, iProc), MAXN, MPI_real, iProc, 2,&
+                    &comm2D_, requests(irq), iErr)
             end do
         end if
-        call mpi_waitall(irq, requests, status, ierr)
+        call mpi_waitall(irq, requests, status, iErr)
 
-        if (MYPROC_ .eq. 0) then
+        if (myProc_ .eq. 0) then
             IX = IXYALL(1, 1, 0); NX = IXYALL(2, 1, 0)
             IY = IXYALL(1, 2, 0); NY = IXYALL(2, 2, 0)
             NX1 = NX + 1; NY1 = NY + 1
@@ -909,14 +909,14 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
             buf(1, :, :, :) = reshape(SUMFLUXDIV(:), (/NZ, NY1, NX1/))
             ALLFLUXDIV(1:NZ, IY:IY + NY - 1, IX:IX + NX - 1) = buf(1, 1:NZ, 1:NY, 1:NX)
             deallocate (buf)
-            do iproc = 1, numProc_ - 1
-                IX = IXYALL(1, 1, iproc); NX = IXYALL(2, 1, iproc)
-                IY = IXYALL(1, 2, iproc); NY = IXYALL(2, 2, iproc)
+            do iProc = 1, NProc_ - 1
+                IX = IXYALL(1, 1, iProc); NX = IXYALL(2, 1, iProc)
+                IY = IXYALL(1, 2, iProc); NY = IXYALL(2, 2, iProc)
                 NX1 = NX + 1; NY1 = NY + 1
                 if (is1DX_ .and. .not. isMpiX_) NX1 = NX
                 if (is1DYx_ .and. .not. isMpiY_) NY1 = NY
                 allocate (buf(1, NZ, NY1, NX1))
-                buf(:, :, :, :) = reshape(recvbuf(:, 1:NZ*NY1*NX1, iproc), (/1, NZ, NY1, NX1/))
+                buf(:, :, :, :) = reshape(recvbuf(:, 1:NZ*NY1*NX1, iProc), (/1, NZ, NY1, NX1/))
                 ALLFLUXDIV(1:NZ, IY:IY + NY - 1, IX:IX + NX - 1) = buf(1, 1:NZ, 1:NY, 1:NX)
                 deallocate (buf)
             end do
@@ -926,22 +926,22 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
 
     if (SH_OUT) then
         irq = 0
-        if (MYPROC_ .gt. 0) then
+        if (myProc_ .gt. 0) then
             irq = irq + 1
-            call mpi_isend(SUMSHTERMS, NSHOUT*NBPTS, MPI_REAL, 0, 3, COMM2D_,&
-                &requests(irq), ierr)
+            call mpi_isend(SUMSHTERMS, NSHOUT*NBPTS, MPI_real, 0, 3, comm2D_,&
+                &requests(irq), iErr)
         else
             MAXN = (maxval(IXYALL(2, 1, :)) + 1)*(maxval(IXYALL(2, 2, :)) + 1)*NZ
-            allocate (recvbuf(NSHOUT, MAXN, 1:numProc_ - 1))
-            do iproc = 1, numProc_ - 1
+            allocate (recvbuf(NSHOUT, MAXN, 1:NProc_ - 1))
+            do iProc = 1, NProc_ - 1
                 irq = irq + 1
-                call mpi_irecv(recvbuf(:, :, iproc), NSHOUT*MAXN, MPI_REAL, iproc, 3,&
-                    &COMM2D_, requests(irq), ierr)
+                call mpi_irecv(recvbuf(:, :, iProc), NSHOUT*MAXN, MPI_real, iProc, 3,&
+                    &comm2D_, requests(irq), iErr)
             end do
         end if
-        call mpi_waitall(irq, requests, status, ierr)
+        call mpi_waitall(irq, requests, status, iErr)
 
-        if (MYPROC_ .eq. 0) then
+        if (myProc_ .eq. 0) then
             IX = IXYALL(1, 1, 0); NX = IXYALL(2, 1, 0)
             IY = IXYALL(1, 2, 0); NY = IXYALL(2, 2, 0)
             NX1 = NX + 1; NY1 = NY + 1
@@ -951,14 +951,14 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
             buf(:, :, :, :) = reshape(SUMSHTERMS(:, :), (/NSHOUT, NZ, NY1, NX1/))
             ALLSHTERMS(:, 1:NZ, IY:IY + NY - 1, IX:IX + NX - 1) = buf(:, 1:NZ, 1:NY, 1:NX)
             deallocate (buf)
-            do iproc = 1, numProc_ - 1
-                IX = IXYALL(1, 1, iproc); NX = IXYALL(2, 1, iproc)
-                IY = IXYALL(1, 2, iproc); NY = IXYALL(2, 2, iproc)
+            do iProc = 1, NProc_ - 1
+                IX = IXYALL(1, 1, iProc); NX = IXYALL(2, 1, iProc)
+                IY = IXYALL(1, 2, iProc); NY = IXYALL(2, 2, iProc)
                 NX1 = NX + 1; NY1 = NY + 1
                 if (is1DX_ .and. .not. isMpiX_) NX1 = NX
                 if (is1DYx_ .and. .not. isMpiY_) NY1 = NY
                 allocate (buf(NSHOUT, NZ, NY1, NX1))
-                buf(:, :, :, :) = reshape(recvbuf(:, 1:NZ*NY1*NX1, iproc), (/NSHOUT, NZ, NY1, NX1/))
+                buf(:, :, :, :) = reshape(recvbuf(:, 1:NZ*NY1*NX1, iProc), (/NSHOUT, NZ, NY1, NX1/))
                 ALLSHTERMS(:, 1:NZ, IY:IY + NY - 1, IX:IX + NX - 1) = buf(:, 1:NZ, 1:NY, 1:NX)
                 deallocate (buf)
             end do
@@ -967,14 +967,14 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
     end if
 
     ! Make the X and Y grids for the full domain
-    if (MYPROC_ .eq. 0) then
+    if (myProc_ .eq. 0) then
         XALLGRID(1:NXT) = (/(XDOMAIN*(I - 1)/NXT, I=1, NXT)/)
         YALLGRID(1:NYT) = (/(YDOMAIN*(I - 1)/NYT, I=1, NYT)/)
     end if
 
     ! Get the sum of the NCELLS, NPTS, and NSH over the processors
     send3int = (/NCELLS, NPTS, NSH/)
-    call mpi_reduce(send3int, recv3int, 3, MPI_INTEGER, MPI_SUM, 0, COMM2D_, ierr)
+    call mpi_reduce(send3int, recv3int, 3, MPI_integer, MPI_sum, 0, comm2D_, iErr)
     NCELLSTOT = recv3int(1); NPTSTOT = recv3int(2); NSHTOT = recv3int(3)
 
     deallocate (IXYALL, requests, status)
@@ -989,14 +989,14 @@ subroutine shd_mpi__findAlbMax(ALBMAX)
     real, intent(inout) :: ALBMAX
 
 #if HAS_MPI
-    integer :: ierr
+    integer :: iErr
     real    :: sendrbuf
 
-    if (numProc_ .gt. 1) then
+    if (NProc_ .gt. 1) then
         ! Call mpi_allreduce to find the max ALBMAX over all processors
         sendrbuf = ALBMAX
-        call mpi_allreduce(sendrbuf, ALBMAX, 1, MPI_REAL, MPI_MAX, COMM2D_, ierr)
-        if (ierr .ne. MPI_SUCCESS) call shd_mpi__abort('Error [mpi__findAlbMax]: mpi_allreduce error.')
+        call mpi_allreduce(sendrbuf, ALBMAX, 1, MPI_real, MPI_max, comm2D_, iErr)
+        if (iErr .ne. MPI_success) call shd_mpi__abort('Error [mpi__findAlbMax]: mpi_allreduce error.')
     end if
 #endif
 
@@ -1010,17 +1010,17 @@ subroutine shd_mpi__unifySplit(DOSPLIT, STARTSPLITACC)
     real, intent(inout) :: STARTSPLITACC
 
 #if HAS_MPI
-    integer :: ierr(2)
+    integer :: iErr(2)
     logical :: sendlbuf
     real    :: sendrbuf
 
-    if (numProc_ .gt. 1) then
+    if (NProc_ .gt. 1) then
         ! Call mpi_allreduce to
         sendrbuf = STARTSPLITACC
-        call mpi_allreduce(sendrbuf, STARTSPLITACC, 1, MPI_REAL, MPI_MAX, COMM2D_, ierr(1))
+        call mpi_allreduce(sendrbuf, STARTSPLITACC, 1, MPI_real, MPI_max, comm2D_, iErr(1))
         sendlbuf = DOSPLIT
-        call mpi_allreduce(sendlbuf, DOSPLIT, 1, MPI_LOGICAL, MPI_LOR, COMM2D_, ierr(2))
-        if (any(ierr(:) .ne. MPI_SUCCESS)) call shd_mpi__abort('Error [mpi__unifySplit]: mpi_allreduce error.')
+        call mpi_allreduce(sendlbuf, DOSPLIT, 1, MPI_logical, MPI_lor, comm2D_, iErr(2))
+        if (any(iErr(:) .ne. MPI_success)) call shd_mpi__abort('Error [mpi__unifySplit]: mpi_allreduce error.')
     end if
 #endif
 
@@ -1033,14 +1033,14 @@ subroutine shd_mpi__findTotSplitCritMax(SPLITCRIT)
     real, intent(inout) :: SPLITCRIT
 
 #if HAS_MPI
-    integer :: ierr
+    integer :: iErr
     real    :: sendrbuf
 
-    if (numProc_ .gt. 1) then
+    if (NProc_ .gt. 1) then
         ! Call mpi_allreduce to find the max SPLITCRIT over all processors
         sendrbuf = SPLITCRIT
-        call mpi_allreduce(sendrbuf, SPLITCRIT, 1, MPI_REAL, MPI_MAX, COMM2D_, ierr)
-        if (ierr .ne. MPI_SUCCESS) call shd_mpi__abort('Error [mpi__findTotSplitCritMax]: mpi_allreduce error.')
+        call mpi_allreduce(sendrbuf, SPLITCRIT, 1, MPI_real, MPI_max, comm2D_, iErr)
+        if (iErr .ne. MPI_success) call shd_mpi__abort('Error [mpi__findTotSplitCritMax]: mpi_allreduce error.')
     end if
 #endif
 
@@ -1069,7 +1069,7 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
     integer :: MAXNBEAM, Lupx, Lupy, Ldownx, Ldowny, Nbeam
     integer :: SIDE, NINVALID(0:4)
     integer :: IP, I, J, L
-    integer :: ierr, irq, iproc
+    integer :: iErr, irq, iProc
     integer :: intsendbuf(2), intrecvbuf(2)
     logical :: VALIDRAD, AllDone
     real    :: XO, YO, ZO, X, Y, Z, XMAX, YMAX, EPS, DIRJUNK
@@ -1079,13 +1079,13 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
     integer, allocatable :: DirPtrOut(:, :), DirPtrIn(:)
     real, allocatable    :: DirAllOut(:, :), DirAllIn(:)
 
-    type(MPI_REQUEST) :: requests(12)
-    type(MPI_STATUS) :: status(12)
+    type(MPI_request) :: requests(12)
+    type(MPI_status) :: status(12)
 
     MAXNBEAM = 2*NPTS
     allocate (BndDirRealInfo(4, MAXNBEAM, 4), BndDirIntInfo(2, MAXNBEAM, 4))
-    allocate (DirAllOut(MAXNBEAM, 0:numProc_ - 1), DirPtrOut(MAXNBEAM, 0:numProc_ - 1))
-    allocate (DirAllIn(MAXNBEAM), DirPtrIn(MAXNBEAM), Ndone(0:numProc_ - 1))
+    allocate (DirAllOut(MAXNBEAM, 0:NProc_ - 1), DirPtrOut(MAXNBEAM, 0:NProc_ - 1))
+    allocate (DirAllIn(MAXNBEAM), DirPtrIn(MAXNBEAM), Ndone(0:NProc_ - 1))
 
     EPS = 1.0e-5*max(XGRID(2) - XGRID(1), YGRID(2) - YGRID(1))
 
@@ -1097,7 +1097,7 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
         ! Find the max lowest uniform Z level over all processors and then
         !   tell shd_rad__computeDirect about it
         UZLEV = UNIFZLEV
-        call mpi_allreduce(UZLEV, UNIFZLEV, 1, MPI_REAL, MPI_MAX, COMM2D_, ierr)
+        call mpi_allreduce(UZLEV, UNIFZLEV, 1, MPI_real, MPI_max, comm2D_, iErr)
         call shd_rad__computeDirect(2, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
             &DELTAM, ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
@@ -1141,7 +1141,7 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
             NINVALID(SIDE) = NINVALID(SIDE) + 1
             if (NINVALID(SIDE) .gt. MAXNBEAM) call shd_mpi__abort('Error [mpi__makeDirect]: NINVALID(SIDE) exceeds MAXNBEAM 1.')
             BndDirRealInfo(:, NINVALID(SIDE), SIDE) = (/XO, YO, ZO, DIRPATH/)
-            BndDirIntInfo(:, NINVALID(SIDE), SIDE) = (/MYPROC_, IP/)
+            BndDirIntInfo(:, NINVALID(SIDE), SIDE) = (/myProc_, IP/)
         end if
     end do
 
@@ -1154,42 +1154,42 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
         !   the real and integer info needed about the radiance integrations
         irq = 0
         if (isMpiX_) then
-            call mpi_isend(NINVALID(Lupx), 1, MPI_INTEGER,&
-                &IPROCNEIGH_(Lupx), 1, COMM2D_, requests(irq + 1), ierr)
-            call mpi_isend(BndDirRealInfo(:, :, Lupx), 4*NINVALID(Lupx), MPI_REAL,&
-                &IPROCNEIGH_(Lupx), 2, COMM2D_, requests(irq + 2), ierr)
-            call mpi_isend(BndDirIntInfo(:, :, Lupx), 2*NINVALID(Lupx), MPI_INTEGER,&
-                &IPROCNEIGH_(Lupx), 3, COMM2D_, requests(irq + 3), ierr)
+            call mpi_isend(NINVALID(Lupx), 1, MPI_integer,&
+                &iProcNeigh_(Lupx), 1, comm2D_, requests(irq + 1), iErr)
+            call mpi_isend(BndDirRealInfo(:, :, Lupx), 4*NINVALID(Lupx), MPI_real,&
+                &iProcNeigh_(Lupx), 2, comm2D_, requests(irq + 2), iErr)
+            call mpi_isend(BndDirIntInfo(:, :, Lupx), 2*NINVALID(Lupx), MPI_integer,&
+                &iProcNeigh_(Lupx), 3, comm2D_, requests(irq + 3), iErr)
             irq = irq + 3
         end if
         if (isMpiY_) then
-            call mpi_isend(NINVALID(Lupy), 1, MPI_INTEGER,&
-                &IPROCNEIGH_(Lupy), 4, COMM2D_, requests(irq + 1), ierr)
-            call mpi_isend(BndDirRealInfo(:, :, Lupy), 4*NINVALID(Lupy), MPI_REAL,&
-                &IPROCNEIGH_(Lupy), 5, COMM2D_, requests(irq + 2), ierr)
-            call mpi_isend(BndDirIntInfo(:, :, Lupy), 2*NINVALID(Lupy), MPI_INTEGER,&
-                &IPROCNEIGH_(Lupy), 6, COMM2D_, requests(irq + 3), ierr)
+            call mpi_isend(NINVALID(Lupy), 1, MPI_integer,&
+                &iProcNeigh_(Lupy), 4, comm2D_, requests(irq + 1), iErr)
+            call mpi_isend(BndDirRealInfo(:, :, Lupy), 4*NINVALID(Lupy), MPI_real,&
+                &iProcNeigh_(Lupy), 5, comm2D_, requests(irq + 2), iErr)
+            call mpi_isend(BndDirIntInfo(:, :, Lupy), 2*NINVALID(Lupy), MPI_integer,&
+                &iProcNeigh_(Lupy), 6, comm2D_, requests(irq + 3), iErr)
             irq = irq + 3
         end if
         if (isMpiX_) then
-            call mpi_irecv(NINVALID(Ldownx), 1, MPI_INTEGER,&
-                &IPROCNEIGH_(Ldownx), 1, COMM2D_, requests(irq + 1), ierr)
-            call mpi_irecv(BndDirRealInfo(:, :, Ldownx), 4*MAXNBEAM, MPI_REAL,&
-                &IPROCNEIGH_(Ldownx), 2, COMM2D_, requests(irq + 2), ierr)
-            call mpi_irecv(BndDirIntInfo(:, :, Ldownx), 2*MAXNBEAM, MPI_INTEGER,&
-                &IPROCNEIGH_(Ldownx), 3, COMM2D_, requests(irq + 3), ierr)
+            call mpi_irecv(NINVALID(Ldownx), 1, MPI_integer,&
+                &iProcNeigh_(Ldownx), 1, comm2D_, requests(irq + 1), iErr)
+            call mpi_irecv(BndDirRealInfo(:, :, Ldownx), 4*MAXNBEAM, MPI_real,&
+                &iProcNeigh_(Ldownx), 2, comm2D_, requests(irq + 2), iErr)
+            call mpi_irecv(BndDirIntInfo(:, :, Ldownx), 2*MAXNBEAM, MPI_integer,&
+                &iProcNeigh_(Ldownx), 3, comm2D_, requests(irq + 3), iErr)
             irq = irq + 3
         end if
         if (isMpiY_) then
-            call mpi_irecv(NINVALID(Ldowny), 1, MPI_INTEGER,&
-                &IPROCNEIGH_(Ldowny), 4, COMM2D_, requests(irq + 1), ierr)
-            call mpi_irecv(BndDirRealInfo(:, :, Ldowny), 4*MAXNBEAM, MPI_REAL,&
-                &IPROCNEIGH_(Ldowny), 5, COMM2D_, requests(irq + 2), ierr)
-            call mpi_irecv(BndDirIntInfo(:, :, Ldowny), 2*MAXNBEAM, MPI_INTEGER,&
-                &IPROCNEIGH_(Ldowny), 6, COMM2D_, requests(irq + 3), ierr)
+            call mpi_irecv(NINVALID(Ldowny), 1, MPI_integer,&
+                &iProcNeigh_(Ldowny), 4, comm2D_, requests(irq + 1), iErr)
+            call mpi_irecv(BndDirRealInfo(:, :, Ldowny), 4*MAXNBEAM, MPI_real,&
+                &iProcNeigh_(Ldowny), 5, comm2D_, requests(irq + 2), iErr)
+            call mpi_irecv(BndDirIntInfo(:, :, Ldowny), 2*MAXNBEAM, MPI_integer,&
+                &iProcNeigh_(Ldowny), 6, comm2D_, requests(irq + 3), iErr)
             irq = irq + 3
         end if
-        call mpi_waitall(irq, requests, status, ierr)
+        call mpi_waitall(irq, requests, status, iErr)
 
         NINVALID(Lupx) = 0; NINVALID(Lupy) = 0
         if (isMpiX_) then
@@ -1207,12 +1207,12 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
                 ! If we got a valid direct beam then store it in DirAllOut otherwise
                 ! save the information to continue passing to neighboring processors
                 if (VALIDBEAM) then
-                    iproc = BndDirIntInfo(1, J, Ldownx)
-                    Ndone(iproc) = Ndone(iproc) + 1
-                    if (Ndone(iproc) .gt. MAXNBEAM)&
-                        &call shd_mpi__abort('Error [mpi__makeDirect]: Ndone(iproc) exceeds MAXNBEAM x.')
-                    DirAllOut(Ndone(iproc), iproc) = DIRPATH
-                    DirPtrOut(Ndone(iproc), iproc) = BndDirIntInfo(2, J, Ldownx)
+                    iProc = BndDirIntInfo(1, J, Ldownx)
+                    Ndone(iProc) = Ndone(iProc) + 1
+                    if (Ndone(iProc) .gt. MAXNBEAM)&
+                        &call shd_mpi__abort('Error [mpi__makeDirect]: Ndone(iProc) exceeds MAXNBEAM x.')
+                    DirAllOut(Ndone(iProc), iProc) = DIRPATH
+                    DirPtrOut(Ndone(iProc), iProc) = BndDirIntInfo(2, J, Ldownx)
                 else
                     if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) call shd_mpi__abort('Error [mpi__makeDirect]: Bad SIDE 2x.')
                     NINVALID(SIDE) = NINVALID(SIDE) + 1
@@ -1239,12 +1239,12 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
                 ! If we got a valid direct beam then store it in DirAllOut otherwise
                 ! save the information to continue passing to neighboring processors
                 if (VALIDBEAM) then
-                    iproc = BndDirIntInfo(1, J, Ldowny)
-                    Ndone(iproc) = Ndone(iproc) + 1
-                    if (Ndone(iproc) .gt. MAXNBEAM)&
-                        &call shd_mpi__abort('Error [mpi__makeDirect]: Ndone(iproc) exceeds MAXNBEAM y.')
-                    DirAllOut(Ndone(iproc), iproc) = DIRPATH
-                    DirPtrOut(Ndone(iproc), iproc) = BndDirIntInfo(2, J, Ldowny)
+                    iProc = BndDirIntInfo(1, J, Ldowny)
+                    Ndone(iProc) = Ndone(iProc) + 1
+                    if (Ndone(iProc) .gt. MAXNBEAM)&
+                        &call shd_mpi__abort('Error [mpi__makeDirect]: Ndone(iProc) exceeds MAXNBEAM y.')
+                    DirAllOut(Ndone(iProc), iProc) = DIRPATH
+                    DirPtrOut(Ndone(iProc), iProc) = BndDirIntInfo(2, J, Ldowny)
                 else
                     if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) call shd_mpi__abort('Error [mpi__makeDirect]: Bad SIDE 2y.')
                     NINVALID(SIDE) = NINVALID(SIDE) + 1
@@ -1258,8 +1258,8 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
 
         ! See if there are any more invalid radiance rays on all the processors
         intsendbuf = (/NINVALID(Lupx), NINVALID(Lupy)/)
-        call mpi_allreduce(intsendbuf, intrecvbuf, 2, MPI_INTEGER, MPI_MAX,&
-            &COMM2D_, ierr)
+        call mpi_allreduce(intsendbuf, intrecvbuf, 2, MPI_integer, MPI_max,&
+            &comm2D_, iErr)
         AllDone = all(intrecvbuf(1:2) .eq. 0)
         if ((maxval(intrecvbuf(1:2)) .gt. MAXNBEAM) .or. (maxval(Ndone(:)) .gt. MAXNBEAM)) then
             call shd_mpi__abort('Error [mpi__makeDirect]: MAXNBEAM exceeded 2.')
@@ -1267,21 +1267,21 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
     end do
 
     ! Exchange the finished direct beam paths with all of the other processors
-    do iproc = 0, numProc_ - 1
-        if (iproc .ne. MYPROC_) then
-            call mpi_isend(Ndone(iproc), 1, MPI_INTEGER,&
-                &iproc, 7, COMM2D_, requests(1), ierr)
-            call mpi_isend(DirAllOut(:, iproc), Ndone(iproc), MPI_REAL,&
-                &iproc, 8, COMM2D_, requests(2), ierr)
-            call mpi_isend(DirPtrOut(:, iproc), Ndone(iproc), MPI_INTEGER,&
-                &iproc, 9, COMM2D_, requests(3), ierr)
-            call mpi_irecv(Nbeam, 1, MPI_INTEGER,&
-                &iproc, 7, COMM2D_, requests(4), ierr)
-            call mpi_irecv(DirAllIn, MAXNBEAM, MPI_REAL,&
-                &iproc, 8, COMM2D_, requests(5), ierr)
-            call mpi_irecv(DirPtrIn, MAXNBEAM, MPI_INTEGER,&
-                &iproc, 9, COMM2D_, requests(6), ierr)
-            call mpi_waitall(6, requests, status, ierr)
+    do iProc = 0, NProc_ - 1
+        if (iProc .ne. myProc_) then
+            call mpi_isend(Ndone(iProc), 1, MPI_integer,&
+                &iProc, 7, comm2D_, requests(1), iErr)
+            call mpi_isend(DirAllOut(:, iProc), Ndone(iProc), MPI_real,&
+                &iProc, 8, comm2D_, requests(2), iErr)
+            call mpi_isend(DirPtrOut(:, iProc), Ndone(iProc), MPI_integer,&
+                &iProc, 9, comm2D_, requests(3), iErr)
+            call mpi_irecv(Nbeam, 1, MPI_integer,&
+                &iProc, 7, comm2D_, requests(4), iErr)
+            call mpi_irecv(DirAllIn, MAXNBEAM, MPI_real,&
+                &iProc, 8, comm2D_, requests(5), iErr)
+            call mpi_irecv(DirPtrIn, MAXNBEAM, MPI_integer,&
+                &iProc, 9, comm2D_, requests(6), iErr)
+            call mpi_waitall(6, requests, status, iErr)
             ! Put the direct beam flux in the correct grid point
             do I = 1, Nbeam
                 IP = DirPtrIn(I)
@@ -1290,9 +1290,9 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
         else
             ! If we have the direct paths for this processor then avoid MPI and
             !   put the direct beam flux in the grid point
-            do I = 1, Ndone(MYPROC_)
-                IP = DirPtrOut(I, MYPROC_)
-                DIRFLUX(IP) = SOLARFLUX*exp(-DirAllOut(I, MYPROC_))
+            do I = 1, Ndone(myProc_)
+                IP = DirPtrOut(I, myProc_)
+                DIRFLUX(IP) = SOLARFLUX*exp(-DirAllOut(I, myProc_))
             end do
         end if
     end do
@@ -1313,11 +1313,11 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
     ! For each of the potentially eight octants there are
     ! two sets of boundary pointers; 1 is for the current subdomain,
     ! and 2 is for the neighboring subdomain.
-    ! Fills in the BXYPTR_(:,IBC,JOCT) and BXYPOS_(:,IBC,JOCT) arrays
+    ! Fills in the BxyPtr_(:,IBC,JOCT) and BxyPos_(:,IBC,JOCT) arrays
     ! (module variables), where IBC is a boundary point index and JOCT is
-    ! a sort of octant number. BXYPTR_ holds (iproc,IPT,SIDE) for the boundary
-    ! grid points from grid point IPT in processor iproc that are on the SIDE
-    ! boundary of this subdomain (SIDE: 1=-X, 2=+X, 3=-Y, 4=+Y).  BXYPOS_ holds
+    ! a sort of octant number. BxyPtr_ holds (iProc,IPT,SIDE) for the boundary
+    ! grid points from grid point IPT in processor iProc that are on the SIDE
+    ! boundary of this subdomain (SIDE: 1=-X, 2=+X, 3=-Y, 4=+Y).  BxyPos_ holds
     ! the gridpoint positions (X,Y,Z) for these boundary points.
 
     integer, intent(in) :: BCFLAG, IPFLAG, NPTS, SWEEPORD(NPTS, *), GRIDPTR(8, *)
@@ -1325,7 +1325,7 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
     real, intent(in) :: GRIDPOS(3, NPTS), XGRID(NX), YGRID(NY), ZGRID(NZ)
 
 #if HAS_MPI
-    integer :: tag, ierr, irq
+    integer :: tag, iErr, irq
     integer :: MAXNBXY, NOCT, JOCT, IORDER, IPCELL, ICORNER, IPT, SIDE
     integer :: L, LI, N(4), N1(8, 4), N2(8, 4), NS, NBX, NBY
     integer :: MAXBC, IBC, BITZ, SZ, EZ, DZ, LX, LY, IX, IY, IZ, J
@@ -1336,12 +1336,12 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
     integer, allocatable :: BNDPTR(:, :, :, :), INDX(:)
     real, allocatable :: BNDPOS(:, :, :, :, :), ZARRAY(:)
 
-    type(MPI_REQUEST) :: requests(24)
-    type(MPI_STATUS) :: status(24)
+    type(MPI_request) :: requests(24)
+    type(MPI_status) :: status(24)
 
     if (.not. (isMpi_)) return
     if (is1D_) return
-    call mpi_allreduce(NPTS .eq. OLDNPTS, SAMEGRID, 1, MPI_LOGICAL, MPI_LAND, COMM2D_, ierr)
+    call mpi_allreduce(NPTS .eq. OLDNPTS, SAMEGRID, 1, MPI_logical, MPI_land, comm2D_, iErr)
     OLDNPTS = NPTS
     if (SAMEGRID) return
 
@@ -1361,8 +1361,8 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
     end if
     ! Allocate grid point pointer and position arrays (second from last
     !   index is 1 for local, 2 for neighbor; last index is boundary L)
-    if (allocated(IBXYPTR_)) then
-        MAXNBXY = nint(3.0*maxval(IBXYPTR_(2, :, :)))
+    if (allocated(iBxyPtr_)) then
+        MAXNBXY = nint(3.0*maxval(iBxyPtr_(2, :, :)))
     else
         MAXNBXY = 3.0*(NZ - 2)*max(NX, NY)
     end if
@@ -1414,38 +1414,38 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
             ! Exchange the lists of boundary points with neighbors
             LI = INOUT_ARR(L)
             tag = L
-            call mpi_isend(N1(:, L), 8, MPI_INTEGER,&
-                &IPROCNEIGH_(L), tag, COMM2D_, requests(irq + 1), ierr)
-            call mpi_irecv(N2(:, LI), 8, MPI_INTEGER,&
-                &IPROCNEIGH_(LI), tag, COMM2D_, requests(irq + 2), ierr)
+            call mpi_isend(N1(:, L), 8, MPI_integer,&
+                &iProcNeigh_(L), tag, comm2D_, requests(irq + 1), iErr)
+            call mpi_irecv(N2(:, LI), 8, MPI_integer,&
+                &iProcNeigh_(LI), tag, comm2D_, requests(irq + 2), iErr)
             tag = 1000 + L
-            call mpi_isend(BNDPTR(:, :, 1, L), NOCT*NS, MPI_INTEGER,&
-                &IPROCNEIGH_(L), tag, COMM2D_, requests(irq + 3), ierr)
-            call mpi_irecv(BNDPTR(:, :, 2, LI), NOCT*MAXNBXY, MPI_INTEGER,&
-                &IPROCNEIGH_(LI), tag, COMM2D_, requests(irq + 4), ierr)
+            call mpi_isend(BNDPTR(:, :, 1, L), NOCT*NS, MPI_integer,&
+                &iProcNeigh_(L), tag, comm2D_, requests(irq + 3), iErr)
+            call mpi_irecv(BNDPTR(:, :, 2, LI), NOCT*MAXNBXY, MPI_integer,&
+                &iProcNeigh_(LI), tag, comm2D_, requests(irq + 4), iErr)
             tag = 2000 + L
-            call mpi_isend(BNDPOS(:, :, :, 1, L), 3*NOCT*NS, MPI_REAL,&
-                &IPROCNEIGH_(L), tag, COMM2D_, requests(irq + 5), ierr)
-            call mpi_irecv(BNDPOS(:, :, :, 2, LI), 3*NOCT*MAXNBXY, MPI_REAL,&
-                &IPROCNEIGH_(LI), tag, COMM2D_, requests(irq + 6), ierr)
+            call mpi_isend(BNDPOS(:, :, :, 1, L), 3*NOCT*NS, MPI_real,&
+                &iProcNeigh_(L), tag, comm2D_, requests(irq + 5), iErr)
+            call mpi_irecv(BNDPOS(:, :, :, 2, LI), 3*NOCT*MAXNBXY, MPI_real,&
+                &iProcNeigh_(LI), tag, comm2D_, requests(irq + 6), iErr)
             irq = irq + 6
         end if
     end do
     ! Wait for the transfers among all the neighbors to resolve
-    call mpi_waitall(irq, requests, status, ierr)
+    call mpi_waitall(irq, requests, status, iErr)
     NS = maxval(N2(:, :))
     if (NS .gt. MAXNBXY) call shd_mpi__abort('Error [mpi__findBndryPnt]: MAXNBXY was exceeded.')
 
-    if (allocated(BXYPTR_)) deallocate (BXYPTR_, BXYPOS_, IBXYPTR_)
+    if (allocated(BxyPtr_)) deallocate (BxyPtr_, BxyPos_, iBxyPtr_)
     MAXBC = maxval((/N2(:, 1) + N2(:, 3), N2(:, 1) + N2(:, 4), N2(:, 2) + N2(:, 3), N2(:, 2) + N2(:, 4)/))
-    allocate (BXYPTR_(3, MAXBC, NOCT), BXYPOS_(3, MAXBC, NOCT), IBXYPTR_(2, NZ, NOCT))
+    allocate (BxyPtr_(3, MAXBC, NOCT), BxyPos_(3, MAXBC, NOCT), iBxyPtr_(2, NZ, NOCT))
 
     ! Put the boundary points from the neighboring subdomains in the
-    ! BXYPTR_ and BXYPOS_ arrays.  Merge in X and Y boundary points one Z slab
-    ! at a time, and set pointers (IBXYPTR_) to start and end of each slab.
-    !  DO IBC = IBXYPTR_(1,IZ,JOCT), IBXYPTR_(2,IZ,JOCT)
-    !    X=BXYPOS_(1,IBC,JOCT) ; Y=BXYPOS_(2,IBC,JOCT) ; Z=BXYPOS_(3,IBC,JOCT)
-    !    iproc=BXYPTR_(1,IBC,JOCT) ; IPT=BXYPTR_(2,IBC,JOCT) ; SIDE=BXYPTR_(2,IBC,JOCT)
+    ! BxyPtr_ and BxyPos_ arrays.  Merge in X and Y boundary points one Z slab
+    ! at a time, and set pointers (iBxyPtr_) to start and end of each slab.
+    !  DO IBC = iBxyPtr_(1,IZ,JOCT), iBxyPtr_(2,IZ,JOCT)
+    !    X=BxyPos_(1,IBC,JOCT) ; Y=BxyPos_(2,IBC,JOCT) ; Z=BxyPos_(3,IBC,JOCT)
+    !    iProc=BxyPtr_(1,IBC,JOCT) ; IPT=BxyPtr_(2,IBC,JOCT) ; SIDE=BxyPtr_(2,IBC,JOCT)
 
     do JOCT = 1, NOCT
         BITZ = 1 - ibits(JOCT, 0, 1)
@@ -1463,12 +1463,12 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
         call shd_util__ssort(ZARRAY, INDX, NBX + NBY, 2*DZ)
 
         ! For each Z slab use Z sorted index to transfer the X or Y boundary points
-        IBXYPTR_(:, :, JOCT) = 0
+        iBxyPtr_(:, :, JOCT) = 0
         SZ = (NZ - 1)*(1 - BITZ) + 1 + DZ
         EZ = (NZ - 1)*(BITZ) + 1
         IBC = 0; J = 1
         do IZ = SZ, EZ, DZ
-            IBXYPTR_(1, IZ, JOCT) = IBC + 1
+            iBxyPtr_(1, IZ, JOCT) = IBC + 1
             ! Store the boundary point info for this Z slab
             do while ((J .le. (NBX + NBY)) .and.&
                 &(((ZARRAY(J) .ge. ZGRID(IZ)) .and. (BITZ .eq. 0)) .or.&
@@ -1476,18 +1476,18 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
                 IBC = IBC + 1
                 if (INDX(J) .gt. 0) then
                     IX = INDX(J)
-                    BXYPTR_(:, IBC, JOCT) = (/IPROCNEIGH_(LX), BNDPTR(JOCT, IX, 2, LX), LX/)
-                    BXYPOS_(:, IBC, JOCT) = BNDPOS(:, JOCT, IX, 2, LX)
-                    BXYPOS_(int((LX + 1)/2), IBC, JOCT) = XYB(LX)
+                    BxyPtr_(:, IBC, JOCT) = (/iProcNeigh_(LX), BNDPTR(JOCT, IX, 2, LX), LX/)
+                    BxyPos_(:, IBC, JOCT) = BNDPOS(:, JOCT, IX, 2, LX)
+                    BxyPos_(int((LX + 1)/2), IBC, JOCT) = XYB(LX)
                 else
                     IY = abs(INDX(J))
-                    BXYPTR_(:, IBC, JOCT) = (/IPROCNEIGH_(LY), BNDPTR(JOCT, IY, 2, LY), LY/)
-                    BXYPOS_(:, IBC, JOCT) = BNDPOS(:, JOCT, IY, 2, LY)
-                    BXYPOS_(int((LY + 1)/2), IBC, JOCT) = XYB(LY)
+                    BxyPtr_(:, IBC, JOCT) = (/iProcNeigh_(LY), BNDPTR(JOCT, IY, 2, LY), LY/)
+                    BxyPos_(:, IBC, JOCT) = BNDPOS(:, JOCT, IY, 2, LY)
+                    BxyPos_(int((LY + 1)/2), IBC, JOCT) = XYB(LY)
                 end if
                 J = J + 1
             end do
-            IBXYPTR_(2, IZ, JOCT) = IBC
+            iBxyPtr_(2, IZ, JOCT) = IBC
         end do
         deallocate (ZARRAY, INDX)
     end do
@@ -1508,12 +1508,12 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
 
     ! Calculates the discrete ordinate boundary radiances for the KANG discrete
     ! ordinate (going in direction MU/PHI) for the grid points in the IZ slab.
-    ! shd_mpi__findBndryPnt has already been called to set up the BXYPTR_ and
-    ! BXYPOS_ arrays for the grid points on the boundaries, and the IBXYPTR_
+    ! shd_mpi__findBndryPnt has already been called to set up the BxyPtr_ and
+    ! BxyPos_ arrays for the grid points on the boundaries, and the iBxyPtr_
     ! array which has the starting and ending points for the IZ slab.  The
     ! grid points are done in the sweeping order, and so the octant (JOCT)
-    ! is used to index into the IBXYPTR_, BXYPTR_, and BXYPOS_ arrays.  The
-    ! grid points specified in BXYPTR_/BXYPOS_ are on the boundaries of this
+    ! is used to index into the iBxyPtr_, BxyPtr_, and BxyPos_ arrays.  The
+    ! grid points specified in BxyPtr_/BxyPos_ are on the boundaries of this
     ! processor, and need to be traced back along the discrete ordinate
     ! first within this subdomain.  The radiative transfer integrations
     ! with the extinction (EXTINCT) and source function (SOURCE) are done
@@ -1542,7 +1542,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
     integer :: MAXNBND, Nbcpnts, Lupx, Lupy, Ldownx, Ldowny
     integer :: SIDE, NINVALID(0:4)
     integer :: IBC, IPT, I, J, L
-    integer :: ierr(12), irq, iproc
+    integer :: iErr(12), irq, iProc
     integer :: intsendbuf(2), intrecvbuf(2)
     logical :: VALIDRAD, AllDone
     real    :: X, Y, Z, RADIANCE(NSTOKES), TRANSMIT, xo, yo, zo
@@ -1552,13 +1552,13 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
     integer, allocatable :: RadPtrOut(:, :), RadPtrIn(:)
     real, allocatable    :: RadAllOut(:, :, :), RadAllIn(:, :)
 
-    type(MPI_REQUEST) :: requests(12)
-    type(MPI_STATUS) :: status(12)
+    type(MPI_request) :: requests(12)
+    type(MPI_status) :: status(12)
 
-    MAXNBND = numProc_*maxval(IBXYPTR_(2, :, :) - IBXYPTR_(1, :, :) + 1)
+    MAXNBND = NProc_*maxval(iBxyPtr_(2, :, :) - iBxyPtr_(1, :, :) + 1)
     allocate (BndRadRealInfo(4 + NSTOKES, MAXNBND, 4), BndRadIntInfo(2, MAXNBND, 4))
-    allocate (RadAllOut(NSTOKES, MAXNBND, 0:numProc_ - 1), RadPtrOut(MAXNBND, 0:numProc_ - 1))
-    allocate (RadAllIn(NSTOKES, MAXNBND), RadPtrIn(MAXNBND), Ndone(0:numProc_ - 1))
+    allocate (RadAllOut(NSTOKES, MAXNBND, 0:NProc_ - 1), RadPtrOut(MAXNBND, 0:NProc_ - 1))
+    allocate (RadAllIn(NSTOKES, MAXNBND), RadPtrIn(MAXNBND), Ndone(0:NProc_ - 1))
 
     Lupx = 0; Lupy = 0; Ldownx = 0; Ldowny = 0
     if (isMpiX_) then
@@ -1580,10 +1580,10 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
     Ndone(:) = 0
     NINVALID(:) = 0
     ! Loop over the downstream boundary points from the neighbor subdomains
-    do IBC = IBXYPTR_(1, IZ, JOCT), IBXYPTR_(2, IZ, JOCT)
+    do IBC = iBxyPtr_(1, IZ, JOCT), iBxyPtr_(2, IZ, JOCT)
         ! Call shd_mpi__integrateRay for this
-        X = BXYPOS_(1, IBC, JOCT); Y = BXYPOS_(2, IBC, JOCT); Z = BXYPOS_(3, IBC, JOCT)
-        iproc = BXYPTR_(1, IBC, JOCT); IPT = BXYPTR_(2, IBC, JOCT); SIDE = BXYPTR_(3, IBC, JOCT)
+        X = BxyPos_(1, IBC, JOCT); Y = BxyPos_(2, IBC, JOCT); Z = BxyPos_(3, IBC, JOCT)
+        iProc = BxyPtr_(1, IBC, JOCT); IPT = BxyPtr_(2, IBC, JOCT); SIDE = BxyPtr_(3, IBC, JOCT)
         RADIANCE(:) = 0.0; TRANSMIT = 1.0
         xo = x; yo = y; zo = z
         call shd_mpi__integrateRay(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
@@ -1594,17 +1594,17 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
         ! If we got a radiance then store it otherwise save
         !  the information needed to pass to other processors
         if (VALIDRAD) then
-            Ndone(iproc) = Ndone(iproc) + 1
-            RadAllOut(:, Ndone(iproc), iproc) = RADIANCE(:)
-            RadPtrOut(Ndone(iproc), iproc) = IPT
+            Ndone(iProc) = Ndone(iProc) + 1
+            RadAllOut(:, Ndone(iProc), iProc) = RADIANCE(:)
+            RadPtrOut(Ndone(iProc), iProc) = IPT
         else
             if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
-                write (6, *) 'Bad SIDE 1:', MYPROC_, mu, phi, SIDE, x, y, z, xo, yo, zo
+                write (6, *) 'Bad SIDE 1:', myProc_, mu, phi, SIDE, x, y, z, xo, yo, zo
                 call shd_mpi__abort('Error [mpi__calBndryRad]')
             end if
             NINVALID(SIDE) = NINVALID(SIDE) + 1
             BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/X, Y, Z, TRANSMIT, RADIANCE(:)/)
-            BndRadIntInfo(:, NINVALID(SIDE), SIDE) = (/iproc, IPT/)
+            BndRadIntInfo(:, NINVALID(SIDE), SIDE) = (/iProc, IPT/)
         end if
     end do
 
@@ -1616,48 +1616,48 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
         !   the real and integer info needed about the radiance integrations
         irq = 0
         if (isMpiX_) then
-            call mpi_isend(NINVALID(Lupx), 1, MPI_INTEGER,&
-                &IPROCNEIGH_(Lupx), 1, COMM2D_, requests(irq + 1), ierr(irq + 1))
-            call mpi_isend(BndRadRealInfo(:, :, Lupx), (4 + NSTOKES)*NINVALID(Lupx), MPI_REAL,&
-                &IPROCNEIGH_(Lupx), 2, COMM2D_, requests(irq + 2), ierr(irq + 2))
-            call mpi_isend(BndRadIntInfo(:, :, Lupx), 2*NINVALID(Lupx), MPI_INTEGER,&
-                &IPROCNEIGH_(Lupx), 3, COMM2D_, requests(irq + 3), ierr(irq + 3))
+            call mpi_isend(NINVALID(Lupx), 1, MPI_integer,&
+                &iProcNeigh_(Lupx), 1, comm2D_, requests(irq + 1), iErr(irq + 1))
+            call mpi_isend(BndRadRealInfo(:, :, Lupx), (4 + NSTOKES)*NINVALID(Lupx), MPI_real,&
+                &iProcNeigh_(Lupx), 2, comm2D_, requests(irq + 2), iErr(irq + 2))
+            call mpi_isend(BndRadIntInfo(:, :, Lupx), 2*NINVALID(Lupx), MPI_integer,&
+                &iProcNeigh_(Lupx), 3, comm2D_, requests(irq + 3), iErr(irq + 3))
             irq = irq + 3
         end if
         if (isMpiY_) then
-            call mpi_isend(NINVALID(Lupy), 1, MPI_INTEGER,&
-                &IPROCNEIGH_(Lupy), 4, COMM2D_, requests(irq + 1), ierr(irq + 1))
-            call mpi_isend(BndRadRealInfo(:, :, Lupy), (4 + NSTOKES)*NINVALID(Lupy), MPI_REAL,&
-                &IPROCNEIGH_(Lupy), 5, COMM2D_, requests(irq + 2), ierr(irq + 2))
-            call mpi_isend(BndRadIntInfo(:, :, Lupy), 2*NINVALID(Lupy), MPI_INTEGER,&
-                &IPROCNEIGH_(Lupy), 6, COMM2D_, requests(irq + 3), ierr(irq + 3))
+            call mpi_isend(NINVALID(Lupy), 1, MPI_integer,&
+                &iProcNeigh_(Lupy), 4, comm2D_, requests(irq + 1), iErr(irq + 1))
+            call mpi_isend(BndRadRealInfo(:, :, Lupy), (4 + NSTOKES)*NINVALID(Lupy), MPI_real,&
+                &iProcNeigh_(Lupy), 5, comm2D_, requests(irq + 2), iErr(irq + 2))
+            call mpi_isend(BndRadIntInfo(:, :, Lupy), 2*NINVALID(Lupy), MPI_integer,&
+                &iProcNeigh_(Lupy), 6, comm2D_, requests(irq + 3), iErr(irq + 3))
             irq = irq + 3
         end if
         if (isMpiX_) then
-            call mpi_irecv(NINVALID(Ldownx), 1, MPI_INTEGER,&
-                &IPROCNEIGH_(Ldownx), 1, COMM2D_, requests(irq + 1), ierr(irq + 1))
-            call mpi_irecv(BndRadRealInfo(:, :, Ldownx), (4 + NSTOKES)*MAXNBND, MPI_REAL,&
-                &IPROCNEIGH_(Ldownx), 2, COMM2D_, requests(irq + 2), ierr(irq + 2))
-            call mpi_irecv(BndRadIntInfo(:, :, Ldownx), 2*MAXNBND, MPI_INTEGER,&
-                &IPROCNEIGH_(Ldownx), 3, COMM2D_, requests(irq + 3), ierr(irq + 3))
+            call mpi_irecv(NINVALID(Ldownx), 1, MPI_integer,&
+                &iProcNeigh_(Ldownx), 1, comm2D_, requests(irq + 1), iErr(irq + 1))
+            call mpi_irecv(BndRadRealInfo(:, :, Ldownx), (4 + NSTOKES)*MAXNBND, MPI_real,&
+                &iProcNeigh_(Ldownx), 2, comm2D_, requests(irq + 2), iErr(irq + 2))
+            call mpi_irecv(BndRadIntInfo(:, :, Ldownx), 2*MAXNBND, MPI_integer,&
+                &iProcNeigh_(Ldownx), 3, comm2D_, requests(irq + 3), iErr(irq + 3))
             irq = irq + 3
         end if
         if (isMpiY_) then
-            call mpi_irecv(NINVALID(Ldowny), 1, MPI_INTEGER,&
-                &IPROCNEIGH_(Ldowny), 4, COMM2D_, requests(irq + 1), ierr(irq + 1))
-            call mpi_irecv(BndRadRealInfo(:, :, Ldowny), (4 + NSTOKES)*MAXNBND, MPI_REAL,&
-                &IPROCNEIGH_(Ldowny), 5, COMM2D_, requests(irq + 2), ierr(irq + 2))
-            call mpi_irecv(BndRadIntInfo(:, :, Ldowny), 2*MAXNBND, MPI_INTEGER,&
-                &IPROCNEIGH_(Ldowny), 6, COMM2D_, requests(irq + 3), ierr(irq + 3))
+            call mpi_irecv(NINVALID(Ldowny), 1, MPI_integer,&
+                &iProcNeigh_(Ldowny), 4, comm2D_, requests(irq + 1), iErr(irq + 1))
+            call mpi_irecv(BndRadRealInfo(:, :, Ldowny), (4 + NSTOKES)*MAXNBND, MPI_real,&
+                &iProcNeigh_(Ldowny), 5, comm2D_, requests(irq + 2), iErr(irq + 2))
+            call mpi_irecv(BndRadIntInfo(:, :, Ldowny), 2*MAXNBND, MPI_integer,&
+                &iProcNeigh_(Ldowny), 6, comm2D_, requests(irq + 3), iErr(irq + 3))
             irq = irq + 3
         end if
-        if (any(ierr(1:irq) .ne. MPI_SUCCESS)) then
-            write (6, *) 'MPI error: ', ierr(1:irq)
+        if (any(iErr(1:irq) .ne. MPI_success)) then
+            write (6, *) 'MPI error: ', iErr(1:irq)
             call shd_mpi__abort('Error [mpi__calBndryRad]: MPI error 1.')
         end if
-        call mpi_waitall(irq, requests, status, ierr(1))
-        if (ierr(1) .ne. MPI_SUCCESS) then
-            write (6, *) 'mpi_waitall error: ', ierr(1)
+        call mpi_waitall(irq, requests, status, iErr(1))
+        if (iErr(1) .ne. MPI_success) then
+            write (6, *) 'mpi_waitall error: ', iErr(1)
             call shd_mpi__abort('Error [mpi__calBndryRad]: MPI error 2.')
         end if
 
@@ -1681,13 +1681,13 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
                 !   processor) otherwise save the information needed to continue
                 !   passing to neighboring processors
                 if (VALIDRAD) then
-                    iproc = BndRadIntInfo(1, J, Ldownx)
-                    Ndone(iproc) = Ndone(iproc) + 1
-                    RadAllOut(:, Ndone(iproc), iproc) = RADIANCE(:)
-                    RadPtrOut(Ndone(iproc), iproc) = BndRadIntInfo(2, J, Ldownx)
+                    iProc = BndRadIntInfo(1, J, Ldownx)
+                    Ndone(iProc) = Ndone(iProc) + 1
+                    RadAllOut(:, Ndone(iProc), iProc) = RADIANCE(:)
+                    RadPtrOut(Ndone(iProc), iProc) = BndRadIntInfo(2, J, Ldownx)
                 else
                     if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
-                        write (6, *) 'Bad SIDE 2x:', MYPROC_, mu, phi, SIDE, x, y, z
+                        write (6, *) 'Bad SIDE 2x:', myProc_, mu, phi, SIDE, x, y, z
                         call shd_mpi__abort('Error [mpi__calBndryRad]: Bad SIDE 2x, see above.')
                     end if
                     NINVALID(SIDE) = NINVALID(SIDE) + 1
@@ -1715,13 +1715,13 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
                 !   processor) otherwise save the information needed to continue
                 !   passing to neighboring processors
                 if (VALIDRAD) then
-                    iproc = BndRadIntInfo(1, J, Ldowny)
-                    Ndone(iproc) = Ndone(iproc) + 1
-                    RadAllOut(:, Ndone(iproc), iproc) = RADIANCE(:)
-                    RadPtrOut(Ndone(iproc), iproc) = BndRadIntInfo(2, J, Ldowny)
+                    iProc = BndRadIntInfo(1, J, Ldowny)
+                    Ndone(iProc) = Ndone(iProc) + 1
+                    RadAllOut(:, Ndone(iProc), iProc) = RADIANCE(:)
+                    RadPtrOut(Ndone(iProc), iProc) = BndRadIntInfo(2, J, Ldowny)
                 else
                     if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
-                        write (6, *) 'Bad SIDE 2y:', MYPROC_, mu, phi, SIDE, x, y, z
+                        write (6, *) 'Bad SIDE 2y:', myProc_, mu, phi, SIDE, x, y, z
                         call shd_mpi__abort('Error [mpi__calBndryRad]: Bad SIDE 2y, see above.')
                     end if
                     NINVALID(SIDE) = NINVALID(SIDE) + 1
@@ -1733,29 +1733,29 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
 
         ! See if there are any more invalid radiance rays on all the processors
         intsendbuf = (/NINVALID(Lupx), NINVALID(Lupy)/)
-        call mpi_allreduce(intsendbuf, intrecvbuf, 2, MPI_INTEGER, MPI_MAX,&
-            &COMM2D_, ierr(1))
+        call mpi_allreduce(intsendbuf, intrecvbuf, 2, MPI_integer, MPI_max,&
+            &comm2D_, iErr(1))
         AllDone = all(intrecvbuf(1:2) .eq. 0)
     end do
 
     ! Exchange the finished boundary radiances with all of the other processors
-    do iproc = 0, numProc_ - 1
-        if (iproc .ne. MYPROC_) then
-            call mpi_isend(Ndone(iproc), 1, MPI_INTEGER,&
-                &iproc, 7, COMM2D_, requests(1), ierr(1))
-            call mpi_isend(RadAllOut(:, :, iproc), NSTOKES*Ndone(iproc), MPI_REAL,&
-                &iproc, 8, COMM2D_, requests(2), ierr(2))
-            call mpi_isend(RadPtrOut(:, iproc), Ndone(iproc), MPI_INTEGER,&
-                &iproc, 9, COMM2D_, requests(3), ierr(3))
-            call mpi_irecv(Nbcpnts, 1, MPI_INTEGER,&
-                &iproc, 7, COMM2D_, requests(4), ierr(4))
-            call mpi_irecv(RadAllIn, NSTOKES*MAXNBND, MPI_REAL,&
-                &iproc, 8, COMM2D_, requests(5), ierr(5))
-            call mpi_irecv(RadPtrIn, MAXNBND, MPI_INTEGER,&
-                &iproc, 9, COMM2D_, requests(6), ierr(6))
-            call mpi_waitall(6, requests, status, ierr(7))
-            if (any(ierr(1:7) .ne. MPI_SUCCESS)) then
-                write (6, *) 'MPI error: ', ierr(1:7)
+    do iProc = 0, NProc_ - 1
+        if (iProc .ne. myProc_) then
+            call mpi_isend(Ndone(iProc), 1, MPI_integer,&
+                &iProc, 7, comm2D_, requests(1), iErr(1))
+            call mpi_isend(RadAllOut(:, :, iProc), NSTOKES*Ndone(iProc), MPI_real,&
+                &iProc, 8, comm2D_, requests(2), iErr(2))
+            call mpi_isend(RadPtrOut(:, iProc), Ndone(iProc), MPI_integer,&
+                &iProc, 9, comm2D_, requests(3), iErr(3))
+            call mpi_irecv(Nbcpnts, 1, MPI_integer,&
+                &iProc, 7, comm2D_, requests(4), iErr(4))
+            call mpi_irecv(RadAllIn, NSTOKES*MAXNBND, MPI_real,&
+                &iProc, 8, comm2D_, requests(5), iErr(5))
+            call mpi_irecv(RadPtrIn, MAXNBND, MPI_integer,&
+                &iProc, 9, comm2D_, requests(6), iErr(6))
+            call mpi_waitall(6, requests, status, iErr(7))
+            if (any(iErr(1:7) .ne. MPI_success)) then
+                write (6, *) 'MPI error: ', iErr(1:7)
                 call shd_mpi__abort('Error [mpi__calBndryRad]: MPI error 3.')
             end if
             do I = 1, Nbcpnts
@@ -1763,9 +1763,9 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
                 GRIDRAD(:, IPT) = RadAllIn(:, I)
             end do
         else
-            do I = 1, Ndone(MYPROC_)
-                IPT = RadPtrOut(I, MYPROC_)
-                GRIDRAD(:, IPT) = RadAllOut(:, I, MYPROC_)
+            do I = 1, Ndone(myProc_)
+                IPT = RadPtrOut(I, myProc_)
+                GRIDRAD(:, IPT) = RadAllOut(:, I, myProc_)
             end do
         end if
     end do
@@ -1832,14 +1832,14 @@ subroutine shd_mpi__computeRad(&
     integer :: MAXNRAD, NDOWN, Lupx, Lupy, Ldownx, Ldowny
     integer :: SIDE, NINVALID(0:4)
     integer :: I, J, L, Ndone, intsendbuf(2), intrecvbuf(2)
-    integer :: ierr, irq, iproc
+    integer :: iErr, irq, iProc
     logical :: AllDone
     integer, allocatable :: NradRecv(:)
     integer, allocatable :: IndexSend(:), IndexRecv(:, :), BndRadIntInfo(:, :)
     real, allocatable    :: RadSend(:, :), RadRecv(:, :, :), BndRadRealInfo(:, :, :)
 
-    type(MPI_REQUEST), allocatable :: requests(:)
-    type(MPI_STATUS), allocatable :: status(:)
+    type(MPI_request), allocatable :: requests(:)
+    type(MPI_status), allocatable :: status(:)
 
     ! added for fixing the "domain shift" issue
     !╭──────────────────────────────────────────────────────────────╮!
@@ -1879,13 +1879,13 @@ subroutine shd_mpi__computeRad(&
 
     LAMBERTIAN = SFCTYPE(2:2) .eq. 'L'
 
-    MAXNRAD = nint(4.0*(NXOUT*NYOUT)/numProc_)
+    MAXNRAD = nint(4.0*(NXOUT*NYOUT)/NProc_)
     ! MAXNRAD = NXOUT*NYOUT
     allocate (RadSend(NSTOKES, MAXNRAD), IndexSend(MAXNRAD))
-    if (MYPROC_ .eq. 0) allocate (NradRecv(numProc_ - 1),&
-        &RadRecv(NSTOKES, MAXNRAD, numProc_ - 1), IndexRecv(MAXNRAD, numProc_ - 1))
+    if (myProc_ .eq. 0) allocate (NradRecv(NProc_ - 1),&
+        &RadRecv(NSTOKES, MAXNRAD, NProc_ - 1), IndexRecv(MAXNRAD, NProc_ - 1))
     allocate (BndRadRealInfo(4 + NSTOKES, MAXNRAD, 4), BndRadIntInfo(MAXNRAD, 4))
-    allocate (requests(max(12, 3*numProc_)), status(max(12, 3*numProc_)))
+    allocate (requests(max(12, 3*NProc_)), status(max(12, 3*NProc_)))
 
     ! Loop over the radiance directions
     do K = 1, NANGOUT
@@ -2031,7 +2031,7 @@ subroutine shd_mpi__computeRad(&
                         IndexSend(Ndone) = NRAD
                     else
                         if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
-                            write (6, *) 'Bad SIDE 1:', MYPROC_, muout, phiout, x0, y0, z0, SIDE, xe, ye, ze
+                            write (6, *) 'Bad SIDE 1:', myProc_, muout, phiout, x0, y0, z0, SIDE, xe, ye, ze
                             call shd_mpi__abort('Error [mpi__computeRad]: Bad SIDE 1, see above.')
                         end if
                         NINVALID(SIDE) = NINVALID(SIDE) + 1
@@ -2055,42 +2055,42 @@ subroutine shd_mpi__computeRad(&
             !   the real and integer info needed about the radiance integrations
             irq = 0
             if (isMpiX_) then
-                call mpi_isend(NINVALID(Lupx), 1, MPI_INTEGER,&
-                    &IPROCNEIGH_(Lupx), 6*K + 1, COMM2D_, requests(irq + 1), ierr)
-                call mpi_isend(BndRadRealInfo(:, :, Lupx), (4 + NSTOKES)*NINVALID(Lupx), MPI_DOUBLE_PRECISION,&
-                    &IPROCNEIGH_(Lupx), 6*K + 2, COMM2D_, requests(irq + 2), ierr)
-                call mpi_isend(BndRadIntInfo(:, Lupx), NINVALID(Lupx), MPI_INTEGER,&
-                    &IPROCNEIGH_(Lupx), 6*K + 3, COMM2D_, requests(irq + 3), ierr)
+                call mpi_isend(NINVALID(Lupx), 1, MPI_integer,&
+                    &iProcNeigh_(Lupx), 6*K + 1, comm2D_, requests(irq + 1), iErr)
+                call mpi_isend(BndRadRealInfo(:, :, Lupx), (4 + NSTOKES)*NINVALID(Lupx), MPI_double_precision,&
+                    &iProcNeigh_(Lupx), 6*K + 2, comm2D_, requests(irq + 2), iErr)
+                call mpi_isend(BndRadIntInfo(:, Lupx), NINVALID(Lupx), MPI_integer,&
+                    &iProcNeigh_(Lupx), 6*K + 3, comm2D_, requests(irq + 3), iErr)
                 irq = irq + 3
             end if
             if (isMpiY_) then
-                call mpi_isend(NINVALID(Lupy), 1, MPI_INTEGER,&
-                    &IPROCNEIGH_(Lupy), 6*K + 4, COMM2D_, requests(irq + 1), ierr)
-                call mpi_isend(BndRadRealInfo(:, :, Lupy), (4 + NSTOKES)*NINVALID(Lupy), MPI_DOUBLE_PRECISION,&
-                    &IPROCNEIGH_(Lupy), 6*K + 5, COMM2D_, requests(irq + 2), ierr)
-                call mpi_isend(BndRadIntInfo(:, Lupy), NINVALID(Lupy), MPI_INTEGER,&
-                    &IPROCNEIGH_(Lupy), 6*K + 6, COMM2D_, requests(irq + 3), ierr)
+                call mpi_isend(NINVALID(Lupy), 1, MPI_integer,&
+                    &iProcNeigh_(Lupy), 6*K + 4, comm2D_, requests(irq + 1), iErr)
+                call mpi_isend(BndRadRealInfo(:, :, Lupy), (4 + NSTOKES)*NINVALID(Lupy), MPI_double_precision,&
+                    &iProcNeigh_(Lupy), 6*K + 5, comm2D_, requests(irq + 2), iErr)
+                call mpi_isend(BndRadIntInfo(:, Lupy), NINVALID(Lupy), MPI_integer,&
+                    &iProcNeigh_(Lupy), 6*K + 6, comm2D_, requests(irq + 3), iErr)
                 irq = irq + 3
             end if
             if (isMpiX_) then
-                call mpi_irecv(NINVALID(Ldownx), 1, MPI_INTEGER,&
-                    &IPROCNEIGH_(Ldownx), 6*K + 1, COMM2D_, requests(irq + 1), ierr)
-                call mpi_irecv(BndRadRealInfo(:, :, Ldownx), (4 + NSTOKES)*MAXNRAD, MPI_DOUBLE_PRECISION,&
-                    &IPROCNEIGH_(Ldownx), 6*K + 2, COMM2D_, requests(irq + 2), ierr)
-                call mpi_irecv(BndRadIntInfo(:, Ldownx), MAXNRAD, MPI_INTEGER,&
-                    &IPROCNEIGH_(Ldownx), 6*K + 3, COMM2D_, requests(irq + 3), ierr)
+                call mpi_irecv(NINVALID(Ldownx), 1, MPI_integer,&
+                    &iProcNeigh_(Ldownx), 6*K + 1, comm2D_, requests(irq + 1), iErr)
+                call mpi_irecv(BndRadRealInfo(:, :, Ldownx), (4 + NSTOKES)*MAXNRAD, MPI_double_precision,&
+                    &iProcNeigh_(Ldownx), 6*K + 2, comm2D_, requests(irq + 2), iErr)
+                call mpi_irecv(BndRadIntInfo(:, Ldownx), MAXNRAD, MPI_integer,&
+                    &iProcNeigh_(Ldownx), 6*K + 3, comm2D_, requests(irq + 3), iErr)
                 irq = irq + 3
             end if
             if (isMpiY_) then
-                call mpi_irecv(NINVALID(Ldowny), 1, MPI_INTEGER,&
-                    &IPROCNEIGH_(Ldowny), 6*K + 4, COMM2D_, requests(irq + 1), ierr)
-                call mpi_irecv(BndRadRealInfo(:, :, Ldowny), (4 + NSTOKES)*MAXNRAD, MPI_DOUBLE_PRECISION,&
-                    &IPROCNEIGH_(Ldowny), 6*K + 5, COMM2D_, requests(irq + 2), ierr)
-                call mpi_irecv(BndRadIntInfo(:, Ldowny), MAXNRAD, MPI_INTEGER,&
-                    &IPROCNEIGH_(Ldowny), 6*K + 6, COMM2D_, requests(irq + 3), ierr)
+                call mpi_irecv(NINVALID(Ldowny), 1, MPI_integer,&
+                    &iProcNeigh_(Ldowny), 6*K + 4, comm2D_, requests(irq + 1), iErr)
+                call mpi_irecv(BndRadRealInfo(:, :, Ldowny), (4 + NSTOKES)*MAXNRAD, MPI_double_precision,&
+                    &iProcNeigh_(Ldowny), 6*K + 5, comm2D_, requests(irq + 2), iErr)
+                call mpi_irecv(BndRadIntInfo(:, Ldowny), MAXNRAD, MPI_integer,&
+                    &iProcNeigh_(Ldowny), 6*K + 6, comm2D_, requests(irq + 3), iErr)
                 irq = irq + 3
             end if
-            call mpi_waitall(irq, requests, status, ierr)
+            call mpi_waitall(irq, requests, status, iErr)
 
             NINVALID(Lupx) = 0; NINVALID(Lupy) = 0
             if (isMpiX_) then
@@ -2118,7 +2118,7 @@ subroutine shd_mpi__computeRad(&
                         IndexSend(Ndone) = BndRadIntInfo(J, Ldownx)
                     else
                         if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
-                            write (6, *) 'Bad SIDE 2x', MYPROC_, muout, phiout, x, y, z, SIDE, xe, ye, ze
+                            write (6, *) 'Bad SIDE 2x', myProc_, muout, phiout, x, y, z, SIDE, xe, ye, ze
                             call shd_mpi__abort('Error [mpi__computeRad]: Bad SIDE 2x, see above.')
                         end if
                         NINVALID(SIDE) = NINVALID(SIDE) + 1
@@ -2155,7 +2155,7 @@ subroutine shd_mpi__computeRad(&
                         IndexSend(Ndone) = BndRadIntInfo(J, Ldowny)
                     else
                         if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
-                            write (6, *) 'Bad SIDE 2y', MYPROC_, muout, phiout, x, y, z, SIDE, xe, ye, ze
+                            write (6, *) 'Bad SIDE 2y', myProc_, muout, phiout, x, y, z, SIDE, xe, ye, ze
                             call shd_mpi__abort('Error [mpi__computeRad]: Bad SIDE 2y, see above.')
                         end if
                         NINVALID(SIDE) = NINVALID(SIDE) + 1
@@ -2169,17 +2169,17 @@ subroutine shd_mpi__computeRad(&
 
             ! See if there are any more invalid radiance rays on all the processors
             intsendbuf = (/NINVALID(Lupx), NINVALID(Lupy)/)
-            call mpi_allreduce(intsendbuf, intrecvbuf, 2, MPI_INTEGER, MPI_MAX,&
-                &COMM2D_, ierr)
+            call mpi_allreduce(intsendbuf, intrecvbuf, 2, MPI_integer, MPI_max,&
+                &comm2D_, iErr)
             AllDone = all(intrecvbuf(1:2) .eq. 0)
         end do
 
-        if (MYPROC_ .gt. 0) then
+        if (myProc_ .gt. 0) then
             ! Send the finished radiances to the master processor
-            call mpi_isend(Ndone, 1, MPI_INTEGER, 0, 6*K + 7, COMM2D_, requests(1), ierr)
-            call mpi_isend(RadSend, NSTOKES*Ndone, MPI_REAL, 0, 6*K + 8, COMM2D_, requests(2), ierr)
-            call mpi_isend(IndexSend, Ndone, MPI_INTEGER, 0, 6*K + 9, COMM2D_, requests(3), ierr)
-            call mpi_waitall(3, requests, status, ierr)
+            call mpi_isend(Ndone, 1, MPI_integer, 0, 6*K + 7, comm2D_, requests(1), iErr)
+            call mpi_isend(RadSend, NSTOKES*Ndone, MPI_real, 0, 6*K + 8, comm2D_, requests(2), iErr)
+            call mpi_isend(IndexSend, Ndone, MPI_integer, 0, 6*K + 9, comm2D_, requests(3), iErr)
+            call mpi_waitall(3, requests, status, iErr)
         else
             ! Put the radiances finished by the master processor in the list
             do i = 1, Ndone
@@ -2187,19 +2187,19 @@ subroutine shd_mpi__computeRad(&
             end do
             ! Receive the radiances from all the other processors
             irq = 0
-            do iproc = 1, numProc_ - 1
-                call mpi_irecv(NradRecv(iproc), 1, MPI_INTEGER, iproc,&
-                    &6*K + 7, COMM2D_, requests(irq + 1), ierr)
-                call mpi_irecv(RadRecv(:, :, iproc), NSTOKES*MAXNRAD, MPI_REAL, iproc,&
-                    &6*K + 8, COMM2D_, requests(irq + 2), ierr)
-                call mpi_irecv(IndexRecv(:, iproc), MAXNRAD, MPI_INTEGER, iproc,&
-                    &6*K + 9, COMM2D_, requests(irq + 3), ierr)
+            do iProc = 1, NProc_ - 1
+                call mpi_irecv(NradRecv(iProc), 1, MPI_integer, iProc,&
+                    &6*K + 7, comm2D_, requests(irq + 1), iErr)
+                call mpi_irecv(RadRecv(:, :, iProc), NSTOKES*MAXNRAD, MPI_real, iProc,&
+                    &6*K + 8, comm2D_, requests(irq + 2), iErr)
+                call mpi_irecv(IndexRecv(:, iProc), MAXNRAD, MPI_integer, iProc,&
+                    &6*K + 9, comm2D_, requests(irq + 3), iErr)
                 irq = irq + 3
             end do
-            call mpi_waitall(irq, requests, status, ierr)
-            do iproc = 1, numProc_ - 1
-                do i = 1, NradRecv(iproc)
-                    RADOUT(:, IndexRecv(i, iproc)) = RadRecv(:, i, iproc)
+            call mpi_waitall(irq, requests, status, iErr)
+            do iProc = 1, NProc_ - 1
+                do i = 1, NradRecv(iProc)
+                    RADOUT(:, IndexRecv(i, iProc)) = RadRecv(:, i, iProc)
                 end do
             end do
         end if
@@ -2207,7 +2207,7 @@ subroutine shd_mpi__computeRad(&
     end do ! K (angle loop)
 
     deallocate (requests, status, RadSend, IndexSend)
-    if (MYPROC_ .eq. 0) deallocate (NradRecv, RadRecv, IndexRecv)
+    if (myProc_ .eq. 0) deallocate (NradRecv, RadRecv, IndexRecv)
     deallocate (BndRadRealInfo, BndRadIntInfo)
 #endif
 
@@ -2276,7 +2276,7 @@ subroutine shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     integer, parameter :: RECVSIDE(4) = (/2, 1, 4, 3/)
     integer :: SIDE, IBND, NINVALID(4), NINCOMING(4)
     integer :: Ndone, intrecvbuf(4)
-    integer :: ierr, irq, iproc, K
+    integer :: iErr, irq, iProc, K
     logical :: AllDone
     integer, allocatable :: NradRecv(:)
     integer, allocatable :: IndexSend(:), IndexRecv(:, :)
@@ -2284,8 +2284,8 @@ subroutine shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     real, allocatable    :: RadSend(:, :), RadRecv(:, :, :)
     real, allocatable    :: BndSendRadRealInfo(:, :, :), BndRecvRadRealInfo(:, :, :)
 
-    type(MPI_REQUEST), allocatable :: requests(:)
-    type(MPI_STATUS), allocatable :: status(:)
+    type(MPI_request), allocatable :: requests(:)
+    type(MPI_status), allocatable :: status(:)
 
     allocate (YLMSUN(NSTLEG, NLM))
 
@@ -2335,11 +2335,11 @@ subroutine shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     ! Allocate sending, receiving, etc. arrays for MPI
     MAXNRAD = NL*NS
     allocate (RadSend(NSTOKES, MAXNRAD), IndexSend(MAXNRAD))
-    if (MYPROC_ .eq. 0) allocate (NradRecv(numProc_ - 1),&
-        &RadRecv(NSTOKES, MAXNRAD, numProc_ - 1), IndexRecv(MAXNRAD, numProc_ - 1))
+    if (myProc_ .eq. 0) allocate (NradRecv(NProc_ - 1),&
+        &RadRecv(NSTOKES, MAXNRAD, NProc_ - 1), IndexRecv(MAXNRAD, NProc_ - 1))
     allocate (BndSendRadRealInfo(6 + NSTOKES, MAXNRAD, 4), BndSendRadIntInfo(MAXNRAD, 4))
     allocate (BndRecvRadRealInfo(6 + NSTOKES, MAXNRAD, 4), BndRecvRadIntInfo(MAXNRAD, 4))
-    allocate (requests(max(24, 3*numProc_)), status(max(24, 3*numProc_)))
+    allocate (requests(max(24, 3*NProc_)), status(max(24, 3*NProc_)))
 
     NINVALID(:) = 0
     Ndone = 0
@@ -2538,12 +2538,12 @@ subroutine shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
             if ((isMpiX_ .and. (SIDE .eq. 1 .or. SIDE .eq. 2)) .or.&
                 (isMpiY_ .and. (SIDE .eq. 3 .or. SIDE .eq. 4))) then
                 K = 3*SIDE
-                call mpi_isend(NINVALID(SIDE), 1, MPI_INTEGER,&
-                    &IPROCNEIGH_(SIDE), K + 1, COMM2D_, requests(irq + 1), ierr)
-                call mpi_isend(BndSendRadRealInfo(:, :, SIDE), (6 + NSTOKES)*NINVALID(SIDE), MPI_DOUBLE_PRECISION,&
-                    &IPROCNEIGH_(SIDE), K + 2, COMM2D_, requests(irq + 2), ierr)
-                call mpi_isend(BndSendRadIntInfo(:, SIDE), NINVALID(SIDE), MPI_INTEGER,&
-                    &IPROCNEIGH_(SIDE), K + 3, COMM2D_, requests(irq + 3), ierr)
+                call mpi_isend(NINVALID(SIDE), 1, MPI_integer,&
+                    &iProcNeigh_(SIDE), K + 1, comm2D_, requests(irq + 1), iErr)
+                call mpi_isend(BndSendRadRealInfo(:, :, SIDE), (6 + NSTOKES)*NINVALID(SIDE), MPI_double_precision,&
+                    &iProcNeigh_(SIDE), K + 2, comm2D_, requests(irq + 2), iErr)
+                call mpi_isend(BndSendRadIntInfo(:, SIDE), NINVALID(SIDE), MPI_integer,&
+                    &iProcNeigh_(SIDE), K + 3, comm2D_, requests(irq + 3), iErr)
                 irq = irq + 3
             end if
         end do
@@ -2552,16 +2552,16 @@ subroutine shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
             if ((isMpiX_ .and. (SIDE .eq. 1 .or. SIDE .eq. 2)) .or.&
                 (isMpiY_ .and. (SIDE .eq. 3 .or. SIDE .eq. 4))) then
                 K = 3*RECVSIDE(SIDE)
-                call mpi_irecv(NINCOMING(SIDE), 1, MPI_INTEGER,&
-                    &IPROCNEIGH_(SIDE), K + 1, COMM2D_, requests(irq + 1), ierr)
-                call mpi_irecv(BndRecvRadRealInfo(:, :, SIDE), (6 + NSTOKES)*MAXNRAD, MPI_DOUBLE_PRECISION,&
-                    &IPROCNEIGH_(SIDE), K + 2, COMM2D_, requests(irq + 2), ierr)
-                call mpi_irecv(BndRecvRadIntInfo(:, SIDE), MAXNRAD, MPI_INTEGER,&
-                    &IPROCNEIGH_(SIDE), K + 3, COMM2D_, requests(irq + 3), ierr)
+                call mpi_irecv(NINCOMING(SIDE), 1, MPI_integer,&
+                    &iProcNeigh_(SIDE), K + 1, comm2D_, requests(irq + 1), iErr)
+                call mpi_irecv(BndRecvRadRealInfo(:, :, SIDE), (6 + NSTOKES)*MAXNRAD, MPI_double_precision,&
+                    &iProcNeigh_(SIDE), K + 2, comm2D_, requests(irq + 2), iErr)
+                call mpi_irecv(BndRecvRadIntInfo(:, SIDE), MAXNRAD, MPI_integer,&
+                    &iProcNeigh_(SIDE), K + 3, comm2D_, requests(irq + 3), iErr)
                 irq = irq + 3
             end if
         end do
-        call mpi_waitall(irq, requests, status, ierr)
+        call mpi_waitall(irq, requests, status, iErr)
 
         ! Continue the backwards ray integrations for the four boundaries
         NINVALID(:) = 0
@@ -2613,18 +2613,18 @@ subroutine shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
         end do
 
         ! See if there are any more invalid radiance rays on all the processors
-        call mpi_allreduce(NINVALID, intrecvbuf, 4, MPI_INTEGER, MPI_MAX,&
-            &COMM2D_, ierr)
+        call mpi_allreduce(NINVALID, intrecvbuf, 4, MPI_integer, MPI_max,&
+            &comm2D_, iErr)
         AllDone = all(intrecvbuf(1:4) .eq. 0)
     end do
     !print *,'Done with ray tracing.', Ndone
 
-    if (MYPROC_ .gt. 0) then
+    if (myProc_ .gt. 0) then
         ! Send the finished radiances to the master processor
-        call mpi_isend(Ndone, 1, MPI_INTEGER, 0, 21, COMM2D_, requests(1), ierr)
-        call mpi_isend(RadSend, NSTOKES*Ndone, MPI_REAL, 0, 22, COMM2D_, requests(2), ierr)
-        call mpi_isend(IndexSend, Ndone, MPI_INTEGER, 0, 23, COMM2D_, requests(3), ierr)
-        call mpi_waitall(3, requests, status, ierr)
+        call mpi_isend(Ndone, 1, MPI_integer, 0, 21, comm2D_, requests(1), iErr)
+        call mpi_isend(RadSend, NSTOKES*Ndone, MPI_real, 0, 22, comm2D_, requests(2), iErr)
+        call mpi_isend(IndexSend, Ndone, MPI_integer, 0, 23, comm2D_, requests(3), iErr)
+        call mpi_waitall(3, requests, status, iErr)
     else
         ! Put the radiances finished by the master processor in the list
         do i = 1, Ndone
@@ -2632,25 +2632,25 @@ subroutine shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
         end do
         ! Receive the radiances from all the other processors
         irq = 0
-        do iproc = 1, numProc_ - 1
-            call mpi_irecv(NradRecv(iproc), 1, MPI_INTEGER, iproc,&
-                &21, COMM2D_, requests(irq + 1), ierr)
-            call mpi_irecv(RadRecv(:, :, iproc), NSTOKES*MAXNRAD, MPI_REAL, iproc,&
-                &22, COMM2D_, requests(irq + 2), ierr)
-            call mpi_irecv(IndexRecv(:, iproc), MAXNRAD, MPI_INTEGER, iproc,&
-                &23, COMM2D_, requests(irq + 3), ierr)
+        do iProc = 1, NProc_ - 1
+            call mpi_irecv(NradRecv(iProc), 1, MPI_integer, iProc,&
+                &21, comm2D_, requests(irq + 1), iErr)
+            call mpi_irecv(RadRecv(:, :, iProc), NSTOKES*MAXNRAD, MPI_real, iProc,&
+                &22, comm2D_, requests(irq + 2), iErr)
+            call mpi_irecv(IndexRecv(:, iProc), MAXNRAD, MPI_integer, iProc,&
+                &23, comm2D_, requests(irq + 3), iErr)
             irq = irq + 3
         end do
-        call mpi_waitall(irq, requests, status, ierr)
-        do iproc = 1, numProc_ - 1
-            do i = 1, NradRecv(iproc)
-                VISOUT(:, IndexRecv(i, iproc)) = RadRecv(:, i, iproc)
+        call mpi_waitall(irq, requests, status, iErr)
+        do iProc = 1, NProc_ - 1
+            do i = 1, NradRecv(iProc)
+                VISOUT(:, IndexRecv(i, iProc)) = RadRecv(:, i, iProc)
             end do
         end do
     end if
 
     deallocate (requests, status, RadSend, IndexSend)
-    if (MYPROC_ .eq. 0) deallocate (NradRecv, RadRecv, IndexRecv)
+    if (myProc_ .eq. 0) deallocate (NradRecv, RadRecv, IndexRecv)
     deallocate (BndSendRadRealInfo, BndSendRadIntInfo)
     deallocate (BndRecvRadRealInfo, BndRecvRadIntInfo)
     deallocate (YLMSUN)
@@ -2658,7 +2658,7 @@ subroutine shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
 
     ! On the master processor convert VISOUT(2:,*) from Stokes parameters
     ! to DOLP, AOLP, DOCP
-    if (MYPROC_ .eq. 0) then
+    if (myProc_ .eq. 0) then
         if (isPol_) then
             N = NL*NS
             do I = IVIS - N + 1, IVIS
@@ -2709,14 +2709,14 @@ subroutine shd_mpi__calAccelSolCrit(DOACCEL, DELJDOT, DELJOLD, DELJNEW, JNORM,&
     real, save :: A = 0.0
 
 #if HAS_MPI
-    integer :: ierr
+    integer :: iErr
     real :: sendbuf(4), recvbuf(4)
 
-    if (numProc_ .gt. 1) then
+    if (NProc_ .gt. 1) then
         ! Call mpi_allreduce to sum up the four dot products
         sendbuf(:) = (/DELJDOT, DELJOLD, DELJNEW, JNORM/)
-        call mpi_allreduce(sendbuf, recvbuf, 4, MPI_REAL, MPI_SUM, COMM2D_, ierr)
-        if (ierr .ne. MPI_SUCCESS) call shd_mpi__abort('Error [mpi__calAccelSolCrit]: mpi_allreduce error.')
+        call mpi_allreduce(sendbuf, recvbuf, 4, MPI_real, MPI_sum, comm2D_, iErr)
+        if (iErr .ne. MPI_success) call shd_mpi__abort('Error [mpi__calAccelSolCrit]: mpi_allreduce error.')
         DELJDOT = recvbuf(1); DELJOLD = recvbuf(2)
         DELJNEW = recvbuf(3); JNORM = recvbuf(4)
     end if
@@ -2760,18 +2760,18 @@ subroutine shd_mpi__end(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART, XDOMAIN, YDOMAI
 
 #if HAS_MPI
     integer :: I, IX, IY, MAXN, SX, SY, EX, EY, NX, NY
-    integer :: iproc, ierr, irq
+    integer :: iProc, iErr, irq
     integer, allocatable :: NUMGRID(:, :), NUMGRIDALL(:, :), NORM(:, :), IXYALL(:, :, :)
     integer, allocatable :: recvbuf(:, :), buf(:, :)
     real :: DELX, DELY
     real :: ElapsedTime
-    type(MPI_REQUEST), allocatable :: requests(:)
-    type(MPI_STATUS), allocatable :: status(:)
+    type(MPI_request), allocatable :: requests(:)
+    type(MPI_status), allocatable :: status(:)
 
     DELX = real(XDOMAIN)/real(NPXT)
     DELY = real(YDOMAIN)/real(NPYT)
 
-    if (LOADBALANCE_) then
+    if (loadBalance_) then
         ! Calculate the number of grid points around each property grid column
         allocate (NUMGRID(NPX, NPY))
         NUMGRID(:, :) = 0
@@ -2783,44 +2783,44 @@ subroutine shd_mpi__end(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART, XDOMAIN, YDOMAI
             end if
         end do
 
-        if (numProc_ .gt. 1) then
+        if (NProc_ .gt. 1) then
             ! Have the master process collect the property grid locations of all
-            allocate (IXYALL(2, 2, 0:numProc_ - 1))
-            call mpi_gather(IXYPRP_, 4, MPI_INTEGER, IXYALL, 4, MPI_INTEGER, 0, COMM2D_, ierr)
+            allocate (IXYALL(2, 2, 0:NProc_ - 1))
+            call mpi_gather(ixyPrp_, 4, MPI_integer, IXYALL, 4, MPI_integer, 0, comm2D_, iErr)
 
             ! Send the NUMGRIDs to the master processor
-            allocate (requests(numProc_), status(numProc_))
+            allocate (requests(NProc_), status(NProc_))
             irq = 0
-            if (MYPROC_ .gt. 0) then
+            if (myProc_ .gt. 0) then
                 irq = irq + 1
-                call mpi_isend(NUMGRID, NPX*NPY, MPI_INTEGER, 0, 777, COMM2D_,&
-                    &requests(irq), ierr)
+                call mpi_isend(NUMGRID, NPX*NPY, MPI_integer, 0, 777, comm2D_,&
+                    &requests(irq), iErr)
             else
                 MAXN = (maxval(IXYALL(2, 1, :) - IXYALL(1, 1, :)) + 1)*(maxval(IXYALL(2, 2, :) - IXYALL(1, 2, :)) + 1)
-                allocate (recvbuf(MAXN, 1:numProc_ - 1))
-                do iproc = 1, numProc_ - 1
+                allocate (recvbuf(MAXN, 1:NProc_ - 1))
+                do iProc = 1, NProc_ - 1
                     irq = irq + 1
-                    call mpi_irecv(recvbuf(:, iproc), MAXN, MPI_INTEGER, iproc, 777,&
-                        &COMM2D_, requests(irq), ierr)
+                    call mpi_irecv(recvbuf(:, iProc), MAXN, MPI_integer, iProc, 777,&
+                        &comm2D_, requests(irq), iErr)
                 end do
             end if
-            call mpi_waitall(irq, requests, status, ierr)
+            call mpi_waitall(irq, requests, status, iErr)
 
             ! Put the NUMGRIDS into the full domain array on the master processor.
             !   Use a normalization counter (NORM) to deal with grid points that
             !   get contribution from two processors.
-            if (MYPROC_ .eq. 0) then
+            if (myProc_ .eq. 0) then
                 allocate (NUMGRIDALL(NPXT, NPYT), NORM(NPXT, NPYT))
                 NUMGRIDALL(:, :) = 0; NORM(:, :) = 0
                 SX = IXYALL(1, 1, 0); EX = IXYALL(2, 1, 0); NX = EX - SX + 1
                 SY = IXYALL(1, 2, 0); EY = IXYALL(2, 2, 0); NY = EY - SY + 1
                 NUMGRIDALL(SX:EX, SY:EY) = NUMGRID(:, :)
                 NORM(SX:EX, SY:EY) = reshape((/1/), (/NX, NY/), (/1/))
-                do iproc = 1, numProc_ - 1
-                    SX = IXYALL(1, 1, iproc); EX = IXYALL(2, 1, iproc); NX = EX - SX + 1
-                    SY = IXYALL(1, 2, iproc); EY = IXYALL(2, 2, iproc); NY = EY - SY + 1
+                do iProc = 1, NProc_ - 1
+                    SX = IXYALL(1, 1, iProc); EX = IXYALL(2, 1, iProc); NX = EX - SX + 1
+                    SY = IXYALL(1, 2, iProc); EY = IXYALL(2, 2, iProc); NY = EY - SY + 1
                     allocate (buf(NX, NY))
-                    buf(:, :) = reshape(recvbuf(1:NX*NY, iproc), (/NX, NY/))
+                    buf(:, :) = reshape(recvbuf(1:NX*NY, iProc), (/NX, NY/))
                     NUMGRIDALL(SX:EX - 1, SY:EY - 1) = NUMGRIDALL(SX:EX - 1, SY:EY - 1) + buf(1:NX - 1, 1:NY - 1)
                     NORM(SX:EX - 1, SY:EY - 1) = NORM(SX:EX - 1, SY:EY - 1) + reshape((/1/), (/NX - 1, NY - 1/), (/1/))
                     IX = mod(EX - 1, NPXT) + 1; IY = mod(EY - 1, NPYT) + 1
@@ -2854,7 +2854,7 @@ subroutine shd_mpi__end(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART, XDOMAIN, YDOMAI
         ! checked
         deallocate (NUMGRID)
 
-        if (MYPROC_ .eq. 0) then
+        if (myProc_ .eq. 0) then
             ! Write out the array to the load balancing file
             open (UNIT=10, FILE=trim(RUNNAME)//'_load_balance.out', STATUS='UNKNOWN')
             write (10, '(A)') '! SHDOM grid point load balancing file for property file:'
@@ -2872,7 +2872,7 @@ subroutine shd_mpi__end(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART, XDOMAIN, YDOMAI
         end if
     end if
 
-    ElapsedTime = mpi_wtime() - STARTTIME_
+    ElapsedTime = mpi_wtime() - startTime_
 
     if (ElapsedTime .lt. 60.0) then
         if (VERBOSE_ .ge. 5) write (6, '(A,F0.2,A)') 'Message [mpi__end]: Total time used: ', ElapsedTime, ' sec'
@@ -2883,10 +2883,10 @@ subroutine shd_mpi__end(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART, XDOMAIN, YDOMAI
     if (VERBOSE_ .ge. 5) write (6, '(A,"<",A,">")') 'Message [mpi__end]: Finished with SHDOM run: ', trim(adjustl(RUNNAME))
 
     ! Shut down MPI
-    if (allocated(BXYPTR_)) deallocate(BXYPTR_)
-    if (allocated(IBXYPTR_)) deallocate(IBXYPTR_)
-    if (allocated(BXYPOS_)) deallocate(BXYPOS_)
-    call mpi_finalize(ierr)
+    if (allocated(BxyPtr_)) deallocate(BxyPtr_)
+    if (allocated(iBxyPtr_)) deallocate(iBxyPtr_)
+    if (allocated(BxyPos_)) deallocate(BxyPos_)
+    call mpi_finalize(iErr)
 
 #endif
 
@@ -2897,13 +2897,13 @@ end subroutine shd_mpi__end
 subroutine shd_mpi__abort(ERRSTR)
 
     character(len=*), intent(in) :: ERRSTR
-    integer :: ierr, errorcode = 7
+    integer :: iErr, errorcode = 7
 
     write (6, *) trim(adjustl(ERRSTR))
 
 #if HAS_MPI
 ! note: this if clause has <else>
-    call MPI_ABORT(COMM2D_, errorcode, ierr)
+    call MPI_ABORT(comm2D_, errorcode, iErr)
 #else
     stop
 #endif
@@ -2916,7 +2916,7 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
 
     ! Calculates the location of this processor (subdomain) in the property
     ! grid.  The starting and ending property grid point indices for X and Y
-    ! are returned in IXYPRP_.  Each processor sends its location in the
+    ! are returned in ixyPrp_.  Each processor sends its location in the
     ! 2D array of subdomains to the master process and the master process
     ! reads the RUNNAME//"_load_balance.inp" file (if there is one) and does
     ! the optimization.  If the "shdom_proc_times.inp" file of relative
@@ -2926,7 +2926,7 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
     integer, intent(in) :: ProcDims(2), ProcCoord(2), NPXT, NPYT
     character(len=*), intent(in) :: PROPFILE, RUNNAME
     integer :: NPXTI, NPYTI
-    integer :: IX, IY, JX, JY, Nxd, Nyd, N, I, ierr
+    integer :: IX, IY, JX, JY, Nxd, Nyd, N, I, iErr
     integer :: BndLines(ProcDims(1) + ProcDims(2) - 2)
     integer :: IDX(ProcDims(1) + 1), IDY(ProcDims(2) + 1)
     logical :: DoLoadBalancing
@@ -2948,12 +2948,12 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
     BndLines(1:Nxd - 1) = (/(nint(I*float(NPXT)/Nxd) + 1, I=1, Nxd - 1)/)
     BndLines(Nxd:N) = (/(nint(I*float(NPYT)/Nyd) + 1, I=1, Nyd - 1)/)
 
-    if (LOADBALANCE_) then
+    if (loadBalance_) then
         DoLoadBalancing = .false.
-        if (MYPROC_ .eq. 0) then
+        if (myProc_ .eq. 0) then
             ! See if we can read the load balancing file and header matches
-            open (UNIT=10, FILE=trim(RUNNAME)//'_load_balance.inp', STATUS='OLD', IOSTAT=ierr)
-            if (ierr .eq. 0) then
+            open (UNIT=10, FILE=trim(RUNNAME)//'_load_balance.inp', STATUS='OLD', IOSTAT=iErr)
+            if (iErr .eq. 0) then
                 read (10, *)
                 read (10, '(A)') PROPFILEI
                 read (10, *) NPXTI, NPYTI
@@ -2970,10 +2970,10 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
         end if
 
         ! Have the master process collect the locations of all
-        allocate (ProcCoordAll(2, 0:numProc_ - 1))
-        call mpi_gather(ProcCoord, 2, MPI_INTEGER, ProcCoordAll, 2, MPI_INTEGER, 0, COMM2D_, ierr)
+        allocate (ProcCoordAll(2, 0:NProc_ - 1))
+        call mpi_gather(ProcCoord, 2, MPI_integer, ProcCoordAll, 2, MPI_integer, 0, comm2D_, iErr)
 
-        if (MYPROC_ .eq. 0 .and. DoLoadBalancing) then
+        if (myProc_ .eq. 0 .and. DoLoadBalancing) then
             ! Read the load balancing file to get array of number of grid points
             allocate (Ngrid(NPXT + 1, NPYT + 1))
             open (UNIT=10, FILE=trim(RUNNAME)//'_load_balance.inp', STATUS='OLD')
@@ -2991,14 +2991,14 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
             Ngrid(NPXT + 1, NPYT + 1) = Ngrid(1, 1)
 
             ! Read the relative processor times if the "shdom_proc_times.inp" file exists
-            allocate (wtproc(numProc_))
-            open (UNIT=11, FILE='shdom_proc_times.inp', STATUS='OLD', IOSTAT=ierr)
-            if (ierr .eq. 0) then
-                do i = 1, numProc_
+            allocate (wtproc(NProc_))
+            open (UNIT=11, FILE='shdom_proc_times.inp', STATUS='OLD', IOSTAT=iErr)
+            if (iErr .eq. 0) then
+                do i = 1, NProc_
                     read (11, *) wtproc(i)
                 end do
                 close (11)
-                wtproc(:) = wtproc(:)*numProc_/sum(wtproc(:))
+                wtproc(:) = wtproc(:)*NProc_/sum(wtproc(:))
             else
                 wtproc(:) = 1.0
             end if
@@ -3052,9 +3052,9 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
             deallocate (Ngrid)
         end if
 
-        call mpi_bcast(BndLines, N, MPI_INTEGER, 0, COMM2D_, ierr)
+        call mpi_bcast(BndLines, N, MPI_integer, 0, comm2D_, iErr)
         deallocate (ProcCoordAll)
-        if (MYPROC_ .eq. 0 .and. DoLoadBalancing) then
+        if (myProc_ .eq. 0 .and. DoLoadBalancing) then
             write (6, '(A)') 'Optimum load balanced boundary lines in the property grid:'
             write (6, '(A,16I4)') '  X lines:', BndLines(1:Nxd - 1)
             write (6, '(A,16I4)') '  Y lines:', BndLines(Nxd:N)
@@ -3065,8 +3065,8 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
     IDX(1) = 1; IDX(Nxd + 1) = NPXT + 1; if (Nxd .eq. 1) IDX(Nxd + 1) = NPXT
     IDY(1) = 1; IDY(Nyd + 1) = NPYT + 1; if (Nyd .eq. 1) IDY(Nyd + 1) = NPYT
     IDX(2:Nxd) = BndLines(1:Nxd - 1); IDY(2:Nyd) = BndLines(Nxd:N)
-    IXYPRP_(1:2, 1) = IDX(ProcCoord(1) + 1:ProcCoord(1) + 2)
-    IXYPRP_(1:2, 2) = IDY(ProcCoord(2) + 1:ProcCoord(2) + 2)
+    ixyPrp_(1:2, 1) = IDX(ProcCoord(1) + 1:ProcCoord(1) + 2)
+    ixyPrp_(1:2, 2) = IDY(ProcCoord(2) + 1:ProcCoord(2) + 2)
 
 end subroutine shd_mpi__optimizeProcDomain
 
@@ -3220,7 +3220,7 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
         IY = 1 + int((NY - 1)*(Y - YGRID(1))/(YGRID(NY) - YGRID(1)))
     end if
     if ((ix .lt. 1) .or. (iy .lt. 1) .or. (ix .gt. (NX + 1)) .or. (iy .gt. (NY + 1))) then
-        write (6, *) 'Bad ix and/or iy', x, y, z, ix, iy, iz, xgrid(1), xgrid(nx), ygrid(1), ygrid(ny), MYPROC_
+        write (6, *) 'Bad ix and/or iy', x, y, z, ix, iy, iz, xgrid(1), xgrid(nx), ygrid(1), ygrid(ny), myProc_
         write (6, *) 'Bad ix and/or iy', side, transmit
         call shd_mpi__abort('Error [mpi_integrateRay]: Bad ix and/or iy, see above.')
     end if

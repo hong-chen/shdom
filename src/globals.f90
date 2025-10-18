@@ -125,13 +125,13 @@ module globals_cfg
     implicit none
     public
 
-    integer, parameter :: FNAMEMAXLEN_ = 256 ! file name max length (number of characters)
-    real(kind=8), save :: RACC_
+    integer, parameter :: fnameMaxLen_ = 256 ! file name max length (number of characters)
+    real(kind=8), save :: RAcc_
     real(kind=4), save :: TOTSYSMEM_MB_ = 16000.0
     real(kind=4), save :: MAXCPUMEM_MB_
     real(kind=4), save :: PLANET_RADIUS_ = 6371.009
 
-    integer(kind=1), save :: VERBOSE_ = 5
+    integer(kind=1), save :: verbose_ = 5
     !Severity    Level  Description
     !Emergency     0      System unusable
     !Alert         1      Action must be taken immediately
