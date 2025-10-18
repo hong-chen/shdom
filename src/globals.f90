@@ -142,6 +142,9 @@ module globals_cfg
     !Informational 6      Informational messages
     !All           7      All-level messages
 
+    ! Namelist input
+    logical, save :: isNmlInp_ = .true.
+
     ! High order radiance (use more SH terms)
     logical, save :: isHighOrder_
 

@@ -42,7 +42,7 @@ program shdom
     use globals_const, only: REPS_
     use globals_cfg,   only: VERBOSE_, FNAMEMAXLEN_, RACC_, &
                              TOTSYSMEM_MB_, MAXCPUMEM_MB_, &
-                             isHighOrder_, &
+                             isNmlInp_, isHighOrder_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, isMpi_, &
                              is1DX_, is1DYx_, is1D_, is3Ddir1Ddif_, &
                              is1D1_, isPol_, isPol4_, &
@@ -178,10 +178,9 @@ program shdom
     character(len=FNAMEMAXLEN_) :: MESSAGE
 
     logical :: KDIST, INRADFLAG, NEWGRIDFLAG, DELTAM, ACCELFLAG
-    logical :: BASEOUT, MASTERPROC, VALIDBEAM
+    logical :: BASEOUT, isMasterProc, VALIDBEAM
     logical :: RADIANCE_OUT, VISUAL_OUT
     logical :: FLUX_OUT, FLUXDIV_OUT, SH_OUT, SOURCE_OUT
-    logical :: NMLMODE = .true.
 
 
     ! start timing
@@ -190,15 +189,15 @@ program shdom
 
     ! Start up MPI for multiple processors if available, and
     !   return flag for master process (procnum=0)
-    call shd_mpi__start(MASTERPROC, NUMPROC)
+    call shd_mpi__start(isMasterProc, NUMPROC)
 
 
     ! Read input from namelist or user input
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! In MPI, the master processor performs the main computation,
     !   and the results are then broadcast to the child processors.
-    if (MASTERPROC) then
-        if (NMLMODE) then
+    if (isMasterProc) then
+        if (isNmlInp_) then
             call shd_io__nmlInp(RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
                 INSAVEFILE, OUTSAVEFILE, SENFILE,&
                 NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
@@ -318,7 +317,7 @@ program shdom
 
     ! Read PROPFILE (property file) to get data size info, broadcast data if MPI
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    if (MASTERPROC) then
+    if (isMasterProc) then
         ! Find out the size of the input property file grid
         call shd_io__readPrpSize(PROPFILE, NSTLEG, NLEG, NPX_, NPY_, NPZ_, DELX_, DELY_,&
             &NUMPHASE_, MAXLEG, MAXPGL)
@@ -337,7 +336,7 @@ program shdom
         DELXSFC = DELX_
         DELYSFC = DELY_
     else
-        if (MASTERPROC) then
+        if (isMasterProc) then
             ! find out the size of the surface file grid
             call shd_io__readSfcSize(SFCFILE, NXSFC, NYSFC, DELXSFC, DELYSFC, MAXSFCPTS, MAXSFCPARS)
         end if
@@ -522,7 +521,7 @@ program shdom
 
         ! Read the properties of the medium to the master processor and
         !   distribute to all the processors
-        if (MASTERPROC) then
+        if (isMasterProc) then
 
             MAXPGT = NPXT*NPYT*NPZ_
             MAXPGLT = MAXPGL
@@ -556,7 +555,7 @@ program shdom
             &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, IPHASEPT,&
             &TEMPP_, EXTINCTP_, ALBEDOP_, LEGENP_, IPHASEP_)
 
-        if (MASTERPROC) deallocate (TEMPPT, EXTINCTPT, ALBEDOPT, IPHASEPT, LEGENPT)
+        if (isMasterProc) deallocate (TEMPPT, EXTINCTPT, ALBEDOPT, IPHASEPT, LEGENPT)
 
     else
 
@@ -573,7 +572,7 @@ program shdom
 
     end if
 
-    if (MASTERPROC) then
+    if (isMasterProc) then
         ! Check input parameters
         call shd_io__checkInp(NMU, NPHI, DELTAM, MAXASYM,&
             &GRIDTYPE, SRCTYPE, UNITS, SOLARFLUX0, SOLARMU,&
@@ -592,7 +591,7 @@ program shdom
         allocate (SFCPARMS(MAXSFCPARS*MAXSFCPTS))
         MEMWORD = MEMWORD + MAXSFCPARS*MAXSFCPTS
 
-        if (MASTERPROC) then
+        if (isMasterProc) then
             call shd_io__readSfc(SFCFILE, MAXSFCPTS, MAXSFCPARS,&
                 &SFCTYPE, NXSFC, NYSFC, DELXSFC, DELYSFC,&
                 &NSFCPAR, SFCPARMS, GNDTEMP, GNDALBEDO)
@@ -608,7 +607,7 @@ program shdom
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! If doing a k-distribution then get the band info from the CKD file
     if (KDIST) then
-        if (MASTERPROC) then
+        if (isMasterProc) then
             call shd_io__readCkdSize(CKDFILE, WAVENO, NG, NZCKD_)
         end if
         ! Broadcast the k-distribution array sizes
@@ -617,7 +616,7 @@ program shdom
         allocate (SOLFLUX(NG), DELG(NG))
         MEMWORD = MEMWORD + NZCKD_*(2.0+NG) + 2.0*NG
 
-        if (MASTERPROC) then
+        if (isMasterProc) then
             MAXNG = NG; MAXNZ = NZCKD_
             call shd_io__readCkd(MAXNG, MAXNZ, CKDFILE, WAVENO, SOLFLUX,&
                 &NG, DELG, NZCKD_, ZCKD_, KABS)
@@ -641,14 +640,14 @@ program shdom
     ! Read in user-specified sensor properties if given
     !   this is a binary angle input implemented for 'R' and 'V3'
     if (SENFILE(1:4) .ne. 'NONE') then
-        if (MASTERPROC) then
+        if (isMasterProc) then
             call shd_io__readSenSize(SENFILE, NSENDATA, NSENPAR)
         end if
         call shd_mpi__bcastSenSize(NSENDATA, NSENPAR)
         allocate (SENPARMS(NSENDATA*NSENPAR))
         MEMWORD = MEMWORD + NSENDATA*NSENPAR
 
-        if (MASTERPROC) then
+        if (isMasterProc) then
             call shd_io__readSen(SENFILE, NSENDATA, NSENPAR,&
                 &SENPARMS)
         end if
@@ -719,7 +718,7 @@ program shdom
 
     ! Notify user that certain outputs are not supported with multiple processors
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    if (isMpi_ .and. MASTERPROC) then
+    if (isMpi_ .and. isMasterProc) then
         do I = 1, NUMOUT
             if (OUTTYPES(I) .eq. 'F') then
                 if (nint(OUTPARMS(1, I)) .eq. 2 .or. nint(OUTPARMS(1, I)) .eq. 5) then
@@ -981,7 +980,7 @@ program shdom
 
     MESSAGE = 'Message [shdom]: Total time used for preparation: '
     call shd_util__tickTock(MESSAGE, COUNT_START)
-    if (MASTERPROC) then
+    if (isMasterProc) then
         if (VERBOSE_ .ge. 5) write (6, '(A)') trim(adjustl(MESSAGE))
     end if
 
@@ -1259,7 +1258,7 @@ program shdom
 
     MESSAGE = 'Message [shdom]: Total time used for runs: '
     call shd_util__tickTock(MESSAGE, COUNT_START)
-    if (MASTERPROC) then
+    if (isMasterProc) then
         if (VERBOSE_ .ge. 5) write (6, '(A)') trim(adjustl(MESSAGE))
     end if
 
@@ -1271,7 +1270,7 @@ program shdom
     IVIS = 0
     if (isMpi_) then
 
-        if (MASTERPROC) then
+        if (isMasterProc) then
             if (FLUX_OUT) allocate (ALLFLUXES(3, NZ, NYT, NXT))
             if (FLUXDIV_OUT) allocate (ALLFLUXDIV(NZ, NYT, NXT))
             if (SH_OUT) allocate (ALLSHTERMS(NSHOUT, NZ, NYT, NXT))
@@ -1285,7 +1284,7 @@ program shdom
             &ALLFLUXES, ALLFLUXDIV, ALLSHTERMS,&
             &NCELLS, NPTS, NSH, NCELLSTOT, NPTSTOT, NSHTOT)
 
-        if (MASTERPROC) then
+        if (isMasterProc) then
 
             do I = 1, NUMOUT
                 if (OUTTYPES(I) .ne. 'V' .and. OUTFILES(I)(1:4) .ne. 'NONE') then
@@ -1366,7 +1365,7 @@ program shdom
 
     ! Output camera radiance if there are any
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    if (MASTERPROC) then
+    if (isMasterProc) then
         do I = 1, NUMOUT
             if ((OUTTYPES(I) .eq. 'V')) then
                 if (SENFILE(1:4) .ne. 'NONE') then
@@ -1407,7 +1406,7 @@ program shdom
 
     MESSAGE = 'Message [shdom]: Total time used for output: '
     call shd_util__tickTock(MESSAGE, COUNT_START)
-    if (MASTERPROC) then
+    if (isMasterProc) then
         if (VERBOSE_ .ge. 5) write (6, '(A)') trim(adjustl(MESSAGE))
     end if
 
