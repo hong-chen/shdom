@@ -115,6 +115,9 @@ program shdom
     real(kind=R__), allocatable :: sumFluxTot_Out(:, :), sumFluxDir_Out(:), sumFluxDiv_Out(:)
     real(kind=R__), allocatable :: sumSH_Out(:), src1_Out(:)
     real(kind=R__), allocatable :: sumRad_Out(:), sumCam_Out(:)
+    logical :: isBaseOut, isRadOut, isCamOut, isFluxOut, isHROut, isSHOut, isSrcOut
+
+    character(len=charMaxLen_) :: fileOut_nc
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
@@ -222,8 +225,8 @@ program shdom
 
     real(kind=R__) :: memUsed, memNeed, scaleFactor
 
-    integer(kind=I__) :: maxPG, maxIG, maxIC, maxIV, maxIDO, maxNz, maxNg
-    integer(kind=I__) :: maxLeg, maxPGL, maxIGL, NbigArr
+    integer(kind=I__) :: maxG_P, maxIG, maxIC, maxIV, maxIDO, maxNz, maxNg
+    integer(kind=I__) :: maxLeg, maxGL_P, maxIGL, NbigArr
 
     real(kind=R__) :: NmaxIG
     real(kind=R__) :: MAX_TOTAL_MB, ADAPT_GRID_FACTOR
@@ -231,7 +234,7 @@ program shdom
     real(kind=R__) :: MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
 
     integer(kind=I__) :: Nproc, Nstokes, Nx, Ny, Nz, Nx1, Ny1
-    integer(kind=I__) :: Nx_T, Ny_T, Nx_PT, Ny_PT, maxPGT, maxPGLT
+    integer(kind=I__) :: Nx_T, Ny_T, Nx_PT, Ny_PT, maxG_PT, maxGL_PT
     integer(kind=I__) :: Npts_base, Npts, Ncell, Nsh, Ncell_base, oldNpts
     integer(kind=I__) :: maxIter, iter, totIter, iz, iout, Nout, bcFlag, ipFlag
     integer(kind=I__) :: Nrad, irad, Nx_out, Ny_out, Nlos, ilos, Nscan, Npix, Nsh_out
@@ -243,14 +246,13 @@ program shdom
     real(kind=R__) :: skyRad, waveNum(2), waveLen
     real(kind=R__) :: solAcc, solCrit, splitAcc, shAcc, maxAsym
 
-    character(len=charMaxLen_) :: fileOut_nc, runName
+    logical :: isMasterProc
+    character(len=charMaxLen_) :: runName
 
     integer(kind=I__) :: countStart, countRate, countMax
     character(len=charMaxLen_) :: message
 
     logical :: isCkd, isDeltaM, isAccel
-    logical :: isBaseOut, isMasterProc
-    logical :: isRadOut, isCamOut, isFluxOut, isHROut, isSHOut, isSrcOut
 
 
     ! start timing
@@ -390,10 +392,10 @@ program shdom
     if (isMasterProc) then
         ! Find out the size of the input property file grid
         call shd_io__readPrpSize(fileInp_prp, Nstleg, Nleg, Nx_prp_, Ny_prp_, Nz_prp_, dx_prp_, dy_prp_,&
-            &Npha_prp_, maxLeg, maxPGL)
+            &Npha_prp_, maxLeg, maxGL_P)
     end if
     call shd_mpi__bcastPrpSize(Nx_prp_, Ny_prp_, Nz_prp_, dx_prp_, dy_prp_,&
-        &Npha_prp_, maxLeg, maxPGL)
+        &Npha_prp_, maxLeg, maxGL_P)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
@@ -578,14 +580,14 @@ program shdom
     ! Read fileInp_prp and distribute data if MPI
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Determine the size of the property grid arrays so can allocate
-    maxNz = Nz_prp_
-    maxPG = Nx_prp_*Ny_prp_*Nz_prp_
-    if (Npha_prp_ .eq. 0) maxPGL = maxPG*(maxLeg + 1)*Nstleg
+    maxNz  = Nz_prp_
+    maxG_P = Nx_prp_*Ny_prp_*Nz_prp_
+    if (Npha_prp_ .eq. 0) maxGL_P = maxG_P*(maxLeg + 1)*Nstleg
 
     allocate (z_Prp_(Nz_prp_))
-    allocate (temp_Prp_(maxPG), ext_Prp_(maxPG), ssAlb_Prp_(maxPG))
-    allocate (extDir_Prp_(maxPG), ipha_Prp_(maxPG), legen_Prp_(maxPGL))
-    memUsed = memUsed + Nz_prp_+ 6.0*maxPG + maxPGL
+    allocate (temp_Prp_(maxG_P), ext_Prp_(maxG_P), ssAlb_Prp_(maxG_P))
+    allocate (extDir_Prp_(maxG_P), ipha_Prp_(maxG_P), legen_Prp_(maxGL_P))
+    memUsed = memUsed + Nz_prp_+ 6.0*maxG_P + maxGL_P
 
     if (isMpi_) then
 
@@ -593,16 +595,16 @@ program shdom
         !   distribute to all the processors
         if (isMasterProc) then
 
-            maxPGT = Nx_PT*Ny_PT*Nz_prp_
-            maxPGLT = maxPGL
-            if (Npha_prp_ .eq. 0) maxPGLT = maxPGT*(maxLeg + 1)*Nstleg
+            maxG_PT = Nx_PT*Ny_PT*Nz_prp_
+            maxGL_PT = maxGL_P
+            if (Npha_prp_ .eq. 0) maxGL_PT = maxG_PT*(maxLeg + 1)*Nstleg
 
-            allocate (temp_PT(maxPGT), ext_PT(maxPGT), ssAlb_PT(maxPGT))
-            allocate (ipha_PT(maxPGT), legen_PT(maxPGLT))
+            allocate (temp_PT(maxG_PT), ext_PT(maxG_PT), ssAlb_PT(maxG_PT))
+            allocate (ipha_PT(maxG_PT), legen_PT(maxGL_PT))
 
             ! Only use delX and delY from initial read, dxTmp_prp and dyTmp_prp are discarded
             call shd_io__readPrp(fileInp_prp, Nx_PT, Ny_PT, Nz_prp_,&
-                &Nstleg, maxLeg, Nleg, maxNz, maxPGT, maxPGLT, isDeltaM,&
+                &Nstleg, maxLeg, Nleg, maxNz, maxG_PT, maxGL_PT, isDeltaM,&
                 &type_prp, dxTmp_prp, dyTmp_prp, z_Prp_, maxAsym,&
                 &temp_PT, ext_PT, ssAlb_PT, legen_PT, Npha_prp_, ipha_PT)
 
@@ -631,7 +633,7 @@ program shdom
 
         ! Read the properties of the medium to the single processor
         call shd_io__readPrp(fileInp_prp, Nx_prp_, Ny_prp_, Nz_prp_,&
-            &Nstleg, maxLeg, Nleg, maxNz, maxPG, maxPGL, isDeltaM,&
+            &Nstleg, maxLeg, Nleg, maxNz, maxG_P, maxGL_P, isDeltaM,&
             &type_prp, dx_prp_, dy_prp_, z_Prp_, maxAsym,&
             &temp_Prp_, ext_Prp_, ssAlb_Prp_, legen_Prp_, Npha_prp_, ipha_Prp_)
 
@@ -891,7 +893,7 @@ program shdom
     ! memUsed is now more accurate than before
     ! before:
     !   memUsed = Nmu*(2 + 2*Nphi + 2*Nlm + 2*33*32)&            ! SHDO allocation
-    !       + 4.5*maxPG + maxPGL + Npha_prp_*Nstleg*(maxLeg + 1) ! phase allocation
+    !       + 4.5*maxG_P + maxGL_P+ Npha_prp_*Nstleg*(maxLeg + 1) ! phase allocation
     ! now: update memUsed after every allocation step
     !
     ! NmaxIG is now more accurate than before
@@ -1486,7 +1488,7 @@ program shdom
     ! MAXMB is now more accurate than before
     ! before:
     !  MAXMB_OUT = 4*(Nmu*(2 + 2*Nphi + 2*Nlm + 2*33*32)&
-    !      + 4.5*maxPG + maxPGL + Npha_prp_*Nstleg*(maxLeg + 1)&
+    !      + 4.5*maxG_P + maxGL_P + Npha_prp_*Nstleg*(maxLeg + 1)&
     !      + 16.5*Ncell + Npts*(28 + Nphi0max*Nstokes)&
     !      + Nstokes*Nsh*NbigArr)/1024**2
     ! now:
