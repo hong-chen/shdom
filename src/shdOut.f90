@@ -40,7 +40,7 @@
 module shd_out
 
     use globals_const, only: RD_, PI_
-    use globals_cfg,   only: verbose_, fnameMaxLen_, is1DX_, &
+    use globals_cfg,   only: verbose_, charMaxLen_, is1DX_, &
                              isPol_, isPol4_, &
                              isSolar_, isThermal_
 
@@ -133,7 +133,7 @@ subroutine shd_io__outputResult(&
     character(len=128) :: FORM
     character(len=128) :: GRIDNAME, SOURCENAME, UNITSNAME, OUTNAME, SFCNAME
 
-    character(len=fnameMaxLen_) :: OUTFILE_DATA
+    character(len=charMaxLen_) :: OUTFILE_DATA
     character(len=20)  :: DATA_POSTFIX
     integer :: NVAR, NDATA, IDATA
 
@@ -1227,7 +1227,7 @@ subroutine shd_io__outputResultMpi(&
     character(len=64) :: GRIDNAME, SOURCENAME, UNITSNAME, OUTNAME, SFCNAME
 
     real, allocatable :: MU_SET(:), PHI_SET(:)
-    character(len=fnameMaxLen_) :: OUTFILE_DATA
+    character(len=charMaxLen_) :: OUTFILE_DATA
     character(len=20)  :: DATA_POSTFIX
     integer :: NVAR, NDATA, IDATA
     real, allocatable :: SUM1(:), SUM2(:), SUM3(:)
@@ -1956,7 +1956,7 @@ subroutine shd_io__outputCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     real VISOUT(NSTOKES, *)
 
     character(len=128) :: GRIDNAME, SOURCENAME, UNITSNAME, SFCNAME, OUTNAME
-    character(len=fnameMaxLen_) :: OUTFILE_DATA
+    character(len=charMaxLen_) :: OUTFILE_DATA
     character(len=20)  :: DATA_POSTFIX
     integer :: N, IDATA, NL, NS, CAMID
 

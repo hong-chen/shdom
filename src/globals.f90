@@ -125,7 +125,7 @@ module globals_cfg
     implicit none
     public
 
-    integer, parameter :: fnameMaxLen_ = 256 ! file name max length (number of characters)
+    integer, parameter :: charMaxLen_ = 256 ! file name max length (number of characters)
     real(kind=8), save :: RAcc_
     real(kind=4), save :: memTotSysMB_ = 16000.0
     real(kind=4), save :: memPerCpuMB_

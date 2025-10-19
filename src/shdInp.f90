@@ -43,7 +43,7 @@
 module shd_inp
 
     use globals_const, only: PI_
-    use globals_cfg,   only: verbose_, fnameMaxLen_
+    use globals_cfg,   only: verbose_, charMaxLen_
 
     use shd_util, only: shd_util__computePlanck
 
@@ -103,9 +103,9 @@ subroutine shd_io__userInp(&
     real NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
     character(len=1) :: SRCTYPE, GRIDTYPE, UNITS
     character(len=1) :: OUTTYPES(*)
-    character(len=fnameMaxLen_) :: OUTFILES(*)
-    character(len=fnameMaxLen_) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE, SENFILE
-    character(len=fnameMaxLen_) :: OutFileNC, RUNNAME
+    character(len=charMaxLen_) :: OUTFILES(*)
+    character(len=charMaxLen_) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE, SENFILE
+    character(len=charMaxLen_) :: OutFileNC, RUNNAME
     integer(kind=1) :: VERBOSE
     integer I, J, N
     real GNDEMIS
@@ -366,10 +366,10 @@ subroutine shd_io__nmlInp(&
     real dNUM_SH_TERM_FACTOR, dCELL_TO_POINT_RATIO
     character(len=1) :: dSRCTYPE, dGRIDTYPE, dUNITS
     character(len=1) ::  dOUTTYPES(*)
-    character(len=fnameMaxLen_) :: dOUTFILES(*)
-    character(len=fnameMaxLen_) :: dOutFileNC, dRUNNAME
-    character(len=fnameMaxLen_) :: dPROPFILE, dSFCFILE, dCKDFILE
-    character(len=fnameMaxLen_) :: dINSAVEFILE, dOUTSAVEFILE, dSENFILE
+    character(len=charMaxLen_) :: dOUTFILES(*)
+    character(len=charMaxLen_) :: dOutFileNC, dRUNNAME
+    character(len=charMaxLen_) :: dPROPFILE, dSFCFILE, dCKDFILE
+    character(len=charMaxLen_) :: dINSAVEFILE, dOUTSAVEFILE, dSENFILE
     integer(kind=1) :: dVERBOSE
     integer I, J, N
 
@@ -386,9 +386,9 @@ subroutine shd_io__nmlInp(&
     real OUTPARMS(MAXPAR, MAXOUT)
     character(len=1) :: SRCTYPE, GRIDTYPE, UNITS
     character(len=1) :: OUTTYPES(MAXOUT)
-    character(len=fnameMaxLen_) :: OUTFILES(MAXOUT)
-    character(len=fnameMaxLen_) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
-    character(len=fnameMaxLen_) :: SENFILE, OutFileNC, RUNNAME
+    character(len=charMaxLen_) :: OUTFILES(MAXOUT)
+    character(len=charMaxLen_) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
+    character(len=charMaxLen_) :: SENFILE, OutFileNC, RUNNAME
     integer(kind=1) :: VERBOSE
     namelist /SHDOMINPUT/&
         &RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
@@ -403,7 +403,7 @@ subroutine shd_io__nmlInp(&
         &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO,&
         &VERBOSE
 
-    character(len=fnameMaxLen_) :: NMLFILE
+    character(len=charMaxLen_) :: NMLFILE
 
     if (dMAXOUT .ne. MAXOUT) stop 'Error [_nmlInp]: MAXOUT not the same.'
     if (dMAXPAR .ne. MAXPAR) stop 'Error [_nmlInp]: MAXPAR not the same.'
@@ -749,9 +749,9 @@ subroutine shd_io__readPrp(&
     integer I, IX, IY, IZ, J, JS, K, KL, L, IL, NUML, IPH, N
     real :: TMP, EXT, ALB, CHI
 
-    character(len=fnameMaxLen_) :: OUTFILE_DATA
-    character(len=fnameMaxLen_) :: TMP_CHAR
-    character(len=fnameMaxLen_) :: DIMS_CHAR
+    character(len=charMaxLen_) :: OUTFILE_DATA
+    character(len=charMaxLen_) :: TMP_CHAR
+    character(len=charMaxLen_) :: DIMS_CHAR
     character(len=20) :: DATA_POSTFIX
     integer :: NXX, NYY, NZZ, NPP
 
@@ -1220,9 +1220,9 @@ subroutine shd_io__readSfc(&
     real F_ISO, F_VOL, F_GEO, F_JIAO
     real A, B, ZETA, SIGMA, ALPHA
 
-    character(len=fnameMaxLen_) :: OUTFILE_DATA
-    character(len=fnameMaxLen_) :: TMP_CHAR
-    character(len=fnameMaxLen_) :: DIMS_CHAR
+    character(len=charMaxLen_) :: OUTFILE_DATA
+    character(len=charMaxLen_) :: TMP_CHAR
+    character(len=charMaxLen_) :: DIMS_CHAR
     character(len=20) :: DATA_POSTFIX
     integer :: NXX, NYY, NPP, IDATA, NDATA
 
@@ -1705,8 +1705,8 @@ subroutine shd_io__readSenSize(&
     character(len=*), intent(in) :: SENFILE
     integer, intent(out) :: NSENDATA, NSENPAR
 
-    character(len=fnameMaxLen_) :: TMP_CHAR
-    character(len=fnameMaxLen_) :: DIMS_CHAR
+    character(len=charMaxLen_) :: TMP_CHAR
+    character(len=charMaxLen_) :: DIMS_CHAR
 
     ! Open the file, figure out the type, and get the grid size
     open (UNIT=1, FILE=trim(adjustl(SENFILE)), STATUS='OLD')
@@ -1734,9 +1734,9 @@ subroutine shd_io__readSen(&
     real, intent(inout) :: SENPARMS(*)
     integer :: NSENDATA, NSENPAR, ISENDATA
 
-    character(len=fnameMaxLen_) :: OUTFILE_DATA
-    character(len=fnameMaxLen_) :: TMP_CHAR
-    character(len=fnameMaxLen_) :: DIMS_CHAR
+    character(len=charMaxLen_) :: OUTFILE_DATA
+    character(len=charMaxLen_) :: TMP_CHAR
+    character(len=charMaxLen_) :: DIMS_CHAR
     character(len=20) :: DATA_POSTFIX
 
     ! Open the file, figure out the type, and get the grid size

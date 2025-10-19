@@ -40,7 +40,7 @@
 module shd_mpi
 
     use globals_const, only: RD_, PI_, DPI_, PIH_, FRAC13_, FRAC112_
-    use globals_cfg,   only: verbose_, fnameMaxLen_, RAcc_, &
+    use globals_cfg,   only: verbose_, charMaxLen_, RAcc_, &
                              isMpiX_, isMpiY_, isMpi_, &
                              is1DX_, is1DYx_, is1D_, &
                              isPol_, isPol4_, &
@@ -196,7 +196,7 @@ subroutine shd_mpi__map(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
     logical :: periodic(2) = (/.true., .true./), reorder = .false.
     real    :: XEND, YEND
     character(len=4) :: procstr
-    character(len=fnameMaxLen_) :: logfile
+    character(len=charMaxLen_) :: logfile
 
     NPXT = NPX; NPYT = NPY; NXT = NX; NYT = NY
 
@@ -366,15 +366,15 @@ subroutine shd_mpi__bcastInp(&
     real, intent(inout) :: MAX_TOTAL_MB, SPLITTING_FACTOR
     real, intent(inout) :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
     character(len=1), intent(inout) :: SRCTYPE, GRIDTYPE, UNITS, OUTTYPES(*)
-    character(len=fnameMaxLen_), intent(inout) :: RUNNAME, PROPFILE, SFCFILE, CKDFILE
-    character(len=fnameMaxLen_), intent(inout) :: INSAVEFILE, OUTSAVEFILE, SENFILE
+    character(len=charMaxLen_), intent(inout) :: RUNNAME, PROPFILE, SFCFILE, CKDFILE
+    character(len=charMaxLen_), intent(inout) :: INSAVEFILE, OUTSAVEFILE, SENFILE
 
 #if HAS_MPI
     integer :: iErr, intbuf(10)
     logical :: logbuf(3)
     real    :: realbuf(16)
     character(len=1) :: char1buf(3)
-    character(len=fnameMaxLen_) :: char256buf(7)
+    character(len=charMaxLen_) :: char256buf(7)
     character(len=4) :: procstr
 
     if (NProc_ .le. 1) return
@@ -2941,7 +2941,7 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
     real    :: loadObject, Energy, NewEnergy, LowestEnergy, DeltaE, Boltz
     integer, allocatable :: ProcCoordAll(:, :), Ngrid(:, :)
     real, allocatable :: wtproc(:)
-    character(len=fnameMaxLen_) :: PROPFILEI
+    character(len=charMaxLen_) :: PROPFILEI
 
     ! Initialize the subdomain boundary lines to evenly spaced
     Nxd = ProcDims(1); Nyd = ProcDims(2); N = Nxd + Nyd - 2

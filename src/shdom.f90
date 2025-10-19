@@ -40,7 +40,7 @@
 program shdom
 
     use globals_const, only: REPS_
-    use globals_cfg,   only: verbose_, fnameMaxLen_, RAcc_, &
+    use globals_cfg,   only: verbose_, charMaxLen_, RAcc_, &
                              memTotSysMB_, memPerCpuMB_, &
                              isNmlInp_, isHighOrder_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, isMpi_, &
@@ -111,7 +111,7 @@ program shdom
     real(kind=R__)   :: mu_out, phi_out
     real(kind=R__)   :: parms_Out(maxNpar_out, maxNset_out)
     character(len=1) :: type_Out(maxNset_out)
-    character(len=fnameMaxLen_) :: file_Out(maxNset_out)
+    character(len=charMaxLen_) :: file_Out(maxNset_out)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     integer(kind=2)  , allocatable :: ipha(:)
@@ -144,20 +144,30 @@ program shdom
 
     ! SAV
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    character(len=fnameMaxLen_) :: fileInp_sav, fileOut_sav
-    logical :: INRADFLAG, NEWGRIDFLAG
+    character(len=charMaxLen_) :: fileInp_sav, fileOut_sav
+    logical :: isNewRad, isNewGrid
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! PRP
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    character(len=fnameMaxLen_) :: fileInp_prp
+    character(len=charMaxLen_) :: fileInp_prp
     character(len=1) :: type_prp
-    real(kind=R__) :: dx0_prp, dy0_prp
+    real(kind=R__) :: dxDummy_prp, dyDummy_prp
+
+    ! the followings are included in globals_prp
+    ! integer, save :: Nx_prp_, Ny_prp_, Nz_prp_, Npha_prp_
+    ! real, save    :: dx_prp_, dy_prp_, xStart_prp_, yStart_prp_
+    ! real, save    :: xDomain_prp_, yDomain_prp_
+    ! real, save, allocatable :: z_Prp_(:)
+    ! real, save, allocatable :: temp_Prp_(:), ext_Prp_(:), ssAlb_Prp_(:)
+    ! real, save, allocatable :: extDir_Prp_(:)
+    ! real, save, allocatable :: legen_Prp_(:)
+    ! integer(2), save, allocatable :: ipha_Prp_(:)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! SFC
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    character(len=fnameMaxLen_) :: fileInp_sfc
+    character(len=charMaxLen_) :: fileInp_sfc
     character(len=2)  :: type_sfc
     integer(kind=I__) :: Nx_sfc, Ny_sfc, Npar_sfc
     integer(kind=I__) :: maxPts_sfc, maxPar_sfc
@@ -169,7 +179,7 @@ program shdom
 
     ! CKD
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    character(len=fnameMaxLen_) :: fileInp_ckd
+    character(len=charMaxLen_) :: fileInp_ckd
     integer(kind=I__) :: Ng_ckd, ig_ckd
     real(kind=R__)    :: solar0_ckd
     real(kind=R__), allocatable :: solar_Ckd(:), &
@@ -179,7 +189,7 @@ program shdom
 
     ! SEN
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    character(len=fnameMaxLen_) :: fileInp_sen
+    character(len=charMaxLen_) :: fileInp_sen
     integer(kind=I__) :: Npts_sen, Npar_sen
     real(kind=R__), allocatable :: parms_Sen(:)
     !╰────────────────────────────────────────────────────────────────────────────╯!
@@ -227,10 +237,10 @@ program shdom
     real(kind=R__) :: skyRad, waveNum(2), waveLen
     real(kind=R__) :: solAcc, solCrit, splitAcc, shAcc, maxAsym
 
-    character(len=fnameMaxLen_) :: fileOut_nc, runName
+    character(len=charMaxLen_) :: fileOut_nc, runName
 
     integer(kind=I__) :: countStart, countRate, countMax
-    character(len=fnameMaxLen_) :: message
+    character(len=charMaxLen_) :: message
 
     logical :: isCkd, isDeltaM, isAccel
     logical :: isBaseOut, isMasterProc
@@ -290,7 +300,7 @@ program shdom
 
 
     ! Memory used for initialization (rough estimate, 1 WORD = 4 bytes)
-    memUsed = 2000.0 + maxNset_out * (maxNpar_out + 0.25 + (fnameMaxLen_/4.0))
+    memUsed = 2000.0 + maxNset_out * (maxNpar_out + 0.25 + (charMaxLen_/4.0))
 
 
     ! Post-process parameters from input
@@ -584,10 +594,10 @@ program shdom
             allocate (tempPT(maxPGT), extinctPT(maxPGT), ssAlbPT(maxPGT))
             allocate (ipha_PT(maxPGT), legenPT(maxPGLT))
 
-            ! Only use delX and delY from initial read, dx0_prp and dy0_prp are discarded
+            ! Only use delX and delY from initial read, dxDummy_prp and dyDummy_prp are discarded
             call shd_io__readPrp(fileInp_prp, NpxT, NpyT, Nz_prp_,&
                 &Nstleg, maxLeg, Nleg, maxNz, maxPGT, maxPGLT, isDeltaM,&
-                &type_prp, dx0_prp, dy0_prp, z_Prp_, maxAsym,&
+                &type_prp, dxDummy_prp, dyDummy_prp, z_Prp_, maxAsym,&
                 &tempPT, extinctPT, ssAlbPT, legenPT, Npha_prp_, ipha_PT)
 
             if (Npha_prp_ .eq. 0) then
@@ -1017,14 +1027,14 @@ program shdom
 
     ! Read in previous run from binary file if desired
     call shd_io__restoreState(fileInp_sav, Nstokes, Nx, Ny, Nz, maxNl, maxNm, Nlm,&
-        &INRADFLAG, NEWGRIDFLAG, x_Grid, y_Grid, z_Grid,&
+        &isNewRad, isNewGrid, x_Grid, y_Grid, z_Grid,&
         &Npts, Ncell, xyz_Grid, ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell,&
         &flag_Cell, fluxes, SHptr, source, RSHptr, radiance)
 
 
     ! Check if we can use pre-calculated "state", if not, generate new grids
-    !   NEWGRIDFLAG is from shd_io__restoreState call
-    if (NEWGRIDFLAG) then
+    !   isNewGrid is from shd_io__restoreState call
+    if (isNewGrid) then
         ! Make the internal base grid lines
         call shd_init__makeGrid(bcFlag, type_grid, Nx_prp_, Ny_prp_, Nz_prp_, Nx, Ny, Nz,&
             &xStart_prp_, yStart_prp_, dx_prp_, dy_prp_, z_Prp_,&
@@ -1069,7 +1079,7 @@ program shdom
 
         ! If this is the first time through or we always want a base grid,
         !   then make the base grid point positions and grid cell structure.
-        if (isBaseOut .or. ((ig_ckd.eq. Ng_ckd) .and. NEWGRIDFLAG)) then
+        if (isBaseOut .or. ((ig_ckd.eq. Ng_ckd) .and. isNewGrid)) then
             call shd_init__makeCell(bcFlag, ipFlag,&
                 &Nx, Ny, Nz, Nx1, Ny1, Npts, Ncell,&
                 &x_Grid, y_Grid, z_Grid, xyz_Grid,&
@@ -1082,7 +1092,7 @@ program shdom
         call shd_solv__solveRte(Nstokes, Nx, Ny, Nz, Nx1, Ny1, Nang,&
             &maxNl, maxNm, Nlm, Nmu, Nphi, Nleg, Nstleg, Npha_prp_,&
             &Nphi0, mu, phi, wtDO,&
-            &maxIV, maxIC, maxIG, maxIDO, INRADFLAG,&
+            &maxIV, maxIC, maxIG, maxIDO, isNewRad,&
             &bcFlag, ipFlag, isDeltaM, type_src, isHighOrder_,&
             &solar0_ckd, mu_solar, az_solar, skyRad,&
             &type_sfc, temp0_sfc, alb0_sfc,&
@@ -1097,7 +1107,7 @@ program shdom
             &Ncell, ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
             &RSHptr, SHptr, OSHptr, work, work1, work2,&
             &source, delSource, radiance, fluxes, dirFlux)
-        INRADFLAG = .false.
+        isNewRad = .false.
         totIter = totIter + iter
 
         ! Compute the output and put in arrays. First the radiance.
