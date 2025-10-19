@@ -40,7 +40,7 @@
 module shd_out
 
     use globals_const, only: RD_, PI_
-    use globals_cfg,   only: VERBOSE_, FNAMEMAXLEN_, is1DX_, &
+    use globals_cfg,   only: verbose_, fnameMaxLen_, is1DX_, &
                              isPol_, isPol4_, &
                              isSolar_, isThermal_
 
@@ -133,7 +133,7 @@ subroutine shd_io__outputResult(&
     character(len=128) :: FORM
     character(len=128) :: GRIDNAME, SOURCENAME, UNITSNAME, OUTNAME, SFCNAME
 
-    character(len=FNAMEMAXLEN_) :: OUTFILE_DATA
+    character(len=fnameMaxLen_) :: OUTFILE_DATA
     character(len=20)  :: DATA_POSTFIX
     integer :: NVAR, NDATA, IDATA
 
@@ -361,7 +361,7 @@ subroutine shd_io__outputResult(&
 
         ! binary data
         !╭────────────────────────────────────────────────╮!
-        if (VERBOSE_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <R> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+        if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <R> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
         N = NANGOUT*NXOUT*NYOUT
         call shd_io__outputDataBin(RADOUT, NSTOKES, N, IRAD, OUTFILE_DATA)
         !╰────────────────────────────────────────────────╯!
@@ -412,7 +412,7 @@ subroutine shd_io__outputResult(&
 
             ! binary data
             !╭────────────────────────────────────────────────╮!
-            if (VERBOSE_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <F1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+            if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <F1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
 
             N = NX1*NY1
             IDATA = 0
@@ -508,7 +508,7 @@ subroutine shd_io__outputResult(&
 
             ! binary data
             !╭────────────────────────────────────────────────╮!
-            if (VERBOSE_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <F2> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+            if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <F2> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
 
             N = NXOUT*NYOUT
             IDATA = 0
@@ -604,7 +604,7 @@ subroutine shd_io__outputResult(&
 
             ! binary data
             !╭────────────────────────────────────────────────╮!
-            if (VERBOSE_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <F3> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+            if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <F3> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
 
             IDATA = 0
             call shd_io__outputDataBin(C*SUM2/N, 1, NZ, IDATA, OUTFILE_DATA)
@@ -692,9 +692,9 @@ subroutine shd_io__outputResult(&
             ! binary data
             !╭────────────────────────────────────────────────╮!
             if (ALLGRID) then
-                if (VERBOSE_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <F5> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+                if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <F5> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
             else
-                if (VERBOSE_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <F4> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+                if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <F4> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
             end if
 
             IDATA = 0
@@ -770,7 +770,7 @@ subroutine shd_io__outputResult(&
 
             ! binary data
             !╭────────────────────────────────────────────────╮!
-            if (VERBOSE_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <H1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+            if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <H1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
 
             IDATA = 0
             call shd_io__outputDataBin(-SUM1/N, 1, NZ, IDATA, OUTFILE_DATA)
@@ -826,9 +826,9 @@ subroutine shd_io__outputResult(&
             ! binary data
             !╭────────────────────────────────────────────────╮!
             if (ALLGRID) then
-                if (VERBOSE_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <H3> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+                if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <H3> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
             else
-                if (VERBOSE_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <H2> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+                if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <H2> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
             end if
 
             IDATA = 0
@@ -903,9 +903,9 @@ subroutine shd_io__outputResult(&
         ! binary data
         !╭────────────────────────────────────────────────╮!
         if (ALLGRID) then
-            if (VERBOSE_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <S2> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+            if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <S2> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
         else
-            if (VERBOSE_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <S1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+            if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <S1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
         end if
 
         IDATA = 0
@@ -992,9 +992,9 @@ subroutine shd_io__outputResult(&
         ! binary data
         !╭────────────────────────────────────────────────╮!
         if (ALLGRID) then
-            if (VERBOSE_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <J2> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+            if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <J2> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
         else
-            if (VERBOSE_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <J1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+            if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <J1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
         end if
 
         IDATA = 0
@@ -1069,9 +1069,9 @@ subroutine shd_io__outputResult(&
         ! binary data
         !╭────────────────────────────────────────────────╮!
         if (ALLGRID) then
-            if (VERBOSE_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <M2> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+            if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <M2> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
         else
-            if (VERBOSE_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <M1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+            if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <M1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
         end if
 
         IDATA = 0
@@ -1227,7 +1227,7 @@ subroutine shd_io__outputResultMpi(&
     character(len=64) :: GRIDNAME, SOURCENAME, UNITSNAME, OUTNAME, SFCNAME
 
     real, allocatable :: MU_SET(:), PHI_SET(:)
-    character(len=FNAMEMAXLEN_) :: OUTFILE_DATA
+    character(len=fnameMaxLen_) :: OUTFILE_DATA
     character(len=20)  :: DATA_POSTFIX
     integer :: NVAR, NDATA, IDATA
     real, allocatable :: SUM1(:), SUM2(:), SUM3(:)
@@ -1440,7 +1440,7 @@ subroutine shd_io__outputResultMpi(&
 
         ! binary data
         !╭────────────────────────────────────────────────╮!
-        if (VERBOSE_ .ge. 5) write(*, '(A)') 'Message [_outputResultMpi]: <R> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+        if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResultMpi]: <R> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
         N = NANGOUT*NXOUT*NYOUT
         call shd_io__outputDataBin(RADOUT, NSTOKES, N, IRAD, OUTFILE_DATA)
         !╰────────────────────────────────────────────────╯!
@@ -1509,7 +1509,7 @@ subroutine shd_io__outputResultMpi(&
 
             ! binary data
             !╭────────────────────────────────────────────────╮!
-            if (VERBOSE_ .ge. 5) write(*, '(A)') 'Message [_outputResultMpi]: <F1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+            if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResultMpi]: <F1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
 
             N = NX*NY
             IDATA = 0
@@ -1596,7 +1596,7 @@ subroutine shd_io__outputResultMpi(&
 
             ! binary data
             !╭────────────────────────────────────────────────╮!
-            if (VERBOSE_ .ge. 5) write(*, '(A)') 'Message [_outputResultMpi]: <F3> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+            if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResultMpi]: <F3> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
 
             N = NX*NY
             IDATA = 0
@@ -1667,7 +1667,7 @@ subroutine shd_io__outputResultMpi(&
 
             ! binary data
             !╭────────────────────────────────────────────────╮!
-            if (VERBOSE_ .ge. 5) write(*, '(A)') 'Message [_outputResultMpi]: <F4> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+            if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResultMpi]: <F4> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
 
             N = NX*NY*NZ
             IDATA = 0
@@ -1741,7 +1741,7 @@ subroutine shd_io__outputResultMpi(&
 
             ! binary data
             !╭────────────────────────────────────────────────╮!
-            if (VERBOSE_ .ge. 5) write(*, '(A)') 'Message [_outputResultMpi]: <H1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+            if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResultMpi]: <H1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
 
             N = NX*NY
             IDATA = 0
@@ -1778,7 +1778,7 @@ subroutine shd_io__outputResultMpi(&
 
             ! binary data
             !╭────────────────────────────────────────────────╮!
-            if (VERBOSE_ .ge. 5) write(*, '(A)') 'Message [_outputResultMpi]: <H2> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+            if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResultMpi]: <H2> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
 
             N = NX*NY*NZ
             IDATA = 0
@@ -1851,7 +1851,7 @@ subroutine shd_io__outputResultMpi(&
 
             ! binary data
             !╭────────────────────────────────────────────────╮!
-            if (VERBOSE_ .ge. 5) write(*, '(A)') 'Message [_outputResultMpi]: <S1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+            if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResultMpi]: <S1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
 
             IDATA = 0
             call shd_io__outputDataBin(SHTERMS(1:4, :, :, :), 4, N, IDATA, OUTFILE_DATA)
@@ -1956,7 +1956,7 @@ subroutine shd_io__outputCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     real VISOUT(NSTOKES, *)
 
     character(len=128) :: GRIDNAME, SOURCENAME, UNITSNAME, SFCNAME, OUTNAME
-    character(len=FNAMEMAXLEN_) :: OUTFILE_DATA
+    character(len=fnameMaxLen_) :: OUTFILE_DATA
     character(len=20)  :: DATA_POSTFIX
     integer :: N, IDATA, NL, NS, CAMID
 
@@ -2121,7 +2121,7 @@ subroutine shd_io__outputCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
 
         ! binary data
         !╭────────────────────────────────────────────────╮!
-        if (VERBOSE_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <V> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
+        if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <V> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
         N = NL*NS
         IDATA = 0
         call shd_io__outputDataBin(VISOUT, NSTOKES, N, IDATA, OUTFILE_DATA)
@@ -2781,7 +2781,7 @@ subroutine shd_io__saveState(&
     !╭────────────────────────────────────────────────╮!
     inquire(FILE=trim(adjustl(OUTSAVEFILE)), size=DATA_BYTE)
     DATA_SIZE = DATA_BYTE/1000000.0
-    if (VERBOSE_ .ge. 5) write(*, '(A,F6.2,A)') 'Message [_saveState]: Data saved at <'//trim(adjustl(OUTSAVEFILE))//'> (',&
+    if (verbose_ .ge. 5) write(*, '(A,F6.2,A)') 'Message [_saveState]: Data saved at <'//trim(adjustl(OUTSAVEFILE))//'> (',&
         &DATA_SIZE, 'MB).'
     !╰────────────────────────────────────────────────╯!
 
@@ -2831,10 +2831,10 @@ subroutine shd_io__outputDataBin(&
         DATA_SIZE = DATA_BYTE/1000000.0
 
         if ((present(MODE)) .and. (MODE .eq. 'ADD')) then
-            if (VERBOSE_ .ge. 5) write(*, '(A,F0.2,A)') 'Message [_outputDataBin]: Data added to <'//trim(adjustl(OUTFILE_DATA))//'> (',&
+            if (verbose_ .ge. 5) write(*, '(A,F0.2,A)') 'Message [_outputDataBin]: Data added to <'//trim(adjustl(OUTFILE_DATA))//'> (',&
                 &DATA_SIZE, 'MB).'
         else
-            if (VERBOSE_ .ge. 5) write(*, '(A,F0.2,A)') 'Message [_outputDataBin]: Data saved at <'//trim(adjustl(OUTFILE_DATA))//'> (',&
+            if (verbose_ .ge. 5) write(*, '(A,F0.2,A)') 'Message [_outputDataBin]: Data saved at <'//trim(adjustl(OUTFILE_DATA))//'> (',&
                 &DATA_SIZE, 'MB).'
         end if
 

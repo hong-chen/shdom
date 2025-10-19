@@ -44,7 +44,7 @@ module shd_sfc
 
     use globals_const, only: PI_
     use globals_cfg,   only: isPol_
-    use globals_prp,   only: NPX_, NPY_, DELX_, DELY_
+    use globals_prp,   only: Nx_prp_, Ny_prp_, dx_prp_, dy_prp_
 
     use shd_util, only: shd_util__computePlanck
 
@@ -113,15 +113,15 @@ subroutine shd_sfc__interpSfc(&
 
         I = BCPTR(IBC)
 
-        if ((NPX_ .gt. 1) .and. (NPY_ .gt. 1) .and.&
+        if ((Nx_prp_ .gt. 1) .and. (Ny_prp_ .gt. 1) .and.&
             &(NXSFC .gt. 1) .and. (NYSFC .gt. 1) .and.&
-            &((abs(DELX_-DELXSFC) .gt. 1.0e-6) .or.&
-            &(abs(DELY_-DELYSFC) .gt. 1.0e-6))) then
-            ! added half dx,dy (DELX_/2.0-DELXSFC/2.0, DELY_/2.0-DELYSFC/2.0) to
+            &((abs(dx_prp_-DELXSFC) .gt. 1.0e-6) .or.&
+             &(abs(dy_prp_-DELYSFC) .gt. 1.0e-6))) then
+            ! added half dx,dy (dx_prp_/2.0-DELXSFC/2.0, dy_prp_/2.0-DELYSFC/2.0) to
             ! find surface point that is closest to grid center
             !╭────────────────────────────────────────────────╮!
-            RX = (GRIDPOS(1, I) + DELX_/2.0 - DELXSFC/2.0) / DELXSFC
-            RY = (GRIDPOS(2, I) + DELY_/2.0 - DELYSFC/2.0) / DELYSFC
+            RX = (GRIDPOS(1, I) + dx_prp_/2.0 - DELXSFC/2.0) / DELXSFC
+            RY = (GRIDPOS(2, I) + dy_prp_/2.0 - DELYSFC/2.0) / DELYSFC
             !╰────────────────────────────────────────────────╯!
         else
             RX = (GRIDPOS(1, I)) / DELXSFC

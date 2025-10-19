@@ -40,7 +40,7 @@
 module shd_grid
 
     use globals_const, only: RD_
-    use globals_cfg,   only: VERBOSE_, RACC_, &
+    use globals_cfg,   only: RAcc_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, isMpi_, &
                              is1DX_, is1DYx_, is1D_, &
                              isPol_, isSolar_, isThermal_
@@ -1104,7 +1104,12 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT, NSTLEG, NLEG,&
     ! is that of the maximum weighted scattering property grid point.
     ! If INIT=.TRUE. then transfers the tabulated phase functions.
 
-    use globals_prp
+    use globals_prp, only: Nx_prp_, Ny_prp_, Nz_prp_, Npha_prp_, &
+                           dx_prp_, dy_prp_, xStart_prp_, yStart_prp_, &
+                           z_Prp_, ext_Prp_, ssAlb_Prp_, ipha_Prp_, &
+                           temp_Prp_, legen_Prp_, extDir_Prp_
+
+    use globals_ckd, only: Nz_ckd_, z_Ckd_, kabs0_Ckd_
 
     integer NSTLEG, NLEG
     integer*2 IPHASE
@@ -1121,52 +1126,52 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT, NSTLEG, NLEG,&
 
     if (INIT) then
        ! If there are tabulated phase functions, then transfer them
-        do I = 1, NUMPHASE_
+        do I = 1, Npha_prp_
             do L = 0, NLEG
                 do J = 1, NSTLEG
-                    LEGEN(J, L, I) = LEGENP_(J + NSTLEG*(L + (NLEG + 1)*(I - 1)))/(2*L + 1)
+                    LEGEN(J, L, I) = legen_Prp_(J + NSTLEG*(L + (NLEG + 1)*(I - 1)))/(2*L + 1)
                 end do
             end do
         end do
-        !EXTMIN = 1.0d-5/((ZLEVELS_(NPZ_) - ZLEVELS_(1))/NPZ_)
-        EXTMIN  = RACC_/((ZLEVELS_(NPZ_) - ZLEVELS_(1))/NPZ_) ! attempt to improve agreement between libRadtran in water vapor abosprtion bands
+        !EXTMIN = 1.0d-5/((z_Prp_(Nz_prp_) - z_Prp_(1))/Nz_prp_)
+        EXTMIN  = RAcc_/((z_Prp_(Nz_prp_) - z_Prp_(1))/Nz_prp_) ! attempt to improve agreement between libRadtran in water vapor abosprtion bands
         SCATMIN = 0.1d0*EXTMIN
         return
     end if
 
     ! Find the grid location and compute the interpolation factors
     IL = 0
-    IU = NPZ_
+    IU = Nz_prp_
     do while (IU - IL .gt. 1)
         IM = (IU + IL)/2
-        if (Z .ge. ZLEVELS_(IM)) then
+        if (Z .ge. z_Prp_(IM)) then
             IL = IM
         else
             IU = IM
         end if
     end do
     IZ = max(IL, 1)
-    W = dble(Z - ZLEVELS_(IZ))/(ZLEVELS_(IZ + 1) - ZLEVELS_(IZ))
+    W = dble(Z - z_Prp_(IZ))/(z_Prp_(IZ + 1) - z_Prp_(IZ))
     W = max(min(W, 1.0d0), 0.0d0)
-    IX = int((X - XSTART_)/DELX_) + 1
-    if (abs(X - XSTART_ - NPX_*DELX_) .lt. 0.01*DELX_) IX = NPX_
-    if (IX .lt. 1 .or. IX .gt. NPX_) then
+    IX = int((X - xStart_prp_)/dx_prp_) + 1
+    if (abs(X - xStart_prp_ - Nx_prp_*dx_prp_) .lt. 0.01*dx_prp_) IX = Nx_prp_
+    if (IX .lt. 1 .or. IX .gt. Nx_prp_) then
         write (6, *) 'TRILIN: Beyond X domain'
         stop
     end if
-    IXP = mod(IX, NPX_) + 1
-    U = dble(X - XSTART_ - DELX_*(IX - 1))/DELX_
+    IXP = mod(IX, Nx_prp_) + 1
+    U = dble(X - xStart_prp_ - dx_prp_*(IX - 1))/dx_prp_
     U = max(min(U, 1.0d0), 0.0d0)
     if (U .lt. 1.0d-5) U = 0.0d0
     if (U .gt. 1.0d0 - 1.0d-5) U = 1.0d0
-    IY = int((Y - YSTART_)/DELY_) + 1
-    if (abs(Y - YSTART_ - NPY_*DELY_) .lt. 0.01*DELY_) IY = NPY_
-    if (IY .lt. 1 .or. IY .gt. NPY_) then
+    IY = int((Y - yStart_prp_)/dy_prp_) + 1
+    if (abs(Y - yStart_prp_ - Ny_prp_*dy_prp_) .lt. 0.01*dy_prp_) IY = Ny_prp_
+    if (IY .lt. 1 .or. IY .gt. Ny_prp_) then
         write (6, *) 'TRILIN: Beyond Y domain'
         stop
     end if
-    IYP = mod(IY, NPY_) + 1
-    V = dble(Y - YSTART_ - DELY_*(IY - 1))/DELY_
+    IYP = mod(IY, Ny_prp_) + 1
+    V = dble(Y - yStart_prp_ - dy_prp_*(IY - 1))/dy_prp_
     V = max(min(V, 1.0d0), 0.0d0)
     if (V .lt. 1.0d-5) V = 0.0d0
     if (V .gt. 1.0d0 - 1.0d-5) V = 1.0d0
@@ -1179,10 +1184,10 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT, NSTLEG, NLEG,&
     F6 =          U *(1.0d0 - V)*         W
     F7 = (1.0d0 - U)*         V *         W
     F8 =          U *         V *         W
-    I1 = IZ + NPZ_*( IY - 1) + NPZ_*NPY_*( IX - 1)
-    I2 = IZ + NPZ_*( IY - 1) + NPZ_*NPY_*(IXP - 1)
-    I3 = IZ + NPZ_*(IYP - 1) + NPZ_*NPY_*( IX - 1)
-    I4 = IZ + NPZ_*(IYP - 1) + NPZ_*NPY_*(IXP - 1)
+    I1 = IZ + Nz_prp_*( IY - 1) + Nz_prp_*Ny_prp_*( IX - 1)
+    I2 = IZ + Nz_prp_*( IY - 1) + Nz_prp_*Ny_prp_*(IXP - 1)
+    I3 = IZ + Nz_prp_*(IYP - 1) + Nz_prp_*Ny_prp_*( IX - 1)
+    I4 = IZ + Nz_prp_*(IYP - 1) + Nz_prp_*Ny_prp_*(IXP - 1)
 
     I5 = I1 + 1
     I6 = I2 + 1
@@ -1197,14 +1202,14 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT, NSTLEG, NLEG,&
     I4 = I8
     !╰────────────────────────────────────────────────╯!
 
-    SCAT1 = F1*EXTINCTP_(I1)*ALBEDOP_(I1)
-    SCAT2 = F2*EXTINCTP_(I2)*ALBEDOP_(I2)
-    SCAT3 = F3*EXTINCTP_(I3)*ALBEDOP_(I3)
-    SCAT4 = F4*EXTINCTP_(I4)*ALBEDOP_(I4)
-    SCAT5 = F5*EXTINCTP_(I5)*ALBEDOP_(I5)
-    SCAT6 = F6*EXTINCTP_(I6)*ALBEDOP_(I6)
-    SCAT7 = F7*EXTINCTP_(I7)*ALBEDOP_(I7)
-    SCAT8 = F8*EXTINCTP_(I8)*ALBEDOP_(I8)
+    SCAT1 = F1*ext_Prp_(I1)*ssAlb_Prp_(I1)
+    SCAT2 = F2*ext_Prp_(I2)*ssAlb_Prp_(I2)
+    SCAT3 = F3*ext_Prp_(I3)*ssAlb_Prp_(I3)
+    SCAT4 = F4*ext_Prp_(I4)*ssAlb_Prp_(I4)
+    SCAT5 = F5*ext_Prp_(I5)*ssAlb_Prp_(I5)
+    SCAT6 = F6*ext_Prp_(I6)*ssAlb_Prp_(I6)
+    SCAT7 = F7*ext_Prp_(I7)*ssAlb_Prp_(I7)
+    SCAT8 = F8*ext_Prp_(I8)*ssAlb_Prp_(I8)
 
     MAXSCAT = -1.0
     if (SCAT1 .gt. MAXSCAT .or. abs(F1 - 1) .lt. 0.001) then
@@ -1240,15 +1245,15 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT, NSTLEG, NLEG,&
         ISELECT = I8
     end if
 
-    !TEMP = TEMPP_(ISELECT)
-    !EXTINCT = EXTINCTP_(ISELECT)
-    !SCATTER = EXTINCTP_(ISELECT)*ALBEDOP_(ISELECT)
+    !TEMP = temp_Prp_(ISELECT)
+    !EXTINCT = ext_Prp_(ISELECT)
+    !SCATTER = ext_Prp_(ISELECT)*ssAlb_Prp_(ISELECT)
 
-    TEMP = F1*TEMPP_(I1) + F2*TEMPP_(I2) + F3*TEMPP_(I3) + F4*TEMPP_(I4)&
-        &+ F5*TEMPP_(I5) + F6*TEMPP_(I6) + F7*TEMPP_(I7) + F8*TEMPP_(I8)
-    EXTINCT = F1*EXTINCTP_(I1) + F2*EXTINCTP_(I2) + F3*EXTINCTP_(I3)&
-        &+ F4*EXTINCTP_(I4) + F5*EXTINCTP_(I5) + F6*EXTINCTP_(I6)&
-        &+ F7*EXTINCTP_(I7) + F8*EXTINCTP_(I8)
+    TEMP = F1*temp_Prp_(I1) + F2*temp_Prp_(I2) + F3*temp_Prp_(I3) + F4*temp_Prp_(I4)&
+        &+ F5*temp_Prp_(I5) + F6*temp_Prp_(I6) + F7*temp_Prp_(I7) + F8*temp_Prp_(I8)
+    EXTINCT = F1*ext_Prp_(I1) + F2*ext_Prp_(I2) + F3*ext_Prp_(I3)&
+        &+ F4*ext_Prp_(I4) + F5*ext_Prp_(I5) + F6*ext_Prp_(I6)&
+        &+ F7*ext_Prp_(I7) + F8*ext_Prp_(I8)
     SCATTER = SCAT1 + SCAT2 + SCAT3 + SCAT4 + SCAT5 + SCAT6 + SCAT7 + SCAT8
 
     if (EXTINCT .gt. EXTMIN) then
@@ -1257,20 +1262,20 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT, NSTLEG, NLEG,&
         ALBEDO = SCATTER/EXTMIN
     end if
 
-    if (NUMPHASE_ .gt. 0) then
-        IPHASE = IPHASEP_(ISELECT)
+    if (Npha_prp_ .gt. 0) then
+        IPHASE = ipha_Prp_(ISELECT)
     else
         ! Standard property file format: unpolarized
         LEGEN(1, 0, 1) = 1.0
         do L = 1, NLEG
-            LEGEN(1, L, 1) = SCAT1*LEGENP_(L + (NLEG + 1)*(I1 - 1))&
-                &+ SCAT2*LEGENP_(L + (NLEG + 1)*(I2 - 1))&
-                &+ SCAT3*LEGENP_(L + (NLEG + 1)*(I3 - 1))&
-                &+ SCAT4*LEGENP_(L + (NLEG + 1)*(I4 - 1))&
-                &+ SCAT5*LEGENP_(L + (NLEG + 1)*(I5 - 1))&
-                &+ SCAT6*LEGENP_(L + (NLEG + 1)*(I6 - 1))&
-                &+ SCAT7*LEGENP_(L + (NLEG + 1)*(I7 - 1))&
-                &+ SCAT8*LEGENP_(L + (NLEG + 1)*(I8 - 1))
+            LEGEN(1, L, 1) = SCAT1*legen_Prp_(L + (NLEG + 1)*(I1 - 1))&
+                &+ SCAT2*legen_Prp_(L + (NLEG + 1)*(I2 - 1))&
+                &+ SCAT3*legen_Prp_(L + (NLEG + 1)*(I3 - 1))&
+                &+ SCAT4*legen_Prp_(L + (NLEG + 1)*(I4 - 1))&
+                &+ SCAT5*legen_Prp_(L + (NLEG + 1)*(I5 - 1))&
+                &+ SCAT6*legen_Prp_(L + (NLEG + 1)*(I6 - 1))&
+                &+ SCAT7*legen_Prp_(L + (NLEG + 1)*(I7 - 1))&
+                &+ SCAT8*legen_Prp_(L + (NLEG + 1)*(I8 - 1))
             if (SCATTER .gt. SCATMIN) then
                 LEGEN(1, L, 1) = LEGEN(1, L, 1)/SCATTER
             else
@@ -1283,19 +1288,19 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT, NSTLEG, NLEG,&
     ! Trilinearly interpolate the temperature, extinction, scattering
     ! original
     !╭────────────────────────────────────────────────╮!
-    !TEMP = F1*TEMPP_(I1) + F2*TEMPP_(I2) + F3*TEMPP_(I3) + F4*TEMPP_(I4)&
-    !    &+ F5*TEMPP_(I5) + F6*TEMPP_(I6) + F7*TEMPP_(I7) + F8*TEMPP_(I8)
-    !EXTINCT = F1*EXTINCTP_(I1) + F2*EXTINCTP_(I2) + F3*EXTINCTP_(I3)&
-    !    &+ F4*EXTINCTP_(I4) + F5*EXTINCTP_(I5) + F6*EXTINCTP_(I6)&
-    !    &+ F7*EXTINCTP_(I7) + F8*EXTINCTP_(I8)
-    !SCAT1 = F1*EXTINCTP_(I1)*ALBEDOP_(I1)
-    !SCAT2 = F2*EXTINCTP_(I2)*ALBEDOP_(I2)
-    !SCAT3 = F3*EXTINCTP_(I3)*ALBEDOP_(I3)
-    !SCAT4 = F4*EXTINCTP_(I4)*ALBEDOP_(I4)
-    !SCAT5 = F5*EXTINCTP_(I5)*ALBEDOP_(I5)
-    !SCAT6 = F6*EXTINCTP_(I6)*ALBEDOP_(I6)
-    !SCAT7 = F7*EXTINCTP_(I7)*ALBEDOP_(I7)
-    !SCAT8 = F8*EXTINCTP_(I8)*ALBEDOP_(I8)
+    !TEMP = F1*temp_Prp_(I1) + F2*temp_Prp_(I2) + F3*temp_Prp_(I3) + F4*temp_Prp_(I4)&
+    !    &+ F5*temp_Prp_(I5) + F6*temp_Prp_(I6) + F7*temp_Prp_(I7) + F8*temp_Prp_(I8)
+    !EXTINCT = F1*ext_Prp_(I1) + F2*ext_Prp_(I2) + F3*ext_Prp_(I3)&
+    !    &+ F4*ext_Prp_(I4) + F5*ext_Prp_(I5) + F6*ext_Prp_(I6)&
+    !    &+ F7*ext_Prp_(I7) + F8*ext_Prp_(I8)
+    !SCAT1 = F1*ext_Prp_(I1)*ssAlb_Prp_(I1)
+    !SCAT2 = F2*ext_Prp_(I2)*ssAlb_Prp_(I2)
+    !SCAT3 = F3*ext_Prp_(I3)*ssAlb_Prp_(I3)
+    !SCAT4 = F4*ext_Prp_(I4)*ssAlb_Prp_(I4)
+    !SCAT5 = F5*ext_Prp_(I5)*ssAlb_Prp_(I5)
+    !SCAT6 = F6*ext_Prp_(I6)*ssAlb_Prp_(I6)
+    !SCAT7 = F7*ext_Prp_(I7)*ssAlb_Prp_(I7)
+    !SCAT8 = F8*ext_Prp_(I8)*ssAlb_Prp_(I8)
     !SCATTER = SCAT1 + SCAT2 + SCAT3 + SCAT4 + SCAT5 + SCAT6 + SCAT7 + SCAT8
     !if (EXTINCT .gt. EXTMIN) then
     !    ALBEDO = SCATTER/EXTINCT
@@ -1308,52 +1313,52 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT, NSTLEG, NLEG,&
     !   or the one with the most scattering weight.
     ! original
     !╭────────────────────────────────────────────────╮!
-    !if (NUMPHASE_ .gt. 0) then
+    !if (Npha_prp_ .gt. 0) then
     !    MAXSCAT = -1.0
     !    if (SCAT1 .gt. MAXSCAT .or. abs(F1 - 1) .lt. 0.001) then
     !        MAXSCAT = SCAT1
-    !        IPHASE = IPHASEP_(I1)
+    !        IPHASE = ipha_Prp_(I1)
     !    end if
     !    if (SCAT2 .gt. MAXSCAT .or. abs(F2 - 1) .lt. 0.001) then
     !        MAXSCAT = SCAT2
-    !        IPHASE = IPHASEP_(I2)
+    !        IPHASE = ipha_Prp_(I2)
     !    end if
     !    if (SCAT3 .gt. MAXSCAT .or. abs(F3 - 1) .lt. 0.001) then
     !        MAXSCAT = SCAT3
-    !        IPHASE = IPHASEP_(I3)
+    !        IPHASE = ipha_Prp_(I3)
     !    end if
     !    if (SCAT4 .gt. MAXSCAT .or. abs(F4 - 1) .lt. 0.001) then
     !        MAXSCAT = SCAT4
-    !        IPHASE = IPHASEP_(I4)
+    !        IPHASE = ipha_Prp_(I4)
     !    end if
     !    if (SCAT5 .gt. MAXSCAT .or. abs(F5 - 1) .lt. 0.001) then
     !        MAXSCAT = SCAT5
-    !        IPHASE = IPHASEP_(I5)
+    !        IPHASE = ipha_Prp_(I5)
     !    end if
     !    if (SCAT6 .gt. MAXSCAT .or. abs(F6 - 1) .lt. 0.001) then
     !        MAXSCAT = SCAT6
-    !        IPHASE = IPHASEP_(I6)
+    !        IPHASE = ipha_Prp_(I6)
     !    end if
     !    if (SCAT7 .gt. MAXSCAT .or. abs(F7 - 1) .lt. 0.001) then
     !        MAXSCAT = SCAT7
-    !        IPHASE = IPHASEP_(I7)
+    !        IPHASE = ipha_Prp_(I7)
     !    end if
     !    if (SCAT8 .gt. MAXSCAT .or. abs(F8 - 1) .lt. 0.001) then
     !        MAXSCAT = SCAT8
-    !        IPHASE = IPHASEP_(I8)
+    !        IPHASE = ipha_Prp_(I8)
     !    end if
     !else
     !    ! Standard property file format: unpolarized
     !    LEGEN(1, 0, 1) = 1.0
     !    do L = 1, NLEG
-    !        LEGEN(1, L, 1) = SCAT1*LEGENP_(L + (NLEG + 1)*(I1 - 1))&
-    !            &+ SCAT2*LEGENP_(L + (NLEG + 1)*(I2 - 1))&
-    !            &+ SCAT3*LEGENP_(L + (NLEG + 1)*(I3 - 1))&
-    !            &+ SCAT4*LEGENP_(L + (NLEG + 1)*(I4 - 1))&
-    !            &+ SCAT5*LEGENP_(L + (NLEG + 1)*(I5 - 1))&
-    !            &+ SCAT6*LEGENP_(L + (NLEG + 1)*(I6 - 1))&
-    !            &+ SCAT7*LEGENP_(L + (NLEG + 1)*(I7 - 1))&
-    !            &+ SCAT8*LEGENP_(L + (NLEG + 1)*(I8 - 1))
+    !        LEGEN(1, L, 1) = SCAT1*legen_Prp_(L + (NLEG + 1)*(I1 - 1))&
+    !            &+ SCAT2*legen_Prp_(L + (NLEG + 1)*(I2 - 1))&
+    !            &+ SCAT3*legen_Prp_(L + (NLEG + 1)*(I3 - 1))&
+    !            &+ SCAT4*legen_Prp_(L + (NLEG + 1)*(I4 - 1))&
+    !            &+ SCAT5*legen_Prp_(L + (NLEG + 1)*(I5 - 1))&
+    !            &+ SCAT6*legen_Prp_(L + (NLEG + 1)*(I6 - 1))&
+    !            &+ SCAT7*legen_Prp_(L + (NLEG + 1)*(I7 - 1))&
+    !            &+ SCAT8*legen_Prp_(L + (NLEG + 1)*(I8 - 1))
     !        if (SCATTER .gt. SCATMIN) then
     !            LEGEN(1, L, 1) = LEGEN(1, L, 1)/SCATTER
     !        else
@@ -1365,21 +1370,21 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT, NSTLEG, NLEG,&
     !╰────────────────────────────────────────────────╯!
 
     ! Add in the gaseous absorption to extinction and albedo
-    if (NZCKD_ .gt. 0) then
+    if (Nz_ckd_ .gt. 0) then
         IL = 1
-        IU = NZCKD_
+        IU = Nz_ckd_
         do while (IU - IL .gt. 1)
             IM = (IU + IL)/2
-            if (Z .le. ZCKD_(IM)) then
+            if (Z .le. z_Ckd_(IM)) then
                 IL = IM
             else
                 IU = IM
             end if
         end do
-        I = min(max(IL, 1), NZCKD_ - 1)
-        F = (Z - ZCKD_(I))/(ZCKD_(I + 1) - ZCKD_(I))
+        I = min(max(IL, 1), Nz_ckd_ - 1)
+        F = (Z - z_Ckd_(I))/(z_Ckd_(I + 1) - z_Ckd_(I))
         F = min(max(F, 0.0d0), 1.0d0)
-        KG = (1.0 - F)*GASABS_(I) + F*GASABS_(I + 1)
+        KG = (1.0 - F)*kabs0_Ckd_(I) + F*kabs0_Ckd_(I + 1)
         if (EXTINCT + KG .gt. 0.0) then
             ALBEDO = ALBEDO*EXTINCT/(EXTINCT + KG)
         else

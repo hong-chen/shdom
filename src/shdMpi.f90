@@ -40,7 +40,7 @@
 module shd_mpi
 
     use globals_const, only: RD_, PI_, DPI_, PIH_, FRAC13_, FRAC112_
-    use globals_cfg,   only: VERBOSE_, FNAMEMAXLEN_, RACC_, &
+    use globals_cfg,   only: verbose_, fnameMaxLen_, RAcc_, &
                              isMpiX_, isMpiY_, isMpi_, &
                              is1DX_, is1DYx_, is1D_, &
                              isPol_, isPol4_, &
@@ -150,7 +150,7 @@ subroutine shd_mpi__start(isMasterProc, NProc)
 
     if (myProc_ .eq. 0) then
         isMasterProc = .true.
-        if (VERBOSE_ .gt. 5) write (6, '(A)') 'Message [mpi__start]: Starting MPI version of SHDOM ...'
+        if (verbose_ .gt. 5) write (6, '(A)') 'Message [mpi__start]: Starting MPI version of SHDOM ...'
     else
         isMasterProc = .false.
     end if
@@ -196,7 +196,7 @@ subroutine shd_mpi__map(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
     logical :: periodic(2) = (/.true., .true./), reorder = .false.
     real    :: XEND, YEND
     character(len=4) :: procstr
-    character(len=FNAMEMAXLEN_) :: logfile
+    character(len=fnameMaxLen_) :: logfile
 
     NPXT = NPX; NPYT = NPY; NXT = NX; NYT = NY
 
@@ -327,12 +327,12 @@ subroutine shd_mpi__map(BCFLAG, NPX, NPY, NX, NY, NZ, DELX, DELY, PROPFILE,&
     call mpi_cart_shift(comm2D_, 0, 1, iProcNeigh_(1), iProcNeigh_(2), iErr)
     call mpi_cart_shift(comm2D_, 1, 1, iProcNeigh_(3), iProcNeigh_(4), iErr)
 
-    if (VERBOSE_ .ge. 5) write (6, '(A)') 'Message [mpi__map]:'
-    if (VERBOSE_ .ge. 5) write (6, '(2X,A,2(I0,2X))')    'NProc in X and Y: ', dims(1:2)
-    if (VERBOSE_ .ge. 5) write (6, '(2X,A,I0)')          '  This processor: ', myProc_
-    if (VERBOSE_ .ge. 5) write (6, '(2X,A,4(I0,2X))')    '       Neighbors: ', iProcNeigh_(1:4)
-    if (VERBOSE_ .ge. 5) write (6, '(2X,A,2(F0.2," km",2X))') '         X range: ', XSTART, XEND
-    if (VERBOSE_ .ge. 5) write (6, '(2X,A,2(F0.2," km",2X))') '         Y range: ', YSTART, YEND
+    if (verbose_ .ge. 5) write (6, '(A)') 'Message [mpi__map]:'
+    if (verbose_ .ge. 5) write (6, '(2X,A,2(I0,2X))')    'NProc in X and Y: ', dims(1:2)
+    if (verbose_ .ge. 5) write (6, '(2X,A,I0)')          '  This processor: ', myProc_
+    if (verbose_ .ge. 5) write (6, '(2X,A,4(I0,2X))')    '       Neighbors: ', iProcNeigh_(1:4)
+    if (verbose_ .ge. 5) write (6, '(2X,A,2(F0.2," km",2X))') '         X range: ', XSTART, XEND
+    if (verbose_ .ge. 5) write (6, '(2X,A,2(F0.2," km",2X))') '         Y range: ', YSTART, YEND
 #else
     XSTART = 0.0; YSTART = 0.0
 #endif
@@ -366,15 +366,15 @@ subroutine shd_mpi__bcastInp(&
     real, intent(inout) :: MAX_TOTAL_MB, SPLITTING_FACTOR
     real, intent(inout) :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
     character(len=1), intent(inout) :: SRCTYPE, GRIDTYPE, UNITS, OUTTYPES(*)
-    character(len=FNAMEMAXLEN_), intent(inout) :: RUNNAME, PROPFILE, SFCFILE, CKDFILE
-    character(len=FNAMEMAXLEN_), intent(inout) :: INSAVEFILE, OUTSAVEFILE, SENFILE
+    character(len=fnameMaxLen_), intent(inout) :: RUNNAME, PROPFILE, SFCFILE, CKDFILE
+    character(len=fnameMaxLen_), intent(inout) :: INSAVEFILE, OUTSAVEFILE, SENFILE
 
 #if HAS_MPI
     integer :: iErr, intbuf(10)
     logical :: logbuf(3)
     real    :: realbuf(16)
     character(len=1) :: char1buf(3)
-    character(len=FNAMEMAXLEN_) :: char256buf(7)
+    character(len=fnameMaxLen_) :: char256buf(7)
     character(len=4) :: procstr
 
     if (NProc_ .le. 1) return
@@ -768,8 +768,8 @@ subroutine shd_mpi__bcastMem(MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
     NUM_SH_TERM_FACTOR = MemParam(3, myProc_)
     CELL_TO_POINT_RATIO = MemParam(4, myProc_)
     deallocate (MemParam)
-    if (VERBOSE_ .ge. 5) write (6, '(A)') 'Message [mpi__bcastMemParam]:'
-    if (VERBOSE_ .ge. 5) write (6, '(2X,A,F0.2,"MB",3(2X,F0.3))') 'Memory parameters used: ', MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
+    if (verbose_ .ge. 5) write (6, '(A)') 'Message [mpi__bcastMemParam]:'
+    if (verbose_ .ge. 5) write (6, '(2X,A,F0.2,"MB",3(2X,F0.3))') 'Memory parameters used: ', MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
         &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
 #endif
 
@@ -1933,13 +1933,13 @@ subroutine shd_mpi__computeRad(&
         !╰────────────────────────────────────────────────╯!
 
         if (MUOUT .eq. 0.0) then
-            if (VERBOSE_ .ge. 4) write (6, *) 'Warning [mpi__computeRad]: Bad MUOUT for radiance', K, MUOUT, PHID
-            MUOUT = RACC_
+            if (verbose_ .ge. 4) write (6, *) 'Warning [mpi__computeRad]: Bad MUOUT for radiance', K, MUOUT, PHID
+            MUOUT = RAcc_
             write (6, *) '                           New MUOUT=', MUOUT
         end if
 
         if (abs(MUOUT) .gt. 1.0) then
-            if (VERBOSE_ .ge. 4) write (6, *) 'Warning [mpi__computeRad]: Bad MUOUT for radiance', K, MUOUT, PHID
+            if (verbose_ .ge. 4) write (6, *) 'Warning [mpi__computeRad]: Bad MUOUT for radiance', K, MUOUT, PHID
             if (MUOUT .gt.  1.0) MUOUT =  1.0
             if (MUOUT .lt. -1.0) MUOUT = -1.0
             write (6, *) '                           New MUOUT=', MUOUT
@@ -2377,14 +2377,14 @@ subroutine shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 SINTH = sqrt(1 - COSTH**2)
                 SINTH0 = sin(THETA0)
                 SINTH1 = sin(THETA1)
-                if (abs(SINTH) .lt. RACC_) then
+                if (abs(SINTH) .lt. RAcc_) then
                     PHIR = 0.0
                 else
-                    if ((abs(SINTH0) .lt. RACC_) .and. (abs(SINTH1) .le. RACC_)) then
+                    if ((abs(SINTH0) .lt. RAcc_) .and. (abs(SINTH1) .le. RAcc_)) then
                         COSDELPHI = 0.0d0
-                    else if (abs(SINTH1) .gt. RACC_) then
+                    else if (abs(SINTH1) .gt. RAcc_) then
                         COSDELPHI = (cos(U) - COSTH*cos(THETA1))/(SINTH1*SINTH)
-                    else if (abs(SINTH0) .gt. RACC_) then
+                    else if (abs(SINTH0) .gt. RAcc_) then
                         COSDELPHI = (cos(U)*cos(V) - COSTH*cos(THETA0))/(SINTH0*SINTH)
                     end if
                     COSDELPHI = min(+1.0d0, max(-1.0d0, COSDELPHI))
@@ -2875,12 +2875,12 @@ subroutine shd_mpi__end(NPTS, GRIDPOS, NPX, NPY, XSTART, YSTART, XDOMAIN, YDOMAI
     ElapsedTime = mpi_wtime() - startTime_
 
     if (ElapsedTime .lt. 60.0) then
-        if (VERBOSE_ .ge. 5) write (6, '(A,F0.2,A)') 'Message [mpi__end]: Total time used: ', ElapsedTime, ' sec'
+        if (verbose_ .ge. 5) write (6, '(A,F0.2,A)') 'Message [mpi__end]: Total time used: ', ElapsedTime, ' sec'
     else
-        if (VERBOSE_ .ge. 5) write (6, '(A,F0.2,A)') 'Message [mpi__end]: Total time used: ', ElapsedTime/60.0, ' min'
+        if (verbose_ .ge. 5) write (6, '(A,F0.2,A)') 'Message [mpi__end]: Total time used: ', ElapsedTime/60.0, ' min'
     end if
 
-    if (VERBOSE_ .ge. 5) write (6, '(A,"<",A,">")') 'Message [mpi__end]: Finished with SHDOM run: ', trim(adjustl(RUNNAME))
+    if (verbose_ .ge. 5) write (6, '(A,"<",A,">")') 'Message [mpi__end]: Finished with SHDOM run: ', trim(adjustl(RUNNAME))
 
     ! Shut down MPI
     if (allocated(BxyPtr_)) deallocate(BxyPtr_)
@@ -2941,7 +2941,7 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
     real    :: loadObject, Energy, NewEnergy, LowestEnergy, DeltaE, Boltz
     integer, allocatable :: ProcCoordAll(:, :), Ngrid(:, :)
     real, allocatable :: wtproc(:)
-    character(len=FNAMEMAXLEN_) :: PROPFILEI
+    character(len=fnameMaxLen_) :: PROPFILEI
 
     ! Initialize the subdomain boundary lines to evenly spaced
     Nxd = ProcDims(1); Nyd = ProcDims(2); N = Nxd + Nyd - 2
@@ -3450,7 +3450,7 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
                 &+ F3*GRIDRAD(:, I3) + F4*GRIDRAD(:, I4)
             RAD(:) = RAD(:) + TRANS*RAD0(:)
         !else if (TRANS .lt. 1.0e-5) then
-        else if (TRANS .lt. RACC_) then
+        else if (TRANS .lt. RAcc_) then
             VALIDRAD = .true.
         else
             EXT1 = EXT0

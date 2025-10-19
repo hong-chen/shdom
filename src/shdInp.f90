@@ -43,7 +43,7 @@
 module shd_inp
 
     use globals_const, only: PI_
-    use globals_cfg,   only: VERBOSE_, FNAMEMAXLEN_
+    use globals_cfg,   only: verbose_, fnameMaxLen_
 
     use shd_util, only: shd_util__computePlanck
 
@@ -103,9 +103,9 @@ subroutine shd_io__userInp(&
     real NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
     character(len=1) :: SRCTYPE, GRIDTYPE, UNITS
     character(len=1) :: OUTTYPES(*)
-    character(len=FNAMEMAXLEN_) :: OUTFILES(*)
-    character(len=FNAMEMAXLEN_) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE, SENFILE
-    character(len=FNAMEMAXLEN_) :: OutFileNC, RUNNAME
+    character(len=fnameMaxLen_) :: OUTFILES(*)
+    character(len=fnameMaxLen_) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE, SENFILE
+    character(len=fnameMaxLen_) :: OutFileNC, RUNNAME
     integer(kind=1) :: VERBOSE
     integer I, J, N
     real GNDEMIS
@@ -116,7 +116,7 @@ subroutine shd_io__userInp(&
     WAVENO(1) = 10000.
     WAVENO(2) = 10001.
     SENFILE = 'NONE'
-    VERBOSE = VERBOSE_
+    VERBOSE = verbose_
 
     write (*, *)
     write (*, '(1X,A)') 'Name of this SHDOM run:'
@@ -309,7 +309,7 @@ subroutine shd_io__userInp(&
     read (*, '(A)') OutFileNC
     write (*, '(A)') OutFileNC
     if (OutFileNC(1:4) .ne. 'NONE') then
-        if (VERBOSE_ .ge. 4) write(*, '(A)') 'Warning [_userInp]: Removed support for netCDF, set <OUTFILENC="NONE">.'
+        if (verbose_ .ge. 4) write(*, '(A)') 'Warning [_userInp]: Removed support for netCDF, set <OUTFILENC="NONE">.'
         OutFileNC = 'NONE'
     end if
 
@@ -366,10 +366,10 @@ subroutine shd_io__nmlInp(&
     real dNUM_SH_TERM_FACTOR, dCELL_TO_POINT_RATIO
     character(len=1) :: dSRCTYPE, dGRIDTYPE, dUNITS
     character(len=1) ::  dOUTTYPES(*)
-    character(len=FNAMEMAXLEN_) :: dOUTFILES(*)
-    character(len=FNAMEMAXLEN_) :: dOutFileNC, dRUNNAME
-    character(len=FNAMEMAXLEN_) :: dPROPFILE, dSFCFILE, dCKDFILE
-    character(len=FNAMEMAXLEN_) :: dINSAVEFILE, dOUTSAVEFILE, dSENFILE
+    character(len=fnameMaxLen_) :: dOUTFILES(*)
+    character(len=fnameMaxLen_) :: dOutFileNC, dRUNNAME
+    character(len=fnameMaxLen_) :: dPROPFILE, dSFCFILE, dCKDFILE
+    character(len=fnameMaxLen_) :: dINSAVEFILE, dOUTSAVEFILE, dSENFILE
     integer(kind=1) :: dVERBOSE
     integer I, J, N
 
@@ -386,9 +386,9 @@ subroutine shd_io__nmlInp(&
     real OUTPARMS(MAXPAR, MAXOUT)
     character(len=1) :: SRCTYPE, GRIDTYPE, UNITS
     character(len=1) :: OUTTYPES(MAXOUT)
-    character(len=FNAMEMAXLEN_) :: OUTFILES(MAXOUT)
-    character(len=FNAMEMAXLEN_) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
-    character(len=FNAMEMAXLEN_) :: SENFILE, OutFileNC, RUNNAME
+    character(len=fnameMaxLen_) :: OUTFILES(MAXOUT)
+    character(len=fnameMaxLen_) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
+    character(len=fnameMaxLen_) :: SENFILE, OutFileNC, RUNNAME
     integer(kind=1) :: VERBOSE
     namelist /SHDOMINPUT/&
         &RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
@@ -403,7 +403,7 @@ subroutine shd_io__nmlInp(&
         &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO,&
         &VERBOSE
 
-    character(len=FNAMEMAXLEN_) :: NMLFILE
+    character(len=fnameMaxLen_) :: NMLFILE
 
     if (dMAXOUT .ne. MAXOUT) stop 'Error [_nmlInp]: MAXOUT not the same.'
     if (dMAXPAR .ne. MAXPAR) stop 'Error [_nmlInp]: MAXPAR not the same.'
@@ -414,11 +414,11 @@ subroutine shd_io__nmlInp(&
     WAVENO(1) = 10000.
     WAVENO(2) = 10001.
     SENFILE = 'NONE'
-    VERBOSE = VERBOSE_
+    VERBOSE = verbose_
 
     ! Read in the namelist
     call get_command_argument(1, NMLFILE)
-    if (VERBOSE_ .ge. 6) write (*, '(A,"<",A,">")') 'Message [_nmlInp]: ', trim(adjustl(NMLFILE))
+    if (verbose_ .ge. 6) write (*, '(A,"<",A,">")') 'Message [_nmlInp]: ', trim(adjustl(NMLFILE))
     open (UNIT=5, FILE=trim(adjustl(NMLFILE)), STATUS='OLD')
     read (5, NML=SHDOMINPUT)
     close (5)
@@ -527,7 +527,7 @@ subroutine shd_io__nmlInp(&
     dOutFileNC = OutFileNC
 
     if (dOutFileNC(1:4) .ne. 'NONE') then
-        if (VERBOSE_ .ge. 4) write(*, '(A)') 'Warning [_nmlInp]: Removed support for netCDF, set <OUTFILENC="NONE">.'
+        if (verbose_ .ge. 4) write(*, '(A)') 'Warning [_nmlInp]: Removed support for netCDF, set <OUTFILENC="NONE">.'
         dOutFileNC = 'NONE'
     end if
 
@@ -576,7 +576,7 @@ subroutine shd_io__checkInp(&
     end if
 
     if (.not. DELTAM .and. SRCTYPE .ne. 'T' .and. MAXASYM .gt. 0.5) then
-        if (VERBOSE_ .ge. 4) write (*, '(A)') 'Warning [_checkInp]: Delta-M should be used&
+        if (verbose_ .ge. 4) write (*, '(A)') 'Warning [_checkInp]: Delta-M should be used&
             & (DELTAM=.TRUE.) for solar radiative transfer&
             & with highly peaked phase functions.'
     end if
@@ -593,17 +593,17 @@ subroutine shd_io__checkInp(&
     end if
     if (SPLITACC .gt. 0.0 .and.&
         &(SPLITACC .lt. 0.001*FLUX .or. SPLITACC .gt. 0.1*FLUX)) then
-        if (VERBOSE_ .ge. 4) write (*, '(A)') 'Warning [_checkInp]: Splitting accuracy parameter&
+        if (verbose_ .ge. 4) write (*, '(A)') 'Warning [_checkInp]: Splitting accuracy parameter&
             & is not a fraction, but scales with fluxes.'
     end if
     if (SHACC .gt. 0.0 .and. SHACC .gt. 0.03*FLUX) then
-        if (VERBOSE_ .ge. 4) write (*, '(A)') 'Warning [_checkInp]: Spherical harmonic accuracy&
+        if (verbose_ .ge. 4) write (*, '(A)') 'Warning [_checkInp]: Spherical harmonic accuracy&
             & (SHACC) is not a fraction, but scales with fluxes.'
     end if
 
     if (SRCTYPE .ne. 'S' .and.&
         &(GNDTEMP .lt. 150. .or. GNDTEMP .gt. 350.)) then
-        if (VERBOSE_ .ge. 4) write (*, '(A)') 'Warning [_checkInp]:&
+        if (verbose_ .ge. 4) write (*, '(A)') 'Warning [_checkInp]:&
             & ground temperature out of Earth range.'
     end if
     if (GNDALBEDO .lt. 0.0 .or. GNDALBEDO .gt. 1.0) then
@@ -611,7 +611,7 @@ subroutine shd_io__checkInp(&
     end if
 
     if (NPHI .lt. NMU) then
-      if (VERBOSE_ .ge. 4) write (*, '(A)') 'Warning [_checkInp]: Usually want NPHI >= NMU.'
+      if (verbose_ .ge. 4) write (*, '(A)') 'Warning [_checkInp]: Usually want NPHI >= NMU.'
     end if
 
     return
@@ -749,9 +749,9 @@ subroutine shd_io__readPrp(&
     integer I, IX, IY, IZ, J, JS, K, KL, L, IL, NUML, IPH, N
     real :: TMP, EXT, ALB, CHI
 
-    character(len=FNAMEMAXLEN_) :: OUTFILE_DATA
-    character(len=FNAMEMAXLEN_) :: TMP_CHAR
-    character(len=FNAMEMAXLEN_) :: DIMS_CHAR
+    character(len=fnameMaxLen_) :: OUTFILE_DATA
+    character(len=fnameMaxLen_) :: TMP_CHAR
+    character(len=fnameMaxLen_) :: DIMS_CHAR
     character(len=20) :: DATA_POSTFIX
     integer :: NXX, NYY, NZZ, NPP
 
@@ -833,7 +833,7 @@ subroutine shd_io__readPrp(&
             end do
 
             if (NLEG .gt. MAXLEG) then
-                if (VERBOSE_ .ge. 4) write (*, '(A,I4,A,I4,A)')&
+                if (verbose_ .ge. 4) write (*, '(A,I4,A,I4,A)')&
                     &'Warning [_readPrp]: Truncating phase function from ',&
                     &NLEG, ' to ', MAXLEG, ' Legendre terms.'
             end if
@@ -1031,7 +1031,7 @@ subroutine shd_io__checkPrp(&
     end do
 
     if (TMIN .lt. 150.0 .or. TMAX .gt. 350.0) then
-        if (VERBOSE_ .ge. 4) write (*, *) 'Warning [_checkPrp]: ',&
+        if (verbose_ .ge. 4) write (*, *) 'Warning [_checkPrp]: ',&
             &'temperature min and max (Kelvin): ', TMIN, TMAX
         write (*, *)
     end if
@@ -1061,7 +1061,7 @@ subroutine shd_io__checkPrp(&
     end do
 
     if (LEGWARN) then
-        if (VERBOSE_ .ge. 4) write (*, *) 'Warning [_checkPrp]: ',&
+        if (verbose_ .ge. 4) write (*, *) 'Warning [_checkPrp]: ',&
             &'an asymmetry parameter is 1/3 (Chi1=1); ',&
             &'  Chi0 should not be specified for Chi1.'
         write (*, *)
@@ -1093,9 +1093,9 @@ subroutine shd_io__checkPrp(&
     end do
 
     if (NTHICK .gt. 0) then
-        if (VERBOSE_ .ge. 5) write (*, '(A)') 'Message [_checkPrp]:'
-        if (VERBOSE_ .ge. 5) write (*, '(A,I0)')   '  Npoints (optical depth > 2): ', NTHICK
-        if (VERBOSE_ .ge. 5) write (*, '(A,F0.2)') '       Max cell optical depth: ', MAXTAU
+        if (verbose_ .ge. 5) write (*, '(A)') 'Message [_checkPrp]:'
+        if (verbose_ .ge. 5) write (*, '(A,I0)')   '  Npoints (optical depth > 2): ', NTHICK
+        if (verbose_ .ge. 5) write (*, '(A,F0.2)') '       Max cell optical depth: ', MAXTAU
     end if
 
     return
@@ -1220,9 +1220,9 @@ subroutine shd_io__readSfc(&
     real F_ISO, F_VOL, F_GEO, F_JIAO
     real A, B, ZETA, SIGMA, ALPHA
 
-    character(len=FNAMEMAXLEN_) :: OUTFILE_DATA
-    character(len=FNAMEMAXLEN_) :: TMP_CHAR
-    character(len=FNAMEMAXLEN_) :: DIMS_CHAR
+    character(len=fnameMaxLen_) :: OUTFILE_DATA
+    character(len=fnameMaxLen_) :: TMP_CHAR
+    character(len=fnameMaxLen_) :: DIMS_CHAR
     character(len=20) :: DATA_POSTFIX
     integer :: NXX, NYY, NPP, IDATA, NDATA
 
@@ -1264,7 +1264,7 @@ subroutine shd_io__readSfc(&
                     if (ALB .lt. 0.0 .or. ALB .gt. 1.0)&
                         &stop 'Error [_readSfc]: Illegal surface albedo.'
                     if (TEMP .lt. 150. .or. TEMP .gt. 350.) then
-                        if (VERBOSE_ .ge. 4) write (*, *) 'Warning [_readSfc]: ',&
+                        if (verbose_ .ge. 4) write (*, *) 'Warning [_readSfc]: ',&
                             &' surface temperature: ', IX, IY, TEMP
                     end if
                     GNDTEMP = GNDTEMP + TEMP
@@ -1705,8 +1705,8 @@ subroutine shd_io__readSenSize(&
     character(len=*), intent(in) :: SENFILE
     integer, intent(out) :: NSENDATA, NSENPAR
 
-    character(len=FNAMEMAXLEN_) :: TMP_CHAR
-    character(len=FNAMEMAXLEN_) :: DIMS_CHAR
+    character(len=fnameMaxLen_) :: TMP_CHAR
+    character(len=fnameMaxLen_) :: DIMS_CHAR
 
     ! Open the file, figure out the type, and get the grid size
     open (UNIT=1, FILE=trim(adjustl(SENFILE)), STATUS='OLD')
@@ -1734,9 +1734,9 @@ subroutine shd_io__readSen(&
     real, intent(inout) :: SENPARMS(*)
     integer :: NSENDATA, NSENPAR, ISENDATA
 
-    character(len=FNAMEMAXLEN_) :: OUTFILE_DATA
-    character(len=FNAMEMAXLEN_) :: TMP_CHAR
-    character(len=FNAMEMAXLEN_) :: DIMS_CHAR
+    character(len=fnameMaxLen_) :: OUTFILE_DATA
+    character(len=fnameMaxLen_) :: TMP_CHAR
+    character(len=fnameMaxLen_) :: DIMS_CHAR
     character(len=20) :: DATA_POSTFIX
 
     ! Open the file, figure out the type, and get the grid size
@@ -1803,14 +1803,14 @@ subroutine shd_io__restoreState(&
     read (3) NSTI, NXI, NYI, NZI, MLI, MMI, NLMI, NPTS, NCELLS
 
     if (NXI .ne. NX .or. NYI .ne. NY .or. NZI .ne. NZ) then
-        if (VERBOSE_ .ge. 4) write (6, '(A, 3I6)') 'Warning [_restoreState]: wrong grid size:', NXI, NYI, NZI
+        if (verbose_ .ge. 4) write (6, '(A, 3I6)') 'Warning [_restoreState]: wrong grid size:', NXI, NYI, NZI
         close (3)
         return
     end if
 
     if (NSTI .ne. NSTOKES .or.&
         &MLI .gt. ML .or. MMI .gt. MM) then
-        if (VERBOSE_ .ge. 4) write (6, '(A, 3I6)') 'Warning [_restoreState]: incompatible SH:', NSTI, MLI, MMI
+        if (verbose_ .ge. 4) write (6, '(A, 3I6)') 'Warning [_restoreState]: incompatible SH:', NSTI, MLI, MMI
         close (3)
         return
     end if
@@ -1839,7 +1839,7 @@ subroutine shd_io__restoreState(&
 
     close (3)
 
-    if (VERBOSE_ .ge. 5) write (6, '(A)') 'Message [_restoreState]: State restored from <'//trim(adjustl(INSAVEFILE))//'> ...'
+    if (verbose_ .ge. 5) write (6, '(A)') 'Message [_restoreState]: State restored from <'//trim(adjustl(INSAVEFILE))//'> ...'
 
     INRADFLAG = .true.
     NEWGRIDFLAG = .false.
@@ -1847,7 +1847,7 @@ subroutine shd_io__restoreState(&
 
 900 continue
 
-    if (VERBOSE_ .ge. 4) write (6, '(A)') 'Warning [_restoreState]: Failed to restore state file from <'//trim(adjustl(INSAVEFILE))//'>.'
+    if (verbose_ .ge. 4) write (6, '(A)') 'Warning [_restoreState]: Failed to restore state file from <'//trim(adjustl(INSAVEFILE))//'>.'
     INRADFLAG = .false.
     NEWGRIDFLAG = .true.
 

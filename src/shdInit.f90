@@ -40,7 +40,7 @@
 module shd_init
 
     use globals_const, only: RD_, PI_, OPI_
-    use globals_cfg,   only: VERBOSE_, PLANET_RADIUS_, &
+    use globals_cfg,   only: verbose_, planetRadius_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
                              is1DX_, is1DYx_, &
                              isSolar_, isThermal_
@@ -120,7 +120,7 @@ subroutine shd_init__makeGrid(&
     !   Only Even allowed horizontally
     if (DELXP .le. 0.0) then
         DELXP = 1.0
-        if (VERBOSE_ .ge. 4) write(*, '(A)') 'Warning [_makeGrid]: Found DELXP<=0.0, reset DELXP to 1.0.'
+        if (verbose_ .ge. 4) write(*, '(A)') 'Warning [_makeGrid]: Found DELXP<=0.0, reset DELXP to 1.0.'
     end if
 
     if (isMpiX_) then ! open in X
@@ -139,7 +139,7 @@ subroutine shd_init__makeGrid(&
 
     if (DELYP .le. 0.0) then
         DELYP = 1.0
-        if (VERBOSE_ .ge. 4) write(*, '(A)') 'Warning [_makeGrid]: Found DELYP<=0.0, reset DELYP to 1.0.'
+        if (verbose_ .ge. 4) write(*, '(A)') 'Warning [_makeGrid]: Found DELYP<=0.0, reset DELYP to 1.0.'
     end if
 
     if (isMpiY_) then ! open in Y
@@ -172,7 +172,7 @@ subroutine shd_init__makeGrid(&
                 + (IZ - 1)*(ZLEVELS(NPZ) - ZLEVELS(1))/float(NZ - 1)
         end do
     else if (GRIDTYPE .eq. 'F') then
-        if (VERBOSE_ .ge. 5) write(*, '(A)') 'Message [_makeGrid]: Reading ZGRID from <shdom-zgrid.txt> ...'
+        if (verbose_ .ge. 5) write(*, '(A)') 'Message [_makeGrid]: Reading ZGRID from <shdom-zgrid.txt> ...'
         open (UNIT=3, FILE='shdom-zgrid.txt', STATUS='OLD')
         do IZ = 1, NZ
             read (3, *) ZGRID(IZ)
@@ -535,7 +535,7 @@ subroutine shd_init__makeRad(&
 
     !real, allocatable :: CH(:, :)
     !allocate (CH(NLAYER, NLAYER))
-    !call shd_init__chapman(NLAYER, SOLARMU, PLANET_RADIUS_, ZGRID(NZ:1:-1), CH)
+    !call shd_init__chapman(NLAYER, SOLARMU, planetRadius_, ZGRID(NZ:1:-1), CH)
 
     DELTAM = .false.
 
@@ -1141,7 +1141,7 @@ subroutine shd_init__checkSfcU(&
 end subroutine shd_init__checkSfcU
 
 subroutine shd_init__chapman(&
-    &NLAYER, SOLARMU, PLANET_RADIUS, ZLEVELS,&
+    &NLAYER, SOLARMU, planetRadius_, ZLEVELS,&
     &CH)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
@@ -1151,7 +1151,7 @@ subroutine shd_init__chapman(&
     ! Input:
     !   NLAYER : integer, number of layers
     !   SOLARMU: real, cosine of incident angle
-    !   PLANET_RADIUS: real, planet radius in km
+    !   planetRadius_: real, planet radius in km
     !   ZLEVELS: real array, layer height, go from top to surface
     !
     ! Output:
@@ -1165,7 +1165,7 @@ subroutine shd_init__chapman(&
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     integer(kind=I__), intent(in) :: NLAYER
-    real(kind=R__)   , intent(in) :: PLANET_RADIUS, ZLEVELS(0:NLAYER), SOLARMU
+    real(kind=R__)   , intent(in) :: planetRadius_, ZLEVELS(0:NLAYER), SOLARMU
 
     real(kind=R__), intent(out) :: CH(NLAYER, NLAYER)
 
@@ -1178,7 +1178,7 @@ subroutine shd_init__chapman(&
 
     cos_theta0 = SOLARMU
     sin_theta0 = sqrt(1.0 - SOLARMU*SOLARMU)
-    h = ZLEVELS + PLANET_RADIUS
+    h = ZLEVELS + planetRadius_
 
     CH(:, :) = -1.0
 

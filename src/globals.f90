@@ -127,9 +127,9 @@ module globals_cfg
 
     integer, parameter :: fnameMaxLen_ = 256 ! file name max length (number of characters)
     real(kind=8), save :: RAcc_
-    real(kind=4), save :: TOTSYSMEM_MB_ = 16000.0
-    real(kind=4), save :: MAXCPUMEM_MB_
-    real(kind=4), save :: PLANET_RADIUS_ = 6371.009
+    real(kind=4), save :: memTotSysMB_ = 16000.0
+    real(kind=4), save :: memPerCpuMB_
+    real(kind=4), save :: planetRadius_ = 6371.009
 
     integer(kind=1), save :: verbose_ = 5
     !Severity    Level  Description
@@ -172,14 +172,24 @@ module globals_prp
     implicit none
     public
 
-    integer, save :: NPX_, NPY_, NPZ_, NUMPHASE_
-    real, save    :: DELX_, DELY_, XSTART_, YSTART_
-    real, save    :: XDOMAIN_, YDOMAIN_
-    real, save, allocatable :: ZLEVELS_(:)
-    real, save, allocatable :: TEMPP_(:), EXTINCTP_(:), ALBEDOP_(:)
-    real, save, allocatable :: LEGENP_(:), EXTDIRP_(:)
-    integer(2), save, allocatable :: IPHASEP_(:)
-    integer, save :: NZCKD_
-    real, save, allocatable :: ZCKD_(:), GASABS_(:)
+    integer, save :: Nx_prp_, Ny_prp_, Nz_prp_, Npha_prp_
+    real, save    :: dx_prp_, dy_prp_, xStart_prp_, yStart_prp_
+    real, save    :: xDomain_prp_, yDomain_prp_
+    real, save, allocatable :: z_Prp_(:)
+    real, save, allocatable :: temp_Prp_(:), ext_Prp_(:), ssAlb_Prp_(:)
+    real, save, allocatable :: extDir_Prp_(:)
+    real, save, allocatable :: legen_Prp_(:)
+    integer(2), save, allocatable :: ipha_Prp_(:)
 
 end module globals_prp
+
+
+module globals_ckd
+
+    implicit none
+    public
+
+    integer, save :: Nz_ckd_
+    real, save, allocatable :: z_Ckd_(:), kabs0_Ckd_(:)
+
+end module globals_ckd
