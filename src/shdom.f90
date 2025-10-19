@@ -223,18 +223,19 @@ program shdom
                                       ptr2Tree_Cell(:, :)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
+    real(kind=R__) :: NmaxIG
     real(kind=R__) :: memUsed, memNeed, scaleFactor
 
     integer(kind=I__) :: maxG_P, maxIG, maxIC, maxIV, maxIDO, maxNz, maxNg
     integer(kind=I__) :: maxLeg, maxGL_P, maxIGL, NbigArr
 
-    real(kind=R__) :: NmaxIG
     real(kind=R__) :: MAX_TOTAL_MB, ADAPT_GRID_FACTOR
     real(kind=R__) :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
     real(kind=R__) :: MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
 
-    integer(kind=I__) :: Nproc, Nstokes, Nx, Ny, Nz, Nx1, Ny1
+    integer(kind=I__) :: Nstokes, Nx, Ny, Nz, Nx1, Ny1
     integer(kind=I__) :: Nx_T, Ny_T, Nx_PT, Ny_PT, maxG_PT, maxGL_PT
+
     integer(kind=I__) :: Npts_base, Npts, Ncell, Nsh, Ncell_base, oldNpts
     integer(kind=I__) :: maxIter, iter, totIter, iz, iout, Nout, bcFlag, ipFlag
     integer(kind=I__) :: Nrad, irad, Nx_out, Ny_out, Nlos, ilos, Nscan, Npix, Nsh_out
@@ -246,6 +247,7 @@ program shdom
     real(kind=R__) :: skyRad, waveNum(2), waveLen
     real(kind=R__) :: solAcc, solCrit, splitAcc, shAcc, maxAsym
 
+    integer(kind=I__) :: Nproc
     logical :: isMasterProc
     character(len=charMaxLen_) :: runName
 
