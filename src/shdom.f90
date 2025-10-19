@@ -106,6 +106,7 @@ program shdom
     ! Output
     !╭────────────────────────────────────────────────────────────────────────────╮!
     integer(kind=I__), parameter :: maxNpar_out=100, maxNset_out=20
+    real(kind=R__) :: mu_out, phi_out
     real(kind=R__)   :: parms_Out(maxNpar_out, maxNset_out)
     character(len=1) :: type_Out(maxNset_out)
     character(len=fnameMaxLen_) :: file_Out(maxNset_out)
@@ -180,10 +181,11 @@ program shdom
 
     ! grids and cells
     !╭────────────────────────────────────────────────────────────────────────────╮!
+    character(len=1) :: type_grid
     real(kind=R__), allocatable    :: x_Grid(:), y_Grid(:), z_Grid(:)
     real(kind=R__), allocatable    :: xyz_Grid(:, :)
 
-    integer(kind=2)  , allocatable :: flags_Cell(:)
+    integer(kind=2)  , allocatable :: flag_Cell(:)
     integer(kind=I__), allocatable :: ptr8Grid_Cell(:, :), &
                                       ptr6Cell_Cell(:, :), &
                                       ptr2Tree_Cell(:, :)
@@ -200,20 +202,19 @@ program shdom
     integer(kind=I__) :: Nproc, Nstokes, Nx, Ny, Nz, Nx1, Ny1
     integer(kind=I__) :: NxT, NyT, NpxT, NpyT, maxPGT, maxPGLT
     integer(kind=I__) :: maxNl, maxNm, Nlm, Nstleg, Nleg, Nang, Nmu, Nphi, Nphi0max
-    integer(kind=I__) :: NptsB, Npts, Ncells, Nsh, NcellsB, oldNpts
+    integer(kind=I__) :: Npts_base, Npts, Ncell, Nsh, Ncell_base, oldNpts
     integer(kind=I__) :: maxIter, iter, totIter, iz, iout, Nout, bcFlag, ipFlag
-    integer(kind=I__) :: Nrad, irad, NxOut, NyOut, Nlos, ilos, Nscan, Npix, NshOut
-    integer(kind=I__) :: NcellsTot, NptsTot, NshTot
+    integer(kind=I__) :: Nrad, irad, Nx_out, Ny_out, Nlos, ilos, Nscan, Npix, Nsh_out
+    integer(kind=I__) :: Ncell_tot, Npts_tot, Nsh_tot
     integer(kind=I__) :: countStart, countRate, countMax
 
+    character(len=1) :: type_src, units_src
     real(kind=R__) :: solar0, solar, mu_sol, az_sol
+
     real(kind=R__) :: gndTemp, gndAlbedo, skyRad, waveNum(2), waveLen
     real(kind=R__) :: solAcc, solCrit, splitAcc, shAcc, maxAsym
-    real(kind=R__) :: mu_out, phi_out
     real(kind=R__) :: delX0, delY0
 
-    character(len=1) :: srcType, units
-    character(len=1) :: gridType
     character(len=fnameMaxLen_) :: inSaveFile, outSaveFile
     character(len=fnameMaxLen_) :: outNcFile, runName
     character(len=fnameMaxLen_) :: message
@@ -241,9 +242,9 @@ program shdom
             call shd_io__nmlInp(runName, file_prp, file_sfc, file_ckd,&
                 inSaveFile, outSaveFile, file_sen,&
                 Nstokes, Nx, Ny, Nz, Nmu, Nphi, bcFlag,&
-                ipFlag, isCkd, isDeltaM, gridType,&
-                srcType, solar0, mu_sol, az_sol, skyRad,&
-                gndTemp, gndAlbedo, units, waveNum, waveLen,&
+                ipFlag, isCkd, isDeltaM, type_grid,&
+                type_src, solar0, mu_sol, az_sol, skyRad,&
+                gndTemp, gndAlbedo, units_src, waveNum, waveLen,&
                 isAccel, solAcc, maxIter, splitAcc, shAcc,&
                 maxNset_out, maxNpar_out, Nout, type_Out, parms_Out, file_Out,&
                 outNcFile, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
@@ -252,9 +253,9 @@ program shdom
             call shd_io__userInp(runName, file_prp, file_sfc, file_ckd,&
                 inSaveFile, outSaveFile, file_sen,&
                 Nstokes, Nx, Ny, Nz, Nmu, Nphi, bcFlag,&
-                ipFlag, isCkd, isDeltaM, gridType,&
-                srcType, solar0, mu_sol, az_sol, skyRad,&
-                gndTemp, gndAlbedo, units, waveNum, waveLen,&
+                ipFlag, isCkd, isDeltaM, type_grid,&
+                type_src, solar0, mu_sol, az_sol, skyRad,&
+                gndTemp, gndAlbedo, units_src, waveNum, waveLen,&
                 isAccel, solAcc, maxIter, splitAcc, shAcc,&
                 maxNset_out, maxNpar_out, Nout, type_Out, parms_Out, file_Out,&
                 outNcFile, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
@@ -265,9 +266,9 @@ program shdom
     call shd_mpi__bcastInp(runName, file_prp, file_sfc, file_ckd,&
         &inSaveFile, outSaveFile, file_sen,&
         &Nstokes, Nx, Ny, Nz, Nmu, Nphi, bcFlag,&
-        &ipFlag, isCkd, isDeltaM, gridType,&
-        &srcType, solar0, mu_sol, az_sol, skyRad,&
-        &gndTemp, gndAlbedo, units, waveNum, waveLen,&
+        &ipFlag, isCkd, isDeltaM, type_grid,&
+        &type_src, solar0, mu_sol, az_sol, skyRad,&
+        &gndTemp, gndAlbedo, units_src, waveNum, waveLen,&
         &isAccel, solAcc, maxIter, splitAcc, shAcc,&
         &maxNset_out, maxNpar_out, Nout, type_Out, parms_Out,&
         &MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
@@ -330,23 +331,23 @@ program shdom
     Nleg = maxNl
     if (isDeltaM) Nleg = maxNl + 1
 
-    if (srcType .eq. 'B') then
+    if (type_src .eq. 'B') then
         isSolar_ = .true.
         isThermal_ = .true.
     else
-        if (srcType .eq. 'S') then
+        if (type_src .eq. 'S') then
             isSolar_ = .true.
             isThermal_ = .false.
-        else if (srcType .eq. 'T') then
+        else if (type_src.eq. 'T') then
             isSolar_ = .false.
             isThermal_ = .true.
         else
-            stop 'Error [shdom]: Unknown srcType.'
+            stop 'Error [shdom]: Unknown type_src.'
         end if
     end if
 
     ! for thermal, reset solar azimuth angle
-    if (srcType .eq. 'T') az_sol= 0.0d0
+    if (type_src.eq. 'T') az_sol= 0.0d0
 
     ! angle grids for DO
     allocate (mu(Nmu), wtDO(Nmu*Nphi), phi(Nmu*Nphi), Nphi0(Nmu))
@@ -436,8 +437,8 @@ program shdom
         isHighOrder_ = .false.
     end if
 
-    NshOut = 4
-    if (isHighOrder_) NshOut = 5
+    Nsh_out = 4
+    if (isHighOrder_) Nsh_out = 5
 
     ! x, y, z grids
     allocate (x_Grid(Nx + 1), y_Grid(Ny + 1), z_Grid(Nz))
@@ -537,10 +538,10 @@ program shdom
     if (is1DYx_ .or. isOpenYx_ .or. isMpiY_) Ny1 = Ny
 
     ! Number of base points
-    NptsB = Nx1*Ny1*Nz
+    Npts_base = Nx1*Ny1*Nz
 
     ! Calculate the number of base grid cells depending on the bcFlag
-    NcellsB = (Nz - 1)*(Nx + ibits(bcFlag, 0, 1) - ibits(bcFlag, 2, 1))&
+    Ncell_base = (Nz - 1)*(Nx + ibits(bcFlag, 0, 1) - ibits(bcFlag, 2, 1))&
         *(Ny + ibits(bcFlag, 1, 1) - ibits(bcFlag, 3, 1))
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
@@ -615,7 +616,7 @@ program shdom
     if (isMasterProc) then
         ! Check input parameters
         call shd_io__checkInp(Nmu, Nphi, isDeltaM, maxAsym,&
-            &gridType, srcType, units, solar0, mu_sol,&
+            &type_grid, type_src, units_src, solar0, mu_sol,&
             &waveNum, waveLen, gndTemp, gndAlbedo,&
             &splitAcc, shAcc)
     end if
@@ -711,24 +712,24 @@ program shdom
         if (type_Out(iout) .eq. 'R') then
             isRadOut = .true.
             if (parms_Out(2, iout) .le. 0.0) then
-                NxOut = 1
+                Nx_out = 1
             else
                 if (isMpiX_) then
-                    NxOut = max(1, nint(XDOMAIN_/parms_Out(2, iout)))
+                    Nx_out = max(1, nint(XDOMAIN_/parms_Out(2, iout)))
                 else
-                    NxOut = max(1, nint((XDOMAIN_ + 2*parms_Out(4, iout))/parms_Out(2, iout)))
+                    Nx_out = max(1, nint((XDOMAIN_ + 2*parms_Out(4, iout))/parms_Out(2, iout)))
                 end if
             end if
             if (parms_Out(3, iout) .le. 0.0) then
-                NyOut = 1
+                Ny_out = 1
             else
                 if (isMpiY_) then
-                    NyOut = max(1, nint(YDOMAIN_/parms_Out(3, iout)))
+                    Ny_out = max(1, nint(YDOMAIN_/parms_Out(3, iout)))
                 else
-                    NyOut = max(1, nint((YDOMAIN_ + 2*parms_Out(5, iout))/parms_Out(3, iout)))
+                    Ny_out = max(1, nint((YDOMAIN_ + 2*parms_Out(5, iout))/parms_Out(3, iout)))
                 end if
             end if
-            Nrad = Nrad + Nstokes*NxOut*NyOut*nint(parms_Out(6, iout))
+            Nrad = Nrad + Nstokes*Nx_out*Ny_out*nint(parms_Out(6, iout))
         else if (type_Out(iout) .eq. 'V') then
             isCamOut = .true.
             if (nint(parms_Out(1, iout)) .eq. 1) then
@@ -835,10 +836,10 @@ program shdom
 
     if (isFluxOut)  NmaxIG = NmaxIG + 3.0
     if (isHROut)    NmaxIG = NmaxIG + 1.0
-    if (isSHOut)    NmaxIG = NmaxIG + NshOut
+    if (isSHOut)    NmaxIG = NmaxIG + Nsh_out
     if (isSrcOut)   NmaxIG = NmaxIG + Nstokes
 
-    NmaxIG = NmaxIG + 16.5*CELL_TO_POINT_RATIO ! ptr8Grid_Cell[8.0], ptr6Cell_Cell[6.0], ptr2Tree_Cell[2.0], flags_Cell[0.5]
+    NmaxIG = NmaxIG + 16.5*CELL_TO_POINT_RATIO ! ptr8Grid_Cell[8.0], ptr6Cell_Cell[6.0], ptr2Tree_Cell[2.0], flag_Cell[0.5]
 
     NmaxIG = NmaxIG + 6.0   ! xyz_Grid[3.0], RSHptr[1.0], SHptr[1.0], OSHptr[1.0]
     memUsed = memUsed + 4.0 ! offset RSHptr[+2], SHptr[+1], OSHptr[+1]
@@ -870,7 +871,7 @@ program shdom
     !       + Nphi0max*Nstokes + NUM_SH_TERM_FACTOR*Nstokes*Nlm*NbigArr
     ! now: update NmaxIG from every allocation step
 
-    memNeed = ADAPT_GRID_FACTOR*NptsB*NmaxIG
+    memNeed = ADAPT_GRID_FACTOR*Npts_base*NmaxIG
 
     if (isHighOrder_) then
         scaleRatio= min(2.0, ((MAX_TOTAL_MB*1024**2)/4 - memUsed)/memNeed)
@@ -900,7 +901,7 @@ program shdom
     ! Retrieve max numbers for array allocation after memory check
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! max number of internal grid points
-    maxIG = nint(ADAPT_GRID_FACTOR*NptsB)
+    maxIG = nint(ADAPT_GRID_FACTOR*Npts_base)
 
     ! max number of grid cells, between 1 and 2 times grid points
     maxIC = nint(CELL_TO_POINT_RATIO*maxIG)
@@ -961,7 +962,7 @@ program shdom
     ! output
     if (isFluxOut) allocate (sumFluxes(2, maxIG), sumDirFlux(maxIG))
     if (isHROut)   allocate (sumFluxDiv(maxIG))
-    if (isSHOut)   allocate (sumSHterms(maxIG*NshOut))
+    if (isSHOut)   allocate (sumSHterms(maxIG*Nsh_out))
     if (isSrcOut)  allocate (source1out(maxIG*Nstokes))
 
     ! pointer to 8 grid points belonging to a cell
@@ -970,7 +971,7 @@ program shdom
     allocate (ptr8Grid_Cell(8, maxIC), ptr6Cell_Cell(6, maxIC), ptr2Tree_Cell(2, maxIC))
 
     ! a collection of binary flags for the cells
-    allocate (flags_Cell(maxIC))
+    allocate (flag_Cell(maxIC))
 
     ! x,y,z coordinate values of grid point locations
     allocate (xyz_Grid(3, maxIG))
@@ -1004,15 +1005,15 @@ program shdom
     ! Read in previous run from binary file if desired
     call shd_io__restoreState(inSaveFile, Nstokes, Nx, Ny, Nz, maxNl, maxNm, Nlm,&
         &INRADFLAG, NEWGRIDFLAG, x_Grid, y_Grid, z_Grid,&
-        &Npts, Ncells, xyz_Grid, ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell,&
-        &flags_Cell, fluxes, SHptr, source, RSHptr, radiance)
+        &Npts, Ncell, xyz_Grid, ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell,&
+        &flag_Cell, fluxes, SHptr, source, RSHptr, radiance)
 
 
     ! Check if we can use pre-calculated "state", if not, generate new grids
     !   NEWGRIDFLAG is from shd_io__restoreState call
     if (NEWGRIDFLAG) then
         ! Make the internal base grid lines
-        call shd_init__makeGrid(bcFlag, gridType, NPX_, NPY_, NPZ_, Nx, Ny, Nz,&
+        call shd_init__makeGrid(bcFlag, type_grid, NPX_, NPY_, NPZ_, Nx, Ny, Nz,&
             &XSTART_, YSTART_, delX_, delY_, ZLEVELS_,&
             &x_Grid, y_Grid, z_Grid)
     end if
@@ -1057,10 +1058,10 @@ program shdom
         !   then make the base grid point positions and grid cell structure.
         if (isBaseOut .or. ((ig_ckd.eq. Ng_ckd) .and. NEWGRIDFLAG)) then
             call shd_init__makeCell(bcFlag, ipFlag,&
-                &Nx, Ny, Nz, Nx1, Ny1, Npts, Ncells,&
+                &Nx, Ny, Nz, Nx1, Ny1, Npts, Ncell,&
                 &x_Grid, y_Grid, z_Grid, xyz_Grid,&
-                &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flags_Cell)
-            NcellsB = Ncells
+                &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell)
+            Ncell_base = Ncell
         end if
 
         ! Find the monochromatic SHDOM solution: adaptive grid output
@@ -1069,18 +1070,18 @@ program shdom
             &maxNl, maxNm, Nlm, Nmu, Nphi, Nleg, Nstleg, NUMPHASE_,&
             &Nphi0, mu, phi, wtDO,&
             &maxIV, maxIC, maxIG, maxIDO, INRADFLAG,&
-            &bcFlag, ipFlag, isDeltaM, srcType, isHighOrder_,&
+            &bcFlag, ipFlag, isDeltaM, type_src, isHighOrder_,&
             &solar0_ckd, mu_sol, az_sol, skyRad,&
             &type_sfc, gndTemp, gndAlbedo,&
             &Nx_sfc, Ny_sfc, dx_sfc, dy_sfc,&
             &Npar_sfc, parms_Sfc, parmsGrid_Sfc,&
-            &units, waveNum, waveLen,&
+            &units_src, waveNum, waveLen,&
             &isAccel, solAcc, maxIter, solCrit, iter,&
             &splitAcc, shAcc, x_Grid, y_Grid, z_Grid,&
             &temp, planck, extinct, ssAlb, legen, iPhase,&
             &maxNpts_bndry, maxNrad_bndry, NptsTop_bndry, NptsBot_bndry, ptr_Bndry, rad_Bndry,&
             &Npts, xyz_Grid,&
-            &Ncells, ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flags_Cell,&
+            &Ncell, ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
             &RSHptr, SHptr, OSHptr, work, work1, work2,&
             &source, delSource, radiance, fluxes, dirFlux)
         INRADFLAG = .false.
@@ -1093,58 +1094,58 @@ program shdom
                 if (type_Out(iout) .eq. 'R') then
                     if (isMpi_) then
                         if (file_sen(1:4) .ne. 'NONE') then
-                            call shd_mpi__computeRad(Nstokes, Nx, Ny, Nz, Npts, Ncells,&
+                            call shd_mpi__computeRad(Nstokes, Nx, Ny, Nz, Npts, Ncell,&
                                 &maxNl, maxNm, Nlm, Nstleg, Nleg, NUMPHASE_,&
                                 &Nmu, Nphi0mAX, Nphi0, mu, phi, wtDO,&
                                 &bcFlag, XDOMAIN_, YDOMAIN_, ipFlag,&
-                                &srcType, isDeltaM, mu_sol, az_sol,&
+                                &type_src, isDeltaM, mu_sol, az_sol,&
                                 &type_sfc, Npar_sfc, parmsGrid_Sfc,&
                                 &maxNpts_bndry, NptsTop_bndry, NptsBot_bndry, ptr_Bndry, rad_Bndry,&
-                                &gndTemp, gndAlbedo, skyRad, waveNum, waveLen, units,&
+                                &gndTemp, gndAlbedo, skyRad, waveNum, waveLen, units_src,&
                                 &x_Grid, y_Grid, z_Grid, xyz_Grid,&
-                                &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flags_Cell,&
+                                &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
                                 &extinct, ssAlb, legen, iPhase, dirFlux, fluxes,&
                                 &SHptr, source, work, work(1 + Npts*Nstokes),&
                                 &parms_Out(1, iout), irad, work2, parms_Sen)
                         else
-                            call shd_mpi__computeRad(Nstokes, Nx, Ny, Nz, Npts, Ncells,&
+                            call shd_mpi__computeRad(Nstokes, Nx, Ny, Nz, Npts, Ncell,&
                                 &maxNl, maxNm, Nlm, Nstleg, Nleg, NUMPHASE_,&
                                 &Nmu, Nphi0max, Nphi0, mu, phi, wtDO,&
                                 &bcFlag, XDOMAIN_, YDOMAIN_, ipFlag,&
-                                &srcType, isDeltaM, mu_sol, az_sol,&
+                                &type_src, isDeltaM, mu_sol, az_sol,&
                                 &type_sfc, Npar_sfc, parmsGrid_Sfc,&
                                 &maxNpts_bndry, NptsTop_bndry, NptsBot_bndry, ptr_Bndry, rad_Bndry,&
-                                &gndTemp, gndAlbedo, skyRad, waveNum, waveLen, units,&
+                                &gndTemp, gndAlbedo, skyRad, waveNum, waveLen, units_src,&
                                 &x_Grid, y_Grid, z_Grid, xyz_Grid,&
-                                &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flags_Cell,&
+                                &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
                                 &extinct, ssAlb, legen, iPhase, dirFlux, fluxes,&
                                 &SHptr, source, work, work(1 + Npts*Nstokes),&
                                 &parms_Out(1, iout), irad, work2)
                         end if
                     else
                         if (file_sen(1:4) .ne. 'NONE') then
-                            call shd_rad__computeRad(Nstokes, Nx, Ny, Nz, Npts, Ncells,&
+                            call shd_rad__computeRad(Nstokes, Nx, Ny, Nz, Npts, Ncell,&
                                 &maxNl, maxNm, Nlm, Nstleg, Nleg, NUMPHASE_,&
                                 &Nmu, Nphi0max, Nphi0, mu, phi, wtDO,&
-                                &bcFlag, ipFlag, srcType, isDeltaM, mu_sol, az_sol,&
+                                &bcFlag, ipFlag, type_src, isDeltaM, mu_sol, az_sol,&
                                 &type_sfc, Npar_sfc, parmsGrid_Sfc,&
                                 &maxNpts_bndry, NptsTop_bndry, NptsBot_bndry, ptr_Bndry, rad_Bndry,&
-                                &gndTemp, gndAlbedo, skyRad, waveNum, waveLen, units,&
+                                &gndTemp, gndAlbedo, skyRad, waveNum, waveLen, units_src,&
                                 &x_Grid, y_Grid, z_Grid, xyz_Grid,&
-                                &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flags_Cell,&
+                                &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
                                 &extinct, ssAlb, legen, iPhase, dirFlux, fluxes,&
                                 &SHptr, source, work(1), work(1 + Npts*Nstokes),&
                                 &parms_Out(1, iout), irad, work2, parms_Sen)
                         else
-                            call shd_rad__computeRad(Nstokes, Nx, Ny, Nz, Npts, Ncells,&
+                            call shd_rad__computeRad(Nstokes, Nx, Ny, Nz, Npts, Ncell,&
                                 &maxNl, maxNm, Nlm, Nstleg, Nleg, NUMPHASE_,&
                                 &Nmu, Nphi0max, Nphi0, mu, phi, wtDO,&
-                                &bcFlag, ipFlag, srcType, isDeltaM, mu_sol, az_sol,&
+                                &bcFlag, ipFlag, type_src, isDeltaM, mu_sol, az_sol,&
                                 &type_sfc, Npar_sfc, parmsGrid_Sfc,&
                                 &maxNpts_bndry, NptsTop_bndry, NptsBot_bndry, ptr_Bndry, rad_Bndry,&
-                                &gndTemp, gndAlbedo, skyRad, waveNum, waveLen, units,&
+                                &gndTemp, gndAlbedo, skyRad, waveNum, waveLen, units_src,&
                                 &x_Grid, y_Grid, z_Grid, xyz_Grid,&
-                                &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flags_Cell,&
+                                &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
                                 &extinct, ssAlb, legen, iPhase, dirFlux, fluxes,&
                                 &SHptr, source, work(1), work(1 + Npts*Nstokes),&
                                 &parms_Out(1, iout), irad, work2)
@@ -1161,55 +1162,55 @@ program shdom
                 if (type_Out(iout) .eq. 'V') then
                     if (isMpi_) then
                         if (file_sen(1:4) .ne. 'NONE') then
-                            call shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, Npts, Ncells,&
+                            call shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, Npts, Ncell,&
                                 &maxNl, maxNm, Nlm, Nstleg, Nleg, NUMPHASE_,&
                                 &Nmu, Nphi0max, Nphi0, mu, phi, wtDO,&
                                 &bcFlag, XDOMAIN_, YDOMAIN_, ipFlag,&
-                                &srcType, isDeltaM, mu_sol, az_sol,&
+                                &type_src, isDeltaM, mu_sol, az_sol,&
                                 &type_sfc, Npar_sfc, parmsGrid_Sfc,&
                                 &maxNpts_bndry, NptsTop_bndry, NptsBot_bndry, ptr_Bndry, rad_Bndry,&
-                                &gndTemp, gndAlbedo, skyRad, waveNum, waveLen, units,&
+                                &gndTemp, gndAlbedo, skyRad, waveNum, waveLen, units_src,&
                                 &x_Grid, y_Grid, z_Grid, xyz_Grid,&
-                                &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flags_Cell,&
+                                &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
                                 &extinct, ssAlb, legen, iPhase, dirFlux, fluxes,&
                                 &SHptr, source, parms_Out(1, iout), ilos, work2, parms_Sen)
                         else
-                            call shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, Npts, Ncells,&
+                            call shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, Npts, Ncell,&
                                 &maxNl, maxNm, Nlm, Nstleg, Nleg, NUMPHASE_,&
                                 &Nmu, Nphi0max, Nphi0, mu, phi, wtDO,&
                                 &bcFlag, XDOMAIN_, YDOMAIN_, ipFlag,&
-                                &srcType, isDeltaM, mu_sol, az_sol,&
+                                &type_src, isDeltaM, mu_sol, az_sol,&
                                 &type_sfc, Npar_sfc, parmsGrid_Sfc,&
                                 &maxNpts_bndry, NptsTop_bndry, NptsBot_bndry, ptr_Bndry, rad_Bndry,&
-                                &gndTemp, gndAlbedo, skyRad, waveNum, waveLen, units,&
+                                &gndTemp, gndAlbedo, skyRad, waveNum, waveLen, units_src,&
                                 &x_Grid, y_Grid, z_Grid, xyz_Grid,&
-                                &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flags_Cell,&
+                                &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
                                 &extinct, ssAlb, legen, iPhase, dirFlux, fluxes,&
                                 &SHptr, source, parms_Out(1, iout), ilos, work2)
                         end if
                     else
                         if (file_sen(1:4) .ne. 'NONE') then
-                            call shd_rad__computeCamRad(Nstokes, Nx, Ny, Nz, Npts, Ncells,&
+                            call shd_rad__computeCamRad(Nstokes, Nx, Ny, Nz, Npts, Ncell,&
                                 &maxNl, maxNm, Nlm, Nstleg, Nleg, NUMPHASE_,&
                                 &Nmu, Nphi0max, Nphi0, mu, phi, wtDO,&
-                                &bcFlag, ipFlag, srcType, isDeltaM, mu_sol, az_sol,&
+                                &bcFlag, ipFlag, type_src, isDeltaM, mu_sol, az_sol,&
                                 &type_sfc, Npar_sfc, parmsGrid_Sfc,&
                                 &maxNpts_bndry, NptsTop_bndry, NptsBot_bndry, ptr_Bndry, rad_Bndry,&
-                                &gndTemp, gndAlbedo, skyRad, waveNum, waveLen, units,&
+                                &gndTemp, gndAlbedo, skyRad, waveNum, waveLen, units_src,&
                                 &x_Grid, y_Grid, z_Grid, xyz_Grid,&
-                                &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flags_Cell,&
+                                &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
                                 &extinct, ssAlb, legen, iPhase, dirFlux, fluxes,&
                                 &SHptr, source, parms_Out(1, iout), ilos, work2, parms_Sen)
                         else
-                            call shd_rad__computeCamRad(Nstokes, Nx, Ny, Nz, Npts, Ncells,&
+                            call shd_rad__computeCamRad(Nstokes, Nx, Ny, Nz, Npts, Ncell,&
                                 &maxNl, maxNm, Nlm, Nstleg, Nleg, NUMPHASE_,&
                                 &Nmu, Nphi0max, Nphi0, mu, phi, wtDO,&
-                                &bcFlag, ipFlag, srcType, isDeltaM, mu_sol, az_sol,&
+                                &bcFlag, ipFlag, type_src, isDeltaM, mu_sol, az_sol,&
                                 &type_sfc, Npar_sfc, parmsGrid_Sfc,&
                                 &maxNpts_bndry, NptsTop_bndry, NptsBot_bndry, ptr_Bndry, rad_Bndry,&
-                                &gndTemp, gndAlbedo, skyRad, waveNum, waveLen, units,&
+                                &gndTemp, gndAlbedo, skyRad, waveNum, waveLen, units_src,&
                                 &x_Grid, y_Grid, z_Grid, xyz_Grid,&
-                                &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flags_Cell,&
+                                &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
                                 &extinct, ssAlb, legen, iPhase, dirFlux, fluxes,&
                                 &SHptr, source, parms_Out(1, iout), ilos, work2)
                         end if
@@ -1228,7 +1229,7 @@ program shdom
                     call shd_src__computeSrcOneDir(Nstokes, maxNl, maxNm, Nlm,&
                         &Nstleg, Nleg, NUMPHASE_,&
                         &Npts, isDeltaM, mu_out, phi_out,&
-                        &srcType, mu_sol, az_sol, ssAlb, legen, iPhase,&
+                        &type_src, mu_sol, az_sol, ssAlb, legen, iPhase,&
                         &dirFlux, SHptr, source, source1out)
                 end if
             end do
@@ -1238,21 +1239,21 @@ program shdom
             ! If outputting only the base grid then throw out the other points
             call shd_init__makeCell(bcFlag, ipFlag,&
                 &Nx, Ny, Nz, Nx1, Ny1,&
-                &Npts, Ncells, x_Grid, y_Grid, z_Grid, xyz_Grid,&
-                &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flags_Cell)
+                &Npts, Ncell, x_Grid, y_Grid, z_Grid, xyz_Grid,&
+                &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell)
         else
             ! For the output from the grid point arrays (Flux, Net flux, SH)
             !   we may need to interpolate the running k-distribution sum
             !   to the newly created grid points.
             call shd_util__interpData(oldNpts, Npts, isFluxOut, isHROut, isSHOut,&
                 sumFluxes, sumDirFlux, sumFluxDiv, sumSHterms,&
-                NcellsB, Ncells, ptr2Tree_Cell, ptr8Grid_Cell, xyz_Grid)
+                Ncell_base, Ncell, ptr2Tree_Cell, ptr8Grid_Cell, xyz_Grid)
         end if
 
         if (isFluxOut) then
 
             ! unscale delta-m fluxes
-            if ((srcType .ne. 'T') .and. isDeltaM) then
+            if ((type_src.ne. 'T') .and. isDeltaM) then
 
                 allocate(dirFlux_tmp(Npts))
 
@@ -1279,15 +1280,15 @@ program shdom
 
         if (isHROut) then
             ! Compute the net flux divergence at every point
-            call shd_rad__computeNetFluxDiv(Nstokes, Npts, RSHptr, srcType, mu_sol,&
+            call shd_rad__computeNetFluxDiv(Nstokes, Npts, RSHptr, type_src, mu_sol,&
                 &extinct, ssAlb, planck, dirFlux, radiance, work)
             call shd_util__sumData(Ng_ckd-ig_ckd, delg_Ckd(ig_ckd), Npts, work, sumFluxDiv)
         end if
 
         if (isSHOut) then
-            call shd_shdo__computeSH(NshOut, Nstokes, Npts, srcType, mu_sol, az_sol,&
+            call shd_shdo__computeSH(Nsh_out, Nstokes, Npts, type_src, mu_sol, az_sol,&
                 &dirFlux, RSHptr, maxNl, maxNm, radiance, work)
-            call shd_util__sumData(Ng_ckd-ig_ckd, delg_Ckd(ig_ckd), NshOut*Npts, work, sumSHterms)
+            call shd_util__sumData(Ng_ckd-ig_ckd, delg_Ckd(ig_ckd), Nsh_out*Npts, work, sumSHterms)
         end if
 
         oldNpts = Npts
@@ -1313,16 +1314,16 @@ program shdom
         if (isMasterProc) then
             if (isFluxOut) allocate (allFluxes(3, Nz, NyT, NxT))
             if (isHROut)   allocate (allFluxDiv(Nz, NyT, NxT))
-            if (isSHOut)   allocate (allSHterms(NshOut, Nz, NyT, NxT))
+            if (isSHOut)   allocate (allSHterms(Nsh_out, Nz, NyT, NxT))
             allocate (xAllGrid(NxT), yAllGrid(NyT))
         end if
 
         call shd_mpi__gatherOut(isFluxOut, isHROut, isSHOut,&
-            &ipFlag, bcFlag, NptsB, NxT, NyT, Nz, NshOut,&
+            &ipFlag, bcFlag, Npts_base, NxT, NyT, Nz, Nsh_out,&
             &sumFluxes, sumDirFlux, sumFluxDiv, sumSHterms,&
             &XDOMAIN_, YDOMAIN_, xAllGrid, yAllGrid,&
             &allFluxes, allFluxDiv, allSHterms,&
-            &Ncells, Npts, Nsh, NcellsTot, NptsTot, NshTot)
+            &Ncell, Npts, Nsh, Ncell_tot, Npts_tot, Nsh_tot)
 
         if (isMasterProc) then
 
@@ -1330,29 +1331,29 @@ program shdom
                 if (type_Out(iout) .ne. 'V' .and. file_Out(iout)(1:4) .ne. 'NONE') then
                     if (file_sen(1:4) .ne. 'NONE') then
                         call shd_io__outputResultMpi(Nstokes, NxT, NyT, Nz,&
-                            &NptsTot, NcellsTot, NshTot,&
+                            &Npts_tot, Ncell_tot, Nsh_tot,&
                             &maxNl, maxNm, Nlm, Nmu, Nphi, Nang, Ng_ckd,&
                             &file_prp, file_sfc, file_ckd, inSaveFile, outSaveFile,&
-                            &bcFlag, ipFlag, isDeltaM, gridType, srcType,&
+                            &bcFlag, ipFlag, isDeltaM, type_grid, type_src,&
                             &solar, mu_sol, az_sol, skyRad,&
-                            &type_sfc, gndTemp, gndAlbedo, waveNum, waveLen, units,&
+                            &type_sfc, gndTemp, gndAlbedo, waveNum, waveLen, units_src,&
                             &splitAcc, shAcc, solAcc, maxIter, totIter,&
                             &XDOMAIN_, YDOMAIN_, xAllGrid, yAllGrid, z_Grid,&
                             &allFluxes, allFluxDiv,&
-                            &NshOut, allSHterms, irad, sumRadOut,&
+                            &Nsh_out, allSHterms, irad, sumRadOut,&
                             &type_Out(iout), parms_Out(1, iout), file_Out(iout), parms_Sen)
                     else
                         call shd_io__outputResultMpi(Nstokes, NxT, NyT, Nz,&
-                            &NptsTot, NcellsTot, NshTot,&
+                            &Npts_tot, Ncell_tot, Nsh_tot,&
                             &maxNl, maxNm, Nlm, Nmu, Nphi, Nang, Ng_ckd,&
                             &file_prp, file_sfc, file_ckd, inSaveFile, outSaveFile,&
-                            &bcFlag, ipFlag, isDeltaM, gridType, srcType,&
+                            &bcFlag, ipFlag, isDeltaM, type_grid, type_src,&
                             &solar, mu_sol, az_sol, skyRad,&
-                            &type_sfc, gndTemp, gndAlbedo, waveNum, waveLen, units,&
+                            &type_sfc, gndTemp, gndAlbedo, waveNum, waveLen, units_src,&
                             &splitAcc, shAcc, solAcc, maxIter, totIter,&
                             &XDOMAIN_, YDOMAIN_, xAllGrid, yAllGrid, z_Grid,&
                             &allFluxes, allFluxDiv,&
-                            &NshOut, allSHterms, irad, sumRadOut,&
+                            &Nsh_out, allSHterms, irad, sumRadOut,&
                             &type_Out(iout), parms_Out(1, iout), file_Out(iout))
                     end if
                 end if
@@ -1369,32 +1370,32 @@ program shdom
         do iout = 1, Nout
             if ((type_Out(iout) .ne. 'V') .and. (file_Out(iout)(1:4) .ne. 'NONE')) then
                 if (file_sen(1:4) .ne. 'NONE') then
-                    call shd_io__outputResult(Nstokes, Nx, Ny, Nx1, Ny1, Nz, NptsB, Npts, Ncells,&
+                    call shd_io__outputResult(Nstokes, Nx, Ny, Nx1, Ny1, Nz, Npts_base, Npts, Ncell,&
                         Nsh, maxNl, maxNm, Nlm, Nstleg, Nleg, NUMPHASE_, Nmu, Nphi, Nang, Ng_ckd,&
                         file_prp, file_sfc, file_ckd, inSaveFile, outSaveFile,&
-                        bcFlag, ipFlag, isDeltaM, gridType, srcType,&
+                        bcFlag, ipFlag, isDeltaM, type_grid, type_src,&
                         solar, mu_sol, az_sol, skyRad,&
-                        type_sfc, gndTemp, gndAlbedo, waveNum, waveLen, units,&
+                        type_sfc, gndTemp, gndAlbedo, waveNum, waveLen, units_src,&
                         splitAcc, shAcc, solAcc, maxIter, totIter,&
                         x_Grid, y_Grid, z_Grid, xyz_Grid,&
-                        ptr2Tree_Cell, ptr8Grid_Cell, flags_Cell,&
+                        ptr2Tree_Cell, ptr8Grid_Cell, flag_Cell,&
                         extinct, ssAlb, legen, iPhase, temp,&
                         sumFluxes, sumDirFlux, sumFluxDiv,&
-                        irad, sumRadOut, NshOut, sumSHterms, source1out,&
+                        irad, sumRadOut, Nsh_out, sumSHterms, source1out,&
                         type_Out(iout), parms_Out(1, iout), file_Out(iout), parms_Sen)
                 else
-                    call shd_io__outputResult(Nstokes, Nx, Ny, Nx1, Ny1, Nz, NptsB, Npts, Ncells,&
+                    call shd_io__outputResult(Nstokes, Nx, Ny, Nx1, Ny1, Nz, Npts_base, Npts, Ncell,&
                         Nsh, maxNl, maxNm, Nlm, Nstleg, Nleg, NUMPHASE_, Nmu, Nphi, Nang, Ng_ckd,&
                         file_prp, file_sfc, file_ckd, inSaveFile, outSaveFile,&
-                        bcFlag, ipFlag, isDeltaM, gridType, srcType,&
+                        bcFlag, ipFlag, isDeltaM, type_grid, type_src,&
                         solar, mu_sol, az_sol, skyRad,&
-                        type_sfc, gndTemp, gndAlbedo, waveNum, waveLen, units,&
+                        type_sfc, gndTemp, gndAlbedo, waveNum, waveLen, units_src,&
                         splitAcc, shAcc, solAcc, maxIter, totIter,&
                         x_Grid, y_Grid, z_Grid, xyz_Grid,&
-                        ptr2Tree_Cell, ptr8Grid_Cell, flags_Cell,&
+                        ptr2Tree_Cell, ptr8Grid_Cell, flag_Cell,&
                         extinct, ssAlb, legen, iPhase, temp,&
                         sumFluxes, sumDirFlux, sumFluxDiv,&
-                        irad, sumRadOut, NshOut, sumSHterms, source1out,&
+                        irad, sumRadOut, Nsh_out, sumSHterms, source1out,&
                         type_Out(iout), parms_Out(1, iout), file_Out(iout))
                 end if
             end if
@@ -1409,21 +1410,21 @@ program shdom
         do iout = 1, Nout
             if ((type_Out(iout) .eq. 'V')) then
                 if (file_sen(1:4) .ne. 'NONE') then
-                    call shd_io__outputCamRad(Nstokes, Nx, Ny, Nz, Npts, Ncells,&
+                    call shd_io__outputCamRad(Nstokes, Nx, Ny, Nz, Npts, Ncell,&
                         &Nsh, maxNl, maxNm, Nlm, Nmu, Nphi, Nang, Ng_ckd,&
                         &file_prp, file_sfc, file_ckd, inSaveFile, outSaveFile,&
-                        &bcFlag, ipFlag, isDeltaM, gridType, srcType,&
+                        &bcFlag, ipFlag, isDeltaM, type_grid, type_src,&
                         &solar, mu_sol, az_sol, skyRad,&
-                        &type_sfc, gndTemp, gndAlbedo, waveNum, waveLen, units,&
+                        &type_sfc, gndTemp, gndAlbedo, waveNum, waveLen, units_src,&
                         &splitAcc, shAcc, solAcc, maxIter, totIter,&
                         &ilos, sumCamOut, parms_Out(1, iout), file_Out(iout), parms_Sen)
                 else
-                    call shd_io__outputCamRad(Nstokes, Nx, Ny, Nz, Npts, Ncells,&
+                    call shd_io__outputCamRad(Nstokes, Nx, Ny, Nz, Npts, Ncell,&
                         &Nsh, maxNl, maxNm, Nlm, Nmu, Nphi, Nang, Ng_ckd,&
                         &file_prp, file_sfc, file_ckd, inSaveFile, outSaveFile,&
-                        &bcFlag, ipFlag, isDeltaM, gridType, srcType,&
+                        &bcFlag, ipFlag, isDeltaM, type_grid, type_src,&
                         &solar, mu_sol, az_sol, skyRad,&
-                        &type_sfc, gndTemp, gndAlbedo, waveNum, waveLen, units,&
+                        &type_sfc, gndTemp, gndAlbedo, waveNum, waveLen, units_src,&
                         &splitAcc, shAcc, solAcc, maxIter, totIter,&
                         &ilos, sumCamOut, parms_Out(1, iout), file_Out(iout))
                 end if
@@ -1438,8 +1439,8 @@ program shdom
     if (maxIter .gt. 0) then
         call shd_io__saveState(outSaveFile, Nstokes, Nx, Ny, Nz, maxNl, maxNm, Nlm,&
             &work, x_Grid, y_Grid, z_Grid,&
-            &Npts, Ncells, xyz_Grid, ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell,&
-            &flags_Cell, fluxes, SHptr, source, RSHptr, radiance)
+            &Npts, Ncell, xyz_Grid, ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell,&
+            &flag_Cell, fluxes, SHptr, source, RSHptr, radiance)
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
@@ -1457,16 +1458,16 @@ program shdom
     ! before:
     !  MAXMB_OUT = 4*(Nmu*(2 + 2*Nphi + 2*Nlm + 2*33*32)&
     !      + 4.5*maxPG + maxPGL + NUMPHASE_*Nstleg*(maxLeg + 1)&
-    !      + 16.5*Ncells + Npts*(28 + Nphi0max*Nstokes)&
+    !      + 16.5*Ncell + Npts*(28 + Nphi0max*Nstokes)&
     !      + Nstokes*Nsh*NbigArr)/1024**2
     ! now:
     !   use NmaxIG
-    MAXMB_OUT = 4*(memUsed + 16.5*Ncells&
+    MAXMB_OUT = 4*(memUsed + 16.5*Ncell&
         + Npts*(NmaxIG-16.5*CELL_TO_POINT_RATIO))/1024**2
 
-    ADAPTGRIDFAC_OUT = float(Npts)/NptsB
+    ADAPTGRIDFAC_OUT = float(Npts)/Npts_base
     SHTERM_FAC_OUT = float(Nsh)/(Nlm*Npts)
-    CELL_POINT_OUT = float(Ncells)/Npts
+    CELL_POINT_OUT = float(Ncell)/Npts
     if (verbose_ .ge. 5) write (6, '(A)')'Message [shdom]: Actual MAX_TOTAL_MB, ADAPT_GRID_FACTOR, NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO'
     if (verbose_ .ge. 5) write (6, '(26X,F9.2,6X,F7.3,14X,F5.3,15X,F5.3)') MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
     !╰────────────────────────────────────────────────────────────────────────────╯!
@@ -1491,7 +1492,7 @@ program shdom
     deallocate (extinct, ssAlb, iPhase)
     deallocate (legen)
     deallocate (ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell)
-    deallocate (flags_Cell)
+    deallocate (flag_Cell)
     deallocate (xyz_Grid)
     deallocate (RSHptr, SHptr, OSHptr)
     deallocate (radiance, source)
