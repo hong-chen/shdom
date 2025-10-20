@@ -121,17 +121,18 @@ program shdom
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
-    real(kind=R__), allocatable :: planck(:)
-    real(kind=R__), allocatable    :: temp(:), ext(:), ssAlb(:)
-    real(kind=R__), allocatable    :: legen(:)
-    integer(kind=2)  , allocatable :: ipha(:)
+    real(kind=R__), allocatable  :: planck(:)
+    real(kind=R__), allocatable  :: temp(:), ext(:), ssAlb(:)
+    real(kind=R__), allocatable  :: legen(:)
+    integer(kind=2), allocatable :: ipha(:)
 
-    real(kind=R__), allocatable    :: temp_PT(:), ext_PT(:), ssAlb_PT(:)
-    real(kind=R__), allocatable    :: legen_PT(:)
-    integer(kind=2)  , allocatable :: ipha_PT(:)
+    real(kind=R__), allocatable  :: temp_PT(:), ext_PT(:), ssAlb_PT(:)
+    real(kind=R__), allocatable  :: legen_PT(:)
+    integer(kind=2), allocatable :: ipha_PT(:)
 
+    real(kind=R__), allocatable    :: work(:)
     integer(kind=I__), allocatable :: work1(:)
-    real(kind=R__), allocatable    :: work(:), work2(:)
+    real(kind=R__), allocatable    :: work2(:)
 
     real(kind=R__), allocatable :: fluxTot(:, :), fluxDir(:)
     real(kind=R__), allocatable :: fluxDirTmp(:)
@@ -163,7 +164,8 @@ program shdom
     character(len=1) :: type_prp
     real(kind=R__) :: dxTmp_prp, dyTmp_prp
 
-    ! the followings are included in globals_prp
+    ! <globals_prp> contains the following:
+    !
     ! integer, save :: Nx_prp_, Ny_prp_, Nz_prp_, Npha_prp_
     ! real, save    :: dx_prp_, dy_prp_, xStart_prp_, yStart_prp_
     ! real, save    :: xDomain_prp_, yDomain_prp_
@@ -217,7 +219,7 @@ program shdom
     real(kind=R__), allocatable    :: x_Grid(:), y_Grid(:), z_Grid(:)
     real(kind=R__), allocatable    :: xyz_Grid(:, :)
 
-    integer(kind=2)  , allocatable :: flag_Cell(:)
+    integer(kind=2), allocatable   :: flag_Cell(:)
     integer(kind=I__), allocatable :: ptr8Grid_Cell(:, :), &
                                       ptr6Cell_Cell(:, :), &
                                       ptr2Tree_Cell(:, :)
