@@ -142,8 +142,8 @@ subroutine shd_rad__computeDirect(&
 
     use globals_prp, only: Nx_prp_, Ny_prp_, Nz_prp_, Npha_prp_, &
                            dx_prp_, dy_prp_, xStart_prp_, yStart_prp_, &
-                           z_Prp_, ext_Prp_, ssAlb_Prp_, ipha_Prp_, &
-                           legen_Prp_, extDir_Prp_
+                           z_Prp_, ext_Prp_, ssa_Prp_, ipha_Prp_, &
+                           leg_Prp_, extDir_Prp_
 
     use globals_ckd, only: Nz_ckd_, z_Ckd_, kabs0_Ckd_
 
@@ -211,7 +211,7 @@ subroutine shd_rad__computeDirect(&
                 do IZ = 1, Nz_prp_
                     IP = IP + 1
                     EXTINCT = ext_Prp_(IP)
-                    ALBEDO = ssAlb_Prp_(IP)
+                    ALBEDO = ssa_Prp_(IP)
                     ! Add in the gaseous absorption to extinction
                     if (GASEXT(IZ) .gt. 0.0) then
                         ALBEDO = ALBEDO*EXTINCT/(EXTINCT + GASEXT(IZ))
@@ -225,7 +225,7 @@ subroutine shd_rad__computeDirect(&
                             IPH = IP
                         end if
                         L = ML + 1
-                        F = legen_Prp_(1 + NSTLEG*(L + (NLEG + 1)*(IPH - 1)))/(2*L + 1)
+                        F = leg_Prp_(1 + NSTLEG*(L + (NLEG + 1)*(IPH - 1)))/(2*L + 1)
                         EXTINCT = (1.0 - ALBEDO*F)*EXTINCT
                     end if
                     extDir_Prp_(IP) = EXTINCT

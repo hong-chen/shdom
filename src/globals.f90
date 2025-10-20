@@ -176,9 +176,9 @@ module globals_prp
     real, save    :: dx_prp_, dy_prp_, xStart_prp_, yStart_prp_
     real, save    :: xDomain_prp_, yDomain_prp_
     real, save, allocatable :: z_Prp_(:)
-    real, save, allocatable :: temp_Prp_(:), ext_Prp_(:), ssAlb_Prp_(:)
+    real, save, allocatable :: temp_Prp_(:), ext_Prp_(:), ssa_Prp_(:)
     real, save, allocatable :: extDir_Prp_(:)
-    real, save, allocatable :: legen_Prp_(:)
+    real, save, allocatable :: leg_Prp_(:)
     integer(2), save, allocatable :: ipha_Prp_(:)
 
 end module globals_prp

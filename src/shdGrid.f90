@@ -1106,8 +1106,8 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT, NSTLEG, NLEG,&
 
     use globals_prp, only: Nx_prp_, Ny_prp_, Nz_prp_, Npha_prp_, &
                            dx_prp_, dy_prp_, xStart_prp_, yStart_prp_, &
-                           z_Prp_, ext_Prp_, ssAlb_Prp_, ipha_Prp_, &
-                           temp_Prp_, legen_Prp_, extDir_Prp_
+                           z_Prp_, ext_Prp_, ssa_Prp_, ipha_Prp_, &
+                           temp_Prp_, leg_Prp_, extDir_Prp_
 
     use globals_ckd, only: Nz_ckd_, z_Ckd_, kabs0_Ckd_
 
@@ -1129,7 +1129,7 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT, NSTLEG, NLEG,&
         do I = 1, Npha_prp_
             do L = 0, NLEG
                 do J = 1, NSTLEG
-                    LEGEN(J, L, I) = legen_Prp_(J + NSTLEG*(L + (NLEG + 1)*(I - 1)))/(2*L + 1)
+                    LEGEN(J, L, I) = leg_Prp_(J + NSTLEG*(L + (NLEG + 1)*(I - 1)))/(2*L + 1)
                 end do
             end do
         end do
@@ -1202,14 +1202,14 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT, NSTLEG, NLEG,&
     I4 = I8
     !╰────────────────────────────────────────────────╯!
 
-    SCAT1 = F1*ext_Prp_(I1)*ssAlb_Prp_(I1)
-    SCAT2 = F2*ext_Prp_(I2)*ssAlb_Prp_(I2)
-    SCAT3 = F3*ext_Prp_(I3)*ssAlb_Prp_(I3)
-    SCAT4 = F4*ext_Prp_(I4)*ssAlb_Prp_(I4)
-    SCAT5 = F5*ext_Prp_(I5)*ssAlb_Prp_(I5)
-    SCAT6 = F6*ext_Prp_(I6)*ssAlb_Prp_(I6)
-    SCAT7 = F7*ext_Prp_(I7)*ssAlb_Prp_(I7)
-    SCAT8 = F8*ext_Prp_(I8)*ssAlb_Prp_(I8)
+    SCAT1 = F1*ext_Prp_(I1)*ssa_Prp_(I1)
+    SCAT2 = F2*ext_Prp_(I2)*ssa_Prp_(I2)
+    SCAT3 = F3*ext_Prp_(I3)*ssa_Prp_(I3)
+    SCAT4 = F4*ext_Prp_(I4)*ssa_Prp_(I4)
+    SCAT5 = F5*ext_Prp_(I5)*ssa_Prp_(I5)
+    SCAT6 = F6*ext_Prp_(I6)*ssa_Prp_(I6)
+    SCAT7 = F7*ext_Prp_(I7)*ssa_Prp_(I7)
+    SCAT8 = F8*ext_Prp_(I8)*ssa_Prp_(I8)
 
     MAXSCAT = -1.0
     if (SCAT1 .gt. MAXSCAT .or. abs(F1 - 1) .lt. 0.001) then
@@ -1247,7 +1247,7 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT, NSTLEG, NLEG,&
 
     !TEMP = temp_Prp_(ISELECT)
     !EXTINCT = ext_Prp_(ISELECT)
-    !SCATTER = ext_Prp_(ISELECT)*ssAlb_Prp_(ISELECT)
+    !SCATTER = ext_Prp_(ISELECT)*ssa_Prp_(ISELECT)
 
     TEMP = F1*temp_Prp_(I1) + F2*temp_Prp_(I2) + F3*temp_Prp_(I3) + F4*temp_Prp_(I4)&
         &+ F5*temp_Prp_(I5) + F6*temp_Prp_(I6) + F7*temp_Prp_(I7) + F8*temp_Prp_(I8)
@@ -1268,14 +1268,14 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT, NSTLEG, NLEG,&
         ! Standard property file format: unpolarized
         LEGEN(1, 0, 1) = 1.0
         do L = 1, NLEG
-            LEGEN(1, L, 1) = SCAT1*legen_Prp_(L + (NLEG + 1)*(I1 - 1))&
-                &+ SCAT2*legen_Prp_(L + (NLEG + 1)*(I2 - 1))&
-                &+ SCAT3*legen_Prp_(L + (NLEG + 1)*(I3 - 1))&
-                &+ SCAT4*legen_Prp_(L + (NLEG + 1)*(I4 - 1))&
-                &+ SCAT5*legen_Prp_(L + (NLEG + 1)*(I5 - 1))&
-                &+ SCAT6*legen_Prp_(L + (NLEG + 1)*(I6 - 1))&
-                &+ SCAT7*legen_Prp_(L + (NLEG + 1)*(I7 - 1))&
-                &+ SCAT8*legen_Prp_(L + (NLEG + 1)*(I8 - 1))
+            LEGEN(1, L, 1) = SCAT1*leg_Prp_(L + (NLEG + 1)*(I1 - 1))&
+                &+ SCAT2*leg_Prp_(L + (NLEG + 1)*(I2 - 1))&
+                &+ SCAT3*leg_Prp_(L + (NLEG + 1)*(I3 - 1))&
+                &+ SCAT4*leg_Prp_(L + (NLEG + 1)*(I4 - 1))&
+                &+ SCAT5*leg_Prp_(L + (NLEG + 1)*(I5 - 1))&
+                &+ SCAT6*leg_Prp_(L + (NLEG + 1)*(I6 - 1))&
+                &+ SCAT7*leg_Prp_(L + (NLEG + 1)*(I7 - 1))&
+                &+ SCAT8*leg_Prp_(L + (NLEG + 1)*(I8 - 1))
             if (SCATTER .gt. SCATMIN) then
                 LEGEN(1, L, 1) = LEGEN(1, L, 1)/SCATTER
             else
@@ -1293,14 +1293,14 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT, NSTLEG, NLEG,&
     !EXTINCT = F1*ext_Prp_(I1) + F2*ext_Prp_(I2) + F3*ext_Prp_(I3)&
     !    &+ F4*ext_Prp_(I4) + F5*ext_Prp_(I5) + F6*ext_Prp_(I6)&
     !    &+ F7*ext_Prp_(I7) + F8*ext_Prp_(I8)
-    !SCAT1 = F1*ext_Prp_(I1)*ssAlb_Prp_(I1)
-    !SCAT2 = F2*ext_Prp_(I2)*ssAlb_Prp_(I2)
-    !SCAT3 = F3*ext_Prp_(I3)*ssAlb_Prp_(I3)
-    !SCAT4 = F4*ext_Prp_(I4)*ssAlb_Prp_(I4)
-    !SCAT5 = F5*ext_Prp_(I5)*ssAlb_Prp_(I5)
-    !SCAT6 = F6*ext_Prp_(I6)*ssAlb_Prp_(I6)
-    !SCAT7 = F7*ext_Prp_(I7)*ssAlb_Prp_(I7)
-    !SCAT8 = F8*ext_Prp_(I8)*ssAlb_Prp_(I8)
+    !SCAT1 = F1*ext_Prp_(I1)*ssa_Prp_(I1)
+    !SCAT2 = F2*ext_Prp_(I2)*ssa_Prp_(I2)
+    !SCAT3 = F3*ext_Prp_(I3)*ssa_Prp_(I3)
+    !SCAT4 = F4*ext_Prp_(I4)*ssa_Prp_(I4)
+    !SCAT5 = F5*ext_Prp_(I5)*ssa_Prp_(I5)
+    !SCAT6 = F6*ext_Prp_(I6)*ssa_Prp_(I6)
+    !SCAT7 = F7*ext_Prp_(I7)*ssa_Prp_(I7)
+    !SCAT8 = F8*ext_Prp_(I8)*ssa_Prp_(I8)
     !SCATTER = SCAT1 + SCAT2 + SCAT3 + SCAT4 + SCAT5 + SCAT6 + SCAT7 + SCAT8
     !if (EXTINCT .gt. EXTMIN) then
     !    ALBEDO = SCATTER/EXTINCT
@@ -1351,14 +1351,14 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT, NSTLEG, NLEG,&
     !    ! Standard property file format: unpolarized
     !    LEGEN(1, 0, 1) = 1.0
     !    do L = 1, NLEG
-    !        LEGEN(1, L, 1) = SCAT1*legen_Prp_(L + (NLEG + 1)*(I1 - 1))&
-    !            &+ SCAT2*legen_Prp_(L + (NLEG + 1)*(I2 - 1))&
-    !            &+ SCAT3*legen_Prp_(L + (NLEG + 1)*(I3 - 1))&
-    !            &+ SCAT4*legen_Prp_(L + (NLEG + 1)*(I4 - 1))&
-    !            &+ SCAT5*legen_Prp_(L + (NLEG + 1)*(I5 - 1))&
-    !            &+ SCAT6*legen_Prp_(L + (NLEG + 1)*(I6 - 1))&
-    !            &+ SCAT7*legen_Prp_(L + (NLEG + 1)*(I7 - 1))&
-    !            &+ SCAT8*legen_Prp_(L + (NLEG + 1)*(I8 - 1))
+    !        LEGEN(1, L, 1) = SCAT1*leg_Prp_(L + (NLEG + 1)*(I1 - 1))&
+    !            &+ SCAT2*leg_Prp_(L + (NLEG + 1)*(I2 - 1))&
+    !            &+ SCAT3*leg_Prp_(L + (NLEG + 1)*(I3 - 1))&
+    !            &+ SCAT4*leg_Prp_(L + (NLEG + 1)*(I4 - 1))&
+    !            &+ SCAT5*leg_Prp_(L + (NLEG + 1)*(I5 - 1))&
+    !            &+ SCAT6*leg_Prp_(L + (NLEG + 1)*(I6 - 1))&
+    !            &+ SCAT7*leg_Prp_(L + (NLEG + 1)*(I7 - 1))&
+    !            &+ SCAT8*leg_Prp_(L + (NLEG + 1)*(I8 - 1))
     !        if (SCATTER .gt. SCATMIN) then
     !            LEGEN(1, L, 1) = LEGEN(1, L, 1)/SCATTER
     !        else
