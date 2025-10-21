@@ -126,7 +126,7 @@ module globals_cfg
     public
 
     integer, parameter :: charMaxLen_ = 256 ! file name max length (number of characters)
-    real(kind=8), save :: RAcc_
+    real(kind=8), save :: accSolv_
     real(kind=4), save :: memTotSysMB_ = 16000.0
     real(kind=4), save :: memPerCpuMB_
     real(kind=4), save :: planetRadius_ = 6371.009

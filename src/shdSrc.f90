@@ -41,7 +41,7 @@ module shd_src
 
     use globals_const, only: RD_, DPI_, O4PI_, DO4PI_, &
                              FRAC12_, FRAC13_, FRAC112_
-    use globals_cfg,   only: RAcc_, isOpenX_, isOpenYx_, &
+    use globals_cfg,   only: accSolv_, isOpenX_, isOpenYx_, &
                              isPol_, isPol4_, &
                              isSolar_, isThermal_
 
@@ -792,7 +792,7 @@ subroutine shd_src__integrateSrcOneRay(&
 
     ! TRANSCUT is the transmission to stop the integration at
     !TRANSCUT = 5.0e-5
-    TRANSCUT = RAcc_
+    TRANSCUT = accSolv_
     ! TAUTOL is the maximum optical path for the subgrid intervals
     TAUTOL = 0.2
 
@@ -835,19 +835,19 @@ subroutine shd_src__integrateSrcOneRay(&
     CX = dsqrt(1.0d0 - MU2**2)*dcos(PHI2 - DPI_)
     CY = dsqrt(1.0d0 - MU2**2)*dsin(PHI2 - DPI_)
     CZ = -MU2
-    if (abs(CX) .gt. RAcc_) then
+    if (abs(CX) .gt. accSolv_) then
         CXINV = 1.0d0/CX
     else
         CX = 0.0
         CXINV = 1.0e6
     end if
-    if (abs(CY) .gt. RAcc_) then
+    if (abs(CY) .gt. accSolv_) then
         CYINV = 1.0d0/CY
     else
         CY = 0.0
         CYINV = 1.0e6
     end if
-    if (abs(CZ) .gt. RAcc_) then
+    if (abs(CZ) .gt. accSolv_) then
         CZINV = 1.0d0/CZ
     else
         CZ = 0.0
@@ -1382,7 +1382,7 @@ subroutine shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
         !   If not, only prepare for next cell
 
         !if (TRANSMIT .lt. 1.0e-5) then
-        if (TRANSMIT .lt. RAcc_) then
+        if (TRANSMIT .lt. accSolv_) then
             VALIDRAD = .true.
         else if (GRIDRAD(1, I1) .ge. 0.0 .and. GRIDRAD(1, I2) .ge. 0.0 .and.&
             &GRIDRAD(1, I3) .ge. 0.0 .and. GRIDRAD(1, I4) .ge. 0.0) then

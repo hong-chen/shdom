@@ -41,7 +41,7 @@ module shd_rad
 
     use globals_const, only: RD_, PI_, DTOR_, &
                              FRAC12_, FRAC13_
-    use globals_cfg,   only: verbose_, RAcc_, &
+    use globals_cfg,   only: verbose_, accSolv_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
                              is3Ddir1Ddif_, &
                              isPol_, isPol4_, &
@@ -810,7 +810,7 @@ subroutine shd_rad__computeRad(&
 
         if (MUOUT .eq. 0.0) then
             if (verbose_ .ge. 4) write (6, *) 'Warning [_computeRad]: Bad MUOUT for radiance', IANG, MUOUT, PHID
-            MUOUT = RAcc_
+            MUOUT = accSolv_
             write (6, *) '                       New MUOUT=', MUOUT
         end if
 
@@ -1007,14 +1007,14 @@ subroutine shd_rad__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 SINTH = sqrt(1 - COSTH**2)
                 SINTH0 = sin(THETA0)
                 SINTH1 = sin(THETA1)
-                if (abs(SINTH) .lt. RAcc_) then
+                if (abs(SINTH) .lt. accSolv_) then
                     PHIR = 0.0
                 else
-                    if ((abs(SINTH0) .lt. RAcc_) .and. (abs(SINTH1) .le. RAcc_)) then
+                    if ((abs(SINTH0) .lt. accSolv_) .and. (abs(SINTH1) .le. accSolv_)) then
                         COSDELPHI = 0.0d0
-                    else if (abs(SINTH1) .gt. RAcc_) then
+                    else if (abs(SINTH1) .gt. accSolv_) then
                         COSDELPHI = (cos(U) - COSTH*cos(THETA1))/(SINTH1*SINTH)
-                    else if (abs(SINTH0) .gt. RAcc_) then
+                    else if (abs(SINTH0) .gt. accSolv_) then
                         COSDELPHI = (cos(U)*cos(V) - COSTH*cos(THETA0))&
                             &/(SINTH0*SINTH)
                     end if
@@ -1301,14 +1301,14 @@ subroutine shd_rad__computeSensorRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 SINTH = sqrt(1 - COSTH**2)
                 SINTH0 = sin(THETA0)
                 SINTH1 = sin(THETA1)
-                if (abs(SINTH) .lt. RAcc_) then
+                if (abs(SINTH) .lt. accSolv_) then
                     PHIR = 0.0
                 else
-                    if ((abs(SINTH0) .lt. RAcc_) .and. (abs(SINTH1) .le. RAcc_)) then
+                    if ((abs(SINTH0) .lt. accSolv_) .and. (abs(SINTH1) .le. accSolv_)) then
                         COSDELPHI = 0.0d0
-                    else if (abs(SINTH1) .gt. RAcc_) then
+                    else if (abs(SINTH1) .gt. accSolv_) then
                         COSDELPHI = (cos(U) - COSTH*cos(THETA1))/(SINTH1*SINTH)
-                    else if (abs(SINTH0) .gt. RAcc_) then
+                    else if (abs(SINTH0) .gt. accSolv_) then
                         COSDELPHI = (cos(U)*cos(V) - COSTH*cos(THETA0))&
                             &/(SINTH0*SINTH)
                     end if

@@ -41,7 +41,7 @@ module shd_intg
 
     use globals_const, only: RD_, DPI_, &
                              FRAC13_, FRAC112_
-    use globals_cfg,   only: verbose_, RAcc_, &
+    use globals_cfg,   only: verbose_, accSolv_, &
                              isMpi_, is1DX_, is1DYx_, is1D_, &
                              isPol_
 
@@ -329,7 +329,7 @@ subroutine shd_intg__integratePath(&
             ! Transfer the radiance for the (IMU,IPHI) discrete ordinate from
             !   GRIDRAD to the work array.
             do I = 1, NPTS
-                if (GRIDRAD(1, I) .lt. -RAcc_) then
+                if (GRIDRAD(1, I) .lt. -accSolv_) then
                     if (verbose_ .ge. 4) write (6, *) 'Warning [_integratePath]: Grid point has no value',&
                         &I, MU(IMU), PHI(IMU, IPHI), GRIDRAD(1, I), XGRID(1), YGRID(1),&
                         &GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I)
@@ -678,7 +678,7 @@ subroutine shd_intg__backIntegrate3D(&
                 RAD(:) = RAD(:) + TRANSMIT*SRC(:)*ABSCELL
                 TRANSMIT = TRANSMIT*TRANSCELL
                 !if (RAD(1) < -1.0e-5) then
-                if (RAD(1) < -RAcc_) then
+                if (RAD(1) < -accSolv_) then
                     print '(A,3(1X,F6.4),8(1X,E12.5))',&
                         &'_backIntegrate3D: RAD<0 ',&
                         &xe, ye, ze, ext0, ext1, so, tau, transmit, src, abscell, rad(:)
@@ -1105,7 +1105,7 @@ subroutine shd_intg__backIntegrate3D_(&
                 RAD = RAD + TRANSMIT*SRC*ABSCELL
                 TRANSMIT = TRANSMIT*TRANSCELL
                 !if (RAD < -1.0e-5) then
-                if (RAD < -RAcc_) then
+                if (RAD < -accSolv_) then
                     print '(A,3(1X,F6.4),8(1X,E12.5))',&
                         &'_backIntegrate3D_: RAD<0 ',&
                         &XE, YE, ZE, EXT0, EXT1, SO, TAU, TRANSMIT, SRC, ABSCELL, RAD
@@ -1582,7 +1582,7 @@ subroutine shd_intg__backIntegrate1D(&
                 ! If not, only add in cell radiance and prepare for next cell
 
                 !if (GRIDRAD(1, I1) .ge. -0.1) then
-                if (GRIDRAD(1, I1) .ge. -RAcc_) then
+                if (GRIDRAD(1, I1) .ge. -accSolv_) then
                     VALIDRAD = .true.
                     RAD0(:) = GRIDRAD(:, I1)
                     RAD(:) = RAD(:) + TRANSMIT*(RAD0(:)*TRANSCELL + SRC(:)*ABSCELL)

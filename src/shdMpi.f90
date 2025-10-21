@@ -40,7 +40,7 @@
 module shd_mpi
 
     use globals_const, only: RD_, PI_, DPI_, PIH_, FRAC13_, FRAC112_
-    use globals_cfg,   only: verbose_, charMaxLen_, RAcc_, &
+    use globals_cfg,   only: verbose_, charMaxLen_, accSolv_, &
                              isMpiX_, isMpiY_, isMpi_, &
                              is1DX_, is1DYx_, is1D_, &
                              isPol_, isPol4_, &
@@ -1934,7 +1934,7 @@ subroutine shd_mpi__computeRad(&
 
         if (MUOUT .eq. 0.0) then
             if (verbose_ .ge. 4) write (6, *) 'Warning [mpi__computeRad]: Bad MUOUT for radiance', K, MUOUT, PHID
-            MUOUT = RAcc_
+            MUOUT = accSolv_
             write (6, *) '                           New MUOUT=', MUOUT
         end if
 
@@ -2377,14 +2377,14 @@ subroutine shd_mpi__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 SINTH = sqrt(1 - COSTH**2)
                 SINTH0 = sin(THETA0)
                 SINTH1 = sin(THETA1)
-                if (abs(SINTH) .lt. RAcc_) then
+                if (abs(SINTH) .lt. accSolv_) then
                     PHIR = 0.0
                 else
-                    if ((abs(SINTH0) .lt. RAcc_) .and. (abs(SINTH1) .le. RAcc_)) then
+                    if ((abs(SINTH0) .lt. accSolv_) .and. (abs(SINTH1) .le. accSolv_)) then
                         COSDELPHI = 0.0d0
-                    else if (abs(SINTH1) .gt. RAcc_) then
+                    else if (abs(SINTH1) .gt. accSolv_) then
                         COSDELPHI = (cos(U) - COSTH*cos(THETA1))/(SINTH1*SINTH)
-                    else if (abs(SINTH0) .gt. RAcc_) then
+                    else if (abs(SINTH0) .gt. accSolv_) then
                         COSDELPHI = (cos(U)*cos(V) - COSTH*cos(THETA0))/(SINTH0*SINTH)
                     end if
                     COSDELPHI = min(+1.0d0, max(-1.0d0, COSDELPHI))
@@ -3450,7 +3450,7 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, NX, NY, NZ, NA,&
                 &+ F3*GRIDRAD(:, I3) + F4*GRIDRAD(:, I4)
             RAD(:) = RAD(:) + TRANS*RAD0(:)
         !else if (TRANS .lt. 1.0e-5) then
-        else if (TRANS .lt. RAcc_) then
+        else if (TRANS .lt. accSolv_) then
             VALIDRAD = .true.
         else
             EXT1 = EXT0

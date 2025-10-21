@@ -40,7 +40,7 @@
 module shd_grid
 
     use globals_const, only: RD_
-    use globals_cfg,   only: RAcc_, &
+    use globals_cfg,   only: accSolv_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, isMpi_, &
                              is1DX_, is1DYx_, is1D_, &
                              isPol_, isSolar_, isThermal_
@@ -1134,7 +1134,7 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT, NSTLEG, NLEG,&
             end do
         end do
         !EXTMIN = 1.0d-5/((z_Prp_(Nz_prp_) - z_Prp_(1))/Nz_prp_)
-        EXTMIN  = RAcc_/((z_Prp_(Nz_prp_) - z_Prp_(1))/Nz_prp_) ! attempt to improve agreement between libRadtran in water vapor abosprtion bands
+        EXTMIN  = accSolv_/((z_Prp_(Nz_prp_) - z_Prp_(1))/Nz_prp_) ! attempt to improve agreement between libRadtran in water vapor abosprtion bands
         SCATMIN = 0.1d0*EXTMIN
         return
     end if

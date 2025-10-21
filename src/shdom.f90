@@ -40,7 +40,7 @@
 program shdom
 
     use globals_const, only: REPS_
-    use globals_cfg,   only: verbose_, charMaxLen_, RAcc_, &
+    use globals_cfg,   only: verbose_, charMaxLen_, accSolv_, &
                              memTotSysMB_, memPerCpuMB_, &
                              isNmlInp_, isHighOrder_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, isMpi_, &
@@ -317,8 +317,8 @@ program shdom
 
     ! Post-process parameters from input
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    ! set calculation accuracy (1.0e-4 to 1.0e-8)
-    RAcc_ = max(REPS_, min(solAcc*0.1, 1.0e-4))
+    ! set RT solving accuracy (1.0e-4 to 1.0e-8)
+    accSolv_ = max(REPS_, min(solAcc*0.1, 1.0e-4))
 
     ! The number of Stokes parameters (and components of the real
     !   generalized spherical harmonics vectors) can be 1, 3, or 4.
