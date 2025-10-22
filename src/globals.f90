@@ -125,6 +125,9 @@ module globals_cfg
     implicit none
     public
 
+    integer, parameter :: I__ = selected_int_kind(9)
+    integer, parameter :: R__ = selected_real_kind(6)
+
     integer, parameter :: charMaxLen_ = 256 ! file name max length (number of characters)
     real(kind=8), save :: accSolv_
     real(kind=4), save :: memTotSysMB_ = 16000.0
@@ -163,9 +166,28 @@ module globals_cfg
     ! Radiation sources (SRCTYPE)
     logical, save :: isSolar_, isThermal_
 
+    ! planning to use derived type feature in modern Fortran
+    ! for sensor, surface, atmosphere, etc.
+    type :: shd_type_sfc
+
+        integer(kind=I__) :: Nx
+        integer(kind=I__) :: Ny
+        integer(kind=I__) :: Npar
+        integer(kind=I__) :: Ndim
+
+        real(kind=R__) :: dx
+        real(kind=R__) :: dy
+        real(kind=R__) :: avgTemp
+        real(kind=R__) :: avgAbl
+
+        character(len=2) :: type
+        character(len=charMaxLen_) :: fileName
+
+        real(kind=R__), allocatable :: rawData
+
+    end type shd_type_sfc
 
 end module globals_cfg
-
 
 module globals_prp
 
