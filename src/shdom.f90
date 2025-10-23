@@ -205,7 +205,7 @@ program shdom
     real(kind=R__), allocatable :: parms_Sen(:)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    ! Boundary (borrowed BC [boundary condition] as postfix)
+    ! BC (borrowed from Boundary Condition)
     !╭────────────────────────────────────────────────────────────────────────────╮!
     integer(kind=I__) :: NptsTop_bc, NptsBot_bc
     integer(kind=I__) :: maxNpts_bc, maxNrad_bc
