@@ -614,7 +614,7 @@ subroutine shd_mpi__bcastSfc(sfc_obj)
     sfc_obj%avgTemp = realbuf(1); sfc_obj%avgAlb = realbuf(2)
 
     Ndata = sfc_obj%Npar * (sfc_obj%Nx+1) * (sfc_obj%Ny+1)
-    call mpi_bcast(sfc_obj%dataRaw, Ndata, MPI_real, 0, comm2D_, ierr)
+    call mpi_bcast(sfc_obj%dataRaw_brdf, Ndata, MPI_real, 0, comm2D_, ierr)
 #endif
 
     return

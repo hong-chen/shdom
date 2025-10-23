@@ -1187,7 +1187,7 @@ subroutine shd_io__readSfc(sfc_obj)
     ! spaced grid of size sfc_obj%Nx by sfc_obj%Ny and spacing sfc_obj%dx by sfc_obj%dy.
     ! The properties are returned on a sfc_obj%Nx+1 by sfc_obj%Ny+1 grid that is
     ! periodic (NX+1 same as 1, etc).  The surface properties at each
-    ! grid point are returned in sfc_obj%dataRaw, and the first parameter must
+    ! grid point are returned in sfc_obj%dataRaw_brdf, and the first parameter must
     ! be temperature.  The number of parameters for each grid point
     ! (including temperature) are returned in sfc_obj%Npar.
     ! Also returned are the domain average ground albedo and temperature
@@ -1257,8 +1257,8 @@ subroutine shd_io__readSfc(sfc_obj)
                 if (IX .ge. 1 .and. IX .le. sfc_obj%Nx .and.&
                     &IY .ge. 1 .and. IY .le. sfc_obj%Ny) then
                     I = sfc_obj%Npar * (IX - 1 + (sfc_obj%Nx + 1)*(IY - 1))
-                    sfc_obj%dataRaw(I + 1) = temp0
-                    sfc_obj%dataRaw(I + 2) = alb0
+                    sfc_obj%dataRaw_brdf(I + 1) = temp0
+                    sfc_obj%dataRaw_brdf(I + 2) = alb0
                     if (alb0 .lt. 0.0 .or. alb0 .gt. 1.0)&
                         &stop 'Error [_readSfc]: Illegal surface albedo.'
                     if (temp0 .lt. 150. .or. temp0 .gt. 350.) then
@@ -1291,9 +1291,9 @@ subroutine shd_io__readSfc(sfc_obj)
                 if (IX .ge. 1 .and. IX .le. sfc_obj%Nx .and.&
                     &IY .ge. 1 .and. IY .le. sfc_obj%Ny) then
                     I = sfc_obj%Npar * (IX - 1 + (sfc_obj%Nx + 1)*(IY - 1))
-                    sfc_obj%dataRaw(I + 1) = temp0
-                    sfc_obj%dataRaw(I + 2) = WSPD
-                    sfc_obj%dataRaw(I + 3) = PCL
+                    sfc_obj%dataRaw_brdf(I + 1) = temp0
+                    sfc_obj%dataRaw_brdf(I + 2) = WSPD
+                    sfc_obj%dataRaw_brdf(I + 3) = PCL
                     temp_sfc = temp_sfc + temp0
                     N = N + 1
                 end if
@@ -1322,10 +1322,10 @@ subroutine shd_io__readSfc(sfc_obj)
                 if (IX .ge. 1 .and. IX .le. sfc_obj%Nx .and.&
                     &IY .ge. 1 .and. IY .le. sfc_obj%Ny) then
                     I = sfc_obj%Npar * (IX - 1 + (sfc_obj%Nx + 1)*(IY - 1))
-                    sfc_obj%dataRaw(I + 1) = temp0
-                    sfc_obj%dataRaw(I + 2) = RHO0
-                    sfc_obj%dataRaw(I + 3) = KR
-                    sfc_obj%dataRaw(I + 4) = THETA
+                    sfc_obj%dataRaw_brdf(I + 1) = temp0
+                    sfc_obj%dataRaw_brdf(I + 2) = RHO0
+                    sfc_obj%dataRaw_brdf(I + 3) = KR
+                    sfc_obj%dataRaw_brdf(I + 4) = THETA
                     temp_sfc = temp_sfc + temp0
                     alb_sfc  = alb_sfc  + RHO0
                     N = N + 1
@@ -1351,10 +1351,10 @@ subroutine shd_io__readSfc(sfc_obj)
                 if (IX .ge. 1 .and. IX .le. sfc_obj%Nx .and.&
                     &IY .ge. 1 .and. IY .le. sfc_obj%Ny) then
                     I = sfc_obj%Npar * (IX - 1 + (sfc_obj%Nx + 1)*(IY - 1))
-                    sfc_obj%dataRaw(I + 1) = temp0
-                    sfc_obj%dataRaw(I + 2) = F_ISO
-                    sfc_obj%dataRaw(I + 3) = F_GEO
-                    sfc_obj%dataRaw(I + 4) = F_VOL
+                    sfc_obj%dataRaw_brdf(I + 1) = temp0
+                    sfc_obj%dataRaw_brdf(I + 2) = F_ISO
+                    sfc_obj%dataRaw_brdf(I + 3) = F_GEO
+                    sfc_obj%dataRaw_brdf(I + 4) = F_VOL
                     temp_sfc = temp_sfc + temp0
                     alb_sfc  = alb_sfc  + F_ISO
                     N = N + 1
@@ -1380,12 +1380,12 @@ subroutine shd_io__readSfc(sfc_obj)
                 if (IX .ge. 1 .and. IX .le. sfc_obj%Nx .and.&
                     &IY .ge. 1 .and. IY .le. sfc_obj%Ny) then
                     I = sfc_obj%Npar * (IX - 1 + (sfc_obj%Nx + 1)*(IY - 1))
-                    sfc_obj%dataRaw(I + 1) = temp0
-                    sfc_obj%dataRaw(I + 2) = F_ISO
-                    sfc_obj%dataRaw(I + 3) = F_GEO
-                    sfc_obj%dataRaw(I + 4) = F_VOL
-                    sfc_obj%dataRaw(I + 5) = F_JIAO
-                    sfc_obj%dataRaw(I + 6) = ALPHA
+                    sfc_obj%dataRaw_brdf(I + 1) = temp0
+                    sfc_obj%dataRaw_brdf(I + 2) = F_ISO
+                    sfc_obj%dataRaw_brdf(I + 3) = F_GEO
+                    sfc_obj%dataRaw_brdf(I + 4) = F_VOL
+                    sfc_obj%dataRaw_brdf(I + 5) = F_JIAO
+                    sfc_obj%dataRaw_brdf(I + 6) = ALPHA
                     temp_sfc = temp_sfc + temp0
                     alb_sfc  = alb_sfc  + F_ISO
                     N = N + 1
@@ -1411,10 +1411,10 @@ subroutine shd_io__readSfc(sfc_obj)
                 if (IX .ge. 1 .and. IX .le. sfc_obj%Nx .and.&
                     &IY .ge. 1 .and. IY .le. sfc_obj%Ny) then
                     I = sfc_obj%Npar * (IX - 1 + (sfc_obj%Nx + 1)*(IY - 1))
-                    sfc_obj%dataRaw(I + 1) = temp0
-                    sfc_obj%dataRaw(I + 2) = MRE
-                    sfc_obj%dataRaw(I + 3) = MIM
-                    sfc_obj%dataRaw(I + 4) = WSPD
+                    sfc_obj%dataRaw_brdf(I + 1) = temp0
+                    sfc_obj%dataRaw_brdf(I + 2) = MRE
+                    sfc_obj%dataRaw_brdf(I + 3) = MIM
+                    sfc_obj%dataRaw_brdf(I + 4) = WSPD
                     temp_sfc = temp_sfc + temp0
                     N = N + 1
                 end if
@@ -1444,12 +1444,12 @@ subroutine shd_io__readSfc(sfc_obj)
                 if (IX .ge. 1 .and. IX .le. sfc_obj%Nx .and.&
                     &IY .ge. 1 .and. IY .le. sfc_obj%Ny) then
                     I = sfc_obj%Npar * (IX - 1 + (sfc_obj%Nx + 1)*(IY - 1))
-                    sfc_obj%dataRaw(I + 1) = temp0
-                    sfc_obj%dataRaw(I + 2) = A
-                    sfc_obj%dataRaw(I + 3) = KR
-                    sfc_obj%dataRaw(I + 4) = B
-                    sfc_obj%dataRaw(I + 5) = ZETA
-                    sfc_obj%dataRaw(I + 6) = SIGMA
+                    sfc_obj%dataRaw_brdf(I + 1) = temp0
+                    sfc_obj%dataRaw_brdf(I + 2) = A
+                    sfc_obj%dataRaw_brdf(I + 3) = KR
+                    sfc_obj%dataRaw_brdf(I + 4) = B
+                    sfc_obj%dataRaw_brdf(I + 5) = ZETA
+                    sfc_obj%dataRaw_brdf(I + 6) = SIGMA
                     temp_sfc = temp_sfc + temp0
                     alb_sfc  = alb_sfc  + A
                     N = N + 1
@@ -1483,14 +1483,14 @@ subroutine shd_io__readSfc(sfc_obj)
                 if (IX .ge. 1 .and. IX .le. sfc_obj%Nx .and.&
                     &IY .ge. 1 .and. IY .le. sfc_obj%Ny) then
                     I = sfc_obj%Npar * (IX - 1 + (sfc_obj%Nx + 1)*(IY - 1))
-                    sfc_obj%dataRaw(I + 1) = PARAM1
-                    sfc_obj%dataRaw(I + 2) = PARAM2
-                    sfc_obj%dataRaw(I + 3) = PARAM3
-                    sfc_obj%dataRaw(I + 4) = PARAM4
-                    sfc_obj%dataRaw(I + 5) = PARAM5
-                    sfc_obj%dataRaw(I + 6) = PARAM6
-                    sfc_obj%dataRaw(I + 7) = PARAM7
-                    sfc_obj%dataRaw(I + 8) = PARAM8 ! surface identification
+                    sfc_obj%dataRaw_brdf(I + 1) = PARAM1
+                    sfc_obj%dataRaw_brdf(I + 2) = PARAM2
+                    sfc_obj%dataRaw_brdf(I + 3) = PARAM3
+                    sfc_obj%dataRaw_brdf(I + 4) = PARAM4
+                    sfc_obj%dataRaw_brdf(I + 5) = PARAM5
+                    sfc_obj%dataRaw_brdf(I + 6) = PARAM6
+                    sfc_obj%dataRaw_brdf(I + 7) = PARAM7
+                    sfc_obj%dataRaw_brdf(I + 8) = PARAM8 ! surface identification
 
                     temp_sfc = temp_sfc + PARAM1
 
@@ -1529,7 +1529,7 @@ subroutine shd_io__readSfc(sfc_obj)
     open (UNIT=88, FILE=trim(adjustl(OUTFILE_DATA)), STATUS='OLD',&
         &ACCESS='STREAM', FORM='UNFORMATTED')
     NDATA = NXX*NYY*NPP
-    read (88) (sfc_obj%dataRaw(IDATA), IDATA=1, NDATA)
+    read (88) (sfc_obj%dataRaw_brdf(IDATA), IDATA=1, NDATA)
     close (88)
 
     do IY = 1, sfc_obj%Ny + 1
@@ -1540,16 +1540,16 @@ subroutine shd_io__readSfc(sfc_obj)
 
                 I = sfc_obj%Npar * (IX - 1 + (sfc_obj%Nx + 1)*(IY - 1))
 
-                temp_sfc = temp_sfc + sfc_obj%dataRaw(I + 1)
+                temp_sfc = temp_sfc + sfc_obj%dataRaw_brdf(I + 1)
 
                 if (((sfc_obj%type .ne. 'VO') .and. (sfc_obj%type .ne. 'Vo')) .and.&
                     &((sfc_obj%type .ne. 'VW') .and. (sfc_obj%type .ne. 'Vw'))) then
                     if ((sfc_obj%type .eq. 'VX') .or. (sfc_obj%type .eq. 'Vx')) then
-                        if ((abs(sfc_obj%dataRaw(I+8))-1.0) .gt. 0.01) then ! exclude [O] and [W]
-                            alb_sfc = alb_sfc + sfc_obj%dataRaw(I + 2)
+                        if ((abs(sfc_obj%dataRaw_brdf(I+8))-1.0) .gt. 0.01) then ! exclude [O] and [W]
+                            alb_sfc = alb_sfc + sfc_obj%dataRaw_brdf(I + 2)
                         end if
                     else
-                        alb_sfc = alb_sfc + sfc_obj%dataRaw(I + 2)
+                        alb_sfc = alb_sfc + sfc_obj%dataRaw_brdf(I + 2)
                     end if
                 end if
 
@@ -1570,7 +1570,7 @@ subroutine shd_io__readSfc(sfc_obj)
         I0 = sfc_obj%Npar * (IX - 1 + (sfc_obj%Nx + 1)*(1 - 1))
         I  = sfc_obj%Npar * (IX - 1 + (sfc_obj%Nx + 1)*(sfc_obj%Ny + 1 - 1))
         do J = 1, sfc_obj%Npar
-            sfc_obj%dataRaw(I + J) = sfc_obj%dataRaw(I0 + J)
+            sfc_obj%dataRaw_brdf(I + J) = sfc_obj%dataRaw_brdf(I0 + J)
         end do
     end do
 
@@ -1578,7 +1578,7 @@ subroutine shd_io__readSfc(sfc_obj)
         I0 = sfc_obj%Npar * ((sfc_obj%Nx + 1)*(IY - 1))
         I  = sfc_obj%Npar * (sfc_obj%Nx + (sfc_obj%Nx + 1)*(IY - 1))
         do J = 1, sfc_obj%Npar
-            sfc_obj%dataRaw(I + J) = sfc_obj%dataRaw(I0 + J)
+            sfc_obj%dataRaw_brdf(I + J) = sfc_obj%dataRaw_brdf(I0 + J)
         end do
     end do
 

@@ -148,7 +148,7 @@ module globals_cfg
         real(kind=R__) :: avgTemp
         real(kind=R__) :: avgAlb
 
-        real(kind=R__), pointer :: dataRaw(:)
+        real(kind=R__), pointer :: dataRaw_brdf(:)
 
         logical :: isUniform    = .false.
         logical :: isLambertian = .false.
@@ -160,19 +160,22 @@ module globals_cfg
 
         character(len=charMaxLen_) :: fname = 'NONE'
 
-        integer(kind=I__) :: Nx
-        integer(kind=I__) :: Ny
-        integer(kind=I__) :: maxNpts
-        integer(kind=I__) :: maxNpar
-        integer(kind=I__) :: Npar
-        integer(kind=I__) :: Ndim
+        integer(kind=I__) :: Ng
 
-        real(kind=R__) :: dx
-        real(kind=R__) :: dy
-        real(kind=R__) :: avgTemp
-        real(kind=R__) :: avgAlb
+        !integer(kind=I__) :: Nx
+        !integer(kind=I__) :: Ny
+        !integer(kind=I__) :: maxNpts
+        !integer(kind=I__) :: maxNpar
+        !integer(kind=I__) :: Npar
+        !integer(kind=I__) :: Ndim
 
-        real(kind=R__), pointer :: dataRaw(:)
+        !real(kind=R__) :: dx
+        !real(kind=R__) :: dy
+
+        real(kind=R__), pointer :: dataRaw_solar(:)
+        real(kind=R__), pointer :: dataRaw_delg(:)
+        real(kind=R__), pointer :: dataRaw_kabs(:)
+        real(kind=R__), pointer :: dataRaw_z(:)
 
         logical :: isAllocated  = .false.
 
