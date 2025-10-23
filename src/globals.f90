@@ -133,7 +133,7 @@ module globals_cfg
     ! for sensor, surface, atmosphere, etc.
     type :: shd_type_sfc
 
-        character(len=charMaxLen_) :: fname
+        character(len=charMaxLen_) :: fname = 'NONE'
         character(len=2) :: type
 
         integer(kind=I__) :: Nx
@@ -148,13 +148,35 @@ module globals_cfg
         real(kind=R__) :: avgTemp
         real(kind=R__) :: avgAlb
 
-        real(kind=R__), pointer :: rawData(:)
+        real(kind=R__), pointer :: dataRaw(:)
 
         logical :: isUniform    = .false.
         logical :: isLambertian = .false.
         logical :: isAllocated  = .false.
 
     end type shd_type_sfc
+
+    type :: shd_type_ckd
+
+        character(len=charMaxLen_) :: fname = 'NONE'
+
+        integer(kind=I__) :: Nx
+        integer(kind=I__) :: Ny
+        integer(kind=I__) :: maxNpts
+        integer(kind=I__) :: maxNpar
+        integer(kind=I__) :: Npar
+        integer(kind=I__) :: Ndim
+
+        real(kind=R__) :: dx
+        real(kind=R__) :: dy
+        real(kind=R__) :: avgTemp
+        real(kind=R__) :: avgAlb
+
+        real(kind=R__), pointer :: dataRaw(:)
+
+        logical :: isAllocated  = .false.
+
+    end type shd_type_ckd
 
     real(kind=8), save :: accSolv_
     real(kind=4), save :: memTotSysMB_ = 16000.0

@@ -594,11 +594,9 @@ subroutine shd_mpi__bcastSfcSize(sfc_obj)
 end subroutine shd_mpi__bcastSfcSize
 
 subroutine shd_mpi__bcastSfc(sfc_obj)
-    !&rawData_Sfc, sfc_obj)
 
     ! Broadcasts the surface file parameters from the master process to the others.
 
-    !real, intent(inout) :: rawData_Sfc(*)
     type(shd_type_sfc), intent(inout) :: sfc_obj
 
 #if HAS_MPI
@@ -616,7 +614,7 @@ subroutine shd_mpi__bcastSfc(sfc_obj)
     sfc_obj%avgTemp = realbuf(1); sfc_obj%avgAlb = realbuf(2)
 
     Ndata = sfc_obj%Npar * (sfc_obj%Nx+1) * (sfc_obj%Ny+1)
-    call mpi_bcast(sfc_obj%rawData, Ndata, MPI_real, 0, comm2D_, ierr)
+    call mpi_bcast(sfc_obj%dataRaw, Ndata, MPI_real, 0, comm2D_, ierr)
 #endif
 
     return
