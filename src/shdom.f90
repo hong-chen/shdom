@@ -661,9 +661,7 @@ program shdom
     ! Read fileInp_sfc and broadcast data if MPI
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Read in the surface properties
-    if (fileInp_sfc(1:4) .eq. 'NONE') then
-        type_sfc = 'FL'
-    else
+    if (fileInp_sfc(1:4) .ne. 'NONE') then
         allocate (parms_Sfc(maxNpar_sfc*maxNpts_sfc))
         memUsed = memUsed + maxNpar_sfc*maxNpts_sfc
 
