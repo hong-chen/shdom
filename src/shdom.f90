@@ -348,19 +348,18 @@ program shdom
     ! Make maxNl_sh and maxNm_sh from Nmu_do and Nphi_do (for discrete ordinate)
     !   Nmu_do: number of discrete ordinate zenith angles in both hemispheres
     !   Nphi_do: number of discrete ordinate azimuth angles in 2*pi
+    !   maxNphi0_do: The maximum number of azimuth angles actually used
     Nmu_do = max(2, 2*int((Nmu_do + 1)/2)) ! force Nmu_do an even number
     Nphi_do = max(1, Nphi_do)
+    maxNphi0_do = Nphi_do
 
     ! maxNl_sh: The maximum L of the spherical harmonic truncation
     ! maxNm_sh: The maximum M of the spherical harmonic truncation
     maxNl_sh = Nmu_do - 1
     maxNm_sh = max(0, int(Nphi_do/2) - 1)
 
-    ! Compute Nlm_sh, maxNphi0_do.
-    !   Nlm_sh: The number of spherical harmonic terms
-    !   maxNphi0_do: The maximum number of azimuth angles actually used
+    ! Nlm_sh: The number of spherical harmonic terms
     Nlm_sh = (2*maxNm_sh + 1)*(maxNl_sh + 1) - maxNm_sh*(maxNm_sh + 1)
-    maxNphi0_do = Nphi_do
 
     ! Nleg_prp: The number of Legendre series phase function terms used in the solution procedure
     Nleg_prp = maxNl_sh
