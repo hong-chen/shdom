@@ -1109,7 +1109,7 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT, NSTLEG, NLEG,&
                            z_Prp_, ext_Prp_, ssa_Prp_, ipha_Prp_, &
                            temp_Prp_, leg_Prp_, extDir_Prp_
 
-    use globals_ckd, only: Nz_ckd_, z_Ckd_, kabs0_Ckd_
+    use globals_ckd, only: Nz_ckd_, dataRaw_z_Ckd_, dataRaw_kabs0_Ckd_
 
     integer NSTLEG, NLEG
     integer*2 IPHASE
@@ -1375,16 +1375,16 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT, NSTLEG, NLEG,&
         IU = Nz_ckd_
         do while (IU - IL .gt. 1)
             IM = (IU + IL)/2
-            if (Z .le. z_Ckd_(IM)) then
+            if (Z .le. dataRaw_z_Ckd_(IM)) then
                 IL = IM
             else
                 IU = IM
             end if
         end do
         I = min(max(IL, 1), Nz_ckd_ - 1)
-        F = (Z - z_Ckd_(I))/(z_Ckd_(I + 1) - z_Ckd_(I))
+        F = (Z - dataRaw_z_Ckd_(I))/(dataRaw_z_Ckd_(I + 1) - dataRaw_z_Ckd_(I))
         F = min(max(F, 0.0d0), 1.0d0)
-        KG = (1.0 - F)*kabs0_Ckd_(I) + F*kabs0_Ckd_(I + 1)
+        KG = (1.0 - F)*dataRaw_kabs0_Ckd_(I) + F*dataRaw_kabs0_Ckd_(I + 1)
         if (EXTINCT + KG .gt. 0.0) then
             ALBEDO = ALBEDO*EXTINCT/(EXTINCT + KG)
         else

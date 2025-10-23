@@ -47,7 +47,7 @@ program shdom
                              is1DX_, is1DYx_, is1D_, is3Ddir1Ddif_, &
                              is1D1_, isPol_, isPol4_, &
                              isSolar_, isThermal_, &
-                             shd_type_sfc
+                             shd_type_sfc, shd_type_ckd
 
     use globals_prp,   only: Nx_prp_, Ny_prp_, Nz_prp_, Npha_prp_, &
                              dx_prp_, dy_prp_, xStart_prp_, yStart_prp_, &
@@ -57,7 +57,7 @@ program shdom
                              extDir_Prp_, &
                              leg_Prp_, ipha_Prp_
 
-    use globals_ckd,   only: Nz_ckd_, z_Ckd_, kabs0_Ckd_
+    use globals_ckd,   only: Nz_ckd_, dataRaw_z_Ckd_, dataRaw_kabs0_Ckd_
 
     use shd_init, only: shd_init__makeGrid, &
                         shd_init__makeCell
@@ -186,12 +186,12 @@ program shdom
 
     ! CKD
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    character(len=charMaxLen_) :: fileInp_ckd
-    integer(kind=I__) :: Ng_ckd, ig_ckd
+    type(shd_type_ckd) :: ckd_obj
+    integer(kind=I__) :: ig_ckd
     real(kind=R__)    :: solar0_ckd
-    real(kind=R__), allocatable :: solar_Ckd(:), &
-                                   kabs_Ckd(:, :), &
-                                   delg_Ckd(:)
+    real(kind=R__), allocatable, target :: dataRaw_solar_Ckd(:), &
+                                           dataRaw_kabs_Ckd(:, :), &
+                                           dataRaw_delg_Ckd(:)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! SEN
@@ -270,7 +270,7 @@ program shdom
     !   and the results are then broadcast to the child processors.
     if (isMasterProc) then
         if (isNmlInp_) then
-            call shd_io__nmlInp(runName, fileInp_prp, sfc_obj%fname, fileInp_ckd,&
+            call shd_io__nmlInp(runName, fileInp_prp, sfc_obj%fname, ckd_obj%fname,&
                 fileInp_sav, fileOut_sav, fileInp_sen,&
                 Nstokes, Nx, Ny, Nz, Nmu_do, Nphi_do, flag_bc,&
                 ipFlag, isCkd, isDeltaM, type_grid,&
@@ -281,7 +281,7 @@ program shdom
                 fileOut_nc, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
                 NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, verbose_)
         else
-            call shd_io__userInp(runName, fileInp_prp, sfc_obj%fname, fileInp_ckd,&
+            call shd_io__userInp(runName, fileInp_prp, sfc_obj%fname, ckd_obj%fname,&
                 fileInp_sav, fileOut_sav, fileInp_sen,&
                 Nstokes, Nx, Ny, Nz, Nmu_do, Nphi_do, flag_bc,&
                 ipFlag, isCkd, isDeltaM, type_grid,&
@@ -294,7 +294,7 @@ program shdom
         end if
     end if
 
-    call shd_mpi__bcastInp(runName, fileInp_prp, fileInp_ckd,&
+    call shd_mpi__bcastInp(runName, fileInp_prp, ckd_obj%fname,&
         &fileInp_sav, fileOut_sav, fileInp_sen,&
         &Nstokes, Nx, Ny, Nz, Nmu_do, Nphi_do, flag_bc,&
         &ipFlag, isCkd, isDeltaM, type_grid,&
@@ -663,7 +663,8 @@ program shdom
     if (sfc_obj%fname(1:4) .ne. 'NONE') then
 
         allocate (dataRaw_brdf_Sfc(sfc_obj%maxNpar * sfc_obj%maxNpts))
-        sfc_obj%dataRaw_brdf => dataRaw_brdf_Sfc; sfc_obj%isAllocated = .true.
+        sfc_obj%dataRaw_brdf => dataRaw_brdf_Sfc
+        sfc_obj%isAllocated = .true.
 
         memUsed = memUsed + sfc_obj%maxNpar * sfc_obj%maxNpts
 
@@ -678,33 +679,48 @@ program shdom
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
-    ! Read fileInp_ckd and broadcast data if MPI
+    ! Read ckd_obj%fname and broadcast ckd_obj if MPI
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! If doing a k-distribution then get the band info from the CKD file
     if (isCkd) then
-        if (isMasterProc) then
-            call shd_io__readCkdSize(fileInp_ckd, waveNum, Ng_ckd, Nz_ckd_)
-        end if
-        ! Broadcast the k-distribution array sizes
-        call shd_mpi__bcastCkdSize(Ng_ckd, Nz_ckd_)
-        allocate (z_Ckd_(Nz_ckd_), kabs0_Ckd_(Nz_ckd_), kabs_Ckd(Nz_ckd_, Ng_ckd))
-        allocate (solar_Ckd(Ng_ckd), delg_Ckd(Ng_ckd))
-        memUsed = memUsed + Nz_ckd_*(2.0+Ng_ckd) + 2.0*Ng_ckd
 
         if (isMasterProc) then
-            maxNg = Ng_ckd; maxNz = Nz_ckd_
-            call shd_io__readCkd(maxNg, maxNz, fileInp_ckd, waveNum, solar_Ckd,&
-                &Ng_ckd, delg_Ckd, Nz_ckd_, z_Ckd_, kabs_Ckd)
+            call shd_io__readCkdSize(waveNum, ckd_obj)
         end if
-        call shd_mpi__bcastCkd(solar_Ckd, Ng_ckd, delg_Ckd, Nz_ckd_, z_Ckd_, kabs_Ckd)
+        Nz_ckd_ = ckd_obj%Nz
+
+        ! Broadcast the k-distribution object
+        call shd_mpi__bcastCkdSize(ckd_obj)
+
+        allocate (dataRaw_solar_Ckd(ckd_obj%Ng), dataRaw_delg_Ckd(ckd_obj%Ng), dataRaw_z_Ckd_(ckd_obj%Nz))
+        allocate (dataRaw_kabs_Ckd(ckd_obj%Nz, ckd_obj%Ng))
+        allocate (dataRaw_kabs0_Ckd_(ckd_obj%Nz))
+
+        memUsed = memUsed + ckd_obj%Nz*(2.0+ckd_obj%Ng) + 2.0*ckd_obj%Ng
+
+        ckd_obj%dataRaw_solar => dataRaw_solar_Ckd
+        ckd_obj%dataRaw_delg  => dataRaw_delg_Ckd
+        ckd_obj%dataRaw_z     => dataRaw_z_Ckd_
+        ckd_obj%dataRaw_kabs  => dataRaw_kabs_Ckd
+        ckd_obj%isAllocated = .true.
+
+        if (isMasterProc) then
+            ckd_obj%maxNg = ckd_obj%Ng; ckd_obj%maxNz = ckd_obj%Nz
+            call shd_io__readCkd(waveNum, ckd_obj)
+        end if
+
+        call shd_mpi__bcastCkd(ckd_obj)
+
     else
-        Ng_ckd = 1
-        allocate (solar_Ckd(Ng_ckd), delg_Ckd(Ng_ckd))
-        memUsed = memUsed + 2.0*Ng_ckd
+        ckd_obj%Ng = 1
 
-        solar_Ckd(1) = 1.0
-        delg_Ckd(1) = 1.0
-        Nz_ckd_ = 0
+        allocate (dataRaw_solar_Ckd(ckd_obj%Ng), dataRaw_delg_Ckd(ckd_obj%Ng))
+        memUsed = memUsed + 2.0*ckd_obj%Ng
+
+        dataRaw_solar_Ckd(1) = 1.0
+        dataRaw_delg_Ckd(1) = 1.0
+
+        ckd_obj%Nz = 0
         isBaseOut = .false.
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
@@ -1071,26 +1087,26 @@ program shdom
     solar = 0.0d0
 
     ! Loop over the k-distribution g's from high to low absorption
-    CKD_LOOP: do ig_ckd = Ng_ckd, 1, -1
+    CKD_LOOP: do ig_ckd = ckd_obj%Ng, 1, -1
 
-        if (verbose_ .ge. 5) write (6, '(A,I2,A,I2,A)') 'Message [shdom]: Starting ', Ng_ckd-ig_ckd+1, '/', Ng_ckd, ' (ig/Ng) ...'
+        if (verbose_ .ge. 5) write (6, '(A,I2,A,I2,A)') 'Message [shdom]: Starting ', ckd_obj%Ng-ig_ckd+1, '/', ckd_obj%Ng, ' (ig/Ng) ...'
 
         ! solar flux for given g of CKD
-        solar0_ckd = solar_Ckd(ig_ckd)*solar0*abs(mu_solar)
+        solar0_ckd = dataRaw_solar_Ckd(ig_ckd)*solar0*abs(mu_solar)
 
         ! weighted average solar flux
-        solar = solar + solar_Ckd(ig_ckd)*delg_Ckd(ig_ckd)*solar0*abs(mu_solar)
+        solar = solar + dataRaw_solar_Ckd(ig_ckd)*dataRaw_delg_Ckd(ig_ckd)*solar0*abs(mu_solar)
 
         ! If doing k-distribution then get the gas absorption profile.
         if (isCkd) then
             do iz = 1, Nz_ckd_
-                kabs0_Ckd_(iz) = kabs_Ckd(iz, ig_ckd)
+                dataRaw_kabs0_Ckd_(iz) = dataRaw_kabs_Ckd(iz, ig_ckd)
             end do
         end if
 
         ! If this is the first time through or we always want a base grid,
         !   then make the base grid point positions and grid cell structure.
-        if (isBaseOut .or. ((ig_ckd.eq. Ng_ckd) .and. isNewGrid)) then
+        if (isBaseOut .or. ((ig_ckd.eq. ckd_obj%Ng) .and. isNewGrid)) then
             call shd_init__makeCell(flag_bc, ipFlag,&
                 &Nx, Ny, Nz, Nx1, Ny1, Npts, Ncell,&
                 &x_Grid, y_Grid, z_Grid, xyz_Grid,&
@@ -1187,7 +1203,7 @@ program shdom
                     end if
                 end if
             end do
-            call shd_util__sumData(Ng_ckd-ig_ckd, delg_Ckd(ig_ckd), Nrad, work2, sumRad_Out)
+            call shd_util__sumData(ckd_obj%Ng-ig_ckd, dataRaw_delg_Ckd(ig_ckd), Nrad, work2, sumRad_Out)
         end if
 
         if (isCamOut) then
@@ -1251,7 +1267,7 @@ program shdom
                     end if
                 end if
             end do
-            call shd_util__sumData(Ng_ckd-ig_ckd, delg_Ckd(ig_ckd), Nlos, work2, sumCam_Out)
+            call shd_util__sumData(ckd_obj%Ng-ig_ckd, dataRaw_delg_Ckd(ig_ckd), Nlos, work2, sumCam_Out)
         end if
 
         if (isSrcOut) then
@@ -1308,21 +1324,21 @@ program shdom
 
             end if
 
-            call shd_util__sumData(Ng_ckd-ig_ckd, delg_Ckd(ig_ckd), 2*Npts, fluxTot, sumFluxTot_Out)
-            call shd_util__sumData(Ng_ckd-ig_ckd, delg_Ckd(ig_ckd), Npts, fluxDir, sumFluxDir_Out)
+            call shd_util__sumData(ckd_obj%Ng-ig_ckd, dataRaw_delg_Ckd(ig_ckd), 2*Npts, fluxTot, sumFluxTot_Out)
+            call shd_util__sumData(ckd_obj%Ng-ig_ckd, dataRaw_delg_Ckd(ig_ckd), Npts, fluxDir, sumFluxDir_Out)
         end if
 
         if (isHROut) then
             ! Compute the net flux divergence at every point
             call shd_rad__computeNetFluxDiv(Nstokes, Npts, ptrRad_Sh, type_src, mu_solar,&
                 &ext, ssa, planck, fluxDir, rad_Sh, work)
-            call shd_util__sumData(Ng_ckd-ig_ckd, delg_Ckd(ig_ckd), Npts, work, sumFluxDiv_Out)
+            call shd_util__sumData(ckd_obj%Ng-ig_ckd, dataRaw_delg_Ckd(ig_ckd), Npts, work, sumFluxDiv_Out)
         end if
 
         if (isSHOut) then
             call shd_shdo__computeSH(Nsh_out, Nstokes, Npts, type_src, mu_solar, az_solar,&
                 &fluxDir, ptrRad_Sh, maxNl_sh, maxNm_sh, rad_Sh, work)
-            call shd_util__sumData(Ng_ckd-ig_ckd, delg_Ckd(ig_ckd), Nsh_out*Npts, work, sumSH_Out)
+            call shd_util__sumData(ckd_obj%Ng-ig_ckd, dataRaw_delg_Ckd(ig_ckd), Nsh_out*Npts, work, sumSH_Out)
         end if
 
         oldNpts = Npts
@@ -1366,8 +1382,8 @@ program shdom
                     if (fileInp_sen(1:4) .ne. 'NONE') then
                         call shd_io__outputResultMpi(Nstokes, Nx_T, Ny_T, Nz,&
                             &Npts_tot, Ncell_tot, Nsh_tot,&
-                            &maxNl_sh, maxNm_sh, Nlm_sh, Nmu_do, Nphi_do, Nang_do, Ng_ckd,&
-                            &fileInp_prp, sfc_obj%fname, fileInp_ckd, fileInp_sav, fileOut_sav,&
+                            &maxNl_sh, maxNm_sh, Nlm_sh, Nmu_do, Nphi_do, Nang_do, ckd_obj%Ng,&
+                            &fileInp_prp, sfc_obj%fname, ckd_obj%fname, fileInp_sav, fileOut_sav,&
                             &flag_bc, ipFlag, isDeltaM, type_grid, type_src,&
                             &solar, mu_solar, az_solar, skyRad,&
                             &sfc_obj%type, sfc_obj%avgTemp, sfc_obj%avgAlb, waveNum, waveLen, units_src,&
@@ -1379,8 +1395,8 @@ program shdom
                     else
                         call shd_io__outputResultMpi(Nstokes, Nx_T, Ny_T, Nz,&
                             &Npts_tot, Ncell_tot, Nsh_tot,&
-                            &maxNl_sh, maxNm_sh, Nlm_sh, Nmu_do, Nphi_do, Nang_do, Ng_ckd,&
-                            &fileInp_prp, sfc_obj%fname, fileInp_ckd, fileInp_sav, fileOut_sav,&
+                            &maxNl_sh, maxNm_sh, Nlm_sh, Nmu_do, Nphi_do, Nang_do, ckd_obj%Ng,&
+                            &fileInp_prp, sfc_obj%fname, ckd_obj%fname, fileInp_sav, fileOut_sav,&
                             &flag_bc, ipFlag, isDeltaM, type_grid, type_src,&
                             &solar, mu_solar, az_solar, skyRad,&
                             &sfc_obj%type, sfc_obj%avgTemp, sfc_obj%avgAlb, waveNum, waveLen, units_src,&
@@ -1405,8 +1421,8 @@ program shdom
             if ((type_Out(iout) .ne. 'V') .and. (file_Out(iout)(1:4) .ne. 'NONE')) then
                 if (fileInp_sen(1:4) .ne. 'NONE') then
                     call shd_io__outputResult(Nstokes, Nx, Ny, Nx1, Ny1, Nz, Npts_base, Npts, Ncell,&
-                        Nsh, maxNl_sh, maxNm_sh, Nlm_sh, NlegSet_prp, Nleg_prp, Npha_prp_, Nmu_do, Nphi_do, Nang_do, Ng_ckd,&
-                        fileInp_prp, sfc_obj%fname, fileInp_ckd, fileInp_sav, fileOut_sav,&
+                        Nsh, maxNl_sh, maxNm_sh, Nlm_sh, NlegSet_prp, Nleg_prp, Npha_prp_, Nmu_do, Nphi_do, Nang_do, ckd_obj%Ng,&
+                        fileInp_prp, sfc_obj%fname, ckd_obj%fname, fileInp_sav, fileOut_sav,&
                         flag_bc, ipFlag, isDeltaM, type_grid, type_src,&
                         solar, mu_solar, az_solar, skyRad,&
                         sfc_obj%type, sfc_obj%avgTemp, sfc_obj%avgAlb, waveNum, waveLen, units_src,&
@@ -1419,8 +1435,8 @@ program shdom
                         type_Out(iout), parms_Out(1, iout), file_Out(iout), parms_Sen)
                 else
                     call shd_io__outputResult(Nstokes, Nx, Ny, Nx1, Ny1, Nz, Npts_base, Npts, Ncell,&
-                        Nsh, maxNl_sh, maxNm_sh, Nlm_sh, NlegSet_prp, Nleg_prp, Npha_prp_, Nmu_do, Nphi_do, Nang_do, Ng_ckd,&
-                        fileInp_prp, sfc_obj%fname, fileInp_ckd, fileInp_sav, fileOut_sav,&
+                        Nsh, maxNl_sh, maxNm_sh, Nlm_sh, NlegSet_prp, Nleg_prp, Npha_prp_, Nmu_do, Nphi_do, Nang_do, ckd_obj%Ng,&
+                        fileInp_prp, sfc_obj%fname, ckd_obj%fname, fileInp_sav, fileOut_sav,&
                         flag_bc, ipFlag, isDeltaM, type_grid, type_src,&
                         solar, mu_solar, az_solar, skyRad,&
                         sfc_obj%type, sfc_obj%avgTemp, sfc_obj%avgAlb, waveNum, waveLen, units_src,&
@@ -1445,8 +1461,8 @@ program shdom
             if ((type_Out(iout) .eq. 'V')) then
                 if (fileInp_sen(1:4) .ne. 'NONE') then
                     call shd_io__outputCamRad(Nstokes, Nx, Ny, Nz, Npts, Ncell,&
-                        &Nsh, maxNl_sh, maxNm_sh, Nlm_sh, Nmu_do, Nphi_do, Nang_do, Ng_ckd,&
-                        &fileInp_prp, sfc_obj%fname, fileInp_ckd, fileInp_sav, fileOut_sav,&
+                        &Nsh, maxNl_sh, maxNm_sh, Nlm_sh, Nmu_do, Nphi_do, Nang_do, ckd_obj%Ng,&
+                        &fileInp_prp, sfc_obj%fname, ckd_obj%fname, fileInp_sav, fileOut_sav,&
                         &flag_bc, ipFlag, isDeltaM, type_grid, type_src,&
                         &solar, mu_solar, az_solar, skyRad,&
                         &sfc_obj%type, sfc_obj%avgTemp, sfc_obj%avgAlb, waveNum, waveLen, units_src,&
@@ -1454,8 +1470,8 @@ program shdom
                         &ilos, sumCam_Out, parms_Out(1, iout), file_Out(iout), parms_Sen)
                 else
                     call shd_io__outputCamRad(Nstokes, Nx, Ny, Nz, Npts, Ncell,&
-                        &Nsh, maxNl_sh, maxNm_sh, Nlm_sh, Nmu_do, Nphi_do, Nang_do, Ng_ckd,&
-                        &fileInp_prp, sfc_obj%fname, fileInp_ckd, fileInp_sav, fileOut_sav,&
+                        &Nsh, maxNl_sh, maxNm_sh, Nlm_sh, Nmu_do, Nphi_do, Nang_do, ckd_obj%Ng,&
+                        &fileInp_prp, sfc_obj%fname, ckd_obj%fname, fileInp_sav, fileOut_sav,&
                         &flag_bc, ipFlag, isDeltaM, type_grid, type_src,&
                         &solar, mu_solar, az_solar, skyRad,&
                         &sfc_obj%type, sfc_obj%avgTemp, sfc_obj%avgAlb, waveNum, waveLen, units_src,&
@@ -1514,16 +1530,27 @@ program shdom
     if (isHROut)   deallocate (sumFluxDiv_Out)
     if (isSHOut)   deallocate (sumSH_Out)
     if (isSrcOut)  deallocate (src1_Out)
-    if (isCkd) deallocate (z_Ckd_, kabs0_Ckd_, kabs_Ckd)
 
-    if (sfc_obj%isAllocated) then
-        deallocate(dataRaw_brdf_Sfc, dataGrid_brdf_Sfc)
-        nullify(sfc_obj%dataRaw_brdf); sfc_obj%isAllocated = .false.
+    if (allocated(dataRaw_kabs_Ckd)) then
+        deallocate (dataRaw_solar_Ckd, dataRaw_delg_Ckd, dataRaw_z_Ckd_, dataRaw_kabs_Ckd)
+        if (ckd_obj%isAllocated) then
+            nullify(ckd_obj%dataRaw_solar, ckd_obj%dataRaw_delg, ckd_obj%dataRaw_z, ckd_obj%dataRaw_kabs)
+            ckd_obj%isAllocated = .false.
+        end if
+        deallocate (dataRaw_kabs0_Ckd_)
     end if
 
+    if (allocated(dataRaw_brdf_Sfc)) then
+        deallocate(dataRaw_brdf_Sfc, dataGrid_brdf_Sfc)
+        if (sfc_obj%isAllocated) then
+            nullify(sfc_obj%dataRaw_brdf)
+            sfc_obj%isAllocated = .false.
+        end if
+    end if
 
     if (allocated(parms_Sen)) deallocate (parms_Sen)
-    deallocate (delg_Ckd, solar_Ckd)
+
+
     deallocate (ptr_Bc, rad_Bc)
 
     deallocate (mu_Do, phi_Do, Nphi0_Do, wt_Do)

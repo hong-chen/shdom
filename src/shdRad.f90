@@ -145,7 +145,7 @@ subroutine shd_rad__computeDirect(&
                            z_Prp_, ext_Prp_, ssa_Prp_, ipha_Prp_, &
                            leg_Prp_, extDir_Prp_
 
-    use globals_ckd, only: Nz_ckd_, z_Ckd_, kabs0_Ckd_
+    use globals_ckd, only: Nz_ckd_, dataRaw_z_Ckd_, dataRaw_kabs0_Ckd_
 
     integer INIT, BCFLAG, IPFLAG, ML, NSTLEG, NLEG, SIDE
     logical DELTAM, VALIDBEAM
@@ -189,16 +189,16 @@ subroutine shd_rad__computeDirect(&
                 IU = Nz_ckd_
                 do while (IU - IL .gt. 1)
                     IM = (IU + IL)/2
-                    if (z_Prp_(IZ) .le. z_Ckd_(IM)) then
+                    if (z_Prp_(IZ) .le. dataRaw_z_Ckd_(IM)) then
                         IL = IM
                     else
                         IU = IM
                     end if
                 end do
                 I = min(max(IL, 1), Nz_ckd_ - 1)
-                W0 = (z_Prp_(IZ) - z_Ckd_(I))/(z_Ckd_(I + 1) - z_Ckd_(I))
+                W0 = (z_Prp_(IZ) - dataRaw_z_Ckd_(I))/(dataRaw_z_Ckd_(I + 1) - dataRaw_z_Ckd_(I))
                 W0 = min(max(W0, 0.0d0), 1.0d0)
-                GASEXT(IZ) = (1.0 - W0)*kabs0_Ckd_(I) + W0*kabs0_Ckd_(I + 1)
+                GASEXT(IZ) = (1.0 - W0)*dataRaw_kabs0_Ckd_(I) + W0*dataRaw_kabs0_Ckd_(I + 1)
             else
                 GASEXT(IZ) = 0.0
             end if

@@ -45,7 +45,7 @@ module shd_mpi
                              is1DX_, is1DYx_, is1D_, &
                              isPol_, isPol4_, &
                              isSolar_, &
-                             shd_type_sfc
+                             shd_type_sfc, shd_type_ckd
 
 #if HAS_MPI
     use mpi_f08,  only: MPI_comm_world, MPI_comm, MPI_request, &
@@ -621,33 +621,32 @@ subroutine shd_mpi__bcastSfc(sfc_obj)
 
 end subroutine shd_mpi__bcastSfc
 
-subroutine shd_mpi__bcastCkdSize(Ng_ckd, Nz_ckd)
+subroutine shd_mpi__bcastCkdSize(ckd_obj)
 
     ! Broadcasts the k-distribution array sizes from the master process to the others.
 
-    integer, intent(inout) :: Ng_ckd, Nz_ckd
+    type(shd_type_ckd), intent(inout) :: ckd_obj
 
 #if HAS_MPI
     integer :: ierr, intbuf(2)
 
     if (Nproc_ .le. 1) return
 
-    intbuf(1:2) = (/Ng_ckd, Nz_ckd/)
+    intbuf(1:2) = (/ckd_obj%Ng, ckd_obj%Nz/)
     call mpi_bcast(intbuf, 2, MPI_integer, 0, comm2D_, ierr)
-    Ng_ckd = intbuf(1); Nz_ckd = intbuf(2)
+    ckd_obj%Ng = intbuf(1); ckd_obj%Nz = intbuf(2)
 #endif
 
     return
 
 end subroutine shd_mpi__bcastCkdSize
 
-subroutine shd_mpi__bcastCkd(solar_Ckd, Ng_ckd, delg_Ckd, Nz_ckd, z_Ckd, kabs_Ckd)
+subroutine shd_mpi__bcastCkd(ckd_obj)
 
     ! Broadcasts the k-distribution file parameters from the master process
     ! to the other processes.
 
-    integer, intent(in) :: Ng_ckd, Nz_ckd
-    real, intent(inout) :: solar_Ckd(Ng_ckd), delg_Ckd(Ng_ckd), z_Ckd(Nz_ckd), kabs_Ckd(Nz_ckd, Ng_ckd)
+    type(shd_type_ckd), intent(inout) :: ckd_obj
 
 #if HAS_MPI
     integer :: ierr
@@ -655,19 +654,19 @@ subroutine shd_mpi__bcastCkd(solar_Ckd, Ng_ckd, delg_Ckd, Nz_ckd, z_Ckd, kabs_Ck
 
     if (Nproc_ .le. 1) return
 
-    allocate (realbuf(2*Ng_ckd+Nz_ckd))
+    allocate (realbuf(2*ckd_obj%Ng + ckd_obj%Nz))
 
-    realbuf(1 : Ng_ckd) = solar_Ckd(:)
-    realbuf(Ng_ckd+1 : 2*Ng_ckd) = delg_Ckd(:)
+    realbuf(1              : ckd_obj%Ng             ) = ckd_obj%dataRaw_solar(:)
+    realbuf(ckd_obj%Ng+1   : 2*ckd_obj%Ng           ) = ckd_obj%dataRaw_delg(:)
+    realbuf(2*ckd_obj%Ng+1 : 2*ckd_obj%Ng+ckd_obj%Nz) = ckd_obj%dataRaw_z(:)
 
-    realbuf(2*Ng_ckd+1 : 2*Ng_ckd+Nz_ckd) = z_Ckd(:)
-    call mpi_bcast(realbuf, 2*Ng_ckd+Nz_ckd, MPI_real, 0, comm2D_, ierr)
+    call mpi_bcast(realbuf, 2*ckd_obj%Ng+ckd_obj%Nz, MPI_real, 0, comm2D_, ierr)
 
-    solar_Ckd(:) = realbuf(1 : Ng_ckd)
-    delg_Ckd(:)  = realbuf(Ng_ckd+1 : 2*Ng_ckd)
-    z_Ckd(:) = realbuf(2*Ng_ckd+1 : 2*Ng_ckd+Nz_ckd)
+    ckd_obj%dataRaw_solar(:) = realbuf(1 : ckd_obj%Ng)
+    ckd_obj%dataRaw_delg(:)  = realbuf(ckd_obj%Ng+1 : 2*ckd_obj%Ng)
+    ckd_obj%dataRaw_z(:)     = realbuf(2*ckd_obj%Ng+1 : 2*ckd_obj%Ng+ckd_obj%Nz)
 
-    call mpi_bcast(kabs_Ckd, Nz_ckd*Ng_ckd, MPI_real, 0, comm2D_, ierr)
+    call mpi_bcast(ckd_obj%dataRaw_kabs, ckd_obj%Nz*ckd_obj%Ng, MPI_real, 0, comm2D_, ierr)
 #endif
 
     return

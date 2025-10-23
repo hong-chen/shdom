@@ -44,7 +44,7 @@ module shd_inp
 
     use globals_const, only: PI_
     use globals_cfg,   only: verbose_, charMaxLen_, &
-                             shd_type_sfc
+                             shd_type_sfc, shd_type_ckd
 
     use shd_util, only: shd_util__computePlanck
 
@@ -1588,111 +1588,116 @@ subroutine shd_io__readSfc(sfc_obj)
 
 end subroutine shd_io__readSfc
 
-subroutine shd_io__readCkdSize(CKDFILE, WAVENO, NG, NZCKD)
+subroutine shd_io__readCkdSize(waveNum, ckd_obj)
 
     ! Find the size of the k-distribution arrays for this wavenumber band
 
-    integer NG, NZCKD
-    real WAVENO(2)
-    character(len=*), intent(in) :: CKDFILE
-    integer NB, IB, JB, KB, N
-    real WAVENUM1, WAVENUM2
+    real(kind=R__), intent(in) :: waveNum(2)
+    type(shd_type_ckd), intent(inout) :: ckd_obj
 
-    open (UNIT=1, FILE=trim(adjustl(CKDFILE)), STATUS='OLD')
+    integer(kind=I__) :: Nband, iband, ibandCheck, ibandSelect
+
+    open (unit=1, file=trim(adjustl(ckd_obj%fname)), status='old')
     read (1, *)
-    read (1, *) NB
+    read (1, *) Nband
     read (1, *)
 
     ! Read band information until the right one is found
-    JB = 0
-    do IB = 1, NB
-        read (1, *) KB, WAVENUM1, WAVENUM2, N
-        if (abs(WAVENUM1 - WAVENO(1)) .lt. 1.0 .and.&
-            &abs(WAVENUM2 - WAVENO(2)) .lt. 1.0) then
+    ibandSelect = 0
+    do iband = 1, Nband
+        read (1, *) ibandCheck, ckd_obj%waveNum(1), ckd_obj%waveNum(2), ckd_obj%Ng
+        if (abs(ckd_obj%waveNum(1) - waveNum(1)) .lt. 1.0 .and.&
+            &abs(ckd_obj%waveNum(2) - waveNum(2)) .lt. 1.0) then
             backspace (1)
-            NG = N
-            read (1, *) JB, WAVENUM1, WAVENUM2, N
+            read (1, *) ibandSelect, ckd_obj%waveNum(1), ckd_obj%waveNum(2), ckd_obj%Ng
         end if
     end do
 
-    if (JB .eq. 0) then
+    if (ibandSelect .eq. 0) then
         write (*, *) 'Error [_readCkdSize]: Wavenumber range not found in CKD file : ',&
-            &WAVENO(1), WAVENO(2), CKDFILE
+            &waveNum(1), waveNum(2), ckd_obj%fname
         stop
     end if
 
-    read (1, *) NZCKD
+    read (1, *) ckd_obj%Nz
     close (1)
+
     return
 
 end subroutine shd_io__readCkdSize
 
-subroutine shd_io__readCkd(&
-    &MAXNG, MAXNZ, CKDFILE, WAVENO, SOLFLUX,&
-    &NG, DELG, NZCKD, ZCKD, KABS)
+subroutine shd_io__readCkd(waveNum, ckd_obj)
 
     ! Reads the information appropriate for one band from a
     ! correlated k-distribution file.   The wavenumber range (cm^-1)
-    ! in the file must match the desired in WAVENO.  The solar flux
-    ! is returned in SOLFLUX, the number of "g"'s in NG, the weights
-    ! or delta g's in DELG, the number of levels in NZCKD, the
-    ! levels from the top down in ZCKD, and the absorption coefficients
-    ! for each g and level in KABS.  The array sizes MAXNG and MAXNZ
-    ! are checked.
+    ! in the file must match the desired in waveNum.  The solar flux
+    ! is returned in ckd_obj%dataRaw_solar, the number of "g"'s in ckd_obj%Ng, the weights
+    ! or delta g's in ckd_obj%dataRaw_delg, the number of levels in ckd_obj%Nz, the
+    ! levels from the top down in ckd_obj%dataRaw_z, and the absorption coefficients
+    ! for each g and level in ckd_obj%dataRaw_kabs.
+    ! The array sizes ckd_obj%maxNg and ckd_obj%maxNz are checked.
 
-    integer MAXNG, MAXNZ, NG, NZCKD
-    real WAVENO(2), SOLFLUX(*), DELG(*), ZCKD(*), KABS(*)
-    character(len=*), intent(in) :: CKDFILE
-    integer NB, IB, JB, KB, IG, I, J, N
-    real WAVENUM1, WAVENUM2, SF
+    real(kind=R__), intent(inout) :: waveNum(2)
+    type(shd_type_ckd), intent(inout) :: ckd_obj
 
-    open (UNIT=1, FILE=trim(adjustl(CKDFILE)), STATUS='OLD')
+    integer(kind=I__) :: Nband, iband, ibandCheck, ibandSelect
+    integer(kind=I__) :: ig, iz, itmp
+
+    open (unit=1, file=trim(adjustl(ckd_obj%fname)), status='old')
+
     read (1, *)
-    read (1, *) NB
+    read (1, *) Nband
     read (1, *)
+
     ! Read band information until the right one is found
-    JB = 0
-    do IB = 1, NB
-        read (1, *) KB, WAVENUM1, WAVENUM2, N
-        if (abs(WAVENUM1 - WAVENO(1)) .lt. 1.0 .and.&
-            &abs(WAVENUM2 - WAVENO(2)) .lt. 1.0) then
+    ibandSelect = 0
+    do iband = 1, Nband
+        read (1, *) ibandCheck, ckd_obj%waveNum(1), ckd_obj%waveNum(2), ckd_obj%Ng
+        if (abs(ckd_obj%waveNum(1) - waveNum(1)) .lt. 1.0 .and.&
+            &abs(ckd_obj%waveNum(2) - waveNum(2)) .lt. 1.0) then
             backspace (1)
-            NG = N
-            if (NG .gt. MAXNG) stop 'Error [_readCkd]: MAXNG exceeded.'
-            read (1, *) JB, WAVENO(1), WAVENO(2),&
-                &N, (SOLFLUX(IG), IG=1, NG), (DELG(IG), IG=1, NG)
+            if (ckd_obj%Ng .gt. ckd_obj%maxNg) stop 'Error [_readCkd]: ckd_obj%maxNg exceeded.'
+            read (1, *) ibandSelect, waveNum(1), waveNum(2),&
+                &ckd_obj%Ng, (ckd_obj%dataRaw_solar(ig), ig=1, ckd_obj%Ng), (ckd_obj%dataRaw_delg(ig), ig=1, ckd_obj%Ng)
         end if
     end do
-    if (JB .eq. 0) then
+
+    if (ibandSelect .eq. 0) then
         write (*, *) 'Error [_readCkd]: Wavenumber range not found in CKD file : ',&
-            &WAVENO(1), WAVENO(2), CKDFILE
+            &waveNum(1), waveNum(2), ckd_obj%fname
         stop
     end if
+
     ! Read the Z level heights
-    read (1, *) NZCKD
-    if (NZCKD .gt. MAXNZ) stop 'Error [_readCkd]: MAXNZ exceeded.'
+    read (1, *) ckd_obj%Nz
+    if (ckd_obj%Nz .gt. ckd_obj%maxNz) stop 'Error [_readCkd]: ckd_obj%maxNz exceeded.'
+
     read (1, *)
     read (1, *)
-    do I = 1, NZCKD
-        read (1, *) ZCKD(I)
+    do iz = 1, ckd_obj%maxNz
+        read (1, *) ckd_obj%dataRaw_z(iz)
     end do
+
     ! Skip over the irrelevant bands and read the absorption coeffic
     read (1, *)
-    do I = 1, (JB - 1)*NZCKD
+    do itmp = 1, (ibandSelect - 1)*ckd_obj%maxNz
         read (1, *)
     end do
-    do I = 1, NZCKD
-        read (1, *) IB, J, (KABS(I + (IG - 1)*NZCKD), IG=1, NG)
-        do IG = 1, NG
-            if (KABS(I + (IG - 1)*NZCKD) .lt. 0.0) then
+
+    do iz = 1, ckd_obj%maxNz
+        read (1, *) iband, itmp, (ckd_obj%dataRaw_kabs(iz, ig), ig=1, ckd_obj%Ng)
+        do ig = 1, ckd_obj%Ng
+            if (ckd_obj%dataRaw_kabs(iz, ig) .lt. 0.0) then
                 write (*, '(1X,A,A,I3,A,I3,A,I2)')&
                     &'Negative absorption in CKD file.  ',&
-                    &'Band: ', IB, '   Level: ', I, '   k: ', IG
+                    &'Band: ', iband, '   Level: ', iz, '   k: ', ig
             end if
         end do
     end do
     close (1)
+
     return
+
 end subroutine shd_io__readCkd
 
 subroutine shd_io__readSenSize(&

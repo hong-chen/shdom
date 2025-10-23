@@ -148,7 +148,7 @@ module globals_cfg
         real(kind=R__) :: avgTemp
         real(kind=R__) :: avgAlb
 
-        real(kind=R__), pointer :: dataRaw_brdf(:)
+        real(kind=R__), pointer :: dataRaw_brdf(:) => null()
 
         logical :: isUniform    = .false.
         logical :: isLambertian = .false.
@@ -161,21 +161,17 @@ module globals_cfg
         character(len=charMaxLen_) :: fname = 'NONE'
 
         integer(kind=I__) :: Ng
+        integer(kind=I__) :: Nz
+        integer(kind=I__) :: maxNg
+        integer(kind=I__) :: maxNz
 
-        !integer(kind=I__) :: Nx
-        !integer(kind=I__) :: Ny
-        !integer(kind=I__) :: maxNpts
-        !integer(kind=I__) :: maxNpar
-        !integer(kind=I__) :: Npar
-        !integer(kind=I__) :: Ndim
+        real(kind=R__) :: waveNum(2), avgWaveNum
+        real(kind=R__) :: waveLen(2), avgWaveLen
 
-        !real(kind=R__) :: dx
-        !real(kind=R__) :: dy
-
-        real(kind=R__), pointer :: dataRaw_solar(:)
-        real(kind=R__), pointer :: dataRaw_delg(:)
-        real(kind=R__), pointer :: dataRaw_kabs(:)
-        real(kind=R__), pointer :: dataRaw_z(:)
+        real(kind=R__), pointer :: dataRaw_solar(:)   => null()
+        real(kind=R__), pointer :: dataRaw_delg(:)    => null()
+        real(kind=R__), pointer :: dataRaw_z(:)       => null()
+        real(kind=R__), pointer :: dataRaw_kabs(:, :) => null()
 
         logical :: isAllocated  = .false.
 
@@ -244,6 +240,7 @@ module globals_ckd
     public
 
     integer, save :: Nz_ckd_
-    real, save, allocatable :: z_Ckd_(:), kabs0_Ckd_(:)
+    real, save, allocatable, target :: dataRaw_z_Ckd_(:)
+    real, save, allocatable :: dataRaw_kabs0_Ckd_(:)
 
 end module globals_ckd
