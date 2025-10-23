@@ -201,6 +201,7 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
     character(len=1) :: SFCTYPE
     integer, parameter :: iSFC_ID=7
 
+
     if ((SFCTYPE .eq. 'L') .or. (SFCTYPE .eq. 'l')) then
 
         ! L or l: Lambertian surface BRDF is constant.
@@ -335,12 +336,14 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
 
         else
 
+            print *, SFCTYPE
             stop 'Error [_brdfSurface]: Unknown BRDF type.'
 
         end if
 
     else
 
+        print *, SFCTYPE
         stop 'Error [_brdfSurface]: Unknown BRDF type.'
 
     end if

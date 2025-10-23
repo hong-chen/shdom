@@ -44,7 +44,8 @@ module shd_mpi
                              isMpiX_, isMpiY_, isMpi_, &
                              is1DX_, is1DYx_, is1D_, &
                              isPol_, isPol4_, &
-                             isSolar_
+                             isSolar_, &
+                             shd_type_sfc
 
 #if HAS_MPI
     use mpi_f08,  only: MPI_comm_world, MPI_comm, MPI_request, &
@@ -566,16 +567,17 @@ subroutine shd_mpi__bcastPrp(NPXT, NPYT, NPX, NPY, NPZ,&
 
 end subroutine shd_mpi__bcastPrp
 
-subroutine shd_mpi__bcastSfcSize(NXSFC, NYSFC, DELXSFC, DELYSFC, MAXSFCPTS, MAXSFCPARS)
+subroutine shd_mpi__bcastSfcSize(sfc_obj)
 
     ! Broadcasts the surface array sizes from the master process to the others.
 
-    integer, intent(inout) :: NXSFC, NYSFC, MAXSFCPTS, MAXSFCPARS
-    real, intent(inout) :: DELXSFC, DELYSFC
+    type(shd_type_sfc), intent(inout) :: sfc_obj
 
 #if HAS_MPI
-    integer :: iErr, intbuf(4)
-    real :: realbuf(2)
+    integer :: iErr
+
+    type(shd_type_sfc), intent(inout) :: sfc_obj0
+
 
     if (Nproc_ .le. 1) return
 

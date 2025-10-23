@@ -127,8 +127,33 @@ module globals_cfg
 
     integer, parameter :: I__ = selected_int_kind(9)
     integer, parameter :: R__ = selected_real_kind(6)
-
     integer, parameter :: charMaxLen_ = 256 ! file name max length (number of characters)
+
+    ! planning to use derived type feature in modern Fortran
+    ! for sensor, surface, atmosphere, etc.
+    type :: shd_type_sfc
+        character(len=charMaxLen_) :: fname
+        character(len=2) :: type
+
+        integer(kind=I__) :: Nx
+        integer(kind=I__) :: Ny
+        integer(kind=I__) :: maxNpts
+        integer(kind=I__) :: maxNpar
+        integer(kind=I__) :: Npar
+        integer(kind=I__) :: Ndim
+
+        real(kind=R__) :: dx
+        real(kind=R__) :: dy
+        real(kind=R__) :: avgTemp
+        real(kind=R__) :: avgAlb
+
+        real(kind=R__), allocatable :: rawData(:)
+
+        logical :: isUniform    = .false.
+        logical :: isLambertian = .false.
+        logical :: isAllocated  = .false.
+    end type shd_type_sfc
+
     real(kind=8), save :: accSolv_
     real(kind=4), save :: memTotSysMB_ = 16000.0
     real(kind=4), save :: memPerCpuMB_
@@ -165,27 +190,6 @@ module globals_cfg
 
     ! Radiation sources (SRCTYPE)
     logical, save :: isSolar_, isThermal_
-
-    ! planning to use derived type feature in modern Fortran
-    ! for sensor, surface, atmosphere, etc.
-    type :: shd_type_sfc
-
-        integer(kind=I__) :: Nx
-        integer(kind=I__) :: Ny
-        integer(kind=I__) :: Npar
-        integer(kind=I__) :: Ndim
-
-        real(kind=R__) :: dx
-        real(kind=R__) :: dy
-        real(kind=R__) :: avgTemp
-        real(kind=R__) :: avgAbl
-
-        character(len=2) :: type
-        character(len=charMaxLen_) :: fileName
-
-        real(kind=R__), allocatable :: rawData
-
-    end type shd_type_sfc
 
 end module globals_cfg
 
