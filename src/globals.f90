@@ -132,6 +132,7 @@ module globals_cfg
     ! planning to use derived type feature in modern Fortran
     ! for sensor, surface, atmosphere, etc.
     type :: shd_type_sfc
+
         character(len=charMaxLen_) :: fname
         character(len=2) :: type
 
@@ -147,11 +148,12 @@ module globals_cfg
         real(kind=R__) :: avgTemp
         real(kind=R__) :: avgAlb
 
-        real(kind=R__), allocatable :: rawData(:)
+        real(kind=R__), pointer :: rawData(:)
 
         logical :: isUniform    = .false.
         logical :: isLambertian = .false.
         logical :: isAllocated  = .false.
+
     end type shd_type_sfc
 
     real(kind=8), save :: accSolv_

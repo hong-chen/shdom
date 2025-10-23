@@ -343,16 +343,16 @@ subroutine shd_mpi__map(BCFLAG, Nx_prp, Ny_prp, Nx, Ny, Nz, dx_prp, dy_prp, file
 end subroutine shd_mpi__map
 
 subroutine shd_mpi__bcastInp(&
-    &runName, fileInp_prp, fileInp_sfc, fileInp_ckd,&
+    &runName, fileInp_prp, fileInp_ckd,&
     &fileInp_sav, fileOut_sav, fileInp_sen,&
     &Nstokes, Nx, Ny, Nz, NMU, NPHI, BCFLAG,&
     &IPFLAG, KDIST, DELTAM, GRIDTYPE,&
     &SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
-    &temp0_sfc, alb0_sfc, UNITS, WAVENO, WAVELEN,&
+    &UNITS, WAVENO, WAVELEN,&
     &ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
     &MAXOUT, MAXPAR, NUMOUT, OUTTYPES, parms_Out,&
     &MAX_TOTAL_MB, SPLITTING_FACTOR,&
-    &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
+    &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, sfc_obj)
 
     ! Broadcasts all the user input parameters (except unneeded file names)
     ! from the master processor to the slave processors.
@@ -362,13 +362,14 @@ subroutine shd_mpi__bcastInp(&
     integer, intent(inout) :: MAXITER, NUMOUT
     logical, intent(inout) :: KDIST, DELTAM, ACCELFLAG
     real, intent(inout) :: SOLARFLUX, SOLARMU, SOLARAZ
-    real, intent(inout) :: temp0_sfc, alb0_sfc, SKYRAD, WAVENO(2), WAVELEN
+    real, intent(inout) :: SKYRAD, WAVENO(2), WAVELEN
     real, intent(inout) :: SOLACC, SPLITACC, SHACC, parms_Out(MAXPAR, MAXOUT)
     real, intent(inout) :: MAX_TOTAL_MB, SPLITTING_FACTOR
     real, intent(inout) :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
     character(len=1), intent(inout) :: SRCTYPE, GRIDTYPE, UNITS, OUTTYPES(*)
-    character(len=charMaxLen_), intent(inout) :: runName, fileInp_prp, fileInp_sfc, fileInp_ckd
+    character(len=charMaxLen_), intent(inout) :: runName, fileInp_prp, fileInp_ckd
     character(len=charMaxLen_), intent(inout) :: fileInp_sav, fileOut_sav, fileInp_sen
+    type(shd_type_sfc), intent(inout) :: sfc_obj
 
 #if HAS_MPI
     integer :: ierr, intbuf(10)
@@ -390,12 +391,12 @@ subroutine shd_mpi__bcastInp(&
     call mpi_bcast(logbuf, 3, MPI_logical, 0, MPI_comm_world, ierr)
     KDIST = logbuf(1); DELTAM = logbuf(2); ACCELFLAG = logbuf(3)
 
-    realbuf(:) = (/SOLARFLUX, SOLARMU, SOLARAZ, temp0_sfc, alb0_sfc, SKYRAD,&
+    realbuf(:) = (/SOLARFLUX, SOLARMU, SOLARAZ, sfc_obj%avgTemp, sfc_obj%avgAlb, SKYRAD,&
         &WAVENO(1:2), WAVELEN, SOLACC, SPLITACC, SHACC,&
         &MAX_TOTAL_MB, SPLITTING_FACTOR, NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO/)
     call mpi_bcast(realbuf, 16, MPI_real, 0, MPI_comm_world, ierr)
     SOLARFLUX = realbuf(1); SOLARMU = realbuf(2); SOLARAZ = realbuf(3)
-    temp0_sfc = realbuf(4); alb0_sfc = realbuf(5); SKYRAD = realbuf(6)
+    sfc_obj%avgTemp = realbuf(4); sfc_obj%avgAlb = realbuf(5); SKYRAD = realbuf(6)
     WAVENO(1:2) = realbuf(7:8); WAVELEN = realbuf(9)
     SOLACC = realbuf(10); SPLITACC = realbuf(11); SHACC = realbuf(12)
     MAX_TOTAL_MB = realbuf(13); SPLITTING_FACTOR = realbuf(14)
@@ -405,9 +406,9 @@ subroutine shd_mpi__bcastInp(&
     call mpi_bcast(char1buf, 3, MPI_character, 0, MPI_comm_world, ierr)
     SRCTYPE = char1buf(1); GRIDTYPE = char1buf(2); UNITS = char1buf(3)
 
-    char256buf(:) = (/fileInp_prp, fileInp_sfc, fileInp_ckd, fileInp_sav, fileOut_sav, fileInp_sen, runName/)
+    char256buf(:) = (/fileInp_prp, sfc_obj%fname, fileInp_ckd, fileInp_sav, fileOut_sav, fileInp_sen, runName/)
     call mpi_bcast(char256buf, 7*256, MPI_character, 0, MPI_comm_world, ierr)
-    fileInp_prp = char256buf(1); fileInp_sfc = char256buf(2); fileInp_ckd = char256buf(3)
+    fileInp_prp = char256buf(1); sfc_obj%fname = char256buf(2); fileInp_ckd = char256buf(3)
     fileInp_sav = char256buf(4); fileOut_sav = char256buf(5); fileInp_sen = char256buf(6); runName = char256buf(7)
 
     call mpi_bcast(parms_Out, MAXPAR*NUMOUT, MPI_real, 0, MPI_comm_world, ierr)
@@ -567,12 +568,11 @@ subroutine shd_mpi__bcastPrp(NPXT, NPYT, Nx_prp, Ny_prp, Nz_prp,&
 
 end subroutine shd_mpi__bcastPrp
 
-subroutine shd_mpi__bcastSfcSize(Nx_sfc, Ny_sfc, dx_sfc, dy_sfc, maxNpts_sfc, maxNpar_sfc)
+subroutine shd_mpi__bcastSfcSize(sfc_obj)
 
     ! Broadcasts the surface array sizes from the master process to the others.
 
-    integer, intent(inout) :: Nx_sfc, Ny_sfc, maxNpts_sfc, maxNpar_sfc
-    real, intent(inout) :: dx_sfc, dy_sfc
+    type(shd_type_sfc), intent(inout) :: sfc_obj
 
 #if HAS_MPI
     integer :: ierr, intbuf(4)
@@ -580,45 +580,43 @@ subroutine shd_mpi__bcastSfcSize(Nx_sfc, Ny_sfc, dx_sfc, dy_sfc, maxNpts_sfc, ma
 
     if (Nproc_ .le. 1) return
 
-    intbuf(1:4) = (/Nx_sfc, Ny_sfc, maxNpts_sfc, maxNpar_sfc/)
+    intbuf(1:4) = (/sfc_obj%Nx, sfc_obj%Ny, sfc_obj%maxNpts, sfc_obj%maxNpar/)
     call mpi_bcast(intbuf, 4, MPI_integer, 0, comm2D_, ierr)
-    Nx_sfc = intbuf(1); Ny_sfc = intbuf(2); maxNpts_sfc = intbuf(3); maxNpar_sfc = intbuf(4)
+    sfc_obj%Nx = intbuf(1); sfc_obj%Ny = intbuf(2); sfc_obj%maxNpts = intbuf(3); sfc_obj%maxNpar = intbuf(4)
 
-    realbuf(1:2) = (/dx_sfc, dy_sfc/)
+    realbuf(1:2) = (/sfc_obj%dx, sfc_obj%dy/)
     call mpi_bcast(realbuf, 2, MPI_real, 0, comm2D_, ierr)
-    dx_sfc = realbuf(1); dy_sfc = realbuf(2)
+    sfc_obj%dx = realbuf(1); sfc_obj%dy = realbuf(2)
 #endif
 
     return
 
 end subroutine shd_mpi__bcastSfcSize
 
-subroutine shd_mpi__bcastSfc(type_sfc, Nx_sfc, Ny_sfc,&
-    &Npar_sfc, parms_Sfc, temp0_sfc, alb0_sfc)
+subroutine shd_mpi__bcastSfc(sfc_obj)
+    !&rawData_Sfc, sfc_obj)
 
     ! Broadcasts the surface file parameters from the master process to the others.
 
-    character(len=2), intent(inout) :: type_sfc
-    integer, intent(in) :: Nx_sfc, Ny_sfc
-    integer, intent(inout) :: Npar_sfc
-    real, intent(inout) :: parms_Sfc(*), temp0_sfc, alb0_sfc
+    !real, intent(inout) :: rawData_Sfc(*)
+    type(shd_type_sfc), intent(inout) :: sfc_obj
 
 #if HAS_MPI
-    integer :: ierr, n
+    integer :: ierr, Ndata
     real    :: realbuf(2)
 
     if (Nproc_ .le. 1) return
 
-    call mpi_bcast(type_sfc, 2, MPI_character, 0, comm2D_, ierr)
+    call mpi_bcast(sfc_obj%type, 2, MPI_character, 0, comm2D_, ierr)
 
-    call mpi_bcast(Npar_sfc, 1, MPI_integer, 0, comm2D_, ierr)
+    call mpi_bcast(sfc_obj%Npar, 1, MPI_integer, 0, comm2D_, ierr)
 
-    realbuf(1:2) = (/temp0_sfc, alb0_sfc/)
+    realbuf(1:2) = (/sfc_obj%avgTemp, sfc_obj%avgAlb/)
     call mpi_bcast(realbuf, 2, MPI_real, 0, comm2D_, ierr)
-    temp0_sfc = realbuf(1); alb0_sfc = realbuf(2)
+    sfc_obj%avgTemp = realbuf(1); sfc_obj%avgAlb = realbuf(2)
 
-    n = Npar_sfc*(Nx_sfc + 1)*(Ny_sfc + 1)
-    call mpi_bcast(parms_Sfc, n, MPI_real, 0, comm2D_, ierr)
+    Ndata = sfc_obj%Npar * (sfc_obj%Nx+1) * (sfc_obj%Ny+1)
+    call mpi_bcast(sfc_obj%rawData, Ndata, MPI_real, 0, comm2D_, ierr)
 #endif
 
     return
