@@ -42,7 +42,8 @@ module shd_out
     use globals_const, only: RD_, PI_
     use globals_cfg,   only: verbose_, charMaxLen_, is1DX_, &
                              isPol_, isPol4_, &
-                             isSolar_, isThermal_
+                             isSolar_, isThermal_, &
+                             shd_type_sfc, shd_type_ckd
 
     use shd_grid, only: shd_grid__testCellSplit
 
@@ -72,18 +73,18 @@ contains
 subroutine shd_io__outputResult(&
     &NSTOKES, NX, NY, NX1, NY1, NZ, NBPTS, NPTS, NCELLS,&
     &NSH, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
-    &NMU, NPHI, NANG, NG,&
-    &PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
+    &NMU, NPHI, NANG,&
+    &PROPFILE, INSAVEFILE, OUTSAVEFILE,&
     &BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
     &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
-    &SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS,&
+    &WAVENO, WAVELEN, UNITS,&
     &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
     &XGRID, YGRID, ZGRID, GRIDPOS,&
     &TREEPTR, GRIDPTR, CELLFLAGS,&
     &EXTINCT, ALBEDO, LEGEN, IPHASE, TEMP,&
     &FLUXES, DIRFLUX, FLUXDIV,&
     &IRAD, RADOUT, NSHOUT, SHTERMS, SOURCE1OUT,&
-    &OUTTYPE, OUTPARMS, OUTFILE, SENPARMS)
+    &OUTTYPE, OUTPARMS, OUTFILE, sfc_obj, ckd_obj, SENPARMS)
 
     !   Writes the desired type of output file from the output fields
     ! with a header giving the input parameters.
@@ -93,23 +94,25 @@ subroutine shd_io__outputResult(&
     ! medium properties.
     ! See the overall program documentation for output parameters.
 
+    type(shd_type_sfc), intent(in) :: sfc_obj
+    type(shd_type_ckd), intent(in) :: ckd_obj
+
     integer, intent(in) :: NSTOKES, NX, NY, NX1, NY1, NZ, NBPTS, NPTS, NCELLS, NSH
-    integer, intent(in) :: ML, MM, NLM, NSTLEG, NLEG, NUMPHASE, NMU, NPHI, NANG, NG
+    integer, intent(in) :: ML, MM, NLM, NSTLEG, NLEG, NUMPHASE, NMU, NPHI, NANG
     integer, intent(in) :: BCFLAG, IPFLAG
     integer, intent(in) :: MAXITER, TOTITER, NSHOUT
     integer, intent(in) :: TREEPTR(2, NCELLS), GRIDPTR(8, NCELLS)
     integer*2, intent(in) :: CELLFLAGS(NCELLS), IPHASE(NPTS)
     logical  , intent(in) :: DELTAM
     real, intent(in) :: SOLARFLUX, SOLARMU, SOLARAZ
-    real, intent(in) :: GNDTEMP, GNDALBEDO, SKYRAD
+    real, intent(in) :: SKYRAD
     real, intent(in) :: SOLACC, SPLITACC, SHACC
     real, intent(in) :: WAVENO(2), WAVELEN
     real, intent(in) :: XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ), GRIDPOS(3, NPTS)
     real, intent(inout) :: OUTPARMS(*)
     real, optional :: SENPARMS(*)
     character(len=1), intent(in) :: SRCTYPE, UNITS, GRIDTYPE, OUTTYPE
-    character(len=2), intent(in) :: SFCTYPE
-    character(len=*), intent(in) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
+    character(len=*), intent(in) :: PROPFILE, INSAVEFILE, OUTSAVEFILE
     character(len=*), intent(in) :: OUTFILE
     real, intent(in) :: EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, NPTS)
     real, intent(in) :: TEMP(NPTS)
@@ -157,25 +160,25 @@ subroutine shd_io__outputResult(&
         SOURCENAME = 'SOLAR/THERMAL'
     end if
 
-    if (SFCTYPE .eq. 'FL') then
+    if (sfc_obj%type .eq. 'FL') then
         SFCNAME = 'FIXED LAMBERTIAN'
-    else if (SFCTYPE .eq. 'VL') then
+    else if (sfc_obj%type .eq. 'VL') then
         SFCNAME = 'VARIABLE LAMBERTIAN'
-    else if (SFCTYPE .eq. 'VW') then
+    else if (sfc_obj%type .eq. 'VW') then
         SFCNAME = 'VARIABLE WAVE-FRESNEL'
-    else if (SFCTYPE .eq. 'VD') then
+    else if (sfc_obj%type .eq. 'VD') then
         SFCNAME = 'VARIABLE DINER'
-    else if (SFCTYPE .eq. 'VO') then
+    else if (sfc_obj%type .eq. 'VO') then
         SFCNAME = 'VARIABLE OCEAN'
-    else if (SFCTYPE .eq. 'VR') then
+    else if (sfc_obj%type .eq. 'VR') then
         SFCNAME = 'VARIABLE RPV'
-    else if (SFCTYPE .eq. 'VT') then
+    else if (sfc_obj%type .eq. 'VT') then
         SFCNAME = 'VARIABLE LSRT'
-    else if (SFCTYPE .eq. 'VJ') then
+    else if (sfc_obj%type .eq. 'VJ') then
         SFCNAME = 'VARIABLE LSRT-J'
-    else if (SFCTYPE .eq. 'VX') then
+    else if (sfc_obj%type .eq. 'VX') then
         SFCNAME = 'VARIABLE MIXED'
-    else if (SFCTYPE(1:1) .eq. 'V') then
+    else if (sfc_obj%type(1:1) .eq. 'V') then
         SFCNAME = 'VARIABLE OTHER'
     end if
 
@@ -218,7 +221,7 @@ subroutine shd_io__outputResult(&
         &'    NPTS=', NPTS, '   NCELLS=', NCELLS
     write (2, '(A,A)') '!  PROPERTY_FILE=', trim(PROPFILE)
     write (2, '(A,A,A,I2)') '!  CORRELATED_K-DIST_FILE=',&
-        &trim(CKDFILE), '   NUM_G=', NG
+        &trim(ckd_obj%fname), '   NUM_G=', ckd_obj%Ng
     write (2, '(A,A)') '!  INPUT_SAVE_FILE=', trim(INSAVEFILE)
     write (2, '(A,A)') '!  OUTPUT_SAVE_FILE=', trim(OUTSAVEFILE)
 
@@ -236,17 +239,17 @@ subroutine shd_io__outputResult(&
 
     if (isSolar_) then
 
-        if (SFCTYPE(1:1) .eq. 'V') then
-            write (2, '(A,A,A,E12.5)') '!  SURFACE_FILE=', trim(SFCFILE),&
+        if (sfc_obj%type(1:1) .eq. 'V') then
+            write (2, '(A,A,A,E12.5)') '!  SURFACE_FILE=', trim(sfc_obj%fname),&
                 &'  SKY_RAD=', SKYRAD
         else
             if (SRCTYPE .eq. 'B') then
                 write (2, '(A,F9.7,A,F8.3,A,E12.5)')&
-                    &'!  GROUND_ALBEDO=', GNDALBEDO, '  GROUND_TEMP=', GNDTEMP,&
+                    &'!  GROUND_ALBEDO=', sfc_obj%avgAlb, '  GROUND_TEMP=', sfc_obj%avgTemp,&
                     &'  SKY_RAD=', SKYRAD
             else
                 write (2, '(A,F9.7,A,E12.5)')&
-                    &'!  GROUND_ALBEDO=', GNDALBEDO, '  SKY_RAD=', SKYRAD
+                    &'!  GROUND_ALBEDO=', sfc_obj%avgAlb, '  SKY_RAD=', SKYRAD
             end if
         end if
 
@@ -256,11 +259,11 @@ subroutine shd_io__outputResult(&
 
     else
 
-        if (SFCTYPE(1:1) .eq. 'V') then
-            write (2, '(A,A)') '!  SURFACE_FILE=', trim(SFCFILE)
+        if (sfc_obj%type(1:1) .eq. 'V') then
+            write (2, '(A,A)') '!  SURFACE_FILE=', trim(sfc_obj%fname)
         else
             write (2, '(A,F8.3,A,F9.7)')&
-                &'!  GROUND_TEMP=', GNDTEMP, '  GROUND_EMIS=', 1.0 - GNDALBEDO
+                &'!  GROUND_TEMP=', sfc_obj%avgTemp, '  GROUND_EMIS=', 1.0 - sfc_obj%avgAlb
         end if
         write (2, '(A,F8.3)') '!  SKY_TEMP=', SKYRAD
 
@@ -1182,15 +1185,15 @@ end subroutine shd_io__radShiftCorr
 
 subroutine shd_io__outputResultMpi(&
     &NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
-    &NSH, ML, MM, NLM, NMU, NPHI, NANG, NG,&
-    &PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
+    &NSH, ML, MM, NLM, NMU, NPHI, NANG,&
+    &PROPFILE, INSAVEFILE, OUTSAVEFILE,&
     &BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
     &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
-    &SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS,&
+    &WAVENO, WAVELEN, UNITS,&
     &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
     &XDOMAIN, YDOMAIN, XGRID, YGRID, ZGRID,&
     &FLUXES, FLUXDIV, NSHOUT, SHTERMS, IRAD, RADOUT,&
-    &OUTTYPE, OUTPARMS, OUTFILE, SENPARMS)
+    &OUTTYPE, OUTPARMS, OUTFILE, sfc_obj, ckd_obj, SENPARMS)
     ! Writes the desired type of output file from the output fields
     ! with a header giving the input parameters.
     ! There are four supported types (OUTTYPE) of output: 'R' - for radi
@@ -1198,21 +1201,23 @@ subroutine shd_io__outputResultMpi(&
     ! convergence), 'S' - for spherical harmonic terms
     ! See the overall program documentation for output parameters.
 
+    type(shd_type_sfc), intent(in) :: sfc_obj
+    type(shd_type_ckd), intent(in) :: ckd_obj
+
     integer NSTOKES, NX, NY, NZ, NPTS, NCELLS, NSH
-    integer ML, MM, NLM, NMU, NPHI, NANG, NG
+    integer ML, MM, NLM, NMU, NPHI, NANG
     integer BCFLAG, IPFLAG
     integer MAXITER, TOTITER, IRAD, NSHOUT
     logical DELTAM
     real SOLARFLUX, SOLARMU, SOLARAZ
-    real GNDTEMP, GNDALBEDO, SKYRAD
+    real SKYRAD
     real SOLACC, SPLITACC, SHACC
     real WAVENO(2), WAVELEN
     real XDOMAIN, YDOMAIN, XGRID(NX), YGRID(NY), ZGRID(NZ)
     real OUTPARMS(*)
     real, optional :: SENPARMS(*)
     character(len=1), intent(in) :: SRCTYPE, UNITS, GRIDTYPE, OUTTYPE
-    character(len=2), intent(in) :: SFCTYPE
-    character(len=*), intent(in) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
+    character(len=*), intent(in) :: PROPFILE, INSAVEFILE, OUTSAVEFILE
     character(len=*), intent(in) :: OUTFILE
     real FLUXES(3, NZ, NY, NX), FLUXDIV(NZ, NY, NX)
     real RADOUT(NSTOKES, *), SHTERMS(NSHOUT, NZ, NY, NX)
@@ -1253,25 +1258,25 @@ subroutine shd_io__outputResultMpi(&
         SOURCENAME = 'SOLAR/THERMAL'
     end if
 
-    if (SFCTYPE .eq. 'FL') then
+    if (sfc_obj%type .eq. 'FL') then
         SFCNAME = 'FIXED LAMBERTIAN'
-    else if (SFCTYPE .eq. 'VL') then
+    else if (sfc_obj%type .eq. 'VL') then
         SFCNAME = 'VARIABLE LAMBERTIAN'
-    else if (SFCTYPE .eq. 'VW') then
+    else if (sfc_obj%type .eq. 'VW') then
         SFCNAME = 'VARIABLE WAVE-FRESNEL'
-    else if (SFCTYPE .eq. 'VD') then
+    else if (sfc_obj%type .eq. 'VD') then
         SFCNAME = 'VARIABLE DINER'
-    else if (SFCTYPE .eq. 'VO') then
+    else if (sfc_obj%type .eq. 'VO') then
         SFCNAME = 'VARIABLE OCEAN'
-    else if (SFCTYPE .eq. 'VR') then
+    else if (sfc_obj%type .eq. 'VR') then
         SFCNAME = 'VARIABLE RPV'
-    else if (SFCTYPE .eq. 'VT') then
+    else if (sfc_obj%type .eq. 'VT') then
         SFCNAME = 'VARIABLE LSRT'
-    else if (SFCTYPE .eq. 'VJ') then
+    else if (sfc_obj%type .eq. 'VJ') then
         SFCNAME = 'VARIABLE LSRT-J'
-    else if (SFCTYPE .eq. 'VX') then
+    else if (sfc_obj%type .eq. 'VX') then
         SFCNAME = 'VARIABLE MIXED'
-    else if (SFCTYPE(1:1) .eq. 'V') then
+    else if (sfc_obj%type(1:1) .eq. 'V') then
         SFCNAME = 'VARIABLE OTHER'
     end if
 
@@ -1312,7 +1317,7 @@ subroutine shd_io__outputResultMpi(&
         & '   NPTS=', NPTS, '   NCELLS=', NCELLS
     write (2, '(A,A)') '!  PROPERTY_FILE=', trim(PROPFILE)
     write (2, '(A,A,A,I2)') '!  CORRELATED_K-DIST_FILE=',&
-        & trim(CKDFILE), '   NUM_G=', NG
+        & trim(ckd_obj%fname), '   NUM_G=', ckd_obj%Ng
     write (2, '(A,A)') '!  INPUT_SAVE_FILE=', trim(INSAVEFILE)
     write (2, '(A,A)') '!  OUTPUT_SAVE_FILE=', trim(OUTSAVEFILE)
     if (DELTAM) then
@@ -1326,28 +1331,28 @@ subroutine shd_io__outputResultMpi(&
     write (2, '(A,A22,A,I2)') '!  SURFACE_TYPE=', SFCNAME,&
         & '   HORIZ_BOUNDARY_COND=', BCFLAG
     if (isSolar_) then
-        if (SFCTYPE(1:1) .eq. 'V') then
-            write (2, '(A,A,A,E12.5)') '!  SURFACE_FILE=', trim(SFCFILE),&
+        if (sfc_obj%type(1:1) .eq. 'V') then
+            write (2, '(A,A,A,E12.5)') '!  SURFACE_FILE=', trim(sfc_obj%fname),&
                 & '  SKY_RAD=', SKYRAD
         else
             if (SRCTYPE .eq. 'B') then
                 write (2, '(A,F9.7,A,F8.3,A,E12.5)')&
-                    & '!  GROUND_ALBEDO=', GNDALBEDO, '  GROUND_TEMP=', GNDTEMP,&
+                    & '!  GROUND_ALBEDO=', sfc_obj%avgAlb, '  GROUND_TEMP=', sfc_obj%avgTemp,&
                     & '  SKY_RAD=', SKYRAD
             else
                 write (2, '(A,F9.7,A,E12.5)')&
-                    & '!  GROUND_ALBEDO=', GNDALBEDO, '  SKY_RAD=', SKYRAD
+                    & '!  GROUND_ALBEDO=', sfc_obj%avgAlb, '  SKY_RAD=', SKYRAD
             end if
         end if
         write (2, '(A,E13.6,A,F10.7,A,F8.3)')&
             & '!  SOLAR_FLUX=', SOLARFLUX, '   SOLAR_MU=', SOLARMU,&
             & '   SOLAR_AZ=', SOLARAZ*180.0/acos(-1.0)
     else
-        if (SFCTYPE(1:1) .eq. 'V') then
-            write (2, '(A,A)') '!  SURFACE_FILE=', trim(SFCFILE)
+        if (sfc_obj%type(1:1) .eq. 'V') then
+            write (2, '(A,A)') '!  SURFACE_FILE=', trim(sfc_obj%fname)
         else
             write (2, '(A,F8.3,A,F9.7)')&
-                & '!  GROUND_TEMP=', GNDTEMP, '  GROUND_EMIS=', 1.0 - GNDALBEDO
+                & '!  GROUND_TEMP=', sfc_obj%avgTemp, '  GROUND_EMIS=', 1.0 - sfc_obj%avgAlb
         end if
         write (2, '(A,F8.3)') '!  SKY_TEMP=', SKYRAD
     end if
@@ -1924,13 +1929,13 @@ subroutine shd_io__outputResultMpi(&
 end subroutine shd_io__outputResultMpi
 
 subroutine shd_io__outputCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
-    & NSH, ML, MM, NLM, NMU, NPHI, NANG, NG,&
-    & PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
+    & NSH, ML, MM, NLM, NMU, NPHI, NANG,&
+    & PROPFILE, INSAVEFILE, OUTSAVEFILE,&
     & BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
     & SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
-    & SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS,&
+    & WAVENO, WAVELEN, UNITS,&
     & SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
-    & IVIS, VISOUT, OUTPARMS, OUTFILE, SENPARMS)
+    & IVIS, VISOUT, OUTPARMS, OUTFILE, sfc_obj, ckd_obj, SENPARMS)
 
     ! Writes the visualization image in PGM binary format with either
     ! one byte or two byte pixels.  The PGM binary format (P5) has an
@@ -1938,20 +1943,22 @@ subroutine shd_io__outputCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     ! (here the SHDOM input parameters), followed by the byte or two byte
     ! image pixels.
 
+    type(shd_type_sfc), intent(in) :: sfc_obj
+    type(shd_type_ckd), intent(in) :: ckd_obj
+
     integer NSTOKES, NX, NY, NZ, NPTS, NCELLS, NSH
-    integer ML, MM, NLM, NMU, NPHI, NANG, NG
+    integer ML, MM, NLM, NMU, NPHI, NANG
     integer BCFLAG, IPFLAG
     integer MAXITER, TOTITER, IVIS
     logical, intent(in) :: DELTAM
     real SOLARFLUX, SOLARMU, SOLARAZ
-    real GNDTEMP, GNDALBEDO, SKYRAD
+    real SKYRAD
     real SOLACC, SPLITACC, SHACC
     real WAVENO(2), WAVELEN
     real OUTPARMS(*)
     real, optional :: SENPARMS(*)
     character(len=1), intent(in) :: SRCTYPE, UNITS, GRIDTYPE
-    character(len=2), intent(in) :: SFCTYPE
-    character(len=*), intent(in) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
+    character(len=*), intent(in) :: PROPFILE, INSAVEFILE, OUTSAVEFILE
     character(len=*), intent(in) :: OUTFILE
     real VISOUT(NSTOKES, *)
 
@@ -1980,25 +1987,25 @@ subroutine shd_io__outputCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
         SOURCENAME = 'SOLAR/THERMAL'
     end if
 
-    if (SFCTYPE .eq. 'FL') then
+    if (sfc_obj%type .eq. 'FL') then
         SFCNAME = 'FIXED LAMBERTIAN'
-    else if (SFCTYPE .eq. 'VL') then
+    else if (sfc_obj%type .eq. 'VL') then
         SFCNAME = 'VARIABLE LAMBERTIAN'
-    else if (SFCTYPE .eq. 'VW') then
+    else if (sfc_obj%type .eq. 'VW') then
         SFCNAME = 'VARIABLE WAVE-FRESNEL'
-    else if (SFCTYPE .eq. 'VD') then
+    else if (sfc_obj%type .eq. 'VD') then
         SFCNAME = 'VARIABLE DINER'
-    else if (SFCTYPE .eq. 'VO') then
+    else if (sfc_obj%type .eq. 'VO') then
         SFCNAME = 'VARIABLE OCEAN'
-    else if (SFCTYPE .eq. 'VR') then
+    else if (sfc_obj%type .eq. 'VR') then
         SFCNAME = 'VARIABLE RPV'
-    else if (SFCTYPE .eq. 'VT') then
+    else if (sfc_obj%type .eq. 'VT') then
         SFCNAME = 'VARIABLE LSRT'
-    else if (SFCTYPE .eq. 'VJ') then
+    else if (sfc_obj%type .eq. 'VJ') then
         SFCNAME = 'VARIABLE LSRT-J'
-    else if (SFCTYPE .eq. 'VX') then
+    else if (sfc_obj%type .eq. 'VX') then
         SFCNAME = 'VARIABLE MIXED'
-    else if (SFCTYPE(1:1) .eq. 'V') then
+    else if (sfc_obj%type(1:1) .eq. 'V') then
         SFCNAME = 'VARIABLE OTHER'
     end if
 
@@ -2044,7 +2051,7 @@ subroutine shd_io__outputCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
         &'    NPTS=', NPTS, '   NCELLS=', NCELLS
     write (2, '(A,A)') '!  PROPERTY_FILE=', trim(PROPFILE)
     write (2, '(A,A,A,I2)') '!  CORRELATED_K-DIST_FILE=',&
-        &trim(CKDFILE), '   NUM_G=', NG
+        &trim(ckd_obj%fname), '   NUM_G=', ckd_obj%Ng
     write (2, '(A,A)') '!  INPUT_SAVE_FILE=', trim(INSAVEFILE)
     write (2, '(A,A)') '!  OUTPUT_SAVE_FILE=', trim(OUTSAVEFILE)
 
@@ -2062,17 +2069,17 @@ subroutine shd_io__outputCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
 
     if (isSolar_) then
 
-        if (SFCTYPE(1:1) .eq. 'V') then
-            write (2, '(A,A,A,E12.5)') '!  SURFACE_FILE=', trim(SFCFILE),&
+        if (sfc_obj%type(1:1) .eq. 'V') then
+            write (2, '(A,A,A,E12.5)') '!  SURFACE_FILE=', trim(sfc_obj%fname),&
                 &'  SKY_RAD=', SKYRAD
         else
             if (SRCTYPE .eq. 'B') then
                 write (2, '(A,F9.7,A,F8.3,A,E12.5)')&
-                    &'!  GROUND_ALBEDO=', GNDALBEDO, '  GROUND_TEMP=', GNDTEMP,&
+                    &'!  GROUND_ALBEDO=', sfc_obj%avgAlb, '  GROUND_TEMP=', sfc_obj%avgTemp,&
                     &'  SKY_RAD=', SKYRAD
             else
                 write (2, '(A,F9.7,A,E12.5)')&
-                    &'!  GROUND_ALBEDO=', GNDALBEDO, '  SKY_RAD=', SKYRAD
+                    &'!  GROUND_ALBEDO=', sfc_obj%avgAlb, '  SKY_RAD=', SKYRAD
             end if
         end if
 
@@ -2082,11 +2089,11 @@ subroutine shd_io__outputCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
 
     else
 
-        if (SFCTYPE(1:1) .eq. 'V') then
-            write (2, '(A,A)') '!  SURFACE_FILE=', trim(SFCFILE)
+        if (sfc_obj%type(1:1) .eq. 'V') then
+            write (2, '(A,A)') '!  SURFACE_FILE=', trim(sfc_obj%fname)
         else
             write (2, '(A,F8.3,A,F9.7)')&
-                &'!  GROUND_TEMP=', GNDTEMP, '  GROUND_EMIS=', 1.0 - GNDALBEDO
+                &'!  GROUND_TEMP=', sfc_obj%avgTemp, '  GROUND_EMIS=', 1.0 - sfc_obj%avgAlb
         end if
         write (2, '(A,F8.3)') '!  SKY_TEMP=', SKYRAD
 
@@ -2134,13 +2141,13 @@ subroutine shd_io__outputCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
 end subroutine shd_io__outputCamRad
 
 subroutine shd_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
-    & NSH, ML, MM, NLM, NMU, NPHI, NANG, NG,&
-    & PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE,&
+    & NSH, ML, MM, NLM, NMU, NPHI, NANG,&
+    & PROPFILE, INSAVEFILE, OUTSAVEFILE,&
     & BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
     & SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
-    & SFCTYPE, GNDTEMP, GNDALBEDO, WAVENO, WAVELEN, UNITS,&
+    & WAVENO, WAVELEN, UNITS,&
     & SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
-    & IVIS, VISOUT, OUTPARMS, OUTFILE)
+    & IVIS, VISOUT, OUTPARMS, OUTFILE, sfc_obj, ckd_obj)
 
     ! Writes the visualization image in PGM binary format with either
     ! one byte or two byte pixels.  The PGM binary format (P5) has an
@@ -2148,19 +2155,21 @@ subroutine shd_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     ! (here the SHDOM input parameters), followed by the byte or two byte
     ! image pixels.
 
+    type(shd_type_sfc), intent(in) :: sfc_obj
+    type(shd_type_ckd), intent(in) :: ckd_obj
+
     integer NSTOKES, NX, NY, NZ, NPTS, NCELLS, NSH
-    integer ML, MM, NLM, NMU, NPHI, NANG, NG
+    integer ML, MM, NLM, NMU, NPHI, NANG
     integer BCFLAG, IPFLAG
     integer MAXITER, TOTITER, IVIS
     logical, intent(in) :: DELTAM
     real SOLARFLUX, SOLARMU, SOLARAZ
-    real GNDTEMP, GNDALBEDO, SKYRAD
+    real SKYRAD
     real SOLACC, SPLITACC, SHACC
     real WAVENO(2), WAVELEN
     real OUTPARMS(*)
     character(len=1), intent(in) :: SRCTYPE, UNITS, GRIDTYPE
-    character(len=2), intent(in) :: SFCTYPE
-    character(len=*), intent(in) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
+    character(len=*), intent(in) :: PROPFILE, INSAVEFILE, OUTSAVEFILE
     character(len=*), intent(in) :: OUTFILE
     real VISOUT(NSTOKES, *)
 
@@ -2273,25 +2282,25 @@ subroutine shd_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
         SOURCENAME = 'SOLAR/THERMAL'
     end if
 
-    if (SFCTYPE .eq. 'FL') then
+    if (sfc_obj%type .eq. 'FL') then
         SFCNAME = 'FIXED LAMBERTIAN'
-    else if (SFCTYPE .eq. 'VL') then
+    else if (sfc_obj%type .eq. 'VL') then
         SFCNAME = 'VARIABLE LAMBERTIAN'
-    else if (SFCTYPE .eq. 'VW') then
+    else if (sfc_obj%type .eq. 'VW') then
         SFCNAME = 'VARIABLE WAVE-FRESNEL'
-    else if (SFCTYPE .eq. 'VD') then
+    else if (sfc_obj%type .eq. 'VD') then
         SFCNAME = 'VARIABLE DINER'
-    else if (SFCTYPE .eq. 'VO') then
+    else if (sfc_obj%type .eq. 'VO') then
         SFCNAME = 'VARIABLE OCEAN'
-    else if (SFCTYPE .eq. 'VR') then
+    else if (sfc_obj%type .eq. 'VR') then
         SFCNAME = 'VARIABLE RPV'
-    else if (SFCTYPE .eq. 'VT') then
+    else if (sfc_obj%type .eq. 'VT') then
         SFCNAME = 'VARIABLE LSRT'
-    else if (SFCTYPE .eq. 'VJ') then
+    else if (sfc_obj%type .eq. 'VJ') then
         SFCNAME = 'VARIABLE LSRT-J'
-    else if (SFCTYPE .eq. 'VX') then
+    else if (sfc_obj%type .eq. 'VX') then
         SFCNAME = 'VARIABLE MIXED'
-    else if (SFCTYPE(1:1) .eq. 'V') then
+    else if (sfc_obj%type(1:1) .eq. 'V') then
         SFCNAME = 'VARIABLE OTHER'
     end if
 
@@ -2319,7 +2328,7 @@ subroutine shd_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     !    & '# PROPERTY_FILE=', trim(PROPFILE), LF
     I = I + index(BUF(I:I + 79), LF)
     !write (BUF(I:I + 79), '(A,A,A,I2,A1)')&
-    !    & '# CORRELATED_K-DIST_FILE=', trim(CKDFILE), '   NUM_G=', NG, LF
+    !    & '# CORRELATED_K-DIST_FILE=', trim(ckd_obj%fname), '   NUM_G=', ckd_obj%Ng, LF
     I = I + index(BUF(I:I + 79), LF)
     !write (BUF(I:I + 79), '(A,A,A1)')&
     !    & '# INPUT_SAVE_FILE=', trim(INSAVEFILE), LF
@@ -2343,20 +2352,20 @@ subroutine shd_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
         & '# SURFACE_TYPE=', SFCNAME, '   HORIZ_BOUNDARY_COND=', BCFLAG, LF
     I = I + index(BUF(I:I + 79), LF)
     if (isSolar_) then
-        if (SFCTYPE(1:1) .eq. 'V') then
+        if (sfc_obj%type(1:1) .eq. 'V') then
             !write (BUF(I:I + 79), '(A,A,A,E12.5,A1)')&
-            !    & '# SURFACE_FILE=', trim(SFCFILE),&
+            !    & '# SURFACE_FILE=', trim(sfc_obj%fname),&
             !    & '  SKY_RAD=', SKYRAD, LF
             I = I + index(BUF(I:I + 79), LF)
         else
             if (SRCTYPE .eq. 'B') then
                 write (BUF(I:I + 79), '(A,F9.7,A,F8.3,A,E12.5,A1)')&
-                    &'# GROUND_ALBEDO=', GNDALBEDO, '  GROUND_TEMP=', GNDTEMP,&
+                    &'# GROUND_ALBEDO=', sfc_obj%avgAlb, '  GROUND_TEMP=', sfc_obj%avgTemp,&
                     &'  SKY_RAD=', SKYRAD, LF
                 I = I + index(BUF(I:I + 79), LF)
             else
                 write (BUF(I:I + 79), '(A,F9.7,A,E12.5,A1)')&
-                    &'# GROUND_ALBEDO=', GNDALBEDO, '  SKY_RAD=', SKYRAD, LF
+                    &'# GROUND_ALBEDO=', sfc_obj%avgAlb, '  SKY_RAD=', SKYRAD, LF
                 I = I + index(BUF(I:I + 79), LF)
             end if
         end if
@@ -2365,14 +2374,14 @@ subroutine shd_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
             &'   SOLAR_AZ=', SOLARAZ*180.0/acos(-1.0), LF
         I = I + index(BUF(I:I + 79), LF)
     else
-        if (SFCTYPE(1:1) .eq. 'V') then
+        if (sfc_obj%type(1:1) .eq. 'V') then
             !write (BUF(I:I + 79), '(A,A,A1)')&
-            !    &'# SURFACE_FILE=', trim(SFCFILE), LF
+            !    &'# SURFACE_FILE=', trim(sfc_obj%fname), LF
             I = I + index(BUF(I:I + 79), LF)
         else
             write (BUF(I:I + 79), '(A,F8.3,A,F9.7,A1)')&
-                &'# GROUND_TEMP=', GNDTEMP,&
-                &'  GROUND_EMIS=', 1.0 - GNDALBEDO, LF
+                &'# GROUND_TEMP=', sfc_obj%avgTemp,&
+                &'  GROUND_EMIS=', 1.0 - sfc_obj%avgAlb, LF
             I = I + index(BUF(I:I + 79), LF)
         end if
         write (BUF(I:I + 79), '(A,F8.3,A1)') '# SKY_TEMP=', SKYRAD, LF

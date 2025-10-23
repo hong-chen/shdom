@@ -179,7 +179,7 @@ program shdom
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_sfc) :: sfc_obj
     real(kind=R__), allocatable, target :: dataRaw_brdf_Sfc(:)
-    real(kind=R__), allocatable :: dataGrid_brdf_Sfc(:)
+    real(kind=R__), allocatable, target :: dataGrid_brdf_Sfc(:)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! CKD
@@ -753,8 +753,8 @@ program shdom
     isCamOut  = .false.
     isSrcOut  = .false.
     isFluxOut = .false.
-    isHROut  = .false.
-    isSHOut  = .false.
+    isHROut   = .false.
+    isSHOut   = .false.
     do iout = 1, Nout
         if (type_Out(iout) .eq. 'R') then
             isRadOut = .true.
@@ -1003,7 +1003,12 @@ program shdom
     !   rad_Bc(:[Nstokes], NptsTop_bc+1:NptsTop_bc+NptsBot_bc): upwelling bottom radiances
     !   rad_Bc(:[Nstokes], NptsTop_bc+NptsBot_bc+1:NptsTop_bc+NptsBot_bc+NptsBot_bc*Nang_do/2):
     !         downwelling bottom radiances at discrete ordinates
-    if (sfc_obj%fname(1:4) .ne. 'NONE') allocate (dataGrid_brdf_Sfc(sfc_obj%maxNpar*maxNpts_bc))
+    if (sfc_obj%fname(1:4) .ne. 'NONE') then
+        allocate (dataGrid_brdf_Sfc(sfc_obj%maxNpar*maxNpts_bc))
+        sfc_obj%dataGrid_brdf => dataGrid_brdf_Sfc
+        sfc_obj%isAllocated = .true.
+    end if
+
     allocate (ptr_Bc(2*maxNpts_bc), rad_Bc(Nstokes, maxNrad_bc))
 
     ! output
@@ -1115,9 +1120,6 @@ program shdom
             &maxIV, maxIC, maxIG, maxIDO, isNewRad,&
             &flag_bc, ipFlag, isDeltaM, type_src, isHighOrder_,&
             &solar0_ckd, mu_solar, az_solar, skyRad,&
-            &sfc_obj%type, sfc_obj%avgTemp, sfc_obj%avgAlb,&
-            &sfc_obj%Nx, sfc_obj%Ny, sfc_obj%dx, sfc_obj%dy,&
-            &sfc_obj%Npar, sfc_obj%dataRaw_brdf, dataGrid_brdf_Sfc,&
             &units_src, waveNum, waveLen,&
             &isAccel, solAcc, maxIter, solCrit, iter,&
             &splitAcc, shAcc, x_Grid, y_Grid, z_Grid,&
@@ -1126,7 +1128,7 @@ program shdom
             &Npts, xyz_Grid,&
             &Ncell, ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
             &ptrRad_Sh, ptrSrc_Sh, ptrSrcDel_Sh, work, work1, work2,&
-            &src_Sh, srcDel_Sh, rad_Sh, fluxTot, fluxDir, ckd_obj)
+            &src_Sh, srcDel_Sh, rad_Sh, fluxTot, fluxDir, sfc_obj, ckd_obj)
         isNewRad = .false.
         totIter = totIter + iter
 
@@ -1142,28 +1144,26 @@ program shdom
                                 &Nmu_do, maxNphi0_do, Nphi0_Do, mu_Do, phi_Do, wt_Do,&
                                 &flag_bc, xDomain_prp_, yDomain_prp_, ipFlag,&
                                 &type_src, isDeltaM, mu_solar, az_solar,&
-                                &sfc_obj%type, sfc_obj%Npar, dataGrid_brdf_Sfc,&
                                 &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
-                                &sfc_obj%avgTemp, sfc_obj%avgAlb, skyRad, waveNum, waveLen, units_src,&
+                                &skyRad, waveNum, waveLen, units_src,&
                                 &x_Grid, y_Grid, z_Grid, xyz_Grid,&
                                 &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
                                 &ext, ssa, leg, ipha, fluxDir, fluxTot,&
                                 &ptrSrc_Sh, src_Sh, work, work(1 + Npts*Nstokes),&
-                                &parms_Out(1, iout), irad, work2, parms_Sen)
+                                &parms_Out(1, iout), irad, work2, sfc_obj, parms_Sen)
                         else
                             call shd_mpi__computeRad(Nstokes, Nx, Ny, Nz, Npts, Ncell,&
                                 &maxNl_sh, maxNm_sh, Nlm_sh, NlegSet_prp, Nleg_prp, Npha_prp_,&
                                 &Nmu_do, maxNphi0_do, Nphi0_Do, mu_Do, phi_Do, wt_Do,&
                                 &flag_bc, xDomain_prp_, yDomain_prp_, ipFlag,&
                                 &type_src, isDeltaM, mu_solar, az_solar,&
-                                &sfc_obj%type, sfc_obj%Npar, dataGrid_brdf_Sfc,&
                                 &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
-                                &sfc_obj%avgTemp, sfc_obj%avgAlb, skyRad, waveNum, waveLen, units_src,&
+                                &skyRad, waveNum, waveLen, units_src,&
                                 &x_Grid, y_Grid, z_Grid, xyz_Grid,&
                                 &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
                                 &ext, ssa, leg, ipha, fluxDir, fluxTot,&
                                 &ptrSrc_Sh, src_Sh, work, work(1 + Npts*Nstokes),&
-                                &parms_Out(1, iout), irad, work2)
+                                &parms_Out(1, iout), irad, work2, sfc_obj)
                         end if
                     else
                         if (fileInp_sen(1:4) .ne. 'NONE') then
@@ -1171,27 +1171,25 @@ program shdom
                                 &maxNl_sh, maxNm_sh, Nlm_sh, NlegSet_prp, Nleg_prp, Npha_prp_,&
                                 &Nmu_do, maxNphi0_do, Nphi0_Do, mu_Do, phi_Do, wt_Do,&
                                 &flag_bc, ipFlag, type_src, isDeltaM, mu_solar, az_solar,&
-                                &sfc_obj%type, sfc_obj%Npar, dataGrid_brdf_Sfc,&
                                 &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
-                                &sfc_obj%avgTemp, sfc_obj%avgAlb, skyRad, waveNum, waveLen, units_src,&
+                                &skyRad, waveNum, waveLen, units_src,&
                                 &x_Grid, y_Grid, z_Grid, xyz_Grid,&
                                 &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
                                 &ext, ssa, leg, ipha, fluxDir, fluxTot,&
                                 &ptrSrc_Sh, src_Sh, work(1), work(1 + Npts*Nstokes),&
-                                &parms_Out(1, iout), irad, work2, parms_Sen)
+                                &parms_Out(1, iout), irad, work2, sfc_obj, parms_Sen)
                         else
                             call shd_rad__computeRad(Nstokes, Nx, Ny, Nz, Npts, Ncell,&
                                 &maxNl_sh, maxNm_sh, Nlm_sh, NlegSet_prp, Nleg_prp, Npha_prp_,&
                                 &Nmu_do, maxNphi0_do, Nphi0_Do, mu_Do, phi_Do, wt_Do,&
                                 &flag_bc, ipFlag, type_src, isDeltaM, mu_solar, az_solar,&
-                                &sfc_obj%type, sfc_obj%Npar, dataGrid_brdf_Sfc,&
                                 &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
-                                &sfc_obj%avgTemp, sfc_obj%avgAlb, skyRad, waveNum, waveLen, units_src,&
+                                &skyRad, waveNum, waveLen, units_src,&
                                 &x_Grid, y_Grid, z_Grid, xyz_Grid,&
                                 &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
                                 &ext, ssa, leg, ipha, fluxDir, fluxTot,&
                                 &ptrSrc_Sh, src_Sh, work(1), work(1 + Npts*Nstokes),&
-                                &parms_Out(1, iout), irad, work2)
+                                &parms_Out(1, iout), irad, work2, sfc_obj)
                         end if
                     end if
                 end if
@@ -1210,26 +1208,24 @@ program shdom
                                 &Nmu_do, maxNphi0_do, Nphi0_Do, mu_Do, phi_Do, wt_Do,&
                                 &flag_bc, xDomain_prp_, yDomain_prp_, ipFlag,&
                                 &type_src, isDeltaM, mu_solar, az_solar,&
-                                &sfc_obj%type, sfc_obj%Npar, dataGrid_brdf_Sfc,&
                                 &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
-                                &sfc_obj%avgTemp, sfc_obj%avgAlb, skyRad, waveNum, waveLen, units_src,&
+                                &skyRad, waveNum, waveLen, units_src,&
                                 &x_Grid, y_Grid, z_Grid, xyz_Grid,&
                                 &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
                                 &ext, ssa, leg, ipha, fluxDir, fluxTot,&
-                                &ptrSrc_Sh, src_Sh, parms_Out(1, iout), ilos, work2, parms_Sen)
+                                &ptrSrc_Sh, src_Sh, parms_Out(1, iout), ilos, work2, sfc_obj, parms_Sen)
                         else
                             call shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, Npts, Ncell,&
                                 &maxNl_sh, maxNm_sh, Nlm_sh, NlegSet_prp, Nleg_prp, Npha_prp_,&
                                 &Nmu_do, maxNphi0_do, Nphi0_Do, mu_Do, phi_Do, wt_Do,&
                                 &flag_bc, xDomain_prp_, yDomain_prp_, ipFlag,&
                                 &type_src, isDeltaM, mu_solar, az_solar,&
-                                &sfc_obj%type, sfc_obj%Npar, dataGrid_brdf_Sfc,&
                                 &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
-                                &sfc_obj%avgTemp, sfc_obj%avgAlb, skyRad, waveNum, waveLen, units_src,&
+                                &skyRad, waveNum, waveLen, units_src,&
                                 &x_Grid, y_Grid, z_Grid, xyz_Grid,&
                                 &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
                                 &ext, ssa, leg, ipha, fluxDir, fluxTot,&
-                                &ptrSrc_Sh, src_Sh, parms_Out(1, iout), ilos, work2)
+                                &ptrSrc_Sh, src_Sh, parms_Out(1, iout), ilos, work2, sfc_obj)
                         end if
                     else
                         if (fileInp_sen(1:4) .ne. 'NONE') then
@@ -1237,25 +1233,23 @@ program shdom
                                 &maxNl_sh, maxNm_sh, Nlm_sh, NlegSet_prp, Nleg_prp, Npha_prp_,&
                                 &Nmu_do, maxNphi0_do, Nphi0_Do, mu_Do, phi_Do, wt_Do,&
                                 &flag_bc, ipFlag, type_src, isDeltaM, mu_solar, az_solar,&
-                                &sfc_obj%type, sfc_obj%Npar, dataGrid_brdf_Sfc,&
                                 &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
-                                &sfc_obj%avgTemp, sfc_obj%avgAlb, skyRad, waveNum, waveLen, units_src,&
+                                &skyRad, waveNum, waveLen, units_src,&
                                 &x_Grid, y_Grid, z_Grid, xyz_Grid,&
                                 &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
                                 &ext, ssa, leg, ipha, fluxDir, fluxTot,&
-                                &ptrSrc_Sh, src_Sh, parms_Out(1, iout), ilos, work2, parms_Sen)
+                                &ptrSrc_Sh, src_Sh, parms_Out(1, iout), ilos, work2, sfc_obj, parms_Sen)
                         else
                             call shd_rad__computeCamRad(Nstokes, Nx, Ny, Nz, Npts, Ncell,&
                                 &maxNl_sh, maxNm_sh, Nlm_sh, NlegSet_prp, Nleg_prp, Npha_prp_,&
                                 &Nmu_do, maxNphi0_do, Nphi0_Do, mu_Do, phi_Do, wt_Do,&
                                 &flag_bc, ipFlag, type_src, isDeltaM, mu_solar, az_solar,&
-                                &sfc_obj%type, sfc_obj%Npar, dataGrid_brdf_Sfc,&
                                 &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
-                                &sfc_obj%avgTemp, sfc_obj%avgAlb, skyRad, waveNum, waveLen, units_src,&
+                                &skyRad, waveNum, waveLen, units_src,&
                                 &x_Grid, y_Grid, z_Grid, xyz_Grid,&
                                 &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
                                 &ext, ssa, leg, ipha, fluxDir, fluxTot,&
-                                &ptrSrc_Sh, src_Sh, parms_Out(1, iout), ilos, work2)
+                                &ptrSrc_Sh, src_Sh, parms_Out(1, iout), ilos, work2, sfc_obj)
                         end if
                     end if
                 end if
@@ -1375,29 +1369,29 @@ program shdom
                     if (fileInp_sen(1:4) .ne. 'NONE') then
                         call shd_io__outputResultMpi(Nstokes, Nx_T, Ny_T, Nz,&
                             &Npts_tot, Ncell_tot, Nsh_tot,&
-                            &maxNl_sh, maxNm_sh, Nlm_sh, Nmu_do, Nphi_do, Nang_do, ckd_obj%Ng,&
-                            &fileInp_prp, sfc_obj%fname, ckd_obj%fname, fileInp_sav, fileOut_sav,&
+                            &maxNl_sh, maxNm_sh, Nlm_sh, Nmu_do, Nphi_do, Nang_do,&
+                            &fileInp_prp, fileInp_sav, fileOut_sav,&
                             &flag_bc, ipFlag, isDeltaM, type_grid, type_src,&
                             &solar, mu_solar, az_solar, skyRad,&
-                            &sfc_obj%type, sfc_obj%avgTemp, sfc_obj%avgAlb, waveNum, waveLen, units_src,&
+                            &waveNum, waveLen, units_src,&
                             &splitAcc, shAcc, solAcc, maxIter, totIter,&
                             &xDomain_prp_, yDomain_prp_, xGrid_all, yGrid_all, z_Grid,&
                             &fluxTot_all, fluxDiv_all,&
                             &Nsh_out, SH_all, irad, sumRad_Out,&
-                            &type_Out(iout), parms_Out(1, iout), file_Out(iout), parms_Sen)
+                            &type_Out(iout), parms_Out(1, iout), file_Out(iout), sfc_obj, ckd_obj, parms_Sen)
                     else
                         call shd_io__outputResultMpi(Nstokes, Nx_T, Ny_T, Nz,&
                             &Npts_tot, Ncell_tot, Nsh_tot,&
-                            &maxNl_sh, maxNm_sh, Nlm_sh, Nmu_do, Nphi_do, Nang_do, ckd_obj%Ng,&
-                            &fileInp_prp, sfc_obj%fname, ckd_obj%fname, fileInp_sav, fileOut_sav,&
+                            &maxNl_sh, maxNm_sh, Nlm_sh, Nmu_do, Nphi_do, Nang_do,&
+                            &fileInp_prp, fileInp_sav, fileOut_sav,&
                             &flag_bc, ipFlag, isDeltaM, type_grid, type_src,&
                             &solar, mu_solar, az_solar, skyRad,&
-                            &sfc_obj%type, sfc_obj%avgTemp, sfc_obj%avgAlb, waveNum, waveLen, units_src,&
+                            &waveNum, waveLen, units_src,&
                             &splitAcc, shAcc, solAcc, maxIter, totIter,&
                             &xDomain_prp_, yDomain_prp_, xGrid_all, yGrid_all, z_Grid,&
                             &fluxTot_all, fluxDiv_all,&
                             &Nsh_out, SH_all, irad, sumRad_Out,&
-                            &type_Out(iout), parms_Out(1, iout), file_Out(iout))
+                            &type_Out(iout), parms_Out(1, iout), file_Out(iout), sfc_obj, ckd_obj)
                     end if
                 end if
             end do
@@ -1414,32 +1408,32 @@ program shdom
             if ((type_Out(iout) .ne. 'V') .and. (file_Out(iout)(1:4) .ne. 'NONE')) then
                 if (fileInp_sen(1:4) .ne. 'NONE') then
                     call shd_io__outputResult(Nstokes, Nx, Ny, Nx1, Ny1, Nz, Npts_base, Npts, Ncell,&
-                        Nsh, maxNl_sh, maxNm_sh, Nlm_sh, NlegSet_prp, Nleg_prp, Npha_prp_, Nmu_do, Nphi_do, Nang_do, ckd_obj%Ng,&
-                        fileInp_prp, sfc_obj%fname, ckd_obj%fname, fileInp_sav, fileOut_sav,&
+                        Nsh, maxNl_sh, maxNm_sh, Nlm_sh, NlegSet_prp, Nleg_prp, Npha_prp_, Nmu_do, Nphi_do, Nang_do,&
+                        fileInp_prp, fileInp_sav, fileOut_sav,&
                         flag_bc, ipFlag, isDeltaM, type_grid, type_src,&
                         solar, mu_solar, az_solar, skyRad,&
-                        sfc_obj%type, sfc_obj%avgTemp, sfc_obj%avgAlb, waveNum, waveLen, units_src,&
+                        waveNum, waveLen, units_src,&
                         splitAcc, shAcc, solAcc, maxIter, totIter,&
                         x_Grid, y_Grid, z_Grid, xyz_Grid,&
                         ptr2Tree_Cell, ptr8Grid_Cell, flag_Cell,&
                         ext, ssa, leg, ipha, temp,&
                         sumFluxTot_Out, sumFluxDir_Out, sumFluxDiv_Out,&
                         irad, sumRad_Out, Nsh_out, sumSH_Out, src1_Out,&
-                        type_Out(iout), parms_Out(1, iout), file_Out(iout), parms_Sen)
+                        type_Out(iout), parms_Out(1, iout), file_Out(iout), sfc_obj, ckd_obj, parms_Sen)
                 else
                     call shd_io__outputResult(Nstokes, Nx, Ny, Nx1, Ny1, Nz, Npts_base, Npts, Ncell,&
-                        Nsh, maxNl_sh, maxNm_sh, Nlm_sh, NlegSet_prp, Nleg_prp, Npha_prp_, Nmu_do, Nphi_do, Nang_do, ckd_obj%Ng,&
-                        fileInp_prp, sfc_obj%fname, ckd_obj%fname, fileInp_sav, fileOut_sav,&
+                        Nsh, maxNl_sh, maxNm_sh, Nlm_sh, NlegSet_prp, Nleg_prp, Npha_prp_, Nmu_do, Nphi_do, Nang_do,&
+                        fileInp_prp, fileInp_sav, fileOut_sav,&
                         flag_bc, ipFlag, isDeltaM, type_grid, type_src,&
                         solar, mu_solar, az_solar, skyRad,&
-                        sfc_obj%type, sfc_obj%avgTemp, sfc_obj%avgAlb, waveNum, waveLen, units_src,&
+                        waveNum, waveLen, units_src,&
                         splitAcc, shAcc, solAcc, maxIter, totIter,&
                         x_Grid, y_Grid, z_Grid, xyz_Grid,&
                         ptr2Tree_Cell, ptr8Grid_Cell, flag_Cell,&
                         ext, ssa, leg, ipha, temp,&
                         sumFluxTot_Out, sumFluxDir_Out, sumFluxDiv_Out,&
                         irad, sumRad_Out, Nsh_out, sumSH_Out, src1_Out,&
-                        type_Out(iout), parms_Out(1, iout), file_Out(iout))
+                        type_Out(iout), parms_Out(1, iout), file_Out(iout), sfc_obj, ckd_obj)
                 end if
             end if
         end do
@@ -1454,22 +1448,22 @@ program shdom
             if ((type_Out(iout) .eq. 'V')) then
                 if (fileInp_sen(1:4) .ne. 'NONE') then
                     call shd_io__outputCamRad(Nstokes, Nx, Ny, Nz, Npts, Ncell,&
-                        &Nsh, maxNl_sh, maxNm_sh, Nlm_sh, Nmu_do, Nphi_do, Nang_do, ckd_obj%Ng,&
-                        &fileInp_prp, sfc_obj%fname, ckd_obj%fname, fileInp_sav, fileOut_sav,&
+                        &Nsh, maxNl_sh, maxNm_sh, Nlm_sh, Nmu_do, Nphi_do, Nang_do,&
+                        &fileInp_prp, fileInp_sav, fileOut_sav,&
                         &flag_bc, ipFlag, isDeltaM, type_grid, type_src,&
                         &solar, mu_solar, az_solar, skyRad,&
-                        &sfc_obj%type, sfc_obj%avgTemp, sfc_obj%avgAlb, waveNum, waveLen, units_src,&
+                        &waveNum, waveLen, units_src,&
                         &splitAcc, shAcc, solAcc, maxIter, totIter,&
-                        &ilos, sumCam_Out, parms_Out(1, iout), file_Out(iout), parms_Sen)
+                        &ilos, sumCam_Out, parms_Out(1, iout), file_Out(iout), sfc_obj, ckd_obj, parms_Sen)
                 else
                     call shd_io__outputCamRad(Nstokes, Nx, Ny, Nz, Npts, Ncell,&
-                        &Nsh, maxNl_sh, maxNm_sh, Nlm_sh, Nmu_do, Nphi_do, Nang_do, ckd_obj%Ng,&
-                        &fileInp_prp, sfc_obj%fname, ckd_obj%fname, fileInp_sav, fileOut_sav,&
+                        &Nsh, maxNl_sh, maxNm_sh, Nlm_sh, Nmu_do, Nphi_do, Nang_do,&
+                        &fileInp_prp, fileInp_sav, fileOut_sav,&
                         &flag_bc, ipFlag, isDeltaM, type_grid, type_src,&
                         &solar, mu_solar, az_solar, skyRad,&
-                        &sfc_obj%type, sfc_obj%avgTemp, sfc_obj%avgAlb, waveNum, waveLen, units_src,&
+                        &waveNum, waveLen, units_src,&
                         &splitAcc, shAcc, solAcc, maxIter, totIter,&
-                        &ilos, sumCam_Out, parms_Out(1, iout), file_Out(iout))
+                        &ilos, sumCam_Out, parms_Out(1, iout), file_Out(iout), sfc_obj, ckd_obj)
                 end if
             end if
         end do

@@ -148,7 +148,8 @@ module globals_cfg
         real(kind=R__) :: avgTemp
         real(kind=R__) :: avgAlb
 
-        real(kind=R__), pointer :: dataRaw_brdf(:) => null()
+        real(kind=R__), pointer :: dataRaw_brdf(:)  => null()
+        real(kind=R__), pointer :: dataGrid_brdf(:) => null()
 
         logical :: isUniform    = .false.
         logical :: isLambertian = .false.

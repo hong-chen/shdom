@@ -1780,42 +1780,43 @@ subroutine shd_mpi__computeRad(&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
     &BCFLAG, XDOMAIN, YDOMAIN, IPFLAG,&
     &SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
-    &type_sfc, Npar_sfc, SFCGRIDPARMS,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-    &temp0_sfc, alb0_sfc, SKYRAD, WAVENO, WAVELEN, UNITS,&
+    &SKYRAD, WAVENO, WAVELEN, UNITS,&
     &x_Grid, y_Grid, z_Grid, xyz_Grid,&
     &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
     &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
     &SHPTR, SOURCE, SOURCE1, GRIDRAD,&
-    &parms_Out, NRAD, RADOUT, parms_Sen)
+    &parms_Out, NRAD, RADOUT, sfc_obj, parms_Sen)
 
     ! Computes the radiances for the locations and directions specified
     ! in parms_Out, putting the results in RADOUT and increasing NRAD by
     ! the number of radiances output.  Does the radiative transfer integrations
     ! across multiple processors.
 
+    type(shd_type_sfc), intent(in) :: sfc_obj
+
     integer, intent(in) :: Nstokes, Nx, Ny, Nz, BCFLAG, IPFLAG, NPTS, NCELLS
     integer, intent(in) :: ML, MM, NLM, NlegSet_prp, Nleg_prp, Npha_prp
     integer, intent(in) :: NMU, NPHI0MAX, NPHI0(NMU)
     integer, intent(inout) :: NRAD
-    integer, intent(in) :: MAXNBC, NTOPPTS, NBOTPTS, Npar_sfc
+    integer, intent(in) :: MAXNBC, NTOPPTS, NBOTPTS
     integer, intent(in) :: ptr8Grid_Cell(8, NCELLS), ptr6Cell_Cell(6, NCELLS), ptr2Tree_Cell(2, NCELLS)
     integer, intent(in) :: SHPTR(NPTS + 1), BCPTR(MAXNBC, 2)
     integer*2, intent(in) :: flag_Cell(NCELLS), IPHASE(NPTS)
     logical, intent(in) :: DELTAM
     real, intent(in) :: SOLARMU, SOLARAZ
-    real, intent(in) :: temp0_sfc, alb0_sfc, SKYRAD, WAVENO(2), WAVELEN
+    real, intent(in) :: SKYRAD, WAVENO(2), WAVELEN
     real, intent(in) :: MU(NMU), PHI(NMU, NPHI0MAX), WTDO(NMU, NPHI0MAX)
     real, intent(in) :: XDOMAIN, YDOMAIN, x_Grid(Nx + 1), y_Grid(Ny + 1), z_Grid(Nz)
     real, intent(in) :: xyz_Grid(3, NPTS)
-    real, intent(in) :: SFCGRIDPARMS(*), BCRAD(Nstokes, *)
+    real, intent(in) :: BCRAD(Nstokes, *)
     real, intent(in) :: EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NlegSet_prp, 0:Nleg_prp, NPTS)
     real, intent(in) :: DIRFLUX(NPTS), FLUXES(2, NPTS), SOURCE(Nstokes, *)
     real, intent(inout) :: SOURCE1(Nstokes, NPTS), GRIDRAD(Nstokes, NPTS)
     real, intent(in) :: parms_Out(*)
     real, intent(in), optional :: parms_Sen(*)
     real, intent(out) :: RADOUT(Nstokes, *)
-    character, intent(in) ::  SRCTYPE*1, type_sfc*2, UNITS*1
+    character, intent(in) ::  SRCTYPE*1, UNITS*1
 
 #if HAS_MPI
     integer :: IBC, JX, JY, K
@@ -1847,13 +1848,13 @@ subroutine shd_mpi__computeRad(&
         &UNITS, NTOPPTS, Nstokes, BCRAD(1, 1))
     ! Make the bottom boundary radiances for the Lambertian surfaces.
     ! Compute the upwelling bottom radiances using the downwelling fluxes.
-    if (type_sfc .eq. 'FL') then
+    if (sfc_obj%type .eq. 'FL') then
         call shd_init__makeSfcRadFL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, SRCTYPE, temp0_sfc, alb0_sfc,&
+            &DIRFLUX, FLUXES, SRCTYPE, sfc_obj%avgTemp, sfc_obj%avgAlb,&
             &WAVENO, WAVELEN, UNITS, Nstokes, BCRAD(1, 1 + NTOPPTS))
-    else if (type_sfc .eq. 'VL') then
+    else if (sfc_obj%type .eq. 'VL') then
         call shd_init__makeSfcRadVL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, SRCTYPE, Npar_sfc, SFCGRIDPARMS,&
+            &DIRFLUX, FLUXES, SRCTYPE, sfc_obj%Npar, sfc_obj%dataGrid_brdf,&
             &Nstokes, BCRAD(1, 1 + NTOPPTS))
     end if
 
@@ -1873,7 +1874,7 @@ subroutine shd_mpi__computeRad(&
     Z0 = min(max(parms_Out(1), z_Grid(1)), z_Grid(Nz))
     NANGOUT = nint(parms_Out(6))
 
-    LAMBERTIAN = type_sfc(2:2) .eq. 'L'
+    LAMBERTIAN = sfc_obj%type(2:2) .eq. 'L'
 
     MAXNRAD = nint(4.0*(Nx_out*Ny_out)/Nproc_)
     ! MAXNRAD = Nx_out*Ny_out
@@ -1969,7 +1970,7 @@ subroutine shd_mpi__computeRad(&
                 call shd_init__makeSfcRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
                     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, mu_out, phi_out,&
                     &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
-                    &type_sfc, Npar_sfc, SFCGRIDPARMS, Nstokes, BCRAD(1, 1 + NTOPPTS))
+                    &sfc_obj%type, sfc_obj%Npar, sfc_obj%dataGrid_brdf, Nstokes, BCRAD(1, 1 + NTOPPTS))
             end if
             do IBC = 1, NBOTPTS
                 I = BCPTR(IBC, 2)
@@ -2216,40 +2217,41 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
     &BCFLAG, XDOMAIN, YDOMAIN, IPFLAG,&
     &SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
-    &type_sfc, Npar_sfc, SFCGRIDPARMS,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-    &temp0_sfc, alb0_sfc, SKYRAD, WAVENO, WAVELEN, UNITS,&
+    &SKYRAD, WAVENO, WAVELEN, UNITS,&
     &x_Grid, y_Grid, z_Grid, xyz_Grid,&
     &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
     &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
-    &SHPTR, SOURCE, parms_Out, IVIS, VISOUT, parms_Sen)
+    &SHPTR, SOURCE, parms_Out, IVIS, VISOUT, sfc_obj, parms_Sen)
 
     ! Computes Stokes radiances (output in VISOUT) for the visualization
     !   modes: 1) camera mode,
     !          2) cross track scanning,
     !          3) user-specified sensor mode.
 
+    type(shd_type_sfc), intent(in) :: sfc_obj
+
     integer, intent(in) :: Nstokes, Nx, Ny, Nz, BCFLAG, IPFLAG, NPTS, NCELLS
     integer, intent(in) :: ML, MM, NLM, NlegSet_prp, Nleg_prp, Npha_prp
     integer, intent(in) :: NMU, NPHI0MAX, NPHI0(NMU)
     integer, intent(inout) :: IVIS
-    integer, intent(in) :: MAXNBC, NTOPPTS, NBOTPTS, Npar_sfc
+    integer, intent(in) :: MAXNBC, NTOPPTS, NBOTPTS
     integer, intent(in) :: ptr8Grid_Cell(8, NCELLS), ptr6Cell_Cell(6, NCELLS), ptr2Tree_Cell(2, NCELLS)
     integer, intent(in) :: SHPTR(NPTS + 1), BCPTR(MAXNBC, 2)
     integer*2, intent(in) :: flag_Cell(NCELLS), IPHASE(NPTS)
     logical, intent(in) :: DELTAM
     real, intent(in) :: SOLARMU, SOLARAZ
-    real, intent(in) :: temp0_sfc, alb0_sfc, SKYRAD, WAVENO(2), WAVELEN
+    real, intent(in) :: SKYRAD, WAVENO(2), WAVELEN
     real, intent(in) :: MU(NMU), PHI(NMU, NPHI0MAX), WTDO(NMU, NPHI0MAX)
     real, intent(in) :: XDOMAIN, YDOMAIN, x_Grid(Nx + 1), y_Grid(Ny + 1), z_Grid(Nz)
     real, intent(in) :: xyz_Grid(3, NPTS)
-    real, intent(in) :: SFCGRIDPARMS(*), BCRAD(Nstokes, *)
+    real, intent(in) :: BCRAD(Nstokes, *)
     real, intent(in) :: EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NlegSet_prp, 0:Nleg_prp, *)
     real, intent(in) :: DIRFLUX(NPTS), FLUXES(2, NPTS), SOURCE(Nstokes, *)
     real, intent(in) :: parms_Out(*)
     real, intent(in), optional :: parms_Sen(*)
     real, intent(out) :: VISOUT(Nstokes, *)
-    character, intent(in) :: SRCTYPE*1, type_sfc*2, UNITS*1
+    character, intent(in) :: SRCTYPE*1, UNITS*1
 
 #if HAS_MPI
     integer :: NSCATANGLE, NSTPHASE, I, J, L, N
@@ -2301,13 +2303,13 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
         &UNITS, NTOPPTS, Nstokes, BCRAD(1, 1))
     ! Make the bottom boundary radiances for the Lambertian surfaces.
     ! Compute the upwelling bottom radiances using the downwelling fluxes.
-    if (type_sfc .eq. 'FL') then
+    if (sfc_obj%type .eq. 'FL') then
         call shd_init__makeSfcRadFL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, SRCTYPE, temp0_sfc, alb0_sfc,&
+            &DIRFLUX, FLUXES, SRCTYPE, sfc_obj%avgTemp, sfc_obj%avgAlb,&
             &WAVENO, WAVELEN, UNITS, Nstokes, BCRAD(1, 1 + NTOPPTS))
-    else if (type_sfc .eq. 'VL') then
+    else if (sfc_obj%type .eq. 'VL') then
         call shd_init__makeSfcRadVL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, SRCTYPE, Npar_sfc, SFCGRIDPARMS,&
+            &DIRFLUX, FLUXES, SRCTYPE, sfc_obj%Npar, sfc_obj%dataGrid_brdf,&
             &Nstokes, BCRAD(1, 1 + NTOPPTS))
     end if
 
@@ -2491,7 +2493,7 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
                     &EXTINCT, ALBEDO, LEGEN, IPHASE,&
                     &DIRFLUX, SHPTR, SOURCE, YLMSUN,&
                     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-                    &type_sfc, Npar_sfc, SFCGRIDPARMS,&
+                    &sfc_obj%type, sfc_obj%Npar, sfc_obj%dataGrid_brdf,&
                     &MU2, PHI2, X0, Y0, Z0,&
                     &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
 
@@ -2578,7 +2580,7 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
                     &EXTINCT, ALBEDO, LEGEN, IPHASE,&
                     &DIRFLUX, SHPTR, SOURCE, YLMSUN,&
                     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-                    &type_sfc, Npar_sfc, SFCGRIDPARMS,&
+                    &sfc_obj%type, sfc_obj%Npar, sfc_obj%dataGrid_brdf,&
                     &MU2, PHI2, X, Y, Z,&
                     &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
 

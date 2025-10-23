@@ -41,7 +41,7 @@ module shd_solv
 
     use globals_cfg, only: verbose_, isMpi_, &
                            isSolar_, &
-                           shd_type_ckd
+                           shd_type_sfc, shd_type_ckd
 
     use shd_init, only: shd_init__makePrp, &
                         shd_init__makeRad, &
@@ -91,9 +91,6 @@ subroutine shd_solv__solveRte(&
     &MAXIV, MAXIC, MAXIG, MAXIDO, INRADFLAG,&
     &BCFLAG, IPFLAG, DELTAM, SRCTYPE, isHighOrder,&
     &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
-    &SFCTYPE, GNDTEMP, GNDALBEDO,&
-    &NXSFC, NYSFC, DELXSFC, DELYSFC,&
-    &NSFCPAR, SFCPARMS, SFCGRIDPARMS,&
     &UNITS, WAVENO, WAVELEN,&
     &ACCELFLAG, SOLACC, MAXITER, SOLCRIT, ITER,&
     &SPLITACC, SHACC, XGRID, YGRID, ZGRID,&
@@ -102,7 +99,8 @@ subroutine shd_solv__solveRte(&
     &NPTS, GRIDPOS,&
     &NCELLS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &RSHPTR, SHPTR, OSHPTR, WORK, WORK1, WORK2,&
-    &SOURCE, DELSOURCE, RADIANCE, FLUXES, DIRFLUX, ckd_obj)
+    &SOURCE, DELSOURCE, RADIANCE, FLUXES, DIRFLUX,&
+    &sfc_obj, ckd_obj)
 
     ! Performs the SHDOM solution procedure.
     ! Output is returned in SOURCE, RADIANCE, FLUXES, DIRFLUX.
@@ -110,9 +108,10 @@ subroutine shd_solv__solveRte(&
     ! CELLFLAGS,NPTS,GRIDPOS) is input and modified for new grid
     ! cells and points on output.
 
+    type(shd_type_sfc), intent(in) :: sfc_obj
     type(shd_type_ckd), intent(in) :: ckd_obj
 
-    integer, intent(in) :: NSTOKES, NX, NY, NZ, NX1, NY1, NXSFC, NYSFC, NSFCPAR
+    integer, intent(in) :: NSTOKES, NX, NY, NZ, NX1, NY1
     integer :: ML, MM, NLM, NMU, NPHI, NANG, NLEG, NSTLEG, NUMPHASE
     integer NPHI0(*), MAXITER, ITER, BCFLAG, IPFLAG
     integer MAXIV, MAXIC, MAXIG, MAXIDO
@@ -124,8 +123,6 @@ subroutine shd_solv__solveRte(&
     integer WORK1(*)
     logical INRADFLAG, DELTAM, ACCELFLAG, isHighOrder
     real SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD
-    real GNDTEMP, GNDALBEDO
-    real DELXSFC, DELYSFC, SFCPARMS(*), SFCGRIDPARMS(*)
     real WAVENO(2), WAVELEN
     real SOLACC, SOLCRIT, SPLITACC, SHACC
     real MU(*), WTDO(*), PHI(*)
@@ -139,11 +136,10 @@ subroutine shd_solv__solveRte(&
     real RADIANCE(NSTOKES, *)
     real WORK(*), WORK2(*)
     character(len=1) :: SRCTYPE, UNITS
-    character(len=2) :: SFCTYPE
 
     integer NPHI0MAX, I, ORDINATESET, NBPTS, NBCELLS
     integer MAXNANGBND, NANGBND(4, 2), IERR
-    logical FIXSH, SPLITTESTING, DOSPLIT, OUTOFMEM, LAMBERTIAN
+    logical FIXSH, SPLITTESTING, DOSPLIT, OUTOFMEM
     logical UNIFORM_SFC_BRDF
     logical, allocatable :: FFTFLAG(:)
     real ALBMAX
@@ -215,7 +211,7 @@ subroutine shd_solv__solveRte(&
         call shd_init__makeRad(NSTOKES, NX1*NY1, NZ, NSTLEG, NLEG,&
             &RSHPTR, ZGRID,&
             &EXTINCT, ALBEDO, LEGEN, TEMP, NUMPHASE, IPHASE,&
-            &SRCTYPE, SOLARFLUX, SOLARMU, GNDALBEDO, GNDTEMP, SKYRAD,&
+            &SRCTYPE, SOLARFLUX, SOLARMU, sfc_obj%avgAlb, sfc_obj%avgTemp, SKYRAD,&
             &UNITS, WAVENO, WAVELEN, RADIANCE)
         ! Interpolate the radiance on the non-base grid points from the
         !   base grid points
@@ -242,20 +238,19 @@ subroutine shd_solv__solveRte(&
 
     ! Surface initialization
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    LAMBERTIAN = SFCTYPE(2:2) .eq. 'L'
     ! Make the pointers to the grid points on the top and bottom boundaries
-    call shd_grid__findBndryPnt(NPTS, NANG, MAXNBC, MAXBCRAD, LAMBERTIAN, &
+    call shd_grid__findBndryPnt(NPTS, NANG, MAXNBC, MAXBCRAD, sfc_obj%isLambertian, &
         &ZGRID(1), ZGRID(NZ), GRIDPOS,&
         &NTOPPTS, NBOTPTS, BCPTR)
-    if (SFCTYPE(1:1) .eq. 'V') then
+    if (sfc_obj%type(1:1) .eq. 'V') then
         ! If this is a variable surface then bilinearly interpolate
         !   the surface temperature and reflection parameters to the
         !   bottom grid points.
         call shd_sfc__interpSfc(NBOTPTS, BCPTR(1, 2), GRIDPOS,&
             &SRCTYPE, WAVENO, WAVELEN, UNITS,&
-            &NXSFC, NYSFC, DELXSFC, DELYSFC, NSFCPAR, SFCPARMS,&
-            &SFCGRIDPARMS)
-        call shd_init__checkSfcU(NXSFC, NYSFC, NSFCPAR, SFCPARMS,&
+            &sfc_obj%Nx, sfc_obj%Ny, sfc_obj%dx, sfc_obj%dy, sfc_obj%Npar, sfc_obj%dataRaw_brdf,&
+            &sfc_obj%dataGrid_brdf)
+        call shd_init__checkSfcU(sfc_obj%Nx, sfc_obj%Ny, sfc_obj%Npar, sfc_obj%dataRaw_brdf,&
             &UNIFORM_SFC_BRDF)
         if (UNIFORM_SFC_BRDF) then
             if (NSTOKES*(NMU/2)*NPHI0MAX .gt.&
@@ -266,8 +261,8 @@ subroutine shd_solv__solveRte(&
                     &NSTOKES, NMU/2, NPHI0MAX), STAT=IERR)
             end if
             if (IERR .eq. 0) then
-                call shd_shdo__makeSfcDO(SFCTYPE, WAVELEN,&
-                    &NXSFC, NYSFC, NSFCPAR, SFCPARMS, NSTOKES,&
+                call shd_shdo__makeSfcDO(sfc_obj%type, WAVELEN,&
+                    &sfc_obj%Nx, sfc_obj%Ny, sfc_obj%Npar, sfc_obj%dataRaw_brdf, NSTOKES,&
                     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                     &SFC_BRDF_DO)
             else
@@ -379,9 +374,9 @@ subroutine shd_solv__solveRte(&
             &NPTS, NCELLS, XGRID, YGRID, ZGRID, GRIDPOS,&
             &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
             &SRCTYPE, SOLARMU, SOLARAZ, SKYRAD, WAVENO, WAVELEN,&
-            &UNITS, SFCTYPE, GNDTEMP, GNDALBEDO,&
-            &NXSFC, NYSFC, DELXSFC, DELYSFC, NSFCPAR, SFCPARMS,&
-            &SFCGRIDPARMS, UNIFORM_SFC_BRDF, SFC_BRDF_DO,&
+            &UNITS, sfc_obj%type, sfc_obj%avgTemp, sfc_obj%avgAlb,&
+            &sfc_obj%Nx, sfc_obj%Ny, sfc_obj%dx, sfc_obj%dy, sfc_obj%Npar, sfc_obj%dataRaw_brdf,&
+            &sfc_obj%dataGrid_brdf, UNIFORM_SFC_BRDF, SFC_BRDF_DO,&
             &MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
             &MU, PHI, WTDO,&
             &CMU1, CPHI1, CMU2, CPHI2, WPHISAVE, FFTFLAG,&
@@ -457,7 +452,7 @@ subroutine shd_solv__solveRte(&
 
     ! Deallocate arrays
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    if (SFCTYPE(1:1) .eq. 'V' .and. UNIFORM_SFC_BRDF) then
+    if (sfc_obj%type(1:1) .eq. 'V' .and. UNIFORM_SFC_BRDF) then
         deallocate (SFC_BRDF_DO)
     end if
     deallocate (YLMSUN, FFTFLAG, WTMU, WPHISAVE)
