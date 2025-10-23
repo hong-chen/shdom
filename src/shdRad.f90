@@ -45,7 +45,8 @@ module shd_rad
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
                              is3Ddir1Ddif_, &
                              isPol_, isPol4_, &
-                             isSolar_, isThermal_
+                             isSolar_, isThermal_, &
+                             shd_type_ckd
 
     use shd_scat, only: shd_scat__computePhase
 
@@ -77,11 +78,13 @@ contains
 subroutine shd_rad__makeDirect(&
     &NPTS, BCFLAG, IPFLAG, DELTAM,&
     &ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
-    &GRIDPOS, DIRFLUX)
+    &GRIDPOS, DIRFLUX, ckd_obj)
 
     ! Makes the direct beam solar flux for the internal base grid.
     !   DIRFLUX is set to F*exp(-tau_sun).
     !   Actually calls shd_rad__computeDirect to do all the hard work.
+
+    type(shd_type_ckd), intent(in) :: ckd_obj
 
     integer NPTS, BCFLAG, IPFLAG, ML, NSTLEG, NLEG
     logical DELTAM
@@ -95,7 +98,7 @@ subroutine shd_rad__makeDirect(&
         &1, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
         &DELTAM, ML, NSTLEG, NLEG,&
         &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
-        &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
+        &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, ckd_obj)
 
     do IP = 1, NPTS
         DIRPATH = 0.0
@@ -103,7 +106,7 @@ subroutine shd_rad__makeDirect(&
             &(0, GRIDPOS(1, IP), GRIDPOS(2, IP), GRIDPOS(3, IP),&
             &BCFLAG, IPFLAG, DELTAM, ML, NSTLEG, NLEG,&
             &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(IP),&
-            &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
+            &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, ckd_obj)
     end do
 
     return
@@ -112,7 +115,7 @@ end subroutine shd_rad__makeDirect
 subroutine shd_rad__computeDirect(&
     &INIT, XI, YI, ZI, BCFLAG, IPFLAG,&
     &DELTAM, ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
-    &DIRFLUX, UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
+    &DIRFLUX, UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, ckd_obj)
 
     !╭──────────────────────────────────────────────────────────────╮!
     ! Computes the direct beam flux at point (XI,YI,ZI) by integrating
@@ -145,7 +148,7 @@ subroutine shd_rad__computeDirect(&
                            z_Prp_, ext_Prp_, ssa_Prp_, ipha_Prp_, &
                            leg_Prp_, extDir_Prp_
 
-    use globals_ckd, only: Nz_ckd_, dataRaw_z_Ckd_, dataRaw_kabs0_Ckd_
+    type(shd_type_ckd), intent(in) :: ckd_obj
 
     integer INIT, BCFLAG, IPFLAG, ML, NSTLEG, NLEG, SIDE
     logical DELTAM, VALIDBEAM
@@ -184,21 +187,21 @@ subroutine shd_rad__computeDirect(&
         if (.not. allocated(GASEXT)) allocate (GASEXT(Nz_prp_), EXTMIN(Nz_prp_), EXTMAX(Nz_prp_))
         ! Get the gaseous extinction at the property grid levels
         do IZ = 1, Nz_prp_
-            if (Nz_ckd_ .gt. 0) then
+            if (ckd_obj%Nz .gt. 0) then
                 IL = 1
-                IU = Nz_ckd_
+                IU = ckd_obj%Nz
                 do while (IU - IL .gt. 1)
                     IM = (IU + IL)/2
-                    if (z_Prp_(IZ) .le. dataRaw_z_Ckd_(IM)) then
+                    if (z_Prp_(IZ) .le. ckd_obj%dataRaw_z(IM)) then
                         IL = IM
                     else
                         IU = IM
                     end if
                 end do
-                I = min(max(IL, 1), Nz_ckd_ - 1)
-                W0 = (z_Prp_(IZ) - dataRaw_z_Ckd_(I))/(dataRaw_z_Ckd_(I + 1) - dataRaw_z_Ckd_(I))
+                I = min(max(IL, 1), ckd_obj%Nz - 1)
+                W0 = (z_Prp_(IZ) - ckd_obj%dataRaw_z(I))/(ckd_obj%dataRaw_z(I + 1) - ckd_obj%dataRaw_z(I))
                 W0 = min(max(W0, 0.0d0), 1.0d0)
-                GASEXT(IZ) = (1.0 - W0)*dataRaw_kabs0_Ckd_(I) + W0*dataRaw_kabs0_Ckd_(I + 1)
+                GASEXT(IZ) = (1.0 - W0)*ckd_obj%dataRaw_kabs(I, ckd_obj%ig) + W0*ckd_obj%dataRaw_kabs(I + 1, ckd_obj%ig)
             else
                 GASEXT(IZ) = 0.0
             end if

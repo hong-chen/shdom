@@ -162,6 +162,7 @@ module globals_cfg
 
         integer(kind=I__) :: Ng
         integer(kind=I__) :: Nz
+        integer(kind=I__) :: ig
         integer(kind=I__) :: maxNg
         integer(kind=I__) :: maxNz
 
@@ -232,15 +233,3 @@ module globals_prp
     integer(2), save, allocatable :: ipha_Prp_(:)
 
 end module globals_prp
-
-
-module globals_ckd
-
-    implicit none
-    public
-
-    integer, save :: Nz_ckd_
-    real, save, allocatable, target :: dataRaw_z_Ckd_(:)
-    real, save, allocatable :: dataRaw_kabs0_Ckd_(:)
-
-end module globals_ckd

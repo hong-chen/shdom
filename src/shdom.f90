@@ -57,8 +57,6 @@ program shdom
                              extDir_Prp_, &
                              leg_Prp_, ipha_Prp_
 
-    use globals_ckd,   only: Nz_ckd_, dataRaw_z_Ckd_, dataRaw_kabs0_Ckd_
-
     use shd_init, only: shd_init__makeGrid, &
                         shd_init__makeCell
 
@@ -190,8 +188,9 @@ program shdom
     integer(kind=I__) :: ig_ckd
     real(kind=R__)    :: solar0_ckd
     real(kind=R__), allocatable, target :: dataRaw_solar_Ckd(:), &
-                                           dataRaw_kabs_Ckd(:, :), &
-                                           dataRaw_delg_Ckd(:)
+                                           dataRaw_delg_Ckd(:), &
+                                           dataRaw_z_Ckd(:), &
+                                           dataRaw_kabs_Ckd(:, :)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! SEN
@@ -687,20 +686,18 @@ program shdom
         if (isMasterProc) then
             call shd_io__readCkdSize(waveNum, ckd_obj)
         end if
-        Nz_ckd_ = ckd_obj%Nz
 
         ! Broadcast the k-distribution object
         call shd_mpi__bcastCkdSize(ckd_obj)
 
-        allocate (dataRaw_solar_Ckd(ckd_obj%Ng), dataRaw_delg_Ckd(ckd_obj%Ng), dataRaw_z_Ckd_(ckd_obj%Nz))
+        allocate (dataRaw_solar_Ckd(ckd_obj%Ng), dataRaw_delg_Ckd(ckd_obj%Ng), dataRaw_z_Ckd(ckd_obj%Nz))
         allocate (dataRaw_kabs_Ckd(ckd_obj%Nz, ckd_obj%Ng))
-        allocate (dataRaw_kabs0_Ckd_(ckd_obj%Nz))
 
         memUsed = memUsed + ckd_obj%Nz*(2.0+ckd_obj%Ng) + 2.0*ckd_obj%Ng
 
         ckd_obj%dataRaw_solar => dataRaw_solar_Ckd
         ckd_obj%dataRaw_delg  => dataRaw_delg_Ckd
-        ckd_obj%dataRaw_z     => dataRaw_z_Ckd_
+        ckd_obj%dataRaw_z     => dataRaw_z_Ckd
         ckd_obj%dataRaw_kabs  => dataRaw_kabs_Ckd
         ckd_obj%isAllocated = .true.
 
@@ -1098,11 +1095,7 @@ program shdom
         solar = solar + dataRaw_solar_Ckd(ig_ckd)*dataRaw_delg_Ckd(ig_ckd)*solar0*abs(mu_solar)
 
         ! If doing k-distribution then get the gas absorption profile.
-        if (isCkd) then
-            do iz = 1, Nz_ckd_
-                dataRaw_kabs0_Ckd_(iz) = dataRaw_kabs_Ckd(iz, ig_ckd)
-            end do
-        end if
+        ckd_obj%ig = ig_ckd
 
         ! If this is the first time through or we always want a base grid,
         !   then make the base grid point positions and grid cell structure.
@@ -1133,7 +1126,7 @@ program shdom
             &Npts, xyz_Grid,&
             &Ncell, ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
             &ptrRad_Sh, ptrSrc_Sh, ptrSrcDel_Sh, work, work1, work2,&
-            &src_Sh, srcDel_Sh, rad_Sh, fluxTot, fluxDir)
+            &src_Sh, srcDel_Sh, rad_Sh, fluxTot, fluxDir, ckd_obj)
         isNewRad = .false.
         totIter = totIter + iter
 
@@ -1310,11 +1303,11 @@ program shdom
                 if (isMpi_) then
                     call shd_mpi__makeDirect(1, Npts, flag_bc, ipFlag, .false., maxNl_sh,&
                         &NlegSet_prp, Nleg_prp, solar0_ckd, mu_solar, az_solar,&
-                        &xyz_Grid, Nx, x_Grid, Ny, y_Grid, fluxDirTmp)
+                        &xyz_Grid, Nx, x_Grid, Ny, y_Grid, fluxDirTmp, ckd_obj)
                 else
                     call shd_rad__makeDirect(Npts, flag_bc, ipFlag, .false., maxNl_sh,&
                         &NlegSet_prp, Nleg_prp, solar0_ckd, mu_solar, az_solar,&
-                        &xyz_Grid, fluxDirTmp)
+                        &xyz_Grid, fluxDirTmp, ckd_obj)
                 end if
 
                 fluxTot(1, 1:Npts) = fluxTot(1, 1:Npts) + fluxDir(1:Npts) - fluxDirTmp(1:Npts)
@@ -1532,12 +1525,11 @@ program shdom
     if (isSrcOut)  deallocate (src1_Out)
 
     if (allocated(dataRaw_kabs_Ckd)) then
-        deallocate (dataRaw_solar_Ckd, dataRaw_delg_Ckd, dataRaw_z_Ckd_, dataRaw_kabs_Ckd)
+        deallocate (dataRaw_solar_Ckd, dataRaw_delg_Ckd, dataRaw_z_Ckd, dataRaw_kabs_Ckd)
         if (ckd_obj%isAllocated) then
             nullify(ckd_obj%dataRaw_solar, ckd_obj%dataRaw_delg, ckd_obj%dataRaw_z, ckd_obj%dataRaw_kabs)
             ckd_obj%isAllocated = .false.
         end if
-        deallocate (dataRaw_kabs0_Ckd_)
     end if
 
     if (allocated(dataRaw_brdf_Sfc)) then

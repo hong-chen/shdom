@@ -40,7 +40,8 @@
 module shd_solv
 
     use globals_cfg, only: verbose_, isMpi_, &
-                           isSolar_
+                           isSolar_, &
+                           shd_type_ckd
 
     use shd_init, only: shd_init__makePrp, &
                         shd_init__makeRad, &
@@ -101,13 +102,15 @@ subroutine shd_solv__solveRte(&
     &NPTS, GRIDPOS,&
     &NCELLS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &RSHPTR, SHPTR, OSHPTR, WORK, WORK1, WORK2,&
-    &SOURCE, DELSOURCE, RADIANCE, FLUXES, DIRFLUX)
+    &SOURCE, DELSOURCE, RADIANCE, FLUXES, DIRFLUX, ckd_obj)
 
     ! Performs the SHDOM solution procedure.
     ! Output is returned in SOURCE, RADIANCE, FLUXES, DIRFLUX.
     ! The adaptive grid stucture (NCELLS,GRIDPTR,NEIGHPTR,TREEPTR,
     ! CELLFLAGS,NPTS,GRIDPOS) is input and modified for new grid
     ! cells and points on output.
+
+    type(shd_type_ckd), intent(in) :: ckd_obj
 
     integer, intent(in) :: NSTOKES, NX, NY, NZ, NX1, NY1, NXSFC, NYSFC, NSFCPAR
     integer :: ML, MM, NLM, NMU, NPHI, NANG, NLEG, NSTLEG, NUMPHASE
@@ -167,7 +170,7 @@ subroutine shd_solv__solveRte(&
 
     ! Transfer the medium properties to the internal grid and add gas absorption
     call shd_grid__interpGrid(NPTS, NSTLEG, NLEG, GRIDPOS,&
-        &TEMP, EXTINCT, ALBEDO, LEGEN, IPHASE)
+        &TEMP, EXTINCT, ALBEDO, LEGEN, IPHASE, ckd_obj)
 
     ! If Delta-M then scale the extinction, albedo, and Legendre terms
     ! Put the Planck blackbody source in PLANCK.
@@ -184,11 +187,11 @@ subroutine shd_solv__solveRte(&
         if (isMpi_) then
             call shd_mpi__makeDirect(1, NPTS, BCFLAG, IPFLAG, DELTAM, ML,&
                 &NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
-                &GRIDPOS, NX, XGRID, NY, YGRID, DIRFLUX)
+                &GRIDPOS, NX, XGRID, NY, YGRID, DIRFLUX, ckd_obj)
         else
             call shd_rad__makeDirect(NPTS, BCFLAG, IPFLAG, DELTAM, ML,&
                 &NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
-                &GRIDPOS, DIRFLUX)
+                &GRIDPOS, DIRFLUX, ckd_obj)
         end if
         call shd_shdo__computeYlm(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG,&
             &YLMSUN)
@@ -350,7 +353,7 @@ subroutine shd_solv__solveRte(&
                     &RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR,&
                     &TEMP, PLANCK, DIRFLUX, SRCTYPE,&
                     &SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN,&
-                    &UNITS, WAVENO, WAVELEN, WORK, WORK2)
+                    &UNITS, WAVENO, WAVELEN, WORK, WORK2, ckd_obj)
                 if (SOLCRIT .gt. STARTADAPTSOL) STARTSPLITACC = SPLITCRIT
             end if
             ! Find the maximum splitting criterion over all processors

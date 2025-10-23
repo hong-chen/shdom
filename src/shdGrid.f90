@@ -43,7 +43,8 @@ module shd_grid
     use globals_cfg,   only: accSolv_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, isMpi_, &
                              is1DX_, is1DYx_, is1D_, &
-                             isPol_, isSolar_, isThermal_
+                             isPol_, isSolar_, isThermal_, &
+                             shd_type_ckd
 
     use shd_util, only: shd_util__findNextCell, &
                         shd_util__computePlanck, &
@@ -1067,10 +1068,12 @@ end function sweepCellNext
 
 subroutine shd_grid__interpGrid(&
     &NPTS, NSTLEG, NLEG, GRIDPOS,&
-    &TEMP, EXTINCT, ALBEDO, LEGEN, IPHASE)
+    &TEMP, EXTINCT, ALBEDO, LEGEN, IPHASE, ckd_obj)
 
     ! Calls shd_grid__InterpTriLinGridPrp to interpolate the input arrays from
     !   the property grid to each internal grid point.
+
+    type(shd_type_ckd), intent(in) :: ckd_obj
 
     integer NPTS, NSTLEG, NLEG
     integer*2 IPHASE(*)
@@ -1080,21 +1083,21 @@ subroutine shd_grid__interpGrid(&
 
     ! Initialize: transfer the tabulated phase functions
     call shd_grid__InterpTriLinGridPrp(0.0, 0.0, 0.0, .true., NSTLEG, NLEG,&
-        &TEMP(1), EXTINCT(1), ALBEDO(1), LEGEN(1, 0, 1), IPHASE(1))
+        &TEMP(1), EXTINCT(1), ALBEDO(1), LEGEN(1, 0, 1), IPHASE(1), ckd_obj)
 
     ! Trilinearly interpolate from the property grid to the adaptive
     do IP = 1, NPTS
         call shd_grid__InterpTriLinGridPrp(&
             &GRIDPOS(1, IP), GRIDPOS(2, IP), GRIDPOS(3, IP),&
             &.false., NSTLEG, NLEG, TEMP(IP), EXTINCT(IP),&
-            &ALBEDO(IP), LEGEN(1, 0, IP), IPHASE(IP))
+            &ALBEDO(IP), LEGEN(1, 0, IP), IPHASE(IP), ckd_obj)
     end do
 
     return
 end subroutine shd_grid__interpGrid
 
 subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT, NSTLEG, NLEG,&
-    &TEMP, EXTINCT, ALBEDO, LEGEN, IPHASE)
+    &TEMP, EXTINCT, ALBEDO, LEGEN, IPHASE, ckd_obj)
     !  Trilinearly interpolates the quantities on the input property
     ! grid at the single point (X,Y,Z) to get the output TEMP,EXTINCT,
     ! ALBEDO, and LEGEN or IPHASE.  Interpolation is done on the
@@ -1109,7 +1112,7 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT, NSTLEG, NLEG,&
                            z_Prp_, ext_Prp_, ssa_Prp_, ipha_Prp_, &
                            temp_Prp_, leg_Prp_, extDir_Prp_
 
-    use globals_ckd, only: Nz_ckd_, dataRaw_z_Ckd_, dataRaw_kabs0_Ckd_
+    type(shd_type_ckd), intent(in) :: ckd_obj
 
     integer NSTLEG, NLEG
     integer*2 IPHASE
@@ -1370,21 +1373,22 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT, NSTLEG, NLEG,&
     !╰────────────────────────────────────────────────╯!
 
     ! Add in the gaseous absorption to extinction and albedo
-    if (Nz_ckd_ .gt. 0) then
+    if (ckd_obj%Nz .gt. 0) then
         IL = 1
-        IU = Nz_ckd_
+        IU = ckd_obj%Nz
         do while (IU - IL .gt. 1)
             IM = (IU + IL)/2
-            if (Z .le. dataRaw_z_Ckd_(IM)) then
+            if (Z .le. ckd_obj%dataRaw_z(IM)) then
                 IL = IM
             else
                 IU = IM
             end if
         end do
-        I = min(max(IL, 1), Nz_ckd_ - 1)
-        F = (Z - dataRaw_z_Ckd_(I))/(dataRaw_z_Ckd_(I + 1) - dataRaw_z_Ckd_(I))
+        I = min(max(IL, 1), ckd_obj%Nz - 1)
+        F = (Z - ckd_obj%dataRaw_z(I))/(ckd_obj%dataRaw_z(I + 1) - ckd_obj%dataRaw_z(I))
         F = min(max(F, 0.0d0), 1.0d0)
-        KG = (1.0 - F)*dataRaw_kabs0_Ckd_(I) + F*dataRaw_kabs0_Ckd_(I + 1)
+        KG = (1.0 - F)*ckd_obj%dataRaw_kabs(I, ckd_obj%ig) + F*ckd_obj%dataRaw_kabs(I + 1, ckd_obj%ig)
+        KG = (1.0 - F)*ckd_obj%dataRaw_kabs(I, ckd_obj%ig) + F*ckd_obj%dataRaw_kabs(I + 1, ckd_obj%ig)
         if (EXTINCT + KG .gt. 0.0) then
             ALBEDO = ALBEDO*EXTINCT/(EXTINCT + KG)
         else
@@ -1402,7 +1406,7 @@ subroutine shd_grid__interpNewGridPnt(NEWPOINTS, NPTS,&
     &SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN,&
     &UNITS, WAVENO, WAVELEN,&
     &EXTINCT, ALBEDO, LEGEN, IPHASE, TEMP, PLANCK, DIRFLUX,&
-    &RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR)
+    &RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR, ckd_obj)
 
     !   Interpolates the medium properties, radiance, and source function for
     ! new grid points (specified in NEWPOINTS).  The medium properties are
@@ -1413,6 +1417,8 @@ subroutine shd_grid__interpNewGridPnt(NEWPOINTS, NPTS,&
     ! recomputed (rather than interpolated).  The radiance is averaged
     ! from the two parent grid points, and used to compute the source
     ! function for the new points.
+
+    type(shd_type_ckd), intent(in) :: ckd_obj
 
     integer NEWPOINTS(3, 4), NPTS
     integer NSTOKES, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
@@ -1468,7 +1474,7 @@ subroutine shd_grid__interpNewGridPnt(NEWPOINTS, NPTS,&
             Z = GRIDPOS(3, IP)
             call shd_grid__InterpTriLinGridPrp(X, Y, Z, .false., NSTLEG, NLEG,&
                 &TEMP(IP), EXTINCT(IP), ALBEDO(IP),&
-                &LEGEN(1, 0, IP), IPHASE(IP))
+                &LEGEN(1, 0, IP), IPHASE(IP), ckd_obj)
             ! Do the Delta-M scaling of extinction and albedo for this point
             if (DELTAM) then
                 if (NUMPHASE .gt. 0) then
@@ -1501,7 +1507,7 @@ subroutine shd_grid__interpNewGridPnt(NEWPOINTS, NPTS,&
                     call shd_rad__computeDirect(0, X, Y, Z, BCFLAG, IPFLAG, DELTAM,&
                         &ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
                         &DIRFLUX(IP),&
-                        &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
+                        &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, ckd_obj)
                 end if
             end if
 
@@ -1585,13 +1591,15 @@ subroutine shd_grid__splitGrid(&
     &RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR,&
     &TEMP, PLANCK, DIRFLUX, SRCTYPE,&
     &SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN,&
-    &UNITS, WAVENO, WAVELEN, ADAPTCRIT, ADAPTIND)
+    &UNITS, WAVENO, WAVELEN, ADAPTCRIT, ADAPTIND, ckd_obj)
 
     !   Splits the cells that have a cell dividing criterion greater than
     ! CURSPLITACC if DOSPLIT is true.  The current splitting criterion
     ! achieved is returned in SPLITCRIT.  If we are at the end of the
     ! grid point, grid cell, or spherical harmonic arrays (sizes given
     ! by MAXIG, MAXIC, MAXIV, MAXIDO) then the OUTOFMEM flag is returned true.
+
+    type(shd_type_ckd), intent(in) :: ckd_obj
 
     integer MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX
     integer NPTS, NCELLS, BCFLAG, IPFLAG
@@ -1671,7 +1679,7 @@ subroutine shd_grid__splitGrid(&
                         &SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN,&
                         &UNITS, WAVENO, WAVELEN,&
                         &EXTINCT, ALBEDO, LEGEN, IPHASE, TEMP, PLANCK, DIRFLUX,&
-                        &RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR)
+                        &RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR, ckd_obj)
                 end if
                 I = I + 1
             end do
@@ -1709,7 +1717,7 @@ subroutine shd_grid__splitGrid(&
                             &SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN,&
                             &UNITS, WAVENO, WAVELEN,&
                             &EXTINCT, ALBEDO, LEGEN, IPHASE, TEMP, PLANCK, DIRFLUX,&
-                            &RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR)
+                            &RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR, ckd_obj)
                     end if
                 end if
                 I = I + 1
@@ -1729,7 +1737,7 @@ subroutine shd_grid__splitGrid(&
                 call shd_mpi__makeDirect(OLDNPTS + 1, NPTS, BCFLAG,&
                     &IPFLAG, DELTAM, ML, NSTLEG, NLEG,&
                     &SOLARFLUX, SOLARMU, SOLARAZ, GRIDPOS,&
-                    &NX, XGRID, NY, YGRID, DIRFLUX)
+                    &NX, XGRID, NY, YGRID, DIRFLUX, ckd_obj)
             end if
         end if
     end if
