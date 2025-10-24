@@ -479,7 +479,7 @@ subroutine shd_mpi__bcastPrp(NPXT, NPYT, Nx_prp, Ny_prp, Nz_prp,&
 #if HAS_MPI
     integer :: SX, EX, Nx, SY, EY, Ny, N, MAXN, MaxNX, MaxNY
     integer :: iproc, irq, ierr
-    integer, allocatable :: IXYALL(:, :, :)
+    integer, allocatable :: ixyAll(:, :, :)
     real, allocatable :: realbuf(:), rbuf(:, :, :)
     real, allocatable :: tempbuf(:, :), extbuf(:, :), albbuf(:, :)
     integer*2, allocatable :: ibuf(:, :, :), iphbuf(:, :)
@@ -502,8 +502,8 @@ subroutine shd_mpi__bcastPrp(NPXT, NPYT, Nx_prp, Ny_prp, Nz_prp,&
     end if
 
     ! Get the ixyPrp_ arrays from all processors to tell where they are in property grid
-    allocate (IXYALL(2, 2, 0:Nproc_ - 1))
-    call mpi_gather(ixyPrp_, 4, MPI_integer, IXYALL, 4, MPI_integer, 0, comm2D_, ierr)
+    allocate (ixyAll(2, 2, 0:Nproc_ - 1))
+    call mpi_gather(ixyPrp_, 4, MPI_integer, ixyAll, 4, MPI_integer, 0, comm2D_, ierr)
 
     allocate (requests(4*Nproc_ + 4), status(4*Nproc_ + 4))
 
@@ -512,8 +512,8 @@ subroutine shd_mpi__bcastPrp(NPXT, NPYT, Nx_prp, Ny_prp, Nz_prp,&
         ! Allocate the send buffers for each processor
         MAXN = 1; MaxNX = 1; MaxNY = 1
         do iproc = 0, Nproc_ - 1
-            Nx = IXYALL(2, 1, iproc) - IXYALL(1, 1, iproc) + 1; MaxNX = max(MaxNX, Nx)
-            Ny = IXYALL(2, 2, iproc) - IXYALL(1, 2, iproc) + 1; MaxNY = max(MaxNY, Ny)
+            Nx = ixyAll(2, 1, iproc) - ixyAll(1, 1, iproc) + 1; MaxNX = max(MaxNX, Nx)
+            Ny = ixyAll(2, 2, iproc) - ixyAll(1, 2, iproc) + 1; MaxNY = max(MaxNY, Ny)
             MAXN = max(MAXN, Nz_prp*Ny*Nx)
         end do
         allocate (rbuf(Nz_prp, MaxNY, MaxNX), ibuf(Nz_prp, MaxNY, MaxNX))
@@ -522,8 +522,8 @@ subroutine shd_mpi__bcastPrp(NPXT, NPYT, Nx_prp, Ny_prp, Nz_prp,&
         ! The master processor reformats the four property arrays (to deal with
         ! the wrap around at the full domain edge) and sends the arrays with MPI.
         do iproc = 0, Nproc_ - 1
-            SX = IXYALL(1, 1, iproc); EX = IXYALL(2, 1, iproc)
-            SY = IXYALL(1, 2, iproc); EY = IXYALL(2, 2, iproc)
+            SX = ixyAll(1, 1, iproc); EX = ixyAll(2, 1, iproc)
+            SY = ixyAll(1, 2, iproc); EY = ixyAll(2, 2, iproc)
             Nx = EX - SX + 1; Ny = EY - SY + 1; N = Nx*Ny*Nz_prp
             rbuf(:, 1:Ny - 1, 1:Nx - 1) = TEMPPT(:, SY:EY - 1, SX:EX - 1)
             rbuf(:, 1:Ny - 1, Nx) = TEMPPT(:, SY:EY - 1, mod(EX - 1, NPXT) + 1)
@@ -565,7 +565,7 @@ subroutine shd_mpi__bcastPrp(NPXT, NPYT, Nx_prp, Ny_prp, Nz_prp,&
     call mpi_waitall(irq, requests, status, ierr)
 
     if (myProc_ .eq. 0) deallocate (tempbuf, extbuf, albbuf, iphbuf, rbuf, ibuf)
-    deallocate (requests, status, IXYALL, realbuf)
+    deallocate (requests, status, ixyAll, realbuf)
 #endif
 
     return
@@ -816,14 +816,14 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
 #if HAS_MPI
     integer :: IX, IY, Nx, Ny, NX1, NY1, MAXN, I, send3int(3), recv3int(3)
     integer :: iproc, ierr, irq
-    integer, allocatable :: IXYALL(:, :, :)
+    integer, allocatable :: ixyAll(:, :, :)
     real, allocatable :: sendbuf(:, :), recvbuf(:, :, :), buf(:, :, :, :)
 
     type(MPI_request), allocatable :: requests(:)
     type(MPI_status), allocatable :: status(:)
 
-    allocate (IXYALL(2, 2, 0:Nproc_ - 1))
-    call mpi_gather(ixyOut_, 4, MPI_integer, IXYALL, 4, MPI_integer, 0, comm2D_, ierr)
+    allocate (ixyAll(2, 2, 0:Nproc_ - 1))
+    call mpi_gather(ixyOut_, 4, MPI_integer, ixyAll, 4, MPI_integer, 0, comm2D_, ierr)
 
     allocate (requests(Nproc_), status(Nproc_))
 
@@ -836,7 +836,7 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
             call mpi_isend(sendbuf, 3*NBPTS, MPI_real, 0, 1, comm2D_,&
                 &requests(irq), ierr)
         else
-            MAXN = (maxval(IXYALL(2, 1, :)) + 1)*(maxval(IXYALL(2, 2, :)) + 1)*Nz
+            MAXN = (maxval(ixyAll(2, 1, :)) + 1)*(maxval(ixyAll(2, 2, :)) + 1)*Nz
             allocate (recvbuf(3, MAXN, 1:Nproc_ - 1))
             do iproc = 1, Nproc_ - 1
                 irq = irq + 1
@@ -847,8 +847,8 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
         call mpi_waitall(irq, requests, status, ierr)
 
         if (myProc_ .eq. 0) then
-            IX = IXYALL(1, 1, 0); Nx = IXYALL(2, 1, 0)
-            IY = IXYALL(1, 2, 0); Ny = IXYALL(2, 2, 0)
+            IX = ixyAll(1, 1, 0); Nx = ixyAll(2, 1, 0)
+            IY = ixyAll(1, 2, 0); Ny = ixyAll(2, 2, 0)
             NX1 = Nx + 1; NY1 = Ny + 1
             if (is1DX_ .and. .not. isMpiX_) NX1 = Nx
             if (is1DYx_ .and. .not. isMpiY_) NY1 = Ny
@@ -858,8 +858,8 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
             ALLFLUXES(1:3, 1:Nz, IY:IY + Ny - 1, IX:IX + Nx - 1) = buf(:, 1:Nz, 1:Ny, 1:Nx)
             deallocate (buf)
             do iproc = 1, Nproc_ - 1
-                IX = IXYALL(1, 1, iproc); Nx = IXYALL(2, 1, iproc)
-                IY = IXYALL(1, 2, iproc); Ny = IXYALL(2, 2, iproc)
+                IX = ixyAll(1, 1, iproc); Nx = ixyAll(2, 1, iproc)
+                IY = ixyAll(1, 2, iproc); Ny = ixyAll(2, 2, iproc)
                 NX1 = Nx + 1; NY1 = Ny + 1
                 if (is1DX_ .and. .not. isMpiX_) NX1 = Nx
                 if (is1DYx_ .and. .not. isMpiY_) NY1 = Ny
@@ -881,7 +881,7 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
             call mpi_isend(SUMFLUXDIV, NBPTS, MPI_real, 0, 2, comm2D_,&
                 &requests(irq), ierr)
         else
-            MAXN = (maxval(IXYALL(2, 1, :)) + 1)*(maxval(IXYALL(2, 2, :)) + 1)*Nz
+            MAXN = (maxval(ixyAll(2, 1, :)) + 1)*(maxval(ixyAll(2, 2, :)) + 1)*Nz
             allocate (recvbuf(1, MAXN, 1:Nproc_ - 1))
             do iproc = 1, Nproc_ - 1
                 irq = irq + 1
@@ -892,8 +892,8 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
         call mpi_waitall(irq, requests, status, ierr)
 
         if (myProc_ .eq. 0) then
-            IX = IXYALL(1, 1, 0); Nx = IXYALL(2, 1, 0)
-            IY = IXYALL(1, 2, 0); Ny = IXYALL(2, 2, 0)
+            IX = ixyAll(1, 1, 0); Nx = ixyAll(2, 1, 0)
+            IY = ixyAll(1, 2, 0); Ny = ixyAll(2, 2, 0)
             NX1 = Nx + 1; NY1 = Ny + 1
             if (is1DX_ .and. .not. isMpiX_) NX1 = Nx
             if (is1DYx_ .and. .not. isMpiY_) NY1 = Ny
@@ -902,8 +902,8 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
             ALLFLUXDIV(1:Nz, IY:IY + Ny - 1, IX:IX + Nx - 1) = buf(1, 1:Nz, 1:Ny, 1:Nx)
             deallocate (buf)
             do iproc = 1, Nproc_ - 1
-                IX = IXYALL(1, 1, iproc); Nx = IXYALL(2, 1, iproc)
-                IY = IXYALL(1, 2, iproc); Ny = IXYALL(2, 2, iproc)
+                IX = ixyAll(1, 1, iproc); Nx = ixyAll(2, 1, iproc)
+                IY = ixyAll(1, 2, iproc); Ny = ixyAll(2, 2, iproc)
                 NX1 = Nx + 1; NY1 = Ny + 1
                 if (is1DX_ .and. .not. isMpiX_) NX1 = Nx
                 if (is1DYx_ .and. .not. isMpiY_) NY1 = Ny
@@ -923,7 +923,7 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
             call mpi_isend(SUMSHTERMS, NSHOUT*NBPTS, MPI_real, 0, 3, comm2D_,&
                 &requests(irq), ierr)
         else
-            MAXN = (maxval(IXYALL(2, 1, :)) + 1)*(maxval(IXYALL(2, 2, :)) + 1)*Nz
+            MAXN = (maxval(ixyAll(2, 1, :)) + 1)*(maxval(ixyAll(2, 2, :)) + 1)*Nz
             allocate (recvbuf(NSHOUT, MAXN, 1:Nproc_ - 1))
             do iproc = 1, Nproc_ - 1
                 irq = irq + 1
@@ -934,8 +934,8 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
         call mpi_waitall(irq, requests, status, ierr)
 
         if (myProc_ .eq. 0) then
-            IX = IXYALL(1, 1, 0); Nx = IXYALL(2, 1, 0)
-            IY = IXYALL(1, 2, 0); Ny = IXYALL(2, 2, 0)
+            IX = ixyAll(1, 1, 0); Nx = ixyAll(2, 1, 0)
+            IY = ixyAll(1, 2, 0); Ny = ixyAll(2, 2, 0)
             NX1 = Nx + 1; NY1 = Ny + 1
             if (is1DX_ .and. .not. isMpiX_) NX1 = Nx
             if (is1DYx_ .and. .not. isMpiY_) NY1 = Ny
@@ -944,8 +944,8 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
             ALLSHTERMS(:, 1:Nz, IY:IY + Ny - 1, IX:IX + Nx - 1) = buf(:, 1:Nz, 1:Ny, 1:Nx)
             deallocate (buf)
             do iproc = 1, Nproc_ - 1
-                IX = IXYALL(1, 1, iproc); Nx = IXYALL(2, 1, iproc)
-                IY = IXYALL(1, 2, iproc); Ny = IXYALL(2, 2, iproc)
+                IX = ixyAll(1, 1, iproc); Nx = ixyAll(2, 1, iproc)
+                IY = ixyAll(1, 2, iproc); Ny = ixyAll(2, 2, iproc)
                 NX1 = Nx + 1; NY1 = Ny + 1
                 if (is1DX_ .and. .not. isMpiX_) NX1 = Nx
                 if (is1DYx_ .and. .not. isMpiY_) NY1 = Ny
@@ -969,7 +969,7 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
     call mpi_reduce(send3int, recv3int, 3, MPI_integer, MPI_sum, 0, comm2D_, ierr)
     NCELLSTOT = recv3int(1); NPTSTOT = recv3int(2); NSHTOT = recv3int(3)
 
-    deallocate (IXYALL, requests, status)
+    deallocate (ixyAll, requests, status)
 #endif
 
     return
@@ -2750,7 +2750,7 @@ subroutine shd_mpi__end(NPTS, xyz_Grid, Nx_prp, Ny_prp, XSTART, YSTART, XDOMAIN,
 #if HAS_MPI
     integer :: I, IX, IY, MAXN, SX, SY, EX, EY, Nx, Ny
     integer :: iproc, ierr, irq
-    integer, allocatable :: NUMGRID(:, :), NUMGRIDALL(:, :), NORM(:, :), IXYALL(:, :, :)
+    integer, allocatable :: NUMGRID(:, :), NUMGRIDALL(:, :), NORM(:, :), ixyAll(:, :, :)
     integer, allocatable :: recvbuf(:, :), buf(:, :)
     real :: dx_prp, dy_prp
     real :: ElapsedTime
@@ -2774,8 +2774,8 @@ subroutine shd_mpi__end(NPTS, xyz_Grid, Nx_prp, Ny_prp, XSTART, YSTART, XDOMAIN,
 
         if (Nproc_ .gt. 1) then
             ! Have the master process collect the property grid locations of all
-            allocate (IXYALL(2, 2, 0:Nproc_ - 1))
-            call mpi_gather(ixyPrp_, 4, MPI_integer, IXYALL, 4, MPI_integer, 0, comm2D_, ierr)
+            allocate (ixyAll(2, 2, 0:Nproc_ - 1))
+            call mpi_gather(ixyPrp_, 4, MPI_integer, ixyAll, 4, MPI_integer, 0, comm2D_, ierr)
 
             ! Send the NUMGRIDs to the master processor
             allocate (requests(Nproc_), status(Nproc_))
@@ -2785,7 +2785,7 @@ subroutine shd_mpi__end(NPTS, xyz_Grid, Nx_prp, Ny_prp, XSTART, YSTART, XDOMAIN,
                 call mpi_isend(NUMGRID, Nx_prp*Ny_prp, MPI_integer, 0, 777, comm2D_,&
                     &requests(irq), ierr)
             else
-                MAXN = (maxval(IXYALL(2, 1, :) - IXYALL(1, 1, :)) + 1)*(maxval(IXYALL(2, 2, :) - IXYALL(1, 2, :)) + 1)
+                MAXN = (maxval(ixyAll(2, 1, :) - ixyAll(1, 1, :)) + 1)*(maxval(ixyAll(2, 2, :) - ixyAll(1, 2, :)) + 1)
                 allocate (recvbuf(MAXN, 1:Nproc_ - 1))
                 do iproc = 1, Nproc_ - 1
                     irq = irq + 1
@@ -2801,13 +2801,13 @@ subroutine shd_mpi__end(NPTS, xyz_Grid, Nx_prp, Ny_prp, XSTART, YSTART, XDOMAIN,
             if (myProc_ .eq. 0) then
                 allocate (NUMGRIDALL(NPXT, NPYT), NORM(NPXT, NPYT))
                 NUMGRIDALL(:, :) = 0; NORM(:, :) = 0
-                SX = IXYALL(1, 1, 0); EX = IXYALL(2, 1, 0); Nx = EX - SX + 1
-                SY = IXYALL(1, 2, 0); EY = IXYALL(2, 2, 0); Ny = EY - SY + 1
+                SX = ixyAll(1, 1, 0); EX = ixyAll(2, 1, 0); Nx = EX - SX + 1
+                SY = ixyAll(1, 2, 0); EY = ixyAll(2, 2, 0); Ny = EY - SY + 1
                 NUMGRIDALL(SX:EX, SY:EY) = NUMGRID(:, :)
                 NORM(SX:EX, SY:EY) = reshape((/1/), (/Nx, Ny/), (/1/))
                 do iproc = 1, Nproc_ - 1
-                    SX = IXYALL(1, 1, iproc); EX = IXYALL(2, 1, iproc); Nx = EX - SX + 1
-                    SY = IXYALL(1, 2, iproc); EY = IXYALL(2, 2, iproc); Ny = EY - SY + 1
+                    SX = ixyAll(1, 1, iproc); EX = ixyAll(2, 1, iproc); Nx = EX - SX + 1
+                    SY = ixyAll(1, 2, iproc); EY = ixyAll(2, 2, iproc); Ny = EY - SY + 1
                     allocate (buf(Nx, Ny))
                     buf(:, :) = reshape(recvbuf(1:Nx*Ny, iproc), (/Nx, Ny/))
                     NUMGRIDALL(SX:EX - 1, SY:EY - 1) = NUMGRIDALL(SX:EX - 1, SY:EY - 1) + buf(1:Nx - 1, 1:Ny - 1)
@@ -2833,7 +2833,7 @@ subroutine shd_mpi__end(NPTS, xyz_Grid, Nx_prp, Ny_prp, XSTART, YSTART, XDOMAIN,
             end if
 
             ! checked
-            deallocate (requests, status, IXYALL)
+            deallocate (requests, status, ixyAll)
 
         else
             allocate (NUMGRIDALL(NPXT, NPYT))
