@@ -109,7 +109,7 @@ subroutine shd_io__userInp(&
     character(len=charMaxLen_) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE, SENFILE
     character(len=charMaxLen_) :: OutFileNC, RUNNAME
     integer(kind=1) :: VERBOSE
-    integer I, J, N
+    integer i, j, N
     real GNDEMIS
 
     SOLARMU = -1.0
@@ -248,63 +248,63 @@ subroutine shd_io__userInp(&
     read (*, *) NUMOUT
     write (*, *) NUMOUT
     if (NUMOUT .gt. MAXOUT) stop 'Error [_userInp]: MAXOUT exceeded.'
-    do I = 1, NUMOUT
+    do i = 1, NUMOUT
         write (*, '(1X,A,A)') 'Output type (R-radiance, ',&
             &'V-visualization, F-flux, H-heating,'
         write (*, '(14X,A)') 'S-spherical harmonic, J-source, M-medium)'
-        read (*, '(A)') OUTTYPES(I)
-        write (*, *) OUTTYPES(I)
-        if (OUTTYPES(I) (1:1) .eq. 'R') then
+        read (*, '(A)') OUTTYPES(i)
+        write (*, *) OUTTYPES(i)
+        if (OUTTYPES(i) (1:1) .eq. 'R') then
             write (*, '(1X,A,A)')&
                 &'Z level, X and Y spacing, X and Y offset, ',&
                 &'number of angles, and mu, phi pairs'
-            read (*, *) OUTPARMS(1, I), OUTPARMS(2, I), OUTPARMS(3, I),&
-                &OUTPARMS(4, I), OUTPARMS(5, I),&
-                &N, (OUTPARMS(J + 6, I), J=1, min(2*N, MAXPAR - 6))
+            read (*, *) OUTPARMS(1, i), OUTPARMS(2, i), OUTPARMS(3, i),&
+                &OUTPARMS(4, i), OUTPARMS(5, i),&
+                &N, (OUTPARMS(j + 6, i), j=1, min(2*N, MAXPAR - 6))
             if (N .gt. (MAXPAR - 6)/2) then
-                print *, 'Error [_userInp]: Number of radiance angles is too large for MAXPAR'
+                write (*, *) 'Error [_userInp]: Number of radiance angles is too large for MAXPAR'
                 stop
             end if
             N = min(N, (MAXPAR - 6)/2)
-            OUTPARMS(6, I) = float(N)
-            write (*, *) (OUTPARMS(J, I), J=1, 2*N + 6)
-        else if (OUTTYPES(I) (1:1) .eq. 'V') then
+            OUTPARMS(6, i) = float(N)
+            write (*, *) (OUTPARMS(j, i), j=1, 2*N + 6)
+        else if (OUTTYPES(i) (1:1) .eq. 'V') then
             write (*, '(1X,A,A)')&
                 &'1, bytes,scale, X,Y,Z, theta,phi,rotang, NL,NS, delline,delsamp'
             write (*, '(1X,A,A)')&
                 &'2, bytes,scale, X1,Y1,Z1, X2,Y2,Z2, spacing, scan1,scan2,delscan'
-            read (*, *) (OUTPARMS(J, I), J=1, 13)
-            write (*, *) (OUTPARMS(J, I), J=1, 13)
-        else if (OUTTYPES(I) (1:1) .eq. 'F') then
+            read (*, *) (OUTPARMS(j, i), j=1, 13)
+            write (*, *) (OUTPARMS(j, i), j=1, 13)
+        else if (OUTTYPES(i) (1:1) .eq. 'F') then
             write (*, '(1X,A)')&
                 &'Format (1,2,3,4,5), [Z, del X, del Y for format 2]'
-            read (*, *) N, (OUTPARMS(1 + J, I), J=1, 3*max(0, 1 - abs(N - 2)))
-            OUTPARMS(1, I) = float(N)
+            read (*, *) N, (OUTPARMS(1 + j, i), j=1, 3*max(0, 1 - abs(N - 2)))
+            OUTPARMS(1, i) = float(N)
             if (N .eq. 2) then
-                write (*, *) N, (OUTPARMS(1 + J, I), J=1, 3)
+                write (*, *) N, (OUTPARMS(1 + j, i), j=1, 3)
             else
                 write (*, *) N
             end if
-        else if (OUTTYPES(I) (1:1) .eq. 'H') then
+        else if (OUTTYPES(i) (1:1) .eq. 'H') then
             write (*, '(1X,A)') 'Format (1,2,3)'
-            read (*, *) OUTPARMS(1, I)
-            write (*, *) OUTPARMS(1, I)
-        else if (OUTTYPES(I) (1:1) .eq. 'S') then
+            read (*, *) OUTPARMS(1, i)
+            write (*, *) OUTPARMS(1, i)
+        else if (OUTTYPES(i) (1:1) .eq. 'S') then
             write (*, '(1X,A)') 'Format (1,2)'
-            read (*, *) OUTPARMS(1, I)
-            write (*, *) OUTPARMS(1, I)
-        else if (OUTTYPES(I) (1:1) .eq. 'J') then
+            read (*, *) OUTPARMS(1, i)
+            write (*, *) OUTPARMS(1, i)
+        else if (OUTTYPES(i) (1:1) .eq. 'J') then
             write (*, '(1X,A)') 'Format (1,2),  mu, phi '
-            read (*, *) OUTPARMS(1, I), OUTPARMS(2, I), OUTPARMS(3, I)
-            write (*, *) OUTPARMS(1, I), OUTPARMS(2, I), OUTPARMS(3, I)
-        else if (OUTTYPES(I) (1:1) .eq. 'M') then
+            read (*, *) OUTPARMS(1, i), OUTPARMS(2, i), OUTPARMS(3, i)
+            write (*, *) OUTPARMS(1, i), OUTPARMS(2, i), OUTPARMS(3, i)
+        else if (OUTTYPES(i) (1:1) .eq. 'M') then
             write (*, '(1X,A)') 'Format (1,2)'
-            read (*, *) OUTPARMS(1, I)
-            write (*, *) OUTPARMS(1, I)
+            read (*, *) OUTPARMS(1, i)
+            write (*, *) OUTPARMS(1, i)
         end if
         write (*, '(1X,A,A)') 'Output file name'
-        read (*, '(A)') OUTFILES(I)
-        write (*, '(A)') OUTFILES(I)
+        read (*, '(A)') OUTFILES(i)
+        write (*, '(A)') OUTFILES(i)
     end do
 
     write (*, '(1X,A)') 'Output netcdf file name (or NONE or "")'
@@ -373,7 +373,7 @@ subroutine shd_io__nmlInp(&
     character(len=charMaxLen_) :: dPROPFILE, dSFCFILE, dCKDFILE
     character(len=charMaxLen_) :: dINSAVEFILE, dOUTSAVEFILE, dSENFILE
     integer(kind=1) :: dVERBOSE
-    integer I, J, N
+    integer i, j, N
 
     integer MAXOUT, MAXPAR
     parameter(MAXOUT=20, MAXPAR=100)
@@ -480,50 +480,50 @@ subroutine shd_io__nmlInp(&
 
     dNUMOUT = NUMOUT
     if (NUMOUT .gt. MAXOUT) stop 'Error [_nmlInp]: MAXOUT exceeded.'
-    do I = 1, NUMOUT
-        dOUTTYPES(I) = OUTTYPES(I)
-        if (OUTTYPES(I) (1:1) .eq. 'R') then
+    do i = 1, NUMOUT
+        dOUTTYPES(i) = OUTTYPES(i)
+        if (OUTTYPES(i) (1:1) .eq. 'R') then
             ! new binary angle input do not need the loop above
             if (SENFILE(1:4) .ne. 'NONE') then
-                do J = 1, 6
-                    dOUTPARMS(J, I) = OUTPARMS(J, I)
+                do j = 1, 6
+                    dOUTPARMS(j, i) = OUTPARMS(j, i)
                 end do
             else
-                N = nint(OUTPARMS(6, I))
-                do J = 1, min(2*N + 6, MAXPAR)
-                    dOUTPARMS(J, I) = OUTPARMS(J, I)
+                N = nint(OUTPARMS(6, i))
+                do j = 1, min(2*N + 6, MAXPAR)
+                    dOUTPARMS(j, i) = OUTPARMS(j, i)
                 end do
             end if
-        else if (OUTTYPES(I) (1:1) .eq. 'V') then
-            dOUTPARMS(1, I) = OUTPARMS(1, I)
-            dOUTPARMS(2, I) = OUTPARMS(2, I)
-            dOUTPARMS(3, I) = OUTPARMS(3, I)
+        else if (OUTTYPES(i) (1:1) .eq. 'V') then
+            dOUTPARMS(1, i) = OUTPARMS(1, i)
+            dOUTPARMS(2, i) = OUTPARMS(2, i)
+            dOUTPARMS(3, i) = OUTPARMS(3, i)
             ! new user-specified sensor mode V3 only need 3 parameters
             ! read more parameters if for V1 and V2
-            if (nint(OUTPARMS(1, I)) .le. 2) then
-                do J = 4, 13
-                    dOUTPARMS(J, I) = OUTPARMS(J, I)
+            if (nint(OUTPARMS(1, i)) .le. 2) then
+                do j = 4, 13
+                    dOUTPARMS(j, i) = OUTPARMS(j, i)
                 end do
             end if
-        else if (OUTTYPES(I) (1:1) .eq. 'F') then
-            dOUTPARMS(1, I) = OUTPARMS(1, I)
-            if (nint(OUTPARMS(1, I)) .eq. 2) then
-                do J = 2, 4
-                    dOUTPARMS(J, I) = OUTPARMS(J, I)
+        else if (OUTTYPES(i) (1:1) .eq. 'F') then
+            dOUTPARMS(1, i) = OUTPARMS(1, i)
+            if (nint(OUTPARMS(1, i)) .eq. 2) then
+                do j = 2, 4
+                    dOUTPARMS(j, i) = OUTPARMS(j, i)
                 end do
             end if
-        else if (OUTTYPES(I) (1:1) .eq. 'H') then
-            dOUTPARMS(1, I) = OUTPARMS(1, I)
-        else if (OUTTYPES(I) (1:1) .eq. 'S') then
-            dOUTPARMS(1, I) = OUTPARMS(1, I)
-        else if (OUTTYPES(I) (1:1) .eq. 'J') then
-            dOUTPARMS(1, I) = OUTPARMS(1, I)
-            dOUTPARMS(2, I) = OUTPARMS(2, I)
-            dOUTPARMS(3, I) = OUTPARMS(3, I)
-        else if (OUTTYPES(I) (1:1) .eq. 'M') then
-            dOUTPARMS(1, I) = OUTPARMS(1, I)
+        else if (OUTTYPES(i) (1:1) .eq. 'H') then
+            dOUTPARMS(1, i) = OUTPARMS(1, i)
+        else if (OUTTYPES(i) (1:1) .eq. 'S') then
+            dOUTPARMS(1, i) = OUTPARMS(1, i)
+        else if (OUTTYPES(i) (1:1) .eq. 'J') then
+            dOUTPARMS(1, i) = OUTPARMS(1, i)
+            dOUTPARMS(2, i) = OUTPARMS(2, i)
+            dOUTPARMS(3, i) = OUTPARMS(3, i)
+        else if (OUTTYPES(i) (1:1) .eq. 'M') then
+            dOUTPARMS(1, i) = OUTPARMS(1, i)
         end if
-        dOUTFILES(I) = OUTFILES(I)
+        dOUTFILES(i) = OUTFILES(i)
     end do
 
     dOutFileNC = OutFileNC
@@ -663,7 +663,13 @@ subroutine shd_io__readPrpSize(prp_obj)
     end if
 
     read (11, *) prp_obj%Nx, prp_obj%Ny, prp_obj%Nz
+    prp_obj%maxNz = prp_obj%Nz
+    prp_obj%maxNpts = prp_obj%Nx * prp_obj%Ny * prp_obj%Nz
+
     read (11, *) prp_obj%dx, prp_obj%dy, (z0, k=1, prp_obj%Nz)
+    prp_obj%xDomain = prp_obj%Nx * prp_obj%dx
+    prp_obj%yDomain = prp_obj%Ny * prp_obj%dy
+
 
     ! Property file type E is for extinction only format
     if (prp_obj%type .eq. 'E') then
@@ -702,6 +708,8 @@ subroutine shd_io__readPrpSize(prp_obj)
 
     else
 
+        prp_obj%Npha = 0
+
         ! Standard property file has everything variable
         prp_obj%maxNleg = prp_obj%Nleg
         do while (.true.)
@@ -722,11 +730,7 @@ subroutine shd_io__readPrpSize(prp_obj)
 
 end subroutine shd_io__readPrpSize
 
-subroutine shd_io__readPrp(&
-    &PROPFILE, NPX, NPY, NPZ,&
-    &NSTLEG, MAXLEG, NLEG, MAXNZ, MAXPG, MAXPGL, DELTAM,&
-    &PROPTYPE, DELX, DELY, ZLEVELS, MAXASYM,&
-    &TEMPP, EXTINCTP, ALBEDOP, LEGENP, NUMPHASE, IPHASEP)
+subroutine shd_io__readPrp(isDeltaM, prp_obj)
 
     ! Reads the medium properties from the file into the property arrays.
     ! There are four formats: the standard format specifies the extinction,
@@ -739,151 +743,168 @@ subroutine shd_io__readPrp(&
     ! The polarized format specifies the six unique elements of the phase
     ! (Mueller) matrix in the header and includes the l=0 term.
     ! If the format is extinction only or tabulated phase function then
-    ! NUMPHASE is the number of phase functions, otherwise NUMPHASE=0.
-    ! If doing delta-M then NLEG is the minimum number of Legendre terms on
+    ! prp_obj%Npha is the number of phase functions, otherwise prp_obj%Npha=0.
+    ! If doing delta-M then prp_obj%Nleg is the minimum number of Legendre terms on
     ! input and the actual maximum number of terms on output, except that
-    ! it may not exceed MAXLEG; otherwise NLEG is the number of Legendre
+    ! it may not exceed prp_obj%maxNleg; otherwise prp_obj%Nleg is the number of Legendre
     ! terms to be used (regardless of what is in property file).
     ! See the overall program documentation for the four file formats.
 
-    integer NPX, NPY, NPZ, NSTLEG, MAXLEG, NLEG, NUMPHASE
-    integer MAXNZ, MAXPG, MAXPGL
-    integer*2 IPHASEP(*)
-    logical DELTAM
-    real DELX, DELY, ZLEVELS(*)
-    real TEMPP(*), EXTINCTP(*)
-    real ALBEDOP(*), LEGENP(*), MAXASYM
-    character(len=*), intent(in) :: PROPFILE
-    character(len=1) :: PROPTYPE
-    integer I, IX, IY, IZ, J, JS, K, KL, L, IL, NUML, IPH, N
-    real :: TMP, EXT, ALB, CHI
+    logical, intent(in) :: isDeltaM
+
+    type(shd_type_prp), intent(inout) :: prp_obj
+
+    integer i, ix, iy, iz, j, js, k, kl, l, il, Nleg, ipha0, N
+    real :: temp0, ext0, ssa0, chi0
 
     character(len=charMaxLen_) :: fnameBin
     character(len=charMaxLen_) :: lineTmp
     character(len=charMaxLen_) :: lineDim
     character(len=20) :: dataPostfix
-    integer :: NXX, NYY, NZZ, NPP
+    integer :: Nxx, Nyy, Nzz, Npp
 
     ! Open the file, figure out the type, and get the grid size
-    open (UNIT=1, FILE=trim(adjustl(PROPFILE)), STATUS='OLD')
-    read (1, '(A1)') PROPTYPE
-    if (PROPTYPE .ne. 'E' .and. PROPTYPE .ne. 'T'&
-        &.and. PROPTYPE .ne. 'P') rewind (1)
-    if (PROPTYPE .ne. 'P' .and. NSTLEG .gt. 1) then
-        write (*, '(A,A)') 'Error [_readPrp]: NSTOKES>1 requires ',&
+    open (unit=1, file=trim(adjustl(prp_obj%fname)), status='old')
+
+    read (1, '(A1)') prp_obj%type
+
+    if (prp_obj%type .ne. 'E' .and. prp_obj%type .ne. 'T'&
+        &.and. prp_obj%type .ne. 'P') rewind (1)
+
+    if (prp_obj%type .ne. 'P' .and. prp_obj%NlegSet .gt. 1) then
+        write (*, '(A,A)') 'Error [_readPrp]: Nstokes>1 requires ',&
             &'Polarized phase function property file.'
         stop
     end if
-    read (1, *) NPX, NPY, NPZ
-    if (NPZ .gt. MAXNZ) stop 'Error [_readPrp]: MAXNZ exceeded.'
-    read (1, *) DELX, DELY, (ZLEVELS(K), K=1, NPZ)
+
+    read (1, *) prp_obj%Nx, prp_obj%Ny, prp_obj%Nz
+
+    if (prp_obj%Nz .gt. prp_obj%maxNz) stop 'Error [_readPrp]: prp_obj%maxNz exceeded.'
+
+    read (1, *) prp_obj%dx, prp_obj%dy, (prp_obj%dataRaw_z(k), k=1, prp_obj%Nz)
 
     ! Property file type E is for extinction only format
-    if (PROPTYPE .eq. 'E') then
-        NUMPHASE = 1
-        read (1, *) (TMP, IZ=1, NPZ)
-        read (1, *) ALB, NUML
-        if (DELTAM) then
-            NLEG = max(NLEG, NUML)
-            NLEG = min(NLEG, MAXLEG)
+    if (prp_obj%type .eq. 'E') then
+
+        prp_obj%Npha = 1
+
+        read (1, *) (temp0, iz=1, prp_obj%Nz)
+        read (1, *) ssa0, Nleg
+
+        if (isDeltaM) then
+            prp_obj%Nleg = max(prp_obj%Nleg, Nleg)
+            prp_obj%Nleg = min(prp_obj%Nleg, prp_obj%maxNleg)
         end if
-        if (NPX*NPY*NPZ .gt. MAXPG)&
-            &stop 'Error [_readPrp]: MAXPG exceeded.'
-        if (NLEG + 1 .gt. MAXPGL)&
-            &stop 'Error [_readPrp]: MAXPGL exceeded.'
+
+        if (prp_obj%Nx * prp_obj%Ny * prp_obj%Nz .gt. prp_obj%maxNpts) then
+            stop 'Error [_readPrp]: prp_obj%maxNpts exceeded.'
+        end if
+
+        if (prp_obj%Nleg + 1 .gt. prp_obj%maxNptsLeg)&
+            &stop 'Error [_readPrp]: prp_obj%maxNptsLeg exceeded.'
+
         rewind (1)
         read (1, *)
-        read (1, *) NPX, NPY, NPZ
-        read (1, *) DELX, DELY, (ZLEVELS(K), K=1, NPZ)
-        read (1, *) (TEMPP(IZ), IZ=1, NPZ)
-        read (1, *) ALB, NUML, (LEGENP(L + 1), L=1, min(NUML, NLEG)),&
-            &(CHI, L=NLEG + 1, NUML)
+        read (1, *) prp_obj%Nx, prp_obj%Ny, prp_obj%Nz
+        read (1, *) prp_obj%dx, prp_obj%dy, (prp_obj%dataRaw_z(k), k=1, prp_obj%Nz)
+        read (1, *) (prp_obj%dataRaw_temp(iz), iz=1, prp_obj%Nz)
 
-        LEGENP(1) = 1.0
-        MAXASYM = LEGENP(1 + 1)/3.0
-        do L = NUML + 1, NLEG
-            LEGENP(L) = 0.0
+        read (1, *) ssa0, Nleg, (prp_obj%dataRaw_leg(l + 1), l=1, min(Nleg, prp_obj%Nleg)),&
+            &(chi0, l=prp_obj%Nleg + 1, Nleg)
+
+        prp_obj%dataRaw_leg(1) = 1.0
+
+        prp_obj%maxAsym = prp_obj%dataRaw_leg(1 + 1)/3.0
+        do l = Nleg + 1, prp_obj%Nleg
+            prp_obj%dataRaw_leg(l) = 0.0
         end do
 
-        IY = 1
+        iy = 1
         do while (.true.)
-            if (NPY .eq. 1) then
-                read (1, *, end=290) IX, IZ, EXT
+            if (prp_obj%Ny .eq. 1) then
+                read (1, *, end=290) ix, iz, ext0
             else
-                read (1, *, end=290) IX, IY, IZ, EXT
+                read (1, *, end=290) ix, iy, iz, ext0
             end if
-            if (IX .ge. 1 .and. IX .le. NPX .and.&
-               &IY .ge. 1 .and. IY .le. NPY .and.&
-               &IZ .ge. 1 .and. IZ .le. NPZ) then
-                K = IZ + NPZ*(IY - 1) + NPZ*NPY*(IX - 1)
-                TEMPP(K) = TEMPP(IZ)
-                EXTINCTP(K) = EXT
-                ALBEDOP(K) = ALB
-                IPHASEP(K) = 1
+            if (ix .ge. 1 .and. ix .le. prp_obj%Nx .and.&
+               &iy .ge. 1 .and. iy .le. prp_obj%Ny .and.&
+               &iz .ge. 1 .and. iz .le. prp_obj%Nz) then
+                k = iz + prp_obj%Nz*(iy - 1) + prp_obj%Nz*prp_obj%Ny*(ix - 1)
+                prp_obj%dataRaw_temp(k) = prp_obj%dataRaw_temp(iz)
+                prp_obj%dataRaw_ext(k)  = ext0
+                prp_obj%dataRaw_ssa(k)  = ssa0
+                prp_obj%dataRaw_ipha(k) = 1
             end if
         end do
 
     ! Property file type T or P is for tabulated phase function format
-    else if (PROPTYPE .eq. 'T' .or. PROPTYPE .eq. 'P') then
+    else if (prp_obj%type .eq. 'T' .or. prp_obj%type .eq. 'P') then
 
-        read (1, *) NUMPHASE
+        read (1, *) prp_obj%Npha
+
         ! If delta-M then find the largest number of Legendre terms
-        if (DELTAM) then
+        if (isDeltaM) then
 
-            do I = 1, NUMPHASE
-                if (PROPTYPE .eq. 'T') then
-                    read (1, *) NUML, (CHI, L=1, NUML)
+            do i = 1, prp_obj%Npha
+                if (prp_obj%type .eq. 'T') then
+                    read (1, *) Nleg, (chi0, l=1, Nleg)
                 else
-                    do J = 1, 6
-                        read (1, *) JS, NUML, (CHI, L=0, NUML)
+                    do j = 1, 6
+                        read (1, *) js, Nleg, (chi0, l=0, Nleg)
                     end do
                 end if
-                NLEG = max(NUML, NLEG)
+                prp_obj%Nleg = max(Nleg, prp_obj%Nleg)
             end do
 
-            if (NLEG .gt. MAXLEG) then
+            if (prp_obj%Nleg .gt. prp_obj%maxNleg) then
                 if (verbose_ .ge. 4) write (*, '(A,I4,A,I4,A)')&
                     &'Warning [_readPrp]: Truncating phase function from ',&
-                    &NLEG, ' to ', MAXLEG, ' Legendre terms.'
+                    &prp_obj%Nleg, ' to ', prp_obj%maxNleg, ' Legendre terms.'
             end if
-            NLEG = min(NLEG, MAXLEG)
+            prp_obj%Nleg = min(prp_obj%Nleg, prp_obj%maxNleg)
 
         end if
 
-        N = NPX*NPY*NPZ
-        if (N .gt. MAXPG) stop 'Error [_readPrp]: MAXPG exceeded.'
-        if (NUMPHASE*(NLEG + 1)*NSTLEG .gt. MAXPGL)&
-            &stop 'Error [_readPrp]: MAXPGL exceeded.'
+        N = prp_obj%Nx * prp_obj%Ny * prp_obj%Nz
+
+        if (N .gt. prp_obj%maxNpts) stop 'Error [_readPrp]: prp_obj%maxNpts exceeded.'
+
+        if (prp_obj%Npha*(prp_obj%Nleg+1)*prp_obj%NlegSet .gt. prp_obj%maxNptsLeg)&
+            &stop 'Error [_readPrp]: prp_obj%maxNptsLeg exceeded.'
+
         rewind (1)
         read (1, *)
-        read (1, *) NPX, NPY, NPZ
-        read (1, *) DELX, DELY, (ZLEVELS(K), K=1, NPZ)
-        read (1, *) NUMPHASE
-        MAXASYM = -1.0
-        do I = 1, NUMPHASE
-            IL = (NLEG + 1)*(I - 1)
-            if (PROPTYPE .eq. 'T') then
-                LEGENP(IL + 1) = 1.0
-                read (1, *) NUML, (LEGENP(IL + L + 1), L=1, min(NUML, NLEG)),&
-                    &(CHI, L=NLEG + 1, NUML)
-                do L = NUML + 1, NLEG
-                    LEGENP(L + IL + 1) = 0.0
+        read (1, *) prp_obj%Nx, prp_obj%Ny, prp_obj%Nz
+        read (1, *) prp_obj%dx, prp_obj%dy, (prp_obj%dataRaw_z(k), k=1, prp_obj%Nz)
+        read (1, *) prp_obj%Npha
+
+        prp_obj%maxAsym = -1.0
+        do i = 1, prp_obj%Npha
+
+            il = (prp_obj%Nleg + 1)*(i - 1)
+
+            if (prp_obj%type .eq. 'T') then
+                prp_obj%dataRaw_leg(il + 1) = 1.0
+                read (1, *) Nleg, (prp_obj%dataRaw_leg(il + l + 1), l=1, min(Nleg, prp_obj%Nleg)),&
+                    &(chi0, l=prp_obj%Nleg + 1, Nleg)
+                do l = Nleg + 1, prp_obj%Nleg
+                    prp_obj%dataRaw_leg(l + il + 1) = 0.0
                 end do
             else
-                do J = 1, 6
-                    if (J .le. NSTLEG) then
-                        read (1, *) JS, NUML,&
-                            &(LEGENP((IL + L)*NSTLEG + J), L=0, min(NUML, NLEG)),&
-                            &(CHI, L=NLEG + 1, NUML)
-                        do L = NUML + 1, NLEG
-                            LEGENP((IL + L)*NSTLEG + J) = 0.0
+                do j = 1, 6
+                    if (j .le. prp_obj%NlegSet) then
+                        read (1, *) js, Nleg,&
+                            &(prp_obj%dataRaw_leg((il + l)*prp_obj%NlegSet + j), l=0, min(Nleg, prp_obj%Nleg)),&
+                            &(chi0, l=prp_obj%Nleg + 1, Nleg)
+                        do l = Nleg + 1, prp_obj%Nleg
+                            prp_obj%dataRaw_leg((il + l)*prp_obj%NlegSet + j) = 0.0
                         end do
                     else
-                        read (1, *) JS, NUML, (CHI, L=0, NUML)
+                        read (1, *) js, Nleg, (chi0, l=0, Nleg)
                     end if
                 end do
             end if
-            MAXASYM = max(MAXASYM, LEGENP((IL + 1)*NSTLEG + 1)/3.0)
+            prp_obj%maxAsym = max(prp_obj%maxAsym, prp_obj%dataRaw_leg((il + 1)*prp_obj%NlegSet + 1)/3.0)
         end do
 
         read (1, '(A)') lineTmp ! skip one line
@@ -893,24 +914,24 @@ subroutine shd_io__readPrp(&
             read (1, '(A)') dataPostfix
             read (1, '(A)') lineDim
 
-            read (lineDim( 3:12), '(I10)') NXX
-            read (lineDim(14:23), '(I10)') NYY
-            read (lineDim(25:34), '(I10)') NZZ
-            read (lineDim(36:45), '(I10)') NPP
+            read (lineDim( 3:12), '(I10)') Nxx
+            read (lineDim(14:23), '(I10)') Nyy
+            read (lineDim(25:34), '(I10)') Nzz
+            read (lineDim(36:45), '(I10)') Npp
 
-            fnameBin = trim(adjustl(PROPFILE))//trim(adjustl(dataPostfix(2:)))
+            fnameBin = trim(adjustl(prp_obj%fname))//trim(adjustl(dataPostfix(2:)))
 
             open (UNIT=88, FILE=trim(adjustl(fnameBin)), STATUS='OLD',&
                 &ACCESS='STREAM', FORM='UNFORMATTED')
 
-            ! TEMPP: real(4)
-            read (88) (((   TEMPP(IZ+NPZ*(IY-1)+NPZ*NPY*(IX-1)), IZ=1,NZZ), IY=1,NYY), IX=1,NXX)
-            ! EXTINCTP: real(4)
-            read (88) (((EXTINCTP(IZ+NPZ*(IY-1)+NPZ*NPY*(IX-1)), IZ=1,NZZ), IY=1,NYY), IX=1,NXX)
-            ! ALBEDOP: real(4)
-            read (88) ((( ALBEDOP(IZ+NPZ*(IY-1)+NPZ*NPY*(IX-1)), IZ=1,NZZ), IY=1,NYY), IX=1,NXX)
-            ! IPHASEP: integer(2)
-            read (88) ((( IPHASEP(IZ+NPZ*(IY-1)+NPZ*NPY*(IX-1)), IZ=1,NZZ), IY=1,NYY), IX=1,NXX)
+            ! prp_obj%dataRaw_temp: real(4)
+            read (88) (((prp_obj%dataRaw_temp(iz+prp_obj%Nz*(iy-1)+prp_obj%Nz*prp_obj%Ny*(ix-1)), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
+            ! prp_obj%dataRaw_ext: real(4)
+            read (88) ((( prp_obj%dataRaw_ext(iz+prp_obj%Nz*(iy-1)+prp_obj%Nz*prp_obj%Ny*(ix-1)), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
+            ! prp_obj%dataRaw_ssa: real(4)
+            read (88) ((( prp_obj%dataRaw_ssa(iz+prp_obj%Nz*(iy-1)+prp_obj%Nz*prp_obj%Ny*(ix-1)), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
+            ! prp_obj%dataRaw_ipha: integer(2)
+            read (88) (((prp_obj%dataRaw_ipha(iz+prp_obj%Nz*(iy-1)+prp_obj%Nz*prp_obj%Ny*(ix-1)), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
 
             close (88)
 
@@ -921,15 +942,15 @@ subroutine shd_io__readPrp(&
             ! original
             !╭────────────────────────────────────────────────╮!
             do while (.true.)
-                read (1, *, end=290) IX, IY, IZ, TMP, EXT, ALB, IPH
-                if (IX .ge. 1 .and. IX .le. NPX .and.&
-                   &IY .ge. 1 .and. IY .le. NPY .and.&
-                   &IZ .ge. 1 .and. IZ .le. NPZ) then
-                    K = IZ + NPZ*(IY - 1) + NPZ*NPY*(IX - 1)
-                    TEMPP(K) = TMP
-                    EXTINCTP(K) = EXT
-                    ALBEDOP(K) = ALB
-                    IPHASEP(K) = IPH
+                read (1, *, end=290) ix, iy, iz, temp0, ext0, ssa0, ipha0
+                if (ix .ge. 1 .and. ix .le. prp_obj%Nx .and.&
+                   &iy .ge. 1 .and. iy .le. prp_obj%Ny .and.&
+                   &iz .ge. 1 .and. iz .le. prp_obj%Nz) then
+                    k = iz + prp_obj%Nz*(iy - 1) + prp_obj%Nz*prp_obj%Ny*(ix - 1)
+                    prp_obj%dataRaw_temp(k) = temp0
+                    prp_obj%dataRaw_ext(k)  = ext0
+                    prp_obj%dataRaw_ssa(k)  = ssa0
+                    prp_obj%dataRaw_ipha(k) = ipha0
                 end if
             end do
             !╰────────────────────────────────────────────────╯!
@@ -940,40 +961,57 @@ subroutine shd_io__readPrp(&
 
         ! Standard property file has everything variable
         !   If delta-M then find the largest number of Legendre terms
-        NUMPHASE = 0
-        if (DELTAM) then
+        prp_obj%Npha = 0
+
+        if (isDeltaM) then
             do while (.true.)
-                read (1, *, end=190) IX, IY, IZ, TMP, EXT, ALB, NUML,&
-                    &(CHI, L=1, NUML)
-                NLEG = max(NUML, NLEG)
+                read (1, *, end=190) ix, iy, iz, temp0, ext0, ssa0, Nleg,&
+                    &(chi0, l=1, Nleg)
+                prp_obj%Nleg = max(Nleg, prp_obj%Nleg)
             end do
+
 190         continue
-            NLEG = min(NLEG, MAXLEG)
+
+            prp_obj%Nleg = min(prp_obj%Nleg, prp_obj%maxNleg)
+
             rewind (1)
-            read (1, *) NPX, NPY, NPZ
-            read (1, *) DELX, DELY, (ZLEVELS(K), K=1, NPZ)
+
+            read (1, *) prp_obj%Nx, prp_obj%Ny, prp_obj%Nz
+            read (1, *) prp_obj%dx, prp_obj%dy, (prp_obj%dataRaw_z(k), k=1, prp_obj%Nz)
         end if
-        N = NPX*NPY*NPZ
-        if (N .gt. MAXPG) stop 'Error [_readPrp]: MAXPG exceeded.'
-        if (N*(NLEG + 1) .gt. MAXPGL)&
-            &stop 'Error [_readPrp]: MAXPGL exceeded.'
-        MAXASYM = -1.0
+
+        N = prp_obj%Nx * prp_obj%Ny * prp_obj%Nz
+
+        if (N .gt. prp_obj%maxNpts) stop 'Error [_readPrp]: prp_obj%maxNpts exceeded.'
+
+        if (N*(prp_obj%Nleg + 1) .gt. prp_obj%maxNptsLeg)&
+            &stop 'Error [_readPrp]: prp_obj%maxNptsLeg exceeded.'
+
+        prp_obj%maxAsym = -1.0
         do while (.true.)
-            read (1, *, end=290) IX, IY, IZ, TMP, EXT, ALB, NUML
-            if (IX .ge. 1 .and. IX .le. NPX .and.&
-                &IY .ge. 1 .and. IY .le. NPY .and.&
-                &IZ .ge. 1 .and. IZ .le. NPZ) then
-                K = IZ + NPZ*(IY - 1) + NPZ*NPY*(IX - 1)
-                KL = (NLEG + 1)*(K - 1)
+
+            read (1, *, end=290) ix, iy, iz, temp0, ext0, ssa0, Nleg
+
+            if  (ix .ge. 1 .and. ix .le. prp_obj%Nx .and.&
+                &iy .ge. 1 .and. iy .le. prp_obj%Ny.and.&
+                &iz .ge. 1 .and. iz .le. prp_obj%Nz) then
+
+                k = iz + prp_obj%Nz*(iy - 1) + prp_obj%Nz*prp_obj%Ny*(ix - 1)
+                kl = (prp_obj%Nleg + 1)*(k - 1)
+
                 backspace (1)
-                read (1, *, end=290) IX, IY, IZ, TEMPP(K), EXTINCTP(K),&
-                    &ALBEDOP(K), NUML, (LEGENP(L + KL), L=1, min(NUML, NLEG)),&
-                    &(CHI, L=NLEG + 1, NUML)
-                MAXASYM = max(MAXASYM, LEGENP(KL + 1 + 1)/3.0)
-                LEGENP(1 + KL) = 1.0
-                do L = NUML + 1, NLEG
-                    LEGENP(L + KL) = 0.0
+
+                read (1, *, end=290) ix, iy, iz, prp_obj%dataRaw_temp(k), prp_obj%dataRaw_ext(k),&
+                    &prp_obj%dataRaw_ssa(k), Nleg, (prp_obj%dataRaw_leg(l + kl), L=1, min(Nleg, prp_obj%Nleg)),&
+                    &(chi0, L=prp_obj%Nleg + 1, Nleg)
+
+                prp_obj%maxAsym = max(prp_obj%maxAsym, prp_obj%dataRaw_leg(kl + 1 + 1)/3.0)
+                prp_obj%dataRaw_leg(1 + kl) = 1.0
+
+                do l = Nleg + 1, prp_obj%Nleg
+                    prp_obj%dataRaw_leg(l + kl) = 0.0
                 end do
+
             end if
         end do
 
@@ -985,10 +1023,7 @@ subroutine shd_io__readPrp(&
 
 end subroutine shd_io__readPrp
 
-subroutine shd_io__checkPrp(&
-    &NPX, NPY, NPZ, NSTLEG, NLEG,&
-    &DELX, DELY, ZLEVELS,&
-    &TEMPP, EXTINCTP, ALBEDOP, LEGENP, NUMPHASE, IPHASEP)
+subroutine shd_io__checkPrp(prp_obj)
 
     ! Checks the input medium property values for correctness.
     ! Warning if temperature below 150 K or above 350 K.
@@ -998,113 +1033,116 @@ subroutine shd_io__checkPrp(&
     ! Warning if Chi1=1, for people specifying Chi0.
     ! Warning if optical depth across a grid cell exceeds 2.
 
-    integer NPX, NPY, NPZ, NSTLEG, NLEG, NUMPHASE
-    integer*2 IPHASEP(*)
-    real DELX, DELY, ZLEVELS(*)
-    real TEMPP(*), EXTINCTP(*)
-    real ALBEDOP(*), LEGENP(NSTLEG, 0:NLEG, *)
-    integer I, IZ, N, NTHICK
-    logical LEGWARN
-    real TMIN, TMAX, TAU, MAXTAU, DZ
+    type(shd_type_prp), intent(inout) :: prp_obj
 
-    ! NPX and NPY must be 1 or greater, NPZ must be 2 or greater
-    if (NPX .lt. 1 .or. NPY .lt. 1 .or. NPZ .lt. 2) then
+    real(kind=R__), pointer, contiguous :: dataRaw_leg_Prp(:, :, :) => null()
+
+    integer(kind=I__) :: i, iz, N, Nthick
+    real(kind=R__)    :: tmin, tmax, tau, maxTau, dz
+    logical :: legWarn
+
+    dataRaw_leg_Prp(1:prp_obj%NlegSet, 0:prp_obj%Nleg, 1:prp_obj%maxNpts) => prp_obj%dataRaw_leg
+
+    ! prp_obj%Nx and prp_obj%Ny must be 1 or greater, prp_obj%Nz must be 2 or greater
+    if (prp_obj%Nx .lt. 1 .or. prp_obj%Ny .lt. 1 .or. prp_obj%Nz .lt. 2) then
         write (*, *) 'Error [_checkPrp]: Bad grid size - ',&
-            &NPX, NPY, NPZ
+            &prp_obj%Nx, prp_obj%Ny, prp_obj%Nz
         stop
     end if
 
-    if (DELX .le. 0.0 .or. DELY .le. 0.0) then
+    if (prp_obj%dx .le. 0.0 .or. prp_obj%dy .le. 0.0) then
         write (*, *) 'Error [_checkPrp]: Bad grid spacing - ',&
-            &'DELX,DELY: ', DELX, DELY
+            &'prp_obj%dx,prp_obj%dy: ', prp_obj%dx, prp_obj%dy
         stop
     end if
 
     ! The vertical levels must be increasing
-    do IZ = 1, NPZ - 1
-        if (ZLEVELS(IZ + 1) .le. ZLEVELS(IZ)) then
-            write (*, *) 'Error [_checkPrp]: ZLEVELS must increase : ',&
-                &IZ, ZLEVELS(IZ), ZLEVELS(IZ + 1)
+    do iz = 1, prp_obj%Nz - 1
+        if (prp_obj%dataRaw_z(iz + 1) .le. prp_obj%dataRaw_z(iz)) then
+            write (*, *) 'Error [_checkPrp]: prp_obj%dataRaw_z must increase : ',&
+                &iz, prp_obj%dataRaw_z(iz), prp_obj%dataRaw_z(iz + 1)
             stop
         end if
     end do
 
     ! Loop over the property grid points, checking parameters
     !   Warn about temperatures outside of Earth atmosphere temperat
-    N = NPX*NPY*NPZ
-    TMIN = 1000.0
-    TMAX = -1000.0
-    do I = 1, N
-        TMIN = min(TMIN, TEMPP(I))
-        TMAX = max(TMAX, TEMPP(I))
+    N = prp_obj%Nx*prp_obj%Ny*prp_obj%Nz
+    tmin = 1000.0
+    tmax = -1000.0
+    do i = 1, N
+        tmin = min(tmin, prp_obj%dataRaw_temp(i))
+        tmax = max(tmax, prp_obj%dataRaw_temp(i))
     end do
 
-    if (TMIN .lt. 150.0 .or. TMAX .gt. 350.0) then
+    if (tmin .lt. 150.0 .or. tmax .gt. 350.0) then
         if (verbose_ .ge. 4) write (*, *) 'Warning [_checkPrp]: ',&
-            &'temperature min and max (Kelvin): ', TMIN, TMAX
+            &'temperature min and max (Kelvin): ', tmin, tmax
         write (*, *)
     end if
 
-    do I = 1, N
-        if (EXTINCTP(I) .lt. 0.0) then
+    do i = 1, N
+        if (prp_obj%dataRaw_ext(i) .lt. 0.0) then
             write (*, *) 'Error [_checkPrp]: Negative extinction - ',&
-                &EXTINCTP(I), ' at grid point ', I
+                &prp_obj%dataRaw_ext(i), ' at grid point ', i
             stop
         end if
-        if (ALBEDOP(I) .lt. 0.0 .or. ALBEDOP(I) .gt. 1.0) then
+        if (prp_obj%dataRaw_ssa(i) .lt. 0.0 .or. prp_obj%dataRaw_ssa(i) .gt. 1.0) then
             write (*, *) 'Error [_checkPrp]: Single scattering ',&
-                &'albedo out of range - ', ALBEDOP(I), ' at grid point ', I
+                &'albedo out of range - ', prp_obj%dataRaw_ssa(i), ' at grid point ', i
             stop
         end if
     end do
 
-    if (NUMPHASE .gt. 0) N = NUMPHASE
-    LEGWARN = .false.
-    do I = 1, N
-        if (LEGENP(1, 1, I) .lt. -3.0 .or. LEGENP(1, 1, I) .gt. 3.0) then
+    if (prp_obj%Npha .gt. 0) N = prp_obj%Npha
+    legWarn = .false.
+    do i = 1, N
+        if (dataRaw_leg_Prp(1, 1, i) .lt. -3.0 .or. dataRaw_leg_Prp(1, 1, i) .gt. 3.0) then
             write (*, *) 'Error [_checkPrp]: Asymmetry parameter ',&
-                &'out of range - ', LEGENP(1, 1, I)/3.0, ' at grid point ', I
+                &'out of range - ', dataRaw_leg_Prp(1, 1, i)/3.0, ' at grid point ', i
             stop
         end if
-        if (LEGENP(1, 1, I) .eq. 1.0) LEGWARN = .true.
+        if (dataRaw_leg_Prp(1, 1, i) .eq. 1.0) legWarn = .true.
     end do
 
-    if (LEGWARN) then
+    nullify(dataRaw_leg_Prp)
+
+    if (legWarn) then
         if (verbose_ .ge. 4) write (*, *) 'Warning [_checkPrp]: ',&
             &'an asymmetry parameter is 1/3 (Chi1=1); ',&
             &'  Chi0 should not be specified for Chi1.'
         write (*, *)
     end if
 
-    if (NUMPHASE .gt. 0) then
-        N = NPX*NPY*NPZ
-        do I = 1, N
-            if (IPHASEP(I) .lt. 1 .or. IPHASEP(I) .gt. NUMPHASE) then
+    if (prp_obj%Npha .gt. 0) then
+        N = prp_obj%Nx*prp_obj%Ny*prp_obj%Nz
+        do i = 1, N
+            if (prp_obj%dataRaw_ipha(i) .lt. 1 .or. prp_obj%dataRaw_ipha(i) .gt. prp_obj%Npha) then
                 write (*, *) 'Error [_checkPrp]: Phase function pointer',&
-                    &' out of range - ', IPHASEP(I), ' at grid point ', I
+                    &' out of range - ', prp_obj%dataRaw_ipha(i), ' at grid point ', i
                 stop
             end if
         end do
     end if
 
-    N = NPX*NPY*NPZ
-    NTHICK = 0
-    MAXTAU = 0.0
-    do IZ = 1, NPZ - 1
-        DZ = ZLEVELS(IZ + 1) - ZLEVELS(IZ)
-        do I = 0, N - 1, NPZ
-            TAU = 0.5*(EXTINCTP(I + IZ) + EXTINCTP(I + IZ + 1))*DZ
-            if (TAU .gt. 2.0) then
-                NTHICK = NTHICK + 1
-                MAXTAU = max(MAXTAU, TAU)
+    N = prp_obj%Nx*prp_obj%Ny*prp_obj%Nz
+    Nthick = 0
+    maxTau = 0.0
+    do iz = 1, prp_obj%Nz - 1
+        dz = prp_obj%dataRaw_z(iz + 1) - prp_obj%dataRaw_z(iz)
+        do i = 0, N - 1, prp_obj%Nz
+            tau = 0.5*(prp_obj%dataRaw_ext(i + iz) + prp_obj%dataRaw_ext(i + iz + 1))*dz
+            if (tau .gt. 2.0) then
+                Nthick = Nthick + 1
+                maxTau = max(maxTau, tau)
             end if
         end do
     end do
 
-    if (NTHICK .gt. 0) then
+    if (Nthick .gt. 0) then
         if (verbose_ .ge. 5) write (*, '(A)') 'Message [_checkPrp]:'
-        if (verbose_ .ge. 5) write (*, '(A,I0)')   '  Npoints (optical depth > 2): ', NTHICK
-        if (verbose_ .ge. 5) write (*, '(A,F0.2)') '       Max cell optical depth: ', MAXTAU
+        if (verbose_ .ge. 5) write (*, '(A,I0)')   '  Npoints (optical depth > 2): ', Nthick
+        if (verbose_ .ge. 5) write (*, '(A,F0.2)') '       Max cell optical depth: ', maxTau
     end if
 
     return
@@ -1216,7 +1254,7 @@ subroutine shd_io__readSfc(sfc_obj)
 
     real :: temp_sfc, alb_sfc
 
-    integer :: N, I, I0, IX, IY, J
+    integer :: N, i, i0, ix, iy, j
     real :: alb0, temp0, MRE, MIM, RHO0, KR, THETA, WSPD, PCL
     real :: PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7, PARAM8
     real F_ISO, F_VOL, F_GEO, F_JIAO
@@ -1226,7 +1264,7 @@ subroutine shd_io__readSfc(sfc_obj)
     character(len=charMaxLen_) :: lineTmp
     character(len=charMaxLen_) :: lineDim
     character(len=20) :: dataPostfix
-    integer :: NXX, NYY, NPP, IDATA, NDATA
+    integer :: Nxx, Nyy, Npp, idata, Ndata
 
     ! Surface type is variable something
     sfc_obj%type(1:1) = 'V'
@@ -1261,17 +1299,17 @@ subroutine shd_io__readSfc(sfc_obj)
         if (lineTmp(1:1) .ne. '!') then ! check if binary input,
             backspace(1)                 ! if not, go back one line
             do while (.true.)
-                read (1, *, end=290) IX, IY, temp0, alb0
-                if (IX .ge. 1 .and. IX .le. sfc_obj%Nx .and.&
-                    &IY .ge. 1 .and. IY .le. sfc_obj%Ny) then
-                    I = sfc_obj%Npar * (IX - 1 + (sfc_obj%Nx + 1)*(IY - 1))
-                    sfc_obj%dataRaw_brdf(I + 1) = temp0
-                    sfc_obj%dataRaw_brdf(I + 2) = alb0
+                read (1, *, end=290) ix, iy, temp0, alb0
+                if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
+                    &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
+                    i = sfc_obj%Npar * (ix - 1 + (sfc_obj%Nx + 1)*(iy - 1))
+                    sfc_obj%dataRaw_brdf(i + 1) = temp0
+                    sfc_obj%dataRaw_brdf(i + 2) = alb0
                     if (alb0 .lt. 0.0 .or. alb0 .gt. 1.0)&
                         &stop 'Error [_readSfc]: Illegal surface albedo.'
                     if (temp0 .lt. 150. .or. temp0 .gt. 350.) then
                         if (verbose_ .ge. 4) write (*, *) 'Warning [_readSfc]: ',&
-                            &' surface temperature: ', IX, IY, temp0
+                            &' surface temperature: ', ix, iy, temp0
                     end if
                     temp_sfc = temp_sfc + temp0
                     alb_sfc  = alb_sfc  + alb0
@@ -1295,13 +1333,13 @@ subroutine shd_io__readSfc(sfc_obj)
         if (lineTmp(1:1) .ne. '!') then ! check if binary input,
             backspace(1)                 ! if not, go back one line
             do while (.true.)
-                read (1, *, end=290) IX, IY, temp0, WSPD, PCL
-                if (IX .ge. 1 .and. IX .le. sfc_obj%Nx .and.&
-                    &IY .ge. 1 .and. IY .le. sfc_obj%Ny) then
-                    I = sfc_obj%Npar * (IX - 1 + (sfc_obj%Nx + 1)*(IY - 1))
-                    sfc_obj%dataRaw_brdf(I + 1) = temp0
-                    sfc_obj%dataRaw_brdf(I + 2) = WSPD
-                    sfc_obj%dataRaw_brdf(I + 3) = PCL
+                read (1, *, end=290) ix, iy, temp0, WSPD, PCL
+                if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
+                    &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
+                    i = sfc_obj%Npar * (ix - 1 + (sfc_obj%Nx + 1)*(iy - 1))
+                    sfc_obj%dataRaw_brdf(i + 1) = temp0
+                    sfc_obj%dataRaw_brdf(i + 2) = WSPD
+                    sfc_obj%dataRaw_brdf(i + 3) = PCL
                     temp_sfc = temp_sfc + temp0
                     N = N + 1
                 end if
@@ -1326,14 +1364,14 @@ subroutine shd_io__readSfc(sfc_obj)
         if (lineTmp(1:1) .ne. '!') then ! check if binary input,
             backspace(1)                 ! if not, go back one line
             do while (.true.)
-                read (1, *, end=290) IX, IY, temp0, RHO0, KR, THETA
-                if (IX .ge. 1 .and. IX .le. sfc_obj%Nx .and.&
-                    &IY .ge. 1 .and. IY .le. sfc_obj%Ny) then
-                    I = sfc_obj%Npar * (IX - 1 + (sfc_obj%Nx + 1)*(IY - 1))
-                    sfc_obj%dataRaw_brdf(I + 1) = temp0
-                    sfc_obj%dataRaw_brdf(I + 2) = RHO0
-                    sfc_obj%dataRaw_brdf(I + 3) = KR
-                    sfc_obj%dataRaw_brdf(I + 4) = THETA
+                read (1, *, end=290) ix, iy, temp0, RHO0, KR, THETA
+                if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
+                    &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
+                    i = sfc_obj%Npar * (ix - 1 + (sfc_obj%Nx + 1)*(iy - 1))
+                    sfc_obj%dataRaw_brdf(i + 1) = temp0
+                    sfc_obj%dataRaw_brdf(i + 2) = RHO0
+                    sfc_obj%dataRaw_brdf(i + 3) = KR
+                    sfc_obj%dataRaw_brdf(i + 4) = THETA
                     temp_sfc = temp_sfc + temp0
                     alb_sfc  = alb_sfc  + RHO0
                     N = N + 1
@@ -1355,14 +1393,14 @@ subroutine shd_io__readSfc(sfc_obj)
         if (lineTmp(1:1) .ne. '!') then ! check if binary input,
             backspace(1)                 ! if not, go back one line
             do while (.true.)
-                read (1, *, end=290) IX, IY, temp0, F_ISO, F_GEO, F_VOL
-                if (IX .ge. 1 .and. IX .le. sfc_obj%Nx .and.&
-                    &IY .ge. 1 .and. IY .le. sfc_obj%Ny) then
-                    I = sfc_obj%Npar * (IX - 1 + (sfc_obj%Nx + 1)*(IY - 1))
-                    sfc_obj%dataRaw_brdf(I + 1) = temp0
-                    sfc_obj%dataRaw_brdf(I + 2) = F_ISO
-                    sfc_obj%dataRaw_brdf(I + 3) = F_GEO
-                    sfc_obj%dataRaw_brdf(I + 4) = F_VOL
+                read (1, *, end=290) ix, iy, temp0, F_ISO, F_GEO, F_VOL
+                if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
+                    &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
+                    i = sfc_obj%Npar * (ix - 1 + (sfc_obj%Nx + 1)*(iy - 1))
+                    sfc_obj%dataRaw_brdf(i + 1) = temp0
+                    sfc_obj%dataRaw_brdf(i + 2) = F_ISO
+                    sfc_obj%dataRaw_brdf(i + 3) = F_GEO
+                    sfc_obj%dataRaw_brdf(i + 4) = F_VOL
                     temp_sfc = temp_sfc + temp0
                     alb_sfc  = alb_sfc  + F_ISO
                     N = N + 1
@@ -1384,16 +1422,16 @@ subroutine shd_io__readSfc(sfc_obj)
         if (lineTmp(1:1) .ne. '!') then ! check if binary input,
             backspace(1)                 ! if not, go back one line
             do while (.true.)
-                read (1, *, end=290) IX, IY, temp0, F_ISO, F_GEO, F_VOL, F_JIAO, ALPHA
-                if (IX .ge. 1 .and. IX .le. sfc_obj%Nx .and.&
-                    &IY .ge. 1 .and. IY .le. sfc_obj%Ny) then
-                    I = sfc_obj%Npar * (IX - 1 + (sfc_obj%Nx + 1)*(IY - 1))
-                    sfc_obj%dataRaw_brdf(I + 1) = temp0
-                    sfc_obj%dataRaw_brdf(I + 2) = F_ISO
-                    sfc_obj%dataRaw_brdf(I + 3) = F_GEO
-                    sfc_obj%dataRaw_brdf(I + 4) = F_VOL
-                    sfc_obj%dataRaw_brdf(I + 5) = F_JIAO
-                    sfc_obj%dataRaw_brdf(I + 6) = ALPHA
+                read (1, *, end=290) ix, iy, temp0, F_ISO, F_GEO, F_VOL, F_JIAO, ALPHA
+                if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
+                    &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
+                    i = sfc_obj%Npar * (ix - 1 + (sfc_obj%Nx + 1)*(iy - 1))
+                    sfc_obj%dataRaw_brdf(i + 1) = temp0
+                    sfc_obj%dataRaw_brdf(i + 2) = F_ISO
+                    sfc_obj%dataRaw_brdf(i + 3) = F_GEO
+                    sfc_obj%dataRaw_brdf(i + 4) = F_VOL
+                    sfc_obj%dataRaw_brdf(i + 5) = F_JIAO
+                    sfc_obj%dataRaw_brdf(i + 6) = ALPHA
                     temp_sfc = temp_sfc + temp0
                     alb_sfc  = alb_sfc  + F_ISO
                     N = N + 1
@@ -1415,14 +1453,14 @@ subroutine shd_io__readSfc(sfc_obj)
         if (lineTmp(1:1) .ne. '!') then ! check if binary input,
             backspace(1)                 ! if not, go back one line
             do while (.true.)
-                read (1, *, end=290) IX, IY, temp0, MRE, MIM, WSPD
-                if (IX .ge. 1 .and. IX .le. sfc_obj%Nx .and.&
-                    &IY .ge. 1 .and. IY .le. sfc_obj%Ny) then
-                    I = sfc_obj%Npar * (IX - 1 + (sfc_obj%Nx + 1)*(IY - 1))
-                    sfc_obj%dataRaw_brdf(I + 1) = temp0
-                    sfc_obj%dataRaw_brdf(I + 2) = MRE
-                    sfc_obj%dataRaw_brdf(I + 3) = MIM
-                    sfc_obj%dataRaw_brdf(I + 4) = WSPD
+                read (1, *, end=290) ix, iy, temp0, MRE, MIM, WSPD
+                if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
+                    &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
+                    i = sfc_obj%Npar * (ix - 1 + (sfc_obj%Nx + 1)*(iy - 1))
+                    sfc_obj%dataRaw_brdf(i + 1) = temp0
+                    sfc_obj%dataRaw_brdf(i + 2) = MRE
+                    sfc_obj%dataRaw_brdf(i + 3) = MIM
+                    sfc_obj%dataRaw_brdf(i + 4) = WSPD
                     temp_sfc = temp_sfc + temp0
                     N = N + 1
                 end if
@@ -1448,16 +1486,16 @@ subroutine shd_io__readSfc(sfc_obj)
         if (lineTmp(1:1) .ne. '!') then ! check if binary input,
             backspace(1)                 ! if not, go back one line
             do while (.true.)
-                read (1, *, end=290) IX, IY, temp0, A, KR, B, ZETA, SIGMA
-                if (IX .ge. 1 .and. IX .le. sfc_obj%Nx .and.&
-                    &IY .ge. 1 .and. IY .le. sfc_obj%Ny) then
-                    I = sfc_obj%Npar * (IX - 1 + (sfc_obj%Nx + 1)*(IY - 1))
-                    sfc_obj%dataRaw_brdf(I + 1) = temp0
-                    sfc_obj%dataRaw_brdf(I + 2) = A
-                    sfc_obj%dataRaw_brdf(I + 3) = KR
-                    sfc_obj%dataRaw_brdf(I + 4) = B
-                    sfc_obj%dataRaw_brdf(I + 5) = ZETA
-                    sfc_obj%dataRaw_brdf(I + 6) = SIGMA
+                read (1, *, end=290) ix, iy, temp0, A, KR, B, ZETA, SIGMA
+                if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
+                    &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
+                    i = sfc_obj%Npar * (ix - 1 + (sfc_obj%Nx + 1)*(iy - 1))
+                    sfc_obj%dataRaw_brdf(i + 1) = temp0
+                    sfc_obj%dataRaw_brdf(i + 2) = A
+                    sfc_obj%dataRaw_brdf(i + 3) = KR
+                    sfc_obj%dataRaw_brdf(i + 4) = B
+                    sfc_obj%dataRaw_brdf(i + 5) = ZETA
+                    sfc_obj%dataRaw_brdf(i + 6) = SIGMA
                     temp_sfc = temp_sfc + temp0
                     alb_sfc  = alb_sfc  + A
                     N = N + 1
@@ -1479,26 +1517,26 @@ subroutine shd_io__readSfc(sfc_obj)
         if (lineTmp(1:1) .ne. '!') then ! check if binary input,
             backspace(1)                 ! if not, go back one line
             do while (.true.)
-                read (1, *, end=290)    IX, IY, PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7, PARAM8
-                ! for Lambertian   (VL):IX, IY, temp0,   alb0,    -999.0, -999.0, -999.0, -999.0, -999.0,  0.0
-                ! for Ocean        (VO):IX, IY, temp0,   WSPD,   PCL,    -999.0, -999.0, -999.0, -999.0,  1.0
-                ! for RPV          (VR):IX, IY, temp0,   RHO0,   KR,     THETA,  -999.0, -999.0, -999.0,  2.0
-                ! for LSRT         (VT):IX, IY, temp0,   F_ISO,  F_GEO,  F_VOL,  -999.0, -999.0, -999.0,  3.0
-                ! for LSRT-J       (VJ):IX, IY, temp0,   F_ISO,  F_GEO,  F_VOL,  F_JIAO, ALPHA,  -999.0,  4.0
-                ! for Wave-Fresnel (VW):IX, IY, temp0,   MRE,    MIM,    WSPD,   -999.0, -999.0, -999.0, -1.0
-                ! for Diner        (VD):IX, IY, temp0,   A,      KR,     B,      ZETA,   SIGMA,  -999.0, -2.0
+                read (1, *, end=290)    ix, iy, PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7, PARAM8
+                ! for Lambertian   (VL):ix, iy, temp0,   alb0,    -999.0, -999.0, -999.0, -999.0, -999.0,  0.0
+                ! for Ocean        (VO):ix, iy, temp0,   WSPD,   PCL,    -999.0, -999.0, -999.0, -999.0,  1.0
+                ! for RPV          (VR):ix, iy, temp0,   RHO0,   KR,     THETA,  -999.0, -999.0, -999.0,  2.0
+                ! for LSRT         (VT):ix, iy, temp0,   F_ISO,  F_GEO,  F_VOL,  -999.0, -999.0, -999.0,  3.0
+                ! for LSRT-J       (VJ):ix, iy, temp0,   F_ISO,  F_GEO,  F_VOL,  F_JIAO, ALPHA,  -999.0,  4.0
+                ! for Wave-Fresnel (VW):ix, iy, temp0,   MRE,    MIM,    WSPD,   -999.0, -999.0, -999.0, -1.0
+                ! for Diner        (VD):ix, iy, temp0,   A,      KR,     B,      ZETA,   SIGMA,  -999.0, -2.0
 
-                if (IX .ge. 1 .and. IX .le. sfc_obj%Nx .and.&
-                    &IY .ge. 1 .and. IY .le. sfc_obj%Ny) then
-                    I = sfc_obj%Npar * (IX - 1 + (sfc_obj%Nx + 1)*(IY - 1))
-                    sfc_obj%dataRaw_brdf(I + 1) = PARAM1
-                    sfc_obj%dataRaw_brdf(I + 2) = PARAM2
-                    sfc_obj%dataRaw_brdf(I + 3) = PARAM3
-                    sfc_obj%dataRaw_brdf(I + 4) = PARAM4
-                    sfc_obj%dataRaw_brdf(I + 5) = PARAM5
-                    sfc_obj%dataRaw_brdf(I + 6) = PARAM6
-                    sfc_obj%dataRaw_brdf(I + 7) = PARAM7
-                    sfc_obj%dataRaw_brdf(I + 8) = PARAM8 ! surface identification
+                if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
+                    &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
+                    i = sfc_obj%Npar * (ix - 1 + (sfc_obj%Nx + 1)*(iy - 1))
+                    sfc_obj%dataRaw_brdf(i + 1) = PARAM1
+                    sfc_obj%dataRaw_brdf(i + 2) = PARAM2
+                    sfc_obj%dataRaw_brdf(i + 3) = PARAM3
+                    sfc_obj%dataRaw_brdf(i + 4) = PARAM4
+                    sfc_obj%dataRaw_brdf(i + 5) = PARAM5
+                    sfc_obj%dataRaw_brdf(i + 6) = PARAM6
+                    sfc_obj%dataRaw_brdf(i + 7) = PARAM7
+                    sfc_obj%dataRaw_brdf(i + 8) = PARAM8 ! surface identification
 
                     temp_sfc = temp_sfc + PARAM1
 
@@ -1529,35 +1567,35 @@ subroutine shd_io__readSfc(sfc_obj)
     read (1, '(A)') dataPostfix
     read (1, '(A)') lineDim
 
-    read (lineDim( 3:12), '(I10)') NXX
-    read (lineDim(14:23), '(I10)') NYY
-    read (lineDim(25:34), '(I10)') NPP
+    read (lineDim( 3:12), '(I10)') Nxx
+    read (lineDim(14:23), '(I10)') Nyy
+    read (lineDim(25:34), '(I10)') Npp
 
     fnameBin = trim(adjustl(sfc_obj%fname))//trim(adjustl(dataPostfix(2:)))
     open (UNIT=88, FILE=trim(adjustl(fnameBin)), STATUS='OLD',&
         &ACCESS='STREAM', FORM='UNFORMATTED')
-    NDATA = NXX*NYY*NPP
-    read (88) (sfc_obj%dataRaw_brdf(IDATA), IDATA=1, NDATA)
+    Ndata = Nxx*Nyy*Npp
+    read (88) (sfc_obj%dataRaw_brdf(idata), idata=1, Ndata)
     close (88)
 
-    do IY = 1, sfc_obj%Ny + 1
-        do IX = 1, sfc_obj%Nx + 1
+    do iy = 1, sfc_obj%Ny + 1
+        do ix = 1, sfc_obj%Nx + 1
 
-            if (IX .ge. 1 .and. IX .le. sfc_obj%Nx .and.&
-                &IY .ge. 1 .and. IY .le. sfc_obj%Ny) then
+            if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
+                &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
 
-                I = sfc_obj%Npar * (IX - 1 + (sfc_obj%Nx + 1)*(IY - 1))
+                i = sfc_obj%Npar * (ix - 1 + (sfc_obj%Nx + 1)*(iy - 1))
 
-                temp_sfc = temp_sfc + sfc_obj%dataRaw_brdf(I + 1)
+                temp_sfc = temp_sfc + sfc_obj%dataRaw_brdf(i + 1)
 
                 if (((sfc_obj%type .ne. 'VO') .and. (sfc_obj%type .ne. 'Vo')) .and.&
                     &((sfc_obj%type .ne. 'VW') .and. (sfc_obj%type .ne. 'Vw'))) then
                     if ((sfc_obj%type .eq. 'VX') .or. (sfc_obj%type .eq. 'Vx')) then
-                        if ((abs(sfc_obj%dataRaw_brdf(I+8))-1.0) .gt. 0.01) then ! exclude [O] and [W]
-                            alb_sfc = alb_sfc + sfc_obj%dataRaw_brdf(I + 2)
+                        if ((abs(sfc_obj%dataRaw_brdf(i+8))-1.0) .gt. 0.01) then ! exclude [O] and [W]
+                            alb_sfc = alb_sfc + sfc_obj%dataRaw_brdf(i + 2)
                         end if
                     else
-                        alb_sfc = alb_sfc + sfc_obj%dataRaw_brdf(I + 2)
+                        alb_sfc = alb_sfc + sfc_obj%dataRaw_brdf(i + 2)
                     end if
                 end if
 
@@ -1574,19 +1612,19 @@ subroutine shd_io__readSfc(sfc_obj)
     close (1)
 
     ! Copy the edge points to the opposite side for periodic boundar
-    do IX = 1, sfc_obj%Nx
-        I0 = sfc_obj%Npar * (IX - 1 + (sfc_obj%Nx + 1)*(1 - 1))
-        I  = sfc_obj%Npar * (IX - 1 + (sfc_obj%Nx + 1)*(sfc_obj%Ny + 1 - 1))
-        do J = 1, sfc_obj%Npar
-            sfc_obj%dataRaw_brdf(I + J) = sfc_obj%dataRaw_brdf(I0 + J)
+    do ix = 1, sfc_obj%Nx
+        i0 = sfc_obj%Npar * (ix - 1 + (sfc_obj%Nx + 1)*(1 - 1))
+        i  = sfc_obj%Npar * (ix - 1 + (sfc_obj%Nx + 1)*(sfc_obj%Ny + 1 - 1))
+        do j = 1, sfc_obj%Npar
+            sfc_obj%dataRaw_brdf(i + j) = sfc_obj%dataRaw_brdf(I0 + j)
         end do
     end do
 
-    do IY = 1, sfc_obj%Ny + 1
-        I0 = sfc_obj%Npar * ((sfc_obj%Nx + 1)*(IY - 1))
-        I  = sfc_obj%Npar * (sfc_obj%Nx + (sfc_obj%Nx + 1)*(IY - 1))
-        do J = 1, sfc_obj%Npar
-            sfc_obj%dataRaw_brdf(I + J) = sfc_obj%dataRaw_brdf(I0 + J)
+    do iy = 1, sfc_obj%Ny + 1
+        i0 = sfc_obj%Npar * ((sfc_obj%Nx + 1)*(iy - 1))
+        i  = sfc_obj%Npar * (sfc_obj%Nx + (sfc_obj%Nx + 1)*(iy - 1))
+        do j = 1, sfc_obj%Npar
+            sfc_obj%dataRaw_brdf(i + j) = sfc_obj%dataRaw_brdf(I0 + j)
         end do
     end do
 
@@ -1798,7 +1836,7 @@ subroutine shd_io__restoreState(&
     real(kind=R__), intent(out) :: GRIDPOS(3, *), FLUXES(2, *), SOURCE(*), RADIANCE(*)
 
     integer :: NSTI, NXI, NYI, NZI, MLI, MMI, NLMI
-    integer :: I, J, NS, NR
+    integer :: i, j, NS, NR
 
     INRADFLAG = .false.
     NEWGRIDFLAG = .true.
@@ -1822,26 +1860,26 @@ subroutine shd_io__restoreState(&
         return
     end if
 
-    read (3) (XGRID(I), I=1, NX+1)
-    read (3) (YGRID(I), I=1, NY+1)
-    read (3) (ZGRID(I), I=1, NZ)
-    read (3) ((GRIDPTR(J, I), J=1, 8), I=1, NCELLS)
-    read (3) ((NEIGHPTR(J, I), J=1, 6), I=1, NCELLS)
-    read (3) ((TREEPTR(J, I), J=1, 2), I=1, NCELLS)
-    read (3) (CELLFLAGS(I), I=1, NCELLS)
+    read (3) (XGRID(i), i=1, NX+1)
+    read (3) (YGRID(i), i=1, NY+1)
+    read (3) (ZGRID(i), i=1, NZ)
+    read (3) ((GRIDPTR(j, i), j=1, 8), i=1, NCELLS)
+    read (3) ((NEIGHPTR(j, i), j=1, 6), i=1, NCELLS)
+    read (3) ((TREEPTR(j, i), j=1, 2), i=1, NCELLS)
+    read (3) (CELLFLAGS(i), i=1, NCELLS)
 
-    read (3) ((GRIDPOS(J, I), J=1, 3), I=1, NPTS)
-    read (3) ((FLUXES(J, I), J=1, 2), I=1, NPTS)
+    read (3) ((GRIDPOS(j, i), j=1, 3), i=1, NPTS)
+    read (3) ((FLUXES(j, i), j=1, 2), i=1, NPTS)
 
-    read (3) (SHPTR(I), I=1, NPTS + 1)
+    read (3) (SHPTR(i), i=1, NPTS + 1)
     NS = SHPTR(NPTS + 1)
-    read (3) (SOURCE(I), I=1, NSTOKES*NS)
+    read (3) (SOURCE(i), i=1, NSTOKES*NS)
 
     NR = 4*NPTS
-    read (3) (RADIANCE(I), I=1, NSTOKES*NR)
+    read (3) (RADIANCE(i), i=1, NSTOKES*NR)
     RSHPTR(1) = 0
-    do I = 1, NPTS
-        RSHPTR(I+1) = RSHPTR(I) + NSTOKES*4
+    do i = 1, NPTS
+        RSHPTR(i+1) = RSHPTR(i) + NSTOKES*4
     end do
 
     close (3)

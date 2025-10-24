@@ -118,10 +118,6 @@ program shdom
     real(kind=R__), allocatable  :: leg(:)
     integer(kind=2), allocatable :: ipha(:)
 
-    real(kind=R__), allocatable  :: temp_PT(:), ext_PT(:), ssa_PT(:)
-    real(kind=R__), allocatable  :: leg_PT(:)
-    integer(kind=2), allocatable :: ipha_PT(:)
-
     real(kind=R__), allocatable    :: work(:)
     integer(kind=I__), allocatable :: work1(:)
     real(kind=R__), allocatable    :: work2(:)
@@ -160,6 +156,10 @@ program shdom
      real, save, allocatable, target :: dataRaw_extDir_Prp(:)
      real, save, allocatable, target :: dataRaw_leg_Prp(:)
      integer(2), save, allocatable, target :: dataRaw_ipha_Prp(:)
+
+    real(kind=R__), allocatable, target  :: dataRaw_temp_PrpAll(:), dataRaw_ext_PrpAll(:), dataRaw_ssa_PrpAll(:)
+    real(kind=R__), allocatable, target  :: dataRaw_leg_PrpAll(:)
+    integer(kind=2), allocatable, target :: dataRaw_ipha_PrpAll(:)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! sfc_obj
@@ -209,7 +209,7 @@ program shdom
     real(kind=R__) :: NmaxIG
     real(kind=R__) :: memUsed, memNeed, scaleFactor
 
-    integer(kind=I__) :: maxIG, maxIC, maxIV, maxIDO, maxNz, maxNg
+    integer(kind=I__) :: maxIG, maxIC, maxIV, maxIDO, maxNg
     integer(kind=I__) :: maxIGL, NbigArr
 
     real(kind=R__) :: MAX_TOTAL_MB, ADAPT_GRID_FACTOR
@@ -228,7 +228,7 @@ program shdom
     real(kind=R__) :: solar0, solar, mu_solar, az_solar
 
     real(kind=R__) :: skyRad, waveNum(2), waveLen
-    real(kind=R__) :: solAcc, solCrit, splitAcc, shAcc, maxAsym
+    real(kind=R__) :: solAcc, solCrit, splitAcc, shAcc
 
     integer(kind=I__) :: Nproc
     logical :: isMasterProc
@@ -255,7 +255,7 @@ program shdom
     !   and the results are then broadcast to the child processors.
     if (isMasterProc) then
         if (isNmlInp_) then
-            call shd_io__nmlInp(runName, prp_obj%fname, sfc_obj%fname, ckd_obj%fname,&
+            call shd_io__nmlInp(runName, prpAll_obj%fname, sfc_obj%fname, ckd_obj%fname,&
                 fileInp_sav, fileOut_sav, sen_obj%fname,&
                 Nstokes, Nx, Ny, Nz, Nmu_do, Nphi_do, flag_bc,&
                 ipFlag, isCkd, isDeltaM, type_grid,&
@@ -266,7 +266,7 @@ program shdom
                 fileOut_nc, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
                 NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, verbose_)
         else
-            call shd_io__userInp(runName, prp_obj%fname, sfc_obj%fname, ckd_obj%fname,&
+            call shd_io__userInp(runName, prpAll_obj%fname, sfc_obj%fname, ckd_obj%fname,&
                 fileInp_sav, fileOut_sav, sen_obj%fname,&
                 Nstokes, Nx, Ny, Nz, Nmu_do, Nphi_do, flag_bc,&
                 ipFlag, isCkd, isDeltaM, type_grid,&
@@ -288,7 +288,7 @@ program shdom
         &isAccel, solAcc, maxIter, splitAcc, shAcc,&
         &maxNset_out, maxNpar_out, Nout, type_Out, parms_Out,&
         &MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
-        &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, prp_obj, sfc_obj, ckd_obj, sen_obj)
+        &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, prpAll_obj, sfc_obj, ckd_obj, sen_obj)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! Memory used for initialization (rough estimate, 1 WORD = 4 bytes)
@@ -307,14 +307,14 @@ program shdom
         if (verbose_ .ge. 4) write (6, '(A)') 'Warning [shdom]: Nstokes cannot be 2, reset Nstokes to 3.'
     end if
 
-    ! prp_obj%NlegSet is the number of phase function elements used (1 or 6)
+    ! prpAll_obj%NlegSet is the number of phase function elements used (1 or 6)
     !   Also used for the number of unique elements of the generalized
     !   spherical harmonics matrices.
     if (Nstokes .eq. 1) then
-        prp_obj%NlegSet = 1
+        prpAll_obj%NlegSet = 1
         isPol_ = .false.
     else
-        prp_obj%NlegSet = 6
+        prpAll_obj%NlegSet = 6
         isPol_ = .true.
     end if
 
@@ -340,9 +340,9 @@ program shdom
     ! Nlm_sh: The number of spherical harmonic terms
     Nlm_sh = (2*maxNm_sh + 1)*(maxNl_sh + 1) - maxNm_sh*(maxNm_sh + 1)
 
-    ! prp_obj%Nleg: The number of Legendre series phase function terms used in the solution procedure
-    prp_obj%Nleg = maxNl_sh
-    if (isDeltaM) prp_obj%Nleg = maxNl_sh + 1
+    ! prpAll_obj%Nleg: The number of Legendre series phase function terms used in the solution procedure
+    prpAll_obj%Nleg = maxNl_sh
+    if (isDeltaM) prpAll_obj%Nleg = maxNl_sh + 1
 
     if (type_src .eq. 'B') then
         isSolar_ = .true.
@@ -369,15 +369,16 @@ program shdom
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
-    ! Read prp_obj%fname (property file) to get data size info, broadcast data if MPI
+    ! Read prpAll_obj%fname (property file) to get data size info, broadcast data if MPI
     !╭────────────────────────────────────────────────────────────────────────────╮!
     if (isMasterProc) then
         ! Find out the size of the input property file grid
-        call shd_io__readPrpSize(prp_obj)
+        call shd_io__readPrpSize(prpAll_obj)
     end if
 
-    call shd_mpi__bcastPrpSize(prp_obj)
+    call shd_mpi__bcastPrpSize(prpAll_obj)
     !╰────────────────────────────────────────────────────────────────────────────╯!
+    print *, 'first:', prpAll_obj%maxNptsLeg
 
 
     ! Read sfc_obj%fname (surface file) to get general info, broadcast sfc_obj if MPI
@@ -387,8 +388,8 @@ program shdom
         sfc_obj%type  = 'FL'
         sfc_obj%Nx = 1
         sfc_obj%Ny = 1
-        sfc_obj%dx = prp_obj%dx
-        sfc_obj%dy = prp_obj%dy
+        sfc_obj%dx = prpAll_obj%dx
+        sfc_obj%dy = prpAll_obj%dy
         sfc_obj%maxNpts = 1
         sfc_obj%maxNpar = 2
         sfc_obj%isUniform    = .true.
@@ -431,22 +432,23 @@ program shdom
 
     ! Set the full domain grid sizes (variables end in T)
     Nx_T = Nx  ; Ny_T = Ny
-    prpAll_obj%Nx = prp_obj%Nx; prpAll_obj%Ny = prp_obj%Ny
+
 
     if (prpAll_obj%Nx .eq. 1) then
-        prp_obj%dx = sfc_obj%Nx * sfc_obj%dx ! overwrite prp_obj%dx if only 1 grid in X direction
-        if (verbose_ .ge. 4) write (6, '(A)') 'Warning [shdom]: prpAll_obj%Nx=1, reset prp_obj%dx to match surface domain.'
-    end if
-    if (prpAll_obj%Ny .eq. 1) then
-        prp_obj%dy = sfc_obj%Ny * sfc_obj%dy ! overwrite prp_obj%dy if only 1 grid in Y direction
-        if (verbose_ .ge. 4) write (6, '(A)') 'Warning [shdom]: prpAll_obj%Ny=1, reset prp_obj%dy to match surface domain.'
+        prpAll_obj%dx = sfc_obj%Nx * sfc_obj%dx ! overwrite prpAll_obj%dx if only 1 grid in X direction
+        if (verbose_ .ge. 4) write (6, '(A)') 'Warning [shdom]: prpAll_obj%Nx=1, reset prpAll_obj%dx to match surface domain.'
     end if
 
-    prp_obj%xDomain = prpAll_obj%Nx * prp_obj%dx
-    prp_obj%yDomain = prpAll_obj%Ny * prp_obj%dy
+    if (prpAll_obj%Ny .eq. 1) then
+        prpAll_obj%dy = sfc_obj%Ny * sfc_obj%dy ! overwrite prpAll_obj%dy if only 1 grid in Y direction
+        if (verbose_ .ge. 4) write (6, '(A)') 'Warning [shdom]: prpAll_obj%Ny=1, reset prpAll_obj%dy to match surface domain.'
+    end if
+
+    prpAll_obj%xDomain = prpAll_obj%Nx * prpAll_obj%dx
+    prpAll_obj%yDomain = prpAll_obj%Ny * prpAll_obj%dy
 
     ! Choose the option to compute higher order radiance SH terms
-    if ((prpAll_obj%Nx .eq. 1) .and. (prpAll_obj%Ny .eq. 1) .and.&
+    if  ((prpAll_obj%Nx .eq. 1) .and. (prpAll_obj%Ny .eq. 1) .and.&
         &(sfc_obj%Nx .le. 32) .and. (sfc_obj%Ny .le. 32)) then
         isHighOrder_ = .true.
         if (verbose_ .ge. 4) write (6, '(A)') 'Warning [shdom]: 1D calculation, set isHighOrder_ to .TRUE.'
@@ -470,8 +472,8 @@ program shdom
     !   the X and Y starting position of this subdomain. Set bits
     !   2 and 3 in flag_bc to indicate multiple processors in X and Y.
     !   Also open the slave processor log files.
-    call shd_mpi__map(flag_bc, prp_obj%Nx, prp_obj%Ny, Nx, Ny, Nz, prp_obj%dx, prp_obj%dy, prp_obj%fname,&
-        &prp_obj%xStart, prp_obj%yStart, runName)
+    prp_obj = prpAll_obj
+    call shd_mpi__map(flag_bc, Nx, Ny, Nz, runName, prp_obj)
 
     ! flag_bc bit-representation '...0001' isOpenX_
     if (btest(flag_bc, 0)) then
@@ -563,16 +565,19 @@ program shdom
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
-    ! Read prp_obj%fname and distribute data if MPI
+    ! Read prp_obj%fname and distribute property object if MPI
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Determine the size of the property grid arrays so can allocate
-    maxNz  = prp_obj%Nz
     prp_obj%maxNpts = prp_obj%Nx * prp_obj%Ny * prp_obj%Nz
     if (prp_obj%Npha .eq. 0) prp_obj%maxNptsLeg = prp_obj%maxNpts * (prp_obj%maxNleg + 1) * prp_obj%NlegSet
 
     allocate (dataRaw_z_Prp(prp_obj%Nz))
-    allocate (dataRaw_temp_Prp(prp_obj%maxNpts), dataRaw_ext_Prp(prp_obj%maxNpts), dataRaw_ssa_Prp(prp_obj%maxNpts))
-    allocate (dataRaw_extDir_Prp(prp_obj%maxNpts), dataRaw_ipha_Prp(prp_obj%maxNpts), dataRaw_leg_Prp(prp_obj%maxNptsLeg))
+    allocate (dataRaw_temp_Prp(prp_obj%maxNpts), &
+              dataRaw_ext_Prp(prp_obj%maxNpts), &
+              dataRaw_ssa_Prp(prp_obj%maxNpts))
+    allocate (dataRaw_extDir_Prp(prp_obj%maxNpts), &
+              dataRaw_ipha_Prp(prp_obj%maxNpts), &
+              dataRaw_leg_Prp(prp_obj%maxNptsLeg))
     memUsed = memUsed + prp_obj%Nz + 6.0*prp_obj%maxNpts + prp_obj%maxNptsLeg
 
     prp_obj%dataRaw_z      => dataRaw_z_Prp
@@ -580,9 +585,12 @@ program shdom
     prp_obj%dataRaw_ext    => dataRaw_ext_Prp
     prp_obj%dataRaw_extDir => dataRaw_extDir_Prp
     prp_obj%dataRaw_ssa    => dataRaw_ssa_Prp
-    prp_obj%dataRaw_leg    => dataRaw_leg_Prp
     prp_obj%dataRaw_ipha   => dataRaw_ipha_Prp
+    prp_obj%dataRaw_leg    => dataRaw_leg_Prp
     prp_obj%isAllocated = .true.
+
+    print *, 'All:', prpAll_obj%NlegSet, prpAll_obj%Nleg + 1, prpAll_obj%Npha
+    print *, 'Par:', prp_obj%NlegSet, prp_obj%Nleg + 1, prp_obj%Npha
 
     if (isMpi_) then
 
@@ -590,58 +598,69 @@ program shdom
         !   distribute to all the processors
         if (isMasterProc) then
 
-            prpAll_obj%maxNpts = prpAll_obj%Nx * prpAll_obj%Ny * prp_obj%Nz
-            prpAll_obj%maxNptsLeg = prp_obj%maxNptsLeg
-            if (prp_obj%Npha .eq. 0) prpAll_obj%maxNptsLeg = prpAll_obj%maxNpts * (prp_obj%maxNleg + 1) * prp_obj%NlegSet
+            allocate (dataRaw_temp_PrpAll(prpAll_obj%maxNpts), &
+                      dataRaw_ext_PrpAll(prpAll_obj%maxNpts), &
+                      dataRaw_ssa_PrpAll(prpAll_obj%maxNpts))
+            allocate (dataRaw_ipha_PrpAll(prpAll_obj%maxNpts), &
+                      dataRaw_leg_PrpAll(prp_obj%maxNptsLeg))
 
-            allocate (temp_PT(prpAll_obj%maxNpts), ext_PT(prpAll_obj%maxNpts), ssa_PT(prpAll_obj%maxNpts))
-            allocate (ipha_PT(prpAll_obj%maxNpts), leg_PT(prpAll_obj%maxNptsLeg))
+            print *, 'prp_obj%maxNptsLeg:', prp_obj%maxNptsLeg
 
-            ! Only use delX and delY from initial read, dxTmp_prp and dyTmp_prp are discarded
-            call shd_io__readPrp(prp_obj%fname, prpAll_obj%Nx, prpAll_obj%Ny, prp_obj%Nz,&
-                &prp_obj%NlegSet, prp_obj%maxNleg, prp_obj%Nleg, maxNz, prpAll_obj%maxNpts, prpAll_obj%maxNptsLeg, isDeltaM,&
-                &prp_obj%type, dxTmp_prp, dyTmp_prp, prp_obj%dataRaw_z, maxAsym,&
-                &temp_PT, ext_PT, ssa_PT, leg_PT, prp_obj%Npha, ipha_PT)
+            prpAll_obj%dataRaw_z    => dataRaw_z_Prp
+            prpAll_obj%dataRaw_temp => dataRaw_temp_PrpAll
+            prpAll_obj%dataRaw_ext  => dataRaw_ext_PrpAll
+            prpAll_obj%dataRaw_ssa  => dataRaw_ssa_PrpAll
+            prpAll_obj%dataRaw_ipha => dataRaw_ipha_PrpAll
+            prpAll_obj%dataRaw_leg  => dataRaw_leg_PrpAll
+            prpAll_obj%isAllocated = .true.
 
-            if (prp_obj%Npha .eq. 0) then
+            call shd_io__readPrp(isDeltaM, prpAll_obj)
+
+            if (prpAll_obj%Npha .eq. 0) then
                 stop 'Error [shdom]: Standard property file (with phase function Legendre series at every point)&
                     & is not allowed with multiple processors.'
             end if
 
             ! Check values of medium properties
-            call shd_io__checkPrp(prpAll_obj%Nx, prpAll_obj%Ny, prp_obj%Nz, prp_obj%NlegSet, prp_obj%Nleg,&
-                &prp_obj%dx, prp_obj%dy, prp_obj%dataRaw_z,&
-                &temp_PT, ext_PT, ssa_PT, leg_PT, prp_obj%Npha, ipha_PT)
+            call shd_io__checkPrp(prpAll_obj)
 
         end if
 
         ! distribute file grid data to working grids (different CPU processes different grids)
-        call shd_mpi__bcastPrp(prpAll_obj%Nx, prpAll_obj%Ny, prp_obj%Nx, prp_obj%Ny, prp_obj%Nz,&
-            &prp_obj%NlegSet, prp_obj%Nleg, prp_obj%Npha,&
-            &prp_obj%dataRaw_z, maxAsym,&
-            &temp_PT, ext_PT, ssa_PT, leg_PT, ipha_PT,&
-            &prp_obj%dataRaw_temp, prp_obj%dataRaw_ext, prp_obj%dataRaw_ssa, prp_obj%dataRaw_leg, prp_obj%dataRaw_ipha)
+        call shd_mpi__bcastPrp(prpAll_obj, prp_obj)
 
-        if (isMasterProc) deallocate (temp_PT, ext_PT, ssa_PT, ipha_PT, leg_PT)
+        stop 'hahahaha'
+
+        if (isMasterProc) then
+            deallocate(dataRaw_temp_PrpAll, &
+                       dataRaw_ext_PrpAll, &
+                       dataRaw_ssa_PrpAll, &
+                       dataRaw_ipha_PrpAll, &
+                       dataRaw_leg_PrpAll)
+            if (prpAll_obj%isAllocated) then
+                nullify(prpAll_obj%dataRaw_z, &
+                        prpAll_obj%dataRaw_temp, &
+                        prpAll_obj%dataRaw_ext, &
+                        prpAll_obj%dataRaw_ssa, &
+                        prpAll_obj%dataRaw_ipha, &
+                        prpAll_obj%dataRaw_leg)
+                prpAll_obj%isAllocated = .false.
+            end if
+        end if
 
     else
 
         ! Read the properties of the medium to the single processor
-        call shd_io__readPrp(prp_obj%fname, prp_obj%Nx, prp_obj%Ny, prp_obj%Nz,&
-            &prp_obj%NlegSet, prp_obj%maxNleg, prp_obj%Nleg, maxNz, prp_obj%maxNpts, prp_obj%maxNptsLeg, isDeltaM,&
-            &prp_obj%type, prp_obj%dx, prp_obj%dy, prp_obj%dataRaw_z, maxAsym,&
-            &prp_obj%dataRaw_temp, prp_obj%dataRaw_ext, prp_obj%dataRaw_ssa, prp_obj%dataRaw_leg, prp_obj%Npha, prp_obj%dataRaw_ipha)
+        call shd_io__readPrp(isDeltaM, prp_obj)
 
         ! Check values of medium properties
-        call shd_io__checkPrp(prp_obj%Nx, prp_obj%Ny, prp_obj%Nz, prp_obj%NlegSet, prp_obj%Nleg,&
-            &prp_obj%dx, prp_obj%dy, prp_obj%dataRaw_z,&
-            &prp_obj%dataRaw_temp, prp_obj%dataRaw_ext, prp_obj%dataRaw_ssa, prp_obj%dataRaw_leg, prp_obj%Npha, prp_obj%dataRaw_ipha)
+        call shd_io__checkPrp(prp_obj)
 
     end if
 
     if (isMasterProc) then
         ! Check input parameters
-        call shd_io__checkInp(Nmu_do, Nphi_do, isDeltaM, maxAsym,&
+        call shd_io__checkInp(Nmu_do, Nphi_do, isDeltaM, prp_obj%maxAsym,&
             &type_grid, type_src, units_src, solar0, mu_solar,&
             &waveNum, waveLen, sfc_obj%avgTemp, sfc_obj%avgAlb,&
             &splitAcc, shAcc)

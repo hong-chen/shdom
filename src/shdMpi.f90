@@ -80,6 +80,9 @@ module shd_mpi
     implicit none
     private
 
+    integer, parameter :: I__ = selected_int_kind(9)
+    integer, parameter :: R__ = selected_real_kind(6)
+
     public :: shd_mpi__start
     public :: shd_mpi__map
     public :: shd_mpi__bcastInp
@@ -167,13 +170,13 @@ subroutine shd_mpi__start(isMasterProc, Nproc)
 
 end subroutine shd_mpi__start
 
-subroutine shd_mpi__map(BCFLAG, Nx_prp, Ny_prp, Nx, Ny, Nz, dx_prp, dy_prp, fileInp_prp,&
-    &XSTART, YSTART, runName)
+subroutine shd_mpi__map(BCFLAG, Nx, Ny, Nz,&
+    &runName, prp_obj)
 
     ! Sets up the mapping of processors for the SHDOM domain (creating the
     ! 2D communicator, comm2D_).  Determines the subdomain property grid
-    ! (Nx_prp,Ny_prp) and internal base grid (Nx,Ny) sizes, and outputs the
-    ! starting position of this subdomain (XSTART,YSTART).  Bits 2 and 3
+    ! (prp_obj%Nx,prp_obj%Ny) and internal base grid (Nx,Ny) sizes, and outputs the
+    ! starting position of this subdomain (prp_obj%xStart,prp_obj%yStart).  Bits 2 and 3
     ! of BCFLAG are set to indicate multiple processors in the X and Y
     ! directions, respectively.  Open boundary conditions (bits 0 and 1 in
     ! BCFLAG) are overridden by the multiple processor flags (i.e. multiple
@@ -186,32 +189,32 @@ subroutine shd_mpi__map(BCFLAG, Nx_prp, Ny_prp, Nx, Ny, Nz, dx_prp, dy_prp, file
     ! of grid points of the internal base grid for this subdomain (for the
     ! output arrays).
 
-    integer, intent(inout) :: BCFLAG, Nx_prp, Ny_prp, Nx, Ny, Nz
-    character(len=*), intent(in) :: fileInp_prp, runName
-    real, intent(inout) :: dx_prp, dy_prp
-    real, intent(out) :: XSTART, YSTART
+    type(shd_type_prp), intent(inout) :: prp_obj
+
+    integer, intent(inout) :: BCFLAG, Nx, Ny, Nz
+    character(len=*), intent(in) :: runName
 
 #if HAS_MPI
 ! note: this if clause has <else>
     integer :: NPXT, NPYT, NXT, NYT
     integer :: i, ierr, dims(2), coords(2)
     logical :: periodic(2) = (/.true., .true./), reorder = .false.
-    real    :: XEND, YEND
-    character(len=4) :: procstr
-    character(len=charMaxLen_) :: logfile
+    real    :: xEnd, yEnd
+    character(len=4) :: procStr
+    character(len=charMaxLen_) :: logFile
 
-    NPXT = Nx_prp; NPYT = Ny_prp; NXT = Nx; NYT = Ny
+    NPXT = prp_obj%Nx; NPYT = prp_obj%Ny; NXT = Nx; NYT = Ny
 
     !if ((Nproc_ .eq. 1) .or. ((NPXT .eq. 1) .and. (NPYT .eq. 1))) then
     if (Nproc_ .eq. 1) then
-        XSTART = 0.0; YSTART = 0.0
+        prp_obj%xStart = 0.0; prp_obj%yStart = 0.0
         return
     end if
 
     if (myProc_ .gt. 0) then
-        write (procstr, '(I4.4)') myProc_
-        logfile = trim(adjustl(runName))//'.sHdOmNG-log.iproc-'//procstr
-        open (UNIT=6, FILE=trim(adjustl(logfile)), STATUS='UNKNOWN')
+        write (procStr, '(I4.4)') myProc_
+        logFile = trim(adjustl(runName))//'.sHdOmNG-log.iproc-'//procStr
+        open (UNIT=6, FILE=trim(adjustl(logFile)), STATUS='UNKNOWN')
     end if
 
     ! Partition 2D Cartesian topology:
@@ -248,81 +251,81 @@ subroutine shd_mpi__map(BCFLAG, Nx_prp, Ny_prp, Nx, Ny, Nz, dx_prp, dy_prp, file
     call mpi_cart_coords(comm2D_, myProc_, 2, coords, ierr)
 
     ! Make the optimal (or default) property grid divisions (in ixyPrp_)
-    call shd_mpi__optimizeProcDomain(dims, coords, NPXT, NPYT, fileInp_prp, runName)
+    call shd_mpi__optimizeProcDomain(dims, coords, NPXT, NPYT, prp_obj%fname, runName)
 
     ! Make the new property and base grid sizes and the ixyOut_ arrays
     if (dims(1) .gt. 1) then
         if (NPXT .gt. 1) then
 
-            Nx_prp = ixyPrp_(2, 1) - ixyPrp_(1, 1) + 1
-            Nx = nint(NXT*float(Nx_prp - 1)/NPXT) + 1
-            if (abs(NPXT/float(NXT) - (Nx_prp - 1)/float(Nx - 1)) .gt. 0.0001) then
+            prp_obj%Nx = ixyPrp_(2, 1) - ixyPrp_(1, 1) + 1
+            Nx = nint(NXT*float(prp_obj%Nx - 1)/NPXT) + 1
+            if (abs(NPXT/float(NXT) - (prp_obj%Nx - 1)/float(Nx - 1)) .gt. 0.0001) then
                 call shd_mpi__abort('Error [mpi__map]: Even X base grid cannot be preserved&
                     & for this Nx and number of processors')
             end if
             ixyOut_(1, 1) = nint(NXT*float(ixyPrp_(1, 1) - 1)/NPXT) + 1
-            ixyOut_(2, 1) = nint(NXT*float(Nx_prp - 1)/NPXT)
-            XSTART = (ixyPrp_(1, 1) - 1)*dx_prp
-            XEND = (ixyPrp_(2, 1) - 1)*dx_prp
+            ixyOut_(2, 1) = nint(NXT*float(prp_obj%Nx - 1)/NPXT)
+            prp_obj%xStart = (ixyPrp_(1, 1) - 1)*prp_obj%dx
+            xEnd = (ixyPrp_(2, 1) - 1)*prp_obj%dx
 
         else
 
-            Nx_prp = 1
+            prp_obj%Nx = 1
 
             ixyOut_(1, 1) = nint(real(NXT)/real(dims(1)))*coords(1) + 1
             ixyOut_(2, 1) = min(nint(real(NXT)/real(dims(1)))*(coords(1)+1), NXT)
 
             Nx = ixyOut_(2, 1) - ixyOut_(1, 1) + 2
 
-            XSTART = real(dx_prp)/real(NXT) * real((ixyOut_(1, 1)-1))
-            XEND   = real(dx_prp)/real(NXT) * real((ixyOut_(2, 1)))
+            prp_obj%xStart = real(prp_obj%dx)/real(NXT) * real((ixyOut_(1, 1)-1))
+            xEnd   = real(prp_obj%dx)/real(NXT) * real((ixyOut_(2, 1)))
 
-            dx_prp = XEND - XSTART
+            prp_obj%dx = xEnd - prp_obj%xStart
 
 
         end if
     else
         ixyOut_(1, 1) = 1
         ixyOut_(2, 1) = NXT
-        XSTART = 0.0
-        XEND = NPXT*dx_prp
+        prp_obj%xStart = 0.0
+        xEnd = NPXT*prp_obj%dx
     end if
 
     if (dims(2) .gt. 1) then
 
         if (NPYT .gt. 1) then
 
-            Ny_prp = ixyPrp_(2, 2) - ixyPrp_(1, 2) + 1
-            Ny = nint(NYT*float(Ny_prp - 1)/NPYT) + 1
-            if (abs(NPYT/float(NYT) - (Ny_prp - 1)/float(Ny - 1)) .gt. 0.0001) then
+            prp_obj%Ny = ixyPrp_(2, 2) - ixyPrp_(1, 2) + 1
+            Ny = nint(NYT*float(prp_obj%Ny - 1)/NPYT) + 1
+            if (abs(NPYT/float(NYT) - (prp_obj%Ny - 1)/float(Ny - 1)) .gt. 0.0001) then
                 call shd_mpi__abort('Error [mpi__map]: Even Y base grid cannot be preserved&
                     & for this Ny and number of processors')
             end if
             ixyOut_(1, 2) = nint(NYT*float(ixyPrp_(1, 2) - 1)/NPYT) + 1
-            ixyOut_(2, 2) = nint(NYT*float(Ny_prp - 1)/NPYT)
-            YSTART = (ixyPrp_(1, 2) - 1)*dy_prp
-            YEND = (ixyPrp_(2, 2) - 1)*dy_prp
+            ixyOut_(2, 2) = nint(NYT*float(prp_obj%Ny - 1)/NPYT)
+            prp_obj%yStart = (ixyPrp_(1, 2) - 1)*prp_obj%dy
+            yEnd = (ixyPrp_(2, 2) - 1)*prp_obj%dy
 
         else
 
-            Ny_prp = 1
+            prp_obj%Ny = 1
 
             ixyOut_(1, 2) = nint(real(NYT)/real(dims(2)))*coords(2) + 1
             ixyOut_(2, 2) = min(nint(real(NYT)/real(dims(2)))*(coords(2)+1), NYT)
 
             Ny = ixyOut_(2, 2) - ixyOut_(1, 2) + 2
 
-            YSTART = real(dy_prp)/real(NYT) * real((ixyOut_(1, 2)-1))
-            YEND   = real(dy_prp)/real(NYT) * real((ixyOut_(2, 2)))
+            prp_obj%yStart = real(prp_obj%dy)/real(NYT) * real((ixyOut_(1, 2)-1))
+            yEnd   = real(prp_obj%dy)/real(NYT) * real((ixyOut_(2, 2)))
 
-            dy_prp = YEND - YSTART
+            prp_obj%dy = yEnd - prp_obj%yStart
 
         end if
     else
         ixyOut_(1, 2) = 1
         ixyOut_(2, 2) = NYT
-        YSTART = 0.0
-        YEND = NPYT*dy_prp
+        prp_obj%yStart = 0.0
+        yEnd = NPYT*prp_obj%dy
     end if
 
     ! Get the processors (rank numbers) of the neighbors
@@ -333,10 +336,10 @@ subroutine shd_mpi__map(BCFLAG, Nx_prp, Ny_prp, Nx, Ny, Nz, dx_prp, dy_prp, file
     if (verbose_ .ge. 5) write (6, '(2X,A,2(I0,2X))')    'Nproc in X and Y: ', dims(1:2)
     if (verbose_ .ge. 5) write (6, '(2X,A,I0)')          '  This processor: ', myProc_
     if (verbose_ .ge. 5) write (6, '(2X,A,4(I0,2X))')    '       Neighbors: ', iProcNeigh_(1:4)
-    if (verbose_ .ge. 5) write (6, '(2X,A,2(F0.2," km",2X))') '         X range: ', XSTART, XEND
-    if (verbose_ .ge. 5) write (6, '(2X,A,2(F0.2," km",2X))') '         Y range: ', YSTART, YEND
+    if (verbose_ .ge. 5) write (6, '(2X,A,2(F0.2," km",2X))') '         X range: ', prp_obj%xStart, xEnd
+    if (verbose_ .ge. 5) write (6, '(2X,A,2(F0.2," km",2X))') '         Y range: ', prp_obj%yStart, yEnd
 #else
-    XSTART = 0.0; YSTART = 0.0
+    prp_obj%xStart = 0.0; prp_obj%yStart = 0.0
 #endif
 
     return
@@ -383,7 +386,7 @@ subroutine shd_mpi__bcastInp(&
     real    :: realbuf(16)
     character(len=1) :: char1buf(3)
     character(len=charMaxLen_) :: char256buf(7)
-    character(len=4) :: procstr
+    character(len=4) :: procStr
 
     if (Nproc_ .le. 1) return
 
@@ -420,9 +423,9 @@ subroutine shd_mpi__bcastInp(&
     call mpi_bcast(parms_Out, MAXPAR*NUMOUT, MPI_real, 0, MPI_comm_world, ierr)
     call mpi_bcast(OUTTYPES, NUMOUT*1, MPI_character, 0, MPI_comm_world, ierr)
 
-    write (procstr, '(I4.4)') myProc_
-    if (fileInp_sav(1:4) .ne. 'NONE') fileInp_sav = trim(fileInp_sav)//'.iproc-'//procstr
-    if (fileOut_sav(1:4) .ne. 'NONE') fileOut_sav = trim(fileOut_sav)//'.iproc-'//procstr
+    write (procStr, '(I4.4)') myProc_
+    if (fileInp_sav(1:4) .ne. 'NONE') fileInp_sav = trim(fileInp_sav)//'.iproc-'//procStr
+    if (fileOut_sav(1:4) .ne. 'NONE') fileOut_sav = trim(fileOut_sav)//'.iproc-'//procStr
 #endif
 
     return
@@ -456,25 +459,14 @@ subroutine shd_mpi__bcastPrpSize(prp_obj)
 
 end subroutine shd_mpi__bcastPrpSize
 
-subroutine shd_mpi__bcastPrp(NPXT, NPYT, Nx_prp, Ny_prp, Nz_prp,&
-    &NlegSet_prp, Nleg_prp, Npha_prp,&
-    &z_Prp, maxAsym,&
-    &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, IPHASEPT,&
-    &temp_Prp, ext_Prp, ssa_Prp, leg_Prp, ipha_Prp)
+subroutine shd_mpi__bcastPrp(prpAll_obj, prp_obj)
 
     ! Sends portions of the optical properties on the property grid to each
     ! of the processors.  Deals with the duplicating the grid points on the
     ! boundaries between processors.
 
-    integer, intent(in) :: NPXT, NPYT, Nx_prp, Ny_prp, Nz_prp, NlegSet_prp, Npha_prp
-    integer, intent(inout) :: Nleg_prp
-    real, intent(inout) :: z_Prp(Nz_prp), maxAsym
-    real, intent(in) :: TEMPPT(Nz_prp, NPYT, NPXT), EXTINCTPT(Nz_prp, NPYT, NPXT)
-    real, intent(in) :: ALBEDOPT(Nz_prp, NPYT, NPXT), LEGENPT(*)
-    integer*2, intent(in) :: IPHASEPT(Nz_prp, NPYT, NPXT)
-    real, intent(out) :: temp_Prp(Nz_prp, Ny_prp, Nx_prp), ext_Prp(Nz_prp, Ny_prp, Nx_prp)
-    real, intent(out) :: ssa_Prp(Nz_prp, Ny_prp, Nx_prp), leg_Prp(*)
-    integer*2, intent(out) :: ipha_Prp(Nz_prp, Ny_prp, Nx_prp)
+    type(shd_type_prp), intent(inout) :: prpAll_obj
+    type(shd_type_prp), intent(inout) :: prp_obj
 
 #if HAS_MPI
     integer :: SX, EX, Nx, SY, EY, Ny, N, MAXN, MaxNX, MaxNY
@@ -482,30 +474,57 @@ subroutine shd_mpi__bcastPrp(NPXT, NPYT, Nx_prp, Ny_prp, Nz_prp,&
     integer, allocatable :: ixyAll(:, :, :)
     real, allocatable :: realbuf(:), rbuf(:, :, :)
     real, allocatable :: tempbuf(:, :), extbuf(:, :), albbuf(:, :)
-    integer*2, allocatable :: ibuf(:, :, :), iphbuf(:, :)
+    integer(kind=2), allocatable :: ibuf(:, :, :), iphbuf(:, :)
 
     type(MPI_request), allocatable :: requests(:)
     type(MPI_status), allocatable :: status(:)
 
+    real(kind=R__), pointer, contiguous ::  dataRaw_temp_PrpAll(:, :, :) => null(), &
+                                dataRaw_ext_PrpAll(:, :, :)  => null(), &
+                                dataRaw_ssa_PrpAll(:, :, :)  => null()
+
+    integer(kind=2), pointer, contiguous :: dataRaw_ipha_PrpAll(:, :, :) => null()
+
+    !real(kind=R__), pointer, contiguous :: dataRaw_temp_Prp(:, :, :) => null(), &
+    !                                       dataRaw_ext_Prp(:, :, :)  => null(), &
+    !                                       dataRaw_ssa_Prp(:, :, :)  => null(), &
+    !integer(kind=2), pointer, contiguous :: dataRaw_ipha_Prp(:, :, :) => null()
+
+    dataRaw_temp_PrpAll(1:prpAll_obj%Nz, 1:prpAll_obj%Ny, 1:prpAll_obj%Nx) => prpAll_obj%dataRaw_temp
+    dataRaw_ext_PrpAll( 1:prpAll_obj%Nz, 1:prpAll_obj%Ny, 1:prpAll_obj%Nx) => prpAll_obj%dataRaw_ext
+    dataRaw_ssa_PrpAll( 1:prpAll_obj%Nz, 1:prpAll_obj%Ny, 1:prpAll_obj%Nx) => prpAll_obj%dataRaw_ssa
+    dataRaw_ipha_PrpAll(1:prpAll_obj%Nz, 1:prpAll_obj%Ny, 1:prpAll_obj%Nx) => prpAll_obj%dataRaw_ipha
+    print *, 'haha1'
+
+    !dataRaw_temp_Prp(1:prp_obj%Nz, 1:prp_obj%Ny, 1:prp_obj%Nx) => prp_obj%dataRaw_temp
+    !dataRaw_ext_Prp( 1:prp_obj%Nz, 1:prp_obj%Ny, 1:prp_obj%Nx) => prp_obj%dataRaw_ext
+    !dataRaw_ssa_Prp( 1:prp_obj%Nz, 1:prp_obj%Ny, 1:prp_obj%Nx) => prp_obj%dataRaw_ssa
+    !dataRaw_ipha_Prp(1:prp_obj%Nz, 1:prp_obj%Ny, 1:prp_obj%Nx) => prp_obj%dataRaw_ipha
+
     ! Broadcast the small stuff that is going to all processors
-    allocate (realbuf(Nz_prp + 1))
-    realbuf(1:Nz_prp + 1) = (/z_Prp(1:Nz_prp), maxAsym/)
-    call mpi_bcast(realbuf, Nz_prp + 1, MPI_real, 0, comm2D_, ierr)
-    z_Prp(1:Nz_prp) = realbuf(1:Nz_prp); maxAsym = realbuf(Nz_prp + 1)
+    allocate (realbuf(prpAll_obj%Nz + 1))
+    realbuf(1:prpAll_obj%Nz + 1) = (/prpAll_obj%dataRaw_z(1:prpAll_obj%Nz), prpAll_obj%maxAsym/)
+    call mpi_bcast(realbuf, prpAll_obj%Nz + 1, MPI_real, 0, comm2D_, ierr)
+    prp_obj%dataRaw_z(1:prpAll_obj%Nz) = realbuf(1:prpAll_obj%Nz); prp_obj%maxAsym = realbuf(prpAll_obj%Nz + 1)
+    print *, 'haha2'
 
     ! If we have a tabulated phase function, then broadcast to all processors
-    if (Npha_prp .gt. 0) then
-        if (myProc_ .eq. 0) leg_Prp(1:Npha_prp*(Nleg_prp + 1)*NlegSet_prp) =&
-            &LEGENPT(1:Npha_prp*(Nleg_prp + 1)*NlegSet_prp)
-        call mpi_bcast(Nleg_prp, 1, MPI_integer, 0, comm2D_, ierr)
-        call mpi_bcast(leg_Prp, NlegSet_prp*(Nleg_prp + 1)*Npha_prp, MPI_real, 0, comm2D_, ierr)
+    if (prp_obj%Npha .gt. 0) then
+        if (myProc_ .eq. 0) prp_obj%dataRaw_leg(1:prp_obj%Npha*(prp_obj%Nleg + 1)*prp_obj%NlegSet) =&
+            &prpAll_obj%dataRaw_leg(1:prp_obj%Npha*(prp_obj%Nleg + 1)*prp_obj%NlegSet)
+        call mpi_bcast(prp_obj%Nleg , 1, MPI_integer, 0, comm2D_, ierr)
+        print *, 'prp_obj%maxNptsLeg [MPI]:', prp_obj%NlegSet*(prp_obj%Nleg + 1)*prp_obj%Npha
+        print *, 'Par[MPI]:', prp_obj%NlegSet, prp_obj%Nleg + 1, prp_obj%Npha
+        call mpi_bcast(prp_obj%dataRaw_leg, prp_obj%NlegSet*(prp_obj%Nleg + 1)*prp_obj%Npha, MPI_real, 0, comm2D_, ierr)
     end if
+    print *, 'haha3'
 
     ! Get the ixyPrp_ arrays from all processors to tell where they are in property grid
     allocate (ixyAll(2, 2, 0:Nproc_ - 1))
     call mpi_gather(ixyPrp_, 4, MPI_integer, ixyAll, 4, MPI_integer, 0, comm2D_, ierr)
 
     allocate (requests(4*Nproc_ + 4), status(4*Nproc_ + 4))
+    print *, 'haha4'
 
     irq = 0
     if (myProc_ .eq. 0) then
@@ -514,9 +533,9 @@ subroutine shd_mpi__bcastPrp(NPXT, NPYT, Nx_prp, Ny_prp, Nz_prp,&
         do iproc = 0, Nproc_ - 1
             Nx = ixyAll(2, 1, iproc) - ixyAll(1, 1, iproc) + 1; MaxNX = max(MaxNX, Nx)
             Ny = ixyAll(2, 2, iproc) - ixyAll(1, 2, iproc) + 1; MaxNY = max(MaxNY, Ny)
-            MAXN = max(MAXN, Nz_prp*Ny*Nx)
+            MAXN = max(MAXN, prpAll_obj%Nz*Ny*Nx)
         end do
-        allocate (rbuf(Nz_prp, MaxNY, MaxNX), ibuf(Nz_prp, MaxNY, MaxNX))
+        allocate (rbuf(prpAll_obj%Nz, MaxNY, MaxNX), ibuf(prpAll_obj%Nz, MaxNY, MaxNX))
         allocate (tempbuf(MAXN, 0:Nproc_ - 1), extbuf(MAXN, 0:Nproc_ - 1))
         allocate (albbuf(MAXN, 0:Nproc_ - 1), iphbuf(MAXN, 0:Nproc_ - 1))
         ! The master processor reformats the four property arrays (to deal with
@@ -524,48 +543,50 @@ subroutine shd_mpi__bcastPrp(NPXT, NPYT, Nx_prp, Ny_prp, Nz_prp,&
         do iproc = 0, Nproc_ - 1
             SX = ixyAll(1, 1, iproc); EX = ixyAll(2, 1, iproc)
             SY = ixyAll(1, 2, iproc); EY = ixyAll(2, 2, iproc)
-            Nx = EX - SX + 1; Ny = EY - SY + 1; N = Nx*Ny*Nz_prp
-            rbuf(:, 1:Ny - 1, 1:Nx - 1) = TEMPPT(:, SY:EY - 1, SX:EX - 1)
-            rbuf(:, 1:Ny - 1, Nx) = TEMPPT(:, SY:EY - 1, mod(EX - 1, NPXT) + 1)
-            rbuf(:, Ny, 1:Nx - 1) = TEMPPT(:, mod(EY - 1, NPYT) + 1, SX:EX - 1)
-            rbuf(:, Ny, Nx) = TEMPPT(:, mod(EY - 1, NPYT) + 1, mod(EX - 1, NPXT) + 1)
-            tempbuf(1:N, iproc) = reshape(rbuf(1:Nz_prp, 1:Ny, 1:Nx), (/N/))
+            Nx = EX - SX + 1; Ny = EY - SY + 1; N = Nx*Ny*prpAll_obj%Nz
+            rbuf(:, 1:Ny - 1, 1:Nx - 1) = dataRaw_temp_PrpAll(:, SY:EY - 1, SX:EX - 1)
+            rbuf(:, 1:Ny - 1,       Nx) = dataRaw_temp_PrpAll(:, SY:EY - 1, mod(EX - 1, prpAll_obj%Nx) + 1)
+            rbuf(:,       Ny, 1:Nx - 1) = dataRaw_temp_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, SX:EX - 1)
+            rbuf(:,       Ny,       Nx) = dataRaw_temp_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, mod(EX - 1, prpAll_obj%Nx) + 1)
+            tempbuf(1:N, iproc) = reshape(rbuf(1:prpAll_obj%Nz, 1:Ny, 1:Nx), (/N/))
             call mpi_isend(tempbuf(1:N, iproc), N, MPI_real, iproc, 1, comm2D_, requests(irq + 1), ierr)
 
-            rbuf(:, 1:Ny - 1, 1:Nx - 1) = EXTINCTPT(:, SY:EY - 1, SX:EX - 1)
-            rbuf(:, 1:Ny - 1, Nx) = EXTINCTPT(:, SY:EY - 1, mod(EX - 1, NPXT) + 1)
-            rbuf(:, Ny, 1:Nx - 1) = EXTINCTPT(:, mod(EY - 1, NPYT) + 1, SX:EX - 1)
-            rbuf(:, Ny, Nx) = EXTINCTPT(:, mod(EY - 1, NPYT) + 1, mod(EX - 1, NPXT) + 1)
-            extbuf(1:N, iproc) = reshape(rbuf(1:Nz_prp, 1:Ny, 1:Nx), (/N/))
+            rbuf(:, 1:Ny - 1, 1:Nx - 1) = dataRaw_ext_PrpAll(:, SY:EY - 1, SX:EX - 1)
+            rbuf(:, 1:Ny - 1,       Nx) = dataRaw_ext_PrpAll(:, SY:EY - 1, mod(EX - 1, prpAll_obj%Nx) + 1)
+            rbuf(:,       Ny, 1:Nx - 1) = dataRaw_ext_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, SX:EX - 1)
+            rbuf(:,       Ny,       Nx) = dataRaw_ext_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, mod(EX - 1, prpAll_obj%Nx) + 1)
+            extbuf(1:N, iproc) = reshape(rbuf(1:prpAll_obj%Nz, 1:Ny, 1:Nx), (/N/))
             call mpi_isend(extbuf(1:N, iproc), N, MPI_real, iproc, 2, comm2D_, requests(irq + 2), ierr)
 
-            rbuf(:, 1:Ny - 1, 1:Nx - 1) = ALBEDOPT(:, SY:EY - 1, SX:EX - 1)
-            rbuf(:, 1:Ny - 1, Nx) = ALBEDOPT(:, SY:EY - 1, mod(EX - 1, NPXT) + 1)
-            rbuf(:, Ny, 1:Nx - 1) = ALBEDOPT(:, mod(EY - 1, NPYT) + 1, SX:EX - 1)
-            rbuf(:, Ny, Nx) = ALBEDOPT(:, mod(EY - 1, NPYT) + 1, mod(EX - 1, NPXT) + 1)
-            albbuf(1:N, iproc) = reshape(rbuf(1:Nz_prp, 1:Ny, 1:Nx), (/N/))
+            rbuf(:, 1:Ny - 1, 1:Nx - 1) = dataRaw_ssa_PrpAll(:, SY:EY - 1, SX:EX - 1)
+            rbuf(:, 1:Ny - 1,       Nx) = dataRaw_ssa_PrpAll(:, SY:EY - 1, mod(EX - 1, prpAll_obj%Nx) + 1)
+            rbuf(:,       Ny, 1:Nx - 1) = dataRaw_ssa_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, SX:EX - 1)
+            rbuf(:,       Ny,       Nx) = dataRaw_ssa_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, mod(EX - 1, prpAll_obj%Nx) + 1)
+            albbuf(1:N, iproc) = reshape(rbuf(1:prpAll_obj%Nz, 1:Ny, 1:Nx), (/N/))
             call mpi_isend(albbuf(1:N, iproc), N, MPI_real, iproc, 3, comm2D_, requests(irq + 3), ierr)
 
-            ibuf(:, 1:Ny - 1, 1:Nx - 1) = IPHASEPT(:, SY:EY - 1, SX:EX - 1)
-            ibuf(:, 1:Ny - 1, Nx) = IPHASEPT(:, SY:EY - 1, mod(EX - 1, NPXT) + 1)
-            ibuf(:, Ny, 1:Nx - 1) = IPHASEPT(:, mod(EY - 1, NPYT) + 1, SX:EX - 1)
-            ibuf(:, Ny, Nx) = IPHASEPT(:, mod(EY - 1, NPYT) + 1, mod(EX - 1, NPXT) + 1)
-            iphbuf(1:N, iproc) = reshape(ibuf(1:Nz_prp, 1:Ny, 1:Nx), (/N/))
+            ibuf(:, 1:Ny - 1, 1:Nx - 1) = dataRaw_ipha_PrpAll(:, SY:EY - 1, SX:EX - 1)
+            ibuf(:, 1:Ny - 1,       Nx) = dataRaw_ipha_PrpAll(:, SY:EY - 1, mod(EX - 1, prpAll_obj%Nx) + 1)
+            ibuf(:,       Ny, 1:Nx - 1) = dataRaw_ipha_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, SX:EX - 1)
+            ibuf(:,       Ny,       Nx) = dataRaw_ipha_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, mod(EX - 1, prpAll_obj%Nx) + 1)
+            iphbuf(1:N, iproc) = reshape(ibuf(1:prpAll_obj%Nz, 1:Ny, 1:Nx), (/N/))
             call mpi_isend(iphbuf(1:N, iproc), N, MPI_integer2, iproc, 4, comm2D_, requests(irq + 4), ierr)
             irq = irq + 4
         end do
     end if
 
-    N = Nx_prp*Ny_prp*Nz_prp
-    call mpi_irecv(temp_Prp, N, MPI_real    , 0, 1, comm2D_, requests(irq + 1), ierr)
-    call mpi_irecv(ext_Prp , N, MPI_real    , 0, 2, comm2D_, requests(irq + 2), ierr)
-    call mpi_irecv(ssa_Prp , N, MPI_real    , 0, 3, comm2D_, requests(irq + 3), ierr)
-    call mpi_irecv(ipha_Prp, N, MPI_integer2, 0, 4, comm2D_, requests(irq + 4), ierr)
+    N = prp_obj%Nx*prp_obj%Ny*prpAll_obj%Nz
+    call mpi_irecv(prp_obj%dataRaw_temp, N, MPI_real    , 0, 1, comm2D_, requests(irq + 1), ierr)
+    call mpi_irecv(prp_obj%dataRaw_ext , N, MPI_real    , 0, 2, comm2D_, requests(irq + 2), ierr)
+    call mpi_irecv(prp_obj%dataRaw_ssa , N, MPI_real    , 0, 3, comm2D_, requests(irq + 3), ierr)
+    call mpi_irecv(prp_obj%dataRaw_ipha, N, MPI_integer2, 0, 4, comm2D_, requests(irq + 4), ierr)
     irq = irq + 4
     call mpi_waitall(irq, requests, status, ierr)
 
     if (myProc_ .eq. 0) deallocate (tempbuf, extbuf, albbuf, iphbuf, rbuf, ibuf)
     deallocate (requests, status, ixyAll, realbuf)
+    nullify(dataRaw_temp_PrpAll, dataRaw_ext_PrpAll, dataRaw_ssa_PrpAll, dataRaw_ipha_PrpAll)
+    !nullify(dataRaw_temp_Prp, dataRaw_ext_Prp, dataRaw_ssa_Prp, dataRaw_ipha_Prp)
 #endif
 
     return

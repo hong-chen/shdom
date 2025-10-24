@@ -141,9 +141,12 @@ module globals_cfg
         integer(kind=I__) :: Nleg
         integer(kind=I__) :: NlegSet
 
+        integer(kind=I__) :: maxNz
         integer(kind=I__) :: maxNpts
         integer(kind=I__) :: maxNleg
         integer(kind=I__) :: maxNptsLeg
+
+        real(kind=R__) :: maxAsym
 
         real(kind=R__) :: dx
         real(kind=R__) :: dy
@@ -157,8 +160,10 @@ module globals_cfg
         real(kind=R__), pointer :: dataRaw_ext(:)     => null()
         real(kind=R__), pointer :: dataRaw_extDir(:)  => null()
         real(kind=R__), pointer :: dataRaw_ssa(:)     => null()
+
+        integer(kind=2), pointer:: dataRaw_ipha(:)    => null()
+
         real(kind=R__), pointer :: dataRaw_leg(:)     => null()
-        integer(kind=2), pointer:: dataRaw_ipha(: )   => null()
 
         logical :: isAllocated  = .false.
 
