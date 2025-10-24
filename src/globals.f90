@@ -129,8 +129,41 @@ module globals_cfg
     integer, parameter :: R__ = selected_real_kind(6)
     integer, parameter :: charMaxLen_ = 256 ! file name max length (number of characters)
 
-    ! planning to use derived type feature in modern Fortran
-    ! for sensor, surface, atmosphere, etc.
+    type :: shd_type_prp
+
+        character(len=charMaxLen_) :: fname = 'NONE'
+        character(len=1) :: type
+
+        integer(kind=I__) :: Nx
+        integer(kind=I__) :: Ny
+        integer(kind=I__) :: Nz
+        integer(kind=I__) :: Npha
+        integer(kind=I__) :: Nleg
+        integer(kind=I__) :: NlegSet
+
+        integer(kind=I__) :: maxNpts
+        integer(kind=I__) :: maxNleg
+        integer(kind=I__) :: maxNptsLeg
+
+        real(kind=R__) :: dx
+        real(kind=R__) :: dy
+        real(kind=R__) :: xStart
+        real(kind=R__) :: yStart
+        real(kind=R__) :: xDomain
+        real(kind=R__) :: yDomain
+
+        real(kind=R__), pointer :: dataRaw_z(:)       => null()
+        real(kind=R__), pointer :: dataRaw_temp(:)    => null()
+        real(kind=R__), pointer :: dataRaw_ext(:)     => null()
+        real(kind=R__), pointer :: dataRaw_extDir(:)  => null()
+        real(kind=R__), pointer :: dataRaw_ssa(:)     => null()
+        real(kind=R__), pointer :: dataRaw_leg(:)     => null()
+        integer(kind=2), pointer:: dataRaw_ipha(: )   => null()
+
+        logical :: isAllocated  = .false.
+
+    end type shd_type_prp
+
     type :: shd_type_sfc
 
         character(len=charMaxLen_) :: fname = 'NONE'
@@ -141,7 +174,6 @@ module globals_cfg
         integer(kind=I__) :: maxNpts
         integer(kind=I__) :: maxNpar
         integer(kind=I__) :: Npar
-        integer(kind=I__) :: Ndim
 
         real(kind=R__) :: dx
         real(kind=R__) :: dy

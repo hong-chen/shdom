@@ -47,15 +47,8 @@ program shdom
                              is1DX_, is1DYx_, is1D_, is3Ddir1Ddif_, &
                              is1D1_, isPol_, isPol4_, &
                              isSolar_, isThermal_, &
-                             shd_type_sfc, shd_type_ckd, shd_type_sen
-
-    use globals_prp,   only: Nx_prp_, Ny_prp_, Nz_prp_, Npha_prp_, &
-                             dx_prp_, dy_prp_, xStart_prp_, yStart_prp_, &
-                             xDomain_prp_, yDomain_prp_, &
-                             z_Prp_, temp_Prp_, &
-                             ext_Prp_, ssa_Prp_, &
-                             extDir_Prp_, &
-                             leg_Prp_, ipha_Prp_
+                             shd_type_prp, shd_type_sfc, &
+                             shd_type_ckd, shd_type_sen
 
     use shd_init, only: shd_init__makeGrid, &
                         shd_init__makeCell
@@ -158,21 +151,15 @@ program shdom
 
     ! PRP
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    character(len=charMaxLen_) :: fileInp_prp
-    character(len=1) :: type_prp
-    integer(kind=I__) :: NlegSet_prp, Nleg_prp
-    real(kind=R__)    :: dxTmp_prp, dyTmp_prp
+    type(shd_type_prp) :: prp_obj, prpAll_obj
 
-    ! <globals_prp> contains the following:
-    !
-    ! integer, save :: Nx_prp_, Ny_prp_, Nz_prp_, Npha_prp_
-    ! real, save    :: dx_prp_, dy_prp_, xStart_prp_, yStart_prp_
-    ! real, save    :: xDomain_prp_, yDomain_prp_
-    ! real, save, allocatable :: z_Prp_(:)
-    ! real, save, allocatable :: temp_Prp_(:), ext_Prp_(:), ssa_Prp_(:)
-    ! real, save, allocatable :: extDir_Prp_(:)
-    ! real, save, allocatable :: leg_Prp_(:)
-    ! integer(2), save, allocatable :: ipha_Prp_(:)
+    real(kind=R__)   :: dxTmp_prp, dyTmp_prp
+
+     real, save, allocatable, target :: dataRaw_z_Prp(:)
+     real, save, allocatable, target :: dataRaw_temp_Prp(:), dataRaw_ext_Prp(:), dataRaw_ssa_Prp(:)
+     real, save, allocatable, target :: dataRaw_extDir_Prp(:)
+     real, save, allocatable, target :: dataRaw_leg_Prp(:)
+     integer(2), save, allocatable, target :: dataRaw_ipha_Prp(:)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! sfc_obj
@@ -222,15 +209,15 @@ program shdom
     real(kind=R__) :: NmaxIG
     real(kind=R__) :: memUsed, memNeed, scaleFactor
 
-    integer(kind=I__) :: maxG_P, maxIG, maxIC, maxIV, maxIDO, maxNz, maxNg
-    integer(kind=I__) :: maxLeg, maxGL_P, maxIGL, NbigArr
+    integer(kind=I__) :: maxIG, maxIC, maxIV, maxIDO, maxNz, maxNg
+    integer(kind=I__) :: maxIGL, NbigArr
 
     real(kind=R__) :: MAX_TOTAL_MB, ADAPT_GRID_FACTOR
     real(kind=R__) :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
     real(kind=R__) :: MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
 
     integer(kind=I__) :: Nstokes, Nx, Ny, Nz, Nx1, Ny1
-    integer(kind=I__) :: Nx_T, Ny_T, Nx_PT, Ny_PT, maxG_PT, maxGL_PT
+    integer(kind=I__) :: Nx_T, Ny_T
 
     integer(kind=I__) :: Npts_base, Npts, Ncell, Nsh, Ncell_base, oldNpts
     integer(kind=I__) :: maxIter, iter, totIter, iz, iout, Nout, flag_bc, ipFlag
@@ -268,7 +255,7 @@ program shdom
     !   and the results are then broadcast to the child processors.
     if (isMasterProc) then
         if (isNmlInp_) then
-            call shd_io__nmlInp(runName, fileInp_prp, sfc_obj%fname, ckd_obj%fname,&
+            call shd_io__nmlInp(runName, prp_obj%fname, sfc_obj%fname, ckd_obj%fname,&
                 fileInp_sav, fileOut_sav, sen_obj%fname,&
                 Nstokes, Nx, Ny, Nz, Nmu_do, Nphi_do, flag_bc,&
                 ipFlag, isCkd, isDeltaM, type_grid,&
@@ -279,7 +266,7 @@ program shdom
                 fileOut_nc, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
                 NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, verbose_)
         else
-            call shd_io__userInp(runName, fileInp_prp, sfc_obj%fname, ckd_obj%fname,&
+            call shd_io__userInp(runName, prp_obj%fname, sfc_obj%fname, ckd_obj%fname,&
                 fileInp_sav, fileOut_sav, sen_obj%fname,&
                 Nstokes, Nx, Ny, Nz, Nmu_do, Nphi_do, flag_bc,&
                 ipFlag, isCkd, isDeltaM, type_grid,&
@@ -292,7 +279,7 @@ program shdom
         end if
     end if
 
-    call shd_mpi__bcastInp(runName, fileInp_prp,&
+    call shd_mpi__bcastInp(runName,&
         &fileInp_sav, fileOut_sav,&
         &Nstokes, Nx, Ny, Nz, Nmu_do, Nphi_do, flag_bc,&
         &ipFlag, isCkd, isDeltaM, type_grid,&
@@ -301,7 +288,7 @@ program shdom
         &isAccel, solAcc, maxIter, splitAcc, shAcc,&
         &maxNset_out, maxNpar_out, Nout, type_Out, parms_Out,&
         &MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
-        &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, sfc_obj, ckd_obj, sen_obj)
+        &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, prp_obj, sfc_obj, ckd_obj, sen_obj)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! Memory used for initialization (rough estimate, 1 WORD = 4 bytes)
@@ -320,14 +307,14 @@ program shdom
         if (verbose_ .ge. 4) write (6, '(A)') 'Warning [shdom]: Nstokes cannot be 2, reset Nstokes to 3.'
     end if
 
-    ! NlegSet_prp is the number of phase function elements used (1 or 6)
+    ! prp_obj%NlegSet is the number of phase function elements used (1 or 6)
     !   Also used for the number of unique elements of the generalized
     !   spherical harmonics matrices.
     if (Nstokes .eq. 1) then
-        NlegSet_prp = 1
+        prp_obj%NlegSet = 1
         isPol_ = .false.
     else
-        NlegSet_prp = 6
+        prp_obj%NlegSet = 6
         isPol_ = .true.
     end if
 
@@ -353,9 +340,9 @@ program shdom
     ! Nlm_sh: The number of spherical harmonic terms
     Nlm_sh = (2*maxNm_sh + 1)*(maxNl_sh + 1) - maxNm_sh*(maxNm_sh + 1)
 
-    ! Nleg_prp: The number of Legendre series phase function terms used in the solution procedure
-    Nleg_prp = maxNl_sh
-    if (isDeltaM) Nleg_prp = maxNl_sh + 1
+    ! prp_obj%Nleg: The number of Legendre series phase function terms used in the solution procedure
+    prp_obj%Nleg = maxNl_sh
+    if (isDeltaM) prp_obj%Nleg = maxNl_sh + 1
 
     if (type_src .eq. 'B') then
         isSolar_ = .true.
@@ -382,16 +369,14 @@ program shdom
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
-    ! Read fileInp_prp (property file) to get data size info, broadcast data if MPI
+    ! Read prp_obj%fname (property file) to get data size info, broadcast data if MPI
     !╭────────────────────────────────────────────────────────────────────────────╮!
     if (isMasterProc) then
         ! Find out the size of the input property file grid
-        call shd_io__readPrpSize(fileInp_prp, NlegSet_prp, Nleg_prp, Nx_prp_, Ny_prp_, Nz_prp_, dx_prp_, dy_prp_,&
-            &Npha_prp_, maxLeg, maxGL_P)
+        call shd_io__readPrpSize(prp_obj)
     end if
 
-    call shd_mpi__bcastPrpSize(Nx_prp_, Ny_prp_, Nz_prp_, dx_prp_, dy_prp_,&
-        &Npha_prp_, maxLeg, maxGL_P)
+    call shd_mpi__bcastPrpSize(prp_obj)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
@@ -402,8 +387,8 @@ program shdom
         sfc_obj%type  = 'FL'
         sfc_obj%Nx = 1
         sfc_obj%Ny = 1
-        sfc_obj%dx = dx_prp_
-        sfc_obj%dy = dy_prp_
+        sfc_obj%dx = prp_obj%dx
+        sfc_obj%dy = prp_obj%dy
         sfc_obj%maxNpts = 1
         sfc_obj%maxNpar = 2
         sfc_obj%isUniform    = .true.
@@ -446,22 +431,22 @@ program shdom
 
     ! Set the full domain grid sizes (variables end in T)
     Nx_T = Nx  ; Ny_T = Ny
-    Nx_PT = Nx_prp_; Ny_PT = Ny_prp_
+    prpAll_obj%Nx = prp_obj%Nx; prpAll_obj%Ny = prp_obj%Ny
 
-    if (Nx_PT .eq. 1) then
-        dx_prp_ = sfc_obj%Nx * sfc_obj%dx ! overwrite dx_prp_ if only 1 grid in X direction
-        if (verbose_ .ge. 4) write (6, '(A)') 'Warning [shdom]: Nx_PT=1, reset dx_prp_ to match surface domain.'
+    if (prpAll_obj%Nx .eq. 1) then
+        prp_obj%dx = sfc_obj%Nx * sfc_obj%dx ! overwrite prp_obj%dx if only 1 grid in X direction
+        if (verbose_ .ge. 4) write (6, '(A)') 'Warning [shdom]: prpAll_obj%Nx=1, reset prp_obj%dx to match surface domain.'
     end if
-    if (Ny_PT .eq. 1) then
-        dy_prp_ = sfc_obj%Ny * sfc_obj%dy ! overwrite dy_prp_ if only 1 grid in Y direction
-        if (verbose_ .ge. 4) write (6, '(A)') 'Warning [shdom]: Ny_PT=1, reset dy_prp_ to match surface domain.'
+    if (prpAll_obj%Ny .eq. 1) then
+        prp_obj%dy = sfc_obj%Ny * sfc_obj%dy ! overwrite prp_obj%dy if only 1 grid in Y direction
+        if (verbose_ .ge. 4) write (6, '(A)') 'Warning [shdom]: prpAll_obj%Ny=1, reset prp_obj%dy to match surface domain.'
     end if
 
-    xDomain_prp_ = Nx_PT*dx_prp_
-    yDomain_prp_ = Ny_PT*dy_prp_
+    prp_obj%xDomain = prpAll_obj%Nx * prp_obj%dx
+    prp_obj%yDomain = prpAll_obj%Ny * prp_obj%dy
 
     ! Choose the option to compute higher order radiance SH terms
-    if ((Nx_PT .eq. 1) .and. (Ny_PT .eq. 1) .and.&
+    if ((prpAll_obj%Nx .eq. 1) .and. (prpAll_obj%Ny .eq. 1) .and.&
         &(sfc_obj%Nx .le. 32) .and. (sfc_obj%Ny .le. 32)) then
         isHighOrder_ = .true.
         if (verbose_ .ge. 4) write (6, '(A)') 'Warning [shdom]: 1D calculation, set isHighOrder_ to .TRUE.'
@@ -485,8 +470,8 @@ program shdom
     !   the X and Y starting position of this subdomain. Set bits
     !   2 and 3 in flag_bc to indicate multiple processors in X and Y.
     !   Also open the slave processor log files.
-    call shd_mpi__map(flag_bc, Nx_prp_, Ny_prp_, Nx, Ny, Nz, dx_prp_, dy_prp_, fileInp_prp,&
-        &xStart_prp_, yStart_prp_, runName)
+    call shd_mpi__map(flag_bc, prp_obj%Nx, prp_obj%Ny, Nx, Ny, Nz, prp_obj%dx, prp_obj%dy, prp_obj%fname,&
+        &prp_obj%xStart, prp_obj%yStart, runName)
 
     ! flag_bc bit-representation '...0001' isOpenX_
     if (btest(flag_bc, 0)) then
@@ -578,17 +563,26 @@ program shdom
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
-    ! Read fileInp_prp and distribute data if MPI
+    ! Read prp_obj%fname and distribute data if MPI
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Determine the size of the property grid arrays so can allocate
-    maxNz  = Nz_prp_
-    maxG_P = Nx_prp_*Ny_prp_*Nz_prp_
-    if (Npha_prp_ .eq. 0) maxGL_P = maxG_P*(maxLeg + 1)*NlegSet_prp
+    maxNz  = prp_obj%Nz
+    prp_obj%maxNpts = prp_obj%Nx * prp_obj%Ny * prp_obj%Nz
+    if (prp_obj%Npha .eq. 0) prp_obj%maxNptsLeg = prp_obj%maxNpts * (prp_obj%maxNleg + 1) * prp_obj%NlegSet
 
-    allocate (z_Prp_(Nz_prp_))
-    allocate (temp_Prp_(maxG_P), ext_Prp_(maxG_P), ssa_Prp_(maxG_P))
-    allocate (extDir_Prp_(maxG_P), ipha_Prp_(maxG_P), leg_Prp_(maxGL_P))
-    memUsed = memUsed + Nz_prp_+ 6.0*maxG_P + maxGL_P
+    allocate (dataRaw_z_Prp(prp_obj%Nz))
+    allocate (dataRaw_temp_Prp(prp_obj%maxNpts), dataRaw_ext_Prp(prp_obj%maxNpts), dataRaw_ssa_Prp(prp_obj%maxNpts))
+    allocate (dataRaw_extDir_Prp(prp_obj%maxNpts), dataRaw_ipha_Prp(prp_obj%maxNpts), dataRaw_leg_Prp(prp_obj%maxNptsLeg))
+    memUsed = memUsed + prp_obj%Nz + 6.0*prp_obj%maxNpts + prp_obj%maxNptsLeg
+
+    prp_obj%dataRaw_z      => dataRaw_z_Prp
+    prp_obj%dataRaw_temp   => dataRaw_temp_Prp
+    prp_obj%dataRaw_ext    => dataRaw_ext_Prp
+    prp_obj%dataRaw_extDir => dataRaw_extDir_Prp
+    prp_obj%dataRaw_ssa    => dataRaw_ssa_Prp
+    prp_obj%dataRaw_leg    => dataRaw_leg_Prp
+    prp_obj%dataRaw_ipha   => dataRaw_ipha_Prp
+    prp_obj%isAllocated = .true.
 
     if (isMpi_) then
 
@@ -596,52 +590,52 @@ program shdom
         !   distribute to all the processors
         if (isMasterProc) then
 
-            maxG_PT = Nx_PT*Ny_PT*Nz_prp_
-            maxGL_PT = maxGL_P
-            if (Npha_prp_ .eq. 0) maxGL_PT = maxG_PT*(maxLeg + 1)*NlegSet_prp
+            prpAll_obj%maxNpts = prpAll_obj%Nx * prpAll_obj%Ny * prp_obj%Nz
+            prpAll_obj%maxNptsLeg = prp_obj%maxNptsLeg
+            if (prp_obj%Npha .eq. 0) prpAll_obj%maxNptsLeg = prpAll_obj%maxNpts * (prp_obj%maxNleg + 1) * prp_obj%NlegSet
 
-            allocate (temp_PT(maxG_PT), ext_PT(maxG_PT), ssa_PT(maxG_PT))
-            allocate (ipha_PT(maxG_PT), leg_PT(maxGL_PT))
+            allocate (temp_PT(prpAll_obj%maxNpts), ext_PT(prpAll_obj%maxNpts), ssa_PT(prpAll_obj%maxNpts))
+            allocate (ipha_PT(prpAll_obj%maxNpts), leg_PT(prpAll_obj%maxNptsLeg))
 
             ! Only use delX and delY from initial read, dxTmp_prp and dyTmp_prp are discarded
-            call shd_io__readPrp(fileInp_prp, Nx_PT, Ny_PT, Nz_prp_,&
-                &NlegSet_prp, maxLeg, Nleg_prp, maxNz, maxG_PT, maxGL_PT, isDeltaM,&
-                &type_prp, dxTmp_prp, dyTmp_prp, z_Prp_, maxAsym,&
-                &temp_PT, ext_PT, ssa_PT, leg_PT, Npha_prp_, ipha_PT)
+            call shd_io__readPrp(prp_obj%fname, prpAll_obj%Nx, prpAll_obj%Ny, prp_obj%Nz,&
+                &prp_obj%NlegSet, prp_obj%maxNleg, prp_obj%Nleg, maxNz, prpAll_obj%maxNpts, prpAll_obj%maxNptsLeg, isDeltaM,&
+                &prp_obj%type, dxTmp_prp, dyTmp_prp, prp_obj%dataRaw_z, maxAsym,&
+                &temp_PT, ext_PT, ssa_PT, leg_PT, prp_obj%Npha, ipha_PT)
 
-            if (Npha_prp_ .eq. 0) then
+            if (prp_obj%Npha .eq. 0) then
                 stop 'Error [shdom]: Standard property file (with phase function Legendre series at every point)&
                     & is not allowed with multiple processors.'
             end if
 
             ! Check values of medium properties
-            call shd_io__checkPrp(Nx_PT, Ny_PT, Nz_prp_, NlegSet_prp, Nleg_prp,&
-                &dx_prp_, dy_prp_, z_Prp_,&
-                &temp_PT, ext_PT, ssa_PT, leg_PT, Npha_prp_, ipha_PT)
+            call shd_io__checkPrp(prpAll_obj%Nx, prpAll_obj%Ny, prp_obj%Nz, prp_obj%NlegSet, prp_obj%Nleg,&
+                &prp_obj%dx, prp_obj%dy, prp_obj%dataRaw_z,&
+                &temp_PT, ext_PT, ssa_PT, leg_PT, prp_obj%Npha, ipha_PT)
 
         end if
 
         ! distribute file grid data to working grids (different CPU processes different grids)
-        call shd_mpi__bcastPrp(Nx_PT, Ny_PT, Nx_prp_, Ny_prp_, Nz_prp_,&
-            &NlegSet_prp, Nleg_prp, Npha_prp_,&
-            &z_Prp_, maxAsym,&
+        call shd_mpi__bcastPrp(prpAll_obj%Nx, prpAll_obj%Ny, prp_obj%Nx, prp_obj%Ny, prp_obj%Nz,&
+            &prp_obj%NlegSet, prp_obj%Nleg, prp_obj%Npha,&
+            &prp_obj%dataRaw_z, maxAsym,&
             &temp_PT, ext_PT, ssa_PT, leg_PT, ipha_PT,&
-            &temp_Prp_, ext_Prp_, ssa_Prp_, leg_Prp_, ipha_Prp_)
+            &prp_obj%dataRaw_temp, prp_obj%dataRaw_ext, prp_obj%dataRaw_ssa, prp_obj%dataRaw_leg, prp_obj%dataRaw_ipha)
 
         if (isMasterProc) deallocate (temp_PT, ext_PT, ssa_PT, ipha_PT, leg_PT)
 
     else
 
         ! Read the properties of the medium to the single processor
-        call shd_io__readPrp(fileInp_prp, Nx_prp_, Ny_prp_, Nz_prp_,&
-            &NlegSet_prp, maxLeg, Nleg_prp, maxNz, maxG_P, maxGL_P, isDeltaM,&
-            &type_prp, dx_prp_, dy_prp_, z_Prp_, maxAsym,&
-            &temp_Prp_, ext_Prp_, ssa_Prp_, leg_Prp_, Npha_prp_, ipha_Prp_)
+        call shd_io__readPrp(prp_obj%fname, prp_obj%Nx, prp_obj%Ny, prp_obj%Nz,&
+            &prp_obj%NlegSet, prp_obj%maxNleg, prp_obj%Nleg, maxNz, prp_obj%maxNpts, prp_obj%maxNptsLeg, isDeltaM,&
+            &prp_obj%type, prp_obj%dx, prp_obj%dy, prp_obj%dataRaw_z, maxAsym,&
+            &prp_obj%dataRaw_temp, prp_obj%dataRaw_ext, prp_obj%dataRaw_ssa, prp_obj%dataRaw_leg, prp_obj%Npha, prp_obj%dataRaw_ipha)
 
         ! Check values of medium properties
-        call shd_io__checkPrp(Nx_prp_, Ny_prp_, Nz_prp_, NlegSet_prp, Nleg_prp,&
-            &dx_prp_, dy_prp_, z_Prp_,&
-            &temp_Prp_, ext_Prp_, ssa_Prp_, leg_Prp_, Npha_prp_, ipha_Prp_)
+        call shd_io__checkPrp(prp_obj%Nx, prp_obj%Ny, prp_obj%Nz, prp_obj%NlegSet, prp_obj%Nleg,&
+            &prp_obj%dx, prp_obj%dy, prp_obj%dataRaw_z,&
+            &prp_obj%dataRaw_temp, prp_obj%dataRaw_ext, prp_obj%dataRaw_ssa, prp_obj%dataRaw_leg, prp_obj%Npha, prp_obj%dataRaw_ipha)
 
     end if
 
@@ -768,18 +762,18 @@ program shdom
                 Nx_out = 1
             else
                 if (isMpiX_) then
-                    Nx_out = max(1, nint(xDomain_prp_/parms_Out(2, iout)))
+                    Nx_out = max(1, nint(prp_obj%xDomain/parms_Out(2, iout)))
                 else
-                    Nx_out = max(1, nint((xDomain_prp_+ 2*parms_Out(4, iout))/parms_Out(2, iout)))
+                    Nx_out = max(1, nint((prp_obj%xDomain + 2*parms_Out(4, iout))/parms_Out(2, iout)))
                 end if
             end if
             if (parms_Out(3, iout) .le. 0.0) then
                 Ny_out = 1
             else
                 if (isMpiY_) then
-                    Ny_out = max(1, nint(yDomain_prp_/parms_Out(3, iout)))
+                    Ny_out = max(1, nint(prp_obj%yDomain/parms_Out(3, iout)))
                 else
-                    Ny_out = max(1, nint((yDomain_prp_+ 2*parms_Out(5, iout))/parms_Out(3, iout)))
+                    Ny_out = max(1, nint((prp_obj%yDomain+ 2*parms_Out(5, iout))/parms_Out(3, iout)))
                 end if
             end if
             Nrad = Nrad + Nstokes*Nx_out*Ny_out*nint(parms_Out(6, iout))
@@ -873,10 +867,10 @@ program shdom
 
     NmaxIG = NmaxIG + 4.5 ! temp, planck, ext, ssa, ipha[0.5, integer(kind=2)]
 
-    if (Npha_prp_ .gt. 0) then
-        memUsed = memUsed + Npha_prp_*NlegSet_prp*(maxLeg + 1) ! offset phase table
+    if (prp_obj%Npha .gt. 0) then
+        memUsed = memUsed + prp_obj%Npha * prp_obj%NlegSet * (prp_obj%maxNleg + 1) ! offset phase table
     else
-        NmaxIG = NmaxIG + NlegSet_prp*(maxLeg + 1)
+        NmaxIG = NmaxIG + prp_obj%NlegSet*(prp_obj%maxNleg + 1)
     end if
 
     if (sfc_obj%fname(1:4) .ne. 'NONE') then
@@ -915,7 +909,7 @@ program shdom
     ! memUsed is now more accurate than before
     ! before:
     !   memUsed = Nmu_do*(2 + 2*Nphi_do+ 2*Nlm_sh + 2*33*32)&            ! SHDO allocation
-    !       + 4.5*maxG_P + maxGL_P+ Npha_prp_*NlegSet_prp*(maxLeg + 1) ! phase allocation
+    !       + 4.5*prp_obj%maxNpts + prp_obj%maxNptsLeg + prp_obj%Npha*prp_obj%NlegSet*(prp_obj%maxNleg + 1) ! phase allocation
     ! now: update memUsed after every allocation step
     !
     ! NmaxIG is now more accurate than before
@@ -983,10 +977,10 @@ program shdom
     end if
 
     ! max number of legendre coefficients
-    if (Npha_prp_ .gt. 0) then
-        maxIGL = Npha_prp_*NlegSet_prp*(maxLeg + 1)
+    if (prp_obj%Npha .gt. 0) then
+        maxIGL = prp_obj%Npha * prp_obj%NlegSet * (prp_obj%maxNleg + 1)
     else
-        maxIGL = maxIG*NlegSet_prp*(maxLeg + 1)
+        maxIGL = maxIG*prp_obj%NlegSet*(prp_obj%maxNleg + 1)
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
@@ -1071,8 +1065,8 @@ program shdom
     !   isNewGrid is from shd_io__restoreState call
     if (isNewGrid) then
         ! Make the internal base grid lines
-        call shd_init__makeGrid(flag_bc, type_grid, Nx_prp_, Ny_prp_, Nz_prp_, Nx, Ny, Nz,&
-            &xStart_prp_, yStart_prp_, dx_prp_, dy_prp_, z_Prp_,&
+        call shd_init__makeGrid(flag_bc, type_grid, prp_obj%Nx, prp_obj%Ny, prp_obj%Nz, Nx, Ny, Nz,&
+            &prp_obj%xStart, prp_obj%yStart, prp_obj%dx, prp_obj%dy, prp_obj%dataRaw_z,&
             &x_Grid, y_Grid, z_Grid)
     end if
 
@@ -1121,7 +1115,7 @@ program shdom
         ! Find the monochromatic SHDOM solution: adaptive grid output
         !   in source (ptrSrc_Sh), radiance (ptrRad_Sh), fluxes, direct Flux.
         call shd_solv__solveRte(Nstokes, Nx, Ny, Nz, Nx1, Ny1, Nang_do,&
-            &maxNl_sh, maxNm_sh, Nlm_sh, Nmu_do, Nphi_do, Nleg_prp, NlegSet_prp, Npha_prp_,&
+            &maxNl_sh, maxNm_sh, Nlm_sh, Nmu_do, Nphi_do, prp_obj%Nleg, prp_obj%NlegSet, prp_obj%Npha,&
             &Nphi0_Do, mu_Do, phi_Do, wt_Do,&
             &maxIV, maxIC, maxIG, maxIDO, isNewRad,&
             &flag_bc, ipFlag, isDeltaM, type_src, isHighOrder_,&
@@ -1145,9 +1139,9 @@ program shdom
                 if (type_Out(iout) .eq. 'R') then
                     if (isMpi_) then
                         call shd_mpi__computeRad(Nstokes, Nx, Ny, Nz, Npts, Ncell,&
-                            &maxNl_sh, maxNm_sh, Nlm_sh, NlegSet_prp, Nleg_prp, Npha_prp_,&
+                            &maxNl_sh, maxNm_sh, Nlm_sh, prp_obj%NlegSet, prp_obj%Nleg, prp_obj%Npha,&
                             &Nmu_do, maxNphi0_do, Nphi0_Do, mu_Do, phi_Do, wt_Do,&
-                            &flag_bc, xDomain_prp_, yDomain_prp_, ipFlag,&
+                            &flag_bc, prp_obj%xDomain, prp_obj%yDomain, ipFlag,&
                             &type_src, isDeltaM, mu_solar, az_solar,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
                             &skyRad, waveNum, waveLen, units_src,&
@@ -1158,7 +1152,7 @@ program shdom
                             &parms_Out(1, iout), irad, work2, sfc_obj, sen_obj)
                     else
                         call shd_rad__computeRad(Nstokes, Nx, Ny, Nz, Npts, Ncell,&
-                            &maxNl_sh, maxNm_sh, Nlm_sh, NlegSet_prp, Nleg_prp, Npha_prp_,&
+                            &maxNl_sh, maxNm_sh, Nlm_sh, prp_obj%NlegSet, prp_obj%Nleg, prp_obj%Npha,&
                             &Nmu_do, maxNphi0_do, Nphi0_Do, mu_Do, phi_Do, wt_Do,&
                             &flag_bc, ipFlag, type_src, isDeltaM, mu_solar, az_solar,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
@@ -1180,9 +1174,9 @@ program shdom
                 if (type_Out(iout) .eq. 'V') then
                     if (isMpi_) then
                         call shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, Npts, Ncell,&
-                            &maxNl_sh, maxNm_sh, Nlm_sh, NlegSet_prp, Nleg_prp, Npha_prp_,&
+                            &maxNl_sh, maxNm_sh, Nlm_sh, prp_obj%NlegSet, prp_obj%Nleg, prp_obj%Npha,&
                             &Nmu_do, maxNphi0_do, Nphi0_Do, mu_Do, phi_Do, wt_Do,&
-                            &flag_bc, xDomain_prp_, yDomain_prp_, ipFlag,&
+                            &flag_bc, prp_obj%xDomain, prp_obj%yDomain, ipFlag,&
                             &type_src, isDeltaM, mu_solar, az_solar,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
                             &skyRad, waveNum, waveLen, units_src,&
@@ -1192,7 +1186,7 @@ program shdom
                             &ptrSrc_Sh, src_Sh, parms_Out(1, iout), ilos, work2, sfc_obj, sen_obj)
                     else
                         call shd_rad__computeCamRad(Nstokes, Nx, Ny, Nz, Npts, Ncell,&
-                            &maxNl_sh, maxNm_sh, Nlm_sh, NlegSet_prp, Nleg_prp, Npha_prp_,&
+                            &maxNl_sh, maxNm_sh, Nlm_sh, prp_obj%NlegSet, prp_obj%Nleg, prp_obj%Npha,&
                             &Nmu_do, maxNphi0_do, Nphi0_Do, mu_Do, phi_Do, wt_Do,&
                             &flag_bc, ipFlag, type_src, isDeltaM, mu_solar, az_solar,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
@@ -1214,7 +1208,7 @@ program shdom
                     mu_out  = parms_Out(2, iout)
                     phi_out = parms_Out(3, iout)*acos(-1.0)/180.0
                     call shd_src__computeSrcOneDir(Nstokes, maxNl_sh, maxNm_sh, Nlm_sh,&
-                        &NlegSet_prp, Nleg_prp, Npha_prp_,&
+                        &prp_obj%NlegSet, prp_obj%Nleg, prp_obj%Npha,&
                         &Npts, isDeltaM, mu_out, phi_out,&
                         &type_src, mu_solar, az_solar, ssa, leg, ipha,&
                         &fluxDir, ptrSrc_Sh, src_Sh, src1_Out)
@@ -1246,11 +1240,11 @@ program shdom
 
                 if (isMpi_) then
                     call shd_mpi__makeDirect(1, Npts, flag_bc, ipFlag, .false., maxNl_sh,&
-                        &NlegSet_prp, Nleg_prp, solar0_ckd, mu_solar, az_solar,&
+                        &prp_obj%NlegSet, prp_obj%Nleg, solar0_ckd, mu_solar, az_solar,&
                         &xyz_Grid, Nx, x_Grid, Ny, y_Grid, fluxDirTmp, ckd_obj)
                 else
                     call shd_rad__makeDirect(Npts, flag_bc, ipFlag, .false., maxNl_sh,&
-                        &NlegSet_prp, Nleg_prp, solar0_ckd, mu_solar, az_solar,&
+                        &prp_obj%NlegSet, prp_obj%Nleg, solar0_ckd, mu_solar, az_solar,&
                         &xyz_Grid, fluxDirTmp, ckd_obj)
                 end if
 
@@ -1308,7 +1302,7 @@ program shdom
         call shd_mpi__gatherOut(isFluxOut, isHROut, isSHOut,&
             &ipFlag, flag_bc, Npts_base, Nx_T, Ny_T, Nz, Nsh_out,&
             &sumFluxTot_Out, sumFluxDir_Out, sumFluxDiv_Out, sumSH_Out,&
-            &xDomain_prp_, yDomain_prp_, xGrid_all, yGrid_all,&
+            &prp_obj%xDomain, prp_obj%yDomain, xGrid_all, yGrid_all,&
             &fluxTot_all, fluxDiv_all, SH_all,&
             &Ncell, Npts, Nsh, Ncell_tot, Npts_tot, Nsh_tot)
 
@@ -1319,12 +1313,12 @@ program shdom
                     call shd_io__outputResultMpi(Nstokes, Nx_T, Ny_T, Nz,&
                         &Npts_tot, Ncell_tot, Nsh_tot,&
                         &maxNl_sh, maxNm_sh, Nlm_sh, Nmu_do, Nphi_do, Nang_do,&
-                        &fileInp_prp, fileInp_sav, fileOut_sav,&
+                        &prp_obj%fname, fileInp_sav, fileOut_sav,&
                         &flag_bc, ipFlag, isDeltaM, type_grid, type_src,&
                         &solar, mu_solar, az_solar, skyRad,&
                         &waveNum, waveLen, units_src,&
                         &splitAcc, shAcc, solAcc, maxIter, totIter,&
-                        &xDomain_prp_, yDomain_prp_, xGrid_all, yGrid_all, z_Grid,&
+                        &prp_obj%xDomain, prp_obj%yDomain, xGrid_all, yGrid_all, z_Grid,&
                         &fluxTot_all, fluxDiv_all,&
                         &Nsh_out, SH_all, irad, sumRad_Out,&
                         &type_Out(iout), parms_Out(1, iout), file_Out(iout), sfc_obj, ckd_obj, sen_obj)
@@ -1342,8 +1336,8 @@ program shdom
         do iout = 1, Nout
             if ((type_Out(iout) .ne. 'V') .and. (file_Out(iout)(1:4) .ne. 'NONE')) then
                 call shd_io__outputResult(Nstokes, Nx, Ny, Nx1, Ny1, Nz, Npts_base, Npts, Ncell,&
-                    Nsh, maxNl_sh, maxNm_sh, Nlm_sh, NlegSet_prp, Nleg_prp, Npha_prp_, Nmu_do, Nphi_do, Nang_do,&
-                    fileInp_prp, fileInp_sav, fileOut_sav,&
+                    Nsh, maxNl_sh, maxNm_sh, Nlm_sh, prp_obj%NlegSet, prp_obj%Nleg, prp_obj%Npha, Nmu_do, Nphi_do, Nang_do,&
+                    prp_obj%fname, fileInp_sav, fileOut_sav,&
                     flag_bc, ipFlag, isDeltaM, type_grid, type_src,&
                     solar, mu_solar, az_solar, skyRad,&
                     waveNum, waveLen, units_src,&
@@ -1367,7 +1361,7 @@ program shdom
             if ((type_Out(iout) .eq. 'V')) then
                 call shd_io__outputCamRad(Nstokes, Nx, Ny, Nz, Npts, Ncell,&
                     &Nsh, maxNl_sh, maxNm_sh, Nlm_sh, Nmu_do, Nphi_do, Nang_do,&
-                    &fileInp_prp, fileInp_sav, fileOut_sav,&
+                    &prp_obj%fname, fileInp_sav, fileOut_sav,&
                     &flag_bc, ipFlag, isDeltaM, type_grid, type_src,&
                     &solar, mu_solar, az_solar, skyRad,&
                     &waveNum, waveLen, units_src,&
@@ -1402,7 +1396,7 @@ program shdom
     ! MAXMB is now more accurate than before
     ! before:
     !  MAXMB_OUT = 4*(Nmu_do*(2 + 2*Nphi_do + 2*Nlm_sh + 2*33*32)&
-    !      + 4.5*maxG_P + maxGL_P + Npha_prp_*NlegSet_prp*(maxLeg + 1)&
+    !      + 4.5*prp_obj%maxNpts + prp_obj%maxNptsLeg + prp_obj%Npha*prp_obj%NlegSet*(prp_obj%maxNleg + 1)&
     !      + 16.5*Ncell + Npts*(28 + maxNphi0_do*Nstokes)&
     !      + Nstokes*Nsh*NbigArr)/1024**2
     ! now:
@@ -1420,7 +1414,9 @@ program shdom
 
     ! Deallocate array
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    deallocate (z_Prp_, temp_Prp_, ext_Prp_, ssa_Prp_, ipha_Prp_, leg_Prp_, extDir_Prp_)
+    deallocate (dataRaw_z_Prp, dataRaw_temp_Prp, dataRaw_ext_Prp, dataRaw_ssa_Prp)
+    deallocate (dataRaw_ipha_Prp, dataRaw_leg_Prp, dataRaw_extDir_Prp)
+
     if (isFluxOut) deallocate (sumFluxTot_Out, sumFluxDir_Out)
     if (isHROut)   deallocate (sumFluxDiv_Out)
     if (isSHOut)   deallocate (sumSH_Out)
@@ -1469,7 +1465,7 @@ program shdom
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
-    call shd_mpi__end(Npts, xyz_Grid, Nx_prp_, Ny_prp_, xStart_prp_, yStart_prp_, xDomain_prp_, yDomain_prp_,&
-        &Nx_PT, Ny_PT, fileInp_prp, runName)
+    call shd_mpi__end(Npts, xyz_Grid, prp_obj%Nx, prp_obj%Ny, prp_obj%xStart, prp_obj%yStart, prp_obj%xDomain, prp_obj%yDomain,&
+        &prpAll_obj%Nx, prpAll_obj%Ny, prp_obj%fname, runName)
 
 end program shdom

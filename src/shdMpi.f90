@@ -45,7 +45,8 @@ module shd_mpi
                              is1DX_, is1DYx_, is1D_, &
                              isPol_, isPol4_, &
                              isSolar_, &
-                             shd_type_sfc, shd_type_ckd, shd_type_sen
+                             shd_type_prp, shd_type_sfc, &
+                             shd_type_ckd, shd_type_sen
 
 #if HAS_MPI
     use mpi_f08,  only: MPI_comm_world, MPI_comm, MPI_request, &
@@ -343,7 +344,7 @@ subroutine shd_mpi__map(BCFLAG, Nx_prp, Ny_prp, Nx, Ny, Nz, dx_prp, dy_prp, file
 end subroutine shd_mpi__map
 
 subroutine shd_mpi__bcastInp(&
-    &runName, fileInp_prp,&
+    &runName,&
     &fileInp_sav, fileOut_sav,&
     &Nstokes, Nx, Ny, Nz, NMU, NPHI, BCFLAG,&
     &IPFLAG, KDIST, DELTAM, GRIDTYPE,&
@@ -353,11 +354,12 @@ subroutine shd_mpi__bcastInp(&
     &MAXOUT, MAXPAR, NUMOUT, OUTTYPES, parms_Out,&
     &MAX_TOTAL_MB, SPLITTING_FACTOR,&
     &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO,&
-    &sfc_obj, ckd_obj, sen_obj)
+    &prp_obj, sfc_obj, ckd_obj, sen_obj)
 
     ! Broadcasts all the user input parameters (except unneeded file names)
     ! from the master processor to the slave processors.
 
+    type(shd_type_prp), intent(inout) :: prp_obj
     type(shd_type_sfc), intent(inout) :: sfc_obj
     type(shd_type_ckd), intent(inout) :: ckd_obj
     type(shd_type_sen), intent(inout) :: sen_obj
@@ -372,7 +374,7 @@ subroutine shd_mpi__bcastInp(&
     real, intent(inout) :: MAX_TOTAL_MB, SPLITTING_FACTOR
     real, intent(inout) :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
     character(len=1), intent(inout) :: SRCTYPE, GRIDTYPE, UNITS, OUTTYPES(*)
-    character(len=charMaxLen_), intent(inout) :: runName, fileInp_prp
+    character(len=charMaxLen_), intent(inout) :: runName
     character(len=charMaxLen_), intent(inout) :: fileInp_sav, fileOut_sav
 
 #if HAS_MPI
@@ -410,9 +412,9 @@ subroutine shd_mpi__bcastInp(&
     call mpi_bcast(char1buf, 3, MPI_character, 0, MPI_comm_world, ierr)
     SRCTYPE = char1buf(1); GRIDTYPE = char1buf(2); UNITS = char1buf(3)
 
-    char256buf(:) = (/fileInp_prp, sfc_obj%fname, ckd_obj%fname, fileInp_sav, fileOut_sav, sen_obj%fname, runName/)
+    char256buf(:) = (/prp_obj%fname, sfc_obj%fname, ckd_obj%fname, fileInp_sav, fileOut_sav, sen_obj%fname, runName/)
     call mpi_bcast(char256buf, 7*256, MPI_character, 0, MPI_comm_world, ierr)
-    fileInp_prp = char256buf(1); sfc_obj%fname = char256buf(2); ckd_obj%fname = char256buf(3)
+    prp_obj%fname = char256buf(1); sfc_obj%fname = char256buf(2); ckd_obj%fname = char256buf(3)
     fileInp_sav = char256buf(4); fileOut_sav = char256buf(5); sen_obj%fname = char256buf(6); runName = char256buf(7)
 
     call mpi_bcast(parms_Out, MAXPAR*NUMOUT, MPI_real, 0, MPI_comm_world, ierr)
@@ -427,14 +429,12 @@ subroutine shd_mpi__bcastInp(&
 
 end subroutine shd_mpi__bcastInp
 
-subroutine shd_mpi__bcastPrpSize(Nx_prp, Ny_prp, Nz_prp, dx_prp, dy_prp,&
-    &Npha_prp, MAXLEG, MAXPGL)
+subroutine shd_mpi__bcastPrpSize(prp_obj)
 
     ! Broadcasts the property file size information from the master processor
     ! to the slave processors.
 
-    integer, intent(inout) :: Nx_prp, Ny_prp, Nz_prp, Npha_prp, MAXLEG, MAXPGL
-    real, intent(inout) :: dx_prp, dy_prp
+    type(shd_type_prp), intent(inout) :: prp_obj
 
 #if HAS_MPI
     integer :: ierr, intbuf(6)
@@ -442,14 +442,14 @@ subroutine shd_mpi__bcastPrpSize(Nx_prp, Ny_prp, Nz_prp, dx_prp, dy_prp,&
 
     if (Nproc_ .le. 1) return
 
-    intbuf(:) = (/Nx_prp, Ny_prp, Nz_prp, Npha_prp, MAXLEG, MAXPGL/)
+    intbuf(:) = (/prp_obj%Nx, prp_obj%Ny, prp_obj%Nz, prp_obj%Npha, prp_obj%maxNleg, prp_obj%maxNptsLeg/)
     call mpi_bcast(intbuf, 6, MPI_integer, 0, MPI_comm_world, ierr)
-    Nx_prp = intbuf(1); Ny_prp = intbuf(2); Nz_prp = intbuf(3)
-    Npha_prp = intbuf(4); MAXLEG = intbuf(5); MAXPGL = intbuf(6)
+    prp_obj%Nx = intbuf(1); prp_obj%Ny = intbuf(2); prp_obj%Nz = intbuf(3)
+    prp_obj%Npha = intbuf(4); prp_obj%maxNleg = intbuf(5); prp_obj%maxNptsLeg = intbuf(6)
 
-    realbuf(:) = (/dx_prp, dy_prp/)
+    realbuf(:) = (/prp_obj%dx, prp_obj%dy/)
     call mpi_bcast(realbuf, 2, MPI_real, 0, MPI_comm_world, ierr)
-    dx_prp = realbuf(1); dy_prp = realbuf(2)
+    prp_obj%dx = realbuf(1); prp_obj%dy = realbuf(2)
 #endif
 
     return
