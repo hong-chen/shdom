@@ -186,9 +186,6 @@ module globals_cfg
         integer(kind=I__) :: Npts
         integer(kind=I__) :: Npar
 
-        integer(kind=I__) :: maxNpts
-        integer(kind=I__) :: maxNpar
-
         real(kind=R__), pointer :: dataRaw_view(:) => null()
 
         logical :: isAllocated  = .false.
