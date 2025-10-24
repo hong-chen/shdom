@@ -46,7 +46,7 @@ module shd_rad
                              is3Ddir1Ddif_, &
                              isPol_, isPol4_, &
                              isSolar_, isThermal_, &
-                             shd_type_sfc, shd_type_ckd
+                             shd_type_sfc, shd_type_ckd, shd_type_sen
 
     use shd_scat, only: shd_scat__computePhase
 
@@ -710,11 +710,12 @@ subroutine shd_rad__computeRad(&
     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
     &SHPTR, SOURCE, SOURCE1, GRIDRAD,&
-    &OUTPARMS, IRAD, RADOUT, sfc_obj, SENPARMS)
+    &OUTPARMS, IRAD, RADOUT, sfc_obj, sen_obj)
 
     ! Computes the radiances for the specified locations and directions
 
     type(shd_type_sfc), intent(in) :: sfc_obj
+    type(shd_type_sen), intent(in) :: sen_obj
 
     integer NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG, NPTS, NCELLS
     integer ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
@@ -734,7 +735,6 @@ subroutine shd_rad__computeRad(&
     real SOURCE1(NSTOKES, NPTS), GRIDRAD(NSTOKES, NPTS)
     real SOURCE(NSTOKES, *)
     real OUTPARMS(*), RADOUT(NSTOKES, *)
-    real, optional :: SENPARMS(*)
     character(len=1) :: SRCTYPE, UNITS
     integer I, IBC, IANG, JX, JY, K, SIDE
     integer NANGOUT, NXOUT, NYOUT
@@ -790,9 +790,9 @@ subroutine shd_rad__computeRad(&
 
     ! Loop over the radiance directions
     do IANG = 1, NANGOUT
-        if (present(SENPARMS)) then
-            MUOUT = SENPARMS(2*IANG - 1)
-            PHID  = SENPARMS(2*IANG)
+        if (sen_obj%fname(1:4) .ne. 'NONE') then
+            MUOUT = sen_obj%dataRaw_view(2*IANG - 1)
+            PHID  = sen_obj%dataRaw_view(2*IANG)
         else
             MUOUT = OUTPARMS(2*IANG + 5)
             PHID  = OUTPARMS(2*IANG + 6)
@@ -896,12 +896,13 @@ subroutine shd_rad__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     &XGRID, YGRID, ZGRID, GRIDPOS,&
     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
-    &SHPTR, SOURCE, OUTPARMS, IVIS, VISOUT, sfc_obj, SENPARMS)
+    &SHPTR, SOURCE, OUTPARMS, IVIS, VISOUT, sfc_obj, sen_obj)
 
     !   Computes Stokes radiances (output in VISOUT) for the visualization
     !  modes: 1) camera mode, and 2) cross track scanning.
 
     type(shd_type_sfc), intent(in) :: sfc_obj
+    type(shd_type_sen), intent(in) :: sen_obj
 
     integer NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG, NPTS, NCELLS
     integer ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
@@ -919,7 +920,6 @@ subroutine shd_rad__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     real EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, *)
     real DIRFLUX(NPTS), FLUXES(2, NPTS), SOURCE(NSTOKES, *)
     real OUTPARMS(*), VISOUT(NSTOKES, *)
-    real, optional :: SENPARMS(*)
     character(len=1) :: SRCTYPE, UNITS
     integer NSCATANGLE, NSTPHASE, I, J, L, N, SIDE
     integer NL, NS, LINE, SAMP

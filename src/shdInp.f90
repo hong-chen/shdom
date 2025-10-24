@@ -44,7 +44,7 @@ module shd_inp
 
     use globals_const, only: PI_
     use globals_cfg,   only: verbose_, charMaxLen_, &
-                             shd_type_sfc, shd_type_ckd
+                             shd_type_sfc, shd_type_ckd, shd_type_sen
 
     use shd_util, only: shd_util__computePlanck
 
@@ -750,10 +750,10 @@ subroutine shd_io__readPrp(&
     integer I, IX, IY, IZ, J, JS, K, KL, L, IL, NUML, IPH, N
     real :: TMP, EXT, ALB, CHI
 
-    character(len=charMaxLen_) :: OUTFILE_DATA
-    character(len=charMaxLen_) :: TMP_CHAR
-    character(len=charMaxLen_) :: DIMS_CHAR
-    character(len=20) :: DATA_POSTFIX
+    character(len=charMaxLen_) :: fnameBin
+    character(len=charMaxLen_) :: lineTmp
+    character(len=charMaxLen_) :: lineDim
+    character(len=20) :: dataPostfix
     integer :: NXX, NYY, NZZ, NPP
 
     ! Open the file, figure out the type, and get the grid size
@@ -878,21 +878,21 @@ subroutine shd_io__readPrp(&
             MAXASYM = max(MAXASYM, LEGENP((IL + 1)*NSTLEG + 1)/3.0)
         end do
 
-        read (1, '(A)') TMP_CHAR ! skip one line
+        read (1, '(A)') lineTmp ! skip one line
 
-        if (TMP_CHAR(1:1) .eq. '!') then
+        if (lineTmp(1:1) .eq. '!') then
 
-            read (1, '(A)') DATA_POSTFIX
-            read (1, '(A)') DIMS_CHAR
+            read (1, '(A)') dataPostfix
+            read (1, '(A)') lineDim
 
-            read (DIMS_CHAR( 3:12), '(I10)') NXX
-            read (DIMS_CHAR(14:23), '(I10)') NYY
-            read (DIMS_CHAR(25:34), '(I10)') NZZ
-            read (DIMS_CHAR(36:45), '(I10)') NPP
+            read (lineDim( 3:12), '(I10)') NXX
+            read (lineDim(14:23), '(I10)') NYY
+            read (lineDim(25:34), '(I10)') NZZ
+            read (lineDim(36:45), '(I10)') NPP
 
-            OUTFILE_DATA = trim(adjustl(PROPFILE))//trim(adjustl(DATA_POSTFIX(2:)))
+            fnameBin = trim(adjustl(PROPFILE))//trim(adjustl(dataPostfix(2:)))
 
-            open (UNIT=88, FILE=trim(adjustl(OUTFILE_DATA)), STATUS='OLD',&
+            open (UNIT=88, FILE=trim(adjustl(fnameBin)), STATUS='OLD',&
                 &ACCESS='STREAM', FORM='UNFORMATTED')
 
             ! TEMPP: real(4)
@@ -1214,10 +1214,10 @@ subroutine shd_io__readSfc(sfc_obj)
     real F_ISO, F_VOL, F_GEO, F_JIAO
     real A, B, ZETA, SIGMA, ALPHA
 
-    character(len=charMaxLen_) :: OUTFILE_DATA
-    character(len=charMaxLen_) :: TMP_CHAR
-    character(len=charMaxLen_) :: DIMS_CHAR
-    character(len=20) :: DATA_POSTFIX
+    character(len=charMaxLen_) :: fnameBin
+    character(len=charMaxLen_) :: lineTmp
+    character(len=charMaxLen_) :: lineDim
+    character(len=20) :: dataPostfix
     integer :: NXX, NYY, NPP, IDATA, NDATA
 
     ! Surface type is variable something
@@ -1249,8 +1249,8 @@ subroutine shd_io__readSfc(sfc_obj)
             stop
         end if
 
-        read (1, '(A)') TMP_CHAR
-        if (TMP_CHAR(1:1) .ne. '!') then ! check if binary input,
+        read (1, '(A)') lineTmp
+        if (lineTmp(1:1) .ne. '!') then ! check if binary input,
             backspace(1)                 ! if not, go back one line
             do while (.true.)
                 read (1, *, end=290) IX, IY, temp0, alb0
@@ -1283,8 +1283,8 @@ subroutine shd_io__readSfc(sfc_obj)
             stop
         end if
 
-        read (1, '(A)') TMP_CHAR
-        if (TMP_CHAR(1:1) .ne. '!') then ! check if binary input,
+        read (1, '(A)') lineTmp
+        if (lineTmp(1:1) .ne. '!') then ! check if binary input,
             backspace(1)                 ! if not, go back one line
             do while (.true.)
                 read (1, *, end=290) IX, IY, temp0, WSPD, PCL
@@ -1314,8 +1314,8 @@ subroutine shd_io__readSfc(sfc_obj)
             stop
         end if
 
-        read (1, '(A)') TMP_CHAR
-        if (TMP_CHAR(1:1) .ne. '!') then ! check if binary input,
+        read (1, '(A)') lineTmp
+        if (lineTmp(1:1) .ne. '!') then ! check if binary input,
             backspace(1)                 ! if not, go back one line
             do while (.true.)
                 read (1, *, end=290) IX, IY, temp0, RHO0, KR, THETA
@@ -1343,8 +1343,8 @@ subroutine shd_io__readSfc(sfc_obj)
             stop
         end if
 
-        read (1, '(A)') TMP_CHAR
-        if (TMP_CHAR(1:1) .ne. '!') then ! check if binary input,
+        read (1, '(A)') lineTmp
+        if (lineTmp(1:1) .ne. '!') then ! check if binary input,
             backspace(1)                 ! if not, go back one line
             do while (.true.)
                 read (1, *, end=290) IX, IY, temp0, F_ISO, F_GEO, F_VOL
@@ -1372,8 +1372,8 @@ subroutine shd_io__readSfc(sfc_obj)
             stop
         end if
 
-        read (1, '(A)') TMP_CHAR
-        if (TMP_CHAR(1:1) .ne. '!') then ! check if binary input,
+        read (1, '(A)') lineTmp
+        if (lineTmp(1:1) .ne. '!') then ! check if binary input,
             backspace(1)                 ! if not, go back one line
             do while (.true.)
                 read (1, *, end=290) IX, IY, temp0, F_ISO, F_GEO, F_VOL, F_JIAO, ALPHA
@@ -1403,8 +1403,8 @@ subroutine shd_io__readSfc(sfc_obj)
             stop
         end if
 
-        read (1, '(A)') TMP_CHAR
-        if (TMP_CHAR(1:1) .ne. '!') then ! check if binary input,
+        read (1, '(A)') lineTmp
+        if (lineTmp(1:1) .ne. '!') then ! check if binary input,
             backspace(1)                 ! if not, go back one line
             do while (.true.)
                 read (1, *, end=290) IX, IY, temp0, MRE, MIM, WSPD
@@ -1436,8 +1436,8 @@ subroutine shd_io__readSfc(sfc_obj)
             stop
         end if
 
-        read (1, '(A)') TMP_CHAR
-        if (TMP_CHAR(1:1) .ne. '!') then ! check if binary input,
+        read (1, '(A)') lineTmp
+        if (lineTmp(1:1) .ne. '!') then ! check if binary input,
             backspace(1)                 ! if not, go back one line
             do while (.true.)
                 read (1, *, end=290) IX, IY, temp0, A, KR, B, ZETA, SIGMA
@@ -1467,8 +1467,8 @@ subroutine shd_io__readSfc(sfc_obj)
             stop
         end if
 
-        read (1, '(A)') TMP_CHAR
-        if (TMP_CHAR(1:1) .ne. '!') then ! check if binary input,
+        read (1, '(A)') lineTmp
+        if (lineTmp(1:1) .ne. '!') then ! check if binary input,
             backspace(1)                 ! if not, go back one line
             do while (.true.)
                 read (1, *, end=290)    IX, IY, PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7, PARAM8
@@ -1518,15 +1518,15 @@ subroutine shd_io__readSfc(sfc_obj)
         stop
     end if
 
-    read (1, '(A)') DATA_POSTFIX
-    read (1, '(A)') DIMS_CHAR
+    read (1, '(A)') dataPostfix
+    read (1, '(A)') lineDim
 
-    read (DIMS_CHAR( 3:12), '(I10)') NXX
-    read (DIMS_CHAR(14:23), '(I10)') NYY
-    read (DIMS_CHAR(25:34), '(I10)') NPP
+    read (lineDim( 3:12), '(I10)') NXX
+    read (lineDim(14:23), '(I10)') NYY
+    read (lineDim(25:34), '(I10)') NPP
 
-    OUTFILE_DATA = trim(adjustl(sfc_obj%fname))//trim(adjustl(DATA_POSTFIX(2:)))
-    open (UNIT=88, FILE=trim(adjustl(OUTFILE_DATA)), STATUS='OLD',&
+    fnameBin = trim(adjustl(sfc_obj%fname))//trim(adjustl(dataPostfix(2:)))
+    open (UNIT=88, FILE=trim(adjustl(fnameBin)), STATUS='OLD',&
         &ACCESS='STREAM', FORM='UNFORMATTED')
     NDATA = NXX*NYY*NPP
     read (88) (sfc_obj%dataRaw_brdf(IDATA), IDATA=1, NDATA)
@@ -1700,26 +1700,24 @@ subroutine shd_io__readCkd(waveNum, ckd_obj)
 
 end subroutine shd_io__readCkd
 
-subroutine shd_io__readSenSize(&
-    &SENFILE, NSENDATA, NSENPAR)
+subroutine shd_io__readSenSize(sen_obj)
 
     ! Reads the user-specified sensor data size information
 
-    character(len=*), intent(in) :: SENFILE
-    integer, intent(out) :: NSENDATA, NSENPAR
+    type(shd_type_sen), intent(inout) :: sen_obj
 
-    character(len=charMaxLen_) :: TMP_CHAR
-    character(len=charMaxLen_) :: DIMS_CHAR
+    character(len=charMaxLen_) :: lineTmp
+    character(len=charMaxLen_) :: lineDim
 
     ! Open the file, figure out the type, and get the grid size
-    open (UNIT=1, FILE=trim(adjustl(SENFILE)), STATUS='OLD')
-    read (1, '(A)') TMP_CHAR ! skip one line
-    read (1, '(A)') TMP_CHAR ! skip one line
-    read (1, '(A)') TMP_CHAR ! skip one line
-    read (1, '(A)') DIMS_CHAR
+    open (unit=1, file=trim(adjustl(sen_obj%fname)), status='old')
+    read (1, '(A)') lineTmp ! skip one line
+    read (1, '(A)') lineTmp ! skip one line
+    read (1, '(A)') lineTmp ! skip one line
+    read (1, '(A)') lineDim
 
-    read (DIMS_CHAR( 3:12), '(I10)') NSENPAR
-    read (DIMS_CHAR(14:23), '(I10)') NSENDATA
+    read (lineDim( 3:12), '(I10)') sen_obj%Npar
+    read (lineDim(14:23), '(I10)') sen_obj%Npts
 
     close (1)
 
@@ -1727,37 +1725,35 @@ subroutine shd_io__readSenSize(&
 
 end subroutine shd_io__readSenSize
 
-subroutine shd_io__readSen(&
-    &SENFILE, NSENDATA, NSENPAR,&
-    &SENPARMS)
+subroutine shd_io__readSen(sen_obj)
 
     ! Reads the user-specified sensor information
 
-    character(len=*), intent(in) :: SENFILE
-    real, intent(inout) :: SENPARMS(*)
-    integer :: NSENDATA, NSENPAR, ISENDATA
+    type(shd_type_sen), intent(inout) :: sen_obj
 
-    character(len=charMaxLen_) :: OUTFILE_DATA
-    character(len=charMaxLen_) :: TMP_CHAR
-    character(len=charMaxLen_) :: DIMS_CHAR
-    character(len=20) :: DATA_POSTFIX
+    integer :: idata
+
+    character(len=charMaxLen_) :: fnameBin
+    character(len=charMaxLen_) :: lineTmp
+    character(len=charMaxLen_) :: lineDim
+    character(len=20) :: dataPostfix
 
     ! Open the file, figure out the type, and get the grid size
-    open (UNIT=1, FILE=trim(adjustl(SENFILE)), STATUS='OLD')
-    read (1, '(A)') TMP_CHAR ! skip one line
-    read (1, '(A)') TMP_CHAR ! skip one line
-    read (1, '(A)') DATA_POSTFIX
-    read (1, '(A)') DIMS_CHAR
+    open (unit=1, file=trim(adjustl(sen_obj%fname)), status='old')
+    read (1, '(A)') lineTmp ! skip one line
+    read (1, '(A)') lineTmp ! skip one line
+    read (1, '(A)') dataPostfix
+    read (1, '(A)') lineDim
 
-    read (DIMS_CHAR( 3:12), '(I10)') NSENPAR
-    read (DIMS_CHAR(14:23), '(I10)') NSENDATA
+    read (lineDim( 3:12), '(I10)') sen_obj%Npar
+    read (lineDim(14:23), '(I10)') sen_obj%Npts
 
-    OUTFILE_DATA = trim(adjustl(SENFILE))//trim(adjustl(DATA_POSTFIX(2:)))
+    fnameBin = trim(adjustl(sen_obj%fname))//trim(adjustl(dataPostfix(2:)))
 
-    open (UNIT=88, FILE=trim(adjustl(OUTFILE_DATA)), STATUS='OLD',&
-        &ACCESS='STREAM', FORM='UNFORMATTED')
+    open (unit=88, file=trim(adjustl(fnameBin)), status='old',&
+        &access='stream', form='unformatted')
 
-    read (88) (SENPARMS(ISENDATA), ISENDATA=1,NSENDATA*NSENPAR)
+    read (88) (sen_obj%dataRaw_view(idata), idata=1, sen_obj%Npts*sen_obj%Npar)
 
     close (88)
 

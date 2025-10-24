@@ -179,6 +179,22 @@ module globals_cfg
 
     end type shd_type_ckd
 
+    type :: shd_type_sen
+
+        character(len=charMaxLen_) :: fname = 'NONE'
+
+        integer(kind=I__) :: Npts
+        integer(kind=I__) :: Npar
+
+        integer(kind=I__) :: maxNpts
+        integer(kind=I__) :: maxNpar
+
+        real(kind=R__), pointer :: dataRaw_view(:) => null()
+
+        logical :: isAllocated  = .false.
+
+    end type shd_type_sen
+
     real(kind=8), save :: accSolv_
     real(kind=4), save :: memTotSysMB_ = 16000.0
     real(kind=4), save :: memPerCpuMB_

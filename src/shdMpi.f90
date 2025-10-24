@@ -45,7 +45,7 @@ module shd_mpi
                              is1DX_, is1DYx_, is1D_, &
                              isPol_, isPol4_, &
                              isSolar_, &
-                             shd_type_sfc, shd_type_ckd
+                             shd_type_sfc, shd_type_ckd, shd_type_sen
 
 #if HAS_MPI
     use mpi_f08,  only: MPI_comm_world, MPI_comm, MPI_request, &
@@ -343,8 +343,8 @@ subroutine shd_mpi__map(BCFLAG, Nx_prp, Ny_prp, Nx, Ny, Nz, dx_prp, dy_prp, file
 end subroutine shd_mpi__map
 
 subroutine shd_mpi__bcastInp(&
-    &runName, fileInp_prp, fileInp_ckd,&
-    &fileInp_sav, fileOut_sav, fileInp_sen,&
+    &runName, fileInp_prp,&
+    &fileInp_sav, fileOut_sav,&
     &Nstokes, Nx, Ny, Nz, NMU, NPHI, BCFLAG,&
     &IPFLAG, KDIST, DELTAM, GRIDTYPE,&
     &SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
@@ -352,10 +352,15 @@ subroutine shd_mpi__bcastInp(&
     &ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
     &MAXOUT, MAXPAR, NUMOUT, OUTTYPES, parms_Out,&
     &MAX_TOTAL_MB, SPLITTING_FACTOR,&
-    &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, sfc_obj)
+    &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO,&
+    &sfc_obj, ckd_obj, sen_obj)
 
     ! Broadcasts all the user input parameters (except unneeded file names)
     ! from the master processor to the slave processors.
+
+    type(shd_type_sfc), intent(inout) :: sfc_obj
+    type(shd_type_ckd), intent(inout) :: ckd_obj
+    type(shd_type_sen), intent(inout) :: sen_obj
 
     integer, intent(inout) :: Nstokes, Nx, Ny, Nz, NMU, NPHI, BCFLAG, IPFLAG
     integer, intent(in)    :: MAXOUT, MAXPAR
@@ -367,9 +372,8 @@ subroutine shd_mpi__bcastInp(&
     real, intent(inout) :: MAX_TOTAL_MB, SPLITTING_FACTOR
     real, intent(inout) :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
     character(len=1), intent(inout) :: SRCTYPE, GRIDTYPE, UNITS, OUTTYPES(*)
-    character(len=charMaxLen_), intent(inout) :: runName, fileInp_prp, fileInp_ckd
-    character(len=charMaxLen_), intent(inout) :: fileInp_sav, fileOut_sav, fileInp_sen
-    type(shd_type_sfc), intent(inout) :: sfc_obj
+    character(len=charMaxLen_), intent(inout) :: runName, fileInp_prp
+    character(len=charMaxLen_), intent(inout) :: fileInp_sav, fileOut_sav
 
 #if HAS_MPI
     integer :: ierr, intbuf(10)
@@ -406,10 +410,10 @@ subroutine shd_mpi__bcastInp(&
     call mpi_bcast(char1buf, 3, MPI_character, 0, MPI_comm_world, ierr)
     SRCTYPE = char1buf(1); GRIDTYPE = char1buf(2); UNITS = char1buf(3)
 
-    char256buf(:) = (/fileInp_prp, sfc_obj%fname, fileInp_ckd, fileInp_sav, fileOut_sav, fileInp_sen, runName/)
+    char256buf(:) = (/fileInp_prp, sfc_obj%fname, ckd_obj%fname, fileInp_sav, fileOut_sav, sen_obj%fname, runName/)
     call mpi_bcast(char256buf, 7*256, MPI_character, 0, MPI_comm_world, ierr)
-    fileInp_prp = char256buf(1); sfc_obj%fname = char256buf(2); fileInp_ckd = char256buf(3)
-    fileInp_sav = char256buf(4); fileOut_sav = char256buf(5); fileInp_sen = char256buf(6); runName = char256buf(7)
+    fileInp_prp = char256buf(1); sfc_obj%fname = char256buf(2); ckd_obj%fname = char256buf(3)
+    fileInp_sav = char256buf(4); fileOut_sav = char256buf(5); sen_obj%fname = char256buf(6); runName = char256buf(7)
 
     call mpi_bcast(parms_Out, MAXPAR*NUMOUT, MPI_real, 0, MPI_comm_world, ierr)
     call mpi_bcast(OUTTYPES, NUMOUT*1, MPI_character, 0, MPI_comm_world, ierr)
@@ -673,47 +677,41 @@ subroutine shd_mpi__bcastCkd(ckd_obj)
 
 end subroutine shd_mpi__bcastCkd
 
-subroutine shd_mpi__bcastSenSize(Npts_sen, Npar_sen)
+subroutine shd_mpi__bcastSenSize(sen_obj)
 
     ! Broadcasts the user-specified sensor data array sizes from
     ! the master process to the others.
 
-    integer, intent(inout) :: Npts_sen, Npar_sen
+    type(shd_type_sen), intent(inout) :: sen_obj
 
 #if HAS_MPI
     integer :: ierr, intbuf(2)
 
     if (Nproc_ .le. 1) return
 
-    intbuf(1:2) = (/Npts_sen, Npar_sen/)
+    intbuf(1:2) = (/sen_obj%Npts, sen_obj%Npar/)
     call mpi_bcast(intbuf, 2, MPI_integer, 0, comm2D_, ierr)
-    Npts_sen = intbuf(1); Npar_sen = intbuf(2)
+    sen_obj%Npts = intbuf(1); sen_obj%Npar = intbuf(2)
 #endif
 
     return
 
 end subroutine shd_mpi__bcastSenSize
 
-subroutine shd_mpi__bcastSen(Npts_sen, Npar_sen, parms_Sen)
+subroutine shd_mpi__bcastSen(sen_obj)
 
     ! Broadcasts the user-specified sensor data array from
     ! the master process to the others.
 
-    integer, intent(inout) :: Npts_sen, Npar_sen
-    real, intent(inout) :: parms_Sen(*)
+    type(shd_type_sen), intent(inout) :: sen_obj
 
 #if HAS_MPI
-    integer :: ierr, intbuf(2), n
-    real    :: realbuf(4)
+    integer :: ierr, Ndata
 
     if (Nproc_ .le. 1) return
 
-    intbuf(1:2) = (/Npts_sen, Npar_sen/)
-    call mpi_bcast(intbuf, 2, MPI_integer, 0, comm2D_, ierr)
-    Npts_sen = intbuf(1); Npar_sen = intbuf(2)
-
-    n = Npts_sen*Npar_sen
-    call mpi_bcast(parms_Sen, n, MPI_real, 0, comm2D_, ierr)
+    Ndata = sen_obj%Npts*sen_obj%Npar
+    call mpi_bcast(sen_obj%dataRaw_view, Ndata, MPI_real, 0, comm2D_, ierr)
 #endif
 
     return
@@ -1786,7 +1784,7 @@ subroutine shd_mpi__computeRad(&
     &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
     &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
     &SHPTR, SOURCE, SOURCE1, GRIDRAD,&
-    &parms_Out, NRAD, RADOUT, sfc_obj, parms_Sen)
+    &parms_Out, NRAD, RADOUT, sfc_obj, sen_obj)
 
     ! Computes the radiances for the locations and directions specified
     ! in parms_Out, putting the results in RADOUT and increasing NRAD by
@@ -1794,6 +1792,7 @@ subroutine shd_mpi__computeRad(&
     ! across multiple processors.
 
     type(shd_type_sfc), intent(in) :: sfc_obj
+    type(shd_type_sen), intent(in) :: sen_obj
 
     integer, intent(in) :: Nstokes, Nx, Ny, Nz, BCFLAG, IPFLAG, NPTS, NCELLS
     integer, intent(in) :: ML, MM, NLM, NlegSet_prp, Nleg_prp, Npha_prp
@@ -1814,7 +1813,6 @@ subroutine shd_mpi__computeRad(&
     real, intent(in) :: DIRFLUX(NPTS), FLUXES(2, NPTS), SOURCE(Nstokes, *)
     real, intent(inout) :: SOURCE1(Nstokes, NPTS), GRIDRAD(Nstokes, NPTS)
     real, intent(in) :: parms_Out(*)
-    real, intent(in), optional :: parms_Sen(*)
     real, intent(out) :: RADOUT(Nstokes, *)
     character, intent(in) ::  SRCTYPE*1, UNITS*1
 
@@ -1886,9 +1884,9 @@ subroutine shd_mpi__computeRad(&
 
     ! Loop over the radiance directions
     do K = 1, NANGOUT
-        if (present(parms_Sen)) then
-            mu_out = parms_Sen(2*K - 1)
-            phiDeg_out = parms_Sen(2*K)
+        if (sen_obj%fname(1:4) .ne. 'NONE') then
+            mu_out     = sen_obj%dataRaw_view(2*K - 1)
+            phiDeg_out = sen_obj%dataRaw_view(2*K)
         else
             mu_out = parms_Out(2*K + 5)
             phiDeg_out = parms_Out(2*K + 6)
@@ -2222,7 +2220,7 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
     &x_Grid, y_Grid, z_Grid, xyz_Grid,&
     &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
     &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
-    &SHPTR, SOURCE, parms_Out, IVIS, VISOUT, sfc_obj, parms_Sen)
+    &SHPTR, SOURCE, parms_Out, IVIS, VISOUT, sfc_obj, sen_obj)
 
     ! Computes Stokes radiances (output in VISOUT) for the visualization
     !   modes: 1) camera mode,
@@ -2230,6 +2228,7 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
     !          3) user-specified sensor mode.
 
     type(shd_type_sfc), intent(in) :: sfc_obj
+    type(shd_type_sen), intent(in) :: sen_obj
 
     integer, intent(in) :: Nstokes, Nx, Ny, Nz, BCFLAG, IPFLAG, NPTS, NCELLS
     integer, intent(in) :: ML, MM, NLM, NlegSet_prp, Nleg_prp, Npha_prp
@@ -2249,7 +2248,6 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
     real, intent(in) :: EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NlegSet_prp, 0:Nleg_prp, *)
     real, intent(in) :: DIRFLUX(NPTS), FLUXES(2, NPTS), SOURCE(Nstokes, *)
     real, intent(in) :: parms_Out(*)
-    real, intent(in), optional :: parms_Sen(*)
     real, intent(out) :: VISOUT(Nstokes, *)
     character, intent(in) :: SRCTYPE*1, UNITS*1
 
@@ -2399,14 +2397,14 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
 
             else if (SENSOR_MODE) then
 
-                if (present(parms_Sen)) then
-                    X0    =  parms_Sen(5*SAMP - 4)
-                    Y0    =  parms_Sen(5*SAMP - 3)
-                    Z0    =  parms_Sen(5*SAMP - 2)
-                    COSTH =  parms_Sen(5*SAMP - 1)
-                    PHIR  =  parms_Sen(5*SAMP)
+                if (sen_obj%fname(1:4) .ne. 'NONE') then
+                    X0    =  sen_obj%dataRaw_view(5*SAMP - 4)
+                    Y0    =  sen_obj%dataRaw_view(5*SAMP - 3)
+                    Z0    =  sen_obj%dataRaw_view(5*SAMP - 2)
+                    COSTH =  sen_obj%dataRaw_view(5*SAMP - 1)
+                    PHIR  =  sen_obj%dataRaw_view(5*SAMP)
                 else
-                    stop 'Error [mpi__computeCamRad]: Need parms_Sen to proceed.'
+                    stop 'Error [mpi__computeCamRad]: Need sen_obj to proceed.'
                 end if
 
             else
