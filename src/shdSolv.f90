@@ -223,11 +223,11 @@ subroutine shd_solv__solveRte(&
             &NBCELLS, NCELLS, TREEPTR, GRIDPTR, GRIDPOS)
         ! Initialize the source function from the radiance field
         call shd_src__computeSrc(NSTOKES, ML, MM, NLM,&
-            &prp_obj%NlegSet, prp_obj%Nleg, prp_obj%Npha, NPTS,&
+            &NPTS,&
             &FIXSH, SRCTYPE, SOLARMU, YLMSUN, ALBEDO, LEGEN,&
             &IPHASE, PLANCK, DIRFLUX, SHACC,&
             &MAXIV, RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR, DELSOURCE,&
-            &.true., ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM)
+            &.true., ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM, prp_obj)
     end if
 
     if (ACCELFLAG) then
@@ -391,11 +391,11 @@ subroutine shd_solv__solveRte(&
         if (((SOLCRIT .lt. ENDADAPTSOL) .or. (ITER .gt. 30)) .and.&
             &((NX .gt. 36) .or. (NY .gt. 36))) FIXSH = .true.
         call shd_src__computeSrc(NSTOKES, ML, MM, NLM,&
-            &prp_obj%NlegSet, prp_obj%Nleg, prp_obj%Npha, NPTS,&
+            &NPTS,&
             &FIXSH, SRCTYPE, SOLARMU, YLMSUN, ALBEDO, LEGEN,&
             &IPHASE, PLANCK, DIRFLUX, SHACC,&
             &MAXIV, RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR, DELSOURCE,&
-            &.false., ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM)
+            &.false., ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM, prp_obj)
 
         ! Calculate the acceleration parameter and solution criterion
         !   from all the processors

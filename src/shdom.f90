@@ -480,7 +480,7 @@ program shdom
     !   2 and 3 in flag_bc to indicate multiple processors in X and Y.
     !   Also open the slave processor log files.
     prp_obj = prpAll_obj
-    call shd_mpi__map(flag_bc, Nx, Ny, Nz, runName, prp_obj)
+    call shd_mpi__map(flag_bc, Nx, Ny, Nz, runName, prpAll_obj, prp_obj)
 
     ! flag_bc bit-representation '...0001' isOpenX_
     if (btest(flag_bc, 0)) then
@@ -938,9 +938,9 @@ program shdom
     memNeed = ADAPT_GRID_FACTOR*Npts_base*NmaxIG
 
     if (isHighOrder_) then
-        scaleFactor = min(2.0, ((MAX_TOTAL_MB*1024**2)/4 - memUsed)/memNeed)
-    else
         scaleFactor = min(1.5, ((MAX_TOTAL_MB*1024**2)/4 - memUsed)/memNeed)
+    else
+        scaleFactor = min(1.0, ((MAX_TOTAL_MB*1024**2)/4 - memUsed)/memNeed)
     end if
 
     ADAPT_GRID_FACTOR = ADAPT_GRID_FACTOR*scaleFactor
@@ -1226,10 +1226,9 @@ program shdom
                     mu_out  = parms_Out(2, iout)
                     phi_out = parms_Out(3, iout)*acos(-1.0)/180.0
                     call shd_src__computeSrcOneDir(Nstokes, maxNl_sh, maxNm_sh, Nlm_sh,&
-                        &prp_obj%NlegSet, prp_obj%Nleg, prp_obj%Npha,&
                         &Npts, isDeltaM, mu_out, phi_out,&
                         &type_src, mu_solar, az_solar, ssa, leg, ipha,&
-                        &fluxDir, ptrSrc_Sh, src_Sh, src1_Out)
+                        &fluxDir, ptrSrc_Sh, src_Sh, src1_Out, prp_obj)
                 end if
             end do
         end if
@@ -1320,9 +1319,9 @@ program shdom
         call shd_mpi__gatherOut(isFluxOut, isHROut, isSHOut,&
             &ipFlag, flag_bc, Npts_base, Nx_T, Ny_T, Nz, Nsh_out,&
             &sumFluxTot_Out, sumFluxDir_Out, sumFluxDiv_Out, sumSH_Out,&
-            &prp_obj%xDomain, prp_obj%yDomain, xGrid_all, yGrid_all,&
+            &xGrid_all, yGrid_all,&
             &fluxTot_all, fluxDiv_all, SH_all,&
-            &Ncell, Npts, Nsh, Ncell_tot, Npts_tot, Nsh_tot)
+            &Ncell, Npts, Nsh, Ncell_tot, Npts_tot, Nsh_tot, prp_obj)
 
         if (isMasterProc) then
 
@@ -1331,15 +1330,16 @@ program shdom
                     call shd_io__outputResultMpi(Nstokes, Nx_T, Ny_T, Nz,&
                         &Npts_tot, Ncell_tot, Nsh_tot,&
                         &maxNl_sh, maxNm_sh, Nlm_sh, Nmu_do, Nphi_do, Nang_do,&
-                        &prp_obj%fname, fileInp_sav, fileOut_sav,&
+                        &fileInp_sav, fileOut_sav,&
                         &flag_bc, ipFlag, isDeltaM, type_grid, type_src,&
                         &solar, mu_solar, az_solar, skyRad,&
                         &waveNum, waveLen, units_src,&
                         &splitAcc, shAcc, solAcc, maxIter, totIter,&
-                        &prp_obj%xDomain, prp_obj%yDomain, xGrid_all, yGrid_all, z_Grid,&
+                        &xGrid_all, yGrid_all, z_Grid,&
                         &fluxTot_all, fluxDiv_all,&
                         &Nsh_out, SH_all, irad, sumRad_Out,&
-                        &type_Out(iout), parms_Out(1, iout), file_Out(iout), sfc_obj, ckd_obj, sen_obj)
+                        &type_Out(iout), parms_Out(1, iout), file_Out(iout),&
+                        &prp_obj, sfc_obj, ckd_obj, sen_obj)
                 end if
             end do
 
@@ -1354,8 +1354,8 @@ program shdom
         do iout = 1, Nout
             if ((type_Out(iout) .ne. 'V') .and. (file_Out(iout)(1:4) .ne. 'NONE')) then
                 call shd_io__outputResult(Nstokes, Nx, Ny, Nx1, Ny1, Nz, Npts_base, Npts, Ncell,&
-                    Nsh, maxNl_sh, maxNm_sh, Nlm_sh, prp_obj%NlegSet, prp_obj%Nleg, prp_obj%Npha, Nmu_do, Nphi_do, Nang_do,&
-                    prp_obj%fname, fileInp_sav, fileOut_sav,&
+                    Nsh, maxNl_sh, maxNm_sh, Nlm_sh, Nmu_do, Nphi_do, Nang_do,&
+                    fileInp_sav, fileOut_sav,&
                     flag_bc, ipFlag, isDeltaM, type_grid, type_src,&
                     solar, mu_solar, az_solar, skyRad,&
                     waveNum, waveLen, units_src,&
@@ -1365,7 +1365,8 @@ program shdom
                     ext, ssa, leg, ipha, temp,&
                     sumFluxTot_Out, sumFluxDir_Out, sumFluxDiv_Out,&
                     irad, sumRad_Out, Nsh_out, sumSH_Out, src1_Out,&
-                    type_Out(iout), parms_Out(1, iout), file_Out(iout), sfc_obj, ckd_obj, sen_obj)
+                    type_Out(iout), parms_Out(1, iout), file_Out(iout),&
+                    prp_obj, sfc_obj, ckd_obj, sen_obj)
             end if
         end do
     end if
@@ -1379,12 +1380,13 @@ program shdom
             if ((type_Out(iout) .eq. 'V')) then
                 call shd_io__outputCamRad(Nstokes, Nx, Ny, Nz, Npts, Ncell,&
                     &Nsh, maxNl_sh, maxNm_sh, Nlm_sh, Nmu_do, Nphi_do, Nang_do,&
-                    &prp_obj%fname, fileInp_sav, fileOut_sav,&
+                    &fileInp_sav, fileOut_sav,&
                     &flag_bc, ipFlag, isDeltaM, type_grid, type_src,&
                     &solar, mu_solar, az_solar, skyRad,&
                     &waveNum, waveLen, units_src,&
                     &splitAcc, shAcc, solAcc, maxIter, totIter,&
-                    &ilos, sumCam_Out, parms_Out(1, iout), file_Out(iout), sfc_obj, ckd_obj, sen_obj)
+                    &ilos, sumCam_Out, parms_Out(1, iout), file_Out(iout),&
+                    &prp_obj, sfc_obj, ckd_obj, sen_obj)
             end if
         end do
     end if
@@ -1492,7 +1494,6 @@ program shdom
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
-    call shd_mpi__end(Npts, xyz_Grid, prp_obj%Nx, prp_obj%Ny, prp_obj%xStart, prp_obj%yStart, prp_obj%xDomain, prp_obj%yDomain,&
-        &prpAll_obj%Nx, prpAll_obj%Ny, prp_obj%fname, runName)
+    call shd_mpi__end(Npts, xyz_Grid, runName, prpAll_obj, prp_obj)
 
 end program shdom

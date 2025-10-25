@@ -171,7 +171,7 @@ subroutine shd_mpi__start(isMasterProc, Nproc)
 end subroutine shd_mpi__start
 
 subroutine shd_mpi__map(BCFLAG, Nx, Ny, Nz,&
-    &runName, prp_obj)
+    &runName, prpAll_obj, prp_obj)
 
     ! Sets up the mapping of processors for the SHDOM domain (creating the
     ! 2D communicator, comm2D_).  Determines the subdomain property grid
@@ -189,6 +189,7 @@ subroutine shd_mpi__map(BCFLAG, Nx, Ny, Nz,&
     ! of grid points of the internal base grid for this subdomain (for the
     ! output arrays).
 
+    type(shd_type_prp), intent(in) :: prpAll_obj
     type(shd_type_prp), intent(inout) :: prp_obj
 
     integer, intent(inout) :: BCFLAG, Nx, Ny, Nz
@@ -196,16 +197,16 @@ subroutine shd_mpi__map(BCFLAG, Nx, Ny, Nz,&
 
 #if HAS_MPI
 ! note: this if clause has <else>
-    integer :: NPXT, NPYT, NXT, NYT
+    integer :: NXT, NYT
     integer :: i, ierr, dims(2), coords(2)
     logical :: periodic(2) = (/.true., .true./), reorder = .false.
     real    :: xEnd, yEnd
     character(len=4) :: procStr
     character(len=charMaxLen_) :: logFile
 
-    NPXT = prp_obj%Nx; NPYT = prp_obj%Ny; NXT = Nx; NYT = Ny
+    NXT = Nx; NYT = Ny
 
-    !if ((Nproc_ .eq. 1) .or. ((NPXT .eq. 1) .and. (NPYT .eq. 1))) then
+    !if ((Nproc_ .eq. 1) .or. ((prpAll_obj%Nx .eq. 1) .and. (prpAll_obj%Ny .eq. 1))) then
     if (Nproc_ .eq. 1) then
         prp_obj%xStart = 0.0; prp_obj%yStart = 0.0
         return
@@ -251,20 +252,20 @@ subroutine shd_mpi__map(BCFLAG, Nx, Ny, Nz,&
     call mpi_cart_coords(comm2D_, myProc_, 2, coords, ierr)
 
     ! Make the optimal (or default) property grid divisions (in ixyPrp_)
-    call shd_mpi__optimizeProcDomain(dims, coords, NPXT, NPYT, prp_obj%fname, runName)
+    call shd_mpi__optimizeProcDomain(dims, coords, runName, prpAll_obj, prp_obj)
 
     ! Make the new property and base grid sizes and the ixyOut_ arrays
     if (dims(1) .gt. 1) then
-        if (NPXT .gt. 1) then
+        if (prpAll_obj%Nx .gt. 1) then
 
             prp_obj%Nx = ixyPrp_(2, 1) - ixyPrp_(1, 1) + 1
-            Nx = nint(NXT*float(prp_obj%Nx - 1)/NPXT) + 1
-            if (abs(NPXT/float(NXT) - (prp_obj%Nx - 1)/float(Nx - 1)) .gt. 0.0001) then
+            Nx = nint(NXT*float(prp_obj%Nx - 1)/prpAll_obj%Nx) + 1
+            if (abs(prpAll_obj%Nx/float(NXT) - (prp_obj%Nx - 1)/float(Nx - 1)) .gt. 0.0001) then
                 call shd_mpi__abort('Error [mpi__map]: Even X base grid cannot be preserved&
                     & for this Nx and number of processors')
             end if
-            ixyOut_(1, 1) = nint(NXT*float(ixyPrp_(1, 1) - 1)/NPXT) + 1
-            ixyOut_(2, 1) = nint(NXT*float(prp_obj%Nx - 1)/NPXT)
+            ixyOut_(1, 1) = nint(NXT*float(ixyPrp_(1, 1) - 1)/prpAll_obj%Nx) + 1
+            ixyOut_(2, 1) = nint(NXT*float(prp_obj%Nx - 1)/prpAll_obj%Nx)
             prp_obj%xStart = (ixyPrp_(1, 1) - 1)*prp_obj%dx
             xEnd = (ixyPrp_(2, 1) - 1)*prp_obj%dx
 
@@ -288,21 +289,21 @@ subroutine shd_mpi__map(BCFLAG, Nx, Ny, Nz,&
         ixyOut_(1, 1) = 1
         ixyOut_(2, 1) = NXT
         prp_obj%xStart = 0.0
-        xEnd = NPXT*prp_obj%dx
+        xEnd = prpAll_obj%Nx*prp_obj%dx
     end if
 
     if (dims(2) .gt. 1) then
 
-        if (NPYT .gt. 1) then
+        if (prpAll_obj%Ny .gt. 1) then
 
             prp_obj%Ny = ixyPrp_(2, 2) - ixyPrp_(1, 2) + 1
-            Ny = nint(NYT*float(prp_obj%Ny - 1)/NPYT) + 1
-            if (abs(NPYT/float(NYT) - (prp_obj%Ny - 1)/float(Ny - 1)) .gt. 0.0001) then
+            Ny = nint(NYT*float(prp_obj%Ny - 1)/prpAll_obj%Ny) + 1
+            if (abs(prpAll_obj%Ny/float(NYT) - (prp_obj%Ny - 1)/float(Ny - 1)) .gt. 0.0001) then
                 call shd_mpi__abort('Error [mpi__map]: Even Y base grid cannot be preserved&
                     & for this Ny and number of processors')
             end if
-            ixyOut_(1, 2) = nint(NYT*float(ixyPrp_(1, 2) - 1)/NPYT) + 1
-            ixyOut_(2, 2) = nint(NYT*float(prp_obj%Ny - 1)/NPYT)
+            ixyOut_(1, 2) = nint(NYT*float(ixyPrp_(1, 2) - 1)/prpAll_obj%Ny) + 1
+            ixyOut_(2, 2) = nint(NYT*float(prp_obj%Ny - 1)/prpAll_obj%Ny)
             prp_obj%yStart = (ixyPrp_(1, 2) - 1)*prp_obj%dy
             yEnd = (ixyPrp_(2, 2) - 1)*prp_obj%dy
 
@@ -325,7 +326,7 @@ subroutine shd_mpi__map(BCFLAG, Nx, Ny, Nz,&
         ixyOut_(1, 2) = 1
         ixyOut_(2, 2) = NYT
         prp_obj%yStart = 0.0
-        yEnd = NPYT*prp_obj%dy
+        yEnd = prpAll_obj%Ny*prp_obj%dy
     end if
 
     ! Get the processors (rank numbers) of the neighbors
@@ -795,9 +796,9 @@ end function shd_mpi__sumCpuTime
 subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
     &IPFLAG, BCFLAG, NBPTS, NXT, NYT, Nz, NSHOUT,&
     &SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV, SUMSHTERMS,&
-    &XDOMAIN, YDOMAIN, XALLGRID, YALLGRID,&
+    &XALLGRID, YALLGRID,&
     &ALLFLUXES, ALLFLUXDIV, ALLSHTERMS,&
-    &NCELLS, NPTS, NSH, NCELLSTOT, NPTSTOT, NSHTOT)
+    &NCELLS, NPTS, NSH, NCELLSTOT, NPTSTOT, NSHTOT, prp_obj)
 
     ! Gathers the base grid output data in SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV,
     ! and SUMSHTERMS from all the processors and assembles in the master
@@ -806,9 +807,10 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
     ! Also gathers the full base grid position arrays (XALLGRID/YALLGRID) and
     ! sums NCELLS,NPTS,NSH over all processors.
 
+    type(shd_type_prp), intent(in) :: prp_obj
+
     logical, intent(in) :: FLUX_OUT, FLUXDIV_OUT, SH_OUT
     integer, intent(in) :: IPFLAG, BCFLAG, NBPTS, NXT, NYT, Nz, NSHOUT
-    real, intent(in) :: XDOMAIN, YDOMAIN
     real, intent(in) :: SUMFLUXES(2, NBPTS), SUMDIRFLUX(NBPTS)
     real, intent(in) :: SUMFLUXDIV(NBPTS), SUMSHTERMS(NSHOUT, NBPTS)
     real, intent(out) :: XALLGRID(NXT), YALLGRID(NYT)
@@ -964,8 +966,8 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
 
     ! Make the X and Y grids for the full domain
     if (myProc_ .eq. 0) then
-        XALLGRID(1:NXT) = (/(XDOMAIN*(I - 1)/NXT, I=1, NXT)/)
-        YALLGRID(1:NYT) = (/(YDOMAIN*(I - 1)/NYT, I=1, NYT)/)
+        XALLGRID(1:NXT) = (/(prp_obj%xDomain*(I - 1)/NXT, I=1, NXT)/)
+        YALLGRID(1:NYT) = (/(prp_obj%yDomain*(I - 1)/NYT, I=1, NYT)/)
     end if
 
     ! Get the sum of the NCELLS, NPTS, and NSH over the processors
@@ -1947,10 +1949,10 @@ subroutine shd_mpi__computeRad(&
         end if
 
         ! Compute the source function throughout grid for this angle
-        call shd_src__computeSrcOneDir(Nstokes, ML, MM, NLM, prp_obj%NlegSet,&
-            &prp_obj%Nleg, prp_obj%Npha, NPTS, DELTAM, mu_out, phi_out,&
+        call shd_src__computeSrcOneDir(Nstokes, ML, MM, NLM,&
+            &NPTS, DELTAM, mu_out, phi_out,&
             &SRCTYPE, SOLARMU, SOLARAZ, ALBEDO, LEGEN, IPHASE,&
-            &DIRFLUX, SHPTR, SOURCE, SOURCE1)
+            &DIRFLUX, SHPTR, SOURCE, SOURCE1, prp_obj)
 
         ! Set the radiance field to -1, so we can determine valid radiances
         !   Also set the source array to the extinction times the source
@@ -1992,7 +1994,7 @@ subroutine shd_mpi__computeRad(&
             end if
         end if
         if (isMpiY_) then
-            !if ((sin(phi_out) .gt. 1.0e-5) .and. (Ny_prp .gt. 1)) then
+            !if ((sin(phi_out) .gt. 1.0e-5) .and. (prp_obj%Ny .gt. 1)) then
             if ((sin(phi_out) .gt. 1.0e-5)) then
                 Ldowny = 4; Lupy = 3
             else
@@ -2487,12 +2489,12 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
                 ! Integrate the extinction and source function along this ray
                 ! to calculate the Stokes radiance vector for this pixel
                 TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
-                call shd_src__integrateSrcOneRay(BCFLAG, IPFLAG, Nstokes, prp_obj%NlegSet,&
+                call shd_src__integrateSrcOneRay(BCFLAG, IPFLAG, Nstokes,&
                     &NSTPHASE, NSCATANGLE, PHASETAB,&
                     &Nx, Ny, Nz, NPTS, NCELLS,&
                     &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
                     &x_Grid, y_Grid, z_Grid, xyz_Grid,&
-                    &ML, MM, NLM, prp_obj%Nleg, prp_obj%Npha,&
+                    &ML, MM, NLM,&
                     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                     &DELTAM, SRCTYPE, WAVELEN, SOLARMU, SOLARAZ,&
                     &EXTINCT, ALBEDO, LEGEN, IPHASE,&
@@ -2500,7 +2502,7 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
                     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                     &sfc_obj%type, sfc_obj%Npar, sfc_obj%dataGrid_brdf,&
                     &MU2, PHI2, X0, Y0, Z0,&
-                    &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
+                    &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD, prp_obj)
 
                 ! If we got a radiance then store it in RadSend otherwise save
                 !  the information needed to pass to other processors
@@ -2574,12 +2576,12 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
                 PHI2 = BndRecvRadRealInfo(5, J, IBND)
                 TRANSMIT = BndRecvRadRealInfo(6, J, IBND)
                 RADIANCE(:) = BndRecvRadRealInfo(7 : 6+Nstokes, J, IBND)
-                call shd_src__integrateSrcOneRay(BCFLAG, IPFLAG, Nstokes, prp_obj%NlegSet,&
+                call shd_src__integrateSrcOneRay(BCFLAG, IPFLAG, Nstokes,&
                     &NSTPHASE, NSCATANGLE, PHASETAB,&
                     &Nx, Ny, Nz, NPTS, NCELLS,&
                     &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
                     &x_Grid, y_Grid, z_Grid, xyz_Grid,&
-                    &ML, MM, NLM, prp_obj%Nleg, prp_obj%Npha,&
+                    &ML, MM, NLM,&
                     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                     &DELTAM, SRCTYPE, WAVELEN, SOLARMU, SOLARAZ,&
                     &EXTINCT, ALBEDO, LEGEN, IPHASE,&
@@ -2587,7 +2589,7 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
                     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                     &sfc_obj%type, sfc_obj%Npar, sfc_obj%dataGrid_brdf,&
                     &MU2, PHI2, X, Y, Z,&
-                    &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
+                    &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD, prp_obj)
 
                 ! If we got a valid radiance then store it in RadSend, otherwise
                 ! save information needed to pass to neighboring processors
@@ -2742,17 +2744,19 @@ subroutine shd_mpi__calAccelSolCrit(DOACCEL, DELJDOT, DELJOLD, DELJNEW, JNORM,&
 
 end subroutine shd_mpi__calAccelSolCrit
 
-subroutine shd_mpi__end(NPTS, xyz_Grid, Nx_prp, Ny_prp, XSTART, YSTART, XDOMAIN, YDOMAIN,&
-    &NPXT, NPYT, fileInp_prp, runName)
+subroutine shd_mpi__end(NPTS, xyz_Grid,&
+    &runName, prpAll_obj, prp_obj)
 
     ! Shuts down MPI at the end, but mainly finds the number of gridpoints
     ! around each property grid point column, sends that array to the master
     ! process, and the master process write out the runName//"_load_balance.out"
     ! file.
 
-    integer, intent(in) :: NPTS, Nx_prp, Ny_prp, NPXT, NPYT
-    real, intent(in) :: xyz_Grid(3, NPTS), XSTART, YSTART, XDOMAIN, YDOMAIN
-    character(len=*), intent(in) :: fileInp_prp, runName
+    type(shd_type_prp), intent(in) :: prpAll_obj, prp_obj
+
+    integer, intent(in) :: NPTS
+    real, intent(in) :: xyz_Grid(3, NPTS)
+    character(len=*), intent(in) :: runName
 
 #if HAS_MPI
     integer :: I, IX, IY, MAXN, SX, SY, EX, EY, Nx, Ny
@@ -2764,17 +2768,17 @@ subroutine shd_mpi__end(NPTS, xyz_Grid, Nx_prp, Ny_prp, XSTART, YSTART, XDOMAIN,
     type(MPI_request), allocatable :: requests(:)
     type(MPI_status), allocatable :: status(:)
 
-    dx_prp = real(XDOMAIN)/real(NPXT)
-    dy_prp = real(YDOMAIN)/real(NPYT)
+    dx_prp = real(prp_obj%xDomain)/real(prpAll_obj%Nx)
+    dy_prp = real(prp_obj%yDomain)/real(prpAll_obj%Ny)
 
     if (loadBalance_) then
         ! Calculate the number of grid points around each property grid column
-        allocate (NUMGRID(Nx_prp, Ny_prp))
+        allocate (NUMGRID(prp_obj%Nx, prp_obj%Ny))
         NUMGRID(:, :) = 0
         do I = 1, NPTS
-            IX = nint((xyz_Grid(1, I) - XSTART)/dx_prp) + 1
-            IY = nint((xyz_Grid(2, I) - YSTART)/dy_prp) + 1
-            if ((IX .le. Nx_prp) .and. (IY .le. Ny_prp)) then
+            IX = nint((xyz_Grid(1, I) - prp_obj%xStart)/dx_prp) + 1
+            IY = nint((xyz_Grid(2, I) - prp_obj%yStart)/dy_prp) + 1
+            if ((IX .le. prp_obj%Nx) .and. (IY .le. prp_obj%Ny)) then
                 NUMGRID(IX, IY) = NUMGRID(IX, IY) + 1
             end if
         end do
@@ -2789,7 +2793,7 @@ subroutine shd_mpi__end(NPTS, xyz_Grid, Nx_prp, Ny_prp, XSTART, YSTART, XDOMAIN,
             irq = 0
             if (myProc_ .gt. 0) then
                 irq = irq + 1
-                call mpi_isend(NUMGRID, Nx_prp*Ny_prp, MPI_integer, 0, 777, comm2D_,&
+                call mpi_isend(NUMGRID, prp_obj%Nx*prp_obj%Ny, MPI_integer, 0, 777, comm2D_,&
                     &requests(irq), ierr)
             else
                 MAXN = (maxval(ixyAll(2, 1, :) - ixyAll(1, 1, :)) + 1)*(maxval(ixyAll(2, 2, :) - ixyAll(1, 2, :)) + 1)
@@ -2806,7 +2810,7 @@ subroutine shd_mpi__end(NPTS, xyz_Grid, Nx_prp, Ny_prp, XSTART, YSTART, XDOMAIN,
             !   Use a normalization counter (NORM) to deal with grid points that
             !   get contribution from two processors.
             if (myProc_ .eq. 0) then
-                allocate (NUMGRIDALL(NPXT, NPYT), NORM(NPXT, NPYT))
+                allocate (NUMGRIDALL(prpAll_obj%Nx, prpAll_obj%Ny), NORM(prpAll_obj%Nx, prpAll_obj%Ny))
                 NUMGRIDALL(:, :) = 0; NORM(:, :) = 0
                 SX = ixyAll(1, 1, 0); EX = ixyAll(2, 1, 0); Nx = EX - SX + 1
                 SY = ixyAll(1, 2, 0); EY = ixyAll(2, 2, 0); Ny = EY - SY + 1
@@ -2819,7 +2823,7 @@ subroutine shd_mpi__end(NPTS, xyz_Grid, Nx_prp, Ny_prp, XSTART, YSTART, XDOMAIN,
                     buf(:, :) = reshape(recvbuf(1:Nx*Ny, iproc), (/Nx, Ny/))
                     NUMGRIDALL(SX:EX - 1, SY:EY - 1) = NUMGRIDALL(SX:EX - 1, SY:EY - 1) + buf(1:Nx - 1, 1:Ny - 1)
                     NORM(SX:EX - 1, SY:EY - 1) = NORM(SX:EX - 1, SY:EY - 1) + reshape((/1/), (/Nx - 1, Ny - 1/), (/1/))
-                    IX = mod(EX - 1, NPXT) + 1; IY = mod(EY - 1, NPYT) + 1
+                    IX = mod(EX - 1, prpAll_obj%Nx) + 1; IY = mod(EY - 1, prpAll_obj%Ny) + 1
                     NUMGRIDALL(IX, SY:EY - 1) = NUMGRIDALL(IX, SY:EY - 1) + buf(Nx, 1:Ny - 1)
                     NORM(IX, SY:EY - 1) = NORM(IX, SY:EY - 1) + reshape((/1/), (/Ny - 1/), (/1/))
                     NUMGRIDALL(SX:EX - 1, IY) = NUMGRIDALL(SX:EX - 1, IY) + buf(1:Nx - 1, Ny)
@@ -2843,8 +2847,8 @@ subroutine shd_mpi__end(NPTS, xyz_Grid, Nx_prp, Ny_prp, XSTART, YSTART, XDOMAIN,
             deallocate (requests, status, ixyAll)
 
         else
-            allocate (NUMGRIDALL(NPXT, NPYT))
-            NUMGRIDALL(1:Nx_prp, 1:Ny_prp) = NUMGRID(:, :)
+            allocate (NUMGRIDALL(prpAll_obj%Nx, prpAll_obj%Ny))
+            NUMGRIDALL(1:prp_obj%Nx, 1:prp_obj%Ny) = NUMGRID(:, :)
         end if
 
         ! checked
@@ -2854,10 +2858,10 @@ subroutine shd_mpi__end(NPTS, xyz_Grid, Nx_prp, Ny_prp, XSTART, YSTART, XDOMAIN,
             ! Write out the array to the load balancing file
             open (UNIT=10, FILE=trim(runName)//'_load_balance.out', STATUS='UNKNOWN')
             write (10, '(A)') '! SHDOM grid point load balancing file for property file:'
-            write (10, '(A)') fileInp_prp
-            write (10, '(2(1X,I4),A)') NPXT, NPYT, ' ! property grid size (Nx,Ny)'
-            do IX = 1, NPXT
-                do IY = 1, NPYT
+            write (10, '(A)') prp_obj%fname
+            write (10, '(2(1X,I4),A)') prpAll_obj%Nx, prpAll_obj%Ny, ' ! property grid size (Nx,Ny)'
+            do IX = 1, prpAll_obj%Nx
+                do IY = 1, prpAll_obj%Ny
                     write (10, '(I4,1X,I4,1X,I5)') IX, IY, NUMGRIDALL(IX, IY)
                 end do
             end do
@@ -2907,8 +2911,8 @@ subroutine shd_mpi__abort(ERRSTR)
 end subroutine shd_mpi__abort
 
 #if HAS_MPI
-subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
-    &fileInp_prp, runName)
+subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord,&
+    &runName, prpAll_obj, prp_obj)
 
     ! Calculates the location of this processor (subdomain) in the property
     ! grid.  The starting and ending property grid point indices for X and Y
@@ -2919,8 +2923,10 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
     ! processor times exists then the optimization uses this information on
     ! heterogeneous processors to try to give more work to faster processors.
 
-    integer, intent(in) :: ProcDims(2), ProcCoord(2), NPXT, NPYT
-    character(len=*), intent(in) :: fileInp_prp, runName
+    type(shd_type_prp), intent(in) :: prpAll_obj, prp_obj
+
+    integer, intent(in) :: ProcDims(2), ProcCoord(2)
+    character(len=*), intent(in) :: runName
     integer :: NPXTI, NPYTI
     integer :: IX, IY, JX, JY, Nxd, Nyd, N, I, ierr
     integer :: BndLines(ProcDims(1) + ProcDims(2) - 2)
@@ -2941,8 +2947,8 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
 
     ! Initialize the subdomain boundary lines to evenly spaced
     Nxd = ProcDims(1); Nyd = ProcDims(2); N = Nxd + Nyd - 2
-    BndLines(1:Nxd - 1) = (/(nint(I*float(NPXT)/Nxd) + 1, I=1, Nxd - 1)/)
-    BndLines(Nxd:N) = (/(nint(I*float(NPYT)/Nyd) + 1, I=1, Nyd - 1)/)
+    BndLines(1:Nxd - 1) = (/(nint(I*float(prpAll_obj%Nx)/Nxd) + 1, I=1, Nxd - 1)/)
+    BndLines(Nxd:N) = (/(nint(I*float(prpAll_obj%Ny)/Nyd) + 1, I=1, Nyd - 1)/)
 
     if (loadBalance_) then
         DoLoadBalancing = .false.
@@ -2953,10 +2959,10 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
                 read (10, *)
                 read (10, '(A)') fileInp_prp0
                 read (10, *) NPXTI, NPYTI
-                if ((NPXTI .ne. NPXT) .or. (NPYTI .ne. NPYT) .or. (fileInp_prp0 .ne. fileInp_prp)) then
+                if ((NPXTI .ne. prpAll_obj%Nx) .or. (NPYTI .ne. prpAll_obj%Ny) .or. (fileInp_prp0 .ne. prp_obj%fname)) then
                     write (6, '(A,A,A)') 'Load balancing file ', trim(runName),&
                         &'_load_balance.inp is not compatible with property file:'
-                    write (6, *) fileInp_prp
+                    write (6, *) prp_obj%fname
                     write (6, *)
                 else
                     DoLoadBalancing = .true.
@@ -2971,20 +2977,20 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
 
         if (myProc_ .eq. 0 .and. DoLoadBalancing) then
             ! Read the load balancing file to get array of number of grid points
-            allocate (Ngrid(NPXT + 1, NPYT + 1))
+            allocate (Ngrid(prpAll_obj%Nx + 1, prpAll_obj%Ny + 1))
             open (UNIT=10, FILE=trim(runName)//'_load_balance.inp', STATUS='OLD')
             read (10, *)
             read (10, *)
             read (10, *)
-            do IX = 1, NPXT
-                do IY = 1, NPYT
+            do IX = 1, prpAll_obj%Nx
+                do IY = 1, prpAll_obj%Ny
                     read (10, *) JX, JY, Ngrid(IX, IY)
                 end do
             end do
             close (10)
-            Ngrid(NPXT + 1, :) = Ngrid(1, :)
-            Ngrid(:, NPYT + 1) = Ngrid(:, 1)
-            Ngrid(NPXT + 1, NPYT + 1) = Ngrid(1, 1)
+            Ngrid(prpAll_obj%Nx + 1, :) = Ngrid(1, :)
+            Ngrid(:, prpAll_obj%Ny + 1) = Ngrid(:, 1)
+            Ngrid(prpAll_obj%Nx + 1, prpAll_obj%Ny+ 1) = Ngrid(1, 1)
 
             ! Read the relative processor times if the "shdom_proc_times.inp" file exists
             allocate (wtproc(Nproc_))
@@ -3002,7 +3008,7 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
             ! Do the simulated annealing to minimize the objective function
             u = shd_mpi__ran(iseed)
             NITER = NiterFac*N
-            Energy = loadObject(BndLines, Nxd, Nyd, ProcCoordAll, wtproc, NPXT, NPYT, Ngrid)
+            Energy = loadObject(BndLines, Nxd, Nyd, ProcCoordAll, wtproc, Ngrid, prpAll_obj)
             LowestEnergy = Energy
             CurLines(:) = BndLines(:)
             ! print *, 'Annealing cycles: Cycle Temp Energy  BndLines'
@@ -3013,7 +3019,7 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
                 Temp = Temp0*exp(-Tempfac*(icycle - 1)) ! lower the temp
                 ! Adjust the maximum distance a boundary line is perturbed with the cycle number
                 u = float(icycle - 1)/(NCYCLE - 1)
-                DelLines = (1 - u)*0.5*max(NPXT/Nxd, NPYT/Nyd) + u*1.0
+                DelLines = (1 - u)*0.5*max(prpAll_obj%Nx/Nxd, prpAll_obj%Ny/Nyd) + u*1.0
 
                 ! Do NITER iterations per temp cycle
                 do ITER = 1, NITER
@@ -3025,7 +3031,7 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
                         end do
                     end do
                     ! Calculate the energy of these new boundary lines
-                    NewEnergy = loadObject(TrialLines, Nxd, Nyd, ProcCoordAll, wtproc, NPXT, NPYT, Ngrid)
+                    NewEnergy = loadObject(TrialLines, Nxd, Nyd, ProcCoordAll, wtproc, Ngrid, prpAll_obj)
                     DeltaE = NewEnergy - Energy
                     if (DeltaE .lt. 0.0) then ! If lower energy accept change
                         CurLines(:) = TrialLines(:)
@@ -3058,8 +3064,8 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
     end if
 
     ! Make the subdomain position array for this processor from BndLines
-    IDX(1) = 1; IDX(Nxd + 1) = NPXT + 1; if (Nxd .eq. 1) IDX(Nxd + 1) = NPXT
-    IDY(1) = 1; IDY(Nyd + 1) = NPYT + 1; if (Nyd .eq. 1) IDY(Nyd + 1) = NPYT
+    IDX(1) = 1; IDX(Nxd + 1) = prpAll_obj%Nx + 1; if (Nxd .eq. 1) IDX(Nxd + 1) = prpAll_obj%Nx
+    IDY(1) = 1; IDY(Nyd + 1) = prpAll_obj%Ny + 1; if (Nyd .eq. 1) IDY(Nyd + 1) = prpAll_obj%Ny
     IDX(2:Nxd) = BndLines(1:Nxd - 1); IDY(2:Nyd) = BndLines(Nxd:N)
     ixyPrp_(1:2, 1) = IDX(ProcCoord(1) + 1:ProcCoord(1) + 2)
     ixyPrp_(1:2, 2) = IDY(ProcCoord(2) + 1:ProcCoord(2) + 2)
@@ -3462,7 +3468,7 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
 end subroutine shd_mpi__integrateRay
 
 real function loadObject(BndLines, Nxd, Nyd, ProcCoordAll, wtproc,&
-    &NPXT, NPYT, Ngrid)
+    &Ngrid, prpAll_obj)
 
     ! Calculates the objective function to minimize in doing the processor
     ! load balancing optimization.  The boundary line indices in X and Y to
@@ -3472,10 +3478,12 @@ real function loadObject(BndLines, Nxd, Nyd, ProcCoordAll, wtproc,&
     ! of each domain and the mean number, weighted by the relative processor
     ! times.
 
+    type(shd_type_prp), intent(in) :: prpAll_obj
+
     integer, intent(in) :: Nxd, Nyd, BndLines(Nxd + Nyd - 2)
     integer, intent(in) :: ProcCoordAll(2, 0:Nxd*Nyd - 1)
     real, intent(in) :: wtproc(0:Nxd*Nyd)
-    integer, intent(in) :: NPXT, NPYT, Ngrid(NPXT + 1, NPYT + 1)
+    integer, intent(in) :: Ngrid(prpAll_obj%Nx + 1, prpAll_obj%Ny + 1)
     integer :: N, I, J, IX, IY, IDX(Nxd + 1), IDY(Nyd + 1)
     real    :: OBJA
     real, save :: sumN = -1.0, a
@@ -3484,8 +3492,8 @@ real function loadObject(BndLines, Nxd, Nyd, ProcCoordAll, wtproc,&
         sumN = sum(Ngrid(:, :)); a = float(Nxd*Nyd)/sumN
     end if
     N = Nxd + Nyd - 2
-    IDX(1) = 1; IDX(Nxd + 1) = NPXT + 1; if (Nxd .eq. 1) IDX(Nxd + 1) = NPXT
-    IDY(1) = 1; IDY(Nyd + 1) = NPYT + 1; if (Nyd .eq. 1) IDY(Nyd + 1) = NPYT
+    IDX(1) = 1; IDX(Nxd + 1) = prpAll_obj%Nx + 1; if (Nxd .eq. 1) IDX(Nxd + 1) = prpAll_obj%Nx
+    IDY(1) = 1; IDY(Nyd + 1) = prpAll_obj%Ny + 1; if (Nyd .eq. 1) IDY(Nyd + 1) = prpAll_obj%Ny
 
     OBJA = 0.0
     do J = 0, Nxd*Nyd - 1

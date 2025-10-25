@@ -43,7 +43,8 @@ module shd_src
                              FRAC12_, FRAC13_, FRAC112_
     use globals_cfg,   only: accSolv_, isOpenX_, isOpenYx_, &
                              isPol_, isPol4_, &
-                             isSolar_, isThermal_
+                             isSolar_, isThermal_, &
+                             shd_type_prp
 
     use shd_scat, only: shd_scat__computeLegendre, &
                         shd_scat__computeWigner
@@ -77,12 +78,12 @@ contains
 
 subroutine shd_src__computeSrcOneCell(&
     &ICELL, GRIDPTR,&
-    &NSTOKES, NSTLEG, ML, MM, NLM, NLEG, NUMPHASE,&
+    &NSTOKES, ML, MM, NLM,&
     &NPTS, DELTAM, SRCTYPE, SOLARMU,&
     &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX,&
     &SHPTR, SOURCE, YLMDIR, YLMSUN, SUNDIRLEG, SINGSCAT,&
     &DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
-    &EXTINCT8, SRCEXT8)
+    &EXTINCT8, SRCEXT8, prp_obj)
 
     !   Computes the source function times extinction for gridpoints
     ! belonging to cell ICELL in the direction (MU,PHI). The results
@@ -92,19 +93,21 @@ subroutine shd_src__computeSrcOneCell(&
     ! procedure, replacing delta-M single scattering with single scattering
     ! for unscaled untruncated phase function.
 
-    integer ICELL, NSTOKES, NSTLEG, NPTS, ML, MM, NLM, NLEG, NUMPHASE
+    type(shd_type_prp), intent(in) :: prp_obj
+
+    integer ICELL, NSTOKES, NPTS, ML, MM, NLM
     integer GRIDPTR(8, *), SHPTR(NPTS + 1)
     integer DONETHIS(8), OLDIPTS(8)
     integer*2 IPHASE(NPTS)
     logical DELTAM
     real SOLARMU
-    real EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, NPTS)
+    real EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, NPTS)
     real DIRFLUX(NPTS), SOURCE(NSTOKES, *)
-    real YLMDIR(NSTLEG, NLM), YLMSUN(NSTLEG, NLM)
-    real SINGSCAT(NSTOKES, NUMPHASE)
+    real YLMDIR(prp_obj%NlegSet, NLM), YLMSUN(prp_obj%NlegSet, NLM)
+    real SINGSCAT(NSTOKES, prp_obj%Npha)
     real OEXTINCT8(8), OSRCEXT8(NSTOKES, 8)
     real EXTINCT8(8), SRCEXT8(NSTOKES, 8)
-    real(RD_) :: SUNDIRLEG(0:NLEG)
+    real(RD_) :: SUNDIRLEG(0:prp_obj%Nleg)
     character(len=1) :: SRCTYPE
 
     integer IP, J, JT, L, M, MS, ME, IPH, IS, NS, N, I
@@ -150,7 +153,7 @@ subroutine shd_src__computeSrcOneCell(&
 
             ! Special case for solar source and Delta-M
             if (isSolar_ .and. DELTAM) then
-                if (NUMPHASE .gt. 0) then
+                if (prp_obj%Npha .gt. 0) then
                     IPH = IPHASE(IP)
                 else
                     IPH = IP
@@ -181,11 +184,11 @@ subroutine shd_src__computeSrcOneCell(&
                 end do
                 ! Then add in the single scattering contribution for the
                 !   original unscaled phase function.
-                if (NUMPHASE .gt. 0) then
+                if (prp_obj%Npha .gt. 0) then
                     SRCEXT8(:, N) = SRCEXT8(:, N) + DA*SINGSCAT(:, IPH)
                 else if (.not. isPol_) then
                     F = LEGEN(1, ML + 1, IPH)
-                    do L = 0, NLEG
+                    do L = 0, prp_obj%Nleg
                         if (L .le. ML) then
                             A = DA*(LEGEN(1, L, IPH) + F/(1 - F))
                         else
@@ -206,12 +209,12 @@ end subroutine shd_src__computeSrcOneCell
 
 subroutine shd_src__computeSrcOneCell_(&
     &ICELL, GRIDPTR,&
-    &ML, MM, NLM, NLEG, NUMPHASE,&
+    &ML, MM, NLM,&
     &NPTS, DELTAM, SRCTYPE, SOLARMU,&
     &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX,&
     &SHPTR, SOURCE, YLMDIR, YLMSUN, SUNDIRLEG, SINGSCAT,&
     &DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
-    &EXTINCT8, SRCEXT8)
+    &EXTINCT8, SRCEXT8, prp_obj)
 
     !   Computes the source function times extinction for gridpoints
     ! belonging to cell ICELL in the direction (MU,PHI).  The results
@@ -221,19 +224,21 @@ subroutine shd_src__computeSrcOneCell_(&
     ! procedure, replacing delta-M single scattering with single scattering
     ! for unscaled untruncated phase function.
 
-    integer ICELL, NPTS, ML, MM, NLM, NLEG, NUMPHASE
+    type(shd_type_prp), intent(in) :: prp_obj
+
+    integer ICELL, NPTS, ML, MM, NLM
     integer GRIDPTR(8, *), SHPTR(NPTS + 1)
     integer DONETHIS(8), OLDIPTS(8)
     integer*2 IPHASE(NPTS)
     logical DELTAM
     real SOLARMU
-    real EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(0:NLEG, NPTS)
+    real EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(0:prp_obj%Nleg, NPTS)
     real DIRFLUX(NPTS), SOURCE(*)
     real YLMDIR(NLM), YLMSUN(NLM)
-    real SINGSCAT(NUMPHASE)
+    real SINGSCAT(prp_obj%Npha)
     real OEXTINCT8(8), OSRCEXT8(8)
     real EXTINCT8(8), SRCEXT8(8)
-    real(RD_) :: SUNDIRLEG(0:NLEG)
+    real(RD_) :: SUNDIRLEG(0:prp_obj%Nleg)
     character(len=1) :: SRCTYPE
 
     integer IP, J, JT, L, M, MS, ME, IPH, IS, NS, N, I
@@ -266,7 +271,7 @@ subroutine shd_src__computeSrcOneCell_(&
 
             ! Special case for solar source and Delta-M
             if (isSolar_ .and. DELTAM) then
-                if (NUMPHASE .gt. 0) then
+                if (prp_obj%Npha .gt. 0) then
                     IPH = IPHASE(IP)
                 else
                     IPH = IP
@@ -288,11 +293,11 @@ subroutine shd_src__computeSrcOneCell_(&
                 end do
                 ! Then add in the single scattering contribution for the
                 !   original unscaled phase function.
-                if (NUMPHASE .gt. 0) then
+                if (prp_obj%Npha .gt. 0) then
                     SRCEXT8(N) = SRCEXT8(N) + DA*SINGSCAT(IPH)
                 else
                     F = LEGEN(ML + 1, IPH)
-                    do L = 0, NLEG
+                    do L = 0, prp_obj%Nleg
                         if (L .le. ML) then
                             A = DA*(LEGEN(L, IPH) + F/(1 - F))
                         else
@@ -312,10 +317,10 @@ subroutine shd_src__computeSrcOneCell_(&
 end subroutine shd_src__computeSrcOneCell_
 
 subroutine shd_src__computeSrcOneDir(NSTOKES,&
-    &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
+    &ML, MM, NLM,&
     &NPTS, DELTAM, MU, PHI, SRCTYPE, SOLARMU, SOLARAZ,&
     &ALBEDO, LEGEN, IPHASE, DIRFLUX,&
-    &SHPTR, SOURCE, SOURCE1)
+    &SHPTR, SOURCE, SOURCE1, prp_obj)
 
     ! Computes the source function (SOURCE1) in the direction (MU,PHI)
     ! for the whole domain (NX,NZ).  The spherical harmonic source function
@@ -324,12 +329,14 @@ subroutine shd_src__computeSrcOneDir(NSTOKES,&
     ! procedure, replacing delta-M single scattering with single scattering
     ! for unscaled untruncated phase function.
 
-    integer NSTOKES, NPTS, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
+    type(shd_type_prp), intent(in) :: prp_obj
+
+    integer NSTOKES, NPTS, ML, MM, NLM
     integer SHPTR(NPTS + 1)
     integer*2 IPHASE(NPTS)
     logical DELTAM
     real SOLARMU, SOLARAZ, MU, PHI
-    real ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, NPTS), DIRFLUX(NPTS)
+    real ALBEDO(NPTS), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, NPTS), DIRFLUX(NPTS)
     real SOURCE(NSTOKES, *), SOURCE1(NSTOKES, NPTS)
     character(len=1) :: SRCTYPE
     integer I, J, JT, K, L, M, N, IPH, IS, NS, ME, MS
@@ -339,28 +346,28 @@ subroutine shd_src__computeSrcOneDir(NSTOKES,&
     real, allocatable :: UNSCLEGEN(:, :), SINGSCAT(:, :)
     logical TMS
 
-    allocate (YLMDIR(NSTLEG, NLM), YLMSUN(NSTLEG, NLM))
-    allocate (SUNDIRLEG(0:NLEG))
-    allocate (UNSCLEGEN(2, 0:NLEG), SINGSCAT(NSTOKES, NUMPHASE))
+    allocate (YLMDIR(prp_obj%NlegSet, NLM), YLMSUN(prp_obj%NlegSet, NLM))
+    allocate (SUNDIRLEG(0:prp_obj%Nleg))
+    allocate (UNSCLEGEN(2, 0:prp_obj%Nleg), SINGSCAT(NSTOKES, prp_obj%Npha))
     if (abs(MU) .gt. 1.0) stop 'Error [_computeOneSrc]: Bad mu.'
 
     TMS = DELTAM
     ! TMS = .FALSE.
 
     ! Precompute Ylm's for output direction and solar direction
-    call shd_shdo__computeYlm(.false., MU, PHI, ML, MM, NSTLEG, YLMDIR)
+    call shd_shdo__computeYlm(.false., MU, PHI, ML, MM, prp_obj%NlegSet, YLMDIR)
     if (isSolar_) then
-        call shd_shdo__computeYlm(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG,&
+        call shd_shdo__computeYlm(.true., SOLARMU, SOLARAZ, ML, MM, prp_obj%NlegSet,&
             &YLMSUN)
         SECMU0 = 1.0/abs(SOLARMU)
         COSSCAT = SOLARMU*MU + sqrt((1.0d0 - SOLARMU**2)*(1.0d0 - MU**2))&
             &*cos(SOLARAZ - PHI)
-        if (NUMPHASE .eq. 0 .and. TMS) then
+        if (prp_obj%Npha .eq. 0 .and. TMS) then
             ! If non-tabulate phase functions (unpolarized) then
             !   compute the Legendre polynomials for the scattering angle
             !   for the untruncated solar single scattering computation.
-            call shd_scat__computeLegendre(dble(COSSCAT), NLEG, SUNDIRLEG)
-            do L = 0, NLEG
+            call shd_scat__computeLegendre(dble(COSSCAT), prp_obj%Nleg, SUNDIRLEG)
+            do L = 0, prp_obj%Nleg
                 SUNDIRLEG(L) = SUNDIRLEG(L)*(2*L + 1)*O4PI_
             end do
         end if
@@ -368,18 +375,18 @@ subroutine shd_src__computeSrcOneDir(NSTOKES,&
 
     ! If solar source and tabulated phase functions then precompute
     !   the single scattered solar Stokes vector to outgoing direction
-    if ((SRCTYPE .ne. 'T') .and. TMS .and. (NUMPHASE .gt. 0)) then
-        do IPH = 1, NUMPHASE
+    if ((SRCTYPE .ne. 'T') .and. TMS .and. (prp_obj%Npha .gt. 0)) then
+        do IPH = 1, prp_obj%Npha
             ! Unscaled the needed Legendre coefficients, but divide by 1-f
             !   because extinction is still scaled (for TMS method)
             F = LEGEN(1, ML + 1, IPH)
-            do L = 0, NLEG
+            do L = 0, prp_obj%Nleg
                 if (L .le. ML) then
                     UNSCLEGEN(1, L) = LEGEN(1, L, IPH) + F/(1 - F)
                 else
                     UNSCLEGEN(1, L) = LEGEN(1, L, IPH)/(1 - F)
                 end if
-                if (NSTLEG .gt. 1) then
+                if (prp_obj%NlegSet .gt. 1) then
                     if (L .le. ML) then
                         UNSCLEGEN(2, L) = LEGEN(5, L, IPH)
                     else
@@ -389,9 +396,9 @@ subroutine shd_src__computeSrcOneDir(NSTOKES,&
             end do
             ! Sum the Wigner series (for A1 and B1), rotate the plane of
             !   polarization to the outgoing direction, and return the Stoke
-            call shd_src__computeSolarStokesVect(NLEG, UNSCLEGEN, COSSCAT,&
+            call shd_src__computeSolarStokesVect(UNSCLEGEN, COSSCAT,&
                 &SOLARMU, MU, SOLARAZ - PHI, NSTOKES,&
-                &SINGSCAT(1, IPH))
+                &SINGSCAT(1, IPH), prp_obj)
             if (SINGSCAT(1, IPH) .le. 0.0) then
                 write (6, *) 'Error [_computeOneSrc]: negative source function',&
                     &' for tabulated phase function:', IPH, MU, PHI, SINGSCAT(1, IPH)
@@ -427,7 +434,7 @@ subroutine shd_src__computeSrcOneDir(NSTOKES,&
 
         ! Special case for solar source and Delta-M
         if ((SRCTYPE .ne. 'T') .and. TMS) then
-            if (NUMPHASE .gt. 0) then
+            if (prp_obj%Npha .gt. 0) then
                 IPH = IPHASE(I)
             else
                 IPH = I
@@ -459,7 +466,7 @@ subroutine shd_src__computeSrcOneDir(NSTOKES,&
 
             ! Then add in the single scattering contribution for the
             !   original unscaled phase matrix.
-            if (NUMPHASE .gt. 0) then
+            if (prp_obj%Npha .gt. 0) then
                 SOURCE1(:, I) = SOURCE1(:, I) + DA*SINGSCAT(:, IPH)
             else if (.not. isPol_) then
                 ! If we have a phase function for each grid point (which
@@ -467,7 +474,7 @@ subroutine shd_src__computeSrcOneDir(NSTOKES,&
                 !   coefficients for L<=ML and sum over the Legendre series
                 !   in cosine of the scattering angle.
                 F = LEGEN(1, ML + 1, IPH)
-                do L = 0, NLEG
+                do L = 0, prp_obj%Nleg
                     if (L .le. ML) then
                         A = DA*(LEGEN(1, L, IPH) + F/(1 - F))
                     else
@@ -487,11 +494,11 @@ end subroutine shd_src__computeSrcOneDir
 
 subroutine shd_src__computeSrc(&
     &NSTOKES, ML, MM, NLM,&
-    &NSTLEG, NLEG, NUMPHASE, NPTS, FIXSH,&
+    &NPTS, FIXSH,&
     &SRCTYPE, SOLARMU, YLMSUN, ALBEDO, LEGEN,&
     &IPHASE, PLANCK, DIRFLUX, SHACC, MAXIV,&
     &RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR, DELSOURCE,&
-    &FIRST, ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM)
+    &FIRST, ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM, prp_obj)
 
     ! Computes the source function (SOURCE) in spherical harmonic space
     !   for all the grid points.  The thermal source and/or solar
@@ -516,14 +523,16 @@ subroutine shd_src__computeSrc(&
     !   of the solution criterion (SOLCRIT, the RMS difference in succesive
     !   source function fields normalized by the RMS of the field).
 
-    integer NSTOKES, NPTS, ML, MM, NLM, NSTLEG, NLEG
-    integer NUMPHASE, MAXIV
+    type(shd_type_prp), intent(in) :: prp_obj
+
+    integer NSTOKES, NPTS, ML, MM, NLM
+    integer MAXIV
     integer RSHPTR(NPTS + 1), SHPTR(NPTS + 1), OSHPTR(NPTS + 1)
     integer*2 IPHASE(NPTS)
     logical FIXSH, FIRST, ACCELFLAG
-    real SHACC, YLMSUN(NSTLEG, NLM), SOLARMU
+    real SHACC, YLMSUN(prp_obj%NlegSet, NLM), SOLARMU
     real DELJDOT, DELJOLD, DELJNEW, JNORM
-    real ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, *)
+    real ALBEDO(NPTS), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, *)
     real PLANCK(NPTS), DIRFLUX(NPTS)
     real RADIANCE(NSTOKES, *)
     real SOURCE(NSTOKES, *), DELSOURCE(NSTOKES, *)
@@ -560,7 +569,7 @@ subroutine shd_src__computeSrc(&
         JNORM = 0.0
         do I = 1, NPTS
             ! Compute the temporary source function for this point
-            if (NUMPHASE .gt. 0) then
+            if (prp_obj%Npha .gt. 0) then
                 IPH = IPHASE(I)
             else
                 IPH = I
@@ -572,15 +581,15 @@ subroutine shd_src__computeSrc(&
                 stop
             end if
             if (isPol_) then
-                call shd_src__computeSrcOnePnt(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
+                call shd_src__computeSrcOnePnt(NSTOKES, NLM, LOFJ,&
                     &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
                     &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
-                    &NR, RADIANCE(1, IR + 1), SOURCET)
+                    &NR, RADIANCE(1, IR + 1), SOURCET, prp_obj)
             else
-                call shd_src__computeSrcOnePnt_(NLM, NLEG, LOFJ,&
+                call shd_src__computeSrcOnePnt_(NLM, LOFJ,&
                     &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
                     &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
-                    &NR, RADIANCE(1, IR + 1), SOURCET)
+                    &NR, RADIANCE(1, IR + 1), SOURCET, prp_obj)
             end if
 
             ! Compute the dot product of the new and old source difference,
@@ -615,7 +624,7 @@ subroutine shd_src__computeSrc(&
     if (.not. FIRST .and. ACCELFLAG) then
         do I = 1, NPTS
             ! Compute the temporary source function for this point
-            if (NUMPHASE .gt. 0) then
+            if (prp_obj%Npha .gt. 0) then
                 IPH = IPHASE(I)
             else
                 IPH = I
@@ -623,15 +632,15 @@ subroutine shd_src__computeSrc(&
             IR = RSHPTR(I)
             NR = RSHPTR(I + 1) - IR
             if (isPol_) then
-                call shd_src__computeSrcOnePnt(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
+                call shd_src__computeSrcOnePnt(NSTOKES, NLM, LOFJ,&
                     &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
                     &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
-                    &NR, RADIANCE(1, IR + 1), SOURCET)
+                    &NR, RADIANCE(1, IR + 1), SOURCET, prp_obj)
             else
-                call shd_src__computeSrcOnePnt_(NLM, NLEG, LOFJ,&
+                call shd_src__computeSrcOnePnt_(NLM, LOFJ,&
                     &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
                     &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
-                    &NR, RADIANCE(1, IR + 1), SOURCET)
+                    &NR, RADIANCE(1, IR + 1), SOURCET, prp_obj)
             end if
 
             ! Make the source difference vector
@@ -648,7 +657,7 @@ subroutine shd_src__computeSrc(&
     ! Compute the source function in the temporary array.
     IS = 0
     do I = 1, NPTS
-        if (NUMPHASE .gt. 0) then
+        if (prp_obj%Npha .gt. 0) then
             IPH = IPHASE(I)
         else
             IPH = I
@@ -660,15 +669,15 @@ subroutine shd_src__computeSrc(&
             stop
         end if
         if (isPol_) then
-            call shd_src__computeSrcOnePnt(NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
+            call shd_src__computeSrcOnePnt(NSTOKES, NLM, LOFJ,&
                 &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
                 &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
-                &NR, RADIANCE(1, IR + 1), SOURCET)
+                &NR, RADIANCE(1, IR + 1), SOURCET, prp_obj)
         else
-            call shd_src__computeSrcOnePnt_(NLM, NLEG, LOFJ,&
+            call shd_src__computeSrcOnePnt_(NLM, LOFJ,&
                 &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
                 &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
-                &NR, RADIANCE(1, IR + 1), SOURCET)
+                &NR, RADIANCE(1, IR + 1), SOURCET, prp_obj)
         end if
         if (FIXSH) then
             NS = SHPTR(I + 1) - IS
@@ -716,12 +725,12 @@ subroutine shd_src__computeSrc(&
 end subroutine shd_src__computeSrc
 
 subroutine shd_src__integrateSrcOneRay(&
-    &BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
+    &BCFLAG, IPFLAG, NSTOKES,&
     &NSTPHASE, NSCATANGLE, PHASETAB,&
     &NX, NY, NZ, NPTS, NCELLS,&
     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &XGRID, YGRID, ZGRID, GRIDPOS,&
-    &ML, MM, NLM, NLEG, NUMPHASE,&
+    &ML, MM, NLM,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
     &DELTAM, SRCTYPE, WAVELEN, SOLARMU, SOLARAZ,&
     &EXTINCT, ALBEDO, LEGEN, IPHASE,&
@@ -729,7 +738,7 @@ subroutine shd_src__integrateSrcOneRay(&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
     &MU2, PHI2, X0, Y0, Z0,&
-    &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
+    &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD, prp_obj)
 
     !   Integrates the source function through the extinction field
     ! (EXTINCT) backward from the outgoing direction (MU2,PHI2) to find the
@@ -739,9 +748,11 @@ subroutine shd_src__integrateSrcOneRay(&
     ! ray location (XE,YE,ZE) and side of the domain (1=-X,2=+X,3=-Y,4=+Y,
     ! 5=-Z,6=+Z).
 
-    integer BCFLAG, IPFLAG, NSTOKES, NSTLEG, NSTPHASE, NSCATANGLE
+    type(shd_type_prp), intent(in) :: prp_obj
+
+    integer BCFLAG, IPFLAG, NSTOKES, NSTPHASE, NSCATANGLE
     integer NX, NY, NZ, NPTS, NCELLS, SIDE
-    integer ML, MM, NLM, NLEG, NUMPHASE
+    integer ML, MM, NLM
     integer MAXNBC, NTOPPTS, NBOTPTS
     integer NMU, NPHI0MAX, NPHI0(NMU), NSFCPAR
     integer GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
@@ -753,10 +764,10 @@ subroutine shd_src__integrateSrcOneRay(&
     real WAVELEN, SOLARMU, SOLARAZ
     real SFCGRIDPARMS(NSFCPAR, NBOTPTS), BCRAD(*)
     real XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ), GRIDPOS(3, NPTS)
-    real EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, NPTS)
+    real EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, NPTS)
     real DIRFLUX(NPTS), SOURCE(NSTOKES, *)
-    real YLMSUN(NSTLEG, NLM)
-    real PHASETAB(NSTPHASE, NUMPHASE, NSCATANGLE)
+    real YLMSUN(prp_obj%NlegSet, NLM)
+    real PHASETAB(NSTPHASE, prp_obj%Npha, NSCATANGLE)
     real(RD_) :: MU2, PHI2, X0, Y0, Z0, XE, YE, ZE
     real(RD_) :: TRANSMIT, RADIANCE(NSTOKES)
     character(len=1) :: SRCTYPE
@@ -800,8 +811,8 @@ subroutine shd_src__integrateSrcOneRay(&
     MAXCELLSCROSS = 50*max(NX, NY, NZ)
 
     ! Calculate the generalized spherical harmonics for this direction
-    allocate (YLMDIR(NSTLEG, NLM))
-    call shd_shdo__computeYlm(.false., sngl(MU2), sngl(PHI2), ML, MM, NSTLEG, YLMDIR)
+    allocate (YLMDIR(prp_obj%NlegSet, NLM))
+    call shd_shdo__computeYlm(.false., sngl(MU2), sngl(PHI2), ML, MM, prp_obj%NlegSet, YLMDIR)
 
     if ((SRCTYPE .ne. 'T') .and. (DELTAM)) then
         ! Get the solar single scattering Stokes vector for the outgoin
@@ -809,12 +820,12 @@ subroutine shd_src__integrateSrcOneRay(&
         !   table and then rotating the Q/U polarization to the outgoing
         COSSCAT = SOLARMU*MU2 + dsqrt((1.0d0 - SOLARMU**2)*(1.0d0 - MU2**2))&
             &*dcos(SOLARAZ - PHI2)
-        if (NUMPHASE .gt. 0) then
-            allocate (SINGSCAT(NSTOKES, NUMPHASE))
+        if (prp_obj%Npha .gt. 0) then
+            allocate (SINGSCAT(NSTOKES, prp_obj%Npha))
             F = (NSCATANGLE - 1)*(dacos(COSSCAT)/DPI_) + 1
             J = min(NSCATANGLE - 1, int(F))
             F = F - J
-            do I = 1, NUMPHASE
+            do I = 1, prp_obj%Npha
                 SINGSCAT(1:NSTPHASE, I)&
                     &= (1 - F)*PHASETAB(:, I, J) + F*PHASETAB(:, I, J + 1)
                 if (isPol_) then
@@ -823,9 +834,9 @@ subroutine shd_src__integrateSrcOneRay(&
                 end if
             end do
         else
-            allocate (SUNDIRLEG(0:NLEG))
-            call shd_scat__computeLegendre(COSSCAT, NLEG, SUNDIRLEG)
-            do L = 0, NLEG
+            allocate (SUNDIRLEG(0:prp_obj%Nleg))
+            call shd_scat__computeLegendre(COSSCAT, prp_obj%Nleg, SUNDIRLEG)
+            do L = 0, prp_obj%Nleg
                 SUNDIRLEG(L) = SUNDIRLEG(L)*(2*L + 1)/(4*DPI_)
             end do
         end if
@@ -909,20 +920,20 @@ subroutine shd_src__integrateSrcOneRay(&
         ! Compute the source function times extinction in direction (MU2
         if (isPol_) then
             call shd_src__computeSrcOneCell(ICELL, GRIDPTR,&
-                &NSTOKES, NSTLEG, ML, MM, NLM, NLEG, NUMPHASE,&
+                &NSTOKES, ML, MM, NLM,&
                 &NPTS, DELTAM, SRCTYPE, SOLARMU,&
                 &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX,&
                 &SHPTR, SOURCE, YLMDIR, YLMSUN, SUNDIRLEG, SINGSCAT,&
                 &DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
-                &EXTINCT8, SRCEXT8)
+                &EXTINCT8, SRCEXT8, prp_obj)
         else
             call shd_src__computeSrcOneCell_(ICELL, GRIDPTR,&
-                &ML, MM, NLM, NLEG, NUMPHASE,&
+                &ML, MM, NLM,&
                 &NPTS, DELTAM, SRCTYPE, SOLARMU,&
                 &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX,&
                 &SHPTR, SOURCE, YLMDIR, YLMSUN, SUNDIRLEG, SINGSCAT,&
                 &DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
-                &EXTINCT8, SRCEXT8)
+                &EXTINCT8, SRCEXT8, prp_obj)
         end if
 
         ! Interpolate the source and extinction to the current point
@@ -1115,7 +1126,7 @@ subroutine shd_src__integrateSrcOneRay(&
     SIDE = IFACE
 
     if (isSolar_ .and. DELTAM) then
-        if (NUMPHASE .gt. 0) then
+        if (prp_obj%Npha .gt. 0) then
             deallocate (SINGSCAT)
         else
             deallocate (SUNDIRLEG)
@@ -1403,9 +1414,9 @@ subroutine shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
 end subroutine shd_src__integrateSrc
 
 subroutine shd_src__computeSolarStokesVect(&
-    &NLEG, SINGLEGEN, COSSCAT,&
+    &SINGLEGEN, COSSCAT,&
     &SOLARMU, MU, DELPHI, NSTOKES,&
-    &SCATVECT)
+    &SCATVECT, prp_obj)
 
     ! Calculates the Stokes vector for a single scattering of unpolarized
     ! sunlight from the solar direction (SOLARMU) to the outgoing
@@ -1415,8 +1426,10 @@ subroutine shd_src__computeSolarStokesVect(&
     ! The plane of polarization is rotated from the scattering plane to
     ! the outgoing meridional plane.  Also divides the output vector by 4*pi.
 
-    integer NLEG, NSTOKES
-    real SINGLEGEN(2, 0:NLEG), COSSCAT, SOLARMU, MU, DELPHI
+    type(shd_type_prp), intent(in) :: prp_obj
+
+    integer NSTOKES
+    real SINGLEGEN(2, 0:prp_obj%Nleg), COSSCAT, SOLARMU, MU, DELPHI
     real SCATVECT(NSTOKES)
     integer I, J, K, L
     real(RD_) :: X, FCT, A1, B1
@@ -1424,13 +1437,13 @@ subroutine shd_src__computeSolarStokesVect(&
     real(RD_) :: SIN_SCAT, SIN_THETA1, SIN_THETA2
     real(RD_) :: SINPHI, COSPHI, SIN2, COS2, SIN22, COS22
 
-    allocate (DMM1(0:NLEG))
+    allocate (DMM1(0:prp_obj%Nleg))
 
     ! Sum the first Wigner function series, which is actually a Legend
     X = dble(COSSCAT)
-    call shd_scat__computeWigner(X, NLEG, 0, 0, DMM1)
+    call shd_scat__computeWigner(X, prp_obj%Nleg, 0, 0, DMM1)
     A1 = 0.0d0
-    do L = 0, NLEG
+    do L = 0, prp_obj%Nleg
         FCT = 2.0d0*L + 1.0d0
         A1 = A1 + FCT*dble(SINGLEGEN(1, L))*DMM1(L)
     end do
@@ -1438,9 +1451,9 @@ subroutine shd_src__computeSolarStokesVect(&
 
     if (isPol_) then
         ! If doing polarization, sum the second Wigner function series
-        call shd_scat__computeWigner(X, NLEG, 2, 0, DMM1)
+        call shd_scat__computeWigner(X, prp_obj%Nleg, 2, 0, DMM1)
         B1 = 0.0d0
-        do L = 0, NLEG
+        do L = 0, prp_obj%Nleg
             FCT = 2.0d0*L + 1.0d0
             B1 = B1 - FCT*dble(SINGLEGEN(2, L))*DMM1(L)
         end do
@@ -1618,19 +1631,21 @@ subroutine shd_src__rotatePolarPlane(NSTOKES, COSSCAT,&
 end subroutine shd_src__rotatePolarPlane
 
 subroutine shd_src__computeSrcOnePnt(&
-    &NSTOKES, NLM, NSTLEG, NLEG, LOFJ,&
+    &NSTOKES, NLM, LOFJ,&
     &SRCTYPE, FLUX0, YLMSUN, PLANCK,&
     &ALBEDO, IPH, LEGEN, NR, RADIANCE,&
-    &SOURCET)
+    &SOURCET, prp_obj)
 
     ! Calculates the polarized source function in real generalized
     ! spherical harmonics at one grid point from the radiance in
     ! real generalized spherical harmonics and thermal and/or solar
     ! source information.
 
-    integer, intent(in) :: NSTOKES, NSTLEG, NLEG, NLM, LOFJ(NLM), IPH, NR
-    real, intent(in) :: FLUX0, YLMSUN(NSTLEG, NLM), PLANCK, ALBEDO
-    real, intent(in) :: LEGEN(NSTLEG, 0:NLEG, *)
+    type(shd_type_prp), intent(in) :: prp_obj
+
+    integer, intent(in) :: NSTOKES, NLM, LOFJ(NLM), IPH, NR
+    real, intent(in) :: FLUX0, YLMSUN(prp_obj%NlegSet, NLM), PLANCK, ALBEDO
+    real, intent(in) :: LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, *)
     real, intent(in) :: RADIANCE(NSTOKES, NR)
     character(len=1), intent(in) :: SRCTYPE
 
@@ -1703,19 +1718,21 @@ subroutine shd_src__computeSrcOnePnt(&
 end subroutine shd_src__computeSrcOnePnt
 
 subroutine shd_src__computeSrcOnePnt_(&
-    &NLM, NLEG, LOFJ,&
+    &NLM, LOFJ,&
     &SRCTYPE, FLUX0, YLMSUN, PLANCK,&
     &ALBEDO, IPH, LEGEN, NR, RADIANCE,&
-    &SOURCET)
+    &SOURCET, prp_obj)
 
     ! Calculates the scalar source function in spherical harmonics at
     ! one grid point from the radiance in spherical harmonics and
     ! thermal and/or solar source information.
 
-    integer, intent(in) :: NLEG, NLM, LOFJ(NLM), IPH, NR
+    type(shd_type_prp), intent(in) :: prp_obj
+
+    integer, intent(in) :: NLM, LOFJ(NLM), IPH, NR
     character(len=1), intent(in) :: SRCTYPE
     real, intent(in) :: FLUX0, YLMSUN(NLM), PLANCK, ALBEDO
-    real, intent(in) :: LEGEN(0:NLEG, *)
+    real, intent(in) :: LEGEN(0:prp_obj%Nleg, *)
     real, intent(in) :: RADIANCE(NR)
 
     real, intent(out) :: SOURCET(NLM)

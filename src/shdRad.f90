@@ -824,10 +824,10 @@ subroutine shd_rad__computeRad(&
         end if
 
         ! Compute the source function throughout grid for this angle
-        call shd_src__computeSrcOneDir(NSTOKES, ML, MM, NLM, prp_obj%NlegSet, prp_obj%Nleg,&
-            &prp_obj%Npha, NPTS, DELTAM, MUOUT, PHIOUT, SRCTYPE,&
+        call shd_src__computeSrcOneDir(NSTOKES, ML, MM, NLM,&
+            &NPTS, DELTAM, MUOUT, PHIOUT, SRCTYPE,&
             &SOLARMU, SOLARAZ, ALBEDO, LEGEN,&
-            &IPHASE, DIRFLUX, SHPTR, SOURCE, SOURCE1)
+            &IPHASE, DIRFLUX, SHPTR, SOURCE, SOURCE1, prp_obj)
 
         ! Set the radiance field to -1, so we can determine valid ra
         !   Also set the source array to the extinction times the so
@@ -1088,12 +1088,12 @@ subroutine shd_rad__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
             ! Integrate the extinction and source function along this ray
             !   to calculate the Stokes radiance vector for this pixel
             TRANSMIT = 1.0d0; VISRAD(:) = 0.0d0
-            call shd_src__integrateSrcOneRay(BCFLAG, IPFLAG, NSTOKES, prp_obj%NlegSet,&
+            call shd_src__integrateSrcOneRay(BCFLAG, IPFLAG, NSTOKES,&
                 &NSTPHASE, NSCATANGLE, PHASETAB,&
                 &NX, NY, NZ, NPTS, NCELLS,&
                 &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
                 &XGRID, YGRID, ZGRID, GRIDPOS,&
-                &ML, MM, NLM, prp_obj%Nleg, prp_obj%Npha,&
+                &ML, MM, NLM,&
                 &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                 &DELTAM, SRCTYPE, WAVELEN, SOLARMU, SOLARAZ,&
                 &EXTINCT, ALBEDO, LEGEN, IPHASE,&
@@ -1101,7 +1101,7 @@ subroutine shd_rad__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                 &sfc_obj%type, sfc_obj%Npar, sfc_obj%dataGrid_brdf,&
                 &MU2, PHI2, X0, Y0, Z0,&
-                &XE, YE, ZE, SIDE, TRANSMIT, VISRAD, VALIDRAD)
+                &XE, YE, ZE, SIDE, TRANSMIT, VISRAD, VALIDRAD, prp_obj)
 900         continue
             ! write (6,'(1X,2F8.4,1X,2F11.7,4(1X,F11.6))')&
             !     &X0,Y0,MURAY,PHIRAY,VISRAD(:)

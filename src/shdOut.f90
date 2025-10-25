@@ -43,7 +43,8 @@ module shd_out
     use globals_cfg,   only: verbose_, charMaxLen_, is1DX_, &
                              isPol_, isPol4_, &
                              isSolar_, isThermal_, &
-                             shd_type_sfc, shd_type_ckd, shd_type_sen
+                             shd_type_prp, shd_type_sfc, &
+                             shd_type_ckd, shd_type_sen
 
     use shd_grid, only: shd_grid__testCellSplit
 
@@ -72,9 +73,9 @@ contains
 
 subroutine shd_io__outputResult(&
     &NSTOKES, NX, NY, NX1, NY1, NZ, NBPTS, NPTS, NCELLS,&
-    &NSH, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
+    &NSH, ML, MM, NLM,&
     &NMU, NPHI, NANG,&
-    &PROPFILE, INSAVEFILE, OUTSAVEFILE,&
+    &INSAVEFILE, OUTSAVEFILE,&
     &BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
     &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
     &WAVENO, WAVELEN, UNITS,&
@@ -84,7 +85,8 @@ subroutine shd_io__outputResult(&
     &EXTINCT, ALBEDO, LEGEN, IPHASE, TEMP,&
     &FLUXES, DIRFLUX, FLUXDIV,&
     &IRAD, RADOUT, NSHOUT, SHTERMS, SOURCE1OUT,&
-    &OUTTYPE, OUTPARMS, OUTFILE, sfc_obj, ckd_obj, sen_obj)
+    &OUTTYPE, OUTPARMS, OUTFILE,&
+    &prp_obj, sfc_obj, ckd_obj, sen_obj)
 
     !   Writes the desired type of output file from the output fields
     ! with a header giving the input parameters.
@@ -94,12 +96,13 @@ subroutine shd_io__outputResult(&
     ! medium properties.
     ! See the overall program documentation for output parameters.
 
+    type(shd_type_prp), intent(in) :: prp_obj
     type(shd_type_sfc), intent(in) :: sfc_obj
     type(shd_type_ckd), intent(in) :: ckd_obj
     type(shd_type_sen), intent(in) :: sen_obj
 
     integer, intent(in) :: NSTOKES, NX, NY, NX1, NY1, NZ, NBPTS, NPTS, NCELLS, NSH
-    integer, intent(in) :: ML, MM, NLM, NSTLEG, NLEG, NUMPHASE, NMU, NPHI, NANG
+    integer, intent(in) :: ML, MM, NLM, NMU, NPHI, NANG
     integer, intent(in) :: BCFLAG, IPFLAG
     integer, intent(in) :: MAXITER, TOTITER, NSHOUT
     integer, intent(in) :: TREEPTR(2, NCELLS), GRIDPTR(8, NCELLS)
@@ -112,9 +115,9 @@ subroutine shd_io__outputResult(&
     real, intent(in) :: XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ), GRIDPOS(3, NPTS)
     real, intent(inout) :: OUTPARMS(*)
     character(len=1), intent(in) :: SRCTYPE, UNITS, GRIDTYPE, OUTTYPE
-    character(len=*), intent(in) :: PROPFILE, INSAVEFILE, OUTSAVEFILE
+    character(len=*), intent(in) :: INSAVEFILE, OUTSAVEFILE
     character(len=*), intent(in) :: OUTFILE
-    real, intent(in) :: EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, NPTS)
+    real, intent(in) :: EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, NPTS)
     real, intent(in) :: TEMP(NPTS)
     real, intent(in) :: FLUXES(2, NPTS), DIRFLUX(NPTS), FLUXDIV(NPTS)
     real, intent(in) :: SOURCE1OUT(NSTOKES, *)
@@ -219,7 +222,7 @@ subroutine shd_io__outputResult(&
     write (2, '(A,I1,3(A,I4),2(A,I8))') '!  NSTOKES=', NSTOKES,&
         &'   NX=', NX, '   NY=', NY, '   NZ=', NZ,&
         &'    NPTS=', NPTS, '   NCELLS=', NCELLS
-    write (2, '(A,A)') '!  PROPERTY_FILE=', trim(PROPFILE)
+    write (2, '(A,A)') '!  PROPERTY_FILE=', trim(prp_obj%fname)
     write (2, '(A,A,A,I2)') '!  CORRELATED_K-DIST_FILE=',&
         &trim(ckd_obj%fname), '   NUM_G=', ckd_obj%Ng
     write (2, '(A,A)') '!  INPUT_SAVE_FILE=', trim(INSAVEFILE)
@@ -1046,7 +1049,7 @@ subroutine shd_io__outputResult(&
         !╭────────────────────────────────────────────────╮!
         allocate(ASYM(N))
         do I = 1, N
-            if (NUMPHASE .gt. 0) then
+            if (prp_obj%Npha .gt. 0) then
                 ASYM(I) = LEGEN(1, 1, IPHASE(I))
             else
                 ASYM(I) = LEGEN(1, 1, I)
@@ -1099,7 +1102,7 @@ subroutine shd_io__outputResult(&
         ! original
         !╭────────────────────────────────────────────────╮!
         !do I = 1, N
-        !    if (NUMPHASE .gt. 0) then
+        !    if (prp_obj%Npha .gt. 0) then
         !        ASYM = LEGEN(1, 1, IPHASE(I))
         !    else
         !        ASYM = LEGEN(1, 1, I)
@@ -1186,14 +1189,16 @@ end subroutine shd_io__radShiftCorr
 subroutine shd_io__outputResultMpi(&
     &NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     &NSH, ML, MM, NLM, NMU, NPHI, NANG,&
-    &PROPFILE, INSAVEFILE, OUTSAVEFILE,&
+    &INSAVEFILE, OUTSAVEFILE,&
     &BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
     &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
     &WAVENO, WAVELEN, UNITS,&
     &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
-    &XDOMAIN, YDOMAIN, XGRID, YGRID, ZGRID,&
+    &XGRID, YGRID, ZGRID,&
     &FLUXES, FLUXDIV, NSHOUT, SHTERMS, IRAD, RADOUT,&
-    &OUTTYPE, OUTPARMS, OUTFILE, sfc_obj, ckd_obj, sen_obj)
+    &OUTTYPE, OUTPARMS, OUTFILE,&
+    &prp_obj, sfc_obj, ckd_obj, sen_obj)
+
     ! Writes the desired type of output file from the output fields
     ! with a header giving the input parameters.
     ! There are four supported types (OUTTYPE) of output: 'R' - for radi
@@ -1201,6 +1206,7 @@ subroutine shd_io__outputResultMpi(&
     ! convergence), 'S' - for spherical harmonic terms
     ! See the overall program documentation for output parameters.
 
+    type(shd_type_prp), intent(in) :: prp_obj
     type(shd_type_sfc), intent(in) :: sfc_obj
     type(shd_type_ckd), intent(in) :: ckd_obj
     type(shd_type_sen), intent(in) :: sen_obj
@@ -1214,10 +1220,10 @@ subroutine shd_io__outputResultMpi(&
     real SKYRAD
     real SOLACC, SPLITACC, SHACC
     real WAVENO(2), WAVELEN
-    real XDOMAIN, YDOMAIN, XGRID(NX), YGRID(NY), ZGRID(NZ)
+    real XGRID(NX), YGRID(NY), ZGRID(NZ)
     real OUTPARMS(*)
     character(len=1), intent(in) :: SRCTYPE, UNITS, GRIDTYPE, OUTTYPE
-    character(len=*), intent(in) :: PROPFILE, INSAVEFILE, OUTSAVEFILE
+    character(len=*), intent(in) :: INSAVEFILE, OUTSAVEFILE
     character(len=*), intent(in) :: OUTFILE
     real FLUXES(3, NZ, NY, NX), FLUXDIV(NZ, NY, NX)
     real RADOUT(NSTOKES, *), SHTERMS(NSHOUT, NZ, NY, NX)
@@ -1315,7 +1321,7 @@ subroutine shd_io__outputResultMpi(&
     write (2, '(A,I1,3(A,I4),2(A,I8))') '!  NSTOKES=', NSTOKES,&
         & '   NX=', NX, '   NY=', NY, '   NZ=', NZ,&
         & '   NPTS=', NPTS, '   NCELLS=', NCELLS
-    write (2, '(A,A)') '!  PROPERTY_FILE=', trim(PROPFILE)
+    write (2, '(A,A)') '!  PROPERTY_FILE=', trim(prp_obj%fname)
     write (2, '(A,A,A,I2)') '!  CORRELATED_K-DIST_FILE=',&
         & trim(ckd_obj%fname), '   NUM_G=', ckd_obj%Ng
     write (2, '(A,A)') '!  INPUT_SAVE_FILE=', trim(INSAVEFILE)
@@ -1379,13 +1385,13 @@ subroutine shd_io__outputResultMpi(&
         if (OUTPARMS(2) .le. 0.0) then
             NXOUT = 1
         else
-            NXOUT = max(1, nint(XDOMAIN/OUTPARMS(2)))
+            NXOUT = max(1, nint(prp_obj%xDomain/OUTPARMS(2)))
         end if
         STARTY = 0.0
         if (OUTPARMS(3) .le. 0.0) then
             NYOUT = 1
         else
-            NYOUT = max(1, nint(YDOMAIN/OUTPARMS(3)))
+            NYOUT = max(1, nint(prp_obj%yDomain/OUTPARMS(3)))
         end if
         Z0 = min(max(OUTPARMS(1), ZGRID(1)), ZGRID(NZ))
         NANGOUT = nint(OUTPARMS(6))
@@ -1429,7 +1435,7 @@ subroutine shd_io__outputResultMpi(&
 
         if (IPFLAG .eq. 0) then
             call shd_io__radShiftCorr(RADOUT(:, 1:NXOUT*NYOUT*NANGOUT), NSTOKES, NANGOUT, NXOUT, NYOUT,&
-                OUTPARMS(2), OUTPARMS(3), XDOMAIN, YDOMAIN, Z0-ZGRID(1), MU_SET, PHI_SET)
+                OUTPARMS(2), OUTPARMS(3), prp_obj%xDomain, prp_obj%yDomain, Z0-ZGRID(1), MU_SET, PHI_SET)
         end if
 
         deallocate(MU_SET, PHI_SET)
@@ -1930,12 +1936,13 @@ end subroutine shd_io__outputResultMpi
 
 subroutine shd_io__outputCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     & NSH, ML, MM, NLM, NMU, NPHI, NANG,&
-    & PROPFILE, INSAVEFILE, OUTSAVEFILE,&
+    & INSAVEFILE, OUTSAVEFILE,&
     & BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
     & SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
     & WAVENO, WAVELEN, UNITS,&
     & SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
-    & IVIS, VISOUT, OUTPARMS, OUTFILE, sfc_obj, ckd_obj, sen_obj)
+    & IVIS, VISOUT, OUTPARMS, OUTFILE,&
+    & prp_obj, sfc_obj, ckd_obj, sen_obj)
 
     ! Writes the visualization image in PGM binary format with either
     ! one byte or two byte pixels.  The PGM binary format (P5) has an
@@ -1943,6 +1950,7 @@ subroutine shd_io__outputCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     ! (here the SHDOM input parameters), followed by the byte or two byte
     ! image pixels.
 
+    type(shd_type_prp), intent(in) :: prp_obj
     type(shd_type_sfc), intent(in) :: sfc_obj
     type(shd_type_ckd), intent(in) :: ckd_obj
     type(shd_type_sen), intent(in) :: sen_obj
@@ -1958,7 +1966,7 @@ subroutine shd_io__outputCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     real WAVENO(2), WAVELEN
     real OUTPARMS(*)
     character(len=1), intent(in) :: SRCTYPE, UNITS, GRIDTYPE
-    character(len=*), intent(in) :: PROPFILE, INSAVEFILE, OUTSAVEFILE
+    character(len=*), intent(in) :: INSAVEFILE, OUTSAVEFILE
     character(len=*), intent(in) :: OUTFILE
     real VISOUT(NSTOKES, *)
 
@@ -2049,7 +2057,7 @@ subroutine shd_io__outputCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     write (2, '(A,I1,3(A,I4),2(A,I8))') '!  NSTOKES=', NSTOKES,&
         &'   NX=', NX, '   NY=', NY, '   NZ=', NZ,&
         &'    NPTS=', NPTS, '   NCELLS=', NCELLS
-    write (2, '(A,A)') '!  PROPERTY_FILE=', trim(PROPFILE)
+    write (2, '(A,A)') '!  PROPERTY_FILE=', trim(prp_obj%fname)
     write (2, '(A,A,A,I2)') '!  CORRELATED_K-DIST_FILE=',&
         &trim(ckd_obj%fname), '   NUM_G=', ckd_obj%Ng
     write (2, '(A,A)') '!  INPUT_SAVE_FILE=', trim(INSAVEFILE)
@@ -2142,12 +2150,12 @@ end subroutine shd_io__outputCamRad
 
 subroutine shd_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     & NSH, ML, MM, NLM, NMU, NPHI, NANG,&
-    & PROPFILE, INSAVEFILE, OUTSAVEFILE,&
+    & INSAVEFILE, OUTSAVEFILE,&
     & BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
     & SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
     & WAVENO, WAVELEN, UNITS,&
     & SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
-    & IVIS, VISOUT, OUTPARMS, OUTFILE, sfc_obj, ckd_obj)
+    & IVIS, VISOUT, OUTPARMS, OUTFILE, prp_obj, sfc_obj, ckd_obj)
 
     ! Writes the visualization image in PGM binary format with either
     ! one byte or two byte pixels.  The PGM binary format (P5) has an
@@ -2155,6 +2163,7 @@ subroutine shd_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     ! (here the SHDOM input parameters), followed by the byte or two byte
     ! image pixels.
 
+    type(shd_type_prp), intent(in) :: prp_obj
     type(shd_type_sfc), intent(in) :: sfc_obj
     type(shd_type_ckd), intent(in) :: ckd_obj
 
@@ -2169,7 +2178,7 @@ subroutine shd_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     real WAVENO(2), WAVELEN
     real OUTPARMS(*)
     character(len=1), intent(in) :: SRCTYPE, UNITS, GRIDTYPE
-    character(len=*), intent(in) :: PROPFILE, INSAVEFILE, OUTSAVEFILE
+    character(len=*), intent(in) :: INSAVEFILE, OUTSAVEFILE
     character(len=*), intent(in) :: OUTFILE
     real VISOUT(NSTOKES, *)
 
@@ -2325,7 +2334,7 @@ subroutine shd_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
         & '    NPTS=', NPTS, '   NCELLS=', NCELLS, LF
     I = I + index(BUF(I:I + 79), LF)
     !write (BUF(I:I + 79), '(A,A,A1)')&
-    !    & '# PROPERTY_FILE=', trim(PROPFILE), LF
+    !    & '# PROPERTY_FILE=', trim(prp_obj%fname), LF
     I = I + index(BUF(I:I + 79), LF)
     !write (BUF(I:I + 79), '(A,A,A,I2,A1)')&
     !    & '# CORRELATED_K-DIST_FILE=', trim(ckd_obj%fname), '   NUM_G=', ckd_obj%Ng, LF
