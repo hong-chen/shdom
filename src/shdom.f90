@@ -1061,6 +1061,12 @@ program shdom
     !print *, 'haha2', maxNz, maxG_P, maxLeg, maxGL_P, maxAsym
     !print *, 'haha3', dx_prp_, dy_prp_, xStart_prp_, yStart_prp_, xDomain_prp_, yDomain_prp_
     !print *, 'haha4', leg_Prp_
+    !print *, 'haha-temp', sum(temp_Prp_)
+    !print *, 'haha-ext ', sum(ext_Prp_)
+    !print *, 'haha-ssa ', sum(ssa_Prp_)
+    !print *, 'haha-leg ', sum(leg_Prp_)
+    !print *, 'haha-ipha', sum(ipha_Prp_)
+    !print *, 'haha-z'   , sum(z_Prp_)
     !stop
 
 
