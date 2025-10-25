@@ -1057,6 +1057,12 @@ program shdom
         if (verbose_ .ge. 5) write (6, '(A)') trim(adjustl(message))
     end if
 
+    !print *, 'haha1', Nx_prp_, Ny_prp_, Nz_prp_, Npha_prp_, Nleg_prp, NlegSet_prp
+    !print *, 'haha2', maxNz, maxG_P, maxLeg, maxGL_P, maxAsym
+    !print *, 'haha3', dx_prp_, dy_prp_, xStart_prp_, yStart_prp_, xDomain_prp_, yDomain_prp_
+    !print *, 'haha4', leg_Prp_
+    !stop
+
 
     ! solve radiative transfer equation
     !   1. Use Picard iteration to solve radiance and source
