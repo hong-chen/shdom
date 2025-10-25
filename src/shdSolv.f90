@@ -86,7 +86,7 @@ contains
 
 subroutine shd_solv__solveRte(&
     &NSTOKES, NX, NY, NZ, NX1, NY1, NANG,&
-    &ML, MM, NLM, NMU, NPHI, NLEG, NSTLEG, NUMPHASE,&
+    &ML, MM, NLM, NMU, NPHI,&
     &NPHI0, MU, PHI, WTDO,&
     &MAXIV, MAXIC, MAXIG, MAXIDO, INRADFLAG,&
     &BCFLAG, IPFLAG, DELTAM, SRCTYPE, isHighOrder,&
@@ -113,7 +113,7 @@ subroutine shd_solv__solveRte(&
     type(shd_type_ckd), intent(in) :: ckd_obj
 
     integer, intent(in) :: NSTOKES, NX, NY, NZ, NX1, NY1
-    integer :: ML, MM, NLM, NMU, NPHI, NANG, NLEG, NSTLEG, NUMPHASE
+    integer :: ML, MM, NLM, NMU, NPHI, NANG
     integer NPHI0(*), MAXITER, ITER, BCFLAG, IPFLAG
     integer MAXIV, MAXIC, MAXIG, MAXIDO
     integer MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR(MAXNBC, 2)
@@ -128,7 +128,7 @@ subroutine shd_solv__solveRte(&
     real SOLACC, SOLCRIT, SPLITACC, SHACC
     real MU(*), WTDO(*), PHI(*)
     real TEMP(*), PLANCK(*)
-    real EXTINCT(*), ALBEDO(*), LEGEN(NSTLEG, 0:NLEG, *)
+    real EXTINCT(*), ALBEDO(*), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, *)
     real XGRID(NX1), YGRID(NY1), ZGRID(NZ)
     real GRIDPOS(3, *)
     real BCRAD(*)
@@ -157,21 +157,21 @@ subroutine shd_solv__solveRte(&
     real :: ELAPSED_TIME
 
     ! Allocate local arrays
-    ! NSTLEG=1 for NSTOKES=1, otherwise NSTLEG=6
-    allocate (CMU1(NSTLEG, NLM, NMU), CMU2(NSTLEG, NLM, NMU))
+    ! prp_obj%NlegSet=1 for NSTOKES=1, otherwise prp_obj%NlegSet=6
+    allocate (CMU1(prp_obj%NlegSet, NLM, NMU), CMU2(prp_obj%NlegSet, NLM, NMU))
     allocate (CPHI1(-16:16, 32, NMU), CPHI2(32, -16:16, NMU))
-    allocate (YLMSUN(NSTLEG, NLM))
+    allocate (YLMSUN(prp_obj%NlegSet, NLM))
     allocate (FFTFLAG(NMU), WTMU(NMU), WPHISAVE(NMU*(3*NPHI + 15)))
 
     ! Set up some things before solution loop
 
     ! Transfer the medium properties to the internal grid and add gas absorption
-    call shd_grid__interpGrid(NPTS, NSTLEG, NLEG, GRIDPOS,&
+    call shd_grid__interpGrid(NPTS, prp_obj%NlegSet, prp_obj%Nleg, GRIDPOS,&
         &TEMP, EXTINCT, ALBEDO, LEGEN, IPHASE, prp_obj, ckd_obj)
 
     ! If Delta-M then scale the extinction, albedo, and Legendre terms
     ! Put the Planck blackbody source in PLANCK.
-    call shd_init__makePrp(ML, MM, NSTLEG, NLEG, NPTS, DELTAM, NUMPHASE,&
+    call shd_init__makePrp(ML, MM, prp_obj%NlegSet, prp_obj%Nleg, NPTS, DELTAM, prp_obj%Npha,&
         &SRCTYPE, UNITS, WAVENO, WAVELEN, ALBMAX,&
         &EXTINCT, ALBEDO, LEGEN, TEMP, PLANCK, IPHASE)
 
@@ -183,14 +183,14 @@ subroutine shd_solv__solveRte(&
     if (isSolar_) then
         if (isMpi_) then
             call shd_mpi__makeDirect(1, NPTS, BCFLAG, IPFLAG, DELTAM, ML,&
-                &NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
+                &prp_obj%NlegSet, prp_obj%Nleg, SOLARFLUX, SOLARMU, SOLARAZ,&
                 &GRIDPOS, NX, XGRID, NY, YGRID, DIRFLUX, prp_obj, ckd_obj)
         else
             call shd_rad__makeDirect(NPTS, BCFLAG, IPFLAG, DELTAM, ML,&
-                &NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
+                &prp_obj%NlegSet, prp_obj%Nleg, SOLARFLUX, SOLARMU, SOLARAZ,&
                 &GRIDPOS, DIRFLUX, prp_obj, ckd_obj)
         end if
-        call shd_shdo__computeYlm(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG,&
+        call shd_shdo__computeYlm(.true., SOLARMU, SOLARAZ, ML, MM, prp_obj%NlegSet,&
             &YLMSUN)
     end if
 
@@ -201,7 +201,7 @@ subroutine shd_solv__solveRte(&
         &NPHI0, MU, PHI, WTMU, WTDO, FFTFLAG, NANG)
 
     ! Make the Ylm transform coefficients
-    call shd_shdo__makeSHDO(NSTLEG, ML, MM, NLM, NMU, NPHI0,&
+    call shd_shdo__makeSHDO(prp_obj%NlegSet, ML, MM, NLM, NMU, NPHI0,&
         &NPHI0MAX, MU, PHI, WTMU, WTDO, FFTFLAG,&
         &CMU1, CMU2, CPHI1, CPHI2, WPHISAVE)
 
@@ -209,9 +209,9 @@ subroutine shd_solv__solveRte(&
     if (.not. INRADFLAG) then
         ! Initialize the radiance on the base grid using Eddington
         ! two-stream plane-parallel
-        call shd_init__makeRad(NSTOKES, NX1*NY1, NZ, NSTLEG, NLEG,&
+        call shd_init__makeRad(NSTOKES, NX1*NY1, NZ, prp_obj%NlegSet, prp_obj%Nleg,&
             &RSHPTR, ZGRID,&
-            &EXTINCT, ALBEDO, LEGEN, TEMP, NUMPHASE, IPHASE,&
+            &EXTINCT, ALBEDO, LEGEN, TEMP, prp_obj%Npha, IPHASE,&
             &SRCTYPE, SOLARFLUX, SOLARMU, sfc_obj%avgAlb, sfc_obj%avgTemp, SKYRAD,&
             &UNITS, WAVENO, WAVELEN, RADIANCE)
         ! Interpolate the radiance on the non-base grid points from the
@@ -223,7 +223,7 @@ subroutine shd_solv__solveRte(&
             &NBCELLS, NCELLS, TREEPTR, GRIDPTR, GRIDPOS)
         ! Initialize the source function from the radiance field
         call shd_src__computeSrc(NSTOKES, ML, MM, NLM,&
-            &NSTLEG, NLEG, NUMPHASE, NPTS,&
+            &prp_obj%NlegSet, prp_obj%Nleg, prp_obj%Npha, NPTS,&
             &FIXSH, SRCTYPE, SOLARMU, YLMSUN, ALBEDO, LEGEN,&
             &IPHASE, PLANCK, DIRFLUX, SHACC,&
             &MAXIV, RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR, DELSOURCE,&
@@ -343,7 +343,7 @@ subroutine shd_solv__solveRte(&
                     &DOSPLIT, OUTOFMEM, CURSPLITACC, SPLITCRIT,&
                     &NPTS, NCELLS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
                     &GRIDPOS, NX, XGRID, NY, YGRID,&
-                    &NSTOKES, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
+                    &NSTOKES, ML, MM, NLM, prp_obj%NlegSet, prp_obj%Nleg, prp_obj%Npha,&
                     &DELTAM, BCFLAG, IPFLAG, ACCELFLAG,&
                     &EXTINCT, ALBEDO, LEGEN, IPHASE,&
                     &RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR,&
@@ -361,7 +361,7 @@ subroutine shd_solv__solveRte(&
 
         ! Find the SH truncation to use for the radiance (RSHPTR)
         call shd_solv__truncRad(isHighOrder,&
-            &NSTOKES, ML, MM, NSTLEG, NLEG, NUMPHASE,&
+            &NSTOKES, ML, MM, prp_obj%NlegSet, prp_obj%Nleg, prp_obj%Npha,&
             &NPTS, ALBEDO, LEGEN, IPHASE, SHPTR, RADIANCE,&
             &MAXIV + MAXIG, FIXSH, SHACC, RSHPTR)
 
@@ -370,7 +370,7 @@ subroutine shd_solv__solveRte(&
         !   and output radiance are in spherical harmonic expansions,
         !   and the SH/DO transforms are done during the loop over
         !   discrete ordinates.
-        call shd_intg__integratePath(NX, NY, NZ, NSTOKES, NSTLEG, ML, MM, NLM,&
+        call shd_intg__integratePath(NX, NY, NZ, NSTOKES, prp_obj%NlegSet, ML, MM, NLM,&
             &NMU, NPHI0MAX, NPHI0, NANG, BCFLAG, IPFLAG,&
             &NPTS, NCELLS, XGRID, YGRID, ZGRID, GRIDPOS,&
             &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
@@ -391,7 +391,7 @@ subroutine shd_solv__solveRte(&
         if (((SOLCRIT .lt. ENDADAPTSOL) .or. (ITER .gt. 30)) .and.&
             &((NX .gt. 36) .or. (NY .gt. 36))) FIXSH = .true.
         call shd_src__computeSrc(NSTOKES, ML, MM, NLM,&
-            &NSTLEG, NLEG, NUMPHASE, NPTS,&
+            &prp_obj%NlegSet, prp_obj%Nleg, prp_obj%Npha, NPTS,&
             &FIXSH, SRCTYPE, SOLARMU, YLMSUN, ALBEDO, LEGEN,&
             &IPHASE, PLANCK, DIRFLUX, SHACC,&
             &MAXIV, RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR, DELSOURCE,&

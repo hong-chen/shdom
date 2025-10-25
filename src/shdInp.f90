@@ -543,10 +543,10 @@ subroutine shd_io__nmlInp(&
 end subroutine shd_io__nmlInp
 
 subroutine shd_io__checkInp(&
-    &NMU, NPHI, DELTAM, MAXASYM,&
+    &NMU, NPHI, DELTAM,&
     &GRIDTYPE, SRCTYPE, UNITS, SOLARFLUX, SOLARMU,&
-    &WAVENO, WAVELEN, GNDTEMP, GNDALBEDO,&
-    &SPLITACC, SHACC)
+    &WAVENO, WAVELEN,&
+    &SPLITACC, SHACC, prp_obj, sfc_obj)
 
     ! Checks for validity of the input parameters. Gives warning for
     ! parameters that might not be correct.
@@ -554,14 +554,17 @@ subroutine shd_io__checkInp(&
     ! Delta-M should be used for solar transfer with forward peaked
     ! phase functions.
     ! Check for reasonable ranges on SPLITACC and SHACC.
-    ! Check for reasonable range of GNDTEMP and valid range of GNDALBEDO.
+    ! Check for reasonable range of sfc_obj%avgTemp and valid range of sfc_obj%avgAlb.
     ! Check for SOLARMU=0.
     ! Check for NPHI<NMU.
 
+    type(shd_type_prp), intent(in) :: prp_obj
+    type(shd_type_sfc), intent(in) :: sfc_obj
+
     integer NMU, NPHI
     logical DELTAM
-    real MAXASYM, SOLARFLUX, SOLARMU, WAVENO(2), WAVELEN
-    real GNDTEMP, GNDALBEDO, SPLITACC, SHACC
+    real SOLARFLUX, SOLARMU, WAVENO(2), WAVELEN
+    real SPLITACC, SHACC
     character(len=1) :: GRIDTYPE, SRCTYPE, UNITS
     real FLUX
 
@@ -577,7 +580,7 @@ subroutine shd_io__checkInp(&
             & (SOLARMU) cannot be 0.'
     end if
 
-    if (.not. DELTAM .and. SRCTYPE .ne. 'T' .and. MAXASYM .gt. 0.5) then
+    if (.not. DELTAM .and. SRCTYPE .ne. 'T' .and. prp_obj%maxAsym .gt. 0.5) then
         if (verbose_ .ge. 4) write (*, '(A)') 'Warning [_checkInp]: Delta-M should be used&
             & (DELTAM=.TRUE.) for solar radiative transfer&
             & with highly peaked phase functions.'
@@ -585,7 +588,7 @@ subroutine shd_io__checkInp(&
 
     ! Check for SPLITACC and SHACC magnitudes
     if (SRCTYPE .eq. 'T' .or. SRCTYPE .eq. 'B') then
-        call shd_util__computePlanck(GNDTEMP, UNITS, WAVENO, WAVELEN, FLUX)
+        call shd_util__computePlanck(sfc_obj%avgTemp, UNITS, WAVENO, WAVELEN, FLUX)
         FLUX = PI_*FLUX
     else
         FLUX = 0.0
@@ -604,11 +607,11 @@ subroutine shd_io__checkInp(&
     end if
 
     if (SRCTYPE .ne. 'S' .and.&
-        &(GNDTEMP .lt. 150. .or. GNDTEMP .gt. 350.)) then
+        &(sfc_obj%avgTemp .lt. 150. .or. sfc_obj%avgTemp .gt. 350.)) then
         if (verbose_ .ge. 4) write (*, '(A)') 'Warning [_checkInp]:&
             & ground temperature out of Earth range.'
     end if
-    if (GNDALBEDO .lt. 0.0 .or. GNDALBEDO .gt. 1.0) then
+    if (sfc_obj%avgAlb .lt. 0.0 .or. sfc_obj%avgAlb .gt. 1.0) then
         stop 'Error [_checkInp]: Ground albedo must be 0 to 1.'
     end if
 

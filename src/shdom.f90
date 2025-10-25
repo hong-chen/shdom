@@ -650,10 +650,10 @@ program shdom
 
     if (isMasterProc) then
         ! Check input parameters
-        call shd_io__checkInp(Nmu_do, Nphi_do, isDeltaM, prp_obj%maxAsym,&
+        call shd_io__checkInp(Nmu_do, Nphi_do, isDeltaM,&
             &type_grid, type_src, units_src, solar0, mu_solar,&
-            &waveNum, waveLen, sfc_obj%avgTemp, sfc_obj%avgAlb,&
-            &splitAcc, shAcc)
+            &waveNum, waveLen,&
+            &splitAcc, shAcc, prp_obj, sfc_obj)
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
@@ -1074,9 +1074,8 @@ program shdom
     !   isNewGrid is from shd_io__restoreState call
     if (isNewGrid) then
         ! Make the internal base grid lines
-        call shd_init__makeGrid(flag_bc, type_grid, prp_obj%Nx, prp_obj%Ny, prp_obj%Nz, Nx, Ny, Nz,&
-            &prp_obj%xStart, prp_obj%yStart, prp_obj%dx, prp_obj%dy, prp_obj%dataRaw_z,&
-            &x_Grid, y_Grid, z_Grid)
+        call shd_init__makeGrid(flag_bc, type_grid, Nx, Ny, Nz,&
+            &x_Grid, y_Grid, z_Grid, prp_obj)
     end if
 
 
@@ -1128,7 +1127,7 @@ program shdom
         ! Find the monochromatic SHDOM solution: adaptive grid output
         !   in source (ptrSrc_Sh), radiance (ptrRad_Sh), fluxes, direct Flux.
         call shd_solv__solveRte(Nstokes, Nx, Ny, Nz, Nx1, Ny1, Nang_do,&
-            &maxNl_sh, maxNm_sh, Nlm_sh, Nmu_do, Nphi_do, prp_obj%Nleg, prp_obj%NlegSet, prp_obj%Npha,&
+            &maxNl_sh, maxNm_sh, Nlm_sh, Nmu_do, Nphi_do,&
             &Nphi0_Do, mu_Do, phi_Do, wt_Do,&
             &maxIV, maxIC, maxIG, maxIDO, isNewRad,&
             &flag_bc, ipFlag, isDeltaM, type_src, isHighOrder_,&

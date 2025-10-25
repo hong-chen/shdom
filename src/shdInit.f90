@@ -43,7 +43,8 @@ module shd_init
     use globals_cfg,   only: verbose_, planetRadius_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
                              is1DX_, is1DYx_, &
-                             isSolar_, isThermal_
+                             isSolar_, isThermal_, &
+                             shd_type_prp
 
     use shd_util, only: shd_util__computePlanck, &
                         shd_util__solveTriDiag
@@ -74,9 +75,8 @@ module shd_init
 contains
 
 subroutine shd_init__makeGrid(&
-    &BCFLAG, GRIDTYPE, NPX, NPY, NPZ, NX, NY, NZ,&
-    &XSTART, YSTART, DELXP, DELYP, ZLEVELS,&
-    &XGRID, YGRID, ZGRID)
+    &BCFLAG, GRIDTYPE, NX, NY, NZ,&
+    &XGRID, YGRID, ZGRID, prp_obj)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Description:
@@ -93,11 +93,11 @@ subroutine shd_init__makeGrid(&
     !             "E": even Z base grid between bottom and top;
     !             "P": Z base grid levels from property file;
     !             "F": Z base grid levels from file: shdom-zgrid.txt
-    !   NPX, NPY, NPZ : integer, size of the input property arrays
+    !   prp_obj%Nx, prp_obj%Ny, prp_obj%Nz: integer, size of the input property arrays
     !   NX, NY, NZ    : integer, base grid size in X, Y and Z
-    !   XSTART, YSTART: real, starting X and Y
-    !   DELXP, DELYP  : real, horizontal grid spacing of the property arrays
-    !   ZLEVELS       : real array, input Z levels from the property file
+    !   prp_obj%xStart, prp_obj%yStart: real, starting X and Y
+    !   prp_obj%dx, prp_obj%dy: real, horizontal grid spacing of the property arrays
+    !   prp_obj%dataRaw_z: real array, input Z levels from the property file
     !
     ! Output:
     !   XGRID, YGRID, ZGRID: real array, grid locations for each dimension.
@@ -107,10 +107,10 @@ subroutine shd_init__makeGrid(&
     !                        are evenly spaced in X and Y.
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    integer(kind=I__), intent(in) :: BCFLAG, NPX, NPY, NPZ, NX, NY, NZ
+    type(shd_type_prp), intent(inout) :: prp_obj
+
+    integer(kind=I__), intent(in) :: BCFLAG, NX, NY, NZ
     character(len=1) , intent(in) :: GRIDTYPE
-    real(kind=R__), intent(in)    :: XSTART, YSTART, ZLEVELS(NPZ)
-    real(kind=R__), intent(inout) :: DELXP, DELYP
     real(kind=R__), intent(out)   :: XGRID(NX+1), YGRID(NY+1), ZGRID(NZ)
 
     integer(kind=I__) :: IX, IY, IZ
@@ -118,58 +118,58 @@ subroutine shd_init__makeGrid(&
     ! Make the X, Y, and Z grids, depending on type:
     !   E for evenly spaced, P from property file, F from zgrid.inp
     !   Only Even allowed horizontally
-    if (DELXP .le. 0.0) then
-        DELXP = 1.0
-        if (verbose_ .ge. 4) write(*, '(A)') 'Warning [_makeGrid]: Found DELXP<=0.0, reset DELXP to 1.0.'
+    if (prp_obj%dx .le. 0.0) then
+        prp_obj%dx = 1.0
+        if (verbose_ .ge. 4) write(*, '(A)') 'Warning [_makeGrid]: Found prp_obj%dx<=0.0, reset prp_obj%dx to 1.0.'
     end if
 
     if (isMpiX_) then ! open in X
         do IX = 1, NX
-            if (NPX .gt. 1) then
-                XGRID(IX) = XSTART + (IX - 1)*(DELXP*(NPX - 1))/float(NX - 1)
+            if (prp_obj%Nx .gt. 1) then
+                XGRID(IX) = prp_obj%xStart + (IX - 1)*(prp_obj%dx*(prp_obj%Nx - 1))/float(NX - 1)
             else
-                XGRID(IX) = XSTART + (IX - 1)*(DELXP*NPX)/float(NX - 1)
+                XGRID(IX) = prp_obj%xStart + (IX - 1)*(prp_obj%dx*prp_obj%Nx)/float(NX - 1)
             end if
         end do
     else ! periodic in X
         do IX = 1, NX + 1
-            XGRID(IX) = XSTART + (IX - 1)*(DELXP*NPX)/float(NX)
+            XGRID(IX) = prp_obj%xStart + (IX - 1)*(prp_obj%dx*prp_obj%Nx)/float(NX)
         end do
     end if
 
-    if (DELYP .le. 0.0) then
-        DELYP = 1.0
-        if (verbose_ .ge. 4) write(*, '(A)') 'Warning [_makeGrid]: Found DELYP<=0.0, reset DELYP to 1.0.'
+    if (prp_obj%dy .le. 0.0) then
+        prp_obj%dy = 1.0
+        if (verbose_ .ge. 4) write(*, '(A)') 'Warning [_makeGrid]: Found prp_obj%dy<=0.0, reset prp_obj%dy to 1.0.'
     end if
 
     if (isMpiY_) then ! open in Y
         do IY = 1, NY
-            if (NPY .gt. 1) then
-                YGRID(IY) = YSTART + (IY - 1)*(DELYP*(NPY - 1))/float(NY - 1)
+            if (prp_obj%Ny .gt. 1) then
+                YGRID(IY) = prp_obj%yStart + (IY - 1)*(prp_obj%dy*(prp_obj%Ny - 1))/float(NY - 1)
             else
-                YGRID(IY) = YSTART + (IY - 1)*(DELYP*NPY)/float(NY - 1)
+                YGRID(IY) = prp_obj%yStart + (IY - 1)*(prp_obj%dy*prp_obj%Ny)/float(NY - 1)
             end if
         end do
     else ! periodic in Y
         do IY = 1, NY + 1
-            YGRID(IY) = YSTART + (IY - 1)*(DELYP*NPY)/float(NY)
+            YGRID(IY) = prp_obj%yStart + (IY - 1)*(prp_obj%dy*prp_obj%Ny)/float(NY)
         end do
     end if
 
     if (GRIDTYPE .eq. 'P') then
-        if (NZ .ne. NPZ) then
+        if (NZ .ne. prp_obj%Nz) then
             write (6, *)&
                 &'Error [_makeGrid]: For internal Z grid same as property file grid,'
-            write (6, *) '  must have same number of grid points (NZ=NPZ).'
+            write (6, *) '  must have same number of grid points (NZ=prp_obj%Nz).'
             stop
         end if
         do IZ = 1, NZ
-            ZGRID(IZ) = ZLEVELS(IZ)
+            ZGRID(IZ) = prp_obj%dataRaw_z(IZ)
         end do
     else if (GRIDTYPE .eq. 'E') then
         do IZ = 1, NZ
-            ZGRID(IZ) = ZLEVELS(1)&
-                + (IZ - 1)*(ZLEVELS(NPZ) - ZLEVELS(1))/float(NZ - 1)
+            ZGRID(IZ) = prp_obj%dataRaw_z(1)&
+                + (IZ - 1)*(prp_obj%dataRaw_z(prp_obj%Nz) - prp_obj%dataRaw_z(1))/float(NZ - 1)
         end do
     else if (GRIDTYPE .eq. 'F') then
         if (verbose_ .ge. 5) write(*, '(A)') 'Message [_makeGrid]: Reading ZGRID from <shdom-zgrid.txt> ...'
