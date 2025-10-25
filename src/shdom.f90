@@ -420,9 +420,11 @@ program shdom
         ipFlag = ior(ipFlag, 1) ! '0000'(3D,   0) + '0001'(Nx=1, 1) = '0001' (Nx=1, 1)
         if (verbose_ .ge. 4) write (6, '(A)') 'Warning [shdom]: Nx=1, reset ipFlag to 1.'
     end if
+
     if (Ny .eq. 1) then
         ipFlag = ior(ipFlag, 2) ! '0001'(Nx=1, 1) + '0010'(Ny=1, 2) = '0011' (IPA,  3)
-        if (verbose_ .ge. 4) write (6, '(A)') 'Warning [shdom]: Ny=1, reset ipFlag to 2 (or 3).'
+        if (verbose_ .ge. 4) write (6, '(A)') &
+            'Warning [shdom]: Ny=1, reset ipFlag to 2 (or 3).'
     end if
 
     if ((Nx .eq. 1) .and. (Ny .eq. 1)) then
@@ -434,14 +436,18 @@ program shdom
     ! Set the full domain grid sizes (variables end in T)
     Nx_T = Nx  ; Ny_T = Ny
 
+    ! Overwrite prpAll_obj%dx if only 1 grid in X direction
     if (prpAll_obj%Nx .eq. 1) then
-        prpAll_obj%dx = sfc_obj%Nx * sfc_obj%dx ! overwrite prpAll_obj%dx if only 1 grid in X direction
-        if (verbose_ .ge. 4) write (6, '(A)') 'Warning [shdom]: prpAll_obj%Nx=1, reset prpAll_obj%dx to match surface domain.'
+        prpAll_obj%dx = sfc_obj%Nx * sfc_obj%dx
+        if (verbose_ .ge. 4) write (6, '(A)') &
+            'Warning [shdom]: prpAll_obj%Nx=1, reset prpAll_obj%dx to match surface domain.'
     end if
 
+    ! overwrite prpAll_obj%dy if only 1 grid in Y direction
     if (prpAll_obj%Ny .eq. 1) then
-        prpAll_obj%dy = sfc_obj%Ny * sfc_obj%dy ! overwrite prpAll_obj%dy if only 1 grid in Y direction
-        if (verbose_ .ge. 4) write (6, '(A)') 'Warning [shdom]: prpAll_obj%Ny=1, reset prpAll_obj%dy to match surface domain.'
+        prpAll_obj%dy = sfc_obj%Ny * sfc_obj%dy
+        if (verbose_ .ge. 4) write (6, '(A)') &
+            'Warning [shdom]: prpAll_obj%Ny=1, reset prpAll_obj%dy to match surface domain.'
     end if
 
     prpAll_obj%xDomain = prpAll_obj%Nx * prpAll_obj%dx
@@ -451,7 +457,8 @@ program shdom
     if  ((prpAll_obj%Nx .eq. 1) .and. (prpAll_obj%Ny .eq. 1) .and.&
         &(sfc_obj%Nx .le. 32) .and. (sfc_obj%Ny .le. 32)) then
         isHighOrder_ = .true.
-        if (verbose_ .ge. 4) write (6, '(A)') 'Warning [shdom]: 1D calculation, set isHighOrder_ to .TRUE.'
+        if (verbose_ .ge. 4) write (6, '(A)') &
+            'Warning [shdom]: 1D calculation, set isHighOrder_ to .TRUE.'
     else
         isHighOrder_ = .false.
     end if
@@ -577,6 +584,7 @@ program shdom
     allocate (dataRaw_extDir_Prp(prp_obj%maxNpts), &
               dataRaw_ipha_Prp(prp_obj%maxNpts), &
               dataRaw_leg_Prp( prp_obj%maxNptsLeg))
+
     memUsed = memUsed + prp_obj%Nz + 6.0*prp_obj%maxNpts + prp_obj%maxNptsLeg
 
     prp_obj%dataRaw_z      => dataRaw_z_Prp
