@@ -378,7 +378,6 @@ program shdom
 
     call shd_mpi__bcastPrpSize(prpAll_obj)
     !╰────────────────────────────────────────────────────────────────────────────╯!
-    print *, 'first:', prpAll_obj%maxNptsLeg
 
 
     ! Read sfc_obj%fname (surface file) to get general info, broadcast sfc_obj if MPI
@@ -432,7 +431,6 @@ program shdom
 
     ! Set the full domain grid sizes (variables end in T)
     Nx_T = Nx  ; Ny_T = Ny
-
 
     if (prpAll_obj%Nx .eq. 1) then
         prpAll_obj%dx = sfc_obj%Nx * sfc_obj%dx ! overwrite prpAll_obj%dx if only 1 grid in X direction
@@ -589,9 +587,6 @@ program shdom
     prp_obj%dataRaw_leg    => dataRaw_leg_Prp
     prp_obj%isAllocated = .true.
 
-    print *, 'All:', prpAll_obj%NlegSet, prpAll_obj%Nleg + 1, prpAll_obj%Npha
-    print *, 'Par:', prp_obj%NlegSet, prp_obj%Nleg + 1, prp_obj%Npha
-
     if (isMpi_) then
 
         ! Read the properties of the medium to the master processor and
@@ -602,9 +597,7 @@ program shdom
                       dataRaw_ext_PrpAll(prpAll_obj%maxNpts), &
                       dataRaw_ssa_PrpAll(prpAll_obj%maxNpts))
             allocate (dataRaw_ipha_PrpAll(prpAll_obj%maxNpts), &
-                      dataRaw_leg_PrpAll(prp_obj%maxNptsLeg))
-
-            print *, 'prp_obj%maxNptsLeg:', prp_obj%maxNptsLeg
+                      dataRaw_leg_PrpAll(prpAll_obj%maxNptsLeg))
 
             prpAll_obj%dataRaw_z    => dataRaw_z_Prp
             prpAll_obj%dataRaw_temp => dataRaw_temp_PrpAll
@@ -615,6 +608,9 @@ program shdom
             prpAll_obj%isAllocated = .true.
 
             call shd_io__readPrp(isDeltaM, prpAll_obj)
+            print *, dataRaw_leg_PrpAll
+            print *, 'this'
+            stop
 
             if (prpAll_obj%Npha .eq. 0) then
                 stop 'Error [shdom]: Standard property file (with phase function Legendre series at every point)&
