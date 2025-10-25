@@ -43,7 +43,7 @@ module shd_intg
                              FRAC13_, FRAC112_
     use globals_cfg,   only: verbose_, accSolv_, &
                              isMpi_, is1DX_, is1DYx_, is1D_, &
-                             isPol_
+                             isPol_, shd_type_prp
 
     use shd_sfc,  only: shd_sfc__interpSfc
 
@@ -98,7 +98,7 @@ subroutine shd_intg__integratePath(&
     &CMU1, CPHI1, CMU2, CPHI2, WSAVE, FFTFLAG,&
     &DIRFLUX, FLUXES, EXTINCT,&
     &SHPTR, SOURCE, RSHPTR, RADIANCE,&
-    &WORK, SWEEPORD, GRIDRAD)
+    &WORK, SWEEPORD, GRIDRAD, prp_obj)
 
     !   Performs the path integrations through the medium specified by
     ! the extinction (EXTINCT) and source function (SOURCE) in
@@ -123,6 +123,8 @@ subroutine shd_intg__integratePath(&
     ! For the general BRDF, the BCRAD array in addition holds the
     ! downwelling radiances at all discrete ordinates for the bottom
     ! boundary points.
+
+    type(shd_type_prp), intent(in) :: prp_obj
 
     integer NX, NY, NZ, NSTOKES, NSTLEG, ML, MM, NLM
     integer NMU, NPHI0MAX, NPHI0(NMU), NANG
@@ -186,7 +188,7 @@ subroutine shd_intg__integratePath(&
             call shd_sfc__interpSfc(NBOTPTS, BCPTR(1, 2), GRIDPOS,&
                 &SRCTYPE, WAVENO, WAVELEN, UNITS,&
                 &NXSFC, NYSFC, DELXSFC, DELYSFC, NSFCPAR, SFCPARMS,&
-                &SFCGRIDPARMS)
+                &SFCGRIDPARMS, prp_obj)
         end if
     end if
     ! Make the isotropic radiances for the top boundary

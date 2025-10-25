@@ -41,7 +41,7 @@ module shd_solv
 
     use globals_cfg, only: verbose_, isMpi_, &
                            isSolar_, &
-                           shd_type_sfc, shd_type_ckd
+                           shd_type_prp, shd_type_sfc, shd_type_ckd
 
     use shd_init, only: shd_init__makePrp, &
                         shd_init__makeRad, &
@@ -100,7 +100,7 @@ subroutine shd_solv__solveRte(&
     &NCELLS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &RSHPTR, SHPTR, OSHPTR, WORK, WORK1, WORK2,&
     &SOURCE, DELSOURCE, RADIANCE, FLUXES, DIRFLUX,&
-    &sfc_obj, ckd_obj)
+    &prp_obj, sfc_obj, ckd_obj)
 
     ! Performs the SHDOM solution procedure.
     ! Output is returned in SOURCE, RADIANCE, FLUXES, DIRFLUX.
@@ -108,6 +108,7 @@ subroutine shd_solv__solveRte(&
     ! CELLFLAGS,NPTS,GRIDPOS) is input and modified for new grid
     ! cells and points on output.
 
+    type(shd_type_prp), intent(in) :: prp_obj
     type(shd_type_sfc), intent(in) :: sfc_obj
     type(shd_type_ckd), intent(in) :: ckd_obj
 
@@ -166,7 +167,7 @@ subroutine shd_solv__solveRte(&
 
     ! Transfer the medium properties to the internal grid and add gas absorption
     call shd_grid__interpGrid(NPTS, NSTLEG, NLEG, GRIDPOS,&
-        &TEMP, EXTINCT, ALBEDO, LEGEN, IPHASE, ckd_obj)
+        &TEMP, EXTINCT, ALBEDO, LEGEN, IPHASE, prp_obj, ckd_obj)
 
     ! If Delta-M then scale the extinction, albedo, and Legendre terms
     ! Put the Planck blackbody source in PLANCK.
@@ -183,11 +184,11 @@ subroutine shd_solv__solveRte(&
         if (isMpi_) then
             call shd_mpi__makeDirect(1, NPTS, BCFLAG, IPFLAG, DELTAM, ML,&
                 &NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
-                &GRIDPOS, NX, XGRID, NY, YGRID, DIRFLUX, ckd_obj)
+                &GRIDPOS, NX, XGRID, NY, YGRID, DIRFLUX, prp_obj, ckd_obj)
         else
             call shd_rad__makeDirect(NPTS, BCFLAG, IPFLAG, DELTAM, ML,&
                 &NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
-                &GRIDPOS, DIRFLUX, ckd_obj)
+                &GRIDPOS, DIRFLUX, prp_obj, ckd_obj)
         end if
         call shd_shdo__computeYlm(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG,&
             &YLMSUN)
@@ -249,7 +250,7 @@ subroutine shd_solv__solveRte(&
         call shd_sfc__interpSfc(NBOTPTS, BCPTR(1, 2), GRIDPOS,&
             &SRCTYPE, WAVENO, WAVELEN, UNITS,&
             &sfc_obj%Nx, sfc_obj%Ny, sfc_obj%dx, sfc_obj%dy, sfc_obj%Npar, sfc_obj%dataRaw_brdf,&
-            &sfc_obj%dataGrid_brdf)
+            &sfc_obj%dataGrid_brdf, prp_obj)
         call shd_init__checkSfcU(sfc_obj%Nx, sfc_obj%Ny, sfc_obj%Npar, sfc_obj%dataRaw_brdf,&
             &UNIFORM_SFC_BRDF)
         if (UNIFORM_SFC_BRDF) then
@@ -348,7 +349,7 @@ subroutine shd_solv__solveRte(&
                     &RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR,&
                     &TEMP, PLANCK, DIRFLUX, SRCTYPE,&
                     &SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN,&
-                    &UNITS, WAVENO, WAVELEN, WORK, WORK2, ckd_obj)
+                    &UNITS, WAVENO, WAVELEN, WORK, WORK2, prp_obj, ckd_obj)
                 if (SOLCRIT .gt. STARTADAPTSOL) STARTSPLITACC = SPLITCRIT
             end if
             ! Find the maximum splitting criterion over all processors
@@ -382,7 +383,7 @@ subroutine shd_solv__solveRte(&
             &CMU1, CPHI1, CMU2, CPHI2, WPHISAVE, FFTFLAG,&
             &DIRFLUX, FLUXES, EXTINCT,&
             &SHPTR, SOURCE, RSHPTR, RADIANCE,&
-            &WORK, WORK1, WORK2)
+            &WORK, WORK1, WORK2, prp_obj)
 
         ! Compute the source function from the radiance field,
         !   do the adaptive spherical harmonics truncation, compute

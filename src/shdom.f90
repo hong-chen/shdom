@@ -1141,7 +1141,7 @@ program shdom
             &Npts, xyz_Grid,&
             &Ncell, ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
             &ptrRad_Sh, ptrSrc_Sh, ptrSrcDel_Sh, work, work1, work2,&
-            &src_Sh, srcDel_Sh, rad_Sh, fluxTot, fluxDir, sfc_obj, ckd_obj)
+            &src_Sh, srcDel_Sh, rad_Sh, fluxTot, fluxDir, prp_obj, sfc_obj, ckd_obj)
         isNewRad = .false.
         totIter = totIter + iter
 
@@ -1254,11 +1254,11 @@ program shdom
                 if (isMpi_) then
                     call shd_mpi__makeDirect(1, Npts, flag_bc, ipFlag, .false., maxNl_sh,&
                         &prp_obj%NlegSet, prp_obj%Nleg, solar0_ckd, mu_solar, az_solar,&
-                        &xyz_Grid, Nx, x_Grid, Ny, y_Grid, fluxDirTmp, ckd_obj)
+                        &xyz_Grid, Nx, x_Grid, Ny, y_Grid, fluxDirTmp, prp_obj, ckd_obj)
                 else
                     call shd_rad__makeDirect(Npts, flag_bc, ipFlag, .false., maxNl_sh,&
                         &prp_obj%NlegSet, prp_obj%Nleg, solar0_ckd, mu_solar, az_solar,&
-                        &xyz_Grid, fluxDirTmp, ckd_obj)
+                        &xyz_Grid, fluxDirTmp, prp_obj, ckd_obj)
                 end if
 
                 fluxTot(1, 1:Npts) = fluxTot(1, 1:Npts) + fluxDir(1:Npts) - fluxDirTmp(1:Npts)

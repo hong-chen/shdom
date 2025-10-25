@@ -1066,12 +1066,13 @@ end subroutine shd_mpi__findTotSplitCritMax
 subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
     &DELTAM, ML, NlegSet_prp, Nleg_prp,&
     &SOLARFLUX, SOLARMU, SOLARAZ, xyz_Grid,&
-    &Nx, x_Grid, Ny, y_Grid, DIRFLUX, ckd_obj)
+    &Nx, x_Grid, Ny, y_Grid, DIRFLUX, prp_obj, ckd_obj)
 
     ! Makes the direct beam solar flux for the NPTS gridpoints started with
     ! index SPT having X/Y/Z positions in xyz_Grid.
     ! DIRFLUX is set to F*exp(-tau_sun).
 
+    type(shd_type_prp), intent(in) ::  prp_obj
     type(shd_type_ckd), intent(in) ::  ckd_obj
 
     integer, intent(in) :: SPT, NPTS, BCFLAG, IPFLAG, ML, NlegSet_prp, Nleg_prp, Nx, Ny
@@ -1110,14 +1111,14 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
         ! Initialize the direct beam calculation
         call shd_rad__computeDirect(1, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
             &DELTAM, ML, NlegSet_prp, Nleg_prp, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
-            &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, ckd_obj)
+            &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj, ckd_obj)
         ! Find the max lowest uniform Z level over all processors and then
         !   tell shd_rad__computeDirect about it
         UZLEV = UNIFZLEV
         call mpi_allreduce(UZLEV, UNIFZLEV, 1, MPI_real, MPI_max, comm2D_, ierr)
         call shd_rad__computeDirect(2, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
             &DELTAM, ML, NlegSet_prp, Nleg_prp, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
-            &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, ckd_obj)
+            &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj, ckd_obj)
     end if
 
     Lupx = 0; Lupy = 0; Ldownx = 0; Ldowny = 0
@@ -1150,7 +1151,7 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
         call shd_rad__computeDirect(0, xyz_Grid(1, IP), xyz_Grid(2, IP), xyz_Grid(3, IP),&
             &BCFLAG, IPFLAG, DELTAM, ML, NlegSet_prp, Nleg_prp,&
             &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(IP),&
-            &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, ckd_obj)
+            &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj, ckd_obj)
         ! If we don't have a good direct beam then save the information
         !   needed to pass to two upstream processors
         if (.not. VALIDBEAM) then
@@ -1220,7 +1221,7 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
                 call shd_rad__computeDirect(0, X, Y, Z, BCFLAG, IPFLAG,&
                     &DELTAM, ML, NlegSet_prp, Nleg_prp,&
                     &SOLARFLUX, SOLARMU, SOLARAZ, DIRJUNK,&
-                    &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, ckd_obj)
+                    &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj, ckd_obj)
                 ! If we got a valid direct beam then store it in DirAllOut otherwise
                 ! save the information to continue passing to neighboring processors
                 if (VALIDBEAM) then
@@ -1252,7 +1253,7 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
                 call shd_rad__computeDirect(0, X, Y, Z, BCFLAG, IPFLAG,&
                     &DELTAM, ML, NlegSet_prp, Nleg_prp,&
                     &SOLARFLUX, SOLARMU, SOLARAZ, DIRJUNK,&
-                    &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, ckd_obj)
+                    &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj, ckd_obj)
                 ! If we got a valid direct beam then store it in DirAllOut otherwise
                 ! save the information to continue passing to neighboring processors
                 if (VALIDBEAM) then

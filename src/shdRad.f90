@@ -46,7 +46,8 @@ module shd_rad
                              is3Ddir1Ddif_, &
                              isPol_, isPol4_, &
                              isSolar_, isThermal_, &
-                             shd_type_sfc, shd_type_ckd, shd_type_sen
+                             shd_type_prp, shd_type_sfc, &
+                             shd_type_ckd, shd_type_sen
 
     use shd_scat, only: shd_scat__computePhase
 
@@ -78,12 +79,13 @@ contains
 subroutine shd_rad__makeDirect(&
     &NPTS, BCFLAG, IPFLAG, DELTAM,&
     &ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
-    &GRIDPOS, DIRFLUX, ckd_obj)
+    &GRIDPOS, DIRFLUX, prp_obj, ckd_obj)
 
     ! Makes the direct beam solar flux for the internal base grid.
     !   DIRFLUX is set to F*exp(-tau_sun).
     !   Actually calls shd_rad__computeDirect to do all the hard work.
 
+    type(shd_type_prp), intent(in) :: prp_obj
     type(shd_type_ckd), intent(in) :: ckd_obj
 
     integer NPTS, BCFLAG, IPFLAG, ML, NSTLEG, NLEG
@@ -98,7 +100,7 @@ subroutine shd_rad__makeDirect(&
         &1, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
         &DELTAM, ML, NSTLEG, NLEG,&
         &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
-        &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, ckd_obj)
+        &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj, ckd_obj)
 
     do IP = 1, NPTS
         DIRPATH = 0.0
@@ -106,7 +108,7 @@ subroutine shd_rad__makeDirect(&
             &(0, GRIDPOS(1, IP), GRIDPOS(2, IP), GRIDPOS(3, IP),&
             &BCFLAG, IPFLAG, DELTAM, ML, NSTLEG, NLEG,&
             &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(IP),&
-            &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, ckd_obj)
+            &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj, ckd_obj)
     end do
 
     return
@@ -115,7 +117,7 @@ end subroutine shd_rad__makeDirect
 subroutine shd_rad__computeDirect(&
     &INIT, XI, YI, ZI, BCFLAG, IPFLAG,&
     &DELTAM, ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
-    &DIRFLUX, UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, ckd_obj)
+    &DIRFLUX, UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj, ckd_obj)
 
     !╭──────────────────────────────────────────────────────────────╮!
     ! Computes the direct beam flux at point (XI,YI,ZI) by integrating
@@ -143,11 +145,7 @@ subroutine shd_rad__computeDirect(&
     !   and path is the optical path from XI,YI,ZI to the sun.
     !╰──────────────────────────────────────────────────────────────╯!
 
-    use globals_prp, only: Nx_prp_, Ny_prp_, Nz_prp_, Npha_prp_, &
-                           dx_prp_, dy_prp_, xStart_prp_, yStart_prp_, &
-                           z_Prp_, ext_Prp_, ssa_Prp_, ipha_Prp_, &
-                           leg_Prp_, extDir_Prp_
-
+    type(shd_type_prp), intent(in) :: prp_obj
     type(shd_type_ckd), intent(in) :: ckd_obj
 
     integer INIT, BCFLAG, IPFLAG, ML, NSTLEG, NLEG, SIDE
@@ -184,22 +182,22 @@ subroutine shd_rad__computeDirect(&
     end if
 
     if (INIT .eq. 1) then
-        if (.not. allocated(GASEXT)) allocate (GASEXT(Nz_prp_), EXTMIN(Nz_prp_), EXTMAX(Nz_prp_))
+        if (.not. allocated(GASEXT)) allocate (GASEXT(prp_obj%Nz), EXTMIN(prp_obj%Nz), EXTMAX(prp_obj%Nz))
         ! Get the gaseous extinction at the property grid levels
-        do IZ = 1, Nz_prp_
+        do IZ = 1, prp_obj%Nz
             if (ckd_obj%Nz .gt. 0) then
                 IL = 1
                 IU = ckd_obj%Nz
                 do while (IU - IL .gt. 1)
                     IM = (IU + IL)/2
-                    if (z_Prp_(IZ) .le. ckd_obj%dataRaw_z(IM)) then
+                    if (prp_obj%dataRaw_z(IZ) .le. ckd_obj%dataRaw_z(IM)) then
                         IL = IM
                     else
                         IU = IM
                     end if
                 end do
                 I = min(max(IL, 1), ckd_obj%Nz - 1)
-                W0 = (z_Prp_(IZ) - ckd_obj%dataRaw_z(I))/(ckd_obj%dataRaw_z(I + 1) - ckd_obj%dataRaw_z(I))
+                W0 = (prp_obj%dataRaw_z(IZ) - ckd_obj%dataRaw_z(I))/(ckd_obj%dataRaw_z(I + 1) - ckd_obj%dataRaw_z(I))
                 W0 = min(max(W0, 0.0d0), 1.0d0)
                 GASEXT(IZ) = (1.0 - W0)*ckd_obj%dataRaw_kabs(I, ckd_obj%ig) + W0*ckd_obj%dataRaw_kabs(I + 1, ckd_obj%ig)
             else
@@ -209,12 +207,12 @@ subroutine shd_rad__computeDirect(&
         ! First make the property grid extinction field, on which all
         !   the direct beam paths will be computed.
         IP = 0
-        do IX = 1, Nx_prp_
-            do IY = 1, Ny_prp_
-                do IZ = 1, Nz_prp_
+        do IX = 1, prp_obj%Nx
+            do IY = 1, prp_obj%Ny
+                do IZ = 1, prp_obj%Nz
                     IP = IP + 1
-                    EXTINCT = ext_Prp_(IP)
-                    ALBEDO = ssa_Prp_(IP)
+                    EXTINCT = prp_obj%dataRaw_ext(IP)
+                    ALBEDO = prp_obj%dataRaw_ssa(IP)
                     ! Add in the gaseous absorption to extinction
                     if (GASEXT(IZ) .gt. 0.0) then
                         ALBEDO = ALBEDO*EXTINCT/(EXTINCT + GASEXT(IZ))
@@ -222,16 +220,16 @@ subroutine shd_rad__computeDirect(&
                     end if
                     ! Do the Delta-M scaling if needed
                     if (DELTAM) then
-                        if (Npha_prp_ .gt. 0) then
-                            IPH = ipha_Prp_(IP)
+                        if (prp_obj%Npha .gt. 0) then
+                            IPH = prp_obj%dataRaw_ipha(IP)
                         else
                             IPH = IP
                         end if
                         L = ML + 1
-                        F = leg_Prp_(1 + NSTLEG*(L + (NLEG + 1)*(IPH - 1)))/(2*L + 1)
+                        F = prp_obj%dataRaw_leg(1 + NSTLEG*(L + (NLEG + 1)*(IPH - 1)))/(2*L + 1)
                         EXTINCT = (1.0 - ALBEDO*F)*EXTINCT
                     end if
-                    extDir_Prp_(IP) = EXTINCT
+                    prp_obj%dataRaw_extDir(IP) = EXTINCT
                 end do
             end do
         end do
@@ -268,48 +266,48 @@ subroutine shd_rad__computeDirect(&
         DI = nint(sign(1.0d0, CX))
         DJ = nint(sign(1.0d0, CY))
         DK = nint(sign(1.0d0, CZ))
-        EPSZ = 1.0e-6*(z_Prp_(Nz_prp_) - z_Prp_(1))
-        EPSS = 1.0e-3*(z_Prp_(Nz_prp_) - z_Prp_(1))/Nz_prp_
-        if (.not. btest(IPDIRECT, 0)) EPSS = max(EPSS, 1.0d-4*dx_prp_)
-        if (.not. btest(IPDIRECT, 1)) EPSS = max(EPSS, 1.0d-4*dy_prp_)
-        DELXD = dble(dx_prp_)
-        DELYD = dble(dy_prp_)
+        EPSZ = 1.0e-6*(prp_obj%dataRaw_z(prp_obj%Nz) - prp_obj%dataRaw_z(1))
+        EPSS = 1.0e-3*(prp_obj%dataRaw_z(prp_obj%Nz) - prp_obj%dataRaw_z(1))/prp_obj%Nz
+        if (.not. btest(IPDIRECT, 0)) EPSS = max(EPSS, 1.0d-4*prp_obj%dx)
+        if (.not. btest(IPDIRECT, 1)) EPSS = max(EPSS, 1.0d-4*prp_obj%dy)
+        DELXD = dble(prp_obj%dx)
+        DELYD = dble(prp_obj%dy)
         EPSS = max(0.001*DELXD, 0.001*DELYD, EPSS)
 
-        if (isMpiX_ .and. (Nx_prp_ .gt. 1)) then
-            XDOMAIN = DELXD*(Nx_prp_ - 1)
+        if (isMpiX_ .and. (prp_obj%Nx .gt. 1)) then
+            XDOMAIN = DELXD*(prp_obj%Nx - 1)
         else
-            XDOMAIN = DELXD*Nx_prp_
+            XDOMAIN = DELXD*prp_obj%Nx
         end if
 
-        if (isMpiY_ .and. (Ny_prp_ .gt. 1)) then
-            YDOMAIN = DELYD*(Ny_prp_ - 1)
+        if (isMpiY_ .and. (prp_obj%Ny .gt. 1)) then
+            YDOMAIN = DELYD*(prp_obj%Ny - 1)
         else
-            YDOMAIN = DELYD*Ny_prp_
+            YDOMAIN = DELYD*prp_obj%Ny
         end if
 
         ! Find the Z level above which the medium is plane-parallel
         EXTBEAMCUT = 1.0e-4
-        do IZ = 1, Nz_prp_
+        do IZ = 1, prp_obj%Nz
             EXTMIN(IZ) = 1.0e20
             EXTMAX(IZ) = 0.0
         end do
         IP = 0
-        do IX = 1, Nx_prp_
-            do IY = 1, Ny_prp_
-                do IZ = 1, Nz_prp_
+        do IX = 1, prp_obj%Nx
+            do IY = 1, prp_obj%Ny
+                do IZ = 1, prp_obj%Nz
                     IP = IP + 1
-                    EXTMIN(IZ) = min(ext_Prp_(IP), EXTMIN(IZ))
-                    EXTMAX(IZ) = max(ext_Prp_(IP), EXTMAX(IZ))
+                    EXTMIN(IZ) = min(prp_obj%dataRaw_ext(IP), EXTMIN(IZ))
+                    EXTMAX(IZ) = max(prp_obj%dataRaw_ext(IP), EXTMAX(IZ))
                 end do
             end do
         end do
         JZ = 0
-        do IZ = 1, Nz_prp_
+        do IZ = 1, prp_obj%Nz
             if (EXTMAX(IZ) - EXTMIN(IZ) .gt. EXTBEAMCUT) JZ = IZ
         end do
-        JZ = min(Nz_prp_, JZ + 1)
-        UNIFORMZLEV = z_Prp_(JZ)
+        JZ = min(prp_obj%Nz, JZ + 1)
+        UNIFORMZLEV = prp_obj%dataRaw_z(JZ)
         UNIFZLEV = UNIFORMZLEV
         return
     ! Done with initialization
@@ -322,15 +320,15 @@ subroutine shd_rad__computeDirect(&
 
     ! Here for computing the direct beam path for one starting point.
     Z = ZI
-    X = XI - xStart_prp_
-    Y = YI - yStart_prp_
+    X = XI - prp_obj%xStart
+    Y = YI - prp_obj%yStart
 
     ! Find the grid location
     IL = 0
-    IU = Nz_prp_
+    IU = prp_obj%Nz
     do while (IU - IL .gt. 1)
         IM = (IU + IL)/2
-        if (Z .ge. z_Prp_(IM)) then
+        if (Z .ge. prp_obj%dataRaw_z(IM)) then
             IL = IM
         else
             IU = IM
@@ -339,15 +337,15 @@ subroutine shd_rad__computeDirect(&
     K = max(IL, 1)
 
     I = int(X/DELXD) + 1
-    if (I .gt. Nx_prp_ .and. abs(X - XDOMAIN) .lt. 0.001*DELXD) I = Nx_prp_
-    if (I .lt. 1 .or. I .gt. Nx_prp_) then
+    if (I .gt. prp_obj%Nx .and. abs(X - XDOMAIN) .lt. 0.001*DELXD) I = prp_obj%Nx
+    if (I .lt. 1 .or. I .gt. prp_obj%Nx) then
         write (6, *) '_computeDirect: Beyond X domain', I, XI, YI, ZI
         stop
     end if
 
     J = int(Y/DELYD) + 1
-    if (J .gt. Ny_prp_ .and. abs(Y - YDOMAIN) .lt. 0.001*DELYD) J = Ny_prp_
-    if (J .lt. 1 .or. J .gt. Ny_prp_) then
+    if (J .gt. prp_obj%Ny .and. abs(Y - YDOMAIN) .lt. 0.001*DELYD) J = prp_obj%Ny
+    if (J .lt. 1 .or. J .gt. prp_obj%Ny) then
         write (6, *) '_computeDirect: Beyond Y domain', J, XI, YI, ZI
         stop
     end if
@@ -362,9 +360,9 @@ subroutine shd_rad__computeDirect(&
     if (CX .eq. 0.0) CONSTX = .true.
     if (CY .eq. 0.0) CONSTY = .true.
     if (isOpenX_ .and. (abs(X) .lt. 0.01*DELXD&
-        &.or. abs(X - (Nx_prp_ - 1)*DELXD) .lt. 0.01*DELXD)) CONSTX = .true.
+        &.or. abs(X - (prp_obj%Nx - 1)*DELXD) .lt. 0.01*DELXD)) CONSTX = .true.
     if (isOpenYx_ .and. (abs(Y) .lt. 0.01*DELYD&
-        &.or. abs(Y - (Ny_prp_ - 1)*DELYD) .lt. 0.01*DELYD)) CONSTY = .true.
+        &.or. abs(Y - (prp_obj%Ny - 1)*DELYD) .lt. 0.01*DELYD)) CONSTY = .true.
 
     ! If have multiple subdomains (processors) and ray is going outwards
     !   from a boundary then set the HITBOUNDARY flag
@@ -391,19 +389,19 @@ subroutine shd_rad__computeDirect(&
 
     ! Grid cell loop begin
     PATH = DIRPATH
-    do while (.not. HITBOUNDARY .and. abs(ZE - z_Prp_(Nz_prp_)) .gt. EPSZ)
+    do while (.not. HITBOUNDARY .and. abs(ZE - prp_obj%dataRaw_z(prp_obj%Nz)) .gt. EPSZ)
         IP = I + 1
-        if (I .eq. Nx_prp_) then
+        if (I .eq. prp_obj%Nx) then
             if (isOpenX_ .or. isMpiX_) then
-                IP = Nx_prp_
+                IP = prp_obj%Nx
             else
                 IP = 1
             end if
         end if
         JP = J + 1
-        if (J .eq. Ny_prp_) then
+        if (J .eq. prp_obj%Ny) then
             if (isOpenYx_ .or. isMpiY_) then
-                JP = Ny_prp_
+                JP = prp_obj%Ny
             else
                 JP = 1
             end if
@@ -412,35 +410,35 @@ subroutine shd_rad__computeDirect(&
         X1 = X0 + DELXD
         Y0 = DELYD*(J - 1)
         Y1 = Y0 + DELYD
-        Z0 = z_Prp_(K)
-        Z1 = z_Prp_(K + 1)
-        if  (I .lt. 1 .or. I .gt. Nx_prp_ .or.&
-            &J .lt. 1 .or. J .gt. Ny_prp_ .or.&
-            &K .lt. 1 .or. K .ge. Nz_prp_) then
+        Z0 = prp_obj%dataRaw_z(K)
+        Z1 = prp_obj%dataRaw_z(K + 1)
+        if  (I .lt. 1 .or. I .gt. prp_obj%Nx .or.&
+            &J .lt. 1 .or. J .gt. prp_obj%Ny .or.&
+            &K .lt. 1 .or. K .ge. prp_obj%Nz) then
             write (6, '(A,3I4)') '_computeDirect: beyond grid!', I, J, K
             write (6, '(1(2X,3F9.5))') X, Y, Z
             stop
         end if
         ! Get the eight corner extinction values
-        I1 = K + Nz_prp_*(J - 1) + Nz_prp_*Ny_prp_*(I - 1)
-        I2 = K + Nz_prp_*(J - 1) + Nz_prp_*Ny_prp_*(IP - 1)
-        I3 = K + Nz_prp_*(JP - 1) + Nz_prp_*Ny_prp_*(I - 1)
-        I4 = K + Nz_prp_*(JP - 1) + Nz_prp_*Ny_prp_*(IP - 1)
+        I1 = K + prp_obj%Nz*(J - 1) + prp_obj%Nz*prp_obj%Ny*(I - 1)
+        I2 = K + prp_obj%Nz*(J - 1) + prp_obj%Nz*prp_obj%Ny*(IP - 1)
+        I3 = K + prp_obj%Nz*(JP - 1) + prp_obj%Nz*prp_obj%Ny*(I - 1)
+        I4 = K + prp_obj%Nz*(JP - 1) + prp_obj%Nz*prp_obj%Ny*(IP - 1)
 
         ! zgrid correction (to address layer averaging issue in z direction)
         !╭────────────────────────────────────────────────╮!
-        !E1 = extDir_Prp_(I1)
-        !E2 = extDir_Prp_(I2)
-        !E3 = extDir_Prp_(I3)
-        !E4 = extDir_Prp_(I4)
-        E1 = extDir_Prp_(I1 + 1)
-        E2 = extDir_Prp_(I2 + 1)
-        E3 = extDir_Prp_(I3 + 1)
-        E4 = extDir_Prp_(I4 + 1)
-        E5 = extDir_Prp_(I1 + 1)
-        E6 = extDir_Prp_(I2 + 1)
-        E7 = extDir_Prp_(I3 + 1)
-        E8 = extDir_Prp_(I4 + 1)
+        !E1 = prp_obj%dataRaw_extDir(I1)
+        !E2 = prp_obj%dataRaw_extDir(I2)
+        !E3 = prp_obj%dataRaw_extDir(I3)
+        !E4 = prp_obj%dataRaw_extDir(I4)
+        E1 = prp_obj%dataRaw_extDir(I1 + 1)
+        E2 = prp_obj%dataRaw_extDir(I2 + 1)
+        E3 = prp_obj%dataRaw_extDir(I3 + 1)
+        E4 = prp_obj%dataRaw_extDir(I4 + 1)
+        E5 = prp_obj%dataRaw_extDir(I1 + 1)
+        E6 = prp_obj%dataRaw_extDir(I2 + 1)
+        E7 = prp_obj%dataRaw_extDir(I3 + 1)
+        E8 = prp_obj%dataRaw_extDir(I4 + 1)
         !╰────────────────────────────────────────────────╯!
 
         ! Compute the distance to the next grid plane in  X, Y, and Z
@@ -501,15 +499,15 @@ subroutine shd_rad__computeDirect(&
                     HITBOUNDARY = .true.
                     SIDE = 1
                 else
-                    I = Nx_prp_
+                    I = prp_obj%Nx
                     XOFFS = XDOMAIN
                 end if
-            else if (I .ge. Nx_prp_ .and. isMpiX_) then
+            else if (I .ge. prp_obj%Nx .and. isMpiX_) then
                 HITBOUNDARY = .true.
                 SIDE = 2
-            else if (I .eq. Nx_prp_ + 1) then
+            else if (I .eq. prp_obj%Nx + 1) then
                 if (isOpenX_) then
-                    I = Nx_prp_
+                    I = prp_obj%Nx
                     CONSTX = .true.
                 else
                     I = 1
@@ -529,15 +527,15 @@ subroutine shd_rad__computeDirect(&
                     HITBOUNDARY = .true.
                     SIDE = 3
                 else
-                    J = Ny_prp_
+                    J = prp_obj%Ny
                     YOFFS = YDOMAIN
                 end if
-            else if (J .ge. Ny_prp_ .and. isMpiY_) then
+            else if (J .ge. prp_obj%Ny .and. isMpiY_) then
                 HITBOUNDARY = .true.
                 SIDE = 4
-            else if (J .eq. Ny_prp_ + 1) then
+            else if (J .eq. prp_obj%Ny + 1) then
                 if (isOpenYx_) then
-                    J = Ny_prp_
+                    J = prp_obj%Ny
                     CONSTY = .true.
                 else
                     J = 1
@@ -624,8 +622,8 @@ subroutine shd_rad__computeDirect(&
     end do
     DIRFLUX = SOLARFLUX*exp(-PATH)
     DIRPATH = PATH
-    XO = XE + xStart_prp_; YO = YE + yStart_prp_; ZO = ZE
-    VALIDBEAM = abs(ZE - z_Prp_(Nz_prp_)) .lt. EPSZ
+    XO = XE + prp_obj%xStart; YO = YE + prp_obj%yStart; ZO = ZE
+    VALIDBEAM = abs(ZE - prp_obj%dataRaw_z(prp_obj%Nz)) .lt. EPSZ
     if (VALIDBEAM) SIDE = 6
 
     return

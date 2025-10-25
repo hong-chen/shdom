@@ -43,8 +43,7 @@
 module shd_sfc
 
     use globals_const, only: PI_
-    use globals_cfg,   only: isPol_
-    use globals_prp,   only: Nx_prp_, Ny_prp_, dx_prp_, dy_prp_
+    use globals_cfg,   only: isPol_, shd_type_prp
 
     use shd_util, only: shd_util__computePlanck
 
@@ -80,7 +79,7 @@ subroutine shd_sfc__interpSfc(&
     &NBOTPTS, BCPTR, GRIDPOS,&
     &SRCTYPE, WAVENO, WAVELEN, UNITS,&
     &NXSFC, NYSFC, DELXSFC, DELYSFC, NSFCPAR, SFCPARMS,&
-    &SFCGRIDPARMS)
+    &SFCGRIDPARMS, prp_obj)
 
     !   Bilinearly interpolates the surface properties from the regular
     ! surface grid to the boundary points of the adaptive grid.
@@ -92,6 +91,8 @@ subroutine shd_sfc__interpSfc(&
     ! The output interpolated surface parameters at the NBOTPTS boundary
     ! points are in SFCGRIDPARMS.  The first parameter is input as
     ! temperature, but converted to Planck function for output.
+
+    type(shd_type_prp), intent(in) :: prp_obj
 
     integer :: NBOTPTS, BCPTR(*), NXSFC, NYSFC, NSFCPAR
     real :: WAVENO(2), WAVELEN
@@ -113,15 +114,15 @@ subroutine shd_sfc__interpSfc(&
 
         I = BCPTR(IBC)
 
-        if ((Nx_prp_ .gt. 1) .and. (Ny_prp_ .gt. 1) .and.&
+        if ((prp_obj%Nx .gt. 1) .and. (prp_obj%Ny .gt. 1) .and.&
             &(NXSFC .gt. 1) .and. (NYSFC .gt. 1) .and.&
-            &((abs(dx_prp_-DELXSFC) .gt. 1.0e-6) .or.&
-             &(abs(dy_prp_-DELYSFC) .gt. 1.0e-6))) then
-            ! added half dx,dy (dx_prp_/2.0-DELXSFC/2.0, dy_prp_/2.0-DELYSFC/2.0) to
+            &((abs(prp_obj%dx - DELXSFC) .gt. 1.0e-6) .or.&
+             &(abs(prp_obj%dy - DELYSFC) .gt. 1.0e-6))) then
+            ! added half dx,dy (prp_obj%dx/2.0-DELXSFC/2.0, prp_obj%dy/2.0-DELYSFC/2.0) to
             ! find surface point that is closest to grid center
             !╭────────────────────────────────────────────────╮!
-            RX = (GRIDPOS(1, I) + dx_prp_/2.0 - DELXSFC/2.0) / DELXSFC
-            RY = (GRIDPOS(2, I) + dy_prp_/2.0 - DELYSFC/2.0) / DELYSFC
+            RX = (GRIDPOS(1, I) + prp_obj%dx/2.0 - DELXSFC/2.0) / DELXSFC
+            RY = (GRIDPOS(2, I) + prp_obj%dy/2.0 - DELYSFC/2.0) / DELYSFC
             !╰────────────────────────────────────────────────╯!
         else
             RX = (GRIDPOS(1, I)) / DELXSFC
