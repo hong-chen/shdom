@@ -145,16 +145,14 @@ program shdom
     logical :: isNewRad, isNewGrid
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    ! PRP
+    ! prp_obj
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    type(shd_type_prp) :: prp_obj, prpAll_obj
+    type(shd_type_prp) :: prpAll_obj, prp_obj
 
-    real(kind=R__)   :: dxTmp_prp, dyTmp_prp
-
-    real(kind=R__), allocatable, target :: dataRaw_z_Prp(:)
-    real(kind=R__), allocatable, target :: dataRaw_temp_Prp(:), dataRaw_ext_Prp(:), dataRaw_ssa_Prp(:)
-    real(kind=R__), allocatable, target :: dataRaw_extDir_Prp(:)
-    real(kind=R__), allocatable, target :: dataRaw_leg_Prp(:)
+    real(kind=R__), allocatable, target  :: dataRaw_z_Prp(:)
+    real(kind=R__), allocatable, target  :: dataRaw_temp_Prp(:), dataRaw_ext_Prp(:), dataRaw_ssa_Prp(:)
+    real(kind=R__), allocatable, target  :: dataRaw_extDir_Prp(:)
+    real(kind=R__), allocatable, target  :: dataRaw_leg_Prp(:)
     integer(kind=2), allocatable, target :: dataRaw_ipha_Prp(:)
 
     real(kind=R__), allocatable, target  :: dataRaw_temp_PrpAll(:), dataRaw_ext_PrpAll(:), dataRaw_ssa_PrpAll(:)
@@ -596,7 +594,6 @@ program shdom
                       dataRaw_ext_PrpAll( prpAll_obj%maxNpts), &
                       dataRaw_ssa_PrpAll( prpAll_obj%maxNpts))
             allocate (dataRaw_ipha_PrpAll(prpAll_obj%maxNpts))
-                      !dataRaw_leg_PrpAll( prpAll_obj%maxNptsLeg))
 
             prpAll_obj%dataRaw_z    => dataRaw_z_Prp
             prpAll_obj%dataRaw_leg  => dataRaw_leg_Prp
@@ -626,7 +623,6 @@ program shdom
                        dataRaw_ext_PrpAll, &
                        dataRaw_ssa_PrpAll, &
                        dataRaw_ipha_PrpAll)
-                       !dataRaw_leg_PrpAll)
             if (prpAll_obj%isAllocated) then
                 nullify(prpAll_obj%dataRaw_z, &
                         prpAll_obj%dataRaw_temp, &
@@ -1085,16 +1081,6 @@ program shdom
         if (verbose_ .ge. 5) write (6, '(A)') trim(adjustl(message))
     end if
 
-    !print *, 'haha1', prp_obj%Nx, prp_obj%Ny, prp_obj%Nz, prp_obj%Npha, prp_obj%Nleg, prp_obj%NlegSet
-    !print *, 'haha2', prp_obj%maxNz, prp_obj%maxNpts, prp_obj%maxNleg, prp_obj%maxNptsLeg, prp_obj%maxAsym
-    !print *, 'haha3', prp_obj%dx, prp_obj%dy, prp_obj%xStart, prp_obj%yStart, prp_obj%xDomain, prp_obj%yDomain
-    !print *, 'haha-temp', sum(prp_obj%dataRaw_temp)
-    !print *, 'haha-ext ', sum(prp_obj%dataRaw_ext)
-    !print *, 'haha-ssa ', sum(prp_obj%dataRaw_ssa)
-    !print *, 'haha-leg ', sum(prp_obj%dataRaw_leg)
-    !print *, 'haha-ipha', sum(prp_obj%dataRaw_ipha)
-    !print *, 'haha-z'   , sum(prp_obj%dataRaw_z)
-    !stop
 
     ! solve radiative transfer equation
     !   1. Use Picard iteration to solve radiance and source

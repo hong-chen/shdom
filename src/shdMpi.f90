@@ -447,8 +447,8 @@ subroutine shd_mpi__bcastPrpSize(prp_obj)
 
     intbuf(:) = (/prp_obj%Nx, prp_obj%Ny, prp_obj%Nz, prp_obj%Npha, prp_obj%maxNz, prp_obj%maxNleg, prp_obj%maxNptsLeg/)
     call mpi_bcast(intbuf, 7, MPI_integer, 0, MPI_comm_world, ierr)
-    prp_obj%Nx = intbuf(1); prp_obj%Ny = intbuf(2); prp_obj%Nz = intbuf(3)
-    prp_obj%Npha = intbuf(4); prp_obj%maxNz = intbuf(5)
+    prp_obj%Nx      = intbuf(1); prp_obj%Ny    = intbuf(2); prp_obj%Nz = intbuf(3)
+    prp_obj%Npha    = intbuf(4); prp_obj%maxNz = intbuf(5)
     prp_obj%maxNleg = intbuf(6); prp_obj%maxNptsLeg = intbuf(7)
 
     realbuf(:) = (/prp_obj%dx, prp_obj%dy/)
@@ -473,8 +473,7 @@ subroutine shd_mpi__bcastPrp(prpAll_obj, prp_obj)
     integer :: SX, EX, Nx, SY, EY, Ny, N, MAXN, MaxNX, MaxNY
     integer :: iproc, irq, ierr
     integer, allocatable :: ixyAll(:, :, :)
-    real, allocatable :: realbuf(:), rbuf(:, :, :)
-    real, allocatable :: tempbuf(:, :), extbuf(:, :), ssabuf(:, :)
+    real, allocatable :: rbuf(:, :, :), tempbuf(:, :), extbuf(:, :), ssabuf(:, :)
     integer(kind=2), allocatable :: ibuf(:, :, :), iphabuf(:, :)
 
     type(MPI_request), allocatable :: requests(:)
