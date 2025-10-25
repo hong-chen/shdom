@@ -183,11 +183,11 @@ subroutine shd_solv__solveRte(&
     if (isSolar_) then
         if (isMpi_) then
             call shd_mpi__makeDirect(1, NPTS, BCFLAG, IPFLAG, DELTAM, ML,&
-                &prp_obj%NlegSet, prp_obj%Nleg, SOLARFLUX, SOLARMU, SOLARAZ,&
+                &SOLARFLUX, SOLARMU, SOLARAZ,&
                 &GRIDPOS, NX, XGRID, NY, YGRID, DIRFLUX, prp_obj, ckd_obj)
         else
             call shd_rad__makeDirect(NPTS, BCFLAG, IPFLAG, DELTAM, ML,&
-                &prp_obj%NlegSet, prp_obj%Nleg, SOLARFLUX, SOLARMU, SOLARAZ,&
+                &SOLARFLUX, SOLARMU, SOLARAZ,&
                 &GRIDPOS, DIRFLUX, prp_obj, ckd_obj)
         end if
         call shd_shdo__computeYlm(.true., SOLARMU, SOLARAZ, ML, MM, prp_obj%NlegSet,&

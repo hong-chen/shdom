@@ -1045,7 +1045,7 @@ subroutine shd_mpi__findTotSplitCritMax(SPLITCRIT)
 end subroutine shd_mpi__findTotSplitCritMax
 
 subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
-    &DELTAM, ML, NlegSet_prp, Nleg_prp,&
+    &DELTAM, ML,&
     &SOLARFLUX, SOLARMU, SOLARAZ, xyz_Grid,&
     &Nx, x_Grid, Ny, y_Grid, DIRFLUX, prp_obj, ckd_obj)
 
@@ -1056,7 +1056,7 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
     type(shd_type_prp), intent(in) ::  prp_obj
     type(shd_type_ckd), intent(in) ::  ckd_obj
 
-    integer, intent(in) :: SPT, NPTS, BCFLAG, IPFLAG, ML, NlegSet_prp, Nleg_prp, Nx, Ny
+    integer, intent(in) :: SPT, NPTS, BCFLAG, IPFLAG, ML, Nx, Ny
     logical, intent(in) :: DELTAM
     real, intent(in) :: SOLARFLUX, SOLARMU, SOLARAZ
     real, intent(in) :: xyz_Grid(3, NPTS), x_Grid(Nx + 1), y_Grid(Ny + 1)
@@ -1091,14 +1091,14 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
     if (SPT .eq. 1) then
         ! Initialize the direct beam calculation
         call shd_rad__computeDirect(1, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
-            &DELTAM, ML, NlegSet_prp, Nleg_prp, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
+            &DELTAM, ML, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj, ckd_obj)
         ! Find the max lowest uniform Z level over all processors and then
         !   tell shd_rad__computeDirect about it
         UZLEV = UNIFZLEV
         call mpi_allreduce(UZLEV, UNIFZLEV, 1, MPI_real, MPI_max, comm2D_, ierr)
         call shd_rad__computeDirect(2, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
-            &DELTAM, ML, NlegSet_prp, Nleg_prp, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
+            &DELTAM, ML, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj, ckd_obj)
     end if
 
@@ -1130,7 +1130,7 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
     do IP = SPT, NPTS
         DIRPATH = 0.0
         call shd_rad__computeDirect(0, xyz_Grid(1, IP), xyz_Grid(2, IP), xyz_Grid(3, IP),&
-            &BCFLAG, IPFLAG, DELTAM, ML, NlegSet_prp, Nleg_prp,&
+            &BCFLAG, IPFLAG, DELTAM, ML,&
             &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(IP),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj, ckd_obj)
         ! If we don't have a good direct beam then save the information
@@ -1200,7 +1200,7 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
                 Z = BndDirRealInfo(3, J, Ldownx); DIRPATH = BndDirRealInfo(4, J, Ldownx)
                 if (Y .lt. (y_Grid(1) - EPS)) Y = YMAX; if (Y .gt. (YMAX + EPS)) Y = y_Grid(1)
                 call shd_rad__computeDirect(0, X, Y, Z, BCFLAG, IPFLAG,&
-                    &DELTAM, ML, NlegSet_prp, Nleg_prp,&
+                    &DELTAM, ML,&
                     &SOLARFLUX, SOLARMU, SOLARAZ, DIRJUNK,&
                     &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj, ckd_obj)
                 ! If we got a valid direct beam then store it in DirAllOut otherwise
@@ -1232,7 +1232,7 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
                 Z = BndDirRealInfo(3, J, Ldowny); DIRPATH = BndDirRealInfo(4, J, Ldowny)
                 if (X .lt. (x_Grid(1) - EPS)) X = XMAX; if (X .gt. (XMAX + EPS)) X = x_Grid(1)
                 call shd_rad__computeDirect(0, X, Y, Z, BCFLAG, IPFLAG,&
-                    &DELTAM, ML, NlegSet_prp, Nleg_prp,&
+                    &DELTAM, ML,&
                     &SOLARFLUX, SOLARMU, SOLARAZ, DIRJUNK,&
                     &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj, ckd_obj)
                 ! If we got a valid direct beam then store it in DirAllOut otherwise
@@ -1779,9 +1779,9 @@ end subroutine shd_mpi__calBndryRad
 
 subroutine shd_mpi__computeRad(&
     &Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
-    &ML, MM, NLM, NlegSet_prp, Nleg_prp, Npha_prp,&
+    &ML, MM, NLM,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-    &BCFLAG, XDOMAIN, YDOMAIN, IPFLAG,&
+    &BCFLAG, IPFLAG,&
     &SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &SKYRAD, WAVENO, WAVELEN, UNITS,&
@@ -1789,18 +1789,19 @@ subroutine shd_mpi__computeRad(&
     &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
     &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
     &SHPTR, SOURCE, SOURCE1, GRIDRAD,&
-    &parms_Out, NRAD, RADOUT, sfc_obj, sen_obj)
+    &parms_Out, NRAD, RADOUT, prp_obj, sfc_obj, sen_obj)
 
     ! Computes the radiances for the locations and directions specified
     ! in parms_Out, putting the results in RADOUT and increasing NRAD by
     ! the number of radiances output.  Does the radiative transfer integrations
     ! across multiple processors.
 
+    type(shd_type_prp), intent(in) :: prp_obj
     type(shd_type_sfc), intent(in) :: sfc_obj
     type(shd_type_sen), intent(in) :: sen_obj
 
     integer, intent(in) :: Nstokes, Nx, Ny, Nz, BCFLAG, IPFLAG, NPTS, NCELLS
-    integer, intent(in) :: ML, MM, NLM, NlegSet_prp, Nleg_prp, Npha_prp
+    integer, intent(in) :: ML, MM, NLM
     integer, intent(in) :: NMU, NPHI0MAX, NPHI0(NMU)
     integer, intent(inout) :: NRAD
     integer, intent(in) :: MAXNBC, NTOPPTS, NBOTPTS
@@ -1811,10 +1812,10 @@ subroutine shd_mpi__computeRad(&
     real, intent(in) :: SOLARMU, SOLARAZ
     real, intent(in) :: SKYRAD, WAVENO(2), WAVELEN
     real, intent(in) :: MU(NMU), PHI(NMU, NPHI0MAX), WTDO(NMU, NPHI0MAX)
-    real, intent(in) :: XDOMAIN, YDOMAIN, x_Grid(Nx + 1), y_Grid(Ny + 1), z_Grid(Nz)
+    real, intent(in) :: x_Grid(Nx + 1), y_Grid(Ny + 1), z_Grid(Nz)
     real, intent(in) :: xyz_Grid(3, NPTS)
     real, intent(in) :: BCRAD(Nstokes, *)
-    real, intent(in) :: EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NlegSet_prp, 0:Nleg_prp, NPTS)
+    real, intent(in) :: EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, NPTS)
     real, intent(in) :: DIRFLUX(NPTS), FLUXES(2, NPTS), SOURCE(Nstokes, *)
     real, intent(inout) :: SOURCE1(Nstokes, NPTS), GRIDRAD(Nstokes, NPTS)
     real, intent(in) :: parms_Out(*)
@@ -1866,13 +1867,13 @@ subroutine shd_mpi__computeRad(&
     if (parms_Out(2) .le. 0.0) then
         Nx_out = 1
     else
-        Nx_out = max(1, nint(XDOMAIN/parms_Out(2)))
+        Nx_out = max(1, nint(prp_obj%xDomain/parms_Out(2)))
     end if
     STARTY = 0.0
     if (parms_Out(3) .le. 0.0) then
         Ny_out = 1
     else
-        Ny_out = max(1, nint(YDOMAIN/parms_Out(3)))
+        Ny_out = max(1, nint(prp_obj%yDomain/parms_Out(3)))
     end if
     Z0 = min(max(parms_Out(1), z_Grid(1)), z_Grid(Nz))
     NANGOUT = nint(parms_Out(6))
@@ -1946,8 +1947,8 @@ subroutine shd_mpi__computeRad(&
         end if
 
         ! Compute the source function throughout grid for this angle
-        call shd_src__computeSrcOneDir(Nstokes, ML, MM, NLM, NlegSet_prp,&
-            &Nleg_prp, Npha_prp, NPTS, DELTAM, mu_out, phi_out,&
+        call shd_src__computeSrcOneDir(Nstokes, ML, MM, NLM, prp_obj%NlegSet,&
+            &prp_obj%Nleg, prp_obj%Npha, NPTS, DELTAM, mu_out, phi_out,&
             &SRCTYPE, SOLARMU, SOLARAZ, ALBEDO, LEGEN, IPHASE,&
             &DIRFLUX, SHPTR, SOURCE, SOURCE1)
 
@@ -2216,27 +2217,28 @@ subroutine shd_mpi__computeRad(&
 end subroutine shd_mpi__computeRad
 
 subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
-    &ML, MM, NLM, NlegSet_prp, Nleg_prp, Npha_prp,&
+    &ML, MM, NLM,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-    &BCFLAG, XDOMAIN, YDOMAIN, IPFLAG,&
+    &BCFLAG, IPFLAG,&
     &SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &SKYRAD, WAVENO, WAVELEN, UNITS,&
     &x_Grid, y_Grid, z_Grid, xyz_Grid,&
     &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
     &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
-    &SHPTR, SOURCE, parms_Out, IVIS, VISOUT, sfc_obj, sen_obj)
+    &SHPTR, SOURCE, parms_Out, IVIS, VISOUT, prp_obj, sfc_obj, sen_obj)
 
     ! Computes Stokes radiances (output in VISOUT) for the visualization
     !   modes: 1) camera mode,
     !          2) cross track scanning,
     !          3) user-specified sensor mode.
 
+    type(shd_type_prp), intent(in) :: prp_obj
     type(shd_type_sfc), intent(in) :: sfc_obj
     type(shd_type_sen), intent(in) :: sen_obj
 
     integer, intent(in) :: Nstokes, Nx, Ny, Nz, BCFLAG, IPFLAG, NPTS, NCELLS
-    integer, intent(in) :: ML, MM, NLM, NlegSet_prp, Nleg_prp, Npha_prp
+    integer, intent(in) :: ML, MM, NLM
     integer, intent(in) :: NMU, NPHI0MAX, NPHI0(NMU)
     integer, intent(inout) :: IVIS
     integer, intent(in) :: MAXNBC, NTOPPTS, NBOTPTS
@@ -2247,10 +2249,10 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
     real, intent(in) :: SOLARMU, SOLARAZ
     real, intent(in) :: SKYRAD, WAVENO(2), WAVELEN
     real, intent(in) :: MU(NMU), PHI(NMU, NPHI0MAX), WTDO(NMU, NPHI0MAX)
-    real, intent(in) :: XDOMAIN, YDOMAIN, x_Grid(Nx + 1), y_Grid(Ny + 1), z_Grid(Nz)
+    real, intent(in) :: x_Grid(Nx + 1), y_Grid(Ny + 1), z_Grid(Nz)
     real, intent(in) :: xyz_Grid(3, NPTS)
     real, intent(in) :: BCRAD(Nstokes, *)
-    real, intent(in) :: EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NlegSet_prp, 0:Nleg_prp, *)
+    real, intent(in) :: EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, *)
     real, intent(in) :: DIRFLUX(NPTS), FLUXES(2, NPTS), SOURCE(Nstokes, *)
     real, intent(in) :: parms_Out(*)
     real, intent(out) :: VISOUT(Nstokes, *)
@@ -2288,16 +2290,16 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
     type(MPI_request), allocatable :: requests(:)
     type(MPI_status), allocatable :: status(:)
 
-    allocate (YLMSUN(NlegSet_prp, NLM))
+    allocate (YLMSUN(prp_obj%NlegSet, NLM))
 
     if (isSolar_) then
-        call shd_shdo__computeYlm(.true., SOLARMU, SOLARAZ, ML, MM, NlegSet_prp, YLMSUN)
-        if (DELTAM .and. Npha_prp .gt. 0) then
-            NSCATANGLE = max(36, min(MAXSCATANG, 2*Nleg_prp))
-            NSTPHASE = min(NlegSet_prp, 2)
-            allocate (PHASETAB(NSTPHASE, Npha_prp, NSCATANGLE))
-            call shd_scat__computePhase(NSCATANGLE, Npha_prp, NSTPHASE,&
-                &Nstokes, ML, NlegSet_prp, Nleg_prp, LEGEN, PHASETAB)
+        call shd_shdo__computeYlm(.true., SOLARMU, SOLARAZ, ML, MM, prp_obj%NlegSet, YLMSUN)
+        if (DELTAM .and. prp_obj%Npha .gt. 0) then
+            NSCATANGLE = max(36, min(MAXSCATANG, 2*prp_obj%Nleg))
+            NSTPHASE = min(prp_obj%NlegSet, 2)
+            allocate (PHASETAB(NSTPHASE, prp_obj%Npha, NSCATANGLE))
+            call shd_scat__computePhase(NSCATANGLE, prp_obj%Npha, NSTPHASE,&
+                &Nstokes, ML, prp_obj%NlegSet, prp_obj%Nleg, LEGEN, PHASETAB)
         end if
     end if
 
@@ -2464,14 +2466,14 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
             ! Relocate the starting point in the overall periodic domain
             ! (we know we have a periodic domain if doing MPI)
             if (X0 .ge. 0.0) then
-                X0 = mod(X0, dble(XDOMAIN))
+                X0 = mod(X0, dble(prp_obj%xDomain))
             else
-                X0 = mod(X0 + XDOMAIN*int(1.0 - X0/XDOMAIN), dble(XDOMAIN))
+                X0 = mod(X0 + prp_obj%xDomain*int(1.0 - X0/prp_obj%xDomain), dble(prp_obj%xDomain))
             end if
             if (Y0 .ge. 0.0) then
-                Y0 = mod(Y0, dble(YDOMAIN))
+                Y0 = mod(Y0, dble(prp_obj%yDomain))
             else
-                Y0 = mod(Y0 + YDOMAIN*int(1.0 - Y0/YDOMAIN), dble(YDOMAIN))
+                Y0 = mod(Y0 + prp_obj%yDomain*int(1.0 - Y0/prp_obj%yDomain), dble(prp_obj%yDomain))
             end if
 
             ! Start the radiance calculation for those rays starting in this subdomain
@@ -2485,12 +2487,12 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
                 ! Integrate the extinction and source function along this ray
                 ! to calculate the Stokes radiance vector for this pixel
                 TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
-                call shd_src__integrateSrcOneRay(BCFLAG, IPFLAG, Nstokes, NlegSet_prp,&
+                call shd_src__integrateSrcOneRay(BCFLAG, IPFLAG, Nstokes, prp_obj%NlegSet,&
                     &NSTPHASE, NSCATANGLE, PHASETAB,&
                     &Nx, Ny, Nz, NPTS, NCELLS,&
                     &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
                     &x_Grid, y_Grid, z_Grid, xyz_Grid,&
-                    &ML, MM, NLM, Nleg_prp, Npha_prp,&
+                    &ML, MM, NLM, prp_obj%Nleg, prp_obj%Npha,&
                     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                     &DELTAM, SRCTYPE, WAVELEN, SOLARMU, SOLARAZ,&
                     &EXTINCT, ALBEDO, LEGEN, IPHASE,&
@@ -2572,12 +2574,12 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
                 PHI2 = BndRecvRadRealInfo(5, J, IBND)
                 TRANSMIT = BndRecvRadRealInfo(6, J, IBND)
                 RADIANCE(:) = BndRecvRadRealInfo(7 : 6+Nstokes, J, IBND)
-                call shd_src__integrateSrcOneRay(BCFLAG, IPFLAG, Nstokes, NlegSet_prp,&
+                call shd_src__integrateSrcOneRay(BCFLAG, IPFLAG, Nstokes, prp_obj%NlegSet,&
                     &NSTPHASE, NSCATANGLE, PHASETAB,&
                     &Nx, Ny, Nz, NPTS, NCELLS,&
                     &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
                     &x_Grid, y_Grid, z_Grid, xyz_Grid,&
-                    &ML, MM, NLM, Nleg_prp, Npha_prp,&
+                    &ML, MM, NLM, prp_obj%Nleg, prp_obj%Npha,&
                     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                     &DELTAM, SRCTYPE, WAVELEN, SOLARMU, SOLARAZ,&
                     &EXTINCT, ALBEDO, LEGEN, IPHASE,&

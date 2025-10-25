@@ -1503,7 +1503,7 @@ subroutine shd_grid__interpNewGridPnt(NEWPOINTS, NPTS,&
                     ! Otherwise, calculate the exact direct beam from property grid
                     DIRPATH = 0.0
                     call shd_rad__computeDirect(0, X, Y, Z, BCFLAG, IPFLAG, DELTAM,&
-                        &ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
+                        &ML, SOLARFLUX, SOLARMU, SOLARAZ,&
                         &DIRFLUX(IP),&
                         &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj, ckd_obj)
                 end if
@@ -1734,7 +1734,7 @@ subroutine shd_grid__splitGrid(&
         if (isSolar_) then
             if (isMpi_) then
                 call shd_mpi__makeDirect(OLDNPTS + 1, NPTS, BCFLAG,&
-                    &IPFLAG, DELTAM, ML, NSTLEG, NLEG,&
+                    &IPFLAG, DELTAM, ML,&
                     &SOLARFLUX, SOLARMU, SOLARAZ, GRIDPOS,&
                     &NX, XGRID, NY, YGRID, DIRFLUX, prp_obj, ckd_obj)
             end if

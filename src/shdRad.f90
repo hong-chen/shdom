@@ -78,7 +78,7 @@ contains
 
 subroutine shd_rad__makeDirect(&
     &NPTS, BCFLAG, IPFLAG, DELTAM,&
-    &ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
+    &ML, SOLARFLUX, SOLARMU, SOLARAZ,&
     &GRIDPOS, DIRFLUX, prp_obj, ckd_obj)
 
     ! Makes the direct beam solar flux for the internal base grid.
@@ -88,7 +88,7 @@ subroutine shd_rad__makeDirect(&
     type(shd_type_prp), intent(in) :: prp_obj
     type(shd_type_ckd), intent(in) :: ckd_obj
 
-    integer NPTS, BCFLAG, IPFLAG, ML, NSTLEG, NLEG
+    integer NPTS, BCFLAG, IPFLAG, ML
     logical DELTAM
     real SOLARFLUX, SOLARMU, SOLARAZ
     real GRIDPOS(3, NPTS), DIRFLUX(NPTS)
@@ -98,7 +98,7 @@ subroutine shd_rad__makeDirect(&
 
     call shd_rad__computeDirect(&
         &1, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
-        &DELTAM, ML, NSTLEG, NLEG,&
+        &DELTAM, ML,&
         &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
         &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj, ckd_obj)
 
@@ -106,7 +106,7 @@ subroutine shd_rad__makeDirect(&
         DIRPATH = 0.0
         call shd_rad__computeDirect&
             &(0, GRIDPOS(1, IP), GRIDPOS(2, IP), GRIDPOS(3, IP),&
-            &BCFLAG, IPFLAG, DELTAM, ML, NSTLEG, NLEG,&
+            &BCFLAG, IPFLAG, DELTAM, ML,&
             &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(IP),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj, ckd_obj)
     end do
@@ -116,7 +116,7 @@ end subroutine shd_rad__makeDirect
 
 subroutine shd_rad__computeDirect(&
     &INIT, XI, YI, ZI, BCFLAG, IPFLAG,&
-    &DELTAM, ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
+    &DELTAM, ML, SOLARFLUX, SOLARMU, SOLARAZ,&
     &DIRFLUX, UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj, ckd_obj)
 
     !╭──────────────────────────────────────────────────────────────╮!
@@ -148,7 +148,7 @@ subroutine shd_rad__computeDirect(&
     type(shd_type_prp), intent(in) :: prp_obj
     type(shd_type_ckd), intent(in) :: ckd_obj
 
-    integer INIT, BCFLAG, IPFLAG, ML, NSTLEG, NLEG, SIDE
+    integer INIT, BCFLAG, IPFLAG, ML, SIDE
     logical DELTAM, VALIDBEAM
     real XI, YI, ZI, SOLARFLUX, SOLARMU, SOLARAZ
     real DIRFLUX, UNIFZLEV, XO, YO, ZO, DIRPATH
@@ -226,7 +226,7 @@ subroutine shd_rad__computeDirect(&
                             IPH = IP
                         end if
                         L = ML + 1
-                        F = prp_obj%dataRaw_leg(1 + NSTLEG*(L + (NLEG + 1)*(IPH - 1)))/(2*L + 1)
+                        F = prp_obj%dataRaw_leg(1 + prp_obj%NlegSet*(L + (prp_obj%Nleg+ 1)*(IPH - 1)))/(2*L + 1)
                         EXTINCT = (1.0 - ALBEDO*F)*EXTINCT
                     end if
                     prp_obj%dataRaw_extDir(IP) = EXTINCT
@@ -699,7 +699,7 @@ end subroutine shd_rad__interpRad
 
 subroutine shd_rad__computeRad(&
     &NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
-    &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
+    &ML, MM, NLM,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
     &BCFLAG, IPFLAG, SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
@@ -708,15 +708,16 @@ subroutine shd_rad__computeRad(&
     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
     &SHPTR, SOURCE, SOURCE1, GRIDRAD,&
-    &OUTPARMS, IRAD, RADOUT, sfc_obj, sen_obj)
+    &OUTPARMS, IRAD, RADOUT, prp_obj, sfc_obj, sen_obj)
 
     ! Computes the radiances for the specified locations and directions
 
+    type(shd_type_prp), intent(in) :: prp_obj
     type(shd_type_sfc), intent(in) :: sfc_obj
     type(shd_type_sen), intent(in) :: sen_obj
 
     integer NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG, NPTS, NCELLS
-    integer ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
+    integer ML, MM, NLM
     integer NMU, NPHI0MAX, NPHI0(NMU), IRAD
     integer MAXNBC, NTOPPTS, NBOTPTS
     integer GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
@@ -728,7 +729,7 @@ subroutine shd_rad__computeRad(&
     real MU(NMU), PHI(NMU, NPHI0MAX), WTDO(NMU, NPHI0MAX)
     real XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ), GRIDPOS(3, NPTS)
     real BCRAD(NSTOKES, *)
-    real EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, NPTS)
+    real EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, NPTS)
     real DIRFLUX(NPTS), FLUXES(2, NPTS)
     real SOURCE1(NSTOKES, NPTS), GRIDRAD(NSTOKES, NPTS)
     real SOURCE(NSTOKES, *)
@@ -823,8 +824,8 @@ subroutine shd_rad__computeRad(&
         end if
 
         ! Compute the source function throughout grid for this angle
-        call shd_src__computeSrcOneDir(NSTOKES, ML, MM, NLM, NSTLEG, NLEG,&
-            &NUMPHASE, NPTS, DELTAM, MUOUT, PHIOUT, SRCTYPE,&
+        call shd_src__computeSrcOneDir(NSTOKES, ML, MM, NLM, prp_obj%NlegSet, prp_obj%Nleg,&
+            &prp_obj%Npha, NPTS, DELTAM, MUOUT, PHIOUT, SRCTYPE,&
             &SOLARMU, SOLARAZ, ALBEDO, LEGEN,&
             &IPHASE, DIRFLUX, SHPTR, SOURCE, SOURCE1)
 
@@ -886,7 +887,7 @@ subroutine shd_rad__computeRad(&
 end subroutine shd_rad__computeRad
 
 subroutine shd_rad__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
-    &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
+    &ML, MM, NLM,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
     &BCFLAG, IPFLAG, SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
@@ -894,16 +895,17 @@ subroutine shd_rad__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     &XGRID, YGRID, ZGRID, GRIDPOS,&
     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
-    &SHPTR, SOURCE, OUTPARMS, IVIS, VISOUT, sfc_obj, sen_obj)
+    &SHPTR, SOURCE, OUTPARMS, IVIS, VISOUT, prp_obj, sfc_obj, sen_obj)
 
     !   Computes Stokes radiances (output in VISOUT) for the visualization
     !  modes: 1) camera mode, and 2) cross track scanning.
 
+    type(shd_type_prp), intent(in) :: prp_obj
     type(shd_type_sfc), intent(in) :: sfc_obj
     type(shd_type_sen), intent(in) :: sen_obj
 
     integer NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG, NPTS, NCELLS
-    integer ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
+    integer ML, MM, NLM
     integer NMU, NPHI0MAX, NPHI0(NMU), IVIS
     integer MAXNBC, NTOPPTS, NBOTPTS
     integer GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
@@ -915,7 +917,7 @@ subroutine shd_rad__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     real MU(NMU), PHI(NMU, NPHI0MAX), WTDO(NMU, NPHI0MAX)
     real XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ), GRIDPOS(3, NPTS)
     real BCRAD(NSTOKES, *)
-    real EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, *)
+    real EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, *)
     real DIRFLUX(NPTS), FLUXES(2, NPTS), SOURCE(NSTOKES, *)
     real OUTPARMS(*), VISOUT(NSTOKES, *)
     character(len=1) :: SRCTYPE, UNITS
@@ -935,16 +937,16 @@ subroutine shd_rad__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     real              :: MEAN, STD1, STD2
     real, allocatable :: AOLP(:)
 
-    allocate (YLMSUN(NSTLEG, NLM))
+    allocate (YLMSUN(prp_obj%NlegSet, NLM))
 
     if (isSolar_) then
-        call shd_shdo__computeYlm(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG, YLMSUN)
-        if (DELTAM .and. NUMPHASE .gt. 0) then
-            NSCATANGLE = max(36, min(MAXSCATANG, 2*NLEG))
-            NSTPHASE = min(NSTLEG, 2)
-            allocate (PHASETAB(NSTPHASE, NUMPHASE, NSCATANGLE))
-            call shd_scat__computePhase(NSCATANGLE, NUMPHASE, NSTPHASE,&
-                &NSTOKES, ML, NSTLEG, NLEG, LEGEN, PHASETAB)
+        call shd_shdo__computeYlm(.true., SOLARMU, SOLARAZ, ML, MM, prp_obj%NlegSet, YLMSUN)
+        if (DELTAM .and. prp_obj%Npha .gt. 0) then
+            NSCATANGLE = max(36, min(MAXSCATANG, 2*prp_obj%Nleg))
+            NSTPHASE = min(prp_obj%NlegSet, 2)
+            allocate (PHASETAB(NSTPHASE, prp_obj%Npha, NSCATANGLE))
+            call shd_scat__computePhase(NSCATANGLE, prp_obj%Npha, NSTPHASE,&
+                &NSTOKES, ML, prp_obj%NlegSet, prp_obj%Nleg, LEGEN, PHASETAB)
         end if
     end if
 
@@ -1086,12 +1088,12 @@ subroutine shd_rad__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
             ! Integrate the extinction and source function along this ray
             !   to calculate the Stokes radiance vector for this pixel
             TRANSMIT = 1.0d0; VISRAD(:) = 0.0d0
-            call shd_src__integrateSrcOneRay(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
+            call shd_src__integrateSrcOneRay(BCFLAG, IPFLAG, NSTOKES, prp_obj%NlegSet,&
                 &NSTPHASE, NSCATANGLE, PHASETAB,&
                 &NX, NY, NZ, NPTS, NCELLS,&
                 &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
                 &XGRID, YGRID, ZGRID, GRIDPOS,&
-                &ML, MM, NLM, NLEG, NUMPHASE,&
+                &ML, MM, NLM, prp_obj%Nleg, prp_obj%Npha,&
                 &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                 &DELTAM, SRCTYPE, WAVELEN, SOLARMU, SOLARAZ,&
                 &EXTINCT, ALBEDO, LEGEN, IPHASE,&

@@ -149,14 +149,18 @@ program shdom
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_prp) :: prpAll_obj, prp_obj
 
-    real(kind=R__), allocatable, target  :: dataRaw_z_Prp(:)
-    real(kind=R__), allocatable, target  :: dataRaw_temp_Prp(:), dataRaw_ext_Prp(:), dataRaw_ssa_Prp(:)
-    real(kind=R__), allocatable, target  :: dataRaw_extDir_Prp(:)
-    real(kind=R__), allocatable, target  :: dataRaw_leg_Prp(:)
+    real(kind=R__),  allocatable, target :: dataRaw_z_Prp(:)
+    real(kind=R__),  allocatable, target :: dataRaw_temp_Prp(:), &
+                                            dataRaw_ext_Prp(:), &
+                                            dataRaw_ssa_Prp(:)
+    real(kind=R__),  allocatable, target :: dataRaw_extDir_Prp(:)
+    real(kind=R__),  allocatable, target :: dataRaw_leg_Prp(:)
     integer(kind=2), allocatable, target :: dataRaw_ipha_Prp(:)
 
-    real(kind=R__), allocatable, target  :: dataRaw_temp_PrpAll(:), dataRaw_ext_PrpAll(:), dataRaw_ssa_PrpAll(:)
-    real(kind=R__), allocatable, target  :: dataRaw_leg_PrpAll(:)
+    real(kind=R__),  allocatable, target :: dataRaw_temp_PrpAll(:), &
+                                            dataRaw_ext_PrpAll(:), &
+                                            dataRaw_ssa_PrpAll(:)
+    real(kind=R__),  allocatable, target :: dataRaw_leg_PrpAll(:)
     integer(kind=2), allocatable, target :: dataRaw_ipha_PrpAll(:)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
@@ -1143,9 +1147,9 @@ program shdom
                 if (type_Out(iout) .eq. 'R') then
                     if (isMpi_) then
                         call shd_mpi__computeRad(Nstokes, Nx, Ny, Nz, Npts, Ncell,&
-                            &maxNl_sh, maxNm_sh, Nlm_sh, prp_obj%NlegSet, prp_obj%Nleg, prp_obj%Npha,&
+                            &maxNl_sh, maxNm_sh, Nlm_sh,&
                             &Nmu_do, maxNphi0_do, Nphi0_Do, mu_Do, phi_Do, wt_Do,&
-                            &flag_bc, prp_obj%xDomain, prp_obj%yDomain, ipFlag,&
+                            &flag_bc, ipFlag,&
                             &type_src, isDeltaM, mu_solar, az_solar,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
                             &skyRad, waveNum, waveLen, units_src,&
@@ -1153,10 +1157,10 @@ program shdom
                             &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
                             &ext, ssa, leg, ipha, fluxDir, fluxTot,&
                             &ptrSrc_Sh, src_Sh, work, work(1 + Npts*Nstokes),&
-                            &parms_Out(1, iout), irad, work2, sfc_obj, sen_obj)
+                            &parms_Out(1, iout), irad, work2, prp_obj, sfc_obj, sen_obj)
                     else
                         call shd_rad__computeRad(Nstokes, Nx, Ny, Nz, Npts, Ncell,&
-                            &maxNl_sh, maxNm_sh, Nlm_sh, prp_obj%NlegSet, prp_obj%Nleg, prp_obj%Npha,&
+                            &maxNl_sh, maxNm_sh, Nlm_sh,&
                             &Nmu_do, maxNphi0_do, Nphi0_Do, mu_Do, phi_Do, wt_Do,&
                             &flag_bc, ipFlag, type_src, isDeltaM, mu_solar, az_solar,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
@@ -1165,7 +1169,7 @@ program shdom
                             &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
                             &ext, ssa, leg, ipha, fluxDir, fluxTot,&
                             &ptrSrc_Sh, src_Sh, work(1), work(1 + Npts*Nstokes),&
-                            &parms_Out(1, iout), irad, work2, sfc_obj, sen_obj)
+                            &parms_Out(1, iout), irad, work2, prp_obj, sfc_obj, sen_obj)
                     end if
                 end if
             end do
@@ -1178,19 +1182,20 @@ program shdom
                 if (type_Out(iout) .eq. 'V') then
                     if (isMpi_) then
                         call shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, Npts, Ncell,&
-                            &maxNl_sh, maxNm_sh, Nlm_sh, prp_obj%NlegSet, prp_obj%Nleg, prp_obj%Npha,&
+                            &maxNl_sh, maxNm_sh, Nlm_sh,&
                             &Nmu_do, maxNphi0_do, Nphi0_Do, mu_Do, phi_Do, wt_Do,&
-                            &flag_bc, prp_obj%xDomain, prp_obj%yDomain, ipFlag,&
+                            &flag_bc, ipFlag,&
                             &type_src, isDeltaM, mu_solar, az_solar,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
                             &skyRad, waveNum, waveLen, units_src,&
                             &x_Grid, y_Grid, z_Grid, xyz_Grid,&
                             &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
                             &ext, ssa, leg, ipha, fluxDir, fluxTot,&
-                            &ptrSrc_Sh, src_Sh, parms_Out(1, iout), ilos, work2, sfc_obj, sen_obj)
+                            &ptrSrc_Sh, src_Sh, parms_Out(1, iout), ilos, work2,&
+                            &prp_obj, sfc_obj, sen_obj)
                     else
                         call shd_rad__computeCamRad(Nstokes, Nx, Ny, Nz, Npts, Ncell,&
-                            &maxNl_sh, maxNm_sh, Nlm_sh, prp_obj%NlegSet, prp_obj%Nleg, prp_obj%Npha,&
+                            &maxNl_sh, maxNm_sh, Nlm_sh,&
                             &Nmu_do, maxNphi0_do, Nphi0_Do, mu_Do, phi_Do, wt_Do,&
                             &flag_bc, ipFlag, type_src, isDeltaM, mu_solar, az_solar,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
@@ -1198,7 +1203,8 @@ program shdom
                             &x_Grid, y_Grid, z_Grid, xyz_Grid,&
                             &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
                             &ext, ssa, leg, ipha, fluxDir, fluxTot,&
-                            &ptrSrc_Sh, src_Sh, parms_Out(1, iout), ilos, work2, sfc_obj, sen_obj)
+                            &ptrSrc_Sh, src_Sh, parms_Out(1, iout), ilos, work2,&
+                            &prp_obj, sfc_obj, sen_obj)
                     end if
                 end if
             end do
@@ -1244,11 +1250,11 @@ program shdom
 
                 if (isMpi_) then
                     call shd_mpi__makeDirect(1, Npts, flag_bc, ipFlag, .false., maxNl_sh,&
-                        &prp_obj%NlegSet, prp_obj%Nleg, solar0_ckd, mu_solar, az_solar,&
+                        &solar0_ckd, mu_solar, az_solar,&
                         &xyz_Grid, Nx, x_Grid, Ny, y_Grid, fluxDirTmp, prp_obj, ckd_obj)
                 else
                     call shd_rad__makeDirect(Npts, flag_bc, ipFlag, .false., maxNl_sh,&
-                        &prp_obj%NlegSet, prp_obj%Nleg, solar0_ckd, mu_solar, az_solar,&
+                        &solar0_ckd, mu_solar, az_solar,&
                         &xyz_Grid, fluxDirTmp, prp_obj, ckd_obj)
                 end if
 
