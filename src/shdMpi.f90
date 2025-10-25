@@ -580,10 +580,11 @@ subroutine shd_mpi__bcastPrp(prpAll_obj, prp_obj)
     irq = irq + 4
     call mpi_waitall(irq, requests, status, ierr)
 
+    prp_obj%Nleg = prpAll_obj%Nleg
     prp_obj%maxAsym = prpAll_obj%maxAsym
     call mpi_bcast(prp_obj%dataRaw_z, prp_obj%Nz, MPI_real, 0, comm2D_, ierr)
     if (prp_obj%Npha .gt. 0) then
-        call mpi_bcast(prp_obj%dataRaw_leg, prpAll_obj%maxNptsLeg, MPI_real, 0, comm2D_, ierr)
+        call mpi_bcast(prp_obj%dataRaw_leg, prp_obj%maxNptsLeg, MPI_real, 0, comm2D_, ierr)
     end if
 
     if (myProc_ .eq. 0) deallocate (tempbuf, extbuf, ssabuf, iphabuf, rbuf, ibuf)

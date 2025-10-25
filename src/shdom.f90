@@ -1086,8 +1086,10 @@ program shdom
         if (verbose_ .ge. 5) write (6, '(A)') trim(adjustl(message))
     end if
 
-    print *, 'hahahah'
-    stop
+    !print *, 'haha1', prp_obj%Nx, prp_obj%Ny, prp_obj%Nz, prp_obj%Npha, prp_obj%Nleg, prp_obj%NlegSet
+    !print *, 'haha2', prp_obj%maxNz, prp_obj%maxNpts, prp_obj%maxNleg, prp_obj%maxNptsLeg, prp_obj%maxAsym
+    !print *, 'haha3', prp_obj%dx, prp_obj%dy, prp_obj%xStart, prp_obj%yStart, prp_obj%xDomain, prp_obj%yDomain
+    !stop
 
     ! solve radiative transfer equation
     !   1. Use Picard iteration to solve radiance and source
@@ -1427,6 +1429,15 @@ program shdom
     !╭────────────────────────────────────────────────────────────────────────────╮!
     deallocate (dataRaw_z_Prp, dataRaw_temp_Prp, dataRaw_ext_Prp, dataRaw_ssa_Prp)
     deallocate (dataRaw_ipha_Prp, dataRaw_leg_Prp, dataRaw_extDir_Prp)
+    if (prp_obj%isAllocated) then
+        nullify(prp_obj%dataRaw_z, &
+                prp_obj%dataRaw_temp, &
+                prp_obj%dataRaw_ext, &
+                prp_obj%dataRaw_ssa, &
+                prp_obj%dataRaw_ipha, &
+                prp_obj%dataRaw_leg)
+        prp_obj%isAllocated = .false.
+    end if
 
     if (isFluxOut) deallocate (sumFluxTot_Out, sumFluxDir_Out)
     if (isHROut)   deallocate (sumFluxDiv_Out)
