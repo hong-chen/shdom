@@ -1007,8 +1007,8 @@ subroutine shd_io__readPrp(isDeltaM, prp_obj)
                 backspace (1)
 
                 read (1, *, end=290) ix, iy, iz, prp_obj%dataRaw_temp(k), prp_obj%dataRaw_ext(k),&
-                    &prp_obj%dataRaw_ssa(k), Nleg, (prp_obj%dataRaw_leg(l + kl), L=1, min(Nleg, prp_obj%Nleg)),&
-                    &(chi0, L=prp_obj%Nleg + 1, Nleg)
+                    &prp_obj%dataRaw_ssa(k), Nleg, (prp_obj%dataRaw_leg(l + kl), l=1, min(Nleg, prp_obj%Nleg)),&
+                    &(chi0, l=prp_obj%Nleg + 1, Nleg)
 
                 prp_obj%maxAsym = max(prp_obj%maxAsym, prp_obj%dataRaw_leg(kl + 1 + 1)/3.0)
                 prp_obj%dataRaw_leg(1 + kl) = 1.0
