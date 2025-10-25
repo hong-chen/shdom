@@ -1085,10 +1085,15 @@ program shdom
         if (verbose_ .ge. 5) write (6, '(A)') trim(adjustl(message))
     end if
 
-    print *, 'haha1', prp_obj%Nx, prp_obj%Ny, prp_obj%Nz, prp_obj%Npha, prp_obj%Nleg, prp_obj%NlegSet
-    print *, 'haha2', prp_obj%maxNz, prp_obj%maxNpts, prp_obj%maxNleg, prp_obj%maxNptsLeg, prp_obj%maxAsym
-    print *, 'haha3', prp_obj%dx, prp_obj%dy, prp_obj%xStart, prp_obj%yStart, prp_obj%xDomain, prp_obj%yDomain
-    print *, 'haha4', prp_obj%dataRaw_leg
+    !print *, 'haha1', prp_obj%Nx, prp_obj%Ny, prp_obj%Nz, prp_obj%Npha, prp_obj%Nleg, prp_obj%NlegSet
+    !print *, 'haha2', prp_obj%maxNz, prp_obj%maxNpts, prp_obj%maxNleg, prp_obj%maxNptsLeg, prp_obj%maxAsym
+    !print *, 'haha3', prp_obj%dx, prp_obj%dy, prp_obj%xStart, prp_obj%yStart, prp_obj%xDomain, prp_obj%yDomain
+    print *, 'haha-temp', sum(prp_obj%dataRaw_temp)
+    print *, 'haha-ext ', sum(prp_obj%dataRaw_ext)
+    print *, 'haha-ssa ', sum(prp_obj%dataRaw_ssa)
+    print *, 'haha-leg ', sum(prp_obj%dataRaw_leg)
+    print *, 'haha-ipha', sum(prp_obj%dataRaw_ipha)
+    print *, 'haha-z'   , sum(prp_obj%dataRaw_z)
     stop
 
     ! solve radiative transfer equation

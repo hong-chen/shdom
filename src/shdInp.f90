@@ -688,7 +688,7 @@ subroutine shd_io__readPrpSize(prp_obj)
     ! Property file type T is for tabulated phase function format
     else if (prp_obj%type .eq. 'T') then
 
-        prp_obj%Nleg = prp_obj%Nleg
+        prp_obj%maxNleg = prp_obj%Nleg
 
         read (11, *) prp_obj%Npha
         do i = 1, prp_obj%Npha
