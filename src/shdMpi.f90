@@ -473,74 +473,55 @@ subroutine shd_mpi__bcastPrp(prpAll_obj, prp_obj)
     integer :: iproc, irq, ierr
     integer, allocatable :: ixyAll(:, :, :)
     real, allocatable :: realbuf(:), rbuf(:, :, :)
-    real, allocatable :: tempbuf(:, :), extbuf(:, :), albbuf(:, :)
-    integer(kind=2), allocatable :: ibuf(:, :, :), iphbuf(:, :)
+    real, allocatable :: tempbuf(:, :), extbuf(:, :), ssabuf(:, :)
+    integer(kind=2), allocatable :: ibuf(:, :, :), iphabuf(:, :)
 
     type(MPI_request), allocatable :: requests(:)
     type(MPI_status), allocatable :: status(:)
 
     real(kind=R__), pointer, contiguous ::  dataRaw_temp_PrpAll(:, :, :) => null(), &
-                                dataRaw_ext_PrpAll(:, :, :)  => null(), &
-                                dataRaw_ssa_PrpAll(:, :, :)  => null()
-
+                                            dataRaw_ext_PrpAll(:, :, :)  => null(), &
+                                            dataRaw_ssa_PrpAll(:, :, :)  => null()
     integer(kind=2), pointer, contiguous :: dataRaw_ipha_PrpAll(:, :, :) => null()
 
-    !real(kind=R__), pointer, contiguous :: dataRaw_temp_Prp(:, :, :) => null(), &
-    !                                       dataRaw_ext_Prp(:, :, :)  => null(), &
-    !                                       dataRaw_ssa_Prp(:, :, :)  => null(), &
-    !integer(kind=2), pointer, contiguous :: dataRaw_ipha_Prp(:, :, :) => null()
 
-    dataRaw_temp_PrpAll(1:prpAll_obj%Nz, 1:prpAll_obj%Ny, 1:prpAll_obj%Nx) => prpAll_obj%dataRaw_temp
-    dataRaw_ext_PrpAll( 1:prpAll_obj%Nz, 1:prpAll_obj%Ny, 1:prpAll_obj%Nx) => prpAll_obj%dataRaw_ext
-    dataRaw_ssa_PrpAll( 1:prpAll_obj%Nz, 1:prpAll_obj%Ny, 1:prpAll_obj%Nx) => prpAll_obj%dataRaw_ssa
-    dataRaw_ipha_PrpAll(1:prpAll_obj%Nz, 1:prpAll_obj%Ny, 1:prpAll_obj%Nx) => prpAll_obj%dataRaw_ipha
+    !if (myProc_ .eq. 0) then
+    !    ! Broadcast the small stuff that is going to all processors
+    !    allocate(realbuf(prpAll_obj%Nz + 1))
+    !    realbuf(1:prpAll_obj%Nz + 1) = (/prpAll_obj%dataRaw_z(1:prpAll_obj%Nz), prpAll_obj%maxAsym/)
+    !    call mpi_bcast(realbuf, prpAll_obj%Nz + 1, MPI_real, 0, comm2D_, ierr)
+    !    prp_obj%dataRaw_z(1:prpAll_obj%Nz) = realbuf(1:prpAll_obj%Nz)
+    !    prp_obj%maxAsym = realbuf(prpAll_obj%Nz + 1)
+    !    deallocate(realbuf)
+    !end if
 
-    ! Broadcast the small stuff that is going to all processors
-    allocate(realbuf(prpAll_obj%Nz + 1))
-    realbuf(1:prpAll_obj%Nz + 1) = (/prpAll_obj%dataRaw_z(1:prpAll_obj%Nz), prpAll_obj%maxAsym/)
-    call mpi_bcast(realbuf, prpAll_obj%Nz + 1, MPI_real, 0, comm2D_, ierr)
-    prp_obj%dataRaw_z(1:prpAll_obj%Nz) = realbuf(1:prpAll_obj%Nz)
-    prp_obj%maxAsym = realbuf(prpAll_obj%Nz + 1)
-    deallocate(realbuf)
-
+    !prp_obj%dataRaw_z = prpAll_obj%dataRaw_z
+    !prp_obj%maxAsym = prpAll_obj%maxAsym
 
     ! If we have a tabulated phase function, then broadcast to all processors
-    if (prp_obj%Npha .gt. 0) then
-        print *, 'here3.1'
-        if (myProc_ .eq. 0) then
-            prp_obj%dataRaw_leg(    1 : prp_obj%maxNptsLeg) = &
-            prpAll_obj%dataRaw_leg( 1 : prp_obj%maxNptsLeg)
-        end if
-
-        !call mpi_bcast(prp_obj%Nleg , 1, MPI_integer, 0, comm2D_, ierr)
-        !call mpi_bcast(prp_obj%Npha , 1, MPI_integer, 0, comm2D_, ierr)
-        !call mpi_bcast(prp_obj%maxNleg , 1, MPI_integer, 0, comm2D_, ierr)
-
-        print *, 'here3.2'
-        allocate(realbuf(prp_obj%maxNptsLeg))
-        realbuf(1:prp_obj%maxNptsLeg) = prpAll_obj%dataRaw_leg(1:prp_obj%maxNptsLeg)
-        print *, 'here3.2.1'
-        print *, realbuf(1:prp_obj%maxNptsLeg)
-        call mpi_bcast(realbuf, prp_obj%maxNptsLeg, MPI_real, 0, comm2D_, ierr)
-        print *, 'here3.3'
-
-        prp_obj%dataRaw_leg(1:prp_obj%maxNptsLeg) = realbuf(1:prp_obj%maxNptsLeg)
-        deallocate(realbuf)
-        print *, 'here3.4'
-    end if
-
-    print *, 'here3'
+    !if (prp_obj%Npha .gt. 0) then
+    !    if (myProc_ .eq. 0) then
+    !        allocate(realbuf(prpAll_obj%maxNptsLeg))
+    !        realbuf(1:prpAll_obj%maxNptsLeg) = prpAll_obj%dataRaw_leg(1:prpAll_obj%maxNptsLeg)
+    !        call mpi_bcast(realbuf, prpAll_obj%maxNptsLeg, MPI_real, 0, comm2D_, ierr)
+    !        prp_obj%dataRaw_leg(1:prp_obj.maxNptsLeg) = realbuf(1:prpAll_obj%maxNptsLeg)
+    !        deallocate(realbuf)
+    !    end if
+    !end if
 
     ! Get the ixyPrp_ arrays from all processors to tell where they are in property grid
     allocate (ixyAll(2, 2, 0:Nproc_ - 1))
     call mpi_gather(ixyPrp_, 4, MPI_integer, ixyAll, 4, MPI_integer, 0, comm2D_, ierr)
-
     allocate (requests(4*Nproc_ + 4), status(4*Nproc_ + 4))
-    print *, 'here4'
-    stop
 
     irq = 0
     if (myProc_ .eq. 0) then
+
+        dataRaw_temp_PrpAll(1:prpAll_obj%Nz, 1:prpAll_obj%Ny, 1:prpAll_obj%Nx) => prpAll_obj%dataRaw_temp
+        dataRaw_ext_PrpAll( 1:prpAll_obj%Nz, 1:prpAll_obj%Ny, 1:prpAll_obj%Nx) => prpAll_obj%dataRaw_ext
+        dataRaw_ssa_PrpAll( 1:prpAll_obj%Nz, 1:prpAll_obj%Ny, 1:prpAll_obj%Nx) => prpAll_obj%dataRaw_ssa
+        dataRaw_ipha_PrpAll(1:prpAll_obj%Nz, 1:prpAll_obj%Ny, 1:prpAll_obj%Nx) => prpAll_obj%dataRaw_ipha
+
         ! Allocate the send buffers for each processor
         MAXN = 1; MaxNX = 1; MaxNY = 1
         do iproc = 0, Nproc_ - 1
@@ -550,7 +531,7 @@ subroutine shd_mpi__bcastPrp(prpAll_obj, prp_obj)
         end do
         allocate (rbuf(prpAll_obj%Nz, MaxNY, MaxNX), ibuf(prpAll_obj%Nz, MaxNY, MaxNX))
         allocate (tempbuf(MAXN, 0:Nproc_ - 1), extbuf(MAXN, 0:Nproc_ - 1))
-        allocate (albbuf(MAXN, 0:Nproc_ - 1), iphbuf(MAXN, 0:Nproc_ - 1))
+        allocate (ssabuf(MAXN, 0:Nproc_ - 1), iphabuf(MAXN, 0:Nproc_ - 1))
         ! The master processor reformats the four property arrays (to deal with
         ! the wrap around at the full domain edge) and sends the arrays with MPI.
         do iproc = 0, Nproc_ - 1
@@ -575,20 +556,23 @@ subroutine shd_mpi__bcastPrp(prpAll_obj, prp_obj)
             rbuf(:, 1:Ny - 1,       Nx) = dataRaw_ssa_PrpAll(:, SY:EY - 1, mod(EX - 1, prpAll_obj%Nx) + 1)
             rbuf(:,       Ny, 1:Nx - 1) = dataRaw_ssa_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, SX:EX - 1)
             rbuf(:,       Ny,       Nx) = dataRaw_ssa_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, mod(EX - 1, prpAll_obj%Nx) + 1)
-            albbuf(1:N, iproc) = reshape(rbuf(1:prpAll_obj%Nz, 1:Ny, 1:Nx), (/N/))
-            call mpi_isend(albbuf(1:N, iproc), N, MPI_real, iproc, 3, comm2D_, requests(irq + 3), ierr)
+            ssabuf(1:N, iproc) = reshape(rbuf(1:prpAll_obj%Nz, 1:Ny, 1:Nx), (/N/))
+            call mpi_isend(ssabuf(1:N, iproc), N, MPI_real, iproc, 3, comm2D_, requests(irq + 3), ierr)
 
             ibuf(:, 1:Ny - 1, 1:Nx - 1) = dataRaw_ipha_PrpAll(:, SY:EY - 1, SX:EX - 1)
             ibuf(:, 1:Ny - 1,       Nx) = dataRaw_ipha_PrpAll(:, SY:EY - 1, mod(EX - 1, prpAll_obj%Nx) + 1)
             ibuf(:,       Ny, 1:Nx - 1) = dataRaw_ipha_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, SX:EX - 1)
             ibuf(:,       Ny,       Nx) = dataRaw_ipha_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, mod(EX - 1, prpAll_obj%Nx) + 1)
-            iphbuf(1:N, iproc) = reshape(ibuf(1:prpAll_obj%Nz, 1:Ny, 1:Nx), (/N/))
-            call mpi_isend(iphbuf(1:N, iproc), N, MPI_integer2, iproc, 4, comm2D_, requests(irq + 4), ierr)
+            iphabuf(1:N, iproc) = reshape(ibuf(1:prpAll_obj%Nz, 1:Ny, 1:Nx), (/N/))
+            call mpi_isend(iphabuf(1:N, iproc), N, MPI_integer2, iproc, 4, comm2D_, requests(irq + 4), ierr)
             irq = irq + 4
         end do
+
+        nullify(dataRaw_temp_PrpAll, dataRaw_ext_PrpAll, dataRaw_ssa_PrpAll, dataRaw_ipha_PrpAll)
+
     end if
 
-    N = prp_obj%Nx*prp_obj%Ny*prpAll_obj%Nz
+    N = prp_obj%Nx*prp_obj%Ny*prp_obj%Nz
     call mpi_irecv(prp_obj%dataRaw_temp, N, MPI_real    , 0, 1, comm2D_, requests(irq + 1), ierr)
     call mpi_irecv(prp_obj%dataRaw_ext , N, MPI_real    , 0, 2, comm2D_, requests(irq + 2), ierr)
     call mpi_irecv(prp_obj%dataRaw_ssa , N, MPI_real    , 0, 3, comm2D_, requests(irq + 3), ierr)
@@ -596,10 +580,14 @@ subroutine shd_mpi__bcastPrp(prpAll_obj, prp_obj)
     irq = irq + 4
     call mpi_waitall(irq, requests, status, ierr)
 
-    if (myProc_ .eq. 0) deallocate (tempbuf, extbuf, albbuf, iphbuf, rbuf, ibuf)
+    prp_obj%maxAsym = prpAll_obj%maxAsym
+    call mpi_bcast(prp_obj%dataRaw_z, prp_obj%Nz, MPI_real, 0, comm2D_, ierr)
+    if (prp_obj%Npha .gt. 0) then
+        call mpi_bcast(prp_obj%dataRaw_leg, prpAll_obj%maxNptsLeg, MPI_real, 0, comm2D_, ierr)
+    end if
+
+    if (myProc_ .eq. 0) deallocate (tempbuf, extbuf, ssabuf, iphabuf, rbuf, ibuf)
     deallocate (requests, status, ixyAll)
-    nullify(dataRaw_temp_PrpAll, dataRaw_ext_PrpAll, dataRaw_ssa_PrpAll, dataRaw_ipha_PrpAll)
-    !nullify(dataRaw_temp_Prp, dataRaw_ext_Prp, dataRaw_ssa_Prp, dataRaw_ipha_Prp)
 #endif
 
     return

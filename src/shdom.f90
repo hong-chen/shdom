@@ -151,11 +151,11 @@ program shdom
 
     real(kind=R__)   :: dxTmp_prp, dyTmp_prp
 
-     real, save, allocatable, target :: dataRaw_z_Prp(:)
-     real, save, allocatable, target :: dataRaw_temp_Prp(:), dataRaw_ext_Prp(:), dataRaw_ssa_Prp(:)
-     real, save, allocatable, target :: dataRaw_extDir_Prp(:)
-     real, save, allocatable, target :: dataRaw_leg_Prp(:)
-     integer(2), save, allocatable, target :: dataRaw_ipha_Prp(:)
+    real(kind=R__), allocatable, target :: dataRaw_z_Prp(:)
+    real(kind=R__), allocatable, target :: dataRaw_temp_Prp(:), dataRaw_ext_Prp(:), dataRaw_ssa_Prp(:)
+    real(kind=R__), allocatable, target :: dataRaw_extDir_Prp(:)
+    real(kind=R__), allocatable, target :: dataRaw_leg_Prp(:)
+    integer(kind=2), allocatable, target :: dataRaw_ipha_Prp(:)
 
     real(kind=R__), allocatable, target  :: dataRaw_temp_PrpAll(:), dataRaw_ext_PrpAll(:), dataRaw_ssa_PrpAll(:)
     real(kind=R__), allocatable, target  :: dataRaw_leg_PrpAll(:)
@@ -562,7 +562,6 @@ program shdom
         *(Ny + ibits(flag_bc, 1, 1) - ibits(flag_bc, 3, 1))
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-
     ! Read prp_obj%fname and distribute property object if MPI
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Determine the size of the property grid arrays so can allocate
@@ -571,11 +570,11 @@ program shdom
 
     allocate (dataRaw_z_Prp(prp_obj%Nz))
     allocate (dataRaw_temp_Prp(prp_obj%maxNpts), &
-              dataRaw_ext_Prp(prp_obj%maxNpts), &
-              dataRaw_ssa_Prp(prp_obj%maxNpts))
+              dataRaw_ext_Prp( prp_obj%maxNpts), &
+              dataRaw_ssa_Prp( prp_obj%maxNpts))
     allocate (dataRaw_extDir_Prp(prp_obj%maxNpts), &
               dataRaw_ipha_Prp(prp_obj%maxNpts), &
-              dataRaw_leg_Prp(prp_obj%maxNptsLeg))
+              dataRaw_leg_Prp( prp_obj%maxNptsLeg))
     memUsed = memUsed + prp_obj%Nz + 6.0*prp_obj%maxNpts + prp_obj%maxNptsLeg
 
     prp_obj%dataRaw_z      => dataRaw_z_Prp
@@ -594,23 +593,20 @@ program shdom
         if (isMasterProc) then
 
             allocate (dataRaw_temp_PrpAll(prpAll_obj%maxNpts), &
-                      dataRaw_ext_PrpAll(prpAll_obj%maxNpts), &
-                      dataRaw_ssa_PrpAll(prpAll_obj%maxNpts))
-            allocate (dataRaw_ipha_PrpAll(prpAll_obj%maxNpts), &
-                      dataRaw_leg_PrpAll(prpAll_obj%maxNptsLeg))
+                      dataRaw_ext_PrpAll( prpAll_obj%maxNpts), &
+                      dataRaw_ssa_PrpAll( prpAll_obj%maxNpts))
+            allocate (dataRaw_ipha_PrpAll(prpAll_obj%maxNpts))
+                      !dataRaw_leg_PrpAll( prpAll_obj%maxNptsLeg))
 
             prpAll_obj%dataRaw_z    => dataRaw_z_Prp
+            prpAll_obj%dataRaw_leg  => dataRaw_leg_Prp
             prpAll_obj%dataRaw_temp => dataRaw_temp_PrpAll
             prpAll_obj%dataRaw_ext  => dataRaw_ext_PrpAll
             prpAll_obj%dataRaw_ssa  => dataRaw_ssa_PrpAll
             prpAll_obj%dataRaw_ipha => dataRaw_ipha_PrpAll
-            prpAll_obj%dataRaw_leg  => dataRaw_leg_PrpAll
             prpAll_obj%isAllocated = .true.
 
             call shd_io__readPrp(isDeltaM, prpAll_obj)
-            print *, dataRaw_leg_PrpAll
-            print *, 'this'
-            stop
 
             if (prpAll_obj%Npha .eq. 0) then
                 stop 'Error [shdom]: Standard property file (with phase function Legendre series at every point)&
@@ -625,14 +621,12 @@ program shdom
         ! distribute file grid data to working grids (different CPU processes different grids)
         call shd_mpi__bcastPrp(prpAll_obj, prp_obj)
 
-        stop 'hahahaha'
-
         if (isMasterProc) then
             deallocate(dataRaw_temp_PrpAll, &
                        dataRaw_ext_PrpAll, &
                        dataRaw_ssa_PrpAll, &
-                       dataRaw_ipha_PrpAll, &
-                       dataRaw_leg_PrpAll)
+                       dataRaw_ipha_PrpAll)
+                       !dataRaw_leg_PrpAll)
             if (prpAll_obj%isAllocated) then
                 nullify(prpAll_obj%dataRaw_z, &
                         prpAll_obj%dataRaw_temp, &
@@ -1092,6 +1086,8 @@ program shdom
         if (verbose_ .ge. 5) write (6, '(A)') trim(adjustl(message))
     end if
 
+    print *, 'hahahah'
+    stop
 
     ! solve radiative transfer equation
     !   1. Use Picard iteration to solve radiance and source
