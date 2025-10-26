@@ -1164,7 +1164,8 @@ program shdom
             &Npts, xyz_Grid,&
             &Ncell, ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
             &shdo_obj%dataRaw_iradI, shdo_obj%dataRaw_isrcJ, dataRaw_idsrc_Shdo, work, work1, work2,&
-            &shdo_obj%dataRaw_srcJ, dataRaw_dsrc_Shdo, shdo_obj%dataRaw_radI, fluxTot, fluxDir, prp_obj, sfc_obj, ckd_obj)
+            &shdo_obj%dataRaw_srcJ, dataRaw_dsrc_Shdo, shdo_obj%dataRaw_radI, fluxTot, fluxDir,&
+            &prp_obj, sfc_obj, ckd_obj, shdo_obj)
         isNewRad = .false.
         totIter = totIter + iter
 
