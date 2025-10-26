@@ -28,7 +28,7 @@
  NUMOUT          = 0
  OutFileNC       = 'NONE'
  ACCELFLAG       = .TRUE.
- SOLACC          = 1e-05
+ SOLACC          = 1e-04
  MAXITER         = 200
  SPLITACC        = 0.01
  SHACC           = 0.003

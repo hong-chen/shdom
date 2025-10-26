@@ -77,47 +77,49 @@ module shd_sfc
 contains
 
 subroutine shd_sfc__interpSfc(&
-    &NBOTPTS, BCPTR, GRIDPOS,&
+    &NptsBot, BCPTR, GRIDPOS,&
     &SRCTYPE, WAVENO, WAVELEN, UNITS,&
     &prp_obj, sfc_obj)
 
     !   Bilinearly interpolates the surface properties from the regular
     ! surface grid to the boundary points of the adaptive grid.
-    ! The locations of the NBOTPTS grid points on the bottom boundary
+    ! The locations of the NptsBot grid points on the bottom boundary
     ! (pointed to by BCPTR) are in the GRIDPOS array.  The input regular
     ! surface info is specified by the number of grid lines (sfc_obj%Nx,sfc_obj%Ny),
     ! the grid spacing (sfc_obj%dx,sfc_obj%dy), the number of parameters at
     ! each grid point (sfc_obj%Npar), and the surface parameters (sfc_obj%dataRaw_brdf).
-    ! The output interpolated surface parameters at the NBOTPTS boundary
-    ! points are in dataGrid_brdf_Sfc.  The first parameter is input as
+    ! The output interpolated surface parameters at the NptsBot boundary
+    ! points are in cal_brdf_Sfc.  The first parameter is input as
     ! temperature, but converted to Planck function for output.
 
     type(shd_type_prp), intent(in) :: prp_obj
     type(shd_type_sfc), intent(in) :: sfc_obj
 
-    integer :: NBOTPTS, BCPTR(*)
+    integer, intent(in) :: NptsBot, BCPTR(*)
+    character(len=1), intent(in) :: SRCTYPE, UNITS
+
     real :: WAVENO(2), WAVELEN
     real :: GRIDPOS(3, *)
 
-    real, pointer :: dataRaw_brdf_Sfc(:, :, :) => null()
-    real, pointer :: dataGrid_brdf_Sfc(:, :) => null()
-    character(len=1) :: SRCTYPE, UNITS
-    integer :: I, IBC, IX, IY, J
-    real :: RX, RY, U, V, TEMP, PLANCK
-    logical :: INTERP
+    integer :: igrid, ibc, ix, iy, ipar
+    real :: rx, ry, u, v, temp, planck
+    logical :: doInterp
 
-    dataRaw_brdf_Sfc(1:sfc_obj%Npar, 1:sfc_obj%Nx+1, 1:sfc_obj%Ny+1) => sfc_obj%dataRaw_brdf
-    dataGrid_brdf_Sfc(1:sfc_obj%Npar, 1:NBOTPTS) => sfc_obj%dataGrid_brdf
+    real, pointer :: raw_brdf_Sfc(:, :, :) => null()
+    real, pointer :: cal_brdf_Sfc(:, :) => null()
 
-    INTERP = .true.
+    raw_brdf_Sfc(1:sfc_obj%Npar, 1:sfc_obj%Ny+1, 1:sfc_obj%Nx+1) => sfc_obj%dataRaw_brdf
+    cal_brdf_Sfc(1:sfc_obj%Npar, 1:NptsBot) => sfc_obj%dataGrid_brdf
+
+    doInterp = .true.
     if (sfc_obj%Npar .gt. 6) then
-        INTERP = .false.
+        doInterp = .false.
     end if
 
     ! Loop over all bottom points
-    do IBC = 1, NBOTPTS
+    do ibc = 1, NptsBot
 
-        I = BCPTR(IBC)
+        igrid = BCPTR(ibc)
 
         if  ((prp_obj%Nx .gt. 1) .and. (prp_obj%Ny .gt. 1) .and.&
             &(sfc_obj%Nx .gt. 1) .and. (sfc_obj%Ny .gt. 1) .and.&
@@ -126,50 +128,50 @@ subroutine shd_sfc__interpSfc(&
             ! added half dx,dy (prp_obj%dx/2.0-sfc_obj%dx/2.0, prp_obj%dy/2.0-sfc_obj%dy/2.0) to
             ! find surface point that is closest to grid center
             !╭────────────────────────────────────────────────╮!
-            RX = (GRIDPOS(1, I) + prp_obj%dx/2.0 - sfc_obj%dx/2.0) / sfc_obj%dx
-            RY = (GRIDPOS(2, I) + prp_obj%dy/2.0 - sfc_obj%dy/2.0) / sfc_obj%dy
+            rx = (GRIDPOS(1, igrid) + prp_obj%dx/2.0 - sfc_obj%dx/2.0) / sfc_obj%dx
+            ry = (GRIDPOS(2, igrid) + prp_obj%dy/2.0 - sfc_obj%dy/2.0) / sfc_obj%dy
             !╰────────────────────────────────────────────────╯!
         else
-            RX = (GRIDPOS(1, I)) / sfc_obj%dx
-            RY = (GRIDPOS(2, I)) / sfc_obj%dy
+            rx = (GRIDPOS(1, igrid)) / sfc_obj%dx
+            ry = (GRIDPOS(2, igrid)) / sfc_obj%dy
         end if
 
-        IX = max(1, min(sfc_obj%Nx, int(RX) + 1))
-        IY = max(1, min(sfc_obj%Ny, int(RY) + 1))
-        U = max(0.0, min(1.0, RX - (IX - 1)))
-        V = max(0.0, min(1.0, RY - (IY - 1)))
+        ix = max(1, min(sfc_obj%Nx, int(rx) + 1))
+        iy = max(1, min(sfc_obj%Ny, int(ry) + 1))
+        u = max(0.0, min(1.0, rx - (ix - 1)))
+        v = max(0.0, min(1.0, ry - (iy - 1)))
 
-        do J = 1, sfc_obj%Npar
+        do ipar = 1, sfc_obj%Npar
             ! only interpolate BRDF parameter, not surface type ID (currently stored at 8)
-            if (INTERP) then
+            if (doInterp) then
                 ! bi-linear interpolation
                 !╭────────────────────────────────────────────────╮!
-                dataGrid_brdf_Sfc(J, IBC) =&
-                    &  (1.0 - U)*(1.0 - V)*dataRaw_brdf_Sfc(J, IX  , IY)&
-                    &+ (1.0 - U)*       V *dataRaw_brdf_Sfc(J, IX  , IY+1)&
-                    &+        U *(1.0 - V)*dataRaw_brdf_Sfc(J, IX+1, IY)&
-                    &+        U *       V *dataRaw_brdf_Sfc(J, IX+1, IY+1)
+                cal_brdf_Sfc(ipar, ibc) =&
+                    &  (1.0 - u)*(1.0 - v)*raw_brdf_Sfc(ipar, iy  , ix)&
+                    &+ (1.0 - u)*       v *raw_brdf_Sfc(ipar, iy  , ix+1)&
+                    &+        u *(1.0 - v)*raw_brdf_Sfc(ipar, iy+1, ix)&
+                    &+        u *       v *raw_brdf_Sfc(ipar, iy+1, ix+1)
                 !╰────────────────────────────────────────────────╯!
             else
                 ! nearest interpolation
                 !╭────────────────────────────────────────────────╮!
-                dataGrid_brdf_Sfc(J, IBC) = dataRaw_brdf_Sfc(J, IX, IY)
+                cal_brdf_Sfc(ipar, ibc) = raw_brdf_Sfc(ipar, iy, ix)
                 !╰────────────────────────────────────────────────╯!
             end if
         end do
 
         if (SRCTYPE .eq. 'S') then
-            PLANCK = 0.0
+            planck = 0.0
         else
-            TEMP = dataGrid_brdf_Sfc(1, IBC)
-            call shd_util__computePlanck(TEMP, UNITS, WAVENO, WAVELEN, PLANCK)
+            temp = cal_brdf_Sfc(1, ibc)
+            call shd_util__computePlanck(temp, UNITS, WAVENO, WAVELEN, planck)
         end if
 
-        dataGrid_brdf_Sfc(1, IBC) = PLANCK
+        cal_brdf_Sfc(1, ibc) = planck
 
     end do
 
-    nullify(dataRaw_brdf_Sfc, dataGrid_brdf_Sfc)
+    nullify(raw_brdf_Sfc, cal_brdf_Sfc)
 
     return
 
