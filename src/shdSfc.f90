@@ -202,11 +202,11 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
     ! M  Mixed surface
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
+    character(len=1), intent(in) :: SFCTYPE
     integer :: NSTOKES
     integer :: K1, K2
     real    :: REFPARMS(*), WAVELEN, MU1, PHI1, MU2, PHI2, REFLECT(4, 4)
     real    :: PHIDIFF
-    character(len=1) :: SFCTYPE
     integer, parameter :: iSFC_ID=7
 
 

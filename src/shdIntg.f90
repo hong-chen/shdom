@@ -49,10 +49,10 @@ module shd_intg
     use shd_sfc,  only: shd_sfc__interpSfc
 
     use shd_init, only: shd_init__makeTopRad, &
-                        shd_init__makeSfcRadFL, &
-                        shd_init__makeSfcRadVL, &
-                        shd_init__makeSfcRadV, &
-                        shd_init__makeSfcRadU
+                        shd_init__makeBotRadUL, &
+                        shd_init__makeBotRadVL, &
+                        shd_init__makeBotRadU, &
+                        shd_init__makeBotRadV
 
     use shd_grid, only: shd_grid__makeSweepOrder, &
                         shd_grid__findBndryPnt
@@ -212,13 +212,13 @@ subroutine shd_intg__integratePath(&
             !   for the Lambertian surfaces.  Compute the upwelling bottom
             !   radiances using the downwelling fluxes.
             if (sfc_obj%type .eq. 'FL') then
-                call shd_init__makeSfcRadFL(NBOTPTS, BCPTR(1, 2),&
-                    &DIRFLUX, FLUXES, SRCTYPE, sfc_obj%avgTemp, sfc_obj%avgAlb,&
-                    &WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1, 1 + NTOPPTS))
+                call shd_init__makeBotRadUL(NBOTPTS, BCPTR(1, 2),&
+                    &DIRFLUX, FLUXES, SRCTYPE,&
+                    &WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1, 1 + NTOPPTS), sfc_obj)
             else if (sfc_obj%type .eq. 'VL') then
-                call shd_init__makeSfcRadVL(NBOTPTS, BCPTR(1, 2),&
-                    &DIRFLUX, FLUXES, SRCTYPE, sfc_obj%Npar, sfc_obj%dataGrid_brdf,&
-                    &NSTOKES, BCRAD(1, 1 + NTOPPTS))
+                call shd_init__makeBotRadVL(NBOTPTS, BCPTR(1, 2),&
+                    &DIRFLUX, FLUXES, SRCTYPE,&
+                    &NSTOKES, BCRAD(1, 1 + NTOPPTS), sfc_obj)
             end if
         end if
 
@@ -265,18 +265,17 @@ subroutine shd_intg__integratePath(&
                     ! If the surface reflection is uniform use the precomputed
                     !   BRDF matrix to do the integration.
                     if (sfc_obj%isUniform) then
-                        call shd_init__makeSfcRadU(NBOTPTS, BCPTR(1, 2),&
+                        call shd_init__makeBotRadU(NBOTPTS, BCPTR(1, 2),&
                             &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, IMU, IPHI,&
                             &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
-                            &sfc_obj%type, sfc_obj%Npar, sfc_obj%dataGrid_brdf, SFC_BRDF_DO,&
-                            &NSTOKES, BCRAD(1, 1 + NTOPPTS))
+                            &SFC_BRDF_DO,&
+                            &NSTOKES, BCRAD(1, 1 + NTOPPTS), sfc_obj)
                     else
-                        call shd_init__makeSfcRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
+                        call shd_init__makeBotRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
                             &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                             &MU(IMU), PHI(IMU, IPHI),&
                             &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
-                            &sfc_obj%type, sfc_obj%Npar, sfc_obj%dataGrid_brdf,&
-                            &NSTOKES, BCRAD(1, 1 + NTOPPTS))
+                            &NSTOKES, BCRAD(1, 1 + NTOPPTS), sfc_obj)
                     end if
                 end if
 

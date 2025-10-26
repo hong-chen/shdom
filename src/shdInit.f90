@@ -65,10 +65,10 @@ module shd_init
     public :: shd_init__makeFlux
 
     public :: shd_init__makeTopRad
-    public :: shd_init__makeSfcRadFL
-    public :: shd_init__makeSfcRadVL
-    public :: shd_init__makeSfcRadU
-    public :: shd_init__makeSfcRadV
+    public :: shd_init__makeBotRadUL
+    public :: shd_init__makeBotRadVL
+    public :: shd_init__makeBotRadU
+    public :: shd_init__makeBotRadV
 
     public :: shd_init__checkSfcU
 
@@ -504,8 +504,8 @@ subroutine shd_init__makeRad(&
     &NSTOKES, NXY, NZ,&
     &RSHPTR, ZGRID,&
     &EXTINCT, ALBEDO, LEGEN, TEMP, IPHASE,&
-    &SRCTYPE, SOLARFLUX, SOLARMU, GNDALBEDO, GNDTEMP,&
-    &SKYRAD, UNITS, WAVENO, WAVELEN, RADIANCE, prp_obj)
+    &SRCTYPE, SOLARFLUX, SOLARMU,&
+    &SKYRAD, UNITS, WAVENO, WAVELEN, RADIANCE, prp_obj, sfc_obj)
 
     ! Initializes radiance field by solving plane-parallel two-stream.
     ! Solves the L=1 M=0 SH system by transforming the pentadiagonal
@@ -514,10 +514,11 @@ subroutine shd_init__makeRad(&
     ! Only the I Stokes parameter is initialized, the rest are zeroed.
 
     type(shd_type_prp), intent(in) :: prp_obj
+    type(shd_type_sfc), intent(in) :: sfc_obj
 
     integer NSTOKES, NXY, NZ, RSHPTR(*)
     integer*2 IPHASE(NZ, NXY)
-    real GNDALBEDO, GNDTEMP, SKYRAD, SOLARFLUX, SOLARMU
+    real SKYRAD, SOLARFLUX, SOLARMU
     real WAVENO(2), WAVELEN
     real ZGRID(NZ)
     real EXTINCT(NZ, NXY), ALBEDO(NZ, NXY), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, *)
@@ -593,12 +594,12 @@ subroutine shd_init__makeRad(&
 
         TEMPS(1) = TEMP(NZ, I)
 
-        GNDEMIS = 1.0 - GNDALBEDO
+        GNDEMIS = 1.0 - sfc_obj%avgAlb
 
         ! Call the Eddington flux routine
         call shd_init__makeFlux(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
             &TEMPS, DELTAM, SRCTYPE, SOLARFLUX, SOLARMU,&
-            &GNDTEMP, GNDEMIS, SKYRAD, UNITS, WAVENO, WAVELEN,&
+            &sfc_obj%avgTemp, GNDEMIS, SKYRAD, UNITS, WAVENO, WAVELEN,&
             &FLUXES)
 
         ! Convert fluxes to first two moments of spherical harmonics
@@ -875,9 +876,9 @@ subroutine shd_init__makeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
 
 end subroutine shd_init__makeTopRad
 
-subroutine shd_init__makeSfcRadFL(NBOTPTS, BCPTR,&
-    &DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO,&
-    &WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD)
+subroutine shd_init__makeBotRadUL(NBOTPTS, BCPTR,&
+    &DIRFLUX, FLUXES, SRCTYPE,&
+    &WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD, sfc_obj)
 
     !   Returns the BCRAD array with the upwelling unpolarized radiance for
     ! a Lambertian surface for the bottom points (pointed to by BCPTR).
@@ -886,18 +887,20 @@ subroutine shd_init__makeSfcRadFL(NBOTPTS, BCPTR,&
     ! emission (depending on temperature and emissivity) or reflected
     ! collimated solar radiation (DIRFLUX).
 
+    type(shd_type_sfc), intent(in) :: sfc_obj
+
     integer NBOTPTS, BCPTR(*), NSTOKES
     real DIRFLUX(*), FLUXES(2, *)
-    real GNDTEMP, GNDALBEDO, WAVENO(2), WAVELEN
+    real WAVENO(2), WAVELEN
     real BCRAD(NSTOKES, *)
     character(len=1) :: SRCTYPE, UNITS
     integer I, IBC, K
     real ALB, GNDRAD
 
-    ALB = GNDALBEDO/acos(-1.0)
+    ALB = sfc_obj%avgAlb/acos(-1.0)
     if (isThermal_) then
-        call shd_util__computePlanck(GNDTEMP, UNITS, WAVENO, WAVELEN, GNDRAD)
-        GNDRAD = GNDRAD*(1.0 - GNDALBEDO)
+        call shd_util__computePlanck(sfc_obj%avgTemp, UNITS, WAVENO, WAVELEN, GNDRAD)
+        GNDRAD = GNDRAD*(1.0 - sfc_obj%avgAlb)
     end if
 
     ! Loop over all bottom points finding the upwelling radiance
@@ -915,37 +918,41 @@ subroutine shd_init__makeSfcRadFL(NBOTPTS, BCPTR,&
 
     return
 
-end subroutine shd_init__makeSfcRadFL
+end subroutine shd_init__makeBotRadUL
 
-subroutine shd_init__makeSfcRadVL(NBOTPTS, BCPTR,&
-    &DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS,&
-    &NSTOKES, BCRAD)
+subroutine shd_init__makeBotRadVL(NBOTPTS, BCPTR,&
+    &DIRFLUX, FLUXES, SRCTYPE,&
+    &NSTOKES, BCRAD, sfc_obj)
 
     !   Returns the BCRAD array with the upwelling unpolarized radiance for a
     ! variable Lambertian surface for the bottom points (pointed to by BCPTR).
-    ! SFCGRIDPARMS contains the interpolated surface properties for the
+    ! sfc_obj%dataGrid_brdf contains the interpolated surface properties for the
     ! bottom boundary points; the first is Planck function and the second is
     ! albedo.  The reflection is computed from the downwelling hemispheric
     ! flux (in FLUXES).  There may also be thermal emission (depending on
     ! temperature and emissivity) or reflected collimated solar radiation
     ! (from DIRFLUX).
 
-    integer NBOTPTS, BCPTR(*), NSFCPAR, NSTOKES
+    type(shd_type_sfc), intent(in) :: sfc_obj
+
+    integer NBOTPTS, BCPTR(*), NSTOKES
     real DIRFLUX(*), FLUXES(2, *)
-    real SFCGRIDPARMS(NSFCPAR, NBOTPTS)
+    real, pointer :: dataGrid_brdf_Sfc(:, :) => null()
     real BCRAD(NSTOKES, *)
     character(len=1) :: SRCTYPE
     integer I, IBC, K
     real ALB, GNDRAD
 
+    dataGrid_brdf_Sfc(1:sfc_obj%Npar, 1:NBOTPTS) => sfc_obj%dataGrid_brdf
+
     ! Loop over all bottom points
     do IBC = 1, NBOTPTS
         I = BCPTR(IBC)
-        ALB = SFCGRIDPARMS(2, IBC)
+        ALB = dataGrid_brdf_Sfc(2, IBC)
         if (SRCTYPE .eq. 'S') then
             BCRAD(1, IBC) = OPI_*ALB*(DIRFLUX(I) + FLUXES(1, I))
         else
-            GNDRAD = SFCGRIDPARMS(1, IBC)*(1 - ALB)
+            GNDRAD = dataGrid_brdf_Sfc(1, IBC)*(1 - ALB)
             if (SRCTYPE .eq. 'T') then
                 BCRAD(1, IBC) = GNDRAD + OPI_*ALB*FLUXES(1, I)
             else if (SRCTYPE .eq. 'B') then
@@ -954,15 +961,18 @@ subroutine shd_init__makeSfcRadVL(NBOTPTS, BCPTR,&
         end if
         BCRAD(2:, IBC) = 0.0
     end do
+
+    nullify(dataGrid_brdf_Sfc)
+
     return
 
-end subroutine shd_init__makeSfcRadVL
+end subroutine shd_init__makeBotRadVL
 
-subroutine shd_init__makeSfcRadU(NBOTPTS, BCPTR,&
+subroutine shd_init__makeBotRadU(NBOTPTS, BCPTR,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, IMU, IPHI,&
     &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
-    &SFCTYPE, NSFCPAR, SFCGRIDPARMS, SFC_BRDF_DO,&
-    &NSTOKES, BCRAD)
+    &SFC_BRDF_DO,&
+    &NSTOKES, BCRAD, sfc_obj)
 
     !   Computes the upwelling Stokes vector of the bottom boundary points
     ! for one outgoing discrete ordinate using the precomputed bidirectional
@@ -979,17 +989,20 @@ subroutine shd_init__makeSfcRadU(NBOTPTS, BCPTR,&
     ! radiance vectors are input in BCRAD(*,*,2...) and the outgoing
     ! upwelling radiance vectors are output in BCRAD(*,*,1).
 
+    type(shd_type_sfc), intent(in) :: sfc_obj
+
     integer NBOTPTS, BCPTR(NBOTPTS)
-    integer NMU, NPHI0MAX, NPHI0(NMU), IMU, IPHI, NSFCPAR, NSTOKES
+    integer NMU, NPHI0MAX, NPHI0(NMU), IMU, IPHI, NSTOKES
     real WTDO(NMU, NPHI0MAX), MU(NMU), PHI(NMU, NPHI0MAX)
     real WAVELEN, SOLARMU, SOLARAZ, DIRFLUX(*)
-    real SFCGRIDPARMS(NSFCPAR, NBOTPTS)
+    real, pointer :: dataGrid_brdf_Sfc(:, :) => null()
     real SFC_BRDF_DO(NSTOKES, NMU/2, NPHI0MAX, NSTOKES, NMU/2, NPHI0MAX)
     real BCRAD(NSTOKES, NBOTPTS, *)
     character(len=1) :: SRCTYPE
-    character(len=2) :: SFCTYPE
     integer IMU1, JMU, JPHI, IBC, I, JANG, K, K1, K2
     real REFLECT(4, 4), W
+
+    dataGrid_brdf_Sfc(1:sfc_obj%Npar, 1:NBOTPTS) => sfc_obj%dataGrid_brdf
 
     IMU1 = IMU - NMU/2
     do IBC = 1, NBOTPTS
@@ -999,7 +1012,7 @@ subroutine shd_init__makeSfcRadU(NBOTPTS, BCPTR,&
         BCRAD(:, IBC, 1) = 0.0
         if (isSolar_) then
             I = BCPTR(IBC)
-            call shd_sfc__brdfSurface(SFCTYPE(2:2), SFCGRIDPARMS(2, IBC), WAVELEN,&
+            call shd_sfc__brdfSurface(sfc_obj%type(2:2), dataGrid_brdf_Sfc(2:sfc_obj%Npar, IBC), WAVELEN,&
                 &MU(IMU), PHI(IMU, IPHI), SOLARMU, SOLARAZ,&
                 &NSTOKES, REFLECT)
             BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1)&
@@ -1017,24 +1030,26 @@ subroutine shd_init__makeSfcRadU(NBOTPTS, BCPTR,&
                 end do
                 ! Add in the polarized thermal emission
                 W = OPI_*abs(MU(JMU))*WTDO(JMU, JPHI)
-                BCRAD(1, IBC, 1) = BCRAD(1, IBC, 1) + SFCGRIDPARMS(1, IBC)&
+                BCRAD(1, IBC, 1) = BCRAD(1, IBC, 1) + dataGrid_brdf_Sfc(1, IBC)&
                     &*(W - SFC_BRDF_DO(1, IMU1, IPHI, 1, JMU, JPHI))
-                BCRAD(2:, IBC, 1) = BCRAD(2:, IBC, 1) - SFCGRIDPARMS(1, IBC)&
+                BCRAD(2:, IBC, 1) = BCRAD(2:, IBC, 1) - dataGrid_brdf_Sfc(1, IBC)&
                     &*SFC_BRDF_DO(2:, IMU1, IPHI, 1, JMU, JPHI)
                 JANG = JANG + 1
             end do
         end do
     end do
 
+    nullify(dataGrid_brdf_Sfc)
+
     return
 
-end subroutine shd_init__makeSfcRadU
+end subroutine shd_init__makeBotRadU
 
-subroutine shd_init__makeSfcRadV(&
+subroutine shd_init__makeBotRadV(&
     &NBOTPTS, IBEG, IEND, BCPTR,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MU2, PHI2,&
     &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
-    &SFCTYPE, NSFCPAR, SFCGRIDPARMS, NSTOKES, BCRAD)
+    &NSTOKES, BCRAD, sfc_obj)
 
     !   Computes the upwelling Stokes vector of the bottom boundary points
     ! for one outgoing direction using the specified bidirectional
@@ -1046,7 +1061,7 @@ subroutine shd_init__makeSfcRadV(&
     ! downwelling radiance, so a discrete sum is done and the integral
     ! weights (WTDO) are included. The general BRDF function is called
     ! to compute the Stokes reflectance matrix for the particular BRDF
-    ! type (SFCTYPE) with parameters (SFCGRIDPARMS) for the incident and
+    ! type (sfc_obj%type) with parameters (sfc_obj%dataGrid_brdf) for the incident and
     ! outgoing directions.  The emissivity is computed implicitly from the
     ! integral of the BRDF.  The outgoing direction is specified with
     ! (MU2,PHI2), and the BRDF is computed for all incident directions
@@ -1054,15 +1069,19 @@ subroutine shd_init__makeSfcRadV(&
     ! input in BCRAD(*,*,2...) and the outgoing upwelling radiance vectors
     ! are output in BCRAD(*,*,1).
 
+    type(shd_type_sfc), intent(in) :: sfc_obj
+
     integer NBOTPTS, IBEG, IEND, BCPTR(NBOTPTS)
-    integer NMU, NPHI0MAX, NPHI0(NMU), NSFCPAR, NSTOKES
+    integer NMU, NPHI0MAX, NPHI0(NMU), NSTOKES
     real WTDO(NMU, NPHI0MAX), MU(NMU), PHI(NMU, NPHI0MAX)
     real MU2, PHI2, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX(*)
-    real SFCGRIDPARMS(NSFCPAR, NBOTPTS), BCRAD(NSTOKES, NBOTPTS, *)
+    real BCRAD(NSTOKES, NBOTPTS, *)
+    real, pointer :: dataGrid_brdf_Sfc(:, :) => null()
     character(len=1) :: SRCTYPE
-    character(len=2) :: SFCTYPE
     integer JMU, JPHI, IBC, I, JANG, K, K1, K2
     real REFLECT(4, 4), W, SUM0, SUM1, RADSPEC(4)
+
+    dataGrid_brdf_Sfc(1:sfc_obj%Npar, 1:NBOTPTS) => sfc_obj%dataGrid_brdf
 
     do IBC = IBEG, IEND
 
@@ -1071,7 +1090,7 @@ subroutine shd_init__makeSfcRadV(&
         BCRAD(:, IBC, 1) = 0.0
         if (isSolar_) then
             I = BCPTR(IBC)
-            call shd_sfc__brdfSurface(SFCTYPE(2:2), SFCGRIDPARMS(2, IBC), WAVELEN,&
+            call shd_sfc__brdfSurface(sfc_obj%type(2:2), dataGrid_brdf_Sfc(2:sfc_obj%Npar, IBC), WAVELEN,&
                 &MU2, PHI2, SOLARMU, SOLARAZ, NSTOKES, REFLECT)
             BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1)&
                 &+ OPI_*REFLECT(1:NSTOKES, 1)*DIRFLUX(I)
@@ -1081,7 +1100,7 @@ subroutine shd_init__makeSfcRadV(&
         JANG = 1
         do JMU = 1, NMU/2
             do JPHI = 1, NPHI0(JMU)
-                call shd_sfc__brdfSurface(SFCTYPE(2:2), SFCGRIDPARMS(2, IBC),&
+                call shd_sfc__brdfSurface(sfc_obj%type(2:2), dataGrid_brdf_Sfc(2:sfc_obj%Npar, IBC),&
                     &WAVELEN, MU2, PHI2, MU(JMU), PHI(JMU, JPHI),&
                     &NSTOKES, REFLECT)
                 W = OPI_*abs(MU(JMU))*WTDO(JMU, JPHI)
@@ -1092,16 +1111,20 @@ subroutine shd_init__makeSfcRadV(&
                 end do
                 ! Add in the polarized thermal emission
                 BCRAD(1, IBC, 1) = BCRAD(1, IBC, 1)&
-                    &+ W*(1 - REFLECT(1, 1))*SFCGRIDPARMS(1, IBC)
+                    &+ W*(1 - REFLECT(1, 1))*dataGrid_brdf_Sfc(1, IBC)
                 BCRAD(2:, IBC, 1) = BCRAD(2:, IBC, 1)&
-                    &- W*REFLECT(2:NSTOKES, 1)*SFCGRIDPARMS(1, IBC)
+                    &- W*REFLECT(2:NSTOKES, 1)*dataGrid_brdf_Sfc(1, IBC)
                 JANG = JANG + 1
             end do
         end do
 
     end do
+
+    nullify(dataGrid_brdf_Sfc)
+
     return
-end subroutine shd_init__makeSfcRadV
+
+end subroutine shd_init__makeBotRadV
 
 subroutine shd_init__checkSfcU(sfc_obj)
 
@@ -1113,7 +1136,7 @@ subroutine shd_init__checkSfcU(sfc_obj)
     ! Input:
     !   sfc_obj%Nx, sfc_obj%Ny: integer, size of surface arrays (internally sfc_obj%Nx+1 by sfc_obj%Ny+1)
     !   sfc_obj%Npar: integer, number of surface parameters for modeling different BRDF
-    !   SFCPARMS: real array, surface parameters for modeling different BRDF
+    !   sfc_obj%dataRaw_brdf: real array, surface parameters for modeling different BRDF
     !
     ! Output:
     !   sfc_obj%isUniform: logical, whether surface reflection parameters are uniform

@@ -58,9 +58,9 @@ module shd_rad
                         shd_src__integrateSrcOneRay
 
     use shd_init, only: shd_init__makeTopRad, &
-                        shd_init__makeSfcRadFL, &
-                        shd_init__makeSfcRadVL, &
-                        shd_init__makeSfcRadV
+                        shd_init__makeBotRadUL, &
+                        shd_init__makeBotRadVL, &
+                        shd_init__makeBotRadV
 
     implicit none
     private
@@ -755,15 +755,15 @@ subroutine shd_rad__computeRad(&
     ! Compute the upwelling bottom radiances using the downwelling fluxes.
     if (sfc_obj%type .eq. 'FL') then
 
-        call shd_init__makeSfcRadFL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, SRCTYPE, sfc_obj%avgTemp, sfc_obj%avgAlb,&
-            &WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1, 1 + NTOPPTS))
+        call shd_init__makeBotRadUL(NBOTPTS, BCPTR(1, 2),&
+            &DIRFLUX, FLUXES, SRCTYPE,&
+            &WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1, 1 + NTOPPTS), sfc_obj)
 
     else if (sfc_obj%type .eq. 'VL') then
 
-        call shd_init__makeSfcRadVL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, SRCTYPE, sfc_obj%Npar, sfc_obj%dataGrid_brdf,&
-            &NSTOKES, BCRAD(1, 1 + NTOPPTS))
+        call shd_init__makeBotRadVL(NBOTPTS, BCPTR(1, 2),&
+            &DIRFLUX, FLUXES, SRCTYPE,&
+            &NSTOKES, BCRAD(1, 1 + NTOPPTS), sfc_obj)
 
     end if
 
@@ -846,11 +846,11 @@ subroutine shd_rad__computeRad(&
             end do
         else
             if (.not. sfc_obj%isLambertian) then
-                call shd_init__makeSfcRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
+                call shd_init__makeBotRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
                     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MUOUT, PHIOUT,&
                     &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
-                    &sfc_obj%type, sfc_obj%Npar, sfc_obj%dataGrid_brdf, NSTOKES,&
-                    &BCRAD(1, 1 + NTOPPTS))
+                    &NSTOKES,&
+                    &BCRAD(1, 1 + NTOPPTS), sfc_obj)
             end if
             do IBC = 1, NBOTPTS
                 I = BCPTR(IBC, 2)
@@ -954,13 +954,13 @@ subroutine shd_rad__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     ! Make the bottom boundary radiances for the Lambertian surfaces
     !   Compute the upwelling bottom radiances using the downwelling
     if (sfc_obj%type .eq. 'FL') then
-        call shd_init__makeSfcRadFL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, SRCTYPE, sfc_obj%avgTemp, sfc_obj%avgAlb,&
-            &WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1, 1 + NTOPPTS))
+        call shd_init__makeBotRadUL(NBOTPTS, BCPTR(1, 2),&
+            &DIRFLUX, FLUXES, SRCTYPE,&
+            &WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1, 1 + NTOPPTS), sfc_obj)
     else if (sfc_obj%type .eq. 'VL') then
-        call shd_init__makeSfcRadVL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, SRCTYPE, sfc_obj%Npar, sfc_obj%dataGrid_brdf,&
-            &NSTOKES, BCRAD(1, 1 + NTOPPTS))
+        call shd_init__makeBotRadVL(NBOTPTS, BCPTR(1, 2),&
+            &DIRFLUX, FLUXES, SRCTYPE,&
+            &NSTOKES, BCRAD(1, 1 + NTOPPTS), sfc_obj)
     end if
 
     CAMERA_MODE = nint(OUTPARMS(1)) .eq. 1
@@ -1097,9 +1097,9 @@ subroutine shd_rad__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 &EXTINCT, ALBEDO, LEGEN, IPHASE,&
                 &DIRFLUX, SHPTR, SOURCE, YLMSUN,&
                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-                &sfc_obj%type, sfc_obj%Npar, sfc_obj%dataGrid_brdf,&
                 &MU2, PHI2, X0, Y0, Z0,&
-                &XE, YE, ZE, SIDE, TRANSMIT, VISRAD, VALIDRAD, prp_obj)
+                &XE, YE, ZE, SIDE, TRANSMIT, VISRAD, VALIDRAD,&
+                &prp_obj, sfc_obj)
 900         continue
             ! write (6,'(1X,2F8.4,1X,2F11.7,4(1X,F11.6))')&
             !     &X0,Y0,MURAY,PHIRAY,VISRAD(:)

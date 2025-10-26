@@ -44,7 +44,7 @@ module shd_src
     use globals_cfg,   only: accSolv_, isOpenX_, isOpenYx_, &
                              isPol_, isPol4_, &
                              isSolar_, isThermal_
-    use globals_type,  only: shd_type_prp
+    use globals_type,  only: shd_type_prp, shd_type_sfc
 
     use shd_scat, only: shd_scat__computeLegendre, &
                         shd_scat__computeWigner
@@ -55,7 +55,7 @@ module shd_src
                         shd_util__findNextCell, &
                         shd_util__interpTriLin
 
-    use shd_init, only: shd_init__makeSfcRadV
+    use shd_init, only: shd_init__makeBotRadV
 
     implicit none
     private
@@ -736,9 +736,9 @@ subroutine shd_src__integrateSrcOneRay(&
     &EXTINCT, ALBEDO, LEGEN, IPHASE,&
     &DIRFLUX, SHPTR, SOURCE, YLMSUN,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-    &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
     &MU2, PHI2, X0, Y0, Z0,&
-    &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD, prp_obj)
+    &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD,&
+    &prp_obj, sfc_obj)
 
     !   Integrates the source function through the extinction field
     ! (EXTINCT) backward from the outgoing direction (MU2,PHI2) to find the
@@ -749,12 +749,13 @@ subroutine shd_src__integrateSrcOneRay(&
     ! 5=-Z,6=+Z).
 
     type(shd_type_prp), intent(in) :: prp_obj
+    type(shd_type_sfc), intent(in) :: sfc_obj
 
     integer BCFLAG, IPFLAG, NSTOKES, NSTPHASE, NSCATANGLE
     integer NX, NY, NZ, NPTS, NCELLS, SIDE
     integer ML, MM, NLM
     integer MAXNBC, NTOPPTS, NBOTPTS
-    integer NMU, NPHI0MAX, NPHI0(NMU), NSFCPAR
+    integer NMU, NPHI0MAX, NPHI0(NMU)
     integer GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
     integer SHPTR(NPTS + 1)
     integer*2 CELLFLAGS(NCELLS), IPHASE(NPTS)
@@ -762,7 +763,7 @@ subroutine shd_src__integrateSrcOneRay(&
     logical DELTAM, VALIDRAD
     real WTDO(NMU, NPHI0MAX), MU(NMU), PHI(NMU, NPHI0MAX)
     real WAVELEN, SOLARMU, SOLARAZ
-    real SFCGRIDPARMS(NSFCPAR, NBOTPTS), BCRAD(*)
+    real BCRAD(*)
     real XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ), GRIDPOS(3, NPTS)
     real EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, NPTS)
     real DIRFLUX(NPTS), SOURCE(NSTOKES, *)
@@ -771,7 +772,6 @@ subroutine shd_src__integrateSrcOneRay(&
     real(RD_) :: MU2, PHI2, X0, Y0, Z0, XE, YE, ZE
     real(RD_) :: TRANSMIT, RADIANCE(NSTOKES)
     character(len=1) :: SRCTYPE
-    character(len=2) :: SFCTYPE
 
     integer BITX, BITY, BITZ, IOCT, ICELL, INEXTCELL, IFACE
     integer IOPP, NTAU, IT, I, IPT1, IPT2, J, L
@@ -1111,8 +1111,7 @@ subroutine shd_src__integrateSrcOneRay(&
                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                 &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                 &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
-                &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
-                &RADBND)
+                &RADBND, sfc_obj)
             RADIANCE(:) = RADIANCE(:) + TRANSMIT*RADBND(:)
         else
             ICELL = INEXTCELL
@@ -1492,34 +1491,31 @@ subroutine shd_src__findBndryRad(&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
     &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
-    &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
-    &RADBND)
+    &RADBND, sfc_obj)
 
     !   Returns the interpolated Stokes radiance at the boundary (RADBND)
     ! Inputs are the boundary location (XB,YB), ray direction away from
     ! boundary (MU2,PHI2), cell number (ICELL) and face (KFACE) at
     ! the boundary point.
 
+    type(shd_type_sfc), intent(in) :: sfc_obj
+
     integer NSTOKES, ICELL, KFACE, MAXNBC, NTOPPTS, NBOTPTS
     integer GRIDPTR(8, *), BCPTR(MAXNBC, 2)
-    integer NMU, NPHI0MAX, NPHI0(NMU), NSFCPAR
+    integer NMU, NPHI0MAX, NPHI0(NMU)
     real MU2, PHI2, RADBND(NSTOKES)
     real(RD_) :: XB, YB
     real GRIDPOS(3, *)
     real WTDO(NMU, NPHI0MAX), MU(NMU), PHI(NMU, NPHI0MAX)
     real WAVELEN, SOLARMU, SOLARAZ, DIRFLUX(*)
-    real SFCGRIDPARMS(NSFCPAR, NBOTPTS), BCRAD(NSTOKES, *)
+    real BCRAD(NSTOKES, *)
     character(len=1) :: SRCTYPE
-    character(len=2) :: SFCTYPE
 
     integer IL, IM, IU, IP, IBC, J
-    logical LAMBERTIAN
     real X(4), Y(4), RAD(NSTOKES, 4), U, V
     integer GRIDFACE(4, 6)
     data GRIDFACE/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8,&
         &1, 2, 3, 4, 5, 6, 7, 8/
-
-    LAMBERTIAN = SFCTYPE(2:2) .eq. 'L'
 
     ! Loop over the four gridpoints of the cell face on the boundary
     do J = 1, 4
@@ -1563,12 +1559,12 @@ subroutine shd_src__findBndryRad(&
             if (BCPTR(IBC, 2) .ne. IP)&
                 &stop 'Error [_findBndryRad]: Not at boundary.'
 
-            if (.not. LAMBERTIAN) then
-                call shd_init__makeSfcRadV(NBOTPTS, IBC, IBC, BCPTR(1, 2),&
+            if (.not. sfc_obj%isLambertian) then
+                call shd_init__makeBotRadV(NBOTPTS, IBC, IBC, BCPTR(1, 2),&
                     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MU2, PHI2,&
                     &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
-                    &SFCTYPE, NSFCPAR, SFCGRIDPARMS, NSTOKES,&
-                    &BCRAD(:, 1 + NTOPPTS))
+                    &NSTOKES,&
+                    &BCRAD(:, 1 + NTOPPTS), sfc_obj)
             end if
             RAD(:, J) = BCRAD(:, NTOPPTS + IBC)
         end if

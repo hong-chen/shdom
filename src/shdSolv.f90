@@ -211,8 +211,8 @@ subroutine shd_solv__solveRte(&
         call shd_init__makeRad(NSTOKES, NX1*NY1, NZ,&
             &RSHPTR, ZGRID,&
             &EXTINCT, ALBEDO, LEGEN, TEMP, IPHASE,&
-            &SRCTYPE, SOLARFLUX, SOLARMU, sfc_obj%avgAlb, sfc_obj%avgTemp, SKYRAD,&
-            &UNITS, WAVENO, WAVELEN, RADIANCE, prp_obj)
+            &SRCTYPE, SOLARFLUX, SOLARMU, SKYRAD,&
+            &UNITS, WAVENO, WAVELEN, RADIANCE, prp_obj, sfc_obj)
         ! Interpolate the radiance on the non-base grid points from the
         !   base grid points
         NBPTS = NX1*NY1*NZ

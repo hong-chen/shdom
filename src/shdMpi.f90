@@ -59,9 +59,9 @@ module shd_mpi
                         mpi_comm_set_errhandler
 
     use shd_init, only: shd_init__makeTopRad, &
-                        shd_init__makeSfcRadFL, &
-                        shd_init__makeSfcRadVL, &
-                        shd_init__makeSfcRadV
+                        shd_init__makeBotRadUL, &
+                        shd_init__makeBotRadVL, &
+                        shd_init__makeBotRadV
 
     use shd_util, only: shd_util__ssort, &
                         shd_util__findNextCell
@@ -1855,13 +1855,13 @@ subroutine shd_mpi__computeRad(&
     ! Make the bottom boundary radiances for the Lambertian surfaces.
     ! Compute the upwelling bottom radiances using the downwelling fluxes.
     if (sfc_obj%type .eq. 'FL') then
-        call shd_init__makeSfcRadFL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, SRCTYPE, sfc_obj%avgTemp, sfc_obj%avgAlb,&
-            &WAVENO, WAVELEN, UNITS, Nstokes, BCRAD(1, 1 + NTOPPTS))
+        call shd_init__makeBotRadUL(NBOTPTS, BCPTR(1, 2),&
+            &DIRFLUX, FLUXES, SRCTYPE,&
+            &WAVENO, WAVELEN, UNITS, Nstokes, BCRAD(1, 1 + NTOPPTS), sfc_obj)
     else if (sfc_obj%type .eq. 'VL') then
-        call shd_init__makeSfcRadVL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, SRCTYPE, sfc_obj%Npar, sfc_obj%dataGrid_brdf,&
-            &Nstokes, BCRAD(1, 1 + NTOPPTS))
+        call shd_init__makeBotRadVL(NBOTPTS, BCPTR(1, 2),&
+            &DIRFLUX, FLUXES, SRCTYPE,&
+            &Nstokes, BCRAD(1, 1 + NTOPPTS), sfc_obj)
     end if
 
     ! Setup the regularly spaced radiance locations
@@ -1971,10 +1971,10 @@ subroutine shd_mpi__computeRad(&
             end do
         else
             if (.not. sfc_obj%isLambertian) then
-                call shd_init__makeSfcRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
+                call shd_init__makeBotRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
                     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, mu_out, phi_out,&
                     &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
-                    &sfc_obj%type, sfc_obj%Npar, sfc_obj%dataGrid_brdf, Nstokes, BCRAD(1, 1 + NTOPPTS))
+                    &Nstokes, BCRAD(1, 1 + NTOPPTS), sfc_obj)
             end if
             do IBC = 1, NBOTPTS
                 I = BCPTR(IBC, 2)
@@ -2309,13 +2309,13 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
     ! Make the bottom boundary radiances for the Lambertian surfaces.
     ! Compute the upwelling bottom radiances using the downwelling fluxes.
     if (sfc_obj%type .eq. 'FL') then
-        call shd_init__makeSfcRadFL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, SRCTYPE, sfc_obj%avgTemp, sfc_obj%avgAlb,&
-            &WAVENO, WAVELEN, UNITS, Nstokes, BCRAD(1, 1 + NTOPPTS))
+        call shd_init__makeBotRadUL(NBOTPTS, BCPTR(1, 2),&
+            &DIRFLUX, FLUXES, SRCTYPE,&
+            &WAVENO, WAVELEN, UNITS, Nstokes, BCRAD(1, 1 + NTOPPTS), sfc_obj)
     else if (sfc_obj%type .eq. 'VL') then
-        call shd_init__makeSfcRadVL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, SRCTYPE, sfc_obj%Npar, sfc_obj%dataGrid_brdf,&
-            &Nstokes, BCRAD(1, 1 + NTOPPTS))
+        call shd_init__makeBotRadVL(NBOTPTS, BCPTR(1, 2),&
+            &DIRFLUX, FLUXES, SRCTYPE,&
+            &Nstokes, BCRAD(1, 1 + NTOPPTS), sfc_obj)
     end if
 
     CAMERA_MODE = nint(parms_Out(1)) .eq. 1
@@ -2498,9 +2498,8 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
                     &EXTINCT, ALBEDO, LEGEN, IPHASE,&
                     &DIRFLUX, SHPTR, SOURCE, YLMSUN,&
                     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-                    &sfc_obj%type, sfc_obj%Npar, sfc_obj%dataGrid_brdf,&
                     &MU2, PHI2, X0, Y0, Z0,&
-                    &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD, prp_obj)
+                    &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD, prp_obj, sfc_obj)
 
                 ! If we got a radiance then store it in RadSend otherwise save
                 !  the information needed to pass to other processors
@@ -2585,9 +2584,8 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
                     &EXTINCT, ALBEDO, LEGEN, IPHASE,&
                     &DIRFLUX, SHPTR, SOURCE, YLMSUN,&
                     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-                    &sfc_obj%type, sfc_obj%Npar, sfc_obj%dataGrid_brdf,&
                     &MU2, PHI2, X, Y, Z,&
-                    &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD, prp_obj)
+                    &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD, prp_obj, sfc_obj)
 
                 ! If we got a valid radiance then store it in RadSend, otherwise
                 ! save information needed to pass to neighboring processors
