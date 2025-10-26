@@ -718,6 +718,7 @@ program shdom
 
     else
         ckd_obj%Ng = 1
+        ckd_obj%Nz = 0
 
         allocate (dataRaw_solar_Ckd(ckd_obj%Ng), dataRaw_delg_Ckd(ckd_obj%Ng)); &
             memUsed = memUsed + 2.0*ckd_obj%Ng
@@ -725,7 +726,6 @@ program shdom
         dataRaw_solar_Ckd(1) = 1.0
         dataRaw_delg_Ckd(1) = 1.0
 
-        ckd_obj%Nz = 0
         isBaseOut = .false.
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
