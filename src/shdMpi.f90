@@ -480,10 +480,10 @@ subroutine shd_mpi__bcastPrp(prpAll_obj, prp_obj)
     type(MPI_request), allocatable :: requests(:)
     type(MPI_status), allocatable :: status(:)
 
-    real(kind=R__), pointer, contiguous ::  dataRaw_temp_PrpAll(:, :, :) => null(), &
-                                            dataRaw_ext_PrpAll(:, :, :)  => null(), &
-                                            dataRaw_ssa_PrpAll(:, :, :)  => null()
-    integer(kind=2), pointer, contiguous :: dataRaw_ipha_PrpAll(:, :, :) => null()
+    real(kind=R__), pointer, contiguous ::  temp_PrpAll(:, :, :) => null(), &
+                                            ext_PrpAll(:, :, :)  => null(), &
+                                            ssa_PrpAll(:, :, :)  => null()
+    integer(kind=2), pointer, contiguous :: ipha_PrpAll(:, :, :) => null()
 
     ! Get the ixyPrp_ arrays from all processors to tell where they are in property grid
     allocate (ixyAll(2, 2, 0 : Nproc_-1))
@@ -493,10 +493,10 @@ subroutine shd_mpi__bcastPrp(prpAll_obj, prp_obj)
     irq = 0
     if (myProc_ .eq. 0) then
 
-        dataRaw_temp_PrpAll(1:prpAll_obj%Nz, 1:prpAll_obj%Ny, 1:prpAll_obj%Nx) => prpAll_obj%dataRaw_temp
-        dataRaw_ext_PrpAll( 1:prpAll_obj%Nz, 1:prpAll_obj%Ny, 1:prpAll_obj%Nx) => prpAll_obj%dataRaw_ext
-        dataRaw_ssa_PrpAll( 1:prpAll_obj%Nz, 1:prpAll_obj%Ny, 1:prpAll_obj%Nx) => prpAll_obj%dataRaw_ssa
-        dataRaw_ipha_PrpAll(1:prpAll_obj%Nz, 1:prpAll_obj%Ny, 1:prpAll_obj%Nx) => prpAll_obj%dataRaw_ipha
+        temp_PrpAll(1:prpAll_obj%Nz, 1:prpAll_obj%Ny, 1:prpAll_obj%Nx) => prpAll_obj%temp
+        ext_PrpAll( 1:prpAll_obj%Nz, 1:prpAll_obj%Ny, 1:prpAll_obj%Nx) => prpAll_obj%ext
+        ssa_PrpAll( 1:prpAll_obj%Nz, 1:prpAll_obj%Ny, 1:prpAll_obj%Nx) => prpAll_obj%ssa
+        ipha_PrpAll(1:prpAll_obj%Nz, 1:prpAll_obj%Ny, 1:prpAll_obj%Nx) => prpAll_obj%ipha
 
         ! Allocate the send buffers for each processor
         MAXN = 1; MaxNX = 1; MaxNY = 1
@@ -515,31 +515,31 @@ subroutine shd_mpi__bcastPrp(prpAll_obj, prp_obj)
             SX = ixyAll(1, 1, iproc); EX = ixyAll(2, 1, iproc)
             SY = ixyAll(1, 2, iproc); EY = ixyAll(2, 2, iproc)
             Nx = EX - SX + 1; Ny = EY - SY + 1; N = Nx*Ny*prpAll_obj%Nz
-            rbuf(:, 1:Ny - 1, 1:Nx - 1) = dataRaw_temp_PrpAll(:, SY:EY - 1, SX:EX - 1)
-            rbuf(:, 1:Ny - 1,       Nx) = dataRaw_temp_PrpAll(:, SY:EY - 1, mod(EX - 1, prpAll_obj%Nx) + 1)
-            rbuf(:,       Ny, 1:Nx - 1) = dataRaw_temp_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, SX:EX - 1)
-            rbuf(:,       Ny,       Nx) = dataRaw_temp_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, mod(EX - 1, prpAll_obj%Nx) + 1)
+            rbuf(:, 1:Ny - 1, 1:Nx - 1) = temp_PrpAll(:, SY:EY - 1, SX:EX - 1)
+            rbuf(:, 1:Ny - 1,       Nx) = temp_PrpAll(:, SY:EY - 1, mod(EX - 1, prpAll_obj%Nx) + 1)
+            rbuf(:,       Ny, 1:Nx - 1) = temp_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, SX:EX - 1)
+            rbuf(:,       Ny,       Nx) = temp_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, mod(EX - 1, prpAll_obj%Nx) + 1)
             tempbuf(1:N, iproc) = reshape(rbuf(1:prpAll_obj%Nz, 1:Ny, 1:Nx), (/N/))
             call mpi_isend(tempbuf(1:N, iproc), N, MPI_real, iproc, 1, comm2D_, requests(irq + 1), ierr)
 
-            rbuf(:, 1:Ny - 1, 1:Nx - 1) = dataRaw_ext_PrpAll(:, SY:EY - 1, SX:EX - 1)
-            rbuf(:, 1:Ny - 1,       Nx) = dataRaw_ext_PrpAll(:, SY:EY - 1, mod(EX - 1, prpAll_obj%Nx) + 1)
-            rbuf(:,       Ny, 1:Nx - 1) = dataRaw_ext_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, SX:EX - 1)
-            rbuf(:,       Ny,       Nx) = dataRaw_ext_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, mod(EX - 1, prpAll_obj%Nx) + 1)
+            rbuf(:, 1:Ny - 1, 1:Nx - 1) = ext_PrpAll(:, SY:EY - 1, SX:EX - 1)
+            rbuf(:, 1:Ny - 1,       Nx) = ext_PrpAll(:, SY:EY - 1, mod(EX - 1, prpAll_obj%Nx) + 1)
+            rbuf(:,       Ny, 1:Nx - 1) = ext_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, SX:EX - 1)
+            rbuf(:,       Ny,       Nx) = ext_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, mod(EX - 1, prpAll_obj%Nx) + 1)
             extbuf(1:N, iproc) = reshape(rbuf(1:prpAll_obj%Nz, 1:Ny, 1:Nx), (/N/))
             call mpi_isend(extbuf(1:N, iproc), N, MPI_real, iproc, 2, comm2D_, requests(irq + 2), ierr)
 
-            rbuf(:, 1:Ny - 1, 1:Nx - 1) = dataRaw_ssa_PrpAll(:, SY:EY - 1, SX:EX - 1)
-            rbuf(:, 1:Ny - 1,       Nx) = dataRaw_ssa_PrpAll(:, SY:EY - 1, mod(EX - 1, prpAll_obj%Nx) + 1)
-            rbuf(:,       Ny, 1:Nx - 1) = dataRaw_ssa_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, SX:EX - 1)
-            rbuf(:,       Ny,       Nx) = dataRaw_ssa_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, mod(EX - 1, prpAll_obj%Nx) + 1)
+            rbuf(:, 1:Ny - 1, 1:Nx - 1) = ssa_PrpAll(:, SY:EY - 1, SX:EX - 1)
+            rbuf(:, 1:Ny - 1,       Nx) = ssa_PrpAll(:, SY:EY - 1, mod(EX - 1, prpAll_obj%Nx) + 1)
+            rbuf(:,       Ny, 1:Nx - 1) = ssa_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, SX:EX - 1)
+            rbuf(:,       Ny,       Nx) = ssa_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, mod(EX - 1, prpAll_obj%Nx) + 1)
             ssabuf(1:N, iproc) = reshape(rbuf(1:prpAll_obj%Nz, 1:Ny, 1:Nx), (/N/))
             call mpi_isend(ssabuf(1:N, iproc), N, MPI_real, iproc, 3, comm2D_, requests(irq + 3), ierr)
 
-            ibuf(:, 1:Ny - 1, 1:Nx - 1) = dataRaw_ipha_PrpAll(:, SY:EY - 1, SX:EX - 1)
-            ibuf(:, 1:Ny - 1,       Nx) = dataRaw_ipha_PrpAll(:, SY:EY - 1, mod(EX - 1, prpAll_obj%Nx) + 1)
-            ibuf(:,       Ny, 1:Nx - 1) = dataRaw_ipha_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, SX:EX - 1)
-            ibuf(:,       Ny,       Nx) = dataRaw_ipha_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, mod(EX - 1, prpAll_obj%Nx) + 1)
+            ibuf(:, 1:Ny - 1, 1:Nx - 1) = ipha_PrpAll(:, SY:EY - 1, SX:EX - 1)
+            ibuf(:, 1:Ny - 1,       Nx) = ipha_PrpAll(:, SY:EY - 1, mod(EX - 1, prpAll_obj%Nx) + 1)
+            ibuf(:,       Ny, 1:Nx - 1) = ipha_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, SX:EX - 1)
+            ibuf(:,       Ny,       Nx) = ipha_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, mod(EX - 1, prpAll_obj%Nx) + 1)
             iphabuf(1:N, iproc) = reshape(ibuf(1:prpAll_obj%Nz, 1:Ny, 1:Nx), (/N/))
             call mpi_isend(iphabuf(1:N, iproc), N, MPI_integer2, iproc, 4, comm2D_, requests(irq + 4), ierr)
 
@@ -548,15 +548,15 @@ subroutine shd_mpi__bcastPrp(prpAll_obj, prp_obj)
             irq = irq + 6
         end do
 
-        nullify(dataRaw_temp_PrpAll, dataRaw_ext_PrpAll, dataRaw_ssa_PrpAll, dataRaw_ipha_PrpAll)
+        nullify(temp_PrpAll, ext_PrpAll, ssa_PrpAll, ipha_PrpAll)
 
     end if
 
     N = prp_obj%Nx*prp_obj%Ny*prp_obj%Nz
-    call mpi_irecv(prp_obj%dataRaw_temp, N, MPI_real    , 0, 1, comm2D_, requests(irq+1), ierr)
-    call mpi_irecv(prp_obj%dataRaw_ext , N, MPI_real    , 0, 2, comm2D_, requests(irq+2), ierr)
-    call mpi_irecv(prp_obj%dataRaw_ssa , N, MPI_real    , 0, 3, comm2D_, requests(irq+3), ierr)
-    call mpi_irecv(prp_obj%dataRaw_ipha, N, MPI_integer2, 0, 4, comm2D_, requests(irq+4), ierr)
+    call mpi_irecv(prp_obj%temp, N, MPI_real    , 0, 1, comm2D_, requests(irq+1), ierr)
+    call mpi_irecv(prp_obj%ext , N, MPI_real    , 0, 2, comm2D_, requests(irq+2), ierr)
+    call mpi_irecv(prp_obj%ssa , N, MPI_real    , 0, 3, comm2D_, requests(irq+3), ierr)
+    call mpi_irecv(prp_obj%ipha, N, MPI_integer2, 0, 4, comm2D_, requests(irq+4), ierr)
 
     call mpi_irecv(prp_obj%Nleg   , 1, MPI_integer, 0, 5, comm2D_, requests(irq+5), ierr)
     call mpi_irecv(prp_obj%maxAsym, 1, MPI_real   , 0, 6, comm2D_, requests(irq+6), ierr)
@@ -564,9 +564,9 @@ subroutine shd_mpi__bcastPrp(prpAll_obj, prp_obj)
     irq = irq + 6
     call mpi_waitall(irq, requests, status, ierr)
 
-    call mpi_bcast(prp_obj%dataRaw_z, prp_obj%Nz, MPI_real, 0, comm2D_, ierr)
+    call mpi_bcast(prp_obj%z, prp_obj%Nz, MPI_real, 0, comm2D_, ierr)
     if (prp_obj%Npha .gt. 0) then
-        call mpi_bcast(prp_obj%dataRaw_leg, prp_obj%maxNptsLeg, MPI_real, 0, comm2D_, ierr)
+        call mpi_bcast(prp_obj%leg, prp_obj%maxNptsLeg, MPI_real, 0, comm2D_, ierr)
     end if
 
     if (myProc_ .eq. 0) deallocate (tempbuf, extbuf, ssabuf, iphabuf, rbuf, ibuf)
@@ -623,7 +623,7 @@ subroutine shd_mpi__bcastSfc(sfc_obj)
     sfc_obj%avgTemp = realbuf(1); sfc_obj%avgAlb = realbuf(2)
 
     Ndata = sfc_obj%Npar * (sfc_obj%Nx+1) * (sfc_obj%Ny+1)
-    call mpi_bcast(sfc_obj%dataRaw_brdf, Ndata, MPI_real, 0, comm2D_, ierr)
+    call mpi_bcast(sfc_obj%brdf, Ndata, MPI_real, 0, comm2D_, ierr)
 #endif
 
     return
@@ -665,17 +665,17 @@ subroutine shd_mpi__bcastCkd(ckd_obj)
 
     allocate (realbuf(2*ckd_obj%Ng + ckd_obj%Nz))
 
-    realbuf(1              : ckd_obj%Ng             ) = ckd_obj%dataRaw_solar(:)
-    realbuf(ckd_obj%Ng+1   : 2*ckd_obj%Ng           ) = ckd_obj%dataRaw_delg(:)
-    realbuf(2*ckd_obj%Ng+1 : 2*ckd_obj%Ng+ckd_obj%Nz) = ckd_obj%dataRaw_z(:)
+    realbuf(1              : ckd_obj%Ng             ) = ckd_obj%solar(:)
+    realbuf(ckd_obj%Ng+1   : 2*ckd_obj%Ng           ) = ckd_obj%delg(:)
+    realbuf(2*ckd_obj%Ng+1 : 2*ckd_obj%Ng+ckd_obj%Nz) = ckd_obj%z(:)
 
     call mpi_bcast(realbuf, 2*ckd_obj%Ng+ckd_obj%Nz, MPI_real, 0, comm2D_, ierr)
 
-    ckd_obj%dataRaw_solar(:) = realbuf(1 : ckd_obj%Ng)
-    ckd_obj%dataRaw_delg(:)  = realbuf(ckd_obj%Ng+1 : 2*ckd_obj%Ng)
-    ckd_obj%dataRaw_z(:)     = realbuf(2*ckd_obj%Ng+1 : 2*ckd_obj%Ng+ckd_obj%Nz)
+    ckd_obj%solar(:) = realbuf(1 : ckd_obj%Ng)
+    ckd_obj%delg(:)  = realbuf(ckd_obj%Ng+1 : 2*ckd_obj%Ng)
+    ckd_obj%z(:)     = realbuf(2*ckd_obj%Ng+1 : 2*ckd_obj%Ng+ckd_obj%Nz)
 
-    call mpi_bcast(ckd_obj%dataRaw_kabs, ckd_obj%Nz*ckd_obj%Ng, MPI_real, 0, comm2D_, ierr)
+    call mpi_bcast(ckd_obj%kabs, ckd_obj%Nz*ckd_obj%Ng, MPI_real, 0, comm2D_, ierr)
 #endif
 
     return
@@ -716,7 +716,7 @@ subroutine shd_mpi__bcastSen(sen_obj)
     if (Nproc_ .le. 1) return
 
     Ndata = sen_obj%Npts*sen_obj%Npar
-    call mpi_bcast(sen_obj%dataRaw_view, Ndata, MPI_real, 0, comm2D_, ierr)
+    call mpi_bcast(sen_obj%view, Ndata, MPI_real, 0, comm2D_, ierr)
 #endif
 
     return
@@ -1891,8 +1891,8 @@ subroutine shd_mpi__computeRad(&
     ! Loop over the radiance directions
     do K = 1, NANGOUT
         if (sen_obj%fname(1:4) .ne. 'NONE') then
-            mu_out     = sen_obj%dataRaw_view(2*K - 1)
-            phiDeg_out = sen_obj%dataRaw_view(2*K)
+            mu_out     = sen_obj%view(2*K - 1)
+            phiDeg_out = sen_obj%view(2*K)
         else
             mu_out = parms_Out(2*K + 5)
             phiDeg_out = parms_Out(2*K + 6)
@@ -2405,11 +2405,11 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
             else if (SENSOR_MODE) then
 
                 if (sen_obj%fname(1:4) .ne. 'NONE') then
-                    X0    =  sen_obj%dataRaw_view(5*SAMP - 4)
-                    Y0    =  sen_obj%dataRaw_view(5*SAMP - 3)
-                    Z0    =  sen_obj%dataRaw_view(5*SAMP - 2)
-                    COSTH =  sen_obj%dataRaw_view(5*SAMP - 1)
-                    PHIR  =  sen_obj%dataRaw_view(5*SAMP)
+                    X0    =  sen_obj%view(5*SAMP - 4)
+                    Y0    =  sen_obj%view(5*SAMP - 3)
+                    Z0    =  sen_obj%view(5*SAMP - 2)
+                    COSTH =  sen_obj%view(5*SAMP - 1)
+                    PHIR  =  sen_obj%view(5*SAMP)
                 else
                     stop 'Error [mpi__computeCamRad]: Need sen_obj to proceed.'
                 end if

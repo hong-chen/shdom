@@ -190,16 +190,16 @@ module globals_type
         integer(kind=I__) :: maxNm   = -999
         integer(kind=I__) :: maxNphi0 = -999
 
-        integer(kind=I__), pointer :: dataRaw_Nphi0(:)   => null()
-        integer(kind=I__), pointer :: dataRaw_iradI(:)   => null()
-        integer(kind=I__), pointer :: dataRaw_isrcJ(:)   => null()
+        integer(kind=I__), pointer :: Nphi0(:)   => null()
+        integer(kind=I__), pointer :: iradI(:)   => null()
+        integer(kind=I__), pointer :: isrcJ(:)   => null()
 
-        real(kind=R__), pointer :: dataRaw_mu(:)  => null()
-        real(kind=R__), pointer :: dataRaw_phi(:) => null()
-        real(kind=R__), pointer :: dataRaw_wgt(:) => null()
+        real(kind=R__), pointer :: mu(:)  => null()
+        real(kind=R__), pointer :: phi(:) => null()
+        real(kind=R__), pointer :: wgt(:) => null()
 
-        real(kind=R__), pointer :: dataRaw_radI(:, :)   => null()
-        real(kind=R__), pointer :: dataRaw_srcJ(:, :)   => null()
+        real(kind=R__), pointer :: radI(:, :)   => null()
+        real(kind=R__), pointer :: srcJ(:, :)   => null()
 
         logical :: isAllocated  = .false.
     end type shd_type_shdo
@@ -230,15 +230,15 @@ module globals_type
         real(kind=R__) :: xDomain = -999.0
         real(kind=R__) :: yDomain = -999.0
 
-        real(kind=R__), pointer :: dataRaw_z(:)      => null()
-        real(kind=R__), pointer :: dataRaw_temp(:)   => null()
-        real(kind=R__), pointer :: dataRaw_ext(:)    => null()
-        real(kind=R__), pointer :: dataRaw_extDir(:) => null()
-        real(kind=R__), pointer :: dataRaw_ssa(:)    => null()
+        real(kind=R__), pointer :: z(:)      => null()
+        real(kind=R__), pointer :: temp(:)   => null()
+        real(kind=R__), pointer :: ext(:)    => null()
+        real(kind=R__), pointer :: extDir(:) => null()
+        real(kind=R__), pointer :: ssa(:)    => null()
 
-        integer(kind=2), pointer:: dataRaw_ipha(:) => null()
+        integer(kind=2), pointer:: ipha(:) => null()
 
-        real(kind=R__), pointer :: dataRaw_leg(:)  => null()
+        real(kind=R__), pointer :: leg(:)  => null()
 
         logical :: isAllocated  = .false.
     end type shd_type_prp
@@ -259,8 +259,8 @@ module globals_type
         real(kind=R__) :: avgTemp = -999.0
         real(kind=R__) :: avgAlb = -999.0
 
-        real(kind=R__), pointer :: dataRaw_brdf(:)  => null()
-        real(kind=R__), pointer :: dataGrid_brdf(:) => null()
+        real(kind=R__), pointer :: brdf(:) => null()
+        real(kind=R__), pointer :: brdf_grid(:) => null()
 
         logical :: isUniform    = .false.
         logical :: isLambertian = .false.
@@ -282,10 +282,10 @@ module globals_type
         real(kind=R__) :: waveLen(2) = [-999.0, -999.0]
         real(kind=R__) :: avgWaveLen = -999.0
 
-        real(kind=R__), pointer :: dataRaw_solar(:)   => null()
-        real(kind=R__), pointer :: dataRaw_delg(:)    => null()
-        real(kind=R__), pointer :: dataRaw_z(:)       => null()
-        real(kind=R__), pointer :: dataRaw_kabs(:, :) => null()
+        real(kind=R__), pointer :: solar(:)   => null()
+        real(kind=R__), pointer :: delg(:)    => null()
+        real(kind=R__), pointer :: z(:)       => null()
+        real(kind=R__), pointer :: kabs(:, :) => null()
 
         logical :: isAllocated  = .false.
     end type shd_type_ckd
@@ -297,7 +297,7 @@ module globals_type
         integer(kind=I__) :: Npts = -999
         integer(kind=I__) :: Npar = -999
 
-        real(kind=R__), pointer :: dataRaw_view(:) => null()
+        real(kind=R__), pointer :: view(:) => null()
 
         logical :: isAllocated  = .false.
     end type shd_type_sen

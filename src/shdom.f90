@@ -133,17 +133,17 @@ program shdom
     ! shdo_obj
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_shdo) :: shdo_obj
-    integer(kind=I__), allocatable, target :: dataRaw_Nphi0_Shdo(:)
-    real(kind=R__),    allocatable, target :: dataRaw_mu_Shdo(:), &
-                                              dataRaw_phi_Shdo(:), &
-                                              dataRaw_wgt_Shdo(:)
-    real(kind=R__),    allocatable, target :: dataRaw_radI_Shdo(:, :), &
-                                              dataRaw_srcJ_Shdo(:, :)
-    integer(kind=I__), allocatable, target :: dataRaw_iradI_Shdo(:), &
-                                              dataRaw_isrcJ_Shdo(:)
+    integer(kind=I__), allocatable, target :: Nphi0_Shdo(:)
+    real(kind=R__),    allocatable, target :: mu_Shdo(:), &
+                                              phi_Shdo(:), &
+                                              wgt_Shdo(:)
+    real(kind=R__),    allocatable, target :: radI_Shdo(:, :), &
+                                              srcJ_Shdo(:, :)
+    integer(kind=I__), allocatable, target :: iradI_Shdo(:), &
+                                              isrcJ_Shdo(:)
 
-    real(kind=R__),    allocatable :: dataRaw_dsrc_Shdo(:, :)
-    integer(kind=I__), allocatable :: dataRaw_idsrc_Shdo(:)
+    real(kind=R__),    allocatable :: dsrc_Shdo(:, :)
+    integer(kind=I__), allocatable :: idsrc_Shdo(:)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! SAV
@@ -156,26 +156,26 @@ program shdom
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_prp) :: prpAll_obj, prp_obj
 
-    real(kind=R__),  allocatable, target :: dataRaw_z_Prp(:)
-    real(kind=R__),  allocatable, target :: dataRaw_temp_Prp(:), &
-                                            dataRaw_ext_Prp(:), &
-                                            dataRaw_ssa_Prp(:)
-    real(kind=R__),  allocatable, target :: dataRaw_extDir_Prp(:)
-    real(kind=R__),  allocatable, target :: dataRaw_leg_Prp(:)
-    integer(kind=2), allocatable, target :: dataRaw_ipha_Prp(:)
+    real(kind=R__),  allocatable, target :: z_Prp(:)
+    real(kind=R__),  allocatable, target :: temp_Prp(:), &
+                                            ext_Prp(:), &
+                                            ssa_Prp(:)
+    real(kind=R__),  allocatable, target :: extDir_Prp(:)
+    real(kind=R__),  allocatable, target :: leg_Prp(:)
+    integer(kind=2), allocatable, target :: ipha_Prp(:)
 
-    real(kind=R__),  allocatable, target :: dataRaw_temp_PrpAll(:), &
-                                            dataRaw_ext_PrpAll(:), &
-                                            dataRaw_ssa_PrpAll(:)
-    real(kind=R__),  allocatable, target :: dataRaw_leg_PrpAll(:)
-    integer(kind=2), allocatable, target :: dataRaw_ipha_PrpAll(:)
+    real(kind=R__),  allocatable, target :: temp_PrpAll(:), &
+                                            ext_PrpAll(:), &
+                                            ssa_PrpAll(:)
+    real(kind=R__),  allocatable, target :: leg_PrpAll(:)
+    integer(kind=2), allocatable, target :: ipha_PrpAll(:)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! sfc_obj
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_sfc) :: sfc_obj
-    real(kind=R__), allocatable, target :: dataRaw_brdf_Sfc(:)
-    real(kind=R__), allocatable, target :: dataGrid_brdf_Sfc(:)
+    real(kind=R__), allocatable, target :: brdf_Sfc(:)
+    real(kind=R__), allocatable, target :: brdf_grid_Sfc(:)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! ckd_obj
@@ -183,16 +183,16 @@ program shdom
     type(shd_type_ckd) :: ckd_obj
     integer(kind=I__) :: ig_ckd
     real(kind=R__)    :: solar0_ckd
-    real(kind=R__), allocatable, target :: dataRaw_solar_Ckd(:), &
-                                           dataRaw_delg_Ckd(:), &
-                                           dataRaw_z_Ckd(:), &
-                                           dataRaw_kabs_Ckd(:, :)
+    real(kind=R__), allocatable, target :: solar_Ckd(:), &
+                                           delg_Ckd(:), &
+                                           z_Ckd(:), &
+                                           kabs_Ckd(:, :)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! sen_obj
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_sen) :: sen_obj
-    real(kind=R__), allocatable, target :: dataRaw_view_Sen(:)
+    real(kind=R__), allocatable, target :: view_Sen(:)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! BC (borrowed from Boundary Condition)
@@ -374,16 +374,16 @@ program shdom
     if (type_src.eq. 'T') az_solar = 0.0d0
 
     ! angle grids for DO
-    allocate (dataRaw_Nphi0_Shdo(shdo_obj%Nmu), &
-              dataRaw_mu_Shdo(shdo_obj%Nmu), &
-              dataRaw_phi_Shdo(shdo_obj%Nmu*shdo_obj%Nphi), &
-              dataRaw_wgt_Shdo(shdo_obj%Nmu*shdo_obj%Nphi)); &
+    allocate (Nphi0_Shdo(shdo_obj%Nmu), &
+              mu_Shdo(shdo_obj%Nmu), &
+              phi_Shdo(shdo_obj%Nmu*shdo_obj%Nphi), &
+              wgt_Shdo(shdo_obj%Nmu*shdo_obj%Nphi)); &
         memUsed = memUsed + 2.0*shdo_obj%Nmu*(1.0 + shdo_obj%Nphi)
 
-    shdo_obj%dataRaw_Nphi0 => dataRaw_Nphi0_Shdo
-    shdo_obj%dataRaw_mu    => dataRaw_mu_Shdo
-    shdo_obj%dataRaw_phi   => dataRaw_phi_Shdo
-    shdo_obj%dataRaw_wgt   => dataRaw_wgt_Shdo
+    shdo_obj%Nphi0 => Nphi0_Shdo
+    shdo_obj%mu    => mu_Shdo
+    shdo_obj%phi   => phi_Shdo
+    shdo_obj%wgt   => wgt_Shdo
     shdo_obj%isAllocated = .true.
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
@@ -594,22 +594,22 @@ program shdom
     prp_obj%maxNpts = prp_obj%Nx * prp_obj%Ny * prp_obj%Nz
     if (prp_obj%Npha .eq. 0) prp_obj%maxNptsLeg = prp_obj%maxNpts * (prp_obj%maxNleg + 1) * prp_obj%NlegSet
 
-    allocate (dataRaw_z_Prp(prp_obj%Nz))
-    allocate (dataRaw_temp_Prp(prp_obj%maxNpts), &
-              dataRaw_ext_Prp( prp_obj%maxNpts), &
-              dataRaw_ssa_Prp( prp_obj%maxNpts))
-    allocate (dataRaw_extDir_Prp(prp_obj%maxNpts), &
-              dataRaw_ipha_Prp(prp_obj%maxNpts), &
-              dataRaw_leg_Prp( prp_obj%maxNptsLeg)); &
+    allocate (z_Prp(prp_obj%Nz))
+    allocate (temp_Prp(prp_obj%maxNpts), &
+              ext_Prp( prp_obj%maxNpts), &
+              ssa_Prp( prp_obj%maxNpts))
+    allocate (extDir_Prp(prp_obj%maxNpts), &
+              ipha_Prp(prp_obj%maxNpts), &
+              leg_Prp( prp_obj%maxNptsLeg)); &
         memUsed = memUsed + prp_obj%Nz + 6.0*prp_obj%maxNpts + prp_obj%maxNptsLeg
 
-    prp_obj%dataRaw_z      => dataRaw_z_Prp
-    prp_obj%dataRaw_temp   => dataRaw_temp_Prp
-    prp_obj%dataRaw_ext    => dataRaw_ext_Prp
-    prp_obj%dataRaw_extDir => dataRaw_extDir_Prp
-    prp_obj%dataRaw_ssa    => dataRaw_ssa_Prp
-    prp_obj%dataRaw_ipha   => dataRaw_ipha_Prp
-    prp_obj%dataRaw_leg    => dataRaw_leg_Prp
+    prp_obj%z      => z_Prp
+    prp_obj%temp   => temp_Prp
+    prp_obj%ext    => ext_Prp
+    prp_obj%extDir => extDir_Prp
+    prp_obj%ssa    => ssa_Prp
+    prp_obj%ipha   => ipha_Prp
+    prp_obj%leg    => leg_Prp
     prp_obj%isAllocated = .true.
 
     if (isMpi_) then
@@ -618,17 +618,17 @@ program shdom
         !   distribute to all the processors
         if (isMasterProc) then
 
-            allocate (dataRaw_temp_PrpAll(prpAll_obj%maxNpts), &
-                      dataRaw_ext_PrpAll( prpAll_obj%maxNpts), &
-                      dataRaw_ssa_PrpAll( prpAll_obj%maxNpts))
-            allocate (dataRaw_ipha_PrpAll(prpAll_obj%maxNpts))
+            allocate (temp_PrpAll(prpAll_obj%maxNpts), &
+                      ext_PrpAll( prpAll_obj%maxNpts), &
+                      ssa_PrpAll( prpAll_obj%maxNpts))
+            allocate (ipha_PrpAll(prpAll_obj%maxNpts))
 
-            prpAll_obj%dataRaw_z    => dataRaw_z_Prp
-            prpAll_obj%dataRaw_leg  => dataRaw_leg_Prp
-            prpAll_obj%dataRaw_temp => dataRaw_temp_PrpAll
-            prpAll_obj%dataRaw_ext  => dataRaw_ext_PrpAll
-            prpAll_obj%dataRaw_ssa  => dataRaw_ssa_PrpAll
-            prpAll_obj%dataRaw_ipha => dataRaw_ipha_PrpAll
+            prpAll_obj%z    => z_Prp
+            prpAll_obj%leg  => leg_Prp
+            prpAll_obj%temp => temp_PrpAll
+            prpAll_obj%ext  => ext_PrpAll
+            prpAll_obj%ssa  => ssa_PrpAll
+            prpAll_obj%ipha => ipha_PrpAll
             prpAll_obj%isAllocated = .true.
 
             call shd_io__readPrp(isDeltaM, prpAll_obj)
@@ -647,17 +647,17 @@ program shdom
         call shd_mpi__bcastPrp(prpAll_obj, prp_obj)
 
         if (isMasterProc) then
-            deallocate(dataRaw_temp_PrpAll, &
-                       dataRaw_ext_PrpAll, &
-                       dataRaw_ssa_PrpAll, &
-                       dataRaw_ipha_PrpAll)
+            deallocate(temp_PrpAll, &
+                       ext_PrpAll, &
+                       ssa_PrpAll, &
+                       ipha_PrpAll)
             if (prpAll_obj%isAllocated) then
-                nullify(prpAll_obj%dataRaw_z, &
-                        prpAll_obj%dataRaw_temp, &
-                        prpAll_obj%dataRaw_ext, &
-                        prpAll_obj%dataRaw_ssa, &
-                        prpAll_obj%dataRaw_ipha, &
-                        prpAll_obj%dataRaw_leg)
+                nullify(prpAll_obj%z, &
+                        prpAll_obj%temp, &
+                        prpAll_obj%ext, &
+                        prpAll_obj%ssa, &
+                        prpAll_obj%ipha, &
+                        prpAll_obj%leg)
                 prpAll_obj%isAllocated = .false.
             end if
         end if
@@ -687,10 +687,10 @@ program shdom
     ! Read in the surface properties
     if (sfc_obj%fname(1:4) .ne. 'NONE') then
 
-        allocate (dataRaw_brdf_Sfc(sfc_obj%maxNpar * sfc_obj%maxNpts)); &
+        allocate (brdf_Sfc(sfc_obj%maxNpar * sfc_obj%maxNpts)); &
             memUsed = memUsed + sfc_obj%maxNpar * sfc_obj%maxNpts
 
-        sfc_obj%dataRaw_brdf => dataRaw_brdf_Sfc
+        sfc_obj%brdf => brdf_Sfc
         sfc_obj%isAllocated = .true.
 
 
@@ -717,14 +717,14 @@ program shdom
         ! Broadcast the k-distribution object
         call shd_mpi__bcastCkdSize(ckd_obj)
 
-        allocate (dataRaw_solar_Ckd(ckd_obj%Ng), dataRaw_delg_Ckd(ckd_obj%Ng), dataRaw_z_Ckd(ckd_obj%Nz))
-        allocate (dataRaw_kabs_Ckd(ckd_obj%Nz, ckd_obj%Ng)); &
+        allocate (solar_Ckd(ckd_obj%Ng), delg_Ckd(ckd_obj%Ng), z_Ckd(ckd_obj%Nz))
+        allocate (kabs_Ckd(ckd_obj%Nz, ckd_obj%Ng)); &
             memUsed = memUsed + ckd_obj%Nz*(2.0+ckd_obj%Ng) + 2.0*ckd_obj%Ng
 
-        ckd_obj%dataRaw_solar => dataRaw_solar_Ckd
-        ckd_obj%dataRaw_delg  => dataRaw_delg_Ckd
-        ckd_obj%dataRaw_z     => dataRaw_z_Ckd
-        ckd_obj%dataRaw_kabs  => dataRaw_kabs_Ckd
+        ckd_obj%solar => solar_Ckd
+        ckd_obj%delg  => delg_Ckd
+        ckd_obj%z     => z_Ckd
+        ckd_obj%kabs  => kabs_Ckd
         ckd_obj%isAllocated = .true.
 
         if (isMasterProc) then
@@ -738,11 +738,11 @@ program shdom
         ckd_obj%Ng = 1
         ckd_obj%Nz = 0
 
-        allocate (dataRaw_solar_Ckd(ckd_obj%Ng), dataRaw_delg_Ckd(ckd_obj%Ng)); &
+        allocate (solar_Ckd(ckd_obj%Ng), delg_Ckd(ckd_obj%Ng)); &
             memUsed = memUsed + 2.0*ckd_obj%Ng
 
-        dataRaw_solar_Ckd(1) = 1.0
-        dataRaw_delg_Ckd(1) = 1.0
+        solar_Ckd(1) = 1.0
+        delg_Ckd(1) = 1.0
 
         isBaseOut = .false.
     end if
@@ -761,10 +761,10 @@ program shdom
 
         call shd_mpi__bcastSenSize(sen_obj)
 
-        allocate (dataRaw_view_Sen(sen_obj%Npar*sen_obj%Npts)); &
+        allocate (view_Sen(sen_obj%Npar*sen_obj%Npts)); &
             memUsed = memUsed + sen_obj%Npar*sen_obj%Npts
 
-        sen_obj%dataRaw_view => dataRaw_view_Sen
+        sen_obj%view => view_Sen
         sen_obj%isAllocated = .true.
 
         if (isMasterProc) then
@@ -920,8 +920,8 @@ program shdom
 
     NmaxIG = NmaxIG + 16.5*CELL_TO_POINT_RATIO ! ptr8Grid_Cell[8.0], ptr6Cell_Cell[6.0], ptr2Tree_Cell[2.0], flag_Cell[0.5]
 
-    NmaxIG = NmaxIG + 6.0   ! xyz_Grid[3.0], shdo_obj%dataRaw_iradI[1.0], shdo_obj%dataRaw_isrcJ[1.0], dataRaw_idsrc_Shdo[1.0]
-    memUsed = memUsed + 4.0 ! offset shdo_obj%dataRaw_iradI[+2], shdo_obj%dataRaw_isrcJ[+1], dataRaw_idsrc_Shdo[+1]
+    NmaxIG = NmaxIG + 6.0   ! xyz_Grid[3.0], shdo_obj%iradI[1.0], shdo_obj%isrcJ[1.0], idsrc_Shdo[1.0]
+    memUsed = memUsed + 4.0 ! offset shdo_obj%iradI[+2], shdo_obj%isrcJ[+1], idsrc_Shdo[+1]
 
     if (isAccel) then
         NmaxIG = NmaxIG + shdo_obj%Nstokes*(1.0+3.0*NUM_SH_TERM_FACTOR*shdo_obj%Nlm) ! radiance, source, delta source
@@ -1036,8 +1036,8 @@ program shdom
     !   rad_Bc(:[shdo_obj%Nstokes], NptsTop_bc+NptsBot_bc+1:NptsTop_bc+NptsBot_bc+NptsBot_bc*shdo_obj%Nang/2):
     !         downwelling bottom radiances at discrete ordinates
     if (sfc_obj%fname(1:4) .ne. 'NONE') then
-        allocate (dataGrid_brdf_Sfc(sfc_obj%maxNpar*maxNpts_bc))
-        sfc_obj%dataGrid_brdf => dataGrid_brdf_Sfc
+        allocate (brdf_grid_Sfc(sfc_obj%maxNpar*maxNpts_bc))
+        sfc_obj%brdf_grid => brdf_grid_Sfc
         sfc_obj%isAllocated = .true.
     end if
 
@@ -1061,17 +1061,17 @@ program shdom
     allocate (xyz_Grid(3, maxIG))
 
     ! SH related array
-    allocate (dataRaw_iradI_Shdo(maxIG + 2), dataRaw_isrcJ_Shdo(maxIG + 1))
+    allocate (iradI_Shdo(maxIG + 2), isrcJ_Shdo(maxIG + 1))
     ! radiance and source
-    allocate (dataRaw_radI_Shdo(shdo_obj%Nstokes, maxIV + maxIG), dataRaw_srcJ_Shdo(shdo_obj%Nstokes, maxIV))
-    shdo_obj%dataRaw_iradI => dataRaw_iradI_Shdo
-    shdo_obj%dataRaw_isrcJ => dataRaw_isrcJ_Shdo
-    shdo_obj%dataRaw_radI  => dataRaw_radI_Shdo
-    shdo_obj%dataRaw_srcJ  => dataRaw_srcJ_Shdo
+    allocate (radI_Shdo(shdo_obj%Nstokes, maxIV + maxIG), srcJ_Shdo(shdo_obj%Nstokes, maxIV))
+    shdo_obj%iradI => iradI_Shdo
+    shdo_obj%isrcJ => isrcJ_Shdo
+    shdo_obj%radI  => radI_Shdo
+    shdo_obj%srcJ  => srcJ_Shdo
 
     ! delta source
     if (isAccel) then
-        allocate (dataRaw_idsrc_Shdo(maxIG + 1), dataRaw_dsrc_Shdo(shdo_obj%Nstokes, maxIV))
+        allocate (idsrc_Shdo(maxIG + 1), dsrc_Shdo(shdo_obj%Nstokes, maxIV))
     end if
 
     ! fluxes
@@ -1095,7 +1095,7 @@ program shdom
     call shd_io__restoreState(fileInp_sav, shdo_obj%Nstokes, Nx, Ny, Nz, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
         &isNewRad, isNewGrid, x_Grid, y_Grid, z_Grid,&
         &Npts, Ncell, xyz_Grid, ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell,&
-        &flag_Cell, fluxTot, shdo_obj%dataRaw_isrcJ, shdo_obj%dataRaw_srcJ, shdo_obj%dataRaw_iradI, shdo_obj%dataRaw_radI)
+        &flag_Cell, fluxTot, shdo_obj%isrcJ, shdo_obj%srcJ, shdo_obj%iradI, shdo_obj%radI)
 
 
     ! Check if we can use pre-calculated "state", if not, generate new grids
@@ -1130,10 +1130,10 @@ program shdom
         if (verbose_ .ge. 5) write (6, '(A,I2,A,I2,A)') 'Message [shdom]: Starting ', ckd_obj%Ng-ig_ckd+1, '/', ckd_obj%Ng, ' (ig/Ng) ...'
 
         ! solar flux for given g of CKD
-        solar0_ckd = dataRaw_solar_Ckd(ig_ckd)*solar0*abs(mu_solar)
+        solar0_ckd = solar_Ckd(ig_ckd)*solar0*abs(mu_solar)
 
         ! weighted average solar flux
-        solar = solar + dataRaw_solar_Ckd(ig_ckd)*dataRaw_delg_Ckd(ig_ckd)*solar0*abs(mu_solar)
+        solar = solar + solar_Ckd(ig_ckd)*delg_Ckd(ig_ckd)*solar0*abs(mu_solar)
 
         ! If doing k-distribution then get the gas absorption profile.
         ckd_obj%ig = ig_ckd
@@ -1149,10 +1149,10 @@ program shdom
         end if
 
         ! Find the monochromatic SHDOM solution: adaptive grid output
-        !   in source (shdo_obj%dataRaw_srcJ), radiance (shdo_obj%dataRaw_radI), fluxes, direct Flux.
+        !   in source (shdo_obj%srcJ), radiance (shdo_obj%radI), fluxes, direct Flux.
         call shd_solv__solveRte(shdo_obj%Nstokes, Nx, Ny, Nz, Nx1, Ny1, shdo_obj%Nang,&
             &shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm, shdo_obj%Nmu, shdo_obj%Nphi,&
-            &shdo_obj%dataRaw_Nphi0, shdo_obj%dataRaw_mu, shdo_obj%dataRaw_phi, shdo_obj%dataRaw_wgt,&
+            &shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
             &maxIV, maxIC, maxIG, maxIDO, isNewRad,&
             &flag_bc, ipFlag, isDeltaM, type_src, isHighOrder_,&
             &solar0_ckd, mu_solar, az_solar, skyRad,&
@@ -1163,8 +1163,8 @@ program shdom
             &maxNpts_bc, maxNrad_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
             &Npts, xyz_Grid,&
             &Ncell, ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
-            &shdo_obj%dataRaw_iradI, shdo_obj%dataRaw_isrcJ, dataRaw_idsrc_Shdo, work, work1, work2,&
-            &shdo_obj%dataRaw_srcJ, dataRaw_dsrc_Shdo, shdo_obj%dataRaw_radI, fluxTot, fluxDir,&
+            &shdo_obj%iradI, shdo_obj%isrcJ, idsrc_Shdo, work, work1, work2,&
+            &shdo_obj%srcJ, dsrc_Shdo, shdo_obj%radI, fluxTot, fluxDir,&
             &prp_obj, sfc_obj, ckd_obj)
         isNewRad = .false.
         totIter = totIter + iter
@@ -1177,7 +1177,7 @@ program shdom
                     if (isMpi_) then
                         call shd_mpi__computeRad(shdo_obj%Nstokes, Nx, Ny, Nz, Npts, Ncell,&
                             &shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
-                            &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%dataRaw_Nphi0, shdo_obj%dataRaw_mu, shdo_obj%dataRaw_phi, shdo_obj%dataRaw_wgt,&
+                            &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
                             &flag_bc, ipFlag,&
                             &type_src, isDeltaM, mu_solar, az_solar,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
@@ -1185,24 +1185,24 @@ program shdom
                             &x_Grid, y_Grid, z_Grid, xyz_Grid,&
                             &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
                             &ext, ssa, leg, ipha, fluxDir, fluxTot,&
-                            &shdo_obj%dataRaw_isrcJ, shdo_obj%dataRaw_srcJ, work, work(1 + Npts*shdo_obj%Nstokes),&
+                            &shdo_obj%isrcJ, shdo_obj%srcJ, work, work(1 + Npts*shdo_obj%Nstokes),&
                             &parms_Out(1, iout), irad, work2, prp_obj, sfc_obj, sen_obj)
                     else
                         call shd_rad__computeRad(shdo_obj%Nstokes, Nx, Ny, Nz, Npts, Ncell,&
                             &shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
-                            &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%dataRaw_Nphi0, shdo_obj%dataRaw_mu, shdo_obj%dataRaw_phi, shdo_obj%dataRaw_wgt,&
+                            &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
                             &flag_bc, ipFlag, type_src, isDeltaM, mu_solar, az_solar,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
                             &skyRad, waveNum, waveLen, units_src,&
                             &x_Grid, y_Grid, z_Grid, xyz_Grid,&
                             &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
                             &ext, ssa, leg, ipha, fluxDir, fluxTot,&
-                            &shdo_obj%dataRaw_isrcJ, shdo_obj%dataRaw_srcJ, work(1), work(1 + Npts*shdo_obj%Nstokes),&
+                            &shdo_obj%isrcJ, shdo_obj%srcJ, work(1), work(1 + Npts*shdo_obj%Nstokes),&
                             &parms_Out(1, iout), irad, work2, prp_obj, sfc_obj, sen_obj)
                     end if
                 end if
             end do
-            call shd_util__sumData(ckd_obj%Ng-ig_ckd, dataRaw_delg_Ckd(ig_ckd), Nrad, work2, sumRad_Out)
+            call shd_util__sumData(ckd_obj%Ng-ig_ckd, delg_Ckd(ig_ckd), Nrad, work2, sumRad_Out)
         end if
 
         if (isCamOut) then
@@ -1212,7 +1212,7 @@ program shdom
                     if (isMpi_) then
                         call shd_mpi__computeCamRad(shdo_obj%Nstokes, Nx, Ny, Nz, Npts, Ncell,&
                             &shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
-                            &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%dataRaw_Nphi0, shdo_obj%dataRaw_mu, shdo_obj%dataRaw_phi, shdo_obj%dataRaw_wgt,&
+                            &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
                             &flag_bc, ipFlag,&
                             &type_src, isDeltaM, mu_solar, az_solar,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
@@ -1220,24 +1220,24 @@ program shdom
                             &x_Grid, y_Grid, z_Grid, xyz_Grid,&
                             &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
                             &ext, ssa, leg, ipha, fluxDir, fluxTot,&
-                            &shdo_obj%dataRaw_isrcJ, shdo_obj%dataRaw_srcJ, parms_Out(1, iout), ilos, work2,&
+                            &shdo_obj%isrcJ, shdo_obj%srcJ, parms_Out(1, iout), ilos, work2,&
                             &prp_obj, sfc_obj, sen_obj)
                     else
                         call shd_rad__computeCamRad(shdo_obj%Nstokes, Nx, Ny, Nz, Npts, Ncell,&
                             &shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
-                            &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%dataRaw_Nphi0, shdo_obj%dataRaw_mu, shdo_obj%dataRaw_phi, shdo_obj%dataRaw_wgt,&
+                            &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
                             &flag_bc, ipFlag, type_src, isDeltaM, mu_solar, az_solar,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
                             &skyRad, waveNum, waveLen, units_src,&
                             &x_Grid, y_Grid, z_Grid, xyz_Grid,&
                             &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
                             &ext, ssa, leg, ipha, fluxDir, fluxTot,&
-                            &shdo_obj%dataRaw_isrcJ, shdo_obj%dataRaw_srcJ, parms_Out(1, iout), ilos, work2,&
+                            &shdo_obj%isrcJ, shdo_obj%srcJ, parms_Out(1, iout), ilos, work2,&
                             &prp_obj, sfc_obj, sen_obj)
                     end if
                 end if
             end do
-            call shd_util__sumData(ckd_obj%Ng-ig_ckd, dataRaw_delg_Ckd(ig_ckd), Nlos, work2, sumCam_Out)
+            call shd_util__sumData(ckd_obj%Ng-ig_ckd, delg_Ckd(ig_ckd), Nlos, work2, sumCam_Out)
         end if
 
         if (isSrcOut) then
@@ -1249,7 +1249,7 @@ program shdom
                     call shd_src__computeSrcOneDir(shdo_obj%Nstokes, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
                         &Npts, isDeltaM, mu_out, phi_out,&
                         &type_src, mu_solar, az_solar, ssa, leg, ipha,&
-                        &fluxDir, shdo_obj%dataRaw_isrcJ, shdo_obj%dataRaw_srcJ, src1_Out, prp_obj)
+                        &fluxDir, shdo_obj%isrcJ, shdo_obj%srcJ, src1_Out, prp_obj)
                 end if
             end do
         end if
@@ -1293,21 +1293,21 @@ program shdom
 
             end if
 
-            call shd_util__sumData(ckd_obj%Ng-ig_ckd, dataRaw_delg_Ckd(ig_ckd), 2*Npts, fluxTot, sumFluxTot_Out)
-            call shd_util__sumData(ckd_obj%Ng-ig_ckd, dataRaw_delg_Ckd(ig_ckd), Npts, fluxDir, sumFluxDir_Out)
+            call shd_util__sumData(ckd_obj%Ng-ig_ckd, delg_Ckd(ig_ckd), 2*Npts, fluxTot, sumFluxTot_Out)
+            call shd_util__sumData(ckd_obj%Ng-ig_ckd, delg_Ckd(ig_ckd), Npts, fluxDir, sumFluxDir_Out)
         end if
 
         if (isHROut) then
             ! Compute the net flux divergence at every point
-            call shd_rad__computeNetFluxDiv(shdo_obj%Nstokes, Npts, shdo_obj%dataRaw_iradI, type_src, mu_solar,&
-                &ext, ssa, planck, fluxDir, shdo_obj%dataRaw_radI, work)
-            call shd_util__sumData(ckd_obj%Ng-ig_ckd, dataRaw_delg_Ckd(ig_ckd), Npts, work, sumFluxDiv_Out)
+            call shd_rad__computeNetFluxDiv(shdo_obj%Nstokes, Npts, shdo_obj%iradI, type_src, mu_solar,&
+                &ext, ssa, planck, fluxDir, shdo_obj%radI, work)
+            call shd_util__sumData(ckd_obj%Ng-ig_ckd, delg_Ckd(ig_ckd), Npts, work, sumFluxDiv_Out)
         end if
 
         if (isSHOut) then
             call shd_shdo__computeSH(Nsh_out, shdo_obj%Nstokes, Npts, type_src, mu_solar, az_solar,&
-                &fluxDir, shdo_obj%dataRaw_iradI, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%dataRaw_radI, work)
-            call shd_util__sumData(ckd_obj%Ng-ig_ckd, dataRaw_delg_Ckd(ig_ckd), Nsh_out*Npts, work, sumSH_Out)
+                &fluxDir, shdo_obj%iradI, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%radI, work)
+            call shd_util__sumData(ckd_obj%Ng-ig_ckd, delg_Ckd(ig_ckd), Nsh_out*Npts, work, sumSH_Out)
         end if
 
         oldNpts = Npts
@@ -1325,7 +1325,7 @@ program shdom
 
     ! Output radiance and/or flux (and/or other radiative quantities)
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    Nsh = shdo_obj%dataRaw_isrcJ(Npts + 1)
+    Nsh = shdo_obj%isrcJ(Npts + 1)
     irad = 0
     ilos = 0
     if (isMpi_) then
@@ -1420,7 +1420,7 @@ program shdom
         call shd_io__saveState(fileOut_sav, shdo_obj%Nstokes, Nx, Ny, Nz, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
             &work, x_Grid, y_Grid, z_Grid,&
             &Npts, Ncell, xyz_Grid, ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell,&
-            &flag_Cell, fluxTot, shdo_obj%dataRaw_isrcJ, shdo_obj%dataRaw_srcJ, shdo_obj%dataRaw_iradI, shdo_obj%dataRaw_radI)
+            &flag_Cell, fluxTot, shdo_obj%isrcJ, shdo_obj%srcJ, shdo_obj%iradI, shdo_obj%radI)
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
@@ -1455,15 +1455,15 @@ program shdom
 
     ! Deallocate array
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    deallocate (dataRaw_z_Prp, dataRaw_temp_Prp, dataRaw_ext_Prp, dataRaw_ssa_Prp)
-    deallocate (dataRaw_ipha_Prp, dataRaw_leg_Prp, dataRaw_extDir_Prp)
+    deallocate (z_Prp, temp_Prp, ext_Prp, ssa_Prp)
+    deallocate (ipha_Prp, leg_Prp, extDir_Prp)
     if (prp_obj%isAllocated) then
-        nullify(prp_obj%dataRaw_z, &
-                prp_obj%dataRaw_temp, &
-                prp_obj%dataRaw_ext, &
-                prp_obj%dataRaw_ssa, &
-                prp_obj%dataRaw_ipha, &
-                prp_obj%dataRaw_leg)
+        nullify(prp_obj%z, &
+                prp_obj%temp, &
+                prp_obj%ext, &
+                prp_obj%ssa, &
+                prp_obj%ipha, &
+                prp_obj%leg)
         prp_obj%isAllocated = .false.
     end if
 
@@ -1472,45 +1472,45 @@ program shdom
     if (isSHOut)   deallocate (sumSH_Out)
     if (isSrcOut)  deallocate (src1_Out)
 
-    if (allocated(dataRaw_kabs_Ckd)) then
-        deallocate (dataRaw_solar_Ckd, dataRaw_delg_Ckd, dataRaw_z_Ckd, dataRaw_kabs_Ckd)
+    if (allocated(kabs_Ckd)) then
+        deallocate (solar_Ckd, delg_Ckd, z_Ckd, kabs_Ckd)
         if (ckd_obj%isAllocated) then
-            nullify(ckd_obj%dataRaw_solar, ckd_obj%dataRaw_delg, ckd_obj%dataRaw_z, ckd_obj%dataRaw_kabs)
+            nullify(ckd_obj%solar, ckd_obj%delg, ckd_obj%z, ckd_obj%kabs)
             ckd_obj%isAllocated = .false.
         end if
     end if
 
-    if (allocated(dataRaw_brdf_Sfc)) then
-        deallocate(dataRaw_brdf_Sfc, dataGrid_brdf_Sfc)
+    if (allocated(brdf_Sfc)) then
+        deallocate(brdf_Sfc, brdf_grid_Sfc)
         if (sfc_obj%isAllocated) then
-            nullify(sfc_obj%dataRaw_brdf, sfc_obj%dataGrid_brdf)
+            nullify(sfc_obj%brdf, sfc_obj%brdf_grid)
             sfc_obj%isAllocated = .false.
         end if
     end if
 
-    if (allocated(dataRaw_view_Sen)) then
-        deallocate (dataRaw_view_Sen)
+    if (allocated(view_Sen)) then
+        deallocate (view_Sen)
         if (sen_obj%isAllocated) then
-            nullify(sen_obj%dataRaw_view)
+            nullify(sen_obj%view)
             sen_obj%isAllocated = .false.
         end if
     end if
 
     deallocate (ptr_Bc, rad_Bc)
 
-    deallocate (dataRaw_mu_Shdo, dataRaw_phi_Shdo, dataRaw_wgt_Shdo, dataRaw_Nphi0_Shdo)
-    deallocate (dataRaw_radI_Shdo, dataRaw_srcJ_Shdo)
-    if (isAccel) deallocate (dataRaw_dsrc_Shdo)
-    deallocate (dataRaw_iradI_Shdo, dataRaw_isrcJ_Shdo, dataRaw_idsrc_Shdo)
+    deallocate (mu_Shdo, phi_Shdo, wgt_Shdo, Nphi0_Shdo)
+    deallocate (radI_Shdo, srcJ_Shdo)
+    if (isAccel) deallocate (dsrc_Shdo)
+    deallocate (iradI_Shdo, isrcJ_Shdo, idsrc_Shdo)
     if (shdo_obj%isAllocated) then
-        nullify(shdo_obj%dataRaw_Nphi0, &
-                shdo_obj%dataRaw_iradI, &
-                shdo_obj%dataRaw_isrcJ, &
-                shdo_obj%dataRaw_radI, &
-                shdo_obj%dataRaw_srcJ, &
-                shdo_obj%dataRaw_mu, &
-                shdo_obj%dataRaw_phi, &
-                shdo_obj%dataRaw_wgt)
+        nullify(shdo_obj%Nphi0, &
+                shdo_obj%iradI, &
+                shdo_obj%isrcJ, &
+                shdo_obj%radI, &
+                shdo_obj%srcJ, &
+                shdo_obj%mu, &
+                shdo_obj%phi, &
+                shdo_obj%wgt)
     end if
 
     deallocate (x_Grid, y_Grid, z_Grid)

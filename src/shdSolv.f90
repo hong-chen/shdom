@@ -260,7 +260,7 @@ subroutine shd_solv__solveRte(&
             end if
             if (IERR .eq. 0) then
                 call shd_shdo__makeSfcDO(sfc_obj%type, WAVELEN,&
-                    &sfc_obj%Nx, sfc_obj%Ny, sfc_obj%Npar, sfc_obj%dataRaw_brdf, NSTOKES,&
+                    &sfc_obj%Nx, sfc_obj%Ny, sfc_obj%Npar, sfc_obj%brdf, NSTOKES,&
                     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                     &SFC_BRDF_DO)
             else

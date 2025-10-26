@@ -190,16 +190,16 @@ subroutine shd_rad__computeDirect(&
                 IU = ckd_obj%Nz
                 do while (IU - IL .gt. 1)
                     IM = (IU + IL)/2
-                    if (prp_obj%dataRaw_z(IZ) .le. ckd_obj%dataRaw_z(IM)) then
+                    if (prp_obj%z(IZ) .le. ckd_obj%z(IM)) then
                         IL = IM
                     else
                         IU = IM
                     end if
                 end do
                 I = min(max(IL, 1), ckd_obj%Nz - 1)
-                W0 = (prp_obj%dataRaw_z(IZ) - ckd_obj%dataRaw_z(I))/(ckd_obj%dataRaw_z(I + 1) - ckd_obj%dataRaw_z(I))
+                W0 = (prp_obj%z(IZ) - ckd_obj%z(I))/(ckd_obj%z(I + 1) - ckd_obj%z(I))
                 W0 = min(max(W0, 0.0d0), 1.0d0)
-                GASEXT(IZ) = (1.0 - W0)*ckd_obj%dataRaw_kabs(I, ckd_obj%ig) + W0*ckd_obj%dataRaw_kabs(I + 1, ckd_obj%ig)
+                GASEXT(IZ) = (1.0 - W0)*ckd_obj%kabs(I, ckd_obj%ig) + W0*ckd_obj%kabs(I + 1, ckd_obj%ig)
             else
                 GASEXT(IZ) = 0.0
             end if
@@ -211,8 +211,8 @@ subroutine shd_rad__computeDirect(&
             do IY = 1, prp_obj%Ny
                 do IZ = 1, prp_obj%Nz
                     IP = IP + 1
-                    EXTINCT = prp_obj%dataRaw_ext(IP)
-                    ALBEDO = prp_obj%dataRaw_ssa(IP)
+                    EXTINCT = prp_obj%ext(IP)
+                    ALBEDO = prp_obj%ssa(IP)
                     ! Add in the gaseous absorption to extinction
                     if (GASEXT(IZ) .gt. 0.0) then
                         ALBEDO = ALBEDO*EXTINCT/(EXTINCT + GASEXT(IZ))
@@ -221,15 +221,15 @@ subroutine shd_rad__computeDirect(&
                     ! Do the Delta-M scaling if needed
                     if (DELTAM) then
                         if (prp_obj%Npha .gt. 0) then
-                            IPH = prp_obj%dataRaw_ipha(IP)
+                            IPH = prp_obj%ipha(IP)
                         else
                             IPH = IP
                         end if
                         L = ML + 1
-                        F = prp_obj%dataRaw_leg(1 + prp_obj%NlegSet*(L + (prp_obj%Nleg+ 1)*(IPH - 1)))/(2*L + 1)
+                        F = prp_obj%leg(1 + prp_obj%NlegSet*(L + (prp_obj%Nleg+ 1)*(IPH - 1)))/(2*L + 1)
                         EXTINCT = (1.0 - ALBEDO*F)*EXTINCT
                     end if
-                    prp_obj%dataRaw_extDir(IP) = EXTINCT
+                    prp_obj%extDir(IP) = EXTINCT
                 end do
             end do
         end do
@@ -266,8 +266,8 @@ subroutine shd_rad__computeDirect(&
         DI = nint(sign(1.0d0, CX))
         DJ = nint(sign(1.0d0, CY))
         DK = nint(sign(1.0d0, CZ))
-        EPSZ = 1.0e-6*(prp_obj%dataRaw_z(prp_obj%Nz) - prp_obj%dataRaw_z(1))
-        EPSS = 1.0e-3*(prp_obj%dataRaw_z(prp_obj%Nz) - prp_obj%dataRaw_z(1))/prp_obj%Nz
+        EPSZ = 1.0e-6*(prp_obj%z(prp_obj%Nz) - prp_obj%z(1))
+        EPSS = 1.0e-3*(prp_obj%z(prp_obj%Nz) - prp_obj%z(1))/prp_obj%Nz
         if (.not. btest(IPDIRECT, 0)) EPSS = max(EPSS, 1.0d-4*prp_obj%dx)
         if (.not. btest(IPDIRECT, 1)) EPSS = max(EPSS, 1.0d-4*prp_obj%dy)
         DELXD = dble(prp_obj%dx)
@@ -297,8 +297,8 @@ subroutine shd_rad__computeDirect(&
             do IY = 1, prp_obj%Ny
                 do IZ = 1, prp_obj%Nz
                     IP = IP + 1
-                    EXTMIN(IZ) = min(prp_obj%dataRaw_ext(IP), EXTMIN(IZ))
-                    EXTMAX(IZ) = max(prp_obj%dataRaw_ext(IP), EXTMAX(IZ))
+                    EXTMIN(IZ) = min(prp_obj%ext(IP), EXTMIN(IZ))
+                    EXTMAX(IZ) = max(prp_obj%ext(IP), EXTMAX(IZ))
                 end do
             end do
         end do
@@ -307,7 +307,7 @@ subroutine shd_rad__computeDirect(&
             if (EXTMAX(IZ) - EXTMIN(IZ) .gt. EXTBEAMCUT) JZ = IZ
         end do
         JZ = min(prp_obj%Nz, JZ + 1)
-        UNIFORMZLEV = prp_obj%dataRaw_z(JZ)
+        UNIFORMZLEV = prp_obj%z(JZ)
         UNIFZLEV = UNIFORMZLEV
         return
     ! Done with initialization
@@ -328,7 +328,7 @@ subroutine shd_rad__computeDirect(&
     IU = prp_obj%Nz
     do while (IU - IL .gt. 1)
         IM = (IU + IL)/2
-        if (Z .ge. prp_obj%dataRaw_z(IM)) then
+        if (Z .ge. prp_obj%z(IM)) then
             IL = IM
         else
             IU = IM
@@ -389,7 +389,7 @@ subroutine shd_rad__computeDirect(&
 
     ! Grid cell loop begin
     PATH = DIRPATH
-    do while (.not. HITBOUNDARY .and. abs(ZE - prp_obj%dataRaw_z(prp_obj%Nz)) .gt. EPSZ)
+    do while (.not. HITBOUNDARY .and. abs(ZE - prp_obj%z(prp_obj%Nz)) .gt. EPSZ)
         IP = I + 1
         if (I .eq. prp_obj%Nx) then
             if (isOpenX_ .or. isMpiX_) then
@@ -410,8 +410,8 @@ subroutine shd_rad__computeDirect(&
         X1 = X0 + DELXD
         Y0 = DELYD*(J - 1)
         Y1 = Y0 + DELYD
-        Z0 = prp_obj%dataRaw_z(K)
-        Z1 = prp_obj%dataRaw_z(K + 1)
+        Z0 = prp_obj%z(K)
+        Z1 = prp_obj%z(K + 1)
         if  (I .lt. 1 .or. I .gt. prp_obj%Nx .or.&
             &J .lt. 1 .or. J .gt. prp_obj%Ny .or.&
             &K .lt. 1 .or. K .ge. prp_obj%Nz) then
@@ -427,18 +427,18 @@ subroutine shd_rad__computeDirect(&
 
         ! zgrid correction (to address layer averaging issue in z direction)
         !╭────────────────────────────────────────────────╮!
-        !E1 = prp_obj%dataRaw_extDir(I1)
-        !E2 = prp_obj%dataRaw_extDir(I2)
-        !E3 = prp_obj%dataRaw_extDir(I3)
-        !E4 = prp_obj%dataRaw_extDir(I4)
-        E1 = prp_obj%dataRaw_extDir(I1 + 1)
-        E2 = prp_obj%dataRaw_extDir(I2 + 1)
-        E3 = prp_obj%dataRaw_extDir(I3 + 1)
-        E4 = prp_obj%dataRaw_extDir(I4 + 1)
-        E5 = prp_obj%dataRaw_extDir(I1 + 1)
-        E6 = prp_obj%dataRaw_extDir(I2 + 1)
-        E7 = prp_obj%dataRaw_extDir(I3 + 1)
-        E8 = prp_obj%dataRaw_extDir(I4 + 1)
+        !E1 = prp_obj%extDir(I1)
+        !E2 = prp_obj%extDir(I2)
+        !E3 = prp_obj%extDir(I3)
+        !E4 = prp_obj%extDir(I4)
+        E1 = prp_obj%extDir(I1 + 1)
+        E2 = prp_obj%extDir(I2 + 1)
+        E3 = prp_obj%extDir(I3 + 1)
+        E4 = prp_obj%extDir(I4 + 1)
+        E5 = prp_obj%extDir(I1 + 1)
+        E6 = prp_obj%extDir(I2 + 1)
+        E7 = prp_obj%extDir(I3 + 1)
+        E8 = prp_obj%extDir(I4 + 1)
         !╰────────────────────────────────────────────────╯!
 
         ! Compute the distance to the next grid plane in  X, Y, and Z
@@ -623,7 +623,7 @@ subroutine shd_rad__computeDirect(&
     DIRFLUX = SOLARFLUX*exp(-PATH)
     DIRPATH = PATH
     XO = XE + prp_obj%xStart; YO = YE + prp_obj%yStart; ZO = ZE
-    VALIDBEAM = abs(ZE - prp_obj%dataRaw_z(prp_obj%Nz)) .lt. EPSZ
+    VALIDBEAM = abs(ZE - prp_obj%z(prp_obj%Nz)) .lt. EPSZ
     if (VALIDBEAM) SIDE = 6
 
     return
@@ -788,8 +788,8 @@ subroutine shd_rad__computeRad(&
     ! Loop over the radiance directions
     do IANG = 1, NANGOUT
         if (sen_obj%fname(1:4) .ne. 'NONE') then
-            MUOUT = sen_obj%dataRaw_view(2*IANG - 1)
-            PHID  = sen_obj%dataRaw_view(2*IANG)
+            MUOUT = sen_obj%view(2*IANG - 1)
+            PHID  = sen_obj%view(2*IANG)
         else
             MUOUT = OUTPARMS(2*IANG + 5)
             PHID  = OUTPARMS(2*IANG + 6)

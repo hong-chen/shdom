@@ -786,7 +786,7 @@ subroutine shd_io__readPrp(isDeltaM, prp_obj)
 
     if (prp_obj%Nz .gt. prp_obj%maxNz) stop 'Error [_readPrp]: prp_obj%maxNz exceeded.'
 
-    read (1, *) prp_obj%dx, prp_obj%dy, (prp_obj%dataRaw_z(k), k=1, prp_obj%Nz)
+    read (1, *) prp_obj%dx, prp_obj%dy, (prp_obj%z(k), k=1, prp_obj%Nz)
 
     ! Property file type E is for extinction only format
     if (prp_obj%type .eq. 'E') then
@@ -811,17 +811,17 @@ subroutine shd_io__readPrp(isDeltaM, prp_obj)
         rewind (1)
         read (1, *)
         read (1, *) prp_obj%Nx, prp_obj%Ny, prp_obj%Nz
-        read (1, *) prp_obj%dx, prp_obj%dy, (prp_obj%dataRaw_z(k), k=1, prp_obj%Nz)
-        read (1, *) (prp_obj%dataRaw_temp(iz), iz=1, prp_obj%Nz)
+        read (1, *) prp_obj%dx, prp_obj%dy, (prp_obj%z(k), k=1, prp_obj%Nz)
+        read (1, *) (prp_obj%temp(iz), iz=1, prp_obj%Nz)
 
-        read (1, *) ssa0, Nleg, (prp_obj%dataRaw_leg(l + 1), l=1, min(Nleg, prp_obj%Nleg)),&
+        read (1, *) ssa0, Nleg, (prp_obj%leg(l + 1), l=1, min(Nleg, prp_obj%Nleg)),&
             &(chi0, l=prp_obj%Nleg + 1, Nleg)
 
-        prp_obj%dataRaw_leg(1) = 1.0
+        prp_obj%leg(1) = 1.0
 
-        prp_obj%maxAsym = prp_obj%dataRaw_leg(1 + 1)/3.0
+        prp_obj%maxAsym = prp_obj%leg(1 + 1)/3.0
         do l = Nleg + 1, prp_obj%Nleg
-            prp_obj%dataRaw_leg(l) = 0.0
+            prp_obj%leg(l) = 0.0
         end do
 
         iy = 1
@@ -835,10 +835,10 @@ subroutine shd_io__readPrp(isDeltaM, prp_obj)
                &iy .ge. 1 .and. iy .le. prp_obj%Ny .and.&
                &iz .ge. 1 .and. iz .le. prp_obj%Nz) then
                 k = iz + prp_obj%Nz*(iy - 1) + prp_obj%Nz*prp_obj%Ny*(ix - 1)
-                prp_obj%dataRaw_temp(k) = prp_obj%dataRaw_temp(iz)
-                prp_obj%dataRaw_ext(k)  = ext0
-                prp_obj%dataRaw_ssa(k)  = ssa0
-                prp_obj%dataRaw_ipha(k) = 1
+                prp_obj%temp(k) = prp_obj%temp(iz)
+                prp_obj%ext(k)  = ext0
+                prp_obj%ssa(k)  = ssa0
+                prp_obj%ipha(k) = 1
             end if
         end do
 
@@ -880,7 +880,7 @@ subroutine shd_io__readPrp(isDeltaM, prp_obj)
         rewind (1)
         read (1, *)
         read (1, *) prp_obj%Nx, prp_obj%Ny, prp_obj%Nz
-        read (1, *) prp_obj%dx, prp_obj%dy, (prp_obj%dataRaw_z(k), k=1, prp_obj%Nz)
+        read (1, *) prp_obj%dx, prp_obj%dy, (prp_obj%z(k), k=1, prp_obj%Nz)
         read (1, *) prp_obj%Npha
 
         prp_obj%maxAsym = -1.0
@@ -889,27 +889,27 @@ subroutine shd_io__readPrp(isDeltaM, prp_obj)
             il = (prp_obj%Nleg + 1)*(i - 1)
 
             if (prp_obj%type .eq. 'T') then
-                prp_obj%dataRaw_leg(il + 1) = 1.0
-                read (1, *) Nleg, (prp_obj%dataRaw_leg(il + l + 1), l=1, min(Nleg, prp_obj%Nleg)),&
+                prp_obj%leg(il + 1) = 1.0
+                read (1, *) Nleg, (prp_obj%leg(il + l + 1), l=1, min(Nleg, prp_obj%Nleg)),&
                     &(chi0, l=prp_obj%Nleg + 1, Nleg)
                 do l = Nleg + 1, prp_obj%Nleg
-                    prp_obj%dataRaw_leg(l + il + 1) = 0.0
+                    prp_obj%leg(l + il + 1) = 0.0
                 end do
             else
                 do j = 1, 6
                     if (j .le. prp_obj%NlegSet) then
                         read (1, *) js, Nleg,&
-                            &(prp_obj%dataRaw_leg((il + l)*prp_obj%NlegSet + j), l=0, min(Nleg, prp_obj%Nleg)),&
+                            &(prp_obj%leg((il + l)*prp_obj%NlegSet + j), l=0, min(Nleg, prp_obj%Nleg)),&
                             &(chi0, l=prp_obj%Nleg + 1, Nleg)
                         do l = Nleg + 1, prp_obj%Nleg
-                            prp_obj%dataRaw_leg((il + l)*prp_obj%NlegSet + j) = 0.0
+                            prp_obj%leg((il + l)*prp_obj%NlegSet + j) = 0.0
                         end do
                     else
                         read (1, *) js, Nleg, (chi0, l=0, Nleg)
                     end if
                 end do
             end if
-            prp_obj%maxAsym = max(prp_obj%maxAsym, prp_obj%dataRaw_leg((il + 1)*prp_obj%NlegSet + 1)/3.0)
+            prp_obj%maxAsym = max(prp_obj%maxAsym, prp_obj%leg((il + 1)*prp_obj%NlegSet + 1)/3.0)
         end do
 
         read (1, '(A)') lineTmp ! skip one line
@@ -929,14 +929,14 @@ subroutine shd_io__readPrp(isDeltaM, prp_obj)
             open (UNIT=88, FILE=trim(adjustl(fnameBin)), STATUS='OLD',&
                 &ACCESS='STREAM', FORM='UNFORMATTED')
 
-            ! prp_obj%dataRaw_temp: real(4)
-            read (88) (((prp_obj%dataRaw_temp(iz+prp_obj%Nz*(iy-1)+prp_obj%Nz*prp_obj%Ny*(ix-1)), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
-            ! prp_obj%dataRaw_ext: real(4)
-            read (88) ((( prp_obj%dataRaw_ext(iz+prp_obj%Nz*(iy-1)+prp_obj%Nz*prp_obj%Ny*(ix-1)), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
-            ! prp_obj%dataRaw_ssa: real(4)
-            read (88) ((( prp_obj%dataRaw_ssa(iz+prp_obj%Nz*(iy-1)+prp_obj%Nz*prp_obj%Ny*(ix-1)), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
-            ! prp_obj%dataRaw_ipha: integer(2)
-            read (88) (((prp_obj%dataRaw_ipha(iz+prp_obj%Nz*(iy-1)+prp_obj%Nz*prp_obj%Ny*(ix-1)), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
+            ! prp_obj%temp: real(4)
+            read (88) (((prp_obj%temp(iz+prp_obj%Nz*(iy-1)+prp_obj%Nz*prp_obj%Ny*(ix-1)), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
+            ! prp_obj%ext: real(4)
+            read (88) ((( prp_obj%ext(iz+prp_obj%Nz*(iy-1)+prp_obj%Nz*prp_obj%Ny*(ix-1)), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
+            ! prp_obj%ssa: real(4)
+            read (88) ((( prp_obj%ssa(iz+prp_obj%Nz*(iy-1)+prp_obj%Nz*prp_obj%Ny*(ix-1)), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
+            ! prp_obj%ipha: integer(2)
+            read (88) (((prp_obj%ipha(iz+prp_obj%Nz*(iy-1)+prp_obj%Nz*prp_obj%Ny*(ix-1)), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
 
             close (88)
 
@@ -952,10 +952,10 @@ subroutine shd_io__readPrp(isDeltaM, prp_obj)
                    &iy .ge. 1 .and. iy .le. prp_obj%Ny .and.&
                    &iz .ge. 1 .and. iz .le. prp_obj%Nz) then
                     k = iz + prp_obj%Nz*(iy - 1) + prp_obj%Nz*prp_obj%Ny*(ix - 1)
-                    prp_obj%dataRaw_temp(k) = temp0
-                    prp_obj%dataRaw_ext(k)  = ext0
-                    prp_obj%dataRaw_ssa(k)  = ssa0
-                    prp_obj%dataRaw_ipha(k) = ipha0
+                    prp_obj%temp(k) = temp0
+                    prp_obj%ext(k)  = ext0
+                    prp_obj%ssa(k)  = ssa0
+                    prp_obj%ipha(k) = ipha0
                 end if
             end do
             !╰────────────────────────────────────────────────╯!
@@ -982,7 +982,7 @@ subroutine shd_io__readPrp(isDeltaM, prp_obj)
             rewind (1)
 
             read (1, *) prp_obj%Nx, prp_obj%Ny, prp_obj%Nz
-            read (1, *) prp_obj%dx, prp_obj%dy, (prp_obj%dataRaw_z(k), k=1, prp_obj%Nz)
+            read (1, *) prp_obj%dx, prp_obj%dy, (prp_obj%z(k), k=1, prp_obj%Nz)
         end if
 
         N = prp_obj%Nx * prp_obj%Ny * prp_obj%Nz
@@ -1006,15 +1006,15 @@ subroutine shd_io__readPrp(isDeltaM, prp_obj)
 
                 backspace (1)
 
-                read (1, *, end=290) ix, iy, iz, prp_obj%dataRaw_temp(k), prp_obj%dataRaw_ext(k),&
-                    &prp_obj%dataRaw_ssa(k), Nleg, (prp_obj%dataRaw_leg(l + kl), l=1, min(Nleg, prp_obj%Nleg)),&
+                read (1, *, end=290) ix, iy, iz, prp_obj%temp(k), prp_obj%ext(k),&
+                    &prp_obj%ssa(k), Nleg, (prp_obj%leg(l + kl), l=1, min(Nleg, prp_obj%Nleg)),&
                     &(chi0, l=prp_obj%Nleg + 1, Nleg)
 
-                prp_obj%maxAsym = max(prp_obj%maxAsym, prp_obj%dataRaw_leg(kl + 1 + 1)/3.0)
-                prp_obj%dataRaw_leg(1 + kl) = 1.0
+                prp_obj%maxAsym = max(prp_obj%maxAsym, prp_obj%leg(kl + 1 + 1)/3.0)
+                prp_obj%leg(1 + kl) = 1.0
 
                 do l = Nleg + 1, prp_obj%Nleg
-                    prp_obj%dataRaw_leg(l + kl) = 0.0
+                    prp_obj%leg(l + kl) = 0.0
                 end do
 
             end if
@@ -1040,13 +1040,13 @@ subroutine shd_io__checkPrp(prp_obj)
 
     type(shd_type_prp), intent(inout) :: prp_obj
 
-    real(kind=R__), pointer, contiguous :: dataRaw_leg_Prp(:, :, :) => null()
+    real(kind=R__), pointer, contiguous :: leg_Prp(:, :, :) => null()
 
     integer(kind=I__) :: i, iz, N, Nthick
     real(kind=R__)    :: tmin, tmax, tau, maxTau, dz
     logical :: legWarn
 
-    dataRaw_leg_Prp(1:prp_obj%NlegSet, 0:prp_obj%Nleg, 1:prp_obj%maxNpts) => prp_obj%dataRaw_leg
+    leg_Prp(1:prp_obj%NlegSet, 0:prp_obj%Nleg, 1:prp_obj%maxNpts) => prp_obj%leg
 
     ! prp_obj%Nx and prp_obj%Ny must be 1 or greater, prp_obj%Nz must be 2 or greater
     if (prp_obj%Nx .lt. 1 .or. prp_obj%Ny .lt. 1 .or. prp_obj%Nz .lt. 2) then
@@ -1063,9 +1063,9 @@ subroutine shd_io__checkPrp(prp_obj)
 
     ! The vertical levels must be increasing
     do iz = 1, prp_obj%Nz - 1
-        if (prp_obj%dataRaw_z(iz + 1) .le. prp_obj%dataRaw_z(iz)) then
-            write (*, *) 'Error [_checkPrp]: prp_obj%dataRaw_z must increase : ',&
-                &iz, prp_obj%dataRaw_z(iz), prp_obj%dataRaw_z(iz + 1)
+        if (prp_obj%z(iz + 1) .le. prp_obj%z(iz)) then
+            write (*, *) 'Error [_checkPrp]: prp_obj%z must increase : ',&
+                &iz, prp_obj%z(iz), prp_obj%z(iz + 1)
             stop
         end if
     end do
@@ -1076,8 +1076,8 @@ subroutine shd_io__checkPrp(prp_obj)
     tmin = 1000.0
     tmax = -1000.0
     do i = 1, N
-        tmin = min(tmin, prp_obj%dataRaw_temp(i))
-        tmax = max(tmax, prp_obj%dataRaw_temp(i))
+        tmin = min(tmin, prp_obj%temp(i))
+        tmax = max(tmax, prp_obj%temp(i))
     end do
 
     if (tmin .lt. 150.0 .or. tmax .gt. 350.0) then
@@ -1087,14 +1087,14 @@ subroutine shd_io__checkPrp(prp_obj)
     end if
 
     do i = 1, N
-        if (prp_obj%dataRaw_ext(i) .lt. 0.0) then
+        if (prp_obj%ext(i) .lt. 0.0) then
             write (*, *) 'Error [_checkPrp]: Negative extinction - ',&
-                &prp_obj%dataRaw_ext(i), ' at grid point ', i
+                &prp_obj%ext(i), ' at grid point ', i
             stop
         end if
-        if (prp_obj%dataRaw_ssa(i) .lt. 0.0 .or. prp_obj%dataRaw_ssa(i) .gt. 1.0) then
+        if (prp_obj%ssa(i) .lt. 0.0 .or. prp_obj%ssa(i) .gt. 1.0) then
             write (*, *) 'Error [_checkPrp]: Single scattering ',&
-                &'albedo out of range - ', prp_obj%dataRaw_ssa(i), ' at grid point ', i
+                &'albedo out of range - ', prp_obj%ssa(i), ' at grid point ', i
             stop
         end if
     end do
@@ -1102,15 +1102,15 @@ subroutine shd_io__checkPrp(prp_obj)
     if (prp_obj%Npha .gt. 0) N = prp_obj%Npha
     legWarn = .false.
     do i = 1, N
-        if (dataRaw_leg_Prp(1, 1, i) .lt. -3.0 .or. dataRaw_leg_Prp(1, 1, i) .gt. 3.0) then
+        if (leg_Prp(1, 1, i) .lt. -3.0 .or. leg_Prp(1, 1, i) .gt. 3.0) then
             write (*, *) 'Error [_checkPrp]: Asymmetry parameter ',&
-                &'out of range - ', dataRaw_leg_Prp(1, 1, i)/3.0, ' at grid point ', i
+                &'out of range - ', leg_Prp(1, 1, i)/3.0, ' at grid point ', i
             stop
         end if
-        if (dataRaw_leg_Prp(1, 1, i) .eq. 1.0) legWarn = .true.
+        if (leg_Prp(1, 1, i) .eq. 1.0) legWarn = .true.
     end do
 
-    nullify(dataRaw_leg_Prp)
+    nullify(leg_Prp)
 
     if (legWarn) then
         if (verbose_ .ge. 4) write (*, *) 'Warning [_checkPrp]: ',&
@@ -1122,9 +1122,9 @@ subroutine shd_io__checkPrp(prp_obj)
     if (prp_obj%Npha .gt. 0) then
         N = prp_obj%Nx*prp_obj%Ny*prp_obj%Nz
         do i = 1, N
-            if (prp_obj%dataRaw_ipha(i) .lt. 1 .or. prp_obj%dataRaw_ipha(i) .gt. prp_obj%Npha) then
+            if (prp_obj%ipha(i) .lt. 1 .or. prp_obj%ipha(i) .gt. prp_obj%Npha) then
                 write (*, *) 'Error [_checkPrp]: Phase function pointer',&
-                    &' out of range - ', prp_obj%dataRaw_ipha(i), ' at grid point ', i
+                    &' out of range - ', prp_obj%ipha(i), ' at grid point ', i
                 stop
             end if
         end do
@@ -1134,9 +1134,9 @@ subroutine shd_io__checkPrp(prp_obj)
     Nthick = 0
     maxTau = 0.0
     do iz = 1, prp_obj%Nz - 1
-        dz = prp_obj%dataRaw_z(iz + 1) - prp_obj%dataRaw_z(iz)
+        dz = prp_obj%z(iz + 1) - prp_obj%z(iz)
         do i = 0, N - 1, prp_obj%Nz
-            tau = 0.5*(prp_obj%dataRaw_ext(i + iz) + prp_obj%dataRaw_ext(i + iz + 1))*dz
+            tau = 0.5*(prp_obj%ext(i + iz) + prp_obj%ext(i + iz + 1))*dz
             if (tau .gt. 2.0) then
                 Nthick = Nthick + 1
                 maxTau = max(maxTau, tau)
@@ -1238,7 +1238,7 @@ subroutine shd_io__readSfc(sfc_obj)
     ! spaced grid of size sfc_obj%Nx by sfc_obj%Ny and spacing sfc_obj%dx by sfc_obj%dy.
     ! The properties are returned on a sfc_obj%Nx+1 by sfc_obj%Ny+1 grid that is
     ! periodic (NX+1 same as 1, etc).  The surface properties at each
-    ! grid point are returned in sfc_obj%dataRaw_brdf, and the first parameter must
+    ! grid point are returned in sfc_obj%brdf, and the first parameter must
     ! be temperature.  The number of parameters for each grid point
     ! (including temperature) are returned in sfc_obj%Npar.
     ! Also returned are the domain average ground albedo and temperature
@@ -1308,8 +1308,8 @@ subroutine shd_io__readSfc(sfc_obj)
                 if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
                     i = sfc_obj%Npar * (ix - 1 + (sfc_obj%Nx + 1)*(iy - 1))
-                    sfc_obj%dataRaw_brdf(i + 1) = temp0
-                    sfc_obj%dataRaw_brdf(i + 2) = alb0
+                    sfc_obj%brdf(i + 1) = temp0
+                    sfc_obj%brdf(i + 2) = alb0
                     if (alb0 .lt. 0.0 .or. alb0 .gt. 1.0)&
                         &stop 'Error [_readSfc]: Illegal surface albedo.'
                     if (temp0 .lt. 150. .or. temp0 .gt. 350.) then
@@ -1342,9 +1342,9 @@ subroutine shd_io__readSfc(sfc_obj)
                 if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
                     i = sfc_obj%Npar * (ix - 1 + (sfc_obj%Nx + 1)*(iy - 1))
-                    sfc_obj%dataRaw_brdf(i + 1) = temp0
-                    sfc_obj%dataRaw_brdf(i + 2) = WSPD
-                    sfc_obj%dataRaw_brdf(i + 3) = PCL
+                    sfc_obj%brdf(i + 1) = temp0
+                    sfc_obj%brdf(i + 2) = WSPD
+                    sfc_obj%brdf(i + 3) = PCL
                     temp_sfc = temp_sfc + temp0
                     N = N + 1
                 end if
@@ -1373,10 +1373,10 @@ subroutine shd_io__readSfc(sfc_obj)
                 if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
                     i = sfc_obj%Npar * (ix - 1 + (sfc_obj%Nx + 1)*(iy - 1))
-                    sfc_obj%dataRaw_brdf(i + 1) = temp0
-                    sfc_obj%dataRaw_brdf(i + 2) = RHO0
-                    sfc_obj%dataRaw_brdf(i + 3) = KR
-                    sfc_obj%dataRaw_brdf(i + 4) = THETA
+                    sfc_obj%brdf(i + 1) = temp0
+                    sfc_obj%brdf(i + 2) = RHO0
+                    sfc_obj%brdf(i + 3) = KR
+                    sfc_obj%brdf(i + 4) = THETA
                     temp_sfc = temp_sfc + temp0
                     alb_sfc  = alb_sfc  + RHO0
                     N = N + 1
@@ -1402,10 +1402,10 @@ subroutine shd_io__readSfc(sfc_obj)
                 if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
                     i = sfc_obj%Npar * (ix - 1 + (sfc_obj%Nx + 1)*(iy - 1))
-                    sfc_obj%dataRaw_brdf(i + 1) = temp0
-                    sfc_obj%dataRaw_brdf(i + 2) = F_ISO
-                    sfc_obj%dataRaw_brdf(i + 3) = F_GEO
-                    sfc_obj%dataRaw_brdf(i + 4) = F_VOL
+                    sfc_obj%brdf(i + 1) = temp0
+                    sfc_obj%brdf(i + 2) = F_ISO
+                    sfc_obj%brdf(i + 3) = F_GEO
+                    sfc_obj%brdf(i + 4) = F_VOL
                     temp_sfc = temp_sfc + temp0
                     alb_sfc  = alb_sfc  + F_ISO
                     N = N + 1
@@ -1431,12 +1431,12 @@ subroutine shd_io__readSfc(sfc_obj)
                 if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
                     i = sfc_obj%Npar * (ix - 1 + (sfc_obj%Nx + 1)*(iy - 1))
-                    sfc_obj%dataRaw_brdf(i + 1) = temp0
-                    sfc_obj%dataRaw_brdf(i + 2) = F_ISO
-                    sfc_obj%dataRaw_brdf(i + 3) = F_GEO
-                    sfc_obj%dataRaw_brdf(i + 4) = F_VOL
-                    sfc_obj%dataRaw_brdf(i + 5) = F_JIAO
-                    sfc_obj%dataRaw_brdf(i + 6) = ALPHA
+                    sfc_obj%brdf(i + 1) = temp0
+                    sfc_obj%brdf(i + 2) = F_ISO
+                    sfc_obj%brdf(i + 3) = F_GEO
+                    sfc_obj%brdf(i + 4) = F_VOL
+                    sfc_obj%brdf(i + 5) = F_JIAO
+                    sfc_obj%brdf(i + 6) = ALPHA
                     temp_sfc = temp_sfc + temp0
                     alb_sfc  = alb_sfc  + F_ISO
                     N = N + 1
@@ -1462,10 +1462,10 @@ subroutine shd_io__readSfc(sfc_obj)
                 if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
                     i = sfc_obj%Npar * (ix - 1 + (sfc_obj%Nx + 1)*(iy - 1))
-                    sfc_obj%dataRaw_brdf(i + 1) = temp0
-                    sfc_obj%dataRaw_brdf(i + 2) = MRE
-                    sfc_obj%dataRaw_brdf(i + 3) = MIM
-                    sfc_obj%dataRaw_brdf(i + 4) = WSPD
+                    sfc_obj%brdf(i + 1) = temp0
+                    sfc_obj%brdf(i + 2) = MRE
+                    sfc_obj%brdf(i + 3) = MIM
+                    sfc_obj%brdf(i + 4) = WSPD
                     temp_sfc = temp_sfc + temp0
                     N = N + 1
                 end if
@@ -1495,12 +1495,12 @@ subroutine shd_io__readSfc(sfc_obj)
                 if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
                     i = sfc_obj%Npar * (ix - 1 + (sfc_obj%Nx + 1)*(iy - 1))
-                    sfc_obj%dataRaw_brdf(i + 1) = temp0
-                    sfc_obj%dataRaw_brdf(i + 2) = A
-                    sfc_obj%dataRaw_brdf(i + 3) = KR
-                    sfc_obj%dataRaw_brdf(i + 4) = B
-                    sfc_obj%dataRaw_brdf(i + 5) = ZETA
-                    sfc_obj%dataRaw_brdf(i + 6) = SIGMA
+                    sfc_obj%brdf(i + 1) = temp0
+                    sfc_obj%brdf(i + 2) = A
+                    sfc_obj%brdf(i + 3) = KR
+                    sfc_obj%brdf(i + 4) = B
+                    sfc_obj%brdf(i + 5) = ZETA
+                    sfc_obj%brdf(i + 6) = SIGMA
                     temp_sfc = temp_sfc + temp0
                     alb_sfc  = alb_sfc  + A
                     N = N + 1
@@ -1534,14 +1534,14 @@ subroutine shd_io__readSfc(sfc_obj)
                 if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
                     i = sfc_obj%Npar * (ix - 1 + (sfc_obj%Nx + 1)*(iy - 1))
-                    sfc_obj%dataRaw_brdf(i + 1) = PARAM1
-                    sfc_obj%dataRaw_brdf(i + 2) = PARAM2
-                    sfc_obj%dataRaw_brdf(i + 3) = PARAM3
-                    sfc_obj%dataRaw_brdf(i + 4) = PARAM4
-                    sfc_obj%dataRaw_brdf(i + 5) = PARAM5
-                    sfc_obj%dataRaw_brdf(i + 6) = PARAM6
-                    sfc_obj%dataRaw_brdf(i + 7) = PARAM7
-                    sfc_obj%dataRaw_brdf(i + 8) = PARAM8 ! surface identification
+                    sfc_obj%brdf(i + 1) = PARAM1
+                    sfc_obj%brdf(i + 2) = PARAM2
+                    sfc_obj%brdf(i + 3) = PARAM3
+                    sfc_obj%brdf(i + 4) = PARAM4
+                    sfc_obj%brdf(i + 5) = PARAM5
+                    sfc_obj%brdf(i + 6) = PARAM6
+                    sfc_obj%brdf(i + 7) = PARAM7
+                    sfc_obj%brdf(i + 8) = PARAM8 ! surface identification
 
                     temp_sfc = temp_sfc + PARAM1
 
@@ -1580,7 +1580,7 @@ subroutine shd_io__readSfc(sfc_obj)
     open (UNIT=88, FILE=trim(adjustl(fnameBin)), STATUS='OLD',&
         &ACCESS='STREAM', FORM='UNFORMATTED')
     Ndata = Nxx*Nyy*Npp
-    read (88) (sfc_obj%dataRaw_brdf(idata), idata=1, Ndata)
+    read (88) (sfc_obj%brdf(idata), idata=1, Ndata)
     close (88)
 
     do iy = 1, sfc_obj%Ny + 1
@@ -1591,16 +1591,16 @@ subroutine shd_io__readSfc(sfc_obj)
 
                 i = sfc_obj%Npar * (ix - 1 + (sfc_obj%Nx + 1)*(iy - 1))
 
-                temp_sfc = temp_sfc + sfc_obj%dataRaw_brdf(i + 1)
+                temp_sfc = temp_sfc + sfc_obj%brdf(i + 1)
 
                 if (((sfc_obj%type .ne. 'VO') .and. (sfc_obj%type .ne. 'Vo')) .and.&
                     &((sfc_obj%type .ne. 'VW') .and. (sfc_obj%type .ne. 'Vw'))) then
                     if ((sfc_obj%type .eq. 'VX') .or. (sfc_obj%type .eq. 'Vx')) then
-                        if ((abs(sfc_obj%dataRaw_brdf(i+8))-1.0) .gt. 0.01) then ! exclude [O] and [W]
-                            alb_sfc = alb_sfc + sfc_obj%dataRaw_brdf(i + 2)
+                        if ((abs(sfc_obj%brdf(i+8))-1.0) .gt. 0.01) then ! exclude [O] and [W]
+                            alb_sfc = alb_sfc + sfc_obj%brdf(i + 2)
                         end if
                     else
-                        alb_sfc = alb_sfc + sfc_obj%dataRaw_brdf(i + 2)
+                        alb_sfc = alb_sfc + sfc_obj%brdf(i + 2)
                     end if
                 end if
 
@@ -1621,7 +1621,7 @@ subroutine shd_io__readSfc(sfc_obj)
         i0 = sfc_obj%Npar * (ix - 1 + (sfc_obj%Nx + 1)*(1 - 1))
         i  = sfc_obj%Npar * (ix - 1 + (sfc_obj%Nx + 1)*(sfc_obj%Ny + 1 - 1))
         do j = 1, sfc_obj%Npar
-            sfc_obj%dataRaw_brdf(i + j) = sfc_obj%dataRaw_brdf(I0 + j)
+            sfc_obj%brdf(i + j) = sfc_obj%brdf(I0 + j)
         end do
     end do
 
@@ -1629,7 +1629,7 @@ subroutine shd_io__readSfc(sfc_obj)
         i0 = sfc_obj%Npar * ((sfc_obj%Nx + 1)*(iy - 1))
         i  = sfc_obj%Npar * (sfc_obj%Nx + (sfc_obj%Nx + 1)*(iy - 1))
         do j = 1, sfc_obj%Npar
-            sfc_obj%dataRaw_brdf(i + j) = sfc_obj%dataRaw_brdf(I0 + j)
+            sfc_obj%brdf(i + j) = sfc_obj%brdf(I0 + j)
         end do
     end do
 
@@ -1682,10 +1682,10 @@ subroutine shd_io__readCkd(waveNum, ckd_obj)
     ! Reads the information appropriate for one band from a
     ! correlated k-distribution file.   The wavenumber range (cm^-1)
     ! in the file must match the desired in waveNum.  The solar flux
-    ! is returned in ckd_obj%dataRaw_solar, the number of "g"'s in ckd_obj%Ng, the weights
-    ! or delta g's in ckd_obj%dataRaw_delg, the number of levels in ckd_obj%Nz, the
-    ! levels from the top down in ckd_obj%dataRaw_z, and the absorption coefficients
-    ! for each g and level in ckd_obj%dataRaw_kabs.
+    ! is returned in ckd_obj%solar, the number of "g"'s in ckd_obj%Ng, the weights
+    ! or delta g's in ckd_obj%delg, the number of levels in ckd_obj%Nz, the
+    ! levels from the top down in ckd_obj%z, and the absorption coefficients
+    ! for each g and level in ckd_obj%kabs.
     ! The array sizes ckd_obj%maxNg and ckd_obj%maxNz are checked.
 
     real(kind=R__), intent(inout) :: waveNum(2)
@@ -1709,7 +1709,7 @@ subroutine shd_io__readCkd(waveNum, ckd_obj)
             backspace (1)
             if (ckd_obj%Ng .gt. ckd_obj%maxNg) stop 'Error [_readCkd]: ckd_obj%maxNg exceeded.'
             read (1, *) ibandSelect, waveNum(1), waveNum(2),&
-                &ckd_obj%Ng, (ckd_obj%dataRaw_solar(ig), ig=1, ckd_obj%Ng), (ckd_obj%dataRaw_delg(ig), ig=1, ckd_obj%Ng)
+                &ckd_obj%Ng, (ckd_obj%solar(ig), ig=1, ckd_obj%Ng), (ckd_obj%delg(ig), ig=1, ckd_obj%Ng)
         end if
     end do
 
@@ -1726,7 +1726,7 @@ subroutine shd_io__readCkd(waveNum, ckd_obj)
     read (1, *)
     read (1, *)
     do iz = 1, ckd_obj%maxNz
-        read (1, *) ckd_obj%dataRaw_z(iz)
+        read (1, *) ckd_obj%z(iz)
     end do
 
     ! Skip over the irrelevant bands and read the absorption coeffic
@@ -1736,9 +1736,9 @@ subroutine shd_io__readCkd(waveNum, ckd_obj)
     end do
 
     do iz = 1, ckd_obj%maxNz
-        read (1, *) iband, itmp, (ckd_obj%dataRaw_kabs(iz, ig), ig=1, ckd_obj%Ng)
+        read (1, *) iband, itmp, (ckd_obj%kabs(iz, ig), ig=1, ckd_obj%Ng)
         do ig = 1, ckd_obj%Ng
-            if (ckd_obj%dataRaw_kabs(iz, ig) .lt. 0.0) then
+            if (ckd_obj%kabs(iz, ig) .lt. 0.0) then
                 write (*, '(1X,A,A,I3,A,I3,A,I2)')&
                     &'Negative absorption in CKD file.  ',&
                     &'Band: ', iband, '   Level: ', iz, '   k: ', ig
@@ -1804,7 +1804,7 @@ subroutine shd_io__readSen(sen_obj)
     open (unit=88, file=trim(adjustl(fnameBin)), status='old',&
         &access='stream', form='unformatted')
 
-    read (88) (sen_obj%dataRaw_view(idata), idata=1, sen_obj%Npts*sen_obj%Npar)
+    read (88) (sen_obj%view(idata), idata=1, sen_obj%Npts*sen_obj%Npar)
 
     close (88)
 

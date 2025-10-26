@@ -1130,12 +1130,12 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT,&
         do I = 1, prp_obj%Npha
             do L = 0, prp_obj%Nleg
                 do J = 1, prp_obj%NlegSet
-                    LEGEN(J, L, I) = prp_obj%dataRaw_leg(J + prp_obj%NlegSet*(L + (prp_obj%Nleg+ 1)*(I - 1)))/(2*L + 1)
+                    LEGEN(J, L, I) = prp_obj%leg(J + prp_obj%NlegSet*(L + (prp_obj%Nleg+ 1)*(I - 1)))/(2*L + 1)
                 end do
             end do
         end do
-        !EXTMIN = 1.0d-5/((prp_obj%dataRaw_z(prp_obj%Nz) - prp_obj%dataRaw_z(1))/prp_obj%Nz)
-        EXTMIN  = accSolv_/((prp_obj%dataRaw_z(prp_obj%Nz) - prp_obj%dataRaw_z(1))/prp_obj%Nz) ! attempt to improve agreement between libRadtran in water vapor abosprtion bands
+        !EXTMIN = 1.0d-5/((prp_obj%z(prp_obj%Nz) - prp_obj%z(1))/prp_obj%Nz)
+        EXTMIN  = accSolv_/((prp_obj%z(prp_obj%Nz) - prp_obj%z(1))/prp_obj%Nz) ! attempt to improve agreement between libRadtran in water vapor abosprtion bands
         SCATMIN = 0.1d0*EXTMIN
         return
     end if
@@ -1145,14 +1145,14 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT,&
     IU = prp_obj%Nz
     do while (IU - IL .gt. 1)
         IM = (IU + IL)/2
-        if (Z .ge. prp_obj%dataRaw_z(IM)) then
+        if (Z .ge. prp_obj%z(IM)) then
             IL = IM
         else
             IU = IM
         end if
     end do
     IZ = max(IL, 1)
-    W = dble(Z - prp_obj%dataRaw_z(IZ))/(prp_obj%dataRaw_z(IZ + 1) - prp_obj%dataRaw_z(IZ))
+    W = dble(Z - prp_obj%z(IZ))/(prp_obj%z(IZ + 1) - prp_obj%z(IZ))
     W = max(min(W, 1.0d0), 0.0d0)
     IX = int((X - prp_obj%xStart)/prp_obj%dx) + 1
     if (abs(X - prp_obj%xStart - prp_obj%Nx*prp_obj%dx) .lt. 0.01*prp_obj%dx) IX = prp_obj%Nx
@@ -1203,14 +1203,14 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT,&
     I4 = I8
     !╰────────────────────────────────────────────────╯!
 
-    SCAT1 = F1*prp_obj%dataRaw_ext(I1)*prp_obj%dataRaw_ssa(I1)
-    SCAT2 = F2*prp_obj%dataRaw_ext(I2)*prp_obj%dataRaw_ssa(I2)
-    SCAT3 = F3*prp_obj%dataRaw_ext(I3)*prp_obj%dataRaw_ssa(I3)
-    SCAT4 = F4*prp_obj%dataRaw_ext(I4)*prp_obj%dataRaw_ssa(I4)
-    SCAT5 = F5*prp_obj%dataRaw_ext(I5)*prp_obj%dataRaw_ssa(I5)
-    SCAT6 = F6*prp_obj%dataRaw_ext(I6)*prp_obj%dataRaw_ssa(I6)
-    SCAT7 = F7*prp_obj%dataRaw_ext(I7)*prp_obj%dataRaw_ssa(I7)
-    SCAT8 = F8*prp_obj%dataRaw_ext(I8)*prp_obj%dataRaw_ssa(I8)
+    SCAT1 = F1*prp_obj%ext(I1)*prp_obj%ssa(I1)
+    SCAT2 = F2*prp_obj%ext(I2)*prp_obj%ssa(I2)
+    SCAT3 = F3*prp_obj%ext(I3)*prp_obj%ssa(I3)
+    SCAT4 = F4*prp_obj%ext(I4)*prp_obj%ssa(I4)
+    SCAT5 = F5*prp_obj%ext(I5)*prp_obj%ssa(I5)
+    SCAT6 = F6*prp_obj%ext(I6)*prp_obj%ssa(I6)
+    SCAT7 = F7*prp_obj%ext(I7)*prp_obj%ssa(I7)
+    SCAT8 = F8*prp_obj%ext(I8)*prp_obj%ssa(I8)
 
     MAXSCAT = -1.0
     if (SCAT1 .gt. MAXSCAT .or. abs(F1 - 1) .lt. 0.001) then
@@ -1246,15 +1246,15 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT,&
         ISELECT = I8
     end if
 
-    !TEMP = prp_obj%dataRaw_temp(ISELECT)
-    !EXTINCT = prp_obj%dataRaw_ext(ISELECT)
-    !SCATTER = prp_obj%dataRaw_ext(ISELECT)*prp_obj%dataRaw_ssa(ISELECT)
+    !TEMP = prp_obj%temp(ISELECT)
+    !EXTINCT = prp_obj%ext(ISELECT)
+    !SCATTER = prp_obj%ext(ISELECT)*prp_obj%ssa(ISELECT)
 
-    TEMP = F1*prp_obj%dataRaw_temp(I1) + F2*prp_obj%dataRaw_temp(I2) + F3*prp_obj%dataRaw_temp(I3) + F4*prp_obj%dataRaw_temp(I4)&
-        &+ F5*prp_obj%dataRaw_temp(I5) + F6*prp_obj%dataRaw_temp(I6) + F7*prp_obj%dataRaw_temp(I7) + F8*prp_obj%dataRaw_temp(I8)
-    EXTINCT = F1*prp_obj%dataRaw_ext(I1) + F2*prp_obj%dataRaw_ext(I2) + F3*prp_obj%dataRaw_ext(I3)&
-        &+ F4*prp_obj%dataRaw_ext(I4) + F5*prp_obj%dataRaw_ext(I5) + F6*prp_obj%dataRaw_ext(I6)&
-        &+ F7*prp_obj%dataRaw_ext(I7) + F8*prp_obj%dataRaw_ext(I8)
+    TEMP = F1*prp_obj%temp(I1) + F2*prp_obj%temp(I2) + F3*prp_obj%temp(I3) + F4*prp_obj%temp(I4)&
+        &+ F5*prp_obj%temp(I5) + F6*prp_obj%temp(I6) + F7*prp_obj%temp(I7) + F8*prp_obj%temp(I8)
+    EXTINCT = F1*prp_obj%ext(I1) + F2*prp_obj%ext(I2) + F3*prp_obj%ext(I3)&
+        &+ F4*prp_obj%ext(I4) + F5*prp_obj%ext(I5) + F6*prp_obj%ext(I6)&
+        &+ F7*prp_obj%ext(I7) + F8*prp_obj%ext(I8)
     SCATTER = SCAT1 + SCAT2 + SCAT3 + SCAT4 + SCAT5 + SCAT6 + SCAT7 + SCAT8
 
     if (EXTINCT .gt. EXTMIN) then
@@ -1264,19 +1264,19 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT,&
     end if
 
     if (prp_obj%Npha .gt. 0) then
-        IPHASE = prp_obj%dataRaw_ipha(ISELECT)
+        IPHASE = prp_obj%ipha(ISELECT)
     else
         ! Standard property file format: unpolarized
         LEGEN(1, 0, 1) = 1.0
         do L = 1, prp_obj%Nleg
-            LEGEN(1, L, 1) = SCAT1*prp_obj%dataRaw_leg(L + (prp_obj%Nleg + 1)*(I1 - 1))&
-                &+ SCAT2*prp_obj%dataRaw_leg(L + (prp_obj%Nleg + 1)*(I2 - 1))&
-                &+ SCAT3*prp_obj%dataRaw_leg(L + (prp_obj%Nleg + 1)*(I3 - 1))&
-                &+ SCAT4*prp_obj%dataRaw_leg(L + (prp_obj%Nleg + 1)*(I4 - 1))&
-                &+ SCAT5*prp_obj%dataRaw_leg(L + (prp_obj%Nleg + 1)*(I5 - 1))&
-                &+ SCAT6*prp_obj%dataRaw_leg(L + (prp_obj%Nleg + 1)*(I6 - 1))&
-                &+ SCAT7*prp_obj%dataRaw_leg(L + (prp_obj%Nleg + 1)*(I7 - 1))&
-                &+ SCAT8*prp_obj%dataRaw_leg(L + (prp_obj%Nleg + 1)*(I8 - 1))
+            LEGEN(1, L, 1) = SCAT1*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I1 - 1))&
+                &+ SCAT2*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I2 - 1))&
+                &+ SCAT3*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I3 - 1))&
+                &+ SCAT4*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I4 - 1))&
+                &+ SCAT5*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I5 - 1))&
+                &+ SCAT6*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I6 - 1))&
+                &+ SCAT7*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I7 - 1))&
+                &+ SCAT8*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I8 - 1))
             if (SCATTER .gt. SCATMIN) then
                 LEGEN(1, L, 1) = LEGEN(1, L, 1)/SCATTER
             else
@@ -1289,19 +1289,19 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT,&
     ! Trilinearly interpolate the temperature, extinction, scattering
     ! original
     !╭────────────────────────────────────────────────╮!
-    !TEMP = F1*prp_obj%dataRaw_temp(I1) + F2*prp_obj%dataRaw_temp(I2) + F3*prp_obj%dataRaw_temp(I3) + F4*prp_obj%dataRaw_temp(I4)&
-    !    &+ F5*prp_obj%dataRaw_temp(I5) + F6*prp_obj%dataRaw_temp(I6) + F7*prp_obj%dataRaw_temp(I7) + F8*prp_obj%dataRaw_temp(I8)
-    !EXTINCT = F1*prp_obj%dataRaw_ext(I1) + F2*prp_obj%dataRaw_ext(I2) + F3*prp_obj%dataRaw_ext(I3)&
-    !    &+ F4*prp_obj%dataRaw_ext(I4) + F5*prp_obj%dataRaw_ext(I5) + F6*prp_obj%dataRaw_ext(I6)&
-    !    &+ F7*prp_obj%dataRaw_ext(I7) + F8*prp_obj%dataRaw_ext(I8)
-    !SCAT1 = F1*prp_obj%dataRaw_ext(I1)*prp_obj%dataRaw_ssa(I1)
-    !SCAT2 = F2*prp_obj%dataRaw_ext(I2)*prp_obj%dataRaw_ssa(I2)
-    !SCAT3 = F3*prp_obj%dataRaw_ext(I3)*prp_obj%dataRaw_ssa(I3)
-    !SCAT4 = F4*prp_obj%dataRaw_ext(I4)*prp_obj%dataRaw_ssa(I4)
-    !SCAT5 = F5*prp_obj%dataRaw_ext(I5)*prp_obj%dataRaw_ssa(I5)
-    !SCAT6 = F6*prp_obj%dataRaw_ext(I6)*prp_obj%dataRaw_ssa(I6)
-    !SCAT7 = F7*prp_obj%dataRaw_ext(I7)*prp_obj%dataRaw_ssa(I7)
-    !SCAT8 = F8*prp_obj%dataRaw_ext(I8)*prp_obj%dataRaw_ssa(I8)
+    !TEMP = F1*prp_obj%temp(I1) + F2*prp_obj%temp(I2) + F3*prp_obj%temp(I3) + F4*prp_obj%temp(I4)&
+    !    &+ F5*prp_obj%temp(I5) + F6*prp_obj%temp(I6) + F7*prp_obj%temp(I7) + F8*prp_obj%temp(I8)
+    !EXTINCT = F1*prp_obj%ext(I1) + F2*prp_obj%ext(I2) + F3*prp_obj%ext(I3)&
+    !    &+ F4*prp_obj%ext(I4) + F5*prp_obj%ext(I5) + F6*prp_obj%ext(I6)&
+    !    &+ F7*prp_obj%ext(I7) + F8*prp_obj%ext(I8)
+    !SCAT1 = F1*prp_obj%ext(I1)*prp_obj%ssa(I1)
+    !SCAT2 = F2*prp_obj%ext(I2)*prp_obj%ssa(I2)
+    !SCAT3 = F3*prp_obj%ext(I3)*prp_obj%ssa(I3)
+    !SCAT4 = F4*prp_obj%ext(I4)*prp_obj%ssa(I4)
+    !SCAT5 = F5*prp_obj%ext(I5)*prp_obj%ssa(I5)
+    !SCAT6 = F6*prp_obj%ext(I6)*prp_obj%ssa(I6)
+    !SCAT7 = F7*prp_obj%ext(I7)*prp_obj%ssa(I7)
+    !SCAT8 = F8*prp_obj%ext(I8)*prp_obj%ssa(I8)
     !SCATTER = SCAT1 + SCAT2 + SCAT3 + SCAT4 + SCAT5 + SCAT6 + SCAT7 + SCAT8
     !if (EXTINCT .gt. EXTMIN) then
     !    ALBEDO = SCATTER/EXTINCT
@@ -1318,48 +1318,48 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT,&
     !    MAXSCAT = -1.0
     !    if (SCAT1 .gt. MAXSCAT .or. abs(F1 - 1) .lt. 0.001) then
     !        MAXSCAT = SCAT1
-    !        IPHASE = prp_obj%dataRaw_ipha(I1)
+    !        IPHASE = prp_obj%ipha(I1)
     !    end if
     !    if (SCAT2 .gt. MAXSCAT .or. abs(F2 - 1) .lt. 0.001) then
     !        MAXSCAT = SCAT2
-    !        IPHASE = prp_obj%dataRaw_ipha(I2)
+    !        IPHASE = prp_obj%ipha(I2)
     !    end if
     !    if (SCAT3 .gt. MAXSCAT .or. abs(F3 - 1) .lt. 0.001) then
     !        MAXSCAT = SCAT3
-    !        IPHASE = prp_obj%dataRaw_ipha(I3)
+    !        IPHASE = prp_obj%ipha(I3)
     !    end if
     !    if (SCAT4 .gt. MAXSCAT .or. abs(F4 - 1) .lt. 0.001) then
     !        MAXSCAT = SCAT4
-    !        IPHASE = prp_obj%dataRaw_ipha(I4)
+    !        IPHASE = prp_obj%ipha(I4)
     !    end if
     !    if (SCAT5 .gt. MAXSCAT .or. abs(F5 - 1) .lt. 0.001) then
     !        MAXSCAT = SCAT5
-    !        IPHASE = prp_obj%dataRaw_ipha(I5)
+    !        IPHASE = prp_obj%ipha(I5)
     !    end if
     !    if (SCAT6 .gt. MAXSCAT .or. abs(F6 - 1) .lt. 0.001) then
     !        MAXSCAT = SCAT6
-    !        IPHASE = prp_obj%dataRaw_ipha(I6)
+    !        IPHASE = prp_obj%ipha(I6)
     !    end if
     !    if (SCAT7 .gt. MAXSCAT .or. abs(F7 - 1) .lt. 0.001) then
     !        MAXSCAT = SCAT7
-    !        IPHASE = prp_obj%dataRaw_ipha(I7)
+    !        IPHASE = prp_obj%ipha(I7)
     !    end if
     !    if (SCAT8 .gt. MAXSCAT .or. abs(F8 - 1) .lt. 0.001) then
     !        MAXSCAT = SCAT8
-    !        IPHASE = prp_obj%dataRaw_ipha(I8)
+    !        IPHASE = prp_obj%ipha(I8)
     !    end if
     !else
     !    ! Standard property file format: unpolarized
     !    LEGEN(1, 0, 1) = 1.0
     !    do L = 1, prp_obj%Nleg
-    !        LEGEN(1, L, 1) = SCAT1*prp_obj%dataRaw_leg(L + (prp_obj%Nleg + 1)*(I1 - 1))&
-    !            &+ SCAT2*prp_obj%dataRaw_leg(L + (prp_obj%Nleg + 1)*(I2 - 1))&
-    !            &+ SCAT3*prp_obj%dataRaw_leg(L + (prp_obj%Nleg + 1)*(I3 - 1))&
-    !            &+ SCAT4*prp_obj%dataRaw_leg(L + (prp_obj%Nleg + 1)*(I4 - 1))&
-    !            &+ SCAT5*prp_obj%dataRaw_leg(L + (prp_obj%Nleg + 1)*(I5 - 1))&
-    !            &+ SCAT6*prp_obj%dataRaw_leg(L + (prp_obj%Nleg + 1)*(I6 - 1))&
-    !            &+ SCAT7*prp_obj%dataRaw_leg(L + (prp_obj%Nleg + 1)*(I7 - 1))&
-    !            &+ SCAT8*prp_obj%dataRaw_leg(L + (prp_obj%Nleg + 1)*(I8 - 1))
+    !        LEGEN(1, L, 1) = SCAT1*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I1 - 1))&
+    !            &+ SCAT2*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I2 - 1))&
+    !            &+ SCAT3*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I3 - 1))&
+    !            &+ SCAT4*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I4 - 1))&
+    !            &+ SCAT5*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I5 - 1))&
+    !            &+ SCAT6*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I6 - 1))&
+    !            &+ SCAT7*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I7 - 1))&
+    !            &+ SCAT8*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I8 - 1))
     !        if (SCATTER .gt. SCATMIN) then
     !            LEGEN(1, L, 1) = LEGEN(1, L, 1)/SCATTER
     !        else
@@ -1376,17 +1376,17 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT,&
         IU = ckd_obj%Nz
         do while (IU - IL .gt. 1)
             IM = (IU + IL)/2
-            if (Z .le. ckd_obj%dataRaw_z(IM)) then
+            if (Z .le. ckd_obj%z(IM)) then
                 IL = IM
             else
                 IU = IM
             end if
         end do
         I = min(max(IL, 1), ckd_obj%Nz - 1)
-        F = (Z - ckd_obj%dataRaw_z(I))/(ckd_obj%dataRaw_z(I + 1) - ckd_obj%dataRaw_z(I))
+        F = (Z - ckd_obj%z(I))/(ckd_obj%z(I + 1) - ckd_obj%z(I))
         F = min(max(F, 0.0d0), 1.0d0)
-        KG = (1.0 - F)*ckd_obj%dataRaw_kabs(I, ckd_obj%ig) + F*ckd_obj%dataRaw_kabs(I + 1, ckd_obj%ig)
-        KG = (1.0 - F)*ckd_obj%dataRaw_kabs(I, ckd_obj%ig) + F*ckd_obj%dataRaw_kabs(I + 1, ckd_obj%ig)
+        KG = (1.0 - F)*ckd_obj%kabs(I, ckd_obj%ig) + F*ckd_obj%kabs(I + 1, ckd_obj%ig)
+        KG = (1.0 - F)*ckd_obj%kabs(I, ckd_obj%ig) + F*ckd_obj%kabs(I + 1, ckd_obj%ig)
         if (EXTINCT + KG .gt. 0.0) then
             ALBEDO = ALBEDO*EXTINCT/(EXTINCT + KG)
         else
