@@ -130,13 +130,17 @@ program shdom
     real(kind=R__), allocatable :: SH_all(:, :, :, :)
     real(kind=R__), allocatable :: xGrid_all(:), yGrid_all(:)
 
-    ! SH and DO
+    ! shdo_obj
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_shdo) :: shdo_obj
     integer(kind=I__), allocatable, target :: dataRaw_Nphi0_Shdo(:)
-    real(kind=R__),    allocatable, target :: dataRaw_mu_Shdo(:), dataRaw_phi_Shdo(:), dataRaw_wgt_Shdo(:)
-    real(kind=R__),    allocatable, target :: dataRaw_radI_Shdo(:, :), dataRaw_srcJ_Shdo(:, :)
-    integer(kind=I__), allocatable, target :: dataRaw_iradI_Shdo(:), dataRaw_isrcJ_Shdo(:)
+    real(kind=R__),    allocatable, target :: dataRaw_mu_Shdo(:), &
+                                              dataRaw_phi_Shdo(:), &
+                                              dataRaw_wgt_Shdo(:)
+    real(kind=R__),    allocatable, target :: dataRaw_radI_Shdo(:, :), &
+                                              dataRaw_srcJ_Shdo(:, :)
+    integer(kind=I__), allocatable, target :: dataRaw_iradI_Shdo(:), &
+                                              dataRaw_isrcJ_Shdo(:)
 
     real(kind=R__),    allocatable :: dataRaw_dsrc_Shdo(:, :)
     integer(kind=I__), allocatable :: dataRaw_idsrc_Shdo(:)
