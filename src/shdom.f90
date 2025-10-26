@@ -365,9 +365,8 @@ program shdom
     if (type_src.eq. 'T') az_solar = 0.0d0
 
     ! angle grids for DO
-    allocate (mu_Do(Nmu_do), phi_Do(Nmu_do*Nphi_do), Nphi0_Do(Nmu_do), wt_Do(Nmu_do*Nphi_do))
-
-    memUsed = memUsed + 2.0*Nmu_do*(1.0 + Nphi_do)
+    allocate (mu_Do(Nmu_do), phi_Do(Nmu_do*Nphi_do), Nphi0_Do(Nmu_do), wt_Do(Nmu_do*Nphi_do)); &
+        memUsed = memUsed + 2.0*Nmu_do*(1.0 + Nphi_do)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
@@ -467,8 +466,8 @@ program shdom
     if (isHighOrder_) Nsh_out = 5
 
     ! x, y, z grids
-    allocate (x_Grid(Nx + 1), y_Grid(Ny + 1), z_Grid(Nz))
-    memUsed = memUsed + (Nx+1) + (Ny+1) + (Nz)
+    allocate (x_Grid(Nx + 1), y_Grid(Ny + 1), z_Grid(Nz)); &
+        memUsed = memUsed + (Nx+1) + (Ny+1) + (Nz)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
@@ -583,9 +582,8 @@ program shdom
               dataRaw_ssa_Prp( prp_obj%maxNpts))
     allocate (dataRaw_extDir_Prp(prp_obj%maxNpts), &
               dataRaw_ipha_Prp(prp_obj%maxNpts), &
-              dataRaw_leg_Prp( prp_obj%maxNptsLeg))
-
-    memUsed = memUsed + prp_obj%Nz + 6.0*prp_obj%maxNpts + prp_obj%maxNptsLeg
+              dataRaw_leg_Prp( prp_obj%maxNptsLeg)); &
+        memUsed = memUsed + prp_obj%Nz + 6.0*prp_obj%maxNpts + prp_obj%maxNptsLeg
 
     prp_obj%dataRaw_z      => dataRaw_z_Prp
     prp_obj%dataRaw_temp   => dataRaw_temp_Prp
@@ -671,11 +669,12 @@ program shdom
     ! Read in the surface properties
     if (sfc_obj%fname(1:4) .ne. 'NONE') then
 
-        allocate (dataRaw_brdf_Sfc(sfc_obj%maxNpar * sfc_obj%maxNpts))
+        allocate (dataRaw_brdf_Sfc(sfc_obj%maxNpar * sfc_obj%maxNpts)); &
+            memUsed = memUsed + sfc_obj%maxNpar * sfc_obj%maxNpts
+
         sfc_obj%dataRaw_brdf => dataRaw_brdf_Sfc
         sfc_obj%isAllocated = .true.
 
-        memUsed = memUsed + sfc_obj%maxNpar * sfc_obj%maxNpts
 
         if (isMasterProc) then
             call shd_io__readSfc(sfc_obj)
@@ -701,9 +700,8 @@ program shdom
         call shd_mpi__bcastCkdSize(ckd_obj)
 
         allocate (dataRaw_solar_Ckd(ckd_obj%Ng), dataRaw_delg_Ckd(ckd_obj%Ng), dataRaw_z_Ckd(ckd_obj%Nz))
-        allocate (dataRaw_kabs_Ckd(ckd_obj%Nz, ckd_obj%Ng))
-
-        memUsed = memUsed + ckd_obj%Nz*(2.0+ckd_obj%Ng) + 2.0*ckd_obj%Ng
+        allocate (dataRaw_kabs_Ckd(ckd_obj%Nz, ckd_obj%Ng)); &
+            memUsed = memUsed + ckd_obj%Nz*(2.0+ckd_obj%Ng) + 2.0*ckd_obj%Ng
 
         ckd_obj%dataRaw_solar => dataRaw_solar_Ckd
         ckd_obj%dataRaw_delg  => dataRaw_delg_Ckd
@@ -721,8 +719,8 @@ program shdom
     else
         ckd_obj%Ng = 1
 
-        allocate (dataRaw_solar_Ckd(ckd_obj%Ng), dataRaw_delg_Ckd(ckd_obj%Ng))
-        memUsed = memUsed + 2.0*ckd_obj%Ng
+        allocate (dataRaw_solar_Ckd(ckd_obj%Ng), dataRaw_delg_Ckd(ckd_obj%Ng)); &
+            memUsed = memUsed + 2.0*ckd_obj%Ng
 
         dataRaw_solar_Ckd(1) = 1.0
         dataRaw_delg_Ckd(1) = 1.0
@@ -745,9 +743,8 @@ program shdom
 
         call shd_mpi__bcastSenSize(sen_obj)
 
-        allocate (dataRaw_view_Sen(sen_obj%Npar*sen_obj%Npts))
-
-        memUsed = memUsed + sen_obj%Npar*sen_obj%Npts
+        allocate (dataRaw_view_Sen(sen_obj%Npar*sen_obj%Npts)); &
+            memUsed = memUsed + sen_obj%Npar*sen_obj%Npts
 
         sen_obj%dataRaw_view => dataRaw_view_Sen
         sen_obj%isAllocated = .true.
