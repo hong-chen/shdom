@@ -113,7 +113,6 @@ program shdom
     character(len=charMaxLen_) :: fileOut_nc
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-
     real(kind=R__), allocatable  :: planck(:)
     real(kind=R__), allocatable  :: temp(:), ext(:), ssa(:)
     real(kind=R__), allocatable  :: leg(:)
