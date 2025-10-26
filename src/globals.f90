@@ -131,30 +131,29 @@ module globals_type
 
 
     type :: shd_type_prp
-
         character(len=charMaxLen_) :: fname = 'NONE'
-        character(len=1) :: type
+        character(len=1) :: type = ' '
 
-        integer(kind=I__) :: Nx
-        integer(kind=I__) :: Ny
-        integer(kind=I__) :: Nz
-        integer(kind=I__) :: Npha
-        integer(kind=I__) :: Nleg
-        integer(kind=I__) :: NlegSet
+        integer(kind=I__) :: Nx = -999
+        integer(kind=I__) :: Ny = -999
+        integer(kind=I__) :: Nz = -999
+        integer(kind=I__) :: Npha = -999
+        integer(kind=I__) :: Nleg = -999
+        integer(kind=I__) :: NlegSet = -999
 
-        integer(kind=I__) :: maxNz
-        integer(kind=I__) :: maxNpts
-        integer(kind=I__) :: maxNleg
-        integer(kind=I__) :: maxNptsLeg
+        integer(kind=I__) :: maxNz   = -999
+        integer(kind=I__) :: maxNpts = -999
+        integer(kind=I__) :: maxNleg = -999
+        integer(kind=I__) :: maxNptsLeg = -999
 
-        real(kind=R__) :: maxAsym
+        real(kind=R__) :: maxAsym = -999.0
 
-        real(kind=R__) :: dx
-        real(kind=R__) :: dy
-        real(kind=R__) :: xStart
-        real(kind=R__) :: yStart
-        real(kind=R__) :: xDomain
-        real(kind=R__) :: yDomain
+        real(kind=R__) :: dx = -999.0
+        real(kind=R__) :: dy = -999.0
+        real(kind=R__) :: xStart  = -999.0
+        real(kind=R__) :: yStart  = -999.0
+        real(kind=R__) :: xDomain = -999.0
+        real(kind=R__) :: yDomain = -999.0
 
         real(kind=R__), pointer :: dataRaw_z(:)       => null()
         real(kind=R__), pointer :: dataRaw_temp(:)    => null()
@@ -167,25 +166,23 @@ module globals_type
         real(kind=R__), pointer :: dataRaw_leg(:)     => null()
 
         logical :: isAllocated  = .false.
-
     end type shd_type_prp
 
 
     type :: shd_type_sfc
-
         character(len=charMaxLen_) :: fname = 'NONE'
-        character(len=2) :: type
+        character(len=2) :: type = '  '
 
-        integer(kind=I__) :: Nx
-        integer(kind=I__) :: Ny
-        integer(kind=I__) :: maxNpts
-        integer(kind=I__) :: maxNpar
-        integer(kind=I__) :: Npar
+        integer(kind=I__) :: Nx = -999
+        integer(kind=I__) :: Ny = -999
+        integer(kind=I__) :: maxNpts = -999
+        integer(kind=I__) :: maxNpar = -999
+        integer(kind=I__) :: Npar = -999
 
-        real(kind=R__) :: dx
-        real(kind=R__) :: dy
-        real(kind=R__) :: avgTemp
-        real(kind=R__) :: avgAlb
+        real(kind=R__) :: dx = -999.0
+        real(kind=R__) :: dy = -999.0
+        real(kind=R__) :: avgTemp = -999.0
+        real(kind=R__) :: avgAlb = -999.0
 
         real(kind=R__), pointer :: dataRaw_brdf(:)  => null()
         real(kind=R__), pointer :: dataGrid_brdf(:) => null()
@@ -193,22 +190,22 @@ module globals_type
         logical :: isUniform    = .false.
         logical :: isLambertian = .false.
         logical :: isAllocated  = .false.
-
     end type shd_type_sfc
 
 
     type :: shd_type_ckd
-
         character(len=charMaxLen_) :: fname = 'NONE'
 
-        integer(kind=I__) :: Ng
-        integer(kind=I__) :: Nz
-        integer(kind=I__) :: ig
-        integer(kind=I__) :: maxNg
-        integer(kind=I__) :: maxNz
+        integer(kind=I__) :: Ng = -999
+        integer(kind=I__) :: Nz = -999
+        integer(kind=I__) :: ig = -999
+        integer(kind=I__) :: maxNg = -999
+        integer(kind=I__) :: maxNz = -999
 
-        real(kind=R__) :: waveNum(2), avgWaveNum
-        real(kind=R__) :: waveLen(2), avgWaveLen
+        real(kind=R__) :: waveNum(2) = [-999.0, -999.0]
+        real(kind=R__) :: avgWaveNum = -999.0
+        real(kind=R__) :: waveLen(2) = [-999.0, -999.0]
+        real(kind=R__) :: avgWaveLen = -999.0
 
         real(kind=R__), pointer :: dataRaw_solar(:)   => null()
         real(kind=R__), pointer :: dataRaw_delg(:)    => null()
@@ -216,21 +213,18 @@ module globals_type
         real(kind=R__), pointer :: dataRaw_kabs(:, :) => null()
 
         logical :: isAllocated  = .false.
-
     end type shd_type_ckd
 
 
     type :: shd_type_sen
-
         character(len=charMaxLen_) :: fname = 'NONE'
 
-        integer(kind=I__) :: Npts
-        integer(kind=I__) :: Npar
+        integer(kind=I__) :: Npts = -999
+        integer(kind=I__) :: Npar = -999
 
         real(kind=R__), pointer :: dataRaw_view(:) => null()
 
         logical :: isAllocated  = .false.
-
     end type shd_type_sen
 
 end module globals_type
