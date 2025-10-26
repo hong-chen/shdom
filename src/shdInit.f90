@@ -43,8 +43,8 @@ module shd_init
     use globals_cfg,   only: verbose_, planetRadius_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
                              is1DX_, is1DYx_, &
-                             isSolar_, isThermal_, &
-                             shd_type_prp, shd_type_sfc
+                             isSolar_, isThermal_
+    use globals_type,  only: shd_type_prp, shd_type_sfc
 
     use shd_util, only: shd_util__computePlanck, &
                         shd_util__solveTriDiag

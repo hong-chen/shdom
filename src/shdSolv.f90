@@ -39,9 +39,9 @@
 
 module shd_solv
 
-    use globals_cfg, only: verbose_, isMpi_, &
-                           isSolar_, &
-                           shd_type_prp, shd_type_sfc, shd_type_ckd
+    use globals_cfg, only:  verbose_, isMpi_, &
+                            isSolar_
+    use globals_type, only: shd_type_prp, shd_type_sfc, shd_type_ckd
 
     use shd_init, only: shd_init__makePrp, &
                         shd_init__makeRad, &

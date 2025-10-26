@@ -43,8 +43,8 @@
 module shd_inp
 
     use globals_const, only: PI_
-    use globals_cfg,   only: verbose_, charMaxLen_, &
-                             shd_type_prp, shd_type_sfc, &
+    use globals_cfg,   only: verbose_, charMaxLen_
+    use globals_type,  only: shd_type_prp, shd_type_sfc, &
                              shd_type_ckd, shd_type_sen
 
     use shd_util, only: shd_util__computePlanck

@@ -45,8 +45,8 @@ module shd_rad
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
                              is3Ddir1Ddif_, &
                              isPol_, isPol4_, &
-                             isSolar_, isThermal_, &
-                             shd_type_prp, shd_type_sfc, &
+                             isSolar_, isThermal_
+    use globals_type,  only: shd_type_prp, shd_type_sfc, &
                              shd_type_ckd, shd_type_sen
 
     use shd_scat, only: shd_scat__computePhase

@@ -46,8 +46,8 @@ program shdom
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, isMpi_, &
                              is1DX_, is1DYx_, is1D_, is3Ddir1Ddif_, &
                              is1D1_, isPol_, isPol4_, &
-                             isSolar_, isThermal_, &
-                             shd_type_prp, shd_type_sfc, &
+                             isSolar_, isThermal_
+    use globals_type,  only: shd_type_prp, shd_type_sfc, &
                              shd_type_ckd, shd_type_sen
 
     use shd_init, only: shd_init__makeGrid, &

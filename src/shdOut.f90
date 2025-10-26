@@ -42,8 +42,8 @@ module shd_out
     use globals_const, only: RD_, PI_
     use globals_cfg,   only: verbose_, charMaxLen_, is1DX_, &
                              isPol_, isPol4_, &
-                             isSolar_, isThermal_, &
-                             shd_type_prp, shd_type_sfc, &
+                             isSolar_, isThermal_
+    use globals_type,  only: shd_type_prp, shd_type_sfc, &
                              shd_type_ckd, shd_type_sen
 
     use shd_grid, only: shd_grid__testCellSplit

@@ -43,8 +43,8 @@ module shd_src
                              FRAC12_, FRAC13_, FRAC112_
     use globals_cfg,   only: accSolv_, isOpenX_, isOpenYx_, &
                              isPol_, isPol4_, &
-                             isSolar_, isThermal_, &
-                             shd_type_prp
+                             isSolar_, isThermal_
+    use globals_type,  only: shd_type_prp
 
     use shd_scat, only: shd_scat__computeLegendre, &
                         shd_scat__computeWigner

@@ -43,8 +43,8 @@ module shd_grid
     use globals_cfg,   only: accSolv_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, isMpi_, &
                              is1DX_, is1DYx_, is1D_, &
-                             isPol_, isSolar_, isThermal_, &
-                             shd_type_prp, shd_type_sfc, shd_type_ckd
+                             isPol_, isSolar_, isThermal_
+    use globals_type,  only: shd_type_prp, shd_type_sfc, shd_type_ckd
 
     use shd_util, only: shd_util__findNextCell, &
                         shd_util__computePlanck, &

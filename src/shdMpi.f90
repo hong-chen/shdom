@@ -44,8 +44,8 @@ module shd_mpi
                              isMpiX_, isMpiY_, isMpi_, &
                              is1DX_, is1DYx_, is1D_, &
                              isPol_, isPol4_, &
-                             isSolar_, &
-                             shd_type_prp, shd_type_sfc, &
+                             isSolar_
+    use globals_type,  only: shd_type_prp, shd_type_sfc, &
                              shd_type_ckd, shd_type_sen
 
 #if HAS_MPI

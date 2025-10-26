@@ -43,7 +43,8 @@ module shd_intg
                              FRAC13_, FRAC112_
     use globals_cfg,   only: verbose_, accSolv_, &
                              isMpi_, is1DX_, is1DYx_, is1D_, &
-                             isPol_, shd_type_prp, shd_type_sfc
+                             isPol_
+    use globals_type,  only: shd_type_prp, shd_type_sfc
 
     use shd_sfc,  only: shd_sfc__interpSfc
 

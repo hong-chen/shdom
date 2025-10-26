@@ -43,8 +43,8 @@
 module shd_sfc
 
     use globals_const, only: PI_
-    use globals_cfg,   only: isPol_, &
-                             shd_type_prp, shd_type_sfc
+    use globals_cfg,   only: isPol_
+    use globals_type,  only: shd_type_prp, shd_type_sfc
 
     use shd_util, only: shd_util__computePlanck
 

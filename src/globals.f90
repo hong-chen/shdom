@@ -119,15 +119,16 @@ module globals_const
 
 end module globals_const
 
+module globals_type
 
-module globals_cfg
+    use globals_cfg, only: charMaxLen_
 
     implicit none
     public
 
     integer, parameter :: I__ = selected_int_kind(9)
     integer, parameter :: R__ = selected_real_kind(6)
-    integer, parameter :: charMaxLen_ = 256 ! file name max length (number of characters)
+
 
     type :: shd_type_prp
 
@@ -169,6 +170,7 @@ module globals_cfg
 
     end type shd_type_prp
 
+
     type :: shd_type_sfc
 
         character(len=charMaxLen_) :: fname = 'NONE'
@@ -194,6 +196,7 @@ module globals_cfg
 
     end type shd_type_sfc
 
+
     type :: shd_type_ckd
 
         character(len=charMaxLen_) :: fname = 'NONE'
@@ -216,6 +219,7 @@ module globals_cfg
 
     end type shd_type_ckd
 
+
     type :: shd_type_sen
 
         character(len=charMaxLen_) :: fname = 'NONE'
@@ -228,6 +232,16 @@ module globals_cfg
         logical :: isAllocated  = .false.
 
     end type shd_type_sen
+
+end module globals_type
+
+
+module globals_cfg
+
+    implicit none
+    public
+
+    integer, parameter :: charMaxLen_ = 256 ! file name max length (number of characters)
 
     real(kind=8), save :: accSolv_
     real(kind=4), save :: memTotSysMB_ = 16000.0
