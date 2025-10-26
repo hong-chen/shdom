@@ -129,7 +129,6 @@ module globals_type
     integer, parameter :: I__ = selected_int_kind(9)
     integer, parameter :: R__ = selected_real_kind(6)
 
-
     type :: shd_type_prp
         character(len=charMaxLen_) :: fname = 'NONE'
         character(len=1) :: type = ' '
@@ -155,15 +154,15 @@ module globals_type
         real(kind=R__) :: xDomain = -999.0
         real(kind=R__) :: yDomain = -999.0
 
-        real(kind=R__), pointer :: dataRaw_z(:)       => null()
-        real(kind=R__), pointer :: dataRaw_temp(:)    => null()
-        real(kind=R__), pointer :: dataRaw_ext(:)     => null()
-        real(kind=R__), pointer :: dataRaw_extDir(:)  => null()
-        real(kind=R__), pointer :: dataRaw_ssa(:)     => null()
+        real(kind=R__), pointer :: dataRaw_z(:)      => null()
+        real(kind=R__), pointer :: dataRaw_temp(:)   => null()
+        real(kind=R__), pointer :: dataRaw_ext(:)    => null()
+        real(kind=R__), pointer :: dataRaw_extDir(:) => null()
+        real(kind=R__), pointer :: dataRaw_ssa(:)    => null()
 
-        integer(kind=2), pointer:: dataRaw_ipha(:)    => null()
+        integer(kind=2), pointer:: dataRaw_ipha(:) => null()
 
-        real(kind=R__), pointer :: dataRaw_leg(:)     => null()
+        real(kind=R__), pointer :: dataRaw_leg(:)  => null()
 
         logical :: isAllocated  = .false.
     end type shd_type_prp
