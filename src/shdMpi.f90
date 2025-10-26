@@ -1827,7 +1827,7 @@ subroutine shd_mpi__computeRad(&
 #if HAS_MPI
     integer :: IBC, JX, JY, K
     integer :: NANGOUT, Nx_out, Ny_out
-    logical :: LAMBERTIAN, VALIDRAD
+    logical :: VALIDRAD
     real(RD_) :: X0, Y0, Z0, XE, YE, ZE, X, Y, Z, TRANSMIT, RADIANCE(Nstokes)
     real    :: mu_out, phi_out, phiDeg_out
     real    :: STARTX, STARTY, EPS = 1.0e-5
@@ -1879,8 +1879,6 @@ subroutine shd_mpi__computeRad(&
     end if
     Z0 = min(max(parms_Out(1), z_Grid(1)), z_Grid(Nz))
     NANGOUT = nint(parms_Out(6))
-
-    LAMBERTIAN = sfc_obj%type(2:2) .eq. 'L'
 
     MAXNRAD = nint(4.0*(Nx_out*Ny_out)/Nproc_)
     ! MAXNRAD = Nx_out*Ny_out
@@ -1972,7 +1970,7 @@ subroutine shd_mpi__computeRad(&
                 GRIDRAD(:, I) = BCRAD(:, IBC)
             end do
         else
-            if (.not. LAMBERTIAN) then
+            if (.not. sfc_obj%isLambertian) then
                 call shd_init__makeSfcRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
                     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, mu_out, phi_out,&
                     &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&

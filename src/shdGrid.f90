@@ -44,7 +44,7 @@ module shd_grid
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, isMpi_, &
                              is1DX_, is1DYx_, is1D_, &
                              isPol_, isSolar_, isThermal_, &
-                             shd_type_prp, shd_type_ckd
+                             shd_type_prp, shd_type_sfc, shd_type_ckd
 
     use shd_util, only: shd_util__findNextCell, &
                         shd_util__computePlanck, &
@@ -94,9 +94,9 @@ module shd_grid
 contains
 
 subroutine shd_grid__findBndryPnt(&
-    &NPTS, NANG, MAXNBC, MAXBCRAD, LAMBERTIAN, &
+    &NPTS, NANG, MAXNBC, MAXBCRAD, &
     &ZBOT, ZTOP, GRIDPOS,&
-    &NTOPPTS, NBOTPTS, BCPTR)
+    &NTOPPTS, NBOTPTS, BCPTR, sfc_obj)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Description:
@@ -109,7 +109,7 @@ subroutine shd_grid__findBndryPnt(&
     !   NANG      : integer, number of discrete ordinate angles (NMU and NPHI)
     !   MAXNBC    : integer, maximum number of boundary grid points
     !   MAXBCRAD  : integer, maximum number of radiances at boundary grid points
-    !   LAMBERTIAN: logical, lambertian surface or not
+    !   sfc_obj%isLambertian: logical, lambertian surface or not
     !   ZBOT      : real, altitude of bottom boundary
     !   ZTOP      : real, altitude of bottom boundary
     !   GRIDPOS(3, NPTS): real array, (x,y,z) coordinate values of grid point locations
@@ -121,16 +121,17 @@ subroutine shd_grid__findBndryPnt(&
     !               and NBOTPTS (bottom boundary points)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
+    type(shd_type_sfc), intent(in) :: sfc_obj
+
     integer(kind=I__), intent(in) :: NPTS, NANG, MAXNBC, MAXBCRAD
     real(kind=R__)   , intent(in) :: ZBOT, ZTOP, GRIDPOS(3, NPTS)
-    logical, intent(in) :: LAMBERTIAN
 
     integer(kind=I__), intent(out) :: NTOPPTS, NBOTPTS
     integer(kind=I__), intent(out) :: BCPTR(MAXNBC, 2)
 
     integer(kind=I__) :: I, IT, IB, NA
 
-    if (LAMBERTIAN) then
+    if (sfc_obj%isLambertian) then
         NA = 1
     else
         NA = NANG/2 + 1

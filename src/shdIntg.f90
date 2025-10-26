@@ -149,7 +149,7 @@ subroutine shd_intg__integratePath(&
 
     integer I, I1, K, NR, IPHI, IMU, IBC, IANG, IUPDOWN, OLDNPTS
     integer joct, ipt, ip, iorder, ipcell, icorner
-    logical :: LAMBERTIAN, theflag
+    logical :: theflag
     real A, TRANSMIN
     save OLDNPTS
 
@@ -170,12 +170,11 @@ subroutine shd_intg__integratePath(&
     call shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
         &GRIDPOS, NX, NY, NZ, XGRID, YGRID, ZGRID)
 
-    LAMBERTIAN = sfc_obj%type(2:2) .eq. 'L'
     if (NPTS .ne. OLDNPTS) then
         ! Make the pointers to the grid points on the top and bottom boundaries
-        call shd_grid__findBndryPnt(NPTS, NANG, MAXNBC, MAXBCRAD, LAMBERTIAN, &
+        call shd_grid__findBndryPnt(NPTS, NANG, MAXNBC, MAXBCRAD, &
             &ZGRID(1), ZGRID(NZ), GRIDPOS,&
-            &NTOPPTS, NBOTPTS, BCPTR)
+            &NTOPPTS, NBOTPTS, BCPTR, sfc_obj)
         if (sfc_obj%type(1:1) .eq. 'V') then
             ! If this is a variable surface then bilinearly interpolate
             !   the surface temperature and reflection parameters to the
@@ -257,7 +256,7 @@ subroutine shd_intg__integratePath(&
 
                 ! Initialize the bottom boundary radiances
                 IUPDOWN = 2
-                if (.not. LAMBERTIAN) then
+                if (.not. sfc_obj%isLambertian) then
 
                     ! If a Lambertian surface, use the radiances computed above
                     !   otherwise, compute the radiance for this angle
@@ -345,7 +344,7 @@ subroutine shd_intg__integratePath(&
 
             ! For a general BRDF surface save the downwelling radiance
             !   at the bottom boundary points.
-            if (.not. LAMBERTIAN .and. IMU .le. NMU/2) then
+            if ((.not. sfc_obj%isLambertian) .and. (IMU .le. NMU/2)) then
                 I1 = NTOPPTS + NBOTPTS*IANG
                 do IBC = 1, NBOTPTS
                     I = BCPTR(IBC, 2)

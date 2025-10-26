@@ -239,9 +239,9 @@ subroutine shd_solv__solveRte(&
     ! Surface initialization
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Make the pointers to the grid points on the top and bottom boundaries
-    call shd_grid__findBndryPnt(NPTS, NANG, MAXNBC, MAXBCRAD, sfc_obj%isLambertian, &
+    call shd_grid__findBndryPnt(NPTS, NANG, MAXNBC, MAXBCRAD,&
         &ZGRID(1), ZGRID(NZ), GRIDPOS,&
-        &NTOPPTS, NBOTPTS, BCPTR)
+        &NTOPPTS, NBOTPTS, BCPTR, sfc_obj)
     if (sfc_obj%type(1:1) .eq. 'V') then
         ! If this is a variable surface then bilinearly interpolate
         !   the surface temperature and reflection parameters to the

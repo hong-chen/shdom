@@ -737,7 +737,7 @@ subroutine shd_rad__computeRad(&
     character(len=1) :: SRCTYPE, UNITS
     integer I, IBC, IANG, JX, JY, K, SIDE
     integer NANGOUT, NXOUT, NYOUT
-    logical LAMBERTIAN, VALIDRAD
+    logical VALIDRAD
     real(RD_) :: X0, Y0, Z0, XE, YE, ZE, TRANSMIT, RADIANCE(4)
     real MUOUT, PHIOUT, PHID
     real XDOMAIN, YDOMAIN, STARTX, STARTY
@@ -784,8 +784,6 @@ subroutine shd_rad__computeRad(&
     end if
     Z0 = min(max(OUTPARMS(1), ZGRID(1)), ZGRID(NZ))
     NANGOUT = nint(OUTPARMS(6))
-
-    LAMBERTIAN = sfc_obj%type(2:2) .eq. 'L'
 
     ! Loop over the radiance directions
     do IANG = 1, NANGOUT
@@ -847,7 +845,7 @@ subroutine shd_rad__computeRad(&
                 GRIDRAD(:, I) = BCRAD(:, IBC)
             end do
         else
-            if (.not. LAMBERTIAN) then
+            if (.not. sfc_obj%isLambertian) then
                 call shd_init__makeSfcRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
                     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MUOUT, PHIOUT,&
                     &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
