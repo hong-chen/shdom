@@ -129,6 +129,34 @@ module globals_type
     integer, parameter :: I__ = selected_int_kind(9)
     integer, parameter :: R__ = selected_real_kind(6)
 
+
+    type :: shd_type_shdo
+        integer(kind=I__) :: Nmu  = -999
+        integer(kind=I__) :: Nphi = -999
+        integer(kind=I__) :: Nang = -999
+        integer(kind=I__) :: Nlm  = -999
+        integer(kind=I__) :: Nstokes = -999
+        integer(kind=I__) :: NlegSet = -999
+
+        integer(kind=I__) :: maxNl   = -999
+        integer(kind=I__) :: maxNm   = -999
+        integer(kind=I__) :: maxNphi0 = -999
+
+        integer(kind=I__), pointer :: dataRaw_Nphi0(:)   => null()
+        integer(kind=I__), pointer :: dataRaw_iradI(:)   => null()
+        integer(kind=I__), pointer :: dataRaw_isrcJ(:)   => null()
+
+        real(kind=R__), pointer :: dataRaw_mu(:)  => null()
+        real(kind=R__), pointer :: dataRaw_phi(:) => null()
+        real(kind=R__), pointer :: dataRaw_wgt(:) => null()
+
+        real(kind=R__), pointer :: dataRaw_radI(:, :)   => null()
+        real(kind=R__), pointer :: dataRaw_srcJ(:, :)   => null()
+
+        logical :: isAllocated  = .false.
+    end type shd_type_shdo
+
+
     type :: shd_type_prp
         character(len=charMaxLen_) :: fname = 'NONE'
         character(len=1) :: type = ' '
