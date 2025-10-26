@@ -4,7 +4,7 @@
  SFCFILE = '../../data/shdom-sfc_land-lsrt.txt'
  CKDFILE = '../../data/shdom-ckd_modis-aqua-b01.txt'
  INSAVEFILE = 'NONE'
- OUTSAVEFILE ='tmp-data/shdom-out_land.sHdOm-sav'
+ OUTSAVEFILE ='tmp-data/shdom-out_land.sHdOmNG-sav'
  NSTOKES = 1
  NX = 120
  NY = 120
@@ -26,7 +26,7 @@
  WAVENO = 14492.8 16393.4
  WAVELEN = 0.65
  ACCELFLAG = .TRUE.
- SOLACC = 1.0E-5
+ SOLACC = 1.0E-4
  MAXITER = 50
  SPLITACC = 0.01
  SHACC = 0.003

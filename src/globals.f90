@@ -119,6 +119,54 @@ module globals_const
 
 end module globals_const
 
+
+module globals_cfg
+
+    implicit none
+    public
+
+    integer, parameter :: charMaxLen_ = 256 ! file name max length (number of characters)
+
+    real(kind=8), save :: accSolv_
+    real(kind=4), save :: memTotSysMB_ = 16000.0
+    real(kind=4), save :: memPerCpuMB_
+    real(kind=4), save :: planetRadius_ = 6371.009
+
+    integer(kind=1), save :: verbose_ = 5
+    !Severity    Level  Description
+    !Emergency     0      System unusable
+    !Alert         1      Action must be taken immediately
+    !Critical      2      Critical conditions
+    !Error         3      Error conditions
+    !Warning       4      Warning conditions
+    !Notice        5      Normal but significant condition
+    !Informational 6      Informational messages
+    !All           7      All-level messages
+
+    ! Namelist input
+    logical, save :: isNmlInp_ = .true.
+
+    ! High order radiance (use more SH terms)
+    logical, save :: isHighOrder_
+
+    ! Boundary conditions (BCFLAG)
+    logical, save :: isOpenX_, isOpenYx_, isMpiX_, isMpiY_, isMpi_
+
+    ! Indepedent pixel conditions (IPFLAG)
+    logical, save :: is1DX_, is1DYx_, is1D_, is3Ddir1Ddif_
+
+    ! Pure 1D calculation
+    logical, save :: is1D1_
+
+    ! Polarization
+    logical, save :: isPol_, isPol4_
+
+    ! Radiation sources (SRCTYPE)
+    logical, save :: isSolar_, isThermal_
+
+end module globals_cfg
+
+
 module globals_type
 
     use globals_cfg, only: charMaxLen_
@@ -255,50 +303,3 @@ module globals_type
     end type shd_type_sen
 
 end module globals_type
-
-
-module globals_cfg
-
-    implicit none
-    public
-
-    integer, parameter :: charMaxLen_ = 256 ! file name max length (number of characters)
-
-    real(kind=8), save :: accSolv_
-    real(kind=4), save :: memTotSysMB_ = 16000.0
-    real(kind=4), save :: memPerCpuMB_
-    real(kind=4), save :: planetRadius_ = 6371.009
-
-    integer(kind=1), save :: verbose_ = 5
-    !Severity    Level  Description
-    !Emergency     0      System unusable
-    !Alert         1      Action must be taken immediately
-    !Critical      2      Critical conditions
-    !Error         3      Error conditions
-    !Warning       4      Warning conditions
-    !Notice        5      Normal but significant condition
-    !Informational 6      Informational messages
-    !All           7      All-level messages
-
-    ! Namelist input
-    logical, save :: isNmlInp_ = .true.
-
-    ! High order radiance (use more SH terms)
-    logical, save :: isHighOrder_
-
-    ! Boundary conditions (BCFLAG)
-    logical, save :: isOpenX_, isOpenYx_, isMpiX_, isMpiY_, isMpi_
-
-    ! Indepedent pixel conditions (IPFLAG)
-    logical, save :: is1DX_, is1DYx_, is1D_, is3Ddir1Ddif_
-
-    ! Pure 1D calculation
-    logical, save :: is1D1_
-
-    ! Polarization
-    logical, save :: isPol_, isPol4_
-
-    ! Radiation sources (SRCTYPE)
-    logical, save :: isSolar_, isThermal_
-
-end module globals_cfg
