@@ -43,7 +43,7 @@ module shd_intg
                              FRAC13_, FRAC112_
     use globals_cfg,   only: verbose_, accSolv_, &
                              isMpi_, is1DX_, is1DYx_, is1D_, &
-                             isPol_, shd_type_prp
+                             isPol_, shd_type_prp, shd_type_sfc
 
     use shd_sfc,  only: shd_sfc__interpSfc
 
@@ -84,21 +84,20 @@ module shd_intg
 contains
 
 subroutine shd_intg__integratePath(&
-    &NX, NY, NZ, NSTOKES, NSTLEG,&
+    &NX, NY, NZ, NSTOKES,&
     &ML, MM, NLM, NMU, NPHI0MAX, NPHI0, NANG,&
     &BCFLAG, IPFLAG,&
     &NPTS, NCELLS, XGRID, YGRID, ZGRID, GRIDPOS,&
     &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &SRCTYPE, SOLARMU, SOLARAZ, SKYRAD, WAVENO, WAVELEN,&
-    &UNITS, SFCTYPE, GNDTEMP, GNDALBEDO,&
-    &NXSFC, NYSFC, DELXSFC, DELYSFC, NSFCPAR, SFCPARMS,&
-    &SFCGRIDPARMS, UNIFORM_SFC_BRDF, SFC_BRDF_DO,&
+    &UNITS,&
+    &SFC_BRDF_DO,&
     &MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &MU, PHI, WTDO,&
     &CMU1, CPHI1, CMU2, CPHI2, WSAVE, FFTFLAG,&
     &DIRFLUX, FLUXES, EXTINCT,&
     &SHPTR, SOURCE, RSHPTR, RADIANCE,&
-    &WORK, SWEEPORD, GRIDRAD, prp_obj)
+    &WORK, SWEEPORD, GRIDRAD, prp_obj, sfc_obj)
 
     !   Performs the path integrations through the medium specified by
     ! the extinction (EXTINCT) and source function (SOURCE) in
@@ -125,21 +124,18 @@ subroutine shd_intg__integratePath(&
     ! boundary points.
 
     type(shd_type_prp), intent(in) :: prp_obj
+    type(shd_type_sfc), intent(in) :: sfc_obj
 
-    integer NX, NY, NZ, NSTOKES, NSTLEG, ML, MM, NLM
+    integer NX, NY, NZ, NSTOKES, ML, MM, NLM
     integer NMU, NPHI0MAX, NPHI0(NMU), NANG
     integer BCFLAG, IPFLAG
     integer NPTS, NCELLS, MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS
-    integer NXSFC, NYSFC, NSFCPAR
     integer SHPTR(NPTS + 1), RSHPTR(NPTS + 1), BCPTR(MAXNBC, 2)
     integer GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
     integer*2 CELLFLAGS(NCELLS)
     integer SWEEPORD(NPTS, *)
-    logical FFTFLAG(NMU), UNIFORM_SFC_BRDF
+    logical FFTFLAG(NMU)
     real SOLARMU, SOLARAZ, SKYRAD
-    real GNDTEMP, GNDALBEDO
-    real DELXSFC, DELYSFC
-    real SFCPARMS(NSFCPAR, *), SFCGRIDPARMS(NSFCPAR, MAXNBC)
     real SFC_BRDF_DO(NSTOKES, NMU/2, NPHI0MAX, NSTOKES, NMU/2, NPHI0MAX)
     real WAVENO(2), WAVELEN
     real XGRID(NX), YGRID(NY), ZGRID(NZ), GRIDPOS(3, NPTS)
@@ -150,7 +146,6 @@ subroutine shd_intg__integratePath(&
     real GRIDRAD(NSTOKES, NPTS), WORK(NSTOKES, NPHI0MAX, NPTS)
     real SOURCE(NSTOKES, *), RADIANCE(NSTOKES, *)
     character(len=1) :: SRCTYPE, UNITS
-    character(len=2) :: SFCTYPE
 
     integer I, I1, K, NR, IPHI, IMU, IBC, IANG, IUPDOWN, OLDNPTS
     integer joct, ipt, ip, iorder, ipcell, icorner
@@ -175,20 +170,19 @@ subroutine shd_intg__integratePath(&
     call shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
         &GRIDPOS, NX, NY, NZ, XGRID, YGRID, ZGRID)
 
-    LAMBERTIAN = SFCTYPE(2:2) .eq. 'L'
+    LAMBERTIAN = sfc_obj%type(2:2) .eq. 'L'
     if (NPTS .ne. OLDNPTS) then
         ! Make the pointers to the grid points on the top and bottom boundaries
         call shd_grid__findBndryPnt(NPTS, NANG, MAXNBC, MAXBCRAD, LAMBERTIAN, &
             &ZGRID(1), ZGRID(NZ), GRIDPOS,&
             &NTOPPTS, NBOTPTS, BCPTR)
-        if (SFCTYPE(1:1) .eq. 'V') then
+        if (sfc_obj%type(1:1) .eq. 'V') then
             ! If this is a variable surface then bilinearly interpolate
             !   the surface temperature and reflection parameters to the
             !   bottom grid points.
             call shd_sfc__interpSfc(NBOTPTS, BCPTR(1, 2), GRIDPOS,&
                 &SRCTYPE, WAVENO, WAVELEN, UNITS,&
-                &NXSFC, NYSFC, DELXSFC, DELYSFC, NSFCPAR, SFCPARMS,&
-                &SFCGRIDPARMS, prp_obj)
+                &prp_obj, sfc_obj)
         end if
     end if
     ! Make the isotropic radiances for the top boundary
@@ -217,19 +211,19 @@ subroutine shd_intg__integratePath(&
             ! For the first upwelling angle, make the bottom boundary radiances
             !   for the Lambertian surfaces.  Compute the upwelling bottom
             !   radiances using the downwelling fluxes.
-            if (SFCTYPE .eq. 'FL') then
+            if (sfc_obj%type .eq. 'FL') then
                 call shd_init__makeSfcRadFL(NBOTPTS, BCPTR(1, 2),&
-                    &DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO,&
+                    &DIRFLUX, FLUXES, SRCTYPE, sfc_obj%avgTemp, sfc_obj%avgAlb,&
                     &WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1, 1 + NTOPPTS))
-            else if (SFCTYPE .eq. 'VL') then
+            else if (sfc_obj%type .eq. 'VL') then
                 call shd_init__makeSfcRadVL(NBOTPTS, BCPTR(1, 2),&
-                    &DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS,&
+                    &DIRFLUX, FLUXES, SRCTYPE, sfc_obj%Npar, sfc_obj%dataGrid_brdf,&
                     &NSTOKES, BCRAD(1, 1 + NTOPPTS))
             end if
         end if
 
         if (isPol_) then
-            call shd_shdo__transSHtoDO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
+            call shd_shdo__transSHtoDO(NPTS, NSTOKES, prp_obj%NlegSet, ML, MM, NLM,&
                 &NMU, NPHI0MAX, NPHI0(IMU),&
                 &IMU, FFTFLAG, CMU1, CPHI1, WSAVE,&
                 &SHPTR, SOURCE, WORK)
@@ -270,18 +264,18 @@ subroutine shd_intg__integratePath(&
                     !   by integrating over the stored downwelling radiances.
                     ! If the surface reflection is uniform use the precomputed
                     !   BRDF matrix to do the integration.
-                    if (UNIFORM_SFC_BRDF) then
+                    if (sfc_obj%isUniform) then
                         call shd_init__makeSfcRadU(NBOTPTS, BCPTR(1, 2),&
                             &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, IMU, IPHI,&
                             &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
-                            &SFCTYPE, NSFCPAR, SFCGRIDPARMS, SFC_BRDF_DO,&
+                            &sfc_obj%type, sfc_obj%Npar, sfc_obj%dataGrid_brdf, SFC_BRDF_DO,&
                             &NSTOKES, BCRAD(1, 1 + NTOPPTS))
                     else
                         call shd_init__makeSfcRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
                             &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                             &MU(IMU), PHI(IMU, IPHI),&
                             &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
-                            &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
+                            &sfc_obj%type, sfc_obj%Npar, sfc_obj%dataGrid_brdf,&
                             &NSTOKES, BCRAD(1, 1 + NTOPPTS))
                     end if
                 end if
@@ -364,7 +358,7 @@ subroutine shd_intg__integratePath(&
 
         ! Transform the radiance to spherical harmonics for this zenith angle
         if (isPol_) then
-            call shd_shdo__transDOtoSH(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
+            call shd_shdo__transDOtoSH(NPTS, NSTOKES, prp_obj%NlegSet, ML, MM, NLM,&
                 &NMU, NPHI0MAX, NPHI0(IMU),&
                 &IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
                 &RSHPTR, WORK, RADIANCE)

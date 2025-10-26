@@ -1067,7 +1067,7 @@ logical function sweepCellNext(BCFLAG, NXC, NYC, NZ, IOCT,&
 end function sweepCellNext
 
 subroutine shd_grid__interpGrid(&
-    &NPTS, NSTLEG, NLEG, GRIDPOS,&
+    &NPTS, GRIDPOS,&
     &TEMP, EXTINCT, ALBEDO, LEGEN, IPHASE, prp_obj, ckd_obj)
 
     ! Calls shd_grid__InterpTriLinGridPrp to interpolate the input arrays from
@@ -1076,29 +1076,30 @@ subroutine shd_grid__interpGrid(&
     type(shd_type_prp), intent(in) :: prp_obj
     type(shd_type_ckd), intent(in) :: ckd_obj
 
-    integer NPTS, NSTLEG, NLEG
+    integer NPTS
     integer*2 IPHASE(*)
     real GRIDPOS(3, NPTS)
-    real TEMP(*), EXTINCT(*), ALBEDO(*), LEGEN(NSTLEG, 0:NLEG, *)
+    real TEMP(*), EXTINCT(*), ALBEDO(*), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, *)
     integer IP
 
     ! Initialize: transfer the tabulated phase functions
-    call shd_grid__InterpTriLinGridPrp(0.0, 0.0, 0.0, .true., NSTLEG, NLEG,&
+    call shd_grid__InterpTriLinGridPrp(0.0, 0.0, 0.0, .true.,&
         &TEMP(1), EXTINCT(1), ALBEDO(1), LEGEN(1, 0, 1), IPHASE(1), prp_obj, ckd_obj)
 
     ! Trilinearly interpolate from the property grid to the adaptive
     do IP = 1, NPTS
         call shd_grid__InterpTriLinGridPrp(&
             &GRIDPOS(1, IP), GRIDPOS(2, IP), GRIDPOS(3, IP),&
-            &.false., NSTLEG, NLEG, TEMP(IP), EXTINCT(IP),&
+            &.false., TEMP(IP), EXTINCT(IP),&
             &ALBEDO(IP), LEGEN(1, 0, IP), IPHASE(IP), prp_obj, ckd_obj)
     end do
 
     return
 end subroutine shd_grid__interpGrid
 
-subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT, NSTLEG, NLEG,&
+subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT,&
     &TEMP, EXTINCT, ALBEDO, LEGEN, IPHASE, prp_obj, ckd_obj)
+
     !  Trilinearly interpolates the quantities on the input property
     ! grid at the single point (X,Y,Z) to get the output TEMP,EXTINCT,
     ! ALBEDO, and LEGEN or IPHASE.  Interpolation is done on the
@@ -1111,10 +1112,9 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT, NSTLEG, NLEG,&
     type(shd_type_prp), intent(in) :: prp_obj
     type(shd_type_ckd), intent(in) :: ckd_obj
 
-    integer NSTLEG, NLEG
     integer*2 IPHASE
     logical INIT
-    real X, Y, Z, TEMP, EXTINCT, ALBEDO, LEGEN(NSTLEG, 0:NLEG, *)
+    real X, Y, Z, TEMP, EXTINCT, ALBEDO, LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, *)
     integer IX, IXP, IY, IYP, IZ, L, IL, IM, IU, J
     integer I1, I2, I3, I4, I5, I6, I7, I8, I
     real(RD_) :: U, V, W, F1, F2, F3, F4, F5, F6, F7, F8, F
@@ -1127,9 +1127,9 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT, NSTLEG, NLEG,&
     if (INIT) then
        ! If there are tabulated phase functions, then transfer them
         do I = 1, prp_obj%Npha
-            do L = 0, NLEG
-                do J = 1, NSTLEG
-                    LEGEN(J, L, I) = prp_obj%dataRaw_leg(J + NSTLEG*(L + (NLEG + 1)*(I - 1)))/(2*L + 1)
+            do L = 0, prp_obj%Nleg
+                do J = 1, prp_obj%NlegSet
+                    LEGEN(J, L, I) = prp_obj%dataRaw_leg(J + prp_obj%NlegSet*(L + (prp_obj%Nleg+ 1)*(I - 1)))/(2*L + 1)
                 end do
             end do
         end do
@@ -1267,15 +1267,15 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT, NSTLEG, NLEG,&
     else
         ! Standard property file format: unpolarized
         LEGEN(1, 0, 1) = 1.0
-        do L = 1, NLEG
-            LEGEN(1, L, 1) = SCAT1*prp_obj%dataRaw_leg(L + (NLEG + 1)*(I1 - 1))&
-                &+ SCAT2*prp_obj%dataRaw_leg(L + (NLEG + 1)*(I2 - 1))&
-                &+ SCAT3*prp_obj%dataRaw_leg(L + (NLEG + 1)*(I3 - 1))&
-                &+ SCAT4*prp_obj%dataRaw_leg(L + (NLEG + 1)*(I4 - 1))&
-                &+ SCAT5*prp_obj%dataRaw_leg(L + (NLEG + 1)*(I5 - 1))&
-                &+ SCAT6*prp_obj%dataRaw_leg(L + (NLEG + 1)*(I6 - 1))&
-                &+ SCAT7*prp_obj%dataRaw_leg(L + (NLEG + 1)*(I7 - 1))&
-                &+ SCAT8*prp_obj%dataRaw_leg(L + (NLEG + 1)*(I8 - 1))
+        do L = 1, prp_obj%Nleg
+            LEGEN(1, L, 1) = SCAT1*prp_obj%dataRaw_leg(L + (prp_obj%Nleg + 1)*(I1 - 1))&
+                &+ SCAT2*prp_obj%dataRaw_leg(L + (prp_obj%Nleg + 1)*(I2 - 1))&
+                &+ SCAT3*prp_obj%dataRaw_leg(L + (prp_obj%Nleg + 1)*(I3 - 1))&
+                &+ SCAT4*prp_obj%dataRaw_leg(L + (prp_obj%Nleg + 1)*(I4 - 1))&
+                &+ SCAT5*prp_obj%dataRaw_leg(L + (prp_obj%Nleg + 1)*(I5 - 1))&
+                &+ SCAT6*prp_obj%dataRaw_leg(L + (prp_obj%Nleg + 1)*(I6 - 1))&
+                &+ SCAT7*prp_obj%dataRaw_leg(L + (prp_obj%Nleg + 1)*(I7 - 1))&
+                &+ SCAT8*prp_obj%dataRaw_leg(L + (prp_obj%Nleg + 1)*(I8 - 1))
             if (SCATTER .gt. SCATMIN) then
                 LEGEN(1, L, 1) = LEGEN(1, L, 1)/SCATTER
             else
@@ -1350,15 +1350,15 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT, NSTLEG, NLEG,&
     !else
     !    ! Standard property file format: unpolarized
     !    LEGEN(1, 0, 1) = 1.0
-    !    do L = 1, NLEG
-    !        LEGEN(1, L, 1) = SCAT1*prp_obj%dataRaw_leg(L + (NLEG + 1)*(I1 - 1))&
-    !            &+ SCAT2*prp_obj%dataRaw_leg(L + (NLEG + 1)*(I2 - 1))&
-    !            &+ SCAT3*prp_obj%dataRaw_leg(L + (NLEG + 1)*(I3 - 1))&
-    !            &+ SCAT4*prp_obj%dataRaw_leg(L + (NLEG + 1)*(I4 - 1))&
-    !            &+ SCAT5*prp_obj%dataRaw_leg(L + (NLEG + 1)*(I5 - 1))&
-    !            &+ SCAT6*prp_obj%dataRaw_leg(L + (NLEG + 1)*(I6 - 1))&
-    !            &+ SCAT7*prp_obj%dataRaw_leg(L + (NLEG + 1)*(I7 - 1))&
-    !            &+ SCAT8*prp_obj%dataRaw_leg(L + (NLEG + 1)*(I8 - 1))
+    !    do L = 1, prp_obj%Nleg
+    !        LEGEN(1, L, 1) = SCAT1*prp_obj%dataRaw_leg(L + (prp_obj%Nleg + 1)*(I1 - 1))&
+    !            &+ SCAT2*prp_obj%dataRaw_leg(L + (prp_obj%Nleg + 1)*(I2 - 1))&
+    !            &+ SCAT3*prp_obj%dataRaw_leg(L + (prp_obj%Nleg + 1)*(I3 - 1))&
+    !            &+ SCAT4*prp_obj%dataRaw_leg(L + (prp_obj%Nleg + 1)*(I4 - 1))&
+    !            &+ SCAT5*prp_obj%dataRaw_leg(L + (prp_obj%Nleg + 1)*(I5 - 1))&
+    !            &+ SCAT6*prp_obj%dataRaw_leg(L + (prp_obj%Nleg + 1)*(I6 - 1))&
+    !            &+ SCAT7*prp_obj%dataRaw_leg(L + (prp_obj%Nleg + 1)*(I7 - 1))&
+    !            &+ SCAT8*prp_obj%dataRaw_leg(L + (prp_obj%Nleg + 1)*(I8 - 1))
     !        if (SCATTER .gt. SCATMIN) then
     !            LEGEN(1, L, 1) = LEGEN(1, L, 1)/SCATTER
     !        else
@@ -1398,7 +1398,7 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT, NSTLEG, NLEG,&
 end subroutine shd_grid__InterpTriLinGridPrp
 
 subroutine shd_grid__interpNewGridPnt(NEWPOINTS, NPTS,&
-    &NSTOKES, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
+    &NSTOKES, ML, MM, NLM,&
     &DELTAM, BCFLAG, IPFLAG, ACCELFLAG, GRIDPOS,&
     &SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN,&
     &UNITS, WAVENO, WAVELEN,&
@@ -1419,14 +1419,14 @@ subroutine shd_grid__interpNewGridPnt(NEWPOINTS, NPTS,&
     type(shd_type_ckd), intent(in) :: ckd_obj
 
     integer NEWPOINTS(3, 4), NPTS
-    integer NSTOKES, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
+    integer NSTOKES, ML, MM, NLM
     integer BCFLAG, IPFLAG
     integer RSHPTR(*), SHPTR(*), OSHPTR(*)
     integer*2 IPHASE(NPTS)
     logical DELTAM, ACCELFLAG
-    real SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN(NSTLEG, NLM)
+    real SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN(prp_obj%NlegSet, NLM)
     real WAVENO(2), WAVELEN
-    real EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, NPTS)
+    real EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, NPTS)
     real TEMP(NPTS), PLANCK(NPTS), DIRFLUX(NPTS)
     real RADIANCE(NSTOKES, *), SOURCE(NSTOKES, *)
     real GRIDPOS(3, *)
@@ -1470,12 +1470,12 @@ subroutine shd_grid__interpNewGridPnt(NEWPOINTS, NPTS,&
             X = GRIDPOS(1, IP)
             Y = GRIDPOS(2, IP)
             Z = GRIDPOS(3, IP)
-            call shd_grid__InterpTriLinGridPrp(X, Y, Z, .false., NSTLEG, NLEG,&
+            call shd_grid__InterpTriLinGridPrp(X, Y, Z, .false.,&
                 &TEMP(IP), EXTINCT(IP), ALBEDO(IP),&
                 &LEGEN(1, 0, IP), IPHASE(IP), prp_obj, ckd_obj)
             ! Do the Delta-M scaling of extinction and albedo for this point
             if (DELTAM) then
-                if (NUMPHASE .gt. 0) then
+                if (prp_obj%Npha .gt. 0) then
                     F = LEGEN(1, ML + 1, IPHASE(IP))
                 else
                     F = LEGEN(1, ML + 1, IP)
@@ -1551,7 +1551,7 @@ subroutine shd_grid__interpNewGridPnt(NEWPOINTS, NPTS,&
             IS = SHPTR(IP)
             SHPTR(IP + 1) = IS + NS
             if (ACCELFLAG) OSHPTR(IP + 1) = OSHPTR(IP)
-            if (NUMPHASE .gt. 0) then
+            if (prp_obj%Npha .gt. 0) then
                 IPH = IPHASE(IP)
             else
                 IPH = IP
@@ -1583,7 +1583,7 @@ subroutine shd_grid__splitGrid(&
     &DOSPLIT, OUTOFMEM, CURSPLITACC, SPLITCRIT,&
     &NPTS, NCELLS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &GRIDPOS, NX, XGRID, NY, YGRID,&
-    &NSTOKES, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
+    &NSTOKES, ML, MM, NLM,&
     &DELTAM, BCFLAG, IPFLAG, ACCELFLAG,&
     &EXTINCT, ALBEDO, LEGEN, IPHASE,&
     &RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR,&
@@ -1602,17 +1602,17 @@ subroutine shd_grid__splitGrid(&
 
     integer MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX
     integer NPTS, NCELLS, BCFLAG, IPFLAG
-    integer NX, NY, NSTOKES, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
+    integer NX, NY, NSTOKES, ML, MM, NLM
     integer GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
     integer RSHPTR(*), SHPTR(*), OSHPTR(*)
     real ADAPTIND(*)
     integer*2 CELLFLAGS(*), IPHASE(*)
     logical DELTAM, ACCELFLAG, DOSPLIT, OUTOFMEM
     real CURSPLITACC, SPLITCRIT
-    real SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN(NSTLEG, NLM)
+    real SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN(prp_obj%NlegSet, NLM)
     real WAVENO(2), WAVELEN
     real GRIDPOS(3, *), XGRID(*), YGRID(*), ADAPTCRIT(*)
-    real EXTINCT(*), ALBEDO(*), LEGEN(NSTLEG, 0:NLEG, *)
+    real EXTINCT(*), ALBEDO(*), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, *)
     real RADIANCE(NSTOKES, *), SOURCE(NSTOKES, *)
     real TEMP(*), PLANCK(*), DIRFLUX(*)
     character(len=1) :: SRCTYPE, UNITS
@@ -1673,7 +1673,7 @@ subroutine shd_grid__splitGrid(&
                         &TREEPTR, CELLFLAGS, GRIDPOS, ICELL, IDIR, NEWPOINTS)
                     ! Interpolate the medium properties, radiance, and source
                     call shd_grid__interpNewGridPnt(NEWPOINTS, NPTS,&
-                        &NSTOKES, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
+                        &NSTOKES, ML, MM, NLM,&
                         &DELTAM, BCFLAG, IPFLAG, ACCELFLAG, GRIDPOS,&
                         &SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN,&
                         &UNITS, WAVENO, WAVELEN,&
@@ -1711,7 +1711,7 @@ subroutine shd_grid__splitGrid(&
                             &TREEPTR, CELLFLAGS, GRIDPOS, ICELL, IDIR, NEWPOINTS)
                         ! Interpolate the medium properties, radiance, and source
                         call shd_grid__interpNewGridPnt(NEWPOINTS, NPTS,&
-                            &NSTOKES, ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
+                            &NSTOKES, ML, MM, NLM,&
                             &DELTAM, BCFLAG, IPFLAG, ACCELFLAG, GRIDPOS,&
                             &SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN,&
                             &UNITS, WAVENO, WAVELEN,&

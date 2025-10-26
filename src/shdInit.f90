@@ -44,7 +44,7 @@ module shd_init
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
                              is1DX_, is1DYx_, &
                              isSolar_, isThermal_, &
-                             shd_type_prp
+                             shd_type_prp, shd_type_sfc
 
     use shd_util, only: shd_util__computePlanck, &
                         shd_util__solveTriDiag
@@ -430,9 +430,9 @@ subroutine shd_init__makeCell(&
 end subroutine shd_init__makeCell
 
 subroutine shd_init__makePrp(&
-    &ML, MM, NSTLEG, NLEG, NPTS, DELTAM,&
-    &NUMPHASE, SRCTYPE, UNITS, WAVENO, WAVELEN, ALBMAX,&
-    &EXTINCT, ALBEDO, LEGEN, TEMP, PLANCK, IPHASE)
+    &ML, MM, NPTS, DELTAM,&
+    &SRCTYPE, UNITS, WAVENO, WAVELEN, ALBMAX,&
+    &EXTINCT, ALBEDO, LEGEN, TEMP, PLANCK, IPHASE, prp_obj)
 
     ! Prepares the grid arrays for the iterative solution process.
     ! If doing Delta-M scaling then the extinction, albedo, and Legend
@@ -441,11 +441,13 @@ subroutine shd_init__makePrp(&
     ! the Planck function (meaning depends on UNITS).
     ! TEMP array is unchanged.
 
-    integer ML, MM, NSTLEG, NLEG, NPTS, NUMPHASE
+    type(shd_type_prp), intent(in) :: prp_obj
+
+    integer ML, MM, NPTS
     integer*2 IPHASE(NPTS)
     logical DELTAM
     real WAVENO(2), WAVELEN, ALBMAX
-    real EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, *)
+    real EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, *)
     real TEMP(NPTS), PLANCK(NPTS)
     character(len=1) :: SRCTYPE, UNITS
     integer I, IPH, L
@@ -453,13 +455,13 @@ subroutine shd_init__makePrp(&
 
     ALBMAX = 0.0
 
-    if (DELTAM .and. NUMPHASE .gt. 0) then
-        do IPH = 1, NUMPHASE
+    if (DELTAM .and. prp_obj%Npha .gt. 0) then
+        do IPH = 1, prp_obj%Npha
             F = LEGEN(1, ML + 1, IPH)
             do L = 0, ML
                 ! Scale the diagonal and off-diagonal phase matrix elements d
                 LEGEN(1, L, IPH) = (LEGEN(1, L, IPH) - F)/(1 - F)
-                if (NSTLEG .gt. 1) then
+                if (prp_obj%NlegSet .gt. 1) then
                     LEGEN(2, L, IPH) = (LEGEN(2, L, IPH) - F)/(1 - F)
                     LEGEN(3, L, IPH) = (LEGEN(3, L, IPH) - F)/(1 - F)
                     LEGEN(4, L, IPH) = (LEGEN(4, L, IPH) - F)/(1 - F)
@@ -472,10 +474,10 @@ subroutine shd_init__makePrp(&
 
     do I = 1, NPTS
         if (DELTAM) then
-            if (NUMPHASE .gt. 0) then
+            if (prp_obj%Npha .gt. 0) then
                 F = LEGEN(1, ML + 1, IPHASE(I))
             else
-                ! NUMPHASE=0 is standard property format, which is unpolarized
+                ! prp_obj%Npha =0 is standard property format, which is unpolarized
                 F = LEGEN(1, ML + 1, I)
                 do L = 0, ML
                     LEGEN(1, L, I) = (LEGEN(1, L, I) - F)/(1 - F)
@@ -499,11 +501,11 @@ subroutine shd_init__makePrp(&
 end subroutine shd_init__makePrp
 
 subroutine shd_init__makeRad(&
-    &NSTOKES, NXY, NZ, NSTLEG, NLEG,&
+    &NSTOKES, NXY, NZ,&
     &RSHPTR, ZGRID,&
-    &EXTINCT, ALBEDO, LEGEN, TEMP, NUMPHASE, IPHASE,&
+    &EXTINCT, ALBEDO, LEGEN, TEMP, IPHASE,&
     &SRCTYPE, SOLARFLUX, SOLARMU, GNDALBEDO, GNDTEMP,&
-    &SKYRAD, UNITS, WAVENO, WAVELEN, RADIANCE)
+    &SKYRAD, UNITS, WAVENO, WAVELEN, RADIANCE, prp_obj)
 
     ! Initializes radiance field by solving plane-parallel two-stream.
     ! Solves the L=1 M=0 SH system by transforming the pentadiagonal
@@ -511,12 +513,14 @@ subroutine shd_init__makeRad(&
     ! Does the initialization for the NXY columns of the base grid.
     ! Only the I Stokes parameter is initialized, the rest are zeroed.
 
-    integer NSTOKES, NXY, NZ, NSTLEG, NLEG, NUMPHASE, RSHPTR(*)
+    type(shd_type_prp), intent(in) :: prp_obj
+
+    integer NSTOKES, NXY, NZ, RSHPTR(*)
     integer*2 IPHASE(NZ, NXY)
     real GNDALBEDO, GNDTEMP, SKYRAD, SOLARFLUX, SOLARMU
     real WAVENO(2), WAVELEN
     real ZGRID(NZ)
-    real EXTINCT(NZ, NXY), ALBEDO(NZ, NXY), LEGEN(NSTLEG, 0:NLEG, *)
+    real EXTINCT(NZ, NXY), ALBEDO(NZ, NXY), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, *)
     real TEMP(NZ, NXY)
     real RADIANCE(NSTOKES, *)
     character(len=1) :: SRCTYPE, UNITS
@@ -571,7 +575,7 @@ subroutine shd_init__makeRad(&
                 ALBEDOS(L) = 0.0
             end if
 
-            if (NUMPHASE .gt. 0) then
+            if (prp_obj%Npha .gt. 0) then
                 J = IPHASE(ZINDEX, I)
             else
                 J = NZ*(I - 1) + IZ
@@ -1099,37 +1103,37 @@ subroutine shd_init__makeSfcRadV(&
     return
 end subroutine shd_init__makeSfcRadV
 
-subroutine shd_init__checkSfcU(&
-    &NXSFC, NYSFC, NSFCPAR, SFCPARMS,&
-    &UNIFORM_SFC_BRDF)
+subroutine shd_init__checkSfcU(sfc_obj)
 
     ! Description:
     !   Checks to see if the surface reflection parameters are uniform,
-    !   and if so sets the UNIFORM_SFC_BRDF flag.  The temperature need
+    !   and if so sets the sfc_obj%isUniform flag.  The temperature need
     !   not be uniform.
     !
     ! Input:
-    !   NXSFC, NYSFC: integer, size of surface arrays (internally NXSFC+1 by NYSFC+1)
-    !   NSFCPAR: integer, number of surface parameters for modeling different BRDF
+    !   sfc_obj%Nx, sfc_obj%Ny: integer, size of surface arrays (internally sfc_obj%Nx+1 by sfc_obj%Ny+1)
+    !   sfc_obj%Npar: integer, number of surface parameters for modeling different BRDF
     !   SFCPARMS: real array, surface parameters for modeling different BRDF
     !
     ! Output:
-    !   UNIFORM_SFC_BRDF: logical, whether surface reflection parameters are uniform
+    !   sfc_obj%isUniform: logical, whether surface reflection parameters are uniform
 
-    integer(kind=I__), intent(in) :: NXSFC, NYSFC, NSFCPAR
-    real(kind=R__)   , intent(in) :: SFCPARMS(NSFCPAR, NXSFC + 1, NYSFC + 1)
+    type(shd_type_sfc), intent(inout) :: sfc_obj
 
-    logical, intent(out) :: UNIFORM_SFC_BRDF
+    real(kind=R__), pointer :: dataRaw_brdf_Sfc(:, :, :) => null()
 
     integer(kind=I__) :: IX, IY, J
 
-    UNIFORM_SFC_BRDF = .true.
+    dataRaw_brdf_Sfc(1:sfc_obj%Npar, 1:sfc_obj%Nx+1, 1:sfc_obj%Ny+1) => sfc_obj%dataRaw_brdf
 
-    do IY = 1, NYSFC
-        do IX = 1, NXSFC
-            do J = 2, NSFCPAR
-                if (SFCPARMS(J, IX, IY) .ne. SFCPARMS(J, 1, 1)) then
-                    UNIFORM_SFC_BRDF = .false.
+    sfc_obj%isUniform = .true.
+
+    do IY = 1, sfc_obj%Ny
+        do IX = 1, sfc_obj%Nx
+            do J = 2, sfc_obj%Npar
+                if (dataRaw_brdf_Sfc(J, IX, IY) .ne. dataRaw_brdf_Sfc(J, 1, 1)) then
+                    sfc_obj%isUniform = .false.
+                    nullify(dataRaw_brdf_Sfc)
                     return
                 end if
             end do

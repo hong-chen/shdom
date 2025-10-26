@@ -108,9 +108,9 @@ subroutine shd_solv__solveRte(&
     ! CELLFLAGS,NPTS,GRIDPOS) is input and modified for new grid
     ! cells and points on output.
 
-    type(shd_type_prp), intent(in) :: prp_obj
-    type(shd_type_sfc), intent(in) :: sfc_obj
-    type(shd_type_ckd), intent(in) :: ckd_obj
+    type(shd_type_prp), intent(in)    :: prp_obj
+    type(shd_type_sfc), intent(inout) :: sfc_obj
+    type(shd_type_ckd), intent(in)    :: ckd_obj
 
     integer, intent(in) :: NSTOKES, NX, NY, NZ, NX1, NY1
     integer :: ML, MM, NLM, NMU, NPHI, NANG
@@ -141,7 +141,6 @@ subroutine shd_solv__solveRte(&
     integer NPHI0MAX, I, ORDINATESET, NBPTS, NBCELLS
     integer MAXNANGBND, NANGBND(4, 2), IERR
     logical FIXSH, SPLITTESTING, DOSPLIT, OUTOFMEM
-    logical UNIFORM_SFC_BRDF
     logical, allocatable :: FFTFLAG(:)
     real ALBMAX
     real STARTADAPTSOL, ENDADAPTSOL, ADAPTRANGE, SPLITCRIT
@@ -166,14 +165,14 @@ subroutine shd_solv__solveRte(&
     ! Set up some things before solution loop
 
     ! Transfer the medium properties to the internal grid and add gas absorption
-    call shd_grid__interpGrid(NPTS, prp_obj%NlegSet, prp_obj%Nleg, GRIDPOS,&
+    call shd_grid__interpGrid(NPTS, GRIDPOS,&
         &TEMP, EXTINCT, ALBEDO, LEGEN, IPHASE, prp_obj, ckd_obj)
 
     ! If Delta-M then scale the extinction, albedo, and Legendre terms
     ! Put the Planck blackbody source in PLANCK.
-    call shd_init__makePrp(ML, MM, prp_obj%NlegSet, prp_obj%Nleg, NPTS, DELTAM, prp_obj%Npha,&
+    call shd_init__makePrp(ML, MM, NPTS, DELTAM,&
         &SRCTYPE, UNITS, WAVENO, WAVELEN, ALBMAX,&
-        &EXTINCT, ALBEDO, LEGEN, TEMP, PLANCK, IPHASE)
+        &EXTINCT, ALBEDO, LEGEN, TEMP, PLANCK, IPHASE, prp_obj)
 
     ! Get the maximum single scattering albedo over all processors
     call shd_mpi__findAlbMax(ALBMAX)
@@ -209,11 +208,11 @@ subroutine shd_solv__solveRte(&
     if (.not. INRADFLAG) then
         ! Initialize the radiance on the base grid using Eddington
         ! two-stream plane-parallel
-        call shd_init__makeRad(NSTOKES, NX1*NY1, NZ, prp_obj%NlegSet, prp_obj%Nleg,&
+        call shd_init__makeRad(NSTOKES, NX1*NY1, NZ,&
             &RSHPTR, ZGRID,&
-            &EXTINCT, ALBEDO, LEGEN, TEMP, prp_obj%Npha, IPHASE,&
+            &EXTINCT, ALBEDO, LEGEN, TEMP, IPHASE,&
             &SRCTYPE, SOLARFLUX, SOLARMU, sfc_obj%avgAlb, sfc_obj%avgTemp, SKYRAD,&
-            &UNITS, WAVENO, WAVELEN, RADIANCE)
+            &UNITS, WAVENO, WAVELEN, RADIANCE, prp_obj)
         ! Interpolate the radiance on the non-base grid points from the
         !   base grid points
         NBPTS = NX1*NY1*NZ
@@ -249,11 +248,9 @@ subroutine shd_solv__solveRte(&
         !   bottom grid points.
         call shd_sfc__interpSfc(NBOTPTS, BCPTR(1, 2), GRIDPOS,&
             &SRCTYPE, WAVENO, WAVELEN, UNITS,&
-            &sfc_obj%Nx, sfc_obj%Ny, sfc_obj%dx, sfc_obj%dy, sfc_obj%Npar, sfc_obj%dataRaw_brdf,&
-            &sfc_obj%dataGrid_brdf, prp_obj)
-        call shd_init__checkSfcU(sfc_obj%Nx, sfc_obj%Ny, sfc_obj%Npar, sfc_obj%dataRaw_brdf,&
-            &UNIFORM_SFC_BRDF)
-        if (UNIFORM_SFC_BRDF) then
+            &prp_obj, sfc_obj)
+        call shd_init__checkSfcU(sfc_obj)
+        if (sfc_obj%isUniform) then
             if (NSTOKES*(NMU/2)*NPHI0MAX .gt.&
                 &sqrt(1.0*huge(NMU)/kind(NMU))) then
                 IERR = 1
@@ -270,7 +267,7 @@ subroutine shd_solv__solveRte(&
                 print '(A,A)', 'Not enough memory to allocate precomputed',&
                     &' surface BRDF discrete ordinate matrix: '
                 print *, '  Proceeding more slowly.'
-                UNIFORM_SFC_BRDF = .false.
+                sfc_obj%isUniform = .false.
             end if
         end if
     end if
@@ -343,7 +340,7 @@ subroutine shd_solv__solveRte(&
                     &DOSPLIT, OUTOFMEM, CURSPLITACC, SPLITCRIT,&
                     &NPTS, NCELLS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
                     &GRIDPOS, NX, XGRID, NY, YGRID,&
-                    &NSTOKES, ML, MM, NLM, prp_obj%NlegSet, prp_obj%Nleg, prp_obj%Npha,&
+                    &NSTOKES, ML, MM, NLM,&
                     &DELTAM, BCFLAG, IPFLAG, ACCELFLAG,&
                     &EXTINCT, ALBEDO, LEGEN, IPHASE,&
                     &RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR,&
@@ -361,29 +358,27 @@ subroutine shd_solv__solveRte(&
 
         ! Find the SH truncation to use for the radiance (RSHPTR)
         call shd_solv__truncRad(isHighOrder,&
-            &NSTOKES, ML, MM, prp_obj%NlegSet, prp_obj%Nleg, prp_obj%Npha,&
+            &NSTOKES, ML, MM,&
             &NPTS, ALBEDO, LEGEN, IPHASE, SHPTR, RADIANCE,&
-            &MAXIV + MAXIG, FIXSH, SHACC, RSHPTR)
+            &MAXIV + MAXIG, FIXSH, SHACC, RSHPTR, prp_obj)
 
         ! Integrate the source function along discrete ordinates
         !   to compute the radiance field.  The input source function
         !   and output radiance are in spherical harmonic expansions,
         !   and the SH/DO transforms are done during the loop over
         !   discrete ordinates.
-        call shd_intg__integratePath(NX, NY, NZ, NSTOKES, prp_obj%NlegSet, ML, MM, NLM,&
+        call shd_intg__integratePath(NX, NY, NZ, NSTOKES, ML, MM, NLM,&
             &NMU, NPHI0MAX, NPHI0, NANG, BCFLAG, IPFLAG,&
             &NPTS, NCELLS, XGRID, YGRID, ZGRID, GRIDPOS,&
             &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
             &SRCTYPE, SOLARMU, SOLARAZ, SKYRAD, WAVENO, WAVELEN,&
-            &UNITS, sfc_obj%type, sfc_obj%avgTemp, sfc_obj%avgAlb,&
-            &sfc_obj%Nx, sfc_obj%Ny, sfc_obj%dx, sfc_obj%dy, sfc_obj%Npar, sfc_obj%dataRaw_brdf,&
-            &sfc_obj%dataGrid_brdf, UNIFORM_SFC_BRDF, SFC_BRDF_DO,&
+            &UNITS, SFC_BRDF_DO,&
             &MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
             &MU, PHI, WTDO,&
             &CMU1, CPHI1, CMU2, CPHI2, WPHISAVE, FFTFLAG,&
             &DIRFLUX, FLUXES, EXTINCT,&
             &SHPTR, SOURCE, RSHPTR, RADIANCE,&
-            &WORK, WORK1, WORK2, prp_obj)
+            &WORK, WORK1, WORK2, prp_obj, sfc_obj)
 
         ! Compute the source function from the radiance field,
         !   do the adaptive spherical harmonics truncation, compute
@@ -453,7 +448,7 @@ subroutine shd_solv__solveRte(&
 
     ! Deallocate arrays
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    if (sfc_obj%type(1:1) .eq. 'V' .and. UNIFORM_SFC_BRDF) then
+    if (sfc_obj%type(1:1) .eq. 'V' .and. sfc_obj%isUniform) then
         deallocate (SFC_BRDF_DO)
     end if
     deallocate (YLMSUN, FFTFLAG, WTMU, WPHISAVE)
@@ -496,9 +491,9 @@ subroutine shd_solv__accelSol(&
 end subroutine shd_solv__accelSol
 
 subroutine shd_solv__truncRad(isHighOrder,&
-    &NSTOKES, ML, MM, NSTLEG, NLEG, NUMPHASE,&
+    &NSTOKES, ML, MM,&
     &NPTS, ALBEDO, LEGEN, IPHASE, SHPTR, RADIANCE,&
-    &MAXIR, FIXSH, SHACC, RSHPTR)
+    &MAXIR, FIXSH, SHACC, RSHPTR, prp_obj)
 
     ! Computes the next radiance spherical harmonic series truncation
     ! to use based on the current source function truncation and the
@@ -512,11 +507,13 @@ subroutine shd_solv__truncRad(isHighOrder,&
     ! L=1 so that the mean radiance and net flux terms may be computed,
     ! unless isHighOrder is on, in which case all terms are kept.
 
-    integer NPTS, NSTOKES, ML, MM, NSTLEG, NLEG, NUMPHASE, MAXIR
+    type(shd_type_prp), intent(in) :: prp_obj
+
+    integer NPTS, NSTOKES, ML, MM, MAXIR
     integer SHPTR(NPTS + 1), RSHPTR(NPTS + 2)
     integer*2 IPHASE(NPTS)
     logical isHighOrder, FIXSH
-    real ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, *), RADIANCE(NSTOKES, *)
+    real ALBEDO(NPTS), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, *), RADIANCE(NSTOKES, *)
     real SHACC
     integer IRO, IR, NRO, NR, I, J, K, L, LR, LS, M, MS, ME, NS, NLM
     integer, allocatable :: LOFJ(:)
@@ -551,7 +548,7 @@ subroutine shd_solv__truncRad(isHighOrder,&
         NRO = RSHPTR(I + 1) - IRO
         if (NRO .eq. 0) NOTEND = .false.
         if (NOTEND) then
-            if (NUMPHASE .gt. 0) then
+            if (prp_obj%Npha .gt. 0) then
                 K = IPHASE(I)
             else
                 K = I

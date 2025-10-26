@@ -43,7 +43,8 @@
 module shd_sfc
 
     use globals_const, only: PI_
-    use globals_cfg,   only: isPol_, shd_type_prp
+    use globals_cfg,   only: isPol_, &
+                             shd_type_prp, shd_type_sfc
 
     use shd_util, only: shd_util__computePlanck
 
@@ -78,34 +79,38 @@ contains
 subroutine shd_sfc__interpSfc(&
     &NBOTPTS, BCPTR, GRIDPOS,&
     &SRCTYPE, WAVENO, WAVELEN, UNITS,&
-    &NXSFC, NYSFC, DELXSFC, DELYSFC, NSFCPAR, SFCPARMS,&
-    &SFCGRIDPARMS, prp_obj)
+    &prp_obj, sfc_obj)
 
     !   Bilinearly interpolates the surface properties from the regular
     ! surface grid to the boundary points of the adaptive grid.
     ! The locations of the NBOTPTS grid points on the bottom boundary
     ! (pointed to by BCPTR) are in the GRIDPOS array.  The input regular
-    ! surface info is specified by the number of grid lines (NXSFC,NYSFC),
-    ! the grid spacing (DELXSFC,DELYSFC), the number of parameters at
-    ! each grid point (NSFCPAR), and the surface parameters (SFCPARMS).
+    ! surface info is specified by the number of grid lines (sfc_obj%Nx,sfc_obj%Ny),
+    ! the grid spacing (sfc_obj%dx,sfc_obj%dy), the number of parameters at
+    ! each grid point (sfc_obj%Npar), and the surface parameters (sfc_obj%dataRaw_brdf).
     ! The output interpolated surface parameters at the NBOTPTS boundary
-    ! points are in SFCGRIDPARMS.  The first parameter is input as
+    ! points are in dataGrid_brdf_Sfc.  The first parameter is input as
     ! temperature, but converted to Planck function for output.
 
     type(shd_type_prp), intent(in) :: prp_obj
+    type(shd_type_sfc), intent(in) :: sfc_obj
 
-    integer :: NBOTPTS, BCPTR(*), NXSFC, NYSFC, NSFCPAR
+    integer :: NBOTPTS, BCPTR(*)
     real :: WAVENO(2), WAVELEN
-    real :: DELXSFC, DELYSFC
-    real :: GRIDPOS(3, *), SFCPARMS(NSFCPAR, NXSFC+1, NYSFC+1)
-    real :: SFCGRIDPARMS(NSFCPAR, NBOTPTS)
+    real :: GRIDPOS(3, *)
+
+    real, pointer :: dataRaw_brdf_Sfc(:, :, :) => null()
+    real, pointer :: dataGrid_brdf_Sfc(:, :) => null()
     character(len=1) :: SRCTYPE, UNITS
     integer :: I, IBC, IX, IY, J
     real :: RX, RY, U, V, TEMP, PLANCK
     logical :: INTERP
 
+    dataRaw_brdf_Sfc(1:sfc_obj%Npar, 1:sfc_obj%Nx+1, 1:sfc_obj%Ny+1) => sfc_obj%dataRaw_brdf
+    dataGrid_brdf_Sfc(1:sfc_obj%Npar, 1:NBOTPTS) => sfc_obj%dataGrid_brdf
+
     INTERP = .true.
-    if (NSFCPAR .gt. 6) then
+    if (sfc_obj%Npar .gt. 6) then
         INTERP = .false.
     end if
 
@@ -114,41 +119,41 @@ subroutine shd_sfc__interpSfc(&
 
         I = BCPTR(IBC)
 
-        if ((prp_obj%Nx .gt. 1) .and. (prp_obj%Ny .gt. 1) .and.&
-            &(NXSFC .gt. 1) .and. (NYSFC .gt. 1) .and.&
-            &((abs(prp_obj%dx - DELXSFC) .gt. 1.0e-6) .or.&
-             &(abs(prp_obj%dy - DELYSFC) .gt. 1.0e-6))) then
-            ! added half dx,dy (prp_obj%dx/2.0-DELXSFC/2.0, prp_obj%dy/2.0-DELYSFC/2.0) to
+        if  ((prp_obj%Nx .gt. 1) .and. (prp_obj%Ny .gt. 1) .and.&
+            &(sfc_obj%Nx .gt. 1) .and. (sfc_obj%Ny .gt. 1) .and.&
+            &((abs(prp_obj%dx - sfc_obj%dx) .gt. 1.0e-6) .or.&
+             &(abs(prp_obj%dy - sfc_obj%dy) .gt. 1.0e-6))) then
+            ! added half dx,dy (prp_obj%dx/2.0-sfc_obj%dx/2.0, prp_obj%dy/2.0-sfc_obj%dy/2.0) to
             ! find surface point that is closest to grid center
             !╭────────────────────────────────────────────────╮!
-            RX = (GRIDPOS(1, I) + prp_obj%dx/2.0 - DELXSFC/2.0) / DELXSFC
-            RY = (GRIDPOS(2, I) + prp_obj%dy/2.0 - DELYSFC/2.0) / DELYSFC
+            RX = (GRIDPOS(1, I) + prp_obj%dx/2.0 - sfc_obj%dx/2.0) / sfc_obj%dx
+            RY = (GRIDPOS(2, I) + prp_obj%dy/2.0 - sfc_obj%dy/2.0) / sfc_obj%dy
             !╰────────────────────────────────────────────────╯!
         else
-            RX = (GRIDPOS(1, I)) / DELXSFC
-            RY = (GRIDPOS(2, I)) / DELYSFC
+            RX = (GRIDPOS(1, I)) / sfc_obj%dx
+            RY = (GRIDPOS(2, I)) / sfc_obj%dy
         end if
 
-        IX = max(1, min(NXSFC, int(RX) + 1))
-        IY = max(1, min(NYSFC, int(RY) + 1))
+        IX = max(1, min(sfc_obj%Nx, int(RX) + 1))
+        IY = max(1, min(sfc_obj%Ny, int(RY) + 1))
         U = max(0.0, min(1.0, RX - (IX - 1)))
         V = max(0.0, min(1.0, RY - (IY - 1)))
 
-        do J = 1, NSFCPAR
+        do J = 1, sfc_obj%Npar
             ! only interpolate BRDF parameter, not surface type ID (currently stored at 8)
             if (INTERP) then
                 ! bi-linear interpolation
                 !╭────────────────────────────────────────────────╮!
-                SFCGRIDPARMS(J, IBC) =&
-                    &  (1.0 - U)*(1.0 - V)*SFCPARMS(J, IX  , IY)&
-                    &+ (1.0 - U)*       V *SFCPARMS(J, IX  , IY+1)&
-                    &+        U *(1.0 - V)*SFCPARMS(J, IX+1, IY)&
-                    &+        U *       V *SFCPARMS(J, IX+1, IY+1)
+                dataGrid_brdf_Sfc(J, IBC) =&
+                    &  (1.0 - U)*(1.0 - V)*dataRaw_brdf_Sfc(J, IX  , IY)&
+                    &+ (1.0 - U)*       V *dataRaw_brdf_Sfc(J, IX  , IY+1)&
+                    &+        U *(1.0 - V)*dataRaw_brdf_Sfc(J, IX+1, IY)&
+                    &+        U *       V *dataRaw_brdf_Sfc(J, IX+1, IY+1)
                 !╰────────────────────────────────────────────────╯!
             else
                 ! nearest interpolation
                 !╭────────────────────────────────────────────────╮!
-                SFCGRIDPARMS(J, IBC) = SFCPARMS(J, IX, IY)
+                dataGrid_brdf_Sfc(J, IBC) = dataRaw_brdf_Sfc(J, IX, IY)
                 !╰────────────────────────────────────────────────╯!
             end if
         end do
@@ -156,13 +161,15 @@ subroutine shd_sfc__interpSfc(&
         if (SRCTYPE .eq. 'S') then
             PLANCK = 0.0
         else
-            TEMP = SFCGRIDPARMS(1, IBC)
+            TEMP = dataGrid_brdf_Sfc(1, IBC)
             call shd_util__computePlanck(TEMP, UNITS, WAVENO, WAVELEN, PLANCK)
         end if
 
-        SFCGRIDPARMS(1, IBC) = PLANCK
+        dataGrid_brdf_Sfc(1, IBC) = PLANCK
 
     end do
+
+    nullify(dataRaw_brdf_Sfc, dataGrid_brdf_Sfc)
 
     return
 
