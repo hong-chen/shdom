@@ -1507,9 +1507,9 @@ program shdom
     deallocate (ptr_Bc, rad_Bc)
 
     deallocate (mu_Shdo, phi_Shdo, wgt_Shdo, Nphi0_Shdo)
-    deallocate (radI_Shdo, srcJ_Shdo)
-    if (isAccel) deallocate (dsrc_Shdo)
-    deallocate (iradI_Shdo, isrcJ_Shdo, idsrc_Shdo)
+    deallocate (radI_Shdo, iradI_Shdo)
+    deallocate (srcJ_Shdo, isrcJ_Shdo)
+    if (isAccel) deallocate (dsrc_Shdo, idsrc_Shdo)
     if (shdo_obj%isAllocated) then
         nullify(shdo_obj%Nphi0, &
                 shdo_obj%iradI, &
