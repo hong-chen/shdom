@@ -213,6 +213,13 @@ module globals_type
         real(kind=R__) :: avgWaveNum = -999.0
         real(kind=R__) :: waveLen(2) = [-999.0, -999.0]
         real(kind=R__) :: avgWaveLen = -999.0
+
+        real(kind=R__) :: avgMu = -999.0
+        real(kind=R__) :: avgAz = -999.0
+
+        real(kind=R__) :: avgSolar0 = -999.0
+        real(kind=R__) :: avgSolar  = -999.0
+
     end type shd_type_src
 
 
