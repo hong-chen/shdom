@@ -1307,7 +1307,9 @@ subroutine shd_io__readSfc(sfc_obj)
                 read (1, *, end=290) ix, iy, temp0, alb0
                 if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
-                    i = sfc_obj%Npar * (ix - 1 + (sfc_obj%Nx + 1)*(iy - 1))
+
+                    i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+
                     sfc_obj%brdf(i + 1) = temp0
                     sfc_obj%brdf(i + 2) = alb0
                     if (alb0 .lt. 0.0 .or. alb0 .gt. 1.0)&
@@ -1341,7 +1343,9 @@ subroutine shd_io__readSfc(sfc_obj)
                 read (1, *, end=290) ix, iy, temp0, WSPD, PCL
                 if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
-                    i = sfc_obj%Npar * (ix - 1 + (sfc_obj%Nx + 1)*(iy - 1))
+
+                    i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+
                     sfc_obj%brdf(i + 1) = temp0
                     sfc_obj%brdf(i + 2) = WSPD
                     sfc_obj%brdf(i + 3) = PCL
@@ -1372,7 +1376,9 @@ subroutine shd_io__readSfc(sfc_obj)
                 read (1, *, end=290) ix, iy, temp0, RHO0, KR, THETA
                 if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
-                    i = sfc_obj%Npar * (ix - 1 + (sfc_obj%Nx + 1)*(iy - 1))
+
+                    i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+
                     sfc_obj%brdf(i + 1) = temp0
                     sfc_obj%brdf(i + 2) = RHO0
                     sfc_obj%brdf(i + 3) = KR
@@ -1401,7 +1407,9 @@ subroutine shd_io__readSfc(sfc_obj)
                 read (1, *, end=290) ix, iy, temp0, F_ISO, F_GEO, F_VOL
                 if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
-                    i = sfc_obj%Npar * (ix - 1 + (sfc_obj%Nx + 1)*(iy - 1))
+
+                    i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+
                     sfc_obj%brdf(i + 1) = temp0
                     sfc_obj%brdf(i + 2) = F_ISO
                     sfc_obj%brdf(i + 3) = F_GEO
@@ -1430,7 +1438,9 @@ subroutine shd_io__readSfc(sfc_obj)
                 read (1, *, end=290) ix, iy, temp0, F_ISO, F_GEO, F_VOL, F_JIAO, ALPHA
                 if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
-                    i = sfc_obj%Npar * (ix - 1 + (sfc_obj%Nx + 1)*(iy - 1))
+
+                    i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+
                     sfc_obj%brdf(i + 1) = temp0
                     sfc_obj%brdf(i + 2) = F_ISO
                     sfc_obj%brdf(i + 3) = F_GEO
@@ -1461,7 +1471,9 @@ subroutine shd_io__readSfc(sfc_obj)
                 read (1, *, end=290) ix, iy, temp0, MRE, MIM, WSPD
                 if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
-                    i = sfc_obj%Npar * (ix - 1 + (sfc_obj%Nx + 1)*(iy - 1))
+
+                    i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+
                     sfc_obj%brdf(i + 1) = temp0
                     sfc_obj%brdf(i + 2) = MRE
                     sfc_obj%brdf(i + 3) = MIM
@@ -1494,7 +1506,9 @@ subroutine shd_io__readSfc(sfc_obj)
                 read (1, *, end=290) ix, iy, temp0, A, KR, B, ZETA, SIGMA
                 if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
-                    i = sfc_obj%Npar * (ix - 1 + (sfc_obj%Nx + 1)*(iy - 1))
+
+                    i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+
                     sfc_obj%brdf(i + 1) = temp0
                     sfc_obj%brdf(i + 2) = A
                     sfc_obj%brdf(i + 3) = KR
@@ -1533,7 +1547,9 @@ subroutine shd_io__readSfc(sfc_obj)
 
                 if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
-                    i = sfc_obj%Npar * (ix - 1 + (sfc_obj%Nx + 1)*(iy - 1))
+
+                    i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+
                     sfc_obj%brdf(i + 1) = PARAM1
                     sfc_obj%brdf(i + 2) = PARAM2
                     sfc_obj%brdf(i + 3) = PARAM3
@@ -1589,7 +1605,7 @@ subroutine shd_io__readSfc(sfc_obj)
             if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
                 &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
 
-                i = sfc_obj%Npar * (ix - 1 + (sfc_obj%Nx + 1)*(iy - 1))
+                i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
 
                 temp_sfc = temp_sfc + sfc_obj%brdf(i + 1)
 
