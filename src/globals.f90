@@ -217,9 +217,12 @@ module globals_type
         real(kind=R__) :: avgMu = -999.0
         real(kind=R__) :: avgAz = -999.0
 
-        real(kind=R__) :: avgSolar0 = -999.0
-        real(kind=R__) :: avgSolar  = -999.0
+        real(kind=R__) :: avgSolar0 = -999.0 ! solar read in from input file
+        real(kind=R__) :: avgSolar  = -999.0 ! solar from correlated-k
 
+        ! placeholder for spatially varying solar input
+        !real(kind=R__), pointer :: mu(:) => null()
+        !real(kind=R__), pointer :: az(:) => null()
     end type shd_type_src
 
 
@@ -246,9 +249,9 @@ module globals_type
         real(kind=R__) :: xDomain = -999.0
         real(kind=R__) :: yDomain = -999.0
 
-        real(kind=R__), pointer :: x(:)    => null()
-        real(kind=R__), pointer :: y(:)    => null()
-        real(kind=R__), pointer :: z(:)    => null()
+        real(kind=R__), pointer :: x(:) => null()
+        real(kind=R__), pointer :: y(:) => null()
+        real(kind=R__), pointer :: z(:) => null()
 
         real(kind=R__), pointer :: temp(:) => null()
         real(kind=R__), pointer :: ext(:)  => null()
