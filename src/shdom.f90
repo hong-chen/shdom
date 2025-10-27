@@ -49,7 +49,7 @@ program shdom
                              isSolar_, isThermal_
     use globals_type,  only: shd_type_prp, shd_type_sfc, &
                              shd_type_ckd, shd_type_sen, &
-                             shd_type_shdo
+                             shd_type_shdo, shd_type_rtm
 
     use shd_init, only: shd_init__makeGrid, &
                         shd_init__makeCell
@@ -111,6 +111,12 @@ program shdom
     logical :: isBaseOut, isRadOut, isCamOut, isFluxOut, isHROut, isSHOut, isSrcOut
 
     character(len=charMaxLen_) :: fileOut_nc
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+
+    ! rtm_obj
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    type(shd_type_rtm) :: rtmAll_obj, rtm_obj
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     real(kind=R__), allocatable  :: planck(:)
@@ -204,7 +210,6 @@ program shdom
 
     ! grids and cells
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    character(len=1) :: type_grid
     real(kind=R__), allocatable    :: x_Grid(:), y_Grid(:), z_Grid(:)
     real(kind=R__), allocatable    :: xyz_Grid(:, :)
 
@@ -224,11 +229,8 @@ program shdom
     real(kind=R__) :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
     real(kind=R__) :: MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
 
-    integer(kind=I__) :: Nx, Ny, Nz, Nx1, Ny1
-    integer(kind=I__) :: Nx_T, Ny_T
-
     integer(kind=I__) :: Npts_base, Npts, Ncell, Nsh, Ncell_base, oldNpts
-    integer(kind=I__) :: maxIter, iter, totIter, iz, iout, Nout, flag_bc, ipFlag
+    integer(kind=I__) :: maxIter, iter, totIter, iz, iout, Nout
     integer(kind=I__) :: Nrad, irad, Nx_out, Ny_out, Nlos, ilos, Nscan, Npix, Nsh_out
     integer(kind=I__) :: Ncell_tot, Npts_tot, Nsh_tot
 
@@ -265,8 +267,8 @@ program shdom
         if (isNmlInp_) then
             call shd_io__nmlInp(runName, prpAll_obj%fname, sfc_obj%fname, ckd_obj%fname,&
                 fileInp_sav, fileOut_sav, sen_obj%fname,&
-                shdo_obj%Nstokes, Nx, Ny, Nz, shdo_obj%Nmu, shdo_obj%Nphi, flag_bc,&
-                ipFlag, isCkd, isDeltaM, type_grid,&
+                shdo_obj%Nstokes, rtmAll_obj%Nx, rtmAll_obj%Ny, rtmAll_obj%Nz, shdo_obj%Nmu, shdo_obj%Nphi, rtmAll_obj%flag_bc,&
+                rtmAll_obj%flag_ip, isCkd, isDeltaM, rtmAll_obj%type,&
                 type_src, solar0, mu_solar, az_solar, skyRad,&
                 sfc_obj%avgTemp, sfc_obj%avgAlb, units_src, waveNum, waveLen,&
                 isAccel, solAcc, maxIter, splitAcc, shAcc,&
@@ -276,8 +278,8 @@ program shdom
         else
             call shd_io__userInp(runName, prpAll_obj%fname, sfc_obj%fname, ckd_obj%fname,&
                 fileInp_sav, fileOut_sav, sen_obj%fname,&
-                shdo_obj%Nstokes, Nx, Ny, Nz, shdo_obj%Nmu, shdo_obj%Nphi, flag_bc,&
-                ipFlag, isCkd, isDeltaM, type_grid,&
+                shdo_obj%Nstokes, rtmAll_obj%Nx, rtmAll_obj%Ny, rtmAll_obj%Nz, shdo_obj%Nmu, shdo_obj%Nphi, rtmAll_obj%flag_bc,&
+                rtmAll_obj%flag_ip, isCkd, isDeltaM, rtmAll_obj%type,&
                 type_src, solar0, mu_solar, az_solar, skyRad,&
                 sfc_obj%avgTemp, sfc_obj%avgAlb, units_src, waveNum, waveLen,&
                 isAccel, solAcc, maxIter, splitAcc, shAcc,&
@@ -289,8 +291,8 @@ program shdom
 
     call shd_mpi__bcastInp(runName,&
         &fileInp_sav, fileOut_sav,&
-        &shdo_obj%Nstokes, Nx, Ny, Nz, shdo_obj%Nmu, shdo_obj%Nphi, flag_bc,&
-        &ipFlag, isCkd, isDeltaM, type_grid,&
+        &shdo_obj%Nstokes, rtmAll_obj%Nx, rtmAll_obj%Ny, rtmAll_obj%Nz, shdo_obj%Nmu, shdo_obj%Nphi, rtmAll_obj%flag_bc,&
+        &rtmAll_obj%flag_ip, isCkd, isDeltaM, rtmAll_obj%type,&
         &type_src, solar0, mu_solar, az_solar, skyRad,&
         &units_src, waveNum, waveLen,&
         &isAccel, solAcc, maxIter, splitAcc, shAcc,&
@@ -425,32 +427,35 @@ program shdom
     ! Process grids
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! X, Y, Z grids
-    Nx = max(1, Nx); Ny = max(1, Ny); Nz = max(2, Nz)
+    rtmAll_obj%Nx = max(1, rtmAll_obj%Nx)
+    rtmAll_obj%Ny = max(1, rtmAll_obj%Ny)
+    rtmAll_obj%Nz = max(2, rtmAll_obj%Nz)
 
     ! If single plane or column then force IP mode
-    !   if   3D ipFlag=0, bit representation '0000'
-    !   if Nx=1 ipFlag=1, bit representation '0001'
-    !   if Ny=1 ipFlag=2, bit representation '0010'
-    !   if  IPA ipFlag=3, bit representation '0011'
-    if (Nx .eq. 1) then
-        ipFlag = ior(ipFlag, 1) ! '0000'(3D,   0) + '0001'(Nx=1, 1) = '0001' (Nx=1, 1)
-        if (verbose_ .ge. 4) write (6, '(A)') 'Warning [shdom]: Nx=1, reset ipFlag to 1.'
+    !   if              3D rtmAll_obj%flag_ip=0, bit representation '0000'
+    !   if rtmAll_obj%Ny=1 rtmAll_obj%flag_ip=1, bit representation '0001'
+    !   if rtmAll_obj%Ny=1 rtmAll_obj%flag_ip=2, bit representation '0010'
+    !   if             IPA rtmAll_obj%flag_ip=3, bit representation '0011'
+    if (rtmAll_obj%Nx .eq. 1) then
+        ! '0000'(3D,   0) + '0001'(rtmAll_obj%Nx=1, 1) = '0001' (rtmAll_obj%Nx=1, 1)
+        rtmAll_obj%flag_ip = ior(rtmAll_obj%flag_ip, 1)
+        if (verbose_ .ge. 4) write (6, '(A)') 'Warning [shdom]: rtmAll_obj%Nx=1, reset rtmAll_obj%flag_ip to 1.'
     end if
 
-    if (Ny .eq. 1) then
-        ipFlag = ior(ipFlag, 2) ! '0001'(Nx=1, 1) + '0010'(Ny=1, 2) = '0011' (IPA,  3)
+    if (rtmAll_obj%Ny .eq. 1) then
+        ! '0001'(rtmAll_obj%Nx=1, 1) + '0010'(rtmAll_obj%Ny=1, 2) = '0011' (IPA,  3)
+        rtmAll_obj%flag_ip = ior(rtmAll_obj%flag_ip, 2)
         if (verbose_ .ge. 4) write (6, '(A)') &
-            'Warning [shdom]: Ny=1, reset ipFlag to 2 (or 3).'
+            'Warning [shdom]: rtmAll_obj%Ny=1, reset rtmAll_obj%flag_ip to 2 (or 3).'
     end if
 
-    if ((Nx .eq. 1) .and. (Ny .eq. 1)) then
+    if ((rtmAll_obj%Nx .eq. 1) .and. (rtmAll_obj%Ny .eq. 1)) then
         is1D1_ = .true.
     else
         is1D1_ = .false.
     end if
 
-    ! Set the full domain grid sizes (variables end in T)
-    Nx_T = Nx  ; Ny_T = Ny
+    !==================
 
     ! Overwrite prpAll_obj%dx if only 1 grid in X direction
     if (prpAll_obj%Nx .eq. 1) then
@@ -481,10 +486,6 @@ program shdom
 
     Nsh_out = 4
     if (isHighOrder_) Nsh_out = 5
-
-    ! x, y, z grids
-    allocate (x_Grid(Nx + 1), y_Grid(Ny + 1), z_Grid(Nz)); &
-        memUsed = memUsed + (Nx+1) + (Ny+1) + (Nz)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
@@ -493,34 +494,35 @@ program shdom
     ! Map the full SHDOM domain onto the multiple processors:
     !   change NPX,NPY and Nx,Ny to the subdomain size, and output
     !   the X and Y starting position of this subdomain. Set bits
-    !   2 and 3 in flag_bc to indicate multiple processors in X and Y.
+    !   2 and 3 in rtmAll_obj%flag_bc to indicate multiple processors in X and Y.
     !   Also open the slave processor log files.
+    rtm_obj = rtmAll_obj
     prp_obj = prpAll_obj
-    call shd_mpi__map(flag_bc, Nx, Ny, Nz, runName, prpAll_obj, prp_obj)
+    call shd_mpi__map(rtmAll_obj, prpAll_obj, rtm_obj, prp_obj)
 
-    ! flag_bc bit-representation '...0001' isOpenX_
-    if (btest(flag_bc, 0)) then
+    ! rtm_obj%flag_bc bit-representation '...0001' isOpenX_
+    if (btest(rtm_obj%flag_bc, 0)) then
         isOpenX_ = .true.
     else
         isOpenX_ = .false.
     end if
 
-    ! flag_bc bit-representation '...001x' isOpenYx_
-    if (btest(flag_bc, 1)) then
+    ! rtm_obj%flag_bc bit-representation '...001x' isOpenYx_
+    if (btest(rtm_obj%flag_bc, 1)) then
         isOpenYx_ = .true.
     else
         isOpenYx_ = .false.
     end if
 
-    ! flag_bc bit-representation '...01xx' isMpiX_
-    if (btest(flag_bc, 2)) then
+    ! rtm_obj%flag_bc bit-representation '...01xx' isMpiX_
+    if (btest(rtm_obj%flag_bc, 2)) then
         isMpiX_ = .true.
     else
         isMpiX_ = .false.
     end if
 
-    ! flag_bc bit-representation '...1xxx' isMpiY_
-    if (btest(flag_bc, 3)) then
+    ! rtm_obj%flag_bc bit-representation '...1xxx' isMpiY_
+    if (btest(rtm_obj%flag_bc, 3)) then
         isMpiY_ = .true.
     else
         isMpiY_ = .false.
@@ -532,24 +534,24 @@ program shdom
         isMpi_ = .false.
     end if
 
-    ! btest(ipFlag, 0) checks whether ipFlag=1 or ipFlag=0 ('...0001' [IPA in X] or '...0000' [3D in X])
-    if (btest(ipFlag, 0)) then
+    ! btest(rtm_obj%flag_ip, 0) checks whether rtm_obj%flag_ip=1 or rtm_obj%flag_ip=0 ('...0001' [IPA in X] or '...0000' [3D in X])
+    if (btest(rtm_obj%flag_ip, 0)) then
         is1DX_ = .true.
     else
         is1DX_ = .false.
     end if
 
-    ! btest(ipFlag, 1) checks whether ipFlag=2 [or 3] or ipFlag=0 [or 1]
+    ! btest(rtm_obj%flag_ip, 1) checks whether rtm_obj%flag_ip=2 [or 3] or rtm_obj%flag_ip=0 [or 1]
     !   ('...0010' [or '...0011', IPA in Y] or '...0000' [or '...0001', 3D in Y])
-    if (btest(ipFlag, 1)) then
+    if (btest(rtm_obj%flag_ip, 1)) then
         is1DYx_ = .true.
     else
         is1DYx_ = .false.
     end if
 
-    ! btest(ipFlag, 1) checks whether ipFlag=7 [or 8]
+    ! btest(rtm_obj%flag_ip, 1) checks whether rtm_obj%flag_ip=7 [or 8]
     !   ('...0110' [or '...0111'], 3D direct beam but IP diffuse radiative transfer)
-    if (btest(ipFlag, 2)) then
+    if (btest(rtm_obj%flag_ip, 2)) then
         is3Ddir1Ddif_ = .true.
     else
         is3Ddir1Ddif_ = .false.
@@ -570,21 +572,21 @@ program shdom
     isBaseOut = .false.
 
     ! Set up base grid point actual size (Nx1xNY1xNZ)
-    !   btest(flag_bc, 0) checks whether flag_bc=1 or flag_bc=0 ('...0001' [open in X] or '...0000' [periodic in X])
-    Nx1 = Nx + 1
-    if (is1DX_ .or. isOpenX_ .or. isMpiX_) Nx1 = Nx
+    !   btest(rtm_obj%flag_bc, 0) checks whether rtm_obj%flag_bc=1 or rtm_obj%flag_bc=0 ('...0001' [open in X] or '...0000' [periodic in X])
+    rtm_obj%Nx_bc = rtm_obj%Nx + 1
+    if (is1DX_ .or. isOpenX_ .or. isMpiX_) rtm_obj%Nx_bc = rtm_obj%Nx
 
-    ! btest(flag_bc, 1) checks whether flag_bc=2 [or 3] or flag_bc=0 [or 1]
+    ! btest(rtm_obj%flag_bc, 1) checks whether rtm_obj%flag_bc=2 [or 3] or rtm_obj%flag_bc=0 [or 1]
     !   ('...0010' [or '...0011', open in Y] or '...0000' [or '...0001', periodic in Y])
-    Ny1 = Ny + 1
-    if (is1DYx_ .or. isOpenYx_ .or. isMpiY_) Ny1 = Ny
+    rtm_obj%Ny_bc = rtm_obj%Ny + 1
+    if (is1DYx_ .or. isOpenYx_ .or. isMpiY_) rtm_obj%Ny_bc = rtm_obj%Ny
 
     ! Number of base points
-    Npts_base = Nx1*Ny1*Nz
+    Npts_base = rtm_obj%Nx_bc*rtm_obj%Ny_bc*rtm_obj%Nz
 
     ! Calculate the number of base grid cells depending on the boundary condition flag
-    Ncell_base = (Nz - 1)*(Nx + ibits(flag_bc, 0, 1) - ibits(flag_bc, 2, 1))&
-        *(Ny + ibits(flag_bc, 1, 1) - ibits(flag_bc, 3, 1))
+    Ncell_base = (rtm_obj%Nz - 1)*(rtm_obj%Nx + ibits(rtm_obj%flag_bc, 0, 1) - ibits(rtm_obj%flag_bc, 2, 1))&
+                                 *(rtm_obj%Ny + ibits(rtm_obj%flag_bc, 1, 1) - ibits(rtm_obj%flag_bc, 3, 1))
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! Read prp_obj%fname and distribute property object if MPI
@@ -674,7 +676,7 @@ program shdom
     if (isMasterProc) then
         ! Check input parameters
         call shd_io__checkInp(shdo_obj%Nmu, shdo_obj%Nphi, isDeltaM,&
-            &type_grid, type_src, units_src, solar0, mu_solar,&
+            &rtm_obj%type, type_src, units_src, solar0, mu_solar,&
             &waveNum, waveLen,&
             &splitAcc, shAcc, prp_obj, sfc_obj)
     end if
@@ -898,6 +900,9 @@ program shdom
 
     NmaxIG = NmaxIG + 4.5 ! temp, planck, ext, ssa, ipha[0.5, integer(kind=2)]
 
+    ! x, y, z grid
+    memUsed = memUsed + (rtm_obj%Nx+1) + (rtm_obj%Ny+1) + (rtm_obj%Nz)
+
     if (prp_obj%Npha .gt. 0) then
         memUsed = memUsed + prp_obj%Npha * prp_obj%NlegSet * (prp_obj%maxNleg + 1) ! offset phase table
     else
@@ -906,9 +911,9 @@ program shdom
 
     if (sfc_obj%fname(1:4) .ne. 'NONE') then
         if (sfc_obj%type(2:2) .eq. 'L') then
-            NmaxIG = real(3)/real(Nz) * (sfc_obj%maxNpar + 2.0 + shdo_obj%Nstokes*2.0)
+            NmaxIG = real(3)/real(rtm_obj%Nz) * (sfc_obj%maxNpar + 2.0 + shdo_obj%Nstokes*2.0)
         else
-            NmaxIG = real(3)/real(Nz) * (sfc_obj%maxNpar + 2.0 + shdo_obj%Nstokes*(2.0+ shdo_obj%Nmu*shdo_obj%maxNphi0/2))
+            NmaxIG = real(3)/real(rtm_obj%Nz) * (sfc_obj%maxNpar + 2.0 + shdo_obj%Nstokes*(2.0+ shdo_obj%Nmu*shdo_obj%maxNphi0/2))
         end if
     end if
 
@@ -1000,7 +1005,7 @@ program shdom
         stop
     end if
 
-    maxNpts_bc = maxIG*3/Nz
+    maxNpts_bc = maxIG*3/rtm_obj%Nz
     if (sfc_obj%isLambertian) then
         maxNrad_bc = 2 * maxNpts_bc
     else
@@ -1018,6 +1023,9 @@ program shdom
 
     ! Allocate array
     !╭────────────────────────────────────────────────────────────────────────────╮!
+    ! x, y, z grids ???
+    allocate (x_Grid(rtm_obj%Nx + 1), y_Grid(rtm_obj%Ny + 1), z_Grid(rtm_obj%Nz))
+
     ! temperature and planck radiance (maybe we don't need this for shortwave)
     allocate (temp(maxIG), planck(maxIG))
 
@@ -1091,7 +1099,7 @@ program shdom
 
 
     ! Read in previous run from binary file if desired
-    call shd_io__restoreState(fileInp_sav, shdo_obj%Nstokes, Nx, Ny, Nz, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
+    call shd_io__restoreState(fileInp_sav, shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
         &isNewRad, isNewGrid, x_Grid, y_Grid, z_Grid,&
         &Npts, Ncell, xyz_Grid, ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell,&
         &flag_Cell, fluxTot, shdo_obj%isrcJ, shdo_obj%srcJ, shdo_obj%iradI, shdo_obj%radI)
@@ -1101,7 +1109,7 @@ program shdom
     !   isNewGrid is from shd_io__restoreState call
     if (isNewGrid) then
         ! Make the internal base grid lines
-        call shd_init__makeGrid(flag_bc, type_grid, Nx, Ny, Nz,&
+        call shd_init__makeGrid(rtm_obj%flag_bc, rtm_obj%type, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz,&
             &x_Grid, y_Grid, z_Grid, prp_obj)
     end if
 
@@ -1140,8 +1148,8 @@ program shdom
         ! If this is the first time through or we always want a base grid,
         !   then make the base grid point positions and grid cell structure.
         if (isBaseOut .or. ((ig_ckd.eq. ckd_obj%Ng) .and. isNewGrid)) then
-            call shd_init__makeCell(flag_bc, ipFlag,&
-                &Nx, Ny, Nz, Nx1, Ny1, Npts, Ncell,&
+            call shd_init__makeCell(rtm_obj%flag_bc, rtm_obj%flag_ip,&
+                &rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, rtm_obj%Nx_bc, rtm_obj%Ny_bc, Npts, Ncell,&
                 &x_Grid, y_Grid, z_Grid, xyz_Grid,&
                 &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell)
             Ncell_base = Ncell
@@ -1149,11 +1157,11 @@ program shdom
 
         ! Find the monochromatic SHDOM solution: adaptive grid output
         !   in source (shdo_obj%srcJ), radiance (shdo_obj%radI), fluxes, direct Flux.
-        call shd_solv__solveRte(shdo_obj%Nstokes, Nx, Ny, Nz, Nx1, Ny1, shdo_obj%Nang,&
+        call shd_solv__solveRte(shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, rtm_obj%Nx_bc, rtm_obj%Ny_bc, shdo_obj%Nang,&
             &shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm, shdo_obj%Nmu, shdo_obj%Nphi,&
             &shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
             &maxIV, maxIC, maxIG, maxIDO, isNewRad,&
-            &flag_bc, ipFlag, isDeltaM, type_src, isHighOrder_,&
+            &rtm_obj%flag_bc, rtm_obj%flag_ip, isDeltaM, type_src, isHighOrder_,&
             &solar0_ckd, mu_solar, az_solar, skyRad,&
             &units_src, waveNum, waveLen,&
             &isAccel, solAcc, maxIter, solCrit, iter,&
@@ -1174,10 +1182,10 @@ program shdom
             do iout = 1, Nout
                 if (type_Out(iout) .eq. 'R') then
                     if (isMpi_) then
-                        call shd_mpi__computeRad(shdo_obj%Nstokes, Nx, Ny, Nz, Npts, Ncell,&
+                        call shd_mpi__computeRad(shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, Npts, Ncell,&
                             &shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
                             &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
-                            &flag_bc, ipFlag,&
+                            &rtm_obj%flag_bc, rtm_obj%flag_ip,&
                             &type_src, isDeltaM, mu_solar, az_solar,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
                             &skyRad, waveNum, waveLen, units_src,&
@@ -1187,10 +1195,10 @@ program shdom
                             &shdo_obj%isrcJ, shdo_obj%srcJ, work, work(1 + Npts*shdo_obj%Nstokes),&
                             &parms_Out(1, iout), irad, work2, prp_obj, sfc_obj, sen_obj)
                     else
-                        call shd_rad__computeRad(shdo_obj%Nstokes, Nx, Ny, Nz, Npts, Ncell,&
+                        call shd_rad__computeRad(shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, Npts, Ncell,&
                             &shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
                             &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
-                            &flag_bc, ipFlag, type_src, isDeltaM, mu_solar, az_solar,&
+                            &rtm_obj%flag_bc, rtm_obj%flag_ip, type_src, isDeltaM, mu_solar, az_solar,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
                             &skyRad, waveNum, waveLen, units_src,&
                             &x_Grid, y_Grid, z_Grid, xyz_Grid,&
@@ -1209,10 +1217,10 @@ program shdom
             do iout = 1, Nout
                 if (type_Out(iout) .eq. 'V') then
                     if (isMpi_) then
-                        call shd_mpi__computeCamRad(shdo_obj%Nstokes, Nx, Ny, Nz, Npts, Ncell,&
+                        call shd_mpi__computeCamRad(shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, Npts, Ncell,&
                             &shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
                             &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
-                            &flag_bc, ipFlag,&
+                            &rtm_obj%flag_bc, rtm_obj%flag_ip,&
                             &type_src, isDeltaM, mu_solar, az_solar,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
                             &skyRad, waveNum, waveLen, units_src,&
@@ -1222,10 +1230,10 @@ program shdom
                             &shdo_obj%isrcJ, shdo_obj%srcJ, parms_Out(1, iout), ilos, work2,&
                             &prp_obj, sfc_obj, sen_obj)
                     else
-                        call shd_rad__computeCamRad(shdo_obj%Nstokes, Nx, Ny, Nz, Npts, Ncell,&
+                        call shd_rad__computeCamRad(shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, Npts, Ncell,&
                             &shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
                             &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
-                            &flag_bc, ipFlag, type_src, isDeltaM, mu_solar, az_solar,&
+                            &rtm_obj%flag_bc, rtm_obj%flag_ip, type_src, isDeltaM, mu_solar, az_solar,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
                             &skyRad, waveNum, waveLen, units_src,&
                             &x_Grid, y_Grid, z_Grid, xyz_Grid,&
@@ -1255,8 +1263,8 @@ program shdom
 
         if (isBaseOut) then
             ! If outputting only the base grid then throw out the other points
-            call shd_init__makeCell(flag_bc, ipFlag,&
-                &Nx, Ny, Nz, Nx1, Ny1,&
+            call shd_init__makeCell(rtm_obj%flag_bc, rtm_obj%flag_ip,&
+                &rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, rtm_obj%Nx_bc, rtm_obj%Ny_bc,&
                 &Npts, Ncell, x_Grid, y_Grid, z_Grid, xyz_Grid,&
                 &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell)
         else
@@ -1276,11 +1284,11 @@ program shdom
                 allocate(fluxDirTmp(Npts))
 
                 if (isMpi_) then
-                    call shd_mpi__makeDirect(1, Npts, flag_bc, ipFlag, .false., shdo_obj%maxNl,&
+                    call shd_mpi__makeDirect(1, Npts, rtm_obj%flag_bc, rtm_obj%flag_ip, .false., shdo_obj%maxNl,&
                         &solar0_ckd, mu_solar, az_solar,&
-                        &xyz_Grid, Nx, x_Grid, Ny, y_Grid, fluxDirTmp, prp_obj, ckd_obj)
+                        &xyz_Grid, rtm_obj%Nx, x_Grid, rtm_obj%Ny, y_Grid, fluxDirTmp, prp_obj, ckd_obj)
                 else
-                    call shd_rad__makeDirect(Npts, flag_bc, ipFlag, .false., shdo_obj%maxNl,&
+                    call shd_rad__makeDirect(Npts, rtm_obj%flag_bc, rtm_obj%flag_ip, .false., shdo_obj%maxNl,&
                         &solar0_ckd, mu_solar, az_solar,&
                         &xyz_Grid, fluxDirTmp, prp_obj, ckd_obj)
                 end if
@@ -1330,14 +1338,14 @@ program shdom
     if (isMpi_) then
 
         if (isMasterProc) then
-            if (isFluxOut) allocate (fluxTot_all(3, Nz, Ny_T, Nx_T))
-            if (isHROut)   allocate (fluxDiv_all(Nz, Ny_T, Nx_T))
-            if (isSHOut)   allocate (SH_all(Nsh_out, Nz, Ny_T, Nx_T))
-            allocate (xGrid_all(Nx_T), yGrid_all(Ny_T))
+            if (isFluxOut) allocate (fluxTot_all(3, rtmAll_obj%Nz, rtmAll_obj%Ny, rtmAll_obj%Nx))
+            if (isHROut)   allocate (fluxDiv_all(rtmAll_obj%Nz, rtmAll_obj%Ny, rtmAll_obj%Nx))
+            if (isSHOut)   allocate (SH_all(Nsh_out, rtmAll_obj%Nz, rtmAll_obj%Ny, rtmAll_obj%Nx))
+            allocate (xGrid_all(rtmAll_obj%Nx), yGrid_all(rtmAll_obj%Ny))
         end if
 
         call shd_mpi__gatherOut(isFluxOut, isHROut, isSHOut,&
-            &ipFlag, flag_bc, Npts_base, Nx_T, Ny_T, Nz, Nsh_out,&
+            &rtm_obj%flag_ip, rtm_obj%flag_bc, Npts_base, rtmAll_obj%Nx, rtmAll_obj%Ny, rtm_obj%Nz, Nsh_out,&
             &sumFluxTot_Out, sumFluxDir_Out, sumFluxDiv_Out, sumSH_Out,&
             &xGrid_all, yGrid_all,&
             &fluxTot_all, fluxDiv_all, SH_all,&
@@ -1347,11 +1355,11 @@ program shdom
 
             do iout = 1, Nout
                 if (type_Out(iout) .ne. 'V' .and. file_Out(iout)(1:4) .ne. 'NONE') then
-                    call shd_io__outputResultMpi(shdo_obj%Nstokes, Nx_T, Ny_T, Nz,&
+                    call shd_io__outputResultMpi(shdo_obj%Nstokes, rtmAll_obj%Nx, rtmAll_obj%Ny, rtm_obj%Nz,&
                         &Npts_tot, Ncell_tot, Nsh_tot,&
                         &shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm, shdo_obj%Nmu, shdo_obj%Nphi, shdo_obj%Nang,&
                         &fileInp_sav, fileOut_sav,&
-                        &flag_bc, ipFlag, isDeltaM, type_grid, type_src,&
+                        &rtm_obj%flag_bc, rtm_obj%flag_ip, isDeltaM, rtm_obj%type, type_src,&
                         &solar, mu_solar, az_solar, skyRad,&
                         &waveNum, waveLen, units_src,&
                         &splitAcc, shAcc, solAcc, maxIter, totIter,&
@@ -1373,10 +1381,10 @@ program shdom
 
         do iout = 1, Nout
             if ((type_Out(iout) .ne. 'V') .and. (file_Out(iout)(1:4) .ne. 'NONE')) then
-                call shd_io__outputResult(shdo_obj%Nstokes, Nx, Ny, Nx1, Ny1, Nz, Npts_base, Npts, Ncell,&
+                call shd_io__outputResult(shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nx_bc, rtm_obj%Ny_bc, rtm_obj%Nz, Npts_base, Npts, Ncell,&
                     Nsh, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm, shdo_obj%Nmu, shdo_obj%Nphi, shdo_obj%Nang,&
                     fileInp_sav, fileOut_sav,&
-                    flag_bc, ipFlag, isDeltaM, type_grid, type_src,&
+                    rtm_obj%flag_bc, rtm_obj%flag_ip, isDeltaM, rtm_obj%type, type_src,&
                     solar, mu_solar, az_solar, skyRad,&
                     waveNum, waveLen, units_src,&
                     splitAcc, shAcc, solAcc, maxIter, totIter,&
@@ -1398,10 +1406,10 @@ program shdom
     if (isMasterProc) then
         do iout = 1, Nout
             if ((type_Out(iout) .eq. 'V')) then
-                call shd_io__outputCamRad(shdo_obj%Nstokes, Nx, Ny, Nz, Npts, Ncell,&
+                call shd_io__outputCamRad(shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, Npts, Ncell,&
                     &Nsh, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm, shdo_obj%Nmu, shdo_obj%Nphi, shdo_obj%Nang,&
                     &fileInp_sav, fileOut_sav,&
-                    &flag_bc, ipFlag, isDeltaM, type_grid, type_src,&
+                    &rtm_obj%flag_bc, rtm_obj%flag_ip, isDeltaM, rtm_obj%type, type_src,&
                     &solar, mu_solar, az_solar, skyRad,&
                     &waveNum, waveLen, units_src,&
                     &splitAcc, shAcc, solAcc, maxIter, totIter,&
@@ -1416,7 +1424,7 @@ program shdom
     ! save state
     !╭────────────────────────────────────────────────────────────────────────────╮!
     if (maxIter .gt. 0) then
-        call shd_io__saveState(fileOut_sav, shdo_obj%Nstokes, Nx, Ny, Nz, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
+        call shd_io__saveState(fileOut_sav, shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
             &work, x_Grid, y_Grid, z_Grid,&
             &Npts, Ncell, xyz_Grid, ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell,&
             &flag_Cell, fluxTot, shdo_obj%isrcJ, shdo_obj%srcJ, shdo_obj%iradI, shdo_obj%radI)

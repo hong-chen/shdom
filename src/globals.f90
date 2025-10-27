@@ -205,6 +205,43 @@ module globals_type
     end type shd_type_shdo
 
 
+    type :: shd_type_rtm
+        character(len=charMaxLen_) :: runName = 'NONE'
+        character(len=1) :: type = ' '
+
+        integer(kind=I__) :: flag_bc = -999
+        integer(kind=I__) :: flag_ip = -999
+
+        integer(kind=I__) :: Nx = -999
+        integer(kind=I__) :: Ny = -999
+        integer(kind=I__) :: Nz = -999
+        integer(kind=I__) :: Nx_bc = -999
+        integer(kind=I__) :: Ny_bc = -999
+
+        integer(kind=I__) :: maxNz   = -999
+        integer(kind=I__) :: maxNpts = -999
+
+        real(kind=R__) :: dx = -999.0
+        real(kind=R__) :: dy = -999.0
+        real(kind=R__) :: xStart  = -999.0
+        real(kind=R__) :: yStart  = -999.0
+        real(kind=R__) :: xDomain = -999.0
+        real(kind=R__) :: yDomain = -999.0
+
+        real(kind=R__), pointer :: x(:)    => null()
+        real(kind=R__), pointer :: y(:)    => null()
+        real(kind=R__), pointer :: z(:)    => null()
+
+        real(kind=R__), pointer :: temp(:) => null()
+        real(kind=R__), pointer :: ext(:)  => null()
+        real(kind=R__), pointer :: ssa(:)  => null()
+        real(kind=R__), pointer :: leg(:)  => null()
+        integer(kind=2), pointer:: ipha(:) => null()
+
+        logical :: isAllocated  = .false.
+    end type shd_type_rtm
+
+
     type :: shd_type_prp
         character(len=charMaxLen_) :: fname = 'NONE'
         character(len=1) :: type = ' '

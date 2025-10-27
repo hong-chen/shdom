@@ -46,7 +46,8 @@ module shd_mpi
                              isPol_, isPol4_, &
                              isSolar_
     use globals_type,  only: shd_type_prp, shd_type_sfc, &
-                             shd_type_ckd, shd_type_sen
+                             shd_type_ckd, shd_type_sen, &
+                             shd_type_rtm
 
 #if HAS_MPI
     use mpi_f08,  only: MPI_comm_world, MPI_comm, MPI_request, &
@@ -170,16 +171,15 @@ subroutine shd_mpi__start(isMasterProc, Nproc)
 
 end subroutine shd_mpi__start
 
-subroutine shd_mpi__map(BCFLAG, Nx, Ny, Nz,&
-    &runName, prpAll_obj, prp_obj)
+subroutine shd_mpi__map(rtmAll_obj, prpAll_obj, rtm_obj,  prp_obj)
 
     ! Sets up the mapping of processors for the SHDOM domain (creating the
     ! 2D communicator, comm2D_).  Determines the subdomain property grid
-    ! (prp_obj%Nx,prp_obj%Ny) and internal base grid (Nx,Ny) sizes, and outputs the
+    ! (prp_obj%Nx,prp_obj%Ny) and internal base grid (rtm_obj%Nx,rtm_obj%Ny) sizes, and outputs the
     ! starting position of this subdomain (prp_obj%xStart,prp_obj%yStart).  Bits 2 and 3
-    ! of BCFLAG are set to indicate multiple processors in the X and Y
+    ! of rtm_obj%flag_bc are set to indicate multiple processors in the X and Y
     ! directions, respectively.  Open boundary conditions (bits 0 and 1 in
-    ! BCFLAG) are overridden by the multiple processor flags (i.e. multiple
+    ! rtm_obj%flag_bc) are overridden by the multiple processor flags (i.e. multiple
     ! processor requires a periodic full domain).
     !   The neighboring processors are stored in iProcNeigh_(:), with the
     ! following indexing scheme: 1=-X, 2=+X, 3-=-Y, 4=+Y.   The ixyPrp_ array
@@ -189,22 +189,19 @@ subroutine shd_mpi__map(BCFLAG, Nx, Ny, Nz,&
     ! of grid points of the internal base grid for this subdomain (for the
     ! output arrays).
 
+    type(shd_type_rtm), intent(in) :: rtmAll_obj
     type(shd_type_prp), intent(in) :: prpAll_obj
-    type(shd_type_prp), intent(inout) :: prp_obj
 
-    integer, intent(inout) :: BCFLAG, Nx, Ny, Nz
-    character(len=*), intent(in) :: runName
+    type(shd_type_rtm), intent(inout) :: rtm_obj
+    type(shd_type_prp), intent(inout) :: prp_obj
 
 #if HAS_MPI
 ! note: this if clause has <else>
-    integer :: NXT, NYT
     integer :: i, ierr, dims(2), coords(2)
     logical :: periodic(2) = (/.true., .true./), reorder = .false.
     real    :: xEnd, yEnd
     character(len=4) :: procStr
     character(len=charMaxLen_) :: logFile
-
-    NXT = Nx; NYT = Ny
 
     !if ((Nproc_ .eq. 1) .or. ((prpAll_obj%Nx .eq. 1) .and. (prpAll_obj%Ny .eq. 1))) then
     if (Nproc_ .eq. 1) then
@@ -214,7 +211,7 @@ subroutine shd_mpi__map(BCFLAG, Nx, Ny, Nz,&
 
     if (myProc_ .gt. 0) then
         write (procStr, '(I4.4)') myProc_
-        logFile = trim(adjustl(runName))//'.sHdOmNG-log.iproc-'//procStr
+        logFile = trim(adjustl(rtm_obj%runName))//'.sHdOmNG-log.iproc-'//procStr
         open (UNIT=6, FILE=trim(adjustl(logFile)), STATUS='UNKNOWN')
     end if
 
@@ -227,14 +224,14 @@ subroutine shd_mpi__map(BCFLAG, Nx, Ny, Nz,&
         &comm2D_, ierr)
 
     if (dims(1) .gt. 1) then
-        BCFLAG = ibset(BCFLAG, 2)
+        rtm_obj%flag_bc = ibset(rtm_obj%flag_bc, 2)
         isMpiX_ = .true.
     else
         isMpiX_ = .false.
     end if
 
     if (dims(2) .gt. 1) then
-        BCFLAG = ibset(BCFLAG, 3)
+        rtm_obj%flag_bc = ibset(rtm_obj%flag_bc, 3)
         isMpiY_ = .true.
     else
         isMpiY_ = .false.
@@ -242,7 +239,7 @@ subroutine shd_mpi__map(BCFLAG, Nx, Ny, Nz,&
 
     ! Multi-processor BC takes precedence over open BCs
     if (isMpiX_ .or. isMpiY_) then
-        BCFLAG = iand(BCFLAG, 12)
+        rtm_obj%flag_bc = iand(rtm_obj%flag_bc, 12)
         isMpi_ = .true.
     else
         isMpi_ = .false.
@@ -252,20 +249,20 @@ subroutine shd_mpi__map(BCFLAG, Nx, Ny, Nz,&
     call mpi_cart_coords(comm2D_, myProc_, 2, coords, ierr)
 
     ! Make the optimal (or default) property grid divisions (in ixyPrp_)
-    call shd_mpi__optimizeProcDomain(dims, coords, runName, prpAll_obj, prp_obj)
+    call shd_mpi__optimizeProcDomain(dims, coords, rtm_obj%runName, prpAll_obj, prp_obj)
 
     ! Make the new property and base grid sizes and the ixyOut_ arrays
     if (dims(1) .gt. 1) then
         if (prpAll_obj%Nx .gt. 1) then
 
             prp_obj%Nx = ixyPrp_(2, 1) - ixyPrp_(1, 1) + 1
-            Nx = nint(NXT*float(prp_obj%Nx - 1)/prpAll_obj%Nx) + 1
-            if (abs(prpAll_obj%Nx/float(NXT) - (prp_obj%Nx - 1)/float(Nx - 1)) .gt. 0.0001) then
+            rtm_obj%Nx = nint(rtmAll_obj%Nx*float(prp_obj%Nx - 1)/prpAll_obj%Nx) + 1
+            if (abs(prpAll_obj%Nx/float(rtmAll_obj%Nx) - (prp_obj%Nx - 1)/float(rtm_obj%Nx - 1)) .gt. 0.0001) then
                 call shd_mpi__abort('Error [mpi__map]: Even X base grid cannot be preserved&
-                    & for this Nx and number of processors')
+                    & for this rtm_obj%Nx and number of processors')
             end if
-            ixyOut_(1, 1) = nint(NXT*float(ixyPrp_(1, 1) - 1)/prpAll_obj%Nx) + 1
-            ixyOut_(2, 1) = nint(NXT*float(prp_obj%Nx - 1)/prpAll_obj%Nx)
+            ixyOut_(1, 1) = nint(rtmAll_obj%Nx*float(ixyPrp_(1, 1) - 1)/prpAll_obj%Nx) + 1
+            ixyOut_(2, 1) = nint(rtmAll_obj%Nx*float(prp_obj%Nx    - 1)/prpAll_obj%Nx)
             prp_obj%xStart = (ixyPrp_(1, 1) - 1)*prp_obj%dx
             xEnd = (ixyPrp_(2, 1) - 1)*prp_obj%dx
 
@@ -273,13 +270,13 @@ subroutine shd_mpi__map(BCFLAG, Nx, Ny, Nz,&
 
             prp_obj%Nx = 1
 
-            ixyOut_(1, 1) = nint(real(NXT)/real(dims(1)))*coords(1) + 1
-            ixyOut_(2, 1) = min(nint(real(NXT)/real(dims(1)))*(coords(1)+1), NXT)
+            ixyOut_(1, 1) = nint(real(rtmAll_obj%Nx)/real(dims(1)))*coords(1) + 1
+            ixyOut_(2, 1) = min(nint(real(rtmAll_obj%Nx)/real(dims(1)))*(coords(1)+1), rtmAll_obj%Nx)
 
-            Nx = ixyOut_(2, 1) - ixyOut_(1, 1) + 2
+            rtm_obj%Nx = ixyOut_(2, 1) - ixyOut_(1, 1) + 2
 
-            prp_obj%xStart = real(prp_obj%dx)/real(NXT) * real((ixyOut_(1, 1)-1))
-            xEnd   = real(prp_obj%dx)/real(NXT) * real((ixyOut_(2, 1)))
+            prp_obj%xStart = real(prp_obj%dx)/real(rtmAll_obj%Nx) * real((ixyOut_(1, 1)-1))
+            xEnd           = real(prp_obj%dx)/real(rtmAll_obj%Nx) * real((ixyOut_(2, 1)))
 
             prp_obj%dx = xEnd - prp_obj%xStart
 
@@ -287,7 +284,7 @@ subroutine shd_mpi__map(BCFLAG, Nx, Ny, Nz,&
         end if
     else
         ixyOut_(1, 1) = 1
-        ixyOut_(2, 1) = NXT
+        ixyOut_(2, 1) =  rtmAll_obj%Nx
         prp_obj%xStart = 0.0
         xEnd = prpAll_obj%Nx*prp_obj%dx
     end if
@@ -297,13 +294,13 @@ subroutine shd_mpi__map(BCFLAG, Nx, Ny, Nz,&
         if (prpAll_obj%Ny .gt. 1) then
 
             prp_obj%Ny = ixyPrp_(2, 2) - ixyPrp_(1, 2) + 1
-            Ny = nint(NYT*float(prp_obj%Ny - 1)/prpAll_obj%Ny) + 1
-            if (abs(prpAll_obj%Ny/float(NYT) - (prp_obj%Ny - 1)/float(Ny - 1)) .gt. 0.0001) then
+            rtm_obj%Ny = nint(rtmAll_obj%Ny*float(prp_obj%Ny - 1)/prpAll_obj%Ny) + 1
+            if (abs(prpAll_obj%Ny/float(rtmAll_obj%Ny) - (prp_obj%Ny - 1)/float(rtm_obj%Ny - 1)) .gt. 0.0001) then
                 call shd_mpi__abort('Error [mpi__map]: Even Y base grid cannot be preserved&
-                    & for this Ny and number of processors')
+                    & for this rtm_obj%Ny and number of processors')
             end if
-            ixyOut_(1, 2) = nint(NYT*float(ixyPrp_(1, 2) - 1)/prpAll_obj%Ny) + 1
-            ixyOut_(2, 2) = nint(NYT*float(prp_obj%Ny - 1)/prpAll_obj%Ny)
+            ixyOut_(1, 2) = nint(rtmAll_obj%Ny*float(ixyPrp_(1, 2) - 1)/prpAll_obj%Ny) + 1
+            ixyOut_(2, 2) = nint(rtmAll_obj%Ny*float(prp_obj%Ny - 1)/prpAll_obj%Ny)
             prp_obj%yStart = (ixyPrp_(1, 2) - 1)*prp_obj%dy
             yEnd = (ixyPrp_(2, 2) - 1)*prp_obj%dy
 
@@ -311,20 +308,20 @@ subroutine shd_mpi__map(BCFLAG, Nx, Ny, Nz,&
 
             prp_obj%Ny = 1
 
-            ixyOut_(1, 2) = nint(real(NYT)/real(dims(2)))*coords(2) + 1
-            ixyOut_(2, 2) = min(nint(real(NYT)/real(dims(2)))*(coords(2)+1), NYT)
+            ixyOut_(1, 2) =     nint(real(rtmAll_obj%Ny)/real(dims(2)))*(coords(2)+1)
+            ixyOut_(2, 2) = min(nint(real(rtmAll_obj%Ny)/real(dims(2)))*(coords(2)+1), rtmAll_obj%Ny)
 
-            Ny = ixyOut_(2, 2) - ixyOut_(1, 2) + 2
+            rtm_obj%Ny = ixyOut_(2, 2) - ixyOut_(1, 2) + 2
 
-            prp_obj%yStart = real(prp_obj%dy)/real(NYT) * real((ixyOut_(1, 2)-1))
-            yEnd   = real(prp_obj%dy)/real(NYT) * real((ixyOut_(2, 2)))
+            prp_obj%yStart = real(prp_obj%dy)/real(rtmAll_obj%Ny) * real((ixyOut_(1, 2)-1))
+            yEnd           = real(prp_obj%dy)/real(rtmAll_obj%Ny) * real((ixyOut_(2, 2)))
 
             prp_obj%dy = yEnd - prp_obj%yStart
 
         end if
     else
         ixyOut_(1, 2) = 1
-        ixyOut_(2, 2) = NYT
+        ixyOut_(2, 2) = rtmAll_obj%Ny
         prp_obj%yStart = 0.0
         yEnd = prpAll_obj%Ny*prp_obj%dy
     end if
