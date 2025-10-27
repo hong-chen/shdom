@@ -205,6 +205,12 @@ module globals_type
     end type shd_type_shdo
 
 
+    type :: shd_type_src
+        character(len=1) :: type = ' '
+        character(len=1) :: unit = ' '
+    end type shd_type_src
+
+
     type :: shd_type_rtm
         character(len=charMaxLen_) :: runName = 'NONE'
         character(len=1) :: type = ' '
