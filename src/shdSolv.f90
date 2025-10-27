@@ -99,12 +99,12 @@ subroutine shd_solv__solveRte(&
     &MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &NPTS, GRIDPOS,&
     &NCELLS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-    &RSHPTR, SHPTR, OSHPTR, WORK, WORK1, WORK2,&
-    &SOURCE, DELSOURCE, RADIANCE, FLUXES, DIRFLUX,&
+    &idsrc_Shdo, WORK, WORK1, WORK2,&
+    &dsrc_Shdo, FLUXES, DIRFLUX,&
     &rtm_obj, shdo_obj, prp_obj, sfc_obj, ckd_obj)
 
     ! Performs the SHDOM solution procedure.
-    ! Output is returned in SOURCE, RADIANCE, FLUXES, DIRFLUX.
+    ! Output is returned in shdo_obj%srcJ, shdo_obj%radI, FLUXES, DIRFLUX.
     ! The adaptive grid stucture (NCELLS,GRIDPTR,NEIGHPTR,TREEPTR,
     ! CELLFLAGS,NPTS,GRIDPOS) is input and modified for new grid
     ! cells and points on output.
@@ -119,7 +119,7 @@ subroutine shd_solv__solveRte(&
     integer MAXIV, MAXIC, MAXIG, MAXIDO
     integer MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR(MAXNBC, 2)
     integer NPTS, NCELLS
-    integer RSHPTR(*), SHPTR(*), OSHPTR(*)
+    integer idsrc_Shdo(*)
     integer GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
     integer*2 CELLFLAGS(*), IPHASE(*)
     integer WORK1(*)
@@ -133,8 +133,7 @@ subroutine shd_solv__solveRte(&
     real GRIDPOS(3, *)
     real BCRAD(*)
     real FLUXES(2, *), DIRFLUX(*)
-    real SOURCE(shdo_obj%Nstokes, *), DELSOURCE(shdo_obj%Nstokes, *)
-    real RADIANCE(shdo_obj%Nstokes, *)
+    real dsrc_Shdo(shdo_obj%Nstokes, *)
     real WORK(*), WORK2(*)
     character(len=1) :: SRCTYPE, UNITS
 
@@ -209,29 +208,29 @@ subroutine shd_solv__solveRte(&
         ! Initialize the radiance on the base grid using Eddington
         ! two-stream plane-parallel
         call shd_init__makeRad(shdo_obj%Nstokes, rtm_obj%Nx_grid*rtm_obj%Ny_grid, rtm_obj%Nz,&
-            &RSHPTR, ZGRID,&
+            &shdo_obj%iradI, ZGRID,&
             &EXTINCT, ALBEDO, LEGEN, TEMP, IPHASE,&
             &SRCTYPE, SOLARFLUX, SOLARMU, SKYRAD,&
-            &UNITS, WAVENO, WAVELEN, RADIANCE, prp_obj, sfc_obj)
+            &UNITS, WAVENO, WAVELEN, shdo_obj%radI, prp_obj, sfc_obj)
         ! Interpolate the radiance on the non-base grid points from the
         !   base grid points
         NBPTS = rtm_obj%Nx_grid * rtm_obj%Ny_grid * rtm_obj%Nz
         NBCELLS = (rtm_obj%Nz - 1)*(rtm_obj%Nx + ibits(rtm_obj%flag_bc, 0, 1) - ibits(rtm_obj%flag_bc, 2, 1))&
                                  &*(rtm_obj%Ny + ibits(rtm_obj%flag_bc, 1, 1) - ibits(rtm_obj%flag_bc, 3, 1))
-        call shd_rad__interpRad(shdo_obj%Nstokes, NBPTS, NPTS, RSHPTR, RADIANCE,&
+        call shd_rad__interpRad(shdo_obj%Nstokes, NBPTS, NPTS, shdo_obj%iradI, shdo_obj%radI,&
             &NBCELLS, NCELLS, TREEPTR, GRIDPTR, GRIDPOS)
         ! Initialize the source function from the radiance field
         call shd_src__computeSrc(shdo_obj%Nstokes, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
             &NPTS,&
             &FIXSH, SRCTYPE, SOLARMU, YLMSUN, ALBEDO, LEGEN,&
             &IPHASE, PLANCK, DIRFLUX, SHACC,&
-            &MAXIV, RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR, DELSOURCE,&
+            &MAXIV, shdo_obj%iradI, shdo_obj%radI, shdo_obj%isrcJ, shdo_obj%srcJ, idsrc_Shdo, dsrc_Shdo,&
             &.true., ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM, prp_obj)
     end if
 
     if (ACCELFLAG) then
-        OSHPTR(1:NPTS + 1) = SHPTR(1:NPTS + 1)
-        DELSOURCE(:, 1:OSHPTR(NPTS + 1)) = 0.0
+        idsrc_Shdo(1:NPTS + 1) = shdo_obj%isrcJ(1:NPTS + 1)
+        dsrc_Shdo(:, 1:idsrc_Shdo(NPTS + 1)) = 0.0
     end if
     SOLCRIT = 1.0
 
@@ -343,7 +342,7 @@ subroutine shd_solv__solveRte(&
                     &shdo_obj%Nstokes, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
                     &DELTAM, rtm_obj%flag_bc, rtm_obj%flag_ip, ACCELFLAG,&
                     &EXTINCT, ALBEDO, LEGEN, IPHASE,&
-                    &RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR,&
+                    &shdo_obj%iradI, shdo_obj%radI, shdo_obj%isrcJ, shdo_obj%srcJ, idsrc_Shdo,&
                     &TEMP, PLANCK, DIRFLUX, SRCTYPE,&
                     &SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN,&
                     &UNITS, WAVENO, WAVELEN, WORK, WORK2, prp_obj, ckd_obj)
@@ -356,11 +355,11 @@ subroutine shd_solv__solveRte(&
             DOSPLIT = .false.
         end if
 
-        ! Find the SH truncation to use for the radiance (RSHPTR)
+        ! Find the SH truncation to use for the radiance (shdo_obj%iradI)
         call shd_solv__truncRad(isHighOrder,&
             &shdo_obj%Nstokes, shdo_obj%maxNl, shdo_obj%maxNm,&
-            &NPTS, ALBEDO, LEGEN, IPHASE, SHPTR, RADIANCE,&
-            &MAXIV + MAXIG, FIXSH, SHACC, RSHPTR, prp_obj)
+            &NPTS, ALBEDO, LEGEN, IPHASE, shdo_obj%isrcJ, shdo_obj%radI,&
+            &MAXIV + MAXIG, FIXSH, SHACC, shdo_obj%iradI, prp_obj)
 
         ! Integrate the source function along discrete ordinates
         !   to compute the radiance field.  The input source function
@@ -377,7 +376,7 @@ subroutine shd_solv__solveRte(&
             &shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
             &CMU1, CPHI1, CMU2, CPHI2, WPHISAVE, FFTFLAG,&
             &DIRFLUX, FLUXES, EXTINCT,&
-            &SHPTR, SOURCE, RSHPTR, RADIANCE,&
+            &shdo_obj%isrcJ, shdo_obj%srcJ, shdo_obj%iradI, shdo_obj%radI,&
             &WORK, WORK1, WORK2, prp_obj, sfc_obj)
 
         ! Compute the source function from the radiance field,
@@ -389,7 +388,7 @@ subroutine shd_solv__solveRte(&
             &NPTS,&
             &FIXSH, SRCTYPE, SOLARMU, YLMSUN, ALBEDO, LEGEN,&
             &IPHASE, PLANCK, DIRFLUX, SHACC,&
-            &MAXIV, RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR, DELSOURCE,&
+            &MAXIV, shdo_obj%iradI, shdo_obj%radI, shdo_obj%isrcJ, shdo_obj%srcJ, idsrc_Shdo, dsrc_Shdo,&
             &.false., ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM, prp_obj)
 
         ! Calculate the acceleration parameter and solution criterion
@@ -398,8 +397,8 @@ subroutine shd_solv__solveRte(&
             &JNORM, ACCELPAR, SOLCRIT)
 
         ! Accelerate the convergence of the source function vector
-        call shd_solv__accelSol(ACCELPAR, NPTS, SHPTR, OSHPTR,&
-            &shdo_obj%Nstokes, SOURCE, DELSOURCE)
+        call shd_solv__accelSol(ACCELPAR, NPTS, shdo_obj%isrcJ, idsrc_Shdo,&
+            &shdo_obj%Nstokes, shdo_obj%srcJ, dsrc_Shdo)
 
         ! If it is a not scattering medium then do only one iteration
         if (ALBMAX .lt. SOLACC) SOLCRIT = SOLACC
@@ -415,9 +414,9 @@ subroutine shd_solv__solveRte(&
                 &SPLITCRIT,&
                 &NPTS,&
                 &NCELLS,&
-                &float(SHPTR(NPTS + 1))/NPTS,&
+                &float(shdo_obj%isrcJ(NPTS + 1))/NPTS,&
                 &ELAPSED_TIME
-                !&float(SHPTR(NPTS + 1))/(NPTS*shdo_obj%Nlm)
+                !&float(shdo_obj%isrcJ(NPTS + 1))/(NPTS*shdo_obj%Nlm)
         else
             if (OUTOFMEM) then
                 if (verbose_ .ge. 5) write (6, '("M",1X,I4,2X,F7.3,2X,E10.3,1X,I8,1X,I8,1X,F8.2,2X,F6.2," sec")')&
@@ -425,18 +424,18 @@ subroutine shd_solv__solveRte(&
                     &SPLITCRIT,&
                     &NPTS,&
                     &NCELLS,&
-                    &float(SHPTR(NPTS + 1))/NPTS,&
+                    &float(shdo_obj%isrcJ(NPTS + 1))/NPTS,&
                     &ELAPSED_TIME
-                    !&float(SHPTR(NPTS + 1))/(NPTS*shdo_obj%Nlm)
+                    !&float(shdo_obj%isrcJ(NPTS + 1))/(NPTS*shdo_obj%Nlm)
             else
                 if (verbose_ .ge. 5) write (6, '(2X,I4,2X,F7.3,2X,E10.3,1X,I8,1X,I8,1X,F8.2,2X,F6.2," sec")')&
                     &ITER, log10(max(SOLCRIT, 1.0e-20)),&
                     &SPLITCRIT,&
                     &NPTS,&
                     &NCELLS,&
-                    &float(SHPTR(NPTS + 1))/NPTS,&
+                    &float(shdo_obj%isrcJ(NPTS + 1))/NPTS,&
                     &ELAPSED_TIME
-                    !&float(SHPTR(NPTS + 1))/(NPTS*shdo_obj%Nlm)
+                    !&float(shdo_obj%isrcJ(NPTS + 1))/(NPTS*shdo_obj%Nlm)
             end if
         end if
     end do PICARD_ITER_LOOP
@@ -460,14 +459,14 @@ subroutine shd_solv__solveRte(&
 end subroutine shd_solv__solveRte
 
 subroutine shd_solv__accelSol(&
-    &ACCELPAR, NPTS, SHPTR, OSHPTR,&
-    &NSTOKES, SOURCE, DELSOURCE)
+    &ACCELPAR, NPTS, SHPTR, idsrc_Shdo,&
+    &NSTOKES, SOURCE, dsrc_Shdo)
 
     !   Accelerates the successive order of scattering series using the
     ! input acceleration parameter (ACCELPAR).
 
-    integer, intent(in) :: NPTS, SHPTR(*), OSHPTR(*), NSTOKES
-    real, intent(in)    :: ACCELPAR, DELSOURCE(NSTOKES, *)
+    integer, intent(in) :: NPTS, SHPTR(*), idsrc_Shdo(*), NSTOKES
+    real, intent(in)    :: ACCELPAR, dsrc_Shdo(NSTOKES, *)
 
     real, intent(inout) :: SOURCE(NSTOKES, *)
 
@@ -477,12 +476,12 @@ subroutine shd_solv__accelSol(&
         do I = 1, NPTS
             IS = SHPTR(I)
             NS = SHPTR(I + 1) - IS
-            ISD = OSHPTR(I)
-            NSD = OSHPTR(I + 1) - ISD
+            ISD = idsrc_Shdo(I)
+            NSD = idsrc_Shdo(I + 1) - ISD
             NSC = min(NS, NSD)
             do J = 1, NSC
                 SOURCE(:, IS + J) = SOURCE(:, IS + J)&
-                    &+ ACCELPAR*DELSOURCE(:, ISD + J)
+                    &+ ACCELPAR*dsrc_Shdo(:, ISD + J)
             end do
         end do
     end if

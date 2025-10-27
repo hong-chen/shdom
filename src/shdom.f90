@@ -1171,9 +1171,10 @@ program shdom
             &maxNpts_bc, maxNrad_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
             &Npts, xyz_Grid,&
             &Ncell, ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
-            &shdo_obj%iradI, shdo_obj%isrcJ, idsrc_Shdo, work, work1, work2,&
-            &shdo_obj%srcJ, dsrc_Shdo, shdo_obj%radI, fluxTot, fluxDir,&
-            &rtm_obj, shdo_obj, prp_obj, sfc_obj, ckd_obj)
+            &idsrc_Shdo, work, work1, work2,&
+            &dsrc_Shdo, fluxTot, fluxDir,&
+            &rtm_obj, shdo_obj,&
+            &prp_obj, sfc_obj, ckd_obj)
         isNewRad = .false.
         totIter = totIter + iter
 
