@@ -208,17 +208,17 @@ module globals_type
     type :: shd_type_src
         character(len=1) :: type = ' '
         character(len=1) :: unit = ' '
+
+        real(kind=R__) :: waveNum(2) = [-999.0, -999.0]
+        real(kind=R__) :: avgWaveNum = -999.0
+        real(kind=R__) :: waveLen(2) = [-999.0, -999.0]
+        real(kind=R__) :: avgWaveLen = -999.0
     end type shd_type_src
 
 
     type :: shd_type_rtm
         character(len=charMaxLen_) :: runName = 'NONE'
         character(len=1) :: type = ' '
-
-        real(kind=R__) :: waveNum(2) = [-999.0, -999.0]
-        real(kind=R__) :: avgWaveNum = -999.0
-        real(kind=R__) :: waveLen(2) = [-999.0, -999.0]
-        real(kind=R__) :: avgWaveLen = -999.0
 
         integer(kind=I__) :: flag_bc = -999
         integer(kind=I__) :: flag_ip = -999

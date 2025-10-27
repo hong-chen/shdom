@@ -242,7 +242,7 @@ program shdom
 
     real(kind=R__) :: solar0, solar, mu_solar, az_solar
 
-    real(kind=R__) :: skyRad, waveNum(2), waveLen
+    real(kind=R__) :: skyRad
     real(kind=R__) :: solAcc, solCrit, splitAcc, shAcc
 
     integer(kind=I__) :: Nproc
@@ -274,7 +274,7 @@ program shdom
                 shdo_obj%Nstokes, rtmAll_obj%Nx, rtmAll_obj%Ny, rtmAll_obj%Nz, shdo_obj%Nmu, shdo_obj%Nphi, rtmAll_obj%flag_bc,&
                 rtmAll_obj%flag_ip, isCkd, isDeltaM, rtmAll_obj%type,&
                 src_obj%type, solar0, mu_solar, az_solar, skyRad,&
-                sfc_obj%avgTemp, sfc_obj%avgAlb, src_obj%unit, waveNum, waveLen,&
+                sfc_obj%avgTemp, sfc_obj%avgAlb, src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen,&
                 isAccel, solAcc, maxIter, splitAcc, shAcc,&
                 maxNset_out, maxNpar_out, Nout, type_Out, parms_Out, file_Out,&
                 fileOut_nc, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
@@ -285,7 +285,7 @@ program shdom
                 shdo_obj%Nstokes, rtmAll_obj%Nx, rtmAll_obj%Ny, rtmAll_obj%Nz, shdo_obj%Nmu, shdo_obj%Nphi, rtmAll_obj%flag_bc,&
                 rtmAll_obj%flag_ip, isCkd, isDeltaM, rtmAll_obj%type,&
                 src_obj%type, solar0, mu_solar, az_solar, skyRad,&
-                sfc_obj%avgTemp, sfc_obj%avgAlb, src_obj%unit, waveNum, waveLen,&
+                sfc_obj%avgTemp, sfc_obj%avgAlb, src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen,&
                 isAccel, solAcc, maxIter, splitAcc, shAcc,&
                 maxNset_out, maxNpar_out, Nout, type_Out, parms_Out, file_Out,&
                 fileOut_nc, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
@@ -298,7 +298,7 @@ program shdom
         &shdo_obj%Nstokes, rtmAll_obj%Nx, rtmAll_obj%Ny, rtmAll_obj%Nz, shdo_obj%Nmu, shdo_obj%Nphi, rtmAll_obj%flag_bc,&
         &rtmAll_obj%flag_ip, isCkd, isDeltaM, rtmAll_obj%type,&
         &src_obj%type, solar0, mu_solar, az_solar, skyRad,&
-        &src_obj%unit, waveNum, waveLen,&
+        &src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen,&
         &isAccel, solAcc, maxIter, splitAcc, shAcc,&
         &maxNset_out, maxNpar_out, Nout, type_Out, parms_Out,&
         &MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
@@ -681,7 +681,7 @@ program shdom
         ! Check input parameters
         call shd_io__checkInp(shdo_obj%Nmu, shdo_obj%Nphi, isDeltaM,&
             &rtm_obj%type, src_obj%type, src_obj%unit, solar0, mu_solar,&
-            &waveNum, waveLen,&
+            &src_obj%waveNum, src_obj%avgWaveLen,&
             &splitAcc, shAcc, prp_obj, sfc_obj)
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
@@ -716,7 +716,7 @@ program shdom
     if (isCkd) then
 
         if (isMasterProc) then
-            call shd_io__readCkdSize(waveNum, ckd_obj)
+            call shd_io__readCkdSize(src_obj%waveNum, ckd_obj)
         end if
 
         ! Broadcast the k-distribution object
@@ -734,7 +734,7 @@ program shdom
 
         if (isMasterProc) then
             ckd_obj%maxNg = ckd_obj%Ng; ckd_obj%maxNz = ckd_obj%Nz
-            call shd_io__readCkd(waveNum, ckd_obj)
+            call shd_io__readCkd(src_obj%waveNum, ckd_obj)
         end if
 
         call shd_mpi__bcastCkd(ckd_obj)
@@ -1169,7 +1169,7 @@ program shdom
             &maxIV, maxIC, maxIG, maxIDO, isNewRad,&
             &rtm_obj%flag_bc, rtm_obj%flag_ip, isDeltaM, src_obj%type, isHighOrder_,&
             &solar0_ckd, mu_solar, az_solar, skyRad,&
-            &src_obj%unit, waveNum, waveLen,&
+            &src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen,&
             &isAccel, solAcc, maxIter, solCrit, iter,&
             &splitAcc, shAcc, x_Grid, y_Grid, z_Grid,&
             &temp, planck, ext, ssa, leg, ipha,&
@@ -1194,7 +1194,7 @@ program shdom
                             &rtm_obj%flag_bc, rtm_obj%flag_ip,&
                             &src_obj%type, isDeltaM, mu_solar, az_solar,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
-                            &skyRad, waveNum, waveLen, src_obj%unit,&
+                            &skyRad, src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
                             &x_Grid, y_Grid, z_Grid, xyz_Grid,&
                             &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
                             &ext, ssa, leg, ipha, fluxDir, fluxTot,&
@@ -1206,7 +1206,7 @@ program shdom
                             &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
                             &rtm_obj%flag_bc, rtm_obj%flag_ip, src_obj%type, isDeltaM, mu_solar, az_solar,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
-                            &skyRad, waveNum, waveLen, src_obj%unit,&
+                            &skyRad, src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
                             &x_Grid, y_Grid, z_Grid, xyz_Grid,&
                             &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
                             &ext, ssa, leg, ipha, fluxDir, fluxTot,&
@@ -1229,7 +1229,7 @@ program shdom
                             &rtm_obj%flag_bc, rtm_obj%flag_ip,&
                             &src_obj%type, isDeltaM, mu_solar, az_solar,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
-                            &skyRad, waveNum, waveLen, src_obj%unit,&
+                            &skyRad, src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
                             &x_Grid, y_Grid, z_Grid, xyz_Grid,&
                             &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
                             &ext, ssa, leg, ipha, fluxDir, fluxTot,&
@@ -1241,7 +1241,7 @@ program shdom
                             &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
                             &rtm_obj%flag_bc, rtm_obj%flag_ip, src_obj%type, isDeltaM, mu_solar, az_solar,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
-                            &skyRad, waveNum, waveLen, src_obj%unit,&
+                            &skyRad, src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
                             &x_Grid, y_Grid, z_Grid, xyz_Grid,&
                             &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
                             &ext, ssa, leg, ipha, fluxDir, fluxTot,&
@@ -1367,7 +1367,7 @@ program shdom
                         &fileInp_sav, fileOut_sav,&
                         &rtm_obj%flag_bc, rtm_obj%flag_ip, isDeltaM, rtm_obj%type, src_obj%type,&
                         &solar, mu_solar, az_solar, skyRad,&
-                        &waveNum, waveLen, src_obj%unit,&
+                        &src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
                         &splitAcc, shAcc, solAcc, maxIter, totIter,&
                         &xGrid_all, yGrid_all, z_Grid,&
                         &fluxTot_all, fluxDiv_all,&
@@ -1392,7 +1392,7 @@ program shdom
                     fileInp_sav, fileOut_sav,&
                     rtm_obj%flag_bc, rtm_obj%flag_ip, isDeltaM, rtm_obj%type, src_obj%type,&
                     solar, mu_solar, az_solar, skyRad,&
-                    waveNum, waveLen, src_obj%unit,&
+                    src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
                     splitAcc, shAcc, solAcc, maxIter, totIter,&
                     x_Grid, y_Grid, z_Grid, xyz_Grid,&
                     ptr2Tree_Cell, ptr8Grid_Cell, flag_Cell,&
@@ -1417,7 +1417,7 @@ program shdom
                     &fileInp_sav, fileOut_sav,&
                     &rtm_obj%flag_bc, rtm_obj%flag_ip, isDeltaM, rtm_obj%type, src_obj%type,&
                     &solar, mu_solar, az_solar, skyRad,&
-                    &waveNum, waveLen, src_obj%unit,&
+                    &src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
                     &splitAcc, shAcc, solAcc, maxIter, totIter,&
                     &ilos, sumCam_Out, parms_Out(1, iout), file_Out(iout),&
                     &prp_obj, sfc_obj, ckd_obj, sen_obj)
