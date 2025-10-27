@@ -215,6 +215,11 @@ module globals_type
         character(len=charMaxLen_) :: runName = 'NONE'
         character(len=1) :: type = ' '
 
+        real(kind=R__) :: waveNum(2) = [-999.0, -999.0]
+        real(kind=R__) :: avgWaveNum = -999.0
+        real(kind=R__) :: waveLen(2) = [-999.0, -999.0]
+        real(kind=R__) :: avgWaveLen = -999.0
+
         integer(kind=I__) :: flag_bc = -999
         integer(kind=I__) :: flag_ip = -999
 
