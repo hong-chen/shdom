@@ -331,7 +331,7 @@ module globals_type
         real(kind=R__) :: avgWaveLen = -999.0
 
         real(kind=R__), pointer :: solar(:)   => null()
-        real(kind=R__), pointer :: delg(:)    => null()
+        real(kind=R__), pointer :: wgt(:)    => null()
         real(kind=R__), pointer :: z(:)       => null()
         real(kind=R__), pointer :: kabs(:, :) => null()
 

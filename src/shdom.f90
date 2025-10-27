@@ -195,7 +195,7 @@ program shdom
     integer(kind=I__) :: ig_ckd
     real(kind=R__)    :: solar0_ckd
     real(kind=R__), allocatable, target :: solar_Ckd(:), &
-                                           delg_Ckd(:), &
+                                           wgt_Ckd(:), &
                                            z_Ckd(:), &
                                            kabs_Ckd(:, :)
     !╰────────────────────────────────────────────────────────────────────────────╯!
@@ -247,7 +247,6 @@ program shdom
 
     integer(kind=I__) :: Nproc
     logical :: isMasterProc
-    character(len=charMaxLen_) :: runName
 
     integer(kind=I__) :: countStart, countRate, countMax
     character(len=charMaxLen_) :: message
@@ -270,7 +269,7 @@ program shdom
     !   and the results are then broadcast to the child processors.
     if (isMasterProc) then
         if (isNmlInp_) then
-            call shd_io__nmlInp(runName, prpAll_obj%fname, sfc_obj%fname, ckd_obj%fname,&
+            call shd_io__nmlInp(rtmAll_obj%runName, prpAll_obj%fname, sfc_obj%fname, ckd_obj%fname,&
                 fileInp_sav, fileOut_sav, sen_obj%fname,&
                 shdo_obj%Nstokes, rtmAll_obj%Nx, rtmAll_obj%Ny, rtmAll_obj%Nz, shdo_obj%Nmu, shdo_obj%Nphi, rtmAll_obj%flag_bc,&
                 rtmAll_obj%flag_ip, isCkd, isDeltaM, rtmAll_obj%type,&
@@ -281,7 +280,7 @@ program shdom
                 fileOut_nc, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
                 NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, verbose_)
         else
-            call shd_io__userInp(runName, prpAll_obj%fname, sfc_obj%fname, ckd_obj%fname,&
+            call shd_io__userInp(rtmAll_obj%runName, prpAll_obj%fname, sfc_obj%fname, ckd_obj%fname,&
                 fileInp_sav, fileOut_sav, sen_obj%fname,&
                 shdo_obj%Nstokes, rtmAll_obj%Nx, rtmAll_obj%Ny, rtmAll_obj%Nz, shdo_obj%Nmu, shdo_obj%Nphi, rtmAll_obj%flag_bc,&
                 rtmAll_obj%flag_ip, isCkd, isDeltaM, rtmAll_obj%type,&
@@ -294,7 +293,7 @@ program shdom
         end if
     end if
 
-    call shd_mpi__bcastInp(runName,&
+    call shd_mpi__bcastInp(rtmAll_obj%runName,&
         &fileInp_sav, fileOut_sav,&
         &shdo_obj%Nstokes, rtmAll_obj%Nx, rtmAll_obj%Ny, rtmAll_obj%Nz, shdo_obj%Nmu, shdo_obj%Nphi, rtmAll_obj%flag_bc,&
         &rtmAll_obj%flag_ip, isCkd, isDeltaM, rtmAll_obj%type,&
@@ -723,12 +722,12 @@ program shdom
         ! Broadcast the k-distribution object
         call shd_mpi__bcastCkdSize(ckd_obj)
 
-        allocate (solar_Ckd(ckd_obj%Ng), delg_Ckd(ckd_obj%Ng), z_Ckd(ckd_obj%Nz))
+        allocate (solar_Ckd(ckd_obj%Ng), wgt_Ckd(ckd_obj%Ng), z_Ckd(ckd_obj%Nz))
         allocate (kabs_Ckd(ckd_obj%Nz, ckd_obj%Ng)); &
             memUsed = memUsed + ckd_obj%Nz*(2.0+ckd_obj%Ng) + 2.0*ckd_obj%Ng
 
         ckd_obj%solar => solar_Ckd
-        ckd_obj%delg  => delg_Ckd
+        ckd_obj%wgt  => wgt_Ckd
         ckd_obj%z     => z_Ckd
         ckd_obj%kabs  => kabs_Ckd
         ckd_obj%isAllocated = .true.
@@ -744,11 +743,11 @@ program shdom
         ckd_obj%Ng = 1
         ckd_obj%Nz = 0
 
-        allocate (solar_Ckd(ckd_obj%Ng), delg_Ckd(ckd_obj%Ng)); &
+        allocate (solar_Ckd(ckd_obj%Ng), wgt_Ckd(ckd_obj%Ng)); &
             memUsed = memUsed + 2.0*ckd_obj%Ng
 
         solar_Ckd(1) = 1.0
-        delg_Ckd(1) = 1.0
+        wgt_Ckd(1) = 1.0
 
         isBaseOut = .false.
     end if
@@ -879,7 +878,7 @@ program shdom
         ! Read the memory parameters from a file, if it exists, and send
         !   the parameters to all processors. Otherwise use the input ones.
         call shd_mpi__bcastMem(MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
-            &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, runName)
+            &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, rtm_obj%runName)
     end if
 
     ! Guess maximum number of grid points, cells, SH vector size needed
@@ -1130,7 +1129,9 @@ program shdom
     !   1. Use Picard iteration to solve radiance and source
     !   2. Compute actual radiance (and/or other radiative quantities specified by user)
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    if (verbose_ .ge. 5) write (6, '(A,"<",A,">")') 'Message [shdom]: Starting solution iterations for SHDOM run: ', trim(adjustl(runName))
+    if (verbose_ .ge. 5) &
+        write (6, '(A,"<",A,">")') 'Message [shdom]: Starting solution iterations for SHDOM run: ', &
+            trim(adjustl(rtm_obj%runName))
 
     totIter = 0
     oldNpts = 0
@@ -1145,7 +1146,7 @@ program shdom
         solar0_ckd = solar_Ckd(ig_ckd)*solar0*abs(mu_solar)
 
         ! weighted average solar flux
-        solar = solar + solar_Ckd(ig_ckd)*delg_Ckd(ig_ckd)*solar0*abs(mu_solar)
+        solar = solar + solar_Ckd(ig_ckd)*wgt_Ckd(ig_ckd)*solar0*abs(mu_solar)
 
         ! If doing k-distribution then get the gas absorption profile.
         ckd_obj%ig = ig_ckd
@@ -1214,7 +1215,7 @@ program shdom
                     end if
                 end if
             end do
-            call shd_util__sumData(ckd_obj%Ng-ig_ckd, delg_Ckd(ig_ckd), Nrad, work2, sumRad_Out)
+            call shd_util__sumData(ckd_obj%Ng-ig_ckd, wgt_Ckd(ig_ckd), Nrad, work2, sumRad_Out)
         end if
 
         if (isCamOut) then
@@ -1249,7 +1250,7 @@ program shdom
                     end if
                 end if
             end do
-            call shd_util__sumData(ckd_obj%Ng-ig_ckd, delg_Ckd(ig_ckd), Nlos, work2, sumCam_Out)
+            call shd_util__sumData(ckd_obj%Ng-ig_ckd, wgt_Ckd(ig_ckd), Nlos, work2, sumCam_Out)
         end if
 
         if (isSrcOut) then
@@ -1305,21 +1306,21 @@ program shdom
 
             end if
 
-            call shd_util__sumData(ckd_obj%Ng-ig_ckd, delg_Ckd(ig_ckd), 2*Npts, fluxTot, sumFluxTot_Out)
-            call shd_util__sumData(ckd_obj%Ng-ig_ckd, delg_Ckd(ig_ckd), Npts, fluxDir, sumFluxDir_Out)
+            call shd_util__sumData(ckd_obj%Ng-ig_ckd, wgt_Ckd(ig_ckd), 2*Npts, fluxTot, sumFluxTot_Out)
+            call shd_util__sumData(ckd_obj%Ng-ig_ckd, wgt_Ckd(ig_ckd), Npts, fluxDir, sumFluxDir_Out)
         end if
 
         if (isHROut) then
             ! Compute the net flux divergence at every point
             call shd_rad__computeNetFluxDiv(shdo_obj%Nstokes, Npts, shdo_obj%iradI, src_obj%type, mu_solar,&
                 &ext, ssa, planck, fluxDir, shdo_obj%radI, work)
-            call shd_util__sumData(ckd_obj%Ng-ig_ckd, delg_Ckd(ig_ckd), Npts, work, sumFluxDiv_Out)
+            call shd_util__sumData(ckd_obj%Ng-ig_ckd, wgt_Ckd(ig_ckd), Npts, work, sumFluxDiv_Out)
         end if
 
         if (isSHOut) then
             call shd_shdo__computeSH(Nsh_out, shdo_obj%Nstokes, Npts, src_obj%type, mu_solar, az_solar,&
                 &fluxDir, shdo_obj%iradI, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%radI, work)
-            call shd_util__sumData(ckd_obj%Ng-ig_ckd, delg_Ckd(ig_ckd), Nsh_out*Npts, work, sumSH_Out)
+            call shd_util__sumData(ckd_obj%Ng-ig_ckd, wgt_Ckd(ig_ckd), Nsh_out*Npts, work, sumSH_Out)
         end if
 
         oldNpts = Npts
@@ -1485,9 +1486,9 @@ program shdom
     if (isSrcOut)  deallocate (src1_Out)
 
     if (allocated(kabs_Ckd)) then
-        deallocate (solar_Ckd, delg_Ckd, z_Ckd, kabs_Ckd)
+        deallocate (solar_Ckd, wgt_Ckd, z_Ckd, kabs_Ckd)
         if (ckd_obj%isAllocated) then
-            nullify(ckd_obj%solar, ckd_obj%delg, ckd_obj%z, ckd_obj%kabs)
+            nullify(ckd_obj%solar, ckd_obj%wgt, ckd_obj%z, ckd_obj%kabs)
             ckd_obj%isAllocated = .false.
         end if
     end if
@@ -1538,6 +1539,6 @@ program shdom
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
-    call shd_mpi__end(Npts, xyz_Grid, runName, prpAll_obj, prp_obj)
+    call shd_mpi__end(Npts, xyz_Grid, rtm_obj%runName, prpAll_obj, prp_obj)
 
 end program shdom

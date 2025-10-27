@@ -1683,7 +1683,7 @@ subroutine shd_io__readCkd(waveNum, ckd_obj)
     ! correlated k-distribution file.   The wavenumber range (cm^-1)
     ! in the file must match the desired in waveNum.  The solar flux
     ! is returned in ckd_obj%solar, the number of "g"'s in ckd_obj%Ng, the weights
-    ! or delta g's in ckd_obj%delg, the number of levels in ckd_obj%Nz, the
+    ! or delta g's in ckd_obj%wgt, the number of levels in ckd_obj%Nz, the
     ! levels from the top down in ckd_obj%z, and the absorption coefficients
     ! for each g and level in ckd_obj%kabs.
     ! The array sizes ckd_obj%maxNg and ckd_obj%maxNz are checked.
@@ -1709,7 +1709,7 @@ subroutine shd_io__readCkd(waveNum, ckd_obj)
             backspace (1)
             if (ckd_obj%Ng .gt. ckd_obj%maxNg) stop 'Error [_readCkd]: ckd_obj%maxNg exceeded.'
             read (1, *) ibandSelect, waveNum(1), waveNum(2),&
-                &ckd_obj%Ng, (ckd_obj%solar(ig), ig=1, ckd_obj%Ng), (ckd_obj%delg(ig), ig=1, ckd_obj%Ng)
+                &ckd_obj%Ng, (ckd_obj%solar(ig), ig=1, ckd_obj%Ng), (ckd_obj%wgt(ig), ig=1, ckd_obj%Ng)
         end if
     end do
 

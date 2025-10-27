@@ -663,13 +663,13 @@ subroutine shd_mpi__bcastCkd(ckd_obj)
     allocate (realbuf(2*ckd_obj%Ng + ckd_obj%Nz))
 
     realbuf(1              : ckd_obj%Ng             ) = ckd_obj%solar(:)
-    realbuf(ckd_obj%Ng+1   : 2*ckd_obj%Ng           ) = ckd_obj%delg(:)
+    realbuf(ckd_obj%Ng+1   : 2*ckd_obj%Ng           ) = ckd_obj%wgt(:)
     realbuf(2*ckd_obj%Ng+1 : 2*ckd_obj%Ng+ckd_obj%Nz) = ckd_obj%z(:)
 
     call mpi_bcast(realbuf, 2*ckd_obj%Ng+ckd_obj%Nz, MPI_real, 0, comm2D_, ierr)
 
     ckd_obj%solar(:) = realbuf(1 : ckd_obj%Ng)
-    ckd_obj%delg(:)  = realbuf(ckd_obj%Ng+1 : 2*ckd_obj%Ng)
+    ckd_obj%wgt(:)   = realbuf(ckd_obj%Ng+1   : 2*ckd_obj%Ng)
     ckd_obj%z(:)     = realbuf(2*ckd_obj%Ng+1 : 2*ckd_obj%Ng+ckd_obj%Nz)
 
     call mpi_bcast(ckd_obj%kabs, ckd_obj%Nz*ckd_obj%Ng, MPI_real, 0, comm2D_, ierr)
