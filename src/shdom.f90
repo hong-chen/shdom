@@ -1162,9 +1162,8 @@ program shdom
         !   in source (shdo_obj%srcJ), radiance (shdo_obj%radI), fluxes, direct Flux.
         call shd_solv__solveRte(&
             &maxIV, maxIC, maxIG, maxIDO, isNewRad,&
-            &isDeltaM, src_obj%type, isHighOrder_,&
-            &solar0_ckd, src_obj%avgMu, src_obj%avgAz, skyRad,&
-            &src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen,&
+            &isDeltaM, isHighOrder_,&
+            &solar0_ckd, skyRad,&
             &isAccel, solAcc, maxIter, solCrit, iter,&
             &splitAcc, shAcc, x_Grid, y_Grid, z_Grid,&
             &temp, planck, ext, ssa, leg, ipha,&
@@ -1173,7 +1172,7 @@ program shdom
             &Ncell, ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
             &idsrc_Shdo, work, work1, work2,&
             &dsrc_Shdo, fluxTot, fluxDir,&
-            &rtm_obj, shdo_obj,&
+            &rtm_obj, shdo_obj, src_obj,&
             &prp_obj, sfc_obj, ckd_obj)
         isNewRad = .false.
         totIter = totIter + iter

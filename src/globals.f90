@@ -198,8 +198,8 @@ module globals_type
         real(kind=R__), pointer :: phi(:) => null()
         real(kind=R__), pointer :: wgt(:) => null()
 
-        real(kind=R__), pointer :: radI(:, :)   => null()
-        real(kind=R__), pointer :: srcJ(:, :)   => null()
+        real(kind=R__), pointer :: radI(:, :) => null()
+        real(kind=R__), pointer :: srcJ(:, :) => null()
 
         logical :: isAllocated  = .false.
     end type shd_type_shdo

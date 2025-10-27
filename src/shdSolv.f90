@@ -43,6 +43,7 @@ module shd_solv
                             isSolar_
     use globals_type, only: shd_type_rtm,  &
                             shd_type_shdo, &
+                            shd_type_src,  &
                             shd_type_prp,  &
                             shd_type_sfc,  &
                             shd_type_ckd
@@ -90,9 +91,8 @@ contains
 
 subroutine shd_solv__solveRte(&
     &MAXIV, MAXIC, MAXIG, MAXIDO, INRADFLAG,&
-    &DELTAM, SRCTYPE, isHighOrder,&
-    &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
-    &UNITS, WAVENO, WAVELEN,&
+    &DELTAM, isHighOrder,&
+    &SOLARFLUX, SKYRAD,&
     &ACCELFLAG, SOLACC, MAXITER, SOLCRIT, ITER,&
     &SPLITACC, SHACC, XGRID, YGRID, ZGRID,&
     &TEMP, PLANCK, EXTINCT, ALBEDO, LEGEN, IPHASE,&
@@ -101,7 +101,8 @@ subroutine shd_solv__solveRte(&
     &NCELLS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &idsrc_Shdo, WORK, WORK1, WORK2,&
     &dsrc_Shdo, FLUXES, DIRFLUX,&
-    &rtm_obj, shdo_obj, prp_obj, sfc_obj, ckd_obj)
+    &rtm_obj, shdo_obj, src_obj,&
+    &prp_obj, sfc_obj, ckd_obj)
 
     ! Performs the SHDOM solution procedure.
     ! Output is returned in shdo_obj%srcJ, shdo_obj%radI, FLUXES, DIRFLUX.
@@ -111,6 +112,7 @@ subroutine shd_solv__solveRte(&
 
     type(shd_type_rtm),  intent(in)    :: rtm_obj
     type(shd_type_shdo), intent(inout) :: shdo_obj
+    type(shd_type_src),  intent(in)    :: src_obj
     type(shd_type_prp),  intent(in)    :: prp_obj
     type(shd_type_sfc),  intent(inout) :: sfc_obj
     type(shd_type_ckd),  intent(in)    :: ckd_obj
@@ -124,8 +126,7 @@ subroutine shd_solv__solveRte(&
     integer*2 CELLFLAGS(*), IPHASE(*)
     integer WORK1(*)
     logical INRADFLAG, DELTAM, ACCELFLAG, isHighOrder
-    real SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD
-    real WAVENO(2), WAVELEN
+    real SOLARFLUX, SKYRAD
     real SOLACC, SOLCRIT, SPLITACC, SHACC
     real TEMP(*), PLANCK(*)
     real EXTINCT(*), ALBEDO(*), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, *)
@@ -135,7 +136,6 @@ subroutine shd_solv__solveRte(&
     real FLUXES(2, *), DIRFLUX(*)
     real dsrc_Shdo(shdo_obj%Nstokes, *)
     real WORK(*), WORK2(*)
-    character(len=1) :: SRCTYPE, UNITS
 
     integer I, ORDINATESET, NBPTS, NBCELLS
     integer MAXNANGBND, NANGBND(4, 2), IERR
@@ -170,7 +170,7 @@ subroutine shd_solv__solveRte(&
     ! If Delta-M then scale the extinction, albedo, and Legendre terms
     ! Put the Planck blackbody source in PLANCK.
     call shd_init__makePrp(shdo_obj%maxNl, shdo_obj%maxNm, NPTS, DELTAM,&
-        &SRCTYPE, UNITS, WAVENO, WAVELEN, ALBMAX,&
+        &src_obj%type, src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen, ALBMAX,&
         &EXTINCT, ALBEDO, LEGEN, TEMP, PLANCK, IPHASE, prp_obj)
 
     ! Get the maximum single scattering albedo over all processors
@@ -181,14 +181,14 @@ subroutine shd_solv__solveRte(&
     if (isSolar_) then
         if (isMpi_) then
             call shd_mpi__makeDirect(1, NPTS, rtm_obj%flag_bc, rtm_obj%flag_ip, DELTAM, shdo_obj%maxNl,&
-                &SOLARFLUX, SOLARMU, SOLARAZ,&
+                &SOLARFLUX, src_obj%avgMu, src_obj%avgAz,&
                 &GRIDPOS, rtm_obj%Nx, XGRID, rtm_obj%Ny, YGRID, DIRFLUX, prp_obj, ckd_obj)
         else
             call shd_rad__makeDirect(NPTS, rtm_obj%flag_bc, rtm_obj%flag_ip, DELTAM, shdo_obj%maxNl,&
-                &SOLARFLUX, SOLARMU, SOLARAZ,&
+                &SOLARFLUX, src_obj%avgMu, src_obj%avgAz,&
                 &GRIDPOS, DIRFLUX, prp_obj, ckd_obj)
         end if
-        call shd_shdo__computeYlm(.true., SOLARMU, SOLARAZ, shdo_obj%maxNl, shdo_obj%maxNm, prp_obj%NlegSet,&
+        call shd_shdo__computeYlm(.true., src_obj%avgMu, src_obj%avgAz, shdo_obj%maxNl, shdo_obj%maxNm, prp_obj%NlegSet,&
             &YLMSUN)
     end if
 
@@ -210,8 +210,8 @@ subroutine shd_solv__solveRte(&
         call shd_init__makeRad(shdo_obj%Nstokes, rtm_obj%Nx_grid*rtm_obj%Ny_grid, rtm_obj%Nz,&
             &shdo_obj%iradI, ZGRID,&
             &EXTINCT, ALBEDO, LEGEN, TEMP, IPHASE,&
-            &SRCTYPE, SOLARFLUX, SOLARMU, SKYRAD,&
-            &UNITS, WAVENO, WAVELEN, shdo_obj%radI, prp_obj, sfc_obj)
+            &src_obj%type, SOLARFLUX, src_obj%avgMu, SKYRAD,&
+            &src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen, shdo_obj%radI, prp_obj, sfc_obj)
         ! Interpolate the radiance on the non-base grid points from the
         !   base grid points
         NBPTS = rtm_obj%Nx_grid * rtm_obj%Ny_grid * rtm_obj%Nz
@@ -222,7 +222,7 @@ subroutine shd_solv__solveRte(&
         ! Initialize the source function from the radiance field
         call shd_src__computeSrc(shdo_obj%Nstokes, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
             &NPTS,&
-            &FIXSH, SRCTYPE, SOLARMU, YLMSUN, ALBEDO, LEGEN,&
+            &FIXSH, src_obj%type, src_obj%avgMu, YLMSUN, ALBEDO, LEGEN,&
             &IPHASE, PLANCK, DIRFLUX, SHACC,&
             &MAXIV, shdo_obj%iradI, shdo_obj%radI, shdo_obj%isrcJ, shdo_obj%srcJ, idsrc_Shdo, dsrc_Shdo,&
             &.true., ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM, prp_obj)
@@ -246,7 +246,7 @@ subroutine shd_solv__solveRte(&
         !   the surface temperature and reflection parameters to the
         !   bottom grid points.
         call shd_sfc__interpSfc(NBOTPTS, BCPTR(1, 2), GRIDPOS,&
-            &SRCTYPE, WAVENO, WAVELEN, UNITS,&
+            &src_obj%type, src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
             &prp_obj, sfc_obj)
         call shd_init__checkSfcU(sfc_obj)
         if (sfc_obj%isUniform) then
@@ -258,7 +258,7 @@ subroutine shd_solv__solveRte(&
                     &shdo_obj%Nstokes, shdo_obj%Nmu/2, shdo_obj%maxNphi0), STAT=IERR)
             end if
             if (IERR .eq. 0) then
-                call shd_shdo__makeSfcDO(sfc_obj%type, WAVELEN,&
+                call shd_shdo__makeSfcDO(sfc_obj%type, src_obj%avgWaveLen,&
                     &sfc_obj%Nx, sfc_obj%Ny, sfc_obj%Npar, sfc_obj%brdf, shdo_obj%Nstokes,&
                     &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
                     &SFC_BRDF_DO)
@@ -343,9 +343,9 @@ subroutine shd_solv__solveRte(&
                     &DELTAM, rtm_obj%flag_bc, rtm_obj%flag_ip, ACCELFLAG,&
                     &EXTINCT, ALBEDO, LEGEN, IPHASE,&
                     &shdo_obj%iradI, shdo_obj%radI, shdo_obj%isrcJ, shdo_obj%srcJ, idsrc_Shdo,&
-                    &TEMP, PLANCK, DIRFLUX, SRCTYPE,&
-                    &SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN,&
-                    &UNITS, WAVENO, WAVELEN, WORK, WORK2, prp_obj, ckd_obj)
+                    &TEMP, PLANCK, DIRFLUX, src_obj%type,&
+                    &SOLARFLUX, src_obj%avgMu, src_obj%avgAz, YLMSUN,&
+                    &src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen, WORK, WORK2, prp_obj, ckd_obj)
                 if (SOLCRIT .gt. STARTADAPTSOL) STARTSPLITACC = SPLITCRIT
             end if
             ! Find the maximum splitting criterion over all processors
@@ -370,8 +370,8 @@ subroutine shd_solv__solveRte(&
             &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%Nang, rtm_obj%flag_bc, rtm_obj%flag_ip,&
             &NPTS, NCELLS, XGRID, YGRID, ZGRID, GRIDPOS,&
             &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-            &SRCTYPE, SOLARMU, SOLARAZ, SKYRAD, WAVENO, WAVELEN,&
-            &UNITS, SFC_BRDF_DO,&
+            &src_obj%type, src_obj%avgMu, src_obj%avgAz, SKYRAD, src_obj%waveNum, src_obj%avgWaveLen,&
+            &src_obj%unit, SFC_BRDF_DO,&
             &MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
             &shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
             &CMU1, CPHI1, CMU2, CPHI2, WPHISAVE, FFTFLAG,&
@@ -386,7 +386,7 @@ subroutine shd_solv__solveRte(&
             &((rtm_obj%Nx .gt. 36) .or. (rtm_obj%Ny .gt. 36))) FIXSH = .true.
         call shd_src__computeSrc(shdo_obj%Nstokes, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
             &NPTS,&
-            &FIXSH, SRCTYPE, SOLARMU, YLMSUN, ALBEDO, LEGEN,&
+            &FIXSH, src_obj%type, src_obj%avgMu, YLMSUN, ALBEDO, LEGEN,&
             &IPHASE, PLANCK, DIRFLUX, SHACC,&
             &MAXIV, shdo_obj%iradI, shdo_obj%radI, shdo_obj%isrcJ, shdo_obj%srcJ, idsrc_Shdo, dsrc_Shdo,&
             &.false., ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM, prp_obj)
