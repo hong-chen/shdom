@@ -236,8 +236,8 @@ module globals_type
         integer(kind=I__) :: Nx = -999
         integer(kind=I__) :: Ny = -999
         integer(kind=I__) :: Nz = -999
-        integer(kind=I__) :: Nx_bc = -999
-        integer(kind=I__) :: Ny_bc = -999
+        integer(kind=I__) :: Nx_grid = -999
+        integer(kind=I__) :: Ny_grid = -999
 
         integer(kind=I__) :: maxNz   = -999
         integer(kind=I__) :: maxNpts = -999

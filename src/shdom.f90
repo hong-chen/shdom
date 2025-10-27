@@ -498,8 +498,7 @@ program shdom
     !   the X and Y starting position of this subdomain. Set bits
     !   2 and 3 in rtmAll_obj%flag_bc to indicate multiple processors in X and Y.
     !   Also open the slave processor log files.
-    rtm_obj = rtmAll_obj
-    prp_obj = prpAll_obj
+    rtm_obj = rtmAll_obj; prp_obj = prpAll_obj
     call shd_mpi__map(rtmAll_obj, prpAll_obj, rtm_obj, prp_obj)
 
     ! rtm_obj%flag_bc bit-representation '...0001' isOpenX_
@@ -575,16 +574,16 @@ program shdom
 
     ! Set up base grid point actual size (Nx1xNY1xNZ)
     !   btest(rtm_obj%flag_bc, 0) checks whether rtm_obj%flag_bc=1 or rtm_obj%flag_bc=0 ('...0001' [open in X] or '...0000' [periodic in X])
-    rtm_obj%Nx_bc = rtm_obj%Nx + 1
-    if (is1DX_ .or. isOpenX_ .or. isMpiX_) rtm_obj%Nx_bc = rtm_obj%Nx
+    rtm_obj%Nx_grid = rtm_obj%Nx + 1
+    if (is1DX_ .or. isOpenX_ .or. isMpiX_) rtm_obj%Nx_grid = rtm_obj%Nx
 
     ! btest(rtm_obj%flag_bc, 1) checks whether rtm_obj%flag_bc=2 [or 3] or rtm_obj%flag_bc=0 [or 1]
     !   ('...0010' [or '...0011', open in Y] or '...0000' [or '...0001', periodic in Y])
-    rtm_obj%Ny_bc = rtm_obj%Ny + 1
-    if (is1DYx_ .or. isOpenYx_ .or. isMpiY_) rtm_obj%Ny_bc = rtm_obj%Ny
+    rtm_obj%Ny_grid = rtm_obj%Ny + 1
+    if (is1DYx_ .or. isOpenYx_ .or. isMpiY_) rtm_obj%Ny_grid = rtm_obj%Ny
 
     ! Number of base points
-    Npts_base = rtm_obj%Nx_bc*rtm_obj%Ny_bc*rtm_obj%Nz
+    Npts_base = rtm_obj%Nx_grid*rtm_obj%Ny_grid*rtm_obj%Nz
 
     ! Calculate the number of base grid cells depending on the boundary condition flag
     Ncell_base = (rtm_obj%Nz - 1)*(rtm_obj%Nx + ibits(rtm_obj%flag_bc, 0, 1) - ibits(rtm_obj%flag_bc, 2, 1))&
@@ -1153,7 +1152,7 @@ program shdom
         !   then make the base grid point positions and grid cell structure.
         if (isBaseOut .or. ((ig_ckd.eq. ckd_obj%Ng) .and. isNewGrid)) then
             call shd_init__makeCell(rtm_obj%flag_bc, rtm_obj%flag_ip,&
-                &rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, rtm_obj%Nx_bc, rtm_obj%Ny_bc, Npts, Ncell,&
+                &rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, rtm_obj%Nx_grid, rtm_obj%Ny_grid, Npts, Ncell,&
                 &x_Grid, y_Grid, z_Grid, xyz_Grid,&
                 &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell)
             Ncell_base = Ncell
@@ -1161,11 +1160,11 @@ program shdom
 
         ! Find the monochromatic SHDOM solution: adaptive grid output
         !   in source (shdo_obj%srcJ), radiance (shdo_obj%radI), fluxes, direct Flux.
-        call shd_solv__solveRte(shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, rtm_obj%Nx_bc, rtm_obj%Ny_bc, shdo_obj%Nang,&
+        call shd_solv__solveRte(shdo_obj%Nstokes, shdo_obj%Nang,&
             &shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm, shdo_obj%Nmu, shdo_obj%Nphi,&
             &shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
             &maxIV, maxIC, maxIG, maxIDO, isNewRad,&
-            &rtm_obj%flag_bc, rtm_obj%flag_ip, isDeltaM, src_obj%type, isHighOrder_,&
+            &isDeltaM, src_obj%type, isHighOrder_,&
             &solar0_ckd, src_obj%avgMu, src_obj%avgAz, skyRad,&
             &src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen,&
             &isAccel, solAcc, maxIter, solCrit, iter,&
@@ -1176,7 +1175,7 @@ program shdom
             &Ncell, ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
             &shdo_obj%iradI, shdo_obj%isrcJ, idsrc_Shdo, work, work1, work2,&
             &shdo_obj%srcJ, dsrc_Shdo, shdo_obj%radI, fluxTot, fluxDir,&
-            &prp_obj, sfc_obj, ckd_obj)
+            &rtm_obj, prp_obj, sfc_obj, ckd_obj)
         isNewRad = .false.
         totIter = totIter + iter
 
@@ -1268,7 +1267,7 @@ program shdom
         if (isBaseOut) then
             ! If outputting only the base grid then throw out the other points
             call shd_init__makeCell(rtm_obj%flag_bc, rtm_obj%flag_ip,&
-                &rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, rtm_obj%Nx_bc, rtm_obj%Ny_bc,&
+                &rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, rtm_obj%Nx_grid, rtm_obj%Ny_grid,&
                 &Npts, Ncell, x_Grid, y_Grid, z_Grid, xyz_Grid,&
                 &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell)
         else
@@ -1385,7 +1384,7 @@ program shdom
 
         do iout = 1, Nout
             if ((type_Out(iout) .ne. 'V') .and. (file_Out(iout)(1:4) .ne. 'NONE')) then
-                call shd_io__outputResult(shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nx_bc, rtm_obj%Ny_bc, rtm_obj%Nz, Npts_base, Npts, Ncell,&
+                call shd_io__outputResult(shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nx_grid, rtm_obj%Ny_grid, rtm_obj%Nz, Npts_base, Npts, Ncell,&
                     Nsh, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm, shdo_obj%Nmu, shdo_obj%Nphi, shdo_obj%Nang,&
                     fileInp_sav, fileOut_sav,&
                     rtm_obj%flag_bc, rtm_obj%flag_ip, isDeltaM, rtm_obj%type, src_obj%type,&

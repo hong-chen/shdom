@@ -41,7 +41,10 @@ module shd_solv
 
     use globals_cfg, only:  verbose_, isMpi_, &
                             isSolar_
-    use globals_type, only: shd_type_prp, shd_type_sfc, shd_type_ckd
+    use globals_type, only: shd_type_rtm,&
+                            shd_type_prp,&
+                            shd_type_sfc,&
+                            shd_type_ckd
 
     use shd_init, only: shd_init__makePrp, &
                         shd_init__makeRad, &
@@ -85,11 +88,11 @@ module shd_solv
 contains
 
 subroutine shd_solv__solveRte(&
-    &NSTOKES, NX, NY, NZ, NX1, NY1, NANG,&
+    &NSTOKES, NANG,&
     &ML, MM, NLM, NMU, NPHI,&
     &NPHI0, MU, PHI, WTDO,&
     &MAXIV, MAXIC, MAXIG, MAXIDO, INRADFLAG,&
-    &BCFLAG, IPFLAG, DELTAM, SRCTYPE, isHighOrder,&
+    &DELTAM, SRCTYPE, isHighOrder,&
     &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
     &UNITS, WAVENO, WAVELEN,&
     &ACCELFLAG, SOLACC, MAXITER, SOLCRIT, ITER,&
@@ -100,7 +103,7 @@ subroutine shd_solv__solveRte(&
     &NCELLS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &RSHPTR, SHPTR, OSHPTR, WORK, WORK1, WORK2,&
     &SOURCE, DELSOURCE, RADIANCE, FLUXES, DIRFLUX,&
-    &prp_obj, sfc_obj, ckd_obj)
+    &rtm_obj, prp_obj, sfc_obj, ckd_obj)
 
     ! Performs the SHDOM solution procedure.
     ! Output is returned in SOURCE, RADIANCE, FLUXES, DIRFLUX.
@@ -108,13 +111,14 @@ subroutine shd_solv__solveRte(&
     ! CELLFLAGS,NPTS,GRIDPOS) is input and modified for new grid
     ! cells and points on output.
 
+    type(shd_type_rtm), intent(in)    :: rtm_obj
     type(shd_type_prp), intent(in)    :: prp_obj
     type(shd_type_sfc), intent(inout) :: sfc_obj
     type(shd_type_ckd), intent(in)    :: ckd_obj
 
-    integer, intent(in) :: NSTOKES, NX, NY, NZ, NX1, NY1
+    integer, intent(in) :: NSTOKES
     integer :: ML, MM, NLM, NMU, NPHI, NANG
-    integer NPHI0(*), MAXITER, ITER, BCFLAG, IPFLAG
+    integer NPHI0(*), MAXITER, ITER
     integer MAXIV, MAXIC, MAXIG, MAXIDO
     integer MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR(MAXNBC, 2)
     integer NPTS, NCELLS
@@ -129,7 +133,7 @@ subroutine shd_solv__solveRte(&
     real MU(*), WTDO(*), PHI(*)
     real TEMP(*), PLANCK(*)
     real EXTINCT(*), ALBEDO(*), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, *)
-    real XGRID(NX1), YGRID(NY1), ZGRID(NZ)
+    real XGRID(rtm_obj%Nx_grid), YGRID(rtm_obj%Ny_grid), ZGRID(rtm_obj%Nz)
     real GRIDPOS(3, *)
     real BCRAD(*)
     real FLUXES(2, *), DIRFLUX(*)
@@ -181,11 +185,11 @@ subroutine shd_solv__solveRte(&
     ! Precompute Ylm's for solar direction
     if (isSolar_) then
         if (isMpi_) then
-            call shd_mpi__makeDirect(1, NPTS, BCFLAG, IPFLAG, DELTAM, ML,&
+            call shd_mpi__makeDirect(1, NPTS, rtm_obj%flag_bc, rtm_obj%flag_ip, DELTAM, ML,&
                 &SOLARFLUX, SOLARMU, SOLARAZ,&
-                &GRIDPOS, NX, XGRID, NY, YGRID, DIRFLUX, prp_obj, ckd_obj)
+                &GRIDPOS, rtm_obj%Nx, XGRID, rtm_obj%Ny, YGRID, DIRFLUX, prp_obj, ckd_obj)
         else
-            call shd_rad__makeDirect(NPTS, BCFLAG, IPFLAG, DELTAM, ML,&
+            call shd_rad__makeDirect(NPTS, rtm_obj%flag_bc, rtm_obj%flag_ip, DELTAM, ML,&
                 &SOLARFLUX, SOLARMU, SOLARAZ,&
                 &GRIDPOS, DIRFLUX, prp_obj, ckd_obj)
         end if
@@ -208,16 +212,16 @@ subroutine shd_solv__solveRte(&
     if (.not. INRADFLAG) then
         ! Initialize the radiance on the base grid using Eddington
         ! two-stream plane-parallel
-        call shd_init__makeRad(NSTOKES, NX1*NY1, NZ,&
+        call shd_init__makeRad(NSTOKES, rtm_obj%Nx_grid*rtm_obj%Ny_grid, rtm_obj%Nz,&
             &RSHPTR, ZGRID,&
             &EXTINCT, ALBEDO, LEGEN, TEMP, IPHASE,&
             &SRCTYPE, SOLARFLUX, SOLARMU, SKYRAD,&
             &UNITS, WAVENO, WAVELEN, RADIANCE, prp_obj, sfc_obj)
         ! Interpolate the radiance on the non-base grid points from the
         !   base grid points
-        NBPTS = NX1*NY1*NZ
-        NBCELLS = (NZ - 1)*(NX + ibits(BCFLAG, 0, 1) - ibits(BCFLAG, 2, 1))&
-            &*(NY + ibits(BCFLAG, 1, 1) - ibits(BCFLAG, 3, 1))
+        NBPTS = rtm_obj%Nx_grid * rtm_obj%Ny_grid * rtm_obj%Nz
+        NBCELLS = (rtm_obj%Nz - 1)*(rtm_obj%Nx + ibits(rtm_obj%flag_bc, 0, 1) - ibits(rtm_obj%flag_bc, 2, 1))&
+                                 &*(rtm_obj%Ny + ibits(rtm_obj%flag_bc, 1, 1) - ibits(rtm_obj%flag_bc, 3, 1))
         call shd_rad__interpRad(NSTOKES, NBPTS, NPTS, RSHPTR, RADIANCE,&
             &NBCELLS, NCELLS, TREEPTR, GRIDPTR, GRIDPOS)
         ! Initialize the source function from the radiance field
@@ -240,7 +244,7 @@ subroutine shd_solv__solveRte(&
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Make the pointers to the grid points on the top and bottom boundaries
     call shd_grid__findBndryPnt(NPTS, NANG, MAXNBC, MAXBCRAD,&
-        &ZGRID(1), ZGRID(NZ), GRIDPOS,&
+        &ZGRID(1), ZGRID(rtm_obj%Nz), GRIDPOS,&
         &NTOPPTS, NBOTPTS, BCPTR, sfc_obj)
     if (sfc_obj%type(1:1) .eq. 'V') then
         ! If this is a variable surface then bilinearly interpolate
@@ -339,9 +343,9 @@ subroutine shd_solv__solveRte(&
                 call shd_grid__splitGrid(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
                     &DOSPLIT, OUTOFMEM, CURSPLITACC, SPLITCRIT,&
                     &NPTS, NCELLS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-                    &GRIDPOS, NX, XGRID, NY, YGRID,&
+                    &GRIDPOS, rtm_obj%Nx, XGRID, rtm_obj%Ny, YGRID,&
                     &NSTOKES, ML, MM, NLM,&
-                    &DELTAM, BCFLAG, IPFLAG, ACCELFLAG,&
+                    &DELTAM, rtm_obj%flag_bc, rtm_obj%flag_ip, ACCELFLAG,&
                     &EXTINCT, ALBEDO, LEGEN, IPHASE,&
                     &RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR,&
                     &TEMP, PLANCK, DIRFLUX, SRCTYPE,&
@@ -367,8 +371,8 @@ subroutine shd_solv__solveRte(&
         !   and output radiance are in spherical harmonic expansions,
         !   and the SH/DO transforms are done during the loop over
         !   discrete ordinates.
-        call shd_intg__integratePath(NX, NY, NZ, NSTOKES, ML, MM, NLM,&
-            &NMU, NPHI0MAX, NPHI0, NANG, BCFLAG, IPFLAG,&
+        call shd_intg__integratePath(rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, NSTOKES, ML, MM, NLM,&
+            &NMU, NPHI0MAX, NPHI0, NANG, rtm_obj%flag_bc, rtm_obj%flag_ip,&
             &NPTS, NCELLS, XGRID, YGRID, ZGRID, GRIDPOS,&
             &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
             &SRCTYPE, SOLARMU, SOLARAZ, SKYRAD, WAVENO, WAVELEN,&
@@ -384,7 +388,7 @@ subroutine shd_solv__solveRte(&
         !   do the adaptive spherical harmonics truncation, compute
         !   the solution criterion, and dot products for acceleration
         if (((SOLCRIT .lt. ENDADAPTSOL) .or. (ITER .gt. 30)) .and.&
-            &((NX .gt. 36) .or. (NY .gt. 36))) FIXSH = .true.
+            &((rtm_obj%Nx .gt. 36) .or. (rtm_obj%Ny .gt. 36))) FIXSH = .true.
         call shd_src__computeSrc(NSTOKES, ML, MM, NLM,&
             &NPTS,&
             &FIXSH, SRCTYPE, SOLARMU, YLMSUN, ALBEDO, LEGEN,&
