@@ -41,9 +41,10 @@ module shd_solv
 
     use globals_cfg, only:  verbose_, isMpi_, &
                             isSolar_
-    use globals_type, only: shd_type_rtm,&
-                            shd_type_prp,&
-                            shd_type_sfc,&
+    use globals_type, only: shd_type_rtm,  &
+                            shd_type_shdo, &
+                            shd_type_prp,  &
+                            shd_type_sfc,  &
                             shd_type_ckd
 
     use shd_init, only: shd_init__makePrp, &
@@ -88,9 +89,6 @@ module shd_solv
 contains
 
 subroutine shd_solv__solveRte(&
-    &NSTOKES, NANG,&
-    &ML, MM, NLM, NMU, NPHI,&
-    &NPHI0, MU, PHI, WTDO,&
     &MAXIV, MAXIC, MAXIG, MAXIDO, INRADFLAG,&
     &DELTAM, SRCTYPE, isHighOrder,&
     &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
@@ -103,7 +101,7 @@ subroutine shd_solv__solveRte(&
     &NCELLS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &RSHPTR, SHPTR, OSHPTR, WORK, WORK1, WORK2,&
     &SOURCE, DELSOURCE, RADIANCE, FLUXES, DIRFLUX,&
-    &rtm_obj, prp_obj, sfc_obj, ckd_obj)
+    &rtm_obj, shdo_obj, prp_obj, sfc_obj, ckd_obj)
 
     ! Performs the SHDOM solution procedure.
     ! Output is returned in SOURCE, RADIANCE, FLUXES, DIRFLUX.
@@ -111,14 +109,13 @@ subroutine shd_solv__solveRte(&
     ! CELLFLAGS,NPTS,GRIDPOS) is input and modified for new grid
     ! cells and points on output.
 
-    type(shd_type_rtm), intent(in)    :: rtm_obj
-    type(shd_type_prp), intent(in)    :: prp_obj
-    type(shd_type_sfc), intent(inout) :: sfc_obj
-    type(shd_type_ckd), intent(in)    :: ckd_obj
+    type(shd_type_rtm),  intent(in)    :: rtm_obj
+    type(shd_type_shdo), intent(inout) :: shdo_obj
+    type(shd_type_prp),  intent(in)    :: prp_obj
+    type(shd_type_sfc),  intent(inout) :: sfc_obj
+    type(shd_type_ckd),  intent(in)    :: ckd_obj
 
-    integer, intent(in) :: NSTOKES
-    integer :: ML, MM, NLM, NMU, NPHI, NANG
-    integer NPHI0(*), MAXITER, ITER
+    integer MAXITER, ITER
     integer MAXIV, MAXIC, MAXIG, MAXIDO
     integer MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR(MAXNBC, 2)
     integer NPTS, NCELLS
@@ -130,19 +127,18 @@ subroutine shd_solv__solveRte(&
     real SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD
     real WAVENO(2), WAVELEN
     real SOLACC, SOLCRIT, SPLITACC, SHACC
-    real MU(*), WTDO(*), PHI(*)
     real TEMP(*), PLANCK(*)
     real EXTINCT(*), ALBEDO(*), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, *)
     real XGRID(rtm_obj%Nx_grid), YGRID(rtm_obj%Ny_grid), ZGRID(rtm_obj%Nz)
     real GRIDPOS(3, *)
     real BCRAD(*)
     real FLUXES(2, *), DIRFLUX(*)
-    real SOURCE(NSTOKES, *), DELSOURCE(NSTOKES, *)
-    real RADIANCE(NSTOKES, *)
+    real SOURCE(shdo_obj%Nstokes, *), DELSOURCE(shdo_obj%Nstokes, *)
+    real RADIANCE(shdo_obj%Nstokes, *)
     real WORK(*), WORK2(*)
     character(len=1) :: SRCTYPE, UNITS
 
-    integer NPHI0MAX, I, ORDINATESET, NBPTS, NBCELLS
+    integer I, ORDINATESET, NBPTS, NBCELLS
     integer MAXNANGBND, NANGBND(4, 2), IERR
     logical FIXSH, SPLITTESTING, DOSPLIT, OUTOFMEM
     logical, allocatable :: FFTFLAG(:)
@@ -160,11 +156,11 @@ subroutine shd_solv__solveRte(&
     real :: ELAPSED_TIME
 
     ! Allocate local arrays
-    ! prp_obj%NlegSet=1 for NSTOKES=1, otherwise prp_obj%NlegSet=6
-    allocate (CMU1(prp_obj%NlegSet, NLM, NMU), CMU2(prp_obj%NlegSet, NLM, NMU))
-    allocate (CPHI1(-16:16, 32, NMU), CPHI2(32, -16:16, NMU))
-    allocate (YLMSUN(prp_obj%NlegSet, NLM))
-    allocate (FFTFLAG(NMU), WTMU(NMU), WPHISAVE(NMU*(3*NPHI + 15)))
+    ! prp_obj%NlegSet=1 for shdo_obj%Nstokes=1, otherwise prp_obj%NlegSet=6
+    allocate (CMU1(prp_obj%NlegSet, shdo_obj%Nlm, shdo_obj%Nmu), CMU2(prp_obj%NlegSet, shdo_obj%Nlm, shdo_obj%Nmu))
+    allocate (CPHI1(-16:16, 32, shdo_obj%Nmu), CPHI2(32, -16:16, shdo_obj%Nmu))
+    allocate (YLMSUN(prp_obj%NlegSet, shdo_obj%Nlm))
+    allocate (FFTFLAG(shdo_obj%Nmu), WTMU(shdo_obj%Nmu), WPHISAVE(shdo_obj%Nmu*(3*shdo_obj%Nphi+ 15)))
 
     ! Set up some things before solution loop
 
@@ -174,7 +170,7 @@ subroutine shd_solv__solveRte(&
 
     ! If Delta-M then scale the extinction, albedo, and Legendre terms
     ! Put the Planck blackbody source in PLANCK.
-    call shd_init__makePrp(ML, MM, NPTS, DELTAM,&
+    call shd_init__makePrp(shdo_obj%maxNl, shdo_obj%maxNm, NPTS, DELTAM,&
         &SRCTYPE, UNITS, WAVENO, WAVELEN, ALBMAX,&
         &EXTINCT, ALBEDO, LEGEN, TEMP, PLANCK, IPHASE, prp_obj)
 
@@ -185,34 +181,34 @@ subroutine shd_solv__solveRte(&
     ! Precompute Ylm's for solar direction
     if (isSolar_) then
         if (isMpi_) then
-            call shd_mpi__makeDirect(1, NPTS, rtm_obj%flag_bc, rtm_obj%flag_ip, DELTAM, ML,&
+            call shd_mpi__makeDirect(1, NPTS, rtm_obj%flag_bc, rtm_obj%flag_ip, DELTAM, shdo_obj%maxNl,&
                 &SOLARFLUX, SOLARMU, SOLARAZ,&
                 &GRIDPOS, rtm_obj%Nx, XGRID, rtm_obj%Ny, YGRID, DIRFLUX, prp_obj, ckd_obj)
         else
-            call shd_rad__makeDirect(NPTS, rtm_obj%flag_bc, rtm_obj%flag_ip, DELTAM, ML,&
+            call shd_rad__makeDirect(NPTS, rtm_obj%flag_bc, rtm_obj%flag_ip, DELTAM, shdo_obj%maxNl,&
                 &SOLARFLUX, SOLARMU, SOLARAZ,&
                 &GRIDPOS, DIRFLUX, prp_obj, ckd_obj)
         end if
-        call shd_shdo__computeYlm(.true., SOLARMU, SOLARAZ, ML, MM, prp_obj%NlegSet,&
+        call shd_shdo__computeYlm(.true., SOLARMU, SOLARAZ, shdo_obj%maxNl, shdo_obj%maxNm, prp_obj%NlegSet,&
             &YLMSUN)
     end if
 
     ! Make the discrete ordinates (angles)
     !   (set 2 is reduced gaussian, 3 is reduced double gauss)
     ORDINATESET = 3
-    call shd_shdo__makeAngle(NMU, NPHI, ORDINATESET, NPHI0MAX,&
-        &NPHI0, MU, PHI, WTMU, WTDO, FFTFLAG, NANG)
+    call shd_shdo__makeAngle(shdo_obj%Nmu, shdo_obj%Nphi, ORDINATESET, shdo_obj%maxNphi0,&
+        &shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, WTMU, shdo_obj%wgt, FFTFLAG, shdo_obj%Nang)
 
     ! Make the Ylm transform coefficients
-    call shd_shdo__makeSHDO(prp_obj%NlegSet, ML, MM, NLM, NMU, NPHI0,&
-        &NPHI0MAX, MU, PHI, WTMU, WTDO, FFTFLAG,&
+    call shd_shdo__makeSHDO(prp_obj%NlegSet, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm, shdo_obj%Nmu, shdo_obj%Nphi0,&
+        &shdo_obj%maxNphi0, shdo_obj%mu, shdo_obj%phi, WTMU, shdo_obj%wgt, FFTFLAG,&
         &CMU1, CMU2, CPHI1, CPHI2, WPHISAVE)
 
     FIXSH = .false.
     if (.not. INRADFLAG) then
         ! Initialize the radiance on the base grid using Eddington
         ! two-stream plane-parallel
-        call shd_init__makeRad(NSTOKES, rtm_obj%Nx_grid*rtm_obj%Ny_grid, rtm_obj%Nz,&
+        call shd_init__makeRad(shdo_obj%Nstokes, rtm_obj%Nx_grid*rtm_obj%Ny_grid, rtm_obj%Nz,&
             &RSHPTR, ZGRID,&
             &EXTINCT, ALBEDO, LEGEN, TEMP, IPHASE,&
             &SRCTYPE, SOLARFLUX, SOLARMU, SKYRAD,&
@@ -222,10 +218,10 @@ subroutine shd_solv__solveRte(&
         NBPTS = rtm_obj%Nx_grid * rtm_obj%Ny_grid * rtm_obj%Nz
         NBCELLS = (rtm_obj%Nz - 1)*(rtm_obj%Nx + ibits(rtm_obj%flag_bc, 0, 1) - ibits(rtm_obj%flag_bc, 2, 1))&
                                  &*(rtm_obj%Ny + ibits(rtm_obj%flag_bc, 1, 1) - ibits(rtm_obj%flag_bc, 3, 1))
-        call shd_rad__interpRad(NSTOKES, NBPTS, NPTS, RSHPTR, RADIANCE,&
+        call shd_rad__interpRad(shdo_obj%Nstokes, NBPTS, NPTS, RSHPTR, RADIANCE,&
             &NBCELLS, NCELLS, TREEPTR, GRIDPTR, GRIDPOS)
         ! Initialize the source function from the radiance field
-        call shd_src__computeSrc(NSTOKES, ML, MM, NLM,&
+        call shd_src__computeSrc(shdo_obj%Nstokes, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
             &NPTS,&
             &FIXSH, SRCTYPE, SOLARMU, YLMSUN, ALBEDO, LEGEN,&
             &IPHASE, PLANCK, DIRFLUX, SHACC,&
@@ -243,7 +239,7 @@ subroutine shd_solv__solveRte(&
     ! Surface initialization
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Make the pointers to the grid points on the top and bottom boundaries
-    call shd_grid__findBndryPnt(NPTS, NANG, MAXNBC, MAXBCRAD,&
+    call shd_grid__findBndryPnt(NPTS, shdo_obj%Nang, MAXNBC, MAXBCRAD,&
         &ZGRID(1), ZGRID(rtm_obj%Nz), GRIDPOS,&
         &NTOPPTS, NBOTPTS, BCPTR, sfc_obj)
     if (sfc_obj%type(1:1) .eq. 'V') then
@@ -255,17 +251,17 @@ subroutine shd_solv__solveRte(&
             &prp_obj, sfc_obj)
         call shd_init__checkSfcU(sfc_obj)
         if (sfc_obj%isUniform) then
-            if (NSTOKES*(NMU/2)*NPHI0MAX .gt.&
-                &sqrt(1.0*huge(NMU)/kind(NMU))) then
+            if (shdo_obj%Nstokes*(shdo_obj%Nmu/2)*shdo_obj%maxNphi0 .gt.&
+                &sqrt(1.0*huge(shdo_obj%Nmu)/kind(shdo_obj%Nmu))) then
                 IERR = 1
             else
-                allocate (SFC_BRDF_DO(NSTOKES, NMU/2, NPHI0MAX,&
-                    &NSTOKES, NMU/2, NPHI0MAX), STAT=IERR)
+                allocate (SFC_BRDF_DO(shdo_obj%Nstokes, shdo_obj%Nmu/2, shdo_obj%maxNphi0,&
+                    &shdo_obj%Nstokes, shdo_obj%Nmu/2, shdo_obj%maxNphi0), STAT=IERR)
             end if
             if (IERR .eq. 0) then
                 call shd_shdo__makeSfcDO(sfc_obj%type, WAVELEN,&
-                    &sfc_obj%Nx, sfc_obj%Ny, sfc_obj%Npar, sfc_obj%brdf, NSTOKES,&
-                    &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
+                    &sfc_obj%Nx, sfc_obj%Ny, sfc_obj%Npar, sfc_obj%brdf, shdo_obj%Nstokes,&
+                    &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
                     &SFC_BRDF_DO)
             else
                 print '(A,A)', 'Not enough memory to allocate precomputed',&
@@ -340,11 +336,11 @@ subroutine shd_solv__solveRte(&
                 &SPLITACC*(AVGSOLCRIT/(3.0*ENDADAPTSOL))**BETA))
             if (SOLCRIT .le. ENDADAPTSOL) CURSPLITACC = SPLITACC
             if (SPLITTESTING) then
-                call shd_grid__splitGrid(MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
+                call shd_grid__splitGrid(MAXIG, MAXIC, MAXIV, MAXIDO, shdo_obj%maxNphi0,&
                     &DOSPLIT, OUTOFMEM, CURSPLITACC, SPLITCRIT,&
                     &NPTS, NCELLS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
                     &GRIDPOS, rtm_obj%Nx, XGRID, rtm_obj%Ny, YGRID,&
-                    &NSTOKES, ML, MM, NLM,&
+                    &shdo_obj%Nstokes, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
                     &DELTAM, rtm_obj%flag_bc, rtm_obj%flag_ip, ACCELFLAG,&
                     &EXTINCT, ALBEDO, LEGEN, IPHASE,&
                     &RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR,&
@@ -362,7 +358,7 @@ subroutine shd_solv__solveRte(&
 
         ! Find the SH truncation to use for the radiance (RSHPTR)
         call shd_solv__truncRad(isHighOrder,&
-            &NSTOKES, ML, MM,&
+            &shdo_obj%Nstokes, shdo_obj%maxNl, shdo_obj%maxNm,&
             &NPTS, ALBEDO, LEGEN, IPHASE, SHPTR, RADIANCE,&
             &MAXIV + MAXIG, FIXSH, SHACC, RSHPTR, prp_obj)
 
@@ -371,14 +367,14 @@ subroutine shd_solv__solveRte(&
         !   and output radiance are in spherical harmonic expansions,
         !   and the SH/DO transforms are done during the loop over
         !   discrete ordinates.
-        call shd_intg__integratePath(rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, NSTOKES, ML, MM, NLM,&
-            &NMU, NPHI0MAX, NPHI0, NANG, rtm_obj%flag_bc, rtm_obj%flag_ip,&
+        call shd_intg__integratePath(rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, shdo_obj%Nstokes, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
+            &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%Nang, rtm_obj%flag_bc, rtm_obj%flag_ip,&
             &NPTS, NCELLS, XGRID, YGRID, ZGRID, GRIDPOS,&
             &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
             &SRCTYPE, SOLARMU, SOLARAZ, SKYRAD, WAVENO, WAVELEN,&
             &UNITS, SFC_BRDF_DO,&
             &MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-            &MU, PHI, WTDO,&
+            &shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
             &CMU1, CPHI1, CMU2, CPHI2, WPHISAVE, FFTFLAG,&
             &DIRFLUX, FLUXES, EXTINCT,&
             &SHPTR, SOURCE, RSHPTR, RADIANCE,&
@@ -389,7 +385,7 @@ subroutine shd_solv__solveRte(&
         !   the solution criterion, and dot products for acceleration
         if (((SOLCRIT .lt. ENDADAPTSOL) .or. (ITER .gt. 30)) .and.&
             &((rtm_obj%Nx .gt. 36) .or. (rtm_obj%Ny .gt. 36))) FIXSH = .true.
-        call shd_src__computeSrc(NSTOKES, ML, MM, NLM,&
+        call shd_src__computeSrc(shdo_obj%Nstokes, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
             &NPTS,&
             &FIXSH, SRCTYPE, SOLARMU, YLMSUN, ALBEDO, LEGEN,&
             &IPHASE, PLANCK, DIRFLUX, SHACC,&
@@ -403,7 +399,7 @@ subroutine shd_solv__solveRte(&
 
         ! Accelerate the convergence of the source function vector
         call shd_solv__accelSol(ACCELPAR, NPTS, SHPTR, OSHPTR,&
-            &NSTOKES, SOURCE, DELSOURCE)
+            &shdo_obj%Nstokes, SOURCE, DELSOURCE)
 
         ! If it is a not scattering medium then do only one iteration
         if (ALBMAX .lt. SOLACC) SOLCRIT = SOLACC
@@ -421,7 +417,7 @@ subroutine shd_solv__solveRte(&
                 &NCELLS,&
                 &float(SHPTR(NPTS + 1))/NPTS,&
                 &ELAPSED_TIME
-                !&float(SHPTR(NPTS + 1))/(NPTS*NLM)
+                !&float(SHPTR(NPTS + 1))/(NPTS*shdo_obj%Nlm)
         else
             if (OUTOFMEM) then
                 if (verbose_ .ge. 5) write (6, '("M",1X,I4,2X,F7.3,2X,E10.3,1X,I8,1X,I8,1X,F8.2,2X,F6.2," sec")')&
@@ -431,7 +427,7 @@ subroutine shd_solv__solveRte(&
                     &NCELLS,&
                     &float(SHPTR(NPTS + 1))/NPTS,&
                     &ELAPSED_TIME
-                    !&float(SHPTR(NPTS + 1))/(NPTS*NLM)
+                    !&float(SHPTR(NPTS + 1))/(NPTS*shdo_obj%Nlm)
             else
                 if (verbose_ .ge. 5) write (6, '(2X,I4,2X,F7.3,2X,E10.3,1X,I8,1X,I8,1X,F8.2,2X,F6.2," sec")')&
                     &ITER, log10(max(SOLCRIT, 1.0e-20)),&
@@ -440,7 +436,7 @@ subroutine shd_solv__solveRte(&
                     &NCELLS,&
                     &float(SHPTR(NPTS + 1))/NPTS,&
                     &ELAPSED_TIME
-                    !&float(SHPTR(NPTS + 1))/(NPTS*NLM)
+                    !&float(SHPTR(NPTS + 1))/(NPTS*shdo_obj%Nlm)
             end if
         end if
     end do PICARD_ITER_LOOP

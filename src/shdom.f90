@@ -1160,9 +1160,7 @@ program shdom
 
         ! Find the monochromatic SHDOM solution: adaptive grid output
         !   in source (shdo_obj%srcJ), radiance (shdo_obj%radI), fluxes, direct Flux.
-        call shd_solv__solveRte(shdo_obj%Nstokes, shdo_obj%Nang,&
-            &shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm, shdo_obj%Nmu, shdo_obj%Nphi,&
-            &shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
+        call shd_solv__solveRte(&
             &maxIV, maxIC, maxIG, maxIDO, isNewRad,&
             &isDeltaM, src_obj%type, isHighOrder_,&
             &solar0_ckd, src_obj%avgMu, src_obj%avgAz, skyRad,&
@@ -1175,7 +1173,7 @@ program shdom
             &Ncell, ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
             &shdo_obj%iradI, shdo_obj%isrcJ, idsrc_Shdo, work, work1, work2,&
             &shdo_obj%srcJ, dsrc_Shdo, shdo_obj%radI, fluxTot, fluxDir,&
-            &rtm_obj, prp_obj, sfc_obj, ckd_obj)
+            &rtm_obj, shdo_obj, prp_obj, sfc_obj, ckd_obj)
         isNewRad = .false.
         totIter = totIter + iter
 
