@@ -712,7 +712,6 @@ program shdom
         sfc_obj%brdf => brdf_Sfc
         sfc_obj%isAllocated = .true.
 
-
         if (isMasterProc) then
             call shd_io__readSfc(sfc_obj)
         end if
