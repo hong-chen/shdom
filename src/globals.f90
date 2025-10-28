@@ -190,6 +190,8 @@ module globals_type
         integer(kind=I__) :: maxNl   = -999
         integer(kind=I__) :: maxNm   = -999
         integer(kind=I__) :: maxNphi0 = -999
+        integer(kind=I__) :: maxNptsSH = -999
+        integer(kind=I__) :: maxNptsDO = -999
 
         integer(kind=I__), pointer :: Nphi0(:)   => null()
         integer(kind=I__), pointer :: iradI(:)   => null()
@@ -239,6 +241,7 @@ module globals_type
 
         integer(kind=I__) :: maxNz   = -999
         integer(kind=I__) :: maxNpts = -999
+        integer(kind=I__) :: maxNptsLeg = -999
 
         real(kind=R__) :: dx = -999.0
         real(kind=R__) :: dy = -999.0
@@ -247,11 +250,13 @@ module globals_type
         real(kind=R__) :: xDomain = -999.0
         real(kind=R__) :: yDomain = -999.0
 
-        real(kind=R__), pointer :: temp(:) => null()
-        real(kind=R__), pointer :: ext(:)  => null()
-        real(kind=R__), pointer :: ssa(:)  => null()
-        real(kind=R__), pointer :: leg(:)  => null()
-        integer(kind=2), pointer:: ipha(:) => null()
+        real(kind=R__),  pointer :: temp(:)   => null()
+        real(kind=R__),  pointer :: planck(:) => null()
+        real(kind=R__),  pointer :: ext(:)  => null()
+        real(kind=R__),  pointer :: ssa(:)  => null()
+        integer(kind=2), pointer :: ipha(:) => null()
+
+        real(kind=R__),  pointer :: leg(:, :, :)  => null()
 
         logical :: isAllocated  = .false.
     end type shd_type_rtm
@@ -269,6 +274,9 @@ module globals_type
 
         integer(kind=I__) :: Npts  = -999
         integer(kind=I__) :: Ncell = -999
+
+        integer(kind=I__) :: maxNpts    = -999
+        integer(kind=I__) :: maxNcell   = -999
 
         real(kind=R__) :: dx = -999.0
         real(kind=R__) :: dy = -999.0
@@ -325,7 +333,7 @@ module globals_type
 
         integer(kind=2), pointer:: ipha(:) => null()
 
-        real(kind=R__), pointer :: leg(:)  => null()
+        real(kind=R__), pointer :: leg(:, :, :)  => null()
 
         logical :: isAllocated  = .false.
     end type shd_type_prp
@@ -370,7 +378,7 @@ module globals_type
         real(kind=R__) :: avgWaveLen = -999.0
 
         real(kind=R__), pointer :: solar(:)   => null()
-        real(kind=R__), pointer :: wgt(:)    => null()
+        real(kind=R__), pointer :: wgt(:)     => null()
         real(kind=R__), pointer :: z(:)       => null()
         real(kind=R__), pointer :: kabs(:, :) => null()
 

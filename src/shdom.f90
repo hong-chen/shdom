@@ -123,10 +123,12 @@ program shdom
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_rtm) :: rtmAll_obj, rtm_obj
 
-    real(kind=R__), allocatable  :: planck(:)
-    real(kind=R__), allocatable  :: temp(:), ext(:), ssa(:)
-    real(kind=R__), allocatable  :: leg(:)
-    integer(kind=2), allocatable :: ipha(:)
+    real(kind=R__),  allocatable, target :: temp_Rtm(:), &
+                                            planck_Rtm(:), &
+                                            ext_Rtm(:), &
+                                            ssa_Rtm(:)
+    real(kind=R__),  allocatable, target :: leg_Rtm(:)
+    integer(kind=2), allocatable, target :: ipha_Rtm(:)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! grid_obj
@@ -233,11 +235,10 @@ program shdom
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
-    real(kind=R__) :: NmaxIG
+    real(kind=R__) :: NmaxNpts
     real(kind=R__) :: memUsed, memNeed, scaleFactor
 
-    integer(kind=I__) :: maxIG, maxIC, maxIV, maxIDO, maxNg
-    integer(kind=I__) :: maxIGL, NbigArr
+    integer(kind=I__) :: NbigArr
 
     real(kind=R__) :: MAX_TOTAL_MB, ADAPT_GRID_FACTOR
     real(kind=R__) :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
@@ -465,8 +466,6 @@ program shdom
         is1D1_ = .false.
     end if
 
-    !==================
-
     ! Overwrite prpAll_obj%dx if only 1 grid in X direction
     if (prpAll_obj%Nx .eq. 1) then
         prpAll_obj%dx = sfc_obj%Nx * sfc_obj%dx
@@ -621,7 +620,11 @@ program shdom
     prp_obj%extDir => extDir_Prp
     prp_obj%ssa    => ssa_Prp
     prp_obj%ipha   => ipha_Prp
-    prp_obj%leg    => leg_Prp
+
+    prp_obj%leg(1:prp_obj%NlegSet, &
+                0:prp_obj%maxNleg, &
+                1:prp_obj%maxNptsLeg/(prp_obj%maxNleg+1)/prp_obj%NlegSet) => leg_Prp
+
     prp_obj%isAllocated = .true.
 
     if (isMpi_) then
@@ -636,7 +639,11 @@ program shdom
             allocate (ipha_PrpAll(prpAll_obj%maxNpts))
 
             prpAll_obj%z    => z_Prp
-            prpAll_obj%leg  => leg_Prp
+
+            prpAll_obj%leg(1:prpAll_obj%NlegSet, &
+                           0:prpAll_obj%maxNleg, &
+                           1:prpAll_obj%maxNptsLeg/(prpAll_obj%maxNleg+1)/prpAll_obj%NlegSet) => leg_Prp
+
             prpAll_obj%temp => temp_PrpAll
             prpAll_obj%ext  => ext_PrpAll
             prpAll_obj%ssa  => ssa_PrpAll
@@ -905,11 +912,11 @@ program shdom
     NbigArr = 3
     if (.not. isAccel) NbigArr = 2
 
-    ! NmaxIG
+    ! NmaxNpts
     !╭──────────────────────────────────────────────────────────────╮!
-    NmaxIG = 0.0
+    NmaxNpts = 0.0
 
-    NmaxIG = NmaxIG + 4.5 ! temp, planck, ext, ssa, ipha[0.5, integer(kind=2)]
+    NmaxNpts = NmaxNpts + 4.5 ! temp_Rtm, planck_Rtm, ext_Rtm, ssa_Rtm, ipha_Rtm[0.5, integer(kind=2)]
 
     ! x, y, z grid
     memUsed = memUsed + (rtm_obj%Nx+1) + (rtm_obj%Ny+1) + (rtm_obj%Nz)
@@ -917,38 +924,38 @@ program shdom
     if (prp_obj%Npha .gt. 0) then
         memUsed = memUsed + prp_obj%Npha * prp_obj%NlegSet * (prp_obj%maxNleg + 1) ! offset phase table
     else
-        NmaxIG = NmaxIG + prp_obj%NlegSet*(prp_obj%maxNleg + 1)
+        NmaxNpts = NmaxNpts + prp_obj%NlegSet*(prp_obj%maxNleg + 1)
     end if
 
     if (sfc_obj%fname(1:4) .ne. 'NONE') then
         if (sfc_obj%type(2:2) .eq. 'L') then
-            NmaxIG = real(3)/real(rtm_obj%Nz) * (sfc_obj%maxNpar + 2.0 + shdo_obj%Nstokes*2.0)
+            NmaxNpts = real(3)/real(rtm_obj%Nz) * (sfc_obj%maxNpar + 2.0 + shdo_obj%Nstokes*2.0)
         else
-            NmaxIG = real(3)/real(rtm_obj%Nz) * (sfc_obj%maxNpar + 2.0 + shdo_obj%Nstokes*(2.0+ shdo_obj%Nmu*shdo_obj%maxNphi0/2))
+            NmaxNpts = real(3)/real(rtm_obj%Nz) * (sfc_obj%maxNpar + 2.0 + shdo_obj%Nstokes*(2.0+ shdo_obj%Nmu*shdo_obj%maxNphi0/2))
         end if
     end if
 
-    if (isFluxOut)  NmaxIG = NmaxIG + 3.0
-    if (isHROut)    NmaxIG = NmaxIG + 1.0
-    if (isSHOut)    NmaxIG = NmaxIG + Nsh_out
-    if (isSrcOut)   NmaxIG = NmaxIG + shdo_obj%Nstokes
+    if (isFluxOut)  NmaxNpts = NmaxNpts + 3.0
+    if (isHROut)    NmaxNpts = NmaxNpts + 1.0
+    if (isSHOut)    NmaxNpts = NmaxNpts + Nsh_out
+    if (isSrcOut)   NmaxNpts = NmaxNpts + shdo_obj%Nstokes
 
-    NmaxIG = NmaxIG + 16.5*CELL_TO_POINT_RATIO ! i8Grid_Cell[8.0], i6Cell_Cell[6.0], i2Tree_Cell[2.0], flag_Cell[0.5]
+    NmaxNpts = NmaxNpts + 16.5*CELL_TO_POINT_RATIO ! i8Grid_Cell[8.0], i6Cell_Cell[6.0], i2Tree_Cell[2.0], flag_Cell[0.5]
 
-    NmaxIG = NmaxIG + 6.0   ! xyz_Grid[3.0], shdo_obj%iradI[1.0], shdo_obj%isrcJ[1.0], idsrc_Shdo[1.0]
+    NmaxNpts = NmaxNpts + 6.0   ! xyz_Grid[3.0], shdo_obj%iradI[1.0], shdo_obj%isrcJ[1.0], idsrc_Shdo[1.0]
     memUsed = memUsed + 4.0 ! offset shdo_obj%iradI[+2], shdo_obj%isrcJ[+1], idsrc_Shdo[+1]
 
     if (isAccel) then
-        NmaxIG = NmaxIG + shdo_obj%Nstokes*(1.0+3.0*NUM_SH_TERM_FACTOR*shdo_obj%Nlm) ! radiance, source, delta source
+        NmaxNpts = NmaxNpts + shdo_obj%Nstokes*(1.0+3.0*NUM_SH_TERM_FACTOR*shdo_obj%Nlm) ! radiance, source, delta source
     else
-        NmaxIG = NmaxIG + shdo_obj%Nstokes*(1.0+2.0*NUM_SH_TERM_FACTOR*shdo_obj%Nlm) ! radiance, source
+        NmaxNpts = NmaxNpts + shdo_obj%Nstokes*(1.0+2.0*NUM_SH_TERM_FACTOR*shdo_obj%Nlm) ! radiance, source
     end if
 
-    NmaxIG = NmaxIG + 3.0 ! fluxTot[2.0], fluxDir[1.0]
+    NmaxNpts = NmaxNpts + 3.0 ! fluxTot[2.0], fluxDir[1.0]
 
     memUsed = memUsed + (Nrad+Nlos) ! offset sumRad_Out[Nrad] and sumCam_Out[Nlos]
 
-    NmaxIG = NmaxIG + (shdo_obj%Nstokes*(max(shdo_obj%maxNphi0, 4)+1.0) + 8.0) !work, work1, work2
+    NmaxNpts = NmaxNpts + (shdo_obj%Nstokes*(max(shdo_obj%maxNphi0, 4)+1.0) + 8.0) !work, work1, work2
 
     memUsed = memUsed + Nrad + Nlos ! work2 (over-count but memory safe)
     !╰──────────────────────────────────────────────────────────────╯!
@@ -959,13 +966,13 @@ program shdom
     !       + 4.5*prp_obj%maxNpts + prp_obj%maxNptsLeg + prp_obj%Npha*prp_obj%NlegSet*(prp_obj%maxNleg + 1) ! phase allocation
     ! now: update memUsed after every allocation step
     !
-    ! NmaxIG is now more accurate than before
+    ! NmaxNpts is now more accurate than before
     ! before:
-    !   NmaxIG = 28.0 + 16.5*CELL_TO_POINT_RATIO&
+    !   NmaxNpts = 28.0 + 16.5*CELL_TO_POINT_RATIO&
     !       + shdo_obj%maxNphi0*shdo_obj%Nstokes + NUM_SH_TERM_FACTOR*shdo_obj%Nstokes*shdo_obj%Nlm*NbigArr
-    ! now: update NmaxIG from every allocation step
+    ! now: update NmaxNpts from every allocation step
 
-    memNeed = ADAPT_GRID_FACTOR*grid_obj%Npts0*NmaxIG
+    memNeed = ADAPT_GRID_FACTOR*grid_obj%Npts0*NmaxNpts
 
     if (isHighOrder_) then
         scaleFactor = min(1.5, ((MAX_TOTAL_MB*1024**2)/4 - memUsed)/memNeed)
@@ -985,7 +992,7 @@ program shdom
     end if
 
     memNeed = scaleFactor*memNeed
-    if (memNeed .gt. huge(maxIV)) then
+    if (memNeed .gt. huge(shdo_obj%maxNptsSH)) then
         write (6, '(A,F8.2)') 'Error [shdom]: Number of words of memory exceeds max integer size:', memNeed
         stop
     end if
@@ -995,28 +1002,28 @@ program shdom
     ! Retrieve max numbers for array allocation after memory check
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! max number of internal grid points
-    maxIG = nint(ADAPT_GRID_FACTOR*grid_obj%Npts0)
+    grid_obj%maxNpts = nint(ADAPT_GRID_FACTOR*grid_obj%Npts0)
 
     ! max number of grid cells, between 1 and 2 times grid points
-    maxIC = nint(CELL_TO_POINT_RATIO*maxIG)
+    grid_obj%maxNcell = nint(CELL_TO_POINT_RATIO*grid_obj%maxNpts)
 
     ! max words for source function and radiance arrays
-    maxIV = nint(NUM_SH_TERM_FACTOR*shdo_obj%Nlm*maxIG)
+    shdo_obj%maxNptsSH = nint(NUM_SH_TERM_FACTOR*shdo_obj%Nlm*grid_obj%maxNpts)
 
     ! max words for temporary discrete ordinate azimuthal array
-    maxIDO = maxIG*max(shdo_obj%maxNphi0, 4)
+    shdo_obj%maxNptsDO = grid_obj%maxNpts*max(shdo_obj%maxNphi0, 4)
 
-    if (4.0*(maxIV + maxIG)*shdo_obj%Nstokes .gt. huge(maxIV)) then
-        write (6, '(A,I12)') 'Error [shdom]: Size of big SH arrays (maxIV) probably exceeds max integer number of bytes:', maxIV
+    if (4.0*(shdo_obj%maxNptsSH + grid_obj%maxNpts)*shdo_obj%Nstokes .gt. huge(shdo_obj%maxNptsSH)) then
+        write (6, '(A,I12)') 'Error [shdom]: Size of big SH arrays (shdo_obj%maxNptsSH) probably exceeds max integer number of bytes:', shdo_obj%maxNptsSH
         stop
     end if
 
-    if (4.0*8.0*maxIC .gt. huge(maxIV)) then
-        write (6, '(A,F8.2)') 'Error [shdom]: Size of i8Grid_Cell array (8*maxIC) probably exceeds max integer number of bytes:', 8*maxIC
+    if (4.0*8.0*grid_obj%maxNcell .gt. huge(shdo_obj%maxNptsSH)) then
+        write (6, '(A,F8.2)') 'Error [shdom]: Size of i8Grid_Cell array (8*grid_obj%maxNcell) probably exceeds max integer number of bytes:', 8*grid_obj%maxNcell
         stop
     end if
 
-    maxNpts_bc = maxIG*3/rtm_obj%Nz
+    maxNpts_bc = grid_obj%maxNpts*3/rtm_obj%Nz
     if (sfc_obj%isLambertian) then
         maxNrad_bc = 2 * maxNpts_bc
     else
@@ -1025,28 +1032,30 @@ program shdom
 
     ! max number of legendre coefficients
     if (prp_obj%Npha .gt. 0) then
-        maxIGL = prp_obj%Npha * prp_obj%NlegSet * (prp_obj%maxNleg + 1)
+        rtm_obj%maxNptsLeg = prp_obj%Npha * prp_obj%NlegSet * (prp_obj%maxNleg + 1)
     else
-        maxIGL = maxIG*prp_obj%NlegSet*(prp_obj%maxNleg + 1)
+        rtm_obj%maxNptsLeg = grid_obj%maxNpts*prp_obj%NlegSet*(prp_obj%maxNleg + 1)
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
     ! Allocate array
     !╭────────────────────────────────────────────────────────────────────────────╮!
+    ! grid
+    !╭────────────────────────────────────────────────╮!
     ! x, y, z grids
     allocate (x_Grid(grid_obj%Nx), y_Grid(grid_obj%Ny), z_Grid(grid_obj%Nz))
 
     ! x,y,z coordinate values of grid point locations
-    allocate (xyz_Grid(3, maxIG))
+    allocate (xyz_Grid(3, grid_obj%maxNpts))
 
     ! a collection of binary flags for the cells
-    allocate (flag_Cell(maxIC))
+    allocate (flag_Cell(grid_obj%maxNcell))
 
     ! pointer to 8 grid points belonging to a cell
     ! pointer to 6 neighboring cells of a cell
     ! pointer to parent and children cells in tree structure
-    allocate (i8Grid_Cell(8, maxIC), i6Cell_Cell(6, maxIC), i2Tree_Cell(2, maxIC))
+    allocate (i8Grid_Cell(8, grid_obj%maxNcell), i6Cell_Cell(6, grid_obj%maxNcell), i2Tree_Cell(2, grid_obj%maxNcell))
 
     grid_obj%x => x_Grid
     grid_obj%y => y_Grid
@@ -1057,15 +1066,31 @@ program shdom
     grid_obj%i6Cell => i6Cell_Cell
     grid_obj%i2Tree => i2Tree_Cell
     grid_obj%isAllocated = .true.
+    !╰────────────────────────────────────────────────╯!
 
+    ! rtm
+    !╭────────────────────────────────────────────────╮!
     ! temperature and planck radiance (maybe we don't need this for shortwave)
-    allocate (temp(maxIG), planck(maxIG))
+    allocate (temp_Rtm(grid_obj%maxNpts), planck_Rtm(grid_obj%maxNpts))
 
     ! extinction, single scattering albedo, and phase function indices
-    allocate (ext(maxIG), ssa(maxIG), ipha(maxIG))
+    allocate (ext_Rtm(grid_obj%maxNpts), ssa_Rtm(grid_obj%maxNpts), ipha_Rtm(grid_obj%maxNpts))
 
     ! legendre coefficients
-    allocate (leg(maxIGL))
+    allocate (leg_Rtm(rtm_obj%maxNptsLeg))
+
+    rtm_obj%temp   => temp_Rtm
+    rtm_obj%planck => planck_Rtm
+    rtm_obj%ext    => ext_Rtm
+    rtm_obj%ssa    => ssa_Rtm
+    rtm_obj%ipha   => ipha_Rtm
+
+    rtm_obj%leg(1:prp_obj%NlegSet, &
+                0:prp_obj%maxNleg, &
+                1:rtm_obj%maxNptsLeg/(prp_obj%maxNleg+1)/prp_obj%NlegSet) => leg_Rtm
+
+    rtm_obj%isAllocated = .true.
+    !╰────────────────────────────────────────────────╯!
 
     ! boundary points pointers and radiances
     !   ptr_Bc(:, 1): pointers to grid points that are on top
@@ -1083,39 +1108,40 @@ program shdom
     allocate (ptr_Bc(2*maxNpts_bc), rad_Bc(shdo_obj%Nstokes, maxNrad_bc))
 
     ! output
-    if (isFluxOut) allocate (sumFluxTot_Out(2, maxIG), sumFluxDir_Out(maxIG))
-    if (isHROut)   allocate (sumFluxDiv_Out(maxIG))
-    if (isSHOut)   allocate (sumSH_Out(maxIG*Nsh_out))
-    if (isSrcOut)  allocate (src1_Out(maxIG*shdo_obj%Nstokes))
+    if (isFluxOut) allocate (sumFluxTot_Out(2, grid_obj%maxNpts), sumFluxDir_Out(grid_obj%maxNpts))
+    if (isHROut)   allocate (sumFluxDiv_Out(grid_obj%maxNpts))
+    if (isSHOut)   allocate (sumSH_Out(grid_obj%maxNpts*Nsh_out))
+    if (isSrcOut)  allocate (src1_Out(grid_obj%maxNpts*shdo_obj%Nstokes))
 
     ! SH related array
-    allocate (iradI_Shdo(maxIG + 2), isrcJ_Shdo(maxIG + 1))
+    allocate (iradI_Shdo(grid_obj%maxNpts + 2), isrcJ_Shdo(grid_obj%maxNpts + 1))
     ! radiance and source
-    allocate (radI_Shdo(shdo_obj%Nstokes, maxIV + maxIG), srcJ_Shdo(shdo_obj%Nstokes, maxIV))
+    allocate (radI_Shdo(shdo_obj%Nstokes, shdo_obj%maxNptsSH + grid_obj%maxNpts), srcJ_Shdo(shdo_obj%Nstokes, shdo_obj%maxNptsSH))
     shdo_obj%iradI => iradI_Shdo
     shdo_obj%isrcJ => isrcJ_Shdo
     shdo_obj%radI  => radI_Shdo
     shdo_obj%srcJ  => srcJ_Shdo
+    shdo_obj%isAllocated = .true.
 
     ! delta source
     if (isAccel) then
-        allocate (idsrc_Shdo(maxIG + 1), dsrc_Shdo(shdo_obj%Nstokes, maxIV))
+        allocate (idsrc_Shdo(grid_obj%maxNpts + 1), dsrc_Shdo(shdo_obj%Nstokes, shdo_obj%maxNptsSH))
     end if
 
     ! fluxes
-    allocate (fluxTot(2, maxIG), fluxDir(maxIG))
+    allocate (fluxTot(2, grid_obj%maxNpts), fluxDir(grid_obj%maxNpts))
 
     ! output radiances to be summed over g
     allocate (sumRad_Out(Nrad), sumCam_Out(Nlos))
 
     ! work: work array for path integration; radiance field, Nazimuth*grid_obj%Npts
-    allocate (work(shdo_obj%Nstokes*maxIDO))
+    allocate (work(shdo_obj%Nstokes*shdo_obj%maxNptsDO))
 
     ! work1: work array for path integration; grid point sweeping order
-    allocate (work1(8*maxIG))
+    allocate (work1(8*grid_obj%maxNpts))
 
     ! work2: work array for path integration; single angle radiance
-    allocate (work2(max(Nlos, Nrad, shdo_obj%Nstokes*maxIG)))
+    allocate (work2(max(Nlos, Nrad, shdo_obj%Nstokes*grid_obj%maxNpts)))
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
@@ -1140,7 +1166,6 @@ program shdom
     if (isMasterProc) then
         if (verbose_ .ge. 5) write (6, '(A)') trim(adjustl(message))
     end if
-
 
     ! solve radiative transfer equation
     !   1. Use Picard iteration to solve radiance and source
@@ -1170,7 +1195,7 @@ program shdom
 
         ! If this is the first time through or we always want a base grid,
         !   then make the base grid point positions and grid cell structure.
-        if (isBaseOut .or. ((ig_ckd.eq. ckd_obj%Ng) .and. isNewGrid)) then
+        if (isBaseOut .or. ((ig_ckd .eq. ckd_obj%Ng) .and. isNewGrid)) then
             call shd_init__makeCell(rtm_obj%flag_bc, rtm_obj%flag_ip,&
                 &rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, grid_obj%Nx, grid_obj%Ny, grid_obj%Npts, grid_obj%Ncell,&
                 &grid_obj%x, grid_obj%y, grid_obj%z, grid_obj%xyz,&
@@ -1181,12 +1206,11 @@ program shdom
         ! Find the monochromatic SHDOM solution: adaptive grid output
         !   in source (shdo_obj%srcJ), radiance (shdo_obj%radI), fluxes, direct Flux.
         call shd_solv__solveRte(&
-            &maxIV, maxIC, maxIG, maxIDO, isNewRad,&
+            &isNewRad,&
             &isDeltaM, isHighOrder_,&
             &solar0_ckd, skyRad,&
             &isAccel, solAcc, maxIter, solCrit, iter,&
             &splitAcc, shAcc,&
-            &temp, planck, ext, ssa, leg, ipha,&
             &maxNpts_bc, maxNrad_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
             &idsrc_Shdo, work, work1, work2,&
             &dsrc_Shdo, fluxTot, fluxDir,&
@@ -1210,7 +1234,7 @@ program shdom
                             &skyRad, src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
                             &grid_obj%x, grid_obj%y, grid_obj%z, grid_obj%xyz,&
                             &grid_obj%i8Grid, grid_obj%i6Cell, grid_obj%i2Tree, grid_obj%flag,&
-                            &ext, ssa, leg, ipha, fluxDir, fluxTot,&
+                            &rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%ipha, fluxDir, fluxTot,&
                             &shdo_obj%isrcJ, shdo_obj%srcJ, work, work(1 + grid_obj%Npts*shdo_obj%Nstokes),&
                             &parms_Out(1, iout), irad, work2, prp_obj, sfc_obj, sen_obj)
                     else
@@ -1222,7 +1246,7 @@ program shdom
                             &skyRad, src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
                             &grid_obj%x, grid_obj%y, grid_obj%z, grid_obj%xyz,&
                             &grid_obj%i8Grid, grid_obj%i6Cell, grid_obj%i2Tree, grid_obj%flag,&
-                            &ext, ssa, leg, ipha, fluxDir, fluxTot,&
+                            &rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%ipha, fluxDir, fluxTot,&
                             &shdo_obj%isrcJ, shdo_obj%srcJ, work(1), work(1 + grid_obj%Npts*shdo_obj%Nstokes),&
                             &parms_Out(1, iout), irad, work2, prp_obj, sfc_obj, sen_obj)
                     end if
@@ -1245,7 +1269,7 @@ program shdom
                             &skyRad, src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
                             &grid_obj%x, grid_obj%y, grid_obj%z, grid_obj%xyz,&
                             &grid_obj%i8Grid, grid_obj%i6Cell, grid_obj%i2Tree, grid_obj%flag,&
-                            &ext, ssa, leg, ipha, fluxDir, fluxTot,&
+                            &rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%ipha, fluxDir, fluxTot,&
                             &shdo_obj%isrcJ, shdo_obj%srcJ, parms_Out(1, iout), ilos, work2,&
                             &prp_obj, sfc_obj, sen_obj)
                     else
@@ -1257,7 +1281,7 @@ program shdom
                             &skyRad, src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
                             &grid_obj%x, grid_obj%y, grid_obj%z, grid_obj%xyz,&
                             &grid_obj%i8Grid, grid_obj%i6Cell, grid_obj%i2Tree, grid_obj%flag,&
-                            &ext, ssa, leg, ipha, fluxDir, fluxTot,&
+                            &rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%ipha, fluxDir, fluxTot,&
                             &shdo_obj%isrcJ, shdo_obj%srcJ, parms_Out(1, iout), ilos, work2,&
                             &prp_obj, sfc_obj, sen_obj)
                     end if
@@ -1274,7 +1298,7 @@ program shdom
                     phi_out = parms_Out(3, iout)*acos(-1.0)/180.0
                     call shd_src__computeSrcOneDir(shdo_obj%Nstokes, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
                         &grid_obj%Npts, isDeltaM, mu_out, phi_out,&
-                        &src_obj%type, src_obj%avgMu, src_obj%avgAz, ssa, leg, ipha,&
+                        &src_obj%type, src_obj%avgMu, src_obj%avgAz, rtm_obj%ssa, rtm_obj%leg, rtm_obj%ipha,&
                         &fluxDir, shdo_obj%isrcJ, shdo_obj%srcJ, src1_Out, prp_obj)
                 end if
             end do
@@ -1326,7 +1350,7 @@ program shdom
         if (isHROut) then
             ! Compute the net flux divergence at every point
             call shd_rad__computeNetFluxDiv(shdo_obj%Nstokes, grid_obj%Npts, shdo_obj%iradI, src_obj%type, src_obj%avgMu,&
-                &ext, ssa, planck, fluxDir, shdo_obj%radI, work)
+                &rtm_obj%ext, rtm_obj%ssa, rtm_obj%planck, fluxDir, shdo_obj%radI, work)
             call shd_util__sumData(ckd_obj%Ng-ig_ckd, wgt_Ckd(ig_ckd), grid_obj%Npts, work, sumFluxDiv_Out)
         end if
 
@@ -1409,7 +1433,7 @@ program shdom
                     splitAcc, shAcc, solAcc, maxIter, totIter,&
                     grid_obj%x, grid_obj%y, grid_obj%z, grid_obj%xyz,&
                     grid_obj%i2Tree, grid_obj%i8Grid, grid_obj%flag,&
-                    ext, ssa, leg, ipha, temp,&
+                    rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%ipha, rtm_obj%temp,&
                     sumFluxTot_Out, sumFluxDir_Out, sumFluxDiv_Out,&
                     irad, sumRad_Out, Nsh_out, sumSH_Out, src1_Out,&
                     type_Out(iout), parms_Out(1, iout), file_Out(iout),&
@@ -1467,9 +1491,9 @@ program shdom
     !      + 16.5*grid_obj%Ncell + grid_obj%Npts*(28 + shdo_obj%maxNphi0*shdo_obj%Nstokes)&
     !      + shdo_obj%Nstokes*shdo_obj%Nsh*NbigArr)/1024**2
     ! now:
-    !   use NmaxIG
+    !   use NmaxNpts
     MAXMB_OUT = 4*(memUsed + 16.5*grid_obj%Ncell&
-        + grid_obj%Npts*(NmaxIG-16.5*CELL_TO_POINT_RATIO))/1024**2
+        + grid_obj%Npts*(NmaxNpts-16.5*CELL_TO_POINT_RATIO))/1024**2
 
     ADAPTGRIDFAC_OUT = float(grid_obj%Npts)/grid_obj%Npts0
     SHTERM_FAC_OUT = float(shdo_obj%Nsh)/(shdo_obj%Nlm*grid_obj%Npts)
@@ -1487,12 +1511,23 @@ program shdom
     ! rtm_obj
     !╭────────────────────────────────────────────────╮!
     deallocate (ptr_Bc, rad_Bc)
-    deallocate (temp, planck)
-    deallocate (ext, ssa, ipha)
-    deallocate (leg)
+    deallocate (temp_Rtm, planck_Rtm)
+    deallocate (ext_Rtm, ssa_Rtm, ipha_Rtm)
+    deallocate (leg_Rtm)
     deallocate (fluxTot, fluxDir)
     deallocate (sumRad_Out, sumCam_Out)
     deallocate (work, work1, work2)
+    if (rtm_obj%isAllocated) then
+        nullify( &
+        rtm_obj%temp, &
+        rtm_obj%planck, &
+        rtm_obj%ext, &
+        rtm_obj%ssa, &
+        rtm_obj%leg, &
+        rtm_obj%ipha &
+        )
+    end if
+
     !╰────────────────────────────────────────────────╯!
 
     ! grid_obj

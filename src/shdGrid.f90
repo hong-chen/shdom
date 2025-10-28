@@ -1130,7 +1130,8 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT,&
         do I = 1, prp_obj%Npha
             do L = 0, prp_obj%Nleg
                 do J = 1, prp_obj%NlegSet
-                    LEGEN(J, L, I) = prp_obj%leg(J + prp_obj%NlegSet*(L + (prp_obj%Nleg+ 1)*(I - 1)))/(2*L + 1)
+                    !LEGEN(J, L, I) = prp_obj%leg(J + prp_obj%NlegSet*(L + (prp_obj%Nleg+ 1)*(I - 1)))/(2*L + 1)
+                    LEGEN(J, L, I) = prp_obj%leg(J, L, I)/(2*L + 1)
                 end do
             end do
         end do
@@ -1269,14 +1270,22 @@ subroutine shd_grid__InterpTriLinGridPrp(X, Y, Z, INIT,&
         ! Standard property file format: unpolarized
         LEGEN(1, 0, 1) = 1.0
         do L = 1, prp_obj%Nleg
-            LEGEN(1, L, 1) = SCAT1*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I1 - 1))&
-                &+ SCAT2*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I2 - 1))&
-                &+ SCAT3*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I3 - 1))&
-                &+ SCAT4*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I4 - 1))&
-                &+ SCAT5*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I5 - 1))&
-                &+ SCAT6*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I6 - 1))&
-                &+ SCAT7*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I7 - 1))&
-                &+ SCAT8*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I8 - 1))
+            !LEGEN(1, L, 1) = SCAT1*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I1 - 1))&
+            !    &+ SCAT2*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I2 - 1))&
+            !    &+ SCAT3*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I3 - 1))&
+            !    &+ SCAT4*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I4 - 1))&
+            !    &+ SCAT5*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I5 - 1))&
+            !    &+ SCAT6*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I6 - 1))&
+            !    &+ SCAT7*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I7 - 1))&
+            !    &+ SCAT8*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I8 - 1))
+            LEGEN(1, L, 1) = SCAT1*prp_obj%leg(1, L, I1)&
+                          &+ SCAT2*prp_obj%leg(1, L, I2)&
+                          &+ SCAT3*prp_obj%leg(1, L, I3)&
+                          &+ SCAT4*prp_obj%leg(1, L, I4)&
+                          &+ SCAT5*prp_obj%leg(1, L, I5)&
+                          &+ SCAT6*prp_obj%leg(1, L, I6)&
+                          &+ SCAT7*prp_obj%leg(1, L, I7)&
+                          &+ SCAT8*prp_obj%leg(1, L, I8)
             if (SCATTER .gt. SCATMIN) then
                 LEGEN(1, L, 1) = LEGEN(1, L, 1)/SCATTER
             else

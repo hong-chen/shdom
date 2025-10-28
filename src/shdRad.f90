@@ -226,7 +226,8 @@ subroutine shd_rad__computeDirect(&
                             IPH = IP
                         end if
                         L = ML + 1
-                        F = prp_obj%leg(1 + prp_obj%NlegSet*(L + (prp_obj%Nleg+ 1)*(IPH - 1)))/(2*L + 1)
+                        !F = prp_obj%leg(1 + prp_obj%NlegSet*(L + (prp_obj%Nleg+ 1)*(IPH - 1)))/(2*L + 1)
+                        F = prp_obj%leg(1, L, IPH)/(2*L + 1)
                         EXTINCT = (1.0 - ALBEDO*F)*EXTINCT
                     end if
                     prp_obj%extDir(IP) = EXTINCT

@@ -91,12 +91,11 @@ module shd_solv
 contains
 
 subroutine shd_solv__solveRte(&
-    &MAXIV, MAXIC, MAXIG, MAXIDO, INRADFLAG,&
+    &INRADFLAG,&
     &DELTAM, isHighOrder,&
     &SOLARFLUX, SKYRAD,&
     &ACCELFLAG, SOLACC, MAXITER, SOLCRIT, ITER,&
     &SPLITACC, SHACC,&
-    &TEMP, PLANCK, EXTINCT, ALBEDO, LEGEN, IPHASE,&
     &MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &idsrc_Shdo, WORK, WORK1, WORK2,&
     &dsrc_Shdo, FLUXES, DIRFLUX,&
@@ -118,16 +117,12 @@ subroutine shd_solv__solveRte(&
     type(shd_type_ckd),  intent(in)    :: ckd_obj
 
     integer MAXITER, ITER
-    integer MAXIV, MAXIC, MAXIG, MAXIDO
     integer MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR(MAXNBC, 2)
     integer idsrc_Shdo(*)
-    integer*2 IPHASE(*)
     integer WORK1(*)
     logical INRADFLAG, DELTAM, ACCELFLAG, isHighOrder
     real SOLARFLUX, SKYRAD
     real SOLACC, SOLCRIT, SPLITACC, SHACC
-    real TEMP(*), PLANCK(*)
-    real EXTINCT(*), ALBEDO(*), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, *)
     real BCRAD(*)
     real FLUXES(2, *), DIRFLUX(*)
     real dsrc_Shdo(shdo_obj%Nstokes, *)
@@ -161,13 +156,13 @@ subroutine shd_solv__solveRte(&
 
     ! Transfer the medium properties to the internal grid and add gas absorption
     call shd_grid__interpGrid(grid_obj%Npts, grid_obj%xyz,&
-        &TEMP, EXTINCT, ALBEDO, LEGEN, IPHASE, prp_obj, ckd_obj)
+        &rtm_obj%temp, rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%ipha, prp_obj, ckd_obj)
 
     ! If Delta-M then scale the extinction, albedo, and Legendre terms
-    ! Put the Planck blackbody source in PLANCK.
+    ! Put the Planck blackbody source in rtm_obj%planck.
     call shd_init__makePrp(shdo_obj%maxNl, shdo_obj%maxNm, grid_obj%Npts, DELTAM,&
         &src_obj%type, src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen, ALBMAX,&
-        &EXTINCT, ALBEDO, LEGEN, TEMP, PLANCK, IPHASE, prp_obj)
+        &rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%temp, rtm_obj%planck, rtm_obj%ipha, prp_obj)
 
     ! Get the maximum single scattering albedo over all processors
     call shd_mpi__findAlbMax(ALBMAX)
@@ -205,7 +200,7 @@ subroutine shd_solv__solveRte(&
         ! two-stream plane-parallel
         call shd_init__makeRad(shdo_obj%Nstokes, grid_obj%Nx*grid_obj%Ny, grid_obj%Nz,&
             &shdo_obj%iradI, grid_obj%z,&
-            &EXTINCT, ALBEDO, LEGEN, TEMP, IPHASE,&
+            &rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%temp, rtm_obj%ipha,&
             &src_obj%type, SOLARFLUX, src_obj%avgMu, SKYRAD,&
             &src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen, shdo_obj%radI, prp_obj, sfc_obj)
         ! Interpolate the radiance on the non-base grid points from the
@@ -218,9 +213,9 @@ subroutine shd_solv__solveRte(&
         ! Initialize the source function from the radiance field
         call shd_src__computeSrc(shdo_obj%Nstokes, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
             &grid_obj%Npts,&
-            &FIXSH, src_obj%type, src_obj%avgMu, YLMSUN, ALBEDO, LEGEN,&
-            &IPHASE, PLANCK, DIRFLUX, SHACC,&
-            &MAXIV, shdo_obj%iradI, shdo_obj%radI, shdo_obj%isrcJ, shdo_obj%srcJ, idsrc_Shdo, dsrc_Shdo,&
+            &FIXSH, src_obj%type, src_obj%avgMu, YLMSUN, rtm_obj%ssa, rtm_obj%leg,&
+            &rtm_obj%ipha, rtm_obj%planck, DIRFLUX, SHACC,&
+            &shdo_obj%maxNptsSH, shdo_obj%iradI, shdo_obj%radI, shdo_obj%isrcJ, shdo_obj%srcJ, idsrc_Shdo, dsrc_Shdo,&
             &.true., ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM, prp_obj)
     end if
 
@@ -331,15 +326,15 @@ subroutine shd_solv__solveRte(&
                 &SPLITACC*(AVGSOLCRIT/(3.0*ENDADAPTSOL))**BETA))
             if (SOLCRIT .le. ENDADAPTSOL) CURSPLITACC = SPLITACC
             if (SPLITTESTING) then
-                call shd_grid__splitGrid(MAXIG, MAXIC, MAXIV, MAXIDO, shdo_obj%maxNphi0,&
+                call shd_grid__splitGrid(grid_obj%maxNpts, grid_obj%maxNcell, shdo_obj%maxNptsSH, shdo_obj%maxNptsDO, shdo_obj%maxNphi0,&
                     &DOSPLIT, OUTOFMEM, CURSPLITACC, SPLITCRIT,&
                     &grid_obj%Npts, grid_obj%Ncell, grid_obj%i8Grid, grid_obj%i6Cell, grid_obj%i2Tree, grid_obj%flag,&
                     &grid_obj%xyz, rtm_obj%Nx, grid_obj%x, rtm_obj%Ny, grid_obj%y,&
                     &shdo_obj%Nstokes, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
                     &DELTAM, rtm_obj%flag_bc, rtm_obj%flag_ip, ACCELFLAG,&
-                    &EXTINCT, ALBEDO, LEGEN, IPHASE,&
+                    &rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%ipha,&
                     &shdo_obj%iradI, shdo_obj%radI, shdo_obj%isrcJ, shdo_obj%srcJ, idsrc_Shdo,&
-                    &TEMP, PLANCK, DIRFLUX, src_obj%type,&
+                    &rtm_obj%temp, rtm_obj%planck, DIRFLUX, src_obj%type,&
                     &SOLARFLUX, src_obj%avgMu, src_obj%avgAz, YLMSUN,&
                     &src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen, WORK, WORK2, prp_obj, ckd_obj)
                 if (SOLCRIT .gt. STARTADAPTSOL) STARTSPLITACC = SPLITCRIT
@@ -354,9 +349,11 @@ subroutine shd_solv__solveRte(&
         ! Find the SH truncation to use for the radiance (shdo_obj%iradI)
         call shd_solv__truncRad(isHighOrder,&
             &shdo_obj%Nstokes, shdo_obj%maxNl, shdo_obj%maxNm,&
-            &grid_obj%Npts, ALBEDO, LEGEN, IPHASE, shdo_obj%isrcJ, shdo_obj%radI,&
-            &MAXIV + MAXIG, FIXSH, SHACC, shdo_obj%iradI, prp_obj)
+            &grid_obj%Npts, rtm_obj%ssa, rtm_obj%leg, rtm_obj%ipha, shdo_obj%isrcJ, shdo_obj%radI,&
+            &shdo_obj%maxNptsSH + grid_obj%maxNpts, FIXSH, SHACC, shdo_obj%iradI, prp_obj)
 
+        ! srcSH to srcDO, then srcDO to radDO, then radDO to radSH
+        !╭────────────────────────────────────────────────╮!
         ! Integrate the source function along discrete ordinates
         !   to compute the radiance field.  The input source function
         !   and output radiance are in spherical harmonic expansions,
@@ -371,21 +368,26 @@ subroutine shd_solv__solveRte(&
             &MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
             &shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
             &CMU1, CPHI1, CMU2, CPHI2, WPHISAVE, FFTFLAG,&
-            &DIRFLUX, FLUXES, EXTINCT,&
+            &DIRFLUX, FLUXES, rtm_obj%ext,&
             &shdo_obj%isrcJ, shdo_obj%srcJ, shdo_obj%iradI, shdo_obj%radI,&
             &WORK, WORK1, WORK2, prp_obj, sfc_obj)
+        !╰────────────────────────────────────────────────╯!
 
         ! Compute the source function from the radiance field,
         !   do the adaptive spherical harmonics truncation, compute
         !   the solution criterion, and dot products for acceleration
         if (((SOLCRIT .lt. ENDADAPTSOL) .or. (ITER .gt. 30)) .and.&
             &((rtm_obj%Nx .gt. 36) .or. (rtm_obj%Ny .gt. 36))) FIXSH = .true.
+
+        ! radSH to srcSH
+        !╭────────────────────────────────────────────────╮!
         call shd_src__computeSrc(shdo_obj%Nstokes, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
             &grid_obj%Npts,&
-            &FIXSH, src_obj%type, src_obj%avgMu, YLMSUN, ALBEDO, LEGEN,&
-            &IPHASE, PLANCK, DIRFLUX, SHACC,&
-            &MAXIV, shdo_obj%iradI, shdo_obj%radI, shdo_obj%isrcJ, shdo_obj%srcJ, idsrc_Shdo, dsrc_Shdo,&
+            &FIXSH, src_obj%type, src_obj%avgMu, YLMSUN, rtm_obj%ssa, rtm_obj%leg,&
+            &rtm_obj%ipha, rtm_obj%planck, DIRFLUX, SHACC,&
+            &shdo_obj%maxNptsSH, shdo_obj%iradI, shdo_obj%radI, shdo_obj%isrcJ, shdo_obj%srcJ, idsrc_Shdo, dsrc_Shdo,&
             &.false., ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM, prp_obj)
+        !╰────────────────────────────────────────────────╯!
 
         ! Calculate the acceleration parameter and solution criterion
         !   from all the processors
@@ -602,7 +604,7 @@ subroutine shd_solv__truncRad(isHighOrder,&
         if (IR .gt. MAXIR) then
             write (6, *) 'Error [_truncRad]: Really out of memory ',&
                 &'for more radiance terms.'
-            write (6, *) '  Increase MAXIV.'
+            write (6, *) '  Increase shdo_obj%maxNptsSH.'
             stop
         end if
         RSHPTR(I + 1) = IR
