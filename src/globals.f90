@@ -183,6 +183,7 @@ module globals_type
         integer(kind=I__) :: Nphi = -999
         integer(kind=I__) :: Nang = -999
         integer(kind=I__) :: Nlm  = -999
+        integer(kind=I__) :: Nsh  = -999
         integer(kind=I__) :: Nstokes = -999
         integer(kind=I__) :: NlegSet = -999
 
@@ -263,6 +264,12 @@ module globals_type
         integer(kind=I__) :: Ny = -999
         integer(kind=I__) :: Nz = -999
 
+        integer(kind=I__) :: Npts0  = -999
+        integer(kind=I__) :: Ncell0 = -999
+
+        integer(kind=I__) :: Npts  = -999
+        integer(kind=I__) :: Ncell = -999
+
         real(kind=R__) :: dx = -999.0
         real(kind=R__) :: dy = -999.0
         real(kind=R__) :: xStart  = -999.0
@@ -273,6 +280,13 @@ module globals_type
         real(kind=R__), pointer :: x(:) => null()
         real(kind=R__), pointer :: y(:) => null()
         real(kind=R__), pointer :: z(:) => null()
+        real(kind=R__), pointer :: xyz(:, :) => null()
+
+        integer(kind=2),   pointer:: flag(:) => null()
+        integer(kind=I__), pointer:: i8Grid(:, :) => null()
+        integer(kind=I__), pointer:: i6Cell(:, :) => null()
+        integer(kind=I__), pointer:: i2Tree(:, :) => null()
+
 
         logical :: isAllocated  = .false.
     end type shd_type_grid
