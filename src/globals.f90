@@ -187,15 +187,15 @@ module globals_type
         integer(kind=I__) :: Nstokes = -999
         integer(kind=I__) :: NlegSet = -999
 
-        integer(kind=I__) :: maxNl   = -999
-        integer(kind=I__) :: maxNm   = -999
-        integer(kind=I__) :: maxNphi0 = -999
+        integer(kind=I__) :: maxNl = -999
+        integer(kind=I__) :: maxNm = -999
+        integer(kind=I__) :: maxNphi0  = -999
         integer(kind=I__) :: maxNptsSH = -999
         integer(kind=I__) :: maxNptsDO = -999
 
-        integer(kind=I__), pointer :: Nphi0(:)   => null()
-        integer(kind=I__), pointer :: iradI(:)   => null()
-        integer(kind=I__), pointer :: isrcJ(:)   => null()
+        integer(kind=I__), pointer :: Nphi0(:) => null()
+        integer(kind=I__), pointer :: iradI(:) => null()
+        integer(kind=I__), pointer :: isrcJ(:) => null()
 
         real(kind=R__), pointer :: mu(:)  => null()
         real(kind=R__), pointer :: phi(:) => null()
@@ -256,7 +256,7 @@ module globals_type
         real(kind=R__),  pointer :: ssa(:)  => null()
         integer(kind=2), pointer :: ipha(:) => null()
 
-        real(kind=R__),  pointer :: leg(:, :, :)  => null()
+        real(kind=R__),  pointer :: leg(:, :, :) => null()
 
         logical :: isAllocated  = .false.
     end type shd_type_rtm
@@ -275,8 +275,8 @@ module globals_type
         integer(kind=I__) :: Npts  = -999
         integer(kind=I__) :: Ncell = -999
 
-        integer(kind=I__) :: maxNpts    = -999
-        integer(kind=I__) :: maxNcell   = -999
+        integer(kind=I__) :: maxNpts  = -999
+        integer(kind=I__) :: maxNcell = -999
 
         real(kind=R__) :: dx = -999.0
         real(kind=R__) :: dy = -999.0
@@ -294,7 +294,6 @@ module globals_type
         integer(kind=I__), pointer:: i8Grid(:, :) => null()
         integer(kind=I__), pointer:: i6Cell(:, :) => null()
         integer(kind=I__), pointer:: i2Tree(:, :) => null()
-
 
         logical :: isAllocated  = .false.
     end type shd_type_grid
@@ -333,7 +332,7 @@ module globals_type
 
         integer(kind=2), pointer:: ipha(:) => null()
 
-        real(kind=R__), pointer :: leg(:, :, :)  => null()
+        real(kind=R__), pointer :: leg(:, :, :) => null()
 
         logical :: isAllocated  = .false.
     end type shd_type_prp
@@ -345,14 +344,15 @@ module globals_type
 
         integer(kind=I__) :: Nx = -999
         integer(kind=I__) :: Ny = -999
+        integer(kind=I__) :: Npar = -999
+
         integer(kind=I__) :: maxNpts = -999
         integer(kind=I__) :: maxNpar = -999
-        integer(kind=I__) :: Npar = -999
 
         real(kind=R__) :: dx = -999.0
         real(kind=R__) :: dy = -999.0
         real(kind=R__) :: avgTemp = -999.0
-        real(kind=R__) :: avgAlb = -999.0
+        real(kind=R__) :: avgAlb  = -999.0
 
         real(kind=R__), pointer :: brdf(:) => null()
         real(kind=R__), pointer :: brdf_grid(:) => null()
