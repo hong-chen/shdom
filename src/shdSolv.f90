@@ -42,6 +42,7 @@ module shd_solv
     use globals_cfg, only:  verbose_, isMpi_, &
                             isSolar_
     use globals_type, only: shd_type_rtm,  &
+                            shd_type_grid, &
                             shd_type_shdo, &
                             shd_type_src,  &
                             shd_type_prp,  &
@@ -101,7 +102,7 @@ subroutine shd_solv__solveRte(&
     &NCELLS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &idsrc_Shdo, WORK, WORK1, WORK2,&
     &dsrc_Shdo, FLUXES, DIRFLUX,&
-    &rtm_obj, shdo_obj, src_obj,&
+    &rtm_obj, grid_obj, shdo_obj, src_obj,&
     &prp_obj, sfc_obj, ckd_obj)
 
     ! Performs the SHDOM solution procedure.
@@ -111,6 +112,7 @@ subroutine shd_solv__solveRte(&
     ! cells and points on output.
 
     type(shd_type_rtm),  intent(in)    :: rtm_obj
+    type(shd_type_grid), intent(in)    :: grid_obj
     type(shd_type_shdo), intent(inout) :: shdo_obj
     type(shd_type_src),  intent(in)    :: src_obj
     type(shd_type_prp),  intent(in)    :: prp_obj
@@ -130,7 +132,7 @@ subroutine shd_solv__solveRte(&
     real SOLACC, SOLCRIT, SPLITACC, SHACC
     real TEMP(*), PLANCK(*)
     real EXTINCT(*), ALBEDO(*), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, *)
-    real XGRID(rtm_obj%Nx_grid), YGRID(rtm_obj%Ny_grid), ZGRID(rtm_obj%Nz)
+    real XGRID(grid_obj%Nx), YGRID(grid_obj%Ny), ZGRID(grid_obj%Nz)
     real GRIDPOS(3, *)
     real BCRAD(*)
     real FLUXES(2, *), DIRFLUX(*)
@@ -207,16 +209,16 @@ subroutine shd_solv__solveRte(&
     if (.not. INRADFLAG) then
         ! Initialize the radiance on the base grid using Eddington
         ! two-stream plane-parallel
-        call shd_init__makeRad(shdo_obj%Nstokes, rtm_obj%Nx_grid*rtm_obj%Ny_grid, rtm_obj%Nz,&
+        call shd_init__makeRad(shdo_obj%Nstokes, grid_obj%Nx*grid_obj%Ny, grid_obj%Nz,&
             &shdo_obj%iradI, ZGRID,&
             &EXTINCT, ALBEDO, LEGEN, TEMP, IPHASE,&
             &src_obj%type, SOLARFLUX, src_obj%avgMu, SKYRAD,&
             &src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen, shdo_obj%radI, prp_obj, sfc_obj)
         ! Interpolate the radiance on the non-base grid points from the
         !   base grid points
-        NBPTS = rtm_obj%Nx_grid * rtm_obj%Ny_grid * rtm_obj%Nz
-        NBCELLS = (rtm_obj%Nz - 1)*(rtm_obj%Nx + ibits(rtm_obj%flag_bc, 0, 1) - ibits(rtm_obj%flag_bc, 2, 1))&
-                                 &*(rtm_obj%Ny + ibits(rtm_obj%flag_bc, 1, 1) - ibits(rtm_obj%flag_bc, 3, 1))
+        NBPTS = grid_obj%Nx * grid_obj%Ny * grid_obj%Nz
+        NBCELLS = (grid_obj%Nz - 1)*(rtm_obj%Nx + ibits(rtm_obj%flag_bc, 0, 1) - ibits(rtm_obj%flag_bc, 2, 1))&
+                                  &*(rtm_obj%Ny + ibits(rtm_obj%flag_bc, 1, 1) - ibits(rtm_obj%flag_bc, 3, 1))
         call shd_rad__interpRad(shdo_obj%Nstokes, NBPTS, NPTS, shdo_obj%iradI, shdo_obj%radI,&
             &NBCELLS, NCELLS, TREEPTR, GRIDPTR, GRIDPOS)
         ! Initialize the source function from the radiance field
@@ -239,7 +241,7 @@ subroutine shd_solv__solveRte(&
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Make the pointers to the grid points on the top and bottom boundaries
     call shd_grid__findBndryPnt(NPTS, shdo_obj%Nang, MAXNBC, MAXBCRAD,&
-        &ZGRID(1), ZGRID(rtm_obj%Nz), GRIDPOS,&
+        &ZGRID(1), ZGRID(grid_obj%Nz), GRIDPOS,&
         &NTOPPTS, NBOTPTS, BCPTR, sfc_obj)
     if (sfc_obj%type(1:1) .eq. 'V') then
         ! If this is a variable surface then bilinearly interpolate
