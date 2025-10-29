@@ -128,10 +128,10 @@ subroutine shd_solv__solveRte(&
     real dsrc_Shdo(shdo_obj%Nstokes, *)
     real WORK(*), WORK2(*)
 
-    integer I, ORDINATESET, NBPTS, NBCELLS
-    integer MAXNANGBND, NANGBND(4, 2), IERR
+    integer I, whichDO, NBPTS, NBCELLS
+    integer MAXNANGBND, NANGBND(4, 2), ierr
     logical FIXSH, SPLITTESTING, DOSPLIT, OUTOFMEM
-    logical, allocatable :: FFTFLAG(:)
+    logical, allocatable :: flagFFT_Shdo(:)
     real ALBMAX
     real STARTADAPTSOL, ENDADAPTSOL, ADAPTRANGE, SPLITCRIT
     real STARTSPLITACC, CURSPLITACC, AVGSOLCRIT, BETA
@@ -139,8 +139,8 @@ subroutine shd_solv__solveRte(&
 
     real, allocatable :: CMU1(:, :, :), CMU2(:, :, :)
     real, allocatable :: CPHI1(:, :, :), CPHI2(:, :, :)
-    real, allocatable :: YLMSUN(:, :), WTMU(:), WPHISAVE(:)
-    real, allocatable :: SFC_BRDF_DO(:, :, :, :, :, :)
+    real, allocatable :: YlmSolar_Shdo(:, :), wgtMu_Shdo(:), wPhiFFT_Shdo(:)
+    real, allocatable :: brdf_Shdo(:, :, :, :, :, :)
 
     integer :: COUNT_START, COUNT_RATE, COUNT_MAX
     integer :: COUNT_END
@@ -150,8 +150,8 @@ subroutine shd_solv__solveRte(&
     ! prp_obj%NlegSet=1 for shdo_obj%Nstokes=1, otherwise prp_obj%NlegSet=6
     allocate (CMU1(prp_obj%NlegSet, shdo_obj%Nlm, shdo_obj%Nmu), CMU2(prp_obj%NlegSet, shdo_obj%Nlm, shdo_obj%Nmu))
     allocate (CPHI1(-16:16, 32, shdo_obj%Nmu), CPHI2(32, -16:16, shdo_obj%Nmu))
-    allocate (YLMSUN(prp_obj%NlegSet, shdo_obj%Nlm))
-    allocate (FFTFLAG(shdo_obj%Nmu), WTMU(shdo_obj%Nmu), WPHISAVE(shdo_obj%Nmu*(3*shdo_obj%Nphi+ 15)))
+    allocate (YlmSolar_Shdo(prp_obj%NlegSet, shdo_obj%Nlm))
+    allocate (flagFFT_Shdo(shdo_obj%Nmu), wgtMu_Shdo(shdo_obj%Nmu), wPhiFFT_Shdo(shdo_obj%Nmu*(3*shdo_obj%Nphi+ 15)))
 
     ! Set up some things before solution loop
 
@@ -181,19 +181,19 @@ subroutine shd_solv__solveRte(&
                 &grid_obj%xyz, DIRFLUX, prp_obj, ckd_obj)
         end if
         call shd_shdo__computeYlm(.true., src_obj%avgMu, src_obj%avgAz, shdo_obj%maxNl, shdo_obj%maxNm, prp_obj%NlegSet,&
-            &YLMSUN)
+            &YlmSolar_Shdo)
     end if
 
     ! Make the discrete ordinates (angles)
     !   (set 2 is reduced gaussian, 3 is reduced double gauss)
-    ORDINATESET = 3
-    call shd_shdo__makeAngle(shdo_obj%Nmu, shdo_obj%Nphi, ORDINATESET, shdo_obj%maxNphi0,&
-        &shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, WTMU, shdo_obj%wgt, FFTFLAG, shdo_obj%Nang)
+    whichDO = 3
+    call shd_shdo__makeAngle(shdo_obj%Nmu, shdo_obj%Nphi, whichDO, shdo_obj%maxNphi0,&
+        &shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, wgtMu_Shdo, shdo_obj%wgt, flagFFT_Shdo, shdo_obj%Nang)
 
     ! Make the Ylm transform coefficients
     call shd_shdo__makeSHDO(prp_obj%NlegSet, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm, shdo_obj%Nmu, shdo_obj%Nphi0,&
-        &shdo_obj%maxNphi0, shdo_obj%mu, shdo_obj%phi, WTMU, shdo_obj%wgt, FFTFLAG,&
-        &CMU1, CMU2, CPHI1, CPHI2, WPHISAVE)
+        &shdo_obj%maxNphi0, shdo_obj%mu, shdo_obj%phi, wgtMu_Shdo, shdo_obj%wgt, flagFFT_Shdo,&
+        &CMU1, CMU2, CPHI1, CPHI2, wPhiFFT_Shdo)
 
     FIXSH = .false.
     if (.not. INRADFLAG) then
@@ -214,7 +214,7 @@ subroutine shd_solv__solveRte(&
         ! Initialize the source function from the radiance field
         call shd_src__computeSrc(shdo_obj%Nstokes, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
             &grid_obj%Npts,&
-            &FIXSH, src_obj%type, src_obj%avgMu, YLMSUN, rtm_obj%ssa, rtm_obj%leg,&
+            &FIXSH, src_obj%type, src_obj%avgMu, YlmSolar_Shdo, rtm_obj%ssa, rtm_obj%leg,&
             &rtm_obj%ipha, rtm_obj%planck, DIRFLUX, SHACC,&
             &shdo_obj%maxNptsSH, shdo_obj%iradI, shdo_obj%radI, shdo_obj%isrcJ, shdo_obj%srcJ, idsrc_Shdo, dsrc_Shdo,&
             &.true., ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM, prp_obj)
@@ -244,16 +244,16 @@ subroutine shd_solv__solveRte(&
         if (sfc_obj%isUniform) then
             if (shdo_obj%Nstokes*(shdo_obj%Nmu/2)*shdo_obj%maxNphi0 .gt.&
                 &sqrt(1.0*huge(shdo_obj%Nmu)/kind(shdo_obj%Nmu))) then
-                IERR = 1
+                ierr = 1
             else
-                allocate (SFC_BRDF_DO(shdo_obj%Nstokes, shdo_obj%Nmu/2, shdo_obj%maxNphi0,&
-                    &shdo_obj%Nstokes, shdo_obj%Nmu/2, shdo_obj%maxNphi0), STAT=IERR)
+                allocate (brdf_Shdo(shdo_obj%Nstokes, shdo_obj%Nmu/2, shdo_obj%maxNphi0,&
+                    &shdo_obj%Nstokes, shdo_obj%Nmu/2, shdo_obj%maxNphi0), stat=ierr)
             end if
-            if (IERR .eq. 0) then
+            if (ierr .eq. 0) then
                 call shd_shdo__makeSfcDO(sfc_obj%type, src_obj%avgWaveLen,&
                     &sfc_obj%Nx, sfc_obj%Ny, sfc_obj%Npar, sfc_obj%brdf, shdo_obj%Nstokes,&
                     &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
-                    &SFC_BRDF_DO)
+                    &brdf_Shdo)
             else
                 print '(A,A)', 'Not enough memory to allocate precomputed',&
                     &' surface BRDF discrete ordinate matrix: '
@@ -336,7 +336,7 @@ subroutine shd_solv__solveRte(&
                     &rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%ipha,&
                     &shdo_obj%iradI, shdo_obj%radI, shdo_obj%isrcJ, shdo_obj%srcJ, idsrc_Shdo,&
                     &rtm_obj%temp, rtm_obj%planck, DIRFLUX, src_obj%type,&
-                    &SOLARFLUX, src_obj%avgMu, src_obj%avgAz, YLMSUN,&
+                    &SOLARFLUX, src_obj%avgMu, src_obj%avgAz, YlmSolar_Shdo,&
                     &src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen, WORK, WORK2, prp_obj, ckd_obj)
                 if (SOLCRIT .gt. STARTADAPTSOL) STARTSPLITACC = SPLITCRIT
             end if
@@ -365,10 +365,10 @@ subroutine shd_solv__solveRte(&
             &grid_obj%Npts, grid_obj%Ncell, grid_obj%x, grid_obj%y, grid_obj%z, grid_obj%xyz,&
             &grid_obj%i8Grid, grid_obj%i6Cell, grid_obj%i2Tree, grid_obj%flag,&
             &src_obj%type, src_obj%avgMu, src_obj%avgAz, SKYRAD, src_obj%waveNum, src_obj%avgWaveLen,&
-            &src_obj%unit, SFC_BRDF_DO,&
+            &src_obj%unit, brdf_Shdo,&
             &MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
             &shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
-            &CMU1, CPHI1, CMU2, CPHI2, WPHISAVE, FFTFLAG,&
+            &CMU1, CPHI1, CMU2, CPHI2, wPhiFFT_Shdo, flagFFT_Shdo,&
             &DIRFLUX, FLUXES, rtm_obj%ext,&
             &shdo_obj%isrcJ, shdo_obj%srcJ, shdo_obj%iradI, shdo_obj%radI,&
             &WORK, WORK1, WORK2, prp_obj, sfc_obj)
@@ -384,7 +384,7 @@ subroutine shd_solv__solveRte(&
         !╭────────────────────────────────────────────────╮!
         call shd_src__computeSrc(shdo_obj%Nstokes, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
             &grid_obj%Npts,&
-            &FIXSH, src_obj%type, src_obj%avgMu, YLMSUN, rtm_obj%ssa, rtm_obj%leg,&
+            &FIXSH, src_obj%type, src_obj%avgMu, YlmSolar_Shdo, rtm_obj%ssa, rtm_obj%leg,&
             &rtm_obj%ipha, rtm_obj%planck, DIRFLUX, SHACC,&
             &shdo_obj%maxNptsSH, shdo_obj%iradI, shdo_obj%radI, shdo_obj%isrcJ, shdo_obj%srcJ, idsrc_Shdo, dsrc_Shdo,&
             &.false., ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM, prp_obj)
@@ -446,10 +446,10 @@ subroutine shd_solv__solveRte(&
 
     ! Deallocate arrays
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    if (sfc_obj%type(1:1) .eq. 'V' .and. sfc_obj%isUniform) then
-        deallocate (SFC_BRDF_DO)
+    if ((sfc_obj%type(1:1) .eq. 'V') .and. sfc_obj%isUniform) then
+        deallocate (brdf_Shdo)
     end if
-    deallocate (YLMSUN, FFTFLAG, WTMU, WPHISAVE)
+    deallocate (YlmSolar_Shdo, flagFFT_Shdo, wgtMu_Shdo, wPhiFFT_Shdo)
     deallocate (CMU1, CMU2, CPHI1, CPHI2)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
