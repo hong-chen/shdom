@@ -1159,7 +1159,6 @@ program shdom
         call shd_init__makeGrid(rtm_obj, prp_OBJ, grid_OBJ)
     end if
 
-
     message = 'Message [shdom]: Total time used for preparation: '
     call shd_util__tickTock(message, countStart)
     if (isMasterProc) then

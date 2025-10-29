@@ -1325,7 +1325,7 @@ subroutine shd_io__readSfc(sfc_obj)
         if (lineTmp(1:1) .ne. '!') then ! check if binary input,
             backspace(1)                ! if not, go back one line
             do while (.true.)
-                read (1, *, end=290) ix, iy, temp0, alb0
+                read (1, *, end=290) ix, iy, param1, param2
                 if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
 
@@ -1368,7 +1368,7 @@ subroutine shd_io__readSfc(sfc_obj)
         if (lineTmp(1:1) .ne. '!') then ! check if binary input,
             backspace(1)                ! if not, go back one line
             do while (.true.)
-                read (1, *, end=290) ix, iy, temp0, WSPD, PCL
+                read (1, *, end=290) ix, iy, param1, param2, param3
                 if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
 
@@ -1408,7 +1408,7 @@ subroutine shd_io__readSfc(sfc_obj)
         if (lineTmp(1:1) .ne. '!') then ! check if binary input,
             backspace(1)                ! if not, go back one line
             do while (.true.)
-                read (1, *, end=290) ix, iy, temp0, RHO0, KR, THETA
+                read (1, *, end=290) ix, iy, param1, param2, param3, param4
                 if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
 
@@ -1448,7 +1448,7 @@ subroutine shd_io__readSfc(sfc_obj)
         if (lineTmp(1:1) .ne. '!') then ! check if binary input,
             backspace(1)                ! if not, go back one line
             do while (.true.)
-                read (1, *, end=290) ix, iy, temp0, F_ISO, F_GEO, F_VOL
+                read (1, *, end=290) ix, iy, param1, param2, param3, param4
                 if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
 
@@ -1488,7 +1488,7 @@ subroutine shd_io__readSfc(sfc_obj)
         if (lineTmp(1:1) .ne. '!') then ! check if binary input,
             backspace(1)                ! if not, go back one line
             do while (.true.)
-                read (1, *, end=290) ix, iy, temp0, F_ISO, F_GEO, F_VOL, F_JIAO, ALPHA
+                read (1, *, end=290) ix, iy, param1, param2, param3, param4, param5, param6
                 if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
 
@@ -1532,7 +1532,7 @@ subroutine shd_io__readSfc(sfc_obj)
         if (lineTmp(1:1) .ne. '!') then ! check if binary input,
             backspace(1)                 ! if not, go back one line
             do while (.true.)
-                read (1, *, end=290) ix, iy, temp0, MRE, MIM, WSPD
+                read (1, *, end=290) ix, iy, param1, param2, param3, param4
                 if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
 
@@ -1576,7 +1576,7 @@ subroutine shd_io__readSfc(sfc_obj)
         if (lineTmp(1:1) .ne. '!') then ! check if binary input,
             backspace(1)                 ! if not, go back one line
             do while (.true.)
-                read (1, *, end=290) ix, iy, temp0, A, KR, B, ZETA, SIGMA
+                read (1, *, end=290) ix, iy, param1, param2, param3, param4, param5, param6
                 if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
 
