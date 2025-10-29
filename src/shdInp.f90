@@ -1282,7 +1282,7 @@ subroutine shd_io__readSfc(sfc_obj)
 
     integer :: N, i, i0, ix, iy, j
     real :: alb0, temp0, MRE, MIM, RHO0, KR, THETA, WSPD, PCL
-    real :: PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7, PARAM8
+    real :: param1, param2, param3, param4, param5, param6, param7, param8
     real F_ISO, F_VOL, F_GEO, F_JIAO
     real A, B, ZETA, SIGMA, ALPHA
 
@@ -1290,7 +1290,7 @@ subroutine shd_io__readSfc(sfc_obj)
     character(len=charMaxLen_) :: lineTmp
     character(len=charMaxLen_) :: lineDim
     character(len=20) :: dataPostfix
-    integer :: Nxx, Nyy, Npp, idata, Ndata
+    integer :: Nxx, Nyy, Npp, ipar, idata, Ndata
 
     ! Surface type is variable something
     sfc_obj%type(1:1) = 'V'
@@ -1323,25 +1323,32 @@ subroutine shd_io__readSfc(sfc_obj)
 
         read (1, '(A)') lineTmp
         if (lineTmp(1:1) .ne. '!') then ! check if binary input,
-            backspace(1)                 ! if not, go back one line
+            backspace(1)                ! if not, go back one line
             do while (.true.)
                 read (1, *, end=290) ix, iy, temp0, alb0
                 if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
 
-                    i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+                    !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+                    !sfc_obj%brdf(i + 1) = temp0
+                    !sfc_obj%brdf(i + 2) = alb0
 
-                    sfc_obj%brdf(i + 1) = temp0
-                    sfc_obj%brdf(i + 2) = alb0
+                    i = iy + (sfc_obj%Ny + 1)*(ix - 1)
+
+                    sfc_obj%brdf(1, i) = param1 ! temperature
+                    sfc_obj%brdf(2, i) = param2 ! albedo
                     if (alb0 .lt. 0.0 .or. alb0 .gt. 1.0)&
                         &stop 'Error [_readSfc]: Illegal surface albedo.'
                     if (temp0 .lt. 150. .or. temp0 .gt. 350.) then
                         if (verbose_ .ge. 4) write (*, *) 'Warning [_readSfc]: ',&
                             &' surface temperature: ', ix, iy, temp0
                     end if
-                    temp_sfc = temp_sfc + temp0
-                    alb_sfc  = alb_sfc  + alb0
+
+                    temp_sfc = temp_sfc + param1
+                    alb_sfc  = alb_sfc  + param2
+
                     N = N + 1
+
                 end if
             end do
         end if
@@ -1359,18 +1366,25 @@ subroutine shd_io__readSfc(sfc_obj)
 
         read (1, '(A)') lineTmp
         if (lineTmp(1:1) .ne. '!') then ! check if binary input,
-            backspace(1)                 ! if not, go back one line
+            backspace(1)                ! if not, go back one line
             do while (.true.)
                 read (1, *, end=290) ix, iy, temp0, WSPD, PCL
                 if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
 
-                    i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+                    !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+                    !sfc_obj%brdf(i + 1) = temp0
+                    !sfc_obj%brdf(i + 2) = WSPD
+                    !sfc_obj%brdf(i + 3) = PCL
 
-                    sfc_obj%brdf(i + 1) = temp0
-                    sfc_obj%brdf(i + 2) = WSPD
-                    sfc_obj%brdf(i + 3) = PCL
-                    temp_sfc = temp_sfc + temp0
+                    i = iy + (sfc_obj%Ny + 1)*(ix - 1)
+
+                    sfc_obj%brdf(1, i) = param1 ! temperature
+                    sfc_obj%brdf(2, i) = param2 ! 10m wind speed, units: m/s
+                    sfc_obj%brdf(3, i) = param3 ! pigment concentration, units: mg/m^3
+
+                    temp_sfc = temp_sfc + param1
+
                     N = N + 1
                 end if
             end do
@@ -1392,21 +1406,30 @@ subroutine shd_io__readSfc(sfc_obj)
 
         read (1, '(A)') lineTmp
         if (lineTmp(1:1) .ne. '!') then ! check if binary input,
-            backspace(1)                 ! if not, go back one line
+            backspace(1)                ! if not, go back one line
             do while (.true.)
                 read (1, *, end=290) ix, iy, temp0, RHO0, KR, THETA
                 if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
 
-                    i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+                    !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+                    !sfc_obj%brdf(i + 1) = temp0
+                    !sfc_obj%brdf(i + 2) = RHO0
+                    !sfc_obj%brdf(i + 3) = KR
+                    !sfc_obj%brdf(i + 4) = THETA
 
-                    sfc_obj%brdf(i + 1) = temp0
-                    sfc_obj%brdf(i + 2) = RHO0
-                    sfc_obj%brdf(i + 3) = KR
-                    sfc_obj%brdf(i + 4) = THETA
-                    temp_sfc = temp_sfc + temp0
-                    alb_sfc  = alb_sfc  + RHO0
+                    i = iy + (sfc_obj%Ny + 1)*(ix - 1)
+
+                    sfc_obj%brdf(1, i) = param1 ! temperature
+                    sfc_obj%brdf(2, i) = param2 ! rho0
+                    sfc_obj%brdf(3, i) = param3 ! kr
+                    sfc_obj%brdf(4, i) = param4 ! theta
+
+                    temp_sfc = temp_sfc + param1
+                    alb_sfc  = alb_sfc  + param2
+
                     N = N + 1
+
                 end if
             end do
         end if
@@ -1423,21 +1446,30 @@ subroutine shd_io__readSfc(sfc_obj)
 
         read (1, '(A)') lineTmp
         if (lineTmp(1:1) .ne. '!') then ! check if binary input,
-            backspace(1)                 ! if not, go back one line
+            backspace(1)                ! if not, go back one line
             do while (.true.)
                 read (1, *, end=290) ix, iy, temp0, F_ISO, F_GEO, F_VOL
                 if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
 
-                    i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+                    !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+                    !sfc_obj%brdf(i + 1) = temp0
+                    !sfc_obj%brdf(i + 2) = F_ISO
+                    !sfc_obj%brdf(i + 3) = F_GEO
+                    !sfc_obj%brdf(i + 4) = F_VOL
 
-                    sfc_obj%brdf(i + 1) = temp0
-                    sfc_obj%brdf(i + 2) = F_ISO
-                    sfc_obj%brdf(i + 3) = F_GEO
-                    sfc_obj%brdf(i + 4) = F_VOL
-                    temp_sfc = temp_sfc + temp0
-                    alb_sfc  = alb_sfc  + F_ISO
+                    i = iy + (sfc_obj%Ny + 1)*(ix - 1)
+
+                    sfc_obj%brdf(1, i) = param1 ! temperature
+                    sfc_obj%brdf(2, i) = param2 ! f_iso
+                    sfc_obj%brdf(3, i) = param3 ! f_geo
+                    sfc_obj%brdf(4, i) = param4 ! f_vol
+
+                    temp_sfc = temp_sfc + param1
+                    alb_sfc  = alb_sfc  + param2
+
                     N = N + 1
+
                 end if
             end do
         end if
@@ -1454,23 +1486,34 @@ subroutine shd_io__readSfc(sfc_obj)
 
         read (1, '(A)') lineTmp
         if (lineTmp(1:1) .ne. '!') then ! check if binary input,
-            backspace(1)                 ! if not, go back one line
+            backspace(1)                ! if not, go back one line
             do while (.true.)
                 read (1, *, end=290) ix, iy, temp0, F_ISO, F_GEO, F_VOL, F_JIAO, ALPHA
                 if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
 
-                    i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+                    !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+                    !sfc_obj%brdf(i + 1) = temp0
+                    !sfc_obj%brdf(i + 2) = F_ISO
+                    !sfc_obj%brdf(i + 3) = F_GEO
+                    !sfc_obj%brdf(i + 4) = F_VOL
+                    !sfc_obj%brdf(i + 5) = F_JIAO
+                    !sfc_obj%brdf(i + 6) = ALPHA
 
-                    sfc_obj%brdf(i + 1) = temp0
-                    sfc_obj%brdf(i + 2) = F_ISO
-                    sfc_obj%brdf(i + 3) = F_GEO
-                    sfc_obj%brdf(i + 4) = F_VOL
-                    sfc_obj%brdf(i + 5) = F_JIAO
-                    sfc_obj%brdf(i + 6) = ALPHA
-                    temp_sfc = temp_sfc + temp0
-                    alb_sfc  = alb_sfc  + F_ISO
+                    i = iy + (sfc_obj%Ny + 1)*(ix - 1)
+
+                    sfc_obj%brdf(1, i) = param1 ! temperature
+                    sfc_obj%brdf(2, i) = param2 ! f_iso
+                    sfc_obj%brdf(3, i) = param3 ! f_geo
+                    sfc_obj%brdf(4, i) = param4 ! f_vol
+                    sfc_obj%brdf(5, i) = param5 ! f_jiao
+                    sfc_obj%brdf(6, i) = param6 ! alpha
+
+                    temp_sfc = temp_sfc + param1
+                    alb_sfc  = alb_sfc  + param2
+
                     N = N + 1
+
                 end if
             end do
         end if
@@ -1493,14 +1536,23 @@ subroutine shd_io__readSfc(sfc_obj)
                 if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
 
-                    i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+                    !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+                    !sfc_obj%brdf(i + 1) = temp0
+                    !sfc_obj%brdf(i + 2) = MRE
+                    !sfc_obj%brdf(i + 3) = MIM
+                    !sfc_obj%brdf(i + 4) = WSPD
 
-                    sfc_obj%brdf(i + 1) = temp0
-                    sfc_obj%brdf(i + 2) = MRE
-                    sfc_obj%brdf(i + 3) = MIM
-                    sfc_obj%brdf(i + 4) = WSPD
-                    temp_sfc = temp_sfc + temp0
+                    i = iy + (sfc_obj%Ny + 1)*(ix - 1)
+
+                    sfc_obj%brdf(1, i) = param1 ! temperature
+                    sfc_obj%brdf(2, i) = param2 ! M_real
+                    sfc_obj%brdf(3, i) = param3 ! M_img
+                    sfc_obj%brdf(4, i) = param4 ! 10m wind speed
+
+                    temp_sfc = temp_sfc + param1
+
                     N = N + 1
+
                 end if
             end do
         end if
@@ -1528,17 +1580,27 @@ subroutine shd_io__readSfc(sfc_obj)
                 if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
 
-                    i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+                    !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+                    !sfc_obj%brdf(i + 1) = temp0
+                    !sfc_obj%brdf(i + 2) = A
+                    !sfc_obj%brdf(i + 3) = KR
+                    !sfc_obj%brdf(i + 4) = B
+                    !sfc_obj%brdf(i + 5) = ZETA
+                    !sfc_obj%brdf(i + 6) = SIGMA
 
-                    sfc_obj%brdf(i + 1) = temp0
-                    sfc_obj%brdf(i + 2) = A
-                    sfc_obj%brdf(i + 3) = KR
-                    sfc_obj%brdf(i + 4) = B
-                    sfc_obj%brdf(i + 5) = ZETA
-                    sfc_obj%brdf(i + 6) = SIGMA
-                    temp_sfc = temp_sfc + temp0
-                    alb_sfc  = alb_sfc  + A
+                    i = iy + (sfc_obj%Ny + 1)*(ix - 1)
+                    sfc_obj%brdf(1, i) = param1 ! temperature
+                    sfc_obj%brdf(2, i) = param2 ! A
+                    sfc_obj%brdf(3, i) = param3 ! Kr
+                    sfc_obj%brdf(4, i) = param4 ! B
+                    sfc_obj%brdf(5, i) = param5 ! Zeta
+                    sfc_obj%brdf(6, i) = param6 ! Sigma
+
+                    temp_sfc = temp_sfc + param1
+                    alb_sfc  = alb_sfc  + param2
+
                     N = N + 1
+
                 end if
             end do
         end if
@@ -1557,7 +1619,7 @@ subroutine shd_io__readSfc(sfc_obj)
         if (lineTmp(1:1) .ne. '!') then ! check if binary input,
             backspace(1)                 ! if not, go back one line
             do while (.true.)
-                read (1, *, end=290)    ix, iy, PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7, PARAM8
+                read (1, *, end=290)    ix, iy, param1, param2, param3, param4, param5, param6, param7, param8
                 ! for Lambertian   (VL):ix, iy, temp0,   alb0,    -999.0, -999.0, -999.0, -999.0, -999.0,  0.0
                 ! for Ocean        (VO):ix, iy, temp0,   WSPD,   PCL,    -999.0, -999.0, -999.0, -999.0,  1.0
                 ! for RPV          (VR):ix, iy, temp0,   RHO0,   KR,     THETA,  -999.0, -999.0, -999.0,  2.0
@@ -1569,22 +1631,31 @@ subroutine shd_io__readSfc(sfc_obj)
                 if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
 
-                    i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+                    !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+                    !sfc_obj%brdf(i + 1) = param1
+                    !sfc_obj%brdf(i + 2) = param2
+                    !sfc_obj%brdf(i + 3) = param3
+                    !sfc_obj%brdf(i + 4) = param4
+                    !sfc_obj%brdf(i + 5) = param5
+                    !sfc_obj%brdf(i + 6) = param6
+                    !sfc_obj%brdf(i + 7) = param7
+                    !sfc_obj%brdf(i + 8) = param8 ! surface identification
 
-                    sfc_obj%brdf(i + 1) = PARAM1
-                    sfc_obj%brdf(i + 2) = PARAM2
-                    sfc_obj%brdf(i + 3) = PARAM3
-                    sfc_obj%brdf(i + 4) = PARAM4
-                    sfc_obj%brdf(i + 5) = PARAM5
-                    sfc_obj%brdf(i + 6) = PARAM6
-                    sfc_obj%brdf(i + 7) = PARAM7
-                    sfc_obj%brdf(i + 8) = PARAM8 ! surface identification
+                    i = iy + (sfc_obj%Ny + 1)*(ix - 1)
+                    sfc_obj%brdf(1, i) = param1
+                    sfc_obj%brdf(2, i) = param2
+                    sfc_obj%brdf(3, i) = param3
+                    sfc_obj%brdf(4, i) = param4
+                    sfc_obj%brdf(5, i) = param5
+                    sfc_obj%brdf(6, i) = param6
+                    sfc_obj%brdf(7, i) = param7
+                    sfc_obj%brdf(8, i) = param8 ! surface identification
 
-                    temp_sfc = temp_sfc + PARAM1
+                    temp_sfc = temp_sfc + param1
 
-                    ! no albedo for polarized (W) and unpolarized (O) Ocean parameterization
-                    if ((abs(PARAM8)-1.0) .gt. 0.01) then
-                        alb_sfc = alb_sfc + PARAM2
+                    ! no albedo for polarized (W [-1]) and unpolarized (O [1]) Ocean parameterization
+                    if ((abs(param8)-1.0) .gt. 0.01) then
+                        alb_sfc = alb_sfc + param2
                     end if
 
                     N = N + 1
@@ -1616,8 +1687,8 @@ subroutine shd_io__readSfc(sfc_obj)
     fnameBin = trim(adjustl(sfc_obj%fname))//trim(adjustl(dataPostfix(2:)))
     open (UNIT=88, FILE=trim(adjustl(fnameBin)), STATUS='OLD',&
         &ACCESS='STREAM', FORM='UNFORMATTED')
-    Ndata = Nxx*Nyy*Npp
-    read (88) (sfc_obj%brdf(idata), idata=1, Ndata)
+    Ndata = Nxx*Nyy
+    read (88) ((sfc_obj%brdf(ipar, idata), ipar=1, Npp), idata=1, Ndata)
     close (88)
 
     do iy = 1, sfc_obj%Ny + 1
@@ -1626,18 +1697,20 @@ subroutine shd_io__readSfc(sfc_obj)
             if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
                 &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
 
-                i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+                !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
 
-                temp_sfc = temp_sfc + sfc_obj%brdf(i + 1)
+                i = iy + (sfc_obj%Ny + 1)*(ix - 1)
 
-                if (((sfc_obj%type .ne. 'VO') .and. (sfc_obj%type .ne. 'Vo')) .and.&
+                temp_sfc = temp_sfc + sfc_obj%brdf(1, i)
+
+                if  (((sfc_obj%type .ne. 'VO') .and. (sfc_obj%type .ne. 'Vo')) .and.&
                     &((sfc_obj%type .ne. 'VW') .and. (sfc_obj%type .ne. 'Vw'))) then
                     if ((sfc_obj%type .eq. 'VX') .or. (sfc_obj%type .eq. 'Vx')) then
-                        if ((abs(sfc_obj%brdf(i+8))-1.0) .gt. 0.01) then ! exclude [O] and [W]
-                            alb_sfc = alb_sfc + sfc_obj%brdf(i + 2)
+                        if ((abs(sfc_obj%brdf(8, i))-1.0) .gt. 0.01) then ! exclude [O] and [W]
+                            alb_sfc = alb_sfc + sfc_obj%brdf(2, i)
                         end if
                     else
-                        alb_sfc = alb_sfc + sfc_obj%brdf(i + 2)
+                        alb_sfc = alb_sfc + sfc_obj%brdf(2, i)
                     end if
                 end if
 
@@ -1654,19 +1727,25 @@ subroutine shd_io__readSfc(sfc_obj)
     close (1)
 
     ! Copy the edge points to the opposite side for periodic boundar
+    ! for x, copy bottom line to top line
     do ix = 1, sfc_obj%Nx
-        i0 = sfc_obj%Npar * (ix - 1 + (sfc_obj%Nx + 1)*(1 - 1))
-        i  = sfc_obj%Npar * (ix - 1 + (sfc_obj%Nx + 1)*(sfc_obj%Ny + 1 - 1))
+        !i0 = sfc_obj%Npar * (ix - 1 + (sfc_obj%Nx + 1)*(1 - 1))
+        !i  = sfc_obj%Npar * (ix - 1 + (sfc_obj%Nx + 1)*(sfc_obj%Ny + 1 - 1))
+        i0 = ix
+        i  = ix + (sfc_obj%Nx + 1)*(sfc_obj%Ny)
         do j = 1, sfc_obj%Npar
-            sfc_obj%brdf(i + j) = sfc_obj%brdf(I0 + j)
+            sfc_obj%brdf(j, i) = sfc_obj%brdf(j, i0)
         end do
     end do
 
+    ! for y, copy left line to right line
     do iy = 1, sfc_obj%Ny + 1
-        i0 = sfc_obj%Npar * ((sfc_obj%Nx + 1)*(iy - 1))
-        i  = sfc_obj%Npar * (sfc_obj%Nx + (sfc_obj%Nx + 1)*(iy - 1))
+        !i0 = sfc_obj%Npar * ((sfc_obj%Nx + 1)*(iy - 1))
+        !i  = sfc_obj%Npar * (sfc_obj%Nx + (sfc_obj%Nx + 1)*(iy - 1))
+        i0 = 1 + (sfc_obj%Nx + 1)*(iy - 1)
+        i  = 1 + sfc_obj%Nx + (sfc_obj%Nx + 1)*(iy - 1)
         do j = 1, sfc_obj%Npar
-            sfc_obj%brdf(i + j) = sfc_obj%brdf(I0 + j)
+            sfc_obj%brdf(j, i) = sfc_obj%brdf(j, i0)
         end do
     end do
 

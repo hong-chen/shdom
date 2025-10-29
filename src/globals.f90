@@ -354,8 +354,8 @@ module globals_type
         real(kind=R__) :: avgTemp = -999.0
         real(kind=R__) :: avgAlb  = -999.0
 
-        real(kind=R__), pointer :: brdf(:) => null()
-        real(kind=R__), pointer :: brdf_grid(:) => null()
+        real(kind=R__), pointer :: brdf(:, :) => null()
+        real(kind=R__), pointer :: brdf_grid(:, :) => null()
 
         logical :: isUniform    = .false.
         logical :: isLambertian = .false.

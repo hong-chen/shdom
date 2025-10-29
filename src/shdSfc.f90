@@ -101,15 +101,15 @@ subroutine shd_sfc__interpSfc(&
     real :: WAVENO(2), WAVELEN
     real :: GRIDPOS(3, *)
 
-    integer :: igrid, ibc, ix, iy, ipar
+    integer :: igrid, ibc, ix, iy, ipar, i1, i2, i3, i4
     real :: rx, ry, u, v, temp, planck
     logical :: doInterp
 
-    real, pointer :: brdf_Sfc(:, :, :) => null()
-    real, pointer :: brdf_grid_Sfc(:, :) => null()
+    !real, pointer :: brdf_Sfc(:, :, :) => null()
+    !real, pointer :: brdf_grid_Sfc(:, :) => null()
 
-    brdf_Sfc(1:sfc_obj%Npar, 1:sfc_obj%Ny+1, 1:sfc_obj%Nx+1) => sfc_obj%brdf
-    brdf_grid_Sfc(1:sfc_obj%Npar, 1:NptsBot) => sfc_obj%brdf_grid
+    !brdf_Sfc(1:sfc_obj%Npar, 1:sfc_obj%Ny+1, 1:sfc_obj%Nx+1) => sfc_obj%brdf
+    !brdf_grid_Sfc(1:sfc_obj%Npar, 1:NptsBot) => sfc_obj%brdf_grid
 
     doInterp = .true.
     if (sfc_obj%Npar .gt. 6) then
@@ -141,21 +141,33 @@ subroutine shd_sfc__interpSfc(&
         u = max(0.0, min(1.0, rx - (ix - 1)))
         v = max(0.0, min(1.0, ry - (iy - 1)))
 
+        i1 = iy + (sfc_obj%Ny + 1)*(ix - 1)
+        if (doInterp) then
+            i2 = iy     + (sfc_obj%Ny + 1)*(ix)
+            i3 = iy + 1 + (sfc_obj%Ny + 1)*(ix - 1)
+            i4 = iy + 1 + (sfc_obj%Ny + 1)*(ix)
+        end if
+
         do ipar = 1, sfc_obj%Npar
             ! only interpolate BRDF parameter, not surface type ID (currently stored at 8)
             if (doInterp) then
                 ! bi-linear interpolation
                 !╭────────────────────────────────────────────────╮!
-                brdf_grid_Sfc(ipar, ibc) =&
-                    &  (1.0 - u)*(1.0 - v)*brdf_Sfc(ipar, iy  , ix)&
-                    &+ (1.0 - u)*       v *brdf_Sfc(ipar, iy  , ix+1)&
-                    &+        u *(1.0 - v)*brdf_Sfc(ipar, iy+1, ix)&
-                    &+        u *       v *brdf_Sfc(ipar, iy+1, ix+1)
+                !sfc_obj%brdf_grid(ipar, ibc) =&
+                !    &  (1.0 - u)*(1.0 - v)*brdf_Sfc(ipar, iy  , ix)&
+                !    &+ (1.0 - u)*       v *brdf_Sfc(ipar, iy  , ix+1)&
+                !    &+        u *(1.0 - v)*brdf_Sfc(ipar, iy+1, ix)&
+                !    &+        u *       v *brdf_Sfc(ipar, iy+1, ix+1)
+                sfc_obj%brdf_grid(ipar, ibc) =&
+                    &  (1.0 - u)*(1.0 - v)*sfc_obj%brdf(ipar, i1)&
+                    &+ (1.0 - u)*       v *sfc_obj%brdf(ipar, i2)&
+                    &+        u *(1.0 - v)*sfc_obj%brdf(ipar, i3)&
+                    &+        u *       v *sfc_obj%brdf(ipar, i4)
                 !╰────────────────────────────────────────────────╯!
             else
                 ! nearest interpolation
                 !╭────────────────────────────────────────────────╮!
-                brdf_grid_Sfc(ipar, ibc) = brdf_Sfc(ipar, iy, ix)
+                sfc_obj%brdf_grid(ipar, ibc) = sfc_obj%brdf(ipar, i1)
                 !╰────────────────────────────────────────────────╯!
             end if
         end do
@@ -163,15 +175,15 @@ subroutine shd_sfc__interpSfc(&
         if (SRCTYPE .eq. 'S') then
             planck = 0.0
         else
-            temp = brdf_grid_Sfc(1, ibc)
+            temp = sfc_obj%brdf_grid(1, ibc)
             call shd_util__computePlanck(temp, UNITS, WAVENO, WAVELEN, planck)
         end if
 
-        brdf_grid_Sfc(1, ibc) = planck
+        sfc_obj%brdf_grid(1, ibc) = planck
 
     end do
 
-    nullify(brdf_Sfc, brdf_grid_Sfc)
+    !nullify(brdf_Sfc, brdf_grid_Sfc)
 
     return
 

@@ -709,7 +709,7 @@ program shdom
         allocate (brdf_Sfc(sfc_obj%maxNpar * sfc_obj%maxNpts)); &
             memUsed = memUsed + sfc_obj%maxNpar * sfc_obj%maxNpts
 
-        sfc_obj%brdf => brdf_Sfc
+        sfc_obj%brdf(1:sfc_obj%maxNpar, 1:sfc_obj%maxNpts) => brdf_Sfc
         sfc_obj%isAllocated = .true.
 
         if (isMasterProc) then
@@ -1100,7 +1100,7 @@ program shdom
     !         downwelling bottom radiances at discrete ordinates
     if (sfc_obj%fname(1:4) .ne. 'NONE') then
         allocate (brdf_grid_Sfc(sfc_obj%maxNpar*maxNpts_bc))
-        sfc_obj%brdf_grid => brdf_grid_Sfc
+        sfc_obj%brdf_grid(1:sfc_obj%maxNpar, 1:maxNpts_bc) => brdf_grid_Sfc
         sfc_obj%isAllocated = .true.
     end if
 

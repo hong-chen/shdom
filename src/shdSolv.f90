@@ -136,6 +136,7 @@ subroutine shd_solv__solveRte(&
     real STARTADAPTSOL, ENDADAPTSOL, ADAPTRANGE, SPLITCRIT
     real STARTSPLITACC, CURSPLITACC, AVGSOLCRIT, BETA
     real DELJDOT, DELJOLD, DELJNEW, JNORM, ACCELPAR
+
     real, allocatable :: CMU1(:, :, :), CMU2(:, :, :)
     real, allocatable :: CPHI1(:, :, :), CPHI2(:, :, :)
     real, allocatable :: YLMSUN(:, :), WTMU(:), WPHISAVE(:)

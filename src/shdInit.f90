@@ -937,22 +937,22 @@ subroutine shd_init__makeBotRadVL(NBOTPTS, BCPTR,&
 
     integer NBOTPTS, BCPTR(*), NSTOKES
     real DIRFLUX(*), FLUXES(2, *)
-    real, pointer :: brdf_grid_Sfc(:, :) => null()
+    !real, pointer :: brdf_grid_Sfc(:, :) => null()
     real BCRAD(NSTOKES, *)
     character(len=1) :: SRCTYPE
     integer I, IBC, K
     real ALB, GNDRAD
 
-    brdf_grid_Sfc(1:sfc_obj%Npar, 1:NBOTPTS) => sfc_obj%brdf_grid
+    !brdf_grid_Sfc(1:sfc_obj%Npar, 1:NBOTPTS) => sfc_obj%brdf_grid
 
     ! Loop over all bottom points
     do IBC = 1, NBOTPTS
         I = BCPTR(IBC)
-        ALB = brdf_grid_Sfc(2, IBC)
+        ALB = sfc_obj%brdf_grid(2, IBC)
         if (SRCTYPE .eq. 'S') then
             BCRAD(1, IBC) = OPI_*ALB*(DIRFLUX(I) + FLUXES(1, I))
         else
-            GNDRAD = brdf_grid_Sfc(1, IBC)*(1 - ALB)
+            GNDRAD = sfc_obj%brdf_grid(1, IBC)*(1 - ALB)
             if (SRCTYPE .eq. 'T') then
                 BCRAD(1, IBC) = GNDRAD + OPI_*ALB*FLUXES(1, I)
             else if (SRCTYPE .eq. 'B') then
@@ -962,7 +962,7 @@ subroutine shd_init__makeBotRadVL(NBOTPTS, BCPTR,&
         BCRAD(2:, IBC) = 0.0
     end do
 
-    nullify(brdf_grid_Sfc)
+    !nullify(brdf_grid_Sfc)
 
     return
 
@@ -995,14 +995,14 @@ subroutine shd_init__makeBotRadU(NBOTPTS, BCPTR,&
     integer NMU, NPHI0MAX, NPHI0(NMU), IMU, IPHI, NSTOKES
     real WTDO(NMU, NPHI0MAX), MU(NMU), PHI(NMU, NPHI0MAX)
     real WAVELEN, SOLARMU, SOLARAZ, DIRFLUX(*)
-    real, pointer :: brdf_grid_Sfc(:, :) => null()
+    !real, pointer :: brdf_grid_Sfc(:, :) => null()
     real SFC_BRDF_DO(NSTOKES, NMU/2, NPHI0MAX, NSTOKES, NMU/2, NPHI0MAX)
     real BCRAD(NSTOKES, NBOTPTS, *)
     character(len=1) :: SRCTYPE
     integer IMU1, JMU, JPHI, IBC, I, JANG, K, K1, K2
     real REFLECT(4, 4), W
 
-    brdf_grid_Sfc(1:sfc_obj%Npar, 1:NBOTPTS) => sfc_obj%brdf_grid
+    !brdf_grid_Sfc(1:sfc_obj%Npar, 1:NBOTPTS) => sfc_obj%brdf_grid
 
     IMU1 = IMU - NMU/2
     do IBC = 1, NBOTPTS
@@ -1012,7 +1012,7 @@ subroutine shd_init__makeBotRadU(NBOTPTS, BCPTR,&
         BCRAD(:, IBC, 1) = 0.0
         if (isSolar_) then
             I = BCPTR(IBC)
-            call shd_sfc__brdfSurface(sfc_obj%type(2:2), brdf_grid_Sfc(2:sfc_obj%Npar, IBC), WAVELEN,&
+            call shd_sfc__brdfSurface(sfc_obj%type(2:2), sfc_obj%brdf_grid(2:sfc_obj%Npar, IBC), WAVELEN,&
                 &MU(IMU), PHI(IMU, IPHI), SOLARMU, SOLARAZ,&
                 &NSTOKES, REFLECT)
             BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1)&
@@ -1030,16 +1030,16 @@ subroutine shd_init__makeBotRadU(NBOTPTS, BCPTR,&
                 end do
                 ! Add in the polarized thermal emission
                 W = OPI_*abs(MU(JMU))*WTDO(JMU, JPHI)
-                BCRAD(1, IBC, 1) = BCRAD(1, IBC, 1) + brdf_grid_Sfc(1, IBC)&
+                BCRAD(1, IBC, 1) = BCRAD(1, IBC, 1) + sfc_obj%brdf_grid(1, IBC)&
                     &*(W - SFC_BRDF_DO(1, IMU1, IPHI, 1, JMU, JPHI))
-                BCRAD(2:, IBC, 1) = BCRAD(2:, IBC, 1) - brdf_grid_Sfc(1, IBC)&
+                BCRAD(2:, IBC, 1) = BCRAD(2:, IBC, 1) - sfc_obj%brdf_grid(1, IBC)&
                     &*SFC_BRDF_DO(2:, IMU1, IPHI, 1, JMU, JPHI)
                 JANG = JANG + 1
             end do
         end do
     end do
 
-    nullify(brdf_grid_Sfc)
+    !nullify(brdf_grid_Sfc)
 
     return
 
@@ -1076,12 +1076,12 @@ subroutine shd_init__makeBotRadV(&
     real WTDO(NMU, NPHI0MAX), MU(NMU), PHI(NMU, NPHI0MAX)
     real MU2, PHI2, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX(*)
     real BCRAD(NSTOKES, NBOTPTS, *)
-    real, pointer :: brdf_grid_Sfc(:, :) => null()
+    !real, pointer :: brdf_grid_Sfc(:, :) => null()
     character(len=1) :: SRCTYPE
     integer JMU, JPHI, IBC, I, JANG, K, K1, K2
     real REFLECT(4, 4), W, SUM0, SUM1, RADSPEC(4)
 
-    brdf_grid_Sfc(1:sfc_obj%Npar, 1:NBOTPTS) => sfc_obj%brdf_grid
+    !brdf_grid_Sfc(1:sfc_obj%Npar, 1:NBOTPTS) => sfc_obj%brdf_grid
 
     do IBC = IBEG, IEND
 
@@ -1090,7 +1090,7 @@ subroutine shd_init__makeBotRadV(&
         BCRAD(:, IBC, 1) = 0.0
         if (isSolar_) then
             I = BCPTR(IBC)
-            call shd_sfc__brdfSurface(sfc_obj%type(2:2), brdf_grid_Sfc(2:sfc_obj%Npar, IBC), WAVELEN,&
+            call shd_sfc__brdfSurface(sfc_obj%type(2:2), sfc_obj%brdf_grid(2:sfc_obj%Npar, IBC), WAVELEN,&
                 &MU2, PHI2, SOLARMU, SOLARAZ, NSTOKES, REFLECT)
             BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1)&
                 &+ OPI_*REFLECT(1:NSTOKES, 1)*DIRFLUX(I)
@@ -1100,7 +1100,7 @@ subroutine shd_init__makeBotRadV(&
         JANG = 1
         do JMU = 1, NMU/2
             do JPHI = 1, NPHI0(JMU)
-                call shd_sfc__brdfSurface(sfc_obj%type(2:2), brdf_grid_Sfc(2:sfc_obj%Npar, IBC),&
+                call shd_sfc__brdfSurface(sfc_obj%type(2:2), sfc_obj%brdf_grid(2:sfc_obj%Npar, IBC),&
                     &WAVELEN, MU2, PHI2, MU(JMU), PHI(JMU, JPHI),&
                     &NSTOKES, REFLECT)
                 W = OPI_*abs(MU(JMU))*WTDO(JMU, JPHI)
@@ -1111,16 +1111,16 @@ subroutine shd_init__makeBotRadV(&
                 end do
                 ! Add in the polarized thermal emission
                 BCRAD(1, IBC, 1) = BCRAD(1, IBC, 1)&
-                    &+ W*(1 - REFLECT(1, 1))*brdf_grid_Sfc(1, IBC)
+                    &+ W*(1 - REFLECT(1, 1))*sfc_obj%brdf_grid(1, IBC)
                 BCRAD(2:, IBC, 1) = BCRAD(2:, IBC, 1)&
-                    &- W*REFLECT(2:NSTOKES, 1)*brdf_grid_Sfc(1, IBC)
+                    &- W*REFLECT(2:NSTOKES, 1)*sfc_obj%brdf_grid(1, IBC)
                 JANG = JANG + 1
             end do
         end do
 
     end do
 
-    nullify(brdf_grid_Sfc)
+    !nullify(brdf_grid_Sfc)
 
     return
 
@@ -1143,20 +1143,21 @@ subroutine shd_init__checkSfcU(sfc_obj)
 
     type(shd_type_sfc), intent(inout) :: sfc_obj
 
-    real(kind=R__), pointer :: brdf_Sfc(:, :, :) => null()
+    !real(kind=R__), pointer :: brdf_Sfc(:, :, :) => null()
 
-    integer(kind=I__) :: IX, IY, J
+    integer(kind=I__) :: ix, iy, J, idata
 
-    brdf_Sfc(1:sfc_obj%Npar, 1:sfc_obj%Nx+1, 1:sfc_obj%Ny+1) => sfc_obj%brdf
+    !brdf_Sfc(1:sfc_obj%Npar, 1:sfc_obj%Nx+1, 1:sfc_obj%Ny+1) => sfc_obj%brdf
 
     sfc_obj%isUniform = .true.
 
-    do IY = 1, sfc_obj%Ny
-        do IX = 1, sfc_obj%Nx
+    do iy = 1, sfc_obj%Ny
+        do ix = 1, sfc_obj%Nx
+            idata = iy + (sfc_obj%Ny + 1)*(ix - 1)
             do J = 2, sfc_obj%Npar
-                if (brdf_Sfc(J, IX, IY) .ne. brdf_Sfc(J, 1, 1)) then
+                if (sfc_obj%brdf(J, idata) .ne. sfc_obj%brdf(J, 1)) then
                     sfc_obj%isUniform = .false.
-                    nullify(brdf_Sfc)
+                    !nullify(brdf_Sfc)
                     return
                 end if
             end do
