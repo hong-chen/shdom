@@ -128,7 +128,7 @@ subroutine shd_solv__solveRte(&
     real dsrc_Shdo(shdo_obj%Nstokes, *)
     real WORK(*), WORK2(*)
 
-    integer I, whichDO, NBPTS, NBCELLS
+    integer I, isetDO, NBPTS, NBCELLS
     integer MAXNANGBND, NANGBND(4, 2), ierr
     logical FIXSH, SPLITTESTING, DOSPLIT, OUTOFMEM
     logical, allocatable :: flagFFT_Shdo(:)
@@ -186,8 +186,8 @@ subroutine shd_solv__solveRte(&
 
     ! Make the discrete ordinates (angles)
     !   (set 2 is reduced gaussian, 3 is reduced double gauss)
-    whichDO = 3
-    call shd_shdo__makeAngle(shdo_obj%Nmu, shdo_obj%Nphi, whichDO, shdo_obj%maxNphi0,&
+    isetDO = 3
+    call shd_shdo__makeAngle(shdo_obj%Nmu, shdo_obj%Nphi, isetDO, shdo_obj%maxNphi0,&
         &shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, wgtMu_Shdo, shdo_obj%wgt, flagFFT_Shdo, shdo_obj%Nang)
 
     ! Make the Ylm transform coefficients
