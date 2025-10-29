@@ -86,11 +86,6 @@ subroutine shd_init__makeGrid(rtm_obj, &
     !   and X and Y spacing from the property file according to the grid_obj%type.
     !
     ! Input:
-    !   rtm_obj%flag_bc: integer, bit flags to specify the horizontal boundary conditions
-    !             0: periodic in X&Y; 1: open in x; 2: open in y; 3: open in X&Y
-    !             4: for MPI in X (perodic)
-    !             8: for MPI in Y (perodic)
-    !            12: for MPI in both (perodic)
     !   grid_obj%type: character(len=1), grid type
     !             "E": even Z base grid between bottom and top;
     !             "P": Z base grid levels from property file;
@@ -201,56 +196,47 @@ subroutine shd_init__makeGrid(rtm_obj, &
 
 end subroutine shd_init__makeGrid
 
-subroutine shd_init__makeCell(&
-    &BCFLAG, IPFLAG, NX, NY, NZ, NX1, NY1,&
-    &NPTS, NCELLS, XGRID, YGRID, ZGRID, GRIDPOS,&
-    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS)
+subroutine shd_init__makeCell(rtm_obj, &
+                              grid_OBJ)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Description:
     !   Make the initial grid cell data structure for the base grid.
-    !   For periodic boundary conditions there are NX*NY*(NZ-1) grid cells
-    !   and (NX+1)*(NY+1)*NZ grid points. The IX=NX+1 column is the same
-    !   as the IX=1 column, because of the periodicity, but the grid points
+    !   For periodic boundary conditions there are rtm_obj%Nx*rtm_obj%Ny*(rtm_obj%Nz-1) grid cells
+    !   and (rtm_obj%Nx+1)*(rtm_obj%Ny+1)*rtm_obj%Nz grid points. The ix=rtm_obj%Nx+1 column is the same
+    !   as the ix=1 column, because of the periodicity, but the grid points
     !   are repeated.  The last grid cell on the "right" has the last column
     !   of grid points on the "left" and the repeated "virtual" set of grid
     !   points on the "right". For open boundary conditions in X and Y
-    !   there are (NX+1)*(NY+1)*(NZ-1) grid cells and NX*NY*NZ grid points.
+    !   there are (rtm_obj%Nx+1)*(rtm_obj%Ny+1)*(rtm_obj%Nz-1) grid cells and rtm_obj%Nx*rtm_obj%Ny*rtm_obj%Nz grid points.
     !   Open boundary conditions are done with the lowest "left most" and
     !   "right most" X and Y columns being independent pixels with
     !   their own grid cells (zero width), therefore one extra grid cell
     !   is required.   Multiple processor boundary conditions have
-    !   (NX-1)*(NY-1)*(NZ-1) grid cells and NX*NY*NZ grid points.
-    !   Independent pixel mode has NX*NY*(NZ-1) grid cells and NX*NY*NZ
+    !   (rtm_obj%Nx-1)*(rtm_obj%Ny-1)*(rtm_obj%Nz-1) grid cells and rtm_obj%Nx*rtm_obj%Ny*rtm_obj%Nz grid points.
+    !   Independent pixel mode has rtm_obj%Nx*rtm_obj%Ny*(rtm_obj%Nz-1) grid cells and rtm_obj%Nx*rtm_obj%Ny*rtm_obj%Nz
     !   grid points
     !
     ! Input:
-    !   IPFLAG    : Independent pixel flag
-    !                0: 3D, 1: IPA in X, 2: IPA in Y, 3: IPA in X&Y.
-    !   BCFLAG    : integer, bit flags to specify the horizontal boundary conditions
-    !               0: periodic in X&Y; 1: open in x; 2: open in y; 3: open in X&Y
-    !               4: for MPI in X (perodic)
-    !               8: for MPI in Y (perodic)
-    !              12: for MPI in both (perodic)
-    !   NX, NY, NZ: integer, base grid size in X, Y and Z
-    !   NX1, NY1  : integer, base grid actual size in X, Y
-    !   XGRID, YGRID, ZGRID: real array, grid locations for each dimension.
+    !   rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz: integer, base grid size in X, Y and Z
+    !   grid_obj%Nx, grid_obj%Ny: integer, base grid actual size in X, Y
+    !   grid_obj%x, grid_obj%y, grid_obj%z: real array, grid locations for each dimension.
     !                        To facilitate the periodic horizontal boundaries,
-    !                        there are NX+1 values in XGRID, NY+1 in YGRID,
-    !                        NZ values in ZGRID. Currently the grid locations
+    !                        there are rtm_obj%Nx+1 values in grid_obj%x, rtm_obj%Ny+1 in grid_obj%y,
+    !                        rtm_obj%Nz values in grid_obj%z. Currently the grid locations
     !                        are evenly spaced in X and Y.
     !
     ! Output:
-    !   NPTS          : total number of grid points
-    !   NCELLS        : total number of cells
-    !   GRIDPOS(3,IP) : X,Y,Z coordinate values of grid point locations
-    !   GRIDPTR(8,IC) : pointer to 8 grid points belonging to a cell.
+    !   grid_obj%Npts : total number of grid points
+    !   grid_obj%Ncell: total number of cells
+    !   grid_obj%xyz(3,IP) : X,Y,Z coordinate values of grid point locations
+    !   grid_obj%i8Grid(8,IC) : pointer to 8 grid points belonging to a cell.
     !                   Order of pointers is based on binary digits Z-Y-X:
     !                   IOCT = 1 + BITX + 2*BITY + 4*BITZ, where
     !                   BITc is 0 for negative side and 1 for positive side.
     !                   1: (-X, -Y, -Z), 2: (+X, -Y, -Z), 3: (-X, +Y, -Z), 4: (+X, +Y, -Z)
     !                   5: (-X, -Y, +Z), 6: (+X, -Y, +Z), 7: (-X, +Y, +Z), 8: (+X, +Y, +Z)
-    !   NEIGHPTR(6,IC): pointer to 6 neighboring cells of a cell.
+    !   grid_obj%i6Cell(6,IC): pointer to 6 neighboring cells of a cell.
     !                   Order of pointers are 1:-X, 2:+X, 3:-Y, 4:+Y, 5:-Z, 6:+Z.
     !                   Is 0 if there is no neighbor cell (boundary).
     !                   Is positive if there is just one cell across face
@@ -259,14 +245,14 @@ subroutine shd_init__makeCell(&
     !                   the face of current cell.  In this case the
     !                   cell pointed to is the parent cell that has a
     !                   has same or larger face adjoining current cell.
-    !   TREEPTR(2,IC) : pointer to parent and children cells in tree structure.
+    !   grid_obj%i2Tree(2,IC) : pointer to parent and children cells in tree structure.
     !                   First is pointer to parent cell, 0 for a base cell.
     !                   Second is pointer to first of the two children cells.
     !                   This pointer is 0 if there are no children cells.
     !                   The children cells are in successive order, with
-    !                   the negative side first. See CELLFLAGS for direction
+    !                   the negative side first. See grid_obj%flag for direction
     !                   of division of split.
-    !   CELLFLAGS(IC) : a collection of binary flags for the cells:
+    !   grid_obj%flag(IC) : a collection of binary flags for the cells:
     !                   bit  For bit set
     !                   0:  Do independent pixel for X
     !                   1:  Do independent pixel for Y
@@ -274,171 +260,166 @@ subroutine shd_init__makeCell(&
     ! IP is a grid point index, IC is a cell index.
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    integer(kind=I__), intent(in)    :: IPFLAG, BCFLAG, NX, NY, NZ, NX1, NY1
-    real(kind=R__)   , intent(in)    :: XGRID(NX1), YGRID(NY1), ZGRID(NZ)
+    type(shd_type_rtm),  intent(in)    :: rtm_obj
+    type(shd_type_grid), intent(inout) :: grid_obj
 
-    real(kind=R__)   , intent(out)   :: GRIDPOS(3, *)
-    integer(kind=I__), intent(inout) :: NPTS, NCELLS
-    integer(kind=I__), intent(out)   :: GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
-    integer(kind=2)  , intent(out)   :: CELLFLAGS(*)
-
-    integer(kind=I__) :: IX, IY, IZ, IX0, IX1, IY0, IY1, I, NXC, NYC
+    integer(kind=I__) :: ix, iy, iz, ix0, ix1, iy0, iy1, i, Nxc, Nyc
 
     ! First, make the grid point positions
-    I = 0
-    do IX = 1, NX1
-        do IY = 1, NY1
-            do IZ = 1, NZ
-                I = I + 1
-                GRIDPOS(1, I) = XGRID(IX)
-                GRIDPOS(2, I) = YGRID(IY)
-                GRIDPOS(3, I) = ZGRID(IZ)
+    i = 0
+    do ix = 1, grid_obj%Nx
+        do iy = 1, grid_obj%Ny
+            do iz = 1, grid_obj%Nz
+                i = i + 1
+                grid_obj%xyz(1, i) = grid_obj%x(ix)
+                grid_obj%xyz(2, i) = grid_obj%y(iy)
+                grid_obj%xyz(3, i) = grid_obj%z(iz)
             end do
         end do
     end do
-    NPTS = I
+    grid_obj%Npts = i
 
-    NXC = NX
-    if (isOpenX_) NXC = NX + 1
-    if (isMpiX_ .and. (.not. is1DX_)) NXC = NX - 1
-    NYC = NY
-    if (isOpenYx_) NYC = NY + 1
-    if (isMpiY_ .and. (.not. is1DYx_)) NYC = NY - 1
+    Nxc = rtm_obj%Nx
+    if (isOpenX_) Nxc = rtm_obj%Nx + 1
+    if (isMpiX_ .and. (.not. is1DX_)) Nxc = rtm_obj%Nx - 1
+    Nyc = rtm_obj%Ny
+    if (isOpenYx_) Nyc = rtm_obj%Ny + 1
+    if (isMpiY_ .and. (.not. is1DYx_)) Nyc = rtm_obj%Ny - 1
 
     ! Then setup the cell structures
-    I = 0
-    do IX = 1, NXC
+    i = 0
+    do ix = 1, Nxc
         if (is1DX_) then
-            IX0 = IX
-            IX1 = IX
+            ix0 = ix
+            ix1 = ix
         else if (isOpenX_) then
-            IX0 = max(1, IX - 1)
-            IX1 = min(NX, IX)
+            ix0 = max(1, ix - 1)
+            ix1 = min(rtm_obj%Nx, ix)
         else
-            IX0 = IX
-            IX1 = IX + 1
+            ix0 = ix
+            ix1 = ix + 1
         end if
-        do IY = 1, NYC
+        do iy = 1, Nyc
             if (is1DYx_) then
-                IY0 = IY
-                IY1 = IY
+                iy0 = iy
+                iy1 = iy
             else if (isOpenYx_) then
-                IY0 = max(1, IY - 1)
-                IY1 = min(NY, IY)
+                iy0 = max(1, iy - 1)
+                iy1 = min(rtm_obj%Ny, iy)
             else
-                IY0 = IY
-                IY1 = IY + 1
+                iy0 = iy
+                iy1 = iy + 1
             end if
-            do IZ = 1, NZ - 1
-                I = I + 1
-                GRIDPTR(1, I) = IZ +     NZ*(IY0 - 1) + NZ*NY1*(IX0 - 1)
-                GRIDPTR(2, I) = IZ +     NZ*(IY0 - 1) + NZ*NY1*(IX1 - 1)
-                GRIDPTR(3, I) = IZ +     NZ*(IY1 - 1) + NZ*NY1*(IX0 - 1)
-                GRIDPTR(4, I) = IZ +     NZ*(IY1 - 1) + NZ*NY1*(IX1 - 1)
-                GRIDPTR(5, I) = IZ + 1 + NZ*(IY0 - 1) + NZ*NY1*(IX0 - 1)
-                GRIDPTR(6, I) = IZ + 1 + NZ*(IY0 - 1) + NZ*NY1*(IX1 - 1)
-                GRIDPTR(7, I) = IZ + 1 + NZ*(IY1 - 1) + NZ*NY1*(IX0 - 1)
-                GRIDPTR(8, I) = IZ + 1 + NZ*(IY1 - 1) + NZ*NY1*(IX1 - 1)
-                CELLFLAGS(I) = 0
+            do iz = 1, grid_obj%Nz - 1
+                i = i + 1
+                grid_obj%i8Grid(1, i) = iz +     grid_obj%Nz*(iy0 - 1) + grid_obj%Nz*grid_obj%Ny*(ix0 - 1)
+                grid_obj%i8Grid(2, i) = iz +     grid_obj%Nz*(iy0 - 1) + grid_obj%Nz*grid_obj%Ny*(ix1 - 1)
+                grid_obj%i8Grid(3, i) = iz +     grid_obj%Nz*(iy1 - 1) + grid_obj%Nz*grid_obj%Ny*(ix0 - 1)
+                grid_obj%i8Grid(4, i) = iz +     grid_obj%Nz*(iy1 - 1) + grid_obj%Nz*grid_obj%Ny*(ix1 - 1)
+                grid_obj%i8Grid(5, i) = iz + 1 + grid_obj%Nz*(iy0 - 1) + grid_obj%Nz*grid_obj%Ny*(ix0 - 1)
+                grid_obj%i8Grid(6, i) = iz + 1 + grid_obj%Nz*(iy0 - 1) + grid_obj%Nz*grid_obj%Ny*(ix1 - 1)
+                grid_obj%i8Grid(7, i) = iz + 1 + grid_obj%Nz*(iy1 - 1) + grid_obj%Nz*grid_obj%Ny*(ix0 - 1)
+                grid_obj%i8Grid(8, i) = iz + 1 + grid_obj%Nz*(iy1 - 1) + grid_obj%Nz*grid_obj%Ny*(ix1 - 1)
+                grid_obj%flag(I) = 0
                 ! Initialize the neighbor pointer; to self for IP mode or
                 !   if open boundary conditions and at either end
                 if (is1DX_) then
-                    NEIGHPTR(1, I) = I
-                    NEIGHPTR(2, I) = I
-                    CELLFLAGS(I) = ibset(int(CELLFLAGS(I)), 0)
+                    grid_obj%i6Cell(1, i) = i
+                    grid_obj%i6Cell(2, i) = i
+                    grid_obj%flag(I) = ibset(int(grid_obj%flag(I)), 0)
                 else if (isOpenX_) then
-                    if (IX .eq. 1) then
-                        NEIGHPTR(1, I) = I
-                        NEIGHPTR(2, I) = I + (NZ - 1)*NYC
-                        CELLFLAGS(I) = ibset(int(CELLFLAGS(I)), 0)
-                    else if (IX .eq. NXC) then
-                        NEIGHPTR(1, I) = I - (NZ - 1)*NYC
-                        NEIGHPTR(2, I) = I
-                        CELLFLAGS(I) = ibset(int(CELLFLAGS(I)), 0)
+                    if (ix .eq. 1) then
+                        grid_obj%i6Cell(1, i) = i
+                        grid_obj%i6Cell(2, i) = i + (grid_obj%Nz - 1)*Nyc
+                        grid_obj%flag(I) = ibset(int(grid_obj%flag(I)), 0)
+                    else if (ix .eq. Nxc) then
+                        grid_obj%i6Cell(1, i) = i - (grid_obj%Nz - 1)*Nyc
+                        grid_obj%i6Cell(2, i) = i
+                        grid_obj%flag(I) = ibset(int(grid_obj%flag(I)), 0)
                     else
-                        NEIGHPTR(1, I) = I - (NZ - 1)*NYC
-                        NEIGHPTR(2, I) = I + (NZ - 1)*NYC
+                        grid_obj%i6Cell(1, i) = i - (grid_obj%Nz - 1)*Nyc
+                        grid_obj%i6Cell(2, i) = i + (grid_obj%Nz - 1)*Nyc
                     end if
                 else if (isMpiX_) then
-                    if (IX .eq. 1) then
-                        NEIGHPTR(1, I) = 0
-                        NEIGHPTR(2, I) = I + (NZ - 1)*NYC
-                    else if (IX .eq. NXC) then
-                        NEIGHPTR(1, I) = I - (NZ - 1)*NYC
-                        NEIGHPTR(2, I) = 0
+                    if (ix .eq. 1) then
+                        grid_obj%i6Cell(1, i) = 0
+                        grid_obj%i6Cell(2, i) = i + (grid_obj%Nz - 1)*Nyc
+                    else if (ix .eq. Nxc) then
+                        grid_obj%i6Cell(1, i) = i - (grid_obj%Nz - 1)*Nyc
+                        grid_obj%i6Cell(2, i) = 0
                     else
-                        NEIGHPTR(1, I) = I - (NZ - 1)*NYC
-                        NEIGHPTR(2, I) = I + (NZ - 1)*NYC
+                        grid_obj%i6Cell(1, i) = i - (grid_obj%Nz - 1)*Nyc
+                        grid_obj%i6Cell(2, i) = i + (grid_obj%Nz - 1)*Nyc
                     end if
                 else
-                    if (IX .eq. 1) then
-                        NEIGHPTR(1, I) = I + (NXC - 1)*(NZ - 1)*NYC
+                    if (ix .eq. 1) then
+                        grid_obj%i6Cell(1, i) = i + (Nxc - 1)*(grid_obj%Nz - 1)*Nyc
                     else
-                        NEIGHPTR(1, I) = I - (NZ - 1)*NYC
+                        grid_obj%i6Cell(1, i) = i - (grid_obj%Nz - 1)*Nyc
                     end if
-                    if (IX .eq. NX) then
-                        NEIGHPTR(2, I) = I - (NXC - 1)*(NZ - 1)*NYC
+                    if (ix .eq. rtm_obj%Nx) then
+                        grid_obj%i6Cell(2, i) = i - (Nxc - 1)*(grid_obj%Nz - 1)*Nyc
                     else
-                        NEIGHPTR(2, I) = I + (NZ - 1)*NYC
+                        grid_obj%i6Cell(2, i) = i + (grid_obj%Nz - 1)*Nyc
                     end if
                 end if
                 if (is1DYx_) then
-                    NEIGHPTR(3, I) = I
-                    NEIGHPTR(4, I) = I
-                    CELLFLAGS(I) = ibset(int(CELLFLAGS(I)), 1)
+                    grid_obj%i6Cell(3, i) = i
+                    grid_obj%i6Cell(4, i) = i
+                    grid_obj%flag(I) = ibset(int(grid_obj%flag(I)), 1)
                 else if (isOpenYx_) then
-                    if (IY .eq. 1) then
-                        NEIGHPTR(3, I) = I
-                        NEIGHPTR(4, I) = I + (NZ - 1)
-                        CELLFLAGS(I) = ibset(int(CELLFLAGS(I)), 1)
-                    else if (IY .eq. NYC) then
-                        NEIGHPTR(3, I) = I - (NZ - 1)
-                        NEIGHPTR(4, I) = I
-                        CELLFLAGS(I) = ibset(int(CELLFLAGS(I)), 1)
+                    if (iy .eq. 1) then
+                        grid_obj%i6Cell(3, i) = i
+                        grid_obj%i6Cell(4, i) = i + (grid_obj%Nz - 1)
+                        grid_obj%flag(I) = ibset(int(grid_obj%flag(I)), 1)
+                    else if (iy .eq. Nyc) then
+                        grid_obj%i6Cell(3, i) = i - (grid_obj%Nz - 1)
+                        grid_obj%i6Cell(4, i) = i
+                        grid_obj%flag(I) = ibset(int(grid_obj%flag(I)), 1)
                     else
-                        NEIGHPTR(3, I) = I - (NZ - 1)
-                        NEIGHPTR(4, I) = I + (NZ - 1)
+                        grid_obj%i6Cell(3, i) = i - (grid_obj%Nz - 1)
+                        grid_obj%i6Cell(4, i) = i + (grid_obj%Nz - 1)
                     end if
                 else if (isMpiY_) then
-                    if (IY .eq. 1) then
-                        NEIGHPTR(3, I) = 0
-                        NEIGHPTR(4, I) = I + (NZ - 1)
-                    else if (IY .eq. NYC) then
-                        NEIGHPTR(3, I) = I - (NZ - 1)
-                        NEIGHPTR(4, I) = 0
+                    if (iy .eq. 1) then
+                        grid_obj%i6Cell(3, i) = 0
+                        grid_obj%i6Cell(4, i) = i + (grid_obj%Nz - 1)
+                    else if (iy .eq. Nyc) then
+                        grid_obj%i6Cell(3, i) = i - (grid_obj%Nz - 1)
+                        grid_obj%i6Cell(4, i) = 0
                     else
-                        NEIGHPTR(3, I) = I - (NZ - 1)
-                        NEIGHPTR(4, I) = I + (NZ - 1)
+                        grid_obj%i6Cell(3, i) = i - (grid_obj%Nz - 1)
+                        grid_obj%i6Cell(4, i) = i + (grid_obj%Nz - 1)
                     end if
                 else
-                    if (IY .eq. 1) then
-                        NEIGHPTR(3, I) = I + (NYC - 1)*(NZ - 1)
+                    if (iy .eq. 1) then
+                        grid_obj%i6Cell(3, i) = i + (Nyc - 1)*(grid_obj%Nz - 1)
                     else
-                        NEIGHPTR(3, I) = I - (NZ - 1)
+                        grid_obj%i6Cell(3, i) = i - (grid_obj%Nz - 1)
                     end if
-                    if (IY .eq. NY) then
-                        NEIGHPTR(4, I) = I - (NYC - 1)*(NZ - 1)
+                    if (iy .eq. rtm_obj%Ny) then
+                        grid_obj%i6Cell(4, i) = i - (Nyc - 1)*(grid_obj%Nz - 1)
                     else
-                        NEIGHPTR(4, I) = I + (NZ - 1)
+                        grid_obj%i6Cell(4, i) = i + (grid_obj%Nz - 1)
                     end if
                 end if
-                if (IZ .eq. 1) then
-                    NEIGHPTR(5, I) = 0
+                if (iz .eq. 1) then
+                    grid_obj%i6Cell(5, i) = 0
                 else
-                    NEIGHPTR(5, I) = I - 1
+                    grid_obj%i6Cell(5, i) = i - 1
                 end if
-                if (IZ .eq. NZ - 1) then
-                    NEIGHPTR(6, I) = 0
+                if (iz .eq. grid_obj%Nz - 1) then
+                    grid_obj%i6Cell(6, i) = 0
                 else
-                    NEIGHPTR(6, I) = I + 1
+                    grid_obj%i6Cell(6, i) = i + 1
                 end if
                 ! Base grid cells have no parents or children
-                TREEPTR(1, I) = 0
-                TREEPTR(2, I) = 0
+                grid_obj%i2Tree(1, i) = 0
+                grid_obj%i2Tree(2, i) = 0
             end do
         end do
     end do
-    NCELLS = I
+    grid_obj%Ncell = i
 
     return
 

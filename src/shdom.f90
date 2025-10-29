@@ -1195,10 +1195,7 @@ program shdom
         ! If this is the first time through or we always want a base grid,
         !   then make the base grid point positions and grid cell structure.
         if (isBaseOut .or. ((ig_ckd .eq. ckd_obj%Ng) .and. doNewGrid)) then
-            call shd_init__makeCell(rtm_obj%flag_bc, rtm_obj%flag_ip,&
-                &rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, grid_obj%Nx, grid_obj%Ny, grid_obj%Npts, grid_obj%Ncell,&
-                &grid_obj%x, grid_obj%y, grid_obj%z, grid_obj%xyz,&
-                &grid_obj%i8Grid, grid_obj%i6Cell, grid_obj%i2Tree, grid_obj%flag)
+            call shd_init__makeCell(rtm_obj, grid_OBJ)
             grid_obj%Ncell0 = grid_obj%Ncell
         end if
 
@@ -1305,10 +1302,7 @@ program shdom
 
         if (isBaseOut) then
             ! If outputting only the base grid then throw out the other points
-            call shd_init__makeCell(rtm_obj%flag_bc, rtm_obj%flag_ip,&
-                &rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, grid_obj%Nx, grid_obj%Ny,&
-                &grid_obj%Npts, grid_obj%Ncell, grid_obj%x, grid_obj%y, grid_obj%z, grid_obj%xyz,&
-                &grid_obj%i8Grid, grid_obj%i6Cell, grid_obj%i2Tree, grid_obj%flag)
+            call shd_init__makeCell(rtm_obj, grid_OBJ)
         else
             ! For the output from the grid point arrays (Flux, Net flux, SH)
             !   we may need to interpolate the running k-distribution sum
