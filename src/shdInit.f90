@@ -44,7 +44,10 @@ module shd_init
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
                              is1DX_, is1DYx_, &
                              isSolar_, isThermal_
-    use globals_type,  only: shd_type_prp, shd_type_sfc
+    use globals_type,  only: shd_type_rtm, &
+                             shd_type_grid, &
+                             shd_type_prp, &
+                             shd_type_sfc
 
     use shd_util, only: shd_util__computePlanck, &
                         shd_util__solveTriDiag
@@ -74,113 +77,125 @@ module shd_init
 
 contains
 
-subroutine shd_init__makeGrid(&
-    &BCFLAG, GRIDTYPE, NX, NY, NZ,&
-    &XGRID, YGRID, ZGRID, prp_obj)
+subroutine shd_init__makeGrid(rtm_obj, &
+                              prp_OBJ, grid_OBJ)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Description:
-    !   Makes the XGRID, YGRID, and ZGRID arrays from the input Z levels
-    !   and X and Y spacing from the property file according to the GRIDTYPE.
+    !   Makes the grid_obj%x, grid_obj%y, and grid_obj%z arrays from the input Z levels
+    !   and X and Y spacing from the property file according to the grid_obj%type.
     !
     ! Input:
-    !   BCFLAG  : integer, bit flags to specify the horizontal boundary conditions
+    !   rtm_obj%flag_bc: integer, bit flags to specify the horizontal boundary conditions
     !             0: periodic in X&Y; 1: open in x; 2: open in y; 3: open in X&Y
     !             4: for MPI in X (perodic)
     !             8: for MPI in Y (perodic)
     !            12: for MPI in both (perodic)
-    !   GRIDTYPE: character(len=1), grid type
+    !   grid_obj%type: character(len=1), grid type
     !             "E": even Z base grid between bottom and top;
     !             "P": Z base grid levels from property file;
     !             "F": Z base grid levels from file: shdom-zgrid.txt
     !   prp_obj%Nx, prp_obj%Ny, prp_obj%Nz: integer, size of the input property arrays
-    !   NX, NY, NZ    : integer, base grid size in X, Y and Z
+    !   rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz: integer, base grid size in X, Y and Z
     !   prp_obj%xStart, prp_obj%yStart: real, starting X and Y
     !   prp_obj%dx, prp_obj%dy: real, horizontal grid spacing of the property arrays
     !   prp_obj%z: real array, input Z levels from the property file
     !
     ! Output:
-    !   XGRID, YGRID, ZGRID: real array, grid locations for each dimension.
+    !   grid_obj%x, grid_obj%y, grid_obj%z: real array, grid locations for each dimension.
     !                        To facilitate the periodic horizontal boundaries,
-    !                        there are NX+1 values in XGRID, NY+1 in YGRID,
-    !                        NZ values in ZGRID. Currently the grid locations
+    !                        there are rtm_obj%Nx+1 values in grid_obj%x, rtm_obj%Ny+1 in grid_obj%y,
+    !                        rtm_obj%Nz values in grid_obj%z. Currently the grid locations
     !                        are evenly spaced in X and Y.
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    type(shd_type_prp), intent(inout) :: prp_obj
+    type(shd_type_rtm),  intent(in)    :: rtm_obj
+    type(shd_type_prp),  intent(inout) :: prp_obj
+    type(shd_type_grid), intent(inout) :: grid_obj
 
-    integer(kind=I__), intent(in) :: BCFLAG, NX, NY, NZ
-    character(len=1) , intent(in) :: GRIDTYPE
-    real(kind=R__), intent(out)   :: XGRID(NX+1), YGRID(NY+1), ZGRID(NZ)
-
-    integer(kind=I__) :: IX, IY, IZ
+    integer(kind=I__) :: ix, iy, iz
 
     ! Make the X, Y, and Z grids, depending on type:
-    !   E for evenly spaced, P from property file, F from zgrid.inp
+    !   E for evenly spaced, P from property file, F from shdom-zgrid.txt
     !   Only Even allowed horizontally
+
+    ! x
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     if (prp_obj%dx .le. 0.0) then
         prp_obj%dx = 1.0
         if (verbose_ .ge. 4) write(*, '(A)') 'Warning [_makeGrid]: Found prp_obj%dx<=0.0, reset prp_obj%dx to 1.0.'
     end if
 
     if (isMpiX_) then ! open in X
-        do IX = 1, NX
+        do ix = 1, rtm_obj%Nx
             if (prp_obj%Nx .gt. 1) then
-                XGRID(IX) = prp_obj%xStart + (IX - 1)*(prp_obj%dx*(prp_obj%Nx - 1))/float(NX - 1)
+                grid_obj%x(ix) = prp_obj%xStart + (ix - 1)*(prp_obj%dx*(prp_obj%Nx - 1))/float(rtm_obj%Nx - 1)
             else
-                XGRID(IX) = prp_obj%xStart + (IX - 1)*(prp_obj%dx*prp_obj%Nx)/float(NX - 1)
+                grid_obj%x(ix) = prp_obj%xStart + (ix - 1)*(prp_obj%dx*prp_obj%Nx)/float(rtm_obj%Nx - 1)
             end if
         end do
     else ! periodic in X
-        do IX = 1, NX + 1
-            XGRID(IX) = prp_obj%xStart + (IX - 1)*(prp_obj%dx*prp_obj%Nx)/float(NX)
+        do ix = 1, rtm_obj%Nx + 1
+            grid_obj%x(ix) = prp_obj%xStart + (ix - 1)*(prp_obj%dx*prp_obj%Nx)/float(rtm_obj%Nx)
         end do
     end if
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
+    ! y
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     if (prp_obj%dy .le. 0.0) then
         prp_obj%dy = 1.0
         if (verbose_ .ge. 4) write(*, '(A)') 'Warning [_makeGrid]: Found prp_obj%dy<=0.0, reset prp_obj%dy to 1.0.'
     end if
 
     if (isMpiY_) then ! open in Y
-        do IY = 1, NY
+        do iy = 1, rtm_obj%Ny
             if (prp_obj%Ny .gt. 1) then
-                YGRID(IY) = prp_obj%yStart + (IY - 1)*(prp_obj%dy*(prp_obj%Ny - 1))/float(NY - 1)
+                grid_obj%y(iy) = prp_obj%yStart + (iy - 1)*(prp_obj%dy*(prp_obj%Ny - 1))/float(rtm_obj%Ny - 1)
             else
-                YGRID(IY) = prp_obj%yStart + (IY - 1)*(prp_obj%dy*prp_obj%Ny)/float(NY - 1)
+                grid_obj%y(iy) = prp_obj%yStart + (iy - 1)*(prp_obj%dy*prp_obj%Ny)/float(rtm_obj%Ny - 1)
             end if
         end do
     else ! periodic in Y
-        do IY = 1, NY + 1
-            YGRID(IY) = prp_obj%yStart + (IY - 1)*(prp_obj%dy*prp_obj%Ny)/float(NY)
+        do iy = 1, rtm_obj%Ny + 1
+            grid_obj%y(iy) = prp_obj%yStart + (iy - 1)*(prp_obj%dy*prp_obj%Ny)/float(rtm_obj%Ny)
         end do
     end if
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    if (GRIDTYPE .eq. 'P') then
-        if (NZ .ne. prp_obj%Nz) then
+    ! z
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    if (grid_obj%type .eq. 'P') then
+
+        if (rtm_obj%Nz .ne. prp_obj%Nz) then
             write (6, *)&
                 &'Error [_makeGrid]: For internal Z grid same as property file grid,'
-            write (6, *) '  must have same number of grid points (NZ=prp_obj%Nz).'
+            write (6, *) '  must have same number of grid points (rtm_obj%Nz=prp_obj%Nz).'
             stop
         end if
-        do IZ = 1, NZ
-            ZGRID(IZ) = prp_obj%z(IZ)
+        do iz = 1, rtm_obj%Nz
+            grid_obj%z(iz) = prp_obj%z(iz)
         end do
-    else if (GRIDTYPE .eq. 'E') then
-        do IZ = 1, NZ
-            ZGRID(IZ) = prp_obj%z(1)&
-                + (IZ - 1)*(prp_obj%z(prp_obj%Nz) - prp_obj%z(1))/float(NZ - 1)
+
+    else if (grid_obj%type .eq. 'E') then
+
+        do iz = 1, rtm_obj%Nz
+            grid_obj%z(iz) = prp_obj%z(1)&
+                + (iz - 1)*(prp_obj%z(prp_obj%Nz) - prp_obj%z(1))/float(rtm_obj%Nz - 1)
         end do
-    else if (GRIDTYPE .eq. 'F') then
-        if (verbose_ .ge. 5) write(*, '(A)') 'Message [_makeGrid]: Reading ZGRID from <shdom-zgrid.txt> ...'
+
+    else if (grid_obj%type .eq. 'F') then
+
+        if (verbose_ .ge. 5) write(*, '(A)') 'Message [_makeGrid]: Reading grid_obj%z from <shdom-zgrid.txt> ...'
         open (UNIT=3, FILE='shdom-zgrid.txt', STATUS='OLD')
-        do IZ = 1, NZ
-            read (3, *) ZGRID(IZ)
+        do iz = 1, rtm_obj%Nz
+            read (3, *) grid_obj%z(iz)
         end do
         close (3)
     else
         stop 'Error [_makeGrid]: Illegal grid type in Z.'
     end if
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
     return
 

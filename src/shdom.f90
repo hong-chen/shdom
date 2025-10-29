@@ -180,7 +180,7 @@ program shdom
     ! SAV
     !╭────────────────────────────────────────────────────────────────────────────╮!
     character(len=charMaxLen_) :: fileInp_sav, fileOut_sav
-    logical :: isNewRad, isNewGrid
+    logical :: isNewRad, doNewGrid
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! prp_obj
@@ -258,7 +258,7 @@ program shdom
     integer(kind=I__) :: countStart, countRate, countMax
     character(len=charMaxLen_) :: message
 
-    logical :: isCkd, isDeltaM, isAccel
+    logical :: doCkd, doDeltaM, isAccel
 
 
     ! start timing
@@ -279,7 +279,7 @@ program shdom
             call shd_io__nmlInp(rtmAll_obj%runName, prpAll_obj%fname, sfc_obj%fname, ckd_obj%fname,&
                 fileInp_sav, fileOut_sav, sen_obj%fname,&
                 shdo_obj%Nstokes, rtmAll_obj%Nx, rtmAll_obj%Ny, rtmAll_obj%Nz, shdo_obj%Nmu, shdo_obj%Nphi, rtmAll_obj%flag_bc,&
-                rtmAll_obj%flag_ip, isCkd, isDeltaM, grid_obj%type,&
+                rtmAll_obj%flag_ip, doCkd, doDeltaM, grid_obj%type,&
                 src_obj%type, src_obj%avgSolar0, src_obj%avgMu, src_obj%avgAz, skyRad,&
                 sfc_obj%avgTemp, sfc_obj%avgAlb, src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen,&
                 isAccel, solAcc, maxIter, splitAcc, shAcc,&
@@ -290,7 +290,7 @@ program shdom
             call shd_io__userInp(rtmAll_obj%runName, prpAll_obj%fname, sfc_obj%fname, ckd_obj%fname,&
                 fileInp_sav, fileOut_sav, sen_obj%fname,&
                 shdo_obj%Nstokes, rtmAll_obj%Nx, rtmAll_obj%Ny, rtmAll_obj%Nz, shdo_obj%Nmu, shdo_obj%Nphi, rtmAll_obj%flag_bc,&
-                rtmAll_obj%flag_ip, isCkd, isDeltaM, grid_obj%type,&
+                rtmAll_obj%flag_ip, doCkd, doDeltaM, grid_obj%type,&
                 src_obj%type, src_obj%avgSolar0, src_obj%avgMu, src_obj%avgAz, skyRad,&
                 sfc_obj%avgTemp, sfc_obj%avgAlb, src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen,&
                 isAccel, solAcc, maxIter, splitAcc, shAcc,&
@@ -303,7 +303,7 @@ program shdom
     call shd_mpi__bcastInp(rtmAll_obj%runName,&
         &fileInp_sav, fileOut_sav,&
         &shdo_obj%Nstokes, rtmAll_obj%Nx, rtmAll_obj%Ny, rtmAll_obj%Nz, shdo_obj%Nmu, shdo_obj%Nphi, rtmAll_obj%flag_bc,&
-        &rtmAll_obj%flag_ip, isCkd, isDeltaM, grid_obj%type,&
+        &rtmAll_obj%flag_ip, doCkd, doDeltaM, grid_obj%type,&
         &src_obj%type, src_obj%avgSolar0, src_obj%avgMu, src_obj%avgAz, skyRad,&
         &src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen,&
         &isAccel, solAcc, maxIter, splitAcc, shAcc,&
@@ -365,7 +365,7 @@ program shdom
 
     ! prpAll_obj%Nleg: The number of Legendre series phase function terms used in the solution procedure
     prpAll_obj%Nleg = shdo_obj%maxNl
-    if (isDeltaM) prpAll_obj%Nleg = shdo_obj%maxNl + 1
+    if (doDeltaM) prpAll_obj%Nleg = shdo_obj%maxNl + 1
 
     if (src_obj%type .eq. 'B') then
         isSolar_ = .true.
@@ -650,7 +650,7 @@ program shdom
             prpAll_obj%ipha => ipha_PrpAll
             prpAll_obj%isAllocated = .true.
 
-            call shd_io__readPrp(isDeltaM, prpAll_obj)
+            call shd_io__readPrp(doDeltaM, prpAll_obj)
 
             if (prpAll_obj%Npha .eq. 0) then
                 stop 'Error [shdom]: Standard property file (with phase function Legendre series at every point)&
@@ -684,7 +684,7 @@ program shdom
     else
 
         ! Read the properties of the medium to the single processor
-        call shd_io__readPrp(isDeltaM, prp_obj)
+        call shd_io__readPrp(doDeltaM, prp_obj)
 
         ! Check values of medium properties
         call shd_io__checkPrp(prp_obj)
@@ -693,7 +693,7 @@ program shdom
 
     if (isMasterProc) then
         ! Check input parameters
-        call shd_io__checkInp(shdo_obj%Nmu, shdo_obj%Nphi, isDeltaM,&
+        call shd_io__checkInp(shdo_obj%Nmu, shdo_obj%Nphi, doDeltaM,&
             &grid_obj%type, src_obj%type, src_obj%unit, src_obj%avgSolar0, src_obj%avgMu,&
             &src_obj%waveNum, src_obj%avgWaveLen,&
             &splitAcc, shAcc, prp_obj, sfc_obj)
@@ -726,7 +726,7 @@ program shdom
     ! Read ckd_obj%fname and broadcast correlated-k object if MPI
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! If doing a k-distribution then get the band info from the CKD file
-    if (isCkd) then
+    if (doCkd) then
 
         if (isMasterProc) then
             call shd_io__readCkdSize(src_obj%waveNum, ckd_obj)
@@ -1146,17 +1146,17 @@ program shdom
 
     ! Read in previous run from binary file if desired
     call shd_io__restoreState(fileInp_sav, shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
-        &isNewRad, isNewGrid, grid_obj%x, grid_obj%y, grid_obj%z,&
+        &isNewRad, doNewGrid, grid_obj%x, grid_obj%y, grid_obj%z,&
         &grid_obj%Npts, grid_obj%Ncell, grid_obj%xyz, grid_obj%i8Grid, grid_obj%i6Cell, grid_obj%i2Tree,&
         &grid_obj%flag, fluxTot, shdo_obj%isrcJ, shdo_obj%srcJ, shdo_obj%iradI, shdo_obj%radI)
 
 
     ! Check if we can use pre-calculated "state", if not, generate new grids
-    !   isNewGrid is from shd_io__restoreState call
-    if (isNewGrid) then
+    !   doNewGrid is from shd_io__restoreState call
+    if (doNewGrid) then
         ! Make the internal base grid lines
-        call shd_init__makeGrid(rtm_obj%flag_bc, grid_obj%type, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz,&
-            &grid_obj%x, grid_obj%y, grid_obj%z, prp_obj)
+        ! note: we might not need <rtm_obj> after all
+        call shd_init__makeGrid(rtm_obj, prp_OBJ, grid_OBJ)
     end if
 
 
@@ -1194,7 +1194,7 @@ program shdom
 
         ! If this is the first time through or we always want a base grid,
         !   then make the base grid point positions and grid cell structure.
-        if (isBaseOut .or. ((ig_ckd .eq. ckd_obj%Ng) .and. isNewGrid)) then
+        if (isBaseOut .or. ((ig_ckd .eq. ckd_obj%Ng) .and. doNewGrid)) then
             call shd_init__makeCell(rtm_obj%flag_bc, rtm_obj%flag_ip,&
                 &rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, grid_obj%Nx, grid_obj%Ny, grid_obj%Npts, grid_obj%Ncell,&
                 &grid_obj%x, grid_obj%y, grid_obj%z, grid_obj%xyz,&
@@ -1206,7 +1206,7 @@ program shdom
         !   in source (shdo_obj%srcJ), radiance (shdo_obj%radI), fluxes, direct Flux.
         call shd_solv__solveRte(&
             &isNewRad,&
-            &isDeltaM, isHighOrder_,&
+            &doDeltaM, isHighOrder_,&
             &solar0_ckd, skyRad,&
             &isAccel, solAcc, maxIter, solCrit, iter,&
             &splitAcc, shAcc,&
@@ -1228,7 +1228,7 @@ program shdom
                             &shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
                             &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
                             &rtm_obj%flag_bc, rtm_obj%flag_ip,&
-                            &src_obj%type, isDeltaM, src_obj%avgMu, src_obj%avgAz,&
+                            &src_obj%type, doDeltaM, src_obj%avgMu, src_obj%avgAz,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
                             &skyRad, src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
                             &grid_obj%x, grid_obj%y, grid_obj%z, grid_obj%xyz,&
@@ -1240,7 +1240,7 @@ program shdom
                         call shd_rad__computeRad(shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, grid_obj%Npts, grid_obj%Ncell,&
                             &shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
                             &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
-                            &rtm_obj%flag_bc, rtm_obj%flag_ip, src_obj%type, isDeltaM, src_obj%avgMu, src_obj%avgAz,&
+                            &rtm_obj%flag_bc, rtm_obj%flag_ip, src_obj%type, doDeltaM, src_obj%avgMu, src_obj%avgAz,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
                             &skyRad, src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
                             &grid_obj%x, grid_obj%y, grid_obj%z, grid_obj%xyz,&
@@ -1263,7 +1263,7 @@ program shdom
                             &shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
                             &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
                             &rtm_obj%flag_bc, rtm_obj%flag_ip,&
-                            &src_obj%type, isDeltaM, src_obj%avgMu, src_obj%avgAz,&
+                            &src_obj%type, doDeltaM, src_obj%avgMu, src_obj%avgAz,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
                             &skyRad, src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
                             &grid_obj%x, grid_obj%y, grid_obj%z, grid_obj%xyz,&
@@ -1275,7 +1275,7 @@ program shdom
                         call shd_rad__computeCamRad(shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, grid_obj%Npts, grid_obj%Ncell,&
                             &shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
                             &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
-                            &rtm_obj%flag_bc, rtm_obj%flag_ip, src_obj%type, isDeltaM, src_obj%avgMu, src_obj%avgAz,&
+                            &rtm_obj%flag_bc, rtm_obj%flag_ip, src_obj%type, doDeltaM, src_obj%avgMu, src_obj%avgAz,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
                             &skyRad, src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
                             &grid_obj%x, grid_obj%y, grid_obj%z, grid_obj%xyz,&
@@ -1296,7 +1296,7 @@ program shdom
                     mu_out  = parms_Out(2, iout)
                     phi_out = parms_Out(3, iout)*acos(-1.0)/180.0
                     call shd_src__computeSrcOneDir(shdo_obj%Nstokes, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
-                        &grid_obj%Npts, isDeltaM, mu_out, phi_out,&
+                        &grid_obj%Npts, doDeltaM, mu_out, phi_out,&
                         &src_obj%type, src_obj%avgMu, src_obj%avgAz, rtm_obj%ssa, rtm_obj%leg, rtm_obj%ipha,&
                         &fluxDir, shdo_obj%isrcJ, shdo_obj%srcJ, src1_Out, prp_obj)
                 end if
@@ -1321,7 +1321,7 @@ program shdom
         if (isFluxOut) then
 
             ! unscale delta-m fluxes
-            if ((src_obj%type.ne. 'T') .and. isDeltaM) then
+            if ((src_obj%type.ne. 'T') .and. doDeltaM) then
 
                 allocate(fluxDirTmp(grid_obj%Npts))
 
@@ -1401,7 +1401,7 @@ program shdom
                         &Npts_tot, Ncell_tot, Nsh_tot,&
                         &shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm, shdo_obj%Nmu, shdo_obj%Nphi, shdo_obj%Nang,&
                         &fileInp_sav, fileOut_sav,&
-                        &rtm_obj%flag_bc, rtm_obj%flag_ip, isDeltaM, grid_obj%type, src_obj%type,&
+                        &rtm_obj%flag_bc, rtm_obj%flag_ip, doDeltaM, grid_obj%type, src_obj%type,&
                         &src_obj%avgSolar, src_obj%avgMu, src_obj%avgAz, skyRad,&
                         &src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
                         &splitAcc, shAcc, solAcc, maxIter, totIter,&
@@ -1426,7 +1426,7 @@ program shdom
                 call shd_io__outputResult(shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, grid_obj%Nx, grid_obj%Ny, rtm_obj%Nz, grid_obj%Npts0, grid_obj%Npts, grid_obj%Ncell,&
                     shdo_obj%Nsh, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm, shdo_obj%Nmu, shdo_obj%Nphi, shdo_obj%Nang,&
                     fileInp_sav, fileOut_sav,&
-                    rtm_obj%flag_bc, rtm_obj%flag_ip, isDeltaM, grid_obj%type, src_obj%type,&
+                    rtm_obj%flag_bc, rtm_obj%flag_ip, doDeltaM, grid_obj%type, src_obj%type,&
                     src_obj%avgSolar, src_obj%avgMu, src_obj%avgAz, skyRad,&
                     src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
                     splitAcc, shAcc, solAcc, maxIter, totIter,&
@@ -1451,7 +1451,7 @@ program shdom
                 call shd_io__outputCamRad(shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, grid_obj%Npts, grid_obj%Ncell,&
                     &shdo_obj%Nsh, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm, shdo_obj%Nmu, shdo_obj%Nphi, shdo_obj%Nang,&
                     &fileInp_sav, fileOut_sav,&
-                    &rtm_obj%flag_bc, rtm_obj%flag_ip, isDeltaM, grid_obj%type, src_obj%type,&
+                    &rtm_obj%flag_bc, rtm_obj%flag_ip, doDeltaM, grid_obj%type, src_obj%type,&
                     &src_obj%avgSolar, src_obj%avgMu, src_obj%avgAz, skyRad,&
                     &src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
                     &splitAcc, shAcc, solAcc, maxIter, totIter,&
