@@ -44,8 +44,13 @@ module shd_inp
 
     use globals_const, only: PI_
     use globals_cfg,   only: verbose_, charMaxLen_
-    use globals_type,  only: shd_type_prp, shd_type_sfc, &
-                             shd_type_ckd, shd_type_sen
+    use globals_type,  only: shd_type_rtm, &
+                             shd_type_grid, &
+                             shd_type_shdo, &
+                             shd_type_prp, &
+                             shd_type_sfc, &
+                             shd_type_ckd, &
+                             shd_type_sen
 
     use shd_util, only: shd_util__computePlanck
 
@@ -1931,10 +1936,10 @@ subroutine shd_io__readSen(sen_obj)
 end subroutine shd_io__readSen
 
 subroutine shd_io__restoreState(&
-    &INSAVEFILE, NSTOKES, NX, NY, NZ,&
-    &ML, MM, NLM, INRADFLAG, NEWGRIDFLAG, XGRID, YGRID, ZGRID,&
-    &NPTS, NCELLS, GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR,&
-    &CELLFLAGS, FLUXES, SHPTR, SOURCE, RSHPTR, RADIANCE)
+    &INSAVEFILE,&
+    &INRADFLAG, NEWGRIDFLAG,&
+    &FLUXES,&
+    &rtm_obj, grid_obj, shdo_obj)
 
     ! Reads the binary save file containing a previous state of
     ! the SHDOM solution. This includes the cell tree structure,
@@ -1942,19 +1947,17 @@ subroutine shd_io__restoreState(&
     ! the low order terms of the radiance expansion, and the flux array.
     ! If the file name is 'NONE' then the INRADFLAG is set to false,
     ! otherwise it is true.  The input file may have any spherical
-    ! harmonic truncation smaller than the current (ML,MM,NLM).
+    ! harmonic truncation smaller than the current (shdo_obj%maxNl,shdo_obj%maxNm,shdo_obj%Nlm).
     ! The flag NEWGRIDFLAG is set to false if reading succeeds.
 
-    character(*), intent(in) :: INSAVEFILE
-    integer(kind=I__), intent(in) :: NSTOKES, NX, NY, NZ, ML, MM, NLM
+    type(shd_type_rtm),  intent(in)    :: rtm_obj
+    type(shd_type_grid), intent(inout) :: grid_obj
+    type(shd_type_shdo), intent(inout) :: shdo_obj
 
-    integer(kind=I__), intent(out) :: NPTS, NCELLS
-    integer(kind=I__), intent(out) :: SHPTR(*), RSHPTR(*)
-    integer(kind=I__), intent(out) :: GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
-    integer(kind=2), intent(out) :: CELLFLAGS(*)
+    character(*), intent(in) :: INSAVEFILE
+
     logical, intent(out) :: INRADFLAG, NEWGRIDFLAG
-    real(kind=R__), intent(out) :: XGRID(NX+1), YGRID(NY+1), ZGRID(NZ)
-    real(kind=R__), intent(out) :: GRIDPOS(3, *), FLUXES(2, *), SOURCE(*), RADIANCE(*)
+    real(kind=R__), intent(out) :: FLUXES(2, *)
 
     integer :: NSTI, NXI, NYI, NZI, MLI, MMI, NLMI
     integer :: i, j, NS, NR
@@ -1966,41 +1969,44 @@ subroutine shd_io__restoreState(&
     open (UNIT=3, FILE=trim(adjustl(INSAVEFILE)), STATUS='OLD',&
         &FORM='UNFORMATTED', ERR=900)
 
-    read (3) NSTI, NXI, NYI, NZI, MLI, MMI, NLMI, NPTS, NCELLS
+    read (3) NSTI, NXI, NYI, NZI, MLI, MMI, NLMI, grid_obj%Npts, grid_obj%Ncell
 
-    if (NXI .ne. NX .or. NYI .ne. NY .or. NZI .ne. NZ) then
+    if ((NXI .ne. rtm_obj%Nx) .or. (NYI .ne. rtm_obj%Ny) .or. (NZI .ne. rtm_obj%Nz)) then
         if (verbose_ .ge. 4) write (6, '(A, 3I6)') 'Warning [_restoreState]: wrong grid size:', NXI, NYI, NZI
         close (3)
         return
     end if
 
-    if (NSTI .ne. NSTOKES .or.&
-        &MLI .gt. ML .or. MMI .gt. MM) then
+    if ((NSTI .ne. shdo_obj%Nstokes) .or. &
+        (MLI .gt. shdo_obj%maxNl) .or. &
+        (MMI .gt. shdo_obj%maxNm)) then
         if (verbose_ .ge. 4) write (6, '(A, 3I6)') 'Warning [_restoreState]: incompatible SH:', NSTI, MLI, MMI
         close (3)
         return
     end if
 
-    read (3) (XGRID(i), i=1, NX+1)
-    read (3) (YGRID(i), i=1, NY+1)
-    read (3) (ZGRID(i), i=1, NZ)
-    read (3) ((GRIDPTR(j, i), j=1, 8), i=1, NCELLS)
-    read (3) ((NEIGHPTR(j, i), j=1, 6), i=1, NCELLS)
-    read (3) ((TREEPTR(j, i), j=1, 2), i=1, NCELLS)
-    read (3) (CELLFLAGS(i), i=1, NCELLS)
+    read (3) (grid_obj%x(i), i=1, rtm_obj%Nx+1)
+    read (3) (grid_obj%y(i), i=1, rtm_obj%Ny+1)
+    read (3) (grid_obj%z(i), i=1, rtm_obj%Nz)
+    read (3) ((grid_obj%i8Grid(j, i), j=1, 8), i=1, grid_obj%Ncell)
+    read (3) ((grid_obj%i6Cell(j, i), j=1, 6), i=1, grid_obj%Ncell)
+    read (3) ((grid_obj%i2Tree(j, i), j=1, 2), i=1, grid_obj%Ncell)
+    read (3) (grid_obj%flag(i), i=1, grid_obj%Ncell)
 
-    read (3) ((GRIDPOS(j, i), j=1, 3), i=1, NPTS)
-    read (3) ((FLUXES(j, i), j=1, 2), i=1, NPTS)
+    read (3) ((grid_obj%xyz(j, i), j=1, 3), i=1, grid_obj%Npts)
+    read (3) ((FLUXES(j, i), j=1, 2), i=1, grid_obj%Npts)
 
-    read (3) (SHPTR(i), i=1, NPTS + 1)
-    NS = SHPTR(NPTS + 1)
-    read (3) (SOURCE(i), i=1, NSTOKES*NS)
+    read (3) (shdo_obj%isrcJ(i), i=1, grid_obj%Npts + 1)
 
-    NR = 4*NPTS
-    read (3) (RADIANCE(i), i=1, NSTOKES*NR)
-    RSHPTR(1) = 0
-    do i = 1, NPTS
-        RSHPTR(i+1) = RSHPTR(i) + NSTOKES*4
+    NS = shdo_obj%isrcJ(grid_obj%Npts + 1)
+    read (3) ((shdo_obj%srcJ(j, i), j=1, shdo_obj%Nstokes), i=1, NS)
+
+    NR = 4*grid_obj%Npts
+    read (3) ((shdo_obj%radI(j, i), j=1, shdo_obj%Nstokes), i=1, NR)
+
+    shdo_obj%iradI(1) = 0
+    do i = 1, grid_obj%Npts
+        shdo_obj%iradI(i+1) = shdo_obj%iradI(i) + shdo_obj%Nstokes*4
     end do
 
     close (3)

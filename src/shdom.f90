@@ -928,9 +928,9 @@ program shdom
 
     if (sfc_obj%fname(1:4) .ne. 'NONE') then
         if (sfc_obj%type(2:2) .eq. 'L') then
-            NmaxNpts = real(3)/real(rtm_obj%Nz) * (sfc_obj%maxNpar + 2.0 + shdo_obj%Nstokes*2.0)
+            NmaxNpts = 3.0/real(rtm_obj%Nz) * (sfc_obj%maxNpar + 2.0 + shdo_obj%Nstokes*2.0)
         else
-            NmaxNpts = real(3)/real(rtm_obj%Nz) * (sfc_obj%maxNpar + 2.0 + shdo_obj%Nstokes*(2.0+ shdo_obj%Nmu*shdo_obj%maxNphi0/2))
+            NmaxNpts = 3.0/real(rtm_obj%Nz) * (sfc_obj%maxNpar + 2.0 + shdo_obj%Nstokes*(2.0+ shdo_obj%Nmu*shdo_obj%maxNphi0/2))
         end if
     end if
 
@@ -1145,10 +1145,9 @@ program shdom
 
 
     ! Read in previous run from binary file if desired
-    call shd_io__restoreState(fileInp_sav, shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
-        &isNewRad, doNewGrid, grid_obj%x, grid_obj%y, grid_obj%z,&
-        &grid_obj%Npts, grid_obj%Ncell, grid_obj%xyz, grid_obj%i8Grid, grid_obj%i6Cell, grid_obj%i2Tree,&
-        &grid_obj%flag, fluxTot, shdo_obj%isrcJ, shdo_obj%srcJ, shdo_obj%iradI, shdo_obj%radI)
+    call shd_io__restoreState(fileInp_sav,&
+        &isNewRad, doNewGrid,fluxTot,&
+        &rtm_obj, grid_OBJ, shdo_OBJ)
 
 
     ! Check if we can use pre-calculated "state", if not, generate new grids
@@ -1194,6 +1193,7 @@ program shdom
         ! If this is the first time through or we always want a base grid,
         !   then make the base grid point positions and grid cell structure.
         if (isBaseOut .or. ((ig_ckd .eq. ckd_obj%Ng) .and. doNewGrid)) then
+            ! note: we might not need <rtm_obj> after all
             call shd_init__makeCell(rtm_obj, grid_OBJ)
             grid_obj%Ncell0 = grid_obj%Ncell
         end if
