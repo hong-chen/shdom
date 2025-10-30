@@ -45,9 +45,14 @@ module shd_mpi
                              is1DX_, is1DYx_, is1D_, &
                              isPol_, isPol4_, &
                              isSolar_
-    use globals_type,  only: shd_type_prp, shd_type_sfc, &
-                             shd_type_ckd, shd_type_sen, &
-                             shd_type_rtm
+    use globals_type, only: shd_type_rtm,  &
+                            shd_type_grid, &
+                            shd_type_shdo, &
+                            shd_type_src,  &
+                            shd_type_prp,  &
+                            shd_type_sfc,  &
+                            shd_type_ckd,  &
+                            shd_type_sen
 
 #if HAS_MPI
     use mpi_f08,  only: MPI_comm_world, MPI_comm, MPI_request, &
@@ -795,16 +800,17 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
     &SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV, SUMSHTERMS,&
     &XALLGRID, YALLGRID,&
     &ALLFLUXES, ALLFLUXDIV, ALLSHTERMS,&
-    &NCELLS, NPTS, NSH, NCELLSTOT, NPTSTOT, NSHTOT, prp_obj)
+    &NSH, NCELLSTOT, NPTSTOT, NSHTOT, grid_obj, prp_obj)
 
     ! Gathers the base grid output data in SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV,
     ! and SUMSHTERMS from all the processors and assembles in the master
     ! processor output arrays ALLFLUXES, ALLFLUXDIV, ALLSHTERMS.  Gathers the
     ! ixyOut_ array from each processor to determine where each subdomain is.
     ! Also gathers the full base grid position arrays (XALLGRID/YALLGRID) and
-    ! sums NCELLS,NPTS,NSH over all processors.
+    ! sums grid_obj%Ncell,grid_obj%Npts,NSH over all processors.
 
-    type(shd_type_prp), intent(in) :: prp_obj
+    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_prp),  intent(in) :: prp_obj
 
     logical, intent(in) :: FLUX_OUT, FLUXDIV_OUT, SH_OUT
     integer, intent(in) :: IPFLAG, BCFLAG, NBPTS, NXT, NYT, Nz, NSHOUT
@@ -813,7 +819,7 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
     real, intent(out) :: XALLGRID(NXT), YALLGRID(NYT)
     real, intent(out) :: ALLFLUXES(3, Nz, NYT, NXT), ALLFLUXDIV(Nz, NYT, NXT)
     real, intent(out) :: ALLSHTERMS(NSHOUT, Nz, NYT, NXT)
-    integer, intent(in) :: NCELLS, NPTS, NSH
+    integer, intent(in) :: NSH
     integer, intent(out) :: NCELLSTOT, NPTSTOT, NSHTOT
 
 #if HAS_MPI
@@ -967,8 +973,8 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
         YALLGRID(1:NYT) = (/(prp_obj%yDomain*(I - 1)/NYT, I=1, NYT)/)
     end if
 
-    ! Get the sum of the NCELLS, NPTS, and NSH over the processors
-    send3int = (/NCELLS, NPTS, NSH/)
+    ! Get the sum of the grid_obj%Ncell, grid_obj%Npts, and NSH over the processors
+    send3int = (/grid_obj%Ncell, grid_obj%Npts, NSH/)
     call mpi_reduce(send3int, recv3int, 3, MPI_integer, MPI_sum, 0, comm2D_, ierr)
     NCELLSTOT = recv3int(1); NPTSTOT = recv3int(2); NSHTOT = recv3int(3)
 
@@ -1043,23 +1049,23 @@ subroutine shd_mpi__findTotSplitCritMax(SPLITCRIT)
 
 end subroutine shd_mpi__findTotSplitCritMax
 
-subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
+subroutine shd_mpi__makeDirect(SPT, BCFLAG, IPFLAG,&
     &DELTAM, ML,&
-    &SOLARFLUX, SOLARMU, SOLARAZ, xyz_Grid,&
-    &Nx, x_Grid, Ny, y_Grid, DIRFLUX, prp_obj, ckd_obj)
+    &SOLARFLUX, SOLARMU, SOLARAZ,&
+    &Nx, Ny, DIRFLUX, grid_obj, prp_obj, ckd_obj)
 
-    ! Makes the direct beam solar flux for the NPTS gridpoints started with
-    ! index SPT having X/Y/Z positions in xyz_Grid.
+    ! Makes the direct beam solar flux for the grid_obj%Npts gridpoints started with
+    ! index SPT having X/Y/Z positions in grid_obj%xyz.
     ! DIRFLUX is set to F*exp(-tau_sun).
 
-    type(shd_type_prp), intent(in) ::  prp_obj
-    type(shd_type_ckd), intent(in) ::  ckd_obj
+    type(shd_type_grid), intent(in) ::  grid_obj
+    type(shd_type_prp),  intent(in) ::  prp_obj
+    type(shd_type_ckd),  intent(in) ::  ckd_obj
 
-    integer, intent(in) :: SPT, NPTS, BCFLAG, IPFLAG, ML, Nx, Ny
+    integer, intent(in) :: SPT, BCFLAG, IPFLAG, ML, Nx, Ny
     logical, intent(in) :: DELTAM
     real, intent(in) :: SOLARFLUX, SOLARMU, SOLARAZ
-    real, intent(in) :: xyz_Grid(3, NPTS), x_Grid(Nx + 1), y_Grid(Ny + 1)
-    real, intent(out) :: DIRFLUX(NPTS)
+    real, intent(out) :: DIRFLUX(grid_obj%Npts)
 
 #if HAS_MPI
     logical :: VALIDBEAM
@@ -1080,12 +1086,12 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
     type(MPI_request) :: requests(12)
     type(MPI_status) :: status(12)
 
-    MAXNBEAM = 2*NPTS
+    MAXNBEAM = 2*grid_obj%Npts
     allocate (BndDirRealInfo(4, MAXNBEAM, 4), BndDirIntInfo(2, MAXNBEAM, 4))
     allocate (DirAllOut(MAXNBEAM, 0:Nproc_ - 1), DirPtrOut(MAXNBEAM, 0:Nproc_ - 1))
     allocate (DirAllIn(MAXNBEAM), DirPtrIn(MAXNBEAM), Ndone(0:Nproc_ - 1))
 
-    EPS = 1.0e-5*max(x_Grid(2) - x_Grid(1), y_Grid(2) - y_Grid(1))
+    EPS = 1.0e-5*max(grid_obj%x(2) - grid_obj%x(1), grid_obj%y(2) - grid_obj%y(1))
 
     if (SPT .eq. 1) then
         ! Initialize the direct beam calculation
@@ -1108,9 +1114,9 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
         else
             Ldownx = 1; Lupx = 2
         end if
-        XMAX = x_Grid(Nx)
+        XMAX = grid_obj%x(Nx)
     else
-        XMAX = x_Grid(Nx + 1)
+        XMAX = grid_obj%x(Nx + 1)
     end if
     if (isMpiY_) then
         if (sin(SOLARAZ) .gt. 1.0e-5) then
@@ -1118,17 +1124,17 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
         else
             Ldowny = 3; Lupy = 4
         end if
-        YMAX = y_Grid(Ny)
+        YMAX = grid_obj%y(Ny)
     else
-        YMAX = y_Grid(Ny + 1)
+        YMAX = grid_obj%y(Ny + 1)
     end if
 
 
     ! Do the initial direct beam tracing starting at the base grid points
     NINVALID(:) = 0
-    do IP = SPT, NPTS
+    do IP = SPT, grid_obj%Npts
         DIRPATH = 0.0
-        call shd_rad__computeDirect(0, xyz_Grid(1, IP), xyz_Grid(2, IP), xyz_Grid(3, IP),&
+        call shd_rad__computeDirect(0, grid_obj%xyz(1, IP), grid_obj%xyz(2, IP), grid_obj%xyz(3, IP),&
             &BCFLAG, IPFLAG, DELTAM, ML,&
             &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(IP),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj, ckd_obj)
@@ -1193,11 +1199,11 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
         if (isMpiX_) then
             ! Continue the backwards ray integrations from the X boundary
             do J = 1, NINVALID(Ldownx)
-                if (Ldownx .eq. 1) BndDirRealInfo(1, J, Ldownx) = x_Grid(1)
-                if (Ldownx .eq. 2) BndDirRealInfo(1, J, Ldownx) = x_Grid(Nx)
+                if (Ldownx .eq. 1) BndDirRealInfo(1, J, Ldownx) = grid_obj%x(1)
+                if (Ldownx .eq. 2) BndDirRealInfo(1, J, Ldownx) = grid_obj%x(Nx)
                 X = BndDirRealInfo(1, J, Ldownx); Y = BndDirRealInfo(2, J, Ldownx)
                 Z = BndDirRealInfo(3, J, Ldownx); DIRPATH = BndDirRealInfo(4, J, Ldownx)
-                if (Y .lt. (y_Grid(1) - EPS)) Y = YMAX; if (Y .gt. (YMAX + EPS)) Y = y_Grid(1)
+                if (Y .lt. (grid_obj%y(1) - EPS)) Y = YMAX; if (Y .gt. (YMAX + EPS)) Y = grid_obj%y(1)
                 call shd_rad__computeDirect(0, X, Y, Z, BCFLAG, IPFLAG,&
                     &DELTAM, ML,&
                     &SOLARFLUX, SOLARMU, SOLARAZ, DIRJUNK,&
@@ -1225,11 +1231,11 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
         if (isMpiY_) then
             ! Continue the backwards ray integrations for the Y boundary
             do J = 1, NINVALID(Ldowny)
-                if (Ldowny .eq. 3) BndDirRealInfo(2, J, Ldowny) = y_Grid(1)
-                if (Ldowny .eq. 4) BndDirRealInfo(2, J, Ldowny) = y_Grid(Ny)
+                if (Ldowny .eq. 3) BndDirRealInfo(2, J, Ldowny) = grid_obj%y(1)
+                if (Ldowny .eq. 4) BndDirRealInfo(2, J, Ldowny) = grid_obj%y(Ny)
                 X = BndDirRealInfo(1, J, Ldowny); Y = BndDirRealInfo(2, J, Ldowny)
                 Z = BndDirRealInfo(3, J, Ldowny); DIRPATH = BndDirRealInfo(4, J, Ldowny)
-                if (X .lt. (x_Grid(1) - EPS)) X = XMAX; if (X .gt. (XMAX + EPS)) X = x_Grid(1)
+                if (X .lt. (grid_obj%x(1) - EPS)) X = XMAX; if (X .gt. (XMAX + EPS)) X = grid_obj%x(1)
                 call shd_rad__computeDirect(0, X, Y, Z, BCFLAG, IPFLAG,&
                     &DELTAM, ML,&
                     &SOLARFLUX, SOLARMU, SOLARAZ, DIRJUNK,&
@@ -1303,8 +1309,8 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
 
 end subroutine shd_mpi__makeDirect
 
-subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, ptr8Grid_Cell,&
-    &xyz_Grid, Nx, Ny, Nz, x_Grid, y_Grid, z_Grid)
+subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, SWEEPORD,&
+    &Nx, Ny, Nz, grid_obj)
 
     ! Makes the pointers to and positions of the horizontal boundary grid
     ! points of the processors neighboring this one.
@@ -1318,9 +1324,10 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, ptr8Grid_Cell,&
     ! boundary of this subdomain (SIDE: 1=-X, 2=+X, 3=-Y, 4=+Y).  BxyPos_ holds
     ! the gridpoint positions (X,Y,Z) for these boundary points.
 
-    integer, intent(in) :: BCFLAG, IPFLAG, NPTS, SWEEPORD(NPTS, *), ptr8Grid_Cell(8, *)
+    type(shd_type_grid), intent(in) :: grid_obj
+
+    integer, intent(in) :: BCFLAG, IPFLAG, SWEEPORD(grid_obj%Npts, *)
     integer, intent(in) :: Nx, Ny, Nz
-    real, intent(in) :: xyz_Grid(3, NPTS), x_Grid(Nx), y_Grid(Ny), z_Grid(Nz)
 
 #if HAS_MPI
     integer :: tag, ierr, irq
@@ -1339,16 +1346,16 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, ptr8Grid_Cell,&
 
     if (.not. (isMpi_)) return
     if (is1D_) return
-    call mpi_allreduce(NPTS .eq. OLDNPTS, SAMEGRID, 1, MPI_logical, MPI_land, comm2D_, ierr)
-    OLDNPTS = NPTS
+    call mpi_allreduce(grid_obj%Npts .eq. OLDNPTS, SAMEGRID, 1, MPI_logical, MPI_land, comm2D_, ierr)
+    OLDNPTS = grid_obj%Npts
     if (SAMEGRID) return
 
     ! IOCT=1+BITX+2*BITY+4*BITZ ; JOCT=JOCTORDER(IOCT) = (/ 1,3,5,7,2,4,6,8 /)
     ! CX<0: BITX=1, JOCT=3,7,4,8      CY<0: BITY=1, JOCT=5,7,6,8
-    XEDGE(:) = (/x_Grid(Nx), x_Grid(Nx), x_Grid(1), x_Grid(1), x_Grid(Nx), x_Grid(Nx), x_Grid(1), x_Grid(1)/)
-    YEDGE(:) = (/y_Grid(Ny), y_Grid(Ny), y_Grid(Ny), y_Grid(Ny), y_Grid(1), y_Grid(1), y_Grid(1), y_Grid(1)/)
-    XYB(1) = x_Grid(1); XYB(2) = x_Grid(Nx)
-    XYB(3) = y_Grid(1); XYB(4) = y_Grid(Ny)
+    XEDGE(:) = (/grid_obj%x(Nx), grid_obj%x(Nx), grid_obj%x(1), grid_obj%x(1), grid_obj%x(Nx), grid_obj%x(Nx), grid_obj%x(1), grid_obj%x(1)/)
+    YEDGE(:) = (/grid_obj%y(Ny), grid_obj%y(Ny), grid_obj%y(Ny), grid_obj%y(Ny), grid_obj%y(1), grid_obj%y(1), grid_obj%y(1), grid_obj%y(1)/)
+    XYB(1) = grid_obj%x(1); XYB(2) = grid_obj%x(Nx)
+    XYB(3) = grid_obj%y(1); XYB(4) = grid_obj%y(Ny)
 
     if (is1D_) then
         NOCT = 2
@@ -1370,14 +1377,14 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, ptr8Grid_Cell,&
     do JOCT = 1, NOCT
         BITZ = 1 - ibits(JOCT, 0, 1)
         N(:) = 0
-        do IORDER = 1, NPTS
+        do IORDER = 1, grid_obj%Npts
             IPCELL = ishft(SWEEPORD(IORDER, JOCT), -3)
             ICORNER = ibits(SWEEPORD(IORDER, JOCT), 0, 3) + 1
-            IPT = ptr8Grid_Cell(ICORNER, IPCELL)
+            IPT = grid_obj%i8Grid(ICORNER, IPCELL)
 
-            if ((xyz_Grid(3, IPT) .lt. z_Grid(Nz) .and. BITZ .eq. 0) .or.&
-                &(xyz_Grid(3, IPT) .gt. z_Grid(1) .and. BITZ .eq. 1)) then
-                if (isMpiX_ .and. xyz_Grid(1, IPT) .eq. XEDGE(JOCT)&
+            if  ((grid_obj%xyz(3, IPT) .lt. grid_obj%z(Nz) .and. BITZ .eq. 0) .or.&
+                &(grid_obj%xyz(3, IPT) .gt. grid_obj%z(1) .and. BITZ .eq. 1)) then
+                if (isMpiX_ .and. grid_obj%xyz(1, IPT) .eq. XEDGE(JOCT)&
                     &.and. .not. is1DX_) then
                     SIDE = 2 - ibits(JOCT - 1, 1, 1)
                     N(SIDE) = N(SIDE) + 1
@@ -1385,9 +1392,9 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, ptr8Grid_Cell,&
                         call shd_mpi__abort('Error [mpi__findBndryPnt]: MAXNBXY exceeded by N(SIDE) 1x.')
                     end if
                     BNDPTR(JOCT, N(SIDE), 1, SIDE) = IPT
-                    BNDPOS(:, JOCT, N(SIDE), 1, SIDE) = xyz_Grid(:, IPT)
+                    BNDPOS(:, JOCT, N(SIDE), 1, SIDE) = grid_obj%xyz(:, IPT)
                 end if
-                if (isMpiY_ .and. xyz_Grid(2, IPT) .eq. YEDGE(JOCT)&
+                if (isMpiY_ .and. grid_obj%xyz(2, IPT) .eq. YEDGE(JOCT)&
                     &.and. .not. is1DYx_) then
                     SIDE = 4 - ibits(JOCT - 1, 2, 1)
                     N(SIDE) = N(SIDE) + 1
@@ -1395,7 +1402,7 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, ptr8Grid_Cell,&
                         call shd_mpi__abort('Error [mpi__findBndryPnt]: MAXNBXY exceeded by N(SIDE) 1y.')
                     end if
                     BNDPTR(JOCT, N(SIDE), 1, SIDE) = IPT
-                    BNDPOS(:, JOCT, N(SIDE), 1, SIDE) = xyz_Grid(:, IPT)
+                    BNDPOS(:, JOCT, N(SIDE), 1, SIDE) = grid_obj%xyz(:, IPT)
                 end if
             end if
         end do
@@ -1469,8 +1476,8 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, ptr8Grid_Cell,&
             iBxyPtr_(1, IZ, JOCT) = IBC + 1
             ! Store the boundary point info for this Z slab
             do while ((J .le. (NBX + NBY)) .and.&
-                &(((ZARRAY(J) .ge. z_Grid(IZ)) .and. (BITZ .eq. 0)) .or.&
-                &((ZARRAY(J) .le. z_Grid(IZ)) .and. (BITZ .eq. 1))))
+                &(((ZARRAY(J) .ge. grid_obj%z(IZ)) .and. (BITZ .eq. 0)) .or.&
+                 &((ZARRAY(J) .le. grid_obj%z(IZ)) .and. (BITZ .eq. 1))))
                 IBC = IBC + 1
                 if (INDX(J) .gt. 0) then
                     IX = INDX(J)
@@ -1498,11 +1505,10 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, ptr8Grid_Cell,&
 end subroutine shd_mpi__findBndryPnt
 
 subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
-    &Nx, Ny, Nz, x_Grid, y_Grid, z_Grid,&
-    &NA, NPTS, NCELLS, ptr8Grid_Cell,&
-    &ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell, xyz_Grid,&
+    &Nx, Ny, Nz,&
+    &NA,&
     &MU, PHI, EXTINCT, Nstokes, SOURCE,&
-    &KANG, GRIDRAD)
+    &KANG, GRIDRAD, grid_obj)
 
     ! Calculates the discrete ordinate boundary radiances for the KANG discrete
     ! ordinate (going in direction MU/PHI) for the grid points in the IZ slab.
@@ -1525,16 +1531,13 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
     ! the finished radiance and original grid points are exchanged with
     ! all the other processors.
 
+    type(shd_type_grid), intent(in) :: grid_obj
+
     integer, intent(in) :: BCFLAG, IPFLAG, JOCT, IZ
-    integer, intent(in) :: Nstokes, Nx, Ny, Nz, NA, NPTS, NCELLS, KANG
-    real, intent(in) :: x_Grid(Nx), y_Grid(Ny), z_Grid(Nz)
-    integer, intent(in) :: ptr8Grid_Cell(8, NCELLS), ptr6Cell_Cell(6, NCELLS)
-    integer, intent(in) :: ptr2Tree_Cell(2, NCELLS)
-    integer*2, intent(in) :: flag_Cell(NCELLS)
-    real, intent(in) :: xyz_Grid(3, NPTS)
+    integer, intent(in) :: Nstokes, Nx, Ny, Nz, NA, KANG
     real, intent(in) :: MU, PHI
-    real, intent(in) :: EXTINCT(NPTS), SOURCE(Nstokes, NA, NPTS)
-    real, intent(inout) :: GRIDRAD(Nstokes, NPTS)
+    real, intent(in) :: EXTINCT(grid_obj%Npts), SOURCE(Nstokes, NA, grid_obj%Npts)
+    real, intent(inout) :: GRIDRAD(Nstokes, grid_obj%Npts)
 
 #if HAS_MPI
     integer :: MAXNBND, Nbcpnts, Lupx, Lupy, Ldownx, Ldowny
@@ -1585,10 +1588,8 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
         RADIANCE(:) = 0.0; TRANSMIT = 1.0
         xo = x; yo = y; zo = z
         call shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
-            &x_Grid, y_Grid, z_Grid, NPTS, NCELLS,&
-            &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
-            &xyz_Grid, EXTINCT, Nstokes, SOURCE, KANG, GRIDRAD,&
-            &MU, PHI, X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
+            &EXTINCT, Nstokes, SOURCE, KANG, GRIDRAD,&
+            &MU, PHI, X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD, grid_obj)
         ! If we got a radiance then store it otherwise save
         !  the information needed to pass to other processors
         if (VALIDRAD) then
@@ -1663,17 +1664,15 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
         if (isMpiX_) then
             ! Continue the backwards ray integrations for the X boundary
             do J = 1, NINVALID(Ldownx)
-                if (Ldownx .eq. 1) BndRadRealInfo(1, J, Ldownx) = x_Grid(1)
-                if (Ldownx .eq. 2) BndRadRealInfo(1, J, Ldownx) = x_Grid(Nx)
+                if (Ldownx .eq. 1) BndRadRealInfo(1, J, Ldownx) = grid_obj%x(1)
+                if (Ldownx .eq. 2) BndRadRealInfo(1, J, Ldownx) = grid_obj%x(Nx)
                 X = BndRadRealInfo(1, J, Ldownx); Y = BndRadRealInfo(2, J, Ldownx)
                 Z = BndRadRealInfo(3, J, Ldownx)
                 SIDE = Ldownx; TRANSMIT = BndRadRealInfo(4, J, Ldownx)
                 RADIANCE(:) = BndRadRealInfo(5:4 + Nstokes, J, Ldownx)
                 call shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
-                    &x_Grid, y_Grid, z_Grid, NPTS, NCELLS,&
-                    &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
-                    &xyz_Grid, EXTINCT, Nstokes, SOURCE, KANG, GRIDRAD,&
-                    &MU, PHI, X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
+                    &EXTINCT, Nstokes, SOURCE, KANG, GRIDRAD,&
+                    &MU, PHI, X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD, grid_obj)
 
                 ! If we got a radiance then store it in RadAllOut (if for another
                 !   processor) otherwise save the information needed to continue
@@ -1698,17 +1697,15 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
         if (isMpiY_) then
             ! Continue the backwards ray integrations for the Y boundary
             do J = 1, NINVALID(Ldowny)
-                if (Ldowny .eq. 3) BndRadRealInfo(2, J, Ldowny) = y_Grid(1)
-                if (Ldowny .eq. 4) BndRadRealInfo(2, J, Ldowny) = y_Grid(Ny)
+                if (Ldowny .eq. 3) BndRadRealInfo(2, J, Ldowny) = grid_obj%y(1)
+                if (Ldowny .eq. 4) BndRadRealInfo(2, J, Ldowny) = grid_obj%y(Ny)
                 X = BndRadRealInfo(1, J, Ldowny); Y = BndRadRealInfo(2, J, Ldowny)
                 Z = BndRadRealInfo(3, J, Ldowny)
                 SIDE = Ldowny; TRANSMIT = BndRadRealInfo(4, J, Ldowny)
                 RADIANCE(:) = BndRadRealInfo(5:4 + Nstokes, J, Ldowny)
                 call shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
-                    &x_Grid, y_Grid, z_Grid, NPTS, NCELLS,&
-                    &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
-                    &xyz_Grid, EXTINCT, Nstokes, SOURCE, KANG, GRIDRAD,&
-                    &MU, PHI, X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
+                    &EXTINCT, Nstokes, SOURCE, KANG, GRIDRAD,&
+                    &MU, PHI, X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD, grid_obj)
                 ! If we got a radiance then store it in RadAllOut (if for another
                 !   processor) otherwise save the information needed to continue
                 !   passing to neighboring processors
@@ -1777,55 +1774,56 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
 end subroutine shd_mpi__calBndryRad
 
 subroutine shd_mpi__computeRad(&
-    &Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
+    &Nx, Ny, Nz,&
     &ML, MM, NLM,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
     &BCFLAG, IPFLAG,&
     &SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &SKYRAD, WAVENO, WAVELEN, UNITS,&
-    &x_Grid, y_Grid, z_Grid, xyz_Grid,&
-    &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
     &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
     &SHPTR, SOURCE, SOURCE1, GRIDRAD,&
-    &parms_Out, NRAD, RADOUT, prp_obj, sfc_obj, sen_obj)
+    &parms_Out, NRAD, RADOUT,&
+    &rtm_obj, grid_obj, shdo_obj, src_obj,&
+    &prp_obj, sfc_obj, sen_obj)
 
     ! Computes the radiances for the locations and directions specified
     ! in parms_Out, putting the results in RADOUT and increasing NRAD by
     ! the number of radiances output.  Does the radiative transfer integrations
     ! across multiple processors.
 
-    type(shd_type_prp), intent(in) :: prp_obj
-    type(shd_type_sfc), intent(in) :: sfc_obj
-    type(shd_type_sen), intent(in) :: sen_obj
+    type(shd_type_rtm),  intent(in) :: rtm_obj
+    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_shdo), intent(in) :: shdo_obj
+    type(shd_type_src),  intent(in) :: src_obj
+    type(shd_type_prp),  intent(in) :: prp_obj
+    type(shd_type_sfc),  intent(in) :: sfc_obj
+    type(shd_type_sen),  intent(in) :: sen_obj
 
-    integer, intent(in) :: Nstokes, Nx, Ny, Nz, BCFLAG, IPFLAG, NPTS, NCELLS
+    integer, intent(in) :: Nx, Ny, Nz, BCFLAG, IPFLAG
     integer, intent(in) :: ML, MM, NLM
     integer, intent(in) :: NMU, NPHI0MAX, NPHI0(NMU)
     integer, intent(inout) :: NRAD
     integer, intent(in) :: MAXNBC, NTOPPTS, NBOTPTS
-    integer, intent(in) :: ptr8Grid_Cell(8, NCELLS), ptr6Cell_Cell(6, NCELLS), ptr2Tree_Cell(2, NCELLS)
-    integer, intent(in) :: SHPTR(NPTS + 1), BCPTR(MAXNBC, 2)
-    integer*2, intent(in) :: flag_Cell(NCELLS), IPHASE(NPTS)
+    integer, intent(in) :: SHPTR(grid_obj%Npts + 1), BCPTR(MAXNBC, 2)
+    integer*2, intent(in) :: IPHASE(grid_obj%Npts)
     logical, intent(in) :: DELTAM
     real, intent(in) :: SOLARMU, SOLARAZ
     real, intent(in) :: SKYRAD, WAVENO(2), WAVELEN
     real, intent(in) :: MU(NMU), PHI(NMU, NPHI0MAX), WTDO(NMU, NPHI0MAX)
-    real, intent(in) :: x_Grid(Nx + 1), y_Grid(Ny + 1), z_Grid(Nz)
-    real, intent(in) :: xyz_Grid(3, NPTS)
-    real, intent(in) :: BCRAD(Nstokes, *)
-    real, intent(in) :: EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, NPTS)
-    real, intent(in) :: DIRFLUX(NPTS), FLUXES(2, NPTS), SOURCE(Nstokes, *)
-    real, intent(inout) :: SOURCE1(Nstokes, NPTS), GRIDRAD(Nstokes, NPTS)
+    real, intent(in) :: BCRAD(shdo_obj%Nstokes, *)
+    real, intent(in) :: EXTINCT(grid_obj%Npts), ALBEDO(grid_obj%Npts), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, grid_obj%Npts)
+    real, intent(in) :: DIRFLUX(grid_obj%Npts), FLUXES(2, grid_obj%Npts), SOURCE(shdo_obj%Nstokes, *)
+    real, intent(inout) :: SOURCE1(shdo_obj%Nstokes, grid_obj%Npts), GRIDRAD(shdo_obj%Nstokes, grid_obj%Npts)
     real, intent(in) :: parms_Out(*)
-    real, intent(out) :: RADOUT(Nstokes, *)
+    real, intent(out) :: RADOUT(shdo_obj%Nstokes, *)
     character, intent(in) ::  SRCTYPE*1, UNITS*1
 
 #if HAS_MPI
     integer :: IBC, JX, JY, K
     integer :: NANGOUT, Nx_out, Ny_out
     logical :: VALIDRAD
-    real(RD_) :: X0, Y0, Z0, XE, YE, ZE, X, Y, Z, TRANSMIT, RADIANCE(Nstokes)
+    real(RD_) :: X0, Y0, Z0, XE, YE, ZE, X, Y, Z, TRANSMIT, RADIANCE(shdo_obj%Nstokes)
     real    :: mu_out, phi_out, phiDeg_out
     real    :: STARTX, STARTY, EPS = 1.0e-5
 
@@ -1848,17 +1846,17 @@ subroutine shd_mpi__computeRad(&
 
     ! Make the isotropic radiances for the top boundary
     call shd_init__makeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
-        &UNITS, NTOPPTS, Nstokes, BCRAD(1, 1))
+        &UNITS, NTOPPTS, shdo_obj%Nstokes, BCRAD(1, 1))
     ! Make the bottom boundary radiances for the Lambertian surfaces.
     ! Compute the upwelling bottom radiances using the downwelling fluxes.
     if (sfc_obj%type .eq. 'FL') then
         call shd_init__makeBotRadUL(NBOTPTS, BCPTR(1, 2),&
             &DIRFLUX, FLUXES, SRCTYPE,&
-            &WAVENO, WAVELEN, UNITS, Nstokes, BCRAD(1, 1 + NTOPPTS), sfc_obj)
+            &WAVENO, WAVELEN, UNITS, shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS), sfc_obj)
     else if (sfc_obj%type .eq. 'VL') then
         call shd_init__makeBotRadVL(NBOTPTS, BCPTR(1, 2),&
             &DIRFLUX, FLUXES, SRCTYPE,&
-            &Nstokes, BCRAD(1, 1 + NTOPPTS), sfc_obj)
+            &shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS), sfc_obj)
     end if
 
     ! Setup the regularly spaced radiance locations
@@ -1874,15 +1872,15 @@ subroutine shd_mpi__computeRad(&
     else
         Ny_out = max(1, nint(prp_obj%yDomain/parms_Out(3)))
     end if
-    Z0 = min(max(parms_Out(1), z_Grid(1)), z_Grid(Nz))
+    Z0 = min(max(parms_Out(1), grid_obj%z(1)), grid_obj%z(Nz))
     NANGOUT = nint(parms_Out(6))
 
     MAXNRAD = nint(4.0*(Nx_out*Ny_out)/Nproc_)
     ! MAXNRAD = Nx_out*Ny_out
-    allocate (RadSend(Nstokes, MAXNRAD), IndexSend(MAXNRAD))
+    allocate (RadSend(shdo_obj%Nstokes, MAXNRAD), IndexSend(MAXNRAD))
     if (myProc_ .eq. 0) allocate (NradRecv(Nproc_ - 1),&
-        &RadRecv(Nstokes, MAXNRAD, Nproc_ - 1), IndexRecv(MAXNRAD, Nproc_ - 1))
-    allocate (BndRadRealInfo(4 + Nstokes, MAXNRAD, 4), BndRadIntInfo(MAXNRAD, 4))
+        &RadRecv(shdo_obj%Nstokes, MAXNRAD, Nproc_ - 1), IndexRecv(MAXNRAD, Nproc_ - 1))
+    allocate (BndRadRealInfo(4 + shdo_obj%Nstokes, MAXNRAD, 4), BndRadIntInfo(MAXNRAD, 4))
     allocate (requests(max(12, 3*Nproc_)), status(max(12, 3*Nproc_)))
 
     ! Loop over the radiance directions
@@ -1904,7 +1902,7 @@ subroutine shd_mpi__computeRad(&
         !   <shd_io__radShiftCorr> in shdOut.f90
         !╭────────────────────────────────────────────────╮!
         if (IPFLAG .eq. 0) then
-            DS_Z0 = Z0 - z_Grid(1)
+            DS_Z0 = Z0 - grid_obj%z(1)
             DS_VZA_RAD = acos(mu_out)
             DS_XOFFSET = DS_Z0*dtan(DS_VZA_RAD)*cos(phi_out)
             DS_YOFFSET = DS_Z0*dtan(DS_VZA_RAD)*sin(phi_out)
@@ -1944,15 +1942,15 @@ subroutine shd_mpi__computeRad(&
         end if
 
         ! Compute the source function throughout grid for this angle
-        call shd_src__computeSrcOneDir(Nstokes, ML, MM, NLM,&
-            &NPTS, DELTAM, mu_out, phi_out,&
+        call shd_src__computeSrcOneDir(shdo_obj%Nstokes, ML, MM, NLM,&
+            &grid_obj%Npts, DELTAM, mu_out, phi_out,&
             &SRCTYPE, SOLARMU, SOLARAZ, ALBEDO, LEGEN, IPHASE,&
             &DIRFLUX, SHPTR, SOURCE, SOURCE1, prp_obj)
 
         ! Set the radiance field to -1, so we can determine valid radiances
         !   Also set the source array to the extinction times the source
         !   function, so the grid interpolation is correct.
-        do I = 1, NPTS
+        do I = 1, grid_obj%Npts
             GRIDRAD(1, I) = -1.0
             SOURCE1(:, I) = SOURCE1(:, I)*EXTINCT(I)
         end do
@@ -1971,7 +1969,7 @@ subroutine shd_mpi__computeRad(&
                 call shd_init__makeBotRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
                     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, mu_out, phi_out,&
                     &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
-                    &Nstokes, BCRAD(1, 1 + NTOPPTS), sfc_obj)
+                    &shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS), sfc_obj)
             end if
             do IBC = 1, NBOTPTS
                 I = BCPTR(IBC, 2)
@@ -2008,16 +2006,14 @@ subroutine shd_mpi__computeRad(&
             do JX = 1, Nx_out
                 NRAD = NRAD + 1
 
-                if (X0 .ge. (x_Grid(1) - EPS) .and. X0 .le. (x_Grid(Nx) + EPS) .and.&
-                    Y0 .ge. (y_Grid(1) - EPS) .and. Y0 .le. (y_Grid(Ny) + EPS)) then
+                if (X0 .ge. (grid_obj%x(1) - EPS) .and. X0 .le. (grid_obj%x(Nx) + EPS) .and.&
+                    Y0 .ge. (grid_obj%y(1) - EPS) .and. Y0 .le. (grid_obj%y(Ny) + EPS)) then
                     TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
-                    call shd_src__integrateSrc(BCFLAG, IPFLAG, Nstokes,&
-                        &Nx, Ny, Nz, NPTS, NCELLS,&
-                        &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
-                        &x_Grid, y_Grid, z_Grid, xyz_Grid,&
+                    call shd_src__integrateSrc(BCFLAG, IPFLAG, shdo_obj%Nstokes,&
+                        &Nx, Ny, Nz,&
                         &mu_out, phi_out, GRIDRAD, EXTINCT, SOURCE1,&
                         &X0, Y0, Z0, XE, YE, ZE, SIDE,&
-                        &TRANSMIT, RADIANCE, VALIDRAD)
+                        &TRANSMIT, RADIANCE, VALIDRAD, grid_obj)
 
                     ! If we got a radiance then store it in RadSend otherwise save
                     !  the information needed to pass to other processors
@@ -2055,7 +2051,7 @@ subroutine shd_mpi__computeRad(&
             if (isMpiX_) then
                 call mpi_isend(NINVALID(Lupx), 1, MPI_integer,&
                     &iProcNeigh_(Lupx), 6*K + 1, comm2D_, requests(irq + 1), ierr)
-                call mpi_isend(BndRadRealInfo(:, :, Lupx), (4 + Nstokes)*NINVALID(Lupx), MPI_double_precision,&
+                call mpi_isend(BndRadRealInfo(:, :, Lupx), (4 + shdo_obj%Nstokes)*NINVALID(Lupx), MPI_double_precision,&
                     &iProcNeigh_(Lupx), 6*K + 2, comm2D_, requests(irq + 2), ierr)
                 call mpi_isend(BndRadIntInfo(:, Lupx), NINVALID(Lupx), MPI_integer,&
                     &iProcNeigh_(Lupx), 6*K + 3, comm2D_, requests(irq + 3), ierr)
@@ -2064,7 +2060,7 @@ subroutine shd_mpi__computeRad(&
             if (isMpiY_) then
                 call mpi_isend(NINVALID(Lupy), 1, MPI_integer,&
                     &iProcNeigh_(Lupy), 6*K + 4, comm2D_, requests(irq + 1), ierr)
-                call mpi_isend(BndRadRealInfo(:, :, Lupy), (4 + Nstokes)*NINVALID(Lupy), MPI_double_precision,&
+                call mpi_isend(BndRadRealInfo(:, :, Lupy), (4 + shdo_obj%Nstokes)*NINVALID(Lupy), MPI_double_precision,&
                     &iProcNeigh_(Lupy), 6*K + 5, comm2D_, requests(irq + 2), ierr)
                 call mpi_isend(BndRadIntInfo(:, Lupy), NINVALID(Lupy), MPI_integer,&
                     &iProcNeigh_(Lupy), 6*K + 6, comm2D_, requests(irq + 3), ierr)
@@ -2073,7 +2069,7 @@ subroutine shd_mpi__computeRad(&
             if (isMpiX_) then
                 call mpi_irecv(NINVALID(Ldownx), 1, MPI_integer,&
                     &iProcNeigh_(Ldownx), 6*K + 1, comm2D_, requests(irq + 1), ierr)
-                call mpi_irecv(BndRadRealInfo(:, :, Ldownx), (4 + Nstokes)*MAXNRAD, MPI_double_precision,&
+                call mpi_irecv(BndRadRealInfo(:, :, Ldownx), (4 + shdo_obj%Nstokes)*MAXNRAD, MPI_double_precision,&
                     &iProcNeigh_(Ldownx), 6*K + 2, comm2D_, requests(irq + 2), ierr)
                 call mpi_irecv(BndRadIntInfo(:, Ldownx), MAXNRAD, MPI_integer,&
                     &iProcNeigh_(Ldownx), 6*K + 3, comm2D_, requests(irq + 3), ierr)
@@ -2082,7 +2078,7 @@ subroutine shd_mpi__computeRad(&
             if (isMpiY_) then
                 call mpi_irecv(NINVALID(Ldowny), 1, MPI_integer,&
                     &iProcNeigh_(Ldowny), 6*K + 4, comm2D_, requests(irq + 1), ierr)
-                call mpi_irecv(BndRadRealInfo(:, :, Ldowny), (4 + Nstokes)*MAXNRAD, MPI_double_precision,&
+                call mpi_irecv(BndRadRealInfo(:, :, Ldowny), (4 + shdo_obj%Nstokes)*MAXNRAD, MPI_double_precision,&
                     &iProcNeigh_(Ldowny), 6*K + 5, comm2D_, requests(irq + 2), ierr)
                 call mpi_irecv(BndRadIntInfo(:, Ldowny), MAXNRAD, MPI_integer,&
                     &iProcNeigh_(Ldowny), 6*K + 6, comm2D_, requests(irq + 3), ierr)
@@ -2094,18 +2090,16 @@ subroutine shd_mpi__computeRad(&
             if (isMpiX_) then
                 ! Continue the backwards ray integrations for the X boundary
                 do J = 1, NINVALID(Ldownx)
-                    if (Ldownx .eq. 1) BndRadRealInfo(1, J, Ldownx) = x_Grid(1)
-                    if (Ldownx .eq. 2) BndRadRealInfo(1, J, Ldownx) = x_Grid(Nx)
+                    if (Ldownx .eq. 1) BndRadRealInfo(1, J, Ldownx) = grid_obj%x(1)
+                    if (Ldownx .eq. 2) BndRadRealInfo(1, J, Ldownx) = grid_obj%x(Nx)
                     X = BndRadRealInfo(1, J, Ldownx); Y = BndRadRealInfo(2, J, Ldownx)
                     Z = BndRadRealInfo(3, J, Ldownx); TRANSMIT = BndRadRealInfo(4, J, Ldownx)
-                    RADIANCE(:) = BndRadRealInfo(5:4 + Nstokes, J, Ldownx)
-                    call shd_src__integrateSrc(BCFLAG, IPFLAG, Nstokes,&
-                        &Nx, Ny, Nz, NPTS, NCELLS,&
-                        &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
-                        &x_Grid, y_Grid, z_Grid, xyz_Grid,&
+                    RADIANCE(:) = BndRadRealInfo(5:4 + shdo_obj%Nstokes, J, Ldownx)
+                    call shd_src__integrateSrc(BCFLAG, IPFLAG, shdo_obj%Nstokes,&
+                        &Nx, Ny, Nz,&
                         &mu_out, phi_out, GRIDRAD, EXTINCT, SOURCE1,&
                         &X, Y, Z, XE, YE, ZE, SIDE,&
-                        &TRANSMIT, RADIANCE, VALIDRAD)
+                        &TRANSMIT, RADIANCE, VALIDRAD, grid_obj)
                     ! If we got a radiance then store it in RadSend, otherwise
                     ! save information needed to pass to neighboring processors
                     if (VALIDRAD) then
@@ -2131,18 +2125,16 @@ subroutine shd_mpi__computeRad(&
             if (isMpiY_) then
                 ! Continue the backwards ray integrations for the Y boundary
                 do J = 1, NINVALID(Ldowny)
-                    if (Ldowny .eq. 3) BndRadRealInfo(2, J, Ldowny) = y_Grid(1)
-                    if (Ldowny .eq. 4) BndRadRealInfo(2, J, Ldowny) = y_Grid(Ny)
+                    if (Ldowny .eq. 3) BndRadRealInfo(2, J, Ldowny) = grid_obj%y(1)
+                    if (Ldowny .eq. 4) BndRadRealInfo(2, J, Ldowny) = grid_obj%y(Ny)
                     X = BndRadRealInfo(1, J, Ldowny); Y = BndRadRealInfo(2, J, Ldowny)
                     Z = BndRadRealInfo(3, J, Ldowny); TRANSMIT = BndRadRealInfo(4, J, Ldowny)
-                    RADIANCE(:) = BndRadRealInfo(5:4 + Nstokes, J, Ldowny)
-                    call shd_src__integrateSrc(BCFLAG, IPFLAG, Nstokes,&
-                        &Nx, Ny, Nz, NPTS, NCELLS,&
-                        &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
-                        &x_Grid, y_Grid, z_Grid, xyz_Grid,&
+                    RADIANCE(:) = BndRadRealInfo(5:4 + shdo_obj%Nstokes, J, Ldowny)
+                    call shd_src__integrateSrc(BCFLAG, IPFLAG, shdo_obj%Nstokes,&
+                        &Nx, Ny, Nz,&
                         &mu_out, phi_out, GRIDRAD, EXTINCT, SOURCE1,&
                         &X, Y, Z, XE, YE, ZE, SIDE,&
-                        &TRANSMIT, RADIANCE, VALIDRAD)
+                        &TRANSMIT, RADIANCE, VALIDRAD, grid_obj)
                     ! If we got a radiance then store it in RadSend, otherwise
                     ! save information needed to pass to neighboring processors
                     if (VALIDRAD) then
@@ -2175,7 +2167,7 @@ subroutine shd_mpi__computeRad(&
         if (myProc_ .gt. 0) then
             ! Send the finished radiances to the master processor
             call mpi_isend(Ndone, 1, MPI_integer, 0, 6*K + 7, comm2D_, requests(1), ierr)
-            call mpi_isend(RadSend, Nstokes*Ndone, MPI_real, 0, 6*K + 8, comm2D_, requests(2), ierr)
+            call mpi_isend(RadSend, shdo_obj%Nstokes*Ndone, MPI_real, 0, 6*K + 8, comm2D_, requests(2), ierr)
             call mpi_isend(IndexSend, Ndone, MPI_integer, 0, 6*K + 9, comm2D_, requests(3), ierr)
             call mpi_waitall(3, requests, status, ierr)
         else
@@ -2188,7 +2180,7 @@ subroutine shd_mpi__computeRad(&
             do iproc = 1, Nproc_ - 1
                 call mpi_irecv(NradRecv(iproc), 1, MPI_integer, iproc,&
                     &6*K + 7, comm2D_, requests(irq + 1), ierr)
-                call mpi_irecv(RadRecv(:, :, iproc), Nstokes*MAXNRAD, MPI_real, iproc,&
+                call mpi_irecv(RadRecv(:, :, iproc), shdo_obj%Nstokes*MAXNRAD, MPI_real, iproc,&
                     &6*K + 8, comm2D_, requests(irq + 2), ierr)
                 call mpi_irecv(IndexRecv(:, iproc), MAXNRAD, MPI_integer, iproc,&
                     &6*K + 9, comm2D_, requests(irq + 3), ierr)
@@ -2213,46 +2205,47 @@ subroutine shd_mpi__computeRad(&
 
 end subroutine shd_mpi__computeRad
 
-subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
+subroutine shd_mpi__computeCamRad(Nx, Ny, Nz,&
     &ML, MM, NLM,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
     &BCFLAG, IPFLAG,&
     &SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &SKYRAD, WAVENO, WAVELEN, UNITS,&
-    &x_Grid, y_Grid, z_Grid, xyz_Grid,&
-    &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
     &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
-    &SHPTR, SOURCE, parms_Out, IVIS, VISOUT, prp_obj, sfc_obj, sen_obj)
+    &SHPTR, SOURCE, parms_Out, IVIS, VISOUT,&
+    &rtm_obj, grid_obj, shdo_obj, src_obj,&
+    &prp_obj, sfc_obj, sen_obj)
 
     ! Computes Stokes radiances (output in VISOUT) for the visualization
     !   modes: 1) camera mode,
     !          2) cross track scanning,
     !          3) user-specified sensor mode.
 
-    type(shd_type_prp), intent(in) :: prp_obj
-    type(shd_type_sfc), intent(in) :: sfc_obj
-    type(shd_type_sen), intent(in) :: sen_obj
+    type(shd_type_rtm),  intent(in) :: rtm_obj
+    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_shdo), intent(in) :: shdo_obj
+    type(shd_type_src),  intent(in) :: src_obj
+    type(shd_type_prp),  intent(in) :: prp_obj
+    type(shd_type_sfc),  intent(in) :: sfc_obj
+    type(shd_type_sen),  intent(in) :: sen_obj
 
-    integer, intent(in) :: Nstokes, Nx, Ny, Nz, BCFLAG, IPFLAG, NPTS, NCELLS
+    integer, intent(in) :: Nx, Ny, Nz, BCFLAG, IPFLAG
     integer, intent(in) :: ML, MM, NLM
     integer, intent(in) :: NMU, NPHI0MAX, NPHI0(NMU)
     integer, intent(inout) :: IVIS
     integer, intent(in) :: MAXNBC, NTOPPTS, NBOTPTS
-    integer, intent(in) :: ptr8Grid_Cell(8, NCELLS), ptr6Cell_Cell(6, NCELLS), ptr2Tree_Cell(2, NCELLS)
-    integer, intent(in) :: SHPTR(NPTS + 1), BCPTR(MAXNBC, 2)
-    integer*2, intent(in) :: flag_Cell(NCELLS), IPHASE(NPTS)
+    integer, intent(in) :: SHPTR(grid_obj%Npts + 1), BCPTR(MAXNBC, 2)
+    integer*2, intent(in) :: IPHASE(grid_obj%Npts)
     logical, intent(in) :: DELTAM
     real, intent(in) :: SOLARMU, SOLARAZ
     real, intent(in) :: SKYRAD, WAVENO(2), WAVELEN
     real, intent(in) :: MU(NMU), PHI(NMU, NPHI0MAX), WTDO(NMU, NPHI0MAX)
-    real, intent(in) :: x_Grid(Nx + 1), y_Grid(Ny + 1), z_Grid(Nz)
-    real, intent(in) :: xyz_Grid(3, NPTS)
-    real, intent(in) :: BCRAD(Nstokes, *)
-    real, intent(in) :: EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, *)
-    real, intent(in) :: DIRFLUX(NPTS), FLUXES(2, NPTS), SOURCE(Nstokes, *)
+    real, intent(in) :: BCRAD(shdo_obj%Nstokes, *)
+    real, intent(in) :: EXTINCT(grid_obj%Npts), ALBEDO(grid_obj%Npts), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, *)
+    real, intent(in) :: DIRFLUX(grid_obj%Npts), FLUXES(2, grid_obj%Npts), SOURCE(shdo_obj%Nstokes, *)
     real, intent(in) :: parms_Out(*)
-    real, intent(out) :: VISOUT(Nstokes, *)
+    real, intent(out) :: VISOUT(shdo_obj%Nstokes, *)
     character, intent(in) :: SRCTYPE*1, UNITS*1
 
 #if HAS_MPI
@@ -2260,7 +2253,7 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
     integer :: NL, NS, LINE, SAMP
     logical :: CAMERA_MODE, SENSOR_MODE, VALIDRAD
     real, parameter  :: EPS = 1.0e-5
-    real(RD_) :: XE, YE, ZE, TRANSMIT, VISRAD(Nstokes), RADIANCE(Nstokes)
+    real(RD_) :: XE, YE, ZE, TRANSMIT, VISRAD(shdo_obj%Nstokes), RADIANCE(shdo_obj%Nstokes)
     real(RD_) :: X0, Y0, Z0, X1, Y1, Z1, X2, Y2, Z2, X, Y, Z
     real(RD_) :: THETA0, THETA1, PHIR, PHI0, COSSCAT, MU2, PHI2
     real(RD_) :: COSTH, SINTH, SINTH0, SINTH1
@@ -2296,23 +2289,23 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
             NSTPHASE = min(prp_obj%NlegSet, 2)
             allocate (PHASETAB(NSTPHASE, prp_obj%Npha, NSCATANGLE))
             call shd_scat__computePhase(NSCATANGLE, prp_obj%Npha, NSTPHASE,&
-                &Nstokes, ML, prp_obj%NlegSet, prp_obj%Nleg, LEGEN, PHASETAB)
+                &shdo_obj%Nstokes, ML, prp_obj%NlegSet, prp_obj%Nleg, LEGEN, PHASETAB)
         end if
     end if
 
     ! Make the isotropic radiances for the top boundary
     call shd_init__makeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
-        &UNITS, NTOPPTS, Nstokes, BCRAD(1, 1))
+        &UNITS, NTOPPTS, shdo_obj%Nstokes, BCRAD(1, 1))
     ! Make the bottom boundary radiances for the Lambertian surfaces.
     ! Compute the upwelling bottom radiances using the downwelling fluxes.
     if (sfc_obj%type .eq. 'FL') then
         call shd_init__makeBotRadUL(NBOTPTS, BCPTR(1, 2),&
             &DIRFLUX, FLUXES, SRCTYPE,&
-            &WAVENO, WAVELEN, UNITS, Nstokes, BCRAD(1, 1 + NTOPPTS), sfc_obj)
+            &WAVENO, WAVELEN, UNITS, shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS), sfc_obj)
     else if (sfc_obj%type .eq. 'VL') then
         call shd_init__makeBotRadVL(NBOTPTS, BCPTR(1, 2),&
             &DIRFLUX, FLUXES, SRCTYPE,&
-            &Nstokes, BCRAD(1, 1 + NTOPPTS), sfc_obj)
+            &shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS), sfc_obj)
     end if
 
     CAMERA_MODE = nint(parms_Out(1)) .eq. 1
@@ -2334,11 +2327,11 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
 
     ! Allocate sending, receiving, etc. arrays for MPI
     MAXNRAD = NL*NS
-    allocate (RadSend(Nstokes, MAXNRAD), IndexSend(MAXNRAD))
+    allocate (RadSend(shdo_obj%Nstokes, MAXNRAD), IndexSend(MAXNRAD))
     if (myProc_ .eq. 0) allocate (NradRecv(Nproc_ - 1),&
-        &RadRecv(Nstokes, MAXNRAD, Nproc_ - 1), IndexRecv(MAXNRAD, Nproc_ - 1))
-    allocate (BndSendRadRealInfo(6 + Nstokes, MAXNRAD, 4), BndSendRadIntInfo(MAXNRAD, 4))
-    allocate (BndRecvRadRealInfo(6 + Nstokes, MAXNRAD, 4), BndRecvRadIntInfo(MAXNRAD, 4))
+        &RadRecv(shdo_obj%Nstokes, MAXNRAD, Nproc_ - 1), IndexRecv(MAXNRAD, Nproc_ - 1))
+    allocate (BndSendRadRealInfo(6 + shdo_obj%Nstokes, MAXNRAD, 4), BndSendRadIntInfo(MAXNRAD, 4))
+    allocate (BndRecvRadRealInfo(6 + shdo_obj%Nstokes, MAXNRAD, 4), BndRecvRadIntInfo(MAXNRAD, 4))
     allocate (requests(max(24, 3*Nproc_)), status(max(24, 3*Nproc_)))
 
     NINVALID(:) = 0
@@ -2444,18 +2437,18 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
             !print *, IVIS, X0, Y0, Z0, 180.0/DPI_*COSTH, 180.0/DPI_*PHIR
 
             ! Extrapolate ray to domain top if above
-            if (Z0 .gt. z_Grid(Nz)) then
+            if (Z0 .gt. grid_obj%z(Nz)) then
                 if (COSTH .ge. 0.0) then
                     Ndone = Ndone + 1
                     RadSend(:, Ndone) = 0.0
                     IndexSend(Ndone) = IVIS
                     cycle
                 end if
-                R = (z_Grid(Nz) - Z0)/COSTH
+                R = (grid_obj%z(Nz) - Z0)/COSTH
                 X0 = X0 + R*sqrt(1 - COSTH**2)*cos(PHIR)
                 Y0 = Y0 + R*sqrt(1 - COSTH**2)*sin(PHIR)
-                Z0 = z_Grid(Nz)
-            else if (Z0 .lt. z_Grid(1)) then
+                Z0 = grid_obj%z(Nz)
+            else if (Z0 .lt. grid_obj%z(1)) then
                 write (6, *) 'Error [mpi__visualizeRad]: Level below domain.'
                 stop
             end if
@@ -2474,8 +2467,8 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
             end if
 
             ! Start the radiance calculation for those rays starting in this subdomain
-            if ((X0 .ge. x_Grid(1)) .and. (X0 .le. x_Grid(Nx)).and.&
-                (Y0 .ge. y_Grid(1)) .and. (Y0 .le. y_Grid(Ny))) then
+            if ((X0 .ge. grid_obj%x(1)) .and. (X0 .le. grid_obj%x(Nx)).and.&
+                (Y0 .ge. grid_obj%y(1)) .and. (Y0 .le. grid_obj%y(Ny))) then
 
                 ! MU2,PHI2 is radiance travel direction (opposite the camera viewing direction)
                 MU2 = -COSTH
@@ -2484,11 +2477,9 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
                 ! Integrate the extinction and source function along this ray
                 ! to calculate the Stokes radiance vector for this pixel
                 TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
-                call shd_src__integrateSrcOneRay(BCFLAG, IPFLAG, Nstokes,&
+                call shd_src__integrateSrcOneRay(BCFLAG, IPFLAG, shdo_obj%Nstokes,&
                     &NSTPHASE, NSCATANGLE, PHASETAB,&
-                    &Nx, Ny, Nz, NPTS, NCELLS,&
-                    &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
-                    &x_Grid, y_Grid, z_Grid, xyz_Grid,&
+                    &Nx, Ny, Nz,&
                     &ML, MM, NLM,&
                     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                     &DELTAM, SRCTYPE, WAVELEN, SOLARMU, SOLARAZ,&
@@ -2496,7 +2487,7 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
                     &DIRFLUX, SHPTR, SOURCE, YLMSUN,&
                     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                     &MU2, PHI2, X0, Y0, Z0,&
-                    &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD, prp_obj, sfc_obj)
+                    &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD, grid_obj, prp_obj, sfc_obj)
 
                 ! If we got a radiance then store it in RadSend otherwise save
                 !  the information needed to pass to other processors
@@ -2532,7 +2523,7 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
                 K = 3*SIDE
                 call mpi_isend(NINVALID(SIDE), 1, MPI_integer,&
                     &iProcNeigh_(SIDE), K + 1, comm2D_, requests(irq + 1), ierr)
-                call mpi_isend(BndSendRadRealInfo(:, :, SIDE), (6 + Nstokes)*NINVALID(SIDE), MPI_double_precision,&
+                call mpi_isend(BndSendRadRealInfo(:, :, SIDE), (6 + shdo_obj%Nstokes)*NINVALID(SIDE), MPI_double_precision,&
                     &iProcNeigh_(SIDE), K + 2, comm2D_, requests(irq + 2), ierr)
                 call mpi_isend(BndSendRadIntInfo(:, SIDE), NINVALID(SIDE), MPI_integer,&
                     &iProcNeigh_(SIDE), K + 3, comm2D_, requests(irq + 3), ierr)
@@ -2546,7 +2537,7 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
                 K = 3*RECVSIDE(SIDE)
                 call mpi_irecv(NINCOMING(SIDE), 1, MPI_integer,&
                     &iProcNeigh_(SIDE), K + 1, comm2D_, requests(irq + 1), ierr)
-                call mpi_irecv(BndRecvRadRealInfo(:, :, SIDE), (6 + Nstokes)*MAXNRAD, MPI_double_precision,&
+                call mpi_irecv(BndRecvRadRealInfo(:, :, SIDE), (6 + shdo_obj%Nstokes)*MAXNRAD, MPI_double_precision,&
                     &iProcNeigh_(SIDE), K + 2, comm2D_, requests(irq + 2), ierr)
                 call mpi_irecv(BndRecvRadIntInfo(:, SIDE), MAXNRAD, MPI_integer,&
                     &iProcNeigh_(SIDE), K + 3, comm2D_, requests(irq + 3), ierr)
@@ -2559,22 +2550,20 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
         NINVALID(:) = 0
         do IBND = 1, 4
             do J = 1, NINCOMING(IBND)
-                if (IBND .eq. 1) BndRecvRadRealInfo(1, J, IBND) = x_Grid(1)
-                if (IBND .eq. 2) BndRecvRadRealInfo(1, J, IBND) = x_Grid(Nx)
-                if (IBND .eq. 3) BndRecvRadRealInfo(2, J, IBND) = y_Grid(1)
-                if (IBND .eq. 4) BndRecvRadRealInfo(2, J, IBND) = y_Grid(Ny)
+                if (IBND .eq. 1) BndRecvRadRealInfo(1, J, IBND) = grid_obj%x(1)
+                if (IBND .eq. 2) BndRecvRadRealInfo(1, J, IBND) = grid_obj%x(Nx)
+                if (IBND .eq. 3) BndRecvRadRealInfo(2, J, IBND) = grid_obj%y(1)
+                if (IBND .eq. 4) BndRecvRadRealInfo(2, J, IBND) = grid_obj%y(Ny)
                 X = BndRecvRadRealInfo(1, J, IBND)
                 Y = BndRecvRadRealInfo(2, J, IBND)
                 Z = BndRecvRadRealInfo(3, J, IBND)
                 MU2 = BndRecvRadRealInfo(4, J, IBND)
                 PHI2 = BndRecvRadRealInfo(5, J, IBND)
                 TRANSMIT = BndRecvRadRealInfo(6, J, IBND)
-                RADIANCE(:) = BndRecvRadRealInfo(7 : 6+Nstokes, J, IBND)
-                call shd_src__integrateSrcOneRay(BCFLAG, IPFLAG, Nstokes,&
+                RADIANCE(:) = BndRecvRadRealInfo(7 : 6+shdo_obj%Nstokes, J, IBND)
+                call shd_src__integrateSrcOneRay(BCFLAG, IPFLAG, shdo_obj%Nstokes,&
                     &NSTPHASE, NSCATANGLE, PHASETAB,&
-                    &Nx, Ny, Nz, NPTS, NCELLS,&
-                    &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
-                    &x_Grid, y_Grid, z_Grid, xyz_Grid,&
+                    &Nx, Ny, Nz,&
                     &ML, MM, NLM,&
                     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                     &DELTAM, SRCTYPE, WAVELEN, SOLARMU, SOLARAZ,&
@@ -2582,7 +2571,7 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
                     &DIRFLUX, SHPTR, SOURCE, YLMSUN,&
                     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                     &MU2, PHI2, X, Y, Z,&
-                    &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD, prp_obj, sfc_obj)
+                    &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD, grid_obj, prp_obj, sfc_obj)
 
                 ! If we got a valid radiance then store it in RadSend, otherwise
                 ! save information needed to pass to neighboring processors
@@ -2613,7 +2602,7 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
     if (myProc_ .gt. 0) then
         ! Send the finished radiances to the master processor
         call mpi_isend(Ndone, 1, MPI_integer, 0, 21, comm2D_, requests(1), ierr)
-        call mpi_isend(RadSend, Nstokes*Ndone, MPI_real, 0, 22, comm2D_, requests(2), ierr)
+        call mpi_isend(RadSend, shdo_obj%Nstokes*Ndone, MPI_real, 0, 22, comm2D_, requests(2), ierr)
         call mpi_isend(IndexSend, Ndone, MPI_integer, 0, 23, comm2D_, requests(3), ierr)
         call mpi_waitall(3, requests, status, ierr)
     else
@@ -2626,7 +2615,7 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
         do iproc = 1, Nproc_ - 1
             call mpi_irecv(NradRecv(iproc), 1, MPI_integer, iproc,&
                 &21, comm2D_, requests(irq + 1), ierr)
-            call mpi_irecv(RadRecv(:, :, iproc), Nstokes*MAXNRAD, MPI_real, iproc,&
+            call mpi_irecv(RadRecv(:, :, iproc), shdo_obj%Nstokes*MAXNRAD, MPI_real, iproc,&
                 &22, comm2D_, requests(irq + 2), ierr)
             call mpi_irecv(IndexRecv(:, iproc), MAXNRAD, MPI_integer, iproc,&
                 &23, comm2D_, requests(irq + 3), ierr)
@@ -2737,18 +2726,16 @@ subroutine shd_mpi__calAccelSolCrit(DOACCEL, DELJDOT, DELJOLD, DELJNEW, JNORM,&
 
 end subroutine shd_mpi__calAccelSolCrit
 
-subroutine shd_mpi__end(NPTS, xyz_Grid,&
-    &runName, prpAll_obj, prp_obj)
+subroutine shd_mpi__end(runName, grid_obj, prpAll_obj, prp_obj)
 
     ! Shuts down MPI at the end, but mainly finds the number of gridpoints
     ! around each property grid point column, sends that array to the master
     ! process, and the master process write out the runName//"_load_balance.out"
     ! file.
 
+    type(shd_type_grid), intent(in) :: grid_obj
     type(shd_type_prp), intent(in) :: prpAll_obj, prp_obj
 
-    integer, intent(in) :: NPTS
-    real, intent(in) :: xyz_Grid(3, NPTS)
     character(len=*), intent(in) :: runName
 
 #if HAS_MPI
@@ -2768,9 +2755,9 @@ subroutine shd_mpi__end(NPTS, xyz_Grid,&
         ! Calculate the number of grid points around each property grid column
         allocate (NUMGRID(prp_obj%Nx, prp_obj%Ny))
         NUMGRID(:, :) = 0
-        do I = 1, NPTS
-            IX = nint((xyz_Grid(1, I) - prp_obj%xStart)/dx_prp) + 1
-            IY = nint((xyz_Grid(2, I) - prp_obj%yStart)/dy_prp) + 1
+        do I = 1, grid_obj%Npts
+            IX = nint((grid_obj%xyz(1, I) - prp_obj%xStart)/dx_prp) + 1
+            IY = nint((grid_obj%xyz(2, I) - prp_obj%yStart)/dy_prp) + 1
             if ((IX .le. prp_obj%Nx) .and. (IY .le. prp_obj%Ny)) then
                 NUMGRID(IX, IY) = NUMGRID(IX, IY) + 1
             end if
@@ -3093,11 +3080,9 @@ real function shd_mpi__ran(idum)
 end function shd_mpi__ran
 
 subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
-    &x_Grid, y_Grid, z_Grid, NPTS, NCELLS,&
-    &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
-    &xyz_Grid, EXTINCT, Nstokes, SOURCE, KANG,&
+    &EXTINCT, Nstokes, SOURCE, KANG,&
     &GRIDRAD, MU, PHI,&
-    &X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
+    &X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD, grid_obj)
 
     ! Integrates the radiative transfer equation tracing a ray starting
     ! at X,Y,Z on boundary (face) SIDE to get the radiance in direction MU,PHI.
@@ -3113,15 +3098,12 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     ! properly initialized on input).  The ending location X,Y,Z and the
     ! subdomain SIDE (1=-X,2=+X,3=-Y,4=+Y) are also returned.
 
-    integer, intent(in) :: BCFLAG, IPFLAG, Nx, Ny, Nz, NA, NPTS, NCELLS
+    type(shd_type_grid), intent(in) :: grid_obj
+
+    integer, intent(in) :: BCFLAG, IPFLAG, Nx, Ny, Nz, NA
     integer, intent(in) :: Nstokes, KANG
-    real, intent(in) :: x_Grid(Nx), y_Grid(Ny), z_Grid(Nz)
-    integer, intent(in) :: ptr8Grid_Cell(8, NCELLS), ptr6Cell_Cell(6, NCELLS)
-    integer, intent(in) :: ptr2Tree_Cell(2, NCELLS)
-    integer*2, intent(in) :: flag_Cell(NCELLS)
-    real, intent(in) :: xyz_Grid(3, NPTS)
-    real, intent(in) :: EXTINCT(NPTS)
-    real, intent(in) :: SOURCE(Nstokes, NA, NPTS), GRIDRAD(Nstokes, NPTS)
+    real, intent(in) :: EXTINCT(grid_obj%Npts)
+    real, intent(in) :: SOURCE(Nstokes, NA, grid_obj%Npts), GRIDRAD(Nstokes, grid_obj%Npts)
     real, intent(in) :: MU, PHI
     real, intent(inout) :: X, Y, Z
     integer, intent(inout) :: SIDE
@@ -3144,7 +3126,7 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     data GRIDFACE/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8/
     data OPPFACE/2, 1, 4, 3, 6, 5/
 
-    EPS = 1.0e-3*(xyz_Grid(3, ptr8Grid_Cell(8, 1)) - xyz_Grid(3, ptr8Grid_Cell(1, 1)))
+    EPS = 1.0e-3*(grid_obj%xyz(3, grid_obj%i8Grid(8, 1)) - grid_obj%xyz(3, grid_obj%i8Grid(1, 1)))
 
     ! Make the ray direction (opposite to the discrete ordinate direction)
     CX = sqrt(1.0 - MU**2)*cos(PHI + DPI_)
@@ -3191,7 +3173,7 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     IU = Nz
     do while (IU - IL .gt. 1)
         IM = (IU + IL)/2
-        if (Z .ge. z_Grid(IM)) then
+        if (Z .ge. grid_obj%z(IM)) then
             IL = IM
         else
             IU = IM
@@ -3205,17 +3187,17 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     NYC = Ny
     if (isMpiY_ .and. .not. is1DYx_) NYC = Ny - 1
     if (is1DX_) then
-        IX = 1 + nint((Nx - 1)*(X - x_Grid(1))/(x_Grid(Nx) - x_Grid(1)))
+        IX = 1 + nint((Nx - 1)*(X - grid_obj%x(1))/(grid_obj%x(Nx) - grid_obj%x(1)))
     else
-        IX = 1 + int((Nx - 1)*(X - x_Grid(1))/(x_Grid(Nx) - x_Grid(1)))
+        IX = 1 +  int((Nx - 1)*(X - grid_obj%x(1))/(grid_obj%x(Nx) - grid_obj%x(1)))
     end if
     if (is1DYx_) then
-        IY = 1 + nint((Ny - 1)*(Y - y_Grid(1))/(y_Grid(Ny) - y_Grid(1)))
+        IY = 1 + nint((Ny - 1)*(Y - grid_obj%y(1))/(grid_obj%y(Ny) - grid_obj%y(1)))
     else
-        IY = 1 + int((Ny - 1)*(Y - y_Grid(1))/(y_Grid(Ny) - y_Grid(1)))
+        IY = 1 +  int((Ny - 1)*(Y - grid_obj%y(1))/(grid_obj%y(Ny) - grid_obj%y(1)))
     end if
     if ((ix .lt. 1) .or. (iy .lt. 1) .or. (ix .gt. (Nx + 1)) .or. (iy .gt. (Ny + 1))) then
-        write (6, *) 'Bad ix and/or iy', x, y, z, ix, iy, iz, x_Grid(1), x_Grid(Nx), y_Grid(1), y_Grid(ny), myProc_
+        write (6, *) 'Bad ix and/or iy', x, y, z, ix, iy, iz, grid_obj%x(1), grid_obj%x(Nx), grid_obj%y(1), grid_obj%y(ny), myProc_
         write (6, *) 'Bad ix and/or iy', side, transmit
         call shd_mpi__abort('Error [mpi_integrateRay]: Bad ix and/or iy, see above.')
     end if
@@ -3230,42 +3212,42 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     ! which dimension (X,Y,Z) the parent cell was split in, then compare
     ! the grid point with the test point (X,Y,Z) to find which child cell
     ! (pos or neg) the test point is in.
-    do while (ptr2Tree_Cell(2, ICELL) .gt. 0)
-        DIR = ibits(int(flag_Cell(ICELL)), 2, 2)
-        IC = ptr2Tree_Cell(2, ICELL) + 1
-        IPTR = ptr8Grid_Cell(1, IC)
+    do while (grid_obj%i2Tree(2, ICELL) .gt. 0)
+        DIR = ibits(int(grid_obj%flag(ICELL)), 2, 2)
+        IC = grid_obj%i2Tree(2, ICELL) + 1
+        IPTR = grid_obj%i8Grid(1, IC)
         if (DIR .eq. 1) then
-            if (X .lt. xyz_Grid(1, IPTR)) IC = IC - 1
+            if (X .lt. grid_obj%xyz(1, IPTR)) IC = IC - 1
         else if (DIR .eq. 2) then
-            if (Y .lt. xyz_Grid(2, IPTR)) IC = IC - 1
+            if (Y .lt. grid_obj%xyz(2, IPTR)) IC = IC - 1
         else if (DIR .eq. 3) then
-            if (Z .lt. xyz_Grid(3, IPTR)) IC = IC - 1
+            if (Z .lt. grid_obj%xyz(3, IPTR)) IC = IC - 1
         end if
         ICELL = IC
     end do
 
     IFACE = SIDE
     ! Get the four gridpoints for this face
-    I1 = ptr8Grid_Cell(GRIDFACE(1, IFACE), ICELL)
-    I2 = ptr8Grid_Cell(GRIDFACE(2, IFACE), ICELL)
-    I3 = ptr8Grid_Cell(GRIDFACE(3, IFACE), ICELL)
-    I4 = ptr8Grid_Cell(GRIDFACE(4, IFACE), ICELL)
-    IPINX = btest(int(flag_Cell(ICELL)), 0)
-    IPINY = btest(int(flag_Cell(ICELL)), 1)
+    I1 = grid_obj%i8Grid(GRIDFACE(1, IFACE), ICELL)
+    I2 = grid_obj%i8Grid(GRIDFACE(2, IFACE), ICELL)
+    I3 = grid_obj%i8Grid(GRIDFACE(3, IFACE), ICELL)
+    I4 = grid_obj%i8Grid(GRIDFACE(4, IFACE), ICELL)
+    IPINX = btest(int(grid_obj%flag(ICELL)), 0)
+    IPINY = btest(int(grid_obj%flag(ICELL)), 1)
     ! Compute the face interpolation factors
     if (IFACE .le. 2) then
-        U = (Z - xyz_Grid(3, I1))/(xyz_Grid(3, I3) - xyz_Grid(3, I1))
+        U = (Z - grid_obj%xyz(3, I1))/(grid_obj%xyz(3, I3) - grid_obj%xyz(3, I1))
         if (IPINY) then
             V = 0.5
         else
-            V = (Y - xyz_Grid(2, I1))/(xyz_Grid(2, I2) - xyz_Grid(2, I1))
+            V = (Y - grid_obj%xyz(2, I1))/(grid_obj%xyz(2, I2) - grid_obj%xyz(2, I1))
         end if
     else
-        U = (Z - xyz_Grid(3, I1))/(xyz_Grid(3, I3) - xyz_Grid(3, I1))
+        U = (Z - grid_obj%xyz(3, I1))/(grid_obj%xyz(3, I3) - grid_obj%xyz(3, I1))
         if (IPINX) then
             V = 0.5
         else
-            V = (X - xyz_Grid(1, I1))/(xyz_Grid(1, I2) - xyz_Grid(1, I1))
+            V = (X - grid_obj%xyz(1, I1))/(grid_obj%xyz(1, I2) - grid_obj%xyz(1, I1))
         end if
     end if
 
@@ -3284,25 +3266,25 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     RAD(:) = RADIANCE(:)
     VALIDRAD = .false.
     do while (.not. VALIDRAD .and. ICELL .gt. 0)
-        IPINX = btest(int(flag_Cell(ICELL)), 0)
-        IPINY = btest(int(flag_Cell(ICELL)), 1)
+        IPINX = btest(int(grid_obj%flag(ICELL)), 0)
+        IPINY = btest(int(grid_obj%flag(ICELL)), 1)
 
         ! Find boundaries of the current cell
         !   Find the three possible intersection planes (X,Y,Z)
         !   from the coordinates of the opposite corner grid point
-        IOPP = ptr8Grid_Cell(9 - IOCT, ICELL)
+        IOPP = grid_obj%i8Grid(9 - IOCT, ICELL)
         ! Get the distances to the 3 planes and select the closest
         if (IPINX) then
             SOX = 1.0e20
         else
-            SOX = (xyz_Grid(1, IOPP) - XE)*CXINV
+            SOX = (grid_obj%xyz(1, IOPP) - XE)*CXINV
         end if
         if (IPINY) then
             SOY = 1.0e20
         else
-            SOY = (xyz_Grid(2, IOPP) - YE)*CYINV
+            SOY = (grid_obj%xyz(2, IOPP) - YE)*CYINV
         end if
-        SOZ = (xyz_Grid(3, IOPP) - ZE)*CZINV
+        SOZ = (grid_obj%xyz(3, IOPP) - ZE)*CZINV
         SO = min(SOX, SOY, SOZ)
         if (SO .lt. -EPS) then
             write (6, *) 'SO<0: ', MU, PHI, X, Y, Z, SOX, SOY, SOZ, SO, ICELL, TRANS
@@ -3325,14 +3307,14 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
             JFACE = 3
         end if
         ! Get the next cell to go to
-        INEXTCELL = ptr6Cell_Cell(IFACE, ICELL)
+        INEXTCELL = grid_obj%i6Cell(IFACE, ICELL)
         if (INEXTCELL .lt. 0) then
-            call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, xyz_Grid,&
-                &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell, INEXTCELL)
+            call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, grid_obj%xyz,&
+                &grid_obj%i8Grid, grid_obj%i6Cell, grid_obj%i2Tree, grid_obj%flag, INEXTCELL)
         end if
 
         ! Get the face grid pointers
-        if (ptr6Cell_Cell(IFACE, ICELL) .ge. 0) then
+        if (grid_obj%i6Cell(IFACE, ICELL) .ge. 0) then
             ! If going to same or larger face then use previous face
             KFACE = IFACE
             IC = ICELL
@@ -3341,35 +3323,35 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
             KFACE = OPPFACE(IFACE)
             IC = INEXTCELL
         end if
-        I1 = ptr8Grid_Cell(GRIDFACE(1, KFACE), IC)
-        I2 = ptr8Grid_Cell(GRIDFACE(2, KFACE), IC)
-        I3 = ptr8Grid_Cell(GRIDFACE(3, KFACE), IC)
-        I4 = ptr8Grid_Cell(GRIDFACE(4, KFACE), IC)
+        I1 = grid_obj%i8Grid(GRIDFACE(1, KFACE), IC)
+        I2 = grid_obj%i8Grid(GRIDFACE(2, KFACE), IC)
+        I3 = grid_obj%i8Grid(GRIDFACE(3, KFACE), IC)
+        I4 = grid_obj%i8Grid(GRIDFACE(4, KFACE), IC)
         ! Compute the face interpolation factors
         if (JFACE .eq. 1) then
-            U = (ZE - xyz_Grid(3, I1))/(xyz_Grid(3, I3) - xyz_Grid(3, I1))
+            U = (ZE - grid_obj%xyz(3, I1))/(grid_obj%xyz(3, I3) - grid_obj%xyz(3, I1))
             if (IPINY) then
                 V = 0.5
             else
-                V = (YE - xyz_Grid(2, I1))/(xyz_Grid(2, I2) - xyz_Grid(2, I1))
+                V = (YE - grid_obj%xyz(2, I1))/(grid_obj%xyz(2, I2) - grid_obj%xyz(2, I1))
             end if
         else if (JFACE .eq. 2) then
-            U = (ZE - xyz_Grid(3, I1))/(xyz_Grid(3, I3) - xyz_Grid(3, I1))
+            U = (ZE - grid_obj%xyz(3, I1))/(grid_obj%xyz(3, I3) - grid_obj%xyz(3, I1))
             if (IPINX) then
                 V = 0.5
             else
-                V = (XE - xyz_Grid(1, I1))/(xyz_Grid(1, I2) - xyz_Grid(1, I1))
+                V = (XE - grid_obj%xyz(1, I1))/(grid_obj%xyz(1, I2) - grid_obj%xyz(1, I1))
             end if
         else
             if (IPINY) then
                 U = 0.5
             else
-                U = (YE - xyz_Grid(2, I1))/(xyz_Grid(2, I3) - xyz_Grid(2, I1))
+                U = (YE - grid_obj%xyz(2, I1))/(grid_obj%xyz(2, I3) - grid_obj%xyz(2, I1))
             end if
             if (IPINX) then
                 V = 0.5
             else
-                V = (XE - xyz_Grid(1, I1))/(xyz_Grid(1, I2) - xyz_Grid(1, I1))
+                V = (XE - grid_obj%xyz(1, I1))/(grid_obj%xyz(1, I2) - grid_obj%xyz(1, I1))
             end if
         end if
         if ((u .lt. -1.0e-4) .or. (v .lt. -1.0e-4) .or. (u .gt. 1.0001) .or. (v .gt. 1.0001)) then
@@ -3380,11 +3362,11 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
         ! Get the location coordinate (does the boundary wrapping)
         if (INEXTCELL .gt. 0) then
             if (JFACE .eq. 1) then
-                XE = xyz_Grid(1, ptr8Grid_Cell(IOCT, INEXTCELL))
+                XE = grid_obj%xyz(1, grid_obj%i8Grid(IOCT, INEXTCELL))
             else if (JFACE .eq. 2) then
-                YE = xyz_Grid(2, ptr8Grid_Cell(IOCT, INEXTCELL))
+                YE = grid_obj%xyz(2, grid_obj%i8Grid(IOCT, INEXTCELL))
             else
-                ZE = xyz_Grid(3, ptr8Grid_Cell(IOCT, INEXTCELL))
+                ZE = grid_obj%xyz(3, grid_obj%i8Grid(IOCT, INEXTCELL))
             end if
         end if
 

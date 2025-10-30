@@ -44,7 +44,7 @@ module shd_grid
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, isMpi_, &
                              is1DX_, is1DYx_, is1D_, &
                              isPol_, isSolar_, isThermal_
-    use globals_type,  only: shd_type_prp, shd_type_sfc, shd_type_ckd
+    use globals_type,  only: shd_type_grid, shd_type_prp, shd_type_sfc, shd_type_ckd
 
     use shd_util, only: shd_util__findNextCell, &
                         shd_util__computePlanck, &
@@ -1591,15 +1591,15 @@ end subroutine shd_grid__interpNewGridPnt
 subroutine shd_grid__splitGrid(&
     &MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX,&
     &DOSPLIT, OUTOFMEM, CURSPLITACC, SPLITCRIT,&
-    &NPTS, NCELLS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-    &GRIDPOS, NX, XGRID, NY, YGRID,&
+    &NX, NY,&
     &NSTOKES, ML, MM, NLM,&
     &DELTAM, BCFLAG, IPFLAG, ACCELFLAG,&
     &EXTINCT, ALBEDO, LEGEN, IPHASE,&
     &RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR,&
     &TEMP, PLANCK, DIRFLUX, SRCTYPE,&
     &SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN,&
-    &UNITS, WAVENO, WAVELEN, ADAPTCRIT, ADAPTIND, prp_obj, ckd_obj)
+    &UNITS, WAVENO, WAVELEN, ADAPTCRIT, ADAPTIND,&
+    &grid_obj, prp_obj, ckd_obj)
 
     !   Splits the cells that have a cell dividing criterion greater than
     ! CURSPLITACC if DOSPLIT is true.  The current splitting criterion
@@ -1607,21 +1607,21 @@ subroutine shd_grid__splitGrid(&
     ! grid point, grid cell, or spherical harmonic arrays (sizes given
     ! by MAXIG, MAXIC, MAXIV, MAXIDO) then the OUTOFMEM flag is returned true.
 
-    type(shd_type_prp), intent(in) :: prp_obj
-    type(shd_type_ckd), intent(in) :: ckd_obj
+    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_prp),  intent(in) :: prp_obj
+    type(shd_type_ckd),  intent(in) :: ckd_obj
 
     integer MAXIG, MAXIC, MAXIV, MAXIDO, NPHI0MAX
-    integer NPTS, NCELLS, BCFLAG, IPFLAG
+    integer BCFLAG, IPFLAG
     integer NX, NY, NSTOKES, ML, MM, NLM
-    integer GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
     integer RSHPTR(*), SHPTR(*), OSHPTR(*)
     real ADAPTIND(*)
-    integer*2 CELLFLAGS(*), IPHASE(*)
+    integer*2 IPHASE(*)
     logical DELTAM, ACCELFLAG, DOSPLIT, OUTOFMEM
     real CURSPLITACC, SPLITCRIT
     real SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN(prp_obj%NlegSet, NLM)
     real WAVENO(2), WAVELEN
-    real GRIDPOS(3, *), XGRID(*), YGRID(*), ADAPTCRIT(*)
+    real ADAPTCRIT(*)
     real EXTINCT(*), ALBEDO(*), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, *)
     real RADIANCE(NSTOKES, *), SOURCE(NSTOKES, *)
     real TEMP(*), PLANCK(*), DIRFLUX(*)
@@ -1632,25 +1632,25 @@ subroutine shd_grid__splitGrid(&
     real ADAPT(3), FRAC
 
     if (DOSPLIT) then
-        OLDNPTS = NPTS
+        OLDNPTS = grid_obj%Npts
         ! Do the cells in batchs, so the newly split cells can be tested
         !   for further splitting
         ICELL1 = 1
-        do while (ICELL1 .le. NCELLS)
+        do while (ICELL1 .le. grid_obj%Ncell)
             ! For the current batch of cells, compute the adaptive grid
             !   splitting criterion for 3 directions for each cell.
             N = 0
-            do ICELL = ICELL1, NCELLS
-                if (TREEPTR(2, ICELL) .eq. 0) then
+            do ICELL = ICELL1, grid_obj%Ncell
+                if (grid_obj%i2Tree(2, ICELL) .eq. 0) then
                     ! If this is a end node cell then compute adaptive criterion
-                    call shd_grid__testCellSplit(GRIDPTR, GRIDPOS, EXTINCT,&
+                    call shd_grid__testCellSplit(grid_obj%i8Grid, grid_obj%xyz, EXTINCT,&
                         &SHPTR, NSTOKES, SOURCE, ICELL,&
                         &ADAPT, ADAPTCRIT(N + 1), IDIR)
                     ADAPTIND(N+1) = 4*ICELL + IDIR
                     N = N + 1
                 end if
             end do
-            ICELL1 = NCELLS + 1
+            ICELL1 = grid_obj%Ncell + 1
 
             ! Sort the adaptive criterion in decreasing order
             call shd_util__ssort(ADAPTCRIT, ADAPTIND, N, -2)
@@ -1658,33 +1658,33 @@ subroutine shd_grid__splitGrid(&
             ! Figure how many cells we can split, leaving some room
             !   for cells split during grid smoothing
             FRAC = 0.03
-            MAXCELLS = MAXIC - FRAC*(MAXIC - NCELLS) - 2
-            MAXPTS = MAXIG - FRAC*(MAXIG - NPTS) - 4
-            MAXWORK = MAXIDO - FRAC*(MAXIDO - NPHI0MAX*NPTS) - 4*NPHI0MAX
-            MAXSH = MAXIV - FRAC*(MAXIV - SHPTR(NPTS + 1)) - 4*NLM
-            MAXRAD = MAXIV + MAXIG - FRAC*(MAXIV + MAXIG - RSHPTR(NPTS + 1)) - 4*NLM
+            MAXCELLS = MAXIC - FRAC*(MAXIC - grid_obj%Ncell) - 2
+            MAXPTS = MAXIG - FRAC*(MAXIG - grid_obj%Npts) - 4
+            MAXWORK = MAXIDO - FRAC*(MAXIDO - NPHI0MAX*grid_obj%Npts) - 4*NPHI0MAX
+            MAXSH = MAXIV - FRAC*(MAXIV - SHPTR(grid_obj%Npts + 1)) - 4*NLM
+            MAXRAD = MAXIV + MAXIG - FRAC*(MAXIV + MAXIG - RSHPTR(grid_obj%Npts + 1)) - 4*NLM
 
             ! Go down the list from highest adaptive cell criterion on down
             OUTOFMEM0 = OUTOFMEM
             I = 1
             do while ((.not. OUTOFMEM0) .and. (ADAPTCRIT(I) .gt. CURSPLITACC)&
                 &.and. (I .le. N))
-                if ((NCELLS .gt. MAXCELLS) .or.&
-                    &(NPTS .gt. MAXPTS) .or.&
-                    &(NPTS*NPHI0MAX .gt. MAXWORK) .or.&
-                    &(SHPTR(NPTS + 1) .gt. MAXSH) .or.&
-                    &(RSHPTR(NPTS + 1) .gt. MAXRAD)) then
+                if ((grid_obj%Ncell .gt. MAXCELLS) .or.&
+                    &(grid_obj%Npts .gt. MAXPTS) .or.&
+                    &(grid_obj%Npts*NPHI0MAX .gt. MAXWORK) .or.&
+                    &(SHPTR(grid_obj%Npts + 1) .gt. MAXSH) .or.&
+                    &(RSHPTR(grid_obj%Npts + 1) .gt. MAXRAD)) then
                     OUTOFMEM0 = .true.
                 else
                     ICELL = int(ADAPTIND(I))/4
                     IDIR = iand(int(ADAPTIND(I)), 3)
                     ! Create the new grid points and make pointers
-                    call shd_grid__divideCell(NPTS, NCELLS, GRIDPTR, NEIGHPTR,&
-                        &TREEPTR, CELLFLAGS, GRIDPOS, ICELL, IDIR, NEWPOINTS)
+                    call shd_grid__divideCell(grid_obj%Npts, grid_obj%Ncell, grid_obj%i8Grid, grid_obj%i6Cell,&
+                        &grid_obj%i2Tree, grid_obj%flag, grid_obj%xyz, ICELL, IDIR, NEWPOINTS)
                     ! Interpolate the medium properties, radiance, and source
-                    call shd_grid__interpNewGridPnt(NEWPOINTS, NPTS,&
+                    call shd_grid__interpNewGridPnt(NEWPOINTS, grid_obj%Npts,&
                         &NSTOKES, ML, MM, NLM,&
-                        &DELTAM, BCFLAG, IPFLAG, ACCELFLAG, GRIDPOS,&
+                        &DELTAM, BCFLAG, IPFLAG, ACCELFLAG, grid_obj%xyz,&
                         &SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN,&
                         &UNITS, WAVENO, WAVELEN,&
                         &EXTINCT, ALBEDO, LEGEN, IPHASE, TEMP, PLANCK, DIRFLUX,&
@@ -1701,28 +1701,28 @@ subroutine shd_grid__splitGrid(&
 
             ! Split some more cells to make the adaptive grid "smoother"
             do while ((.not. OUTOFMEM) .and. (I .le. N))
-                if ((NCELLS .gt. MAXCELLS) .or.&
-                    &(NPTS .gt. MAXPTS) .or.&
-                    &(NPTS*NPHI0MAX .gt. MAXWORK) .or.&
-                    &(SHPTR(NPTS + 1) .gt. MAXSH) .or.&
-                    &(RSHPTR(NPTS + 1) .gt. MAXRAD)) then
+                if ((grid_obj%Ncell .gt. MAXCELLS) .or.&
+                    &(grid_obj%Npts .gt. MAXPTS) .or.&
+                    &(grid_obj%Npts *NPHI0MAX .gt. MAXWORK) .or.&
+                    &(SHPTR(grid_obj%Npts + 1) .gt. MAXSH) .or.&
+                    &(RSHPTR(grid_obj%Npts + 1) .gt. MAXRAD)) then
                     OUTOFMEM = .true.
                 else
                     ! See if cell should be split to make better grid:
                     !   IDIR=0 if no, IDIR=direction (1,2,3) otherwise
                     ICELL = int(ADAPTIND(I))/4
-                    call shd_grid__testGridSmooth(GRIDPTR, GRIDPOS, NEIGHPTR,&
-                        &TREEPTR, CELLFLAGS, SHPTR, ICELL, IDIR)
+                    call shd_grid__testGridSmooth(grid_obj%i8Grid, grid_obj%xyz, grid_obj%i6Cell,&
+                        &grid_obj%i2Tree, grid_obj%flag, SHPTR, ICELL, IDIR)
                     ! Set IDIR=0 to stop adaptive grid smoothing
                     ! IDIR = 0
                     if (IDIR .gt. 0) then
                         ! Create the new grid points and make pointers
-                        call shd_grid__divideCell(NPTS, NCELLS, GRIDPTR, NEIGHPTR,&
-                            &TREEPTR, CELLFLAGS, GRIDPOS, ICELL, IDIR, NEWPOINTS)
+                        call shd_grid__divideCell(grid_obj%Npts, grid_obj%Ncell, grid_obj%i8Grid, grid_obj%i6Cell,&
+                            &grid_obj%i2Tree, grid_obj%flag, grid_obj%xyz, ICELL, IDIR, NEWPOINTS)
                         ! Interpolate the medium properties, radiance, and source
-                        call shd_grid__interpNewGridPnt(NEWPOINTS, NPTS,&
+                        call shd_grid__interpNewGridPnt(NEWPOINTS, grid_obj%Npts,&
                             &NSTOKES, ML, MM, NLM,&
-                            &DELTAM, BCFLAG, IPFLAG, ACCELFLAG, GRIDPOS,&
+                            &DELTAM, BCFLAG, IPFLAG, ACCELFLAG, grid_obj%xyz,&
                             &SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN,&
                             &UNITS, WAVENO, WAVELEN,&
                             &EXTINCT, ALBEDO, LEGEN, IPHASE, TEMP, PLANCK, DIRFLUX,&
@@ -1737,25 +1737,25 @@ subroutine shd_grid__splitGrid(&
             OUTOFMEM = .true.
             !write (6, '(2A,I8,A,I8)')&
             !    &'Message [_splitGrid]: Further cell splitting requires larger array allocations: ',&
-            !    &'Ncells = ', NCELLS, ', Npnts = ', NPTS
+            !    &'grid_obj%Ncell= ', grid_obj%Ncell, ', Npnts = ', NPTS
         end if
 
         ! If in parallel mode, calculate all the direct beam fluxes at once
         if (isSolar_) then
             if (isMpi_) then
-                call shd_mpi__makeDirect(OLDNPTS + 1, NPTS, BCFLAG,&
+                call shd_mpi__makeDirect(OLDNPTS + 1, BCFLAG,&
                     &IPFLAG, DELTAM, ML,&
-                    &SOLARFLUX, SOLARMU, SOLARAZ, GRIDPOS,&
-                    &NX, XGRID, NY, YGRID, DIRFLUX, prp_obj, ckd_obj)
+                    &SOLARFLUX, SOLARMU, SOLARAZ,&
+                    &NX, NY, DIRFLUX, grid_obj, prp_obj, ckd_obj)
             end if
         end if
     end if
 
     ! Find the max adaptive cell criterion after the cell divisions
     SPLITCRIT = 0.0
-    do ICELL = 1, NCELLS
-        if (TREEPTR(2, ICELL) .eq. 0) then
-            call shd_grid__testCellSplit(GRIDPTR, GRIDPOS, EXTINCT,&
+    do ICELL = 1, grid_obj%Ncell
+        if (grid_obj%i2Tree(2, ICELL) .eq. 0) then
+            call shd_grid__testCellSplit(grid_obj%i8Grid, grid_obj%xyz, EXTINCT,&
                 &SHPTR, NSTOKES, SOURCE, ICELL,&
                 &ADAPT, ADAPTCRIT(1), IDIR)
             SPLITCRIT = max(SPLITCRIT, ADAPTCRIT(1))

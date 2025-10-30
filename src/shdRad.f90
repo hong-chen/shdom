@@ -46,8 +46,14 @@ module shd_rad
                              is3Ddir1Ddif_, &
                              isPol_, isPol4_, &
                              isSolar_, isThermal_
-    use globals_type,  only: shd_type_prp, shd_type_sfc, &
-                             shd_type_ckd, shd_type_sen
+    use globals_type,  only: shd_type_rtm, &
+                             shd_type_grid, &
+                             shd_type_shdo, &
+                             shd_type_src, &
+                             shd_type_prp, &
+                             shd_type_sfc, &
+                             shd_type_ckd, &
+                             shd_type_sen
 
     use shd_scat, only: shd_scat__computePhase
 
@@ -699,40 +705,42 @@ subroutine shd_rad__interpRad(&
 end subroutine shd_rad__interpRad
 
 subroutine shd_rad__computeRad(&
-    &NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+    &NSTOKES, NX, NY, NZ,&
     &ML, MM, NLM,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
     &BCFLAG, IPFLAG, SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &SKYRAD, WAVENO, WAVELEN, UNITS,&
-    &XGRID, YGRID, ZGRID, GRIDPOS,&
-    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
     &SHPTR, SOURCE, SOURCE1, GRIDRAD,&
-    &OUTPARMS, IRAD, RADOUT, prp_obj, sfc_obj, sen_obj)
+    &OUTPARMS, IRAD, RADOUT,&
+    &rtm_obj, grid_obj, shdo_obj, src_obj,&
+    &prp_obj, sfc_obj, sen_obj)
 
     ! Computes the radiances for the specified locations and directions
 
-    type(shd_type_prp), intent(in) :: prp_obj
-    type(shd_type_sfc), intent(in) :: sfc_obj
-    type(shd_type_sen), intent(in) :: sen_obj
+    type(shd_type_rtm),  intent(in) :: rtm_obj
+    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_shdo), intent(in) :: shdo_obj
+    type(shd_type_src),  intent(in) :: src_obj
+    type(shd_type_prp),  intent(in) :: prp_obj
+    type(shd_type_sfc),  intent(in) :: sfc_obj
+    type(shd_type_sen),  intent(in) :: sen_obj
 
-    integer NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG, NPTS, NCELLS
+    integer NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG
     integer ML, MM, NLM
     integer NMU, NPHI0MAX, NPHI0(NMU), IRAD
     integer MAXNBC, NTOPPTS, NBOTPTS
-    integer GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
-    integer SHPTR(NPTS + 1), BCPTR(MAXNBC, 2)
-    integer*2 CELLFLAGS(NCELLS), IPHASE(NPTS)
+    integer SHPTR(grid_obj%Npts + 1), BCPTR(MAXNBC, 2)
+    integer*2 IPHASE(grid_obj%Npts)
     logical DELTAM
     real SOLARMU, SOLARAZ
     real SKYRAD, WAVENO(2), WAVELEN
     real MU(NMU), PHI(NMU, NPHI0MAX), WTDO(NMU, NPHI0MAX)
-    real XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ), GRIDPOS(3, NPTS)
     real BCRAD(NSTOKES, *)
-    real EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, NPTS)
-    real DIRFLUX(NPTS), FLUXES(2, NPTS)
-    real SOURCE1(NSTOKES, NPTS), GRIDRAD(NSTOKES, NPTS)
+    real EXTINCT(grid_obj%Npts), ALBEDO(grid_obj%Npts), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, grid_obj%Npts)
+    real DIRFLUX(grid_obj%Npts), FLUXES(2, grid_obj%Npts)
+    real SOURCE1(NSTOKES, grid_obj%Npts), GRIDRAD(NSTOKES, grid_obj%Npts)
     real SOURCE(NSTOKES, *)
     real OUTPARMS(*), RADOUT(NSTOKES, *)
     character(len=1) :: SRCTYPE, UNITS
@@ -769,21 +777,21 @@ subroutine shd_rad__computeRad(&
     end if
 
     ! Setup the regularly spaced radiance locations
-    XDOMAIN = XGRID(NX + 1 - ibits(BCFLAG, 0, 1)) - XGRID(1) + 2*OUTPARMS(4)
+    XDOMAIN = grid_obj%x(NX + 1 - ibits(BCFLAG, 0, 1)) - grid_obj%x(1) + 2*OUTPARMS(4)
     STARTX = -OUTPARMS(4)
     if (OUTPARMS(2) .eq. 0.0) then
         NXOUT = 1
     else
         NXOUT = max(1, nint(XDOMAIN/OUTPARMS(2)))
     end if
-    YDOMAIN = YGRID(NY + 1 - ibits(BCFLAG, 1, 1)) - YGRID(1) + 2*OUTPARMS(5)
+    YDOMAIN = grid_obj%y(NY + 1 - ibits(BCFLAG, 1, 1)) - grid_obj%y(1) + 2*OUTPARMS(5)
     STARTY = -OUTPARMS(5)
     if (OUTPARMS(3) .eq. 0.0) then
         NYOUT = 1
     else
         NYOUT = max(1, nint(YDOMAIN/OUTPARMS(3)))
     end if
-    Z0 = min(max(OUTPARMS(1), ZGRID(1)), ZGRID(NZ))
+    Z0 = min(max(OUTPARMS(1), grid_obj%z(1)), grid_obj%z(NZ))
     NANGOUT = nint(OUTPARMS(6))
 
     ! Loop over the radiance directions
@@ -800,7 +808,7 @@ subroutine shd_rad__computeRad(&
         ! added for fixing the "domain shift" issue (only for 3D)
         !╭────────────────────────────────────────────────╮!
         if (IPFLAG .eq. 0) then
-            DS_Z0 = Z0 - ZGRID(1)
+            DS_Z0 = Z0 - grid_obj%z(1)
             DS_VZA_RAD = acos(MUOUT)
             DS_XOFFSET = DS_Z0*tan(DS_VZA_RAD)*cos(PHIOUT)
             DS_YOFFSET = DS_Z0*tan(DS_VZA_RAD)*sin(PHIOUT)
@@ -824,14 +832,14 @@ subroutine shd_rad__computeRad(&
 
         ! Compute the source function throughout grid for this angle
         call shd_src__computeSrcOneDir(NSTOKES, ML, MM, NLM,&
-            &NPTS, DELTAM, MUOUT, PHIOUT, SRCTYPE,&
+            &grid_obj%Npts, DELTAM, MUOUT, PHIOUT, SRCTYPE,&
             &SOLARMU, SOLARAZ, ALBEDO, LEGEN,&
             &IPHASE, DIRFLUX, SHPTR, SOURCE, SOURCE1, prp_obj)
 
         ! Set the radiance field to -1, so we can determine valid ra
         !   Also set the source array to the extinction times the so
         !   function, so the grid interpolation is correct.
-        do I = 1, NPTS
+        do I = 1, grid_obj%Npts
             GRIDRAD(1, I) = -1.0
             SOURCE1(:, I) = SOURCE1(:, I)*EXTINCT(I)
         end do
@@ -867,12 +875,10 @@ subroutine shd_rad__computeRad(&
                 IRAD = IRAD + 1
                 TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
                 call shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
-                    &NX, NY, NZ, NPTS, NCELLS,&
-                    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-                    &XGRID, YGRID, ZGRID, GRIDPOS,&
+                    &NX, NY, NZ,&
                     &MUOUT, PHIOUT, GRIDRAD, EXTINCT, SOURCE1,&
                     &X0, Y0, Z0, XE, YE, ZE, SIDE,&
-                    &TRANSMIT, RADIANCE, VALIDRAD)
+                    &TRANSMIT, RADIANCE, VALIDRAD, grid_obj)
                 RADOUT(:, IRAD) = RADIANCE(1:NSTOKES)
                 X0 = X0 + OUTPARMS(2)
             end do
@@ -885,39 +891,41 @@ subroutine shd_rad__computeRad(&
 
 end subroutine shd_rad__computeRad
 
-subroutine shd_rad__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+subroutine shd_rad__computeCamRad(NSTOKES, NX, NY, NZ,&
     &ML, MM, NLM,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
     &BCFLAG, IPFLAG, SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &SKYRAD, WAVENO, WAVELEN, UNITS,&
-    &XGRID, YGRID, ZGRID, GRIDPOS,&
-    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
     &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
-    &SHPTR, SOURCE, OUTPARMS, IVIS, VISOUT, prp_obj, sfc_obj, sen_obj)
+    &SHPTR, SOURCE, OUTPARMS, IVIS, VISOUT,&
+    &rtm_obj, grid_obj, shdo_obj, src_obj,&
+    &prp_obj, sfc_obj, sen_obj)
 
     !   Computes Stokes radiances (output in VISOUT) for the visualization
     !  modes: 1) camera mode, and 2) cross track scanning.
 
-    type(shd_type_prp), intent(in) :: prp_obj
-    type(shd_type_sfc), intent(in) :: sfc_obj
-    type(shd_type_sen), intent(in) :: sen_obj
+    type(shd_type_rtm),  intent(in) :: rtm_obj
+    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_shdo), intent(in) :: shdo_obj
+    type(shd_type_src),  intent(in) :: src_obj
+    type(shd_type_prp),  intent(in) :: prp_obj
+    type(shd_type_sfc),  intent(in) :: sfc_obj
+    type(shd_type_sen),  intent(in) :: sen_obj
 
-    integer NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG, NPTS, NCELLS
+    integer NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG
     integer ML, MM, NLM
     integer NMU, NPHI0MAX, NPHI0(NMU), IVIS
     integer MAXNBC, NTOPPTS, NBOTPTS
-    integer GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
-    integer SHPTR(NPTS + 1), BCPTR(MAXNBC, 2)
-    integer*2 CELLFLAGS(NCELLS), IPHASE(NPTS)
+    integer SHPTR(grid_obj%Npts + 1), BCPTR(MAXNBC, 2)
+    integer*2 IPHASE(grid_obj%Npts)
     logical DELTAM
     real SOLARMU, SOLARAZ
     real SKYRAD, WAVENO(2), WAVELEN
     real MU(NMU), PHI(NMU, NPHI0MAX), WTDO(NMU, NPHI0MAX)
-    real XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ), GRIDPOS(3, NPTS)
     real BCRAD(NSTOKES, *)
-    real EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, *)
-    real DIRFLUX(NPTS), FLUXES(2, NPTS), SOURCE(NSTOKES, *)
+    real EXTINCT(grid_obj%Npts), ALBEDO(grid_obj%Npts), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, *)
+    real DIRFLUX(grid_obj%Npts), FLUXES(2, grid_obj%Npts), SOURCE(NSTOKES, *)
     real OUTPARMS(*), VISOUT(NSTOKES, *)
     character(len=1) :: SRCTYPE, UNITS
     integer NSCATANGLE, NSTPHASE, I, J, L, N, SIDE
@@ -1063,16 +1071,16 @@ subroutine shd_rad__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
             end if
 
             ! Extrapolate ray to domain top if above
-            if (Z0 .gt. ZGRID(NZ)) then
+            if (Z0 .gt. grid_obj%z(NZ)) then
                 if (COSTH .ge. 0.0) then
                     VISRAD(:) = 0.0
                     goto 900
                 end if
-                R = (ZGRID(NZ) - Z0)/COSTH
+                R = (grid_obj%z(NZ) - Z0)/COSTH
                 X0 = X0 + R*sqrt(1 - COSTH**2)*cos(PHIR)
                 Y0 = Y0 + R*sqrt(1 - COSTH**2)*sin(PHIR)
-                Z0 = ZGRID(NZ)
-            else if (Z0 .lt. ZGRID(1)) then
+                Z0 = grid_obj%z(NZ)
+            else if (Z0 .lt. grid_obj%z(1)) then
                 write (6, *) 'Error [_visualizeRad]: Level below domain.'
                 stop
             end if
@@ -1089,9 +1097,7 @@ subroutine shd_rad__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
             TRANSMIT = 1.0d0; VISRAD(:) = 0.0d0
             call shd_src__integrateSrcOneRay(BCFLAG, IPFLAG, NSTOKES,&
                 &NSTPHASE, NSCATANGLE, PHASETAB,&
-                &NX, NY, NZ, NPTS, NCELLS,&
-                &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-                &XGRID, YGRID, ZGRID, GRIDPOS,&
+                &NX, NY, NZ,&
                 &ML, MM, NLM,&
                 &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                 &DELTAM, SRCTYPE, WAVELEN, SOLARMU, SOLARAZ,&
@@ -1100,7 +1106,7 @@ subroutine shd_rad__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                 &MU2, PHI2, X0, Y0, Z0,&
                 &XE, YE, ZE, SIDE, TRANSMIT, VISRAD, VALIDRAD,&
-                &prp_obj, sfc_obj)
+                &grid_obj, prp_obj, sfc_obj)
 900         continue
             ! write (6,'(1X,2F8.4,1X,2F11.7,4(1X,F11.6))')&
             !     &X0,Y0,MURAY,PHIRAY,VISRAD(:)

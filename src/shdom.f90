@@ -1218,30 +1218,30 @@ program shdom
             do iout = 1, Nout
                 if (type_Out(iout) .eq. 'R') then
                     if (isMpi_) then
-                        call shd_mpi__computeRad(shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, grid_obj%Npts, grid_obj%Ncell,&
+                        call shd_mpi__computeRad(rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz,&
                             &shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
                             &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
                             &rtm_obj%flag_bc, rtm_obj%flag_ip,&
                             &src_obj%type, doDeltaM, src_obj%avgMu, src_obj%avgAz,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
                             &skyRad, src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
-                            &grid_obj%x, grid_obj%y, grid_obj%z, grid_obj%xyz,&
-                            &grid_obj%i8Grid, grid_obj%i6Cell, grid_obj%i2Tree, grid_obj%flag,&
                             &rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%ipha, fluxDir, fluxTot,&
                             &shdo_obj%isrcJ, shdo_obj%srcJ, work, work(1 + grid_obj%Npts*shdo_obj%Nstokes),&
-                            &parms_Out(1, iout), irad, work2, prp_obj, sfc_obj, sen_obj)
+                            &parms_Out(1, iout), irad, work2,&
+                            &rtm_obj, grid_obj, shdo_obj, src_obj,&
+                            &prp_obj, sfc_obj, sen_obj)
                     else
-                        call shd_rad__computeRad(shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, grid_obj%Npts, grid_obj%Ncell,&
+                        call shd_rad__computeRad(shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz,&
                             &shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
                             &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
                             &rtm_obj%flag_bc, rtm_obj%flag_ip, src_obj%type, doDeltaM, src_obj%avgMu, src_obj%avgAz,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
                             &skyRad, src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
-                            &grid_obj%x, grid_obj%y, grid_obj%z, grid_obj%xyz,&
-                            &grid_obj%i8Grid, grid_obj%i6Cell, grid_obj%i2Tree, grid_obj%flag,&
                             &rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%ipha, fluxDir, fluxTot,&
                             &shdo_obj%isrcJ, shdo_obj%srcJ, work(1), work(1 + grid_obj%Npts*shdo_obj%Nstokes),&
-                            &parms_Out(1, iout), irad, work2, prp_obj, sfc_obj, sen_obj)
+                            &parms_Out(1, iout), irad, work2,&
+                            &rtm_obj, grid_obj, shdo_obj, src_obj,&
+                            &prp_obj, sfc_obj, sen_obj)
                     end if
                 end if
             end do
@@ -1253,29 +1253,27 @@ program shdom
             do iout = 1, Nout
                 if (type_Out(iout) .eq. 'V') then
                     if (isMpi_) then
-                        call shd_mpi__computeCamRad(shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, grid_obj%Npts, grid_obj%Ncell,&
+                        call shd_mpi__computeCamRad(rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz,&
                             &shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
                             &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
                             &rtm_obj%flag_bc, rtm_obj%flag_ip,&
                             &src_obj%type, doDeltaM, src_obj%avgMu, src_obj%avgAz,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
                             &skyRad, src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
-                            &grid_obj%x, grid_obj%y, grid_obj%z, grid_obj%xyz,&
-                            &grid_obj%i8Grid, grid_obj%i6Cell, grid_obj%i2Tree, grid_obj%flag,&
                             &rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%ipha, fluxDir, fluxTot,&
                             &shdo_obj%isrcJ, shdo_obj%srcJ, parms_Out(1, iout), ilos, work2,&
+                            &rtm_obj, grid_obj, shdo_obj, src_obj,&
                             &prp_obj, sfc_obj, sen_obj)
                     else
-                        call shd_rad__computeCamRad(shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, grid_obj%Npts, grid_obj%Ncell,&
+                        call shd_rad__computeCamRad(shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz,&
                             &shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
                             &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
                             &rtm_obj%flag_bc, rtm_obj%flag_ip, src_obj%type, doDeltaM, src_obj%avgMu, src_obj%avgAz,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
                             &skyRad, src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
-                            &grid_obj%x, grid_obj%y, grid_obj%z, grid_obj%xyz,&
-                            &grid_obj%i8Grid, grid_obj%i6Cell, grid_obj%i2Tree, grid_obj%flag,&
                             &rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%ipha, fluxDir, fluxTot,&
                             &shdo_obj%isrcJ, shdo_obj%srcJ, parms_Out(1, iout), ilos, work2,&
+                            &rtm_obj, grid_obj, shdo_obj, src_obj,&
                             &prp_obj, sfc_obj, sen_obj)
                     end if
                 end if
@@ -1317,9 +1315,9 @@ program shdom
                 allocate(fluxDirTmp(grid_obj%Npts))
 
                 if (isMpi_) then
-                    call shd_mpi__makeDirect(1, grid_obj%Npts, rtm_obj%flag_bc, rtm_obj%flag_ip, .false., shdo_obj%maxNl,&
+                    call shd_mpi__makeDirect(1, rtm_obj%flag_bc, rtm_obj%flag_ip, .false., shdo_obj%maxNl,&
                         &solar0_ckd, src_obj%avgMu, src_obj%avgAz,&
-                        &grid_obj%xyz, rtm_obj%Nx, grid_obj%x, rtm_obj%Ny, grid_obj%y, fluxDirTmp, prp_obj, ckd_obj)
+                        &rtm_obj%Nx, rtm_obj%Ny, fluxDirTmp, grid_obj, prp_obj, ckd_obj)
                 else
                     call shd_rad__makeDirect(grid_obj%Npts, rtm_obj%flag_bc, rtm_obj%flag_ip, .false., shdo_obj%maxNl,&
                         &solar0_ckd, src_obj%avgMu, src_obj%avgAz,&
@@ -1382,7 +1380,7 @@ program shdom
             &sumFluxTot_Out, sumFluxDir_Out, sumFluxDiv_Out, sumSH_Out,&
             &xGrid_all, yGrid_all,&
             &fluxTot_all, fluxDiv_all, SH_all,&
-            &grid_obj%Ncell, grid_obj%Npts, shdo_obj%Nsh, Ncell_tot, Npts_tot, Nsh_tot, prp_obj)
+            &shdo_obj%Nsh, Ncell_tot, Npts_tot, Nsh_tot, grid_obj, prp_obj)
 
         if (isMasterProc) then
 
@@ -1493,7 +1491,7 @@ program shdom
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
-    call shd_mpi__end(grid_obj%Npts, grid_obj%xyz, rtm_obj%runName, prpAll_obj, prp_obj)
+    call shd_mpi__end(rtm_obj%runName, grid_obj, prpAll_obj, prp_obj)
 
 
     ! Deallocate array

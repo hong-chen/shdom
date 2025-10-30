@@ -172,9 +172,9 @@ subroutine shd_solv__solveRte(&
     ! Precompute Ylm's for solar direction
     if (isSolar_) then
         if (isMpi_) then
-            call shd_mpi__makeDirect(1, grid_obj%Npts, rtm_obj%flag_bc, rtm_obj%flag_ip, DELTAM, shdo_obj%maxNl,&
+            call shd_mpi__makeDirect(1, rtm_obj%flag_bc, rtm_obj%flag_ip, DELTAM, shdo_obj%maxNl,&
                 &SOLARFLUX, src_obj%avgMu, src_obj%avgAz,&
-                &grid_obj%xyz, rtm_obj%Nx, grid_obj%x, rtm_obj%Ny, grid_obj%y, DIRFLUX, prp_obj, ckd_obj)
+                &rtm_obj%Nx, rtm_obj%Ny, DIRFLUX, grid_obj, prp_obj, ckd_obj)
         else
             call shd_rad__makeDirect(grid_obj%Npts, rtm_obj%flag_bc, rtm_obj%flag_ip, DELTAM, shdo_obj%maxNl,&
                 &SOLARFLUX, src_obj%avgMu, src_obj%avgAz,&
@@ -329,15 +329,14 @@ subroutine shd_solv__solveRte(&
             if (SPLITTESTING) then
                 call shd_grid__splitGrid(grid_obj%maxNpts, grid_obj%maxNcell, shdo_obj%maxNptsSH, shdo_obj%maxNptsDO, shdo_obj%maxNphi0,&
                     &DOSPLIT, OUTOFMEM, CURSPLITACC, SPLITCRIT,&
-                    &grid_obj%Npts, grid_obj%Ncell, grid_obj%i8Grid, grid_obj%i6Cell, grid_obj%i2Tree, grid_obj%flag,&
-                    &grid_obj%xyz, rtm_obj%Nx, grid_obj%x, rtm_obj%Ny, grid_obj%y,&
+                    &rtm_obj%Nx, rtm_obj%Ny,&
                     &shdo_obj%Nstokes, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
                     &DELTAM, rtm_obj%flag_bc, rtm_obj%flag_ip, ACCELFLAG,&
                     &rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%ipha,&
                     &shdo_obj%iradI, shdo_obj%radI, shdo_obj%isrcJ, shdo_obj%srcJ, idsrc_Shdo,&
                     &rtm_obj%temp, rtm_obj%planck, DIRFLUX, src_obj%type,&
                     &SOLARFLUX, src_obj%avgMu, src_obj%avgAz, YlmSolar_Shdo,&
-                    &src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen, WORK, WORK2, prp_obj, ckd_obj)
+                    &src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen, WORK, WORK2, grid_obj, prp_obj, ckd_obj)
                 if (SOLCRIT .gt. STARTADAPTSOL) STARTSPLITACC = SPLITCRIT
             end if
             ! Find the maximum splitting criterion over all processors
@@ -362,8 +361,6 @@ subroutine shd_solv__solveRte(&
         !   discrete ordinates.
         call shd_intg__integratePath(rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, shdo_obj%Nstokes, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
             &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%Nang, rtm_obj%flag_bc, rtm_obj%flag_ip,&
-            &grid_obj%Npts, grid_obj%Ncell, grid_obj%x, grid_obj%y, grid_obj%z, grid_obj%xyz,&
-            &grid_obj%i8Grid, grid_obj%i6Cell, grid_obj%i2Tree, grid_obj%flag,&
             &src_obj%type, src_obj%avgMu, src_obj%avgAz, SKYRAD, src_obj%waveNum, src_obj%avgWaveLen,&
             &src_obj%unit, brdf_Shdo,&
             &MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
@@ -371,7 +368,8 @@ subroutine shd_solv__solveRte(&
             &CMU1, CPHI1, CMU2, CPHI2, wPhiFFT_Shdo, flagFFT_Shdo,&
             &DIRFLUX, FLUXES, rtm_obj%ext,&
             &shdo_obj%isrcJ, shdo_obj%srcJ, shdo_obj%iradI, shdo_obj%radI,&
-            &WORK, WORK1, WORK2, prp_obj, sfc_obj)
+            &WORK, WORK1, WORK2,&
+            &grid_obj, prp_obj, sfc_obj)
         !╰────────────────────────────────────────────────╯!
 
         ! Compute the source function from the radiance field,
