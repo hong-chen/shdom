@@ -1043,7 +1043,7 @@ program shdom
     ! grid
     !╭────────────────────────────────────────────────╮!
     ! x, y, z grids
-    allocate (x_Grid(grid_obj%Nx), y_Grid(grid_obj%Ny), z_Grid(grid_obj%Nz))
+    allocate (x_Grid(rtm_obj%Nx+1), y_Grid(rtm_obj%Ny+1), z_Grid(grid_obj%Nz))
 
     ! x,y,z coordinate values of grid point locations
     allocate (xyz_Grid(3, grid_obj%maxNpts))
