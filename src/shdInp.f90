@@ -47,6 +47,7 @@ module shd_inp
     use globals_type,  only: shd_type_rtm, &
                              shd_type_grid, &
                              shd_type_shdo, &
+                             shd_type_src, &
                              shd_type_prp, &
                              shd_type_sfc, &
                              shd_type_ckd, &
@@ -548,10 +549,9 @@ subroutine shd_io__nmlInp(&
 end subroutine shd_io__nmlInp
 
 subroutine shd_io__checkInp(&
-    &NMU, NPHI, DELTAM,&
-    &GRIDTYPE, SRCTYPE, UNITS, SOLARFLUX, SOLARMU,&
-    &WAVENO, WAVELEN,&
-    &SPLITACC, SHACC, prp_obj, sfc_obj)
+    &DELTAM,&
+    &SPLITACC, SHACC,&
+    &grid_obj, shdo_obj, src_obj, prp_obj, sfc_obj)
 
     ! Checks for validity of the input parameters. Gives warning for
     ! parameters that might not be correct.
@@ -560,46 +560,46 @@ subroutine shd_io__checkInp(&
     ! phase functions.
     ! Check for reasonable ranges on SPLITACC and SHACC.
     ! Check for reasonable range of sfc_obj%avgTemp and valid range of sfc_obj%avgAlb.
-    ! Check for SOLARMU=0.
-    ! Check for NPHI<NMU.
+    ! Check for src_obj%avgMu=0.
+    ! Check for shdo_obj%Nphi<shdo_obj%Nmu.
 
-    type(shd_type_prp), intent(in) :: prp_obj
-    type(shd_type_sfc), intent(in) :: sfc_obj
+    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_shdo), intent(in) :: shdo_obj
+    type(shd_type_src),  intent(in) :: src_obj
+    type(shd_type_prp),  intent(in) :: prp_obj
+    type(shd_type_sfc),  intent(in) :: sfc_obj
 
-    integer NMU, NPHI
     logical DELTAM
-    real SOLARFLUX, SOLARMU, WAVENO(2), WAVELEN
     real SPLITACC, SHACC
-    character(len=1) :: GRIDTYPE, SRCTYPE, UNITS
     real FLUX
 
-    if (SRCTYPE .ne. 'S' .and. SRCTYPE .ne. 'T' .and. SRCTYPE .ne. 'B')&
+    if ((src_obj%type .ne. 'S') .and. (src_obj%type .ne. 'T') .and. (src_obj%type .ne. 'B'))&
         &stop 'Error [_checkInp]: Illegal source type.'
-    if (UNITS .ne. 'R' .and. UNITS .ne. 'T' .and. UNITS .ne. 'B')&
+    if ((src_obj%unit .ne. 'R') .and. (src_obj%unit .ne. 'T') .and. (src_obj%unit .ne. 'B'))&
         &stop 'Error [_checkInp]: Illegal units.'
-    if (GRIDTYPE .ne. 'E' .and. GRIDTYPE .ne. 'P' .and. GRIDTYPE .ne. 'F')&
+    if ((grid_obj%type .ne. 'E') .and. (grid_obj%type .ne. 'P') .and. (grid_obj%type .ne. 'F'))&
         &stop 'Error [_checkInp]: Illegal grid type.'
 
-    if (SRCTYPE .ne. 'T' .and. SOLARMU .eq. 0.0) then
+    if ((src_obj%type .ne. 'T') .and. (src_obj%avgMu .eq. 0.0)) then
         stop 'Error [_checkInp]: Cosine solar zenith angle&
-            & (SOLARMU) cannot be 0.'
+            & (src_obj%avgMu) cannot be 0.'
     end if
 
-    if (.not. DELTAM .and. SRCTYPE .ne. 'T' .and. prp_obj%maxAsym .gt. 0.5) then
+    if (.not. DELTAM .and. (src_obj%type .ne. 'T') .and. prp_obj%maxAsym .gt. 0.5) then
         if (verbose_ .ge. 4) write (*, '(A)') 'Warning [_checkInp]: Delta-M should be used&
             & (DELTAM=.TRUE.) for solar radiative transfer&
             & with highly peaked phase functions.'
     end if
 
     ! Check for SPLITACC and SHACC magnitudes
-    if (SRCTYPE .eq. 'T' .or. SRCTYPE .eq. 'B') then
-        call shd_util__computePlanck(sfc_obj%avgTemp, UNITS, WAVENO, WAVELEN, FLUX)
+    if ((src_obj%type .eq. 'T') .or. (src_obj%type .eq. 'B')) then
+        call shd_util__computePlanck(sfc_obj%avgTemp, src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen, FLUX)
         FLUX = PI_*FLUX
     else
         FLUX = 0.0
     end if
-    if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
-        FLUX = FLUX + SOLARFLUX
+    if ((src_obj%type .eq. 'S') .or. (src_obj%type .eq. 'B')) then
+        FLUX = FLUX + src_obj%avgSolar0
     end if
     if (SPLITACC .gt. 0.0 .and.&
         &(SPLITACC .lt. 0.001*FLUX .or. SPLITACC .gt. 0.1*FLUX)) then
@@ -611,7 +611,7 @@ subroutine shd_io__checkInp(&
             & (SHACC) is not a fraction, but scales with fluxes.'
     end if
 
-    if (SRCTYPE .ne. 'S' .and.&
+    if ((src_obj%type .ne. 'S') .and.&
         &(sfc_obj%avgTemp .lt. 150. .or. sfc_obj%avgTemp .gt. 350.)) then
         if (verbose_ .ge. 4) write (*, '(A)') 'Warning [_checkInp]:&
             & ground temperature out of Earth range.'
@@ -620,8 +620,8 @@ subroutine shd_io__checkInp(&
         stop 'Error [_checkInp]: Ground albedo must be 0 to 1.'
     end if
 
-    if (NPHI .lt. NMU) then
-      if (verbose_ .ge. 4) write (*, '(A)') 'Warning [_checkInp]: Usually want NPHI >= NMU.'
+    if (shdo_obj%Nphi .lt. shdo_obj%Nmu) then
+      if (verbose_ .ge. 4) write (*, '(A)') 'Warning [_checkInp]: Usually want shdo_obj%Nphi>= shdo_obj%Nmu.'
     end if
 
     return

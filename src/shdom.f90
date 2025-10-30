@@ -180,7 +180,7 @@ program shdom
     ! SAV
     !╭────────────────────────────────────────────────────────────────────────────╮!
     character(len=charMaxLen_) :: fileInp_sav, fileOut_sav
-    logical :: isNewRad, doNewGrid
+    logical :: doRadInit, doGridInit
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! prp_obj
@@ -693,10 +693,8 @@ program shdom
 
     if (isMasterProc) then
         ! Check input parameters
-        call shd_io__checkInp(shdo_obj%Nmu, shdo_obj%Nphi, doDeltaM,&
-            &grid_obj%type, src_obj%type, src_obj%unit, src_obj%avgSolar0, src_obj%avgMu,&
-            &src_obj%waveNum, src_obj%avgWaveLen,&
-            &splitAcc, shAcc, prp_obj, sfc_obj)
+        call shd_io__checkInp(doDeltaM, splitAcc, shAcc,&
+            &grid_obj, shdo_obj, src_obj, prp_obj, sfc_obj)
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
@@ -1146,13 +1144,13 @@ program shdom
 
     ! Read in previous run from binary file if desired
     call shd_io__restoreState(fileInp_sav,&
-        &isNewRad, doNewGrid,fluxTot,&
+        &doRadInit, doGridInit,fluxTot,&
         &rtm_obj, grid_OBJ, shdo_OBJ)
 
 
     ! Check if we can use pre-calculated "state", if not, generate new grids
-    !   doNewGrid is from shd_io__restoreState call
-    if (doNewGrid) then
+    !   doGridInit is from shd_io__restoreState call
+    if (doGridInit) then
         ! Make the internal base grid lines
         ! note: we might not need <rtm_obj> after all
         call shd_init__makeGrid(rtm_obj, prp_OBJ, grid_OBJ)
@@ -1192,7 +1190,7 @@ program shdom
 
         ! If this is the first time through or we always want a base grid,
         !   then make the base grid point positions and grid cell structure.
-        if (isBaseOut .or. ((ig_ckd .eq. ckd_obj%Ng) .and. doNewGrid)) then
+        if (isBaseOut .or. ((ig_ckd .eq. ckd_obj%Ng) .and. doGridInit)) then
             ! note: we might not need <rtm_obj> after all
             call shd_init__makeCell(rtm_obj, grid_OBJ)
             grid_obj%Ncell0 = grid_obj%Ncell
@@ -1201,7 +1199,7 @@ program shdom
         ! Find the monochromatic SHDOM solution: adaptive grid output
         !   in source (shdo_obj%srcJ), radiance (shdo_obj%radI), fluxes, direct Flux.
         call shd_solv__solveRte(&
-            &isNewRad,&
+            &doRadInit,&
             &doDeltaM, isHighOrder_,&
             &solar0_ckd, skyRad,&
             &isAccel, solAcc, maxIter, solCrit, iter,&
@@ -1211,7 +1209,7 @@ program shdom
             &dsrc_Shdo, fluxTot, fluxDir,&
             &rtm_obj, grid_obj, shdo_obj, src_obj,&
             &prp_obj, sfc_obj, ckd_obj)
-        isNewRad = .false.
+        doRadInit = .false.
         totIter = totIter + iter
 
         ! Compute the output and put in arrays. First the radiance.
