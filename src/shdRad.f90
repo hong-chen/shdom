@@ -705,14 +705,11 @@ subroutine shd_rad__interpRad(&
 end subroutine shd_rad__interpRad
 
 subroutine shd_rad__computeRad(&
-    &NSTOKES, NX, NY, NZ,&
-    &ML, MM, NLM,&
-    &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-    &BCFLAG, IPFLAG, SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
+    &DELTAM,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-    &SKYRAD, WAVENO, WAVELEN, UNITS,&
-    &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
-    &SHPTR, SOURCE, SOURCE1, GRIDRAD,&
+    &SKYRAD,&
+    &DIRFLUX, FLUXES,&
+    &SOURCE1, GRIDRAD,&
     &OUTPARMS, IRAD, RADOUT,&
     &rtm_obj, grid_obj, shdo_obj, src_obj,&
     &prp_obj, sfc_obj, sen_obj)
@@ -727,23 +724,15 @@ subroutine shd_rad__computeRad(&
     type(shd_type_sfc),  intent(in) :: sfc_obj
     type(shd_type_sen),  intent(in) :: sen_obj
 
-    integer NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG
-    integer ML, MM, NLM
-    integer NMU, NPHI0MAX, NPHI0(NMU), IRAD
+    integer IRAD
     integer MAXNBC, NTOPPTS, NBOTPTS
-    integer SHPTR(grid_obj%Npts + 1), BCPTR(MAXNBC, 2)
-    integer*2 IPHASE(grid_obj%Npts)
+    integer BCPTR(MAXNBC, 2)
     logical DELTAM
-    real SOLARMU, SOLARAZ
-    real SKYRAD, WAVENO(2), WAVELEN
-    real MU(NMU), PHI(NMU, NPHI0MAX), WTDO(NMU, NPHI0MAX)
-    real BCRAD(NSTOKES, *)
-    real EXTINCT(grid_obj%Npts), ALBEDO(grid_obj%Npts), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, grid_obj%Npts)
+    real SKYRAD
+    real BCRAD(shdo_obj%Nstokes, *)
     real DIRFLUX(grid_obj%Npts), FLUXES(2, grid_obj%Npts)
-    real SOURCE1(NSTOKES, grid_obj%Npts), GRIDRAD(NSTOKES, grid_obj%Npts)
-    real SOURCE(NSTOKES, *)
-    real OUTPARMS(*), RADOUT(NSTOKES, *)
-    character(len=1) :: SRCTYPE, UNITS
+    real SOURCE1(shdo_obj%Nstokes, grid_obj%Npts), GRIDRAD(shdo_obj%Nstokes, grid_obj%Npts)
+    real OUTPARMS(*), RADOUT(shdo_obj%Nstokes, *)
     integer I, IBC, IANG, JX, JY, K, SIDE
     integer NANGOUT, NXOUT, NYOUT
     logical VALIDRAD
@@ -757,41 +746,41 @@ subroutine shd_rad__computeRad(&
     !╰──────────────────────────────────────────────────────────────╯!
 
     ! Make the isotropic radiances for the top boundary
-    call shd_init__makeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
-        &UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
+    call shd_init__makeTopRad(src_obj%type, SKYRAD, src_obj%waveNum, src_obj%avgWaveLen,&
+        &src_obj%unit, NTOPPTS, shdo_obj%Nstokes, BCRAD(1, 1))
 
     ! Make the bottom boundary radiances for the Lambertian surfaces.
     ! Compute the upwelling bottom radiances using the downwelling fluxes.
     if (sfc_obj%type .eq. 'FL') then
 
         call shd_init__makeBotRadUL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, SRCTYPE,&
-            &WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1, 1 + NTOPPTS), sfc_obj)
+            &DIRFLUX, FLUXES, src_obj%type,&
+            &src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit, shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS), sfc_obj)
 
     else if (sfc_obj%type .eq. 'VL') then
 
         call shd_init__makeBotRadVL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, SRCTYPE,&
-            &NSTOKES, BCRAD(1, 1 + NTOPPTS), sfc_obj)
+            &DIRFLUX, FLUXES, src_obj%type,&
+            &shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS), sfc_obj)
 
     end if
 
     ! Setup the regularly spaced radiance locations
-    XDOMAIN = grid_obj%x(NX + 1 - ibits(BCFLAG, 0, 1)) - grid_obj%x(1) + 2*OUTPARMS(4)
+    XDOMAIN = grid_obj%x(rtm_obj%Nx + 1 - ibits(rtm_obj%flag_bc, 0, 1)) - grid_obj%x(1) + 2*OUTPARMS(4)
     STARTX = -OUTPARMS(4)
     if (OUTPARMS(2) .eq. 0.0) then
         NXOUT = 1
     else
         NXOUT = max(1, nint(XDOMAIN/OUTPARMS(2)))
     end if
-    YDOMAIN = grid_obj%y(NY + 1 - ibits(BCFLAG, 1, 1)) - grid_obj%y(1) + 2*OUTPARMS(5)
+    YDOMAIN = grid_obj%y(rtm_obj%Ny + 1 - ibits(rtm_obj%flag_bc, 1, 1)) - grid_obj%y(1) + 2*OUTPARMS(5)
     STARTY = -OUTPARMS(5)
     if (OUTPARMS(3) .eq. 0.0) then
         NYOUT = 1
     else
         NYOUT = max(1, nint(YDOMAIN/OUTPARMS(3)))
     end if
-    Z0 = min(max(OUTPARMS(1), grid_obj%z(1)), grid_obj%z(NZ))
+    Z0 = min(max(OUTPARMS(1), grid_obj%z(1)), grid_obj%z(rtm_obj%Nz))
     NANGOUT = nint(OUTPARMS(6))
 
     ! Loop over the radiance directions
@@ -807,7 +796,7 @@ subroutine shd_rad__computeRad(&
 
         ! added for fixing the "domain shift" issue (only for 3D)
         !╭────────────────────────────────────────────────╮!
-        if (IPFLAG .eq. 0) then
+        if (rtm_obj%flag_ip .eq. 0) then
             DS_Z0 = Z0 - grid_obj%z(1)
             DS_VZA_RAD = acos(MUOUT)
             DS_XOFFSET = DS_Z0*tan(DS_VZA_RAD)*cos(PHIOUT)
@@ -841,7 +830,7 @@ subroutine shd_rad__computeRad(&
         !   function, so the grid interpolation is correct.
         do I = 1, grid_obj%Npts
             GRIDRAD(1, I) = -1.0
-            SOURCE1(:, I) = SOURCE1(:, I)*EXTINCT(I)
+            SOURCE1(:, I) = SOURCE1(:, I)*rtm_obj%ext(I)
         end do
         ! Get boundary radiances: either top or bottom
         ! Isotropic top boundary or Lambertian bottom boundary can u
@@ -856,9 +845,9 @@ subroutine shd_rad__computeRad(&
         else
             if (.not. sfc_obj%isLambertian) then
                 call shd_init__makeBotRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
-                    &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MUOUT, PHIOUT,&
-                    &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
-                    &NSTOKES,&
+                    &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt, MUOUT, PHIOUT,&
+                    &src_obj%type, src_obj%avgWaveLen, src_obj%avgMu, src_obj%avgAz, DIRFLUX,&
+                    &shdo_obj%Nstokes,&
                     &BCRAD(1, 1 + NTOPPTS), sfc_obj)
             end if
             do IBC = 1, NBOTPTS
@@ -874,12 +863,12 @@ subroutine shd_rad__computeRad(&
             do JX = 1, NXOUT
                 IRAD = IRAD + 1
                 TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
-                call shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
-                    &NX, NY, NZ,&
-                    &MUOUT, PHIOUT, GRIDRAD, EXTINCT, SOURCE1,&
+                call shd_src__integrateSrc(rtm_obj%flag_bc, rtm_obj%flag_ip, shdo_obj%Nstokes,&
+                    &rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz,&
+                    &MUOUT, PHIOUT, GRIDRAD, rtm_obj%ext, SOURCE1,&
                     &X0, Y0, Z0, XE, YE, ZE, SIDE,&
                     &TRANSMIT, RADIANCE, VALIDRAD, grid_obj)
-                RADOUT(:, IRAD) = RADIANCE(1:NSTOKES)
+                RADOUT(:, IRAD) = RADIANCE(1:shdo_obj%Nstokes)
                 X0 = X0 + OUTPARMS(2)
             end do
             Y0 = Y0 + OUTPARMS(3)
@@ -891,14 +880,12 @@ subroutine shd_rad__computeRad(&
 
 end subroutine shd_rad__computeRad
 
-subroutine shd_rad__computeCamRad(NSTOKES, NX, NY, NZ,&
-    &ML, MM, NLM,&
-    &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-    &BCFLAG, IPFLAG, SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
+subroutine shd_rad__computeCamRad(&
+    &DELTAM,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-    &SKYRAD, WAVENO, WAVELEN, UNITS,&
-    &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
-    &SHPTR, SOURCE, OUTPARMS, IVIS, VISOUT,&
+    &SKYRAD,&
+    &DIRFLUX, FLUXES,&
+    &OUTPARMS, IVIS, VISOUT,&
     &rtm_obj, grid_obj, shdo_obj, src_obj,&
     &prp_obj, sfc_obj, sen_obj)
 
@@ -913,26 +900,19 @@ subroutine shd_rad__computeCamRad(NSTOKES, NX, NY, NZ,&
     type(shd_type_sfc),  intent(in) :: sfc_obj
     type(shd_type_sen),  intent(in) :: sen_obj
 
-    integer NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG
-    integer ML, MM, NLM
-    integer NMU, NPHI0MAX, NPHI0(NMU), IVIS
+    integer IVIS
     integer MAXNBC, NTOPPTS, NBOTPTS
-    integer SHPTR(grid_obj%Npts + 1), BCPTR(MAXNBC, 2)
-    integer*2 IPHASE(grid_obj%Npts)
+    integer BCPTR(MAXNBC, 2)
     logical DELTAM
-    real SOLARMU, SOLARAZ
-    real SKYRAD, WAVENO(2), WAVELEN
-    real MU(NMU), PHI(NMU, NPHI0MAX), WTDO(NMU, NPHI0MAX)
-    real BCRAD(NSTOKES, *)
-    real EXTINCT(grid_obj%Npts), ALBEDO(grid_obj%Npts), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, *)
-    real DIRFLUX(grid_obj%Npts), FLUXES(2, grid_obj%Npts), SOURCE(NSTOKES, *)
-    real OUTPARMS(*), VISOUT(NSTOKES, *)
-    character(len=1) :: SRCTYPE, UNITS
+    real SKYRAD
+    real BCRAD(shdo_obj%Nstokes, *)
+    real DIRFLUX(grid_obj%Npts), FLUXES(2, grid_obj%Npts)
+    real OUTPARMS(*), VISOUT(shdo_obj%Nstokes, *)
     integer NSCATANGLE, NSTPHASE, I, J, L, N, SIDE
     integer NL, NS, LINE, SAMP
     logical CAMERA_MODE, VALIDRAD
     real MURAY, PHIRAY
-    real(RD_) :: XE, YE, ZE, TRANSMIT, VISRAD(NSTOKES)
+    real(RD_) :: XE, YE, ZE, TRANSMIT, VISRAD(shdo_obj%Nstokes)
     real(RD_) :: X0, Y0, Z0, X1, Y1, Z1, X2, Y2, Z2
     real(RD_) :: THETA0, THETA1, PHIR, PHI0
     real(RD_) :: COSTH, SINTH, SINTH0, SINTH1, MU2, PHI2
@@ -944,32 +924,32 @@ subroutine shd_rad__computeCamRad(NSTOKES, NX, NY, NZ,&
     real              :: MEAN, STD1, STD2
     real, allocatable :: AOLP(:)
 
-    allocate (YLMSUN(prp_obj%NlegSet, NLM))
+    allocate (YLMSUN(prp_obj%NlegSet, shdo_obj%Nlm))
 
     if (isSolar_) then
-        call shd_shdo__computeYlm(.true., SOLARMU, SOLARAZ, ML, MM, prp_obj%NlegSet, YLMSUN)
+        call shd_shdo__computeYlm(.true., src_obj%avgMu, src_obj%avgAz, shdo_obj%maxNl, shdo_obj%maxNm, prp_obj%NlegSet, YLMSUN)
         if (DELTAM .and. prp_obj%Npha .gt. 0) then
             NSCATANGLE = max(36, min(MAXSCATANG, 2*prp_obj%Nleg))
             NSTPHASE = min(prp_obj%NlegSet, 2)
             allocate (PHASETAB(NSTPHASE, prp_obj%Npha, NSCATANGLE))
             call shd_scat__computePhase(NSCATANGLE, prp_obj%Npha, NSTPHASE,&
-                &NSTOKES, ML, prp_obj%NlegSet, prp_obj%Nleg, LEGEN, PHASETAB)
+                &shdo_obj%Nstokes, shdo_obj%maxNl, prp_obj%NlegSet, prp_obj%Nleg, rtm_obj%leg, PHASETAB)
         end if
     end if
 
     ! Make the isotropic radiances for the top boundary
-    call shd_init__makeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
-        &UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
+    call shd_init__makeTopRad(src_obj%type, SKYRAD, src_obj%waveNum, src_obj%avgWaveLen,&
+        &src_obj%unit, NTOPPTS, shdo_obj%Nstokes, BCRAD(1, 1))
     ! Make the bottom boundary radiances for the Lambertian surfaces
     !   Compute the upwelling bottom radiances using the downwelling
     if (sfc_obj%type .eq. 'FL') then
         call shd_init__makeBotRadUL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, SRCTYPE,&
-            &WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1, 1 + NTOPPTS), sfc_obj)
+            &DIRFLUX, FLUXES, src_obj%type,&
+            &src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit, shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS), sfc_obj)
     else if (sfc_obj%type .eq. 'VL') then
         call shd_init__makeBotRadVL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, SRCTYPE,&
-            &NSTOKES, BCRAD(1, 1 + NTOPPTS), sfc_obj)
+            &DIRFLUX, FLUXES, src_obj%type,&
+            &shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS), sfc_obj)
     end if
 
     CAMERA_MODE = nint(OUTPARMS(1)) .eq. 1
@@ -1071,15 +1051,15 @@ subroutine shd_rad__computeCamRad(NSTOKES, NX, NY, NZ,&
             end if
 
             ! Extrapolate ray to domain top if above
-            if (Z0 .gt. grid_obj%z(NZ)) then
+            if (Z0 .gt. grid_obj%z(rtm_obj%Nz)) then
                 if (COSTH .ge. 0.0) then
                     VISRAD(:) = 0.0
                     goto 900
                 end if
-                R = (grid_obj%z(NZ) - Z0)/COSTH
+                R = (grid_obj%z(rtm_obj%Nz) - Z0)/COSTH
                 X0 = X0 + R*sqrt(1 - COSTH**2)*cos(PHIR)
                 Y0 = Y0 + R*sqrt(1 - COSTH**2)*sin(PHIR)
-                Z0 = grid_obj%z(NZ)
+                Z0 = grid_obj%z(rtm_obj%Nz)
             else if (Z0 .lt. grid_obj%z(1)) then
                 write (6, *) 'Error [_visualizeRad]: Level below domain.'
                 stop
@@ -1095,14 +1075,14 @@ subroutine shd_rad__computeCamRad(NSTOKES, NX, NY, NZ,&
             ! Integrate the extinction and source function along this ray
             !   to calculate the Stokes radiance vector for this pixel
             TRANSMIT = 1.0d0; VISRAD(:) = 0.0d0
-            call shd_src__integrateSrcOneRay(BCFLAG, IPFLAG, NSTOKES,&
+            call shd_src__integrateSrcOneRay(rtm_obj%flag_bc, rtm_obj%flag_ip, shdo_obj%Nstokes,&
                 &NSTPHASE, NSCATANGLE, PHASETAB,&
-                &NX, NY, NZ,&
-                &ML, MM, NLM,&
-                &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-                &DELTAM, SRCTYPE, WAVELEN, SOLARMU, SOLARAZ,&
-                &EXTINCT, ALBEDO, LEGEN, IPHASE,&
-                &DIRFLUX, SHPTR, SOURCE, YLMSUN,&
+                &rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz,&
+                &shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
+                &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
+                &DELTAM, src_obj%type, src_obj%avgWaveLen, src_obj%avgMu, src_obj%avgAz,&
+                &rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%ipha,&
+                &DIRFLUX, shdo_obj%isrcJ, shdo_obj%srcJ, YLMSUN,&
                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                 &MU2, PHI2, X0, Y0, Z0,&
                 &XE, YE, ZE, SIDE, TRANSMIT, VISRAD, VALIDRAD,&

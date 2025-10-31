@@ -1218,27 +1218,22 @@ program shdom
             do iout = 1, Nout
                 if (type_Out(iout) .eq. 'R') then
                     if (isMpi_) then
-                        call shd_mpi__computeRad(rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz,&
-                            &shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
-                            &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
-                            &rtm_obj%flag_bc, rtm_obj%flag_ip,&
-                            &src_obj%type, doDeltaM, src_obj%avgMu, src_obj%avgAz,&
+                        call shd_mpi__computeRad(&
+                            &doDeltaM,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
-                            &skyRad, src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
-                            &rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%ipha, fluxDir, fluxTot,&
-                            &shdo_obj%isrcJ, shdo_obj%srcJ, work, work(1 + grid_obj%Npts*shdo_obj%Nstokes),&
+                            &skyRad,&
+                            &fluxDir, fluxTot,&
+                            &work, work(1 + grid_obj%Npts*shdo_obj%Nstokes),&
                             &parms_Out(1, iout), irad, work2,&
                             &rtm_obj, grid_obj, shdo_obj, src_obj,&
                             &prp_obj, sfc_obj, sen_obj)
                     else
-                        call shd_rad__computeRad(shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz,&
-                            &shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
-                            &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
-                            &rtm_obj%flag_bc, rtm_obj%flag_ip, src_obj%type, doDeltaM, src_obj%avgMu, src_obj%avgAz,&
+                        call shd_rad__computeRad(&
+                            &doDeltaM,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
-                            &skyRad, src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
-                            &rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%ipha, fluxDir, fluxTot,&
-                            &shdo_obj%isrcJ, shdo_obj%srcJ, work(1), work(1 + grid_obj%Npts*shdo_obj%Nstokes),&
+                            &skyRad,&
+                            &fluxDir, fluxTot,&
+                            &work(1), work(1 + grid_obj%Npts*shdo_obj%Nstokes),&
                             &parms_Out(1, iout), irad, work2,&
                             &rtm_obj, grid_obj, shdo_obj, src_obj,&
                             &prp_obj, sfc_obj, sen_obj)
@@ -1253,26 +1248,21 @@ program shdom
             do iout = 1, Nout
                 if (type_Out(iout) .eq. 'V') then
                     if (isMpi_) then
-                        call shd_mpi__computeCamRad(rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz,&
-                            &shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
-                            &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
-                            &rtm_obj%flag_bc, rtm_obj%flag_ip,&
-                            &src_obj%type, doDeltaM, src_obj%avgMu, src_obj%avgAz,&
+                        call shd_mpi__computeCamRad(&
+                            &doDeltaM,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
-                            &skyRad, src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
-                            &rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%ipha, fluxDir, fluxTot,&
-                            &shdo_obj%isrcJ, shdo_obj%srcJ, parms_Out(1, iout), ilos, work2,&
+                            &skyRad,&
+                            &fluxDir, fluxTot,&
+                            &parms_Out(1, iout), ilos, work2,&
                             &rtm_obj, grid_obj, shdo_obj, src_obj,&
                             &prp_obj, sfc_obj, sen_obj)
                     else
-                        call shd_rad__computeCamRad(shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz,&
-                            &shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
-                            &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
-                            &rtm_obj%flag_bc, rtm_obj%flag_ip, src_obj%type, doDeltaM, src_obj%avgMu, src_obj%avgAz,&
+                        call shd_rad__computeCamRad(&
+                            &doDeltaM,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
-                            &skyRad, src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
-                            &rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%ipha, fluxDir, fluxTot,&
-                            &shdo_obj%isrcJ, shdo_obj%srcJ, parms_Out(1, iout), ilos, work2,&
+                            &skyRad,&
+                            &fluxDir, fluxTot,&
+                            &parms_Out(1, iout), ilos, work2,&
                             &rtm_obj, grid_obj, shdo_obj, src_obj,&
                             &prp_obj, sfc_obj, sen_obj)
                     end if
