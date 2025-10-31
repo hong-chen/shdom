@@ -1400,18 +1400,15 @@ program shdom
 
         do iout = 1, Nout
             if ((type_Out(iout) .ne. 'V') .and. (file_Out(iout)(1:4) .ne. 'NONE')) then
-                call shd_io__outputResult(shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz,&
-                    shdo_obj%Nsh, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm, shdo_obj%Nmu, shdo_obj%Nphi, shdo_obj%Nang,&
+                call shd_io__outputResult(&
                     fileInp_sav, fileOut_sav,&
-                    rtm_obj%flag_bc, rtm_obj%flag_ip, doDeltaM, src_obj%type,&
-                    src_obj%avgSolar, src_obj%avgMu, src_obj%avgAz, src_obj%skyRad,&
-                    src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
+                    doDeltaM,&
                     splitAcc, shAcc, solAcc, maxIter, totIter,&
-                    rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%ipha, rtm_obj%temp,&
                     sumFluxTot_Out, sumFluxDir_Out, sumFluxDiv_Out,&
                     irad, sumRad_Out, Nsh_out, sumSH_Out, src1_Out,&
                     type_Out(iout), parms_Out(1, iout), file_Out(iout),&
-                    rtm_obj, grid_obj, prp_obj, sfc_obj, ckd_obj, sen_obj)
+                    rtm_obj, grid_obj, shdo_obj, src_obj,&
+                    prp_obj, sfc_obj, ckd_obj, sen_obj)
             end if
         end do
     end if
@@ -1423,15 +1420,13 @@ program shdom
     if (isMasterProc) then
         do iout = 1, Nout
             if ((type_Out(iout) .eq. 'V')) then
-                call shd_io__outputCamRad(shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz,&
-                    &shdo_obj%Nsh, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm, shdo_obj%Nmu, shdo_obj%Nphi, shdo_obj%Nang,&
+                call shd_io__outputCamRad(&
                     &fileInp_sav, fileOut_sav,&
-                    &rtm_obj%flag_bc, rtm_obj%flag_ip, doDeltaM, src_obj%type,&
-                    &src_obj%avgSolar, src_obj%avgMu, src_obj%avgAz, src_obj%skyRad,&
-                    &src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
+                    &doDeltaM,&
                     &splitAcc, shAcc, solAcc, maxIter, totIter,&
                     &ilos, sumCam_Out, parms_Out(1, iout), file_Out(iout),&
-                    &rtm_obj, grid_obj, prp_obj, sfc_obj, ckd_obj, sen_obj)
+                    &rtm_obj, grid_obj, shdo_obj, src_obj,&
+                    &prp_obj, sfc_obj, ckd_obj, sen_obj)
             end if
         end do
     end if
