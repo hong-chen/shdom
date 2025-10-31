@@ -71,7 +71,7 @@ module shd_solv
 
     use shd_intg, only: shd_intg__integratePath
 
-    use shd_mpi,  only: shd_mpi__findAlbMax, &
+    use shd_mpi,  only: shd_mpi__findMaxSsa, &
                         shd_mpi__makeDirect, &
                         shd_mpi__unifySplit, &
                         shd_mpi__findTotSplitCritMax, &
@@ -92,7 +92,7 @@ contains
 
 subroutine shd_solv__solveRte(&
     &INRADFLAG,&
-    &DELTAM, isHighOrder,&
+    &doDeltaM, isHighOrder,&
     &SOLARFLUX,&
     &ACCELFLAG, SOLACC, MAXITER, SOLCRIT, ITER,&
     &SPLITACC, SHACC,&
@@ -108,7 +108,7 @@ subroutine shd_solv__solveRte(&
     ! grid_obj%flag,grid_obj%Npts,grid_obj%xyz) is input and modified for new grid
     ! cells and points on output.
 
-    type(shd_type_rtm),  intent(in)    :: rtm_obj
+    type(shd_type_rtm),  intent(inout) :: rtm_obj
     type(shd_type_grid), intent(inout) :: grid_obj
     type(shd_type_shdo), intent(inout) :: shdo_obj
     type(shd_type_src),  intent(in)    :: src_obj
@@ -120,7 +120,7 @@ subroutine shd_solv__solveRte(&
     integer MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR(MAXNBC, 2)
     integer idsrc_Shdo(*)
     integer WORK1(*)
-    logical INRADFLAG, DELTAM, ACCELFLAG, isHighOrder
+    logical INRADFLAG, doDeltaM, ACCELFLAG, isHighOrder
     real SOLARFLUX
     real SOLACC, SOLCRIT, SPLITACC, SHACC
     real BCRAD(*)
@@ -132,7 +132,7 @@ subroutine shd_solv__solveRte(&
     integer MAXNANGBND, NANGBND(4, 2), ierr
     logical FIXSH, SPLITTESTING, DOSPLIT, OUTOFMEM
     logical, allocatable :: flagFFT_Shdo(:)
-    real ALBMAX
+    real maxSsa
     real STARTADAPTSOL, ENDADAPTSOL, ADAPTRANGE, SPLITCRIT
     real STARTSPLITACC, CURSPLITACC, AVGSOLCRIT, BETA
     real DELJDOT, DELJOLD, DELJNEW, JNORM, ACCELPAR
@@ -160,23 +160,22 @@ subroutine shd_solv__solveRte(&
 
     ! If Delta-M then scale the extinction, albedo, and Legendre terms
     ! Put the Planck blackbody source in rtm_obj%planck.
-    call shd_init__makePrp(shdo_obj%maxNl, shdo_obj%maxNm, grid_obj%Npts, DELTAM,&
-        &src_obj%type, src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen, ALBMAX,&
-        &rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%temp, rtm_obj%planck, rtm_obj%ipha, prp_obj)
+    call shd_init__makePrp(doDeltaM, maxSsa,&
+        &rtm_obj, grid_obj, shdo_obj, src_obj, prp_obj)
 
     ! Get the maximum single scattering albedo over all processors
-    call shd_mpi__findAlbMax(ALBMAX)
+    call shd_mpi__findMaxSsa(maxSsa)
 
     ! Compute the solar transmission in DIRFLUX.
     ! Precompute Ylm's for solar direction
     if (isSolar_) then
         if (isMpi_) then
-            call shd_mpi__makeDirect(1, DELTAM, shdo_obj%maxNl,&
+            call shd_mpi__makeDirect(1, doDeltaM, shdo_obj%maxNl,&
                 &SOLARFLUX, src_obj%avgMu, src_obj%avgAz,&
                 &DIRFLUX,&
                 &rtm_obj, grid_obj, prp_obj, ckd_obj)
         else
-            call shd_rad__makeDirect(grid_obj%Npts, DELTAM, shdo_obj%maxNl,&
+            call shd_rad__makeDirect(grid_obj%Npts, doDeltaM, shdo_obj%maxNl,&
                 &SOLARFLUX, src_obj%avgMu, src_obj%avgAz,&
                 &DIRFLUX,&
                 &rtm_obj, grid_obj, prp_obj, ckd_obj)
@@ -332,7 +331,7 @@ subroutine shd_solv__solveRte(&
                     &DOSPLIT, OUTOFMEM, CURSPLITACC, SPLITCRIT,&
                     &rtm_obj%Nx, rtm_obj%Ny,&
                     &shdo_obj%Nstokes, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
-                    &DELTAM, rtm_obj%flag_bc, rtm_obj%flag_ip, ACCELFLAG,&
+                    &doDeltaM, rtm_obj%flag_bc, rtm_obj%flag_ip, ACCELFLAG,&
                     &rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%ipha,&
                     &shdo_obj%iradI, shdo_obj%radI, shdo_obj%isrcJ, shdo_obj%srcJ, idsrc_Shdo,&
                     &rtm_obj%temp, rtm_obj%planck, DIRFLUX, src_obj%type,&
@@ -400,7 +399,7 @@ subroutine shd_solv__solveRte(&
             &shdo_obj%Nstokes, shdo_obj%srcJ, dsrc_Shdo)
 
         ! If it is a not scattering medium then do only one iteration
-        if (ALBMAX .lt. SOLACC) SOLCRIT = SOLACC
+        if (maxSsa .lt. SOLACC) SOLCRIT = SOLACC
 
         call system_clock(COUNT_END, COUNT_RATE, COUNT_MAX)
         ELAPSED_TIME = (real(COUNT_END) - real(COUNT_START)) / real(COUNT_RATE)

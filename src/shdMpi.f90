@@ -109,7 +109,7 @@ module shd_mpi
     public :: shd_mpi__makeDirect
     public :: shd_mpi__computeRad
     public :: shd_mpi__computeCamRad
-    public :: shd_mpi__findAlbMax
+    public :: shd_mpi__findMaxSsa
     public :: shd_mpi__findTotSplitCritMax
     public :: shd_mpi__findBndryPnt
     public :: shd_mpi__calBndryRad
@@ -985,25 +985,25 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
 
 end subroutine shd_mpi__gatherOut
 
-subroutine shd_mpi__findAlbMax(ALBMAX)
+subroutine shd_mpi__findMaxSsa(maxSsa)
 
-    real, intent(inout) :: ALBMAX
+    real, intent(inout) :: maxSsa
 
 #if HAS_MPI
     integer :: ierr
     real    :: sendrbuf
 
     if (Nproc_ .gt. 1) then
-        ! Call mpi_allreduce to find the max ALBMAX over all processors
-        sendrbuf = ALBMAX
-        call mpi_allreduce(sendrbuf, ALBMAX, 1, MPI_real, MPI_max, comm2D_, ierr)
-        if (ierr .ne. MPI_success) call shd_mpi__abort('Error [mpi__findAlbMax]: mpi_allreduce error.')
+        ! Call mpi_allreduce to find the max maxSsa over all processors
+        sendrbuf = maxSsa
+        call mpi_allreduce(sendrbuf, maxSsa, 1, MPI_real, MPI_max, comm2D_, ierr)
+        if (ierr .ne. MPI_success) call shd_mpi__abort('Error [mpi__findSsaMax]: mpi_allreduce error.')
     end if
 #endif
 
     return
 
-end subroutine shd_mpi__findAlbMax
+end subroutine shd_mpi__findMaxSsa
 
 subroutine shd_mpi__unifySplit(DOSPLIT, STARTSPLITACC)
 

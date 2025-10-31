@@ -46,6 +46,8 @@ module shd_init
                              isSolar_, isThermal_
     use globals_type,  only: shd_type_rtm, &
                              shd_type_grid, &
+                             shd_type_shdo, &
+                             shd_type_src, &
                              shd_type_prp, &
                              shd_type_sfc
 
@@ -426,69 +428,67 @@ subroutine shd_init__makeCell(rtm_obj, &
 end subroutine shd_init__makeCell
 
 subroutine shd_init__makePrp(&
-    &ML, MM, NPTS, DELTAM,&
-    &SRCTYPE, UNITS, WAVENO, WAVELEN, ALBMAX,&
-    &EXTINCT, ALBEDO, LEGEN, TEMP, PLANCK, IPHASE, prp_obj)
+    &doDeltaM, maxSsa,&
+    &rtm_obj, grid_obj, shdo_obj, src_obj, prp_obj)
 
     ! Prepares the grid arrays for the iterative solution process.
     ! If doing Delta-M scaling then the extinction, albedo, and Legend
-    ! terms are scaled first; only the 0 to ML LEGEN terms are scaled.
-    ! Outputs PLANCK with (1-omega)*B(T) for thermal source, where B(T
-    ! the Planck function (meaning depends on UNITS).
-    ! TEMP array is unchanged.
+    ! terms are scaled first; only the 0 to shdo_obj%maxNl rtm_obj%leg terms are scaled.
+    ! Outputs rtm_obj%planck with (1-omega)*B(T) for thermal source, where B(T
+    ! the function (meaning depends on src_obj%unit).
+    ! rtm_obj%temp array is unchanged.
 
-    type(shd_type_prp), intent(in) :: prp_obj
+    type(shd_type_rtm),  intent(inout) :: rtm_obj
+    type(shd_type_grid), intent(in)    :: grid_obj
+    type(shd_type_shdo), intent(in)    :: shdo_obj
+    type(shd_type_src),  intent(in)    :: src_obj
+    type(shd_type_prp),  intent(in)    :: prp_obj
 
-    integer ML, MM, NPTS
-    integer*2 IPHASE(NPTS)
-    logical DELTAM
-    real WAVENO(2), WAVELEN, ALBMAX
-    real EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, *)
-    real TEMP(NPTS), PLANCK(NPTS)
-    character(len=1) :: SRCTYPE, UNITS
+    logical, intent(in) :: doDeltaM
+    real(kind=R__), intent(inout) :: maxSsa
     integer I, IPH, L
     real F, BB
 
-    ALBMAX = 0.0
+    maxSsa = 0.0
 
-    if (DELTAM .and. prp_obj%Npha .gt. 0) then
+    if (doDeltaM .and. (prp_obj%Npha .gt. 0)) then
         do IPH = 1, prp_obj%Npha
-            F = LEGEN(1, ML + 1, IPH)
-            do L = 0, ML
+            F = rtm_obj%leg(1, shdo_obj%maxNl + 1, IPH)
+            do L = 0, shdo_obj%maxNl
                 ! Scale the diagonal and off-diagonal phase matrix elements d
-                LEGEN(1, L, IPH) = (LEGEN(1, L, IPH) - F)/(1 - F)
+                rtm_obj%leg(1, L, IPH) = (rtm_obj%leg(1, L, IPH) - F)/(1 - F)
                 if (prp_obj%NlegSet .gt. 1) then
-                    LEGEN(2, L, IPH) = (LEGEN(2, L, IPH) - F)/(1 - F)
-                    LEGEN(3, L, IPH) = (LEGEN(3, L, IPH) - F)/(1 - F)
-                    LEGEN(4, L, IPH) = (LEGEN(4, L, IPH) - F)/(1 - F)
-                    LEGEN(5, L, IPH) = LEGEN(5, L, IPH)/(1 - F)
-                    LEGEN(6, L, IPH) = LEGEN(6, L, IPH)/(1 - F)
+                    rtm_obj%leg(2, L, IPH) = (rtm_obj%leg(2, L, IPH) - F)/(1 - F)
+                    rtm_obj%leg(3, L, IPH) = (rtm_obj%leg(3, L, IPH) - F)/(1 - F)
+                    rtm_obj%leg(4, L, IPH) = (rtm_obj%leg(4, L, IPH) - F)/(1 - F)
+                    rtm_obj%leg(5, L, IPH) =  rtm_obj%leg(5, L, IPH)     /(1 - F)
+                    rtm_obj%leg(6, L, IPH) =  rtm_obj%leg(6, L, IPH)     /(1 - F)
                 end if
             end do
         end do
     end if
 
-    do I = 1, NPTS
-        if (DELTAM) then
+    do I = 1, grid_obj%Npts
+        if (doDeltaM) then
             if (prp_obj%Npha .gt. 0) then
-                F = LEGEN(1, ML + 1, IPHASE(I))
+                F = rtm_obj%leg(1, shdo_obj%maxNl + 1, rtm_obj%ipha(I))
             else
                 ! prp_obj%Npha =0 is standard property format, which is unpolarized
-                F = LEGEN(1, ML + 1, I)
-                do L = 0, ML
-                    LEGEN(1, L, I) = (LEGEN(1, L, I) - F)/(1 - F)
+                F = rtm_obj%leg(1, shdo_obj%maxNl + 1, I)
+                do L = 0, shdo_obj%maxNl
+                    rtm_obj%leg(1, L, I) = (rtm_obj%leg(1, L, I) - F)/(1 - F)
                 end do
             end if
 
-            EXTINCT(I) = (1.0 - ALBEDO(I)*F)*EXTINCT(I)
-            ALBEDO(I) = (1.0 - F)*ALBEDO(I)/(1.0 - ALBEDO(I)*F)
+            rtm_obj%ext(I) = (1.0 - rtm_obj%ssa(I)*F)*rtm_obj%ext(I)
+            rtm_obj%ssa(I) = (1.0 - F)*rtm_obj%ssa(I)/(1.0 - rtm_obj%ssa(I)*F)
 
         end if
 
-        ALBMAX = max(ALBMAX, ALBEDO(I))
+        maxSsa = max(maxSsa, rtm_obj%ssa(I))
         if (isThermal_) then
-            call shd_util__computePlanck(TEMP(I), UNITS, WAVENO, WAVELEN, BB)
-            PLANCK(I) = (1.0 - ALBEDO(I))*BB
+            call shd_util__computePlanck(rtm_obj%temp(I), src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen, BB)
+            rtm_obj%planck(I) = (1.0 - rtm_obj%ssa(I))*BB
         end if
     end do
 
