@@ -83,27 +83,30 @@ module shd_rad
 contains
 
 subroutine shd_rad__makeDirect(&
-    &NPTS, BCFLAG, IPFLAG, DELTAM,&
+    &NPTS, DELTAM,&
     &ML, SOLARFLUX, SOLARMU, SOLARAZ,&
-    &GRIDPOS, DIRFLUX, prp_obj, ckd_obj)
+    &DIRFLUX,&
+    &rtm_obj, grid_obj, prp_obj, ckd_obj)
 
     ! Makes the direct beam solar flux for the internal base grid.
     !   DIRFLUX is set to F*exp(-tau_sun).
     !   Actually calls shd_rad__computeDirect to do all the hard work.
 
-    type(shd_type_prp), intent(in) :: prp_obj
-    type(shd_type_ckd), intent(in) :: ckd_obj
+    type(shd_type_rtm),  intent(in) :: rtm_obj
+    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_prp),  intent(in) :: prp_obj
+    type(shd_type_ckd),  intent(in) :: ckd_obj
 
-    integer NPTS, BCFLAG, IPFLAG, ML
+    integer NPTS, ML
     logical DELTAM
     real SOLARFLUX, SOLARMU, SOLARAZ
-    real GRIDPOS(3, NPTS), DIRFLUX(NPTS)
+    real DIRFLUX(NPTS)
     integer SIDE, IP
     logical VALIDBEAM
     real UNIFZLEV, XO, YO, ZO, DIR, DIRPATH
 
     call shd_rad__computeDirect(&
-        &1, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
+        &1, 0.0, 0.0, 0.0, rtm_obj%flag_bc, rtm_obj%flag_ip,&
         &DELTAM, ML,&
         &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
         &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj, ckd_obj)
@@ -111,8 +114,8 @@ subroutine shd_rad__makeDirect(&
     do IP = 1, NPTS
         DIRPATH = 0.0
         call shd_rad__computeDirect&
-            &(0, GRIDPOS(1, IP), GRIDPOS(2, IP), GRIDPOS(3, IP),&
-            &BCFLAG, IPFLAG, DELTAM, ML,&
+            &(0, grid_obj%xyz(1, IP), grid_obj%xyz(2, IP), grid_obj%xyz(3, IP),&
+            &rtm_obj%flag_bc, rtm_obj%flag_ip, DELTAM, ML,&
             &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(IP),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj, ckd_obj)
     end do

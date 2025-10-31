@@ -1049,10 +1049,10 @@ subroutine shd_mpi__findTotSplitCritMax(SPLITCRIT)
 
 end subroutine shd_mpi__findTotSplitCritMax
 
-subroutine shd_mpi__makeDirect(SPT, BCFLAG, IPFLAG,&
+subroutine shd_mpi__makeDirect(SPT,&
     &DELTAM, ML,&
     &SOLARFLUX, SOLARMU, SOLARAZ,&
-    &Nx, Ny, DIRFLUX,&
+    &DIRFLUX,&
     &rtm_obj, grid_obj, prp_obj, ckd_obj)
 
     ! Makes the direct beam solar flux for the grid_obj%Npts gridpoints started with
@@ -1064,7 +1064,7 @@ subroutine shd_mpi__makeDirect(SPT, BCFLAG, IPFLAG,&
     type(shd_type_prp),  intent(in) ::  prp_obj
     type(shd_type_ckd),  intent(in) ::  ckd_obj
 
-    integer, intent(in) :: SPT, BCFLAG, IPFLAG, ML, Nx, Ny
+    integer, intent(in) :: SPT, ML
     logical, intent(in) :: DELTAM
     real, intent(in) :: SOLARFLUX, SOLARMU, SOLARAZ
     real, intent(out) :: DIRFLUX(grid_obj%Npts)
@@ -1097,14 +1097,14 @@ subroutine shd_mpi__makeDirect(SPT, BCFLAG, IPFLAG,&
 
     if (SPT .eq. 1) then
         ! Initialize the direct beam calculation
-        call shd_rad__computeDirect(1, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
+        call shd_rad__computeDirect(1, 0.0, 0.0, 0.0, rtm_obj%flag_bc, rtm_obj%flag_ip,&
             &DELTAM, ML, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj, ckd_obj)
         ! Find the max lowest uniform Z level over all processors and then
         !   tell shd_rad__computeDirect about it
         UZLEV = UNIFZLEV
         call mpi_allreduce(UZLEV, UNIFZLEV, 1, MPI_real, MPI_max, comm2D_, ierr)
-        call shd_rad__computeDirect(2, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
+        call shd_rad__computeDirect(2, 0.0, 0.0, 0.0, rtm_obj%flag_bc, rtm_obj%flag_ip,&
             &DELTAM, ML, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj, ckd_obj)
     end if
@@ -1116,9 +1116,9 @@ subroutine shd_mpi__makeDirect(SPT, BCFLAG, IPFLAG,&
         else
             Ldownx = 1; Lupx = 2
         end if
-        XMAX = rtm_obj%x(Nx)
+        XMAX = rtm_obj%x(rtm_obj%Nx)
     else
-        XMAX = rtm_obj%x(Nx + 1)
+        XMAX = rtm_obj%x(rtm_obj%Nx + 1)
     end if
     if (isMpiY_) then
         if (sin(SOLARAZ) .gt. 1.0e-5) then
@@ -1126,9 +1126,9 @@ subroutine shd_mpi__makeDirect(SPT, BCFLAG, IPFLAG,&
         else
             Ldowny = 3; Lupy = 4
         end if
-        YMAX = rtm_obj%y(Ny)
+        YMAX = rtm_obj%y(rtm_obj%Ny)
     else
-        YMAX = rtm_obj%y(Ny + 1)
+        YMAX = rtm_obj%y(rtm_obj%Ny + 1)
     end if
 
 
@@ -1137,7 +1137,7 @@ subroutine shd_mpi__makeDirect(SPT, BCFLAG, IPFLAG,&
     do IP = SPT, grid_obj%Npts
         DIRPATH = 0.0
         call shd_rad__computeDirect(0, grid_obj%xyz(1, IP), grid_obj%xyz(2, IP), grid_obj%xyz(3, IP),&
-            &BCFLAG, IPFLAG, DELTAM, ML,&
+            &rtm_obj%flag_bc, rtm_obj%flag_ip, DELTAM, ML,&
             &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(IP),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj, ckd_obj)
         ! If we don't have a good direct beam then save the information
@@ -1202,11 +1202,11 @@ subroutine shd_mpi__makeDirect(SPT, BCFLAG, IPFLAG,&
             ! Continue the backwards ray integrations from the X boundary
             do J = 1, NINVALID(Ldownx)
                 if (Ldownx .eq. 1) BndDirRealInfo(1, J, Ldownx) = rtm_obj%x(1)
-                if (Ldownx .eq. 2) BndDirRealInfo(1, J, Ldownx) = rtm_obj%x(Nx)
+                if (Ldownx .eq. 2) BndDirRealInfo(1, J, Ldownx) = rtm_obj%x(rtm_obj%Nx)
                 X = BndDirRealInfo(1, J, Ldownx); Y = BndDirRealInfo(2, J, Ldownx)
                 Z = BndDirRealInfo(3, J, Ldownx); DIRPATH = BndDirRealInfo(4, J, Ldownx)
                 if (Y .lt. (rtm_obj%y(1) - EPS)) Y = YMAX; if (Y .gt. (YMAX + EPS)) Y = rtm_obj%y(1)
-                call shd_rad__computeDirect(0, X, Y, Z, BCFLAG, IPFLAG,&
+                call shd_rad__computeDirect(0, X, Y, Z, rtm_obj%flag_bc, rtm_obj%flag_ip,&
                     &DELTAM, ML,&
                     &SOLARFLUX, SOLARMU, SOLARAZ, DIRJUNK,&
                     &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj, ckd_obj)
@@ -1234,11 +1234,11 @@ subroutine shd_mpi__makeDirect(SPT, BCFLAG, IPFLAG,&
             ! Continue the backwards ray integrations for the Y boundary
             do J = 1, NINVALID(Ldowny)
                 if (Ldowny .eq. 3) BndDirRealInfo(2, J, Ldowny) = rtm_obj%y(1)
-                if (Ldowny .eq. 4) BndDirRealInfo(2, J, Ldowny) = rtm_obj%y(Ny)
+                if (Ldowny .eq. 4) BndDirRealInfo(2, J, Ldowny) = rtm_obj%y(rtm_obj%Ny)
                 X = BndDirRealInfo(1, J, Ldowny); Y = BndDirRealInfo(2, J, Ldowny)
                 Z = BndDirRealInfo(3, J, Ldowny); DIRPATH = BndDirRealInfo(4, J, Ldowny)
                 if (X .lt. (rtm_obj%x(1) - EPS)) X = XMAX; if (X .gt. (XMAX + EPS)) X = rtm_obj%x(1)
-                call shd_rad__computeDirect(0, X, Y, Z, BCFLAG, IPFLAG,&
+                call shd_rad__computeDirect(0, X, Y, Z, rtm_obj%flag_bc, rtm_obj%flag_ip,&
                     &DELTAM, ML,&
                     &SOLARFLUX, SOLARMU, SOLARAZ, DIRJUNK,&
                     &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj, ckd_obj)

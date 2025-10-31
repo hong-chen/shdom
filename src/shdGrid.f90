@@ -1754,10 +1754,10 @@ subroutine shd_grid__splitGrid(&
         ! If in parallel mode, calculate all the direct beam fluxes at once
         if (isSolar_) then
             if (isMpi_) then
-                call shd_mpi__makeDirect(OLDNPTS + 1, BCFLAG,&
-                    &IPFLAG, DELTAM, ML,&
+                call shd_mpi__makeDirect(OLDNPTS + 1,&
+                    &DELTAM, ML,&
                     &SOLARFLUX, SOLARMU, SOLARAZ,&
-                    &NX, NY, DIRFLUX,&
+                    &DIRFLUX,&
                     &rtm_obj, grid_obj, prp_obj, ckd_obj)
             end if
         end if

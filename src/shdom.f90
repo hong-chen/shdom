@@ -1302,14 +1302,15 @@ program shdom
                 allocate(fluxDirTmp(grid_obj%Npts))
 
                 if (isMpi_) then
-                    call shd_mpi__makeDirect(1, rtm_obj%flag_bc, rtm_obj%flag_ip, .false., shdo_obj%maxNl,&
+                    call shd_mpi__makeDirect(1, .false., shdo_obj%maxNl,&
                         &solar0_ckd, src_obj%avgMu, src_obj%avgAz,&
-                        &rtm_obj%Nx, rtm_obj%Ny, fluxDirTmp,&
+                        &fluxDirTmp,&
                         &rtm_obj, grid_obj, prp_obj, ckd_obj)
                 else
-                    call shd_rad__makeDirect(grid_obj%Npts, rtm_obj%flag_bc, rtm_obj%flag_ip, .false., shdo_obj%maxNl,&
+                    call shd_rad__makeDirect(grid_obj%Npts, .false., shdo_obj%maxNl,&
                         &solar0_ckd, src_obj%avgMu, src_obj%avgAz,&
-                        &grid_obj%xyz, fluxDirTmp, prp_obj, ckd_obj)
+                        &fluxDirTmp,&
+                        &rtm_obj, grid_obj, prp_obj, ckd_obj)
                 end if
 
                 fluxTot(1, 1:grid_obj%Npts) = fluxTot(1, 1:grid_obj%Npts) + fluxDir(1:grid_obj%Npts) - fluxDirTmp(1:grid_obj%Npts)

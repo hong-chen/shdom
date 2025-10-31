@@ -171,14 +171,15 @@ subroutine shd_solv__solveRte(&
     ! Precompute Ylm's for solar direction
     if (isSolar_) then
         if (isMpi_) then
-            call shd_mpi__makeDirect(1, rtm_obj%flag_bc, rtm_obj%flag_ip, DELTAM, shdo_obj%maxNl,&
+            call shd_mpi__makeDirect(1, DELTAM, shdo_obj%maxNl,&
                 &SOLARFLUX, src_obj%avgMu, src_obj%avgAz,&
-                &rtm_obj%Nx, rtm_obj%Ny, DIRFLUX,&
+                &DIRFLUX,&
                 &rtm_obj, grid_obj, prp_obj, ckd_obj)
         else
-            call shd_rad__makeDirect(grid_obj%Npts, rtm_obj%flag_bc, rtm_obj%flag_ip, DELTAM, shdo_obj%maxNl,&
+            call shd_rad__makeDirect(grid_obj%Npts, DELTAM, shdo_obj%maxNl,&
                 &SOLARFLUX, src_obj%avgMu, src_obj%avgAz,&
-                &grid_obj%xyz, DIRFLUX, prp_obj, ckd_obj)
+                &DIRFLUX,&
+                &rtm_obj, grid_obj, prp_obj, ckd_obj)
         end if
         call shd_shdo__computeYlm(.true., src_obj%avgMu, src_obj%avgAz, shdo_obj%maxNl, shdo_obj%maxNm, prp_obj%NlegSet,&
             &YlmSolar_Shdo)
