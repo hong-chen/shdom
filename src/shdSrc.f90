@@ -741,7 +741,7 @@ subroutine shd_src__integrateSrcOneRay(&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &MU2, PHI2, X0, Y0, Z0,&
     &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD,&
-    &grid_obj, prp_obj, sfc_obj)
+    &rtm_obj, grid_obj, prp_obj, sfc_obj)
 
     !   Integrates the source function through the extinction field
     ! (EXTINCT) backward from the outgoing direction (MU2,PHI2) to find the
@@ -751,6 +751,7 @@ subroutine shd_src__integrateSrcOneRay(&
     ! ray location (XE,YE,ZE) and side of the domain (1=-X,2=+X,3=-Y,4=+Y,
     ! 5=-Z,6=+Z).
 
+    type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
     type(shd_type_prp),  intent(in) :: prp_obj
     type(shd_type_sfc),  intent(in) :: sfc_obj
@@ -884,16 +885,16 @@ subroutine shd_src__integrateSrcOneRay(&
         BITZ = 0
     end if
     IOCT = 1 + BITX + 2*BITY + 4*BITZ
-    XM = 0.5d0*(grid_obj%x(1) + grid_obj%x(NX))
-    YM = 0.5d0*(grid_obj%y(1) + grid_obj%y(NY))
+    XM = 0.5d0*(rtm_obj%x(1) + rtm_obj%x(NX))
+    YM = 0.5d0*(rtm_obj%y(1) + rtm_obj%y(NY))
 
     ! Start at the desired point, getting the extinction and source
     XE = X0
     YE = Y0
     ZE = Z0
-    ! ZE = MAX(MIN(Z0,DBLE(grid_obj%z(NZ))),DBLE(grid_obj%z(1)))
+    ! ZE = MAX(MIN(Z0,DBLE(rtm_obj%z(NZ))),DBLE(rtm_obj%z(1)))
     call shd_util__findCell(NX, NY, NZ,&
-        &BCFLAG, IPFLAG, XE, YE, ZE, ICELL, grid_obj)
+        &BCFLAG, IPFLAG, XE, YE, ZE, ICELL, rtm_obj, grid_obj)
     ! print '(A,5(1X,F8.5),1X,I6)',&
     !     &'_integrateSrcOneRay:',X0,Y0,Z0,MU2,PHI2,ICELL
     IFACE = 0
@@ -1143,7 +1144,7 @@ subroutine shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
     &MU, PHI, GRIDRAD, EXTINCT, SOURCE,&
     &X0, Y0, Z0, XE, YE, ZE, SIDE,&
     &TRANSMIT, RADIANCE, VALIDRAD,&
-    &grid_obj)
+    &rtm_obj, grid_obj)
 
     ! Integrates the source function (SOURCE) through the extinction
     ! field (EXTINCT) backward in the direction opposite to (MU,PHI)
@@ -1154,6 +1155,7 @@ subroutine shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
     ! ray location (XE,YE,ZE) and side of the domain (1=-X,2=+X,3=-Y,4=+Y,
     ! 5=-Z,6=+Z).
 
+    type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
 
     integer BCFLAG, IPFLAG, NSTOKES, NX, NY, NZ, SIDE
@@ -1219,15 +1221,15 @@ subroutine shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
         stop 'Error [_integrateSrc]: Bad MU.'
     end if
     IOCT = 1 + BITX + 2*BITY + 4*BITZ
-    XM = 0.5*(grid_obj%x(1) + grid_obj%x(NX))
-    YM = 0.5*(grid_obj%y(1) + grid_obj%y(NY))
+    XM = 0.5*(rtm_obj%x(1) + rtm_obj%x(NX))
+    YM = 0.5*(rtm_obj%y(1) + rtm_obj%y(NY))
 
     ! Start at the desired point, getting the extinction and source
     XE = X0
     YE = Y0
     ZE = Z0
     call shd_util__findCell(NX, NY, NZ,&
-        &BCFLAG, IPFLAG, XE, YE, ZE, ICELL, grid_obj)
+        &BCFLAG, IPFLAG, XE, YE, ZE, ICELL, rtm_obj, grid_obj)
     ! print '(A,5(1X,F8.5),1X,I6)', &
     !     &'_integrateSrc:', X0, Y0, Z0, MU, PHI, ICELL
     call shd_util__interpTriLin(ICELL,&
@@ -1268,7 +1270,7 @@ subroutine shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
         SO = min(SOX, SOY, SOZ)
         if (SO .lt. -EPS) then
             write (6, *) 'Error [_integrateSrc]: SO<0 ',&
-                &MU, PHI, X0, Y0, Z0, XE, YE, ZE, SO, SOX, SOY, SOZ, grid_obj%x(1), grid_obj%y(1),&
+                &MU, PHI, X0, Y0, Z0, XE, YE, ZE, SO, SOX, SOY, SOZ, rtm_obj%x(1), rtm_obj%y(1),&
                 &grid_obj%xyz(1, IOPP), grid_obj%xyz(2, IOPP), grid_obj%xyz(3, IOPP)
             stop
         end if

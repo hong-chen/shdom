@@ -551,7 +551,7 @@ end subroutine shd_io__nmlInp
 subroutine shd_io__checkInp(&
     &DELTAM,&
     &SPLITACC, SHACC,&
-    &grid_obj, shdo_obj, src_obj, prp_obj, sfc_obj)
+    &rtm_obj, shdo_obj, src_obj, prp_obj, sfc_obj)
 
     ! Checks for validity of the input parameters. Gives warning for
     ! parameters that might not be correct.
@@ -563,7 +563,7 @@ subroutine shd_io__checkInp(&
     ! Check for src_obj%avgMu=0.
     ! Check for shdo_obj%Nphi<shdo_obj%Nmu.
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_shdo), intent(in) :: shdo_obj
     type(shd_type_src),  intent(in) :: src_obj
     type(shd_type_prp),  intent(in) :: prp_obj
@@ -577,7 +577,7 @@ subroutine shd_io__checkInp(&
         &stop 'Error [_checkInp]: Illegal source type.'
     if ((src_obj%unit .ne. 'R') .and. (src_obj%unit .ne. 'T') .and. (src_obj%unit .ne. 'B'))&
         &stop 'Error [_checkInp]: Illegal units.'
-    if ((grid_obj%type .ne. 'E') .and. (grid_obj%type .ne. 'P') .and. (grid_obj%type .ne. 'F'))&
+    if ((rtm_obj%type .ne. 'E') .and. (rtm_obj%type .ne. 'P') .and. (rtm_obj%type .ne. 'F'))&
         &stop 'Error [_checkInp]: Illegal grid type.'
 
     if ((src_obj%type .ne. 'T') .and. (src_obj%avgMu .eq. 0.0)) then
@@ -1985,9 +1985,9 @@ subroutine shd_io__restoreState(&
         return
     end if
 
-    read (3) (grid_obj%x(i), i=1, rtm_obj%Nx+1)
-    read (3) (grid_obj%y(i), i=1, rtm_obj%Ny+1)
-    read (3) (grid_obj%z(i), i=1, rtm_obj%Nz)
+    read (3) (rtm_obj%x(i), i=1, rtm_obj%Nx+1)
+    read (3) (rtm_obj%y(i), i=1, rtm_obj%Ny+1)
+    read (3) (rtm_obj%z(i), i=1, rtm_obj%Nz)
     read (3) ((grid_obj%i8Grid(j, i), j=1, 8), i=1, grid_obj%Ncell)
     read (3) ((grid_obj%i6Cell(j, i), j=1, 6), i=1, grid_obj%Ncell)
     read (3) ((grid_obj%i2Tree(j, i), j=1, 2), i=1, grid_obj%Ncell)

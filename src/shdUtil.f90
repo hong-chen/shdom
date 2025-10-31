@@ -45,7 +45,7 @@ module shd_util
     use globals_const, only: RD_, PI_, DPI_
     use globals_cfg,   only: isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
                              is1DX_, is1DYx_
-    use globals_type,  only: shd_type_grid
+    use globals_type,  only: shd_type_rtm, shd_type_grid
 
     implicit none
     private
@@ -178,14 +178,15 @@ end subroutine shd_util__interpData
 
 subroutine shd_util__findCell(NX, NY, NZ,&
     &BCFLAG, IPFLAG, X0, Y0, Z0, ICELL,&
-    &grid_obj)
+    &rtm_obj, grid_obj)
 
     !   Locates the grid cell in the tree structure containing the
     ! specified point (X0,Y0,Z0), and returns the cell pointer ICELL.
-    ! First the base grid cell is found (using NX,NY,NZ, grid_obj%x,grid_obj%y,grid_obj%z),
+    ! First the base grid cell is found (using NX,NY,NZ, rtm_obj%x,rtm_obj%y,rtm_obj%z),
     ! and the tree is traced down to find the smallest cell containing
     ! the point.
 
+    type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
 
     integer NX, NY, NZ, ICELL, BCFLAG, IPFLAG
@@ -195,19 +196,19 @@ subroutine shd_util__findCell(NX, NY, NZ,&
 
     ! Move point to within horizontal domain if periodic
     if (.not. (isOpenX_ .or. isMpiX_)) then
-        XDOMAIN = grid_obj%x(NX + 1) - grid_obj%x(1)
-        if (X0 .lt. grid_obj%x(1)) then
-            X0 = X0 - XDOMAIN*(int((X0 - grid_obj%x(1))/XDOMAIN) - 1)
-        else if (X0 .gt. grid_obj%x(NX + 1)) then
-            X0 = X0 - XDOMAIN*int((X0 - grid_obj%x(1))/XDOMAIN)
+        XDOMAIN = rtm_obj%x(NX + 1) - rtm_obj%x(1)
+        if (X0 .lt. rtm_obj%x(1)) then
+            X0 = X0 - XDOMAIN*(int((X0 - rtm_obj%x(1))/XDOMAIN) - 1)
+        else if (X0 .gt. rtm_obj%x(NX + 1)) then
+            X0 = X0 - XDOMAIN*int((X0 - rtm_obj%x(1))/XDOMAIN)
         end if
     end if
     if (.not. (isOpenYx_ .or. isMpiY_)) then
-        YDOMAIN = grid_obj%y(NY + 1) - grid_obj%y(1)
-        if (Y0 .lt. grid_obj%y(1)) then
-            Y0 = Y0 - YDOMAIN*(int((Y0 - grid_obj%y(1))/YDOMAIN) - 1)
-        else if (Y0 .gt. grid_obj%y(NY + 1)) then
-            Y0 = Y0 - YDOMAIN*int((Y0 - grid_obj%y(1))/YDOMAIN)
+        YDOMAIN = rtm_obj%y(NY + 1) - rtm_obj%y(1)
+        if (Y0 .lt. rtm_obj%y(1)) then
+            Y0 = Y0 - YDOMAIN*(int((Y0 - rtm_obj%y(1))/YDOMAIN) - 1)
+        else if (Y0 .gt. rtm_obj%y(NY + 1)) then
+            Y0 = Y0 - YDOMAIN*int((Y0 - rtm_obj%y(1))/YDOMAIN)
         end if
     end if
 
@@ -219,7 +220,7 @@ subroutine shd_util__findCell(NX, NY, NZ,&
         IU = NX
         do while (IU - IL .gt. 1)
             IM = (IU + IL)/2
-            if (X0 .ge. 0.5*(grid_obj%x(IM) + grid_obj%x(IM + 1))) then
+            if (X0 .ge. 0.5*(rtm_obj%x(IM) + rtm_obj%x(IM + 1))) then
                 IL = IM
             else
                 IU = IM
@@ -230,7 +231,7 @@ subroutine shd_util__findCell(NX, NY, NZ,&
         IU = NX + 1
         do while (IU - IL .gt. 1)
             IM = (IU + IL)/2
-            if (X0 .ge. grid_obj%x(IM)) then
+            if (X0 .ge. rtm_obj%x(IM)) then
                 IL = IM
             else
                 IU = IM
@@ -244,7 +245,7 @@ subroutine shd_util__findCell(NX, NY, NZ,&
         IU = NY
         do while (IU - IL .gt. 1)
             IM = (IU + IL)/2
-            if (Y0 .ge. 0.5*(grid_obj%y(IM) + grid_obj%y(IM + 1))) then
+            if (Y0 .ge. 0.5*(rtm_obj%y(IM) + rtm_obj%y(IM + 1))) then
                 IL = IM
             else
                 IU = IM
@@ -255,7 +256,7 @@ subroutine shd_util__findCell(NX, NY, NZ,&
         IU = NY + 1
         do while (IU - IL .gt. 1)
             IM = (IU + IL)/2
-            if (Y0 .ge. grid_obj%y(IM)) then
+            if (Y0 .ge. rtm_obj%y(IM)) then
                 IL = IM
             else
                 IU = IM
@@ -268,7 +269,7 @@ subroutine shd_util__findCell(NX, NY, NZ,&
     IU = NZ
     do while (IU - IL .gt. 1)
         IM = (IU + IL)/2
-        if (Z0 .ge. grid_obj%z(IM)) then
+        if (Z0 .ge. rtm_obj%z(IM)) then
             IL = IM
         else
             IU = IM
@@ -281,11 +282,11 @@ subroutine shd_util__findCell(NX, NY, NZ,&
     NXC = NX
     if (isOpenX_) then
         NXC = NX + 1
-        if (X0 .lt. grid_obj%x(1)) then
-            ! X0 = grid_obj%x(1)
+        if (X0 .lt. rtm_obj%x(1)) then
+            ! X0 = rtm_obj%x(1)
             IX = 1
-        else if (X0 .gt. grid_obj%x(NX)) then
-            ! X0 = grid_obj%x(NX)
+        else if (X0 .gt. rtm_obj%x(NX)) then
+            ! X0 = rtm_obj%x(NX)
             IX = NX + 1
         else
             IX = IX + 1
@@ -298,11 +299,11 @@ subroutine shd_util__findCell(NX, NY, NZ,&
     NYC = NY
     if (isOpenYx_) then
         NYC = NY + 1
-        if (Y0 .lt. grid_obj%y(1)) then
-            ! Y0 = grid_obj%y(1)
+        if (Y0 .lt. rtm_obj%y(1)) then
+            ! Y0 = rtm_obj%y(1)
             IY = 1
-        else if (Y0 .gt. grid_obj%y(NY)) then
-            ! Y0 = grid_obj%y(NY)
+        else if (Y0 .gt. rtm_obj%y(NY)) then
+            ! Y0 = rtm_obj%y(NY)
             IY = NY + 1
         else
             IY = IY + 1

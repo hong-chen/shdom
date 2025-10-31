@@ -766,21 +766,21 @@ subroutine shd_rad__computeRad(&
     end if
 
     ! Setup the regularly spaced radiance locations
-    XDOMAIN = grid_obj%x(rtm_obj%Nx + 1 - ibits(rtm_obj%flag_bc, 0, 1)) - grid_obj%x(1) + 2*OUTPARMS(4)
+    XDOMAIN = rtm_obj%x(rtm_obj%Nx + 1 - ibits(rtm_obj%flag_bc, 0, 1)) - rtm_obj%x(1) + 2*OUTPARMS(4)
     STARTX = -OUTPARMS(4)
     if (OUTPARMS(2) .eq. 0.0) then
         NXOUT = 1
     else
         NXOUT = max(1, nint(XDOMAIN/OUTPARMS(2)))
     end if
-    YDOMAIN = grid_obj%y(rtm_obj%Ny + 1 - ibits(rtm_obj%flag_bc, 1, 1)) - grid_obj%y(1) + 2*OUTPARMS(5)
+    YDOMAIN = rtm_obj%y(rtm_obj%Ny + 1 - ibits(rtm_obj%flag_bc, 1, 1)) - rtm_obj%y(1) + 2*OUTPARMS(5)
     STARTY = -OUTPARMS(5)
     if (OUTPARMS(3) .eq. 0.0) then
         NYOUT = 1
     else
         NYOUT = max(1, nint(YDOMAIN/OUTPARMS(3)))
     end if
-    Z0 = min(max(OUTPARMS(1), grid_obj%z(1)), grid_obj%z(rtm_obj%Nz))
+    Z0 = min(max(OUTPARMS(1), rtm_obj%z(1)), rtm_obj%z(rtm_obj%Nz))
     NANGOUT = nint(OUTPARMS(6))
 
     ! Loop over the radiance directions
@@ -797,7 +797,7 @@ subroutine shd_rad__computeRad(&
         ! added for fixing the "domain shift" issue (only for 3D)
         !╭────────────────────────────────────────────────╮!
         if (rtm_obj%flag_ip .eq. 0) then
-            DS_Z0 = Z0 - grid_obj%z(1)
+            DS_Z0 = Z0 - rtm_obj%z(1)
             DS_VZA_RAD = acos(MUOUT)
             DS_XOFFSET = DS_Z0*tan(DS_VZA_RAD)*cos(PHIOUT)
             DS_YOFFSET = DS_Z0*tan(DS_VZA_RAD)*sin(PHIOUT)
@@ -867,7 +867,7 @@ subroutine shd_rad__computeRad(&
                     &rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz,&
                     &MUOUT, PHIOUT, GRIDRAD, rtm_obj%ext, SOURCE1,&
                     &X0, Y0, Z0, XE, YE, ZE, SIDE,&
-                    &TRANSMIT, RADIANCE, VALIDRAD, grid_obj)
+                    &TRANSMIT, RADIANCE, VALIDRAD, rtm_obj, grid_obj)
                 RADOUT(:, IRAD) = RADIANCE(1:shdo_obj%Nstokes)
                 X0 = X0 + OUTPARMS(2)
             end do
@@ -1051,16 +1051,16 @@ subroutine shd_rad__computeCamRad(&
             end if
 
             ! Extrapolate ray to domain top if above
-            if (Z0 .gt. grid_obj%z(rtm_obj%Nz)) then
+            if (Z0 .gt. rtm_obj%z(rtm_obj%Nz)) then
                 if (COSTH .ge. 0.0) then
                     VISRAD(:) = 0.0
                     goto 900
                 end if
-                R = (grid_obj%z(rtm_obj%Nz) - Z0)/COSTH
+                R = (rtm_obj%z(rtm_obj%Nz) - Z0)/COSTH
                 X0 = X0 + R*sqrt(1 - COSTH**2)*cos(PHIR)
                 Y0 = Y0 + R*sqrt(1 - COSTH**2)*sin(PHIR)
-                Z0 = grid_obj%z(rtm_obj%Nz)
-            else if (Z0 .lt. grid_obj%z(1)) then
+                Z0 = rtm_obj%z(rtm_obj%Nz)
+            else if (Z0 .lt. rtm_obj%z(1)) then
                 write (6, *) 'Error [_visualizeRad]: Level below domain.'
                 stop
             end if
@@ -1086,7 +1086,7 @@ subroutine shd_rad__computeCamRad(&
                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                 &MU2, PHI2, X0, Y0, Z0,&
                 &XE, YE, ZE, SIDE, TRANSMIT, VISRAD, VALIDRAD,&
-                &grid_obj, prp_obj, sfc_obj)
+                &rtm_obj, grid_obj, prp_obj, sfc_obj)
 900         continue
             ! write (6,'(1X,2F8.4,1X,2F11.7,4(1X,F11.6))')&
             !     &X0,Y0,MURAY,PHIRAY,VISRAD(:)

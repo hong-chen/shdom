@@ -44,7 +44,10 @@ module shd_intg
     use globals_cfg,   only: verbose_, accSolv_, &
                              isMpi_, is1DX_, is1DYx_, is1D_, &
                              isPol_
-    use globals_type,  only: shd_type_grid, shd_type_prp, shd_type_sfc
+    use globals_type,  only: shd_type_rtm, &
+                             shd_type_grid, &
+                             shd_type_prp, &
+                             shd_type_sfc
 
     use shd_sfc,  only: shd_sfc__interpSfc
 
@@ -96,7 +99,8 @@ subroutine shd_intg__integratePath(&
     &CMU1, CPHI1, CMU2, CPHI2, WSAVE, FFTFLAG,&
     &DIRFLUX, FLUXES, EXTINCT,&
     &SHPTR, SOURCE, RSHPTR, RADIANCE,&
-    &WORK, SWEEPORD, GRIDRAD, grid_obj, prp_obj, sfc_obj)
+    &WORK, SWEEPORD, GRIDRAD,&
+    &rtm_obj, grid_obj, prp_obj, sfc_obj)
 
     !   Performs the path integrations through the medium specified by
     ! the extinction (EXTINCT) and source function (SOURCE) in
@@ -122,6 +126,7 @@ subroutine shd_intg__integratePath(&
     ! downwelling radiances at all discrete ordinates for the bottom
     ! boundary points.
 
+    type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
     type(shd_type_prp),  intent(in) :: prp_obj
     type(shd_type_sfc),  intent(in) :: sfc_obj
@@ -164,12 +169,12 @@ subroutine shd_intg__integratePath(&
     end if
 
     call shd_mpi__findBndryPnt(BCFLAG, IPFLAG, SWEEPORD,&
-        &NX, NY, NZ, grid_obj)
+        &NX, NY, NZ, rtm_obj, grid_obj)
 
     if (grid_obj%Npts .ne. OLDNPTS) then
         ! Make the pointers to the grid points on the top and bottom boundaries
         call shd_grid__findBndryPnt(NANG, MAXNBC, MAXBCRAD, &
-            &grid_obj%z(1), grid_obj%z(NZ),&
+            &rtm_obj%z(1), rtm_obj%z(NZ),&
             &NTOPPTS, NBOTPTS, BCPTR, grid_obj, sfc_obj)
         if (sfc_obj%type(1:1) .eq. 'V') then
             ! If this is a variable surface then bilinearly interpolate
@@ -300,14 +305,14 @@ subroutine shd_intg__integratePath(&
                     call shd_intg__backIntegrate3D(NX, NY, NZ, NPHI0MAX,&
                         &SWEEPORD,&
                         &MU(IMU), PHI(IMU, IPHI), TRANSMIN, BCFLAG, IPFLAG,&
-                        &EXTINCT, NSTOKES, WORK, IPHI, GRIDRAD, grid_obj)
+                        &EXTINCT, NSTOKES, WORK, IPHI, GRIDRAD, rtm_obj, grid_obj)
 
                 else
 
                     call shd_intg__backIntegrate3D_(NX, NY, NZ, NPHI0MAX,&
                         &SWEEPORD,&
                         &MU(IMU), PHI(IMU, IPHI), TRANSMIN, BCFLAG, IPFLAG,&
-                        &EXTINCT, WORK, IPHI, GRIDRAD, grid_obj)
+                        &EXTINCT, WORK, IPHI, GRIDRAD, rtm_obj, grid_obj)
 
                 end if
             end if
@@ -317,7 +322,7 @@ subroutine shd_intg__integratePath(&
             do I = 1, grid_obj%Npts
                 if (GRIDRAD(1, I) .lt. -accSolv_) then
                     if (verbose_ .ge. 4) write (6, *) 'Warning [_integratePath]: Grid point has no value',&
-                        &I, MU(IMU), PHI(IMU, IPHI), GRIDRAD(1, I), grid_obj%x(1), grid_obj%y(1),&
+                        &I, MU(IMU), PHI(IMU, IPHI), GRIDRAD(1, I), rtm_obj%x(1), rtm_obj%y(1),&
                         &grid_obj%xyz(1, I), grid_obj%xyz(2, I), grid_obj%xyz(3, I)
                     ! stop
                     GRIDRAD(1, I) = 0.0
@@ -372,7 +377,7 @@ subroutine shd_intg__backIntegrate3D(&
     &SWEEPORD,&
     &MU, PHI, TRANSMIN, BCFLAG, IPFLAG,&
     &EXTINCT, NSTOKES, SOURCE, KANG, GRIDRAD,&
-    &grid_obj)
+    &rtm_obj, grid_obj)
 
     !   Sweeps through the spatial grid computing radiance vectors for the
     ! discrete ordinate direction (MU,PHI) by integrating the source
@@ -386,6 +391,7 @@ subroutine shd_intg__backIntegrate3D(&
     ! at the end of the ray path is interpolated from the known grid point
     ! radiances on the face.  The resulting radiances are put in GRIDRAD.
 
+    type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
 
     integer NX, NY, NZ, NA, NSTOKES, KANG
@@ -470,14 +476,14 @@ subroutine shd_intg__backIntegrate3D(&
         if (isMpi_) then
             ! For multiple processors get the subdomain boundary radiances
             !   for each Z slab
-            if  ((grid_obj%xyz(3, IPT) .lt. grid_obj%z(IZ) .and. BITZ .eq. 0) .or.&
-                &(grid_obj%xyz(3, IPT) .gt. grid_obj%z(IZ) .and. BITZ .eq. 1)) then
+            if  ((grid_obj%xyz(3, IPT) .lt. rtm_obj%z(IZ) .and. BITZ .eq. 0) .or.&
+                &(grid_obj%xyz(3, IPT) .gt. rtm_obj%z(IZ) .and. BITZ .eq. 1)) then
                 IZ = IZ + 2*BITZ - 1
                 call shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
                     &NX, NY, NZ,&
                     &NA,&
                     &MU, PHI, EXTINCT, NSTOKES, SOURCE,&
-                    &KANG, GRIDRAD, grid_obj)
+                    &KANG, GRIDRAD, rtm_obj, grid_obj)
             end if
         end if
 
@@ -710,7 +716,8 @@ subroutine shd_intg__backIntegrate3D_(&
     &NX, NY, NZ, NA,&
     &SWEEPORD,&
     &MU, PHI, TRANSMIN, BCFLAG, IPFLAG,&
-    &EXTINCT, SOURCE, KANG, GRIDRAD, grid_obj)
+    &EXTINCT, SOURCE, KANG, GRIDRAD,&
+    &rtm_obj, grid_obj)
 
     ! Description:
     !   Sweeps through the spatial grid computing radiances for the
@@ -758,13 +765,14 @@ subroutine shd_intg__backIntegrate3D_(&
     !                       1:  Do independent pixel for Y
     !                       2,3: Direction cell is split (0=no split, 1=X, 2=Y, 3=Z)
     !   grid_obj%xyz(3,grid_obj%Npts)    : real array, X,Y,Z coordinate values of grid point locations
-    !   grid_obj%x, grid_obj%y, grid_obj%z: real array, grid locations for each dimension.
+    !   rtm_obj%x, rtm_obj%y, rtm_obj%z: real array, grid locations for each dimension.
     !                        To facilitate the periodic horizontal boundaries,
-    !                        there are NX+1 values in grid_obj%x, NY+1 in grid_obj%y,
-    !                        NZ values in grid_obj%z. Currently the grid locations
+    !                        there are NX+1 values in rtm_obj%x, NY+1 in rtm_obj%y,
+    !                        NZ values in rtm_obj%z. Currently the grid locations
     !                        are evenly spaced in X and Y.
     !   SWEEPORD(grid_obj%Npts,*)   : integer array, grid point sweeping order
 
+    type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
 
     integer(kind=I__), intent(in) :: NX, NY, NZ, NA, KANG, BCFLAG, IPFLAG
@@ -873,14 +881,14 @@ subroutine shd_intg__backIntegrate3D_(&
         if (isMpi_) then
             ! For multiple processors get the subdomain boundary radiances
             !   for each Z slab
-            if  ((grid_obj%xyz(3, IPT) .lt. grid_obj%z(IZ) .and. BITZ .eq. 0) .or.&
-                &(grid_obj%xyz(3, IPT) .gt. grid_obj%z(IZ) .and. BITZ .eq. 1)) then
+            if  ((grid_obj%xyz(3, IPT) .lt. rtm_obj%z(IZ) .and. BITZ .eq. 0) .or.&
+                &(grid_obj%xyz(3, IPT) .gt. rtm_obj%z(IZ) .and. BITZ .eq. 1)) then
                 IZ = IZ + 2*BITZ - 1
                 call shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
                     &NX, NY, NZ,&
                     &NA,&
                     &MU, PHI, EXTINCT, 1, SOURCE,&
-                    &KANG, GRIDRAD, grid_obj)
+                    &KANG, GRIDRAD, rtm_obj, grid_obj)
             end if
         end if
         !╰────────────────────────────────────────────────╯!

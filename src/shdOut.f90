@@ -89,7 +89,7 @@ subroutine shd_io__outputResult(&
     &FLUXES, DIRFLUX, FLUXDIV,&
     &IRAD, RADOUT, NSHOUT, SHTERMS, SOURCE1OUT,&
     &OUTTYPE, OUTPARMS, OUTFILE,&
-    &grid_obj, prp_obj, sfc_obj, ckd_obj, sen_obj)
+    &rtm_obj, grid_obj, prp_obj, sfc_obj, ckd_obj, sen_obj)
 
     !   Writes the desired type of output file from the output fields
     ! with a header giving the input parameters.
@@ -99,6 +99,7 @@ subroutine shd_io__outputResult(&
     ! medium properties.
     ! See the overall program documentation for output parameters.
 
+    type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
     type(shd_type_prp),  intent(in) :: prp_obj
     type(shd_type_sfc),  intent(in) :: sfc_obj
@@ -149,9 +150,9 @@ subroutine shd_io__outputResult(&
     OUTFILE_DATA = trim(adjustl(OUTFILE))//trim(adjustl(DATA_POSTFIX))
 
     GRIDNAME = 'EVEN (X,Y)  '
-    if (grid_obj%type .eq. 'P') then
+    if (rtm_obj%type .eq. 'P') then
         GRIDNAME = GRIDNAME(1:14)//'PROPERTY-FILE (Z) '
-    else if (grid_obj%type .eq. 'F') then
+    else if (rtm_obj%type .eq. 'F') then
         GRIDNAME = GRIDNAME(1:14)//'INPUT-FILE (Z)    '
     else
         GRIDNAME = GRIDNAME(1:14)//'EVEN (Z)          '
@@ -296,7 +297,7 @@ subroutine shd_io__outputResult(&
         ! Radiance output
         ! NXOUT
         !╭────────────────────────────────────────────────╮!
-        XDOMAIN = grid_obj%x(NX + 1 - ibits(BCFLAG, 0, 1)) - grid_obj%x(1) + 2*OUTPARMS(4)
+        XDOMAIN = rtm_obj%x(NX + 1 - ibits(BCFLAG, 0, 1)) - rtm_obj%x(1) + 2*OUTPARMS(4)
         STARTX = -OUTPARMS(4)
         if (OUTPARMS(2) .eq. 0.0) then
             NXOUT = 1
@@ -307,7 +308,7 @@ subroutine shd_io__outputResult(&
 
         ! NYOUT
         !╭────────────────────────────────────────────────╮!
-        YDOMAIN = grid_obj%y(NY + 1 - ibits(BCFLAG, 1, 1)) - grid_obj%y(1) + 2*OUTPARMS(5)
+        YDOMAIN = rtm_obj%y(NY + 1 - ibits(BCFLAG, 1, 1)) - rtm_obj%y(1) + 2*OUTPARMS(5)
         STARTY = -OUTPARMS(5)
         if (OUTPARMS(3) .eq. 0.0) then
             NYOUT = 1
@@ -318,7 +319,7 @@ subroutine shd_io__outputResult(&
 
         ! Z0
         !╭────────────────────────────────────────────────╮!
-        Z0 = min(max(OUTPARMS(1), grid_obj%z(1)), grid_obj%z(NZ))
+        Z0 = min(max(OUTPARMS(1), rtm_obj%z(1)), rtm_obj%z(NZ))
         !╰────────────────────────────────────────────────╯!
 
         ! NANGOUT
@@ -393,8 +394,8 @@ subroutine shd_io__outputResult(&
         ! NVAR=2 or 3, NSET=1, NX=NX, NY=NY, NZ=1
         if (nint(OUTPARMS(1)) .le. 1) then
 
-            write (2, '(A,F7.3)') '!    UPWELLING FLUX:     Z=', grid_obj%z(NZ)
-            write (2, '(A,F7.3)') '!    DOWNWELLING FLUX:   Z=', grid_obj%z(1)
+            write (2, '(A,F7.3)') '!    UPWELLING FLUX:     Z=', rtm_obj%z(NZ)
+            write (2, '(A,F7.3)') '!    DOWNWELLING FLUX:   Z=', rtm_obj%z(1)
 
             if (UNITS .eq. 'T') then
                 FORM = '(2(1X,F7.3),1X,2(2X,F6.2))'
@@ -438,8 +439,8 @@ subroutine shd_io__outputResult(&
             ! original
             !╭────────────────────────────────────────────────╮!
             !do I = 1, grid_obj%Npts0, NZ
-            !    if  (grid_obj%xyz(1, I) .lt. grid_obj%x(NX + 1) .and.&
-            !        &grid_obj%xyz(2, I) .lt. grid_obj%y(NY + 1)) then
+            !    if  (grid_obj%xyz(1, I) .lt. rtm_obj%x(NX + 1) .and.&
+            !        &grid_obj%xyz(2, I) .lt. rtm_obj%y(NY + 1)) then
             !        if (SRCTYPE .ne. 'T') then
             !            write (2, FORM) grid_obj%xyz(1, I), grid_obj%xyz(2, I),&
             !                & C*FLUXES(2, I + NZ - 1), C*FLUXES(1, I), DIRFLUX(I)
@@ -455,13 +456,13 @@ subroutine shd_io__outputResult(&
         ! NVAR=2 or 3, NSET=1, NX=NXOUT, NY=NYOUT, NZ=1
         else if (nint(OUTPARMS(1)) .eq. 2) then
 
-            Z0 = min(max(OUTPARMS(2), grid_obj%z(1)), grid_obj%z(NZ))
+            Z0 = min(max(OUTPARMS(2), rtm_obj%z(1)), rtm_obj%z(NZ))
             if (OUTPARMS(3) .eq. 0.0) OUTPARMS(3) = 1.0
             NX2 = NX + 1 - ibits(BCFLAG, 0, 1)
-            NXOUT = max(1, nint((grid_obj%x(NX2) - grid_obj%x(1))/OUTPARMS(3)))
+            NXOUT = max(1, nint((rtm_obj%x(NX2) - rtm_obj%x(1))/OUTPARMS(3)))
             if (OUTPARMS(4) .eq. 0.0) OUTPARMS(4) = 1.0
             NY2 = NY + 1 - ibits(BCFLAG, 1, 1)
-            NYOUT = max(1, nint((grid_obj%y(NY2) - grid_obj%y(1))/OUTPARMS(4)))
+            NYOUT = max(1, nint((rtm_obj%y(NY2) - rtm_obj%y(1))/OUTPARMS(4)))
             write (2, '(A,F7.3,2(A,I4))') '!    UPWELLING FLUX:     Z=', Z0,&
                 & '    NXO=', NXOUT, '    NYO=', NYOUT
             write (2, '(A,F7.3)') '!    DOWNWELLING FLUX:   Z=', Z0
@@ -486,13 +487,13 @@ subroutine shd_io__outputResult(&
             allocate(FDIR(NXOUT*NYOUT))
 
             IDATA = 0
-            Y0 = grid_obj%y(1)
+            Y0 = rtm_obj%y(1)
             do JY = 1, NYOUT
-                X0 = grid_obj%x(1)
+                X0 = rtm_obj%x(1)
                 do JX = 1, NXOUT
                     IDATA = IDATA + 1
                     call shd_util__findCell(NX, NY, NZ,&
-                        & BCFLAG, IPFLAG, X0, Y0, Z0, ICELL, grid_obj)
+                        & BCFLAG, IPFLAG, X0, Y0, Z0, ICELL, rtm_obj, grid_obj)
                     call shd_util__interpTriLin(ICELL,&
                         & X0, Y0, Z0, 2, FLUXES, 1, 1, FDN(IDATA), grid_obj)
                     call shd_util__interpTriLin(ICELL,&
@@ -536,9 +537,9 @@ subroutine shd_io__outputResult(&
 
             ! original
             !╭────────────────────────────────────────────────╮!
-            !Y0 = grid_obj%y(1)
+            !Y0 = rtm_obj%y(1)
             !do JY = 1, NYOUT
-            !    X0 = grid_obj%x(1)
+            !    X0 = rtm_obj%x(1)
             !    do JX = 1, NXOUT
             !        call shd_util__findCell(NX, NY, NZ,&
             !            & BCFLAG, IPFLAG, X0, Y0, Z0, ICELL, grid_obj)
@@ -589,8 +590,8 @@ subroutine shd_io__outputResult(&
                 SUM3(IZ) = 0.0
                 N = 0
                 do I = IZ, grid_obj%Npts0, NZ
-                    if  (grid_obj%xyz(1, I) .lt. grid_obj%x(NX + 1) .and.&
-                        &grid_obj%xyz(2, I) .lt. grid_obj%y(NY + 1)) then
+                    if  (grid_obj%xyz(1, I) .lt. rtm_obj%x(NX + 1) .and.&
+                        &grid_obj%xyz(2, I) .lt. rtm_obj%y(NY + 1)) then
                         SUM1(IZ) = SUM1(IZ) + FLUXES(1, I)
                         SUM2(IZ) = SUM2(IZ) + FLUXES(2, I)
                         SUM3(IZ) = SUM3(IZ) + DIRFLUX(I)
@@ -636,8 +637,8 @@ subroutine shd_io__outputResult(&
             !    SUM3 = 0.0
             !    N = 0
             !    do I = IZ, grid_obj%Npts0, NZ
-            !        if  (grid_obj%xyz(1, I) .lt. grid_obj%x(NX + 1) .and.&
-            !            &grid_obj%xyz(2, I) .lt. grid_obj%y(NY + 1)) then
+            !        if  (grid_obj%xyz(1, I) .lt. rtm_obj%x(NX + 1) .and.&
+            !            &grid_obj%xyz(2, I) .lt. rtm_obj%y(NY + 1)) then
             !            SUM1 = SUM1 + FLUXES(1, I)
             !            SUM2 = SUM2 + FLUXES(2, I)
             !            SUM3 = SUM3 + DIRFLUX(I)
@@ -645,9 +646,9 @@ subroutine shd_io__outputResult(&
             !        end if
             !    end do
             !    if (SRCTYPE .ne. 'T') then
-            !        write (2, FORM) grid_obj%z(IZ), C*SUM2/N, C*SUM1/N, SUM3/N
+            !        write (2, FORM) rtm_obj%z(IZ), C*SUM2/N, C*SUM1/N, SUM3/N
             !    else
-            !        write (2, FORM) grid_obj%z(IZ), C*SUM2/N, C*SUM1/N
+            !        write (2, FORM) rtm_obj%z(IZ), C*SUM2/N, C*SUM1/N
             !    end if
             !end do
             !╰────────────────────────────────────────────────╯!
@@ -724,8 +725,8 @@ subroutine shd_io__outputResult(&
             ! original
             !╭────────────────────────────────────────────────╮!
             !do I = 1, N
-            !    if ((grid_obj%xyz(1, I) .lt. grid_obj%x(NX + 1) .and.&
-            !        &grid_obj%xyz(2, I) .lt. grid_obj%y(NY + 1)) .or. ALLGRID) then
+            !    if ((grid_obj%xyz(1, I) .lt. rtm_obj%x(NX + 1) .and.&
+            !        &grid_obj%xyz(2, I) .lt. rtm_obj%y(NY + 1)) .or. ALLGRID) then
             !        if (SRCTYPE .ne. 'T') then
             !            write (2, FORM) grid_obj%xyz(1, I), grid_obj%xyz(2, I), grid_obj%xyz(3, I),&
             !                & C*FLUXES(2, I), C*FLUXES(1, I), DIRFLUX(I)
@@ -757,8 +758,8 @@ subroutine shd_io__outputResult(&
                 SUM1(IZ) = 0.0
                 N = 0
                 do I = IZ, grid_obj%Npts0, NZ
-                    if  (grid_obj%xyz(1, I) .lt. grid_obj%x(NX + 1) .and.&
-                        &grid_obj%xyz(2, I) .lt. grid_obj%y(NY + 1)) then
+                    if  (grid_obj%xyz(1, I) .lt. rtm_obj%x(NX + 1) .and.&
+                        &grid_obj%xyz(2, I) .lt. rtm_obj%y(NY + 1)) then
                         SUM1(IZ) = SUM1(IZ) + FLUXDIV(I)
                         N = N + 1
                     end if
@@ -790,13 +791,13 @@ subroutine shd_io__outputResult(&
             !    SUM = 0.0
             !    N = 0
             !    do I = IZ, grid_obj%Npts0, NZ
-            !        if  (grid_obj%xyz(1, I) .lt. grid_obj%x(NX + 1) .and.&
-            !            &grid_obj%xyz(2, I) .lt. grid_obj%y(NY + 1)) then
+            !        if  (grid_obj%xyz(1, I) .lt. rtm_obj%x(NX + 1) .and.&
+            !            &grid_obj%xyz(2, I) .lt. rtm_obj%y(NY + 1)) then
             !            SUM = SUM + FLUXDIV(I)
             !            N = N + 1
             !        end if
             !    end do
-            !    write (2, '(1X,F7.3,2X,E13.5)') grid_obj%z(IZ), -SUM/N
+            !    write (2, '(1X,F7.3,2X,E13.5)') rtm_obj%z(IZ), -SUM/N
             !end do
             !╰────────────────────────────────────────────────╯!
 
@@ -850,8 +851,8 @@ subroutine shd_io__outputResult(&
             ! original
             !╭────────────────────────────────────────────────╮!
             !do I = 1, N
-            !    if ((grid_obj%xyz(1, I) .lt. grid_obj%x(NX + 1) .and.&
-            !        &grid_obj%xyz(2, I) .lt. grid_obj%y(NY + 1)) .or. ALLGRID) then
+            !    if ((grid_obj%xyz(1, I) .lt. rtm_obj%x(NX + 1) .and.&
+            !        &grid_obj%xyz(2, I) .lt. rtm_obj%y(NY + 1)) .or. ALLGRID) then
             !        write (2, '(3(1X,F7.3),2X,E13.5)')&
             !            & grid_obj%xyz(1, I), grid_obj%xyz(2, I), grid_obj%xyz(3, I), -FLUXDIV(I)
             !    end if
@@ -937,8 +938,8 @@ subroutine shd_io__outputResult(&
         !    write (2, '(A,A)') '!    X       Y        Z         Imean',&
         !        &'          Fx           Fy           Fz       HOrms'
         !    do I = 1, N
-        !        if ((grid_obj%xyz(1, I) .lt. grid_obj%x(NX + 1) .and.&
-        !            &grid_obj%xyz(2, I) .lt. grid_obj%y(NY + 1)) .or. ALLGRID) then
+        !        if ((grid_obj%xyz(1, I) .lt. rtm_obj%x(NX + 1) .and.&
+        !            &grid_obj%xyz(2, I) .lt. rtm_obj%y(NY + 1)) .or. ALLGRID) then
         !            write (2, '(3(1X,F7.3),1X,4(1X,E12.5),1X,F6.3)')&
         !                &grid_obj%xyz(1, I), grid_obj%xyz(2, I), grid_obj%xyz(3, I),&
         !                &SHTERMS(1, I), SHTERMS(2, I), SHTERMS(3, I), SHTERMS(4, I),&
@@ -949,8 +950,8 @@ subroutine shd_io__outputResult(&
         !    write (2, '(A,A)') '!    X       Y        Z         Imean',&
         !        &'          Fx           Fy           Fz '
         !    do I = 1, N
-        !        if ((grid_obj%xyz(1, I) .lt. grid_obj%x(NX + 1) .and.&
-        !            &grid_obj%xyz(2, I) .lt. grid_obj%y(NY + 1)) .or. ALLGRID) then
+        !        if ((grid_obj%xyz(1, I) .lt. rtm_obj%x(NX + 1) .and.&
+        !            &grid_obj%xyz(2, I) .lt. rtm_obj%y(NY + 1)) .or. ALLGRID) then
         !            write (2, '(3(1X,F7.3),1X,4(1X,E12.5))')&
         !                &grid_obj%xyz(1, I), grid_obj%xyz(2, I), grid_obj%xyz(3, I),&
         !                &SHTERMS(1, I), SHTERMS(2, I), SHTERMS(3, I), SHTERMS(4, I)
@@ -1018,8 +1019,8 @@ subroutine shd_io__outputResult(&
         ! original
         !╭────────────────────────────────────────────────╮!
         !do I = 1, N
-        !    if ((grid_obj%xyz(1, I) .lt. grid_obj%x(NX + 1) .and.&
-        !        &grid_obj%xyz(2, I) .lt. grid_obj%y(NY + 1)) .or. ALLGRID) then
+        !    if ((grid_obj%xyz(1, I) .lt. rtm_obj%x(NX + 1) .and.&
+        !        &grid_obj%xyz(2, I) .lt. rtm_obj%y(NY + 1)) .or. ALLGRID) then
         !        write (2, '(3(1X,F7.3),5(1X,E12.5))')&
         !            & grid_obj%xyz(1, I), grid_obj%xyz(2, I), grid_obj%xyz(3, I),&
         !            & EXTINCT(I), SOURCE1OUT(:, I)
@@ -1107,8 +1108,8 @@ subroutine shd_io__outputResult(&
         !    else
         !        ASYM = LEGEN(1, 1, I)
         !    end if
-        !    if ((grid_obj%xyz(1, I) .lt. grid_obj%x(NX + 1) .and.&
-        !        &grid_obj%xyz(2, I) .lt. grid_obj%y(NY + 1)) .or. ALLGRID) then
+        !    if ((grid_obj%xyz(1, I) .lt. rtm_obj%x(NX + 1) .and.&
+        !        &grid_obj%xyz(2, I) .lt. rtm_obj%y(NY + 1)) .or. ALLGRID) then
         !        write (2, '(3(1X,F7.3),1X,F10.6,1X,F8.6,1X,F8.5,1X,F7.2)')&
         !            & grid_obj%xyz(1, I), grid_obj%xyz(2, I), grid_obj%xyz(3, I),&
         !            & EXTINCT(I), ALBEDO(I), ASYM, TEMP(I)
@@ -1197,7 +1198,7 @@ subroutine shd_io__outputResultMpi(&
     &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
     &FLUXES, FLUXDIV, NSHOUT, SHTERMS, IRAD, RADOUT,&
     &OUTTYPE, OUTPARMS, OUTFILE,&
-    &grid_obj, prp_obj, sfc_obj, ckd_obj, sen_obj)
+    &rtm_obj, grid_obj, prp_obj, sfc_obj, ckd_obj, sen_obj)
 
     ! Writes the desired type of output file from the output fields
     ! with a header giving the input parameters.
@@ -1206,6 +1207,7 @@ subroutine shd_io__outputResultMpi(&
     ! convergence), 'S' - for spherical harmonic terms
     ! See the overall program documentation for output parameters.
 
+    type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
     type(shd_type_prp),  intent(in) :: prp_obj
     type(shd_type_sfc),  intent(in) :: sfc_obj
@@ -1248,9 +1250,9 @@ subroutine shd_io__outputResultMpi(&
     OUTFILE_DATA = trim(adjustl(OUTFILE))//trim(adjustl(DATA_POSTFIX))
 
     GRIDNAME = 'EVEN (X,Y)  '
-    if (grid_obj%type .eq. 'P') then
+    if (rtm_obj%type .eq. 'P') then
         GRIDNAME = GRIDNAME(1:14)//'PROPERTY-FILE (Z) '
-    else if (grid_obj%type .eq. 'F') then
+    else if (rtm_obj%type .eq. 'F') then
         GRIDNAME = GRIDNAME(1:14)//'INPUT-FILE (Z)    '
     else
         GRIDNAME = GRIDNAME(1:14)//'EVEN (Z)          '
@@ -1393,7 +1395,7 @@ subroutine shd_io__outputResultMpi(&
         else
             NYOUT = max(1, nint(prp_obj%yDomain/OUTPARMS(3)))
         end if
-        Z0 = min(max(OUTPARMS(1), grid_obj%z(1)), grid_obj%z(NZ))
+        Z0 = min(max(OUTPARMS(1), rtm_obj%z(1)), rtm_obj%z(NZ))
         NANGOUT = nint(OUTPARMS(6))
 
         write (2, '(A,F7.3,3(A,I10))') '!    RADIANCE AT Z=', Z0,&
@@ -1435,7 +1437,7 @@ subroutine shd_io__outputResultMpi(&
 
         if (IPFLAG .eq. 0) then
             call shd_io__radShiftCorr(RADOUT(:, 1:NXOUT*NYOUT*NANGOUT), NSTOKES, NANGOUT, NXOUT, NYOUT,&
-                OUTPARMS(2), OUTPARMS(3), prp_obj%xDomain, prp_obj%yDomain, Z0-grid_obj%z(1), MU_SET, PHI_SET)
+                OUTPARMS(2), OUTPARMS(3), prp_obj%xDomain, prp_obj%yDomain, Z0-rtm_obj%z(1), MU_SET, PHI_SET)
         end if
 
         deallocate(MU_SET, PHI_SET)
@@ -1494,8 +1496,8 @@ subroutine shd_io__outputResultMpi(&
 
         if (nint(OUTPARMS(1)) .le. 1) then
 
-            write (2, '(A,F7.3)') '!    UPWELLING FLUX:     Z=', grid_obj%z(NZ)
-            write (2, '(A,F7.3)') '!    DOWNWELLING FLUX:   Z=', grid_obj%z(1)
+            write (2, '(A,F7.3)') '!    UPWELLING FLUX:     Z=', rtm_obj%z(NZ)
+            write (2, '(A,F7.3)') '!    DOWNWELLING FLUX:   Z=', rtm_obj%z(1)
             if (UNITS .eq. 'T') then
                 FORM = '(2(1X,F7.3),1X,2(2X,F6.2))'
                 write (2, '(A)') '!   X       Y        UP     DOWN'
@@ -1542,10 +1544,10 @@ subroutine shd_io__outputResultMpi(&
             !do I = 1, NX
             !    do J = 1, NY
             !        if (SRCTYPE .ne. 'T') then
-            !            write (2, FORM) grid_obj%x(I), grid_obj%y(J),&
+            !            write (2, FORM) rtm_obj%x(I), rtm_obj%y(J),&
             !                & C*FLUXES(2, NZ, J, I), C*FLUXES(1, 1, J, I), FLUXES(3, 1, J, I)
             !        else
-            !            write (2, FORM) grid_obj%x(I), grid_obj%y(J),&
+            !            write (2, FORM) rtm_obj%x(I), rtm_obj%y(J),&
             !                & C*FLUXES(2, NZ, J, I), C*FLUXES(1, 1, J, I)
             !        end if
             !    end do
@@ -1643,9 +1645,9 @@ subroutine shd_io__outputResultMpi(&
             !        end do
             !    end do
             !    if (SRCTYPE .ne. 'T') then
-            !        write (2, FORM) grid_obj%z(K), C*SUM2/N, C*SUM1/N, SUM3/N
+            !        write (2, FORM) rtm_obj%z(K), C*SUM2/N, C*SUM1/N, SUM3/N
             !    else
-            !        write (2, FORM) grid_obj%z(K), C*SUM2/N, C*SUM1/N
+            !        write (2, FORM) rtm_obj%z(K), C*SUM2/N, C*SUM1/N
             !    end if
             !end do
             !╰────────────────────────────────────────────────╯!
@@ -1701,10 +1703,10 @@ subroutine shd_io__outputResultMpi(&
             !    do J = 1, NY
             !        do K = 1, NZ
             !            if (SRCTYPE .ne. 'T') then
-            !                write (2, FORM) grid_obj%x(I), grid_obj%y(J), grid_obj%z(K),&
+            !                write (2, FORM) rtm_obj%x(I), rtm_obj%y(J), rtm_obj%z(K),&
             !                    & C*FLUXES(2, K, J, I), C*FLUXES(1, K, J, I), FLUXES(3, K, J, I)
             !            else
-            !                write (2, FORM) grid_obj%x(I), grid_obj%y(J), grid_obj%z(K),&
+            !                write (2, FORM) rtm_obj%x(I), rtm_obj%y(J), rtm_obj%z(K),&
             !                    & C*FLUXES(2, K, J, I), C*FLUXES(1, K, J, I)
             !            end if
             !        end do
@@ -1770,7 +1772,7 @@ subroutine shd_io__outputResultMpi(&
             !            SUM = SUM + FLUXDIV(K, J, I)
             !        end do
             !    end do
-            !    write (2, '(1X,F7.3,2X,E13.5)') grid_obj%z(K), -SUM/(NX*NY)
+            !    write (2, '(1X,F7.3,2X,E13.5)') rtm_obj%z(K), -SUM/(NX*NY)
             !end do
             !╰────────────────────────────────────────────────╯!
 
@@ -1802,7 +1804,7 @@ subroutine shd_io__outputResultMpi(&
             !        do J = 1, NY
             !            do K = 1, NZ
             !                write (2, '(3(1X,F7.3),2X,E13.5)')&
-            !                    & grid_obj%x(I), grid_obj%y(J), grid_obj%z(K), -FLUXDIV(K, J, I)
+            !                    & rtm_obj%x(I), rtm_obj%y(J), rtm_obj%z(K), -FLUXDIV(K, J, I)
             !            end do
             !        end do
             !    end do
@@ -1891,7 +1893,7 @@ subroutine shd_io__outputResultMpi(&
         !        do J = 1, NY
         !            do K = 1, NZ
         !                write (2, '(3(1X,F7.3),1X,4(1X,E12.5),1X,F6.3)')&
-        !                    &grid_obj%x(I), grid_obj%y(J), grid_obj%z(K), SHTERMS(1, K, J, I),&
+        !                    &rtm_obj%x(I), rtm_obj%y(J), rtm_obj%z(K), SHTERMS(1, K, J, I),&
         !                    &SHTERMS(2, K, J, I), SHTERMS(3, K, J, I), SHTERMS(4, K, J, I),&
         !                    &SHTERMS(5, K, J, I)/max(1e-20, SHTERMS(1, K, J, I))
         !            end do
@@ -1906,7 +1908,7 @@ subroutine shd_io__outputResultMpi(&
         !        do J = 1, NY
         !            do K = 1, NZ
         !                write (2, '(3(1X,F7.3),1X,4(1X,E12.5),1X,F6.3)')&
-        !                    &grid_obj%x(I), grid_obj%y(J), grid_obj%z(K), SHTERMS(1, K, J, I),&
+        !                    &rtm_obj%x(I), rtm_obj%y(J), rtm_obj%z(K), SHTERMS(1, K, J, I),&
         !                    &SHTERMS(2, K, J, I), SHTERMS(3, K, J, I), SHTERMS(4, K, J, I)
         !            end do
         !        end do
@@ -1935,14 +1937,14 @@ subroutine shd_io__outputResultMpi(&
 end subroutine shd_io__outputResultMpi
 
 subroutine shd_io__outputCamRad(NSTOKES, NX, NY, NZ,&
-    & NSH, ML, MM, NLM, NMU, NPHI, NANG,&
-    & INSAVEFILE, OUTSAVEFILE,&
-    & BCFLAG, IPFLAG, DELTAM, SRCTYPE,&
-    & SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
-    & WAVENO, WAVELEN, UNITS,&
-    & SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
-    & IVIS, VISOUT, OUTPARMS, OUTFILE,&
-    & grid_obj, prp_obj, sfc_obj, ckd_obj, sen_obj)
+    &NSH, ML, MM, NLM, NMU, NPHI, NANG,&
+    &INSAVEFILE, OUTSAVEFILE,&
+    &BCFLAG, IPFLAG, DELTAM, SRCTYPE,&
+    &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+    &WAVENO, WAVELEN, UNITS,&
+    &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
+    &IVIS, VISOUT, OUTPARMS, OUTFILE,&
+    &rtm_obj, grid_obj, prp_obj, sfc_obj, ckd_obj, sen_obj)
 
     ! Writes the visualization image in PGM binary format with either
     ! one byte or two byte pixels.  The PGM binary format (P5) has an
@@ -1950,6 +1952,7 @@ subroutine shd_io__outputCamRad(NSTOKES, NX, NY, NZ,&
     ! (here the SHDOM input parameters), followed by the byte or two byte
     ! image pixels.
 
+    type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
     type(shd_type_prp),  intent(in) :: prp_obj
     type(shd_type_sfc),  intent(in) :: sfc_obj
@@ -1980,9 +1983,9 @@ subroutine shd_io__outputCamRad(NSTOKES, NX, NY, NZ,&
     OUTFILE_DATA = trim(adjustl(OUTFILE))//trim(adjustl(DATA_POSTFIX))
 
     GRIDNAME = 'EVEN (X,Y)  '
-    if (grid_obj%type .eq. 'P') then
+    if (rtm_obj%type .eq. 'P') then
         GRIDNAME = GRIDNAME(1:14)//'PROPERTY-FILE (Z) '
-    else if (grid_obj%type .eq. 'F') then
+    else if (rtm_obj%type .eq. 'F') then
         GRIDNAME = GRIDNAME(1:14)//'INPUT-FILE (Z)    '
     else
         GRIDNAME = GRIDNAME(1:14)//'EVEN (Z)          '
@@ -2150,14 +2153,14 @@ subroutine shd_io__outputCamRad(NSTOKES, NX, NY, NZ,&
 end subroutine shd_io__outputCamRad
 
 subroutine shd_io__outputImg(NSTOKES, NX, NY, NZ,&
-    & NSH, ML, MM, NLM, NMU, NPHI, NANG,&
-    & INSAVEFILE, OUTSAVEFILE,&
-    & BCFLAG, IPFLAG, DELTAM, SRCTYPE,&
-    & SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
-    & WAVENO, WAVELEN, UNITS,&
-    & SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
-    & IVIS, VISOUT, OUTPARMS, OUTFILE,&
-    & grid_obj, prp_obj, sfc_obj, ckd_obj)
+    &NSH, ML, MM, NLM, NMU, NPHI, NANG,&
+    &INSAVEFILE, OUTSAVEFILE,&
+    &BCFLAG, IPFLAG, DELTAM, SRCTYPE,&
+    &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
+    &WAVENO, WAVELEN, UNITS,&
+    &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
+    &IVIS, VISOUT, OUTPARMS, OUTFILE,&
+    &rtm_obj, grid_obj, prp_obj, sfc_obj, ckd_obj)
 
     ! Writes the visualization image in PGM binary format with either
     ! one byte or two byte pixels.  The PGM binary format (P5) has an
@@ -2165,6 +2168,7 @@ subroutine shd_io__outputImg(NSTOKES, NX, NY, NZ,&
     ! (here the SHDOM input parameters), followed by the byte or two byte
     ! image pixels.
 
+    type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
     type(shd_type_prp),  intent(in) :: prp_obj
     type(shd_type_sfc),  intent(in) :: sfc_obj
@@ -2278,9 +2282,9 @@ subroutine shd_io__outputImg(NSTOKES, NX, NY, NZ,&
 
     ! Make the SHDOM part of the header
     GRIDNAME = 'EVEN (X,Y)  '
-    if (grid_obj%type .eq. 'P') then
+    if (rtm_obj%type .eq. 'P') then
         GRIDNAME = GRIDNAME(1:14)//'PROPERTY-FILE (Z) '
-    else if (grid_obj%type .eq. 'F') then
+    else if (rtm_obj%type .eq. 'F') then
         GRIDNAME = GRIDNAME(1:14)//'INPUT-FILE (Z)    '
     else
         GRIDNAME = GRIDNAME(1:14)//'EVEN (Z)          '
@@ -2758,9 +2762,9 @@ subroutine shd_io__saveState(&
 
     write (91) shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm, grid_obj%Npts, grid_obj%Ncell
 
-    write (91) (grid_obj%x(I), I=1, rtm_obj%Nx+1)
-    write (91) (grid_obj%y(I), I=1, rtm_obj%Ny+1)
-    write (91) (grid_obj%z(I), I=1, rtm_obj%Ny)
+    write (91) (rtm_obj%x(I), I=1, rtm_obj%Nx+1)
+    write (91) (rtm_obj%y(I), I=1, rtm_obj%Ny+1)
+    write (91) (rtm_obj%z(I), I=1, rtm_obj%Ny)
 
     write (91) ((grid_obj%i8Grid(J, I), J=1, 8), I=1, grid_obj%Ncell)
     write (91) ((grid_obj%i6Cell(J, I), J=1, 6), I=1, grid_obj%Ncell)

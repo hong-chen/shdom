@@ -82,11 +82,11 @@ subroutine shd_init__makeGrid(rtm_obj, &
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Description:
-    !   Makes the grid_obj%x, grid_obj%y, and grid_obj%z arrays from the input Z levels
-    !   and X and Y spacing from the property file according to the grid_obj%type.
+    !   Makes the rtm_obj%x, rtm_obj%y, and rtm_obj%z arrays from the input Z levels
+    !   and X and Y spacing from the property file according to the rtm_obj%type.
     !
     ! Input:
-    !   grid_obj%type: character(len=1), grid type
+    !   rtm_obj%type: character(len=1), grid type
     !             "E": even Z base grid between bottom and top;
     !             "P": Z base grid levels from property file;
     !             "F": Z base grid levels from file: shdom-zgrid.txt
@@ -97,10 +97,10 @@ subroutine shd_init__makeGrid(rtm_obj, &
     !   prp_obj%z: real array, input Z levels from the property file
     !
     ! Output:
-    !   grid_obj%x, grid_obj%y, grid_obj%z: real array, grid locations for each dimension.
+    !   rtm_obj%x, rtm_obj%y, rtm_obj%z: real array, grid locations for each dimension.
     !                        To facilitate the periodic horizontal boundaries,
-    !                        there are rtm_obj%Nx+1 values in grid_obj%x, rtm_obj%Ny+1 in grid_obj%y,
-    !                        rtm_obj%Nz values in grid_obj%z. Currently the grid locations
+    !                        there are rtm_obj%Nx+1 values in rtm_obj%x, rtm_obj%Ny+1 in rtm_obj%y,
+    !                        rtm_obj%Nz values in rtm_obj%z. Currently the grid locations
     !                        are evenly spaced in X and Y.
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
@@ -124,14 +124,14 @@ subroutine shd_init__makeGrid(rtm_obj, &
     if (isMpiX_) then ! open in X
         do ix = 1, rtm_obj%Nx
             if (prp_obj%Nx .gt. 1) then
-                grid_obj%x(ix) = prp_obj%xStart + (ix - 1)*(prp_obj%dx*(prp_obj%Nx - 1))/float(rtm_obj%Nx - 1)
+                rtm_obj%x(ix) = prp_obj%xStart + (ix - 1)*(prp_obj%dx*(prp_obj%Nx - 1))/float(rtm_obj%Nx - 1)
             else
-                grid_obj%x(ix) = prp_obj%xStart + (ix - 1)*(prp_obj%dx*prp_obj%Nx)/float(rtm_obj%Nx - 1)
+                rtm_obj%x(ix) = prp_obj%xStart + (ix - 1)*(prp_obj%dx*prp_obj%Nx)/float(rtm_obj%Nx - 1)
             end if
         end do
     else ! periodic in X
         do ix = 1, rtm_obj%Nx + 1
-            grid_obj%x(ix) = prp_obj%xStart + (ix - 1)*(prp_obj%dx*prp_obj%Nx)/float(rtm_obj%Nx)
+            rtm_obj%x(ix) = prp_obj%xStart + (ix - 1)*(prp_obj%dx*prp_obj%Nx)/float(rtm_obj%Nx)
         end do
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
@@ -146,21 +146,21 @@ subroutine shd_init__makeGrid(rtm_obj, &
     if (isMpiY_) then ! open in Y
         do iy = 1, rtm_obj%Ny
             if (prp_obj%Ny .gt. 1) then
-                grid_obj%y(iy) = prp_obj%yStart + (iy - 1)*(prp_obj%dy*(prp_obj%Ny - 1))/float(rtm_obj%Ny - 1)
+                rtm_obj%y(iy) = prp_obj%yStart + (iy - 1)*(prp_obj%dy*(prp_obj%Ny - 1))/float(rtm_obj%Ny - 1)
             else
-                grid_obj%y(iy) = prp_obj%yStart + (iy - 1)*(prp_obj%dy*prp_obj%Ny)/float(rtm_obj%Ny - 1)
+                rtm_obj%y(iy) = prp_obj%yStart + (iy - 1)*(prp_obj%dy*prp_obj%Ny)/float(rtm_obj%Ny - 1)
             end if
         end do
     else ! periodic in Y
         do iy = 1, rtm_obj%Ny + 1
-            grid_obj%y(iy) = prp_obj%yStart + (iy - 1)*(prp_obj%dy*prp_obj%Ny)/float(rtm_obj%Ny)
+            rtm_obj%y(iy) = prp_obj%yStart + (iy - 1)*(prp_obj%dy*prp_obj%Ny)/float(rtm_obj%Ny)
         end do
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! z
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    if (grid_obj%type .eq. 'P') then
+    if (rtm_obj%type .eq. 'P') then
 
         if (rtm_obj%Nz .ne. prp_obj%Nz) then
             write (6, *)&
@@ -169,22 +169,22 @@ subroutine shd_init__makeGrid(rtm_obj, &
             stop
         end if
         do iz = 1, rtm_obj%Nz
-            grid_obj%z(iz) = prp_obj%z(iz)
+            rtm_obj%z(iz) = prp_obj%z(iz)
         end do
 
-    else if (grid_obj%type .eq. 'E') then
+    else if (rtm_obj%type .eq. 'E') then
 
         do iz = 1, rtm_obj%Nz
-            grid_obj%z(iz) = prp_obj%z(1)&
+            rtm_obj%z(iz) = prp_obj%z(1)&
                 + (iz - 1)*(prp_obj%z(prp_obj%Nz) - prp_obj%z(1))/float(rtm_obj%Nz - 1)
         end do
 
-    else if (grid_obj%type .eq. 'F') then
+    else if (rtm_obj%type .eq. 'F') then
 
-        if (verbose_ .ge. 5) write(*, '(A)') 'Message [_makeGrid]: Reading grid_obj%z from <shdom-zgrid.txt> ...'
+        if (verbose_ .ge. 5) write(*, '(A)') 'Message [_makeGrid]: Reading rtm_obj%z from <shdom-zgrid.txt> ...'
         open (UNIT=3, FILE='shdom-zgrid.txt', STATUS='OLD')
         do iz = 1, rtm_obj%Nz
-            read (3, *) grid_obj%z(iz)
+            read (3, *) rtm_obj%z(iz)
         end do
         close (3)
     else
@@ -220,10 +220,10 @@ subroutine shd_init__makeCell(rtm_obj, &
     ! Input:
     !   rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz: integer, base grid size in X, Y and Z
     !   grid_obj%Nx, grid_obj%Ny: integer, base grid actual size in X, Y
-    !   grid_obj%x, grid_obj%y, grid_obj%z: real array, grid locations for each dimension.
+    !   rtm_obj%x, rtm_obj%y, rtm_obj%z: real array, grid locations for each dimension.
     !                        To facilitate the periodic horizontal boundaries,
-    !                        there are rtm_obj%Nx+1 values in grid_obj%x, rtm_obj%Ny+1 in grid_obj%y,
-    !                        rtm_obj%Nz values in grid_obj%z. Currently the grid locations
+    !                        there are rtm_obj%Nx+1 values in rtm_obj%x, rtm_obj%Ny+1 in rtm_obj%y,
+    !                        rtm_obj%Nz values in rtm_obj%z. Currently the grid locations
     !                        are evenly spaced in X and Y.
     !
     ! Output:
@@ -271,9 +271,9 @@ subroutine shd_init__makeCell(rtm_obj, &
         do iy = 1, grid_obj%Ny
             do iz = 1, grid_obj%Nz
                 i = i + 1
-                grid_obj%xyz(1, i) = grid_obj%x(ix)
-                grid_obj%xyz(2, i) = grid_obj%y(iy)
-                grid_obj%xyz(3, i) = grid_obj%z(iz)
+                grid_obj%xyz(1, i) = rtm_obj%x(ix)
+                grid_obj%xyz(2, i) = rtm_obj%y(iy)
+                grid_obj%xyz(3, i) = rtm_obj%z(iz)
             end do
         end do
     end do

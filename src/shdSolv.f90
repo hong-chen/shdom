@@ -173,7 +173,8 @@ subroutine shd_solv__solveRte(&
         if (isMpi_) then
             call shd_mpi__makeDirect(1, rtm_obj%flag_bc, rtm_obj%flag_ip, DELTAM, shdo_obj%maxNl,&
                 &SOLARFLUX, src_obj%avgMu, src_obj%avgAz,&
-                &rtm_obj%Nx, rtm_obj%Ny, DIRFLUX, grid_obj, prp_obj, ckd_obj)
+                &rtm_obj%Nx, rtm_obj%Ny, DIRFLUX,&
+                &rtm_obj, grid_obj, prp_obj, ckd_obj)
         else
             call shd_rad__makeDirect(grid_obj%Npts, rtm_obj%flag_bc, rtm_obj%flag_ip, DELTAM, shdo_obj%maxNl,&
                 &SOLARFLUX, src_obj%avgMu, src_obj%avgAz,&
@@ -199,7 +200,7 @@ subroutine shd_solv__solveRte(&
         ! Initialize the radiance on the base grid using Eddington
         ! two-stream plane-parallel
         call shd_init__makeRad(shdo_obj%Nstokes, grid_obj%Nx*grid_obj%Ny, grid_obj%Nz,&
-            &shdo_obj%iradI, grid_obj%z,&
+            &shdo_obj%iradI, rtm_obj%z,&
             &rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%temp, rtm_obj%ipha,&
             &src_obj%type, SOLARFLUX, src_obj%avgMu, SKYRAD,&
             &src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen, shdo_obj%radI, prp_obj, sfc_obj)
@@ -230,7 +231,7 @@ subroutine shd_solv__solveRte(&
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Make the pointers to the grid points on the top and bottom boundaries
     call shd_grid__findBndryPnt(shdo_obj%Nang, MAXNBC, MAXBCRAD,&
-        &grid_obj%z(1), grid_obj%z(grid_obj%Nz),&
+        &rtm_obj%z(1), rtm_obj%z(grid_obj%Nz),&
         &NTOPPTS, NBOTPTS, BCPTR, grid_obj, sfc_obj)
     if (sfc_obj%type(1:1) .eq. 'V') then
         ! If this is a variable surface then bilinearly interpolate
@@ -336,7 +337,7 @@ subroutine shd_solv__solveRte(&
                     &rtm_obj%temp, rtm_obj%planck, DIRFLUX, src_obj%type,&
                     &SOLARFLUX, src_obj%avgMu, src_obj%avgAz, YlmSolar_Shdo,&
                     &src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen, WORK, WORK2,&
-                    &grid_obj, prp_obj, ckd_obj)
+                    &rtm_obj, grid_obj, prp_obj, ckd_obj)
                 if (SOLCRIT .gt. STARTADAPTSOL) STARTSPLITACC = SPLITCRIT
             end if
             ! Find the maximum splitting criterion over all processors
@@ -369,7 +370,7 @@ subroutine shd_solv__solveRte(&
             &DIRFLUX, FLUXES, rtm_obj%ext,&
             &shdo_obj%isrcJ, shdo_obj%srcJ, shdo_obj%iradI, shdo_obj%radI,&
             &WORK, WORK1, WORK2,&
-            &grid_obj, prp_obj, sfc_obj)
+            &rtm_obj, grid_obj, prp_obj, sfc_obj)
         !╰────────────────────────────────────────────────╯!
 
         ! Compute the source function from the radiance field,

@@ -1052,12 +1052,14 @@ end subroutine shd_mpi__findTotSplitCritMax
 subroutine shd_mpi__makeDirect(SPT, BCFLAG, IPFLAG,&
     &DELTAM, ML,&
     &SOLARFLUX, SOLARMU, SOLARAZ,&
-    &Nx, Ny, DIRFLUX, grid_obj, prp_obj, ckd_obj)
+    &Nx, Ny, DIRFLUX,&
+    &rtm_obj, grid_obj, prp_obj, ckd_obj)
 
     ! Makes the direct beam solar flux for the grid_obj%Npts gridpoints started with
     ! index SPT having X/Y/Z positions in grid_obj%xyz.
     ! DIRFLUX is set to F*exp(-tau_sun).
 
+    type(shd_type_rtm),  intent(in) ::  rtm_obj
     type(shd_type_grid), intent(in) ::  grid_obj
     type(shd_type_prp),  intent(in) ::  prp_obj
     type(shd_type_ckd),  intent(in) ::  ckd_obj
@@ -1091,7 +1093,7 @@ subroutine shd_mpi__makeDirect(SPT, BCFLAG, IPFLAG,&
     allocate (DirAllOut(MAXNBEAM, 0:Nproc_ - 1), DirPtrOut(MAXNBEAM, 0:Nproc_ - 1))
     allocate (DirAllIn(MAXNBEAM), DirPtrIn(MAXNBEAM), Ndone(0:Nproc_ - 1))
 
-    EPS = 1.0e-5*max(grid_obj%x(2) - grid_obj%x(1), grid_obj%y(2) - grid_obj%y(1))
+    EPS = 1.0e-5*max(rtm_obj%x(2) - rtm_obj%x(1), rtm_obj%y(2) - rtm_obj%y(1))
 
     if (SPT .eq. 1) then
         ! Initialize the direct beam calculation
@@ -1114,9 +1116,9 @@ subroutine shd_mpi__makeDirect(SPT, BCFLAG, IPFLAG,&
         else
             Ldownx = 1; Lupx = 2
         end if
-        XMAX = grid_obj%x(Nx)
+        XMAX = rtm_obj%x(Nx)
     else
-        XMAX = grid_obj%x(Nx + 1)
+        XMAX = rtm_obj%x(Nx + 1)
     end if
     if (isMpiY_) then
         if (sin(SOLARAZ) .gt. 1.0e-5) then
@@ -1124,9 +1126,9 @@ subroutine shd_mpi__makeDirect(SPT, BCFLAG, IPFLAG,&
         else
             Ldowny = 3; Lupy = 4
         end if
-        YMAX = grid_obj%y(Ny)
+        YMAX = rtm_obj%y(Ny)
     else
-        YMAX = grid_obj%y(Ny + 1)
+        YMAX = rtm_obj%y(Ny + 1)
     end if
 
 
@@ -1199,11 +1201,11 @@ subroutine shd_mpi__makeDirect(SPT, BCFLAG, IPFLAG,&
         if (isMpiX_) then
             ! Continue the backwards ray integrations from the X boundary
             do J = 1, NINVALID(Ldownx)
-                if (Ldownx .eq. 1) BndDirRealInfo(1, J, Ldownx) = grid_obj%x(1)
-                if (Ldownx .eq. 2) BndDirRealInfo(1, J, Ldownx) = grid_obj%x(Nx)
+                if (Ldownx .eq. 1) BndDirRealInfo(1, J, Ldownx) = rtm_obj%x(1)
+                if (Ldownx .eq. 2) BndDirRealInfo(1, J, Ldownx) = rtm_obj%x(Nx)
                 X = BndDirRealInfo(1, J, Ldownx); Y = BndDirRealInfo(2, J, Ldownx)
                 Z = BndDirRealInfo(3, J, Ldownx); DIRPATH = BndDirRealInfo(4, J, Ldownx)
-                if (Y .lt. (grid_obj%y(1) - EPS)) Y = YMAX; if (Y .gt. (YMAX + EPS)) Y = grid_obj%y(1)
+                if (Y .lt. (rtm_obj%y(1) - EPS)) Y = YMAX; if (Y .gt. (YMAX + EPS)) Y = rtm_obj%y(1)
                 call shd_rad__computeDirect(0, X, Y, Z, BCFLAG, IPFLAG,&
                     &DELTAM, ML,&
                     &SOLARFLUX, SOLARMU, SOLARAZ, DIRJUNK,&
@@ -1231,11 +1233,11 @@ subroutine shd_mpi__makeDirect(SPT, BCFLAG, IPFLAG,&
         if (isMpiY_) then
             ! Continue the backwards ray integrations for the Y boundary
             do J = 1, NINVALID(Ldowny)
-                if (Ldowny .eq. 3) BndDirRealInfo(2, J, Ldowny) = grid_obj%y(1)
-                if (Ldowny .eq. 4) BndDirRealInfo(2, J, Ldowny) = grid_obj%y(Ny)
+                if (Ldowny .eq. 3) BndDirRealInfo(2, J, Ldowny) = rtm_obj%y(1)
+                if (Ldowny .eq. 4) BndDirRealInfo(2, J, Ldowny) = rtm_obj%y(Ny)
                 X = BndDirRealInfo(1, J, Ldowny); Y = BndDirRealInfo(2, J, Ldowny)
                 Z = BndDirRealInfo(3, J, Ldowny); DIRPATH = BndDirRealInfo(4, J, Ldowny)
-                if (X .lt. (grid_obj%x(1) - EPS)) X = XMAX; if (X .gt. (XMAX + EPS)) X = grid_obj%x(1)
+                if (X .lt. (rtm_obj%x(1) - EPS)) X = XMAX; if (X .gt. (XMAX + EPS)) X = rtm_obj%x(1)
                 call shd_rad__computeDirect(0, X, Y, Z, BCFLAG, IPFLAG,&
                     &DELTAM, ML,&
                     &SOLARFLUX, SOLARMU, SOLARAZ, DIRJUNK,&
@@ -1310,7 +1312,8 @@ subroutine shd_mpi__makeDirect(SPT, BCFLAG, IPFLAG,&
 end subroutine shd_mpi__makeDirect
 
 subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, SWEEPORD,&
-    &Nx, Ny, Nz, grid_obj)
+    &Nx, Ny, Nz,&
+    &rtm_obj, grid_obj)
 
     ! Makes the pointers to and positions of the horizontal boundary grid
     ! points of the processors neighboring this one.
@@ -1324,6 +1327,7 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, SWEEPORD,&
     ! boundary of this subdomain (SIDE: 1=-X, 2=+X, 3=-Y, 4=+Y).  BxyPos_ holds
     ! the gridpoint positions (X,Y,Z) for these boundary points.
 
+    type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
 
     integer, intent(in) :: BCFLAG, IPFLAG, SWEEPORD(grid_obj%Npts, *)
@@ -1352,10 +1356,10 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, SWEEPORD,&
 
     ! IOCT=1+BITX+2*BITY+4*BITZ ; JOCT=JOCTORDER(IOCT) = (/ 1,3,5,7,2,4,6,8 /)
     ! CX<0: BITX=1, JOCT=3,7,4,8      CY<0: BITY=1, JOCT=5,7,6,8
-    XEDGE(:) = (/grid_obj%x(Nx), grid_obj%x(Nx), grid_obj%x(1), grid_obj%x(1), grid_obj%x(Nx), grid_obj%x(Nx), grid_obj%x(1), grid_obj%x(1)/)
-    YEDGE(:) = (/grid_obj%y(Ny), grid_obj%y(Ny), grid_obj%y(Ny), grid_obj%y(Ny), grid_obj%y(1), grid_obj%y(1), grid_obj%y(1), grid_obj%y(1)/)
-    XYB(1) = grid_obj%x(1); XYB(2) = grid_obj%x(Nx)
-    XYB(3) = grid_obj%y(1); XYB(4) = grid_obj%y(Ny)
+    XEDGE(:) = (/rtm_obj%x(Nx), rtm_obj%x(Nx), rtm_obj%x(1), rtm_obj%x(1), rtm_obj%x(Nx), rtm_obj%x(Nx), rtm_obj%x(1), rtm_obj%x(1)/)
+    YEDGE(:) = (/rtm_obj%y(Ny), rtm_obj%y(Ny), rtm_obj%y(Ny), rtm_obj%y(Ny), rtm_obj%y(1), rtm_obj%y(1), rtm_obj%y(1), rtm_obj%y(1)/)
+    XYB(1) = rtm_obj%x(1); XYB(2) = rtm_obj%x(Nx)
+    XYB(3) = rtm_obj%y(1); XYB(4) = rtm_obj%y(Ny)
 
     if (is1D_) then
         NOCT = 2
@@ -1382,8 +1386,8 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, SWEEPORD,&
             ICORNER = ibits(SWEEPORD(IORDER, JOCT), 0, 3) + 1
             IPT = grid_obj%i8Grid(ICORNER, IPCELL)
 
-            if  ((grid_obj%xyz(3, IPT) .lt. grid_obj%z(Nz) .and. BITZ .eq. 0) .or.&
-                &(grid_obj%xyz(3, IPT) .gt. grid_obj%z(1) .and. BITZ .eq. 1)) then
+            if  ((grid_obj%xyz(3, IPT) .lt. rtm_obj%z(Nz) .and. BITZ .eq. 0) .or.&
+                &(grid_obj%xyz(3, IPT) .gt. rtm_obj%z(1) .and. BITZ .eq. 1)) then
                 if (isMpiX_ .and. grid_obj%xyz(1, IPT) .eq. XEDGE(JOCT)&
                     &.and. .not. is1DX_) then
                     SIDE = 2 - ibits(JOCT - 1, 1, 1)
@@ -1476,8 +1480,8 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, SWEEPORD,&
             iBxyPtr_(1, IZ, JOCT) = IBC + 1
             ! Store the boundary point info for this Z slab
             do while ((J .le. (NBX + NBY)) .and.&
-                &(((ZARRAY(J) .ge. grid_obj%z(IZ)) .and. (BITZ .eq. 0)) .or.&
-                 &((ZARRAY(J) .le. grid_obj%z(IZ)) .and. (BITZ .eq. 1))))
+                &(((ZARRAY(J) .ge. rtm_obj%z(IZ)) .and. (BITZ .eq. 0)) .or.&
+                 &((ZARRAY(J) .le. rtm_obj%z(IZ)) .and. (BITZ .eq. 1))))
                 IBC = IBC + 1
                 if (INDX(J) .gt. 0) then
                     IX = INDX(J)
@@ -1508,7 +1512,8 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
     &Nx, Ny, Nz,&
     &NA,&
     &MU, PHI, EXTINCT, Nstokes, SOURCE,&
-    &KANG, GRIDRAD, grid_obj)
+    &KANG, GRIDRAD,&
+    &rtm_obj, grid_obj)
 
     ! Calculates the discrete ordinate boundary radiances for the KANG discrete
     ! ordinate (going in direction MU/PHI) for the grid points in the IZ slab.
@@ -1531,6 +1536,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
     ! the finished radiance and original grid points are exchanged with
     ! all the other processors.
 
+    type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
 
     integer, intent(in) :: BCFLAG, IPFLAG, JOCT, IZ
@@ -1589,7 +1595,8 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
         xo = x; yo = y; zo = z
         call shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
             &EXTINCT, Nstokes, SOURCE, KANG, GRIDRAD,&
-            &MU, PHI, X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD, grid_obj)
+            &MU, PHI, X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD,&
+            &rtm_obj, grid_obj)
         ! If we got a radiance then store it otherwise save
         !  the information needed to pass to other processors
         if (VALIDRAD) then
@@ -1664,15 +1671,16 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
         if (isMpiX_) then
             ! Continue the backwards ray integrations for the X boundary
             do J = 1, NINVALID(Ldownx)
-                if (Ldownx .eq. 1) BndRadRealInfo(1, J, Ldownx) = grid_obj%x(1)
-                if (Ldownx .eq. 2) BndRadRealInfo(1, J, Ldownx) = grid_obj%x(Nx)
+                if (Ldownx .eq. 1) BndRadRealInfo(1, J, Ldownx) = rtm_obj%x(1)
+                if (Ldownx .eq. 2) BndRadRealInfo(1, J, Ldownx) = rtm_obj%x(Nx)
                 X = BndRadRealInfo(1, J, Ldownx); Y = BndRadRealInfo(2, J, Ldownx)
                 Z = BndRadRealInfo(3, J, Ldownx)
                 SIDE = Ldownx; TRANSMIT = BndRadRealInfo(4, J, Ldownx)
                 RADIANCE(:) = BndRadRealInfo(5:4 + Nstokes, J, Ldownx)
                 call shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
                     &EXTINCT, Nstokes, SOURCE, KANG, GRIDRAD,&
-                    &MU, PHI, X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD, grid_obj)
+                    &MU, PHI, X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD,&
+                    &rtm_obj, grid_obj)
 
                 ! If we got a radiance then store it in RadAllOut (if for another
                 !   processor) otherwise save the information needed to continue
@@ -1697,15 +1705,16 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
         if (isMpiY_) then
             ! Continue the backwards ray integrations for the Y boundary
             do J = 1, NINVALID(Ldowny)
-                if (Ldowny .eq. 3) BndRadRealInfo(2, J, Ldowny) = grid_obj%y(1)
-                if (Ldowny .eq. 4) BndRadRealInfo(2, J, Ldowny) = grid_obj%y(Ny)
+                if (Ldowny .eq. 3) BndRadRealInfo(2, J, Ldowny) = rtm_obj%y(1)
+                if (Ldowny .eq. 4) BndRadRealInfo(2, J, Ldowny) = rtm_obj%y(Ny)
                 X = BndRadRealInfo(1, J, Ldowny); Y = BndRadRealInfo(2, J, Ldowny)
                 Z = BndRadRealInfo(3, J, Ldowny)
                 SIDE = Ldowny; TRANSMIT = BndRadRealInfo(4, J, Ldowny)
                 RADIANCE(:) = BndRadRealInfo(5:4 + Nstokes, J, Ldowny)
                 call shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
                     &EXTINCT, Nstokes, SOURCE, KANG, GRIDRAD,&
-                    &MU, PHI, X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD, grid_obj)
+                    &MU, PHI, X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD,&
+                    &rtm_obj, grid_obj)
                 ! If we got a radiance then store it in RadAllOut (if for another
                 !   processor) otherwise save the information needed to continue
                 !   passing to neighboring processors
@@ -1860,7 +1869,7 @@ subroutine shd_mpi__computeRad(&
     else
         Ny_out = max(1, nint(prp_obj%yDomain/parms_Out(3)))
     end if
-    Z0 = min(max(parms_Out(1), grid_obj%z(1)), grid_obj%z(rtm_obj%Nz))
+    Z0 = min(max(parms_Out(1), rtm_obj%z(1)), rtm_obj%z(rtm_obj%Nz))
     NANGOUT = nint(parms_Out(6))
 
     MAXNRAD = nint(4.0*(Nx_out*Ny_out)/Nproc_)
@@ -1890,7 +1899,7 @@ subroutine shd_mpi__computeRad(&
         !   <shd_io__radShiftCorr> in shdOut.f90
         !╭────────────────────────────────────────────────╮!
         if (rtm_obj%flag_ip .eq. 0) then
-            DS_Z0 = Z0 - grid_obj%z(1)
+            DS_Z0 = Z0 - rtm_obj%z(1)
             DS_VZA_RAD = acos(mu_out)
             DS_XOFFSET = DS_Z0*dtan(DS_VZA_RAD)*cos(phi_out)
             DS_YOFFSET = DS_Z0*dtan(DS_VZA_RAD)*sin(phi_out)
@@ -1994,14 +2003,15 @@ subroutine shd_mpi__computeRad(&
             do JX = 1, Nx_out
                 NRAD = NRAD + 1
 
-                if (X0 .ge. (grid_obj%x(1) - EPS) .and. X0 .le. (grid_obj%x(rtm_obj%Nx) + EPS) .and.&
-                    Y0 .ge. (grid_obj%y(1) - EPS) .and. Y0 .le. (grid_obj%y(rtm_obj%Ny) + EPS)) then
+                if (X0 .ge. (rtm_obj%x(1) - EPS) .and. X0 .le. (rtm_obj%x(rtm_obj%Nx) + EPS) .and.&
+                    Y0 .ge. (rtm_obj%y(1) - EPS) .and. Y0 .le. (rtm_obj%y(rtm_obj%Ny) + EPS)) then
                     TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
                     call shd_src__integrateSrc(rtm_obj%flag_bc, rtm_obj%flag_ip, shdo_obj%Nstokes,&
                         &rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz,&
                         &mu_out, phi_out, GRIDRAD, rtm_obj%ext, SOURCE1,&
                         &X0, Y0, Z0, XE, YE, ZE, SIDE,&
-                        &TRANSMIT, RADIANCE, VALIDRAD, grid_obj)
+                        &TRANSMIT, RADIANCE, VALIDRAD,&
+                        &rtm_obj, grid_obj)
 
                     ! If we got a radiance then store it in RadSend otherwise save
                     !  the information needed to pass to other processors
@@ -2078,8 +2088,8 @@ subroutine shd_mpi__computeRad(&
             if (isMpiX_) then
                 ! Continue the backwards ray integrations for the X boundary
                 do J = 1, NINVALID(Ldownx)
-                    if (Ldownx .eq. 1) BndRadRealInfo(1, J, Ldownx) = grid_obj%x(1)
-                    if (Ldownx .eq. 2) BndRadRealInfo(1, J, Ldownx) = grid_obj%x(rtm_obj%Nx)
+                    if (Ldownx .eq. 1) BndRadRealInfo(1, J, Ldownx) = rtm_obj%x(1)
+                    if (Ldownx .eq. 2) BndRadRealInfo(1, J, Ldownx) = rtm_obj%x(rtm_obj%Nx)
                     X = BndRadRealInfo(1, J, Ldownx); Y = BndRadRealInfo(2, J, Ldownx)
                     Z = BndRadRealInfo(3, J, Ldownx); TRANSMIT = BndRadRealInfo(4, J, Ldownx)
                     RADIANCE(:) = BndRadRealInfo(5:4 + shdo_obj%Nstokes, J, Ldownx)
@@ -2087,7 +2097,8 @@ subroutine shd_mpi__computeRad(&
                         &rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz,&
                         &mu_out, phi_out, GRIDRAD, rtm_obj%ext, SOURCE1,&
                         &X, Y, Z, XE, YE, ZE, SIDE,&
-                        &TRANSMIT, RADIANCE, VALIDRAD, grid_obj)
+                        &TRANSMIT, RADIANCE, VALIDRAD,&
+                        &rtm_obj, grid_obj)
                     ! If we got a radiance then store it in RadSend, otherwise
                     ! save information needed to pass to neighboring processors
                     if (VALIDRAD) then
@@ -2113,8 +2124,8 @@ subroutine shd_mpi__computeRad(&
             if (isMpiY_) then
                 ! Continue the backwards ray integrations for the Y boundary
                 do J = 1, NINVALID(Ldowny)
-                    if (Ldowny .eq. 3) BndRadRealInfo(2, J, Ldowny) = grid_obj%y(1)
-                    if (Ldowny .eq. 4) BndRadRealInfo(2, J, Ldowny) = grid_obj%y(rtm_obj%Ny)
+                    if (Ldowny .eq. 3) BndRadRealInfo(2, J, Ldowny) = rtm_obj%y(1)
+                    if (Ldowny .eq. 4) BndRadRealInfo(2, J, Ldowny) = rtm_obj%y(rtm_obj%Ny)
                     X = BndRadRealInfo(1, J, Ldowny); Y = BndRadRealInfo(2, J, Ldowny)
                     Z = BndRadRealInfo(3, J, Ldowny); TRANSMIT = BndRadRealInfo(4, J, Ldowny)
                     RADIANCE(:) = BndRadRealInfo(5:4 + shdo_obj%Nstokes, J, Ldowny)
@@ -2122,7 +2133,8 @@ subroutine shd_mpi__computeRad(&
                         &rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz,&
                         &mu_out, phi_out, GRIDRAD, rtm_obj%ext, SOURCE1,&
                         &X, Y, Z, XE, YE, ZE, SIDE,&
-                        &TRANSMIT, RADIANCE, VALIDRAD, grid_obj)
+                        &TRANSMIT, RADIANCE, VALIDRAD,&
+                        &rtm_obj, grid_obj)
                     ! If we got a radiance then store it in RadSend, otherwise
                     ! save information needed to pass to neighboring processors
                     if (VALIDRAD) then
@@ -2414,18 +2426,18 @@ subroutine shd_mpi__computeCamRad(&
             !print *, IVIS, X0, Y0, Z0, 180.0/DPI_*COSTH, 180.0/DPI_*PHIR
 
             ! Extrapolate ray to domain top if above
-            if (Z0 .gt. grid_obj%z(rtm_obj%Nz)) then
+            if (Z0 .gt. rtm_obj%z(rtm_obj%Nz)) then
                 if (COSTH .ge. 0.0) then
                     Ndone = Ndone + 1
                     RadSend(:, Ndone) = 0.0
                     IndexSend(Ndone) = IVIS
                     cycle
                 end if
-                R = (grid_obj%z(rtm_obj%Nz) - Z0)/COSTH
+                R = (rtm_obj%z(rtm_obj%Nz) - Z0)/COSTH
                 X0 = X0 + R*sqrt(1 - COSTH**2)*cos(PHIR)
                 Y0 = Y0 + R*sqrt(1 - COSTH**2)*sin(PHIR)
-                Z0 = grid_obj%z(rtm_obj%Nz)
-            else if (Z0 .lt. grid_obj%z(1)) then
+                Z0 = rtm_obj%z(rtm_obj%Nz)
+            else if (Z0 .lt. rtm_obj%z(1)) then
                 write (6, *) 'Error [mpi__visualizeRad]: Level below domain.'
                 stop
             end if
@@ -2444,8 +2456,8 @@ subroutine shd_mpi__computeCamRad(&
             end if
 
             ! Start the radiance calculation for those rays starting in this subdomain
-            if ((X0 .ge. grid_obj%x(1)) .and. (X0 .le. grid_obj%x(rtm_obj%Nx)).and.&
-                (Y0 .ge. grid_obj%y(1)) .and. (Y0 .le. grid_obj%y(rtm_obj%Ny))) then
+            if ((X0 .ge. rtm_obj%x(1)) .and. (X0 .le. rtm_obj%x(rtm_obj%Nx)).and.&
+                (Y0 .ge. rtm_obj%y(1)) .and. (Y0 .le. rtm_obj%y(rtm_obj%Ny))) then
 
                 ! MU2,PHI2 is radiance travel direction (opposite the camera viewing direction)
                 MU2 = -COSTH
@@ -2464,7 +2476,8 @@ subroutine shd_mpi__computeCamRad(&
                     &DIRFLUX, shdo_obj%iSrcJ, shdo_obj%srcJ, YLMSUN,&
                     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                     &MU2, PHI2, X0, Y0, Z0,&
-                    &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD, grid_obj, prp_obj, sfc_obj)
+                    &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD,&
+                    &rtm_obj, grid_obj, prp_obj, sfc_obj)
 
                 ! If we got a radiance then store it in RadSend otherwise save
                 !  the information needed to pass to other processors
@@ -2527,10 +2540,10 @@ subroutine shd_mpi__computeCamRad(&
         NINVALID(:) = 0
         do IBND = 1, 4
             do J = 1, NINCOMING(IBND)
-                if (IBND .eq. 1) BndRecvRadRealInfo(1, J, IBND) = grid_obj%x(1)
-                if (IBND .eq. 2) BndRecvRadRealInfo(1, J, IBND) = grid_obj%x(rtm_obj%Nx)
-                if (IBND .eq. 3) BndRecvRadRealInfo(2, J, IBND) = grid_obj%y(1)
-                if (IBND .eq. 4) BndRecvRadRealInfo(2, J, IBND) = grid_obj%y(rtm_obj%Ny)
+                if (IBND .eq. 1) BndRecvRadRealInfo(1, J, IBND) = rtm_obj%x(1)
+                if (IBND .eq. 2) BndRecvRadRealInfo(1, J, IBND) = rtm_obj%x(rtm_obj%Nx)
+                if (IBND .eq. 3) BndRecvRadRealInfo(2, J, IBND) = rtm_obj%y(1)
+                if (IBND .eq. 4) BndRecvRadRealInfo(2, J, IBND) = rtm_obj%y(rtm_obj%Ny)
                 X = BndRecvRadRealInfo(1, J, IBND)
                 Y = BndRecvRadRealInfo(2, J, IBND)
                 Z = BndRecvRadRealInfo(3, J, IBND)
@@ -2548,7 +2561,8 @@ subroutine shd_mpi__computeCamRad(&
                     &DIRFLUX, shdo_obj%iSrcJ, shdo_obj%srcJ, YLMSUN,&
                     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                     &MU2, PHI2, X, Y, Z,&
-                    &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD, grid_obj, prp_obj, sfc_obj)
+                    &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD,&
+                    &rtm_obj, grid_obj, prp_obj, sfc_obj)
 
                 ! If we got a valid radiance then store it in RadSend, otherwise
                 ! save information needed to pass to neighboring processors
@@ -3059,7 +3073,8 @@ end function shd_mpi__ran
 subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     &EXTINCT, Nstokes, SOURCE, KANG,&
     &GRIDRAD, MU, PHI,&
-    &X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD, grid_obj)
+    &X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD,&
+    &rtm_obj, grid_obj)
 
     ! Integrates the radiative transfer equation tracing a ray starting
     ! at X,Y,Z on boundary (face) SIDE to get the radiance in direction MU,PHI.
@@ -3075,6 +3090,7 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     ! properly initialized on input).  The ending location X,Y,Z and the
     ! subdomain SIDE (1=-X,2=+X,3=-Y,4=+Y) are also returned.
 
+    type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
 
     integer, intent(in) :: BCFLAG, IPFLAG, Nx, Ny, Nz, NA
@@ -3150,7 +3166,7 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     IU = Nz
     do while (IU - IL .gt. 1)
         IM = (IU + IL)/2
-        if (Z .ge. grid_obj%z(IM)) then
+        if (Z .ge. rtm_obj%z(IM)) then
             IL = IM
         else
             IU = IM
@@ -3164,17 +3180,17 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     NYC = Ny
     if (isMpiY_ .and. .not. is1DYx_) NYC = Ny - 1
     if (is1DX_) then
-        IX = 1 + nint((Nx - 1)*(X - grid_obj%x(1))/(grid_obj%x(Nx) - grid_obj%x(1)))
+        IX = 1 + nint((Nx - 1)*(X - rtm_obj%x(1))/(rtm_obj%x(Nx) - rtm_obj%x(1)))
     else
-        IX = 1 +  int((Nx - 1)*(X - grid_obj%x(1))/(grid_obj%x(Nx) - grid_obj%x(1)))
+        IX = 1 +  int((Nx - 1)*(X - rtm_obj%x(1))/(rtm_obj%x(Nx) - rtm_obj%x(1)))
     end if
     if (is1DYx_) then
-        IY = 1 + nint((Ny - 1)*(Y - grid_obj%y(1))/(grid_obj%y(Ny) - grid_obj%y(1)))
+        IY = 1 + nint((Ny - 1)*(Y - rtm_obj%y(1))/(rtm_obj%y(Ny) - rtm_obj%y(1)))
     else
-        IY = 1 +  int((Ny - 1)*(Y - grid_obj%y(1))/(grid_obj%y(Ny) - grid_obj%y(1)))
+        IY = 1 +  int((Ny - 1)*(Y - rtm_obj%y(1))/(rtm_obj%y(Ny) - rtm_obj%y(1)))
     end if
     if ((ix .lt. 1) .or. (iy .lt. 1) .or. (ix .gt. (Nx + 1)) .or. (iy .gt. (Ny + 1))) then
-        write (6, *) 'Bad ix and/or iy', x, y, z, ix, iy, iz, grid_obj%x(1), grid_obj%x(Nx), grid_obj%y(1), grid_obj%y(ny), myProc_
+        write (6, *) 'Bad ix and/or iy', x, y, z, ix, iy, iz, rtm_obj%x(1), rtm_obj%x(Nx), rtm_obj%y(1), rtm_obj%y(ny), myProc_
         write (6, *) 'Bad ix and/or iy', side, transmit
         call shd_mpi__abort('Error [mpi_integrateRay]: Bad ix and/or iy, see above.')
     end if

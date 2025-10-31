@@ -44,7 +44,11 @@ module shd_grid
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, isMpi_, &
                              is1DX_, is1DYx_, is1D_, &
                              isPol_, isSolar_, isThermal_
-    use globals_type,  only: shd_type_grid, shd_type_prp, shd_type_sfc, shd_type_ckd
+    use globals_type,  only: shd_type_rtm, &
+                             shd_type_grid, &
+                             shd_type_prp, &
+                             shd_type_sfc, &
+                             shd_type_ckd
 
     use shd_util, only: shd_util__findNextCell, &
                         shd_util__computePlanck, &
@@ -1603,7 +1607,7 @@ subroutine shd_grid__splitGrid(&
     &TEMP, PLANCK, DIRFLUX, SRCTYPE,&
     &SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN,&
     &UNITS, WAVENO, WAVELEN, ADAPTCRIT, ADAPTIND,&
-    &grid_obj, prp_obj, ckd_obj)
+    &rtm_obj, grid_obj, prp_obj, ckd_obj)
 
     !   Splits the cells that have a cell dividing criterion greater than
     ! CURSPLITACC if DOSPLIT is true.  The current splitting criterion
@@ -1611,6 +1615,7 @@ subroutine shd_grid__splitGrid(&
     ! grid point, grid cell, or spherical harmonic arrays (sizes given
     ! by MAXIG, MAXIC, MAXIV, MAXIDO) then the OUTOFMEM flag is returned true.
 
+    type(shd_type_rtm),  intent(in)    :: rtm_obj
     type(shd_type_grid), intent(inout) :: grid_obj
     type(shd_type_prp),  intent(in)    :: prp_obj
     type(shd_type_ckd),  intent(in)    :: ckd_obj
@@ -1752,7 +1757,8 @@ subroutine shd_grid__splitGrid(&
                 call shd_mpi__makeDirect(OLDNPTS + 1, BCFLAG,&
                     &IPFLAG, DELTAM, ML,&
                     &SOLARFLUX, SOLARMU, SOLARAZ,&
-                    &NX, NY, DIRFLUX, grid_obj, prp_obj, ckd_obj)
+                    &NX, NY, DIRFLUX,&
+                    &rtm_obj, grid_obj, prp_obj, ckd_obj)
             end if
         end if
     end if
