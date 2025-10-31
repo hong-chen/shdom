@@ -1144,7 +1144,7 @@ program shdom
 
     ! Read in previous run from binary file if desired
     call shd_io__restoreState(fileInp_sav,&
-        &doRadInit, doGridInit,fluxTot,&
+        &doRadInit, doGridInit, fluxTot,&
         &rtm_obj, grid_OBJ, shdo_OBJ)
 
 
@@ -1302,9 +1302,9 @@ program shdom
             ! For the output from the grid point arrays (Flux, Net flux, SH)
             !   we may need to interpolate the running k-distribution sum
             !   to the newly created grid points.
-            call shd_util__interpData(oldNpts, grid_obj%Npts, isFluxOut, isHROut, isSHOut,&
+            call shd_util__interpData(oldNpts, isFluxOut, isHROut, isSHOut,&
                 sumFluxTot_Out, sumFluxDir_Out, sumFluxDiv_Out, sumSH_Out,&
-                grid_obj%Ncell0, grid_obj%Ncell, grid_obj%i2Tree, grid_obj%i8Grid, grid_obj%xyz)
+                grid_obj)
         end if
 
         if (isFluxOut) then
@@ -1360,7 +1360,6 @@ program shdom
         if (verbose_ .ge. 5) write (6, '(A)') trim(adjustl(message))
     end if
 
-
     ! Output radiance and/or flux (and/or other radiative quantities)
     !╭────────────────────────────────────────────────────────────────────────────╮!
     shdo_obj%Nsh = shdo_obj%isrcJ(grid_obj%Npts + 1)
@@ -1387,18 +1386,19 @@ program shdom
             do iout = 1, Nout
                 if (type_Out(iout) .ne. 'V' .and. file_Out(iout)(1:4) .ne. 'NONE') then
                     call shd_io__outputResultMpi(shdo_obj%Nstokes, rtmAll_obj%Nx, rtmAll_obj%Ny, rtm_obj%Nz,&
-                        &Npts_tot, Ncell_tot, Nsh_tot,&
+                        &Npts_tot, Ncell_tot,&
+                        &Nsh_tot,&
                         &shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm, shdo_obj%Nmu, shdo_obj%Nphi, shdo_obj%Nang,&
                         &fileInp_sav, fileOut_sav,&
-                        &rtm_obj%flag_bc, rtm_obj%flag_ip, doDeltaM, grid_obj%type, src_obj%type,&
+                        &rtm_obj%flag_bc, rtm_obj%flag_ip, doDeltaM, src_obj%type,&
                         &src_obj%avgSolar, src_obj%avgMu, src_obj%avgAz, skyRad,&
                         &src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
                         &splitAcc, shAcc, solAcc, maxIter, totIter,&
-                        &xGrid_all, yGrid_all, grid_obj%z,&
+                        !&xGrid_all, yGrid_all,&
                         &fluxTot_all, fluxDiv_all,&
                         &Nsh_out, SH_all, irad, sumRad_Out,&
                         &type_Out(iout), parms_Out(1, iout), file_Out(iout),&
-                        &prp_obj, sfc_obj, ckd_obj, sen_obj)
+                        &grid_obj, prp_obj, sfc_obj, ckd_obj, sen_obj)
                 end if
             end do
 
@@ -1412,20 +1412,18 @@ program shdom
 
         do iout = 1, Nout
             if ((type_Out(iout) .ne. 'V') .and. (file_Out(iout)(1:4) .ne. 'NONE')) then
-                call shd_io__outputResult(shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, grid_obj%Nx, grid_obj%Ny, rtm_obj%Nz, grid_obj%Npts0, grid_obj%Npts, grid_obj%Ncell,&
+                call shd_io__outputResult(shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz,&
                     shdo_obj%Nsh, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm, shdo_obj%Nmu, shdo_obj%Nphi, shdo_obj%Nang,&
                     fileInp_sav, fileOut_sav,&
-                    rtm_obj%flag_bc, rtm_obj%flag_ip, doDeltaM, grid_obj%type, src_obj%type,&
+                    rtm_obj%flag_bc, rtm_obj%flag_ip, doDeltaM, src_obj%type,&
                     src_obj%avgSolar, src_obj%avgMu, src_obj%avgAz, skyRad,&
                     src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
                     splitAcc, shAcc, solAcc, maxIter, totIter,&
-                    grid_obj%x, grid_obj%y, grid_obj%z, grid_obj%xyz,&
-                    grid_obj%i2Tree, grid_obj%i8Grid, grid_obj%flag,&
                     rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%ipha, rtm_obj%temp,&
                     sumFluxTot_Out, sumFluxDir_Out, sumFluxDiv_Out,&
                     irad, sumRad_Out, Nsh_out, sumSH_Out, src1_Out,&
                     type_Out(iout), parms_Out(1, iout), file_Out(iout),&
-                    prp_obj, sfc_obj, ckd_obj, sen_obj)
+                    grid_obj, prp_obj, sfc_obj, ckd_obj, sen_obj)
             end if
         end do
     end if
@@ -1437,15 +1435,15 @@ program shdom
     if (isMasterProc) then
         do iout = 1, Nout
             if ((type_Out(iout) .eq. 'V')) then
-                call shd_io__outputCamRad(shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, grid_obj%Npts, grid_obj%Ncell,&
+                call shd_io__outputCamRad(shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz,&
                     &shdo_obj%Nsh, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm, shdo_obj%Nmu, shdo_obj%Nphi, shdo_obj%Nang,&
                     &fileInp_sav, fileOut_sav,&
-                    &rtm_obj%flag_bc, rtm_obj%flag_ip, doDeltaM, grid_obj%type, src_obj%type,&
+                    &rtm_obj%flag_bc, rtm_obj%flag_ip, doDeltaM, src_obj%type,&
                     &src_obj%avgSolar, src_obj%avgMu, src_obj%avgAz, skyRad,&
                     &src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
                     &splitAcc, shAcc, solAcc, maxIter, totIter,&
                     &ilos, sumCam_Out, parms_Out(1, iout), file_Out(iout),&
-                    &prp_obj, sfc_obj, ckd_obj, sen_obj)
+                    &grid_obj, prp_obj, sfc_obj, ckd_obj, sen_obj)
             end if
         end do
     end if
@@ -1455,10 +1453,7 @@ program shdom
     ! save state
     !╭────────────────────────────────────────────────────────────────────────────╮!
     if (maxIter .gt. 0) then
-        call shd_io__saveState(fileOut_sav, shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
-            &work, grid_obj%x, grid_obj%y, grid_obj%z,&
-            &grid_obj%Npts, grid_obj%Ncell, grid_obj%xyz, grid_obj%i8Grid, grid_obj%i6Cell, grid_obj%i2Tree,&
-            &grid_obj%flag, fluxTot, shdo_obj%isrcJ, shdo_obj%srcJ, shdo_obj%iradI, shdo_obj%radI)
+        call shd_io__saveState(fileOut_sav, work, fluxTot, rtm_obj, grid_obj, shdo_obj)
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
 

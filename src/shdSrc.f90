@@ -887,9 +887,8 @@ subroutine shd_src__integrateSrcOneRay(&
     YE = Y0
     ZE = Z0
     ! ZE = MAX(MIN(Z0,DBLE(grid_obj%z(NZ))),DBLE(grid_obj%z(1)))
-    call shd_util__findCell(NX, NY, NZ, grid_obj%x, grid_obj%y, grid_obj%z,&
-        &grid_obj%Ncell, grid_obj%i2Tree, grid_obj%i8Grid, grid_obj%flag, grid_obj%xyz,&
-        &BCFLAG, IPFLAG, XE, YE, ZE, ICELL)
+    call shd_util__findCell(NX, NY, NZ,&
+        &BCFLAG, IPFLAG, XE, YE, ZE, ICELL, grid_obj)
     ! print '(A,5(1X,F8.5),1X,I6)',&
     !     &'_integrateSrcOneRay:',X0,Y0,Z0,MU2,PHI2,ICELL
     IFACE = 0
@@ -1072,8 +1071,8 @@ subroutine shd_src__integrateSrcOneRay(&
         ! Get the next cell to go to
         INEXTCELL = grid_obj%i6Cell(IFACE, ICELL)
         if (INEXTCELL .lt. 0) then
-            call shd_util__findNextCell(XN, YN, ZN, IFACE, JFACE, ICELL, grid_obj%xyz,&
-                &grid_obj%i8Grid, grid_obj%i6Cell, grid_obj%i2Tree, grid_obj%flag, INEXTCELL)
+            call shd_util__findNextCell(XN, YN, ZN, IFACE, JFACE, ICELL,&
+                &INEXTCELL, grid_obj)
         end if
         ! If going to same or larger face then use previous face
         if ((grid_obj%i6Cell(IFACE, ICELL) .ge. 0) .and. (.not. OPENBCFACE)) then
@@ -1222,15 +1221,14 @@ subroutine shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
     XE = X0
     YE = Y0
     ZE = Z0
-    call shd_util__findCell(NX, NY, NZ, grid_obj%x, grid_obj%y, grid_obj%z,&
-        &grid_obj%Ncell, grid_obj%i2Tree, grid_obj%i8Grid, grid_obj%flag, grid_obj%xyz,&
-        &BCFLAG, IPFLAG, XE, YE, ZE, ICELL)
+    call shd_util__findCell(NX, NY, NZ,&
+        &BCFLAG, IPFLAG, XE, YE, ZE, ICELL, grid_obj)
     ! print '(A,5(1X,F8.5),1X,I6)', &
     !     &'_integrateSrc:', X0, Y0, Z0, MU, PHI, ICELL
-    call shd_util__interpTriLin(ICELL, grid_obj%i8Grid, grid_obj%xyz,&
-        &XE, YE, ZE, 1, EXTINCT, 1, 1, EXT1)
-    call shd_util__interpTriLin(ICELL, grid_obj%i8Grid, grid_obj%xyz,&
-        &XE, YE, ZE, NSTOKES, SOURCE, 1, NSTOKES, SRCEXT1)
+    call shd_util__interpTriLin(ICELL,&
+        &XE, YE, ZE, 1, EXTINCT, 1, 1, EXT1, grid_obj)
+    call shd_util__interpTriLin(ICELL,&
+        &XE, YE, ZE, NSTOKES, SOURCE, 1, NSTOKES, SRCEXT1, grid_obj)
     SRCEXT1(1) = max(0.0, SRCEXT1(1))
 
     ! Loop until finding a face with known radiances
@@ -1283,8 +1281,8 @@ subroutine shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
 
         ! Find the optical path across the grid cell and figure how
         !   many subgrid intervals to use
-        call shd_util__interpTriLin(ICELL, grid_obj%i8Grid, grid_obj%xyz,&
-            &XN, YN, ZN, 1, EXTINCT, 1, 1, EXTN)
+        call shd_util__interpTriLin(ICELL,&
+            &XN, YN, ZN, 1, EXTINCT, 1, 1, EXTN, grid_obj)
         TAUGRID = SO*0.5*(EXT1(1) + EXTN(1))
         NTAU = max(1, 1 + int(TAUGRID/TAUTOL))
         DELS = SO/NTAU
@@ -1306,11 +1304,11 @@ subroutine shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
             if (IT .eq. NTAU) then
                 EXT0(1) = EXTN(1)
             else
-                call shd_util__interpTriLin(ICELL, grid_obj%i8Grid, grid_obj%xyz,&
-                    &XI, YI, ZI, 1, EXTINCT, 1, 1, EXT0)
+                call shd_util__interpTriLin(ICELL,&
+                    &XI, YI, ZI, 1, EXTINCT, 1, 1, EXT0, grid_obj)
             end if
-            call shd_util__interpTriLin(ICELL, grid_obj%i8Grid, grid_obj%xyz,&
-                &XI, YI, ZI, NSTOKES, SOURCE, 1, NSTOKES, SRCEXT0)
+            call shd_util__interpTriLin(ICELL,&
+                &XI, YI, ZI, NSTOKES, SOURCE, 1, NSTOKES, SRCEXT0, grid_obj)
             SRCEXT0(1) = max(0.0, SRCEXT0(1))
 
             ! Compute the subgrid radiance: integration of the source fun
@@ -1353,8 +1351,8 @@ subroutine shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
         ! Get the next cell to go to
         INEXTCELL = grid_obj%i6Cell(IFACE, ICELL)
         if (INEXTCELL .lt. 0) then
-            call shd_util__findNextCell(XN, YN, ZN, IFACE, JFACE, ICELL, grid_obj%xyz,&
-                &grid_obj%i8Grid, grid_obj%i6Cell, grid_obj%i2Tree, grid_obj%flag, INEXTCELL)
+            call shd_util__findNextCell(XN, YN, ZN, IFACE, JFACE, ICELL,&
+                &INEXTCELL, grid_obj)
         end if
         ! Get the four grid points on the intersection face for
         !   telling if at the boundary
@@ -1392,8 +1390,8 @@ subroutine shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
         else if (GRIDRAD(1, I1) .ge. 0.0 .and. GRIDRAD(1, I2) .ge. 0.0 .and.&
             &GRIDRAD(1, I3) .ge. 0.0 .and. GRIDRAD(1, I4) .ge. 0.0) then
             VALIDRAD = .true.
-            call shd_util__interpTriLin(ICELL, grid_obj%i8Grid, grid_obj%xyz, XI, YI, ZI,&
-                &NSTOKES, GRIDRAD, 1, NSTOKES, RAD0)
+            call shd_util__interpTriLin(ICELL, XI, YI, ZI,&
+                &NSTOKES, GRIDRAD, 1, NSTOKES, RAD0, grid_obj)
             RADIANCE(:) = RADIANCE(:) + TRANSMIT*RAD0(:)
         else
             ICELL = INEXTCELL

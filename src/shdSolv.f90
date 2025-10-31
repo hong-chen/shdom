@@ -109,7 +109,7 @@ subroutine shd_solv__solveRte(&
     ! cells and points on output.
 
     type(shd_type_rtm),  intent(in)    :: rtm_obj
-    type(shd_type_grid), intent(in)    :: grid_obj
+    type(shd_type_grid), intent(inout) :: grid_obj
     type(shd_type_shdo), intent(inout) :: shdo_obj
     type(shd_type_src),  intent(in)    :: src_obj
     type(shd_type_prp),  intent(in)    :: prp_obj
@@ -156,8 +156,7 @@ subroutine shd_solv__solveRte(&
     ! Set up some things before solution loop
 
     ! Transfer the medium properties to the internal grid and add gas absorption
-    call shd_grid__interpGrid(grid_obj%Npts, grid_obj%xyz,&
-        &rtm_obj%temp, rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%ipha, prp_obj, ckd_obj)
+    call shd_grid__interpGrid(rtm_obj%temp, rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%ipha, grid_obj, prp_obj, ckd_obj)
 
     ! If Delta-M then scale the extinction, albedo, and Legendre terms
     ! Put the Planck blackbody source in rtm_obj%planck.
@@ -230,9 +229,9 @@ subroutine shd_solv__solveRte(&
     ! Surface initialization
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Make the pointers to the grid points on the top and bottom boundaries
-    call shd_grid__findBndryPnt(grid_obj%Npts, shdo_obj%Nang, MAXNBC, MAXBCRAD,&
-        &grid_obj%z(1), grid_obj%z(grid_obj%Nz), grid_obj%xyz,&
-        &NTOPPTS, NBOTPTS, BCPTR, sfc_obj)
+    call shd_grid__findBndryPnt(shdo_obj%Nang, MAXNBC, MAXBCRAD,&
+        &grid_obj%z(1), grid_obj%z(grid_obj%Nz),&
+        &NTOPPTS, NBOTPTS, BCPTR, grid_obj, sfc_obj)
     if (sfc_obj%type(1:1) .eq. 'V') then
         ! If this is a variable surface then bilinearly interpolate
         !   the surface temperature and reflection parameters to the
@@ -336,7 +335,8 @@ subroutine shd_solv__solveRte(&
                     &shdo_obj%iradI, shdo_obj%radI, shdo_obj%isrcJ, shdo_obj%srcJ, idsrc_Shdo,&
                     &rtm_obj%temp, rtm_obj%planck, DIRFLUX, src_obj%type,&
                     &SOLARFLUX, src_obj%avgMu, src_obj%avgAz, YlmSolar_Shdo,&
-                    &src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen, WORK, WORK2, grid_obj, prp_obj, ckd_obj)
+                    &src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen, WORK, WORK2,&
+                    &grid_obj, prp_obj, ckd_obj)
                 if (SOLCRIT .gt. STARTADAPTSOL) STARTSPLITACC = SPLITCRIT
             end if
             ! Find the maximum splitting criterion over all processors

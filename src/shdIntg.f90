@@ -159,9 +159,8 @@ subroutine shd_intg__integratePath(&
 
     ! Make the new grid cell/point sweeping order if need to
     if (grid_obj%Npts .ne. OLDNPTS) then
-        call shd_grid__makeSweepOrder(NX, NY, NZ, grid_obj%Npts, grid_obj%Ncell,&
-            &grid_obj%i8Grid, grid_obj%i2Tree, grid_obj%flag,&
-            &BCFLAG, IPFLAG, SWEEPORD, GRIDRAD)
+        call shd_grid__makeSweepOrder(NX, NY, NZ,&
+            &BCFLAG, IPFLAG, SWEEPORD, GRIDRAD, grid_obj)
     end if
 
     call shd_mpi__findBndryPnt(BCFLAG, IPFLAG, SWEEPORD,&
@@ -169,9 +168,9 @@ subroutine shd_intg__integratePath(&
 
     if (grid_obj%Npts .ne. OLDNPTS) then
         ! Make the pointers to the grid points on the top and bottom boundaries
-        call shd_grid__findBndryPnt(grid_obj%Npts, NANG, MAXNBC, MAXBCRAD, &
-            &grid_obj%z(1), grid_obj%z(NZ), grid_obj%xyz,&
-            &NTOPPTS, NBOTPTS, BCPTR, sfc_obj)
+        call shd_grid__findBndryPnt(NANG, MAXNBC, MAXBCRAD, &
+            &grid_obj%z(1), grid_obj%z(NZ),&
+            &NTOPPTS, NBOTPTS, BCPTR, grid_obj, sfc_obj)
         if (sfc_obj%type(1:1) .eq. 'V') then
             ! If this is a variable surface then bilinearly interpolate
             !   the surface temperature and reflection parameters to the
@@ -548,8 +547,8 @@ subroutine shd_intg__backIntegrate3D(&
                 ! Get the next cell to go to
                 INEXTCELL = grid_obj%i6Cell(IFACE, ICELL)
                 if (INEXTCELL .lt. 0) then
-                    call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, grid_obj%xyz,&
-                        &grid_obj%i8Grid, grid_obj%i6Cell, grid_obj%i2Tree, grid_obj%flag, INEXTCELL)
+                    call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL,&
+                        &INEXTCELL, grid_obj)
                 end if
 
                 ! Get the face grid pointers
@@ -963,8 +962,8 @@ subroutine shd_intg__backIntegrate3D_(&
                 ! Get the next cell to go to
                 INEXTCELL = grid_obj%i6Cell(IFACE, ICELL)
                 if (INEXTCELL .lt. 0) then
-                    call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, grid_obj%xyz,&
-                        &grid_obj%i8Grid, grid_obj%i6Cell, grid_obj%i2Tree, grid_obj%flag, INEXTCELL)
+                    call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL,&
+                        &INEXTCELL, grid_obj)
                 end if
 
                 ! Get the face grid pointers
@@ -1267,8 +1266,8 @@ subroutine shd_intg__backIntegrate2D(&
                 ! Get the next cell to go to
                 INEXTCELL = grid_obj%i6Cell(IFACE, ICELL)
                 if (INEXTCELL .lt. 0) then
-                    call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, grid_obj%xyz,&
-                        &grid_obj%i8Grid, grid_obj%i6Cell, grid_obj%i2Tree, grid_obj%flag, INEXTCELL)
+                    call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL,&
+                        &INEXTCELL, grid_obj)
                 end if
 
                 ! Get the face grid pointers

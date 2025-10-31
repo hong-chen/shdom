@@ -3309,8 +3309,8 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
         ! Get the next cell to go to
         INEXTCELL = grid_obj%i6Cell(IFACE, ICELL)
         if (INEXTCELL .lt. 0) then
-            call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, grid_obj%xyz,&
-                &grid_obj%i8Grid, grid_obj%i6Cell, grid_obj%i2Tree, grid_obj%flag, INEXTCELL)
+            call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL,&
+                &INEXTCELL, grid_obj)
         end if
 
         ! Get the face grid pointers

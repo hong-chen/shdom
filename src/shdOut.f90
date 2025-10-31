@@ -43,8 +43,13 @@ module shd_out
     use globals_cfg,   only: verbose_, charMaxLen_, is1DX_, &
                              isPol_, isPol4_, &
                              isSolar_, isThermal_
-    use globals_type,  only: shd_type_prp, shd_type_sfc, &
-                             shd_type_ckd, shd_type_sen
+    use globals_type,  only: shd_type_rtm, &
+                             shd_type_grid, &
+                             shd_type_shdo, &
+                             shd_type_prp, &
+                             shd_type_sfc, &
+                             shd_type_ckd, &
+                             shd_type_sen
 
     use shd_grid, only: shd_grid__testCellSplit
 
@@ -72,21 +77,19 @@ module shd_out
 contains
 
 subroutine shd_io__outputResult(&
-    &NSTOKES, NX, NY, NX1, NY1, NZ, NBPTS, NPTS, NCELLS,&
+    &NSTOKES, NX, NY, NZ,&
     &NSH, ML, MM, NLM,&
     &NMU, NPHI, NANG,&
     &INSAVEFILE, OUTSAVEFILE,&
-    &BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
+    &BCFLAG, IPFLAG, DELTAM, SRCTYPE,&
     &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
     &WAVENO, WAVELEN, UNITS,&
     &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
-    &XGRID, YGRID, ZGRID, GRIDPOS,&
-    &TREEPTR, GRIDPTR, CELLFLAGS,&
     &EXTINCT, ALBEDO, LEGEN, IPHASE, TEMP,&
     &FLUXES, DIRFLUX, FLUXDIV,&
     &IRAD, RADOUT, NSHOUT, SHTERMS, SOURCE1OUT,&
     &OUTTYPE, OUTPARMS, OUTFILE,&
-    &prp_obj, sfc_obj, ckd_obj, sen_obj)
+    &grid_obj, prp_obj, sfc_obj, ckd_obj, sen_obj)
 
     !   Writes the desired type of output file from the output fields
     ! with a header giving the input parameters.
@@ -96,33 +99,32 @@ subroutine shd_io__outputResult(&
     ! medium properties.
     ! See the overall program documentation for output parameters.
 
-    type(shd_type_prp), intent(in) :: prp_obj
-    type(shd_type_sfc), intent(in) :: sfc_obj
-    type(shd_type_ckd), intent(in) :: ckd_obj
-    type(shd_type_sen), intent(in) :: sen_obj
+    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_prp),  intent(in) :: prp_obj
+    type(shd_type_sfc),  intent(in) :: sfc_obj
+    type(shd_type_ckd),  intent(in) :: ckd_obj
+    type(shd_type_sen),  intent(in) :: sen_obj
 
-    integer, intent(in) :: NSTOKES, NX, NY, NX1, NY1, NZ, NBPTS, NPTS, NCELLS, NSH
+    integer, intent(in) :: NSTOKES, NX, NY, NZ, NSH
     integer, intent(in) :: ML, MM, NLM, NMU, NPHI, NANG
     integer, intent(in) :: BCFLAG, IPFLAG
     integer, intent(in) :: MAXITER, TOTITER, NSHOUT
-    integer, intent(in) :: TREEPTR(2, NCELLS), GRIDPTR(8, NCELLS)
-    integer*2, intent(in) :: CELLFLAGS(NCELLS), IPHASE(NPTS)
+    integer*2, intent(in) :: IPHASE(grid_obj%Npts)
     logical  , intent(in) :: DELTAM
     real, intent(in) :: SOLARFLUX, SOLARMU, SOLARAZ
     real, intent(in) :: SKYRAD
     real, intent(in) :: SOLACC, SPLITACC, SHACC
     real, intent(in) :: WAVENO(2), WAVELEN
-    real, intent(in) :: XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ), GRIDPOS(3, NPTS)
     real, intent(inout) :: OUTPARMS(*)
-    character(len=1), intent(in) :: SRCTYPE, UNITS, GRIDTYPE, OUTTYPE
+    character(len=1), intent(in) :: SRCTYPE, UNITS, OUTTYPE
     character(len=*), intent(in) :: INSAVEFILE, OUTSAVEFILE
     character(len=*), intent(in) :: OUTFILE
-    real, intent(in) :: EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, NPTS)
-    real, intent(in) :: TEMP(NPTS)
-    real, intent(in) :: FLUXES(2, NPTS), DIRFLUX(NPTS), FLUXDIV(NPTS)
+    real, intent(in) :: EXTINCT(grid_obj%Npts), ALBEDO(grid_obj%Npts), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, grid_obj%Npts)
+    real, intent(in) :: TEMP(grid_obj%Npts)
+    real, intent(in) :: FLUXES(2, grid_obj%Npts), DIRFLUX(grid_obj%Npts), FLUXDIV(grid_obj%Npts)
     real, intent(in) :: SOURCE1OUT(NSTOKES, *)
 
-    real, intent(in) :: RADOUT(NSTOKES, *), SHTERMS(NSHOUT, NPTS)
+    real, intent(in) :: RADOUT(NSTOKES, *), SHTERMS(NSHOUT, grid_obj%Npts)
     integer, intent(inout) :: IRAD
 
     integer IZ, I, K, N, NX2, NY2, J, JX, JY, ICELL
@@ -147,9 +149,9 @@ subroutine shd_io__outputResult(&
     OUTFILE_DATA = trim(adjustl(OUTFILE))//trim(adjustl(DATA_POSTFIX))
 
     GRIDNAME = 'EVEN (X,Y)  '
-    if (GRIDTYPE .eq. 'P') then
+    if (grid_obj%type .eq. 'P') then
         GRIDNAME = GRIDNAME(1:14)//'PROPERTY-FILE (Z) '
-    else if (GRIDTYPE .eq. 'F') then
+    else if (grid_obj%type .eq. 'F') then
         GRIDNAME = GRIDNAME(1:14)//'INPUT-FILE (Z)    '
     else
         GRIDNAME = GRIDNAME(1:14)//'EVEN (Z)          '
@@ -221,7 +223,7 @@ subroutine shd_io__outputResult(&
         &'   NSH=', NSH
     write (2, '(A,I1,3(A,I4),2(A,I8))') '!  NSTOKES=', NSTOKES,&
         &'   NX=', NX, '   NY=', NY, '   NZ=', NZ,&
-        &'    NPTS=', NPTS, '   NCELLS=', NCELLS
+        &'    NPTS=', grid_obj%Npts, '   NCELLS=', grid_obj%Ncell
     write (2, '(A,A)') '!  PROPERTY_FILE=', trim(prp_obj%fname)
     write (2, '(A,A,A,I2)') '!  CORRELATED_K-DIST_FILE=',&
         &trim(ckd_obj%fname), '   NUM_G=', ckd_obj%Ng
@@ -294,7 +296,7 @@ subroutine shd_io__outputResult(&
         ! Radiance output
         ! NXOUT
         !╭────────────────────────────────────────────────╮!
-        XDOMAIN = XGRID(NX + 1 - ibits(BCFLAG, 0, 1)) - XGRID(1) + 2*OUTPARMS(4)
+        XDOMAIN = grid_obj%x(NX + 1 - ibits(BCFLAG, 0, 1)) - grid_obj%x(1) + 2*OUTPARMS(4)
         STARTX = -OUTPARMS(4)
         if (OUTPARMS(2) .eq. 0.0) then
             NXOUT = 1
@@ -305,7 +307,7 @@ subroutine shd_io__outputResult(&
 
         ! NYOUT
         !╭────────────────────────────────────────────────╮!
-        YDOMAIN = YGRID(NY + 1 - ibits(BCFLAG, 1, 1)) - YGRID(1) + 2*OUTPARMS(5)
+        YDOMAIN = grid_obj%y(NY + 1 - ibits(BCFLAG, 1, 1)) - grid_obj%y(1) + 2*OUTPARMS(5)
         STARTY = -OUTPARMS(5)
         if (OUTPARMS(3) .eq. 0.0) then
             NYOUT = 1
@@ -316,7 +318,7 @@ subroutine shd_io__outputResult(&
 
         ! Z0
         !╭────────────────────────────────────────────────╮!
-        Z0 = min(max(OUTPARMS(1), ZGRID(1)), ZGRID(NZ))
+        Z0 = min(max(OUTPARMS(1), grid_obj%z(1)), grid_obj%z(NZ))
         !╰────────────────────────────────────────────────╯!
 
         ! NANGOUT
@@ -391,8 +393,8 @@ subroutine shd_io__outputResult(&
         ! NVAR=2 or 3, NSET=1, NX=NX, NY=NY, NZ=1
         if (nint(OUTPARMS(1)) .le. 1) then
 
-            write (2, '(A,F7.3)') '!    UPWELLING FLUX:     Z=', ZGRID(NZ)
-            write (2, '(A,F7.3)') '!    DOWNWELLING FLUX:   Z=', ZGRID(1)
+            write (2, '(A,F7.3)') '!    UPWELLING FLUX:     Z=', grid_obj%z(NZ)
+            write (2, '(A,F7.3)') '!    DOWNWELLING FLUX:   Z=', grid_obj%z(1)
 
             if (UNITS .eq. 'T') then
                 FORM = '(2(1X,F7.3),1X,2(2X,F6.2))'
@@ -413,36 +415,36 @@ subroutine shd_io__outputResult(&
             write (2, '(A)') '! The following contains information for binary data intepretation:'
             write (2, '(A)') '! F1'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-            write (2, '(A, 5(I10,A))') '! ', NX1, ',', NY1, ',', 1, ',', 1, ',', NVAR, ''
+            write (2, '(A, 5(I10,A))') '! ', grid_obj%Nx, ',', grid_obj%Ny, ',', 1, ',', 1, ',', NVAR, ''
             !╰────────────────────────────────────────────────╯!
 
             ! binary data
             !╭────────────────────────────────────────────────╮!
             if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <F1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
 
-            N = NX1*NY1
+            N = grid_obj%Nx*grid_obj%Ny
             IDATA = 0
-            call shd_io__outputDataBin(C*FLUXES(2, NZ:NBPTS:NZ), 1, N, IDATA, OUTFILE_DATA)
+            call shd_io__outputDataBin(C*FLUXES(2, NZ:grid_obj%Npts0:NZ), 1, N, IDATA, OUTFILE_DATA)
 
             IDATA = 0
-            call shd_io__outputDataBin(C*FLUXES(1, 1:NBPTS:NZ), 1, N, IDATA, OUTFILE_DATA, 'ADD')
+            call shd_io__outputDataBin(C*FLUXES(1, 1:grid_obj%Npts0:NZ), 1, N, IDATA, OUTFILE_DATA, 'ADD')
 
             if (isSolar_) then
                 IDATA = 0
-                call shd_io__outputDataBin(DIRFLUX(1:NBPTS:NZ), 1, N, IDATA, OUTFILE_DATA, 'ADD')
+                call shd_io__outputDataBin(DIRFLUX(1:grid_obj%Npts0:NZ), 1, N, IDATA, OUTFILE_DATA, 'ADD')
             end if
             !╰────────────────────────────────────────────────╯!
 
             ! original
             !╭────────────────────────────────────────────────╮!
-            !do I = 1, NBPTS, NZ
-            !    if (GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.&
-            !        & GRIDPOS(2, I) .lt. YGRID(NY + 1)) then
+            !do I = 1, grid_obj%Npts0, NZ
+            !    if  (grid_obj%xyz(1, I) .lt. grid_obj%x(NX + 1) .and.&
+            !        &grid_obj%xyz(2, I) .lt. grid_obj%y(NY + 1)) then
             !        if (SRCTYPE .ne. 'T') then
-            !            write (2, FORM) GRIDPOS(1, I), GRIDPOS(2, I),&
+            !            write (2, FORM) grid_obj%xyz(1, I), grid_obj%xyz(2, I),&
             !                & C*FLUXES(2, I + NZ - 1), C*FLUXES(1, I), DIRFLUX(I)
             !        else
-            !            write (2, FORM) GRIDPOS(1, I), GRIDPOS(2, I),&
+            !            write (2, FORM) grid_obj%xyz(1, I), grid_obj%xyz(2, I),&
             !                & C*FLUXES(2, I + NZ - 1), C*FLUXES(1, I)
             !        end if
             !    end if
@@ -453,13 +455,13 @@ subroutine shd_io__outputResult(&
         ! NVAR=2 or 3, NSET=1, NX=NXOUT, NY=NYOUT, NZ=1
         else if (nint(OUTPARMS(1)) .eq. 2) then
 
-            Z0 = min(max(OUTPARMS(2), ZGRID(1)), ZGRID(NZ))
+            Z0 = min(max(OUTPARMS(2), grid_obj%z(1)), grid_obj%z(NZ))
             if (OUTPARMS(3) .eq. 0.0) OUTPARMS(3) = 1.0
             NX2 = NX + 1 - ibits(BCFLAG, 0, 1)
-            NXOUT = max(1, nint((XGRID(NX2) - XGRID(1))/OUTPARMS(3)))
+            NXOUT = max(1, nint((grid_obj%x(NX2) - grid_obj%x(1))/OUTPARMS(3)))
             if (OUTPARMS(4) .eq. 0.0) OUTPARMS(4) = 1.0
             NY2 = NY + 1 - ibits(BCFLAG, 1, 1)
-            NYOUT = max(1, nint((YGRID(NY2) - YGRID(1))/OUTPARMS(4)))
+            NYOUT = max(1, nint((grid_obj%y(NY2) - grid_obj%y(1))/OUTPARMS(4)))
             write (2, '(A,F7.3,2(A,I4))') '!    UPWELLING FLUX:     Z=', Z0,&
                 & '    NXO=', NXOUT, '    NYO=', NYOUT
             write (2, '(A,F7.3)') '!    DOWNWELLING FLUX:   Z=', Z0
@@ -484,20 +486,19 @@ subroutine shd_io__outputResult(&
             allocate(FDIR(NXOUT*NYOUT))
 
             IDATA = 0
-            Y0 = YGRID(1)
+            Y0 = grid_obj%y(1)
             do JY = 1, NYOUT
-                X0 = XGRID(1)
+                X0 = grid_obj%x(1)
                 do JX = 1, NXOUT
                     IDATA = IDATA + 1
-                    call shd_util__findCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
-                        & NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS,&
-                        & BCFLAG, IPFLAG, X0, Y0, Z0, ICELL)
-                    call shd_util__interpTriLin(ICELL, GRIDPTR, GRIDPOS,&
-                        & X0, Y0, Z0, 2, FLUXES, 1, 1, FDN(IDATA))
-                    call shd_util__interpTriLin(ICELL, GRIDPTR, GRIDPOS,&
-                        & X0, Y0, Z0, 2, FLUXES, 2, 1, FUP(IDATA))
-                    call shd_util__interpTriLin(ICELL, GRIDPTR, GRIDPOS,&
-                        & X0, Y0, Z0, 1, DIRFLUX, 1, 1, FDIR(IDATA))
+                    call shd_util__findCell(NX, NY, NZ,&
+                        & BCFLAG, IPFLAG, X0, Y0, Z0, ICELL, grid_obj)
+                    call shd_util__interpTriLin(ICELL,&
+                        & X0, Y0, Z0, 2, FLUXES, 1, 1, FDN(IDATA), grid_obj)
+                    call shd_util__interpTriLin(ICELL,&
+                        & X0, Y0, Z0, 2, FLUXES, 2, 1, FUP(IDATA), grid_obj)
+                    call shd_util__interpTriLin(ICELL,&
+                        & X0, Y0, Z0, 1, DIRFLUX, 1, 1, FDIR(IDATA), grid_obj)
                     X0 = X0 + OUTPARMS(3)
                 end do
                 Y0 = Y0 + OUTPARMS(4)
@@ -535,19 +536,18 @@ subroutine shd_io__outputResult(&
 
             ! original
             !╭────────────────────────────────────────────────╮!
-            !Y0 = YGRID(1)
+            !Y0 = grid_obj%y(1)
             !do JY = 1, NYOUT
-            !    X0 = XGRID(1)
+            !    X0 = grid_obj%x(1)
             !    do JX = 1, NXOUT
-            !        call shd_util__findCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
-            !            & NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS,&
-            !            & BCFLAG, IPFLAG, X0, Y0, Z0, ICELL)
-            !        call shd_util__interpTriLin(ICELL, GRIDPTR, GRIDPOS,&
-            !            & X0, Y0, Z0, 2, FLUXES, 1, 1, FDN)
-            !        call shd_util__interpTriLin(ICELL, GRIDPTR, GRIDPOS,&
-            !            & X0, Y0, Z0, 2, FLUXES, 2, 1, FUP)
-            !        call shd_util__interpTriLin(ICELL, GRIDPTR, GRIDPOS,&
-            !            & X0, Y0, Z0, 1, DIRFLUX, 1, 1, FDIR)
+            !        call shd_util__findCell(NX, NY, NZ,&
+            !            & BCFLAG, IPFLAG, X0, Y0, Z0, ICELL, grid_obj)
+            !        call shd_util__interpTriLin(ICELL,&
+            !            & X0, Y0, Z0, 2, FLUXES, 1, 1, FDN, grid_obj)
+            !        call shd_util__interpTriLin(ICELL,&
+            !            & X0, Y0, Z0, 2, FLUXES, 2, 1, FUP, grid_obj)
+            !        call shd_util__interpTriLin(ICELL,&
+            !            & X0, Y0, Z0, 1, DIRFLUX, 1, 1, FDIR, grid_obj)
             !        if (SRCTYPE .ne. 'T') then
             !            write (2, FORM) X0, Y0, C*FUP, C*FDN, FDIR
             !        else
@@ -560,7 +560,7 @@ subroutine shd_io__outputResult(&
             !╰────────────────────────────────────────────────╯!
 
         ! Format 3 is domain averaged vertical profile
-        ! NVAR=2 or 3, NSET=1, NX=NX1, NY=NY1, NZ=1
+        ! NVAR=2 or 3, NSET=1, NX=grid_obj%Nx, NY=grid_obj%Ny, NZ=1
         else if (nint(OUTPARMS(1)) .eq. 3) then
 
             if (UNITS .eq. 'T') then
@@ -588,9 +588,9 @@ subroutine shd_io__outputResult(&
                 SUM2(IZ) = 0.0
                 SUM3(IZ) = 0.0
                 N = 0
-                do I = IZ, NBPTS, NZ
-                    if (GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.&
-                        & GRIDPOS(2, I) .lt. YGRID(NY + 1)) then
+                do I = IZ, grid_obj%Npts0, NZ
+                    if  (grid_obj%xyz(1, I) .lt. grid_obj%x(NX + 1) .and.&
+                        &grid_obj%xyz(2, I) .lt. grid_obj%y(NY + 1)) then
                         SUM1(IZ) = SUM1(IZ) + FLUXES(1, I)
                         SUM2(IZ) = SUM2(IZ) + FLUXES(2, I)
                         SUM3(IZ) = SUM3(IZ) + DIRFLUX(I)
@@ -635,9 +635,9 @@ subroutine shd_io__outputResult(&
             !    SUM2 = 0.0
             !    SUM3 = 0.0
             !    N = 0
-            !    do I = IZ, NBPTS, NZ
-            !        if (GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.&
-            !            & GRIDPOS(2, I) .lt. YGRID(NY + 1)) then
+            !    do I = IZ, grid_obj%Npts0, NZ
+            !        if  (grid_obj%xyz(1, I) .lt. grid_obj%x(NX + 1) .and.&
+            !            &grid_obj%xyz(2, I) .lt. grid_obj%y(NY + 1)) then
             !            SUM1 = SUM1 + FLUXES(1, I)
             !            SUM2 = SUM2 + FLUXES(2, I)
             !            SUM3 = SUM3 + DIRFLUX(I)
@@ -645,23 +645,23 @@ subroutine shd_io__outputResult(&
             !        end if
             !    end do
             !    if (SRCTYPE .ne. 'T') then
-            !        write (2, FORM) ZGRID(IZ), C*SUM2/N, C*SUM1/N, SUM3/N
+            !        write (2, FORM) grid_obj%z(IZ), C*SUM2/N, C*SUM1/N, SUM3/N
             !    else
-            !        write (2, FORM) ZGRID(IZ), C*SUM2/N, C*SUM1/N
+            !        write (2, FORM) grid_obj%z(IZ), C*SUM2/N, C*SUM1/N
             !    end if
             !end do
             !╰────────────────────────────────────────────────╯!
 
         ! Format 4 is fluxes at every base grid point
         ! Format 5 is fluxes at every grid point
-        ! NVAR=2 or 3, NSET=1, NX=NX1, NY=NY1, NZ=NZ
+        ! NVAR=2 or 3, NSET=1, NX=grid_obj%Nx, NY=grid_obj%Ny, NZ=NZ
         else if (nint(OUTPARMS(1)) .ge. 4) then
 
             if (nint(OUTPARMS(1)) .eq. 5) then
-                N = NPTS
+                N = grid_obj%Npts
                 ALLGRID = .true.
             else
-                N = NBPTS
+                N = grid_obj%Npts0
                 ALLGRID = .false.
             end if
 
@@ -691,7 +691,7 @@ subroutine shd_io__outputResult(&
             else
                 write (2, '(A)') '! F4'
                 write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-                write (2, '(A, 5(I10,A))') '! ', NX1, ',', NY1, ',', NZ, ',', 1, ',', NVAR, ''
+                write (2, '(A, 5(I10,A))') '! ', grid_obj%Nx, ',', grid_obj%Ny, ',', NZ, ',', 1, ',', NVAR, ''
             end if
             !╰────────────────────────────────────────────────╯!
 
@@ -717,20 +717,20 @@ subroutine shd_io__outputResult(&
             ! add grid positions (or binary data cannot be reconstructed)
             if (ALLGRID) then
                 IDATA = 0
-                call shd_io__outputDataBin(GRIDPOS(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
+                call shd_io__outputDataBin(grid_obj%xyz(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
             end if
             !╰────────────────────────────────────────────────╯!
 
             ! original
             !╭────────────────────────────────────────────────╮!
             !do I = 1, N
-            !    if ((GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.&
-            !        & GRIDPOS(2, I) .lt. YGRID(NY + 1)) .or. ALLGRID) then
+            !    if ((grid_obj%xyz(1, I) .lt. grid_obj%x(NX + 1) .and.&
+            !        &grid_obj%xyz(2, I) .lt. grid_obj%y(NY + 1)) .or. ALLGRID) then
             !        if (SRCTYPE .ne. 'T') then
-            !            write (2, FORM) GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I),&
+            !            write (2, FORM) grid_obj%xyz(1, I), grid_obj%xyz(2, I), grid_obj%xyz(3, I),&
             !                & C*FLUXES(2, I), C*FLUXES(1, I), DIRFLUX(I)
             !        else
-            !            write (2, FORM) GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I),&
+            !            write (2, FORM) grid_obj%xyz(1, I), grid_obj%xyz(2, I), grid_obj%xyz(3, I),&
             !                & C*FLUXES(2, I), C*FLUXES(1, I)
             !        end if
             !    end if
@@ -756,9 +756,9 @@ subroutine shd_io__outputResult(&
             do IZ = 1, NZ
                 SUM1(IZ) = 0.0
                 N = 0
-                do I = IZ, NBPTS, NZ
-                    if (GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.&
-                        & GRIDPOS(2, I) .lt. YGRID(NY + 1)) then
+                do I = IZ, grid_obj%Npts0, NZ
+                    if  (grid_obj%xyz(1, I) .lt. grid_obj%x(NX + 1) .and.&
+                        &grid_obj%xyz(2, I) .lt. grid_obj%y(NY + 1)) then
                         SUM1(IZ) = SUM1(IZ) + FLUXDIV(I)
                         N = N + 1
                     end if
@@ -789,14 +789,14 @@ subroutine shd_io__outputResult(&
             !do IZ = 1, NZ
             !    SUM = 0.0
             !    N = 0
-            !    do I = IZ, NBPTS, NZ
-            !        if (GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.&
-            !            & GRIDPOS(2, I) .lt. YGRID(NY + 1)) then
+            !    do I = IZ, grid_obj%Npts0, NZ
+            !        if  (grid_obj%xyz(1, I) .lt. grid_obj%x(NX + 1) .and.&
+            !            &grid_obj%xyz(2, I) .lt. grid_obj%y(NY + 1)) then
             !            SUM = SUM + FLUXDIV(I)
             !            N = N + 1
             !        end if
             !    end do
-            !    write (2, '(1X,F7.3,2X,E13.5)') ZGRID(IZ), -SUM/N
+            !    write (2, '(1X,F7.3,2X,E13.5)') grid_obj%z(IZ), -SUM/N
             !end do
             !╰────────────────────────────────────────────────╯!
 
@@ -805,10 +805,10 @@ subroutine shd_io__outputResult(&
             ! Format 2 is flux convergence for every base grid point
             ! Format 3 is flux convergence for every grid point
             if (nint(OUTPARMS(1)) .eq. 3) then
-                N = NPTS
+                N = grid_obj%Npts
                 ALLGRID = .true.
             else
-                N = NBPTS
+                N = grid_obj%Npts0
                 ALLGRID = .false.
             end if
 
@@ -825,7 +825,7 @@ subroutine shd_io__outputResult(&
             else
                 write (2, '(A)') '! H2'
                 write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-                write (2, '(A, 5(I10,A))') '! ', NX1, ',', NY1, ',', NZ, ',', 1, ',', NVAR, ''
+                write (2, '(A, 5(I10,A))') '! ', grid_obj%Nx, ',', grid_obj%Ny, ',', NZ, ',', 1, ',', NVAR, ''
             end if
             !╰────────────────────────────────────────────────╯!
 
@@ -843,17 +843,17 @@ subroutine shd_io__outputResult(&
             ! add grid positions (or binary data cannot be reconstructed)
             if (ALLGRID) then
                 IDATA = 0
-                call shd_io__outputDataBin(GRIDPOS(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
+                call shd_io__outputDataBin(grid_obj%xyz(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
             end if
             !╰────────────────────────────────────────────────╯!
 
             ! original
             !╭────────────────────────────────────────────────╮!
             !do I = 1, N
-            !    if ((GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.&
-            !        & GRIDPOS(2, I) .lt. YGRID(NY + 1)) .or. ALLGRID) then
+            !    if ((grid_obj%xyz(1, I) .lt. grid_obj%x(NX + 1) .and.&
+            !        &grid_obj%xyz(2, I) .lt. grid_obj%y(NY + 1)) .or. ALLGRID) then
             !        write (2, '(3(1X,F7.3),2X,E13.5)')&
-            !            & GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I), -FLUXDIV(I)
+            !            & grid_obj%xyz(1, I), grid_obj%xyz(2, I), grid_obj%xyz(3, I), -FLUXDIV(I)
             !    end if
             !end do
             !╰────────────────────────────────────────────────╯!
@@ -866,10 +866,10 @@ subroutine shd_io__outputResult(&
     else if (OUTTYPE .eq. 'S') then
 
         if (nint(OUTPARMS(1)) .eq. 2) then
-            N = NPTS
+            N = grid_obj%Npts
             ALLGRID = .true.
         else
-            N = NBPTS
+            N = grid_obj%Npts0
             ALLGRID = .false.
         end if
 
@@ -902,7 +902,7 @@ subroutine shd_io__outputResult(&
         else
             write (2, '(A)') '! S1'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-            write (2, '(A, 5(I10,A))') '! ', NX1, ',', NY1, ',', NZ, ',', 1, ',', NVAR, ''
+            write (2, '(A, 5(I10,A))') '! ', grid_obj%Nx, ',', grid_obj%Ny, ',', NZ, ',', 1, ',', NVAR, ''
         end if
         !╰────────────────────────────────────────────────╯!
 
@@ -925,7 +925,7 @@ subroutine shd_io__outputResult(&
         ! add grid positions (or binary data cannot be reconstructed)
         if (ALLGRID) then
             IDATA = 0
-            call shd_io__outputDataBin(GRIDPOS(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
+            call shd_io__outputDataBin(grid_obj%xyz(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
         end if
 
         deallocate(SHTERM5)
@@ -937,10 +937,10 @@ subroutine shd_io__outputResult(&
         !    write (2, '(A,A)') '!    X       Y        Z         Imean',&
         !        &'          Fx           Fy           Fz       HOrms'
         !    do I = 1, N
-        !        if ((GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.&
-        !            &GRIDPOS(2, I) .lt. YGRID(NY + 1)) .or. ALLGRID) then
+        !        if ((grid_obj%xyz(1, I) .lt. grid_obj%x(NX + 1) .and.&
+        !            &grid_obj%xyz(2, I) .lt. grid_obj%y(NY + 1)) .or. ALLGRID) then
         !            write (2, '(3(1X,F7.3),1X,4(1X,E12.5),1X,F6.3)')&
-        !                &GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I),&
+        !                &grid_obj%xyz(1, I), grid_obj%xyz(2, I), grid_obj%xyz(3, I),&
         !                &SHTERMS(1, I), SHTERMS(2, I), SHTERMS(3, I), SHTERMS(4, I),&
         !                &SHTERMS(5, I)/max(1e-20, SHTERMS(1, I))
         !        end if
@@ -949,10 +949,10 @@ subroutine shd_io__outputResult(&
         !    write (2, '(A,A)') '!    X       Y        Z         Imean',&
         !        &'          Fx           Fy           Fz '
         !    do I = 1, N
-        !        if ((GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.&
-        !            &GRIDPOS(2, I) .lt. YGRID(NY + 1)) .or. ALLGRID) then
+        !        if ((grid_obj%xyz(1, I) .lt. grid_obj%x(NX + 1) .and.&
+        !            &grid_obj%xyz(2, I) .lt. grid_obj%y(NY + 1)) .or. ALLGRID) then
         !            write (2, '(3(1X,F7.3),1X,4(1X,E12.5))')&
-        !                &GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I),&
+        !                &grid_obj%xyz(1, I), grid_obj%xyz(2, I), grid_obj%xyz(3, I),&
         !                &SHTERMS(1, I), SHTERMS(2, I), SHTERMS(3, I), SHTERMS(4, I)
         !        end if
         !    end do
@@ -966,10 +966,10 @@ subroutine shd_io__outputResult(&
         ! J source function output: source function for a specified ang
         !   at every grid point
         if (nint(OUTPARMS(1)) .eq. 2) then
-            N = NPTS
+            N = grid_obj%Npts
             ALLGRID = .true.
         else
-            N = NBPTS
+            N = grid_obj%Npts0
             ALLGRID = .false.
         end if
 
@@ -991,7 +991,7 @@ subroutine shd_io__outputResult(&
         else
             write (2, '(A)') '! J1'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-            write (2, '(A, 5(I10,A))') '! ', NX1, ',', NY1, ',', NZ, ',', 1, ',', NVAR, ''
+            write (2, '(A, 5(I10,A))') '! ', grid_obj%Nx, ',', grid_obj%Ny, ',', NZ, ',', 1, ',', NVAR, ''
         end if
         !╰────────────────────────────────────────────────╯!
 
@@ -1011,17 +1011,17 @@ subroutine shd_io__outputResult(&
         ! add grid positions (or binary data cannot be reconstructed)
         if (ALLGRID) then
             IDATA = 0
-            call shd_io__outputDataBin(GRIDPOS(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
+            call shd_io__outputDataBin(grid_obj%xyz(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
         end if
         !╰────────────────────────────────────────────────╯!
 
         ! original
         !╭────────────────────────────────────────────────╮!
         !do I = 1, N
-        !    if ((GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.&
-        !        & GRIDPOS(2, I) .lt. YGRID(NY + 1)) .or. ALLGRID) then
+        !    if ((grid_obj%xyz(1, I) .lt. grid_obj%x(NX + 1) .and.&
+        !        &grid_obj%xyz(2, I) .lt. grid_obj%y(NY + 1)) .or. ALLGRID) then
         !        write (2, '(3(1X,F7.3),5(1X,E12.5))')&
-        !            & GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I),&
+        !            & grid_obj%xyz(1, I), grid_obj%xyz(2, I), grid_obj%xyz(3, I),&
         !            & EXTINCT(I), SOURCE1OUT(:, I)
         !    end if
         !end do
@@ -1035,10 +1035,10 @@ subroutine shd_io__outputResult(&
         NVAR = 4
 
         if (nint(OUTPARMS(1)) .eq. 2) then
-            N = NPTS
+            N = grid_obj%Npts
             ALLGRID = .true.
         else
-            N = NBPTS
+            N = grid_obj%Npts0
             ALLGRID = .false.
         end if
 
@@ -1068,7 +1068,7 @@ subroutine shd_io__outputResult(&
         else
             write (2, '(A)') '! M1'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-            write (2, '(A, 5(I10,A))') '! ', NX1, ',', NY1, ',', NZ, ',', 1, ',', NVAR, ''
+            write (2, '(A, 5(I10,A))') '! ', grid_obj%Nx, ',', grid_obj%Ny, ',', NZ, ',', 1, ',', NVAR, ''
         end if
         !╰────────────────────────────────────────────────╯!
 
@@ -1092,7 +1092,7 @@ subroutine shd_io__outputResult(&
         ! add grid positions (or binary data cannot be reconstructed)
         if (ALLGRID) then
             IDATA = 0
-            call shd_io__outputDataBin(GRIDPOS(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
+            call shd_io__outputDataBin(grid_obj%xyz(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
         end if
 
         deallocate(ASYM)
@@ -1107,10 +1107,10 @@ subroutine shd_io__outputResult(&
         !    else
         !        ASYM = LEGEN(1, 1, I)
         !    end if
-        !    if ((GRIDPOS(1, I) .lt. XGRID(NX + 1) .and.&
-        !        & GRIDPOS(2, I) .lt. YGRID(NY + 1)) .or. ALLGRID) then
+        !    if ((grid_obj%xyz(1, I) .lt. grid_obj%x(NX + 1) .and.&
+        !        &grid_obj%xyz(2, I) .lt. grid_obj%y(NY + 1)) .or. ALLGRID) then
         !        write (2, '(3(1X,F7.3),1X,F10.6,1X,F8.6,1X,F8.5,1X,F7.2)')&
-        !            & GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I),&
+        !            & grid_obj%xyz(1, I), grid_obj%xyz(2, I), grid_obj%xyz(3, I),&
         !            & EXTINCT(I), ALBEDO(I), ASYM, TEMP(I)
         !    end if
         !end do
@@ -1187,17 +1187,17 @@ subroutine shd_io__radShiftCorr(&
 end subroutine shd_io__radShiftCorr
 
 subroutine shd_io__outputResultMpi(&
-    &NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+    &NSTOKES, NX, NY, NZ,&
+    &Npts_tot, Ncell_tot,&
     &NSH, ML, MM, NLM, NMU, NPHI, NANG,&
     &INSAVEFILE, OUTSAVEFILE,&
-    &BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
+    &BCFLAG, IPFLAG, DELTAM, SRCTYPE,&
     &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
     &WAVENO, WAVELEN, UNITS,&
     &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
-    &XGRID, YGRID, ZGRID,&
     &FLUXES, FLUXDIV, NSHOUT, SHTERMS, IRAD, RADOUT,&
     &OUTTYPE, OUTPARMS, OUTFILE,&
-    &prp_obj, sfc_obj, ckd_obj, sen_obj)
+    &grid_obj, prp_obj, sfc_obj, ckd_obj, sen_obj)
 
     ! Writes the desired type of output file from the output fields
     ! with a header giving the input parameters.
@@ -1206,12 +1206,13 @@ subroutine shd_io__outputResultMpi(&
     ! convergence), 'S' - for spherical harmonic terms
     ! See the overall program documentation for output parameters.
 
-    type(shd_type_prp), intent(in) :: prp_obj
-    type(shd_type_sfc), intent(in) :: sfc_obj
-    type(shd_type_ckd), intent(in) :: ckd_obj
-    type(shd_type_sen), intent(in) :: sen_obj
+    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_prp),  intent(in) :: prp_obj
+    type(shd_type_sfc),  intent(in) :: sfc_obj
+    type(shd_type_ckd),  intent(in) :: ckd_obj
+    type(shd_type_sen),  intent(in) :: sen_obj
 
-    integer NSTOKES, NX, NY, NZ, NPTS, NCELLS, NSH
+    integer NSTOKES, NX, NY, NZ, NSH, Npts_tot, Ncell_tot
     integer ML, MM, NLM, NMU, NPHI, NANG
     integer BCFLAG, IPFLAG
     integer MAXITER, TOTITER, IRAD, NSHOUT
@@ -1220,9 +1221,8 @@ subroutine shd_io__outputResultMpi(&
     real SKYRAD
     real SOLACC, SPLITACC, SHACC
     real WAVENO(2), WAVELEN
-    real XGRID(NX), YGRID(NY), ZGRID(NZ)
     real OUTPARMS(*)
-    character(len=1), intent(in) :: SRCTYPE, UNITS, GRIDTYPE, OUTTYPE
+    character(len=1), intent(in) :: SRCTYPE, UNITS, OUTTYPE
     character(len=*), intent(in) :: INSAVEFILE, OUTSAVEFILE
     character(len=*), intent(in) :: OUTFILE
     real FLUXES(3, NZ, NY, NX), FLUXDIV(NZ, NY, NX)
@@ -1248,9 +1248,9 @@ subroutine shd_io__outputResultMpi(&
     OUTFILE_DATA = trim(adjustl(OUTFILE))//trim(adjustl(DATA_POSTFIX))
 
     GRIDNAME = 'EVEN (X,Y)  '
-    if (GRIDTYPE .eq. 'P') then
+    if (grid_obj%type .eq. 'P') then
         GRIDNAME = GRIDNAME(1:14)//'PROPERTY-FILE (Z) '
-    else if (GRIDTYPE .eq. 'F') then
+    else if (grid_obj%type .eq. 'F') then
         GRIDNAME = GRIDNAME(1:14)//'INPUT-FILE (Z)    '
     else
         GRIDNAME = GRIDNAME(1:14)//'EVEN (Z)          '
@@ -1320,7 +1320,7 @@ subroutine shd_io__outputResultMpi(&
         & '   NSH=', NSH
     write (2, '(A,I1,3(A,I4),2(A,I8))') '!  NSTOKES=', NSTOKES,&
         & '   NX=', NX, '   NY=', NY, '   NZ=', NZ,&
-        & '   NPTS=', NPTS, '   NCELLS=', NCELLS
+        & '   NPTS=', Npts_tot, '   NCELLS=', Ncell_tot
     write (2, '(A,A)') '!  PROPERTY_FILE=', trim(prp_obj%fname)
     write (2, '(A,A,A,I2)') '!  CORRELATED_K-DIST_FILE=',&
         & trim(ckd_obj%fname), '   NUM_G=', ckd_obj%Ng
@@ -1393,7 +1393,7 @@ subroutine shd_io__outputResultMpi(&
         else
             NYOUT = max(1, nint(prp_obj%yDomain/OUTPARMS(3)))
         end if
-        Z0 = min(max(OUTPARMS(1), ZGRID(1)), ZGRID(NZ))
+        Z0 = min(max(OUTPARMS(1), grid_obj%z(1)), grid_obj%z(NZ))
         NANGOUT = nint(OUTPARMS(6))
 
         write (2, '(A,F7.3,3(A,I10))') '!    RADIANCE AT Z=', Z0,&
@@ -1435,7 +1435,7 @@ subroutine shd_io__outputResultMpi(&
 
         if (IPFLAG .eq. 0) then
             call shd_io__radShiftCorr(RADOUT(:, 1:NXOUT*NYOUT*NANGOUT), NSTOKES, NANGOUT, NXOUT, NYOUT,&
-                OUTPARMS(2), OUTPARMS(3), prp_obj%xDomain, prp_obj%yDomain, Z0-ZGRID(1), MU_SET, PHI_SET)
+                OUTPARMS(2), OUTPARMS(3), prp_obj%xDomain, prp_obj%yDomain, Z0-grid_obj%z(1), MU_SET, PHI_SET)
         end if
 
         deallocate(MU_SET, PHI_SET)
@@ -1494,8 +1494,8 @@ subroutine shd_io__outputResultMpi(&
 
         if (nint(OUTPARMS(1)) .le. 1) then
 
-            write (2, '(A,F7.3)') '!    UPWELLING FLUX:     Z=', ZGRID(NZ)
-            write (2, '(A,F7.3)') '!    DOWNWELLING FLUX:   Z=', ZGRID(1)
+            write (2, '(A,F7.3)') '!    UPWELLING FLUX:     Z=', grid_obj%z(NZ)
+            write (2, '(A,F7.3)') '!    DOWNWELLING FLUX:   Z=', grid_obj%z(1)
             if (UNITS .eq. 'T') then
                 FORM = '(2(1X,F7.3),1X,2(2X,F6.2))'
                 write (2, '(A)') '!   X       Y        UP     DOWN'
@@ -1542,10 +1542,10 @@ subroutine shd_io__outputResultMpi(&
             !do I = 1, NX
             !    do J = 1, NY
             !        if (SRCTYPE .ne. 'T') then
-            !            write (2, FORM) XGRID(I), YGRID(J),&
+            !            write (2, FORM) grid_obj%x(I), grid_obj%y(J),&
             !                & C*FLUXES(2, NZ, J, I), C*FLUXES(1, 1, J, I), FLUXES(3, 1, J, I)
             !        else
-            !            write (2, FORM) XGRID(I), YGRID(J),&
+            !            write (2, FORM) grid_obj%x(I), grid_obj%y(J),&
             !                & C*FLUXES(2, NZ, J, I), C*FLUXES(1, 1, J, I)
             !        end if
             !    end do
@@ -1643,9 +1643,9 @@ subroutine shd_io__outputResultMpi(&
             !        end do
             !    end do
             !    if (SRCTYPE .ne. 'T') then
-            !        write (2, FORM) ZGRID(K), C*SUM2/N, C*SUM1/N, SUM3/N
+            !        write (2, FORM) grid_obj%z(K), C*SUM2/N, C*SUM1/N, SUM3/N
             !    else
-            !        write (2, FORM) ZGRID(K), C*SUM2/N, C*SUM1/N
+            !        write (2, FORM) grid_obj%z(K), C*SUM2/N, C*SUM1/N
             !    end if
             !end do
             !╰────────────────────────────────────────────────╯!
@@ -1701,10 +1701,10 @@ subroutine shd_io__outputResultMpi(&
             !    do J = 1, NY
             !        do K = 1, NZ
             !            if (SRCTYPE .ne. 'T') then
-            !                write (2, FORM) XGRID(I), YGRID(J), ZGRID(K),&
+            !                write (2, FORM) grid_obj%x(I), grid_obj%y(J), grid_obj%z(K),&
             !                    & C*FLUXES(2, K, J, I), C*FLUXES(1, K, J, I), FLUXES(3, K, J, I)
             !            else
-            !                write (2, FORM) XGRID(I), YGRID(J), ZGRID(K),&
+            !                write (2, FORM) grid_obj%x(I), grid_obj%y(J), grid_obj%z(K),&
             !                    & C*FLUXES(2, K, J, I), C*FLUXES(1, K, J, I)
             !            end if
             !        end do
@@ -1770,7 +1770,7 @@ subroutine shd_io__outputResultMpi(&
             !            SUM = SUM + FLUXDIV(K, J, I)
             !        end do
             !    end do
-            !    write (2, '(1X,F7.3,2X,E13.5)') ZGRID(K), -SUM/(NX*NY)
+            !    write (2, '(1X,F7.3,2X,E13.5)') grid_obj%z(K), -SUM/(NX*NY)
             !end do
             !╰────────────────────────────────────────────────╯!
 
@@ -1802,7 +1802,7 @@ subroutine shd_io__outputResultMpi(&
             !        do J = 1, NY
             !            do K = 1, NZ
             !                write (2, '(3(1X,F7.3),2X,E13.5)')&
-            !                    & XGRID(I), YGRID(J), ZGRID(K), -FLUXDIV(K, J, I)
+            !                    & grid_obj%x(I), grid_obj%y(J), grid_obj%z(K), -FLUXDIV(K, J, I)
             !            end do
             !        end do
             !    end do
@@ -1891,7 +1891,7 @@ subroutine shd_io__outputResultMpi(&
         !        do J = 1, NY
         !            do K = 1, NZ
         !                write (2, '(3(1X,F7.3),1X,4(1X,E12.5),1X,F6.3)')&
-        !                    &XGRID(I), YGRID(J), ZGRID(K), SHTERMS(1, K, J, I),&
+        !                    &grid_obj%x(I), grid_obj%y(J), grid_obj%z(K), SHTERMS(1, K, J, I),&
         !                    &SHTERMS(2, K, J, I), SHTERMS(3, K, J, I), SHTERMS(4, K, J, I),&
         !                    &SHTERMS(5, K, J, I)/max(1e-20, SHTERMS(1, K, J, I))
         !            end do
@@ -1906,7 +1906,7 @@ subroutine shd_io__outputResultMpi(&
         !        do J = 1, NY
         !            do K = 1, NZ
         !                write (2, '(3(1X,F7.3),1X,4(1X,E12.5),1X,F6.3)')&
-        !                    &XGRID(I), YGRID(J), ZGRID(K), SHTERMS(1, K, J, I),&
+        !                    &grid_obj%x(I), grid_obj%y(J), grid_obj%z(K), SHTERMS(1, K, J, I),&
         !                    &SHTERMS(2, K, J, I), SHTERMS(3, K, J, I), SHTERMS(4, K, J, I)
         !            end do
         !        end do
@@ -1934,15 +1934,15 @@ subroutine shd_io__outputResultMpi(&
     return
 end subroutine shd_io__outputResultMpi
 
-subroutine shd_io__outputCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+subroutine shd_io__outputCamRad(NSTOKES, NX, NY, NZ,&
     & NSH, ML, MM, NLM, NMU, NPHI, NANG,&
     & INSAVEFILE, OUTSAVEFILE,&
-    & BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
+    & BCFLAG, IPFLAG, DELTAM, SRCTYPE,&
     & SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
     & WAVENO, WAVELEN, UNITS,&
     & SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
     & IVIS, VISOUT, OUTPARMS, OUTFILE,&
-    & prp_obj, sfc_obj, ckd_obj, sen_obj)
+    & grid_obj, prp_obj, sfc_obj, ckd_obj, sen_obj)
 
     ! Writes the visualization image in PGM binary format with either
     ! one byte or two byte pixels.  The PGM binary format (P5) has an
@@ -1950,12 +1950,13 @@ subroutine shd_io__outputCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     ! (here the SHDOM input parameters), followed by the byte or two byte
     ! image pixels.
 
-    type(shd_type_prp), intent(in) :: prp_obj
-    type(shd_type_sfc), intent(in) :: sfc_obj
-    type(shd_type_ckd), intent(in) :: ckd_obj
-    type(shd_type_sen), intent(in) :: sen_obj
+    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_prp),  intent(in) :: prp_obj
+    type(shd_type_sfc),  intent(in) :: sfc_obj
+    type(shd_type_ckd),  intent(in) :: ckd_obj
+    type(shd_type_sen),  intent(in) :: sen_obj
 
-    integer NSTOKES, NX, NY, NZ, NPTS, NCELLS, NSH
+    integer NSTOKES, NX, NY, NZ, NSH
     integer ML, MM, NLM, NMU, NPHI, NANG
     integer BCFLAG, IPFLAG
     integer MAXITER, TOTITER, IVIS
@@ -1965,7 +1966,7 @@ subroutine shd_io__outputCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     real SOLACC, SPLITACC, SHACC
     real WAVENO(2), WAVELEN
     real OUTPARMS(*)
-    character(len=1), intent(in) :: SRCTYPE, UNITS, GRIDTYPE
+    character(len=1), intent(in) :: SRCTYPE, UNITS
     character(len=*), intent(in) :: INSAVEFILE, OUTSAVEFILE
     character(len=*), intent(in) :: OUTFILE
     real VISOUT(NSTOKES, *)
@@ -1979,9 +1980,9 @@ subroutine shd_io__outputCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     OUTFILE_DATA = trim(adjustl(OUTFILE))//trim(adjustl(DATA_POSTFIX))
 
     GRIDNAME = 'EVEN (X,Y)  '
-    if (GRIDTYPE .eq. 'P') then
+    if (grid_obj%type .eq. 'P') then
         GRIDNAME = GRIDNAME(1:14)//'PROPERTY-FILE (Z) '
-    else if (GRIDTYPE .eq. 'F') then
+    else if (grid_obj%type .eq. 'F') then
         GRIDNAME = GRIDNAME(1:14)//'INPUT-FILE (Z)    '
     else
         GRIDNAME = GRIDNAME(1:14)//'EVEN (Z)          '
@@ -2056,7 +2057,7 @@ subroutine shd_io__outputCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
         &'   NSH=', NSH
     write (2, '(A,I1,3(A,I4),2(A,I8))') '!  NSTOKES=', NSTOKES,&
         &'   NX=', NX, '   NY=', NY, '   NZ=', NZ,&
-        &'    NPTS=', NPTS, '   NCELLS=', NCELLS
+        &'    NPTS=', grid_obj%Npts, '   NCELLS=', grid_obj%Ncell
     write (2, '(A,A)') '!  PROPERTY_FILE=', trim(prp_obj%fname)
     write (2, '(A,A,A,I2)') '!  CORRELATED_K-DIST_FILE=',&
         &trim(ckd_obj%fname), '   NUM_G=', ckd_obj%Ng
@@ -2148,14 +2149,15 @@ subroutine shd_io__outputCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     return
 end subroutine shd_io__outputCamRad
 
-subroutine shd_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
+subroutine shd_io__outputImg(NSTOKES, NX, NY, NZ,&
     & NSH, ML, MM, NLM, NMU, NPHI, NANG,&
     & INSAVEFILE, OUTSAVEFILE,&
-    & BCFLAG, IPFLAG, DELTAM, GRIDTYPE, SRCTYPE,&
+    & BCFLAG, IPFLAG, DELTAM, SRCTYPE,&
     & SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
     & WAVENO, WAVELEN, UNITS,&
     & SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
-    & IVIS, VISOUT, OUTPARMS, OUTFILE, prp_obj, sfc_obj, ckd_obj)
+    & IVIS, VISOUT, OUTPARMS, OUTFILE,&
+    & grid_obj, prp_obj, sfc_obj, ckd_obj)
 
     ! Writes the visualization image in PGM binary format with either
     ! one byte or two byte pixels.  The PGM binary format (P5) has an
@@ -2163,11 +2165,12 @@ subroutine shd_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     ! (here the SHDOM input parameters), followed by the byte or two byte
     ! image pixels.
 
-    type(shd_type_prp), intent(in) :: prp_obj
-    type(shd_type_sfc), intent(in) :: sfc_obj
-    type(shd_type_ckd), intent(in) :: ckd_obj
+    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_prp),  intent(in) :: prp_obj
+    type(shd_type_sfc),  intent(in) :: sfc_obj
+    type(shd_type_ckd),  intent(in) :: ckd_obj
 
-    integer NSTOKES, NX, NY, NZ, NPTS, NCELLS, NSH
+    integer NSTOKES, NX, NY, NZ, NSH
     integer ML, MM, NLM, NMU, NPHI, NANG
     integer BCFLAG, IPFLAG
     integer MAXITER, TOTITER, IVIS
@@ -2177,7 +2180,7 @@ subroutine shd_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     real SOLACC, SPLITACC, SHACC
     real WAVENO(2), WAVELEN
     real OUTPARMS(*)
-    character(len=1), intent(in) :: SRCTYPE, UNITS, GRIDTYPE
+    character(len=1), intent(in) :: SRCTYPE, UNITS
     character(len=*), intent(in) :: INSAVEFILE, OUTSAVEFILE
     character(len=*), intent(in) :: OUTFILE
     real VISOUT(NSTOKES, *)
@@ -2275,9 +2278,9 @@ subroutine shd_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
 
     ! Make the SHDOM part of the header
     GRIDNAME = 'EVEN (X,Y)  '
-    if (GRIDTYPE .eq. 'P') then
+    if (grid_obj%type .eq. 'P') then
         GRIDNAME = GRIDNAME(1:14)//'PROPERTY-FILE (Z) '
-    else if (GRIDTYPE .eq. 'F') then
+    else if (grid_obj%type .eq. 'F') then
         GRIDNAME = GRIDNAME(1:14)//'INPUT-FILE (Z)    '
     else
         GRIDNAME = GRIDNAME(1:14)//'EVEN (Z)          '
@@ -2331,7 +2334,7 @@ subroutine shd_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     I = I + index(BUF(I:I + 79), LF)
     write (BUF(I:I + 90), '(A,I1,3(A,I4),2(A,I8),A1)')&
         & '# NSTOKES=', NSTOKES, '  NX=', NX, '   NY=', NY, '  NZ=', NZ,&
-        & '    NPTS=', NPTS, '   NCELLS=', NCELLS, LF
+        & '    NPTS=', grid_obj%Npts, '   NCELLS=', grid_obj%Ncell, LF
     I = I + index(BUF(I:I + 79), LF)
     !write (BUF(I:I + 79), '(A,A,A1)')&
     !    & '# PROPERTY_FILE=', trim(prp_obj%fname), LF
@@ -2551,16 +2554,19 @@ subroutine shd_io__outputImg(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
 end subroutine shd_io__outputImg
 
 subroutine shd_io__outputCellSplit(&
-    &OUTFILE, GRIDPTR, GRIDPOS, EXTINCT,&
-    &SHPTR, SOURCE, NCELLS, NSTOKES)
+    &OUTFILE, EXTINCT,&
+    &SHPTR, SOURCE, NSTOKES,&
+    &grid_obj)
 
     ! Outputs the final cell splitting criterion for each grid cell
     ! and direction (X,Y,Z).  Calls CELL_SPLIT_TEST.
     ! Mainly for debugging purposes.
 
-    integer NCELLS, NSTOKES
-    integer SHPTR(*), GRIDPTR(8, *)
-    real GRIDPOS(3, *), EXTINCT(*), SOURCE(NSTOKES, *)
+    type(shd_type_grid), intent(in) :: grid_obj
+
+    integer NSTOKES
+    integer SHPTR(*)
+    real EXTINCT(*), SOURCE(NSTOKES, *)
     character(len=*), intent(in) :: OUTFILE
     integer IP1, IP2, ICELL, IDIR
     real ADAPTCRIT(3), MAXADAPT, XC, YC, ZC, EXT
@@ -2570,21 +2576,21 @@ subroutine shd_io__outputCellSplit(&
         &'Extinct SplitX  SplitY  SplitZ'
 
     ! Loop over all the cells
-    do ICELL = 1, NCELLS
+    do ICELL = 1, grid_obj%Ncell
         ! Get the adaptive grid criterion for the 3 directions
-        call shd_grid__testCellSplit(GRIDPTR, GRIDPOS, EXTINCT,&
+        call shd_grid__testCellSplit(EXTINCT,&
             &SHPTR, NSTOKES, SOURCE, ICELL,&
-            &ADAPTCRIT, MAXADAPT, IDIR)
+            &ADAPTCRIT, MAXADAPT, IDIR, grid_obj)
         ! Compute the cell center location and mean extinction
-        IP1 = GRIDPTR(1, ICELL)
-        IP2 = GRIDPTR(8, ICELL)
-        XC = 0.5*(GRIDPOS(1, IP1) + GRIDPOS(1, IP2))
-        YC = 0.5*(GRIDPOS(2, IP1) + GRIDPOS(2, IP2))
-        ZC = 0.5*(GRIDPOS(3, IP1) + GRIDPOS(3, IP2))
-        EXT =  (EXTINCT(GRIDPTR(1, ICELL)) + EXTINCT(GRIDPTR(2, ICELL))&
-            &+ EXTINCT(GRIDPTR(3, ICELL)) + EXTINCT(GRIDPTR(4, ICELL))&
-            &+ EXTINCT(GRIDPTR(5, ICELL)) + EXTINCT(GRIDPTR(6, ICELL))&
-            &+ EXTINCT(GRIDPTR(7, ICELL)) + EXTINCT(GRIDPTR(8, ICELL)))/8
+        IP1 = grid_obj%i8Grid(1, ICELL)
+        IP2 = grid_obj%i8Grid(8, ICELL)
+        XC = 0.5*(grid_obj%xyz(1, IP1) + grid_obj%xyz(1, IP2))
+        YC = 0.5*(grid_obj%xyz(2, IP1) + grid_obj%xyz(2, IP2))
+        ZC = 0.5*(grid_obj%xyz(3, IP1) + grid_obj%xyz(3, IP2))
+        EXT =  (EXTINCT(grid_obj%i8Grid(1, ICELL)) + EXTINCT(grid_obj%i8Grid(2, ICELL))&
+            &+ EXTINCT(grid_obj%i8Grid(3, ICELL)) + EXTINCT(grid_obj%i8Grid(4, ICELL))&
+            &+ EXTINCT(grid_obj%i8Grid(5, ICELL)) + EXTINCT(grid_obj%i8Grid(6, ICELL))&
+            &+ EXTINCT(grid_obj%i8Grid(7, ICELL)) + EXTINCT(grid_obj%i8Grid(8, ICELL)))/8
         write (9, '(1X,I5,3(1X,F6.3),1X,E11.4,3(1X,F7.5))')&
             &ICELL, XC, YC, ZC, EXT,&
             &ADAPTCRIT(1), ADAPTCRIT(2), ADAPTCRIT(3)
@@ -2595,9 +2601,9 @@ subroutine shd_io__outputCellSplit(&
 end subroutine shd_io__outputCellSplit
 
 subroutine shd_io__visualizeCell(&
-    & OUTFILE, YVAL, OUTTYPE,&
-    & IPFLAG, NX, XDOMAIN, ZDOMAIN,&
-    & NCELLS, GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, GRIDPOS)
+    &OUTFILE, YVAL, OUTTYPE,&
+    &IPFLAG, NX, XDOMAIN, ZDOMAIN,&
+    &grid_obj)
 
     ! Visualizes the cell structure by outputting GLE code to draw
     ! a diagram of the cells in the XZ plane.  Only the end cells are
@@ -2606,10 +2612,10 @@ subroutine shd_io__visualizeCell(&
     ! OUTTYPE=0 for cell outlines only, OUTTYPE=1 for cells and arrows.
     ! There is a special output for IP mode.
 
-    integer OUTTYPE, IPFLAG, NX, NCELLS
-    integer GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
-    integer*2 CELLFLAGS(*)
-    real YVAL, XDOMAIN, ZDOMAIN, GRIDPOS(3, *)
+    type(shd_type_grid), intent(in) :: grid_obj
+
+    integer OUTTYPE, IPFLAG, NX
+    real YVAL, XDOMAIN, ZDOMAIN
     character(len=*), intent(in) :: OUTFILE
     integer IC
     integer J, INeigh
@@ -2669,24 +2675,24 @@ subroutine shd_io__visualizeCell(&
         write (9, '(A)')
     end if
 
-    do IC = 1, NCELLS
+    do IC = 1, grid_obj%Ncell
         ! Output if it is an end cell and crosses the Y value
-        if (TREEPTR(2, IC) .eq. 0 .and.&
-            & GRIDPOS(2, GRIDPTR(1, IC)) .le. YVAL .and.&
-            & GRIDPOS(2, GRIDPTR(3, IC)) .ge. YVAL) then
+        if (grid_obj%i2Tree(2, IC) .eq. 0 .and.&
+            & grid_obj%xyz(2, grid_obj%i8Grid(1, IC)) .le. YVAL .and.&
+            & grid_obj%xyz(2, grid_obj%i8Grid(3, IC)) .ge. YVAL) then
             ! Get the center of the cell
-            XC = (GRIDPOS(1, GRIDPTR(1, IC)) + GRIDPOS(1, GRIDPTR(8, IC)))/2
-            ZC = (GRIDPOS(3, GRIDPTR(1, IC)) + GRIDPOS(3, GRIDPTR(8, IC)))/2
+            XC = (grid_obj%xyz(1, grid_obj%i8Grid(1, IC)) + grid_obj%xyz(1, grid_obj%i8Grid(8, IC)))/2
+            ZC = (grid_obj%xyz(3, grid_obj%i8Grid(1, IC)) + grid_obj%xyz(3, grid_obj%i8Grid(8, IC)))/2
             ! Draw the outline in XZ (four lines and four grid points)
             !   and the cell number at the center using the gle subrouti
-            X1 = GRIDPOS(1, GRIDPTR(1, IC))
-            Z1 = GRIDPOS(3, GRIDPTR(1, IC))
-            X2 = GRIDPOS(1, GRIDPTR(2, IC))
-            Z2 = GRIDPOS(3, GRIDPTR(2, IC))
-            X3 = GRIDPOS(1, GRIDPTR(6, IC))
-            Z3 = GRIDPOS(3, GRIDPTR(6, IC))
-            X4 = GRIDPOS(1, GRIDPTR(5, IC))
-            Z4 = GRIDPOS(3, GRIDPTR(5, IC))
+            X1 = grid_obj%xyz(1, grid_obj%i8Grid(1, IC))
+            Z1 = grid_obj%xyz(3, grid_obj%i8Grid(1, IC))
+            X2 = grid_obj%xyz(1, grid_obj%i8Grid(2, IC))
+            Z2 = grid_obj%xyz(3, grid_obj%i8Grid(2, IC))
+            X3 = grid_obj%xyz(1, grid_obj%i8Grid(6, IC))
+            Z3 = grid_obj%xyz(3, grid_obj%i8Grid(6, IC))
+            X4 = grid_obj%xyz(1, grid_obj%i8Grid(5, IC))
+            Z4 = grid_obj%xyz(3, grid_obj%i8Grid(5, IC))
             if (is1DX_) then
                 write (9, '(A,6(1X,F6.3),I8)') '@drawbox ',&
                     & S*X1, S*Z1, S*X3, S*Z3, S*XC, S*ZC, IC
@@ -2699,16 +2705,16 @@ subroutine shd_io__visualizeCell(&
                 DX = 0.1*(X2 - X1)
                 DZ = 0.1*(Z4 - Z1)
                 do J = 1, 6
-                    if (NEIGHPTR(J, IC) .ne. 0 .and. J .ne. 3 .and. J .ne. 4) then
-                        INeigh = abs(NEIGHPTR(J, IC))
-                        XN = (GRIDPOS(1, GRIDPTR(1, INeigh)) + GRIDPOS(1, GRIDPTR(8, INeigh)))/2
-                        ZN = (GRIDPOS(3, GRIDPTR(1, INeigh)) + GRIDPOS(3, GRIDPTR(8, INeigh)))/2
+                    if (grid_obj%i6Cell(J, IC) .ne. 0 .and. J .ne. 3 .and. J .ne. 4) then
+                        INeigh = abs(grid_obj%i6Cell(J, IC))
+                        XN = (grid_obj%xyz(1, grid_obj%i8Grid(1, INeigh)) + grid_obj%xyz(1, grid_obj%i8Grid(8, INeigh)))/2
+                        ZN = (grid_obj%xyz(3, grid_obj%i8Grid(1, INeigh)) + grid_obj%xyz(3, grid_obj%i8Grid(8, INeigh)))/2
                         XA = XC + 1.0*(XN - XC)
                         ZA = ZC + 1.0*(ZN - ZC)
                         if (.not. (XN - XC .gt. 0.0 .and. J .eq. 1 .or.&
                             & XN - XC .lt. 0.0 .and. J .eq. 2)) then
                             write (9, '(A,4(1X,F6.3),1X,I8)') '@drawarrow ',&
-                                & S*XC, S*ZC, S*XA, S*ZA, NEIGHPTR(J, IC)
+                                & S*XC, S*ZC, S*XA, S*ZA, grid_obj%i6Cell(J, IC)
                         end if
                     end if
                 end do
@@ -2724,10 +2730,8 @@ subroutine shd_io__visualizeCell(&
 end subroutine shd_io__visualizeCell
 
 subroutine shd_io__saveState(&
-    &OUTSAVEFILE, NSTOKES, NX, NY, NZ,&
-    &ML, MM, NLM, WORK, XGRID, YGRID, ZGRID,&
-    &NPTS, NCELLS, GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR,&
-    &CELLFLAGS, FLUXES, SHPTR, SOURCE, RSHPTR, RADIANCE)
+    &OUTSAVEFILE, WORK, FLUXES,&
+    &rtm_obj, grid_obj, shdo_obj)
 
     ! Write a binary save file containing the current state of
     ! the SHDOM solution. This includes the cell tree structure,
@@ -2735,16 +2739,15 @@ subroutine shd_io__saveState(&
     ! the low order terms of the radiance expansion, and the flux array.
     ! If the file name is 'NONE' then no file is written.
 
-    character(len=*) , intent(in) :: OUTSAVEFILE
-    integer(kind=I__), intent(in) :: NSTOKES, NX, NY, NZ, ML, MM, NLM, NPTS, NCELLS
-    integer(kind=I__), intent(in) :: SHPTR(NPTS+1), RSHPTR(NPTS)
-    integer(kind=I__), intent(in) :: GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
-    integer(kind=2)  , intent(in) :: CELLFLAGS(NCELLS)
-    real(kind=R__)   , intent(in) :: XGRID(NX+1), YGRID(NY+1), ZGRID(NZ)
-    real(kind=R__)   , intent(inout) :: WORK(*)
-    real(kind=R__)   , intent(in) :: GRIDPOS(3, NPTS), FLUXES(2, NPTS), SOURCE(*), RADIANCE(*)
+    type(shd_type_rtm),  intent(in) :: rtm_obj
+    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_shdo), intent(in) :: shdo_obj
 
-    integer(kind=4) :: I, J, K, IR, NS, NR
+    character(len=*) , intent(in) :: OUTSAVEFILE
+    real(kind=R__)   , intent(inout) :: WORK(*)
+    real(kind=R__)   , intent(in) :: FLUXES(2, grid_obj%Npts)
+
+    integer(kind=4) :: I, J, K, IR, NS, NR, istoke
     integer(kind=4) :: DATA_BYTE
     real(kind=4) :: DATA_SIZE
 
@@ -2753,45 +2756,56 @@ subroutine shd_io__saveState(&
     open (unit=91, file=trim(adjustl(OUTSAVEFILE)), status='REPLACE',&
         &form='UNFORMATTED')
 
-    write (91) NSTOKES, NX, NY, NZ, ML, MM, NLM, NPTS, NCELLS
+    write (91) shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm, grid_obj%Npts, grid_obj%Ncell
 
-    write (91) (XGRID(I), I=1, NX+1)
-    write (91) (YGRID(I), I=1, NY+1)
-    write (91) (ZGRID(I), I=1, NZ)
+    write (91) (grid_obj%x(I), I=1, rtm_obj%Nx+1)
+    write (91) (grid_obj%y(I), I=1, rtm_obj%Ny+1)
+    write (91) (grid_obj%z(I), I=1, rtm_obj%Ny)
 
-    write (91) ((GRIDPTR(J, I) , J=1, 8), I=1, NCELLS)
-    write (91) ((NEIGHPTR(J, I), J=1, 6), I=1, NCELLS)
-    write (91) ((TREEPTR(J, I) , J=1, 2), I=1, NCELLS)
-    write (91) (CELLFLAGS(I)   , I=1, NCELLS)
+    write (91) ((grid_obj%i8Grid(J, I), J=1, 8), I=1, grid_obj%Ncell)
+    write (91) ((grid_obj%i6Cell(J, I), J=1, 6), I=1, grid_obj%Ncell)
+    write (91) ((grid_obj%i2Tree(J, I), J=1, 2), I=1, grid_obj%Ncell)
+    write (91)  (grid_obj%flag(I), I=1, grid_obj%Ncell)
 
-    write (91) ((GRIDPOS(J, I), J=1, 3), I=1, NPTS)
-    write (91) ((FLUXES(J, I) , J=1, 2), I=1, NPTS)
+    write (91) ((grid_obj%xyz(J, I), J=1, 3), I=1, grid_obj%Npts)
+    write (91) ((FLUXES(J, I) , J=1, 2), I=1, grid_obj%Npts)
 
-    write (91) (SHPTR(I), I=1, NPTS + 1)
+    write (91) (shdo_obj%isrcJ(I), I=1, grid_obj%Npts + 1)
 
-    NS = SHPTR(NPTS + 1)
-    write (91) (SOURCE(I), I=1, NSTOKES*NS)
+    NS = shdo_obj%isrcJ(grid_obj%Npts + 1)
+    write (91) ((shdo_obj%srcJ(J, I), J=1, shdo_obj%Nstokes), I=1, NS)
+
+    !K = 1
+    !do I = 1, grid_obj%Npts
+    !    IR = shdo_obj%iradI(I)
+    !    do J = 1, shdo_obj%Nstokes*4
+
+    !        ! the following is an attempt to fix the segmentation issue
+    !        !╭────────────────────────────────────────────────╮!
+    !        ! shdo_obj%iradI(1) = 0 (from shd_init__makeRad)
+    !        ! originally it was:
+    !        ! WORK(K) = shdo_obj%radI(shdo_obj%Nstokes*(IR-1)+J)
+    !        ! when I=1, IR=0, shdo_obj%Nstokes*(IR-1)+J is 0 when J=1 (shdo_obj%Nstokes=1)
+    !        WORK(K) = shdo_obj%radI(shdo_obj%Nstokes*(IR)+J)
+    !        !╰────────────────────────────────────────────────╯!
+
+    !        K = K + 1
+    !    end do
+    !end do
 
     K = 1
-    do I = 1, NPTS
-        IR = RSHPTR(I)
-        do J = 1, NSTOKES*4
-
-            ! the following is an attempt to fix the segmentation issue
-            !╭────────────────────────────────────────────────╮!
-            ! RSHPTR(1) = 0 (from shd_init__makeRad)
-            ! originally it was:
-            ! WORK(K) = RADIANCE(NSTOKES*(IR-1)+J)
-            ! when I=1, IR=0, NSTOKES*(IR-1)+J is 0 when J=1 (NSTOKES=1)
-            WORK(K) = RADIANCE(NSTOKES*(IR)+J)
-            !╰────────────────────────────────────────────────╯!
-
-            K = K + 1
+    do I = 1, grid_obj%Npts
+        IR = shdo_obj%iradI(I)   !radI(NSTOKES, NPTS)
+        do J = 1, 4
+            do istoke = 1, shdo_obj%Nstokes
+                WORK(K) = shdo_obj%radI(istoke, IR+J)
+                K = K + 1
+            end do
         end do
     end do
 
-    NR = 4*NPTS
-    write (91) (WORK(I), I=1, NSTOKES*NR)
+    NR = 4*grid_obj%Npts
+    write (91) (WORK(I), I=1, shdo_obj%Nstokes*NR)
 
     close (unit=91)
 
