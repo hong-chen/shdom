@@ -42,7 +42,7 @@ program shdom
     use globals_const, only: REPS_
     use globals_cfg,   only: verbose_, charMaxLen_, accSolv_, &
                              memTotSysMB_, memPerCpuMB_, &
-                             isNmlInp_, isHighOrder_, &
+                             doNmlInp_, doHighOrder_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, isMpi_, &
                              is1DX_, is1DYx_, is1D_, is3Ddir1Ddif_, &
                              is1D1_, isPol_, isPol4_, &
@@ -275,7 +275,7 @@ program shdom
     ! In MPI, the master processor performs the main computation,
     !   and the results are then broadcast to the child processors.
     if (isMasterProc) then
-        if (isNmlInp_) then
+        if (doNmlInp_) then
             call shd_io__nmlInp(rtmAll_obj%runName, prpAll_obj%fname, sfc_obj%fname, ckd_obj%fname,&
                 fileInp_sav, fileOut_sav, sen_obj%fname,&
                 shdo_obj%Nstokes, rtmAll_obj%Nx, rtmAll_obj%Ny, rtmAll_obj%Nz, shdo_obj%Nmu, shdo_obj%Nphi, rtmAll_obj%flag_bc,&
@@ -486,15 +486,15 @@ program shdom
     ! Choose the option to compute higher order radiance SH terms
     if  ((prpAll_obj%Nx .eq. 1) .and. (prpAll_obj%Ny .eq. 1) .and.&
         &(sfc_obj%Nx .le. 32) .and. (sfc_obj%Ny .le. 32)) then
-        isHighOrder_ = .true.
+        doHighOrder_ = .true.
         if (verbose_ .ge. 4) write (6, '(A)') &
-            'Warning [shdom]: 1D calculation, set isHighOrder_ to .TRUE.'
+            'Warning [shdom]: 1D calculation, set doHighOrder_ to .TRUE.'
     else
-        isHighOrder_ = .false.
+        doHighOrder_ = .false.
     end if
 
     Nsh_out = 4
-    if (isHighOrder_) Nsh_out = 5
+    if (doHighOrder_) Nsh_out = 5
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
@@ -971,7 +971,7 @@ program shdom
 
     memNeed = ADAPT_GRID_FACTOR*grid_obj%Npts0*NmaxNpts
 
-    if (isHighOrder_) then
+    if (doHighOrder_) then
         scaleFactor = min(1.5, ((MAX_TOTAL_MB*1024**2)/4 - memUsed)/memNeed)
     else
         scaleFactor = min(1.0, ((MAX_TOTAL_MB*1024**2)/4 - memUsed)/memNeed)
@@ -1200,7 +1200,7 @@ program shdom
         !   in source (shdo_obj%srcJ), radiance (shdo_obj%radI), fluxes, direct Flux.
         call shd_solv__solveRte(&
             &doRadInit,&
-            &doDeltaM, isHighOrder_,&
+            &doDeltaM, doHighOrder_,&
             &solar0_ckd,&
             &isAccel, solAcc, maxIter, solCrit, iter,&
             &splitAcc, shAcc,&

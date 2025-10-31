@@ -92,7 +92,7 @@ contains
 
 subroutine shd_solv__solveRte(&
     &INRADFLAG,&
-    &doDeltaM, isHighOrder,&
+    &doDeltaM, doHighOrder,&
     &SOLARFLUX,&
     &ACCELFLAG, SOLACC, MAXITER, SOLCRIT, ITER,&
     &SPLITACC, SHACC,&
@@ -120,7 +120,7 @@ subroutine shd_solv__solveRte(&
     integer MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR(MAXNBC, 2)
     integer idsrc_Shdo(*)
     integer WORK1(*)
-    logical INRADFLAG, doDeltaM, ACCELFLAG, isHighOrder
+    logical INRADFLAG, doDeltaM, ACCELFLAG, doHighOrder
     real SOLARFLUX
     real SOLACC, SOLCRIT, SPLITACC, SHACC
     real BCRAD(*)
@@ -130,7 +130,7 @@ subroutine shd_solv__solveRte(&
 
     integer I, isetDO, NBPTS, NBCELLS
     integer MAXNANGBND, NANGBND(4, 2), ierr
-    logical FIXSH, SPLITTESTING, DOSPLIT, OUTOFMEM
+    logical FIXSH, SPLITTESTING, doSplit, isOutMem
     logical, allocatable :: flagFFT_Shdo(:)
     real maxSsa
     real STARTADAPTSOL, ENDADAPTSOL, ADAPTRANGE, SPLITCRIT
@@ -282,7 +282,7 @@ subroutine shd_solv__solveRte(&
     ! The shd_grid__splitGrid routine is called and the splitting criterion returned
     ! as long as SPLITTESTING is true.
     SPLITTESTING = .true.
-    OUTOFMEM = .false.
+    isOutMem = .false.
     ENDADAPTSOL = 0.001
     STARTADAPTSOL = 0.1
     ADAPTRANGE = STARTADAPTSOL/(3.0*ENDADAPTSOL)
@@ -304,7 +304,7 @@ subroutine shd_solv__solveRte(&
                                &((SOLCRIT .gt. SOLACC) .or.&
                                 &((SPLITCRIT .gt. SPLITACC) .and.&
                                  &(CURSPLITACC .gt. SPLITACC) .and.&
-                                 &(.not. OUTOFMEM))))
+                                 &(.not. isOutMem))))
 
         call system_clock(COUNT_START, COUNT_RATE, COUNT_MAX)
 
@@ -316,39 +316,36 @@ subroutine shd_solv__solveRte(&
             !   interpolate the medium and source functions to the new points.
             ! The current splitting accuracy is started high and then lowered.
             AVGSOLCRIT = sqrt(AVGSOLCRIT*SOLCRIT)
-            DOSPLIT = (SOLCRIT .le. STARTADAPTSOL) .and.&
+            doSplit = (SOLCRIT .le. STARTADAPTSOL) .and.&
                      &((SOLCRIT .gt. ENDADAPTSOL) .or.&
                       &(CURSPLITACC .gt. SPLITACC)) .and.&
-                     &(.not. OUTOFMEM)
+                     &(.not. isOutMem)
             ! Make sure all processors are going to split cells if any want to
-            call shd_mpi__unifySplit(DOSPLIT, STARTSPLITACC)
+            call shd_mpi__unifySplit(doSplit, STARTSPLITACC)
             BETA = log(STARTSPLITACC/SPLITACC)/log(ADAPTRANGE)
             CURSPLITACC = min(CURSPLITACC, max(SPLITACC,&
                 &SPLITACC*(AVGSOLCRIT/(3.0*ENDADAPTSOL))**BETA))
             if (SOLCRIT .le. ENDADAPTSOL) CURSPLITACC = SPLITACC
             if (SPLITTESTING) then
-                call shd_grid__splitGrid(grid_obj%maxNpts, grid_obj%maxNcell, shdo_obj%maxNptsSH, shdo_obj%maxNptsDO, shdo_obj%maxNphi0,&
-                    &DOSPLIT, OUTOFMEM, CURSPLITACC, SPLITCRIT,&
-                    &rtm_obj%Nx, rtm_obj%Ny,&
-                    &shdo_obj%Nstokes, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
-                    &doDeltaM, rtm_obj%flag_bc, rtm_obj%flag_ip, ACCELFLAG,&
-                    &rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%ipha,&
-                    &shdo_obj%iradI, shdo_obj%radI, shdo_obj%isrcJ, shdo_obj%srcJ, idsrc_Shdo,&
-                    &rtm_obj%temp, rtm_obj%planck, DIRFLUX, src_obj%type,&
-                    &SOLARFLUX, src_obj%avgMu, src_obj%avgAz, YlmSolar_Shdo,&
-                    &src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen, WORK, WORK2,&
-                    &rtm_obj, grid_obj, prp_obj, ckd_obj)
+                call shd_grid__splitGrid(&
+                    &doSplit, isOutMem, CURSPLITACC, SPLITCRIT,&
+                    &doDeltaM, ACCELFLAG,&
+                    &idsrc_Shdo,&
+                    &DIRFLUX,&
+                    &SOLARFLUX, YlmSolar_Shdo,&
+                    &WORK, WORK2,&
+                    &rtm_obj, grid_obj, shdo_obj, src_obj, prp_obj, ckd_obj)
                 if (SOLCRIT .gt. STARTADAPTSOL) STARTSPLITACC = SPLITCRIT
             end if
             ! Find the maximum splitting criterion over all processors
             call shd_mpi__findTotSplitCritMax(SPLITCRIT)
             if (SOLCRIT .le. ENDADAPTSOL) SPLITTESTING = .false.
         else
-            DOSPLIT = .false.
+            doSplit = .false.
         end if
 
         ! Find the SH truncation to use for the radiance (shdo_obj%iradI)
-        call shd_solv__truncRad(isHighOrder,&
+        call shd_solv__truncRad(doHighOrder,&
             &shdo_obj%Nstokes, shdo_obj%maxNl, shdo_obj%maxNm,&
             &grid_obj%Npts, rtm_obj%ssa, rtm_obj%leg, rtm_obj%ipha, shdo_obj%isrcJ, shdo_obj%radI,&
             &shdo_obj%maxNptsSH + grid_obj%maxNpts, FIXSH, SHACC, shdo_obj%iradI, prp_obj)
@@ -406,7 +403,7 @@ subroutine shd_solv__solveRte(&
 
         ! Print out the log solution criterion, number of points,
         !   and average SH truncation.
-        if (DOSPLIT) then
+        if (doSplit) then
             if (verbose_ .ge. 5) write (6, '("S",1X,I4,2X,F7.3,2X,E10.3,1X,I8,1X,I8,1X,F8.2,2X,F6.2," sec")')&
                 &ITER, log10(max(SOLCRIT, 1.0e-20)),&
                 &SPLITCRIT,&
@@ -416,7 +413,7 @@ subroutine shd_solv__solveRte(&
                 &ELAPSED_TIME
                 !&float(shdo_obj%isrcJ(grid_obj%Npts + 1))/(grid_obj%Npts*shdo_obj%Nlm)
         else
-            if (OUTOFMEM) then
+            if (isOutMem) then
                 if (verbose_ .ge. 5) write (6, '("M",1X,I4,2X,F7.3,2X,E10.3,1X,I8,1X,I8,1X,F8.2,2X,F6.2," sec")')&
                     &ITER, log10(max(SOLCRIT, 1.0e-20)),&
                     &SPLITCRIT,&
@@ -487,7 +484,7 @@ subroutine shd_solv__accelSol(&
     return
 end subroutine shd_solv__accelSol
 
-subroutine shd_solv__truncRad(isHighOrder,&
+subroutine shd_solv__truncRad(doHighOrder,&
     &NSTOKES, ML, MM,&
     &NPTS, ALBEDO, LEGEN, IPHASE, SHPTR, RADIANCE,&
     &MAXIR, FIXSH, SHACC, RSHPTR, prp_obj)
@@ -502,14 +499,14 @@ subroutine shd_solv__truncRad(isHighOrder,&
     ! the source function truncation may grow (since initialized with
     ! a low order truncation).  The minimum radiance truncation is
     ! L=1 so that the mean radiance and net flux terms may be computed,
-    ! unless isHighOrder is on, in which case all terms are kept.
+    ! unless doHighOrder is on, in which case all terms are kept.
 
     type(shd_type_prp), intent(in) :: prp_obj
 
     integer NPTS, NSTOKES, ML, MM, MAXIR
     integer SHPTR(NPTS + 1), RSHPTR(NPTS + 2)
     integer*2 IPHASE(NPTS)
-    logical isHighOrder, FIXSH
+    logical doHighOrder, FIXSH
     real ALBEDO(NPTS), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, *), RADIANCE(NSTOKES, *)
     real SHACC
     integer IRO, IR, NRO, NR, I, J, K, L, LR, LS, M, MS, ME, NS, NLM
@@ -567,7 +564,7 @@ subroutine shd_solv__truncRad(isHighOrder,&
         NS = max(1, SHPTR(I + 1) - SHPTR(I))
         LS = LOFJ(NS)
         LR = min(LR, LS + ML/8 + 2)
-        if (isHighOrder) LR = ML
+        if (doHighOrder) LR = ML
         if (LR .le. MM) then
             NR = (LR*(LR + 1)) + LR + 1
         else
@@ -593,7 +590,7 @@ subroutine shd_solv__truncRad(isHighOrder,&
     IR = 0
     do I = 1, NPTS
         NR = max(4, SHPTR(I + 1) - SHPTR(I))
-        if (isHighOrder) then
+        if (doHighOrder) then
             if (ML .le. MM) then
                 NR = (ML*(ML + 1)) + ML + 1
             else

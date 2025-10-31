@@ -144,10 +144,10 @@ module globals_cfg
     !All           7      All-level messages
 
     ! Namelist input
-    logical, save :: isNmlInp_ = .true.
+    logical, save :: doNmlInp_ = .true.
 
     ! High order radiance (use more SH terms)
-    logical, save :: isHighOrder_
+    logical, save :: doHighOrder_
 
     ! Boundary conditions (BCFLAG)
     logical, save :: isOpenX_, isOpenYx_, isMpiX_, isMpiY_, isMpi_
