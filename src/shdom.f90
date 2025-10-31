@@ -1486,17 +1486,15 @@ program shdom
     deallocate (sumRad_Out, sumCam_Out)
     deallocate (work, work1, work2)
     if (rtm_obj%isAllocated) then
-        nullify(&
-        rtm_obj%x, &
-        rtm_obj%y, &
-        rtm_obj%z, &
-        rtm_obj%temp, &
-        rtm_obj%planck, &
-        rtm_obj%ext, &
-        rtm_obj%ssa, &
-        rtm_obj%leg, &
-        rtm_obj%ipha &
-        )
+        nullify(rtm_obj%x, &
+                rtm_obj%y, &
+                rtm_obj%z, &
+                rtm_obj%temp, &
+                rtm_obj%planck, &
+                rtm_obj%ext, &
+                rtm_obj%ssa, &
+                rtm_obj%leg, &
+                rtm_obj%ipha)
     end if
 
     !╰────────────────────────────────────────────────╯!
@@ -1506,8 +1504,7 @@ program shdom
     deallocate (xyz_Grid)
     deallocate (flag_Cell, i8Grid_Cell, i6Cell_Cell, i2Tree_Cell)
     if (grid_obj%isAllocated) then
-        nullify(&
-                grid_obj%xyz, &
+        nullify(grid_obj%xyz, &
                 grid_obj%flag, &
                 grid_obj%i8Grid, &
                 grid_obj%i6Cell, &
