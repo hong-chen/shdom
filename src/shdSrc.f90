@@ -44,7 +44,12 @@ module shd_src
     use globals_cfg,   only: accSolv_, isOpenX_, isOpenYx_, &
                              isPol_, isPol4_, &
                              isSolar_, isThermal_
-    use globals_type,  only: shd_type_grid, shd_type_prp, shd_type_sfc
+    use globals_type,  only: shd_type_rtm, &
+                             shd_type_grid, &
+                             shd_type_shdo, &
+                             shd_type_src, &
+                             shd_type_prp, &
+                             shd_type_sfc
 
     use shd_scat, only: shd_scat__computeLegendre, &
                         shd_scat__computeWigner
@@ -316,29 +321,29 @@ subroutine shd_src__computeSrcOneCell_(&
     return
 end subroutine shd_src__computeSrcOneCell_
 
-subroutine shd_src__computeSrcOneDir(NSTOKES,&
-    &ML, MM, NLM,&
-    &NPTS, DELTAM, MU, PHI, SRCTYPE, SOLARMU, SOLARAZ,&
-    &ALBEDO, LEGEN, IPHASE, DIRFLUX,&
-    &SHPTR, SOURCE, SOURCE1, prp_obj)
+subroutine shd_src__computeSrcOneDir(&
+    &DELTAM, MU, PHI,&
+    &DIRFLUX,&
+    &SOURCE1,&
+    &rtm_obj, grid_obj, shdo_obj, src_obj, prp_obj)
 
     ! Computes the source function (SOURCE1) in the direction (MU,PHI)
     ! for the whole domain (NX,NZ).  The spherical harmonic source function
-    ! series is input in SOURCE.
+    ! series is input in shdo_obj%srcJ.
     ! For a solar source if delta-M then use Nakajima and Tanaka TMS
     ! procedure, replacing delta-M single scattering with single scattering
     ! for unscaled untruncated phase function.
 
-    type(shd_type_prp), intent(in) :: prp_obj
+    type(shd_type_rtm),  intent(in) :: rtm_obj
+    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_shdo), intent(in) :: shdo_obj
+    type(shd_type_src),  intent(in) :: src_obj
+    type(shd_type_prp),  intent(in) :: prp_obj
 
-    integer NSTOKES, NPTS, ML, MM, NLM
-    integer SHPTR(NPTS + 1)
-    integer*2 IPHASE(NPTS)
     logical DELTAM
-    real SOLARMU, SOLARAZ, MU, PHI
-    real ALBEDO(NPTS), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, NPTS), DIRFLUX(NPTS)
-    real SOURCE(NSTOKES, *), SOURCE1(NSTOKES, NPTS)
-    character(len=1) :: SRCTYPE
+    real MU, PHI
+    real DIRFLUX(grid_obj%Npts)
+    real SOURCE1(shdo_obj%Nstokes, grid_obj%Npts)
     integer I, J, JT, K, L, M, N, IPH, IS, NS, ME, MS
     real DA, F, A, A1, B1, SECMU0, COSSCAT
     real, allocatable :: YLMDIR(:, :), YLMSUN(:, :)
@@ -346,22 +351,22 @@ subroutine shd_src__computeSrcOneDir(NSTOKES,&
     real, allocatable :: UNSCLEGEN(:, :), SINGSCAT(:, :)
     logical TMS
 
-    allocate (YLMDIR(prp_obj%NlegSet, NLM), YLMSUN(prp_obj%NlegSet, NLM))
+    allocate (YLMDIR(prp_obj%NlegSet, shdo_obj%Nlm), YLMSUN(prp_obj%NlegSet, shdo_obj%Nlm))
     allocate (SUNDIRLEG(0:prp_obj%Nleg))
-    allocate (UNSCLEGEN(2, 0:prp_obj%Nleg), SINGSCAT(NSTOKES, prp_obj%Npha))
+    allocate (UNSCLEGEN(2, 0:prp_obj%Nleg), SINGSCAT(shdo_obj%Nstokes, prp_obj%Npha))
     if (abs(MU) .gt. 1.0) stop 'Error [_computeOneSrc]: Bad mu.'
 
     TMS = DELTAM
     ! TMS = .FALSE.
 
     ! Precompute Ylm's for output direction and solar direction
-    call shd_shdo__computeYlm(.false., MU, PHI, ML, MM, prp_obj%NlegSet, YLMDIR)
+    call shd_shdo__computeYlm(.false., MU, PHI, shdo_obj%maxNl, shdo_obj%maxNm, prp_obj%NlegSet, YLMDIR)
     if (isSolar_) then
-        call shd_shdo__computeYlm(.true., SOLARMU, SOLARAZ, ML, MM, prp_obj%NlegSet,&
+        call shd_shdo__computeYlm(.true., src_obj%avgMu, src_obj%avgAz, shdo_obj%maxNl, shdo_obj%maxNm, prp_obj%NlegSet,&
             &YLMSUN)
-        SECMU0 = 1.0/abs(SOLARMU)
-        COSSCAT = SOLARMU*MU + sqrt((1.0d0 - SOLARMU**2)*(1.0d0 - MU**2))&
-            &*cos(SOLARAZ - PHI)
+        SECMU0 = 1.0/abs(src_obj%avgMu)
+        COSSCAT = src_obj%avgMu*MU + sqrt((1.0d0 - src_obj%avgMu**2)*(1.0d0 - MU**2))&
+            &*cos(src_obj%avgAz - PHI)
         if (prp_obj%Npha .eq. 0 .and. TMS) then
             ! If non-tabulate phase functions (unpolarized) then
             !   compute the Legendre polynomials for the scattering angle
@@ -375,29 +380,29 @@ subroutine shd_src__computeSrcOneDir(NSTOKES,&
 
     ! If solar source and tabulated phase functions then precompute
     !   the single scattered solar Stokes vector to outgoing direction
-    if ((SRCTYPE .ne. 'T') .and. TMS .and. (prp_obj%Npha .gt. 0)) then
+    if ((src_obj%type .ne. 'T') .and. TMS .and. (prp_obj%Npha .gt. 0)) then
         do IPH = 1, prp_obj%Npha
             ! Unscaled the needed Legendre coefficients, but divide by 1-f
             !   because extinction is still scaled (for TMS method)
-            F = LEGEN(1, ML + 1, IPH)
+            F = rtm_obj%leg(1, shdo_obj%maxNl + 1, IPH)
             do L = 0, prp_obj%Nleg
-                if (L .le. ML) then
-                    UNSCLEGEN(1, L) = LEGEN(1, L, IPH) + F/(1 - F)
+                if (L .le. shdo_obj%maxNl) then
+                    UNSCLEGEN(1, L) = rtm_obj%leg(1, L, IPH) + F/(1 - F)
                 else
-                    UNSCLEGEN(1, L) = LEGEN(1, L, IPH)/(1 - F)
+                    UNSCLEGEN(1, L) = rtm_obj%leg(1, L, IPH)/(1 - F)
                 end if
                 if (prp_obj%NlegSet .gt. 1) then
-                    if (L .le. ML) then
-                        UNSCLEGEN(2, L) = LEGEN(5, L, IPH)
+                    if (L .le. shdo_obj%maxNl) then
+                        UNSCLEGEN(2, L) = rtm_obj%leg(5, L, IPH)
                     else
-                        UNSCLEGEN(2, L) = LEGEN(5, L, IPH)/(1 - F)
+                        UNSCLEGEN(2, L) = rtm_obj%leg(5, L, IPH)/(1 - F)
                     end if
                 end if
             end do
             ! Sum the Wigner series (for A1 and B1), rotate the plane of
             !   polarization to the outgoing direction, and return the Stoke
             call shd_src__computeSolarStokesVect(UNSCLEGEN, COSSCAT,&
-                &SOLARMU, MU, SOLARAZ - PHI, NSTOKES,&
+                &src_obj%avgMu, MU, src_obj%avgAz - PHI, shdo_obj%Nstokes,&
                 &SINGSCAT(1, IPH), prp_obj)
             if (SINGSCAT(1, IPH) .le. 0.0) then
                 write (6, *) 'Error [_computeOneSrc]: negative source function',&
@@ -409,44 +414,44 @@ subroutine shd_src__computeSrcOneDir(NSTOKES,&
 
     ! Loop over all the grid points, computing the source function
     !   at the viewing angle from the spherical harmonic source func
-    do I = 1, NPTS
-        IS = SHPTR(I)
-        NS = SHPTR(I + 1) - IS
+    do I = 1, grid_obj%Npts
+        IS = shdo_obj%isrcJ(I)
+        NS = shdo_obj%isrcJ(I + 1) - IS
         ! Sum over the real generalized spherical harmonic series
         !   of the source function
         SOURCE1(:, I) = 0.0
         do J = 1, NS
-            SOURCE1(1, I) = SOURCE1(1, I) + SOURCE(1, IS + J)*YLMDIR(1, J)
+            SOURCE1(1, I) = SOURCE1(1, I) + shdo_obj%srcJ(1, IS + J)*YLMDIR(1, J)
         end do
         if (isPol_) then
             do J = 1, NS
-                SOURCE1(2, I) = SOURCE1(2, I) + SOURCE(2, IS + J)*YLMDIR(2, J)&
-                    &+ SOURCE(3, IS + J)*YLMDIR(5, J)
-                SOURCE1(3, I) = SOURCE1(3, I) + SOURCE(2, IS + J)*YLMDIR(6, J)&
-                    &+ SOURCE(3, IS + J)*YLMDIR(3, J)
+                SOURCE1(2, I) = SOURCE1(2, I) + shdo_obj%srcJ(2, IS + J)*YLMDIR(2, J)&
+                    &+ shdo_obj%srcJ(3, IS + J)*YLMDIR(5, J)
+                SOURCE1(3, I) = SOURCE1(3, I) + shdo_obj%srcJ(2, IS + J)*YLMDIR(6, J)&
+                    &+ shdo_obj%srcJ(3, IS + J)*YLMDIR(3, J)
             end do
         end if
         if (isPol4_) then
             do J = 1, NS
-                SOURCE1(4, I) = SOURCE1(4, I) + SOURCE(4, IS + J)*YLMDIR(4, J)
+                SOURCE1(4, I) = SOURCE1(4, I) + shdo_obj%srcJ(4, IS + J)*YLMDIR(4, J)
             end do
         end if
 
         ! Special case for solar source and Delta-M
-        if ((SRCTYPE .ne. 'T') .and. TMS) then
+        if ((src_obj%type .ne. 'T') .and. TMS) then
             if (prp_obj%Npha .gt. 0) then
-                IPH = IPHASE(I)
+                IPH = rtm_obj%ipha(I)
             else
                 IPH = I
             end if
             ! First subtract off the truncated single scattering
-            DA = ALBEDO(I)*DIRFLUX(I)*SECMU0
+            DA = rtm_obj%ssa(I)*DIRFLUX(I)*SECMU0
             J = 1
-            do L = 0, ML
-                ME = min(L, MM)
+            do L = 0, shdo_obj%maxNl
+                ME = min(L, shdo_obj%maxNm)
                 MS = -ME
-                A1 = DA*LEGEN(1, L, IPH)
-                B1 = DA*LEGEN(5, L, IPH)
+                A1 = DA*rtm_obj%leg(1, L, IPH)
+                B1 = DA*rtm_obj%leg(5, L, IPH)
                 if (J .le. NS) then
                     JT = J
                     do M = MS, ME
@@ -471,14 +476,14 @@ subroutine shd_src__computeSrcOneDir(NSTOKES,&
             else if (.not. isPol_) then
                 ! If we have a phase function for each grid point (which
                 !   should be the unpolarized case) then unscale the Legendre
-                !   coefficients for L<=ML and sum over the Legendre series
+                !   coefficients for L<=shdo_obj%maxNl and sum over the Legendre series
                 !   in cosine of the scattering angle.
-                F = LEGEN(1, ML + 1, IPH)
+                F = rtm_obj%leg(1, shdo_obj%maxNl + 1, IPH)
                 do L = 0, prp_obj%Nleg
-                    if (L .le. ML) then
-                        A = DA*(LEGEN(1, L, IPH) + F/(1 - F))
+                    if (L .le. shdo_obj%maxNl) then
+                        A = DA*(rtm_obj%leg(1, L, IPH) + F/(1 - F))
                     else
-                        A = DA*LEGEN(1, L, IPH)/(1 - F)
+                        A = DA*rtm_obj%leg(1, L, IPH)/(1 - F)
                     end if
                     SOURCE1(1, I) = SOURCE1(1, I) + A*SUNDIRLEG(L)
                 end do

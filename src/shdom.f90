@@ -1287,10 +1287,10 @@ program shdom
                 if (type_Out(iout) .eq. 'J') then
                     mu_out  = parms_Out(2, iout)
                     phi_out = parms_Out(3, iout)*acos(-1.0)/180.0
-                    call shd_src__computeSrcOneDir(shdo_obj%Nstokes, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
-                        &grid_obj%Npts, doDeltaM, mu_out, phi_out,&
-                        &src_obj%type, src_obj%avgMu, src_obj%avgAz, rtm_obj%ssa, rtm_obj%leg, rtm_obj%ipha,&
-                        &fluxDir, shdo_obj%isrcJ, shdo_obj%srcJ, src1_Out, prp_obj)
+                    call shd_src__computeSrcOneDir(doDeltaM,&
+                        &mu_out, phi_out,&
+                        &fluxDir, src1_Out,&
+                        &rtm_obj, grid_obj, shdo_obj, src_obj, prp_obj)
                 end if
             end do
         end if

@@ -831,10 +831,10 @@ subroutine shd_rad__computeRad(&
         end if
 
         ! Compute the source function throughout grid for this angle
-        call shd_src__computeSrcOneDir(NSTOKES, ML, MM, NLM,&
-            &grid_obj%Npts, DELTAM, MUOUT, PHIOUT, SRCTYPE,&
-            &SOLARMU, SOLARAZ, ALBEDO, LEGEN,&
-            &IPHASE, DIRFLUX, SHPTR, SOURCE, SOURCE1, prp_obj)
+        call shd_src__computeSrcOneDir(&
+            &DELTAM, MUOUT, PHIOUT,&
+            &DIRFLUX, SOURCE1,&
+            &rtm_obj, grid_obj, shdo_obj, src_obj, prp_obj)
 
         ! Set the radiance field to -1, so we can determine valid ra
         !   Also set the source array to the extinction times the so
