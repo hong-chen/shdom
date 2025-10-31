@@ -1209,6 +1209,7 @@ program shdom
             &dsrc_Shdo, fluxTot, fluxDir,&
             &rtm_obj, grid_obj, shdo_obj, src_obj,&
             &prp_obj, sfc_obj, ckd_obj)
+
         doRadInit = .false.
         totIter = totIter + iter
 
