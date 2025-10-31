@@ -156,7 +156,7 @@ subroutine shd_solv__solveRte(&
     ! Set up some things before solution loop
 
     ! Transfer the medium properties to the internal grid and add gas absorption
-    call shd_grid__interpGrid(rtm_obj%temp, rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%ipha, grid_obj, prp_obj, ckd_obj)
+    call shd_grid__interpGrid(rtm_obj, grid_obj, prp_obj, ckd_obj)
 
     ! If Delta-M then scale the extinction, albedo, and Legendre terms
     ! Put the Planck blackbody source in rtm_obj%planck.
