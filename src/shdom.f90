@@ -394,8 +394,8 @@ program shdom
 
     shdo_obj%Nphi0 => Nphi0_Shdo
     shdo_obj%mu    => mu_Shdo
-    shdo_obj%phi   => phi_Shdo
-    shdo_obj%wgt   => wgt_Shdo
+    shdo_obj%phi(1:shdo_obj%Nmu, 1:shdo_obj%Nphi) => phi_Shdo
+    shdo_obj%wgt(1:shdo_obj%Nmu, 1:shdo_obj%Nphi) => wgt_Shdo
     shdo_obj%isAllocated = .true.
     !╰────────────────────────────────────────────────────────────────────────────╯!
 

@@ -198,8 +198,8 @@ module globals_type
         integer(kind=I__), pointer :: isrcJ(:) => null()
 
         real(kind=R__), pointer :: mu(:)  => null()
-        real(kind=R__), pointer :: phi(:) => null()
-        real(kind=R__), pointer :: wgt(:) => null()
+        real(kind=R__), pointer :: phi(:, :) => null()
+        real(kind=R__), pointer :: wgt(:, :) => null()
 
         real(kind=R__), pointer :: radI(:, :) => null()
         real(kind=R__), pointer :: srcJ(:, :) => null()

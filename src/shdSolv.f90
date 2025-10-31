@@ -212,12 +212,12 @@ subroutine shd_solv__solveRte(&
         call shd_rad__interpRad(shdo_obj%Nstokes, NBPTS, grid_obj%Npts, shdo_obj%iradI, shdo_obj%radI,&
             &NBCELLS, grid_obj%Ncell, grid_obj%i2Tree, grid_obj%i8Grid, grid_obj%xyz)
         ! Initialize the source function from the radiance field
-        call shd_src__computeSrc(shdo_obj%Nstokes, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
-            &grid_obj%Npts,&
-            &FIXSH, src_obj%type, src_obj%avgMu, YlmSolar_Shdo, rtm_obj%ssa, rtm_obj%leg,&
-            &rtm_obj%ipha, rtm_obj%planck, DIRFLUX, SHACC,&
-            &shdo_obj%maxNptsSH, shdo_obj%iradI, shdo_obj%radI, shdo_obj%isrcJ, shdo_obj%srcJ, idsrc_Shdo, dsrc_Shdo,&
-            &.true., ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM, prp_obj)
+        call shd_src__computeSrc(&
+            &FIXSH, YlmSolar_Shdo,&
+            &DIRFLUX, SHACC,&
+            &idsrc_Shdo, dsrc_Shdo,&
+            &.true., ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM,&
+            &rtm_obj, grid_obj, shdo_obj, src_obj, prp_obj)
     end if
 
     if (ACCELFLAG) then
@@ -357,17 +357,13 @@ subroutine shd_solv__solveRte(&
         !   and output radiance are in spherical harmonic expansions,
         !   and the SH/DO transforms are done during the loop over
         !   discrete ordinates.
-        call shd_intg__integratePath(rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, shdo_obj%Nstokes, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
-            &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%Nang, rtm_obj%flag_bc, rtm_obj%flag_ip,&
-            &src_obj%type, src_obj%avgMu, src_obj%avgAz, src_obj%skyRad, src_obj%waveNum, src_obj%avgWaveLen,&
-            &src_obj%unit, brdf_Shdo,&
+        call shd_intg__integratePath(&
+            &brdf_Shdo,&
             &MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-            &shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
             &CMU1, CPHI1, CMU2, CPHI2, wPhiFFT_Shdo, flagFFT_Shdo,&
-            &DIRFLUX, FLUXES, rtm_obj%ext,&
-            &shdo_obj%isrcJ, shdo_obj%srcJ, shdo_obj%iradI, shdo_obj%radI,&
+            &DIRFLUX, FLUXES,&
             &WORK, WORK1, WORK2,&
-            &rtm_obj, grid_obj, prp_obj, sfc_obj)
+            &rtm_obj, grid_obj, shdo_obj, src_obj, prp_obj, sfc_obj)
         !╰────────────────────────────────────────────────╯!
 
         ! Compute the source function from the radiance field,
@@ -378,12 +374,12 @@ subroutine shd_solv__solveRte(&
 
         ! radSH to srcSH
         !╭────────────────────────────────────────────────╮!
-        call shd_src__computeSrc(shdo_obj%Nstokes, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
-            &grid_obj%Npts,&
-            &FIXSH, src_obj%type, src_obj%avgMu, YlmSolar_Shdo, rtm_obj%ssa, rtm_obj%leg,&
-            &rtm_obj%ipha, rtm_obj%planck, DIRFLUX, SHACC,&
-            &shdo_obj%maxNptsSH, shdo_obj%iradI, shdo_obj%radI, shdo_obj%isrcJ, shdo_obj%srcJ, idsrc_Shdo, dsrc_Shdo,&
-            &.false., ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM, prp_obj)
+        call shd_src__computeSrc(&
+            &FIXSH, YlmSolar_Shdo,&
+            &DIRFLUX, SHACC,&
+            &idsrc_Shdo, dsrc_Shdo,&
+            &.false., ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM,&
+            &rtm_obj, grid_obj, shdo_obj, src_obj, prp_obj)
         !╰────────────────────────────────────────────────╯!
 
         ! Calculate the acceleration parameter and solution criterion

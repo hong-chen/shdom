@@ -498,17 +498,17 @@ subroutine shd_src__computeSrcOneDir(&
 end subroutine shd_src__computeSrcOneDir
 
 subroutine shd_src__computeSrc(&
-    &NSTOKES, ML, MM, NLM,&
-    &NPTS, FIXSH,&
-    &SRCTYPE, SOLARMU, YLMSUN, ALBEDO, LEGEN,&
-    &IPHASE, PLANCK, DIRFLUX, SHACC, MAXIV,&
-    &RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR, DELSOURCE,&
-    &FIRST, ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM, prp_obj)
+    &FIXSH,&
+    &YLMSUN,&
+    &DIRFLUX, SHACC,&
+    &OSHPTR, DELSOURCE,&
+    &FIRST, ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM,&
+    &rtm_obj, grid_obj, shdo_obj, src_obj, prp_obj)
 
-    ! Computes the source function (SOURCE) in spherical harmonic space
+    ! Computes the source function (shdo_obj%srcJ) in spherical harmonic space
     !   for all the grid points.  The thermal source and/or solar
-    !   pseudo-source (in PLANCK or DIRFLUX) is added to the scattering source
-    !   (computed from LEGEN and the spherical harmonic expansion in RADIANCE).
+    !   pseudo-source (in rtm_obj%planck or DIRFLUX) is added to the scattering source
+    !   (computed from rtm_obj%leg and the spherical harmonic expansion in shdo_obj%radI).
     !   Also computes the adaptive spherical harmonic truncation for
     !   the source function, unless FIXSH is true.  The SH truncation is set
     !   so that the higher terms of the source function are smaller in
@@ -516,7 +516,7 @@ subroutine shd_src__computeSrc(&
     !   so that a triangular (for M=L) truncation is preserved.  If there
     !   is little or no scattering then the SH truncation can be set to
     !   zero terms.  The source function SH truncation is output in terms
-    !   of the pointer SHPTR (note that RSHPTR refers to the RADIANCE array
+    !   of the pointer shdo_obj%isrcJ (note that shdo_obj%iradI refers to the shdo_obj%radI array
     !   and OSHPTR to the DELSOURCE array).
     ! To save memory this routine also computes some things for the
     !   series acceleration: the dot products of the difference in source
@@ -528,37 +528,35 @@ subroutine shd_src__computeSrc(&
     !   of the solution criterion (SOLCRIT, the RMS difference in succesive
     !   source function fields normalized by the RMS of the field).
 
-    type(shd_type_prp), intent(in) :: prp_obj
+    type(shd_type_rtm),  intent(in) :: rtm_obj
+    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_shdo), intent(in) :: shdo_obj
+    type(shd_type_src),  intent(in) :: src_obj
+    type(shd_type_prp),  intent(in) :: prp_obj
 
-    integer NSTOKES, NPTS, ML, MM, NLM
-    integer MAXIV
-    integer RSHPTR(NPTS + 1), SHPTR(NPTS + 1), OSHPTR(NPTS + 1)
-    integer*2 IPHASE(NPTS)
+    integer OSHPTR(grid_obj%Npts + 1)
     logical FIXSH, FIRST, ACCELFLAG
-    real SHACC, YLMSUN(prp_obj%NlegSet, NLM), SOLARMU
+    real SHACC, YLMSUN(prp_obj%NlegSet, shdo_obj%Nlm)
     real DELJDOT, DELJOLD, DELJNEW, JNORM
-    real ALBEDO(NPTS), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, *)
-    real PLANCK(NPTS), DIRFLUX(NPTS)
-    real RADIANCE(NSTOKES, *)
-    real SOURCE(NSTOKES, *), DELSOURCE(NSTOKES, *)
-    character(len=1) :: SRCTYPE
+    real DIRFLUX(grid_obj%Npts)
+    real DELSOURCE(shdo_obj%Nstokes, *)
     integer IS, ISO, IR, I, IPH, J, JS, K, L, LS, M, MS, ME, NS, NR
     integer, allocatable :: LOFJ(:)
     real, allocatable :: SOURCET(:, :)
     real SRCMIN, C, SECMU0, D
 
-    allocate (LOFJ(NLM), SOURCET(NSTOKES, NLM))
+    allocate (LOFJ(shdo_obj%Nlm), SOURCET(shdo_obj%Nstokes, shdo_obj%Nlm))
 
     SRCMIN = SHACC
     ! Make source function from scattering integral and real sources:
     !   Solar source: DIRFLUX has F0*exp(-tau)
-    !   Thermal source: PLANCK has (1-omega)*B(T)
-    SECMU0 = 1.0/abs(SOLARMU)
+    !   Thermal source: rtm_obj%planck has (1-omega)*B(T)
+    SECMU0 = 1.0/abs(src_obj%avgMu)
     C = sqrt(4.0*acos(-1.0))
     ! Make the l index as a function of SH term (J)
     J = 0
-    do L = 0, ML
-        ME = min(L, MM)
+    do L = 0, shdo_obj%maxNl
+        ME = min(L, shdo_obj%maxNm)
         MS = -ME
         do M = MS, ME
             J = J + 1
@@ -572,53 +570,53 @@ subroutine shd_src__computeSrc(&
         DELJOLD = 0.0
         DELJNEW = 0.0
         JNORM = 0.0
-        do I = 1, NPTS
+        do I = 1, grid_obj%Npts
             ! Compute the temporary source function for this point
             if (prp_obj%Npha .gt. 0) then
-                IPH = IPHASE(I)
+                IPH = rtm_obj%ipha(I)
             else
                 IPH = I
             end if
-            IR = RSHPTR(I)
-            NR = RSHPTR(I + 1) - IR
-            if (NR .gt. NLM) then
-                write (6, *) 'Error [_computeSrc]: NR>NLM 1', I, IR, RSHPTR(I + 1)
+            IR = shdo_obj%iradI(I)
+            NR = shdo_obj%iradI(I + 1) - IR
+            if (NR .gt. shdo_obj%Nlm) then
+                write (6, *) 'Error [_computeSrc]: NR>NLM 1', I, IR, shdo_obj%iradI(I + 1)
                 stop
             end if
             if (isPol_) then
-                call shd_src__computeSrcOnePnt(NSTOKES, NLM, LOFJ,&
-                    &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
-                    &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
-                    &NR, RADIANCE(1, IR + 1), SOURCET, prp_obj)
+                call shd_src__computeSrcOnePnt(shdo_obj%Nstokes, shdo_obj%Nlm, LOFJ,&
+                    &src_obj%type, DIRFLUX(I)*SECMU0, YLMSUN,&
+                    &rtm_obj%planck(I), rtm_obj%ssa(I), IPH, rtm_obj%leg,&
+                    &NR, shdo_obj%radI(1:shdo_obj%Nstokes, IR+1:NR), SOURCET, prp_obj)
             else
-                call shd_src__computeSrcOnePnt_(NLM, LOFJ,&
-                    &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
-                    &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
-                    &NR, RADIANCE(1, IR + 1), SOURCET, prp_obj)
+                call shd_src__computeSrcOnePnt_(shdo_obj%Nlm, LOFJ,&
+                    &src_obj%type, DIRFLUX(I)*SECMU0, YLMSUN,&
+                    &rtm_obj%planck(I), rtm_obj%ssa(I), IPH, rtm_obj%leg,&
+                    &NR, shdo_obj%radI(1:shdo_obj%Nstokes, IR+1:NR), SOURCET, prp_obj)
             end if
 
             ! Compute the dot product of the new and old source difference,
             !   and the solution criterion (don't use new points for Jnorm).
             if (ACCELFLAG) then
-                IS = SHPTR(I)
+                IS = shdo_obj%isrcJ(I)
                 ISO = OSHPTR(I)
-                NS = min(SHPTR(I + 1) - IS, OSHPTR(I + 1) - ISO)
-                do K = 1, NSTOKES
+                NS = min(shdo_obj%isrcJ(I + 1) - IS, OSHPTR(I + 1) - ISO)
+                do K = 1, shdo_obj%Nstokes
                     do J = 1, NS
                         DELJDOT = DELJDOT +&
-                            &(SOURCET(K, J) - SOURCE(K, IS + J))*DELSOURCE(K, ISO + J)
+                            &(SOURCET(K, J) - shdo_obj%srcJ(K, IS + J))*DELSOURCE(K, ISO + J)
                         DELJOLD = DELJOLD + DELSOURCE(K, ISO + J)**2
-                        DELJNEW = DELJNEW + (SOURCET(K, J) - SOURCE(K, IS + J))**2
-                        JNORM = JNORM + SOURCE(K, IS + J)**2
+                        DELJNEW = DELJNEW + (SOURCET(K, J) - shdo_obj%srcJ(K, IS + J))**2
+                        JNORM = JNORM + shdo_obj%srcJ(K, IS + J)**2
                     end do
                 end do
             else
-                IS = SHPTR(I)
-                NS = SHPTR(I + 1) - IS
-                do K = 1, NSTOKES
+                IS = shdo_obj%isrcJ(I)
+                NS = shdo_obj%isrcJ(I + 1) - IS
+                do K = 1, shdo_obj%Nstokes
                     do J = 1, NS
-                        DELJNEW = DELJNEW + (SOURCET(K, J) - SOURCE(K, IS + J))**2
-                        JNORM = JNORM + SOURCE(K, IS + J)**2
+                        DELJNEW = DELJNEW + (SOURCET(K, J) - shdo_obj%srcJ(K, IS + J))**2
+                        JNORM = JNORM + shdo_obj%srcJ(K, IS + J)**2
                     end do
                 end do
             end if
@@ -627,76 +625,76 @@ subroutine shd_src__computeSrc(&
 
     ! Compute and store the new source function difference vector
     if (.not. FIRST .and. ACCELFLAG) then
-        do I = 1, NPTS
+        do I = 1, grid_obj%Npts
             ! Compute the temporary source function for this point
             if (prp_obj%Npha .gt. 0) then
-                IPH = IPHASE(I)
+                IPH = rtm_obj%ipha(I)
             else
                 IPH = I
             end if
-            IR = RSHPTR(I)
-            NR = RSHPTR(I + 1) - IR
+            IR = shdo_obj%iradI(I)
+            NR = shdo_obj%iradI(I + 1) - IR
             if (isPol_) then
-                call shd_src__computeSrcOnePnt(NSTOKES, NLM, LOFJ,&
-                    &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
-                    &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
-                    &NR, RADIANCE(1, IR + 1), SOURCET, prp_obj)
+                call shd_src__computeSrcOnePnt(shdo_obj%Nstokes, shdo_obj%Nlm, LOFJ,&
+                    &src_obj%type, DIRFLUX(I)*SECMU0, YLMSUN,&
+                    &rtm_obj%planck(I), rtm_obj%ssa(I), IPH, rtm_obj%leg,&
+                    &NR, shdo_obj%radI(1:shdo_obj%Nstokes, IR+1:NR), SOURCET, prp_obj)
             else
-                call shd_src__computeSrcOnePnt_(NLM, LOFJ,&
-                    &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
-                    &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
-                    &NR, RADIANCE(1, IR + 1), SOURCET, prp_obj)
+                call shd_src__computeSrcOnePnt_(shdo_obj%Nlm, LOFJ,&
+                    &src_obj%type, DIRFLUX(I)*SECMU0, YLMSUN,&
+                    &rtm_obj%planck(I), rtm_obj%ssa(I), IPH, rtm_obj%leg,&
+                    &NR, shdo_obj%radI(1:shdo_obj%Nstokes, IR+1:NR), SOURCET, prp_obj)
             end if
 
             ! Make the source difference vector
-            IS = SHPTR(I)
-            NS = SHPTR(I + 1) - IS
+            IS = shdo_obj%isrcJ(I)
+            NS = shdo_obj%isrcJ(I + 1) - IS
             OSHPTR(I) = IS
             do J = 1, NS
-                DELSOURCE(:, IS + J) = SOURCET(:, J) - SOURCE(:, IS + J)
+                DELSOURCE(:, IS + J) = SOURCET(:, J) - shdo_obj%srcJ(:, IS + J)
             end do
         end do
-        OSHPTR(NPTS + 1) = SHPTR(NPTS + 1)
+        OSHPTR(grid_obj%Npts + 1) = shdo_obj%isrcJ(grid_obj%Npts + 1)
     end if
 
     ! Compute the source function in the temporary array.
     IS = 0
-    do I = 1, NPTS
+    do I = 1, grid_obj%Npts
         if (prp_obj%Npha .gt. 0) then
-            IPH = IPHASE(I)
+            IPH = rtm_obj%ipha(I)
         else
             IPH = I
         end if
-        IR = RSHPTR(I)
-        NR = RSHPTR(I + 1) - IR
-        if (NR .gt. NLM) then
-            write (6, *) 'Error [_computeSrc]: NR>NLM 3', I, IR, RSHPTR(I + 1)
+        IR = shdo_obj%iradI(I)
+        NR = shdo_obj%iradI(I + 1) - IR
+        if (NR .gt. shdo_obj%Nlm) then
+            write (6, *) 'Error [_computeSrc]: NR>NLM 3', I, IR, shdo_obj%iradI(I + 1)
             stop
         end if
         if (isPol_) then
-            call shd_src__computeSrcOnePnt(NSTOKES, NLM, LOFJ,&
-                &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
-                &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
-                &NR, RADIANCE(1, IR + 1), SOURCET, prp_obj)
+            call shd_src__computeSrcOnePnt(shdo_obj%Nstokes, shdo_obj%Nlm, LOFJ,&
+                &src_obj%type, DIRFLUX(I)*SECMU0, YLMSUN,&
+                &rtm_obj%planck(I), rtm_obj%ssa(I), IPH, rtm_obj%leg,&
+                &NR, shdo_obj%radI(1:shdo_obj%Nstokes, IR+1:NR), SOURCET, prp_obj)
         else
-            call shd_src__computeSrcOnePnt_(NLM, LOFJ,&
-                &SRCTYPE, DIRFLUX(I)*SECMU0, YLMSUN,&
-                &PLANCK(I), ALBEDO(I), IPH, LEGEN,&
-                &NR, RADIANCE(1, IR + 1), SOURCET, prp_obj)
+            call shd_src__computeSrcOnePnt_(shdo_obj%Nlm, LOFJ,&
+                &src_obj%type, DIRFLUX(I)*SECMU0, YLMSUN,&
+                &rtm_obj%planck(I), rtm_obj%ssa(I), IPH, rtm_obj%leg,&
+                &NR, shdo_obj%radI(1:shdo_obj%Nstokes, IR+1:NR), SOURCET, prp_obj)
         end if
         if (FIXSH) then
-            NS = SHPTR(I + 1) - IS
+            NS = shdo_obj%isrcJ(I + 1) - IS
         else
             ! Then do the adaptive spherical harmonics:
             !   Find how many source function terms to use, and how many
             !   terms wanted for the radiance.
-            if (SRCTYPE .eq. 'S') then
+            if (src_obj%type .eq. 'S') then
                 JS = 0
             else
                 JS = 1
             end if
-            do J = 1, NLM
-                do K = 1, NSTOKES
+            do J = 1, shdo_obj%Nlm
+                do K = 1, shdo_obj%Nstokes
                     if (abs(SOURCET(K, J)) .gt. SRCMIN) JS = J
                 end do
             end do
@@ -705,26 +703,26 @@ subroutine shd_src__computeSrc(&
                 NS = 0
             else
                 LS = LOFJ(JS)
-                if (LS .le. MM) then
+                if (LS .le. shdo_obj%maxNm) then
                     NS = (LS*(LS + 1)) + LS + 1
                 else
-                    NS = (2*MM + 1)*LS - (MM*(1 + (MM - 1))) + MM + 1
+                    NS = (2*shdo_obj%maxNm + 1)*LS - (shdo_obj%maxNm*(1 + (shdo_obj%maxNm - 1))) + shdo_obj%maxNm + 1
                 end if
             end if
-            SHPTR(I) = IS
+            shdo_obj%isrcJ(I) = IS
         end if
-        if (IS + NS .gt. MAXIV) then
-            write (6, *) 'Error [_computeSrc]: MAXIV exceeded.', MAXIV
+        if (IS + NS .gt. shdo_obj%maxNptsSH) then
+            write (6, *) 'Error [_computeSrc]: shdo_obj%maxNptsSH exceeded.', shdo_obj%maxNptsSH
             write (6, *) '  Out of memory for more spherical harmonic terms.'
             stop
         end if
         ! Transfer the new source function
         do J = 1, NS
-            SOURCE(:, IS + J) = SOURCET(:, J)
+            shdo_obj%srcJ(:, IS + J) = SOURCET(:, J)
         end do
         IS = IS + NS
     end do
-    SHPTR(NPTS + 1) = IS
+    shdo_obj%isrcJ(grid_obj%Npts + 1) = IS
     deallocate (LOFJ, SOURCET)
     return
 end subroutine shd_src__computeSrc

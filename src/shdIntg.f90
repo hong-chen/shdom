@@ -46,6 +46,8 @@ module shd_intg
                              isPol_
     use globals_type,  only: shd_type_rtm, &
                              shd_type_grid, &
+                             shd_type_shdo, &
+                             shd_type_src, &
                              shd_type_prp, &
                              shd_type_sfc
 
@@ -88,22 +90,15 @@ module shd_intg
 contains
 
 subroutine shd_intg__integratePath(&
-    &NX, NY, NZ, NSTOKES,&
-    &ML, MM, NLM, NMU, NPHI0MAX, NPHI0, NANG,&
-    &BCFLAG, IPFLAG,&
-    &SRCTYPE, SOLARMU, SOLARAZ, SKYRAD, WAVENO, WAVELEN,&
-    &UNITS,&
     &SFC_BRDF_DO,&
     &MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-    &MU, PHI, WTDO,&
     &CMU1, CPHI1, CMU2, CPHI2, WSAVE, FFTFLAG,&
-    &DIRFLUX, FLUXES, EXTINCT,&
-    &SHPTR, SOURCE, RSHPTR, RADIANCE,&
+    &DIRFLUX, FLUXES,&
     &WORK, SWEEPORD, GRIDRAD,&
-    &rtm_obj, grid_obj, prp_obj, sfc_obj)
+    &rtm_obj, grid_obj, shdo_obj, src_obj, prp_obj, sfc_obj)
 
     !   Performs the path integrations through the medium specified by
-    ! the extinction (EXTINCT) and source function (SOURCE) in
+    ! the extinction (rtm_obj%ext) and source function (shdo_obj%srcJ) in
     ! spherical harmonic space.  The source function is transformed to
     ! discrete ordinates one zenith angle at a time.  The integrations
     ! are done from the top boundary (with no reflection) down to the
@@ -112,7 +107,7 @@ subroutine shd_intg__integratePath(&
     ! After the path integrations produce the discrete angle radiance
     ! it is transformed and added to output radiance spherical harmonic
     ! expansion.  The hemispheric flux FLUXES is also computed.
-    ! The discrete ordinates in MU, PHI must be a complete set with the
+    ! The discrete ordinates in shdo_obj%mu, shdo_obj%phi must be a complete set with the
     ! downwelling (mu<0) angles first.
     !   The surface reflection is handled differently for Lambertian
     ! surfaces and more general surfaces specified by bidirectional
@@ -128,26 +123,20 @@ subroutine shd_intg__integratePath(&
 
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_shdo), intent(in) :: shdo_obj
+    type(shd_type_src),  intent(in) :: src_obj
     type(shd_type_prp),  intent(in) :: prp_obj
     type(shd_type_sfc),  intent(in) :: sfc_obj
 
-    integer NX, NY, NZ, NSTOKES, ML, MM, NLM
-    integer NMU, NPHI0MAX, NPHI0(NMU), NANG
-    integer BCFLAG, IPFLAG
     integer MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS
-    integer SHPTR(grid_obj%Npts + 1), RSHPTR(grid_obj%Npts + 1), BCPTR(MAXNBC, 2)
+    integer BCPTR(MAXNBC, 2)
     integer SWEEPORD(grid_obj%Npts, *)
-    logical FFTFLAG(NMU)
-    real SOLARMU, SOLARAZ, SKYRAD
-    real SFC_BRDF_DO(NSTOKES, NMU/2, NPHI0MAX, NSTOKES, NMU/2, NPHI0MAX)
-    real WAVENO(2), WAVELEN
-    real MU(NMU), PHI(NMU, NPHI0MAX), WTDO(NMU, NPHI0MAX)
+    logical FFTFLAG(shdo_obj%Nmu)
+    real SFC_BRDF_DO(shdo_obj%Nstokes, shdo_obj%Nmu/2, shdo_obj%maxNphi0, shdo_obj%Nstokes, shdo_obj%Nmu/2, shdo_obj%maxNphi0)
     real CMU1(*), CPHI1(*), CMU2(*), CPHI2(*), WSAVE(*)
-    real BCRAD(NSTOKES, MAXBCRAD)
-    real DIRFLUX(grid_obj%Npts), FLUXES(2, grid_obj%Npts), EXTINCT(grid_obj%Npts)
-    real GRIDRAD(NSTOKES, grid_obj%Npts), WORK(NSTOKES, NPHI0MAX, grid_obj%Npts)
-    real SOURCE(NSTOKES, *), RADIANCE(NSTOKES, *)
-    character(len=1) :: SRCTYPE, UNITS
+    real BCRAD(shdo_obj%Nstokes, MAXBCRAD)
+    real DIRFLUX(grid_obj%Npts), FLUXES(2, grid_obj%Npts)
+    real GRIDRAD(shdo_obj%Nstokes, grid_obj%Npts), WORK(shdo_obj%Nstokes, shdo_obj%maxNphi0, grid_obj%Npts)
 
     integer I, I1, K, NR, IPHI, IMU, IBC, IANG, IUPDOWN, OLDNPTS
     integer joct, ipt, ip, iorder, ipcell, icorner
@@ -164,30 +153,30 @@ subroutine shd_intg__integratePath(&
 
     ! Make the new grid cell/point sweeping order if need to
     if (grid_obj%Npts .ne. OLDNPTS) then
-        call shd_grid__makeSweepOrder(NX, NY, NZ,&
-            &BCFLAG, IPFLAG, SWEEPORD, GRIDRAD, grid_obj)
+        call shd_grid__makeSweepOrder(rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz,&
+            &rtm_obj%flag_bc, rtm_obj%flag_ip, SWEEPORD, GRIDRAD, grid_obj)
     end if
 
-    call shd_mpi__findBndryPnt(BCFLAG, IPFLAG, SWEEPORD,&
-        &NX, NY, NZ, rtm_obj, grid_obj)
+    call shd_mpi__findBndryPnt(rtm_obj%flag_bc, rtm_obj%flag_ip, SWEEPORD,&
+        &rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, rtm_obj, grid_obj)
 
     if (grid_obj%Npts .ne. OLDNPTS) then
         ! Make the pointers to the grid points on the top and bottom boundaries
-        call shd_grid__findBndryPnt(NANG, MAXNBC, MAXBCRAD, &
-            &rtm_obj%z(1), rtm_obj%z(NZ),&
+        call shd_grid__findBndryPnt(shdo_obj%Nang, MAXNBC, MAXBCRAD, &
+            &rtm_obj%z(1), rtm_obj%z(rtm_obj%Nz),&
             &NTOPPTS, NBOTPTS, BCPTR, grid_obj, sfc_obj)
         if (sfc_obj%type(1:1) .eq. 'V') then
             ! If this is a variable surface then bilinearly interpolate
             !   the surface temperature and reflection parameters to the
             !   bottom grid points.
             call shd_sfc__interpSfc(NBOTPTS, BCPTR(1, 2), grid_obj%xyz,&
-                &SRCTYPE, WAVENO, WAVELEN, UNITS,&
+                &src_obj%type, src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
                 &prp_obj, sfc_obj)
         end if
     end if
     ! Make the isotropic radiances for the top boundary
-    call shd_init__makeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
-        &UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
+    call shd_init__makeTopRad(src_obj%type, src_obj%skyRad, src_obj%waveNum, src_obj%avgWaveLen,&
+        &src_obj%unit, NTOPPTS, shdo_obj%Nstokes, BCRAD(1, 1))
 
     ! Zero the flux arrays and set temporary radiance to -1 for not valid
     do I = 1, grid_obj%Npts
@@ -197,54 +186,54 @@ subroutine shd_intg__integratePath(&
     end do
 
     ! Zero the output spherical harmonic radiance
-    NR = RSHPTR(grid_obj%Npts + 1)
+    NR = shdo_obj%iradI(grid_obj%Npts + 1)
     do I = 1, NR
-        RADIANCE(:, I) = 0.0
+        shdo_obj%radI(:, I) = 0.0
     end do
 
     ! print *, 'Path integration:'
     ! Loop over the zenith angles (downwelling angles must be first)
     IANG = 1
-    DO_MU_LOOP: do IMU = 1, NMU
+    DO_MU_LOOP: do IMU = 1, shdo_obj%Nmu
 
-        if (IMU .eq. NMU/2 + 1) then
+        if (IMU .eq. shdo_obj%Nmu/2 + 1) then
             ! For the first upwelling angle, make the bottom boundary radiances
             !   for the Lambertian surfaces.  Compute the upwelling bottom
             !   radiances using the downwelling fluxes.
             if (sfc_obj%type .eq. 'FL') then
                 call shd_init__makeBotRadUL(NBOTPTS, BCPTR(1, 2),&
-                    &DIRFLUX, FLUXES, SRCTYPE,&
-                    &WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1, 1 + NTOPPTS), sfc_obj)
+                    &DIRFLUX, FLUXES, src_obj%type,&
+                    &src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit, shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS), sfc_obj)
             else if (sfc_obj%type .eq. 'VL') then
                 call shd_init__makeBotRadVL(NBOTPTS, BCPTR(1, 2),&
-                    &DIRFLUX, FLUXES, SRCTYPE,&
-                    &NSTOKES, BCRAD(1, 1 + NTOPPTS), sfc_obj)
+                    &DIRFLUX, FLUXES, src_obj%type,&
+                    &shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS), sfc_obj)
             end if
         end if
 
         if (isPol_) then
-            call shd_shdo__transSHtoDO(grid_obj%Npts, NSTOKES, prp_obj%NlegSet, ML, MM, NLM,&
-                &NMU, NPHI0MAX, NPHI0(IMU),&
+            call shd_shdo__transSHtoDO(grid_obj%Npts, shdo_obj%Nstokes, prp_obj%NlegSet, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
+                &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0(IMU),&
                 &IMU, FFTFLAG, CMU1, CPHI1, WSAVE,&
-                &SHPTR, SOURCE, WORK)
+                &shdo_obj%isrcJ, shdo_obj%srcJ, WORK)
         else
-            call shd_shdo__transSHtoDO_(grid_obj%Npts, ML, MM, NLM,&
-                &NMU, NPHI0MAX, NPHI0(IMU),&
+            call shd_shdo__transSHtoDO_(grid_obj%Npts, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
+                &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0(IMU),&
                 &IMU, FFTFLAG, CMU1, CPHI1, WSAVE,&
-                &SHPTR, SOURCE, WORK)
+                &shdo_obj%isrcJ, shdo_obj%srcJ, WORK)
         end if
 
         ! Enforce the discrete ordinate I source function to be non-negative
         do I = 1, grid_obj%Npts
-            do IPHI = 1, NPHI0(IMU)
+            do IPHI = 1, shdo_obj%Nphi0(IMU)
                 WORK(1, IPHI, I) = max(0.0, WORK(1, IPHI, I))
             end do
         end do
 
         ! Loop over the azimuthal angles
-        DO_PHI_LOOP: do IPHI = 1, NPHI0(IMU)
+        DO_PHI_LOOP: do IPHI = 1, shdo_obj%Nphi0(IMU)
 
-            if (MU(IMU) .lt. 0.0) then
+            if (shdo_obj%mu(IMU) .lt. 0.0) then
 
                 ! For downward ordinates, initialize the top boundary radiances
                 IUPDOWN = 1
@@ -266,16 +255,16 @@ subroutine shd_intg__integratePath(&
                     !   BRDF matrix to do the integration.
                     if (sfc_obj%isUniform) then
                         call shd_init__makeBotRadU(NBOTPTS, BCPTR(1, 2),&
-                            &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, IMU, IPHI,&
-                            &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
+                            &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt, IMU, IPHI,&
+                            &src_obj%type, src_obj%avgWaveLen, src_obj%avgMu, src_obj%avgAz, DIRFLUX,&
                             &SFC_BRDF_DO,&
-                            &NSTOKES, BCRAD(1, 1 + NTOPPTS), sfc_obj)
+                            &shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS), sfc_obj)
                     else
                         call shd_init__makeBotRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
-                            &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-                            &MU(IMU), PHI(IMU, IPHI),&
-                            &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
-                            &NSTOKES, BCRAD(1, 1 + NTOPPTS), sfc_obj)
+                            &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
+                            &shdo_obj%mu(IMU), shdo_obj%phi(IMU, IPHI),&
+                            &src_obj%type, src_obj%avgWaveLen, src_obj%avgMu, src_obj%avgAz, DIRFLUX,&
+                            &shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS), sfc_obj)
                     end if
                 end if
 
@@ -289,30 +278,30 @@ subroutine shd_intg__integratePath(&
             ! Do backward path integration from each grid point not done yet
             if (is1D_) then
 
-                call shd_intg__backIntegrate1D(NX, NY, NZ, NPHI0MAX,&
-                    &SWEEPORD, MU(IMU), PHI(IMU, IPHI), TRANSMIN,&
-                    &EXTINCT, NSTOKES, WORK, IPHI, GRIDRAD, grid_obj)
+                call shd_intg__backIntegrate1D(rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, shdo_obj%maxNphi0,&
+                    &SWEEPORD, shdo_obj%mu(IMU), shdo_obj%phi(IMU, IPHI), TRANSMIN,&
+                    &rtm_obj%ext, shdo_obj%Nstokes, WORK, IPHI, GRIDRAD, grid_obj)
 
             else if (is1DYx_ .and. (.not. isMpi_)) then
 
-                call shd_intg__backIntegrate2D(NX, NY, NZ, NPHI0MAX,&
-                    &SWEEPORD, MU(IMU), PHI(IMU, IPHI), TRANSMIN,&
-                    &EXTINCT, NSTOKES, WORK, IPHI, GRIDRAD, grid_obj)
+                call shd_intg__backIntegrate2D(rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, shdo_obj%maxNphi0,&
+                    &SWEEPORD, shdo_obj%mu(IMU), shdo_obj%phi(IMU, IPHI), TRANSMIN,&
+                    &rtm_obj%ext, shdo_obj%Nstokes, WORK, IPHI, GRIDRAD, grid_obj)
 
             else
                 if (isPol_) then
 
-                    call shd_intg__backIntegrate3D(NX, NY, NZ, NPHI0MAX,&
+                    call shd_intg__backIntegrate3D(rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, shdo_obj%maxNphi0,&
                         &SWEEPORD,&
-                        &MU(IMU), PHI(IMU, IPHI), TRANSMIN, BCFLAG, IPFLAG,&
-                        &EXTINCT, NSTOKES, WORK, IPHI, GRIDRAD, rtm_obj, grid_obj)
+                        &shdo_obj%mu(IMU), shdo_obj%phi(IMU, IPHI), TRANSMIN, rtm_obj%flag_bc, rtm_obj%flag_ip,&
+                        &rtm_obj%ext, shdo_obj%Nstokes, WORK, IPHI, GRIDRAD, rtm_obj, grid_obj)
 
                 else
 
-                    call shd_intg__backIntegrate3D_(NX, NY, NZ, NPHI0MAX,&
+                    call shd_intg__backIntegrate3D_(rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, shdo_obj%maxNphi0,&
                         &SWEEPORD,&
-                        &MU(IMU), PHI(IMU, IPHI), TRANSMIN, BCFLAG, IPFLAG,&
-                        &EXTINCT, WORK, IPHI, GRIDRAD, rtm_obj, grid_obj)
+                        &shdo_obj%mu(IMU), shdo_obj%phi(IMU, IPHI), TRANSMIN, rtm_obj%flag_bc, rtm_obj%flag_ip,&
+                        &rtm_obj%ext, WORK, IPHI, GRIDRAD, rtm_obj, grid_obj)
 
                 end if
             end if
@@ -322,7 +311,7 @@ subroutine shd_intg__integratePath(&
             do I = 1, grid_obj%Npts
                 if (GRIDRAD(1, I) .lt. -accSolv_) then
                     if (verbose_ .ge. 4) write (6, *) 'Warning [_integratePath]: Grid point has no value',&
-                        &I, MU(IMU), PHI(IMU, IPHI), GRIDRAD(1, I), rtm_obj%x(1), rtm_obj%y(1),&
+                        &I, shdo_obj%mu(IMU), shdo_obj%phi(IMU, IPHI), GRIDRAD(1, I), rtm_obj%x(1), rtm_obj%y(1),&
                         &grid_obj%xyz(1, I), grid_obj%xyz(2, I), grid_obj%xyz(3, I)
                     ! stop
                     GRIDRAD(1, I) = 0.0
@@ -333,14 +322,14 @@ subroutine shd_intg__integratePath(&
             end do
 
             ! Do the sum for the hemispheric fluxes for this angle
-            A = abs(MU(IMU))*WTDO(IMU, IPHI)
+            A = abs(shdo_obj%mu(IMU))*shdo_obj%wgt(IMU, IPHI)
             do I = 1, grid_obj%Npts
                 FLUXES(IUPDOWN, I) = FLUXES(IUPDOWN, I) + A*WORK(1, IPHI, I)
             end do
 
             ! For a general BRDF surface save the downwelling radiance
             !   at the bottom boundary points.
-            if ((.not. sfc_obj%isLambertian) .and. (IMU .le. NMU/2)) then
+            if ((.not. sfc_obj%isLambertian) .and. (IMU .le. shdo_obj%Nmu/2)) then
                 I1 = NTOPPTS + NBOTPTS*IANG
                 do IBC = 1, NBOTPTS
                     I = BCPTR(IBC, 2)
@@ -353,15 +342,15 @@ subroutine shd_intg__integratePath(&
 
         ! Transform the radiance to spherical harmonics for this zenith angle
         if (isPol_) then
-            call shd_shdo__transDOtoSH(grid_obj%Npts, NSTOKES, prp_obj%NlegSet, ML, MM, NLM,&
-                &NMU, NPHI0MAX, NPHI0(IMU),&
+            call shd_shdo__transDOtoSH(grid_obj%Npts, shdo_obj%Nstokes, prp_obj%NlegSet, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
+                &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0(IMU),&
                 &IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
-                &RSHPTR, WORK, RADIANCE)
+                &shdo_obj%iradI, WORK, shdo_obj%radI)
         else
-            call shd_shdo__transDOtoSH_(grid_obj%Npts, ML, MM, NLM,&
-                &NMU, NPHI0MAX, NPHI0(IMU),&
+            call shd_shdo__transDOtoSH_(grid_obj%Npts, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
+                &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0(IMU),&
                 &IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
-                &RSHPTR, WORK, RADIANCE)
+                &shdo_obj%iradI, WORK, shdo_obj%radI)
         end if
 
     end do DO_MU_LOOP
