@@ -1421,13 +1421,11 @@ subroutine shd_grid__InterpTriLinGridPrp(&
 end subroutine shd_grid__InterpTriLinGridPrp
 
 subroutine shd_grid__interpNewGridPnt(NEWPOINTS,&
-    &NSTOKES, ML, MM, NLM,&
-    &doDeltaM, BCFLAG, IPFLAG, ACCELFLAG,&
-    &SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN,&
-    &UNITS, WAVENO, WAVELEN,&
-    &EXTINCT, ALBEDO, LEGEN, IPHASE, TEMP, PLANCK, DIRFLUX,&
-    &RSHPTR, RADIANCE, SHPTR, SOURCE, OSHPTR,&
-    &grid_obj, prp_obj, ckd_obj)
+    &doDeltaM, ACCELFLAG,&
+    &SOLARFLUX, YLMSUN,&
+    &DIRFLUX,&
+    &OSHPTR,&
+    &rtm_obj, grid_obj, shdo_obj, src_obj, prp_obj, ckd_obj)
 
     !   Interpolates the medium properties, radiance, and source function for
     ! new grid points (specified in NEWPOINTS).  The medium properties are
@@ -1439,37 +1437,33 @@ subroutine shd_grid__interpNewGridPnt(NEWPOINTS,&
     ! from the two parent grid points, and used to compute the source
     ! function for the new points.
 
+    type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_shdo), intent(in) :: shdo_obj
+    type(shd_type_src),  intent(in) :: src_obj
     type(shd_type_prp),  intent(in) :: prp_obj
     type(shd_type_ckd),  intent(in) :: ckd_obj
 
     integer NEWPOINTS(3, 4)
-    integer NSTOKES, ML, MM, NLM
-    integer BCFLAG, IPFLAG
-    integer RSHPTR(*), SHPTR(*), OSHPTR(*)
-    integer*2 IPHASE(grid_obj%Npts)
+    integer OSHPTR(*)
     logical doDeltaM, ACCELFLAG
-    real SOLARFLUX, SOLARMU, SOLARAZ, YLMSUN(prp_obj%NlegSet, NLM)
-    real WAVENO(2), WAVELEN
-    real EXTINCT(grid_obj%Npts), ALBEDO(grid_obj%Npts), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, grid_obj%Npts)
-    real TEMP(grid_obj%Npts), PLANCK(grid_obj%Npts), DIRFLUX(grid_obj%Npts)
-    real RADIANCE(NSTOKES, *), SOURCE(NSTOKES, *)
-    character(len=1) :: SRCTYPE, UNITS
+    real SOLARFLUX, YLMSUN(prp_obj%NlegSet, shdo_obj%Nlm)
+    real DIRFLUX(grid_obj%Npts)
     integer I, IP1, IP2, IP, IPH, J, K, L, M, ME, MS
     integer IS, NS, NS1, NS2
     integer IR, IR1, IR2, NR, NR1, NR2, SIDE
     logical VALIDBEAM
     real X, Y, Z, F, BB, C, D, SECMU0
-    real RAD1(NSTOKES), RAD2(NSTOKES)
+    real RAD1(shdo_obj%Nstokes), RAD2(shdo_obj%Nstokes)
     real UNIFZLEV, XO, YO, ZO, DIRPATH
     integer, allocatable :: LOFJ(:)
     real, allocatable :: SOURCET(:, :)
 
-    allocate (LOFJ(NLM), SOURCET(NSTOKES, NLM))
+    allocate (LOFJ(shdo_obj%Nlm), SOURCET(shdo_obj%Nstokes, shdo_obj%Nlm))
     ! Make the l index as a function of SH term (J)
     J = 0
-    do L = 0, ML
-        ME = min(L, MM)
+    do L = 0, shdo_obj%maxNl
+        ME = min(L, shdo_obj%maxNm)
         MS = -ME
         do M = MS, ME
             J = J + 1
@@ -1479,7 +1473,7 @@ subroutine shd_grid__interpNewGridPnt(NEWPOINTS,&
 
     C = sqrt(4.0*acos(-1.0))
     if (isSolar_) then
-        SECMU0 = 1.0/abs(SOLARMU)
+        SECMU0 = 1.0/abs(src_obj%avgMu)
     end if
 
     ! Loop over the (potentially) four new grid points
@@ -1495,26 +1489,26 @@ subroutine shd_grid__interpNewGridPnt(NEWPOINTS,&
             Y = grid_obj%xyz(2, IP)
             Z = grid_obj%xyz(3, IP)
             call shd_grid__InterpTriLinGridPrp(X, Y, Z, .false.,&
-                &TEMP(IP), EXTINCT(IP), ALBEDO(IP),&
-                &LEGEN(1, 0, IP), IPHASE(IP), prp_obj, ckd_obj)
+                &rtm_obj%temp(IP), rtm_obj%ext(IP), rtm_obj%ssa(IP),&
+                &rtm_obj%leg(1:prp_obj%NlegSet, 0:prp_obj%Nleg, 1), rtm_obj%ipha(IP), prp_obj, ckd_obj)
             ! Do the Delta-M scaling of extinction and albedo for this point
             if (doDeltaM) then
                 if (prp_obj%Npha .gt. 0) then
-                    F = LEGEN(1, ML + 1, IPHASE(IP))
+                    F = rtm_obj%leg(1, shdo_obj%maxNl + 1, rtm_obj%ipha(IP))
                 else
-                    F = LEGEN(1, ML + 1, IP)
-                    do L = 0, ML
-                        LEGEN(1, L, IP) = (LEGEN(1, L, IP) - F)/(1 - F)
+                    F = rtm_obj%leg(1, shdo_obj%maxNl + 1, IP)
+                    do L = 0, shdo_obj%maxNl
+                        rtm_obj%leg(1, L, IP) = (rtm_obj%leg(1, L, IP) - F)/(1 - F)
                     end do
                 end if
-                EXTINCT(IP) = (1.0 - ALBEDO(IP)*F)*EXTINCT(IP)
-                ALBEDO(IP) = (1.0 - F)*ALBEDO(IP)/(1.0 - ALBEDO(IP)*F)
+                rtm_obj%ext(IP) = (1.0 - rtm_obj%ssa(IP)*F)*rtm_obj%ext(IP)
+                rtm_obj%ssa(IP) = (1.0 - F)*rtm_obj%ssa(IP)/(1.0 - rtm_obj%ssa(IP)*F)
             end if
 
             ! Compute the new Planck source function (if needed)
             if (isThermal_) then
-                call shd_util__computePlanck(TEMP(IP), UNITS, WAVENO, WAVELEN, BB)
-                PLANCK(IP) = (1.0 - ALBEDO(IP))*BB
+                call shd_util__computePlanck(rtm_obj%temp(IP), src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen, BB)
+                rtm_obj%planck(IP) = (1.0 - rtm_obj%ssa(IP))*BB
             end if
 
             ! Compute the new direct beam flux (if needed)
@@ -1526,29 +1520,29 @@ subroutine shd_grid__interpNewGridPnt(NEWPOINTS,&
                 else
                     ! Otherwise, calculate the exact direct beam from property grid
                     DIRPATH = 0.0
-                    call shd_rad__computeDirect(0, X, Y, Z, BCFLAG, IPFLAG, doDeltaM,&
-                        &ML, SOLARFLUX, SOLARMU, SOLARAZ,&
+                    call shd_rad__computeDirect(0, X, Y, Z, rtm_obj%flag_bc, rtm_obj%flag_ip, doDeltaM,&
+                        &shdo_obj%maxNl, SOLARFLUX, src_obj%avgMu, src_obj%avgAz,&
                         &DIRFLUX(IP),&
                         &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj, ckd_obj)
                 end if
             end if
 
             ! Interpolate the radiance
-            IR1 = RSHPTR(IP1)
-            IR2 = RSHPTR(IP2)
-            NR1 = RSHPTR(IP1 + 1) - RSHPTR(IP1)
-            NR2 = RSHPTR(IP2 + 1) - RSHPTR(IP2)
+            IR1 = shdo_obj%iradI(IP1)
+            IR2 = shdo_obj%iradI(IP2)
+            NR1 = shdo_obj%iradI(IP1 + 1) - shdo_obj%iradI(IP1)
+            NR2 = shdo_obj%iradI(IP2 + 1) - shdo_obj%iradI(IP2)
             NR = max(NR1, NR2)
-            IR = RSHPTR(IP)
-            RSHPTR(IP + 1) = IR + NR
+            IR = shdo_obj%iradI(IP)
+            shdo_obj%iradI(IP + 1) = IR + NR
             do J = 1, NR
                 if (J .le. NR1) then
-                    RAD1(:) = RADIANCE(:, IR1 + J)
+                    RAD1(:) = shdo_obj%radI(:, IR1 + J)
                 else
                     RAD1(:) = 0.0
                 end if
                 if (J .le. NR2) then
-                    RAD2(:) = RADIANCE(:, IR2 + J)
+                    RAD2(:) = shdo_obj%radI(:, IR2 + J)
                 else
                     RAD2(:) = 0.0
                 end if
@@ -1557,42 +1551,42 @@ subroutine shd_grid__interpNewGridPnt(NEWPOINTS,&
                 !if ((abs(grid_obj%xyz(1, IP1)-grid_obj%xyz(1, IP2)) .lt. 1.0e-6) .and.&
                 !    &(abs(grid_obj%xyz(2, IP1)-grid_obj%xyz(2, IP2)) .lt. 1.0e-6)) then
                 !    if (grid_obj%xyz(3, IP2) .gt. grid_obj%xyz(3, IP1)) then
-                !        RADIANCE(:, IR + J) = RAD2(:)
+                !        shdo_obj%radI(:, IR + J) = RAD2(:)
                 !    else
-                !        RADIANCE(:, IR + J) = RAD1(:)
+                !        shdo_obj%radI(:, IR + J) = RAD1(:)
                 !    end if
                 !else
-                    !RADIANCE(:, IR + J) = 0.5*(RAD1(:) + RAD2(:))
+                    !shdo_obj%radI(:, IR + J) = 0.5*(RAD1(:) + RAD2(:))
                 !end if
                 !╰────────────────────────────────────────────────╯!
-                RADIANCE(:, IR + J) = 0.5*(RAD1(:) + RAD2(:))
+                shdo_obj%radI(:, IR + J) = 0.5*(RAD1(:) + RAD2(:))
             end do
 
             ! Compute the source function for the new points
-            NS1 = SHPTR(IP1 + 1) - SHPTR(IP1)
-            NS2 = SHPTR(IP2 + 1) - SHPTR(IP2)
+            NS1 = shdo_obj%isrcJ(IP1 + 1) - shdo_obj%isrcJ(IP1)
+            NS2 = shdo_obj%isrcJ(IP2 + 1) - shdo_obj%isrcJ(IP2)
             NS = max(NS1, NS2)
-            IS = SHPTR(IP)
-            SHPTR(IP + 1) = IS + NS
+            IS = shdo_obj%isrcJ(IP)
+            shdo_obj%isrcJ(IP + 1) = IS + NS
             if (ACCELFLAG) OSHPTR(IP + 1) = OSHPTR(IP)
             if (prp_obj%Npha .gt. 0) then
-                IPH = IPHASE(IP)
+                IPH = rtm_obj%ipha(IP)
             else
                 IPH = IP
             end if
             if (isPol_) then
-                call shd_src__computeSrcOnePnt(NSTOKES, NLM, LOFJ,&
-                    &SRCTYPE, DIRFLUX(IP)*SECMU0, YLMSUN,&
-                    &PLANCK(IP), ALBEDO(IP), IPH, LEGEN,&
-                    &NR, RADIANCE(1, IR + 1), SOURCET, prp_obj)
+                call shd_src__computeSrcOnePnt(shdo_obj%Nstokes, shdo_obj%Nlm, LOFJ,&
+                    &src_obj%type, DIRFLUX(IP)*SECMU0, YLMSUN,&
+                    &rtm_obj%planck(IP), rtm_obj%ssa(IP), IPH, rtm_obj%leg,&
+                    &NR, shdo_obj%radI(1:shdo_obj%Nstokes, IR+1:NR), SOURCET, prp_obj)
             else
-                call shd_src__computeSrcOnePnt_(NLM, LOFJ,&
-                    &SRCTYPE, DIRFLUX(IP)*SECMU0, YLMSUN,&
-                    &PLANCK(IP), ALBEDO(IP), IPH, LEGEN,&
-                    &NR, RADIANCE(1, IR + 1), SOURCET, prp_obj)
+                call shd_src__computeSrcOnePnt_(shdo_obj%Nlm, LOFJ,&
+                    &src_obj%type, DIRFLUX(IP)*SECMU0, YLMSUN,&
+                    &rtm_obj%planck(IP), rtm_obj%ssa(IP), IPH, rtm_obj%leg,&
+                    &NR, shdo_obj%radI(1:shdo_obj%Nstokes, IR+1:NR), SOURCET, prp_obj)
             end if
             do J = 1, NS
-                SOURCE(:, IS + J) = SOURCET(:, J)
+                shdo_obj%srcJ(:, IS + J) = SOURCET(:, J)
             end do
         end if
     end do
@@ -1664,10 +1658,10 @@ subroutine shd_grid__splitGrid(&
             !   for cells split during grid smoothing
             FRAC = 0.03
             MAXCELLS = grid_obj%maxNcell - FRAC*(grid_obj%maxNcell - grid_obj%Ncell) - 2
-            MAXPTS = grid_obj%maxNpts - FRAC*(grid_obj%maxNpts - grid_obj%Npts) - 4
-            MAXWORK = shdo_obj%maxNptsDO - FRAC*(shdo_obj%maxNptsDO - shdo_obj%maxNphi0*grid_obj%Npts) - 4*shdo_obj%maxNphi0
-            MAXSH = shdo_obj%maxNptsSH - FRAC*(shdo_obj%maxNptsSH - shdo_obj%isrcJ(grid_obj%Npts + 1)) - 4*shdo_obj%Nlm
-            MAXRAD = shdo_obj%maxNptsSH + grid_obj%maxNpts - FRAC*(shdo_obj%maxNptsSH + grid_obj%maxNpts - shdo_obj%iradI(grid_obj%Npts + 1)) - 4*shdo_obj%Nlm
+            MAXPTS   = grid_obj%maxNpts  - FRAC*(grid_obj%maxNpts  - grid_obj%Npts)  - 4
+            MAXWORK  = shdo_obj%maxNptsDO - FRAC*(shdo_obj%maxNptsDO - shdo_obj%maxNphi0*grid_obj%Npts) - 4*shdo_obj%maxNphi0
+            MAXSH    = shdo_obj%maxNptsSH - FRAC*(shdo_obj%maxNptsSH - shdo_obj%isrcJ(grid_obj%Npts+1)) - 4*shdo_obj%Nlm
+            MAXRAD   = shdo_obj%maxNptsSH + grid_obj%maxNpts - FRAC*(shdo_obj%maxNptsSH + grid_obj%maxNpts - shdo_obj%iradI(grid_obj%Npts + 1)) - 4*shdo_obj%Nlm
 
             ! Go down the list from highest adaptive cell criterion on down
             isOutMem0 = isOutMem
@@ -1676,8 +1670,8 @@ subroutine shd_grid__splitGrid(&
                 &.and. (I .le. N))
                 if ((grid_obj%Ncell .gt. MAXCELLS) .or.&
                     &(grid_obj%Npts .gt. MAXPTS) .or.&
-                    &(grid_obj%Npts*shdo_obj%maxNphi0 .gt. MAXWORK) .or.&
-                    &(shdo_obj%isrcJ(grid_obj%Npts + 1) .gt. MAXSH) .or.&
+                    &(grid_obj%Npts*shdo_obj%maxNphi0   .gt. MAXWORK) .or.&
+                    &(shdo_obj%isrcJ(grid_obj%Npts + 1) .gt. MAXSH)   .or.&
                     &(shdo_obj%iradI(grid_obj%Npts + 1) .gt. MAXRAD)) then
                     isOutMem0 = .true.
                 else
@@ -1688,28 +1682,26 @@ subroutine shd_grid__splitGrid(&
 
                     ! Interpolate the medium properties, radiance, and source
                     call shd_grid__interpNewGridPnt(NEWPOINTS,&
-                        &shdo_obj%Nstokes, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
-                        &doDeltaM, rtm_obj%flag_bc, rtm_obj%flag_ip, ACCELFLAG,&
-                        &src_obj%type, SOLARFLUX, src_obj%avgMu, src_obj%avgAz, YLMSUN,&
-                        &src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen,&
-                        &rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%ipha, rtm_obj%temp, rtm_obj%planck, DIRFLUX,&
-                        &shdo_obj%iradI, shdo_obj%radI, shdo_obj%isrcJ, shdo_obj%srcJ, OSHPTR,&
-                        &grid_obj, prp_obj, ckd_obj)
+                        &doDeltaM, ACCELFLAG,&
+                        &SOLARFLUX, YLMSUN,&
+                        &DIRFLUX,&
+                        &OSHPTR,&
+                        &rtm_obj, grid_obj, shdo_obj, src_obj, prp_obj, ckd_obj)
                 end if
                 I = I + 1
             end do
 
             MAXCELLS = grid_obj%maxNcell - 2
-            MAXPTS = grid_obj%maxNpts - 4
-            MAXWORK = shdo_obj%maxNptsDO - 4*shdo_obj%maxNphi0
-            MAXSH = shdo_obj%maxNptsSH - 4*shdo_obj%Nlm
-            MAXRAD = shdo_obj%maxNptsSH + grid_obj%maxNpts - 4*shdo_obj%Nlm
+            MAXPTS   = grid_obj%maxNpts  - 4
+            MAXWORK  = shdo_obj%maxNptsDO - 4*shdo_obj%maxNphi0
+            MAXSH    = shdo_obj%maxNptsSH - 4*shdo_obj%Nlm
+            MAXRAD   = shdo_obj%maxNptsSH + grid_obj%maxNpts - 4*shdo_obj%Nlm
 
             ! Split some more cells to make the adaptive grid "smoother"
             do while ((.not. isOutMem) .and. (I .le. N))
-                if ((grid_obj%Ncell .gt. MAXCELLS) .or.&
-                    &(grid_obj%Npts .gt. MAXPTS) .or.&
-                    &(grid_obj%Npts *shdo_obj%maxNphi0 .gt. MAXWORK) .or.&
+                if  ((grid_obj%Ncell .gt. MAXCELLS) .or.&
+                    &(grid_obj%Npts  .gt. MAXPTS) .or.&
+                    &(grid_obj%Npts * shdo_obj%maxNphi0 .gt. MAXWORK) .or.&
                     &(shdo_obj%isrcJ(grid_obj%Npts + 1) .gt. MAXSH) .or.&
                     &(shdo_obj%iradI(grid_obj%Npts + 1) .gt. MAXRAD)) then
                     isOutMem = .true.
@@ -1727,13 +1719,11 @@ subroutine shd_grid__splitGrid(&
 
                         ! Interpolate the medium properties, radiance, and source
                         call shd_grid__interpNewGridPnt(NEWPOINTS,&
-                            &shdo_obj%Nstokes, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
-                            &doDeltaM, rtm_obj%flag_bc, rtm_obj%flag_ip, ACCELFLAG,&
-                            &src_obj%type, SOLARFLUX, src_obj%avgMu, src_obj%avgAz, YLMSUN,&
-                            &src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen,&
-                            &rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%ipha, rtm_obj%temp, rtm_obj%planck, DIRFLUX,&
-                            &shdo_obj%iradI, shdo_obj%radI, shdo_obj%isrcJ, shdo_obj%srcJ, OSHPTR,&
-                            &grid_obj, prp_obj, ckd_obj)
+                            &doDeltaM, ACCELFLAG,&
+                            &SOLARFLUX, YLMSUN,&
+                            &DIRFLUX,&
+                            &OSHPTR,&
+                            &rtm_obj, grid_obj, shdo_obj, src_obj, prp_obj, ckd_obj)
                     end if
                 end if
                 I = I + 1
