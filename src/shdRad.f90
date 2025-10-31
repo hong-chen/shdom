@@ -78,7 +78,7 @@ module shd_rad
     public :: shd_rad__computeRad
     public :: shd_rad__computeCamRad
 
-    public :: shd_rad__computeNetFluxDiv
+    public :: shd_rad__computeFluxDiv
 
 contains
 
@@ -1125,7 +1125,7 @@ subroutine shd_rad__computeCamRad(&
     return
 end subroutine shd_rad__computeCamRad
 
-subroutine shd_rad__computeNetFluxDiv(NSTOKES, NPTS, RSHPTR, SRCTYPE,&
+subroutine shd_rad__computeFluxDiv(NSTOKES, NPTS, RSHPTR, SRCTYPE,&
     &SOLARMU, EXTINCT, ALBEDO, PLANCK, DIRFLUX,&
     &RADIANCE, NETFLUXDIV)
 
@@ -1155,6 +1155,6 @@ subroutine shd_rad__computeNetFluxDiv(NSTOKES, NPTS, RSHPTR, SRCTYPE,&
 
     return
 
-end subroutine shd_rad__computeNetFluxDiv
+end subroutine shd_rad__computeFluxDiv
 
 end module shd_rad

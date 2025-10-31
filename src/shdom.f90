@@ -68,7 +68,7 @@ program shdom
     use shd_rad,  only: shd_rad__computeRad, &
                         shd_rad__computeCamRad, &
                         shd_rad__makeDirect, &
-                        shd_rad__computeNetFluxDiv
+                        shd_rad__computeFluxDiv
 
     use shd_inp,  only: shd_io__nmlInp,      shd_io__userInp, shd_io__checkInp, &
                         shd_io__readPrpSize, shd_io__readPrp, shd_io__checkPrp, &
@@ -1325,7 +1325,7 @@ program shdom
 
         if (isHROut) then
             ! Compute the net flux divergence at every point
-            call shd_rad__computeNetFluxDiv(shdo_obj%Nstokes, grid_obj%Npts, shdo_obj%iradI, src_obj%type, src_obj%avgMu,&
+            call shd_rad__computeFluxDiv(shdo_obj%Nstokes, grid_obj%Npts, shdo_obj%iradI, src_obj%type, src_obj%avgMu,&
                 &rtm_obj%ext, rtm_obj%ssa, rtm_obj%planck, fluxDir, shdo_obj%radI, work)
             call shd_util__sumData(ckd_obj%Ng-ig_ckd, wgt_Ckd(ig_ckd), grid_obj%Npts, work, sumFluxDiv_Out)
         end if
