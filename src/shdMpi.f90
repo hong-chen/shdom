@@ -796,29 +796,29 @@ real function shd_mpi__sumCpuTime(cpuTimes)
 end function shd_mpi__sumCpuTime
 
 subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
-    &IPFLAG, BCFLAG, NBPTS, NXT, NYT, Nz, NSHOUT,&
+    &NSHOUT,&
     &SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV, SUMSHTERMS,&
-    &XALLGRID, YALLGRID,&
     &ALLFLUXES, ALLFLUXDIV, ALLSHTERMS,&
-    &NSH, NCELLSTOT, NPTSTOT, NSHTOT, grid_obj, prp_obj)
+    &NSH, NCELLSTOT, NPTSTOT, NSHTOT,&
+    &rtmAll_obj, grid_obj, prp_obj)
 
     ! Gathers the base grid output data in SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV,
     ! and SUMSHTERMS from all the processors and assembles in the master
     ! processor output arrays ALLFLUXES, ALLFLUXDIV, ALLSHTERMS.  Gathers the
     ! ixyOut_ array from each processor to determine where each subdomain is.
-    ! Also gathers the full base grid position arrays (XALLGRID/YALLGRID) and
+    ! Also gathers the full base grid position arrays (rtmAll_obj%x/rtmAll_obj%y) and
     ! sums grid_obj%Ncell,grid_obj%Npts,NSH over all processors.
 
-    type(shd_type_grid), intent(in) :: grid_obj
-    type(shd_type_prp),  intent(in) :: prp_obj
+    type(shd_type_rtm),  intent(inout) :: rtmAll_obj
+    type(shd_type_grid), intent(in)    :: grid_obj
+    type(shd_type_prp),  intent(in)    :: prp_obj
 
     logical, intent(in) :: FLUX_OUT, FLUXDIV_OUT, SH_OUT
-    integer, intent(in) :: IPFLAG, BCFLAG, NBPTS, NXT, NYT, Nz, NSHOUT
-    real, intent(in) :: SUMFLUXES(2, NBPTS), SUMDIRFLUX(NBPTS)
-    real, intent(in) :: SUMFLUXDIV(NBPTS), SUMSHTERMS(NSHOUT, NBPTS)
-    real, intent(out) :: XALLGRID(NXT), YALLGRID(NYT)
-    real, intent(out) :: ALLFLUXES(3, Nz, NYT, NXT), ALLFLUXDIV(Nz, NYT, NXT)
-    real, intent(out) :: ALLSHTERMS(NSHOUT, Nz, NYT, NXT)
+    integer, intent(in) :: NSHOUT
+    real, intent(in) :: SUMFLUXES(2, grid_obj%Npts0), SUMDIRFLUX(grid_obj%Npts0)
+    real, intent(in) :: SUMFLUXDIV(grid_obj%Npts0), SUMSHTERMS(NSHOUT, grid_obj%Npts0)
+    real, intent(out) :: ALLFLUXES(3, rtmAll_obj%Nz, rtmAll_obj%Ny, rtmAll_obj%Nx), ALLFLUXDIV(rtmAll_obj%Nz, rtmAll_obj%Ny, rtmAll_obj%Nx)
+    real, intent(out) :: ALLSHTERMS(NSHOUT, rtmAll_obj%Nz, rtmAll_obj%Ny, rtmAll_obj%Nx)
     integer, intent(in) :: NSH
     integer, intent(out) :: NCELLSTOT, NPTSTOT, NSHTOT
 
@@ -839,13 +839,13 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
     if (FLUX_OUT) then
         irq = 0
         if (myProc_ .gt. 0) then
-            allocate (sendbuf(3, NBPTS))
+            allocate (sendbuf(3, grid_obj%Npts0))
             sendbuf(1:2, :) = SUMFLUXES(:, :); sendbuf(3, :) = SUMDIRFLUX(:)
             irq = irq + 1
-            call mpi_isend(sendbuf, 3*NBPTS, MPI_real, 0, 1, comm2D_,&
+            call mpi_isend(sendbuf, 3*grid_obj%Npts0, MPI_real, 0, 1, comm2D_,&
                 &requests(irq), ierr)
         else
-            MAXN = (maxval(ixyAll(2, 1, :)) + 1)*(maxval(ixyAll(2, 2, :)) + 1)*Nz
+            MAXN = (maxval(ixyAll(2, 1, :)) + 1)*(maxval(ixyAll(2, 2, :)) + 1)*rtmAll_obj%Nz
             allocate (recvbuf(3, MAXN, 1:Nproc_ - 1))
             do iproc = 1, Nproc_ - 1
                 irq = irq + 1
@@ -861,10 +861,10 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
             NX1 = Nx + 1; NY1 = Ny + 1
             if (is1DX_ .and. .not. isMpiX_) NX1 = Nx
             if (is1DYx_ .and. .not. isMpiY_) NY1 = Ny
-            allocate (buf(3, Nz, NY1, NX1))
-            buf(1:2, :, :, :) = reshape(SUMFLUXES(1:2, :), (/2, Nz, NY1, NX1/))
-            buf(3, :, :, :) = reshape(SUMDIRFLUX(:), (/Nz, NY1, NX1/))
-            ALLFLUXES(1:3, 1:Nz, IY:IY + Ny - 1, IX:IX + Nx - 1) = buf(:, 1:Nz, 1:Ny, 1:Nx)
+            allocate (buf(3, rtmAll_obj%Nz, NY1, NX1))
+            buf(1:2, :, :, :) = reshape(SUMFLUXES(1:2, :), (/2, rtmAll_obj%Nz, NY1, NX1/))
+            buf(3, :, :, :) = reshape(SUMDIRFLUX(:), (/rtmAll_obj%Nz, NY1, NX1/))
+            ALLFLUXES(1:3, 1:rtmAll_obj%Nz, IY:IY + Ny - 1, IX:IX + Nx - 1) = buf(:, 1:rtmAll_obj%Nz, 1:Ny, 1:Nx)
             deallocate (buf)
             do iproc = 1, Nproc_ - 1
                 IX = ixyAll(1, 1, iproc); Nx = ixyAll(2, 1, iproc)
@@ -872,9 +872,9 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
                 NX1 = Nx + 1; NY1 = Ny + 1
                 if (is1DX_ .and. .not. isMpiX_) NX1 = Nx
                 if (is1DYx_ .and. .not. isMpiY_) NY1 = Ny
-                allocate (buf(3, Nz, NY1, NX1))
-                buf(:, :, :, :) = reshape(recvbuf(:, 1:Nz*NY1*NX1, iproc), (/3, Nz, NY1, NX1/))
-                ALLFLUXES(1:3, 1:Nz, IY:IY + Ny - 1, IX:IX + Nx - 1) = buf(:, 1:Nz, 1:Ny, 1:Nx)
+                allocate (buf(3, rtmAll_obj%Nz, NY1, NX1))
+                buf(:, :, :, :) = reshape(recvbuf(:, 1:rtmAll_obj%Nz*NY1*NX1, iproc), (/3, rtmAll_obj%Nz, NY1, NX1/))
+                ALLFLUXES(1:3, 1:rtmAll_obj%Nz, IY:IY + Ny - 1, IX:IX + Nx - 1) = buf(:, 1:rtmAll_obj%Nz, 1:Ny, 1:Nx)
                 deallocate (buf)
             end do
             deallocate (recvbuf)
@@ -887,10 +887,10 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
         irq = 0
         if (myProc_ .gt. 0) then
             irq = irq + 1
-            call mpi_isend(SUMFLUXDIV, NBPTS, MPI_real, 0, 2, comm2D_,&
+            call mpi_isend(SUMFLUXDIV, grid_obj%Npts0, MPI_real, 0, 2, comm2D_,&
                 &requests(irq), ierr)
         else
-            MAXN = (maxval(ixyAll(2, 1, :)) + 1)*(maxval(ixyAll(2, 2, :)) + 1)*Nz
+            MAXN = (maxval(ixyAll(2, 1, :)) + 1)*(maxval(ixyAll(2, 2, :)) + 1)*rtmAll_obj%Nz
             allocate (recvbuf(1, MAXN, 1:Nproc_ - 1))
             do iproc = 1, Nproc_ - 1
                 irq = irq + 1
@@ -906,9 +906,9 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
             NX1 = Nx + 1; NY1 = Ny + 1
             if (is1DX_ .and. .not. isMpiX_) NX1 = Nx
             if (is1DYx_ .and. .not. isMpiY_) NY1 = Ny
-            allocate (buf(1, Nz, NY1, NX1))
-            buf(1, :, :, :) = reshape(SUMFLUXDIV(:), (/Nz, NY1, NX1/))
-            ALLFLUXDIV(1:Nz, IY:IY + Ny - 1, IX:IX + Nx - 1) = buf(1, 1:Nz, 1:Ny, 1:Nx)
+            allocate (buf(1, rtmAll_obj%Nz, NY1, NX1))
+            buf(1, :, :, :) = reshape(SUMFLUXDIV(:), (/rtmAll_obj%Nz, NY1, NX1/))
+            ALLFLUXDIV(1:rtmAll_obj%Nz, IY:IY + Ny - 1, IX:IX + Nx - 1) = buf(1, 1:rtmAll_obj%Nz, 1:Ny, 1:Nx)
             deallocate (buf)
             do iproc = 1, Nproc_ - 1
                 IX = ixyAll(1, 1, iproc); Nx = ixyAll(2, 1, iproc)
@@ -916,9 +916,9 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
                 NX1 = Nx + 1; NY1 = Ny + 1
                 if (is1DX_ .and. .not. isMpiX_) NX1 = Nx
                 if (is1DYx_ .and. .not. isMpiY_) NY1 = Ny
-                allocate (buf(1, Nz, NY1, NX1))
-                buf(:, :, :, :) = reshape(recvbuf(:, 1:Nz*NY1*NX1, iproc), (/1, Nz, NY1, NX1/))
-                ALLFLUXDIV(1:Nz, IY:IY + Ny - 1, IX:IX + Nx - 1) = buf(1, 1:Nz, 1:Ny, 1:Nx)
+                allocate (buf(1, rtmAll_obj%Nz, NY1, NX1))
+                buf(:, :, :, :) = reshape(recvbuf(:, 1:rtmAll_obj%Nz*NY1*NX1, iproc), (/1, rtmAll_obj%Nz, NY1, NX1/))
+                ALLFLUXDIV(1:rtmAll_obj%Nz, IY:IY + Ny - 1, IX:IX + Nx - 1) = buf(1, 1:rtmAll_obj%Nz, 1:Ny, 1:Nx)
                 deallocate (buf)
             end do
             deallocate (recvbuf)
@@ -929,10 +929,10 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
         irq = 0
         if (myProc_ .gt. 0) then
             irq = irq + 1
-            call mpi_isend(SUMSHTERMS, NSHOUT*NBPTS, MPI_real, 0, 3, comm2D_,&
+            call mpi_isend(SUMSHTERMS, NSHOUT*grid_obj%Npts0, MPI_real, 0, 3, comm2D_,&
                 &requests(irq), ierr)
         else
-            MAXN = (maxval(ixyAll(2, 1, :)) + 1)*(maxval(ixyAll(2, 2, :)) + 1)*Nz
+            MAXN = (maxval(ixyAll(2, 1, :)) + 1)*(maxval(ixyAll(2, 2, :)) + 1)*rtmAll_obj%Nz
             allocate (recvbuf(NSHOUT, MAXN, 1:Nproc_ - 1))
             do iproc = 1, Nproc_ - 1
                 irq = irq + 1
@@ -948,9 +948,9 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
             NX1 = Nx + 1; NY1 = Ny + 1
             if (is1DX_ .and. .not. isMpiX_) NX1 = Nx
             if (is1DYx_ .and. .not. isMpiY_) NY1 = Ny
-            allocate (buf(NSHOUT, Nz, NY1, NX1))
-            buf(:, :, :, :) = reshape(SUMSHTERMS(:, :), (/NSHOUT, Nz, NY1, NX1/))
-            ALLSHTERMS(:, 1:Nz, IY:IY + Ny - 1, IX:IX + Nx - 1) = buf(:, 1:Nz, 1:Ny, 1:Nx)
+            allocate (buf(NSHOUT, rtmAll_obj%Nz, NY1, NX1))
+            buf(:, :, :, :) = reshape(SUMSHTERMS(:, :), (/NSHOUT, rtmAll_obj%Nz, NY1, NX1/))
+            ALLSHTERMS(:, 1:rtmAll_obj%Nz, IY:IY + Ny - 1, IX:IX + Nx - 1) = buf(:, 1:rtmAll_obj%Nz, 1:Ny, 1:Nx)
             deallocate (buf)
             do iproc = 1, Nproc_ - 1
                 IX = ixyAll(1, 1, iproc); Nx = ixyAll(2, 1, iproc)
@@ -958,9 +958,9 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
                 NX1 = Nx + 1; NY1 = Ny + 1
                 if (is1DX_ .and. .not. isMpiX_) NX1 = Nx
                 if (is1DYx_ .and. .not. isMpiY_) NY1 = Ny
-                allocate (buf(NSHOUT, Nz, NY1, NX1))
-                buf(:, :, :, :) = reshape(recvbuf(:, 1:Nz*NY1*NX1, iproc), (/NSHOUT, Nz, NY1, NX1/))
-                ALLSHTERMS(:, 1:Nz, IY:IY + Ny - 1, IX:IX + Nx - 1) = buf(:, 1:Nz, 1:Ny, 1:Nx)
+                allocate (buf(NSHOUT, rtmAll_obj%Nz, NY1, NX1))
+                buf(:, :, :, :) = reshape(recvbuf(:, 1:rtmAll_obj%Nz*NY1*NX1, iproc), (/NSHOUT, rtmAll_obj%Nz, NY1, NX1/))
+                ALLSHTERMS(:, 1:rtmAll_obj%Nz, IY:IY + Ny - 1, IX:IX + Nx - 1) = buf(:, 1:rtmAll_obj%Nz, 1:Ny, 1:Nx)
                 deallocate (buf)
             end do
             deallocate (recvbuf)
@@ -969,8 +969,8 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
 
     ! Make the X and Y grids for the full domain
     if (myProc_ .eq. 0) then
-        XALLGRID(1:NXT) = (/(prp_obj%xDomain*(I - 1)/NXT, I=1, NXT)/)
-        YALLGRID(1:NYT) = (/(prp_obj%yDomain*(I - 1)/NYT, I=1, NYT)/)
+        rtmAll_obj%x(1:rtmAll_obj%Nx) = (/(prp_obj%xDomain*(I - 1)/rtmAll_obj%Nx, I=1, rtmAll_obj%Nx)/)
+        rtmAll_obj%y(1:rtmAll_obj%Ny) = (/(prp_obj%yDomain*(I - 1)/rtmAll_obj%Ny, I=1, rtmAll_obj%Ny)/)
     end if
 
     ! Get the sum of the grid_obj%Ncell, grid_obj%Npts, and NSH over the processors
@@ -1785,7 +1785,6 @@ end subroutine shd_mpi__calBndryRad
 subroutine shd_mpi__computeRad(&
     &DELTAM,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-    &SKYRAD,&
     &DIRFLUX, FLUXES,&
     &SOURCE1, GRIDRAD,&
     &parms_Out, NRAD, RADOUT,&
@@ -1809,7 +1808,6 @@ subroutine shd_mpi__computeRad(&
     integer, intent(in) :: MAXNBC, NTOPPTS, NBOTPTS
     integer, intent(in) :: BCPTR(MAXNBC, 2)
     logical, intent(in) :: DELTAM
-    real, intent(in) :: SKYRAD
     real, intent(in) :: BCRAD(shdo_obj%Nstokes, *)
     real, intent(in) :: DIRFLUX(grid_obj%Npts), FLUXES(2, grid_obj%Npts)
     real, intent(inout) :: SOURCE1(shdo_obj%Nstokes, grid_obj%Npts), GRIDRAD(shdo_obj%Nstokes, grid_obj%Npts)
@@ -1842,7 +1840,7 @@ subroutine shd_mpi__computeRad(&
     !╰──────────────────────────────────────────────────────────────╯!
 
     ! Make the isotropic radiances for the top boundary
-    call shd_init__makeTopRad(src_obj%type, SKYRAD, src_obj%waveNum, src_obj%avgWaveLen,&
+    call shd_init__makeTopRad(src_obj%type, src_obj%skyRad, src_obj%waveNum, src_obj%avgWaveLen,&
         &src_obj%unit, NTOPPTS, shdo_obj%Nstokes, BCRAD(1, 1))
     ! Make the bottom boundary radiances for the Lambertian surfaces.
     ! Compute the upwelling bottom radiances using the downwelling fluxes.
@@ -2208,7 +2206,6 @@ end subroutine shd_mpi__computeRad
 subroutine shd_mpi__computeCamRad(&
     &DELTAM,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-    &SKYRAD,&
     &DIRFLUX, FLUXES,&
     &parms_Out, IVIS, VISOUT,&
     &rtm_obj, grid_obj, shdo_obj, src_obj,&
@@ -2231,7 +2228,6 @@ subroutine shd_mpi__computeCamRad(&
     integer, intent(in) :: MAXNBC, NTOPPTS, NBOTPTS
     integer, intent(in) :: BCPTR(MAXNBC, 2)
     logical, intent(in) :: DELTAM
-    real, intent(in) :: SKYRAD
     real, intent(in) :: BCRAD(shdo_obj%Nstokes, *)
     real, intent(in) :: DIRFLUX(grid_obj%Npts), FLUXES(2, grid_obj%Npts)
     real, intent(in) :: parms_Out(*)
@@ -2283,7 +2279,7 @@ subroutine shd_mpi__computeCamRad(&
     end if
 
     ! Make the isotropic radiances for the top boundary
-    call shd_init__makeTopRad(src_obj%type, SKYRAD, src_obj%waveNum, src_obj%avgWaveLen,&
+    call shd_init__makeTopRad(src_obj%type, src_obj%skyRad, src_obj%waveNum, src_obj%avgWaveLen,&
         &src_obj%unit, NTOPPTS, shdo_obj%Nstokes, BCRAD(1, 1))
     ! Make the bottom boundary radiances for the Lambertian surfaces.
     ! Compute the upwelling bottom radiances using the downwelling fluxes.

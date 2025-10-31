@@ -223,6 +223,8 @@ module globals_type
         real(kind=R__) :: avgSolar0 = -999.0 ! solar read in from input file
         real(kind=R__) :: avgSolar  = -999.0 ! solar from correlated-k
 
+        real(kind=R__) :: skyRad = -999.0
+
         ! placeholder for spatially varying solar input
         !real(kind=R__), pointer :: mu(:) => null()
         !real(kind=R__), pointer :: az(:) => null()

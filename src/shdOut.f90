@@ -46,6 +46,7 @@ module shd_out
     use globals_type,  only: shd_type_rtm, &
                              shd_type_grid, &
                              shd_type_shdo, &
+                             shd_type_src, &
                              shd_type_prp, &
                              shd_type_sfc, &
                              shd_type_ckd, &
@@ -1188,17 +1189,14 @@ subroutine shd_io__radShiftCorr(&
 end subroutine shd_io__radShiftCorr
 
 subroutine shd_io__outputResultMpi(&
-    &NSTOKES, NX, NY, NZ,&
-    &Npts_tot, Ncell_tot,&
-    &NSH, ML, MM, NLM, NMU, NPHI, NANG,&
+    &Npts_tot, Ncell_tot, Nsh_tot,&
     &INSAVEFILE, OUTSAVEFILE,&
-    &BCFLAG, IPFLAG, DELTAM, SRCTYPE,&
-    &SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
-    &WAVENO, WAVELEN, UNITS,&
+    &DELTAM,&
     &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
     &FLUXES, FLUXDIV, NSHOUT, SHTERMS, IRAD, RADOUT,&
     &OUTTYPE, OUTPARMS, OUTFILE,&
-    &rtm_obj, grid_obj, prp_obj, sfc_obj, ckd_obj, sen_obj)
+    &rtmAll_obj, grid_obj, shdo_obj, src_obj,&
+    &prp_obj, sfc_obj, ckd_obj, sen_obj)
 
     ! Writes the desired type of output file from the output fields
     ! with a header giving the input parameters.
@@ -1207,28 +1205,25 @@ subroutine shd_io__outputResultMpi(&
     ! convergence), 'S' - for spherical harmonic terms
     ! See the overall program documentation for output parameters.
 
-    type(shd_type_rtm),  intent(in) :: rtm_obj
+    type(shd_type_rtm),  intent(in) :: rtmAll_obj
     type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_shdo), intent(in) :: shdo_obj
+    type(shd_type_src),  intent(in) :: src_obj
     type(shd_type_prp),  intent(in) :: prp_obj
     type(shd_type_sfc),  intent(in) :: sfc_obj
     type(shd_type_ckd),  intent(in) :: ckd_obj
     type(shd_type_sen),  intent(in) :: sen_obj
 
-    integer NSTOKES, NX, NY, NZ, NSH, Npts_tot, Ncell_tot
-    integer ML, MM, NLM, NMU, NPHI, NANG
-    integer BCFLAG, IPFLAG
+    integer Nsh_tot, Npts_tot, Ncell_tot
     integer MAXITER, TOTITER, IRAD, NSHOUT
     logical DELTAM
-    real SOLARFLUX, SOLARMU, SOLARAZ
-    real SKYRAD
     real SOLACC, SPLITACC, SHACC
-    real WAVENO(2), WAVELEN
     real OUTPARMS(*)
-    character(len=1), intent(in) :: SRCTYPE, UNITS, OUTTYPE
+    character(len=1), intent(in) :: OUTTYPE
     character(len=*), intent(in) :: INSAVEFILE, OUTSAVEFILE
     character(len=*), intent(in) :: OUTFILE
-    real FLUXES(3, NZ, NY, NX), FLUXDIV(NZ, NY, NX)
-    real RADOUT(NSTOKES, *), SHTERMS(NSHOUT, NZ, NY, NX)
+    real FLUXES(3, rtmAll_obj%Nz, rtmAll_obj%Ny, rtmAll_obj%Nx), FLUXDIV(rtmAll_obj%Nz, rtmAll_obj%Ny, rtmAll_obj%Nx)
+    real RADOUT(shdo_obj%Nstokes, *), SHTERMS(NSHOUT, rtmAll_obj%Nz, rtmAll_obj%Ny, rtmAll_obj%Nx)
 
     integer I, J, K, N, JX, JY, IZ
     integer NANGOUT, NXOUT, NYOUT
@@ -1250,19 +1245,19 @@ subroutine shd_io__outputResultMpi(&
     OUTFILE_DATA = trim(adjustl(OUTFILE))//trim(adjustl(DATA_POSTFIX))
 
     GRIDNAME = 'EVEN (X,Y)  '
-    if (rtm_obj%type .eq. 'P') then
+    if (rtmAll_obj%type .eq. 'P') then
         GRIDNAME = GRIDNAME(1:14)//'PROPERTY-FILE (Z) '
-    else if (rtm_obj%type .eq. 'F') then
+    else if (rtmAll_obj%type .eq. 'F') then
         GRIDNAME = GRIDNAME(1:14)//'INPUT-FILE (Z)    '
     else
         GRIDNAME = GRIDNAME(1:14)//'EVEN (Z)          '
     end if
 
-    if (SRCTYPE .eq. 'S') then
+    if (src_obj%type .eq. 'S') then
         SOURCENAME = 'SOLAR'
-    else if (SRCTYPE .eq. 'T') then
+    else if (src_obj%type .eq. 'T') then
         SOURCENAME = 'THERMAL'
-    else if (SRCTYPE .eq. 'B') then
+    else if (src_obj%type .eq. 'B') then
         SOURCENAME = 'SOLAR/THERMAL'
     end if
 
@@ -1288,9 +1283,9 @@ subroutine shd_io__outputResultMpi(&
         SFCNAME = 'VARIABLE OTHER'
     end if
 
-    if (UNITS .eq. 'T') then
+    if (src_obj%unit .eq. 'T') then
         UNITSNAME = 'KELVIN'
-    else if (UNITS .eq. 'B') then
+    else if (src_obj%unit .eq. 'B') then
         if (OUTTYPE .eq. 'F') then
             UNITSNAME = 'WATTS/(M^2)'
         else if (OUTTYPE .eq. 'H') then
@@ -1317,11 +1312,11 @@ subroutine shd_io__outputResultMpi(&
         & '! Polarized Spherical Harmonic Discrete Ordinate',&
         & ' Radiative Transfer Output'
     write (2, '(2(A,I3),A,I5,2(A,I3),A,I5,A,I10)')&
-        & '!  L=', ML, '  M=', MM, '  NLM=', NLM,&
-        & '   NMU=', NMU, '  NPHI=', NPHI, '  NANG=', NANG,&
-        & '   NSH=', NSH
-    write (2, '(A,I1,3(A,I4),2(A,I8))') '!  NSTOKES=', NSTOKES,&
-        & '   NX=', NX, '   NY=', NY, '   NZ=', NZ,&
+        & '!  L=', shdo_obj%maxNl, '  M=', shdo_obj%maxNm, '  NLM=', shdo_obj%Nlm,&
+        & '   NMU=', shdo_obj%Nmu, '  NPHI=', shdo_obj%Nphi, '  NANG=', shdo_obj%Nang,&
+        & '   NSH=', Nsh_tot
+    write (2, '(A,I1,3(A,I4),2(A,I8))') '!  NSTOKES=', shdo_obj%Nstokes,&
+        & '   NX=', rtmAll_obj%Nx, '   NY=', rtmAll_obj%Ny, '   NZ=', rtmAll_obj%Nz,&
         & '   NPTS=', Npts_tot, '   NCELLS=', Ncell_tot
     write (2, '(A,A)') '!  PROPERTY_FILE=', trim(prp_obj%fname)
     write (2, '(A,A,A,I2)') '!  CORRELATED_K-DIST_FILE=',&
@@ -1335,26 +1330,26 @@ subroutine shd_io__outputResultMpi(&
         write (2, '(A,A14)') '!  SOURCE_TYPE=', SOURCENAME
     end if
     write (2, '(A,A32,A,I1)') '!  GRID_TYPE=', GRIDNAME,&
-        & '   INDEPENDENT_PIXEL=', IPFLAG
+        & '   INDEPENDENT_PIXEL=', rtmAll_obj%flag_ip
     write (2, '(A,A22,A,I2)') '!  SURFACE_TYPE=', SFCNAME,&
-        & '   HORIZ_BOUNDARY_COND=', BCFLAG
+        & '   HORIZ_BOUNDARY_COND=', rtmAll_obj%flag_bc
     if (isSolar_) then
         if (sfc_obj%type(1:1) .eq. 'V') then
             write (2, '(A,A,A,E12.5)') '!  SURFACE_FILE=', trim(sfc_obj%fname),&
-                & '  SKY_RAD=', SKYRAD
+                & '  SKY_RAD=', src_obj%skyRad
         else
-            if (SRCTYPE .eq. 'B') then
+            if (src_obj%type .eq. 'B') then
                 write (2, '(A,F9.7,A,F8.3,A,E12.5)')&
                     & '!  GROUND_ALBEDO=', sfc_obj%avgAlb, '  GROUND_TEMP=', sfc_obj%avgTemp,&
-                    & '  SKY_RAD=', SKYRAD
+                    & '  SKY_RAD=', src_obj%skyRad
             else
                 write (2, '(A,F9.7,A,E12.5)')&
-                    & '!  GROUND_ALBEDO=', sfc_obj%avgAlb, '  SKY_RAD=', SKYRAD
+                    & '!  GROUND_ALBEDO=', sfc_obj%avgAlb, '  SKY_RAD=', src_obj%skyRad
             end if
         end if
         write (2, '(A,E13.6,A,F10.7,A,F8.3)')&
-            & '!  SOLAR_FLUX=', SOLARFLUX, '   SOLAR_MU=', SOLARMU,&
-            & '   SOLAR_AZ=', SOLARAZ*180.0/acos(-1.0)
+            & '!  SOLAR_FLUX=', src_obj%avgSolar, '   SOLAR_MU=', src_obj%avgMu,&
+            & '   SOLAR_AZ=', src_obj%avgAz*180.0/acos(-1.0)
     else
         if (sfc_obj%type(1:1) .eq. 'V') then
             write (2, '(A,A)') '!  SURFACE_FILE=', trim(sfc_obj%fname)
@@ -1362,17 +1357,17 @@ subroutine shd_io__outputResultMpi(&
             write (2, '(A,F8.3,A,F9.7)')&
                 & '!  GROUND_TEMP=', sfc_obj%avgTemp, '  GROUND_EMIS=', 1.0 - sfc_obj%avgAlb
         end if
-        write (2, '(A,F8.3)') '!  SKY_TEMP=', SKYRAD
+        write (2, '(A,F8.3)') '!  SKY_TEMP=', src_obj%skyRad
     end if
 
-    if (UNITS .eq. 'T') then
+    if (src_obj%unit .eq. 'T') then
         write (2, '(A,A24)') '!  UNITS=', UNITSNAME
-    else if (UNITS .eq. 'B') then
+    else if (src_obj%unit .eq. 'B') then
         write (2, '(A,A24,A,2(1X,F10.2))') '!  UNITS=', UNITSNAME,&
-            & '   WAVENUMBER_RANGE=', WAVENO(1), WAVENO(2)
+            & '   WAVENUMBER_RANGE=', src_obj%waveNum(1), src_obj%waveNum(2)
     else
         write (2, '(A,A24,A,F10.2)') '!  UNITS=', UNITSNAME,&
-            & '   WAVELENGTH=', WAVELEN
+            & '   WAVELENGTH=', src_obj%avgWaveLen
     end if
     write (2, '(2(A,E10.3))') '!  SPLITTING_ACCURACY=', SPLITACC,&
         & '   SPHERICAL_HARMONIC_ACCURACY=', SHACC
@@ -1395,12 +1390,12 @@ subroutine shd_io__outputResultMpi(&
         else
             NYOUT = max(1, nint(prp_obj%yDomain/OUTPARMS(3)))
         end if
-        Z0 = min(max(OUTPARMS(1), rtm_obj%z(1)), rtm_obj%z(NZ))
+        Z0 = min(max(OUTPARMS(1), rtmAll_obj%z(1)), rtmAll_obj%z(rtmAll_obj%Nz))
         NANGOUT = nint(OUTPARMS(6))
 
         write (2, '(A,F7.3,3(A,I10))') '!    RADIANCE AT Z=', Z0,&
             & '    NXO=', NXOUT, '    NYO=', NYOUT, '    NDIR=', NANGOUT
-        if (UNITS .eq. 'T') then
+        if (src_obj%unit .eq. 'T') then
             FORM = '(2(1X,F7.3),1X,4(1X,F6.2))'
             write (2, '(A)')&
                 & '!   X       Y      RADIANCE (STOKES I, Q, U, V)'
@@ -1435,9 +1430,9 @@ subroutine shd_io__outputResultMpi(&
             PHI_SET(K) = PHID*acos(-1.0)/180.0
         end do
 
-        if (IPFLAG .eq. 0) then
-            call shd_io__radShiftCorr(RADOUT(:, 1:NXOUT*NYOUT*NANGOUT), NSTOKES, NANGOUT, NXOUT, NYOUT,&
-                OUTPARMS(2), OUTPARMS(3), prp_obj%xDomain, prp_obj%yDomain, Z0-rtm_obj%z(1), MU_SET, PHI_SET)
+        if (rtmAll_obj%flag_ip .eq. 0) then
+            call shd_io__radShiftCorr(RADOUT(:, 1:NXOUT*NYOUT*NANGOUT), shdo_obj%Nstokes, NANGOUT, NXOUT, NYOUT,&
+                OUTPARMS(2), OUTPARMS(3), prp_obj%xDomain, prp_obj%yDomain, Z0-rtmAll_obj%z(1), MU_SET, PHI_SET)
         end if
 
         deallocate(MU_SET, PHI_SET)
@@ -1448,14 +1443,14 @@ subroutine shd_io__outputResultMpi(&
         write (2, '(A)') '! The following contains information for binary data intepretation:'
         write (2, '(A)') '! R'
         write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-        write (2, '(A, 5(I10,A))') '! ', NXOUT, ',', NYOUT, ',', 1, ',', NANGOUT, ',', NSTOKES, ''
+        write (2, '(A, 5(I10,A))') '! ', NXOUT, ',', NYOUT, ',', 1, ',', NANGOUT, ',', shdo_obj%Nstokes, ''
         !╰────────────────────────────────────────────────╯!
 
         ! binary data
         !╭────────────────────────────────────────────────╮!
         if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResultMpi]: <R> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
         N = NANGOUT*NXOUT*NYOUT
-        call shd_io__outputDataBin(RADOUT, NSTOKES, N, IRAD, OUTFILE_DATA)
+        call shd_io__outputDataBin(RADOUT, shdo_obj%Nstokes, N, IRAD, OUTFILE_DATA)
         !╰────────────────────────────────────────────────╯!
 
         ! original
@@ -1482,7 +1477,7 @@ subroutine shd_io__outputResultMpi(&
     ! Format 1 is flux at top and bottom of medium at grid point
     else if (OUTTYPE .eq. 'F') then
 
-        if (UNITS .eq. 'T') then
+        if (src_obj%unit .eq. 'T') then
             C = 1.0 / PI_
         else
             C = 1.0
@@ -1496,9 +1491,9 @@ subroutine shd_io__outputResultMpi(&
 
         if (nint(OUTPARMS(1)) .le. 1) then
 
-            write (2, '(A,F7.3)') '!    UPWELLING FLUX:     Z=', rtm_obj%z(NZ)
-            write (2, '(A,F7.3)') '!    DOWNWELLING FLUX:   Z=', rtm_obj%z(1)
-            if (UNITS .eq. 'T') then
+            write (2, '(A,F7.3)') '!    UPWELLING FLUX:     Z=', rtmAll_obj%z(rtmAll_obj%Nz)
+            write (2, '(A,F7.3)') '!    DOWNWELLING FLUX:   Z=', rtmAll_obj%z(1)
+            if (src_obj%unit .eq. 'T') then
                 FORM = '(2(1X,F7.3),1X,2(2X,F6.2))'
                 write (2, '(A)') '!   X       Y        UP     DOWN'
             else
@@ -1517,16 +1512,16 @@ subroutine shd_io__outputResultMpi(&
             write (2, '(A)') '! The following contains information for binary data intepretation:'
             write (2, '(A)') '! F1'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-            write (2, '(A, 5(I10,A))') '! ', NX, ',', NY, ',', 1, ',', 1, ',', NVAR, ''
+            write (2, '(A, 5(I10,A))') '! ', rtmAll_obj%Nx, ',', rtmAll_obj%Ny, ',', 1, ',', 1, ',', NVAR, ''
             !╰────────────────────────────────────────────────╯!
 
             ! binary data
             !╭────────────────────────────────────────────────╮!
             if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResultMpi]: <F1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
 
-            N = NX*NY
+            N = rtmAll_obj%Nx*rtmAll_obj%Ny
             IDATA = 0
-            call shd_io__outputDataBin(C*FLUXES(2, NZ, :, :), 1, N, IDATA, OUTFILE_DATA)
+            call shd_io__outputDataBin(C*FLUXES(2, rtmAll_obj%Nz, :, :), 1, N, IDATA, OUTFILE_DATA)
 
             IDATA = 0
             call shd_io__outputDataBin(C*FLUXES(1,  1, :, :), 1, N, IDATA, OUTFILE_DATA, 'ADD')
@@ -1540,15 +1535,15 @@ subroutine shd_io__outputResultMpi(&
             ! original
             !╭────────────────────────────────────────────────╮!
             !C = 1.0
-            !if (UNITS .eq. 'T') C = 1.0 / PI_
-            !do I = 1, NX
-            !    do J = 1, NY
-            !        if (SRCTYPE .ne. 'T') then
-            !            write (2, FORM) rtm_obj%x(I), rtm_obj%y(J),&
-            !                & C*FLUXES(2, NZ, J, I), C*FLUXES(1, 1, J, I), FLUXES(3, 1, J, I)
+            !if (src_obj%unit .eq. 'T') C = 1.0 / PI_
+            !do I = 1, rtmAll_obj%Nx
+            !    do J = 1, rtmAll_obj%Ny
+            !        if (src_obj%type .ne. 'T') then
+            !            write (2, FORM) rtmAll_obj%x(I), rtmAll_obj%y(J),&
+            !                & C*FLUXES(2, rtmAll_obj%Nz, J, I), C*FLUXES(1, 1, J, I), FLUXES(3, 1, J, I)
             !        else
-            !            write (2, FORM) rtm_obj%x(I), rtm_obj%y(J),&
-            !                & C*FLUXES(2, NZ, J, I), C*FLUXES(1, 1, J, I)
+            !            write (2, FORM) rtmAll_obj%x(I), rtmAll_obj%y(J),&
+            !                & C*FLUXES(2, rtmAll_obj%Nz, J, I), C*FLUXES(1, 1, J, I)
             !        end if
             !    end do
             !end do
@@ -1563,7 +1558,7 @@ subroutine shd_io__outputResultMpi(&
         ! Format 3 is domain averaged vertical profile
         else if (nint(OUTPARMS(1)) .eq. 3) then
 
-            if (UNITS .eq. 'T') then
+            if (src_obj%unit .eq. 'T') then
                 FORM = '(1X,F7.3,1X,2(2X,F6.2))'
                 write (2, '(A)') '!   Z        UP     DOWN'
             else
@@ -1579,17 +1574,17 @@ subroutine shd_io__outputResultMpi(&
 
             ! data processing
             !╭────────────────────────────────────────────────╮!
-            allocate(SUM1(NZ))
-            allocate(SUM2(NZ))
-            allocate(SUM3(NZ))
+            allocate(SUM1(rtmAll_obj%Nz))
+            allocate(SUM2(rtmAll_obj%Nz))
+            allocate(SUM3(rtmAll_obj%Nz))
 
-            do IZ = 1, NZ
+            do IZ = 1, rtmAll_obj%Nz
                 SUM1(IZ) = 0.0
                 SUM2(IZ) = 0.0
                 SUM3(IZ) = 0.0
 
-                do I = 1, NX
-                    do J = 1, NY
+                do I = 1, rtmAll_obj%Nx
+                    do J = 1, rtmAll_obj%Ny
                         SUM1(IZ) = SUM1(IZ) + FLUXES(1, IZ, J, I)
                         SUM2(IZ) = SUM2(IZ) + FLUXES(2, IZ, J, I)
                         SUM3(IZ) = SUM3(IZ) + FLUXES(3, IZ, J, I)
@@ -1604,23 +1599,23 @@ subroutine shd_io__outputResultMpi(&
             write (2, '(A)') '! The following contains information for binary data intepretation:'
             write (2, '(A)') '! F3'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-            write (2, '(A, 5(I10,A))') '! ', 1, ',', 1, ',', NZ, ',', 1, ',', NVAR, ''
+            write (2, '(A, 5(I10,A))') '! ', 1, ',', 1, ',', rtmAll_obj%Nz, ',', 1, ',', NVAR, ''
             !╰────────────────────────────────────────────────╯!
 
             ! binary data
             !╭────────────────────────────────────────────────╮!
             if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResultMpi]: <F3> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
 
-            N = NX*NY
+            N = rtmAll_obj%Nx*rtmAll_obj%Ny
             IDATA = 0
-            call shd_io__outputDataBin(C*SUM2/N, 1, NZ, IDATA, OUTFILE_DATA)
+            call shd_io__outputDataBin(C*SUM2/N, 1, rtmAll_obj%Nz, IDATA, OUTFILE_DATA)
 
             IDATA = 0
-            call shd_io__outputDataBin(C*SUM1/N, 1, NZ, IDATA, OUTFILE_DATA, 'ADD')
+            call shd_io__outputDataBin(C*SUM1/N, 1, rtmAll_obj%Nz, IDATA, OUTFILE_DATA, 'ADD')
 
             if (isSolar_) then
                 IDATA = 0
-                call shd_io__outputDataBin(SUM3/N, 1, NZ, IDATA, OUTFILE_DATA, 'ADD')
+                call shd_io__outputDataBin(SUM3/N, 1, rtmAll_obj%Nz, IDATA, OUTFILE_DATA, 'ADD')
             end if
 
             deallocate(SUM1)
@@ -1631,23 +1626,23 @@ subroutine shd_io__outputResultMpi(&
             ! original
             !╭────────────────────────────────────────────────╮!
             !C = 1.0
-            !if (UNITS .eq. 'T') C = 1.0 / PI_
-            !N = NX*NY
-            !do K = 1, NZ
+            !if (src_obj%unit .eq. 'T') C = 1.0 / PI_
+            !N = rtmAll_obj%Nx*rtmAll_obj%Ny
+            !do K = 1, rtmAll_obj%Nz
             !    SUM1 = 0.0
             !    SUM2 = 0.0
             !    SUM3 = 0.0
-            !    do I = 1, NX
-            !        do J = 1, NY
+            !    do I = 1, rtmAll_obj%Nx
+            !        do J = 1, rtmAll_obj%Ny
             !            SUM1 = SUM1 + FLUXES(1, K, J, I)
             !            SUM2 = SUM2 + FLUXES(2, K, J, I)
             !            SUM3 = SUM3 + FLUXES(3, K, J, I)
             !        end do
             !    end do
-            !    if (SRCTYPE .ne. 'T') then
-            !        write (2, FORM) rtm_obj%z(K), C*SUM2/N, C*SUM1/N, SUM3/N
+            !    if (src_obj%type .ne. 'T') then
+            !        write (2, FORM) rtmAll_obj%z(K), C*SUM2/N, C*SUM1/N, SUM3/N
             !    else
-            !        write (2, FORM) rtm_obj%z(K), C*SUM2/N, C*SUM1/N
+            !        write (2, FORM) rtmAll_obj%z(K), C*SUM2/N, C*SUM1/N
             !    end if
             !end do
             !╰────────────────────────────────────────────────╯!
@@ -1655,7 +1650,7 @@ subroutine shd_io__outputResultMpi(&
         ! Format 4 is fluxes at every base grid point
         else if (nint(OUTPARMS(1)) .eq. 4) then
 
-            if (UNITS .eq. 'T') then
+            if (src_obj%unit .eq. 'T') then
                 FORM = '(3(1X,F7.3),1X,2(2X,F6.2))'
                 write (2, '(A)') '!   X       Y       Z        UP     DOWN'
             else
@@ -1675,14 +1670,14 @@ subroutine shd_io__outputResultMpi(&
             write (2, '(A)') '! The following contains information for binary data intepretation:'
             write (2, '(A)') '! F4'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-            write (2, '(A, 5(I10,A))') '! ', NX, ',', NY, ',', NZ, ',', 1, ',', NVAR, ''
+            write (2, '(A, 5(I10,A))') '! ', rtmAll_obj%Nx, ',', rtmAll_obj%Ny, ',', rtmAll_obj%Nz, ',', 1, ',', NVAR, ''
             !╰────────────────────────────────────────────────╯!
 
             ! binary data
             !╭────────────────────────────────────────────────╮!
             if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResultMpi]: <F4> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
 
-            N = NX*NY*NZ
+            N = rtmAll_obj%Nx*rtmAll_obj%Ny*rtmAll_obj%Nz
             IDATA = 0
             call shd_io__outputDataBin(C*FLUXES(2, :, :, :), 1, N, IDATA, OUTFILE_DATA)
 
@@ -1698,15 +1693,15 @@ subroutine shd_io__outputResultMpi(&
             ! original
             !╭────────────────────────────────────────────────╮!
             !C = 1.0
-            !if (UNITS .eq. 'T') C = 1.0 / PI_
-            !do I = 1, NX
-            !    do J = 1, NY
-            !        do K = 1, NZ
-            !            if (SRCTYPE .ne. 'T') then
-            !                write (2, FORM) rtm_obj%x(I), rtm_obj%y(J), rtm_obj%z(K),&
+            !if (src_obj%unit .eq. 'T') C = 1.0 / PI_
+            !do I = 1, rtmAll_obj%Nx
+            !    do J = 1, rtmAll_obj%Ny
+            !        do K = 1, rtmAll_obj%Nz
+            !            if (src_obj%type .ne. 'T') then
+            !                write (2, FORM) rtmAll_obj%x(I), rtmAll_obj%y(J), rtmAll_obj%z(K),&
             !                    & C*FLUXES(2, K, J, I), C*FLUXES(1, K, J, I), FLUXES(3, K, J, I)
             !            else
-            !                write (2, FORM) rtm_obj%x(I), rtm_obj%y(J), rtm_obj%z(K),&
+            !                write (2, FORM) rtmAll_obj%x(I), rtmAll_obj%y(J), rtmAll_obj%z(K),&
             !                    & C*FLUXES(2, K, J, I), C*FLUXES(1, K, J, I)
             !            end if
             !        end do
@@ -1732,12 +1727,12 @@ subroutine shd_io__outputResultMpi(&
 
             ! data processing
             !╭────────────────────────────────────────────────╮!
-            allocate(SUM1(NZ))
+            allocate(SUM1(rtmAll_obj%Nz))
 
-            do IZ = 1, NZ
+            do IZ = 1, rtmAll_obj%Nz
                 SUM1(IZ) = 0.0
-                do I = 1, NX
-                    do J = 1, NY
+                do I = 1, rtmAll_obj%Nx
+                    do J = 1, rtmAll_obj%Ny
                         SUM1(IZ) = SUM1(IZ) + FLUXDIV(IZ, J, I)
                     end do
                 end do
@@ -1749,30 +1744,30 @@ subroutine shd_io__outputResultMpi(&
             write (2, '(A)') '! The following contains information for binary data intepretation:'
             write (2, '(A)') '! H1'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-            write (2, '(A, 5(I10,A))') '! ', 1, ',', 1, ',', NZ, ',', 1, ',', NVAR, ''
+            write (2, '(A, 5(I10,A))') '! ', 1, ',', 1, ',', rtmAll_obj%Nz, ',', 1, ',', NVAR, ''
             !╰────────────────────────────────────────────────╯!
 
             ! binary data
             !╭────────────────────────────────────────────────╮!
             if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResultMpi]: <H1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
 
-            N = NX*NY
+            N = rtmAll_obj%Nx*rtmAll_obj%Ny
             IDATA = 0
-            call shd_io__outputDataBin(-SUM1/N, 1, NZ, IDATA, OUTFILE_DATA)
+            call shd_io__outputDataBin(-SUM1/N, 1, rtmAll_obj%Nz, IDATA, OUTFILE_DATA)
 
             deallocate(SUM1)
             !╰────────────────────────────────────────────────╯!
 
             ! original
             !╭────────────────────────────────────────────────╮!
-            !do K = 1, NZ
+            !do K = 1, rtmAll_obj%Nz
             !    SUM = 0.0
-            !    do I = 1, NX
-            !        do J = 1, NY
+            !    do I = 1, rtmAll_obj%Nx
+            !        do J = 1, rtmAll_obj%Ny
             !            SUM = SUM + FLUXDIV(K, J, I)
             !        end do
             !    end do
-            !    write (2, '(1X,F7.3,2X,E13.5)') rtm_obj%z(K), -SUM/(NX*NY)
+            !    write (2, '(1X,F7.3,2X,E13.5)') rtmAll_obj%z(K), -SUM/(rtmAll_obj%Nx*rtmAll_obj%Ny)
             !end do
             !╰────────────────────────────────────────────────╯!
 
@@ -1786,25 +1781,25 @@ subroutine shd_io__outputResultMpi(&
             write (2, '(A)') '! The following contains information for binary data intepretation:'
             write (2, '(A)') '! H2'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-            write (2, '(A, 5(I10,A))') '! ', NX, ',', NY, ',', NZ, ',', 1, ',', NVAR, ''
+            write (2, '(A, 5(I10,A))') '! ', rtmAll_obj%Nx, ',', rtmAll_obj%Ny, ',', rtmAll_obj%Nz, ',', 1, ',', NVAR, ''
             !╰────────────────────────────────────────────────╯!
 
             ! binary data
             !╭────────────────────────────────────────────────╮!
             if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResultMpi]: <H2> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
 
-            N = NX*NY*NZ
+            N = rtmAll_obj%Nx*rtmAll_obj%Ny*rtmAll_obj%Nz
             IDATA = 0
             call shd_io__outputDataBin(-FLUXDIV, 1, N, IDATA, OUTFILE_DATA)
             !╰────────────────────────────────────────────────╯!
 
             ! original
             !╭────────────────────────────────────────────────╮!
-            !    do I = 1, NX
-            !        do J = 1, NY
-            !            do K = 1, NZ
+            !    do I = 1, rtmAll_obj%Nx
+            !        do J = 1, rtmAll_obj%Ny
+            !            do K = 1, rtmAll_obj%Nz
             !                write (2, '(3(1X,F7.3),2X,E13.5)')&
-            !                    & rtm_obj%x(I), rtm_obj%y(J), rtm_obj%z(K), -FLUXDIV(K, J, I)
+            !                    & rtmAll_obj%x(I), rtmAll_obj%y(J), rtmAll_obj%z(K), -FLUXDIV(K, J, I)
             !            end do
             !        end do
             !    end do
@@ -1826,20 +1821,20 @@ subroutine shd_io__outputResultMpi(&
 
         if (nint(OUTPARMS(1)) .eq. 1) then
 
-            N = NX*NY*NZ
+            N = rtmAll_obj%Nx*rtmAll_obj%Ny*rtmAll_obj%Nz
 
             ! data processing
             !╭────────────────────────────────────────────────╮!
-            allocate(SHTERM5(NZ, NY, NX))
+            allocate(SHTERM5(rtmAll_obj%Nz, rtmAll_obj%Ny, rtmAll_obj%Nx))
 
             if (NSHOUT .eq. 5) then
 
                 NVAR = 5
                 write (2, '(A,A)') '!    X       Y        Z         Imean',&
                     &'          Fx           Fy           Fz       HOrms'
-                do IZ = 1, NZ
-                    do I = 1, NX
-                        do J = 1, NY
+                do IZ = 1, rtmAll_obj%Nz
+                    do I = 1, rtmAll_obj%Nx
+                        do J = 1, rtmAll_obj%Ny
                             SHTERM5(IZ, J, I) = SHTERMS(5, IZ, J, I)/max(1e-20, SHTERMS(1, IZ, J, I))
                         end do
                     end do
@@ -1859,7 +1854,7 @@ subroutine shd_io__outputResultMpi(&
             write (2, '(A)') '! The following contains information for binary data intepretation:'
             write (2, '(A)') '! S1'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-            write (2, '(A, 5(I10,A))') '! ', NX, ',', NY, ',', NZ, ',', 1, ',', NVAR, ''
+            write (2, '(A, 5(I10,A))') '! ', rtmAll_obj%Nx, ',', rtmAll_obj%Ny, ',', rtmAll_obj%Nz, ',', 1, ',', NVAR, ''
             !╰────────────────────────────────────────────────╯!
 
             ! binary data
@@ -1889,11 +1884,11 @@ subroutine shd_io__outputResultMpi(&
 
         !    write (2, '(A,A)') '!    X       Y        Z         Imean',&
         !        &'          Fx           Fy           Fz       HOrms'
-        !    do I = 1, NX
-        !        do J = 1, NY
-        !            do K = 1, NZ
+        !    do I = 1, rtmAll_obj%Nx
+        !        do J = 1, rtmAll_obj%Ny
+        !            do K = 1, rtmAll_obj%Nz
         !                write (2, '(3(1X,F7.3),1X,4(1X,E12.5),1X,F6.3)')&
-        !                    &rtm_obj%x(I), rtm_obj%y(J), rtm_obj%z(K), SHTERMS(1, K, J, I),&
+        !                    &rtmAll_obj%x(I), rtmAll_obj%y(J), rtmAll_obj%z(K), SHTERMS(1, K, J, I),&
         !                    &SHTERMS(2, K, J, I), SHTERMS(3, K, J, I), SHTERMS(4, K, J, I),&
         !                    &SHTERMS(5, K, J, I)/max(1e-20, SHTERMS(1, K, J, I))
         !            end do
@@ -1904,11 +1899,11 @@ subroutine shd_io__outputResultMpi(&
 
         !    write (2, '(A,A)') '!    X       Y        Z         Imean',&
         !        &'          Fx           Fy           Fz '
-        !    do I = 1, NX
-        !        do J = 1, NY
-        !            do K = 1, NZ
+        !    do I = 1, rtmAll_obj%Nx
+        !        do J = 1, rtmAll_obj%Ny
+        !            do K = 1, rtmAll_obj%Nz
         !                write (2, '(3(1X,F7.3),1X,4(1X,E12.5),1X,F6.3)')&
-        !                    &rtm_obj%x(I), rtm_obj%y(J), rtm_obj%z(K), SHTERMS(1, K, J, I),&
+        !                    &rtmAll_obj%x(I), rtmAll_obj%y(J), rtmAll_obj%z(K), SHTERMS(1, K, J, I),&
         !                    &SHTERMS(2, K, J, I), SHTERMS(3, K, J, I), SHTERMS(4, K, J, I)
         !            end do
         !        end do

@@ -707,7 +707,6 @@ end subroutine shd_rad__interpRad
 subroutine shd_rad__computeRad(&
     &DELTAM,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-    &SKYRAD,&
     &DIRFLUX, FLUXES,&
     &SOURCE1, GRIDRAD,&
     &OUTPARMS, IRAD, RADOUT,&
@@ -728,7 +727,6 @@ subroutine shd_rad__computeRad(&
     integer MAXNBC, NTOPPTS, NBOTPTS
     integer BCPTR(MAXNBC, 2)
     logical DELTAM
-    real SKYRAD
     real BCRAD(shdo_obj%Nstokes, *)
     real DIRFLUX(grid_obj%Npts), FLUXES(2, grid_obj%Npts)
     real SOURCE1(shdo_obj%Nstokes, grid_obj%Npts), GRIDRAD(shdo_obj%Nstokes, grid_obj%Npts)
@@ -746,7 +744,7 @@ subroutine shd_rad__computeRad(&
     !╰──────────────────────────────────────────────────────────────╯!
 
     ! Make the isotropic radiances for the top boundary
-    call shd_init__makeTopRad(src_obj%type, SKYRAD, src_obj%waveNum, src_obj%avgWaveLen,&
+    call shd_init__makeTopRad(src_obj%type, src_obj%skyRad, src_obj%waveNum, src_obj%avgWaveLen,&
         &src_obj%unit, NTOPPTS, shdo_obj%Nstokes, BCRAD(1, 1))
 
     ! Make the bottom boundary radiances for the Lambertian surfaces.
@@ -883,7 +881,6 @@ end subroutine shd_rad__computeRad
 subroutine shd_rad__computeCamRad(&
     &DELTAM,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-    &SKYRAD,&
     &DIRFLUX, FLUXES,&
     &OUTPARMS, IVIS, VISOUT,&
     &rtm_obj, grid_obj, shdo_obj, src_obj,&
@@ -904,7 +901,6 @@ subroutine shd_rad__computeCamRad(&
     integer MAXNBC, NTOPPTS, NBOTPTS
     integer BCPTR(MAXNBC, 2)
     logical DELTAM
-    real SKYRAD
     real BCRAD(shdo_obj%Nstokes, *)
     real DIRFLUX(grid_obj%Npts), FLUXES(2, grid_obj%Npts)
     real OUTPARMS(*), VISOUT(shdo_obj%Nstokes, *)
@@ -938,7 +934,7 @@ subroutine shd_rad__computeCamRad(&
     end if
 
     ! Make the isotropic radiances for the top boundary
-    call shd_init__makeTopRad(src_obj%type, SKYRAD, src_obj%waveNum, src_obj%avgWaveLen,&
+    call shd_init__makeTopRad(src_obj%type, src_obj%skyRad, src_obj%waveNum, src_obj%avgWaveLen,&
         &src_obj%unit, NTOPPTS, shdo_obj%Nstokes, BCRAD(1, 1))
     ! Make the bottom boundary radiances for the Lambertian surfaces
     !   Compute the upwelling bottom radiances using the downwelling

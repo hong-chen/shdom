@@ -123,6 +123,9 @@ program shdom
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_rtm) :: rtmAll_obj, rtm_obj
 
+    real(kind=R__), allocatable, target :: x_Grid(:), y_Grid(:), z_Grid(:)
+    real(kind=R__), allocatable, target :: x_Grid_all(:), y_Grid_all(:)
+
     real(kind=R__),  allocatable, target :: temp_Rtm(:), &
                                             planck_Rtm(:), &
                                             ext_Rtm(:), &
@@ -135,7 +138,6 @@ program shdom
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_grid) :: grid_obj
 
-    real(kind=R__), allocatable, target :: x_Grid(:), y_Grid(:), z_Grid(:)
     real(kind=R__), allocatable, target :: xyz_Grid(:, :)
 
     integer(kind=2),   allocatable, target :: flag_Cell(:)
@@ -159,7 +161,6 @@ program shdom
 
     real(kind=R__), allocatable :: fluxTot_all(:, :, :, :), fluxDiv_all(:, :, :)
     real(kind=R__), allocatable :: SH_all(:, :, :, :)
-    real(kind=R__), allocatable :: xGrid_all(:), yGrid_all(:)
 
     ! shdo_obj
     !╭────────────────────────────────────────────────────────────────────────────╮!
@@ -249,7 +250,6 @@ program shdom
     integer(kind=I__) :: Nrad, irad, Nx_out, Ny_out, Nlos, ilos, Nscan, Npix, Nsh_out
     integer(kind=I__) :: Ncell_tot, Npts_tot, Nsh_tot
 
-    real(kind=R__) :: skyRad
     real(kind=R__) :: solAcc, solCrit, splitAcc, shAcc
 
     integer(kind=I__) :: Nproc
@@ -280,7 +280,7 @@ program shdom
                 fileInp_sav, fileOut_sav, sen_obj%fname,&
                 shdo_obj%Nstokes, rtmAll_obj%Nx, rtmAll_obj%Ny, rtmAll_obj%Nz, shdo_obj%Nmu, shdo_obj%Nphi, rtmAll_obj%flag_bc,&
                 rtmAll_obj%flag_ip, doCkd, doDeltaM, rtmAll_obj%type,&
-                src_obj%type, src_obj%avgSolar0, src_obj%avgMu, src_obj%avgAz, skyRad,&
+                src_obj%type, src_obj%avgSolar0, src_obj%avgMu, src_obj%avgAz, src_obj%skyRad,&
                 sfc_obj%avgTemp, sfc_obj%avgAlb, src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen,&
                 isAccel, solAcc, maxIter, splitAcc, shAcc,&
                 maxNset_out, maxNpar_out, Nout, type_Out, parms_Out, file_Out,&
@@ -291,7 +291,7 @@ program shdom
                 fileInp_sav, fileOut_sav, sen_obj%fname,&
                 shdo_obj%Nstokes, rtmAll_obj%Nx, rtmAll_obj%Ny, rtmAll_obj%Nz, shdo_obj%Nmu, shdo_obj%Nphi, rtmAll_obj%flag_bc,&
                 rtmAll_obj%flag_ip, doCkd, doDeltaM, rtmAll_obj%type,&
-                src_obj%type, src_obj%avgSolar0, src_obj%avgMu, src_obj%avgAz, skyRad,&
+                src_obj%type, src_obj%avgSolar0, src_obj%avgMu, src_obj%avgAz, src_obj%skyRad,&
                 sfc_obj%avgTemp, sfc_obj%avgAlb, src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen,&
                 isAccel, solAcc, maxIter, splitAcc, shAcc,&
                 maxNset_out, maxNpar_out, Nout, type_Out, parms_Out, file_Out,&
@@ -304,7 +304,7 @@ program shdom
         &fileInp_sav, fileOut_sav,&
         &shdo_obj%Nstokes, rtmAll_obj%Nx, rtmAll_obj%Ny, rtmAll_obj%Nz, shdo_obj%Nmu, shdo_obj%Nphi, rtmAll_obj%flag_bc,&
         &rtmAll_obj%flag_ip, doCkd, doDeltaM, rtmAll_obj%type,&
-        &src_obj%type, src_obj%avgSolar0, src_obj%avgMu, src_obj%avgAz, skyRad,&
+        &src_obj%type, src_obj%avgSolar0, src_obj%avgMu, src_obj%avgAz, src_obj%skyRad,&
         &src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen,&
         &isAccel, solAcc, maxIter, splitAcc, shAcc,&
         &maxNset_out, maxNpar_out, Nout, type_Out, parms_Out,&
@@ -1201,7 +1201,7 @@ program shdom
         call shd_solv__solveRte(&
             &doRadInit,&
             &doDeltaM, isHighOrder_,&
-            &solar0_ckd, skyRad,&
+            &solar0_ckd,&
             &isAccel, solAcc, maxIter, solCrit, iter,&
             &splitAcc, shAcc,&
             &maxNpts_bc, maxNrad_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
@@ -1222,7 +1222,6 @@ program shdom
                         call shd_mpi__computeRad(&
                             &doDeltaM,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
-                            &skyRad,&
                             &fluxDir, fluxTot,&
                             &work, work(1 + grid_obj%Npts*shdo_obj%Nstokes),&
                             &parms_Out(1, iout), irad, work2,&
@@ -1232,7 +1231,6 @@ program shdom
                         call shd_rad__computeRad(&
                             &doDeltaM,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
-                            &skyRad,&
                             &fluxDir, fluxTot,&
                             &work(1), work(1 + grid_obj%Npts*shdo_obj%Nstokes),&
                             &parms_Out(1, iout), irad, work2,&
@@ -1252,7 +1250,6 @@ program shdom
                         call shd_mpi__computeCamRad(&
                             &doDeltaM,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
-                            &skyRad,&
                             &fluxDir, fluxTot,&
                             &parms_Out(1, iout), ilos, work2,&
                             &rtm_obj, grid_obj, shdo_obj, src_obj,&
@@ -1261,7 +1258,6 @@ program shdom
                         call shd_rad__computeCamRad(&
                             &doDeltaM,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
-                            &skyRad,&
                             &fluxDir, fluxTot,&
                             &parms_Out(1, iout), ilos, work2,&
                             &rtm_obj, grid_obj, shdo_obj, src_obj,&
@@ -1363,41 +1359,41 @@ program shdom
             if (isFluxOut) allocate (fluxTot_all(3, rtmAll_obj%Nz, rtmAll_obj%Ny, rtmAll_obj%Nx))
             if (isHROut)   allocate (fluxDiv_all(rtmAll_obj%Nz, rtmAll_obj%Ny, rtmAll_obj%Nx))
             if (isSHOut)   allocate (SH_all(Nsh_out, rtmAll_obj%Nz, rtmAll_obj%Ny, rtmAll_obj%Nx))
-            allocate (xGrid_all(rtmAll_obj%Nx), yGrid_all(rtmAll_obj%Ny))
+            allocate (x_Grid_all(rtmAll_obj%Nx), y_Grid_all(rtmAll_obj%Ny))
+            rtmAll_obj%x => x_Grid_all
+            rtmAll_obj%y => y_Grid_all
+            rtmAll_obj%z => z_Grid
         end if
 
         call shd_mpi__gatherOut(isFluxOut, isHROut, isSHOut,&
-            &rtm_obj%flag_ip, rtm_obj%flag_bc, grid_obj%Npts0, rtmAll_obj%Nx, rtmAll_obj%Ny, rtm_obj%Nz, Nsh_out,&
+            &Nsh_out,&
             &sumFluxTot_Out, sumFluxDir_Out, sumFluxDiv_Out, sumSH_Out,&
-            &xGrid_all, yGrid_all,&
             &fluxTot_all, fluxDiv_all, SH_all,&
-            &shdo_obj%Nsh, Ncell_tot, Npts_tot, Nsh_tot, grid_obj, prp_obj)
+            &shdo_obj%Nsh, Ncell_tot, Npts_tot, Nsh_tot,&
+            &rtmAll_obj, grid_obj, prp_obj)
 
         if (isMasterProc) then
 
             do iout = 1, Nout
                 if (type_Out(iout) .ne. 'V' .and. file_Out(iout)(1:4) .ne. 'NONE') then
-                    call shd_io__outputResultMpi(shdo_obj%Nstokes, rtmAll_obj%Nx, rtmAll_obj%Ny, rtm_obj%Nz,&
-                        &Npts_tot, Ncell_tot,&
-                        &Nsh_tot,&
-                        &shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm, shdo_obj%Nmu, shdo_obj%Nphi, shdo_obj%Nang,&
+                    call shd_io__outputResultMpi(&
+                        &Npts_tot, Ncell_tot, Nsh_tot,&
                         &fileInp_sav, fileOut_sav,&
-                        &rtm_obj%flag_bc, rtm_obj%flag_ip, doDeltaM, src_obj%type,&
-                        &src_obj%avgSolar, src_obj%avgMu, src_obj%avgAz, skyRad,&
-                        &src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
+                        &doDeltaM,&
                         &splitAcc, shAcc, solAcc, maxIter, totIter,&
-                        !&xGrid_all, yGrid_all,&
                         &fluxTot_all, fluxDiv_all,&
                         &Nsh_out, SH_all, irad, sumRad_Out,&
                         &type_Out(iout), parms_Out(1, iout), file_Out(iout),&
-                        &rtm_obj, grid_obj, prp_obj, sfc_obj, ckd_obj, sen_obj)
+                        &rtmAll_obj, grid_obj, shdo_obj, src_obj,&
+                        &prp_obj, sfc_obj, ckd_obj, sen_obj)
                 end if
             end do
 
             if (isFluxOut) deallocate (fluxTot_all)
             if (isHROut)   deallocate (fluxDiv_all)
             if (isSHOut)   deallocate (SH_all)
-            deallocate (xGrid_all, yGrid_all)
+            deallocate (x_Grid_all, y_Grid_all)
+            nullify(rtmAll_obj%x, rtmAll_obj%y, rtmAll_obj%z)
         end if
 
     else
@@ -1408,7 +1404,7 @@ program shdom
                     shdo_obj%Nsh, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm, shdo_obj%Nmu, shdo_obj%Nphi, shdo_obj%Nang,&
                     fileInp_sav, fileOut_sav,&
                     rtm_obj%flag_bc, rtm_obj%flag_ip, doDeltaM, src_obj%type,&
-                    src_obj%avgSolar, src_obj%avgMu, src_obj%avgAz, skyRad,&
+                    src_obj%avgSolar, src_obj%avgMu, src_obj%avgAz, src_obj%skyRad,&
                     src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
                     splitAcc, shAcc, solAcc, maxIter, totIter,&
                     rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%ipha, rtm_obj%temp,&
@@ -1431,7 +1427,7 @@ program shdom
                     &shdo_obj%Nsh, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm, shdo_obj%Nmu, shdo_obj%Nphi, shdo_obj%Nang,&
                     &fileInp_sav, fileOut_sav,&
                     &rtm_obj%flag_bc, rtm_obj%flag_ip, doDeltaM, src_obj%type,&
-                    &src_obj%avgSolar, src_obj%avgMu, src_obj%avgAz, skyRad,&
+                    &src_obj%avgSolar, src_obj%avgMu, src_obj%avgAz, src_obj%skyRad,&
                     &src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
                     &splitAcc, shAcc, solAcc, maxIter, totIter,&
                     &ilos, sumCam_Out, parms_Out(1, iout), file_Out(iout),&
@@ -1485,6 +1481,7 @@ program shdom
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! rtm_obj
     !╭────────────────────────────────────────────────╮!
+    deallocate (x_Grid, y_Grid, z_Grid)
     deallocate (ptr_Bc, rad_Bc)
     deallocate (temp_Rtm, planck_Rtm)
     deallocate (ext_Rtm, ssa_Rtm, ipha_Rtm)
@@ -1510,7 +1507,7 @@ program shdom
 
     ! grid_obj
     !╭────────────────────────────────────────────────╮!
-    deallocate (x_Grid, y_Grid, z_Grid, xyz_Grid)
+    deallocate (xyz_Grid)
     deallocate (flag_Cell, i8Grid_Cell, i6Cell_Cell, i2Tree_Cell)
     if (grid_obj%isAllocated) then
         nullify(&

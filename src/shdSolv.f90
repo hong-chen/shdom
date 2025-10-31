@@ -93,7 +93,7 @@ contains
 subroutine shd_solv__solveRte(&
     &INRADFLAG,&
     &DELTAM, isHighOrder,&
-    &SOLARFLUX, SKYRAD,&
+    &SOLARFLUX,&
     &ACCELFLAG, SOLACC, MAXITER, SOLCRIT, ITER,&
     &SPLITACC, SHACC,&
     &MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
@@ -121,7 +121,7 @@ subroutine shd_solv__solveRte(&
     integer idsrc_Shdo(*)
     integer WORK1(*)
     logical INRADFLAG, DELTAM, ACCELFLAG, isHighOrder
-    real SOLARFLUX, SKYRAD
+    real SOLARFLUX
     real SOLACC, SOLCRIT, SPLITACC, SHACC
     real BCRAD(*)
     real FLUXES(2, *), DIRFLUX(*)
@@ -202,7 +202,7 @@ subroutine shd_solv__solveRte(&
         call shd_init__makeRad(shdo_obj%Nstokes, grid_obj%Nx*grid_obj%Ny, grid_obj%Nz,&
             &shdo_obj%iradI, rtm_obj%z,&
             &rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%temp, rtm_obj%ipha,&
-            &src_obj%type, SOLARFLUX, src_obj%avgMu, SKYRAD,&
+            &src_obj%type, SOLARFLUX, src_obj%avgMu, src_obj%skyRad,&
             &src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen, shdo_obj%radI, prp_obj, sfc_obj)
         ! Interpolate the radiance on the non-base grid points from the
         !   base grid points
@@ -362,7 +362,7 @@ subroutine shd_solv__solveRte(&
         !   discrete ordinates.
         call shd_intg__integratePath(rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, shdo_obj%Nstokes, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
             &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%Nang, rtm_obj%flag_bc, rtm_obj%flag_ip,&
-            &src_obj%type, src_obj%avgMu, src_obj%avgAz, SKYRAD, src_obj%waveNum, src_obj%avgWaveLen,&
+            &src_obj%type, src_obj%avgMu, src_obj%avgAz, src_obj%skyRad, src_obj%waveNum, src_obj%avgWaveLen,&
             &src_obj%unit, brdf_Shdo,&
             &MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
             &shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
