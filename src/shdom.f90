@@ -1057,8 +1057,8 @@ program shdom
     ! pointer to parent and children cells in tree structure
     allocate (i8Grid_Cell(8, grid_obj%maxNcell), i6Cell_Cell(6, grid_obj%maxNcell), i2Tree_Cell(2, grid_obj%maxNcell))
 
-    grid_obj%xyz => xyz_Grid
-    grid_obj%flag => flag_Cell
+    grid_obj%xyz    => xyz_Grid
+    grid_obj%flag   => flag_Cell
     grid_obj%i8Grid => i8Grid_Cell
     grid_obj%i6Cell => i6Cell_Cell
     grid_obj%i2Tree => i2Tree_Cell
