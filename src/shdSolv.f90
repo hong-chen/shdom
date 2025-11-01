@@ -91,7 +91,7 @@ module shd_solv
 contains
 
 subroutine shd_solv__solveRte(&
-    &INRADFLAG,&
+    &doRadInit,&
     &doDeltaM, doHighOrder,&
     &SOLARFLUX,&
     &ACCELFLAG, SOLACC, MAXITER, SOLCRIT, ITER,&
@@ -120,7 +120,7 @@ subroutine shd_solv__solveRte(&
     integer MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR(MAXNBC, 2)
     integer idsrc_Shdo(*)
     integer WORK1(*)
-    logical INRADFLAG, doDeltaM, ACCELFLAG, doHighOrder
+    logical doRadInit, doDeltaM, ACCELFLAG, doHighOrder
     real SOLARFLUX
     real SOLACC, SOLCRIT, SPLITACC, SHACC
     real BCRAD(*)
@@ -130,7 +130,7 @@ subroutine shd_solv__solveRte(&
 
     integer I, isetDO, NBPTS, NBCELLS
     integer MAXNANGBND, NANGBND(4, 2), ierr
-    logical FIXSH, SPLITTESTING, doSplit, isOutMem
+    logical doFixSH, SPLITTESTING, doSplit, isOutMem
     logical, allocatable :: flagFFT_Shdo(:)
     real maxSsa
     real STARTADAPTSOL, ENDADAPTSOL, ADAPTRANGE, SPLITCRIT
@@ -195,8 +195,8 @@ subroutine shd_solv__solveRte(&
         &shdo_obj%maxNphi0, shdo_obj%mu, shdo_obj%phi, wgtMu_Shdo, shdo_obj%wgt, flagFFT_Shdo,&
         &CMU1, CMU2, CPHI1, CPHI2, wPhiFFT_Shdo)
 
-    FIXSH = .false.
-    if (.not. INRADFLAG) then
+    doFixSH = .false.
+    if (.not. doRadInit) then
         ! Initialize the radiance on the base grid using Eddington
         ! two-stream plane-parallel
         call shd_init__makeRad(shdo_obj%Nstokes, grid_obj%Nx*grid_obj%Ny, grid_obj%Nz,&
@@ -213,7 +213,7 @@ subroutine shd_solv__solveRte(&
             &NBCELLS, grid_obj%Ncell, grid_obj%i2Tree, grid_obj%i8Grid, grid_obj%xyz)
         ! Initialize the source function from the radiance field
         call shd_src__computeSrc(&
-            &FIXSH, YlmSolar_Shdo,&
+            &doFixSH, YlmSolar_Shdo,&
             &DIRFLUX, SHACC,&
             &idsrc_Shdo, dsrc_Shdo,&
             &.true., ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM,&
@@ -345,7 +345,7 @@ subroutine shd_solv__solveRte(&
         end if
 
         ! Find the SH truncation to use for the radiance (shdo_obj%iradI)
-        call shd_solv__truncRad(doHighOrder, FIXSH, SHACC,&
+        call shd_solv__truncRad(doHighOrder, doFixSH, SHACC,&
             &rtm_obj, grid_obj, shdo_obj, prp_obj)
 
         ! srcSH to srcDO, then srcDO to radDO, then radDO to radSH
@@ -368,12 +368,12 @@ subroutine shd_solv__solveRte(&
         !   do the adaptive spherical harmonics truncation, compute
         !   the solution criterion, and dot products for acceleration
         if (((SOLCRIT .lt. ENDADAPTSOL) .or. (ITER .gt. 30)) .and.&
-            &((rtm_obj%Nx .gt. 36) .or. (rtm_obj%Ny .gt. 36))) FIXSH = .true.
+            &((rtm_obj%Nx .gt. 36) .or. (rtm_obj%Ny .gt. 36))) doFixSH = .true.
 
         ! radSH to srcSH
         !╭────────────────────────────────────────────────╮!
         call shd_src__computeSrc(&
-            &FIXSH, YlmSolar_Shdo,&
+            &doFixSH, YlmSolar_Shdo,&
             &DIRFLUX, SHACC,&
             &idsrc_Shdo, dsrc_Shdo,&
             &.false., ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM,&
@@ -478,7 +478,7 @@ subroutine shd_solv__accelSol(&
     return
 end subroutine shd_solv__accelSol
 
-subroutine shd_solv__truncRad(doHighOrder, FIXSH, SHACC,&
+subroutine shd_solv__truncRad(doHighOrder, doFixSH, SHACC,&
     &rtm_obj, grid_obj, shdo_obj, prp_obj)
 
     ! Computes the next radiance spherical harmonic series truncation
@@ -499,16 +499,16 @@ subroutine shd_solv__truncRad(doHighOrder, FIXSH, SHACC,&
     type(shd_type_prp),  intent(in)    :: prp_obj
 
     integer MAXIR
-    logical doHighOrder, FIXSH
+    logical doHighOrder, doFixSH
     real SHACC
     integer IRO, IR, NRO, NR, I, J, K, L, LR, LS, M, MS, ME, NS, NLM
     integer, allocatable :: LOFJ(:)
     logical NOTEND
     real RADMIN
 
-    if (FIXSH) goto 190
-
     MAXIR = shdo_obj%maxNptsSH + grid_obj%maxNpts
+
+    if (doFixSH) goto 190
 
     RADMIN = SHACC
     NOTEND = .true.
