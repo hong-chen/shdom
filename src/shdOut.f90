@@ -2187,7 +2187,7 @@ subroutine shd_io__outputImg(&
     end if
     NBYTES = min(2, max(1, nint(abs(OUTPARMS(2)))))
     LSBFIRST = OUTPARMS(2) .lt. 0.0
-    allocate (BUFFER1(NBYTES*NS))
+    allocate(BUFFER1(NBYTES*NS))
     NLOUT = shdo_obj%Nstokes*NL
 
     ! Calculate the output range for each Stokes parameter and setup fo

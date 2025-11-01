@@ -386,10 +386,10 @@ program shdom
     if (src_obj%type .eq. 'T') src_obj%avgAz = 0.0d0
 
     ! angle grids for DO
-    allocate (Nphi0_Shdo(shdo_obj%Nmu), &
-              mu_Shdo(shdo_obj%Nmu), &
-              phi_Shdo(shdo_obj%Nmu*shdo_obj%Nphi), &
-              wgt_Shdo(shdo_obj%Nmu*shdo_obj%Nphi)); &
+    allocate(Nphi0_Shdo(shdo_obj%Nmu), &
+             mu_Shdo(shdo_obj%Nmu), &
+             phi_Shdo(shdo_obj%Nmu*shdo_obj%Nphi), &
+             wgt_Shdo(shdo_obj%Nmu*shdo_obj%Nphi)); &
         memUsed = memUsed + 2.0*shdo_obj%Nmu*(1.0 + shdo_obj%Nphi)
 
     shdo_obj%Nphi0 => Nphi0_Shdo
@@ -605,13 +605,13 @@ program shdom
     prp_obj%maxNpts = prp_obj%Nx * prp_obj%Ny * prp_obj%Nz
     if (prp_obj%Npha .eq. 0) prp_obj%maxNptsLeg = prp_obj%maxNpts * (prp_obj%maxNleg + 1) * prp_obj%NlegSet
 
-    allocate (z_Prp(prp_obj%Nz))
-    allocate (temp_Prp(prp_obj%maxNpts), &
-              ext_Prp( prp_obj%maxNpts), &
-              ssa_Prp( prp_obj%maxNpts))
-    allocate (extDir_Prp(prp_obj%maxNpts), &
-              ipha_Prp(prp_obj%maxNpts), &
-              leg_Prp( prp_obj%maxNptsLeg)); &
+    allocate(z_Prp(prp_obj%Nz))
+    allocate(temp_Prp(prp_obj%maxNpts), &
+             ext_Prp( prp_obj%maxNpts), &
+             ssa_Prp( prp_obj%maxNpts))
+    allocate(extDir_Prp(prp_obj%maxNpts), &
+             ipha_Prp(prp_obj%maxNpts), &
+             leg_Prp( prp_obj%maxNptsLeg)); &
         memUsed = memUsed + prp_obj%Nz + 6.0*prp_obj%maxNpts + prp_obj%maxNptsLeg
 
     prp_obj%z      => z_Prp
@@ -633,10 +633,10 @@ program shdom
         !   distribute to all the processors
         if (isMasterProc) then
 
-            allocate (temp_PrpAll(prpAll_obj%maxNpts), &
-                      ext_PrpAll( prpAll_obj%maxNpts), &
-                      ssa_PrpAll( prpAll_obj%maxNpts))
-            allocate (ipha_PrpAll(prpAll_obj%maxNpts))
+            allocate(temp_PrpAll(prpAll_obj%maxNpts), &
+                     ext_PrpAll( prpAll_obj%maxNpts), &
+                     ssa_PrpAll( prpAll_obj%maxNpts))
+            allocate(ipha_PrpAll(prpAll_obj%maxNpts))
 
             prpAll_obj%z    => z_Prp
 
@@ -704,7 +704,7 @@ program shdom
     ! Read in the surface properties
     if (sfc_obj%fname(1:4) .ne. 'NONE') then
 
-        allocate (brdf_Sfc(sfc_obj%maxNpar * sfc_obj%maxNpts)); &
+        allocate(brdf_Sfc(sfc_obj%maxNpar * sfc_obj%maxNpts)); &
             memUsed = memUsed + sfc_obj%maxNpar * sfc_obj%maxNpts
 
         sfc_obj%brdf(1:sfc_obj%maxNpar, 1:sfc_obj%maxNpts) => brdf_Sfc
@@ -733,8 +733,8 @@ program shdom
         ! Broadcast the k-distribution object
         call shd_mpi__bcastCkdSize(ckd_obj)
 
-        allocate (solar_Ckd(ckd_obj%Ng), wgt_Ckd(ckd_obj%Ng), z_Ckd(ckd_obj%Nz))
-        allocate (kabs_Ckd(ckd_obj%Nz, ckd_obj%Ng)); &
+        allocate(solar_Ckd(ckd_obj%Ng), wgt_Ckd(ckd_obj%Ng), z_Ckd(ckd_obj%Nz))
+        allocate(kabs_Ckd(ckd_obj%Nz, ckd_obj%Ng)); &
             memUsed = memUsed + ckd_obj%Nz*(2.0+ckd_obj%Ng) + 2.0*ckd_obj%Ng
 
         ckd_obj%solar => solar_Ckd
@@ -754,7 +754,7 @@ program shdom
         ckd_obj%Ng = 1
         ckd_obj%Nz = 0
 
-        allocate (solar_Ckd(ckd_obj%Ng), wgt_Ckd(ckd_obj%Ng)); &
+        allocate(solar_Ckd(ckd_obj%Ng), wgt_Ckd(ckd_obj%Ng)); &
             memUsed = memUsed + 2.0*ckd_obj%Ng
 
         solar_Ckd(1) = 1.0
@@ -777,7 +777,7 @@ program shdom
 
         call shd_mpi__bcastSenSize(sen_obj)
 
-        allocate (view_Sen(sen_obj%Npar*sen_obj%Npts)); &
+        allocate(view_Sen(sen_obj%Npar*sen_obj%Npts)); &
             memUsed = memUsed + sen_obj%Npar*sen_obj%Npts
 
         sen_obj%view => view_Sen
@@ -1041,21 +1041,21 @@ program shdom
     ! grid
     !╭────────────────────────────────────────────────╮!
     ! x, y, z grids
-    allocate (x_Grid(rtm_obj%Nx+1), y_Grid(rtm_obj%Ny+1), z_Grid(grid_obj%Nz))
+    allocate(x_Grid(rtm_obj%Nx+1), y_Grid(rtm_obj%Ny+1), z_Grid(grid_obj%Nz))
     rtm_obj%x => x_Grid
     rtm_obj%y => y_Grid
     rtm_obj%z => z_Grid
 
     ! x,y,z coordinate values of grid point locations
-    allocate (xyz_Grid(3, grid_obj%maxNpts))
+    allocate(xyz_Grid(3, grid_obj%maxNpts))
 
     ! a collection of binary flags for the cells
-    allocate (flag_Cell(grid_obj%maxNcell))
+    allocate(flag_Cell(grid_obj%maxNcell))
 
     ! pointer to 8 grid points belonging to a cell
     ! pointer to 6 neighboring cells of a cell
     ! pointer to parent and children cells in tree structure
-    allocate (i8Grid_Cell(8, grid_obj%maxNcell), i6Cell_Cell(6, grid_obj%maxNcell), i2Tree_Cell(2, grid_obj%maxNcell))
+    allocate(i8Grid_Cell(8, grid_obj%maxNcell), i6Cell_Cell(6, grid_obj%maxNcell), i2Tree_Cell(2, grid_obj%maxNcell))
 
     grid_obj%xyz    => xyz_Grid
     grid_obj%flag   => flag_Cell
@@ -1068,13 +1068,13 @@ program shdom
     ! rtm
     !╭────────────────────────────────────────────────╮!
     ! temperature and planck radiance (maybe we don't need this for shortwave)
-    allocate (temp_Rtm(grid_obj%maxNpts), planck_Rtm(grid_obj%maxNpts))
+    allocate(temp_Rtm(grid_obj%maxNpts), planck_Rtm(grid_obj%maxNpts))
 
     ! extinction, single scattering albedo, and phase function indices
-    allocate (ext_Rtm(grid_obj%maxNpts), ssa_Rtm(grid_obj%maxNpts), ipha_Rtm(grid_obj%maxNpts))
+    allocate(ext_Rtm(grid_obj%maxNpts), ssa_Rtm(grid_obj%maxNpts), ipha_Rtm(grid_obj%maxNpts))
 
     ! legendre coefficients
-    allocate (leg_Rtm(rtm_obj%maxNptsLeg))
+    allocate(leg_Rtm(rtm_obj%maxNptsLeg))
 
     rtm_obj%temp   => temp_Rtm
     rtm_obj%planck => planck_Rtm
@@ -1097,23 +1097,23 @@ program shdom
     !   rad_Bc(:[shdo_obj%Nstokes], NptsTop_bc+NptsBot_bc+1:NptsTop_bc+NptsBot_bc+NptsBot_bc*shdo_obj%Nang/2):
     !         downwelling bottom radiances at discrete ordinates
     if (sfc_obj%fname(1:4) .ne. 'NONE') then
-        allocate (brdf_grid_Sfc(sfc_obj%maxNpar*maxNpts_bc))
+        allocate(brdf_grid_Sfc(sfc_obj%maxNpar*maxNpts_bc))
         sfc_obj%brdf_grid(1:sfc_obj%maxNpar, 1:maxNpts_bc) => brdf_grid_Sfc
         sfc_obj%isAllocated = .true.
     end if
 
-    allocate (ptr_Bc(2*maxNpts_bc), rad_Bc(shdo_obj%Nstokes, maxNrad_bc))
+    allocate(ptr_Bc(2*maxNpts_bc), rad_Bc(shdo_obj%Nstokes, maxNrad_bc))
 
     ! output
-    if (isFluxOut) allocate (sumFluxTot_Out(2, grid_obj%maxNpts), sumFluxDir_Out(grid_obj%maxNpts))
-    if (isHROut)   allocate (sumFluxDiv_Out(grid_obj%maxNpts))
-    if (isSHOut)   allocate (sumSH_Out(grid_obj%maxNpts*Nsh_out))
-    if (isSrcOut)  allocate (src1_Out(grid_obj%maxNpts*shdo_obj%Nstokes))
+    if (isFluxOut) allocate(sumFluxTot_Out(2, grid_obj%maxNpts), sumFluxDir_Out(grid_obj%maxNpts))
+    if (isHROut)   allocate(sumFluxDiv_Out(grid_obj%maxNpts))
+    if (isSHOut)   allocate(sumSH_Out(grid_obj%maxNpts*Nsh_out))
+    if (isSrcOut)  allocate(src1_Out(grid_obj%maxNpts*shdo_obj%Nstokes))
 
     ! SH related array
-    allocate (iradI_Shdo(grid_obj%maxNpts + 2), isrcJ_Shdo(grid_obj%maxNpts + 1))
+    allocate(iradI_Shdo(grid_obj%maxNpts + 2), isrcJ_Shdo(grid_obj%maxNpts + 1))
     ! radiance and source
-    allocate (radI_Shdo(shdo_obj%Nstokes, shdo_obj%maxNptsSH + grid_obj%maxNpts), srcJ_Shdo(shdo_obj%Nstokes, shdo_obj%maxNptsSH))
+    allocate(radI_Shdo(shdo_obj%Nstokes, shdo_obj%maxNptsSH + grid_obj%maxNpts), srcJ_Shdo(shdo_obj%Nstokes, shdo_obj%maxNptsSH))
     shdo_obj%iradI => iradI_Shdo
     shdo_obj%isrcJ => isrcJ_Shdo
     shdo_obj%radI  => radI_Shdo
@@ -1122,23 +1122,23 @@ program shdom
 
     ! delta source
     if (isAccel) then
-        allocate (idsrc_Shdo(grid_obj%maxNpts + 1), dsrc_Shdo(shdo_obj%Nstokes, shdo_obj%maxNptsSH))
+        allocate(idsrc_Shdo(grid_obj%maxNpts + 1), dsrc_Shdo(shdo_obj%Nstokes, shdo_obj%maxNptsSH))
     end if
 
     ! fluxes
-    allocate (fluxTot(2, grid_obj%maxNpts), fluxDir(grid_obj%maxNpts))
+    allocate(fluxTot(2, grid_obj%maxNpts), fluxDir(grid_obj%maxNpts))
 
     ! output radiances to be summed over g
-    allocate (sumRad_Out(Nrad), sumCam_Out(Nlos))
+    allocate(sumRad_Out(Nrad), sumCam_Out(Nlos))
 
     ! work: work array for path integration; radiance field, Nazimuth*grid_obj%Npts
-    allocate (work(shdo_obj%Nstokes*shdo_obj%maxNptsDO))
+    allocate(work(shdo_obj%Nstokes*shdo_obj%maxNptsDO))
 
     ! work1: work array for path integration; grid point sweeping order
-    allocate (work1(8*grid_obj%maxNpts))
+    allocate(work1(8*grid_obj%maxNpts))
 
     ! work2: work array for path integration; single angle radiance
-    allocate (work2(max(Nlos, Nrad, shdo_obj%Nstokes*grid_obj%maxNpts)))
+    allocate(work2(max(Nlos, Nrad, shdo_obj%Nstokes*grid_obj%maxNpts)))
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
@@ -1357,10 +1357,10 @@ program shdom
     if (isMpi_) then
 
         if (isMasterProc) then
-            if (isFluxOut) allocate (fluxTot_all(3, rtmAll_obj%Nz, rtmAll_obj%Ny, rtmAll_obj%Nx))
-            if (isHROut)   allocate (fluxDiv_all(rtmAll_obj%Nz, rtmAll_obj%Ny, rtmAll_obj%Nx))
-            if (isSHOut)   allocate (SH_all(Nsh_out, rtmAll_obj%Nz, rtmAll_obj%Ny, rtmAll_obj%Nx))
-            allocate (x_Grid_all(rtmAll_obj%Nx), y_Grid_all(rtmAll_obj%Ny))
+            if (isFluxOut) allocate(fluxTot_all(3, rtmAll_obj%Nz, rtmAll_obj%Ny, rtmAll_obj%Nx))
+            if (isHROut)   allocate(fluxDiv_all(rtmAll_obj%Nz, rtmAll_obj%Ny, rtmAll_obj%Nx))
+            if (isSHOut)   allocate(SH_all(Nsh_out, rtmAll_obj%Nz, rtmAll_obj%Ny, rtmAll_obj%Nx))
+            allocate(x_Grid_all(rtmAll_obj%Nx), y_Grid_all(rtmAll_obj%Ny))
             rtmAll_obj%x => x_Grid_all
             rtmAll_obj%y => y_Grid_all
             rtmAll_obj%z => z_Grid

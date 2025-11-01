@@ -531,11 +531,11 @@ subroutine shd_init__makeRad(&
 
     NLAYER = NZ - 1
 
-    allocate (OPTDEPTHS(NZ), ALBEDOS(NZ), ASYMMETRIES(NZ))
-    allocate (TEMPS(NZ), FLUXES(3, NZ))
+    allocate(OPTDEPTHS(NZ), ALBEDOS(NZ), ASYMMETRIES(NZ))
+    allocate(TEMPS(NZ), FLUXES(3, NZ))
 
     !real, allocatable :: CH(:, :)
-    !allocate (CH(NLAYER, NLAYER))
+    !allocate(CH(NLAYER, NLAYER))
     !call shd_init__chapman(NLAYER, SOLARMU, planetRadius_, ZGRID(NZ:1:-1), CH)
 
     DELTAM = .false.
@@ -694,7 +694,7 @@ subroutine shd_init__makeFlux(&
     real BBRAD
 
     N = 2*NLAYER + 2
-    allocate (LOWER(N), UPPER(N), DIAG(N), RHS(N))
+    allocate(LOWER(N), UPPER(N), DIAG(N), RHS(N))
 
     ! Compute the reflection, transmission, and source
     !   coefficients for each layer for the diffuse Eddington

@@ -79,7 +79,7 @@ program PLOTSCATTAB
     write (*, '(1X,A)') 'Number of angles (<0 to input |n| angles)'
     read (*, *) NANGLE
     write (*, *) NANGLE
-    allocate (ANGLE(abs(NANGLE)))
+    allocate(ANGLE(abs(NANGLE)))
     if (NANGLE <= 0) then
         NANGLE = abs(NANGLE)
         write (*, *) 'Input the angles (degrees)'
@@ -95,7 +95,7 @@ program PLOTSCATTAB
         write (*, '(1X,A)') 'Number of phase functions to output'
         read (*, *) NOUT
         write (*, *) NOUT
-        allocate (OUTREFF(NOUT))
+        allocate(OUTREFF(NOUT))
         write (*, *) 'Input the tabulated phase function indices'
         read (*, *) OUTREFF(:)
         write (*, '(20(1X,I4))') nint(OUTREFF(:))
@@ -104,13 +104,13 @@ program PLOTSCATTAB
         write (*, '(1X,A)') 'Number of effective radii/matrix elements to output'
         read (*, *) NOUT
         write (*, *) NOUT
-        allocate (OUTREFF(NOUT))
+        allocate(OUTREFF(NOUT))
         write (*, *) 'Input the effective radii (micron)'
         read (*, *) OUTREFF(:)
         write (*, '(20(1X,F6.2))') OUTREFF(:)
         write (*, *) 'Phase matrix elements to output for each effective radius'
     end if
-    allocate (PELEM(NOUT))
+    allocate(PELEM(NOUT))
     write (*, *) '(1=P11, 2=P22, 3=P33, 4=P44, 5=P12, 6=P34) (<0 for ratio to P11)'
     read (*, *) PELEM(:)
     write (*, '(20(1X,I2))') PELEM(:)
@@ -126,20 +126,20 @@ program PLOTSCATTAB
 
     if (FILETYPE == 'P') then
         call READ_PROPERTY_SIZE(INFILE, NPHASEPOL, NPHASE, MAXNCOEF)
-        allocate (REFF(NPHASE), NCOEF(NPHASE), WIGCOEF(NPHASEPOL, 0:MAXNCOEF, NPHASE))
+        allocate(REFF(NPHASE), NCOEF(NPHASE), WIGCOEF(NPHASEPOL, 0:MAXNCOEF, NPHASE))
         call READ_PROPERTY_PHASEMAT(INFILE, NPHASEPOL, NPHASE, MAXNCOEF, &
                                     NCOEF, WIGCOEF)
         REFF(:) = (/(FLOAT(J), J=1, NPHASE)/)
     else
         call READ_SCAT_TABLE_SIZE(INFILE, POLTAB, NPHASEPOL, NPHASE, MAXNCOEF)
-        allocate (REFF(NPHASE), NCOEF(NPHASE), WIGCOEF(NPHASEPOL, 0:MAXNCOEF, NPHASE))
+        allocate(REFF(NPHASE), NCOEF(NPHASE), WIGCOEF(NPHASEPOL, 0:MAXNCOEF, NPHASE))
         call READ_SCAT_TABLE(INFILE, POLTAB, NPHASEPOL, NPHASE, REFF, &
                              MAXNCOEF, NCOEF, WIGCOEF)
     end if
 
     ! Loop over each effective radius in scattering table (I), pulling out
     !   ones we want to output (K)
-    allocate (PHASE(NANGLE, NOUT))
+    allocate(PHASE(NANGLE, NOUT))
     PI = acos(-1.0)
     do K = 1, NOUT
         FOUND = .false.
@@ -175,7 +175,7 @@ program PLOTSCATTAB
     end do
     close (1)
 
-    deallocate (PHASE, REFF, NCOEF, WIGCOEF, OUTREFF, ANGLE, PELEM)
+    deallocate(PHASE, REFF, NCOEF, WIGCOEF, OUTREFF, ANGLE, PELEM)
 end program
 
 subroutine READ_SCAT_TABLE_SIZE(SCATTABFILE, POLTAB, NPHASEPOL, &
@@ -405,8 +405,8 @@ subroutine TRANSFORM_WIGNERD_TO_PHASE(MAXNCOEF, NPHASEPOL, &
     end if
 
     ! Allocate arrays for Wigner functions D20, D22, D2-2 and D00
-    allocate (D00(0:NCOEF), D22P(0:NCOEF), D22M(0:NCOEF), D20(0:NCOEF))
-    allocate (NORM(NANGLE))
+    allocate(D00(0:NCOEF), D22P(0:NCOEF), D22M(0:NCOEF), D20(0:NCOEF))
+    allocate(NORM(NANGLE))
 
     PI = DACOS(-1.0d0)
     do J = 1, NANGLE
@@ -485,7 +485,7 @@ subroutine TRANSFORM_WIGNERD_TO_PHASE(MAXNCOEF, NPHASEPOL, &
     if (PELEM < 0) then
         PHASE(:) = PHASE(:)/NORM(:)
     end if
-    deallocate (D00, D22P, D22M, D20, NORM)
+    deallocate(D00, D22P, D22M, D20, NORM)
 end subroutine TRANSFORM_WIGNERD_TO_PHASE
 
 subroutine WIGNERFCT(X, NRANK, M, M1, DMM1)

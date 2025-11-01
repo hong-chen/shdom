@@ -148,10 +148,10 @@ subroutine shd_solv__solveRte(&
 
     ! Allocate local arrays
     ! prp_obj%NlegSet=1 for shdo_obj%Nstokes=1, otherwise prp_obj%NlegSet=6
-    allocate (CMU1(prp_obj%NlegSet, shdo_obj%Nlm, shdo_obj%Nmu), CMU2(prp_obj%NlegSet, shdo_obj%Nlm, shdo_obj%Nmu))
-    allocate (CPHI1(-16:16, 32, shdo_obj%Nmu), CPHI2(32, -16:16, shdo_obj%Nmu))
-    allocate (YlmSolar_Shdo(prp_obj%NlegSet, shdo_obj%Nlm))
-    allocate (flagFFT_Shdo(shdo_obj%Nmu), wgtMu_Shdo(shdo_obj%Nmu), wPhiFFT_Shdo(shdo_obj%Nmu*(3*shdo_obj%Nphi+ 15)))
+    allocate(CMU1(prp_obj%NlegSet, shdo_obj%Nlm, shdo_obj%Nmu), CMU2(prp_obj%NlegSet, shdo_obj%Nlm, shdo_obj%Nmu))
+    allocate(CPHI1(-16:16, 32, shdo_obj%Nmu), CPHI2(32, -16:16, shdo_obj%Nmu))
+    allocate(YlmSolar_Shdo(prp_obj%NlegSet, shdo_obj%Nlm))
+    allocate(flagFFT_Shdo(shdo_obj%Nmu), wgtMu_Shdo(shdo_obj%Nmu), wPhiFFT_Shdo(shdo_obj%Nmu*(3*shdo_obj%Nphi+ 15)))
 
     ! Set up some things before solution loop
 
@@ -246,7 +246,7 @@ subroutine shd_solv__solveRte(&
                 &sqrt(1.0*huge(shdo_obj%Nmu)/kind(shdo_obj%Nmu))) then
                 ierr = 1
             else
-                allocate (brdf_Shdo(shdo_obj%Nstokes, shdo_obj%Nmu/2, shdo_obj%maxNphi0,&
+                allocate(brdf_Shdo(shdo_obj%Nstokes, shdo_obj%Nmu/2, shdo_obj%maxNphi0,&
                     &shdo_obj%Nstokes, shdo_obj%Nmu/2, shdo_obj%maxNphi0), stat=ierr)
             end if
             if (ierr .eq. 0) then
@@ -514,7 +514,7 @@ subroutine shd_solv__truncRad(doHighOrder, FIXSH, SHACC,&
     NOTEND = .true.
     ! Make the l index as a function of SH term (J)
     NLM = (2*shdo_obj%maxNm + 1)*(shdo_obj%maxNl + 1) - shdo_obj%maxNm*(shdo_obj%maxNm + 1)
-    allocate (LOFJ(NLM))
+    allocate(LOFJ(NLM))
     J = 0
     do L = 0, shdo_obj%maxNl
         ME = min(L, shdo_obj%maxNm)

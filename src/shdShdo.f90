@@ -100,7 +100,7 @@ subroutine shd_shdo__computeSH(&
     real, allocatable :: YLMSUN(:)
 
     NLM = (2*MM + 1)*(ML + 1) - MM*(MM + 1)
-    allocate (YLMSUN(NLM))
+    allocate(YLMSUN(NLM))
 
     ! Spherical Harmonic output: individual SH terms
     A = sqrt(2.0*PI_/3.0)
@@ -185,7 +185,7 @@ subroutine shd_shdo__makeSHDO(NSTLEG, ML, MM, NLM, NMU, NPHI0,&
     real, allocatable :: PRC(:, :)
 
     ! Make the mu part of the real generalized spherical harmonics
-    allocate (PRC(6, NLM))
+    allocate(PRC(6, NLM))
     do I = 1, NMU
         X = MU(I)
         PRC(:, :) = 0.0
@@ -300,8 +300,8 @@ subroutine shd_shdo__transSHtoDO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
     integer, allocatable :: MOFJ(:)
     real, allocatable :: SUMUV(:, :), SUMCS(:, :), TMP(:)
 
-    allocate (MOFJ(NLM), TMP(2*MM + 2))
-    allocate (SUMUV(NSTOKES, -MM:MM), SUMCS(NSTOKES, -MM:MM))
+    allocate(MOFJ(NLM), TMP(2*MM + 2))
+    allocate(SUMUV(NSTOKES, -MM:MM), SUMCS(NSTOKES, -MM:MM))
 
     ! Make the M for each J array
     J = 0
@@ -436,7 +436,7 @@ subroutine shd_shdo__transSHtoDO_(&
     integer, allocatable :: MOFJ(:)
     real, allocatable :: SUMUV(:), SUMCS(:), TMP(:)
 
-    allocate (MOFJ(NLM), SUMUV(-MM:MM), SUMCS(-MM:MM), TMP(2*MM + 2))
+    allocate(MOFJ(NLM), SUMUV(-MM:MM), SUMCS(-MM:MM), TMP(2*MM + 2))
 
     ! Make the M for each J array
     J = 0
@@ -530,8 +530,8 @@ subroutine shd_shdo__transDOtoSH(&
     integer, allocatable :: MOFJ(:)
     real, allocatable :: SUMUV(:, :), SUMCS(:, :), TMP(:)
 
-    allocate (MOFJ(NLM), TMP(NPHI0))
-    allocate (SUMUV(NSTOKES, -MM:MM), SUMCS(NSTOKES, -MM:MM))
+    allocate(MOFJ(NLM), TMP(NPHI0))
+    allocate(SUMUV(NSTOKES, -MM:MM), SUMCS(NSTOKES, -MM:MM))
 
     DELPHI = 2.0*acos(-1.0)/NPHI0
 
@@ -645,7 +645,7 @@ subroutine shd_shdo__transDOtoSH_(NPTS, ML, MM, NLM,&
     integer, allocatable :: MOFJ(:)
     real, allocatable :: SUMUV(:), SUMCS(:), TMP(:)
 
-    allocate (MOFJ(NLM), SUMUV(-MM:MM), SUMCS(-MM:MM), TMP(NPHI0))
+    allocate(MOFJ(NLM), SUMUV(-MM:MM), SUMCS(-MM:MM), TMP(NPHI0))
 
     DELPHI = 2.0*acos(-1.0)/NPHI0
     ! Make the M for each J array
@@ -822,7 +822,7 @@ subroutine shd_shdo__computeYlm(TRANSPOSED, MU, PHI, ML, MM, NSTLEG, YR)
         return
     end if
 
-    allocate (DM0(0:ML), DM2P(0:ML), DM2M(0:ML))
+    allocate(DM0(0:ML), DM2P(0:ML), DM2M(0:ML))
     X = dble(MU)
 
     FCT = 1.d0/dsqrt(2.d0*DPI_)
@@ -931,7 +931,7 @@ subroutine shd_shdo__computeYlm_(MU, PHI, ML, MM, YR)
     real(RD_) :: X, FCT, COSM, SINM
     real(RD_), allocatable :: DM0(:)
 
-    allocate (DM0(0:ML))
+    allocate(DM0(0:ML))
     X = dble(MU)
 
     FCT = 1.d0/dsqrt(2.d0*DPI_)
@@ -981,7 +981,7 @@ subroutine shd_shdo__computePlm(TRANSPOSED, MU, ML, MM, PRC)
         &DM2M(:)
 
     ! --- allocate ---
-    allocate (DM0(0:ML), DM2P(0:ML), DM2M(0:ML))
+    allocate(DM0(0:ML), DM2P(0:ML), DM2M(0:ML))
 
     X = dble(MU)
 

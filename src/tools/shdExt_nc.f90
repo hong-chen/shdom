@@ -99,13 +99,13 @@ contains
     !  Allocate 3D arrays for the properties. Initialize to zero since the ASCII format
     !     doesn't require every cell to be filled in
     !
-    allocate (extinction(NPX, NPY, NPZ), singleScatteringAlbedo(NPX, NPY, NPZ), &
+    allocate(extinction(NPX, NPY, NPZ), singleScatteringAlbedo(NPX, NPY, NPZ), &
               temperature(NPX, NPY, NPZ), phaseFunctionIndex(NPX, NPY, NPZ), &
               zLevels(NPZ))
     if (PROPTYPE == 'T') then
-      allocate (phaseFunctionCoefficients(1, 0:maxleg, numPhase))
+      allocate(phaseFunctionCoefficients(1, 0:maxleg, numPhase))
     else
-      allocate (phaseFunctionCoefficients(6, 0:maxleg, numPhase))
+      allocate(phaseFunctionCoefficients(6, 0:maxleg, numPhase))
     end if
     extinction(:, :, :) = 0.; singleScatteringAlbedo(:, :, :) = 0.
     temperature(:, :, :) = 0.; phaseFunctionIndex(:, :, :) = 0
@@ -149,7 +149,7 @@ contains
                                  temperature, phaseFunctionCoefficients, &
                                  delX, delY, zLevels, netcdfFileName)
 
-    deallocate (extinction, singleScatteringAlbedo, phaseFunctionIndex, &
+    deallocate(extinction, singleScatteringAlbedo, phaseFunctionIndex, &
                 phaseFunctionCoefficients, temperature, zLevels)
   end subroutine convert_Prp_to_netcdf
 !
@@ -315,13 +315,13 @@ contains
     !
     ! X
     if (nf90_inq_varid(ncFileId, 'x', ncVarId) == nf90_NoErr) then
-      allocate (dimVals(NPX))
+      allocate(dimVals(NPX))
       if (nf90_get_var(ncFileID, ncVarId, dimVals) /= nf90_noErr) &
         stop "Error [read_property_size_netcdf]: Error reading x dimension values from netcdf file."
       delx = dimvals(2) - dimvals(1)
       if (any(abs((dimvals(2:NPX) - dimvals(1:NPX - 1)) - delx) > 2.*spacing(dimvals(2:NPX)))) &
         stop "Error [read_property_size_netcdf]: X values are not evenly spaced in netcdf file."
-      deallocate (dimvals)
+      deallocate(dimvals)
     else
       if (nf90_get_att(ncFileID, nf90_global, "DelX", DELX) /= nf90_NoErr) &
         stop "Error [read_property_size_netcdf]: Error reading DELX attributes from netcdf file."
@@ -329,13 +329,13 @@ contains
 
     ! Y
     if (nf90_inq_varid(ncFileId, 'y', ncVarId) == nf90_NoErr) then
-      allocate (dimVals(NPY))
+      allocate(dimVals(NPY))
       if (nf90_get_var(ncFileID, ncVarId, dimVals) /= nf90_noErr) &
         stop "Error [read_property_size_netcdf]: Error reading y dimension values from netcdf file."
       dely = dimvals(2) - dimvals(1)
       if (any(abs((dimvals(2:NPY) - dimvals(1:NPY - 1)) - delx) > 2.*spacing(dimvals(2:NPY)))) &
         stop "Error [read_property_size_netcdf]: Y values are not evenly spaced in netcdf file."
-      deallocate (dimvals)
+      deallocate(dimvals)
     else
       if (nf90_get_att(ncFileID, nf90_global, "DelY", DELY) /= nf90_NoErr) &
         stop "Error [read_property_size_netcdf]: Error reading DELY attributes from netcdf file."
@@ -382,15 +382,15 @@ contains
     ! 3D  arrays - real for singleScatteringAlbedo, extinction, and (optionally) temperature;
     !  integer for phaseFunctionIndex
     !
-    allocate (tempArray(NPZ, 1, 1))
+    allocate(tempArray(NPZ, 1, 1))
 
     status(1) = nf90_inq_varid(ncFileId, "z", ncVarId)
     status(2) = nf90_get_var(ncFileId, ncVarId, tempArray(:, 1, 1))
     if (any(status(:) /= nf90_NoErr)) stop "Error [read_properties_netcdf]: Error reading z-Levels from netcdf file."
     zLevels = tempArray(:, 1, 1)
 
-    deallocate (tempArray)
-    allocate (tempArray(NPX, NPY, NPZ))
+    deallocate(tempArray)
+    allocate(tempArray(NPX, NPY, NPZ))
 
     status(1) = nf90_inq_varid(ncFileId, "extinction", ncVarId)
     status(2) = nf90_get_var(ncFileId, ncVarId, tempArray)
@@ -417,8 +417,8 @@ contains
       tempp(:NPX*NPY*NPZ) = 250.
     end if
 
-    deallocate (tempArray)
-    allocate (tempIntArray(NPX, NPY, NPZ))
+    deallocate(tempArray)
+    allocate(tempIntArray(NPX, NPY, NPZ))
 
     status(1) = nf90_inq_varid(ncFileId, "phaseFunctionIndex", ncVarId)
     status(2) = nf90_get_var(ncFileId, ncVarId, tempIntArray)
@@ -426,7 +426,7 @@ contains
     IPHASEP(:NPX*NPY*NPZ) = pack(reshape(tempIntArray, shape=(/NPZ, NPY, NPX/), order=(/3, 2, 1/)), &
                                  mask=.true.)
 
-    deallocate (tempIntArray)
+    deallocate(tempIntArray)
 
     !
     ! 3D array for the phase matrices
@@ -437,7 +437,7 @@ contains
     status(2) = nf90_Inquire_Dimension(ncFileId, ncDimId, len=NphasePol)
     status(3) = nf90_inq_dimid(ncFileId, 'legendreTerm', ncDimId)
     status(4) = nf90_Inquire_Dimension(ncFileId, ncDimId, len=numTerms)
-    allocate (tempArray(NphasePol, 0:numTerms - 1, NUMPHASE))
+    allocate(tempArray(NphasePol, 0:numTerms - 1, NUMPHASE))
     status(5) = nf90_inq_varid(ncFileId, "phaseFunctionCoefficients", ncVarId)
     status(6) = nf90_get_var(ncFileId, ncVarId, tempArray)
     if (any(status(:) /= nf90_NoErr)) then
@@ -470,7 +470,7 @@ contains
     end if
 
     MAXASYM = maxval(tempArray(1, 1, :))/3.0
-    deallocate (tempArray)
+    deallocate(tempArray)
 
   end subroutine read_properties_netcdf
   !

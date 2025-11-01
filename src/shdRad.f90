@@ -191,7 +191,7 @@ subroutine shd_rad__computeDirect(&
     end if
 
     if (INIT .eq. 1) then
-        if (.not. allocated(GASEXT)) allocate (GASEXT(prp_obj%Nz), EXTMIN(prp_obj%Nz), EXTMAX(prp_obj%Nz))
+        if (.not. allocated(GASEXT)) allocate(GASEXT(prp_obj%Nz), EXTMIN(prp_obj%Nz), EXTMAX(prp_obj%Nz))
         ! Get the gaseous extinction at the property grid levels
         do IZ = 1, prp_obj%Nz
             if (ckd_obj%Nz .gt. 0) then
@@ -923,14 +923,14 @@ subroutine shd_rad__computeCamRad(&
     real              :: MEAN, STD1, STD2
     real, allocatable :: AOLP(:)
 
-    allocate (YLMSUN(prp_obj%NlegSet, shdo_obj%Nlm))
+    allocate(YLMSUN(prp_obj%NlegSet, shdo_obj%Nlm))
 
     if (isSolar_) then
         call shd_shdo__computeYlm(.true., src_obj%avgMu, src_obj%avgAz, shdo_obj%maxNl, shdo_obj%maxNm, prp_obj%NlegSet, YLMSUN)
         if (DELTAM .and. prp_obj%Npha .gt. 0) then
             NSCATANGLE = max(36, min(MAXSCATANG, 2*prp_obj%Nleg))
             NSTPHASE = min(prp_obj%NlegSet, 2)
-            allocate (PHASETAB(NSTPHASE, prp_obj%Npha, NSCATANGLE))
+            allocate(PHASETAB(NSTPHASE, prp_obj%Npha, NSCATANGLE))
             call shd_scat__computePhase(NSCATANGLE, prp_obj%Npha, NSTPHASE,&
                 &shdo_obj%Nstokes, shdo_obj%maxNl, prp_obj%NlegSet, prp_obj%Nleg, rtm_obj%leg, PHASETAB)
         end if
@@ -1111,7 +1111,7 @@ subroutine shd_rad__computeCamRad(&
     if (isPol_) then
         ! Choose the best range for the angle of linear polarization (-90 to 90 or 0 to 180)
         N = NL*NS
-        allocate (AOLP(N))
+        allocate(AOLP(N))
         AOLP(:) = VISOUT(3, IVIS - N + 1:IVIS)
         MEAN = sum(AOLP(:))/N
         STD1 = sqrt(sum((AOLP(:) - MEAN)**2)/N)

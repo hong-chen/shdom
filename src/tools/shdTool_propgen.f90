@@ -95,7 +95,7 @@ contains
         read (*, *) NSCATTAB
         if (VERBOSE) write (*, *) NSCATTAB
 
-        allocate (SCATTABFILES(NSCATTAB), SCATNUMS(NSCATTAB), POLTABS(NSCATTAB))
+        allocate(SCATTABFILES(NSCATTAB), SCATNUMS(NSCATTAB), POLTABS(NSCATTAB))
         if (NSCATTAB > 0) then
             if (VERBOSE) write (*, *) 'Name of each scattering table'
             do I = 1, NSCATTAB
@@ -137,7 +137,7 @@ contains
         if (VERBOSE) write (*, *) 'Number of extra Z levels'
         read (*, *) NZO
         if (VERBOSE) write (*, '(1X,I3)') NZO
-        allocate (ZOTHER(NZO), TEMPOTHER(NZO))
+        allocate(ZOTHER(NZO), TEMPOTHER(NZO))
         do I = 1, NZO
             if (VERBOSE) write (*, *) 'Height (km) and temperature (K) :', I
             read (*, *) ZOTHER(I), TEMPOTHER(I)
@@ -871,7 +871,7 @@ contains
         OUTFILE_DATA = trim(adjustl(PROPFILE))//trim(adjustl(DATA_POSTFIX))
 
         ! Make a phase function index conversion array to output only the ones used.
-        allocate (PHASECONV(0:NPHASE))
+        allocate(PHASECONV(0:NPHASE))
         PHASECONV(:) = 0
         NPHASEOUT = 0
         do I = 0, NPHASE
@@ -996,8 +996,8 @@ program propgen
     end if
 
     NTYPES = NSCATTAB
-    allocate (WAVELEN1(NSCATTAB), WAVELEN2(NSCATTAB))
-    allocate (NRE(0:NTYPES), PARTYPES(NTYPES))
+    allocate(WAVELEN1(NSCATTAB), WAVELEN2(NSCATTAB))
+    allocate(NRE(0:NTYPES), PARTYPES(NTYPES))
 
     NRE(0) = 1
     MAXCOEF = 2
@@ -1011,12 +1011,12 @@ program propgen
             write (*, *) 'Warning [PROPGEN]: Scattering table wavelengths do not agree for table', I
         end if
     end do
-    deallocate (WAVELEN1, WAVELEN2)
+    deallocate(WAVELEN1, WAVELEN2)
     NENTRIES = NRE(NSCATTAB) - 1
     MAXNPHASE = NENTRIES + MAXNEWPHASE
 
-    allocate (RETAB(NENTRIES), EXTINCTTAB(NENTRIES), SSALBTAB(NENTRIES))
-    allocate (NCOEF(0:MAXNPHASE), WIGCOEFTAB(NPHASEPOL, 0:MAXCOEF, 0:MAXNPHASE))
+    allocate(RETAB(NENTRIES), EXTINCTTAB(NENTRIES), SSALBTAB(NENTRIES))
+    allocate(NCOEF(0:MAXNPHASE), WIGCOEFTAB(NPHASEPOL, 0:MAXCOEF, 0:MAXNPHASE))
 
     WIGCOEFTAB(:, :, :) = 0.0
     ! Put the Rayleigh phase matrix in the zero index
@@ -1032,19 +1032,19 @@ program propgen
             &MAXCOEF, NCOEF(N1:N2), WIGCOEFTAB(:, 0:, N1:N2))
     end do
     PARTYPES(:) = SCATNUMS(:)
-    deallocate (SCATNUMS, SCATTABFILES)
+    deallocate(SCATNUMS, SCATTABFILES)
 
     ! Make the conversion table from particle type to scat table index
     MAXTYPENUM = maxval(PARTYPES(:))
-    allocate (TYPECONV(0:MAXTYPENUM))
+    allocate(TYPECONV(0:MAXTYPENUM))
     call MAKE_TYPE_CONV_TABLE(NTYPES, PARTYPES, MAXTYPENUM, TYPECONV)
 
     ! Read in the particle properties file
     if (PARFILE /= 'NONE' .and. PARFILE /= 'none') then
         call READ_PARTICLE_FILE_SIZE(PARFILE, NX, NY, NZP)
-        allocate (ZPAR(NZP), TEMPPAR(NZP))
-        allocate (NCOMP(NZP, NY, NX), PTYPE(NSCATTAB, NZP, NY, NX))
-        allocate (MASSCONT(NSCATTAB, NZP, NY, NX), REFF(NSCATTAB, NZP, NY, NX))
+        allocate(ZPAR(NZP), TEMPPAR(NZP))
+        allocate(NCOMP(NZP, NY, NX), PTYPE(NSCATTAB, NZP, NY, NX))
+        allocate(MASSCONT(NSCATTAB, NZP, NY, NX), REFF(NSCATTAB, NZP, NY, NX))
         call READ_PARTICLE_FILE(PARFILE, NX, NY, NZP, NSCATTAB, PARTYPES, &
                                 DELX, DELY, ZPAR, TEMPPAR, &
                                 NCOMP, PTYPE, MASSCONT, REFF, CKDFILE, ISEXT)
@@ -1057,7 +1057,7 @@ program propgen
 
     ! Combine the particle levels and extra levels
     NZT = NZP + NZO
-    allocate (ZLEVELS(NZT), TEMP(NZT), IPARLEV(NZT), EXTRAYL(NZT))
+    allocate(ZLEVELS(NZT), TEMP(NZT), IPARLEV(NZT), EXTRAYL(NZT))
     call ORGANIZE_LEVELS(NZP, ZPAR, TEMPPAR, NZO, ZOTHER, TEMPOTHER, &
                          NZT, ZLEVELS, TEMP, IPARLEV)
 
@@ -1081,7 +1081,7 @@ program propgen
 
     end if
 
-    allocate (ASYM(0:MAXNPHASE), PHASE(NANGLES, 0:MAXNPHASE))
+    allocate(ASYM(0:MAXNPHASE), PHASE(NANGLES, 0:MAXNPHASE))
     NPHASE = NENTRIES
     ! Make the asymmetry param and angle space low resolution phase functions
     do I = 0, NPHASE
@@ -1090,11 +1090,11 @@ program propgen
     end do
 
     ! Allocate the output optical property arrays
-    allocate (EXTINCT(NZT, NY, NX), SSALB(NZT, NY, NX), IPHASE(NZT, NY, NX))
+    allocate(EXTINCT(NZT, NY, NX), SSALB(NZT, NY, NX), IPHASE(NZT, NY, NX))
 
     ! Do the optical property mixing from the components specified at each
     !   grid point in the particle file.
-    allocate (WIGCOEF(NPHASEPOL, 0:MAXCOEF), PHASE0(NANGLES))
+    allocate(WIGCOEF(NPHASEPOL, 0:MAXCOEF), PHASE0(NANGLES))
     do IX = 1, NX
         do IY = 1, NY
             do IZ = 1, NZT
@@ -1220,13 +1220,13 @@ program propgen
                            NPHASE, MAXCOEF, NCOEF, WIGCOEFTAB, &
                            EXTINCT, SSALB, IPHASE)
 
-    deallocate (EXTINCT, SSALB, IPHASE, WIGCOEF, ASYM, PHASE0, PHASE)
+    deallocate(EXTINCT, SSALB, IPHASE, WIGCOEF, ASYM, PHASE0, PHASE)
     if (allocated(MASSCONT)) then
-        deallocate (ZPAR, TEMPPAR, NCOMP, PTYPE, MASSCONT, REFF)
+        deallocate(ZPAR, TEMPPAR, NCOMP, PTYPE, MASSCONT, REFF)
     end if
-    deallocate (ZLEVELS, TEMP, IPARLEV)
-    deallocate (NCOEF, WIGCOEFTAB, RETAB, EXTINCTTAB, SSALBTAB)
-    deallocate (TYPECONV, PARTYPES, NRE)
-    deallocate (POLTABS)
+    deallocate(ZLEVELS, TEMP, IPARLEV)
+    deallocate(NCOEF, WIGCOEFTAB, RETAB, EXTINCTTAB, SSALBTAB)
+    deallocate(TYPECONV, PARTYPES, NRE)
+    deallocate(POLTABS)
 
 end

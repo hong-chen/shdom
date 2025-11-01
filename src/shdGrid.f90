@@ -1460,7 +1460,7 @@ subroutine shd_grid__interpNewGridPnt(NEWPOINTS,&
     integer, allocatable :: LOFJ(:)
     real, allocatable :: SOURCET(:, :)
 
-    allocate (LOFJ(shdo_obj%Nlm), SOURCET(shdo_obj%Nstokes, shdo_obj%Nlm))
+    allocate(LOFJ(shdo_obj%Nlm), SOURCET(shdo_obj%Nstokes, shdo_obj%Nlm))
     ! Make the l index as a function of SH term (J)
     J = 0
     do L = 0, shdo_obj%maxNl

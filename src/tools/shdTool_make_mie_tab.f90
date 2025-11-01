@@ -103,10 +103,10 @@ program make_mie_table
     call GET_NSIZE(SRETAB, MAXRADIUS, WAVELENCEN, NSIZE)
 
     ! Allocate all the arrays here
-    allocate (RADII(NSIZE), ND(NSIZE), NRANK1(NSIZE))
-    allocate (EXTINCT1(NSIZE), SCATTER1(NSIZE), WIGCOEF1(6, 0:MAXRANK, NSIZE))
-    allocate (EXTINCT(NRETAB), SSALB(NRETAB))
-    allocate (NRANK(NRETAB), WIGCOEF(6, 0:MAXRANK, NRETAB))
+    allocate(RADII(NSIZE), ND(NSIZE), NRANK1(NSIZE))
+    allocate(EXTINCT1(NSIZE), SCATTER1(NSIZE), WIGCOEF1(6, 0:MAXRANK, NSIZE))
+    allocate(EXTINCT(NRETAB), SSALB(NRETAB))
+    allocate(NRANK(NRETAB), WIGCOEF(6, 0:MAXRANK, NRETAB))
 
     ! Make up the discrete particle radii to use
     call GET_SIZES(SRETAB, MAXRADIUS, WAVELENCEN, NSIZE, RADII)
@@ -165,8 +165,8 @@ program make_mie_table
         & DISTFLAG, ALPHA, GAMMA, NRETAB, SRETAB, ERETAB, LOGRE,&
         & EXTINCT, SSALB, MAXRANK, NRANK, WIGCOEF)
 
-    deallocate (EXTINCT, SSALB, NRANK, WIGCOEF)
-    deallocate (ND, EXTINCT1, SCATTER1, NRANK1, WIGCOEF1)
+    deallocate(EXTINCT, SSALB, NRANK, WIGCOEF)
+    deallocate(ND, EXTINCT1, SCATTER1, NRANK1, WIGCOEF1)
 end program
 
 subroutine USER_INPUT(POLTAB, WAVELEN1, WAVELEN2, PARTYPE, RINDEX, PARDENS,&

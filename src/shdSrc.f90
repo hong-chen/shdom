@@ -351,9 +351,9 @@ subroutine shd_src__computeSrcOneDir(&
     real, allocatable :: UNSCLEGEN(:, :), SINGSCAT(:, :)
     logical TMS
 
-    allocate (YLMDIR(prp_obj%NlegSet, shdo_obj%Nlm), YLMSUN(prp_obj%NlegSet, shdo_obj%Nlm))
-    allocate (SUNDIRLEG(0:prp_obj%Nleg))
-    allocate (UNSCLEGEN(2, 0:prp_obj%Nleg), SINGSCAT(shdo_obj%Nstokes, prp_obj%Npha))
+    allocate(YLMDIR(prp_obj%NlegSet, shdo_obj%Nlm), YLMSUN(prp_obj%NlegSet, shdo_obj%Nlm))
+    allocate(SUNDIRLEG(0:prp_obj%Nleg))
+    allocate(UNSCLEGEN(2, 0:prp_obj%Nleg), SINGSCAT(shdo_obj%Nstokes, prp_obj%Npha))
     if (abs(MU) .gt. 1.0) stop 'Error [_computeOneSrc]: Bad mu.'
 
     TMS = DELTAM
@@ -545,7 +545,7 @@ subroutine shd_src__computeSrc(&
     real, allocatable :: SOURCET(:, :)
     real SRCMIN, C, SECMU0, D
 
-    allocate (LOFJ(shdo_obj%Nlm), SOURCET(shdo_obj%Nstokes, shdo_obj%Nlm))
+    allocate(LOFJ(shdo_obj%Nlm), SOURCET(shdo_obj%Nstokes, shdo_obj%Nlm))
 
     SRCMIN = SHACC
     ! Make source function from scattering integral and real sources:
@@ -812,7 +812,7 @@ subroutine shd_src__integrateSrcOneRay(&
     MAXCELLSCROSS = 50*max(NX, NY, NZ)
 
     ! Calculate the generalized spherical harmonics for this direction
-    allocate (YLMDIR(prp_obj%NlegSet, NLM))
+    allocate(YLMDIR(prp_obj%NlegSet, NLM))
     call shd_shdo__computeYlm(.false., sngl(MU2), sngl(PHI2), ML, MM, prp_obj%NlegSet, YLMDIR)
 
     if ((SRCTYPE .ne. 'T') .and. (DELTAM)) then
@@ -822,7 +822,7 @@ subroutine shd_src__integrateSrcOneRay(&
         COSSCAT = SOLARMU*MU2 + dsqrt((1.0d0 - SOLARMU**2)*(1.0d0 - MU2**2))&
             &*dcos(SOLARAZ - PHI2)
         if (prp_obj%Npha .gt. 0) then
-            allocate (SINGSCAT(NSTOKES, prp_obj%Npha))
+            allocate(SINGSCAT(NSTOKES, prp_obj%Npha))
             F = (NSCATANGLE - 1)*(dacos(COSSCAT)/DPI_) + 1
             J = min(NSCATANGLE - 1, int(F))
             F = F - J
@@ -835,7 +835,7 @@ subroutine shd_src__integrateSrcOneRay(&
                 end if
             end do
         else
-            allocate (SUNDIRLEG(0:prp_obj%Nleg))
+            allocate(SUNDIRLEG(0:prp_obj%Nleg))
             call shd_scat__computeLegendre(COSSCAT, prp_obj%Nleg, SUNDIRLEG)
             do L = 0, prp_obj%Nleg
                 SUNDIRLEG(L) = SUNDIRLEG(L)*(2*L + 1)/(4*DPI_)
@@ -1434,7 +1434,7 @@ subroutine shd_src__computeSolarStokesVect(&
     real(RD_) :: SIN_SCAT, SIN_THETA1, SIN_THETA2
     real(RD_) :: SINPHI, COSPHI, SIN2, COS2, SIN22, COS22
 
-    allocate (DMM1(0:prp_obj%Nleg))
+    allocate(DMM1(0:prp_obj%Nleg))
 
     ! Sum the first Wigner function series, which is actually a Legend
     X = dble(COSSCAT)
