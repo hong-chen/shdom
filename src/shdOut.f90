@@ -2552,9 +2552,9 @@ subroutine shd_io__outputCellSplit(&
     ! Loop over all the cells
     do ICELL = 1, grid_obj%Ncell
         ! Get the adaptive grid criterion for the 3 directions
-        call shd_grid__testCellSplit(rtm_obj%ext,&
-            &SHPTR, shdo_obj%Nstokes, SOURCE, ICELL,&
-            &ADAPTCRIT, MAXADAPT, IDIR, grid_obj)
+        call shd_grid__testCellSplit(ICELL,&
+            &ADAPTCRIT, MAXADAPT, IDIR,&
+            &rtm_obj, grid_obj, shdo_obj)
         ! Compute the cell center location and mean extinction
         IP1 = grid_obj%i8Grid(1, ICELL)
         IP2 = grid_obj%i8Grid(8, ICELL)

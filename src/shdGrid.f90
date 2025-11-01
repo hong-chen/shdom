@@ -706,8 +706,8 @@ subroutine shd_grid__inheritNeighCell(ICELL, IFACE, INeigh,&
 end subroutine shd_grid__inheritNeighCell
 
 subroutine shd_grid__testGridSmooth(&
-    &SHPTR, ICELL, IDIR,&
-    &grid_obj)
+    &ICELL, IDIR,&
+    &grid_obj, shdo_obj)
     !   Tests the grid cell ICELL for splitting in order to improve the
     ! adaptive grid smoothness.  The direction to split the cell is returned
     ! in IDIR (1-X, 2-Y, 3-Z, 0-don't).
@@ -716,9 +716,9 @@ subroutine shd_grid__testGridSmooth(&
     !   2) a neighboring cell has grid spacing more than 3 times finer
 
     type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_shdo), intent(in) :: shdo_obj
 
     integer ICELL, IDIR
-    integer SHPTR(*)
     integer ID, IFACE, IP, IP1, IP2, INeigh, I, J, ISUM
     integer INCELL(2), DIRSPLIT(2)
     integer FACECORNER(4, 6), EDGECORNER(2, 3)
@@ -801,7 +801,7 @@ subroutine shd_grid__testGridSmooth(&
                 ISUM = 0
                 do I = 1, 8
                     IP = grid_obj%i8Grid(I, ICELL)
-                    ISUM = ISUM + SHPTR(IP + 1) - SHPTR(IP)
+                    ISUM = ISUM + shdo_obj%isrcJ(IP + 1) - shdo_obj%isrcJ(IP)
                 end do
                 if (ISUM .gt. 0) then
                     IDIR = ID
@@ -816,10 +816,9 @@ subroutine shd_grid__testGridSmooth(&
 
 end subroutine shd_grid__testGridSmooth
 
-subroutine shd_grid__testCellSplit(EXTINCT,&
-    &SHPTR, NSTOKES, SOURCE, ICELL,&
+subroutine shd_grid__testCellSplit(ICELL,&
     &ADAPTCRIT, MAXADAPT, IDIR,&
-    &grid_obj)
+    &rtm_obj, grid_obj, shdo_obj)
 
     !   Computes the adaptive cell splitting criterion for the X, Y, and Z
     ! directions for cell (ICELL).  The three criterion are returned in
@@ -836,11 +835,11 @@ subroutine shd_grid__testCellSplit(EXTINCT,&
     ! is computed in spherical harmonic space by summing the square of
     ! the difference over all terms.
 
+    type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_shdo), intent(in) :: shdo_obj
 
-    integer NSTOKES, ICELL, IDIR
-    integer SHPTR(*)
-    real EXTINCT(*), SOURCE(NSTOKES, *)
+    integer ICELL, IDIR
     real ADAPTCRIT(3), MAXADAPT
     integer ID, IE, IP1, IP2, IS1, IS2, NS1, NS2, NS
     integer J, NUM
@@ -859,26 +858,26 @@ subroutine shd_grid__testCellSplit(EXTINCT,&
             IP2 = grid_obj%i8Grid(GRIDCORNER(2, IE, ID), ICELL)
             if (IP1 .ne. IP2) then
                 NUM = NUM + 1
-                IS1 = SHPTR(IP1)
-                IS2 = SHPTR(IP2)
-                NS1 = SHPTR(IP1 + 1) - IS1
-                NS2 = SHPTR(IP2 + 1) - IS2
+                IS1 = shdo_obj%isrcJ(IP1)
+                IS2 = shdo_obj%isrcJ(IP2)
+                NS1 = shdo_obj%isrcJ(IP1 + 1) - IS1
+                NS2 = shdo_obj%isrcJ(IP2 + 1) - IS2
                 JAY = 0.0
                 NS = min(NS1, NS2)
                 !   Compute the source function rms difference integrated
                 ! over all angles, which is sum of squares of spherical
                 ! harmonic term differences.
                 do J = 1, NS
-                    JAY = JAY + (EXTINCT(IP2)*SOURCE(1, IS2 + J)&
-                        &- EXTINCT(IP1)*SOURCE(1, IS1 + J))**2
+                    JAY = JAY + (rtm_obj%ext(IP2)*shdo_obj%srcJ(1, IS2 + J)&
+                        &- rtm_obj%ext(IP1)*shdo_obj%srcJ(1, IS1 + J))**2
                 end do
                 do J = NS + 1, NS1
-                    JAY = JAY + (EXTINCT(IP1)*SOURCE(1, IS1 + J))**2
+                    JAY = JAY + (rtm_obj%ext(IP1)*shdo_obj%srcJ(1, IS1 + J))**2
                 end do
                 do J = NS + 1, NS2
-                    JAY = JAY + (EXTINCT(IP2)*SOURCE(1, IS2 + J))**2
+                    JAY = JAY + (rtm_obj%ext(IP2)*shdo_obj%srcJ(1, IS2 + J))**2
                 end do
-                EXT = 0.5*(EXTINCT(IP1) + EXTINCT(IP2))
+                EXT = 0.5*(rtm_obj%ext(IP1) + rtm_obj%ext(IP2))
                 if (EXT .gt. 0.0) then
                     JAY = C0*sqrt(JAY)/EXT
                 else
@@ -1590,6 +1589,7 @@ subroutine shd_grid__interpNewGridPnt(NEWPOINTS,&
             end do
         end if
     end do
+
     deallocate(LOFJ, SOURCET)
 
     return
@@ -1642,9 +1642,9 @@ subroutine shd_grid__splitGrid(&
             do ICELL = ICELL1, grid_obj%Ncell
                 if (grid_obj%i2Tree(2, ICELL) .eq. 0) then
                     ! If this is a end node cell then compute adaptive criterion
-                    call shd_grid__testCellSplit(rtm_obj%ext,&
-                        &shdo_obj%isrcJ, shdo_obj%Nstokes, shdo_obj%srcJ, ICELL,&
-                        &ADAPT, ADAPTCRIT(N + 1), IDIR, grid_obj)
+                    call shd_grid__testCellSplit(ICELL,&
+                        &ADAPT, ADAPTCRIT(N + 1), IDIR,&
+                        &rtm_obj, grid_obj, shdo_obj)
                     ADAPTIND(N+1) = 4*ICELL + IDIR
                     N = N + 1
                 end if
@@ -1709,7 +1709,7 @@ subroutine shd_grid__splitGrid(&
                     ! See if cell should be split to make better grid:
                     !   IDIR=0 if no, IDIR=direction (1,2,3) otherwise
                     ICELL = int(ADAPTIND(I))/4
-                    call shd_grid__testGridSmooth(shdo_obj%isrcJ, ICELL, IDIR, grid_obj)
+                    call shd_grid__testGridSmooth(ICELL, IDIR, grid_obj, shdo_obj)
 
                     ! Set IDIR=0 to stop adaptive grid smoothing
                     ! IDIR = 0
@@ -1753,9 +1753,9 @@ subroutine shd_grid__splitGrid(&
     SPLITCRIT = 0.0
     do ICELL = 1, grid_obj%Ncell
         if (grid_obj%i2Tree(2, ICELL) .eq. 0) then
-            call shd_grid__testCellSplit(rtm_obj%ext,&
-                &shdo_obj%isrcJ, shdo_obj%Nstokes, shdo_obj%srcJ, ICELL,&
-                &ADAPT, ADAPTCRIT(1), IDIR, grid_obj)
+            call shd_grid__testCellSplit(ICELL,&
+                &ADAPT, ADAPTCRIT(1), IDIR,&
+                &rtm_obj, grid_obj, shdo_obj)
             SPLITCRIT = max(SPLITCRIT, ADAPTCRIT(1))
         end if
     end do
