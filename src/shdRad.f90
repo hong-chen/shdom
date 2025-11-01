@@ -186,7 +186,7 @@ subroutine shd_rad__computeDirect(&
     save DELXD, DELYD, XDOMAIN, YDOMAIN, EPSS, EPSZ, UNIFORMZLEV
 
     if (INIT .eq. 9) then
-        deallocate (GASEXT, EXTMIN, EXTMAX)
+        deallocate(GASEXT, EXTMIN, EXTMAX)
         return
     end if
 
@@ -1106,8 +1106,8 @@ subroutine shd_rad__computeCamRad(&
         end do
     end do
 
-    deallocate (YLMSUN)
-    if (allocated(PHASETAB)) deallocate (PHASETAB)
+    deallocate(YLMSUN)
+    if (allocated(PHASETAB)) deallocate(PHASETAB)
     if (isPol_) then
         ! Choose the best range for the angle of linear polarization (-90 to 90 or 0 to 180)
         N = NL*NS
@@ -1123,7 +1123,7 @@ subroutine shd_rad__computeCamRad(&
         if (STD2 < STD1) then
             VISOUT(3, IVIS - N + 1:IVIS) = AOLP(:)
         end if
-        deallocate (AOLP)
+        deallocate(AOLP)
     end if
     return
 end subroutine shd_rad__computeCamRad

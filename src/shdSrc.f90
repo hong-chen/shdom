@@ -491,7 +491,7 @@ subroutine shd_src__computeSrcOneDir(&
         end if
     end do
 
-    deallocate (YLMDIR, YLMSUN, SUNDIRLEG, UNSCLEGEN, SINGSCAT)
+    deallocate(YLMDIR, YLMSUN, SUNDIRLEG, UNSCLEGEN, SINGSCAT)
 
     return
 
@@ -723,7 +723,7 @@ subroutine shd_src__computeSrc(&
         IS = IS + NS
     end do
     shdo_obj%isrcJ(grid_obj%Npts + 1) = IS
-    deallocate (LOFJ, SOURCET)
+    deallocate(LOFJ, SOURCET)
     return
 end subroutine shd_src__computeSrc
 
@@ -1126,13 +1126,13 @@ subroutine shd_src__integrateSrcOneRay(&
 
     if (isSolar_ .and. DELTAM) then
         if (prp_obj%Npha .gt. 0) then
-            deallocate (SINGSCAT)
+            deallocate(SINGSCAT)
         else
-            deallocate (SUNDIRLEG)
+            deallocate(SUNDIRLEG)
         end if
     end if
 
-    deallocate (YLMDIR)
+    deallocate(YLMDIR)
 
     return
 end subroutine shd_src__integrateSrcOneRay
@@ -1477,7 +1477,7 @@ subroutine shd_src__computeSolarStokesVect(&
     if (isPol4_) then
         SCATVECT(4) = 0.0
     end if
-    deallocate (DMM1)
+    deallocate(DMM1)
 
     return
 

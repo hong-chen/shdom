@@ -612,7 +612,7 @@ subroutine shd_init__makeRad(&
         end do
     end do
 
-    deallocate (OPTDEPTHS, ALBEDOS, ASYMMETRIES, TEMPS, FLUXES)
+    deallocate(OPTDEPTHS, ALBEDOS, ASYMMETRIES, TEMPS, FLUXES)
 
     return
 
@@ -836,7 +836,7 @@ subroutine shd_init__makeFlux(&
         I = I + 2
     end do
 
-    deallocate (LOWER, UPPER, DIAG, RHS)
+    deallocate(LOWER, UPPER, DIAG, RHS)
 
     return
 

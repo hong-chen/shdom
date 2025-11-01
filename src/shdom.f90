@@ -1391,11 +1391,11 @@ program shdom
                 end if
             end do
 
-            if (isFluxOut) deallocate (fluxTot_all)
-            if (isHROut)   deallocate (fluxDiv_all)
-            if (isSHOut)   deallocate (SH_all)
+            if (isFluxOut) deallocate(fluxTot_all)
+            if (isHROut)   deallocate(fluxDiv_all)
+            if (isSHOut)   deallocate(SH_all)
 
-            deallocate (x_Grid_all, y_Grid_all)
+            deallocate(x_Grid_all, y_Grid_all)
             if (rtmAll_obj%isAllocated) then
                 nullify(rtmAll_obj%x, rtmAll_obj%y, rtmAll_obj%z)
                 rtmAll_obj%isAllocated = .false.
@@ -1482,14 +1482,14 @@ program shdom
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! rtm_obj
     !╭────────────────────────────────────────────────╮!
-    deallocate (x_Grid, y_Grid, z_Grid)
-    deallocate (ptr_Bc, rad_Bc)
-    deallocate (temp_Rtm, planck_Rtm)
-    deallocate (ext_Rtm, ssa_Rtm, ipha_Rtm)
-    deallocate (leg_Rtm)
-    deallocate (fluxTot, fluxDir)
-    deallocate (sumRad_Out, sumCam_Out)
-    deallocate (work, work1, work2)
+    deallocate(x_Grid, y_Grid, z_Grid)
+    deallocate(ptr_Bc, rad_Bc)
+    deallocate(temp_Rtm, planck_Rtm)
+    deallocate(ext_Rtm, ssa_Rtm, ipha_Rtm)
+    deallocate(leg_Rtm)
+    deallocate(fluxTot, fluxDir)
+    deallocate(sumRad_Out, sumCam_Out)
+    deallocate(work, work1, work2)
     if (rtm_obj%isAllocated) then
         nullify(rtm_obj%x, &
                 rtm_obj%y, &
@@ -1506,8 +1506,8 @@ program shdom
 
     ! grid_obj
     !╭────────────────────────────────────────────────╮!
-    deallocate (xyz_Grid)
-    deallocate (flag_Cell, i8Grid_Cell, i6Cell_Cell, i2Tree_Cell)
+    deallocate(xyz_Grid)
+    deallocate(flag_Cell, i8Grid_Cell, i6Cell_Cell, i2Tree_Cell)
     if (grid_obj%isAllocated) then
         nullify(grid_obj%xyz, &
                 grid_obj%flag, &
@@ -1519,8 +1519,8 @@ program shdom
 
     ! prp_obj
     !╭────────────────────────────────────────────────╮!
-    deallocate (z_Prp, temp_Prp, ext_Prp, ssa_Prp)
-    deallocate (ipha_Prp, leg_Prp, extDir_Prp)
+    deallocate(z_Prp, temp_Prp, ext_Prp, ssa_Prp)
+    deallocate(ipha_Prp, leg_Prp, extDir_Prp)
     if (prp_obj%isAllocated) then
         nullify(prp_obj%z, &
                 prp_obj%temp, &
@@ -1546,7 +1546,7 @@ program shdom
     ! ckd_obj
     !╭────────────────────────────────────────────────╮!
     if (allocated(kabs_Ckd)) then
-        deallocate (solar_Ckd, wgt_Ckd, z_Ckd, kabs_Ckd)
+        deallocate(solar_Ckd, wgt_Ckd, z_Ckd, kabs_Ckd)
         if (ckd_obj%isAllocated) then
             nullify(ckd_obj%solar, ckd_obj%wgt, ckd_obj%z, ckd_obj%kabs)
             ckd_obj%isAllocated = .false.
@@ -1557,7 +1557,7 @@ program shdom
     ! sen_obj
     !╭────────────────────────────────────────────────╮!
     if (allocated(view_Sen)) then
-        deallocate (view_Sen)
+        deallocate(view_Sen)
         if (sen_obj%isAllocated) then
             nullify(sen_obj%view)
             sen_obj%isAllocated = .false.
@@ -1567,10 +1567,10 @@ program shdom
 
     ! shdo_obj
     !╭────────────────────────────────────────────────╮!
-    deallocate (mu_Shdo, phi_Shdo, wgt_Shdo, Nphi0_Shdo)
-    deallocate (radI_Shdo, iradI_Shdo)
-    deallocate (srcJ_Shdo, isrcJ_Shdo)
-    if (isAccel) deallocate (dsrc_Shdo, idsrc_Shdo)
+    deallocate(mu_Shdo, phi_Shdo, wgt_Shdo, Nphi0_Shdo)
+    deallocate(radI_Shdo, iradI_Shdo)
+    deallocate(srcJ_Shdo, isrcJ_Shdo)
+    if (isAccel) deallocate(dsrc_Shdo, idsrc_Shdo)
     if (shdo_obj%isAllocated) then
         nullify(shdo_obj%Nphi0, &
                 shdo_obj%iradI, &
@@ -1585,10 +1585,10 @@ program shdom
 
     ! out_obj
     !╭────────────────────────────────────────────────╮!
-    if (isFluxOut) deallocate (sumFluxTot_Out, sumFluxDir_Out)
-    if (isHROut)   deallocate (sumFluxDiv_Out)
-    if (isSHOut)   deallocate (sumSH_Out)
-    if (isSrcOut)  deallocate (src1_Out)
+    if (isFluxOut) deallocate(sumFluxTot_Out, sumFluxDir_Out)
+    if (isHROut)   deallocate(sumFluxDiv_Out)
+    if (isSHOut)   deallocate(sumSH_Out)
+    if (isSrcOut)  deallocate(src1_Out)
     !╰────────────────────────────────────────────────╯!
     !╰────────────────────────────────────────────────────────────────────────────╯!
 

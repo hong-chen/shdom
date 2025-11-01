@@ -154,7 +154,7 @@ subroutine shd_shdo__computeSH(&
             SHTERMS(5, I) = sqrt(HORMS)
         end if
     end do
-    deallocate (YLMSUN)
+    deallocate(YLMSUN)
 
     return
 
@@ -203,7 +203,7 @@ subroutine shd_shdo__makeSHDO(NSTLEG, ML, MM, NLM, NMU, NPHI0,&
             end do
         end do
     end do
-    deallocate (PRC)
+    deallocate(PRC)
 
     ! Make the to and from Fourier coefficients for each mu
     do I = 1, NMU
@@ -397,7 +397,7 @@ subroutine shd_shdo__transSHtoDO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
             end if
         end if
     end do
-    deallocate (MOFJ, SUMUV, SUMCS, TMP)
+    deallocate(MOFJ, SUMUV, SUMCS, TMP)
 
     return
 
@@ -502,7 +502,7 @@ subroutine shd_shdo__transSHtoDO_(&
             end if
         end if
     end do
-    deallocate (MOFJ, SUMUV, SUMCS, TMP)
+    deallocate(MOFJ, SUMUV, SUMCS, TMP)
 
     return
 
@@ -618,7 +618,7 @@ subroutine shd_shdo__transDOtoSH(&
         end do
         IS = IS + NSH
     end do
-    deallocate (MOFJ, SUMUV, SUMCS, TMP)
+    deallocate(MOFJ, SUMUV, SUMCS, TMP)
 
     return
 
@@ -703,7 +703,7 @@ subroutine shd_shdo__transDOtoSH_(NPTS, ML, MM, NLM,&
         end do
         IS = IS + NSH
     end do
-    deallocate (MOFJ, SUMUV, SUMCS, TMP)
+    deallocate(MOFJ, SUMUV, SUMCS, TMP)
 
     return
 
@@ -908,7 +908,7 @@ subroutine shd_shdo__computeYlm(TRANSPOSED, MU, PHI, ML, MM, NSTLEG, YR)
         end do
     end do
 
-    deallocate (DM0, DM2P, DM2M)
+    deallocate(DM0, DM2P, DM2M)
 
     return
 
@@ -962,7 +962,7 @@ subroutine shd_shdo__computeYlm_(MU, PHI, ML, MM, YR)
         end do
     end do
 
-    deallocate (DM0)
+    deallocate(DM0)
 
     return
 
@@ -1066,7 +1066,7 @@ subroutine shd_shdo__computePlm(TRANSPOSED, MU, ML, MM, PRC)
             PRC(6, J) = -SIGN*P3
         end do
     end do
-    deallocate (DM0, DM2P, DM2M)
+    deallocate(DM0, DM2P, DM2M)
 
     return
 

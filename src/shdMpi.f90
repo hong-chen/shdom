@@ -571,8 +571,8 @@ subroutine shd_mpi__bcastPrp(prpAll_obj, prp_obj)
         call mpi_bcast(prp_obj%leg, prp_obj%maxNptsLeg, MPI_real, 0, comm2D_, ierr)
     end if
 
-    if (myProc_ .eq. 0) deallocate (tempbuf, extbuf, ssabuf, iphabuf, rbuf, ibuf)
-    deallocate (requests, status, ixyAll)
+    if (myProc_ .eq. 0) deallocate(tempbuf, extbuf, ssabuf, iphabuf, rbuf, ibuf)
+    deallocate(requests, status, ixyAll)
 #endif
 
     return
@@ -766,7 +766,7 @@ subroutine shd_mpi__bcastMem(MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
     ADAPT_GRID_FACTOR = MemParam(2, myProc_)
     NUM_SH_TERM_FACTOR = MemParam(3, myProc_)
     CELL_TO_POINT_RATIO = MemParam(4, myProc_)
-    deallocate (MemParam)
+    deallocate(MemParam)
     if (verbose_ .ge. 5) write (6, '(A)') 'Message [mpi__bcastMemParam]:'
     if (verbose_ .ge. 5) write (6, '(2X,A,F0.2,"MB",3(2X,F0.3))') 'Memory parameters used: ', MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
         &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
@@ -865,7 +865,7 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
             buf(1:2, :, :, :) = reshape(SUMFLUXES(1:2, :), (/2, rtmAll_obj%Nz, NY1, NX1/))
             buf(3, :, :, :) = reshape(SUMDIRFLUX(:), (/rtmAll_obj%Nz, NY1, NX1/))
             ALLFLUXES(1:3, 1:rtmAll_obj%Nz, IY:IY + Ny - 1, IX:IX + Nx - 1) = buf(:, 1:rtmAll_obj%Nz, 1:Ny, 1:Nx)
-            deallocate (buf)
+            deallocate(buf)
             do iproc = 1, Nproc_ - 1
                 IX = ixyAll(1, 1, iproc); Nx = ixyAll(2, 1, iproc)
                 IY = ixyAll(1, 2, iproc); Ny = ixyAll(2, 2, iproc)
@@ -875,11 +875,11 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
                 allocate (buf(3, rtmAll_obj%Nz, NY1, NX1))
                 buf(:, :, :, :) = reshape(recvbuf(:, 1:rtmAll_obj%Nz*NY1*NX1, iproc), (/3, rtmAll_obj%Nz, NY1, NX1/))
                 ALLFLUXES(1:3, 1:rtmAll_obj%Nz, IY:IY + Ny - 1, IX:IX + Nx - 1) = buf(:, 1:rtmAll_obj%Nz, 1:Ny, 1:Nx)
-                deallocate (buf)
+                deallocate(buf)
             end do
-            deallocate (recvbuf)
+            deallocate(recvbuf)
         else
-            deallocate (sendbuf)
+            deallocate(sendbuf)
         end if
     end if
 
@@ -909,7 +909,7 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
             allocate (buf(1, rtmAll_obj%Nz, NY1, NX1))
             buf(1, :, :, :) = reshape(SUMFLUXDIV(:), (/rtmAll_obj%Nz, NY1, NX1/))
             ALLFLUXDIV(1:rtmAll_obj%Nz, IY:IY + Ny - 1, IX:IX + Nx - 1) = buf(1, 1:rtmAll_obj%Nz, 1:Ny, 1:Nx)
-            deallocate (buf)
+            deallocate(buf)
             do iproc = 1, Nproc_ - 1
                 IX = ixyAll(1, 1, iproc); Nx = ixyAll(2, 1, iproc)
                 IY = ixyAll(1, 2, iproc); Ny = ixyAll(2, 2, iproc)
@@ -919,9 +919,9 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
                 allocate (buf(1, rtmAll_obj%Nz, NY1, NX1))
                 buf(:, :, :, :) = reshape(recvbuf(:, 1:rtmAll_obj%Nz*NY1*NX1, iproc), (/1, rtmAll_obj%Nz, NY1, NX1/))
                 ALLFLUXDIV(1:rtmAll_obj%Nz, IY:IY + Ny - 1, IX:IX + Nx - 1) = buf(1, 1:rtmAll_obj%Nz, 1:Ny, 1:Nx)
-                deallocate (buf)
+                deallocate(buf)
             end do
-            deallocate (recvbuf)
+            deallocate(recvbuf)
         end if
     end if
 
@@ -951,7 +951,7 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
             allocate (buf(NSHOUT, rtmAll_obj%Nz, NY1, NX1))
             buf(:, :, :, :) = reshape(SUMSHTERMS(:, :), (/NSHOUT, rtmAll_obj%Nz, NY1, NX1/))
             ALLSHTERMS(:, 1:rtmAll_obj%Nz, IY:IY + Ny - 1, IX:IX + Nx - 1) = buf(:, 1:rtmAll_obj%Nz, 1:Ny, 1:Nx)
-            deallocate (buf)
+            deallocate(buf)
             do iproc = 1, Nproc_ - 1
                 IX = ixyAll(1, 1, iproc); Nx = ixyAll(2, 1, iproc)
                 IY = ixyAll(1, 2, iproc); Ny = ixyAll(2, 2, iproc)
@@ -961,9 +961,9 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
                 allocate (buf(NSHOUT, rtmAll_obj%Nz, NY1, NX1))
                 buf(:, :, :, :) = reshape(recvbuf(:, 1:rtmAll_obj%Nz*NY1*NX1, iproc), (/NSHOUT, rtmAll_obj%Nz, NY1, NX1/))
                 ALLSHTERMS(:, 1:rtmAll_obj%Nz, IY:IY + Ny - 1, IX:IX + Nx - 1) = buf(:, 1:rtmAll_obj%Nz, 1:Ny, 1:Nx)
-                deallocate (buf)
+                deallocate(buf)
             end do
-            deallocate (recvbuf)
+            deallocate(recvbuf)
         end if
     end if
 
@@ -978,7 +978,7 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
     call mpi_reduce(send3int, recv3int, 3, MPI_integer, MPI_sum, 0, comm2D_, ierr)
     NCELLSTOT = recv3int(1); NPTSTOT = recv3int(2); NSHTOT = recv3int(3)
 
-    deallocate (ixyAll, requests, status)
+    deallocate(ixyAll, requests, status)
 #endif
 
     return
@@ -1303,8 +1303,8 @@ subroutine shd_mpi__makeDirect(SPT,&
         end if
     end do
 
-    deallocate (DirAllOut, DirPtrOut, DirAllIn, DirPtrIn, Ndone)
-    deallocate (BndDirRealInfo, BndDirIntInfo)
+    deallocate(DirAllOut, DirPtrOut, DirAllIn, DirPtrIn, Ndone)
+    deallocate(BndDirRealInfo, BndDirIntInfo)
 #endif
 
     return
@@ -1445,7 +1445,7 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, SWEEPORD,&
     NS = maxval(N2(:, :))
     if (NS .gt. MAXNBXY) call shd_mpi__abort('Error [mpi__findBndryPnt]: MAXNBXY was exceeded.')
 
-    if (allocated(BxyPtr_)) deallocate (BxyPtr_, BxyPos_, iBxyPtr_)
+    if (allocated(BxyPtr_)) deallocate(BxyPtr_, BxyPos_, iBxyPtr_)
     MAXBC = maxval((/N2(:, 1) + N2(:, 3), N2(:, 1) + N2(:, 4), N2(:, 2) + N2(:, 3), N2(:, 2) + N2(:, 4)/))
     allocate (BxyPtr_(3, MAXBC, NOCT), BxyPos_(3, MAXBC, NOCT), iBxyPtr_(2, Nz, NOCT))
 
@@ -1498,10 +1498,10 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, SWEEPORD,&
             end do
             iBxyPtr_(2, IZ, JOCT) = IBC
         end do
-        deallocate (ZARRAY, INDX)
+        deallocate(ZARRAY, INDX)
     end do
 
-    deallocate (BNDPTR, BNDPOS)
+    deallocate(BNDPTR, BNDPOS)
 #endif
 
     return
@@ -1774,8 +1774,8 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
         end if
     end do
 
-    deallocate (RadAllOut, RadPtrOut, RadAllIn, RadPtrIn, Ndone)
-    deallocate (BndRadRealInfo, BndRadIntInfo)
+    deallocate(RadAllOut, RadPtrOut, RadAllIn, RadPtrIn, Ndone)
+    deallocate(BndRadRealInfo, BndRadIntInfo)
 #endif
 
     return
@@ -2194,9 +2194,9 @@ subroutine shd_mpi__computeRad(&
 
     end do ! K (angle loop)
 
-    deallocate (requests, status, RadSend, IndexSend)
-    if (myProc_ .eq. 0) deallocate (NradRecv, RadRecv, IndexRecv)
-    deallocate (BndRadRealInfo, BndRadIntInfo)
+    deallocate(requests, status, RadSend, IndexSend)
+    if (myProc_ .eq. 0) deallocate(NradRecv, RadRecv, IndexRecv)
+    deallocate(BndRadRealInfo, BndRadIntInfo)
 #endif
 
     return
@@ -2616,12 +2616,12 @@ subroutine shd_mpi__computeCamRad(&
         end do
     end if
 
-    deallocate (requests, status, RadSend, IndexSend)
-    if (myProc_ .eq. 0) deallocate (NradRecv, RadRecv, IndexRecv)
-    deallocate (BndSendRadRealInfo, BndSendRadIntInfo)
-    deallocate (BndRecvRadRealInfo, BndRecvRadIntInfo)
-    deallocate (YLMSUN)
-    if (allocated(PHASETAB)) deallocate (PHASETAB)
+    deallocate(requests, status, RadSend, IndexSend)
+    if (myProc_ .eq. 0) deallocate(NradRecv, RadRecv, IndexRecv)
+    deallocate(BndSendRadRealInfo, BndSendRadIntInfo)
+    deallocate(BndRecvRadRealInfo, BndRecvRadIntInfo)
+    deallocate(YLMSUN)
+    if (allocated(PHASETAB)) deallocate(PHASETAB)
 
     ! On the master processor convert VISOUT(2:,*) from Stokes parameters
     ! to DOLP, AOLP, DOCP
@@ -2653,7 +2653,7 @@ subroutine shd_mpi__computeCamRad(&
             if (STD2 .lt. STD1) then
                 VISOUT(3, IVIS - N + 1:IVIS) = AOLP(:)
             end if
-            deallocate (AOLP)
+            deallocate(AOLP)
         end if
     end if
 #endif
@@ -2799,19 +2799,19 @@ subroutine shd_mpi__end(runName, grid_obj, prpAll_obj, prp_obj)
                     NORM(IX, IY) = NORM(IX, IY) + 1
 
                     ! checked
-                    deallocate (buf)
+                    deallocate(buf)
                 end do
 
                 ! checked
-                deallocate (recvbuf)
+                deallocate(recvbuf)
                 NUMGRIDALL(:, :) = NUMGRIDALL(:, :)/NORM(:, :)
 
                 ! checked
-                deallocate (NORM)
+                deallocate(NORM)
             end if
 
             ! checked
-            deallocate (requests, status, ixyAll)
+            deallocate(requests, status, ixyAll)
 
         else
             allocate (NUMGRIDALL(prpAll_obj%Nx, prpAll_obj%Ny))
@@ -2819,7 +2819,7 @@ subroutine shd_mpi__end(runName, grid_obj, prpAll_obj, prp_obj)
         end if
 
         ! checked
-        deallocate (NUMGRID)
+        deallocate(NUMGRID)
 
         if (myProc_ .eq. 0) then
             ! Write out the array to the load balancing file
@@ -2835,7 +2835,7 @@ subroutine shd_mpi__end(runName, grid_obj, prpAll_obj, prp_obj)
             close (10)
 
             ! checked
-            deallocate (NUMGRIDALL)
+            deallocate(NUMGRIDALL)
         end if
     end if
 
@@ -3018,11 +3018,11 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord,&
                 ! print '(I3,2(1X,F9.6),10(1X,I3))', CYCLE,Temp,LowestEnergy, BndLines(:)
             end do ! end of temperature cycles
 
-            deallocate (Ngrid)
+            deallocate(Ngrid)
         end if
 
         call mpi_bcast(BndLines, N, MPI_integer, 0, comm2D_, ierr)
-        deallocate (ProcCoordAll)
+        deallocate(ProcCoordAll)
         if (myProc_ .eq. 0 .and. DoLoadBalancing) then
             write (6, '(A)') 'Optimum load balanced boundary lines in the property grid:'
             write (6, '(A,16I4)') '  X lines:', BndLines(1:Nxd - 1)

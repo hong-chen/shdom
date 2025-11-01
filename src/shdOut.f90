@@ -2521,7 +2521,7 @@ subroutine shd_io__outputImg(&
     end do
     IVIS = IVIS + NL*NS
 
-    deallocate (BUFFER1)
+    deallocate(BUFFER1)
     close (2)
     return
 end subroutine shd_io__outputImg

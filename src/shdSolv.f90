@@ -437,10 +437,10 @@ subroutine shd_solv__solveRte(&
     ! Deallocate arrays
     !╭────────────────────────────────────────────────────────────────────────────╮!
     if ((sfc_obj%type(1:1) .eq. 'V') .and. sfc_obj%isUniform) then
-        deallocate (brdf_Shdo)
+        deallocate(brdf_Shdo)
     end if
-    deallocate (YlmSolar_Shdo, flagFFT_Shdo, wgtMu_Shdo, wPhiFFT_Shdo)
-    deallocate (CMU1, CMU2, CPHI1, CPHI2)
+    deallocate(YlmSolar_Shdo, flagFFT_Shdo, wgtMu_Shdo, wPhiFFT_Shdo)
+    deallocate(CMU1, CMU2, CPHI1, CPHI2)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     return
@@ -573,7 +573,7 @@ subroutine shd_solv__truncRad(doHighOrder, FIXSH, SHACC,&
         end if
     end do
     shdo_obj%iradI(grid_obj%Npts + 2) = IR
-    deallocate (LOFJ)
+    deallocate(LOFJ)
     return
 
     ! If out of memory or the SH truncation is fixed then

@@ -1590,7 +1590,7 @@ subroutine shd_grid__interpNewGridPnt(NEWPOINTS,&
             end do
         end if
     end do
-    deallocate (LOFJ, SOURCET)
+    deallocate(LOFJ, SOURCET)
 
     return
 

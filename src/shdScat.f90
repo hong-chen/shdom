@@ -130,7 +130,7 @@ subroutine shd_scat__computePhase(&
         end do
     end do
 
-    deallocate (UNSCLEGEN, DMM1, DMM2)
+    deallocate(UNSCLEGEN, DMM1, DMM2)
 
     return
 
