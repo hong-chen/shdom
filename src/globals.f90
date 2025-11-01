@@ -178,59 +178,6 @@ module globals_type
     integer, parameter :: R__ = selected_real_kind(6)
 
 
-    type :: shd_type_shdo
-        integer(kind=I__) :: Nmu  = -999
-        integer(kind=I__) :: Nphi = -999
-        integer(kind=I__) :: Nang = -999
-        integer(kind=I__) :: Nlm  = -999
-        integer(kind=I__) :: Nsh  = -999
-        integer(kind=I__) :: Nstokes = -999
-        integer(kind=I__) :: NlegSet = -999
-
-        integer(kind=I__) :: maxNl = -999
-        integer(kind=I__) :: maxNm = -999
-        integer(kind=I__) :: maxNphi0  = -999
-        integer(kind=I__) :: maxNptsSH = -999
-        integer(kind=I__) :: maxNptsDO = -999
-
-        integer(kind=I__), pointer :: Nphi0(:) => null()
-        integer(kind=I__), pointer :: iradI(:) => null()
-        integer(kind=I__), pointer :: isrcJ(:) => null()
-
-        real(kind=R__), pointer :: mu(:)  => null()
-        real(kind=R__), pointer :: phi(:, :) => null()
-        real(kind=R__), pointer :: wgt(:, :) => null()
-
-        real(kind=R__), pointer :: radI(:, :) => null()
-        real(kind=R__), pointer :: srcJ(:, :) => null()
-
-        logical :: isAllocated  = .false.
-    end type shd_type_shdo
-
-
-    type :: shd_type_src
-        character(len=1) :: type = ' '
-        character(len=1) :: unit = ' '
-
-        real(kind=R__) :: waveNum(2) = [-999.0, -999.0]
-        real(kind=R__) :: avgWaveNum = -999.0
-        real(kind=R__) :: waveLen(2) = [-999.0, -999.0]
-        real(kind=R__) :: avgWaveLen = -999.0
-
-        real(kind=R__) :: avgMu = -999.0
-        real(kind=R__) :: avgAz = -999.0
-
-        real(kind=R__) :: avgSolar0 = -999.0 ! solar read in from input file
-        real(kind=R__) :: avgSolar  = -999.0 ! solar from correlated-k
-
-        real(kind=R__) :: skyRad = -999.0
-
-        ! placeholder for spatially varying solar input
-        !real(kind=R__), pointer :: mu(:) => null()
-        !real(kind=R__), pointer :: az(:) => null()
-    end type shd_type_src
-
-
     type :: shd_type_rtm
         character(len=charMaxLen_) :: runName = 'NONE'
         character(len=1) :: type = ' '
@@ -292,6 +239,59 @@ module globals_type
 
         logical :: isAllocated  = .false.
     end type shd_type_grid
+
+
+    type :: shd_type_shdo
+        integer(kind=I__) :: Nmu  = -999
+        integer(kind=I__) :: Nphi = -999
+        integer(kind=I__) :: Nang = -999
+        integer(kind=I__) :: Nlm  = -999
+        integer(kind=I__) :: Nsh  = -999
+        integer(kind=I__) :: Nstokes = -999
+        integer(kind=I__) :: NlegSet = -999
+
+        integer(kind=I__) :: maxNl = -999
+        integer(kind=I__) :: maxNm = -999
+        integer(kind=I__) :: maxNphi0  = -999
+        integer(kind=I__) :: maxNptsSH = -999
+        integer(kind=I__) :: maxNptsDO = -999
+
+        integer(kind=I__), pointer :: Nphi0(:) => null()
+        integer(kind=I__), pointer :: iradI(:) => null()
+        integer(kind=I__), pointer :: isrcJ(:) => null()
+
+        real(kind=R__), pointer :: mu(:)  => null()
+        real(kind=R__), pointer :: phi(:, :) => null()
+        real(kind=R__), pointer :: wgt(:, :) => null()
+
+        real(kind=R__), pointer :: radI(:, :) => null()
+        real(kind=R__), pointer :: srcJ(:, :) => null()
+
+        logical :: isAllocated  = .false.
+    end type shd_type_shdo
+
+
+    type :: shd_type_src
+        character(len=1) :: type = ' '
+        character(len=1) :: unit = ' '
+
+        real(kind=R__) :: waveNum(2) = [-999.0, -999.0]
+        real(kind=R__) :: avgWaveNum = -999.0
+        real(kind=R__) :: waveLen(2) = [-999.0, -999.0]
+        real(kind=R__) :: avgWaveLen = -999.0
+
+        real(kind=R__) :: avgMu = -999.0
+        real(kind=R__) :: avgAz = -999.0
+
+        real(kind=R__) :: avgSolar0 = -999.0 ! solar read in from input file
+        real(kind=R__) :: avgSolar  = -999.0 ! solar from correlated-k
+
+        real(kind=R__) :: skyRad = -999.0
+
+        ! placeholder for spatially varying solar input
+        !real(kind=R__), pointer :: mu(:) => null()
+        !real(kind=R__), pointer :: az(:) => null()
+    end type shd_type_src
 
 
     type :: shd_type_prp
@@ -391,5 +391,6 @@ module globals_type
 
         logical :: isAllocated  = .false.
     end type shd_type_sen
+
 
 end module globals_type
