@@ -1364,6 +1364,7 @@ program shdom
             rtmAll_obj%x => x_Grid_all
             rtmAll_obj%y => y_Grid_all
             rtmAll_obj%z => z_Grid
+            rtmAll_obj%isAllocated = .true.
         end if
 
         call shd_mpi__gatherOut(isFluxOut, isHROut, isSHOut,&
@@ -1393,8 +1394,12 @@ program shdom
             if (isFluxOut) deallocate (fluxTot_all)
             if (isHROut)   deallocate (fluxDiv_all)
             if (isSHOut)   deallocate (SH_all)
+
             deallocate (x_Grid_all, y_Grid_all)
-            nullify(rtmAll_obj%x, rtmAll_obj%y, rtmAll_obj%z)
+            if (rtmAll_obj%isAllocated) then
+                nullify(rtmAll_obj%x, rtmAll_obj%y, rtmAll_obj%z)
+                rtmAll_obj%isAllocated = .false.
+            end if
         end if
 
     else
