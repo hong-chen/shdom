@@ -345,10 +345,8 @@ subroutine shd_solv__solveRte(&
         end if
 
         ! Find the SH truncation to use for the radiance (shdo_obj%iradI)
-        call shd_solv__truncRad(doHighOrder,&
-            &shdo_obj%Nstokes, shdo_obj%maxNl, shdo_obj%maxNm,&
-            &grid_obj%Npts, rtm_obj%ssa, rtm_obj%leg, rtm_obj%ipha, shdo_obj%isrcJ, shdo_obj%radI,&
-            &shdo_obj%maxNptsSH + grid_obj%maxNpts, FIXSH, SHACC, shdo_obj%iradI, prp_obj)
+        call shd_solv__truncRad(doHighOrder, FIXSH, SHACC,&
+            &rtm_obj, grid_obj, shdo_obj, prp_obj)
 
         ! srcSH to srcDO, then srcDO to radDO, then radDO to radSH
         !╭────────────────────────────────────────────────╮!
@@ -480,10 +478,8 @@ subroutine shd_solv__accelSol(&
     return
 end subroutine shd_solv__accelSol
 
-subroutine shd_solv__truncRad(doHighOrder,&
-    &NSTOKES, ML, MM,&
-    &NPTS, ALBEDO, LEGEN, IPHASE, SHPTR, RADIANCE,&
-    &MAXIR, FIXSH, SHACC, RSHPTR, prp_obj)
+subroutine shd_solv__truncRad(doHighOrder, FIXSH, SHACC,&
+    &rtm_obj, grid_obj, shdo_obj, prp_obj)
 
     ! Computes the next radiance spherical harmonic series truncation
     ! to use based on the current source function truncation and the
@@ -497,13 +493,13 @@ subroutine shd_solv__truncRad(doHighOrder,&
     ! L=1 so that the mean radiance and net flux terms may be computed,
     ! unless doHighOrder is on, in which case all terms are kept.
 
-    type(shd_type_prp), intent(in) :: prp_obj
+    type(shd_type_rtm),  intent(in) :: rtm_obj
+    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_shdo), intent(in) :: shdo_obj
+    type(shd_type_prp),  intent(in) :: prp_obj
 
-    integer NPTS, NSTOKES, ML, MM, MAXIR
-    integer SHPTR(NPTS + 1), RSHPTR(NPTS + 2)
-    integer*2 IPHASE(NPTS)
+    integer MAXIR
     logical doHighOrder, FIXSH
-    real ALBEDO(NPTS), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, *), RADIANCE(NSTOKES, *)
     real SHACC
     integer IRO, IR, NRO, NR, I, J, K, L, LR, LS, M, MS, ME, NS, NLM
     integer, allocatable :: LOFJ(:)
@@ -512,14 +508,16 @@ subroutine shd_solv__truncRad(doHighOrder,&
 
     if (FIXSH) goto 190
 
+    MAXIR = shdo_obj%maxNptsSH + grid_obj%maxNpts
+
     RADMIN = SHACC
     NOTEND = .true.
     ! Make the l index as a function of SH term (J)
-    NLM = (2*MM + 1)*(ML + 1) - MM*(MM + 1)
+    NLM = (2*shdo_obj%maxNm + 1)*(shdo_obj%maxNl + 1) - shdo_obj%maxNm*(shdo_obj%maxNm + 1)
     allocate (LOFJ(NLM))
     J = 0
-    do L = 0, ML
-        ME = min(L, MM)
+    do L = 0, shdo_obj%maxNl
+        ME = min(L, shdo_obj%maxNm)
         MS = -ME
         do M = MS, ME
             J = J + 1
@@ -529,26 +527,26 @@ subroutine shd_solv__truncRad(doHighOrder,&
 
     IRO = 0
     IR = 0
-    RSHPTR(1) = 0
-    do I = 1, NPTS
+    shdo_obj%iradI(1) = 0
+    do I = 1, grid_obj%Npts
         ! Find how many terms wanted for the radiance based on the
         !   radiance threshold (RADMIN) (use the mean radiance as an
         !   upper limit to the SH term radiance).
         !   We don't have radiances for any new points, so don't use them
-        NRO = RSHPTR(I + 1) - IRO
+        NRO = shdo_obj%iradI(I + 1) - IRO
         if (NRO .eq. 0) NOTEND = .false.
         if (NOTEND) then
             if (prp_obj%Npha .gt. 0) then
-                K = IPHASE(I)
+                K = rtm_obj%ipha(I)
             else
                 K = I
             end if
             LR = 1
-            do L = 1, ML
-                if (ALBEDO(I)*LEGEN(1, L, K)*RADIANCE(1, IRO + 1) .gt. RADMIN) LR = L
+            do L = 1, shdo_obj%maxNl
+                if (rtm_obj%ssa(I)*rtm_obj%leg(1, L, K)*shdo_obj%radI(1, IRO + 1) .gt. RADMIN) LR = L
             end do
         else
-            LR = ML
+            LR = shdo_obj%maxNl
         end if
         IRO = IRO + NRO
 
@@ -557,24 +555,24 @@ subroutine shd_solv__truncRad(doHighOrder,&
         !   it is at least 1 (so low order terms are always available).
         !   For higher order radiance option, use all terms.
         !   But if out of memory, use the source function truncation.
-        NS = max(1, SHPTR(I + 1) - SHPTR(I))
+        NS = max(1, shdo_obj%isrcJ(I + 1) - shdo_obj%isrcJ(I))
         LS = LOFJ(NS)
-        LR = min(LR, LS + ML/8 + 2)
-        if (doHighOrder) LR = ML
-        if (LR .le. MM) then
+        LR = min(LR, LS + shdo_obj%maxNl/8 + 2)
+        if (doHighOrder) LR = shdo_obj%maxNl
+        if (LR .le. shdo_obj%maxNm) then
             NR = (LR*(LR + 1)) + LR + 1
         else
-            NR = (2*MM + 1)*LR - (MM*(1 + (MM - 1))) + MM + 1
+            NR = (2*shdo_obj%maxNm + 1)*LR - (shdo_obj%maxNm*(1 + (shdo_obj%maxNm - 1))) + shdo_obj%maxNm + 1
         end if
         IR = IR + NR
-        RSHPTR(I + 1) = IR
+        shdo_obj%iradI(I + 1) = IR
         if (IR .gt. MAXIR) then
             if (verbose_ .ge. 4) write (6, *)&
                 &'Warning [_truncRad]: Out of memory for more radiance terms.'
             goto 190
         end if
     end do
-    RSHPTR(NPTS + 2) = IR
+    shdo_obj%iradI(grid_obj%Npts + 2) = IR
     deallocate (LOFJ)
     return
 
@@ -582,15 +580,15 @@ subroutine shd_solv__truncRad(doHighOrder,&
     ! just set the radiance truncation to that of the source.
 190 continue
 
-    RSHPTR(1) = 0
+    shdo_obj%iradI(1) = 0
     IR = 0
-    do I = 1, NPTS
-        NR = max(4, SHPTR(I + 1) - SHPTR(I))
+    do I = 1, grid_obj%Npts
+        NR = max(4, shdo_obj%isrcJ(I + 1) - shdo_obj%isrcJ(I))
         if (doHighOrder) then
-            if (ML .le. MM) then
-                NR = (ML*(ML + 1)) + ML + 1
+            if (shdo_obj%maxNl .le. shdo_obj%maxNm) then
+                NR = (shdo_obj%maxNl*(shdo_obj%maxNl + 1)) + shdo_obj%maxNl + 1
             else
-                NR = (2*MM + 1)*ML - (MM*(1 + (MM - 1))) + MM + 1
+                NR = (2*shdo_obj%maxNm + 1)*shdo_obj%maxNl - (shdo_obj%maxNm*(1 + (shdo_obj%maxNm - 1))) + shdo_obj%maxNm + 1
             end if
         end if
         IR = IR + NR
@@ -600,9 +598,9 @@ subroutine shd_solv__truncRad(doHighOrder,&
             write (6, *) '  Increase shdo_obj%maxNptsSH.'
             stop
         end if
-        RSHPTR(I + 1) = IR
+        shdo_obj%iradI(I + 1) = IR
     end do
-    RSHPTR(NPTS + 2) = IR
+    shdo_obj%iradI(grid_obj%Npts + 2) = IR
 
     return
 
