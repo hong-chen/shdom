@@ -386,8 +386,8 @@ subroutine shd_solv__solveRte(&
             &JNORM, ACCELPAR, SOLCRIT)
 
         ! Accelerate the convergence of the source function vector
-        call shd_solv__accelSol(ACCELPAR, grid_obj%Npts, shdo_obj%isrcJ, idsrc_Shdo,&
-            &shdo_obj%Nstokes, shdo_obj%srcJ, dsrc_Shdo)
+        call shd_solv__accelSol(ACCELPAR, grid_obj%Npts, idsrc_Shdo,&
+            &dsrc_Shdo, shdo_obj)
 
         ! If it is a not scattering medium then do only one iteration
         if (maxSsa .lt. SOLACC) SOLCRIT = SOLACC
@@ -448,28 +448,28 @@ subroutine shd_solv__solveRte(&
 end subroutine shd_solv__solveRte
 
 subroutine shd_solv__accelSol(&
-    &ACCELPAR, NPTS, SHPTR, idsrc_Shdo,&
-    &NSTOKES, SOURCE, dsrc_Shdo)
+    &ACCELPAR, NPTS, idsrc_Shdo,&
+    &dsrc_Shdo, shdo_obj)
 
     !   Accelerates the successive order of scattering series using the
     ! input acceleration parameter (ACCELPAR).
 
-    integer, intent(in) :: NPTS, SHPTR(*), idsrc_Shdo(*), NSTOKES
-    real, intent(in)    :: ACCELPAR, dsrc_Shdo(NSTOKES, *)
+    type(shd_type_shdo), intent(inout) :: shdo_obj
 
-    real, intent(inout) :: SOURCE(NSTOKES, *)
+    integer, intent(in) :: NPTS, idsrc_Shdo(*)
+    real, intent(in)    :: ACCELPAR, dsrc_Shdo(shdo_obj%Nstokes, *)
 
     integer :: I, J, IS, ISD, K, NS, NSD, NSC
 
     if (ACCELPAR .gt. 0.0) then
         do I = 1, NPTS
-            IS = SHPTR(I)
-            NS = SHPTR(I + 1) - IS
+            IS = shdo_obj%isrcJ(I)
+            NS = shdo_obj%isrcJ(I + 1) - IS
             ISD = idsrc_Shdo(I)
             NSD = idsrc_Shdo(I + 1) - ISD
             NSC = min(NS, NSD)
             do J = 1, NSC
-                SOURCE(:, IS + J) = SOURCE(:, IS + J)&
+                shdo_obj%srcJ(:, IS + J) = shdo_obj%srcJ(:, IS + J)&
                     &+ ACCELPAR*dsrc_Shdo(:, ISD + J)
             end do
         end do
@@ -493,10 +493,10 @@ subroutine shd_solv__truncRad(doHighOrder, FIXSH, SHACC,&
     ! L=1 so that the mean radiance and net flux terms may be computed,
     ! unless doHighOrder is on, in which case all terms are kept.
 
-    type(shd_type_rtm),  intent(in) :: rtm_obj
-    type(shd_type_grid), intent(in) :: grid_obj
-    type(shd_type_shdo), intent(in) :: shdo_obj
-    type(shd_type_prp),  intent(in) :: prp_obj
+    type(shd_type_rtm),  intent(in)    :: rtm_obj
+    type(shd_type_grid), intent(in)    :: grid_obj
+    type(shd_type_shdo), intent(inout) :: shdo_obj
+    type(shd_type_prp),  intent(in)    :: prp_obj
 
     integer MAXIR
     logical doHighOrder, FIXSH
