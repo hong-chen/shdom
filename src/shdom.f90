@@ -1038,14 +1038,39 @@ program shdom
 
     ! Allocate array
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    ! grid
+    ! rtm
     !╭────────────────────────────────────────────────╮!
     ! x, y, z grids
     allocate(x_Grid(rtm_obj%Nx+1), y_Grid(rtm_obj%Ny+1), z_Grid(grid_obj%Nz))
+
+    ! temperature and planck radiance (maybe we don't need this for shortwave)
+    allocate(temp_Rtm(grid_obj%maxNpts), planck_Rtm(grid_obj%maxNpts))
+
+    ! extinction, single scattering albedo, and phase function indices
+    allocate(ext_Rtm(grid_obj%maxNpts), ssa_Rtm(grid_obj%maxNpts), ipha_Rtm(grid_obj%maxNpts))
+
+    ! legendre coefficients
+    allocate(leg_Rtm(rtm_obj%maxNptsLeg))
+
     rtm_obj%x => x_Grid
     rtm_obj%y => y_Grid
     rtm_obj%z => z_Grid
 
+    rtm_obj%temp   => temp_Rtm
+    rtm_obj%planck => planck_Rtm
+    rtm_obj%ext    => ext_Rtm
+    rtm_obj%ssa    => ssa_Rtm
+    rtm_obj%ipha   => ipha_Rtm
+
+    rtm_obj%leg(1:prp_obj%NlegSet, &
+                0:prp_obj%maxNleg, &
+                1:rtm_obj%maxNptsLeg/(prp_obj%maxNleg+1)/prp_obj%NlegSet) => leg_Rtm
+
+    rtm_obj%isAllocated = .true.
+    !╰────────────────────────────────────────────────╯!
+
+    ! grid
+    !╭────────────────────────────────────────────────╮!
     ! x,y,z coordinate values of grid point locations
     allocate(xyz_Grid(3, grid_obj%maxNpts))
 
@@ -1063,30 +1088,6 @@ program shdom
     grid_obj%i6Cell => i6Cell_Cell
     grid_obj%i2Tree => i2Tree_Cell
     grid_obj%isAllocated = .true.
-    !╰────────────────────────────────────────────────╯!
-
-    ! rtm
-    !╭────────────────────────────────────────────────╮!
-    ! temperature and planck radiance (maybe we don't need this for shortwave)
-    allocate(temp_Rtm(grid_obj%maxNpts), planck_Rtm(grid_obj%maxNpts))
-
-    ! extinction, single scattering albedo, and phase function indices
-    allocate(ext_Rtm(grid_obj%maxNpts), ssa_Rtm(grid_obj%maxNpts), ipha_Rtm(grid_obj%maxNpts))
-
-    ! legendre coefficients
-    allocate(leg_Rtm(rtm_obj%maxNptsLeg))
-
-    rtm_obj%temp   => temp_Rtm
-    rtm_obj%planck => planck_Rtm
-    rtm_obj%ext    => ext_Rtm
-    rtm_obj%ssa    => ssa_Rtm
-    rtm_obj%ipha   => ipha_Rtm
-
-    rtm_obj%leg(1:prp_obj%NlegSet, &
-                0:prp_obj%maxNleg, &
-                1:rtm_obj%maxNptsLeg/(prp_obj%maxNleg+1)/prp_obj%NlegSet) => leg_Rtm
-
-    rtm_obj%isAllocated = .true.
     !╰────────────────────────────────────────────────╯!
 
     ! boundary points pointers and radiances
@@ -1110,15 +1111,21 @@ program shdom
     if (isSHOut)   allocate(sumSH_Out(grid_obj%maxNpts*Nsh_out))
     if (isSrcOut)  allocate(src1_Out(grid_obj%maxNpts*shdo_obj%Nstokes))
 
+    ! shdo
+    !╭────────────────────────────────────────────────╮!
     ! SH related array
     allocate(iradI_Shdo(grid_obj%maxNpts + 2), isrcJ_Shdo(grid_obj%maxNpts + 1))
+
     ! radiance and source
     allocate(radI_Shdo(shdo_obj%Nstokes, shdo_obj%maxNptsSH + grid_obj%maxNpts), srcJ_Shdo(shdo_obj%Nstokes, shdo_obj%maxNptsSH))
+
     shdo_obj%iradI => iradI_Shdo
     shdo_obj%isrcJ => isrcJ_Shdo
     shdo_obj%radI  => radI_Shdo
     shdo_obj%srcJ  => srcJ_Shdo
+
     shdo_obj%isAllocated = .true.
+    !╰────────────────────────────────────────────────╯!
 
     ! delta source
     if (isAccel) then
