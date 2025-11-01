@@ -1090,15 +1090,19 @@ subroutine shd_grid__interpGrid(rtm_obj, grid_obj,&
     integer(kind=I__) :: ipts
 
     ! Initialize: transfer the tabulated phase functions
-    call shd_grid__InterpTriLinGridPrp(0.0, 0.0, 0.0, .true.,&
-        &rtm_obj%temp(1), rtm_obj%ext(1), rtm_obj%ssa(1), rtm_obj%leg(1:prp_obj%NlegSet, 0:prp_obj%Nleg, 1), rtm_obj%ipha(1), prp_obj, ckd_obj)
+    call shd_grid__InterpTriLinGridPrp(&
+        &0.0, 0.0, 0.0,&
+        &.true., rtm_obj%temp(1), rtm_obj%ext(1), rtm_obj%ssa(1),&
+        &rtm_obj%leg(1:prp_obj%NlegSet, 0:prp_obj%Nleg, 1), rtm_obj%ipha(1),&
+        &prp_obj, ckd_obj)
 
     ! Trilinearly interpolate from the property grid to the adaptive
     do ipts = 1, grid_obj%Npts
         call shd_grid__InterpTriLinGridPrp(&
             &grid_obj%xyz(1, ipts), grid_obj%xyz(2, ipts), grid_obj%xyz(3, ipts),&
-            &.false., rtm_obj%temp(ipts), rtm_obj%ext(ipts),&
-            &rtm_obj%ssa(ipts), rtm_obj%leg(1:prp_obj%NlegSet, 0:prp_obj%Nleg, ipts), rtm_obj%ipha(ipts), prp_obj, ckd_obj)
+            &.false., rtm_obj%temp(ipts), rtm_obj%ext(ipts), rtm_obj%ssa(ipts),&
+            &rtm_obj%leg(1:prp_obj%NlegSet, 0:prp_obj%Nleg, ipts), rtm_obj%ipha(ipts),&
+            &prp_obj, ckd_obj)
     end do
 
     return
@@ -1131,9 +1135,9 @@ subroutine shd_grid__InterpTriLinGridPrp(&
     integer(kind=I__) :: I1, I2, I3, I4, I5, I6, I7, I8, I
 
     real(kind=RD_) :: U, V, W, F1, F2, F3, F4, F5, F6, F7, F8, F
-    real(kind=RD_) :: SCAT1, SCAT2, SCAT3, SCAT4, SCAT5, SCAT6, SCAT7, SCAT8
-    real(kind=RD_) :: SCATTER, MAXSCAT, KG
-    real(kind=RD_), save :: EXTMIN, SCATMIN
+    real(kind=RD_) :: scat1, scat2, scat3, scat4, scat5, scat6, scat7, scat8
+    real(kind=RD_) :: scat0, minScat, maxScat
+    real(kind=RD_), save :: kabs0, minExt
 
     integer :: ISELECT
 
@@ -1147,9 +1151,9 @@ subroutine shd_grid__InterpTriLinGridPrp(&
                 end do
             end do
         end do
-        !EXTMIN = 1.0d-5/((prp_obj%z(prp_obj%Nz) - prp_obj%z(1))/prp_obj%Nz)
-        EXTMIN  = accSolv_/((prp_obj%z(prp_obj%Nz) - prp_obj%z(1))/prp_obj%Nz) ! attempt to improve agreement between libRadtran in water vapor abosprtion bands
-        SCATMIN = 0.1d0*EXTMIN
+        !minExt = 1.0d-5/((prp_obj%z(prp_obj%Nz) - prp_obj%z(1))/prp_obj%Nz)
+        minExt = accSolv_/((prp_obj%z(prp_obj%Nz) - prp_obj%z(1))/prp_obj%Nz) ! attempt to improve agreement between libRadtran in water vapor abosprtion bands
+        minScat = 0.1d0*minExt
         return
     end if
 
@@ -1216,64 +1220,64 @@ subroutine shd_grid__InterpTriLinGridPrp(&
     I4 = I8
     !╰────────────────────────────────────────────────╯!
 
-    SCAT1 = F1*prp_obj%ext(I1)*prp_obj%ssa(I1)
-    SCAT2 = F2*prp_obj%ext(I2)*prp_obj%ssa(I2)
-    SCAT3 = F3*prp_obj%ext(I3)*prp_obj%ssa(I3)
-    SCAT4 = F4*prp_obj%ext(I4)*prp_obj%ssa(I4)
-    SCAT5 = F5*prp_obj%ext(I5)*prp_obj%ssa(I5)
-    SCAT6 = F6*prp_obj%ext(I6)*prp_obj%ssa(I6)
-    SCAT7 = F7*prp_obj%ext(I7)*prp_obj%ssa(I7)
-    SCAT8 = F8*prp_obj%ext(I8)*prp_obj%ssa(I8)
+    scat1 = F1*prp_obj%ext(I1)*prp_obj%ssa(I1)
+    scat2 = F2*prp_obj%ext(I2)*prp_obj%ssa(I2)
+    scat3 = F3*prp_obj%ext(I3)*prp_obj%ssa(I3)
+    scat4 = F4*prp_obj%ext(I4)*prp_obj%ssa(I4)
+    scat5 = F5*prp_obj%ext(I5)*prp_obj%ssa(I5)
+    scat6 = F6*prp_obj%ext(I6)*prp_obj%ssa(I6)
+    scat7 = F7*prp_obj%ext(I7)*prp_obj%ssa(I7)
+    scat8 = F8*prp_obj%ext(I8)*prp_obj%ssa(I8)
 
-    MAXSCAT = -1.0
-    if (SCAT1 .gt. MAXSCAT .or. abs(F1 - 1) .lt. 0.001) then
-        MAXSCAT = SCAT1
+    maxScat = -1.0
+    if (scat1 .gt. maxScat .or. abs(F1 - 1) .lt. 0.001) then
+        maxScat = scat1
         ISELECT = I1
     end if
-    if (SCAT2 .gt. MAXSCAT .or. abs(F2 - 1) .lt. 0.001) then
-        MAXSCAT = SCAT2
+    if (scat2 .gt. maxScat .or. abs(F2 - 1) .lt. 0.001) then
+        maxScat = scat2
         ISELECT = I2
     end if
-    if (SCAT3 .gt. MAXSCAT .or. abs(F3 - 1) .lt. 0.001) then
-        MAXSCAT = SCAT3
+    if (scat3 .gt. maxScat .or. abs(F3 - 1) .lt. 0.001) then
+        maxScat = scat3
         ISELECT = I3
     end if
-    if (SCAT4 .gt. MAXSCAT .or. abs(F4 - 1) .lt. 0.001) then
-        MAXSCAT = SCAT4
+    if (scat4 .gt. maxScat .or. abs(F4 - 1) .lt. 0.001) then
+        maxScat = scat4
         ISELECT = I4
     end if
-    if (SCAT5 .gt. MAXSCAT .or. abs(F5 - 1) .lt. 0.001) then
-        MAXSCAT = SCAT5
+    if (scat5 .gt. maxScat .or. abs(F5 - 1) .lt. 0.001) then
+        maxScat = scat5
         ISELECT = I5
     end if
-    if (SCAT6 .gt. MAXSCAT .or. abs(F6 - 1) .lt. 0.001) then
-        MAXSCAT = SCAT6
+    if (scat6 .gt. maxScat .or. abs(F6 - 1) .lt. 0.001) then
+        maxScat = scat6
         ISELECT = I6
     end if
-    if (SCAT7 .gt. MAXSCAT .or. abs(F7 - 1) .lt. 0.001) then
-        MAXSCAT = SCAT7
+    if (scat7 .gt. maxScat .or. abs(F7 - 1) .lt. 0.001) then
+        maxScat = scat7
         ISELECT = I7
     end if
-    if (SCAT8 .gt. MAXSCAT .or. abs(F8 - 1) .lt. 0.001) then
-        MAXSCAT = SCAT8
+    if (scat8 .gt. maxScat .or. abs(F8 - 1) .lt. 0.001) then
+        maxScat = scat8
         ISELECT = I8
     end if
 
     !temp0 = prp_obj%temp(ISELECT)
     !ext0 = prp_obj%ext(ISELECT)
-    !SCATTER = prp_obj%ext(ISELECT)*prp_obj%ssa(ISELECT)
+    !scat0 = prp_obj%ext(ISELECT)*prp_obj%ssa(ISELECT)
 
     temp0 = F1*prp_obj%temp(I1) + F2*prp_obj%temp(I2) + F3*prp_obj%temp(I3) + F4*prp_obj%temp(I4)&
         &+ F5*prp_obj%temp(I5) + F6*prp_obj%temp(I6) + F7*prp_obj%temp(I7) + F8*prp_obj%temp(I8)
     ext0 = F1*prp_obj%ext(I1) + F2*prp_obj%ext(I2) + F3*prp_obj%ext(I3)&
         &+ F4*prp_obj%ext(I4) + F5*prp_obj%ext(I5) + F6*prp_obj%ext(I6)&
         &+ F7*prp_obj%ext(I7) + F8*prp_obj%ext(I8)
-    SCATTER = SCAT1 + SCAT2 + SCAT3 + SCAT4 + SCAT5 + SCAT6 + SCAT7 + SCAT8
+    scat0 = scat1 + scat2 + scat3 + scat4 + scat5 + scat6 + scat7 + scat8
 
-    if (ext0 .gt. EXTMIN) then
-        ssa0 = SCATTER/ext0
+    if (ext0 .gt. minExt) then
+        ssa0 = scat0/ext0
     else
-        ssa0 = SCATTER/EXTMIN
+        ssa0 = scat0/minExt
     end if
 
     if (prp_obj%Npha .gt. 0) then
@@ -1282,26 +1286,26 @@ subroutine shd_grid__InterpTriLinGridPrp(&
         ! Standard property file format: unpolarized
         leg0(1, 0, 1) = 1.0
         do L = 1, prp_obj%Nleg
-            !leg0(1, L, 1) = SCAT1*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I1 - 1))&
-            !    &+ SCAT2*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I2 - 1))&
-            !    &+ SCAT3*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I3 - 1))&
-            !    &+ SCAT4*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I4 - 1))&
-            !    &+ SCAT5*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I5 - 1))&
-            !    &+ SCAT6*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I6 - 1))&
-            !    &+ SCAT7*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I7 - 1))&
-            !    &+ SCAT8*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I8 - 1))
-            leg0(1, L, 1) = SCAT1*prp_obj%leg(1, L, I1)&
-                         &+ SCAT2*prp_obj%leg(1, L, I2)&
-                         &+ SCAT3*prp_obj%leg(1, L, I3)&
-                         &+ SCAT4*prp_obj%leg(1, L, I4)&
-                         &+ SCAT5*prp_obj%leg(1, L, I5)&
-                         &+ SCAT6*prp_obj%leg(1, L, I6)&
-                         &+ SCAT7*prp_obj%leg(1, L, I7)&
-                         &+ SCAT8*prp_obj%leg(1, L, I8)
-            if (SCATTER .gt. SCATMIN) then
-                leg0(1, L, 1) = leg0(1, L, 1)/SCATTER
+            !leg0(1, L, 1) = scat1*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I1 - 1))&
+            !    &+ scat2*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I2 - 1))&
+            !    &+ scat3*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I3 - 1))&
+            !    &+ scat4*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I4 - 1))&
+            !    &+ scat5*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I5 - 1))&
+            !    &+ scat6*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I6 - 1))&
+            !    &+ scat7*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I7 - 1))&
+            !    &+ scat8*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I8 - 1))
+            leg0(1, L, 1) = scat1*prp_obj%leg(1, L, I1)&
+                         &+ scat2*prp_obj%leg(1, L, I2)&
+                         &+ scat3*prp_obj%leg(1, L, I3)&
+                         &+ scat4*prp_obj%leg(1, L, I4)&
+                         &+ scat5*prp_obj%leg(1, L, I5)&
+                         &+ scat6*prp_obj%leg(1, L, I6)&
+                         &+ scat7*prp_obj%leg(1, L, I7)&
+                         &+ scat8*prp_obj%leg(1, L, I8)
+            if (scat0 .gt. minScat) then
+                leg0(1, L, 1) = leg0(1, L, 1)/scat0
             else
-                leg0(1, L, 1) = leg0(1, L, 1)/SCATMIN
+                leg0(1, L, 1) = leg0(1, L, 1)/minScat
             end if
             leg0(1, L, 1) = leg0(1, L, 1)/(2*L + 1)
         end do
@@ -1315,19 +1319,19 @@ subroutine shd_grid__InterpTriLinGridPrp(&
     !ext0 = F1*prp_obj%ext(I1) + F2*prp_obj%ext(I2) + F3*prp_obj%ext(I3)&
     !    &+ F4*prp_obj%ext(I4) + F5*prp_obj%ext(I5) + F6*prp_obj%ext(I6)&
     !    &+ F7*prp_obj%ext(I7) + F8*prp_obj%ext(I8)
-    !SCAT1 = F1*prp_obj%ext(I1)*prp_obj%ssa(I1)
-    !SCAT2 = F2*prp_obj%ext(I2)*prp_obj%ssa(I2)
-    !SCAT3 = F3*prp_obj%ext(I3)*prp_obj%ssa(I3)
-    !SCAT4 = F4*prp_obj%ext(I4)*prp_obj%ssa(I4)
-    !SCAT5 = F5*prp_obj%ext(I5)*prp_obj%ssa(I5)
-    !SCAT6 = F6*prp_obj%ext(I6)*prp_obj%ssa(I6)
-    !SCAT7 = F7*prp_obj%ext(I7)*prp_obj%ssa(I7)
-    !SCAT8 = F8*prp_obj%ext(I8)*prp_obj%ssa(I8)
-    !SCATTER = SCAT1 + SCAT2 + SCAT3 + SCAT4 + SCAT5 + SCAT6 + SCAT7 + SCAT8
-    !if (ext0 .gt. EXTMIN) then
-    !    ssa0 = SCATTER/ext0
+    !scat1 = F1*prp_obj%ext(I1)*prp_obj%ssa(I1)
+    !scat2 = F2*prp_obj%ext(I2)*prp_obj%ssa(I2)
+    !scat3 = F3*prp_obj%ext(I3)*prp_obj%ssa(I3)
+    !scat4 = F4*prp_obj%ext(I4)*prp_obj%ssa(I4)
+    !scat5 = F5*prp_obj%ext(I5)*prp_obj%ssa(I5)
+    !scat6 = F6*prp_obj%ext(I6)*prp_obj%ssa(I6)
+    !scat7 = F7*prp_obj%ext(I7)*prp_obj%ssa(I7)
+    !scat8 = F8*prp_obj%ext(I8)*prp_obj%ssa(I8)
+    !scat0 = scat1 + scat2 + scat3 + scat4 + scat5 + scat6 + scat7 + scat8
+    !if (ext0 .gt. minExt) then
+    !    ssa0 = scat0/ext0
     !else
-    !    ssa0 = SCATTER/EXTMIN
+    !    ssa0 = scat0/minExt
     !end if
     !╰────────────────────────────────────────────────╯!
 
@@ -1336,55 +1340,55 @@ subroutine shd_grid__InterpTriLinGridPrp(&
     ! original
     !╭────────────────────────────────────────────────╮!
     !if (prp_obj%Npha .gt. 0) then
-    !    MAXSCAT = -1.0
-    !    if (SCAT1 .gt. MAXSCAT .or. abs(F1 - 1) .lt. 0.001) then
-    !        MAXSCAT = SCAT1
+    !    maxScat = -1.0
+    !    if (scat1 .gt. maxScat .or. abs(F1 - 1) .lt. 0.001) then
+    !        maxScat = scat1
     !        ipha0 = prp_obj%ipha(I1)
     !    end if
-    !    if (SCAT2 .gt. MAXSCAT .or. abs(F2 - 1) .lt. 0.001) then
-    !        MAXSCAT = SCAT2
+    !    if (scat2 .gt. maxScat .or. abs(F2 - 1) .lt. 0.001) then
+    !        maxScat = scat2
     !        ipha0 = prp_obj%ipha(I2)
     !    end if
-    !    if (SCAT3 .gt. MAXSCAT .or. abs(F3 - 1) .lt. 0.001) then
-    !        MAXSCAT = SCAT3
+    !    if (scat3 .gt. maxScat .or. abs(F3 - 1) .lt. 0.001) then
+    !        maxScat = scat3
     !        ipha0 = prp_obj%ipha(I3)
     !    end if
-    !    if (SCAT4 .gt. MAXSCAT .or. abs(F4 - 1) .lt. 0.001) then
-    !        MAXSCAT = SCAT4
+    !    if (scat4 .gt. maxScat .or. abs(F4 - 1) .lt. 0.001) then
+    !        maxScat = scat4
     !        ipha0 = prp_obj%ipha(I4)
     !    end if
-    !    if (SCAT5 .gt. MAXSCAT .or. abs(F5 - 1) .lt. 0.001) then
-    !        MAXSCAT = SCAT5
+    !    if (scat5 .gt. maxScat .or. abs(F5 - 1) .lt. 0.001) then
+    !        maxScat = scat5
     !        ipha0 = prp_obj%ipha(I5)
     !    end if
-    !    if (SCAT6 .gt. MAXSCAT .or. abs(F6 - 1) .lt. 0.001) then
-    !        MAXSCAT = SCAT6
+    !    if (scat6 .gt. maxScat .or. abs(F6 - 1) .lt. 0.001) then
+    !        maxScat = scat6
     !        ipha0 = prp_obj%ipha(I6)
     !    end if
-    !    if (SCAT7 .gt. MAXSCAT .or. abs(F7 - 1) .lt. 0.001) then
-    !        MAXSCAT = SCAT7
+    !    if (scat7 .gt. maxScat .or. abs(F7 - 1) .lt. 0.001) then
+    !        maxScat = scat7
     !        ipha0 = prp_obj%ipha(I7)
     !    end if
-    !    if (SCAT8 .gt. MAXSCAT .or. abs(F8 - 1) .lt. 0.001) then
-    !        MAXSCAT = SCAT8
+    !    if (scat8 .gt. maxScat .or. abs(F8 - 1) .lt. 0.001) then
+    !        maxScat = scat8
     !        ipha0 = prp_obj%ipha(I8)
     !    end if
     !else
     !    ! Standard property file format: unpolarized
     !    leg0(1, 0, 1) = 1.0
     !    do L = 1, prp_obj%Nleg
-    !        leg0(1, L, 1) = SCAT1*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I1 - 1))&
-    !            &+ SCAT2*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I2 - 1))&
-    !            &+ SCAT3*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I3 - 1))&
-    !            &+ SCAT4*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I4 - 1))&
-    !            &+ SCAT5*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I5 - 1))&
-    !            &+ SCAT6*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I6 - 1))&
-    !            &+ SCAT7*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I7 - 1))&
-    !            &+ SCAT8*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I8 - 1))
-    !        if (SCATTER .gt. SCATMIN) then
-    !            leg0(1, L, 1) = leg0(1, L, 1)/SCATTER
+    !        leg0(1, L, 1) = scat1*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I1 - 1))&
+    !            &+ scat2*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I2 - 1))&
+    !            &+ scat3*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I3 - 1))&
+    !            &+ scat4*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I4 - 1))&
+    !            &+ scat5*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I5 - 1))&
+    !            &+ scat6*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I6 - 1))&
+    !            &+ scat7*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I7 - 1))&
+    !            &+ scat8*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I8 - 1))
+    !        if (scat0 .gt. minScat) then
+    !            leg0(1, L, 1) = leg0(1, L, 1)/scat0
     !        else
-    !            leg0(1, L, 1) = leg0(1, L, 1)/SCATMIN
+    !            leg0(1, L, 1) = leg0(1, L, 1)/minScat
     !        end if
     !        leg0(1, L, 1) = leg0(1, L, 1)/(2*L + 1)
     !    end do
@@ -1406,14 +1410,14 @@ subroutine shd_grid__InterpTriLinGridPrp(&
         I = min(max(IL, 1), ckd_obj%Nz - 1)
         F = (z0 - ckd_obj%z(I))/(ckd_obj%z(I + 1) - ckd_obj%z(I))
         F = min(max(F, 0.0d0), 1.0d0)
-        KG = (1.0 - F)*ckd_obj%kabs(I, ckd_obj%ig) + F*ckd_obj%kabs(I + 1, ckd_obj%ig)
-        KG = (1.0 - F)*ckd_obj%kabs(I, ckd_obj%ig) + F*ckd_obj%kabs(I + 1, ckd_obj%ig)
-        if (ext0 + KG .gt. 0.0) then
-            ssa0 = ssa0*ext0/(ext0 + KG)
+        kabs0 = (1.0 - F)*ckd_obj%kabs(I, ckd_obj%ig) + F*ckd_obj%kabs(I + 1, ckd_obj%ig)
+        kabs0 = (1.0 - F)*ckd_obj%kabs(I, ckd_obj%ig) + F*ckd_obj%kabs(I + 1, ckd_obj%ig)
+        if ((ext0 + kabs0) .gt. 0.0) then
+            ssa0 = ssa0*ext0/(ext0 + kabs0)
         else
             ssa0 = 0.0
         end if
-        ext0 = ext0 + KG
+        ext0 = ext0 + kabs0
     end if
 
     return
