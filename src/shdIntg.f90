@@ -153,8 +153,7 @@ subroutine shd_intg__integratePath(&
 
     ! Make the new grid cell/point sweeping order if need to
     if (grid_obj%Npts .ne. OLDNPTS) then
-        call shd_grid__makeSweepOrder(rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz,&
-            &rtm_obj%flag_bc, rtm_obj%flag_ip, SWEEPORD, GRIDRAD, grid_obj)
+        call shd_grid__makeSweepOrder(SWEEPORD, GRIDRAD, rtm_obj, grid_obj)
     end if
 
     call shd_mpi__findBndryPnt(rtm_obj%flag_bc, rtm_obj%flag_ip, SWEEPORD,&
