@@ -380,9 +380,8 @@ subroutine shd_grid__makeNewGridPnt(IDIR, ICELL, NEWCELL,&
 end subroutine shd_grid__makeNewGridPnt
 
 subroutine shd_grid__makeSweepOrder(&
-    &NX, NY, NZ,&
-    &BCFLAG, IPFLAG,&
-    &SWEEPORD, GRIDRAD, grid_obj)
+    &SWEEPORD, GRIDRAD,&
+    &rtm_obj, grid_obj)
 
     ! Description:
     !   Make the array of grid point sweeping order for each discrete
@@ -397,9 +396,8 @@ subroutine shd_grid__makeSweepOrder(&
     ! Input:
     !
 
+    type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
-
-    integer(kind=I__), intent(in) :: NX, NY, NZ, BCFLAG, IPFLAG
 
     integer(kind=I__), intent(out) :: SWEEPORD(grid_obj%Npts, *)
     real(kind=R__)   , intent(out) :: GRIDRAD(grid_obj%Npts)
@@ -434,13 +432,13 @@ subroutine shd_grid__makeSweepOrder(&
         NOCT = 8
     end if
 
-    NXC = NX
-    if (isOpenX_) NXC = NX + 1
-    if (isMpiX_ .and. (.not. is1DX_)) NXC = NX - 1
+    NXC = rtm_obj%Nx
+    if (isOpenX_) NXC = rtm_obj%Nx + 1
+    if (isMpiX_ .and. (.not. is1DX_)) NXC = rtm_obj%Nx - 1
 
-    NYC = NY
-    if (isOpenYx_) NYC = NY + 1
-    if (isMpiY_ .and. (.not. is1DYx_)) NYC = NY - 1
+    NYC = rtm_obj%Ny
+    if (isOpenYx_) NYC = rtm_obj%Ny + 1
+    if (isMpiY_ .and. (.not. is1DYx_)) NYC = rtm_obj%Ny - 1
 
     ! Loop over the number of octants needed; get the octant number
     do JOCT = 1, NOCT
@@ -467,7 +465,7 @@ subroutine shd_grid__makeSweepOrder(&
         if (INDEXCORN .eq. 8) then
             ! If done with the current cell, then go to next
             INDEXCORN = 1
-            if (.not. sweepCellNext(BCFLAG, NXC, NYC, NZ, IOCT,&
+            if (.not. sweepCellNext(rtm_obj%flag_bc, NXC, NYC, rtm_obj%Nz, IOCT,&
                 &IPCELL, grid_obj)) goto 900
         else
             INDEXCORN = INDEXCORN + 1
