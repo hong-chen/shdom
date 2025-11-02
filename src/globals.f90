@@ -238,6 +238,8 @@ module globals_type
         logical :: isAllocated  = .false.
     end type shd_type_grid
 
+    ! SHDO
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     type :: shd_type_shdo
 
         integer(kind=I__) :: Nmu  = -999
@@ -255,12 +257,13 @@ module globals_type
         integer(kind=I__) :: maxNptsDO = -999
 
         integer(kind=I__), pointer :: Nphi0(:) => null()
-        integer(kind=I__), pointer :: iradI(:) => null()
-        integer(kind=I__), pointer :: isrcJ(:) => null()
 
         real(kind=R__), pointer :: mu(:)  => null()
         real(kind=R__), pointer :: phi(:, :) => null()
         real(kind=R__), pointer :: wgt(:, :) => null()
+
+        integer(kind=I__), pointer :: iradI(:) => null()
+        integer(kind=I__), pointer :: isrcJ(:) => null()
 
         real(kind=R__), pointer :: radI(:, :) => null()
         real(kind=R__), pointer :: srcJ(:, :) => null()
@@ -268,6 +271,8 @@ module globals_type
         logical :: isAllocated  = .false.
 
     end type shd_type_shdo
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
 
     ! SRC (radiation source, e.g., solar, thermal, or both)
     !╭────────────────────────────────────────────────────────────────────────────╮!
@@ -354,9 +359,6 @@ module globals_type
         real(kind=R__) :: avgTemp = -999.0
         real(kind=R__) :: avgAlb  = -999.0
 
-        real(kind=R__), pointer :: brdf(:, :) => null()
-        real(kind=R__), pointer :: brdf_grid(:, :) => null()
-
         logical :: isUniform    = .false.
         logical :: isLambertian = .false.
         logical :: isAllocated  = .false.
@@ -427,6 +429,7 @@ module globals_obj
 
     type(shd_type_rtm),  save :: rtmAll_obj, rtm_obj
     type(shd_type_grid), save :: grid_obj
+
     type(shd_type_shdo), save :: shdo_obj
 
 
