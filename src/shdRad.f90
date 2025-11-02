@@ -51,8 +51,7 @@ module shd_rad
                              shd_type_shdo, &
                              shd_type_src, &
                              shd_type_prp, &
-                             shd_type_sfc, &
-                             shd_type_sen
+                             shd_type_sfc
 
     use globals_obj, only: ckd_obj, kabs_Ckd
 
