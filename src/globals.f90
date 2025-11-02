@@ -269,7 +269,7 @@ module globals_type
 
     end type shd_type_shdo
 
-    ! SRC
+    ! SRC (radiation source, e.g., solar, thermal, or both)
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type :: shd_type_src
 
@@ -426,10 +426,17 @@ module globals_obj
     type(shd_type_rtm),  save :: rtmAll_obj, rtm_obj
     type(shd_type_grid), save :: grid_obj
     type(shd_type_shdo), save :: shdo_obj
+
+
+    ! SRC (radiation source, e.g., solar, thermal, or both)
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_src),  save :: src_obj
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
 
     type(shd_type_prp), save :: prpAll_obj, prp_obj
     type(shd_type_sfc), save :: sfc_obj
+
 
     ! CKD
     !╭────────────────────────────────────────────────────────────────────────────╮!
@@ -438,6 +445,7 @@ module globals_obj
                                          wgt_Ckd(:),   & ! (Ng)
                                          kabs_Ckd(:, :)  ! (Nz, Ng)
     !╰────────────────────────────────────────────────────────────────────────────╯!
+
 
     ! SEN
     !╭────────────────────────────────────────────────────────────────────────────╮!
