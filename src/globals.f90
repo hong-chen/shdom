@@ -239,6 +239,7 @@ module globals_type
     end type shd_type_grid
 
     type :: shd_type_shdo
+
         integer(kind=I__) :: Nmu  = -999
         integer(kind=I__) :: Nphi = -999
         integer(kind=I__) :: Nang = -999
@@ -265,6 +266,7 @@ module globals_type
         real(kind=R__), pointer :: srcJ(:, :) => null()
 
         logical :: isAllocated  = .false.
+
     end type shd_type_shdo
 
     type :: shd_type_src
