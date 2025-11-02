@@ -47,10 +47,10 @@ module shd_init
     use globals_type,  only: shd_type_rtm, &
                              shd_type_grid, &
                              shd_type_shdo, &
-                             shd_type_prp, &
-                             shd_type_sfc
+                             shd_type_prp
 
-    use globals_obj, only: src_obj
+    use globals_obj, only: src_obj, &
+                           sfc_obj, brdf_Sfc, brdf_Rtm
 
     use shd_util, only: shd_util__computePlanck, &
                         shd_util__solveTriDiag
@@ -501,7 +501,7 @@ subroutine shd_init__makeRad(&
     &RSHPTR, ZGRID,&
     &EXTINCT, ALBEDO, LEGEN, TEMP, IPHASE,&
     &SRCTYPE, SOLARFLUX, SOLARMU,&
-    &SKYRAD, UNITS, WAVENO, WAVELEN, RADIANCE, prp_obj, sfc_obj)
+    &SKYRAD, UNITS, WAVENO, WAVELEN, RADIANCE, prp_obj)
 
     ! Initializes radiance field by solving plane-parallel two-stream.
     ! Solves the L=1 M=0 SH system by transforming the pentadiagonal
@@ -510,7 +510,6 @@ subroutine shd_init__makeRad(&
     ! Only the I Stokes parameter is initialized, the rest are zeroed.
 
     type(shd_type_prp), intent(in) :: prp_obj
-    type(shd_type_sfc), intent(in) :: sfc_obj
 
     integer NSTOKES, NXY, NZ, RSHPTR(*)
     integer*2 IPHASE(NZ, NXY)
@@ -874,7 +873,7 @@ end subroutine shd_init__makeTopRad
 
 subroutine shd_init__makeBotRadUL(NBOTPTS, BCPTR,&
     &DIRFLUX, FLUXES, SRCTYPE,&
-    &WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD, sfc_obj)
+    &WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD)
 
     !   Returns the BCRAD array with the upwelling unpolarized radiance for
     ! a Lambertian surface for the bottom points (pointed to by BCPTR).
@@ -882,8 +881,6 @@ subroutine shd_init__makeBotRadUL(NBOTPTS, BCPTR,&
     ! bottom points is gotten (from FLUXES). There may also be thermal
     ! emission (depending on temperature and emissivity) or reflected
     ! collimated solar radiation (DIRFLUX).
-
-    type(shd_type_sfc), intent(in) :: sfc_obj
 
     integer NBOTPTS, BCPTR(*), NSTOKES
     real DIRFLUX(*), FLUXES(2, *)
@@ -918,37 +915,34 @@ end subroutine shd_init__makeBotRadUL
 
 subroutine shd_init__makeBotRadVL(NBOTPTS, BCPTR,&
     &DIRFLUX, FLUXES, SRCTYPE,&
-    &NSTOKES, BCRAD, sfc_obj)
+    &NSTOKES, BCRAD)
 
     !   Returns the BCRAD array with the upwelling unpolarized radiance for a
     ! variable Lambertian surface for the bottom points (pointed to by BCPTR).
-    ! sfc_obj%brdf_grid contains the interpolated surface properties for the
+    ! brdf_Rtm contains the interpolated surface properties for the
     ! bottom boundary points; the first is Planck function and the second is
     ! albedo.  The reflection is computed from the downwelling hemispheric
     ! flux (in FLUXES).  There may also be thermal emission (depending on
     ! temperature and emissivity) or reflected collimated solar radiation
     ! (from DIRFLUX).
 
-    type(shd_type_sfc), intent(in) :: sfc_obj
-
     integer NBOTPTS, BCPTR(*), NSTOKES
     real DIRFLUX(*), FLUXES(2, *)
-    !real, pointer :: brdf_grid_Sfc(:, :) => null()
     real BCRAD(NSTOKES, *)
     character(len=1) :: SRCTYPE
     integer I, IBC, K
     real ALB, GNDRAD
 
-    !brdf_grid_Sfc(1:sfc_obj%Npar, 1:NBOTPTS) => sfc_obj%brdf_grid
+    !brdf_grid_Sfc(1:sfc_obj%Npar, 1:NBOTPTS) => brdf_Rtm
 
     ! Loop over all bottom points
     do IBC = 1, NBOTPTS
         I = BCPTR(IBC)
-        ALB = sfc_obj%brdf_grid(2, IBC)
+        ALB = brdf_Rtm(2, IBC)
         if (SRCTYPE .eq. 'S') then
             BCRAD(1, IBC) = OPI_*ALB*(DIRFLUX(I) + FLUXES(1, I))
         else
-            GNDRAD = sfc_obj%brdf_grid(1, IBC)*(1 - ALB)
+            GNDRAD = brdf_Rtm(1, IBC)*(1 - ALB)
             if (SRCTYPE .eq. 'T') then
                 BCRAD(1, IBC) = GNDRAD + OPI_*ALB*FLUXES(1, I)
             else if (SRCTYPE .eq. 'B') then
@@ -968,7 +962,7 @@ subroutine shd_init__makeBotRadU(NBOTPTS, BCPTR,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, IMU, IPHI,&
     &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
     &SFC_BRDF_DO,&
-    &NSTOKES, BCRAD, sfc_obj)
+    &NSTOKES, BCRAD)
 
     !   Computes the upwelling Stokes vector of the bottom boundary points
     ! for one outgoing discrete ordinate using the precomputed bidirectional
@@ -985,8 +979,6 @@ subroutine shd_init__makeBotRadU(NBOTPTS, BCPTR,&
     ! radiance vectors are input in BCRAD(*,*,2...) and the outgoing
     ! upwelling radiance vectors are output in BCRAD(*,*,1).
 
-    type(shd_type_sfc), intent(in) :: sfc_obj
-
     integer NBOTPTS, BCPTR(NBOTPTS)
     integer NMU, NPHI0MAX, NPHI0(NMU), IMU, IPHI, NSTOKES
     real WTDO(NMU, NPHI0MAX), MU(NMU), PHI(NMU, NPHI0MAX)
@@ -998,7 +990,7 @@ subroutine shd_init__makeBotRadU(NBOTPTS, BCPTR,&
     integer IMU1, JMU, JPHI, IBC, I, JANG, K, K1, K2
     real REFLECT(4, 4), W
 
-    !brdf_grid_Sfc(1:sfc_obj%Npar, 1:NBOTPTS) => sfc_obj%brdf_grid
+    !brdf_grid_Sfc(1:sfc_obj%Npar, 1:NBOTPTS) => brdf_Rtm
 
     IMU1 = IMU - NMU/2
     do IBC = 1, NBOTPTS
@@ -1008,7 +1000,7 @@ subroutine shd_init__makeBotRadU(NBOTPTS, BCPTR,&
         BCRAD(:, IBC, 1) = 0.0
         if (isSolar_) then
             I = BCPTR(IBC)
-            call shd_sfc__brdfSurface(sfc_obj%type(2:2), sfc_obj%brdf_grid(2:sfc_obj%Npar, IBC), WAVELEN,&
+            call shd_sfc__brdfSurface(sfc_obj%type(2:2), brdf_Rtm(2:sfc_obj%Npar, IBC), WAVELEN,&
                 &MU(IMU), PHI(IMU, IPHI), SOLARMU, SOLARAZ,&
                 &NSTOKES, REFLECT)
             BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1)&
@@ -1026,9 +1018,9 @@ subroutine shd_init__makeBotRadU(NBOTPTS, BCPTR,&
                 end do
                 ! Add in the polarized thermal emission
                 W = OPI_*abs(MU(JMU))*WTDO(JMU, JPHI)
-                BCRAD(1, IBC, 1) = BCRAD(1, IBC, 1) + sfc_obj%brdf_grid(1, IBC)&
+                BCRAD(1, IBC, 1) = BCRAD(1, IBC, 1) + brdf_Rtm(1, IBC)&
                     &*(W - SFC_BRDF_DO(1, IMU1, IPHI, 1, JMU, JPHI))
-                BCRAD(2:, IBC, 1) = BCRAD(2:, IBC, 1) - sfc_obj%brdf_grid(1, IBC)&
+                BCRAD(2:, IBC, 1) = BCRAD(2:, IBC, 1) - brdf_Rtm(1, IBC)&
                     &*SFC_BRDF_DO(2:, IMU1, IPHI, 1, JMU, JPHI)
                 JANG = JANG + 1
             end do
@@ -1045,7 +1037,7 @@ subroutine shd_init__makeBotRadV(&
     &NBOTPTS, IBEG, IEND, BCPTR,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MU2, PHI2,&
     &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
-    &NSTOKES, BCRAD, sfc_obj)
+    &NSTOKES, BCRAD)
 
     !   Computes the upwelling Stokes vector of the bottom boundary points
     ! for one outgoing direction using the specified bidirectional
@@ -1057,15 +1049,13 @@ subroutine shd_init__makeBotRadV(&
     ! downwelling radiance, so a discrete sum is done and the integral
     ! weights (WTDO) are included. The general BRDF function is called
     ! to compute the Stokes reflectance matrix for the particular BRDF
-    ! type (sfc_obj%type) with parameters (sfc_obj%brdf_grid) for the incident and
+    ! type (sfc_obj%type) with parameters (brdf_Rtm) for the incident and
     ! outgoing directions.  The emissivity is computed implicitly from the
     ! integral of the BRDF.  The outgoing direction is specified with
     ! (MU2,PHI2), and the BRDF is computed for all incident directions
     ! (loop over JMU,JPHI).  The incident downwelling radiance vectors are
     ! input in BCRAD(*,*,2...) and the outgoing upwelling radiance vectors
     ! are output in BCRAD(*,*,1).
-
-    type(shd_type_sfc), intent(in) :: sfc_obj
 
     integer NBOTPTS, IBEG, IEND, BCPTR(NBOTPTS)
     integer NMU, NPHI0MAX, NPHI0(NMU), NSTOKES
@@ -1077,7 +1067,7 @@ subroutine shd_init__makeBotRadV(&
     integer JMU, JPHI, IBC, I, JANG, K, K1, K2
     real REFLECT(4, 4), W, SUM0, SUM1, RADSPEC(4)
 
-    !brdf_grid_Sfc(1:sfc_obj%Npar, 1:NBOTPTS) => sfc_obj%brdf_grid
+    !brdf_grid_Sfc(1:sfc_obj%Npar, 1:NBOTPTS) => brdf_Rtm
 
     do IBC = IBEG, IEND
 
@@ -1086,7 +1076,7 @@ subroutine shd_init__makeBotRadV(&
         BCRAD(:, IBC, 1) = 0.0
         if (isSolar_) then
             I = BCPTR(IBC)
-            call shd_sfc__brdfSurface(sfc_obj%type(2:2), sfc_obj%brdf_grid(2:sfc_obj%Npar, IBC), WAVELEN,&
+            call shd_sfc__brdfSurface(sfc_obj%type(2:2), brdf_Rtm(2:sfc_obj%Npar, IBC), WAVELEN,&
                 &MU2, PHI2, SOLARMU, SOLARAZ, NSTOKES, REFLECT)
             BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1)&
                 &+ OPI_*REFLECT(1:NSTOKES, 1)*DIRFLUX(I)
@@ -1096,7 +1086,7 @@ subroutine shd_init__makeBotRadV(&
         JANG = 1
         do JMU = 1, NMU/2
             do JPHI = 1, NPHI0(JMU)
-                call shd_sfc__brdfSurface(sfc_obj%type(2:2), sfc_obj%brdf_grid(2:sfc_obj%Npar, IBC),&
+                call shd_sfc__brdfSurface(sfc_obj%type(2:2), brdf_Rtm(2:sfc_obj%Npar, IBC),&
                     &WAVELEN, MU2, PHI2, MU(JMU), PHI(JMU, JPHI),&
                     &NSTOKES, REFLECT)
                 W = OPI_*abs(MU(JMU))*WTDO(JMU, JPHI)
@@ -1107,9 +1097,9 @@ subroutine shd_init__makeBotRadV(&
                 end do
                 ! Add in the polarized thermal emission
                 BCRAD(1, IBC, 1) = BCRAD(1, IBC, 1)&
-                    &+ W*(1 - REFLECT(1, 1))*sfc_obj%brdf_grid(1, IBC)
+                    &+ W*(1 - REFLECT(1, 1))*brdf_Rtm(1, IBC)
                 BCRAD(2:, IBC, 1) = BCRAD(2:, IBC, 1)&
-                    &- W*REFLECT(2:NSTOKES, 1)*sfc_obj%brdf_grid(1, IBC)
+                    &- W*REFLECT(2:NSTOKES, 1)*brdf_Rtm(1, IBC)
                 JANG = JANG + 1
             end do
         end do
@@ -1122,7 +1112,7 @@ subroutine shd_init__makeBotRadV(&
 
 end subroutine shd_init__makeBotRadV
 
-subroutine shd_init__checkSfcU(sfc_obj)
+subroutine shd_init__checkSfcU()
 
     ! Description:
     !   Checks to see if the surface reflection parameters are uniform,
@@ -1132,18 +1122,12 @@ subroutine shd_init__checkSfcU(sfc_obj)
     ! Input:
     !   sfc_obj%Nx, sfc_obj%Ny: integer, size of surface arrays (internally sfc_obj%Nx+1 by sfc_obj%Ny+1)
     !   sfc_obj%Npar: integer, number of surface parameters for modeling different BRDF
-    !   sfc_obj%brdf: real array, surface parameters for modeling different BRDF
+    !   brdf_Sfc: real array, surface parameters for modeling different BRDF
     !
     ! Output:
     !   sfc_obj%isUniform: logical, whether surface reflection parameters are uniform
 
-    type(shd_type_sfc), intent(inout) :: sfc_obj
-
-    !real(kind=R__), pointer :: brdf_Sfc(:, :, :) => null()
-
     integer(kind=I__) :: ix, iy, J, idata
-
-    !brdf_Sfc(1:sfc_obj%Npar, 1:sfc_obj%Nx+1, 1:sfc_obj%Ny+1) => sfc_obj%brdf
 
     sfc_obj%isUniform = .true.
 
@@ -1151,10 +1135,12 @@ subroutine shd_init__checkSfcU(sfc_obj)
         do ix = 1, sfc_obj%Nx
             idata = iy + (sfc_obj%Ny + 1)*(ix - 1)
             do J = 2, sfc_obj%Npar
-                if (sfc_obj%brdf(J, idata) .ne. sfc_obj%brdf(J, 1)) then
+                if (brdf_Sfc(J, idata) .ne. brdf_Sfc(J, 1)) then
+
                     sfc_obj%isUniform = .false.
-                    !nullify(brdf_Sfc)
+
                     return
+
                 end if
             end do
         end do

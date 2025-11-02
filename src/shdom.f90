@@ -54,6 +54,7 @@ program shdom
                              shd_type_grid
 
     use globals_obj,   only: src_obj, &
+                             sfc_obj, brdf_Sfc, brdf_Rtm, &
                              ckd_obj, solar_Ckd, wgt_Ckd, kabs_Ckd, &
                              sen_obj, view_Sen
 
@@ -200,9 +201,6 @@ program shdom
 
     ! sfc_obj
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    type(shd_type_sfc) :: sfc_obj
-    real(kind=R__), allocatable, target :: brdf_Sfc(:)
-    real(kind=R__), allocatable, target :: brdf_grid_Sfc(:)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! CKD
@@ -687,18 +685,16 @@ program shdom
     ! Read in the surface properties
     if (sfc_obj%fname(1:4) .ne. 'NONE') then
 
-        allocate(brdf_Sfc(sfc_obj%maxNpar * sfc_obj%maxNpts)); &
-            memUsed = memUsed + sfc_obj%maxNpar * sfc_obj%maxNpts
+        allocate(brdf_Sfc(sfc_obj%maxNpar, sfc_obj%maxNpts))
 
-        sfc_obj%brdf(1:sfc_obj%maxNpar, 1:sfc_obj%maxNpts) => brdf_Sfc
-        sfc_obj%isAllocated = .true.
+        memUsed = memUsed + sfc_obj%maxNpar * sfc_obj%maxNpts
 
         if (isMasterProc) then
-            call shd_io__readSfc(sfc_obj)
+            call shd_io__readSfc(sfc_obj, brdf_Sfc)
         end if
 
         ! Broadcast the surface object
-        call shd_mpi__bcastSfc(sfc_obj)
+        call shd_mpi__bcastSfc(sfc_obj, brdf_Sfc)
 
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
@@ -1080,9 +1076,7 @@ program shdom
     !   rad_Bc(:[shdo_obj%Nstokes], NptsTop_bc+NptsBot_bc+1:NptsTop_bc+NptsBot_bc+NptsBot_bc*shdo_obj%Nang/2):
     !         downwelling bottom radiances at discrete ordinates
     if (sfc_obj%fname(1:4) .ne. 'NONE') then
-        allocate(brdf_grid_Sfc(sfc_obj%maxNpar*maxNpts_bc))
-        sfc_obj%brdf_grid(1:sfc_obj%maxNpar, 1:maxNpts_bc) => brdf_grid_Sfc
-        sfc_obj%isAllocated = .true.
+        allocate(brdf_Rtm(sfc_obj%maxNpar, maxNpts_bc))
     end if
 
     allocate(ptr_Bc(2*maxNpts_bc), rad_Bc(shdo_obj%Nstokes, maxNrad_bc))
@@ -1196,7 +1190,7 @@ program shdom
             &idsrc_Shdo, work, work1, work2,&
             &dsrc_Shdo, fluxTot, fluxDir,&
             &rtm_obj, grid_obj, shdo_obj,&
-            &prp_obj, sfc_obj)
+            &prp_obj)
 
         doRadInit = .false.
         totIter = totIter + iter
@@ -1214,7 +1208,7 @@ program shdom
                             &work, work(1 + grid_obj%Npts*shdo_obj%Nstokes),&
                             &parms_Out(1, iout), irad, work2,&
                             &rtm_obj, grid_obj, shdo_obj,&
-                            &prp_obj, sfc_obj)
+                            &prp_obj)
                     else
                         call shd_rad__computeRad(&
                             &doDeltaM,&
@@ -1223,7 +1217,7 @@ program shdom
                             &work(1), work(1 + grid_obj%Npts*shdo_obj%Nstokes),&
                             &parms_Out(1, iout), irad, work2,&
                             &rtm_obj, grid_obj, shdo_obj,&
-                            &prp_obj, sfc_obj)
+                            &prp_obj)
                     end if
                 end if
             end do
@@ -1241,7 +1235,7 @@ program shdom
                             &fluxDir, fluxTot,&
                             &parms_Out(1, iout), ilos, work2,&
                             &rtm_obj, grid_obj, shdo_obj,&
-                            &prp_obj, sfc_obj)
+                            &prp_obj)
                     else
                         call shd_rad__computeCamRad(&
                             &doDeltaM,&
@@ -1249,7 +1243,7 @@ program shdom
                             &fluxDir, fluxTot,&
                             &parms_Out(1, iout), ilos, work2,&
                             &rtm_obj, grid_obj, shdo_obj,&
-                            &prp_obj, sfc_obj)
+                            &prp_obj)
                     end if
                 end if
             end do
@@ -1375,7 +1369,7 @@ program shdom
                         &Nsh_out, SH_all, irad, sumRad_Out,&
                         &type_Out(iout), parms_Out(1, iout), file_Out(iout),&
                         &rtmAll_obj, grid_obj, shdo_obj,&
-                        &prp_obj, sfc_obj)
+                        &prp_obj)
                 end if
             end do
 
@@ -1402,7 +1396,7 @@ program shdom
                     irad, sumRad_Out, Nsh_out, sumSH_Out, src1_Out,&
                     type_Out(iout), parms_Out(1, iout), file_Out(iout),&
                     rtm_obj, grid_obj, shdo_obj,&
-                    prp_obj, sfc_obj)
+                    prp_obj)
             end if
         end do
     end if
@@ -1420,7 +1414,7 @@ program shdom
                     &splitAcc, shAcc, solAcc, maxIter, totIter,&
                     &ilos, sumCam_Out, parms_Out(1, iout), file_Out(iout),&
                     &rtm_obj, grid_obj, shdo_obj,&
-                    &prp_obj, sfc_obj)
+                    &prp_obj)
             end if
         end do
     end if
@@ -1523,11 +1517,7 @@ program shdom
     ! sfc_obj
     !╭────────────────────────────────────────────────╮!
     if (allocated(brdf_Sfc)) then
-        deallocate(brdf_Sfc, brdf_grid_Sfc)
-        if (sfc_obj%isAllocated) then
-            nullify(sfc_obj%brdf, sfc_obj%brdf_grid)
-            sfc_obj%isAllocated = .false.
-        end if
+        deallocate(brdf_Sfc, brdf_Rtm)
     end if
     !╰────────────────────────────────────────────────╯!
 

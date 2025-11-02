@@ -47,10 +47,10 @@ module shd_grid
     use globals_type,  only: shd_type_rtm, &
                              shd_type_grid, &
                              shd_type_shdo, &
-                             shd_type_prp, &
-                             shd_type_sfc
+                             shd_type_prp
 
-    use globals_obj, only: src_obj
+    use globals_obj, only: src_obj, &
+                           sfc_obj
 
     use globals_obj, only: ckd_obj, kabs_Ckd
 
@@ -105,7 +105,7 @@ subroutine shd_grid__findBndryPnt(&
     &NANG, MAXNBC, MAXBCRAD, &
     &ZBOT, ZTOP,&
     &NTOPPTS, NBOTPTS, BCPTR,&
-    &grid_obj, sfc_obj)
+    &grid_obj)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Description:
@@ -131,7 +131,6 @@ subroutine shd_grid__findBndryPnt(&
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     type(shd_type_grid), intent(in) :: grid_obj
-    type(shd_type_sfc),  intent(in) :: sfc_obj
 
     integer(kind=I__), intent(in) :: NANG, MAXNBC, MAXBCRAD
     real(kind=R__)   , intent(in) :: ZBOT, ZTOP

@@ -47,10 +47,10 @@ module shd_intg
     use globals_type,  only: shd_type_rtm, &
                              shd_type_grid, &
                              shd_type_shdo, &
-                             shd_type_prp, &
-                             shd_type_sfc
+                             shd_type_prp
 
-    use globals_obj, only: src_obj
+    use globals_obj, only: src_obj, &
+                           sfc_obj
 
     use shd_sfc,  only: shd_sfc__interpSfc
 
@@ -96,7 +96,7 @@ subroutine shd_intg__integratePath(&
     &CMU1, CPHI1, CMU2, CPHI2, WSAVE, FFTFLAG,&
     &DIRFLUX, FLUXES,&
     &WORK, SWEEPORD, GRIDRAD,&
-    &rtm_obj, grid_obj, shdo_obj, prp_obj, sfc_obj)
+    &rtm_obj, grid_obj, shdo_obj, prp_obj)
 
     !   Performs the path integrations through the medium specified by
     ! the extinction (rtm_obj%ext) and source function (shdo_obj%srcJ) in
@@ -126,7 +126,6 @@ subroutine shd_intg__integratePath(&
     type(shd_type_grid), intent(in) :: grid_obj
     type(shd_type_shdo), intent(in) :: shdo_obj
     type(shd_type_prp),  intent(in) :: prp_obj
-    type(shd_type_sfc),  intent(in) :: sfc_obj
 
     integer MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS
     integer BCPTR(MAXNBC, 2)
@@ -163,14 +162,14 @@ subroutine shd_intg__integratePath(&
         ! Make the pointers to the grid points on the top and bottom boundaries
         call shd_grid__findBndryPnt(shdo_obj%Nang, MAXNBC, MAXBCRAD, &
             &rtm_obj%z(1), rtm_obj%z(rtm_obj%Nz),&
-            &NTOPPTS, NBOTPTS, BCPTR, grid_obj, sfc_obj)
+            &NTOPPTS, NBOTPTS, BCPTR, grid_obj)
         if (sfc_obj%type(1:1) .eq. 'V') then
             ! If this is a variable surface then bilinearly interpolate
             !   the surface temperature and reflection parameters to the
             !   bottom grid points.
             call shd_sfc__interpSfc(NBOTPTS, BCPTR(1, 2), grid_obj%xyz,&
                 &src_obj%type, src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
-                &prp_obj, sfc_obj)
+                &prp_obj)
         end if
     end if
     ! Make the isotropic radiances for the top boundary
@@ -202,11 +201,11 @@ subroutine shd_intg__integratePath(&
             if (sfc_obj%type .eq. 'FL') then
                 call shd_init__makeBotRadUL(NBOTPTS, BCPTR(1, 2),&
                     &DIRFLUX, FLUXES, src_obj%type,&
-                    &src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit, shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS), sfc_obj)
+                    &src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit, shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS))
             else if (sfc_obj%type .eq. 'VL') then
                 call shd_init__makeBotRadVL(NBOTPTS, BCPTR(1, 2),&
                     &DIRFLUX, FLUXES, src_obj%type,&
-                    &shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS), sfc_obj)
+                    &shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS))
             end if
         end if
 
@@ -257,13 +256,13 @@ subroutine shd_intg__integratePath(&
                             &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt, IMU, IPHI,&
                             &src_obj%type, src_obj%avgWaveLen, src_obj%avgMu, src_obj%avgAz, DIRFLUX,&
                             &SFC_BRDF_DO,&
-                            &shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS), sfc_obj)
+                            &shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS))
                     else
                         call shd_init__makeBotRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
                             &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
                             &shdo_obj%mu(IMU), shdo_obj%phi(IMU, IPHI),&
                             &src_obj%type, src_obj%avgWaveLen, src_obj%avgMu, src_obj%avgAz, DIRFLUX,&
-                            &shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS), sfc_obj)
+                            &shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS))
                     end if
                 end if
 

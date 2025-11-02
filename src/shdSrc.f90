@@ -47,10 +47,10 @@ module shd_src
     use globals_type,  only: shd_type_rtm, &
                              shd_type_grid, &
                              shd_type_shdo, &
-                             shd_type_prp, &
-                             shd_type_sfc
+                             shd_type_prp
 
-    use globals_obj, only: src_obj
+    use globals_obj, only: src_obj, &
+                           sfc_obj
 
     use shd_scat, only: shd_scat__computeLegendre, &
                         shd_scat__computeWigner
@@ -737,7 +737,7 @@ subroutine shd_src__integrateSrcOneRay(&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &MU2, PHI2, X0, Y0, Z0,&
     &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD,&
-    &rtm_obj, grid_obj, prp_obj, sfc_obj)
+    &rtm_obj, grid_obj, prp_obj)
 
     !   Integrates the source function through the extinction field
     ! (rtm_obj%ext) backward from the outgoing direction (MU2,PHI2) to find the
@@ -750,7 +750,6 @@ subroutine shd_src__integrateSrcOneRay(&
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
     type(shd_type_prp),  intent(in) :: prp_obj
-    type(shd_type_sfc),  intent(in) :: sfc_obj
 
     integer NSTOKES, NSTPHASE, NSCATANGLE
     integer SIDE
@@ -1106,7 +1105,7 @@ subroutine shd_src__integrateSrcOneRay(&
                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                 &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                 &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
-                &RADBND, sfc_obj)
+                &RADBND)
             RADIANCE(:) = RADIANCE(:) + TRANSMIT*RADBND(:)
         else
             icell = INEXTCELL
@@ -1481,14 +1480,12 @@ subroutine shd_src__findBndryRad(&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
     &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
-    &RADBND, sfc_obj)
+    &RADBND)
 
     !   Returns the interpolated Stokes radiance at the boundary (RADBND)
     ! Inputs are the boundary location (XB,YB), ray direction away from
     ! boundary (MU2,PHI2), cell number (icell) and face (KFACE) at
     ! the boundary point.
-
-    type(shd_type_sfc), intent(in) :: sfc_obj
 
     integer NSTOKES, icell, KFACE, MAXNBC, NTOPPTS, NBOTPTS
     integer GRIDPTR(8, *), BCPTR(MAXNBC, 2)
@@ -1554,7 +1551,7 @@ subroutine shd_src__findBndryRad(&
                     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MU2, PHI2,&
                     &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
                     &NSTOKES,&
-                    &BCRAD(:, 1 + NTOPPTS), sfc_obj)
+                    &BCRAD(:, 1 + NTOPPTS))
             end if
             RAD(:, J) = BCRAD(:, NTOPPTS + IBC)
         end if

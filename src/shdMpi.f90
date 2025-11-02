@@ -52,7 +52,8 @@ module shd_mpi
                             shd_type_sfc,  &
                             shd_type_ckd,  &
                             shd_type_sen
-    use globals_obj, only: src_obj
+    use globals_obj, only: src_obj, &
+                           sfc_obj
 
 #if HAS_MPI
     use mpi_f08,  only: MPI_comm_world, MPI_comm, MPI_request, &
@@ -604,11 +605,12 @@ subroutine shd_mpi__bcastSfcSize(sfc_obj)
 
 end subroutine shd_mpi__bcastSfcSize
 
-subroutine shd_mpi__bcastSfc(sfc_obj)
+subroutine shd_mpi__bcastSfc(sfc_obj, brdf_Sfc)
 
     ! Broadcasts the surface file parameters from the master process to the others.
 
     type(shd_type_sfc), intent(inout) :: sfc_obj
+    real(kind=R__), intent(inout) :: brdf_Sfc(sfc_obj%maxNpar, sfc_obj%maxNpts)
 
 #if HAS_MPI
     integer :: ierr, Ndata
@@ -625,7 +627,7 @@ subroutine shd_mpi__bcastSfc(sfc_obj)
     sfc_obj%avgTemp = realbuf(1); sfc_obj%avgAlb = realbuf(2)
 
     Ndata = sfc_obj%Npar * (sfc_obj%Nx+1) * (sfc_obj%Ny+1)
-    call mpi_bcast(sfc_obj%brdf, Ndata, MPI_real, 0, comm2D_, ierr)
+    call mpi_bcast(brdf_Sfc, Ndata, MPI_real, 0, comm2D_, ierr)
 #endif
 
     return
@@ -1794,7 +1796,7 @@ subroutine shd_mpi__computeRad(&
     &SOURCE1, GRIDRAD,&
     &parms_Out, NRAD, RADOUT,&
     &rtm_obj, grid_obj, shdo_obj,&
-    &prp_obj, sfc_obj)
+    &prp_obj)
 
     ! Computes the radiances for the locations and directions specified
     ! in parms_Out, putting the results in RADOUT and increasing NRAD by
@@ -1807,7 +1809,6 @@ subroutine shd_mpi__computeRad(&
     type(shd_type_grid), intent(in) :: grid_obj
     type(shd_type_shdo), intent(in) :: shdo_obj
     type(shd_type_prp),  intent(in) :: prp_obj
-    type(shd_type_sfc),  intent(in) :: sfc_obj
 
     integer, intent(inout) :: NRAD
     integer, intent(in) :: MAXNBC, NTOPPTS, NBOTPTS
@@ -1852,11 +1853,11 @@ subroutine shd_mpi__computeRad(&
     if (sfc_obj%type .eq. 'FL') then
         call shd_init__makeBotRadUL(NBOTPTS, BCPTR(1, 2),&
             &DIRFLUX, FLUXES, src_obj%type,&
-            &src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit, shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS), sfc_obj)
+            &src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit, shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS))
     else if (sfc_obj%type .eq. 'VL') then
         call shd_init__makeBotRadVL(NBOTPTS, BCPTR(1, 2),&
             &DIRFLUX, FLUXES, src_obj%type,&
-            &shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS), sfc_obj)
+            &shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS))
     end if
 
     ! Setup the regularly spaced radiance locations
@@ -1969,7 +1970,7 @@ subroutine shd_mpi__computeRad(&
                 call shd_init__makeBotRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
                     &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt, mu_out, phi_out,&
                     &src_obj%type, src_obj%avgWaveLen, src_obj%avgMu, src_obj%avgAz, DIRFLUX,&
-                    &shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS), sfc_obj)
+                    &shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS))
             end if
             do IBC = 1, NBOTPTS
                 I = BCPTR(IBC, 2)
@@ -2211,7 +2212,7 @@ subroutine shd_mpi__computeCamRad(&
     &DIRFLUX, FLUXES,&
     &parms_Out, IVIS, VISOUT,&
     &rtm_obj, grid_obj, shdo_obj,&
-    &prp_obj, sfc_obj)
+    &prp_obj)
 
     ! Computes Stokes radiances (output in VISOUT) for the visualization
     !   modes: 1) camera mode,
@@ -2224,7 +2225,6 @@ subroutine shd_mpi__computeCamRad(&
     type(shd_type_grid), intent(in) :: grid_obj
     type(shd_type_shdo), intent(in) :: shdo_obj
     type(shd_type_prp),  intent(in) :: prp_obj
-    type(shd_type_sfc),  intent(in) :: sfc_obj
 
     integer, intent(inout) :: IVIS
     integer, intent(in) :: MAXNBC, NTOPPTS, NBOTPTS
@@ -2288,11 +2288,11 @@ subroutine shd_mpi__computeCamRad(&
     if (sfc_obj%type .eq. 'FL') then
         call shd_init__makeBotRadUL(NBOTPTS, BCPTR(1, 2),&
             &DIRFLUX, FLUXES, src_obj%type,&
-            &src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit, shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS), sfc_obj)
+            &src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit, shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS))
     else if (sfc_obj%type .eq. 'VL') then
         call shd_init__makeBotRadVL(NBOTPTS, BCPTR(1, 2),&
             &DIRFLUX, FLUXES, src_obj%type,&
-            &shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS), sfc_obj)
+            &shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS))
     end if
 
     CAMERA_MODE = nint(parms_Out(1)) .eq. 1
@@ -2473,7 +2473,7 @@ subroutine shd_mpi__computeCamRad(&
                     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                     &MU2, PHI2, X0, Y0, Z0,&
                     &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD,&
-                    &rtm_obj, grid_obj, prp_obj, sfc_obj)
+                    &rtm_obj, grid_obj, prp_obj)
 
                 ! If we got a radiance then store it in RadSend otherwise save
                 !  the information needed to pass to other processors
@@ -2556,7 +2556,7 @@ subroutine shd_mpi__computeCamRad(&
                     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                     &MU2, PHI2, X, Y, Z,&
                     &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD,&
-                    &rtm_obj, grid_obj, prp_obj, sfc_obj)
+                    &rtm_obj, grid_obj, prp_obj)
 
                 ! If we got a valid radiance then store it in RadSend, otherwise
                 ! save information needed to pass to neighboring processors

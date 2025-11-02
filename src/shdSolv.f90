@@ -44,10 +44,10 @@ module shd_solv
     use globals_type, only: shd_type_rtm,  &
                             shd_type_grid, &
                             shd_type_shdo, &
-                            shd_type_prp,  &
-                            shd_type_sfc
+                            shd_type_prp
 
-    use globals_obj, only: src_obj
+    use globals_obj, only: src_obj, &
+                           sfc_obj, brdf_Sfc
 
     use shd_init, only: shd_init__makePrp, &
                         shd_init__makeRad, &
@@ -99,7 +99,7 @@ subroutine shd_solv__solveRte(&
     &idsrc_Shdo, WORK, WORK1, WORK2,&
     &dsrc_Shdo, FLUXES, DIRFLUX,&
     &rtm_obj, grid_obj, shdo_obj,&
-    &prp_obj, sfc_obj)
+    &prp_obj)
 
     ! Performs the SHDOM solution procedure.
     ! Output is returned in shdo_obj%srcJ, shdo_obj%radI, FLUXES, DIRFLUX.
@@ -111,7 +111,6 @@ subroutine shd_solv__solveRte(&
     type(shd_type_grid), intent(inout) :: grid_obj
     type(shd_type_shdo), intent(inout) :: shdo_obj
     type(shd_type_prp),  intent(in)    :: prp_obj
-    type(shd_type_sfc),  intent(inout) :: sfc_obj
 
     integer MAXITER, ITER
     integer MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR(MAXNBC, 2)
@@ -199,7 +198,7 @@ subroutine shd_solv__solveRte(&
             &shdo_obj%iradI, rtm_obj%z,&
             &rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%temp, rtm_obj%ipha,&
             &src_obj%type, src_obj%avgSolar0, src_obj%avgMu, src_obj%skyRad,&
-            &src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen, shdo_obj%radI, prp_obj, sfc_obj)
+            &src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen, shdo_obj%radI, prp_obj)
         ! Interpolate the radiance on the non-base grid points from the
         !   base grid points
         call shd_rad__interpRad(shdo_obj%Nstokes, grid_obj%Npts0, grid_obj%Npts, shdo_obj%iradI, shdo_obj%radI,&
@@ -225,15 +224,15 @@ subroutine shd_solv__solveRte(&
     ! Make the pointers to the grid points on the top and bottom boundaries
     call shd_grid__findBndryPnt(shdo_obj%Nang, MAXNBC, MAXBCRAD,&
         &rtm_obj%z(1), rtm_obj%z(grid_obj%Nz),&
-        &NTOPPTS, NBOTPTS, BCPTR, grid_obj, sfc_obj)
+        &NTOPPTS, NBOTPTS, BCPTR, grid_obj)
     if (sfc_obj%type(1:1) .eq. 'V') then
         ! If this is a variable surface then bilinearly interpolate
         !   the surface temperature and reflection parameters to the
         !   bottom grid points.
         call shd_sfc__interpSfc(NBOTPTS, BCPTR(1, 2), grid_obj%xyz,&
             &src_obj%type, src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
-            &prp_obj, sfc_obj)
-        call shd_init__checkSfcU(sfc_obj)
+            &prp_obj)
+        call shd_init__checkSfcU()
         if (sfc_obj%isUniform) then
             if (shdo_obj%Nstokes*(shdo_obj%Nmu/2)*shdo_obj%maxNphi0 .gt.&
                 &sqrt(1.0*huge(shdo_obj%Nmu)/kind(shdo_obj%Nmu))) then
@@ -244,7 +243,7 @@ subroutine shd_solv__solveRte(&
             end if
             if (ierr .eq. 0) then
                 call shd_shdo__makeSfcDO(sfc_obj%type, src_obj%avgWaveLen,&
-                    &sfc_obj%Nx, sfc_obj%Ny, sfc_obj%Npar, sfc_obj%brdf, shdo_obj%Nstokes,&
+                    &sfc_obj%Nx, sfc_obj%Ny, sfc_obj%Npar, brdf_Sfc, shdo_obj%Nstokes,&
                     &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
                     &brdf_Shdo)
             else
@@ -354,7 +353,7 @@ subroutine shd_solv__solveRte(&
             &CMU1, CPHI1, CMU2, CPHI2, wPhiFFT_Shdo, flagFFT_Shdo,&
             &DIRFLUX, FLUXES,&
             &WORK, WORK1, WORK2,&
-            &rtm_obj, grid_obj, shdo_obj, prp_obj, sfc_obj)
+            &rtm_obj, grid_obj, shdo_obj, prp_obj)
         !╰────────────────────────────────────────────────╯!
 
         ! Compute the source function from the radiance field,

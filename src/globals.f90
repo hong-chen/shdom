@@ -295,6 +295,7 @@ module globals_type
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     type :: shd_type_prp
+
         character(len=charMaxLen_) :: fname = 'NONE'
         character(len=1) :: type = ' '
 
@@ -330,6 +331,7 @@ module globals_type
         real(kind=R__), pointer :: leg(:, :, :) => null()
 
         logical :: isAllocated  = .false.
+
     end type shd_type_prp
 
 
@@ -435,7 +437,14 @@ module globals_obj
 
 
     type(shd_type_prp), save :: prpAll_obj, prp_obj
+
+
+    ! SFC
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_sfc), save :: sfc_obj
+    real(kind=R__), allocatable, save :: brdf_Sfc(:, :), & ! (Npar, Npts)
+                                         brdf_Rtm(:, :)    ! (Npar, Npts)
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
     ! CKD

@@ -1255,7 +1255,7 @@ subroutine shd_io__readSfcSize(sfc_obj)
 
 end subroutine shd_io__readSfcSize
 
-subroutine shd_io__readSfc(sfc_obj)
+subroutine shd_io__readSfc(sfc_obj, brdf_Sfc)
 
     ! Reads the surface properties from the file into the surface arrays.
     ! There are currently six surface types (Lambertian, Wave-Fresnel,
@@ -1264,7 +1264,7 @@ subroutine shd_io__readSfc(sfc_obj)
     ! spaced grid of size sfc_obj%Nx by sfc_obj%Ny and spacing sfc_obj%dx by sfc_obj%dy.
     ! The properties are returned on a sfc_obj%Nx+1 by sfc_obj%Ny+1 grid that is
     ! periodic (NX+1 same as 1, etc).  The surface properties at each
-    ! grid point are returned in sfc_obj%brdf, and the first parameter must
+    ! grid point are returned in brdf_Sfc, and the first parameter must
     ! be temperature.  The number of parameters for each grid point
     ! (including temperature) are returned in sfc_obj%Npar.
     ! Also returned are the domain average ground albedo and temperature
@@ -1282,6 +1282,7 @@ subroutine shd_io__readSfc(sfc_obj)
     !   M  Mixed
 
     type(shd_type_sfc), intent(inout) :: sfc_obj
+    real(kind=R__), intent(out) :: brdf_Sfc(sfc_obj%maxNpar, sfc_obj%maxNpts)
 
     real :: temp_sfc, alb_sfc
 
@@ -1335,13 +1336,13 @@ subroutine shd_io__readSfc(sfc_obj)
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
 
                     !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
-                    !sfc_obj%brdf(i + 1) = temp0
-                    !sfc_obj%brdf(i + 2) = alb0
+                    !brdf_Sfc(i + 1) = temp0
+                    !brdf_Sfc(i + 2) = alb0
 
                     i = iy + (sfc_obj%Ny + 1)*(ix - 1)
 
-                    sfc_obj%brdf(1, i) = param1 ! temperature
-                    sfc_obj%brdf(2, i) = param2 ! albedo
+                    brdf_Sfc(1, i) = param1 ! temperature
+                    brdf_Sfc(2, i) = param2 ! albedo
                     if (alb0 .lt. 0.0 .or. alb0 .gt. 1.0)&
                         &stop 'Error [_readSfc]: Illegal surface albedo.'
                     if (temp0 .lt. 150. .or. temp0 .gt. 350.) then
@@ -1378,15 +1379,15 @@ subroutine shd_io__readSfc(sfc_obj)
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
 
                     !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
-                    !sfc_obj%brdf(i + 1) = temp0
-                    !sfc_obj%brdf(i + 2) = WSPD
-                    !sfc_obj%brdf(i + 3) = PCL
+                    !brdf_Sfc(i + 1) = temp0
+                    !brdf_Sfc(i + 2) = WSPD
+                    !brdf_Sfc(i + 3) = PCL
 
                     i = iy + (sfc_obj%Ny + 1)*(ix - 1)
 
-                    sfc_obj%brdf(1, i) = param1 ! temperature
-                    sfc_obj%brdf(2, i) = param2 ! 10m wind speed, units: m/s
-                    sfc_obj%brdf(3, i) = param3 ! pigment concentration, units: mg/m^3
+                    brdf_Sfc(1, i) = param1 ! temperature
+                    brdf_Sfc(2, i) = param2 ! 10m wind speed, units: m/s
+                    brdf_Sfc(3, i) = param3 ! pigment concentration, units: mg/m^3
 
                     temp_sfc = temp_sfc + param1
 
@@ -1418,17 +1419,17 @@ subroutine shd_io__readSfc(sfc_obj)
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
 
                     !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
-                    !sfc_obj%brdf(i + 1) = temp0
-                    !sfc_obj%brdf(i + 2) = RHO0
-                    !sfc_obj%brdf(i + 3) = KR
-                    !sfc_obj%brdf(i + 4) = THETA
+                    !brdf_Sfc(i + 1) = temp0
+                    !brdf_Sfc(i + 2) = RHO0
+                    !brdf_Sfc(i + 3) = KR
+                    !brdf_Sfc(i + 4) = THETA
 
                     i = iy + (sfc_obj%Ny + 1)*(ix - 1)
 
-                    sfc_obj%brdf(1, i) = param1 ! temperature
-                    sfc_obj%brdf(2, i) = param2 ! rho0
-                    sfc_obj%brdf(3, i) = param3 ! kr
-                    sfc_obj%brdf(4, i) = param4 ! theta
+                    brdf_Sfc(1, i) = param1 ! temperature
+                    brdf_Sfc(2, i) = param2 ! rho0
+                    brdf_Sfc(3, i) = param3 ! kr
+                    brdf_Sfc(4, i) = param4 ! theta
 
                     temp_sfc = temp_sfc + param1
                     alb_sfc  = alb_sfc  + param2
@@ -1458,17 +1459,17 @@ subroutine shd_io__readSfc(sfc_obj)
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
 
                     !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
-                    !sfc_obj%brdf(i + 1) = temp0
-                    !sfc_obj%brdf(i + 2) = F_ISO
-                    !sfc_obj%brdf(i + 3) = F_GEO
-                    !sfc_obj%brdf(i + 4) = F_VOL
+                    !brdf_Sfc(i + 1) = temp0
+                    !brdf_Sfc(i + 2) = F_ISO
+                    !brdf_Sfc(i + 3) = F_GEO
+                    !brdf_Sfc(i + 4) = F_VOL
 
                     i = iy + (sfc_obj%Ny + 1)*(ix - 1)
 
-                    sfc_obj%brdf(1, i) = param1 ! temperature
-                    sfc_obj%brdf(2, i) = param2 ! f_iso
-                    sfc_obj%brdf(3, i) = param3 ! f_geo
-                    sfc_obj%brdf(4, i) = param4 ! f_vol
+                    brdf_Sfc(1, i) = param1 ! temperature
+                    brdf_Sfc(2, i) = param2 ! f_iso
+                    brdf_Sfc(3, i) = param3 ! f_geo
+                    brdf_Sfc(4, i) = param4 ! f_vol
 
                     temp_sfc = temp_sfc + param1
                     alb_sfc  = alb_sfc  + param2
@@ -1498,21 +1499,21 @@ subroutine shd_io__readSfc(sfc_obj)
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
 
                     !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
-                    !sfc_obj%brdf(i + 1) = temp0
-                    !sfc_obj%brdf(i + 2) = F_ISO
-                    !sfc_obj%brdf(i + 3) = F_GEO
-                    !sfc_obj%brdf(i + 4) = F_VOL
-                    !sfc_obj%brdf(i + 5) = F_JIAO
-                    !sfc_obj%brdf(i + 6) = ALPHA
+                    !brdf_Sfc(i + 1) = temp0
+                    !brdf_Sfc(i + 2) = F_ISO
+                    !brdf_Sfc(i + 3) = F_GEO
+                    !brdf_Sfc(i + 4) = F_VOL
+                    !brdf_Sfc(i + 5) = F_JIAO
+                    !brdf_Sfc(i + 6) = ALPHA
 
                     i = iy + (sfc_obj%Ny + 1)*(ix - 1)
 
-                    sfc_obj%brdf(1, i) = param1 ! temperature
-                    sfc_obj%brdf(2, i) = param2 ! f_iso
-                    sfc_obj%brdf(3, i) = param3 ! f_geo
-                    sfc_obj%brdf(4, i) = param4 ! f_vol
-                    sfc_obj%brdf(5, i) = param5 ! f_jiao
-                    sfc_obj%brdf(6, i) = param6 ! alpha
+                    brdf_Sfc(1, i) = param1 ! temperature
+                    brdf_Sfc(2, i) = param2 ! f_iso
+                    brdf_Sfc(3, i) = param3 ! f_geo
+                    brdf_Sfc(4, i) = param4 ! f_vol
+                    brdf_Sfc(5, i) = param5 ! f_jiao
+                    brdf_Sfc(6, i) = param6 ! alpha
 
                     temp_sfc = temp_sfc + param1
                     alb_sfc  = alb_sfc  + param2
@@ -1542,17 +1543,17 @@ subroutine shd_io__readSfc(sfc_obj)
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
 
                     !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
-                    !sfc_obj%brdf(i + 1) = temp0
-                    !sfc_obj%brdf(i + 2) = MRE
-                    !sfc_obj%brdf(i + 3) = MIM
-                    !sfc_obj%brdf(i + 4) = WSPD
+                    !brdf_Sfc(i + 1) = temp0
+                    !brdf_Sfc(i + 2) = MRE
+                    !brdf_Sfc(i + 3) = MIM
+                    !brdf_Sfc(i + 4) = WSPD
 
                     i = iy + (sfc_obj%Ny + 1)*(ix - 1)
 
-                    sfc_obj%brdf(1, i) = param1 ! temperature
-                    sfc_obj%brdf(2, i) = param2 ! M_real
-                    sfc_obj%brdf(3, i) = param3 ! M_img
-                    sfc_obj%brdf(4, i) = param4 ! 10m wind speed
+                    brdf_Sfc(1, i) = param1 ! temperature
+                    brdf_Sfc(2, i) = param2 ! M_real
+                    brdf_Sfc(3, i) = param3 ! M_img
+                    brdf_Sfc(4, i) = param4 ! 10m wind speed
 
                     temp_sfc = temp_sfc + param1
 
@@ -1586,20 +1587,20 @@ subroutine shd_io__readSfc(sfc_obj)
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
 
                     !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
-                    !sfc_obj%brdf(i + 1) = temp0
-                    !sfc_obj%brdf(i + 2) = A
-                    !sfc_obj%brdf(i + 3) = KR
-                    !sfc_obj%brdf(i + 4) = B
-                    !sfc_obj%brdf(i + 5) = ZETA
-                    !sfc_obj%brdf(i + 6) = SIGMA
+                    !brdf_Sfc(i + 1) = temp0
+                    !brdf_Sfc(i + 2) = A
+                    !brdf_Sfc(i + 3) = KR
+                    !brdf_Sfc(i + 4) = B
+                    !brdf_Sfc(i + 5) = ZETA
+                    !brdf_Sfc(i + 6) = SIGMA
 
                     i = iy + (sfc_obj%Ny + 1)*(ix - 1)
-                    sfc_obj%brdf(1, i) = param1 ! temperature
-                    sfc_obj%brdf(2, i) = param2 ! A
-                    sfc_obj%brdf(3, i) = param3 ! Kr
-                    sfc_obj%brdf(4, i) = param4 ! B
-                    sfc_obj%brdf(5, i) = param5 ! Zeta
-                    sfc_obj%brdf(6, i) = param6 ! Sigma
+                    brdf_Sfc(1, i) = param1 ! temperature
+                    brdf_Sfc(2, i) = param2 ! A
+                    brdf_Sfc(3, i) = param3 ! Kr
+                    brdf_Sfc(4, i) = param4 ! B
+                    brdf_Sfc(5, i) = param5 ! Zeta
+                    brdf_Sfc(6, i) = param6 ! Sigma
 
                     temp_sfc = temp_sfc + param1
                     alb_sfc  = alb_sfc  + param2
@@ -1637,24 +1638,24 @@ subroutine shd_io__readSfc(sfc_obj)
                     &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
 
                     !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
-                    !sfc_obj%brdf(i + 1) = param1
-                    !sfc_obj%brdf(i + 2) = param2
-                    !sfc_obj%brdf(i + 3) = param3
-                    !sfc_obj%brdf(i + 4) = param4
-                    !sfc_obj%brdf(i + 5) = param5
-                    !sfc_obj%brdf(i + 6) = param6
-                    !sfc_obj%brdf(i + 7) = param7
-                    !sfc_obj%brdf(i + 8) = param8 ! surface identification
+                    !brdf_Sfc(i + 1) = param1
+                    !brdf_Sfc(i + 2) = param2
+                    !brdf_Sfc(i + 3) = param3
+                    !brdf_Sfc(i + 4) = param4
+                    !brdf_Sfc(i + 5) = param5
+                    !brdf_Sfc(i + 6) = param6
+                    !brdf_Sfc(i + 7) = param7
+                    !brdf_Sfc(i + 8) = param8 ! surface identification
 
                     i = iy + (sfc_obj%Ny + 1)*(ix - 1)
-                    sfc_obj%brdf(1, i) = param1
-                    sfc_obj%brdf(2, i) = param2
-                    sfc_obj%brdf(3, i) = param3
-                    sfc_obj%brdf(4, i) = param4
-                    sfc_obj%brdf(5, i) = param5
-                    sfc_obj%brdf(6, i) = param6
-                    sfc_obj%brdf(7, i) = param7
-                    sfc_obj%brdf(8, i) = param8 ! surface identification
+                    brdf_Sfc(1, i) = param1
+                    brdf_Sfc(2, i) = param2
+                    brdf_Sfc(3, i) = param3
+                    brdf_Sfc(4, i) = param4
+                    brdf_Sfc(5, i) = param5
+                    brdf_Sfc(6, i) = param6
+                    brdf_Sfc(7, i) = param7
+                    brdf_Sfc(8, i) = param8 ! surface identification
 
                     temp_sfc = temp_sfc + param1
 
@@ -1693,7 +1694,7 @@ subroutine shd_io__readSfc(sfc_obj)
     open (UNIT=88, FILE=trim(adjustl(fnameBin)), STATUS='OLD',&
         &ACCESS='STREAM', FORM='UNFORMATTED')
     Ndata = Nxx*Nyy
-    read (88) ((sfc_obj%brdf(ipar, idata), ipar=1, Npp), idata=1, Ndata)
+    read (88) ((brdf_Sfc(ipar, idata), ipar=1, Npp), idata=1, Ndata)
     close (88)
 
     do iy = 1, sfc_obj%Ny + 1
@@ -1706,16 +1707,16 @@ subroutine shd_io__readSfc(sfc_obj)
 
                 i = iy + (sfc_obj%Ny + 1)*(ix - 1)
 
-                temp_sfc = temp_sfc + sfc_obj%brdf(1, i)
+                temp_sfc = temp_sfc + brdf_Sfc(1, i)
 
                 if  (((sfc_obj%type .ne. 'VO') .and. (sfc_obj%type .ne. 'Vo')) .and.&
                     &((sfc_obj%type .ne. 'VW') .and. (sfc_obj%type .ne. 'Vw'))) then
                     if ((sfc_obj%type .eq. 'VX') .or. (sfc_obj%type .eq. 'Vx')) then
-                        if ((abs(sfc_obj%brdf(8, i))-1.0) .gt. 0.01) then ! exclude [O] and [W]
-                            alb_sfc = alb_sfc + sfc_obj%brdf(2, i)
+                        if ((abs(brdf_Sfc(8, i))-1.0) .gt. 0.01) then ! exclude [O] and [W]
+                            alb_sfc = alb_sfc + brdf_Sfc(2, i)
                         end if
                     else
-                        alb_sfc = alb_sfc + sfc_obj%brdf(2, i)
+                        alb_sfc = alb_sfc + brdf_Sfc(2, i)
                     end if
                 end if
 
@@ -1739,7 +1740,7 @@ subroutine shd_io__readSfc(sfc_obj)
         i0 = ix
         i  = ix + (sfc_obj%Nx + 1)*(sfc_obj%Ny)
         do j = 1, sfc_obj%Npar
-            sfc_obj%brdf(j, i) = sfc_obj%brdf(j, i0)
+            brdf_Sfc(j, i) = brdf_Sfc(j, i0)
         end do
     end do
 
@@ -1750,7 +1751,7 @@ subroutine shd_io__readSfc(sfc_obj)
         i0 = 1 + (sfc_obj%Nx + 1)*(iy - 1)
         i  = 1 + sfc_obj%Nx + (sfc_obj%Nx + 1)*(iy - 1)
         do j = 1, sfc_obj%Npar
-            sfc_obj%brdf(j, i) = sfc_obj%brdf(j, i0)
+            brdf_Sfc(j, i) = brdf_Sfc(j, i0)
         end do
     end do
 
@@ -1906,7 +1907,7 @@ subroutine shd_io__readSen(sen_obj, view_Sen)
     ! Reads the user-specified sensor information
 
     type(shd_type_sen), intent(inout) :: sen_obj
-    real(kind=R__),     intent(out)   :: view_Sen(1:sen_obj%Npar, 1:sen_obj%Npts)
+    real(kind=R__),     intent(out)   :: view_Sen(sen_obj%Npar, sen_obj%Npts)
 
     integer :: ipar, ipts
 

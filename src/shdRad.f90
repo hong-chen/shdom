@@ -49,10 +49,11 @@ module shd_rad
     use globals_type,  only: shd_type_rtm, &
                              shd_type_grid, &
                              shd_type_shdo, &
-                             shd_type_prp, &
-                             shd_type_sfc
+                             shd_type_prp
 
-    use globals_obj, only: src_obj, ckd_obj, kabs_Ckd
+    use globals_obj, only: src_obj, &
+                           sfc_obj, &
+                           ckd_obj, kabs_Ckd
 
     use shd_scat, only: shd_scat__computePhase
 
@@ -711,7 +712,7 @@ subroutine shd_rad__computeRad(&
     &SOURCE1, GRIDRAD,&
     &OUTPARMS, IRAD, RADOUT,&
     &rtm_obj, grid_obj, shdo_obj,&
-    &prp_obj, sfc_obj)
+    &prp_obj)
 
     ! Computes the radiances for the specified locations and directions
 
@@ -721,7 +722,6 @@ subroutine shd_rad__computeRad(&
     type(shd_type_grid), intent(in) :: grid_obj
     type(shd_type_shdo), intent(in) :: shdo_obj
     type(shd_type_prp),  intent(in) :: prp_obj
-    type(shd_type_sfc),  intent(in) :: sfc_obj
 
     integer IRAD
     integer MAXNBC, NTOPPTS, NBOTPTS
@@ -753,13 +753,13 @@ subroutine shd_rad__computeRad(&
 
         call shd_init__makeBotRadUL(NBOTPTS, BCPTR(1, 2),&
             &DIRFLUX, FLUXES, src_obj%type,&
-            &src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit, shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS), sfc_obj)
+            &src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit, shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS))
 
     else if (sfc_obj%type .eq. 'VL') then
 
         call shd_init__makeBotRadVL(NBOTPTS, BCPTR(1, 2),&
             &DIRFLUX, FLUXES, src_obj%type,&
-            &shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS), sfc_obj)
+            &shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS))
 
     end if
 
@@ -846,7 +846,7 @@ subroutine shd_rad__computeRad(&
                     &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt, MUOUT, PHIOUT,&
                     &src_obj%type, src_obj%avgWaveLen, src_obj%avgMu, src_obj%avgAz, DIRFLUX,&
                     &shdo_obj%Nstokes,&
-                    &BCRAD(1, 1 + NTOPPTS), sfc_obj)
+                    &BCRAD(1, 1 + NTOPPTS))
             end if
             do IBC = 1, NBOTPTS
                 I = BCPTR(IBC, 2)
@@ -883,7 +883,7 @@ subroutine shd_rad__computeCamRad(&
     &DIRFLUX, FLUXES,&
     &OUTPARMS, IVIS, VISOUT,&
     &rtm_obj, grid_obj, shdo_obj,&
-    &prp_obj, sfc_obj)
+    &prp_obj)
 
     !   Computes Stokes radiances (output in VISOUT) for the visualization
     !  modes: 1) camera mode, and 2) cross track scanning.
@@ -894,7 +894,6 @@ subroutine shd_rad__computeCamRad(&
     type(shd_type_grid), intent(in) :: grid_obj
     type(shd_type_shdo), intent(in) :: shdo_obj
     type(shd_type_prp),  intent(in) :: prp_obj
-    type(shd_type_sfc),  intent(in) :: sfc_obj
 
     integer IVIS
     integer MAXNBC, NTOPPTS, NBOTPTS
@@ -940,11 +939,11 @@ subroutine shd_rad__computeCamRad(&
     if (sfc_obj%type .eq. 'FL') then
         call shd_init__makeBotRadUL(NBOTPTS, BCPTR(1, 2),&
             &DIRFLUX, FLUXES, src_obj%type,&
-            &src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit, shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS), sfc_obj)
+            &src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit, shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS))
     else if (sfc_obj%type .eq. 'VL') then
         call shd_init__makeBotRadVL(NBOTPTS, BCPTR(1, 2),&
             &DIRFLUX, FLUXES, src_obj%type,&
-            &shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS), sfc_obj)
+            &shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS))
     end if
 
     CAMERA_MODE = nint(OUTPARMS(1)) .eq. 1
@@ -1079,7 +1078,7 @@ subroutine shd_rad__computeCamRad(&
                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                 &MU2, PHI2, X0, Y0, Z0,&
                 &XE, YE, ZE, SIDE, TRANSMIT, VISRAD, VALIDRAD,&
-                &rtm_obj, grid_obj, prp_obj, sfc_obj)
+                &rtm_obj, grid_obj, prp_obj)
 900         continue
             ! write (6,'(1X,2F8.4,1X,2F11.7,4(1X,F11.6))')&
             !     &X0,Y0,MURAY,PHIRAY,VISRAD(:)
