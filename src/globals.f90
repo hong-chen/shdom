@@ -329,7 +329,11 @@ module globals_type
         logical :: isAllocated  = .false.
     end type shd_type_prp
 
+
+    ! SFC
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     type :: shd_type_sfc
+
         character(len=charMaxLen_) :: fname = 'NONE'
         character(len=2) :: type = '  '
 
@@ -351,7 +355,9 @@ module globals_type
         logical :: isUniform    = .false.
         logical :: isLambertian = .false.
         logical :: isAllocated  = .false.
+
     end type shd_type_sfc
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
     ! CKD
@@ -366,9 +372,10 @@ module globals_type
         integer(kind=I__) :: maxNg = -999
         integer(kind=I__) :: maxNz = -999
 
-        real(kind=R__) :: waveNum(2) = [-999.0, -999.0]
+        real(kind=R__), dimension(2) :: waveNum = [-999.0, -999.0]
         real(kind=R__) :: avgWaveNum = -999.0
-        real(kind=R__) :: waveLen(2) = [-999.0, -999.0]
+
+        real(kind=R__), dimension(2) :: waveLen = [-999.0, -999.0]
         real(kind=R__) :: avgWaveLen = -999.0
 
         real(kind=R__), allocatable :: z(:)
