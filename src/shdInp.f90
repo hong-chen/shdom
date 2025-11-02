@@ -1902,9 +1902,9 @@ subroutine shd_io__readSen(sen_obj, view_Sen)
     ! Reads the user-specified sensor information
 
     type(shd_type_sen), intent(inout) :: sen_obj
-    real(kind=R__),     intent(out)   :: view_Sen(*)
+    real(kind=R__),     intent(out)   :: view_Sen(1:sen_obj%Npar, 1:sen_obj%Npts)
 
-    integer :: idata
+    integer :: ipar, ipts
 
     character(len=charMaxLen_) :: fnameBin
     character(len=charMaxLen_) :: lineTmp
@@ -1926,7 +1926,7 @@ subroutine shd_io__readSen(sen_obj, view_Sen)
     open (unit=88, file=trim(adjustl(fnameBin)), status='old',&
         &access='stream', form='unformatted')
 
-    read (88) (view_Sen(idata), idata=1, sen_obj%Npts*sen_obj%Npar)
+    read (88) ((view_Sen(ipar, ipts), ipar=1, sen_obj%Npar), ipts=1, sen_obj%Npts)
 
     close (88)
 

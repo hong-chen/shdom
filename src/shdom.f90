@@ -772,7 +772,7 @@ program shdom
 
         call shd_mpi__bcastSenSize(sen_obj)
 
-        allocate(view_Sen(sen_obj%Npar*sen_obj%Npts)); &
+        allocate(view_Sen(sen_obj%Npar, sen_obj%Npts)); &
             memUsed = memUsed + sen_obj%Npar*sen_obj%Npts
 
         if (isMasterProc) then

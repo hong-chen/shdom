@@ -788,8 +788,8 @@ subroutine shd_rad__computeRad(&
     ! Loop over the radiance directions
     do IANG = 1, NANGOUT
         if (sen_obj%fname(1:4) .ne. 'NONE') then
-            MUOUT = view_Sen(2*IANG - 1)
-            PHID  = view_Sen(2*IANG)
+            MUOUT = view_Sen(1, IANG)
+            PHID  = view_Sen(2, IANG)
         else
             MUOUT = OUTPARMS(2*IANG + 5)
             PHID  = OUTPARMS(2*IANG + 6)

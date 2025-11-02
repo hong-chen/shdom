@@ -365,18 +365,24 @@ module globals_type
         real(kind=R__) :: waveLen(2) = [-999.0, -999.0]
         real(kind=R__) :: avgWaveLen = -999.0
 
+        real(kind=R__), pointer :: z(:)       => null()
+
         real(kind=R__), pointer :: solar(:)   => null()
         real(kind=R__), pointer :: wgt(:)     => null()
-        real(kind=R__), pointer :: z(:)       => null()
         real(kind=R__), pointer :: kabs(:, :) => null()
 
         logical :: isAllocated  = .false.
     end type shd_type_ckd
 
+
     type :: shd_type_sen
+
         character(len=charMaxLen_) :: fname = 'NONE'
         integer(kind=I__) :: Npts = -999
         integer(kind=I__) :: Npar = -999
+
+        logical :: isAllocated  = .false.
+
     end type shd_type_sen
 
 end module globals_type
@@ -407,9 +413,13 @@ module globals_obj
 
     type(shd_type_prp), save :: prpAll_obj, prp_obj
     type(shd_type_sfc), save :: sfc_obj
+
     type(shd_type_ckd), save :: ckd_obj
+    !real(kind=R__), allocatable, save :: solar_Ckd(:), &
+    !                                     wgt_Ckd(:),   &
+    !                                     kabs_Ckd(:, :)
 
     type(shd_type_sen), save :: sen_obj
-    real(kind=R__), allocatable, save :: view_Sen(:)
+    real(kind=R__), allocatable, save :: view_Sen(:, :)
 
 end module globals_obj

@@ -333,8 +333,8 @@ subroutine shd_io__outputResult(&
         !╭────────────────────────────────────────────────╮!
         do K = 1, NANGOUT
             if (sen_obj%fname(1:4) .ne. 'NONE') then
-                MUOUT = view_Sen(2*K - 1)
-                PHID  = view_Sen(2*K)
+                MUOUT = view_Sen(1, K)
+                PHID  = view_Sen(2, K)
             else
                 MUOUT = OUTPARMS(2*K + 5)
                 PHID  = OUTPARMS(2*K + 6)
@@ -1399,8 +1399,8 @@ subroutine shd_io__outputResultMpi(&
 
         do K = 1, NANGOUT
             if (sen_obj%fname(1:4) .ne. 'NONE') then
-                MUOUT = view_Sen(2*K - 1)
-                PHID  = view_Sen(2*K)
+                MUOUT = view_Sen(1, K)
+                PHID  = view_Sen(2, K)
             else
                 MUOUT = OUTPARMS(2*K + 5)
                 PHID  = OUTPARMS(2*K + 6)

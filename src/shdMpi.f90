@@ -711,7 +711,7 @@ subroutine shd_mpi__bcastSen(sen_obj, view_Sen)
     ! the master process to the others.
 
     type(shd_type_sen), intent(inout) :: sen_obj
-    real(kind=R__),     intent(inout) :: view_Sen(1:sen_obj%Npar*sen_obj%Npts)
+    real(kind=R__),     intent(inout) :: view_Sen(1:sen_obj%Npar, 1:sen_obj%Npts)
 
 #if HAS_MPI
     integer :: ierr, Ndata
@@ -1883,8 +1883,8 @@ subroutine shd_mpi__computeRad(&
     ! Loop over the radiance directions
     do K = 1, NANGOUT
         if (sen_obj%fname(1:4) .ne. 'NONE') then
-            mu_out     = view_Sen(2*K - 1)
-            phiDeg_out = view_Sen(2*K)
+            mu_out     = view_Sen(1, K)
+            phiDeg_out = view_Sen(2, K)
         else
             mu_out = parms_Out(2*K + 5)
             phiDeg_out = parms_Out(2*K + 6)
@@ -2380,11 +2380,11 @@ subroutine shd_mpi__computeCamRad(&
             else if (SENSOR_MODE) then
 
                 if (sen_obj%fname(1:4) .ne. 'NONE') then
-                    X0    =  view_Sen(5*SAMP - 4)
-                    Y0    =  view_Sen(5*SAMP - 3)
-                    Z0    =  view_Sen(5*SAMP - 2)
-                    COSTH =  view_Sen(5*SAMP - 1)
-                    PHIR  =  view_Sen(5*SAMP)
+                    X0    =  view_Sen(1, SAMP)
+                    Y0    =  view_Sen(2, SAMP)
+                    Z0    =  view_Sen(3, SAMP)
+                    COSTH =  view_Sen(4, SAMP)
+                    PHIR  =  view_Sen(5, SAMP)
                 else
                     stop 'Error [mpi__computeCamRad]: Need sen_obj to proceed.'
                 end if
