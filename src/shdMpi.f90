@@ -652,12 +652,15 @@ subroutine shd_mpi__bcastCkdSize(ckd_obj)
 
 end subroutine shd_mpi__bcastCkdSize
 
-subroutine shd_mpi__bcastCkd(ckd_obj)
+subroutine shd_mpi__bcastCkd(ckd_obj, solar_Ckd, wgt_Ckd, kabs_Ckd)
 
     ! Broadcasts the k-distribution file parameters from the master process
     ! to the other processes.
 
     type(shd_type_ckd), intent(inout) :: ckd_obj
+    real(kind=R__), intent(inout) :: solar_Ckd(ckd_obj%Ng), &
+                                     wgt_Ckd(ckd_obj%Ng), &
+                                     kabs_Ckd(ckd_obj%Nz, ckd_obj%Ng)
 
 #if HAS_MPI
     integer :: ierr
@@ -667,17 +670,19 @@ subroutine shd_mpi__bcastCkd(ckd_obj)
 
     allocate(realbuf(2*ckd_obj%Ng + ckd_obj%Nz))
 
-    realbuf(1              : ckd_obj%Ng             ) = ckd_obj%solar(:)
-    realbuf(ckd_obj%Ng+1   : 2*ckd_obj%Ng           ) = ckd_obj%wgt(:)
+    realbuf(1              : ckd_obj%Ng             ) = solar_Ckd(:)
+    realbuf(ckd_obj%Ng+1   : 2*ckd_obj%Ng           ) = wgt_Ckd(:)
     realbuf(2*ckd_obj%Ng+1 : 2*ckd_obj%Ng+ckd_obj%Nz) = ckd_obj%z(:)
 
     call mpi_bcast(realbuf, 2*ckd_obj%Ng+ckd_obj%Nz, MPI_real, 0, comm2D_, ierr)
 
-    ckd_obj%solar(:) = realbuf(1 : ckd_obj%Ng)
-    ckd_obj%wgt(:)   = realbuf(ckd_obj%Ng+1   : 2*ckd_obj%Ng)
-    ckd_obj%z(:)     = realbuf(2*ckd_obj%Ng+1 : 2*ckd_obj%Ng+ckd_obj%Nz)
+    solar_Ckd(:) = realbuf(             1 :  ckd_obj%Ng)
+    wgt_Ckd(:)   = realbuf(  ckd_obj%Ng+1 : 2*ckd_obj%Ng)
+    ckd_obj%z(:) = realbuf(2*ckd_obj%Ng+1 : 2*ckd_obj%Ng+ckd_obj%Nz)
 
-    call mpi_bcast(ckd_obj%kabs, ckd_obj%Nz*ckd_obj%Ng, MPI_real, 0, comm2D_, ierr)
+    deallocate(realbuf)
+
+    call mpi_bcast(kabs_Ckd, ckd_obj%Nz*ckd_obj%Ng, MPI_real, 0, comm2D_, ierr)
 #endif
 
     return
@@ -711,7 +716,7 @@ subroutine shd_mpi__bcastSen(sen_obj, view_Sen)
     ! the master process to the others.
 
     type(shd_type_sen), intent(inout) :: sen_obj
-    real(kind=R__),     intent(inout) :: view_Sen(1:sen_obj%Npar, 1:sen_obj%Npts)
+    real(kind=R__),     intent(inout) :: view_Sen(sen_obj%Npar, sen_obj%Npts)
 
 #if HAS_MPI
     integer :: ierr, Ndata
@@ -1054,7 +1059,7 @@ subroutine shd_mpi__makeDirect(SPT,&
     &DELTAM, ML,&
     &SOLARFLUX, SOLARMU, SOLARAZ,&
     &DIRFLUX,&
-    &rtm_obj, grid_obj, prp_obj, ckd_obj)
+    &rtm_obj, grid_obj, prp_obj)
 
     ! Makes the direct beam solar flux for the grid_obj%Npts gridpoints started with
     ! index SPT having X/Y/Z positions in grid_obj%xyz.
@@ -1063,7 +1068,6 @@ subroutine shd_mpi__makeDirect(SPT,&
     type(shd_type_rtm),  intent(in) ::  rtm_obj
     type(shd_type_grid), intent(in) ::  grid_obj
     type(shd_type_prp),  intent(in) ::  prp_obj
-    type(shd_type_ckd),  intent(in) ::  ckd_obj
 
     integer, intent(in) :: SPT, ML
     logical, intent(in) :: DELTAM
@@ -1100,14 +1104,14 @@ subroutine shd_mpi__makeDirect(SPT,&
         ! Initialize the direct beam calculation
         call shd_rad__computeDirect(1, 0.0, 0.0, 0.0, rtm_obj%flag_bc, rtm_obj%flag_ip,&
             &DELTAM, ML, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
-            &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj, ckd_obj)
+            &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj)
         ! Find the max lowest uniform Z level over all processors and then
         !   tell shd_rad__computeDirect about it
         UZLEV = UNIFZLEV
         call mpi_allreduce(UZLEV, UNIFZLEV, 1, MPI_real, MPI_max, comm2D_, ierr)
         call shd_rad__computeDirect(2, 0.0, 0.0, 0.0, rtm_obj%flag_bc, rtm_obj%flag_ip,&
             &DELTAM, ML, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
-            &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj, ckd_obj)
+            &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj)
     end if
 
     Lupx = 0; Lupy = 0; Ldownx = 0; Ldowny = 0
@@ -1140,7 +1144,7 @@ subroutine shd_mpi__makeDirect(SPT,&
         call shd_rad__computeDirect(0, grid_obj%xyz(1, IP), grid_obj%xyz(2, IP), grid_obj%xyz(3, IP),&
             &rtm_obj%flag_bc, rtm_obj%flag_ip, DELTAM, ML,&
             &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(IP),&
-            &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj, ckd_obj)
+            &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj)
         ! If we don't have a good direct beam then save the information
         !   needed to pass to two upstream processors
         if (.not. VALIDBEAM) then
@@ -1210,7 +1214,7 @@ subroutine shd_mpi__makeDirect(SPT,&
                 call shd_rad__computeDirect(0, X, Y, Z, rtm_obj%flag_bc, rtm_obj%flag_ip,&
                     &DELTAM, ML,&
                     &SOLARFLUX, SOLARMU, SOLARAZ, DIRJUNK,&
-                    &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj, ckd_obj)
+                    &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj)
                 ! If we got a valid direct beam then store it in DirAllOut otherwise
                 ! save the information to continue passing to neighboring processors
                 if (VALIDBEAM) then
@@ -1242,7 +1246,7 @@ subroutine shd_mpi__makeDirect(SPT,&
                 call shd_rad__computeDirect(0, X, Y, Z, rtm_obj%flag_bc, rtm_obj%flag_ip,&
                     &DELTAM, ML,&
                     &SOLARFLUX, SOLARMU, SOLARAZ, DIRJUNK,&
-                    &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj, ckd_obj)
+                    &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj)
                 ! If we got a valid direct beam then store it in DirAllOut otherwise
                 ! save the information to continue passing to neighboring processors
                 if (VALIDBEAM) then

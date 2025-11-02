@@ -1778,7 +1778,7 @@ subroutine shd_io__readCkdSize(waveNum, ckd_obj)
     ibandSelect = 0
     do iband = 1, Nband
         read (1, *) ibandCheck, ckd_obj%waveNum(1), ckd_obj%waveNum(2), ckd_obj%Ng
-        if (abs(ckd_obj%waveNum(1) - waveNum(1)) .lt. 1.0 .and.&
+        if  (abs(ckd_obj%waveNum(1) - waveNum(1)) .lt. 1.0 .and.&
             &abs(ckd_obj%waveNum(2) - waveNum(2)) .lt. 1.0) then
             backspace (1)
             read (1, *) ibandSelect, ckd_obj%waveNum(1), ckd_obj%waveNum(2), ckd_obj%Ng
@@ -1798,19 +1798,23 @@ subroutine shd_io__readCkdSize(waveNum, ckd_obj)
 
 end subroutine shd_io__readCkdSize
 
-subroutine shd_io__readCkd(waveNum, ckd_obj)
+subroutine shd_io__readCkd(waveNum, &
+    ckd_obj, solar_Ckd, wgt_Ckd, kabs_Ckd)
 
     ! Reads the information appropriate for one band from a
     ! correlated k-distribution file.   The wavenumber range (cm^-1)
     ! in the file must match the desired in waveNum.  The solar flux
-    ! is returned in ckd_obj%solar, the number of "g"'s in ckd_obj%Ng, the weights
-    ! or delta g's in ckd_obj%wgt, the number of levels in ckd_obj%Nz, the
+    ! is returned in solar_Ckd, the number of "g"'s in ckd_obj%Ng, the weights
+    ! or delta g's in wgt_Ckd, the number of levels in ckd_obj%Nz, the
     ! levels from the top down in ckd_obj%z, and the absorption coefficients
-    ! for each g and level in ckd_obj%kabs.
+    ! for each g and level in kabs_Ckd.
     ! The array sizes ckd_obj%maxNg and ckd_obj%maxNz are checked.
 
     real(kind=R__), intent(inout) :: waveNum(2)
     type(shd_type_ckd), intent(inout) :: ckd_obj
+    real(kind=R__), intent(inout) :: solar_Ckd(ckd_obj%Ng), &
+                                     wgt_Ckd(ckd_obj%Ng), &
+                                     kabs_Ckd(ckd_obj%Nz, ckd_obj%Ng)
 
     integer(kind=I__) :: Nband, iband, ibandCheck, ibandSelect
     integer(kind=I__) :: ig, iz, itmp
@@ -1825,12 +1829,12 @@ subroutine shd_io__readCkd(waveNum, ckd_obj)
     ibandSelect = 0
     do iband = 1, Nband
         read (1, *) ibandCheck, ckd_obj%waveNum(1), ckd_obj%waveNum(2), ckd_obj%Ng
-        if (abs(ckd_obj%waveNum(1) - waveNum(1)) .lt. 1.0 .and.&
+        if  (abs(ckd_obj%waveNum(1) - waveNum(1)) .lt. 1.0 .and.&
             &abs(ckd_obj%waveNum(2) - waveNum(2)) .lt. 1.0) then
             backspace (1)
             if (ckd_obj%Ng .gt. ckd_obj%maxNg) stop 'Error [_readCkd]: ckd_obj%maxNg exceeded.'
             read (1, *) ibandSelect, waveNum(1), waveNum(2),&
-                &ckd_obj%Ng, (ckd_obj%solar(ig), ig=1, ckd_obj%Ng), (ckd_obj%wgt(ig), ig=1, ckd_obj%Ng)
+                &ckd_obj%Ng, (solar_Ckd(ig), ig=1, ckd_obj%Ng), (wgt_Ckd(ig), ig=1, ckd_obj%Ng)
         end if
     end do
 
@@ -1857,9 +1861,9 @@ subroutine shd_io__readCkd(waveNum, ckd_obj)
     end do
 
     do iz = 1, ckd_obj%maxNz
-        read (1, *) iband, itmp, (ckd_obj%kabs(iz, ig), ig=1, ckd_obj%Ng)
+        read (1, *) iband, itmp, (kabs_Ckd(iz, ig), ig=1, ckd_obj%Ng)
         do ig = 1, ckd_obj%Ng
-            if (ckd_obj%kabs(iz, ig) .lt. 0.0) then
+            if (kabs_Ckd(iz, ig) .lt. 0.0) then
                 write (*, '(1X,A,A,I3,A,I3,A,I2)')&
                     &'Negative absorption in CKD file.  ',&
                     &'Band: ', iband, '   Level: ', iz, '   k: ', ig

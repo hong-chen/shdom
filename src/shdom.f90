@@ -49,13 +49,13 @@ program shdom
                              isSolar_, isThermal_
     use globals_type,  only: shd_type_prp, &
                              shd_type_sfc, &
-                             shd_type_ckd, &
                              shd_type_shdo, &
                              shd_type_rtm, &
                              shd_type_grid, &
                              shd_type_src
 
-    use globals_obj,   only: sen_obj, view_Sen
+    use globals_obj,   only: ckd_obj, solar_Ckd, wgt_Ckd, kabs_Ckd, &
+                             sen_obj, view_Sen
 
     use shd_init, only: shd_init__makeGrid, &
                         shd_init__makeCell
@@ -211,15 +211,10 @@ program shdom
     real(kind=R__), allocatable, target :: brdf_grid_Sfc(:)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    ! ckd_obj
+    ! CKD
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    type(shd_type_ckd) :: ckd_obj
     integer(kind=I__) :: ig_ckd
     real(kind=R__)    :: solar0_ckd
-    real(kind=R__), allocatable, target :: solar_Ckd(:), &
-                                           wgt_Ckd(:), &
-                                           z_Ckd(:), &
-                                           kabs_Ckd(:, :)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! BC (borrowed from Boundary Condition)
@@ -722,28 +717,30 @@ program shdom
     if (doCkd) then
 
         if (isMasterProc) then
-            call shd_io__readCkdSize(src_obj%waveNum, ckd_obj)
+            call shd_io__readCkdSize(src_obj%waveNum, &
+                                     ckd_obj)
         end if
 
         ! Broadcast the k-distribution object
         call shd_mpi__bcastCkdSize(ckd_obj)
 
-        allocate(solar_Ckd(ckd_obj%Ng), wgt_Ckd(ckd_obj%Ng), z_Ckd(ckd_obj%Nz))
-        allocate(kabs_Ckd(ckd_obj%Nz, ckd_obj%Ng)); &
-            memUsed = memUsed + ckd_obj%Nz*(2.0+ckd_obj%Ng) + 2.0*ckd_obj%Ng
-
-        ckd_obj%solar => solar_Ckd
-        ckd_obj%wgt   => wgt_Ckd
-        ckd_obj%z     => z_Ckd
-        ckd_obj%kabs  => kabs_Ckd
+        allocate(ckd_obj%z(ckd_obj%Nz))
         ckd_obj%isAllocated = .true.
 
+        allocate(solar_Ckd(ckd_obj%Ng), &
+                 wgt_Ckd(ckd_obj%Ng),   &
+                 kabs_Ckd(ckd_obj%Nz, ckd_obj%Ng))
+
+        memUsed = memUsed + ckd_obj%Nz*(2.0+ckd_obj%Ng) + 2.0*ckd_obj%Ng
+
         if (isMasterProc) then
-            ckd_obj%maxNg = ckd_obj%Ng; ckd_obj%maxNz = ckd_obj%Nz
-            call shd_io__readCkd(src_obj%waveNum, ckd_obj)
+            ckd_obj%maxNz = ckd_obj%Nz
+            ckd_obj%maxNg = ckd_obj%Ng
+            call shd_io__readCkd(src_obj%waveNum, &
+                                 ckd_obj, solar_Ckd, wgt_Ckd, kabs_Ckd)
         end if
 
-        call shd_mpi__bcastCkd(ckd_obj)
+        call shd_mpi__bcastCkd(ckd_obj, solar_Ckd, wgt_Ckd, kabs_Ckd)
 
     else
         ckd_obj%Ng = 1
@@ -1207,7 +1204,7 @@ program shdom
             &idsrc_Shdo, work, work1, work2,&
             &dsrc_Shdo, fluxTot, fluxDir,&
             &rtm_obj, grid_obj, shdo_obj, src_obj,&
-            &prp_obj, sfc_obj, ckd_obj)
+            &prp_obj, sfc_obj)
 
         doRadInit = .false.
         totIter = totIter + iter
@@ -1304,12 +1301,12 @@ program shdom
                     call shd_mpi__makeDirect(1, .false., shdo_obj%maxNl,&
                         &solar0_ckd, src_obj%avgMu, src_obj%avgAz,&
                         &fluxDirTmp,&
-                        &rtm_obj, grid_obj, prp_obj, ckd_obj)
+                        &rtm_obj, grid_obj, prp_obj)
                 else
                     call shd_rad__makeDirect(grid_obj%Npts, .false., shdo_obj%maxNl,&
                         &solar0_ckd, src_obj%avgMu, src_obj%avgAz,&
                         &fluxDirTmp,&
-                        &rtm_obj, grid_obj, prp_obj, ckd_obj)
+                        &rtm_obj, grid_obj, prp_obj)
                 end if
 
                 fluxTot(1, 1:grid_obj%Npts) = fluxTot(1, 1:grid_obj%Npts) + fluxDir(1:grid_obj%Npts) - fluxDirTmp(1:grid_obj%Npts)
@@ -1386,7 +1383,7 @@ program shdom
                         &Nsh_out, SH_all, irad, sumRad_Out,&
                         &type_Out(iout), parms_Out(1, iout), file_Out(iout),&
                         &rtmAll_obj, grid_obj, shdo_obj, src_obj,&
-                        &prp_obj, sfc_obj, ckd_obj)
+                        &prp_obj, sfc_obj)
                 end if
             end do
 
@@ -1413,7 +1410,7 @@ program shdom
                     irad, sumRad_Out, Nsh_out, sumSH_Out, src1_Out,&
                     type_Out(iout), parms_Out(1, iout), file_Out(iout),&
                     rtm_obj, grid_obj, shdo_obj, src_obj,&
-                    prp_obj, sfc_obj, ckd_obj)
+                    prp_obj, sfc_obj)
             end if
         end do
     end if
@@ -1431,7 +1428,7 @@ program shdom
                     &splitAcc, shAcc, solAcc, maxIter, totIter,&
                     &ilos, sumCam_Out, parms_Out(1, iout), file_Out(iout),&
                     &rtm_obj, grid_obj, shdo_obj, src_obj,&
-                    &prp_obj, sfc_obj, ckd_obj)
+                    &prp_obj, sfc_obj)
             end if
         end do
     end if
@@ -1545,9 +1542,9 @@ program shdom
     ! ckd_obj
     !╭────────────────────────────────────────────────╮!
     if (allocated(kabs_Ckd)) then
-        deallocate(solar_Ckd, wgt_Ckd, z_Ckd, kabs_Ckd)
+        deallocate(solar_Ckd, wgt_Ckd, kabs_Ckd)
         if (ckd_obj%isAllocated) then
-            nullify(ckd_obj%solar, ckd_obj%wgt, ckd_obj%z, ckd_obj%kabs)
+            deallocate(ckd_obj%z)
             ckd_obj%isAllocated = .false.
         end if
     end if

@@ -52,8 +52,9 @@ module shd_rad
                              shd_type_src, &
                              shd_type_prp, &
                              shd_type_sfc, &
-                             shd_type_ckd, &
                              shd_type_sen
+
+    use globals_obj, only: ckd_obj, kabs_Ckd
 
     use shd_scat, only: shd_scat__computePhase
 
@@ -86,7 +87,7 @@ subroutine shd_rad__makeDirect(&
     &NPTS, DELTAM,&
     &ML, SOLARFLUX, SOLARMU, SOLARAZ,&
     &DIRFLUX,&
-    &rtm_obj, grid_obj, prp_obj, ckd_obj)
+    &rtm_obj, grid_obj, prp_obj)
 
     ! Makes the direct beam solar flux for the internal base grid.
     !   DIRFLUX is set to F*exp(-tau_sun).
@@ -95,7 +96,6 @@ subroutine shd_rad__makeDirect(&
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
     type(shd_type_prp),  intent(in) :: prp_obj
-    type(shd_type_ckd),  intent(in) :: ckd_obj
 
     integer NPTS, ML
     logical DELTAM
@@ -109,7 +109,7 @@ subroutine shd_rad__makeDirect(&
         &1, 0.0, 0.0, 0.0, rtm_obj%flag_bc, rtm_obj%flag_ip,&
         &DELTAM, ML,&
         &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
-        &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj, ckd_obj)
+        &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj)
 
     do IP = 1, NPTS
         DIRPATH = 0.0
@@ -117,7 +117,7 @@ subroutine shd_rad__makeDirect(&
             &(0, grid_obj%xyz(1, IP), grid_obj%xyz(2, IP), grid_obj%xyz(3, IP),&
             &rtm_obj%flag_bc, rtm_obj%flag_ip, DELTAM, ML,&
             &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(IP),&
-            &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj, ckd_obj)
+            &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj)
     end do
 
     return
@@ -126,7 +126,7 @@ end subroutine shd_rad__makeDirect
 subroutine shd_rad__computeDirect(&
     &INIT, XI, YI, ZI, BCFLAG, IPFLAG,&
     &DELTAM, ML, SOLARFLUX, SOLARMU, SOLARAZ,&
-    &DIRFLUX, UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj, ckd_obj)
+    &DIRFLUX, UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj)
 
     !╭──────────────────────────────────────────────────────────────╮!
     ! Computes the direct beam flux at point (XI,YI,ZI) by integrating
@@ -155,7 +155,6 @@ subroutine shd_rad__computeDirect(&
     !╰──────────────────────────────────────────────────────────────╯!
 
     type(shd_type_prp), intent(in) :: prp_obj
-    type(shd_type_ckd), intent(in) :: ckd_obj
 
     integer INIT, BCFLAG, IPFLAG, ML, SIDE
     logical DELTAM, VALIDBEAM
@@ -208,7 +207,7 @@ subroutine shd_rad__computeDirect(&
                 I = min(max(IL, 1), ckd_obj%Nz - 1)
                 W0 = (prp_obj%z(IZ) - ckd_obj%z(I))/(ckd_obj%z(I + 1) - ckd_obj%z(I))
                 W0 = min(max(W0, 0.0d0), 1.0d0)
-                GASEXT(IZ) = (1.0 - W0)*ckd_obj%kabs(I, ckd_obj%ig) + W0*ckd_obj%kabs(I + 1, ckd_obj%ig)
+                GASEXT(IZ) = (1.0 - W0)*kabs_Ckd(I, ckd_obj%ig) + W0*kabs_Ckd(I + 1, ckd_obj%ig)
             else
                 GASEXT(IZ) = 0.0
             end if
