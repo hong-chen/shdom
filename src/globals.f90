@@ -269,27 +269,30 @@ module globals_type
 
     end type shd_type_shdo
 
+    ! SRC
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     type :: shd_type_src
+
         character(len=1) :: type = ' '
         character(len=1) :: unit = ' '
 
-        real(kind=R__) :: waveNum(2) = [-999.0, -999.0]
+        real(kind=R__), dimension(2) :: waveNum = [-999.0, -999.0]
         real(kind=R__) :: avgWaveNum = -999.0
-        real(kind=R__) :: waveLen(2) = [-999.0, -999.0]
+
+        real(kind=R__), dimension(2) :: waveLen = [-999.0, -999.0]
         real(kind=R__) :: avgWaveLen = -999.0
 
         real(kind=R__) :: avgMu = -999.0
         real(kind=R__) :: avgAz = -999.0
 
-        real(kind=R__) :: avgSolar0 = -999.0 ! solar read in from input file
+        real(kind=R__) :: avgSolar_ = -999.0 ! solar read from input file
+        real(kind=R__) :: avgSolar0 = -999.0 ! solar at every "g", scaled with avgMu and solarFac
         real(kind=R__) :: avgSolar  = -999.0 ! solar from correlated-k
 
         real(kind=R__) :: skyRad = -999.0
 
-        ! placeholder for spatially varying solar input
-        !real(kind=R__), pointer :: mu(:) => null()
-        !real(kind=R__), pointer :: az(:) => null()
     end type shd_type_src
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
     type :: shd_type_prp
         character(len=charMaxLen_) :: fname = 'NONE'

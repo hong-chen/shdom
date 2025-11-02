@@ -51,10 +51,10 @@ program shdom
                              shd_type_sfc, &
                              shd_type_shdo, &
                              shd_type_rtm, &
-                             shd_type_grid, &
-                             shd_type_src
+                             shd_type_grid
 
-    use globals_obj,   only: ckd_obj, solar_Ckd, wgt_Ckd, kabs_Ckd, &
+    use globals_obj,   only: src_obj, &
+                             ckd_obj, solar_Ckd, wgt_Ckd, kabs_Ckd, &
                              sen_obj, view_Sen
 
     use shd_init, only: shd_init__makeGrid, &
@@ -147,12 +147,6 @@ program shdom
                                               i2Tree_Cell(:, :)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    ! src_obj
-    !╭────────────────────────────────────────────────────────────────────────────╮!
-    type(shd_type_src) :: src_obj
-    !╰────────────────────────────────────────────────────────────────────────────╯!
-
-
     real(kind=R__),    allocatable :: work(:)
     integer(kind=I__), allocatable :: work1(:)
     real(kind=R__),    allocatable :: work2(:)
@@ -214,7 +208,6 @@ program shdom
     ! CKD
     !╭────────────────────────────────────────────────────────────────────────────╮!
     integer(kind=I__) :: ig_ckd
-    real(kind=R__)    :: solar0_ckd
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! BC (borrowed from Boundary Condition)
@@ -270,7 +263,7 @@ program shdom
                 fileInp_sav, fileOut_sav, sen_obj%fname,&
                 shdo_obj%Nstokes, rtmAll_obj%Nx, rtmAll_obj%Ny, rtmAll_obj%Nz, shdo_obj%Nmu, shdo_obj%Nphi, rtmAll_obj%flag_bc,&
                 rtmAll_obj%flag_ip, doCkd, doDeltaM, rtmAll_obj%type,&
-                src_obj%type, src_obj%avgSolar0, src_obj%avgMu, src_obj%avgAz, src_obj%skyRad,&
+                src_obj%type, src_obj%avgSolar_, src_obj%avgMu, src_obj%avgAz, src_obj%skyRad,&
                 sfc_obj%avgTemp, sfc_obj%avgAlb, src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen,&
                 isAccel, solAcc, maxIter, splitAcc, shAcc,&
                 maxNset_out, maxNpar_out, Nout, type_Out, parms_Out, file_Out,&
@@ -281,7 +274,7 @@ program shdom
                 fileInp_sav, fileOut_sav, sen_obj%fname,&
                 shdo_obj%Nstokes, rtmAll_obj%Nx, rtmAll_obj%Ny, rtmAll_obj%Nz, shdo_obj%Nmu, shdo_obj%Nphi, rtmAll_obj%flag_bc,&
                 rtmAll_obj%flag_ip, doCkd, doDeltaM, rtmAll_obj%type,&
-                src_obj%type, src_obj%avgSolar0, src_obj%avgMu, src_obj%avgAz, src_obj%skyRad,&
+                src_obj%type, src_obj%avgSolar_, src_obj%avgMu, src_obj%avgAz, src_obj%skyRad,&
                 sfc_obj%avgTemp, sfc_obj%avgAlb, src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen,&
                 isAccel, solAcc, maxIter, splitAcc, shAcc,&
                 maxNset_out, maxNpar_out, Nout, type_Out, parms_Out, file_Out,&
@@ -294,7 +287,7 @@ program shdom
         &fileInp_sav, fileOut_sav,&
         &shdo_obj%Nstokes, rtmAll_obj%Nx, rtmAll_obj%Ny, rtmAll_obj%Nz, shdo_obj%Nmu, shdo_obj%Nphi, rtmAll_obj%flag_bc,&
         &rtmAll_obj%flag_ip, doCkd, doDeltaM, rtmAll_obj%type,&
-        &src_obj%type, src_obj%avgSolar0, src_obj%avgMu, src_obj%avgAz, src_obj%skyRad,&
+        &src_obj%type, src_obj%avgSolar_, src_obj%avgMu, src_obj%avgAz, src_obj%skyRad,&
         &src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen,&
         &isAccel, solAcc, maxIter, splitAcc, shAcc,&
         &maxNset_out, maxNpar_out, Nout, type_Out, parms_Out,&
@@ -1176,10 +1169,10 @@ program shdom
         if (verbose_ .ge. 5) write (6, '(A,I2,A,I2,A)') 'Message [shdom]: Starting ', ckd_obj%Ng-ig_ckd+1, '/', ckd_obj%Ng, ' (ig/Ng) ...'
 
         ! solar flux for given g of CKD
-        solar0_ckd = solar_Ckd(ig_ckd)*src_obj%avgSolar0*abs(src_obj%avgMu)
+        src_obj%avgSolar0 = solar_Ckd(ig_ckd)*src_obj%avgSolar_*abs(src_obj%avgMu)
 
         ! weighted average solar flux
-        src_obj%avgSolar = src_obj%avgSolar + solar_Ckd(ig_ckd)*wgt_Ckd(ig_ckd)*src_obj%avgSolar0*abs(src_obj%avgMu)
+        src_obj%avgSolar = src_obj%avgSolar + solar_Ckd(ig_ckd)*wgt_Ckd(ig_ckd)*src_obj%avgSolar_*abs(src_obj%avgMu)
 
         ! If doing k-distribution then get the gas absorption profile.
         ckd_obj%ig = ig_ckd
@@ -1197,13 +1190,12 @@ program shdom
         call shd_solv__solveRte(&
             &doRadInit,&
             &doDeltaM, doHighOrder_,&
-            &solar0_ckd,&
             &isAccel, solAcc, maxIter, solCrit, iter,&
             &splitAcc, shAcc,&
             &maxNpts_bc, maxNrad_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
             &idsrc_Shdo, work, work1, work2,&
             &dsrc_Shdo, fluxTot, fluxDir,&
-            &rtm_obj, grid_obj, shdo_obj, src_obj,&
+            &rtm_obj, grid_obj, shdo_obj,&
             &prp_obj, sfc_obj)
 
         doRadInit = .false.
@@ -1221,7 +1213,7 @@ program shdom
                             &fluxDir, fluxTot,&
                             &work, work(1 + grid_obj%Npts*shdo_obj%Nstokes),&
                             &parms_Out(1, iout), irad, work2,&
-                            &rtm_obj, grid_obj, shdo_obj, src_obj,&
+                            &rtm_obj, grid_obj, shdo_obj,&
                             &prp_obj, sfc_obj)
                     else
                         call shd_rad__computeRad(&
@@ -1230,7 +1222,7 @@ program shdom
                             &fluxDir, fluxTot,&
                             &work(1), work(1 + grid_obj%Npts*shdo_obj%Nstokes),&
                             &parms_Out(1, iout), irad, work2,&
-                            &rtm_obj, grid_obj, shdo_obj, src_obj,&
+                            &rtm_obj, grid_obj, shdo_obj,&
                             &prp_obj, sfc_obj)
                     end if
                 end if
@@ -1248,7 +1240,7 @@ program shdom
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
                             &fluxDir, fluxTot,&
                             &parms_Out(1, iout), ilos, work2,&
-                            &rtm_obj, grid_obj, shdo_obj, src_obj,&
+                            &rtm_obj, grid_obj, shdo_obj,&
                             &prp_obj, sfc_obj)
                     else
                         call shd_rad__computeCamRad(&
@@ -1256,7 +1248,7 @@ program shdom
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
                             &fluxDir, fluxTot,&
                             &parms_Out(1, iout), ilos, work2,&
-                            &rtm_obj, grid_obj, shdo_obj, src_obj,&
+                            &rtm_obj, grid_obj, shdo_obj,&
                             &prp_obj, sfc_obj)
                     end if
                 end if
@@ -1273,7 +1265,7 @@ program shdom
                     call shd_src__computeSrcOneDir(doDeltaM,&
                         &mu_out, phi_out,&
                         &fluxDir, src1_Out,&
-                        &rtm_obj, grid_obj, shdo_obj, src_obj, prp_obj)
+                        &rtm_obj, grid_obj, shdo_obj, prp_obj)
                 end if
             end do
         end if
@@ -1299,12 +1291,12 @@ program shdom
 
                 if (isMpi_) then
                     call shd_mpi__makeDirect(1, .false., shdo_obj%maxNl,&
-                        &solar0_ckd, src_obj%avgMu, src_obj%avgAz,&
+                        &src_obj%avgSolar0, src_obj%avgMu, src_obj%avgAz,&
                         &fluxDirTmp,&
                         &rtm_obj, grid_obj, prp_obj)
                 else
                     call shd_rad__makeDirect(grid_obj%Npts, .false., shdo_obj%maxNl,&
-                        &solar0_ckd, src_obj%avgMu, src_obj%avgAz,&
+                        &src_obj%avgSolar0, src_obj%avgMu, src_obj%avgAz,&
                         &fluxDirTmp,&
                         &rtm_obj, grid_obj, prp_obj)
                 end if
@@ -1382,7 +1374,7 @@ program shdom
                         &fluxTot_all, fluxDiv_all,&
                         &Nsh_out, SH_all, irad, sumRad_Out,&
                         &type_Out(iout), parms_Out(1, iout), file_Out(iout),&
-                        &rtmAll_obj, grid_obj, shdo_obj, src_obj,&
+                        &rtmAll_obj, grid_obj, shdo_obj,&
                         &prp_obj, sfc_obj)
                 end if
             end do
@@ -1409,7 +1401,7 @@ program shdom
                     sumFluxTot_Out, sumFluxDir_Out, sumFluxDiv_Out,&
                     irad, sumRad_Out, Nsh_out, sumSH_Out, src1_Out,&
                     type_Out(iout), parms_Out(1, iout), file_Out(iout),&
-                    rtm_obj, grid_obj, shdo_obj, src_obj,&
+                    rtm_obj, grid_obj, shdo_obj,&
                     prp_obj, sfc_obj)
             end if
         end do
@@ -1427,7 +1419,7 @@ program shdom
                     &doDeltaM,&
                     &splitAcc, shAcc, solAcc, maxIter, totIter,&
                     &ilos, sumCam_Out, parms_Out(1, iout), file_Out(iout),&
-                    &rtm_obj, grid_obj, shdo_obj, src_obj,&
+                    &rtm_obj, grid_obj, shdo_obj,&
                     &prp_obj, sfc_obj)
             end if
         end do

@@ -599,7 +599,7 @@ subroutine shd_io__checkInp(&
         FLUX = 0.0
     end if
     if ((src_obj%type .eq. 'S') .or. (src_obj%type .eq. 'B')) then
-        FLUX = FLUX + src_obj%avgSolar0
+        FLUX = FLUX + src_obj%avgSolar_
     end if
     if (SPLITACC .gt. 0.0 .and.&
         &(SPLITACC .lt. 0.001*FLUX .or. SPLITACC .gt. 0.1*FLUX)) then

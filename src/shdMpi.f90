@@ -48,11 +48,11 @@ module shd_mpi
     use globals_type, only: shd_type_rtm,  &
                             shd_type_grid, &
                             shd_type_shdo, &
-                            shd_type_src,  &
                             shd_type_prp,  &
                             shd_type_sfc,  &
                             shd_type_ckd,  &
                             shd_type_sen
+    use globals_obj, only: src_obj
 
 #if HAS_MPI
     use mpi_f08,  only: MPI_comm_world, MPI_comm, MPI_request, &
@@ -1793,7 +1793,7 @@ subroutine shd_mpi__computeRad(&
     &DIRFLUX, FLUXES,&
     &SOURCE1, GRIDRAD,&
     &parms_Out, NRAD, RADOUT,&
-    &rtm_obj, grid_obj, shdo_obj, src_obj,&
+    &rtm_obj, grid_obj, shdo_obj,&
     &prp_obj, sfc_obj)
 
     ! Computes the radiances for the locations and directions specified
@@ -1806,7 +1806,6 @@ subroutine shd_mpi__computeRad(&
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
     type(shd_type_shdo), intent(in) :: shdo_obj
-    type(shd_type_src),  intent(in) :: src_obj
     type(shd_type_prp),  intent(in) :: prp_obj
     type(shd_type_sfc),  intent(in) :: sfc_obj
 
@@ -1946,7 +1945,7 @@ subroutine shd_mpi__computeRad(&
         call shd_src__computeSrcOneDir(&
             &DELTAM, mu_out, phi_out,&
             &DIRFLUX, SOURCE1,&
-            &rtm_obj, grid_obj, shdo_obj, src_obj, prp_obj)
+            &rtm_obj, grid_obj, shdo_obj, prp_obj)
 
         ! Set the radiance field to -1, so we can determine valid radiances
         !   Also set the source array to the extinction times the source
@@ -2211,7 +2210,7 @@ subroutine shd_mpi__computeCamRad(&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &DIRFLUX, FLUXES,&
     &parms_Out, IVIS, VISOUT,&
-    &rtm_obj, grid_obj, shdo_obj, src_obj,&
+    &rtm_obj, grid_obj, shdo_obj,&
     &prp_obj, sfc_obj)
 
     ! Computes Stokes radiances (output in VISOUT) for the visualization
@@ -2224,7 +2223,6 @@ subroutine shd_mpi__computeCamRad(&
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
     type(shd_type_shdo), intent(in) :: shdo_obj
-    type(shd_type_src),  intent(in) :: src_obj
     type(shd_type_prp),  intent(in) :: prp_obj
     type(shd_type_sfc),  intent(in) :: sfc_obj
 

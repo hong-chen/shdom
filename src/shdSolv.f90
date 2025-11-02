@@ -44,9 +44,10 @@ module shd_solv
     use globals_type, only: shd_type_rtm,  &
                             shd_type_grid, &
                             shd_type_shdo, &
-                            shd_type_src,  &
                             shd_type_prp,  &
                             shd_type_sfc
+
+    use globals_obj, only: src_obj
 
     use shd_init, only: shd_init__makePrp, &
                         shd_init__makeRad, &
@@ -92,13 +93,12 @@ contains
 subroutine shd_solv__solveRte(&
     &doRadInit,&
     &doDeltaM, doHighOrder,&
-    &SOLARFLUX,&
     &ACCELFLAG, SOLACC, MAXITER, SOLCRIT, ITER,&
     &SPLITACC, SHACC,&
     &MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &idsrc_Shdo, WORK, WORK1, WORK2,&
     &dsrc_Shdo, FLUXES, DIRFLUX,&
-    &rtm_obj, grid_obj, shdo_obj, src_obj,&
+    &rtm_obj, grid_obj, shdo_obj,&
     &prp_obj, sfc_obj)
 
     ! Performs the SHDOM solution procedure.
@@ -110,7 +110,6 @@ subroutine shd_solv__solveRte(&
     type(shd_type_rtm),  intent(inout) :: rtm_obj
     type(shd_type_grid), intent(inout) :: grid_obj
     type(shd_type_shdo), intent(inout) :: shdo_obj
-    type(shd_type_src),  intent(in)    :: src_obj
     type(shd_type_prp),  intent(in)    :: prp_obj
     type(shd_type_sfc),  intent(inout) :: sfc_obj
 
@@ -119,7 +118,6 @@ subroutine shd_solv__solveRte(&
     integer idsrc_Shdo(*)
     integer WORK1(*)
     logical doRadInit, doDeltaM, ACCELFLAG, doHighOrder
-    real SOLARFLUX
     real SOLACC, SOLCRIT, SPLITACC, SHACC
     real BCRAD(*)
     real FLUXES(2, *), DIRFLUX(*)
@@ -159,7 +157,7 @@ subroutine shd_solv__solveRte(&
     ! If Delta-M then scale the extinction, albedo, and Legendre terms
     ! Put the Planck blackbody source in rtm_obj%planck.
     call shd_init__makePrp(doDeltaM, maxSsa,&
-        &rtm_obj, grid_obj, shdo_obj, src_obj, prp_obj)
+        &rtm_obj, grid_obj, shdo_obj, prp_obj)
 
     ! Get the maximum single scattering albedo over all processors
     call shd_mpi__findMaxSsa(maxSsa)
@@ -169,12 +167,12 @@ subroutine shd_solv__solveRte(&
     if (isSolar_) then
         if (isMpi_) then
             call shd_mpi__makeDirect(1, doDeltaM, shdo_obj%maxNl,&
-                &SOLARFLUX, src_obj%avgMu, src_obj%avgAz,&
+                &src_obj%avgSolar0, src_obj%avgMu, src_obj%avgAz,&
                 &DIRFLUX,&
                 &rtm_obj, grid_obj, prp_obj)
         else
             call shd_rad__makeDirect(grid_obj%Npts, doDeltaM, shdo_obj%maxNl,&
-                &SOLARFLUX, src_obj%avgMu, src_obj%avgAz,&
+                &src_obj%avgSolar0, src_obj%avgMu, src_obj%avgAz,&
                 &DIRFLUX,&
                 &rtm_obj, grid_obj, prp_obj)
         end if
@@ -200,7 +198,7 @@ subroutine shd_solv__solveRte(&
         call shd_init__makeRad(shdo_obj%Nstokes, grid_obj%Nx*grid_obj%Ny, grid_obj%Nz,&
             &shdo_obj%iradI, rtm_obj%z,&
             &rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%temp, rtm_obj%ipha,&
-            &src_obj%type, SOLARFLUX, src_obj%avgMu, src_obj%skyRad,&
+            &src_obj%type, src_obj%avgSolar0, src_obj%avgMu, src_obj%skyRad,&
             &src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen, shdo_obj%radI, prp_obj, sfc_obj)
         ! Interpolate the radiance on the non-base grid points from the
         !   base grid points
@@ -212,7 +210,7 @@ subroutine shd_solv__solveRte(&
             &DIRFLUX, SHACC,&
             &idsrc_Shdo, dsrc_Shdo,&
             &.true., ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM,&
-            &rtm_obj, grid_obj, shdo_obj, src_obj, prp_obj)
+            &rtm_obj, grid_obj, shdo_obj, prp_obj)
     end if
 
     if (ACCELFLAG) then
@@ -327,9 +325,9 @@ subroutine shd_solv__solveRte(&
                     &doDeltaM, ACCELFLAG,&
                     &idsrc_Shdo,&
                     &DIRFLUX,&
-                    &SOLARFLUX, YlmSolar_Shdo,&
+                    &src_obj%avgSolar0, YlmSolar_Shdo,&
                     &WORK, WORK2,&
-                    &rtm_obj, grid_obj, shdo_obj, src_obj, prp_obj)
+                    &rtm_obj, grid_obj, shdo_obj, prp_obj)
                 if (SOLCRIT .gt. STARTADAPTSOL) STARTSPLITACC = SPLITCRIT
             end if
             ! Find the maximum splitting criterion over all processors
@@ -356,7 +354,7 @@ subroutine shd_solv__solveRte(&
             &CMU1, CPHI1, CMU2, CPHI2, wPhiFFT_Shdo, flagFFT_Shdo,&
             &DIRFLUX, FLUXES,&
             &WORK, WORK1, WORK2,&
-            &rtm_obj, grid_obj, shdo_obj, src_obj, prp_obj, sfc_obj)
+            &rtm_obj, grid_obj, shdo_obj, prp_obj, sfc_obj)
         !╰────────────────────────────────────────────────╯!
 
         ! Compute the source function from the radiance field,
@@ -372,7 +370,7 @@ subroutine shd_solv__solveRte(&
             &DIRFLUX, SHACC,&
             &idsrc_Shdo, dsrc_Shdo,&
             &.false., ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM,&
-            &rtm_obj, grid_obj, shdo_obj, src_obj, prp_obj)
+            &rtm_obj, grid_obj, shdo_obj, prp_obj)
         !╰────────────────────────────────────────────────╯!
 
         ! Calculate the acceleration parameter and solution criterion

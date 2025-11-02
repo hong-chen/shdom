@@ -47,9 +47,10 @@ module shd_grid
     use globals_type,  only: shd_type_rtm, &
                              shd_type_grid, &
                              shd_type_shdo, &
-                             shd_type_src, &
                              shd_type_prp, &
                              shd_type_sfc
+
+    use globals_obj, only: src_obj
 
     use globals_obj, only: ckd_obj, kabs_Ckd
 
@@ -1426,7 +1427,7 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
     &SOLARFLUX, YLMSUN,&
     &DIRFLUX,&
     &OSHPTR,&
-    &rtm_obj, grid_obj, shdo_obj, src_obj, prp_obj)
+    &rtm_obj, grid_obj, shdo_obj, prp_obj)
 
     !   Interpolates the medium properties, radiance, and source function for
     ! new grid points (specified in newPts).  The medium properties are
@@ -1441,7 +1442,6 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
     type(shd_type_shdo), intent(in) :: shdo_obj
-    type(shd_type_src),  intent(in) :: src_obj
     type(shd_type_prp),  intent(in) :: prp_obj
 
     integer newPts(3, 4)
@@ -1604,7 +1604,7 @@ subroutine shd_grid__splitGrid(&
     &DIRFLUX,&
     &SOLARFLUX, YLMSUN,&
     &ADAPTCRIT, ADAPTIND,&
-    &rtm_obj, grid_obj, shdo_obj, src_obj, prp_obj)
+    &rtm_obj, grid_obj, shdo_obj, prp_obj)
 
     !   Splits the cells that have a cell dividing criterion greater than
     ! CURSPLITACC if doSplit is true.  The current splitting criterion
@@ -1615,7 +1615,6 @@ subroutine shd_grid__splitGrid(&
     type(shd_type_rtm),  intent(in)    :: rtm_obj
     type(shd_type_grid), intent(inout) :: grid_obj
     type(shd_type_shdo), intent(inout) :: shdo_obj
-    type(shd_type_src),  intent(in)    :: src_obj
     type(shd_type_prp),  intent(in)    :: prp_obj
 
     integer OSHPTR(*)
@@ -1686,7 +1685,7 @@ subroutine shd_grid__splitGrid(&
                         &SOLARFLUX, YLMSUN,&
                         &DIRFLUX,&
                         &OSHPTR,&
-                        &rtm_obj, grid_obj, shdo_obj, src_obj, prp_obj)
+                        &rtm_obj, grid_obj, shdo_obj, prp_obj)
                 end if
                 I = I + 1
             end do
@@ -1723,7 +1722,7 @@ subroutine shd_grid__splitGrid(&
                             &SOLARFLUX, YLMSUN,&
                             &DIRFLUX,&
                             &OSHPTR,&
-                            &rtm_obj, grid_obj, shdo_obj, src_obj, prp_obj)
+                            &rtm_obj, grid_obj, shdo_obj, prp_obj)
                     end if
                 end if
                 I = I + 1

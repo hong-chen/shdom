@@ -47,9 +47,10 @@ module shd_init
     use globals_type,  only: shd_type_rtm, &
                              shd_type_grid, &
                              shd_type_shdo, &
-                             shd_type_src, &
                              shd_type_prp, &
                              shd_type_sfc
+
+    use globals_obj, only: src_obj
 
     use shd_util, only: shd_util__computePlanck, &
                         shd_util__solveTriDiag
@@ -429,7 +430,7 @@ end subroutine shd_init__makeCell
 
 subroutine shd_init__makePrp(&
     &doDeltaM, maxSsa,&
-    &rtm_obj, grid_obj, shdo_obj, src_obj, prp_obj)
+    &rtm_obj, grid_obj, shdo_obj, prp_obj)
 
     ! Prepares the grid arrays for the iterative solution process.
     ! If doing Delta-M scaling then the extinction, albedo, and Legend
@@ -441,7 +442,6 @@ subroutine shd_init__makePrp(&
     type(shd_type_rtm),  intent(inout) :: rtm_obj
     type(shd_type_grid), intent(in)    :: grid_obj
     type(shd_type_shdo), intent(in)    :: shdo_obj
-    type(shd_type_src),  intent(in)    :: src_obj
     type(shd_type_prp),  intent(in)    :: prp_obj
 
     logical, intent(in) :: doDeltaM

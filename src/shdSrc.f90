@@ -47,9 +47,10 @@ module shd_src
     use globals_type,  only: shd_type_rtm, &
                              shd_type_grid, &
                              shd_type_shdo, &
-                             shd_type_src, &
                              shd_type_prp, &
                              shd_type_sfc
+
+    use globals_obj, only: src_obj
 
     use shd_scat, only: shd_scat__computeLegendre, &
                         shd_scat__computeWigner
@@ -323,7 +324,7 @@ subroutine shd_src__computeSrcOneDir(&
     &DELTAM, MU, PHI,&
     &DIRFLUX,&
     &SOURCE1,&
-    &rtm_obj, grid_obj, shdo_obj, src_obj, prp_obj)
+    &rtm_obj, grid_obj, shdo_obj, prp_obj)
 
     ! Computes the source function (SOURCE1) in the direction (MU,PHI)
     ! for the whole domain (rtm_obj%Nx,rtm_obj%Nz).  The spherical harmonic source function
@@ -335,7 +336,6 @@ subroutine shd_src__computeSrcOneDir(&
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
     type(shd_type_shdo), intent(in) :: shdo_obj
-    type(shd_type_src),  intent(in) :: src_obj
     type(shd_type_prp),  intent(in) :: prp_obj
 
     logical DELTAM
@@ -501,7 +501,7 @@ subroutine shd_src__computeSrc(&
     &DIRFLUX, SHACC,&
     &OSHPTR, DELSOURCE,&
     &FIRST, ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM,&
-    &rtm_obj, grid_obj, shdo_obj, src_obj, prp_obj)
+    &rtm_obj, grid_obj, shdo_obj, prp_obj)
 
     ! Computes the source function (shdo_obj%srcJ) in spherical harmonic space
     !   for all the grid points.  The thermal source and/or solar
@@ -529,7 +529,6 @@ subroutine shd_src__computeSrc(&
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
     type(shd_type_shdo), intent(in) :: shdo_obj
-    type(shd_type_src),  intent(in) :: src_obj
     type(shd_type_prp),  intent(in) :: prp_obj
 
     integer OSHPTR(grid_obj%Npts + 1)

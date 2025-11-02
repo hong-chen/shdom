@@ -49,11 +49,10 @@ module shd_rad
     use globals_type,  only: shd_type_rtm, &
                              shd_type_grid, &
                              shd_type_shdo, &
-                             shd_type_src, &
                              shd_type_prp, &
                              shd_type_sfc
 
-    use globals_obj, only: ckd_obj, kabs_Ckd
+    use globals_obj, only: src_obj, ckd_obj, kabs_Ckd
 
     use shd_scat, only: shd_scat__computePhase
 
@@ -711,7 +710,7 @@ subroutine shd_rad__computeRad(&
     &DIRFLUX, FLUXES,&
     &SOURCE1, GRIDRAD,&
     &OUTPARMS, IRAD, RADOUT,&
-    &rtm_obj, grid_obj, shdo_obj, src_obj,&
+    &rtm_obj, grid_obj, shdo_obj,&
     &prp_obj, sfc_obj)
 
     ! Computes the radiances for the specified locations and directions
@@ -721,7 +720,6 @@ subroutine shd_rad__computeRad(&
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
     type(shd_type_shdo), intent(in) :: shdo_obj
-    type(shd_type_src),  intent(in) :: src_obj
     type(shd_type_prp),  intent(in) :: prp_obj
     type(shd_type_sfc),  intent(in) :: sfc_obj
 
@@ -823,7 +821,7 @@ subroutine shd_rad__computeRad(&
         call shd_src__computeSrcOneDir(&
             &DELTAM, MUOUT, PHIOUT,&
             &DIRFLUX, SOURCE1,&
-            &rtm_obj, grid_obj, shdo_obj, src_obj, prp_obj)
+            &rtm_obj, grid_obj, shdo_obj, prp_obj)
 
         ! Set the radiance field to -1, so we can determine valid ra
         !   Also set the source array to the extinction times the so
@@ -884,7 +882,7 @@ subroutine shd_rad__computeCamRad(&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &DIRFLUX, FLUXES,&
     &OUTPARMS, IVIS, VISOUT,&
-    &rtm_obj, grid_obj, shdo_obj, src_obj,&
+    &rtm_obj, grid_obj, shdo_obj,&
     &prp_obj, sfc_obj)
 
     !   Computes Stokes radiances (output in VISOUT) for the visualization
@@ -895,7 +893,6 @@ subroutine shd_rad__computeCamRad(&
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
     type(shd_type_shdo), intent(in) :: shdo_obj
-    type(shd_type_src),  intent(in) :: src_obj
     type(shd_type_prp),  intent(in) :: prp_obj
     type(shd_type_sfc),  intent(in) :: sfc_obj
 

@@ -47,9 +47,10 @@ module shd_intg
     use globals_type,  only: shd_type_rtm, &
                              shd_type_grid, &
                              shd_type_shdo, &
-                             shd_type_src, &
                              shd_type_prp, &
                              shd_type_sfc
+
+    use globals_obj, only: src_obj
 
     use shd_sfc,  only: shd_sfc__interpSfc
 
@@ -95,7 +96,7 @@ subroutine shd_intg__integratePath(&
     &CMU1, CPHI1, CMU2, CPHI2, WSAVE, FFTFLAG,&
     &DIRFLUX, FLUXES,&
     &WORK, SWEEPORD, GRIDRAD,&
-    &rtm_obj, grid_obj, shdo_obj, src_obj, prp_obj, sfc_obj)
+    &rtm_obj, grid_obj, shdo_obj, prp_obj, sfc_obj)
 
     !   Performs the path integrations through the medium specified by
     ! the extinction (rtm_obj%ext) and source function (shdo_obj%srcJ) in
@@ -124,7 +125,6 @@ subroutine shd_intg__integratePath(&
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
     type(shd_type_shdo), intent(in) :: shdo_obj
-    type(shd_type_src),  intent(in) :: src_obj
     type(shd_type_prp),  intent(in) :: prp_obj
     type(shd_type_sfc),  intent(in) :: sfc_obj
 
