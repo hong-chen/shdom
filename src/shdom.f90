@@ -152,9 +152,9 @@ program shdom
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
-    real(kind=R__), allocatable    :: work(:)
+    real(kind=R__),    allocatable :: work(:)
     integer(kind=I__), allocatable :: work1(:)
-    real(kind=R__), allocatable    :: work2(:)
+    real(kind=R__),    allocatable :: work2(:)
 
     real(kind=R__), allocatable :: fluxTot(:, :), fluxDir(:)
     real(kind=R__), allocatable :: fluxDirTmp(:)
