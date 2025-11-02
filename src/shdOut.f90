@@ -117,7 +117,7 @@ subroutine shd_io__outputResult(&
     real, intent(in) :: RADOUT(shdo_obj%Nstokes, *), SHTERMS(NSHOUT, grid_obj%Npts)
     integer, intent(inout) :: IRAD
 
-    integer IZ, I, K, N, NX2, NY2, J, JX, JY, ICELL
+    integer IZ, I, K, N, NX2, NY2, J, JX, JY, icell
     integer NANGOUT, NXOUT, NYOUT
     logical ALLGRID
     real(RD_) :: MUOUT, PHID
@@ -481,13 +481,12 @@ subroutine shd_io__outputResult(&
                 X0 = rtm_obj%x(1)
                 do JX = 1, NXOUT
                     IDATA = IDATA + 1
-                    call shd_util__findCell(rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz,&
-                        & rtm_obj%flag_bc, rtm_obj%flag_ip, X0, Y0, Z0, ICELL, rtm_obj, grid_obj)
-                    call shd_util__interpTriLin(ICELL,&
+                    call shd_util__findCell(X0, Y0, Z0, icell, rtm_obj, grid_obj)
+                    call shd_util__interpTriLin(icell,&
                         & X0, Y0, Z0, 2, FLUXES, 1, 1, FDN(IDATA), grid_obj)
-                    call shd_util__interpTriLin(ICELL,&
+                    call shd_util__interpTriLin(icell,&
                         & X0, Y0, Z0, 2, FLUXES, 2, 1, FUP(IDATA), grid_obj)
-                    call shd_util__interpTriLin(ICELL,&
+                    call shd_util__interpTriLin(icell,&
                         & X0, Y0, Z0, 1, DIRFLUX, 1, 1, FDIR(IDATA), grid_obj)
                     X0 = X0 + OUTPARMS(3)
                 end do
@@ -531,12 +530,12 @@ subroutine shd_io__outputResult(&
             !    X0 = rtm_obj%x(1)
             !    do JX = 1, NXOUT
             !        call shd_util__findCell(rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz,&
-            !            & rtm_obj%flag_bc, rtm_obj%flag_ip, X0, Y0, Z0, ICELL, grid_obj)
-            !        call shd_util__interpTriLin(ICELL,&
+            !            & rtm_obj%flag_bc, rtm_obj%flag_ip, X0, Y0, Z0, icell, grid_obj)
+            !        call shd_util__interpTriLin(icell,&
             !            & X0, Y0, Z0, 2, FLUXES, 1, 1, FDN, grid_obj)
-            !        call shd_util__interpTriLin(ICELL,&
+            !        call shd_util__interpTriLin(icell,&
             !            & X0, Y0, Z0, 2, FLUXES, 2, 1, FUP, grid_obj)
-            !        call shd_util__interpTriLin(ICELL,&
+            !        call shd_util__interpTriLin(icell,&
             !            & X0, Y0, Z0, 1, DIRFLUX, 1, 1, FDIR, grid_obj)
             !        if (src_obj%type .ne. 'T') then
             !            write (2, FORM) X0, Y0, C*FUP, C*FDN, FDIR
@@ -2542,31 +2541,31 @@ subroutine shd_io__outputCellSplit(&
     integer SHPTR(*)
     real SOURCE(shdo_obj%Nstokes, *)
     character(len=*), intent(in) :: OUTFILE
-    integer IP1, IP2, ICELL, IDIR
+    integer IP1, IP2, icell, IDIR
     real ADAPTCRIT(3), MAXADAPT, XC, YC, ZC, EXT
 
     open (UNIT=9, FILE=trim(adjustl(OUTFILE)), STATUS='UNKNOWN')
-    write (9, *) '!  ICELL   Xc     Yc     Zc  ',&
+    write (9, *) '!  icell   Xc     Yc     Zc  ',&
         &'Extinct SplitX  SplitY  SplitZ'
 
     ! Loop over all the cells
-    do ICELL = 1, grid_obj%Ncell
+    do icell = 1, grid_obj%Ncell
         ! Get the adaptive grid criterion for the 3 directions
-        call shd_grid__testCellSplit(ICELL,&
+        call shd_grid__testCellSplit(icell,&
             &ADAPTCRIT, MAXADAPT, IDIR,&
             &rtm_obj, grid_obj, shdo_obj)
         ! Compute the cell center location and mean extinction
-        IP1 = grid_obj%i8Grid(1, ICELL)
-        IP2 = grid_obj%i8Grid(8, ICELL)
+        IP1 = grid_obj%i8Grid(1, icell)
+        IP2 = grid_obj%i8Grid(8, icell)
         XC = 0.5*(grid_obj%xyz(1, IP1) + grid_obj%xyz(1, IP2))
         YC = 0.5*(grid_obj%xyz(2, IP1) + grid_obj%xyz(2, IP2))
         ZC = 0.5*(grid_obj%xyz(3, IP1) + grid_obj%xyz(3, IP2))
-        EXT =  (rtm_obj%ext(grid_obj%i8Grid(1, ICELL)) + rtm_obj%ext(grid_obj%i8Grid(2, ICELL))&
-             &+ rtm_obj%ext(grid_obj%i8Grid(3, ICELL)) + rtm_obj%ext(grid_obj%i8Grid(4, ICELL))&
-             &+ rtm_obj%ext(grid_obj%i8Grid(5, ICELL)) + rtm_obj%ext(grid_obj%i8Grid(6, ICELL))&
-             &+ rtm_obj%ext(grid_obj%i8Grid(7, ICELL)) + rtm_obj%ext(grid_obj%i8Grid(8, ICELL)))/8
+        EXT =  (rtm_obj%ext(grid_obj%i8Grid(1, icell)) + rtm_obj%ext(grid_obj%i8Grid(2, icell))&
+             &+ rtm_obj%ext(grid_obj%i8Grid(3, icell)) + rtm_obj%ext(grid_obj%i8Grid(4, icell))&
+             &+ rtm_obj%ext(grid_obj%i8Grid(5, icell)) + rtm_obj%ext(grid_obj%i8Grid(6, icell))&
+             &+ rtm_obj%ext(grid_obj%i8Grid(7, icell)) + rtm_obj%ext(grid_obj%i8Grid(8, icell)))/8
         write (9, '(1X,I5,3(1X,F6.3),1X,E11.4,3(1X,F7.5))')&
-            &ICELL, XC, YC, ZC, EXT,&
+            &icell, XC, YC, ZC, EXT,&
             &ADAPTCRIT(1), ADAPTCRIT(2), ADAPTCRIT(3)
     end do
 

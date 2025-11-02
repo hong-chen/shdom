@@ -1137,7 +1137,7 @@ subroutine shd_grid__InterpTriLinGridPrp(&
     real(kind=RD_) :: scat0, minScat, maxScat
     real(kind=RD_), save :: kabs0, minExt
 
-    integer :: ISELECT
+    integer :: iSelect
 
     if (doInit) then
        ! If there are tabulated phase functions, then transfer them
@@ -1172,7 +1172,7 @@ subroutine shd_grid__InterpTriLinGridPrp(&
     IX = int((x0 - prp_obj%xStart)/prp_obj%dx) + 1
     if (abs(x0 - prp_obj%xStart - prp_obj%Nx*prp_obj%dx) .lt. 0.01*prp_obj%dx) IX = prp_obj%Nx
     if (IX .lt. 1 .or. IX .gt. prp_obj%Nx) then
-        write (6, *) 'TRILIN: Beyond X domain'
+        write (6, *) 'Error [_InterpTriLinGridPrp]: Beyond X domain.'
         stop
     end if
     IXP = mod(IX, prp_obj%Nx) + 1
@@ -1183,7 +1183,7 @@ subroutine shd_grid__InterpTriLinGridPrp(&
     IY = int((y0 - prp_obj%yStart)/prp_obj%dy) + 1
     if (abs(y0 - prp_obj%yStart - prp_obj%Ny*prp_obj%dy) .lt. 0.01*prp_obj%dy) IY = prp_obj%Ny
     if (IY .lt. 1 .or. IY .gt. prp_obj%Ny) then
-        write (6, *) 'TRILIN: Beyond Y domain'
+        write (6, *) 'Error [_InterpTriLinGridPrp]: Beyond Y domain.'
         stop
     end if
     IYP = mod(IY, prp_obj%Ny) + 1
@@ -1230,40 +1230,40 @@ subroutine shd_grid__InterpTriLinGridPrp(&
     maxScat = -1.0
     if (scat1 .gt. maxScat .or. abs(F1 - 1) .lt. 0.001) then
         maxScat = scat1
-        ISELECT = I1
+        iSelect = I1
     end if
     if (scat2 .gt. maxScat .or. abs(F2 - 1) .lt. 0.001) then
         maxScat = scat2
-        ISELECT = I2
+        iSelect = I2
     end if
     if (scat3 .gt. maxScat .or. abs(F3 - 1) .lt. 0.001) then
         maxScat = scat3
-        ISELECT = I3
+        iSelect = I3
     end if
     if (scat4 .gt. maxScat .or. abs(F4 - 1) .lt. 0.001) then
         maxScat = scat4
-        ISELECT = I4
+        iSelect = I4
     end if
     if (scat5 .gt. maxScat .or. abs(F5 - 1) .lt. 0.001) then
         maxScat = scat5
-        ISELECT = I5
+        iSelect = I5
     end if
     if (scat6 .gt. maxScat .or. abs(F6 - 1) .lt. 0.001) then
         maxScat = scat6
-        ISELECT = I6
+        iSelect = I6
     end if
     if (scat7 .gt. maxScat .or. abs(F7 - 1) .lt. 0.001) then
         maxScat = scat7
-        ISELECT = I7
+        iSelect = I7
     end if
     if (scat8 .gt. maxScat .or. abs(F8 - 1) .lt. 0.001) then
         maxScat = scat8
-        ISELECT = I8
+        iSelect = I8
     end if
 
-    !temp0 = prp_obj%temp(ISELECT)
-    !ext0 = prp_obj%ext(ISELECT)
-    !scat0 = prp_obj%ext(ISELECT)*prp_obj%ssa(ISELECT)
+    !temp0 = prp_obj%temp(iSelect)
+    !ext0 = prp_obj%ext(iSelect)
+    !scat0 = prp_obj%ext(iSelect)*prp_obj%ssa(iSelect)
 
     temp0 = F1*prp_obj%temp(I1) + F2*prp_obj%temp(I2) + F3*prp_obj%temp(I3) + F4*prp_obj%temp(I4)&
         &+ F5*prp_obj%temp(I5) + F6*prp_obj%temp(I6) + F7*prp_obj%temp(I7) + F8*prp_obj%temp(I8)
@@ -1279,7 +1279,7 @@ subroutine shd_grid__InterpTriLinGridPrp(&
     end if
 
     if (prp_obj%Npha .gt. 0) then
-        ipha0 = prp_obj%ipha(ISELECT)
+        ipha0 = prp_obj%ipha(iSelect)
     else
         ! Standard property file format: unpolarized
         leg0(1, 0, 1) = 1.0
@@ -1419,6 +1419,7 @@ subroutine shd_grid__InterpTriLinGridPrp(&
     end if
 
     return
+
 end subroutine shd_grid__InterpTriLinGridPrp
 
 subroutine shd_grid__interpNewGridPnt(newPts,&

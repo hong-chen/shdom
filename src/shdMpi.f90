@@ -2004,9 +2004,8 @@ subroutine shd_mpi__computeRad(&
                 if (X0 .ge. (rtm_obj%x(1) - EPS) .and. X0 .le. (rtm_obj%x(rtm_obj%Nx) + EPS) .and.&
                     Y0 .ge. (rtm_obj%y(1) - EPS) .and. Y0 .le. (rtm_obj%y(rtm_obj%Ny) + EPS)) then
                     TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
-                    call shd_src__integrateSrc(rtm_obj%flag_bc, rtm_obj%flag_ip, shdo_obj%Nstokes,&
-                        &rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz,&
-                        &mu_out, phi_out, GRIDRAD, rtm_obj%ext, SOURCE1,&
+                    call shd_src__integrateSrc(shdo_obj%Nstokes,&
+                        &mu_out, phi_out, GRIDRAD, SOURCE1,&
                         &X0, Y0, Z0, XE, YE, ZE, SIDE,&
                         &TRANSMIT, RADIANCE, VALIDRAD,&
                         &rtm_obj, grid_obj)
@@ -2091,9 +2090,8 @@ subroutine shd_mpi__computeRad(&
                     X = BndRadRealInfo(1, J, Ldownx); Y = BndRadRealInfo(2, J, Ldownx)
                     Z = BndRadRealInfo(3, J, Ldownx); TRANSMIT = BndRadRealInfo(4, J, Ldownx)
                     RADIANCE(:) = BndRadRealInfo(5:4 + shdo_obj%Nstokes, J, Ldownx)
-                    call shd_src__integrateSrc(rtm_obj%flag_bc, rtm_obj%flag_ip, shdo_obj%Nstokes,&
-                        &rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz,&
-                        &mu_out, phi_out, GRIDRAD, rtm_obj%ext, SOURCE1,&
+                    call shd_src__integrateSrc(shdo_obj%Nstokes,&
+                        &mu_out, phi_out, GRIDRAD, SOURCE1,&
                         &X, Y, Z, XE, YE, ZE, SIDE,&
                         &TRANSMIT, RADIANCE, VALIDRAD,&
                         &rtm_obj, grid_obj)
@@ -2127,9 +2125,8 @@ subroutine shd_mpi__computeRad(&
                     X = BndRadRealInfo(1, J, Ldowny); Y = BndRadRealInfo(2, J, Ldowny)
                     Z = BndRadRealInfo(3, J, Ldowny); TRANSMIT = BndRadRealInfo(4, J, Ldowny)
                     RADIANCE(:) = BndRadRealInfo(5:4 + shdo_obj%Nstokes, J, Ldowny)
-                    call shd_src__integrateSrc(rtm_obj%flag_bc, rtm_obj%flag_ip, shdo_obj%Nstokes,&
-                        &rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz,&
-                        &mu_out, phi_out, GRIDRAD, rtm_obj%ext, SOURCE1,&
+                    call shd_src__integrateSrc(shdo_obj%Nstokes,&
+                        &mu_out, phi_out, GRIDRAD, SOURCE1,&
                         &X, Y, Z, XE, YE, ZE, SIDE,&
                         &TRANSMIT, RADIANCE, VALIDRAD,&
                         &rtm_obj, grid_obj)
@@ -2462,13 +2459,11 @@ subroutine shd_mpi__computeCamRad(&
                 ! Integrate the extinction and source function along this ray
                 ! to calculate the Stokes radiance vector for this pixel
                 TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
-                call shd_src__integrateSrcOneRay(rtm_obj%flag_bc, rtm_obj%flag_ip, shdo_obj%Nstokes,&
+                call shd_src__integrateSrcOneRay(shdo_obj%Nstokes,&
                     &NSTPHASE, NSCATANGLE, PHASETAB,&
-                    &rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz,&
                     &shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
                     &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
                     &DELTAM, src_obj%type, src_obj%avgWaveLen, src_obj%avgMu, src_obj%avgAz,&
-                    &rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%ipha,&
                     &DIRFLUX, shdo_obj%iSrcJ, shdo_obj%srcJ, YLMSUN,&
                     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                     &MU2, PHI2, X0, Y0, Z0,&
@@ -2547,13 +2542,11 @@ subroutine shd_mpi__computeCamRad(&
                 PHI2 = BndRecvRadRealInfo(5, J, IBND)
                 TRANSMIT = BndRecvRadRealInfo(6, J, IBND)
                 RADIANCE(:) = BndRecvRadRealInfo(7 : 6+shdo_obj%Nstokes, J, IBND)
-                call shd_src__integrateSrcOneRay(rtm_obj%flag_bc, rtm_obj%flag_ip, shdo_obj%Nstokes,&
+                call shd_src__integrateSrcOneRay(shdo_obj%Nstokes,&
                     &NSTPHASE, NSCATANGLE, PHASETAB,&
-                    &rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz,&
                     &shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
                     &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
                     &DELTAM, src_obj%type, src_obj%avgWaveLen, src_obj%avgMu, src_obj%avgAz,&
-                    &rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%ipha,&
                     &DIRFLUX, shdo_obj%iSrcJ, shdo_obj%srcJ, YLMSUN,&
                     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                     &MU2, PHI2, X, Y, Z,&

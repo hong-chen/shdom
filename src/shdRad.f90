@@ -864,9 +864,8 @@ subroutine shd_rad__computeRad(&
             do JX = 1, NXOUT
                 IRAD = IRAD + 1
                 TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
-                call shd_src__integrateSrc(rtm_obj%flag_bc, rtm_obj%flag_ip, shdo_obj%Nstokes,&
-                    &rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz,&
-                    &MUOUT, PHIOUT, GRIDRAD, rtm_obj%ext, SOURCE1,&
+                call shd_src__integrateSrc(shdo_obj%Nstokes,&
+                    &MUOUT, PHIOUT, GRIDRAD, SOURCE1,&
                     &X0, Y0, Z0, XE, YE, ZE, SIDE,&
                     &TRANSMIT, RADIANCE, VALIDRAD, rtm_obj, grid_obj)
                 RADOUT(:, IRAD) = RADIANCE(1:shdo_obj%Nstokes)
@@ -1074,13 +1073,11 @@ subroutine shd_rad__computeCamRad(&
             ! Integrate the extinction and source function along this ray
             !   to calculate the Stokes radiance vector for this pixel
             TRANSMIT = 1.0d0; VISRAD(:) = 0.0d0
-            call shd_src__integrateSrcOneRay(rtm_obj%flag_bc, rtm_obj%flag_ip, shdo_obj%Nstokes,&
+            call shd_src__integrateSrcOneRay(shdo_obj%Nstokes,&
                 &NSTPHASE, NSCATANGLE, PHASETAB,&
-                &rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz,&
                 &shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
                 &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
                 &DELTAM, src_obj%type, src_obj%avgWaveLen, src_obj%avgMu, src_obj%avgAz,&
-                &rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%ipha,&
                 &DIRFLUX, shdo_obj%isrcJ, shdo_obj%srcJ, YLMSUN,&
                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                 &MU2, PHI2, X0, Y0, Z0,&

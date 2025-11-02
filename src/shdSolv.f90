@@ -128,7 +128,7 @@ subroutine shd_solv__solveRte(&
     real dsrc_Shdo(shdo_obj%Nstokes, *)
     real WORK(*), WORK2(*)
 
-    integer I, isetDO, NBPTS, NBCELLS
+    integer I, isetDO
     integer MAXNANGBND, NANGBND(4, 2), ierr
     logical doFixSH, SPLITTESTING, doSplit, isOutMem
     logical, allocatable :: flagFFT_Shdo(:)
@@ -206,11 +206,8 @@ subroutine shd_solv__solveRte(&
             &src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen, shdo_obj%radI, prp_obj, sfc_obj)
         ! Interpolate the radiance on the non-base grid points from the
         !   base grid points
-        NBPTS = grid_obj%Nx * grid_obj%Ny * grid_obj%Nz
-        NBCELLS = (grid_obj%Nz - 1)*(rtm_obj%Nx + ibits(rtm_obj%flag_bc, 0, 1) - ibits(rtm_obj%flag_bc, 2, 1))&
-                                  &*(rtm_obj%Ny + ibits(rtm_obj%flag_bc, 1, 1) - ibits(rtm_obj%flag_bc, 3, 1))
-        call shd_rad__interpRad(shdo_obj%Nstokes, NBPTS, grid_obj%Npts, shdo_obj%iradI, shdo_obj%radI,&
-            &NBCELLS, grid_obj%Ncell, grid_obj%i2Tree, grid_obj%i8Grid, grid_obj%xyz)
+        call shd_rad__interpRad(shdo_obj%Nstokes, grid_obj%Npts0, grid_obj%Npts, shdo_obj%iradI, shdo_obj%radI,&
+            &grid_obj%Ncell0, grid_obj%Ncell, grid_obj%i2Tree, grid_obj%i8Grid, grid_obj%xyz)
         ! Initialize the source function from the radiance field
         call shd_src__computeSrc(&
             &doFixSH, YlmSolar_Shdo,&

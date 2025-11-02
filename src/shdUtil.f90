@@ -176,38 +176,37 @@ subroutine shd_util__interpData(OLDNPTS,&
 
 end subroutine shd_util__interpData
 
-subroutine shd_util__findCell(NX, NY, NZ,&
-    &BCFLAG, IPFLAG, X0, Y0, Z0, ICELL,&
+subroutine shd_util__findCell(X0, Y0, Z0, icell,&
     &rtm_obj, grid_obj)
 
     !   Locates the grid cell in the tree structure containing the
-    ! specified point (X0,Y0,Z0), and returns the cell pointer ICELL.
-    ! First the base grid cell is found (using NX,NY,NZ, rtm_obj%x,rtm_obj%y,rtm_obj%z),
+    ! specified point (X0,Y0,Z0), and returns the cell pointer icell.
+    ! First the base grid cell is found (using rtm_obj%Nx,rtm_obj%Ny,rtm_obj%Nz, rtm_obj%x,rtm_obj%y,rtm_obj%z),
     ! and the tree is traced down to find the smallest cell containing
     ! the point.
 
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
 
-    integer NX, NY, NZ, ICELL, BCFLAG, IPFLAG
+    integer icell
     real(RD_) :: X0, Y0, Z0
     integer IL, IU, IM, IX, IY, IZ, NXC, NYC, IC, IPTR, DIR
     real(RD_) :: XDOMAIN, YDOMAIN
 
     ! Move point to within horizontal domain if periodic
     if (.not. (isOpenX_ .or. isMpiX_)) then
-        XDOMAIN = rtm_obj%x(NX + 1) - rtm_obj%x(1)
+        XDOMAIN = rtm_obj%x(rtm_obj%Nx + 1) - rtm_obj%x(1)
         if (X0 .lt. rtm_obj%x(1)) then
             X0 = X0 - XDOMAIN*(int((X0 - rtm_obj%x(1))/XDOMAIN) - 1)
-        else if (X0 .gt. rtm_obj%x(NX + 1)) then
+        else if (X0 .gt. rtm_obj%x(rtm_obj%Nx + 1)) then
             X0 = X0 - XDOMAIN*int((X0 - rtm_obj%x(1))/XDOMAIN)
         end if
     end if
     if (.not. (isOpenYx_ .or. isMpiY_)) then
-        YDOMAIN = rtm_obj%y(NY + 1) - rtm_obj%y(1)
+        YDOMAIN = rtm_obj%y(rtm_obj%Ny + 1) - rtm_obj%y(1)
         if (Y0 .lt. rtm_obj%y(1)) then
             Y0 = Y0 - YDOMAIN*(int((Y0 - rtm_obj%y(1))/YDOMAIN) - 1)
-        else if (Y0 .gt. rtm_obj%y(NY + 1)) then
+        else if (Y0 .gt. rtm_obj%y(rtm_obj%Ny + 1)) then
             Y0 = Y0 - YDOMAIN*int((Y0 - rtm_obj%y(1))/YDOMAIN)
         end if
     end if
@@ -217,7 +216,7 @@ subroutine shd_util__findCell(NX, NY, NZ,&
     !   Special case for independent pixel: get closest grid column.
     IL = 0
     if (is1DX_) then
-        IU = NX
+        IU = rtm_obj%Nx
         do while (IU - IL .gt. 1)
             IM = (IU + IL)/2
             if (X0 .ge. 0.5*(rtm_obj%x(IM) + rtm_obj%x(IM + 1))) then
@@ -228,7 +227,7 @@ subroutine shd_util__findCell(NX, NY, NZ,&
         end do
         IL = IL + 1
     else
-        IU = NX + 1
+        IU = rtm_obj%Nx + 1
         do while (IU - IL .gt. 1)
             IM = (IU + IL)/2
             if (X0 .ge. rtm_obj%x(IM)) then
@@ -242,7 +241,7 @@ subroutine shd_util__findCell(NX, NY, NZ,&
 
     IL = 0
     if (is1DYx_) then
-        IU = NY
+        IU = rtm_obj%Ny
         do while (IU - IL .gt. 1)
             IM = (IU + IL)/2
             if (Y0 .ge. 0.5*(rtm_obj%y(IM) + rtm_obj%y(IM + 1))) then
@@ -253,7 +252,7 @@ subroutine shd_util__findCell(NX, NY, NZ,&
         end do
         IL = IL + 1
     else
-        IU = NY + 1
+        IU = rtm_obj%Ny + 1
         do while (IU - IL .gt. 1)
             IM = (IU + IL)/2
             if (Y0 .ge. rtm_obj%y(IM)) then
@@ -266,7 +265,7 @@ subroutine shd_util__findCell(NX, NY, NZ,&
     IY = max(IL, 1)
 
     IL = 0
-    IU = NZ
+    IU = rtm_obj%Nz
     do while (IU - IL .gt. 1)
         IM = (IU + IL)/2
         if (Z0 .ge. rtm_obj%z(IM)) then
@@ -279,43 +278,43 @@ subroutine shd_util__findCell(NX, NY, NZ,&
 
     ! Special case for open boundary conditions: if outside the 1 to
     !   domain then use the IP grid cells at either end
-    NXC = NX
+    NXC = rtm_obj%Nx
     if (isOpenX_) then
-        NXC = NX + 1
+        NXC = rtm_obj%Nx + 1
         if (X0 .lt. rtm_obj%x(1)) then
             ! X0 = rtm_obj%x(1)
             IX = 1
-        else if (X0 .gt. rtm_obj%x(NX)) then
-            ! X0 = rtm_obj%x(NX)
-            IX = NX + 1
+        else if (X0 .gt. rtm_obj%x(rtm_obj%Nx)) then
+            ! X0 = rtm_obj%x(rtm_obj%Nx)
+            IX = rtm_obj%Nx + 1
         else
             IX = IX + 1
         end if
     end if
     if (isMpiX_ .and. .not. is1DX_) then
-        NXC = NX - 1
+        NXC = rtm_obj%Nx - 1
         IX = min(IX, NXC)
     end if
-    NYC = NY
+    NYC = rtm_obj%Ny
     if (isOpenYx_) then
-        NYC = NY + 1
+        NYC = rtm_obj%Ny + 1
         if (Y0 .lt. rtm_obj%y(1)) then
             ! Y0 = rtm_obj%y(1)
             IY = 1
-        else if (Y0 .gt. rtm_obj%y(NY)) then
-            ! Y0 = rtm_obj%y(NY)
-            IY = NY + 1
+        else if (Y0 .gt. rtm_obj%y(rtm_obj%Ny)) then
+            ! Y0 = rtm_obj%y(rtm_obj%Ny)
+            IY = rtm_obj%Ny + 1
         else
             IY = IY + 1
         end if
     end if
     if (isMpiY_ .and. .not. is1DYx_) then
-        NYC = NY - 1
+        NYC = rtm_obj%Ny - 1
         IY = min(IY, NYC)
     end if
 
     ! Get the base grid cell pointer
-    ICELL = IZ + (NZ - 1)*(IY - 1) + (NZ - 1)*NYC*(IX - 1)
+    icell = IZ + (rtm_obj%Nz - 1)*(IY - 1) + (rtm_obj%Nz - 1)*NYC*(IX - 1)
 
     !   Trace down the tree: point to the positive child cell, get the
     ! grid point that is on the negative (X,Y,Z) side, use the
@@ -323,9 +322,9 @@ subroutine shd_util__findCell(NX, NY, NZ,&
     ! split in, then compare the grid point with the test point
     ! (X0,Y0,Z0) to find which child cell (pos or neg) the test
     ! point is in.
-    do while (grid_obj%i2Tree(2, ICELL) .gt. 0)
-        DIR = ibits(int(grid_obj%flag(ICELL)), 2, 2)
-        IC = grid_obj%i2Tree(2, ICELL) + 1
+    do while (grid_obj%i2Tree(2, icell) .gt. 0)
+        DIR = ibits(int(grid_obj%flag(icell)), 2, 2)
+        IC = grid_obj%i2Tree(2, icell) + 1
         IPTR = grid_obj%i8Grid(1, IC)
         if (DIR .eq. 1) then
             if (X0 .lt. grid_obj%xyz(1, IPTR)) IC = IC - 1
@@ -334,7 +333,7 @@ subroutine shd_util__findCell(NX, NY, NZ,&
         else if (DIR .eq. 3) then
             if (Z0 .lt. grid_obj%xyz(3, IPTR)) IC = IC - 1
         end if
-        ICELL = IC
+        icell = IC
     end do
 
     return
