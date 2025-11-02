@@ -705,12 +705,13 @@ subroutine shd_mpi__bcastSenSize(sen_obj)
 
 end subroutine shd_mpi__bcastSenSize
 
-subroutine shd_mpi__bcastSen(sen_obj)
+subroutine shd_mpi__bcastSen(sen_obj, view_Sen)
 
     ! Broadcasts the user-specified sensor data array from
     ! the master process to the others.
 
     type(shd_type_sen), intent(inout) :: sen_obj
+    real(kind=R__),     intent(inout) :: view_Sen(1:sen_obj%Npar*sen_obj%Npts)
 
 #if HAS_MPI
     integer :: ierr, Ndata
@@ -718,7 +719,7 @@ subroutine shd_mpi__bcastSen(sen_obj)
     if (Nproc_ .le. 1) return
 
     Ndata = sen_obj%Npts*sen_obj%Npar
-    call mpi_bcast(sen_obj%view, Ndata, MPI_real, 0, comm2D_, ierr)
+    call mpi_bcast(view_Sen, Ndata, MPI_real, 0, comm2D_, ierr)
 #endif
 
     return
@@ -1789,12 +1790,14 @@ subroutine shd_mpi__computeRad(&
     &SOURCE1, GRIDRAD,&
     &parms_Out, NRAD, RADOUT,&
     &rtm_obj, grid_obj, shdo_obj, src_obj,&
-    &prp_obj, sfc_obj, sen_obj)
+    &prp_obj, sfc_obj)
 
     ! Computes the radiances for the locations and directions specified
     ! in parms_Out, putting the results in RADOUT and increasing NRAD by
     ! the number of radiances output.  Does the radiative transfer integrations
     ! across multiple processors.
+
+    use globals_obj, only: sen_obj, view_Sen
 
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
@@ -1802,7 +1805,6 @@ subroutine shd_mpi__computeRad(&
     type(shd_type_src),  intent(in) :: src_obj
     type(shd_type_prp),  intent(in) :: prp_obj
     type(shd_type_sfc),  intent(in) :: sfc_obj
-    type(shd_type_sen),  intent(in) :: sen_obj
 
     integer, intent(inout) :: NRAD
     integer, intent(in) :: MAXNBC, NTOPPTS, NBOTPTS
@@ -1881,8 +1883,8 @@ subroutine shd_mpi__computeRad(&
     ! Loop over the radiance directions
     do K = 1, NANGOUT
         if (sen_obj%fname(1:4) .ne. 'NONE') then
-            mu_out     = sen_obj%view(2*K - 1)
-            phiDeg_out = sen_obj%view(2*K)
+            mu_out     = view_Sen(2*K - 1)
+            phiDeg_out = view_Sen(2*K)
         else
             mu_out = parms_Out(2*K + 5)
             phiDeg_out = parms_Out(2*K + 6)
@@ -2206,12 +2208,14 @@ subroutine shd_mpi__computeCamRad(&
     &DIRFLUX, FLUXES,&
     &parms_Out, IVIS, VISOUT,&
     &rtm_obj, grid_obj, shdo_obj, src_obj,&
-    &prp_obj, sfc_obj, sen_obj)
+    &prp_obj, sfc_obj)
 
     ! Computes Stokes radiances (output in VISOUT) for the visualization
     !   modes: 1) camera mode,
     !          2) cross track scanning,
     !          3) user-specified sensor mode.
+
+    use globals_obj, only: sen_obj, view_Sen
 
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
@@ -2219,7 +2223,6 @@ subroutine shd_mpi__computeCamRad(&
     type(shd_type_src),  intent(in) :: src_obj
     type(shd_type_prp),  intent(in) :: prp_obj
     type(shd_type_sfc),  intent(in) :: sfc_obj
-    type(shd_type_sen),  intent(in) :: sen_obj
 
     integer, intent(inout) :: IVIS
     integer, intent(in) :: MAXNBC, NTOPPTS, NBOTPTS
@@ -2377,11 +2380,11 @@ subroutine shd_mpi__computeCamRad(&
             else if (SENSOR_MODE) then
 
                 if (sen_obj%fname(1:4) .ne. 'NONE') then
-                    X0    =  sen_obj%view(5*SAMP - 4)
-                    Y0    =  sen_obj%view(5*SAMP - 3)
-                    Z0    =  sen_obj%view(5*SAMP - 2)
-                    COSTH =  sen_obj%view(5*SAMP - 1)
-                    PHIR  =  sen_obj%view(5*SAMP)
+                    X0    =  view_Sen(5*SAMP - 4)
+                    Y0    =  view_Sen(5*SAMP - 3)
+                    Z0    =  view_Sen(5*SAMP - 2)
+                    COSTH =  view_Sen(5*SAMP - 1)
+                    PHIR  =  view_Sen(5*SAMP)
                 else
                     stop 'Error [mpi__computeCamRad]: Need sen_obj to proceed.'
                 end if

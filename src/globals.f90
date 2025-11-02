@@ -174,9 +174,8 @@ module globals_type
     implicit none
     public
 
-    integer, parameter :: I__ = selected_int_kind(9)
-    integer, parameter :: R__ = selected_real_kind(6)
-
+    integer, parameter, private :: I__ = selected_int_kind(9)
+    integer, parameter, private :: R__ = selected_real_kind(6)
 
     type :: shd_type_rtm
         character(len=charMaxLen_) :: runName = 'NONE'
@@ -215,7 +214,6 @@ module globals_type
         logical :: isAllocated  = .false.
     end type shd_type_rtm
 
-
     type :: shd_type_grid
         integer(kind=I__) :: Nx = -999
         integer(kind=I__) :: Ny = -999
@@ -239,7 +237,6 @@ module globals_type
 
         logical :: isAllocated  = .false.
     end type shd_type_grid
-
 
     type :: shd_type_shdo
         integer(kind=I__) :: Nmu  = -999
@@ -270,7 +267,6 @@ module globals_type
         logical :: isAllocated  = .false.
     end type shd_type_shdo
 
-
     type :: shd_type_src
         character(len=1) :: type = ' '
         character(len=1) :: unit = ' '
@@ -292,7 +288,6 @@ module globals_type
         !real(kind=R__), pointer :: mu(:) => null()
         !real(kind=R__), pointer :: az(:) => null()
     end type shd_type_src
-
 
     type :: shd_type_prp
         character(len=charMaxLen_) :: fname = 'NONE'
@@ -332,7 +327,6 @@ module globals_type
         logical :: isAllocated  = .false.
     end type shd_type_prp
 
-
     type :: shd_type_sfc
         character(len=charMaxLen_) :: fname = 'NONE'
         character(len=2) :: type = '  '
@@ -357,7 +351,6 @@ module globals_type
         logical :: isAllocated  = .false.
     end type shd_type_sfc
 
-
     type :: shd_type_ckd
         character(len=charMaxLen_) :: fname = 'NONE'
 
@@ -380,17 +373,43 @@ module globals_type
         logical :: isAllocated  = .false.
     end type shd_type_ckd
 
-
     type :: shd_type_sen
         character(len=charMaxLen_) :: fname = 'NONE'
-
         integer(kind=I__) :: Npts = -999
         integer(kind=I__) :: Npar = -999
-
-        real(kind=R__), pointer :: view(:) => null()
-
-        logical :: isAllocated  = .false.
     end type shd_type_sen
 
-
 end module globals_type
+
+
+module globals_obj
+
+    use globals_type, only: shd_type_rtm, &
+                            shd_type_grid, &
+                            shd_type_shdo, &
+                            shd_type_src, &
+                            shd_type_prp, &
+                            shd_type_sfc, &
+                            shd_type_sfc, &
+                            shd_type_ckd, &
+                            shd_type_sen
+
+    implicit none
+    public
+
+    integer, parameter, private :: I__ = selected_int_kind(9)
+    integer, parameter, private :: R__ = selected_real_kind(6)
+
+    type(shd_type_rtm),  save :: rtmAll_obj, rtm_obj
+    type(shd_type_grid), save :: grid_obj
+    type(shd_type_shdo), save :: shdo_obj
+    type(shd_type_src),  save :: src_obj
+
+    type(shd_type_prp), save :: prpAll_obj, prp_obj
+    type(shd_type_sfc), save :: sfc_obj
+    type(shd_type_ckd), save :: ckd_obj
+
+    type(shd_type_sen), save :: sen_obj
+    real(kind=R__), allocatable, save :: view_Sen(:)
+
+end module globals_obj

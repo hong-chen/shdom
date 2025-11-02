@@ -714,9 +714,11 @@ subroutine shd_rad__computeRad(&
     &SOURCE1, GRIDRAD,&
     &OUTPARMS, IRAD, RADOUT,&
     &rtm_obj, grid_obj, shdo_obj, src_obj,&
-    &prp_obj, sfc_obj, sen_obj)
+    &prp_obj, sfc_obj)
 
     ! Computes the radiances for the specified locations and directions
+
+    use globals_obj, only: sen_obj, view_Sen
 
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
@@ -724,7 +726,6 @@ subroutine shd_rad__computeRad(&
     type(shd_type_src),  intent(in) :: src_obj
     type(shd_type_prp),  intent(in) :: prp_obj
     type(shd_type_sfc),  intent(in) :: sfc_obj
-    type(shd_type_sen),  intent(in) :: sen_obj
 
     integer IRAD
     integer MAXNBC, NTOPPTS, NBOTPTS
@@ -787,8 +788,8 @@ subroutine shd_rad__computeRad(&
     ! Loop over the radiance directions
     do IANG = 1, NANGOUT
         if (sen_obj%fname(1:4) .ne. 'NONE') then
-            MUOUT = sen_obj%view(2*IANG - 1)
-            PHID  = sen_obj%view(2*IANG)
+            MUOUT = view_Sen(2*IANG - 1)
+            PHID  = view_Sen(2*IANG)
         else
             MUOUT = OUTPARMS(2*IANG + 5)
             PHID  = OUTPARMS(2*IANG + 6)
@@ -886,10 +887,12 @@ subroutine shd_rad__computeCamRad(&
     &DIRFLUX, FLUXES,&
     &OUTPARMS, IVIS, VISOUT,&
     &rtm_obj, grid_obj, shdo_obj, src_obj,&
-    &prp_obj, sfc_obj, sen_obj)
+    &prp_obj, sfc_obj)
 
     !   Computes Stokes radiances (output in VISOUT) for the visualization
     !  modes: 1) camera mode, and 2) cross track scanning.
+
+    use globals_obj, only: sen_obj, view_Sen
 
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
@@ -897,7 +900,6 @@ subroutine shd_rad__computeCamRad(&
     type(shd_type_src),  intent(in) :: src_obj
     type(shd_type_prp),  intent(in) :: prp_obj
     type(shd_type_sfc),  intent(in) :: sfc_obj
-    type(shd_type_sen),  intent(in) :: sen_obj
 
     integer IVIS
     integer MAXNBC, NTOPPTS, NBOTPTS

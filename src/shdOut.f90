@@ -52,6 +52,8 @@ module shd_out
                              shd_type_ckd, &
                              shd_type_sen
 
+    use globals_obj, only: sen_obj, view_Sen
+
     use shd_grid, only: shd_grid__testCellSplit
 
     use shd_util, only: shd_util__findCell, &
@@ -85,7 +87,7 @@ subroutine shd_io__outputResult(&
     &IRAD, RADOUT, NSHOUT, SHTERMS, SOURCE1OUT,&
     &OUTTYPE, OUTPARMS, OUTFILE,&
     &rtm_obj, grid_obj, shdo_obj, src_obj,&
-    &prp_obj, sfc_obj, ckd_obj, sen_obj)
+    &prp_obj, sfc_obj, ckd_obj)
 
     !   Writes the desired type of output file from the output fields
     ! with a header giving the input parameters.
@@ -102,7 +104,6 @@ subroutine shd_io__outputResult(&
     type(shd_type_prp),  intent(in) :: prp_obj
     type(shd_type_sfc),  intent(in) :: sfc_obj
     type(shd_type_ckd),  intent(in) :: ckd_obj
-    type(shd_type_sen),  intent(in) :: sen_obj
 
     integer, intent(in) :: MAXITER, TOTITER, NSHOUT
     logical  , intent(in) :: DELTAM
@@ -332,8 +333,8 @@ subroutine shd_io__outputResult(&
         !╭────────────────────────────────────────────────╮!
         do K = 1, NANGOUT
             if (sen_obj%fname(1:4) .ne. 'NONE') then
-                MUOUT = sen_obj%view(2*K - 1)
-                PHID  = sen_obj%view(2*K)
+                MUOUT = view_Sen(2*K - 1)
+                PHID  = view_Sen(2*K)
             else
                 MUOUT = OUTPARMS(2*K + 5)
                 PHID  = OUTPARMS(2*K + 6)
@@ -1183,7 +1184,7 @@ subroutine shd_io__outputResultMpi(&
     &FLUXES, FLUXDIV, NSHOUT, SHTERMS, IRAD, RADOUT,&
     &OUTTYPE, OUTPARMS, OUTFILE,&
     &rtmAll_obj, grid_obj, shdo_obj, src_obj,&
-    &prp_obj, sfc_obj, ckd_obj, sen_obj)
+    &prp_obj, sfc_obj, ckd_obj)
 
     ! Writes the desired type of output file from the output fields
     ! with a header giving the input parameters.
@@ -1199,7 +1200,6 @@ subroutine shd_io__outputResultMpi(&
     type(shd_type_prp),  intent(in) :: prp_obj
     type(shd_type_sfc),  intent(in) :: sfc_obj
     type(shd_type_ckd),  intent(in) :: ckd_obj
-    type(shd_type_sen),  intent(in) :: sen_obj
 
     integer Nsh_tot, Npts_tot, Ncell_tot
     integer MAXITER, TOTITER, IRAD, NSHOUT
@@ -1399,8 +1399,8 @@ subroutine shd_io__outputResultMpi(&
 
         do K = 1, NANGOUT
             if (sen_obj%fname(1:4) .ne. 'NONE') then
-                MUOUT = sen_obj%view(2*K - 1)
-                PHID  = sen_obj%view(2*K)
+                MUOUT = view_Sen(2*K - 1)
+                PHID  = view_Sen(2*K)
             else
                 MUOUT = OUTPARMS(2*K + 5)
                 PHID  = OUTPARMS(2*K + 6)
@@ -1924,7 +1924,7 @@ subroutine shd_io__outputCamRad(&
     &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
     &IVIS, VISOUT, OUTPARMS, OUTFILE,&
     &rtm_obj, grid_obj, shdo_obj, src_obj,&
-    &prp_obj, sfc_obj, ckd_obj, sen_obj)
+    &prp_obj, sfc_obj, ckd_obj)
 
     ! Writes the visualization image in PGM binary format with either
     ! one byte or two byte pixels.  The PGM binary format (P5) has an
@@ -1939,7 +1939,6 @@ subroutine shd_io__outputCamRad(&
     type(shd_type_prp),  intent(in) :: prp_obj
     type(shd_type_sfc),  intent(in) :: sfc_obj
     type(shd_type_ckd),  intent(in) :: ckd_obj
-    type(shd_type_sen),  intent(in) :: sen_obj
 
     integer MAXITER, TOTITER, IVIS
     logical, intent(in) :: DELTAM

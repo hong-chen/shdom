@@ -50,11 +50,12 @@ program shdom
     use globals_type,  only: shd_type_prp, &
                              shd_type_sfc, &
                              shd_type_ckd, &
-                             shd_type_sen, &
                              shd_type_shdo, &
                              shd_type_rtm, &
                              shd_type_grid, &
                              shd_type_src
+
+    use globals_obj,   only: sen_obj, view_Sen
 
     use shd_init, only: shd_init__makeGrid, &
                         shd_init__makeCell
@@ -219,12 +220,6 @@ program shdom
                                            wgt_Ckd(:), &
                                            z_Ckd(:), &
                                            kabs_Ckd(:, :)
-    !╰────────────────────────────────────────────────────────────────────────────╯!
-
-    ! sen_obj
-    !╭────────────────────────────────────────────────────────────────────────────╮!
-    type(shd_type_sen) :: sen_obj
-    real(kind=R__), allocatable, target :: view_Sen(:)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! BC (borrowed from Boundary Condition)
@@ -780,14 +775,11 @@ program shdom
         allocate(view_Sen(sen_obj%Npar*sen_obj%Npts)); &
             memUsed = memUsed + sen_obj%Npar*sen_obj%Npts
 
-        sen_obj%view => view_Sen
-        sen_obj%isAllocated = .true.
-
         if (isMasterProc) then
-            call shd_io__readSen(sen_obj)
+            call shd_io__readSen(sen_obj, view_Sen)
         end if
 
-        call shd_mpi__bcastSen(sen_obj)
+        call shd_mpi__bcastSen(sen_obj, view_Sen)
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
@@ -1233,7 +1225,7 @@ program shdom
                             &work, work(1 + grid_obj%Npts*shdo_obj%Nstokes),&
                             &parms_Out(1, iout), irad, work2,&
                             &rtm_obj, grid_obj, shdo_obj, src_obj,&
-                            &prp_obj, sfc_obj, sen_obj)
+                            &prp_obj, sfc_obj)
                     else
                         call shd_rad__computeRad(&
                             &doDeltaM,&
@@ -1242,7 +1234,7 @@ program shdom
                             &work(1), work(1 + grid_obj%Npts*shdo_obj%Nstokes),&
                             &parms_Out(1, iout), irad, work2,&
                             &rtm_obj, grid_obj, shdo_obj, src_obj,&
-                            &prp_obj, sfc_obj, sen_obj)
+                            &prp_obj, sfc_obj)
                     end if
                 end if
             end do
@@ -1260,7 +1252,7 @@ program shdom
                             &fluxDir, fluxTot,&
                             &parms_Out(1, iout), ilos, work2,&
                             &rtm_obj, grid_obj, shdo_obj, src_obj,&
-                            &prp_obj, sfc_obj, sen_obj)
+                            &prp_obj, sfc_obj)
                     else
                         call shd_rad__computeCamRad(&
                             &doDeltaM,&
@@ -1268,7 +1260,7 @@ program shdom
                             &fluxDir, fluxTot,&
                             &parms_Out(1, iout), ilos, work2,&
                             &rtm_obj, grid_obj, shdo_obj, src_obj,&
-                            &prp_obj, sfc_obj, sen_obj)
+                            &prp_obj, sfc_obj)
                     end if
                 end if
             end do
@@ -1394,7 +1386,7 @@ program shdom
                         &Nsh_out, SH_all, irad, sumRad_Out,&
                         &type_Out(iout), parms_Out(1, iout), file_Out(iout),&
                         &rtmAll_obj, grid_obj, shdo_obj, src_obj,&
-                        &prp_obj, sfc_obj, ckd_obj, sen_obj)
+                        &prp_obj, sfc_obj, ckd_obj)
                 end if
             end do
 
@@ -1421,7 +1413,7 @@ program shdom
                     irad, sumRad_Out, Nsh_out, sumSH_Out, src1_Out,&
                     type_Out(iout), parms_Out(1, iout), file_Out(iout),&
                     rtm_obj, grid_obj, shdo_obj, src_obj,&
-                    prp_obj, sfc_obj, ckd_obj, sen_obj)
+                    prp_obj, sfc_obj, ckd_obj)
             end if
         end do
     end if
@@ -1439,7 +1431,7 @@ program shdom
                     &splitAcc, shAcc, solAcc, maxIter, totIter,&
                     &ilos, sumCam_Out, parms_Out(1, iout), file_Out(iout),&
                     &rtm_obj, grid_obj, shdo_obj, src_obj,&
-                    &prp_obj, sfc_obj, ckd_obj, sen_obj)
+                    &prp_obj, sfc_obj, ckd_obj)
             end if
         end do
     end if
@@ -1565,10 +1557,6 @@ program shdom
     !╭────────────────────────────────────────────────╮!
     if (allocated(view_Sen)) then
         deallocate(view_Sen)
-        if (sen_obj%isAllocated) then
-            nullify(sen_obj%view)
-            sen_obj%isAllocated = .false.
-        end if
     end if
     !╰────────────────────────────────────────────────╯!
 
