@@ -52,8 +52,11 @@ module shd_mpi
                             shd_type_sfc,  &
                             shd_type_ckd,  &
                             shd_type_sen
+
     use globals_obj, only: src_obj, &
-                           sfc_obj
+                           prp_obj, &
+                           sfc_obj, &
+                           sen_obj, view_Sen
 
 #if HAS_MPI
     use mpi_f08,  only: MPI_comm_world, MPI_comm, MPI_request, &
@@ -464,18 +467,30 @@ subroutine shd_mpi__bcastPrpSize(prp_obj)
 
 end subroutine shd_mpi__bcastPrpSize
 
-subroutine shd_mpi__bcastPrp(prpAll_obj, prp_obj)
+subroutine shd_mpi__bcastPrp(prpAll_obj, temp_PrpAll, ext_PrpAll, ssa_PrpAll, leg_PrpAll, ipha_PrpAll, &
+                             prp_obj, temp_Prp, ext_Prp, ssa_Prp, leg_Prp, ipha_Prp)
 
     ! Sends portions of the optical properties on the property grid to each
     ! of the processors.  Deals with the duplicating the grid points on the
     ! boundaries between processors.
 
     type(shd_type_prp), intent(inout) :: prpAll_obj
+    real(kind=R__),  intent(in) :: temp_PrpAll(prpAll_obj%Nz, prpAll_obj%Ny, prpAll_obj%Nx), &
+                                   ext_PrpAll( prpAll_obj%Nz, prpAll_obj%Ny, prpAll_obj%Nx), &
+                                   ssa_PrpAll( prpAll_obj%Nz, prpAll_obj%Ny, prpAll_obj%Nx), &
+                                   leg_PrpAll( prpAll_obj%maxNptsLeg)
+    integer(kind=2), intent(in) :: ipha_PrpAll(prpAll_obj%Nz, prpAll_obj%Ny, prpAll_obj%Nx)
+
     type(shd_type_prp), intent(inout) :: prp_obj
+    real(kind=R__),  intent(out) :: temp_Prp(prp_obj%maxNpts), &
+                                    ext_Prp( prp_obj%maxNpts), &
+                                    ssa_Prp( prp_obj%maxNpts), &
+                                    leg_Prp( prp_obj%maxNptsLeg)
+    integer(kind=2), intent(out) :: ipha_Prp(prp_obj%maxNpts)
 
 #if HAS_MPI
     integer :: SX, EX, Nx, SY, EY, Ny, N, MAXN, MaxNX, MaxNY
-    integer :: iproc, irq, ierr
+    integer :: iproc, irq, ierr, Nrq
     integer, allocatable :: ixyAll(:, :, :)
     real, allocatable :: rbuf(:, :, :), tempbuf(:, :), extbuf(:, :), ssabuf(:, :)
     integer(kind=2), allocatable :: ibuf(:, :, :), iphabuf(:, :)
@@ -483,23 +498,20 @@ subroutine shd_mpi__bcastPrp(prpAll_obj, prp_obj)
     type(MPI_request), allocatable :: requests(:)
     type(MPI_status), allocatable :: status(:)
 
-    real(kind=R__), pointer, contiguous ::  temp_PrpAll(:, :, :) => null(), &
-                                            ext_PrpAll(:, :, :)  => null(), &
-                                            ssa_PrpAll(:, :, :)  => null()
-    integer(kind=2), pointer, contiguous :: ipha_PrpAll(:, :, :) => null()
+    if (prp_obj%Npha .gt. 0) then
+        Nrq = 8
+    else
+        Nrq = 7
+    end if
 
     ! Get the ixyPrp_ arrays from all processors to tell where they are in property grid
     allocate(ixyAll(2, 2, 0 : Nproc_-1))
     call mpi_gather(ixyPrp_, 4, MPI_integer, ixyAll, 4, MPI_integer, 0, comm2D_, ierr)
-    allocate(requests(6*Nproc_ + 6), status(6*Nproc_ + 6))
+
+    allocate(requests(Nrq*Nproc_ + Nrq), status(Nrq*Nproc_ + Nrq))
 
     irq = 0
     if (myProc_ .eq. 0) then
-
-        temp_PrpAll(1:prpAll_obj%Nz, 1:prpAll_obj%Ny, 1:prpAll_obj%Nx) => prpAll_obj%temp
-        ext_PrpAll( 1:prpAll_obj%Nz, 1:prpAll_obj%Ny, 1:prpAll_obj%Nx) => prpAll_obj%ext
-        ssa_PrpAll( 1:prpAll_obj%Nz, 1:prpAll_obj%Ny, 1:prpAll_obj%Nx) => prpAll_obj%ssa
-        ipha_PrpAll(1:prpAll_obj%Nz, 1:prpAll_obj%Ny, 1:prpAll_obj%Nx) => prpAll_obj%ipha
 
         ! Allocate the send buffers for each processor
         MAXN = 1; MaxNX = 1; MaxNY = 1
@@ -548,29 +560,37 @@ subroutine shd_mpi__bcastPrp(prpAll_obj, prp_obj)
 
             call mpi_isend(prpAll_obj%Nleg   , 1, MPI_integer, iproc, 5, comm2D_, requests(irq + 5), ierr)
             call mpi_isend(prpAll_obj%maxAsym, 1, MPI_real   , iproc, 6, comm2D_, requests(irq + 6), ierr)
-            irq = irq + 6
+
+            call mpi_isend(prpAll_obj%z, prpAll_obj%Nz, MPI_real, iproc, 7, comm2D_, requests(irq + 7), ierr)
+
+            if (prpAll_obj%Npha .gt. 0) then
+                call mpi_isend(leg_PrpAll, prpAll_obj%maxNptsLeg, MPI_real, iproc, 8, comm2D_, requests(irq + 8), ierr)
+            end if
+
+            irq = irq + Nrq
+
         end do
 
-        nullify(temp_PrpAll, ext_PrpAll, ssa_PrpAll, ipha_PrpAll)
 
     end if
 
     N = prp_obj%Nx*prp_obj%Ny*prp_obj%Nz
-    call mpi_irecv(prp_obj%temp, N, MPI_real    , 0, 1, comm2D_, requests(irq+1), ierr)
-    call mpi_irecv(prp_obj%ext , N, MPI_real    , 0, 2, comm2D_, requests(irq+2), ierr)
-    call mpi_irecv(prp_obj%ssa , N, MPI_real    , 0, 3, comm2D_, requests(irq+3), ierr)
-    call mpi_irecv(prp_obj%ipha, N, MPI_integer2, 0, 4, comm2D_, requests(irq+4), ierr)
+    call mpi_irecv(temp_Prp, N, MPI_real    , 0, 1, comm2D_, requests(irq+1), ierr)
+    call mpi_irecv(ext_Prp , N, MPI_real    , 0, 2, comm2D_, requests(irq+2), ierr)
+    call mpi_irecv(ssa_Prp , N, MPI_real    , 0, 3, comm2D_, requests(irq+3), ierr)
+    call mpi_irecv(ipha_Prp, N, MPI_integer2, 0, 4, comm2D_, requests(irq+4), ierr)
 
     call mpi_irecv(prp_obj%Nleg   , 1, MPI_integer, 0, 5, comm2D_, requests(irq+5), ierr)
     call mpi_irecv(prp_obj%maxAsym, 1, MPI_real   , 0, 6, comm2D_, requests(irq+6), ierr)
 
-    irq = irq + 6
-    call mpi_waitall(irq, requests, status, ierr)
+    call mpi_irecv(prp_obj%z, prp_obj%Nz, MPI_real, 0, 7, comm2D_, requests(irq+7), ierr)
 
-    call mpi_bcast(prp_obj%z, prp_obj%Nz, MPI_real, 0, comm2D_, ierr)
     if (prp_obj%Npha .gt. 0) then
-        call mpi_bcast(prp_obj%leg, prp_obj%maxNptsLeg, MPI_real, 0, comm2D_, ierr)
+        call mpi_irecv(leg_Prp, prp_obj%maxNptsLeg, MPI_real, 0, 8, comm2D_, requests(irq+8), ierr)
     end if
+
+    irq = irq + Nrq
+    call mpi_waitall(irq, requests, status, ierr)
 
     if (myProc_ .eq. 0) deallocate(tempbuf, extbuf, ssabuf, iphabuf, rbuf, ibuf)
     deallocate(requests, status, ixyAll)
@@ -1061,7 +1081,7 @@ subroutine shd_mpi__makeDirect(SPT,&
     &DELTAM, ML,&
     &SOLARFLUX, SOLARMU, SOLARAZ,&
     &DIRFLUX,&
-    &rtm_obj, grid_obj, prp_obj)
+    &rtm_obj, grid_obj)
 
     ! Makes the direct beam solar flux for the grid_obj%Npts gridpoints started with
     ! index SPT having X/Y/Z positions in grid_obj%xyz.
@@ -1069,7 +1089,6 @@ subroutine shd_mpi__makeDirect(SPT,&
 
     type(shd_type_rtm),  intent(in) ::  rtm_obj
     type(shd_type_grid), intent(in) ::  grid_obj
-    type(shd_type_prp),  intent(in) ::  prp_obj
 
     integer, intent(in) :: SPT, ML
     logical, intent(in) :: DELTAM
@@ -1106,14 +1125,14 @@ subroutine shd_mpi__makeDirect(SPT,&
         ! Initialize the direct beam calculation
         call shd_rad__computeDirect(1, 0.0, 0.0, 0.0, rtm_obj%flag_bc, rtm_obj%flag_ip,&
             &DELTAM, ML, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
-            &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj)
+            &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
         ! Find the max lowest uniform Z level over all processors and then
         !   tell shd_rad__computeDirect about it
         UZLEV = UNIFZLEV
         call mpi_allreduce(UZLEV, UNIFZLEV, 1, MPI_real, MPI_max, comm2D_, ierr)
         call shd_rad__computeDirect(2, 0.0, 0.0, 0.0, rtm_obj%flag_bc, rtm_obj%flag_ip,&
             &DELTAM, ML, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
-            &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj)
+            &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
     end if
 
     Lupx = 0; Lupy = 0; Ldownx = 0; Ldowny = 0
@@ -1146,7 +1165,7 @@ subroutine shd_mpi__makeDirect(SPT,&
         call shd_rad__computeDirect(0, grid_obj%xyz(1, IP), grid_obj%xyz(2, IP), grid_obj%xyz(3, IP),&
             &rtm_obj%flag_bc, rtm_obj%flag_ip, DELTAM, ML,&
             &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(IP),&
-            &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj)
+            &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
         ! If we don't have a good direct beam then save the information
         !   needed to pass to two upstream processors
         if (.not. VALIDBEAM) then
@@ -1216,7 +1235,7 @@ subroutine shd_mpi__makeDirect(SPT,&
                 call shd_rad__computeDirect(0, X, Y, Z, rtm_obj%flag_bc, rtm_obj%flag_ip,&
                     &DELTAM, ML,&
                     &SOLARFLUX, SOLARMU, SOLARAZ, DIRJUNK,&
-                    &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj)
+                    &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
                 ! If we got a valid direct beam then store it in DirAllOut otherwise
                 ! save the information to continue passing to neighboring processors
                 if (VALIDBEAM) then
@@ -1248,7 +1267,7 @@ subroutine shd_mpi__makeDirect(SPT,&
                 call shd_rad__computeDirect(0, X, Y, Z, rtm_obj%flag_bc, rtm_obj%flag_ip,&
                     &DELTAM, ML,&
                     &SOLARFLUX, SOLARMU, SOLARAZ, DIRJUNK,&
-                    &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj)
+                    &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
                 ! If we got a valid direct beam then store it in DirAllOut otherwise
                 ! save the information to continue passing to neighboring processors
                 if (VALIDBEAM) then
@@ -1795,20 +1814,16 @@ subroutine shd_mpi__computeRad(&
     &DIRFLUX, FLUXES,&
     &SOURCE1, GRIDRAD,&
     &parms_Out, NRAD, RADOUT,&
-    &rtm_obj, grid_obj, shdo_obj,&
-    &prp_obj)
+    &rtm_obj, grid_obj, shdo_obj)
 
     ! Computes the radiances for the locations and directions specified
     ! in parms_Out, putting the results in RADOUT and increasing NRAD by
     ! the number of radiances output.  Does the radiative transfer integrations
     ! across multiple processors.
 
-    use globals_obj, only: sen_obj, view_Sen
-
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
     type(shd_type_shdo), intent(in) :: shdo_obj
-    type(shd_type_prp),  intent(in) :: prp_obj
 
     integer, intent(inout) :: NRAD
     integer, intent(in) :: MAXNBC, NTOPPTS, NBOTPTS
@@ -1946,7 +1961,7 @@ subroutine shd_mpi__computeRad(&
         call shd_src__computeSrcOneDir(&
             &DELTAM, mu_out, phi_out,&
             &DIRFLUX, SOURCE1,&
-            &rtm_obj, grid_obj, shdo_obj, prp_obj)
+            &rtm_obj, grid_obj, shdo_obj)
 
         ! Set the radiance field to -1, so we can determine valid radiances
         !   Also set the source array to the extinction times the source
@@ -2211,20 +2226,16 @@ subroutine shd_mpi__computeCamRad(&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &DIRFLUX, FLUXES,&
     &parms_Out, IVIS, VISOUT,&
-    &rtm_obj, grid_obj, shdo_obj,&
-    &prp_obj)
+    &rtm_obj, grid_obj, shdo_obj)
 
     ! Computes Stokes radiances (output in VISOUT) for the visualization
     !   modes: 1) camera mode,
     !          2) cross track scanning,
     !          3) user-specified sensor mode.
 
-    use globals_obj, only: sen_obj, view_Sen
-
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
     type(shd_type_shdo), intent(in) :: shdo_obj
-    type(shd_type_prp),  intent(in) :: prp_obj
 
     integer, intent(inout) :: IVIS
     integer, intent(in) :: MAXNBC, NTOPPTS, NBOTPTS
@@ -2473,7 +2484,7 @@ subroutine shd_mpi__computeCamRad(&
                     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                     &MU2, PHI2, X0, Y0, Z0,&
                     &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD,&
-                    &rtm_obj, grid_obj, prp_obj)
+                    &rtm_obj, grid_obj)
 
                 ! If we got a radiance then store it in RadSend otherwise save
                 !  the information needed to pass to other processors
@@ -2556,7 +2567,7 @@ subroutine shd_mpi__computeCamRad(&
                     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                     &MU2, PHI2, X, Y, Z,&
                     &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD,&
-                    &rtm_obj, grid_obj, prp_obj)
+                    &rtm_obj, grid_obj)
 
                 ! If we got a valid radiance then store it in RadSend, otherwise
                 ! save information needed to pass to neighboring processors

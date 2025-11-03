@@ -46,10 +46,10 @@ module shd_intg
                              isPol_
     use globals_type,  only: shd_type_rtm, &
                              shd_type_grid, &
-                             shd_type_shdo, &
-                             shd_type_prp
+                             shd_type_shdo
 
     use globals_obj, only: src_obj, &
+                           prp_obj, &
                            sfc_obj
 
     use shd_sfc,  only: shd_sfc__interpSfc
@@ -96,7 +96,7 @@ subroutine shd_intg__integratePath(&
     &CMU1, CPHI1, CMU2, CPHI2, WSAVE, FFTFLAG,&
     &DIRFLUX, FLUXES,&
     &WORK, SWEEPORD, GRIDRAD,&
-    &rtm_obj, grid_obj, shdo_obj, prp_obj)
+    &rtm_obj, grid_obj, shdo_obj)
 
     !   Performs the path integrations through the medium specified by
     ! the extinction (rtm_obj%ext) and source function (shdo_obj%srcJ) in
@@ -125,7 +125,6 @@ subroutine shd_intg__integratePath(&
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
     type(shd_type_shdo), intent(in) :: shdo_obj
-    type(shd_type_prp),  intent(in) :: prp_obj
 
     integer MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS
     integer BCPTR(MAXNBC, 2)
@@ -168,8 +167,7 @@ subroutine shd_intg__integratePath(&
             !   the surface temperature and reflection parameters to the
             !   bottom grid points.
             call shd_sfc__interpSfc(NBOTPTS, BCPTR(1, 2), grid_obj%xyz,&
-                &src_obj%type, src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit,&
-                &prp_obj)
+                &src_obj%type, src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit)
         end if
     end if
     ! Make the isotropic radiances for the top boundary

@@ -740,7 +740,8 @@ subroutine shd_io__readPrpSize(prp_obj)
 
 end subroutine shd_io__readPrpSize
 
-subroutine shd_io__readPrp(isDeltaM, prp_obj)
+subroutine shd_io__readPrp(isDeltaM, &
+                           prp_obj, temp_Prp, ext_Prp, ssa_Prp, leg_Prp, ipha_Prp)
 
     ! Reads the medium properties from the file into the property arrays.
     ! There are four formats: the standard format specifies the extinction,
@@ -763,6 +764,12 @@ subroutine shd_io__readPrp(isDeltaM, prp_obj)
     logical, intent(in) :: isDeltaM
 
     type(shd_type_prp), intent(inout) :: prp_obj
+    real(kind=R__), intent(out) :: temp_Prp(prp_obj%maxNpts), &
+                                   ext_Prp(prp_obj%maxNpts), &
+                                   ssa_Prp(prp_obj%maxNpts), &
+                                   leg_Prp(prp_obj%NlegSet, &
+                                           0:prp_obj%maxNleg, *)
+    integer(kind=2), intent(out) :: ipha_Prp(prp_obj%maxNpts)
 
     !integer i, ix, iy, iz, j, js, k, kl, l, il, Nleg, ipha0, N
     integer i, ix, iy, iz, j, js, k, l, Nleg, ipha0, N
@@ -818,21 +825,21 @@ subroutine shd_io__readPrp(isDeltaM, prp_obj)
         read (1, *)
         read (1, *) prp_obj%Nx, prp_obj%Ny, prp_obj%Nz
         read (1, *) prp_obj%dx, prp_obj%dy, (prp_obj%z(k), k=1, prp_obj%Nz)
-        read (1, *) (prp_obj%temp(iz), iz=1, prp_obj%Nz)
+        read (1, *) (temp_Prp(iz), iz=1, prp_obj%Nz)
 
-        !read (1, *) ssa0, Nleg, (prp_obj%leg(l + 1), l=1, min(Nleg, prp_obj%Nleg)),&
+        !read (1, *) ssa0, Nleg, (leg_Prp(l + 1), l=1, min(Nleg, prp_obj%Nleg)),&
         !    &(chi0, l=prp_obj%Nleg + 1, Nleg)
-        read (1, *) ssa0, Nleg, (prp_obj%leg(1, l, 1), l=1, min(Nleg, prp_obj%Nleg)),&
+        read (1, *) ssa0, Nleg, (leg_Prp(1, l, 1), l=1, min(Nleg, prp_obj%Nleg)),&
             &(chi0, l=prp_obj%Nleg + 1, Nleg)
 
-        !prp_obj%leg(1) = 1.0
-        prp_obj%leg(1, 0, 1) = 1.0
+        !leg_Prp(1) = 1.0
+        leg_Prp(1, 0, 1) = 1.0
 
-        !prp_obj%maxAsym = prp_obj%leg(1 + 1)/3.0
-        prp_obj%maxAsym = prp_obj%leg(1, 1, 1)/3.0
+        !prp_obj%maxAsym = leg_Prp(1 + 1)/3.0
+        prp_obj%maxAsym = leg_Prp(1, 1, 1)/3.0
         do l = Nleg + 1, prp_obj%Nleg
-            !prp_obj%leg(l) = 0.0
-            prp_obj%leg(1, l, 1) = 0.0
+            !leg_Prp(l) = 0.0
+            leg_Prp(1, l, 1) = 0.0
         end do
 
         iy = 1
@@ -846,10 +853,10 @@ subroutine shd_io__readPrp(isDeltaM, prp_obj)
                &iy .ge. 1 .and. iy .le. prp_obj%Ny .and.&
                &iz .ge. 1 .and. iz .le. prp_obj%Nz) then
                 k = iz + prp_obj%Nz*(iy - 1) + prp_obj%Nz*prp_obj%Ny*(ix - 1)
-                prp_obj%temp(k) = prp_obj%temp(iz)
-                prp_obj%ext(k)  = ext0
-                prp_obj%ssa(k)  = ssa0
-                prp_obj%ipha(k) = 1
+                temp_Prp(k) = temp_Prp(iz)
+                ext_Prp(k)  = ext0
+                ssa_Prp(k)  = ssa0
+                ipha_Prp(k) = 1
             end if
         end do
 
@@ -901,38 +908,38 @@ subroutine shd_io__readPrp(isDeltaM, prp_obj)
 
             if (prp_obj%type .eq. 'T') then
 
-                !prp_obj%leg(il + 1) = 1.0
-                prp_obj%leg(1, 0, i) = 1.0
+                !leg_Prp(il + 1) = 1.0
+                leg_Prp(1, 0, i) = 1.0
 
-                !read (1, *) Nleg, (prp_obj%leg(il + l + 1), l=1, min(Nleg, prp_obj%Nleg)),&
+                !read (1, *) Nleg, (leg_Prp(il + l + 1), l=1, min(Nleg, prp_obj%Nleg)),&
                 !    &(chi0, l=prp_obj%Nleg + 1, Nleg)
-                read (1, *) Nleg, (prp_obj%leg(1, l, i), l=1, min(Nleg, prp_obj%Nleg)),&
+                read (1, *) Nleg, (leg_Prp(1, l, i), l=1, min(Nleg, prp_obj%Nleg)),&
                     &(chi0, l=prp_obj%Nleg + 1, Nleg)
 
                 do l = Nleg + 1, prp_obj%Nleg
-                    !prp_obj%leg(l + il + 1) = 0.0
-                    prp_obj%leg(1, l, i) = 0.0
+                    !leg_Prp(l + il + 1) = 0.0
+                    leg_Prp(1, l, i) = 0.0
                 end do
             else
                 do j = 1, 6
                     if (j .le. prp_obj%NlegSet) then
                         !read (1, *) js, Nleg,&
-                        !    &(prp_obj%leg((il + l)*prp_obj%NlegSet + j), l=0, min(Nleg, prp_obj%Nleg)),&
+                        !    &(leg_Prp((il + l)*prp_obj%NlegSet + j), l=0, min(Nleg, prp_obj%Nleg)),&
                         !    &(chi0, l=prp_obj%Nleg + 1, Nleg)
                         read (1, *) js, Nleg,&
-                            &(prp_obj%leg(j, l, i), l=0, min(Nleg, prp_obj%Nleg)),&
+                            &(leg_Prp(j, l, i), l=0, min(Nleg, prp_obj%Nleg)),&
                             &(chi0, l=prp_obj%Nleg + 1, Nleg)
                         do l = Nleg + 1, prp_obj%Nleg
-                            !prp_obj%leg((il + l)*prp_obj%NlegSet + j) = 0.0
-                            prp_obj%leg(j, l, i) = 0.0
+                            !leg_Prp((il + l)*prp_obj%NlegSet + j) = 0.0
+                            leg_Prp(j, l, i) = 0.0
                         end do
                     else
                         read (1, *) js, Nleg, (chi0, l=0, Nleg)
                     end if
                 end do
             end if
-            !prp_obj%maxAsym = max(prp_obj%maxAsym, prp_obj%leg((il + 1)*prp_obj%NlegSet + 1)/3.0)
-            prp_obj%maxAsym = max(prp_obj%maxAsym, prp_obj%leg(1, 1, i)/3.0)
+            !prp_obj%maxAsym = max(prp_obj%maxAsym, leg_Prp((il + 1)*prp_obj%NlegSet + 1)/3.0)
+            prp_obj%maxAsym = max(prp_obj%maxAsym, leg_Prp(1, 1, i)/3.0)
         end do
 
         read (1, '(A)') lineTmp ! skip one line
@@ -952,14 +959,14 @@ subroutine shd_io__readPrp(isDeltaM, prp_obj)
             open (UNIT=88, FILE=trim(adjustl(fnameBin)), STATUS='OLD',&
                 &ACCESS='STREAM', FORM='UNFORMATTED')
 
-            ! prp_obj%temp: real(4)
-            read (88) (((prp_obj%temp(iz+prp_obj%Nz*(iy-1)+prp_obj%Nz*prp_obj%Ny*(ix-1)), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
-            ! prp_obj%ext: real(4)
-            read (88) ((( prp_obj%ext(iz+prp_obj%Nz*(iy-1)+prp_obj%Nz*prp_obj%Ny*(ix-1)), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
-            ! prp_obj%ssa: real(4)
-            read (88) ((( prp_obj%ssa(iz+prp_obj%Nz*(iy-1)+prp_obj%Nz*prp_obj%Ny*(ix-1)), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
-            ! prp_obj%ipha: integer(2)
-            read (88) (((prp_obj%ipha(iz+prp_obj%Nz*(iy-1)+prp_obj%Nz*prp_obj%Ny*(ix-1)), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
+            ! temp_Prp: real(4)
+            read (88) (((temp_Prp(iz+prp_obj%Nz*(iy-1)+prp_obj%Nz*prp_obj%Ny*(ix-1)), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
+            ! ext_Prp: real(4)
+            read (88) ((( ext_Prp(iz+prp_obj%Nz*(iy-1)+prp_obj%Nz*prp_obj%Ny*(ix-1)), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
+            ! ssa_Prp: real(4)
+            read (88) ((( ssa_Prp(iz+prp_obj%Nz*(iy-1)+prp_obj%Nz*prp_obj%Ny*(ix-1)), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
+            ! ipha_Prp: integer(2)
+            read (88) (((ipha_Prp(iz+prp_obj%Nz*(iy-1)+prp_obj%Nz*prp_obj%Ny*(ix-1)), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
 
             close (88)
 
@@ -975,10 +982,10 @@ subroutine shd_io__readPrp(isDeltaM, prp_obj)
                    &iy .ge. 1 .and. iy .le. prp_obj%Ny .and.&
                    &iz .ge. 1 .and. iz .le. prp_obj%Nz) then
                     k = iz + prp_obj%Nz*(iy - 1) + prp_obj%Nz*prp_obj%Ny*(ix - 1)
-                    prp_obj%temp(k) = temp0
-                    prp_obj%ext(k)  = ext0
-                    prp_obj%ssa(k)  = ssa0
-                    prp_obj%ipha(k) = ipha0
+                    temp_Prp(k) = temp0
+                    ext_Prp(k)  = ext0
+                    ssa_Prp(k)  = ssa0
+                    ipha_Prp(k) = ipha0
                 end if
             end do
             !╰────────────────────────────────────────────────╯!
@@ -1030,22 +1037,22 @@ subroutine shd_io__readPrp(isDeltaM, prp_obj)
 
                 backspace (1)
 
-                !read (1, *, end=290) ix, iy, iz, prp_obj%temp(k), prp_obj%ext(k),&
-                !    &prp_obj%ssa(k), Nleg, (prp_obj%leg(l + kl), l=1, min(Nleg, prp_obj%Nleg)),&
+                !read (1, *, end=290) ix, iy, iz, temp_Prp(k), ext_Prp(k),&
+                !    &ssa_Prp(k), Nleg, (leg_Prp(l + kl), l=1, min(Nleg, prp_obj%Nleg)),&
                 !    &(chi0, l=prp_obj%Nleg + 1, Nleg)
-                read (1, *, end=290) ix, iy, iz, prp_obj%temp(k), prp_obj%ext(k),&
-                    &prp_obj%ssa(k), Nleg, (prp_obj%leg(1, l, k), l=1, min(Nleg, prp_obj%Nleg)),&
+                read (1, *, end=290) ix, iy, iz, temp_Prp(k), ext_Prp(k),&
+                    &ssa_Prp(k), Nleg, (leg_Prp(1, l, k), l=1, min(Nleg, prp_obj%Nleg)),&
                     &(chi0, l=prp_obj%Nleg + 1, Nleg)
 
-                !prp_obj%maxAsym = max(prp_obj%maxAsym, prp_obj%leg(kl + 1 + 1)/3.0)
-                !prp_obj%leg(1 + kl) = 1.0
+                !prp_obj%maxAsym = max(prp_obj%maxAsym, leg_Prp(kl + 1 + 1)/3.0)
+                !leg_Prp(1 + kl) = 1.0
 
-                prp_obj%maxAsym = max(prp_obj%maxAsym, prp_obj%leg(1, 1, k)/3.0)
-                prp_obj%leg(1, 0, k) = 1.0
+                prp_obj%maxAsym = max(prp_obj%maxAsym, leg_Prp(1, 1, k)/3.0)
+                leg_Prp(1, 0, k) = 1.0
 
                 do l = Nleg + 1, prp_obj%Nleg
-                    !prp_obj%leg(l + kl) = 0.0
-                    prp_obj%leg(1, l, k) = 0.0
+                    !leg_Prp(l + kl) = 0.0
+                    leg_Prp(1, l, k) = 0.0
                 end do
 
             end if
@@ -1060,7 +1067,7 @@ subroutine shd_io__readPrp(isDeltaM, prp_obj)
 
 end subroutine shd_io__readPrp
 
-subroutine shd_io__checkPrp(prp_obj)
+subroutine shd_io__checkPrp(prp_obj, temp_Prp, ext_Prp, ssa_Prp, leg_Prp, ipha_Prp)
 
     ! Checks the input medium property values for correctness.
     ! Warning if temperature below 150 K or above 350 K.
@@ -1071,6 +1078,13 @@ subroutine shd_io__checkPrp(prp_obj)
     ! Warning if optical depth across a grid cell exceeds 2.
 
     type(shd_type_prp), intent(inout) :: prp_obj
+
+    real(kind=R__), intent(in)  :: temp_Prp(prp_obj%maxNpts), &
+                                   ext_Prp(prp_obj%maxNpts), &
+                                   ssa_Prp(prp_obj%maxNpts), &
+                                   leg_Prp(prp_obj%NlegSet, &
+                                           0:prp_obj%maxNleg, *)
+    integer(kind=2), intent(in) :: ipha_Prp(prp_obj%maxNpts)
 
     integer(kind=I__) :: i, iz, N, Nthick
     real(kind=R__)    :: tmin, tmax, tau, maxTau, dz
@@ -1104,8 +1118,8 @@ subroutine shd_io__checkPrp(prp_obj)
     tmin = 1000.0
     tmax = -1000.0
     do i = 1, N
-        tmin = min(tmin, prp_obj%temp(i))
-        tmax = max(tmax, prp_obj%temp(i))
+        tmin = min(tmin, temp_Prp(i))
+        tmax = max(tmax, temp_Prp(i))
     end do
 
     if (tmin .lt. 150.0 .or. tmax .gt. 350.0) then
@@ -1115,14 +1129,14 @@ subroutine shd_io__checkPrp(prp_obj)
     end if
 
     do i = 1, N
-        if (prp_obj%ext(i) .lt. 0.0) then
+        if (ext_Prp(i) .lt. 0.0) then
             write (*, *) 'Error [_checkPrp]: Negative extinction - ',&
-                &prp_obj%ext(i), ' at grid point ', i
+                &ext_Prp(i), ' at grid point ', i
             stop
         end if
-        if (prp_obj%ssa(i) .lt. 0.0 .or. prp_obj%ssa(i) .gt. 1.0) then
+        if (ssa_Prp(i) .lt. 0.0 .or. ssa_Prp(i) .gt. 1.0) then
             write (*, *) 'Error [_checkPrp]: Single scattering ',&
-                &'albedo out of range - ', prp_obj%ssa(i), ' at grid point ', i
+                &'albedo out of range - ', ssa_Prp(i), ' at grid point ', i
             stop
         end if
     end do
@@ -1130,12 +1144,12 @@ subroutine shd_io__checkPrp(prp_obj)
     if (prp_obj%Npha .gt. 0) N = prp_obj%Npha
     legWarn = .false.
     do i = 1, N
-        if (prp_obj%leg(1, 1, i) .lt. -3.0 .or. prp_obj%leg(1, 1, i) .gt. 3.0) then
+        if (leg_Prp(1, 1, i) .lt. -3.0 .or. leg_Prp(1, 1, i) .gt. 3.0) then
             write (*, *) 'Error [_checkPrp]: Asymmetry parameter ',&
-                &'out of range - ', prp_obj%leg(1, 1, i)/3.0, ' at grid point ', i
+                &'out of range - ', leg_Prp(1, 1, i)/3.0, ' at grid point ', i
             stop
         end if
-        if (prp_obj%leg(1, 1, i) .eq. 1.0) legWarn = .true.
+        if (leg_Prp(1, 1, i) .eq. 1.0) legWarn = .true.
     end do
 
     if (legWarn) then
@@ -1148,9 +1162,9 @@ subroutine shd_io__checkPrp(prp_obj)
     if (prp_obj%Npha .gt. 0) then
         N = prp_obj%Nx*prp_obj%Ny*prp_obj%Nz
         do i = 1, N
-            if (prp_obj%ipha(i) .lt. 1 .or. prp_obj%ipha(i) .gt. prp_obj%Npha) then
+            if (ipha_Prp(i) .lt. 1 .or. ipha_Prp(i) .gt. prp_obj%Npha) then
                 write (*, *) 'Error [_checkPrp]: Phase function pointer',&
-                    &' out of range - ', prp_obj%ipha(i), ' at grid point ', i
+                    &' out of range - ', ipha_Prp(i), ' at grid point ', i
                 stop
             end if
         end do
@@ -1162,7 +1176,7 @@ subroutine shd_io__checkPrp(prp_obj)
     do iz = 1, prp_obj%Nz - 1
         dz = prp_obj%z(iz + 1) - prp_obj%z(iz)
         do i = 0, N - 1, prp_obj%Nz
-            tau = 0.5*(prp_obj%ext(i + iz) + prp_obj%ext(i + iz + 1))*dz
+            tau = 0.5*(ext_Prp(i + iz) + ext_Prp(i + iz + 1))*dz
             if (tau .gt. 2.0) then
                 Nthick = Nthick + 1
                 maxTau = max(maxTau, tau)

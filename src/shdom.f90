@@ -54,6 +54,7 @@ program shdom
                              shd_type_grid
 
     use globals_obj,   only: src_obj, &
+                             prp_obj, temp_Prp, ext_Prp, ssa_Prp, leg_Prp, ipha_Prp, extDir_Prp, &
                              sfc_obj, brdf_Sfc, brdf_Rtm, &
                              ckd_obj, solar_Ckd, wgt_Ckd, kabs_Ckd, &
                              sen_obj, view_Sen
@@ -182,21 +183,12 @@ program shdom
 
     ! prp_obj
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    type(shd_type_prp) :: prpAll_obj, prp_obj
-
-    real(kind=R__),  allocatable, target :: z_Prp(:)
-    real(kind=R__),  allocatable, target :: temp_Prp(:), &
-                                            ext_Prp(:), &
-                                            ssa_Prp(:)
-    real(kind=R__),  allocatable, target :: extDir_Prp(:)
-    real(kind=R__),  allocatable, target :: leg_Prp(:)
-    integer(kind=2), allocatable, target :: ipha_Prp(:)
-
-    real(kind=R__),  allocatable, target :: temp_PrpAll(:), &
-                                            ext_PrpAll(:), &
-                                            ssa_PrpAll(:)
-    real(kind=R__),  allocatable, target :: leg_PrpAll(:)
-    integer(kind=2), allocatable, target :: ipha_PrpAll(:)
+    type(shd_type_prp) :: prpAll_obj
+    real(kind=R__),  allocatable :: temp_PrpAll(:), &
+                                    ext_PrpAll(:),  &
+                                    ssa_PrpAll(:),  &
+                                    leg_PrpAll(:, :, :)
+    integer(kind=2), allocatable :: ipha_PrpAll(:)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! sfc_obj
@@ -584,29 +576,23 @@ program shdom
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Determine the size of the property grid arrays so can allocate
     prp_obj%maxNpts = prp_obj%Nx * prp_obj%Ny * prp_obj%Nz
-    if (prp_obj%Npha .eq. 0) prp_obj%maxNptsLeg = prp_obj%maxNpts * (prp_obj%maxNleg + 1) * prp_obj%NlegSet
+    if (prp_obj%Npha .eq. 0) &
+        prp_obj%maxNptsLeg = prp_obj%maxNpts * (prp_obj%maxNleg + 1) * prp_obj%NlegSet
 
-    allocate(z_Prp(prp_obj%Nz))
-    allocate(temp_Prp(prp_obj%maxNpts), &
-             ext_Prp( prp_obj%maxNpts), &
-             ssa_Prp( prp_obj%maxNpts))
-    allocate(extDir_Prp(prp_obj%maxNpts), &
-             ipha_Prp(prp_obj%maxNpts), &
-             leg_Prp( prp_obj%maxNptsLeg)); &
-        memUsed = memUsed + prp_obj%Nz + 6.0*prp_obj%maxNpts + prp_obj%maxNptsLeg
-
-    prp_obj%z      => z_Prp
-    prp_obj%temp   => temp_Prp
-    prp_obj%ext    => ext_Prp
-    prp_obj%extDir => extDir_Prp
-    prp_obj%ssa    => ssa_Prp
-    prp_obj%ipha   => ipha_Prp
-
-    prp_obj%leg(1:prp_obj%NlegSet, &
-                0:prp_obj%maxNleg, &
-                1:prp_obj%maxNptsLeg/(prp_obj%maxNleg+1)/prp_obj%NlegSet) => leg_Prp
-
+    allocate(prp_obj%z(prp_obj%Nz))
     prp_obj%isAllocated = .true.
+
+    allocate(temp_Prp(prp_obj%maxNpts), &
+             ext_Prp(prp_obj%maxNpts),  &
+             ssa_Prp(prp_obj%maxNpts),  &
+             leg_Prp(1:prp_obj%NlegSet, &
+                     0:prp_obj%maxNleg, &
+                     1:prp_obj%maxNptsLeg/(prp_obj%maxNleg+1)/prp_obj%NlegSet), &
+             ipha_Prp(prp_obj%maxNpts))
+
+    allocate(extDir_Prp(prp_obj%maxNpts))
+
+    memUsed = memUsed + prp_obj%Nz + 6.0*prp_obj%maxNpts + prp_obj%maxNptsLeg
 
     if (isMpi_) then
 
@@ -614,24 +600,19 @@ program shdom
         !   distribute to all the processors
         if (isMasterProc) then
 
-            allocate(temp_PrpAll(prpAll_obj%maxNpts), &
-                     ext_PrpAll( prpAll_obj%maxNpts), &
-                     ssa_PrpAll( prpAll_obj%maxNpts))
-            allocate(ipha_PrpAll(prpAll_obj%maxNpts))
-
-            prpAll_obj%z    => z_Prp
-
-            prpAll_obj%leg(1:prpAll_obj%NlegSet, &
-                           0:prpAll_obj%maxNleg, &
-                           1:prpAll_obj%maxNptsLeg/(prpAll_obj%maxNleg+1)/prpAll_obj%NlegSet) => leg_Prp
-
-            prpAll_obj%temp => temp_PrpAll
-            prpAll_obj%ext  => ext_PrpAll
-            prpAll_obj%ssa  => ssa_PrpAll
-            prpAll_obj%ipha => ipha_PrpAll
+            allocate(prpAll_obj%z(prpAll_obj%Nz))
             prpAll_obj%isAllocated = .true.
 
-            call shd_io__readPrp(doDeltaM, prpAll_obj)
+            allocate(temp_PrpAll(prpAll_obj%maxNpts), &
+                     ext_PrpAll( prpAll_obj%maxNpts), &
+                     ssa_PrpAll( prpAll_obj%maxNpts), &
+                     leg_PrpAll( prpAll_obj%NlegSet, &
+                                 0:prpAll_obj%maxNleg, &
+                                 prpAll_obj%maxNptsLeg/(prpAll_obj%maxNleg+1)/prpAll_obj%NlegSet), &
+                     ipha_PrpAll(prpAll_obj%maxNpts))
+
+            call shd_io__readPrp(doDeltaM, &
+                                 prpAll_obj, temp_PrpAll, ext_PrpAll, ssa_PrpAll, leg_PrpAll, ipha_PrpAll)
 
             if (prpAll_obj%Npha .eq. 0) then
                 stop 'Error [shdom]: Standard property file (with phase function Legendre series at every point)&
@@ -639,25 +620,22 @@ program shdom
             end if
 
             ! Check values of medium properties
-            call shd_io__checkPrp(prpAll_obj)
+            call shd_io__checkPrp(prpAll_obj, temp_PrpAll, ext_PrpAll, ssa_PrpAll, leg_PrpAll, ipha_PrpAll)
 
         end if
 
         ! distribute file grid data to working grids (different CPU processes different grids)
-        call shd_mpi__bcastPrp(prpAll_obj, prp_obj)
+        call shd_mpi__bcastPrp(prpAll_obj, temp_PrpAll, ext_PrpAll, ssa_PrpAll, leg_PrpAll, ipha_PrpAll, &
+                               prp_obj,    temp_Prp,    ext_Prp,    ssa_Prp,    leg_Prp,    ipha_Prp)
 
         if (isMasterProc) then
             deallocate(temp_PrpAll, &
-                       ext_PrpAll, &
-                       ssa_PrpAll, &
+                       ext_PrpAll,  &
+                       ssa_PrpAll,  &
+                       leg_PrpAll,  &
                        ipha_PrpAll)
             if (prpAll_obj%isAllocated) then
-                nullify(prpAll_obj%z, &
-                        prpAll_obj%temp, &
-                        prpAll_obj%ext, &
-                        prpAll_obj%ssa, &
-                        prpAll_obj%ipha, &
-                        prpAll_obj%leg)
+                deallocate(prpAll_obj%z)
                 prpAll_obj%isAllocated = .false.
             end if
         end if
@@ -665,10 +643,11 @@ program shdom
     else
 
         ! Read the properties of the medium to the single processor
-        call shd_io__readPrp(doDeltaM, prp_obj)
+        call shd_io__readPrp(doDeltaM, &
+                             prp_obj, temp_Prp, ext_Prp, ssa_Prp, leg_Prp, ipha_Prp)
 
         ! Check values of medium properties
-        call shd_io__checkPrp(prp_obj)
+        call shd_io__checkPrp(prp_obj, temp_Prp, ext_Prp, ssa_Prp, leg_Prp, ipha_Prp)
 
     end if
 
@@ -1136,7 +1115,7 @@ program shdom
     if (doGridInit) then
         ! Make the internal base grid lines
         ! note: we might not need <rtm_obj> after all
-        call shd_init__makeGrid(rtm_obj, prp_OBJ, grid_OBJ)
+        call shd_init__makeGrid(rtm_obj, grid_OBJ)
     end if
 
     message = 'Message [shdom]: Total time used for preparation: '
@@ -1189,8 +1168,7 @@ program shdom
             &maxNpts_bc, maxNrad_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
             &idsrc_Shdo, work, work1, work2,&
             &dsrc_Shdo, fluxTot, fluxDir,&
-            &rtm_obj, grid_obj, shdo_obj,&
-            &prp_obj)
+            &rtm_obj, grid_obj, shdo_obj)
 
         doRadInit = .false.
         totIter = totIter + iter
@@ -1207,8 +1185,7 @@ program shdom
                             &fluxDir, fluxTot,&
                             &work, work(1 + grid_obj%Npts*shdo_obj%Nstokes),&
                             &parms_Out(1, iout), irad, work2,&
-                            &rtm_obj, grid_obj, shdo_obj,&
-                            &prp_obj)
+                            &rtm_obj, grid_obj, shdo_obj)
                     else
                         call shd_rad__computeRad(&
                             &doDeltaM,&
@@ -1216,8 +1193,7 @@ program shdom
                             &fluxDir, fluxTot,&
                             &work(1), work(1 + grid_obj%Npts*shdo_obj%Nstokes),&
                             &parms_Out(1, iout), irad, work2,&
-                            &rtm_obj, grid_obj, shdo_obj,&
-                            &prp_obj)
+                            &rtm_obj, grid_obj, shdo_obj)
                     end if
                 end if
             end do
@@ -1234,16 +1210,14 @@ program shdom
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
                             &fluxDir, fluxTot,&
                             &parms_Out(1, iout), ilos, work2,&
-                            &rtm_obj, grid_obj, shdo_obj,&
-                            &prp_obj)
+                            &rtm_obj, grid_obj, shdo_obj)
                     else
                         call shd_rad__computeCamRad(&
                             &doDeltaM,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
                             &fluxDir, fluxTot,&
                             &parms_Out(1, iout), ilos, work2,&
-                            &rtm_obj, grid_obj, shdo_obj,&
-                            &prp_obj)
+                            &rtm_obj, grid_obj, shdo_obj)
                     end if
                 end if
             end do
@@ -1259,7 +1233,7 @@ program shdom
                     call shd_src__computeSrcOneDir(doDeltaM,&
                         &mu_out, phi_out,&
                         &fluxDir, src1_Out,&
-                        &rtm_obj, grid_obj, shdo_obj, prp_obj)
+                        &rtm_obj, grid_obj, shdo_obj)
                 end if
             end do
         end if
@@ -1287,12 +1261,12 @@ program shdom
                     call shd_mpi__makeDirect(1, .false., shdo_obj%maxNl,&
                         &src_obj%avgSolar0, src_obj%avgMu, src_obj%avgAz,&
                         &fluxDirTmp,&
-                        &rtm_obj, grid_obj, prp_obj)
+                        &rtm_obj, grid_obj)
                 else
                     call shd_rad__makeDirect(grid_obj%Npts, .false., shdo_obj%maxNl,&
                         &src_obj%avgSolar0, src_obj%avgMu, src_obj%avgAz,&
                         &fluxDirTmp,&
-                        &rtm_obj, grid_obj, prp_obj)
+                        &rtm_obj, grid_obj)
                 end if
 
                 fluxTot(1, 1:grid_obj%Npts) = fluxTot(1, 1:grid_obj%Npts) + fluxDir(1:grid_obj%Npts) - fluxDirTmp(1:grid_obj%Npts)
@@ -1368,8 +1342,7 @@ program shdom
                         &fluxTot_all, fluxDiv_all,&
                         &Nsh_out, SH_all, irad, sumRad_Out,&
                         &type_Out(iout), parms_Out(1, iout), file_Out(iout),&
-                        &rtmAll_obj, grid_obj, shdo_obj,&
-                        &prp_obj)
+                        &rtmAll_obj, grid_obj, shdo_obj)
                 end if
             end do
 
@@ -1395,8 +1368,7 @@ program shdom
                     sumFluxTot_Out, sumFluxDir_Out, sumFluxDiv_Out,&
                     irad, sumRad_Out, Nsh_out, sumSH_Out, src1_Out,&
                     type_Out(iout), parms_Out(1, iout), file_Out(iout),&
-                    rtm_obj, grid_obj, shdo_obj,&
-                    prp_obj)
+                    rtm_obj, grid_obj, shdo_obj)
             end if
         end do
     end if
@@ -1413,8 +1385,7 @@ program shdom
                     &doDeltaM,&
                     &splitAcc, shAcc, solAcc, maxIter, totIter,&
                     &ilos, sumCam_Out, parms_Out(1, iout), file_Out(iout),&
-                    &rtm_obj, grid_obj, shdo_obj,&
-                    &prp_obj)
+                    &rtm_obj, grid_obj, shdo_obj)
             end if
         end do
     end if
@@ -1501,15 +1472,10 @@ program shdom
 
     ! prp_obj
     !╭────────────────────────────────────────────────╮!
-    deallocate(z_Prp, temp_Prp, ext_Prp, ssa_Prp)
-    deallocate(ipha_Prp, leg_Prp, extDir_Prp)
+    deallocate(temp_Prp, ext_Prp, ssa_Prp, leg_Prp, ipha_Prp)
+    deallocate(extDir_Prp)
     if (prp_obj%isAllocated) then
-        nullify(prp_obj%z, &
-                prp_obj%temp, &
-                prp_obj%ext, &
-                prp_obj%ssa, &
-                prp_obj%ipha, &
-                prp_obj%leg)
+        deallocate(prp_obj%z)
         prp_obj%isAllocated = .false.
     end if
     !╰────────────────────────────────────────────────╯!

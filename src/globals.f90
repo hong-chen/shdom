@@ -299,6 +299,9 @@ module globals_type
     end type shd_type_src
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
+
+    ! PRP
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     type :: shd_type_prp
 
         character(len=charMaxLen_) :: fname = 'NONE'
@@ -325,19 +328,12 @@ module globals_type
         real(kind=R__) :: xDomain = -999.0
         real(kind=R__) :: yDomain = -999.0
 
-        real(kind=R__), pointer :: z(:)      => null()
-        real(kind=R__), pointer :: temp(:)   => null()
-        real(kind=R__), pointer :: ext(:)    => null()
-        real(kind=R__), pointer :: extDir(:) => null()
-        real(kind=R__), pointer :: ssa(:)    => null()
-
-        integer(kind=2), pointer:: ipha(:) => null()
-
-        real(kind=R__), pointer :: leg(:, :, :) => null()
+        real(kind=R__), allocatable :: z(:)
 
         logical :: isAllocated  = .false.
 
     end type shd_type_prp
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
     ! SFC
@@ -439,7 +435,17 @@ module globals_obj
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
-    type(shd_type_prp), save :: prpAll_obj, prp_obj
+    ! PRP
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    type(shd_type_prp), save :: prp_obj
+
+    real(kind=R__),  allocatable, save :: temp_Prp(:), &
+                                          ext_Prp(:),  &
+                                          ssa_Prp(:),  &
+                                          leg_Prp(:, :, :), &
+                                          extDir_Prp(:)
+    integer(kind=2), allocatable, save :: ipha_Prp(:)
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
     ! SFC

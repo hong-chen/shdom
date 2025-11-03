@@ -45,10 +45,10 @@ module shd_out
                              isSolar_, isThermal_
     use globals_type,  only: shd_type_rtm, &
                              shd_type_grid, &
-                             shd_type_shdo, &
-                             shd_type_prp
+                             shd_type_shdo
 
     use globals_obj, only: src_obj, &
+                           prp_obj, &
                            sfc_obj, &
                            ckd_obj, &
                            sen_obj, view_Sen
@@ -85,8 +85,7 @@ subroutine shd_io__outputResult(&
     &FLUXES, DIRFLUX, FLUXDIV,&
     &IRAD, RADOUT, NSHOUT, SHTERMS, SOURCE1OUT,&
     &OUTTYPE, OUTPARMS, OUTFILE,&
-    &rtm_obj, grid_obj, shdo_obj,&
-    &prp_obj)
+    &rtm_obj, grid_obj, shdo_obj)
 
     !   Writes the desired type of output file from the output fields
     ! with a header giving the input parameters.
@@ -99,7 +98,6 @@ subroutine shd_io__outputResult(&
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
     type(shd_type_shdo), intent(in) :: shdo_obj
-    type(shd_type_prp),  intent(in) :: prp_obj
 
     integer, intent(in) :: MAXITER, TOTITER, NSHOUT
     logical  , intent(in) :: DELTAM
@@ -1179,8 +1177,7 @@ subroutine shd_io__outputResultMpi(&
     &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
     &FLUXES, FLUXDIV, NSHOUT, SHTERMS, IRAD, RADOUT,&
     &OUTTYPE, OUTPARMS, OUTFILE,&
-    &rtmAll_obj, grid_obj, shdo_obj,&
-    &prp_obj)
+    &rtmAll_obj, grid_obj, shdo_obj)
 
     ! Writes the desired type of output file from the output fields
     ! with a header giving the input parameters.
@@ -1192,7 +1189,6 @@ subroutine shd_io__outputResultMpi(&
     type(shd_type_rtm),  intent(in) :: rtmAll_obj
     type(shd_type_grid), intent(in) :: grid_obj
     type(shd_type_shdo), intent(in) :: shdo_obj
-    type(shd_type_prp),  intent(in) :: prp_obj
 
     integer Nsh_tot, Npts_tot, Ncell_tot
     integer MAXITER, TOTITER, IRAD, NSHOUT
@@ -1916,8 +1912,7 @@ subroutine shd_io__outputCamRad(&
     &DELTAM,&
     &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
     &IVIS, VISOUT, OUTPARMS, OUTFILE,&
-    &rtm_obj, grid_obj, shdo_obj,&
-    &prp_obj)
+    &rtm_obj, grid_obj, shdo_obj)
 
     ! Writes the visualization image in PGM binary format with either
     ! one byte or two byte pixels.  The PGM binary format (P5) has an
@@ -1928,7 +1923,6 @@ subroutine shd_io__outputCamRad(&
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
     type(shd_type_shdo), intent(in) :: shdo_obj
-    type(shd_type_prp),  intent(in) :: prp_obj
 
     integer MAXITER, TOTITER, IVIS
     logical, intent(in) :: DELTAM
@@ -2121,8 +2115,7 @@ subroutine shd_io__outputImg(&
     &DELTAM,&
     &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
     &IVIS, VISOUT, OUTPARMS, OUTFILE,&
-    &rtm_obj, grid_obj, shdo_obj,&
-    &prp_obj)
+    &rtm_obj, grid_obj, shdo_obj)
 
     ! Writes the visualization image in PGM binary format with either
     ! one byte or two byte pixels.  The PGM binary format (P5) has an
@@ -2133,7 +2126,6 @@ subroutine shd_io__outputImg(&
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
     type(shd_type_shdo), intent(in) :: shdo_obj
-    type(shd_type_prp),  intent(in) :: prp_obj
 
     integer MAXITER, TOTITER, IVIS
     logical, intent(in) :: DELTAM

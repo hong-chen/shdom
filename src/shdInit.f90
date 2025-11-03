@@ -46,10 +46,10 @@ module shd_init
                              isSolar_, isThermal_
     use globals_type,  only: shd_type_rtm, &
                              shd_type_grid, &
-                             shd_type_shdo, &
-                             shd_type_prp
+                             shd_type_shdo
 
     use globals_obj, only: src_obj, &
+                           prp_obj, &
                            sfc_obj, brdf_Sfc, brdf_Rtm
 
     use shd_util, only: shd_util__computePlanck, &
@@ -81,7 +81,7 @@ module shd_init
 contains
 
 subroutine shd_init__makeGrid(rtm_obj, &
-                              prp_OBJ, grid_OBJ)
+                              grid_OBJ)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Description:
@@ -108,7 +108,6 @@ subroutine shd_init__makeGrid(rtm_obj, &
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     type(shd_type_rtm),  intent(in)    :: rtm_obj
-    type(shd_type_prp),  intent(inout) :: prp_obj
     type(shd_type_grid), intent(inout) :: grid_obj
 
     integer(kind=I__) :: ix, iy, iz
@@ -430,7 +429,7 @@ end subroutine shd_init__makeCell
 
 subroutine shd_init__makePrp(&
     &doDeltaM, maxSsa,&
-    &rtm_obj, grid_obj, shdo_obj, prp_obj)
+    &rtm_obj, grid_obj, shdo_obj)
 
     ! Prepares the grid arrays for the iterative solution process.
     ! If doing Delta-M scaling then the extinction, albedo, and Legend
@@ -442,7 +441,6 @@ subroutine shd_init__makePrp(&
     type(shd_type_rtm),  intent(inout) :: rtm_obj
     type(shd_type_grid), intent(in)    :: grid_obj
     type(shd_type_shdo), intent(in)    :: shdo_obj
-    type(shd_type_prp),  intent(in)    :: prp_obj
 
     logical, intent(in) :: doDeltaM
     real(kind=R__), intent(inout) :: maxSsa
@@ -501,15 +499,13 @@ subroutine shd_init__makeRad(&
     &RSHPTR, ZGRID,&
     &EXTINCT, ALBEDO, LEGEN, TEMP, IPHASE,&
     &SRCTYPE, SOLARFLUX, SOLARMU,&
-    &SKYRAD, UNITS, WAVENO, WAVELEN, RADIANCE, prp_obj)
+    &SKYRAD, UNITS, WAVENO, WAVELEN, RADIANCE)
 
     ! Initializes radiance field by solving plane-parallel two-stream.
     ! Solves the L=1 M=0 SH system by transforming the pentadiagonal
     ! system to tridiagonal and calling solver.
     ! Does the initialization for the NXY columns of the base grid.
     ! Only the I Stokes parameter is initialized, the rest are zeroed.
-
-    type(shd_type_prp), intent(in) :: prp_obj
 
     integer NSTOKES, NXY, NZ, RSHPTR(*)
     integer*2 IPHASE(NZ, NXY)

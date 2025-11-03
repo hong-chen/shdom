@@ -46,10 +46,10 @@ module shd_src
                              isSolar_, isThermal_
     use globals_type,  only: shd_type_rtm, &
                              shd_type_grid, &
-                             shd_type_shdo, &
-                             shd_type_prp
+                             shd_type_shdo
 
     use globals_obj, only: src_obj, &
+                           prp_obj, &
                            sfc_obj
 
     use shd_scat, only: shd_scat__computeLegendre, &
@@ -89,7 +89,7 @@ subroutine shd_src__computeSrcOneCell(&
     &DIRFLUX,&
     &SHPTR, SOURCE, YLMDIR, YLMSUN, SUNDIRLEG, SINGSCAT,&
     &DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
-    &EXTINCT8, SRCEXT8, rtm_obj, prp_obj)
+    &EXTINCT8, SRCEXT8, rtm_obj)
 
     !   Computes the source function times extinction for gridpoints
     ! belonging to cell icell in the direction (MU,PHI). The results
@@ -100,7 +100,6 @@ subroutine shd_src__computeSrcOneCell(&
     ! for unscaled untruncated phase function.
 
     type(shd_type_rtm), intent(in) :: rtm_obj
-    type(shd_type_prp), intent(in) :: prp_obj
 
     integer icell, NSTOKES, NPTS, ML, MM, NLM
     integer GRIDPTR(8, *), SHPTR(NPTS + 1)
@@ -219,7 +218,7 @@ subroutine shd_src__computeSrcOneCell_(&
     &DIRFLUX,&
     &SHPTR, SOURCE, YLMDIR, YLMSUN, SUNDIRLEG, SINGSCAT,&
     &DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
-    &EXTINCT8, SRCEXT8, rtm_obj, prp_obj)
+    &EXTINCT8, SRCEXT8, rtm_obj)
 
     !   Computes the source function times extinction for gridpoints
     ! belonging to cell icell in the direction (MU,PHI).  The results
@@ -230,7 +229,6 @@ subroutine shd_src__computeSrcOneCell_(&
     ! for unscaled untruncated phase function.
 
     type(shd_type_rtm), intent(in) :: rtm_obj
-    type(shd_type_prp), intent(in) :: prp_obj
 
     integer icell, NPTS, ML, MM, NLM
     integer GRIDPTR(8, *), SHPTR(NPTS + 1)
@@ -324,7 +322,7 @@ subroutine shd_src__computeSrcOneDir(&
     &DELTAM, MU, PHI,&
     &DIRFLUX,&
     &SOURCE1,&
-    &rtm_obj, grid_obj, shdo_obj, prp_obj)
+    &rtm_obj, grid_obj, shdo_obj)
 
     ! Computes the source function (SOURCE1) in the direction (MU,PHI)
     ! for the whole domain (rtm_obj%Nx,rtm_obj%Nz).  The spherical harmonic source function
@@ -336,7 +334,6 @@ subroutine shd_src__computeSrcOneDir(&
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
     type(shd_type_shdo), intent(in) :: shdo_obj
-    type(shd_type_prp),  intent(in) :: prp_obj
 
     logical DELTAM
     real MU, PHI
@@ -401,7 +398,7 @@ subroutine shd_src__computeSrcOneDir(&
             !   polarization to the outgoing direction, and return the Stoke
             call shd_src__computeSolarStokesVect(UNSCLEGEN, COSSCAT,&
                 &src_obj%avgMu, MU, src_obj%avgAz - PHI, shdo_obj%Nstokes,&
-                &SINGSCAT(1, IPH), prp_obj)
+                &SINGSCAT(1, IPH))
             if (SINGSCAT(1, IPH) .le. 0.0) then
                 write (6, *) 'Error [_computeOneSrc]: negative source function',&
                     &' for tabulated phase function:', IPH, MU, PHI, SINGSCAT(1, IPH)
@@ -501,7 +498,7 @@ subroutine shd_src__computeSrc(&
     &DIRFLUX, SHACC,&
     &OSHPTR, DELSOURCE,&
     &FIRST, ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM,&
-    &rtm_obj, grid_obj, shdo_obj, prp_obj)
+    &rtm_obj, grid_obj, shdo_obj)
 
     ! Computes the source function (shdo_obj%srcJ) in spherical harmonic space
     !   for all the grid points.  The thermal source and/or solar
@@ -529,7 +526,6 @@ subroutine shd_src__computeSrc(&
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
     type(shd_type_shdo), intent(in) :: shdo_obj
-    type(shd_type_prp),  intent(in) :: prp_obj
 
     integer OSHPTR(grid_obj%Npts + 1)
     logical FIXSH, FIRST, ACCELFLAG
@@ -584,12 +580,12 @@ subroutine shd_src__computeSrc(&
                 call shd_src__computeSrcOnePnt(shdo_obj%Nstokes, shdo_obj%Nlm, LOFJ,&
                     &src_obj%type, DIRFLUX(I)*SECMU0, YLMSUN,&
                     &rtm_obj%planck(I), rtm_obj%ssa(I), IPH, rtm_obj%leg,&
-                    &NR, shdo_obj%radI(1:shdo_obj%Nstokes, IR+1:NR), SOURCET, prp_obj)
+                    &NR, shdo_obj%radI(1:shdo_obj%Nstokes, IR+1:NR), SOURCET)
             else
                 call shd_src__computeSrcOnePnt_(shdo_obj%Nlm, LOFJ,&
                     &src_obj%type, DIRFLUX(I)*SECMU0, YLMSUN,&
                     &rtm_obj%planck(I), rtm_obj%ssa(I), IPH, rtm_obj%leg,&
-                    &NR, shdo_obj%radI(1:shdo_obj%Nstokes, IR+1:NR), SOURCET, prp_obj)
+                    &NR, shdo_obj%radI(1:shdo_obj%Nstokes, IR+1:NR), SOURCET)
             end if
 
             ! Compute the dot product of the new and old source difference,
@@ -635,12 +631,12 @@ subroutine shd_src__computeSrc(&
                 call shd_src__computeSrcOnePnt(shdo_obj%Nstokes, shdo_obj%Nlm, LOFJ,&
                     &src_obj%type, DIRFLUX(I)*SECMU0, YLMSUN,&
                     &rtm_obj%planck(I), rtm_obj%ssa(I), IPH, rtm_obj%leg,&
-                    &NR, shdo_obj%radI(1:shdo_obj%Nstokes, IR+1:NR), SOURCET, prp_obj)
+                    &NR, shdo_obj%radI(1:shdo_obj%Nstokes, IR+1:NR), SOURCET)
             else
                 call shd_src__computeSrcOnePnt_(shdo_obj%Nlm, LOFJ,&
                     &src_obj%type, DIRFLUX(I)*SECMU0, YLMSUN,&
                     &rtm_obj%planck(I), rtm_obj%ssa(I), IPH, rtm_obj%leg,&
-                    &NR, shdo_obj%radI(1:shdo_obj%Nstokes, IR+1:NR), SOURCET, prp_obj)
+                    &NR, shdo_obj%radI(1:shdo_obj%Nstokes, IR+1:NR), SOURCET)
             end if
 
             ! Make the source difference vector
@@ -672,12 +668,12 @@ subroutine shd_src__computeSrc(&
             call shd_src__computeSrcOnePnt(shdo_obj%Nstokes, shdo_obj%Nlm, LOFJ,&
                 &src_obj%type, DIRFLUX(I)*SECMU0, YLMSUN,&
                 &rtm_obj%planck(I), rtm_obj%ssa(I), IPH, rtm_obj%leg,&
-                &NR, shdo_obj%radI(1:shdo_obj%Nstokes, IR+1:NR), SOURCET, prp_obj)
+                &NR, shdo_obj%radI(1:shdo_obj%Nstokes, IR+1:NR), SOURCET)
         else
             call shd_src__computeSrcOnePnt_(shdo_obj%Nlm, LOFJ,&
                 &src_obj%type, DIRFLUX(I)*SECMU0, YLMSUN,&
                 &rtm_obj%planck(I), rtm_obj%ssa(I), IPH, rtm_obj%leg,&
-                &NR, shdo_obj%radI(1:shdo_obj%Nstokes, IR+1:NR), SOURCET, prp_obj)
+                &NR, shdo_obj%radI(1:shdo_obj%Nstokes, IR+1:NR), SOURCET)
         end if
         if (FIXSH) then
             NS = shdo_obj%isrcJ(I + 1) - IS
@@ -737,7 +733,7 @@ subroutine shd_src__integrateSrcOneRay(&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &MU2, PHI2, X0, Y0, Z0,&
     &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD,&
-    &rtm_obj, grid_obj, prp_obj)
+    &rtm_obj, grid_obj)
 
     !   Integrates the source function through the extinction field
     ! (rtm_obj%ext) backward from the outgoing direction (MU2,PHI2) to find the
@@ -749,7 +745,6 @@ subroutine shd_src__integrateSrcOneRay(&
 
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
-    type(shd_type_prp),  intent(in) :: prp_obj
 
     integer NSTOKES, NSTPHASE, NSCATANGLE
     integer SIDE
@@ -919,7 +914,7 @@ subroutine shd_src__integrateSrcOneRay(&
                 &DIRFLUX,&
                 &SHPTR, SOURCE, YLMDIR, YLMSUN, SUNDIRLEG, SINGSCAT,&
                 &DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
-                &EXTINCT8, SRCEXT8, rtm_obj, prp_obj)
+                &EXTINCT8, SRCEXT8, rtm_obj)
         else
             call shd_src__computeSrcOneCell_(icell, grid_obj%i8Grid,&
                 &ML, MM, NLM,&
@@ -927,7 +922,7 @@ subroutine shd_src__integrateSrcOneRay(&
                 &DIRFLUX,&
                 &SHPTR, SOURCE, YLMDIR, YLMSUN, SUNDIRLEG, SINGSCAT,&
                 &DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
-                &EXTINCT8, SRCEXT8, rtm_obj, prp_obj)
+                &EXTINCT8, SRCEXT8, rtm_obj)
         end if
 
         ! Interpolate the source and extinction to the current point
@@ -1404,7 +1399,7 @@ end subroutine shd_src__integrateSrc
 subroutine shd_src__computeSolarStokesVect(&
     &SINGLEGEN, COSSCAT,&
     &SOLARMU, MU, DELPHI, NSTOKES,&
-    &SCATVECT, prp_obj)
+    &SCATVECT)
 
     ! Calculates the Stokes vector for a single scattering of unpolarized
     ! sunlight from the solar direction (SOLARMU) to the outgoing
@@ -1413,8 +1408,6 @@ subroutine shd_src__computeSolarStokesVect(&
     ! the Wigner function expansion coefficients (SINGLEGEN).
     ! The plane of polarization is rotated from the scattering plane to
     ! the outgoing meridional plane.  Also divides the output vector by 4*pi.
-
-    type(shd_type_prp), intent(in) :: prp_obj
 
     integer NSTOKES
     real SINGLEGEN(2, 0:prp_obj%Nleg), COSSCAT, SOLARMU, MU, DELPHI
@@ -1617,14 +1610,12 @@ subroutine shd_src__computeSrcOnePnt(&
     &NSTOKES, NLM, LOFJ,&
     &SRCTYPE, FLUX0, YLMSUN, PLANCK,&
     &ssa0, ipha0, leg, NR, RADIANCE,&
-    &SOURCET, prp_obj)
+    &SOURCET)
 
     ! Calculates the polarized source function in real generalized
     ! spherical harmonics at one grid point from the radiance in
     ! real generalized spherical harmonics and thermal and/or solar
     ! source information.
-
-    type(shd_type_prp), intent(in) :: prp_obj
 
     integer, intent(in) :: NSTOKES, NLM, LOFJ(NLM), ipha0, NR
     real, intent(in) :: FLUX0, YLMSUN(prp_obj%NlegSet, NLM), PLANCK, ssa0
@@ -1704,13 +1695,11 @@ subroutine shd_src__computeSrcOnePnt_(&
     &NLM, LOFJ,&
     &SRCTYPE, FLUX0, YLMSUN, PLANCK,&
     &ssa0, ipha0, leg, NR, RADIANCE,&
-    &SOURCET, prp_obj)
+    &SOURCET)
 
     ! Calculates the scalar source function in spherical harmonics at
     ! one grid point from the radiance in spherical harmonics and
     ! thermal and/or solar source information.
-
-    type(shd_type_prp), intent(in) :: prp_obj
 
     integer, intent(in) :: NLM, LOFJ(NLM), ipha0, NR
     character(len=1), intent(in) :: SRCTYPE

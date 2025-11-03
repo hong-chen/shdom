@@ -46,10 +46,10 @@ module shd_grid
                              isPol_, isSolar_, isThermal_
     use globals_type,  only: shd_type_rtm, &
                              shd_type_grid, &
-                             shd_type_shdo, &
-                             shd_type_prp
+                             shd_type_shdo
 
     use globals_obj, only: src_obj, &
+                           prp_obj, temp_Prp, ext_Prp, ssa_Prp, leg_Prp, ipha_Prp, &
                            sfc_obj
 
     use globals_obj, only: ckd_obj, kabs_Ckd
@@ -1075,15 +1075,13 @@ logical function sweepCellNext(BCFLAG, NXC, NYC, NZ, IOCT,&
 
 end function sweepCellNext
 
-subroutine shd_grid__interpGrid(rtm_obj, grid_obj,&
-    prp_obj)
+subroutine shd_grid__interpGrid(rtm_obj, grid_obj)
 
     ! Calls shd_grid__InterpTriLinGridPrp to interpolate the input arrays from
     !   the property grid to each internal grid point.
 
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
-    type(shd_type_prp),  intent(in) :: prp_obj
 
     integer(kind=I__) :: ipts
 
@@ -1091,16 +1089,14 @@ subroutine shd_grid__interpGrid(rtm_obj, grid_obj,&
     call shd_grid__InterpTriLinGridPrp(&
         &0.0, 0.0, 0.0,&
         &.true., rtm_obj%temp(1), rtm_obj%ext(1), rtm_obj%ssa(1),&
-        &rtm_obj%leg(1:prp_obj%NlegSet, 0:prp_obj%Nleg, 1), rtm_obj%ipha(1),&
-        &prp_obj)
+        &rtm_obj%leg(1:prp_obj%NlegSet, 0:prp_obj%Nleg, 1), rtm_obj%ipha(1))
 
     ! Trilinearly interpolate from the property grid to the adaptive
     do ipts = 1, grid_obj%Npts
         call shd_grid__InterpTriLinGridPrp(&
             &grid_obj%xyz(1, ipts), grid_obj%xyz(2, ipts), grid_obj%xyz(3, ipts),&
             &.false., rtm_obj%temp(ipts), rtm_obj%ext(ipts), rtm_obj%ssa(ipts),&
-            &rtm_obj%leg(1:prp_obj%NlegSet, 0:prp_obj%Nleg, ipts), rtm_obj%ipha(ipts),&
-            &prp_obj)
+            &rtm_obj%leg(1:prp_obj%NlegSet, 0:prp_obj%Nleg, ipts), rtm_obj%ipha(ipts))
     end do
 
     return
@@ -1108,8 +1104,7 @@ end subroutine shd_grid__interpGrid
 
 subroutine shd_grid__InterpTriLinGridPrp(&
     &x0, y0, z0, doInit,&
-    &temp0, ext0, ssa0, leg0, ipha0,&
-    &prp_obj)
+    &temp0, ext0, ssa0, leg0, ipha0)
 
     !  Trilinearly interpolates the quantities on the input property
     ! grid at the single point (x0,y0,z0) to get the output temp0,ext0,
@@ -1120,7 +1115,6 @@ subroutine shd_grid__InterpTriLinGridPrp(&
     ! is that of the maximum weighted scattering property grid point.
     ! If doInit=.TRUE. then transfers the tabulated phase functions.
 
-    type(shd_type_prp), intent(in) :: prp_obj
 
     real(kind=R__), intent(in)  :: x0, y0, z0
     logical, intent(in) :: doInit
@@ -1143,8 +1137,8 @@ subroutine shd_grid__InterpTriLinGridPrp(&
         do I = 1, prp_obj%Npha
             do L = 0, prp_obj%Nleg
                 do J = 1, prp_obj%NlegSet
-                    !leg0(J, L, I) = prp_obj%leg(J + prp_obj%NlegSet*(L + (prp_obj%Nleg+ 1)*(I - 1)))/(2*L + 1)
-                    leg0(J, L, I) = prp_obj%leg(J, L, I)/(2*L + 1)
+                    !leg0(J, L, I) = leg_Prp(J + prp_obj%NlegSet*(L + (prp_obj%Nleg+ 1)*(I - 1)))/(2*L + 1)
+                    leg0(J, L, I) = leg_Prp(J, L, I)/(2*L + 1)
                 end do
             end do
         end do
@@ -1217,14 +1211,14 @@ subroutine shd_grid__InterpTriLinGridPrp(&
     I4 = I8
     !╰────────────────────────────────────────────────╯!
 
-    scat1 = F1*prp_obj%ext(I1)*prp_obj%ssa(I1)
-    scat2 = F2*prp_obj%ext(I2)*prp_obj%ssa(I2)
-    scat3 = F3*prp_obj%ext(I3)*prp_obj%ssa(I3)
-    scat4 = F4*prp_obj%ext(I4)*prp_obj%ssa(I4)
-    scat5 = F5*prp_obj%ext(I5)*prp_obj%ssa(I5)
-    scat6 = F6*prp_obj%ext(I6)*prp_obj%ssa(I6)
-    scat7 = F7*prp_obj%ext(I7)*prp_obj%ssa(I7)
-    scat8 = F8*prp_obj%ext(I8)*prp_obj%ssa(I8)
+    scat1 = F1*ext_Prp(I1)*ssa_Prp(I1)
+    scat2 = F2*ext_Prp(I2)*ssa_Prp(I2)
+    scat3 = F3*ext_Prp(I3)*ssa_Prp(I3)
+    scat4 = F4*ext_Prp(I4)*ssa_Prp(I4)
+    scat5 = F5*ext_Prp(I5)*ssa_Prp(I5)
+    scat6 = F6*ext_Prp(I6)*ssa_Prp(I6)
+    scat7 = F7*ext_Prp(I7)*ssa_Prp(I7)
+    scat8 = F8*ext_Prp(I8)*ssa_Prp(I8)
 
     maxScat = -1.0
     if (scat1 .gt. maxScat .or. abs(F1 - 1) .lt. 0.001) then
@@ -1260,15 +1254,15 @@ subroutine shd_grid__InterpTriLinGridPrp(&
         iSelect = I8
     end if
 
-    !temp0 = prp_obj%temp(iSelect)
-    !ext0 = prp_obj%ext(iSelect)
-    !scat0 = prp_obj%ext(iSelect)*prp_obj%ssa(iSelect)
+    !temp0 = temp_Prp(iSelect)
+    !ext0 = ext_Prp(iSelect)
+    !scat0 = ext_Prp(iSelect)*ssa_Prp(iSelect)
 
-    temp0 = F1*prp_obj%temp(I1) + F2*prp_obj%temp(I2) + F3*prp_obj%temp(I3) + F4*prp_obj%temp(I4)&
-        &+ F5*prp_obj%temp(I5) + F6*prp_obj%temp(I6) + F7*prp_obj%temp(I7) + F8*prp_obj%temp(I8)
-    ext0 = F1*prp_obj%ext(I1) + F2*prp_obj%ext(I2) + F3*prp_obj%ext(I3)&
-        &+ F4*prp_obj%ext(I4) + F5*prp_obj%ext(I5) + F6*prp_obj%ext(I6)&
-        &+ F7*prp_obj%ext(I7) + F8*prp_obj%ext(I8)
+    temp0 = F1*temp_Prp(I1) + F2*temp_Prp(I2) + F3*temp_Prp(I3) + F4*temp_Prp(I4)&
+        &+ F5*temp_Prp(I5) + F6*temp_Prp(I6) + F7*temp_Prp(I7) + F8*temp_Prp(I8)
+    ext0 = F1*ext_Prp(I1) + F2*ext_Prp(I2) + F3*ext_Prp(I3)&
+        &+ F4*ext_Prp(I4) + F5*ext_Prp(I5) + F6*ext_Prp(I6)&
+        &+ F7*ext_Prp(I7) + F8*ext_Prp(I8)
     scat0 = scat1 + scat2 + scat3 + scat4 + scat5 + scat6 + scat7 + scat8
 
     if (ext0 .gt. minExt) then
@@ -1278,27 +1272,27 @@ subroutine shd_grid__InterpTriLinGridPrp(&
     end if
 
     if (prp_obj%Npha .gt. 0) then
-        ipha0 = prp_obj%ipha(iSelect)
+        ipha0 = ipha_Prp(iSelect)
     else
         ! Standard property file format: unpolarized
         leg0(1, 0, 1) = 1.0
         do L = 1, prp_obj%Nleg
-            !leg0(1, L, 1) = scat1*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I1 - 1))&
-            !    &+ scat2*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I2 - 1))&
-            !    &+ scat3*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I3 - 1))&
-            !    &+ scat4*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I4 - 1))&
-            !    &+ scat5*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I5 - 1))&
-            !    &+ scat6*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I6 - 1))&
-            !    &+ scat7*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I7 - 1))&
-            !    &+ scat8*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I8 - 1))
-            leg0(1, L, 1) = scat1*prp_obj%leg(1, L, I1)&
-                         &+ scat2*prp_obj%leg(1, L, I2)&
-                         &+ scat3*prp_obj%leg(1, L, I3)&
-                         &+ scat4*prp_obj%leg(1, L, I4)&
-                         &+ scat5*prp_obj%leg(1, L, I5)&
-                         &+ scat6*prp_obj%leg(1, L, I6)&
-                         &+ scat7*prp_obj%leg(1, L, I7)&
-                         &+ scat8*prp_obj%leg(1, L, I8)
+            !leg0(1, L, 1) = scat1*leg_Prp(L + (prp_obj%Nleg + 1)*(I1 - 1))&
+            !    &+ scat2*leg_Prp(L + (prp_obj%Nleg + 1)*(I2 - 1))&
+            !    &+ scat3*leg_Prp(L + (prp_obj%Nleg + 1)*(I3 - 1))&
+            !    &+ scat4*leg_Prp(L + (prp_obj%Nleg + 1)*(I4 - 1))&
+            !    &+ scat5*leg_Prp(L + (prp_obj%Nleg + 1)*(I5 - 1))&
+            !    &+ scat6*leg_Prp(L + (prp_obj%Nleg + 1)*(I6 - 1))&
+            !    &+ scat7*leg_Prp(L + (prp_obj%Nleg + 1)*(I7 - 1))&
+            !    &+ scat8*leg_Prp(L + (prp_obj%Nleg + 1)*(I8 - 1))
+            leg0(1, L, 1) = scat1*leg_Prp(1, L, I1)&
+                         &+ scat2*leg_Prp(1, L, I2)&
+                         &+ scat3*leg_Prp(1, L, I3)&
+                         &+ scat4*leg_Prp(1, L, I4)&
+                         &+ scat5*leg_Prp(1, L, I5)&
+                         &+ scat6*leg_Prp(1, L, I6)&
+                         &+ scat7*leg_Prp(1, L, I7)&
+                         &+ scat8*leg_Prp(1, L, I8)
             if (scat0 .gt. minScat) then
                 leg0(1, L, 1) = leg0(1, L, 1)/scat0
             else
@@ -1311,19 +1305,19 @@ subroutine shd_grid__InterpTriLinGridPrp(&
     ! Trilinearly interpolate the temperature, extinction, scattering
     ! original
     !╭────────────────────────────────────────────────╮!
-    !temp0 = F1*prp_obj%temp(I1) + F2*prp_obj%temp(I2) + F3*prp_obj%temp(I3) + F4*prp_obj%temp(I4)&
-    !    &+ F5*prp_obj%temp(I5) + F6*prp_obj%temp(I6) + F7*prp_obj%temp(I7) + F8*prp_obj%temp(I8)
-    !ext0 = F1*prp_obj%ext(I1) + F2*prp_obj%ext(I2) + F3*prp_obj%ext(I3)&
-    !    &+ F4*prp_obj%ext(I4) + F5*prp_obj%ext(I5) + F6*prp_obj%ext(I6)&
-    !    &+ F7*prp_obj%ext(I7) + F8*prp_obj%ext(I8)
-    !scat1 = F1*prp_obj%ext(I1)*prp_obj%ssa(I1)
-    !scat2 = F2*prp_obj%ext(I2)*prp_obj%ssa(I2)
-    !scat3 = F3*prp_obj%ext(I3)*prp_obj%ssa(I3)
-    !scat4 = F4*prp_obj%ext(I4)*prp_obj%ssa(I4)
-    !scat5 = F5*prp_obj%ext(I5)*prp_obj%ssa(I5)
-    !scat6 = F6*prp_obj%ext(I6)*prp_obj%ssa(I6)
-    !scat7 = F7*prp_obj%ext(I7)*prp_obj%ssa(I7)
-    !scat8 = F8*prp_obj%ext(I8)*prp_obj%ssa(I8)
+    !temp0 = F1*temp_Prp(I1) + F2*temp_Prp(I2) + F3*temp_Prp(I3) + F4*temp_Prp(I4)&
+    !    &+ F5*temp_Prp(I5) + F6*temp_Prp(I6) + F7*temp_Prp(I7) + F8*temp_Prp(I8)
+    !ext0 = F1*ext_Prp(I1) + F2*ext_Prp(I2) + F3*ext_Prp(I3)&
+    !    &+ F4*ext_Prp(I4) + F5*ext_Prp(I5) + F6*ext_Prp(I6)&
+    !    &+ F7*ext_Prp(I7) + F8*ext_Prp(I8)
+    !scat1 = F1*ext_Prp(I1)*ssa_Prp(I1)
+    !scat2 = F2*ext_Prp(I2)*ssa_Prp(I2)
+    !scat3 = F3*ext_Prp(I3)*ssa_Prp(I3)
+    !scat4 = F4*ext_Prp(I4)*ssa_Prp(I4)
+    !scat5 = F5*ext_Prp(I5)*ssa_Prp(I5)
+    !scat6 = F6*ext_Prp(I6)*ssa_Prp(I6)
+    !scat7 = F7*ext_Prp(I7)*ssa_Prp(I7)
+    !scat8 = F8*ext_Prp(I8)*ssa_Prp(I8)
     !scat0 = scat1 + scat2 + scat3 + scat4 + scat5 + scat6 + scat7 + scat8
     !if (ext0 .gt. minExt) then
     !    ssa0 = scat0/ext0
@@ -1340,48 +1334,48 @@ subroutine shd_grid__InterpTriLinGridPrp(&
     !    maxScat = -1.0
     !    if (scat1 .gt. maxScat .or. abs(F1 - 1) .lt. 0.001) then
     !        maxScat = scat1
-    !        ipha0 = prp_obj%ipha(I1)
+    !        ipha0 = ipha_Prp(I1)
     !    end if
     !    if (scat2 .gt. maxScat .or. abs(F2 - 1) .lt. 0.001) then
     !        maxScat = scat2
-    !        ipha0 = prp_obj%ipha(I2)
+    !        ipha0 = ipha_Prp(I2)
     !    end if
     !    if (scat3 .gt. maxScat .or. abs(F3 - 1) .lt. 0.001) then
     !        maxScat = scat3
-    !        ipha0 = prp_obj%ipha(I3)
+    !        ipha0 = ipha_Prp(I3)
     !    end if
     !    if (scat4 .gt. maxScat .or. abs(F4 - 1) .lt. 0.001) then
     !        maxScat = scat4
-    !        ipha0 = prp_obj%ipha(I4)
+    !        ipha0 = ipha_Prp(I4)
     !    end if
     !    if (scat5 .gt. maxScat .or. abs(F5 - 1) .lt. 0.001) then
     !        maxScat = scat5
-    !        ipha0 = prp_obj%ipha(I5)
+    !        ipha0 = ipha_Prp(I5)
     !    end if
     !    if (scat6 .gt. maxScat .or. abs(F6 - 1) .lt. 0.001) then
     !        maxScat = scat6
-    !        ipha0 = prp_obj%ipha(I6)
+    !        ipha0 = ipha_Prp(I6)
     !    end if
     !    if (scat7 .gt. maxScat .or. abs(F7 - 1) .lt. 0.001) then
     !        maxScat = scat7
-    !        ipha0 = prp_obj%ipha(I7)
+    !        ipha0 = ipha_Prp(I7)
     !    end if
     !    if (scat8 .gt. maxScat .or. abs(F8 - 1) .lt. 0.001) then
     !        maxScat = scat8
-    !        ipha0 = prp_obj%ipha(I8)
+    !        ipha0 = ipha_Prp(I8)
     !    end if
     !else
     !    ! Standard property file format: unpolarized
     !    leg0(1, 0, 1) = 1.0
     !    do L = 1, prp_obj%Nleg
-    !        leg0(1, L, 1) = scat1*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I1 - 1))&
-    !            &+ scat2*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I2 - 1))&
-    !            &+ scat3*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I3 - 1))&
-    !            &+ scat4*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I4 - 1))&
-    !            &+ scat5*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I5 - 1))&
-    !            &+ scat6*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I6 - 1))&
-    !            &+ scat7*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I7 - 1))&
-    !            &+ scat8*prp_obj%leg(L + (prp_obj%Nleg + 1)*(I8 - 1))
+    !        leg0(1, L, 1) = scat1*leg_Prp(L + (prp_obj%Nleg + 1)*(I1 - 1))&
+    !            &+ scat2*leg_Prp(L + (prp_obj%Nleg + 1)*(I2 - 1))&
+    !            &+ scat3*leg_Prp(L + (prp_obj%Nleg + 1)*(I3 - 1))&
+    !            &+ scat4*leg_Prp(L + (prp_obj%Nleg + 1)*(I4 - 1))&
+    !            &+ scat5*leg_Prp(L + (prp_obj%Nleg + 1)*(I5 - 1))&
+    !            &+ scat6*leg_Prp(L + (prp_obj%Nleg + 1)*(I6 - 1))&
+    !            &+ scat7*leg_Prp(L + (prp_obj%Nleg + 1)*(I7 - 1))&
+    !            &+ scat8*leg_Prp(L + (prp_obj%Nleg + 1)*(I8 - 1))
     !        if (scat0 .gt. minScat) then
     !            leg0(1, L, 1) = leg0(1, L, 1)/scat0
     !        else
@@ -1426,7 +1420,7 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
     &SOLARFLUX, YLMSUN,&
     &DIRFLUX,&
     &OSHPTR,&
-    &rtm_obj, grid_obj, shdo_obj, prp_obj)
+    &rtm_obj, grid_obj, shdo_obj)
 
     !   Interpolates the medium properties, radiance, and source function for
     ! new grid points (specified in newPts).  The medium properties are
@@ -1441,7 +1435,6 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
     type(shd_type_shdo), intent(in) :: shdo_obj
-    type(shd_type_prp),  intent(in) :: prp_obj
 
     integer newPts(3, 4)
     integer OSHPTR(*)
@@ -1489,7 +1482,7 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
             Z = grid_obj%xyz(3, IP)
             call shd_grid__InterpTriLinGridPrp(X, Y, Z, .false.,&
                 &rtm_obj%temp(IP), rtm_obj%ext(IP), rtm_obj%ssa(IP),&
-                &rtm_obj%leg(1:prp_obj%NlegSet, 0:prp_obj%Nleg, 1), rtm_obj%ipha(IP), prp_obj)
+                &rtm_obj%leg(1:prp_obj%NlegSet, 0:prp_obj%Nleg, 1), rtm_obj%ipha(IP))
             ! Do the Delta-M scaling of extinction and albedo for this point
             if (doDeltaM) then
                 if (prp_obj%Npha .gt. 0) then
@@ -1522,7 +1515,7 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
                     call shd_rad__computeDirect(0, X, Y, Z, rtm_obj%flag_bc, rtm_obj%flag_ip, doDeltaM,&
                         &shdo_obj%maxNl, SOLARFLUX, src_obj%avgMu, src_obj%avgAz,&
                         &DIRFLUX(IP),&
-                        &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj)
+                        &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
                 end if
             end if
 
@@ -1577,12 +1570,12 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
                 call shd_src__computeSrcOnePnt(shdo_obj%Nstokes, shdo_obj%Nlm, LOFJ,&
                     &src_obj%type, DIRFLUX(IP)*SECMU0, YLMSUN,&
                     &rtm_obj%planck(IP), rtm_obj%ssa(IP), IPH, rtm_obj%leg,&
-                    &NR, shdo_obj%radI(1:shdo_obj%Nstokes, IR+1:NR), SOURCET, prp_obj)
+                    &NR, shdo_obj%radI(1:shdo_obj%Nstokes, IR+1:NR), SOURCET)
             else
                 call shd_src__computeSrcOnePnt_(shdo_obj%Nlm, LOFJ,&
                     &src_obj%type, DIRFLUX(IP)*SECMU0, YLMSUN,&
                     &rtm_obj%planck(IP), rtm_obj%ssa(IP), IPH, rtm_obj%leg,&
-                    &NR, shdo_obj%radI(1:shdo_obj%Nstokes, IR+1:NR), SOURCET, prp_obj)
+                    &NR, shdo_obj%radI(1:shdo_obj%Nstokes, IR+1:NR), SOURCET)
             end if
             do J = 1, NS
                 shdo_obj%srcJ(:, IS + J) = SOURCET(:, J)
@@ -1603,7 +1596,7 @@ subroutine shd_grid__splitGrid(&
     &DIRFLUX,&
     &SOLARFLUX, YLMSUN,&
     &ADAPTCRIT, ADAPTIND,&
-    &rtm_obj, grid_obj, shdo_obj, prp_obj)
+    &rtm_obj, grid_obj, shdo_obj)
 
     !   Splits the cells that have a cell dividing criterion greater than
     ! CURSPLITACC if doSplit is true.  The current splitting criterion
@@ -1614,7 +1607,6 @@ subroutine shd_grid__splitGrid(&
     type(shd_type_rtm),  intent(in)    :: rtm_obj
     type(shd_type_grid), intent(inout) :: grid_obj
     type(shd_type_shdo), intent(inout) :: shdo_obj
-    type(shd_type_prp),  intent(in)    :: prp_obj
 
     integer OSHPTR(*)
     real ADAPTIND(*)
@@ -1684,7 +1676,7 @@ subroutine shd_grid__splitGrid(&
                         &SOLARFLUX, YLMSUN,&
                         &DIRFLUX,&
                         &OSHPTR,&
-                        &rtm_obj, grid_obj, shdo_obj, prp_obj)
+                        &rtm_obj, grid_obj, shdo_obj)
                 end if
                 I = I + 1
             end do
@@ -1721,7 +1713,7 @@ subroutine shd_grid__splitGrid(&
                             &SOLARFLUX, YLMSUN,&
                             &DIRFLUX,&
                             &OSHPTR,&
-                            &rtm_obj, grid_obj, shdo_obj, prp_obj)
+                            &rtm_obj, grid_obj, shdo_obj)
                     end if
                 end if
                 I = I + 1
@@ -1742,7 +1734,7 @@ subroutine shd_grid__splitGrid(&
                     &doDeltaM, shdo_obj%maxNl,&
                     &SOLARFLUX, src_obj%avgMu, src_obj%avgAz,&
                     &DIRFLUX,&
-                    &rtm_obj, grid_obj, prp_obj)
+                    &rtm_obj, grid_obj)
             end if
         end if
     end if

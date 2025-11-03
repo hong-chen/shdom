@@ -48,12 +48,13 @@ module shd_rad
                              isSolar_, isThermal_
     use globals_type,  only: shd_type_rtm, &
                              shd_type_grid, &
-                             shd_type_shdo, &
-                             shd_type_prp
+                             shd_type_shdo
 
     use globals_obj, only: src_obj, &
+                           prp_obj, ext_Prp, ssa_Prp, leg_Prp, ipha_Prp, extDir_Prp, &
                            sfc_obj, &
-                           ckd_obj, kabs_Ckd
+                           ckd_obj, kabs_Ckd, &
+                           sen_obj, view_Sen
 
     use shd_scat, only: shd_scat__computePhase
 
@@ -86,7 +87,7 @@ subroutine shd_rad__makeDirect(&
     &NPTS, DELTAM,&
     &ML, SOLARFLUX, SOLARMU, SOLARAZ,&
     &DIRFLUX,&
-    &rtm_obj, grid_obj, prp_obj)
+    &rtm_obj, grid_obj)
 
     ! Makes the direct beam solar flux for the internal base grid.
     !   DIRFLUX is set to F*exp(-tau_sun).
@@ -94,7 +95,6 @@ subroutine shd_rad__makeDirect(&
 
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
-    type(shd_type_prp),  intent(in) :: prp_obj
 
     integer NPTS, ML
     logical DELTAM
@@ -108,7 +108,7 @@ subroutine shd_rad__makeDirect(&
         &1, 0.0, 0.0, 0.0, rtm_obj%flag_bc, rtm_obj%flag_ip,&
         &DELTAM, ML,&
         &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
-        &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj)
+        &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
 
     do IP = 1, NPTS
         DIRPATH = 0.0
@@ -116,7 +116,7 @@ subroutine shd_rad__makeDirect(&
             &(0, grid_obj%xyz(1, IP), grid_obj%xyz(2, IP), grid_obj%xyz(3, IP),&
             &rtm_obj%flag_bc, rtm_obj%flag_ip, DELTAM, ML,&
             &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(IP),&
-            &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj)
+            &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
     end do
 
     return
@@ -125,7 +125,7 @@ end subroutine shd_rad__makeDirect
 subroutine shd_rad__computeDirect(&
     &INIT, XI, YI, ZI, BCFLAG, IPFLAG,&
     &DELTAM, ML, SOLARFLUX, SOLARMU, SOLARAZ,&
-    &DIRFLUX, UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM, prp_obj)
+    &DIRFLUX, UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
 
     !╭──────────────────────────────────────────────────────────────╮!
     ! Computes the direct beam flux at point (XI,YI,ZI) by integrating
@@ -152,8 +152,6 @@ subroutine shd_rad__computeDirect(&
     !   3=-Y, 4=+Y).  XE,YE,ZE returns the location of the exitting ray,
     !   and path is the optical path from XI,YI,ZI to the sun.
     !╰──────────────────────────────────────────────────────────────╯!
-
-    type(shd_type_prp), intent(in) :: prp_obj
 
     integer INIT, BCFLAG, IPFLAG, ML, SIDE
     logical DELTAM, VALIDBEAM
@@ -218,8 +216,8 @@ subroutine shd_rad__computeDirect(&
             do IY = 1, prp_obj%Ny
                 do IZ = 1, prp_obj%Nz
                     IP = IP + 1
-                    EXTINCT = prp_obj%ext(IP)
-                    ALBEDO = prp_obj%ssa(IP)
+                    EXTINCT = ext_Prp(IP)
+                    ALBEDO = ssa_Prp(IP)
                     ! Add in the gaseous absorption to extinction
                     if (GASEXT(IZ) .gt. 0.0) then
                         ALBEDO = ALBEDO*EXTINCT/(EXTINCT + GASEXT(IZ))
@@ -228,16 +226,16 @@ subroutine shd_rad__computeDirect(&
                     ! Do the Delta-M scaling if needed
                     if (DELTAM) then
                         if (prp_obj%Npha .gt. 0) then
-                            IPH = prp_obj%ipha(IP)
+                            IPH = ipha_Prp(IP)
                         else
                             IPH = IP
                         end if
                         L = ML + 1
-                        !F = prp_obj%leg(1 + prp_obj%NlegSet*(L + (prp_obj%Nleg+ 1)*(IPH - 1)))/(2*L + 1)
-                        F = prp_obj%leg(1, L, IPH)/(2*L + 1)
+                        !F = leg_Prp(1 + prp_obj%NlegSet*(L + (prp_obj%Nleg+ 1)*(IPH - 1)))/(2*L + 1)
+                        F = leg_Prp(1, L, IPH)/(2*L + 1)
                         EXTINCT = (1.0 - ALBEDO*F)*EXTINCT
                     end if
-                    prp_obj%extDir(IP) = EXTINCT
+                    extDir_Prp(IP) = EXTINCT
                 end do
             end do
         end do
@@ -305,8 +303,8 @@ subroutine shd_rad__computeDirect(&
             do IY = 1, prp_obj%Ny
                 do IZ = 1, prp_obj%Nz
                     IP = IP + 1
-                    EXTMIN(IZ) = min(prp_obj%ext(IP), EXTMIN(IZ))
-                    EXTMAX(IZ) = max(prp_obj%ext(IP), EXTMAX(IZ))
+                    EXTMIN(IZ) = min(ext_Prp(IP), EXTMIN(IZ))
+                    EXTMAX(IZ) = max(ext_Prp(IP), EXTMAX(IZ))
                 end do
             end do
         end do
@@ -435,18 +433,18 @@ subroutine shd_rad__computeDirect(&
 
         ! zgrid correction (to address layer averaging issue in z direction)
         !╭────────────────────────────────────────────────╮!
-        !E1 = prp_obj%extDir(I1)
-        !E2 = prp_obj%extDir(I2)
-        !E3 = prp_obj%extDir(I3)
-        !E4 = prp_obj%extDir(I4)
-        E1 = prp_obj%extDir(I1 + 1)
-        E2 = prp_obj%extDir(I2 + 1)
-        E3 = prp_obj%extDir(I3 + 1)
-        E4 = prp_obj%extDir(I4 + 1)
-        E5 = prp_obj%extDir(I1 + 1)
-        E6 = prp_obj%extDir(I2 + 1)
-        E7 = prp_obj%extDir(I3 + 1)
-        E8 = prp_obj%extDir(I4 + 1)
+        !E1 = extDir_Prp(I1)
+        !E2 = extDir_Prp(I2)
+        !E3 = extDir_Prp(I3)
+        !E4 = extDir_Prp(I4)
+        E1 = extDir_Prp(I1 + 1)
+        E2 = extDir_Prp(I2 + 1)
+        E3 = extDir_Prp(I3 + 1)
+        E4 = extDir_Prp(I4 + 1)
+        E5 = extDir_Prp(I1 + 1)
+        E6 = extDir_Prp(I2 + 1)
+        E7 = extDir_Prp(I3 + 1)
+        E8 = extDir_Prp(I4 + 1)
         !╰────────────────────────────────────────────────╯!
 
         ! Compute the distance to the next grid plane in  X, Y, and Z
@@ -711,17 +709,13 @@ subroutine shd_rad__computeRad(&
     &DIRFLUX, FLUXES,&
     &SOURCE1, GRIDRAD,&
     &OUTPARMS, IRAD, RADOUT,&
-    &rtm_obj, grid_obj, shdo_obj,&
-    &prp_obj)
+    &rtm_obj, grid_obj, shdo_obj)
 
     ! Computes the radiances for the specified locations and directions
-
-    use globals_obj, only: sen_obj, view_Sen
 
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
     type(shd_type_shdo), intent(in) :: shdo_obj
-    type(shd_type_prp),  intent(in) :: prp_obj
 
     integer IRAD
     integer MAXNBC, NTOPPTS, NBOTPTS
@@ -821,7 +815,7 @@ subroutine shd_rad__computeRad(&
         call shd_src__computeSrcOneDir(&
             &DELTAM, MUOUT, PHIOUT,&
             &DIRFLUX, SOURCE1,&
-            &rtm_obj, grid_obj, shdo_obj, prp_obj)
+            &rtm_obj, grid_obj, shdo_obj)
 
         ! Set the radiance field to -1, so we can determine valid ra
         !   Also set the source array to the extinction times the so
@@ -882,18 +876,14 @@ subroutine shd_rad__computeCamRad(&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &DIRFLUX, FLUXES,&
     &OUTPARMS, IVIS, VISOUT,&
-    &rtm_obj, grid_obj, shdo_obj,&
-    &prp_obj)
+    &rtm_obj, grid_obj, shdo_obj)
 
     !   Computes Stokes radiances (output in VISOUT) for the visualization
     !  modes: 1) camera mode, and 2) cross track scanning.
 
-    use globals_obj, only: sen_obj, view_Sen
-
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
     type(shd_type_shdo), intent(in) :: shdo_obj
-    type(shd_type_prp),  intent(in) :: prp_obj
 
     integer IVIS
     integer MAXNBC, NTOPPTS, NBOTPTS
@@ -1078,7 +1068,7 @@ subroutine shd_rad__computeCamRad(&
                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                 &MU2, PHI2, X0, Y0, Z0,&
                 &XE, YE, ZE, SIDE, TRANSMIT, VISRAD, VALIDRAD,&
-                &rtm_obj, grid_obj, prp_obj)
+                &rtm_obj, grid_obj)
 900         continue
             ! write (6,'(1X,2F8.4,1X,2F11.7,4(1X,F11.6))')&
             !     &X0,Y0,MURAY,PHIRAY,VISRAD(:)
