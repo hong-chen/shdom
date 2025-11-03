@@ -53,7 +53,8 @@ program shdom
                              shd_type_rtm, &
                              shd_type_grid
 
-    use globals_obj,   only: src_obj, &
+    use globals_obj,   only: shdo_obj, &
+                             src_obj, &
                              prp_obj, temp_Prp, ext_Prp, ssa_Prp, leg_Prp, ipha_Prp, extDir_Prp, &
                              sfc_obj, brdf_Sfc, brdf_Rtm, &
                              ckd_obj, solar_Ckd, wgt_Ckd, kabs_Ckd, &
@@ -161,11 +162,6 @@ program shdom
 
     ! shdo_obj
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    type(shd_type_shdo) :: shdo_obj
-    integer(kind=I__), allocatable, target :: Nphi0_Shdo(:)
-    real(kind=R__),    allocatable, target :: mu_Shdo(:), &
-                                              phi_Shdo(:), &
-                                              wgt_Shdo(:)
     real(kind=R__),    allocatable, target :: radI_Shdo(:, :), &
                                               srcJ_Shdo(:, :)
     integer(kind=I__), allocatable, target :: iradI_Shdo(:), &
@@ -359,17 +355,13 @@ program shdom
     if (src_obj%type .eq. 'T') src_obj%avgAz = 0.0d0
 
     ! angle grids for DO
-    allocate(Nphi0_Shdo(shdo_obj%Nmu), &
-             mu_Shdo(shdo_obj%Nmu), &
-             phi_Shdo(shdo_obj%Nmu*shdo_obj%Nphi), &
-             wgt_Shdo(shdo_obj%Nmu*shdo_obj%Nphi)); &
-        memUsed = memUsed + 2.0*shdo_obj%Nmu*(1.0 + shdo_obj%Nphi)
-
-    shdo_obj%Nphi0 => Nphi0_Shdo
-    shdo_obj%mu    => mu_Shdo
-    shdo_obj%phi(1:shdo_obj%Nmu, 1:shdo_obj%Nphi) => phi_Shdo
-    shdo_obj%wgt(1:shdo_obj%Nmu, 1:shdo_obj%Nphi) => wgt_Shdo
+    allocate(shdo_obj%Nphi0(shdo_obj%Nmu), &
+             shdo_obj%mu(shdo_obj%Nmu), &
+             shdo_obj%phi(shdo_obj%Nmu, shdo_obj%Nphi), &
+             shdo_obj%wgt(shdo_obj%Nmu, shdo_obj%Nphi))
     shdo_obj%isAllocated = .true.
+
+    memUsed = memUsed + 2.0*shdo_obj%Nmu*(1.0 + shdo_obj%Nphi)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
@@ -1507,19 +1499,18 @@ program shdom
 
     ! shdo_obj
     !╭────────────────────────────────────────────────╮!
-    deallocate(mu_Shdo, phi_Shdo, wgt_Shdo, Nphi0_Shdo)
     deallocate(radI_Shdo, iradI_Shdo)
     deallocate(srcJ_Shdo, isrcJ_Shdo)
     if (isAccel) deallocate(dsrc_Shdo, idsrc_Shdo)
     if (shdo_obj%isAllocated) then
-        nullify(shdo_obj%Nphi0, &
-                shdo_obj%iradI, &
+        deallocate(shdo_obj%Nphi0, &
+                   shdo_obj%mu,  &
+                   shdo_obj%phi, &
+                   shdo_obj%wgt)
+        nullify(shdo_obj%iradI, &
                 shdo_obj%isrcJ, &
                 shdo_obj%radI, &
-                shdo_obj%srcJ, &
-                shdo_obj%mu, &
-                shdo_obj%phi, &
-                shdo_obj%wgt)
+                shdo_obj%srcJ)
     end if
     !╰────────────────────────────────────────────────╯!
 

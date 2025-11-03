@@ -256,11 +256,10 @@ module globals_type
         integer(kind=I__) :: maxNptsSH = -999
         integer(kind=I__) :: maxNptsDO = -999
 
-        integer(kind=I__), pointer :: Nphi0(:) => null()
-
-        real(kind=R__), pointer :: mu(:)  => null()
-        real(kind=R__), pointer :: phi(:, :) => null()
-        real(kind=R__), pointer :: wgt(:, :) => null()
+        integer(kind=I__), allocatable :: Nphi0(:)
+        real(kind=R__),    allocatable :: mu(:)
+        real(kind=R__),    allocatable :: phi(:, :)
+        real(kind=R__),    allocatable :: wgt(:, :)
 
         integer(kind=I__), pointer :: iradI(:) => null()
         integer(kind=I__), pointer :: isrcJ(:) => null()
