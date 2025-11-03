@@ -162,10 +162,10 @@ program shdom
 
     ! shdo_obj
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    real(kind=R__),    allocatable, target :: radI_Shdo(:, :), &
-                                              srcJ_Shdo(:, :)
     integer(kind=I__), allocatable, target :: iradI_Shdo(:), &
                                               isrcJ_Shdo(:)
+    real(kind=R__),    allocatable, target ::  radI_Shdo(:, :), &
+                                               srcJ_Shdo(:, :)
 
     real(kind=R__),    allocatable :: dsrc_Shdo(:, :)
     integer(kind=I__), allocatable :: idsrc_Shdo(:)
@@ -181,9 +181,9 @@ program shdom
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_prp) :: prpAll_obj
     real(kind=R__),  allocatable :: temp_PrpAll(:), &
-                                    ext_PrpAll(:),  &
-                                    ssa_PrpAll(:),  &
-                                    leg_PrpAll(:, :, :)
+                                     ext_PrpAll(:), &
+                                     ssa_PrpAll(:), &
+                                     leg_PrpAll(:, :, :)
     integer(kind=2), allocatable :: ipha_PrpAll(:)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
@@ -574,12 +574,12 @@ program shdom
     allocate(prp_obj%z(prp_obj%Nz))
     prp_obj%isAllocated = .true.
 
-    allocate(temp_Prp(prp_obj%maxNpts), &
-             ext_Prp(prp_obj%maxNpts),  &
-             ssa_Prp(prp_obj%maxNpts),  &
-             leg_Prp(1:prp_obj%NlegSet, &
-                     0:prp_obj%maxNleg, &
-                     1:prp_obj%maxNptsLeg/(prp_obj%maxNleg+1)/prp_obj%NlegSet), &
+    allocate(temp_Prp(prp_obj%maxNpts),  &
+              ext_Prp(prp_obj%maxNpts),  &
+              ssa_Prp(prp_obj%maxNpts),  &
+              leg_Prp(1:prp_obj%NlegSet, &
+                      0:prp_obj%maxNleg, &
+                      1:prp_obj%maxNptsLeg/(prp_obj%maxNleg+1)/prp_obj%NlegSet), &
              ipha_Prp(prp_obj%maxNpts))
 
     allocate(extDir_Prp(prp_obj%maxNpts))
@@ -595,10 +595,10 @@ program shdom
             allocate(prpAll_obj%z(prpAll_obj%Nz))
             prpAll_obj%isAllocated = .true.
 
-            allocate(temp_PrpAll(prpAll_obj%maxNpts), &
-                     ext_PrpAll( prpAll_obj%maxNpts), &
-                     ssa_PrpAll( prpAll_obj%maxNpts), &
-                     leg_PrpAll( prpAll_obj%NlegSet, &
+            allocate(temp_PrpAll(prpAll_obj%maxNpts),  &
+                      ext_PrpAll(prpAll_obj%maxNpts),  &
+                      ssa_PrpAll(prpAll_obj%maxNpts),  &
+                      leg_PrpAll(prpAll_obj%NlegSet,   &
                                  0:prpAll_obj%maxNleg, &
                                  prpAll_obj%maxNptsLeg/(prpAll_obj%maxNleg+1)/prpAll_obj%NlegSet), &
                      ipha_PrpAll(prpAll_obj%maxNpts))
@@ -1053,7 +1053,8 @@ program shdom
     allocate(ptr_Bc(2*maxNpts_bc), rad_Bc(shdo_obj%Nstokes, maxNrad_bc))
 
     ! output
-    if (isFluxOut) allocate(sumFluxTot_Out(2, grid_obj%maxNpts), sumFluxDir_Out(grid_obj%maxNpts))
+    if (isFluxOut) allocate(sumFluxTot_Out(2, grid_obj%maxNpts), &
+                            sumFluxDir_Out(grid_obj%maxNpts))
     if (isHROut)   allocate(sumFluxDiv_Out(grid_obj%maxNpts))
     if (isSHOut)   allocate(sumSH_Out(grid_obj%maxNpts*Nsh_out))
     if (isSrcOut)  allocate(src1_Out(grid_obj%maxNpts*shdo_obj%Nstokes))
@@ -1061,10 +1062,12 @@ program shdom
     ! shdo
     !╭────────────────────────────────────────────────╮!
     ! SH related array
-    allocate(iradI_Shdo(grid_obj%maxNpts + 2), isrcJ_Shdo(grid_obj%maxNpts + 1))
+    allocate(iradI_Shdo(grid_obj%maxNpts + 2), &
+             isrcJ_Shdo(grid_obj%maxNpts + 1))
 
     ! radiance and source
-    allocate(radI_Shdo(shdo_obj%Nstokes, shdo_obj%maxNptsSH + grid_obj%maxNpts), srcJ_Shdo(shdo_obj%Nstokes, shdo_obj%maxNptsSH))
+    allocate(radI_Shdo(shdo_obj%Nstokes, shdo_obj%maxNptsSH + grid_obj%maxNpts), &
+             srcJ_Shdo(shdo_obj%Nstokes, shdo_obj%maxNptsSH))
 
     shdo_obj%iradI => iradI_Shdo
     shdo_obj%isrcJ => isrcJ_Shdo
@@ -1076,7 +1079,8 @@ program shdom
 
     ! delta source
     if (isAccel) then
-        allocate(idsrc_Shdo(grid_obj%maxNpts + 1), dsrc_Shdo(shdo_obj%Nstokes, shdo_obj%maxNptsSH))
+        allocate(idsrc_Shdo(grid_obj%maxNpts + 1), &
+                  dsrc_Shdo(shdo_obj%Nstokes, shdo_obj%maxNptsSH))
     end if
 
     ! fluxes
@@ -1439,7 +1443,7 @@ program shdom
         nullify(rtm_obj%x, &
                 rtm_obj%y, &
                 rtm_obj%z, &
-                rtm_obj%temp, &
+                rtm_obj%temp,   &
                 rtm_obj%planck, &
                 rtm_obj%ext, &
                 rtm_obj%ssa, &
@@ -1504,12 +1508,12 @@ program shdom
     if (isAccel) deallocate(dsrc_Shdo, idsrc_Shdo)
     if (shdo_obj%isAllocated) then
         deallocate(shdo_obj%Nphi0, &
-                   shdo_obj%mu,  &
-                   shdo_obj%phi, &
+                   shdo_obj%mu,    &
+                   shdo_obj%phi,   &
                    shdo_obj%wgt)
         nullify(shdo_obj%iradI, &
                 shdo_obj%isrcJ, &
-                shdo_obj%radI, &
+                shdo_obj%radI,  &
                 shdo_obj%srcJ)
     end if
     !╰────────────────────────────────────────────────╯!
