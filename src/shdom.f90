@@ -161,8 +161,8 @@ program shdom
 
     ! shdo_obj
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    real(kind=R__),    allocatable :: dsrc_Shdo(:, :)
-    integer(kind=I__), allocatable :: idsrc_Shdo(:)
+    real(kind=R__),    allocatable :: srcD_Shdo(:, :)
+    integer(kind=I__), allocatable :: isrcD_Shdo(:)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! SAV
@@ -882,8 +882,8 @@ program shdom
 
     NmaxNpts = NmaxNpts + 16.5*CELL_TO_POINT_RATIO ! i8Grid_Cell[8.0], i6Cell_Cell[6.0], i2Tree_Cell[2.0], flag_Cell[0.5]
 
-    NmaxNpts = NmaxNpts + 6.0   ! xyz_Grid[3.0], iradI_Shdo[1.0], isrcJ_Shdo[1.0], idsrc_Shdo[1.0]
-    memUsed = memUsed + 4.0 ! offset iradI_Shdo[+2], isrcJ_Shdo[+1], idsrc_Shdo[+1]
+    NmaxNpts = NmaxNpts + 6.0   ! xyz_Grid[3.0], iradI_Shdo[1.0], isrcJ_Shdo[1.0], isrcD_Shdo[1.0]
+    memUsed = memUsed + 4.0 ! offset iradI_Shdo[+2], isrcJ_Shdo[+1], isrcD_Shdo[+1]
 
     if (isAccel) then
         NmaxNpts = NmaxNpts + shdo_obj%Nstokes*(1.0+3.0*NUM_SH_TERM_FACTOR*shdo_obj%Nlm) ! radiance, source, delta source
@@ -1066,8 +1066,8 @@ program shdom
 
     ! delta source
     if (isAccel) then
-        allocate(idsrc_Shdo(grid_obj%maxNpts + 1), &
-                  dsrc_Shdo(shdo_obj%Nstokes, shdo_obj%maxNptsSH))
+        allocate(isrcD_Shdo(grid_obj%maxNpts + 1), &
+                  srcD_Shdo(shdo_obj%Nstokes, shdo_obj%maxNptsSH))
     end if
 
     ! fluxes
@@ -1150,8 +1150,8 @@ program shdom
             &isAccel, solAcc, maxIter, solCrit, iter,&
             &splitAcc, shAcc,&
             &maxNpts_bc, maxNrad_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
-            &idsrc_Shdo, work, work1, work2,&
-            &dsrc_Shdo, fluxTot, fluxDir,&
+            &isrcD_Shdo, work, work1, work2,&
+            &srcD_Shdo, fluxTot, fluxDir,&
             &rtm_obj, grid_obj)
 
         doRadInit = .false.
@@ -1493,7 +1493,7 @@ program shdom
     !╭────────────────────────────────────────────────╮!
     deallocate(radI_Shdo, iradI_Shdo)
     deallocate(srcJ_Shdo, isrcJ_Shdo)
-    if (isAccel) deallocate(dsrc_Shdo, idsrc_Shdo)
+    if (isAccel) deallocate(srcD_Shdo, isrcD_Shdo)
     if (shdo_obj%isAllocated) then
         deallocate(shdo_obj%Nphi0, &
                    shdo_obj%mu,    &

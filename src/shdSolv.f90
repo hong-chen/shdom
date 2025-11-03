@@ -96,8 +96,8 @@ subroutine shd_solv__solveRte(&
     &ACCELFLAG, SOLACC, MAXITER, SOLCRIT, ITER,&
     &SPLITACC, SHACC,&
     &MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-    &idsrc_Shdo, WORK, WORK1, WORK2,&
-    &dsrc_Shdo, FLUXES, DIRFLUX,&
+    &isrcD_Shdo, WORK, WORK1, WORK2,&
+    &srcD_Shdo, FLUXES, DIRFLUX,&
     &rtm_obj, grid_obj)
 
     ! Performs the SHDOM solution procedure.
@@ -111,13 +111,13 @@ subroutine shd_solv__solveRte(&
 
     integer MAXITER, ITER
     integer MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR(MAXNBC, 2)
-    integer idsrc_Shdo(*)
+    integer isrcD_Shdo(*)
     integer WORK1(*)
     logical doRadInit, doDeltaM, ACCELFLAG, doHighOrder
     real SOLACC, SOLCRIT, SPLITACC, SHACC
     real BCRAD(*)
     real FLUXES(2, *), DIRFLUX(*)
-    real dsrc_Shdo(shdo_obj%Nstokes, *)
+    real srcD_Shdo(shdo_obj%Nstokes, *)
     real WORK(*), WORK2(*)
 
     integer I, isetDO
@@ -204,14 +204,14 @@ subroutine shd_solv__solveRte(&
         call shd_src__computeSrc(&
             &doFixSH, YlmSolar_Shdo,&
             &DIRFLUX, SHACC,&
-            &idsrc_Shdo, dsrc_Shdo,&
+            &isrcD_Shdo, srcD_Shdo,&
             &.true., ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM,&
             &rtm_obj, grid_obj)
     end if
 
     if (ACCELFLAG) then
-        idsrc_Shdo(1:grid_obj%Npts + 1) = isrcJ_Shdo(1:grid_obj%Npts + 1)
-        dsrc_Shdo(:, 1:idsrc_Shdo(grid_obj%Npts + 1)) = 0.0
+        isrcD_Shdo(1:grid_obj%Npts + 1) = isrcJ_Shdo(1:grid_obj%Npts + 1)
+        srcD_Shdo(:, 1:isrcD_Shdo(grid_obj%Npts + 1)) = 0.0
     end if
     SOLCRIT = 1.0
 
@@ -318,7 +318,7 @@ subroutine shd_solv__solveRte(&
                 call shd_grid__splitGrid(&
                     &doSplit, isOutMem, CURSPLITACC, SPLITCRIT,&
                     &doDeltaM, ACCELFLAG,&
-                    &idsrc_Shdo,&
+                    &isrcD_Shdo,&
                     &DIRFLUX,&
                     &src_obj%avgSolar0, YlmSolar_Shdo,&
                     &WORK, WORK2,&
@@ -363,7 +363,7 @@ subroutine shd_solv__solveRte(&
         call shd_src__computeSrc(&
             &doFixSH, YlmSolar_Shdo,&
             &DIRFLUX, SHACC,&
-            &idsrc_Shdo, dsrc_Shdo,&
+            &isrcD_Shdo, srcD_Shdo,&
             &.false., ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM,&
             &rtm_obj, grid_obj)
         !╰────────────────────────────────────────────────╯!
@@ -374,8 +374,8 @@ subroutine shd_solv__solveRte(&
             &JNORM, ACCELPAR, SOLCRIT)
 
         ! Accelerate the convergence of the source function vector
-        call shd_solv__accelSol(ACCELPAR, grid_obj%Npts, idsrc_Shdo,&
-            &dsrc_Shdo)
+        call shd_solv__accelSol(ACCELPAR, grid_obj%Npts, isrcD_Shdo,&
+            &srcD_Shdo)
 
         ! If it is a not scattering medium then do only one iteration
         if (maxSsa .lt. SOLACC) SOLCRIT = SOLACC
@@ -436,14 +436,14 @@ subroutine shd_solv__solveRte(&
 end subroutine shd_solv__solveRte
 
 subroutine shd_solv__accelSol(&
-    &ACCELPAR, NPTS, idsrc_Shdo,&
-    &dsrc_Shdo)
+    &ACCELPAR, NPTS, isrcD_Shdo,&
+    &srcD_Shdo)
 
     !   Accelerates the successive order of scattering series using the
     ! input acceleration parameter (ACCELPAR).
 
-    integer, intent(in) :: NPTS, idsrc_Shdo(*)
-    real, intent(in)    :: ACCELPAR, dsrc_Shdo(shdo_obj%Nstokes, *)
+    integer, intent(in) :: NPTS, isrcD_Shdo(*)
+    real, intent(in)    :: ACCELPAR, srcD_Shdo(shdo_obj%Nstokes, *)
 
     integer :: I, J, IS, ISD, K, NS, NSD, NSC
 
@@ -451,12 +451,12 @@ subroutine shd_solv__accelSol(&
         do I = 1, NPTS
             IS = isrcJ_Shdo(I)
             NS = isrcJ_Shdo(I + 1) - IS
-            ISD = idsrc_Shdo(I)
-            NSD = idsrc_Shdo(I + 1) - ISD
+            ISD = isrcD_Shdo(I)
+            NSD = isrcD_Shdo(I + 1) - ISD
             NSC = min(NS, NSD)
             do J = 1, NSC
                 srcJ_Shdo(:, IS + J) = srcJ_Shdo(:, IS + J)&
-                    &+ ACCELPAR*dsrc_Shdo(:, ISD + J)
+                    &+ ACCELPAR*srcD_Shdo(:, ISD + J)
             end do
         end do
     end if
