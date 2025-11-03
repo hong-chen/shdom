@@ -47,14 +47,14 @@ module shd_rad
                              isPol_, isPol4_, &
                              isSolar_, isThermal_
     use globals_type,  only: shd_type_rtm, &
-                             shd_type_grid, &
-                             shd_type_shdo
+                             shd_type_grid
 
-    use globals_obj, only: src_obj, &
-                           prp_obj, ext_Prp, ssa_Prp, leg_Prp, ipha_Prp, extDir_Prp, &
-                           sfc_obj, &
-                           ckd_obj, kabs_Ckd, &
-                           sen_obj, view_Sen
+    use globals_obj, only: shdo_obj, isrcJ_Shdo, srcJ_Shdo, &
+                            src_obj, &
+                            prp_obj, ext_Prp, ssa_Prp, leg_Prp, ipha_Prp, extDir_Prp, &
+                            sfc_obj, &
+                            ckd_obj, kabs_Ckd, &
+                            sen_obj, view_Sen
 
     use shd_scat, only: shd_scat__computePhase
 
@@ -709,13 +709,12 @@ subroutine shd_rad__computeRad(&
     &DIRFLUX, FLUXES,&
     &SOURCE1, GRIDRAD,&
     &OUTPARMS, IRAD, RADOUT,&
-    &rtm_obj, grid_obj, shdo_obj)
+    &rtm_obj, grid_obj)
 
     ! Computes the radiances for the specified locations and directions
 
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
-    type(shd_type_shdo), intent(in) :: shdo_obj
 
     integer IRAD
     integer MAXNBC, NTOPPTS, NBOTPTS
@@ -815,7 +814,7 @@ subroutine shd_rad__computeRad(&
         call shd_src__computeSrcOneDir(&
             &DELTAM, MUOUT, PHIOUT,&
             &DIRFLUX, SOURCE1,&
-            &rtm_obj, grid_obj, shdo_obj)
+            &rtm_obj, grid_obj)
 
         ! Set the radiance field to -1, so we can determine valid ra
         !   Also set the source array to the extinction times the so
@@ -876,14 +875,13 @@ subroutine shd_rad__computeCamRad(&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &DIRFLUX, FLUXES,&
     &OUTPARMS, IVIS, VISOUT,&
-    &rtm_obj, grid_obj, shdo_obj)
+    &rtm_obj, grid_obj)
 
     !   Computes Stokes radiances (output in VISOUT) for the visualization
     !  modes: 1) camera mode, and 2) cross track scanning.
 
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
-    type(shd_type_shdo), intent(in) :: shdo_obj
 
     integer IVIS
     integer MAXNBC, NTOPPTS, NBOTPTS
@@ -1064,7 +1062,7 @@ subroutine shd_rad__computeCamRad(&
                 &shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
                 &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
                 &DELTAM, src_obj%type, src_obj%avgWaveLen, src_obj%avgMu, src_obj%avgAz,&
-                &DIRFLUX, shdo_obj%isrcJ, shdo_obj%srcJ, YLMSUN,&
+                &DIRFLUX, isrcJ_Shdo, srcJ_Shdo, YLMSUN,&
                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                 &MU2, PHI2, X0, Y0, Z0,&
                 &XE, YE, ZE, SIDE, TRANSMIT, VISRAD, VALIDRAD,&

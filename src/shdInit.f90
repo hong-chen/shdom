@@ -45,12 +45,12 @@ module shd_init
                              is1DX_, is1DYx_, &
                              isSolar_, isThermal_
     use globals_type,  only: shd_type_rtm, &
-                             shd_type_grid, &
-                             shd_type_shdo
+                             shd_type_grid
 
-    use globals_obj, only: src_obj, &
-                           prp_obj, &
-                           sfc_obj, brdf_Sfc, brdf_Rtm
+    use globals_obj, only: shdo_obj, &
+                            src_obj, &
+                            prp_obj, &
+                            sfc_obj, brdf_Sfc, brdf_Rtm
 
     use shd_util, only: shd_util__computePlanck, &
                         shd_util__solveTriDiag
@@ -429,7 +429,7 @@ end subroutine shd_init__makeCell
 
 subroutine shd_init__makePrp(&
     &doDeltaM, maxSsa,&
-    &rtm_obj, grid_obj, shdo_obj)
+    &rtm_obj, grid_obj)
 
     ! Prepares the grid arrays for the iterative solution process.
     ! If doing Delta-M scaling then the extinction, albedo, and Legend
@@ -440,7 +440,6 @@ subroutine shd_init__makePrp(&
 
     type(shd_type_rtm),  intent(inout) :: rtm_obj
     type(shd_type_grid), intent(in)    :: grid_obj
-    type(shd_type_shdo), intent(in)    :: shdo_obj
 
     logical, intent(in) :: doDeltaM
     real(kind=R__), intent(inout) :: maxSsa

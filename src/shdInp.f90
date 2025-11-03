@@ -1959,7 +1959,7 @@ subroutine shd_io__restoreState(&
     &INSAVEFILE,&
     &INRADFLAG, NEWGRIDFLAG,&
     &FLUXES,&
-    &rtm_obj, grid_obj, shdo_obj)
+    &rtm_obj, grid_obj, shdo_obj, iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo)
 
     ! Reads the binary save file containing a previous state of
     ! the SHDOM solution. This includes the cell tree structure,
@@ -1973,6 +1973,11 @@ subroutine shd_io__restoreState(&
     type(shd_type_rtm),  intent(in)    :: rtm_obj
     type(shd_type_grid), intent(inout) :: grid_obj
     type(shd_type_shdo), intent(inout) :: shdo_obj
+    integer(kind=I__), intent(out) :: iradI_Shdo(*)
+    real(kind=R__),    intent(out) ::  radI_Shdo(shdo_obj%Nstokes, *)
+    integer(kind=I__), intent(out) :: isrcJ_Shdo(*)
+    real(kind=R__),    intent(out) ::  srcJ_Shdo(shdo_obj%Nstokes, *)
+
 
     character(*), intent(in) :: INSAVEFILE
 
@@ -2016,17 +2021,17 @@ subroutine shd_io__restoreState(&
     read (3) ((grid_obj%xyz(j, i), j=1, 3), i=1, grid_obj%Npts)
     read (3) ((FLUXES(j, i), j=1, 2), i=1, grid_obj%Npts)
 
-    read (3) (shdo_obj%isrcJ(i), i=1, grid_obj%Npts + 1)
+    read (3) (isrcJ_Shdo(i), i=1, grid_obj%Npts + 1)
 
-    NS = shdo_obj%isrcJ(grid_obj%Npts + 1)
-    read (3) ((shdo_obj%srcJ(j, i), j=1, shdo_obj%Nstokes), i=1, NS)
+    NS = isrcJ_Shdo(grid_obj%Npts + 1)
+    read (3) ((srcJ_Shdo(j, i), j=1, shdo_obj%Nstokes), i=1, NS)
 
     NR = 4*grid_obj%Npts
-    read (3) ((shdo_obj%radI(j, i), j=1, shdo_obj%Nstokes), i=1, NR)
+    read (3) ((radI_Shdo(j, i), j=1, shdo_obj%Nstokes), i=1, NR)
 
-    shdo_obj%iradI(1) = 0
+    iradI_Shdo(1) = 0
     do i = 1, grid_obj%Npts
-        shdo_obj%iradI(i+1) = shdo_obj%iradI(i) + shdo_obj%Nstokes*4
+        iradI_Shdo(i+1) = iradI_Shdo(i) + shdo_obj%Nstokes*4
     end do
 
     close (3)

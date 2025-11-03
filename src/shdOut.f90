@@ -44,14 +44,14 @@ module shd_out
                              isPol_, isPol4_, &
                              isSolar_, isThermal_
     use globals_type,  only: shd_type_rtm, &
-                             shd_type_grid, &
-                             shd_type_shdo
+                             shd_type_grid
 
-    use globals_obj, only: src_obj, &
-                           prp_obj, &
-                           sfc_obj, &
-                           ckd_obj, &
-                           sen_obj, view_Sen
+    use globals_obj, only: shdo_obj, iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo, &
+                            src_obj, &
+                            prp_obj, &
+                            sfc_obj, &
+                            ckd_obj, &
+                            sen_obj, view_Sen
 
     use shd_grid, only: shd_grid__testCellSplit
 
@@ -85,7 +85,7 @@ subroutine shd_io__outputResult(&
     &FLUXES, DIRFLUX, FLUXDIV,&
     &IRAD, RADOUT, NSHOUT, SHTERMS, SOURCE1OUT,&
     &OUTTYPE, OUTPARMS, OUTFILE,&
-    &rtm_obj, grid_obj, shdo_obj)
+    &rtm_obj, grid_obj)
 
     !   Writes the desired type of output file from the output fields
     ! with a header giving the input parameters.
@@ -97,7 +97,6 @@ subroutine shd_io__outputResult(&
 
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
-    type(shd_type_shdo), intent(in) :: shdo_obj
 
     integer, intent(in) :: MAXITER, TOTITER, NSHOUT
     logical  , intent(in) :: DELTAM
@@ -1177,7 +1176,7 @@ subroutine shd_io__outputResultMpi(&
     &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
     &FLUXES, FLUXDIV, NSHOUT, SHTERMS, IRAD, RADOUT,&
     &OUTTYPE, OUTPARMS, OUTFILE,&
-    &rtmAll_obj, grid_obj, shdo_obj)
+    &rtmAll_obj, grid_obj)
 
     ! Writes the desired type of output file from the output fields
     ! with a header giving the input parameters.
@@ -1188,7 +1187,6 @@ subroutine shd_io__outputResultMpi(&
 
     type(shd_type_rtm),  intent(in) :: rtmAll_obj
     type(shd_type_grid), intent(in) :: grid_obj
-    type(shd_type_shdo), intent(in) :: shdo_obj
 
     integer Nsh_tot, Npts_tot, Ncell_tot
     integer MAXITER, TOTITER, IRAD, NSHOUT
@@ -1912,7 +1910,7 @@ subroutine shd_io__outputCamRad(&
     &DELTAM,&
     &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
     &IVIS, VISOUT, OUTPARMS, OUTFILE,&
-    &rtm_obj, grid_obj, shdo_obj)
+    &rtm_obj, grid_obj)
 
     ! Writes the visualization image in PGM binary format with either
     ! one byte or two byte pixels.  The PGM binary format (P5) has an
@@ -1922,7 +1920,6 @@ subroutine shd_io__outputCamRad(&
 
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
-    type(shd_type_shdo), intent(in) :: shdo_obj
 
     integer MAXITER, TOTITER, IVIS
     logical, intent(in) :: DELTAM
@@ -2115,7 +2112,7 @@ subroutine shd_io__outputImg(&
     &DELTAM,&
     &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
     &IVIS, VISOUT, OUTPARMS, OUTFILE,&
-    &rtm_obj, grid_obj, shdo_obj)
+    &rtm_obj, grid_obj)
 
     ! Writes the visualization image in PGM binary format with either
     ! one byte or two byte pixels.  The PGM binary format (P5) has an
@@ -2125,7 +2122,6 @@ subroutine shd_io__outputImg(&
 
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
-    type(shd_type_shdo), intent(in) :: shdo_obj
 
     integer MAXITER, TOTITER, IVIS
     logical, intent(in) :: DELTAM
@@ -2506,7 +2502,7 @@ end subroutine shd_io__outputImg
 subroutine shd_io__outputCellSplit(&
     &OUTFILE,&
     &SHPTR, SOURCE,&
-    &rtm_obj, grid_obj, shdo_obj)
+    &rtm_obj, grid_obj)
 
     ! Outputs the final cell splitting criterion for each grid cell
     ! and direction (X,Y,Z).  Calls CELL_SPLIT_TEST.
@@ -2514,7 +2510,6 @@ subroutine shd_io__outputCellSplit(&
 
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
-    type(shd_type_shdo), intent(in) :: shdo_obj
 
     integer SHPTR(*)
     real SOURCE(shdo_obj%Nstokes, *)
@@ -2531,7 +2526,7 @@ subroutine shd_io__outputCellSplit(&
         ! Get the adaptive grid criterion for the 3 directions
         call shd_grid__testCellSplit(icell,&
             &ADAPTCRIT, MAXADAPT, IDIR,&
-            &rtm_obj, grid_obj, shdo_obj)
+            &rtm_obj, grid_obj)
         ! Compute the cell center location and mean extinction
         IP1 = grid_obj%i8Grid(1, icell)
         IP2 = grid_obj%i8Grid(8, icell)
@@ -2683,7 +2678,7 @@ end subroutine shd_io__visualizeCell
 
 subroutine shd_io__saveState(&
     &OUTSAVEFILE, WORK, FLUXES,&
-    &rtm_obj, grid_obj, shdo_obj)
+    &rtm_obj, grid_obj)
 
     ! Write a binary save file containing the current state of
     ! the SHDOM solution. This includes the cell tree structure,
@@ -2693,7 +2688,6 @@ subroutine shd_io__saveState(&
 
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
-    type(shd_type_shdo), intent(in) :: shdo_obj
 
     character(len=*) , intent(in) :: OUTSAVEFILE
     real(kind=R__)   , intent(inout) :: WORK(*)
@@ -2722,23 +2716,23 @@ subroutine shd_io__saveState(&
     write (91) ((grid_obj%xyz(J, I), J=1, 3), I=1, grid_obj%Npts)
     write (91) ((FLUXES(J, I) , J=1, 2), I=1, grid_obj%Npts)
 
-    write (91) (shdo_obj%isrcJ(I), I=1, grid_obj%Npts + 1)
+    write (91) (isrcJ_Shdo(I), I=1, grid_obj%Npts + 1)
 
-    NS = shdo_obj%isrcJ(grid_obj%Npts + 1)
-    write (91) ((shdo_obj%srcJ(J, I), J=1, shdo_obj%Nstokes), I=1, NS)
+    NS = isrcJ_Shdo(grid_obj%Npts + 1)
+    write (91) ((srcJ_Shdo(J, I), J=1, shdo_obj%Nstokes), I=1, NS)
 
     !K = 1
     !do I = 1, grid_obj%Npts
-    !    IR = shdo_obj%iradI(I)
+    !    IR = iradI_Shdo(I)
     !    do J = 1, shdo_obj%Nstokes*4
 
     !        ! the following is an attempt to fix the segmentation issue
     !        !╭────────────────────────────────────────────────╮!
-    !        ! shdo_obj%iradI(1) = 0 (from shd_init__makeRad)
+    !        ! iradI_Shdo(1) = 0 (from shd_init__makeRad)
     !        ! originally it was:
-    !        ! WORK(K) = shdo_obj%radI(shdo_obj%Nstokes*(IR-1)+J)
+    !        ! WORK(K) = radI_Shdo(shdo_obj%Nstokes*(IR-1)+J)
     !        ! when I=1, IR=0, shdo_obj%Nstokes*(IR-1)+J is 0 when J=1 (shdo_obj%Nstokes=1)
-    !        WORK(K) = shdo_obj%radI(shdo_obj%Nstokes*(IR)+J)
+    !        WORK(K) = radI_Shdo(shdo_obj%Nstokes*(IR)+J)
     !        !╰────────────────────────────────────────────────╯!
 
     !        K = K + 1
@@ -2747,10 +2741,10 @@ subroutine shd_io__saveState(&
 
     K = 1
     do I = 1, grid_obj%Npts
-        IR = shdo_obj%iradI(I)   !radI(NSTOKES, NPTS)
+        IR = iradI_Shdo(I)   !radI(NSTOKES, NPTS)
         do J = 1, 4
             do istoke = 1, shdo_obj%Nstokes
-                WORK(K) = shdo_obj%radI(istoke, IR+J)
+                WORK(K) = radI_Shdo(istoke, IR+J)
                 K = K + 1
             end do
         end do

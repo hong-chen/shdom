@@ -45,12 +45,12 @@ module shd_grid
                              is1DX_, is1DYx_, is1D_, &
                              isPol_, isSolar_, isThermal_
     use globals_type,  only: shd_type_rtm, &
-                             shd_type_grid, &
-                             shd_type_shdo
+                             shd_type_grid
 
-    use globals_obj, only: src_obj, &
-                           prp_obj, temp_Prp, ext_Prp, ssa_Prp, leg_Prp, ipha_Prp, &
-                           sfc_obj
+    use globals_obj, only: shdo_obj, iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo, &
+                            src_obj, &
+                            prp_obj, temp_Prp, ext_Prp, ssa_Prp, leg_Prp, ipha_Prp, &
+                            sfc_obj
 
     use globals_obj, only: ckd_obj, kabs_Ckd
 
@@ -706,7 +706,7 @@ end subroutine shd_grid__inheritNeighCell
 
 subroutine shd_grid__testGridSmooth(&
     &icell, idir,&
-    &grid_obj, shdo_obj)
+    &grid_obj)
     !   Tests the grid cell icell for splitting in order to improve the
     ! adaptive grid smoothness.  The direction to split the cell is returned
     ! in idir (1-X, 2-Y, 3-Z, 0-don't).
@@ -715,7 +715,6 @@ subroutine shd_grid__testGridSmooth(&
     !   2) a neighboring cell has grid spacing more than 3 times finer
 
     type(shd_type_grid), intent(in) :: grid_obj
-    type(shd_type_shdo), intent(in) :: shdo_obj
 
     integer icell, idir
     integer ID, iface, IP, IP1, IP2, icellNeigh, I, J, ISUM
@@ -800,7 +799,7 @@ subroutine shd_grid__testGridSmooth(&
                 ISUM = 0
                 do I = 1, 8
                     IP = grid_obj%i8Grid(I, icell)
-                    ISUM = ISUM + shdo_obj%isrcJ(IP + 1) - shdo_obj%isrcJ(IP)
+                    ISUM = ISUM + isrcJ_Shdo(IP + 1) - isrcJ_Shdo(IP)
                 end do
                 if (ISUM .gt. 0) then
                     idir = ID
@@ -817,7 +816,7 @@ end subroutine shd_grid__testGridSmooth
 
 subroutine shd_grid__testCellSplit(icell,&
     &ADAPTCRIT, MAXADAPT, idir,&
-    &rtm_obj, grid_obj, shdo_obj)
+    &rtm_obj, grid_obj)
 
     !   Computes the adaptive cell splitting criterion for the X, Y, and Z
     ! directions for cell (icell).  The three criterion are returned in
@@ -836,7 +835,6 @@ subroutine shd_grid__testCellSplit(icell,&
 
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
-    type(shd_type_shdo), intent(in) :: shdo_obj
 
     integer icell, idir
     real ADAPTCRIT(3), MAXADAPT
@@ -857,24 +855,24 @@ subroutine shd_grid__testCellSplit(icell,&
             IP2 = grid_obj%i8Grid(gridCorner(2, IE, ID), icell)
             if (IP1 .ne. IP2) then
                 NUM = NUM + 1
-                IS1 = shdo_obj%isrcJ(IP1)
-                IS2 = shdo_obj%isrcJ(IP2)
-                NS1 = shdo_obj%isrcJ(IP1 + 1) - IS1
-                NS2 = shdo_obj%isrcJ(IP2 + 1) - IS2
+                IS1 = isrcJ_Shdo(IP1)
+                IS2 = isrcJ_Shdo(IP2)
+                NS1 = isrcJ_Shdo(IP1 + 1) - IS1
+                NS2 = isrcJ_Shdo(IP2 + 1) - IS2
                 JAY = 0.0
                 NS = min(NS1, NS2)
                 !   Compute the source function rms difference integrated
                 ! over all angles, which is sum of squares of spherical
                 ! harmonic term differences.
                 do J = 1, NS
-                    JAY = JAY + (rtm_obj%ext(IP2)*shdo_obj%srcJ(1, IS2 + J)&
-                        &- rtm_obj%ext(IP1)*shdo_obj%srcJ(1, IS1 + J))**2
+                    JAY = JAY + (rtm_obj%ext(IP2)*srcJ_Shdo(1, IS2 + J)&
+                        &- rtm_obj%ext(IP1)*srcJ_Shdo(1, IS1 + J))**2
                 end do
                 do J = NS + 1, NS1
-                    JAY = JAY + (rtm_obj%ext(IP1)*shdo_obj%srcJ(1, IS1 + J))**2
+                    JAY = JAY + (rtm_obj%ext(IP1)*srcJ_Shdo(1, IS1 + J))**2
                 end do
                 do J = NS + 1, NS2
-                    JAY = JAY + (rtm_obj%ext(IP2)*shdo_obj%srcJ(1, IS2 + J))**2
+                    JAY = JAY + (rtm_obj%ext(IP2)*srcJ_Shdo(1, IS2 + J))**2
                 end do
                 EXT = 0.5*(rtm_obj%ext(IP1) + rtm_obj%ext(IP2))
                 if (EXT .gt. 0.0) then
@@ -1420,7 +1418,7 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
     &SOLARFLUX, YLMSUN,&
     &DIRFLUX,&
     &OSHPTR,&
-    &rtm_obj, grid_obj, shdo_obj)
+    &rtm_obj, grid_obj)
 
     !   Interpolates the medium properties, radiance, and source function for
     ! new grid points (specified in newPts).  The medium properties are
@@ -1434,7 +1432,6 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
 
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
-    type(shd_type_shdo), intent(in) :: shdo_obj
 
     integer newPts(3, 4)
     integer OSHPTR(*)
@@ -1520,21 +1517,21 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
             end if
 
             ! Interpolate the radiance
-            IR1 = shdo_obj%iradI(IP1)
-            IR2 = shdo_obj%iradI(IP2)
-            NR1 = shdo_obj%iradI(IP1 + 1) - shdo_obj%iradI(IP1)
-            NR2 = shdo_obj%iradI(IP2 + 1) - shdo_obj%iradI(IP2)
+            IR1 = iradI_Shdo(IP1)
+            IR2 = iradI_Shdo(IP2)
+            NR1 = iradI_Shdo(IP1 + 1) - iradI_Shdo(IP1)
+            NR2 = iradI_Shdo(IP2 + 1) - iradI_Shdo(IP2)
             NR = max(NR1, NR2)
-            IR = shdo_obj%iradI(IP)
-            shdo_obj%iradI(IP + 1) = IR + NR
+            IR = iradI_Shdo(IP)
+            iradI_Shdo(IP + 1) = IR + NR
             do J = 1, NR
                 if (J .le. NR1) then
-                    RAD1(:) = shdo_obj%radI(:, IR1 + J)
+                    RAD1(:) = radI_Shdo(:, IR1 + J)
                 else
                     RAD1(:) = 0.0
                 end if
                 if (J .le. NR2) then
-                    RAD2(:) = shdo_obj%radI(:, IR2 + J)
+                    RAD2(:) = radI_Shdo(:, IR2 + J)
                 else
                     RAD2(:) = 0.0
                 end if
@@ -1543,23 +1540,23 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
                 !if ((abs(grid_obj%xyz(1, IP1)-grid_obj%xyz(1, IP2)) .lt. 1.0e-6) .and.&
                 !    &(abs(grid_obj%xyz(2, IP1)-grid_obj%xyz(2, IP2)) .lt. 1.0e-6)) then
                 !    if (grid_obj%xyz(3, IP2) .gt. grid_obj%xyz(3, IP1)) then
-                !        shdo_obj%radI(:, IR + J) = RAD2(:)
+                !        radI_Shdo(:, IR + J) = RAD2(:)
                 !    else
-                !        shdo_obj%radI(:, IR + J) = RAD1(:)
+                !        radI_Shdo(:, IR + J) = RAD1(:)
                 !    end if
                 !else
-                    !shdo_obj%radI(:, IR + J) = 0.5*(RAD1(:) + RAD2(:))
+                    !radI_Shdo(:, IR + J) = 0.5*(RAD1(:) + RAD2(:))
                 !end if
                 !╰────────────────────────────────────────────────╯!
-                shdo_obj%radI(:, IR + J) = 0.5*(RAD1(:) + RAD2(:))
+                radI_Shdo(:, IR + J) = 0.5*(RAD1(:) + RAD2(:))
             end do
 
             ! Compute the source function for the new points
-            NS1 = shdo_obj%isrcJ(IP1 + 1) - shdo_obj%isrcJ(IP1)
-            NS2 = shdo_obj%isrcJ(IP2 + 1) - shdo_obj%isrcJ(IP2)
+            NS1 = isrcJ_Shdo(IP1 + 1) - isrcJ_Shdo(IP1)
+            NS2 = isrcJ_Shdo(IP2 + 1) - isrcJ_Shdo(IP2)
             NS = max(NS1, NS2)
-            IS = shdo_obj%isrcJ(IP)
-            shdo_obj%isrcJ(IP + 1) = IS + NS
+            IS = isrcJ_Shdo(IP)
+            isrcJ_Shdo(IP + 1) = IS + NS
             if (ACCELFLAG) OSHPTR(IP + 1) = OSHPTR(IP)
             if (prp_obj%Npha .gt. 0) then
                 IPH = rtm_obj%ipha(IP)
@@ -1570,15 +1567,15 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
                 call shd_src__computeSrcOnePnt(shdo_obj%Nstokes, shdo_obj%Nlm, LOFJ,&
                     &src_obj%type, DIRFLUX(IP)*SECMU0, YLMSUN,&
                     &rtm_obj%planck(IP), rtm_obj%ssa(IP), IPH, rtm_obj%leg,&
-                    &NR, shdo_obj%radI(1:shdo_obj%Nstokes, IR+1:NR), SOURCET)
+                    &NR, radI_Shdo(1:shdo_obj%Nstokes, IR+1:NR), SOURCET)
             else
                 call shd_src__computeSrcOnePnt_(shdo_obj%Nlm, LOFJ,&
                     &src_obj%type, DIRFLUX(IP)*SECMU0, YLMSUN,&
                     &rtm_obj%planck(IP), rtm_obj%ssa(IP), IPH, rtm_obj%leg,&
-                    &NR, shdo_obj%radI(1:shdo_obj%Nstokes, IR+1:NR), SOURCET)
+                    &NR, radI_Shdo(1:shdo_obj%Nstokes, IR+1:NR), SOURCET)
             end if
             do J = 1, NS
-                shdo_obj%srcJ(:, IS + J) = SOURCET(:, J)
+                srcJ_Shdo(:, IS + J) = SOURCET(:, J)
             end do
         end if
     end do
@@ -1596,7 +1593,7 @@ subroutine shd_grid__splitGrid(&
     &DIRFLUX,&
     &SOLARFLUX, YLMSUN,&
     &ADAPTCRIT, ADAPTIND,&
-    &rtm_obj, grid_obj, shdo_obj)
+    &rtm_obj, grid_obj)
 
     !   Splits the cells that have a cell dividing criterion greater than
     ! CURSPLITACC if doSplit is true.  The current splitting criterion
@@ -1606,7 +1603,6 @@ subroutine shd_grid__splitGrid(&
 
     type(shd_type_rtm),  intent(in)    :: rtm_obj
     type(shd_type_grid), intent(inout) :: grid_obj
-    type(shd_type_shdo), intent(inout) :: shdo_obj
 
     integer OSHPTR(*)
     real ADAPTIND(*)
@@ -1634,7 +1630,7 @@ subroutine shd_grid__splitGrid(&
                     ! If this is a end node cell then compute adaptive criterion
                     call shd_grid__testCellSplit(icell,&
                         &ADAPT, ADAPTCRIT(N + 1), idir,&
-                        &rtm_obj, grid_obj, shdo_obj)
+                        &rtm_obj, grid_obj)
                     ADAPTIND(N+1) = 4*icell + idir
                     N = N + 1
                 end if
@@ -1650,8 +1646,8 @@ subroutine shd_grid__splitGrid(&
             MAXCELLS = grid_obj%maxNcell - FRAC*(grid_obj%maxNcell - grid_obj%Ncell) - 2
             MAXPTS   = grid_obj%maxNpts  - FRAC*(grid_obj%maxNpts  - grid_obj%Npts)  - 4
             MAXWORK  = shdo_obj%maxNptsDO - FRAC*(shdo_obj%maxNptsDO - shdo_obj%maxNphi0*grid_obj%Npts) - 4*shdo_obj%maxNphi0
-            MAXSH    = shdo_obj%maxNptsSH - FRAC*(shdo_obj%maxNptsSH - shdo_obj%isrcJ(grid_obj%Npts+1)) - 4*shdo_obj%Nlm
-            MAXRAD   = shdo_obj%maxNptsSH + grid_obj%maxNpts - FRAC*(shdo_obj%maxNptsSH + grid_obj%maxNpts - shdo_obj%iradI(grid_obj%Npts + 1)) - 4*shdo_obj%Nlm
+            MAXSH    = shdo_obj%maxNptsSH - FRAC*(shdo_obj%maxNptsSH - isrcJ_Shdo(grid_obj%Npts+1)) - 4*shdo_obj%Nlm
+            MAXRAD   = shdo_obj%maxNptsSH + grid_obj%maxNpts - FRAC*(shdo_obj%maxNptsSH + grid_obj%maxNpts - iradI_Shdo(grid_obj%Npts + 1)) - 4*shdo_obj%Nlm
 
             ! Go down the list from highest adaptive cell criterion on down
             isOutMem0 = isOutMem
@@ -1661,8 +1657,8 @@ subroutine shd_grid__splitGrid(&
                 if  ((grid_obj%Ncell .gt. MAXCELLS) .or.&
                     &(grid_obj%Npts  .gt. MAXPTS) .or.&
                     &(grid_obj%Npts*shdo_obj%maxNphi0   .gt. MAXWORK) .or.&
-                    &(shdo_obj%isrcJ(grid_obj%Npts + 1) .gt. MAXSH)   .or.&
-                    &(shdo_obj%iradI(grid_obj%Npts + 1) .gt. MAXRAD)) then
+                    &(isrcJ_Shdo(grid_obj%Npts + 1) .gt. MAXSH)   .or.&
+                    &(iradI_Shdo(grid_obj%Npts + 1) .gt. MAXRAD)) then
                     isOutMem0 = .true.
                 else
                     icell = int(ADAPTIND(I))/4
@@ -1676,7 +1672,7 @@ subroutine shd_grid__splitGrid(&
                         &SOLARFLUX, YLMSUN,&
                         &DIRFLUX,&
                         &OSHPTR,&
-                        &rtm_obj, grid_obj, shdo_obj)
+                        &rtm_obj, grid_obj)
                 end if
                 I = I + 1
             end do
@@ -1692,14 +1688,14 @@ subroutine shd_grid__splitGrid(&
                 if  ((grid_obj%Ncell .gt. MAXCELLS) .or.&
                     &(grid_obj%Npts  .gt. MAXPTS) .or.&
                     &(grid_obj%Npts * shdo_obj%maxNphi0 .gt. MAXWORK) .or.&
-                    &(shdo_obj%isrcJ(grid_obj%Npts + 1) .gt. MAXSH) .or.&
-                    &(shdo_obj%iradI(grid_obj%Npts + 1) .gt. MAXRAD)) then
+                    &(isrcJ_Shdo(grid_obj%Npts + 1) .gt. MAXSH) .or.&
+                    &(iradI_Shdo(grid_obj%Npts + 1) .gt. MAXRAD)) then
                     isOutMem = .true.
                 else
                     ! See if cell should be split to make better grid:
                     !   idir=0 if no, idir=direction (1,2,3) otherwise
                     icell = int(ADAPTIND(I))/4
-                    call shd_grid__testGridSmooth(icell, idir, grid_obj, shdo_obj)
+                    call shd_grid__testGridSmooth(icell, idir, grid_obj)
 
                     ! Set idir=0 to stop adaptive grid smoothing
                     ! idir = 0
@@ -1713,7 +1709,7 @@ subroutine shd_grid__splitGrid(&
                             &SOLARFLUX, YLMSUN,&
                             &DIRFLUX,&
                             &OSHPTR,&
-                            &rtm_obj, grid_obj, shdo_obj)
+                            &rtm_obj, grid_obj)
                     end if
                 end if
                 I = I + 1
@@ -1745,7 +1741,7 @@ subroutine shd_grid__splitGrid(&
         if (grid_obj%i2Tree(2, icell) .eq. 0) then
             call shd_grid__testCellSplit(icell,&
                 &ADAPT, ADAPTCRIT(1), idir,&
-                &rtm_obj, grid_obj, shdo_obj)
+                &rtm_obj, grid_obj)
             SPLITCRIT = max(SPLITCRIT, ADAPTCRIT(1))
         end if
     end do

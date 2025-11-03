@@ -45,12 +45,12 @@ module shd_intg
                              isMpi_, is1DX_, is1DYx_, is1D_, &
                              isPol_
     use globals_type,  only: shd_type_rtm, &
-                             shd_type_grid, &
-                             shd_type_shdo
+                             shd_type_grid
 
-    use globals_obj, only: src_obj, &
-                           prp_obj, &
-                           sfc_obj
+    use globals_obj, only: shdo_obj, iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo, &
+                            src_obj, &
+                            prp_obj, &
+                            sfc_obj
 
     use shd_sfc,  only: shd_sfc__interpSfc
 
@@ -96,10 +96,10 @@ subroutine shd_intg__integratePath(&
     &CMU1, CPHI1, CMU2, CPHI2, WSAVE, FFTFLAG,&
     &DIRFLUX, FLUXES,&
     &WORK, SWEEPORD, GRIDRAD,&
-    &rtm_obj, grid_obj, shdo_obj)
+    &rtm_obj, grid_obj)
 
     !   Performs the path integrations through the medium specified by
-    ! the extinction (rtm_obj%ext) and source function (shdo_obj%srcJ) in
+    ! the extinction (rtm_obj%ext) and source function (srcJ_Shdo) in
     ! spherical harmonic space.  The source function is transformed to
     ! discrete ordinates one zenith angle at a time.  The integrations
     ! are done from the top boundary (with no reflection) down to the
@@ -124,7 +124,6 @@ subroutine shd_intg__integratePath(&
 
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
-    type(shd_type_shdo), intent(in) :: shdo_obj
 
     integer MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS
     integer BCPTR(MAXNBC, 2)
@@ -182,9 +181,9 @@ subroutine shd_intg__integratePath(&
     end do
 
     ! Zero the output spherical harmonic radiance
-    NR = shdo_obj%iradI(grid_obj%Npts + 1)
+    NR = iradI_Shdo(grid_obj%Npts + 1)
     do I = 1, NR
-        shdo_obj%radI(:, I) = 0.0
+        radI_Shdo(:, I) = 0.0
     end do
 
     ! print *, 'Path integration:'
@@ -211,12 +210,12 @@ subroutine shd_intg__integratePath(&
             call shd_shdo__transSHtoDO(grid_obj%Npts, shdo_obj%Nstokes, prp_obj%NlegSet, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
                 &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0(IMU),&
                 &IMU, FFTFLAG, CMU1, CPHI1, WSAVE,&
-                &shdo_obj%isrcJ, shdo_obj%srcJ, WORK)
+                &isrcJ_Shdo, srcJ_Shdo, WORK)
         else
             call shd_shdo__transSHtoDO_(grid_obj%Npts, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
                 &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0(IMU),&
                 &IMU, FFTFLAG, CMU1, CPHI1, WSAVE,&
-                &shdo_obj%isrcJ, shdo_obj%srcJ, WORK)
+                &isrcJ_Shdo, srcJ_Shdo, WORK)
         end if
 
         ! Enforce the discrete ordinate I source function to be non-negative
@@ -341,12 +340,12 @@ subroutine shd_intg__integratePath(&
             call shd_shdo__transDOtoSH(grid_obj%Npts, shdo_obj%Nstokes, prp_obj%NlegSet, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
                 &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0(IMU),&
                 &IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
-                &shdo_obj%iradI, WORK, shdo_obj%radI)
+                &iradI_Shdo, WORK, radI_Shdo)
         else
             call shd_shdo__transDOtoSH_(grid_obj%Npts, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
                 &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0(IMU),&
                 &IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
-                &shdo_obj%iradI, WORK, shdo_obj%radI)
+                &iradI_Shdo, WORK, radI_Shdo)
         end if
 
     end do DO_MU_LOOP

@@ -47,16 +47,16 @@ module shd_mpi
                              isSolar_
     use globals_type, only: shd_type_rtm,  &
                             shd_type_grid, &
-                            shd_type_shdo, &
                             shd_type_prp,  &
                             shd_type_sfc,  &
                             shd_type_ckd,  &
                             shd_type_sen
 
-    use globals_obj, only: src_obj, &
-                           prp_obj, &
-                           sfc_obj, &
-                           sen_obj, view_Sen
+    use globals_obj, only: shdo_obj, isrcJ_Shdo, srcJ_Shdo, &
+                            src_obj, &
+                            prp_obj, &
+                            sfc_obj, &
+                            sen_obj, view_Sen
 
 #if HAS_MPI
     use mpi_f08,  only: MPI_comm_world, MPI_comm, MPI_request, &
@@ -1814,7 +1814,7 @@ subroutine shd_mpi__computeRad(&
     &DIRFLUX, FLUXES,&
     &SOURCE1, GRIDRAD,&
     &parms_Out, NRAD, RADOUT,&
-    &rtm_obj, grid_obj, shdo_obj)
+    &rtm_obj, grid_obj)
 
     ! Computes the radiances for the locations and directions specified
     ! in parms_Out, putting the results in RADOUT and increasing NRAD by
@@ -1823,7 +1823,6 @@ subroutine shd_mpi__computeRad(&
 
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
-    type(shd_type_shdo), intent(in) :: shdo_obj
 
     integer, intent(inout) :: NRAD
     integer, intent(in) :: MAXNBC, NTOPPTS, NBOTPTS
@@ -1961,7 +1960,7 @@ subroutine shd_mpi__computeRad(&
         call shd_src__computeSrcOneDir(&
             &DELTAM, mu_out, phi_out,&
             &DIRFLUX, SOURCE1,&
-            &rtm_obj, grid_obj, shdo_obj)
+            &rtm_obj, grid_obj)
 
         ! Set the radiance field to -1, so we can determine valid radiances
         !   Also set the source array to the extinction times the source
@@ -2226,7 +2225,7 @@ subroutine shd_mpi__computeCamRad(&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &DIRFLUX, FLUXES,&
     &parms_Out, IVIS, VISOUT,&
-    &rtm_obj, grid_obj, shdo_obj)
+    &rtm_obj, grid_obj)
 
     ! Computes Stokes radiances (output in VISOUT) for the visualization
     !   modes: 1) camera mode,
@@ -2235,7 +2234,6 @@ subroutine shd_mpi__computeCamRad(&
 
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
-    type(shd_type_shdo), intent(in) :: shdo_obj
 
     integer, intent(inout) :: IVIS
     integer, intent(in) :: MAXNBC, NTOPPTS, NBOTPTS
@@ -2480,7 +2478,7 @@ subroutine shd_mpi__computeCamRad(&
                     &shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
                     &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
                     &DELTAM, src_obj%type, src_obj%avgWaveLen, src_obj%avgMu, src_obj%avgAz,&
-                    &DIRFLUX, shdo_obj%iSrcJ, shdo_obj%srcJ, YLMSUN,&
+                    &DIRFLUX, isrcJ_Shdo, srcJ_Shdo, YLMSUN,&
                     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                     &MU2, PHI2, X0, Y0, Z0,&
                     &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD,&
@@ -2563,7 +2561,7 @@ subroutine shd_mpi__computeCamRad(&
                     &shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
                     &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
                     &DELTAM, src_obj%type, src_obj%avgWaveLen, src_obj%avgMu, src_obj%avgAz,&
-                    &DIRFLUX, shdo_obj%iSrcJ, shdo_obj%srcJ, YLMSUN,&
+                    &DIRFLUX, isrcJ_Shdo, srcJ_Shdo, YLMSUN,&
                     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                     &MU2, PHI2, X, Y, Z,&
                     &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD,&

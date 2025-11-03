@@ -49,11 +49,10 @@ program shdom
                              isSolar_, isThermal_
     use globals_type,  only: shd_type_prp, &
                              shd_type_sfc, &
-                             shd_type_shdo, &
                              shd_type_rtm, &
                              shd_type_grid
 
-    use globals_obj,   only: shdo_obj, &
+    use globals_obj,   only: shdo_obj, iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo, &
                              src_obj, &
                              prp_obj, temp_Prp, ext_Prp, ssa_Prp, leg_Prp, ipha_Prp, extDir_Prp, &
                              sfc_obj, brdf_Sfc, brdf_Rtm, &
@@ -131,10 +130,10 @@ program shdom
     real(kind=R__), allocatable, target :: x_Grid_all(:), y_Grid_all(:)
 
     real(kind=R__),  allocatable, target :: temp_Rtm(:), &
-                                            planck_Rtm(:), &
-                                            ext_Rtm(:), &
-                                            ssa_Rtm(:)
-    real(kind=R__),  allocatable, target :: leg_Rtm(:)
+                                          planck_Rtm(:), &
+                                             ext_Rtm(:), &
+                                             ssa_Rtm(:), &
+                                             leg_Rtm(:)
     integer(kind=2), allocatable, target :: ipha_Rtm(:)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
@@ -162,11 +161,6 @@ program shdom
 
     ! shdo_obj
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    integer(kind=I__), allocatable, target :: iradI_Shdo(:), &
-                                              isrcJ_Shdo(:)
-    real(kind=R__),    allocatable, target ::  radI_Shdo(:, :), &
-                                               srcJ_Shdo(:, :)
-
     real(kind=R__),    allocatable :: dsrc_Shdo(:, :)
     integer(kind=I__), allocatable :: idsrc_Shdo(:)
     !╰────────────────────────────────────────────────────────────────────────────╯!
@@ -888,8 +882,8 @@ program shdom
 
     NmaxNpts = NmaxNpts + 16.5*CELL_TO_POINT_RATIO ! i8Grid_Cell[8.0], i6Cell_Cell[6.0], i2Tree_Cell[2.0], flag_Cell[0.5]
 
-    NmaxNpts = NmaxNpts + 6.0   ! xyz_Grid[3.0], shdo_obj%iradI[1.0], shdo_obj%isrcJ[1.0], idsrc_Shdo[1.0]
-    memUsed = memUsed + 4.0 ! offset shdo_obj%iradI[+2], shdo_obj%isrcJ[+1], idsrc_Shdo[+1]
+    NmaxNpts = NmaxNpts + 6.0   ! xyz_Grid[3.0], iradI_Shdo[1.0], isrcJ_Shdo[1.0], idsrc_Shdo[1.0]
+    memUsed = memUsed + 4.0 ! offset iradI_Shdo[+2], isrcJ_Shdo[+1], idsrc_Shdo[+1]
 
     if (isAccel) then
         NmaxNpts = NmaxNpts + shdo_obj%Nstokes*(1.0+3.0*NUM_SH_TERM_FACTOR*shdo_obj%Nlm) ! radiance, source, delta source
@@ -1068,13 +1062,6 @@ program shdom
     ! radiance and source
     allocate(radI_Shdo(shdo_obj%Nstokes, shdo_obj%maxNptsSH + grid_obj%maxNpts), &
              srcJ_Shdo(shdo_obj%Nstokes, shdo_obj%maxNptsSH))
-
-    shdo_obj%iradI => iradI_Shdo
-    shdo_obj%isrcJ => isrcJ_Shdo
-    shdo_obj%radI  => radI_Shdo
-    shdo_obj%srcJ  => srcJ_Shdo
-
-    shdo_obj%isAllocated = .true.
     !╰────────────────────────────────────────────────╯!
 
     ! delta source
@@ -1101,9 +1088,10 @@ program shdom
 
 
     ! Read in previous run from binary file if desired
-    call shd_io__restoreState(fileInp_sav,&
-        &doRadInit, doGridInit, fluxTot,&
-        &rtm_obj, grid_OBJ, shdo_OBJ)
+    call shd_io__restoreState(fileInp_sav, &
+        doRadInit, doGridInit, fluxTot, &
+        rtm_obj, grid_OBJ, &
+        shdo_OBJ, iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo)
 
 
     ! Check if we can use pre-calculated "state", if not, generate new grids
@@ -1155,7 +1143,7 @@ program shdom
         end if
 
         ! Find the monochromatic SHDOM solution: adaptive grid output
-        !   in source (shdo_obj%srcJ), radiance (shdo_obj%radI), fluxes, direct Flux.
+        !   in source (srcJ_Shdo), radiance (radI_Shdo), fluxes, direct Flux.
         call shd_solv__solveRte(&
             &doRadInit,&
             &doDeltaM, doHighOrder_,&
@@ -1164,7 +1152,7 @@ program shdom
             &maxNpts_bc, maxNrad_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
             &idsrc_Shdo, work, work1, work2,&
             &dsrc_Shdo, fluxTot, fluxDir,&
-            &rtm_obj, grid_obj, shdo_obj)
+            &rtm_obj, grid_obj)
 
         doRadInit = .false.
         totIter = totIter + iter
@@ -1181,7 +1169,7 @@ program shdom
                             &fluxDir, fluxTot,&
                             &work, work(1 + grid_obj%Npts*shdo_obj%Nstokes),&
                             &parms_Out(1, iout), irad, work2,&
-                            &rtm_obj, grid_obj, shdo_obj)
+                            &rtm_obj, grid_obj)
                     else
                         call shd_rad__computeRad(&
                             &doDeltaM,&
@@ -1189,7 +1177,7 @@ program shdom
                             &fluxDir, fluxTot,&
                             &work(1), work(1 + grid_obj%Npts*shdo_obj%Nstokes),&
                             &parms_Out(1, iout), irad, work2,&
-                            &rtm_obj, grid_obj, shdo_obj)
+                            &rtm_obj, grid_obj)
                     end if
                 end if
             end do
@@ -1206,14 +1194,14 @@ program shdom
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
                             &fluxDir, fluxTot,&
                             &parms_Out(1, iout), ilos, work2,&
-                            &rtm_obj, grid_obj, shdo_obj)
+                            &rtm_obj, grid_obj)
                     else
                         call shd_rad__computeCamRad(&
                             &doDeltaM,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
                             &fluxDir, fluxTot,&
                             &parms_Out(1, iout), ilos, work2,&
-                            &rtm_obj, grid_obj, shdo_obj)
+                            &rtm_obj, grid_obj)
                     end if
                 end if
             end do
@@ -1229,7 +1217,7 @@ program shdom
                     call shd_src__computeSrcOneDir(doDeltaM,&
                         &mu_out, phi_out,&
                         &fluxDir, src1_Out,&
-                        &rtm_obj, grid_obj, shdo_obj)
+                        &rtm_obj, grid_obj)
                 end if
             end do
         end if
@@ -1278,14 +1266,14 @@ program shdom
 
         if (isHROut) then
             ! Compute the net flux divergence at every point
-            call shd_rad__computeFluxDiv(shdo_obj%Nstokes, grid_obj%Npts, shdo_obj%iradI, src_obj%type, src_obj%avgMu,&
-                &rtm_obj%ext, rtm_obj%ssa, rtm_obj%planck, fluxDir, shdo_obj%radI, work)
+            call shd_rad__computeFluxDiv(shdo_obj%Nstokes, grid_obj%Npts, iradI_Shdo, src_obj%type, src_obj%avgMu,&
+                &rtm_obj%ext, rtm_obj%ssa, rtm_obj%planck, fluxDir, radI_Shdo, work)
             call shd_util__sumData(ckd_obj%Ng-ig_ckd, wgt_Ckd(ig_ckd), grid_obj%Npts, work, sumFluxDiv_Out)
         end if
 
         if (isSHOut) then
             call shd_shdo__computeSH(Nsh_out, shdo_obj%Nstokes, grid_obj%Npts, src_obj%type, src_obj%avgMu, src_obj%avgAz,&
-                &fluxDir, shdo_obj%iradI, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%radI, work)
+                &fluxDir, iradI_Shdo, shdo_obj%maxNl, shdo_obj%maxNm, radI_Shdo, work)
             call shd_util__sumData(ckd_obj%Ng-ig_ckd, wgt_Ckd(ig_ckd), Nsh_out*grid_obj%Npts, work, sumSH_Out)
         end if
 
@@ -1303,7 +1291,7 @@ program shdom
 
     ! Output radiance and/or flux (and/or other radiative quantities)
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    shdo_obj%Nsh = shdo_obj%isrcJ(grid_obj%Npts + 1)
+    shdo_obj%Nsh = isrcJ_Shdo(grid_obj%Npts + 1)
     irad = 0
     ilos = 0
     if (isMpi_) then
@@ -1338,7 +1326,7 @@ program shdom
                         &fluxTot_all, fluxDiv_all,&
                         &Nsh_out, SH_all, irad, sumRad_Out,&
                         &type_Out(iout), parms_Out(1, iout), file_Out(iout),&
-                        &rtmAll_obj, grid_obj, shdo_obj)
+                        &rtmAll_obj, grid_obj)
                 end if
             end do
 
@@ -1364,7 +1352,7 @@ program shdom
                     sumFluxTot_Out, sumFluxDir_Out, sumFluxDiv_Out,&
                     irad, sumRad_Out, Nsh_out, sumSH_Out, src1_Out,&
                     type_Out(iout), parms_Out(1, iout), file_Out(iout),&
-                    rtm_obj, grid_obj, shdo_obj)
+                    rtm_obj, grid_obj)
             end if
         end do
     end if
@@ -1381,7 +1369,7 @@ program shdom
                     &doDeltaM,&
                     &splitAcc, shAcc, solAcc, maxIter, totIter,&
                     &ilos, sumCam_Out, parms_Out(1, iout), file_Out(iout),&
-                    &rtm_obj, grid_obj, shdo_obj)
+                    &rtm_obj, grid_obj)
             end if
         end do
     end if
@@ -1391,7 +1379,7 @@ program shdom
     ! save state
     !╭────────────────────────────────────────────────────────────────────────────╮!
     if (maxIter .gt. 0) then
-        call shd_io__saveState(fileOut_sav, work, fluxTot, rtm_obj, grid_obj, shdo_obj)
+        call shd_io__saveState(fileOut_sav, work, fluxTot, rtm_obj, grid_obj)
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
@@ -1511,10 +1499,6 @@ program shdom
                    shdo_obj%mu,    &
                    shdo_obj%phi,   &
                    shdo_obj%wgt)
-        nullify(shdo_obj%iradI, &
-                shdo_obj%isrcJ, &
-                shdo_obj%radI,  &
-                shdo_obj%srcJ)
     end if
     !╰────────────────────────────────────────────────╯!
 
