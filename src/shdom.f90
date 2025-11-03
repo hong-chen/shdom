@@ -1493,7 +1493,8 @@ program shdom
     !╭────────────────────────────────────────────────╮!
     deallocate(radI_Shdo, iradI_Shdo)
     deallocate(srcJ_Shdo, isrcJ_Shdo)
-    if (isAccel) deallocate(srcD_Shdo, isrcD_Shdo)
+    if (isAccel) &
+        deallocate(srcD_Shdo, isrcD_Shdo)
     if (shdo_obj%isAllocated) then
         deallocate(shdo_obj%Nphi0, &
                    shdo_obj%mu,    &
@@ -1504,10 +1505,14 @@ program shdom
 
     ! out_obj
     !╭────────────────────────────────────────────────╮!
-    if (isFluxOut) deallocate(sumFluxTot_Out, sumFluxDir_Out)
-    if (isHROut)   deallocate(sumFluxDiv_Out)
-    if (isSHOut)   deallocate(sumSH_Out)
-    if (isSrcOut)  deallocate(src1_Out)
+    if (isFluxOut) &
+        deallocate(sumFluxTot_Out, sumFluxDir_Out)
+    if (isHROut)   &
+        deallocate(sumFluxDiv_Out)
+    if (isSHOut)   &
+        deallocate(sumSH_Out)
+    if (isSrcOut)  &
+        deallocate(src1_Out)
     !╰────────────────────────────────────────────────╯!
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
