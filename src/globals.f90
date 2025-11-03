@@ -289,7 +289,7 @@ module globals_type
         real(kind=R__) :: avgMu = -999.0
         real(kind=R__) :: avgAz = -999.0
 
-        real(kind=R__) :: avgSolar_ = -999.0 ! solar read from input file
+        real(kind=R__) :: inpSolar  = -999.0 ! solar read from input file
         real(kind=R__) :: avgSolar0 = -999.0 ! solar at every "g", scaled with avgMu and solarFac
         real(kind=R__) :: avgSolar  = -999.0 ! solar from correlated-k
 

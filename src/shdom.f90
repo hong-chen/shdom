@@ -249,7 +249,7 @@ program shdom
                 fileInp_sav, fileOut_sav, sen_obj%fname,&
                 shdo_obj%Nstokes, rtmAll_obj%Nx, rtmAll_obj%Ny, rtmAll_obj%Nz, shdo_obj%Nmu, shdo_obj%Nphi, rtmAll_obj%flag_bc,&
                 rtmAll_obj%flag_ip, doCkd, doDeltaM, rtmAll_obj%type,&
-                src_obj%type, src_obj%avgSolar_, src_obj%avgMu, src_obj%avgAz, src_obj%skyRad,&
+                src_obj%type, src_obj%inpSolar, src_obj%avgMu, src_obj%avgAz, src_obj%skyRad,&
                 sfc_obj%avgTemp, sfc_obj%avgAlb, src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen,&
                 isAccel, solAcc, maxIter, splitAcc, shAcc,&
                 maxNset_out, maxNpar_out, Nout, type_Out, parms_Out, file_Out,&
@@ -260,7 +260,7 @@ program shdom
                 fileInp_sav, fileOut_sav, sen_obj%fname,&
                 shdo_obj%Nstokes, rtmAll_obj%Nx, rtmAll_obj%Ny, rtmAll_obj%Nz, shdo_obj%Nmu, shdo_obj%Nphi, rtmAll_obj%flag_bc,&
                 rtmAll_obj%flag_ip, doCkd, doDeltaM, rtmAll_obj%type,&
-                src_obj%type, src_obj%avgSolar_, src_obj%avgMu, src_obj%avgAz, src_obj%skyRad,&
+                src_obj%type, src_obj%inpSolar, src_obj%avgMu, src_obj%avgAz, src_obj%skyRad,&
                 sfc_obj%avgTemp, sfc_obj%avgAlb, src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen,&
                 isAccel, solAcc, maxIter, splitAcc, shAcc,&
                 maxNset_out, maxNpar_out, Nout, type_Out, parms_Out, file_Out,&
@@ -273,7 +273,7 @@ program shdom
         &fileInp_sav, fileOut_sav,&
         &shdo_obj%Nstokes, rtmAll_obj%Nx, rtmAll_obj%Ny, rtmAll_obj%Nz, shdo_obj%Nmu, shdo_obj%Nphi, rtmAll_obj%flag_bc,&
         &rtmAll_obj%flag_ip, doCkd, doDeltaM, rtmAll_obj%type,&
-        &src_obj%type, src_obj%avgSolar_, src_obj%avgMu, src_obj%avgAz, src_obj%skyRad,&
+        &src_obj%type, src_obj%inpSolar, src_obj%avgMu, src_obj%avgAz, src_obj%skyRad,&
         &src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen,&
         &isAccel, solAcc, maxIter, splitAcc, shAcc,&
         &maxNset_out, maxNpar_out, Nout, type_Out, parms_Out,&
@@ -1134,10 +1134,10 @@ program shdom
         if (verbose_ .ge. 5) write (6, '(A,I2,A,I2,A)') 'Message [shdom]: Starting ', ckd_obj%Ng-ig_ckd+1, '/', ckd_obj%Ng, ' (ig/Ng) ...'
 
         ! solar flux for given g of CKD
-        src_obj%avgSolar0 = solar_Ckd(ig_ckd)*src_obj%avgSolar_*abs(src_obj%avgMu)
+        src_obj%avgSolar0 = solar_Ckd(ig_ckd)*src_obj%inpSolar*abs(src_obj%avgMu)
 
         ! weighted average solar flux
-        src_obj%avgSolar = src_obj%avgSolar + solar_Ckd(ig_ckd)*wgt_Ckd(ig_ckd)*src_obj%avgSolar_*abs(src_obj%avgMu)
+        src_obj%avgSolar = src_obj%avgSolar + solar_Ckd(ig_ckd)*wgt_Ckd(ig_ckd)*src_obj%inpSolar*abs(src_obj%avgMu)
 
         ! If doing k-distribution then get the gas absorption profile.
         ckd_obj%ig = ig_ckd
