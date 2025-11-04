@@ -45,12 +45,14 @@ module shd_init
                              is1DX_, is1DYx_, &
                              isSolar_, isThermal_
     use globals_type,  only: shd_type_rtm, &
-                             shd_type_grid
+                             shd_type_grid, &
+                             shd_type_prp, &
+                             shd_type_sfc
 
-    use globals_obj, only: shdo_obj, &
-                            src_obj, &
-                            prp_obj, &
-                            sfc_obj, brdf_Sfc, brdf_Rtm
+    use globals_obj, only: shdo_obj_, &
+                            src_obj_, &
+                            prp_obj_, &
+                            sfc_obj_, brdf_Sfc, brdf_Rtm
 
     use shd_util, only: shd_util__computePlanck, &
                         shd_util__solveTriDiag
@@ -80,8 +82,8 @@ module shd_init
 
 contains
 
-subroutine shd_init__makeGrid(rtm_obj, &
-                              grid_OBJ)
+subroutine shd_init__makeGrid(rtm_OBJ, &
+                              prp_OBJ)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Description:
@@ -107,8 +109,8 @@ subroutine shd_init__makeGrid(rtm_obj, &
     !                        are evenly spaced in X and Y.
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    type(shd_type_rtm),  intent(in)    :: rtm_obj
-    type(shd_type_grid), intent(inout) :: grid_obj
+    type(shd_type_rtm),  intent(inout) :: rtm_obj
+    type(shd_type_prp) , intent(inout) :: prp_obj
 
     integer(kind=I__) :: ix, iy, iz
 
@@ -433,9 +435,9 @@ subroutine shd_init__makePrp(&
 
     ! Prepares the grid arrays for the iterative solution process.
     ! If doing Delta-M scaling then the extinction, albedo, and Legend
-    ! terms are scaled first; only the 0 to shdo_obj%maxNl rtm_obj%leg terms are scaled.
+    ! terms are scaled first; only the 0 to shdo_obj_%maxNl rtm_obj%leg terms are scaled.
     ! Outputs rtm_obj%planck with (1-omega)*B(T) for thermal source, where B(T
-    ! the function (meaning depends on src_obj%unit).
+    ! the function (meaning depends on src_obj_%unit).
     ! rtm_obj%temp array is unchanged.
 
     type(shd_type_rtm),  intent(inout) :: rtm_obj
@@ -448,13 +450,13 @@ subroutine shd_init__makePrp(&
 
     maxSsa = 0.0
 
-    if (doDeltaM .and. (prp_obj%Npha .gt. 0)) then
-        do IPH = 1, prp_obj%Npha
-            F = rtm_obj%leg(1, shdo_obj%maxNl + 1, IPH)
-            do L = 0, shdo_obj%maxNl
+    if (doDeltaM .and. (prp_obj_%Npha .gt. 0)) then
+        do IPH = 1, prp_obj_%Npha
+            F = rtm_obj%leg(1, shdo_obj_%maxNl + 1, IPH)
+            do L = 0, shdo_obj_%maxNl
                 ! Scale the diagonal and off-diagonal phase matrix elements d
                 rtm_obj%leg(1, L, IPH) = (rtm_obj%leg(1, L, IPH) - F)/(1 - F)
-                if (prp_obj%NlegSet .gt. 1) then
+                if (prp_obj_%NlegSet .gt. 1) then
                     rtm_obj%leg(2, L, IPH) = (rtm_obj%leg(2, L, IPH) - F)/(1 - F)
                     rtm_obj%leg(3, L, IPH) = (rtm_obj%leg(3, L, IPH) - F)/(1 - F)
                     rtm_obj%leg(4, L, IPH) = (rtm_obj%leg(4, L, IPH) - F)/(1 - F)
@@ -467,12 +469,12 @@ subroutine shd_init__makePrp(&
 
     do I = 1, grid_obj%Npts
         if (doDeltaM) then
-            if (prp_obj%Npha .gt. 0) then
-                F = rtm_obj%leg(1, shdo_obj%maxNl + 1, rtm_obj%ipha(I))
+            if (prp_obj_%Npha .gt. 0) then
+                F = rtm_obj%leg(1, shdo_obj_%maxNl + 1, rtm_obj%ipha(I))
             else
-                ! prp_obj%Npha =0 is standard property format, which is unpolarized
-                F = rtm_obj%leg(1, shdo_obj%maxNl + 1, I)
-                do L = 0, shdo_obj%maxNl
+                ! prp_obj_%Npha =0 is standard property format, which is unpolarized
+                F = rtm_obj%leg(1, shdo_obj_%maxNl + 1, I)
+                do L = 0, shdo_obj_%maxNl
                     rtm_obj%leg(1, L, I) = (rtm_obj%leg(1, L, I) - F)/(1 - F)
                 end do
             end if
@@ -484,7 +486,7 @@ subroutine shd_init__makePrp(&
 
         maxSsa = max(maxSsa, rtm_obj%ssa(I))
         if (isThermal_) then
-            call shd_util__computePlanck(rtm_obj%temp(I), src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen, BB)
+            call shd_util__computePlanck(rtm_obj%temp(I), src_obj_%unit, src_obj_%waveNum, src_obj_%avgWaveLen, BB)
             rtm_obj%planck(I) = (1.0 - rtm_obj%ssa(I))*BB
         end if
     end do
@@ -511,7 +513,7 @@ subroutine shd_init__makeRad(&
     real SKYRAD, SOLARFLUX, SOLARMU
     real WAVENO(2), WAVELEN
     real ZGRID(NZ)
-    real EXTINCT(NZ, NXY), ALBEDO(NZ, NXY), LEGEN(prp_obj%NlegSet, 0:prp_obj%Nleg, *)
+    real EXTINCT(NZ, NXY), ALBEDO(NZ, NXY), LEGEN(prp_obj_%NlegSet, 0:prp_obj_%Nleg, *)
     real TEMP(NZ, NXY)
     real RADIANCE(NSTOKES, *)
     character(len=1) :: SRCTYPE, UNITS
@@ -566,7 +568,7 @@ subroutine shd_init__makeRad(&
                 ALBEDOS(L) = 0.0
             end if
 
-            if (prp_obj%Npha .gt. 0) then
+            if (prp_obj_%Npha .gt. 0) then
                 J = IPHASE(ZINDEX, I)
             else
                 J = NZ*(I - 1) + IZ
@@ -584,12 +586,12 @@ subroutine shd_init__makeRad(&
 
         TEMPS(1) = TEMP(NZ, I)
 
-        GNDEMIS = 1.0 - sfc_obj%avgAlb
+        GNDEMIS = 1.0 - sfc_obj_%avgAlb
 
         ! Call the Eddington flux routine
         call shd_init__makeFlux(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
             &TEMPS, DELTAM, SRCTYPE, SOLARFLUX, SOLARMU,&
-            &sfc_obj%avgTemp, GNDEMIS, SKYRAD, UNITS, WAVENO, WAVELEN,&
+            &sfc_obj_%avgTemp, GNDEMIS, SKYRAD, UNITS, WAVENO, WAVELEN,&
             &FLUXES)
 
         ! Convert fluxes to first two moments of spherical harmonics
@@ -885,10 +887,10 @@ subroutine shd_init__makeBotRadUL(NBOTPTS, BCPTR,&
     integer I, IBC, K
     real ALB, GNDRAD
 
-    ALB = sfc_obj%avgAlb/acos(-1.0)
+    ALB = sfc_obj_%avgAlb/acos(-1.0)
     if (isThermal_) then
-        call shd_util__computePlanck(sfc_obj%avgTemp, UNITS, WAVENO, WAVELEN, GNDRAD)
-        GNDRAD = GNDRAD*(1.0 - sfc_obj%avgAlb)
+        call shd_util__computePlanck(sfc_obj_%avgTemp, UNITS, WAVENO, WAVELEN, GNDRAD)
+        GNDRAD = GNDRAD*(1.0 - sfc_obj_%avgAlb)
     end if
 
     ! Loop over all bottom points finding the upwelling radiance
@@ -928,8 +930,6 @@ subroutine shd_init__makeBotRadVL(NBOTPTS, BCPTR,&
     integer I, IBC, K
     real ALB, GNDRAD
 
-    !brdf_grid_Sfc(1:sfc_obj%Npar, 1:NBOTPTS) => brdf_Rtm
-
     ! Loop over all bottom points
     do IBC = 1, NBOTPTS
         I = BCPTR(IBC)
@@ -946,8 +946,6 @@ subroutine shd_init__makeBotRadVL(NBOTPTS, BCPTR,&
         end if
         BCRAD(2:, IBC) = 0.0
     end do
-
-    !nullify(brdf_grid_Sfc)
 
     return
 
@@ -978,14 +976,11 @@ subroutine shd_init__makeBotRadU(NBOTPTS, BCPTR,&
     integer NMU, NPHI0MAX, NPHI0(NMU), IMU, IPHI, NSTOKES
     real WTDO(NMU, NPHI0MAX), MU(NMU), PHI(NMU, NPHI0MAX)
     real WAVELEN, SOLARMU, SOLARAZ, DIRFLUX(*)
-    !real, pointer :: brdf_grid_Sfc(:, :) => null()
     real SFC_BRDF_DO(NSTOKES, NMU/2, NPHI0MAX, NSTOKES, NMU/2, NPHI0MAX)
     real BCRAD(NSTOKES, NBOTPTS, *)
     character(len=1) :: SRCTYPE
     integer IMU1, JMU, JPHI, IBC, I, JANG, K, K1, K2
     real REFLECT(4, 4), W
-
-    !brdf_grid_Sfc(1:sfc_obj%Npar, 1:NBOTPTS) => brdf_Rtm
 
     IMU1 = IMU - NMU/2
     do IBC = 1, NBOTPTS
@@ -995,7 +990,7 @@ subroutine shd_init__makeBotRadU(NBOTPTS, BCPTR,&
         BCRAD(:, IBC, 1) = 0.0
         if (isSolar_) then
             I = BCPTR(IBC)
-            call shd_sfc__brdfSurface(sfc_obj%type(2:2), brdf_Rtm(2:sfc_obj%Npar, IBC), WAVELEN,&
+            call shd_sfc__brdfSurface(sfc_obj_%type(2:2), brdf_Rtm(2:sfc_obj_%Npar, IBC), WAVELEN,&
                 &MU(IMU), PHI(IMU, IPHI), SOLARMU, SOLARAZ,&
                 &NSTOKES, REFLECT)
             BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1)&
@@ -1022,8 +1017,6 @@ subroutine shd_init__makeBotRadU(NBOTPTS, BCPTR,&
         end do
     end do
 
-    !nullify(brdf_grid_Sfc)
-
     return
 
 end subroutine shd_init__makeBotRadU
@@ -1044,7 +1037,7 @@ subroutine shd_init__makeBotRadV(&
     ! downwelling radiance, so a discrete sum is done and the integral
     ! weights (WTDO) are included. The general BRDF function is called
     ! to compute the Stokes reflectance matrix for the particular BRDF
-    ! type (sfc_obj%type) with parameters (brdf_Rtm) for the incident and
+    ! type (sfc_obj_%type) with parameters (brdf_Rtm) for the incident and
     ! outgoing directions.  The emissivity is computed implicitly from the
     ! integral of the BRDF.  The outgoing direction is specified with
     ! (MU2,PHI2), and the BRDF is computed for all incident directions
@@ -1057,12 +1050,9 @@ subroutine shd_init__makeBotRadV(&
     real WTDO(NMU, NPHI0MAX), MU(NMU), PHI(NMU, NPHI0MAX)
     real MU2, PHI2, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX(*)
     real BCRAD(NSTOKES, NBOTPTS, *)
-    !real, pointer :: brdf_grid_Sfc(:, :) => null()
     character(len=1) :: SRCTYPE
     integer JMU, JPHI, IBC, I, JANG, K, K1, K2
     real REFLECT(4, 4), W, SUM0, SUM1, RADSPEC(4)
-
-    !brdf_grid_Sfc(1:sfc_obj%Npar, 1:NBOTPTS) => brdf_Rtm
 
     do IBC = IBEG, IEND
 
@@ -1071,7 +1061,7 @@ subroutine shd_init__makeBotRadV(&
         BCRAD(:, IBC, 1) = 0.0
         if (isSolar_) then
             I = BCPTR(IBC)
-            call shd_sfc__brdfSurface(sfc_obj%type(2:2), brdf_Rtm(2:sfc_obj%Npar, IBC), WAVELEN,&
+            call shd_sfc__brdfSurface(sfc_obj_%type(2:2), brdf_Rtm(2:sfc_obj_%Npar, IBC), WAVELEN,&
                 &MU2, PHI2, SOLARMU, SOLARAZ, NSTOKES, REFLECT)
             BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1)&
                 &+ OPI_*REFLECT(1:NSTOKES, 1)*DIRFLUX(I)
@@ -1081,7 +1071,7 @@ subroutine shd_init__makeBotRadV(&
         JANG = 1
         do JMU = 1, NMU/2
             do JPHI = 1, NPHI0(JMU)
-                call shd_sfc__brdfSurface(sfc_obj%type(2:2), brdf_Rtm(2:sfc_obj%Npar, IBC),&
+                call shd_sfc__brdfSurface(sfc_obj_%type(2:2), brdf_Rtm(2:sfc_obj_%Npar, IBC),&
                     &WAVELEN, MU2, PHI2, MU(JMU), PHI(JMU, JPHI),&
                     &NSTOKES, REFLECT)
                 W = OPI_*abs(MU(JMU))*WTDO(JMU, JPHI)
@@ -1101,13 +1091,11 @@ subroutine shd_init__makeBotRadV(&
 
     end do
 
-    !nullify(brdf_grid_Sfc)
-
     return
 
 end subroutine shd_init__makeBotRadV
 
-subroutine shd_init__checkSfcU()
+subroutine shd_init__checkSfcU(sfc_obj)
 
     ! Description:
     !   Checks to see if the surface reflection parameters are uniform,
@@ -1121,6 +1109,8 @@ subroutine shd_init__checkSfcU()
     !
     ! Output:
     !   sfc_obj%isUniform: logical, whether surface reflection parameters are uniform
+
+    type(shd_type_sfc), intent(inout) :: sfc_obj
 
     integer(kind=I__) :: ix, iy, J, idata
 

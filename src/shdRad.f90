@@ -49,12 +49,12 @@ module shd_rad
     use globals_type,  only: shd_type_rtm, &
                              shd_type_grid
 
-    use globals_obj, only: shdo_obj, isrcJ_Shdo, srcJ_Shdo, &
-                            src_obj, &
-                            prp_obj, ext_Prp, ssa_Prp, leg_Prp, ipha_Prp, extDir_Prp, &
-                            sfc_obj, &
-                            ckd_obj, kabs_Ckd, &
-                            sen_obj, view_Sen
+    use globals_obj, only: shdo_obj_, isrcJ_Shdo, srcJ_Shdo, &
+                            src_obj_, &
+                            prp_obj_, ext_Prp, ssa_Prp, leg_Prp, ipha_Prp, extDir_Prp, &
+                            sfc_obj_, &
+                            ckd_obj_, kabs_Ckd, &
+                            sen_obj_, view_Sen
 
     use shd_scat, only: shd_scat__computePhase
 
@@ -187,24 +187,24 @@ subroutine shd_rad__computeDirect(&
     end if
 
     if (INIT .eq. 1) then
-        if (.not. allocated(GASEXT)) allocate(GASEXT(prp_obj%Nz), EXTMIN(prp_obj%Nz), EXTMAX(prp_obj%Nz))
+        if (.not. allocated(GASEXT)) allocate(GASEXT(prp_obj_%Nz), EXTMIN(prp_obj_%Nz), EXTMAX(prp_obj_%Nz))
         ! Get the gaseous extinction at the property grid levels
-        do IZ = 1, prp_obj%Nz
-            if (ckd_obj%Nz .gt. 0) then
+        do IZ = 1, prp_obj_%Nz
+            if (ckd_obj_%Nz .gt. 0) then
                 IL = 1
-                IU = ckd_obj%Nz
+                IU = ckd_obj_%Nz
                 do while (IU - IL .gt. 1)
                     IM = (IU + IL)/2
-                    if (prp_obj%z(IZ) .le. ckd_obj%z(IM)) then
+                    if (prp_obj_%z(IZ) .le. ckd_obj_%z(IM)) then
                         IL = IM
                     else
                         IU = IM
                     end if
                 end do
-                I = min(max(IL, 1), ckd_obj%Nz - 1)
-                W0 = (prp_obj%z(IZ) - ckd_obj%z(I))/(ckd_obj%z(I + 1) - ckd_obj%z(I))
+                I = min(max(IL, 1), ckd_obj_%Nz - 1)
+                W0 = (prp_obj_%z(IZ) - ckd_obj_%z(I))/(ckd_obj_%z(I + 1) - ckd_obj_%z(I))
                 W0 = min(max(W0, 0.0d0), 1.0d0)
-                GASEXT(IZ) = (1.0 - W0)*kabs_Ckd(I, ckd_obj%ig) + W0*kabs_Ckd(I + 1, ckd_obj%ig)
+                GASEXT(IZ) = (1.0 - W0)*kabs_Ckd(I, ckd_obj_%ig) + W0*kabs_Ckd(I + 1, ckd_obj_%ig)
             else
                 GASEXT(IZ) = 0.0
             end if
@@ -212,9 +212,9 @@ subroutine shd_rad__computeDirect(&
         ! First make the property grid extinction field, on which all
         !   the direct beam paths will be computed.
         IP = 0
-        do IX = 1, prp_obj%Nx
-            do IY = 1, prp_obj%Ny
-                do IZ = 1, prp_obj%Nz
+        do IX = 1, prp_obj_%Nx
+            do IY = 1, prp_obj_%Ny
+                do IZ = 1, prp_obj_%Nz
                     IP = IP + 1
                     EXTINCT = ext_Prp(IP)
                     ALBEDO = ssa_Prp(IP)
@@ -225,13 +225,13 @@ subroutine shd_rad__computeDirect(&
                     end if
                     ! Do the Delta-M scaling if needed
                     if (DELTAM) then
-                        if (prp_obj%Npha .gt. 0) then
+                        if (prp_obj_%Npha .gt. 0) then
                             IPH = ipha_Prp(IP)
                         else
                             IPH = IP
                         end if
                         L = ML + 1
-                        !F = leg_Prp(1 + prp_obj%NlegSet*(L + (prp_obj%Nleg+ 1)*(IPH - 1)))/(2*L + 1)
+                        !F = leg_Prp(1 + prp_obj_%NlegSet*(L + (prp_obj_%Nleg+ 1)*(IPH - 1)))/(2*L + 1)
                         F = leg_Prp(1, L, IPH)/(2*L + 1)
                         EXTINCT = (1.0 - ALBEDO*F)*EXTINCT
                     end if
@@ -272,36 +272,36 @@ subroutine shd_rad__computeDirect(&
         DI = nint(sign(1.0d0, CX))
         DJ = nint(sign(1.0d0, CY))
         DK = nint(sign(1.0d0, CZ))
-        EPSZ = 1.0e-6*(prp_obj%z(prp_obj%Nz) - prp_obj%z(1))
-        EPSS = 1.0e-3*(prp_obj%z(prp_obj%Nz) - prp_obj%z(1))/prp_obj%Nz
-        if (.not. btest(IPDIRECT, 0)) EPSS = max(EPSS, 1.0d-4*prp_obj%dx)
-        if (.not. btest(IPDIRECT, 1)) EPSS = max(EPSS, 1.0d-4*prp_obj%dy)
-        DELXD = dble(prp_obj%dx)
-        DELYD = dble(prp_obj%dy)
+        EPSZ = 1.0e-6*(prp_obj_%z(prp_obj_%Nz) - prp_obj_%z(1))
+        EPSS = 1.0e-3*(prp_obj_%z(prp_obj_%Nz) - prp_obj_%z(1))/prp_obj_%Nz
+        if (.not. btest(IPDIRECT, 0)) EPSS = max(EPSS, 1.0d-4*prp_obj_%dx)
+        if (.not. btest(IPDIRECT, 1)) EPSS = max(EPSS, 1.0d-4*prp_obj_%dy)
+        DELXD = dble(prp_obj_%dx)
+        DELYD = dble(prp_obj_%dy)
         EPSS = max(0.001*DELXD, 0.001*DELYD, EPSS)
 
-        if (isMpiX_ .and. (prp_obj%Nx .gt. 1)) then
-            XDOMAIN = DELXD*(prp_obj%Nx - 1)
+        if (isMpiX_ .and. (prp_obj_%Nx .gt. 1)) then
+            XDOMAIN = DELXD*(prp_obj_%Nx - 1)
         else
-            XDOMAIN = DELXD*prp_obj%Nx
+            XDOMAIN = DELXD*prp_obj_%Nx
         end if
 
-        if (isMpiY_ .and. (prp_obj%Ny .gt. 1)) then
-            YDOMAIN = DELYD*(prp_obj%Ny - 1)
+        if (isMpiY_ .and. (prp_obj_%Ny .gt. 1)) then
+            YDOMAIN = DELYD*(prp_obj_%Ny - 1)
         else
-            YDOMAIN = DELYD*prp_obj%Ny
+            YDOMAIN = DELYD*prp_obj_%Ny
         end if
 
         ! Find the Z level above which the medium is plane-parallel
         EXTBEAMCUT = 1.0e-4
-        do IZ = 1, prp_obj%Nz
+        do IZ = 1, prp_obj_%Nz
             EXTMIN(IZ) = 1.0e20
             EXTMAX(IZ) = 0.0
         end do
         IP = 0
-        do IX = 1, prp_obj%Nx
-            do IY = 1, prp_obj%Ny
-                do IZ = 1, prp_obj%Nz
+        do IX = 1, prp_obj_%Nx
+            do IY = 1, prp_obj_%Ny
+                do IZ = 1, prp_obj_%Nz
                     IP = IP + 1
                     EXTMIN(IZ) = min(ext_Prp(IP), EXTMIN(IZ))
                     EXTMAX(IZ) = max(ext_Prp(IP), EXTMAX(IZ))
@@ -309,11 +309,11 @@ subroutine shd_rad__computeDirect(&
             end do
         end do
         JZ = 0
-        do IZ = 1, prp_obj%Nz
+        do IZ = 1, prp_obj_%Nz
             if (EXTMAX(IZ) - EXTMIN(IZ) .gt. EXTBEAMCUT) JZ = IZ
         end do
-        JZ = min(prp_obj%Nz, JZ + 1)
-        UNIFORMZLEV = prp_obj%z(JZ)
+        JZ = min(prp_obj_%Nz, JZ + 1)
+        UNIFORMZLEV = prp_obj_%z(JZ)
         UNIFZLEV = UNIFORMZLEV
         return
     ! Done with initialization
@@ -326,15 +326,15 @@ subroutine shd_rad__computeDirect(&
 
     ! Here for computing the direct beam path for one starting point.
     Z = ZI
-    X = XI - prp_obj%xStart
-    Y = YI - prp_obj%yStart
+    X = XI - prp_obj_%xStart
+    Y = YI - prp_obj_%yStart
 
     ! Find the grid location
     IL = 0
-    IU = prp_obj%Nz
+    IU = prp_obj_%Nz
     do while (IU - IL .gt. 1)
         IM = (IU + IL)/2
-        if (Z .ge. prp_obj%z(IM)) then
+        if (Z .ge. prp_obj_%z(IM)) then
             IL = IM
         else
             IU = IM
@@ -343,15 +343,15 @@ subroutine shd_rad__computeDirect(&
     K = max(IL, 1)
 
     I = int(X/DELXD) + 1
-    if (I .gt. prp_obj%Nx .and. abs(X - XDOMAIN) .lt. 0.001*DELXD) I = prp_obj%Nx
-    if (I .lt. 1 .or. I .gt. prp_obj%Nx) then
+    if (I .gt. prp_obj_%Nx .and. abs(X - XDOMAIN) .lt. 0.001*DELXD) I = prp_obj_%Nx
+    if (I .lt. 1 .or. I .gt. prp_obj_%Nx) then
         write (6, *) '_computeDirect: Beyond X domain', I, XI, YI, ZI
         stop
     end if
 
     J = int(Y/DELYD) + 1
-    if (J .gt. prp_obj%Ny .and. abs(Y - YDOMAIN) .lt. 0.001*DELYD) J = prp_obj%Ny
-    if (J .lt. 1 .or. J .gt. prp_obj%Ny) then
+    if (J .gt. prp_obj_%Ny .and. abs(Y - YDOMAIN) .lt. 0.001*DELYD) J = prp_obj_%Ny
+    if (J .lt. 1 .or. J .gt. prp_obj_%Ny) then
         write (6, *) '_computeDirect: Beyond Y domain', J, XI, YI, ZI
         stop
     end if
@@ -366,9 +366,9 @@ subroutine shd_rad__computeDirect(&
     if (CX .eq. 0.0) CONSTX = .true.
     if (CY .eq. 0.0) CONSTY = .true.
     if (isOpenX_ .and. (abs(X) .lt. 0.01*DELXD&
-        &.or. abs(X - (prp_obj%Nx - 1)*DELXD) .lt. 0.01*DELXD)) CONSTX = .true.
+        &.or. abs(X - (prp_obj_%Nx - 1)*DELXD) .lt. 0.01*DELXD)) CONSTX = .true.
     if (isOpenYx_ .and. (abs(Y) .lt. 0.01*DELYD&
-        &.or. abs(Y - (prp_obj%Ny - 1)*DELYD) .lt. 0.01*DELYD)) CONSTY = .true.
+        &.or. abs(Y - (prp_obj_%Ny - 1)*DELYD) .lt. 0.01*DELYD)) CONSTY = .true.
 
     ! If have multiple subdomains (processors) and ray is going outwards
     !   from a boundary then set the HITBOUNDARY flag
@@ -395,19 +395,19 @@ subroutine shd_rad__computeDirect(&
 
     ! Grid cell loop begin
     PATH = DIRPATH
-    do while (.not. HITBOUNDARY .and. abs(ZE - prp_obj%z(prp_obj%Nz)) .gt. EPSZ)
+    do while (.not. HITBOUNDARY .and. abs(ZE - prp_obj_%z(prp_obj_%Nz)) .gt. EPSZ)
         IP = I + 1
-        if (I .eq. prp_obj%Nx) then
+        if (I .eq. prp_obj_%Nx) then
             if (isOpenX_ .or. isMpiX_) then
-                IP = prp_obj%Nx
+                IP = prp_obj_%Nx
             else
                 IP = 1
             end if
         end if
         JP = J + 1
-        if (J .eq. prp_obj%Ny) then
+        if (J .eq. prp_obj_%Ny) then
             if (isOpenYx_ .or. isMpiY_) then
-                JP = prp_obj%Ny
+                JP = prp_obj_%Ny
             else
                 JP = 1
             end if
@@ -416,20 +416,20 @@ subroutine shd_rad__computeDirect(&
         X1 = X0 + DELXD
         Y0 = DELYD*(J - 1)
         Y1 = Y0 + DELYD
-        Z0 = prp_obj%z(K)
-        Z1 = prp_obj%z(K + 1)
-        if  (I .lt. 1 .or. I .gt. prp_obj%Nx .or.&
-            &J .lt. 1 .or. J .gt. prp_obj%Ny .or.&
-            &K .lt. 1 .or. K .ge. prp_obj%Nz) then
+        Z0 = prp_obj_%z(K)
+        Z1 = prp_obj_%z(K + 1)
+        if  (I .lt. 1 .or. I .gt. prp_obj_%Nx .or.&
+            &J .lt. 1 .or. J .gt. prp_obj_%Ny .or.&
+            &K .lt. 1 .or. K .ge. prp_obj_%Nz) then
             write (6, '(A,3I4)') '_computeDirect: beyond grid!', I, J, K
             write (6, '(1(2X,3F9.5))') X, Y, Z
             stop
         end if
         ! Get the eight corner extinction values
-        I1 = K + prp_obj%Nz*(J - 1) + prp_obj%Nz*prp_obj%Ny*(I - 1)
-        I2 = K + prp_obj%Nz*(J - 1) + prp_obj%Nz*prp_obj%Ny*(IP - 1)
-        I3 = K + prp_obj%Nz*(JP - 1) + prp_obj%Nz*prp_obj%Ny*(I - 1)
-        I4 = K + prp_obj%Nz*(JP - 1) + prp_obj%Nz*prp_obj%Ny*(IP - 1)
+        I1 = K + prp_obj_%Nz*(J - 1) + prp_obj_%Nz*prp_obj_%Ny*(I - 1)
+        I2 = K + prp_obj_%Nz*(J - 1) + prp_obj_%Nz*prp_obj_%Ny*(IP - 1)
+        I3 = K + prp_obj_%Nz*(JP - 1) + prp_obj_%Nz*prp_obj_%Ny*(I - 1)
+        I4 = K + prp_obj_%Nz*(JP - 1) + prp_obj_%Nz*prp_obj_%Ny*(IP - 1)
 
         ! zgrid correction (to address layer averaging issue in z direction)
         !╭────────────────────────────────────────────────╮!
@@ -505,15 +505,15 @@ subroutine shd_rad__computeDirect(&
                     HITBOUNDARY = .true.
                     SIDE = 1
                 else
-                    I = prp_obj%Nx
+                    I = prp_obj_%Nx
                     XOFFS = XDOMAIN
                 end if
-            else if (I .ge. prp_obj%Nx .and. isMpiX_) then
+            else if (I .ge. prp_obj_%Nx .and. isMpiX_) then
                 HITBOUNDARY = .true.
                 SIDE = 2
-            else if (I .eq. prp_obj%Nx + 1) then
+            else if (I .eq. prp_obj_%Nx + 1) then
                 if (isOpenX_) then
-                    I = prp_obj%Nx
+                    I = prp_obj_%Nx
                     CONSTX = .true.
                 else
                     I = 1
@@ -533,15 +533,15 @@ subroutine shd_rad__computeDirect(&
                     HITBOUNDARY = .true.
                     SIDE = 3
                 else
-                    J = prp_obj%Ny
+                    J = prp_obj_%Ny
                     YOFFS = YDOMAIN
                 end if
-            else if (J .ge. prp_obj%Ny .and. isMpiY_) then
+            else if (J .ge. prp_obj_%Ny .and. isMpiY_) then
                 HITBOUNDARY = .true.
                 SIDE = 4
-            else if (J .eq. prp_obj%Ny + 1) then
+            else if (J .eq. prp_obj_%Ny + 1) then
                 if (isOpenYx_) then
-                    J = prp_obj%Ny
+                    J = prp_obj_%Ny
                     CONSTY = .true.
                 else
                     J = 1
@@ -628,8 +628,8 @@ subroutine shd_rad__computeDirect(&
     end do
     DIRFLUX = SOLARFLUX*exp(-PATH)
     DIRPATH = PATH
-    XO = XE + prp_obj%xStart; YO = YE + prp_obj%yStart; ZO = ZE
-    VALIDBEAM = abs(ZE - prp_obj%z(prp_obj%Nz)) .lt. EPSZ
+    XO = XE + prp_obj_%xStart; YO = YE + prp_obj_%yStart; ZO = ZE
+    VALIDBEAM = abs(ZE - prp_obj_%z(prp_obj_%Nz)) .lt. EPSZ
     if (VALIDBEAM) SIDE = 6
 
     return
@@ -720,10 +720,10 @@ subroutine shd_rad__computeRad(&
     integer MAXNBC, NTOPPTS, NBOTPTS
     integer BCPTR(MAXNBC, 2)
     logical DELTAM
-    real BCRAD(shdo_obj%Nstokes, *)
+    real BCRAD(shdo_obj_%Nstokes, *)
     real DIRFLUX(grid_obj%Npts), FLUXES(2, grid_obj%Npts)
-    real SOURCE1(shdo_obj%Nstokes, grid_obj%Npts), GRIDRAD(shdo_obj%Nstokes, grid_obj%Npts)
-    real OUTPARMS(*), RADOUT(shdo_obj%Nstokes, *)
+    real SOURCE1(shdo_obj_%Nstokes, grid_obj%Npts), GRIDRAD(shdo_obj_%Nstokes, grid_obj%Npts)
+    real OUTPARMS(*), RADOUT(shdo_obj_%Nstokes, *)
     integer I, IBC, IANG, JX, JY, K, SIDE
     integer NANGOUT, NXOUT, NYOUT
     logical VALIDRAD
@@ -737,22 +737,22 @@ subroutine shd_rad__computeRad(&
     !╰──────────────────────────────────────────────────────────────╯!
 
     ! Make the isotropic radiances for the top boundary
-    call shd_init__makeTopRad(src_obj%type, src_obj%skyRad, src_obj%waveNum, src_obj%avgWaveLen,&
-        &src_obj%unit, NTOPPTS, shdo_obj%Nstokes, BCRAD(1, 1))
+    call shd_init__makeTopRad(src_obj_%type, src_obj_%skyRad, src_obj_%waveNum, src_obj_%avgWaveLen,&
+        &src_obj_%unit, NTOPPTS, shdo_obj_%Nstokes, BCRAD(1, 1))
 
     ! Make the bottom boundary radiances for the Lambertian surfaces.
     ! Compute the upwelling bottom radiances using the downwelling fluxes.
-    if (sfc_obj%type .eq. 'FL') then
+    if (sfc_obj_%type .eq. 'FL') then
 
         call shd_init__makeBotRadUL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, src_obj%type,&
-            &src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit, shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS))
+            &DIRFLUX, FLUXES, src_obj_%type,&
+            &src_obj_%waveNum, src_obj_%avgWaveLen, src_obj_%unit, shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
 
-    else if (sfc_obj%type .eq. 'VL') then
+    else if (sfc_obj_%type .eq. 'VL') then
 
         call shd_init__makeBotRadVL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, src_obj%type,&
-            &shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS))
+            &DIRFLUX, FLUXES, src_obj_%type,&
+            &shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
 
     end if
 
@@ -776,7 +776,7 @@ subroutine shd_rad__computeRad(&
 
     ! Loop over the radiance directions
     do IANG = 1, NANGOUT
-        if (sen_obj%fname(1:4) .ne. 'NONE') then
+        if (sen_obj_%fname(1:4) .ne. 'NONE') then
             MUOUT = view_Sen(1, IANG)
             PHID  = view_Sen(2, IANG)
         else
@@ -834,11 +834,11 @@ subroutine shd_rad__computeRad(&
                 GRIDRAD(:, I) = BCRAD(:, IBC)
             end do
         else
-            if (.not. sfc_obj%isLambertian) then
+            if (.not. sfc_obj_%isLambertian) then
                 call shd_init__makeBotRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
-                    &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt, MUOUT, PHIOUT,&
-                    &src_obj%type, src_obj%avgWaveLen, src_obj%avgMu, src_obj%avgAz, DIRFLUX,&
-                    &shdo_obj%Nstokes,&
+                    &shdo_obj_%Nmu, shdo_obj_%maxNphi0, shdo_obj_%Nphi0, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt, MUOUT, PHIOUT,&
+                    &src_obj_%type, src_obj_%avgWaveLen, src_obj_%avgMu, src_obj_%avgAz, DIRFLUX,&
+                    &shdo_obj_%Nstokes,&
                     &BCRAD(1, 1 + NTOPPTS))
             end if
             do IBC = 1, NBOTPTS
@@ -854,11 +854,11 @@ subroutine shd_rad__computeRad(&
             do JX = 1, NXOUT
                 IRAD = IRAD + 1
                 TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
-                call shd_src__integrateSrc(shdo_obj%Nstokes,&
+                call shd_src__integrateSrc(shdo_obj_%Nstokes,&
                     &MUOUT, PHIOUT, GRIDRAD, SOURCE1,&
                     &X0, Y0, Z0, XE, YE, ZE, SIDE,&
                     &TRANSMIT, RADIANCE, VALIDRAD, rtm_obj, grid_obj)
-                RADOUT(:, IRAD) = RADIANCE(1:shdo_obj%Nstokes)
+                RADOUT(:, IRAD) = RADIANCE(1:shdo_obj_%Nstokes)
                 X0 = X0 + OUTPARMS(2)
             end do
             Y0 = Y0 + OUTPARMS(3)
@@ -887,14 +887,14 @@ subroutine shd_rad__computeCamRad(&
     integer MAXNBC, NTOPPTS, NBOTPTS
     integer BCPTR(MAXNBC, 2)
     logical DELTAM
-    real BCRAD(shdo_obj%Nstokes, *)
+    real BCRAD(shdo_obj_%Nstokes, *)
     real DIRFLUX(grid_obj%Npts), FLUXES(2, grid_obj%Npts)
-    real OUTPARMS(*), VISOUT(shdo_obj%Nstokes, *)
+    real OUTPARMS(*), VISOUT(shdo_obj_%Nstokes, *)
     integer NSCATANGLE, NSTPHASE, I, J, L, N, SIDE
     integer NL, NS, LINE, SAMP
     logical CAMERA_MODE, VALIDRAD
     real MURAY, PHIRAY
-    real(RD_) :: XE, YE, ZE, TRANSMIT, VISRAD(shdo_obj%Nstokes)
+    real(RD_) :: XE, YE, ZE, TRANSMIT, VISRAD(shdo_obj_%Nstokes)
     real(RD_) :: X0, Y0, Z0, X1, Y1, Z1, X2, Y2, Z2
     real(RD_) :: THETA0, THETA1, PHIR, PHI0
     real(RD_) :: COSTH, SINTH, SINTH0, SINTH1, MU2, PHI2
@@ -906,32 +906,32 @@ subroutine shd_rad__computeCamRad(&
     real              :: MEAN, STD1, STD2
     real, allocatable :: AOLP(:)
 
-    allocate(YLMSUN(prp_obj%NlegSet, shdo_obj%Nlm))
+    allocate(YLMSUN(prp_obj_%NlegSet, shdo_obj_%Nlm))
 
     if (isSolar_) then
-        call shd_shdo__computeYlm(.true., src_obj%avgMu, src_obj%avgAz, shdo_obj%maxNl, shdo_obj%maxNm, prp_obj%NlegSet, YLMSUN)
-        if (DELTAM .and. prp_obj%Npha .gt. 0) then
-            NSCATANGLE = max(36, min(MAXSCATANG, 2*prp_obj%Nleg))
-            NSTPHASE = min(prp_obj%NlegSet, 2)
-            allocate(PHASETAB(NSTPHASE, prp_obj%Npha, NSCATANGLE))
-            call shd_scat__computePhase(NSCATANGLE, prp_obj%Npha, NSTPHASE,&
-                &shdo_obj%Nstokes, shdo_obj%maxNl, prp_obj%NlegSet, prp_obj%Nleg, rtm_obj%leg, PHASETAB)
+        call shd_shdo__computeYlm(.true., src_obj_%avgMu, src_obj_%avgAz, shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet, YLMSUN)
+        if (DELTAM .and. prp_obj_%Npha .gt. 0) then
+            NSCATANGLE = max(36, min(MAXSCATANG, 2*prp_obj_%Nleg))
+            NSTPHASE = min(prp_obj_%NlegSet, 2)
+            allocate(PHASETAB(NSTPHASE, prp_obj_%Npha, NSCATANGLE))
+            call shd_scat__computePhase(NSCATANGLE, prp_obj_%Npha, NSTPHASE,&
+                &shdo_obj_%Nstokes, shdo_obj_%maxNl, prp_obj_%NlegSet, prp_obj_%Nleg, rtm_obj%leg, PHASETAB)
         end if
     end if
 
     ! Make the isotropic radiances for the top boundary
-    call shd_init__makeTopRad(src_obj%type, src_obj%skyRad, src_obj%waveNum, src_obj%avgWaveLen,&
-        &src_obj%unit, NTOPPTS, shdo_obj%Nstokes, BCRAD(1, 1))
+    call shd_init__makeTopRad(src_obj_%type, src_obj_%skyRad, src_obj_%waveNum, src_obj_%avgWaveLen,&
+        &src_obj_%unit, NTOPPTS, shdo_obj_%Nstokes, BCRAD(1, 1))
     ! Make the bottom boundary radiances for the Lambertian surfaces
     !   Compute the upwelling bottom radiances using the downwelling
-    if (sfc_obj%type .eq. 'FL') then
+    if (sfc_obj_%type .eq. 'FL') then
         call shd_init__makeBotRadUL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, src_obj%type,&
-            &src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit, shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS))
-    else if (sfc_obj%type .eq. 'VL') then
+            &DIRFLUX, FLUXES, src_obj_%type,&
+            &src_obj_%waveNum, src_obj_%avgWaveLen, src_obj_%unit, shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
+    else if (sfc_obj_%type .eq. 'VL') then
         call shd_init__makeBotRadVL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, src_obj%type,&
-            &shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS))
+            &DIRFLUX, FLUXES, src_obj_%type,&
+            &shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
     end if
 
     CAMERA_MODE = nint(OUTPARMS(1)) .eq. 1
@@ -1057,11 +1057,11 @@ subroutine shd_rad__computeCamRad(&
             ! Integrate the extinction and source function along this ray
             !   to calculate the Stokes radiance vector for this pixel
             TRANSMIT = 1.0d0; VISRAD(:) = 0.0d0
-            call shd_src__integrateSrcOneRay(shdo_obj%Nstokes,&
+            call shd_src__integrateSrcOneRay(shdo_obj_%Nstokes,&
                 &NSTPHASE, NSCATANGLE, PHASETAB,&
-                &shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
-                &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
-                &DELTAM, src_obj%type, src_obj%avgWaveLen, src_obj%avgMu, src_obj%avgAz,&
+                &shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
+                &shdo_obj_%Nmu, shdo_obj_%maxNphi0, shdo_obj_%Nphi0, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
+                &DELTAM, src_obj_%type, src_obj_%avgWaveLen, src_obj_%avgMu, src_obj_%avgAz,&
                 &DIRFLUX, isrcJ_Shdo, srcJ_Shdo, YLMSUN,&
                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                 &MU2, PHI2, X0, Y0, Z0,&

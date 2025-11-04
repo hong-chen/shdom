@@ -52,11 +52,11 @@ module shd_mpi
                             shd_type_ckd,  &
                             shd_type_sen
 
-    use globals_obj, only: shdo_obj, isrcJ_Shdo, srcJ_Shdo, &
-                            src_obj, &
-                            prp_obj, &
-                            sfc_obj, &
-                            sen_obj, view_Sen
+    use globals_obj, only: shdo_obj_, isrcJ_Shdo, srcJ_Shdo, &
+                            src_obj_, &
+                            prp_obj_, &
+                            sfc_obj_, &
+                            sen_obj_, view_Sen
 
 #if HAS_MPI
     use mpi_f08,  only: MPI_comm_world, MPI_comm, MPI_request, &
@@ -828,7 +828,7 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
     &SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV, SUMSHTERMS,&
     &ALLFLUXES, ALLFLUXDIV, ALLSHTERMS,&
     &NSH, NCELLSTOT, NPTSTOT, NSHTOT,&
-    &rtmAll_obj, grid_obj, prp_obj)
+    &rtmAll_obj, grid_obj)
 
     ! Gathers the base grid output data in SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV,
     ! and SUMSHTERMS from all the processors and assembles in the master
@@ -839,7 +839,6 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
 
     type(shd_type_rtm),  intent(inout) :: rtmAll_obj
     type(shd_type_grid), intent(in)    :: grid_obj
-    type(shd_type_prp),  intent(in)    :: prp_obj
 
     logical, intent(in) :: FLUX_OUT, FLUXDIV_OUT, SH_OUT
     integer, intent(in) :: NSHOUT
@@ -997,8 +996,8 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
 
     ! Make the X and Y grids for the full domain
     if (myProc_ .eq. 0) then
-        rtmAll_obj%x(1:rtmAll_obj%Nx) = (/(prp_obj%xDomain*(I - 1)/rtmAll_obj%Nx, I=1, rtmAll_obj%Nx)/)
-        rtmAll_obj%y(1:rtmAll_obj%Ny) = (/(prp_obj%yDomain*(I - 1)/rtmAll_obj%Ny, I=1, rtmAll_obj%Ny)/)
+        rtmAll_obj%x(1:rtmAll_obj%Nx) = (/(prp_obj_%xDomain*(I - 1)/rtmAll_obj%Nx, I=1, rtmAll_obj%Nx)/)
+        rtmAll_obj%y(1:rtmAll_obj%Ny) = (/(prp_obj_%yDomain*(I - 1)/rtmAll_obj%Ny, I=1, rtmAll_obj%Ny)/)
     end if
 
     ! Get the sum of the grid_obj%Ncell, grid_obj%Npts, and NSH over the processors
@@ -1828,17 +1827,17 @@ subroutine shd_mpi__computeRad(&
     integer, intent(in) :: MAXNBC, NTOPPTS, NBOTPTS
     integer, intent(in) :: BCPTR(MAXNBC, 2)
     logical, intent(in) :: DELTAM
-    real, intent(in) :: BCRAD(shdo_obj%Nstokes, *)
+    real, intent(in) :: BCRAD(shdo_obj_%Nstokes, *)
     real, intent(in) :: DIRFLUX(grid_obj%Npts), FLUXES(2, grid_obj%Npts)
-    real, intent(inout) :: SOURCE1(shdo_obj%Nstokes, grid_obj%Npts), GRIDRAD(shdo_obj%Nstokes, grid_obj%Npts)
+    real, intent(inout) :: SOURCE1(shdo_obj_%Nstokes, grid_obj%Npts), GRIDRAD(shdo_obj_%Nstokes, grid_obj%Npts)
     real, intent(in) :: parms_Out(*)
-    real, intent(out) :: RADOUT(shdo_obj%Nstokes, *)
+    real, intent(out) :: RADOUT(shdo_obj_%Nstokes, *)
 
 #if HAS_MPI
     integer :: IBC, JX, JY, K
     integer :: NANGOUT, Nx_out, Ny_out
     logical :: VALIDRAD
-    real(RD_) :: X0, Y0, Z0, XE, YE, ZE, X, Y, Z, TRANSMIT, RADIANCE(shdo_obj%Nstokes)
+    real(RD_) :: X0, Y0, Z0, XE, YE, ZE, X, Y, Z, TRANSMIT, RADIANCE(shdo_obj_%Nstokes)
     real    :: mu_out, phi_out, phiDeg_out
     real    :: STARTX, STARTY, EPS = 1.0e-5
 
@@ -1860,18 +1859,18 @@ subroutine shd_mpi__computeRad(&
     !╰──────────────────────────────────────────────────────────────╯!
 
     ! Make the isotropic radiances for the top boundary
-    call shd_init__makeTopRad(src_obj%type, src_obj%skyRad, src_obj%waveNum, src_obj%avgWaveLen,&
-        &src_obj%unit, NTOPPTS, shdo_obj%Nstokes, BCRAD(1, 1))
+    call shd_init__makeTopRad(src_obj_%type, src_obj_%skyRad, src_obj_%waveNum, src_obj_%avgWaveLen,&
+        &src_obj_%unit, NTOPPTS, shdo_obj_%Nstokes, BCRAD(1, 1))
     ! Make the bottom boundary radiances for the Lambertian surfaces.
     ! Compute the upwelling bottom radiances using the downwelling fluxes.
-    if (sfc_obj%type .eq. 'FL') then
+    if (sfc_obj_%type .eq. 'FL') then
         call shd_init__makeBotRadUL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, src_obj%type,&
-            &src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit, shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS))
-    else if (sfc_obj%type .eq. 'VL') then
+            &DIRFLUX, FLUXES, src_obj_%type,&
+            &src_obj_%waveNum, src_obj_%avgWaveLen, src_obj_%unit, shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
+    else if (sfc_obj_%type .eq. 'VL') then
         call shd_init__makeBotRadVL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, src_obj%type,&
-            &shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS))
+            &DIRFLUX, FLUXES, src_obj_%type,&
+            &shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
     end if
 
     ! Setup the regularly spaced radiance locations
@@ -1879,28 +1878,28 @@ subroutine shd_mpi__computeRad(&
     if (parms_Out(2) .le. 0.0) then
         Nx_out = 1
     else
-        Nx_out = max(1, nint(prp_obj%xDomain/parms_Out(2)))
+        Nx_out = max(1, nint(prp_obj_%xDomain/parms_Out(2)))
     end if
     STARTY = 0.0
     if (parms_Out(3) .le. 0.0) then
         Ny_out = 1
     else
-        Ny_out = max(1, nint(prp_obj%yDomain/parms_Out(3)))
+        Ny_out = max(1, nint(prp_obj_%yDomain/parms_Out(3)))
     end if
     Z0 = min(max(parms_Out(1), rtm_obj%z(1)), rtm_obj%z(rtm_obj%Nz))
     NANGOUT = nint(parms_Out(6))
 
     MAXNRAD = nint(4.0*(Nx_out*Ny_out)/Nproc_)
     ! MAXNRAD = Nx_out*Ny_out
-    allocate(RadSend(shdo_obj%Nstokes, MAXNRAD), IndexSend(MAXNRAD))
+    allocate(RadSend(shdo_obj_%Nstokes, MAXNRAD), IndexSend(MAXNRAD))
     if (myProc_ .eq. 0) allocate(NradRecv(Nproc_ - 1),&
-        &RadRecv(shdo_obj%Nstokes, MAXNRAD, Nproc_ - 1), IndexRecv(MAXNRAD, Nproc_ - 1))
-    allocate(BndRadRealInfo(4 + shdo_obj%Nstokes, MAXNRAD, 4), BndRadIntInfo(MAXNRAD, 4))
+        &RadRecv(shdo_obj_%Nstokes, MAXNRAD, Nproc_ - 1), IndexRecv(MAXNRAD, Nproc_ - 1))
+    allocate(BndRadRealInfo(4 + shdo_obj_%Nstokes, MAXNRAD, 4), BndRadIntInfo(MAXNRAD, 4))
     allocate(requests(max(12, 3*Nproc_)), status(max(12, 3*Nproc_)))
 
     ! Loop over the radiance directions
     do K = 1, NANGOUT
-        if (sen_obj%fname(1:4) .ne. 'NONE') then
+        if (sen_obj_%fname(1:4) .ne. 'NONE') then
             mu_out     = view_Sen(1, K)
             phiDeg_out = view_Sen(2, K)
         else
@@ -1980,11 +1979,11 @@ subroutine shd_mpi__computeRad(&
                 GRIDRAD(:, I) = BCRAD(:, IBC)
             end do
         else
-            if (.not. sfc_obj%isLambertian) then
+            if (.not. sfc_obj_%isLambertian) then
                 call shd_init__makeBotRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
-                    &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt, mu_out, phi_out,&
-                    &src_obj%type, src_obj%avgWaveLen, src_obj%avgMu, src_obj%avgAz, DIRFLUX,&
-                    &shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS))
+                    &shdo_obj_%Nmu, shdo_obj_%maxNphi0, shdo_obj_%Nphi0, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt, mu_out, phi_out,&
+                    &src_obj_%type, src_obj_%avgWaveLen, src_obj_%avgMu, src_obj_%avgAz, DIRFLUX,&
+                    &shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
             end if
             do IBC = 1, NBOTPTS
                 I = BCPTR(IBC, 2)
@@ -2002,7 +2001,7 @@ subroutine shd_mpi__computeRad(&
             end if
         end if
         if (isMpiY_) then
-            !if ((sin(phi_out) .gt. 1.0e-5) .and. (prp_obj%Ny .gt. 1)) then
+            !if ((sin(phi_out) .gt. 1.0e-5) .and. (prp_obj_%Ny .gt. 1)) then
             if ((sin(phi_out) .gt. 1.0e-5)) then
                 Ldowny = 4; Lupy = 3
             else
@@ -2024,7 +2023,7 @@ subroutine shd_mpi__computeRad(&
                 if (X0 .ge. (rtm_obj%x(1) - EPS) .and. X0 .le. (rtm_obj%x(rtm_obj%Nx) + EPS) .and.&
                     Y0 .ge. (rtm_obj%y(1) - EPS) .and. Y0 .le. (rtm_obj%y(rtm_obj%Ny) + EPS)) then
                     TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
-                    call shd_src__integrateSrc(shdo_obj%Nstokes,&
+                    call shd_src__integrateSrc(shdo_obj_%Nstokes,&
                         &mu_out, phi_out, GRIDRAD, SOURCE1,&
                         &X0, Y0, Z0, XE, YE, ZE, SIDE,&
                         &TRANSMIT, RADIANCE, VALIDRAD,&
@@ -2066,7 +2065,7 @@ subroutine shd_mpi__computeRad(&
             if (isMpiX_) then
                 call mpi_isend(NINVALID(Lupx), 1, MPI_integer,&
                     &iProcNeigh_(Lupx), 6*K + 1, comm2D_, requests(irq + 1), ierr)
-                call mpi_isend(BndRadRealInfo(:, :, Lupx), (4 + shdo_obj%Nstokes)*NINVALID(Lupx), MPI_double_precision,&
+                call mpi_isend(BndRadRealInfo(:, :, Lupx), (4 + shdo_obj_%Nstokes)*NINVALID(Lupx), MPI_double_precision,&
                     &iProcNeigh_(Lupx), 6*K + 2, comm2D_, requests(irq + 2), ierr)
                 call mpi_isend(BndRadIntInfo(:, Lupx), NINVALID(Lupx), MPI_integer,&
                     &iProcNeigh_(Lupx), 6*K + 3, comm2D_, requests(irq + 3), ierr)
@@ -2075,7 +2074,7 @@ subroutine shd_mpi__computeRad(&
             if (isMpiY_) then
                 call mpi_isend(NINVALID(Lupy), 1, MPI_integer,&
                     &iProcNeigh_(Lupy), 6*K + 4, comm2D_, requests(irq + 1), ierr)
-                call mpi_isend(BndRadRealInfo(:, :, Lupy), (4 + shdo_obj%Nstokes)*NINVALID(Lupy), MPI_double_precision,&
+                call mpi_isend(BndRadRealInfo(:, :, Lupy), (4 + shdo_obj_%Nstokes)*NINVALID(Lupy), MPI_double_precision,&
                     &iProcNeigh_(Lupy), 6*K + 5, comm2D_, requests(irq + 2), ierr)
                 call mpi_isend(BndRadIntInfo(:, Lupy), NINVALID(Lupy), MPI_integer,&
                     &iProcNeigh_(Lupy), 6*K + 6, comm2D_, requests(irq + 3), ierr)
@@ -2084,7 +2083,7 @@ subroutine shd_mpi__computeRad(&
             if (isMpiX_) then
                 call mpi_irecv(NINVALID(Ldownx), 1, MPI_integer,&
                     &iProcNeigh_(Ldownx), 6*K + 1, comm2D_, requests(irq + 1), ierr)
-                call mpi_irecv(BndRadRealInfo(:, :, Ldownx), (4 + shdo_obj%Nstokes)*MAXNRAD, MPI_double_precision,&
+                call mpi_irecv(BndRadRealInfo(:, :, Ldownx), (4 + shdo_obj_%Nstokes)*MAXNRAD, MPI_double_precision,&
                     &iProcNeigh_(Ldownx), 6*K + 2, comm2D_, requests(irq + 2), ierr)
                 call mpi_irecv(BndRadIntInfo(:, Ldownx), MAXNRAD, MPI_integer,&
                     &iProcNeigh_(Ldownx), 6*K + 3, comm2D_, requests(irq + 3), ierr)
@@ -2093,7 +2092,7 @@ subroutine shd_mpi__computeRad(&
             if (isMpiY_) then
                 call mpi_irecv(NINVALID(Ldowny), 1, MPI_integer,&
                     &iProcNeigh_(Ldowny), 6*K + 4, comm2D_, requests(irq + 1), ierr)
-                call mpi_irecv(BndRadRealInfo(:, :, Ldowny), (4 + shdo_obj%Nstokes)*MAXNRAD, MPI_double_precision,&
+                call mpi_irecv(BndRadRealInfo(:, :, Ldowny), (4 + shdo_obj_%Nstokes)*MAXNRAD, MPI_double_precision,&
                     &iProcNeigh_(Ldowny), 6*K + 5, comm2D_, requests(irq + 2), ierr)
                 call mpi_irecv(BndRadIntInfo(:, Ldowny), MAXNRAD, MPI_integer,&
                     &iProcNeigh_(Ldowny), 6*K + 6, comm2D_, requests(irq + 3), ierr)
@@ -2109,8 +2108,8 @@ subroutine shd_mpi__computeRad(&
                     if (Ldownx .eq. 2) BndRadRealInfo(1, J, Ldownx) = rtm_obj%x(rtm_obj%Nx)
                     X = BndRadRealInfo(1, J, Ldownx); Y = BndRadRealInfo(2, J, Ldownx)
                     Z = BndRadRealInfo(3, J, Ldownx); TRANSMIT = BndRadRealInfo(4, J, Ldownx)
-                    RADIANCE(:) = BndRadRealInfo(5:4 + shdo_obj%Nstokes, J, Ldownx)
-                    call shd_src__integrateSrc(shdo_obj%Nstokes,&
+                    RADIANCE(:) = BndRadRealInfo(5:4 + shdo_obj_%Nstokes, J, Ldownx)
+                    call shd_src__integrateSrc(shdo_obj_%Nstokes,&
                         &mu_out, phi_out, GRIDRAD, SOURCE1,&
                         &X, Y, Z, XE, YE, ZE, SIDE,&
                         &TRANSMIT, RADIANCE, VALIDRAD,&
@@ -2144,8 +2143,8 @@ subroutine shd_mpi__computeRad(&
                     if (Ldowny .eq. 4) BndRadRealInfo(2, J, Ldowny) = rtm_obj%y(rtm_obj%Ny)
                     X = BndRadRealInfo(1, J, Ldowny); Y = BndRadRealInfo(2, J, Ldowny)
                     Z = BndRadRealInfo(3, J, Ldowny); TRANSMIT = BndRadRealInfo(4, J, Ldowny)
-                    RADIANCE(:) = BndRadRealInfo(5:4 + shdo_obj%Nstokes, J, Ldowny)
-                    call shd_src__integrateSrc(shdo_obj%Nstokes,&
+                    RADIANCE(:) = BndRadRealInfo(5:4 + shdo_obj_%Nstokes, J, Ldowny)
+                    call shd_src__integrateSrc(shdo_obj_%Nstokes,&
                         &mu_out, phi_out, GRIDRAD, SOURCE1,&
                         &X, Y, Z, XE, YE, ZE, SIDE,&
                         &TRANSMIT, RADIANCE, VALIDRAD,&
@@ -2182,7 +2181,7 @@ subroutine shd_mpi__computeRad(&
         if (myProc_ .gt. 0) then
             ! Send the finished radiances to the master processor
             call mpi_isend(Ndone, 1, MPI_integer, 0, 6*K + 7, comm2D_, requests(1), ierr)
-            call mpi_isend(RadSend, shdo_obj%Nstokes*Ndone, MPI_real, 0, 6*K + 8, comm2D_, requests(2), ierr)
+            call mpi_isend(RadSend, shdo_obj_%Nstokes*Ndone, MPI_real, 0, 6*K + 8, comm2D_, requests(2), ierr)
             call mpi_isend(IndexSend, Ndone, MPI_integer, 0, 6*K + 9, comm2D_, requests(3), ierr)
             call mpi_waitall(3, requests, status, ierr)
         else
@@ -2195,7 +2194,7 @@ subroutine shd_mpi__computeRad(&
             do iproc = 1, Nproc_ - 1
                 call mpi_irecv(NradRecv(iproc), 1, MPI_integer, iproc,&
                     &6*K + 7, comm2D_, requests(irq + 1), ierr)
-                call mpi_irecv(RadRecv(:, :, iproc), shdo_obj%Nstokes*MAXNRAD, MPI_real, iproc,&
+                call mpi_irecv(RadRecv(:, :, iproc), shdo_obj_%Nstokes*MAXNRAD, MPI_real, iproc,&
                     &6*K + 8, comm2D_, requests(irq + 2), ierr)
                 call mpi_irecv(IndexRecv(:, iproc), MAXNRAD, MPI_integer, iproc,&
                     &6*K + 9, comm2D_, requests(irq + 3), ierr)
@@ -2239,17 +2238,17 @@ subroutine shd_mpi__computeCamRad(&
     integer, intent(in) :: MAXNBC, NTOPPTS, NBOTPTS
     integer, intent(in) :: BCPTR(MAXNBC, 2)
     logical, intent(in) :: DELTAM
-    real, intent(in) :: BCRAD(shdo_obj%Nstokes, *)
+    real, intent(in) :: BCRAD(shdo_obj_%Nstokes, *)
     real, intent(in) :: DIRFLUX(grid_obj%Npts), FLUXES(2, grid_obj%Npts)
     real, intent(in) :: parms_Out(*)
-    real, intent(out) :: VISOUT(shdo_obj%Nstokes, *)
+    real, intent(out) :: VISOUT(shdo_obj_%Nstokes, *)
 
 #if HAS_MPI
     integer :: NSCATANGLE, NSTPHASE, I, J, L, N
     integer :: NL, NS, LINE, SAMP
     logical :: CAMERA_MODE, SENSOR_MODE, VALIDRAD
     real, parameter  :: EPS = 1.0e-5
-    real(RD_) :: XE, YE, ZE, TRANSMIT, VISRAD(shdo_obj%Nstokes), RADIANCE(shdo_obj%Nstokes)
+    real(RD_) :: XE, YE, ZE, TRANSMIT, VISRAD(shdo_obj_%Nstokes), RADIANCE(shdo_obj_%Nstokes)
     real(RD_) :: X0, Y0, Z0, X1, Y1, Z1, X2, Y2, Z2, X, Y, Z
     real(RD_) :: THETA0, THETA1, PHIR, PHI0, COSSCAT, MU2, PHI2
     real(RD_) :: COSTH, SINTH, SINTH0, SINTH1
@@ -2276,32 +2275,32 @@ subroutine shd_mpi__computeCamRad(&
     type(MPI_request), allocatable :: requests(:)
     type(MPI_status), allocatable :: status(:)
 
-    allocate(YLMSUN(prp_obj%NlegSet, shdo_obj%Nlm))
+    allocate(YLMSUN(prp_obj_%NlegSet, shdo_obj_%Nlm))
 
     if (isSolar_) then
-        call shd_shdo__computeYlm(.true., src_obj%avgMu, src_obj%avgAz, shdo_obj%maxNl, shdo_obj%maxNm, prp_obj%NlegSet, YLMSUN)
-        if (DELTAM .and. prp_obj%Npha .gt. 0) then
-            NSCATANGLE = max(36, min(MAXSCATANG, 2*prp_obj%Nleg))
-            NSTPHASE = min(prp_obj%NlegSet, 2)
-            allocate(PHASETAB(NSTPHASE, prp_obj%Npha, NSCATANGLE))
-            call shd_scat__computePhase(NSCATANGLE, prp_obj%Npha, NSTPHASE,&
-                &shdo_obj%Nstokes, shdo_obj%maxNl, prp_obj%NlegSet, prp_obj%Nleg, rtm_obj%leg, PHASETAB)
+        call shd_shdo__computeYlm(.true., src_obj_%avgMu, src_obj_%avgAz, shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet, YLMSUN)
+        if (DELTAM .and. prp_obj_%Npha .gt. 0) then
+            NSCATANGLE = max(36, min(MAXSCATANG, 2*prp_obj_%Nleg))
+            NSTPHASE = min(prp_obj_%NlegSet, 2)
+            allocate(PHASETAB(NSTPHASE, prp_obj_%Npha, NSCATANGLE))
+            call shd_scat__computePhase(NSCATANGLE, prp_obj_%Npha, NSTPHASE,&
+                &shdo_obj_%Nstokes, shdo_obj_%maxNl, prp_obj_%NlegSet, prp_obj_%Nleg, rtm_obj%leg, PHASETAB)
         end if
     end if
 
     ! Make the isotropic radiances for the top boundary
-    call shd_init__makeTopRad(src_obj%type, src_obj%skyRad, src_obj%waveNum, src_obj%avgWaveLen,&
-        &src_obj%unit, NTOPPTS, shdo_obj%Nstokes, BCRAD(1, 1))
+    call shd_init__makeTopRad(src_obj_%type, src_obj_%skyRad, src_obj_%waveNum, src_obj_%avgWaveLen,&
+        &src_obj_%unit, NTOPPTS, shdo_obj_%Nstokes, BCRAD(1, 1))
     ! Make the bottom boundary radiances for the Lambertian surfaces.
     ! Compute the upwelling bottom radiances using the downwelling fluxes.
-    if (sfc_obj%type .eq. 'FL') then
+    if (sfc_obj_%type .eq. 'FL') then
         call shd_init__makeBotRadUL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, src_obj%type,&
-            &src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit, shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS))
-    else if (sfc_obj%type .eq. 'VL') then
+            &DIRFLUX, FLUXES, src_obj_%type,&
+            &src_obj_%waveNum, src_obj_%avgWaveLen, src_obj_%unit, shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
+    else if (sfc_obj_%type .eq. 'VL') then
         call shd_init__makeBotRadVL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, src_obj%type,&
-            &shdo_obj%Nstokes, BCRAD(1, 1 + NTOPPTS))
+            &DIRFLUX, FLUXES, src_obj_%type,&
+            &shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
     end if
 
     CAMERA_MODE = nint(parms_Out(1)) .eq. 1
@@ -2323,11 +2322,11 @@ subroutine shd_mpi__computeCamRad(&
 
     ! Allocate sending, receiving, etc. arrays for MPI
     MAXNRAD = NL*NS
-    allocate(RadSend(shdo_obj%Nstokes, MAXNRAD), IndexSend(MAXNRAD))
+    allocate(RadSend(shdo_obj_%Nstokes, MAXNRAD), IndexSend(MAXNRAD))
     if (myProc_ .eq. 0) allocate(NradRecv(Nproc_ - 1),&
-        &RadRecv(shdo_obj%Nstokes, MAXNRAD, Nproc_ - 1), IndexRecv(MAXNRAD, Nproc_ - 1))
-    allocate(BndSendRadRealInfo(6 + shdo_obj%Nstokes, MAXNRAD, 4), BndSendRadIntInfo(MAXNRAD, 4))
-    allocate(BndRecvRadRealInfo(6 + shdo_obj%Nstokes, MAXNRAD, 4), BndRecvRadIntInfo(MAXNRAD, 4))
+        &RadRecv(shdo_obj_%Nstokes, MAXNRAD, Nproc_ - 1), IndexRecv(MAXNRAD, Nproc_ - 1))
+    allocate(BndSendRadRealInfo(6 + shdo_obj_%Nstokes, MAXNRAD, 4), BndSendRadIntInfo(MAXNRAD, 4))
+    allocate(BndRecvRadRealInfo(6 + shdo_obj_%Nstokes, MAXNRAD, 4), BndRecvRadIntInfo(MAXNRAD, 4))
     allocate(requests(max(24, 3*Nproc_)), status(max(24, 3*Nproc_)))
 
     NINVALID(:) = 0
@@ -2390,14 +2389,14 @@ subroutine shd_mpi__computeCamRad(&
 
             else if (SENSOR_MODE) then
 
-                if (sen_obj%fname(1:4) .ne. 'NONE') then
+                if (sen_obj_%fname(1:4) .ne. 'NONE') then
                     X0    =  view_Sen(1, SAMP)
                     Y0    =  view_Sen(2, SAMP)
                     Z0    =  view_Sen(3, SAMP)
                     COSTH =  view_Sen(4, SAMP)
                     PHIR  =  view_Sen(5, SAMP)
                 else
-                    stop 'Error [mpi__computeCamRad]: Need sen_obj to proceed.'
+                    stop 'Error [mpi__computeCamRad]: Need sen_obj_ to proceed.'
                 end if
 
             else
@@ -2452,14 +2451,14 @@ subroutine shd_mpi__computeCamRad(&
             ! Relocate the starting point in the overall periodic domain
             ! (we know we have a periodic domain if doing MPI)
             if (X0 .ge. 0.0) then
-                X0 = mod(X0, dble(prp_obj%xDomain))
+                X0 = mod(X0, dble(prp_obj_%xDomain))
             else
-                X0 = mod(X0 + prp_obj%xDomain*int(1.0 - X0/prp_obj%xDomain), dble(prp_obj%xDomain))
+                X0 = mod(X0 + prp_obj_%xDomain*int(1.0 - X0/prp_obj_%xDomain), dble(prp_obj_%xDomain))
             end if
             if (Y0 .ge. 0.0) then
-                Y0 = mod(Y0, dble(prp_obj%yDomain))
+                Y0 = mod(Y0, dble(prp_obj_%yDomain))
             else
-                Y0 = mod(Y0 + prp_obj%yDomain*int(1.0 - Y0/prp_obj%yDomain), dble(prp_obj%yDomain))
+                Y0 = mod(Y0 + prp_obj_%yDomain*int(1.0 - Y0/prp_obj_%yDomain), dble(prp_obj_%yDomain))
             end if
 
             ! Start the radiance calculation for those rays starting in this subdomain
@@ -2473,11 +2472,11 @@ subroutine shd_mpi__computeCamRad(&
                 ! Integrate the extinction and source function along this ray
                 ! to calculate the Stokes radiance vector for this pixel
                 TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
-                call shd_src__integrateSrcOneRay(shdo_obj%Nstokes,&
+                call shd_src__integrateSrcOneRay(shdo_obj_%Nstokes,&
                     &NSTPHASE, NSCATANGLE, PHASETAB,&
-                    &shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
-                    &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
-                    &DELTAM, src_obj%type, src_obj%avgWaveLen, src_obj%avgMu, src_obj%avgAz,&
+                    &shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
+                    &shdo_obj_%Nmu, shdo_obj_%maxNphi0, shdo_obj_%Nphi0, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
+                    &DELTAM, src_obj_%type, src_obj_%avgWaveLen, src_obj_%avgMu, src_obj_%avgAz,&
                     &DIRFLUX, isrcJ_Shdo, srcJ_Shdo, YLMSUN,&
                     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                     &MU2, PHI2, X0, Y0, Z0,&
@@ -2518,7 +2517,7 @@ subroutine shd_mpi__computeCamRad(&
                 K = 3*SIDE
                 call mpi_isend(NINVALID(SIDE), 1, MPI_integer,&
                     &iProcNeigh_(SIDE), K + 1, comm2D_, requests(irq + 1), ierr)
-                call mpi_isend(BndSendRadRealInfo(:, :, SIDE), (6 + shdo_obj%Nstokes)*NINVALID(SIDE), MPI_double_precision,&
+                call mpi_isend(BndSendRadRealInfo(:, :, SIDE), (6 + shdo_obj_%Nstokes)*NINVALID(SIDE), MPI_double_precision,&
                     &iProcNeigh_(SIDE), K + 2, comm2D_, requests(irq + 2), ierr)
                 call mpi_isend(BndSendRadIntInfo(:, SIDE), NINVALID(SIDE), MPI_integer,&
                     &iProcNeigh_(SIDE), K + 3, comm2D_, requests(irq + 3), ierr)
@@ -2532,7 +2531,7 @@ subroutine shd_mpi__computeCamRad(&
                 K = 3*RECVSIDE(SIDE)
                 call mpi_irecv(NINCOMING(SIDE), 1, MPI_integer,&
                     &iProcNeigh_(SIDE), K + 1, comm2D_, requests(irq + 1), ierr)
-                call mpi_irecv(BndRecvRadRealInfo(:, :, SIDE), (6 + shdo_obj%Nstokes)*MAXNRAD, MPI_double_precision,&
+                call mpi_irecv(BndRecvRadRealInfo(:, :, SIDE), (6 + shdo_obj_%Nstokes)*MAXNRAD, MPI_double_precision,&
                     &iProcNeigh_(SIDE), K + 2, comm2D_, requests(irq + 2), ierr)
                 call mpi_irecv(BndRecvRadIntInfo(:, SIDE), MAXNRAD, MPI_integer,&
                     &iProcNeigh_(SIDE), K + 3, comm2D_, requests(irq + 3), ierr)
@@ -2555,12 +2554,12 @@ subroutine shd_mpi__computeCamRad(&
                 MU2 = BndRecvRadRealInfo(4, J, IBND)
                 PHI2 = BndRecvRadRealInfo(5, J, IBND)
                 TRANSMIT = BndRecvRadRealInfo(6, J, IBND)
-                RADIANCE(:) = BndRecvRadRealInfo(7 : 6+shdo_obj%Nstokes, J, IBND)
-                call shd_src__integrateSrcOneRay(shdo_obj%Nstokes,&
+                RADIANCE(:) = BndRecvRadRealInfo(7 : 6+shdo_obj_%Nstokes, J, IBND)
+                call shd_src__integrateSrcOneRay(shdo_obj_%Nstokes,&
                     &NSTPHASE, NSCATANGLE, PHASETAB,&
-                    &shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm,&
-                    &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
-                    &DELTAM, src_obj%type, src_obj%avgWaveLen, src_obj%avgMu, src_obj%avgAz,&
+                    &shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
+                    &shdo_obj_%Nmu, shdo_obj_%maxNphi0, shdo_obj_%Nphi0, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
+                    &DELTAM, src_obj_%type, src_obj_%avgWaveLen, src_obj_%avgMu, src_obj_%avgAz,&
                     &DIRFLUX, isrcJ_Shdo, srcJ_Shdo, YLMSUN,&
                     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                     &MU2, PHI2, X, Y, Z,&
@@ -2596,7 +2595,7 @@ subroutine shd_mpi__computeCamRad(&
     if (myProc_ .gt. 0) then
         ! Send the finished radiances to the master processor
         call mpi_isend(Ndone, 1, MPI_integer, 0, 21, comm2D_, requests(1), ierr)
-        call mpi_isend(RadSend, shdo_obj%Nstokes*Ndone, MPI_real, 0, 22, comm2D_, requests(2), ierr)
+        call mpi_isend(RadSend, shdo_obj_%Nstokes*Ndone, MPI_real, 0, 22, comm2D_, requests(2), ierr)
         call mpi_isend(IndexSend, Ndone, MPI_integer, 0, 23, comm2D_, requests(3), ierr)
         call mpi_waitall(3, requests, status, ierr)
     else
@@ -2609,7 +2608,7 @@ subroutine shd_mpi__computeCamRad(&
         do iproc = 1, Nproc_ - 1
             call mpi_irecv(NradRecv(iproc), 1, MPI_integer, iproc,&
                 &21, comm2D_, requests(irq + 1), ierr)
-            call mpi_irecv(RadRecv(:, :, iproc), shdo_obj%Nstokes*MAXNRAD, MPI_real, iproc,&
+            call mpi_irecv(RadRecv(:, :, iproc), shdo_obj_%Nstokes*MAXNRAD, MPI_real, iproc,&
                 &22, comm2D_, requests(irq + 2), ierr)
             call mpi_irecv(IndexRecv(:, iproc), MAXNRAD, MPI_integer, iproc,&
                 &23, comm2D_, requests(irq + 3), ierr)
@@ -2720,7 +2719,7 @@ subroutine shd_mpi__calAccelSolCrit(DOACCEL, DELJDOT, DELJOLD, DELJNEW, JNORM,&
 
 end subroutine shd_mpi__calAccelSolCrit
 
-subroutine shd_mpi__end(runName, grid_obj, prpAll_obj, prp_obj)
+subroutine shd_mpi__end(runName, grid_obj, prpAll_obj)
 
     ! Shuts down MPI at the end, but mainly finds the number of gridpoints
     ! around each property grid point column, sends that array to the master
@@ -2728,7 +2727,7 @@ subroutine shd_mpi__end(runName, grid_obj, prpAll_obj, prp_obj)
     ! file.
 
     type(shd_type_grid), intent(in) :: grid_obj
-    type(shd_type_prp), intent(in) :: prpAll_obj, prp_obj
+    type(shd_type_prp), intent(in) :: prpAll_obj
 
     character(len=*), intent(in) :: runName
 
@@ -2742,17 +2741,17 @@ subroutine shd_mpi__end(runName, grid_obj, prpAll_obj, prp_obj)
     type(MPI_request), allocatable :: requests(:)
     type(MPI_status), allocatable :: status(:)
 
-    dx_prp = real(prp_obj%xDomain)/real(prpAll_obj%Nx)
-    dy_prp = real(prp_obj%yDomain)/real(prpAll_obj%Ny)
+    dx_prp = real(prp_obj_%xDomain)/real(prpAll_obj%Nx)
+    dy_prp = real(prp_obj_%yDomain)/real(prpAll_obj%Ny)
 
     if (loadBalance_) then
         ! Calculate the number of grid points around each property grid column
-        allocate(NUMGRID(prp_obj%Nx, prp_obj%Ny))
+        allocate(NUMGRID(prp_obj_%Nx, prp_obj_%Ny))
         NUMGRID(:, :) = 0
         do I = 1, grid_obj%Npts
-            IX = nint((grid_obj%xyz(1, I) - prp_obj%xStart)/dx_prp) + 1
-            IY = nint((grid_obj%xyz(2, I) - prp_obj%yStart)/dy_prp) + 1
-            if ((IX .le. prp_obj%Nx) .and. (IY .le. prp_obj%Ny)) then
+            IX = nint((grid_obj%xyz(1, I) - prp_obj_%xStart)/dx_prp) + 1
+            IY = nint((grid_obj%xyz(2, I) - prp_obj_%yStart)/dy_prp) + 1
+            if ((IX .le. prp_obj_%Nx) .and. (IY .le. prp_obj_%Ny)) then
                 NUMGRID(IX, IY) = NUMGRID(IX, IY) + 1
             end if
         end do
@@ -2767,7 +2766,7 @@ subroutine shd_mpi__end(runName, grid_obj, prpAll_obj, prp_obj)
             irq = 0
             if (myProc_ .gt. 0) then
                 irq = irq + 1
-                call mpi_isend(NUMGRID, prp_obj%Nx*prp_obj%Ny, MPI_integer, 0, 777, comm2D_,&
+                call mpi_isend(NUMGRID, prp_obj_%Nx*prp_obj_%Ny, MPI_integer, 0, 777, comm2D_,&
                     &requests(irq), ierr)
             else
                 MAXN = (maxval(ixyAll(2, 1, :) - ixyAll(1, 1, :)) + 1)*(maxval(ixyAll(2, 2, :) - ixyAll(1, 2, :)) + 1)
@@ -2822,7 +2821,7 @@ subroutine shd_mpi__end(runName, grid_obj, prpAll_obj, prp_obj)
 
         else
             allocate(NUMGRIDALL(prpAll_obj%Nx, prpAll_obj%Ny))
-            NUMGRIDALL(1:prp_obj%Nx, 1:prp_obj%Ny) = NUMGRID(:, :)
+            NUMGRIDALL(1:prp_obj_%Nx, 1:prp_obj_%Ny) = NUMGRID(:, :)
         end if
 
         ! checked
@@ -2832,7 +2831,7 @@ subroutine shd_mpi__end(runName, grid_obj, prpAll_obj, prp_obj)
             ! Write out the array to the load balancing file
             open (UNIT=10, FILE=trim(runName)//'_load_balance.out', STATUS='UNKNOWN')
             write (10, '(A)') '! SHDOM grid point load balancing file for property file:'
-            write (10, '(A)') prp_obj%fname
+            write (10, '(A)') prp_obj_%fname
             write (10, '(2(1X,I4),A)') prpAll_obj%Nx, prpAll_obj%Ny, ' ! property grid size (Nx,Ny)'
             do IX = 1, prpAll_obj%Nx
                 do IY = 1, prpAll_obj%Ny

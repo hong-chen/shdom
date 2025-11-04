@@ -44,8 +44,8 @@ module shd_sfc
 
     use globals_const, only: PI_
     use globals_cfg,   only: isPol_
-    use globals_obj,   only: prp_obj, &
-                             sfc_obj, brdf_Sfc, brdf_Rtm
+    use globals_obj,   only: prp_obj_, &
+                             sfc_obj_, brdf_Sfc, brdf_Rtm
 
     use shd_util, only: shd_util__computePlanck
 
@@ -89,9 +89,9 @@ subroutine shd_sfc__interpSfc(&
     ! surface grid to the boundary points of the adaptive grid.
     ! The locations of the NptsBot grid points on the bottom boundary
     ! (pointed to by BCPTR) are in the GRIDPOS array.  The input regular
-    ! surface info is specified by the number of grid lines (sfc_obj%Nx,sfc_obj%Ny),
-    ! the grid spacing (sfc_obj%dx,sfc_obj%dy), the number of parameters at
-    ! each grid point (sfc_obj%Npar), and the surface parameters (brdf_Sfc).
+    ! surface info is specified by the number of grid lines (sfc_obj_%Nx,sfc_obj_%Ny),
+    ! the grid spacing (sfc_obj_%dx,sfc_obj_%dy), the number of parameters at
+    ! each grid point (sfc_obj_%Npar), and the surface parameters (brdf_Sfc).
     ! The output interpolated surface parameters at the NptsBot boundary
     ! points are in brdf_grid_Sfc.  The first parameter is input as
     ! temperature, but converted to Planck function for output.
@@ -99,7 +99,7 @@ subroutine shd_sfc__interpSfc(&
     integer, intent(in) :: NptsBot, BCPTR(*)
     character(len=1), intent(in) :: SRCTYPE, UNITS
 
-    real(kind=R__), intent(out) :: brdf_Rtm(sfc_obj%Npar, *)
+    real(kind=R__), intent(out) :: brdf_Rtm(sfc_obj_%Npar, *)
 
     real :: WAVENO(2), WAVELEN
     real :: GRIDPOS(3, *)
@@ -109,7 +109,7 @@ subroutine shd_sfc__interpSfc(&
     logical :: doInterp
 
     doInterp = .true.
-    if (sfc_obj%Npar .gt. 6) then
+    if (sfc_obj_%Npar .gt. 6) then
         doInterp = .false.
     end if
 
@@ -118,34 +118,34 @@ subroutine shd_sfc__interpSfc(&
 
         igrid = BCPTR(ibc)
 
-        if  ((prp_obj%Nx .gt. 1) .and. (prp_obj%Ny .gt. 1) .and.&
-            &(sfc_obj%Nx .gt. 1) .and. (sfc_obj%Ny .gt. 1) .and.&
-            &((abs(prp_obj%dx - sfc_obj%dx) .gt. 1.0e-6) .or.&
-             &(abs(prp_obj%dy - sfc_obj%dy) .gt. 1.0e-6))) then
-            ! added half dx,dy (prp_obj%dx/2.0-sfc_obj%dx/2.0, prp_obj%dy/2.0-sfc_obj%dy/2.0) to
+        if  ((prp_obj_%Nx .gt. 1) .and. (prp_obj_%Ny .gt. 1) .and.&
+            &(sfc_obj_%Nx .gt. 1) .and. (sfc_obj_%Ny .gt. 1) .and.&
+            &((abs(prp_obj_%dx - sfc_obj_%dx) .gt. 1.0e-6) .or.&
+             &(abs(prp_obj_%dy - sfc_obj_%dy) .gt. 1.0e-6))) then
+            ! added half dx,dy (prp_obj_%dx/2.0-sfc_obj_%dx/2.0, prp_obj_%dy/2.0-sfc_obj_%dy/2.0) to
             ! find surface point that is closest to grid center
             !╭────────────────────────────────────────────────╮!
-            rx = (GRIDPOS(1, igrid) + prp_obj%dx/2.0 - sfc_obj%dx/2.0) / sfc_obj%dx
-            ry = (GRIDPOS(2, igrid) + prp_obj%dy/2.0 - sfc_obj%dy/2.0) / sfc_obj%dy
+            rx = (GRIDPOS(1, igrid) + prp_obj_%dx/2.0 - sfc_obj_%dx/2.0) / sfc_obj_%dx
+            ry = (GRIDPOS(2, igrid) + prp_obj_%dy/2.0 - sfc_obj_%dy/2.0) / sfc_obj_%dy
             !╰────────────────────────────────────────────────╯!
         else
-            rx = (GRIDPOS(1, igrid)) / sfc_obj%dx
-            ry = (GRIDPOS(2, igrid)) / sfc_obj%dy
+            rx = (GRIDPOS(1, igrid)) / sfc_obj_%dx
+            ry = (GRIDPOS(2, igrid)) / sfc_obj_%dy
         end if
 
-        ix = max(1, min(sfc_obj%Nx, int(rx) + 1))
-        iy = max(1, min(sfc_obj%Ny, int(ry) + 1))
+        ix = max(1, min(sfc_obj_%Nx, int(rx) + 1))
+        iy = max(1, min(sfc_obj_%Ny, int(ry) + 1))
         u = max(0.0, min(1.0, rx - (ix - 1)))
         v = max(0.0, min(1.0, ry - (iy - 1)))
 
-        i1 = iy + (sfc_obj%Ny + 1)*(ix - 1)
+        i1 = iy + (sfc_obj_%Ny + 1)*(ix - 1)
         if (doInterp) then
-            i2 = iy     + (sfc_obj%Ny + 1)*(ix)
-            i3 = iy + 1 + (sfc_obj%Ny + 1)*(ix - 1)
-            i4 = iy + 1 + (sfc_obj%Ny + 1)*(ix)
+            i2 = iy     + (sfc_obj_%Ny + 1)*(ix)
+            i3 = iy + 1 + (sfc_obj_%Ny + 1)*(ix - 1)
+            i4 = iy + 1 + (sfc_obj_%Ny + 1)*(ix)
         end if
 
-        do ipar = 1, sfc_obj%Npar
+        do ipar = 1, sfc_obj_%Npar
             ! only interpolate BRDF parameter, not surface type ID (currently stored at 8)
             if (doInterp) then
                 ! bi-linear interpolation

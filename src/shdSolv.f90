@@ -44,10 +44,10 @@ module shd_solv
     use globals_type, only: shd_type_rtm,  &
                             shd_type_grid
 
-    use globals_obj, only: shdo_obj, iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo, &
-                            src_obj, &
-                            prp_obj, &
-                            sfc_obj, brdf_Sfc, brdf_Rtm
+    use globals_obj, only: shdo_obj_, iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo, &
+                            src_obj_, &
+                            prp_obj_, &
+                            sfc_obj_, brdf_Sfc, brdf_Rtm
 
     use shd_init, only: shd_init__makePrp, &
                         shd_init__makeRad, &
@@ -117,7 +117,7 @@ subroutine shd_solv__solveRte(&
     real SOLACC, SOLCRIT, SPLITACC, SHACC
     real BCRAD(*)
     real FLUXES(2, *), DIRFLUX(*)
-    real srcD_Shdo(shdo_obj%Nstokes, *)
+    real srcD_Shdo(shdo_obj_%Nstokes, *)
     real WORK(*), WORK2(*)
 
     integer I, isetDO
@@ -139,11 +139,11 @@ subroutine shd_solv__solveRte(&
     real :: ELAPSED_TIME
 
     ! Allocate local arrays
-    ! prp_obj%NlegSet=1 for shdo_obj%Nstokes=1, otherwise prp_obj%NlegSet=6
-    allocate(CMU1(prp_obj%NlegSet, shdo_obj%Nlm, shdo_obj%Nmu), CMU2(prp_obj%NlegSet, shdo_obj%Nlm, shdo_obj%Nmu))
-    allocate(CPHI1(-16:16, 32, shdo_obj%Nmu), CPHI2(32, -16:16, shdo_obj%Nmu))
-    allocate(YlmSolar_Shdo(prp_obj%NlegSet, shdo_obj%Nlm))
-    allocate(flagFFT_Shdo(shdo_obj%Nmu), wgtMu_Shdo(shdo_obj%Nmu), wPhiFFT_Shdo(shdo_obj%Nmu*(3*shdo_obj%Nphi+ 15)))
+    ! prp_obj_%NlegSet=1 for shdo_obj_%Nstokes=1, otherwise prp_obj_%NlegSet=6
+    allocate(CMU1(prp_obj_%NlegSet, shdo_obj_%Nlm, shdo_obj_%Nmu), CMU2(prp_obj_%NlegSet, shdo_obj_%Nlm, shdo_obj_%Nmu))
+    allocate(CPHI1(-16:16, 32, shdo_obj_%Nmu), CPHI2(32, -16:16, shdo_obj_%Nmu))
+    allocate(YlmSolar_Shdo(prp_obj_%NlegSet, shdo_obj_%Nlm))
+    allocate(flagFFT_Shdo(shdo_obj_%Nmu), wgtMu_Shdo(shdo_obj_%Nmu), wPhiFFT_Shdo(shdo_obj_%Nmu*(3*shdo_obj_%Nphi+ 15)))
 
     ! Set up some things before solution loop
 
@@ -162,43 +162,43 @@ subroutine shd_solv__solveRte(&
     ! Precompute Ylm's for solar direction
     if (isSolar_) then
         if (isMpi_) then
-            call shd_mpi__makeDirect(1, doDeltaM, shdo_obj%maxNl,&
-                &src_obj%avgSolar0, src_obj%avgMu, src_obj%avgAz,&
+            call shd_mpi__makeDirect(1, doDeltaM, shdo_obj_%maxNl,&
+                &src_obj_%avgSolar0, src_obj_%avgMu, src_obj_%avgAz,&
                 &DIRFLUX,&
                 &rtm_obj, grid_obj)
         else
-            call shd_rad__makeDirect(grid_obj%Npts, doDeltaM, shdo_obj%maxNl,&
-                &src_obj%avgSolar0, src_obj%avgMu, src_obj%avgAz,&
+            call shd_rad__makeDirect(grid_obj%Npts, doDeltaM, shdo_obj_%maxNl,&
+                &src_obj_%avgSolar0, src_obj_%avgMu, src_obj_%avgAz,&
                 &DIRFLUX,&
                 &rtm_obj, grid_obj)
         end if
-        call shd_shdo__computeYlm(.true., src_obj%avgMu, src_obj%avgAz, shdo_obj%maxNl, shdo_obj%maxNm, prp_obj%NlegSet,&
+        call shd_shdo__computeYlm(.true., src_obj_%avgMu, src_obj_%avgAz, shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet,&
             &YlmSolar_Shdo)
     end if
 
     ! Make the discrete ordinates (angles)
     !   (set 2 is reduced gaussian, 3 is reduced double gauss)
     isetDO = 3
-    call shd_shdo__makeAngle(shdo_obj%Nmu, shdo_obj%Nphi, isetDO, shdo_obj%maxNphi0,&
-        &shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, wgtMu_Shdo, shdo_obj%wgt, flagFFT_Shdo, shdo_obj%Nang)
+    call shd_shdo__makeAngle(shdo_obj_%Nmu, shdo_obj_%Nphi, isetDO, shdo_obj_%maxNphi0,&
+        &shdo_obj_%Nphi0, shdo_obj_%mu, shdo_obj_%phi, wgtMu_Shdo, shdo_obj_%wgt, flagFFT_Shdo, shdo_obj_%Nang)
 
     ! Make the Ylm transform coefficients
-    call shd_shdo__makeSHDO(prp_obj%NlegSet, shdo_obj%maxNl, shdo_obj%maxNm, shdo_obj%Nlm, shdo_obj%Nmu, shdo_obj%Nphi0,&
-        &shdo_obj%maxNphi0, shdo_obj%mu, shdo_obj%phi, wgtMu_Shdo, shdo_obj%wgt, flagFFT_Shdo,&
+    call shd_shdo__makeSHDO(prp_obj_%NlegSet, shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm, shdo_obj_%Nmu, shdo_obj_%Nphi0,&
+        &shdo_obj_%maxNphi0, shdo_obj_%mu, shdo_obj_%phi, wgtMu_Shdo, shdo_obj_%wgt, flagFFT_Shdo,&
         &CMU1, CMU2, CPHI1, CPHI2, wPhiFFT_Shdo)
 
     doFixSH = .false.
     if (.not. doRadInit) then
         ! Initialize the radiance on the base grid using Eddington
         ! two-stream plane-parallel
-        call shd_init__makeRad(shdo_obj%Nstokes, grid_obj%Nx*grid_obj%Ny, grid_obj%Nz,&
+        call shd_init__makeRad(shdo_obj_%Nstokes, grid_obj%Nx*grid_obj%Ny, grid_obj%Nz,&
             &iradI_Shdo, rtm_obj%z,&
             &rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%temp, rtm_obj%ipha,&
-            &src_obj%type, src_obj%avgSolar0, src_obj%avgMu, src_obj%skyRad,&
-            &src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen, radI_Shdo)
+            &src_obj_%type, src_obj_%avgSolar0, src_obj_%avgMu, src_obj_%skyRad,&
+            &src_obj_%unit, src_obj_%waveNum, src_obj_%avgWaveLen, radI_Shdo)
         ! Interpolate the radiance on the non-base grid points from the
         !   base grid points
-        call shd_rad__interpRad(shdo_obj%Nstokes, grid_obj%Npts0, grid_obj%Npts, iradI_Shdo, radI_Shdo,&
+        call shd_rad__interpRad(shdo_obj_%Nstokes, grid_obj%Npts0, grid_obj%Npts, iradI_Shdo, radI_Shdo,&
             &grid_obj%Ncell0, grid_obj%Ncell, grid_obj%i2Tree, grid_obj%i8Grid, grid_obj%xyz)
         ! Initialize the source function from the radiance field
         call shd_src__computeSrc(&
@@ -219,35 +219,35 @@ subroutine shd_solv__solveRte(&
     ! Surface initialization
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Make the pointers to the grid points on the top and bottom boundaries
-    call shd_grid__findBndryPnt(shdo_obj%Nang, MAXNBC, MAXBCRAD,&
+    call shd_grid__findBndryPnt(shdo_obj_%Nang, MAXNBC, MAXBCRAD,&
         &rtm_obj%z(1), rtm_obj%z(grid_obj%Nz),&
         &NTOPPTS, NBOTPTS, BCPTR, grid_obj)
-    if (sfc_obj%type(1:1) .eq. 'V') then
+    if (sfc_obj_%type(1:1) .eq. 'V') then
         ! If this is a variable surface then bilinearly interpolate
         !   the surface temperature and reflection parameters to the
         !   bottom grid points.
         call shd_sfc__interpSfc(NBOTPTS, BCPTR(1, 2), grid_obj%xyz, &
-            src_obj%type, src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit, &
+            src_obj_%type, src_obj_%waveNum, src_obj_%avgWaveLen, src_obj_%unit, &
             brdf_Rtm)
-        call shd_init__checkSfcU()
-        if (sfc_obj%isUniform) then
-            if (shdo_obj%Nstokes*(shdo_obj%Nmu/2)*shdo_obj%maxNphi0 .gt.&
-                &sqrt(1.0*huge(shdo_obj%Nmu)/kind(shdo_obj%Nmu))) then
+        call shd_init__checkSfcU(sfc_obj_)
+        if (sfc_obj_%isUniform) then
+            if (shdo_obj_%Nstokes*(shdo_obj_%Nmu/2)*shdo_obj_%maxNphi0 .gt.&
+                &sqrt(1.0*huge(shdo_obj_%Nmu)/kind(shdo_obj_%Nmu))) then
                 ierr = 1
             else
-                allocate(brdf_Shdo(shdo_obj%Nstokes, shdo_obj%Nmu/2, shdo_obj%maxNphi0,&
-                    &shdo_obj%Nstokes, shdo_obj%Nmu/2, shdo_obj%maxNphi0), stat=ierr)
+                allocate(brdf_Shdo(shdo_obj_%Nstokes, shdo_obj_%Nmu/2, shdo_obj_%maxNphi0,&
+                    &shdo_obj_%Nstokes, shdo_obj_%Nmu/2, shdo_obj_%maxNphi0), stat=ierr)
             end if
             if (ierr .eq. 0) then
-                call shd_shdo__makeSfcDO(sfc_obj%type, src_obj%avgWaveLen,&
-                    &sfc_obj%Nx, sfc_obj%Ny, sfc_obj%Npar, brdf_Sfc, shdo_obj%Nstokes,&
-                    &shdo_obj%Nmu, shdo_obj%maxNphi0, shdo_obj%Nphi0, shdo_obj%mu, shdo_obj%phi, shdo_obj%wgt,&
+                call shd_shdo__makeSfcDO(sfc_obj_%type, src_obj_%avgWaveLen,&
+                    &sfc_obj_%Nx, sfc_obj_%Ny, sfc_obj_%Npar, brdf_Sfc, shdo_obj_%Nstokes,&
+                    &shdo_obj_%Nmu, shdo_obj_%maxNphi0, shdo_obj_%Nphi0, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
                     &brdf_Shdo)
             else
                 print '(A,A)', 'Not enough memory to allocate precomputed',&
                     &' surface BRDF discrete ordinate matrix: '
                 print *, '  Proceeding more slowly.'
-                sfc_obj%isUniform = .false.
+                sfc_obj_%isUniform = .false.
             end if
         end if
     end if
@@ -321,7 +321,7 @@ subroutine shd_solv__solveRte(&
                     &doDeltaM, ACCELFLAG,&
                     &isrcD_Shdo,&
                     &DIRFLUX,&
-                    &src_obj%avgSolar0, YlmSolar_Shdo,&
+                    &src_obj_%avgSolar0, YlmSolar_Shdo,&
                     &WORK, WORK2,&
                     &rtm_obj, grid_obj)
                 if (SOLCRIT .gt. STARTADAPTSOL) STARTSPLITACC = SPLITCRIT
@@ -394,7 +394,7 @@ subroutine shd_solv__solveRte(&
                 &grid_obj%Ncell,&
                 &float(isrcJ_Shdo(grid_obj%Npts + 1))/grid_obj%Npts,&
                 &ELAPSED_TIME
-                !&float(isrcJ_Shdo(grid_obj%Npts + 1))/(grid_obj%Npts*shdo_obj%Nlm)
+                !&float(isrcJ_Shdo(grid_obj%Npts + 1))/(grid_obj%Npts*shdo_obj_%Nlm)
         else
             if (isOutMem) then
                 if (verbose_ .ge. 5) write (6, '("M",1X,I4,2X,F7.3,2X,E10.3,1X,I8,1X,I8,1X,F8.2,2X,F6.2," sec")')&
@@ -404,7 +404,7 @@ subroutine shd_solv__solveRte(&
                     &grid_obj%Ncell,&
                     &float(isrcJ_Shdo(grid_obj%Npts + 1))/grid_obj%Npts,&
                     &ELAPSED_TIME
-                    !&float(isrcJ_Shdo(grid_obj%Npts + 1))/(grid_obj%Npts*shdo_obj%Nlm)
+                    !&float(isrcJ_Shdo(grid_obj%Npts + 1))/(grid_obj%Npts*shdo_obj_%Nlm)
             else
                 if (verbose_ .ge. 5) write (6, '(2X,I4,2X,F7.3,2X,E10.3,1X,I8,1X,I8,1X,F8.2,2X,F6.2," sec")')&
                     &ITER, log10(max(SOLCRIT, 1.0e-20)),&
@@ -413,7 +413,7 @@ subroutine shd_solv__solveRte(&
                     &grid_obj%Ncell,&
                     &float(isrcJ_Shdo(grid_obj%Npts + 1))/grid_obj%Npts,&
                     &ELAPSED_TIME
-                    !&float(isrcJ_Shdo(grid_obj%Npts + 1))/(grid_obj%Npts*shdo_obj%Nlm)
+                    !&float(isrcJ_Shdo(grid_obj%Npts + 1))/(grid_obj%Npts*shdo_obj_%Nlm)
             end if
         end if
     end do PICARD_ITER_LOOP
@@ -425,7 +425,7 @@ subroutine shd_solv__solveRte(&
 
     ! Deallocate arrays
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    if ((sfc_obj%type(1:1) .eq. 'V') .and. sfc_obj%isUniform) then
+    if ((sfc_obj_%type(1:1) .eq. 'V') .and. sfc_obj_%isUniform) then
         deallocate(brdf_Shdo)
     end if
     deallocate(YlmSolar_Shdo, flagFFT_Shdo, wgtMu_Shdo, wPhiFFT_Shdo)
@@ -444,7 +444,7 @@ subroutine shd_solv__accelSol(&
     ! input acceleration parameter (ACCELPAR).
 
     integer, intent(in) :: NPTS, isrcD_Shdo(*)
-    real, intent(in)    :: ACCELPAR, srcD_Shdo(shdo_obj%Nstokes, *)
+    real, intent(in)    :: ACCELPAR, srcD_Shdo(shdo_obj_%Nstokes, *)
 
     integer :: I, J, IS, ISD, K, NS, NSD, NSC
 
@@ -491,18 +491,18 @@ subroutine shd_solv__truncRad(doHighOrder, doFixSH, SHACC,&
     logical NOTEND
     real RADMIN
 
-    MAXIR = shdo_obj%maxNptsSH + grid_obj%maxNpts
+    MAXIR = shdo_obj_%maxNptsSH + grid_obj%maxNpts
 
     if (doFixSH) goto 190
 
     RADMIN = SHACC
     NOTEND = .true.
     ! Make the l index as a function of SH term (J)
-    NLM = (2*shdo_obj%maxNm + 1)*(shdo_obj%maxNl + 1) - shdo_obj%maxNm*(shdo_obj%maxNm + 1)
+    NLM = (2*shdo_obj_%maxNm + 1)*(shdo_obj_%maxNl + 1) - shdo_obj_%maxNm*(shdo_obj_%maxNm + 1)
     allocate(LOFJ(NLM))
     J = 0
-    do L = 0, shdo_obj%maxNl
-        ME = min(L, shdo_obj%maxNm)
+    do L = 0, shdo_obj_%maxNl
+        ME = min(L, shdo_obj_%maxNm)
         MS = -ME
         do M = MS, ME
             J = J + 1
@@ -521,17 +521,17 @@ subroutine shd_solv__truncRad(doHighOrder, doFixSH, SHACC,&
         NRO = iradI_Shdo(I + 1) - IRO
         if (NRO .eq. 0) NOTEND = .false.
         if (NOTEND) then
-            if (prp_obj%Npha .gt. 0) then
+            if (prp_obj_%Npha .gt. 0) then
                 K = rtm_obj%ipha(I)
             else
                 K = I
             end if
             LR = 1
-            do L = 1, shdo_obj%maxNl
+            do L = 1, shdo_obj_%maxNl
                 if (rtm_obj%ssa(I)*rtm_obj%leg(1, L, K)*radI_Shdo(1, IRO + 1) .gt. RADMIN) LR = L
             end do
         else
-            LR = shdo_obj%maxNl
+            LR = shdo_obj_%maxNl
         end if
         IRO = IRO + NRO
 
@@ -542,12 +542,12 @@ subroutine shd_solv__truncRad(doHighOrder, doFixSH, SHACC,&
         !   But if out of memory, use the source function truncation.
         NS = max(1, isrcJ_Shdo(I + 1) - isrcJ_Shdo(I))
         LS = LOFJ(NS)
-        LR = min(LR, LS + shdo_obj%maxNl/8 + 2)
-        if (doHighOrder) LR = shdo_obj%maxNl
-        if (LR .le. shdo_obj%maxNm) then
+        LR = min(LR, LS + shdo_obj_%maxNl/8 + 2)
+        if (doHighOrder) LR = shdo_obj_%maxNl
+        if (LR .le. shdo_obj_%maxNm) then
             NR = (LR*(LR + 1)) + LR + 1
         else
-            NR = (2*shdo_obj%maxNm + 1)*LR - (shdo_obj%maxNm*(1 + (shdo_obj%maxNm - 1))) + shdo_obj%maxNm + 1
+            NR = (2*shdo_obj_%maxNm + 1)*LR - (shdo_obj_%maxNm*(1 + (shdo_obj_%maxNm - 1))) + shdo_obj_%maxNm + 1
         end if
         IR = IR + NR
         iradI_Shdo(I + 1) = IR
@@ -570,17 +570,17 @@ subroutine shd_solv__truncRad(doHighOrder, doFixSH, SHACC,&
     do I = 1, grid_obj%Npts
         NR = max(4, isrcJ_Shdo(I + 1) - isrcJ_Shdo(I))
         if (doHighOrder) then
-            if (shdo_obj%maxNl .le. shdo_obj%maxNm) then
-                NR = (shdo_obj%maxNl*(shdo_obj%maxNl + 1)) + shdo_obj%maxNl + 1
+            if (shdo_obj_%maxNl .le. shdo_obj_%maxNm) then
+                NR = (shdo_obj_%maxNl*(shdo_obj_%maxNl + 1)) + shdo_obj_%maxNl + 1
             else
-                NR = (2*shdo_obj%maxNm + 1)*shdo_obj%maxNl - (shdo_obj%maxNm*(1 + (shdo_obj%maxNm - 1))) + shdo_obj%maxNm + 1
+                NR = (2*shdo_obj_%maxNm + 1)*shdo_obj_%maxNl - (shdo_obj_%maxNm*(1 + (shdo_obj_%maxNm - 1))) + shdo_obj_%maxNm + 1
             end if
         end if
         IR = IR + NR
         if (IR .gt. MAXIR) then
             write (6, *) 'Error [_truncRad]: Really out of memory ',&
                 &'for more radiance terms.'
-            write (6, *) '  Increase shdo_obj%maxNptsSH.'
+            write (6, *) '  Increase shdo_obj_%maxNptsSH.'
             stop
         end if
         iradI_Shdo(I + 1) = IR

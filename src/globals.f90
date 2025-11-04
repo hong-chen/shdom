@@ -416,12 +416,13 @@ module globals_obj
     integer, parameter, private :: I__ = selected_int_kind(9)
     integer, parameter, private :: R__ = selected_real_kind(6)
 
-    type(shd_type_rtm),  save :: rtmAll_obj, rtm_obj
-    type(shd_type_grid), save :: grid_obj
+    type(shd_type_rtm),  save :: rtm_obj_
+
+    type(shd_type_grid), save :: grid_obj_
 
     ! SHDO
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    type(shd_type_shdo), save :: shdo_obj
+    type(shd_type_shdo), save :: shdo_obj_
     integer(kind=I__), allocatable, save :: iradI_Shdo(:)    ! (Npts)
     real(kind=R__),    allocatable, save ::  radI_Shdo(:, :) ! (Nstokes, Npts)
 
@@ -432,13 +433,13 @@ module globals_obj
 
     ! SRC (radiation source, e.g., solar, thermal, or both)
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    type(shd_type_src),  save :: src_obj
+    type(shd_type_src),  save :: src_obj_
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
     ! PRP
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    type(shd_type_prp), save :: prp_obj
+    type(shd_type_prp), save :: prp_obj_
 
     real(kind=R__),  allocatable, save :: temp_Prp(:),  &      ! (prp_obj%maxNpts)
                                            ext_Prp(:),  &      ! (prp_obj%maxNpts)
@@ -451,7 +452,7 @@ module globals_obj
 
     ! SFC
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    type(shd_type_sfc), save :: sfc_obj
+    type(shd_type_sfc), save :: sfc_obj_
     real(kind=R__), allocatable, save :: brdf_Sfc(:, :), & ! (sfc_obj%maxNpar, sfc_obj%maxNpts)
                                          brdf_Rtm(:, :)    ! (sfc_obj%maxNpar, xxx_obj%xxx)
     !╰────────────────────────────────────────────────────────────────────────────╯!
@@ -459,7 +460,7 @@ module globals_obj
 
     ! CKD
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    type(shd_type_ckd), save :: ckd_obj
+    type(shd_type_ckd), save :: ckd_obj_
     real(kind=R__), allocatable, save :: solar_Ckd(:), & ! (ckd_obj%Ng)
                                            wgt_Ckd(:), & ! (ckd_obj%Ng)
                                           kabs_Ckd(:, :) ! (ckd_obj%Nz, ckd_obj%Ng)
@@ -468,7 +469,7 @@ module globals_obj
 
     ! SEN
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    type(shd_type_sen), save :: sen_obj
+    type(shd_type_sen), save :: sen_obj_
     real(kind=R__), allocatable, save :: view_Sen(:, :) ! (sen_obj%Npar, sen_obj%Npts)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
