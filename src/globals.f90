@@ -440,36 +440,36 @@ module globals_obj
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_prp), save :: prp_obj
 
-    real(kind=R__),  allocatable, save :: temp_Prp(:),  &      ! (Npts)
-                                           ext_Prp(:),  &      ! (Npts)
-                                           ssa_Prp(:),  &      ! (Npts)
-                                           leg_Prp(:, :, :), & ! (NlegSet, Nleg, Npha)
-                                        extDir_Prp(:)          ! (Npts)
-    integer(kind=2), allocatable, save :: ipha_Prp(:)          ! (Npts)
+    real(kind=R__),  allocatable, save :: temp_Prp(:),  &      ! (prp_obj%maxNpts)
+                                           ext_Prp(:),  &      ! (prp_obj%maxNpts)
+                                           ssa_Prp(:),  &      ! (prp_obj%maxNpts)
+                                           leg_Prp(:, :, :), & ! (prp_obj%NlegSet, prp_obj%maxNleg, prp_obj%Npha)
+                                        extDir_Prp(:)          ! (prp_obj%maxNpts)
+    integer(kind=2), allocatable, save :: ipha_Prp(:)          ! (prp_obj%maxNpts)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
     ! SFC
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_sfc), save :: sfc_obj
-    real(kind=R__), allocatable, save :: brdf_Sfc(:, :), & ! (Npar, Npts)
-                                         brdf_Rtm(:, :)    ! (Npar, Npts)
+    real(kind=R__), allocatable, save :: brdf_Sfc(:, :), & ! (sfc_obj%maxNpar, sfc_obj%maxNpts)
+                                         brdf_Rtm(:, :)    ! (sfc_obj%maxNpar, xxx_obj%xxx)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
     ! CKD
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_ckd), save :: ckd_obj
-    real(kind=R__), allocatable, save :: solar_Ckd(:), & ! (Ng)
-                                           wgt_Ckd(:), & ! (Ng)
-                                          kabs_Ckd(:, :) ! (Nz, Ng)
+    real(kind=R__), allocatable, save :: solar_Ckd(:), & ! (ckd_obj%Ng)
+                                           wgt_Ckd(:), & ! (ckd_obj%Ng)
+                                          kabs_Ckd(:, :) ! (ckd_obj%Nz, ckd_obj%Ng)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
     ! SEN
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_sen), save :: sen_obj
-    real(kind=R__), allocatable, save :: view_Sen(:, :) ! (Npar, Npts)
+    real(kind=R__), allocatable, save :: view_Sen(:, :) ! (sen_obj%Npar, sen_obj%Npts)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 end module globals_obj
