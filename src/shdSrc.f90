@@ -47,7 +47,7 @@ module shd_src
     use globals_type,  only: shd_type_rtm, &
                              shd_type_grid
 
-    use globals_obj, only: shdo_obj_, iradI_Shdo, radI_Shdo, isrcJ_Shdo_, srcJ_Shdo_, &
+    use globals_obj, only: shdo_obj_, &
                            src_obj_, &
                            prp_obj_, &
                            sfc_obj_
@@ -498,12 +498,14 @@ subroutine shd_src__computeSrcOneDir(&
 end subroutine shd_src__computeSrcOneDir
 
 subroutine shd_src__computeSrc(&
-    &FIXSH,&
-    &YLMSUN,&
-    &DIRFLUX, SHACC,&
-    &isrcD_Shdo, srcD_Shdo,&
-    &FIRST, ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM,&
-    &rtm_obj, grid_obj, isrcJ_Shdo, srcJ_Shdo)
+    FIXSH, &
+    YLMSUN, &
+    DIRFLUX, SHACC, &
+    isrcD_Shdo, srcD_Shdo, &
+    FIRST, ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM, &
+    rtm_obj, grid_obj, &
+    iradI_Shdo, radI_Shdo, &
+    isrcJ_Shdo, srcJ_Shdo)
 
     ! Computes the source function (srcJ_Shdo) in spherical harmonic space
     !   for all the grid points.  The thermal source and/or solar
@@ -530,6 +532,9 @@ subroutine shd_src__computeSrc(&
 
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
+
+    integer(I__), intent(inout) :: iradI_Shdo(*)
+    real(R__),    intent(inout) ::  radI_Shdo(shdo_obj_%Nstokes, *)
 
     integer(I__), intent(inout) :: isrcJ_Shdo(*)
     real(R__),    intent(inout) ::  srcJ_Shdo(shdo_obj_%Nstokes, *)

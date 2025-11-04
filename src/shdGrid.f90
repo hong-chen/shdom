@@ -47,7 +47,7 @@ module shd_grid
     use globals_type,  only: shd_type_rtm, &
                              shd_type_grid
 
-    use globals_obj, only: shdo_obj_, iradI_Shdo, radI_Shdo, isrcJ_Shdo_, srcJ_Shdo_, &
+    use globals_obj, only: shdo_obj_, isrcJ_Shdo_, srcJ_Shdo_, &
                             src_obj_, &
                             prp_obj_, temp_Prp_, ext_Prp_, ssa_Prp_, leg_Prp_, ipha_Prp_, &
                             sfc_obj_, &
@@ -1413,11 +1413,13 @@ subroutine shd_grid__InterpTriLinGridPrp(&
 end subroutine shd_grid__InterpTriLinGridPrp
 
 subroutine shd_grid__interpNewGridPnt(newPts,&
-    &doDeltaM, ACCELFLAG,&
-    &SOLARFLUX, YLMSUN,&
-    &DIRFLUX,&
-    &isrcD_Shdo,&
-    &rtm_obj, grid_obj, isrcJ_Shdo, srcJ_Shdo)
+    doDeltaM, ACCELFLAG,&
+    SOLARFLUX, YLMSUN,&
+    DIRFLUX,&
+    isrcD_Shdo,&
+    rtm_obj, grid_obj, &
+    iradI_Shdo, radI_Shdo, &
+    isrcJ_Shdo, srcJ_Shdo)
 
     !   Interpolates the medium properties, radiance, and source function for
     ! new grid points (specified in newPts).  The medium properties are
@@ -1431,6 +1433,9 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
 
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
+
+    integer(I__), intent(inout) :: iradI_Shdo(*)
+    real(R__),    intent(inout) ::  radI_Shdo(shdo_obj_%Nstokes, *)
 
     integer(I__), intent(inout) :: isrcJ_Shdo(*)
     real(R__),    intent(inout) ::  srcJ_Shdo(shdo_obj_%Nstokes, *)
@@ -1589,13 +1594,15 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
 end subroutine shd_grid__interpNewGridPnt
 
 subroutine shd_grid__splitGrid(&
-    &doSplit, isOutMem, CURSPLITACC, SPLITCRIT,&
-    &doDeltaM, ACCELFLAG,&
-    &isrcD_Shdo,&
-    &DIRFLUX,&
-    &SOLARFLUX, YLMSUN,&
-    &ADAPTCRIT, ADAPTIND,&
-    &rtm_obj, grid_obj, isrcJ_Shdo, srcJ_Shdo)
+    doSplit, isOutMem, CURSPLITACC, SPLITCRIT, &
+    doDeltaM, ACCELFLAG, &
+    isrcD_Shdo, &
+    DIRFLUX, &
+    SOLARFLUX, YLMSUN, &
+    ADAPTCRIT, ADAPTIND, &
+    rtm_obj, grid_obj, &
+    iradI_Shdo, radI_Shdo, &
+    isrcJ_Shdo, srcJ_Shdo)
 
     !   Splits the cells that have a cell dividing criterion greater than
     ! CURSPLITACC if doSplit is true.  The current splitting criterion
@@ -1605,6 +1612,9 @@ subroutine shd_grid__splitGrid(&
 
     type(shd_type_rtm),  intent(in)    :: rtm_obj
     type(shd_type_grid), intent(inout) :: grid_obj
+
+    integer(I__), intent(inout) :: iradI_Shdo(*)
+    real(R__),    intent(inout) ::  radI_Shdo(shdo_obj_%Nstokes, *)
 
     integer(I__), intent(inout) :: isrcJ_Shdo(*)
     real(R__),    intent(inout) ::  srcJ_Shdo(shdo_obj_%Nstokes, *)
@@ -1677,7 +1687,7 @@ subroutine shd_grid__splitGrid(&
                         &SOLARFLUX, YLMSUN,&
                         &DIRFLUX,&
                         &isrcD_Shdo,&
-                        &rtm_obj, grid_obj, isrcJ_Shdo, srcJ_Shdo)
+                        &rtm_obj, grid_obj, iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo)
                 end if
                 I = I + 1
             end do
@@ -1714,7 +1724,7 @@ subroutine shd_grid__splitGrid(&
                             &SOLARFLUX, YLMSUN,&
                             &DIRFLUX,&
                             &isrcD_Shdo,&
-                            &rtm_obj, grid_obj, isrcJ_Shdo, srcJ_Shdo)
+                            &rtm_obj, grid_obj, iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo)
                     end if
                 end if
                 I = I + 1

@@ -423,11 +423,11 @@ module globals_obj
     ! SHDO
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_shdo), save :: shdo_obj_
-    integer(kind=I__), allocatable, save :: iradI_Shdo(:)    ! (Npts)
-    real(kind=R__),    allocatable, save ::  radI_Shdo(:, :) ! (Nstokes, Npts)
+    integer(kind=I__), allocatable, save :: iradI_Shdo_(:)    ! (grid_obj%maxNpts+2)
+    real(kind=R__),    allocatable, save ::  radI_Shdo_(:, :) ! (shdo_obj_%Nstokes, shdo_obj_%maxNptsSH+grid_obj%maxNpts)
 
-    integer(kind=I__), allocatable, save :: isrcJ_Shdo_(:)    ! (Npts)
-    real(kind=R__),    allocatable, save ::  srcJ_Shdo_(:, :) ! (Nstokes, Npts)
+    integer(kind=I__), allocatable, save :: isrcJ_Shdo_(:)    ! (grid_obj%maxNpts+1)
+    real(kind=R__),    allocatable, save ::  srcJ_Shdo_(:, :) ! (shdo_obj%Nstokes, shdo_obj%maxNptsSH)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 

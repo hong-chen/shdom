@@ -46,7 +46,7 @@ module shd_out
     use globals_type,  only: shd_type_rtm, &
                              shd_type_grid
 
-    use globals_obj, only: shdo_obj_, iradI_Shdo, radI_Shdo, isrcJ_Shdo_, srcJ_Shdo_, &
+    use globals_obj, only: shdo_obj_, iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_, &
                             src_obj_, &
                             prp_obj_, &
                             sfc_obj_, &
@@ -2723,16 +2723,16 @@ subroutine shd_io__saveState(&
 
     !K = 1
     !do I = 1, grid_obj%Npts
-    !    IR = iradI_Shdo(I)
+    !    IR = iradI_Shdo_(I)
     !    do J = 1, shdo_obj_%Nstokes*4
 
     !        ! the following is an attempt to fix the segmentation issue
     !        !╭────────────────────────────────────────────────╮!
-    !        ! iradI_Shdo(1) = 0 (from shd_init__makeRad)
+    !        ! iradI_Shdo_(1) = 0 (from shd_init__makeRad)
     !        ! originally it was:
-    !        ! WORK(K) = radI_Shdo(shdo_obj_%Nstokes*(IR-1)+J)
+    !        ! WORK(K) = radI_Shdo_(shdo_obj_%Nstokes*(IR-1)+J)
     !        ! when I=1, IR=0, shdo_obj_%Nstokes*(IR-1)+J is 0 when J=1 (shdo_obj_%Nstokes=1)
-    !        WORK(K) = radI_Shdo(shdo_obj_%Nstokes*(IR)+J)
+    !        WORK(K) = radI_Shdo_(shdo_obj_%Nstokes*(IR)+J)
     !        !╰────────────────────────────────────────────────╯!
 
     !        K = K + 1
@@ -2741,10 +2741,10 @@ subroutine shd_io__saveState(&
 
     K = 1
     do I = 1, grid_obj%Npts
-        IR = iradI_Shdo(I)   !radI(NSTOKES, NPTS)
+        IR = iradI_Shdo_(I)   !radI(NSTOKES, NPTS)
         do J = 1, 4
             do istoke = 1, shdo_obj_%Nstokes
-                WORK(K) = radI_Shdo(istoke, IR+J)
+                WORK(K) = radI_Shdo_(istoke, IR+J)
                 K = K + 1
             end do
         end do

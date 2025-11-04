@@ -47,7 +47,7 @@ module shd_intg
     use globals_type,  only: shd_type_rtm, &
                              shd_type_grid
 
-    use globals_obj, only: shdo_obj_, iradI_Shdo, radI_Shdo, isrcJ_Shdo_, srcJ_Shdo_, &
+    use globals_obj, only: shdo_obj_, &
                             src_obj_, &
                             prp_obj_, &
                             sfc_obj_, brdf_Sfc_, brdf_Rtm_
@@ -96,7 +96,7 @@ subroutine shd_intg__integratePath(&
     &CMU1, CPHI1, CMU2, CPHI2, WSAVE, FFTFLAG,&
     &DIRFLUX, FLUXES,&
     &WORK, SWEEPORD, GRIDRAD,&
-    &rtm_obj, grid_obj)
+    &rtm_obj, grid_obj, iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo)
 
     !   Performs the path integrations through the medium specified by
     ! the extinction (rtm_obj%ext) and source function (srcJ_Shdo) in
@@ -124,6 +124,12 @@ subroutine shd_intg__integratePath(&
 
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
+
+    integer(I__), intent(inout) :: iradI_Shdo(*)
+    real(R__),    intent(inout) ::  radI_Shdo(shdo_obj_%Nstokes, *)
+
+    integer(I__), intent(inout) :: isrcJ_Shdo(*)
+    real(R__),    intent(inout) ::  srcJ_Shdo(shdo_obj_%Nstokes, *)
 
     integer MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS
     integer BCPTR(MAXNBC, 2)
@@ -211,12 +217,12 @@ subroutine shd_intg__integratePath(&
             call shd_shdo__transSHtoDO(grid_obj%Npts, shdo_obj_%Nstokes, prp_obj_%NlegSet, shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
                 &shdo_obj_%Nmu, shdo_obj_%maxNphi0, shdo_obj_%Nphi0(IMU),&
                 &IMU, FFTFLAG, CMU1, CPHI1, WSAVE,&
-                &isrcJ_Shdo_, srcJ_Shdo_, WORK)
+                &isrcJ_Shdo, srcJ_Shdo, WORK)
         else
             call shd_shdo__transSHtoDO_(grid_obj%Npts, shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
                 &shdo_obj_%Nmu, shdo_obj_%maxNphi0, shdo_obj_%Nphi0(IMU),&
                 &IMU, FFTFLAG, CMU1, CPHI1, WSAVE,&
-                &isrcJ_Shdo_, srcJ_Shdo_, WORK)
+                &isrcJ_Shdo, srcJ_Shdo, WORK)
         end if
 
         ! Enforce the discrete ordinate I source function to be non-negative

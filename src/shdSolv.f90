@@ -44,7 +44,7 @@ module shd_solv
     use globals_type, only: shd_type_rtm,  &
                             shd_type_grid
 
-    use globals_obj, only: shdo_obj_, iradI_Shdo, radI_Shdo, isrcJ_Shdo_, srcJ_Shdo_, &
+    use globals_obj, only: shdo_obj_, iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_, &
                             src_obj_, &
                             prp_obj_, &
                             sfc_obj_, brdf_Sfc_, brdf_Rtm_
@@ -198,13 +198,13 @@ subroutine shd_solv__solveRte(&
         ! Initialize the radiance on the base grid using Eddington
         ! two-stream plane-parallel
         call shd_init__makeRad(shdo_obj_%Nstokes, grid_obj%Nx*grid_obj%Ny, grid_obj%Nz,&
-            &iradI_Shdo, rtm_obj%z,&
+            &iradI_Shdo_, rtm_obj%z,&
             &rtm_obj%ext, rtm_obj%ssa, rtm_obj%leg, rtm_obj%temp, rtm_obj%ipha,&
             &src_obj_%type, src_obj_%avgSolar0, src_obj_%avgMu, src_obj_%skyRad,&
-            &src_obj_%unit, src_obj_%waveNum, src_obj_%avgWaveLen, radI_Shdo)
+            &src_obj_%unit, src_obj_%waveNum, src_obj_%avgWaveLen, radI_Shdo_)
         ! Interpolate the radiance on the non-base grid points from the
         !   base grid points
-        call shd_rad__interpRad(shdo_obj_%Nstokes, grid_obj%Npts0, grid_obj%Npts, iradI_Shdo, radI_Shdo,&
+        call shd_rad__interpRad(shdo_obj_%Nstokes, grid_obj%Npts0, grid_obj%Npts, iradI_Shdo_, radI_Shdo_,&
             &grid_obj%Ncell0, grid_obj%Ncell, grid_obj%i2Tree, grid_obj%i8Grid, grid_obj%xyz)
         ! Initialize the source function from the radiance field
         call shd_src__computeSrc(&
@@ -212,7 +212,7 @@ subroutine shd_solv__solveRte(&
             &DIRFLUX, SHACC,&
             &isrcD_Shdo, srcD_Shdo,&
             &.true., doAccel, DELJDOT, DELJOLD, DELJNEW, JNORM,&
-            &rtm_obj, grid_obj, isrcJ_Shdo_, srcJ_Shdo_)
+            &rtm_obj, grid_obj, iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_)
     end if
 
     if (doAccel) then
@@ -329,7 +329,7 @@ subroutine shd_solv__solveRte(&
                     &DIRFLUX,&
                     &src_obj_%avgSolar0, YlmSolar_Shdo,&
                     &WORK, WORK2,&
-                    &rtm_obj, grid_obj, isrcJ_Shdo_, srcJ_Shdo_)
+                    &rtm_obj, grid_obj, iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_)
                 if (SOLCRIT .gt. STARTADAPTSOL) STARTSPLITACC = SPLITCRIT
             end if
             ! Find the maximum splitting criterion over all processors
@@ -339,9 +339,9 @@ subroutine shd_solv__solveRte(&
             doSplit = .false.
         end if
 
-        ! Find the SH truncation to use for the radiance (iradI_Shdo)
+        ! Find the SH truncation to use for the radiance (iradI_Shdo_)
         call shd_solv__truncRad(doHighOrder, doFixSH, SHACC,&
-            &rtm_obj, grid_obj)
+            &rtm_obj, grid_obj, iradI_Shdo_, radI_Shdo_)
 
         ! srcSH to srcDO, then srcDO to radDO, then radDO to radSH
         !╭────────────────────────────────────────────────╮!
@@ -356,7 +356,7 @@ subroutine shd_solv__solveRte(&
             &CMU1, CPHI1, CMU2, CPHI2, wPhiFFT_Shdo, flagFFT_Shdo,&
             &DIRFLUX, FLUXES,&
             &WORK, WORK1, WORK2,&
-            &rtm_obj, grid_obj)
+            &rtm_obj, grid_obj, iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_)
         !╰────────────────────────────────────────────────╯!
 
         ! Compute the source function from the radiance field,
@@ -372,7 +372,7 @@ subroutine shd_solv__solveRte(&
             &DIRFLUX, SHACC,&
             &isrcD_Shdo, srcD_Shdo,&
             &.false., doAccel, DELJDOT, DELJOLD, DELJNEW, JNORM,&
-            &rtm_obj, grid_obj, isrcJ_Shdo_, srcJ_Shdo_)
+            &rtm_obj, grid_obj, iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_)
         !╰────────────────────────────────────────────────╯!
 
         ! Calculate the acceleration parameter and solution criterion
@@ -479,7 +479,7 @@ subroutine shd_solv__accelSol(&
 end subroutine shd_solv__accelSol
 
 subroutine shd_solv__truncRad(doHighOrder, doFixSH, SHACC,&
-    &rtm_obj, grid_obj)
+    &rtm_obj, grid_obj, iradI_Shdo, radI_Shdo)
 
     ! Computes the next radiance spherical harmonic series truncation
     ! to use based on the current source function truncation and the
@@ -495,6 +495,9 @@ subroutine shd_solv__truncRad(doHighOrder, doFixSH, SHACC,&
 
     type(shd_type_rtm),  intent(in)    :: rtm_obj
     type(shd_type_grid), intent(in)    :: grid_obj
+
+    integer(I__), intent(inout) :: iradI_Shdo(*)
+    real(R__),    intent(in)    ::  radI_Shdo(shdo_obj_%Nstokes, *)
 
     integer MAXIR
     logical doHighOrder, doFixSH
