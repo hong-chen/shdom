@@ -52,6 +52,9 @@ module shd_sfc
     implicit none
     private
 
+    integer, parameter :: R__  = selected_real_kind(6) ! default precision for float
+    integer, parameter :: I__  = selected_int_kind(9)  ! default precision for integer
+
     public :: shd_sfc__interpSfc
     public :: shd_sfc__brdfSurface
 
@@ -78,8 +81,9 @@ module shd_sfc
 contains
 
 subroutine shd_sfc__interpSfc(&
-    &NptsBot, BCPTR, GRIDPOS,&
-    &SRCTYPE, WAVENO, WAVELEN, UNITS)
+    NptsBot, BCPTR, GRIDPOS, &
+    SRCTYPE, WAVENO, WAVELEN, UNITS, &
+    brdf_Rtm)
 
     !   Bilinearly interpolates the surface properties from the regular
     ! surface grid to the boundary points of the adaptive grid.
@@ -94,6 +98,8 @@ subroutine shd_sfc__interpSfc(&
 
     integer, intent(in) :: NptsBot, BCPTR(*)
     character(len=1), intent(in) :: SRCTYPE, UNITS
+
+    real(kind=R__), intent(out) :: brdf_Rtm(sfc_obj%Npar, *)
 
     real :: WAVENO(2), WAVELEN
     real :: GRIDPOS(3, *)

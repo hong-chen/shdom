@@ -50,7 +50,7 @@ module shd_intg
     use globals_obj, only: shdo_obj, iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo, &
                             src_obj, &
                             prp_obj, &
-                            sfc_obj
+                            sfc_obj, brdf_Rtm
 
     use shd_sfc,  only: shd_sfc__interpSfc
 
@@ -166,7 +166,7 @@ subroutine shd_intg__integratePath(&
             !   the surface temperature and reflection parameters to the
             !   bottom grid points.
             call shd_sfc__interpSfc(NBOTPTS, BCPTR(1, 2), grid_obj%xyz,&
-                &src_obj%type, src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit)
+                &src_obj%type, src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit, brdf_Rtm)
         end if
     end if
     ! Make the isotropic radiances for the top boundary

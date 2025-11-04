@@ -47,7 +47,7 @@ module shd_solv
     use globals_obj, only: shdo_obj, iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo, &
                             src_obj, &
                             prp_obj, &
-                            sfc_obj, brdf_Sfc
+                            sfc_obj, brdf_Sfc, brdf_Rtm
 
     use shd_init, only: shd_init__makePrp, &
                         shd_init__makeRad, &
@@ -226,8 +226,9 @@ subroutine shd_solv__solveRte(&
         ! If this is a variable surface then bilinearly interpolate
         !   the surface temperature and reflection parameters to the
         !   bottom grid points.
-        call shd_sfc__interpSfc(NBOTPTS, BCPTR(1, 2), grid_obj%xyz,&
-            &src_obj%type, src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit)
+        call shd_sfc__interpSfc(NBOTPTS, BCPTR(1, 2), grid_obj%xyz, &
+            src_obj%type, src_obj%waveNum, src_obj%avgWaveLen, src_obj%unit, &
+            brdf_Rtm)
         call shd_init__checkSfcU()
         if (sfc_obj%isUniform) then
             if (shdo_obj%Nstokes*(shdo_obj%Nmu/2)*shdo_obj%maxNphi0 .gt.&
