@@ -495,7 +495,7 @@ subroutine shd_src__computeSrc(&
     &FIXSH,&
     &YLMSUN,&
     &DIRFLUX, SHACC,&
-    &OSHPTR, DELSOURCE,&
+    &isrcD_Shdo, srcD_Shdo,&
     &FIRST, ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM,&
     &rtm_obj, grid_obj)
 
@@ -511,11 +511,11 @@ subroutine shd_src__computeSrc(&
     !   is little or no scattering then the SH truncation can be set to
     !   zero terms.  The source function SH truncation is output in terms
     !   of the pointer isrcJ_Shdo (note that iradI_Shdo refers to the radI_Shdo array
-    !   and OSHPTR to the DELSOURCE array).
+    !   and isrcD_Shdo to the srcD_Shdo array).
     ! To save memory this routine also computes some things for the
     !   series acceleration: the dot products of the difference in source
     !   function between successive iterations and the new difference source
-    !   function vector (DELSOURCE).  To avoid using another array and
+    !   function vector (srcD_Shdo).  To avoid using another array and
     !   because of the adaptive truncation pointer stuff, this requires
     !   two extra calculations of the source function.
     ! Computes the sum of squares of the new source function for calculation
@@ -525,12 +525,12 @@ subroutine shd_src__computeSrc(&
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
 
-    integer OSHPTR(grid_obj%Npts + 1)
+    integer isrcD_Shdo(grid_obj%Npts + 1)
     logical FIXSH, FIRST, ACCELFLAG
     real SHACC, YLMSUN(prp_obj_%NlegSet, shdo_obj_%Nlm)
     real DELJDOT, DELJOLD, DELJNEW, JNORM
     real DIRFLUX(grid_obj%Npts)
-    real DELSOURCE(shdo_obj_%Nstokes, *)
+    real srcD_Shdo(shdo_obj_%Nstokes, *)
     integer IS, ISO, IR, I, IPH, J, JS, K, L, LS, M, MS, ME, NS, NR
     integer, allocatable :: LOFJ(:)
     real, allocatable :: SOURCET(:, :)
@@ -590,13 +590,13 @@ subroutine shd_src__computeSrc(&
             !   and the solution criterion (don't use new points for Jnorm).
             if (ACCELFLAG) then
                 IS = isrcJ_Shdo(I)
-                ISO = OSHPTR(I)
-                NS = min(isrcJ_Shdo(I + 1) - IS, OSHPTR(I + 1) - ISO)
+                ISO = isrcD_Shdo(I)
+                NS = min(isrcJ_Shdo(I + 1) - IS, isrcD_Shdo(I + 1) - ISO)
                 do K = 1, shdo_obj_%Nstokes
                     do J = 1, NS
                         DELJDOT = DELJDOT +&
-                            &(SOURCET(K, J) - srcJ_Shdo(K, IS + J))*DELSOURCE(K, ISO + J)
-                        DELJOLD = DELJOLD + DELSOURCE(K, ISO + J)**2
+                            &(SOURCET(K, J) - srcJ_Shdo(K, IS + J))*srcD_Shdo(K, ISO + J)
+                        DELJOLD = DELJOLD + srcD_Shdo(K, ISO + J)**2
                         DELJNEW = DELJNEW + (SOURCET(K, J) - srcJ_Shdo(K, IS + J))**2
                         JNORM = JNORM + srcJ_Shdo(K, IS + J)**2
                     end do
@@ -640,12 +640,12 @@ subroutine shd_src__computeSrc(&
             ! Make the source difference vector
             IS = isrcJ_Shdo(I)
             NS = isrcJ_Shdo(I + 1) - IS
-            OSHPTR(I) = IS
+            isrcD_Shdo(I) = IS
             do J = 1, NS
-                DELSOURCE(:, IS + J) = SOURCET(:, J) - srcJ_Shdo(:, IS + J)
+                srcD_Shdo(:, IS + J) = SOURCET(:, J) - srcJ_Shdo(:, IS + J)
             end do
         end do
-        OSHPTR(grid_obj%Npts + 1) = isrcJ_Shdo(grid_obj%Npts + 1)
+        isrcD_Shdo(grid_obj%Npts + 1) = isrcJ_Shdo(grid_obj%Npts + 1)
     end if
 
     ! Compute the source function in the temporary array.

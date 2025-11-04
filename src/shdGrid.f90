@@ -1416,7 +1416,7 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
     &doDeltaM, ACCELFLAG,&
     &SOLARFLUX, YLMSUN,&
     &DIRFLUX,&
-    &OSHPTR,&
+    &isrcD_Shdo,&
     &rtm_obj, grid_obj)
 
     !   Interpolates the medium properties, radiance, and source function for
@@ -1433,7 +1433,7 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
     type(shd_type_grid), intent(in) :: grid_obj
 
     integer newPts(3, 4)
-    integer OSHPTR(*)
+    integer isrcD_Shdo(*)
     logical doDeltaM, ACCELFLAG
     real SOLARFLUX, YLMSUN(prp_obj_%NlegSet, shdo_obj_%Nlm)
     real DIRFLUX(grid_obj%Npts)
@@ -1556,7 +1556,7 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
             NS = max(NS1, NS2)
             IS = isrcJ_Shdo(IP)
             isrcJ_Shdo(IP + 1) = IS + NS
-            if (ACCELFLAG) OSHPTR(IP + 1) = OSHPTR(IP)
+            if (ACCELFLAG) isrcD_Shdo(IP + 1) = isrcD_Shdo(IP)
             if (prp_obj_%Npha .gt. 0) then
                 IPH = rtm_obj%ipha(IP)
             else
@@ -1588,7 +1588,7 @@ end subroutine shd_grid__interpNewGridPnt
 subroutine shd_grid__splitGrid(&
     &doSplit, isOutMem, CURSPLITACC, SPLITCRIT,&
     &doDeltaM, ACCELFLAG,&
-    &OSHPTR,&
+    &isrcD_Shdo,&
     &DIRFLUX,&
     &SOLARFLUX, YLMSUN,&
     &ADAPTCRIT, ADAPTIND,&
@@ -1603,7 +1603,7 @@ subroutine shd_grid__splitGrid(&
     type(shd_type_rtm),  intent(in)    :: rtm_obj
     type(shd_type_grid), intent(inout) :: grid_obj
 
-    integer OSHPTR(*)
+    integer isrcD_Shdo(*)
     real ADAPTIND(*)
     logical doDeltaM, ACCELFLAG, doSplit, isOutMem
     real CURSPLITACC, SPLITCRIT
@@ -1670,7 +1670,7 @@ subroutine shd_grid__splitGrid(&
                         &doDeltaM, ACCELFLAG,&
                         &SOLARFLUX, YLMSUN,&
                         &DIRFLUX,&
-                        &OSHPTR,&
+                        &isrcD_Shdo,&
                         &rtm_obj, grid_obj)
                 end if
                 I = I + 1
@@ -1707,7 +1707,7 @@ subroutine shd_grid__splitGrid(&
                             &doDeltaM, ACCELFLAG,&
                             &SOLARFLUX, YLMSUN,&
                             &DIRFLUX,&
-                            &OSHPTR,&
+                            &isrcD_Shdo,&
                             &rtm_obj, grid_obj)
                     end if
                 end if
