@@ -426,8 +426,8 @@ module globals_obj
     integer(kind=I__), allocatable, save :: iradI_Shdo(:)    ! (Npts)
     real(kind=R__),    allocatable, save ::  radI_Shdo(:, :) ! (Nstokes, Npts)
 
-    integer(kind=I__), allocatable, save :: isrcJ_Shdo(:)    ! (Npts)
-    real(kind=R__),    allocatable, save ::  srcJ_Shdo(:, :) ! (Nstokes, Npts)
+    integer(kind=I__), allocatable, save :: isrcJ_Shdo_(:)    ! (Npts)
+    real(kind=R__),    allocatable, save ::  srcJ_Shdo_(:, :) ! (Nstokes, Npts)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 

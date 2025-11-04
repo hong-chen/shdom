@@ -46,7 +46,7 @@ module shd_out
     use globals_type,  only: shd_type_rtm, &
                              shd_type_grid
 
-    use globals_obj, only: shdo_obj_, iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo, &
+    use globals_obj, only: shdo_obj_, iradI_Shdo, radI_Shdo, isrcJ_Shdo_, srcJ_Shdo_, &
                             src_obj_, &
                             prp_obj_, &
                             sfc_obj_, &
@@ -2716,10 +2716,10 @@ subroutine shd_io__saveState(&
     write (91) ((grid_obj%xyz(J, I), J=1, 3), I=1, grid_obj%Npts)
     write (91) ((FLUXES(J, I) , J=1, 2), I=1, grid_obj%Npts)
 
-    write (91) (isrcJ_Shdo(I), I=1, grid_obj%Npts + 1)
+    write (91) (isrcJ_Shdo_(I), I=1, grid_obj%Npts + 1)
 
-    NS = isrcJ_Shdo(grid_obj%Npts + 1)
-    write (91) ((srcJ_Shdo(J, I), J=1, shdo_obj_%Nstokes), I=1, NS)
+    NS = isrcJ_Shdo_(grid_obj%Npts + 1)
+    write (91) ((srcJ_Shdo_(J, I), J=1, shdo_obj_%Nstokes), I=1, NS)
 
     !K = 1
     !do I = 1, grid_obj%Npts

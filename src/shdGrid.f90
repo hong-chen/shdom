@@ -47,7 +47,7 @@ module shd_grid
     use globals_type,  only: shd_type_rtm, &
                              shd_type_grid
 
-    use globals_obj, only: shdo_obj_, iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo, &
+    use globals_obj, only: shdo_obj_, iradI_Shdo, radI_Shdo, isrcJ_Shdo_, srcJ_Shdo_, &
                             src_obj_, &
                             prp_obj_, temp_Prp_, ext_Prp_, ssa_Prp_, leg_Prp_, ipha_Prp_, &
                             sfc_obj_, &
@@ -798,7 +798,7 @@ subroutine shd_grid__testGridSmooth(&
                 ISUM = 0
                 do I = 1, 8
                     IP = grid_obj%i8Grid(I, icell)
-                    ISUM = ISUM + isrcJ_Shdo(IP + 1) - isrcJ_Shdo(IP)
+                    ISUM = ISUM + isrcJ_Shdo_(IP + 1) - isrcJ_Shdo_(IP)
                 end do
                 if (ISUM .gt. 0) then
                     idir = ID
@@ -854,24 +854,24 @@ subroutine shd_grid__testCellSplit(icell,&
             IP2 = grid_obj%i8Grid(gridCorner(2, IE, ID), icell)
             if (IP1 .ne. IP2) then
                 NUM = NUM + 1
-                IS1 = isrcJ_Shdo(IP1)
-                IS2 = isrcJ_Shdo(IP2)
-                NS1 = isrcJ_Shdo(IP1 + 1) - IS1
-                NS2 = isrcJ_Shdo(IP2 + 1) - IS2
+                IS1 = isrcJ_Shdo_(IP1)
+                IS2 = isrcJ_Shdo_(IP2)
+                NS1 = isrcJ_Shdo_(IP1 + 1) - IS1
+                NS2 = isrcJ_Shdo_(IP2 + 1) - IS2
                 JAY = 0.0
                 NS = min(NS1, NS2)
                 !   Compute the source function rms difference integrated
                 ! over all angles, which is sum of squares of spherical
                 ! harmonic term differences.
                 do J = 1, NS
-                    JAY = JAY + (rtm_obj%ext(IP2)*srcJ_Shdo(1, IS2 + J)&
-                        &- rtm_obj%ext(IP1)*srcJ_Shdo(1, IS1 + J))**2
+                    JAY = JAY + (rtm_obj%ext(IP2)*srcJ_Shdo_(1, IS2 + J)&
+                        &- rtm_obj%ext(IP1)*srcJ_Shdo_(1, IS1 + J))**2
                 end do
                 do J = NS + 1, NS1
-                    JAY = JAY + (rtm_obj%ext(IP1)*srcJ_Shdo(1, IS1 + J))**2
+                    JAY = JAY + (rtm_obj%ext(IP1)*srcJ_Shdo_(1, IS1 + J))**2
                 end do
                 do J = NS + 1, NS2
-                    JAY = JAY + (rtm_obj%ext(IP2)*srcJ_Shdo(1, IS2 + J))**2
+                    JAY = JAY + (rtm_obj%ext(IP2)*srcJ_Shdo_(1, IS2 + J))**2
                 end do
                 EXT = 0.5*(rtm_obj%ext(IP1) + rtm_obj%ext(IP2))
                 if (EXT .gt. 0.0) then
@@ -1417,7 +1417,7 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
     &SOLARFLUX, YLMSUN,&
     &DIRFLUX,&
     &isrcD_Shdo,&
-    &rtm_obj, grid_obj)
+    &rtm_obj, grid_obj, isrcJ_Shdo, srcJ_Shdo)
 
     !   Interpolates the medium properties, radiance, and source function for
     ! new grid points (specified in newPts).  The medium properties are
@@ -1432,6 +1432,9 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
     type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
 
+    integer(I__), intent(inout) :: isrcJ_Shdo(*)
+    real(R__),    intent(inout) ::  srcJ_Shdo(shdo_obj_%Nstokes, *)
+
     integer newPts(3, 4)
     integer isrcD_Shdo(*)
     logical doDeltaM, ACCELFLAG
@@ -1445,9 +1448,9 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
     real RAD1(shdo_obj_%Nstokes), RAD2(shdo_obj_%Nstokes)
     real UNIFZLEV, XO, YO, ZO, DIRPATH
     integer, allocatable :: LOFJ(:)
-    real, allocatable :: SOURCET(:, :)
+    real, allocatable :: srcT_Shdo(:, :)
 
-    allocate(LOFJ(shdo_obj_%Nlm), SOURCET(shdo_obj_%Nstokes, shdo_obj_%Nlm))
+    allocate(LOFJ(shdo_obj_%Nlm), srcT_Shdo(shdo_obj_%Nstokes, shdo_obj_%Nlm))
     ! Make the l index as a function of SH term (J)
     J = 0
     do L = 0, shdo_obj_%maxNl
@@ -1566,20 +1569,20 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
                 call shd_src__computeSrcOnePnt(shdo_obj_%Nstokes, shdo_obj_%Nlm, LOFJ,&
                     &src_obj_%type, DIRFLUX(IP)*SECMU0, YLMSUN,&
                     &rtm_obj%planck(IP), rtm_obj%ssa(IP), IPH, rtm_obj%leg,&
-                    &NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), SOURCET)
+                    &NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
             else
                 call shd_src__computeSrcOnePnt_(shdo_obj_%Nlm, LOFJ,&
                     &src_obj_%type, DIRFLUX(IP)*SECMU0, YLMSUN,&
                     &rtm_obj%planck(IP), rtm_obj%ssa(IP), IPH, rtm_obj%leg,&
-                    &NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), SOURCET)
+                    &NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
             end if
             do J = 1, NS
-                srcJ_Shdo(:, IS + J) = SOURCET(:, J)
+                srcJ_Shdo(:, IS + J) = srcT_Shdo(:, J)
             end do
         end if
     end do
 
-    deallocate(LOFJ, SOURCET)
+    deallocate(LOFJ, srcT_Shdo)
 
     return
 
@@ -1592,7 +1595,7 @@ subroutine shd_grid__splitGrid(&
     &DIRFLUX,&
     &SOLARFLUX, YLMSUN,&
     &ADAPTCRIT, ADAPTIND,&
-    &rtm_obj, grid_obj)
+    &rtm_obj, grid_obj, isrcJ_Shdo, srcJ_Shdo)
 
     !   Splits the cells that have a cell dividing criterion greater than
     ! CURSPLITACC if doSplit is true.  The current splitting criterion
@@ -1602,6 +1605,9 @@ subroutine shd_grid__splitGrid(&
 
     type(shd_type_rtm),  intent(in)    :: rtm_obj
     type(shd_type_grid), intent(inout) :: grid_obj
+
+    integer(I__), intent(inout) :: isrcJ_Shdo(*)
+    real(R__),    intent(inout) ::  srcJ_Shdo(shdo_obj_%Nstokes, *)
 
     integer isrcD_Shdo(*)
     real ADAPTIND(*)
@@ -1671,7 +1677,7 @@ subroutine shd_grid__splitGrid(&
                         &SOLARFLUX, YLMSUN,&
                         &DIRFLUX,&
                         &isrcD_Shdo,&
-                        &rtm_obj, grid_obj)
+                        &rtm_obj, grid_obj, isrcJ_Shdo, srcJ_Shdo)
                 end if
                 I = I + 1
             end do
@@ -1708,7 +1714,7 @@ subroutine shd_grid__splitGrid(&
                             &SOLARFLUX, YLMSUN,&
                             &DIRFLUX,&
                             &isrcD_Shdo,&
-                            &rtm_obj, grid_obj)
+                            &rtm_obj, grid_obj, isrcJ_Shdo, srcJ_Shdo)
                     end if
                 end if
                 I = I + 1

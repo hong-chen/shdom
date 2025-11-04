@@ -49,7 +49,7 @@ module shd_rad
     use globals_type,  only: shd_type_rtm, &
                              shd_type_grid
 
-    use globals_obj, only: shdo_obj_, isrcJ_Shdo, srcJ_Shdo, &
+    use globals_obj, only: shdo_obj_, isrcJ_Shdo_, srcJ_Shdo_, &
                             src_obj_, &
                             prp_obj_, ext_Prp_, ssa_Prp_, leg_Prp_, ipha_Prp_, &
                             sfc_obj_, &
@@ -642,15 +642,15 @@ subroutine shd_rad__computeDirect(&
 end subroutine shd_rad__computeDirect
 
 subroutine shd_rad__interpRad(&
-    &NSTOKES, OLDNPTS, NPTS, RSHPTR,&
-    &RADIANCE, NBCELLS, NCELLS, TREEPTR, GRIDPTR, GRIDPOS)
+    &NSTOKES, OLDNPTS, NPTS, iradI_Shdo,&
+    &radI_Shdo, NBCELLS, NCELLS, TREEPTR, GRIDPTR, GRIDPOS)
 
     ! Interpolates the spherical harmonic radiance array to the new
     !   grid points (>OLDNPTS) from the old grid points.
 
     integer NSTOKES, OLDNPTS, NPTS, NBCELLS, NCELLS
-    integer RSHPTR(NPTS + 1), GRIDPTR(8, NCELLS), TREEPTR(2, NCELLS)
-    real RADIANCE(NSTOKES, *), GRIDPOS(3, *)
+    integer iradI_Shdo(NPTS + 1), GRIDPTR(8, NCELLS), TREEPTR(2, NCELLS)
+    real radI_Shdo(NSTOKES, *), GRIDPOS(3, *)
     integer IP, IC, ICELL, IPARENT, IDIR, I, J, K, DIR1, DIR2, IP1, IP2
     integer IR, IR1, IR2, NR, NR1, NR2
     integer GRIDCORNER(2, 4, 3)
@@ -681,25 +681,25 @@ subroutine shd_rad__interpRad(&
 120             continue
                 ! Interpolate the data from the two parent points at the
                 !   ends of the edge; assume the cell was split in half.
-                IR1 = RSHPTR(IP1)
-                IR2 = RSHPTR(IP2)
-                NR1 = RSHPTR(IP1 + 1) - RSHPTR(IP1)
-                NR2 = RSHPTR(IP2 + 1) - RSHPTR(IP2)
+                IR1 = iradI_Shdo(IP1)
+                IR2 = iradI_Shdo(IP2)
+                NR1 = iradI_Shdo(IP1 + 1) - iradI_Shdo(IP1)
+                NR2 = iradI_Shdo(IP2 + 1) - iradI_Shdo(IP2)
                 NR = max(NR1, NR2)
-                IR = RSHPTR(IP)
-                RSHPTR(IP + 1) = IR + NR
+                IR = iradI_Shdo(IP)
+                iradI_Shdo(IP + 1) = IR + NR
                 do J = 1, NR
                     if (J .le. NR1) then
-                        RAD1(:) = RADIANCE(:, IR1 + J)
+                        RAD1(:) = radI_Shdo(:, IR1 + J)
                     else
                         RAD1(:) = 0.0
                     end if
                     if (J .le. NR2) then
-                        RAD2(:) = RADIANCE(:, IR2 + J)
+                        RAD2(:) = radI_Shdo(:, IR2 + J)
                     else
                         RAD2(:) = 0.0
                     end if
-                    RADIANCE(:, IR + J) = FRAC12_*(RAD1(:) + RAD2(:))
+                    radI_Shdo(:, IR + J) = FRAC12_*(RAD1(:) + RAD2(:))
                 end do
             end if
         end do
@@ -712,7 +712,7 @@ subroutine shd_rad__computeRad(&
     &DELTAM,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &DIRFLUX, FLUXES,&
-    &SOURCE1, GRIDRAD,&
+    &src1_Shdo, GRIDRAD,&
     &OUTPARMS, IRAD, RADOUT,&
     &rtm_obj, grid_obj)
 
@@ -727,12 +727,12 @@ subroutine shd_rad__computeRad(&
     logical DELTAM
     real BCRAD(shdo_obj_%Nstokes, *)
     real DIRFLUX(grid_obj%Npts), FLUXES(2, grid_obj%Npts)
-    real SOURCE1(shdo_obj_%Nstokes, grid_obj%Npts), GRIDRAD(shdo_obj_%Nstokes, grid_obj%Npts)
+    real src1_Shdo(shdo_obj_%Nstokes, grid_obj%Npts), GRIDRAD(shdo_obj_%Nstokes, grid_obj%Npts)
     real OUTPARMS(*), RADOUT(shdo_obj_%Nstokes, *)
     integer I, IBC, IANG, JX, JY, K, SIDE
     integer NANGOUT, NXOUT, NYOUT
     logical VALIDRAD
-    real(RD_) :: X0, Y0, Z0, XE, YE, ZE, TRANSMIT, RADIANCE(4)
+    real(RD_) :: X0, Y0, Z0, XE, YE, ZE, TRANSMIT, radI_Shdo(4)
     real MUOUT, PHIOUT, PHID
     real XDOMAIN, YDOMAIN, STARTX, STARTY
 
@@ -818,15 +818,15 @@ subroutine shd_rad__computeRad(&
         ! Compute the source function throughout grid for this angle
         call shd_src__computeSrcOneDir(&
             &DELTAM, MUOUT, PHIOUT,&
-            &DIRFLUX, SOURCE1,&
-            &rtm_obj, grid_obj)
+            &DIRFLUX, src1_Shdo,&
+            &rtm_obj, grid_obj, isrcJ_Shdo_, srcJ_Shdo_)
 
         ! Set the radiance field to -1, so we can determine valid ra
         !   Also set the source array to the extinction times the so
         !   function, so the grid interpolation is correct.
         do I = 1, grid_obj%Npts
             GRIDRAD(1, I) = -1.0
-            SOURCE1(:, I) = SOURCE1(:, I)*rtm_obj%ext(I)
+            src1_Shdo(:, I) = src1_Shdo(:, I)*rtm_obj%ext(I)
         end do
         ! Get boundary radiances: either top or bottom
         ! Isotropic top boundary or Lambertian bottom boundary can u
@@ -858,12 +858,12 @@ subroutine shd_rad__computeRad(&
             X0 = STARTX
             do JX = 1, NXOUT
                 IRAD = IRAD + 1
-                TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
+                TRANSMIT = 1.0d0; radI_Shdo(:) = 0.0d0
                 call shd_src__integrateSrc(shdo_obj_%Nstokes,&
-                    &MUOUT, PHIOUT, GRIDRAD, SOURCE1,&
+                    &MUOUT, PHIOUT, GRIDRAD, src1_Shdo,&
                     &X0, Y0, Z0, XE, YE, ZE, SIDE,&
-                    &TRANSMIT, RADIANCE, VALIDRAD, rtm_obj, grid_obj)
-                RADOUT(:, IRAD) = RADIANCE(1:shdo_obj_%Nstokes)
+                    &TRANSMIT, radI_Shdo, VALIDRAD, rtm_obj, grid_obj)
+                RADOUT(:, IRAD) = radI_Shdo(1:shdo_obj_%Nstokes)
                 X0 = X0 + OUTPARMS(2)
             end do
             Y0 = Y0 + OUTPARMS(3)
@@ -1067,7 +1067,7 @@ subroutine shd_rad__computeCamRad(&
                 &shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
                 &shdo_obj_%Nmu, shdo_obj_%maxNphi0, shdo_obj_%Nphi0, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
                 &DELTAM, src_obj_%type, src_obj_%avgWaveLen, src_obj_%avgMu, src_obj_%avgAz,&
-                &DIRFLUX, isrcJ_Shdo, srcJ_Shdo, YLMSUN,&
+                &DIRFLUX, isrcJ_Shdo_, srcJ_Shdo_, YLMSUN,&
                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                 &MU2, PHI2, X0, Y0, Z0,&
                 &XE, YE, ZE, SIDE, TRANSMIT, VISRAD, VALIDRAD,&
@@ -1114,16 +1114,16 @@ subroutine shd_rad__computeCamRad(&
     return
 end subroutine shd_rad__computeCamRad
 
-subroutine shd_rad__computeFluxDiv(NSTOKES, NPTS, RSHPTR, SRCTYPE,&
+subroutine shd_rad__computeFluxDiv(NSTOKES, NPTS, iradI_Shdo, SRCTYPE,&
     &SOLARMU, EXTINCT, ALBEDO, PLANCK, DIRFLUX,&
-    &RADIANCE, NETFLUXDIV)
+    &radI_Shdo, NETFLUXDIV)
 
     ! Computes the net flux divergence at every grid point.
 
-    integer NSTOKES, NPTS, RSHPTR(NPTS + 1)
+    integer NSTOKES, NPTS, iradI_Shdo(NPTS + 1)
     real PLANCK(NPTS), DIRFLUX(NPTS), SOLARMU
     real EXTINCT(NPTS), ALBEDO(NPTS)
-    real RADIANCE(NSTOKES, *), NETFLUXDIV(NPTS)
+    real radI_Shdo(NSTOKES, *), NETFLUXDIV(NPTS)
     character(len=1) :: SRCTYPE
     integer I, IR
     real :: C, SECMU, HR
@@ -1131,8 +1131,8 @@ subroutine shd_rad__computeFluxDiv(NSTOKES, NPTS, RSHPTR, SRCTYPE,&
     C = sqrt(4.0*PI_)
     SECMU = 1.0/abs(SOLARMU)
     do I = 1, NPTS
-        IR = RSHPTR(I)
-        HR = C*EXTINCT(I)*(1 - ALBEDO(I))*RADIANCE(1, IR + 1)
+        IR = iradI_Shdo(I)
+        HR = C*EXTINCT(I)*(1 - ALBEDO(I))*radI_Shdo(1, IR + 1)
         if (isSolar_) then
             HR = HR + EXTINCT(I)*(1.0 - ALBEDO(I))*DIRFLUX(I)*SECMU
         end if

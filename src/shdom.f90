@@ -52,7 +52,7 @@ program shdom
                              shd_type_rtm, &
                              shd_type_grid
 
-    use globals_obj,   only: shdo_obj_, iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo, &
+    use globals_obj,   only: shdo_obj_, iradI_Shdo, radI_Shdo, isrcJ_Shdo_, srcJ_Shdo_, &
                              src_obj_, &
                              prp_obj_, temp_Prp_, ext_Prp_, ssa_Prp_, leg_Prp_, ipha_Prp_, &
                              sfc_obj_, brdf_Sfc_, brdf_Rtm_, &
@@ -884,8 +884,8 @@ program shdom
 
     ! note: in addition to xxx_Shdo_, here memUsed accounts for isrcD_Shdo and srcD_Shdo
     !       that will be used in shd_solv__solveRte(shdSolv.f90)
-    NmaxNpts = NmaxNpts + 6.0   ! xyz_Grid[3.0], iradI_Shdo[1.0], isrcJ_Shdo[1.0], isrcD_Shdo[1.0]
-    memUsed = memUsed + 4.0 ! offset iradI_Shdo[+2], isrcJ_Shdo[+1], isrcD_Shdo[+1]
+    NmaxNpts = NmaxNpts + 6.0   ! xyz_Grid[3.0], iradI_Shdo[1.0], isrcJ_Shdo_[1.0], isrcD_Shdo[1.0]
+    memUsed = memUsed + 4.0 ! offset iradI_Shdo[+2], isrcJ_Shdo_[+1], isrcD_Shdo[+1]
 
     if (doAccel) then
         NmaxNpts = NmaxNpts + shdo_obj_%Nstokes*(1.0+3.0*NUM_SH_TERM_FACTOR*shdo_obj_%Nlm) ! radiance, source, delta source
@@ -1058,12 +1058,12 @@ program shdom
     ! shdo
     !╭────────────────────────────────────────────────╮!
     ! SH related array
-    allocate(iradI_Shdo(grid_obj%maxNpts + 2), &
-             isrcJ_Shdo(grid_obj%maxNpts + 1))
+    allocate(iradI_Shdo(grid_obj%maxNpts+2), &
+              radI_Shdo(shdo_obj_%Nstokes, shdo_obj_%maxNptsSH + grid_obj%maxNpts))
 
     ! radiance and source
-    allocate(radI_Shdo(shdo_obj_%Nstokes, shdo_obj_%maxNptsSH + grid_obj%maxNpts), &
-             srcJ_Shdo(shdo_obj_%Nstokes, shdo_obj_%maxNptsSH))
+    allocate(isrcJ_Shdo_(grid_obj%maxNpts+1), &
+              srcJ_Shdo_(shdo_obj_%Nstokes, shdo_obj_%maxNptsSH))
     !╰────────────────────────────────────────────────╯!
 
     ! fluxes
@@ -1087,7 +1087,7 @@ program shdom
     call shd_io__restoreState(fileInp_sav, &
         doRadInit, doGridInit, fluxTot, &
         rtm_obj, grid_OBJ, &
-        shdo_obj_, iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo)
+        shdo_obj_, iradI_Shdo, radI_Shdo, isrcJ_Shdo_, srcJ_Shdo_)
 
 
     ! Check if we can use pre-calculated "state", if not, generate new grids
@@ -1139,7 +1139,7 @@ program shdom
         end if
 
         ! Find the monochromatic SHDOM solution: adaptive grid output
-        !   in source (srcJ_Shdo), radiance (radI_Shdo), fluxes, direct Flux.
+        !   in source (srcJ_Shdo_), radiance (radI_Shdo), fluxes, direct Flux.
         call shd_solv__solveRte(&
             &doRadInit,&
             &doDeltaM, doHighOrder_,&
@@ -1213,7 +1213,7 @@ program shdom
                     call shd_src__computeSrcOneDir(doDeltaM,&
                         &mu_out, phi_out,&
                         &fluxDir, src1_Out,&
-                        &rtm_obj, grid_obj)
+                        &rtm_obj, grid_obj, isrcJ_Shdo_, srcJ_Shdo_)
                 end if
             end do
         end if
@@ -1287,7 +1287,7 @@ program shdom
 
     ! Output radiance and/or flux (and/or other radiative quantities)
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    shdo_obj_%Nsh = isrcJ_Shdo(grid_obj%Npts + 1)
+    shdo_obj_%Nsh = isrcJ_Shdo_(grid_obj%Npts + 1)
     irad = 0
     ilos = 0
     if (isMpi_) then
@@ -1489,7 +1489,7 @@ program shdom
     ! shdo_obj_
     !╭────────────────────────────────────────────────╮!
     deallocate(radI_Shdo, iradI_Shdo)
-    deallocate(srcJ_Shdo, isrcJ_Shdo)
+    deallocate(srcJ_Shdo_, isrcJ_Shdo_)
     if (shdo_obj_%isAllocated) then
         deallocate(shdo_obj_%Nphi0, &
                    shdo_obj_%mu,    &

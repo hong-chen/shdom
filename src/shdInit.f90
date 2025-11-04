@@ -497,10 +497,10 @@ end subroutine shd_init__makePrp
 
 subroutine shd_init__makeRad(&
     &NSTOKES, NXY, NZ,&
-    &RSHPTR, ZGRID,&
+    &iradI_Shdo, ZGRID,&
     &EXTINCT, ALBEDO, LEGEN, TEMP, IPHASE,&
     &SRCTYPE, SOLARFLUX, SOLARMU,&
-    &SKYRAD, UNITS, WAVENO, WAVELEN, RADIANCE)
+    &SKYRAD, UNITS, WAVENO, WAVELEN, radI_Shdo)
 
     ! Initializes radiance field by solving plane-parallel two-stream.
     ! Solves the L=1 M=0 SH system by transforming the pentadiagonal
@@ -508,14 +508,14 @@ subroutine shd_init__makeRad(&
     ! Does the initialization for the NXY columns of the base grid.
     ! Only the I Stokes parameter is initialized, the rest are zeroed.
 
-    integer NSTOKES, NXY, NZ, RSHPTR(*)
+    integer NSTOKES, NXY, NZ, iradI_Shdo(*)
     integer*2 IPHASE(NZ, NXY)
     real SKYRAD, SOLARFLUX, SOLARMU
     real WAVENO(2), WAVELEN
     real ZGRID(NZ)
     real EXTINCT(NZ, NXY), ALBEDO(NZ, NXY), LEGEN(prp_obj_%NlegSet, 0:prp_obj_%Nleg, *)
     real TEMP(NZ, NXY)
-    real RADIANCE(NSTOKES, *)
+    real radI_Shdo(NSTOKES, *)
     character(len=1) :: SRCTYPE, UNITS
     integer NLAYER, I, IZ, IR, J, K, L, ZINDEX
     logical DELTAM
@@ -545,7 +545,7 @@ subroutine shd_init__makeRad(&
 
     ! Loop over all the columns in the base grid
     IR = 0
-    RSHPTR(1) = 0
+    iradI_Shdo(1) = 0
     do I = 1, NXY
 
         ! this is modified to address layer averaging issue
@@ -597,14 +597,14 @@ subroutine shd_init__makeRad(&
         ! Convert fluxes to first two moments of spherical harmonics
         do IZ = 1, NZ
             L = NZ + 1 - IZ
-            RADIANCE(:, IR + 1) = 0.0
-            RADIANCE(:, IR + 2) = 0.0
-            RADIANCE(:, IR + 3) = 0.0
-            RADIANCE(:, IR + 4) = 0.0
-            RADIANCE(1, IR + 1) = C0*(FLUXES(1, L) + FLUXES(2, L))
-            RADIANCE(1, IR + 3) = C1*(FLUXES(1, L) - FLUXES(2, L))
+            radI_Shdo(:, IR + 1) = 0.0
+            radI_Shdo(:, IR + 2) = 0.0
+            radI_Shdo(:, IR + 3) = 0.0
+            radI_Shdo(:, IR + 4) = 0.0
+            radI_Shdo(1, IR + 1) = C0*(FLUXES(1, L) + FLUXES(2, L))
+            radI_Shdo(1, IR + 3) = C1*(FLUXES(1, L) - FLUXES(2, L))
             IR = IR + 4
-            RSHPTR(IZ + NZ*(I - 1) + 1) = IR
+            iradI_Shdo(IZ + NZ*(I - 1) + 1) = IR
         end do
     end do
 

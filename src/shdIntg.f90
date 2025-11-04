@@ -47,7 +47,7 @@ module shd_intg
     use globals_type,  only: shd_type_rtm, &
                              shd_type_grid
 
-    use globals_obj, only: shdo_obj_, iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo, &
+    use globals_obj, only: shdo_obj_, iradI_Shdo, radI_Shdo, isrcJ_Shdo_, srcJ_Shdo_, &
                             src_obj_, &
                             prp_obj_, &
                             sfc_obj_, brdf_Sfc_, brdf_Rtm_
@@ -211,12 +211,12 @@ subroutine shd_intg__integratePath(&
             call shd_shdo__transSHtoDO(grid_obj%Npts, shdo_obj_%Nstokes, prp_obj_%NlegSet, shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
                 &shdo_obj_%Nmu, shdo_obj_%maxNphi0, shdo_obj_%Nphi0(IMU),&
                 &IMU, FFTFLAG, CMU1, CPHI1, WSAVE,&
-                &isrcJ_Shdo, srcJ_Shdo, WORK)
+                &isrcJ_Shdo_, srcJ_Shdo_, WORK)
         else
             call shd_shdo__transSHtoDO_(grid_obj%Npts, shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
                 &shdo_obj_%Nmu, shdo_obj_%maxNphi0, shdo_obj_%Nphi0(IMU),&
                 &IMU, FFTFLAG, CMU1, CPHI1, WSAVE,&
-                &isrcJ_Shdo, srcJ_Shdo, WORK)
+                &isrcJ_Shdo_, srcJ_Shdo_, WORK)
         end if
 
         ! Enforce the discrete ordinate I source function to be non-negative

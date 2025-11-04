@@ -52,7 +52,7 @@ module shd_mpi
                             shd_type_ckd,  &
                             shd_type_sen
 
-    use globals_obj, only: shdo_obj_, isrcJ_Shdo, srcJ_Shdo, &
+    use globals_obj, only: shdo_obj_, isrcJ_Shdo_, srcJ_Shdo_, &
                             src_obj_, &
                             prp_obj_, &
                             sfc_obj_, &
@@ -1811,7 +1811,7 @@ subroutine shd_mpi__computeRad(&
     &DELTAM,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &DIRFLUX, FLUXES,&
-    &SOURCE1, GRIDRAD,&
+    &src1_Shdo, GRIDRAD,&
     &parms_Out, NRAD, RADOUT,&
     &rtm_obj, grid_obj)
 
@@ -1829,7 +1829,7 @@ subroutine shd_mpi__computeRad(&
     logical, intent(in) :: DELTAM
     real, intent(in) :: BCRAD(shdo_obj_%Nstokes, *)
     real, intent(in) :: DIRFLUX(grid_obj%Npts), FLUXES(2, grid_obj%Npts)
-    real, intent(inout) :: SOURCE1(shdo_obj_%Nstokes, grid_obj%Npts), GRIDRAD(shdo_obj_%Nstokes, grid_obj%Npts)
+    real, intent(inout) :: src1_Shdo(shdo_obj_%Nstokes, grid_obj%Npts), GRIDRAD(shdo_obj_%Nstokes, grid_obj%Npts)
     real, intent(in) :: parms_Out(*)
     real, intent(out) :: RADOUT(shdo_obj_%Nstokes, *)
 
@@ -1958,15 +1958,15 @@ subroutine shd_mpi__computeRad(&
         ! Compute the source function throughout grid for this angle
         call shd_src__computeSrcOneDir(&
             &DELTAM, mu_out, phi_out,&
-            &DIRFLUX, SOURCE1,&
-            &rtm_obj, grid_obj)
+            &DIRFLUX, src1_Shdo,&
+            &rtm_obj, grid_obj, isrcJ_Shdo_, srcJ_Shdo_)
 
         ! Set the radiance field to -1, so we can determine valid radiances
         !   Also set the source array to the extinction times the source
         !   function, so the grid interpolation is correct.
         do I = 1, grid_obj%Npts
             GRIDRAD(1, I) = -1.0
-            SOURCE1(:, I) = SOURCE1(:, I)*rtm_obj%ext(I)
+            src1_Shdo(:, I) = src1_Shdo(:, I)*rtm_obj%ext(I)
         end do
         ! Get boundary radiances: either top or bottom
         ! Isotropic top boundary or Lambertian bottom boundary can use
@@ -2024,7 +2024,7 @@ subroutine shd_mpi__computeRad(&
                     Y0 .ge. (rtm_obj%y(1) - EPS) .and. Y0 .le. (rtm_obj%y(rtm_obj%Ny) + EPS)) then
                     TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
                     call shd_src__integrateSrc(shdo_obj_%Nstokes,&
-                        &mu_out, phi_out, GRIDRAD, SOURCE1,&
+                        &mu_out, phi_out, GRIDRAD, src1_Shdo,&
                         &X0, Y0, Z0, XE, YE, ZE, SIDE,&
                         &TRANSMIT, RADIANCE, VALIDRAD,&
                         &rtm_obj, grid_obj)
@@ -2110,7 +2110,7 @@ subroutine shd_mpi__computeRad(&
                     Z = BndRadRealInfo(3, J, Ldownx); TRANSMIT = BndRadRealInfo(4, J, Ldownx)
                     RADIANCE(:) = BndRadRealInfo(5:4 + shdo_obj_%Nstokes, J, Ldownx)
                     call shd_src__integrateSrc(shdo_obj_%Nstokes,&
-                        &mu_out, phi_out, GRIDRAD, SOURCE1,&
+                        &mu_out, phi_out, GRIDRAD, src1_Shdo,&
                         &X, Y, Z, XE, YE, ZE, SIDE,&
                         &TRANSMIT, RADIANCE, VALIDRAD,&
                         &rtm_obj, grid_obj)
@@ -2145,7 +2145,7 @@ subroutine shd_mpi__computeRad(&
                     Z = BndRadRealInfo(3, J, Ldowny); TRANSMIT = BndRadRealInfo(4, J, Ldowny)
                     RADIANCE(:) = BndRadRealInfo(5:4 + shdo_obj_%Nstokes, J, Ldowny)
                     call shd_src__integrateSrc(shdo_obj_%Nstokes,&
-                        &mu_out, phi_out, GRIDRAD, SOURCE1,&
+                        &mu_out, phi_out, GRIDRAD, src1_Shdo,&
                         &X, Y, Z, XE, YE, ZE, SIDE,&
                         &TRANSMIT, RADIANCE, VALIDRAD,&
                         &rtm_obj, grid_obj)
@@ -2477,7 +2477,7 @@ subroutine shd_mpi__computeCamRad(&
                     &shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
                     &shdo_obj_%Nmu, shdo_obj_%maxNphi0, shdo_obj_%Nphi0, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
                     &DELTAM, src_obj_%type, src_obj_%avgWaveLen, src_obj_%avgMu, src_obj_%avgAz,&
-                    &DIRFLUX, isrcJ_Shdo, srcJ_Shdo, YLMSUN,&
+                    &DIRFLUX, isrcJ_Shdo_, srcJ_Shdo_, YLMSUN,&
                     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                     &MU2, PHI2, X0, Y0, Z0,&
                     &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD,&
@@ -2560,7 +2560,7 @@ subroutine shd_mpi__computeCamRad(&
                     &shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
                     &shdo_obj_%Nmu, shdo_obj_%maxNphi0, shdo_obj_%Nphi0, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
                     &DELTAM, src_obj_%type, src_obj_%avgWaveLen, src_obj_%avgMu, src_obj_%avgAz,&
-                    &DIRFLUX, isrcJ_Shdo, srcJ_Shdo, YLMSUN,&
+                    &DIRFLUX, isrcJ_Shdo_, srcJ_Shdo_, YLMSUN,&
                     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                     &MU2, PHI2, X, Y, Z,&
                     &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD,&

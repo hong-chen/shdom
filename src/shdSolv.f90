@@ -44,7 +44,7 @@ module shd_solv
     use globals_type, only: shd_type_rtm,  &
                             shd_type_grid
 
-    use globals_obj, only: shdo_obj_, iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo, &
+    use globals_obj, only: shdo_obj_, iradI_Shdo, radI_Shdo, isrcJ_Shdo_, srcJ_Shdo_, &
                             src_obj_, &
                             prp_obj_, &
                             sfc_obj_, brdf_Sfc_, brdf_Rtm_
@@ -212,11 +212,11 @@ subroutine shd_solv__solveRte(&
             &DIRFLUX, SHACC,&
             &isrcD_Shdo, srcD_Shdo,&
             &.true., doAccel, DELJDOT, DELJOLD, DELJNEW, JNORM,&
-            &rtm_obj, grid_obj)
+            &rtm_obj, grid_obj, isrcJ_Shdo_, srcJ_Shdo_)
     end if
 
     if (doAccel) then
-        isrcD_Shdo(1:grid_obj%Npts + 1) = isrcJ_Shdo(1:grid_obj%Npts + 1)
+        isrcD_Shdo(1:grid_obj%Npts + 1) = isrcJ_Shdo_(1:grid_obj%Npts + 1)
         srcD_Shdo(:, 1:isrcD_Shdo(grid_obj%Npts + 1)) = 0.0
     end if
     SOLCRIT = 1.0
@@ -329,7 +329,7 @@ subroutine shd_solv__solveRte(&
                     &DIRFLUX,&
                     &src_obj_%avgSolar0, YlmSolar_Shdo,&
                     &WORK, WORK2,&
-                    &rtm_obj, grid_obj)
+                    &rtm_obj, grid_obj, isrcJ_Shdo_, srcJ_Shdo_)
                 if (SOLCRIT .gt. STARTADAPTSOL) STARTSPLITACC = SPLITCRIT
             end if
             ! Find the maximum splitting criterion over all processors
@@ -372,7 +372,7 @@ subroutine shd_solv__solveRte(&
             &DIRFLUX, SHACC,&
             &isrcD_Shdo, srcD_Shdo,&
             &.false., doAccel, DELJDOT, DELJOLD, DELJNEW, JNORM,&
-            &rtm_obj, grid_obj)
+            &rtm_obj, grid_obj, isrcJ_Shdo_, srcJ_Shdo_)
         !╰────────────────────────────────────────────────╯!
 
         ! Calculate the acceleration parameter and solution criterion
@@ -381,8 +381,9 @@ subroutine shd_solv__solveRte(&
             &JNORM, ACCELPAR, SOLCRIT)
 
         ! Accelerate the convergence of the source function vector
-        call shd_solv__accelSol(ACCELPAR, grid_obj%Npts, isrcD_Shdo,&
-            &srcD_Shdo)
+        call shd_solv__accelSol(ACCELPAR, grid_obj%Npts, &
+                                isrcD_Shdo, srcD_Shdo, &
+                                isrcJ_Shdo_, srcJ_Shdo_)
 
         ! If it is a not scattering medium then do only one iteration
         if (maxSsa .lt. SOLACC) SOLCRIT = SOLACC
@@ -398,9 +399,9 @@ subroutine shd_solv__solveRte(&
                 &SPLITCRIT,&
                 &grid_obj%Npts,&
                 &grid_obj%Ncell,&
-                &float(isrcJ_Shdo(grid_obj%Npts + 1))/grid_obj%Npts,&
+                &float(isrcJ_Shdo_(grid_obj%Npts + 1))/grid_obj%Npts,&
                 &ELAPSED_TIME
-                !&float(isrcJ_Shdo(grid_obj%Npts + 1))/(grid_obj%Npts*shdo_obj_%Nlm)
+                !&float(isrcJ_Shdo_(grid_obj%Npts + 1))/(grid_obj%Npts*shdo_obj_%Nlm)
         else
             if (isOutMem) then
                 if (verbose_ .ge. 5) write (6, '("M",1X,I4,2X,F7.3,2X,E10.3,1X,I8,1X,I8,1X,F8.2,2X,F6.2," sec")')&
@@ -408,18 +409,18 @@ subroutine shd_solv__solveRte(&
                     &SPLITCRIT,&
                     &grid_obj%Npts,&
                     &grid_obj%Ncell,&
-                    &float(isrcJ_Shdo(grid_obj%Npts + 1))/grid_obj%Npts,&
+                    &float(isrcJ_Shdo_(grid_obj%Npts + 1))/grid_obj%Npts,&
                     &ELAPSED_TIME
-                    !&float(isrcJ_Shdo(grid_obj%Npts + 1))/(grid_obj%Npts*shdo_obj_%Nlm)
+                    !&float(isrcJ_Shdo_(grid_obj%Npts + 1))/(grid_obj%Npts*shdo_obj_%Nlm)
             else
                 if (verbose_ .ge. 5) write (6, '(2X,I4,2X,F7.3,2X,E10.3,1X,I8,1X,I8,1X,F8.2,2X,F6.2," sec")')&
                     &ITER, log10(max(SOLCRIT, 1.0e-20)),&
                     &SPLITCRIT,&
                     &grid_obj%Npts,&
                     &grid_obj%Ncell,&
-                    &float(isrcJ_Shdo(grid_obj%Npts + 1))/grid_obj%Npts,&
+                    &float(isrcJ_Shdo_(grid_obj%Npts + 1))/grid_obj%Npts,&
                     &ELAPSED_TIME
-                    !&float(isrcJ_Shdo(grid_obj%Npts + 1))/(grid_obj%Npts*shdo_obj_%Nlm)
+                    !&float(isrcJ_Shdo_(grid_obj%Npts + 1))/(grid_obj%Npts*shdo_obj_%Nlm)
             end if
         end if
     end do PICARD_ITER_LOOP
@@ -447,13 +448,16 @@ end subroutine shd_solv__solveRte
 
 subroutine shd_solv__accelSol(&
     &ACCELPAR, NPTS, isrcD_Shdo,&
-    &srcD_Shdo)
+    &srcD_Shdo, isrcJ_Shdo, srcJ_Shdo)
 
     !   Accelerates the successive order of scattering series using the
     ! input acceleration parameter (ACCELPAR).
 
     integer, intent(in) :: NPTS, isrcD_Shdo(*)
     real, intent(in)    :: ACCELPAR, srcD_Shdo(shdo_obj_%Nstokes, *)
+
+    integer(I__), intent(in)    :: isrcJ_Shdo(*)
+    real(R__),    intent(inout) ::  srcJ_Shdo(shdo_obj_%Nstokes, *)
 
     integer :: I, J, IS, ISD, K, NS, NSD, NSC
 
@@ -549,7 +553,7 @@ subroutine shd_solv__truncRad(doHighOrder, doFixSH, SHACC,&
         !   it is at least 1 (so low order terms are always available).
         !   For higher order radiance option, use all terms.
         !   But if out of memory, use the source function truncation.
-        NS = max(1, isrcJ_Shdo(I + 1) - isrcJ_Shdo(I))
+        NS = max(1, isrcJ_Shdo_(I + 1) - isrcJ_Shdo_(I))
         LS = LOFJ(NS)
         LR = min(LR, LS + shdo_obj_%maxNl/8 + 2)
         if (doHighOrder) LR = shdo_obj_%maxNl
@@ -577,7 +581,7 @@ subroutine shd_solv__truncRad(doHighOrder, doFixSH, SHACC,&
     iradI_Shdo(1) = 0
     IR = 0
     do I = 1, grid_obj%Npts
-        NR = max(4, isrcJ_Shdo(I + 1) - isrcJ_Shdo(I))
+        NR = max(4, isrcJ_Shdo_(I + 1) - isrcJ_Shdo_(I))
         if (doHighOrder) then
             if (shdo_obj_%maxNl .le. shdo_obj_%maxNm) then
                 NR = (shdo_obj_%maxNl*(shdo_obj_%maxNl + 1)) + shdo_obj_%maxNl + 1
