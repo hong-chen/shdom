@@ -162,7 +162,7 @@ subroutine shd_rad__computeDirect(&
     integer I, J, K, L, IPH, IP, JP, I1, I2, I3, I4
     integer IPDIRECT, DI, DJ, DK
     logical CONSTX, CONSTY, HITBOUNDARY
-    real(RD_) :: EXTINCT, ALBEDO, F
+    real(RD_) :: ext0, ssa0, F
     real(RD_) :: SUNMU, SUNAZ, PATH
     real(RD_) :: EXTBEAMCUT, UNIFORMZLEV
     real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV
@@ -176,22 +176,23 @@ subroutine shd_rad__computeDirect(&
     real(RD_) :: B1, B2, B3, B4, B5, B6, B7, B8, C1, C2, C3, C4, C5, C6, C7, C8
     real(RD_) :: UV, UMV, UVM, UMVM, UW, UMW, UWM, UMWM, VW, VMW, VWM, VMWM
     real(RD_) :: VWU, VWUM, UWV, UWVM, UVW, UVWM
-    real, save, allocatable :: GASEXT(:), EXTMIN(:), EXTMAX(:), extDir_Prp(:)
+    real, save, allocatable :: kabs(:), minExt(:), maxExt(:), extDir_Prp(:)
 
     save CX, CY, CZ, CXINV, CYINV, CZINV, DI, DJ, DK, IPDIRECT
     save DELXD, DELYD, XDOMAIN, YDOMAIN, EPSS, EPSZ, UNIFORMZLEV
 
 
     if (INIT .eq. 9) then
-        deallocate(GASEXT, EXTMIN, EXTMAX)
-        deallocate(extDir_Prp)
+        deallocate(kabs, minExt, maxExt, extDir_Prp)
         return
     end if
 
     if (INIT .eq. 1) then
-        if (.not. allocated(GASEXT)) then
-            allocate(GASEXT(prp_obj_%Nz), EXTMIN(prp_obj_%Nz), EXTMAX(prp_obj_%Nz))
-            allocate(extDir_Prp(prp_obj_%maxNpts))
+        if (.not. allocated(kabs)) then
+            allocate(kabs(prp_obj_%Nz), &
+                   minExt(prp_obj_%Nz), &
+                   maxExt(prp_obj_%Nz), &
+                   extDir_Prp(prp_obj_%maxNpts))
         end if
         ! Get the gaseous extinction at the property grid levels
         do IZ = 1, prp_obj_%Nz
@@ -209,9 +210,9 @@ subroutine shd_rad__computeDirect(&
                 I = min(max(IL, 1), ckd_obj_%Nz - 1)
                 W0 = (prp_obj_%z(IZ) - ckd_obj_%z(I))/(ckd_obj_%z(I + 1) - ckd_obj_%z(I))
                 W0 = min(max(W0, 0.0d0), 1.0d0)
-                GASEXT(IZ) = (1.0 - W0)*kabs_Ckd_(I, ckd_obj_%ig) + W0*kabs_Ckd_(I + 1, ckd_obj_%ig)
+                kabs(IZ) = (1.0 - W0)*kabs_Ckd_(I, ckd_obj_%ig) + W0*kabs_Ckd_(I + 1, ckd_obj_%ig)
             else
-                GASEXT(IZ) = 0.0
+                kabs(IZ) = 0.0
             end if
         end do
         ! First make the property grid extinction field, on which all
@@ -221,12 +222,12 @@ subroutine shd_rad__computeDirect(&
             do IY = 1, prp_obj_%Ny
                 do IZ = 1, prp_obj_%Nz
                     IP = IP + 1
-                    EXTINCT = ext_Prp_(IP)
-                    ALBEDO = ssa_Prp_(IP)
+                    ext0 = ext_Prp_(IP)
+                    ssa0 = ssa_Prp_(IP)
                     ! Add in the gaseous absorption to extinction
-                    if (GASEXT(IZ) .gt. 0.0) then
-                        ALBEDO = ALBEDO*EXTINCT/(EXTINCT + GASEXT(IZ))
-                        EXTINCT = EXTINCT + GASEXT(IZ)
+                    if (kabs(IZ) .gt. 0.0) then
+                        ssa0 = ssa0*ext0/(ext0 + kabs(IZ))
+                        ext0 = ext0 + kabs(IZ)
                     end if
                     ! Do the Delta-M scaling if needed
                     if (DELTAM) then
@@ -238,9 +239,9 @@ subroutine shd_rad__computeDirect(&
                         L = ML + 1
                         !F = leg_Prp_(1 + prp_obj_%NlegSet*(L + (prp_obj_%Nleg+ 1)*(IPH - 1)))/(2*L + 1)
                         F = leg_Prp_(1, L, IPH)/(2*L + 1)
-                        EXTINCT = (1.0 - ALBEDO*F)*EXTINCT
+                        ext0 = (1.0 - ssa0*F)*ext0
                     end if
-                    extDir_Prp(IP) = EXTINCT
+                    extDir_Prp(IP) = ext0
                 end do
             end do
         end do
@@ -300,22 +301,22 @@ subroutine shd_rad__computeDirect(&
         ! Find the Z level above which the medium is plane-parallel
         EXTBEAMCUT = 1.0e-4
         do IZ = 1, prp_obj_%Nz
-            EXTMIN(IZ) = 1.0e20
-            EXTMAX(IZ) = 0.0
+            minExt(IZ) = 1.0e20
+            maxExt(IZ) = 0.0
         end do
         IP = 0
         do IX = 1, prp_obj_%Nx
             do IY = 1, prp_obj_%Ny
                 do IZ = 1, prp_obj_%Nz
                     IP = IP + 1
-                    EXTMIN(IZ) = min(ext_Prp_(IP), EXTMIN(IZ))
-                    EXTMAX(IZ) = max(ext_Prp_(IP), EXTMAX(IZ))
+                    minExt(IZ) = min(ext_Prp_(IP), minExt(IZ))
+                    maxExt(IZ) = max(ext_Prp_(IP), maxExt(IZ))
                 end do
             end do
         end do
         JZ = 0
         do IZ = 1, prp_obj_%Nz
-            if (EXTMAX(IZ) - EXTMIN(IZ) .gt. EXTBEAMCUT) JZ = IZ
+            if (maxExt(IZ) - minExt(IZ) .gt. EXTBEAMCUT) JZ = IZ
         end do
         JZ = min(prp_obj_%Nz, JZ + 1)
         UNIFORMZLEV = prp_obj_%z(JZ)
