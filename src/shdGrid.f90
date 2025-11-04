@@ -51,7 +51,7 @@ module shd_grid
                             src_obj_, &
                             prp_obj_, temp_Prp, ext_Prp, ssa_Prp, leg_Prp, ipha_Prp, &
                             sfc_obj_, &
-                            ckd_obj_, kabs_Ckd
+                            ckd_obj_, kabs_Ckd_
 
     use shd_util, only: shd_util__findNextCell, &
                         shd_util__computePlanck, &
@@ -1398,8 +1398,8 @@ subroutine shd_grid__InterpTriLinGridPrp(&
         I = min(max(IL, 1), ckd_obj_%Nz - 1)
         F = (z0 - ckd_obj_%z(I))/(ckd_obj_%z(I + 1) - ckd_obj_%z(I))
         F = min(max(F, 0.0d0), 1.0d0)
-        kabs0 = (1.0 - F)*kabs_Ckd(I, ckd_obj_%ig) + F*kabs_Ckd(I + 1, ckd_obj_%ig)
-        kabs0 = (1.0 - F)*kabs_Ckd(I, ckd_obj_%ig) + F*kabs_Ckd(I + 1, ckd_obj_%ig)
+        kabs0 = (1.0 - F)*kabs_Ckd_(I, ckd_obj_%ig) + F*kabs_Ckd_(I + 1, ckd_obj_%ig)
+        kabs0 = (1.0 - F)*kabs_Ckd_(I, ckd_obj_%ig) + F*kabs_Ckd_(I + 1, ckd_obj_%ig)
         if ((ext0 + kabs0) .gt. 0.0) then
             ssa0 = ssa0*ext0/(ext0 + kabs0)
         else

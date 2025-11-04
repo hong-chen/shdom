@@ -51,7 +51,7 @@ module shd_out
                             prp_obj_, &
                             sfc_obj_, &
                             ckd_obj_, &
-                            sen_obj_, view_Sen
+                            sen_obj_, view_Sen_
 
     use shd_grid, only: shd_grid__testCellSplit
 
@@ -326,8 +326,8 @@ subroutine shd_io__outputResult(&
         !╭────────────────────────────────────────────────╮!
         do K = 1, NANGOUT
             if (sen_obj_%fname(1:4) .ne. 'NONE') then
-                MUOUT = view_Sen(1, K)
-                PHID  = view_Sen(2, K)
+                MUOUT = view_Sen_(1, K)
+                PHID  = view_Sen_(2, K)
             else
                 MUOUT = OUTPARMS(2*K + 5)
                 PHID  = OUTPARMS(2*K + 6)
@@ -1386,8 +1386,8 @@ subroutine shd_io__outputResultMpi(&
 
         do K = 1, NANGOUT
             if (sen_obj_%fname(1:4) .ne. 'NONE') then
-                MUOUT = view_Sen(1, K)
-                PHID  = view_Sen(2, K)
+                MUOUT = view_Sen_(1, K)
+                PHID  = view_Sen_(2, K)
             else
                 MUOUT = OUTPARMS(2*K + 5)
                 PHID  = OUTPARMS(2*K + 6)

@@ -47,7 +47,7 @@ module shd_solv
     use globals_obj, only: shdo_obj_, iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo, &
                             src_obj_, &
                             prp_obj_, &
-                            sfc_obj_, brdf_Sfc, brdf_Rtm
+                            sfc_obj_, brdf_Sfc_, brdf_Rtm_
 
     use shd_init, only: shd_init__makePrp, &
                         shd_init__makeRad, &
@@ -228,8 +228,8 @@ subroutine shd_solv__solveRte(&
         !   bottom grid points.
         call shd_sfc__interpSfc(NBOTPTS, BCPTR(1, 2), grid_obj%xyz, &
             src_obj_%type, src_obj_%waveNum, src_obj_%avgWaveLen, src_obj_%unit, &
-            brdf_Rtm)
-        call shd_init__checkSfcU(sfc_obj_)
+            brdf_Sfc_, brdf_Rtm_)
+        call shd_init__checkSfcU(sfc_obj_, brdf_Sfc_)
         if (sfc_obj_%isUniform) then
             if (shdo_obj_%Nstokes*(shdo_obj_%Nmu/2)*shdo_obj_%maxNphi0 .gt.&
                 &sqrt(1.0*huge(shdo_obj_%Nmu)/kind(shdo_obj_%Nmu))) then
@@ -240,7 +240,7 @@ subroutine shd_solv__solveRte(&
             end if
             if (ierr .eq. 0) then
                 call shd_shdo__makeSfcDO(sfc_obj_%type, src_obj_%avgWaveLen,&
-                    &sfc_obj_%Nx, sfc_obj_%Ny, sfc_obj_%Npar, brdf_Sfc, shdo_obj_%Nstokes,&
+                    &sfc_obj_%Nx, sfc_obj_%Ny, sfc_obj_%Npar, brdf_Sfc_, shdo_obj_%Nstokes,&
                     &shdo_obj_%Nmu, shdo_obj_%maxNphi0, shdo_obj_%Nphi0, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
                     &brdf_Shdo)
             else

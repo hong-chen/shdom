@@ -45,7 +45,7 @@ module shd_sfc
     use globals_const, only: PI_
     use globals_cfg,   only: isPol_
     use globals_obj,   only: prp_obj_, &
-                             sfc_obj_, brdf_Sfc, brdf_Rtm
+                             sfc_obj_
 
     use shd_util, only: shd_util__computePlanck
 
@@ -83,7 +83,7 @@ contains
 subroutine shd_sfc__interpSfc(&
     NptsBot, BCPTR, GRIDPOS, &
     SRCTYPE, WAVENO, WAVELEN, UNITS, &
-    brdf_Rtm)
+    brdf_Sfc, brdf_Rtm)
 
     !   Bilinearly interpolates the surface properties from the regular
     ! surface grid to the boundary points of the adaptive grid.
@@ -99,6 +99,7 @@ subroutine shd_sfc__interpSfc(&
     integer, intent(in) :: NptsBot, BCPTR(*)
     character(len=1), intent(in) :: SRCTYPE, UNITS
 
+    real(kind=R__), intent(in)  :: brdf_Sfc(sfc_obj_%Npar, *)
     real(kind=R__), intent(out) :: brdf_Rtm(sfc_obj_%Npar, *)
 
     real :: WAVENO(2), WAVELEN

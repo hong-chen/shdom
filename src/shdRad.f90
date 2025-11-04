@@ -53,8 +53,8 @@ module shd_rad
                             src_obj_, &
                             prp_obj_, ext_Prp, ssa_Prp, leg_Prp, ipha_Prp, extDir_Prp, &
                             sfc_obj_, &
-                            ckd_obj_, kabs_Ckd, &
-                            sen_obj_, view_Sen
+                            ckd_obj_, kabs_Ckd_, &
+                            sen_obj_, view_Sen_
 
     use shd_scat, only: shd_scat__computePhase
 
@@ -204,7 +204,7 @@ subroutine shd_rad__computeDirect(&
                 I = min(max(IL, 1), ckd_obj_%Nz - 1)
                 W0 = (prp_obj_%z(IZ) - ckd_obj_%z(I))/(ckd_obj_%z(I + 1) - ckd_obj_%z(I))
                 W0 = min(max(W0, 0.0d0), 1.0d0)
-                GASEXT(IZ) = (1.0 - W0)*kabs_Ckd(I, ckd_obj_%ig) + W0*kabs_Ckd(I + 1, ckd_obj_%ig)
+                GASEXT(IZ) = (1.0 - W0)*kabs_Ckd_(I, ckd_obj_%ig) + W0*kabs_Ckd_(I + 1, ckd_obj_%ig)
             else
                 GASEXT(IZ) = 0.0
             end if
@@ -777,8 +777,8 @@ subroutine shd_rad__computeRad(&
     ! Loop over the radiance directions
     do IANG = 1, NANGOUT
         if (sen_obj_%fname(1:4) .ne. 'NONE') then
-            MUOUT = view_Sen(1, IANG)
-            PHID  = view_Sen(2, IANG)
+            MUOUT = view_Sen_(1, IANG)
+            PHID  = view_Sen_(2, IANG)
         else
             MUOUT = OUTPARMS(2*IANG + 5)
             PHID  = OUTPARMS(2*IANG + 6)

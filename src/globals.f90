@@ -453,24 +453,24 @@ module globals_obj
     ! SFC
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_sfc), save :: sfc_obj_
-    real(kind=R__), allocatable, save :: brdf_Sfc(:, :), & ! (sfc_obj%maxNpar, sfc_obj%maxNpts)
-                                         brdf_Rtm(:, :)    ! (sfc_obj%maxNpar, xxx_obj%xxx)
+    real(kind=R__), allocatable, save :: brdf_Sfc_(:, :), & ! (sfc_obj%maxNpar, sfc_obj%maxNpts)
+                                         brdf_Rtm_(:, :)    ! (sfc_obj%maxNpar, xxx_obj%xxx)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
     ! CKD
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_ckd), save :: ckd_obj_
-    real(kind=R__), allocatable, save :: solar_Ckd(:), & ! (ckd_obj%Ng)
-                                           wgt_Ckd(:), & ! (ckd_obj%Ng)
-                                          kabs_Ckd(:, :) ! (ckd_obj%Nz, ckd_obj%Ng)
+    real(kind=R__), allocatable, save :: solar_Ckd_(:), & ! (ckd_obj%Ng)
+                                           wgt_Ckd_(:), & ! (ckd_obj%Ng)
+                                          kabs_Ckd_(:, :) ! (ckd_obj%Nz, ckd_obj%Ng)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
     ! SEN
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_sen), save :: sen_obj_
-    real(kind=R__), allocatable, save :: view_Sen(:, :) ! (sen_obj%Npar, sen_obj%Npts)
+    real(kind=R__), allocatable, save :: view_Sen_(:, :) ! (sen_obj%Npar, sen_obj%Npts)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 end module globals_obj

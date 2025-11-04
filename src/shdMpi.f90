@@ -56,7 +56,7 @@ module shd_mpi
                             src_obj_, &
                             prp_obj_, &
                             sfc_obj_, &
-                            sen_obj_, view_Sen
+                            sen_obj_, view_Sen_
 
 #if HAS_MPI
     use mpi_f08,  only: MPI_comm_world, MPI_comm, MPI_request, &
@@ -1900,8 +1900,8 @@ subroutine shd_mpi__computeRad(&
     ! Loop over the radiance directions
     do K = 1, NANGOUT
         if (sen_obj_%fname(1:4) .ne. 'NONE') then
-            mu_out     = view_Sen(1, K)
-            phiDeg_out = view_Sen(2, K)
+            mu_out     = view_Sen_(1, K)
+            phiDeg_out = view_Sen_(2, K)
         else
             mu_out = parms_Out(2*K + 5)
             phiDeg_out = parms_Out(2*K + 6)
@@ -2390,11 +2390,11 @@ subroutine shd_mpi__computeCamRad(&
             else if (SENSOR_MODE) then
 
                 if (sen_obj_%fname(1:4) .ne. 'NONE') then
-                    X0    =  view_Sen(1, SAMP)
-                    Y0    =  view_Sen(2, SAMP)
-                    Z0    =  view_Sen(3, SAMP)
-                    COSTH =  view_Sen(4, SAMP)
-                    PHIR  =  view_Sen(5, SAMP)
+                    X0    =  view_Sen_(1, SAMP)
+                    Y0    =  view_Sen_(2, SAMP)
+                    Z0    =  view_Sen_(3, SAMP)
+                    COSTH =  view_Sen_(4, SAMP)
+                    PHIR  =  view_Sen_(5, SAMP)
                 else
                     stop 'Error [mpi__computeCamRad]: Need sen_obj_ to proceed.'
                 end if

@@ -55,9 +55,9 @@ program shdom
     use globals_obj,   only: shdo_obj_, iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo, &
                              src_obj_, &
                              prp_obj_, temp_Prp, ext_Prp, ssa_Prp, leg_Prp, ipha_Prp, extDir_Prp, &
-                             sfc_obj_, brdf_Sfc, brdf_Rtm, &
-                             ckd_obj_, solar_Ckd, wgt_Ckd, kabs_Ckd, &
-                             sen_obj_, view_Sen
+                             sfc_obj_, brdf_Sfc_, brdf_Rtm_, &
+                             ckd_obj_, solar_Ckd_, wgt_Ckd_, kabs_Ckd_, &
+                             sen_obj_, view_Sen_
 
     use shd_init, only: shd_init__makeGrid, &
                         shd_init__makeCell
@@ -650,16 +650,16 @@ program shdom
     ! Read in the surface properties
     if (sfc_obj_%fname(1:4) .ne. 'NONE') then
 
-        allocate(brdf_Sfc(sfc_obj_%maxNpar, sfc_obj_%maxNpts))
+        allocate(brdf_Sfc_(sfc_obj_%maxNpar, sfc_obj_%maxNpts))
 
         memUsed = memUsed + sfc_obj_%maxNpar * sfc_obj_%maxNpts
 
         if (isMasterProc) then
-            call shd_io__readSfc(sfc_obj_, brdf_Sfc)
+            call shd_io__readSfc(sfc_obj_, brdf_Sfc_)
         end if
 
         ! Broadcast the surface object
-        call shd_mpi__bcastSfc(sfc_obj_, brdf_Sfc)
+        call shd_mpi__bcastSfc(sfc_obj_, brdf_Sfc_)
 
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
@@ -681,9 +681,9 @@ program shdom
         allocate(ckd_obj_%z(ckd_obj_%Nz))
         ckd_obj_%isAllocated = .true.
 
-        allocate(solar_Ckd(ckd_obj_%Ng), &
-                 wgt_Ckd(ckd_obj_%Ng),   &
-                 kabs_Ckd(ckd_obj_%Nz, ckd_obj_%Ng))
+        allocate(solar_Ckd_(ckd_obj_%Ng), &
+                 wgt_Ckd_(ckd_obj_%Ng),   &
+                 kabs_Ckd_(ckd_obj_%Nz, ckd_obj_%Ng))
 
         memUsed = memUsed + ckd_obj_%Nz*(2.0+ckd_obj_%Ng) + 2.0*ckd_obj_%Ng
 
@@ -691,20 +691,20 @@ program shdom
             ckd_obj_%maxNz = ckd_obj_%Nz
             ckd_obj_%maxNg = ckd_obj_%Ng
             call shd_io__readCkd(src_obj_%waveNum, &
-                                 ckd_obj_, solar_Ckd, wgt_Ckd, kabs_Ckd)
+                                 ckd_obj_, solar_Ckd_, wgt_Ckd_, kabs_Ckd_)
         end if
 
-        call shd_mpi__bcastCkd(ckd_obj_, solar_Ckd, wgt_Ckd, kabs_Ckd)
+        call shd_mpi__bcastCkd(ckd_obj_, solar_Ckd_, wgt_Ckd_, kabs_Ckd_)
 
     else
         ckd_obj_%Ng = 1
         ckd_obj_%Nz = 0
 
-        allocate(solar_Ckd(ckd_obj_%Ng), wgt_Ckd(ckd_obj_%Ng)); &
+        allocate(solar_Ckd_(ckd_obj_%Ng), wgt_Ckd_(ckd_obj_%Ng)); &
             memUsed = memUsed + 2.0*ckd_obj_%Ng
 
-        solar_Ckd(1) = 1.0
-        wgt_Ckd(1) = 1.0
+        solar_Ckd_(1) = 1.0
+        wgt_Ckd_(1) = 1.0
 
         isBaseOut = .false.
     end if
@@ -723,14 +723,14 @@ program shdom
 
         call shd_mpi__bcastSenSize(sen_obj_)
 
-        allocate(view_Sen(sen_obj_%Npar, sen_obj_%Npts)); &
+        allocate(view_Sen_(sen_obj_%Npar, sen_obj_%Npts)); &
             memUsed = memUsed + sen_obj_%Npar*sen_obj_%Npts
 
         if (isMasterProc) then
-            call shd_io__readSen(sen_obj_, view_Sen)
+            call shd_io__readSen(sen_obj_, view_Sen_)
         end if
 
-        call shd_mpi__bcastSen(sen_obj_, view_Sen)
+        call shd_mpi__bcastSen(sen_obj_, view_Sen_)
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
@@ -1041,7 +1041,7 @@ program shdom
     !   rad_Bc(:[shdo_obj_%Nstokes], NptsTop_bc+NptsBot_bc+1:NptsTop_bc+NptsBot_bc+NptsBot_bc*shdo_obj_%Nang/2):
     !         downwelling bottom radiances at discrete ordinates
     if (sfc_obj_%fname(1:4) .ne. 'NONE') then
-        allocate(brdf_Rtm(sfc_obj_%maxNpar, maxNpts_bc))
+        allocate(brdf_Rtm_(sfc_obj_%maxNpar, maxNpts_bc))
     end if
 
     allocate(ptr_Bc(2*maxNpts_bc), rad_Bc(shdo_obj_%Nstokes, maxNrad_bc))
@@ -1126,10 +1126,10 @@ program shdom
         if (verbose_ .ge. 5) write (6, '(A,I2,A,I2,A)') 'Message [shdom]: Starting ', ckd_obj_%Ng-ig_ckd+1, '/', ckd_obj_%Ng, ' (ig/Ng) ...'
 
         ! solar flux for given g of CKD
-        src_obj_%avgSolar0 = solar_Ckd(ig_ckd)*src_obj_%inpSolar*abs(src_obj_%avgMu)
+        src_obj_%avgSolar0 = solar_Ckd_(ig_ckd)*src_obj_%inpSolar*abs(src_obj_%avgMu)
 
         ! weighted average solar flux
-        src_obj_%avgSolar = src_obj_%avgSolar + solar_Ckd(ig_ckd)*wgt_Ckd(ig_ckd)*src_obj_%inpSolar*abs(src_obj_%avgMu)
+        src_obj_%avgSolar = src_obj_%avgSolar + solar_Ckd_(ig_ckd)*wgt_Ckd_(ig_ckd)*src_obj_%inpSolar*abs(src_obj_%avgMu)
 
         ! If doing k-distribution then get the gas absorption profile.
         ckd_obj_%ig = ig_ckd
@@ -1181,7 +1181,7 @@ program shdom
                     end if
                 end if
             end do
-            call shd_util__sumData(ckd_obj_%Ng-ig_ckd, wgt_Ckd(ig_ckd), Nrad, work2, sumRad_Out)
+            call shd_util__sumData(ckd_obj_%Ng-ig_ckd, wgt_Ckd_(ig_ckd), Nrad, work2, sumRad_Out)
         end if
 
         if (isCamOut) then
@@ -1205,7 +1205,7 @@ program shdom
                     end if
                 end if
             end do
-            call shd_util__sumData(ckd_obj_%Ng-ig_ckd, wgt_Ckd(ig_ckd), Nlos, work2, sumCam_Out)
+            call shd_util__sumData(ckd_obj_%Ng-ig_ckd, wgt_Ckd_(ig_ckd), Nlos, work2, sumCam_Out)
         end if
 
         if (isSrcOut) then
@@ -1260,21 +1260,21 @@ program shdom
 
             end if
 
-            call shd_util__sumData(ckd_obj_%Ng-ig_ckd, wgt_Ckd(ig_ckd), 2*grid_obj%Npts, fluxTot, sumFluxTot_Out)
-            call shd_util__sumData(ckd_obj_%Ng-ig_ckd, wgt_Ckd(ig_ckd), grid_obj%Npts, fluxDir, sumFluxDir_Out)
+            call shd_util__sumData(ckd_obj_%Ng-ig_ckd, wgt_Ckd_(ig_ckd), 2*grid_obj%Npts, fluxTot, sumFluxTot_Out)
+            call shd_util__sumData(ckd_obj_%Ng-ig_ckd, wgt_Ckd_(ig_ckd), grid_obj%Npts, fluxDir, sumFluxDir_Out)
         end if
 
         if (isHROut) then
             ! Compute the net flux divergence at every point
             call shd_rad__computeFluxDiv(shdo_obj_%Nstokes, grid_obj%Npts, iradI_Shdo, src_obj_%type, src_obj_%avgMu,&
                 &rtm_obj%ext, rtm_obj%ssa, rtm_obj%planck, fluxDir, radI_Shdo, work)
-            call shd_util__sumData(ckd_obj_%Ng-ig_ckd, wgt_Ckd(ig_ckd), grid_obj%Npts, work, sumFluxDiv_Out)
+            call shd_util__sumData(ckd_obj_%Ng-ig_ckd, wgt_Ckd_(ig_ckd), grid_obj%Npts, work, sumFluxDiv_Out)
         end if
 
         if (isSHOut) then
             call shd_shdo__computeSH(Nsh_out, shdo_obj_%Nstokes, grid_obj%Npts, src_obj_%type, src_obj_%avgMu, src_obj_%avgAz,&
                 &fluxDir, iradI_Shdo, shdo_obj_%maxNl, shdo_obj_%maxNm, radI_Shdo, work)
-            call shd_util__sumData(ckd_obj_%Ng-ig_ckd, wgt_Ckd(ig_ckd), Nsh_out*grid_obj%Npts, work, sumSH_Out)
+            call shd_util__sumData(ckd_obj_%Ng-ig_ckd, wgt_Ckd_(ig_ckd), Nsh_out*grid_obj%Npts, work, sumSH_Out)
         end if
 
         oldNpts = grid_obj%Npts
@@ -1466,15 +1466,15 @@ program shdom
 
     ! sfc_obj_
     !╭────────────────────────────────────────────────╮!
-    if (allocated(brdf_Sfc)) then
-        deallocate(brdf_Sfc, brdf_Rtm)
+    if (allocated(brdf_Sfc_)) then
+        deallocate(brdf_Sfc_, brdf_Rtm_)
     end if
     !╰────────────────────────────────────────────────╯!
 
     ! ckd_obj_
     !╭────────────────────────────────────────────────╮!
-    if (allocated(kabs_Ckd)) then
-        deallocate(solar_Ckd, wgt_Ckd, kabs_Ckd)
+    if (allocated(kabs_Ckd_)) then
+        deallocate(solar_Ckd_, wgt_Ckd_, kabs_Ckd_)
         if (ckd_obj_%isAllocated) then
             deallocate(ckd_obj_%z)
             ckd_obj_%isAllocated = .false.
@@ -1484,8 +1484,8 @@ program shdom
 
     ! sen_obj_
     !╭────────────────────────────────────────────────╮!
-    if (allocated(view_Sen)) then
-        deallocate(view_Sen)
+    if (allocated(view_Sen_)) then
+        deallocate(view_Sen_)
     end if
     !╰────────────────────────────────────────────────╯!
 
