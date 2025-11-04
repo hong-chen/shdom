@@ -52,12 +52,22 @@ program shdom
                              shd_type_rtm, &
                              shd_type_grid
 
-    use globals_obj,   only: shdo_obj_, iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_, &
-                             src_obj_, &
-                             prp_obj_, temp_Prp_, ext_Prp_, ssa_Prp_, leg_Prp_, ipha_Prp_, &
-                             sfc_obj_, brdf_Sfc_, brdf_Rtm_, &
-                             ckd_obj_, solar_Ckd_, wgt_Ckd_, kabs_Ckd_, &
-                             sen_obj_, view_Sen_
+    use globals_obj,   only: shdo_obj_, iradI_Shdo_, &
+                                         radI_Shdo_, &
+                                        isrcJ_Shdo_, &
+                                         srcJ_Shdo_, &
+                              src_obj_, &
+                              prp_obj_, temp_Prp_, &
+                                         ext_Prp_, &
+                                         ssa_Prp_, &
+                                         leg_Prp_, &
+                                        ipha_Prp_, &
+                              sfc_obj_, brdf_Sfc_, &
+                                        brdf_Rtm_, &
+                              ckd_obj_, solar_Ckd_, &
+                                          wgt_Ckd_, &
+                                         kabs_Ckd_, &
+                              sen_obj_, view_Sen_
 
     use shd_init, only: shd_init__makeGrid, &
                         shd_init__makeCell
@@ -1450,6 +1460,18 @@ program shdom
     end if
     !╰────────────────────────────────────────────────╯!
 
+    ! shdo_obj_
+    !╭────────────────────────────────────────────────╮!
+    deallocate(radI_Shdo_, iradI_Shdo_)
+    deallocate(srcJ_Shdo_, isrcJ_Shdo_)
+    if (shdo_obj_%isAllocated) then
+        deallocate(shdo_obj_%Nphi0, &
+                   shdo_obj_%mu,    &
+                   shdo_obj_%phi,   &
+                   shdo_obj_%wgt)
+    end if
+    !╰────────────────────────────────────────────────╯!
+
     ! prp_obj_
     !╭────────────────────────────────────────────────╮!
     deallocate(temp_Prp_, ext_Prp_, ssa_Prp_, leg_Prp_, ipha_Prp_)
@@ -1483,18 +1505,6 @@ program shdom
     !╭────────────────────────────────────────────────╮!
     if (allocated(view_Sen_)) then
         deallocate(view_Sen_)
-    end if
-    !╰────────────────────────────────────────────────╯!
-
-    ! shdo_obj_
-    !╭────────────────────────────────────────────────╮!
-    deallocate(radI_Shdo_, iradI_Shdo_)
-    deallocate(srcJ_Shdo_, isrcJ_Shdo_)
-    if (shdo_obj_%isAllocated) then
-        deallocate(shdo_obj_%Nphi0, &
-                   shdo_obj_%mu,    &
-                   shdo_obj_%phi,   &
-                   shdo_obj_%wgt)
     end if
     !╰────────────────────────────────────────────────╯!
 
