@@ -51,7 +51,7 @@ module shd_rad
 
     use globals_obj, only: shdo_obj_, isrcJ_Shdo, srcJ_Shdo, &
                             src_obj_, &
-                            prp_obj_, ext_Prp, ssa_Prp, leg_Prp, ipha_Prp, extDir_Prp, &
+                            prp_obj_, ext_Prp_, ssa_Prp_, leg_Prp_, ipha_Prp_, extDir_Prp, &
                             sfc_obj_, &
                             ckd_obj_, kabs_Ckd_, &
                             sen_obj_, view_Sen_
@@ -216,8 +216,8 @@ subroutine shd_rad__computeDirect(&
             do IY = 1, prp_obj_%Ny
                 do IZ = 1, prp_obj_%Nz
                     IP = IP + 1
-                    EXTINCT = ext_Prp(IP)
-                    ALBEDO = ssa_Prp(IP)
+                    EXTINCT = ext_Prp_(IP)
+                    ALBEDO = ssa_Prp_(IP)
                     ! Add in the gaseous absorption to extinction
                     if (GASEXT(IZ) .gt. 0.0) then
                         ALBEDO = ALBEDO*EXTINCT/(EXTINCT + GASEXT(IZ))
@@ -226,13 +226,13 @@ subroutine shd_rad__computeDirect(&
                     ! Do the Delta-M scaling if needed
                     if (DELTAM) then
                         if (prp_obj_%Npha .gt. 0) then
-                            IPH = ipha_Prp(IP)
+                            IPH = ipha_Prp_(IP)
                         else
                             IPH = IP
                         end if
                         L = ML + 1
-                        !F = leg_Prp(1 + prp_obj_%NlegSet*(L + (prp_obj_%Nleg+ 1)*(IPH - 1)))/(2*L + 1)
-                        F = leg_Prp(1, L, IPH)/(2*L + 1)
+                        !F = leg_Prp_(1 + prp_obj_%NlegSet*(L + (prp_obj_%Nleg+ 1)*(IPH - 1)))/(2*L + 1)
+                        F = leg_Prp_(1, L, IPH)/(2*L + 1)
                         EXTINCT = (1.0 - ALBEDO*F)*EXTINCT
                     end if
                     extDir_Prp(IP) = EXTINCT
@@ -303,8 +303,8 @@ subroutine shd_rad__computeDirect(&
             do IY = 1, prp_obj_%Ny
                 do IZ = 1, prp_obj_%Nz
                     IP = IP + 1
-                    EXTMIN(IZ) = min(ext_Prp(IP), EXTMIN(IZ))
-                    EXTMAX(IZ) = max(ext_Prp(IP), EXTMAX(IZ))
+                    EXTMIN(IZ) = min(ext_Prp_(IP), EXTMIN(IZ))
+                    EXTMAX(IZ) = max(ext_Prp_(IP), EXTMAX(IZ))
                 end do
             end do
         end do

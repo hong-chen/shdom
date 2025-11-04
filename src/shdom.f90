@@ -54,7 +54,7 @@ program shdom
 
     use globals_obj,   only: shdo_obj_, iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo, &
                              src_obj_, &
-                             prp_obj_, temp_Prp, ext_Prp, ssa_Prp, leg_Prp, ipha_Prp, extDir_Prp, &
+                             prp_obj_, temp_Prp_, ext_Prp_, ssa_Prp_, leg_Prp_, ipha_Prp_, extDir_Prp, &
                              sfc_obj_, brdf_Sfc_, brdf_Rtm_, &
                              ckd_obj_, solar_Ckd_, wgt_Ckd_, kabs_Ckd_, &
                              sen_obj_, view_Sen_
@@ -568,13 +568,13 @@ program shdom
     allocate(prp_obj_%z(prp_obj_%Nz))
     prp_obj_%isAllocated = .true.
 
-    allocate(temp_Prp(prp_obj_%maxNpts),  &
-              ext_Prp(prp_obj_%maxNpts),  &
-              ssa_Prp(prp_obj_%maxNpts),  &
-              leg_Prp(1:prp_obj_%NlegSet, &
+    allocate(temp_Prp_(prp_obj_%maxNpts),  &
+              ext_Prp_(prp_obj_%maxNpts),  &
+              ssa_Prp_(prp_obj_%maxNpts),  &
+              leg_Prp_(1:prp_obj_%NlegSet, &
                       0:prp_obj_%maxNleg, &
                       1:prp_obj_%maxNptsLeg/(prp_obj_%maxNleg+1)/prp_obj_%NlegSet), &
-             ipha_Prp(prp_obj_%maxNpts))
+             ipha_Prp_(prp_obj_%maxNpts))
 
     allocate(extDir_Prp(prp_obj_%maxNpts))
 
@@ -611,8 +611,8 @@ program shdom
         end if
 
         ! distribute file grid data to working grids (different CPU processes different grids)
-        call shd_mpi__bcastPrp(prpAll_obj, temp_PrpAll, ext_PrpAll, ssa_PrpAll, leg_PrpAll, ipha_PrpAll, &
-                               prp_obj_,    temp_Prp,    ext_Prp,    ssa_Prp,    leg_Prp,    ipha_Prp)
+        call shd_mpi__bcastPrp(prpAll_obj,  temp_PrpAll, ext_PrpAll, ssa_PrpAll, leg_PrpAll, ipha_PrpAll, &
+                                  prp_obj_, temp_Prp_,   ext_Prp_,   ssa_Prp_,    leg_Prp_,    ipha_Prp_)
 
         if (isMasterProc) then
             deallocate(temp_PrpAll, &
@@ -630,10 +630,10 @@ program shdom
 
         ! Read the properties of the medium to the single processor
         call shd_io__readPrp(doDeltaM, &
-                             prp_obj_, temp_Prp, ext_Prp, ssa_Prp, leg_Prp, ipha_Prp)
+                             prp_obj_, temp_Prp_, ext_Prp_, ssa_Prp_, leg_Prp_, ipha_Prp_)
 
         ! Check values of medium properties
-        call shd_io__checkPrp(prp_obj_, temp_Prp, ext_Prp, ssa_Prp, leg_Prp, ipha_Prp)
+        call shd_io__checkPrp(prp_obj_, temp_Prp_, ext_Prp_, ssa_Prp_, leg_Prp_, ipha_Prp_)
 
     end if
 
@@ -1456,7 +1456,7 @@ program shdom
 
     ! prp_obj_
     !╭────────────────────────────────────────────────╮!
-    deallocate(temp_Prp, ext_Prp, ssa_Prp, leg_Prp, ipha_Prp)
+    deallocate(temp_Prp_, ext_Prp_, ssa_Prp_, leg_Prp_, ipha_Prp_)
     deallocate(extDir_Prp)
     if (prp_obj_%isAllocated) then
         deallocate(prp_obj_%z)

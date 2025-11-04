@@ -468,7 +468,7 @@ subroutine shd_mpi__bcastPrpSize(prp_obj)
 end subroutine shd_mpi__bcastPrpSize
 
 subroutine shd_mpi__bcastPrp(prpAll_obj, temp_PrpAll, ext_PrpAll, ssa_PrpAll, leg_PrpAll, ipha_PrpAll, &
-                             prp_obj, temp_Prp, ext_Prp, ssa_Prp, leg_Prp, ipha_Prp)
+                                prp_obj, temp_Prp,    ext_Prp,    ssa_Prp,    leg_Prp,    ipha_Prp)
 
     ! Sends portions of the optical properties on the property grid to each
     ! of the processors.  Deals with the duplicating the grid points on the
