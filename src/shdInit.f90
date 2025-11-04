@@ -496,39 +496,39 @@ subroutine shd_init__makePrp(&
 end subroutine shd_init__makePrp
 
 subroutine shd_init__makeRad(&
-    &NSTOKES, NXY, NZ,&
+    &NSTOKES, Nxy, NZ,&
     &iradI_Shdo, ZGRID,&
-    &EXTINCT, ALBEDO, LEGEN, TEMP, IPHASE,&
+    &ext, ssa, leg, temp, ipha,&
     &SRCTYPE, SOLARFLUX, SOLARMU,&
     &SKYRAD, UNITS, WAVENO, WAVELEN, radI_Shdo)
 
     ! Initializes radiance field by solving plane-parallel two-stream.
     ! Solves the L=1 M=0 SH system by transforming the pentadiagonal
     ! system to tridiagonal and calling solver.
-    ! Does the initialization for the NXY columns of the base grid.
+    ! Does the initialization for the Nxy columns of the base grid.
     ! Only the I Stokes parameter is initialized, the rest are zeroed.
 
-    integer NSTOKES, NXY, NZ, iradI_Shdo(*)
-    integer*2 IPHASE(NZ, NXY)
+    integer NSTOKES, Nxy, NZ, iradI_Shdo(*)
+    integer*2 ipha(NZ, Nxy)
     real SKYRAD, SOLARFLUX, SOLARMU
     real WAVENO(2), WAVELEN
     real ZGRID(NZ)
-    real EXTINCT(NZ, NXY), ALBEDO(NZ, NXY), LEGEN(prp_obj_%NlegSet, 0:prp_obj_%Nleg, *)
-    real TEMP(NZ, NXY)
+    real ext(NZ, Nxy), ssa(NZ, Nxy), leg(prp_obj_%NlegSet, 0:prp_obj_%Nleg, *)
+    real temp(NZ, Nxy)
     real radI_Shdo(NSTOKES, *)
     character(len=1) :: SRCTYPE, UNITS
     integer NLAYER, I, IZ, IR, J, K, L, ZINDEX
     logical DELTAM
     real C0, C1
     real EXT0, ALB0, SCAT0, G0, GNDEMIS
-    real, allocatable :: OPTDEPTHS(:), ALBEDOS(:), ASYMMETRIES(:)
-    real, allocatable :: TEMPS(:), FLUXES(:, :)
+    real, allocatable :: optZ(:), ssaZ(:), asyZ(:)
+    real, allocatable :: tempZ(:), FLUXES(:, :)
     character(len=1) :: SRCT
 
     NLAYER = NZ - 1
 
-    allocate(OPTDEPTHS(NZ), ALBEDOS(NZ), ASYMMETRIES(NZ))
-    allocate(TEMPS(NZ), FLUXES(3, NZ))
+    allocate(optZ(NZ), ssaZ(NZ), asyZ(NZ))
+    allocate(tempZ(NZ), FLUXES(3, NZ))
 
     !real, allocatable :: CH(:, :)
     !allocate(CH(NLAYER, NLAYER))
@@ -546,7 +546,7 @@ subroutine shd_init__makeRad(&
     ! Loop over all the columns in the base grid
     IR = 0
     iradI_Shdo(1) = 0
-    do I = 1, NXY
+    do I = 1, Nxy
 
         ! this is modified to address layer averaging issue
         !╭────────────────────────────────────────────────╮!
@@ -556,41 +556,41 @@ subroutine shd_init__makeRad(&
 
             ZINDEX = IZ + 1
 
-            EXT0 = EXTINCT(ZINDEX, I)
-            ALB0 = ALBEDO(ZINDEX, I)
+            EXT0 = ext(ZINDEX, I)
+            ALB0 = ssa(ZINDEX, I)
             SCAT0 = ALB0*EXT0
 
-            OPTDEPTHS(L) = (ZGRID(IZ + 1) - ZGRID(IZ))*EXT0
+            optZ(L) = (ZGRID(IZ + 1) - ZGRID(IZ))*EXT0
 
             if (EXT0 .gt. 0.0) then
-                ALBEDOS(L) = ALB0
+                ssaZ(L) = ALB0
             else
-                ALBEDOS(L) = 0.0
+                ssaZ(L) = 0.0
             end if
 
             if (prp_obj_%Npha .gt. 0) then
-                J = IPHASE(ZINDEX, I)
+                J = ipha(ZINDEX, I)
             else
                 J = NZ*(I - 1) + IZ
             end if
-            G0 = LEGEN(1, 1, J)
+            G0 = leg(1, 1, J)
 
             if (SCAT0 .gt. 0.0) then
-                ASYMMETRIES(L) = G0
+                asyZ(L) = G0
             else
-                ASYMMETRIES(L) = 0.0
+                asyZ(L) = 0.0
             end if
-            TEMPS(L + 1) = TEMP(IZ, I)
+            tempZ(L + 1) = temp(IZ, I)
         end do
         !╰────────────────────────────────────────────────╯!
 
-        TEMPS(1) = TEMP(NZ, I)
+        tempZ(1) = temp(NZ, I)
 
         GNDEMIS = 1.0 - sfc_obj_%avgAlb
 
         ! Call the Eddington flux routine
-        call shd_init__makeFlux(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
-            &TEMPS, DELTAM, SRCTYPE, SOLARFLUX, SOLARMU,&
+        call shd_init__makeFlux(NLAYER, optZ, ssaZ, asyZ,&
+            &tempZ, DELTAM, SRCTYPE, SOLARFLUX, SOLARMU,&
             &sfc_obj_%avgTemp, GNDEMIS, SKYRAD, UNITS, WAVENO, WAVELEN,&
             &FLUXES)
 
@@ -608,15 +608,15 @@ subroutine shd_init__makeRad(&
         end do
     end do
 
-    deallocate(OPTDEPTHS, ALBEDOS, ASYMMETRIES, TEMPS, FLUXES)
+    deallocate(optZ, ssaZ, asyZ, tempZ, FLUXES)
 
     return
 
 end subroutine shd_init__makeRad
 
 subroutine shd_init__makeFlux(&
-    &NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
-    &TEMPS, DELTAM, SRCTYPE, SOLARFLUX, SOLARMU,&
+    &NLAYER, optZ, ssaZ, asyZ,&
+    &tempZ, DELTAM, SRCTYPE, SOLARFLUX, SOLARMU,&
     &GNDTEMP, GNDEMIS, SKYRAD, UNITS, WAVENO, WAVELEN,&
     &FLUXES)
 
@@ -641,12 +641,12 @@ subroutine shd_init__makeFlux(&
     !   Input:
     ! NLAYER         integer      Number of homogenous layers
     !                             (layers are specified from the top down)
-    ! OPTDEPTHS      real array   Optical thickness of layers
-    ! ALBEDOS        real array   Single scattering albedos
-    ! ASYMMETRIES    real array   Asymmetry parameters
-    ! TEMPS          real array   Temperatures (K) at layer interfaces
-    !                              (e.g. TEMPS(1) is at top of top layer
-    !                               TEMPS(2) is at bottom of top layer).
+    ! optZ           real array   Optical thickness of layers
+    ! ssaZ           real array   Single scattering albedos
+    ! asyZ           real array   Asymmetry parameters
+    ! tempZ          real array   Temperatures (K) at layer interfaces
+    !                              (e.g. tempZ(1) is at top of top layer
+    !                               tempZ(2) is at bottom of top layer).
     ! DELTAM         logical      True for delta-Eddington scaling
     ! SRCTYPE        character    'S' for solar source, 'T' for thermal source
     ! SOLARFLUX      real         Incident solar flux on horizonal plane
@@ -672,8 +672,8 @@ subroutine shd_init__makeFlux(&
 
     integer NLAYER
     logical DELTAM
-    real TEMPS(*)
-    real OPTDEPTHS(*), ALBEDOS(*), ASYMMETRIES(*)
+    real tempZ(*)
+    real optZ(*), ssaZ(*), asyZ(*)
     real GNDTEMP, GNDEMIS, SKYRAD, SOLARFLUX, SOLARMU
     real WAVENO(2), WAVELEN
     character(len=1) :: SRCTYPE, UNITS
@@ -696,14 +696,14 @@ subroutine shd_init__makeFlux(&
     !   coefficients for each layer for the diffuse Eddington
     !   two stream problem.
     if (SRCTYPE .eq. 'T') then
-        call shd_util__computePlanck(TEMPS(1), UNITS, WAVENO, WAVELEN, BBRAD)
+        call shd_util__computePlanck(tempZ(1), UNITS, WAVENO, WAVELEN, BBRAD)
         PLANCK1 = PI_*BBRAD
     end if
     MU0 = abs(SOLARMU)
     TAU = 0.0
     I = 2
     do L = 1, NLAYER
-        DELTAU = OPTDEPTHS(L)
+        DELTAU = optZ(L)
         if (DELTAU .lt. 0.0) stop 'Error [_makeFlux]: TAU<0.'
         ! Special case for zero optical depth
         if (DELTAU .eq. 0.0) then
@@ -712,8 +712,8 @@ subroutine shd_init__makeFlux(&
             SOURCEP = 0.0
             SOURCEM = 0.0
         else
-            OMEGA = ALBEDOS(L)
-            G = ASYMMETRIES(L)
+            OMEGA = ssaZ(L)
+            G = asyZ(L)
             if (DELTAM) then
                 F = G**2
                 DELTAU = (1 - OMEGA*F)*DELTAU
@@ -741,7 +741,7 @@ subroutine shd_init__makeFlux(&
 
             if (SRCTYPE .eq. 'T') then
                 ! Calculate thermal source terms
-                call shd_util__computePlanck(TEMPS(L + 1), UNITS, WAVENO, WAVELEN, BBRAD)
+                call shd_util__computePlanck(tempZ(L + 1), UNITS, WAVENO, WAVELEN, BBRAD)
                 PLANCK2 = PI_*BBRAD
                 V = 2.0*(PLANCK2 - PLANCK1)/(3.0*(1.0-OMEGA*G)*DELTAU)
                 RADP1P = -V + PLANCK1
