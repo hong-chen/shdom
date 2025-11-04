@@ -54,7 +54,7 @@ program shdom
 
     use globals_obj,   only: shdo_obj_, iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo, &
                              src_obj_, &
-                             prp_obj_, temp_Prp_, ext_Prp_, ssa_Prp_, leg_Prp_, ipha_Prp_, extDir_Prp, &
+                             prp_obj_, temp_Prp_, ext_Prp_, ssa_Prp_, leg_Prp_, ipha_Prp_, &
                              sfc_obj_, brdf_Sfc_, brdf_Rtm_, &
                              ckd_obj_, solar_Ckd_, wgt_Ckd_, kabs_Ckd_, &
                              sen_obj_, view_Sen_
@@ -572,12 +572,12 @@ program shdom
               ext_Prp_(prp_obj_%maxNpts),  &
               ssa_Prp_(prp_obj_%maxNpts),  &
               leg_Prp_(1:prp_obj_%NlegSet, &
-                      0:prp_obj_%maxNleg, &
-                      1:prp_obj_%maxNptsLeg/(prp_obj_%maxNleg+1)/prp_obj_%NlegSet), &
+                       0:prp_obj_%maxNleg, &
+                       1:prp_obj_%maxNptsLeg/(prp_obj_%maxNleg+1)/prp_obj_%NlegSet), &
              ipha_Prp_(prp_obj_%maxNpts))
 
-    allocate(extDir_Prp(prp_obj_%maxNpts))
-
+    ! note: in addition to xxx_Prp_, here memUsed accounts for extDir_Prp
+    !       that will be used in shd_rad__computeDirect (shdRad.f90)
     memUsed = memUsed + prp_obj_%Nz + 6.0*prp_obj_%maxNpts + prp_obj_%maxNptsLeg
 
     if (isMpi_) then
@@ -616,9 +616,9 @@ program shdom
 
         if (isMasterProc) then
             deallocate(temp_PrpAll, &
-                       ext_PrpAll,  &
-                       ssa_PrpAll,  &
-                       leg_PrpAll,  &
+                        ext_PrpAll,  &
+                        ssa_PrpAll,  &
+                        leg_PrpAll,  &
                        ipha_PrpAll)
             if (prpAll_obj%isAllocated) then
                 deallocate(prpAll_obj%z)
@@ -682,8 +682,8 @@ program shdom
         ckd_obj_%isAllocated = .true.
 
         allocate(solar_Ckd_(ckd_obj_%Ng), &
-                 wgt_Ckd_(ckd_obj_%Ng),   &
-                 kabs_Ckd_(ckd_obj_%Nz, ckd_obj_%Ng))
+                   wgt_Ckd_(ckd_obj_%Ng),   &
+                  kabs_Ckd_(ckd_obj_%Nz, ckd_obj_%Ng))
 
         memUsed = memUsed + ckd_obj_%Nz*(2.0+ckd_obj_%Ng) + 2.0*ckd_obj_%Ng
 
@@ -700,8 +700,9 @@ program shdom
         ckd_obj_%Ng = 1
         ckd_obj_%Nz = 0
 
-        allocate(solar_Ckd_(ckd_obj_%Ng), wgt_Ckd_(ckd_obj_%Ng)); &
-            memUsed = memUsed + 2.0*ckd_obj_%Ng
+        allocate(solar_Ckd_(ckd_obj_%Ng), wgt_Ckd_(ckd_obj_%Ng))
+
+        memUsed = memUsed + 2.0*ckd_obj_%Ng
 
         solar_Ckd_(1) = 1.0
         wgt_Ckd_(1) = 1.0
@@ -723,8 +724,9 @@ program shdom
 
         call shd_mpi__bcastSenSize(sen_obj_)
 
-        allocate(view_Sen_(sen_obj_%Npar, sen_obj_%Npts)); &
-            memUsed = memUsed + sen_obj_%Npar*sen_obj_%Npts
+        allocate(view_Sen_(sen_obj_%Npar, sen_obj_%Npts))
+
+        memUsed = memUsed + sen_obj_%Npar*sen_obj_%Npts
 
         if (isMasterProc) then
             call shd_io__readSen(sen_obj_, view_Sen_)
@@ -1457,7 +1459,6 @@ program shdom
     ! prp_obj_
     !╭────────────────────────────────────────────────╮!
     deallocate(temp_Prp_, ext_Prp_, ssa_Prp_, leg_Prp_, ipha_Prp_)
-    deallocate(extDir_Prp)
     if (prp_obj_%isAllocated) then
         deallocate(prp_obj_%z)
         prp_obj_%isAllocated = .false.
@@ -1479,6 +1480,8 @@ program shdom
             deallocate(ckd_obj_%z)
             ckd_obj_%isAllocated = .false.
         end if
+    else
+        deallocate(solar_Ckd_, wgt_Ckd_)
     end if
     !╰────────────────────────────────────────────────╯!
 

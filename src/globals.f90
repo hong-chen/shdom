@@ -444,8 +444,7 @@ module globals_obj
     real(kind=R__),  allocatable, save :: temp_Prp_(:),  &      ! (prp_obj%maxNpts)
                                            ext_Prp_(:),  &      ! (prp_obj%maxNpts)
                                            ssa_Prp_(:),  &      ! (prp_obj%maxNpts)
-                                           leg_Prp_(:, :, :), & ! (prp_obj%NlegSet, prp_obj%maxNleg, prp_obj%Npha)
-                                        extDir_Prp(:)          ! (prp_obj%maxNpts)
+                                           leg_Prp_(:, :, :)    ! (prp_obj%NlegSet, prp_obj%maxNleg, prp_obj%Npha)
     integer(kind=2), allocatable, save :: ipha_Prp_(:)          ! (prp_obj%maxNpts)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 

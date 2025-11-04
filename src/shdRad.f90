@@ -51,7 +51,7 @@ module shd_rad
 
     use globals_obj, only: shdo_obj_, isrcJ_Shdo, srcJ_Shdo, &
                             src_obj_, &
-                            prp_obj_, ext_Prp_, ssa_Prp_, leg_Prp_, ipha_Prp_, extDir_Prp, &
+                            prp_obj_, ext_Prp_, ssa_Prp_, leg_Prp_, ipha_Prp_, &
                             sfc_obj_, &
                             ckd_obj_, kabs_Ckd_, &
                             sen_obj_, view_Sen_
@@ -176,18 +176,23 @@ subroutine shd_rad__computeDirect(&
     real(RD_) :: B1, B2, B3, B4, B5, B6, B7, B8, C1, C2, C3, C4, C5, C6, C7, C8
     real(RD_) :: UV, UMV, UVM, UMVM, UW, UMW, UWM, UMWM, VW, VMW, VWM, VMWM
     real(RD_) :: VWU, VWUM, UWV, UWVM, UVW, UVWM
-    real, save, allocatable :: GASEXT(:), EXTMIN(:), EXTMAX(:)
+    real, save, allocatable :: GASEXT(:), EXTMIN(:), EXTMAX(:), extDir_Prp(:)
 
     save CX, CY, CZ, CXINV, CYINV, CZINV, DI, DJ, DK, IPDIRECT
     save DELXD, DELYD, XDOMAIN, YDOMAIN, EPSS, EPSZ, UNIFORMZLEV
 
+
     if (INIT .eq. 9) then
         deallocate(GASEXT, EXTMIN, EXTMAX)
+        deallocate(extDir_Prp)
         return
     end if
 
     if (INIT .eq. 1) then
-        if (.not. allocated(GASEXT)) allocate(GASEXT(prp_obj_%Nz), EXTMIN(prp_obj_%Nz), EXTMAX(prp_obj_%Nz))
+        if (.not. allocated(GASEXT)) then
+            allocate(GASEXT(prp_obj_%Nz), EXTMIN(prp_obj_%Nz), EXTMAX(prp_obj_%Nz))
+            allocate(extDir_Prp(prp_obj_%maxNpts))
+        end if
         ! Get the gaseous extinction at the property grid levels
         do IZ = 1, prp_obj_%Nz
             if (ckd_obj_%Nz .gt. 0) then
