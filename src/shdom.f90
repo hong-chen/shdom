@@ -161,8 +161,6 @@ program shdom
 
     ! shdo_obj_
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    real(kind=R__),    allocatable :: srcD_Shdo(:, :)
-    integer(kind=I__), allocatable :: isrcD_Shdo(:)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! SAV
@@ -221,7 +219,7 @@ program shdom
     integer(kind=I__) :: countStart, countRate, countMax
     character(len=charMaxLen_) :: message
 
-    logical :: doCkd, doDeltaM, isAccel
+    logical :: doCkd, doDeltaM, doAccel
 
 
     ! start timing
@@ -245,7 +243,7 @@ program shdom
                 rtmAll_obj%flag_ip, doCkd, doDeltaM, rtmAll_obj%type,&
                 src_obj_%type, src_obj_%inpSolar, src_obj_%avgMu, src_obj_%avgAz, src_obj_%skyRad,&
                 sfc_obj_%avgTemp, sfc_obj_%avgAlb, src_obj_%unit, src_obj_%waveNum, src_obj_%avgWaveLen,&
-                isAccel, solAcc, maxIter, splitAcc, shAcc,&
+                doAccel, solAcc, maxIter, splitAcc, shAcc,&
                 maxNset_out, maxNpar_out, Nout, type_Out, parms_Out, file_Out,&
                 fileOut_nc, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
                 NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, verbose_)
@@ -256,7 +254,7 @@ program shdom
                 rtmAll_obj%flag_ip, doCkd, doDeltaM, rtmAll_obj%type,&
                 src_obj_%type, src_obj_%inpSolar, src_obj_%avgMu, src_obj_%avgAz, src_obj_%skyRad,&
                 sfc_obj_%avgTemp, sfc_obj_%avgAlb, src_obj_%unit, src_obj_%waveNum, src_obj_%avgWaveLen,&
-                isAccel, solAcc, maxIter, splitAcc, shAcc,&
+                doAccel, solAcc, maxIter, splitAcc, shAcc,&
                 maxNset_out, maxNpar_out, Nout, type_Out, parms_Out, file_Out,&
                 fileOut_nc, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
                 NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, verbose_)
@@ -269,7 +267,7 @@ program shdom
         &rtmAll_obj%flag_ip, doCkd, doDeltaM, rtmAll_obj%type,&
         &src_obj_%type, src_obj_%inpSolar, src_obj_%avgMu, src_obj_%avgAz, src_obj_%skyRad,&
         &src_obj_%unit, src_obj_%waveNum, src_obj_%avgWaveLen,&
-        &isAccel, solAcc, maxIter, splitAcc, shAcc,&
+        &doAccel, solAcc, maxIter, splitAcc, shAcc,&
         &maxNset_out, maxNpar_out, Nout, type_Out, parms_Out,&
         &MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
         &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, prpAll_obj, sfc_obj_, ckd_obj_, sen_obj_)
@@ -852,7 +850,7 @@ program shdom
     end if
 
     NbigArr = 3
-    if (.not. isAccel) NbigArr = 2
+    if (.not. doAccel) NbigArr = 2
 
     ! NmaxNpts
     !╭──────────────────────────────────────────────────────────────╮!
@@ -884,10 +882,12 @@ program shdom
 
     NmaxNpts = NmaxNpts + 16.5*CELL_TO_POINT_RATIO ! i8Grid_Cell[8.0], i6Cell_Cell[6.0], i2Tree_Cell[2.0], flag_Cell[0.5]
 
+    ! note: in addition to xxx_Shdo_, here memUsed accounts for isrcD_Shdo and srcD_Shdo
+    !       that will be used in shd_solv__solveRte(shdSolv.f90)
     NmaxNpts = NmaxNpts + 6.0   ! xyz_Grid[3.0], iradI_Shdo[1.0], isrcJ_Shdo[1.0], isrcD_Shdo[1.0]
     memUsed = memUsed + 4.0 ! offset iradI_Shdo[+2], isrcJ_Shdo[+1], isrcD_Shdo[+1]
 
-    if (isAccel) then
+    if (doAccel) then
         NmaxNpts = NmaxNpts + shdo_obj_%Nstokes*(1.0+3.0*NUM_SH_TERM_FACTOR*shdo_obj_%Nlm) ! radiance, source, delta source
     else
         NmaxNpts = NmaxNpts + shdo_obj_%Nstokes*(1.0+2.0*NUM_SH_TERM_FACTOR*shdo_obj_%Nlm) ! radiance, source
@@ -1066,12 +1066,6 @@ program shdom
              srcJ_Shdo(shdo_obj_%Nstokes, shdo_obj_%maxNptsSH))
     !╰────────────────────────────────────────────────╯!
 
-    ! delta source
-    if (isAccel) then
-        allocate(isrcD_Shdo(grid_obj%maxNpts + 1), &
-                  srcD_Shdo(shdo_obj_%Nstokes, shdo_obj_%maxNptsSH))
-    end if
-
     ! fluxes
     allocate(fluxTot(2, grid_obj%maxNpts), fluxDir(grid_obj%maxNpts))
 
@@ -1149,11 +1143,11 @@ program shdom
         call shd_solv__solveRte(&
             &doRadInit,&
             &doDeltaM, doHighOrder_,&
-            &isAccel, solAcc, maxIter, solCrit, iter,&
+            &doAccel, solAcc, maxIter, solCrit, iter,&
             &splitAcc, shAcc,&
             &maxNpts_bc, maxNrad_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
-            &isrcD_Shdo, work, work1, work2,&
-            &srcD_Shdo, fluxTot, fluxDir,&
+            &work, work1, work2,&
+            &fluxTot, fluxDir,&
             &rtm_obj, grid_obj)
 
         doRadInit = .false.
@@ -1496,8 +1490,6 @@ program shdom
     !╭────────────────────────────────────────────────╮!
     deallocate(radI_Shdo, iradI_Shdo)
     deallocate(srcJ_Shdo, isrcJ_Shdo)
-    if (isAccel) &
-        deallocate(srcD_Shdo, isrcD_Shdo)
     if (shdo_obj_%isAllocated) then
         deallocate(shdo_obj_%Nphi0, &
                    shdo_obj_%mu,    &

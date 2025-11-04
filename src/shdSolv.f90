@@ -93,11 +93,11 @@ contains
 subroutine shd_solv__solveRte(&
     &doRadInit,&
     &doDeltaM, doHighOrder,&
-    &ACCELFLAG, SOLACC, MAXITER, SOLCRIT, ITER,&
+    &doAccel, SOLACC, MAXITER, SOLCRIT, ITER,&
     &SPLITACC, SHACC,&
     &MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-    &isrcD_Shdo, WORK, WORK1, WORK2,&
-    &srcD_Shdo, FLUXES, DIRFLUX,&
+    &WORK, WORK1, WORK2,&
+    &FLUXES, DIRFLUX,&
     &rtm_obj, grid_obj)
 
     ! Performs the SHDOM solution procedure.
@@ -111,13 +111,11 @@ subroutine shd_solv__solveRte(&
 
     integer MAXITER, ITER
     integer MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR(MAXNBC, 2)
-    integer isrcD_Shdo(*)
     integer WORK1(*)
-    logical doRadInit, doDeltaM, ACCELFLAG, doHighOrder
+    logical doRadInit, doDeltaM, doAccel, doHighOrder
     real SOLACC, SOLCRIT, SPLITACC, SHACC
     real BCRAD(*)
     real FLUXES(2, *), DIRFLUX(*)
-    real srcD_Shdo(shdo_obj_%Nstokes, *)
     real WORK(*), WORK2(*)
 
     integer I, isetDO
@@ -134,6 +132,9 @@ subroutine shd_solv__solveRte(&
     real, allocatable :: YlmSolar_Shdo(:, :), wgtMu_Shdo(:), wPhiFFT_Shdo(:)
     real, allocatable :: brdf_Shdo(:, :, :, :, :, :)
 
+    integer(kind=I__), allocatable :: isrcD_Shdo(:)
+    real(kind=R__),    allocatable ::  srcD_Shdo(:, :)
+
     integer :: COUNT_START, COUNT_RATE, COUNT_MAX
     integer :: COUNT_END
     real :: ELAPSED_TIME
@@ -144,6 +145,11 @@ subroutine shd_solv__solveRte(&
     allocate(CPHI1(-16:16, 32, shdo_obj_%Nmu), CPHI2(32, -16:16, shdo_obj_%Nmu))
     allocate(YlmSolar_Shdo(prp_obj_%NlegSet, shdo_obj_%Nlm))
     allocate(flagFFT_Shdo(shdo_obj_%Nmu), wgtMu_Shdo(shdo_obj_%Nmu), wPhiFFT_Shdo(shdo_obj_%Nmu*(3*shdo_obj_%Nphi+ 15)))
+
+    if (doAccel) then
+        allocate(isrcD_Shdo(grid_obj%maxNpts + 1), &
+                  srcD_Shdo(shdo_obj_%Nstokes, shdo_obj_%maxNptsSH))
+    end if
 
     ! Set up some things before solution loop
 
@@ -205,11 +211,11 @@ subroutine shd_solv__solveRte(&
             &doFixSH, YlmSolar_Shdo,&
             &DIRFLUX, SHACC,&
             &isrcD_Shdo, srcD_Shdo,&
-            &.true., ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM,&
+            &.true., doAccel, DELJDOT, DELJOLD, DELJNEW, JNORM,&
             &rtm_obj, grid_obj)
     end if
 
-    if (ACCELFLAG) then
+    if (doAccel) then
         isrcD_Shdo(1:grid_obj%Npts + 1) = isrcJ_Shdo(1:grid_obj%Npts + 1)
         srcD_Shdo(:, 1:isrcD_Shdo(grid_obj%Npts + 1)) = 0.0
     end if
@@ -318,7 +324,7 @@ subroutine shd_solv__solveRte(&
             if (SPLITTESTING) then
                 call shd_grid__splitGrid(&
                     &doSplit, isOutMem, CURSPLITACC, SPLITCRIT,&
-                    &doDeltaM, ACCELFLAG,&
+                    &doDeltaM, doAccel,&
                     &isrcD_Shdo,&
                     &DIRFLUX,&
                     &src_obj_%avgSolar0, YlmSolar_Shdo,&
@@ -365,13 +371,13 @@ subroutine shd_solv__solveRte(&
             &doFixSH, YlmSolar_Shdo,&
             &DIRFLUX, SHACC,&
             &isrcD_Shdo, srcD_Shdo,&
-            &.false., ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM,&
+            &.false., doAccel, DELJDOT, DELJOLD, DELJNEW, JNORM,&
             &rtm_obj, grid_obj)
         !╰────────────────────────────────────────────────╯!
 
         ! Calculate the acceleration parameter and solution criterion
         !   from all the processors
-        call shd_mpi__calAccelSolCrit(ACCELFLAG, DELJDOT, DELJOLD, DELJNEW,&
+        call shd_mpi__calAccelSolCrit(doAccel, DELJDOT, DELJOLD, DELJNEW,&
             &JNORM, ACCELPAR, SOLCRIT)
 
         ! Accelerate the convergence of the source function vector
@@ -430,6 +436,9 @@ subroutine shd_solv__solveRte(&
     end if
     deallocate(YlmSolar_Shdo, flagFFT_Shdo, wgtMu_Shdo, wPhiFFT_Shdo)
     deallocate(CMU1, CMU2, CPHI1, CPHI2)
+
+    if (allocated(srcD_Shdo)) &
+        deallocate(isrcD_Shdo, srcD_Shdo)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     return
