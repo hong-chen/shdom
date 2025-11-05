@@ -432,7 +432,7 @@ end subroutine shd_init__makeCell
 subroutine shd_init__makePrp(&
     doDeltaM, maxSsa,&
     rtm_obj, grid_obj, &
-    temp_Rtm, planck_Rtm, ext_Rtm, ssa_Rtm)
+    temp_Rtm, planck_Rtm, ext_Rtm, ssa_Rtm, ipha_Rtm)
 
     ! Prepares the grid arrays for the iterative solution process.
     ! If doing Delta-M scaling then the extinction, albedo, and Legend
@@ -444,10 +444,11 @@ subroutine shd_init__makePrp(&
     type(shd_type_rtm),  intent(inout) :: rtm_obj
     type(shd_type_grid), intent(in)    :: grid_obj
 
-    real(R__), intent(in)    ::   temp_Rtm(*)
-    real(R__), intent(out)   :: planck_Rtm(*)
-    real(R__), intent(inout) ::    ext_Rtm(*)
-    real(R__), intent(inout) ::    ssa_Rtm(*)
+    real(kind=R__), intent(in)    ::   temp_Rtm(*)
+    real(kind=R__), intent(out)   :: planck_Rtm(*)
+    real(kind=R__), intent(inout) ::    ext_Rtm(*)
+    real(kind=R__), intent(inout) ::    ssa_Rtm(*)
+    integer(kind=2), intent(in)   ::   ipha_Rtm(*)
 
     logical, intent(in) :: doDeltaM
     real(kind=R__), intent(inout) :: maxSsa
@@ -476,7 +477,7 @@ subroutine shd_init__makePrp(&
     do I = 1, grid_obj%Npts
         if (doDeltaM) then
             if (prp_obj_%Npha .gt. 0) then
-                F = rtm_obj%leg(1, shdo_obj_%maxNl + 1, rtm_obj%ipha(I))
+                F = rtm_obj%leg(1, shdo_obj_%maxNl + 1, ipha_Rtm(I))
             else
                 ! prp_obj_%Npha =0 is standard property format, which is unpolarized
                 F = rtm_obj%leg(1, shdo_obj_%maxNl + 1, I)

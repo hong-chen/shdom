@@ -45,7 +45,7 @@ module shd_out
                              isSolar_, isThermal_
     use globals_type,  only: shd_type_rtm, shd_type_grid
 
-    use globals_obj,   only: rtm_obj_, temp_Rtm_, ext_Rtm_, ssa_Rtm_, &
+    use globals_obj,   only: rtm_obj_, temp_Rtm_, ext_Rtm_, ssa_Rtm_, ipha_Rtm_, &
                             shdo_obj_, iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_, &
                              src_obj_, &
                              prp_obj_, &
@@ -1032,7 +1032,7 @@ subroutine shd_io__outputResult(&
         allocate(ASYM(N))
         do I = 1, N
             if (prp_obj_%Npha .gt. 0) then
-                ASYM(I) = rtm_obj_%leg(1, 1, rtm_obj_%ipha(I))
+                ASYM(I) = rtm_obj_%leg(1, 1, ipha_Rtm_(I))
             else
                 ASYM(I) = rtm_obj_%leg(1, 1, I)
             end if
@@ -1085,7 +1085,7 @@ subroutine shd_io__outputResult(&
         !╭────────────────────────────────────────────────╮!
         !do I = 1, N
         !    if (prp_obj_%Npha .gt. 0) then
-        !        ASYM = rtm_obj_%leg(1, 1, rtm_obj_%ipha(I))
+        !        ASYM = rtm_obj_%leg(1, 1, ipha_Rtm_(I))
         !    else
         !        ASYM = rtm_obj_%leg(1, 1, I)
         !    end if

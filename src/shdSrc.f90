@@ -46,7 +46,7 @@ module shd_src
                              isSolar_, isThermal_
     use globals_type,  only: shd_type_grid
 
-    use globals_obj,   only: rtm_obj_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, &
+    use globals_obj,   only: rtm_obj_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, ipha_Rtm_, &
                             shdo_obj_, &
                              src_obj_, &
                              prp_obj_, &
@@ -159,7 +159,7 @@ subroutine shd_src__computeSrcOneCell(&
             ! Special case for solar source and Delta-M
             if (isSolar_ .and. DELTAM) then
                 if (prp_obj_%Npha .gt. 0) then
-                    IPH = rtm_obj_%ipha(IP)
+                    IPH = ipha_Rtm_(IP)
                 else
                     IPH = IP
                 end if
@@ -273,7 +273,7 @@ subroutine shd_src__computeSrcOneCell_(&
             ! Special case for solar source and Delta-M
             if (isSolar_ .and. DELTAM) then
                 if (prp_obj_%Npha .gt. 0) then
-                    IPH = rtm_obj_%ipha(IP)
+                    IPH = ipha_Rtm_(IP)
                 else
                     IPH = IP
                 end if
@@ -435,7 +435,7 @@ subroutine shd_src__computeSrcOneDir(&
         ! Special case for solar source and Delta-M
         if ((src_obj_%type .ne. 'T') .and. TMS) then
             if (prp_obj_%Npha .gt. 0) then
-                IPH = rtm_obj_%ipha(I)
+                IPH = ipha_Rtm_(I)
             else
                 IPH = I
             end if
@@ -573,7 +573,7 @@ subroutine shd_src__computeSrc(&
         do I = 1, grid_obj%Npts
             ! Compute the temporary source function for this point
             if (prp_obj_%Npha .gt. 0) then
-                IPH = rtm_obj_%ipha(I)
+                IPH = ipha_Rtm_(I)
             else
                 IPH = I
             end if
@@ -628,7 +628,7 @@ subroutine shd_src__computeSrc(&
         do I = 1, grid_obj%Npts
             ! Compute the temporary source function for this point
             if (prp_obj_%Npha .gt. 0) then
-                IPH = rtm_obj_%ipha(I)
+                IPH = ipha_Rtm_(I)
             else
                 IPH = I
             end if
@@ -661,7 +661,7 @@ subroutine shd_src__computeSrc(&
     IS = 0
     do I = 1, grid_obj%Npts
         if (prp_obj_%Npha .gt. 0) then
-            IPH = rtm_obj_%ipha(I)
+            IPH = ipha_Rtm_(I)
         else
             IPH = I
         end if
