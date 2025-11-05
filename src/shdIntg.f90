@@ -44,13 +44,13 @@ module shd_intg
     use globals_cfg,   only: verbose_, accSolv_, &
                              isMpi_, is1DX_, is1DYx_, is1D_, &
                              isPol_
-    use globals_type,  only: shd_type_rtm, &
-                             shd_type_grid
+    use globals_type,  only: shd_type_grid
 
-    use globals_obj, only: shdo_obj_, &
-                            src_obj_, &
-                            prp_obj_, &
-                            sfc_obj_, brdf_Sfc_, brdf_Rtm_
+    use globals_obj,   only:  rtm_obj_, &
+                             shdo_obj_, &
+                              src_obj_, &
+                              prp_obj_, &
+                              sfc_obj_, brdf_Sfc_, brdf_Rtm_
 
     use shd_sfc,  only: shd_sfc__interpSfc
 
@@ -96,10 +96,10 @@ subroutine shd_intg__integratePath(&
     &CMU1, CPHI1, CMU2, CPHI2, WSAVE, FFTFLAG,&
     &DIRFLUX, FLUXES,&
     &WORK, SWEEPORD, GRIDRAD,&
-    &rtm_obj, grid_obj, iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo)
+    &grid_obj, iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo)
 
     !   Performs the path integrations through the medium specified by
-    ! the extinction (rtm_obj%ext) and source function (srcJ_Shdo) in
+    ! the extinction (rtm_obj_%ext) and source function (srcJ_Shdo) in
     ! spherical harmonic space.  The source function is transformed to
     ! discrete ordinates one zenith angle at a time.  The integrations
     ! are done from the top boundary (with no reflection) down to the
@@ -122,7 +122,6 @@ subroutine shd_intg__integratePath(&
     ! downwelling radiances at all discrete ordinates for the bottom
     ! boundary points.
 
-    type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
 
     integer(I__), intent(inout) :: iradI_Shdo(*)
@@ -156,16 +155,16 @@ subroutine shd_intg__integratePath(&
 
     ! Make the new grid cell/point sweeping order if need to
     if (grid_obj%Npts .ne. OLDNPTS) then
-        call shd_grid__makeSweepOrder(SWEEPORD, GRIDRAD, rtm_obj, grid_obj)
+        call shd_grid__makeSweepOrder(SWEEPORD, GRIDRAD, grid_obj)
     end if
 
-    call shd_mpi__findBndryPnt(rtm_obj%flag_bc, rtm_obj%flag_ip, SWEEPORD,&
-        &rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, rtm_obj, grid_obj)
+    call shd_mpi__findBndryPnt(rtm_obj_%flag_bc, rtm_obj_%flag_ip, SWEEPORD,&
+        &rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz, grid_obj)
 
     if (grid_obj%Npts .ne. OLDNPTS) then
         ! Make the pointers to the grid points on the top and bottom boundaries
         call shd_grid__findBndryPnt(shdo_obj_%Nang, MAXNBC, MAXBCRAD, &
-            &rtm_obj%z(1), rtm_obj%z(rtm_obj%Nz),&
+            &rtm_obj_%z(1), rtm_obj_%z(rtm_obj_%Nz),&
             &NTOPPTS, NBOTPTS, BCPTR, grid_obj)
         if (sfc_obj_%type(1:1) .eq. 'V') then
             ! If this is a variable surface then bilinearly interpolate
@@ -280,30 +279,30 @@ subroutine shd_intg__integratePath(&
             ! Do backward path integration from each grid point not done yet
             if (is1D_) then
 
-                call shd_intg__backIntegrate1D(rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, shdo_obj_%maxNphi0,&
+                call shd_intg__backIntegrate1D(rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz, shdo_obj_%maxNphi0,&
                     &SWEEPORD, shdo_obj_%mu(IMU), shdo_obj_%phi(IMU, IPHI), TRANSMIN,&
-                    &rtm_obj%ext, shdo_obj_%Nstokes, WORK, IPHI, GRIDRAD, grid_obj)
+                    &rtm_obj_%ext, shdo_obj_%Nstokes, WORK, IPHI, GRIDRAD, grid_obj)
 
             else if (is1DYx_ .and. (.not. isMpi_)) then
 
-                call shd_intg__backIntegrate2D(rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, shdo_obj_%maxNphi0,&
+                call shd_intg__backIntegrate2D(rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz, shdo_obj_%maxNphi0,&
                     &SWEEPORD, shdo_obj_%mu(IMU), shdo_obj_%phi(IMU, IPHI), TRANSMIN,&
-                    &rtm_obj%ext, shdo_obj_%Nstokes, WORK, IPHI, GRIDRAD, grid_obj)
+                    &rtm_obj_%ext, shdo_obj_%Nstokes, WORK, IPHI, GRIDRAD, grid_obj)
 
             else
                 if (isPol_) then
 
-                    call shd_intg__backIntegrate3D(rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, shdo_obj_%maxNphi0,&
+                    call shd_intg__backIntegrate3D(rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz, shdo_obj_%maxNphi0,&
                         &SWEEPORD,&
-                        &shdo_obj_%mu(IMU), shdo_obj_%phi(IMU, IPHI), TRANSMIN, rtm_obj%flag_bc, rtm_obj%flag_ip,&
-                        &rtm_obj%ext, shdo_obj_%Nstokes, WORK, IPHI, GRIDRAD, rtm_obj, grid_obj)
+                        &shdo_obj_%mu(IMU), shdo_obj_%phi(IMU, IPHI), TRANSMIN, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
+                        &rtm_obj_%ext, shdo_obj_%Nstokes, WORK, IPHI, GRIDRAD, grid_obj)
 
                 else
 
-                    call shd_intg__backIntegrate3D_(rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, shdo_obj_%maxNphi0,&
+                    call shd_intg__backIntegrate3D_(rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz, shdo_obj_%maxNphi0,&
                         &SWEEPORD,&
-                        &shdo_obj_%mu(IMU), shdo_obj_%phi(IMU, IPHI), TRANSMIN, rtm_obj%flag_bc, rtm_obj%flag_ip,&
-                        &rtm_obj%ext, WORK, IPHI, GRIDRAD, rtm_obj, grid_obj)
+                        &shdo_obj_%mu(IMU), shdo_obj_%phi(IMU, IPHI), TRANSMIN, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
+                        &rtm_obj_%ext, WORK, IPHI, GRIDRAD, grid_obj)
 
                 end if
             end if
@@ -313,7 +312,7 @@ subroutine shd_intg__integratePath(&
             do I = 1, grid_obj%Npts
                 if (GRIDRAD(1, I) .lt. -accSolv_) then
                     if (verbose_ .ge. 4) write (6, *) 'Warning [_integratePath]: Grid point has no value',&
-                        &I, shdo_obj_%mu(IMU), shdo_obj_%phi(IMU, IPHI), GRIDRAD(1, I), rtm_obj%x(1), rtm_obj%y(1),&
+                        &I, shdo_obj_%mu(IMU), shdo_obj_%phi(IMU, IPHI), GRIDRAD(1, I), rtm_obj_%x(1), rtm_obj_%y(1),&
                         &grid_obj%xyz(1, I), grid_obj%xyz(2, I), grid_obj%xyz(3, I)
                     ! stop
                     GRIDRAD(1, I) = 0.0
@@ -368,7 +367,7 @@ subroutine shd_intg__backIntegrate3D(&
     &SWEEPORD,&
     &MU, PHI, TRANSMIN, BCFLAG, IPFLAG,&
     &EXTINCT, NSTOKES, SOURCE, KANG, GRIDRAD,&
-    &rtm_obj, grid_obj)
+    &grid_obj)
 
     !   Sweeps through the spatial grid computing radiance vectors for the
     ! discrete ordinate direction (MU,PHI) by integrating the source
@@ -382,7 +381,6 @@ subroutine shd_intg__backIntegrate3D(&
     ! at the end of the ray path is interpolated from the known grid point
     ! radiances on the face.  The resulting radiances are put in GRIDRAD.
 
-    type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
 
     integer NX, NY, NZ, NA, NSTOKES, KANG
@@ -467,14 +465,14 @@ subroutine shd_intg__backIntegrate3D(&
         if (isMpi_) then
             ! For multiple processors get the subdomain boundary radiances
             !   for each Z slab
-            if  ((grid_obj%xyz(3, IPT) .lt. rtm_obj%z(IZ) .and. BITZ .eq. 0) .or.&
-                &(grid_obj%xyz(3, IPT) .gt. rtm_obj%z(IZ) .and. BITZ .eq. 1)) then
+            if  ((grid_obj%xyz(3, IPT) .lt. rtm_obj_%z(IZ) .and. BITZ .eq. 0) .or.&
+                &(grid_obj%xyz(3, IPT) .gt. rtm_obj_%z(IZ) .and. BITZ .eq. 1)) then
                 IZ = IZ + 2*BITZ - 1
                 call shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
                     &NX, NY, NZ,&
                     &NA,&
                     &MU, PHI, EXTINCT, NSTOKES, SOURCE,&
-                    &KANG, GRIDRAD, rtm_obj, grid_obj)
+                    &KANG, GRIDRAD, grid_obj)
             end if
         end if
 
@@ -708,7 +706,7 @@ subroutine shd_intg__backIntegrate3D_(&
     &SWEEPORD,&
     &MU, PHI, TRANSMIN, BCFLAG, IPFLAG,&
     &EXTINCT, SOURCE, KANG, GRIDRAD,&
-    &rtm_obj, grid_obj)
+    &grid_obj)
 
     ! Description:
     !   Sweeps through the spatial grid computing radiances for the
@@ -756,14 +754,13 @@ subroutine shd_intg__backIntegrate3D_(&
     !                       1:  Do independent pixel for Y
     !                       2,3: Direction cell is split (0=no split, 1=X, 2=Y, 3=Z)
     !   grid_obj%xyz(3,grid_obj%Npts)    : real array, X,Y,Z coordinate values of grid point locations
-    !   rtm_obj%x, rtm_obj%y, rtm_obj%z: real array, grid locations for each dimension.
+    !   rtm_obj_%x, rtm_obj_%y, rtm_obj_%z: real array, grid locations for each dimension.
     !                        To facilitate the periodic horizontal boundaries,
-    !                        there are NX+1 values in rtm_obj%x, NY+1 in rtm_obj%y,
-    !                        NZ values in rtm_obj%z. Currently the grid locations
+    !                        there are NX+1 values in rtm_obj_%x, NY+1 in rtm_obj_%y,
+    !                        NZ values in rtm_obj_%z. Currently the grid locations
     !                        are evenly spaced in X and Y.
     !   SWEEPORD(grid_obj%Npts,*)   : integer array, grid point sweeping order
 
-    type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
 
     integer(kind=I__), intent(in) :: NX, NY, NZ, NA, KANG, BCFLAG, IPFLAG
@@ -872,14 +869,14 @@ subroutine shd_intg__backIntegrate3D_(&
         if (isMpi_) then
             ! For multiple processors get the subdomain boundary radiances
             !   for each Z slab
-            if  ((grid_obj%xyz(3, IPT) .lt. rtm_obj%z(IZ) .and. BITZ .eq. 0) .or.&
-                &(grid_obj%xyz(3, IPT) .gt. rtm_obj%z(IZ) .and. BITZ .eq. 1)) then
+            if  ((grid_obj%xyz(3, IPT) .lt. rtm_obj_%z(IZ) .and. BITZ .eq. 0) .or.&
+                &(grid_obj%xyz(3, IPT) .gt. rtm_obj_%z(IZ) .and. BITZ .eq. 1)) then
                 IZ = IZ + 2*BITZ - 1
                 call shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
                     &NX, NY, NZ,&
                     &NA,&
                     &MU, PHI, EXTINCT, 1, SOURCE,&
-                    &KANG, GRIDRAD, rtm_obj, grid_obj)
+                    &KANG, GRIDRAD, grid_obj)
             end if
         end if
         !╰────────────────────────────────────────────────╯!

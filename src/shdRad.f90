@@ -46,15 +46,16 @@ module shd_rad
                              is3Ddir1Ddif_, &
                              isPol_, isPol4_, &
                              isSolar_, isThermal_
-    use globals_type,  only: shd_type_rtm, &
-                             shd_type_grid
 
-    use globals_obj, only: shdo_obj_, isrcJ_Shdo_, srcJ_Shdo_, &
-                            src_obj_, &
-                            prp_obj_, ext_Prp_, ssa_Prp_, leg_Prp_, ipha_Prp_, &
-                            sfc_obj_, &
-                            ckd_obj_, kabs_Ckd_, &
-                            sen_obj_, view_Sen_
+    use globals_type,  only: shd_type_grid
+
+    use globals_obj,   only: rtm_obj_, &
+                            shdo_obj_, isrcJ_Shdo_, srcJ_Shdo_, &
+                             src_obj_, &
+                             prp_obj_, ext_Prp_, ssa_Prp_, leg_Prp_, ipha_Prp_, &
+                             sfc_obj_, &
+                             ckd_obj_, kabs_Ckd_, &
+                             sen_obj_, view_Sen_
 
     use shd_scat, only: shd_scat__computePhase
 
@@ -87,13 +88,12 @@ subroutine shd_rad__makeDirect(&
     &NPTS, DELTAM,&
     &ML, SOLARFLUX, SOLARMU, SOLARAZ,&
     &DIRFLUX,&
-    &rtm_obj, grid_obj)
+    &grid_obj)
 
     ! Makes the direct beam solar flux for the internal base grid.
     !   DIRFLUX is set to F*exp(-tau_sun).
     !   Actually calls shd_rad__computeDirect to do all the hard work.
 
-    type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
 
     integer NPTS, ML
@@ -105,7 +105,7 @@ subroutine shd_rad__makeDirect(&
     real UNIFZLEV, XO, YO, ZO, DIR, DIRPATH
 
     call shd_rad__computeDirect(&
-        &1, 0.0, 0.0, 0.0, rtm_obj%flag_bc, rtm_obj%flag_ip,&
+        &1, 0.0, 0.0, 0.0, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
         &DELTAM, ML,&
         &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
         &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
@@ -114,7 +114,7 @@ subroutine shd_rad__makeDirect(&
         DIRPATH = 0.0
         call shd_rad__computeDirect&
             &(0, grid_obj%xyz(1, IP), grid_obj%xyz(2, IP), grid_obj%xyz(3, IP),&
-            &rtm_obj%flag_bc, rtm_obj%flag_ip, DELTAM, ML,&
+            &rtm_obj_%flag_bc, rtm_obj_%flag_ip, DELTAM, ML,&
             &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(IP),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
     end do
@@ -715,11 +715,10 @@ subroutine shd_rad__computeRad(&
     &DIRFLUX, FLUXES,&
     &src1_Shdo, GRIDRAD,&
     &OUTPARMS, IRAD, RADOUT,&
-    &rtm_obj, grid_obj)
+    &grid_obj)
 
     ! Computes the radiances for the specified locations and directions
 
-    type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
 
     integer IRAD
@@ -763,21 +762,21 @@ subroutine shd_rad__computeRad(&
     end if
 
     ! Setup the regularly spaced radiance locations
-    XDOMAIN = rtm_obj%x(rtm_obj%Nx + 1 - ibits(rtm_obj%flag_bc, 0, 1)) - rtm_obj%x(1) + 2*OUTPARMS(4)
+    XDOMAIN = rtm_obj_%x(rtm_obj_%Nx + 1 - ibits(rtm_obj_%flag_bc, 0, 1)) - rtm_obj_%x(1) + 2*OUTPARMS(4)
     STARTX = -OUTPARMS(4)
     if (OUTPARMS(2) .eq. 0.0) then
         NXOUT = 1
     else
         NXOUT = max(1, nint(XDOMAIN/OUTPARMS(2)))
     end if
-    YDOMAIN = rtm_obj%y(rtm_obj%Ny + 1 - ibits(rtm_obj%flag_bc, 1, 1)) - rtm_obj%y(1) + 2*OUTPARMS(5)
+    YDOMAIN = rtm_obj_%y(rtm_obj_%Ny + 1 - ibits(rtm_obj_%flag_bc, 1, 1)) - rtm_obj_%y(1) + 2*OUTPARMS(5)
     STARTY = -OUTPARMS(5)
     if (OUTPARMS(3) .eq. 0.0) then
         NYOUT = 1
     else
         NYOUT = max(1, nint(YDOMAIN/OUTPARMS(3)))
     end if
-    Z0 = min(max(OUTPARMS(1), rtm_obj%z(1)), rtm_obj%z(rtm_obj%Nz))
+    Z0 = min(max(OUTPARMS(1), rtm_obj_%z(1)), rtm_obj_%z(rtm_obj_%Nz))
     NANGOUT = nint(OUTPARMS(6))
 
     ! Loop over the radiance directions
@@ -793,8 +792,8 @@ subroutine shd_rad__computeRad(&
 
         ! added for fixing the "domain shift" issue (only for 3D)
         !╭────────────────────────────────────────────────╮!
-        if (rtm_obj%flag_ip .eq. 0) then
-            DS_Z0 = Z0 - rtm_obj%z(1)
+        if (rtm_obj_%flag_ip .eq. 0) then
+            DS_Z0 = Z0 - rtm_obj_%z(1)
             DS_VZA_RAD = acos(MUOUT)
             DS_XOFFSET = DS_Z0*tan(DS_VZA_RAD)*cos(PHIOUT)
             DS_YOFFSET = DS_Z0*tan(DS_VZA_RAD)*sin(PHIOUT)
@@ -820,14 +819,14 @@ subroutine shd_rad__computeRad(&
         call shd_src__computeSrcOneDir(&
             &DELTAM, MUOUT, PHIOUT,&
             &DIRFLUX, src1_Shdo,&
-            &rtm_obj, grid_obj, isrcJ_Shdo_, srcJ_Shdo_)
+            &grid_obj, isrcJ_Shdo_, srcJ_Shdo_)
 
         ! Set the radiance field to -1, so we can determine valid ra
         !   Also set the source array to the extinction times the so
         !   function, so the grid interpolation is correct.
         do I = 1, grid_obj%Npts
             GRIDRAD(1, I) = -1.0
-            src1_Shdo(:, I) = src1_Shdo(:, I)*rtm_obj%ext(I)
+            src1_Shdo(:, I) = src1_Shdo(:, I)*rtm_obj_%ext(I)
         end do
         ! Get boundary radiances: either top or bottom
         ! Isotropic top boundary or Lambertian bottom boundary can u
@@ -863,7 +862,7 @@ subroutine shd_rad__computeRad(&
                 call shd_src__integrateSrc(shdo_obj_%Nstokes,&
                     &MUOUT, PHIOUT, GRIDRAD, src1_Shdo,&
                     &X0, Y0, Z0, XE, YE, ZE, SIDE,&
-                    &TRANSMIT, radI_Shdo, VALIDRAD, rtm_obj, grid_obj)
+                    &TRANSMIT, radI_Shdo, VALIDRAD, grid_obj)
                 RADOUT(:, IRAD) = radI_Shdo(1:shdo_obj_%Nstokes)
                 X0 = X0 + OUTPARMS(2)
             end do
@@ -881,12 +880,11 @@ subroutine shd_rad__computeCamRad(&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &DIRFLUX, FLUXES,&
     &OUTPARMS, IVIS, VISOUT,&
-    &rtm_obj, grid_obj)
+    &grid_obj)
 
     !   Computes Stokes radiances (output in VISOUT) for the visualization
     !  modes: 1) camera mode, and 2) cross track scanning.
 
-    type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
 
     integer IVIS
@@ -921,7 +919,7 @@ subroutine shd_rad__computeCamRad(&
             NSTPHASE = min(prp_obj_%NlegSet, 2)
             allocate(PHASETAB(NSTPHASE, prp_obj_%Npha, NSCATANGLE))
             call shd_scat__computePhase(NSCATANGLE, prp_obj_%Npha, NSTPHASE,&
-                &shdo_obj_%Nstokes, shdo_obj_%maxNl, prp_obj_%NlegSet, prp_obj_%Nleg, rtm_obj%leg, PHASETAB)
+                &shdo_obj_%Nstokes, shdo_obj_%maxNl, prp_obj_%NlegSet, prp_obj_%Nleg, rtm_obj_%leg, PHASETAB)
         end if
     end if
 
@@ -1039,16 +1037,16 @@ subroutine shd_rad__computeCamRad(&
             end if
 
             ! Extrapolate ray to domain top if above
-            if (Z0 .gt. rtm_obj%z(rtm_obj%Nz)) then
+            if (Z0 .gt. rtm_obj_%z(rtm_obj_%Nz)) then
                 if (COSTH .ge. 0.0) then
                     VISRAD(:) = 0.0
                     goto 900
                 end if
-                R = (rtm_obj%z(rtm_obj%Nz) - Z0)/COSTH
+                R = (rtm_obj_%z(rtm_obj_%Nz) - Z0)/COSTH
                 X0 = X0 + R*sqrt(1 - COSTH**2)*cos(PHIR)
                 Y0 = Y0 + R*sqrt(1 - COSTH**2)*sin(PHIR)
-                Z0 = rtm_obj%z(rtm_obj%Nz)
-            else if (Z0 .lt. rtm_obj%z(1)) then
+                Z0 = rtm_obj_%z(rtm_obj_%Nz)
+            else if (Z0 .lt. rtm_obj_%z(1)) then
                 write (6, *) 'Error [_visualizeRad]: Level below domain.'
                 stop
             end if
@@ -1072,7 +1070,7 @@ subroutine shd_rad__computeCamRad(&
                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                 &MU2, PHI2, X0, Y0, Z0,&
                 &XE, YE, ZE, SIDE, TRANSMIT, VISRAD, VALIDRAD,&
-                &rtm_obj, grid_obj)
+                &grid_obj)
 900         continue
             ! write (6,'(1X,2F8.4,1X,2F11.7,4(1X,F11.6))')&
             !     &X0,Y0,MURAY,PHIRAY,VISRAD(:)

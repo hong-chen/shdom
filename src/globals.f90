@@ -178,6 +178,7 @@ module globals_type
     integer, parameter, private :: R__ = selected_real_kind(6)
 
     type :: shd_type_rtm
+
         character(len=charMaxLen_) :: runName = 'NONE'
         character(len=1) :: type = ' '
 
@@ -199,9 +200,9 @@ module globals_type
         real(kind=R__) :: xDomain = -999.0
         real(kind=R__) :: yDomain = -999.0
 
-        real(kind=R__),  pointer :: x(:) => null()
-        real(kind=R__),  pointer :: y(:) => null()
-        real(kind=R__),  pointer :: z(:) => null()
+        real(kind=R__),  allocatable :: x(:)
+        real(kind=R__),  allocatable :: y(:)
+        real(kind=R__),  allocatable :: z(:)
 
         real(kind=R__),  pointer :: temp(:)   => null()
         real(kind=R__),  pointer :: planck(:) => null()
@@ -212,9 +213,11 @@ module globals_type
         real(kind=R__),  pointer :: leg(:, :, :) => null()
 
         logical :: isAllocated  = .false.
+
     end type shd_type_rtm
 
     type :: shd_type_grid
+
         integer(kind=I__) :: Nx = -999
         integer(kind=I__) :: Ny = -999
         integer(kind=I__) :: Nz = -999
@@ -236,6 +239,7 @@ module globals_type
         integer(kind=I__), pointer:: i2Tree(:, :) => null()
 
         logical :: isAllocated  = .false.
+
     end type shd_type_grid
 
     ! SHDO
@@ -416,9 +420,13 @@ module globals_obj
     integer, parameter, private :: I__ = selected_int_kind(9)
     integer, parameter, private :: R__ = selected_real_kind(6)
 
+    ! RTM
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_rtm),  save :: rtm_obj_
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
     type(shd_type_grid), save :: grid_obj_
+
 
     ! SHDO
     !╭────────────────────────────────────────────────────────────────────────────╮!

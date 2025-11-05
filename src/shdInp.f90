@@ -1970,7 +1970,7 @@ subroutine shd_io__restoreState(&
     ! harmonic truncation smaller than the current (shdo_obj%maxNl,shdo_obj%maxNm,shdo_obj%Nlm).
     ! The flag NEWGRIDFLAG is set to false if reading succeeds.
 
-    type(shd_type_rtm),  intent(in)    :: rtm_obj
+    type(shd_type_rtm),  intent(inout) :: rtm_obj
     type(shd_type_grid), intent(inout) :: grid_obj
     type(shd_type_shdo), intent(inout) :: shdo_obj
     integer(kind=I__), intent(out) :: iradI_Shdo(*)

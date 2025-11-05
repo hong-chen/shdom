@@ -44,14 +44,14 @@ module shd_grid
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, isMpi_, &
                              is1DX_, is1DYx_, is1D_, &
                              isPol_, isSolar_, isThermal_
-    use globals_type,  only: shd_type_rtm, &
-                             shd_type_grid
+    use globals_type,  only: shd_type_grid
 
-    use globals_obj, only: shdo_obj_, isrcJ_Shdo_, srcJ_Shdo_, &
-                            src_obj_, &
-                            prp_obj_, temp_Prp_, ext_Prp_, ssa_Prp_, leg_Prp_, ipha_Prp_, &
-                            sfc_obj_, &
-                            ckd_obj_, kabs_Ckd_
+    use globals_obj,   only:  rtm_obj_, &
+                             shdo_obj_, isrcJ_Shdo_, srcJ_Shdo_, &
+                              src_obj_, &
+                              prp_obj_, temp_Prp_, ext_Prp_, ssa_Prp_, leg_Prp_, ipha_Prp_, &
+                              sfc_obj_, &
+                              ckd_obj_, kabs_Ckd_
 
     use shd_util, only: shd_util__findNextCell, &
                         shd_util__computePlanck, &
@@ -381,7 +381,7 @@ end subroutine shd_grid__makeNewGridPnt
 
 subroutine shd_grid__makeSweepOrder(&
     &SWEEPORD, GRIDRAD,&
-    &rtm_obj, grid_obj)
+    &grid_obj)
 
     ! Description:
     !   Make the array of grid point sweeping order for each discrete
@@ -396,7 +396,6 @@ subroutine shd_grid__makeSweepOrder(&
     ! Input:
     !
 
-    type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
 
     integer(kind=I__), intent(out) :: SWEEPORD(grid_obj%Npts, *)
@@ -432,13 +431,13 @@ subroutine shd_grid__makeSweepOrder(&
         NOCT = 8
     end if
 
-    NXC = rtm_obj%Nx
-    if (isOpenX_) NXC = rtm_obj%Nx + 1
-    if (isMpiX_ .and. (.not. is1DX_)) NXC = rtm_obj%Nx - 1
+    NXC = rtm_obj_%Nx
+    if (isOpenX_) NXC = rtm_obj_%Nx + 1
+    if (isMpiX_ .and. (.not. is1DX_)) NXC = rtm_obj_%Nx - 1
 
-    NYC = rtm_obj%Ny
-    if (isOpenYx_) NYC = rtm_obj%Ny + 1
-    if (isMpiY_ .and. (.not. is1DYx_)) NYC = rtm_obj%Ny - 1
+    NYC = rtm_obj_%Ny
+    if (isOpenYx_) NYC = rtm_obj_%Ny + 1
+    if (isMpiY_ .and. (.not. is1DYx_)) NYC = rtm_obj_%Ny - 1
 
     ! Loop over the number of octants needed; get the octant number
     do JOCT = 1, NOCT
@@ -465,7 +464,7 @@ subroutine shd_grid__makeSweepOrder(&
         if (INDEXCORN .eq. 8) then
             ! If done with the current cell, then go to next
             INDEXCORN = 1
-            if (.not. sweepCellNext(rtm_obj%flag_bc, NXC, NYC, rtm_obj%Nz, IOCT,&
+            if (.not. sweepCellNext(rtm_obj_%flag_bc, NXC, NYC, rtm_obj_%Nz, IOCT,&
                 &IPCELL, grid_obj)) goto 900
         else
             INDEXCORN = INDEXCORN + 1
@@ -815,7 +814,7 @@ end subroutine shd_grid__testGridSmooth
 
 subroutine shd_grid__testCellSplit(icell,&
     &ADAPTCRIT, MAXADAPT, idir,&
-    &rtm_obj, grid_obj)
+    &grid_obj)
 
     !   Computes the adaptive cell splitting criterion for the X, Y, and Z
     ! directions for cell (icell).  The three criterion are returned in
@@ -832,7 +831,6 @@ subroutine shd_grid__testCellSplit(icell,&
     ! is computed in spherical harmonic space by summing the square of
     ! the difference over all terms.
 
-    type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
 
     integer icell, idir
@@ -864,16 +862,16 @@ subroutine shd_grid__testCellSplit(icell,&
                 ! over all angles, which is sum of squares of spherical
                 ! harmonic term differences.
                 do J = 1, NS
-                    JAY = JAY + (rtm_obj%ext(IP2)*srcJ_Shdo_(1, IS2 + J)&
-                        &- rtm_obj%ext(IP1)*srcJ_Shdo_(1, IS1 + J))**2
+                    JAY = JAY + (rtm_obj_%ext(IP2)*srcJ_Shdo_(1, IS2 + J)&
+                        &- rtm_obj_%ext(IP1)*srcJ_Shdo_(1, IS1 + J))**2
                 end do
                 do J = NS + 1, NS1
-                    JAY = JAY + (rtm_obj%ext(IP1)*srcJ_Shdo_(1, IS1 + J))**2
+                    JAY = JAY + (rtm_obj_%ext(IP1)*srcJ_Shdo_(1, IS1 + J))**2
                 end do
                 do J = NS + 1, NS2
-                    JAY = JAY + (rtm_obj%ext(IP2)*srcJ_Shdo_(1, IS2 + J))**2
+                    JAY = JAY + (rtm_obj_%ext(IP2)*srcJ_Shdo_(1, IS2 + J))**2
                 end do
-                EXT = 0.5*(rtm_obj%ext(IP1) + rtm_obj%ext(IP2))
+                EXT = 0.5*(rtm_obj_%ext(IP1) + rtm_obj_%ext(IP2))
                 if (EXT .gt. 0.0) then
                     JAY = C0*sqrt(JAY)/EXT
                 else
@@ -1072,12 +1070,11 @@ logical function sweepCellNext(BCFLAG, NXC, NYC, NZ, IOCT,&
 
 end function sweepCellNext
 
-subroutine shd_grid__interpGrid(rtm_obj, grid_obj)
+subroutine shd_grid__interpGrid(grid_obj)
 
     ! Calls shd_grid__InterpTriLinGridPrp to interpolate the input arrays from
     !   the property grid to each internal grid point.
 
-    type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
 
     integer(kind=I__) :: ipts
@@ -1085,15 +1082,15 @@ subroutine shd_grid__interpGrid(rtm_obj, grid_obj)
     ! Initialize: transfer the tabulated phase functions
     call shd_grid__InterpTriLinGridPrp(&
         &0.0, 0.0, 0.0,&
-        &.true., rtm_obj%temp(1), rtm_obj%ext(1), rtm_obj%ssa(1),&
-        &rtm_obj%leg(1:prp_obj_%NlegSet, 0:prp_obj_%Nleg, 1), rtm_obj%ipha(1))
+        &.true., rtm_obj_%temp(1), rtm_obj_%ext(1), rtm_obj_%ssa(1),&
+        &rtm_obj_%leg(1:prp_obj_%NlegSet, 0:prp_obj_%Nleg, 1), rtm_obj_%ipha(1))
 
     ! Trilinearly interpolate from the property grid to the adaptive
     do ipts = 1, grid_obj%Npts
         call shd_grid__InterpTriLinGridPrp(&
             &grid_obj%xyz(1, ipts), grid_obj%xyz(2, ipts), grid_obj%xyz(3, ipts),&
-            &.false., rtm_obj%temp(ipts), rtm_obj%ext(ipts), rtm_obj%ssa(ipts),&
-            &rtm_obj%leg(1:prp_obj_%NlegSet, 0:prp_obj_%Nleg, ipts), rtm_obj%ipha(ipts))
+            &.false., rtm_obj_%temp(ipts), rtm_obj_%ext(ipts), rtm_obj_%ssa(ipts),&
+            &rtm_obj_%leg(1:prp_obj_%NlegSet, 0:prp_obj_%Nleg, ipts), rtm_obj_%ipha(ipts))
     end do
 
     return
@@ -1417,7 +1414,7 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
     SOLARFLUX, YLMSUN,&
     DIRFLUX,&
     isrcD_Shdo,&
-    rtm_obj, grid_obj, &
+    grid_obj, &
     iradI_Shdo, radI_Shdo, &
     isrcJ_Shdo, srcJ_Shdo)
 
@@ -1431,7 +1428,6 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
     ! from the two parent grid points, and used to compute the source
     ! function for the new points.
 
-    type(shd_type_rtm),  intent(in) :: rtm_obj
     type(shd_type_grid), intent(in) :: grid_obj
 
     integer(I__), intent(inout) :: iradI_Shdo(*)
@@ -1485,26 +1481,26 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
             Y = grid_obj%xyz(2, IP)
             Z = grid_obj%xyz(3, IP)
             call shd_grid__InterpTriLinGridPrp(X, Y, Z, .false.,&
-                &rtm_obj%temp(IP), rtm_obj%ext(IP), rtm_obj%ssa(IP),&
-                &rtm_obj%leg(1:prp_obj_%NlegSet, 0:prp_obj_%Nleg, 1), rtm_obj%ipha(IP))
+                &rtm_obj_%temp(IP), rtm_obj_%ext(IP), rtm_obj_%ssa(IP),&
+                &rtm_obj_%leg(1:prp_obj_%NlegSet, 0:prp_obj_%Nleg, 1), rtm_obj_%ipha(IP))
             ! Do the Delta-M scaling of extinction and albedo for this point
             if (doDeltaM) then
                 if (prp_obj_%Npha .gt. 0) then
-                    F = rtm_obj%leg(1, shdo_obj_%maxNl + 1, rtm_obj%ipha(IP))
+                    F = rtm_obj_%leg(1, shdo_obj_%maxNl + 1, rtm_obj_%ipha(IP))
                 else
-                    F = rtm_obj%leg(1, shdo_obj_%maxNl + 1, IP)
+                    F = rtm_obj_%leg(1, shdo_obj_%maxNl + 1, IP)
                     do L = 0, shdo_obj_%maxNl
-                        rtm_obj%leg(1, L, IP) = (rtm_obj%leg(1, L, IP) - F)/(1 - F)
+                        rtm_obj_%leg(1, L, IP) = (rtm_obj_%leg(1, L, IP) - F)/(1 - F)
                     end do
                 end if
-                rtm_obj%ext(IP) = (1.0 - rtm_obj%ssa(IP)*F)*rtm_obj%ext(IP)
-                rtm_obj%ssa(IP) = (1.0 - F)*rtm_obj%ssa(IP)/(1.0 - rtm_obj%ssa(IP)*F)
+                rtm_obj_%ext(IP) = (1.0 - rtm_obj_%ssa(IP)*F)*rtm_obj_%ext(IP)
+                rtm_obj_%ssa(IP) = (1.0 - F)*rtm_obj_%ssa(IP)/(1.0 - rtm_obj_%ssa(IP)*F)
             end if
 
             ! Compute the new Planck source function (if needed)
             if (isThermal_) then
-                call shd_util__computePlanck(rtm_obj%temp(IP), src_obj_%unit, src_obj_%waveNum, src_obj_%avgWaveLen, BB)
-                rtm_obj%planck(IP) = (1.0 - rtm_obj%ssa(IP))*BB
+                call shd_util__computePlanck(rtm_obj_%temp(IP), src_obj_%unit, src_obj_%waveNum, src_obj_%avgWaveLen, BB)
+                rtm_obj_%planck(IP) = (1.0 - rtm_obj_%ssa(IP))*BB
             end if
 
             ! Compute the new direct beam flux (if needed)
@@ -1516,7 +1512,7 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
                 else
                     ! Otherwise, calculate the exact direct beam from property grid
                     DIRPATH = 0.0
-                    call shd_rad__computeDirect(0, X, Y, Z, rtm_obj%flag_bc, rtm_obj%flag_ip, doDeltaM,&
+                    call shd_rad__computeDirect(0, X, Y, Z, rtm_obj_%flag_bc, rtm_obj_%flag_ip, doDeltaM,&
                         &shdo_obj_%maxNl, SOLARFLUX, src_obj_%avgMu, src_obj_%avgAz,&
                         &DIRFLUX(IP),&
                         &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
@@ -1566,19 +1562,19 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
             isrcJ_Shdo(IP + 1) = IS + NS
             if (ACCELFLAG) isrcD_Shdo(IP + 1) = isrcD_Shdo(IP)
             if (prp_obj_%Npha .gt. 0) then
-                IPH = rtm_obj%ipha(IP)
+                IPH = rtm_obj_%ipha(IP)
             else
                 IPH = IP
             end if
             if (isPol_) then
                 call shd_src__computeSrcOnePnt(shdo_obj_%Nstokes, shdo_obj_%Nlm, LOFJ,&
                     &src_obj_%type, DIRFLUX(IP)*SECMU0, YLMSUN,&
-                    &rtm_obj%planck(IP), rtm_obj%ssa(IP), IPH, rtm_obj%leg,&
+                    &rtm_obj_%planck(IP), rtm_obj_%ssa(IP), IPH, rtm_obj_%leg,&
                     &NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
             else
                 call shd_src__computeSrcOnePnt_(shdo_obj_%Nlm, LOFJ,&
                     &src_obj_%type, DIRFLUX(IP)*SECMU0, YLMSUN,&
-                    &rtm_obj%planck(IP), rtm_obj%ssa(IP), IPH, rtm_obj%leg,&
+                    &rtm_obj_%planck(IP), rtm_obj_%ssa(IP), IPH, rtm_obj_%leg,&
                     &NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
             end if
             do J = 1, NS
@@ -1600,7 +1596,7 @@ subroutine shd_grid__splitGrid(&
     DIRFLUX, &
     SOLARFLUX, YLMSUN, &
     ADAPTCRIT, ADAPTIND, &
-    rtm_obj, grid_obj, &
+    grid_obj, &
     iradI_Shdo, radI_Shdo, &
     isrcJ_Shdo, srcJ_Shdo)
 
@@ -1610,7 +1606,6 @@ subroutine shd_grid__splitGrid(&
     ! grid point, grid cell, or spherical harmonic arrays (sizes given
     ! by grid_obj%maxNpts, grid_obj%maxNcell, shdo_obj_%maxNptsSH, shdo_obj_%maxNptsDO) then the isOutMem flag is returned true.
 
-    type(shd_type_rtm),  intent(in)    :: rtm_obj
     type(shd_type_grid), intent(inout) :: grid_obj
 
     integer(I__), intent(inout) :: iradI_Shdo(*)
@@ -1645,7 +1640,7 @@ subroutine shd_grid__splitGrid(&
                     ! If this is a end node cell then compute adaptive criterion
                     call shd_grid__testCellSplit(icell,&
                         &ADAPT, ADAPTCRIT(N + 1), idir,&
-                        &rtm_obj, grid_obj)
+                        &grid_obj)
                     ADAPTIND(N+1) = 4*icell + idir
                     N = N + 1
                 end if
@@ -1687,7 +1682,7 @@ subroutine shd_grid__splitGrid(&
                         &SOLARFLUX, YLMSUN,&
                         &DIRFLUX,&
                         &isrcD_Shdo,&
-                        &rtm_obj, grid_obj, iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo)
+                        &grid_obj, iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo)
                 end if
                 I = I + 1
             end do
@@ -1724,7 +1719,7 @@ subroutine shd_grid__splitGrid(&
                             &SOLARFLUX, YLMSUN,&
                             &DIRFLUX,&
                             &isrcD_Shdo,&
-                            &rtm_obj, grid_obj, iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo)
+                            &grid_obj, iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo)
                     end if
                 end if
                 I = I + 1
@@ -1745,7 +1740,7 @@ subroutine shd_grid__splitGrid(&
                     &doDeltaM, shdo_obj_%maxNl,&
                     &SOLARFLUX, src_obj_%avgMu, src_obj_%avgAz,&
                     &DIRFLUX,&
-                    &rtm_obj, grid_obj)
+                    &grid_obj)
             end if
         end if
     end if
@@ -1756,7 +1751,7 @@ subroutine shd_grid__splitGrid(&
         if (grid_obj%i2Tree(2, icell) .eq. 0) then
             call shd_grid__testCellSplit(icell,&
                 &ADAPT, ADAPTCRIT(1), idir,&
-                &rtm_obj, grid_obj)
+                &grid_obj)
             SPLITCRIT = max(SPLITCRIT, ADAPTCRIT(1))
         end if
     end do
