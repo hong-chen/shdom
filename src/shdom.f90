@@ -561,7 +561,7 @@ program shdom
 
     ! Calculate the number of base grid cells depending on the boundary condition flag
     grid_obj%Ncell0 = (rtm_obj_%Nz - 1)*(rtm_obj_%Nx + ibits(rtm_obj_%flag_bc, 0, 1) - ibits(rtm_obj_%flag_bc, 2, 1))&
-                                      *(rtm_obj_%Ny + ibits(rtm_obj_%flag_bc, 1, 1) - ibits(rtm_obj_%flag_bc, 3, 1))
+                                       *(rtm_obj_%Ny + ibits(rtm_obj_%flag_bc, 1, 1) - ibits(rtm_obj_%flag_bc, 3, 1))
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! Read prp_obj_%fname and distribute property object if MPI
@@ -599,7 +599,7 @@ program shdom
                       ext_PrpAll(prpAll_obj%maxNpts),  &
                       ssa_PrpAll(prpAll_obj%maxNpts),  &
                       leg_PrpAll(prpAll_obj%NlegSet,   &
-                                 0:prpAll_obj%maxNleg, &
+                               0:prpAll_obj%maxNleg, &
                                  prpAll_obj%maxNptsLeg/(prpAll_obj%maxNleg+1)/prpAll_obj%NlegSet), &
                      ipha_PrpAll(prpAll_obj%maxNpts))
 
