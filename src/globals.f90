@@ -223,10 +223,9 @@ module globals_type
         integer(kind=I__) :: maxNpts  = -999
         integer(kind=I__) :: maxNcell = -999
 
-        integer(kind=2),   pointer:: flag(:) => null()
-        integer(kind=I__), pointer:: i8Grid(:, :) => null()
         integer(kind=I__), pointer:: i6Cell(:, :) => null()
         integer(kind=I__), pointer:: i2Tree(:, :) => null()
+        integer(kind=2),   pointer:: flag(:) => null()
 
         logical :: isAllocated  = .false.
 
@@ -410,6 +409,7 @@ module globals_obj
     integer, parameter, private :: I__ = selected_int_kind(9)
     integer, parameter, private :: R__ = selected_real_kind(6)
 
+
     ! RTM
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_rtm),  save :: rtm_obj_
@@ -429,7 +429,8 @@ module globals_obj
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_grid), save :: grid_obj_
 
-    real(kind=R__),  allocatable, save :: xyz_Grid_(:, :)    ! (3, grid_obj%maxNpts)
+    real(kind=R__),    allocatable, save ::   xyz_Grid_(:, :)     ! (3, grid_obj%maxNpts)
+    integer(kind=I__), allocatable, save :: i8Pts_Grid_(:, :) ! (8, grid_obj%maxNpts)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
@@ -438,7 +439,6 @@ module globals_obj
     type(shd_type_shdo), save :: shdo_obj_
     integer(kind=I__), allocatable, save :: iradI_Shdo_(:)    ! (grid_obj%maxNpts+2)
     real(kind=R__),    allocatable, save ::  radI_Shdo_(:, :) ! (shdo_obj_%Nstokes, shdo_obj_%maxNptsSH+grid_obj%maxNpts)
-
     integer(kind=I__), allocatable, save :: isrcJ_Shdo_(:)    ! (grid_obj%maxNpts+1)
     real(kind=R__),    allocatable, save ::  srcJ_Shdo_(:, :) ! (shdo_obj%Nstokes, shdo_obj%maxNptsSH)
     !╰────────────────────────────────────────────────────────────────────────────╯!
@@ -454,11 +454,11 @@ module globals_obj
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_prp), save :: prp_obj_
 
-    real(kind=R__),  allocatable, save :: temp_Prp_(:),  &      ! (prp_obj%maxNpts)
-                                           ext_Prp_(:),  &      ! (prp_obj%maxNpts)
-                                           ssa_Prp_(:),  &      ! (prp_obj%maxNpts)
-                                           leg_Prp_(:, :, :)    ! (prp_obj%NlegSet, prp_obj%maxNleg, prp_obj%Npha)
-    integer(kind=2), allocatable, save :: ipha_Prp_(:)          ! (prp_obj%maxNpts)
+    real(kind=R__),  allocatable, save :: temp_Prp_(:),  &   ! (prp_obj%maxNpts)
+                                           ext_Prp_(:),  &   ! (prp_obj%maxNpts)
+                                           ssa_Prp_(:),  &   ! (prp_obj%maxNpts)
+                                           leg_Prp_(:, :, :) ! (prp_obj%NlegSet, prp_obj%maxNleg, prp_obj%Npha)
+    integer(kind=2), allocatable, save :: ipha_Prp_(:)       ! (prp_obj%maxNpts)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
@@ -481,7 +481,7 @@ module globals_obj
     ! SEN
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_sen), save :: sen_obj_
-    real(kind=R__), allocatable, save :: view_Sen_(:, :) ! (sen_obj%Npar, sen_obj%Npts)
+    real(kind=R__), allocatable, save :: view_Sen_(:, :)  ! (sen_obj%Npar, sen_obj%Npts)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 end module globals_obj

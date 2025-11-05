@@ -53,7 +53,7 @@ module shd_mpi
                              shd_type_sen
 
     use globals_obj,   only:  rtm_obj_, ext_Rtm_, leg_Rtm_, &
-                              xyz_Grid_, &
+                              xyz_Grid_, i8Pts_Grid_, &
                              shdo_obj_, isrcJ_Shdo_, srcJ_Shdo_, &
                               src_obj_, &
                               prp_obj_, &
@@ -1409,7 +1409,7 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, SWEEPORD,&
         do IORDER = 1, grid_obj%Npts
             IPCELL = ishft(SWEEPORD(IORDER, JOCT), -3)
             ICORNER = ibits(SWEEPORD(IORDER, JOCT), 0, 3) + 1
-            IPT = grid_obj%i8Grid(ICORNER, IPCELL)
+            IPT = i8Pts_Grid_(ICORNER, IPCELL)
 
             if  ((xyz_Grid_(3, IPT) .lt. rtm_obj_%z(Nz) .and. BITZ .eq. 0) .or.&
                 &(xyz_Grid_(3, IPT) .gt. rtm_obj_%z(1) .and. BITZ .eq. 1)) then
@@ -3117,7 +3117,7 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     data GRIDFACE/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8/
     data OPPFACE/2, 1, 4, 3, 6, 5/
 
-    EPS = 1.0e-3*(xyz_Grid_(3, grid_obj%i8Grid(8, 1)) - xyz_Grid_(3, grid_obj%i8Grid(1, 1)))
+    EPS = 1.0e-3*(xyz_Grid_(3, i8Pts_Grid_(8, 1)) - xyz_Grid_(3, i8Pts_Grid_(1, 1)))
 
     ! Make the ray direction (opposite to the discrete ordinate direction)
     CX = sqrt(1.0 - MU**2)*cos(PHI + DPI_)
@@ -3206,7 +3206,7 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     do while (grid_obj%i2Tree(2, ICELL) .gt. 0)
         DIR = ibits(int(grid_obj%flag(ICELL)), 2, 2)
         IC = grid_obj%i2Tree(2, ICELL) + 1
-        IPTR = grid_obj%i8Grid(1, IC)
+        IPTR = i8Pts_Grid_(1, IC)
         if (DIR .eq. 1) then
             if (X .lt. xyz_Grid_(1, IPTR)) IC = IC - 1
         else if (DIR .eq. 2) then
@@ -3219,10 +3219,10 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
 
     IFACE = SIDE
     ! Get the four gridpoints for this face
-    I1 = grid_obj%i8Grid(GRIDFACE(1, IFACE), ICELL)
-    I2 = grid_obj%i8Grid(GRIDFACE(2, IFACE), ICELL)
-    I3 = grid_obj%i8Grid(GRIDFACE(3, IFACE), ICELL)
-    I4 = grid_obj%i8Grid(GRIDFACE(4, IFACE), ICELL)
+    I1 = i8Pts_Grid_(GRIDFACE(1, IFACE), ICELL)
+    I2 = i8Pts_Grid_(GRIDFACE(2, IFACE), ICELL)
+    I3 = i8Pts_Grid_(GRIDFACE(3, IFACE), ICELL)
+    I4 = i8Pts_Grid_(GRIDFACE(4, IFACE), ICELL)
     IPINX = btest(int(grid_obj%flag(ICELL)), 0)
     IPINY = btest(int(grid_obj%flag(ICELL)), 1)
     ! Compute the face interpolation factors
@@ -3263,7 +3263,7 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
         ! Find boundaries of the current cell
         !   Find the three possible intersection planes (X,Y,Z)
         !   from the coordinates of the opposite corner grid point
-        IOPP = grid_obj%i8Grid(9 - IOCT, ICELL)
+        IOPP = i8Pts_Grid_(9 - IOCT, ICELL)
         ! Get the distances to the 3 planes and select the closest
         if (IPINX) then
             SOX = 1.0e20
@@ -3314,10 +3314,10 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
             KFACE = OPPFACE(IFACE)
             IC = INEXTCELL
         end if
-        I1 = grid_obj%i8Grid(GRIDFACE(1, KFACE), IC)
-        I2 = grid_obj%i8Grid(GRIDFACE(2, KFACE), IC)
-        I3 = grid_obj%i8Grid(GRIDFACE(3, KFACE), IC)
-        I4 = grid_obj%i8Grid(GRIDFACE(4, KFACE), IC)
+        I1 = i8Pts_Grid_(GRIDFACE(1, KFACE), IC)
+        I2 = i8Pts_Grid_(GRIDFACE(2, KFACE), IC)
+        I3 = i8Pts_Grid_(GRIDFACE(3, KFACE), IC)
+        I4 = i8Pts_Grid_(GRIDFACE(4, KFACE), IC)
         ! Compute the face interpolation factors
         if (JFACE .eq. 1) then
             U = (ZE - xyz_Grid_(3, I1))/(xyz_Grid_(3, I3) - xyz_Grid_(3, I1))
@@ -3353,11 +3353,11 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
         ! Get the location coordinate (does the boundary wrapping)
         if (INEXTCELL .gt. 0) then
             if (JFACE .eq. 1) then
-                XE = xyz_Grid_(1, grid_obj%i8Grid(IOCT, INEXTCELL))
+                XE = xyz_Grid_(1, i8Pts_Grid_(IOCT, INEXTCELL))
             else if (JFACE .eq. 2) then
-                YE = xyz_Grid_(2, grid_obj%i8Grid(IOCT, INEXTCELL))
+                YE = xyz_Grid_(2, i8Pts_Grid_(IOCT, INEXTCELL))
             else
-                ZE = xyz_Grid_(3, grid_obj%i8Grid(IOCT, INEXTCELL))
+                ZE = xyz_Grid_(3, i8Pts_Grid_(IOCT, INEXTCELL))
             end if
         end if
 

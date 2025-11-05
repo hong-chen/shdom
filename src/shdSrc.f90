@@ -47,7 +47,7 @@ module shd_src
     use globals_type,  only: shd_type_grid
 
     use globals_obj,   only: rtm_obj_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, leg_Rtm_, ipha_Rtm_, &
-                             xyz_Grid_, &
+                             xyz_Grid_, i8Pts_Grid_, &
                             shdo_obj_, &
                              src_obj_, &
                              prp_obj_, &
@@ -811,7 +811,7 @@ subroutine shd_src__integrateSrcOneRay(&
     ! TAUTOL is the maximum optical path for the subgrid intervals
     TAUTOL = 0.2
 
-    EPS = 1.0e-5*(xyz_Grid_(3, grid_obj%i8Grid(8, 1)) - xyz_Grid_(3, grid_obj%i8Grid(1, 1)))
+    EPS = 1.0e-5*(xyz_Grid_(3, i8Pts_Grid_(8, 1)) - xyz_Grid_(3, i8Pts_Grid_(1, 1)))
     MAXCELLSCROSS = 50*max(rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz)
 
     ! Calculate the generalized spherical harmonics for this direction
@@ -921,7 +921,7 @@ subroutine shd_src__integrateSrcOneRay(&
         end do
         ! Compute the source function times extinction in direction (MU2
         if (isPol_) then
-            call shd_src__computeSrcOneCell(icell, grid_obj%i8Grid,&
+            call shd_src__computeSrcOneCell(icell, i8Pts_Grid_,&
                 &NSTOKES, ML, MM, NLM,&
                 &grid_obj%Npts, DELTAM, SRCTYPE, SOLARMU,&
                 &DIRFLUX,&
@@ -929,7 +929,7 @@ subroutine shd_src__integrateSrcOneRay(&
                 &DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
                 &EXTINCT8, SRCEXT8)
         else
-            call shd_src__computeSrcOneCell_(icell, grid_obj%i8Grid,&
+            call shd_src__computeSrcOneCell_(icell, i8Pts_Grid_,&
                 &ML, MM, NLM,&
                 &grid_obj%Npts, DELTAM, SRCTYPE, SOLARMU,&
                 &DIRFLUX,&
@@ -939,8 +939,8 @@ subroutine shd_src__integrateSrcOneRay(&
         end if
 
         ! Interpolate the source and extinction to the current point
-        IPT1 = grid_obj%i8Grid(1, icell) ! (-x, -y, -z)
-        IPT2 = grid_obj%i8Grid(8, icell) ! (+x, +y, +z)
+        IPT1 = i8Pts_Grid_(1, icell) ! (-x, -y, -z)
+        IPT2 = i8Pts_Grid_(8, icell) ! (+x, +y, +z)
         DELX = xyz_Grid_(1, IPT2) - xyz_Grid_(1, IPT1)
         if (DELX .le. 0.0) then
             INVDELX = 1.0
@@ -980,7 +980,7 @@ subroutine shd_src__integrateSrcOneRay(&
         ! Find boundaries of the current cell
         ! Find the three possible intersection planes (X,Y,Z)
         !   from the coordinates of the opposite corner grid point
-        IOPP = grid_obj%i8Grid(9 - IOCT, icell)
+        IOPP = i8Pts_Grid_(9 - IOCT, icell)
         ! Get the distances to the 3 planes and select the closest
         !   (always need to deal with the cell that is wrapped)
         if (IPINX) then
@@ -1093,11 +1093,11 @@ subroutine shd_src__integrateSrcOneRay(&
         ! Get the location coordinate
         if (INEXTCELL .gt. 0) then
             if (JFACE .eq. 1) then
-                XN = xyz_Grid_(1, grid_obj%i8Grid(IOCT, INEXTCELL))
+                XN = xyz_Grid_(1, i8Pts_Grid_(IOCT, INEXTCELL))
             else if (JFACE .eq. 2) then
-                YN = xyz_Grid_(2, grid_obj%i8Grid(IOCT, INEXTCELL))
+                YN = xyz_Grid_(2, i8Pts_Grid_(IOCT, INEXTCELL))
             else
-                ZN = xyz_Grid_(3, grid_obj%i8Grid(IOCT, INEXTCELL))
+                ZN = xyz_Grid_(3, i8Pts_Grid_(IOCT, INEXTCELL))
             end if
         end if
 
@@ -1109,7 +1109,7 @@ subroutine shd_src__integrateSrcOneRay(&
             VALIDRAD = .true.
             call shd_src__findBndryRad(NSTOKES, XN, YN,&
                 &sngl(MU2), sngl(PHI2),&
-                &IC, KFACE, grid_obj%i8Grid, xyz_Grid_,&
+                &IC, KFACE, i8Pts_Grid_, xyz_Grid_,&
                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                 &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                 &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
@@ -1179,7 +1179,7 @@ subroutine shd_src__integrateSrc(NSTOKES,&
 
     ! TAUTOL is the maximum optical path for the subgrid intervals
     TAUTOL = 0.1
-    EPS = 1.0e-4*(xyz_Grid_(3, grid_obj%i8Grid(8, 1)) - xyz_Grid_(3, grid_obj%i8Grid(1, 1)))
+    EPS = 1.0e-4*(xyz_Grid_(3, i8Pts_Grid_(8, 1)) - xyz_Grid_(3, i8Pts_Grid_(1, 1)))
 
     ! Make the ray direction (opposite to the discrete ordinate dire
     CX = sqrt(1.0 - MU**2)*cos(PHI + DPI_)
@@ -1249,7 +1249,7 @@ subroutine shd_src__integrateSrc(NSTOKES,&
         ! Find boundaries of the current cell
         ! Find the three possible intersection planes (X,Y,Z)
         ! from the coordinates of the opposite corner grid point
-        IOPP = grid_obj%i8Grid(9 - IOCT, icell)
+        IOPP = i8Pts_Grid_(9 - IOCT, icell)
         ! Get the distances to the 3 planes and select the closest
         !   (always need to deal with the cell that is wrapped)
         if (IPINX .or. CX .eq. 0.0) then
@@ -1368,18 +1368,18 @@ subroutine shd_src__integrateSrc(NSTOKES,&
             KFACE = OPPFACE(IFACE)
             IC = INEXTCELL
         end if
-        I1 = grid_obj%i8Grid(GRIDFACE(1, KFACE), IC)
-        I2 = grid_obj%i8Grid(GRIDFACE(2, KFACE), IC)
-        I3 = grid_obj%i8Grid(GRIDFACE(3, KFACE), IC)
-        I4 = grid_obj%i8Grid(GRIDFACE(4, KFACE), IC)
+        I1 = i8Pts_Grid_(GRIDFACE(1, KFACE), IC)
+        I2 = i8Pts_Grid_(GRIDFACE(2, KFACE), IC)
+        I3 = i8Pts_Grid_(GRIDFACE(3, KFACE), IC)
+        I4 = i8Pts_Grid_(GRIDFACE(4, KFACE), IC)
         ! Get the location coordinate
         if (INEXTCELL .gt. 0) then
             if (JFACE .eq. 1) then
-                XN = xyz_Grid_(1, grid_obj%i8Grid(IOCT, INEXTCELL))
+                XN = xyz_Grid_(1, i8Pts_Grid_(IOCT, INEXTCELL))
             else if (JFACE .eq. 2) then
-                YN = xyz_Grid_(2, grid_obj%i8Grid(IOCT, INEXTCELL))
+                YN = xyz_Grid_(2, i8Pts_Grid_(IOCT, INEXTCELL))
             else
-                ZN = xyz_Grid_(3, grid_obj%i8Grid(IOCT, INEXTCELL))
+                ZN = xyz_Grid_(3, i8Pts_Grid_(IOCT, INEXTCELL))
             end if
         end if
 

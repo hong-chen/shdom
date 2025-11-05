@@ -202,7 +202,7 @@ end subroutine shd_init__makeGrid
 
 subroutine shd_init__makeCell(rtm_obj, &
                               grid_OBJ, &
-                              xyz_Grid)
+                              xyz_Grid, i8Pts_Grid)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Description:
@@ -235,7 +235,7 @@ subroutine shd_init__makeCell(rtm_obj, &
     !   grid_obj%Npts : total number of grid points
     !   grid_obj%Ncell: total number of cells
     !   xyz_Grid(3,IP) : X,Y,Z coordinate values of grid point locations
-    !   grid_obj%i8Grid(8,IC) : pointer to 8 grid points belonging to a cell.
+    !   i8Pts_Grid(8,IC) : pointer to 8 grid points belonging to a cell.
     !                   Order of pointers is based on binary digits Z-Y-X:
     !                   IOCT = 1 + BITX + 2*BITY + 4*BITZ, where
     !                   BITc is 0 for negative side and 1 for positive side.
@@ -268,7 +268,8 @@ subroutine shd_init__makeCell(rtm_obj, &
     type(shd_type_rtm),  intent(in)    :: rtm_obj
     type(shd_type_grid), intent(inout) :: grid_obj
 
-    real(kind=R__), intent(out) :: xyz_Grid(3, *)
+    real(kind=R__),    intent(out) :: xyz_Grid(3, *)
+    integer(kind=I__), intent(out) :: i8Pts_Grid(8, *)
 
     integer(kind=I__) :: ix, iy, iz, ix0, ix1, iy0, iy1, i, Nxc, Nyc
 
@@ -319,14 +320,14 @@ subroutine shd_init__makeCell(rtm_obj, &
             end if
             do iz = 1, grid_obj%Nz - 1
                 i = i + 1
-                grid_obj%i8Grid(1, i) = iz +     grid_obj%Nz*(iy0 - 1) + grid_obj%Nz*grid_obj%Ny*(ix0 - 1)
-                grid_obj%i8Grid(2, i) = iz +     grid_obj%Nz*(iy0 - 1) + grid_obj%Nz*grid_obj%Ny*(ix1 - 1)
-                grid_obj%i8Grid(3, i) = iz +     grid_obj%Nz*(iy1 - 1) + grid_obj%Nz*grid_obj%Ny*(ix0 - 1)
-                grid_obj%i8Grid(4, i) = iz +     grid_obj%Nz*(iy1 - 1) + grid_obj%Nz*grid_obj%Ny*(ix1 - 1)
-                grid_obj%i8Grid(5, i) = iz + 1 + grid_obj%Nz*(iy0 - 1) + grid_obj%Nz*grid_obj%Ny*(ix0 - 1)
-                grid_obj%i8Grid(6, i) = iz + 1 + grid_obj%Nz*(iy0 - 1) + grid_obj%Nz*grid_obj%Ny*(ix1 - 1)
-                grid_obj%i8Grid(7, i) = iz + 1 + grid_obj%Nz*(iy1 - 1) + grid_obj%Nz*grid_obj%Ny*(ix0 - 1)
-                grid_obj%i8Grid(8, i) = iz + 1 + grid_obj%Nz*(iy1 - 1) + grid_obj%Nz*grid_obj%Ny*(ix1 - 1)
+                i8Pts_Grid(1, i) = iz +     grid_obj%Nz*(iy0 - 1) + grid_obj%Nz*grid_obj%Ny*(ix0 - 1)
+                i8Pts_Grid(2, i) = iz +     grid_obj%Nz*(iy0 - 1) + grid_obj%Nz*grid_obj%Ny*(ix1 - 1)
+                i8Pts_Grid(3, i) = iz +     grid_obj%Nz*(iy1 - 1) + grid_obj%Nz*grid_obj%Ny*(ix0 - 1)
+                i8Pts_Grid(4, i) = iz +     grid_obj%Nz*(iy1 - 1) + grid_obj%Nz*grid_obj%Ny*(ix1 - 1)
+                i8Pts_Grid(5, i) = iz + 1 + grid_obj%Nz*(iy0 - 1) + grid_obj%Nz*grid_obj%Ny*(ix0 - 1)
+                i8Pts_Grid(6, i) = iz + 1 + grid_obj%Nz*(iy0 - 1) + grid_obj%Nz*grid_obj%Ny*(ix1 - 1)
+                i8Pts_Grid(7, i) = iz + 1 + grid_obj%Nz*(iy1 - 1) + grid_obj%Nz*grid_obj%Ny*(ix0 - 1)
+                i8Pts_Grid(8, i) = iz + 1 + grid_obj%Nz*(iy1 - 1) + grid_obj%Nz*grid_obj%Ny*(ix1 - 1)
                 grid_obj%flag(I) = 0
                 ! Initialize the neighbor pointer; to self for IP mode or
                 !   if open boundary conditions and at either end

@@ -47,7 +47,7 @@ module shd_intg
     use globals_type,  only: shd_type_grid
 
     use globals_obj,   only: rtm_obj_, ext_Rtm_, &
-                             xyz_Grid_, &
+                             xyz_Grid_, i8Pts_Grid_, &
                             shdo_obj_, &
                              src_obj_, &
                              prp_obj_, &
@@ -409,7 +409,7 @@ subroutine shd_intg__backIntegrate3D(&
         &1, 2, 3, 4, 5, 6, 7, 8/, OPPFACE/2, 1, 4, 3, 6, 5/
     data JOCTORDER3/1, 3, 5, 7, 2, 4, 6, 8/, JOCTORDER2/1, 3, 1, 3, 2, 4, 2, 4/
 
-    EPS = 1.0e-3*(xyz_Grid_(3, grid_obj%i8Grid(8, 1)) - xyz_Grid_(3, grid_obj%i8Grid(1, 1)))
+    EPS = 1.0e-3*(xyz_Grid_(3, i8Pts_Grid_(8, 1)) - xyz_Grid_(3, i8Pts_Grid_(1, 1)))
 
     ! Make the ray direction (opposite to the discrete ordinate direction)
     CX = sqrt(1.0 - MU**2)*cos(PHI + DPI_)
@@ -461,7 +461,7 @@ subroutine shd_intg__backIntegrate3D(&
     do IORDER = 1, grid_obj%Npts
         IPCELL = ishft(SWEEPORD(IORDER, JOCT), -3)
         ICORNER = ibits(SWEEPORD(IORDER, JOCT), 0, 3) + 1
-        IPT = grid_obj%i8Grid(ICORNER, IPCELL)
+        IPT = i8Pts_Grid_(ICORNER, IPCELL)
 
         if (isMpi_) then
             ! For multiple processors get the subdomain boundary radiances
@@ -505,7 +505,7 @@ subroutine shd_intg__backIntegrate3D(&
                 ! Find boundaries of the current cell
                 ! Find the three possible intersection planes (X,Y,Z)
                 !   from the coordinates of the opposite corner grid point
-                IOPP = grid_obj%i8Grid(9 - IOCT, ICELL)
+                IOPP = i8Pts_Grid_(9 - IOCT, ICELL)
                 ! Get the distances to the 3 planes and select the closest
                 if (IPINX) then
                     SOX = 1.0e20
@@ -557,10 +557,10 @@ subroutine shd_intg__backIntegrate3D(&
                     KFACE = OPPFACE(IFACE)
                     IC = INEXTCELL
                 end if
-                I1 = grid_obj%i8Grid(GRIDFACE(1, KFACE), IC)
-                I2 = grid_obj%i8Grid(GRIDFACE(2, KFACE), IC)
-                I3 = grid_obj%i8Grid(GRIDFACE(3, KFACE), IC)
-                I4 = grid_obj%i8Grid(GRIDFACE(4, KFACE), IC)
+                I1 = i8Pts_Grid_(GRIDFACE(1, KFACE), IC)
+                I2 = i8Pts_Grid_(GRIDFACE(2, KFACE), IC)
+                I3 = i8Pts_Grid_(GRIDFACE(3, KFACE), IC)
+                I4 = i8Pts_Grid_(GRIDFACE(4, KFACE), IC)
                 ! Compute the face interpolation factors
                 if (JFACE .eq. 1) then
                     U = (ZE - xyz_Grid_(3, I1))/(xyz_Grid_(3, I3) - xyz_Grid_(3, I1))
@@ -598,11 +598,11 @@ subroutine shd_intg__backIntegrate3D(&
                 ! Get the location coordinate (does the boundary wrapping)
                 if (INEXTCELL .gt. 0) then
                     if (JFACE .eq. 1) then
-                        XE = xyz_Grid_(1, grid_obj%i8Grid(IOCT, INEXTCELL))
+                        XE = xyz_Grid_(1, i8Pts_Grid_(IOCT, INEXTCELL))
                     else if (JFACE .eq. 2) then
-                        YE = xyz_Grid_(2, grid_obj%i8Grid(IOCT, INEXTCELL))
+                        YE = xyz_Grid_(2, i8Pts_Grid_(IOCT, INEXTCELL))
                     else
-                        ZE = xyz_Grid_(3, grid_obj%i8Grid(IOCT, INEXTCELL))
+                        ZE = xyz_Grid_(3, i8Pts_Grid_(IOCT, INEXTCELL))
                     end if
                 end if
 
@@ -727,7 +727,7 @@ subroutine shd_intg__backIntegrate3D_(&
     !   NA        : integer, total number of angles (MU and PHI)
     !   grid_obj%Npts : integer, total number of grid points
     !   grid_obj%Ncell : integer, total number of cells
-    !   grid_obj%i8Grid(8,grid_obj%Ncell) : integer array, pointer to 8 grid points belonging to a cell.
+    !   i8Pts_Grid_(8,grid_obj%Ncell) : integer array, pointer to 8 grid points belonging to a cell.
     !                       Order of pointers is based on binary digits Z-Y-X:
     !                       IOCT = 1 + BITX + 2*BITY + 4*BITZ, where
     !                       BITc is 0 for negative side and 1 for positive side.
@@ -799,7 +799,7 @@ subroutine shd_intg__backIntegrate3D_(&
 
     integer :: iwhile, ibreak
 
-    EPS = 1.0e-3*(xyz_Grid_(3, grid_obj%i8Grid(8, 1)) - xyz_Grid_(3, grid_obj%i8Grid(1, 1)))
+    EPS = 1.0e-3*(xyz_Grid_(3, i8Pts_Grid_(8, 1)) - xyz_Grid_(3, i8Pts_Grid_(1, 1)))
 
     ! Make the ray direction (opposite to the discrete ordinate direction)
     CX = dsqrt(dble(1.0d0 - MU**2))*dcos(dble(PHI + DPI_))
@@ -863,7 +863,7 @@ subroutine shd_intg__backIntegrate3D_(&
 
         IPCELL  = ishft(SWEEPORD(IORDER, JOCT), -3)
         ICORNER = ibits(SWEEPORD(IORDER, JOCT), 0, 3) + 1
-        IPT = grid_obj%i8Grid(ICORNER, IPCELL)
+        IPT = i8Pts_Grid_(ICORNER, IPCELL)
 
         ! this is for mpi (e.g., shdMpi.f90, not OMP)
         !╭────────────────────────────────────────────────╮!
@@ -912,7 +912,7 @@ subroutine shd_intg__backIntegrate3D_(&
                 ! Find boundaries of the current cell
                 ! Find the three possible intersection planes (X,Y,Z)
                 !   from the coordinates of the opposite corner grid point
-                IOPP = grid_obj%i8Grid(9 - IOCT, ICELL)
+                IOPP = i8Pts_Grid_(9 - IOCT, ICELL)
 
                 ! Get the distances to the 3 planes and select the closest
                 !╭────────────────────────────────────────────────╮!
@@ -974,10 +974,10 @@ subroutine shd_intg__backIntegrate3D_(&
                     IC = INEXTCELL
                 end if
 
-                I1 = grid_obj%i8Grid(GRIDFACE(1, KFACE), IC)
-                I2 = grid_obj%i8Grid(GRIDFACE(2, KFACE), IC)
-                I3 = grid_obj%i8Grid(GRIDFACE(3, KFACE), IC)
-                I4 = grid_obj%i8Grid(GRIDFACE(4, KFACE), IC)
+                I1 = i8Pts_Grid_(GRIDFACE(1, KFACE), IC)
+                I2 = i8Pts_Grid_(GRIDFACE(2, KFACE), IC)
+                I3 = i8Pts_Grid_(GRIDFACE(3, KFACE), IC)
+                I4 = i8Pts_Grid_(GRIDFACE(4, KFACE), IC)
 
                 ! Compute the face interpolation factors
                 if (JFACE .eq. 1) then
@@ -1017,11 +1017,11 @@ subroutine shd_intg__backIntegrate3D_(&
                 ! Get the location coordinate (does the boundary wrapping)
                 if (INEXTCELL .gt. 0) then
                     if (JFACE .eq. 1) then
-                        XE = xyz_Grid_(1, grid_obj%i8Grid(IOCT, INEXTCELL))
+                        XE = xyz_Grid_(1, i8Pts_Grid_(IOCT, INEXTCELL))
                     else if (JFACE .eq. 2) then
-                        YE = xyz_Grid_(2, grid_obj%i8Grid(IOCT, INEXTCELL))
+                        YE = xyz_Grid_(2, i8Pts_Grid_(IOCT, INEXTCELL))
                     else
-                        ZE = xyz_Grid_(3, grid_obj%i8Grid(IOCT, INEXTCELL))
+                        ZE = xyz_Grid_(3, i8Pts_Grid_(IOCT, INEXTCELL))
                     end if
                 end if
 
@@ -1172,7 +1172,7 @@ subroutine shd_intg__backIntegrate2D(&
     data OPPFACE/2, 1, 4, 3, 6, 5/
     data JOCTORDER/1, 3, 1, 3, 2, 4, 2, 4/
 
-    EPS = 1.0e-3*(xyz_Grid_(3, grid_obj%i8Grid(8, 1)) - xyz_Grid_(3, grid_obj%i8Grid(1, 1)))
+    EPS = 1.0e-3*(xyz_Grid_(3, i8Pts_Grid_(8, 1)) - xyz_Grid_(3, i8Pts_Grid_(1, 1)))
 
     ! Make the ray direction (opposite to the discrete ordinate direction)
     CX = sqrt(1.0 - MU**2)*cos(PHI + DPI_)
@@ -1207,7 +1207,7 @@ subroutine shd_intg__backIntegrate2D(&
     do IORDER = 1, grid_obj%Npts
         IPCELL = ishft(SWEEPORD(IORDER, JOCT), -3)
         ICORNER = ibits(SWEEPORD(IORDER, JOCT), 0, 3) + 1
-        IPT = grid_obj%i8Grid(ICORNER, IPCELL)
+        IPT = i8Pts_Grid_(ICORNER, IPCELL)
         if (GRIDRAD(1, IPT) .lt. 0.0) then
 
             ! Start off at the grid point
@@ -1234,7 +1234,7 @@ subroutine shd_intg__backIntegrate2D(&
                 ! Find boundaries of the current cell
                 ! Find the three possible intersection planes (X,Y,Z)
                 !   from the coordinates of the opposite corner grid point
-                IOPP = grid_obj%i8Grid(9 - IOCT, ICELL)
+                IOPP = i8Pts_Grid_(9 - IOCT, ICELL)
                 ! Get the distances to the 3 planes and select the closest
                 if (IPINX) then
                     SOX = 1.0e20
@@ -1277,8 +1277,8 @@ subroutine shd_intg__backIntegrate2D(&
                     KFACE = OPPFACE(IFACE)
                     IC = INEXTCELL
                 end if
-                I1 = grid_obj%i8Grid(GRIDFACE(1, KFACE), IC)
-                I2 = grid_obj%i8Grid(GRIDFACE(2, KFACE), IC)
+                I1 = i8Pts_Grid_(GRIDFACE(1, KFACE), IC)
+                I2 = i8Pts_Grid_(GRIDFACE(2, KFACE), IC)
                 ! Compute the face interpolation factors
                 if (JFACE .eq. 1) then
                     U = (ZE - xyz_Grid_(3, I1))/(xyz_Grid_(3, I2) - xyz_Grid_(3, I1))
@@ -1293,9 +1293,9 @@ subroutine shd_intg__backIntegrate2D(&
                 ! Get the location coordinate (does the boundary wrapping)
                 if (INEXTCELL .gt. 0) then
                     if (JFACE .eq. 1) then
-                        XE = xyz_Grid_(1, grid_obj%i8Grid(IOCT, INEXTCELL))
+                        XE = xyz_Grid_(1, i8Pts_Grid_(IOCT, INEXTCELL))
                     else
-                        ZE = xyz_Grid_(3, grid_obj%i8Grid(IOCT, INEXTCELL))
+                        ZE = xyz_Grid_(3, i8Pts_Grid_(IOCT, INEXTCELL))
                     end if
                 end if
 
@@ -1427,7 +1427,7 @@ subroutine shd_intg__backIntegrate1D(&
     data GRIDFACE /0, 0, 0, 0, 1, 5/
     data JOCTORDER /1, 1, 1, 1, 2, 2, 2, 2/
 
-    EPS = 1.0e-3*(xyz_Grid_(3, grid_obj%i8Grid(8, 1)) - xyz_Grid_(3, grid_obj%i8Grid(1, 1)))
+    EPS = 1.0e-3*(xyz_Grid_(3, i8Pts_Grid_(8, 1)) - xyz_Grid_(3, i8Pts_Grid_(1, 1)))
 
     ! Make the ray direction (opposite to the discrete ordinate direction)
     CZ = -MU
@@ -1451,7 +1451,7 @@ subroutine shd_intg__backIntegrate1D(&
     do IORDER = 1, grid_obj%Npts
         IPCELL = ishft(SWEEPORD(IORDER, JOCT), -3)
         ICORNER = ibits(SWEEPORD(IORDER, JOCT), 0, 3) + 1
-        IPT = grid_obj%i8Grid(ICORNER, IPCELL)
+        IPT = i8Pts_Grid_(ICORNER, IPCELL)
         if (GRIDRAD(1, IPT) .lt. 0.0) then
             ! Start off at the grid point
             ICELL = IPCELL
@@ -1475,7 +1475,7 @@ subroutine shd_intg__backIntegrate1D(&
                 ! Find boundaries of the current cell
                 ! Find the three possible intersection planes (X,Y,Z)
                 !   from the coordinates of the opposite corner grid point
-                IOPP = grid_obj%i8Grid(9 - IOCT, ICELL)
+                IOPP = i8Pts_Grid_(9 - IOCT, ICELL)
                 ! Get the distances to the 3 planes and select the closest
                 SO = (xyz_Grid_(3, IOPP) - ZE)*CZINV
                 if (SO .lt. -EPS) then
@@ -1492,10 +1492,10 @@ subroutine shd_intg__backIntegrate1D(&
                 INEXTCELL = grid_obj%i6Cell(IFACE, ICELL)
 
                 ! Get the face grid pointers
-                I1 = grid_obj%i8Grid(GRIDFACE(IFACE), ICELL)
+                I1 = i8Pts_Grid_(GRIDFACE(IFACE), ICELL)
                 ! Get the location coordinate (does the boundary wrapping)
                 if (INEXTCELL .gt. 0) then
-                    ZE = xyz_Grid_(3, grid_obj%i8Grid(IOCT, INEXTCELL))
+                    ZE = xyz_Grid_(3, i8Pts_Grid_(IOCT, INEXTCELL))
                 end if
 
                 ! Get extinction and source function at face intersection

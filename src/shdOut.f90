@@ -46,7 +46,7 @@ module shd_out
     use globals_type,  only: shd_type_rtm, shd_type_grid
 
     use globals_obj,   only: rtm_obj_, temp_Rtm_, ext_Rtm_, ssa_Rtm_, leg_Rtm_, ipha_Rtm_, &
-                             xyz_Grid_, &
+                             xyz_Grid_, i8Pts_Grid_, &
                             shdo_obj_, iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_, &
                              src_obj_, &
                              prp_obj_, &
@@ -2525,15 +2525,15 @@ subroutine shd_io__outputCellSplit(&
             &ADAPTCRIT, MAXADAPT, IDIR,&
             &grid_obj)
         ! Compute the cell center location and mean extinction
-        IP1 = grid_obj%i8Grid(1, icell)
-        IP2 = grid_obj%i8Grid(8, icell)
+        IP1 = i8Pts_Grid_(1, icell)
+        IP2 = i8Pts_Grid_(8, icell)
         XC = 0.5*(xyz_Grid_(1, IP1) + xyz_Grid_(1, IP2))
         YC = 0.5*(xyz_Grid_(2, IP1) + xyz_Grid_(2, IP2))
         ZC = 0.5*(xyz_Grid_(3, IP1) + xyz_Grid_(3, IP2))
-        EXT =  (ext_Rtm_(grid_obj%i8Grid(1, icell)) + ext_Rtm_(grid_obj%i8Grid(2, icell))&
-             &+ ext_Rtm_(grid_obj%i8Grid(3, icell)) + ext_Rtm_(grid_obj%i8Grid(4, icell))&
-             &+ ext_Rtm_(grid_obj%i8Grid(5, icell)) + ext_Rtm_(grid_obj%i8Grid(6, icell))&
-             &+ ext_Rtm_(grid_obj%i8Grid(7, icell)) + ext_Rtm_(grid_obj%i8Grid(8, icell)))/8
+        EXT =  (ext_Rtm_(i8Pts_Grid_(1, icell)) + ext_Rtm_(i8Pts_Grid_(2, icell))&
+             &+ ext_Rtm_(i8Pts_Grid_(3, icell)) + ext_Rtm_(i8Pts_Grid_(4, icell))&
+             &+ ext_Rtm_(i8Pts_Grid_(5, icell)) + ext_Rtm_(i8Pts_Grid_(6, icell))&
+             &+ ext_Rtm_(i8Pts_Grid_(7, icell)) + ext_Rtm_(i8Pts_Grid_(8, icell)))/8
         write (9, '(1X,I5,3(1X,F6.3),1X,E11.4,3(1X,F7.5))')&
             &icell, XC, YC, ZC, EXT,&
             &ADAPTCRIT(1), ADAPTCRIT(2), ADAPTCRIT(3)
@@ -2621,21 +2621,21 @@ subroutine shd_io__visualizeCell(&
     do IC = 1, grid_obj%Ncell
         ! Output if it is an end cell and crosses the Y value
         if (grid_obj%i2Tree(2, IC) .eq. 0 .and.&
-            & xyz_Grid_(2, grid_obj%i8Grid(1, IC)) .le. YVAL .and.&
-            & xyz_Grid_(2, grid_obj%i8Grid(3, IC)) .ge. YVAL) then
+            & xyz_Grid_(2, i8Pts_Grid_(1, IC)) .le. YVAL .and.&
+            & xyz_Grid_(2, i8Pts_Grid_(3, IC)) .ge. YVAL) then
             ! Get the center of the cell
-            XC = (xyz_Grid_(1, grid_obj%i8Grid(1, IC)) + xyz_Grid_(1, grid_obj%i8Grid(8, IC)))/2
-            ZC = (xyz_Grid_(3, grid_obj%i8Grid(1, IC)) + xyz_Grid_(3, grid_obj%i8Grid(8, IC)))/2
+            XC = (xyz_Grid_(1, i8Pts_Grid_(1, IC)) + xyz_Grid_(1, i8Pts_Grid_(8, IC)))/2
+            ZC = (xyz_Grid_(3, i8Pts_Grid_(1, IC)) + xyz_Grid_(3, i8Pts_Grid_(8, IC)))/2
             ! Draw the outline in XZ (four lines and four grid points)
             !   and the cell number at the center using the gle subrouti
-            X1 = xyz_Grid_(1, grid_obj%i8Grid(1, IC))
-            Z1 = xyz_Grid_(3, grid_obj%i8Grid(1, IC))
-            X2 = xyz_Grid_(1, grid_obj%i8Grid(2, IC))
-            Z2 = xyz_Grid_(3, grid_obj%i8Grid(2, IC))
-            X3 = xyz_Grid_(1, grid_obj%i8Grid(6, IC))
-            Z3 = xyz_Grid_(3, grid_obj%i8Grid(6, IC))
-            X4 = xyz_Grid_(1, grid_obj%i8Grid(5, IC))
-            Z4 = xyz_Grid_(3, grid_obj%i8Grid(5, IC))
+            X1 = xyz_Grid_(1, i8Pts_Grid_(1, IC))
+            Z1 = xyz_Grid_(3, i8Pts_Grid_(1, IC))
+            X2 = xyz_Grid_(1, i8Pts_Grid_(2, IC))
+            Z2 = xyz_Grid_(3, i8Pts_Grid_(2, IC))
+            X3 = xyz_Grid_(1, i8Pts_Grid_(6, IC))
+            Z3 = xyz_Grid_(3, i8Pts_Grid_(6, IC))
+            X4 = xyz_Grid_(1, i8Pts_Grid_(5, IC))
+            Z4 = xyz_Grid_(3, i8Pts_Grid_(5, IC))
             if (is1DX_) then
                 write (9, '(A,6(1X,F6.3),I8)') '@drawbox ',&
                     & S*X1, S*Z1, S*X3, S*Z3, S*XC, S*ZC, IC
@@ -2650,8 +2650,8 @@ subroutine shd_io__visualizeCell(&
                 do J = 1, 6
                     if (grid_obj%i6Cell(J, IC) .ne. 0 .and. J .ne. 3 .and. J .ne. 4) then
                         INeigh = abs(grid_obj%i6Cell(J, IC))
-                        XN = (xyz_Grid_(1, grid_obj%i8Grid(1, INeigh)) + xyz_Grid_(1, grid_obj%i8Grid(8, INeigh)))/2
-                        ZN = (xyz_Grid_(3, grid_obj%i8Grid(1, INeigh)) + xyz_Grid_(3, grid_obj%i8Grid(8, INeigh)))/2
+                        XN = (xyz_Grid_(1, i8Pts_Grid_(1, INeigh)) + xyz_Grid_(1, i8Pts_Grid_(8, INeigh)))/2
+                        ZN = (xyz_Grid_(3, i8Pts_Grid_(1, INeigh)) + xyz_Grid_(3, i8Pts_Grid_(8, INeigh)))/2
                         XA = XC + 1.0*(XN - XC)
                         ZA = ZC + 1.0*(ZN - ZC)
                         if (.not. (XN - XC .gt. 0.0 .and. J .eq. 1 .or.&
@@ -2703,7 +2703,7 @@ subroutine shd_io__saveState(&
     write (91) (rtm_obj_%y(I), I=1, rtm_obj_%Ny+1)
     write (91) (rtm_obj_%z(I), I=1, rtm_obj_%Ny)
 
-    write (91) ((grid_obj%i8Grid(J, I), J=1, 8), I=1, grid_obj%Ncell)
+    write (91) ((i8Pts_Grid_(J, I), J=1, 8), I=1, grid_obj%Ncell)
     write (91) ((grid_obj%i6Cell(J, I), J=1, 6), I=1, grid_obj%Ncell)
     write (91) ((grid_obj%i2Tree(J, I), J=1, 2), I=1, grid_obj%Ncell)
     write (91)  (grid_obj%flag(I), I=1, grid_obj%Ncell)
