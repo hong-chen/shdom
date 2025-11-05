@@ -45,7 +45,7 @@ module shd_out
                              isSolar_, isThermal_
     use globals_type,  only: shd_type_rtm, shd_type_grid
 
-    use globals_obj,   only: rtm_obj_, temp_Rtm_, ext_Rtm_, ssa_Rtm_, ipha_Rtm_, &
+    use globals_obj,   only: rtm_obj_, temp_Rtm_, ext_Rtm_, ssa_Rtm_, leg_Rtm_, ipha_Rtm_, &
                             shdo_obj_, iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_, &
                              src_obj_, &
                              prp_obj_, &
@@ -1032,9 +1032,9 @@ subroutine shd_io__outputResult(&
         allocate(ASYM(N))
         do I = 1, N
             if (prp_obj_%Npha .gt. 0) then
-                ASYM(I) = rtm_obj_%leg(1, 1, ipha_Rtm_(I))
+                ASYM(I) = leg_Rtm_(1, 1, ipha_Rtm_(I))
             else
-                ASYM(I) = rtm_obj_%leg(1, 1, I)
+                ASYM(I) = leg_Rtm_(1, 1, I)
             end if
         end do
         !╰────────────────────────────────────────────────╯!
@@ -1085,9 +1085,9 @@ subroutine shd_io__outputResult(&
         !╭────────────────────────────────────────────────╮!
         !do I = 1, N
         !    if (prp_obj_%Npha .gt. 0) then
-        !        ASYM = rtm_obj_%leg(1, 1, ipha_Rtm_(I))
+        !        ASYM = leg_Rtm_(1, 1, ipha_Rtm_(I))
         !    else
-        !        ASYM = rtm_obj_%leg(1, 1, I)
+        !        ASYM = leg_Rtm_(1, 1, I)
         !    end if
         !    if ((grid_obj%xyz(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
         !        &grid_obj%xyz(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) .or. ALLGRID) then

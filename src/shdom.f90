@@ -52,7 +52,7 @@ program shdom
                              shd_type_rtm, &
                              shd_type_grid
 
-    use globals_obj,   only: rtm_obj_, temp_Rtm_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, ipha_Rtm_, &
+    use globals_obj,   only: rtm_obj_, temp_Rtm_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, leg_Rtm_, ipha_Rtm_, &
                              shdo_obj_, iradI_Shdo_, &
                                          radI_Shdo_, &
                                         isrcJ_Shdo_, &
@@ -136,8 +136,6 @@ program shdom
     ! rtm_obj
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_rtm) :: rtmAll_obj
-
-    real(kind=R__),  allocatable, target :: leg_Rtm(:)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! grid_obj
@@ -977,9 +975,9 @@ program shdom
 
     ! max number of legendre coefficients
     if (prp_obj_%Npha .gt. 0) then
-        rtm_obj_%maxNptsLeg = prp_obj_%Npha * prp_obj_%NlegSet * (prp_obj_%maxNleg + 1)
+        rtm_obj_%maxNptsLeg = prp_obj_%Npha    * prp_obj_%NlegSet * (prp_obj_%maxNleg + 1)
     else
-        rtm_obj_%maxNptsLeg = grid_obj%maxNpts*prp_obj_%NlegSet*(prp_obj_%maxNleg + 1)
+        rtm_obj_%maxNptsLeg = grid_obj%maxNpts * prp_obj_%NlegSet * (prp_obj_%maxNleg + 1)
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
@@ -999,11 +997,9 @@ program shdom
     allocate(ext_Rtm_(grid_obj%maxNpts), ssa_Rtm_(grid_obj%maxNpts), ipha_Rtm_(grid_obj%maxNpts))
 
     ! legendre coefficients
-    allocate(leg_Rtm(rtm_obj_%maxNptsLeg))
-
-    rtm_obj_%leg(1:prp_obj_%NlegSet, &
-                 0:prp_obj_%maxNleg, &
-                 1:rtm_obj_%maxNptsLeg/(prp_obj_%maxNleg+1)/prp_obj_%NlegSet) => leg_Rtm
+    allocate(leg_Rtm_(prp_obj_%NlegSet, &
+                    0:prp_obj_%maxNleg, &
+                      rtm_obj_%maxNptsLeg/(prp_obj_%maxNleg+1)/prp_obj_%NlegSet))
     !╰────────────────────────────────────────────────╯!
 
     ! grid
@@ -1407,13 +1403,12 @@ program shdom
     deallocate(ptr_Bc, rad_Bc)
     deallocate(temp_Rtm_, planck_Rtm_)
     deallocate(ext_Rtm_, ssa_Rtm_, ipha_Rtm_)
-    deallocate(leg_Rtm)
+    deallocate(leg_Rtm_)
     deallocate(fluxTot, fluxDir)
     deallocate(sumRad_Out, sumCam_Out)
     deallocate(work, work1, work2)
     if (rtm_obj_%isAllocated) then
         deallocate(rtm_obj_%x, rtm_obj_%y, rtm_obj_%z)
-        nullify(rtm_obj_%leg)
         rtm_obj_%isAllocated = .false.
     end if
     !╰────────────────────────────────────────────────╯!

@@ -432,11 +432,11 @@ end subroutine shd_init__makeCell
 subroutine shd_init__makePrp(&
     doDeltaM, maxSsa,&
     rtm_obj, grid_obj, &
-    temp_Rtm, planck_Rtm, ext_Rtm, ssa_Rtm, ipha_Rtm)
+    temp_Rtm, planck_Rtm, ext_Rtm, ssa_Rtm, leg_Rtm, ipha_Rtm)
 
     ! Prepares the grid arrays for the iterative solution process.
     ! If doing Delta-M scaling then the extinction, albedo, and Legend
-    ! terms are scaled first; only the 0 to shdo_obj_%maxNl rtm_obj%leg terms are scaled.
+    ! terms are scaled first; only the 0 to shdo_obj_%maxNl leg_Rtm terms are scaled.
     ! Outputs planck_Rtm with (1-omega)*B(T) for thermal source, where B(T
     ! the function (meaning depends on src_obj_%unit).
     ! temp_Rtm array is unchanged.
@@ -448,6 +448,8 @@ subroutine shd_init__makePrp(&
     real(kind=R__), intent(out)   :: planck_Rtm(*)
     real(kind=R__), intent(inout) ::    ext_Rtm(*)
     real(kind=R__), intent(inout) ::    ssa_Rtm(*)
+    real(kind=R__), intent(inout) ::    leg_Rtm(prp_obj_%NlegSet, &
+                                              0:prp_obj_%maxNleg, *)
     integer(kind=2), intent(in)   ::   ipha_Rtm(*)
 
     logical, intent(in) :: doDeltaM
@@ -459,16 +461,16 @@ subroutine shd_init__makePrp(&
 
     if (doDeltaM .and. (prp_obj_%Npha .gt. 0)) then
         do IPH = 1, prp_obj_%Npha
-            F = rtm_obj%leg(1, shdo_obj_%maxNl + 1, IPH)
+            F = leg_Rtm(1, shdo_obj_%maxNl + 1, IPH)
             do L = 0, shdo_obj_%maxNl
                 ! Scale the diagonal and off-diagonal phase matrix elements d
-                rtm_obj%leg(1, L, IPH) = (rtm_obj%leg(1, L, IPH) - F)/(1 - F)
+                leg_Rtm(1, L, IPH) = (leg_Rtm(1, L, IPH) - F)/(1 - F)
                 if (prp_obj_%NlegSet .gt. 1) then
-                    rtm_obj%leg(2, L, IPH) = (rtm_obj%leg(2, L, IPH) - F)/(1 - F)
-                    rtm_obj%leg(3, L, IPH) = (rtm_obj%leg(3, L, IPH) - F)/(1 - F)
-                    rtm_obj%leg(4, L, IPH) = (rtm_obj%leg(4, L, IPH) - F)/(1 - F)
-                    rtm_obj%leg(5, L, IPH) =  rtm_obj%leg(5, L, IPH)     /(1 - F)
-                    rtm_obj%leg(6, L, IPH) =  rtm_obj%leg(6, L, IPH)     /(1 - F)
+                    leg_Rtm(2, L, IPH) = (leg_Rtm(2, L, IPH) - F)/(1 - F)
+                    leg_Rtm(3, L, IPH) = (leg_Rtm(3, L, IPH) - F)/(1 - F)
+                    leg_Rtm(4, L, IPH) = (leg_Rtm(4, L, IPH) - F)/(1 - F)
+                    leg_Rtm(5, L, IPH) =  leg_Rtm(5, L, IPH)     /(1 - F)
+                    leg_Rtm(6, L, IPH) =  leg_Rtm(6, L, IPH)     /(1 - F)
                 end if
             end do
         end do
@@ -477,12 +479,12 @@ subroutine shd_init__makePrp(&
     do I = 1, grid_obj%Npts
         if (doDeltaM) then
             if (prp_obj_%Npha .gt. 0) then
-                F = rtm_obj%leg(1, shdo_obj_%maxNl + 1, ipha_Rtm(I))
+                F = leg_Rtm(1, shdo_obj_%maxNl + 1, ipha_Rtm(I))
             else
                 ! prp_obj_%Npha =0 is standard property format, which is unpolarized
-                F = rtm_obj%leg(1, shdo_obj_%maxNl + 1, I)
+                F = leg_Rtm(1, shdo_obj_%maxNl + 1, I)
                 do L = 0, shdo_obj_%maxNl
-                    rtm_obj%leg(1, L, I) = (rtm_obj%leg(1, L, I) - F)/(1 - F)
+                    leg_Rtm(1, L, I) = (leg_Rtm(1, L, I) - F)/(1 - F)
                 end do
             end if
 

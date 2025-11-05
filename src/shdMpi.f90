@@ -52,7 +52,7 @@ module shd_mpi
                              shd_type_ckd,  &
                              shd_type_sen
 
-    use globals_obj,   only:  rtm_obj_, ext_Rtm_, &
+    use globals_obj,   only:  rtm_obj_, ext_Rtm_, leg_Rtm_, &
                              shdo_obj_, isrcJ_Shdo_, srcJ_Shdo_, &
                               src_obj_, &
                               prp_obj_, &
@@ -2280,7 +2280,7 @@ subroutine shd_mpi__computeCamRad(&
             NSTPHASE = min(prp_obj_%NlegSet, 2)
             allocate(PHASETAB(NSTPHASE, prp_obj_%Npha, NSCATANGLE))
             call shd_scat__computePhase(NSCATANGLE, prp_obj_%Npha, NSTPHASE,&
-                &shdo_obj_%Nstokes, shdo_obj_%maxNl, prp_obj_%NlegSet, prp_obj_%Nleg, rtm_obj_%leg, PHASETAB)
+                &shdo_obj_%Nstokes, shdo_obj_%maxNl, prp_obj_%NlegSet, prp_obj_%Nleg, leg_Rtm_, PHASETAB)
         end if
     end if
 

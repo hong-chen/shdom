@@ -204,8 +204,6 @@ module globals_type
         real(kind=R__),  allocatable :: y(:)
         real(kind=R__),  allocatable :: z(:)
 
-        real(kind=R__),  pointer :: leg(:, :, :) => null()
-
         logical :: isAllocated  = .false.
 
     end type shd_type_rtm
@@ -420,7 +418,8 @@ module globals_obj
 
     real(kind=R__),  allocatable, save ::   temp_Rtm_(:), &    ! (grid_obj%maxNpts)
                                              ext_Rtm_(:), &    ! (grid_obj%maxNpts)
-                                             ssa_Rtm_(:)
+                                             ssa_Rtm_(:), &    ! (grid_obj%maxNpts)
+                                             leg_Rtm_(:, :, :) ! (prp_obj%NlegSet, prp_obj%maxNleg, prp_obj%Npha)
     integer(kind=2), allocatable, save ::   ipha_Rtm_(:)       ! (grid_obj%maxNpts)
 
     real(kind=R__),  allocatable, save :: planck_Rtm_(:)       ! (grid_obj%maxNpts)

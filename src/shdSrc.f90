@@ -46,7 +46,7 @@ module shd_src
                              isSolar_, isThermal_
     use globals_type,  only: shd_type_grid
 
-    use globals_obj,   only: rtm_obj_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, ipha_Rtm_, &
+    use globals_obj,   only: rtm_obj_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, leg_Rtm_, ipha_Rtm_, &
                             shdo_obj_, &
                              src_obj_, &
                              prp_obj_, &
@@ -169,8 +169,8 @@ subroutine shd_src__computeSrcOneCell(&
                 do L = 0, ML
                     ME = min(L, MM)
                     MS = -ME
-                    A1 = DA*rtm_obj_%leg(1, L, IPH)
-                    B1 = DA*rtm_obj_%leg(5, L, IPH)
+                    A1 = DA*leg_Rtm_(1, L, IPH)
+                    B1 = DA*leg_Rtm_(5, L, IPH)
                     if (J .le. NS) then
                         JT = J
                         do M = MS, ME
@@ -192,12 +192,12 @@ subroutine shd_src__computeSrcOneCell(&
                 if (prp_obj_%Npha .gt. 0) then
                     SRCEXT8(:, N) = SRCEXT8(:, N) + DA*SINGSCAT(:, IPH)
                 else if (.not. isPol_) then
-                    F = rtm_obj_%leg(1, ML + 1, IPH)
+                    F = leg_Rtm_(1, ML + 1, IPH)
                     do L = 0, prp_obj_%Nleg
                         if (L .le. ML) then
-                            A = DA*(rtm_obj_%leg(1, L, IPH) + F/(1 - F))
+                            A = DA*(leg_Rtm_(1, L, IPH) + F/(1 - F))
                         else
-                            A = DA*rtm_obj_%leg(1, L, IPH)/(1 - F)
+                            A = DA*leg_Rtm_(1, L, IPH)/(1 - F)
                         end if
                         SRCEXT8(1, N) = SRCEXT8(1, N) + A*SUNDIRLEG(L)
                     end do
@@ -283,7 +283,7 @@ subroutine shd_src__computeSrcOneCell_(&
                 do L = 0, ML
                     ME = min(L, MM)
                     MS = -ME
-                    A1 = DA*rtm_obj_%leg(1, L, IPH)
+                    A1 = DA*leg_Rtm_(1, L, IPH)
                     if (J .le. NS) then
                         JT = J
                         do M = MS, ME
@@ -297,12 +297,12 @@ subroutine shd_src__computeSrcOneCell_(&
                 if (prp_obj_%Npha .gt. 0) then
                     SRCEXT8(N) = SRCEXT8(N) + DA*SINGSCAT(IPH)
                 else
-                    F = rtm_obj_%leg(1, ML + 1, IPH)
+                    F = leg_Rtm_(1, ML + 1, IPH)
                     do L = 0, prp_obj_%Nleg
                         if (L .le. ML) then
-                            A = DA*(rtm_obj_%leg(1, L, IPH) + F/(1 - F))
+                            A = DA*(leg_Rtm_(1, L, IPH) + F/(1 - F))
                         else
-                            A = DA*rtm_obj_%leg(1, L, IPH)/(1 - F)
+                            A = DA*leg_Rtm_(1, L, IPH)/(1 - F)
                         end if
                         SRCEXT8(N) = SRCEXT8(N) + A*SUNDIRLEG(L)
                     end do
@@ -379,18 +379,18 @@ subroutine shd_src__computeSrcOneDir(&
         do IPH = 1, prp_obj_%Npha
             ! Unscaled the needed Legendre coefficients, but divide by 1-f
             !   because extinction is still scaled (for TMS method)
-            F = rtm_obj_%leg(1, shdo_obj_%maxNl + 1, IPH)
+            F = leg_Rtm_(1, shdo_obj_%maxNl + 1, IPH)
             do L = 0, prp_obj_%Nleg
                 if (L .le. shdo_obj_%maxNl) then
-                    UNSCLEGEN(1, L) = rtm_obj_%leg(1, L, IPH) + F/(1 - F)
+                    UNSCLEGEN(1, L) = leg_Rtm_(1, L, IPH) + F/(1 - F)
                 else
-                    UNSCLEGEN(1, L) = rtm_obj_%leg(1, L, IPH)/(1 - F)
+                    UNSCLEGEN(1, L) = leg_Rtm_(1, L, IPH)/(1 - F)
                 end if
                 if (prp_obj_%NlegSet .gt. 1) then
                     if (L .le. shdo_obj_%maxNl) then
-                        UNSCLEGEN(2, L) = rtm_obj_%leg(5, L, IPH)
+                        UNSCLEGEN(2, L) = leg_Rtm_(5, L, IPH)
                     else
-                        UNSCLEGEN(2, L) = rtm_obj_%leg(5, L, IPH)/(1 - F)
+                        UNSCLEGEN(2, L) = leg_Rtm_(5, L, IPH)/(1 - F)
                     end if
                 end if
             end do
@@ -445,8 +445,8 @@ subroutine shd_src__computeSrcOneDir(&
             do L = 0, shdo_obj_%maxNl
                 ME = min(L, shdo_obj_%maxNm)
                 MS = -ME
-                A1 = DA*rtm_obj_%leg(1, L, IPH)
-                B1 = DA*rtm_obj_%leg(5, L, IPH)
+                A1 = DA*leg_Rtm_(1, L, IPH)
+                B1 = DA*leg_Rtm_(5, L, IPH)
                 if (J .le. NS) then
                     JT = J
                     do M = MS, ME
@@ -473,12 +473,12 @@ subroutine shd_src__computeSrcOneDir(&
                 !   should be the unpolarized case) then unscale the Legendre
                 !   coefficients for L<=shdo_obj_%maxNl and sum over the Legendre series
                 !   in cosine of the scattering angle.
-                F = rtm_obj_%leg(1, shdo_obj_%maxNl + 1, IPH)
+                F = leg_Rtm_(1, shdo_obj_%maxNl + 1, IPH)
                 do L = 0, prp_obj_%Nleg
                     if (L .le. shdo_obj_%maxNl) then
-                        A = DA*(rtm_obj_%leg(1, L, IPH) + F/(1 - F))
+                        A = DA*(leg_Rtm_(1, L, IPH) + F/(1 - F))
                     else
-                        A = DA*rtm_obj_%leg(1, L, IPH)/(1 - F)
+                        A = DA*leg_Rtm_(1, L, IPH)/(1 - F)
                     end if
                     src1_Shdo(1, I) = src1_Shdo(1, I) + A*SUNDIRLEG(L)
                 end do
@@ -505,7 +505,7 @@ subroutine shd_src__computeSrc(&
     ! Computes the source function (srcJ_Shdo) in spherical harmonic space
     !   for all the grid points.  The thermal source and/or solar
     !   pseudo-source (in planck_Rtm_ or DIRFLUX) is added to the scattering source
-    !   (computed from rtm_obj_%leg and the spherical harmonic expansion in radI_Shdo).
+    !   (computed from leg_Rtm_ and the spherical harmonic expansion in radI_Shdo).
     !   Also computes the adaptive spherical harmonic truncation for
     !   the source function, unless FIXSH is true.  The SH truncation is set
     !   so that the higher terms of the source function are smaller in
@@ -586,12 +586,12 @@ subroutine shd_src__computeSrc(&
             if (isPol_) then
                 call shd_src__computeSrcOnePnt(shdo_obj_%Nstokes, shdo_obj_%Nlm, LOFJ,&
                     &src_obj_%type, DIRFLUX(I)*SECMU0, YLMSUN,&
-                    &planck_Rtm_(I), ssa_Rtm_(I), IPH, rtm_obj_%leg,&
+                    &planck_Rtm_(I), ssa_Rtm_(I), IPH, leg_Rtm_,&
                     &NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
             else
                 call shd_src__computeSrcOnePnt_(shdo_obj_%Nlm, LOFJ,&
                     &src_obj_%type, DIRFLUX(I)*SECMU0, YLMSUN,&
-                    &planck_Rtm_(I), ssa_Rtm_(I), IPH, rtm_obj_%leg,&
+                    &planck_Rtm_(I), ssa_Rtm_(I), IPH, leg_Rtm_,&
                     &NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
             end if
 
@@ -637,12 +637,12 @@ subroutine shd_src__computeSrc(&
             if (isPol_) then
                 call shd_src__computeSrcOnePnt(shdo_obj_%Nstokes, shdo_obj_%Nlm, LOFJ,&
                     &src_obj_%type, DIRFLUX(I)*SECMU0, YLMSUN,&
-                    &planck_Rtm_(I), ssa_Rtm_(I), IPH, rtm_obj_%leg,&
+                    &planck_Rtm_(I), ssa_Rtm_(I), IPH, leg_Rtm_,&
                     &NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
             else
                 call shd_src__computeSrcOnePnt_(shdo_obj_%Nlm, LOFJ,&
                     &src_obj_%type, DIRFLUX(I)*SECMU0, YLMSUN,&
-                    &planck_Rtm_(I), ssa_Rtm_(I), IPH, rtm_obj_%leg,&
+                    &planck_Rtm_(I), ssa_Rtm_(I), IPH, leg_Rtm_,&
                     &NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
             end if
 
@@ -674,12 +674,12 @@ subroutine shd_src__computeSrc(&
         if (isPol_) then
             call shd_src__computeSrcOnePnt(shdo_obj_%Nstokes, shdo_obj_%Nlm, LOFJ,&
                 &src_obj_%type, DIRFLUX(I)*SECMU0, YLMSUN,&
-                &planck_Rtm_(I), ssa_Rtm_(I), IPH, rtm_obj_%leg,&
+                &planck_Rtm_(I), ssa_Rtm_(I), IPH, leg_Rtm_,&
                 &NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
         else
             call shd_src__computeSrcOnePnt_(shdo_obj_%Nlm, LOFJ,&
                 &src_obj_%type, DIRFLUX(I)*SECMU0, YLMSUN,&
-                &planck_Rtm_(I), ssa_Rtm_(I), IPH, rtm_obj_%leg,&
+                &planck_Rtm_(I), ssa_Rtm_(I), IPH, leg_Rtm_,&
                 &NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
         end if
         if (FIXSH) then
