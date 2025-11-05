@@ -1576,12 +1576,14 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
                 call shd_src__computeSrcOnePnt(shdo_obj_%Nstokes, shdo_obj_%Nlm, LOFJ,&
                     &src_obj_%type, DIRFLUX(IP)*SECMU0, YLMSUN,&
                     &planck_Rtm(IP), ssa_Rtm(IP), IPH, leg_Rtm,&
-                    &NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
+                    &NR, radI_Shdo(1, IR+1), srcT_Shdo)
+                    !&NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
             else
                 call shd_src__computeSrcOnePnt_(shdo_obj_%Nlm, LOFJ,&
                     &src_obj_%type, DIRFLUX(IP)*SECMU0, YLMSUN,&
                     &planck_Rtm(IP), ssa_Rtm(IP), IPH, leg_Rtm,&
-                    &NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
+                    &NR, radI_Shdo(1, IR+1), srcT_Shdo)
+                    !&NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
             end if
             do J = 1, NS
                 srcJ_Shdo(:, IS + J) = srcT_Shdo(:, J)
