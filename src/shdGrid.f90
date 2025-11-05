@@ -46,7 +46,7 @@ module shd_grid
                              isPol_, isSolar_, isThermal_
     use globals_type,  only: shd_type_grid
 
-    use globals_obj,   only:  rtm_obj_, temp_Rtm_, planck_Rtm_, ext_Rtm_, &
+    use globals_obj,   only:  rtm_obj_, temp_Rtm_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, &
                              shdo_obj_, isrcJ_Shdo_, srcJ_Shdo_, &
                               src_obj_, &
                               prp_obj_, temp_Prp_, ext_Prp_, ssa_Prp_, leg_Prp_, ipha_Prp_, &
@@ -1082,14 +1082,14 @@ subroutine shd_grid__interpGrid(grid_obj)
     ! Initialize: transfer the tabulated phase functions
     call shd_grid__InterpTriLinGridPrp(&
         &0.0, 0.0, 0.0,&
-        &.true., temp_Rtm_(1), ext_Rtm_(1), rtm_obj_%ssa(1),&
+        &.true., temp_Rtm_(1), ext_Rtm_(1), ssa_Rtm_(1),&
         &rtm_obj_%leg(1:prp_obj_%NlegSet, 0:prp_obj_%Nleg, 1), rtm_obj_%ipha(1))
 
     ! Trilinearly interpolate from the property grid to the adaptive
     do ipts = 1, grid_obj%Npts
         call shd_grid__InterpTriLinGridPrp(&
             &grid_obj%xyz(1, ipts), grid_obj%xyz(2, ipts), grid_obj%xyz(3, ipts),&
-            &.false., temp_Rtm_(ipts), ext_Rtm_(ipts), rtm_obj_%ssa(ipts),&
+            &.false., temp_Rtm_(ipts), ext_Rtm_(ipts), ssa_Rtm_(ipts),&
             &rtm_obj_%leg(1:prp_obj_%NlegSet, 0:prp_obj_%Nleg, ipts), rtm_obj_%ipha(ipts))
     end do
 
@@ -1415,7 +1415,7 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
     DIRFLUX,&
     isrcD_Shdo,&
     grid_obj, &
-    temp_Rtm, planck_Rtm, ext_Rtm, &
+    temp_Rtm, planck_Rtm, ext_Rtm, ssa_Rtm, &
     iradI_Shdo, radI_Shdo, &
     isrcJ_Shdo, srcJ_Shdo)
 
@@ -1431,7 +1431,7 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
 
     type(shd_type_grid), intent(in) :: grid_obj
 
-    real(R__),    intent(inout) :: temp_Rtm(*), planck_Rtm(*), ext_Rtm(*)
+    real(R__),    intent(inout) :: temp_Rtm(*), planck_Rtm(*), ext_Rtm(*), ssa_Rtm(*)
 
     integer(I__), intent(inout) :: iradI_Shdo(*)
     real(R__),    intent(inout) ::  radI_Shdo(shdo_obj_%Nstokes, *)
@@ -1484,7 +1484,7 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
             Y = grid_obj%xyz(2, IP)
             Z = grid_obj%xyz(3, IP)
             call shd_grid__InterpTriLinGridPrp(X, Y, Z, .false.,&
-                &temp_Rtm(IP), ext_Rtm(IP), rtm_obj_%ssa(IP),&
+                &temp_Rtm(IP), ext_Rtm(IP), ssa_Rtm(IP),&
                 &rtm_obj_%leg(1:prp_obj_%NlegSet, 0:prp_obj_%Nleg, 1), rtm_obj_%ipha(IP))
             ! Do the Delta-M scaling of extinction and albedo for this point
             if (doDeltaM) then
@@ -1496,14 +1496,14 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
                         rtm_obj_%leg(1, L, IP) = (rtm_obj_%leg(1, L, IP) - F)/(1 - F)
                     end do
                 end if
-                ext_Rtm(IP) = (1.0 - rtm_obj_%ssa(IP)*F)*ext_Rtm(IP)
-                rtm_obj_%ssa(IP) = (1.0 - F)*rtm_obj_%ssa(IP)/(1.0 - rtm_obj_%ssa(IP)*F)
+                ext_Rtm(IP) = (1.0 - ssa_Rtm(IP)*F)*ext_Rtm(IP)
+                ssa_Rtm(IP) = (1.0 - F)*ssa_Rtm(IP)/(1.0 - ssa_Rtm(IP)*F)
             end if
 
             ! Compute the new Planck source function (if needed)
             if (isThermal_) then
                 call shd_util__computePlanck(temp_Rtm(IP), src_obj_%unit, src_obj_%waveNum, src_obj_%avgWaveLen, BB)
-                planck_Rtm(IP) = (1.0 - rtm_obj_%ssa(IP))*BB
+                planck_Rtm(IP) = (1.0 - ssa_Rtm(IP))*BB
             end if
 
             ! Compute the new direct beam flux (if needed)
@@ -1572,12 +1572,12 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
             if (isPol_) then
                 call shd_src__computeSrcOnePnt(shdo_obj_%Nstokes, shdo_obj_%Nlm, LOFJ,&
                     &src_obj_%type, DIRFLUX(IP)*SECMU0, YLMSUN,&
-                    &planck_Rtm(IP), rtm_obj_%ssa(IP), IPH, rtm_obj_%leg,&
+                    &planck_Rtm(IP), ssa_Rtm(IP), IPH, rtm_obj_%leg,&
                     &NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
             else
                 call shd_src__computeSrcOnePnt_(shdo_obj_%Nlm, LOFJ,&
                     &src_obj_%type, DIRFLUX(IP)*SECMU0, YLMSUN,&
-                    &planck_Rtm(IP), rtm_obj_%ssa(IP), IPH, rtm_obj_%leg,&
+                    &planck_Rtm(IP), ssa_Rtm(IP), IPH, rtm_obj_%leg,&
                     &NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
             end if
             do J = 1, NS
@@ -1600,7 +1600,7 @@ subroutine shd_grid__splitGrid(&
     SOLARFLUX, YLMSUN, &
     ADAPTCRIT, ADAPTIND, &
     grid_obj, &
-    temp_Rtm, planck_Rtm, ext_Rtm, &
+    temp_Rtm, planck_Rtm, ext_Rtm, ssa_Rtm, &
     iradI_Shdo, radI_Shdo, &
     isrcJ_Shdo, srcJ_Shdo)
 
@@ -1612,7 +1612,7 @@ subroutine shd_grid__splitGrid(&
 
     type(shd_type_grid), intent(inout) :: grid_obj
 
-    real(R__),    intent(inout) :: temp_Rtm(*), planck_Rtm(*), ext_Rtm(*)
+    real(R__),    intent(inout) :: temp_Rtm(*), planck_Rtm(*), ext_Rtm(*), ssa_Rtm(*)
 
     integer(I__), intent(inout) :: iradI_Shdo(*)
     real(R__),    intent(inout) ::  radI_Shdo(shdo_obj_%Nstokes, *)
@@ -1689,7 +1689,7 @@ subroutine shd_grid__splitGrid(&
                         &DIRFLUX,&
                         &isrcD_Shdo,&
                         &grid_obj, &
-                        &temp_Rtm, planck_Rtm, ext_Rtm, &
+                        &temp_Rtm, planck_Rtm, ext_Rtm, ssa_Rtm, &
                         &iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo)
                 end if
                 I = I + 1
@@ -1728,7 +1728,7 @@ subroutine shd_grid__splitGrid(&
                             DIRFLUX, &
                             isrcD_Shdo, &
                             grid_obj, &
-                            temp_Rtm, planck_Rtm, ext_Rtm, &
+                            temp_Rtm, planck_Rtm, ext_Rtm, ssa_Rtm, &
                             iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo)
                     end if
                 end if

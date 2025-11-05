@@ -46,7 +46,7 @@ module shd_src
                              isSolar_, isThermal_
     use globals_type,  only: shd_type_grid
 
-    use globals_obj,   only: rtm_obj_, planck_Rtm_, ext_Rtm_, &
+    use globals_obj,   only: rtm_obj_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, &
                             shdo_obj_, &
                              src_obj_, &
                              prp_obj_, &
@@ -164,7 +164,7 @@ subroutine shd_src__computeSrcOneCell(&
                     IPH = IP
                 end if
                 ! First subtract off the truncated single scattering
-                DA = rtm_obj_%ssa(IP)*DIRFLUX(IP)*SECMU0
+                DA = ssa_Rtm_(IP)*DIRFLUX(IP)*SECMU0
                 J = 1
                 do L = 0, ML
                     ME = min(L, MM)
@@ -278,7 +278,7 @@ subroutine shd_src__computeSrcOneCell_(&
                     IPH = IP
                 end if
                 ! First subtract off the truncated single scattering
-                DA = rtm_obj_%ssa(IP)*DIRFLUX(IP)*SECMU0
+                DA = ssa_Rtm_(IP)*DIRFLUX(IP)*SECMU0
                 J = 1
                 do L = 0, ML
                     ME = min(L, MM)
@@ -440,7 +440,7 @@ subroutine shd_src__computeSrcOneDir(&
                 IPH = I
             end if
             ! First subtract off the truncated single scattering
-            DA = rtm_obj_%ssa(I)*DIRFLUX(I)*SECMU0
+            DA = ssa_Rtm_(I)*DIRFLUX(I)*SECMU0
             J = 1
             do L = 0, shdo_obj_%maxNl
                 ME = min(L, shdo_obj_%maxNm)
@@ -586,12 +586,12 @@ subroutine shd_src__computeSrc(&
             if (isPol_) then
                 call shd_src__computeSrcOnePnt(shdo_obj_%Nstokes, shdo_obj_%Nlm, LOFJ,&
                     &src_obj_%type, DIRFLUX(I)*SECMU0, YLMSUN,&
-                    &planck_Rtm_(I), rtm_obj_%ssa(I), IPH, rtm_obj_%leg,&
+                    &planck_Rtm_(I), ssa_Rtm_(I), IPH, rtm_obj_%leg,&
                     &NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
             else
                 call shd_src__computeSrcOnePnt_(shdo_obj_%Nlm, LOFJ,&
                     &src_obj_%type, DIRFLUX(I)*SECMU0, YLMSUN,&
-                    &planck_Rtm_(I), rtm_obj_%ssa(I), IPH, rtm_obj_%leg,&
+                    &planck_Rtm_(I), ssa_Rtm_(I), IPH, rtm_obj_%leg,&
                     &NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
             end if
 
@@ -637,12 +637,12 @@ subroutine shd_src__computeSrc(&
             if (isPol_) then
                 call shd_src__computeSrcOnePnt(shdo_obj_%Nstokes, shdo_obj_%Nlm, LOFJ,&
                     &src_obj_%type, DIRFLUX(I)*SECMU0, YLMSUN,&
-                    &planck_Rtm_(I), rtm_obj_%ssa(I), IPH, rtm_obj_%leg,&
+                    &planck_Rtm_(I), ssa_Rtm_(I), IPH, rtm_obj_%leg,&
                     &NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
             else
                 call shd_src__computeSrcOnePnt_(shdo_obj_%Nlm, LOFJ,&
                     &src_obj_%type, DIRFLUX(I)*SECMU0, YLMSUN,&
-                    &planck_Rtm_(I), rtm_obj_%ssa(I), IPH, rtm_obj_%leg,&
+                    &planck_Rtm_(I), ssa_Rtm_(I), IPH, rtm_obj_%leg,&
                     &NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
             end if
 
@@ -674,12 +674,12 @@ subroutine shd_src__computeSrc(&
         if (isPol_) then
             call shd_src__computeSrcOnePnt(shdo_obj_%Nstokes, shdo_obj_%Nlm, LOFJ,&
                 &src_obj_%type, DIRFLUX(I)*SECMU0, YLMSUN,&
-                &planck_Rtm_(I), rtm_obj_%ssa(I), IPH, rtm_obj_%leg,&
+                &planck_Rtm_(I), ssa_Rtm_(I), IPH, rtm_obj_%leg,&
                 &NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
         else
             call shd_src__computeSrcOnePnt_(shdo_obj_%Nlm, LOFJ,&
                 &src_obj_%type, DIRFLUX(I)*SECMU0, YLMSUN,&
-                &planck_Rtm_(I), rtm_obj_%ssa(I), IPH, rtm_obj_%leg,&
+                &planck_Rtm_(I), ssa_Rtm_(I), IPH, rtm_obj_%leg,&
                 &NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
         end if
         if (FIXSH) then

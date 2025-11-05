@@ -432,7 +432,7 @@ end subroutine shd_init__makeCell
 subroutine shd_init__makePrp(&
     doDeltaM, maxSsa,&
     rtm_obj, grid_obj, &
-    temp_Rtm, planck_Rtm, ext_Rtm)
+    temp_Rtm, planck_Rtm, ext_Rtm, ssa_Rtm)
 
     ! Prepares the grid arrays for the iterative solution process.
     ! If doing Delta-M scaling then the extinction, albedo, and Legend
@@ -447,6 +447,7 @@ subroutine shd_init__makePrp(&
     real(R__), intent(in)    ::   temp_Rtm(*)
     real(R__), intent(out)   :: planck_Rtm(*)
     real(R__), intent(inout) ::    ext_Rtm(*)
+    real(R__), intent(inout) ::    ssa_Rtm(*)
 
     logical, intent(in) :: doDeltaM
     real(kind=R__), intent(inout) :: maxSsa
@@ -484,15 +485,15 @@ subroutine shd_init__makePrp(&
                 end do
             end if
 
-            ext_Rtm(I) = (1.0 - rtm_obj%ssa(I)*F)*ext_Rtm(I)
-            rtm_obj%ssa(I) = (1.0 - F)*rtm_obj%ssa(I)/(1.0 - rtm_obj%ssa(I)*F)
+            ext_Rtm(I) = (1.0 - ssa_Rtm(I)*F)*ext_Rtm(I)
+            ssa_Rtm(I) = (1.0 - F)*ssa_Rtm(I)/(1.0 - ssa_Rtm(I)*F)
 
         end if
 
-        maxSsa = max(maxSsa, rtm_obj%ssa(I))
+        maxSsa = max(maxSsa, ssa_Rtm(I))
         if (isThermal_) then
             call shd_util__computePlanck(temp_Rtm(I), src_obj_%unit, src_obj_%waveNum, src_obj_%avgWaveLen, BB)
-            planck_Rtm(I) = (1.0 - rtm_obj%ssa(I))*BB
+            planck_Rtm(I) = (1.0 - ssa_Rtm(I))*BB
         end if
     end do
 

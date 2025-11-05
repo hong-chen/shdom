@@ -44,7 +44,7 @@ module shd_solv
 
     use globals_type, only: shd_type_grid
 
-    use globals_obj,  only: rtm_obj_, temp_Rtm_, planck_Rtm_, ext_Rtm_, &
+    use globals_obj,  only: rtm_obj_, temp_Rtm_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, &
                            shdo_obj_, iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_, &
                             src_obj_, &
                             prp_obj_, &
@@ -160,7 +160,7 @@ subroutine shd_solv__solveRte(&
     ! Put the Planck blackbody source in planck_Rtm_.
     call shd_init__makePrp(doDeltaM, maxSsa, &
         rtm_obj_, grid_obj, &
-        temp_Rtm_, planck_Rtm_, ext_Rtm_)
+        temp_Rtm_, planck_Rtm_, ext_Rtm_, ssa_Rtm_)
 
     ! Get the maximum single scattering albedo over all processors
     call shd_mpi__findMaxSsa(maxSsa)
@@ -200,7 +200,7 @@ subroutine shd_solv__solveRte(&
         ! two-stream plane-parallel
         call shd_init__makeRad(shdo_obj_%Nstokes, grid_obj%Nx*grid_obj%Ny, grid_obj%Nz,&
             &iradI_Shdo_, rtm_obj_%z,&
-            &ext_Rtm_, rtm_obj_%ssa, rtm_obj_%leg, temp_Rtm_, rtm_obj_%ipha,&
+            &ext_Rtm_, ssa_Rtm_, rtm_obj_%leg, temp_Rtm_, rtm_obj_%ipha,&
             &src_obj_%type, src_obj_%avgSolar0, src_obj_%avgMu, src_obj_%skyRad,&
             &src_obj_%unit, src_obj_%waveNum, src_obj_%avgWaveLen, radI_Shdo_)
         ! Interpolate the radiance on the non-base grid points from the
@@ -331,7 +331,7 @@ subroutine shd_solv__solveRte(&
                     src_obj_%avgSolar0, YlmSolar_Shdo, &
                     WORK, WORK2, &
                     grid_obj, &
-                    temp_Rtm_, planck_Rtm_, ext_Rtm_, &
+                    temp_Rtm_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, &
                     iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_)
                 if (SOLCRIT .gt. STARTADAPTSOL) STARTSPLITACC = SPLITCRIT
             end if
@@ -546,7 +546,7 @@ subroutine shd_solv__truncRad(doHighOrder, doFixSH, SHACC,&
             end if
             LR = 1
             do L = 1, shdo_obj_%maxNl
-                if (rtm_obj_%ssa(I)*rtm_obj_%leg(1, L, K)*radI_Shdo(1, IRO + 1) .gt. RADMIN) LR = L
+                if (ssa_Rtm_(I)*rtm_obj_%leg(1, L, K)*radI_Shdo(1, IRO + 1) .gt. RADMIN) LR = L
             end do
         else
             LR = shdo_obj_%maxNl

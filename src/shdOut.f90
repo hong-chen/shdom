@@ -45,7 +45,7 @@ module shd_out
                              isSolar_, isThermal_
     use globals_type,  only: shd_type_rtm, shd_type_grid
 
-    use globals_obj,   only: rtm_obj_, temp_Rtm_, ext_Rtm_, &
+    use globals_obj,   only: rtm_obj_, temp_Rtm_, ext_Rtm_, ssa_Rtm_, &
                             shdo_obj_, iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_, &
                              src_obj_, &
                              prp_obj_, &
@@ -1065,7 +1065,7 @@ subroutine shd_io__outputResult(&
         IDATA = 0
         call shd_io__outputDataBin(ext_Rtm_, 1, N, IDATA, OUTFILE_DATA)
         IDATA = 0
-        call shd_io__outputDataBin(rtm_obj_%ssa, 1, N, IDATA, OUTFILE_DATA, 'ADD')
+        call shd_io__outputDataBin(ssa_Rtm_, 1, N, IDATA, OUTFILE_DATA, 'ADD')
         IDATA = 0
         call shd_io__outputDataBin(ASYM, 1, N, IDATA, OUTFILE_DATA, 'ADD')
         IDATA = 0
@@ -1093,7 +1093,7 @@ subroutine shd_io__outputResult(&
         !        &grid_obj%xyz(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) .or. ALLGRID) then
         !        write (2, '(3(1X,F7.3),1X,F10.6,1X,F8.6,1X,F8.5,1X,F7.2)')&
         !            & grid_obj%xyz(1, I), grid_obj%xyz(2, I), grid_obj%xyz(3, I),&
-        !            & ext_Rtm_(I), rtm_obj_%ssa(I), ASYM, temp_Rtm_(I)
+        !            & ext_Rtm_(I), ssa_Rtm_(I), ASYM, temp_Rtm_(I)
         !    end if
         !end do
         !╰────────────────────────────────────────────────╯!
