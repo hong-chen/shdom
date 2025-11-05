@@ -46,6 +46,7 @@ module shd_out
     use globals_type,  only: shd_type_rtm, shd_type_grid
 
     use globals_obj,   only: rtm_obj_, temp_Rtm_, ext_Rtm_, ssa_Rtm_, leg_Rtm_, ipha_Rtm_, &
+                             xyz_Grid_, &
                             shdo_obj_, iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_, &
                              src_obj_, &
                              prp_obj_, &
@@ -421,13 +422,13 @@ subroutine shd_io__outputResult(&
             ! original
             !╭────────────────────────────────────────────────╮!
             !do I = 1, grid_obj%Npts0, rtm_obj_%Nz
-            !    if  (grid_obj%xyz(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
-            !        &grid_obj%xyz(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) then
+            !    if  (xyz_Grid_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
+            !        &xyz_Grid_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) then
             !        if (src_obj_%type .ne. 'T') then
-            !            write (2, FORM) grid_obj%xyz(1, I), grid_obj%xyz(2, I),&
+            !            write (2, FORM) xyz_Grid_(1, I), xyz_Grid_(2, I),&
             !                & C*FLUXES(2, I + rtm_obj_%Nz - 1), C*FLUXES(1, I), DIRFLUX(I)
             !        else
-            !            write (2, FORM) grid_obj%xyz(1, I), grid_obj%xyz(2, I),&
+            !            write (2, FORM) xyz_Grid_(1, I), xyz_Grid_(2, I),&
             !                & C*FLUXES(2, I + rtm_obj_%Nz - 1), C*FLUXES(1, I)
             !        end if
             !    end if
@@ -571,8 +572,8 @@ subroutine shd_io__outputResult(&
                 SUM3(IZ) = 0.0
                 N = 0
                 do I = IZ, grid_obj%Npts0, rtm_obj_%Nz
-                    if  (grid_obj%xyz(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
-                        &grid_obj%xyz(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) then
+                    if  (xyz_Grid_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
+                        &xyz_Grid_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) then
                         SUM1(IZ) = SUM1(IZ) + FLUXES(1, I)
                         SUM2(IZ) = SUM2(IZ) + FLUXES(2, I)
                         SUM3(IZ) = SUM3(IZ) + DIRFLUX(I)
@@ -618,8 +619,8 @@ subroutine shd_io__outputResult(&
             !    SUM3 = 0.0
             !    N = 0
             !    do I = IZ, grid_obj%Npts0, rtm_obj_%Nz
-            !        if  (grid_obj%xyz(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
-            !            &grid_obj%xyz(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) then
+            !        if  (xyz_Grid_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
+            !            &xyz_Grid_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) then
             !            SUM1 = SUM1 + FLUXES(1, I)
             !            SUM2 = SUM2 + FLUXES(2, I)
             !            SUM3 = SUM3 + DIRFLUX(I)
@@ -699,20 +700,20 @@ subroutine shd_io__outputResult(&
             ! add grid positions (or binary data cannot be reconstructed)
             if (ALLGRID) then
                 IDATA = 0
-                call shd_io__outputDataBin(grid_obj%xyz(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
+                call shd_io__outputDataBin(xyz_Grid_(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
             end if
             !╰────────────────────────────────────────────────╯!
 
             ! original
             !╭────────────────────────────────────────────────╮!
             !do I = 1, N
-            !    if ((grid_obj%xyz(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
-            !        &grid_obj%xyz(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) .or. ALLGRID) then
+            !    if ((xyz_Grid_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
+            !        &xyz_Grid_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) .or. ALLGRID) then
             !        if (src_obj_%type .ne. 'T') then
-            !            write (2, FORM) grid_obj%xyz(1, I), grid_obj%xyz(2, I), grid_obj%xyz(3, I),&
+            !            write (2, FORM) xyz_Grid_(1, I), xyz_Grid_(2, I), xyz_Grid_(3, I),&
             !                & C*FLUXES(2, I), C*FLUXES(1, I), DIRFLUX(I)
             !        else
-            !            write (2, FORM) grid_obj%xyz(1, I), grid_obj%xyz(2, I), grid_obj%xyz(3, I),&
+            !            write (2, FORM) xyz_Grid_(1, I), xyz_Grid_(2, I), xyz_Grid_(3, I),&
             !                & C*FLUXES(2, I), C*FLUXES(1, I)
             !        end if
             !    end if
@@ -739,8 +740,8 @@ subroutine shd_io__outputResult(&
                 SUM1(IZ) = 0.0
                 N = 0
                 do I = IZ, grid_obj%Npts0, rtm_obj_%Nz
-                    if  (grid_obj%xyz(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
-                        &grid_obj%xyz(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) then
+                    if  (xyz_Grid_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
+                        &xyz_Grid_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) then
                         SUM1(IZ) = SUM1(IZ) + FLUXDIV(I)
                         N = N + 1
                     end if
@@ -772,8 +773,8 @@ subroutine shd_io__outputResult(&
             !    SUM = 0.0
             !    N = 0
             !    do I = IZ, grid_obj%Npts0, rtm_obj_%Nz
-            !        if  (grid_obj%xyz(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
-            !            &grid_obj%xyz(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) then
+            !        if  (xyz_Grid_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
+            !            &xyz_Grid_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) then
             !            SUM = SUM + FLUXDIV(I)
             !            N = N + 1
             !        end if
@@ -825,17 +826,17 @@ subroutine shd_io__outputResult(&
             ! add grid positions (or binary data cannot be reconstructed)
             if (ALLGRID) then
                 IDATA = 0
-                call shd_io__outputDataBin(grid_obj%xyz(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
+                call shd_io__outputDataBin(xyz_Grid_(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
             end if
             !╰────────────────────────────────────────────────╯!
 
             ! original
             !╭────────────────────────────────────────────────╮!
             !do I = 1, N
-            !    if ((grid_obj%xyz(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
-            !        &grid_obj%xyz(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) .or. ALLGRID) then
+            !    if ((xyz_Grid_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
+            !        &xyz_Grid_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) .or. ALLGRID) then
             !        write (2, '(3(1X,F7.3),2X,E13.5)')&
-            !            & grid_obj%xyz(1, I), grid_obj%xyz(2, I), grid_obj%xyz(3, I), -FLUXDIV(I)
+            !            & xyz_Grid_(1, I), xyz_Grid_(2, I), xyz_Grid_(3, I), -FLUXDIV(I)
             !    end if
             !end do
             !╰────────────────────────────────────────────────╯!
@@ -907,7 +908,7 @@ subroutine shd_io__outputResult(&
         ! add grid positions (or binary data cannot be reconstructed)
         if (ALLGRID) then
             IDATA = 0
-            call shd_io__outputDataBin(grid_obj%xyz(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
+            call shd_io__outputDataBin(xyz_Grid_(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
         end if
 
         deallocate(SHTERM5)
@@ -919,10 +920,10 @@ subroutine shd_io__outputResult(&
         !    write (2, '(A,A)') '!    X       Y        Z         Imean',&
         !        &'          Fx           Fy           Fz       HOrms'
         !    do I = 1, N
-        !        if ((grid_obj%xyz(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
-        !            &grid_obj%xyz(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) .or. ALLGRID) then
+        !        if ((xyz_Grid_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
+        !            &xyz_Grid_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) .or. ALLGRID) then
         !            write (2, '(3(1X,F7.3),1X,4(1X,E12.5),1X,F6.3)')&
-        !                &grid_obj%xyz(1, I), grid_obj%xyz(2, I), grid_obj%xyz(3, I),&
+        !                &xyz_Grid_(1, I), xyz_Grid_(2, I), xyz_Grid_(3, I),&
         !                &SHTERMS(1, I), SHTERMS(2, I), SHTERMS(3, I), SHTERMS(4, I),&
         !                &SHTERMS(5, I)/max(1e-20, SHTERMS(1, I))
         !        end if
@@ -931,10 +932,10 @@ subroutine shd_io__outputResult(&
         !    write (2, '(A,A)') '!    X       Y        Z         Imean',&
         !        &'          Fx           Fy           Fz '
         !    do I = 1, N
-        !        if ((grid_obj%xyz(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
-        !            &grid_obj%xyz(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) .or. ALLGRID) then
+        !        if ((xyz_Grid_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
+        !            &xyz_Grid_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) .or. ALLGRID) then
         !            write (2, '(3(1X,F7.3),1X,4(1X,E12.5))')&
-        !                &grid_obj%xyz(1, I), grid_obj%xyz(2, I), grid_obj%xyz(3, I),&
+        !                &xyz_Grid_(1, I), xyz_Grid_(2, I), xyz_Grid_(3, I),&
         !                &SHTERMS(1, I), SHTERMS(2, I), SHTERMS(3, I), SHTERMS(4, I)
         !        end if
         !    end do
@@ -993,17 +994,17 @@ subroutine shd_io__outputResult(&
         ! add grid positions (or binary data cannot be reconstructed)
         if (ALLGRID) then
             IDATA = 0
-            call shd_io__outputDataBin(grid_obj%xyz(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
+            call shd_io__outputDataBin(xyz_Grid_(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
         end if
         !╰────────────────────────────────────────────────╯!
 
         ! original
         !╭────────────────────────────────────────────────╮!
         !do I = 1, N
-        !    if ((grid_obj%xyz(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
-        !        &grid_obj%xyz(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) .or. ALLGRID) then
+        !    if ((xyz_Grid_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
+        !        &xyz_Grid_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) .or. ALLGRID) then
         !        write (2, '(3(1X,F7.3),5(1X,E12.5))')&
-        !            & grid_obj%xyz(1, I), grid_obj%xyz(2, I), grid_obj%xyz(3, I),&
+        !            & xyz_Grid_(1, I), xyz_Grid_(2, I), xyz_Grid_(3, I),&
         !            & ext_Rtm_(I), SOURCE1OUT(:, I)
         !    end if
         !end do
@@ -1074,7 +1075,7 @@ subroutine shd_io__outputResult(&
         ! add grid positions (or binary data cannot be reconstructed)
         if (ALLGRID) then
             IDATA = 0
-            call shd_io__outputDataBin(grid_obj%xyz(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
+            call shd_io__outputDataBin(xyz_Grid_(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
         end if
 
         deallocate(ASYM)
@@ -1089,10 +1090,10 @@ subroutine shd_io__outputResult(&
         !    else
         !        ASYM = leg_Rtm_(1, 1, I)
         !    end if
-        !    if ((grid_obj%xyz(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
-        !        &grid_obj%xyz(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) .or. ALLGRID) then
+        !    if ((xyz_Grid_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
+        !        &xyz_Grid_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) .or. ALLGRID) then
         !        write (2, '(3(1X,F7.3),1X,F10.6,1X,F8.6,1X,F8.5,1X,F7.2)')&
-        !            & grid_obj%xyz(1, I), grid_obj%xyz(2, I), grid_obj%xyz(3, I),&
+        !            & xyz_Grid_(1, I), xyz_Grid_(2, I), xyz_Grid_(3, I),&
         !            & ext_Rtm_(I), ssa_Rtm_(I), ASYM, temp_Rtm_(I)
         !    end if
         !end do
@@ -2526,9 +2527,9 @@ subroutine shd_io__outputCellSplit(&
         ! Compute the cell center location and mean extinction
         IP1 = grid_obj%i8Grid(1, icell)
         IP2 = grid_obj%i8Grid(8, icell)
-        XC = 0.5*(grid_obj%xyz(1, IP1) + grid_obj%xyz(1, IP2))
-        YC = 0.5*(grid_obj%xyz(2, IP1) + grid_obj%xyz(2, IP2))
-        ZC = 0.5*(grid_obj%xyz(3, IP1) + grid_obj%xyz(3, IP2))
+        XC = 0.5*(xyz_Grid_(1, IP1) + xyz_Grid_(1, IP2))
+        YC = 0.5*(xyz_Grid_(2, IP1) + xyz_Grid_(2, IP2))
+        ZC = 0.5*(xyz_Grid_(3, IP1) + xyz_Grid_(3, IP2))
         EXT =  (ext_Rtm_(grid_obj%i8Grid(1, icell)) + ext_Rtm_(grid_obj%i8Grid(2, icell))&
              &+ ext_Rtm_(grid_obj%i8Grid(3, icell)) + ext_Rtm_(grid_obj%i8Grid(4, icell))&
              &+ ext_Rtm_(grid_obj%i8Grid(5, icell)) + ext_Rtm_(grid_obj%i8Grid(6, icell))&
@@ -2620,21 +2621,21 @@ subroutine shd_io__visualizeCell(&
     do IC = 1, grid_obj%Ncell
         ! Output if it is an end cell and crosses the Y value
         if (grid_obj%i2Tree(2, IC) .eq. 0 .and.&
-            & grid_obj%xyz(2, grid_obj%i8Grid(1, IC)) .le. YVAL .and.&
-            & grid_obj%xyz(2, grid_obj%i8Grid(3, IC)) .ge. YVAL) then
+            & xyz_Grid_(2, grid_obj%i8Grid(1, IC)) .le. YVAL .and.&
+            & xyz_Grid_(2, grid_obj%i8Grid(3, IC)) .ge. YVAL) then
             ! Get the center of the cell
-            XC = (grid_obj%xyz(1, grid_obj%i8Grid(1, IC)) + grid_obj%xyz(1, grid_obj%i8Grid(8, IC)))/2
-            ZC = (grid_obj%xyz(3, grid_obj%i8Grid(1, IC)) + grid_obj%xyz(3, grid_obj%i8Grid(8, IC)))/2
+            XC = (xyz_Grid_(1, grid_obj%i8Grid(1, IC)) + xyz_Grid_(1, grid_obj%i8Grid(8, IC)))/2
+            ZC = (xyz_Grid_(3, grid_obj%i8Grid(1, IC)) + xyz_Grid_(3, grid_obj%i8Grid(8, IC)))/2
             ! Draw the outline in XZ (four lines and four grid points)
             !   and the cell number at the center using the gle subrouti
-            X1 = grid_obj%xyz(1, grid_obj%i8Grid(1, IC))
-            Z1 = grid_obj%xyz(3, grid_obj%i8Grid(1, IC))
-            X2 = grid_obj%xyz(1, grid_obj%i8Grid(2, IC))
-            Z2 = grid_obj%xyz(3, grid_obj%i8Grid(2, IC))
-            X3 = grid_obj%xyz(1, grid_obj%i8Grid(6, IC))
-            Z3 = grid_obj%xyz(3, grid_obj%i8Grid(6, IC))
-            X4 = grid_obj%xyz(1, grid_obj%i8Grid(5, IC))
-            Z4 = grid_obj%xyz(3, grid_obj%i8Grid(5, IC))
+            X1 = xyz_Grid_(1, grid_obj%i8Grid(1, IC))
+            Z1 = xyz_Grid_(3, grid_obj%i8Grid(1, IC))
+            X2 = xyz_Grid_(1, grid_obj%i8Grid(2, IC))
+            Z2 = xyz_Grid_(3, grid_obj%i8Grid(2, IC))
+            X3 = xyz_Grid_(1, grid_obj%i8Grid(6, IC))
+            Z3 = xyz_Grid_(3, grid_obj%i8Grid(6, IC))
+            X4 = xyz_Grid_(1, grid_obj%i8Grid(5, IC))
+            Z4 = xyz_Grid_(3, grid_obj%i8Grid(5, IC))
             if (is1DX_) then
                 write (9, '(A,6(1X,F6.3),I8)') '@drawbox ',&
                     & S*X1, S*Z1, S*X3, S*Z3, S*XC, S*ZC, IC
@@ -2649,8 +2650,8 @@ subroutine shd_io__visualizeCell(&
                 do J = 1, 6
                     if (grid_obj%i6Cell(J, IC) .ne. 0 .and. J .ne. 3 .and. J .ne. 4) then
                         INeigh = abs(grid_obj%i6Cell(J, IC))
-                        XN = (grid_obj%xyz(1, grid_obj%i8Grid(1, INeigh)) + grid_obj%xyz(1, grid_obj%i8Grid(8, INeigh)))/2
-                        ZN = (grid_obj%xyz(3, grid_obj%i8Grid(1, INeigh)) + grid_obj%xyz(3, grid_obj%i8Grid(8, INeigh)))/2
+                        XN = (xyz_Grid_(1, grid_obj%i8Grid(1, INeigh)) + xyz_Grid_(1, grid_obj%i8Grid(8, INeigh)))/2
+                        ZN = (xyz_Grid_(3, grid_obj%i8Grid(1, INeigh)) + xyz_Grid_(3, grid_obj%i8Grid(8, INeigh)))/2
                         XA = XC + 1.0*(XN - XC)
                         ZA = ZC + 1.0*(ZN - ZC)
                         if (.not. (XN - XC .gt. 0.0 .and. J .eq. 1 .or.&
@@ -2707,7 +2708,7 @@ subroutine shd_io__saveState(&
     write (91) ((grid_obj%i2Tree(J, I), J=1, 2), I=1, grid_obj%Ncell)
     write (91)  (grid_obj%flag(I), I=1, grid_obj%Ncell)
 
-    write (91) ((grid_obj%xyz(J, I), J=1, 3), I=1, grid_obj%Npts)
+    write (91) ((xyz_Grid_(J, I), J=1, 3), I=1, grid_obj%Npts)
     write (91) ((FLUXES(J, I) , J=1, 2), I=1, grid_obj%Npts)
 
     write (91) (isrcJ_Shdo_(I), I=1, grid_obj%Npts + 1)

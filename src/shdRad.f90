@@ -50,6 +50,7 @@ module shd_rad
     use globals_type,  only: shd_type_grid
 
     use globals_obj,   only: rtm_obj_, ext_Rtm_, leg_Rtm_, &
+                             xyz_Grid_, &
                             shdo_obj_, isrcJ_Shdo_, srcJ_Shdo_, &
                              src_obj_, &
                              prp_obj_, ext_Prp_, ssa_Prp_, leg_Prp_, ipha_Prp_, &
@@ -113,7 +114,7 @@ subroutine shd_rad__makeDirect(&
     do IP = 1, NPTS
         DIRPATH = 0.0
         call shd_rad__computeDirect&
-            &(0, grid_obj%xyz(1, IP), grid_obj%xyz(2, IP), grid_obj%xyz(3, IP),&
+            &(0, xyz_Grid_(1, IP), xyz_Grid_(2, IP), xyz_Grid_(3, IP),&
             &rtm_obj_%flag_bc, rtm_obj_%flag_ip, DELTAM, ML,&
             &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(IP),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)

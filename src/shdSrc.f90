@@ -47,6 +47,7 @@ module shd_src
     use globals_type,  only: shd_type_grid
 
     use globals_obj,   only: rtm_obj_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, leg_Rtm_, ipha_Rtm_, &
+                             xyz_Grid_, &
                             shdo_obj_, &
                              src_obj_, &
                              prp_obj_, &
@@ -810,7 +811,7 @@ subroutine shd_src__integrateSrcOneRay(&
     ! TAUTOL is the maximum optical path for the subgrid intervals
     TAUTOL = 0.2
 
-    EPS = 1.0e-5*(grid_obj%xyz(3, grid_obj%i8Grid(8, 1)) - grid_obj%xyz(3, grid_obj%i8Grid(1, 1)))
+    EPS = 1.0e-5*(xyz_Grid_(3, grid_obj%i8Grid(8, 1)) - xyz_Grid_(3, grid_obj%i8Grid(1, 1)))
     MAXCELLSCROSS = 50*max(rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz)
 
     ! Calculate the generalized spherical harmonics for this direction
@@ -940,23 +941,23 @@ subroutine shd_src__integrateSrcOneRay(&
         ! Interpolate the source and extinction to the current point
         IPT1 = grid_obj%i8Grid(1, icell) ! (-x, -y, -z)
         IPT2 = grid_obj%i8Grid(8, icell) ! (+x, +y, +z)
-        DELX = grid_obj%xyz(1, IPT2) - grid_obj%xyz(1, IPT1)
+        DELX = xyz_Grid_(1, IPT2) - xyz_Grid_(1, IPT1)
         if (DELX .le. 0.0) then
             INVDELX = 1.0
         else
             INVDELX = 1.0d0/DELX
         end if
-        DELY = grid_obj%xyz(2, IPT2) - grid_obj%xyz(2, IPT1)
+        DELY = xyz_Grid_(2, IPT2) - xyz_Grid_(2, IPT1)
         if (DELY .le. 0.0) then
             INVDELY = 1.0
         else
             INVDELY = 1.0d0/DELY
         end if
-        DELZ = grid_obj%xyz(3, IPT2) - grid_obj%xyz(3, IPT1)
+        DELZ = xyz_Grid_(3, IPT2) - xyz_Grid_(3, IPT1)
         INVDELZ = 1.0d0/DELZ
-        U = (XE - grid_obj%xyz(1, IPT1))*INVDELX
-        V = (YE - grid_obj%xyz(2, IPT1))*INVDELY
-        W = (ZE - grid_obj%xyz(3, IPT1))*INVDELZ
+        U = (XE - xyz_Grid_(1, IPT1))*INVDELX
+        V = (YE - xyz_Grid_(2, IPT1))*INVDELY
+        W = (ZE - xyz_Grid_(3, IPT1))*INVDELZ
         SRCEXT1(:) = (1 - W)*((1 - V)*((1 - U)*SRCEXT8(:, 1) + U*SRCEXT8(:, 2))&
             &+ V*((1 - U)*SRCEXT8(:, 3) + U*SRCEXT8(:, 4)))&
             &+ W*((1 - V)*((1 - U)*SRCEXT8(:, 5) + U*SRCEXT8(:, 6))&
@@ -985,14 +986,14 @@ subroutine shd_src__integrateSrcOneRay(&
         if (IPINX) then
             SOX = 1.0e20
         else
-            SOX = (grid_obj%xyz(1, IOPP) - XE)*CXINV
+            SOX = (xyz_Grid_(1, IOPP) - XE)*CXINV
         end if
         if (IPINY) then
             SOY = 1.0e20
         else
-            SOY = (grid_obj%xyz(2, IOPP) - YE)*CYINV
+            SOY = (xyz_Grid_(2, IOPP) - YE)*CYINV
         end if
-        SOZ = (grid_obj%xyz(3, IOPP) - ZE)*CZINV
+        SOZ = (xyz_Grid_(3, IOPP) - ZE)*CZINV
         SO = min(SOX, SOY, SOZ)
         if (SO .lt. -EPS) then
             write (6, *) 'Error [_integrateSrcOneRay]: SO<0 ',&
@@ -1005,9 +1006,9 @@ subroutine shd_src__integrateSrcOneRay(&
 
         ! Find the optical path across the grid cell and figure how
         !   many subgrid intervals to use
-        U = (XN - grid_obj%xyz(1, IPT1))*INVDELX
-        V = (YN - grid_obj%xyz(2, IPT1))*INVDELY
-        W = (ZN - grid_obj%xyz(3, IPT1))*INVDELZ
+        U = (XN - xyz_Grid_(1, IPT1))*INVDELX
+        V = (YN - xyz_Grid_(2, IPT1))*INVDELY
+        W = (ZN - xyz_Grid_(3, IPT1))*INVDELZ
         EXTN = (1 - W)*((1 - V)*((1 - U)*EXTINCT8(1) + U*EXTINCT8(2))&
             &+ V*((1 - U)*EXTINCT8(3) + U*EXTINCT8(4)))&
             &+ W*((1 - V)*((1 - U)*EXTINCT8(5) + U*EXTINCT8(6))&
@@ -1023,9 +1024,9 @@ subroutine shd_src__integrateSrcOneRay(&
             YI = YE + S*CY
             ZI = ZE + S*CZ
             ! Interpolate extinction and source function along path
-            U = (XI - grid_obj%xyz(1, IPT1))*INVDELX
-            V = (YI - grid_obj%xyz(2, IPT1))*INVDELY
-            W = (ZI - grid_obj%xyz(3, IPT1))*INVDELZ
+            U = (XI - xyz_Grid_(1, IPT1))*INVDELX
+            V = (YI - xyz_Grid_(2, IPT1))*INVDELY
+            W = (ZI - xyz_Grid_(3, IPT1))*INVDELZ
             EXT0 = (1 - W)*((1 - V)*((1 - U)*EXTINCT8(1) + U*EXTINCT8(2))&
                 &+ V*((1 - U)*EXTINCT8(3) + U*EXTINCT8(4)))&
                 &+ W*((1 - V)*((1 - U)*EXTINCT8(5) + U*EXTINCT8(6))&
@@ -1092,11 +1093,11 @@ subroutine shd_src__integrateSrcOneRay(&
         ! Get the location coordinate
         if (INEXTCELL .gt. 0) then
             if (JFACE .eq. 1) then
-                XN = grid_obj%xyz(1, grid_obj%i8Grid(IOCT, INEXTCELL))
+                XN = xyz_Grid_(1, grid_obj%i8Grid(IOCT, INEXTCELL))
             else if (JFACE .eq. 2) then
-                YN = grid_obj%xyz(2, grid_obj%i8Grid(IOCT, INEXTCELL))
+                YN = xyz_Grid_(2, grid_obj%i8Grid(IOCT, INEXTCELL))
             else
-                ZN = grid_obj%xyz(3, grid_obj%i8Grid(IOCT, INEXTCELL))
+                ZN = xyz_Grid_(3, grid_obj%i8Grid(IOCT, INEXTCELL))
             end if
         end if
 
@@ -1108,7 +1109,7 @@ subroutine shd_src__integrateSrcOneRay(&
             VALIDRAD = .true.
             call shd_src__findBndryRad(NSTOKES, XN, YN,&
                 &sngl(MU2), sngl(PHI2),&
-                &IC, KFACE, grid_obj%i8Grid, grid_obj%xyz,&
+                &IC, KFACE, grid_obj%i8Grid, xyz_Grid_,&
                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                 &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
                 &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
@@ -1178,7 +1179,7 @@ subroutine shd_src__integrateSrc(NSTOKES,&
 
     ! TAUTOL is the maximum optical path for the subgrid intervals
     TAUTOL = 0.1
-    EPS = 1.0e-4*(grid_obj%xyz(3, grid_obj%i8Grid(8, 1)) - grid_obj%xyz(3, grid_obj%i8Grid(1, 1)))
+    EPS = 1.0e-4*(xyz_Grid_(3, grid_obj%i8Grid(8, 1)) - xyz_Grid_(3, grid_obj%i8Grid(1, 1)))
 
     ! Make the ray direction (opposite to the discrete ordinate dire
     CX = sqrt(1.0 - MU**2)*cos(PHI + DPI_)
@@ -1254,19 +1255,19 @@ subroutine shd_src__integrateSrc(NSTOKES,&
         if (IPINX .or. CX .eq. 0.0) then
             SOX = 1.0e20
         else
-            SOX = (grid_obj%xyz(1, IOPP) - XE)*CXINV
+            SOX = (xyz_Grid_(1, IOPP) - XE)*CXINV
         end if
         if (IPINY .or. CY .eq. 0.0) then
             SOY = 1.0e20
         else
-            SOY = (grid_obj%xyz(2, IOPP) - YE)*CYINV
+            SOY = (xyz_Grid_(2, IOPP) - YE)*CYINV
         end if
-        SOZ = (grid_obj%xyz(3, IOPP) - ZE)*CZINV
+        SOZ = (xyz_Grid_(3, IOPP) - ZE)*CZINV
         SO = min(SOX, SOY, SOZ)
         if (SO .lt. -EPS) then
             write (6, *) 'Error [_integrateSrc]: SO<0 ',&
                 &MU, PHI, X0, Y0, Z0, XE, YE, ZE, SO, SOX, SOY, SOZ, rtm_obj_%x(1), rtm_obj_%y(1),&
-                &grid_obj%xyz(1, IOPP), grid_obj%xyz(2, IOPP), grid_obj%xyz(3, IOPP)
+                &xyz_Grid_(1, IOPP), xyz_Grid_(2, IOPP), xyz_Grid_(3, IOPP)
             stop
         end if
         if (IPINX) then
@@ -1374,11 +1375,11 @@ subroutine shd_src__integrateSrc(NSTOKES,&
         ! Get the location coordinate
         if (INEXTCELL .gt. 0) then
             if (JFACE .eq. 1) then
-                XN = grid_obj%xyz(1, grid_obj%i8Grid(IOCT, INEXTCELL))
+                XN = xyz_Grid_(1, grid_obj%i8Grid(IOCT, INEXTCELL))
             else if (JFACE .eq. 2) then
-                YN = grid_obj%xyz(2, grid_obj%i8Grid(IOCT, INEXTCELL))
+                YN = xyz_Grid_(2, grid_obj%i8Grid(IOCT, INEXTCELL))
             else
-                ZN = grid_obj%xyz(3, grid_obj%i8Grid(IOCT, INEXTCELL))
+                ZN = xyz_Grid_(3, grid_obj%i8Grid(IOCT, INEXTCELL))
             end if
         end if
 

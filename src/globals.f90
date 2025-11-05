@@ -223,8 +223,6 @@ module globals_type
         integer(kind=I__) :: maxNpts  = -999
         integer(kind=I__) :: maxNcell = -999
 
-        real(kind=R__), pointer :: xyz(:, :) => null()
-
         integer(kind=2),   pointer:: flag(:) => null()
         integer(kind=I__), pointer:: i8Grid(:, :) => null()
         integer(kind=I__), pointer:: i6Cell(:, :) => null()
@@ -426,7 +424,13 @@ module globals_obj
     real(kind=R__),  allocatable, save ::   brdf_Rtm_(:, :)    ! (sfc_obj%maxNpar, xxx_obj%xxx)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
+
+    ! Grid (and cells)
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_grid), save :: grid_obj_
+
+    real(kind=R__),  allocatable, save :: xyz_Grid_(:, :)    ! (3, grid_obj%maxNpts)
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
     ! SHDO

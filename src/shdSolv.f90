@@ -45,6 +45,7 @@ module shd_solv
     use globals_type, only: shd_type_grid
 
     use globals_obj,  only: rtm_obj_, temp_Rtm_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, leg_Rtm_, ipha_Rtm_, &
+                            xyz_Grid_, &
                            shdo_obj_, iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_, &
                             src_obj_, &
                             prp_obj_, &
@@ -104,7 +105,7 @@ subroutine shd_solv__solveRte(&
     ! Performs the SHDOM solution procedure.
     ! Output is returned in srcJ_Shdo, radI_Shdo, FLUXES, DIRFLUX.
     ! The adaptive grid stucture (grid_obj%Ncell,grid_obj%i8Grid,grid_obj%i6Cell,grid_obj%i2Tree,
-    ! grid_obj%flag,grid_obj%Npts,grid_obj%xyz) is input and modified for new grid
+    ! grid_obj%flag,grid_obj%Npts,xyz_Grid_) is input and modified for new grid
     ! cells and points on output.
 
     type(shd_type_grid), intent(inout) :: grid_obj
@@ -154,7 +155,7 @@ subroutine shd_solv__solveRte(&
     ! Set up some things before solution loop
 
     ! Transfer the medium properties to the internal grid and add gas absorption
-    call shd_grid__interpGrid(grid_obj)
+    call shd_grid__interpGrid(grid_obj, xyz_Grid_)
 
     ! If Delta-M then scale the extinction, albedo, and Legendre terms
     ! Put the Planck blackbody source in planck_Rtm_.
@@ -206,7 +207,7 @@ subroutine shd_solv__solveRte(&
         ! Interpolate the radiance on the non-base grid points from the
         !   base grid points
         call shd_rad__interpRad(shdo_obj_%Nstokes, grid_obj%Npts0, grid_obj%Npts, iradI_Shdo_, radI_Shdo_,&
-            &grid_obj%Ncell0, grid_obj%Ncell, grid_obj%i2Tree, grid_obj%i8Grid, grid_obj%xyz)
+            &grid_obj%Ncell0, grid_obj%Ncell, grid_obj%i2Tree, grid_obj%i8Grid, xyz_Grid_)
         ! Initialize the source function from the radiance field
         call shd_src__computeSrc(&
             &doFixSH, YlmSolar_Shdo,&
@@ -233,7 +234,7 @@ subroutine shd_solv__solveRte(&
         ! If this is a variable surface then bilinearly interpolate
         !   the surface temperature and reflection parameters to the
         !   bottom grid points.
-        call shd_sfc__interpSfc(NBOTPTS, BCPTR(1, 2), grid_obj%xyz, &
+        call shd_sfc__interpSfc(NBOTPTS, BCPTR(1, 2), xyz_Grid_, &
             src_obj_%type, src_obj_%waveNum, src_obj_%avgWaveLen, src_obj_%unit, &
             brdf_Sfc_, brdf_Rtm_)
         call shd_init__checkSfcU(sfc_obj_, brdf_Sfc_)
@@ -330,7 +331,7 @@ subroutine shd_solv__solveRte(&
                     DIRFLUX, &
                     src_obj_%avgSolar0, YlmSolar_Shdo, &
                     WORK, WORK2, &
-                    grid_obj, &
+                    grid_obj, xyz_Grid_, &
                     temp_Rtm_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, leg_Rtm_, ipha_Rtm_, &
                     iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_)
                 if (SOLCRIT .gt. STARTADAPTSOL) STARTSPLITACC = SPLITCRIT

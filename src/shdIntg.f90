@@ -46,11 +46,12 @@ module shd_intg
                              isPol_
     use globals_type,  only: shd_type_grid
 
-    use globals_obj,   only:  rtm_obj_, ext_Rtm_, &
-                             shdo_obj_, &
-                              src_obj_, &
-                              prp_obj_, &
-                              sfc_obj_, brdf_Sfc_, brdf_Rtm_
+    use globals_obj,   only: rtm_obj_, ext_Rtm_, &
+                             xyz_Grid_, &
+                            shdo_obj_, &
+                             src_obj_, &
+                             prp_obj_, &
+                             sfc_obj_, brdf_Sfc_, brdf_Rtm_
 
     use shd_sfc,  only: shd_sfc__interpSfc
 
@@ -170,7 +171,7 @@ subroutine shd_intg__integratePath(&
             ! If this is a variable surface then bilinearly interpolate
             !   the surface temperature and reflection parameters to the
             !   bottom grid points.
-            call shd_sfc__interpSfc(NBOTPTS, BCPTR(1, 2), grid_obj%xyz, &
+            call shd_sfc__interpSfc(NBOTPTS, BCPTR(1, 2), xyz_Grid_, &
                 src_obj_%type, src_obj_%waveNum, src_obj_%avgWaveLen, src_obj_%unit, &
                 brdf_Sfc_, brdf_Rtm_)
         end if
@@ -313,7 +314,7 @@ subroutine shd_intg__integratePath(&
                 if (GRIDRAD(1, I) .lt. -accSolv_) then
                     if (verbose_ .ge. 4) write (6, *) 'Warning [_integratePath]: Grid point has no value',&
                         &I, shdo_obj_%mu(IMU), shdo_obj_%phi(IMU, IPHI), GRIDRAD(1, I), rtm_obj_%x(1), rtm_obj_%y(1),&
-                        &grid_obj%xyz(1, I), grid_obj%xyz(2, I), grid_obj%xyz(3, I)
+                        &xyz_Grid_(1, I), xyz_Grid_(2, I), xyz_Grid_(3, I)
                     ! stop
                     GRIDRAD(1, I) = 0.0
                 else
@@ -408,7 +409,7 @@ subroutine shd_intg__backIntegrate3D(&
         &1, 2, 3, 4, 5, 6, 7, 8/, OPPFACE/2, 1, 4, 3, 6, 5/
     data JOCTORDER3/1, 3, 5, 7, 2, 4, 6, 8/, JOCTORDER2/1, 3, 1, 3, 2, 4, 2, 4/
 
-    EPS = 1.0e-3*(grid_obj%xyz(3, grid_obj%i8Grid(8, 1)) - grid_obj%xyz(3, grid_obj%i8Grid(1, 1)))
+    EPS = 1.0e-3*(xyz_Grid_(3, grid_obj%i8Grid(8, 1)) - xyz_Grid_(3, grid_obj%i8Grid(1, 1)))
 
     ! Make the ray direction (opposite to the discrete ordinate direction)
     CX = sqrt(1.0 - MU**2)*cos(PHI + DPI_)
@@ -465,8 +466,8 @@ subroutine shd_intg__backIntegrate3D(&
         if (isMpi_) then
             ! For multiple processors get the subdomain boundary radiances
             !   for each Z slab
-            if  ((grid_obj%xyz(3, IPT) .lt. rtm_obj_%z(IZ) .and. BITZ .eq. 0) .or.&
-                &(grid_obj%xyz(3, IPT) .gt. rtm_obj_%z(IZ) .and. BITZ .eq. 1)) then
+            if  ((xyz_Grid_(3, IPT) .lt. rtm_obj_%z(IZ) .and. BITZ .eq. 0) .or.&
+                &(xyz_Grid_(3, IPT) .gt. rtm_obj_%z(IZ) .and. BITZ .eq. 1)) then
                 IZ = IZ + 2*BITZ - 1
                 call shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
                     &NX, NY, NZ,&
@@ -484,9 +485,9 @@ subroutine shd_intg__backIntegrate3D(&
             EXT1 = EXTINCT(IPT)
             RAD(:) = 0.0
             SRCEXT1(:) = EXT1*SOURCE(:, KANG, IPT)
-            XE = grid_obj%xyz(1, IPT)
-            YE = grid_obj%xyz(2, IPT)
-            ZE = grid_obj%xyz(3, IPT)
+            XE = xyz_Grid_(1, IPT)
+            YE = xyz_Grid_(2, IPT)
+            ZE = xyz_Grid_(3, IPT)
 
             ! Loop until finding a face with known radiances
             VALIDRAD = .false.
@@ -495,7 +496,7 @@ subroutine shd_intg__backIntegrate3D(&
                 if (ICELL .le. 0) then
                     write (6, *) 'Error [_backIntegrate3D]: ICELL=0 ',&
                         &MU, PHI, IPT, INEXTCELL, xe, ye, ze,&
-                        &grid_obj%xyz(1, ipt), grid_obj%xyz(2, ipt), grid_obj%xyz(3, ipt)
+                        &xyz_Grid_(1, ipt), xyz_Grid_(2, ipt), xyz_Grid_(3, ipt)
                     stop
                 end if
                 IPINX = btest(int(grid_obj%flag(ICELL)), 0)
@@ -509,14 +510,14 @@ subroutine shd_intg__backIntegrate3D(&
                 if (IPINX) then
                     SOX = 1.0e20
                 else
-                    SOX = (grid_obj%xyz(1, IOPP) - XE)*CXINV
+                    SOX = (xyz_Grid_(1, IOPP) - XE)*CXINV
                 end if
                 if (IPINY) then
                     SOY = 1.0e20
                 else
-                    SOY = (grid_obj%xyz(2, IOPP) - YE)*CYINV
+                    SOY = (xyz_Grid_(2, IOPP) - YE)*CYINV
                 end if
-                SOZ = (grid_obj%xyz(3, IOPP) - ZE)*CZINV
+                SOZ = (xyz_Grid_(3, IOPP) - ZE)*CZINV
                 SO = min(SOX, SOY, SOZ)
                 if (SO .lt. -EPS) then
                     write (6, *) 'Error [_backIntegrate3D]: SO<0 ',&
@@ -562,46 +563,46 @@ subroutine shd_intg__backIntegrate3D(&
                 I4 = grid_obj%i8Grid(GRIDFACE(4, KFACE), IC)
                 ! Compute the face interpolation factors
                 if (JFACE .eq. 1) then
-                    U = (ZE - grid_obj%xyz(3, I1))/(grid_obj%xyz(3, I3) - grid_obj%xyz(3, I1))
+                    U = (ZE - xyz_Grid_(3, I1))/(xyz_Grid_(3, I3) - xyz_Grid_(3, I1))
                     if (IPINY) then
                         V = 0.5
                     else
-                        V = (YE - grid_obj%xyz(2, I1))/(grid_obj%xyz(2, I2) - grid_obj%xyz(2, I1))
+                        V = (YE - xyz_Grid_(2, I1))/(xyz_Grid_(2, I2) - xyz_Grid_(2, I1))
                     end if
                 else if (JFACE .eq. 2) then
-                    U = (ZE - grid_obj%xyz(3, I1))/(grid_obj%xyz(3, I3) - grid_obj%xyz(3, I1))
+                    U = (ZE - xyz_Grid_(3, I1))/(xyz_Grid_(3, I3) - xyz_Grid_(3, I1))
                     if (IPINX) then
                         V = 0.5
                     else
-                        V = (XE - grid_obj%xyz(1, I1))/(grid_obj%xyz(1, I2) - grid_obj%xyz(1, I1))
+                        V = (XE - xyz_Grid_(1, I1))/(xyz_Grid_(1, I2) - xyz_Grid_(1, I1))
                     end if
                 else
                     if (IPINY) then
                         U = 0.5
                     else
-                        U = (YE - grid_obj%xyz(2, I1))/(grid_obj%xyz(2, I3) - grid_obj%xyz(2, I1))
+                        U = (YE - xyz_Grid_(2, I1))/(xyz_Grid_(2, I3) - xyz_Grid_(2, I1))
                     end if
                     if (IPINX) then
                         V = 0.5
                     else
-                        V = (XE - grid_obj%xyz(1, I1))/(grid_obj%xyz(1, I2) - grid_obj%xyz(1, I1))
+                        V = (XE - xyz_Grid_(1, I1))/(xyz_Grid_(1, I2) - xyz_Grid_(1, I1))
                     end if
                 end if
                 if (u .lt. -0.0001 .or. v .lt. -0.0001 .or.&
                     &u .gt. 1.0001 .or. v .gt. 1.0001) then
                     print *, '_backIntegrate3D: u,v<0 or u,v>1: ',&
                         &mu, phi, xe, ye, ze, u, v, iface, jface, kface,&
-                        &grid_obj%xyz(1, i1), grid_obj%xyz(2, i1), grid_obj%xyz(3, i1)
+                        &xyz_Grid_(1, i1), xyz_Grid_(2, i1), xyz_Grid_(3, i1)
                 end if
 
                 ! Get the location coordinate (does the boundary wrapping)
                 if (INEXTCELL .gt. 0) then
                     if (JFACE .eq. 1) then
-                        XE = grid_obj%xyz(1, grid_obj%i8Grid(IOCT, INEXTCELL))
+                        XE = xyz_Grid_(1, grid_obj%i8Grid(IOCT, INEXTCELL))
                     else if (JFACE .eq. 2) then
-                        YE = grid_obj%xyz(2, grid_obj%i8Grid(IOCT, INEXTCELL))
+                        YE = xyz_Grid_(2, grid_obj%i8Grid(IOCT, INEXTCELL))
                     else
-                        ZE = grid_obj%xyz(3, grid_obj%i8Grid(IOCT, INEXTCELL))
+                        ZE = xyz_Grid_(3, grid_obj%i8Grid(IOCT, INEXTCELL))
                     end if
                 end if
 
@@ -676,15 +677,15 @@ subroutine shd_intg__backIntegrate3D(&
                         print *, 'Error [_backIntegrate3D]: INEXTCELL=0: ', xe, ye, ze, icell
                         print *, iz, joct, mu, phi
                         print '(i7,4(1x,f7.4))', i1, GRIDRAD(1, I1),&
-                            &grid_obj%xyz(1, i1), grid_obj%xyz(2, i1), grid_obj%xyz(3, i1)
+                            &xyz_Grid_(1, i1), xyz_Grid_(2, i1), xyz_Grid_(3, i1)
                         print '(i7,4(1x,f7.4))', i2, GRIDRAD(1, I2),&
-                            &grid_obj%xyz(1, i2), grid_obj%xyz(2, i2), grid_obj%xyz(3, i2)
+                            &xyz_Grid_(1, i2), xyz_Grid_(2, i2), xyz_Grid_(3, i2)
                         print '(i7,4(1x,f7.4))', i3, GRIDRAD(1, I3),&
-                            &grid_obj%xyz(1, i3), grid_obj%xyz(2, i3), grid_obj%xyz(3, i3)
+                            &xyz_Grid_(1, i3), xyz_Grid_(2, i3), xyz_Grid_(3, i3)
                         print '(i7,4(1x,f7.4))', i4, GRIDRAD(1, I4),&
-                            &grid_obj%xyz(1, i4), grid_obj%xyz(2, i4), grid_obj%xyz(3, i4)
+                            &xyz_Grid_(1, i4), xyz_Grid_(2, i4), xyz_Grid_(3, i4)
                         print '(i7,8x,3(1x,f7.4))', ipt,&
-                            &grid_obj%xyz(1, ipt), grid_obj%xyz(2, ipt), grid_obj%xyz(3, ipt)
+                            &xyz_Grid_(1, ipt), xyz_Grid_(2, ipt), xyz_Grid_(3, ipt)
                         stop
                     end if
                 else
@@ -753,7 +754,7 @@ subroutine shd_intg__backIntegrate3D_(&
     !                       0:  Do independent pixel for X
     !                       1:  Do independent pixel for Y
     !                       2,3: Direction cell is split (0=no split, 1=X, 2=Y, 3=Z)
-    !   grid_obj%xyz(3,grid_obj%Npts)    : real array, X,Y,Z coordinate values of grid point locations
+    !   xyz_Grid_(3,grid_obj%Npts)    : real array, X,Y,Z coordinate values of grid point locations
     !   rtm_obj_%x, rtm_obj_%y, rtm_obj_%z: real array, grid locations for each dimension.
     !                        To facilitate the periodic horizontal boundaries,
     !                        there are NX+1 values in rtm_obj_%x, NY+1 in rtm_obj_%y,
@@ -798,7 +799,7 @@ subroutine shd_intg__backIntegrate3D_(&
 
     integer :: iwhile, ibreak
 
-    EPS = 1.0e-3*(grid_obj%xyz(3, grid_obj%i8Grid(8, 1)) - grid_obj%xyz(3, grid_obj%i8Grid(1, 1)))
+    EPS = 1.0e-3*(xyz_Grid_(3, grid_obj%i8Grid(8, 1)) - xyz_Grid_(3, grid_obj%i8Grid(1, 1)))
 
     ! Make the ray direction (opposite to the discrete ordinate direction)
     CX = dsqrt(dble(1.0d0 - MU**2))*dcos(dble(PHI + DPI_))
@@ -869,8 +870,8 @@ subroutine shd_intg__backIntegrate3D_(&
         if (isMpi_) then
             ! For multiple processors get the subdomain boundary radiances
             !   for each Z slab
-            if  ((grid_obj%xyz(3, IPT) .lt. rtm_obj_%z(IZ) .and. BITZ .eq. 0) .or.&
-                &(grid_obj%xyz(3, IPT) .gt. rtm_obj_%z(IZ) .and. BITZ .eq. 1)) then
+            if  ((xyz_Grid_(3, IPT) .lt. rtm_obj_%z(IZ) .and. BITZ .eq. 0) .or.&
+                &(xyz_Grid_(3, IPT) .gt. rtm_obj_%z(IZ) .and. BITZ .eq. 1)) then
                 IZ = IZ + 2*BITZ - 1
                 call shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
                     &NX, NY, NZ,&
@@ -889,9 +890,9 @@ subroutine shd_intg__backIntegrate3D_(&
             TRANSMIT = 1.0
             EXT1 = EXTINCT(IPT)
             SRCEXT1 = EXT1*SOURCE(KANG, IPT)
-            XE = grid_obj%xyz(1, IPT)
-            YE = grid_obj%xyz(2, IPT)
-            ZE = grid_obj%xyz(3, IPT)
+            XE = xyz_Grid_(1, IPT)
+            YE = xyz_Grid_(2, IPT)
+            ZE = xyz_Grid_(3, IPT)
 
             ! Loop until finding a face with known radiances
             VALIDRAD = .false.
@@ -901,7 +902,7 @@ subroutine shd_intg__backIntegrate3D_(&
                 if (ICELL .le. 0) then
                     write (6, *) 'Error [_backIntegrate3D_]: ICELL=0 ',&
                         &MU, PHI, IPT, INEXTCELL, XE, YE, ZE,&
-                        &grid_obj%xyz(1, IPT), grid_obj%xyz(2, IPT), grid_obj%xyz(3, IPT)
+                        &xyz_Grid_(1, IPT), xyz_Grid_(2, IPT), xyz_Grid_(3, IPT)
                     stop
                 end if
 
@@ -918,16 +919,16 @@ subroutine shd_intg__backIntegrate3D_(&
                 if (IPINX) then
                     SOX = 1.0e20
                 else
-                    SOX = (grid_obj%xyz(1, IOPP) - XE)*CXINV
+                    SOX = (xyz_Grid_(1, IOPP) - XE)*CXINV
                 end if
 
                 if (IPINY) then
                     SOY = 1.0e20
                 else
-                    SOY = (grid_obj%xyz(2, IOPP) - YE)*CYINV
+                    SOY = (xyz_Grid_(2, IOPP) - YE)*CYINV
                 end if
 
-                SOZ = (grid_obj%xyz(3, IOPP) - ZE)*CZINV
+                SOZ = (xyz_Grid_(3, IOPP) - ZE)*CZINV
 
                 SO = min(SOX, SOY, SOZ)
                 !╰────────────────────────────────────────────────╯!
@@ -980,29 +981,29 @@ subroutine shd_intg__backIntegrate3D_(&
 
                 ! Compute the face interpolation factors
                 if (JFACE .eq. 1) then
-                    U = (ZE - grid_obj%xyz(3, I1))/(grid_obj%xyz(3, I3) - grid_obj%xyz(3, I1))
+                    U = (ZE - xyz_Grid_(3, I1))/(xyz_Grid_(3, I3) - xyz_Grid_(3, I1))
                     if (IPINY) then
                         V = 0.5
                     else
-                        V = (YE - grid_obj%xyz(2, I1))/(grid_obj%xyz(2, I2) - grid_obj%xyz(2, I1))
+                        V = (YE - xyz_Grid_(2, I1))/(xyz_Grid_(2, I2) - xyz_Grid_(2, I1))
                     end if
                 else if (JFACE .eq. 2) then
-                    U = (ZE - grid_obj%xyz(3, I1))/(grid_obj%xyz(3, I3) - grid_obj%xyz(3, I1))
+                    U = (ZE - xyz_Grid_(3, I1))/(xyz_Grid_(3, I3) - xyz_Grid_(3, I1))
                     if (IPINX) then
                         V = 0.5
                     else
-                        V = (XE - grid_obj%xyz(1, I1))/(grid_obj%xyz(1, I2) - grid_obj%xyz(1, I1))
+                        V = (XE - xyz_Grid_(1, I1))/(xyz_Grid_(1, I2) - xyz_Grid_(1, I1))
                     end if
                 else
                     if (IPINY) then
                         U = 0.5
                     else
-                        U = (YE - grid_obj%xyz(2, I1))/(grid_obj%xyz(2, I3) - grid_obj%xyz(2, I1))
+                        U = (YE - xyz_Grid_(2, I1))/(xyz_Grid_(2, I3) - xyz_Grid_(2, I1))
                     end if
                     if (IPINX) then
                         V = 0.5
                     else
-                        V = (XE - grid_obj%xyz(1, I1))/(grid_obj%xyz(1, I2) - grid_obj%xyz(1, I1))
+                        V = (XE - xyz_Grid_(1, I1))/(xyz_Grid_(1, I2) - xyz_Grid_(1, I1))
                     end if
                 end if
 
@@ -1010,17 +1011,17 @@ subroutine shd_intg__backIntegrate3D_(&
                     &U .gt. 1.0001 .or. V .gt. 1.0001) then
                     print *, '_backIntegrate3D_: U,V<0 or U,V>1: ',&
                         &MU, PHI, XE, YE, ZE, U, V, IFACE, JFACE, KFACE,&
-                        &grid_obj%xyz(1, I1), grid_obj%xyz(2, I1), grid_obj%xyz(3, I1)
+                        &xyz_Grid_(1, I1), xyz_Grid_(2, I1), xyz_Grid_(3, I1)
                 end if
 
                 ! Get the location coordinate (does the boundary wrapping)
                 if (INEXTCELL .gt. 0) then
                     if (JFACE .eq. 1) then
-                        XE = grid_obj%xyz(1, grid_obj%i8Grid(IOCT, INEXTCELL))
+                        XE = xyz_Grid_(1, grid_obj%i8Grid(IOCT, INEXTCELL))
                     else if (JFACE .eq. 2) then
-                        YE = grid_obj%xyz(2, grid_obj%i8Grid(IOCT, INEXTCELL))
+                        YE = xyz_Grid_(2, grid_obj%i8Grid(IOCT, INEXTCELL))
                     else
-                        ZE = grid_obj%xyz(3, grid_obj%i8Grid(IOCT, INEXTCELL))
+                        ZE = xyz_Grid_(3, grid_obj%i8Grid(IOCT, INEXTCELL))
                     end if
                 end if
 
@@ -1101,15 +1102,15 @@ subroutine shd_intg__backIntegrate3D_(&
                         print *, 'Error [_backIntegrate3D_]: INEXTCELL=0: ', xe, ye, ze, icell
                         print *, iz, joct, mu, phi
                         print '(i7,4(1x,f7.4))', i1, GRIDRAD(I1),&
-                            &grid_obj%xyz(1, i1), grid_obj%xyz(2, i1), grid_obj%xyz(3, i1)
+                            &xyz_Grid_(1, i1), xyz_Grid_(2, i1), xyz_Grid_(3, i1)
                         print '(i7,4(1x,f7.4))', i2, GRIDRAD(I2),&
-                            &grid_obj%xyz(1, i2), grid_obj%xyz(2, i2), grid_obj%xyz(3, i2)
+                            &xyz_Grid_(1, i2), xyz_Grid_(2, i2), xyz_Grid_(3, i2)
                         print '(i7,4(1x,f7.4))', i3, GRIDRAD(I3),&
-                            &grid_obj%xyz(1, i3), grid_obj%xyz(2, i3), grid_obj%xyz(3, i3)
+                            &xyz_Grid_(1, i3), xyz_Grid_(2, i3), xyz_Grid_(3, i3)
                         print '(i7,4(1x,f7.4))', i4, GRIDRAD(I4),&
-                            &grid_obj%xyz(1, i4), grid_obj%xyz(2, i4), grid_obj%xyz(3, i4)
+                            &xyz_Grid_(1, i4), xyz_Grid_(2, i4), xyz_Grid_(3, i4)
                         print '(i7,8x,3(1x,f7.4))', ipt,&
-                            &grid_obj%xyz(1, ipt), grid_obj%xyz(2, ipt), grid_obj%xyz(3, ipt)
+                            &xyz_Grid_(1, ipt), xyz_Grid_(2, ipt), xyz_Grid_(3, ipt)
                         stop
                     end if
                 else
@@ -1171,7 +1172,7 @@ subroutine shd_intg__backIntegrate2D(&
     data OPPFACE/2, 1, 4, 3, 6, 5/
     data JOCTORDER/1, 3, 1, 3, 2, 4, 2, 4/
 
-    EPS = 1.0e-3*(grid_obj%xyz(3, grid_obj%i8Grid(8, 1)) - grid_obj%xyz(3, grid_obj%i8Grid(1, 1)))
+    EPS = 1.0e-3*(xyz_Grid_(3, grid_obj%i8Grid(8, 1)) - xyz_Grid_(3, grid_obj%i8Grid(1, 1)))
 
     ! Make the ray direction (opposite to the discrete ordinate direction)
     CX = sqrt(1.0 - MU**2)*cos(PHI + DPI_)
@@ -1215,9 +1216,9 @@ subroutine shd_intg__backIntegrate2D(&
             EXT1 = EXTINCT(IPT)
             RAD(:) = 0.0
             SRCEXT1(:) = EXT1*SOURCE(:, KANG, IPT)
-            XE = grid_obj%xyz(1, IPT)
-            YE = grid_obj%xyz(2, IPT)
-            ZE = grid_obj%xyz(3, IPT)
+            XE = xyz_Grid_(1, IPT)
+            YE = xyz_Grid_(2, IPT)
+            ZE = xyz_Grid_(3, IPT)
 
             ! Loop until finding a face with known radiances
             VALIDRAD = .false.
@@ -1238,9 +1239,9 @@ subroutine shd_intg__backIntegrate2D(&
                 if (IPINX) then
                     SOX = 1.0e20
                 else
-                    SOX = (grid_obj%xyz(1, IOPP) - XE)*CXINV
+                    SOX = (xyz_Grid_(1, IOPP) - XE)*CXINV
                 end if
-                SOZ = (grid_obj%xyz(3, IOPP) - ZE)*CZINV
+                SOZ = (xyz_Grid_(3, IOPP) - ZE)*CZINV
                 SO = min(SOX, SOZ)
                 if (SO .lt. -EPS) then
                     write (6, *) 'Error [_backIntegrate2D]: SO<0 ',&
@@ -1280,21 +1281,21 @@ subroutine shd_intg__backIntegrate2D(&
                 I2 = grid_obj%i8Grid(GRIDFACE(2, KFACE), IC)
                 ! Compute the face interpolation factors
                 if (JFACE .eq. 1) then
-                    U = (ZE - grid_obj%xyz(3, I1))/(grid_obj%xyz(3, I2) - grid_obj%xyz(3, I1))
+                    U = (ZE - xyz_Grid_(3, I1))/(xyz_Grid_(3, I2) - xyz_Grid_(3, I1))
                 else
                     if (IPINX) then
                         U = 0.5
                     else
-                        U = (XE - grid_obj%xyz(1, I1))/(grid_obj%xyz(1, I2) - grid_obj%xyz(1, I1))
+                        U = (XE - xyz_Grid_(1, I1))/(xyz_Grid_(1, I2) - xyz_Grid_(1, I1))
                     end if
                 end if
 
                 ! Get the location coordinate (does the boundary wrapping)
                 if (INEXTCELL .gt. 0) then
                     if (JFACE .eq. 1) then
-                        XE = grid_obj%xyz(1, grid_obj%i8Grid(IOCT, INEXTCELL))
+                        XE = xyz_Grid_(1, grid_obj%i8Grid(IOCT, INEXTCELL))
                     else
-                        ZE = grid_obj%xyz(3, grid_obj%i8Grid(IOCT, INEXTCELL))
+                        ZE = xyz_Grid_(3, grid_obj%i8Grid(IOCT, INEXTCELL))
                     end if
                 end if
 
@@ -1355,11 +1356,11 @@ subroutine shd_intg__backIntegrate2D(&
                         print *, 'Error [_backIntegrate2D]: INEXTCELL=0: ', xe, ye, ze, icell
                         print *, iz, joct, mu, phi
                         print '(i7,4(1x,f7.4))', i1, GRIDRAD(1, I1),&
-                            &grid_obj%xyz(1, i1), grid_obj%xyz(2, i1), grid_obj%xyz(3, i1)
+                            &xyz_Grid_(1, i1), xyz_Grid_(2, i1), xyz_Grid_(3, i1)
                         print '(i7,4(1x,f7.4))', i2, GRIDRAD(1, I2),&
-                            &grid_obj%xyz(1, i2), grid_obj%xyz(2, i2), grid_obj%xyz(3, i2)
+                            &xyz_Grid_(1, i2), xyz_Grid_(2, i2), xyz_Grid_(3, i2)
                         print '(i7,8x,3(1x,f7.4))', ipt,&
-                            &grid_obj%xyz(1, ipt), grid_obj%xyz(2, ipt), grid_obj%xyz(3, ipt)
+                            &xyz_Grid_(1, ipt), xyz_Grid_(2, ipt), xyz_Grid_(3, ipt)
                         stop
                     end if
                 else
@@ -1426,7 +1427,7 @@ subroutine shd_intg__backIntegrate1D(&
     data GRIDFACE /0, 0, 0, 0, 1, 5/
     data JOCTORDER /1, 1, 1, 1, 2, 2, 2, 2/
 
-    EPS = 1.0e-3*(grid_obj%xyz(3, grid_obj%i8Grid(8, 1)) - grid_obj%xyz(3, grid_obj%i8Grid(1, 1)))
+    EPS = 1.0e-3*(xyz_Grid_(3, grid_obj%i8Grid(8, 1)) - xyz_Grid_(3, grid_obj%i8Grid(1, 1)))
 
     ! Make the ray direction (opposite to the discrete ordinate direction)
     CZ = -MU
@@ -1458,9 +1459,9 @@ subroutine shd_intg__backIntegrate1D(&
             EXT1 = EXTINCT(IPT)
             RAD(:) = 0.0
             SRCEXT1(:) = EXT1*SOURCE(:, KANG, IPT)
-            XE = grid_obj%xyz(1, IPT)
-            YE = grid_obj%xyz(2, IPT)
-            ZE = grid_obj%xyz(3, IPT)
+            XE = xyz_Grid_(1, IPT)
+            YE = xyz_Grid_(2, IPT)
+            ZE = xyz_Grid_(3, IPT)
 
             ! Loop until finding a face with known radiances
             VALIDRAD = .false.
@@ -1476,7 +1477,7 @@ subroutine shd_intg__backIntegrate1D(&
                 !   from the coordinates of the opposite corner grid point
                 IOPP = grid_obj%i8Grid(9 - IOCT, ICELL)
                 ! Get the distances to the 3 planes and select the closest
-                SO = (grid_obj%xyz(3, IOPP) - ZE)*CZINV
+                SO = (xyz_Grid_(3, IOPP) - ZE)*CZINV
                 if (SO .lt. -EPS) then
                     write (6, *) 'Error [_backIntegrate1D]: SO<0 ',&
                         &MU, PHI, ZE, SO, IPT, ICELL
@@ -1494,7 +1495,7 @@ subroutine shd_intg__backIntegrate1D(&
                 I1 = grid_obj%i8Grid(GRIDFACE(IFACE), ICELL)
                 ! Get the location coordinate (does the boundary wrapping)
                 if (INEXTCELL .gt. 0) then
-                    ZE = grid_obj%xyz(3, grid_obj%i8Grid(IOCT, INEXTCELL))
+                    ZE = xyz_Grid_(3, grid_obj%i8Grid(IOCT, INEXTCELL))
                 end if
 
                 ! Get extinction and source function at face intersection
