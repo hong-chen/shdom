@@ -44,7 +44,7 @@ module shd_solv
 
     use globals_type, only: shd_type_grid
 
-    use globals_obj,  only: rtm_obj_, &
+    use globals_obj,  only: rtm_obj_, temp_Rtm_, &
                            shdo_obj_, iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_, &
                             src_obj_, &
                             prp_obj_, &
@@ -158,8 +158,9 @@ subroutine shd_solv__solveRte(&
 
     ! If Delta-M then scale the extinction, albedo, and Legendre terms
     ! Put the Planck blackbody source in rtm_obj_%planck.
-    call shd_init__makePrp(doDeltaM, maxSsa,&
-        &rtm_obj_, grid_obj)
+    call shd_init__makePrp(doDeltaM, maxSsa, &
+        rtm_obj_, grid_obj, &
+        temp_Rtm_)
 
     ! Get the maximum single scattering albedo over all processors
     call shd_mpi__findMaxSsa(maxSsa)
@@ -199,7 +200,7 @@ subroutine shd_solv__solveRte(&
         ! two-stream plane-parallel
         call shd_init__makeRad(shdo_obj_%Nstokes, grid_obj%Nx*grid_obj%Ny, grid_obj%Nz,&
             &iradI_Shdo_, rtm_obj_%z,&
-            &rtm_obj_%ext, rtm_obj_%ssa, rtm_obj_%leg, rtm_obj_%temp, rtm_obj_%ipha,&
+            &rtm_obj_%ext, rtm_obj_%ssa, rtm_obj_%leg, temp_Rtm_, rtm_obj_%ipha,&
             &src_obj_%type, src_obj_%avgSolar0, src_obj_%avgMu, src_obj_%skyRad,&
             &src_obj_%unit, src_obj_%waveNum, src_obj_%avgWaveLen, radI_Shdo_)
         ! Interpolate the radiance on the non-base grid points from the
@@ -322,14 +323,16 @@ subroutine shd_solv__solveRte(&
                 &SPLITACC*(AVGSOLCRIT/(3.0*ENDADAPTSOL))**BETA))
             if (SOLCRIT .le. ENDADAPTSOL) CURSPLITACC = SPLITACC
             if (SPLITTESTING) then
-                call shd_grid__splitGrid(&
-                    &doSplit, isOutMem, CURSPLITACC, SPLITCRIT,&
-                    &doDeltaM, doAccel,&
-                    &isrcD_Shdo,&
-                    &DIRFLUX,&
-                    &src_obj_%avgSolar0, YlmSolar_Shdo,&
-                    &WORK, WORK2,&
-                    &grid_obj, iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_)
+                call shd_grid__splitGrid( &
+                    doSplit, isOutMem, CURSPLITACC, SPLITCRIT, &
+                    doDeltaM, doAccel, &
+                    isrcD_Shdo, &
+                    DIRFLUX, &
+                    src_obj_%avgSolar0, YlmSolar_Shdo, &
+                    WORK, WORK2, &
+                    grid_obj, &
+                    temp_Rtm_, &
+                    iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_)
                 if (SOLCRIT .gt. STARTADAPTSOL) STARTSPLITACC = SPLITCRIT
             end if
             ! Find the maximum splitting criterion over all processors

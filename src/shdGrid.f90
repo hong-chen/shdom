@@ -46,7 +46,7 @@ module shd_grid
                              isPol_, isSolar_, isThermal_
     use globals_type,  only: shd_type_grid
 
-    use globals_obj,   only:  rtm_obj_, &
+    use globals_obj,   only:  rtm_obj_, temp_Rtm_, &
                              shdo_obj_, isrcJ_Shdo_, srcJ_Shdo_, &
                               src_obj_, &
                               prp_obj_, temp_Prp_, ext_Prp_, ssa_Prp_, leg_Prp_, ipha_Prp_, &
@@ -1082,14 +1082,14 @@ subroutine shd_grid__interpGrid(grid_obj)
     ! Initialize: transfer the tabulated phase functions
     call shd_grid__InterpTriLinGridPrp(&
         &0.0, 0.0, 0.0,&
-        &.true., rtm_obj_%temp(1), rtm_obj_%ext(1), rtm_obj_%ssa(1),&
+        &.true., temp_Rtm_(1), rtm_obj_%ext(1), rtm_obj_%ssa(1),&
         &rtm_obj_%leg(1:prp_obj_%NlegSet, 0:prp_obj_%Nleg, 1), rtm_obj_%ipha(1))
 
     ! Trilinearly interpolate from the property grid to the adaptive
     do ipts = 1, grid_obj%Npts
         call shd_grid__InterpTriLinGridPrp(&
             &grid_obj%xyz(1, ipts), grid_obj%xyz(2, ipts), grid_obj%xyz(3, ipts),&
-            &.false., rtm_obj_%temp(ipts), rtm_obj_%ext(ipts), rtm_obj_%ssa(ipts),&
+            &.false., temp_Rtm_(ipts), rtm_obj_%ext(ipts), rtm_obj_%ssa(ipts),&
             &rtm_obj_%leg(1:prp_obj_%NlegSet, 0:prp_obj_%Nleg, ipts), rtm_obj_%ipha(ipts))
     end do
 
@@ -1415,6 +1415,7 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
     DIRFLUX,&
     isrcD_Shdo,&
     grid_obj, &
+    temp_Rtm, &
     iradI_Shdo, radI_Shdo, &
     isrcJ_Shdo, srcJ_Shdo)
 
@@ -1429,6 +1430,8 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
     ! function for the new points.
 
     type(shd_type_grid), intent(in) :: grid_obj
+
+    real(R__),    intent(inout) :: temp_Rtm(*)
 
     integer(I__), intent(inout) :: iradI_Shdo(*)
     real(R__),    intent(inout) ::  radI_Shdo(shdo_obj_%Nstokes, *)
@@ -1481,7 +1484,7 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
             Y = grid_obj%xyz(2, IP)
             Z = grid_obj%xyz(3, IP)
             call shd_grid__InterpTriLinGridPrp(X, Y, Z, .false.,&
-                &rtm_obj_%temp(IP), rtm_obj_%ext(IP), rtm_obj_%ssa(IP),&
+                &temp_Rtm(IP), rtm_obj_%ext(IP), rtm_obj_%ssa(IP),&
                 &rtm_obj_%leg(1:prp_obj_%NlegSet, 0:prp_obj_%Nleg, 1), rtm_obj_%ipha(IP))
             ! Do the Delta-M scaling of extinction and albedo for this point
             if (doDeltaM) then
@@ -1499,7 +1502,7 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
 
             ! Compute the new Planck source function (if needed)
             if (isThermal_) then
-                call shd_util__computePlanck(rtm_obj_%temp(IP), src_obj_%unit, src_obj_%waveNum, src_obj_%avgWaveLen, BB)
+                call shd_util__computePlanck(temp_Rtm(IP), src_obj_%unit, src_obj_%waveNum, src_obj_%avgWaveLen, BB)
                 rtm_obj_%planck(IP) = (1.0 - rtm_obj_%ssa(IP))*BB
             end if
 
@@ -1597,6 +1600,7 @@ subroutine shd_grid__splitGrid(&
     SOLARFLUX, YLMSUN, &
     ADAPTCRIT, ADAPTIND, &
     grid_obj, &
+    temp_Rtm, &
     iradI_Shdo, radI_Shdo, &
     isrcJ_Shdo, srcJ_Shdo)
 
@@ -1607,6 +1611,8 @@ subroutine shd_grid__splitGrid(&
     ! by grid_obj%maxNpts, grid_obj%maxNcell, shdo_obj_%maxNptsSH, shdo_obj_%maxNptsDO) then the isOutMem flag is returned true.
 
     type(shd_type_grid), intent(inout) :: grid_obj
+
+    real(R__),    intent(inout) :: temp_Rtm(*)
 
     integer(I__), intent(inout) :: iradI_Shdo(*)
     real(R__),    intent(inout) ::  radI_Shdo(shdo_obj_%Nstokes, *)
@@ -1682,7 +1688,9 @@ subroutine shd_grid__splitGrid(&
                         &SOLARFLUX, YLMSUN,&
                         &DIRFLUX,&
                         &isrcD_Shdo,&
-                        &grid_obj, iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo)
+                        &grid_obj, &
+                        &temp_Rtm, &
+                        &iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo)
                 end if
                 I = I + 1
             end do
@@ -1715,11 +1723,13 @@ subroutine shd_grid__splitGrid(&
 
                         ! Interpolate the medium properties, radiance, and source
                         call shd_grid__interpNewGridPnt(newPts,&
-                            &doDeltaM, ACCELFLAG,&
-                            &SOLARFLUX, YLMSUN,&
-                            &DIRFLUX,&
-                            &isrcD_Shdo,&
-                            &grid_obj, iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo)
+                            doDeltaM, ACCELFLAG, &
+                            SOLARFLUX, YLMSUN, &
+                            DIRFLUX, &
+                            isrcD_Shdo, &
+                            grid_obj, &
+                            temp_Rtm, &
+                            iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo)
                     end if
                 end if
                 I = I + 1

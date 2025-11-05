@@ -52,7 +52,7 @@ program shdom
                              shd_type_rtm, &
                              shd_type_grid
 
-    use globals_obj,   only: rtm_obj_, &
+    use globals_obj,   only: rtm_obj_, temp_Rtm_, &
                              shdo_obj_, iradI_Shdo_, &
                                          radI_Shdo_, &
                                         isrcJ_Shdo_, &
@@ -137,7 +137,7 @@ program shdom
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_rtm) :: rtmAll_obj
 
-    real(kind=R__),  allocatable, target :: temp_Rtm(:), &
+    real(kind=R__),  allocatable, target :: &
                                           planck_Rtm(:), &
                                              ext_Rtm(:), &
                                              ssa_Rtm(:), &
@@ -864,7 +864,7 @@ program shdom
     !╭──────────────────────────────────────────────────────────────╮!
     NmaxNpts = 0.0
 
-    NmaxNpts = NmaxNpts + 4.5 ! temp_Rtm, planck_Rtm, ext_Rtm, ssa_Rtm, ipha_Rtm[0.5, integer(kind=2)]
+    NmaxNpts = NmaxNpts + 4.5 ! temp_Rtm_, planck_Rtm, ext_Rtm, ssa_Rtm, ipha_Rtm[0.5, integer(kind=2)]
 
     ! x, y, z grid
     memUsed = memUsed + (rtm_obj_%Nx+1) + (rtm_obj_%Ny+1) + (rtm_obj_%Nz)
@@ -998,7 +998,7 @@ program shdom
     rtm_obj_%isAllocated = .true.
 
     ! temperature and planck radiance (maybe we don't need this for shortwave)
-    allocate(temp_Rtm(grid_obj%maxNpts), planck_Rtm(grid_obj%maxNpts))
+    allocate(temp_Rtm_(grid_obj%maxNpts), planck_Rtm(grid_obj%maxNpts))
 
     ! extinction, single scattering albedo, and phase function indices
     allocate(ext_Rtm(grid_obj%maxNpts), ssa_Rtm(grid_obj%maxNpts), ipha_Rtm(grid_obj%maxNpts))
@@ -1006,7 +1006,6 @@ program shdom
     ! legendre coefficients
     allocate(leg_Rtm(rtm_obj_%maxNptsLeg))
 
-    rtm_obj_%temp   => temp_Rtm
     rtm_obj_%planck => planck_Rtm
     rtm_obj_%ext    => ext_Rtm
     rtm_obj_%ssa    => ssa_Rtm
@@ -1416,7 +1415,7 @@ program shdom
     ! rtm_obj_
     !╭────────────────────────────────────────────────╮!
     deallocate(ptr_Bc, rad_Bc)
-    deallocate(temp_Rtm, planck_Rtm)
+    deallocate(temp_Rtm_, planck_Rtm)
     deallocate(ext_Rtm, ssa_Rtm, ipha_Rtm)
     deallocate(leg_Rtm)
     deallocate(fluxTot, fluxDir)
@@ -1424,7 +1423,7 @@ program shdom
     deallocate(work, work1, work2)
     if (rtm_obj_%isAllocated) then
         deallocate(rtm_obj_%x, rtm_obj_%y, rtm_obj_%z)
-        nullify(rtm_obj_%temp,   &
+        nullify(&
                 rtm_obj_%planck, &
                 rtm_obj_%ext, &
                 rtm_obj_%ssa, &

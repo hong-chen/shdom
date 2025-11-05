@@ -204,7 +204,7 @@ module globals_type
         real(kind=R__),  allocatable :: y(:)
         real(kind=R__),  allocatable :: z(:)
 
-        real(kind=R__),  pointer :: temp(:)   => null()
+        !real(kind=R__),  pointer :: temp(:)   => null()
         real(kind=R__),  pointer :: planck(:) => null()
         real(kind=R__),  pointer :: ext(:)  => null()
         real(kind=R__),  pointer :: ssa(:)  => null()
@@ -423,6 +423,8 @@ module globals_obj
     ! RTM
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_rtm),  save :: rtm_obj_
+
+    real(kind=R__),  allocatable, save :: temp_Rtm_(:)          ! (grid_obj%maxNpts)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     type(shd_type_grid), save :: grid_obj_
