@@ -46,7 +46,7 @@ module shd_src
                              isSolar_, isThermal_
     use globals_type,  only: shd_type_grid
 
-    use globals_obj,   only: rtm_obj_, &
+    use globals_obj,   only: rtm_obj_, planck_Rtm_, &
                             shdo_obj_, &
                              src_obj_, &
                              prp_obj_, &
@@ -504,7 +504,7 @@ subroutine shd_src__computeSrc(&
 
     ! Computes the source function (srcJ_Shdo) in spherical harmonic space
     !   for all the grid points.  The thermal source and/or solar
-    !   pseudo-source (in rtm_obj_%planck or DIRFLUX) is added to the scattering source
+    !   pseudo-source (in planck_Rtm_ or DIRFLUX) is added to the scattering source
     !   (computed from rtm_obj_%leg and the spherical harmonic expansion in radI_Shdo).
     !   Also computes the adaptive spherical harmonic truncation for
     !   the source function, unless FIXSH is true.  The SH truncation is set
@@ -550,7 +550,7 @@ subroutine shd_src__computeSrc(&
     SRCMIN = SHACC
     ! Make source function from scattering integral and real sources:
     !   Solar source: DIRFLUX has F0*exp(-tau)
-    !   Thermal source: rtm_obj_%planck has (1-omega)*B(T)
+    !   Thermal source: planck_Rtm_ has (1-omega)*B(T)
     SECMU0 = 1.0/abs(src_obj_%avgMu)
     C = sqrt(4.0*acos(-1.0))
     ! Make the l index as a function of SH term (J)
@@ -586,12 +586,12 @@ subroutine shd_src__computeSrc(&
             if (isPol_) then
                 call shd_src__computeSrcOnePnt(shdo_obj_%Nstokes, shdo_obj_%Nlm, LOFJ,&
                     &src_obj_%type, DIRFLUX(I)*SECMU0, YLMSUN,&
-                    &rtm_obj_%planck(I), rtm_obj_%ssa(I), IPH, rtm_obj_%leg,&
+                    &planck_Rtm_(I), rtm_obj_%ssa(I), IPH, rtm_obj_%leg,&
                     &NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
             else
                 call shd_src__computeSrcOnePnt_(shdo_obj_%Nlm, LOFJ,&
                     &src_obj_%type, DIRFLUX(I)*SECMU0, YLMSUN,&
-                    &rtm_obj_%planck(I), rtm_obj_%ssa(I), IPH, rtm_obj_%leg,&
+                    &planck_Rtm_(I), rtm_obj_%ssa(I), IPH, rtm_obj_%leg,&
                     &NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
             end if
 
@@ -637,12 +637,12 @@ subroutine shd_src__computeSrc(&
             if (isPol_) then
                 call shd_src__computeSrcOnePnt(shdo_obj_%Nstokes, shdo_obj_%Nlm, LOFJ,&
                     &src_obj_%type, DIRFLUX(I)*SECMU0, YLMSUN,&
-                    &rtm_obj_%planck(I), rtm_obj_%ssa(I), IPH, rtm_obj_%leg,&
+                    &planck_Rtm_(I), rtm_obj_%ssa(I), IPH, rtm_obj_%leg,&
                     &NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
             else
                 call shd_src__computeSrcOnePnt_(shdo_obj_%Nlm, LOFJ,&
                     &src_obj_%type, DIRFLUX(I)*SECMU0, YLMSUN,&
-                    &rtm_obj_%planck(I), rtm_obj_%ssa(I), IPH, rtm_obj_%leg,&
+                    &planck_Rtm_(I), rtm_obj_%ssa(I), IPH, rtm_obj_%leg,&
                     &NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
             end if
 
@@ -674,12 +674,12 @@ subroutine shd_src__computeSrc(&
         if (isPol_) then
             call shd_src__computeSrcOnePnt(shdo_obj_%Nstokes, shdo_obj_%Nlm, LOFJ,&
                 &src_obj_%type, DIRFLUX(I)*SECMU0, YLMSUN,&
-                &rtm_obj_%planck(I), rtm_obj_%ssa(I), IPH, rtm_obj_%leg,&
+                &planck_Rtm_(I), rtm_obj_%ssa(I), IPH, rtm_obj_%leg,&
                 &NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
         else
             call shd_src__computeSrcOnePnt_(shdo_obj_%Nlm, LOFJ,&
                 &src_obj_%type, DIRFLUX(I)*SECMU0, YLMSUN,&
-                &rtm_obj_%planck(I), rtm_obj_%ssa(I), IPH, rtm_obj_%leg,&
+                &planck_Rtm_(I), rtm_obj_%ssa(I), IPH, rtm_obj_%leg,&
                 &NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
         end if
         if (FIXSH) then

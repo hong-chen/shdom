@@ -44,7 +44,7 @@ module shd_solv
 
     use globals_type, only: shd_type_grid
 
-    use globals_obj,  only: rtm_obj_, temp_Rtm_, &
+    use globals_obj,  only: rtm_obj_, temp_Rtm_, planck_Rtm_, &
                            shdo_obj_, iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_, &
                             src_obj_, &
                             prp_obj_, &
@@ -157,10 +157,10 @@ subroutine shd_solv__solveRte(&
     call shd_grid__interpGrid(grid_obj)
 
     ! If Delta-M then scale the extinction, albedo, and Legendre terms
-    ! Put the Planck blackbody source in rtm_obj_%planck.
+    ! Put the Planck blackbody source in planck_Rtm_.
     call shd_init__makePrp(doDeltaM, maxSsa, &
         rtm_obj_, grid_obj, &
-        temp_Rtm_)
+        temp_Rtm_, planck_Rtm_)
 
     ! Get the maximum single scattering albedo over all processors
     call shd_mpi__findMaxSsa(maxSsa)
@@ -331,7 +331,7 @@ subroutine shd_solv__solveRte(&
                     src_obj_%avgSolar0, YlmSolar_Shdo, &
                     WORK, WORK2, &
                     grid_obj, &
-                    temp_Rtm_, &
+                    temp_Rtm_, planck_Rtm_, &
                     iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_)
                 if (SOLCRIT .gt. STARTADAPTSOL) STARTSPLITACC = SPLITCRIT
             end if

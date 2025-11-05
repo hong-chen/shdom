@@ -432,19 +432,20 @@ end subroutine shd_init__makeCell
 subroutine shd_init__makePrp(&
     doDeltaM, maxSsa,&
     rtm_obj, grid_obj, &
-    temp_Rtm)
+    temp_Rtm, planck_Rtm)
 
     ! Prepares the grid arrays for the iterative solution process.
     ! If doing Delta-M scaling then the extinction, albedo, and Legend
     ! terms are scaled first; only the 0 to shdo_obj_%maxNl rtm_obj%leg terms are scaled.
-    ! Outputs rtm_obj%planck with (1-omega)*B(T) for thermal source, where B(T
+    ! Outputs planck_Rtm with (1-omega)*B(T) for thermal source, where B(T
     ! the function (meaning depends on src_obj_%unit).
     ! rtm_obj%temp array is unchanged.
 
     type(shd_type_rtm),  intent(inout) :: rtm_obj
     type(shd_type_grid), intent(in)    :: grid_obj
 
-    real(R__), intent(in) :: temp_Rtm(*)
+    real(R__), intent(in)  ::   temp_Rtm(*)
+    real(R__), intent(out) :: planck_Rtm(*)
 
     logical, intent(in) :: doDeltaM
     real(kind=R__), intent(inout) :: maxSsa
@@ -490,7 +491,7 @@ subroutine shd_init__makePrp(&
         maxSsa = max(maxSsa, rtm_obj%ssa(I))
         if (isThermal_) then
             call shd_util__computePlanck(temp_Rtm(I), src_obj_%unit, src_obj_%waveNum, src_obj_%avgWaveLen, BB)
-            rtm_obj%planck(I) = (1.0 - rtm_obj%ssa(I))*BB
+            planck_Rtm(I) = (1.0 - rtm_obj%ssa(I))*BB
         end if
     end do
 
