@@ -46,7 +46,7 @@ module shd_src
                              isSolar_, isThermal_
     use globals_type,  only: shd_type_grid
 
-    use globals_obj,   only: rtm_obj_, planck_Rtm_, &
+    use globals_obj,   only: rtm_obj_, planck_Rtm_, ext_Rtm_, &
                             shdo_obj_, &
                              src_obj_, &
                              prp_obj_, &
@@ -204,8 +204,8 @@ subroutine shd_src__computeSrcOneCell(&
                 end if
             end if
 
-            SRCEXT8(:, N) = SRCEXT8(:, N)*rtm_obj_%ext(IP)
-            EXTINCT8(N) = rtm_obj_%ext(IP)
+            SRCEXT8(:, N) = SRCEXT8(:, N)*ext_Rtm_(IP)
+            EXTINCT8(N) = ext_Rtm_(IP)
         end if
     end do
 
@@ -309,8 +309,8 @@ subroutine shd_src__computeSrcOneCell_(&
                 end if
             end if
 
-            SRCEXT8(N) = SRCEXT8(N)*rtm_obj_%ext(IP)
-            EXTINCT8(N) = rtm_obj_%ext(IP)
+            SRCEXT8(N) = SRCEXT8(N)*ext_Rtm_(IP)
+            EXTINCT8(N) = ext_Rtm_(IP)
         end if
     end do
 
@@ -743,7 +743,7 @@ subroutine shd_src__integrateSrcOneRay(&
     &grid_obj)
 
     !   Integrates the source function through the extinction field
-    ! (rtm_obj_%ext) backward from the outgoing direction (MU2,PHI2) to find the
+    ! (ext_Rtm_) backward from the outgoing direction (MU2,PHI2) to find the
     ! radiance (radI_Shdo) at the point X0,Y0,Z0.
     ! The transmission and radiance of the ray so far (TRANSMIT, radI_Shdo)
     ! are input and returned after the integration along with the exitting
@@ -1139,7 +1139,7 @@ subroutine shd_src__integrateSrc(NSTOKES,&
     &grid_obj)
 
     ! Integrates the source function (srcJ_Shdo) through the extinction
-    ! field (rtm_obj_%ext) backward in the direction opposite to (MU,PHI)
+    ! field (ext_Rtm_) backward in the direction opposite to (MU,PHI)
     ! to find the outgoing radiance (radI_Shdo) at the point X0,Y0,Z0.
     ! The radiances at the opposite boundary are input in GRIDRAD.
     ! The transmission and radiance of the ray so far (TRANSMIT, radI_Shdo)
@@ -1222,7 +1222,7 @@ subroutine shd_src__integrateSrc(NSTOKES,&
     ! print '(A,5(1X,F8.5),1X,I6)', &
     !     &'_integrateSrc:', X0, Y0, Z0, MU, PHI, icell
     call shd_util__interpTriLin(icell,&
-        &XE, YE, ZE, 1, rtm_obj_%ext, 1, 1, EXT1, grid_obj)
+        &XE, YE, ZE, 1, ext_Rtm_, 1, 1, EXT1, grid_obj)
     call shd_util__interpTriLin(icell,&
         &XE, YE, ZE, NSTOKES, srcJ_Shdo, 1, NSTOKES, SRCEXT1, grid_obj)
     SRCEXT1(1) = max(0.0, SRCEXT1(1))
@@ -1278,7 +1278,7 @@ subroutine shd_src__integrateSrc(NSTOKES,&
         ! Find the optical path across the grid cell and figure how
         !   many subgrid intervals to use
         call shd_util__interpTriLin(icell,&
-            &XN, YN, ZN, 1, rtm_obj_%ext, 1, 1, EXTN, grid_obj)
+            &XN, YN, ZN, 1, ext_Rtm_, 1, 1, EXTN, grid_obj)
         TAUGRID = SO*0.5*(EXT1(1) + EXTN(1))
         NTAU = max(1, 1 + int(TAUGRID/TAUTOL))
         DELS = SO/NTAU
@@ -1301,7 +1301,7 @@ subroutine shd_src__integrateSrc(NSTOKES,&
                 EXT0(1) = EXTN(1)
             else
                 call shd_util__interpTriLin(icell,&
-                    &XI, YI, ZI, 1, rtm_obj_%ext, 1, 1, EXT0, grid_obj)
+                    &XI, YI, ZI, 1, ext_Rtm_, 1, 1, EXT0, grid_obj)
             end if
             call shd_util__interpTriLin(icell,&
                 &XI, YI, ZI, NSTOKES, srcJ_Shdo, 1, NSTOKES, SRCEXT0, grid_obj)

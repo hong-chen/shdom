@@ -45,7 +45,7 @@ module shd_out
                              isSolar_, isThermal_
     use globals_type,  only: shd_type_rtm, shd_type_grid
 
-    use globals_obj,   only: rtm_obj_, temp_Rtm_, &
+    use globals_obj,   only: rtm_obj_, temp_Rtm_, ext_Rtm_, &
                             shdo_obj_, iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_, &
                              src_obj_, &
                              prp_obj_, &
@@ -986,7 +986,7 @@ subroutine shd_io__outputResult(&
         end if
 
         IDATA = 0
-        call shd_io__outputDataBin(rtm_obj_%ext, 1, N, IDATA, OUTFILE_DATA)
+        call shd_io__outputDataBin(ext_Rtm_, 1, N, IDATA, OUTFILE_DATA)
         IDATA = 0
         call shd_io__outputDataBin(SOURCE1OUT, 4, N, IDATA, OUTFILE_DATA, 'ADD')
 
@@ -1004,7 +1004,7 @@ subroutine shd_io__outputResult(&
         !        &grid_obj%xyz(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) .or. ALLGRID) then
         !        write (2, '(3(1X,F7.3),5(1X,E12.5))')&
         !            & grid_obj%xyz(1, I), grid_obj%xyz(2, I), grid_obj%xyz(3, I),&
-        !            & rtm_obj_%ext(I), SOURCE1OUT(:, I)
+        !            & ext_Rtm_(I), SOURCE1OUT(:, I)
         !    end if
         !end do
         !╰────────────────────────────────────────────────╯!
@@ -1063,7 +1063,7 @@ subroutine shd_io__outputResult(&
         end if
 
         IDATA = 0
-        call shd_io__outputDataBin(rtm_obj_%ext, 1, N, IDATA, OUTFILE_DATA)
+        call shd_io__outputDataBin(ext_Rtm_, 1, N, IDATA, OUTFILE_DATA)
         IDATA = 0
         call shd_io__outputDataBin(rtm_obj_%ssa, 1, N, IDATA, OUTFILE_DATA, 'ADD')
         IDATA = 0
@@ -1093,7 +1093,7 @@ subroutine shd_io__outputResult(&
         !        &grid_obj%xyz(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) .or. ALLGRID) then
         !        write (2, '(3(1X,F7.3),1X,F10.6,1X,F8.6,1X,F8.5,1X,F7.2)')&
         !            & grid_obj%xyz(1, I), grid_obj%xyz(2, I), grid_obj%xyz(3, I),&
-        !            & rtm_obj_%ext(I), rtm_obj_%ssa(I), ASYM, temp_Rtm_(I)
+        !            & ext_Rtm_(I), rtm_obj_%ssa(I), ASYM, temp_Rtm_(I)
         !    end if
         !end do
         !╰────────────────────────────────────────────────╯!
@@ -2529,10 +2529,10 @@ subroutine shd_io__outputCellSplit(&
         XC = 0.5*(grid_obj%xyz(1, IP1) + grid_obj%xyz(1, IP2))
         YC = 0.5*(grid_obj%xyz(2, IP1) + grid_obj%xyz(2, IP2))
         ZC = 0.5*(grid_obj%xyz(3, IP1) + grid_obj%xyz(3, IP2))
-        EXT =  (rtm_obj_%ext(grid_obj%i8Grid(1, icell)) + rtm_obj_%ext(grid_obj%i8Grid(2, icell))&
-             &+ rtm_obj_%ext(grid_obj%i8Grid(3, icell)) + rtm_obj_%ext(grid_obj%i8Grid(4, icell))&
-             &+ rtm_obj_%ext(grid_obj%i8Grid(5, icell)) + rtm_obj_%ext(grid_obj%i8Grid(6, icell))&
-             &+ rtm_obj_%ext(grid_obj%i8Grid(7, icell)) + rtm_obj_%ext(grid_obj%i8Grid(8, icell)))/8
+        EXT =  (ext_Rtm_(grid_obj%i8Grid(1, icell)) + ext_Rtm_(grid_obj%i8Grid(2, icell))&
+             &+ ext_Rtm_(grid_obj%i8Grid(3, icell)) + ext_Rtm_(grid_obj%i8Grid(4, icell))&
+             &+ ext_Rtm_(grid_obj%i8Grid(5, icell)) + ext_Rtm_(grid_obj%i8Grid(6, icell))&
+             &+ ext_Rtm_(grid_obj%i8Grid(7, icell)) + ext_Rtm_(grid_obj%i8Grid(8, icell)))/8
         write (9, '(1X,I5,3(1X,F6.3),1X,E11.4,3(1X,F7.5))')&
             &icell, XC, YC, ZC, EXT,&
             &ADAPTCRIT(1), ADAPTCRIT(2), ADAPTCRIT(3)

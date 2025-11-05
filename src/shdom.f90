@@ -52,7 +52,7 @@ program shdom
                              shd_type_rtm, &
                              shd_type_grid
 
-    use globals_obj,   only: rtm_obj_, temp_Rtm_, planck_Rtm_, &
+    use globals_obj,   only: rtm_obj_, temp_Rtm_, planck_Rtm_, ext_Rtm_, &
                              shdo_obj_, iradI_Shdo_, &
                                          radI_Shdo_, &
                                         isrcJ_Shdo_, &
@@ -138,7 +138,6 @@ program shdom
     type(shd_type_rtm) :: rtmAll_obj
 
     real(kind=R__),  allocatable, target :: &
-                                             ext_Rtm(:), &
                                              ssa_Rtm(:), &
                                              leg_Rtm(:)
     integer(kind=2), allocatable, target :: ipha_Rtm(:)
@@ -863,7 +862,7 @@ program shdom
     !╭──────────────────────────────────────────────────────────────╮!
     NmaxNpts = 0.0
 
-    NmaxNpts = NmaxNpts + 4.5 ! temp_Rtm_, planck_Rtm_, ext_Rtm, ssa_Rtm, ipha_Rtm[0.5, integer(kind=2)]
+    NmaxNpts = NmaxNpts + 4.5 ! temp_Rtm_, planck_Rtm_, ext_Rtm_, ssa_Rtm, ipha_Rtm[0.5, integer(kind=2)]
 
     ! x, y, z grid
     memUsed = memUsed + (rtm_obj_%Nx+1) + (rtm_obj_%Ny+1) + (rtm_obj_%Nz)
@@ -1000,12 +999,11 @@ program shdom
     allocate(temp_Rtm_(grid_obj%maxNpts), planck_Rtm_(grid_obj%maxNpts))
 
     ! extinction, single scattering albedo, and phase function indices
-    allocate(ext_Rtm(grid_obj%maxNpts), ssa_Rtm(grid_obj%maxNpts), ipha_Rtm(grid_obj%maxNpts))
+    allocate(ext_Rtm_(grid_obj%maxNpts), ssa_Rtm(grid_obj%maxNpts), ipha_Rtm(grid_obj%maxNpts))
 
     ! legendre coefficients
     allocate(leg_Rtm(rtm_obj_%maxNptsLeg))
 
-    rtm_obj_%ext    => ext_Rtm
     rtm_obj_%ssa    => ssa_Rtm
     rtm_obj_%ipha   => ipha_Rtm
 
@@ -1263,7 +1261,7 @@ program shdom
         if (isHROut) then
             ! Compute the net flux divergence at every point
             call shd_rad__computeFluxDiv(shdo_obj_%Nstokes, grid_obj%Npts, iradI_Shdo_, src_obj_%type, src_obj_%avgMu,&
-                &rtm_obj_%ext, rtm_obj_%ssa, planck_Rtm_, fluxDir, radI_Shdo_, work)
+                &ext_Rtm_, rtm_obj_%ssa, planck_Rtm_, fluxDir, radI_Shdo_, work)
             call shd_util__sumData(ckd_obj_%Ng-ig_ckd, wgt_Ckd_(ig_ckd), grid_obj%Npts, work, sumFluxDiv_Out)
         end if
 
@@ -1414,7 +1412,7 @@ program shdom
     !╭────────────────────────────────────────────────╮!
     deallocate(ptr_Bc, rad_Bc)
     deallocate(temp_Rtm_, planck_Rtm_)
-    deallocate(ext_Rtm, ssa_Rtm, ipha_Rtm)
+    deallocate(ext_Rtm_, ssa_Rtm, ipha_Rtm)
     deallocate(leg_Rtm)
     deallocate(fluxTot, fluxDir)
     deallocate(sumRad_Out, sumCam_Out)
@@ -1422,7 +1420,6 @@ program shdom
     if (rtm_obj_%isAllocated) then
         deallocate(rtm_obj_%x, rtm_obj_%y, rtm_obj_%z)
         nullify(&
-                rtm_obj_%ext, &
                 rtm_obj_%ssa, &
                 rtm_obj_%leg, &
                 rtm_obj_%ipha)

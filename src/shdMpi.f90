@@ -52,7 +52,7 @@ module shd_mpi
                              shd_type_ckd,  &
                              shd_type_sen
 
-    use globals_obj,   only:  rtm_obj_, &
+    use globals_obj,   only:  rtm_obj_, ext_Rtm_, &
                              shdo_obj_, isrcJ_Shdo_, srcJ_Shdo_, &
                               src_obj_, &
                               prp_obj_, &
@@ -1963,7 +1963,7 @@ subroutine shd_mpi__computeRad(&
         !   function, so the grid interpolation is correct.
         do I = 1, grid_obj%Npts
             GRIDRAD(1, I) = -1.0
-            src1_Shdo(:, I) = src1_Shdo(:, I)*rtm_obj_%ext(I)
+            src1_Shdo(:, I) = src1_Shdo(:, I)*ext_Rtm_(I)
         end do
         ! Get boundary radiances: either top or bottom
         ! Isotropic top boundary or Lambertian bottom boundary can use

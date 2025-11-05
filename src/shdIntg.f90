@@ -46,7 +46,7 @@ module shd_intg
                              isPol_
     use globals_type,  only: shd_type_grid
 
-    use globals_obj,   only:  rtm_obj_, &
+    use globals_obj,   only:  rtm_obj_, ext_Rtm_, &
                              shdo_obj_, &
                               src_obj_, &
                               prp_obj_, &
@@ -99,7 +99,7 @@ subroutine shd_intg__integratePath(&
     &grid_obj, iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo)
 
     !   Performs the path integrations through the medium specified by
-    ! the extinction (rtm_obj_%ext) and source function (srcJ_Shdo) in
+    ! the extinction (ext_Rtm_) and source function (srcJ_Shdo) in
     ! spherical harmonic space.  The source function is transformed to
     ! discrete ordinates one zenith angle at a time.  The integrations
     ! are done from the top boundary (with no reflection) down to the
@@ -281,13 +281,13 @@ subroutine shd_intg__integratePath(&
 
                 call shd_intg__backIntegrate1D(rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz, shdo_obj_%maxNphi0,&
                     &SWEEPORD, shdo_obj_%mu(IMU), shdo_obj_%phi(IMU, IPHI), TRANSMIN,&
-                    &rtm_obj_%ext, shdo_obj_%Nstokes, WORK, IPHI, GRIDRAD, grid_obj)
+                    &ext_Rtm_, shdo_obj_%Nstokes, WORK, IPHI, GRIDRAD, grid_obj)
 
             else if (is1DYx_ .and. (.not. isMpi_)) then
 
                 call shd_intg__backIntegrate2D(rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz, shdo_obj_%maxNphi0,&
                     &SWEEPORD, shdo_obj_%mu(IMU), shdo_obj_%phi(IMU, IPHI), TRANSMIN,&
-                    &rtm_obj_%ext, shdo_obj_%Nstokes, WORK, IPHI, GRIDRAD, grid_obj)
+                    &ext_Rtm_, shdo_obj_%Nstokes, WORK, IPHI, GRIDRAD, grid_obj)
 
             else
                 if (isPol_) then
@@ -295,14 +295,14 @@ subroutine shd_intg__integratePath(&
                     call shd_intg__backIntegrate3D(rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz, shdo_obj_%maxNphi0,&
                         &SWEEPORD,&
                         &shdo_obj_%mu(IMU), shdo_obj_%phi(IMU, IPHI), TRANSMIN, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
-                        &rtm_obj_%ext, shdo_obj_%Nstokes, WORK, IPHI, GRIDRAD, grid_obj)
+                        &ext_Rtm_, shdo_obj_%Nstokes, WORK, IPHI, GRIDRAD, grid_obj)
 
                 else
 
                     call shd_intg__backIntegrate3D_(rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz, shdo_obj_%maxNphi0,&
                         &SWEEPORD,&
                         &shdo_obj_%mu(IMU), shdo_obj_%phi(IMU, IPHI), TRANSMIN, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
-                        &rtm_obj_%ext, WORK, IPHI, GRIDRAD, grid_obj)
+                        &ext_Rtm_, WORK, IPHI, GRIDRAD, grid_obj)
 
                 end if
             end if
