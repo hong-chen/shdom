@@ -470,7 +470,7 @@ module globals_obj
     type(shd_type_ckd), save :: ckd_obj_
     real(kind=R__), allocatable, save :: solar_Ckd_(:), & ! (ckd_obj%Ng)
                                            wgt_Ckd_(:), & ! (ckd_obj%Ng)
-                                          kabs_Ckd_(:, :) ! (ckd_obj%Ng, ckd_obj%Nz)
+                                          kabs_Ckd_(:, :) ! (ckd_obj%Nz, ckd_obj%Ng)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
