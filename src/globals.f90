@@ -428,10 +428,10 @@ module globals_obj
 
     ! Grid (and cells)
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    type(shd_type_grid), save :: grid_obj_
+    type(shd_type_grid), save :: cell_obj_
 
-    integer(kind=I__), allocatable, save ::  i8Pts_Grid_(:, :) ! (8, grid_obj%maxNcell)
-    integer(kind=I__), allocatable, save :: i6Cell_Grid_(:, :) ! (6, grid_obj%maxNcell)
+    integer(kind=I__), allocatable, save :: i8Grid_Cell_(:, :) ! (8, cell_obj%maxNcell)
+    integer(kind=I__), allocatable, save :: i6Cell_Cell_(:, :) ! (6, cell_obj%maxNcell)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 

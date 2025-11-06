@@ -48,7 +48,7 @@ module shd_util
     use globals_type,  only: shd_type_grid
 
     use globals_obj,   only: rtm_obj_, xyz_Rtm_, &
-                             i8Pts_Grid_, i6Cell_Grid_
+                             i8Grid_Cell_, i6Cell_Cell_
 
     implicit none
     private
@@ -137,7 +137,7 @@ subroutine shd_util__interpData(OLDNPTS,&
     ! Go through all the non-base grid cells
     do ICELL = grid_obj%Ncell0 + 1, grid_obj%Ncell
         do IC = 1, 8
-            IP = i8Pts_Grid_(IC, ICELL)
+            IP = i8Grid_Cell_(IC, ICELL)
             if (IP .gt. OLDNPTS) then
                 IPARENT = grid_obj%i2Tree(1, ICELL)
                 ! Go through all 12 edges of parent cell to find which one has point
@@ -145,8 +145,8 @@ subroutine shd_util__interpData(OLDNPTS,&
                     DIR1 = mod(IDIR - 1 + 1, 3) + 1
                     DIR2 = mod(IDIR - 1 + 2, 3) + 1
                     do I = 1, 4
-                        IP1 = i8Pts_Grid_(GRIDCORNER(1, I, IDIR), IPARENT)
-                        IP2 = i8Pts_Grid_(GRIDCORNER(2, I, IDIR), IPARENT)
+                        IP1 = i8Grid_Cell_(GRIDCORNER(1, I, IDIR), IPARENT)
+                        IP2 = i8Grid_Cell_(GRIDCORNER(2, I, IDIR), IPARENT)
                         if  (xyz_Rtm_(DIR1, IP1) .eq. xyz_Rtm_(DIR1, IP) .and.&
                             &xyz_Rtm_(DIR2, IP1) .eq. xyz_Rtm_(DIR2, IP)) goto 120
                     end do
@@ -327,7 +327,7 @@ subroutine shd_util__findCell(X0, Y0, Z0, icell,&
     do while (grid_obj%i2Tree(2, icell) .gt. 0)
         DIR = ibits(int(grid_obj%flag(icell)), 2, 2)
         IC = grid_obj%i2Tree(2, icell) + 1
-        IPTR = i8Pts_Grid_(1, IC)
+        IPTR = i8Grid_Cell_(1, IC)
         if (DIR .eq. 1) then
             if (X0 .lt. xyz_Rtm_(1, IPTR)) IC = IC - 1
         else if (DIR .eq. 2) then
@@ -358,7 +358,7 @@ subroutine shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, INEXT,&
     integer IC, IC1, DIR
 
     ! Get the pointer to the neighbor cell
-    INEXT = i6Cell_Grid_(IFACE, ICELL)
+    INEXT = i6Cell_Cell_(IFACE, ICELL)
     if (INEXT .lt. 0) then
         ! If neighbor pointer is negative then we are going into a cell
         !   that has subcells, and the absolute value of the pointer is the
@@ -381,11 +381,11 @@ subroutine shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, INEXT,&
                 !   on the split line with the current location.
                 IC = IC1
                 if (DIR .eq. 1) then
-                    if (XE .gt. xyz_Rtm_(1, i8Pts_Grid_(8, IC1))) IC = IC + 1
+                    if (XE .gt. xyz_Rtm_(1, i8Grid_Cell_(8, IC1))) IC = IC + 1
                 else if (DIR .eq. 2) then
-                    if (YE .gt. xyz_Rtm_(2, i8Pts_Grid_(8, IC1))) IC = IC + 1
+                    if (YE .gt. xyz_Rtm_(2, i8Grid_Cell_(8, IC1))) IC = IC + 1
                 else
-                    if (ZE .gt. xyz_Rtm_(3, i8Pts_Grid_(8, IC1))) IC = IC + 1
+                    if (ZE .gt. xyz_Rtm_(3, i8Grid_Cell_(8, IC1))) IC = IC + 1
                 end if
             end if
         end do
@@ -415,8 +415,8 @@ subroutine shd_util__interpTriLin(&
     integer :: IPT1, IPT2, ID
     real(RD_) :: U, V, W, UM, VM, WM, DELX, DELY, DELZ
 
-    IPT1 = i8Pts_Grid_(1, ICELL)
-    IPT2 = i8Pts_Grid_(8, ICELL)
+    IPT1 = i8Grid_Cell_(1, ICELL)
+    IPT2 = i8Grid_Cell_(8, ICELL)
     DELX = xyz_Rtm_(1, IPT2) - xyz_Rtm_(1, IPT1)
     if (DELX .le. 0.0) DELX = 1.0
     DELY = xyz_Rtm_(2, IPT2) - xyz_Rtm_(2, IPT1)
@@ -430,14 +430,14 @@ subroutine shd_util__interpTriLin(&
     WM = 1 - W
 
     do ID = ID1, ID1 + NV - 1
-        VALUES(ID - ID1 + 1) = WM*(VM*(UM*FIELD(ID, i8Pts_Grid_(1, ICELL))&
-            &+ U*FIELD(ID, i8Pts_Grid_(2, ICELL)))&
-            &+ V*(UM*FIELD(ID, i8Pts_Grid_(3, ICELL))&
-            &+ U*FIELD(ID, i8Pts_Grid_(4, ICELL))))&
-            &+ W*(VM*(UM*FIELD(ID, i8Pts_Grid_(5, ICELL))&
-            &+ U*FIELD(ID, i8Pts_Grid_(6, ICELL)))&
-            &+ V*(UM*FIELD(ID, i8Pts_Grid_(7, ICELL))&
-            &+ U*FIELD(ID, i8Pts_Grid_(8, ICELL))))
+        VALUES(ID - ID1 + 1) = WM*(VM*(UM*FIELD(ID, i8Grid_Cell_(1, ICELL))&
+            &+ U*FIELD(ID, i8Grid_Cell_(2, ICELL)))&
+            &+ V*(UM*FIELD(ID, i8Grid_Cell_(3, ICELL))&
+            &+ U*FIELD(ID, i8Grid_Cell_(4, ICELL))))&
+            &+ W*(VM*(UM*FIELD(ID, i8Grid_Cell_(5, ICELL))&
+            &+ U*FIELD(ID, i8Grid_Cell_(6, ICELL)))&
+            &+ V*(UM*FIELD(ID, i8Grid_Cell_(7, ICELL))&
+            &+ U*FIELD(ID, i8Grid_Cell_(8, ICELL))))
     end do
 
     return
