@@ -418,20 +418,20 @@ module globals_obj
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_rtm),  save :: rtm_obj_
 
-    real(kind=R__),  allocatable, save ::    xyz_Rtm_(:, :)    ! (3, grid_obj%maxNpts)
+    real(kind=R__),  allocatable, save ::    xyz_Rtm_(:, :)    ! (3, cell_obj%maxNpts)
 
-    real(kind=R__),  allocatable, save ::   temp_Rtm_(:), &    ! (grid_obj%maxNpts)
-                                             ext_Rtm_(:), &    ! (grid_obj%maxNpts)
-                                             ssa_Rtm_(:), &    ! (grid_obj%maxNpts)
+    real(kind=R__),  allocatable, save ::   temp_Rtm_(:), &    ! (cell_obj%maxNpts)
+                                             ext_Rtm_(:), &    ! (cell_obj%maxNpts)
+                                             ssa_Rtm_(:), &    ! (cell_obj%maxNpts)
                                              leg_Rtm_(:, :, :) ! (prp_obj%NlegSet, prp_obj%maxNleg, prp_obj%Npha)
-    integer(kind=2), allocatable, save ::   ipha_Rtm_(:)       ! (grid_obj%maxNpts)
+    integer(kind=2), allocatable, save ::   ipha_Rtm_(:)       ! (cell_obj%maxNpts)
 
-    real(kind=R__),  allocatable, save :: planck_Rtm_(:)       ! (grid_obj%maxNpts)
+    real(kind=R__),  allocatable, save :: planck_Rtm_(:)       ! (cell_obj%maxNpts)
     real(kind=R__),  allocatable, save ::   brdf_Rtm_(:, :)    ! (sfc_obj%maxNpar, xxx_obj%xxx)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
-    ! Grid (and cells)
+    ! Cell
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_cell), save :: cell_obj_
 
@@ -445,9 +445,9 @@ module globals_obj
     ! SHDO
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_shdo), save :: shdo_obj_
-    integer(kind=I__), allocatable, save :: iradI_Shdo_(:)    ! (grid_obj%maxNpts+2)
-    real(kind=R__),    allocatable, save ::  radI_Shdo_(:, :) ! (shdo_obj_%Nstokes, shdo_obj_%maxNptsSH+grid_obj%maxNpts)
-    integer(kind=I__), allocatable, save :: isrcJ_Shdo_(:)    ! (grid_obj%maxNpts+1)
+    integer(kind=I__), allocatable, save :: iradI_Shdo_(:)    ! (cell_obj%maxNpts+2)
+    real(kind=R__),    allocatable, save ::  radI_Shdo_(:, :) ! (shdo_obj_%Nstokes, shdo_obj_%maxNptsSH+cell_obj%maxNpts)
+    integer(kind=I__), allocatable, save :: isrcJ_Shdo_(:)    ! (cell_obj%maxNpts+1)
     real(kind=R__),    allocatable, save ::  srcJ_Shdo_(:, :) ! (shdo_obj%Nstokes, shdo_obj%maxNptsSH)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 

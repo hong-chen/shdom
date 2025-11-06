@@ -1960,7 +1960,7 @@ subroutine shd_io__restoreState(&
     INRADFLAG, NEWGRIDFLAG, &
     FLUXES, &
     rtm_obj, xyz_Rtm, &
-    grid_obj, i8Grid_Cell, i6Cell_Cell, i2Tree_Cell, flag_Cell, &
+    cell_obj, i8Grid_Cell, i6Cell_Cell, i2Tree_Cell, flag_Cell, &
     shdo_obj, iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo)
 
     ! Reads the binary save file containing a previous state of
@@ -1973,7 +1973,7 @@ subroutine shd_io__restoreState(&
     ! The flag NEWGRIDFLAG is set to false if reading succeeds.
 
     type(shd_type_rtm),  intent(inout) :: rtm_obj
-    type(shd_type_cell), intent(inout) :: grid_obj
+    type(shd_type_cell), intent(inout) :: cell_obj
     type(shd_type_shdo), intent(inout) :: shdo_obj
 
     real(kind=R__),    intent(out) :: xyz_Rtm(3, *)
@@ -2003,7 +2003,7 @@ subroutine shd_io__restoreState(&
     open (UNIT=3, FILE=trim(adjustl(INSAVEFILE)), STATUS='OLD',&
         &FORM='UNFORMATTED', ERR=900)
 
-    read (3) NSTI, NXI, NYI, NZI, MLI, MMI, NLMI, grid_obj%Npts, grid_obj%Ncell
+    read (3) NSTI, NXI, NYI, NZI, MLI, MMI, NLMI, cell_obj%Npts, cell_obj%Ncell
 
     if ((NXI .ne. rtm_obj%Nx) .or. (NYI .ne. rtm_obj%Ny) .or. (NZI .ne. rtm_obj%Nz)) then
         if (verbose_ .ge. 4) write (6, '(A, 3I6)') 'Warning [_restoreState]: wrong grid size:', NXI, NYI, NZI
@@ -2022,24 +2022,24 @@ subroutine shd_io__restoreState(&
     read (3) (rtm_obj%x(i), i=1, rtm_obj%Nx+1)
     read (3) (rtm_obj%y(i), i=1, rtm_obj%Ny+1)
     read (3) (rtm_obj%z(i), i=1, rtm_obj%Nz)
-    read (3) ((i8Grid_Cell(j, i), j=1, 8), i=1, grid_obj%Ncell)
-    read (3) ((i6Cell_Cell(j, i), j=1, 6), i=1, grid_obj%Ncell)
-    read (3) ((i2Tree_Cell(j, i), j=1, 2), i=1, grid_obj%Ncell)
-    read (3) (flag_Cell(i), i=1, grid_obj%Ncell)
+    read (3) ((i8Grid_Cell(j, i), j=1, 8), i=1, cell_obj%Ncell)
+    read (3) ((i6Cell_Cell(j, i), j=1, 6), i=1, cell_obj%Ncell)
+    read (3) ((i2Tree_Cell(j, i), j=1, 2), i=1, cell_obj%Ncell)
+    read (3) (flag_Cell(i), i=1, cell_obj%Ncell)
 
-    read (3) ((xyz_Rtm(j, i), j=1, 3), i=1, grid_obj%Npts)
-    read (3) ((FLUXES(j, i), j=1, 2), i=1, grid_obj%Npts)
+    read (3) ((xyz_Rtm(j, i), j=1, 3), i=1, cell_obj%Npts)
+    read (3) ((FLUXES(j, i), j=1, 2), i=1, cell_obj%Npts)
 
-    read (3) (isrcJ_Shdo(i), i=1, grid_obj%Npts + 1)
+    read (3) (isrcJ_Shdo(i), i=1, cell_obj%Npts + 1)
 
-    NS = isrcJ_Shdo(grid_obj%Npts + 1)
+    NS = isrcJ_Shdo(cell_obj%Npts + 1)
     read (3) ((srcJ_Shdo(j, i), j=1, shdo_obj%Nstokes), i=1, NS)
 
-    NR = 4*grid_obj%Npts
+    NR = 4*cell_obj%Npts
     read (3) ((radI_Shdo(j, i), j=1, shdo_obj%Nstokes), i=1, NR)
 
     iradI_Shdo(1) = 0
-    do i = 1, grid_obj%Npts
+    do i = 1, cell_obj%Npts
         iradI_Shdo(i+1) = iradI_Shdo(i) + shdo_obj%Nstokes*4
     end do
 

@@ -42,10 +42,8 @@ module shd_solv
     use globals_cfg,  only: verbose_, isMpi_, &
                             isSolar_
 
-    use globals_type, only: shd_type_cell
-
     use globals_obj,  only: rtm_obj_, xyz_Rtm_, temp_Rtm_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, leg_Rtm_, ipha_Rtm_, &
-                            i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, flag_Cell_, &
+                           cell_obj_, i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, flag_Cell_, &
                            shdo_obj_, iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_, &
                             src_obj_, &
                             prp_obj_, &
@@ -99,16 +97,13 @@ subroutine shd_solv__solveRte(&
     &SPLITACC, SHACC,&
     &MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &WORK, WORK1, WORK2,&
-    &FLUXES, DIRFLUX,&
-    &grid_obj)
+    &FLUXES, DIRFLUX)
 
     ! Performs the SHDOM solution procedure.
     ! Output is returned in srcJ_Shdo, radI_Shdo, FLUXES, DIRFLUX.
-    ! The adaptive grid stucture (grid_obj%Ncell,i8Grid_Cell_,i6Cell_Cell_,i2Tree_Cell_,
-    ! flag_Cell_,grid_obj%Npts,xyz_Rtm_) is input and modified for new grid
+    ! The adaptive grid stucture (cell_obj_%Ncell,i8Grid_Cell_,i6Cell_Cell_,i2Tree_Cell_,
+    ! flag_Cell_,cell_obj_%Npts,xyz_Rtm_) is input and modified for new grid
     ! cells and points on output.
-
-    type(shd_type_cell), intent(inout) :: grid_obj
 
     integer MAXITER, ITER
     integer MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR(MAXNBC, 2)
@@ -148,19 +143,19 @@ subroutine shd_solv__solveRte(&
     allocate(flagFFT_Shdo(shdo_obj_%Nmu), wgtMu_Shdo(shdo_obj_%Nmu), wPhiFFT_Shdo(shdo_obj_%Nmu*(3*shdo_obj_%Nphi+ 15)))
 
     if (doAccel) then
-        allocate(isrcD_Shdo(grid_obj%maxNpts + 1), &
+        allocate(isrcD_Shdo(cell_obj_%maxNpts + 1), &
                   srcD_Shdo(shdo_obj_%Nstokes, shdo_obj_%maxNptsSH))
     end if
 
     ! Set up some things before solution loop
 
     ! Transfer the medium properties to the internal grid and add gas absorption
-    call shd_grid__interpGrid(grid_obj, xyz_Rtm_)
+    call shd_grid__interpGrid(xyz_Rtm_)
 
     ! If Delta-M then scale the extinction, albedo, and Legendre terms
     ! Put the Planck blackbody source in planck_Rtm_.
     call shd_init__makePrp(doDeltaM, maxSsa, &
-        rtm_obj_, grid_obj, &
+        rtm_obj_, &
         temp_Rtm_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, leg_Rtm_, ipha_Rtm_)
 
     ! Get the maximum single scattering albedo over all processors
@@ -172,13 +167,11 @@ subroutine shd_solv__solveRte(&
         if (isMpi_) then
             call shd_mpi__makeDirect(1, doDeltaM, shdo_obj_%maxNl,&
                 &src_obj_%avgSolar0, src_obj_%avgMu, src_obj_%avgAz,&
-                &DIRFLUX,&
-                &grid_obj)
+                &DIRFLUX)
         else
-            call shd_rad__makeDirect(grid_obj%Npts, doDeltaM, shdo_obj_%maxNl,&
+            call shd_rad__makeDirect(cell_obj_%Npts, doDeltaM, shdo_obj_%maxNl,&
                 &src_obj_%avgSolar0, src_obj_%avgMu, src_obj_%avgAz,&
-                &DIRFLUX,&
-                &grid_obj)
+                &DIRFLUX)
         end if
         call shd_shdo__computeYlm(.true., src_obj_%avgMu, src_obj_%avgAz, shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet,&
             &YlmSolar_Shdo)
@@ -199,27 +192,27 @@ subroutine shd_solv__solveRte(&
     if (.not. doRadInit) then
         ! Initialize the radiance on the base grid using Eddington
         ! two-stream plane-parallel
-        call shd_init__makeRad(shdo_obj_%Nstokes, grid_obj%Nx*grid_obj%Ny, grid_obj%Nz,&
+        call shd_init__makeRad(shdo_obj_%Nstokes, cell_obj_%Nx*cell_obj_%Ny, cell_obj_%Nz,&
             &iradI_Shdo_, rtm_obj_%z,&
             &ext_Rtm_, ssa_Rtm_, leg_Rtm_, temp_Rtm_, ipha_Rtm_,&
             &src_obj_%type, src_obj_%avgSolar0, src_obj_%avgMu, src_obj_%skyRad,&
             &src_obj_%unit, src_obj_%waveNum, src_obj_%avgWaveLen, radI_Shdo_)
         ! Interpolate the radiance on the non-base grid points from the
         !   base grid points
-        call shd_rad__interpRad(shdo_obj_%Nstokes, grid_obj%Npts0, grid_obj%Npts, iradI_Shdo_, radI_Shdo_,&
-            &grid_obj%Ncell0, grid_obj%Ncell, i2Tree_Cell_, i8Grid_Cell_, xyz_Rtm_)
+        call shd_rad__interpRad(shdo_obj_%Nstokes, cell_obj_%Npts0, cell_obj_%Npts, iradI_Shdo_, radI_Shdo_,&
+            &cell_obj_%Ncell0, cell_obj_%Ncell, i2Tree_Cell_, i8Grid_Cell_, xyz_Rtm_)
         ! Initialize the source function from the radiance field
         call shd_src__computeSrc(&
             &doFixSH, YlmSolar_Shdo,&
             &DIRFLUX, SHACC,&
             &isrcD_Shdo, srcD_Shdo,&
             &.true., doAccel, DELJDOT, DELJOLD, DELJNEW, JNORM,&
-            &grid_obj, iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_)
+            &iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_)
     end if
 
     if (doAccel) then
-        isrcD_Shdo(1:grid_obj%Npts + 1) = isrcJ_Shdo_(1:grid_obj%Npts + 1)
-        srcD_Shdo(:, 1:isrcD_Shdo(grid_obj%Npts + 1)) = 0.0
+        isrcD_Shdo(1:cell_obj_%Npts + 1) = isrcJ_Shdo_(1:cell_obj_%Npts + 1)
+        srcD_Shdo(:, 1:isrcD_Shdo(cell_obj_%Npts + 1)) = 0.0
     end if
     SOLCRIT = 1.0
 
@@ -228,8 +221,8 @@ subroutine shd_solv__solveRte(&
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Make the pointers to the grid points on the top and bottom boundaries
     call shd_grid__findBndryPnt(shdo_obj_%Nang, MAXNBC, MAXBCRAD,&
-        &rtm_obj_%z(1), rtm_obj_%z(grid_obj%Nz),&
-        &NTOPPTS, NBOTPTS, BCPTR, grid_obj)
+        &rtm_obj_%z(1), rtm_obj_%z(cell_obj_%Nz),&
+        &NTOPPTS, NBOTPTS, BCPTR)
     if (sfc_obj_%type(1:1) .eq. 'V') then
         ! If this is a variable surface then bilinearly interpolate
         !   the surface temperature and reflection parameters to the
@@ -331,7 +324,7 @@ subroutine shd_solv__solveRte(&
                     DIRFLUX, &
                     src_obj_%avgSolar0, YlmSolar_Shdo, &
                     WORK, WORK2, &
-                    grid_obj, xyz_Rtm_, i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, flag_Cell_, &
+                    cell_obj_, xyz_Rtm_, i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, flag_Cell_, &
                     temp_Rtm_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, leg_Rtm_, ipha_Rtm_, &
                     iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_)
                 if (SOLCRIT .gt. STARTADAPTSOL) STARTSPLITACC = SPLITCRIT
@@ -345,7 +338,7 @@ subroutine shd_solv__solveRte(&
 
         ! Find the SH truncation to use for the radiance (iradI_Shdo_)
         call shd_solv__truncRad(doHighOrder, doFixSH, SHACC,&
-            &grid_obj, iradI_Shdo_, radI_Shdo_)
+            &iradI_Shdo_, radI_Shdo_)
 
         ! srcSH to srcDO, then srcDO to radDO, then radDO to radSH
         !╭────────────────────────────────────────────────╮!
@@ -360,7 +353,7 @@ subroutine shd_solv__solveRte(&
             &CMU1, CPHI1, CMU2, CPHI2, wPhiFFT_Shdo, flagFFT_Shdo,&
             &DIRFLUX, FLUXES,&
             &WORK, WORK1, WORK2,&
-            &grid_obj, iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_)
+            &iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_)
         !╰────────────────────────────────────────────────╯!
 
         ! Compute the source function from the radiance field,
@@ -376,7 +369,7 @@ subroutine shd_solv__solveRte(&
             &DIRFLUX, SHACC,&
             &isrcD_Shdo, srcD_Shdo,&
             &.false., doAccel, DELJDOT, DELJOLD, DELJNEW, JNORM,&
-            &grid_obj, iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_)
+            &iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_)
         !╰────────────────────────────────────────────────╯!
 
         ! Calculate the acceleration parameter and solution criterion
@@ -385,7 +378,7 @@ subroutine shd_solv__solveRte(&
             &JNORM, ACCELPAR, SOLCRIT)
 
         ! Accelerate the convergence of the source function vector
-        call shd_solv__accelSol(ACCELPAR, grid_obj%Npts, &
+        call shd_solv__accelSol(ACCELPAR, cell_obj_%Npts, &
                                 isrcD_Shdo, srcD_Shdo, &
                                 isrcJ_Shdo_, srcJ_Shdo_)
 
@@ -401,30 +394,30 @@ subroutine shd_solv__solveRte(&
             if (verbose_ .ge. 5) write (6, '("S",1X,I4,2X,F7.3,2X,E10.3,1X,I8,1X,I8,1X,F8.2,2X,F6.2," sec")')&
                 &ITER, log10(max(SOLCRIT, 1.0e-20)),&
                 &SPLITCRIT,&
-                &grid_obj%Npts,&
-                &grid_obj%Ncell,&
-                &float(isrcJ_Shdo_(grid_obj%Npts + 1))/grid_obj%Npts,&
+                &cell_obj_%Npts,&
+                &cell_obj_%Ncell,&
+                &float(isrcJ_Shdo_(cell_obj_%Npts + 1))/cell_obj_%Npts,&
                 &ELAPSED_TIME
-                !&float(isrcJ_Shdo_(grid_obj%Npts + 1))/(grid_obj%Npts*shdo_obj_%Nlm)
+                !&float(isrcJ_Shdo_(cell_obj_%Npts + 1))/(cell_obj_%Npts*shdo_obj_%Nlm)
         else
             if (isOutMem) then
                 if (verbose_ .ge. 5) write (6, '("M",1X,I4,2X,F7.3,2X,E10.3,1X,I8,1X,I8,1X,F8.2,2X,F6.2," sec")')&
                     &ITER, log10(max(SOLCRIT, 1.0e-20)),&
                     &SPLITCRIT,&
-                    &grid_obj%Npts,&
-                    &grid_obj%Ncell,&
-                    &float(isrcJ_Shdo_(grid_obj%Npts + 1))/grid_obj%Npts,&
+                    &cell_obj_%Npts,&
+                    &cell_obj_%Ncell,&
+                    &float(isrcJ_Shdo_(cell_obj_%Npts + 1))/cell_obj_%Npts,&
                     &ELAPSED_TIME
-                    !&float(isrcJ_Shdo_(grid_obj%Npts + 1))/(grid_obj%Npts*shdo_obj_%Nlm)
+                    !&float(isrcJ_Shdo_(cell_obj_%Npts + 1))/(cell_obj_%Npts*shdo_obj_%Nlm)
             else
                 if (verbose_ .ge. 5) write (6, '(2X,I4,2X,F7.3,2X,E10.3,1X,I8,1X,I8,1X,F8.2,2X,F6.2," sec")')&
                     &ITER, log10(max(SOLCRIT, 1.0e-20)),&
                     &SPLITCRIT,&
-                    &grid_obj%Npts,&
-                    &grid_obj%Ncell,&
-                    &float(isrcJ_Shdo_(grid_obj%Npts + 1))/grid_obj%Npts,&
+                    &cell_obj_%Npts,&
+                    &cell_obj_%Ncell,&
+                    &float(isrcJ_Shdo_(cell_obj_%Npts + 1))/cell_obj_%Npts,&
                     &ELAPSED_TIME
-                    !&float(isrcJ_Shdo_(grid_obj%Npts + 1))/(grid_obj%Npts*shdo_obj_%Nlm)
+                    !&float(isrcJ_Shdo_(cell_obj_%Npts + 1))/(cell_obj_%Npts*shdo_obj_%Nlm)
             end if
         end if
     end do PICARD_ITER_LOOP
@@ -483,7 +476,7 @@ subroutine shd_solv__accelSol(&
 end subroutine shd_solv__accelSol
 
 subroutine shd_solv__truncRad(doHighOrder, doFixSH, SHACC,&
-    &grid_obj, iradI_Shdo, radI_Shdo)
+    &iradI_Shdo, radI_Shdo)
 
     ! Computes the next radiance spherical harmonic series truncation
     ! to use based on the current source function truncation and the
@@ -497,8 +490,6 @@ subroutine shd_solv__truncRad(doHighOrder, doFixSH, SHACC,&
     ! L=1 so that the mean radiance and net flux terms may be computed,
     ! unless doHighOrder is on, in which case all terms are kept.
 
-    type(shd_type_cell), intent(in)    :: grid_obj
-
     integer(I__), intent(inout) :: iradI_Shdo(*)
     real(R__),    intent(in)    ::  radI_Shdo(shdo_obj_%Nstokes, *)
 
@@ -510,7 +501,7 @@ subroutine shd_solv__truncRad(doHighOrder, doFixSH, SHACC,&
     logical NOTEND
     real RADMIN
 
-    MAXIR = shdo_obj_%maxNptsSH + grid_obj%maxNpts
+    MAXIR = shdo_obj_%maxNptsSH + cell_obj_%maxNpts
 
     if (doFixSH) goto 190
 
@@ -532,7 +523,7 @@ subroutine shd_solv__truncRad(doHighOrder, doFixSH, SHACC,&
     IRO = 0
     IR = 0
     iradI_Shdo(1) = 0
-    do I = 1, grid_obj%Npts
+    do I = 1, cell_obj_%Npts
         ! Find how many terms wanted for the radiance based on the
         !   radiance threshold (RADMIN) (use the mean radiance as an
         !   upper limit to the SH term radiance).
@@ -576,7 +567,7 @@ subroutine shd_solv__truncRad(doHighOrder, doFixSH, SHACC,&
             goto 190
         end if
     end do
-    iradI_Shdo(grid_obj%Npts + 2) = IR
+    iradI_Shdo(cell_obj_%Npts + 2) = IR
     deallocate(LOFJ)
     return
 
@@ -586,7 +577,7 @@ subroutine shd_solv__truncRad(doHighOrder, doFixSH, SHACC,&
 
     iradI_Shdo(1) = 0
     IR = 0
-    do I = 1, grid_obj%Npts
+    do I = 1, cell_obj_%Npts
         NR = max(4, isrcJ_Shdo_(I + 1) - isrcJ_Shdo_(I))
         if (doHighOrder) then
             if (shdo_obj_%maxNl .le. shdo_obj_%maxNm) then
@@ -604,7 +595,7 @@ subroutine shd_solv__truncRad(doHighOrder, doFixSH, SHACC,&
         end if
         iradI_Shdo(I + 1) = IR
     end do
-    iradI_Shdo(grid_obj%Npts + 2) = IR
+    iradI_Shdo(cell_obj_%Npts + 2) = IR
 
     return
 

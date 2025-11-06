@@ -47,9 +47,8 @@ module shd_rad
                              isPol_, isPol4_, &
                              isSolar_, isThermal_
 
-    use globals_type,  only: shd_type_cell
-
     use globals_obj,   only: rtm_obj_, xyz_Rtm_, ext_Rtm_, leg_Rtm_, &
+                            cell_obj_, &
                             shdo_obj_, isrcJ_Shdo_, srcJ_Shdo_, &
                              src_obj_, &
                              prp_obj_, ext_Prp_, ssa_Prp_, leg_Prp_, ipha_Prp_, &
@@ -87,14 +86,11 @@ contains
 subroutine shd_rad__makeDirect(&
     &NPTS, DELTAM,&
     &ML, SOLARFLUX, SOLARMU, SOLARAZ,&
-    &DIRFLUX,&
-    &grid_obj)
+    &DIRFLUX)
 
     ! Makes the direct beam solar flux for the internal base grid.
     !   DIRFLUX is set to F*exp(-tau_sun).
     !   Actually calls shd_rad__computeDirect to do all the hard work.
-
-    type(shd_type_cell), intent(in) :: grid_obj
 
     integer NPTS, ML
     logical DELTAM
@@ -714,20 +710,17 @@ subroutine shd_rad__computeRad(&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &DIRFLUX, FLUXES,&
     &src1_Shdo, GRIDRAD,&
-    &OUTPARMS, IRAD, RADOUT,&
-    &grid_obj)
+    &OUTPARMS, IRAD, RADOUT)
 
     ! Computes the radiances for the specified locations and directions
-
-    type(shd_type_cell), intent(in) :: grid_obj
 
     integer IRAD
     integer MAXNBC, NTOPPTS, NBOTPTS
     integer BCPTR(MAXNBC, 2)
     logical DELTAM
     real BCRAD(shdo_obj_%Nstokes, *)
-    real DIRFLUX(grid_obj%Npts), FLUXES(2, grid_obj%Npts)
-    real src1_Shdo(shdo_obj_%Nstokes, grid_obj%Npts), GRIDRAD(shdo_obj_%Nstokes, grid_obj%Npts)
+    real DIRFLUX(cell_obj_%Npts), FLUXES(2, cell_obj_%Npts)
+    real src1_Shdo(shdo_obj_%Nstokes, cell_obj_%Npts), GRIDRAD(shdo_obj_%Nstokes, cell_obj_%Npts)
     real OUTPARMS(*), RADOUT(shdo_obj_%Nstokes, *)
     integer I, IBC, IANG, JX, JY, K, SIDE
     integer NANGOUT, NXOUT, NYOUT
@@ -819,12 +812,12 @@ subroutine shd_rad__computeRad(&
         call shd_src__computeSrcOneDir(&
             &DELTAM, MUOUT, PHIOUT,&
             &DIRFLUX, src1_Shdo,&
-            &grid_obj, isrcJ_Shdo_, srcJ_Shdo_)
+            &isrcJ_Shdo_, srcJ_Shdo_)
 
         ! Set the radiance field to -1, so we can determine valid ra
         !   Also set the source array to the extinction times the so
         !   function, so the grid interpolation is correct.
-        do I = 1, grid_obj%Npts
+        do I = 1, cell_obj_%Npts
             GRIDRAD(1, I) = -1.0
             src1_Shdo(:, I) = src1_Shdo(:, I)*ext_Rtm_(I)
         end do
@@ -862,7 +855,7 @@ subroutine shd_rad__computeRad(&
                 call shd_src__integrateSrc(shdo_obj_%Nstokes,&
                     &MUOUT, PHIOUT, GRIDRAD, src1_Shdo,&
                     &X0, Y0, Z0, XE, YE, ZE, SIDE,&
-                    &TRANSMIT, radI_Shdo, VALIDRAD, grid_obj)
+                    &TRANSMIT, radI_Shdo, VALIDRAD)
                 RADOUT(:, IRAD) = radI_Shdo(1:shdo_obj_%Nstokes)
                 X0 = X0 + OUTPARMS(2)
             end do
@@ -879,20 +872,17 @@ subroutine shd_rad__computeCamRad(&
     &DELTAM,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &DIRFLUX, FLUXES,&
-    &OUTPARMS, IVIS, VISOUT,&
-    &grid_obj)
+    &OUTPARMS, IVIS, VISOUT)
 
     !   Computes Stokes radiances (output in VISOUT) for the visualization
     !  modes: 1) camera mode, and 2) cross track scanning.
-
-    type(shd_type_cell), intent(in) :: grid_obj
 
     integer IVIS
     integer MAXNBC, NTOPPTS, NBOTPTS
     integer BCPTR(MAXNBC, 2)
     logical DELTAM
     real BCRAD(shdo_obj_%Nstokes, *)
-    real DIRFLUX(grid_obj%Npts), FLUXES(2, grid_obj%Npts)
+    real DIRFLUX(cell_obj_%Npts), FLUXES(2, cell_obj_%Npts)
     real OUTPARMS(*), VISOUT(shdo_obj_%Nstokes, *)
     integer NSCATANGLE, NSTPHASE, I, J, L, N, SIDE
     integer NL, NS, LINE, SAMP
@@ -1069,8 +1059,7 @@ subroutine shd_rad__computeCamRad(&
                 &DIRFLUX, isrcJ_Shdo_, srcJ_Shdo_, YLMSUN,&
                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                 &MU2, PHI2, X0, Y0, Z0,&
-                &XE, YE, ZE, SIDE, TRANSMIT, VISRAD, VALIDRAD,&
-                &grid_obj)
+                &XE, YE, ZE, SIDE, TRANSMIT, VISRAD, VALIDRAD)
 900         continue
             ! write (6,'(1X,2F8.4,1X,2F11.7,4(1X,F11.6))')&
             !     &X0,Y0,MURAY,PHIRAY,VISRAD(:)

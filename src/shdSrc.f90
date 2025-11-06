@@ -44,10 +44,9 @@ module shd_src
     use globals_cfg,   only: accSolv_, isOpenX_, isOpenYx_, &
                              isPol_, isPol4_, &
                              isSolar_, isThermal_
-    use globals_type,  only: shd_type_cell
 
     use globals_obj,   only: rtm_obj_, xyz_Rtm_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, leg_Rtm_, ipha_Rtm_, &
-                             i8Grid_Cell_, i6Cell_Cell_, flag_Cell_, &
+                            cell_obj_, i8Grid_Cell_, i6Cell_Cell_, flag_Cell_, &
                             shdo_obj_, &
                              src_obj_, &
                              prp_obj_, &
@@ -322,7 +321,7 @@ subroutine shd_src__computeSrcOneDir(&
     &DELTAM, MU, PHI,&
     &DIRFLUX,&
     &src1_Shdo,&
-    &grid_obj, isrcJ_Shdo, srcJ_Shdo)
+    &isrcJ_Shdo, srcJ_Shdo)
 
     ! Computes the source function (src1_Shdo) in the direction (MU,PHI)
     ! for the whole domain (rtm_obj_%Nx,rtm_obj_%Nz).  The spherical harmonic source function
@@ -331,15 +330,13 @@ subroutine shd_src__computeSrcOneDir(&
     ! procedure, replacing delta-M single scattering with single scattering
     ! for unscaled untruncated phase function.
 
-    type(shd_type_cell), intent(in) :: grid_obj
-
     integer(I__), intent(inout) :: isrcJ_Shdo(*)
     real(R__),    intent(inout) ::  srcJ_Shdo(shdo_obj_%Nstokes, *)
 
     logical DELTAM
     real MU, PHI
-    real DIRFLUX(grid_obj%Npts)
-    real src1_Shdo(shdo_obj_%Nstokes, grid_obj%Npts)
+    real DIRFLUX(cell_obj_%Npts)
+    real src1_Shdo(shdo_obj_%Nstokes, cell_obj_%Npts)
     integer I, J, JT, K, L, M, N, IPH, IS, NS, ME, MS
     real DA, F, A, A1, B1, SECMU0, COSSCAT
     real, allocatable :: YLMDIR(:, :), YLMSUN(:, :)
@@ -410,7 +407,7 @@ subroutine shd_src__computeSrcOneDir(&
 
     ! Loop over all the grid points, computing the source function
     !   at the viewing angle from the spherical harmonic source func
-    do I = 1, grid_obj%Npts
+    do I = 1, cell_obj_%Npts
         IS = isrcJ_Shdo(I)
         NS = isrcJ_Shdo(I + 1) - IS
         ! Sum over the real generalized spherical harmonic series
@@ -499,7 +496,6 @@ subroutine shd_src__computeSrc(&
     DIRFLUX, SHACC, &
     isrcD_Shdo, srcD_Shdo, &
     FIRST, ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM, &
-    grid_obj, &
     iradI_Shdo, radI_Shdo, &
     isrcJ_Shdo, srcJ_Shdo)
 
@@ -526,8 +522,6 @@ subroutine shd_src__computeSrc(&
     !   of the solution criterion (SOLCRIT, the RMS difference in succesive
     !   source function fields normalized by the RMS of the field).
 
-    type(shd_type_cell), intent(in) :: grid_obj
-
     integer(I__), intent(inout) :: iradI_Shdo(*)
     real(R__),    intent(inout) ::  radI_Shdo(shdo_obj_%Nstokes, *)
 
@@ -535,11 +529,11 @@ subroutine shd_src__computeSrc(&
     real(R__),    intent(inout) ::  srcJ_Shdo(shdo_obj_%Nstokes, *)
 
 
-    integer isrcD_Shdo(grid_obj%Npts + 1)
+    integer isrcD_Shdo(cell_obj_%Npts + 1)
     logical FIXSH, FIRST, ACCELFLAG
     real SHACC, YLMSUN(prp_obj_%NlegSet, shdo_obj_%Nlm)
     real DELJDOT, DELJOLD, DELJNEW, JNORM
-    real DIRFLUX(grid_obj%Npts)
+    real DIRFLUX(cell_obj_%Npts)
     real srcD_Shdo(shdo_obj_%Nstokes, *)
     integer IS, ISO, IR, I, IPH, J, JS, K, L, LS, M, MS, ME, NS, NR
     integer, allocatable :: LOFJ(:)
@@ -571,7 +565,7 @@ subroutine shd_src__computeSrc(&
         DELJOLD = 0.0
         DELJNEW = 0.0
         JNORM = 0.0
-        do I = 1, grid_obj%Npts
+        do I = 1, cell_obj_%Npts
             ! Compute the temporary source function for this point
             if (prp_obj_%Npha .gt. 0) then
                 IPH = ipha_Rtm_(I)
@@ -628,7 +622,7 @@ subroutine shd_src__computeSrc(&
 
     ! Compute and store the new source function difference vector
     if (.not. FIRST .and. ACCELFLAG) then
-        do I = 1, grid_obj%Npts
+        do I = 1, cell_obj_%Npts
             ! Compute the temporary source function for this point
             if (prp_obj_%Npha .gt. 0) then
                 IPH = ipha_Rtm_(I)
@@ -659,12 +653,12 @@ subroutine shd_src__computeSrc(&
                 srcD_Shdo(:, IS + J) = srcT_Shdo(:, J) - srcJ_Shdo(:, IS + J)
             end do
         end do
-        isrcD_Shdo(grid_obj%Npts + 1) = isrcJ_Shdo(grid_obj%Npts + 1)
+        isrcD_Shdo(cell_obj_%Npts + 1) = isrcJ_Shdo(cell_obj_%Npts + 1)
     end if
 
     ! Compute the source function in the temporary array.
     IS = 0
-    do I = 1, grid_obj%Npts
+    do I = 1, cell_obj_%Npts
         if (prp_obj_%Npha .gt. 0) then
             IPH = ipha_Rtm_(I)
         else
@@ -729,7 +723,7 @@ subroutine shd_src__computeSrc(&
         end do
         IS = IS + NS
     end do
-    isrcJ_Shdo(grid_obj%Npts + 1) = IS
+    isrcJ_Shdo(cell_obj_%Npts + 1) = IS
 
     deallocate(LOFJ, srcT_Shdo)
 
@@ -746,8 +740,7 @@ subroutine shd_src__integrateSrcOneRay(&
     &DIRFLUX, isrcJ_Shdo, srcJ_Shdo, YLMSUN,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &MU2, PHI2, X0, Y0, Z0,&
-    &XE, YE, ZE, SIDE, TRANSMIT, radI_Shdo, VALIDRAD,&
-    &grid_obj)
+    &XE, YE, ZE, SIDE, TRANSMIT, radI_Shdo, VALIDRAD)
 
     !   Integrates the source function through the extinction field
     ! (ext_Rtm_) backward from the outgoing direction (MU2,PHI2) to find the
@@ -757,20 +750,18 @@ subroutine shd_src__integrateSrcOneRay(&
     ! ray location (XE,YE,ZE) and side of the domain (1=-X,2=+X,3=-Y,4=+Y,
     ! 5=-Z,6=+Z).
 
-    type(shd_type_cell), intent(in) :: grid_obj
-
     integer NSTOKES, NSTPHASE, NSCATANGLE
     integer SIDE
     integer ML, MM, NLM
     integer MAXNBC, NTOPPTS, NBOTPTS
     integer NMU, NPHI0MAX, NPHI0(NMU)
-    integer isrcJ_Shdo(grid_obj%Npts + 1)
+    integer isrcJ_Shdo(cell_obj_%Npts + 1)
     integer BCPTR(MAXNBC, 2)
     logical DELTAM, VALIDRAD
     real WTDO(NMU, NPHI0MAX), MU(NMU), PHI(NMU, NPHI0MAX)
     real WAVELEN, SOLARMU, SOLARAZ
     real BCRAD(*)
-    real DIRFLUX(grid_obj%Npts), srcJ_Shdo(NSTOKES, *)
+    real DIRFLUX(cell_obj_%Npts), srcJ_Shdo(NSTOKES, *)
     real YLMSUN(prp_obj_%NlegSet, NLM)
     real PHASETAB(NSTPHASE, prp_obj_%Npha, NSCATANGLE)
     real(RD_) :: MU2, PHI2, X0, Y0, Z0, XE, YE, ZE
@@ -894,7 +885,7 @@ subroutine shd_src__integrateSrcOneRay(&
     YE = Y0
     ZE = Z0
     ! ZE = MAX(MIN(Z0,DBLE(rtm_obj_%z(rtm_obj_%Nz))),DBLE(rtm_obj_%z(1)))
-    call shd_util__findCell(XE, YE, ZE, icell, grid_obj)
+    call shd_util__findCell(XE, YE, ZE, icell)
     ! print '(A,5(1X,F8.5),1X,I6)',&
     !     &'_integrateSrcOneRay:',X0,Y0,Z0,MU2,PHI2,icell
     IFACE = 0
@@ -923,7 +914,7 @@ subroutine shd_src__integrateSrcOneRay(&
         if (isPol_) then
             call shd_src__computeSrcOneCell(icell, i8Grid_Cell_,&
                 &NSTOKES, ML, MM, NLM,&
-                &grid_obj%Npts, DELTAM, SRCTYPE, SOLARMU,&
+                &cell_obj_%Npts, DELTAM, SRCTYPE, SOLARMU,&
                 &DIRFLUX,&
                 &isrcJ_Shdo, srcJ_Shdo, YLMDIR, YLMSUN, SUNDIRLEG, SINGSCAT,&
                 &DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
@@ -931,7 +922,7 @@ subroutine shd_src__integrateSrcOneRay(&
         else
             call shd_src__computeSrcOneCell_(icell, i8Grid_Cell_,&
                 &ML, MM, NLM,&
-                &grid_obj%Npts, DELTAM, SRCTYPE, SOLARMU,&
+                &cell_obj_%Npts, DELTAM, SRCTYPE, SOLARMU,&
                 &DIRFLUX,&
                 &isrcJ_Shdo, srcJ_Shdo, YLMDIR, YLMSUN, SUNDIRLEG, SINGSCAT,&
                 &DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
@@ -1078,7 +1069,7 @@ subroutine shd_src__integrateSrcOneRay(&
         INEXTCELL = i6Cell_Cell_(IFACE, icell)
         if (INEXTCELL .lt. 0) then
             call shd_util__findNextCell(XN, YN, ZN, IFACE, JFACE, icell,&
-                &INEXTCELL, grid_obj)
+                &INEXTCELL)
         end if
         ! If going to same or larger face then use previous face
         if ((i6Cell_Cell_(IFACE, icell) .ge. 0) .and. (.not. OPENBCFACE)) then
@@ -1142,8 +1133,7 @@ end subroutine shd_src__integrateSrcOneRay
 subroutine shd_src__integrateSrc(NSTOKES,&
     &MU, PHI, GRIDRAD, srcJ_Shdo,&
     &X0, Y0, Z0, XE, YE, ZE, SIDE,&
-    &TRANSMIT, radI_Shdo, VALIDRAD,&
-    &grid_obj)
+    &TRANSMIT, radI_Shdo, VALIDRAD)
 
     ! Integrates the source function (srcJ_Shdo) through the extinction
     ! field (ext_Rtm_) backward in the direction opposite to (MU,PHI)
@@ -1154,13 +1144,11 @@ subroutine shd_src__integrateSrc(NSTOKES,&
     ! ray location (XE,YE,ZE) and side of the domain (1=-X,2=+X,3=-Y,4=+Y,
     ! 5=-Z,6=+Z).
 
-    type(shd_type_cell), intent(in) :: grid_obj
-
     integer NSTOKES, SIDE
     logical VALIDRAD
     real MU, PHI
     real(RD_) :: X0, Y0, Z0, XE, YE, ZE, TRANSMIT, radI_Shdo(NSTOKES)
-    real srcJ_Shdo(NSTOKES, grid_obj%Npts), GRIDRAD(NSTOKES, grid_obj%Npts)
+    real srcJ_Shdo(NSTOKES, cell_obj_%Npts), GRIDRAD(NSTOKES, cell_obj_%Npts)
     integer BITX, BITY, BITZ, IOCT, icell, INEXTCELL, IFACE
     integer I1, I2, I3, I4, IOPP, NTAU, IT, K
     logical IPINX, IPINY, OPENBCFACE
@@ -1225,13 +1213,13 @@ subroutine shd_src__integrateSrc(NSTOKES,&
     XE = X0
     YE = Y0
     ZE = Z0
-    call shd_util__findCell(XE, YE, ZE, icell, grid_obj)
+    call shd_util__findCell(XE, YE, ZE, icell)
     ! print '(A,5(1X,F8.5),1X,I6)', &
     !     &'_integrateSrc:', X0, Y0, Z0, MU, PHI, icell
     call shd_util__interpTriLin(icell,&
-        &XE, YE, ZE, 1, ext_Rtm_, 1, 1, EXT1, grid_obj)
+        &XE, YE, ZE, 1, ext_Rtm_, 1, 1, EXT1)
     call shd_util__interpTriLin(icell,&
-        &XE, YE, ZE, NSTOKES, srcJ_Shdo, 1, NSTOKES, SRCEXT1, grid_obj)
+        &XE, YE, ZE, NSTOKES, srcJ_Shdo, 1, NSTOKES, SRCEXT1)
     SRCEXT1(1) = max(0.0, SRCEXT1(1))
 
     ! Loop until finding a face with known radiances
@@ -1285,7 +1273,7 @@ subroutine shd_src__integrateSrc(NSTOKES,&
         ! Find the optical path across the grid cell and figure how
         !   many subgrid intervals to use
         call shd_util__interpTriLin(icell,&
-            &XN, YN, ZN, 1, ext_Rtm_, 1, 1, EXTN, grid_obj)
+            &XN, YN, ZN, 1, ext_Rtm_, 1, 1, EXTN)
         TAUGRID = SO*0.5*(EXT1(1) + EXTN(1))
         NTAU = max(1, 1 + int(TAUGRID/TAUTOL))
         DELS = SO/NTAU
@@ -1308,10 +1296,10 @@ subroutine shd_src__integrateSrc(NSTOKES,&
                 EXT0(1) = EXTN(1)
             else
                 call shd_util__interpTriLin(icell,&
-                    &XI, YI, ZI, 1, ext_Rtm_, 1, 1, EXT0, grid_obj)
+                    &XI, YI, ZI, 1, ext_Rtm_, 1, 1, EXT0)
             end if
             call shd_util__interpTriLin(icell,&
-                &XI, YI, ZI, NSTOKES, srcJ_Shdo, 1, NSTOKES, SRCEXT0, grid_obj)
+                &XI, YI, ZI, NSTOKES, srcJ_Shdo, 1, NSTOKES, SRCEXT0)
             SRCEXT0(1) = max(0.0, SRCEXT0(1))
 
             ! Compute the subgrid radiance: integration of the source fun
@@ -1355,7 +1343,7 @@ subroutine shd_src__integrateSrc(NSTOKES,&
         INEXTCELL = i6Cell_Cell_(IFACE, icell)
         if (INEXTCELL .lt. 0) then
             call shd_util__findNextCell(XN, YN, ZN, IFACE, JFACE, icell,&
-                &INEXTCELL, grid_obj)
+                &INEXTCELL)
         end if
         ! Get the four grid points on the intersection face for
         !   telling if at the boundary
@@ -1394,7 +1382,7 @@ subroutine shd_src__integrateSrc(NSTOKES,&
             &GRIDRAD(1, I3) .ge. 0.0 .and. GRIDRAD(1, I4) .ge. 0.0) then
             VALIDRAD = .true.
             call shd_util__interpTriLin(icell, XI, YI, ZI,&
-                &NSTOKES, GRIDRAD, 1, NSTOKES, RAD0, grid_obj)
+                &NSTOKES, GRIDRAD, 1, NSTOKES, RAD0)
             radI_Shdo(:) = radI_Shdo(:) + TRANSMIT*RAD0(:)
         else
             icell = INEXTCELL

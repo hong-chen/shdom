@@ -53,7 +53,7 @@ module shd_mpi
                              shd_type_sen
 
     use globals_obj,   only:  rtm_obj_, xyz_Rtm_, ext_Rtm_, leg_Rtm_, &
-                              i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, flag_Cell_, &
+                             cell_obj_, i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, flag_Cell_, &
                              shdo_obj_, isrcJ_Shdo_, srcJ_Shdo_, &
                               src_obj_, &
                               prp_obj_, &
@@ -830,22 +830,22 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
     &SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV, SUMSHTERMS,&
     &ALLFLUXES, ALLFLUXDIV, ALLSHTERMS,&
     &NSH, NCELLSTOT, NPTSTOT, NSHTOT,&
-    &rtmAll_obj, grid_obj)
+    &rtmAll_obj, cell_obj)
 
     ! Gathers the base grid output data in SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV,
     ! and SUMSHTERMS from all the processors and assembles in the master
     ! processor output arrays ALLFLUXES, ALLFLUXDIV, ALLSHTERMS.  Gathers the
     ! ixyOut_ array from each processor to determine where each subdomain is.
     ! Also gathers the full base grid position arrays (rtmAll_obj%x/rtmAll_obj%y) and
-    ! sums grid_obj%Ncell,grid_obj%Npts,NSH over all processors.
+    ! sums cell_obj%Ncell,cell_obj%Npts,NSH over all processors.
 
     type(shd_type_rtm),  intent(inout) :: rtmAll_obj
-    type(shd_type_cell), intent(in)    :: grid_obj
+    type(shd_type_cell), intent(in)    :: cell_obj
 
     logical, intent(in) :: FLUX_OUT, FLUXDIV_OUT, SH_OUT
     integer, intent(in) :: NSHOUT
-    real, intent(in) :: SUMFLUXES(2, grid_obj%Npts0), SUMDIRFLUX(grid_obj%Npts0)
-    real, intent(in) :: SUMFLUXDIV(grid_obj%Npts0), SUMSHTERMS(NSHOUT, grid_obj%Npts0)
+    real, intent(in) :: SUMFLUXES(2, cell_obj%Npts0), SUMDIRFLUX(cell_obj%Npts0)
+    real, intent(in) :: SUMFLUXDIV(cell_obj%Npts0), SUMSHTERMS(NSHOUT, cell_obj%Npts0)
     real, intent(out) :: ALLFLUXES(3, rtmAll_obj%Nz, rtmAll_obj%Ny, rtmAll_obj%Nx), ALLFLUXDIV(rtmAll_obj%Nz, rtmAll_obj%Ny, rtmAll_obj%Nx)
     real, intent(out) :: ALLSHTERMS(NSHOUT, rtmAll_obj%Nz, rtmAll_obj%Ny, rtmAll_obj%Nx)
     integer, intent(in) :: NSH
@@ -868,10 +868,10 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
     if (FLUX_OUT) then
         irq = 0
         if (myProc_ .gt. 0) then
-            allocate(sendbuf(3, grid_obj%Npts0))
+            allocate(sendbuf(3, cell_obj%Npts0))
             sendbuf(1:2, :) = SUMFLUXES(:, :); sendbuf(3, :) = SUMDIRFLUX(:)
             irq = irq + 1
-            call mpi_isend(sendbuf, 3*grid_obj%Npts0, MPI_real, 0, 1, comm2D_,&
+            call mpi_isend(sendbuf, 3*cell_obj%Npts0, MPI_real, 0, 1, comm2D_,&
                 &requests(irq), ierr)
         else
             MAXN = (maxval(ixyAll(2, 1, :)) + 1)*(maxval(ixyAll(2, 2, :)) + 1)*rtmAll_obj%Nz
@@ -916,7 +916,7 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
         irq = 0
         if (myProc_ .gt. 0) then
             irq = irq + 1
-            call mpi_isend(SUMFLUXDIV, grid_obj%Npts0, MPI_real, 0, 2, comm2D_,&
+            call mpi_isend(SUMFLUXDIV, cell_obj%Npts0, MPI_real, 0, 2, comm2D_,&
                 &requests(irq), ierr)
         else
             MAXN = (maxval(ixyAll(2, 1, :)) + 1)*(maxval(ixyAll(2, 2, :)) + 1)*rtmAll_obj%Nz
@@ -958,7 +958,7 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
         irq = 0
         if (myProc_ .gt. 0) then
             irq = irq + 1
-            call mpi_isend(SUMSHTERMS, NSHOUT*grid_obj%Npts0, MPI_real, 0, 3, comm2D_,&
+            call mpi_isend(SUMSHTERMS, NSHOUT*cell_obj%Npts0, MPI_real, 0, 3, comm2D_,&
                 &requests(irq), ierr)
         else
             MAXN = (maxval(ixyAll(2, 1, :)) + 1)*(maxval(ixyAll(2, 2, :)) + 1)*rtmAll_obj%Nz
@@ -1002,8 +1002,8 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
         rtmAll_obj%y(1:rtmAll_obj%Ny) = (/(prp_obj_%yDomain*(I - 1)/rtmAll_obj%Ny, I=1, rtmAll_obj%Ny)/)
     end if
 
-    ! Get the sum of the grid_obj%Ncell, grid_obj%Npts, and NSH over the processors
-    send3int = (/grid_obj%Ncell, grid_obj%Npts, NSH/)
+    ! Get the sum of the cell_obj%Ncell, cell_obj%Npts, and NSH over the processors
+    send3int = (/cell_obj%Ncell, cell_obj%Npts, NSH/)
     call mpi_reduce(send3int, recv3int, 3, MPI_integer, MPI_sum, 0, comm2D_, ierr)
     NCELLSTOT = recv3int(1); NPTSTOT = recv3int(2); NSHTOT = recv3int(3)
 
@@ -1081,19 +1081,16 @@ end subroutine shd_mpi__findTotSplitCritMax
 subroutine shd_mpi__makeDirect(SPT,&
     &DELTAM, ML,&
     &SOLARFLUX, SOLARMU, SOLARAZ,&
-    &DIRFLUX,&
-    &grid_obj)
+    &DIRFLUX)
 
-    ! Makes the direct beam solar flux for the grid_obj%Npts gridpoints started with
+    ! Makes the direct beam solar flux for the cell_obj_%Npts gridpoints started with
     ! index SPT having X/Y/Z positions in xyz_Rtm_.
     ! DIRFLUX is set to F*exp(-tau_sun).
-
-    type(shd_type_cell), intent(in) ::  grid_obj
 
     integer, intent(in) :: SPT, ML
     logical, intent(in) :: DELTAM
     real, intent(in) :: SOLARFLUX, SOLARMU, SOLARAZ
-    real, intent(out) :: DIRFLUX(grid_obj%Npts)
+    real, intent(out) :: DIRFLUX(cell_obj_%Npts)
 
 #if HAS_MPI
     logical :: VALIDBEAM
@@ -1114,7 +1111,7 @@ subroutine shd_mpi__makeDirect(SPT,&
     type(MPI_request) :: requests(12)
     type(MPI_status) :: status(12)
 
-    MAXNBEAM = 2*grid_obj%Npts
+    MAXNBEAM = 2*cell_obj_%Npts
     allocate(BndDirRealInfo(4, MAXNBEAM, 4), BndDirIntInfo(2, MAXNBEAM, 4))
     allocate(DirAllOut(MAXNBEAM, 0:Nproc_ - 1), DirPtrOut(MAXNBEAM, 0:Nproc_ - 1))
     allocate(DirAllIn(MAXNBEAM), DirPtrIn(MAXNBEAM), Ndone(0:Nproc_ - 1))
@@ -1160,7 +1157,7 @@ subroutine shd_mpi__makeDirect(SPT,&
 
     ! Do the initial direct beam tracing starting at the base grid points
     NINVALID(:) = 0
-    do IP = SPT, grid_obj%Npts
+    do IP = SPT, cell_obj_%Npts
         DIRPATH = 0.0
         call shd_rad__computeDirect(0, xyz_Rtm_(1, IP), xyz_Rtm_(2, IP), xyz_Rtm_(3, IP),&
             &rtm_obj_%flag_bc, rtm_obj_%flag_ip, DELTAM, ML,&
@@ -1338,8 +1335,7 @@ subroutine shd_mpi__makeDirect(SPT,&
 end subroutine shd_mpi__makeDirect
 
 subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, SWEEPORD,&
-    &Nx, Ny, Nz,&
-    &grid_obj)
+    &Nx, Ny, Nz)
 
     ! Makes the pointers to and positions of the horizontal boundary grid
     ! points of the processors neighboring this one.
@@ -1353,9 +1349,7 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, SWEEPORD,&
     ! boundary of this subdomain (SIDE: 1=-X, 2=+X, 3=-Y, 4=+Y).  BxyPos_ holds
     ! the gridpoint positions (X,Y,Z) for these boundary points.
 
-    type(shd_type_cell), intent(in) :: grid_obj
-
-    integer, intent(in) :: BCFLAG, IPFLAG, SWEEPORD(grid_obj%Npts, *)
+    integer, intent(in) :: BCFLAG, IPFLAG, SWEEPORD(cell_obj_%Npts, *)
     integer, intent(in) :: Nx, Ny, Nz
 
 #if HAS_MPI
@@ -1375,8 +1369,8 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, SWEEPORD,&
 
     if (.not. (isMpi_)) return
     if (is1D_) return
-    call mpi_allreduce(grid_obj%Npts .eq. OLDNPTS, SAMEGRID, 1, MPI_logical, MPI_land, comm2D_, ierr)
-    OLDNPTS = grid_obj%Npts
+    call mpi_allreduce(cell_obj_%Npts .eq. OLDNPTS, SAMEGRID, 1, MPI_logical, MPI_land, comm2D_, ierr)
+    OLDNPTS = cell_obj_%Npts
     if (SAMEGRID) return
 
     ! IOCT=1+BITX+2*BITY+4*BITZ ; JOCT=JOCTORDER(IOCT) = (/ 1,3,5,7,2,4,6,8 /)
@@ -1406,7 +1400,7 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, SWEEPORD,&
     do JOCT = 1, NOCT
         BITZ = 1 - ibits(JOCT, 0, 1)
         N(:) = 0
-        do IORDER = 1, grid_obj%Npts
+        do IORDER = 1, cell_obj_%Npts
             IPCELL = ishft(SWEEPORD(IORDER, JOCT), -3)
             ICORNER = ibits(SWEEPORD(IORDER, JOCT), 0, 3) + 1
             IPT = i8Grid_Cell_(ICORNER, IPCELL)
@@ -1537,8 +1531,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
     &Nx, Ny, Nz,&
     &NA,&
     &MU, PHI, EXTINCT, Nstokes, SOURCE,&
-    &KANG, GRIDRAD,&
-    &grid_obj)
+    &KANG, GRIDRAD)
 
     ! Calculates the discrete ordinate boundary radiances for the KANG discrete
     ! ordinate (going in direction MU/PHI) for the grid points in the IZ slab.
@@ -1561,13 +1554,11 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
     ! the finished radiance and original grid points are exchanged with
     ! all the other processors.
 
-    type(shd_type_cell), intent(in) :: grid_obj
-
     integer, intent(in) :: BCFLAG, IPFLAG, JOCT, IZ
     integer, intent(in) :: Nstokes, Nx, Ny, Nz, NA, KANG
     real, intent(in) :: MU, PHI
-    real, intent(in) :: EXTINCT(grid_obj%Npts), SOURCE(Nstokes, NA, grid_obj%Npts)
-    real, intent(inout) :: GRIDRAD(Nstokes, grid_obj%Npts)
+    real, intent(in) :: EXTINCT(cell_obj_%Npts), SOURCE(Nstokes, NA, cell_obj_%Npts)
+    real, intent(inout) :: GRIDRAD(Nstokes, cell_obj_%Npts)
 
 #if HAS_MPI
     integer :: MAXNBND, Nbcpnts, Lupx, Lupy, Ldownx, Ldowny
@@ -1619,8 +1610,8 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
         xo = x; yo = y; zo = z
         call shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
             &EXTINCT, Nstokes, SOURCE, KANG, GRIDRAD,&
-            &MU, PHI, X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD,&
-            &grid_obj)
+            &MU, PHI, X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
+
         ! If we got a radiance then store it otherwise save
         !  the information needed to pass to other processors
         if (VALIDRAD) then
@@ -1703,8 +1694,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
                 RADIANCE(:) = BndRadRealInfo(5:4 + Nstokes, J, Ldownx)
                 call shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
                     &EXTINCT, Nstokes, SOURCE, KANG, GRIDRAD,&
-                    &MU, PHI, X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD,&
-                    &grid_obj)
+                    &MU, PHI, X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
 
                 ! If we got a radiance then store it in RadAllOut (if for another
                 !   processor) otherwise save the information needed to continue
@@ -1737,8 +1727,8 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
                 RADIANCE(:) = BndRadRealInfo(5:4 + Nstokes, J, Ldowny)
                 call shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
                     &EXTINCT, Nstokes, SOURCE, KANG, GRIDRAD,&
-                    &MU, PHI, X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD,&
-                    &grid_obj)
+                    &MU, PHI, X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
+
                 ! If we got a radiance then store it in RadAllOut (if for another
                 !   processor) otherwise save the information needed to continue
                 !   passing to neighboring processors
@@ -1811,23 +1801,20 @@ subroutine shd_mpi__computeRad(&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &DIRFLUX, FLUXES,&
     &src1_Shdo, GRIDRAD,&
-    &parms_Out, NRAD, RADOUT,&
-    &grid_obj)
+    &parms_Out, NRAD, RADOUT)
 
     ! Computes the radiances for the locations and directions specified
     ! in parms_Out, putting the results in RADOUT and increasing NRAD by
     ! the number of radiances output.  Does the radiative transfer integrations
     ! across multiple processors.
 
-    type(shd_type_cell), intent(in) :: grid_obj
-
     integer, intent(inout) :: NRAD
     integer, intent(in) :: MAXNBC, NTOPPTS, NBOTPTS
     integer, intent(in) :: BCPTR(MAXNBC, 2)
     logical, intent(in) :: DELTAM
     real, intent(in) :: BCRAD(shdo_obj_%Nstokes, *)
-    real, intent(in) :: DIRFLUX(grid_obj%Npts), FLUXES(2, grid_obj%Npts)
-    real, intent(inout) :: src1_Shdo(shdo_obj_%Nstokes, grid_obj%Npts), GRIDRAD(shdo_obj_%Nstokes, grid_obj%Npts)
+    real, intent(in) :: DIRFLUX(cell_obj_%Npts), FLUXES(2, cell_obj_%Npts)
+    real, intent(inout) :: src1_Shdo(shdo_obj_%Nstokes, cell_obj_%Npts), GRIDRAD(shdo_obj_%Nstokes, cell_obj_%Npts)
     real, intent(in) :: parms_Out(*)
     real, intent(out) :: RADOUT(shdo_obj_%Nstokes, *)
 
@@ -1957,12 +1944,12 @@ subroutine shd_mpi__computeRad(&
         call shd_src__computeSrcOneDir(&
             &DELTAM, mu_out, phi_out,&
             &DIRFLUX, src1_Shdo,&
-            &grid_obj, isrcJ_Shdo_, srcJ_Shdo_)
+            &isrcJ_Shdo_, srcJ_Shdo_)
 
         ! Set the radiance field to -1, so we can determine valid radiances
         !   Also set the source array to the extinction times the source
         !   function, so the grid interpolation is correct.
-        do I = 1, grid_obj%Npts
+        do I = 1, cell_obj_%Npts
             GRIDRAD(1, I) = -1.0
             src1_Shdo(:, I) = src1_Shdo(:, I)*ext_Rtm_(I)
         end do
@@ -2024,8 +2011,7 @@ subroutine shd_mpi__computeRad(&
                     call shd_src__integrateSrc(shdo_obj_%Nstokes,&
                         &mu_out, phi_out, GRIDRAD, src1_Shdo,&
                         &X0, Y0, Z0, XE, YE, ZE, SIDE,&
-                        &TRANSMIT, RADIANCE, VALIDRAD,&
-                        &grid_obj)
+                        &TRANSMIT, RADIANCE, VALIDRAD)
 
                     ! If we got a radiance then store it in RadSend otherwise save
                     !  the information needed to pass to other processors
@@ -2110,8 +2096,8 @@ subroutine shd_mpi__computeRad(&
                     call shd_src__integrateSrc(shdo_obj_%Nstokes,&
                         &mu_out, phi_out, GRIDRAD, src1_Shdo,&
                         &X, Y, Z, XE, YE, ZE, SIDE,&
-                        &TRANSMIT, RADIANCE, VALIDRAD,&
-                        &grid_obj)
+                        &TRANSMIT, RADIANCE, VALIDRAD)
+
                     ! If we got a radiance then store it in RadSend, otherwise
                     ! save information needed to pass to neighboring processors
                     if (VALIDRAD) then
@@ -2145,8 +2131,8 @@ subroutine shd_mpi__computeRad(&
                     call shd_src__integrateSrc(shdo_obj_%Nstokes,&
                         &mu_out, phi_out, GRIDRAD, src1_Shdo,&
                         &X, Y, Z, XE, YE, ZE, SIDE,&
-                        &TRANSMIT, RADIANCE, VALIDRAD,&
-                        &grid_obj)
+                        &TRANSMIT, RADIANCE, VALIDRAD)
+
                     ! If we got a radiance then store it in RadSend, otherwise
                     ! save information needed to pass to neighboring processors
                     if (VALIDRAD) then
@@ -2221,22 +2207,19 @@ subroutine shd_mpi__computeCamRad(&
     &DELTAM,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &DIRFLUX, FLUXES,&
-    &parms_Out, IVIS, VISOUT,&
-    &grid_obj)
+    &parms_Out, IVIS, VISOUT)
 
     ! Computes Stokes radiances (output in VISOUT) for the visualization
     !   modes: 1) camera mode,
     !          2) cross track scanning,
     !          3) user-specified sensor mode.
 
-    type(shd_type_cell), intent(in) :: grid_obj
-
     integer, intent(inout) :: IVIS
     integer, intent(in) :: MAXNBC, NTOPPTS, NBOTPTS
     integer, intent(in) :: BCPTR(MAXNBC, 2)
     logical, intent(in) :: DELTAM
     real, intent(in) :: BCRAD(shdo_obj_%Nstokes, *)
-    real, intent(in) :: DIRFLUX(grid_obj%Npts), FLUXES(2, grid_obj%Npts)
+    real, intent(in) :: DIRFLUX(cell_obj_%Npts), FLUXES(2, cell_obj_%Npts)
     real, intent(in) :: parms_Out(*)
     real, intent(out) :: VISOUT(shdo_obj_%Nstokes, *)
 
@@ -2477,8 +2460,7 @@ subroutine shd_mpi__computeCamRad(&
                     &DIRFLUX, isrcJ_Shdo_, srcJ_Shdo_, YLMSUN,&
                     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                     &MU2, PHI2, X0, Y0, Z0,&
-                    &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD,&
-                    &grid_obj)
+                    &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
 
                 ! If we got a radiance then store it in RadSend otherwise save
                 !  the information needed to pass to other processors
@@ -2560,8 +2542,7 @@ subroutine shd_mpi__computeCamRad(&
                     &DIRFLUX, isrcJ_Shdo_, srcJ_Shdo_, YLMSUN,&
                     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                     &MU2, PHI2, X, Y, Z,&
-                    &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD,&
-                    &grid_obj)
+                    &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
 
                 ! If we got a valid radiance then store it in RadSend, otherwise
                 ! save information needed to pass to neighboring processors
@@ -2716,14 +2697,14 @@ subroutine shd_mpi__calAccelSolCrit(DOACCEL, DELJDOT, DELJOLD, DELJNEW, JNORM,&
 
 end subroutine shd_mpi__calAccelSolCrit
 
-subroutine shd_mpi__end(runName, grid_obj, prpAll_obj)
+subroutine shd_mpi__end(runName, cell_obj, prpAll_obj)
 
     ! Shuts down MPI at the end, but mainly finds the number of gridpoints
     ! around each property grid point column, sends that array to the master
     ! process, and the master process write out the runName//"_load_balance.out"
     ! file.
 
-    type(shd_type_cell), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: cell_obj
     type(shd_type_prp), intent(in) :: prpAll_obj
 
     character(len=*), intent(in) :: runName
@@ -2745,7 +2726,7 @@ subroutine shd_mpi__end(runName, grid_obj, prpAll_obj)
         ! Calculate the number of grid points around each property grid column
         allocate(NUMGRID(prp_obj_%Nx, prp_obj_%Ny))
         NUMGRID(:, :) = 0
-        do I = 1, grid_obj%Npts
+        do I = 1, cell_obj%Npts
             IX = nint((xyz_Rtm_(1, I) - prp_obj_%xStart)/dx_prp) + 1
             IY = nint((xyz_Rtm_(2, I) - prp_obj_%yStart)/dy_prp) + 1
             if ((IX .le. prp_obj_%Nx) .and. (IY .le. prp_obj_%Ny)) then
@@ -3072,8 +3053,7 @@ end function shd_mpi__ran
 subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     &EXTINCT, Nstokes, SOURCE, KANG,&
     &GRIDRAD, MU, PHI,&
-    &X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD,&
-    &grid_obj)
+    &X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
 
     ! Integrates the radiative transfer equation tracing a ray starting
     ! at X,Y,Z on boundary (face) SIDE to get the radiance in direction MU,PHI.
@@ -3089,12 +3069,10 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     ! properly initialized on input).  The ending location X,Y,Z and the
     ! subdomain SIDE (1=-X,2=+X,3=-Y,4=+Y) are also returned.
 
-    type(shd_type_cell), intent(in) :: grid_obj
-
     integer, intent(in) :: BCFLAG, IPFLAG, Nx, Ny, Nz, NA
     integer, intent(in) :: Nstokes, KANG
-    real, intent(in) :: EXTINCT(grid_obj%Npts)
-    real, intent(in) :: SOURCE(Nstokes, NA, grid_obj%Npts), GRIDRAD(Nstokes, grid_obj%Npts)
+    real, intent(in) :: EXTINCT(cell_obj_%Npts)
+    real, intent(in) :: SOURCE(Nstokes, NA, cell_obj_%Npts), GRIDRAD(Nstokes, cell_obj_%Npts)
     real, intent(in) :: MU, PHI
     real, intent(inout) :: X, Y, Z
     integer, intent(inout) :: SIDE
@@ -3301,7 +3279,7 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
         INEXTCELL = i6Cell_Cell_(IFACE, ICELL)
         if (INEXTCELL .lt. 0) then
             call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL,&
-                &INEXTCELL, grid_obj)
+                &INEXTCELL)
         end if
 
         ! Get the face grid pointers

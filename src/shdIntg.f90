@@ -44,10 +44,9 @@ module shd_intg
     use globals_cfg,   only: verbose_, accSolv_, &
                              isMpi_, is1DX_, is1DYx_, is1D_, &
                              isPol_
-    use globals_type,  only: shd_type_cell
 
     use globals_obj,   only: rtm_obj_, xyz_Rtm_, ext_Rtm_, &
-                             i8Grid_Cell_, i6Cell_Cell_, flag_Cell_, &
+                             cell_obj_, i8Grid_Cell_, i6Cell_Cell_, flag_Cell_, &
                             shdo_obj_, &
                              src_obj_, &
                              prp_obj_, &
@@ -97,7 +96,7 @@ subroutine shd_intg__integratePath(&
     &CMU1, CPHI1, CMU2, CPHI2, WSAVE, FFTFLAG,&
     &DIRFLUX, FLUXES,&
     &WORK, SWEEPORD, GRIDRAD,&
-    &grid_obj, iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo)
+    &iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo)
 
     !   Performs the path integrations through the medium specified by
     ! the extinction (ext_Rtm_) and source function (srcJ_Shdo) in
@@ -123,8 +122,6 @@ subroutine shd_intg__integratePath(&
     ! downwelling radiances at all discrete ordinates for the bottom
     ! boundary points.
 
-    type(shd_type_cell), intent(in) :: grid_obj
-
     integer(I__), intent(inout) :: iradI_Shdo(*)
     real(R__),    intent(inout) ::  radI_Shdo(shdo_obj_%Nstokes, *)
 
@@ -133,13 +130,13 @@ subroutine shd_intg__integratePath(&
 
     integer MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS
     integer BCPTR(MAXNBC, 2)
-    integer SWEEPORD(grid_obj%Npts, *)
+    integer SWEEPORD(cell_obj_%Npts, *)
     logical FFTFLAG(shdo_obj_%Nmu)
     real SFC_BRDF_DO(shdo_obj_%Nstokes, shdo_obj_%Nmu/2, shdo_obj_%maxNphi0, shdo_obj_%Nstokes, shdo_obj_%Nmu/2, shdo_obj_%maxNphi0)
     real CMU1(*), CPHI1(*), CMU2(*), CPHI2(*), WSAVE(*)
     real BCRAD(shdo_obj_%Nstokes, MAXBCRAD)
-    real DIRFLUX(grid_obj%Npts), FLUXES(2, grid_obj%Npts)
-    real GRIDRAD(shdo_obj_%Nstokes, grid_obj%Npts), WORK(shdo_obj_%Nstokes, shdo_obj_%maxNphi0, grid_obj%Npts)
+    real DIRFLUX(cell_obj_%Npts), FLUXES(2, cell_obj_%Npts)
+    real GRIDRAD(shdo_obj_%Nstokes, cell_obj_%Npts), WORK(shdo_obj_%Nstokes, shdo_obj_%maxNphi0, cell_obj_%Npts)
 
     integer I, I1, K, NR, IPHI, IMU, IBC, IANG, IUPDOWN, OLDNPTS
     integer joct, ipt, ip, iorder, ipcell, icorner
@@ -155,18 +152,18 @@ subroutine shd_intg__integratePath(&
     TRANSMIN = 1.00
 
     ! Make the new grid cell/point sweeping order if need to
-    if (grid_obj%Npts .ne. OLDNPTS) then
-        call shd_grid__makeSweepOrder(SWEEPORD, GRIDRAD, grid_obj)
+    if (cell_obj_%Npts .ne. OLDNPTS) then
+        call shd_grid__makeSweepOrder(SWEEPORD, GRIDRAD)
     end if
 
     call shd_mpi__findBndryPnt(rtm_obj_%flag_bc, rtm_obj_%flag_ip, SWEEPORD,&
-        &rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz, grid_obj)
+        &rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz)
 
-    if (grid_obj%Npts .ne. OLDNPTS) then
+    if (cell_obj_%Npts .ne. OLDNPTS) then
         ! Make the pointers to the grid points on the top and bottom boundaries
         call shd_grid__findBndryPnt(shdo_obj_%Nang, MAXNBC, MAXBCRAD, &
             &rtm_obj_%z(1), rtm_obj_%z(rtm_obj_%Nz),&
-            &NTOPPTS, NBOTPTS, BCPTR, grid_obj)
+            &NTOPPTS, NBOTPTS, BCPTR)
         if (sfc_obj_%type(1:1) .eq. 'V') then
             ! If this is a variable surface then bilinearly interpolate
             !   the surface temperature and reflection parameters to the
@@ -181,14 +178,14 @@ subroutine shd_intg__integratePath(&
         &src_obj_%unit, NTOPPTS, shdo_obj_%Nstokes, BCRAD(1, 1))
 
     ! Zero the flux arrays and set temporary radiance to -1 for not valid
-    do I = 1, grid_obj%Npts
+    do I = 1, cell_obj_%Npts
         FLUXES(1, I) = 0.0
         FLUXES(2, I) = 0.0
         GRIDRAD(1, I) = -1.0
     end do
 
     ! Zero the output spherical harmonic radiance
-    NR = iradI_Shdo(grid_obj%Npts + 1)
+    NR = iradI_Shdo(cell_obj_%Npts + 1)
     do I = 1, NR
         radI_Shdo(:, I) = 0.0
     end do
@@ -214,19 +211,19 @@ subroutine shd_intg__integratePath(&
         end if
 
         if (isPol_) then
-            call shd_shdo__transSHtoDO(grid_obj%Npts, shdo_obj_%Nstokes, prp_obj_%NlegSet, shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
+            call shd_shdo__transSHtoDO(cell_obj_%Npts, shdo_obj_%Nstokes, prp_obj_%NlegSet, shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
                 &shdo_obj_%Nmu, shdo_obj_%maxNphi0, shdo_obj_%Nphi0(IMU),&
                 &IMU, FFTFLAG, CMU1, CPHI1, WSAVE,&
                 &isrcJ_Shdo, srcJ_Shdo, WORK)
         else
-            call shd_shdo__transSHtoDO_(grid_obj%Npts, shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
+            call shd_shdo__transSHtoDO_(cell_obj_%Npts, shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
                 &shdo_obj_%Nmu, shdo_obj_%maxNphi0, shdo_obj_%Nphi0(IMU),&
                 &IMU, FFTFLAG, CMU1, CPHI1, WSAVE,&
                 &isrcJ_Shdo, srcJ_Shdo, WORK)
         end if
 
         ! Enforce the discrete ordinate I source function to be non-negative
-        do I = 1, grid_obj%Npts
+        do I = 1, cell_obj_%Npts
             do IPHI = 1, shdo_obj_%Nphi0(IMU)
                 WORK(1, IPHI, I) = max(0.0, WORK(1, IPHI, I))
             end do
@@ -282,13 +279,13 @@ subroutine shd_intg__integratePath(&
 
                 call shd_intg__backIntegrate1D(rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz, shdo_obj_%maxNphi0,&
                     &SWEEPORD, shdo_obj_%mu(IMU), shdo_obj_%phi(IMU, IPHI), TRANSMIN,&
-                    &ext_Rtm_, shdo_obj_%Nstokes, WORK, IPHI, GRIDRAD, grid_obj)
+                    &ext_Rtm_, shdo_obj_%Nstokes, WORK, IPHI, GRIDRAD)
 
             else if (is1DYx_ .and. (.not. isMpi_)) then
 
                 call shd_intg__backIntegrate2D(rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz, shdo_obj_%maxNphi0,&
                     &SWEEPORD, shdo_obj_%mu(IMU), shdo_obj_%phi(IMU, IPHI), TRANSMIN,&
-                    &ext_Rtm_, shdo_obj_%Nstokes, WORK, IPHI, GRIDRAD, grid_obj)
+                    &ext_Rtm_, shdo_obj_%Nstokes, WORK, IPHI, GRIDRAD)
 
             else
                 if (isPol_) then
@@ -296,21 +293,21 @@ subroutine shd_intg__integratePath(&
                     call shd_intg__backIntegrate3D(rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz, shdo_obj_%maxNphi0,&
                         &SWEEPORD,&
                         &shdo_obj_%mu(IMU), shdo_obj_%phi(IMU, IPHI), TRANSMIN, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
-                        &ext_Rtm_, shdo_obj_%Nstokes, WORK, IPHI, GRIDRAD, grid_obj)
+                        &ext_Rtm_, shdo_obj_%Nstokes, WORK, IPHI, GRIDRAD)
 
                 else
 
                     call shd_intg__backIntegrate3D_(rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz, shdo_obj_%maxNphi0,&
                         &SWEEPORD,&
                         &shdo_obj_%mu(IMU), shdo_obj_%phi(IMU, IPHI), TRANSMIN, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
-                        &ext_Rtm_, WORK, IPHI, GRIDRAD, grid_obj)
+                        &ext_Rtm_, WORK, IPHI, GRIDRAD)
 
                 end if
             end if
 
             ! Transfer the radiance for the (IMU,IPHI) discrete ordinate from
             !   GRIDRAD to the work array.
-            do I = 1, grid_obj%Npts
+            do I = 1, cell_obj_%Npts
                 if (GRIDRAD(1, I) .lt. -accSolv_) then
                     if (verbose_ .ge. 4) write (6, *) 'Warning [_integratePath]: Grid point has no value',&
                         &I, shdo_obj_%mu(IMU), shdo_obj_%phi(IMU, IPHI), GRIDRAD(1, I), rtm_obj_%x(1), rtm_obj_%y(1),&
@@ -325,7 +322,7 @@ subroutine shd_intg__integratePath(&
 
             ! Do the sum for the hemispheric fluxes for this angle
             A = abs(shdo_obj_%mu(IMU))*shdo_obj_%wgt(IMU, IPHI)
-            do I = 1, grid_obj%Npts
+            do I = 1, cell_obj_%Npts
                 FLUXES(IUPDOWN, I) = FLUXES(IUPDOWN, I) + A*WORK(1, IPHI, I)
             end do
 
@@ -344,12 +341,12 @@ subroutine shd_intg__integratePath(&
 
         ! Transform the radiance to spherical harmonics for this zenith angle
         if (isPol_) then
-            call shd_shdo__transDOtoSH(grid_obj%Npts, shdo_obj_%Nstokes, prp_obj_%NlegSet, shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
+            call shd_shdo__transDOtoSH(cell_obj_%Npts, shdo_obj_%Nstokes, prp_obj_%NlegSet, shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
                 &shdo_obj_%Nmu, shdo_obj_%maxNphi0, shdo_obj_%Nphi0(IMU),&
                 &IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
                 &iradI_Shdo, WORK, radI_Shdo)
         else
-            call shd_shdo__transDOtoSH_(grid_obj%Npts, shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
+            call shd_shdo__transDOtoSH_(cell_obj_%Npts, shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
                 &shdo_obj_%Nmu, shdo_obj_%maxNphi0, shdo_obj_%Nphi0(IMU),&
                 &IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
                 &iradI_Shdo, WORK, radI_Shdo)
@@ -357,7 +354,7 @@ subroutine shd_intg__integratePath(&
 
     end do DO_MU_LOOP
 
-    OLDNPTS = grid_obj%Npts
+    OLDNPTS = cell_obj_%Npts
 
     return
 
@@ -367,8 +364,7 @@ subroutine shd_intg__backIntegrate3D(&
     &NX, NY, NZ, NA,&
     &SWEEPORD,&
     &MU, PHI, TRANSMIN, BCFLAG, IPFLAG,&
-    &EXTINCT, NSTOKES, SOURCE, KANG, GRIDRAD,&
-    &grid_obj)
+    &EXTINCT, NSTOKES, SOURCE, KANG, GRIDRAD)
 
     !   Sweeps through the spatial grid computing radiance vectors for the
     ! discrete ordinate direction (MU,PHI) by integrating the source
@@ -382,14 +378,12 @@ subroutine shd_intg__backIntegrate3D(&
     ! at the end of the ray path is interpolated from the known grid point
     ! radiances on the face.  The resulting radiances are put in GRIDRAD.
 
-    type(shd_type_cell), intent(in) :: grid_obj
-
     integer NX, NY, NZ, NA, NSTOKES, KANG
     integer BCFLAG, IPFLAG
-    integer SWEEPORD(grid_obj%Npts, *)
+    integer SWEEPORD(cell_obj_%Npts, *)
     real MU, PHI, TRANSMIN
-    real EXTINCT(grid_obj%Npts), SOURCE(NSTOKES, NA, grid_obj%Npts)
-    real GRIDRAD(NSTOKES, grid_obj%Npts)
+    real EXTINCT(cell_obj_%Npts), SOURCE(NSTOKES, NA, cell_obj_%Npts)
+    real GRIDRAD(NSTOKES, cell_obj_%Npts)
     integer BITX, BITY, BITZ, IOCT, JOCT
     integer IPCELL, ICELL, INEXTCELL, IPT, IFACE
     integer I1, I2, I3, I4, IOPP, JFACE, KFACE, IC, IZ
@@ -458,7 +452,7 @@ subroutine shd_intg__backIntegrate3D(&
 
     IZ = (NZ - 1)*(1 - BITZ) + 1
     ! Sweep through all the grid points
-    do IORDER = 1, grid_obj%Npts
+    do IORDER = 1, cell_obj_%Npts
         IPCELL = ishft(SWEEPORD(IORDER, JOCT), -3)
         ICORNER = ibits(SWEEPORD(IORDER, JOCT), 0, 3) + 1
         IPT = i8Grid_Cell_(ICORNER, IPCELL)
@@ -473,7 +467,7 @@ subroutine shd_intg__backIntegrate3D(&
                     &NX, NY, NZ,&
                     &NA,&
                     &MU, PHI, EXTINCT, NSTOKES, SOURCE,&
-                    &KANG, GRIDRAD, grid_obj)
+                    &KANG, GRIDRAD)
             end if
         end if
 
@@ -544,7 +538,7 @@ subroutine shd_intg__backIntegrate3D(&
                 INEXTCELL = i6Cell_Cell_(IFACE, ICELL)
                 if (INEXTCELL .lt. 0) then
                     call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL,&
-                        &INEXTCELL, grid_obj)
+                        &INEXTCELL)
                 end if
 
                 ! Get the face grid pointers
@@ -706,8 +700,7 @@ subroutine shd_intg__backIntegrate3D_(&
     &NX, NY, NZ, NA,&
     &SWEEPORD,&
     &MU, PHI, TRANSMIN, BCFLAG, IPFLAG,&
-    &EXTINCT, SOURCE, KANG, GRIDRAD,&
-    &grid_obj)
+    &EXTINCT, SOURCE, KANG, GRIDRAD)
 
     ! Description:
     !   Sweeps through the spatial grid computing radiances for the
@@ -725,15 +718,15 @@ subroutine shd_intg__backIntegrate3D_(&
     ! Input:
     !   NX, NY, NZ: integer, base grid size in X, Y and Z
     !   NA        : integer, total number of angles (MU and PHI)
-    !   grid_obj%Npts : integer, total number of grid points
-    !   grid_obj%Ncell : integer, total number of cells
-    !   i8Grid_Cell_(8,grid_obj%Ncell) : integer array, pointer to 8 grid points belonging to a cell.
+    !   cell_obj_%Npts : integer, total number of grid points
+    !   cell_obj_%Ncell : integer, total number of cells
+    !   i8Grid_Cell_(8,cell_obj_%Ncell) : integer array, pointer to 8 grid points belonging to a cell.
     !                       Order of pointers is based on binary digits Z-Y-X:
     !                       IOCT = 1 + BITX + 2*BITY + 4*BITZ, where
     !                       BITc is 0 for negative side and 1 for positive side.
     !                       1: (-X, -Y, -Z), 2: (+X, -Y, -Z), 3: (-X, +Y, -Z), 4: (+X, +Y, -Z)
     !                       5: (-X, -Y, +Z), 6: (+X, -Y, +Z), 7: (-X, +Y, +Z), 8: (+X, +Y, +Z)
-    !   i6Cell_Cell_(6,grid_obj%Ncell): integer array, pointer to 6 neighboring cells of a cell.
+    !   i6Cell_Cell_(6,cell_obj_%Ncell): integer array, pointer to 6 neighboring cells of a cell.
     !                       Order of pointers are 1:-X, 2:+X, 3:-Y, 4:+Y, 5:-Z, 6:+Z.
     !                       Is 0 if there is no neighbor cell (boundary).
     !                       Is positive if there is just one cell across face
@@ -742,34 +735,32 @@ subroutine shd_intg__backIntegrate3D_(&
     !                       the face of current cell.  In this case the
     !                       cell pointed to is the parent cell that has a
     !                       has same or larger face adjoining current cell.
-    !   i2Tree_Cell_(2,grid_obj%Ncell) : integer array, pointer to parent and children cells in tree structure.
+    !   i2Tree_Cell_(2,cell_obj_%Ncell) : integer array, pointer to parent and children cells in tree structure.
     !                       First is pointer to parent cell, 0 for a base cell.
     !                       Second is pointer to first of the two children cells.
     !                       This pointer is 0 if there are no children cells.
     !                       The children cells are in successive order, with
     !                       the negative side first. See flag_Cell_ for direction
     !                       of division of split.
-    !   flag_Cell_(grid_obj%Ncell) : integer array, a collection of binary flags for the cells:
+    !   flag_Cell_(cell_obj_%Ncell) : integer array, a collection of binary flags for the cells:
     !                       bit  For bit set
     !                       0:  Do independent pixel for X
     !                       1:  Do independent pixel for Y
     !                       2,3: Direction cell is split (0=no split, 1=X, 2=Y, 3=Z)
-    !   xyz_Rtm_(3,grid_obj%Npts)    : real array, X,Y,Z coordinate values of grid point locations
+    !   xyz_Rtm_(3,cell_obj_%Npts)    : real array, X,Y,Z coordinate values of grid point locations
     !   rtm_obj_%x, rtm_obj_%y, rtm_obj_%z: real array, grid locations for each dimension.
     !                        To facilitate the periodic horizontal boundaries,
     !                        there are NX+1 values in rtm_obj_%x, NY+1 in rtm_obj_%y,
     !                        NZ values in rtm_obj_%z. Currently the grid locations
     !                        are evenly spaced in X and Y.
-    !   SWEEPORD(grid_obj%Npts,*)   : integer array, grid point sweeping order
-
-    type(shd_type_cell), intent(in) :: grid_obj
+    !   SWEEPORD(cell_obj_%Npts,*)   : integer array, grid point sweeping order
 
     integer(kind=I__), intent(in) :: NX, NY, NZ, NA, KANG, BCFLAG, IPFLAG
-    integer(kind=I__), intent(in) :: SWEEPORD(grid_obj%Npts, *)
+    integer(kind=I__), intent(in) :: SWEEPORD(cell_obj_%Npts, *)
     real(kind=R__)   , intent(in) :: MU, PHI, TRANSMIN
-    real(kind=R__)   , intent(in) :: EXTINCT(grid_obj%Npts), SOURCE(NA, grid_obj%Npts)
+    real(kind=R__)   , intent(in) :: EXTINCT(cell_obj_%Npts), SOURCE(NA, cell_obj_%Npts)
 
-    real   (kind=R__), intent(inout) :: GRIDRAD(grid_obj%Npts)
+    real   (kind=R__), intent(inout) :: GRIDRAD(cell_obj_%Npts)
 
     integer(kind=I__) :: BITX, BITY, BITZ, IOCT, JOCT
     integer(kind=I__) :: IPCELL, ICELL, INEXTCELL, IPT, IFACE
@@ -859,7 +850,7 @@ subroutine shd_intg__backIntegrate3D_(&
     IZ = (NZ - 1)*(1 - BITZ) + 1
 
     ! Sweep through all the grid points
-    do IORDER = 1, grid_obj%Npts
+    do IORDER = 1, cell_obj_%Npts
 
         IPCELL  = ishft(SWEEPORD(IORDER, JOCT), -3)
         ICORNER = ibits(SWEEPORD(IORDER, JOCT), 0, 3) + 1
@@ -877,7 +868,7 @@ subroutine shd_intg__backIntegrate3D_(&
                     &NX, NY, NZ,&
                     &NA,&
                     &MU, PHI, EXTINCT, 1, SOURCE,&
-                    &KANG, GRIDRAD, grid_obj)
+                    &KANG, GRIDRAD)
             end if
         end if
         !╰────────────────────────────────────────────────╯!
@@ -960,7 +951,7 @@ subroutine shd_intg__backIntegrate3D_(&
                 INEXTCELL = i6Cell_Cell_(IFACE, ICELL)
                 if (INEXTCELL .lt. 0) then
                     call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL,&
-                        &INEXTCELL, grid_obj)
+                        &INEXTCELL)
                 end if
 
                 ! Get the face grid pointers
@@ -1133,8 +1124,7 @@ end subroutine shd_intg__backIntegrate3D_
 subroutine shd_intg__backIntegrate2D(&
     &NX, NY, NZ, NA,&
     &SWEEPORD, MU, PHI, TRANSMIN,&
-    &EXTINCT, NSTOKES, SOURCE, KANG, GRIDRAD,&
-    &grid_obj)
+    &EXTINCT, NSTOKES, SOURCE, KANG, GRIDRAD)
 
     !   Sweeps through the spatial grid computing radiances for the
     ! discrete ordinate direction (MU,PHI) by integrating the source
@@ -1147,12 +1137,11 @@ subroutine shd_intg__backIntegrate2D(&
     ! ad the end of the ray path is interpolated from the known grid point
     ! radiances on the face.  The resulting radiances are put in GRIDRAD.
 
-    type(shd_type_cell), intent(in) :: grid_obj
     integer NX, NY, NZ, NA, KANG, NSTOKES
-    integer SWEEPORD(grid_obj%Npts, *)
+    integer SWEEPORD(cell_obj_%Npts, *)
     real MU, PHI, TRANSMIN
-    real EXTINCT(grid_obj%Npts), SOURCE(NSTOKES, NA, grid_obj%Npts)
-    real GRIDRAD(NSTOKES, grid_obj%Npts)
+    real EXTINCT(cell_obj_%Npts), SOURCE(NSTOKES, NA, cell_obj_%Npts)
+    real GRIDRAD(NSTOKES, cell_obj_%Npts)
     integer BITX, BITZ, IOCT, JOCT
     integer IPCELL, ICELL, INEXTCELL, IPT, IFACE
     integer I1, I2, IOPP, JFACE, KFACE, IC, IZ
@@ -1204,7 +1193,7 @@ subroutine shd_intg__backIntegrate2D(&
     JOCT = JOCTORDER(IOCT)
 
     ! Sweep through all the grid points
-    do IORDER = 1, grid_obj%Npts
+    do IORDER = 1, cell_obj_%Npts
         IPCELL = ishft(SWEEPORD(IORDER, JOCT), -3)
         ICORNER = ibits(SWEEPORD(IORDER, JOCT), 0, 3) + 1
         IPT = i8Grid_Cell_(ICORNER, IPCELL)
@@ -1264,7 +1253,7 @@ subroutine shd_intg__backIntegrate2D(&
                 INEXTCELL = i6Cell_Cell_(IFACE, ICELL)
                 if (INEXTCELL .lt. 0) then
                     call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL,&
-                        &INEXTCELL, grid_obj)
+                        &INEXTCELL)
                 end if
 
                 ! Get the face grid pointers
@@ -1383,8 +1372,7 @@ end subroutine shd_intg__backIntegrate2D
 subroutine shd_intg__backIntegrate1D(&
     &NX, NY, NZ, NA,&
     &SWEEPORD, MU, PHI, TRANSMIN,&
-    &EXTINCT, NSTOKES, SOURCE, KANG, GRIDRAD,&
-    &grid_obj)
+    &EXTINCT, NSTOKES, SOURCE, KANG, GRIDRAD)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Description:
@@ -1400,14 +1388,12 @@ subroutine shd_intg__backIntegrate1D(&
     !   radiances on the face. The resulting radiances are put in GRIDRAD.
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    type(shd_type_cell), intent(in) :: grid_obj
-
     integer(kind=I__), intent(in) :: NX, NY, NZ, NA, KANG, NSTOKES
-    integer(kind=I__), intent(in) :: SWEEPORD(grid_obj%Npts, *)
+    integer(kind=I__), intent(in) :: SWEEPORD(cell_obj_%Npts, *)
     real(kind=R__)   , intent(in) :: MU, PHI, TRANSMIN
-    real(kind=R__)   , intent(in) :: EXTINCT(grid_obj%Npts), SOURCE(NSTOKES, NA, grid_obj%Npts)
+    real(kind=R__)   , intent(in) :: EXTINCT(cell_obj_%Npts), SOURCE(NSTOKES, NA, cell_obj_%Npts)
 
-    real(kind=R__), intent(inout) :: GRIDRAD(NSTOKES, grid_obj%Npts)
+    real(kind=R__), intent(inout) :: GRIDRAD(NSTOKES, cell_obj_%Npts)
 
     real(kind=RD_) :: CZ, CZINV
     real(kind=RD_) :: XE, YE, ZE
@@ -1448,7 +1434,7 @@ subroutine shd_intg__backIntegrate1D(&
     JOCT = JOCTORDER(IOCT)
 
     ! Sweep through all the grid points
-    do IORDER = 1, grid_obj%Npts
+    do IORDER = 1, cell_obj_%Npts
         IPCELL = ishft(SWEEPORD(IORDER, JOCT), -3)
         ICORNER = ibits(SWEEPORD(IORDER, JOCT), 0, 3) + 1
         IPT = i8Grid_Cell_(ICORNER, IPCELL)

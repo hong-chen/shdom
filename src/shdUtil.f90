@@ -45,10 +45,9 @@ module shd_util
     use globals_const, only: RD_, PI_, DPI_
     use globals_cfg,   only: isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
                              is1DX_, is1DYx_
-    use globals_type,  only: shd_type_cell
 
     use globals_obj,   only: rtm_obj_, xyz_Rtm_, &
-                             i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, flag_Cell_
+                            cell_obj_, i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, flag_Cell_
 
     implicit none
     private
@@ -112,8 +111,7 @@ end subroutine shd_util__sumData
 
 subroutine shd_util__interpData(OLDNPTS,&
     &FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
-    &FLUXES, DIRFLUX, FLUXDIV, SHTERMS,&
-    &grid_obj)
+    &FLUXES, DIRFLUX, FLUXDIV, SHTERMS)
 
     !   Interpolates the output data to the new grid points (those >OLDNPTS)
     ! from the old grid points.  The output data is in FLUXES, DIRFLUX,
@@ -121,12 +119,10 @@ subroutine shd_util__interpData(OLDNPTS,&
     ! Each new point is located in a cell, and the two parent grid points
     ! are found to interpolate the data from.
 
-    type(shd_type_cell), intent(in) :: grid_obj
-
     integer OLDNPTS
     logical FLUX_OUT, FLUXDIV_OUT, SH_OUT
-    real FLUXES(2, grid_obj%Npts), DIRFLUX(grid_obj%Npts), FLUXDIV(grid_obj%Npts)
-    real SHTERMS(5, grid_obj%Npts)
+    real FLUXES(2, cell_obj_%Npts), DIRFLUX(cell_obj_%Npts), FLUXDIV(cell_obj_%Npts)
+    real SHTERMS(5, cell_obj_%Npts)
     integer IP, IC, ICELL, IPARENT, IDIR, I, J, DIR1, DIR2, IP1, IP2
     integer GRIDCORNER(2, 4, 3)
     data GRIDCORNER/1, 2, 3, 4, 5, 6, 7, 8, 1, 3, 2, 4, 5, 7, 6, 8,&
@@ -135,7 +131,7 @@ subroutine shd_util__interpData(OLDNPTS,&
     if (OLDNPTS .le. 0) return
 
     ! Go through all the non-base grid cells
-    do ICELL = grid_obj%Ncell0 + 1, grid_obj%Ncell
+    do ICELL = cell_obj_%Ncell0 + 1, cell_obj_%Ncell
         do IC = 1, 8
             IP = i8Grid_Cell_(IC, ICELL)
             if (IP .gt. OLDNPTS) then
@@ -179,16 +175,13 @@ subroutine shd_util__interpData(OLDNPTS,&
 
 end subroutine shd_util__interpData
 
-subroutine shd_util__findCell(X0, Y0, Z0, icell,&
-    &grid_obj)
+subroutine shd_util__findCell(X0, Y0, Z0, icell)
 
     !   Locates the grid cell in the tree structure containing the
     ! specified point (X0,Y0,Z0), and returns the cell pointer icell.
     ! First the base grid cell is found (using rtm_obj_%Nx,rtm_obj_%Ny,rtm_obj_%Nz, rtm_obj_%x,rtm_obj_%y,rtm_obj_%z),
     ! and the tree is traced down to find the smallest cell containing
     ! the point.
-
-    type(shd_type_cell), intent(in) :: grid_obj
 
     integer icell
     real(RD_) :: X0, Y0, Z0
@@ -342,16 +335,13 @@ subroutine shd_util__findCell(X0, Y0, Z0, icell,&
 
 end subroutine shd_util__findCell
 
-subroutine shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, INEXT,&
-    &grid_obj)
+subroutine shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, INEXT)
 
     !   Gets the next cell (INEXT) to go to that is adjacent to this face
     ! IFACE (1-6) has which face (-X,+X,-Y,+Y,-Z,+Z) of the current cell
     ! (ICELL) we are at, and JFACE (1-3) is the direction (X,Y,Z).
     ! The current location (XE,YE,ZE) on the face is used to find the cell
     ! if there are several adjacent to the current cell.
-
-    type(shd_type_cell), intent(in) :: grid_obj
 
     integer IFACE, JFACE, ICELL, INEXT
     real(RD_) :: XE, YE, ZE
@@ -398,16 +388,13 @@ end subroutine shd_util__findNextCell
 
 subroutine shd_util__interpTriLin(&
     &ICELL,&
-    &X, Y, Z, ND, FIELD, ID1, NV, VALUES,&
-    &grid_obj)
+    &X, Y, Z, ND, FIELD, ID1, NV, VALUES)
 
     !   Trilinearly interpolates the field (FIELD) given a grid cell
     ! pointer (ICELL), to compute the field values (VALUES) at the desired
     ! point (X,Y,Z). ND is the leading index of the FIELD (1 for a
     ! scalar field), ID1 is the first element of the vector to interpolate,
     ! and NV elements are output.
-
-    type(shd_type_cell), intent(in) :: grid_obj
 
     integer, intent(in) :: ICELL, ND, ID1, NV
     real(RD_), intent(in) :: X, Y, Z
