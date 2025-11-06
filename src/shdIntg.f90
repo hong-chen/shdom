@@ -157,7 +157,7 @@ subroutine shd_intg__integratePath(&
     end if
 
     call shd_mpi__findBndryPnt(rtm_obj_%flag_bc, rtm_obj_%flag_ip, SWEEPORD,&
-        &rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz)
+        &rtm_obj_%Nx0, rtm_obj_%Ny0, rtm_obj_%Nz)
 
     if (cell_obj_%Npts .ne. OLDNPTS) then
         ! Make the pointers to the grid points on the top and bottom boundaries
@@ -277,27 +277,27 @@ subroutine shd_intg__integratePath(&
             ! Do backward path integration from each grid point not done yet
             if (is1D_) then
 
-                call shd_intg__backIntegrate1D(rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz, shdo_obj_%maxNphi0,&
+                call shd_intg__backIntegrate1D(rtm_obj_%Nx0, rtm_obj_%Ny0, rtm_obj_%Nz, shdo_obj_%maxNphi0,&
                     &SWEEPORD, shdo_obj_%mu(IMU), shdo_obj_%phi(IMU, IPHI), TRANSMIN,&
                     &ext_Rtm_, shdo_obj_%Nstokes, WORK, IPHI, GRIDRAD)
 
             else if (is1DYx_ .and. (.not. isMpi_)) then
 
-                call shd_intg__backIntegrate2D(rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz, shdo_obj_%maxNphi0,&
+                call shd_intg__backIntegrate2D(rtm_obj_%Nx0, rtm_obj_%Ny0, rtm_obj_%Nz, shdo_obj_%maxNphi0,&
                     &SWEEPORD, shdo_obj_%mu(IMU), shdo_obj_%phi(IMU, IPHI), TRANSMIN,&
                     &ext_Rtm_, shdo_obj_%Nstokes, WORK, IPHI, GRIDRAD)
 
             else
                 if (isPol_) then
 
-                    call shd_intg__backIntegrate3D(rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz, shdo_obj_%maxNphi0,&
+                    call shd_intg__backIntegrate3D(rtm_obj_%Nx0, rtm_obj_%Ny0, rtm_obj_%Nz, shdo_obj_%maxNphi0,&
                         &SWEEPORD,&
                         &shdo_obj_%mu(IMU), shdo_obj_%phi(IMU, IPHI), TRANSMIN, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
                         &ext_Rtm_, shdo_obj_%Nstokes, WORK, IPHI, GRIDRAD)
 
                 else
 
-                    call shd_intg__backIntegrate3D_(rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz, shdo_obj_%maxNphi0,&
+                    call shd_intg__backIntegrate3D_(rtm_obj_%Nx0, rtm_obj_%Ny0, rtm_obj_%Nz, shdo_obj_%maxNphi0,&
                         &SWEEPORD,&
                         &shdo_obj_%mu(IMU), shdo_obj_%phi(IMU, IPHI), TRANSMIN, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
                         &ext_Rtm_, WORK, IPHI, GRIDRAD)

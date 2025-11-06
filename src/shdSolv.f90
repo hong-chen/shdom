@@ -360,7 +360,7 @@ subroutine shd_solv__solveRte(&
         !   do the adaptive spherical harmonics truncation, compute
         !   the solution criterion, and dot products for acceleration
         if (((SOLCRIT .lt. ENDADAPTSOL) .or. (ITER .gt. 30)) .and.&
-            &((rtm_obj_%Nx .gt. 36) .or. (rtm_obj_%Ny .gt. 36))) doFixSH = .true.
+            &((rtm_obj_%Nx0 .gt. 36) .or. (rtm_obj_%Ny0 .gt. 36))) doFixSH = .true.
 
         ! radSH to srcSH
         !╭────────────────────────────────────────────────╮!

@@ -755,14 +755,14 @@ subroutine shd_rad__computeRad(&
     end if
 
     ! Setup the regularly spaced radiance locations
-    XDOMAIN = rtm_obj_%x(rtm_obj_%Nx + 1 - ibits(rtm_obj_%flag_bc, 0, 1)) - rtm_obj_%x(1) + 2*OUTPARMS(4)
+    XDOMAIN = rtm_obj_%x(rtm_obj_%Nx0 + 1 - ibits(rtm_obj_%flag_bc, 0, 1)) - rtm_obj_%x(1) + 2*OUTPARMS(4)
     STARTX = -OUTPARMS(4)
     if (OUTPARMS(2) .eq. 0.0) then
         NXOUT = 1
     else
         NXOUT = max(1, nint(XDOMAIN/OUTPARMS(2)))
     end if
-    YDOMAIN = rtm_obj_%y(rtm_obj_%Ny + 1 - ibits(rtm_obj_%flag_bc, 1, 1)) - rtm_obj_%y(1) + 2*OUTPARMS(5)
+    YDOMAIN = rtm_obj_%y(rtm_obj_%Ny0 + 1 - ibits(rtm_obj_%flag_bc, 1, 1)) - rtm_obj_%y(1) + 2*OUTPARMS(5)
     STARTY = -OUTPARMS(5)
     if (OUTPARMS(3) .eq. 0.0) then
         NYOUT = 1

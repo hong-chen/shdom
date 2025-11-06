@@ -204,7 +204,7 @@ subroutine shd_io__outputResult(&
         &'   NMU=', shdo_obj_%Nmu, '  NPHI=', shdo_obj_%Nphi, '  NANG=', shdo_obj_%Nang,&
         &'   NSH=', shdo_obj_%Nsh
     write (2, '(A,I1,3(A,I4),2(A,I8))') '!  NSTOKES=', shdo_obj_%Nstokes,&
-        &'   NX=', rtm_obj_%Nx, '   NY=', rtm_obj_%Ny, '   NZ=', rtm_obj_%Nz,&
+        &'   NX=', rtm_obj_%Nx0, '   NY=', rtm_obj_%Ny0, '   NZ=', rtm_obj_%Nz,&
         &'    NPTS=', cell_obj_%Npts, '   NCELLS=', cell_obj_%Ncell
     write (2, '(A,A)') '!  PROPERTY_FILE=', trim(prp_obj_%fname)
     write (2, '(A,A,A,I2)') '!  CORRELATED_K-DIST_FILE=',&
@@ -278,7 +278,7 @@ subroutine shd_io__outputResult(&
         ! Radiance output
         ! NXOUT
         !╭────────────────────────────────────────────────╮!
-        XDOMAIN = rtm_obj_%x(rtm_obj_%Nx + 1 - ibits(rtm_obj_%flag_bc, 0, 1)) - rtm_obj_%x(1) + 2*OUTPARMS(4)
+        XDOMAIN = rtm_obj_%x(rtm_obj_%Nx0 + 1 - ibits(rtm_obj_%flag_bc, 0, 1)) - rtm_obj_%x(1) + 2*OUTPARMS(4)
         STARTX = -OUTPARMS(4)
         if (OUTPARMS(2) .eq. 0.0) then
             NXOUT = 1
@@ -289,7 +289,7 @@ subroutine shd_io__outputResult(&
 
         ! NYOUT
         !╭────────────────────────────────────────────────╮!
-        YDOMAIN = rtm_obj_%y(rtm_obj_%Ny + 1 - ibits(rtm_obj_%flag_bc, 1, 1)) - rtm_obj_%y(1) + 2*OUTPARMS(5)
+        YDOMAIN = rtm_obj_%y(rtm_obj_%Ny0 + 1 - ibits(rtm_obj_%flag_bc, 1, 1)) - rtm_obj_%y(1) + 2*OUTPARMS(5)
         STARTY = -OUTPARMS(5)
         if (OUTPARMS(3) .eq. 0.0) then
             NYOUT = 1
@@ -372,7 +372,7 @@ subroutine shd_io__outputResult(&
 
         ! Hemispheric flux output, F1
         ! Format 1 is flux at top and bottom of medium at grid point
-        ! NVAR=2 or 3, NSET=1, NX=rtm_obj_%Nx, NY=rtm_obj_%Ny, NZ=1
+        ! NVAR=2 or 3, NSET=1, NX=rtm_obj_%Nx0, NY=rtm_obj_%Ny0, NZ=1
         if (nint(OUTPARMS(1)) .le. 1) then
 
             write (2, '(A,F7.3)') '!    UPWELLING FLUX:     Z=', rtm_obj_%z(rtm_obj_%Nz)
@@ -420,8 +420,8 @@ subroutine shd_io__outputResult(&
             ! original
             !╭────────────────────────────────────────────────╮!
             !do I = 1, cell_obj_%Npts0, rtm_obj_%Nz
-            !    if  (xyz_Rtm_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
-            !        &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) then
+            !    if  (xyz_Rtm_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx0 + 1) .and.&
+            !        &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny0 + 1)) then
             !        if (src_obj_%type .ne. 'T') then
             !            write (2, FORM) xyz_Rtm_(1, I), xyz_Rtm_(2, I),&
             !                & C*FLUXES(2, I + rtm_obj_%Nz - 1), C*FLUXES(1, I), DIRFLUX(I)
@@ -439,10 +439,10 @@ subroutine shd_io__outputResult(&
 
             Z0 = min(max(OUTPARMS(2), rtm_obj_%z(1)), rtm_obj_%z(rtm_obj_%Nz))
             if (OUTPARMS(3) .eq. 0.0) OUTPARMS(3) = 1.0
-            NX2 = rtm_obj_%Nx + 1 - ibits(rtm_obj_%flag_bc, 0, 1)
+            NX2 = rtm_obj_%Nx0 + 1 - ibits(rtm_obj_%flag_bc, 0, 1)
             NXOUT = max(1, nint((rtm_obj_%x(NX2) - rtm_obj_%x(1))/OUTPARMS(3)))
             if (OUTPARMS(4) .eq. 0.0) OUTPARMS(4) = 1.0
-            NY2 = rtm_obj_%Ny + 1 - ibits(rtm_obj_%flag_bc, 1, 1)
+            NY2 = rtm_obj_%Ny0 + 1 - ibits(rtm_obj_%flag_bc, 1, 1)
             NYOUT = max(1, nint((rtm_obj_%y(NY2) - rtm_obj_%y(1))/OUTPARMS(4)))
             write (2, '(A,F7.3,2(A,I4))') '!    UPWELLING FLUX:     Z=', Z0,&
                 & '    NXO=', NXOUT, '    NYO=', NYOUT
@@ -521,7 +521,7 @@ subroutine shd_io__outputResult(&
             !do JY = 1, NYOUT
             !    X0 = rtm_obj_%x(1)
             !    do JX = 1, NXOUT
-            !        call shd_util__findCell(rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz,&
+            !        call shd_util__findCell(rtm_obj_%Nx0, rtm_obj_%Ny0, rtm_obj_%Nz,&
             !            & rtm_obj_%flag_bc, rtm_obj_%flag_ip, X0, Y0, Z0, icell, cell_obj_)
             !        call shd_util__interpTriLin(icell,&
             !            & X0, Y0, Z0, 2, FLUXES, 1, 1, FDN, cell_obj_)
@@ -570,8 +570,8 @@ subroutine shd_io__outputResult(&
                 SUM3(IZ) = 0.0
                 N = 0
                 do I = IZ, cell_obj_%Npts0, rtm_obj_%Nz
-                    if  (xyz_Rtm_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
-                        &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) then
+                    if  (xyz_Rtm_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx0 + 1) .and.&
+                        &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny0 + 1)) then
                         SUM1(IZ) = SUM1(IZ) + FLUXES(1, I)
                         SUM2(IZ) = SUM2(IZ) + FLUXES(2, I)
                         SUM3(IZ) = SUM3(IZ) + DIRFLUX(I)
@@ -617,8 +617,8 @@ subroutine shd_io__outputResult(&
             !    SUM3 = 0.0
             !    N = 0
             !    do I = IZ, cell_obj_%Npts0, rtm_obj_%Nz
-            !        if  (xyz_Rtm_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
-            !            &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) then
+            !        if  (xyz_Rtm_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx0 + 1) .and.&
+            !            &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny0 + 1)) then
             !            SUM1 = SUM1 + FLUXES(1, I)
             !            SUM2 = SUM2 + FLUXES(2, I)
             !            SUM3 = SUM3 + DIRFLUX(I)
@@ -705,8 +705,8 @@ subroutine shd_io__outputResult(&
             ! original
             !╭────────────────────────────────────────────────╮!
             !do I = 1, N
-            !    if ((xyz_Rtm_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
-            !        &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) .or. ALLGRID) then
+            !    if ((xyz_Rtm_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx0 + 1) .and.&
+            !        &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny0 + 1)) .or. ALLGRID) then
             !        if (src_obj_%type .ne. 'T') then
             !            write (2, FORM) xyz_Rtm_(1, I), xyz_Rtm_(2, I), xyz_Rtm_(3, I),&
             !                & C*FLUXES(2, I), C*FLUXES(1, I), DIRFLUX(I)
@@ -738,8 +738,8 @@ subroutine shd_io__outputResult(&
                 SUM1(IZ) = 0.0
                 N = 0
                 do I = IZ, cell_obj_%Npts0, rtm_obj_%Nz
-                    if  (xyz_Rtm_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
-                        &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) then
+                    if  (xyz_Rtm_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx0 + 1) .and.&
+                        &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny0 + 1)) then
                         SUM1(IZ) = SUM1(IZ) + FLUXDIV(I)
                         N = N + 1
                     end if
@@ -771,8 +771,8 @@ subroutine shd_io__outputResult(&
             !    SUM = 0.0
             !    N = 0
             !    do I = IZ, cell_obj_%Npts0, rtm_obj_%Nz
-            !        if  (xyz_Rtm_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
-            !            &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) then
+            !        if  (xyz_Rtm_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx0 + 1) .and.&
+            !            &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny0 + 1)) then
             !            SUM = SUM + FLUXDIV(I)
             !            N = N + 1
             !        end if
@@ -831,8 +831,8 @@ subroutine shd_io__outputResult(&
             ! original
             !╭────────────────────────────────────────────────╮!
             !do I = 1, N
-            !    if ((xyz_Rtm_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
-            !        &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) .or. ALLGRID) then
+            !    if ((xyz_Rtm_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx0 + 1) .and.&
+            !        &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny0 + 1)) .or. ALLGRID) then
             !        write (2, '(3(1X,F7.3),2X,E13.5)')&
             !            & xyz_Rtm_(1, I), xyz_Rtm_(2, I), xyz_Rtm_(3, I), -FLUXDIV(I)
             !    end if
@@ -918,8 +918,8 @@ subroutine shd_io__outputResult(&
         !    write (2, '(A,A)') '!    X       Y        Z         Imean',&
         !        &'          Fx           Fy           Fz       HOrms'
         !    do I = 1, N
-        !        if ((xyz_Rtm_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
-        !            &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) .or. ALLGRID) then
+        !        if ((xyz_Rtm_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx0 + 1) .and.&
+        !            &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny0 + 1)) .or. ALLGRID) then
         !            write (2, '(3(1X,F7.3),1X,4(1X,E12.5),1X,F6.3)')&
         !                &xyz_Rtm_(1, I), xyz_Rtm_(2, I), xyz_Rtm_(3, I),&
         !                &SHTERMS(1, I), SHTERMS(2, I), SHTERMS(3, I), SHTERMS(4, I),&
@@ -930,8 +930,8 @@ subroutine shd_io__outputResult(&
         !    write (2, '(A,A)') '!    X       Y        Z         Imean',&
         !        &'          Fx           Fy           Fz '
         !    do I = 1, N
-        !        if ((xyz_Rtm_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
-        !            &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) .or. ALLGRID) then
+        !        if ((xyz_Rtm_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx0 + 1) .and.&
+        !            &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny0 + 1)) .or. ALLGRID) then
         !            write (2, '(3(1X,F7.3),1X,4(1X,E12.5))')&
         !                &xyz_Rtm_(1, I), xyz_Rtm_(2, I), xyz_Rtm_(3, I),&
         !                &SHTERMS(1, I), SHTERMS(2, I), SHTERMS(3, I), SHTERMS(4, I)
@@ -999,8 +999,8 @@ subroutine shd_io__outputResult(&
         ! original
         !╭────────────────────────────────────────────────╮!
         !do I = 1, N
-        !    if ((xyz_Rtm_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
-        !        &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) .or. ALLGRID) then
+        !    if ((xyz_Rtm_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx0 + 1) .and.&
+        !        &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny0 + 1)) .or. ALLGRID) then
         !        write (2, '(3(1X,F7.3),5(1X,E12.5))')&
         !            & xyz_Rtm_(1, I), xyz_Rtm_(2, I), xyz_Rtm_(3, I),&
         !            & ext_Rtm_(I), SOURCE1OUT(:, I)
@@ -1088,8 +1088,8 @@ subroutine shd_io__outputResult(&
         !    else
         !        ASYM = leg_Rtm_(1, 1, I)
         !    end if
-        !    if ((xyz_Rtm_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
-        !        &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) .or. ALLGRID) then
+        !    if ((xyz_Rtm_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx0 + 1) .and.&
+        !        &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny0 + 1)) .or. ALLGRID) then
         !        write (2, '(3(1X,F7.3),1X,F10.6,1X,F8.6,1X,F8.5,1X,F7.2)')&
         !            & xyz_Rtm_(1, I), xyz_Rtm_(2, I), xyz_Rtm_(3, I),&
         !            & ext_Rtm_(I), ssa_Rtm_(I), ASYM, temp_Rtm_(I)
@@ -1193,8 +1193,8 @@ subroutine shd_io__outputResultMpi(&
     character(len=1), intent(in) :: OUTTYPE
     character(len=*), intent(in) :: INSAVEFILE, OUTSAVEFILE
     character(len=*), intent(in) :: OUTFILE
-    real FLUXES(3, rtmAll_obj%Nz, rtmAll_obj%Ny, rtmAll_obj%Nx), FLUXDIV(rtmAll_obj%Nz, rtmAll_obj%Ny, rtmAll_obj%Nx)
-    real RADOUT(shdo_obj_%Nstokes, *), SHTERMS(NSHOUT, rtmAll_obj%Nz, rtmAll_obj%Ny, rtmAll_obj%Nx)
+    real FLUXES(3, rtmAll_obj%Nz, rtmAll_obj%Ny0, rtmAll_obj%Nx0), FLUXDIV(rtmAll_obj%Nz, rtmAll_obj%Ny0, rtmAll_obj%Nx0)
+    real RADOUT(shdo_obj_%Nstokes, *), SHTERMS(NSHOUT, rtmAll_obj%Nz, rtmAll_obj%Ny0, rtmAll_obj%Nx0)
 
     integer I, J, K, N, JX, JY, IZ
     integer NANGOUT, NXOUT, NYOUT
@@ -1287,7 +1287,7 @@ subroutine shd_io__outputResultMpi(&
         & '   NMU=', shdo_obj_%Nmu, '  NPHI=', shdo_obj_%Nphi, '  NANG=', shdo_obj_%Nang,&
         & '   NSH=', Nsh_tot
     write (2, '(A,I1,3(A,I4),2(A,I8))') '!  NSTOKES=', shdo_obj_%Nstokes,&
-        & '   NX=', rtmAll_obj%Nx, '   NY=', rtmAll_obj%Ny, '   NZ=', rtmAll_obj%Nz,&
+        & '   NX=', rtmAll_obj%Nx0, '   NY=', rtmAll_obj%Ny0, '   NZ=', rtmAll_obj%Nz,&
         & '   NPTS=', Npts_tot, '   NCELLS=', Ncell_tot
     write (2, '(A,A)') '!  PROPERTY_FILE=', trim(prp_obj_%fname)
     write (2, '(A,A,A,I2)') '!  CORRELATED_K-DIST_FILE=',&
@@ -1483,14 +1483,14 @@ subroutine shd_io__outputResultMpi(&
             write (2, '(A)') '! The following contains information for binary data intepretation:'
             write (2, '(A)') '! F1'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-            write (2, '(A, 5(I10,A))') '! ', rtmAll_obj%Nx, ',', rtmAll_obj%Ny, ',', 1, ',', 1, ',', NVAR, ''
+            write (2, '(A, 5(I10,A))') '! ', rtmAll_obj%Nx0, ',', rtmAll_obj%Ny0, ',', 1, ',', 1, ',', NVAR, ''
             !╰────────────────────────────────────────────────╯!
 
             ! binary data
             !╭────────────────────────────────────────────────╮!
             if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResultMpi]: <F1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
 
-            N = rtmAll_obj%Nx*rtmAll_obj%Ny
+            N = rtmAll_obj%Nx0*rtmAll_obj%Ny0
             IDATA = 0
             call shd_io__outputDataBin(C*FLUXES(2, rtmAll_obj%Nz, :, :), 1, N, IDATA, OUTFILE_DATA)
 
@@ -1507,8 +1507,8 @@ subroutine shd_io__outputResultMpi(&
             !╭────────────────────────────────────────────────╮!
             !C = 1.0
             !if (src_obj_%unit .eq. 'T') C = 1.0 / PI_
-            !do I = 1, rtmAll_obj%Nx
-            !    do J = 1, rtmAll_obj%Ny
+            !do I = 1, rtmAll_obj%Nx0
+            !    do J = 1, rtmAll_obj%Ny0
             !        if (src_obj_%type .ne. 'T') then
             !            write (2, FORM) rtmAll_obj%x(I), rtmAll_obj%y(J),&
             !                & C*FLUXES(2, rtmAll_obj%Nz, J, I), C*FLUXES(1, 1, J, I), FLUXES(3, 1, J, I)
@@ -1554,8 +1554,8 @@ subroutine shd_io__outputResultMpi(&
                 SUM2(IZ) = 0.0
                 SUM3(IZ) = 0.0
 
-                do I = 1, rtmAll_obj%Nx
-                    do J = 1, rtmAll_obj%Ny
+                do I = 1, rtmAll_obj%Nx0
+                    do J = 1, rtmAll_obj%Ny0
                         SUM1(IZ) = SUM1(IZ) + FLUXES(1, IZ, J, I)
                         SUM2(IZ) = SUM2(IZ) + FLUXES(2, IZ, J, I)
                         SUM3(IZ) = SUM3(IZ) + FLUXES(3, IZ, J, I)
@@ -1577,7 +1577,7 @@ subroutine shd_io__outputResultMpi(&
             !╭────────────────────────────────────────────────╮!
             if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResultMpi]: <F3> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
 
-            N = rtmAll_obj%Nx*rtmAll_obj%Ny
+            N = rtmAll_obj%Nx0*rtmAll_obj%Ny0
             IDATA = 0
             call shd_io__outputDataBin(C*SUM2/N, 1, rtmAll_obj%Nz, IDATA, OUTFILE_DATA)
 
@@ -1598,13 +1598,13 @@ subroutine shd_io__outputResultMpi(&
             !╭────────────────────────────────────────────────╮!
             !C = 1.0
             !if (src_obj_%unit .eq. 'T') C = 1.0 / PI_
-            !N = rtmAll_obj%Nx*rtmAll_obj%Ny
+            !N = rtmAll_obj%Nx0*rtmAll_obj%Ny0
             !do K = 1, rtmAll_obj%Nz
             !    SUM1 = 0.0
             !    SUM2 = 0.0
             !    SUM3 = 0.0
-            !    do I = 1, rtmAll_obj%Nx
-            !        do J = 1, rtmAll_obj%Ny
+            !    do I = 1, rtmAll_obj%Nx0
+            !        do J = 1, rtmAll_obj%Ny0
             !            SUM1 = SUM1 + FLUXES(1, K, J, I)
             !            SUM2 = SUM2 + FLUXES(2, K, J, I)
             !            SUM3 = SUM3 + FLUXES(3, K, J, I)
@@ -1641,14 +1641,14 @@ subroutine shd_io__outputResultMpi(&
             write (2, '(A)') '! The following contains information for binary data intepretation:'
             write (2, '(A)') '! F4'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-            write (2, '(A, 5(I10,A))') '! ', rtmAll_obj%Nx, ',', rtmAll_obj%Ny, ',', rtmAll_obj%Nz, ',', 1, ',', NVAR, ''
+            write (2, '(A, 5(I10,A))') '! ', rtmAll_obj%Nx0, ',', rtmAll_obj%Ny0, ',', rtmAll_obj%Nz, ',', 1, ',', NVAR, ''
             !╰────────────────────────────────────────────────╯!
 
             ! binary data
             !╭────────────────────────────────────────────────╮!
             if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResultMpi]: <F4> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
 
-            N = rtmAll_obj%Nx*rtmAll_obj%Ny*rtmAll_obj%Nz
+            N = rtmAll_obj%Nx0*rtmAll_obj%Ny0*rtmAll_obj%Nz
             IDATA = 0
             call shd_io__outputDataBin(C*FLUXES(2, :, :, :), 1, N, IDATA, OUTFILE_DATA)
 
@@ -1665,8 +1665,8 @@ subroutine shd_io__outputResultMpi(&
             !╭────────────────────────────────────────────────╮!
             !C = 1.0
             !if (src_obj_%unit .eq. 'T') C = 1.0 / PI_
-            !do I = 1, rtmAll_obj%Nx
-            !    do J = 1, rtmAll_obj%Ny
+            !do I = 1, rtmAll_obj%Nx0
+            !    do J = 1, rtmAll_obj%Ny0
             !        do K = 1, rtmAll_obj%Nz
             !            if (src_obj_%type .ne. 'T') then
             !                write (2, FORM) rtmAll_obj%x(I), rtmAll_obj%y(J), rtmAll_obj%z(K),&
@@ -1702,8 +1702,8 @@ subroutine shd_io__outputResultMpi(&
 
             do IZ = 1, rtmAll_obj%Nz
                 SUM1(IZ) = 0.0
-                do I = 1, rtmAll_obj%Nx
-                    do J = 1, rtmAll_obj%Ny
+                do I = 1, rtmAll_obj%Nx0
+                    do J = 1, rtmAll_obj%Ny0
                         SUM1(IZ) = SUM1(IZ) + FLUXDIV(IZ, J, I)
                     end do
                 end do
@@ -1722,7 +1722,7 @@ subroutine shd_io__outputResultMpi(&
             !╭────────────────────────────────────────────────╮!
             if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResultMpi]: <H1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
 
-            N = rtmAll_obj%Nx*rtmAll_obj%Ny
+            N = rtmAll_obj%Nx0*rtmAll_obj%Ny0
             IDATA = 0
             call shd_io__outputDataBin(-SUM1/N, 1, rtmAll_obj%Nz, IDATA, OUTFILE_DATA)
 
@@ -1733,12 +1733,12 @@ subroutine shd_io__outputResultMpi(&
             !╭────────────────────────────────────────────────╮!
             !do K = 1, rtmAll_obj%Nz
             !    SUM = 0.0
-            !    do I = 1, rtmAll_obj%Nx
-            !        do J = 1, rtmAll_obj%Ny
+            !    do I = 1, rtmAll_obj%Nx0
+            !        do J = 1, rtmAll_obj%Ny0
             !            SUM = SUM + FLUXDIV(K, J, I)
             !        end do
             !    end do
-            !    write (2, '(1X,F7.3,2X,E13.5)') rtmAll_obj%z(K), -SUM/(rtmAll_obj%Nx*rtmAll_obj%Ny)
+            !    write (2, '(1X,F7.3,2X,E13.5)') rtmAll_obj%z(K), -SUM/(rtmAll_obj%Nx0*rtmAll_obj%Ny0)
             !end do
             !╰────────────────────────────────────────────────╯!
 
@@ -1752,22 +1752,22 @@ subroutine shd_io__outputResultMpi(&
             write (2, '(A)') '! The following contains information for binary data intepretation:'
             write (2, '(A)') '! H2'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-            write (2, '(A, 5(I10,A))') '! ', rtmAll_obj%Nx, ',', rtmAll_obj%Ny, ',', rtmAll_obj%Nz, ',', 1, ',', NVAR, ''
+            write (2, '(A, 5(I10,A))') '! ', rtmAll_obj%Nx0, ',', rtmAll_obj%Ny0, ',', rtmAll_obj%Nz, ',', 1, ',', NVAR, ''
             !╰────────────────────────────────────────────────╯!
 
             ! binary data
             !╭────────────────────────────────────────────────╮!
             if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResultMpi]: <H2> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
 
-            N = rtmAll_obj%Nx*rtmAll_obj%Ny*rtmAll_obj%Nz
+            N = rtmAll_obj%Nx0*rtmAll_obj%Ny0*rtmAll_obj%Nz
             IDATA = 0
             call shd_io__outputDataBin(-FLUXDIV, 1, N, IDATA, OUTFILE_DATA)
             !╰────────────────────────────────────────────────╯!
 
             ! original
             !╭────────────────────────────────────────────────╮!
-            !    do I = 1, rtmAll_obj%Nx
-            !        do J = 1, rtmAll_obj%Ny
+            !    do I = 1, rtmAll_obj%Nx0
+            !        do J = 1, rtmAll_obj%Ny0
             !            do K = 1, rtmAll_obj%Nz
             !                write (2, '(3(1X,F7.3),2X,E13.5)')&
             !                    & rtmAll_obj%x(I), rtmAll_obj%y(J), rtmAll_obj%z(K), -FLUXDIV(K, J, I)
@@ -1792,11 +1792,11 @@ subroutine shd_io__outputResultMpi(&
 
         if (nint(OUTPARMS(1)) .eq. 1) then
 
-            N = rtmAll_obj%Nx*rtmAll_obj%Ny*rtmAll_obj%Nz
+            N = rtmAll_obj%Nx0*rtmAll_obj%Ny0*rtmAll_obj%Nz
 
             ! data processing
             !╭────────────────────────────────────────────────╮!
-            allocate(SHTERM5(rtmAll_obj%Nz, rtmAll_obj%Ny, rtmAll_obj%Nx))
+            allocate(SHTERM5(rtmAll_obj%Nz, rtmAll_obj%Ny0, rtmAll_obj%Nx0))
 
             if (NSHOUT .eq. 5) then
 
@@ -1804,8 +1804,8 @@ subroutine shd_io__outputResultMpi(&
                 write (2, '(A,A)') '!    X       Y        Z         Imean',&
                     &'          Fx           Fy           Fz       HOrms'
                 do IZ = 1, rtmAll_obj%Nz
-                    do I = 1, rtmAll_obj%Nx
-                        do J = 1, rtmAll_obj%Ny
+                    do I = 1, rtmAll_obj%Nx0
+                        do J = 1, rtmAll_obj%Ny0
                             SHTERM5(IZ, J, I) = SHTERMS(5, IZ, J, I)/max(1e-20, SHTERMS(1, IZ, J, I))
                         end do
                     end do
@@ -1825,7 +1825,7 @@ subroutine shd_io__outputResultMpi(&
             write (2, '(A)') '! The following contains information for binary data intepretation:'
             write (2, '(A)') '! S1'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-            write (2, '(A, 5(I10,A))') '! ', rtmAll_obj%Nx, ',', rtmAll_obj%Ny, ',', rtmAll_obj%Nz, ',', 1, ',', NVAR, ''
+            write (2, '(A, 5(I10,A))') '! ', rtmAll_obj%Nx0, ',', rtmAll_obj%Ny0, ',', rtmAll_obj%Nz, ',', 1, ',', NVAR, ''
             !╰────────────────────────────────────────────────╯!
 
             ! binary data
@@ -1855,8 +1855,8 @@ subroutine shd_io__outputResultMpi(&
 
         !    write (2, '(A,A)') '!    X       Y        Z         Imean',&
         !        &'          Fx           Fy           Fz       HOrms'
-        !    do I = 1, rtmAll_obj%Nx
-        !        do J = 1, rtmAll_obj%Ny
+        !    do I = 1, rtmAll_obj%Nx0
+        !        do J = 1, rtmAll_obj%Ny0
         !            do K = 1, rtmAll_obj%Nz
         !                write (2, '(3(1X,F7.3),1X,4(1X,E12.5),1X,F6.3)')&
         !                    &rtmAll_obj%x(I), rtmAll_obj%y(J), rtmAll_obj%z(K), SHTERMS(1, K, J, I),&
@@ -1870,8 +1870,8 @@ subroutine shd_io__outputResultMpi(&
 
         !    write (2, '(A,A)') '!    X       Y        Z         Imean',&
         !        &'          Fx           Fy           Fz '
-        !    do I = 1, rtmAll_obj%Nx
-        !        do J = 1, rtmAll_obj%Ny
+        !    do I = 1, rtmAll_obj%Nx0
+        !        do J = 1, rtmAll_obj%Ny0
         !            do K = 1, rtmAll_obj%Nz
         !                write (2, '(3(1X,F7.3),1X,4(1X,E12.5),1X,F6.3)')&
         !                    &rtmAll_obj%x(I), rtmAll_obj%y(J), rtmAll_obj%z(K), SHTERMS(1, K, J, I),&
@@ -2007,7 +2007,7 @@ subroutine shd_io__outputCamRad(&
         &'   NMU=', shdo_obj_%Nmu, '  NPHI=', shdo_obj_%Nphi, '  NANG=', shdo_obj_%Nang,&
         &'   NSH=', shdo_obj_%Nsh
     write (2, '(A,I1,3(A,I4),2(A,I8))') '!  NSTOKES=', shdo_obj_%Nstokes,&
-        &'   NX=', rtm_obj_%Nx, '   NY=', rtm_obj_%Ny, '   NZ=', rtm_obj_%Nz,&
+        &'   NX=', rtm_obj_%Nx0, '   NY=', rtm_obj_%Ny0, '   NZ=', rtm_obj_%Nz,&
         &'    NPTS=', cell_obj_%Npts, '   NCELLS=', cell_obj_%Ncell
     write (2, '(A,A)') '!  PROPERTY_FILE=', trim(prp_obj_%fname)
     write (2, '(A,A,A,I2)') '!  CORRELATED_K-DIST_FILE=',&
@@ -2268,7 +2268,7 @@ subroutine shd_io__outputImg(&
         & '   NSH=', shdo_obj_%Nsh, LF
     I = I + index(BUF(I:I + 79), LF)
     write (BUF(I:I + 90), '(A,I1,3(A,I4),2(A,I8),A1)')&
-        & '# NSTOKES=', shdo_obj_%Nstokes, '  NX=', rtm_obj_%Nx, '   NY=', rtm_obj_%Ny, '  NZ=', rtm_obj_%Nz,&
+        & '# NSTOKES=', shdo_obj_%Nstokes, '  NX=', rtm_obj_%Nx0, '   NY=', rtm_obj_%Ny0, '  NZ=', rtm_obj_%Nz,&
         & '    NPTS=', cell_obj_%Npts, '   NCELLS=', cell_obj_%Ncell, LF
     I = I + index(BUF(I:I + 79), LF)
     !write (BUF(I:I + 79), '(A,A,A1)')&
@@ -2562,7 +2562,7 @@ subroutine shd_io__visualizeCell(&
     write (9, '(A,1X,F7.3)') '! Y value: ', YVAL
     write (9, '(A)')
     if (is1DX_) then
-        DELX = 0.5*XDOMAIN/rtm_obj_%Nx
+        DELX = 0.5*XDOMAIN/rtm_obj_%Nx0
         write (9, '(A)') 'sub drawbox x1 y1 x3 y3 xc yc n'
         write (9, '(A)') ' set color black'
         write (9, '(A)') ' amove x1 y1'
@@ -2678,11 +2678,11 @@ subroutine shd_io__saveState(&
     open (unit=91, file=trim(adjustl(OUTSAVEFILE)), status='REPLACE',&
         &form='UNFORMATTED')
 
-    write (91) shdo_obj_%Nstokes, rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz, shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm, cell_obj_%Npts, cell_obj_%Ncell
+    write (91) shdo_obj_%Nstokes, rtm_obj_%Nx0, rtm_obj_%Ny0, rtm_obj_%Nz, shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm, cell_obj_%Npts, cell_obj_%Ncell
 
-    write (91) (rtm_obj_%x(I), I=1, rtm_obj_%Nx+1)
-    write (91) (rtm_obj_%y(I), I=1, rtm_obj_%Ny+1)
-    write (91) (rtm_obj_%z(I), I=1, rtm_obj_%Ny)
+    write (91) (rtm_obj_%x(I), I=1, rtm_obj_%Nx0+1)
+    write (91) (rtm_obj_%y(I), I=1, rtm_obj_%Ny0+1)
+    write (91) (rtm_obj_%z(I), I=1, rtm_obj_%Nz)
 
     write (91) ((i8Grid_Cell_(J, I), J=1, 8), I=1, cell_obj_%Ncell)
     write (91) ((i6Cell_Cell_(J, I), J=1, 6), I=1, cell_obj_%Ncell)

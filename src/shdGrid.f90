@@ -427,13 +427,13 @@ subroutine shd_grid__makeSweepOrder(&
         NOCT = 8
     end if
 
-    NXC = rtm_obj_%Nx
-    if (isOpenX_) NXC = rtm_obj_%Nx + 1
-    if (isMpiX_ .and. (.not. is1DX_)) NXC = rtm_obj_%Nx - 1
+    NXC = rtm_obj_%Nx0
+    if (isOpenX_) NXC = rtm_obj_%Nx0 + 1
+    if (isMpiX_ .and. (.not. is1DX_)) NXC = rtm_obj_%Nx0 - 1
 
-    NYC = rtm_obj_%Ny
-    if (isOpenYx_) NYC = rtm_obj_%Ny + 1
-    if (isMpiY_ .and. (.not. is1DYx_)) NYC = rtm_obj_%Ny - 1
+    NYC = rtm_obj_%Ny0
+    if (isOpenYx_) NYC = rtm_obj_%Ny0 + 1
+    if (isMpiY_ .and. (.not. is1DYx_)) NYC = rtm_obj_%Ny0 - 1
 
     ! Loop over the number of octants needed; get the octant number
     do JOCT = 1, NOCT

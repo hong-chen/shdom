@@ -186,7 +186,7 @@ subroutine shd_mpi__map(rtmAll_obj, prpAll_obj, rtm_obj,  prp_obj)
 
     ! Sets up the mapping of processors for the SHDOM domain (creating the
     ! 2D communicator, comm2D_).  Determines the subdomain property grid
-    ! (prp_obj%Nx,prp_obj%Ny) and internal base grid (rtm_obj%Nx,rtm_obj%Ny) sizes, and outputs the
+    ! (prp_obj%Nx,prp_obj%Ny) and internal base grid (rtm_obj%Nx0,rtm_obj%Ny0) sizes, and outputs the
     ! starting position of this subdomain (prp_obj%xStart,prp_obj%yStart).  Bits 2 and 3
     ! of rtm_obj%flag_bc are set to indicate multiple processors in the X and Y
     ! directions, respectively.  Open boundary conditions (bits 0 and 1 in
@@ -267,13 +267,13 @@ subroutine shd_mpi__map(rtmAll_obj, prpAll_obj, rtm_obj,  prp_obj)
         if (prpAll_obj%Nx .gt. 1) then
 
             prp_obj%Nx = ixyPrp_(2, 1) - ixyPrp_(1, 1) + 1
-            rtm_obj%Nx = nint(rtmAll_obj%Nx*float(prp_obj%Nx - 1)/prpAll_obj%Nx) + 1
-            if (abs(prpAll_obj%Nx/float(rtmAll_obj%Nx) - (prp_obj%Nx - 1)/float(rtm_obj%Nx - 1)) .gt. 0.0001) then
+            rtm_obj%Nx0 = nint(rtmAll_obj%Nx0*float(prp_obj%Nx - 1)/prpAll_obj%Nx) + 1
+            if (abs(prpAll_obj%Nx/float(rtmAll_obj%Nx0) - (prp_obj%Nx - 1)/float(rtm_obj%Nx0 - 1)) .gt. 0.0001) then
                 call shd_mpi__abort('Error [mpi__map]: Even X base grid cannot be preserved&
-                    & for this rtm_obj%Nx and number of processors')
+                    & for this rtm_obj%Nx0 and number of processors')
             end if
-            ixyOut_(1, 1) = nint(rtmAll_obj%Nx*float(ixyPrp_(1, 1) - 1)/prpAll_obj%Nx) + 1
-            ixyOut_(2, 1) = nint(rtmAll_obj%Nx*float(prp_obj%Nx    - 1)/prpAll_obj%Nx)
+            ixyOut_(1, 1) = nint(rtmAll_obj%Nx0*float(ixyPrp_(1, 1) - 1)/prpAll_obj%Nx) + 1
+            ixyOut_(2, 1) = nint(rtmAll_obj%Nx0*float(prp_obj%Nx    - 1)/prpAll_obj%Nx)
             prp_obj%xStart = (ixyPrp_(1, 1) - 1)*prp_obj%dx
             xEnd = (ixyPrp_(2, 1) - 1)*prp_obj%dx
 
@@ -281,13 +281,13 @@ subroutine shd_mpi__map(rtmAll_obj, prpAll_obj, rtm_obj,  prp_obj)
 
             prp_obj%Nx = 1
 
-            ixyOut_(1, 1) = nint(real(rtmAll_obj%Nx)/real(dims(1)))*coords(1) + 1
-            ixyOut_(2, 1) = min(nint(real(rtmAll_obj%Nx)/real(dims(1)))*(coords(1)+1), rtmAll_obj%Nx)
+            ixyOut_(1, 1) = nint(real(rtmAll_obj%Nx0)/real(dims(1)))*coords(1) + 1
+            ixyOut_(2, 1) = min(nint(real(rtmAll_obj%Nx0)/real(dims(1)))*(coords(1)+1), rtmAll_obj%Nx0)
 
-            rtm_obj%Nx = ixyOut_(2, 1) - ixyOut_(1, 1) + 2
+            rtm_obj%Nx0 = ixyOut_(2, 1) - ixyOut_(1, 1) + 2
 
-            prp_obj%xStart = real(prp_obj%dx)/real(rtmAll_obj%Nx) * real((ixyOut_(1, 1)-1))
-            xEnd           = real(prp_obj%dx)/real(rtmAll_obj%Nx) * real((ixyOut_(2, 1)))
+            prp_obj%xStart = real(prp_obj%dx)/real(rtmAll_obj%Nx0) * real((ixyOut_(1, 1)-1))
+            xEnd           = real(prp_obj%dx)/real(rtmAll_obj%Nx0) * real((ixyOut_(2, 1)))
 
             prp_obj%dx = xEnd - prp_obj%xStart
 
@@ -295,7 +295,7 @@ subroutine shd_mpi__map(rtmAll_obj, prpAll_obj, rtm_obj,  prp_obj)
         end if
     else
         ixyOut_(1, 1) = 1
-        ixyOut_(2, 1) =  rtmAll_obj%Nx
+        ixyOut_(2, 1) =  rtmAll_obj%Nx0
         prp_obj%xStart = 0.0
         xEnd = prpAll_obj%Nx*prp_obj%dx
     end if
@@ -305,13 +305,13 @@ subroutine shd_mpi__map(rtmAll_obj, prpAll_obj, rtm_obj,  prp_obj)
         if (prpAll_obj%Ny .gt. 1) then
 
             prp_obj%Ny = ixyPrp_(2, 2) - ixyPrp_(1, 2) + 1
-            rtm_obj%Ny = nint(rtmAll_obj%Ny*float(prp_obj%Ny - 1)/prpAll_obj%Ny) + 1
-            if (abs(prpAll_obj%Ny/float(rtmAll_obj%Ny) - (prp_obj%Ny - 1)/float(rtm_obj%Ny - 1)) .gt. 0.0001) then
+            rtm_obj%Ny0 = nint(rtmAll_obj%Ny0*float(prp_obj%Ny - 1)/prpAll_obj%Ny) + 1
+            if (abs(prpAll_obj%Ny/float(rtmAll_obj%Ny0) - (prp_obj%Ny - 1)/float(rtm_obj%Ny0 - 1)) .gt. 0.0001) then
                 call shd_mpi__abort('Error [mpi__map]: Even Y base grid cannot be preserved&
-                    & for this rtm_obj%Ny and number of processors')
+                    & for this rtm_obj%Ny0 and number of processors')
             end if
-            ixyOut_(1, 2) = nint(rtmAll_obj%Ny*float(ixyPrp_(1, 2) - 1)/prpAll_obj%Ny) + 1
-            ixyOut_(2, 2) = nint(rtmAll_obj%Ny*float(prp_obj%Ny - 1)/prpAll_obj%Ny)
+            ixyOut_(1, 2) = nint(rtmAll_obj%Ny0*float(ixyPrp_(1, 2) - 1)/prpAll_obj%Ny) + 1
+            ixyOut_(2, 2) = nint(rtmAll_obj%Ny0*float(prp_obj%Ny - 1)/prpAll_obj%Ny)
             prp_obj%yStart = (ixyPrp_(1, 2) - 1)*prp_obj%dy
             yEnd = (ixyPrp_(2, 2) - 1)*prp_obj%dy
 
@@ -319,20 +319,20 @@ subroutine shd_mpi__map(rtmAll_obj, prpAll_obj, rtm_obj,  prp_obj)
 
             prp_obj%Ny = 1
 
-            ixyOut_(1, 2) =     nint(real(rtmAll_obj%Ny)/real(dims(2)))*(coords(2)+1)
-            ixyOut_(2, 2) = min(nint(real(rtmAll_obj%Ny)/real(dims(2)))*(coords(2)+1), rtmAll_obj%Ny)
+            ixyOut_(1, 2) =     nint(real(rtmAll_obj%Ny0)/real(dims(2)))*(coords(2)+1)
+            ixyOut_(2, 2) = min(nint(real(rtmAll_obj%Ny0)/real(dims(2)))*(coords(2)+1), rtmAll_obj%Ny0)
 
-            rtm_obj%Ny = ixyOut_(2, 2) - ixyOut_(1, 2) + 2
+            rtm_obj%Ny0 = ixyOut_(2, 2) - ixyOut_(1, 2) + 2
 
-            prp_obj%yStart = real(prp_obj%dy)/real(rtmAll_obj%Ny) * real((ixyOut_(1, 2)-1))
-            yEnd           = real(prp_obj%dy)/real(rtmAll_obj%Ny) * real((ixyOut_(2, 2)))
+            prp_obj%yStart = real(prp_obj%dy)/real(rtmAll_obj%Ny0) * real((ixyOut_(1, 2)-1))
+            yEnd           = real(prp_obj%dy)/real(rtmAll_obj%Ny0) * real((ixyOut_(2, 2)))
 
             prp_obj%dy = yEnd - prp_obj%yStart
 
         end if
     else
         ixyOut_(1, 2) = 1
-        ixyOut_(2, 2) = rtmAll_obj%Ny
+        ixyOut_(2, 2) = rtmAll_obj%Ny0
         prp_obj%yStart = 0.0
         yEnd = prpAll_obj%Ny*prp_obj%dy
     end if
@@ -846,8 +846,8 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
     integer, intent(in) :: NSHOUT
     real, intent(in) :: SUMFLUXES(2, cell_obj%Npts0), SUMDIRFLUX(cell_obj%Npts0)
     real, intent(in) :: SUMFLUXDIV(cell_obj%Npts0), SUMSHTERMS(NSHOUT, cell_obj%Npts0)
-    real, intent(out) :: ALLFLUXES(3, rtmAll_obj%Nz, rtmAll_obj%Ny, rtmAll_obj%Nx), ALLFLUXDIV(rtmAll_obj%Nz, rtmAll_obj%Ny, rtmAll_obj%Nx)
-    real, intent(out) :: ALLSHTERMS(NSHOUT, rtmAll_obj%Nz, rtmAll_obj%Ny, rtmAll_obj%Nx)
+    real, intent(out) :: ALLFLUXES(3, rtmAll_obj%Nz, rtmAll_obj%Ny0, rtmAll_obj%Nx0), ALLFLUXDIV(rtmAll_obj%Nz, rtmAll_obj%Ny0, rtmAll_obj%Nx0)
+    real, intent(out) :: ALLSHTERMS(NSHOUT, rtmAll_obj%Nz, rtmAll_obj%Ny0, rtmAll_obj%Nx0)
     integer, intent(in) :: NSH
     integer, intent(out) :: NCELLSTOT, NPTSTOT, NSHTOT
 
@@ -998,8 +998,8 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
 
     ! Make the X and Y grids for the full domain
     if (myProc_ .eq. 0) then
-        rtmAll_obj%x(1:rtmAll_obj%Nx) = (/(prp_obj_%xDomain*(I - 1)/rtmAll_obj%Nx, I=1, rtmAll_obj%Nx)/)
-        rtmAll_obj%y(1:rtmAll_obj%Ny) = (/(prp_obj_%yDomain*(I - 1)/rtmAll_obj%Ny, I=1, rtmAll_obj%Ny)/)
+        rtmAll_obj%x(1:rtmAll_obj%Nx0) = (/(prp_obj_%xDomain*(I - 1)/rtmAll_obj%Nx0, I=1, rtmAll_obj%Nx0)/)
+        rtmAll_obj%y(1:rtmAll_obj%Ny0) = (/(prp_obj_%yDomain*(I - 1)/rtmAll_obj%Ny0, I=1, rtmAll_obj%Ny0)/)
     end if
 
     ! Get the sum of the cell_obj%Ncell, cell_obj%Npts, and NSH over the processors
@@ -1139,9 +1139,9 @@ subroutine shd_mpi__makeDirect(SPT,&
         else
             Ldownx = 1; Lupx = 2
         end if
-        XMAX = rtm_obj_%x(rtm_obj_%Nx)
+        XMAX = rtm_obj_%x(rtm_obj_%Nx0)
     else
-        XMAX = rtm_obj_%x(rtm_obj_%Nx + 1)
+        XMAX = rtm_obj_%x(rtm_obj_%Nx0 + 1)
     end if
     if (isMpiY_) then
         if (sin(SOLARAZ) .gt. 1.0e-5) then
@@ -1149,9 +1149,9 @@ subroutine shd_mpi__makeDirect(SPT,&
         else
             Ldowny = 3; Lupy = 4
         end if
-        YMAX = rtm_obj_%y(rtm_obj_%Ny)
+        YMAX = rtm_obj_%y(rtm_obj_%Ny0)
     else
-        YMAX = rtm_obj_%y(rtm_obj_%Ny + 1)
+        YMAX = rtm_obj_%y(rtm_obj_%Ny0 + 1)
     end if
 
 
@@ -1225,7 +1225,7 @@ subroutine shd_mpi__makeDirect(SPT,&
             ! Continue the backwards ray integrations from the X boundary
             do J = 1, NINVALID(Ldownx)
                 if (Ldownx .eq. 1) BndDirRealInfo(1, J, Ldownx) = rtm_obj_%x(1)
-                if (Ldownx .eq. 2) BndDirRealInfo(1, J, Ldownx) = rtm_obj_%x(rtm_obj_%Nx)
+                if (Ldownx .eq. 2) BndDirRealInfo(1, J, Ldownx) = rtm_obj_%x(rtm_obj_%Nx0)
                 X = BndDirRealInfo(1, J, Ldownx); Y = BndDirRealInfo(2, J, Ldownx)
                 Z = BndDirRealInfo(3, J, Ldownx); DIRPATH = BndDirRealInfo(4, J, Ldownx)
                 if (Y .lt. (rtm_obj_%y(1) - EPS)) Y = YMAX; if (Y .gt. (YMAX + EPS)) Y = rtm_obj_%y(1)
@@ -1257,7 +1257,7 @@ subroutine shd_mpi__makeDirect(SPT,&
             ! Continue the backwards ray integrations for the Y boundary
             do J = 1, NINVALID(Ldowny)
                 if (Ldowny .eq. 3) BndDirRealInfo(2, J, Ldowny) = rtm_obj_%y(1)
-                if (Ldowny .eq. 4) BndDirRealInfo(2, J, Ldowny) = rtm_obj_%y(rtm_obj_%Ny)
+                if (Ldowny .eq. 4) BndDirRealInfo(2, J, Ldowny) = rtm_obj_%y(rtm_obj_%Ny0)
                 X = BndDirRealInfo(1, J, Ldowny); Y = BndDirRealInfo(2, J, Ldowny)
                 Z = BndDirRealInfo(3, J, Ldowny); DIRPATH = BndDirRealInfo(4, J, Ldowny)
                 if (X .lt. (rtm_obj_%x(1) - EPS)) X = XMAX; if (X .gt. (XMAX + EPS)) X = rtm_obj_%x(1)
@@ -2005,8 +2005,8 @@ subroutine shd_mpi__computeRad(&
             do JX = 1, Nx_out
                 NRAD = NRAD + 1
 
-                if (X0 .ge. (rtm_obj_%x(1) - EPS) .and. X0 .le. (rtm_obj_%x(rtm_obj_%Nx) + EPS) .and.&
-                    Y0 .ge. (rtm_obj_%y(1) - EPS) .and. Y0 .le. (rtm_obj_%y(rtm_obj_%Ny) + EPS)) then
+                if (X0 .ge. (rtm_obj_%x(1) - EPS) .and. X0 .le. (rtm_obj_%x(rtm_obj_%Nx0) + EPS) .and.&
+                    Y0 .ge. (rtm_obj_%y(1) - EPS) .and. Y0 .le. (rtm_obj_%y(rtm_obj_%Ny0) + EPS)) then
                     TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
                     call shd_src__integrateSrc(shdo_obj_%Nstokes,&
                         &mu_out, phi_out, GRIDRAD, src1_Shdo,&
@@ -2089,7 +2089,7 @@ subroutine shd_mpi__computeRad(&
                 ! Continue the backwards ray integrations for the X boundary
                 do J = 1, NINVALID(Ldownx)
                     if (Ldownx .eq. 1) BndRadRealInfo(1, J, Ldownx) = rtm_obj_%x(1)
-                    if (Ldownx .eq. 2) BndRadRealInfo(1, J, Ldownx) = rtm_obj_%x(rtm_obj_%Nx)
+                    if (Ldownx .eq. 2) BndRadRealInfo(1, J, Ldownx) = rtm_obj_%x(rtm_obj_%Nx0)
                     X = BndRadRealInfo(1, J, Ldownx); Y = BndRadRealInfo(2, J, Ldownx)
                     Z = BndRadRealInfo(3, J, Ldownx); TRANSMIT = BndRadRealInfo(4, J, Ldownx)
                     RADIANCE(:) = BndRadRealInfo(5:4 + shdo_obj_%Nstokes, J, Ldownx)
@@ -2124,7 +2124,7 @@ subroutine shd_mpi__computeRad(&
                 ! Continue the backwards ray integrations for the Y boundary
                 do J = 1, NINVALID(Ldowny)
                     if (Ldowny .eq. 3) BndRadRealInfo(2, J, Ldowny) = rtm_obj_%y(1)
-                    if (Ldowny .eq. 4) BndRadRealInfo(2, J, Ldowny) = rtm_obj_%y(rtm_obj_%Ny)
+                    if (Ldowny .eq. 4) BndRadRealInfo(2, J, Ldowny) = rtm_obj_%y(rtm_obj_%Ny0)
                     X = BndRadRealInfo(1, J, Ldowny); Y = BndRadRealInfo(2, J, Ldowny)
                     Z = BndRadRealInfo(3, J, Ldowny); TRANSMIT = BndRadRealInfo(4, J, Ldowny)
                     RADIANCE(:) = BndRadRealInfo(5:4 + shdo_obj_%Nstokes, J, Ldowny)
@@ -2442,8 +2442,8 @@ subroutine shd_mpi__computeCamRad(&
             end if
 
             ! Start the radiance calculation for those rays starting in this subdomain
-            if ((X0 .ge. rtm_obj_%x(1)) .and. (X0 .le. rtm_obj_%x(rtm_obj_%Nx)).and.&
-                (Y0 .ge. rtm_obj_%y(1)) .and. (Y0 .le. rtm_obj_%y(rtm_obj_%Ny))) then
+            if ((X0 .ge. rtm_obj_%x(1)) .and. (X0 .le. rtm_obj_%x(rtm_obj_%Nx0)).and.&
+                (Y0 .ge. rtm_obj_%y(1)) .and. (Y0 .le. rtm_obj_%y(rtm_obj_%Ny0))) then
 
                 ! MU2,PHI2 is radiance travel direction (opposite the camera viewing direction)
                 MU2 = -COSTH
@@ -2524,9 +2524,9 @@ subroutine shd_mpi__computeCamRad(&
         do IBND = 1, 4
             do J = 1, NINCOMING(IBND)
                 if (IBND .eq. 1) BndRecvRadRealInfo(1, J, IBND) = rtm_obj_%x(1)
-                if (IBND .eq. 2) BndRecvRadRealInfo(1, J, IBND) = rtm_obj_%x(rtm_obj_%Nx)
+                if (IBND .eq. 2) BndRecvRadRealInfo(1, J, IBND) = rtm_obj_%x(rtm_obj_%Nx0)
                 if (IBND .eq. 3) BndRecvRadRealInfo(2, J, IBND) = rtm_obj_%y(1)
-                if (IBND .eq. 4) BndRecvRadRealInfo(2, J, IBND) = rtm_obj_%y(rtm_obj_%Ny)
+                if (IBND .eq. 4) BndRecvRadRealInfo(2, J, IBND) = rtm_obj_%y(rtm_obj_%Ny0)
                 X = BndRecvRadRealInfo(1, J, IBND)
                 Y = BndRecvRadRealInfo(2, J, IBND)
                 Z = BndRecvRadRealInfo(3, J, IBND)
