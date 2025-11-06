@@ -144,7 +144,7 @@ subroutine shd_solv__solveRte(&
     allocate(YlmSolar_Shdo(prp_obj_%NlegSet, shdo_obj_%Nlm))
     allocate(flagFFT_Shdo(shdo_obj_%Nmu), wgtMu_Shdo(shdo_obj_%Nmu), wPhiFFT_Shdo(shdo_obj_%Nmu*(3*shdo_obj_%Nphi+ 15)))
 
-    if (doAccel) then
+    if (doAccel .and. (.not. allocated(isrcD_Shdo))) then
         allocate(isrcD_Shdo(rtm_obj_%maxNpts + 1), &
                   srcD_Shdo(shdo_obj_%Nstokes, shdo_obj_%maxNptsSH))
     end if
