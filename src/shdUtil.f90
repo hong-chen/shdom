@@ -48,7 +48,7 @@ module shd_util
     use globals_type,  only: shd_type_grid
 
     use globals_obj,   only: rtm_obj_, xyz_Rtm_, &
-                             i8Grid_Cell_, i6Cell_Cell_
+                             i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_
 
     implicit none
     private
@@ -139,7 +139,7 @@ subroutine shd_util__interpData(OLDNPTS,&
         do IC = 1, 8
             IP = i8Grid_Cell_(IC, ICELL)
             if (IP .gt. OLDNPTS) then
-                IPARENT = grid_obj%i2Tree(1, ICELL)
+                IPARENT = i2Tree_Cell_(1, ICELL)
                 ! Go through all 12 edges of parent cell to find which one has point
                 do IDIR = 1, 3
                     DIR1 = mod(IDIR - 1 + 1, 3) + 1
@@ -324,9 +324,9 @@ subroutine shd_util__findCell(X0, Y0, Z0, icell,&
     ! split in, then compare the grid point with the test point
     ! (X0,Y0,Z0) to find which child cell (pos or neg) the test
     ! point is in.
-    do while (grid_obj%i2Tree(2, icell) .gt. 0)
+    do while (i2Tree_Cell_(2, icell) .gt. 0)
         DIR = ibits(int(grid_obj%flag(icell)), 2, 2)
-        IC = grid_obj%i2Tree(2, icell) + 1
+        IC = i2Tree_Cell_(2, icell) + 1
         IPTR = i8Grid_Cell_(1, IC)
         if (DIR .eq. 1) then
             if (X0 .lt. xyz_Rtm_(1, IPTR)) IC = IC - 1
@@ -365,13 +365,13 @@ subroutine shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, INEXT,&
         !   cell to start the tree search.
         IC = abs(INEXT)
         ! Go down the tree until there is no children
-        do while (grid_obj%i2Tree(2, IC) .gt. 0)
+        do while (i2Tree_Cell_(2, IC) .gt. 0)
             ! Get the direction cell is split
             DIR = ibits(int(grid_obj%flag(IC)), 2, 2)
             if (DIR .eq. 0) stop 'Error [_findNextCell]: No split direction.'
             ! If split is in direction of face then choose the near child cell
             !   which is the negative side cell if this is a positive face.
-            IC1 = grid_obj%i2Tree(2, IC)
+            IC1 = i2Tree_Cell_(2, IC)
             if (DIR .eq. JFACE) then
                 IC = IC1 + 1 - mod(IFACE - 1, 2)
             else

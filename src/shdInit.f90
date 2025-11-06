@@ -202,7 +202,7 @@ end subroutine shd_init__makeGrid
 
 subroutine shd_init__makeCell(rtm_obj, &
                               grid_OBJ, &
-                              xyz_Rtm, i8Grid_Cell, i6Cell_Cell)
+                              xyz_Rtm, i8Grid_Cell, i6Cell_Cell, i2Tree_Cell)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Description:
@@ -250,7 +250,7 @@ subroutine shd_init__makeCell(rtm_obj, &
     !                   the face of current cell.  In this case the
     !                   cell pointed to is the parent cell that has a
     !                   has same or larger face adjoining current cell.
-    !   grid_obj%i2Tree(2,IC) : pointer to parent and children cells in tree structure.
+    !   i2Tree_Cell(2,IC) : pointer to parent and children cells in tree structure.
     !                   First is pointer to parent cell, 0 for a base cell.
     !                   Second is pointer to first of the two children cells.
     !                   This pointer is 0 if there are no children cells.
@@ -271,6 +271,7 @@ subroutine shd_init__makeCell(rtm_obj, &
     real(kind=R__),    intent(out) :: xyz_Rtm(3, *)
     integer(kind=I__), intent(out) :: i8Grid_Cell(8, *)
     integer(kind=I__), intent(out) :: i6Cell_Cell(6, *)
+    integer(kind=I__), intent(out) :: i2Tree_Cell(2, *)
 
     integer(kind=I__) :: ix, iy, iz, ix0, ix1, iy0, iy1, i, Nxc, Nyc
 
@@ -423,8 +424,8 @@ subroutine shd_init__makeCell(rtm_obj, &
                     i6Cell_Cell(6, i) = i + 1
                 end if
                 ! Base grid cells have no parents or children
-                grid_obj%i2Tree(1, i) = 0
-                grid_obj%i2Tree(2, i) = 0
+                i2Tree_Cell(1, i) = 0
+                i2Tree_Cell(2, i) = 0
             end do
         end do
     end do

@@ -223,7 +223,7 @@ module globals_type
         integer(kind=I__) :: maxNpts  = -999
         integer(kind=I__) :: maxNcell = -999
 
-        integer(kind=I__), pointer:: i2Tree(:, :) => null()
+        !integer(kind=I__), pointer:: i2Tree(:, :) => null()
         integer(kind=2),   pointer:: flag(:) => null()
 
         logical :: isAllocated  = .false.
@@ -432,6 +432,7 @@ module globals_obj
 
     integer(kind=I__), allocatable, save :: i8Grid_Cell_(:, :) ! (8, cell_obj%maxNcell)
     integer(kind=I__), allocatable, save :: i6Cell_Cell_(:, :) ! (6, cell_obj%maxNcell)
+    integer(kind=I__), allocatable, save :: i2Tree_Cell_(:, :) ! (2, cell_obj%maxNcell)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 

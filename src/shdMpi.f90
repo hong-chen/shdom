@@ -53,7 +53,7 @@ module shd_mpi
                              shd_type_sen
 
     use globals_obj,   only:  rtm_obj_, xyz_Rtm_, ext_Rtm_, leg_Rtm_, &
-                              i8Grid_Cell_, i6Cell_Cell_, &
+                              i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, &
                              shdo_obj_, isrcJ_Shdo_, srcJ_Shdo_, &
                               src_obj_, &
                               prp_obj_, &
@@ -3203,9 +3203,9 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     ! which dimension (X,Y,Z) the parent cell was split in, then compare
     ! the grid point with the test point (X,Y,Z) to find which child cell
     ! (pos or neg) the test point is in.
-    do while (grid_obj%i2Tree(2, ICELL) .gt. 0)
+    do while (i2Tree_Cell_(2, ICELL) .gt. 0)
         DIR = ibits(int(grid_obj%flag(ICELL)), 2, 2)
-        IC = grid_obj%i2Tree(2, ICELL) + 1
+        IC = i2Tree_Cell_(2, ICELL) + 1
         IPTR = i8Grid_Cell_(1, IC)
         if (DIR .eq. 1) then
             if (X .lt. xyz_Rtm_(1, IPTR)) IC = IC - 1

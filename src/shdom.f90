@@ -53,7 +53,7 @@ program shdom
                              shd_type_grid
 
     use globals_obj,   only: rtm_obj_, xyz_Rtm_, temp_Rtm_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, leg_Rtm_, ipha_Rtm_, &
-                             i8Grid_Cell_, i6Cell_Cell_, &
+                             i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, &
                              shdo_obj_, iradI_Shdo_, &
                                          radI_Shdo_, &
                                         isrcJ_Shdo_, &
@@ -144,8 +144,6 @@ program shdom
     type(shd_type_grid) :: grid_obj
 
     integer(kind=2),   allocatable, target :: flag_Cell(:)
-    integer(kind=I__), allocatable, target :: &
-                                              i2Tree_Cell(:, :)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     real(kind=R__),    allocatable :: work(:)
@@ -879,7 +877,7 @@ program shdom
     if (isSHOut)    NmaxNpts = NmaxNpts + Nsh_out
     if (isSrcOut)   NmaxNpts = NmaxNpts + shdo_obj_%Nstokes
 
-    NmaxNpts = NmaxNpts + 16.5*CELL_TO_POINT_RATIO ! i8Grid_Cell_[8.0], i6Cell_Cell_[6.0], i2Tree_Cell[2.0], flag_Cell[0.5]
+    NmaxNpts = NmaxNpts + 16.5*CELL_TO_POINT_RATIO ! i8Grid_Cell_[8.0], i6Cell_Cell_[6.0], i2Tree_Cell_[2.0], flag_Cell[0.5]
 
     ! note: in addition to xxx_Shdo_, here memUsed accounts for isrcD_Shdo and srcD_Shdo
     !       that will be used in shd_solv__solveRte(shdSolv.f90)
@@ -1011,10 +1009,9 @@ program shdom
     ! pointer to 8 grid points belonging to a cell
     ! pointer to 6 neighboring cells of a cell
     ! pointer to parent and children cells in tree structure
-    allocate(i8Grid_Cell_(8, grid_obj%maxNcell), i6Cell_Cell_(6, grid_obj%maxNcell), i2Tree_Cell(2, grid_obj%maxNcell))
+    allocate(i8Grid_Cell_(8, grid_obj%maxNcell), i6Cell_Cell_(6, grid_obj%maxNcell), i2Tree_Cell_(2, grid_obj%maxNcell))
 
     grid_obj%flag   => flag_Cell
-    grid_obj%i2Tree => i2Tree_Cell
     grid_obj%isAllocated = .true.
     !╰────────────────────────────────────────────────╯!
 
@@ -1070,7 +1067,7 @@ program shdom
     call shd_io__restoreState(fileInp_sav, &
         doRadInit, doGridInit, fluxTot, &
         rtm_obj_, xyz_Rtm_, &
-        grid_OBJ, i8Grid_Cell_, i6Cell_Cell_, &
+        grid_OBJ, i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, &
         shdo_obj_, iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_)
 
 
@@ -1118,7 +1115,7 @@ program shdom
         !   then make the base grid point positions and grid cell structure.
         if (isBaseOut .or. ((ig_ckd .eq. ckd_obj_%Ng) .and. doGridInit)) then
             ! note: we might not need <rtm_obj_> after all
-            call shd_init__makeCell(rtm_obj_, grid_OBJ, xyz_Rtm_, i8Grid_Cell_, i6Cell_Cell_)
+            call shd_init__makeCell(rtm_obj_, grid_OBJ, xyz_Rtm_, i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_)
             grid_obj%Ncell0 = grid_obj%Ncell
         end if
 
@@ -1204,7 +1201,7 @@ program shdom
 
         if (isBaseOut) then
             ! If outputting only the base grid then throw out the other points
-            call shd_init__makeCell(rtm_obj_, grid_OBJ, xyz_Rtm_, i8Grid_Cell_, i6Cell_Cell_)
+            call shd_init__makeCell(rtm_obj_, grid_OBJ, xyz_Rtm_, i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_)
         else
             ! For the output from the grid point arrays (Flux, Net flux, SH)
             !   we may need to interpolate the running k-distribution sum
@@ -1412,11 +1409,9 @@ program shdom
 
     ! grid_obj
     !╭────────────────────────────────────────────────╮!
-    deallocate(flag_Cell, i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell)
+    deallocate(flag_Cell, i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_)
     if (grid_obj%isAllocated) then
-        nullify(&
-                grid_obj%flag, &
-                grid_obj%i2Tree)
+        nullify(grid_obj%flag)
         grid_obj%isAllocated = .false.
     end if
     !╰────────────────────────────────────────────────╯!

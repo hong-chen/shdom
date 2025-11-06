@@ -47,7 +47,7 @@ module shd_grid
     use globals_type,  only: shd_type_grid
 
     use globals_obj,   only:  rtm_obj_, xyz_Rtm_, temp_Rtm_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, leg_Rtm_, ipha_Rtm_, &
-                              i8Grid_Cell_, i6Cell_Cell_, &
+                              i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, &
                              shdo_obj_, isrcJ_Shdo_, srcJ_Shdo_, &
                               src_obj_, &
                               prp_obj_, temp_Prp_, ext_Prp_, ssa_Prp_, leg_Prp_, ipha_Prp_, &
@@ -229,7 +229,7 @@ subroutine shd_grid__matchGridPnt(&
 
         ! If at an end cell then check for a gridpoint match at the four
         !   corners of the cell's face
-        do while (grid_obj%i2Tree(2, IC) .eq. 0)
+        do while (i2Tree_Cell_(2, IC) .eq. 0)
             do I = 1, 4
                 ipts = i8Grid_Cell_(gridFace(I, KFACE), IC)
                 if (XP .eq. xyz_Rtm_(1, ipts) .and. YP .eq. xyz_Rtm_(2, ipts)&
@@ -251,7 +251,7 @@ subroutine shd_grid__matchGridPnt(&
 
         ! If split is in direction of face then choose the near child cell
         !   which is the negative side cell if this is a positive face.
-        IC1 = grid_obj%i2Tree(2, IC)
+        IC1 = i2Tree_Cell_(2, IC)
         if (DIR .eq. idir) then
             IC = IC1 + 1 - mod(iface - 1, 2)
         else
@@ -498,10 +498,10 @@ end subroutine shd_grid__makeSweepOrder
 
 subroutine shd_grid__divideCell(&
     &icell, idir, newPts,&
-    &grid_obj, xyz_Rtm, i8Grid_Cell, i6Cell_Cell)
+    &grid_obj, xyz_Rtm, i8Grid_Cell, i6Cell_Cell, i2Tree_Cell)
 
     !   Divides a single cell (icell) in the idir direction (1=Z,2=Y,3=X)
-    ! Makes the pointers to the two new cells (grid_obj%i2Tree), set the flags
+    ! Makes the pointers to the two new cells (i2Tree_Cell), set the flags
     ! (grid_obj%flag), creates the new grid points if they don't exist already,
     ! and updates the neighbor pointers (i6Cell_Cell) for the new cells and
     ! their neighboring cells.
@@ -511,12 +511,13 @@ subroutine shd_grid__divideCell(&
     real(kind=R__),    intent(inout) :: xyz_Rtm(3, *)
     integer(kind=I__), intent(inout) :: i8Grid_Cell(8, *)
     integer(kind=I__), intent(inout) :: i6Cell_Cell(6, *)
+    integer(kind=I__), intent(inout) :: i2Tree_Cell(2, *)
 
     integer icell, idir, newPts(3, 4)
     integer newCell, iface, I
 
     ! Only allow to divide an end cell (i.e. one not yet divided)
-    if (grid_obj%i2Tree(2, icell) .ne. 0) then
+    if (i2Tree_Cell(2, icell) .ne. 0) then
         stop 'Error [_divideCell]: Cannot divide already split cell.'
     end if
 
@@ -524,11 +525,11 @@ subroutine shd_grid__divideCell(&
     !   children point back to parent.
     newCell = grid_obj%Ncell + 1
     grid_obj%Ncell = grid_obj%Ncell + 2
-    grid_obj%i2Tree(2, icell) = newCell
-    grid_obj%i2Tree(1, newCell) = icell
-    grid_obj%i2Tree(2, newCell) = 0
-    grid_obj%i2Tree(1, newCell + 1) = icell
-    grid_obj%i2Tree(2, newCell + 1) = 0
+    i2Tree_Cell(2, icell) = newCell
+    i2Tree_Cell(1, newCell) = icell
+    i2Tree_Cell(2, newCell) = 0
+    i2Tree_Cell(1, newCell + 1) = icell
+    i2Tree_Cell(2, newCell + 1) = 0
     ! Do the flags: put the splitting direction in the parent and
     !   inherit the boundary flags for the children.
     grid_obj%flag(icell) = ior(int(grid_obj%flag(icell)), ishft(idir, 2))
@@ -618,7 +619,7 @@ subroutine shd_grid__matchNeighCellFace(iface, IC,&
             &xyz_Rtm_(DIR2, IC1) .ge. xyz_Rtm_(DIR2, IN1) .and.&
             &xyz_Rtm_(DIR2, IC8) .le. xyz_Rtm_(DIR2, IN8)) then
             ! If this is the bottom of the tree then we have a face match
-            if (grid_obj%i2Tree(2, icellNeigh) .eq. 0) then
+            if (i2Tree_Cell_(2, icellNeigh) .eq. 0) then
                 i6Cell_Cell(iface, IC) =  icellNeigh
             else
                 i6Cell_Cell(iface, IC) = -icellNeigh
@@ -640,11 +641,11 @@ subroutine shd_grid__matchNeighCellFace(iface, IC,&
 
         ! Go down the neighbors cell tree until there is no children,
         !   finding the cell that contains the center of the new face.
-        if (grid_obj%i2Tree(2, icellNeigh) .eq. 0) then
+        if (i2Tree_Cell_(2, icellNeigh) .eq. 0) then
             DONE = .true.
         else
             DIR = ibits(int(grid_obj%flag(icellNeigh)), 2, 2)
-            INN = grid_obj%i2Tree(2, icellNeigh)
+            INN = i2Tree_Cell_(2, icellNeigh)
             if (DIR .eq. JFACE) then
                 icellNeigh = INN + 1 - mod(iface - 1, 2)
             else
@@ -685,7 +686,7 @@ subroutine shd_grid__inheritNeighCell(icell, iface, icellNeigh,&
     do while (.not. DONE)
         i6Cell_Cell(iface, IC) = icellNeigh
         ! If this is an end cell then pop the stack
-        if (grid_obj%i2Tree(2, IC) .eq. 0) then
+        if (i2Tree_Cell_(2, IC) .eq. 0) then
             ! If no more to pop then we are done
             if (SP .eq. 0) then
                 DONE = .true.
@@ -699,14 +700,14 @@ subroutine shd_grid__inheritNeighCell(icell, iface, icellNeigh,&
             ! If split is in same direction as face then do only close child
             DIR = ibits(int(grid_obj%flag(IC)), 2, 2)
             if (DIR .eq. JFACE) then
-                IC = grid_obj%i2Tree(2, IC) + mod(iface - 1, 2)
+                IC = i2Tree_Cell_(2, IC) + mod(iface - 1, 2)
             else
                 ! Otherwise need to go to both children so put the second child
                 !   on the stack and set the pointer to go to the first child next.
                 SP = SP + 1
                 if (SP .gt. 50) stop 'Error [_inheritNeighCell]: Stack exceeded.'
-                STACK(SP) = grid_obj%i2Tree(2, IC) + 1
-                IC = grid_obj%i2Tree(2, IC)
+                STACK(SP) = i2Tree_Cell_(2, IC) + 1
+                IC = i2Tree_Cell_(2, IC)
             end if
         end if
     end do
@@ -774,7 +775,7 @@ subroutine shd_grid__testGridSmooth(&
                     GRIDSIZE(J) = abs(xyz_Rtm_(ID, i8Grid_Cell_(1, INCELL(J)))&
                         &- xyz_Rtm_(ID, i8Grid_Cell_(8, INCELL(J))))
 
-                    if (grid_obj%i2Tree(1, INCELL(J)) .eq. 0) then
+                    if (i2Tree_Cell_(1, INCELL(J)) .eq. 0) then
                         GRIDSIZE(J) = CURGRIDSIZE(ID)
                     end if
                     if (ID .le. 2 .and. btest(grid_obj%flag(INCELL(J)), ID - 1)) then
@@ -1043,7 +1044,7 @@ logical function sweepCellNext(BCFLAG, NXC, NYC, NZ, IOCT,&
     do while (.not. DONE)
         ! If this is an end cell then we are either at the desired cell
         !   or if this is the old cell then we need to pop the stack
-        if (grid_obj%i2Tree(2, IC) .eq. 0) then
+        if (i2Tree_Cell_(2, IC) .eq. 0) then
             if (IC .ne. icell) then
                 DONE = .true.
             else
@@ -1067,11 +1068,11 @@ logical function sweepCellNext(BCFLAG, NXC, NYC, NZ, IOCT,&
             if (SP .gt. 50) stop 'Error [sweepCellNext]: Stack exceeded.'
             idir = ibits(int(grid_obj%flag(IC)), 2, 2) - 1
             if (btest(IOCT - 1, idir)) then
-                STACK(SP) = grid_obj%i2Tree(2, IC) + 1
-                IC = grid_obj%i2Tree(2, IC)
+                STACK(SP) = i2Tree_Cell_(2, IC) + 1
+                IC = i2Tree_Cell_(2, IC)
             else
-                STACK(SP) = grid_obj%i2Tree(2, IC)
-                IC = grid_obj%i2Tree(2, IC) + 1
+                STACK(SP) = i2Tree_Cell_(2, IC)
+                IC = i2Tree_Cell_(2, IC) + 1
             end if
         end if
     end do
@@ -1619,7 +1620,7 @@ subroutine shd_grid__splitGrid(&
     DIRFLUX, &
     SOLARFLUX, YLMSUN, &
     ADAPTCRIT, ADAPTIND, &
-    grid_obj, xyz_Rtm, i8Grid_Cell, i6Cell_Cell, &
+    grid_obj, xyz_Rtm, i8Grid_Cell, i6Cell_Cell, i2Tree_Cell, &
     temp_Rtm, planck_Rtm, ext_Rtm, ssa_Rtm, leg_Rtm, ipha_Rtm, &
     iradI_Shdo, radI_Shdo, &
     isrcJ_Shdo, srcJ_Shdo)
@@ -1635,6 +1636,7 @@ subroutine shd_grid__splitGrid(&
     real(kind=R__),    intent(inout) :: xyz_Rtm(3, *)
     integer(kind=I__), intent(inout) :: i8Grid_Cell(8, *)
     integer(kind=I__), intent(inout) :: i6Cell_Cell(6, *)
+    integer(kind=I__), intent(inout) :: i2Tree_Cell(2, *)
 
     real(kind=R__),    intent(inout) :: temp_Rtm(*), planck_Rtm(*), ext_Rtm(*), ssa_Rtm(*)
     real(kind=R__),    intent(inout) :: leg_Rtm(prp_obj_%NlegSet, &
@@ -1669,7 +1671,7 @@ subroutine shd_grid__splitGrid(&
             !   splitting criterion for 3 directions for each cell.
             N = 0
             do icell = ICELL1, grid_obj%Ncell
-                if (grid_obj%i2Tree(2, icell) .eq. 0) then
+                if (i2Tree_Cell_(2, icell) .eq. 0) then
                     ! If this is a end node cell then compute adaptive criterion
                     call shd_grid__testCellSplit(icell,&
                         &ADAPT, ADAPTCRIT(N + 1), idir,&
@@ -1707,7 +1709,7 @@ subroutine shd_grid__splitGrid(&
                     icell = int(ADAPTIND(I))/4
                     idir = iand(int(ADAPTIND(I)), 3)
                     ! Create the new grid points and make pointers
-                    call shd_grid__divideCell(icell, idir, newPts, grid_obj, xyz_Rtm, i8Grid_Cell, i6Cell_Cell)
+                    call shd_grid__divideCell(icell, idir, newPts, grid_obj, xyz_Rtm, i8Grid_Cell, i6Cell_Cell, i2Tree_Cell)
 
                     ! Interpolate the medium properties, radiance, and source
                     call shd_grid__interpNewGridPnt(newPts,&
@@ -1746,7 +1748,7 @@ subroutine shd_grid__splitGrid(&
                     ! idir = 0
                     if (idir .gt. 0) then
                         ! Create the new grid points and make pointers
-                        call shd_grid__divideCell(icell, idir, newPts, grid_obj, xyz_Rtm, i8Grid_Cell, i6Cell_Cell)
+                        call shd_grid__divideCell(icell, idir, newPts, grid_obj, xyz_Rtm, i8Grid_Cell, i6Cell_Cell, i2Tree_Cell)
 
                         ! Interpolate the medium properties, radiance, and source
                         call shd_grid__interpNewGridPnt(newPts,&
@@ -1785,7 +1787,7 @@ subroutine shd_grid__splitGrid(&
     ! Find the max adaptive cell criterion after the cell divisions
     SPLITCRIT = 0.0
     do icell = 1, grid_obj%Ncell
-        if (grid_obj%i2Tree(2, icell) .eq. 0) then
+        if (i2Tree_Cell_(2, icell) .eq. 0) then
             call shd_grid__testCellSplit(icell,&
                 &ADAPT, ADAPTCRIT(1), idir,&
                 &grid_obj)

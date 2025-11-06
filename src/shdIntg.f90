@@ -742,7 +742,7 @@ subroutine shd_intg__backIntegrate3D_(&
     !                       the face of current cell.  In this case the
     !                       cell pointed to is the parent cell that has a
     !                       has same or larger face adjoining current cell.
-    !   grid_obj%i2Tree(2,grid_obj%Ncell) : integer array, pointer to parent and children cells in tree structure.
+    !   i2Tree_Cell_(2,grid_obj%Ncell) : integer array, pointer to parent and children cells in tree structure.
     !                       First is pointer to parent cell, 0 for a base cell.
     !                       Second is pointer to first of the two children cells.
     !                       This pointer is 0 if there are no children cells.
