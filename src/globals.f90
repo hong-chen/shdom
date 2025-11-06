@@ -220,13 +220,12 @@ module globals_type
         integer(kind=I__) :: Ny = -999
         integer(kind=I__) :: Nz = -999
 
-        integer(kind=I__) :: Npts0  = -999
-        integer(kind=I__) :: Ncell0 = -999
-
+        integer(kind=I__) :: Npts0 = -999
         integer(kind=I__) :: Npts  = -999
-        integer(kind=I__) :: Ncell = -999
-
         integer(kind=I__) :: maxNpts  = -999
+
+        integer(kind=I__) :: Ncell0 = -999
+        integer(kind=I__) :: Ncell  = -999
         integer(kind=I__) :: maxNcell = -999
 
         logical :: isAllocated  = .false.
