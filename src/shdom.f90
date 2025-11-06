@@ -389,7 +389,7 @@ program shdom
     ! X, Y, Z grids
     rtmAll_obj%Nx0 = max(1, rtmAll_obj%Nx0)
     rtmAll_obj%Ny0 = max(1, rtmAll_obj%Ny0)
-    rtmAll_obj%Nz = max(2, rtmAll_obj%Nz)
+    rtmAll_obj%Nz  = max(2, rtmAll_obj%Nz)
 
     ! If single plane or column then force IP mode
     !   if              3D rtmAll_obj%flag_ip=0, bit representation '0000'
@@ -559,9 +559,9 @@ program shdom
     allocate(temp_Prp_(prp_obj_%maxNpts),  &
               ext_Prp_(prp_obj_%maxNpts),  &
               ssa_Prp_(prp_obj_%maxNpts),  &
-              leg_Prp_(1:prp_obj_%NlegSet, &
-                       0:prp_obj_%maxNleg, &
-                       1:prp_obj_%maxNptsLeg/(prp_obj_%maxNleg+1)/prp_obj_%NlegSet), &
+              leg_Prp_(prp_obj_%NlegSet, &
+                     0:prp_obj_%maxNleg, &
+                       prp_obj_%maxNptsLeg/(prp_obj_%maxNleg+1)/prp_obj_%NlegSet), &
              ipha_Prp_(prp_obj_%maxNpts))
 
     ! note: in addition to xxx_Prp_, here memUsed accounts for extDir_Prp
@@ -1104,7 +1104,6 @@ program shdom
         ! If this is the first time through or we always want a base grid,
         !   then make the base grid point positions and grid cell structure.
         if (isBaseOut .or. ((ig_ckd .eq. ckd_obj_%Ng) .and. doGridInit)) then
-            ! note: we might not need <rtm_obj_> after all
             call shd_init__makeCell(rtm_obj_, cell_obj_, xyz_Rtm_, i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, flag_Cell_)
             cell_obj_%Npts0 = cell_obj_%Npts
         end if
