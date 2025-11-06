@@ -980,7 +980,7 @@ program shdom
     ! rtm
     !╭────────────────────────────────────────────────╮!
     ! x, y, z grids
-    allocate(rtm_obj_%x(rtm_obj_%Nx+1), rtm_obj_%y(rtm_obj_%Ny+1), rtm_obj_%z(cell_obj_%Nz))
+    allocate(rtm_obj_%x(rtm_obj_%Nx+1), rtm_obj_%y(rtm_obj_%Ny+1), rtm_obj_%z(rtm_obj_%Nz))
     rtm_obj_%isAllocated = .true.
 
     ! temperature and planck radiance (maybe we don't need this for shortwave)

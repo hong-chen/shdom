@@ -192,8 +192,9 @@ module globals_type
         integer(kind=I__) :: Nz = -999
 
         integer(kind=I__) :: maxNz   = -999
-        integer(kind=I__) :: maxNpts = -999
         integer(kind=I__) :: maxNptsLeg = -999
+
+        integer(kind=I__) :: maxNpts = -999
 
         real(kind=R__) :: dx = -999.0
         real(kind=R__) :: dy = -999.0

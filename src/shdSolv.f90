@@ -192,7 +192,7 @@ subroutine shd_solv__solveRte(&
     if (.not. doRadInit) then
         ! Initialize the radiance on the base grid using Eddington
         ! two-stream plane-parallel
-        call shd_init__makeRad(shdo_obj_%Nstokes, cell_obj_%Nx*cell_obj_%Ny, cell_obj_%Nz,&
+        call shd_init__makeRad(shdo_obj_%Nstokes, cell_obj_%Nx*cell_obj_%Ny, rtm_obj_%Nz,&
             &iradI_Shdo_, rtm_obj_%z,&
             &ext_Rtm_, ssa_Rtm_, leg_Rtm_, temp_Rtm_, ipha_Rtm_,&
             &src_obj_%type, src_obj_%avgSolar0, src_obj_%avgMu, src_obj_%skyRad,&
@@ -221,7 +221,7 @@ subroutine shd_solv__solveRte(&
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Make the pointers to the grid points on the top and bottom boundaries
     call shd_grid__findBndryPnt(shdo_obj_%Nang, MAXNBC, MAXBCRAD,&
-        &rtm_obj_%z(1), rtm_obj_%z(cell_obj_%Nz),&
+        &rtm_obj_%z(1), rtm_obj_%z(rtm_obj_%Nz),&
         &NTOPPTS, NBOTPTS, BCPTR)
     if (sfc_obj_%type(1:1) .eq. 'V') then
         ! If this is a variable surface then bilinearly interpolate
