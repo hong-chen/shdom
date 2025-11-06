@@ -223,7 +223,6 @@ module globals_type
         integer(kind=I__) :: maxNpts  = -999
         integer(kind=I__) :: maxNcell = -999
 
-        !integer(kind=I__), pointer:: i2Tree(:, :) => null()
         integer(kind=2),   pointer:: flag(:) => null()
 
         logical :: isAllocated  = .false.
