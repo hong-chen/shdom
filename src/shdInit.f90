@@ -49,7 +49,7 @@ module shd_init
                              shd_type_prp, &
                              shd_type_sfc
 
-    use globals_obj, only: cell_obj_, &
+    use globals_obj, only:  rtm_obj_, &
                            shdo_obj_, &
                             src_obj_, &
                             prp_obj_, &
@@ -233,7 +233,7 @@ subroutine shd_init__makeCell(rtm_obj, &
     !                        are evenly spaced in X and Y.
     !
     ! Output:
-    !   cell_obj%Npts : total number of grid points
+    !   rtm_obj%Npts : total number of grid points
     !   cell_obj%Ncell: total number of cells
     !   xyz_Rtm(3,IP) : X,Y,Z coordinate values of grid point locations
     !   i8Grid_Cell(8,IC) : pointer to 8 grid points belonging to a cell.
@@ -266,7 +266,7 @@ subroutine shd_init__makeCell(rtm_obj, &
     ! IP is a grid point index, IC is a cell index.
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    type(shd_type_rtm),  intent(in)    :: rtm_obj
+    type(shd_type_rtm),  intent(inout) :: rtm_obj
     type(shd_type_cell), intent(inout) :: cell_obj
 
     real(kind=R__),    intent(out) :: xyz_Rtm(3, *)
@@ -289,7 +289,7 @@ subroutine shd_init__makeCell(rtm_obj, &
             end do
         end do
     end do
-    cell_obj%Npts = i
+    rtm_obj%Npts = i
 
     Nxc = rtm_obj%Nx0
     if (isOpenX_) Nxc = rtm_obj%Nx0 + 1
@@ -483,7 +483,7 @@ subroutine shd_init__makePrp(&
         end do
     end if
 
-    do I = 1, cell_obj_%Npts
+    do I = 1, rtm_obj_%Npts
         if (doDeltaM) then
             if (prp_obj_%Npha .gt. 0) then
                 F = leg_Rtm(1, shdo_obj_%maxNl + 1, ipha_Rtm(I))

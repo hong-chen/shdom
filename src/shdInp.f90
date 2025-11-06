@@ -2003,7 +2003,7 @@ subroutine shd_io__restoreState(&
     open (UNIT=3, FILE=trim(adjustl(INSAVEFILE)), STATUS='OLD',&
         &FORM='UNFORMATTED', ERR=900)
 
-    read (3) NSTI, NXI, NYI, NZI, MLI, MMI, NLMI, cell_obj%Npts, cell_obj%Ncell
+    read (3) NSTI, NXI, NYI, NZI, MLI, MMI, NLMI, rtm_obj%Npts, cell_obj%Ncell
 
     if ((NXI .ne. rtm_obj%Nx0) .or. (NYI .ne. rtm_obj%Ny0) .or. (NZI .ne. rtm_obj%Nz)) then
         if (verbose_ .ge. 4) write (6, '(A, 3I6)') 'Warning [_restoreState]: wrong grid size:', NXI, NYI, NZI
@@ -2027,19 +2027,19 @@ subroutine shd_io__restoreState(&
     read (3) ((i2Tree_Cell(j, i), j=1, 2), i=1, cell_obj%Ncell)
     read (3) (flag_Cell(i), i=1, cell_obj%Ncell)
 
-    read (3) ((xyz_Rtm(j, i), j=1, 3), i=1, cell_obj%Npts)
-    read (3) ((FLUXES(j, i), j=1, 2), i=1, cell_obj%Npts)
+    read (3) ((xyz_Rtm(j, i), j=1, 3), i=1, rtm_obj%Npts)
+    read (3) ((FLUXES(j, i), j=1, 2), i=1, rtm_obj%Npts)
 
-    read (3) (isrcJ_Shdo(i), i=1, cell_obj%Npts + 1)
+    read (3) (isrcJ_Shdo(i), i=1, rtm_obj%Npts + 1)
 
-    NS = isrcJ_Shdo(cell_obj%Npts + 1)
+    NS = isrcJ_Shdo(rtm_obj%Npts + 1)
     read (3) ((srcJ_Shdo(j, i), j=1, shdo_obj%Nstokes), i=1, NS)
 
-    NR = 4*cell_obj%Npts
+    NR = 4*rtm_obj%Npts
     read (3) ((radI_Shdo(j, i), j=1, shdo_obj%Nstokes), i=1, NR)
 
     iradI_Shdo(1) = 0
-    do i = 1, cell_obj%Npts
+    do i = 1, rtm_obj%Npts
         iradI_Shdo(i+1) = iradI_Shdo(i) + shdo_obj%Nstokes*4
     end do
 

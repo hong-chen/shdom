@@ -196,7 +196,9 @@ module globals_type
         integer(kind=I__) :: maxNz   = -999
         integer(kind=I__) :: maxNptsLeg = -999
 
-        integer(kind=I__) :: maxNpts = -999
+        integer(kind=I__) :: Npts0 = -999
+        integer(kind=I__) :: Npts  = -999
+        integer(kind=I__) :: maxNpts  = -999
 
         !real(kind=R__) :: dx = -999.0
         !real(kind=R__) :: dy = -999.0
@@ -218,10 +220,6 @@ module globals_type
     ! Cell
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type :: shd_type_cell
-
-        integer(kind=I__) :: Npts0 = -999
-        integer(kind=I__) :: Npts  = -999
-        integer(kind=I__) :: maxNpts  = -999
 
         integer(kind=I__) :: Ncell0 = -999
         integer(kind=I__) :: Ncell  = -999
@@ -415,15 +413,15 @@ module globals_obj
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_rtm),  save :: rtm_obj_
 
-    real(kind=R__),  allocatable, save ::    xyz_Rtm_(:, :)    ! (3, cell_obj%maxNpts)
+    real(kind=R__),  allocatable, save ::    xyz_Rtm_(:, :)    ! (3, rtm_obj%maxNpts)
 
-    real(kind=R__),  allocatable, save ::   temp_Rtm_(:), &    ! (cell_obj%maxNpts)
-                                             ext_Rtm_(:), &    ! (cell_obj%maxNpts)
-                                             ssa_Rtm_(:), &    ! (cell_obj%maxNpts)
+    real(kind=R__),  allocatable, save ::   temp_Rtm_(:), &    ! (rtm_obj%maxNpts)
+                                             ext_Rtm_(:), &    ! (rtm_obj%maxNpts)
+                                             ssa_Rtm_(:), &    ! (rtm_obj%maxNpts)
                                              leg_Rtm_(:, :, :) ! (prp_obj%NlegSet, prp_obj%maxNleg, prp_obj%Npha)
-    integer(kind=2), allocatable, save ::   ipha_Rtm_(:)       ! (cell_obj%maxNpts)
+    integer(kind=2), allocatable, save ::   ipha_Rtm_(:)       ! (rtm_obj%maxNpts)
 
-    real(kind=R__),  allocatable, save :: planck_Rtm_(:)       ! (cell_obj%maxNpts)
+    real(kind=R__),  allocatable, save :: planck_Rtm_(:)       ! (rtm_obj%maxNpts)
     real(kind=R__),  allocatable, save ::   brdf_Rtm_(:, :)    ! (sfc_obj%maxNpar, xxx_obj%xxx)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
@@ -442,9 +440,9 @@ module globals_obj
     ! SHDO
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_shdo), save :: shdo_obj_
-    integer(kind=I__), allocatable, save :: iradI_Shdo_(:)    ! (cell_obj%maxNpts+2)
-    real(kind=R__),    allocatable, save ::  radI_Shdo_(:, :) ! (shdo_obj_%Nstokes, shdo_obj_%maxNptsSH+cell_obj%maxNpts)
-    integer(kind=I__), allocatable, save :: isrcJ_Shdo_(:)    ! (cell_obj%maxNpts+1)
+    integer(kind=I__), allocatable, save :: iradI_Shdo_(:)    ! (rtm_obj%maxNpts+2)
+    real(kind=R__),    allocatable, save ::  radI_Shdo_(:, :) ! (shdo_obj_%Nstokes, shdo_obj_%maxNptsSH+rtm_obj%maxNpts)
+    integer(kind=I__), allocatable, save :: isrcJ_Shdo_(:)    ! (rtm_obj%maxNpts+1)
     real(kind=R__),    allocatable, save ::  srcJ_Shdo_(:, :) ! (shdo_obj%Nstokes, shdo_obj%maxNptsSH)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 

@@ -44,7 +44,9 @@ module shd_grid
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, isMpi_, &
                              is1DX_, is1DYx_, is1D_, &
                              isPol_, isSolar_, isThermal_
-    use globals_type,  only: shd_type_cell
+
+    use globals_type,  only: shd_type_rtm, &
+                             shd_type_cell
 
     use globals_obj,   only:  rtm_obj_, xyz_Rtm_, temp_Rtm_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, leg_Rtm_, ipha_Rtm_, &
                              cell_obj_, i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, flag_Cell_, &
@@ -113,14 +115,14 @@ subroutine shd_grid__findBndryPnt(&
     !   All the grid points are looked at to find the boundary ones.
     !
     ! Input:
-    !   cell_obj_%Npts : integer, total number of grid points
+    !   rtm_obj_%Npts : integer, total number of grid points
     !   NANG      : integer, number of discrete ordinate angles (NMU and NPHI)
     !   MAXNBC    : integer, maximum number of boundary grid points
     !   MAXBCRAD  : integer, maximum number of radiances at boundary grid points
     !   sfc_obj_%isLambertian: logical, lambertian surface or not
     !   ZBOT      : real, altitude of bottom boundary
     !   ZTOP      : real, altitude of bottom boundary
-    !   xyz_Rtm_(3, cell_obj_%Npts): real array, (x,y,z) coordinate values of grid point locations
+    !   xyz_Rtm_(3, rtm_obj_%Npts): real array, (x,y,z) coordinate values of grid point locations
     !
     ! Output:
     !   NTOPPTS   : integer, number of top boundary points
@@ -146,7 +148,7 @@ subroutine shd_grid__findBndryPnt(&
     IT = 0
     IB = 0
     ! Loop over all points finding the top and bottom ones
-    do I = 1, cell_obj_%Npts
+    do I = 1, rtm_obj_%Npts
 
         if (xyz_Rtm_(3, I) .ge. ZTOP) then
             IT = IT + 1
@@ -288,17 +290,17 @@ end subroutine shd_grid__matchGridPnt
 
 subroutine shd_grid__makeNewGridPnt(idir, icell, newCell,&
     &newPts,&
-    &cell_obj, xyz_Rtm, i8Grid_Cell)
+    &rtm_obj, xyz_Rtm, i8Grid_Cell)
 
     !   Sets up the pointers to the grid points for the two new cells.
     ! Creates the four new points if they don't already exist, changing
-    ! cell_obj%Npts and xyz_Rtm %xyz accordingly.  Returns the newPts(3,4) arrays
+    ! rtm_obj%Npts and xyz_Rtm %xyz accordingly.  Returns the newPts(3,4) arrays
     ! that gives information about the new points: newPts(3,) is the
     ! point address of the new points (or zero), and newPts(1,) and
     ! newPts(2,) are the "parent" grid points these should be
     ! interpolated from.
 
-    type(shd_type_cell), intent(inout) :: cell_obj
+    type(shd_type_rtm), intent(inout) :: rtm_obj
 
     real(kind=R__),    intent(inout) :: xyz_Rtm(3, *)
 
@@ -358,15 +360,15 @@ subroutine shd_grid__makeNewGridPnt(idir, icell, newCell,&
 
         ! Set some new cells' grid pointers to the new or matching one
         if (iptsMatch .eq. 0) then
-            cell_obj%Npts = cell_obj%Npts + 1
-            i8Grid_Cell(I2, newCell) = cell_obj%Npts
-            i8Grid_Cell(I1, newCell + 1) = cell_obj%Npts
-            xyz_Rtm(1, cell_obj%Npts) = XP
-            xyz_Rtm(2, cell_obj%Npts) = YP
-            xyz_Rtm(3, cell_obj%Npts) = ZP
+            rtm_obj%Npts = rtm_obj%Npts + 1
+            i8Grid_Cell(I2, newCell) = rtm_obj%Npts
+            i8Grid_Cell(I1, newCell + 1) = rtm_obj%Npts
+            xyz_Rtm(1, rtm_obj%Npts) = XP
+            xyz_Rtm(2, rtm_obj%Npts) = YP
+            xyz_Rtm(3, rtm_obj%Npts) = ZP
             newPts(1, I) = IP1
             newPts(2, I) = IP2
-            newPts(3, I) = cell_obj%Npts
+            newPts(3, I) = rtm_obj%Npts
         else
             i8Grid_Cell(I2, newCell) = iptsMatch
             i8Grid_Cell(I1, newCell + 1) = iptsMatch
@@ -386,7 +388,7 @@ subroutine shd_grid__makeSweepOrder(&
     !   ordinate octant (SWEEPORD). Rather than pointing to the grid points
     !   directly, the elements of SWEEPORD point to the cell (bits 3-30) and
     !   the corner of the cell (bits 0-2). The first index is the grid
-    !   point visiting order (1-cell_obj_%Npts), and the second index refers to the
+    !   point visiting order (1-rtm_obj_%Npts), and the second index refers to the
     !   octant, but is not the octant number. The octant index is translated
     !   to the octant number with IOCTORDER - this complication arises because
     !   of the desire to use just 2 or 4 octants in 1D or 2D.
@@ -394,8 +396,8 @@ subroutine shd_grid__makeSweepOrder(&
     ! Input:
     !
 
-    integer(kind=I__), intent(out) :: SWEEPORD(cell_obj_%Npts, *)
-    real(kind=R__)   , intent(out) :: GRIDRAD(cell_obj_%Npts)
+    integer(kind=I__), intent(out) :: SWEEPORD(rtm_obj_%Npts, *)
+    real(kind=R__)   , intent(out) :: GRIDRAD(rtm_obj_%Npts)
 
     integer(kind=I__) :: NOCT, IOCT, JOCT, NXC, NYC
     integer(kind=I__) :: IPCELL, ipts, IORDER
@@ -440,7 +442,7 @@ subroutine shd_grid__makeSweepOrder(&
         IOCT = IOCTORDER(JOCT)
 
         ! Set each grid point flag to indicate unvisited.
-        do ipts = 1, cell_obj_%Npts
+        do ipts = 1, rtm_obj_%Npts
             GRIDRAD(ipts) = -1.0
         end do
 
@@ -488,8 +490,9 @@ subroutine shd_grid__makeSweepOrder(&
 end subroutine shd_grid__makeSweepOrder
 
 subroutine shd_grid__divideCell(&
-    &icell, idir, newPts,&
-    &cell_obj, xyz_Rtm, i8Grid_Cell, i6Cell_Cell, i2Tree_Cell, flag_Cell)
+    icell, idir, newPts, &
+    rtm_obj, cell_obj, &
+    xyz_Rtm, i8Grid_Cell, i6Cell_Cell, i2Tree_Cell, flag_Cell)
 
     !   Divides a single cell (icell) in the idir direction (1=Z,2=Y,3=X)
     ! Makes the pointers to the two new cells (i2Tree_Cell), set the flags
@@ -497,6 +500,7 @@ subroutine shd_grid__divideCell(&
     ! and updates the neighbor pointers (i6Cell_Cell) for the new cells and
     ! their neighboring cells.
 
+    type(shd_type_rtm),  intent(inout) :: rtm_obj
     type(shd_type_cell), intent(inout) :: cell_obj
 
     real(kind=R__),    intent(inout) :: xyz_Rtm(3, *)
@@ -536,7 +540,7 @@ subroutine shd_grid__divideCell(&
 
     ! Do the grid points:
     call shd_grid__makeNewGridPnt(idir, icell, newCell,&
-        &newPts, cell_obj, xyz_Rtm, i8Grid_Cell)
+        &newPts, rtm_obj, xyz_Rtm, i8Grid_Cell)
 
     ! Do the neighbor pointers:
     do iface = 1, 6
@@ -1080,7 +1084,7 @@ subroutine shd_grid__interpGrid(xyz_Rtm)
         &leg_Rtm_(1:prp_obj_%NlegSet, 0:prp_obj_%Nleg, 1), ipha_Rtm_(1))
 
     ! Trilinearly interpolate from the property grid to the adaptive
-    do ipts = 1, cell_obj_%Npts
+    do ipts = 1, rtm_obj_%Npts
         call shd_grid__InterpTriLinGridPrp(&
             &xyz_Rtm(1, ipts), xyz_Rtm(2, ipts), xyz_Rtm(3, ipts),&
             &.false., temp_Rtm_(ipts), ext_Rtm_(ipts), ssa_Rtm_(ipts),&
@@ -1437,7 +1441,7 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
     integer isrcD_Shdo(*)
     logical doDeltaM, ACCELFLAG
     real SOLARFLUX, YLMSUN(prp_obj_%NlegSet, shdo_obj_%Nlm)
-    real DIRFLUX(cell_obj_%Npts)
+    real DIRFLUX(rtm_obj_%Npts)
     integer I, IP1, IP2, IP, IPH, J, K, L, M, ME, MS
     integer IS, NS, NS1, NS2
     integer IR, IR1, IR2, NR, NR1, NR2, SIDE
@@ -1595,7 +1599,8 @@ subroutine shd_grid__splitGrid(&
     DIRFLUX, &
     SOLARFLUX, YLMSUN, &
     ADAPTCRIT, ADAPTIND, &
-    cell_obj, xyz_Rtm, i8Grid_Cell, i6Cell_Cell, i2Tree_Cell, flag_Cell, &
+    rtm_obj, cell_obj, &
+    xyz_Rtm, i8Grid_Cell, i6Cell_Cell, i2Tree_Cell, flag_Cell, &
     temp_Rtm, planck_Rtm, ext_Rtm, ssa_Rtm, leg_Rtm, ipha_Rtm, &
     iradI_Shdo, radI_Shdo, &
     isrcJ_Shdo, srcJ_Shdo)
@@ -1604,8 +1609,9 @@ subroutine shd_grid__splitGrid(&
     ! CURSPLITACC if doSplit is true.  The current splitting criterion
     ! achieved is returned in SPLITCRIT.  If we are at the end of the
     ! grid point, grid cell, or spherical harmonic arrays (sizes given
-    ! by cell_obj%maxNpts, cell_obj%maxNcell, shdo_obj_%maxNptsSH, shdo_obj_%maxNptsDO) then the isOutMem flag is returned true.
+    ! by rtm_obj%maxNpts, cell_obj%maxNcell, shdo_obj_%maxNptsSH, shdo_obj_%maxNptsDO) then the isOutMem flag is returned true.
 
+    type(shd_type_rtm),  intent(inout) :: rtm_obj
     type(shd_type_cell), intent(inout) :: cell_obj
 
     real(kind=R__),    intent(inout) :: xyz_Rtm(3, *)
@@ -1638,7 +1644,7 @@ subroutine shd_grid__splitGrid(&
     real ADAPT(3), FRAC
 
     if (doSplit) then
-        OLDNPTS = cell_obj%Npts
+        OLDNPTS = rtm_obj%Npts
         ! Do the cells in batchs, so the newly split cells can be tested
         !   for further splitting
         ICELL1 = 1
@@ -1664,10 +1670,10 @@ subroutine shd_grid__splitGrid(&
             !   for cells split during grid smoothing
             FRAC = 0.03
             MAXCELLS = cell_obj%maxNcell - FRAC*(cell_obj%maxNcell - cell_obj%Ncell) - 2
-            MAXPTS   = cell_obj%maxNpts  - FRAC*(cell_obj%maxNpts  - cell_obj%Npts)  - 4
-            MAXWORK  = shdo_obj_%maxNptsDO - FRAC*(shdo_obj_%maxNptsDO - shdo_obj_%maxNphi0*cell_obj%Npts) - 4*shdo_obj_%maxNphi0
-            MAXSH    = shdo_obj_%maxNptsSH - FRAC*(shdo_obj_%maxNptsSH - isrcJ_Shdo(cell_obj%Npts+1)) - 4*shdo_obj_%Nlm
-            MAXRAD   = shdo_obj_%maxNptsSH + cell_obj%maxNpts - FRAC*(shdo_obj_%maxNptsSH + cell_obj%maxNpts - iradI_Shdo(cell_obj%Npts + 1)) - 4*shdo_obj_%Nlm
+            MAXPTS   = rtm_obj%maxNpts  - FRAC*(rtm_obj%maxNpts  - rtm_obj%Npts)  - 4
+            MAXWORK  = shdo_obj_%maxNptsDO - FRAC*(shdo_obj_%maxNptsDO - shdo_obj_%maxNphi0*rtm_obj%Npts) - 4*shdo_obj_%maxNphi0
+            MAXSH    = shdo_obj_%maxNptsSH - FRAC*(shdo_obj_%maxNptsSH - isrcJ_Shdo(rtm_obj%Npts+1)) - 4*shdo_obj_%Nlm
+            MAXRAD   = shdo_obj_%maxNptsSH + rtm_obj%maxNpts - FRAC*(shdo_obj_%maxNptsSH + rtm_obj%maxNpts - iradI_Shdo(rtm_obj%Npts + 1)) - 4*shdo_obj_%Nlm
 
             ! Go down the list from highest adaptive cell criterion on down
             isOutMem0 = isOutMem
@@ -1675,16 +1681,16 @@ subroutine shd_grid__splitGrid(&
             do while ((.not. isOutMem0) .and. (ADAPTCRIT(I) .gt. CURSPLITACC)&
                 &.and. (I .le. N))
                 if  ((cell_obj%Ncell .gt. MAXCELLS) .or.&
-                    &(cell_obj%Npts  .gt. MAXPTS) .or.&
-                    &(cell_obj%Npts*shdo_obj_%maxNphi0   .gt. MAXWORK) .or.&
-                    &(isrcJ_Shdo(cell_obj%Npts + 1) .gt. MAXSH)   .or.&
-                    &(iradI_Shdo(cell_obj%Npts + 1) .gt. MAXRAD)) then
+                    &(rtm_obj%Npts  .gt. MAXPTS) .or.&
+                    &(rtm_obj%Npts*shdo_obj_%maxNphi0   .gt. MAXWORK) .or.&
+                    &(isrcJ_Shdo(rtm_obj%Npts + 1) .gt. MAXSH)   .or.&
+                    &(iradI_Shdo(rtm_obj%Npts + 1) .gt. MAXRAD)) then
                     isOutMem0 = .true.
                 else
                     icell = int(ADAPTIND(I))/4
                     idir = iand(int(ADAPTIND(I)), 3)
                     ! Create the new grid points and make pointers
-                    call shd_grid__divideCell(icell, idir, newPts, cell_obj, xyz_Rtm, &
+                    call shd_grid__divideCell(icell, idir, newPts, rtm_obj, cell_obj, xyz_Rtm, &
                                               i8Grid_Cell, i6Cell_Cell, i2Tree_Cell, flag_Cell)
 
                     ! Interpolate the medium properties, radiance, and source
@@ -1700,18 +1706,18 @@ subroutine shd_grid__splitGrid(&
             end do
 
             MAXCELLS = cell_obj%maxNcell - 2
-            MAXPTS   = cell_obj%maxNpts  - 4
+            MAXPTS   = rtm_obj%maxNpts  - 4
             MAXWORK  = shdo_obj_%maxNptsDO - 4*shdo_obj_%maxNphi0
             MAXSH    = shdo_obj_%maxNptsSH - 4*shdo_obj_%Nlm
-            MAXRAD   = shdo_obj_%maxNptsSH + cell_obj%maxNpts - 4*shdo_obj_%Nlm
+            MAXRAD   = shdo_obj_%maxNptsSH + rtm_obj%maxNpts - 4*shdo_obj_%Nlm
 
             ! Split some more cells to make the adaptive grid "smoother"
             do while ((.not. isOutMem) .and. (I .le. N))
                 if  ((cell_obj%Ncell .gt. MAXCELLS) .or.&
-                    &(cell_obj%Npts  .gt. MAXPTS) .or.&
-                    &(cell_obj%Npts * shdo_obj_%maxNphi0 .gt. MAXWORK) .or.&
-                    &(isrcJ_Shdo(cell_obj%Npts + 1) .gt. MAXSH) .or.&
-                    &(iradI_Shdo(cell_obj%Npts + 1) .gt. MAXRAD)) then
+                    &(rtm_obj%Npts  .gt. MAXPTS) .or.&
+                    &(rtm_obj%Npts * shdo_obj_%maxNphi0 .gt. MAXWORK) .or.&
+                    &(isrcJ_Shdo(rtm_obj%Npts + 1) .gt. MAXSH) .or.&
+                    &(iradI_Shdo(rtm_obj%Npts + 1) .gt. MAXRAD)) then
                     isOutMem = .true.
                 else
                     ! See if cell should be split to make better grid:
@@ -1723,7 +1729,7 @@ subroutine shd_grid__splitGrid(&
                     ! idir = 0
                     if (idir .gt. 0) then
                         ! Create the new grid points and make pointers
-                        call shd_grid__divideCell(icell, idir, newPts, cell_obj, xyz_Rtm, &
+                        call shd_grid__divideCell(icell, idir, newPts, rtm_obj, cell_obj, xyz_Rtm, &
                                                   i8Grid_Cell, i6Cell_Cell, i2Tree_Cell, flag_Cell)
 
                         ! Interpolate the medium properties, radiance, and source
@@ -1744,7 +1750,7 @@ subroutine shd_grid__splitGrid(&
             isOutMem = .true.
             !write (6, '(2A,I8,A,I8)')&
             !    &'Message [_splitGrid]: Further cell splitting requires larger array allocations: ',&
-            !    &'cell_obj%Ncell= ', cell_obj%Ncell, ', Npnts = ', cell_obj%Npts
+            !    &'cell_obj%Ncell= ', cell_obj%Ncell, ', Npnts = ', rtm_obj%Npts
         end if
 
         ! If in parallel mode, calculate all the direct beam fluxes at once

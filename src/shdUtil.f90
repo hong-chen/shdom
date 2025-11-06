@@ -121,8 +121,8 @@ subroutine shd_util__interpData(OLDNPTS,&
 
     integer OLDNPTS
     logical FLUX_OUT, FLUXDIV_OUT, SH_OUT
-    real FLUXES(2, cell_obj_%Npts), DIRFLUX(cell_obj_%Npts), FLUXDIV(cell_obj_%Npts)
-    real SHTERMS(5, cell_obj_%Npts)
+    real FLUXES(2, rtm_obj_%Npts), DIRFLUX(rtm_obj_%Npts), FLUXDIV(rtm_obj_%Npts)
+    real SHTERMS(5, rtm_obj_%Npts)
     integer IP, IC, ICELL, IPARENT, IDIR, I, J, DIR1, DIR2, IP1, IP2
     integer GRIDCORNER(2, 4, 3)
     data GRIDCORNER/1, 2, 3, 4, 5, 6, 7, 8, 1, 3, 2, 4, 5, 7, 6, 8,&

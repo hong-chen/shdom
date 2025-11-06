@@ -103,10 +103,10 @@ subroutine shd_io__outputResult(&
     character(len=1), intent(in) :: OUTTYPE
     character(len=*), intent(in) :: INSAVEFILE, OUTSAVEFILE
     character(len=*), intent(in) :: OUTFILE
-    real, intent(in) :: FLUXES(2, cell_obj_%Npts), DIRFLUX(cell_obj_%Npts), FLUXDIV(cell_obj_%Npts)
+    real, intent(in) :: FLUXES(2, rtm_obj_%Npts), DIRFLUX(rtm_obj_%Npts), FLUXDIV(rtm_obj_%Npts)
     real, intent(in) :: SOURCE1OUT(shdo_obj_%Nstokes, *)
 
-    real, intent(in) :: RADOUT(shdo_obj_%Nstokes, *), SHTERMS(NSHOUT, cell_obj_%Npts)
+    real, intent(in) :: RADOUT(shdo_obj_%Nstokes, *), SHTERMS(NSHOUT, rtm_obj_%Npts)
     integer, intent(inout) :: IRAD
 
     integer IZ, I, K, N, NX2, NY2, J, JX, JY, icell
@@ -205,7 +205,7 @@ subroutine shd_io__outputResult(&
         &'   NSH=', shdo_obj_%Nsh
     write (2, '(A,I1,3(A,I4),2(A,I8))') '!  NSTOKES=', shdo_obj_%Nstokes,&
         &'   NX=', rtm_obj_%Nx0, '   NY=', rtm_obj_%Ny0, '   NZ=', rtm_obj_%Nz,&
-        &'    NPTS=', cell_obj_%Npts, '   NCELLS=', cell_obj_%Ncell
+        &'    NPTS=', rtm_obj_%Npts, '   NCELLS=', cell_obj_%Ncell
     write (2, '(A,A)') '!  PROPERTY_FILE=', trim(prp_obj_%fname)
     write (2, '(A,A,A,I2)') '!  CORRELATED_K-DIST_FILE=',&
         &trim(ckd_obj_%fname), '   NUM_G=', ckd_obj_%Ng
@@ -406,20 +406,20 @@ subroutine shd_io__outputResult(&
 
             N = rtm_obj_%Nx*rtm_obj_%Ny
             IDATA = 0
-            call shd_io__outputDataBin(C*FLUXES(2, rtm_obj_%Nz:cell_obj_%Npts0:rtm_obj_%Nz), 1, N, IDATA, OUTFILE_DATA)
+            call shd_io__outputDataBin(C*FLUXES(2, rtm_obj_%Nz:rtm_obj_%Npts0:rtm_obj_%Nz), 1, N, IDATA, OUTFILE_DATA)
 
             IDATA = 0
-            call shd_io__outputDataBin(C*FLUXES(1, 1:cell_obj_%Npts0:rtm_obj_%Nz), 1, N, IDATA, OUTFILE_DATA, 'ADD')
+            call shd_io__outputDataBin(C*FLUXES(1, 1:rtm_obj_%Npts0:rtm_obj_%Nz), 1, N, IDATA, OUTFILE_DATA, 'ADD')
 
             if (isSolar_) then
                 IDATA = 0
-                call shd_io__outputDataBin(DIRFLUX(1:cell_obj_%Npts0:rtm_obj_%Nz), 1, N, IDATA, OUTFILE_DATA, 'ADD')
+                call shd_io__outputDataBin(DIRFLUX(1:rtm_obj_%Npts0:rtm_obj_%Nz), 1, N, IDATA, OUTFILE_DATA, 'ADD')
             end if
             !╰────────────────────────────────────────────────╯!
 
             ! original
             !╭────────────────────────────────────────────────╮!
-            !do I = 1, cell_obj_%Npts0, rtm_obj_%Nz
+            !do I = 1, rtm_obj_%Npts0, rtm_obj_%Nz
             !    if  (xyz_Rtm_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx0 + 1) .and.&
             !        &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny0 + 1)) then
             !        if (src_obj_%type .ne. 'T') then
@@ -569,7 +569,7 @@ subroutine shd_io__outputResult(&
                 SUM2(IZ) = 0.0
                 SUM3(IZ) = 0.0
                 N = 0
-                do I = IZ, cell_obj_%Npts0, rtm_obj_%Nz
+                do I = IZ, rtm_obj_%Npts0, rtm_obj_%Nz
                     if  (xyz_Rtm_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx0 + 1) .and.&
                         &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny0 + 1)) then
                         SUM1(IZ) = SUM1(IZ) + FLUXES(1, I)
@@ -616,7 +616,7 @@ subroutine shd_io__outputResult(&
             !    SUM2 = 0.0
             !    SUM3 = 0.0
             !    N = 0
-            !    do I = IZ, cell_obj_%Npts0, rtm_obj_%Nz
+            !    do I = IZ, rtm_obj_%Npts0, rtm_obj_%Nz
             !        if  (xyz_Rtm_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx0 + 1) .and.&
             !            &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny0 + 1)) then
             !            SUM1 = SUM1 + FLUXES(1, I)
@@ -639,10 +639,10 @@ subroutine shd_io__outputResult(&
         else if (nint(OUTPARMS(1)) .ge. 4) then
 
             if (nint(OUTPARMS(1)) .eq. 5) then
-                N = cell_obj_%Npts
+                N = rtm_obj_%Npts
                 ALLGRID = .true.
             else
-                N = cell_obj_%Npts0
+                N = rtm_obj_%Npts0
                 ALLGRID = .false.
             end if
 
@@ -737,7 +737,7 @@ subroutine shd_io__outputResult(&
             do IZ = 1, rtm_obj_%Nz
                 SUM1(IZ) = 0.0
                 N = 0
-                do I = IZ, cell_obj_%Npts0, rtm_obj_%Nz
+                do I = IZ, rtm_obj_%Npts0, rtm_obj_%Nz
                     if  (xyz_Rtm_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx0 + 1) .and.&
                         &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny0 + 1)) then
                         SUM1(IZ) = SUM1(IZ) + FLUXDIV(I)
@@ -770,7 +770,7 @@ subroutine shd_io__outputResult(&
             !do IZ = 1, rtm_obj_%Nz
             !    SUM = 0.0
             !    N = 0
-            !    do I = IZ, cell_obj_%Npts0, rtm_obj_%Nz
+            !    do I = IZ, rtm_obj_%Npts0, rtm_obj_%Nz
             !        if  (xyz_Rtm_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx0 + 1) .and.&
             !            &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny0 + 1)) then
             !            SUM = SUM + FLUXDIV(I)
@@ -786,10 +786,10 @@ subroutine shd_io__outputResult(&
             ! Format 2 is flux convergence for every base grid point
             ! Format 3 is flux convergence for every grid point
             if (nint(OUTPARMS(1)) .eq. 3) then
-                N = cell_obj_%Npts
+                N = rtm_obj_%Npts
                 ALLGRID = .true.
             else
-                N = cell_obj_%Npts0
+                N = rtm_obj_%Npts0
                 ALLGRID = .false.
             end if
 
@@ -847,10 +847,10 @@ subroutine shd_io__outputResult(&
     else if (OUTTYPE .eq. 'S') then
 
         if (nint(OUTPARMS(1)) .eq. 2) then
-            N = cell_obj_%Npts
+            N = rtm_obj_%Npts
             ALLGRID = .true.
         else
-            N = cell_obj_%Npts0
+            N = rtm_obj_%Npts0
             ALLGRID = .false.
         end if
 
@@ -947,10 +947,10 @@ subroutine shd_io__outputResult(&
         ! J source function output: source function for a specified ang
         !   at every grid point
         if (nint(OUTPARMS(1)) .eq. 2) then
-            N = cell_obj_%Npts
+            N = rtm_obj_%Npts
             ALLGRID = .true.
         else
-            N = cell_obj_%Npts0
+            N = rtm_obj_%Npts0
             ALLGRID = .false.
         end if
 
@@ -1016,10 +1016,10 @@ subroutine shd_io__outputResult(&
         NVAR = 4
 
         if (nint(OUTPARMS(1)) .eq. 2) then
-            N = cell_obj_%Npts
+            N = rtm_obj_%Npts
             ALLGRID = .true.
         else
-            N = cell_obj_%Npts0
+            N = rtm_obj_%Npts0
             ALLGRID = .false.
         end if
 
@@ -2008,7 +2008,7 @@ subroutine shd_io__outputCamRad(&
         &'   NSH=', shdo_obj_%Nsh
     write (2, '(A,I1,3(A,I4),2(A,I8))') '!  NSTOKES=', shdo_obj_%Nstokes,&
         &'   NX=', rtm_obj_%Nx0, '   NY=', rtm_obj_%Ny0, '   NZ=', rtm_obj_%Nz,&
-        &'    NPTS=', cell_obj_%Npts, '   NCELLS=', cell_obj_%Ncell
+        &'    NPTS=', rtm_obj_%Npts, '   NCELLS=', cell_obj_%Ncell
     write (2, '(A,A)') '!  PROPERTY_FILE=', trim(prp_obj_%fname)
     write (2, '(A,A,A,I2)') '!  CORRELATED_K-DIST_FILE=',&
         &trim(ckd_obj_%fname), '   NUM_G=', ckd_obj_%Ng
@@ -2269,7 +2269,7 @@ subroutine shd_io__outputImg(&
     I = I + index(BUF(I:I + 79), LF)
     write (BUF(I:I + 90), '(A,I1,3(A,I4),2(A,I8),A1)')&
         & '# NSTOKES=', shdo_obj_%Nstokes, '  NX=', rtm_obj_%Nx0, '   NY=', rtm_obj_%Ny0, '  NZ=', rtm_obj_%Nz,&
-        & '    NPTS=', cell_obj_%Npts, '   NCELLS=', cell_obj_%Ncell, LF
+        & '    NPTS=', rtm_obj_%Npts, '   NCELLS=', cell_obj_%Ncell, LF
     I = I + index(BUF(I:I + 79), LF)
     !write (BUF(I:I + 79), '(A,A,A1)')&
     !    & '# PROPERTY_FILE=', trim(prp_obj_%fname), LF
@@ -2667,7 +2667,7 @@ subroutine shd_io__saveState(&
 
     character(len=*) , intent(in) :: OUTSAVEFILE
     real(kind=R__)   , intent(inout) :: WORK(*)
-    real(kind=R__)   , intent(in) :: FLUXES(2, cell_obj_%Npts)
+    real(kind=R__)   , intent(in) :: FLUXES(2, rtm_obj_%Npts)
 
     integer(kind=4) :: I, J, K, IR, NS, NR, istoke
     integer(kind=4) :: DATA_BYTE
@@ -2678,7 +2678,7 @@ subroutine shd_io__saveState(&
     open (unit=91, file=trim(adjustl(OUTSAVEFILE)), status='REPLACE',&
         &form='UNFORMATTED')
 
-    write (91) shdo_obj_%Nstokes, rtm_obj_%Nx0, rtm_obj_%Ny0, rtm_obj_%Nz, shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm, cell_obj_%Npts, cell_obj_%Ncell
+    write (91) shdo_obj_%Nstokes, rtm_obj_%Nx0, rtm_obj_%Ny0, rtm_obj_%Nz, shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm, rtm_obj_%Npts, cell_obj_%Ncell
 
     write (91) (rtm_obj_%x(I), I=1, rtm_obj_%Nx0+1)
     write (91) (rtm_obj_%y(I), I=1, rtm_obj_%Ny0+1)
@@ -2689,16 +2689,16 @@ subroutine shd_io__saveState(&
     write (91) ((i2Tree_Cell_(J, I), J=1, 2), I=1, cell_obj_%Ncell)
     write (91)  (flag_Cell_(I), I=1, cell_obj_%Ncell)
 
-    write (91) ((xyz_Rtm_(J, I), J=1, 3), I=1, cell_obj_%Npts)
-    write (91) ((FLUXES(J, I) , J=1, 2), I=1, cell_obj_%Npts)
+    write (91) ((xyz_Rtm_(J, I), J=1, 3), I=1, rtm_obj_%Npts)
+    write (91) ((FLUXES(J, I) , J=1, 2), I=1, rtm_obj_%Npts)
 
-    write (91) (isrcJ_Shdo_(I), I=1, cell_obj_%Npts + 1)
+    write (91) (isrcJ_Shdo_(I), I=1, rtm_obj_%Npts + 1)
 
-    NS = isrcJ_Shdo_(cell_obj_%Npts + 1)
+    NS = isrcJ_Shdo_(rtm_obj_%Npts + 1)
     write (91) ((srcJ_Shdo_(J, I), J=1, shdo_obj_%Nstokes), I=1, NS)
 
     !K = 1
-    !do I = 1, cell_obj_%Npts
+    !do I = 1, rtm_obj_%Npts
     !    IR = iradI_Shdo_(I)
     !    do J = 1, shdo_obj_%Nstokes*4
 
@@ -2716,7 +2716,7 @@ subroutine shd_io__saveState(&
     !end do
 
     K = 1
-    do I = 1, cell_obj_%Npts
+    do I = 1, rtm_obj_%Npts
         IR = iradI_Shdo_(I)   !radI(NSTOKES, NPTS)
         do J = 1, 4
             do istoke = 1, shdo_obj_%Nstokes
@@ -2726,7 +2726,7 @@ subroutine shd_io__saveState(&
         end do
     end do
 
-    NR = 4*cell_obj_%Npts
+    NR = 4*rtm_obj_%Npts
     write (91) (WORK(I), I=1, shdo_obj_%Nstokes*NR)
 
     close (unit=91)

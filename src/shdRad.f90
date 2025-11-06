@@ -719,8 +719,8 @@ subroutine shd_rad__computeRad(&
     integer BCPTR(MAXNBC, 2)
     logical DELTAM
     real BCRAD(shdo_obj_%Nstokes, *)
-    real DIRFLUX(cell_obj_%Npts), FLUXES(2, cell_obj_%Npts)
-    real src1_Shdo(shdo_obj_%Nstokes, cell_obj_%Npts), GRIDRAD(shdo_obj_%Nstokes, cell_obj_%Npts)
+    real DIRFLUX(rtm_obj_%Npts), FLUXES(2, rtm_obj_%Npts)
+    real src1_Shdo(shdo_obj_%Nstokes, rtm_obj_%Npts), GRIDRAD(shdo_obj_%Nstokes, rtm_obj_%Npts)
     real OUTPARMS(*), RADOUT(shdo_obj_%Nstokes, *)
     integer I, IBC, IANG, JX, JY, K, SIDE
     integer NANGOUT, NXOUT, NYOUT
@@ -817,7 +817,7 @@ subroutine shd_rad__computeRad(&
         ! Set the radiance field to -1, so we can determine valid ra
         !   Also set the source array to the extinction times the so
         !   function, so the grid interpolation is correct.
-        do I = 1, cell_obj_%Npts
+        do I = 1, rtm_obj_%Npts
             GRIDRAD(1, I) = -1.0
             src1_Shdo(:, I) = src1_Shdo(:, I)*ext_Rtm_(I)
         end do
@@ -882,7 +882,7 @@ subroutine shd_rad__computeCamRad(&
     integer BCPTR(MAXNBC, 2)
     logical DELTAM
     real BCRAD(shdo_obj_%Nstokes, *)
-    real DIRFLUX(cell_obj_%Npts), FLUXES(2, cell_obj_%Npts)
+    real DIRFLUX(rtm_obj_%Npts), FLUXES(2, rtm_obj_%Npts)
     real OUTPARMS(*), VISOUT(shdo_obj_%Nstokes, *)
     integer NSCATANGLE, NSTPHASE, I, J, L, N, SIDE
     integer NL, NS, LINE, SAMP

@@ -541,7 +541,7 @@ program shdom
     if (is1DYx_ .or. isOpenYx_ .or. isMpiY_) rtm_obj_%Ny = rtm_obj_%Ny0
 
     ! Number of base points
-    cell_obj_%Npts0 = rtm_obj_%Nx*rtm_obj_%Ny*rtm_obj_%Nz
+    rtm_obj_%Npts0 = rtm_obj_%Nx*rtm_obj_%Ny*rtm_obj_%Nz
 
     ! Calculate the number of base grid cells depending on the boundary condition flag
     cell_obj_%Ncell0 = (rtm_obj_%Nz - 1)*(rtm_obj_%Nx0 + ibits(rtm_obj_%flag_bc, 0, 1) - ibits(rtm_obj_%flag_bc, 2, 1))&
@@ -906,7 +906,7 @@ program shdom
     !       + shdo_obj_%maxNphi0*shdo_obj_%Nstokes + NUM_SH_TERM_FACTOR*shdo_obj_%Nstokes*shdo_obj_%Nlm*NbigArr
     ! now: update NmaxNpts from every allocation step
 
-    memNeed = ADAPT_GRID_FACTOR*cell_obj_%Npts0*NmaxNpts
+    memNeed = ADAPT_GRID_FACTOR*rtm_obj_%Npts0*NmaxNpts
 
     if (doHighOrder_) then
         scaleFactor = min(1.5, ((MAX_TOTAL_MB*1024**2)/4 - memUsed)/memNeed)
@@ -936,18 +936,18 @@ program shdom
     ! Retrieve max numbers for array allocation after memory check
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! max number of internal grid points
-    cell_obj_%maxNpts = nint(ADAPT_GRID_FACTOR*cell_obj_%Npts0)
+    rtm_obj_%maxNpts = nint(ADAPT_GRID_FACTOR*rtm_obj_%Npts0)
 
     ! max number of grid cells, between 1 and 2 times grid points
-    cell_obj_%maxNcell = nint(CELL_TO_POINT_RATIO*cell_obj_%maxNpts)
+    cell_obj_%maxNcell = nint(CELL_TO_POINT_RATIO*rtm_obj_%maxNpts)
 
     ! max words for source function and radiance arrays
-    shdo_obj_%maxNptsSH = nint(NUM_SH_TERM_FACTOR*shdo_obj_%Nlm*cell_obj_%maxNpts)
+    shdo_obj_%maxNptsSH = nint(NUM_SH_TERM_FACTOR*shdo_obj_%Nlm*rtm_obj_%maxNpts)
 
     ! max words for temporary discrete ordinate azimuthal array
-    shdo_obj_%maxNptsDO = cell_obj_%maxNpts*max(shdo_obj_%maxNphi0, 4)
+    shdo_obj_%maxNptsDO = rtm_obj_%maxNpts*max(shdo_obj_%maxNphi0, 4)
 
-    if (4.0*(shdo_obj_%maxNptsSH + cell_obj_%maxNpts)*shdo_obj_%Nstokes .gt. huge(shdo_obj_%maxNptsSH)) then
+    if (4.0*(shdo_obj_%maxNptsSH + rtm_obj_%maxNpts)*shdo_obj_%Nstokes .gt. huge(shdo_obj_%maxNptsSH)) then
         write (6, '(A,I12)') 'Error [shdom]: Size of big SH arrays (shdo_obj_%maxNptsSH) probably exceeds max integer number of bytes:', shdo_obj_%maxNptsSH
         stop
     end if
@@ -957,7 +957,7 @@ program shdom
         stop
     end if
 
-    maxNpts_bc = cell_obj_%maxNpts*3/rtm_obj_%Nz
+    maxNpts_bc = rtm_obj_%maxNpts*3/rtm_obj_%Nz
     if (sfc_obj_%isLambertian) then
         maxNrad_bc = 2 * maxNpts_bc
     else
@@ -968,7 +968,7 @@ program shdom
     if (prp_obj_%Npha .gt. 0) then
         rtm_obj_%maxNptsLeg = prp_obj_%Npha    * prp_obj_%NlegSet * (prp_obj_%maxNleg + 1)
     else
-        rtm_obj_%maxNptsLeg = cell_obj_%maxNpts * prp_obj_%NlegSet * (prp_obj_%maxNleg + 1)
+        rtm_obj_%maxNptsLeg = rtm_obj_%maxNpts * prp_obj_%NlegSet * (prp_obj_%maxNleg + 1)
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
@@ -982,10 +982,10 @@ program shdom
     rtm_obj_%isAllocated = .true.
 
     ! temperature and planck radiance (maybe we don't need this for shortwave)
-    allocate(temp_Rtm_(cell_obj_%maxNpts), planck_Rtm_(cell_obj_%maxNpts))
+    allocate(temp_Rtm_(rtm_obj_%maxNpts), planck_Rtm_(rtm_obj_%maxNpts))
 
     ! extinction, single scattering albedo, and phase function indices
-    allocate(ext_Rtm_(cell_obj_%maxNpts), ssa_Rtm_(cell_obj_%maxNpts), ipha_Rtm_(cell_obj_%maxNpts))
+    allocate(ext_Rtm_(rtm_obj_%maxNpts), ssa_Rtm_(rtm_obj_%maxNpts), ipha_Rtm_(rtm_obj_%maxNpts))
 
     ! legendre coefficients
     allocate(leg_Rtm_(prp_obj_%NlegSet, &
@@ -996,7 +996,7 @@ program shdom
     ! grid
     !╭────────────────────────────────────────────────╮!
     ! x,y,z coordinate values of grid point locations
-    allocate(xyz_Rtm_(3, cell_obj_%maxNpts))
+    allocate(xyz_Rtm_(3, rtm_obj_%maxNpts))
 
     ! a collection of binary flags for the cells
     allocate(flag_Cell_(cell_obj_%maxNcell))
@@ -1021,37 +1021,37 @@ program shdom
     allocate(ptr_Bc(2*maxNpts_bc), rad_Bc(shdo_obj_%Nstokes, maxNrad_bc))
 
     ! output
-    if (isFluxOut) allocate(sumFluxTot_Out(2, cell_obj_%maxNpts), &
-                            sumFluxDir_Out(cell_obj_%maxNpts))
-    if (isHROut)   allocate(sumFluxDiv_Out(cell_obj_%maxNpts))
-    if (isSHOut)   allocate(sumSH_Out(cell_obj_%maxNpts*Nsh_out))
-    if (isSrcOut)  allocate(src1_Out(cell_obj_%maxNpts*shdo_obj_%Nstokes))
+    if (isFluxOut) allocate(sumFluxTot_Out(2, rtm_obj_%maxNpts), &
+                            sumFluxDir_Out(rtm_obj_%maxNpts))
+    if (isHROut)   allocate(sumFluxDiv_Out(rtm_obj_%maxNpts))
+    if (isSHOut)   allocate(sumSH_Out(rtm_obj_%maxNpts*Nsh_out))
+    if (isSrcOut)  allocate(src1_Out(rtm_obj_%maxNpts*shdo_obj_%Nstokes))
 
     ! shdo
     !╭────────────────────────────────────────────────╮!
     ! SH related array
-    allocate(iradI_Shdo_(cell_obj_%maxNpts+2), &
-              radI_Shdo_(shdo_obj_%Nstokes, shdo_obj_%maxNptsSH + cell_obj_%maxNpts))
+    allocate(iradI_Shdo_(rtm_obj_%maxNpts+2), &
+              radI_Shdo_(shdo_obj_%Nstokes, shdo_obj_%maxNptsSH + rtm_obj_%maxNpts))
 
     ! radiance and source
-    allocate(isrcJ_Shdo_(cell_obj_%maxNpts+1), &
+    allocate(isrcJ_Shdo_(rtm_obj_%maxNpts+1), &
               srcJ_Shdo_(shdo_obj_%Nstokes, shdo_obj_%maxNptsSH))
     !╰────────────────────────────────────────────────╯!
 
     ! fluxes
-    allocate(fluxTot(2, cell_obj_%maxNpts), fluxDir(cell_obj_%maxNpts))
+    allocate(fluxTot(2, rtm_obj_%maxNpts), fluxDir(rtm_obj_%maxNpts))
 
     ! output radiances to be summed over g
     allocate(sumRad_Out(Nrad), sumCam_Out(Nlos))
 
-    ! work: work array for path integration; radiance field, Nazimuth*cell_obj_%Npts
+    ! work: work array for path integration; radiance field, Nazimuth*rtm_obj_%Npts
     allocate(work(shdo_obj_%Nstokes*shdo_obj_%maxNptsDO))
 
     ! work1: work array for path integration; grid point sweeping order
-    allocate(work1(8*cell_obj_%maxNpts))
+    allocate(work1(8*rtm_obj_%maxNpts))
 
     ! work2: work array for path integration; single angle radiance
-    allocate(work2(max(Nlos, Nrad, shdo_obj_%Nstokes*cell_obj_%maxNpts)))
+    allocate(work2(max(Nlos, Nrad, shdo_obj_%Nstokes*rtm_obj_%maxNpts)))
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
@@ -1135,14 +1135,14 @@ program shdom
                             &doDeltaM,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
                             &fluxDir, fluxTot,&
-                            &work, work(1 + cell_obj_%Npts*shdo_obj_%Nstokes),&
+                            &work, work(1 + rtm_obj_%Npts*shdo_obj_%Nstokes),&
                             &parms_Out(1, iout), irad, work2)
                     else
                         call shd_rad__computeRad(&
                             &doDeltaM,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
                             &fluxDir, fluxTot,&
-                            &work(1), work(1 + cell_obj_%Npts*shdo_obj_%Nstokes),&
+                            &work(1), work(1 + rtm_obj_%Npts*shdo_obj_%Nstokes),&
                             &parms_Out(1, iout), irad, work2)
                     end if
                 end if
@@ -1202,43 +1202,43 @@ program shdom
             ! unscale delta-m fluxes
             if ((src_obj_%type.ne. 'T') .and. doDeltaM) then
 
-                allocate(fluxDirTmp(cell_obj_%Npts))
+                allocate(fluxDirTmp(rtm_obj_%Npts))
 
                 if (isMpi_) then
                     call shd_mpi__makeDirect(1, .false., shdo_obj_%maxNl,&
                         &src_obj_%avgSolar0, src_obj_%avgMu, src_obj_%avgAz,&
                         &fluxDirTmp)
                 else
-                    call shd_rad__makeDirect(cell_obj_%Npts, .false., shdo_obj_%maxNl,&
+                    call shd_rad__makeDirect(rtm_obj_%Npts, .false., shdo_obj_%maxNl,&
                         &src_obj_%avgSolar0, src_obj_%avgMu, src_obj_%avgAz,&
                         &fluxDirTmp)
                 end if
 
-                fluxTot(1, 1:cell_obj_%Npts) = fluxTot(1, 1:cell_obj_%Npts) + fluxDir(1:cell_obj_%Npts) - fluxDirTmp(1:cell_obj_%Npts)
-                fluxDir(1:cell_obj_%Npts) = fluxDirTmp(1:cell_obj_%Npts)
+                fluxTot(1, 1:rtm_obj_%Npts) = fluxTot(1, 1:rtm_obj_%Npts) + fluxDir(1:rtm_obj_%Npts) - fluxDirTmp(1:rtm_obj_%Npts)
+                fluxDir(1:rtm_obj_%Npts) = fluxDirTmp(1:rtm_obj_%Npts)
 
                 deallocate(fluxDirTmp)
 
             end if
 
-            call shd_util__sumData(ckd_obj_%Ng-ig_ckd, wgt_Ckd_(ig_ckd), 2*cell_obj_%Npts, fluxTot, sumFluxTot_Out)
-            call shd_util__sumData(ckd_obj_%Ng-ig_ckd, wgt_Ckd_(ig_ckd), cell_obj_%Npts, fluxDir, sumFluxDir_Out)
+            call shd_util__sumData(ckd_obj_%Ng-ig_ckd, wgt_Ckd_(ig_ckd), 2*rtm_obj_%Npts, fluxTot, sumFluxTot_Out)
+            call shd_util__sumData(ckd_obj_%Ng-ig_ckd, wgt_Ckd_(ig_ckd), rtm_obj_%Npts, fluxDir, sumFluxDir_Out)
         end if
 
         if (isHROut) then
             ! Compute the net flux divergence at every point
-            call shd_rad__computeFluxDiv(shdo_obj_%Nstokes, cell_obj_%Npts, iradI_Shdo_, src_obj_%type, src_obj_%avgMu,&
+            call shd_rad__computeFluxDiv(shdo_obj_%Nstokes, rtm_obj_%Npts, iradI_Shdo_, src_obj_%type, src_obj_%avgMu,&
                 &ext_Rtm_, ssa_Rtm_, planck_Rtm_, fluxDir, radI_Shdo_, work)
-            call shd_util__sumData(ckd_obj_%Ng-ig_ckd, wgt_Ckd_(ig_ckd), cell_obj_%Npts, work, sumFluxDiv_Out)
+            call shd_util__sumData(ckd_obj_%Ng-ig_ckd, wgt_Ckd_(ig_ckd), rtm_obj_%Npts, work, sumFluxDiv_Out)
         end if
 
         if (isSHOut) then
-            call shd_shdo__computeSH(Nsh_out, shdo_obj_%Nstokes, cell_obj_%Npts, src_obj_%type, src_obj_%avgMu, src_obj_%avgAz,&
+            call shd_shdo__computeSH(Nsh_out, shdo_obj_%Nstokes, rtm_obj_%Npts, src_obj_%type, src_obj_%avgMu, src_obj_%avgAz,&
                 &fluxDir, iradI_Shdo_, shdo_obj_%maxNl, shdo_obj_%maxNm, radI_Shdo_, work)
-            call shd_util__sumData(ckd_obj_%Ng-ig_ckd, wgt_Ckd_(ig_ckd), Nsh_out*cell_obj_%Npts, work, sumSH_Out)
+            call shd_util__sumData(ckd_obj_%Ng-ig_ckd, wgt_Ckd_(ig_ckd), Nsh_out*rtm_obj_%Npts, work, sumSH_Out)
         end if
 
-        oldNpts = cell_obj_%Npts
+        oldNpts = rtm_obj_%Npts
 
     end do CKD_LOOP
     !╰────────────────────────────────────────────────────────────────────────────╯!
@@ -1252,7 +1252,7 @@ program shdom
 
     ! Output radiance and/or flux (and/or other radiative quantities)
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    shdo_obj_%Nsh = isrcJ_Shdo_(cell_obj_%Npts + 1)
+    shdo_obj_%Nsh = isrcJ_Shdo_(rtm_obj_%Npts + 1)
     irad = 0
     ilos = 0
     if (isMpi_) then
@@ -1271,7 +1271,7 @@ program shdom
             &sumFluxTot_Out, sumFluxDir_Out, sumFluxDiv_Out, sumSH_Out,&
             &fluxTot_all, fluxDiv_all, SH_all,&
             &shdo_obj_%Nsh, Ncell_tot, Npts_tot, Nsh_tot,&
-            &rtmAll_obj, cell_obj_)
+            &rtmAll_obj, rtm_obj_, cell_obj_)
 
         if (isMasterProc) then
 
@@ -1353,22 +1353,22 @@ program shdom
     ! before:
     !  MAXMB_OUT = 4*(shdo_obj_%Nmu*(2 + 2*shdo_obj_%Nphi + 2*shdo_obj_%Nlm + 2*33*32)&
     !      + 4.5*prp_obj_%maxNpts + prp_obj_%maxNptsLeg + prp_obj_%Npha*prp_obj_%NlegSet*(prp_obj_%maxNleg + 1)&
-    !      + 16.5*cell_obj_%Ncell + cell_obj_%Npts*(28 + shdo_obj_%maxNphi0*shdo_obj_%Nstokes)&
+    !      + 16.5*cell_obj_%Ncell + rtm_obj_%Npts*(28 + shdo_obj_%maxNphi0*shdo_obj_%Nstokes)&
     !      + shdo_obj_%Nstokes*shdo_obj_%Nsh*NbigArr)/1024**2
     ! now:
     !   use NmaxNpts
     MAXMB_OUT = 4*(memUsed + 16.5*cell_obj_%Ncell&
-        + cell_obj_%Npts*(NmaxNpts-16.5*CELL_TO_POINT_RATIO))/1024**2
+        + rtm_obj_%Npts*(NmaxNpts-16.5*CELL_TO_POINT_RATIO))/1024**2
 
-    ADAPTGRIDFAC_OUT = float(cell_obj_%Npts)/cell_obj_%Npts0
-    SHTERM_FAC_OUT = float(shdo_obj_%Nsh)/(shdo_obj_%Nlm*cell_obj_%Npts)
-    CELL_POINT_OUT = float(cell_obj_%Ncell)/cell_obj_%Npts
+    ADAPTGRIDFAC_OUT = float(rtm_obj_%Npts)/rtm_obj_%Npts0
+    SHTERM_FAC_OUT = float(shdo_obj_%Nsh)/(shdo_obj_%Nlm*rtm_obj_%Npts)
+    CELL_POINT_OUT = float(cell_obj_%Ncell)/rtm_obj_%Npts
     if (verbose_ .ge. 5) write (6, '(A)')'Message [shdom]: Actual MAX_TOTAL_MB, ADAPT_GRID_FACTOR, NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO'
     if (verbose_ .ge. 5) write (6, '(26X,F9.2,6X,F7.3,14X,F5.3,15X,F5.3)') MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
-    call shd_mpi__end(rtm_obj_%runName, cell_obj_, prpAll_obj)
+    call shd_mpi__end(rtm_obj_%runName, rtm_obj_, prpAll_obj)
 
 
     ! Deallocate array
