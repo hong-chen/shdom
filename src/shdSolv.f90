@@ -45,7 +45,7 @@ module shd_solv
     use globals_type, only: shd_type_grid
 
     use globals_obj,  only: rtm_obj_, xyz_Rtm_, temp_Rtm_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, leg_Rtm_, ipha_Rtm_, &
-                            i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, &
+                            i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, flag_Cell_, &
                            shdo_obj_, iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_, &
                             src_obj_, &
                             prp_obj_, &
@@ -105,7 +105,7 @@ subroutine shd_solv__solveRte(&
     ! Performs the SHDOM solution procedure.
     ! Output is returned in srcJ_Shdo, radI_Shdo, FLUXES, DIRFLUX.
     ! The adaptive grid stucture (grid_obj%Ncell,i8Grid_Cell_,i6Cell_Cell_,i2Tree_Cell_,
-    ! grid_obj%flag,grid_obj%Npts,xyz_Rtm_) is input and modified for new grid
+    ! flag_Cell_,grid_obj%Npts,xyz_Rtm_) is input and modified for new grid
     ! cells and points on output.
 
     type(shd_type_grid), intent(inout) :: grid_obj
@@ -331,7 +331,7 @@ subroutine shd_solv__solveRte(&
                     DIRFLUX, &
                     src_obj_%avgSolar0, YlmSolar_Shdo, &
                     WORK, WORK2, &
-                    grid_obj, xyz_Rtm_, i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, &
+                    grid_obj, xyz_Rtm_, i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, flag_Cell_, &
                     temp_Rtm_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, leg_Rtm_, ipha_Rtm_, &
                     iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_)
                 if (SOLCRIT .gt. STARTADAPTSOL) STARTSPLITACC = SPLITCRIT

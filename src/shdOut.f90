@@ -46,7 +46,7 @@ module shd_out
     use globals_type,  only: shd_type_rtm, shd_type_grid
 
     use globals_obj,   only: rtm_obj_, xyz_Rtm_, temp_Rtm_, ext_Rtm_, ssa_Rtm_, leg_Rtm_, ipha_Rtm_, &
-                             i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, &
+                             i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, flag_Cell_, &
                             shdo_obj_, iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_, &
                              src_obj_, &
                              prp_obj_, &
@@ -2706,7 +2706,7 @@ subroutine shd_io__saveState(&
     write (91) ((i8Grid_Cell_(J, I), J=1, 8), I=1, grid_obj%Ncell)
     write (91) ((i6Cell_Cell_(J, I), J=1, 6), I=1, grid_obj%Ncell)
     write (91) ((i2Tree_Cell_(J, I), J=1, 2), I=1, grid_obj%Ncell)
-    write (91)  (grid_obj%flag(I), I=1, grid_obj%Ncell)
+    write (91)  (flag_Cell_(I), I=1, grid_obj%Ncell)
 
     write (91) ((xyz_Rtm_(J, I), J=1, 3), I=1, grid_obj%Npts)
     write (91) ((FLUXES(J, I) , J=1, 2), I=1, grid_obj%Npts)

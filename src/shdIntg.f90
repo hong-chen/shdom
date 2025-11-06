@@ -47,7 +47,7 @@ module shd_intg
     use globals_type,  only: shd_type_grid
 
     use globals_obj,   only: rtm_obj_, xyz_Rtm_, ext_Rtm_, &
-                             i8Grid_Cell_, i6Cell_Cell_, &
+                             i8Grid_Cell_, i6Cell_Cell_, flag_Cell_, &
                             shdo_obj_, &
                              src_obj_, &
                              prp_obj_, &
@@ -499,8 +499,8 @@ subroutine shd_intg__backIntegrate3D(&
                         &xyz_Rtm_(1, ipt), xyz_Rtm_(2, ipt), xyz_Rtm_(3, ipt)
                     stop
                 end if
-                IPINX = btest(int(grid_obj%flag(ICELL)), 0)
-                IPINY = btest(int(grid_obj%flag(ICELL)), 1)
+                IPINX = btest(int(flag_Cell_(ICELL)), 0)
+                IPINY = btest(int(flag_Cell_(ICELL)), 1)
 
                 ! Find boundaries of the current cell
                 ! Find the three possible intersection planes (X,Y,Z)
@@ -747,9 +747,9 @@ subroutine shd_intg__backIntegrate3D_(&
     !                       Second is pointer to first of the two children cells.
     !                       This pointer is 0 if there are no children cells.
     !                       The children cells are in successive order, with
-    !                       the negative side first. See grid_obj%flag for direction
+    !                       the negative side first. See flag_Cell_ for direction
     !                       of division of split.
-    !   grid_obj%flag(grid_obj%Ncell) : integer array, a collection of binary flags for the cells:
+    !   flag_Cell_(grid_obj%Ncell) : integer array, a collection of binary flags for the cells:
     !                       bit  For bit set
     !                       0:  Do independent pixel for X
     !                       1:  Do independent pixel for Y
@@ -906,8 +906,8 @@ subroutine shd_intg__backIntegrate3D_(&
                     stop
                 end if
 
-                IPINX = btest(int(grid_obj%flag(ICELL)), 0)
-                IPINY = btest(int(grid_obj%flag(ICELL)), 1)
+                IPINX = btest(int(flag_Cell_(ICELL)), 0)
+                IPINY = btest(int(flag_Cell_(ICELL)), 1)
 
                 ! Find boundaries of the current cell
                 ! Find the three possible intersection planes (X,Y,Z)
@@ -1229,7 +1229,7 @@ subroutine shd_intg__backIntegrate2D(&
                         &MU, PHI, IPT, INEXTCELL
                     stop
                 end if
-                IPINX = btest(int(grid_obj%flag(ICELL)), 0)
+                IPINX = btest(int(flag_Cell_(ICELL)), 0)
 
                 ! Find boundaries of the current cell
                 ! Find the three possible intersection planes (X,Y,Z)

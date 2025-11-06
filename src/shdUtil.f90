@@ -48,7 +48,7 @@ module shd_util
     use globals_type,  only: shd_type_grid
 
     use globals_obj,   only: rtm_obj_, xyz_Rtm_, &
-                             i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_
+                             i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, flag_Cell_
 
     implicit none
     private
@@ -325,7 +325,7 @@ subroutine shd_util__findCell(X0, Y0, Z0, icell,&
     ! (X0,Y0,Z0) to find which child cell (pos or neg) the test
     ! point is in.
     do while (i2Tree_Cell_(2, icell) .gt. 0)
-        DIR = ibits(int(grid_obj%flag(icell)), 2, 2)
+        DIR = ibits(int(flag_Cell_(icell)), 2, 2)
         IC = i2Tree_Cell_(2, icell) + 1
         IPTR = i8Grid_Cell_(1, IC)
         if (DIR .eq. 1) then
@@ -367,7 +367,7 @@ subroutine shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, INEXT,&
         ! Go down the tree until there is no children
         do while (i2Tree_Cell_(2, IC) .gt. 0)
             ! Get the direction cell is split
-            DIR = ibits(int(grid_obj%flag(IC)), 2, 2)
+            DIR = ibits(int(flag_Cell_(IC)), 2, 2)
             if (DIR .eq. 0) stop 'Error [_findNextCell]: No split direction.'
             ! If split is in direction of face then choose the near child cell
             !   which is the negative side cell if this is a positive face.

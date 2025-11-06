@@ -53,7 +53,7 @@ module shd_mpi
                              shd_type_sen
 
     use globals_obj,   only:  rtm_obj_, xyz_Rtm_, ext_Rtm_, leg_Rtm_, &
-                              i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, &
+                              i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, flag_Cell_, &
                              shdo_obj_, isrcJ_Shdo_, srcJ_Shdo_, &
                               src_obj_, &
                               prp_obj_, &
@@ -3204,7 +3204,7 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     ! the grid point with the test point (X,Y,Z) to find which child cell
     ! (pos or neg) the test point is in.
     do while (i2Tree_Cell_(2, ICELL) .gt. 0)
-        DIR = ibits(int(grid_obj%flag(ICELL)), 2, 2)
+        DIR = ibits(int(flag_Cell_(ICELL)), 2, 2)
         IC = i2Tree_Cell_(2, ICELL) + 1
         IPTR = i8Grid_Cell_(1, IC)
         if (DIR .eq. 1) then
@@ -3223,8 +3223,8 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     I2 = i8Grid_Cell_(GRIDFACE(2, IFACE), ICELL)
     I3 = i8Grid_Cell_(GRIDFACE(3, IFACE), ICELL)
     I4 = i8Grid_Cell_(GRIDFACE(4, IFACE), ICELL)
-    IPINX = btest(int(grid_obj%flag(ICELL)), 0)
-    IPINY = btest(int(grid_obj%flag(ICELL)), 1)
+    IPINX = btest(int(flag_Cell_(ICELL)), 0)
+    IPINY = btest(int(flag_Cell_(ICELL)), 1)
     ! Compute the face interpolation factors
     if (IFACE .le. 2) then
         U = (Z - xyz_Rtm_(3, I1))/(xyz_Rtm_(3, I3) - xyz_Rtm_(3, I1))
@@ -3257,8 +3257,8 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     RAD(:) = RADIANCE(:)
     VALIDRAD = .false.
     do while (.not. VALIDRAD .and. ICELL .gt. 0)
-        IPINX = btest(int(grid_obj%flag(ICELL)), 0)
-        IPINY = btest(int(grid_obj%flag(ICELL)), 1)
+        IPINX = btest(int(flag_Cell_(ICELL)), 0)
+        IPINY = btest(int(flag_Cell_(ICELL)), 1)
 
         ! Find boundaries of the current cell
         !   Find the three possible intersection planes (X,Y,Z)

@@ -177,6 +177,8 @@ module globals_type
     integer, parameter, private :: I__ = selected_int_kind(9)
     integer, parameter, private :: R__ = selected_real_kind(6)
 
+    ! RTM
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     type :: shd_type_rtm
 
         character(len=charMaxLen_) :: runName = 'NONE'
@@ -207,7 +209,11 @@ module globals_type
         logical :: isAllocated  = .false.
 
     end type shd_type_rtm
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
+
+    ! Cell
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     type :: shd_type_grid
 
         integer(kind=I__) :: Nx = -999
@@ -223,11 +229,11 @@ module globals_type
         integer(kind=I__) :: maxNpts  = -999
         integer(kind=I__) :: maxNcell = -999
 
-        integer(kind=2),   pointer:: flag(:) => null()
-
         logical :: isAllocated  = .false.
 
     end type shd_type_grid
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
 
     ! SHDO
     !╭────────────────────────────────────────────────────────────────────────────╮!
@@ -432,6 +438,7 @@ module globals_obj
     integer(kind=I__), allocatable, save :: i8Grid_Cell_(:, :) ! (8, cell_obj%maxNcell)
     integer(kind=I__), allocatable, save :: i6Cell_Cell_(:, :) ! (6, cell_obj%maxNcell)
     integer(kind=I__), allocatable, save :: i2Tree_Cell_(:, :) ! (2, cell_obj%maxNcell)
+    integer(kind=2),   allocatable, save ::   flag_Cell_(:)    ! (cell_obj%maxNcell)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 

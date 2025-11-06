@@ -47,7 +47,7 @@ module shd_src
     use globals_type,  only: shd_type_grid
 
     use globals_obj,   only: rtm_obj_, xyz_Rtm_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, leg_Rtm_, ipha_Rtm_, &
-                             i8Grid_Cell_, i6Cell_Cell_, &
+                             i8Grid_Cell_, i6Cell_Cell_, flag_Cell_, &
                             shdo_obj_, &
                              src_obj_, &
                              prp_obj_, &
@@ -970,10 +970,10 @@ subroutine shd_src__integrateSrcOneRay(&
 
         ! This cell is independent pixel if IP mode or open boundary
         !   conditions and ray is leaving domain (i.e. not entering)
-        IPINX = btest(int(grid_obj%flag(icell)), 0) .and.&
+        IPINX = btest(int(flag_Cell_(icell)), 0) .and.&
             &.not. (isOpenX_ .and.&
             &((CX .gt. 0 .and. XE .lt. XM) .or. (CX .lt. 0 .and. XE .gt. XM)))
-        IPINY = btest(int(grid_obj%flag(icell)), 1) .and.&
+        IPINY = btest(int(flag_Cell_(icell)), 1) .and.&
             &.not. (isOpenYx_ .and.&
             &((CY .gt. 0 .and. YE .lt. YM) .or. (CY .lt. 0 .and. YE .gt. YM)))
 
@@ -1064,11 +1064,11 @@ subroutine shd_src__integrateSrcOneRay(&
         if ((SOX .le. SOZ) .and. (SOX .le. SOY)) then
             IFACE = 2 - BITX
             JFACE = 1
-            OPENBCFACE = btest(int(grid_obj%flag(icell)), 0) .and. isOpenX_
+            OPENBCFACE = btest(int(flag_Cell_(icell)), 0) .and. isOpenX_
         else if (SOY .le. SOZ) then
             IFACE = 4 - BITY
             JFACE = 2
-            OPENBCFACE = btest(int(grid_obj%flag(icell)), 1) .and. isOpenYx_
+            OPENBCFACE = btest(int(flag_Cell_(icell)), 1) .and. isOpenYx_
         else
             IFACE = 6 - BITZ
             JFACE = 3
@@ -1239,10 +1239,10 @@ subroutine shd_src__integrateSrc(NSTOKES,&
     do while (.not. VALIDRAD .and. icell .gt. 0)
         ! This cell is independent pixel if IP mode or open boundary
         !   conditions and ray is leaving domain (i.e. not entering)
-        IPINX = btest(int(grid_obj%flag(icell)), 0) .and.&
+        IPINX = btest(int(flag_Cell_(icell)), 0) .and.&
             &.not. (isOpenX_ .and.&
             &((CX .gt. 0 .and. XE .lt. XM) .or. (CX .lt. 0 .and. XE .gt. XM)))
-        IPINY = btest(int(grid_obj%flag(icell)), 1) .and.&
+        IPINY = btest(int(flag_Cell_(icell)), 1) .and.&
             &.not. (isOpenYx_ .and.&
             &((CY .gt. 0 .and. YE .lt. YM) .or. (CY .lt. 0 .and. YE .gt. YM)))
 
@@ -1341,11 +1341,11 @@ subroutine shd_src__integrateSrc(NSTOKES,&
         if (SOX .le. SOZ .and. SOX .le. SOY) then
             IFACE = 2 - BITX
             JFACE = 1
-            OPENBCFACE = btest(int(grid_obj%flag(icell)), 0) .and. isOpenX_
+            OPENBCFACE = btest(int(flag_Cell_(icell)), 0) .and. isOpenX_
         else if (SOY .le. SOZ) then
             IFACE = 4 - BITY
             JFACE = 2
-            OPENBCFACE = btest(int(grid_obj%flag(icell)), 1) .and. isOpenYx_
+            OPENBCFACE = btest(int(flag_Cell_(icell)), 1) .and. isOpenYx_
         else
             IFACE = 6 - BITZ
             JFACE = 3

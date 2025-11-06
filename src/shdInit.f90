@@ -202,7 +202,7 @@ end subroutine shd_init__makeGrid
 
 subroutine shd_init__makeCell(rtm_obj, &
                               grid_OBJ, &
-                              xyz_Rtm, i8Grid_Cell, i6Cell_Cell, i2Tree_Cell)
+                              xyz_Rtm, i8Grid_Cell, i6Cell_Cell, i2Tree_Cell, flag_Cell)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Description:
@@ -255,9 +255,9 @@ subroutine shd_init__makeCell(rtm_obj, &
     !                   Second is pointer to first of the two children cells.
     !                   This pointer is 0 if there are no children cells.
     !                   The children cells are in successive order, with
-    !                   the negative side first. See grid_obj%flag for direction
+    !                   the negative side first. See flag_Cell for direction
     !                   of division of split.
-    !   grid_obj%flag(IC) : a collection of binary flags for the cells:
+    !   flag_Cell(IC) : a collection of binary flags for the cells:
     !                   bit  For bit set
     !                   0:  Do independent pixel for X
     !                   1:  Do independent pixel for Y
@@ -272,6 +272,7 @@ subroutine shd_init__makeCell(rtm_obj, &
     integer(kind=I__), intent(out) :: i8Grid_Cell(8, *)
     integer(kind=I__), intent(out) :: i6Cell_Cell(6, *)
     integer(kind=I__), intent(out) :: i2Tree_Cell(2, *)
+    integer(kind=2),   intent(out) :: flag_Cell(*)
 
     integer(kind=I__) :: ix, iy, iz, ix0, ix1, iy0, iy1, i, Nxc, Nyc
 
@@ -330,22 +331,22 @@ subroutine shd_init__makeCell(rtm_obj, &
                 i8Grid_Cell(6, i) = iz + 1 + grid_obj%Nz*(iy0 - 1) + grid_obj%Nz*grid_obj%Ny*(ix1 - 1)
                 i8Grid_Cell(7, i) = iz + 1 + grid_obj%Nz*(iy1 - 1) + grid_obj%Nz*grid_obj%Ny*(ix0 - 1)
                 i8Grid_Cell(8, i) = iz + 1 + grid_obj%Nz*(iy1 - 1) + grid_obj%Nz*grid_obj%Ny*(ix1 - 1)
-                grid_obj%flag(I) = 0
+                flag_Cell(I) = 0
                 ! Initialize the neighbor pointer; to self for IP mode or
                 !   if open boundary conditions and at either end
                 if (is1DX_) then
                     i6Cell_Cell(1, i) = i
                     i6Cell_Cell(2, i) = i
-                    grid_obj%flag(I) = ibset(int(grid_obj%flag(I)), 0)
+                    flag_Cell(I) = ibset(int(flag_Cell(I)), 0)
                 else if (isOpenX_) then
                     if (ix .eq. 1) then
                         i6Cell_Cell(1, i) = i
                         i6Cell_Cell(2, i) = i + (grid_obj%Nz - 1)*Nyc
-                        grid_obj%flag(I) = ibset(int(grid_obj%flag(I)), 0)
+                        flag_Cell(I) = ibset(int(flag_Cell(I)), 0)
                     else if (ix .eq. Nxc) then
                         i6Cell_Cell(1, i) = i - (grid_obj%Nz - 1)*Nyc
                         i6Cell_Cell(2, i) = i
-                        grid_obj%flag(I) = ibset(int(grid_obj%flag(I)), 0)
+                        flag_Cell(I) = ibset(int(flag_Cell(I)), 0)
                     else
                         i6Cell_Cell(1, i) = i - (grid_obj%Nz - 1)*Nyc
                         i6Cell_Cell(2, i) = i + (grid_obj%Nz - 1)*Nyc
@@ -376,16 +377,16 @@ subroutine shd_init__makeCell(rtm_obj, &
                 if (is1DYx_) then
                     i6Cell_Cell(3, i) = i
                     i6Cell_Cell(4, i) = i
-                    grid_obj%flag(I) = ibset(int(grid_obj%flag(I)), 1)
+                    flag_Cell(I) = ibset(int(flag_Cell(I)), 1)
                 else if (isOpenYx_) then
                     if (iy .eq. 1) then
                         i6Cell_Cell(3, i) = i
                         i6Cell_Cell(4, i) = i + (grid_obj%Nz - 1)
-                        grid_obj%flag(I) = ibset(int(grid_obj%flag(I)), 1)
+                        flag_Cell(I) = ibset(int(flag_Cell(I)), 1)
                     else if (iy .eq. Nyc) then
                         i6Cell_Cell(3, i) = i - (grid_obj%Nz - 1)
                         i6Cell_Cell(4, i) = i
-                        grid_obj%flag(I) = ibset(int(grid_obj%flag(I)), 1)
+                        flag_Cell(I) = ibset(int(flag_Cell(I)), 1)
                     else
                         i6Cell_Cell(3, i) = i - (grid_obj%Nz - 1)
                         i6Cell_Cell(4, i) = i + (grid_obj%Nz - 1)
