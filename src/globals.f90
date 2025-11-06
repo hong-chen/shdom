@@ -403,7 +403,6 @@ module globals_obj
                             shd_type_src, &
                             shd_type_prp, &
                             shd_type_sfc, &
-                            shd_type_sfc, &
                             shd_type_ckd, &
                             shd_type_sen
 
