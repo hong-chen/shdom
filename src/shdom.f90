@@ -1132,14 +1132,14 @@ program shdom
                             &doDeltaM,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
                             &fluxDir, fluxTot,&
-                            &work, work(1 + rtm_obj_%Npts*shdo_obj_%Nstokes),&
+                            &work(1), work(rtm_obj_%Npts*shdo_obj_%Nstokes+1),&
                             &parms_Out(1, iout), irad, work2)
                     else
                         call shd_rad__computeRad(&
                             &doDeltaM,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
                             &fluxDir, fluxTot,&
-                            &work(1), work(1 + rtm_obj_%Npts*shdo_obj_%Nstokes),&
+                            &work(1), work(rtm_obj_%Npts*shdo_obj_%Nstokes+1),&
                             &parms_Out(1, iout), irad, work2)
                     end if
                 end if
@@ -1358,8 +1358,8 @@ program shdom
         + rtm_obj_%Npts*(NmaxNpts-16.5*CELL_TO_POINT_RATIO))/1024**2
 
     ADAPTGRIDFAC_OUT = float(rtm_obj_%Npts)/rtm_obj_%Npts0
-    SHTERM_FAC_OUT = float(shdo_obj_%Nsh)/(shdo_obj_%Nlm*rtm_obj_%Npts)
-    CELL_POINT_OUT = float(cell_obj_%Npts)/rtm_obj_%Npts
+    SHTERM_FAC_OUT   = float(shdo_obj_%Nsh)/(shdo_obj_%Nlm*rtm_obj_%Npts)
+    CELL_POINT_OUT   = float(cell_obj_%Npts)/rtm_obj_%Npts
     if (verbose_ .ge. 5) write (6, '(A)')'Message [shdom]: Actual MAX_TOTAL_MB, ADAPT_GRID_FACTOR, NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO'
     if (verbose_ .ge. 5) write (6, '(26X,F9.2,6X,F7.3,14X,F5.3,15X,F5.3)') MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
     !╰────────────────────────────────────────────────────────────────────────────╯!
