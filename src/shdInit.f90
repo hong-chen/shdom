@@ -45,7 +45,7 @@ module shd_init
                              is1DX_, is1DYx_, &
                              isSolar_, isThermal_
     use globals_type,  only: shd_type_rtm, &
-                             shd_type_grid, &
+                             shd_type_cell, &
                              shd_type_prp, &
                              shd_type_sfc
 
@@ -266,7 +266,7 @@ subroutine shd_init__makeCell(rtm_obj, &
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     type(shd_type_rtm),  intent(in)    :: rtm_obj
-    type(shd_type_grid), intent(inout) :: grid_obj
+    type(shd_type_cell), intent(inout) :: grid_obj
 
     real(kind=R__),    intent(out) :: xyz_Rtm(3, *)
     integer(kind=I__), intent(out) :: i8Grid_Cell(8, *)
@@ -449,7 +449,7 @@ subroutine shd_init__makePrp(&
     ! temp_Rtm array is unchanged.
 
     type(shd_type_rtm),  intent(inout) :: rtm_obj
-    type(shd_type_grid), intent(in)    :: grid_obj
+    type(shd_type_cell), intent(in)    :: grid_obj
 
     real(kind=R__), intent(in)    ::   temp_Rtm(*)
     real(kind=R__), intent(out)   :: planck_Rtm(*)

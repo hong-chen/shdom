@@ -42,7 +42,7 @@ module shd_solv
     use globals_cfg,  only: verbose_, isMpi_, &
                             isSolar_
 
-    use globals_type, only: shd_type_grid
+    use globals_type, only: shd_type_cell
 
     use globals_obj,  only: rtm_obj_, xyz_Rtm_, temp_Rtm_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, leg_Rtm_, ipha_Rtm_, &
                             i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, flag_Cell_, &
@@ -108,7 +108,7 @@ subroutine shd_solv__solveRte(&
     ! flag_Cell_,grid_obj%Npts,xyz_Rtm_) is input and modified for new grid
     ! cells and points on output.
 
-    type(shd_type_grid), intent(inout) :: grid_obj
+    type(shd_type_cell), intent(inout) :: grid_obj
 
     integer MAXITER, ITER
     integer MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR(MAXNBC, 2)
@@ -497,7 +497,7 @@ subroutine shd_solv__truncRad(doHighOrder, doFixSH, SHACC,&
     ! L=1 so that the mean radiance and net flux terms may be computed,
     ! unless doHighOrder is on, in which case all terms are kept.
 
-    type(shd_type_grid), intent(in)    :: grid_obj
+    type(shd_type_cell), intent(in)    :: grid_obj
 
     integer(I__), intent(inout) :: iradI_Shdo(*)
     real(R__),    intent(in)    ::  radI_Shdo(shdo_obj_%Nstokes, *)

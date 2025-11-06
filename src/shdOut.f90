@@ -43,7 +43,7 @@ module shd_out
     use globals_cfg,   only: verbose_, charMaxLen_, is1DX_, &
                              isPol_, isPol4_, &
                              isSolar_, isThermal_
-    use globals_type,  only: shd_type_rtm, shd_type_grid
+    use globals_type,  only: shd_type_rtm, shd_type_cell
 
     use globals_obj,   only: rtm_obj_, xyz_Rtm_, temp_Rtm_, ext_Rtm_, ssa_Rtm_, leg_Rtm_, ipha_Rtm_, &
                              i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, flag_Cell_, &
@@ -96,7 +96,7 @@ subroutine shd_io__outputResult(&
     ! medium properties.
     ! See the overall program documentation for output parameters.
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
 
     integer, intent(in) :: MAXITER, TOTITER, NSHOUT
     logical  , intent(in) :: DELTAM
@@ -1186,7 +1186,7 @@ subroutine shd_io__outputResultMpi(&
     ! See the overall program documentation for output parameters.
 
     type(shd_type_rtm),  intent(in) :: rtmAll_obj
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
 
     integer Nsh_tot, Npts_tot, Ncell_tot
     integer MAXITER, TOTITER, IRAD, NSHOUT
@@ -1918,7 +1918,7 @@ subroutine shd_io__outputCamRad(&
     ! (here the SHDOM input parameters), followed by the byte or two byte
     ! image pixels.
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
 
     integer MAXITER, TOTITER, IVIS
     logical, intent(in) :: DELTAM
@@ -2119,7 +2119,7 @@ subroutine shd_io__outputImg(&
     ! (here the SHDOM input parameters), followed by the byte or two byte
     ! image pixels.
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
 
     integer MAXITER, TOTITER, IVIS
     logical, intent(in) :: DELTAM
@@ -2506,7 +2506,7 @@ subroutine shd_io__outputCellSplit(&
     ! and direction (X,Y,Z).  Calls CELL_SPLIT_TEST.
     ! Mainly for debugging purposes.
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
 
     integer SHPTR(*)
     real SOURCE(shdo_obj_%Nstokes, *)
@@ -2555,7 +2555,7 @@ subroutine shd_io__visualizeCell(&
     ! OUTTYPE=0 for cell outlines only, OUTTYPE=1 for cells and arrows.
     ! There is a special output for IP mode.
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
 
     integer OUTTYPE
     real YVAL, XDOMAIN, ZDOMAIN
@@ -2682,7 +2682,7 @@ subroutine shd_io__saveState(&
     ! the low order terms of the radiance expansion, and the flux array.
     ! If the file name is 'NONE' then no file is written.
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
 
     character(len=*) , intent(in) :: OUTSAVEFILE
     real(kind=R__)   , intent(inout) :: WORK(*)

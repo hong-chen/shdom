@@ -47,7 +47,7 @@ module shd_rad
                              isPol_, isPol4_, &
                              isSolar_, isThermal_
 
-    use globals_type,  only: shd_type_grid
+    use globals_type,  only: shd_type_cell
 
     use globals_obj,   only: rtm_obj_, xyz_Rtm_, ext_Rtm_, leg_Rtm_, &
                             shdo_obj_, isrcJ_Shdo_, srcJ_Shdo_, &
@@ -94,7 +94,7 @@ subroutine shd_rad__makeDirect(&
     !   DIRFLUX is set to F*exp(-tau_sun).
     !   Actually calls shd_rad__computeDirect to do all the hard work.
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
 
     integer NPTS, ML
     logical DELTAM
@@ -719,7 +719,7 @@ subroutine shd_rad__computeRad(&
 
     ! Computes the radiances for the specified locations and directions
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
 
     integer IRAD
     integer MAXNBC, NTOPPTS, NBOTPTS
@@ -885,7 +885,7 @@ subroutine shd_rad__computeCamRad(&
     !   Computes Stokes radiances (output in VISOUT) for the visualization
     !  modes: 1) camera mode, and 2) cross track scanning.
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
 
     integer IVIS
     integer MAXNBC, NTOPPTS, NBOTPTS

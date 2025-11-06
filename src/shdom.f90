@@ -50,7 +50,7 @@ program shdom
     use globals_type,  only: shd_type_prp, &
                              shd_type_sfc, &
                              shd_type_rtm, &
-                             shd_type_grid
+                             shd_type_cell
 
     use globals_obj,   only: rtm_obj_, xyz_Rtm_, temp_Rtm_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, leg_Rtm_, ipha_Rtm_, &
                              i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, flag_Cell_, &
@@ -141,7 +141,7 @@ program shdom
 
     ! grid_obj
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    type(shd_type_grid) :: grid_obj
+    type(shd_type_cell) :: grid_obj
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     real(kind=R__),    allocatable :: work(:)

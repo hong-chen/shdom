@@ -45,7 +45,7 @@ module shd_util
     use globals_const, only: RD_, PI_, DPI_
     use globals_cfg,   only: isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
                              is1DX_, is1DYx_
-    use globals_type,  only: shd_type_grid
+    use globals_type,  only: shd_type_cell
 
     use globals_obj,   only: rtm_obj_, xyz_Rtm_, &
                              i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, flag_Cell_
@@ -121,7 +121,7 @@ subroutine shd_util__interpData(OLDNPTS,&
     ! Each new point is located in a cell, and the two parent grid points
     ! are found to interpolate the data from.
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
 
     integer OLDNPTS
     logical FLUX_OUT, FLUXDIV_OUT, SH_OUT
@@ -188,7 +188,7 @@ subroutine shd_util__findCell(X0, Y0, Z0, icell,&
     ! and the tree is traced down to find the smallest cell containing
     ! the point.
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
 
     integer icell
     real(RD_) :: X0, Y0, Z0
@@ -351,7 +351,7 @@ subroutine shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, INEXT,&
     ! The current location (XE,YE,ZE) on the face is used to find the cell
     ! if there are several adjacent to the current cell.
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
 
     integer IFACE, JFACE, ICELL, INEXT
     real(RD_) :: XE, YE, ZE
@@ -407,7 +407,7 @@ subroutine shd_util__interpTriLin(&
     ! scalar field), ID1 is the first element of the vector to interpolate,
     ! and NV elements are output.
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
 
     integer, intent(in) :: ICELL, ND, ID1, NV
     real(RD_), intent(in) :: X, Y, Z

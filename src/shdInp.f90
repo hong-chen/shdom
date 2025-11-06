@@ -45,7 +45,7 @@ module shd_inp
     use globals_const, only: PI_
     use globals_cfg,   only: verbose_, charMaxLen_
     use globals_type,  only: shd_type_rtm, &
-                             shd_type_grid, &
+                             shd_type_cell, &
                              shd_type_shdo, &
                              shd_type_src, &
                              shd_type_prp, &
@@ -1973,7 +1973,7 @@ subroutine shd_io__restoreState(&
     ! The flag NEWGRIDFLAG is set to false if reading succeeds.
 
     type(shd_type_rtm),  intent(inout) :: rtm_obj
-    type(shd_type_grid), intent(inout) :: grid_obj
+    type(shd_type_cell), intent(inout) :: grid_obj
     type(shd_type_shdo), intent(inout) :: shdo_obj
 
     real(kind=R__),    intent(out) :: xyz_Rtm(3, *)

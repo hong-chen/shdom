@@ -44,7 +44,7 @@ module shd_intg
     use globals_cfg,   only: verbose_, accSolv_, &
                              isMpi_, is1DX_, is1DYx_, is1D_, &
                              isPol_
-    use globals_type,  only: shd_type_grid
+    use globals_type,  only: shd_type_cell
 
     use globals_obj,   only: rtm_obj_, xyz_Rtm_, ext_Rtm_, &
                              i8Grid_Cell_, i6Cell_Cell_, flag_Cell_, &
@@ -123,7 +123,7 @@ subroutine shd_intg__integratePath(&
     ! downwelling radiances at all discrete ordinates for the bottom
     ! boundary points.
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
 
     integer(I__), intent(inout) :: iradI_Shdo(*)
     real(R__),    intent(inout) ::  radI_Shdo(shdo_obj_%Nstokes, *)
@@ -382,7 +382,7 @@ subroutine shd_intg__backIntegrate3D(&
     ! at the end of the ray path is interpolated from the known grid point
     ! radiances on the face.  The resulting radiances are put in GRIDRAD.
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
 
     integer NX, NY, NZ, NA, NSTOKES, KANG
     integer BCFLAG, IPFLAG
@@ -762,7 +762,7 @@ subroutine shd_intg__backIntegrate3D_(&
     !                        are evenly spaced in X and Y.
     !   SWEEPORD(grid_obj%Npts,*)   : integer array, grid point sweeping order
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
 
     integer(kind=I__), intent(in) :: NX, NY, NZ, NA, KANG, BCFLAG, IPFLAG
     integer(kind=I__), intent(in) :: SWEEPORD(grid_obj%Npts, *)
@@ -1147,7 +1147,7 @@ subroutine shd_intg__backIntegrate2D(&
     ! ad the end of the ray path is interpolated from the known grid point
     ! radiances on the face.  The resulting radiances are put in GRIDRAD.
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
     integer NX, NY, NZ, NA, KANG, NSTOKES
     integer SWEEPORD(grid_obj%Npts, *)
     real MU, PHI, TRANSMIN
@@ -1400,7 +1400,7 @@ subroutine shd_intg__backIntegrate1D(&
     !   radiances on the face. The resulting radiances are put in GRIDRAD.
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
 
     integer(kind=I__), intent(in) :: NX, NY, NZ, NA, KANG, NSTOKES
     integer(kind=I__), intent(in) :: SWEEPORD(grid_obj%Npts, *)

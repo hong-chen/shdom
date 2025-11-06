@@ -44,7 +44,7 @@ module shd_grid
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, isMpi_, &
                              is1DX_, is1DYx_, is1D_, &
                              isPol_, isSolar_, isThermal_
-    use globals_type,  only: shd_type_grid
+    use globals_type,  only: shd_type_cell
 
     use globals_obj,   only:  rtm_obj_, xyz_Rtm_, temp_Rtm_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, leg_Rtm_, ipha_Rtm_, &
                               i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, flag_Cell_, &
@@ -130,7 +130,7 @@ subroutine shd_grid__findBndryPnt(&
     !               and NBOTPTS (bottom boundary points)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
 
     integer(kind=I__), intent(in) :: NANG, MAXNBC, MAXBCRAD
     real(kind=R__)   , intent(in) :: ZBOT, ZTOP
@@ -200,7 +200,7 @@ subroutine shd_grid__matchGridPnt(&
     !               and NBOTPTS (bottom boundary points)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
 
     real(kind=R__)   , intent(in)  :: XP, YP, ZP
     integer(kind=I__), intent(in)  :: icell, iface
@@ -304,7 +304,7 @@ subroutine shd_grid__makeNewGridPnt(idir, icell, newCell,&
     ! newPts(2,) are the "parent" grid points these should be
     ! interpolated from.
 
-    type(shd_type_grid), intent(inout) :: grid_obj
+    type(shd_type_cell), intent(inout) :: grid_obj
 
     real(kind=R__),    intent(inout) :: xyz_Rtm(3, *)
 
@@ -401,7 +401,7 @@ subroutine shd_grid__makeSweepOrder(&
     ! Input:
     !
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
 
     integer(kind=I__), intent(out) :: SWEEPORD(grid_obj%Npts, *)
     real(kind=R__)   , intent(out) :: GRIDRAD(grid_obj%Npts)
@@ -506,7 +506,7 @@ subroutine shd_grid__divideCell(&
     ! and updates the neighbor pointers (i6Cell_Cell) for the new cells and
     ! their neighboring cells.
 
-    type(shd_type_grid), intent(inout) :: grid_obj
+    type(shd_type_cell), intent(inout) :: grid_obj
 
     real(kind=R__),    intent(inout) :: xyz_Rtm(3, *)
     integer(kind=I__), intent(inout) :: i8Grid_Cell(8, *)
@@ -588,7 +588,7 @@ subroutine shd_grid__matchNeighCellFace(iface, IC,&
     ! the corresponding faces of the neighboring cells (down its tree),
     ! the new cell's i6Cell_Cell and those of the neighboring cells are updated.
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
 
     integer(kind=I__), intent(inout) :: i6Cell_Cell(6, *)
 
@@ -669,7 +669,7 @@ subroutine shd_grid__inheritNeighCell(icell, iface, icellNeigh,&
     !   Updates the icell cell's new neighbor cell (icellNeigh) for all
     ! children cells that border the face (iface).
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
 
     integer(kind=I__), intent(inout) :: i6Cell_Cell(6, *)
 
@@ -727,7 +727,7 @@ subroutine shd_grid__testGridSmooth(&
     !   1) cell has finer grid cells on either side
     !   2) a neighboring cell has grid spacing more than 3 times finer
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
 
     integer icell, idir
     integer ID, iface, IP, IP1, IP2, icellNeigh, I, J, ISUM
@@ -846,7 +846,7 @@ subroutine shd_grid__testCellSplit(icell,&
     ! is computed in spherical harmonic space by summing the square of
     ! the difference over all terms.
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
 
     integer icell, idir
     real ADAPTCRIT(3), MAXADAPT
@@ -1019,7 +1019,7 @@ logical function sweepCellNext(BCFLAG, NXC, NYC, NZ, IOCT,&
     ! Within a base cell the tree structure is traced using a stack until
     ! we get to a new end cell.
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
 
     integer BCFLAG, NXC, NYC, NZ, IOCT, icell
     integer IC, idir, SP, STACK(50)
@@ -1090,7 +1090,7 @@ subroutine shd_grid__interpGrid(grid_obj, xyz_Rtm)
     ! Calls shd_grid__InterpTriLinGridPrp to interpolate the input arrays from
     !   the property grid to each internal grid point.
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
 
     real(kind=R__), intent(in) :: xyz_Rtm(3, *)
 
@@ -1446,7 +1446,7 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
     ! from the two parent grid points, and used to compute the source
     ! function for the new points.
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
 
     real(kind=R__),    intent(inout) :: temp_Rtm(*), planck_Rtm(*), ext_Rtm(*), ssa_Rtm(*)
     real(kind=R__),    intent(inout) :: leg_Rtm(prp_obj_%NlegSet, &
@@ -1632,7 +1632,7 @@ subroutine shd_grid__splitGrid(&
     ! grid point, grid cell, or spherical harmonic arrays (sizes given
     ! by grid_obj%maxNpts, grid_obj%maxNcell, shdo_obj_%maxNptsSH, shdo_obj_%maxNptsDO) then the isOutMem flag is returned true.
 
-    type(shd_type_grid), intent(inout) :: grid_obj
+    type(shd_type_cell), intent(inout) :: grid_obj
 
     real(kind=R__),    intent(inout) :: xyz_Rtm(3, *)
     integer(kind=I__), intent(inout) :: i8Grid_Cell(8, *)

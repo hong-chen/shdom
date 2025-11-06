@@ -46,7 +46,7 @@ module shd_mpi
                              isPol_, isPol4_, &
                              isSolar_
     use globals_type,  only: shd_type_rtm,  &
-                             shd_type_grid, &
+                             shd_type_cell, &
                              shd_type_prp,  &
                              shd_type_sfc,  &
                              shd_type_ckd,  &
@@ -840,7 +840,7 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
     ! sums grid_obj%Ncell,grid_obj%Npts,NSH over all processors.
 
     type(shd_type_rtm),  intent(inout) :: rtmAll_obj
-    type(shd_type_grid), intent(in)    :: grid_obj
+    type(shd_type_cell), intent(in)    :: grid_obj
 
     logical, intent(in) :: FLUX_OUT, FLUXDIV_OUT, SH_OUT
     integer, intent(in) :: NSHOUT
@@ -1088,7 +1088,7 @@ subroutine shd_mpi__makeDirect(SPT,&
     ! index SPT having X/Y/Z positions in xyz_Rtm_.
     ! DIRFLUX is set to F*exp(-tau_sun).
 
-    type(shd_type_grid), intent(in) ::  grid_obj
+    type(shd_type_cell), intent(in) ::  grid_obj
 
     integer, intent(in) :: SPT, ML
     logical, intent(in) :: DELTAM
@@ -1353,7 +1353,7 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, SWEEPORD,&
     ! boundary of this subdomain (SIDE: 1=-X, 2=+X, 3=-Y, 4=+Y).  BxyPos_ holds
     ! the gridpoint positions (X,Y,Z) for these boundary points.
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
 
     integer, intent(in) :: BCFLAG, IPFLAG, SWEEPORD(grid_obj%Npts, *)
     integer, intent(in) :: Nx, Ny, Nz
@@ -1561,7 +1561,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
     ! the finished radiance and original grid points are exchanged with
     ! all the other processors.
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
 
     integer, intent(in) :: BCFLAG, IPFLAG, JOCT, IZ
     integer, intent(in) :: Nstokes, Nx, Ny, Nz, NA, KANG
@@ -1819,7 +1819,7 @@ subroutine shd_mpi__computeRad(&
     ! the number of radiances output.  Does the radiative transfer integrations
     ! across multiple processors.
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
 
     integer, intent(inout) :: NRAD
     integer, intent(in) :: MAXNBC, NTOPPTS, NBOTPTS
@@ -2229,7 +2229,7 @@ subroutine shd_mpi__computeCamRad(&
     !          2) cross track scanning,
     !          3) user-specified sensor mode.
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
 
     integer, intent(inout) :: IVIS
     integer, intent(in) :: MAXNBC, NTOPPTS, NBOTPTS
@@ -2723,7 +2723,7 @@ subroutine shd_mpi__end(runName, grid_obj, prpAll_obj)
     ! process, and the master process write out the runName//"_load_balance.out"
     ! file.
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
     type(shd_type_prp), intent(in) :: prpAll_obj
 
     character(len=*), intent(in) :: runName
@@ -3089,7 +3089,7 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     ! properly initialized on input).  The ending location X,Y,Z and the
     ! subdomain SIDE (1=-X,2=+X,3=-Y,4=+Y) are also returned.
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
 
     integer, intent(in) :: BCFLAG, IPFLAG, Nx, Ny, Nz, NA
     integer, intent(in) :: Nstokes, KANG

@@ -44,7 +44,7 @@ module shd_src
     use globals_cfg,   only: accSolv_, isOpenX_, isOpenYx_, &
                              isPol_, isPol4_, &
                              isSolar_, isThermal_
-    use globals_type,  only: shd_type_grid
+    use globals_type,  only: shd_type_cell
 
     use globals_obj,   only: rtm_obj_, xyz_Rtm_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, leg_Rtm_, ipha_Rtm_, &
                              i8Grid_Cell_, i6Cell_Cell_, flag_Cell_, &
@@ -331,7 +331,7 @@ subroutine shd_src__computeSrcOneDir(&
     ! procedure, replacing delta-M single scattering with single scattering
     ! for unscaled untruncated phase function.
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
 
     integer(I__), intent(inout) :: isrcJ_Shdo(*)
     real(R__),    intent(inout) ::  srcJ_Shdo(shdo_obj_%Nstokes, *)
@@ -526,7 +526,7 @@ subroutine shd_src__computeSrc(&
     !   of the solution criterion (SOLCRIT, the RMS difference in succesive
     !   source function fields normalized by the RMS of the field).
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
 
     integer(I__), intent(inout) :: iradI_Shdo(*)
     real(R__),    intent(inout) ::  radI_Shdo(shdo_obj_%Nstokes, *)
@@ -757,7 +757,7 @@ subroutine shd_src__integrateSrcOneRay(&
     ! ray location (XE,YE,ZE) and side of the domain (1=-X,2=+X,3=-Y,4=+Y,
     ! 5=-Z,6=+Z).
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
 
     integer NSTOKES, NSTPHASE, NSCATANGLE
     integer SIDE
@@ -1154,7 +1154,7 @@ subroutine shd_src__integrateSrc(NSTOKES,&
     ! ray location (XE,YE,ZE) and side of the domain (1=-X,2=+X,3=-Y,4=+Y,
     ! 5=-Z,6=+Z).
 
-    type(shd_type_grid), intent(in) :: grid_obj
+    type(shd_type_cell), intent(in) :: grid_obj
 
     integer NSTOKES, SIDE
     logical VALIDRAD

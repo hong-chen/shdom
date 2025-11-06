@@ -214,7 +214,7 @@ module globals_type
 
     ! Cell
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    type :: shd_type_grid
+    type :: shd_type_cell
 
         integer(kind=I__) :: Nx = -999
         integer(kind=I__) :: Ny = -999
@@ -231,7 +231,7 @@ module globals_type
 
         logical :: isAllocated  = .false.
 
-    end type shd_type_grid
+    end type shd_type_cell
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
@@ -398,7 +398,7 @@ end module globals_type
 module globals_obj
 
     use globals_type, only: shd_type_rtm, &
-                            shd_type_grid, &
+                            shd_type_cell, &
                             shd_type_shdo, &
                             shd_type_src, &
                             shd_type_prp, &
@@ -433,7 +433,7 @@ module globals_obj
 
     ! Grid (and cells)
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    type(shd_type_grid), save :: cell_obj_
+    type(shd_type_cell), save :: cell_obj_
 
     integer(kind=I__), allocatable, save :: i8Grid_Cell_(:, :) ! (8, cell_obj%maxNcell)
     integer(kind=I__), allocatable, save :: i6Cell_Cell_(:, :) ! (6, cell_obj%maxNcell)
