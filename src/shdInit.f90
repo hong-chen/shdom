@@ -202,7 +202,7 @@ end subroutine shd_init__makeGrid
 
 subroutine shd_init__makeCell(rtm_obj, &
                               grid_OBJ, &
-                              xyz_Grid, i8Pts_Grid, i6Cell_Grid)
+                              xyz_Rtm, i8Pts_Grid, i6Cell_Grid)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Description:
@@ -234,7 +234,7 @@ subroutine shd_init__makeCell(rtm_obj, &
     ! Output:
     !   grid_obj%Npts : total number of grid points
     !   grid_obj%Ncell: total number of cells
-    !   xyz_Grid(3,IP) : X,Y,Z coordinate values of grid point locations
+    !   xyz_Rtm(3,IP) : X,Y,Z coordinate values of grid point locations
     !   i8Pts_Grid(8,IC) : pointer to 8 grid points belonging to a cell.
     !                   Order of pointers is based on binary digits Z-Y-X:
     !                   IOCT = 1 + BITX + 2*BITY + 4*BITZ, where
@@ -268,7 +268,7 @@ subroutine shd_init__makeCell(rtm_obj, &
     type(shd_type_rtm),  intent(in)    :: rtm_obj
     type(shd_type_grid), intent(inout) :: grid_obj
 
-    real(kind=R__),    intent(out) :: xyz_Grid(3, *)
+    real(kind=R__),    intent(out) :: xyz_Rtm(3, *)
     integer(kind=I__), intent(out) :: i8Pts_Grid(8, *)
     integer(kind=I__), intent(out) :: i6Cell_Grid(6, *)
 
@@ -280,9 +280,9 @@ subroutine shd_init__makeCell(rtm_obj, &
         do iy = 1, grid_obj%Ny
             do iz = 1, grid_obj%Nz
                 i = i + 1
-                xyz_Grid(1, i) = rtm_obj%x(ix)
-                xyz_Grid(2, i) = rtm_obj%y(iy)
-                xyz_Grid(3, i) = rtm_obj%z(iz)
+                xyz_Rtm(1, i) = rtm_obj%x(ix)
+                xyz_Rtm(2, i) = rtm_obj%y(iy)
+                xyz_Rtm(3, i) = rtm_obj%z(iz)
             end do
         end do
     end do

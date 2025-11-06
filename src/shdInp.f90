@@ -1959,8 +1959,8 @@ subroutine shd_io__restoreState(&
     INSAVEFILE, &
     INRADFLAG, NEWGRIDFLAG, &
     FLUXES, &
-    rtm_obj, &
-    grid_obj, xyz_Grid, i8Pts_Grid, i6Cell_Grid, &
+    rtm_obj, xyz_Rtm, &
+    grid_obj, i8Pts_Grid, i6Cell_Grid, &
     shdo_obj, iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo)
 
     ! Reads the binary save file containing a previous state of
@@ -1976,7 +1976,7 @@ subroutine shd_io__restoreState(&
     type(shd_type_grid), intent(inout) :: grid_obj
     type(shd_type_shdo), intent(inout) :: shdo_obj
 
-    real(kind=R__),    intent(out) :: xyz_Grid(3, *)
+    real(kind=R__),    intent(out) :: xyz_Rtm(3, *)
     integer(kind=I__), intent(out) :: i8Pts_Grid(8, *)
     integer(kind=I__), intent(out) :: i6Cell_Grid(6, *)
 
@@ -2025,7 +2025,7 @@ subroutine shd_io__restoreState(&
     read (3) ((grid_obj%i2Tree(j, i), j=1, 2), i=1, grid_obj%Ncell)
     read (3) (grid_obj%flag(i), i=1, grid_obj%Ncell)
 
-    read (3) ((xyz_Grid(j, i), j=1, 3), i=1, grid_obj%Npts)
+    read (3) ((xyz_Rtm(j, i), j=1, 3), i=1, grid_obj%Npts)
     read (3) ((FLUXES(j, i), j=1, 2), i=1, grid_obj%Npts)
 
     read (3) (isrcJ_Shdo(i), i=1, grid_obj%Npts + 1)

@@ -52,8 +52,8 @@ program shdom
                              shd_type_rtm, &
                              shd_type_grid
 
-    use globals_obj,   only: rtm_obj_, temp_Rtm_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, leg_Rtm_, ipha_Rtm_, &
-                             xyz_Grid_, i8Pts_Grid_, i6Cell_Grid_, &
+    use globals_obj,   only: rtm_obj_, xyz_Rtm_, temp_Rtm_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, leg_Rtm_, ipha_Rtm_, &
+                             i8Pts_Grid_, i6Cell_Grid_, &
                              shdo_obj_, iradI_Shdo_, &
                                          radI_Shdo_, &
                                         isrcJ_Shdo_, &
@@ -883,7 +883,7 @@ program shdom
 
     ! note: in addition to xxx_Shdo_, here memUsed accounts for isrcD_Shdo and srcD_Shdo
     !       that will be used in shd_solv__solveRte(shdSolv.f90)
-    NmaxNpts = NmaxNpts + 6.0   ! xyz_Grid_[3.0], iradI_Shdo_[1.0], isrcJ_Shdo_[1.0], isrcD_Shdo[1.0]
+    NmaxNpts = NmaxNpts + 6.0   ! xyz_Rtm_[3.0], iradI_Shdo_[1.0], isrcJ_Shdo_[1.0], isrcD_Shdo[1.0]
     memUsed = memUsed + 4.0 ! offset iradI_Shdo_[+2], isrcJ_Shdo_[+1], isrcD_Shdo[+1]
 
     if (doAccel) then
@@ -1003,7 +1003,7 @@ program shdom
     ! grid
     !╭────────────────────────────────────────────────╮!
     ! x,y,z coordinate values of grid point locations
-    allocate(xyz_Grid_(3, grid_obj%maxNpts))
+    allocate(xyz_Rtm_(3, grid_obj%maxNpts))
 
     ! a collection of binary flags for the cells
     allocate(flag_Cell(grid_obj%maxNcell))
@@ -1069,8 +1069,8 @@ program shdom
     ! Read in previous run from binary file if desired
     call shd_io__restoreState(fileInp_sav, &
         doRadInit, doGridInit, fluxTot, &
-        rtm_obj_, &
-        grid_OBJ, xyz_Grid_, i8Pts_Grid_, i6Cell_Grid_, &
+        rtm_obj_, xyz_Rtm_, &
+        grid_OBJ, i8Pts_Grid_, i6Cell_Grid_, &
         shdo_obj_, iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_)
 
 
@@ -1118,7 +1118,7 @@ program shdom
         !   then make the base grid point positions and grid cell structure.
         if (isBaseOut .or. ((ig_ckd .eq. ckd_obj_%Ng) .and. doGridInit)) then
             ! note: we might not need <rtm_obj_> after all
-            call shd_init__makeCell(rtm_obj_, grid_OBJ, xyz_Grid_, i8Pts_Grid_, i6Cell_Grid_)
+            call shd_init__makeCell(rtm_obj_, grid_OBJ, xyz_Rtm_, i8Pts_Grid_, i6Cell_Grid_)
             grid_obj%Ncell0 = grid_obj%Ncell
         end if
 
@@ -1204,7 +1204,7 @@ program shdom
 
         if (isBaseOut) then
             ! If outputting only the base grid then throw out the other points
-            call shd_init__makeCell(rtm_obj_, grid_OBJ, xyz_Grid_, i8Pts_Grid_, i6Cell_Grid_)
+            call shd_init__makeCell(rtm_obj_, grid_OBJ, xyz_Rtm_, i8Pts_Grid_, i6Cell_Grid_)
         else
             ! For the output from the grid point arrays (Flux, Net flux, SH)
             !   we may need to interpolate the running k-distribution sum
@@ -1396,6 +1396,7 @@ program shdom
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! rtm_obj_
     !╭────────────────────────────────────────────────╮!
+    deallocate(xyz_Rtm_)
     deallocate(ptr_Bc, rad_Bc)
     deallocate(temp_Rtm_, planck_Rtm_)
     deallocate(ext_Rtm_, ssa_Rtm_, ipha_Rtm_)
@@ -1411,7 +1412,6 @@ program shdom
 
     ! grid_obj
     !╭────────────────────────────────────────────────╮!
-    deallocate(xyz_Grid_)
     deallocate(flag_Cell, i8Pts_Grid_, i6Cell_Grid_, i2Tree_Cell)
     if (grid_obj%isAllocated) then
         nullify(&

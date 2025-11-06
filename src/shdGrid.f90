@@ -46,8 +46,8 @@ module shd_grid
                              isPol_, isSolar_, isThermal_
     use globals_type,  only: shd_type_grid
 
-    use globals_obj,   only:  rtm_obj_, temp_Rtm_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, leg_Rtm_, ipha_Rtm_, &
-                              xyz_Grid_, i8Pts_Grid_, i6Cell_Grid_, &
+    use globals_obj,   only:  rtm_obj_, xyz_Rtm_, temp_Rtm_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, leg_Rtm_, ipha_Rtm_, &
+                              i8Pts_Grid_, i6Cell_Grid_, &
                              shdo_obj_, isrcJ_Shdo_, srcJ_Shdo_, &
                               src_obj_, &
                               prp_obj_, temp_Prp_, ext_Prp_, ssa_Prp_, leg_Prp_, ipha_Prp_, &
@@ -121,7 +121,7 @@ subroutine shd_grid__findBndryPnt(&
     !   sfc_obj_%isLambertian: logical, lambertian surface or not
     !   ZBOT      : real, altitude of bottom boundary
     !   ZTOP      : real, altitude of bottom boundary
-    !   xyz_Grid_(3, grid_obj%Npts): real array, (x,y,z) coordinate values of grid point locations
+    !   xyz_Rtm_(3, grid_obj%Npts): real array, (x,y,z) coordinate values of grid point locations
     !
     ! Output:
     !   NTOPPTS   : integer, number of top boundary points
@@ -151,7 +151,7 @@ subroutine shd_grid__findBndryPnt(&
     ! Loop over all points finding the top and bottom ones
     do I = 1, grid_obj%Npts
 
-        if (xyz_Grid_(3, I) .ge. ZTOP) then
+        if (xyz_Rtm_(3, I) .ge. ZTOP) then
             IT = IT + 1
             if (IT .gt. MAXNBC .or. IT .gt. MAXBCRAD) then
                 stop 'Error [_findBndryPnt]: MAXNBC exceeded - top.'
@@ -159,7 +159,7 @@ subroutine shd_grid__findBndryPnt(&
             BCPTR(IT, 1) = I
         end if
 
-        if (xyz_Grid_(3, I) .le. ZBOT) then
+        if (xyz_Rtm_(3, I) .le. ZBOT) then
             IB = IB + 1
             if ((IB .gt. MAXNBC) .or. (IT + IB*NA .gt. MAXBCRAD)) then
                 stop 'Error [_findBndryPnt]: MAXNBC exceeded - bottom.'
@@ -193,7 +193,7 @@ subroutine shd_grid__matchGridPnt(&
     !
     ! Input:
     !   XP        : real, total number of grid points
-    !   xyz_Grid_ : real array, (x,y,z) coordinate values of grid point locations
+    !   xyz_Rtm_ : real array, (x,y,z) coordinate values of grid point locations
     !
     ! Output:
     !   iptsMatch : integer, pointer array for NTOPPTS (top boundary points)
@@ -232,8 +232,8 @@ subroutine shd_grid__matchGridPnt(&
         do while (grid_obj%i2Tree(2, IC) .eq. 0)
             do I = 1, 4
                 ipts = i8Pts_Grid_(gridFace(I, KFACE), IC)
-                if (XP .eq. xyz_Grid_(1, ipts) .and. YP .eq. xyz_Grid_(2, ipts)&
-                    &.and. ZP .eq. xyz_Grid_(3, ipts)) then
+                if (XP .eq. xyz_Rtm_(1, ipts) .and. YP .eq. xyz_Rtm_(2, ipts)&
+                    &.and. ZP .eq. xyz_Rtm_(3, ipts)) then
                     iptsMatch = ipts
                     return
                 end if
@@ -262,24 +262,24 @@ subroutine shd_grid__matchGridPnt(&
             ! then we have to trace down both cells so put one on the stack.
             IC = IC1
             if (DIR .eq. 1) then
-                if (XP .eq. xyz_Grid_(1, i8Pts_Grid_(8, IC1))) then
+                if (XP .eq. xyz_Rtm_(1, i8Pts_Grid_(8, IC1))) then
                     SP = SP + 1
                     cellStack(SP) = IC + 1
-                else if (XP .gt. xyz_Grid_(1, i8Pts_Grid_(8, IC1))) then
+                else if (XP .gt. xyz_Rtm_(1, i8Pts_Grid_(8, IC1))) then
                     IC = IC + 1
                 end if
             else if (DIR .eq. 2) then
-                if (YP .eq. xyz_Grid_(2, i8Pts_Grid_(8, IC1))) then
+                if (YP .eq. xyz_Rtm_(2, i8Pts_Grid_(8, IC1))) then
                     SP = SP + 1
                     cellStack(SP) = IC + 1
-                else if (YP .gt. xyz_Grid_(2, i8Pts_Grid_(8, IC1))) then
+                else if (YP .gt. xyz_Rtm_(2, i8Pts_Grid_(8, IC1))) then
                     IC = IC + 1
                 end if
             else
-                if (ZP .eq. xyz_Grid_(3, i8Pts_Grid_(8, IC1))) then
+                if (ZP .eq. xyz_Rtm_(3, i8Pts_Grid_(8, IC1))) then
                     SP = SP + 1
                     cellStack(SP) = IC + 1
-                else if (ZP .gt. xyz_Grid_(3, i8Pts_Grid_(8, IC1))) then
+                else if (ZP .gt. xyz_Rtm_(3, i8Pts_Grid_(8, IC1))) then
                     IC = IC + 1
                 end if
             end if
@@ -294,11 +294,11 @@ end subroutine shd_grid__matchGridPnt
 
 subroutine shd_grid__makeNewGridPnt(idir, icell, newCell,&
     &newPts,&
-    &grid_obj, xyz_Grid, i8Pts_Grid)
+    &grid_obj, xyz_Rtm, i8Pts_Grid)
 
     !   Sets up the pointers to the grid points for the two new cells.
     ! Creates the four new points if they don't already exist, changing
-    ! grid_obj%Npts and xyz_Grid %xyz accordingly.  Returns the newPts(3,4) arrays
+    ! grid_obj%Npts and xyz_Rtm %xyz accordingly.  Returns the newPts(3,4) arrays
     ! that gives information about the new points: newPts(3,) is the
     ! point address of the new points (or zero), and newPts(1,) and
     ! newPts(2,) are the "parent" grid points these should be
@@ -306,7 +306,7 @@ subroutine shd_grid__makeNewGridPnt(idir, icell, newCell,&
 
     type(shd_type_grid), intent(inout) :: grid_obj
 
-    real(kind=R__),    intent(inout) :: xyz_Grid(3, *)
+    real(kind=R__),    intent(inout) :: xyz_Rtm(3, *)
 
     integer(kind=I__), intent(inout) :: i8Pts_Grid(8, *)
 
@@ -340,9 +340,9 @@ subroutine shd_grid__makeNewGridPnt(idir, icell, newCell,&
         I2 = gridCorner(2, I, idir)
         IP1 = i8Pts_Grid(I1, icell)
         IP2 = i8Pts_Grid(I2, icell)
-        XP = (xyz_Grid(1, IP1) + xyz_Grid(1, IP2))/2
-        YP = (xyz_Grid(2, IP1) + xyz_Grid(2, IP2))/2
-        ZP = (xyz_Grid(3, IP1) + xyz_Grid(3, IP2))/2
+        XP = (xyz_Rtm(1, IP1) + xyz_Rtm(1, IP2))/2
+        YP = (xyz_Rtm(2, IP1) + xyz_Rtm(2, IP2))/2
+        ZP = (xyz_Rtm(3, IP1) + xyz_Rtm(3, IP2))/2
 
         ! Look for gridpoints matching this new point in the three cell
         !   that border this edge
@@ -367,9 +367,9 @@ subroutine shd_grid__makeNewGridPnt(idir, icell, newCell,&
             grid_obj%Npts = grid_obj%Npts + 1
             i8Pts_Grid(I2, newCell) = grid_obj%Npts
             i8Pts_Grid(I1, newCell + 1) = grid_obj%Npts
-            xyz_Grid(1, grid_obj%Npts) = XP
-            xyz_Grid(2, grid_obj%Npts) = YP
-            xyz_Grid(3, grid_obj%Npts) = ZP
+            xyz_Rtm(1, grid_obj%Npts) = XP
+            xyz_Rtm(2, grid_obj%Npts) = YP
+            xyz_Rtm(3, grid_obj%Npts) = ZP
             newPts(1, I) = IP1
             newPts(2, I) = IP2
             newPts(3, I) = grid_obj%Npts
@@ -498,7 +498,7 @@ end subroutine shd_grid__makeSweepOrder
 
 subroutine shd_grid__divideCell(&
     &icell, idir, newPts,&
-    &grid_obj, xyz_Grid, i8Pts_Grid, i6Cell_Grid)
+    &grid_obj, xyz_Rtm, i8Pts_Grid, i6Cell_Grid)
 
     !   Divides a single cell (icell) in the idir direction (1=Z,2=Y,3=X)
     ! Makes the pointers to the two new cells (grid_obj%i2Tree), set the flags
@@ -508,7 +508,7 @@ subroutine shd_grid__divideCell(&
 
     type(shd_type_grid), intent(inout) :: grid_obj
 
-    real(kind=R__),    intent(inout) :: xyz_Grid(3, *)
+    real(kind=R__),    intent(inout) :: xyz_Rtm(3, *)
     integer(kind=I__), intent(inout) :: i8Pts_Grid(8, *)
     integer(kind=I__), intent(inout) :: i6Cell_Grid(6, *)
 
@@ -543,7 +543,7 @@ subroutine shd_grid__divideCell(&
 
     ! Do the grid points:
     call shd_grid__makeNewGridPnt(idir, icell, newCell,&
-        &newPts, grid_obj, xyz_Grid, i8Pts_Grid)
+        &newPts, grid_obj, xyz_Rtm, i8Pts_Grid)
 
     ! Do the neighbor pointers:
     do iface = 1, 6
@@ -604,8 +604,8 @@ subroutine shd_grid__matchNeighCellFace(iface, IC,&
     IC8 = i8Pts_Grid_(8, IC)
     DIR1 = mod(JFACE - 1 + 1, 3) + 1
     DIR2 = mod(JFACE - 1 + 2, 3) + 1
-    POS(DIR1) = (xyz_Grid_(DIR1, IC1) + xyz_Grid_(DIR1, IC8))/2
-    POS(DIR2) = (xyz_Grid_(DIR2, IC1) + xyz_Grid_(DIR2, IC8))/2
+    POS(DIR1) = (xyz_Rtm_(DIR1, IC1) + xyz_Rtm_(DIR1, IC8))/2
+    POS(DIR2) = (xyz_Rtm_(DIR2, IC1) + xyz_Rtm_(DIR2, IC8))/2
     ! Go down the neighbors cell tree
     DONE = .false.
     do while (.not. DONE .and. IC .ne. icellNeigh)
@@ -613,10 +613,10 @@ subroutine shd_grid__matchNeighCellFace(iface, IC,&
         !   if the new face is contained within the neighbor face.
         IN1 = i8Pts_Grid_(1, icellNeigh)
         IN8 = i8Pts_Grid_(8, icellNeigh)
-        if  (xyz_Grid_(DIR1, IC1) .ge. xyz_Grid_(DIR1, IN1) .and.&
-            &xyz_Grid_(DIR1, IC8) .le. xyz_Grid_(DIR1, IN8) .and.&
-            &xyz_Grid_(DIR2, IC1) .ge. xyz_Grid_(DIR2, IN1) .and.&
-            &xyz_Grid_(DIR2, IC8) .le. xyz_Grid_(DIR2, IN8)) then
+        if  (xyz_Rtm_(DIR1, IC1) .ge. xyz_Rtm_(DIR1, IN1) .and.&
+            &xyz_Rtm_(DIR1, IC8) .le. xyz_Rtm_(DIR1, IN8) .and.&
+            &xyz_Rtm_(DIR2, IC1) .ge. xyz_Rtm_(DIR2, IN1) .and.&
+            &xyz_Rtm_(DIR2, IC8) .le. xyz_Rtm_(DIR2, IN8)) then
             ! If this is the bottom of the tree then we have a face match
             if (grid_obj%i2Tree(2, icellNeigh) .eq. 0) then
                 i6Cell_Grid(iface, IC) =  icellNeigh
@@ -628,10 +628,10 @@ subroutine shd_grid__matchNeighCellFace(iface, IC,&
         !   Update the neighbor's neighbor pointer to the new face
         !   if the neighbor face is smaller, otherwise make the
         !   pointer negative, because it no longer points to an end node.
-        if  (xyz_Grid_(DIR1, IN1) .ge. xyz_Grid_(DIR1, IC1) .and.&
-            &xyz_Grid_(DIR1, IN8) .le. xyz_Grid_(DIR1, IC8) .and.&
-            &xyz_Grid_(DIR2, IN1) .ge. xyz_Grid_(DIR2, IC1) .and.&
-            &xyz_Grid_(DIR2, IN8) .le. xyz_Grid_(DIR2, IC8)) then
+        if  (xyz_Rtm_(DIR1, IN1) .ge. xyz_Rtm_(DIR1, IC1) .and.&
+            &xyz_Rtm_(DIR1, IN8) .le. xyz_Rtm_(DIR1, IC8) .and.&
+            &xyz_Rtm_(DIR2, IN1) .ge. xyz_Rtm_(DIR2, IC1) .and.&
+            &xyz_Rtm_(DIR2, IN8) .le. xyz_Rtm_(DIR2, IC8)) then
             call shd_grid__inheritNeighCell(icellNeigh, oppFace(iface), IC,&
                 &grid_obj, i6Cell_Grid)
         else
@@ -648,7 +648,7 @@ subroutine shd_grid__matchNeighCellFace(iface, IC,&
             if (DIR .eq. JFACE) then
                 icellNeigh = INN + 1 - mod(iface - 1, 2)
             else
-                if (POS(DIR) .gt. xyz_Grid_(DIR, i8Pts_Grid_(8, INN))) then
+                if (POS(DIR) .gt. xyz_Rtm_(DIR, i8Pts_Grid_(8, INN))) then
                     icellNeigh = INN + 1
                 else
                     icellNeigh = INN
@@ -746,7 +746,7 @@ subroutine shd_grid__testGridSmooth(&
         IP2 = i8Pts_Grid_(edgeCorner(2, ID), icell)
         CURGRIDSIZE(ID) = 1.0e20
         if (IP1 .ne. IP2) then
-            CURGRIDSIZE(ID) = abs(xyz_Grid_(ID, IP1) - xyz_Grid_(ID, IP2))
+            CURGRIDSIZE(ID) = abs(xyz_Rtm_(ID, IP1) - xyz_Rtm_(ID, IP2))
             GRIDSIZEINV = 1.0/CURGRIDSIZE(ID)
             ! Loop over two opposite faces
             do J = 1, 2
@@ -758,9 +758,9 @@ subroutine shd_grid__testGridSmooth(&
                 ZE = 0.0
                 do I = 1, 4
                     IP = i8Pts_Grid_(FACECORNER(I, iface), icell)
-                    XE = XE + xyz_Grid_(1, IP)*0.25
-                    YE = YE + xyz_Grid_(2, IP)*0.25
-                    ZE = ZE + xyz_Grid_(3, IP)*0.25
+                    XE = XE + xyz_Rtm_(1, IP)*0.25
+                    YE = YE + xyz_Rtm_(2, IP)*0.25
+                    ZE = ZE + xyz_Rtm_(3, IP)*0.25
                 end do
                 ! Get the neighboring cell and its size in this direction
                 call shd_util__findNextCell(XE, YE, ZE, iface, ID, icell,&
@@ -771,8 +771,8 @@ subroutine shd_grid__testGridSmooth(&
                 if (INCELL(J) .eq. 0) then
                     GRIDSIZE(J) = CURGRIDSIZE(ID)
                 else
-                    GRIDSIZE(J) = abs(xyz_Grid_(ID, i8Pts_Grid_(1, INCELL(J)))&
-                        &- xyz_Grid_(ID, i8Pts_Grid_(8, INCELL(J))))
+                    GRIDSIZE(J) = abs(xyz_Rtm_(ID, i8Pts_Grid_(1, INCELL(J)))&
+                        &- xyz_Rtm_(ID, i8Pts_Grid_(8, INCELL(J))))
 
                     if (grid_obj%i2Tree(1, INCELL(J)) .eq. 0) then
                         GRIDSIZE(J) = CURGRIDSIZE(ID)
@@ -890,7 +890,7 @@ subroutine shd_grid__testCellSplit(icell,&
                 else
                     JAY = 0.0
                 end if
-                TAU = abs(EXT*(xyz_Grid_(ID, IP2) - xyz_Grid_(ID, IP1)))
+                TAU = abs(EXT*(xyz_Rtm_(ID, IP2) - xyz_Rtm_(ID, IP1)))
                 TOSPLIT = abs(JAY)*(1 - exp(-TAU))
                 SUM1 = SUM1 + TOSPLIT
             end if
@@ -1083,14 +1083,14 @@ logical function sweepCellNext(BCFLAG, NXC, NYC, NZ, IOCT,&
 
 end function sweepCellNext
 
-subroutine shd_grid__interpGrid(grid_obj, xyz_Grid)
+subroutine shd_grid__interpGrid(grid_obj, xyz_Rtm)
 
     ! Calls shd_grid__InterpTriLinGridPrp to interpolate the input arrays from
     !   the property grid to each internal grid point.
 
     type(shd_type_grid), intent(in) :: grid_obj
 
-    real(kind=R__), intent(in) :: xyz_Grid(3, *)
+    real(kind=R__), intent(in) :: xyz_Rtm(3, *)
 
     integer(kind=I__) :: ipts
 
@@ -1103,7 +1103,7 @@ subroutine shd_grid__interpGrid(grid_obj, xyz_Grid)
     ! Trilinearly interpolate from the property grid to the adaptive
     do ipts = 1, grid_obj%Npts
         call shd_grid__InterpTriLinGridPrp(&
-            &xyz_Grid(1, ipts), xyz_Grid(2, ipts), xyz_Grid(3, ipts),&
+            &xyz_Rtm(1, ipts), xyz_Rtm(2, ipts), xyz_Rtm(3, ipts),&
             &.false., temp_Rtm_(ipts), ext_Rtm_(ipts), ssa_Rtm_(ipts),&
             &leg_Rtm_(1:prp_obj_%NlegSet, 0:prp_obj_%Nleg, ipts), ipha_Rtm_(ipts))
     end do
@@ -1498,9 +1498,9 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
             IP  = newPts(3, I)
 
             ! Interpolate the medium properties from the property grid
-            X = xyz_Grid_(1, IP)
-            Y = xyz_Grid_(2, IP)
-            Z = xyz_Grid_(3, IP)
+            X = xyz_Rtm_(1, IP)
+            Y = xyz_Rtm_(2, IP)
+            Z = xyz_Rtm_(3, IP)
             call shd_grid__InterpTriLinGridPrp(X, Y, Z, .false.,&
                 &temp_Rtm(IP), ext_Rtm(IP), ssa_Rtm(IP),&
                 &leg_Rtm(1:prp_obj_%NlegSet, 0:prp_obj_%Nleg, 1), ipha_Rtm(IP))
@@ -1561,9 +1561,9 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
                 end if
                 ! this is modified to address the layer averaging issue
                 !╭────────────────────────────────────────────────╮!
-                !if ((abs(xyz_Grid_(1, IP1)-xyz_Grid_(1, IP2)) .lt. 1.0e-6) .and.&
-                !    &(abs(xyz_Grid_(2, IP1)-xyz_Grid_(2, IP2)) .lt. 1.0e-6)) then
-                !    if (xyz_Grid_(3, IP2) .gt. xyz_Grid_(3, IP1)) then
+                !if ((abs(xyz_Rtm_(1, IP1)-xyz_Rtm_(1, IP2)) .lt. 1.0e-6) .and.&
+                !    &(abs(xyz_Rtm_(2, IP1)-xyz_Rtm_(2, IP2)) .lt. 1.0e-6)) then
+                !    if (xyz_Rtm_(3, IP2) .gt. xyz_Rtm_(3, IP1)) then
                 !        radI_Shdo(:, IR + J) = RAD2(:)
                 !    else
                 !        radI_Shdo(:, IR + J) = RAD1(:)
@@ -1619,7 +1619,7 @@ subroutine shd_grid__splitGrid(&
     DIRFLUX, &
     SOLARFLUX, YLMSUN, &
     ADAPTCRIT, ADAPTIND, &
-    grid_obj, xyz_Grid, i8Pts_Grid, i6Cell_Grid, &
+    grid_obj, xyz_Rtm, i8Pts_Grid, i6Cell_Grid, &
     temp_Rtm, planck_Rtm, ext_Rtm, ssa_Rtm, leg_Rtm, ipha_Rtm, &
     iradI_Shdo, radI_Shdo, &
     isrcJ_Shdo, srcJ_Shdo)
@@ -1632,7 +1632,7 @@ subroutine shd_grid__splitGrid(&
 
     type(shd_type_grid), intent(inout) :: grid_obj
 
-    real(kind=R__),    intent(inout) :: xyz_Grid(3, *)
+    real(kind=R__),    intent(inout) :: xyz_Rtm(3, *)
     integer(kind=I__), intent(inout) :: i8Pts_Grid(8, *)
     integer(kind=I__), intent(inout) :: i6Cell_Grid(6, *)
 
@@ -1707,7 +1707,7 @@ subroutine shd_grid__splitGrid(&
                     icell = int(ADAPTIND(I))/4
                     idir = iand(int(ADAPTIND(I)), 3)
                     ! Create the new grid points and make pointers
-                    call shd_grid__divideCell(icell, idir, newPts, grid_obj, xyz_Grid, i8Pts_Grid, i6Cell_Grid)
+                    call shd_grid__divideCell(icell, idir, newPts, grid_obj, xyz_Rtm, i8Pts_Grid, i6Cell_Grid)
 
                     ! Interpolate the medium properties, radiance, and source
                     call shd_grid__interpNewGridPnt(newPts,&
@@ -1746,7 +1746,7 @@ subroutine shd_grid__splitGrid(&
                     ! idir = 0
                     if (idir .gt. 0) then
                         ! Create the new grid points and make pointers
-                        call shd_grid__divideCell(icell, idir, newPts, grid_obj, xyz_Grid, i8Pts_Grid, i6Cell_Grid)
+                        call shd_grid__divideCell(icell, idir, newPts, grid_obj, xyz_Rtm, i8Pts_Grid, i6Cell_Grid)
 
                         ! Interpolate the medium properties, radiance, and source
                         call shd_grid__interpNewGridPnt(newPts,&

@@ -413,6 +413,8 @@ module globals_obj
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_rtm),  save :: rtm_obj_
 
+    real(kind=R__),  allocatable, save ::    xyz_Rtm_(:, :)    ! (3, grid_obj%maxNpts)
+
     real(kind=R__),  allocatable, save ::   temp_Rtm_(:), &    ! (grid_obj%maxNpts)
                                              ext_Rtm_(:), &    ! (grid_obj%maxNpts)
                                              ssa_Rtm_(:), &    ! (grid_obj%maxNpts)
@@ -428,7 +430,6 @@ module globals_obj
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_grid), save :: grid_obj_
 
-    real(kind=R__),    allocatable, save ::    xyz_Grid_(:, :)     ! (3, grid_obj%maxNpts)
     integer(kind=I__), allocatable, save ::  i8Pts_Grid_(:, :) ! (8, grid_obj%maxNcell)
     integer(kind=I__), allocatable, save :: i6Cell_Grid_(:, :) ! (6, grid_obj%maxNcell)
     !╰────────────────────────────────────────────────────────────────────────────╯!

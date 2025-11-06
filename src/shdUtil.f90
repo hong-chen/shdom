@@ -47,8 +47,8 @@ module shd_util
                              is1DX_, is1DYx_
     use globals_type,  only: shd_type_grid
 
-    use globals_obj,   only: rtm_obj_, &
-                             xyz_Grid_, i8Pts_Grid_, i6Cell_Grid_
+    use globals_obj,   only: rtm_obj_, xyz_Rtm_, &
+                             i8Pts_Grid_, i6Cell_Grid_
 
     implicit none
     private
@@ -147,8 +147,8 @@ subroutine shd_util__interpData(OLDNPTS,&
                     do I = 1, 4
                         IP1 = i8Pts_Grid_(GRIDCORNER(1, I, IDIR), IPARENT)
                         IP2 = i8Pts_Grid_(GRIDCORNER(2, I, IDIR), IPARENT)
-                        if  (xyz_Grid_(DIR1, IP1) .eq. xyz_Grid_(DIR1, IP) .and.&
-                            &xyz_Grid_(DIR2, IP1) .eq. xyz_Grid_(DIR2, IP)) goto 120
+                        if  (xyz_Rtm_(DIR1, IP1) .eq. xyz_Rtm_(DIR1, IP) .and.&
+                            &xyz_Rtm_(DIR2, IP1) .eq. xyz_Rtm_(DIR2, IP)) goto 120
                     end do
                 end do
 
@@ -329,11 +329,11 @@ subroutine shd_util__findCell(X0, Y0, Z0, icell,&
         IC = grid_obj%i2Tree(2, icell) + 1
         IPTR = i8Pts_Grid_(1, IC)
         if (DIR .eq. 1) then
-            if (X0 .lt. xyz_Grid_(1, IPTR)) IC = IC - 1
+            if (X0 .lt. xyz_Rtm_(1, IPTR)) IC = IC - 1
         else if (DIR .eq. 2) then
-            if (Y0 .lt. xyz_Grid_(2, IPTR)) IC = IC - 1
+            if (Y0 .lt. xyz_Rtm_(2, IPTR)) IC = IC - 1
         else if (DIR .eq. 3) then
-            if (Z0 .lt. xyz_Grid_(3, IPTR)) IC = IC - 1
+            if (Z0 .lt. xyz_Rtm_(3, IPTR)) IC = IC - 1
         end if
         icell = IC
     end do
@@ -381,11 +381,11 @@ subroutine shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, INEXT,&
                 !   on the split line with the current location.
                 IC = IC1
                 if (DIR .eq. 1) then
-                    if (XE .gt. xyz_Grid_(1, i8Pts_Grid_(8, IC1))) IC = IC + 1
+                    if (XE .gt. xyz_Rtm_(1, i8Pts_Grid_(8, IC1))) IC = IC + 1
                 else if (DIR .eq. 2) then
-                    if (YE .gt. xyz_Grid_(2, i8Pts_Grid_(8, IC1))) IC = IC + 1
+                    if (YE .gt. xyz_Rtm_(2, i8Pts_Grid_(8, IC1))) IC = IC + 1
                 else
-                    if (ZE .gt. xyz_Grid_(3, i8Pts_Grid_(8, IC1))) IC = IC + 1
+                    if (ZE .gt. xyz_Rtm_(3, i8Pts_Grid_(8, IC1))) IC = IC + 1
                 end if
             end if
         end do
@@ -417,14 +417,14 @@ subroutine shd_util__interpTriLin(&
 
     IPT1 = i8Pts_Grid_(1, ICELL)
     IPT2 = i8Pts_Grid_(8, ICELL)
-    DELX = xyz_Grid_(1, IPT2) - xyz_Grid_(1, IPT1)
+    DELX = xyz_Rtm_(1, IPT2) - xyz_Rtm_(1, IPT1)
     if (DELX .le. 0.0) DELX = 1.0
-    DELY = xyz_Grid_(2, IPT2) - xyz_Grid_(2, IPT1)
+    DELY = xyz_Rtm_(2, IPT2) - xyz_Rtm_(2, IPT1)
     if (DELY .le. 0.0) DELY = 1.0
-    DELZ = xyz_Grid_(3, IPT2) - xyz_Grid_(3, IPT1)
-    U = (X - xyz_Grid_(1, IPT1))/DELX
-    V = (Y - xyz_Grid_(2, IPT1))/DELY
-    W = (Z - xyz_Grid_(3, IPT1))/DELZ
+    DELZ = xyz_Rtm_(3, IPT2) - xyz_Rtm_(3, IPT1)
+    U = (X - xyz_Rtm_(1, IPT1))/DELX
+    V = (Y - xyz_Rtm_(2, IPT1))/DELY
+    W = (Z - xyz_Rtm_(3, IPT1))/DELZ
     UM = 1 - U
     VM = 1 - V
     WM = 1 - W

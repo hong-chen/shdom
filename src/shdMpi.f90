@@ -52,8 +52,8 @@ module shd_mpi
                              shd_type_ckd,  &
                              shd_type_sen
 
-    use globals_obj,   only:  rtm_obj_, ext_Rtm_, leg_Rtm_, &
-                              xyz_Grid_, i8Pts_Grid_, i6Cell_Grid_, &
+    use globals_obj,   only:  rtm_obj_, xyz_Rtm_, ext_Rtm_, leg_Rtm_, &
+                              i8Pts_Grid_, i6Cell_Grid_, &
                              shdo_obj_, isrcJ_Shdo_, srcJ_Shdo_, &
                               src_obj_, &
                               prp_obj_, &
@@ -1085,7 +1085,7 @@ subroutine shd_mpi__makeDirect(SPT,&
     &grid_obj)
 
     ! Makes the direct beam solar flux for the grid_obj%Npts gridpoints started with
-    ! index SPT having X/Y/Z positions in xyz_Grid_.
+    ! index SPT having X/Y/Z positions in xyz_Rtm_.
     ! DIRFLUX is set to F*exp(-tau_sun).
 
     type(shd_type_grid), intent(in) ::  grid_obj
@@ -1162,7 +1162,7 @@ subroutine shd_mpi__makeDirect(SPT,&
     NINVALID(:) = 0
     do IP = SPT, grid_obj%Npts
         DIRPATH = 0.0
-        call shd_rad__computeDirect(0, xyz_Grid_(1, IP), xyz_Grid_(2, IP), xyz_Grid_(3, IP),&
+        call shd_rad__computeDirect(0, xyz_Rtm_(1, IP), xyz_Rtm_(2, IP), xyz_Rtm_(3, IP),&
             &rtm_obj_%flag_bc, rtm_obj_%flag_ip, DELTAM, ML,&
             &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(IP),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
@@ -1411,9 +1411,9 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, SWEEPORD,&
             ICORNER = ibits(SWEEPORD(IORDER, JOCT), 0, 3) + 1
             IPT = i8Pts_Grid_(ICORNER, IPCELL)
 
-            if  ((xyz_Grid_(3, IPT) .lt. rtm_obj_%z(Nz) .and. BITZ .eq. 0) .or.&
-                &(xyz_Grid_(3, IPT) .gt. rtm_obj_%z(1) .and. BITZ .eq. 1)) then
-                if (isMpiX_ .and. xyz_Grid_(1, IPT) .eq. XEDGE(JOCT)&
+            if  ((xyz_Rtm_(3, IPT) .lt. rtm_obj_%z(Nz) .and. BITZ .eq. 0) .or.&
+                &(xyz_Rtm_(3, IPT) .gt. rtm_obj_%z(1) .and. BITZ .eq. 1)) then
+                if (isMpiX_ .and. xyz_Rtm_(1, IPT) .eq. XEDGE(JOCT)&
                     &.and. .not. is1DX_) then
                     SIDE = 2 - ibits(JOCT - 1, 1, 1)
                     N(SIDE) = N(SIDE) + 1
@@ -1421,9 +1421,9 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, SWEEPORD,&
                         call shd_mpi__abort('Error [mpi__findBndryPnt]: MAXNBXY exceeded by N(SIDE) 1x.')
                     end if
                     BNDPTR(JOCT, N(SIDE), 1, SIDE) = IPT
-                    BNDPOS(:, JOCT, N(SIDE), 1, SIDE) = xyz_Grid_(:, IPT)
+                    BNDPOS(:, JOCT, N(SIDE), 1, SIDE) = xyz_Rtm_(:, IPT)
                 end if
-                if (isMpiY_ .and. xyz_Grid_(2, IPT) .eq. YEDGE(JOCT)&
+                if (isMpiY_ .and. xyz_Rtm_(2, IPT) .eq. YEDGE(JOCT)&
                     &.and. .not. is1DYx_) then
                     SIDE = 4 - ibits(JOCT - 1, 2, 1)
                     N(SIDE) = N(SIDE) + 1
@@ -1431,7 +1431,7 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, SWEEPORD,&
                         call shd_mpi__abort('Error [mpi__findBndryPnt]: MAXNBXY exceeded by N(SIDE) 1y.')
                     end if
                     BNDPTR(JOCT, N(SIDE), 1, SIDE) = IPT
-                    BNDPOS(:, JOCT, N(SIDE), 1, SIDE) = xyz_Grid_(:, IPT)
+                    BNDPOS(:, JOCT, N(SIDE), 1, SIDE) = xyz_Rtm_(:, IPT)
                 end if
             end if
         end do
@@ -2746,8 +2746,8 @@ subroutine shd_mpi__end(runName, grid_obj, prpAll_obj)
         allocate(NUMGRID(prp_obj_%Nx, prp_obj_%Ny))
         NUMGRID(:, :) = 0
         do I = 1, grid_obj%Npts
-            IX = nint((xyz_Grid_(1, I) - prp_obj_%xStart)/dx_prp) + 1
-            IY = nint((xyz_Grid_(2, I) - prp_obj_%yStart)/dy_prp) + 1
+            IX = nint((xyz_Rtm_(1, I) - prp_obj_%xStart)/dx_prp) + 1
+            IY = nint((xyz_Rtm_(2, I) - prp_obj_%yStart)/dy_prp) + 1
             if ((IX .le. prp_obj_%Nx) .and. (IY .le. prp_obj_%Ny)) then
                 NUMGRID(IX, IY) = NUMGRID(IX, IY) + 1
             end if
@@ -3117,7 +3117,7 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     data GRIDFACE/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8/
     data OPPFACE/2, 1, 4, 3, 6, 5/
 
-    EPS = 1.0e-3*(xyz_Grid_(3, i8Pts_Grid_(8, 1)) - xyz_Grid_(3, i8Pts_Grid_(1, 1)))
+    EPS = 1.0e-3*(xyz_Rtm_(3, i8Pts_Grid_(8, 1)) - xyz_Rtm_(3, i8Pts_Grid_(1, 1)))
 
     ! Make the ray direction (opposite to the discrete ordinate direction)
     CX = sqrt(1.0 - MU**2)*cos(PHI + DPI_)
@@ -3208,11 +3208,11 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
         IC = grid_obj%i2Tree(2, ICELL) + 1
         IPTR = i8Pts_Grid_(1, IC)
         if (DIR .eq. 1) then
-            if (X .lt. xyz_Grid_(1, IPTR)) IC = IC - 1
+            if (X .lt. xyz_Rtm_(1, IPTR)) IC = IC - 1
         else if (DIR .eq. 2) then
-            if (Y .lt. xyz_Grid_(2, IPTR)) IC = IC - 1
+            if (Y .lt. xyz_Rtm_(2, IPTR)) IC = IC - 1
         else if (DIR .eq. 3) then
-            if (Z .lt. xyz_Grid_(3, IPTR)) IC = IC - 1
+            if (Z .lt. xyz_Rtm_(3, IPTR)) IC = IC - 1
         end if
         ICELL = IC
     end do
@@ -3227,18 +3227,18 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     IPINY = btest(int(grid_obj%flag(ICELL)), 1)
     ! Compute the face interpolation factors
     if (IFACE .le. 2) then
-        U = (Z - xyz_Grid_(3, I1))/(xyz_Grid_(3, I3) - xyz_Grid_(3, I1))
+        U = (Z - xyz_Rtm_(3, I1))/(xyz_Rtm_(3, I3) - xyz_Rtm_(3, I1))
         if (IPINY) then
             V = 0.5
         else
-            V = (Y - xyz_Grid_(2, I1))/(xyz_Grid_(2, I2) - xyz_Grid_(2, I1))
+            V = (Y - xyz_Rtm_(2, I1))/(xyz_Rtm_(2, I2) - xyz_Rtm_(2, I1))
         end if
     else
-        U = (Z - xyz_Grid_(3, I1))/(xyz_Grid_(3, I3) - xyz_Grid_(3, I1))
+        U = (Z - xyz_Rtm_(3, I1))/(xyz_Rtm_(3, I3) - xyz_Rtm_(3, I1))
         if (IPINX) then
             V = 0.5
         else
-            V = (X - xyz_Grid_(1, I1))/(xyz_Grid_(1, I2) - xyz_Grid_(1, I1))
+            V = (X - xyz_Rtm_(1, I1))/(xyz_Rtm_(1, I2) - xyz_Rtm_(1, I1))
         end if
     end if
 
@@ -3268,14 +3268,14 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
         if (IPINX) then
             SOX = 1.0e20
         else
-            SOX = (xyz_Grid_(1, IOPP) - XE)*CXINV
+            SOX = (xyz_Rtm_(1, IOPP) - XE)*CXINV
         end if
         if (IPINY) then
             SOY = 1.0e20
         else
-            SOY = (xyz_Grid_(2, IOPP) - YE)*CYINV
+            SOY = (xyz_Rtm_(2, IOPP) - YE)*CYINV
         end if
-        SOZ = (xyz_Grid_(3, IOPP) - ZE)*CZINV
+        SOZ = (xyz_Rtm_(3, IOPP) - ZE)*CZINV
         SO = min(SOX, SOY, SOZ)
         if (SO .lt. -EPS) then
             write (6, *) 'SO<0: ', MU, PHI, X, Y, Z, SOX, SOY, SOZ, SO, ICELL, TRANS
@@ -3320,29 +3320,29 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
         I4 = i8Pts_Grid_(GRIDFACE(4, KFACE), IC)
         ! Compute the face interpolation factors
         if (JFACE .eq. 1) then
-            U = (ZE - xyz_Grid_(3, I1))/(xyz_Grid_(3, I3) - xyz_Grid_(3, I1))
+            U = (ZE - xyz_Rtm_(3, I1))/(xyz_Rtm_(3, I3) - xyz_Rtm_(3, I1))
             if (IPINY) then
                 V = 0.5
             else
-                V = (YE - xyz_Grid_(2, I1))/(xyz_Grid_(2, I2) - xyz_Grid_(2, I1))
+                V = (YE - xyz_Rtm_(2, I1))/(xyz_Rtm_(2, I2) - xyz_Rtm_(2, I1))
             end if
         else if (JFACE .eq. 2) then
-            U = (ZE - xyz_Grid_(3, I1))/(xyz_Grid_(3, I3) - xyz_Grid_(3, I1))
+            U = (ZE - xyz_Rtm_(3, I1))/(xyz_Rtm_(3, I3) - xyz_Rtm_(3, I1))
             if (IPINX) then
                 V = 0.5
             else
-                V = (XE - xyz_Grid_(1, I1))/(xyz_Grid_(1, I2) - xyz_Grid_(1, I1))
+                V = (XE - xyz_Rtm_(1, I1))/(xyz_Rtm_(1, I2) - xyz_Rtm_(1, I1))
             end if
         else
             if (IPINY) then
                 U = 0.5
             else
-                U = (YE - xyz_Grid_(2, I1))/(xyz_Grid_(2, I3) - xyz_Grid_(2, I1))
+                U = (YE - xyz_Rtm_(2, I1))/(xyz_Rtm_(2, I3) - xyz_Rtm_(2, I1))
             end if
             if (IPINX) then
                 V = 0.5
             else
-                V = (XE - xyz_Grid_(1, I1))/(xyz_Grid_(1, I2) - xyz_Grid_(1, I1))
+                V = (XE - xyz_Rtm_(1, I1))/(xyz_Rtm_(1, I2) - xyz_Rtm_(1, I1))
             end if
         end if
         if ((u .lt. -1.0e-4) .or. (v .lt. -1.0e-4) .or. (u .gt. 1.0001) .or. (v .gt. 1.0001)) then
@@ -3353,11 +3353,11 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
         ! Get the location coordinate (does the boundary wrapping)
         if (INEXTCELL .gt. 0) then
             if (JFACE .eq. 1) then
-                XE = xyz_Grid_(1, i8Pts_Grid_(IOCT, INEXTCELL))
+                XE = xyz_Rtm_(1, i8Pts_Grid_(IOCT, INEXTCELL))
             else if (JFACE .eq. 2) then
-                YE = xyz_Grid_(2, i8Pts_Grid_(IOCT, INEXTCELL))
+                YE = xyz_Rtm_(2, i8Pts_Grid_(IOCT, INEXTCELL))
             else
-                ZE = xyz_Grid_(3, i8Pts_Grid_(IOCT, INEXTCELL))
+                ZE = xyz_Rtm_(3, i8Pts_Grid_(IOCT, INEXTCELL))
             end if
         end if
 
