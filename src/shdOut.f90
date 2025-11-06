@@ -397,14 +397,14 @@ subroutine shd_io__outputResult(&
             write (2, '(A)') '! The following contains information for binary data intepretation:'
             write (2, '(A)') '! F1'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-            write (2, '(A, 5(I10,A))') '! ', cell_obj_%Nx, ',', cell_obj_%Ny, ',', 1, ',', 1, ',', NVAR, ''
+            write (2, '(A, 5(I10,A))') '! ', rtm_obj_%Nx, ',', rtm_obj_%Ny, ',', 1, ',', 1, ',', NVAR, ''
             !╰────────────────────────────────────────────────╯!
 
             ! binary data
             !╭────────────────────────────────────────────────╮!
             if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <F1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
 
-            N = cell_obj_%Nx*cell_obj_%Ny
+            N = rtm_obj_%Nx*rtm_obj_%Ny
             IDATA = 0
             call shd_io__outputDataBin(C*FLUXES(2, rtm_obj_%Nz:cell_obj_%Npts0:rtm_obj_%Nz), 1, N, IDATA, OUTFILE_DATA)
 
@@ -541,7 +541,7 @@ subroutine shd_io__outputResult(&
             !╰────────────────────────────────────────────────╯!
 
         ! Format 3 is domain averaged vertical profile
-        ! NVAR=2 or 3, NSET=1, NX=cell_obj_%Nx, NY=cell_obj_%Ny, NZ=1
+        ! NVAR=2 or 3, NSET=1, NX=rtm_obj_%Nx, NY=rtm_obj_%Ny, NZ=1
         else if (nint(OUTPARMS(1)) .eq. 3) then
 
             if (src_obj_%unit .eq. 'T') then
@@ -635,7 +635,7 @@ subroutine shd_io__outputResult(&
 
         ! Format 4 is fluxes at every base grid point
         ! Format 5 is fluxes at every grid point
-        ! NVAR=2 or 3, NSET=1, NX=cell_obj_%Nx, NY=cell_obj_%Ny, NZ=rtm_obj_%Nz
+        ! NVAR=2 or 3, NSET=1, NX=rtm_obj_%Nx, NY=rtm_obj_%Ny, NZ=rtm_obj_%Nz
         else if (nint(OUTPARMS(1)) .ge. 4) then
 
             if (nint(OUTPARMS(1)) .eq. 5) then
@@ -672,7 +672,7 @@ subroutine shd_io__outputResult(&
             else
                 write (2, '(A)') '! F4'
                 write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-                write (2, '(A, 5(I10,A))') '! ', cell_obj_%Nx, ',', cell_obj_%Ny, ',', rtm_obj_%Nz, ',', 1, ',', NVAR, ''
+                write (2, '(A, 5(I10,A))') '! ', rtm_obj_%Nx, ',', rtm_obj_%Ny, ',', rtm_obj_%Nz, ',', 1, ',', NVAR, ''
             end if
             !╰────────────────────────────────────────────────╯!
 
@@ -806,7 +806,7 @@ subroutine shd_io__outputResult(&
             else
                 write (2, '(A)') '! H2'
                 write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-                write (2, '(A, 5(I10,A))') '! ', cell_obj_%Nx, ',', cell_obj_%Ny, ',', rtm_obj_%Nz, ',', 1, ',', NVAR, ''
+                write (2, '(A, 5(I10,A))') '! ', rtm_obj_%Nx, ',', rtm_obj_%Ny, ',', rtm_obj_%Nz, ',', 1, ',', NVAR, ''
             end if
             !╰────────────────────────────────────────────────╯!
 
@@ -883,7 +883,7 @@ subroutine shd_io__outputResult(&
         else
             write (2, '(A)') '! S1'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-            write (2, '(A, 5(I10,A))') '! ', cell_obj_%Nx, ',', cell_obj_%Ny, ',', rtm_obj_%Nz, ',', 1, ',', NVAR, ''
+            write (2, '(A, 5(I10,A))') '! ', rtm_obj_%Nx, ',', rtm_obj_%Ny, ',', rtm_obj_%Nz, ',', 1, ',', NVAR, ''
         end if
         !╰────────────────────────────────────────────────╯!
 
@@ -972,7 +972,7 @@ subroutine shd_io__outputResult(&
         else
             write (2, '(A)') '! J1'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-            write (2, '(A, 5(I10,A))') '! ', cell_obj_%Nx, ',', cell_obj_%Ny, ',', rtm_obj_%Nz, ',', 1, ',', NVAR, ''
+            write (2, '(A, 5(I10,A))') '! ', rtm_obj_%Nx, ',', rtm_obj_%Ny, ',', rtm_obj_%Nz, ',', 1, ',', NVAR, ''
         end if
         !╰────────────────────────────────────────────────╯!
 
@@ -1049,7 +1049,7 @@ subroutine shd_io__outputResult(&
         else
             write (2, '(A)') '! M1'
             write (2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-            write (2, '(A, 5(I10,A))') '! ', cell_obj_%Nx, ',', cell_obj_%Ny, ',', rtm_obj_%Nz, ',', 1, ',', NVAR, ''
+            write (2, '(A, 5(I10,A))') '! ', rtm_obj_%Nx, ',', rtm_obj_%Ny, ',', rtm_obj_%Nz, ',', 1, ',', NVAR, ''
         end if
         !╰────────────────────────────────────────────────╯!
 

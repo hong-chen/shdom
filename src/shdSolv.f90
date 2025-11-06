@@ -47,7 +47,9 @@ module shd_solv
                            shdo_obj_, iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_, &
                             src_obj_, &
                             prp_obj_, &
-                            sfc_obj_, brdf_Sfc_, brdf_Rtm_
+                            sfc_obj_, brdf_Sfc_, brdf_Rtm_, &
+                            ckd_obj_
+
 
     use shd_init, only: shd_init__makePrp, &
                         shd_init__makeRad, &
@@ -128,8 +130,8 @@ subroutine shd_solv__solveRte(&
     real, allocatable :: YlmSolar_Shdo(:, :), wgtMu_Shdo(:), wPhiFFT_Shdo(:)
     real, allocatable :: brdf_Shdo(:, :, :, :, :, :)
 
-    integer(kind=I__), allocatable :: isrcD_Shdo(:)
-    real(kind=R__),    allocatable ::  srcD_Shdo(:, :)
+    integer(kind=I__), save, allocatable :: isrcD_Shdo(:)
+    real(kind=R__),    save, allocatable ::  srcD_Shdo(:, :)
 
     integer :: COUNT_START, COUNT_RATE, COUNT_MAX
     integer :: COUNT_END
@@ -192,7 +194,7 @@ subroutine shd_solv__solveRte(&
     if (.not. doRadInit) then
         ! Initialize the radiance on the base grid using Eddington
         ! two-stream plane-parallel
-        call shd_init__makeRad(shdo_obj_%Nstokes, cell_obj_%Nx*cell_obj_%Ny, rtm_obj_%Nz,&
+        call shd_init__makeRad(shdo_obj_%Nstokes, rtm_obj_%Nx*rtm_obj_%Ny, rtm_obj_%Nz,&
             &iradI_Shdo_, rtm_obj_%z,&
             &ext_Rtm_, ssa_Rtm_, leg_Rtm_, temp_Rtm_, ipha_Rtm_,&
             &src_obj_%type, src_obj_%avgSolar0, src_obj_%avgMu, src_obj_%skyRad,&
@@ -435,7 +437,7 @@ subroutine shd_solv__solveRte(&
     deallocate(YlmSolar_Shdo, flagFFT_Shdo, wgtMu_Shdo, wPhiFFT_Shdo)
     deallocate(CMU1, CMU2, CPHI1, CPHI2)
 
-    if (allocated(srcD_Shdo)) &
+    if (allocated(srcD_Shdo) .and. (ckd_obj_%ig .eq. 1)) &
         deallocate(isrcD_Shdo, srcD_Shdo)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 

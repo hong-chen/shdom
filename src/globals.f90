@@ -219,10 +219,6 @@ module globals_type
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type :: shd_type_cell
 
-        integer(kind=I__) :: Nx = -999
-        integer(kind=I__) :: Ny = -999
-        integer(kind=I__) :: Nz = -999
-
         integer(kind=I__) :: Npts0 = -999
         integer(kind=I__) :: Npts  = -999
         integer(kind=I__) :: maxNpts  = -999

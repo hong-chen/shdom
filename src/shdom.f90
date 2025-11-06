@@ -532,18 +532,16 @@ program shdom
 
     ! Set up base grid point actual size (Nx1xNY1xNZ)
     !   btest(rtm_obj_%flag_bc, 0) checks whether rtm_obj_%flag_bc=1 or rtm_obj_%flag_bc=0 ('...0001' [open in X] or '...0000' [periodic in X])
-    cell_obj_%Nx = rtm_obj_%Nx0 + 1
-    if (is1DX_ .or. isOpenX_ .or. isMpiX_) cell_obj_%Nx = rtm_obj_%Nx0
+    rtm_obj_%Nx = rtm_obj_%Nx0 + 1
+    if (is1DX_ .or. isOpenX_ .or. isMpiX_) rtm_obj_%Nx = rtm_obj_%Nx0
 
     ! btest(rtm_obj_%flag_bc, 1) checks whether rtm_obj_%flag_bc=2 [or 3] or rtm_obj_%flag_bc=0 [or 1]
     !   ('...0010' [or '...0011', open in Y] or '...0000' [or '...0001', periodic in Y])
-    cell_obj_%Ny = rtm_obj_%Ny0 + 1
-    if (is1DYx_ .or. isOpenYx_ .or. isMpiY_) cell_obj_%Ny = rtm_obj_%Ny0
-
-    cell_obj_%Nz = rtm_obj_%Nz
+    rtm_obj_%Ny = rtm_obj_%Ny0 + 1
+    if (is1DYx_ .or. isOpenYx_ .or. isMpiY_) rtm_obj_%Ny = rtm_obj_%Ny0
 
     ! Number of base points
-    cell_obj_%Npts0 = cell_obj_%Nx*cell_obj_%Ny*rtm_obj_%Nz
+    cell_obj_%Npts0 = rtm_obj_%Nx*rtm_obj_%Ny*rtm_obj_%Nz
 
     ! Calculate the number of base grid cells depending on the boundary condition flag
     cell_obj_%Ncell0 = (rtm_obj_%Nz - 1)*(rtm_obj_%Nx0 + ibits(rtm_obj_%flag_bc, 0, 1) - ibits(rtm_obj_%flag_bc, 2, 1))&

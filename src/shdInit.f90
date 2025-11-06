@@ -225,7 +225,7 @@ subroutine shd_init__makeCell(rtm_obj, &
     !
     ! Input:
     !   rtm_obj%Nx0, rtm_obj%Ny0, rtm_obj%Nz: integer, base grid size in X, Y and Z
-    !   cell_obj%Nx, cell_obj%Ny: integer, base grid actual size in X, Y
+    !   rtm_obj%Nx, rtm_obj%Ny: integer, base grid actual size in X, Y
     !   rtm_obj%x, rtm_obj%y, rtm_obj%z: real array, grid locations for each dimension.
     !                        To facilitate the periodic horizontal boundaries,
     !                        there are rtm_obj%Nx0+1 values in rtm_obj%x, rtm_obj%Ny0+1 in rtm_obj%y,
@@ -279,9 +279,9 @@ subroutine shd_init__makeCell(rtm_obj, &
 
     ! First, make the grid point positions
     i = 0
-    do ix = 1, cell_obj%Nx
-        do iy = 1, cell_obj%Ny
-            do iz = 1, cell_obj%Nz
+    do ix = 1, rtm_obj%Nx
+        do iy = 1, rtm_obj%Ny
+            do iz = 1, rtm_obj%Nz
                 i = i + 1
                 xyz_Rtm(1, i) = rtm_obj%x(ix)
                 xyz_Rtm(2, i) = rtm_obj%y(iy)
@@ -322,16 +322,16 @@ subroutine shd_init__makeCell(rtm_obj, &
                 iy0 = iy
                 iy1 = iy + 1
             end if
-            do iz = 1, cell_obj%Nz - 1
+            do iz = 1, rtm_obj%Nz - 1
                 i = i + 1
-                i8Grid_Cell(1, i) = iz +     cell_obj%Nz*(iy0 - 1) + cell_obj%Nz*cell_obj%Ny*(ix0 - 1)
-                i8Grid_Cell(2, i) = iz +     cell_obj%Nz*(iy0 - 1) + cell_obj%Nz*cell_obj%Ny*(ix1 - 1)
-                i8Grid_Cell(3, i) = iz +     cell_obj%Nz*(iy1 - 1) + cell_obj%Nz*cell_obj%Ny*(ix0 - 1)
-                i8Grid_Cell(4, i) = iz +     cell_obj%Nz*(iy1 - 1) + cell_obj%Nz*cell_obj%Ny*(ix1 - 1)
-                i8Grid_Cell(5, i) = iz + 1 + cell_obj%Nz*(iy0 - 1) + cell_obj%Nz*cell_obj%Ny*(ix0 - 1)
-                i8Grid_Cell(6, i) = iz + 1 + cell_obj%Nz*(iy0 - 1) + cell_obj%Nz*cell_obj%Ny*(ix1 - 1)
-                i8Grid_Cell(7, i) = iz + 1 + cell_obj%Nz*(iy1 - 1) + cell_obj%Nz*cell_obj%Ny*(ix0 - 1)
-                i8Grid_Cell(8, i) = iz + 1 + cell_obj%Nz*(iy1 - 1) + cell_obj%Nz*cell_obj%Ny*(ix1 - 1)
+                i8Grid_Cell(1, i) = iz +     rtm_obj%Nz*(iy0 - 1) + rtm_obj%Nz*rtm_obj%Ny*(ix0 - 1)
+                i8Grid_Cell(2, i) = iz +     rtm_obj%Nz*(iy0 - 1) + rtm_obj%Nz*rtm_obj%Ny*(ix1 - 1)
+                i8Grid_Cell(3, i) = iz +     rtm_obj%Nz*(iy1 - 1) + rtm_obj%Nz*rtm_obj%Ny*(ix0 - 1)
+                i8Grid_Cell(4, i) = iz +     rtm_obj%Nz*(iy1 - 1) + rtm_obj%Nz*rtm_obj%Ny*(ix1 - 1)
+                i8Grid_Cell(5, i) = iz + 1 + rtm_obj%Nz*(iy0 - 1) + rtm_obj%Nz*rtm_obj%Ny*(ix0 - 1)
+                i8Grid_Cell(6, i) = iz + 1 + rtm_obj%Nz*(iy0 - 1) + rtm_obj%Nz*rtm_obj%Ny*(ix1 - 1)
+                i8Grid_Cell(7, i) = iz + 1 + rtm_obj%Nz*(iy1 - 1) + rtm_obj%Nz*rtm_obj%Ny*(ix0 - 1)
+                i8Grid_Cell(8, i) = iz + 1 + rtm_obj%Nz*(iy1 - 1) + rtm_obj%Nz*rtm_obj%Ny*(ix1 - 1)
                 flag_Cell(I) = 0
                 ! Initialize the neighbor pointer; to self for IP mode or
                 !   if open boundary conditions and at either end
@@ -342,37 +342,37 @@ subroutine shd_init__makeCell(rtm_obj, &
                 else if (isOpenX_) then
                     if (ix .eq. 1) then
                         i6Cell_Cell(1, i) = i
-                        i6Cell_Cell(2, i) = i + (cell_obj%Nz - 1)*Nyc
+                        i6Cell_Cell(2, i) = i + (rtm_obj%Nz - 1)*Nyc
                         flag_Cell(I) = ibset(int(flag_Cell(I)), 0)
                     else if (ix .eq. Nxc) then
-                        i6Cell_Cell(1, i) = i - (cell_obj%Nz - 1)*Nyc
+                        i6Cell_Cell(1, i) = i - (rtm_obj%Nz - 1)*Nyc
                         i6Cell_Cell(2, i) = i
                         flag_Cell(I) = ibset(int(flag_Cell(I)), 0)
                     else
-                        i6Cell_Cell(1, i) = i - (cell_obj%Nz - 1)*Nyc
-                        i6Cell_Cell(2, i) = i + (cell_obj%Nz - 1)*Nyc
+                        i6Cell_Cell(1, i) = i - (rtm_obj%Nz - 1)*Nyc
+                        i6Cell_Cell(2, i) = i + (rtm_obj%Nz - 1)*Nyc
                     end if
                 else if (isMpiX_) then
                     if (ix .eq. 1) then
                         i6Cell_Cell(1, i) = 0
-                        i6Cell_Cell(2, i) = i + (cell_obj%Nz - 1)*Nyc
+                        i6Cell_Cell(2, i) = i + (rtm_obj%Nz - 1)*Nyc
                     else if (ix .eq. Nxc) then
-                        i6Cell_Cell(1, i) = i - (cell_obj%Nz - 1)*Nyc
+                        i6Cell_Cell(1, i) = i - (rtm_obj%Nz - 1)*Nyc
                         i6Cell_Cell(2, i) = 0
                     else
-                        i6Cell_Cell(1, i) = i - (cell_obj%Nz - 1)*Nyc
-                        i6Cell_Cell(2, i) = i + (cell_obj%Nz - 1)*Nyc
+                        i6Cell_Cell(1, i) = i - (rtm_obj%Nz - 1)*Nyc
+                        i6Cell_Cell(2, i) = i + (rtm_obj%Nz - 1)*Nyc
                     end if
                 else
                     if (ix .eq. 1) then
-                        i6Cell_Cell(1, i) = i + (Nxc - 1)*(cell_obj%Nz - 1)*Nyc
+                        i6Cell_Cell(1, i) = i + (Nxc - 1)*(rtm_obj%Nz - 1)*Nyc
                     else
-                        i6Cell_Cell(1, i) = i - (cell_obj%Nz - 1)*Nyc
+                        i6Cell_Cell(1, i) = i - (rtm_obj%Nz - 1)*Nyc
                     end if
                     if (ix .eq. rtm_obj%Nx0) then
-                        i6Cell_Cell(2, i) = i - (Nxc - 1)*(cell_obj%Nz - 1)*Nyc
+                        i6Cell_Cell(2, i) = i - (Nxc - 1)*(rtm_obj%Nz - 1)*Nyc
                     else
-                        i6Cell_Cell(2, i) = i + (cell_obj%Nz - 1)*Nyc
+                        i6Cell_Cell(2, i) = i + (rtm_obj%Nz - 1)*Nyc
                     end if
                 end if
                 if (is1DYx_) then
@@ -382,37 +382,37 @@ subroutine shd_init__makeCell(rtm_obj, &
                 else if (isOpenYx_) then
                     if (iy .eq. 1) then
                         i6Cell_Cell(3, i) = i
-                        i6Cell_Cell(4, i) = i + (cell_obj%Nz - 1)
+                        i6Cell_Cell(4, i) = i + (rtm_obj%Nz - 1)
                         flag_Cell(I) = ibset(int(flag_Cell(I)), 1)
                     else if (iy .eq. Nyc) then
-                        i6Cell_Cell(3, i) = i - (cell_obj%Nz - 1)
+                        i6Cell_Cell(3, i) = i - (rtm_obj%Nz - 1)
                         i6Cell_Cell(4, i) = i
                         flag_Cell(I) = ibset(int(flag_Cell(I)), 1)
                     else
-                        i6Cell_Cell(3, i) = i - (cell_obj%Nz - 1)
-                        i6Cell_Cell(4, i) = i + (cell_obj%Nz - 1)
+                        i6Cell_Cell(3, i) = i - (rtm_obj%Nz - 1)
+                        i6Cell_Cell(4, i) = i + (rtm_obj%Nz - 1)
                     end if
                 else if (isMpiY_) then
                     if (iy .eq. 1) then
                         i6Cell_Cell(3, i) = 0
-                        i6Cell_Cell(4, i) = i + (cell_obj%Nz - 1)
+                        i6Cell_Cell(4, i) = i + (rtm_obj%Nz - 1)
                     else if (iy .eq. Nyc) then
-                        i6Cell_Cell(3, i) = i - (cell_obj%Nz - 1)
+                        i6Cell_Cell(3, i) = i - (rtm_obj%Nz - 1)
                         i6Cell_Cell(4, i) = 0
                     else
-                        i6Cell_Cell(3, i) = i - (cell_obj%Nz - 1)
-                        i6Cell_Cell(4, i) = i + (cell_obj%Nz - 1)
+                        i6Cell_Cell(3, i) = i - (rtm_obj%Nz - 1)
+                        i6Cell_Cell(4, i) = i + (rtm_obj%Nz - 1)
                     end if
                 else
                     if (iy .eq. 1) then
-                        i6Cell_Cell(3, i) = i + (Nyc - 1)*(cell_obj%Nz - 1)
+                        i6Cell_Cell(3, i) = i + (Nyc - 1)*(rtm_obj%Nz - 1)
                     else
-                        i6Cell_Cell(3, i) = i - (cell_obj%Nz - 1)
+                        i6Cell_Cell(3, i) = i - (rtm_obj%Nz - 1)
                     end if
                     if (iy .eq. rtm_obj%Ny0) then
-                        i6Cell_Cell(4, i) = i - (Nyc - 1)*(cell_obj%Nz - 1)
+                        i6Cell_Cell(4, i) = i - (Nyc - 1)*(rtm_obj%Nz - 1)
                     else
-                        i6Cell_Cell(4, i) = i + (cell_obj%Nz - 1)
+                        i6Cell_Cell(4, i) = i + (rtm_obj%Nz - 1)
                     end if
                 end if
                 if (iz .eq. 1) then
@@ -420,7 +420,7 @@ subroutine shd_init__makeCell(rtm_obj, &
                 else
                     i6Cell_Cell(5, i) = i - 1
                 end if
-                if (iz .eq. cell_obj%Nz - 1) then
+                if (iz .eq. rtm_obj%Nz - 1) then
                     i6Cell_Cell(6, i) = 0
                 else
                     i6Cell_Cell(6, i) = i + 1
