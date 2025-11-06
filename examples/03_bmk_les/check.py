@@ -4,7 +4,7 @@ import struct
 import glob
 
 
-def check(fname, fname_ref, data_len=4, threshold=1e-4, Nerror=10):
+def check(fname, fname_ref, data_len=4, threshold=1e-5, Nerror=10):
 
     if not os.path.exists(fname):
         msg = 'Error [check]: File <%s> does NOT exist.' % (fname)
@@ -51,7 +51,7 @@ if __name__ == '__main__':
 
     fdir_ref='data/output'
 
-    fnames = sorted(glob.glob('tmp-data/shdom-out*fast*.sHdOm-out*'))
+    fnames = sorted(glob.glob('tmp-data/shdom-out*fast*.sHdOmNG-out*'))
 
     for fname in fnames:
         filename = os.path.basename(fname)

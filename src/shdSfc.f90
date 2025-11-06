@@ -44,12 +44,16 @@ module shd_sfc
 
     use globals_const, only: PI_
     use globals_cfg,   only: isPol_
-    use globals_prp,   only: Nx_prp_, Ny_prp_, dx_prp_, dy_prp_
+    use globals_obj,   only: prp_obj_, &
+                             sfc_obj_
 
     use shd_util, only: shd_util__computePlanck
 
     implicit none
     private
+
+    integer, parameter :: R__  = selected_real_kind(6) ! default precision for float
+    integer, parameter :: I__  = selected_int_kind(9)  ! default precision for integer
 
     public :: shd_sfc__interpSfc
     public :: shd_sfc__brdfSurface
@@ -77,89 +81,103 @@ module shd_sfc
 contains
 
 subroutine shd_sfc__interpSfc(&
-    &NBOTPTS, BCPTR, GRIDPOS,&
-    &SRCTYPE, WAVENO, WAVELEN, UNITS,&
-    &NXSFC, NYSFC, DELXSFC, DELYSFC, NSFCPAR, SFCPARMS,&
-    &SFCGRIDPARMS)
+    NptsBot, BCPTR, GRIDPOS, &
+    SRCTYPE, WAVENO, WAVELEN, UNITS, &
+    brdf_Sfc, brdf_Rtm)
 
     !   Bilinearly interpolates the surface properties from the regular
     ! surface grid to the boundary points of the adaptive grid.
-    ! The locations of the NBOTPTS grid points on the bottom boundary
+    ! The locations of the NptsBot grid points on the bottom boundary
     ! (pointed to by BCPTR) are in the GRIDPOS array.  The input regular
-    ! surface info is specified by the number of grid lines (NXSFC,NYSFC),
-    ! the grid spacing (DELXSFC,DELYSFC), the number of parameters at
-    ! each grid point (NSFCPAR), and the surface parameters (SFCPARMS).
-    ! The output interpolated surface parameters at the NBOTPTS boundary
-    ! points are in SFCGRIDPARMS.  The first parameter is input as
+    ! surface info is specified by the number of grid lines (sfc_obj_%Nx,sfc_obj_%Ny),
+    ! the grid spacing (sfc_obj_%dx,sfc_obj_%dy), the number of parameters at
+    ! each grid point (sfc_obj_%Npar), and the surface parameters (brdf_Sfc).
+    ! The output interpolated surface parameters at the NptsBot boundary
+    ! points are in brdf_grid_Sfc.  The first parameter is input as
     ! temperature, but converted to Planck function for output.
 
-    integer :: NBOTPTS, BCPTR(*), NXSFC, NYSFC, NSFCPAR
-    real :: WAVENO(2), WAVELEN
-    real :: DELXSFC, DELYSFC
-    real :: GRIDPOS(3, *), SFCPARMS(NSFCPAR, NXSFC+1, NYSFC+1)
-    real :: SFCGRIDPARMS(NSFCPAR, NBOTPTS)
-    character(len=1) :: SRCTYPE, UNITS
-    integer :: I, IBC, IX, IY, J
-    real :: RX, RY, U, V, TEMP, PLANCK
-    logical :: INTERP
+    integer, intent(in) :: NptsBot, BCPTR(*)
+    character(len=1), intent(in) :: SRCTYPE, UNITS
 
-    INTERP = .true.
-    if (NSFCPAR .gt. 6) then
-        INTERP = .false.
+    real(kind=R__), intent(in)  :: brdf_Sfc(sfc_obj_%Npar, *)
+    real(kind=R__), intent(out) :: brdf_Rtm(sfc_obj_%Npar, *)
+
+    real :: WAVENO(2), WAVELEN
+    real :: GRIDPOS(3, *)
+
+    integer :: igrid, ibc, ix, iy, ipar, i1, i2, i3, i4
+    real :: rx, ry, u, v, temp, planck
+    logical :: doInterp
+
+    doInterp = .true.
+    if (sfc_obj_%Npar .gt. 6) then
+        doInterp = .false.
     end if
 
     ! Loop over all bottom points
-    do IBC = 1, NBOTPTS
+    do ibc = 1, NptsBot
 
-        I = BCPTR(IBC)
+        igrid = BCPTR(ibc)
 
-        if ((Nx_prp_ .gt. 1) .and. (Ny_prp_ .gt. 1) .and.&
-            &(NXSFC .gt. 1) .and. (NYSFC .gt. 1) .and.&
-            &((abs(dx_prp_-DELXSFC) .gt. 1.0e-6) .or.&
-             &(abs(dy_prp_-DELYSFC) .gt. 1.0e-6))) then
-            ! added half dx,dy (dx_prp_/2.0-DELXSFC/2.0, dy_prp_/2.0-DELYSFC/2.0) to
+        if  ((prp_obj_%Nx .gt. 1) .and. (prp_obj_%Ny .gt. 1) .and.&
+            &(sfc_obj_%Nx .gt. 1) .and. (sfc_obj_%Ny .gt. 1) .and.&
+            &((abs(prp_obj_%dx - sfc_obj_%dx) .gt. 1.0e-6) .or.&
+             &(abs(prp_obj_%dy - sfc_obj_%dy) .gt. 1.0e-6))) then
+            ! added half dx,dy (prp_obj_%dx/2.0-sfc_obj_%dx/2.0, prp_obj_%dy/2.0-sfc_obj_%dy/2.0) to
             ! find surface point that is closest to grid center
             !╭────────────────────────────────────────────────╮!
-            RX = (GRIDPOS(1, I) + dx_prp_/2.0 - DELXSFC/2.0) / DELXSFC
-            RY = (GRIDPOS(2, I) + dy_prp_/2.0 - DELYSFC/2.0) / DELYSFC
+            rx = (GRIDPOS(1, igrid) + prp_obj_%dx/2.0 - sfc_obj_%dx/2.0) / sfc_obj_%dx
+            ry = (GRIDPOS(2, igrid) + prp_obj_%dy/2.0 - sfc_obj_%dy/2.0) / sfc_obj_%dy
             !╰────────────────────────────────────────────────╯!
         else
-            RX = (GRIDPOS(1, I)) / DELXSFC
-            RY = (GRIDPOS(2, I)) / DELYSFC
+            rx = (GRIDPOS(1, igrid)) / sfc_obj_%dx
+            ry = (GRIDPOS(2, igrid)) / sfc_obj_%dy
         end if
 
-        IX = max(1, min(NXSFC, int(RX) + 1))
-        IY = max(1, min(NYSFC, int(RY) + 1))
-        U = max(0.0, min(1.0, RX - (IX - 1)))
-        V = max(0.0, min(1.0, RY - (IY - 1)))
+        ix = max(1, min(sfc_obj_%Nx, int(rx) + 1))
+        iy = max(1, min(sfc_obj_%Ny, int(ry) + 1))
+        u = max(0.0, min(1.0, rx - (ix - 1)))
+        v = max(0.0, min(1.0, ry - (iy - 1)))
 
-        do J = 1, NSFCPAR
+        i1 = iy + (sfc_obj_%Ny + 1)*(ix - 1)
+        if (doInterp) then
+            i2 = iy     + (sfc_obj_%Ny + 1)*(ix)
+            i3 = iy + 1 + (sfc_obj_%Ny + 1)*(ix - 1)
+            i4 = iy + 1 + (sfc_obj_%Ny + 1)*(ix)
+        end if
+
+        do ipar = 1, sfc_obj_%Npar
             ! only interpolate BRDF parameter, not surface type ID (currently stored at 8)
-            if (INTERP) then
+            if (doInterp) then
                 ! bi-linear interpolation
                 !╭────────────────────────────────────────────────╮!
-                SFCGRIDPARMS(J, IBC) =&
-                    &  (1.0 - U)*(1.0 - V)*SFCPARMS(J, IX  , IY)&
-                    &+ (1.0 - U)*       V *SFCPARMS(J, IX  , IY+1)&
-                    &+        U *(1.0 - V)*SFCPARMS(J, IX+1, IY)&
-                    &+        U *       V *SFCPARMS(J, IX+1, IY+1)
+                !brdf_Rtm(ipar, ibc) =&
+                !    &  (1.0 - u)*(1.0 - v)*brdf_Sfc(ipar, iy  , ix)&
+                !    &+ (1.0 - u)*       v *brdf_Sfc(ipar, iy  , ix+1)&
+                !    &+        u *(1.0 - v)*brdf_Sfc(ipar, iy+1, ix)&
+                !    &+        u *       v *brdf_Sfc(ipar, iy+1, ix+1)
+                brdf_Rtm(ipar, ibc) =&
+                    &  (1.0 - u)*(1.0 - v)*brdf_Sfc(ipar, i1)&
+                    &+ (1.0 - u)*       v *brdf_Sfc(ipar, i2)&
+                    &+        u *(1.0 - v)*brdf_Sfc(ipar, i3)&
+                    &+        u *       v *brdf_Sfc(ipar, i4)
                 !╰────────────────────────────────────────────────╯!
             else
                 ! nearest interpolation
                 !╭────────────────────────────────────────────────╮!
-                SFCGRIDPARMS(J, IBC) = SFCPARMS(J, IX, IY)
+                brdf_Rtm(ipar, ibc) = brdf_Sfc(ipar, i1)
                 !╰────────────────────────────────────────────────╯!
             end if
         end do
 
         if (SRCTYPE .eq. 'S') then
-            PLANCK = 0.0
+            planck = 0.0
         else
-            TEMP = SFCGRIDPARMS(1, IBC)
-            call shd_util__computePlanck(TEMP, UNITS, WAVENO, WAVELEN, PLANCK)
+            temp = brdf_Rtm(1, ibc)
+            call shd_util__computePlanck(temp, UNITS, WAVENO, WAVELEN, planck)
         end if
 
-        SFCGRIDPARMS(1, IBC) = PLANCK
+        brdf_Rtm(1, ibc) = planck
 
     end do
 
@@ -194,12 +212,13 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
     ! M  Mixed surface
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
+    character(len=1), intent(in) :: SFCTYPE
     integer :: NSTOKES
     integer :: K1, K2
     real    :: REFPARMS(*), WAVELEN, MU1, PHI1, MU2, PHI2, REFLECT(4, 4)
     real    :: PHIDIFF
-    character(len=1) :: SFCTYPE
     integer, parameter :: iSFC_ID=7
+
 
     if ((SFCTYPE .eq. 'L') .or. (SFCTYPE .eq. 'l')) then
 
@@ -335,12 +354,14 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
 
         else
 
+            print *, SFCTYPE
             stop 'Error [_brdfSurface]: Unknown BRDF type.'
 
         end if
 
     else
 
+        print *, SFCTYPE
         stop 'Error [_brdfSurface]: Unknown BRDF type.'
 
     end if

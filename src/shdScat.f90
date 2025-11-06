@@ -76,7 +76,7 @@ subroutine shd_scat__computePhase(&
     real(RD_), allocatable :: UNSCLEGEN(:, :)
     real(RD_), allocatable :: DMM1(:), DMM2(:)
 
-    allocate (UNSCLEGEN(2, 0:NLEG), DMM1(0:NLEG), DMM2(0:NLEG))
+    allocate(UNSCLEGEN(2, 0:NLEG), DMM1(0:NLEG), DMM2(0:NLEG))
 
     do J = 1, NSCATANGLE
         COSSCAT = cos(DPI_*DFLOAT(J - 1)/(NSCATANGLE - 1))
@@ -130,7 +130,7 @@ subroutine shd_scat__computePhase(&
         end do
     end do
 
-    deallocate (UNSCLEGEN, DMM1, DMM2)
+    deallocate(UNSCLEGEN, DMM1, DMM2)
 
     return
 

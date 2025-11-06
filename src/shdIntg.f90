@@ -45,13 +45,20 @@ module shd_intg
                              isMpi_, is1DX_, is1DYx_, is1D_, &
                              isPol_
 
+    use globals_obj,   only: rtm_obj_, xyz_Rtm_, ext_Rtm_, &
+                             cell_obj_, i8Grid_Cell_, i6Cell_Cell_, flag_Cell_, &
+                            shdo_obj_, &
+                             src_obj_, &
+                             prp_obj_, &
+                             sfc_obj_, brdf_Sfc_, brdf_Rtm_
+
     use shd_sfc,  only: shd_sfc__interpSfc
 
     use shd_init, only: shd_init__makeTopRad, &
-                        shd_init__makeSfcRadFL, &
-                        shd_init__makeSfcRadVL, &
-                        shd_init__makeSfcRadV, &
-                        shd_init__makeSfcRadU
+                        shd_init__makeBotRadUL, &
+                        shd_init__makeBotRadVL, &
+                        shd_init__makeBotRadU, &
+                        shd_init__makeBotRadV
 
     use shd_grid, only: shd_grid__makeSweepOrder, &
                         shd_grid__findBndryPnt
@@ -84,24 +91,15 @@ module shd_intg
 contains
 
 subroutine shd_intg__integratePath(&
-    &NX, NY, NZ, NSTOKES, NSTLEG,&
-    &ML, MM, NLM, NMU, NPHI0MAX, NPHI0, NANG,&
-    &BCFLAG, IPFLAG,&
-    &NPTS, NCELLS, XGRID, YGRID, ZGRID, GRIDPOS,&
-    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-    &SRCTYPE, SOLARMU, SOLARAZ, SKYRAD, WAVENO, WAVELEN,&
-    &UNITS, SFCTYPE, GNDTEMP, GNDALBEDO,&
-    &NXSFC, NYSFC, DELXSFC, DELYSFC, NSFCPAR, SFCPARMS,&
-    &SFCGRIDPARMS, UNIFORM_SFC_BRDF, SFC_BRDF_DO,&
+    &SFC_BRDF_DO,&
     &MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-    &MU, PHI, WTDO,&
     &CMU1, CPHI1, CMU2, CPHI2, WSAVE, FFTFLAG,&
-    &DIRFLUX, FLUXES, EXTINCT,&
-    &SHPTR, SOURCE, RSHPTR, RADIANCE,&
-    &WORK, SWEEPORD, GRIDRAD)
+    &DIRFLUX, FLUXES,&
+    &WORK, SWEEPORD, GRIDRAD,&
+    &iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo)
 
     !   Performs the path integrations through the medium specified by
-    ! the extinction (EXTINCT) and source function (SOURCE) in
+    ! the extinction (ext_Rtm_) and source function (srcJ_Shdo) in
     ! spherical harmonic space.  The source function is transformed to
     ! discrete ordinates one zenith angle at a time.  The integrations
     ! are done from the top boundary (with no reflection) down to the
@@ -110,7 +108,7 @@ subroutine shd_intg__integratePath(&
     ! After the path integrations produce the discrete angle radiance
     ! it is transformed and added to output radiance spherical harmonic
     ! expansion.  The hemispheric flux FLUXES is also computed.
-    ! The discrete ordinates in MU, PHI must be a complete set with the
+    ! The discrete ordinates in shdo_obj_%mu, shdo_obj_%phi must be a complete set with the
     ! downwelling (mu<0) angles first.
     !   The surface reflection is handled differently for Lambertian
     ! surfaces and more general surfaces specified by bidirectional
@@ -124,35 +122,25 @@ subroutine shd_intg__integratePath(&
     ! downwelling radiances at all discrete ordinates for the bottom
     ! boundary points.
 
-    integer NX, NY, NZ, NSTOKES, NSTLEG, ML, MM, NLM
-    integer NMU, NPHI0MAX, NPHI0(NMU), NANG
-    integer BCFLAG, IPFLAG
-    integer NPTS, NCELLS, MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS
-    integer NXSFC, NYSFC, NSFCPAR
-    integer SHPTR(NPTS + 1), RSHPTR(NPTS + 1), BCPTR(MAXNBC, 2)
-    integer GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
-    integer*2 CELLFLAGS(NCELLS)
-    integer SWEEPORD(NPTS, *)
-    logical FFTFLAG(NMU), UNIFORM_SFC_BRDF
-    real SOLARMU, SOLARAZ, SKYRAD
-    real GNDTEMP, GNDALBEDO
-    real DELXSFC, DELYSFC
-    real SFCPARMS(NSFCPAR, *), SFCGRIDPARMS(NSFCPAR, MAXNBC)
-    real SFC_BRDF_DO(NSTOKES, NMU/2, NPHI0MAX, NSTOKES, NMU/2, NPHI0MAX)
-    real WAVENO(2), WAVELEN
-    real XGRID(NX), YGRID(NY), ZGRID(NZ), GRIDPOS(3, NPTS)
-    real MU(NMU), PHI(NMU, NPHI0MAX), WTDO(NMU, NPHI0MAX)
+    integer(I__), intent(inout) :: iradI_Shdo(*)
+    real(R__),    intent(inout) ::  radI_Shdo(shdo_obj_%Nstokes, *)
+
+    integer(I__), intent(inout) :: isrcJ_Shdo(*)
+    real(R__),    intent(inout) ::  srcJ_Shdo(shdo_obj_%Nstokes, *)
+
+    integer MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS
+    integer BCPTR(MAXNBC, 2)
+    integer SWEEPORD(rtm_obj_%Npts, *)
+    logical FFTFLAG(shdo_obj_%Nmu)
+    real SFC_BRDF_DO(shdo_obj_%Nstokes, shdo_obj_%Nmu/2, shdo_obj_%maxNphi0, shdo_obj_%Nstokes, shdo_obj_%Nmu/2, shdo_obj_%maxNphi0)
     real CMU1(*), CPHI1(*), CMU2(*), CPHI2(*), WSAVE(*)
-    real BCRAD(NSTOKES, MAXBCRAD)
-    real DIRFLUX(NPTS), FLUXES(2, NPTS), EXTINCT(NPTS)
-    real GRIDRAD(NSTOKES, NPTS), WORK(NSTOKES, NPHI0MAX, NPTS)
-    real SOURCE(NSTOKES, *), RADIANCE(NSTOKES, *)
-    character(len=1) :: SRCTYPE, UNITS
-    character(len=2) :: SFCTYPE
+    real BCRAD(shdo_obj_%Nstokes, MAXBCRAD)
+    real DIRFLUX(rtm_obj_%Npts), FLUXES(2, rtm_obj_%Npts)
+    real GRIDRAD(shdo_obj_%Nstokes, rtm_obj_%Npts), WORK(shdo_obj_%Nstokes, shdo_obj_%maxNphi0, rtm_obj_%Npts)
 
     integer I, I1, K, NR, IPHI, IMU, IBC, IANG, IUPDOWN, OLDNPTS
     integer joct, ipt, ip, iorder, ipcell, icorner
-    logical :: LAMBERTIAN, theflag
+    logical :: theflag
     real A, TRANSMIN
     save OLDNPTS
 
@@ -164,91 +152,87 @@ subroutine shd_intg__integratePath(&
     TRANSMIN = 1.00
 
     ! Make the new grid cell/point sweeping order if need to
-    if (NPTS .ne. OLDNPTS) then
-        call shd_grid__makeSweepOrder(NX, NY, NZ, NPTS, NCELLS,&
-            &GRIDPTR, TREEPTR, CELLFLAGS,&
-            &BCFLAG, IPFLAG, SWEEPORD, GRIDRAD)
+    if (rtm_obj_%Npts .ne. OLDNPTS) then
+        call shd_grid__makeSweepOrder(SWEEPORD, GRIDRAD)
     end if
 
-    call shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, GRIDPTR,&
-        &GRIDPOS, NX, NY, NZ, XGRID, YGRID, ZGRID)
+    call shd_mpi__findBndryPnt(rtm_obj_%flag_bc, rtm_obj_%flag_ip, SWEEPORD,&
+        &rtm_obj_%Nx0, rtm_obj_%Ny0, rtm_obj_%Nz)
 
-    LAMBERTIAN = SFCTYPE(2:2) .eq. 'L'
-    if (NPTS .ne. OLDNPTS) then
+    if (rtm_obj_%Npts .ne. OLDNPTS) then
         ! Make the pointers to the grid points on the top and bottom boundaries
-        call shd_grid__findBndryPnt(NPTS, NANG, MAXNBC, MAXBCRAD, LAMBERTIAN, &
-            &ZGRID(1), ZGRID(NZ), GRIDPOS,&
+        call shd_grid__findBndryPnt(shdo_obj_%Nang, MAXNBC, MAXBCRAD, &
+            &rtm_obj_%z(1), rtm_obj_%z(rtm_obj_%Nz),&
             &NTOPPTS, NBOTPTS, BCPTR)
-        if (SFCTYPE(1:1) .eq. 'V') then
+        if (sfc_obj_%type(1:1) .eq. 'V') then
             ! If this is a variable surface then bilinearly interpolate
             !   the surface temperature and reflection parameters to the
             !   bottom grid points.
-            call shd_sfc__interpSfc(NBOTPTS, BCPTR(1, 2), GRIDPOS,&
-                &SRCTYPE, WAVENO, WAVELEN, UNITS,&
-                &NXSFC, NYSFC, DELXSFC, DELYSFC, NSFCPAR, SFCPARMS,&
-                &SFCGRIDPARMS)
+            call shd_sfc__interpSfc(NBOTPTS, BCPTR(1, 2), xyz_Rtm_, &
+                src_obj_%type, src_obj_%waveNum, src_obj_%avgWaveLen, src_obj_%unit, &
+                brdf_Sfc_, brdf_Rtm_)
         end if
     end if
     ! Make the isotropic radiances for the top boundary
-    call shd_init__makeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
-        &UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
+    call shd_init__makeTopRad(src_obj_%type, src_obj_%skyRad, src_obj_%waveNum, src_obj_%avgWaveLen,&
+        &src_obj_%unit, NTOPPTS, shdo_obj_%Nstokes, BCRAD(1, 1))
 
     ! Zero the flux arrays and set temporary radiance to -1 for not valid
-    do I = 1, NPTS
+    do I = 1, rtm_obj_%Npts
         FLUXES(1, I) = 0.0
         FLUXES(2, I) = 0.0
         GRIDRAD(1, I) = -1.0
     end do
 
     ! Zero the output spherical harmonic radiance
-    NR = RSHPTR(NPTS + 1)
+    NR = iradI_Shdo(rtm_obj_%Npts + 1)
     do I = 1, NR
-        RADIANCE(:, I) = 0.0
+        radI_Shdo(:, I) = 0.0
     end do
 
     ! print *, 'Path integration:'
     ! Loop over the zenith angles (downwelling angles must be first)
     IANG = 1
-    DO_MU_LOOP: do IMU = 1, NMU
+    DO_MU_LOOP: do IMU = 1, shdo_obj_%Nmu
 
-        if (IMU .eq. NMU/2 + 1) then
+        if (IMU .eq. shdo_obj_%Nmu/2 + 1) then
             ! For the first upwelling angle, make the bottom boundary radiances
             !   for the Lambertian surfaces.  Compute the upwelling bottom
             !   radiances using the downwelling fluxes.
-            if (SFCTYPE .eq. 'FL') then
-                call shd_init__makeSfcRadFL(NBOTPTS, BCPTR(1, 2),&
-                    &DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO,&
-                    &WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1, 1 + NTOPPTS))
-            else if (SFCTYPE .eq. 'VL') then
-                call shd_init__makeSfcRadVL(NBOTPTS, BCPTR(1, 2),&
-                    &DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS,&
-                    &NSTOKES, BCRAD(1, 1 + NTOPPTS))
+            if (sfc_obj_%type .eq. 'FL') then
+                call shd_init__makeBotRadUL(NBOTPTS, BCPTR(1, 2),&
+                    &DIRFLUX, FLUXES, src_obj_%type,&
+                    &src_obj_%waveNum, src_obj_%avgWaveLen, src_obj_%unit, shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
+            else if (sfc_obj_%type .eq. 'VL') then
+                call shd_init__makeBotRadVL(NBOTPTS, BCPTR(1, 2),&
+                    &DIRFLUX, FLUXES, src_obj_%type,&
+                    &shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
             end if
         end if
 
         if (isPol_) then
-            call shd_shdo__transSHtoDO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
-                &NMU, NPHI0MAX, NPHI0(IMU),&
+            call shd_shdo__transSHtoDO(rtm_obj_%Npts, shdo_obj_%Nstokes, prp_obj_%NlegSet, shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
+                &shdo_obj_%Nmu, shdo_obj_%maxNphi0, shdo_obj_%Nphi0(IMU),&
                 &IMU, FFTFLAG, CMU1, CPHI1, WSAVE,&
-                &SHPTR, SOURCE, WORK)
+                &isrcJ_Shdo, srcJ_Shdo, WORK)
         else
-            call shd_shdo__transSHtoDO_(NPTS, ML, MM, NLM,&
-                &NMU, NPHI0MAX, NPHI0(IMU),&
+            call shd_shdo__transSHtoDO_(rtm_obj_%Npts, shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
+                &shdo_obj_%Nmu, shdo_obj_%maxNphi0, shdo_obj_%Nphi0(IMU),&
                 &IMU, FFTFLAG, CMU1, CPHI1, WSAVE,&
-                &SHPTR, SOURCE, WORK)
+                &isrcJ_Shdo, srcJ_Shdo, WORK)
         end if
 
         ! Enforce the discrete ordinate I source function to be non-negative
-        do I = 1, NPTS
-            do IPHI = 1, NPHI0(IMU)
+        do I = 1, rtm_obj_%Npts
+            do IPHI = 1, shdo_obj_%Nphi0(IMU)
                 WORK(1, IPHI, I) = max(0.0, WORK(1, IPHI, I))
             end do
         end do
 
         ! Loop over the azimuthal angles
-        DO_PHI_LOOP: do IPHI = 1, NPHI0(IMU)
+        DO_PHI_LOOP: do IPHI = 1, shdo_obj_%Nphi0(IMU)
 
-            if (MU(IMU) .lt. 0.0) then
+            if (shdo_obj_%mu(IMU) .lt. 0.0) then
 
                 ! For downward ordinates, initialize the top boundary radiances
                 IUPDOWN = 1
@@ -261,26 +245,25 @@ subroutine shd_intg__integratePath(&
 
                 ! Initialize the bottom boundary radiances
                 IUPDOWN = 2
-                if (.not. LAMBERTIAN) then
+                if (.not. sfc_obj_%isLambertian) then
 
                     ! If a Lambertian surface, use the radiances computed above
                     !   otherwise, compute the radiance for this angle
                     !   by integrating over the stored downwelling radiances.
                     ! If the surface reflection is uniform use the precomputed
                     !   BRDF matrix to do the integration.
-                    if (UNIFORM_SFC_BRDF) then
-                        call shd_init__makeSfcRadU(NBOTPTS, BCPTR(1, 2),&
-                            &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, IMU, IPHI,&
-                            &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
-                            &SFCTYPE, NSFCPAR, SFCGRIDPARMS, SFC_BRDF_DO,&
-                            &NSTOKES, BCRAD(1, 1 + NTOPPTS))
+                    if (sfc_obj_%isUniform) then
+                        call shd_init__makeBotRadU(NBOTPTS, BCPTR(1, 2),&
+                            &shdo_obj_%Nmu, shdo_obj_%maxNphi0, shdo_obj_%Nphi0, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt, IMU, IPHI,&
+                            &src_obj_%type, src_obj_%avgWaveLen, src_obj_%avgMu, src_obj_%avgAz, DIRFLUX,&
+                            &SFC_BRDF_DO,&
+                            &shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
                     else
-                        call shd_init__makeSfcRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
-                            &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-                            &MU(IMU), PHI(IMU, IPHI),&
-                            &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
-                            &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
-                            &NSTOKES, BCRAD(1, 1 + NTOPPTS))
+                        call shd_init__makeBotRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
+                            &shdo_obj_%Nmu, shdo_obj_%maxNphi0, shdo_obj_%Nphi0, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
+                            &shdo_obj_%mu(IMU), shdo_obj_%phi(IMU, IPHI),&
+                            &src_obj_%type, src_obj_%avgWaveLen, src_obj_%avgMu, src_obj_%avgAz, DIRFLUX,&
+                            &shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
                     end if
                 end if
 
@@ -294,45 +277,41 @@ subroutine shd_intg__integratePath(&
             ! Do backward path integration from each grid point not done yet
             if (is1D_) then
 
-                call shd_intg__backIntegrate1D(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,&
-                    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-                    &GRIDPOS, SWEEPORD, MU(IMU), PHI(IMU, IPHI), TRANSMIN,&
-                    &EXTINCT, NSTOKES, WORK, IPHI, GRIDRAD)
+                call shd_intg__backIntegrate1D(rtm_obj_%Nx0, rtm_obj_%Ny0, rtm_obj_%Nz, shdo_obj_%maxNphi0,&
+                    &SWEEPORD, shdo_obj_%mu(IMU), shdo_obj_%phi(IMU, IPHI), TRANSMIN,&
+                    &ext_Rtm_, shdo_obj_%Nstokes, WORK, IPHI, GRIDRAD)
 
             else if (is1DYx_ .and. (.not. isMpi_)) then
 
-                call shd_intg__backIntegrate2D(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,&
-                    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-                    &GRIDPOS, SWEEPORD, MU(IMU), PHI(IMU, IPHI), TRANSMIN,&
-                    &EXTINCT, NSTOKES, WORK, IPHI, GRIDRAD)
+                call shd_intg__backIntegrate2D(rtm_obj_%Nx0, rtm_obj_%Ny0, rtm_obj_%Nz, shdo_obj_%maxNphi0,&
+                    &SWEEPORD, shdo_obj_%mu(IMU), shdo_obj_%phi(IMU, IPHI), TRANSMIN,&
+                    &ext_Rtm_, shdo_obj_%Nstokes, WORK, IPHI, GRIDRAD)
 
             else
                 if (isPol_) then
 
-                    call shd_intg__backIntegrate3D(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,&
-                        &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-                        &GRIDPOS, XGRID, YGRID, ZGRID, SWEEPORD,&
-                        &MU(IMU), PHI(IMU, IPHI), TRANSMIN, BCFLAG, IPFLAG,&
-                        &EXTINCT, NSTOKES, WORK, IPHI, GRIDRAD)
+                    call shd_intg__backIntegrate3D(rtm_obj_%Nx0, rtm_obj_%Ny0, rtm_obj_%Nz, shdo_obj_%maxNphi0,&
+                        &SWEEPORD,&
+                        &shdo_obj_%mu(IMU), shdo_obj_%phi(IMU, IPHI), TRANSMIN, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
+                        &ext_Rtm_, shdo_obj_%Nstokes, WORK, IPHI, GRIDRAD)
 
                 else
 
-                    call shd_intg__backIntegrate3D_(NX, NY, NZ, NPHI0MAX, NPTS, NCELLS,&
-                        &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-                        &GRIDPOS, XGRID, YGRID, ZGRID, SWEEPORD,&
-                        &MU(IMU), PHI(IMU, IPHI), TRANSMIN, BCFLAG, IPFLAG,&
-                        &EXTINCT, WORK, IPHI, GRIDRAD)
+                    call shd_intg__backIntegrate3D_(rtm_obj_%Nx0, rtm_obj_%Ny0, rtm_obj_%Nz, shdo_obj_%maxNphi0,&
+                        &SWEEPORD,&
+                        &shdo_obj_%mu(IMU), shdo_obj_%phi(IMU, IPHI), TRANSMIN, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
+                        &ext_Rtm_, WORK, IPHI, GRIDRAD)
 
                 end if
             end if
 
             ! Transfer the radiance for the (IMU,IPHI) discrete ordinate from
             !   GRIDRAD to the work array.
-            do I = 1, NPTS
+            do I = 1, rtm_obj_%Npts
                 if (GRIDRAD(1, I) .lt. -accSolv_) then
                     if (verbose_ .ge. 4) write (6, *) 'Warning [_integratePath]: Grid point has no value',&
-                        &I, MU(IMU), PHI(IMU, IPHI), GRIDRAD(1, I), XGRID(1), YGRID(1),&
-                        &GRIDPOS(1, I), GRIDPOS(2, I), GRIDPOS(3, I)
+                        &I, shdo_obj_%mu(IMU), shdo_obj_%phi(IMU, IPHI), GRIDRAD(1, I), rtm_obj_%x(1), rtm_obj_%y(1),&
+                        &xyz_Rtm_(1, I), xyz_Rtm_(2, I), xyz_Rtm_(3, I)
                     ! stop
                     GRIDRAD(1, I) = 0.0
                 else
@@ -342,14 +321,14 @@ subroutine shd_intg__integratePath(&
             end do
 
             ! Do the sum for the hemispheric fluxes for this angle
-            A = abs(MU(IMU))*WTDO(IMU, IPHI)
-            do I = 1, NPTS
+            A = abs(shdo_obj_%mu(IMU))*shdo_obj_%wgt(IMU, IPHI)
+            do I = 1, rtm_obj_%Npts
                 FLUXES(IUPDOWN, I) = FLUXES(IUPDOWN, I) + A*WORK(1, IPHI, I)
             end do
 
             ! For a general BRDF surface save the downwelling radiance
             !   at the bottom boundary points.
-            if (.not. LAMBERTIAN .and. IMU .le. NMU/2) then
+            if ((.not. sfc_obj_%isLambertian) .and. (IMU .le. shdo_obj_%Nmu/2)) then
                 I1 = NTOPPTS + NBOTPTS*IANG
                 do IBC = 1, NBOTPTS
                     I = BCPTR(IBC, 2)
@@ -362,29 +341,28 @@ subroutine shd_intg__integratePath(&
 
         ! Transform the radiance to spherical harmonics for this zenith angle
         if (isPol_) then
-            call shd_shdo__transDOtoSH(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
-                &NMU, NPHI0MAX, NPHI0(IMU),&
+            call shd_shdo__transDOtoSH(rtm_obj_%Npts, shdo_obj_%Nstokes, prp_obj_%NlegSet, shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
+                &shdo_obj_%Nmu, shdo_obj_%maxNphi0, shdo_obj_%Nphi0(IMU),&
                 &IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
-                &RSHPTR, WORK, RADIANCE)
+                &iradI_Shdo, WORK, radI_Shdo)
         else
-            call shd_shdo__transDOtoSH_(NPTS, ML, MM, NLM,&
-                &NMU, NPHI0MAX, NPHI0(IMU),&
+            call shd_shdo__transDOtoSH_(rtm_obj_%Npts, shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
+                &shdo_obj_%Nmu, shdo_obj_%maxNphi0, shdo_obj_%Nphi0(IMU),&
                 &IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
-                &RSHPTR, WORK, RADIANCE)
+                &iradI_Shdo, WORK, radI_Shdo)
         end if
 
     end do DO_MU_LOOP
 
-    OLDNPTS = NPTS
+    OLDNPTS = rtm_obj_%Npts
 
     return
 
 end subroutine shd_intg__integratePath
 
 subroutine shd_intg__backIntegrate3D(&
-    &NX, NY, NZ, NA, NPTS, NCELLS,&
-    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-    &GRIDPOS, XGRID, YGRID, ZGRID, SWEEPORD,&
+    &NX, NY, NZ, NA,&
+    &SWEEPORD,&
     &MU, PHI, TRANSMIN, BCFLAG, IPFLAG,&
     &EXTINCT, NSTOKES, SOURCE, KANG, GRIDRAD)
 
@@ -400,15 +378,12 @@ subroutine shd_intg__backIntegrate3D(&
     ! at the end of the ray path is interpolated from the known grid point
     ! radiances on the face.  The resulting radiances are put in GRIDRAD.
 
-    integer NX, NY, NZ, NA, NPTS, NCELLS, NSTOKES, KANG
+    integer NX, NY, NZ, NA, NSTOKES, KANG
     integer BCFLAG, IPFLAG
-    integer GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
-    integer SWEEPORD(NPTS, *)
-    integer*2 CELLFLAGS(NCELLS)
-    real GRIDPOS(3, NPTS), XGRID(*), YGRID(*), ZGRID(NZ)
+    integer SWEEPORD(rtm_obj_%Npts, *)
     real MU, PHI, TRANSMIN
-    real EXTINCT(NPTS), SOURCE(NSTOKES, NA, NPTS)
-    real GRIDRAD(NSTOKES, NPTS)
+    real EXTINCT(rtm_obj_%Npts), SOURCE(NSTOKES, NA, rtm_obj_%Npts)
+    real GRIDRAD(NSTOKES, rtm_obj_%Npts)
     integer BITX, BITY, BITZ, IOCT, JOCT
     integer IPCELL, ICELL, INEXTCELL, IPT, IFACE
     integer I1, I2, I3, I4, IOPP, JFACE, KFACE, IC, IZ
@@ -428,7 +403,7 @@ subroutine shd_intg__backIntegrate3D(&
         &1, 2, 3, 4, 5, 6, 7, 8/, OPPFACE/2, 1, 4, 3, 6, 5/
     data JOCTORDER3/1, 3, 5, 7, 2, 4, 6, 8/, JOCTORDER2/1, 3, 1, 3, 2, 4, 2, 4/
 
-    EPS = 1.0e-3*(GRIDPOS(3, GRIDPTR(8, 1)) - GRIDPOS(3, GRIDPTR(1, 1)))
+    EPS = 1.0e-3*(xyz_Rtm_(3, i8Grid_Cell_(8, 1)) - xyz_Rtm_(3, i8Grid_Cell_(1, 1)))
 
     ! Make the ray direction (opposite to the discrete ordinate direction)
     CX = sqrt(1.0 - MU**2)*cos(PHI + DPI_)
@@ -477,21 +452,20 @@ subroutine shd_intg__backIntegrate3D(&
 
     IZ = (NZ - 1)*(1 - BITZ) + 1
     ! Sweep through all the grid points
-    do IORDER = 1, NPTS
+    do IORDER = 1, rtm_obj_%Npts
         IPCELL = ishft(SWEEPORD(IORDER, JOCT), -3)
         ICORNER = ibits(SWEEPORD(IORDER, JOCT), 0, 3) + 1
-        IPT = GRIDPTR(ICORNER, IPCELL)
+        IPT = i8Grid_Cell_(ICORNER, IPCELL)
 
         if (isMpi_) then
             ! For multiple processors get the subdomain boundary radiances
             !   for each Z slab
-            if ((GRIDPOS(3, IPT) .lt. ZGRID(IZ) .and. BITZ .eq. 0) .or.&
-                &(GRIDPOS(3, IPT) .gt. ZGRID(IZ) .and. BITZ .eq. 1)) then
+            if  ((xyz_Rtm_(3, IPT) .lt. rtm_obj_%z(IZ) .and. BITZ .eq. 0) .or.&
+                &(xyz_Rtm_(3, IPT) .gt. rtm_obj_%z(IZ) .and. BITZ .eq. 1)) then
                 IZ = IZ + 2*BITZ - 1
                 call shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
-                    &NX, NY, NZ, XGRID, YGRID, ZGRID,&
-                    &NA, NPTS, NCELLS, GRIDPTR,&
-                    &NEIGHPTR, TREEPTR, CELLFLAGS, GRIDPOS,&
+                    &NX, NY, NZ,&
+                    &NA,&
                     &MU, PHI, EXTINCT, NSTOKES, SOURCE,&
                     &KANG, GRIDRAD)
             end if
@@ -505,9 +479,9 @@ subroutine shd_intg__backIntegrate3D(&
             EXT1 = EXTINCT(IPT)
             RAD(:) = 0.0
             SRCEXT1(:) = EXT1*SOURCE(:, KANG, IPT)
-            XE = GRIDPOS(1, IPT)
-            YE = GRIDPOS(2, IPT)
-            ZE = GRIDPOS(3, IPT)
+            XE = xyz_Rtm_(1, IPT)
+            YE = xyz_Rtm_(2, IPT)
+            ZE = xyz_Rtm_(3, IPT)
 
             ! Loop until finding a face with known radiances
             VALIDRAD = .false.
@@ -516,28 +490,28 @@ subroutine shd_intg__backIntegrate3D(&
                 if (ICELL .le. 0) then
                     write (6, *) 'Error [_backIntegrate3D]: ICELL=0 ',&
                         &MU, PHI, IPT, INEXTCELL, xe, ye, ze,&
-                        &gridpos(1, ipt), gridpos(2, ipt), gridpos(3, ipt)
+                        &xyz_Rtm_(1, ipt), xyz_Rtm_(2, ipt), xyz_Rtm_(3, ipt)
                     stop
                 end if
-                IPINX = btest(int(CELLFLAGS(ICELL)), 0)
-                IPINY = btest(int(CELLFLAGS(ICELL)), 1)
+                IPINX = btest(int(flag_Cell_(ICELL)), 0)
+                IPINY = btest(int(flag_Cell_(ICELL)), 1)
 
                 ! Find boundaries of the current cell
                 ! Find the three possible intersection planes (X,Y,Z)
                 !   from the coordinates of the opposite corner grid point
-                IOPP = GRIDPTR(9 - IOCT, ICELL)
+                IOPP = i8Grid_Cell_(9 - IOCT, ICELL)
                 ! Get the distances to the 3 planes and select the closest
                 if (IPINX) then
                     SOX = 1.0e20
                 else
-                    SOX = (GRIDPOS(1, IOPP) - XE)*CXINV
+                    SOX = (xyz_Rtm_(1, IOPP) - XE)*CXINV
                 end if
                 if (IPINY) then
                     SOY = 1.0e20
                 else
-                    SOY = (GRIDPOS(2, IOPP) - YE)*CYINV
+                    SOY = (xyz_Rtm_(2, IOPP) - YE)*CYINV
                 end if
-                SOZ = (GRIDPOS(3, IOPP) - ZE)*CZINV
+                SOZ = (xyz_Rtm_(3, IOPP) - ZE)*CZINV
                 SO = min(SOX, SOY, SOZ)
                 if (SO .lt. -EPS) then
                     write (6, *) 'Error [_backIntegrate3D]: SO<0 ',&
@@ -561,14 +535,14 @@ subroutine shd_intg__backIntegrate3D(&
                     JFACE = 3
                 end if
                 ! Get the next cell to go to
-                INEXTCELL = NEIGHPTR(IFACE, ICELL)
+                INEXTCELL = i6Cell_Cell_(IFACE, ICELL)
                 if (INEXTCELL .lt. 0) then
-                    call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
-                        &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXTCELL)
+                    call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL,&
+                        &INEXTCELL)
                 end if
 
                 ! Get the face grid pointers
-                if (NEIGHPTR(IFACE, ICELL) .ge. 0) then
+                if (i6Cell_Cell_(IFACE, ICELL) .ge. 0) then
                     ! If going to same or larger face then use previous face
                     KFACE = IFACE
                     IC = ICELL
@@ -577,52 +551,52 @@ subroutine shd_intg__backIntegrate3D(&
                     KFACE = OPPFACE(IFACE)
                     IC = INEXTCELL
                 end if
-                I1 = GRIDPTR(GRIDFACE(1, KFACE), IC)
-                I2 = GRIDPTR(GRIDFACE(2, KFACE), IC)
-                I3 = GRIDPTR(GRIDFACE(3, KFACE), IC)
-                I4 = GRIDPTR(GRIDFACE(4, KFACE), IC)
+                I1 = i8Grid_Cell_(GRIDFACE(1, KFACE), IC)
+                I2 = i8Grid_Cell_(GRIDFACE(2, KFACE), IC)
+                I3 = i8Grid_Cell_(GRIDFACE(3, KFACE), IC)
+                I4 = i8Grid_Cell_(GRIDFACE(4, KFACE), IC)
                 ! Compute the face interpolation factors
                 if (JFACE .eq. 1) then
-                    U = (ZE - GRIDPOS(3, I1))/(GRIDPOS(3, I3) - GRIDPOS(3, I1))
+                    U = (ZE - xyz_Rtm_(3, I1))/(xyz_Rtm_(3, I3) - xyz_Rtm_(3, I1))
                     if (IPINY) then
                         V = 0.5
                     else
-                        V = (YE - GRIDPOS(2, I1))/(GRIDPOS(2, I2) - GRIDPOS(2, I1))
+                        V = (YE - xyz_Rtm_(2, I1))/(xyz_Rtm_(2, I2) - xyz_Rtm_(2, I1))
                     end if
                 else if (JFACE .eq. 2) then
-                    U = (ZE - GRIDPOS(3, I1))/(GRIDPOS(3, I3) - GRIDPOS(3, I1))
+                    U = (ZE - xyz_Rtm_(3, I1))/(xyz_Rtm_(3, I3) - xyz_Rtm_(3, I1))
                     if (IPINX) then
                         V = 0.5
                     else
-                        V = (XE - GRIDPOS(1, I1))/(GRIDPOS(1, I2) - GRIDPOS(1, I1))
+                        V = (XE - xyz_Rtm_(1, I1))/(xyz_Rtm_(1, I2) - xyz_Rtm_(1, I1))
                     end if
                 else
                     if (IPINY) then
                         U = 0.5
                     else
-                        U = (YE - GRIDPOS(2, I1))/(GRIDPOS(2, I3) - GRIDPOS(2, I1))
+                        U = (YE - xyz_Rtm_(2, I1))/(xyz_Rtm_(2, I3) - xyz_Rtm_(2, I1))
                     end if
                     if (IPINX) then
                         V = 0.5
                     else
-                        V = (XE - GRIDPOS(1, I1))/(GRIDPOS(1, I2) - GRIDPOS(1, I1))
+                        V = (XE - xyz_Rtm_(1, I1))/(xyz_Rtm_(1, I2) - xyz_Rtm_(1, I1))
                     end if
                 end if
                 if (u .lt. -0.0001 .or. v .lt. -0.0001 .or.&
                     &u .gt. 1.0001 .or. v .gt. 1.0001) then
                     print *, '_backIntegrate3D: u,v<0 or u,v>1: ',&
                         &mu, phi, xe, ye, ze, u, v, iface, jface, kface,&
-                        &gridpos(1, i1), gridpos(2, i1), gridpos(3, i1)
+                        &xyz_Rtm_(1, i1), xyz_Rtm_(2, i1), xyz_Rtm_(3, i1)
                 end if
 
                 ! Get the location coordinate (does the boundary wrapping)
                 if (INEXTCELL .gt. 0) then
                     if (JFACE .eq. 1) then
-                        XE = GRIDPOS(1, GRIDPTR(IOCT, INEXTCELL))
+                        XE = xyz_Rtm_(1, i8Grid_Cell_(IOCT, INEXTCELL))
                     else if (JFACE .eq. 2) then
-                        YE = GRIDPOS(2, GRIDPTR(IOCT, INEXTCELL))
+                        YE = xyz_Rtm_(2, i8Grid_Cell_(IOCT, INEXTCELL))
                     else
-                        ZE = GRIDPOS(3, GRIDPTR(IOCT, INEXTCELL))
+                        ZE = xyz_Rtm_(3, i8Grid_Cell_(IOCT, INEXTCELL))
                     end if
                 end if
 
@@ -697,15 +671,15 @@ subroutine shd_intg__backIntegrate3D(&
                         print *, 'Error [_backIntegrate3D]: INEXTCELL=0: ', xe, ye, ze, icell
                         print *, iz, joct, mu, phi
                         print '(i7,4(1x,f7.4))', i1, GRIDRAD(1, I1),&
-                            &gridpos(1, i1), gridpos(2, i1), gridpos(3, i1)
+                            &xyz_Rtm_(1, i1), xyz_Rtm_(2, i1), xyz_Rtm_(3, i1)
                         print '(i7,4(1x,f7.4))', i2, GRIDRAD(1, I2),&
-                            &gridpos(1, i2), gridpos(2, i2), gridpos(3, i2)
+                            &xyz_Rtm_(1, i2), xyz_Rtm_(2, i2), xyz_Rtm_(3, i2)
                         print '(i7,4(1x,f7.4))', i3, GRIDRAD(1, I3),&
-                            &gridpos(1, i3), gridpos(2, i3), gridpos(3, i3)
+                            &xyz_Rtm_(1, i3), xyz_Rtm_(2, i3), xyz_Rtm_(3, i3)
                         print '(i7,4(1x,f7.4))', i4, GRIDRAD(1, I4),&
-                            &gridpos(1, i4), gridpos(2, i4), gridpos(3, i4)
+                            &xyz_Rtm_(1, i4), xyz_Rtm_(2, i4), xyz_Rtm_(3, i4)
                         print '(i7,8x,3(1x,f7.4))', ipt,&
-                            &gridpos(1, ipt), gridpos(2, ipt), gridpos(3, ipt)
+                            &xyz_Rtm_(1, ipt), xyz_Rtm_(2, ipt), xyz_Rtm_(3, ipt)
                         stop
                     end if
                 else
@@ -723,9 +697,8 @@ subroutine shd_intg__backIntegrate3D(&
 end subroutine shd_intg__backIntegrate3D
 
 subroutine shd_intg__backIntegrate3D_(&
-    &NX, NY, NZ, NA, NPTS, NCELLS,&
-    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-    &GRIDPOS, XGRID, YGRID, ZGRID, SWEEPORD,&
+    &NX, NY, NZ, NA,&
+    &SWEEPORD,&
     &MU, PHI, TRANSMIN, BCFLAG, IPFLAG,&
     &EXTINCT, SOURCE, KANG, GRIDRAD)
 
@@ -745,15 +718,15 @@ subroutine shd_intg__backIntegrate3D_(&
     ! Input:
     !   NX, NY, NZ: integer, base grid size in X, Y and Z
     !   NA        : integer, total number of angles (MU and PHI)
-    !   NPTS      : integer, total number of grid points
-    !   NCELLS    : integer, total number of cells
-    !   GRIDPTR(8,NCELLS) : integer array, pointer to 8 grid points belonging to a cell.
+    !   rtm_obj_%Npts : integer, total number of grid points
+    !   cell_obj_%Npts : integer, total number of cells
+    !   i8Grid_Cell_(8,cell_obj_%Npts) : integer array, pointer to 8 grid points belonging to a cell.
     !                       Order of pointers is based on binary digits Z-Y-X:
     !                       IOCT = 1 + BITX + 2*BITY + 4*BITZ, where
     !                       BITc is 0 for negative side and 1 for positive side.
     !                       1: (-X, -Y, -Z), 2: (+X, -Y, -Z), 3: (-X, +Y, -Z), 4: (+X, +Y, -Z)
     !                       5: (-X, -Y, +Z), 6: (+X, -Y, +Z), 7: (-X, +Y, +Z), 8: (+X, +Y, +Z)
-    !   NEIGHPTR(6,NCELLS): integer array, pointer to 6 neighboring cells of a cell.
+    !   i6Cell_Cell_(6,cell_obj_%Npts): integer array, pointer to 6 neighboring cells of a cell.
     !                       Order of pointers are 1:-X, 2:+X, 3:-Y, 4:+Y, 5:-Z, 6:+Z.
     !                       Is 0 if there is no neighbor cell (boundary).
     !                       Is positive if there is just one cell across face
@@ -762,36 +735,32 @@ subroutine shd_intg__backIntegrate3D_(&
     !                       the face of current cell.  In this case the
     !                       cell pointed to is the parent cell that has a
     !                       has same or larger face adjoining current cell.
-    !   TREEPTR(2,NCELLS) : integer array, pointer to parent and children cells in tree structure.
+    !   i2Tree_Cell_(2,cell_obj_%Npts) : integer array, pointer to parent and children cells in tree structure.
     !                       First is pointer to parent cell, 0 for a base cell.
     !                       Second is pointer to first of the two children cells.
     !                       This pointer is 0 if there are no children cells.
     !                       The children cells are in successive order, with
-    !                       the negative side first. See CELLFLAGS for direction
+    !                       the negative side first. See flag_Cell_ for direction
     !                       of division of split.
-    !   CELLFLAGS(NCELLS) : integer array, a collection of binary flags for the cells:
+    !   flag_Cell_(cell_obj_%Npts) : integer array, a collection of binary flags for the cells:
     !                       bit  For bit set
     !                       0:  Do independent pixel for X
     !                       1:  Do independent pixel for Y
     !                       2,3: Direction cell is split (0=no split, 1=X, 2=Y, 3=Z)
-    !   GRIDPOS(3,NPTS)    : real array, X,Y,Z coordinate values of grid point locations
-    !   XGRID, YGRID, ZGRID: real array, grid locations for each dimension.
+    !   xyz_Rtm_(3,rtm_obj_%Npts)    : real array, X,Y,Z coordinate values of grid point locations
+    !   rtm_obj_%x, rtm_obj_%y, rtm_obj_%z: real array, grid locations for each dimension.
     !                        To facilitate the periodic horizontal boundaries,
-    !                        there are NX+1 values in XGRID, NY+1 in YGRID,
-    !                        NZ values in ZGRID. Currently the grid locations
+    !                        there are NX+1 values in rtm_obj_%x, NY+1 in rtm_obj_%y,
+    !                        NZ values in rtm_obj_%z. Currently the grid locations
     !                        are evenly spaced in X and Y.
-    !   SWEEPORD(NPTS,*)   : integer array, grid point sweeping order
+    !   SWEEPORD(rtm_obj_%Npts,*)   : integer array, grid point sweeping order
 
-
-    integer(kind=I__), intent(in) :: NX, NY, NZ, NA, NPTS, NCELLS, KANG, BCFLAG, IPFLAG
-    integer(kind=I__), intent(in) :: GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
-    integer(kind=I__), intent(in) :: SWEEPORD(NPTS, *)
-    integer(kind=2)  , intent(in) :: CELLFLAGS(NCELLS)
-    real(kind=R__)   , intent(in) :: GRIDPOS(3, NPTS), XGRID(*), YGRID(*), ZGRID(NZ)
+    integer(kind=I__), intent(in) :: NX, NY, NZ, NA, KANG, BCFLAG, IPFLAG
+    integer(kind=I__), intent(in) :: SWEEPORD(rtm_obj_%Npts, *)
     real(kind=R__)   , intent(in) :: MU, PHI, TRANSMIN
-    real(kind=R__)   , intent(in) :: EXTINCT(NPTS), SOURCE(NA, NPTS)
+    real(kind=R__)   , intent(in) :: EXTINCT(rtm_obj_%Npts), SOURCE(NA, rtm_obj_%Npts)
 
-    real   (kind=R__), intent(inout) :: GRIDRAD(NPTS)
+    real   (kind=R__), intent(inout) :: GRIDRAD(rtm_obj_%Npts)
 
     integer(kind=I__) :: BITX, BITY, BITZ, IOCT, JOCT
     integer(kind=I__) :: IPCELL, ICELL, INEXTCELL, IPT, IFACE
@@ -821,7 +790,7 @@ subroutine shd_intg__backIntegrate3D_(&
 
     integer :: iwhile, ibreak
 
-    EPS = 1.0e-3*(GRIDPOS(3, GRIDPTR(8, 1)) - GRIDPOS(3, GRIDPTR(1, 1)))
+    EPS = 1.0e-3*(xyz_Rtm_(3, i8Grid_Cell_(8, 1)) - xyz_Rtm_(3, i8Grid_Cell_(1, 1)))
 
     ! Make the ray direction (opposite to the discrete ordinate direction)
     CX = dsqrt(dble(1.0d0 - MU**2))*dcos(dble(PHI + DPI_))
@@ -881,24 +850,23 @@ subroutine shd_intg__backIntegrate3D_(&
     IZ = (NZ - 1)*(1 - BITZ) + 1
 
     ! Sweep through all the grid points
-    do IORDER = 1, NPTS
+    do IORDER = 1, rtm_obj_%Npts
 
         IPCELL  = ishft(SWEEPORD(IORDER, JOCT), -3)
         ICORNER = ibits(SWEEPORD(IORDER, JOCT), 0, 3) + 1
-        IPT = GRIDPTR(ICORNER, IPCELL)
+        IPT = i8Grid_Cell_(ICORNER, IPCELL)
 
         ! this is for mpi (e.g., shdMpi.f90, not OMP)
         !╭────────────────────────────────────────────────╮!
         if (isMpi_) then
             ! For multiple processors get the subdomain boundary radiances
             !   for each Z slab
-            if ( (GRIDPOS(3, IPT) .lt. ZGRID(IZ) .and. BITZ .eq. 0) .or.&
-                &(GRIDPOS(3, IPT) .gt. ZGRID(IZ) .and. BITZ .eq. 1)) then
+            if  ((xyz_Rtm_(3, IPT) .lt. rtm_obj_%z(IZ) .and. BITZ .eq. 0) .or.&
+                &(xyz_Rtm_(3, IPT) .gt. rtm_obj_%z(IZ) .and. BITZ .eq. 1)) then
                 IZ = IZ + 2*BITZ - 1
                 call shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
-                    &NX, NY, NZ, XGRID, YGRID, ZGRID,&
-                    &NA, NPTS, NCELLS, GRIDPTR,&
-                    &NEIGHPTR, TREEPTR, CELLFLAGS, GRIDPOS,&
+                    &NX, NY, NZ,&
+                    &NA,&
                     &MU, PHI, EXTINCT, 1, SOURCE,&
                     &KANG, GRIDRAD)
             end if
@@ -913,9 +881,9 @@ subroutine shd_intg__backIntegrate3D_(&
             TRANSMIT = 1.0
             EXT1 = EXTINCT(IPT)
             SRCEXT1 = EXT1*SOURCE(KANG, IPT)
-            XE = GRIDPOS(1, IPT)
-            YE = GRIDPOS(2, IPT)
-            ZE = GRIDPOS(3, IPT)
+            XE = xyz_Rtm_(1, IPT)
+            YE = xyz_Rtm_(2, IPT)
+            ZE = xyz_Rtm_(3, IPT)
 
             ! Loop until finding a face with known radiances
             VALIDRAD = .false.
@@ -925,33 +893,33 @@ subroutine shd_intg__backIntegrate3D_(&
                 if (ICELL .le. 0) then
                     write (6, *) 'Error [_backIntegrate3D_]: ICELL=0 ',&
                         &MU, PHI, IPT, INEXTCELL, XE, YE, ZE,&
-                        &GRIDPOS(1, IPT), GRIDPOS(2, IPT), GRIDPOS(3, IPT)
+                        &xyz_Rtm_(1, IPT), xyz_Rtm_(2, IPT), xyz_Rtm_(3, IPT)
                     stop
                 end if
 
-                IPINX = btest(int(CELLFLAGS(ICELL)), 0)
-                IPINY = btest(int(CELLFLAGS(ICELL)), 1)
+                IPINX = btest(int(flag_Cell_(ICELL)), 0)
+                IPINY = btest(int(flag_Cell_(ICELL)), 1)
 
                 ! Find boundaries of the current cell
                 ! Find the three possible intersection planes (X,Y,Z)
                 !   from the coordinates of the opposite corner grid point
-                IOPP = GRIDPTR(9 - IOCT, ICELL)
+                IOPP = i8Grid_Cell_(9 - IOCT, ICELL)
 
                 ! Get the distances to the 3 planes and select the closest
                 !╭────────────────────────────────────────────────╮!
                 if (IPINX) then
                     SOX = 1.0e20
                 else
-                    SOX = (GRIDPOS(1, IOPP) - XE)*CXINV
+                    SOX = (xyz_Rtm_(1, IOPP) - XE)*CXINV
                 end if
 
                 if (IPINY) then
                     SOY = 1.0e20
                 else
-                    SOY = (GRIDPOS(2, IOPP) - YE)*CYINV
+                    SOY = (xyz_Rtm_(2, IOPP) - YE)*CYINV
                 end if
 
-                SOZ = (GRIDPOS(3, IOPP) - ZE)*CZINV
+                SOZ = (xyz_Rtm_(3, IOPP) - ZE)*CZINV
 
                 SO = min(SOX, SOY, SOZ)
                 !╰────────────────────────────────────────────────╯!
@@ -980,14 +948,14 @@ subroutine shd_intg__backIntegrate3D_(&
                 end if
 
                 ! Get the next cell to go to
-                INEXTCELL = NEIGHPTR(IFACE, ICELL)
+                INEXTCELL = i6Cell_Cell_(IFACE, ICELL)
                 if (INEXTCELL .lt. 0) then
-                    call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
-                        &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXTCELL)
+                    call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL,&
+                        &INEXTCELL)
                 end if
 
                 ! Get the face grid pointers
-                if (NEIGHPTR(IFACE, ICELL) .ge. 0) then
+                if (i6Cell_Cell_(IFACE, ICELL) .ge. 0) then
                     ! If going to same or larger face then use previous face
                     KFACE = IFACE
                     IC = ICELL
@@ -997,36 +965,36 @@ subroutine shd_intg__backIntegrate3D_(&
                     IC = INEXTCELL
                 end if
 
-                I1 = GRIDPTR(GRIDFACE(1, KFACE), IC)
-                I2 = GRIDPTR(GRIDFACE(2, KFACE), IC)
-                I3 = GRIDPTR(GRIDFACE(3, KFACE), IC)
-                I4 = GRIDPTR(GRIDFACE(4, KFACE), IC)
+                I1 = i8Grid_Cell_(GRIDFACE(1, KFACE), IC)
+                I2 = i8Grid_Cell_(GRIDFACE(2, KFACE), IC)
+                I3 = i8Grid_Cell_(GRIDFACE(3, KFACE), IC)
+                I4 = i8Grid_Cell_(GRIDFACE(4, KFACE), IC)
 
                 ! Compute the face interpolation factors
                 if (JFACE .eq. 1) then
-                    U = (ZE - GRIDPOS(3, I1))/(GRIDPOS(3, I3) - GRIDPOS(3, I1))
+                    U = (ZE - xyz_Rtm_(3, I1))/(xyz_Rtm_(3, I3) - xyz_Rtm_(3, I1))
                     if (IPINY) then
                         V = 0.5
                     else
-                        V = (YE - GRIDPOS(2, I1))/(GRIDPOS(2, I2) - GRIDPOS(2, I1))
+                        V = (YE - xyz_Rtm_(2, I1))/(xyz_Rtm_(2, I2) - xyz_Rtm_(2, I1))
                     end if
                 else if (JFACE .eq. 2) then
-                    U = (ZE - GRIDPOS(3, I1))/(GRIDPOS(3, I3) - GRIDPOS(3, I1))
+                    U = (ZE - xyz_Rtm_(3, I1))/(xyz_Rtm_(3, I3) - xyz_Rtm_(3, I1))
                     if (IPINX) then
                         V = 0.5
                     else
-                        V = (XE - GRIDPOS(1, I1))/(GRIDPOS(1, I2) - GRIDPOS(1, I1))
+                        V = (XE - xyz_Rtm_(1, I1))/(xyz_Rtm_(1, I2) - xyz_Rtm_(1, I1))
                     end if
                 else
                     if (IPINY) then
                         U = 0.5
                     else
-                        U = (YE - GRIDPOS(2, I1))/(GRIDPOS(2, I3) - GRIDPOS(2, I1))
+                        U = (YE - xyz_Rtm_(2, I1))/(xyz_Rtm_(2, I3) - xyz_Rtm_(2, I1))
                     end if
                     if (IPINX) then
                         V = 0.5
                     else
-                        V = (XE - GRIDPOS(1, I1))/(GRIDPOS(1, I2) - GRIDPOS(1, I1))
+                        V = (XE - xyz_Rtm_(1, I1))/(xyz_Rtm_(1, I2) - xyz_Rtm_(1, I1))
                     end if
                 end if
 
@@ -1034,17 +1002,17 @@ subroutine shd_intg__backIntegrate3D_(&
                     &U .gt. 1.0001 .or. V .gt. 1.0001) then
                     print *, '_backIntegrate3D_: U,V<0 or U,V>1: ',&
                         &MU, PHI, XE, YE, ZE, U, V, IFACE, JFACE, KFACE,&
-                        &GRIDPOS(1, I1), GRIDPOS(2, I1), GRIDPOS(3, I1)
+                        &xyz_Rtm_(1, I1), xyz_Rtm_(2, I1), xyz_Rtm_(3, I1)
                 end if
 
                 ! Get the location coordinate (does the boundary wrapping)
                 if (INEXTCELL .gt. 0) then
                     if (JFACE .eq. 1) then
-                        XE = GRIDPOS(1, GRIDPTR(IOCT, INEXTCELL))
+                        XE = xyz_Rtm_(1, i8Grid_Cell_(IOCT, INEXTCELL))
                     else if (JFACE .eq. 2) then
-                        YE = GRIDPOS(2, GRIDPTR(IOCT, INEXTCELL))
+                        YE = xyz_Rtm_(2, i8Grid_Cell_(IOCT, INEXTCELL))
                     else
-                        ZE = GRIDPOS(3, GRIDPTR(IOCT, INEXTCELL))
+                        ZE = xyz_Rtm_(3, i8Grid_Cell_(IOCT, INEXTCELL))
                     end if
                 end if
 
@@ -1125,15 +1093,15 @@ subroutine shd_intg__backIntegrate3D_(&
                         print *, 'Error [_backIntegrate3D_]: INEXTCELL=0: ', xe, ye, ze, icell
                         print *, iz, joct, mu, phi
                         print '(i7,4(1x,f7.4))', i1, GRIDRAD(I1),&
-                            &gridpos(1, i1), gridpos(2, i1), gridpos(3, i1)
+                            &xyz_Rtm_(1, i1), xyz_Rtm_(2, i1), xyz_Rtm_(3, i1)
                         print '(i7,4(1x,f7.4))', i2, GRIDRAD(I2),&
-                            &gridpos(1, i2), gridpos(2, i2), gridpos(3, i2)
+                            &xyz_Rtm_(1, i2), xyz_Rtm_(2, i2), xyz_Rtm_(3, i2)
                         print '(i7,4(1x,f7.4))', i3, GRIDRAD(I3),&
-                            &gridpos(1, i3), gridpos(2, i3), gridpos(3, i3)
+                            &xyz_Rtm_(1, i3), xyz_Rtm_(2, i3), xyz_Rtm_(3, i3)
                         print '(i7,4(1x,f7.4))', i4, GRIDRAD(I4),&
-                            &gridpos(1, i4), gridpos(2, i4), gridpos(3, i4)
+                            &xyz_Rtm_(1, i4), xyz_Rtm_(2, i4), xyz_Rtm_(3, i4)
                         print '(i7,8x,3(1x,f7.4))', ipt,&
-                            &gridpos(1, ipt), gridpos(2, ipt), gridpos(3, ipt)
+                            &xyz_Rtm_(1, ipt), xyz_Rtm_(2, ipt), xyz_Rtm_(3, ipt)
                         stop
                     end if
                 else
@@ -1154,9 +1122,8 @@ subroutine shd_intg__backIntegrate3D_(&
 end subroutine shd_intg__backIntegrate3D_
 
 subroutine shd_intg__backIntegrate2D(&
-    &NX, NY, NZ, NA, NPTS, NCELLS,&
-    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-    &GRIDPOS, SWEEPORD, MU, PHI, TRANSMIN,&
+    &NX, NY, NZ, NA,&
+    &SWEEPORD, MU, PHI, TRANSMIN,&
     &EXTINCT, NSTOKES, SOURCE, KANG, GRIDRAD)
 
     !   Sweeps through the spatial grid computing radiances for the
@@ -1170,14 +1137,11 @@ subroutine shd_intg__backIntegrate2D(&
     ! ad the end of the ray path is interpolated from the known grid point
     ! radiances on the face.  The resulting radiances are put in GRIDRAD.
 
-    integer NX, NY, NZ, NA, NPTS, NCELLS, KANG, NSTOKES
-    integer GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
-    integer SWEEPORD(NPTS, *)
-    integer*2 CELLFLAGS(NCELLS)
-    real GRIDPOS(3, NPTS)
+    integer NX, NY, NZ, NA, KANG, NSTOKES
+    integer SWEEPORD(rtm_obj_%Npts, *)
     real MU, PHI, TRANSMIN
-    real EXTINCT(NPTS), SOURCE(NSTOKES, NA, NPTS)
-    real GRIDRAD(NSTOKES, NPTS)
+    real EXTINCT(rtm_obj_%Npts), SOURCE(NSTOKES, NA, rtm_obj_%Npts)
+    real GRIDRAD(NSTOKES, rtm_obj_%Npts)
     integer BITX, BITZ, IOCT, JOCT
     integer IPCELL, ICELL, INEXTCELL, IPT, IFACE
     integer I1, I2, IOPP, JFACE, KFACE, IC, IZ
@@ -1197,7 +1161,7 @@ subroutine shd_intg__backIntegrate2D(&
     data OPPFACE/2, 1, 4, 3, 6, 5/
     data JOCTORDER/1, 3, 1, 3, 2, 4, 2, 4/
 
-    EPS = 1.0e-3*(GRIDPOS(3, GRIDPTR(8, 1)) - GRIDPOS(3, GRIDPTR(1, 1)))
+    EPS = 1.0e-3*(xyz_Rtm_(3, i8Grid_Cell_(8, 1)) - xyz_Rtm_(3, i8Grid_Cell_(1, 1)))
 
     ! Make the ray direction (opposite to the discrete ordinate direction)
     CX = sqrt(1.0 - MU**2)*cos(PHI + DPI_)
@@ -1229,10 +1193,10 @@ subroutine shd_intg__backIntegrate2D(&
     JOCT = JOCTORDER(IOCT)
 
     ! Sweep through all the grid points
-    do IORDER = 1, NPTS
+    do IORDER = 1, rtm_obj_%Npts
         IPCELL = ishft(SWEEPORD(IORDER, JOCT), -3)
         ICORNER = ibits(SWEEPORD(IORDER, JOCT), 0, 3) + 1
-        IPT = GRIDPTR(ICORNER, IPCELL)
+        IPT = i8Grid_Cell_(ICORNER, IPCELL)
         if (GRIDRAD(1, IPT) .lt. 0.0) then
 
             ! Start off at the grid point
@@ -1241,9 +1205,9 @@ subroutine shd_intg__backIntegrate2D(&
             EXT1 = EXTINCT(IPT)
             RAD(:) = 0.0
             SRCEXT1(:) = EXT1*SOURCE(:, KANG, IPT)
-            XE = GRIDPOS(1, IPT)
-            YE = GRIDPOS(2, IPT)
-            ZE = GRIDPOS(3, IPT)
+            XE = xyz_Rtm_(1, IPT)
+            YE = xyz_Rtm_(2, IPT)
+            ZE = xyz_Rtm_(3, IPT)
 
             ! Loop until finding a face with known radiances
             VALIDRAD = .false.
@@ -1254,19 +1218,19 @@ subroutine shd_intg__backIntegrate2D(&
                         &MU, PHI, IPT, INEXTCELL
                     stop
                 end if
-                IPINX = btest(int(CELLFLAGS(ICELL)), 0)
+                IPINX = btest(int(flag_Cell_(ICELL)), 0)
 
                 ! Find boundaries of the current cell
                 ! Find the three possible intersection planes (X,Y,Z)
                 !   from the coordinates of the opposite corner grid point
-                IOPP = GRIDPTR(9 - IOCT, ICELL)
+                IOPP = i8Grid_Cell_(9 - IOCT, ICELL)
                 ! Get the distances to the 3 planes and select the closest
                 if (IPINX) then
                     SOX = 1.0e20
                 else
-                    SOX = (GRIDPOS(1, IOPP) - XE)*CXINV
+                    SOX = (xyz_Rtm_(1, IOPP) - XE)*CXINV
                 end if
-                SOZ = (GRIDPOS(3, IOPP) - ZE)*CZINV
+                SOZ = (xyz_Rtm_(3, IOPP) - ZE)*CZINV
                 SO = min(SOX, SOZ)
                 if (SO .lt. -EPS) then
                     write (6, *) 'Error [_backIntegrate2D]: SO<0 ',&
@@ -1286,14 +1250,14 @@ subroutine shd_intg__backIntegrate2D(&
                     JFACE = 3
                 end if
                 ! Get the next cell to go to
-                INEXTCELL = NEIGHPTR(IFACE, ICELL)
+                INEXTCELL = i6Cell_Cell_(IFACE, ICELL)
                 if (INEXTCELL .lt. 0) then
-                    call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
-                        &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXTCELL)
+                    call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL,&
+                        &INEXTCELL)
                 end if
 
                 ! Get the face grid pointers
-                if (NEIGHPTR(IFACE, ICELL) .ge. 0) then
+                if (i6Cell_Cell_(IFACE, ICELL) .ge. 0) then
                     ! If going to same or larger face then use previous face
                     KFACE = IFACE
                     IC = ICELL
@@ -1302,25 +1266,25 @@ subroutine shd_intg__backIntegrate2D(&
                     KFACE = OPPFACE(IFACE)
                     IC = INEXTCELL
                 end if
-                I1 = GRIDPTR(GRIDFACE(1, KFACE), IC)
-                I2 = GRIDPTR(GRIDFACE(2, KFACE), IC)
+                I1 = i8Grid_Cell_(GRIDFACE(1, KFACE), IC)
+                I2 = i8Grid_Cell_(GRIDFACE(2, KFACE), IC)
                 ! Compute the face interpolation factors
                 if (JFACE .eq. 1) then
-                    U = (ZE - GRIDPOS(3, I1))/(GRIDPOS(3, I2) - GRIDPOS(3, I1))
+                    U = (ZE - xyz_Rtm_(3, I1))/(xyz_Rtm_(3, I2) - xyz_Rtm_(3, I1))
                 else
                     if (IPINX) then
                         U = 0.5
                     else
-                        U = (XE - GRIDPOS(1, I1))/(GRIDPOS(1, I2) - GRIDPOS(1, I1))
+                        U = (XE - xyz_Rtm_(1, I1))/(xyz_Rtm_(1, I2) - xyz_Rtm_(1, I1))
                     end if
                 end if
 
                 ! Get the location coordinate (does the boundary wrapping)
                 if (INEXTCELL .gt. 0) then
                     if (JFACE .eq. 1) then
-                        XE = GRIDPOS(1, GRIDPTR(IOCT, INEXTCELL))
+                        XE = xyz_Rtm_(1, i8Grid_Cell_(IOCT, INEXTCELL))
                     else
-                        ZE = GRIDPOS(3, GRIDPTR(IOCT, INEXTCELL))
+                        ZE = xyz_Rtm_(3, i8Grid_Cell_(IOCT, INEXTCELL))
                     end if
                 end if
 
@@ -1381,11 +1345,11 @@ subroutine shd_intg__backIntegrate2D(&
                         print *, 'Error [_backIntegrate2D]: INEXTCELL=0: ', xe, ye, ze, icell
                         print *, iz, joct, mu, phi
                         print '(i7,4(1x,f7.4))', i1, GRIDRAD(1, I1),&
-                            &gridpos(1, i1), gridpos(2, i1), gridpos(3, i1)
+                            &xyz_Rtm_(1, i1), xyz_Rtm_(2, i1), xyz_Rtm_(3, i1)
                         print '(i7,4(1x,f7.4))', i2, GRIDRAD(1, I2),&
-                            &gridpos(1, i2), gridpos(2, i2), gridpos(3, i2)
+                            &xyz_Rtm_(1, i2), xyz_Rtm_(2, i2), xyz_Rtm_(3, i2)
                         print '(i7,8x,3(1x,f7.4))', ipt,&
-                            &gridpos(1, ipt), gridpos(2, ipt), gridpos(3, ipt)
+                            &xyz_Rtm_(1, ipt), xyz_Rtm_(2, ipt), xyz_Rtm_(3, ipt)
                         stop
                     end if
                 else
@@ -1406,9 +1370,8 @@ subroutine shd_intg__backIntegrate2D(&
 end subroutine shd_intg__backIntegrate2D
 
 subroutine shd_intg__backIntegrate1D(&
-    &NX, NY, NZ, NA, NPTS, NCELLS,&
-    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-    &GRIDPOS, SWEEPORD, MU, PHI, TRANSMIN,&
+    &NX, NY, NZ, NA,&
+    &SWEEPORD, MU, PHI, TRANSMIN,&
     &EXTINCT, NSTOKES, SOURCE, KANG, GRIDRAD)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
@@ -1425,15 +1388,12 @@ subroutine shd_intg__backIntegrate1D(&
     !   radiances on the face. The resulting radiances are put in GRIDRAD.
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    integer(kind=I__), intent(in) :: NX, NY, NZ, NA, NPTS, NCELLS, KANG, NSTOKES
-    integer(kind=I__), intent(in) :: GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
-    integer(kind=I__), intent(in) :: SWEEPORD(NPTS, *)
-    integer(kind=2)  , intent(in) :: CELLFLAGS(NCELLS)
-    real(kind=R__)   , intent(in) :: GRIDPOS(3, NPTS)
+    integer(kind=I__), intent(in) :: NX, NY, NZ, NA, KANG, NSTOKES
+    integer(kind=I__), intent(in) :: SWEEPORD(rtm_obj_%Npts, *)
     real(kind=R__)   , intent(in) :: MU, PHI, TRANSMIN
-    real(kind=R__)   , intent(in) :: EXTINCT(NPTS), SOURCE(NSTOKES, NA, NPTS)
+    real(kind=R__)   , intent(in) :: EXTINCT(rtm_obj_%Npts), SOURCE(NSTOKES, NA, rtm_obj_%Npts)
 
-    real(kind=R__), intent(inout) :: GRIDRAD(NSTOKES, NPTS)
+    real(kind=R__), intent(inout) :: GRIDRAD(NSTOKES, rtm_obj_%Npts)
 
     real(kind=RD_) :: CZ, CZINV
     real(kind=RD_) :: XE, YE, ZE
@@ -1453,7 +1413,7 @@ subroutine shd_intg__backIntegrate1D(&
     data GRIDFACE /0, 0, 0, 0, 1, 5/
     data JOCTORDER /1, 1, 1, 1, 2, 2, 2, 2/
 
-    EPS = 1.0e-3*(GRIDPOS(3, GRIDPTR(8, 1)) - GRIDPOS(3, GRIDPTR(1, 1)))
+    EPS = 1.0e-3*(xyz_Rtm_(3, i8Grid_Cell_(8, 1)) - xyz_Rtm_(3, i8Grid_Cell_(1, 1)))
 
     ! Make the ray direction (opposite to the discrete ordinate direction)
     CZ = -MU
@@ -1474,10 +1434,10 @@ subroutine shd_intg__backIntegrate1D(&
     JOCT = JOCTORDER(IOCT)
 
     ! Sweep through all the grid points
-    do IORDER = 1, NPTS
+    do IORDER = 1, rtm_obj_%Npts
         IPCELL = ishft(SWEEPORD(IORDER, JOCT), -3)
         ICORNER = ibits(SWEEPORD(IORDER, JOCT), 0, 3) + 1
-        IPT = GRIDPTR(ICORNER, IPCELL)
+        IPT = i8Grid_Cell_(ICORNER, IPCELL)
         if (GRIDRAD(1, IPT) .lt. 0.0) then
             ! Start off at the grid point
             ICELL = IPCELL
@@ -1485,9 +1445,9 @@ subroutine shd_intg__backIntegrate1D(&
             EXT1 = EXTINCT(IPT)
             RAD(:) = 0.0
             SRCEXT1(:) = EXT1*SOURCE(:, KANG, IPT)
-            XE = GRIDPOS(1, IPT)
-            YE = GRIDPOS(2, IPT)
-            ZE = GRIDPOS(3, IPT)
+            XE = xyz_Rtm_(1, IPT)
+            YE = xyz_Rtm_(2, IPT)
+            ZE = xyz_Rtm_(3, IPT)
 
             ! Loop until finding a face with known radiances
             VALIDRAD = .false.
@@ -1501,9 +1461,9 @@ subroutine shd_intg__backIntegrate1D(&
                 ! Find boundaries of the current cell
                 ! Find the three possible intersection planes (X,Y,Z)
                 !   from the coordinates of the opposite corner grid point
-                IOPP = GRIDPTR(9 - IOCT, ICELL)
+                IOPP = i8Grid_Cell_(9 - IOCT, ICELL)
                 ! Get the distances to the 3 planes and select the closest
-                SO = (GRIDPOS(3, IOPP) - ZE)*CZINV
+                SO = (xyz_Rtm_(3, IOPP) - ZE)*CZINV
                 if (SO .lt. -EPS) then
                     write (6, *) 'Error [_backIntegrate1D]: SO<0 ',&
                         &MU, PHI, ZE, SO, IPT, ICELL
@@ -1515,13 +1475,13 @@ subroutine shd_intg__backIntegrate1D(&
                 ! Get the intersection face number (i.e. neighptr index)
                 IFACE = 6 - BITZ
                 ! Get the next cell to go to
-                INEXTCELL = NEIGHPTR(IFACE, ICELL)
+                INEXTCELL = i6Cell_Cell_(IFACE, ICELL)
 
                 ! Get the face grid pointers
-                I1 = GRIDPTR(GRIDFACE(IFACE), ICELL)
+                I1 = i8Grid_Cell_(GRIDFACE(IFACE), ICELL)
                 ! Get the location coordinate (does the boundary wrapping)
                 if (INEXTCELL .gt. 0) then
-                    ZE = GRIDPOS(3, GRIDPTR(IOCT, INEXTCELL))
+                    ZE = xyz_Rtm_(3, i8Grid_Cell_(IOCT, INEXTCELL))
                 end if
 
                 ! Get extinction and source function at face intersection

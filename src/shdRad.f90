@@ -47,6 +47,15 @@ module shd_rad
                              isPol_, isPol4_, &
                              isSolar_, isThermal_
 
+    use globals_obj,   only: rtm_obj_, xyz_Rtm_, ext_Rtm_, leg_Rtm_, &
+                            cell_obj_, &
+                            shdo_obj_, isrcJ_Shdo_, srcJ_Shdo_, &
+                             src_obj_, &
+                             prp_obj_, ext_Prp_, ssa_Prp_, leg_Prp_, ipha_Prp_, &
+                             sfc_obj_, &
+                             ckd_obj_, kabs_Ckd_, &
+                             sen_obj_, view_Sen_
+
     use shd_scat, only: shd_scat__computePhase
 
     use shd_shdo, only: shd_shdo__computeYlm
@@ -56,9 +65,9 @@ module shd_rad
                         shd_src__integrateSrcOneRay
 
     use shd_init, only: shd_init__makeTopRad, &
-                        shd_init__makeSfcRadFL, &
-                        shd_init__makeSfcRadVL, &
-                        shd_init__makeSfcRadV
+                        shd_init__makeBotRadUL, &
+                        shd_init__makeBotRadVL, &
+                        shd_init__makeBotRadV
 
     implicit none
     private
@@ -70,38 +79,38 @@ module shd_rad
     public :: shd_rad__computeRad
     public :: shd_rad__computeCamRad
 
-    public :: shd_rad__computeNetFluxDiv
+    public :: shd_rad__computeFluxDiv
 
 contains
 
 subroutine shd_rad__makeDirect(&
-    &NPTS, BCFLAG, IPFLAG, DELTAM,&
-    &ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
-    &GRIDPOS, DIRFLUX)
+    &NPTS, DELTAM,&
+    &ML, SOLARFLUX, SOLARMU, SOLARAZ,&
+    &DIRFLUX)
 
     ! Makes the direct beam solar flux for the internal base grid.
     !   DIRFLUX is set to F*exp(-tau_sun).
     !   Actually calls shd_rad__computeDirect to do all the hard work.
 
-    integer NPTS, BCFLAG, IPFLAG, ML, NSTLEG, NLEG
+    integer NPTS, ML
     logical DELTAM
     real SOLARFLUX, SOLARMU, SOLARAZ
-    real GRIDPOS(3, NPTS), DIRFLUX(NPTS)
+    real DIRFLUX(NPTS)
     integer SIDE, IP
     logical VALIDBEAM
     real UNIFZLEV, XO, YO, ZO, DIR, DIRPATH
 
     call shd_rad__computeDirect(&
-        &1, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
-        &DELTAM, ML, NSTLEG, NLEG,&
+        &1, 0.0, 0.0, 0.0, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
+        &DELTAM, ML,&
         &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
         &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
 
     do IP = 1, NPTS
         DIRPATH = 0.0
         call shd_rad__computeDirect&
-            &(0, GRIDPOS(1, IP), GRIDPOS(2, IP), GRIDPOS(3, IP),&
-            &BCFLAG, IPFLAG, DELTAM, ML, NSTLEG, NLEG,&
+            &(0, xyz_Rtm_(1, IP), xyz_Rtm_(2, IP), xyz_Rtm_(3, IP),&
+            &rtm_obj_%flag_bc, rtm_obj_%flag_ip, DELTAM, ML,&
             &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(IP),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
     end do
@@ -111,7 +120,7 @@ end subroutine shd_rad__makeDirect
 
 subroutine shd_rad__computeDirect(&
     &INIT, XI, YI, ZI, BCFLAG, IPFLAG,&
-    &DELTAM, ML, NSTLEG, NLEG, SOLARFLUX, SOLARMU, SOLARAZ,&
+    &DELTAM, ML, SOLARFLUX, SOLARMU, SOLARAZ,&
     &DIRFLUX, UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
 
     !╭──────────────────────────────────────────────────────────────╮!
@@ -140,14 +149,7 @@ subroutine shd_rad__computeDirect(&
     !   and path is the optical path from XI,YI,ZI to the sun.
     !╰──────────────────────────────────────────────────────────────╯!
 
-    use globals_prp, only: Nx_prp_, Ny_prp_, Nz_prp_, Npha_prp_, &
-                           dx_prp_, dy_prp_, xStart_prp_, yStart_prp_, &
-                           z_Prp_, ext_Prp_, ssa_Prp_, ipha_Prp_, &
-                           leg_Prp_, extDir_Prp_
-
-    use globals_ckd, only: Nz_ckd_, z_Ckd_, kabs0_Ckd_
-
-    integer INIT, BCFLAG, IPFLAG, ML, NSTLEG, NLEG, SIDE
+    integer INIT, BCFLAG, IPFLAG, ML, SIDE
     logical DELTAM, VALIDBEAM
     real XI, YI, ZI, SOLARFLUX, SOLARMU, SOLARAZ
     real DIRFLUX, UNIFZLEV, XO, YO, ZO, DIRPATH
@@ -156,7 +158,7 @@ subroutine shd_rad__computeDirect(&
     integer I, J, K, L, IPH, IP, JP, I1, I2, I3, I4
     integer IPDIRECT, DI, DJ, DK
     logical CONSTX, CONSTY, HITBOUNDARY
-    real(RD_) :: EXTINCT, ALBEDO, F
+    real(RD_) :: ext0, ssa0, F
     real(RD_) :: SUNMU, SUNAZ, PATH
     real(RD_) :: EXTBEAMCUT, UNIFORMZLEV
     real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV
@@ -170,65 +172,72 @@ subroutine shd_rad__computeDirect(&
     real(RD_) :: B1, B2, B3, B4, B5, B6, B7, B8, C1, C2, C3, C4, C5, C6, C7, C8
     real(RD_) :: UV, UMV, UVM, UMVM, UW, UMW, UWM, UMWM, VW, VMW, VWM, VMWM
     real(RD_) :: VWU, VWUM, UWV, UWVM, UVW, UVWM
-    real, save, allocatable :: GASEXT(:), EXTMIN(:), EXTMAX(:)
+    real, save, allocatable :: kabs(:), minExt(:), maxExt(:), extDir_Prp(:)
 
     save CX, CY, CZ, CXINV, CYINV, CZINV, DI, DJ, DK, IPDIRECT
     save DELXD, DELYD, XDOMAIN, YDOMAIN, EPSS, EPSZ, UNIFORMZLEV
 
+
     if (INIT .eq. 9) then
-        deallocate (GASEXT, EXTMIN, EXTMAX)
+        deallocate(kabs, minExt, maxExt, extDir_Prp)
         return
     end if
 
     if (INIT .eq. 1) then
-        if (.not. allocated(GASEXT)) allocate (GASEXT(Nz_prp_), EXTMIN(Nz_prp_), EXTMAX(Nz_prp_))
+        if (.not. allocated(kabs)) then
+            allocate(kabs(prp_obj_%Nz), &
+                   minExt(prp_obj_%Nz), &
+                   maxExt(prp_obj_%Nz), &
+                   extDir_Prp(prp_obj_%maxNpts))
+        end if
         ! Get the gaseous extinction at the property grid levels
-        do IZ = 1, Nz_prp_
-            if (Nz_ckd_ .gt. 0) then
+        do IZ = 1, prp_obj_%Nz
+            if (ckd_obj_%Nz .gt. 0) then
                 IL = 1
-                IU = Nz_ckd_
+                IU = ckd_obj_%Nz
                 do while (IU - IL .gt. 1)
                     IM = (IU + IL)/2
-                    if (z_Prp_(IZ) .le. z_Ckd_(IM)) then
+                    if (prp_obj_%z(IZ) .le. ckd_obj_%z(IM)) then
                         IL = IM
                     else
                         IU = IM
                     end if
                 end do
-                I = min(max(IL, 1), Nz_ckd_ - 1)
-                W0 = (z_Prp_(IZ) - z_Ckd_(I))/(z_Ckd_(I + 1) - z_Ckd_(I))
+                I = min(max(IL, 1), ckd_obj_%Nz - 1)
+                W0 = (prp_obj_%z(IZ) - ckd_obj_%z(I))/(ckd_obj_%z(I + 1) - ckd_obj_%z(I))
                 W0 = min(max(W0, 0.0d0), 1.0d0)
-                GASEXT(IZ) = (1.0 - W0)*kabs0_Ckd_(I) + W0*kabs0_Ckd_(I + 1)
+                kabs(IZ) = (1.0 - W0)*kabs_Ckd_(I, ckd_obj_%ig) + W0*kabs_Ckd_(I+1, ckd_obj_%ig)
             else
-                GASEXT(IZ) = 0.0
+                kabs(IZ) = 0.0
             end if
         end do
         ! First make the property grid extinction field, on which all
         !   the direct beam paths will be computed.
         IP = 0
-        do IX = 1, Nx_prp_
-            do IY = 1, Ny_prp_
-                do IZ = 1, Nz_prp_
+        do IX = 1, prp_obj_%Nx
+            do IY = 1, prp_obj_%Ny
+                do IZ = 1, prp_obj_%Nz
                     IP = IP + 1
-                    EXTINCT = ext_Prp_(IP)
-                    ALBEDO = ssa_Prp_(IP)
+                    ext0 = ext_Prp_(IP)
+                    ssa0 = ssa_Prp_(IP)
                     ! Add in the gaseous absorption to extinction
-                    if (GASEXT(IZ) .gt. 0.0) then
-                        ALBEDO = ALBEDO*EXTINCT/(EXTINCT + GASEXT(IZ))
-                        EXTINCT = EXTINCT + GASEXT(IZ)
+                    if (kabs(IZ) .gt. 0.0) then
+                        ssa0 = ssa0*ext0/(ext0 + kabs(IZ))
+                        ext0 = ext0 + kabs(IZ)
                     end if
                     ! Do the Delta-M scaling if needed
                     if (DELTAM) then
-                        if (Npha_prp_ .gt. 0) then
+                        if (prp_obj_%Npha .gt. 0) then
                             IPH = ipha_Prp_(IP)
                         else
                             IPH = IP
                         end if
                         L = ML + 1
-                        F = leg_Prp_(1 + NSTLEG*(L + (NLEG + 1)*(IPH - 1)))/(2*L + 1)
-                        EXTINCT = (1.0 - ALBEDO*F)*EXTINCT
+                        !F = leg_Prp_(1 + prp_obj_%NlegSet*(L + (prp_obj_%Nleg+ 1)*(IPH - 1)))/(2*L + 1)
+                        F = leg_Prp_(1, L, IPH)/(2*L + 1)
+                        ext0 = (1.0 - ssa0*F)*ext0
                     end if
-                    extDir_Prp_(IP) = EXTINCT
+                    extDir_Prp(IP) = ext0
                 end do
             end do
         end do
@@ -265,48 +274,48 @@ subroutine shd_rad__computeDirect(&
         DI = nint(sign(1.0d0, CX))
         DJ = nint(sign(1.0d0, CY))
         DK = nint(sign(1.0d0, CZ))
-        EPSZ = 1.0e-6*(z_Prp_(Nz_prp_) - z_Prp_(1))
-        EPSS = 1.0e-3*(z_Prp_(Nz_prp_) - z_Prp_(1))/Nz_prp_
-        if (.not. btest(IPDIRECT, 0)) EPSS = max(EPSS, 1.0d-4*dx_prp_)
-        if (.not. btest(IPDIRECT, 1)) EPSS = max(EPSS, 1.0d-4*dy_prp_)
-        DELXD = dble(dx_prp_)
-        DELYD = dble(dy_prp_)
+        EPSZ = 1.0e-6*(prp_obj_%z(prp_obj_%Nz) - prp_obj_%z(1))
+        EPSS = 1.0e-3*(prp_obj_%z(prp_obj_%Nz) - prp_obj_%z(1))/prp_obj_%Nz
+        if (.not. btest(IPDIRECT, 0)) EPSS = max(EPSS, 1.0d-4*prp_obj_%dx)
+        if (.not. btest(IPDIRECT, 1)) EPSS = max(EPSS, 1.0d-4*prp_obj_%dy)
+        DELXD = dble(prp_obj_%dx)
+        DELYD = dble(prp_obj_%dy)
         EPSS = max(0.001*DELXD, 0.001*DELYD, EPSS)
 
-        if (isMpiX_ .and. (Nx_prp_ .gt. 1)) then
-            XDOMAIN = DELXD*(Nx_prp_ - 1)
+        if (isMpiX_ .and. (prp_obj_%Nx .gt. 1)) then
+            XDOMAIN = DELXD*(prp_obj_%Nx - 1)
         else
-            XDOMAIN = DELXD*Nx_prp_
+            XDOMAIN = DELXD*prp_obj_%Nx
         end if
 
-        if (isMpiY_ .and. (Ny_prp_ .gt. 1)) then
-            YDOMAIN = DELYD*(Ny_prp_ - 1)
+        if (isMpiY_ .and. (prp_obj_%Ny .gt. 1)) then
+            YDOMAIN = DELYD*(prp_obj_%Ny - 1)
         else
-            YDOMAIN = DELYD*Ny_prp_
+            YDOMAIN = DELYD*prp_obj_%Ny
         end if
 
         ! Find the Z level above which the medium is plane-parallel
         EXTBEAMCUT = 1.0e-4
-        do IZ = 1, Nz_prp_
-            EXTMIN(IZ) = 1.0e20
-            EXTMAX(IZ) = 0.0
+        do IZ = 1, prp_obj_%Nz
+            minExt(IZ) = 1.0e20
+            maxExt(IZ) = 0.0
         end do
         IP = 0
-        do IX = 1, Nx_prp_
-            do IY = 1, Ny_prp_
-                do IZ = 1, Nz_prp_
+        do IX = 1, prp_obj_%Nx
+            do IY = 1, prp_obj_%Ny
+                do IZ = 1, prp_obj_%Nz
                     IP = IP + 1
-                    EXTMIN(IZ) = min(ext_Prp_(IP), EXTMIN(IZ))
-                    EXTMAX(IZ) = max(ext_Prp_(IP), EXTMAX(IZ))
+                    minExt(IZ) = min(ext_Prp_(IP), minExt(IZ))
+                    maxExt(IZ) = max(ext_Prp_(IP), maxExt(IZ))
                 end do
             end do
         end do
         JZ = 0
-        do IZ = 1, Nz_prp_
-            if (EXTMAX(IZ) - EXTMIN(IZ) .gt. EXTBEAMCUT) JZ = IZ
+        do IZ = 1, prp_obj_%Nz
+            if (maxExt(IZ) - minExt(IZ) .gt. EXTBEAMCUT) JZ = IZ
         end do
-        JZ = min(Nz_prp_, JZ + 1)
-        UNIFORMZLEV = z_Prp_(JZ)
+        JZ = min(prp_obj_%Nz, JZ + 1)
+        UNIFORMZLEV = prp_obj_%z(JZ)
         UNIFZLEV = UNIFORMZLEV
         return
     ! Done with initialization
@@ -319,15 +328,15 @@ subroutine shd_rad__computeDirect(&
 
     ! Here for computing the direct beam path for one starting point.
     Z = ZI
-    X = XI - xStart_prp_
-    Y = YI - yStart_prp_
+    X = XI - prp_obj_%xStart
+    Y = YI - prp_obj_%yStart
 
     ! Find the grid location
     IL = 0
-    IU = Nz_prp_
+    IU = prp_obj_%Nz
     do while (IU - IL .gt. 1)
         IM = (IU + IL)/2
-        if (Z .ge. z_Prp_(IM)) then
+        if (Z .ge. prp_obj_%z(IM)) then
             IL = IM
         else
             IU = IM
@@ -336,15 +345,15 @@ subroutine shd_rad__computeDirect(&
     K = max(IL, 1)
 
     I = int(X/DELXD) + 1
-    if (I .gt. Nx_prp_ .and. abs(X - XDOMAIN) .lt. 0.001*DELXD) I = Nx_prp_
-    if (I .lt. 1 .or. I .gt. Nx_prp_) then
+    if (I .gt. prp_obj_%Nx .and. abs(X - XDOMAIN) .lt. 0.001*DELXD) I = prp_obj_%Nx
+    if (I .lt. 1 .or. I .gt. prp_obj_%Nx) then
         write (6, *) '_computeDirect: Beyond X domain', I, XI, YI, ZI
         stop
     end if
 
     J = int(Y/DELYD) + 1
-    if (J .gt. Ny_prp_ .and. abs(Y - YDOMAIN) .lt. 0.001*DELYD) J = Ny_prp_
-    if (J .lt. 1 .or. J .gt. Ny_prp_) then
+    if (J .gt. prp_obj_%Ny .and. abs(Y - YDOMAIN) .lt. 0.001*DELYD) J = prp_obj_%Ny
+    if (J .lt. 1 .or. J .gt. prp_obj_%Ny) then
         write (6, *) '_computeDirect: Beyond Y domain', J, XI, YI, ZI
         stop
     end if
@@ -359,9 +368,9 @@ subroutine shd_rad__computeDirect(&
     if (CX .eq. 0.0) CONSTX = .true.
     if (CY .eq. 0.0) CONSTY = .true.
     if (isOpenX_ .and. (abs(X) .lt. 0.01*DELXD&
-        &.or. abs(X - (Nx_prp_ - 1)*DELXD) .lt. 0.01*DELXD)) CONSTX = .true.
+        &.or. abs(X - (prp_obj_%Nx - 1)*DELXD) .lt. 0.01*DELXD)) CONSTX = .true.
     if (isOpenYx_ .and. (abs(Y) .lt. 0.01*DELYD&
-        &.or. abs(Y - (Ny_prp_ - 1)*DELYD) .lt. 0.01*DELYD)) CONSTY = .true.
+        &.or. abs(Y - (prp_obj_%Ny - 1)*DELYD) .lt. 0.01*DELYD)) CONSTY = .true.
 
     ! If have multiple subdomains (processors) and ray is going outwards
     !   from a boundary then set the HITBOUNDARY flag
@@ -388,19 +397,19 @@ subroutine shd_rad__computeDirect(&
 
     ! Grid cell loop begin
     PATH = DIRPATH
-    do while (.not. HITBOUNDARY .and. abs(ZE - z_Prp_(Nz_prp_)) .gt. EPSZ)
+    do while (.not. HITBOUNDARY .and. abs(ZE - prp_obj_%z(prp_obj_%Nz)) .gt. EPSZ)
         IP = I + 1
-        if (I .eq. Nx_prp_) then
+        if (I .eq. prp_obj_%Nx) then
             if (isOpenX_ .or. isMpiX_) then
-                IP = Nx_prp_
+                IP = prp_obj_%Nx
             else
                 IP = 1
             end if
         end if
         JP = J + 1
-        if (J .eq. Ny_prp_) then
+        if (J .eq. prp_obj_%Ny) then
             if (isOpenYx_ .or. isMpiY_) then
-                JP = Ny_prp_
+                JP = prp_obj_%Ny
             else
                 JP = 1
             end if
@@ -409,35 +418,35 @@ subroutine shd_rad__computeDirect(&
         X1 = X0 + DELXD
         Y0 = DELYD*(J - 1)
         Y1 = Y0 + DELYD
-        Z0 = z_Prp_(K)
-        Z1 = z_Prp_(K + 1)
-        if  (I .lt. 1 .or. I .gt. Nx_prp_ .or.&
-            &J .lt. 1 .or. J .gt. Ny_prp_ .or.&
-            &K .lt. 1 .or. K .ge. Nz_prp_) then
+        Z0 = prp_obj_%z(K)
+        Z1 = prp_obj_%z(K + 1)
+        if  (I .lt. 1 .or. I .gt. prp_obj_%Nx .or.&
+            &J .lt. 1 .or. J .gt. prp_obj_%Ny .or.&
+            &K .lt. 1 .or. K .ge. prp_obj_%Nz) then
             write (6, '(A,3I4)') '_computeDirect: beyond grid!', I, J, K
             write (6, '(1(2X,3F9.5))') X, Y, Z
             stop
         end if
         ! Get the eight corner extinction values
-        I1 = K + Nz_prp_*(J - 1) + Nz_prp_*Ny_prp_*(I - 1)
-        I2 = K + Nz_prp_*(J - 1) + Nz_prp_*Ny_prp_*(IP - 1)
-        I3 = K + Nz_prp_*(JP - 1) + Nz_prp_*Ny_prp_*(I - 1)
-        I4 = K + Nz_prp_*(JP - 1) + Nz_prp_*Ny_prp_*(IP - 1)
+        I1 = K + prp_obj_%Nz*(J - 1) + prp_obj_%Nz*prp_obj_%Ny*(I - 1)
+        I2 = K + prp_obj_%Nz*(J - 1) + prp_obj_%Nz*prp_obj_%Ny*(IP - 1)
+        I3 = K + prp_obj_%Nz*(JP - 1) + prp_obj_%Nz*prp_obj_%Ny*(I - 1)
+        I4 = K + prp_obj_%Nz*(JP - 1) + prp_obj_%Nz*prp_obj_%Ny*(IP - 1)
 
         ! zgrid correction (to address layer averaging issue in z direction)
         !╭────────────────────────────────────────────────╮!
-        !E1 = extDir_Prp_(I1)
-        !E2 = extDir_Prp_(I2)
-        !E3 = extDir_Prp_(I3)
-        !E4 = extDir_Prp_(I4)
-        E1 = extDir_Prp_(I1 + 1)
-        E2 = extDir_Prp_(I2 + 1)
-        E3 = extDir_Prp_(I3 + 1)
-        E4 = extDir_Prp_(I4 + 1)
-        E5 = extDir_Prp_(I1 + 1)
-        E6 = extDir_Prp_(I2 + 1)
-        E7 = extDir_Prp_(I3 + 1)
-        E8 = extDir_Prp_(I4 + 1)
+        !E1 = extDir_Prp(I1)
+        !E2 = extDir_Prp(I2)
+        !E3 = extDir_Prp(I3)
+        !E4 = extDir_Prp(I4)
+        E1 = extDir_Prp(I1 + 1)
+        E2 = extDir_Prp(I2 + 1)
+        E3 = extDir_Prp(I3 + 1)
+        E4 = extDir_Prp(I4 + 1)
+        E5 = extDir_Prp(I1 + 1)
+        E6 = extDir_Prp(I2 + 1)
+        E7 = extDir_Prp(I3 + 1)
+        E8 = extDir_Prp(I4 + 1)
         !╰────────────────────────────────────────────────╯!
 
         ! Compute the distance to the next grid plane in  X, Y, and Z
@@ -498,15 +507,15 @@ subroutine shd_rad__computeDirect(&
                     HITBOUNDARY = .true.
                     SIDE = 1
                 else
-                    I = Nx_prp_
+                    I = prp_obj_%Nx
                     XOFFS = XDOMAIN
                 end if
-            else if (I .ge. Nx_prp_ .and. isMpiX_) then
+            else if (I .ge. prp_obj_%Nx .and. isMpiX_) then
                 HITBOUNDARY = .true.
                 SIDE = 2
-            else if (I .eq. Nx_prp_ + 1) then
+            else if (I .eq. prp_obj_%Nx + 1) then
                 if (isOpenX_) then
-                    I = Nx_prp_
+                    I = prp_obj_%Nx
                     CONSTX = .true.
                 else
                     I = 1
@@ -526,15 +535,15 @@ subroutine shd_rad__computeDirect(&
                     HITBOUNDARY = .true.
                     SIDE = 3
                 else
-                    J = Ny_prp_
+                    J = prp_obj_%Ny
                     YOFFS = YDOMAIN
                 end if
-            else if (J .ge. Ny_prp_ .and. isMpiY_) then
+            else if (J .ge. prp_obj_%Ny .and. isMpiY_) then
                 HITBOUNDARY = .true.
                 SIDE = 4
-            else if (J .eq. Ny_prp_ + 1) then
+            else if (J .eq. prp_obj_%Ny + 1) then
                 if (isOpenYx_) then
-                    J = Ny_prp_
+                    J = prp_obj_%Ny
                     CONSTY = .true.
                 else
                     J = 1
@@ -621,8 +630,8 @@ subroutine shd_rad__computeDirect(&
     end do
     DIRFLUX = SOLARFLUX*exp(-PATH)
     DIRPATH = PATH
-    XO = XE + xStart_prp_; YO = YE + yStart_prp_; ZO = ZE
-    VALIDBEAM = abs(ZE - z_Prp_(Nz_prp_)) .lt. EPSZ
+    XO = XE + prp_obj_%xStart; YO = YE + prp_obj_%yStart; ZO = ZE
+    VALIDBEAM = abs(ZE - prp_obj_%z(prp_obj_%Nz)) .lt. EPSZ
     if (VALIDBEAM) SIDE = 6
 
     return
@@ -630,15 +639,15 @@ subroutine shd_rad__computeDirect(&
 end subroutine shd_rad__computeDirect
 
 subroutine shd_rad__interpRad(&
-    &NSTOKES, OLDNPTS, NPTS, RSHPTR,&
-    &RADIANCE, NBCELLS, NCELLS, TREEPTR, GRIDPTR, GRIDPOS)
+    &NSTOKES, OLDNPTS, NPTS, iradI_Shdo,&
+    &radI_Shdo, NBCELLS, NCELLS, TREEPTR, GRIDPTR, GRIDPOS)
 
     ! Interpolates the spherical harmonic radiance array to the new
     !   grid points (>OLDNPTS) from the old grid points.
 
     integer NSTOKES, OLDNPTS, NPTS, NBCELLS, NCELLS
-    integer RSHPTR(NPTS + 1), GRIDPTR(8, NCELLS), TREEPTR(2, NCELLS)
-    real RADIANCE(NSTOKES, *), GRIDPOS(3, *)
+    integer iradI_Shdo(NPTS + 1), GRIDPTR(8, NCELLS), TREEPTR(2, NCELLS)
+    real radI_Shdo(NSTOKES, *), GRIDPOS(3, *)
     integer IP, IC, ICELL, IPARENT, IDIR, I, J, K, DIR1, DIR2, IP1, IP2
     integer IR, IR1, IR2, NR, NR1, NR2
     integer GRIDCORNER(2, 4, 3)
@@ -669,25 +678,25 @@ subroutine shd_rad__interpRad(&
 120             continue
                 ! Interpolate the data from the two parent points at the
                 !   ends of the edge; assume the cell was split in half.
-                IR1 = RSHPTR(IP1)
-                IR2 = RSHPTR(IP2)
-                NR1 = RSHPTR(IP1 + 1) - RSHPTR(IP1)
-                NR2 = RSHPTR(IP2 + 1) - RSHPTR(IP2)
+                IR1 = iradI_Shdo(IP1)
+                IR2 = iradI_Shdo(IP2)
+                NR1 = iradI_Shdo(IP1 + 1) - iradI_Shdo(IP1)
+                NR2 = iradI_Shdo(IP2 + 1) - iradI_Shdo(IP2)
                 NR = max(NR1, NR2)
-                IR = RSHPTR(IP)
-                RSHPTR(IP + 1) = IR + NR
+                IR = iradI_Shdo(IP)
+                iradI_Shdo(IP + 1) = IR + NR
                 do J = 1, NR
                     if (J .le. NR1) then
-                        RAD1(:) = RADIANCE(:, IR1 + J)
+                        RAD1(:) = radI_Shdo(:, IR1 + J)
                     else
                         RAD1(:) = 0.0
                     end if
                     if (J .le. NR2) then
-                        RAD2(:) = RADIANCE(:, IR2 + J)
+                        RAD2(:) = radI_Shdo(:, IR2 + J)
                     else
                         RAD2(:) = 0.0
                     end if
-                    RADIANCE(:, IR + J) = FRAC12_*(RAD1(:) + RAD2(:))
+                    radI_Shdo(:, IR + J) = FRAC12_*(RAD1(:) + RAD2(:))
                 end do
             end if
         end do
@@ -697,46 +706,26 @@ subroutine shd_rad__interpRad(&
 end subroutine shd_rad__interpRad
 
 subroutine shd_rad__computeRad(&
-    &NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
-    &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
-    &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-    &BCFLAG, IPFLAG, SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
-    &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
+    &DELTAM,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-    &GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, UNITS,&
-    &XGRID, YGRID, ZGRID, GRIDPOS,&
-    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-    &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
-    &SHPTR, SOURCE, SOURCE1, GRIDRAD,&
-    &OUTPARMS, IRAD, RADOUT, SENPARMS)
+    &DIRFLUX, FLUXES,&
+    &src1_Shdo, GRIDRAD,&
+    &OUTPARMS, IRAD, RADOUT)
 
     ! Computes the radiances for the specified locations and directions
 
-    integer NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG, NPTS, NCELLS
-    integer ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
-    integer NMU, NPHI0MAX, NPHI0(NMU), IRAD
-    integer MAXNBC, NTOPPTS, NBOTPTS, NSFCPAR
-    integer GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
-    integer SHPTR(NPTS + 1), BCPTR(MAXNBC, 2)
-    integer*2 CELLFLAGS(NCELLS), IPHASE(NPTS)
+    integer IRAD
+    integer MAXNBC, NTOPPTS, NBOTPTS
+    integer BCPTR(MAXNBC, 2)
     logical DELTAM
-    real SOLARMU, SOLARAZ
-    real GNDTEMP, GNDALBEDO, SKYRAD, WAVENO(2), WAVELEN
-    real MU(NMU), PHI(NMU, NPHI0MAX), WTDO(NMU, NPHI0MAX)
-    real XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ), GRIDPOS(3, NPTS)
-    real SFCGRIDPARMS(*), BCRAD(NSTOKES, *)
-    real EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, NPTS)
-    real DIRFLUX(NPTS), FLUXES(2, NPTS)
-    real SOURCE1(NSTOKES, NPTS), GRIDRAD(NSTOKES, NPTS)
-    real SOURCE(NSTOKES, *)
-    real OUTPARMS(*), RADOUT(NSTOKES, *)
-    real, optional :: SENPARMS(*)
-    character(len=1) :: SRCTYPE, UNITS
-    character(len=2) :: SFCTYPE
+    real BCRAD(shdo_obj_%Nstokes, *)
+    real DIRFLUX(rtm_obj_%Npts), FLUXES(2, rtm_obj_%Npts)
+    real src1_Shdo(shdo_obj_%Nstokes, rtm_obj_%Npts), GRIDRAD(shdo_obj_%Nstokes, rtm_obj_%Npts)
+    real OUTPARMS(*), RADOUT(shdo_obj_%Nstokes, *)
     integer I, IBC, IANG, JX, JY, K, SIDE
     integer NANGOUT, NXOUT, NYOUT
-    logical LAMBERTIAN, VALIDRAD
-    real(RD_) :: X0, Y0, Z0, XE, YE, ZE, TRANSMIT, RADIANCE(4)
+    logical VALIDRAD
+    real(RD_) :: X0, Y0, Z0, XE, YE, ZE, TRANSMIT, radI_Shdo(4)
     real MUOUT, PHIOUT, PHID
     real XDOMAIN, YDOMAIN, STARTX, STARTY
 
@@ -746,50 +735,48 @@ subroutine shd_rad__computeRad(&
     !╰──────────────────────────────────────────────────────────────╯!
 
     ! Make the isotropic radiances for the top boundary
-    call shd_init__makeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
-        &UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
+    call shd_init__makeTopRad(src_obj_%type, src_obj_%skyRad, src_obj_%waveNum, src_obj_%avgWaveLen,&
+        &src_obj_%unit, NTOPPTS, shdo_obj_%Nstokes, BCRAD(1, 1))
 
     ! Make the bottom boundary radiances for the Lambertian surfaces.
     ! Compute the upwelling bottom radiances using the downwelling fluxes.
-    if (SFCTYPE .eq. 'FL') then
+    if (sfc_obj_%type .eq. 'FL') then
 
-        call shd_init__makeSfcRadFL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO,&
-            &WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1, 1 + NTOPPTS))
+        call shd_init__makeBotRadUL(NBOTPTS, BCPTR(1, 2),&
+            &DIRFLUX, FLUXES, src_obj_%type,&
+            &src_obj_%waveNum, src_obj_%avgWaveLen, src_obj_%unit, shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
 
-    else if (SFCTYPE .eq. 'VL') then
+    else if (sfc_obj_%type .eq. 'VL') then
 
-        call shd_init__makeSfcRadVL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS,&
-            &NSTOKES, BCRAD(1, 1 + NTOPPTS))
+        call shd_init__makeBotRadVL(NBOTPTS, BCPTR(1, 2),&
+            &DIRFLUX, FLUXES, src_obj_%type,&
+            &shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
 
     end if
 
     ! Setup the regularly spaced radiance locations
-    XDOMAIN = XGRID(NX + 1 - ibits(BCFLAG, 0, 1)) - XGRID(1) + 2*OUTPARMS(4)
+    XDOMAIN = rtm_obj_%x(rtm_obj_%Nx0 + 1 - ibits(rtm_obj_%flag_bc, 0, 1)) - rtm_obj_%x(1) + 2*OUTPARMS(4)
     STARTX = -OUTPARMS(4)
     if (OUTPARMS(2) .eq. 0.0) then
         NXOUT = 1
     else
         NXOUT = max(1, nint(XDOMAIN/OUTPARMS(2)))
     end if
-    YDOMAIN = YGRID(NY + 1 - ibits(BCFLAG, 1, 1)) - YGRID(1) + 2*OUTPARMS(5)
+    YDOMAIN = rtm_obj_%y(rtm_obj_%Ny0 + 1 - ibits(rtm_obj_%flag_bc, 1, 1)) - rtm_obj_%y(1) + 2*OUTPARMS(5)
     STARTY = -OUTPARMS(5)
     if (OUTPARMS(3) .eq. 0.0) then
         NYOUT = 1
     else
         NYOUT = max(1, nint(YDOMAIN/OUTPARMS(3)))
     end if
-    Z0 = min(max(OUTPARMS(1), ZGRID(1)), ZGRID(NZ))
+    Z0 = min(max(OUTPARMS(1), rtm_obj_%z(1)), rtm_obj_%z(rtm_obj_%Nz))
     NANGOUT = nint(OUTPARMS(6))
-
-    LAMBERTIAN = SFCTYPE(2:2) .eq. 'L'
 
     ! Loop over the radiance directions
     do IANG = 1, NANGOUT
-        if (present(SENPARMS)) then
-            MUOUT = SENPARMS(2*IANG - 1)
-            PHID  = SENPARMS(2*IANG)
+        if (sen_obj_%fname(1:4) .ne. 'NONE') then
+            MUOUT = view_Sen_(1, IANG)
+            PHID  = view_Sen_(2, IANG)
         else
             MUOUT = OUTPARMS(2*IANG + 5)
             PHID  = OUTPARMS(2*IANG + 6)
@@ -798,8 +785,8 @@ subroutine shd_rad__computeRad(&
 
         ! added for fixing the "domain shift" issue (only for 3D)
         !╭────────────────────────────────────────────────╮!
-        if (IPFLAG .eq. 0) then
-            DS_Z0 = Z0 - ZGRID(1)
+        if (rtm_obj_%flag_ip .eq. 0) then
+            DS_Z0 = Z0 - rtm_obj_%z(1)
             DS_VZA_RAD = acos(MUOUT)
             DS_XOFFSET = DS_Z0*tan(DS_VZA_RAD)*cos(PHIOUT)
             DS_YOFFSET = DS_Z0*tan(DS_VZA_RAD)*sin(PHIOUT)
@@ -822,17 +809,17 @@ subroutine shd_rad__computeRad(&
         end if
 
         ! Compute the source function throughout grid for this angle
-        call shd_src__computeSrcOneDir(NSTOKES, ML, MM, NLM, NSTLEG, NLEG,&
-            &NUMPHASE, NPTS, DELTAM, MUOUT, PHIOUT, SRCTYPE,&
-            &SOLARMU, SOLARAZ, ALBEDO, LEGEN,&
-            &IPHASE, DIRFLUX, SHPTR, SOURCE, SOURCE1)
+        call shd_src__computeSrcOneDir(&
+            &DELTAM, MUOUT, PHIOUT,&
+            &DIRFLUX, src1_Shdo,&
+            &isrcJ_Shdo_, srcJ_Shdo_)
 
         ! Set the radiance field to -1, so we can determine valid ra
         !   Also set the source array to the extinction times the so
         !   function, so the grid interpolation is correct.
-        do I = 1, NPTS
+        do I = 1, rtm_obj_%Npts
             GRIDRAD(1, I) = -1.0
-            SOURCE1(:, I) = SOURCE1(:, I)*EXTINCT(I)
+            src1_Shdo(:, I) = src1_Shdo(:, I)*ext_Rtm_(I)
         end do
         ! Get boundary radiances: either top or bottom
         ! Isotropic top boundary or Lambertian bottom boundary can u
@@ -845,11 +832,11 @@ subroutine shd_rad__computeRad(&
                 GRIDRAD(:, I) = BCRAD(:, IBC)
             end do
         else
-            if (.not. LAMBERTIAN) then
-                call shd_init__makeSfcRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
-                    &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MUOUT, PHIOUT,&
-                    &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
-                    &SFCTYPE, NSFCPAR, SFCGRIDPARMS, NSTOKES,&
+            if (.not. sfc_obj_%isLambertian) then
+                call shd_init__makeBotRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
+                    &shdo_obj_%Nmu, shdo_obj_%maxNphi0, shdo_obj_%Nphi0, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt, MUOUT, PHIOUT,&
+                    &src_obj_%type, src_obj_%avgWaveLen, src_obj_%avgMu, src_obj_%avgAz, DIRFLUX,&
+                    &shdo_obj_%Nstokes,&
                     &BCRAD(1, 1 + NTOPPTS))
             end if
             do IBC = 1, NBOTPTS
@@ -864,15 +851,12 @@ subroutine shd_rad__computeRad(&
             X0 = STARTX
             do JX = 1, NXOUT
                 IRAD = IRAD + 1
-                TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
-                call shd_src__integrateSrc(BCFLAG, IPFLAG, NSTOKES,&
-                    &NX, NY, NZ, NPTS, NCELLS,&
-                    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-                    &XGRID, YGRID, ZGRID, GRIDPOS,&
-                    &MUOUT, PHIOUT, GRIDRAD, EXTINCT, SOURCE1,&
+                TRANSMIT = 1.0d0; radI_Shdo(:) = 0.0d0
+                call shd_src__integrateSrc(shdo_obj_%Nstokes,&
+                    &MUOUT, PHIOUT, GRIDRAD, src1_Shdo,&
                     &X0, Y0, Z0, XE, YE, ZE, SIDE,&
-                    &TRANSMIT, RADIANCE, VALIDRAD)
-                RADOUT(:, IRAD) = RADIANCE(1:NSTOKES)
+                    &TRANSMIT, radI_Shdo, VALIDRAD)
+                RADOUT(:, IRAD) = radI_Shdo(1:shdo_obj_%Nstokes)
                 X0 = X0 + OUTPARMS(2)
             end do
             Y0 = Y0 + OUTPARMS(3)
@@ -884,45 +868,27 @@ subroutine shd_rad__computeRad(&
 
 end subroutine shd_rad__computeRad
 
-subroutine shd_rad__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
-    &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
-    &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-    &BCFLAG, IPFLAG, SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
-    &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
+subroutine shd_rad__computeCamRad(&
+    &DELTAM,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-    &GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, UNITS,&
-    &XGRID, YGRID, ZGRID, GRIDPOS,&
-    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-    &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
-    &SHPTR, SOURCE, OUTPARMS, IVIS, VISOUT, SENPARMS)
+    &DIRFLUX, FLUXES,&
+    &OUTPARMS, IVIS, VISOUT)
 
     !   Computes Stokes radiances (output in VISOUT) for the visualization
     !  modes: 1) camera mode, and 2) cross track scanning.
 
-    integer NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG, NPTS, NCELLS
-    integer ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
-    integer NMU, NPHI0MAX, NPHI0(NMU), IVIS
-    integer MAXNBC, NTOPPTS, NBOTPTS, NSFCPAR
-    integer GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
-    integer SHPTR(NPTS + 1), BCPTR(MAXNBC, 2)
-    integer*2 CELLFLAGS(NCELLS), IPHASE(NPTS)
+    integer IVIS
+    integer MAXNBC, NTOPPTS, NBOTPTS
+    integer BCPTR(MAXNBC, 2)
     logical DELTAM
-    real SOLARMU, SOLARAZ
-    real GNDTEMP, GNDALBEDO, SKYRAD, WAVENO(2), WAVELEN
-    real MU(NMU), PHI(NMU, NPHI0MAX), WTDO(NMU, NPHI0MAX)
-    real XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ), GRIDPOS(3, NPTS)
-    real SFCGRIDPARMS(*), BCRAD(NSTOKES, *)
-    real EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, *)
-    real DIRFLUX(NPTS), FLUXES(2, NPTS), SOURCE(NSTOKES, *)
-    real OUTPARMS(*), VISOUT(NSTOKES, *)
-    real, optional :: SENPARMS(*)
-    character(len=1) :: SRCTYPE, UNITS
-    character(len=2) :: SFCTYPE
+    real BCRAD(shdo_obj_%Nstokes, *)
+    real DIRFLUX(rtm_obj_%Npts), FLUXES(2, rtm_obj_%Npts)
+    real OUTPARMS(*), VISOUT(shdo_obj_%Nstokes, *)
     integer NSCATANGLE, NSTPHASE, I, J, L, N, SIDE
     integer NL, NS, LINE, SAMP
     logical CAMERA_MODE, VALIDRAD
     real MURAY, PHIRAY
-    real(RD_) :: XE, YE, ZE, TRANSMIT, VISRAD(NSTOKES)
+    real(RD_) :: XE, YE, ZE, TRANSMIT, VISRAD(shdo_obj_%Nstokes)
     real(RD_) :: X0, Y0, Z0, X1, Y1, Z1, X2, Y2, Z2
     real(RD_) :: THETA0, THETA1, PHIR, PHI0
     real(RD_) :: COSTH, SINTH, SINTH0, SINTH1, MU2, PHI2
@@ -934,32 +900,32 @@ subroutine shd_rad__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
     real              :: MEAN, STD1, STD2
     real, allocatable :: AOLP(:)
 
-    allocate (YLMSUN(NSTLEG, NLM))
+    allocate(YLMSUN(prp_obj_%NlegSet, shdo_obj_%Nlm))
 
     if (isSolar_) then
-        call shd_shdo__computeYlm(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG, YLMSUN)
-        if (DELTAM .and. NUMPHASE .gt. 0) then
-            NSCATANGLE = max(36, min(MAXSCATANG, 2*NLEG))
-            NSTPHASE = min(NSTLEG, 2)
-            allocate (PHASETAB(NSTPHASE, NUMPHASE, NSCATANGLE))
-            call shd_scat__computePhase(NSCATANGLE, NUMPHASE, NSTPHASE,&
-                &NSTOKES, ML, NSTLEG, NLEG, LEGEN, PHASETAB)
+        call shd_shdo__computeYlm(.true., src_obj_%avgMu, src_obj_%avgAz, shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet, YLMSUN)
+        if (DELTAM .and. prp_obj_%Npha .gt. 0) then
+            NSCATANGLE = max(36, min(MAXSCATANG, 2*prp_obj_%Nleg))
+            NSTPHASE = min(prp_obj_%NlegSet, 2)
+            allocate(PHASETAB(NSTPHASE, prp_obj_%Npha, NSCATANGLE))
+            call shd_scat__computePhase(NSCATANGLE, prp_obj_%Npha, NSTPHASE,&
+                &shdo_obj_%Nstokes, shdo_obj_%maxNl, prp_obj_%NlegSet, prp_obj_%Nleg, leg_Rtm_, PHASETAB)
         end if
     end if
 
     ! Make the isotropic radiances for the top boundary
-    call shd_init__makeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
-        &UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
+    call shd_init__makeTopRad(src_obj_%type, src_obj_%skyRad, src_obj_%waveNum, src_obj_%avgWaveLen,&
+        &src_obj_%unit, NTOPPTS, shdo_obj_%Nstokes, BCRAD(1, 1))
     ! Make the bottom boundary radiances for the Lambertian surfaces
     !   Compute the upwelling bottom radiances using the downwelling
-    if (SFCTYPE .eq. 'FL') then
-        call shd_init__makeSfcRadFL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO,&
-            &WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1, 1 + NTOPPTS))
-    else if (SFCTYPE .eq. 'VL') then
-        call shd_init__makeSfcRadVL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS,&
-            &NSTOKES, BCRAD(1, 1 + NTOPPTS))
+    if (sfc_obj_%type .eq. 'FL') then
+        call shd_init__makeBotRadUL(NBOTPTS, BCPTR(1, 2),&
+            &DIRFLUX, FLUXES, src_obj_%type,&
+            &src_obj_%waveNum, src_obj_%avgWaveLen, src_obj_%unit, shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
+    else if (sfc_obj_%type .eq. 'VL') then
+        call shd_init__makeBotRadVL(NBOTPTS, BCPTR(1, 2),&
+            &DIRFLUX, FLUXES, src_obj_%type,&
+            &shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
     end if
 
     CAMERA_MODE = nint(OUTPARMS(1)) .eq. 1
@@ -1061,16 +1027,16 @@ subroutine shd_rad__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
             end if
 
             ! Extrapolate ray to domain top if above
-            if (Z0 .gt. ZGRID(NZ)) then
+            if (Z0 .gt. rtm_obj_%z(rtm_obj_%Nz)) then
                 if (COSTH .ge. 0.0) then
                     VISRAD(:) = 0.0
                     goto 900
                 end if
-                R = (ZGRID(NZ) - Z0)/COSTH
+                R = (rtm_obj_%z(rtm_obj_%Nz) - Z0)/COSTH
                 X0 = X0 + R*sqrt(1 - COSTH**2)*cos(PHIR)
                 Y0 = Y0 + R*sqrt(1 - COSTH**2)*sin(PHIR)
-                Z0 = ZGRID(NZ)
-            else if (Z0 .lt. ZGRID(1)) then
+                Z0 = rtm_obj_%z(rtm_obj_%Nz)
+            else if (Z0 .lt. rtm_obj_%z(1)) then
                 write (6, *) 'Error [_visualizeRad]: Level below domain.'
                 stop
             end if
@@ -1085,18 +1051,13 @@ subroutine shd_rad__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
             ! Integrate the extinction and source function along this ray
             !   to calculate the Stokes radiance vector for this pixel
             TRANSMIT = 1.0d0; VISRAD(:) = 0.0d0
-            call shd_src__integrateSrcOneRay(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
+            call shd_src__integrateSrcOneRay(shdo_obj_%Nstokes,&
                 &NSTPHASE, NSCATANGLE, PHASETAB,&
-                &NX, NY, NZ, NPTS, NCELLS,&
-                &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-                &XGRID, YGRID, ZGRID, GRIDPOS,&
-                &ML, MM, NLM, NLEG, NUMPHASE,&
-                &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-                &DELTAM, SRCTYPE, WAVELEN, SOLARMU, SOLARAZ,&
-                &EXTINCT, ALBEDO, LEGEN, IPHASE,&
-                &DIRFLUX, SHPTR, SOURCE, YLMSUN,&
+                &shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
+                &shdo_obj_%Nmu, shdo_obj_%maxNphi0, shdo_obj_%Nphi0, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
+                &DELTAM, src_obj_%type, src_obj_%avgWaveLen, src_obj_%avgMu, src_obj_%avgAz,&
+                &DIRFLUX, isrcJ_Shdo_, srcJ_Shdo_, YLMSUN,&
                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-                &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
                 &MU2, PHI2, X0, Y0, Z0,&
                 &XE, YE, ZE, SIDE, TRANSMIT, VISRAD, VALIDRAD)
 900         continue
@@ -1119,12 +1080,12 @@ subroutine shd_rad__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
         end do
     end do
 
-    deallocate (YLMSUN)
-    if (allocated(PHASETAB)) deallocate (PHASETAB)
+    deallocate(YLMSUN)
+    if (allocated(PHASETAB)) deallocate(PHASETAB)
     if (isPol_) then
         ! Choose the best range for the angle of linear polarization (-90 to 90 or 0 to 180)
         N = NL*NS
-        allocate (AOLP(N))
+        allocate(AOLP(N))
         AOLP(:) = VISOUT(3, IVIS - N + 1:IVIS)
         MEAN = sum(AOLP(:))/N
         STD1 = sqrt(sum((AOLP(:) - MEAN)**2)/N)
@@ -1136,21 +1097,21 @@ subroutine shd_rad__computeCamRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
         if (STD2 < STD1) then
             VISOUT(3, IVIS - N + 1:IVIS) = AOLP(:)
         end if
-        deallocate (AOLP)
+        deallocate(AOLP)
     end if
     return
 end subroutine shd_rad__computeCamRad
 
-subroutine shd_rad__computeNetFluxDiv(NSTOKES, NPTS, RSHPTR, SRCTYPE,&
+subroutine shd_rad__computeFluxDiv(NSTOKES, NPTS, iradI_Shdo, SRCTYPE,&
     &SOLARMU, EXTINCT, ALBEDO, PLANCK, DIRFLUX,&
-    &RADIANCE, NETFLUXDIV)
+    &radI_Shdo, NETFLUXDIV)
 
     ! Computes the net flux divergence at every grid point.
 
-    integer NSTOKES, NPTS, RSHPTR(NPTS + 1)
+    integer NSTOKES, NPTS, iradI_Shdo(NPTS + 1)
     real PLANCK(NPTS), DIRFLUX(NPTS), SOLARMU
     real EXTINCT(NPTS), ALBEDO(NPTS)
-    real RADIANCE(NSTOKES, *), NETFLUXDIV(NPTS)
+    real radI_Shdo(NSTOKES, *), NETFLUXDIV(NPTS)
     character(len=1) :: SRCTYPE
     integer I, IR
     real :: C, SECMU, HR
@@ -1158,8 +1119,8 @@ subroutine shd_rad__computeNetFluxDiv(NSTOKES, NPTS, RSHPTR, SRCTYPE,&
     C = sqrt(4.0*PI_)
     SECMU = 1.0/abs(SOLARMU)
     do I = 1, NPTS
-        IR = RSHPTR(I)
-        HR = C*EXTINCT(I)*(1 - ALBEDO(I))*RADIANCE(1, IR + 1)
+        IR = iradI_Shdo(I)
+        HR = C*EXTINCT(I)*(1 - ALBEDO(I))*radI_Shdo(1, IR + 1)
         if (isSolar_) then
             HR = HR + EXTINCT(I)*(1.0 - ALBEDO(I))*DIRFLUX(I)*SECMU
         end if
@@ -1171,272 +1132,6 @@ subroutine shd_rad__computeNetFluxDiv(NSTOKES, NPTS, RSHPTR, SRCTYPE,&
 
     return
 
-end subroutine shd_rad__computeNetFluxDiv
-
-subroutine shd_rad__computeSensorRad(NSTOKES, NX, NY, NZ, NPTS, NCELLS,&
-    &ML, MM, NLM, NSTLEG, NLEG, NUMPHASE,&
-    &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-    &BCFLAG, IPFLAG, SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
-    &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
-    &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-    &GNDTEMP, GNDALBEDO, SKYRAD, WAVENO, WAVELEN, UNITS,&
-    &XGRID, YGRID, ZGRID, GRIDPOS,&
-    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-    &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
-    &SHPTR, SOURCE, OUTPARMS, IVIS, VISOUT)
-
-    !  Computes Stokes radiances (output in VISOUT) for the sensor-specific
-    !    modes:
-    !    1) user-specified mode,
-    !    2) auto mode (placeholder).
-
-    integer NSTOKES, NX, NY, NZ, BCFLAG, IPFLAG, NPTS, NCELLS
-    integer ML, MM, NLM, NSTLEG, NLEG, NUMPHASE
-    integer NMU, NPHI0MAX, NPHI0(NMU), IVIS
-    integer MAXNBC, NTOPPTS, NBOTPTS, NSFCPAR
-    integer GRIDPTR(8, NCELLS), NEIGHPTR(6, NCELLS), TREEPTR(2, NCELLS)
-    integer SHPTR(NPTS + 1), BCPTR(MAXNBC, 2)
-    integer*2 CELLFLAGS(NCELLS), IPHASE(NPTS)
-    logical DELTAM
-    real SOLARMU, SOLARAZ
-    real GNDTEMP, GNDALBEDO, SKYRAD, WAVENO(2), WAVELEN
-    real MU(NMU), PHI(NMU, NPHI0MAX), WTDO(NMU, NPHI0MAX)
-    real XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ), GRIDPOS(3, NPTS)
-    real SFCGRIDPARMS(*), BCRAD(NSTOKES, *)
-    real EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, *)
-    real DIRFLUX(NPTS), FLUXES(2, NPTS), SOURCE(NSTOKES, *)
-    real OUTPARMS(*), VISOUT(NSTOKES, *)
-    character(len=1) :: SRCTYPE, UNITS
-    character(len=2) :: SFCTYPE
-    integer NSCATANGLE, NSTPHASE, I, J, L, N, SIDE
-    integer NL, NS, LINE, SAMP
-    logical AUTO_MODE, VALIDRAD
-    real MURAY, PHIRAY
-    real(RD_) :: XE, YE, ZE, TRANSMIT, VISRAD(NSTOKES)
-    real(RD_) :: X0, Y0, Z0, X1, Y1, Z1, X2, Y2, Z2
-    real(RD_) :: THETA0, THETA1, PHIR, PHI0
-    real(RD_) :: COSTH, SINTH, SINTH0, SINTH1, MU2, PHI2
-    real(RD_) :: U, V, UP, VP, COSDELPHI, ROTANG, R
-    real(RD_) :: DIST, D, RX, RY, RZ, SCANANG
-    integer MAXSCATANG
-    parameter(MAXSCATANG=721)
-    real, allocatable :: YLMSUN(:, :), PHASETAB(:, :, :)
-    real              :: MEAN, STD1, STD2
-    real, allocatable :: AOLP(:)
-
-    allocate (YLMSUN(NSTLEG, NLM))
-
-    if (isSolar_) then
-        call shd_shdo__computeYlm(.true., SOLARMU, SOLARAZ, ML, MM, NSTLEG, YLMSUN)
-        if (DELTAM .and. NUMPHASE .gt. 0) then
-            NSCATANGLE = max(36, min(MAXSCATANG, 2*NLEG))
-            NSTPHASE = min(NSTLEG, 2)
-            allocate (PHASETAB(NSTPHASE, NUMPHASE, NSCATANGLE))
-            call shd_scat__computePhase(NSCATANGLE, NUMPHASE, NSTPHASE,&
-                &NSTOKES, ML, NSTLEG, NLEG, LEGEN, PHASETAB)
-        end if
-    end if
-
-    ! Make the isotropic radiances for the top boundary
-    call shd_init__makeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
-        &UNITS, NTOPPTS, NSTOKES, BCRAD(1, 1))
-
-    ! Make the bottom boundary radiances for the Lambertian surfaces
-    !   Compute the upwelling bottom radiances using the downwelling
-    if (SFCTYPE .eq. 'FL') then
-        call shd_init__makeSfcRadFL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO,&
-            &WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD(1, 1 + NTOPPTS))
-    else if (SFCTYPE .eq. 'VL') then
-        call shd_init__makeSfcRadVL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS,&
-            &NSTOKES, BCRAD(1, 1 + NTOPPTS))
-    end if
-
-    AUTO_MODE = nint(OUTPARMS(1)) .eq. 0
-    if (AUTO_MODE) then
-        NL = nint(OUTPARMS(10))
-        NS = nint(OUTPARMS(11))
-    else
-        NL = 1 + int(sqrt((OUTPARMS(4) - OUTPARMS(7))**2&
-            &+ (OUTPARMS(5) - OUTPARMS(8))**2&
-            &+ (OUTPARMS(6) - OUTPARMS(9))**2)/OUTPARMS(10))
-        NS = 1 + int(abs(OUTPARMS(12) - OUTPARMS(11))/OUTPARMS(13))
-    end if
-
-    ! Loop over pixels in image
-    do LINE = 1, NL
-        do SAMP = 1, NS
-            IVIS = IVIS + 1
-
-            if (AUTO_MODE) then
-
-                ! Camera mode:
-                !   1, 2,     3,     4,5,6, 7,     8,   9,      10, 11, 12,      13
-                !   1, bytes, scale, X,Y,Z, theta, phi, rotang, NL, NS, delline, delsamp
-                !
-                ! Use spherical trig to find the pixel direction (MURAY,PHIRAY)
-                !   from the camera center (THETA0,PHI0) and the relative pixel
-                !   angles (U,V).
-                UP = (SAMP - NS/2 - 1)*OUTPARMS(13)*DTOR_
-                VP = (LINE - NL/2 - 1)*OUTPARMS(12)*DTOR_
-                ROTANG = OUTPARMS(9)*DTOR_
-                if (ROTANG .eq. 0.0) then
-                    U = UP
-                    V = VP
-                else
-                    U = cos(ROTANG)*UP - sin(ROTANG)*VP
-                    V = sin(ROTANG)*UP + cos(ROTANG)*VP
-                end if
-
-                THETA0 = DTOR_*OUTPARMS(7)
-                PHI0 = DTOR_*OUTPARMS(8)
-                THETA1 = THETA0 + V
-                if (V .eq. 0.0) then
-                    COSTH = cos(U)*cos(THETA0)
-                else
-                    COSTH = cos(U)*(sin(THETA1)*cos(V) - sin(THETA0))/sin(V)
-                    COSTH = min(+1.0d0, max(-1.0d0, COSTH))
-                end if
-                SINTH = sqrt(1 - COSTH**2)
-                SINTH0 = sin(THETA0)
-                SINTH1 = sin(THETA1)
-                if (abs(SINTH) .lt. accSolv_) then
-                    PHIR = 0.0
-                else
-                    if ((abs(SINTH0) .lt. accSolv_) .and. (abs(SINTH1) .le. accSolv_)) then
-                        COSDELPHI = 0.0d0
-                    else if (abs(SINTH1) .gt. accSolv_) then
-                        COSDELPHI = (cos(U) - COSTH*cos(THETA1))/(SINTH1*SINTH)
-                    else if (abs(SINTH0) .gt. accSolv_) then
-                        COSDELPHI = (cos(U)*cos(V) - COSTH*cos(THETA0))&
-                            &/(SINTH0*SINTH)
-                    end if
-                    COSDELPHI = min(+1.0d0, max(-1.0d0, COSDELPHI))
-                    if (U .ge. 0.0) then
-                        PHIR = PHI0 - acos(COSDELPHI)
-                    else
-                        PHIR = PHI0 + acos(COSDELPHI)
-                    end if
-                end if
-
-                X0 = OUTPARMS(4)
-                Y0 = OUTPARMS(5)
-                Z0 = OUTPARMS(6)
-
-            else
-
-                ! Cross track scanning in the vertical plane:
-                !   2, bytes, scale, X1,Y1,Z1, X2,Y2,Z2, spacing, scan1, scan2, delscan
-                ! Start and end of scan angle (scan1, scan2) are +/- relative
-                !   to nadir, and positive is on right side.
-                X1 = OUTPARMS(4)
-                Y1 = OUTPARMS(5)
-                Z1 = OUTPARMS(6)
-                X2 = OUTPARMS(7)
-                Y2 = OUTPARMS(8)
-                Z2 = OUTPARMS(9)
-                DIST = sqrt((X2 - X1)**2 + (Y2 - Y1)**2 + (Z2 - Z1)**2)
-                RX = (X2 - X1)/DIST
-                RY = (Y2 - Y1)/DIST
-                RZ = (Z2 - Z1)/DIST
-                ! D = (LINE-1)*OUTPARMS(10)
-                D = (NL - LINE)*OUTPARMS(10)
-                X0 = X1 + D*RX
-                Y0 = Y1 + D*RY
-                Z0 = Z1 + D*RZ
-                SCANANG = DTOR_*(OUTPARMS(11) + (SAMP - 1)*OUTPARMS(13))
-                COSTH = cos(PI_ - abs(SCANANG))
-                if (SCANANG .gt. 0.0) then
-                    PHIR = atan2(-RX, RY)
-                else
-                    PHIR = atan2(RX, -RY)
-                end if
-
-            end if
-
-            ! Extrapolate ray to domain top if above
-            if (Z0 .gt. ZGRID(NZ)) then
-                if (COSTH .ge. 0.0) then
-                    VISRAD(:) = 0.0
-                    goto 900
-                end if
-                R = (ZGRID(NZ) - Z0)/COSTH
-                X0 = X0 + R*sqrt(1 - COSTH**2)*cos(PHIR)
-                Y0 = Y0 + R*sqrt(1 - COSTH**2)*sin(PHIR)
-                Z0 = ZGRID(NZ)
-            else if (Z0 .lt. ZGRID(1)) then
-                write (6, *) 'Error [_visualizeRad]: Level below domain.'
-                stop
-            end if
-
-            ! MURAY,PHRAY is camera pixel viewing direction;
-            ! MU2,PHI2 is radiance travel direction (the opposite)
-            MURAY = sngl(COSTH)
-            PHIRAY = sngl(PHIR)
-            MU2 = -COSTH
-            PHI2 = PHIR + PI_
-
-            ! Integrate the extinction and source function along this ray
-            !   to calculate the Stokes radiance vector for this pixel
-            TRANSMIT = 1.0d0; VISRAD(:) = 0.0d0
-            call shd_src__integrateSrcOneRay(BCFLAG, IPFLAG, NSTOKES, NSTLEG,&
-                &NSTPHASE, NSCATANGLE, PHASETAB,&
-                &NX, NY, NZ, NPTS, NCELLS,&
-                &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS,&
-                &XGRID, YGRID, ZGRID, GRIDPOS,&
-                &ML, MM, NLM, NLEG, NUMPHASE,&
-                &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-                &DELTAM, SRCTYPE, WAVELEN, SOLARMU, SOLARAZ,&
-                &EXTINCT, ALBEDO, LEGEN, IPHASE,&
-                &DIRFLUX, SHPTR, SOURCE, YLMSUN,&
-                &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-                &SFCTYPE, NSFCPAR, SFCGRIDPARMS,&
-                &MU2, PHI2, X0, Y0, Z0,&
-                &XE, YE, ZE, SIDE, TRANSMIT, VISRAD, VALIDRAD)
-
-900         continue
-
-            ! write (6,'(1X,2F8.4,1X,2F11.7,4(1X,F11.6))')&
-            !     &X0,Y0,MURAY,PHIRAY,VISRAD(:)
-
-            VISOUT(1, IVIS) = VISRAD(1)
-            if (VISRAD(1) .gt. 0.0) then
-                if (isPol_) then
-                    ! Output degree (0 to 1) and angle (-180 to 180) of linear polarization
-                    VISOUT(2, IVIS) = sqrt(VISRAD(2)**2 + VISRAD(3)**2)/VISRAD(1)
-                    VISOUT(3, IVIS) = (180.0d0/PI_)*FRAC12_*atan2(VISRAD(3), VISRAD(2))
-                end if
-                if (isPol4_) then
-                    ! Output degree of circular polarization (-1 to 1)
-                    VISOUT(4, IVIS) = VISRAD(4)/VISRAD(1)
-                end if
-            else
-                VISOUT(2:, IVIS) = 0.0
-            end if
-        end do
-    end do
-
-    deallocate (YLMSUN)
-    if (allocated(PHASETAB)) deallocate (PHASETAB)
-    if (isPol_) then
-        ! Choose the best range for the angle of linear polarization (-90 to 90 or 0 to 180)
-        N = NL*NS
-        allocate (AOLP(N))
-        AOLP(:) = VISOUT(3, IVIS - N + 1:IVIS)
-        MEAN = sum(AOLP(:))/N
-        STD1 = sqrt(sum((AOLP(:) - MEAN)**2)/N)
-        where (AOLP(:) < 0.0)
-            AOLP(:) = AOLP(:) + 180.0
-        end where
-        MEAN = sum(AOLP(:))/N
-        STD2 = sqrt(sum((AOLP(:) - MEAN)**2)/N)
-        if (STD2 < STD1) then
-            VISOUT(3, IVIS - N + 1:IVIS) = AOLP(:)
-        end if
-        deallocate (AOLP)
-    end if
-    return
-end subroutine shd_rad__computeSensorRad
+end subroutine shd_rad__computeFluxDiv
 
 end module shd_rad

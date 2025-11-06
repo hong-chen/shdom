@@ -126,6 +126,7 @@ module globals_cfg
     public
 
     integer, parameter :: charMaxLen_ = 256 ! file name max length (number of characters)
+
     real(kind=8), save :: accSolv_
     real(kind=4), save :: memTotSysMB_ = 16000.0
     real(kind=4), save :: memPerCpuMB_
@@ -143,10 +144,10 @@ module globals_cfg
     !All           7      All-level messages
 
     ! Namelist input
-    logical, save :: isNmlInp_ = .true.
+    logical, save :: doNmlInp_ = .true.
 
     ! High order radiance (use more SH terms)
-    logical, save :: isHighOrder_
+    logical, save :: doHighOrder_
 
     ! Boundary conditions (BCFLAG)
     logical, save :: isOpenX_, isOpenYx_, isMpiX_, isMpiY_, isMpi_
@@ -166,29 +167,317 @@ module globals_cfg
 end module globals_cfg
 
 
-module globals_prp
+module globals_type
+
+    use globals_cfg, only: charMaxLen_
 
     implicit none
     public
 
-    integer, save :: Nx_prp_, Ny_prp_, Nz_prp_, Npha_prp_
-    real, save    :: dx_prp_, dy_prp_, xStart_prp_, yStart_prp_
-    real, save    :: xDomain_prp_, yDomain_prp_
-    real, save, allocatable :: z_Prp_(:)
-    real, save, allocatable :: temp_Prp_(:), ext_Prp_(:), ssa_Prp_(:)
-    real, save, allocatable :: extDir_Prp_(:)
-    real, save, allocatable :: leg_Prp_(:)
-    integer(2), save, allocatable :: ipha_Prp_(:)
+    integer, parameter, private :: I__ = selected_int_kind(9)
+    integer, parameter, private :: R__ = selected_real_kind(6)
 
-end module globals_prp
+    ! RTM
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    type :: shd_type_rtm
+
+        character(len=charMaxLen_) :: runName = 'NONE'
+        character(len=1) :: type = ' '
+
+        integer(kind=I__) :: flag_bc = -999
+        integer(kind=I__) :: flag_ip = -999
+
+        integer(kind=I__) :: Nx0 = -999
+        integer(kind=I__) :: Ny0 = -999
+        integer(kind=I__) :: Nx  = -999
+        integer(kind=I__) :: Ny  = -999
+        integer(kind=I__) :: Nz  = -999
+
+        integer(kind=I__) :: maxNz = -999
+        integer(kind=I__) :: maxNptsLeg = -999
+
+        integer(kind=I__) :: Npts0 = -999
+        integer(kind=I__) :: Npts  = -999
+        integer(kind=I__) :: maxNpts = -999
+
+        real(kind=R__),  allocatable :: x(:)
+        real(kind=R__),  allocatable :: y(:)
+        real(kind=R__),  allocatable :: z(:)
+
+        logical :: isAllocated  = .false.
+
+    end type shd_type_rtm
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
-module globals_ckd
+    ! Cell
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    type :: shd_type_cell
+
+        integer(kind=I__) :: Npts0 = -999
+        integer(kind=I__) :: Npts  = -999
+        integer(kind=I__) :: maxNpts = -999
+
+        logical :: isAllocated  = .false.
+
+    end type shd_type_cell
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+
+    ! SHDO
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    type :: shd_type_shdo
+
+        integer(kind=I__) :: Nmu  = -999
+        integer(kind=I__) :: Nphi = -999
+        integer(kind=I__) :: Nang = -999
+        integer(kind=I__) :: Nlm  = -999
+        integer(kind=I__) :: Nsh  = -999
+        integer(kind=I__) :: Nstokes = -999
+        integer(kind=I__) :: NlegSet = -999
+
+        integer(kind=I__) :: maxNl = -999
+        integer(kind=I__) :: maxNm = -999
+        integer(kind=I__) :: maxNphi0  = -999
+        integer(kind=I__) :: maxNptsSH = -999
+        integer(kind=I__) :: maxNptsDO = -999
+
+        integer(kind=I__), allocatable :: Nphi0(:)
+        real(kind=R__),    allocatable :: mu(:)
+        real(kind=R__),    allocatable :: phi(:, :)
+        real(kind=R__),    allocatable :: wgt(:, :)
+
+        logical :: isAllocated  = .false.
+
+    end type shd_type_shdo
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+
+    ! SRC (radiation source, e.g., solar, thermal, or both)
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    type :: shd_type_src
+
+        character(len=1) :: type = ' '
+        character(len=1) :: unit = ' '
+
+        real(kind=R__), dimension(2) :: waveNum = [-999.0, -999.0]
+        real(kind=R__) :: avgWaveNum = -999.0
+
+        real(kind=R__), dimension(2) :: waveLen = [-999.0, -999.0]
+        real(kind=R__) :: avgWaveLen = -999.0
+
+        real(kind=R__) :: avgMu = -999.0
+        real(kind=R__) :: avgAz = -999.0
+
+        real(kind=R__) :: inpSolar  = -999.0 ! solar read from input file
+        real(kind=R__) :: avgSolar0 = -999.0 ! solar at every "g", scaled with avgMu and solarFac
+        real(kind=R__) :: avgSolar  = -999.0 ! averaged solar from all "g"s of correlated-k
+
+        real(kind=R__) :: skyRad = -999.0
+
+    end type shd_type_src
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+
+    ! PRP
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    type :: shd_type_prp
+
+        character(len=charMaxLen_) :: fname = 'NONE'
+        character(len=1) :: type = ' '
+
+        integer(kind=I__) :: Nx = -999
+        integer(kind=I__) :: Ny = -999
+        integer(kind=I__) :: Nz = -999
+        integer(kind=I__) :: Npha = -999
+        integer(kind=I__) :: Nleg = -999
+        integer(kind=I__) :: NlegSet = -999
+
+        integer(kind=I__) :: maxNz   = -999
+        integer(kind=I__) :: maxNpts = -999
+        integer(kind=I__) :: maxNleg = -999
+        integer(kind=I__) :: maxNptsLeg = -999
+
+        real(kind=R__) :: maxAsym = -999.0
+
+        real(kind=R__) :: dx = -999.0
+        real(kind=R__) :: dy = -999.0
+        real(kind=R__) :: xStart  = -999.0
+        real(kind=R__) :: yStart  = -999.0
+        real(kind=R__) :: xDomain = -999.0
+        real(kind=R__) :: yDomain = -999.0
+
+        real(kind=R__), allocatable :: z(:)
+
+        logical :: isAllocated  = .false.
+
+    end type shd_type_prp
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+
+    ! SFC
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    type :: shd_type_sfc
+
+        character(len=charMaxLen_) :: fname = 'NONE'
+        character(len=2) :: type = '  '
+
+        integer(kind=I__) :: Nx = -999
+        integer(kind=I__) :: Ny = -999
+        integer(kind=I__) :: Npar = -999
+
+        integer(kind=I__) :: maxNpts = -999
+        integer(kind=I__) :: maxNpar = -999
+
+        real(kind=R__) :: dx = -999.0
+        real(kind=R__) :: dy = -999.0
+        real(kind=R__) :: avgTemp = -999.0
+        real(kind=R__) :: avgAlb  = -999.0
+
+        logical :: isUniform    = .false.
+        logical :: isLambertian = .false.
+        logical :: isAllocated  = .false.
+
+    end type shd_type_sfc
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+
+    ! CKD
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    type :: shd_type_ckd
+
+        character(len=charMaxLen_) :: fname = 'NONE'
+
+        integer(kind=I__) :: Ng = -999
+        integer(kind=I__) :: Nz = -999
+        integer(kind=I__) :: ig = -999
+        integer(kind=I__) :: maxNg = -999
+        integer(kind=I__) :: maxNz = -999
+
+        real(kind=R__), dimension(2) :: waveNum = [-999.0, -999.0]
+        real(kind=R__) :: avgWaveNum = -999.0
+
+        real(kind=R__), dimension(2) :: waveLen = [-999.0, -999.0]
+        real(kind=R__) :: avgWaveLen = -999.0
+
+        real(kind=R__), allocatable :: z(:)
+
+        logical :: isAllocated  = .false.
+
+    end type shd_type_ckd
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+
+    ! SEN
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    type :: shd_type_sen
+
+        character(len=charMaxLen_) :: fname = 'NONE'
+        integer(kind=I__) :: Npts = -999
+        integer(kind=I__) :: Npar = -999
+
+        logical :: isAllocated  = .false.
+
+    end type shd_type_sen
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+end module globals_type
+
+
+module globals_obj
+
+    use globals_type, only: shd_type_rtm, &
+                            shd_type_cell, &
+                            shd_type_shdo, &
+                            shd_type_src, &
+                            shd_type_prp, &
+                            shd_type_sfc, &
+                            shd_type_ckd, &
+                            shd_type_sen
 
     implicit none
     public
 
-    integer, save :: Nz_ckd_
-    real, save, allocatable :: z_Ckd_(:), kabs0_Ckd_(:)
+    integer, parameter, private :: I__ = selected_int_kind(9)
+    integer, parameter, private :: R__ = selected_real_kind(6)
 
-end module globals_ckd
+
+    ! RTM
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    type(shd_type_rtm),  save :: rtm_obj_
+
+    real(kind=R__),  allocatable, save ::    xyz_Rtm_(:, :)    ! (3, rtm_obj%maxNpts)
+
+    real(kind=R__),  allocatable, save ::   temp_Rtm_(:), &    ! (rtm_obj%maxNpts)
+                                             ext_Rtm_(:), &    ! (rtm_obj%maxNpts)
+                                             ssa_Rtm_(:), &    ! (rtm_obj%maxNpts)
+                                             leg_Rtm_(:, :, :) ! (prp_obj%NlegSet, prp_obj%maxNleg, prp_obj%Npha)
+    integer(kind=2), allocatable, save ::   ipha_Rtm_(:)       ! (rtm_obj%maxNpts)
+
+    real(kind=R__),  allocatable, save :: planck_Rtm_(:)       ! (rtm_obj%maxNpts)
+    real(kind=R__),  allocatable, save ::   brdf_Rtm_(:, :)    ! (sfc_obj%maxNpar, xxx_obj%xxx)
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+
+    ! Cell
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    type(shd_type_cell), save :: cell_obj_
+
+    integer(kind=I__), allocatable, save :: i8Grid_Cell_(:, :) ! (8, cell_obj%maxNpts)
+    integer(kind=I__), allocatable, save :: i6Cell_Cell_(:, :) ! (6, cell_obj%maxNpts)
+    integer(kind=I__), allocatable, save :: i2Tree_Cell_(:, :) ! (2, cell_obj%maxNpts)
+    integer(kind=2),   allocatable, save ::   flag_Cell_(:)    ! (cell_obj%maxNpts)
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+
+    ! SHDO
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    type(shd_type_shdo), save :: shdo_obj_
+    integer(kind=I__), allocatable, save :: iradI_Shdo_(:)    ! (rtm_obj%maxNpts+2)
+    real(kind=R__),    allocatable, save ::  radI_Shdo_(:, :) ! (shdo_obj_%Nstokes, shdo_obj_%maxNptsSH+rtm_obj%maxNpts)
+    integer(kind=I__), allocatable, save :: isrcJ_Shdo_(:)    ! (rtm_obj%maxNpts+1)
+    real(kind=R__),    allocatable, save ::  srcJ_Shdo_(:, :) ! (shdo_obj%Nstokes, shdo_obj%maxNptsSH)
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+
+    ! SRC (radiation source, e.g., solar, thermal, or both)
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    type(shd_type_src),  save :: src_obj_
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+
+    ! PRP
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    type(shd_type_prp), save :: prp_obj_
+
+    real(kind=R__),  allocatable, save :: temp_Prp_(:),  &   ! (prp_obj%maxNpts)
+                                           ext_Prp_(:),  &   ! (prp_obj%maxNpts)
+                                           ssa_Prp_(:),  &   ! (prp_obj%maxNpts)
+                                           leg_Prp_(:, :, :) ! (prp_obj%NlegSet, prp_obj%maxNleg, prp_obj%Npha)
+    integer(kind=2), allocatable, save :: ipha_Prp_(:)       ! (prp_obj%maxNpts)
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+
+    ! SFC
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    type(shd_type_sfc), save :: sfc_obj_
+    real(kind=R__), allocatable, save :: brdf_Sfc_(:, :)  ! (sfc_obj%maxNpar, sfc_obj%maxNpts)
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+
+    ! CKD
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    type(shd_type_ckd), save :: ckd_obj_
+    real(kind=R__), allocatable, save :: solar_Ckd_(:), & ! (ckd_obj%Ng)
+                                           wgt_Ckd_(:), & ! (ckd_obj%Ng)
+                                          kabs_Ckd_(:, :) ! (ckd_obj%Nz, ckd_obj%Ng)
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+
+    ! SEN
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    type(shd_type_sen), save :: sen_obj_
+    real(kind=R__), allocatable, save :: view_Sen_(:, :)  ! (sen_obj%Npar, sen_obj%Npts)
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+end module globals_obj

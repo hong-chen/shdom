@@ -44,6 +44,16 @@ module shd_init
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
                              is1DX_, is1DYx_, &
                              isSolar_, isThermal_
+    use globals_type,  only: shd_type_rtm, &
+                             shd_type_cell, &
+                             shd_type_prp, &
+                             shd_type_sfc
+
+    use globals_obj, only:  rtm_obj_, &
+                           shdo_obj_, &
+                            src_obj_, &
+                            prp_obj_, &
+                            sfc_obj_, brdf_Rtm_
 
     use shd_util, only: shd_util__computePlanck, &
                         shd_util__solveTriDiag
@@ -64,178 +74,175 @@ module shd_init
     public :: shd_init__makeFlux
 
     public :: shd_init__makeTopRad
-    public :: shd_init__makeSfcRadFL
-    public :: shd_init__makeSfcRadVL
-    public :: shd_init__makeSfcRadU
-    public :: shd_init__makeSfcRadV
+    public :: shd_init__makeBotRadUL
+    public :: shd_init__makeBotRadVL
+    public :: shd_init__makeBotRadU
+    public :: shd_init__makeBotRadV
 
     public :: shd_init__checkSfcU
 
 contains
 
-subroutine shd_init__makeGrid(&
-    &BCFLAG, GRIDTYPE, NPX, NPY, NPZ, NX, NY, NZ,&
-    &XSTART, YSTART, DELXP, DELYP, ZLEVELS,&
-    &XGRID, YGRID, ZGRID)
+subroutine shd_init__makeGrid(rtm_OBJ, &
+                              prp_OBJ)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Description:
-    !   Makes the XGRID, YGRID, and ZGRID arrays from the input Z levels
-    !   and X and Y spacing from the property file according to the GRIDTYPE.
+    !   Makes the rtm_obj%x, rtm_obj%y, and rtm_obj%z arrays from the input Z levels
+    !   and X and Y spacing from the property file according to the rtm_obj%type.
     !
     ! Input:
-    !   BCFLAG  : integer, bit flags to specify the horizontal boundary conditions
-    !             0: periodic in X&Y; 1: open in x; 2: open in y; 3: open in X&Y
-    !             4: for MPI in X (perodic)
-    !             8: for MPI in Y (perodic)
-    !            12: for MPI in both (perodic)
-    !   GRIDTYPE: character(len=1), grid type
+    !   rtm_obj%type: character(len=1), grid type
     !             "E": even Z base grid between bottom and top;
     !             "P": Z base grid levels from property file;
     !             "F": Z base grid levels from file: shdom-zgrid.txt
-    !   NPX, NPY, NPZ : integer, size of the input property arrays
-    !   NX, NY, NZ    : integer, base grid size in X, Y and Z
-    !   XSTART, YSTART: real, starting X and Y
-    !   DELXP, DELYP  : real, horizontal grid spacing of the property arrays
-    !   ZLEVELS       : real array, input Z levels from the property file
+    !   prp_obj%Nx, prp_obj%Ny, prp_obj%Nz: integer, size of the input property arrays
+    !   rtm_obj%Nx0, rtm_obj%Ny0, rtm_obj%Nz: integer, base grid size in X, Y and Z
+    !   prp_obj%xStart, prp_obj%yStart: real, starting X and Y
+    !   prp_obj%dx, prp_obj%dy: real, horizontal grid spacing of the property arrays
+    !   prp_obj%z: real array, input Z levels from the property file
     !
     ! Output:
-    !   XGRID, YGRID, ZGRID: real array, grid locations for each dimension.
+    !   rtm_obj%x, rtm_obj%y, rtm_obj%z: real array, grid locations for each dimension.
     !                        To facilitate the periodic horizontal boundaries,
-    !                        there are NX+1 values in XGRID, NY+1 in YGRID,
-    !                        NZ values in ZGRID. Currently the grid locations
+    !                        there are rtm_obj%Nx0+1 values in rtm_obj%x, rtm_obj%Ny0+1 in rtm_obj%y,
+    !                        rtm_obj%Nz values in rtm_obj%z. Currently the grid locations
     !                        are evenly spaced in X and Y.
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    integer(kind=I__), intent(in) :: BCFLAG, NPX, NPY, NPZ, NX, NY, NZ
-    character(len=1) , intent(in) :: GRIDTYPE
-    real(kind=R__), intent(in)    :: XSTART, YSTART, ZLEVELS(NPZ)
-    real(kind=R__), intent(inout) :: DELXP, DELYP
-    real(kind=R__), intent(out)   :: XGRID(NX+1), YGRID(NY+1), ZGRID(NZ)
+    type(shd_type_rtm),  intent(inout) :: rtm_obj
+    type(shd_type_prp) , intent(inout) :: prp_obj
 
-    integer(kind=I__) :: IX, IY, IZ
+    integer(kind=I__) :: ix, iy, iz
 
     ! Make the X, Y, and Z grids, depending on type:
-    !   E for evenly spaced, P from property file, F from zgrid.inp
+    !   E for evenly spaced, P from property file, F from shdom-zgrid.txt
     !   Only Even allowed horizontally
-    if (DELXP .le. 0.0) then
-        DELXP = 1.0
-        if (verbose_ .ge. 4) write(*, '(A)') 'Warning [_makeGrid]: Found DELXP<=0.0, reset DELXP to 1.0.'
+
+    ! x
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    if (prp_obj%dx .le. 0.0) then
+        prp_obj%dx = 1.0
+        if (verbose_ .ge. 4) write(*, '(A)') 'Warning [_makeGrid]: Found prp_obj%dx<=0.0, reset prp_obj%dx to 1.0.'
     end if
 
     if (isMpiX_) then ! open in X
-        do IX = 1, NX
-            if (NPX .gt. 1) then
-                XGRID(IX) = XSTART + (IX - 1)*(DELXP*(NPX - 1))/float(NX - 1)
+        do ix = 1, rtm_obj%Nx0
+            if (prp_obj%Nx .gt. 1) then
+                rtm_obj%x(ix) = prp_obj%xStart + (ix - 1)*(prp_obj%dx*(prp_obj%Nx - 1))/float(rtm_obj%Nx0 - 1)
             else
-                XGRID(IX) = XSTART + (IX - 1)*(DELXP*NPX)/float(NX - 1)
+                rtm_obj%x(ix) = prp_obj%xStart + (ix - 1)*(prp_obj%dx*prp_obj%Nx)/float(rtm_obj%Nx0 - 1)
             end if
         end do
     else ! periodic in X
-        do IX = 1, NX + 1
-            XGRID(IX) = XSTART + (IX - 1)*(DELXP*NPX)/float(NX)
+        do ix = 1, rtm_obj%Nx0 + 1
+            rtm_obj%x(ix) = prp_obj%xStart + (ix - 1)*(prp_obj%dx*prp_obj%Nx)/float(rtm_obj%Nx0)
         end do
     end if
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    if (DELYP .le. 0.0) then
-        DELYP = 1.0
-        if (verbose_ .ge. 4) write(*, '(A)') 'Warning [_makeGrid]: Found DELYP<=0.0, reset DELYP to 1.0.'
+    ! y
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    if (prp_obj%dy .le. 0.0) then
+        prp_obj%dy = 1.0
+        if (verbose_ .ge. 4) write(*, '(A)') 'Warning [_makeGrid]: Found prp_obj%dy<=0.0, reset prp_obj%dy to 1.0.'
     end if
 
     if (isMpiY_) then ! open in Y
-        do IY = 1, NY
-            if (NPY .gt. 1) then
-                YGRID(IY) = YSTART + (IY - 1)*(DELYP*(NPY - 1))/float(NY - 1)
+        do iy = 1, rtm_obj%Ny0
+            if (prp_obj%Ny .gt. 1) then
+                rtm_obj%y(iy) = prp_obj%yStart + (iy - 1)*(prp_obj%dy*(prp_obj%Ny - 1))/float(rtm_obj%Ny0 - 1)
             else
-                YGRID(IY) = YSTART + (IY - 1)*(DELYP*NPY)/float(NY - 1)
+                rtm_obj%y(iy) = prp_obj%yStart + (iy - 1)*(prp_obj%dy*prp_obj%Ny)/float(rtm_obj%Ny0 - 1)
             end if
         end do
     else ! periodic in Y
-        do IY = 1, NY + 1
-            YGRID(IY) = YSTART + (IY - 1)*(DELYP*NPY)/float(NY)
+        do iy = 1, rtm_obj%Ny0 + 1
+            rtm_obj%y(iy) = prp_obj%yStart + (iy - 1)*(prp_obj%dy*prp_obj%Ny)/float(rtm_obj%Ny0)
         end do
     end if
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    if (GRIDTYPE .eq. 'P') then
-        if (NZ .ne. NPZ) then
+    ! z
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    if (rtm_obj%type .eq. 'P') then
+
+        if (rtm_obj%Nz .ne. prp_obj%Nz) then
             write (6, *)&
                 &'Error [_makeGrid]: For internal Z grid same as property file grid,'
-            write (6, *) '  must have same number of grid points (NZ=NPZ).'
+            write (6, *) '  must have same number of grid points (rtm_obj%Nz=prp_obj%Nz).'
             stop
         end if
-        do IZ = 1, NZ
-            ZGRID(IZ) = ZLEVELS(IZ)
+        do iz = 1, rtm_obj%Nz
+            rtm_obj%z(iz) = prp_obj%z(iz)
         end do
-    else if (GRIDTYPE .eq. 'E') then
-        do IZ = 1, NZ
-            ZGRID(IZ) = ZLEVELS(1)&
-                + (IZ - 1)*(ZLEVELS(NPZ) - ZLEVELS(1))/float(NZ - 1)
+
+    else if (rtm_obj%type .eq. 'E') then
+
+        do iz = 1, rtm_obj%Nz
+            rtm_obj%z(iz) = prp_obj%z(1)&
+                + (iz - 1)*(prp_obj%z(prp_obj%Nz) - prp_obj%z(1))/float(rtm_obj%Nz - 1)
         end do
-    else if (GRIDTYPE .eq. 'F') then
-        if (verbose_ .ge. 5) write(*, '(A)') 'Message [_makeGrid]: Reading ZGRID from <shdom-zgrid.txt> ...'
+
+    else if (rtm_obj%type .eq. 'F') then
+
+        if (verbose_ .ge. 5) write(*, '(A)') 'Message [_makeGrid]: Reading rtm_obj%z from <shdom-zgrid.txt> ...'
         open (UNIT=3, FILE='shdom-zgrid.txt', STATUS='OLD')
-        do IZ = 1, NZ
-            read (3, *) ZGRID(IZ)
+        do iz = 1, rtm_obj%Nz
+            read (3, *) rtm_obj%z(iz)
         end do
         close (3)
     else
         stop 'Error [_makeGrid]: Illegal grid type in Z.'
     end if
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
     return
 
 end subroutine shd_init__makeGrid
 
-subroutine shd_init__makeCell(&
-    &BCFLAG, IPFLAG, NX, NY, NZ, NX1, NY1,&
-    &NPTS, NCELLS, XGRID, YGRID, ZGRID, GRIDPOS,&
-    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS)
+subroutine shd_init__makeCell(rtm_obj, &
+                              cell_obj, &
+                              xyz_Rtm, i8Grid_Cell, i6Cell_Cell, i2Tree_Cell, flag_Cell)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Description:
     !   Make the initial grid cell data structure for the base grid.
-    !   For periodic boundary conditions there are NX*NY*(NZ-1) grid cells
-    !   and (NX+1)*(NY+1)*NZ grid points. The IX=NX+1 column is the same
-    !   as the IX=1 column, because of the periodicity, but the grid points
+    !   For periodic boundary conditions there are rtm_obj%Nx0*rtm_obj%Ny0*(rtm_obj%Nz-1) grid cells
+    !   and (rtm_obj%Nx0+1)*(rtm_obj%Ny0+1)*rtm_obj%Nz grid points. The ix=rtm_obj%Nx0+1 column is the same
+    !   as the ix=1 column, because of the periodicity, but the grid points
     !   are repeated.  The last grid cell on the "right" has the last column
     !   of grid points on the "left" and the repeated "virtual" set of grid
     !   points on the "right". For open boundary conditions in X and Y
-    !   there are (NX+1)*(NY+1)*(NZ-1) grid cells and NX*NY*NZ grid points.
+    !   there are (rtm_obj%Nx0+1)*(rtm_obj%Ny0+1)*(rtm_obj%Nz-1) grid cells and rtm_obj%Nx0*rtm_obj%Ny0*rtm_obj%Nz grid points.
     !   Open boundary conditions are done with the lowest "left most" and
     !   "right most" X and Y columns being independent pixels with
     !   their own grid cells (zero width), therefore one extra grid cell
     !   is required.   Multiple processor boundary conditions have
-    !   (NX-1)*(NY-1)*(NZ-1) grid cells and NX*NY*NZ grid points.
-    !   Independent pixel mode has NX*NY*(NZ-1) grid cells and NX*NY*NZ
+    !   (rtm_obj%Nx0-1)*(rtm_obj%Ny0-1)*(rtm_obj%Nz-1) grid cells and rtm_obj%Nx0*rtm_obj%Ny0*rtm_obj%Nz grid points.
+    !   Independent pixel mode has rtm_obj%Nx0*rtm_obj%Ny0*(rtm_obj%Nz-1) grid cells and rtm_obj%Nx0*rtm_obj%Ny0*rtm_obj%Nz
     !   grid points
     !
     ! Input:
-    !   IPFLAG    : Independent pixel flag
-    !                0: 3D, 1: IPA in X, 2: IPA in Y, 3: IPA in X&Y.
-    !   BCFLAG    : integer, bit flags to specify the horizontal boundary conditions
-    !               0: periodic in X&Y; 1: open in x; 2: open in y; 3: open in X&Y
-    !               4: for MPI in X (perodic)
-    !               8: for MPI in Y (perodic)
-    !              12: for MPI in both (perodic)
-    !   NX, NY, NZ: integer, base grid size in X, Y and Z
-    !   NX1, NY1  : integer, base grid actual size in X, Y
-    !   XGRID, YGRID, ZGRID: real array, grid locations for each dimension.
+    !   rtm_obj%Nx0, rtm_obj%Ny0, rtm_obj%Nz: integer, base grid size in X, Y and Z
+    !   rtm_obj%Nx, rtm_obj%Ny: integer, base grid actual size in X, Y
+    !   rtm_obj%x, rtm_obj%y, rtm_obj%z: real array, grid locations for each dimension.
     !                        To facilitate the periodic horizontal boundaries,
-    !                        there are NX+1 values in XGRID, NY+1 in YGRID,
-    !                        NZ values in ZGRID. Currently the grid locations
+    !                        there are rtm_obj%Nx0+1 values in rtm_obj%x, rtm_obj%Ny0+1 in rtm_obj%y,
+    !                        rtm_obj%Nz values in rtm_obj%z. Currently the grid locations
     !                        are evenly spaced in X and Y.
     !
     ! Output:
-    !   NPTS          : total number of grid points
-    !   NCELLS        : total number of cells
-    !   GRIDPOS(3,IP) : X,Y,Z coordinate values of grid point locations
-    !   GRIDPTR(8,IC) : pointer to 8 grid points belonging to a cell.
+    !   rtm_obj%Npts : total number of grid points
+    !   cell_obj%Npts: total number of cells
+    !   xyz_Rtm(3,IP) : X,Y,Z coordinate values of grid point locations
+    !   i8Grid_Cell(8,IC) : pointer to 8 grid points belonging to a cell.
     !                   Order of pointers is based on binary digits Z-Y-X:
     !                   IOCT = 1 + BITX + 2*BITY + 4*BITZ, where
     !                   BITc is 0 for negative side and 1 for positive side.
     !                   1: (-X, -Y, -Z), 2: (+X, -Y, -Z), 3: (-X, +Y, -Z), 4: (+X, +Y, -Z)
     !                   5: (-X, -Y, +Z), 6: (+X, -Y, +Z), 7: (-X, +Y, +Z), 8: (+X, +Y, +Z)
-    !   NEIGHPTR(6,IC): pointer to 6 neighboring cells of a cell.
+    !   i6Cell_Cell(6,IC): pointer to 6 neighboring cells of a cell.
     !                   Order of pointers are 1:-X, 2:+X, 3:-Y, 4:+Y, 5:-Z, 6:+Z.
     !                   Is 0 if there is no neighbor cell (boundary).
     !                   Is positive if there is just one cell across face
@@ -244,14 +251,14 @@ subroutine shd_init__makeCell(&
     !                   the face of current cell.  In this case the
     !                   cell pointed to is the parent cell that has a
     !                   has same or larger face adjoining current cell.
-    !   TREEPTR(2,IC) : pointer to parent and children cells in tree structure.
+    !   i2Tree_Cell(2,IC) : pointer to parent and children cells in tree structure.
     !                   First is pointer to parent cell, 0 for a base cell.
     !                   Second is pointer to first of the two children cells.
     !                   This pointer is 0 if there are no children cells.
     !                   The children cells are in successive order, with
-    !                   the negative side first. See CELLFLAGS for direction
+    !                   the negative side first. See flag_Cell for direction
     !                   of division of split.
-    !   CELLFLAGS(IC) : a collection of binary flags for the cells:
+    !   flag_Cell(IC) : a collection of binary flags for the cells:
     !                   bit  For bit set
     !                   0:  Do independent pixel for X
     !                   1:  Do independent pixel for Y
@@ -259,238 +266,244 @@ subroutine shd_init__makeCell(&
     ! IP is a grid point index, IC is a cell index.
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    integer(kind=I__), intent(in)    :: IPFLAG, BCFLAG, NX, NY, NZ, NX1, NY1
-    real(kind=R__)   , intent(in)    :: XGRID(NX1), YGRID(NY1), ZGRID(NZ)
+    type(shd_type_rtm),  intent(inout) :: rtm_obj
+    type(shd_type_cell), intent(inout) :: cell_obj
 
-    real(kind=R__)   , intent(out)   :: GRIDPOS(3, *)
-    integer(kind=I__), intent(inout) :: NPTS, NCELLS
-    integer(kind=I__), intent(out)   :: GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
-    integer(kind=2)  , intent(out)   :: CELLFLAGS(*)
+    real(kind=R__),    intent(out) :: xyz_Rtm(3, *)
+    integer(kind=I__), intent(out) :: i8Grid_Cell(8, *)
+    integer(kind=I__), intent(out) :: i6Cell_Cell(6, *)
+    integer(kind=I__), intent(out) :: i2Tree_Cell(2, *)
+    integer(kind=2),   intent(out) :: flag_Cell(*)
 
-    integer(kind=I__) :: IX, IY, IZ, IX0, IX1, IY0, IY1, I, NXC, NYC
+    integer(kind=I__) :: ix, iy, iz, ix0, ix1, iy0, iy1, i, Nxc, Nyc
 
     ! First, make the grid point positions
-    I = 0
-    do IX = 1, NX1
-        do IY = 1, NY1
-            do IZ = 1, NZ
-                I = I + 1
-                GRIDPOS(1, I) = XGRID(IX)
-                GRIDPOS(2, I) = YGRID(IY)
-                GRIDPOS(3, I) = ZGRID(IZ)
+    i = 0
+    do ix = 1, rtm_obj%Nx
+        do iy = 1, rtm_obj%Ny
+            do iz = 1, rtm_obj%Nz
+                i = i + 1
+                xyz_Rtm(1, i) = rtm_obj%x(ix)
+                xyz_Rtm(2, i) = rtm_obj%y(iy)
+                xyz_Rtm(3, i) = rtm_obj%z(iz)
             end do
         end do
     end do
-    NPTS = I
+    rtm_obj%Npts = i
 
-    NXC = NX
-    if (isOpenX_) NXC = NX + 1
-    if (isMpiX_ .and. (.not. is1DX_)) NXC = NX - 1
-    NYC = NY
-    if (isOpenYx_) NYC = NY + 1
-    if (isMpiY_ .and. (.not. is1DYx_)) NYC = NY - 1
+    Nxc = rtm_obj%Nx0
+    if (isOpenX_) Nxc = rtm_obj%Nx0 + 1
+    if (isMpiX_ .and. (.not. is1DX_)) Nxc = rtm_obj%Nx0 - 1
+    Nyc = rtm_obj%Ny0
+    if (isOpenYx_) Nyc = rtm_obj%Ny0 + 1
+    if (isMpiY_ .and. (.not. is1DYx_)) Nyc = rtm_obj%Ny0 - 1
 
     ! Then setup the cell structures
-    I = 0
-    do IX = 1, NXC
+    i = 0
+    do ix = 1, Nxc
         if (is1DX_) then
-            IX0 = IX
-            IX1 = IX
+            ix0 = ix
+            ix1 = ix
         else if (isOpenX_) then
-            IX0 = max(1, IX - 1)
-            IX1 = min(NX, IX)
+            ix0 = max(1, ix - 1)
+            ix1 = min(rtm_obj%Nx0, ix)
         else
-            IX0 = IX
-            IX1 = IX + 1
+            ix0 = ix
+            ix1 = ix + 1
         end if
-        do IY = 1, NYC
+        do iy = 1, Nyc
             if (is1DYx_) then
-                IY0 = IY
-                IY1 = IY
+                iy0 = iy
+                iy1 = iy
             else if (isOpenYx_) then
-                IY0 = max(1, IY - 1)
-                IY1 = min(NY, IY)
+                iy0 = max(1, iy - 1)
+                iy1 = min(rtm_obj%Ny0, iy)
             else
-                IY0 = IY
-                IY1 = IY + 1
+                iy0 = iy
+                iy1 = iy + 1
             end if
-            do IZ = 1, NZ - 1
-                I = I + 1
-                GRIDPTR(1, I) = IZ +     NZ*(IY0 - 1) + NZ*NY1*(IX0 - 1)
-                GRIDPTR(2, I) = IZ +     NZ*(IY0 - 1) + NZ*NY1*(IX1 - 1)
-                GRIDPTR(3, I) = IZ +     NZ*(IY1 - 1) + NZ*NY1*(IX0 - 1)
-                GRIDPTR(4, I) = IZ +     NZ*(IY1 - 1) + NZ*NY1*(IX1 - 1)
-                GRIDPTR(5, I) = IZ + 1 + NZ*(IY0 - 1) + NZ*NY1*(IX0 - 1)
-                GRIDPTR(6, I) = IZ + 1 + NZ*(IY0 - 1) + NZ*NY1*(IX1 - 1)
-                GRIDPTR(7, I) = IZ + 1 + NZ*(IY1 - 1) + NZ*NY1*(IX0 - 1)
-                GRIDPTR(8, I) = IZ + 1 + NZ*(IY1 - 1) + NZ*NY1*(IX1 - 1)
-                CELLFLAGS(I) = 0
+            do iz = 1, rtm_obj%Nz - 1
+                i = i + 1
+                i8Grid_Cell(1, i) = iz +     rtm_obj%Nz*(iy0 - 1) + rtm_obj%Nz*rtm_obj%Ny*(ix0 - 1)
+                i8Grid_Cell(2, i) = iz +     rtm_obj%Nz*(iy0 - 1) + rtm_obj%Nz*rtm_obj%Ny*(ix1 - 1)
+                i8Grid_Cell(3, i) = iz +     rtm_obj%Nz*(iy1 - 1) + rtm_obj%Nz*rtm_obj%Ny*(ix0 - 1)
+                i8Grid_Cell(4, i) = iz +     rtm_obj%Nz*(iy1 - 1) + rtm_obj%Nz*rtm_obj%Ny*(ix1 - 1)
+                i8Grid_Cell(5, i) = iz + 1 + rtm_obj%Nz*(iy0 - 1) + rtm_obj%Nz*rtm_obj%Ny*(ix0 - 1)
+                i8Grid_Cell(6, i) = iz + 1 + rtm_obj%Nz*(iy0 - 1) + rtm_obj%Nz*rtm_obj%Ny*(ix1 - 1)
+                i8Grid_Cell(7, i) = iz + 1 + rtm_obj%Nz*(iy1 - 1) + rtm_obj%Nz*rtm_obj%Ny*(ix0 - 1)
+                i8Grid_Cell(8, i) = iz + 1 + rtm_obj%Nz*(iy1 - 1) + rtm_obj%Nz*rtm_obj%Ny*(ix1 - 1)
+                flag_Cell(I) = 0
                 ! Initialize the neighbor pointer; to self for IP mode or
                 !   if open boundary conditions and at either end
                 if (is1DX_) then
-                    NEIGHPTR(1, I) = I
-                    NEIGHPTR(2, I) = I
-                    CELLFLAGS(I) = ibset(int(CELLFLAGS(I)), 0)
+                    i6Cell_Cell(1, i) = i
+                    i6Cell_Cell(2, i) = i
+                    flag_Cell(I) = ibset(int(flag_Cell(I)), 0)
                 else if (isOpenX_) then
-                    if (IX .eq. 1) then
-                        NEIGHPTR(1, I) = I
-                        NEIGHPTR(2, I) = I + (NZ - 1)*NYC
-                        CELLFLAGS(I) = ibset(int(CELLFLAGS(I)), 0)
-                    else if (IX .eq. NXC) then
-                        NEIGHPTR(1, I) = I - (NZ - 1)*NYC
-                        NEIGHPTR(2, I) = I
-                        CELLFLAGS(I) = ibset(int(CELLFLAGS(I)), 0)
+                    if (ix .eq. 1) then
+                        i6Cell_Cell(1, i) = i
+                        i6Cell_Cell(2, i) = i + (rtm_obj%Nz - 1)*Nyc
+                        flag_Cell(I) = ibset(int(flag_Cell(I)), 0)
+                    else if (ix .eq. Nxc) then
+                        i6Cell_Cell(1, i) = i - (rtm_obj%Nz - 1)*Nyc
+                        i6Cell_Cell(2, i) = i
+                        flag_Cell(I) = ibset(int(flag_Cell(I)), 0)
                     else
-                        NEIGHPTR(1, I) = I - (NZ - 1)*NYC
-                        NEIGHPTR(2, I) = I + (NZ - 1)*NYC
+                        i6Cell_Cell(1, i) = i - (rtm_obj%Nz - 1)*Nyc
+                        i6Cell_Cell(2, i) = i + (rtm_obj%Nz - 1)*Nyc
                     end if
                 else if (isMpiX_) then
-                    if (IX .eq. 1) then
-                        NEIGHPTR(1, I) = 0
-                        NEIGHPTR(2, I) = I + (NZ - 1)*NYC
-                    else if (IX .eq. NXC) then
-                        NEIGHPTR(1, I) = I - (NZ - 1)*NYC
-                        NEIGHPTR(2, I) = 0
+                    if (ix .eq. 1) then
+                        i6Cell_Cell(1, i) = 0
+                        i6Cell_Cell(2, i) = i + (rtm_obj%Nz - 1)*Nyc
+                    else if (ix .eq. Nxc) then
+                        i6Cell_Cell(1, i) = i - (rtm_obj%Nz - 1)*Nyc
+                        i6Cell_Cell(2, i) = 0
                     else
-                        NEIGHPTR(1, I) = I - (NZ - 1)*NYC
-                        NEIGHPTR(2, I) = I + (NZ - 1)*NYC
+                        i6Cell_Cell(1, i) = i - (rtm_obj%Nz - 1)*Nyc
+                        i6Cell_Cell(2, i) = i + (rtm_obj%Nz - 1)*Nyc
                     end if
                 else
-                    if (IX .eq. 1) then
-                        NEIGHPTR(1, I) = I + (NXC - 1)*(NZ - 1)*NYC
+                    if (ix .eq. 1) then
+                        i6Cell_Cell(1, i) = i + (Nxc - 1)*(rtm_obj%Nz - 1)*Nyc
                     else
-                        NEIGHPTR(1, I) = I - (NZ - 1)*NYC
+                        i6Cell_Cell(1, i) = i - (rtm_obj%Nz - 1)*Nyc
                     end if
-                    if (IX .eq. NX) then
-                        NEIGHPTR(2, I) = I - (NXC - 1)*(NZ - 1)*NYC
+                    if (ix .eq. rtm_obj%Nx0) then
+                        i6Cell_Cell(2, i) = i - (Nxc - 1)*(rtm_obj%Nz - 1)*Nyc
                     else
-                        NEIGHPTR(2, I) = I + (NZ - 1)*NYC
+                        i6Cell_Cell(2, i) = i + (rtm_obj%Nz - 1)*Nyc
                     end if
                 end if
                 if (is1DYx_) then
-                    NEIGHPTR(3, I) = I
-                    NEIGHPTR(4, I) = I
-                    CELLFLAGS(I) = ibset(int(CELLFLAGS(I)), 1)
+                    i6Cell_Cell(3, i) = i
+                    i6Cell_Cell(4, i) = i
+                    flag_Cell(I) = ibset(int(flag_Cell(I)), 1)
                 else if (isOpenYx_) then
-                    if (IY .eq. 1) then
-                        NEIGHPTR(3, I) = I
-                        NEIGHPTR(4, I) = I + (NZ - 1)
-                        CELLFLAGS(I) = ibset(int(CELLFLAGS(I)), 1)
-                    else if (IY .eq. NYC) then
-                        NEIGHPTR(3, I) = I - (NZ - 1)
-                        NEIGHPTR(4, I) = I
-                        CELLFLAGS(I) = ibset(int(CELLFLAGS(I)), 1)
+                    if (iy .eq. 1) then
+                        i6Cell_Cell(3, i) = i
+                        i6Cell_Cell(4, i) = i + (rtm_obj%Nz - 1)
+                        flag_Cell(I) = ibset(int(flag_Cell(I)), 1)
+                    else if (iy .eq. Nyc) then
+                        i6Cell_Cell(3, i) = i - (rtm_obj%Nz - 1)
+                        i6Cell_Cell(4, i) = i
+                        flag_Cell(I) = ibset(int(flag_Cell(I)), 1)
                     else
-                        NEIGHPTR(3, I) = I - (NZ - 1)
-                        NEIGHPTR(4, I) = I + (NZ - 1)
+                        i6Cell_Cell(3, i) = i - (rtm_obj%Nz - 1)
+                        i6Cell_Cell(4, i) = i + (rtm_obj%Nz - 1)
                     end if
                 else if (isMpiY_) then
-                    if (IY .eq. 1) then
-                        NEIGHPTR(3, I) = 0
-                        NEIGHPTR(4, I) = I + (NZ - 1)
-                    else if (IY .eq. NYC) then
-                        NEIGHPTR(3, I) = I - (NZ - 1)
-                        NEIGHPTR(4, I) = 0
+                    if (iy .eq. 1) then
+                        i6Cell_Cell(3, i) = 0
+                        i6Cell_Cell(4, i) = i + (rtm_obj%Nz - 1)
+                    else if (iy .eq. Nyc) then
+                        i6Cell_Cell(3, i) = i - (rtm_obj%Nz - 1)
+                        i6Cell_Cell(4, i) = 0
                     else
-                        NEIGHPTR(3, I) = I - (NZ - 1)
-                        NEIGHPTR(4, I) = I + (NZ - 1)
+                        i6Cell_Cell(3, i) = i - (rtm_obj%Nz - 1)
+                        i6Cell_Cell(4, i) = i + (rtm_obj%Nz - 1)
                     end if
                 else
-                    if (IY .eq. 1) then
-                        NEIGHPTR(3, I) = I + (NYC - 1)*(NZ - 1)
+                    if (iy .eq. 1) then
+                        i6Cell_Cell(3, i) = i + (Nyc - 1)*(rtm_obj%Nz - 1)
                     else
-                        NEIGHPTR(3, I) = I - (NZ - 1)
+                        i6Cell_Cell(3, i) = i - (rtm_obj%Nz - 1)
                     end if
-                    if (IY .eq. NY) then
-                        NEIGHPTR(4, I) = I - (NYC - 1)*(NZ - 1)
+                    if (iy .eq. rtm_obj%Ny0) then
+                        i6Cell_Cell(4, i) = i - (Nyc - 1)*(rtm_obj%Nz - 1)
                     else
-                        NEIGHPTR(4, I) = I + (NZ - 1)
+                        i6Cell_Cell(4, i) = i + (rtm_obj%Nz - 1)
                     end if
                 end if
-                if (IZ .eq. 1) then
-                    NEIGHPTR(5, I) = 0
+                if (iz .eq. 1) then
+                    i6Cell_Cell(5, i) = 0
                 else
-                    NEIGHPTR(5, I) = I - 1
+                    i6Cell_Cell(5, i) = i - 1
                 end if
-                if (IZ .eq. NZ - 1) then
-                    NEIGHPTR(6, I) = 0
+                if (iz .eq. rtm_obj%Nz - 1) then
+                    i6Cell_Cell(6, i) = 0
                 else
-                    NEIGHPTR(6, I) = I + 1
+                    i6Cell_Cell(6, i) = i + 1
                 end if
                 ! Base grid cells have no parents or children
-                TREEPTR(1, I) = 0
-                TREEPTR(2, I) = 0
+                i2Tree_Cell(1, i) = 0
+                i2Tree_Cell(2, i) = 0
             end do
         end do
     end do
-    NCELLS = I
+    cell_obj%Npts = i
 
     return
 
 end subroutine shd_init__makeCell
 
 subroutine shd_init__makePrp(&
-    &ML, MM, NSTLEG, NLEG, NPTS, DELTAM,&
-    &NUMPHASE, SRCTYPE, UNITS, WAVENO, WAVELEN, ALBMAX,&
-    &EXTINCT, ALBEDO, LEGEN, TEMP, PLANCK, IPHASE)
+    doDeltaM, maxSsa,&
+    rtm_obj, &
+    temp_Rtm, planck_Rtm, ext_Rtm, ssa_Rtm, leg_Rtm, ipha_Rtm)
 
     ! Prepares the grid arrays for the iterative solution process.
     ! If doing Delta-M scaling then the extinction, albedo, and Legend
-    ! terms are scaled first; only the 0 to ML LEGEN terms are scaled.
-    ! Outputs PLANCK with (1-omega)*B(T) for thermal source, where B(T
-    ! the Planck function (meaning depends on UNITS).
-    ! TEMP array is unchanged.
+    ! terms are scaled first; only the 0 to shdo_obj_%maxNl leg_Rtm terms are scaled.
+    ! Outputs planck_Rtm with (1-omega)*B(T) for thermal source, where B(T
+    ! the function (meaning depends on src_obj_%unit).
+    ! temp_Rtm array is unchanged.
 
-    integer ML, MM, NSTLEG, NLEG, NPTS, NUMPHASE
-    integer*2 IPHASE(NPTS)
-    logical DELTAM
-    real WAVENO(2), WAVELEN, ALBMAX
-    real EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NSTLEG, 0:NLEG, *)
-    real TEMP(NPTS), PLANCK(NPTS)
-    character(len=1) :: SRCTYPE, UNITS
+    type(shd_type_rtm),  intent(inout) :: rtm_obj
+
+    real(kind=R__), intent(in)    ::   temp_Rtm(*)
+    real(kind=R__), intent(out)   :: planck_Rtm(*)
+    real(kind=R__), intent(inout) ::    ext_Rtm(*)
+    real(kind=R__), intent(inout) ::    ssa_Rtm(*)
+    real(kind=R__), intent(inout) ::    leg_Rtm(prp_obj_%NlegSet, &
+                                              0:prp_obj_%maxNleg, *)
+    integer(kind=2), intent(in)   ::   ipha_Rtm(*)
+
+    logical, intent(in) :: doDeltaM
+    real(kind=R__), intent(inout) :: maxSsa
     integer I, IPH, L
     real F, BB
 
-    ALBMAX = 0.0
+    maxSsa = 0.0
 
-    if (DELTAM .and. NUMPHASE .gt. 0) then
-        do IPH = 1, NUMPHASE
-            F = LEGEN(1, ML + 1, IPH)
-            do L = 0, ML
+    if (doDeltaM .and. (prp_obj_%Npha .gt. 0)) then
+        do IPH = 1, prp_obj_%Npha
+            F = leg_Rtm(1, shdo_obj_%maxNl + 1, IPH)
+            do L = 0, shdo_obj_%maxNl
                 ! Scale the diagonal and off-diagonal phase matrix elements d
-                LEGEN(1, L, IPH) = (LEGEN(1, L, IPH) - F)/(1 - F)
-                if (NSTLEG .gt. 1) then
-                    LEGEN(2, L, IPH) = (LEGEN(2, L, IPH) - F)/(1 - F)
-                    LEGEN(3, L, IPH) = (LEGEN(3, L, IPH) - F)/(1 - F)
-                    LEGEN(4, L, IPH) = (LEGEN(4, L, IPH) - F)/(1 - F)
-                    LEGEN(5, L, IPH) = LEGEN(5, L, IPH)/(1 - F)
-                    LEGEN(6, L, IPH) = LEGEN(6, L, IPH)/(1 - F)
+                leg_Rtm(1, L, IPH) = (leg_Rtm(1, L, IPH) - F)/(1 - F)
+                if (prp_obj_%NlegSet .gt. 1) then
+                    leg_Rtm(2, L, IPH) = (leg_Rtm(2, L, IPH) - F)/(1 - F)
+                    leg_Rtm(3, L, IPH) = (leg_Rtm(3, L, IPH) - F)/(1 - F)
+                    leg_Rtm(4, L, IPH) = (leg_Rtm(4, L, IPH) - F)/(1 - F)
+                    leg_Rtm(5, L, IPH) =  leg_Rtm(5, L, IPH)     /(1 - F)
+                    leg_Rtm(6, L, IPH) =  leg_Rtm(6, L, IPH)     /(1 - F)
                 end if
             end do
         end do
     end if
 
-    do I = 1, NPTS
-        if (DELTAM) then
-            if (NUMPHASE .gt. 0) then
-                F = LEGEN(1, ML + 1, IPHASE(I))
+    do I = 1, rtm_obj_%Npts
+        if (doDeltaM) then
+            if (prp_obj_%Npha .gt. 0) then
+                F = leg_Rtm(1, shdo_obj_%maxNl + 1, ipha_Rtm(I))
             else
-                ! NUMPHASE=0 is standard property format, which is unpolarized
-                F = LEGEN(1, ML + 1, I)
-                do L = 0, ML
-                    LEGEN(1, L, I) = (LEGEN(1, L, I) - F)/(1 - F)
+                ! prp_obj_%Npha =0 is standard property format, which is unpolarized
+                F = leg_Rtm(1, shdo_obj_%maxNl + 1, I)
+                do L = 0, shdo_obj_%maxNl
+                    leg_Rtm(1, L, I) = (leg_Rtm(1, L, I) - F)/(1 - F)
                 end do
             end if
 
-            EXTINCT(I) = (1.0 - ALBEDO(I)*F)*EXTINCT(I)
-            ALBEDO(I) = (1.0 - F)*ALBEDO(I)/(1.0 - ALBEDO(I)*F)
+            ext_Rtm(I) = (1.0 - ssa_Rtm(I)*F)*ext_Rtm(I)
+            ssa_Rtm(I) = (1.0 - F)*ssa_Rtm(I)/(1.0 - ssa_Rtm(I)*F)
 
         end if
 
-        ALBMAX = max(ALBMAX, ALBEDO(I))
+        maxSsa = max(maxSsa, ssa_Rtm(I))
         if (isThermal_) then
-            call shd_util__computePlanck(TEMP(I), UNITS, WAVENO, WAVELEN, BB)
-            PLANCK(I) = (1.0 - ALBEDO(I))*BB
+            call shd_util__computePlanck(temp_Rtm(I), src_obj_%unit, src_obj_%waveNum, src_obj_%avgWaveLen, BB)
+            planck_Rtm(I) = (1.0 - ssa_Rtm(I))*BB
         end if
     end do
 
@@ -499,42 +512,42 @@ subroutine shd_init__makePrp(&
 end subroutine shd_init__makePrp
 
 subroutine shd_init__makeRad(&
-    &NSTOKES, NXY, NZ, NSTLEG, NLEG,&
-    &RSHPTR, ZGRID,&
-    &EXTINCT, ALBEDO, LEGEN, TEMP, NUMPHASE, IPHASE,&
-    &SRCTYPE, SOLARFLUX, SOLARMU, GNDALBEDO, GNDTEMP,&
-    &SKYRAD, UNITS, WAVENO, WAVELEN, RADIANCE)
+    &NSTOKES, Nxy, NZ,&
+    &iradI_Shdo, ZGRID,&
+    &ext, ssa, leg, temp, ipha,&
+    &SRCTYPE, SOLARFLUX, SOLARMU,&
+    &SKYRAD, UNITS, WAVENO, WAVELEN, radI_Shdo)
 
     ! Initializes radiance field by solving plane-parallel two-stream.
     ! Solves the L=1 M=0 SH system by transforming the pentadiagonal
     ! system to tridiagonal and calling solver.
-    ! Does the initialization for the NXY columns of the base grid.
+    ! Does the initialization for the Nxy columns of the base grid.
     ! Only the I Stokes parameter is initialized, the rest are zeroed.
 
-    integer NSTOKES, NXY, NZ, NSTLEG, NLEG, NUMPHASE, RSHPTR(*)
-    integer*2 IPHASE(NZ, NXY)
-    real GNDALBEDO, GNDTEMP, SKYRAD, SOLARFLUX, SOLARMU
+    integer NSTOKES, Nxy, NZ, iradI_Shdo(*)
+    integer*2 ipha(NZ, Nxy)
+    real SKYRAD, SOLARFLUX, SOLARMU
     real WAVENO(2), WAVELEN
     real ZGRID(NZ)
-    real EXTINCT(NZ, NXY), ALBEDO(NZ, NXY), LEGEN(NSTLEG, 0:NLEG, *)
-    real TEMP(NZ, NXY)
-    real RADIANCE(NSTOKES, *)
+    real ext(NZ, Nxy), ssa(NZ, Nxy), leg(prp_obj_%NlegSet, 0:prp_obj_%Nleg, *)
+    real temp(NZ, Nxy)
+    real radI_Shdo(NSTOKES, *)
     character(len=1) :: SRCTYPE, UNITS
     integer NLAYER, I, IZ, IR, J, K, L, ZINDEX
     logical DELTAM
     real C0, C1
     real EXT0, ALB0, SCAT0, G0, GNDEMIS
-    real, allocatable :: OPTDEPTHS(:), ALBEDOS(:), ASYMMETRIES(:)
-    real, allocatable :: TEMPS(:), FLUXES(:, :)
+    real, allocatable :: optZ(:), ssaZ(:), asyZ(:)
+    real, allocatable :: tempZ(:), FLUXES(:, :)
     character(len=1) :: SRCT
 
     NLAYER = NZ - 1
 
-    allocate (OPTDEPTHS(NZ), ALBEDOS(NZ), ASYMMETRIES(NZ))
-    allocate (TEMPS(NZ), FLUXES(3, NZ))
+    allocate(optZ(NZ), ssaZ(NZ), asyZ(NZ))
+    allocate(tempZ(NZ), FLUXES(3, NZ))
 
     !real, allocatable :: CH(:, :)
-    !allocate (CH(NLAYER, NLAYER))
+    !allocate(CH(NLAYER, NLAYER))
     !call shd_init__chapman(NLAYER, SOLARMU, planetRadius_, ZGRID(NZ:1:-1), CH)
 
     DELTAM = .false.
@@ -548,8 +561,8 @@ subroutine shd_init__makeRad(&
 
     ! Loop over all the columns in the base grid
     IR = 0
-    RSHPTR(1) = 0
-    do I = 1, NXY
+    iradI_Shdo(1) = 0
+    do I = 1, Nxy
 
         ! this is modified to address layer averaging issue
         !╭────────────────────────────────────────────────╮!
@@ -559,67 +572,67 @@ subroutine shd_init__makeRad(&
 
             ZINDEX = IZ + 1
 
-            EXT0 = EXTINCT(ZINDEX, I)
-            ALB0 = ALBEDO(ZINDEX, I)
+            EXT0 = ext(ZINDEX, I)
+            ALB0 = ssa(ZINDEX, I)
             SCAT0 = ALB0*EXT0
 
-            OPTDEPTHS(L) = (ZGRID(IZ + 1) - ZGRID(IZ))*EXT0
+            optZ(L) = (ZGRID(IZ + 1) - ZGRID(IZ))*EXT0
 
             if (EXT0 .gt. 0.0) then
-                ALBEDOS(L) = ALB0
+                ssaZ(L) = ALB0
             else
-                ALBEDOS(L) = 0.0
+                ssaZ(L) = 0.0
             end if
 
-            if (NUMPHASE .gt. 0) then
-                J = IPHASE(ZINDEX, I)
+            if (prp_obj_%Npha .gt. 0) then
+                J = ipha(ZINDEX, I)
             else
                 J = NZ*(I - 1) + IZ
             end if
-            G0 = LEGEN(1, 1, J)
+            G0 = leg(1, 1, J)
 
             if (SCAT0 .gt. 0.0) then
-                ASYMMETRIES(L) = G0
+                asyZ(L) = G0
             else
-                ASYMMETRIES(L) = 0.0
+                asyZ(L) = 0.0
             end if
-            TEMPS(L + 1) = TEMP(IZ, I)
+            tempZ(L + 1) = temp(IZ, I)
         end do
         !╰────────────────────────────────────────────────╯!
 
-        TEMPS(1) = TEMP(NZ, I)
+        tempZ(1) = temp(NZ, I)
 
-        GNDEMIS = 1.0 - GNDALBEDO
+        GNDEMIS = 1.0 - sfc_obj_%avgAlb
 
         ! Call the Eddington flux routine
-        call shd_init__makeFlux(NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
-            &TEMPS, DELTAM, SRCTYPE, SOLARFLUX, SOLARMU,&
-            &GNDTEMP, GNDEMIS, SKYRAD, UNITS, WAVENO, WAVELEN,&
+        call shd_init__makeFlux(NLAYER, optZ, ssaZ, asyZ,&
+            &tempZ, DELTAM, SRCTYPE, SOLARFLUX, SOLARMU,&
+            &sfc_obj_%avgTemp, GNDEMIS, SKYRAD, UNITS, WAVENO, WAVELEN,&
             &FLUXES)
 
         ! Convert fluxes to first two moments of spherical harmonics
         do IZ = 1, NZ
             L = NZ + 1 - IZ
-            RADIANCE(:, IR + 1) = 0.0
-            RADIANCE(:, IR + 2) = 0.0
-            RADIANCE(:, IR + 3) = 0.0
-            RADIANCE(:, IR + 4) = 0.0
-            RADIANCE(1, IR + 1) = C0*(FLUXES(1, L) + FLUXES(2, L))
-            RADIANCE(1, IR + 3) = C1*(FLUXES(1, L) - FLUXES(2, L))
+            radI_Shdo(:, IR + 1) = 0.0
+            radI_Shdo(:, IR + 2) = 0.0
+            radI_Shdo(:, IR + 3) = 0.0
+            radI_Shdo(:, IR + 4) = 0.0
+            radI_Shdo(1, IR + 1) = C0*(FLUXES(1, L) + FLUXES(2, L))
+            radI_Shdo(1, IR + 3) = C1*(FLUXES(1, L) - FLUXES(2, L))
             IR = IR + 4
-            RSHPTR(IZ + NZ*(I - 1) + 1) = IR
+            iradI_Shdo(IZ + NZ*(I - 1) + 1) = IR
         end do
     end do
 
-    deallocate (OPTDEPTHS, ALBEDOS, ASYMMETRIES, TEMPS, FLUXES)
+    deallocate(optZ, ssaZ, asyZ, tempZ, FLUXES)
 
     return
 
 end subroutine shd_init__makeRad
 
 subroutine shd_init__makeFlux(&
-    &NLAYER, OPTDEPTHS, ALBEDOS, ASYMMETRIES,&
-    &TEMPS, DELTAM, SRCTYPE, SOLARFLUX, SOLARMU,&
+    &NLAYER, optZ, ssaZ, asyZ,&
+    &tempZ, DELTAM, SRCTYPE, SOLARFLUX, SOLARMU,&
     &GNDTEMP, GNDEMIS, SKYRAD, UNITS, WAVENO, WAVELEN,&
     &FLUXES)
 
@@ -644,12 +657,12 @@ subroutine shd_init__makeFlux(&
     !   Input:
     ! NLAYER         integer      Number of homogenous layers
     !                             (layers are specified from the top down)
-    ! OPTDEPTHS      real array   Optical thickness of layers
-    ! ALBEDOS        real array   Single scattering albedos
-    ! ASYMMETRIES    real array   Asymmetry parameters
-    ! TEMPS          real array   Temperatures (K) at layer interfaces
-    !                              (e.g. TEMPS(1) is at top of top layer
-    !                               TEMPS(2) is at bottom of top layer).
+    ! optZ           real array   Optical thickness of layers
+    ! ssaZ           real array   Single scattering albedos
+    ! asyZ           real array   Asymmetry parameters
+    ! tempZ          real array   Temperatures (K) at layer interfaces
+    !                              (e.g. tempZ(1) is at top of top layer
+    !                               tempZ(2) is at bottom of top layer).
     ! DELTAM         logical      True for delta-Eddington scaling
     ! SRCTYPE        character    'S' for solar source, 'T' for thermal source
     ! SOLARFLUX      real         Incident solar flux on horizonal plane
@@ -675,8 +688,8 @@ subroutine shd_init__makeFlux(&
 
     integer NLAYER
     logical DELTAM
-    real TEMPS(*)
-    real OPTDEPTHS(*), ALBEDOS(*), ASYMMETRIES(*)
+    real tempZ(*)
+    real optZ(*), ssaZ(*), asyZ(*)
     real GNDTEMP, GNDEMIS, SKYRAD, SOLARFLUX, SOLARMU
     real WAVENO(2), WAVELEN
     character(len=1) :: SRCTYPE, UNITS
@@ -693,20 +706,20 @@ subroutine shd_init__makeFlux(&
     real BBRAD
 
     N = 2*NLAYER + 2
-    allocate (LOWER(N), UPPER(N), DIAG(N), RHS(N))
+    allocate(LOWER(N), UPPER(N), DIAG(N), RHS(N))
 
     ! Compute the reflection, transmission, and source
     !   coefficients for each layer for the diffuse Eddington
     !   two stream problem.
     if (SRCTYPE .eq. 'T') then
-        call shd_util__computePlanck(TEMPS(1), UNITS, WAVENO, WAVELEN, BBRAD)
+        call shd_util__computePlanck(tempZ(1), UNITS, WAVENO, WAVELEN, BBRAD)
         PLANCK1 = PI_*BBRAD
     end if
     MU0 = abs(SOLARMU)
     TAU = 0.0
     I = 2
     do L = 1, NLAYER
-        DELTAU = OPTDEPTHS(L)
+        DELTAU = optZ(L)
         if (DELTAU .lt. 0.0) stop 'Error [_makeFlux]: TAU<0.'
         ! Special case for zero optical depth
         if (DELTAU .eq. 0.0) then
@@ -715,8 +728,8 @@ subroutine shd_init__makeFlux(&
             SOURCEP = 0.0
             SOURCEM = 0.0
         else
-            OMEGA = ALBEDOS(L)
-            G = ASYMMETRIES(L)
+            OMEGA = ssaZ(L)
+            G = asyZ(L)
             if (DELTAM) then
                 F = G**2
                 DELTAU = (1 - OMEGA*F)*DELTAU
@@ -744,7 +757,7 @@ subroutine shd_init__makeFlux(&
 
             if (SRCTYPE .eq. 'T') then
                 ! Calculate thermal source terms
-                call shd_util__computePlanck(TEMPS(L + 1), UNITS, WAVENO, WAVELEN, BBRAD)
+                call shd_util__computePlanck(tempZ(L + 1), UNITS, WAVENO, WAVELEN, BBRAD)
                 PLANCK2 = PI_*BBRAD
                 V = 2.0*(PLANCK2 - PLANCK1)/(3.0*(1.0-OMEGA*G)*DELTAU)
                 RADP1P = -V + PLANCK1
@@ -835,7 +848,7 @@ subroutine shd_init__makeFlux(&
         I = I + 2
     end do
 
-    deallocate (LOWER, UPPER, DIAG, RHS)
+    deallocate(LOWER, UPPER, DIAG, RHS)
 
     return
 
@@ -871,8 +884,8 @@ subroutine shd_init__makeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
 
 end subroutine shd_init__makeTopRad
 
-subroutine shd_init__makeSfcRadFL(NBOTPTS, BCPTR,&
-    &DIRFLUX, FLUXES, SRCTYPE, GNDTEMP, GNDALBEDO,&
+subroutine shd_init__makeBotRadUL(NBOTPTS, BCPTR,&
+    &DIRFLUX, FLUXES, SRCTYPE,&
     &WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD)
 
     !   Returns the BCRAD array with the upwelling unpolarized radiance for
@@ -884,16 +897,16 @@ subroutine shd_init__makeSfcRadFL(NBOTPTS, BCPTR,&
 
     integer NBOTPTS, BCPTR(*), NSTOKES
     real DIRFLUX(*), FLUXES(2, *)
-    real GNDTEMP, GNDALBEDO, WAVENO(2), WAVELEN
+    real WAVENO(2), WAVELEN
     real BCRAD(NSTOKES, *)
     character(len=1) :: SRCTYPE, UNITS
     integer I, IBC, K
     real ALB, GNDRAD
 
-    ALB = GNDALBEDO/acos(-1.0)
+    ALB = sfc_obj_%avgAlb/acos(-1.0)
     if (isThermal_) then
-        call shd_util__computePlanck(GNDTEMP, UNITS, WAVENO, WAVELEN, GNDRAD)
-        GNDRAD = GNDRAD*(1.0 - GNDALBEDO)
+        call shd_util__computePlanck(sfc_obj_%avgTemp, UNITS, WAVENO, WAVELEN, GNDRAD)
+        GNDRAD = GNDRAD*(1.0 - sfc_obj_%avgAlb)
     end if
 
     ! Loop over all bottom points finding the upwelling radiance
@@ -911,24 +924,23 @@ subroutine shd_init__makeSfcRadFL(NBOTPTS, BCPTR,&
 
     return
 
-end subroutine shd_init__makeSfcRadFL
+end subroutine shd_init__makeBotRadUL
 
-subroutine shd_init__makeSfcRadVL(NBOTPTS, BCPTR,&
-    &DIRFLUX, FLUXES, SRCTYPE, NSFCPAR, SFCGRIDPARMS,&
+subroutine shd_init__makeBotRadVL(NBOTPTS, BCPTR,&
+    &DIRFLUX, FLUXES, SRCTYPE,&
     &NSTOKES, BCRAD)
 
     !   Returns the BCRAD array with the upwelling unpolarized radiance for a
     ! variable Lambertian surface for the bottom points (pointed to by BCPTR).
-    ! SFCGRIDPARMS contains the interpolated surface properties for the
+    ! brdf_Rtm_ contains the interpolated surface properties for the
     ! bottom boundary points; the first is Planck function and the second is
     ! albedo.  The reflection is computed from the downwelling hemispheric
     ! flux (in FLUXES).  There may also be thermal emission (depending on
     ! temperature and emissivity) or reflected collimated solar radiation
     ! (from DIRFLUX).
 
-    integer NBOTPTS, BCPTR(*), NSFCPAR, NSTOKES
+    integer NBOTPTS, BCPTR(*), NSTOKES
     real DIRFLUX(*), FLUXES(2, *)
-    real SFCGRIDPARMS(NSFCPAR, NBOTPTS)
     real BCRAD(NSTOKES, *)
     character(len=1) :: SRCTYPE
     integer I, IBC, K
@@ -937,11 +949,11 @@ subroutine shd_init__makeSfcRadVL(NBOTPTS, BCPTR,&
     ! Loop over all bottom points
     do IBC = 1, NBOTPTS
         I = BCPTR(IBC)
-        ALB = SFCGRIDPARMS(2, IBC)
+        ALB = brdf_Rtm_(2, IBC)
         if (SRCTYPE .eq. 'S') then
             BCRAD(1, IBC) = OPI_*ALB*(DIRFLUX(I) + FLUXES(1, I))
         else
-            GNDRAD = SFCGRIDPARMS(1, IBC)*(1 - ALB)
+            GNDRAD = brdf_Rtm_(1, IBC)*(1 - ALB)
             if (SRCTYPE .eq. 'T') then
                 BCRAD(1, IBC) = GNDRAD + OPI_*ALB*FLUXES(1, I)
             else if (SRCTYPE .eq. 'B') then
@@ -950,14 +962,15 @@ subroutine shd_init__makeSfcRadVL(NBOTPTS, BCPTR,&
         end if
         BCRAD(2:, IBC) = 0.0
     end do
+
     return
 
-end subroutine shd_init__makeSfcRadVL
+end subroutine shd_init__makeBotRadVL
 
-subroutine shd_init__makeSfcRadU(NBOTPTS, BCPTR,&
+subroutine shd_init__makeBotRadU(NBOTPTS, BCPTR,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, IMU, IPHI,&
     &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
-    &SFCTYPE, NSFCPAR, SFCGRIDPARMS, SFC_BRDF_DO,&
+    &SFC_BRDF_DO,&
     &NSTOKES, BCRAD)
 
     !   Computes the upwelling Stokes vector of the bottom boundary points
@@ -976,14 +989,12 @@ subroutine shd_init__makeSfcRadU(NBOTPTS, BCPTR,&
     ! upwelling radiance vectors are output in BCRAD(*,*,1).
 
     integer NBOTPTS, BCPTR(NBOTPTS)
-    integer NMU, NPHI0MAX, NPHI0(NMU), IMU, IPHI, NSFCPAR, NSTOKES
+    integer NMU, NPHI0MAX, NPHI0(NMU), IMU, IPHI, NSTOKES
     real WTDO(NMU, NPHI0MAX), MU(NMU), PHI(NMU, NPHI0MAX)
     real WAVELEN, SOLARMU, SOLARAZ, DIRFLUX(*)
-    real SFCGRIDPARMS(NSFCPAR, NBOTPTS)
     real SFC_BRDF_DO(NSTOKES, NMU/2, NPHI0MAX, NSTOKES, NMU/2, NPHI0MAX)
     real BCRAD(NSTOKES, NBOTPTS, *)
     character(len=1) :: SRCTYPE
-    character(len=2) :: SFCTYPE
     integer IMU1, JMU, JPHI, IBC, I, JANG, K, K1, K2
     real REFLECT(4, 4), W
 
@@ -995,7 +1006,7 @@ subroutine shd_init__makeSfcRadU(NBOTPTS, BCPTR,&
         BCRAD(:, IBC, 1) = 0.0
         if (isSolar_) then
             I = BCPTR(IBC)
-            call shd_sfc__brdfSurface(SFCTYPE(2:2), SFCGRIDPARMS(2, IBC), WAVELEN,&
+            call shd_sfc__brdfSurface(sfc_obj_%type(2:2), brdf_Rtm_(2:sfc_obj_%Npar, IBC), WAVELEN,&
                 &MU(IMU), PHI(IMU, IPHI), SOLARMU, SOLARAZ,&
                 &NSTOKES, REFLECT)
             BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1)&
@@ -1013,9 +1024,9 @@ subroutine shd_init__makeSfcRadU(NBOTPTS, BCPTR,&
                 end do
                 ! Add in the polarized thermal emission
                 W = OPI_*abs(MU(JMU))*WTDO(JMU, JPHI)
-                BCRAD(1, IBC, 1) = BCRAD(1, IBC, 1) + SFCGRIDPARMS(1, IBC)&
+                BCRAD(1, IBC, 1) = BCRAD(1, IBC, 1) + brdf_Rtm_(1, IBC)&
                     &*(W - SFC_BRDF_DO(1, IMU1, IPHI, 1, JMU, JPHI))
-                BCRAD(2:, IBC, 1) = BCRAD(2:, IBC, 1) - SFCGRIDPARMS(1, IBC)&
+                BCRAD(2:, IBC, 1) = BCRAD(2:, IBC, 1) - brdf_Rtm_(1, IBC)&
                     &*SFC_BRDF_DO(2:, IMU1, IPHI, 1, JMU, JPHI)
                 JANG = JANG + 1
             end do
@@ -1024,13 +1035,13 @@ subroutine shd_init__makeSfcRadU(NBOTPTS, BCPTR,&
 
     return
 
-end subroutine shd_init__makeSfcRadU
+end subroutine shd_init__makeBotRadU
 
-subroutine shd_init__makeSfcRadV(&
+subroutine shd_init__makeBotRadV(&
     &NBOTPTS, IBEG, IEND, BCPTR,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MU2, PHI2,&
     &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
-    &SFCTYPE, NSFCPAR, SFCGRIDPARMS, NSTOKES, BCRAD)
+    &NSTOKES, BCRAD)
 
     !   Computes the upwelling Stokes vector of the bottom boundary points
     ! for one outgoing direction using the specified bidirectional
@@ -1042,7 +1053,7 @@ subroutine shd_init__makeSfcRadV(&
     ! downwelling radiance, so a discrete sum is done and the integral
     ! weights (WTDO) are included. The general BRDF function is called
     ! to compute the Stokes reflectance matrix for the particular BRDF
-    ! type (SFCTYPE) with parameters (SFCGRIDPARMS) for the incident and
+    ! type (sfc_obj_%type) with parameters (brdf_Rtm_) for the incident and
     ! outgoing directions.  The emissivity is computed implicitly from the
     ! integral of the BRDF.  The outgoing direction is specified with
     ! (MU2,PHI2), and the BRDF is computed for all incident directions
@@ -1051,12 +1062,11 @@ subroutine shd_init__makeSfcRadV(&
     ! are output in BCRAD(*,*,1).
 
     integer NBOTPTS, IBEG, IEND, BCPTR(NBOTPTS)
-    integer NMU, NPHI0MAX, NPHI0(NMU), NSFCPAR, NSTOKES
+    integer NMU, NPHI0MAX, NPHI0(NMU), NSTOKES
     real WTDO(NMU, NPHI0MAX), MU(NMU), PHI(NMU, NPHI0MAX)
     real MU2, PHI2, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX(*)
-    real SFCGRIDPARMS(NSFCPAR, NBOTPTS), BCRAD(NSTOKES, NBOTPTS, *)
+    real BCRAD(NSTOKES, NBOTPTS, *)
     character(len=1) :: SRCTYPE
-    character(len=2) :: SFCTYPE
     integer JMU, JPHI, IBC, I, JANG, K, K1, K2
     real REFLECT(4, 4), W, SUM0, SUM1, RADSPEC(4)
 
@@ -1067,7 +1077,7 @@ subroutine shd_init__makeSfcRadV(&
         BCRAD(:, IBC, 1) = 0.0
         if (isSolar_) then
             I = BCPTR(IBC)
-            call shd_sfc__brdfSurface(SFCTYPE(2:2), SFCGRIDPARMS(2, IBC), WAVELEN,&
+            call shd_sfc__brdfSurface(sfc_obj_%type(2:2), brdf_Rtm_(2:sfc_obj_%Npar, IBC), WAVELEN,&
                 &MU2, PHI2, SOLARMU, SOLARAZ, NSTOKES, REFLECT)
             BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1)&
                 &+ OPI_*REFLECT(1:NSTOKES, 1)*DIRFLUX(I)
@@ -1077,7 +1087,7 @@ subroutine shd_init__makeSfcRadV(&
         JANG = 1
         do JMU = 1, NMU/2
             do JPHI = 1, NPHI0(JMU)
-                call shd_sfc__brdfSurface(SFCTYPE(2:2), SFCGRIDPARMS(2, IBC),&
+                call shd_sfc__brdfSurface(sfc_obj_%type(2:2), brdf_Rtm_(2:sfc_obj_%Npar, IBC),&
                     &WAVELEN, MU2, PHI2, MU(JMU), PHI(JMU, JPHI),&
                     &NSTOKES, REFLECT)
                 W = OPI_*abs(MU(JMU))*WTDO(JMU, JPHI)
@@ -1088,49 +1098,51 @@ subroutine shd_init__makeSfcRadV(&
                 end do
                 ! Add in the polarized thermal emission
                 BCRAD(1, IBC, 1) = BCRAD(1, IBC, 1)&
-                    &+ W*(1 - REFLECT(1, 1))*SFCGRIDPARMS(1, IBC)
+                    &+ W*(1 - REFLECT(1, 1))*brdf_Rtm_(1, IBC)
                 BCRAD(2:, IBC, 1) = BCRAD(2:, IBC, 1)&
-                    &- W*REFLECT(2:NSTOKES, 1)*SFCGRIDPARMS(1, IBC)
+                    &- W*REFLECT(2:NSTOKES, 1)*brdf_Rtm_(1, IBC)
                 JANG = JANG + 1
             end do
         end do
 
     end do
-    return
-end subroutine shd_init__makeSfcRadV
 
-subroutine shd_init__checkSfcU(&
-    &NXSFC, NYSFC, NSFCPAR, SFCPARMS,&
-    &UNIFORM_SFC_BRDF)
+    return
+
+end subroutine shd_init__makeBotRadV
+
+subroutine shd_init__checkSfcU(sfc_obj, brdf_Sfc)
 
     ! Description:
     !   Checks to see if the surface reflection parameters are uniform,
-    !   and if so sets the UNIFORM_SFC_BRDF flag.  The temperature need
+    !   and if so sets the sfc_obj%isUniform flag.  The temperature need
     !   not be uniform.
     !
     ! Input:
-    !   NXSFC, NYSFC: integer, size of surface arrays (internally NXSFC+1 by NYSFC+1)
-    !   NSFCPAR: integer, number of surface parameters for modeling different BRDF
-    !   SFCPARMS: real array, surface parameters for modeling different BRDF
+    !   sfc_obj%Nx, sfc_obj%Ny: integer, size of surface arrays (internally sfc_obj%Nx+1 by sfc_obj%Ny+1)
+    !   sfc_obj%Npar: integer, number of surface parameters for modeling different BRDF
+    !   brdf_Sfc: real array, surface parameters for modeling different BRDF
     !
     ! Output:
-    !   UNIFORM_SFC_BRDF: logical, whether surface reflection parameters are uniform
+    !   sfc_obj%isUniform: logical, whether surface reflection parameters are uniform
 
-    integer(kind=I__), intent(in) :: NXSFC, NYSFC, NSFCPAR
-    real(kind=R__)   , intent(in) :: SFCPARMS(NSFCPAR, NXSFC + 1, NYSFC + 1)
+    type(shd_type_sfc), intent(inout) :: sfc_obj
+    real(R__),          intent(in)    :: brdf_Sfc(sfc_obj%Npar, *)
 
-    logical, intent(out) :: UNIFORM_SFC_BRDF
+    integer(kind=I__) :: ix, iy, J, idata
 
-    integer(kind=I__) :: IX, IY, J
+    sfc_obj%isUniform = .true.
 
-    UNIFORM_SFC_BRDF = .true.
+    do iy = 1, sfc_obj%Ny
+        do ix = 1, sfc_obj%Nx
+            idata = iy + (sfc_obj%Ny + 1)*(ix - 1)
+            do J = 2, sfc_obj%Npar
+                if (brdf_Sfc(J, idata) .ne. brdf_Sfc(J, 1)) then
 
-    do IY = 1, NYSFC
-        do IX = 1, NXSFC
-            do J = 2, NSFCPAR
-                if (SFCPARMS(J, IX, IY) .ne. SFCPARMS(J, 1, 1)) then
-                    UNIFORM_SFC_BRDF = .false.
+                    sfc_obj%isUniform = .false.
+
                     return
+
                 end if
             end do
         end do

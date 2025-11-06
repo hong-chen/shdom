@@ -45,6 +45,20 @@ module shd_mpi
                              is1DX_, is1DYx_, is1D_, &
                              isPol_, isPol4_, &
                              isSolar_
+    use globals_type,  only: shd_type_rtm,  &
+                             shd_type_cell, &
+                             shd_type_prp,  &
+                             shd_type_sfc,  &
+                             shd_type_ckd,  &
+                             shd_type_sen
+
+    use globals_obj,   only:  rtm_obj_, xyz_Rtm_, ext_Rtm_, leg_Rtm_, &
+                             cell_obj_, i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, flag_Cell_, &
+                             shdo_obj_, isrcJ_Shdo_, srcJ_Shdo_, &
+                              src_obj_, &
+                              prp_obj_, &
+                              sfc_obj_, &
+                              sen_obj_, view_Sen_
 
 #if HAS_MPI
     use mpi_f08,  only: MPI_comm_world, MPI_comm, MPI_request, &
@@ -57,9 +71,9 @@ module shd_mpi
                         mpi_comm_set_errhandler
 
     use shd_init, only: shd_init__makeTopRad, &
-                        shd_init__makeSfcRadFL, &
-                        shd_init__makeSfcRadVL, &
-                        shd_init__makeSfcRadV
+                        shd_init__makeBotRadUL, &
+                        shd_init__makeBotRadVL, &
+                        shd_init__makeBotRadV
 
     use shd_util, only: shd_util__ssort, &
                         shd_util__findNextCell
@@ -77,6 +91,9 @@ module shd_mpi
 
     implicit none
     private
+
+    integer, parameter :: I__ = selected_int_kind(9)
+    integer, parameter :: R__ = selected_real_kind(6)
 
     public :: shd_mpi__start
     public :: shd_mpi__map
@@ -98,7 +115,7 @@ module shd_mpi
     public :: shd_mpi__makeDirect
     public :: shd_mpi__computeRad
     public :: shd_mpi__computeCamRad
-    public :: shd_mpi__findAlbMax
+    public :: shd_mpi__findMaxSsa
     public :: shd_mpi__findTotSplitCritMax
     public :: shd_mpi__findBndryPnt
     public :: shd_mpi__calBndryRad
@@ -165,16 +182,15 @@ subroutine shd_mpi__start(isMasterProc, Nproc)
 
 end subroutine shd_mpi__start
 
-subroutine shd_mpi__map(BCFLAG, Nx_prp, Ny_prp, Nx, Ny, Nz, dx_prp, dy_prp, fileInp_prp,&
-    &XSTART, YSTART, runName)
+subroutine shd_mpi__map(rtmAll_obj, prpAll_obj, rtm_obj,  prp_obj)
 
     ! Sets up the mapping of processors for the SHDOM domain (creating the
     ! 2D communicator, comm2D_).  Determines the subdomain property grid
-    ! (Nx_prp,Ny_prp) and internal base grid (Nx,Ny) sizes, and outputs the
-    ! starting position of this subdomain (XSTART,YSTART).  Bits 2 and 3
-    ! of BCFLAG are set to indicate multiple processors in the X and Y
+    ! (prp_obj%Nx,prp_obj%Ny) and internal base grid (rtm_obj%Nx0,rtm_obj%Ny0) sizes, and outputs the
+    ! starting position of this subdomain (prp_obj%xStart,prp_obj%yStart).  Bits 2 and 3
+    ! of rtm_obj%flag_bc are set to indicate multiple processors in the X and Y
     ! directions, respectively.  Open boundary conditions (bits 0 and 1 in
-    ! BCFLAG) are overridden by the multiple processor flags (i.e. multiple
+    ! rtm_obj%flag_bc) are overridden by the multiple processor flags (i.e. multiple
     ! processor requires a periodic full domain).
     !   The neighboring processors are stored in iProcNeigh_(:), with the
     ! following indexing scheme: 1=-X, 2=+X, 3-=-Y, 4=+Y.   The ixyPrp_ array
@@ -184,32 +200,30 @@ subroutine shd_mpi__map(BCFLAG, Nx_prp, Ny_prp, Nx, Ny, Nz, dx_prp, dy_prp, file
     ! of grid points of the internal base grid for this subdomain (for the
     ! output arrays).
 
-    integer, intent(inout) :: BCFLAG, Nx_prp, Ny_prp, Nx, Ny, Nz
-    character(len=*), intent(in) :: fileInp_prp, runName
-    real, intent(inout) :: dx_prp, dy_prp
-    real, intent(out) :: XSTART, YSTART
+    type(shd_type_rtm), intent(in) :: rtmAll_obj
+    type(shd_type_prp), intent(in) :: prpAll_obj
+
+    type(shd_type_rtm), intent(inout) :: rtm_obj
+    type(shd_type_prp), intent(inout) :: prp_obj
 
 #if HAS_MPI
 ! note: this if clause has <else>
-    integer :: NPXT, NPYT, NXT, NYT
     integer :: i, ierr, dims(2), coords(2)
     logical :: periodic(2) = (/.true., .true./), reorder = .false.
-    real    :: XEND, YEND
-    character(len=4) :: procstr
-    character(len=charMaxLen_) :: logfile
+    real    :: xEnd, yEnd
+    character(len=4) :: procStr
+    character(len=charMaxLen_) :: logFile
 
-    NPXT = Nx_prp; NPYT = Ny_prp; NXT = Nx; NYT = Ny
-
-    !if ((Nproc_ .eq. 1) .or. ((NPXT .eq. 1) .and. (NPYT .eq. 1))) then
+    !if ((Nproc_ .eq. 1) .or. ((prpAll_obj%Nx .eq. 1) .and. (prpAll_obj%Ny .eq. 1))) then
     if (Nproc_ .eq. 1) then
-        XSTART = 0.0; YSTART = 0.0
+        prp_obj%xStart = 0.0; prp_obj%yStart = 0.0
         return
     end if
 
     if (myProc_ .gt. 0) then
-        write (procstr, '(I4.4)') myProc_
-        logfile = trim(adjustl(runName))//'.sHdOmNG-log.iproc-'//procstr
-        open (UNIT=6, FILE=trim(adjustl(logfile)), STATUS='UNKNOWN')
+        write (procStr, '(I4.4)') myProc_
+        logFile = trim(adjustl(rtm_obj%runName))//'.sHdOmNG-log.iproc-'//procStr
+        open (UNIT=6, FILE=trim(adjustl(logFile)), STATUS='UNKNOWN')
     end if
 
     ! Partition 2D Cartesian topology:
@@ -221,14 +235,14 @@ subroutine shd_mpi__map(BCFLAG, Nx_prp, Ny_prp, Nx, Ny, Nz, dx_prp, dy_prp, file
         &comm2D_, ierr)
 
     if (dims(1) .gt. 1) then
-        BCFLAG = ibset(BCFLAG, 2)
+        rtm_obj%flag_bc = ibset(rtm_obj%flag_bc, 2)
         isMpiX_ = .true.
     else
         isMpiX_ = .false.
     end if
 
     if (dims(2) .gt. 1) then
-        BCFLAG = ibset(BCFLAG, 3)
+        rtm_obj%flag_bc = ibset(rtm_obj%flag_bc, 3)
         isMpiY_ = .true.
     else
         isMpiY_ = .false.
@@ -236,7 +250,7 @@ subroutine shd_mpi__map(BCFLAG, Nx_prp, Ny_prp, Nx, Ny, Nz, dx_prp, dy_prp, file
 
     ! Multi-processor BC takes precedence over open BCs
     if (isMpiX_ .or. isMpiY_) then
-        BCFLAG = iand(BCFLAG, 12)
+        rtm_obj%flag_bc = iand(rtm_obj%flag_bc, 12)
         isMpi_ = .true.
     else
         isMpi_ = .false.
@@ -246,81 +260,81 @@ subroutine shd_mpi__map(BCFLAG, Nx_prp, Ny_prp, Nx, Ny, Nz, dx_prp, dy_prp, file
     call mpi_cart_coords(comm2D_, myProc_, 2, coords, ierr)
 
     ! Make the optimal (or default) property grid divisions (in ixyPrp_)
-    call shd_mpi__optimizeProcDomain(dims, coords, NPXT, NPYT, fileInp_prp, runName)
+    call shd_mpi__optimizeProcDomain(dims, coords, rtm_obj%runName, prpAll_obj, prp_obj)
 
     ! Make the new property and base grid sizes and the ixyOut_ arrays
     if (dims(1) .gt. 1) then
-        if (NPXT .gt. 1) then
+        if (prpAll_obj%Nx .gt. 1) then
 
-            Nx_prp = ixyPrp_(2, 1) - ixyPrp_(1, 1) + 1
-            Nx = nint(NXT*float(Nx_prp - 1)/NPXT) + 1
-            if (abs(NPXT/float(NXT) - (Nx_prp - 1)/float(Nx - 1)) .gt. 0.0001) then
+            prp_obj%Nx = ixyPrp_(2, 1) - ixyPrp_(1, 1) + 1
+            rtm_obj%Nx0 = nint(rtmAll_obj%Nx0*float(prp_obj%Nx - 1)/prpAll_obj%Nx) + 1
+            if (abs(prpAll_obj%Nx/float(rtmAll_obj%Nx0) - (prp_obj%Nx - 1)/float(rtm_obj%Nx0 - 1)) .gt. 0.0001) then
                 call shd_mpi__abort('Error [mpi__map]: Even X base grid cannot be preserved&
-                    & for this Nx and number of processors')
+                    & for this rtm_obj%Nx0 and number of processors')
             end if
-            ixyOut_(1, 1) = nint(NXT*float(ixyPrp_(1, 1) - 1)/NPXT) + 1
-            ixyOut_(2, 1) = nint(NXT*float(Nx_prp - 1)/NPXT)
-            XSTART = (ixyPrp_(1, 1) - 1)*dx_prp
-            XEND = (ixyPrp_(2, 1) - 1)*dx_prp
+            ixyOut_(1, 1) = nint(rtmAll_obj%Nx0*float(ixyPrp_(1, 1) - 1)/prpAll_obj%Nx) + 1
+            ixyOut_(2, 1) = nint(rtmAll_obj%Nx0*float(prp_obj%Nx    - 1)/prpAll_obj%Nx)
+            prp_obj%xStart = (ixyPrp_(1, 1) - 1)*prp_obj%dx
+            xEnd = (ixyPrp_(2, 1) - 1)*prp_obj%dx
 
         else
 
-            Nx_prp = 1
+            prp_obj%Nx = 1
 
-            ixyOut_(1, 1) = nint(real(NXT)/real(dims(1)))*coords(1) + 1
-            ixyOut_(2, 1) = min(nint(real(NXT)/real(dims(1)))*(coords(1)+1), NXT)
+            ixyOut_(1, 1) = nint(real(rtmAll_obj%Nx0)/real(dims(1)))*coords(1) + 1
+            ixyOut_(2, 1) = min(nint(real(rtmAll_obj%Nx0)/real(dims(1)))*(coords(1)+1), rtmAll_obj%Nx0)
 
-            Nx = ixyOut_(2, 1) - ixyOut_(1, 1) + 2
+            rtm_obj%Nx0 = ixyOut_(2, 1) - ixyOut_(1, 1) + 2
 
-            XSTART = real(dx_prp)/real(NXT) * real((ixyOut_(1, 1)-1))
-            XEND   = real(dx_prp)/real(NXT) * real((ixyOut_(2, 1)))
+            prp_obj%xStart = real(prp_obj%dx)/real(rtmAll_obj%Nx0) * real((ixyOut_(1, 1)-1))
+            xEnd           = real(prp_obj%dx)/real(rtmAll_obj%Nx0) * real((ixyOut_(2, 1)))
 
-            dx_prp = XEND - XSTART
+            prp_obj%dx = xEnd - prp_obj%xStart
 
 
         end if
     else
         ixyOut_(1, 1) = 1
-        ixyOut_(2, 1) = NXT
-        XSTART = 0.0
-        XEND = NPXT*dx_prp
+        ixyOut_(2, 1) =  rtmAll_obj%Nx0
+        prp_obj%xStart = 0.0
+        xEnd = prpAll_obj%Nx*prp_obj%dx
     end if
 
     if (dims(2) .gt. 1) then
 
-        if (NPYT .gt. 1) then
+        if (prpAll_obj%Ny .gt. 1) then
 
-            Ny_prp = ixyPrp_(2, 2) - ixyPrp_(1, 2) + 1
-            Ny = nint(NYT*float(Ny_prp - 1)/NPYT) + 1
-            if (abs(NPYT/float(NYT) - (Ny_prp - 1)/float(Ny - 1)) .gt. 0.0001) then
+            prp_obj%Ny = ixyPrp_(2, 2) - ixyPrp_(1, 2) + 1
+            rtm_obj%Ny0 = nint(rtmAll_obj%Ny0*float(prp_obj%Ny - 1)/prpAll_obj%Ny) + 1
+            if (abs(prpAll_obj%Ny/float(rtmAll_obj%Ny0) - (prp_obj%Ny - 1)/float(rtm_obj%Ny0 - 1)) .gt. 0.0001) then
                 call shd_mpi__abort('Error [mpi__map]: Even Y base grid cannot be preserved&
-                    & for this Ny and number of processors')
+                    & for this rtm_obj%Ny0 and number of processors')
             end if
-            ixyOut_(1, 2) = nint(NYT*float(ixyPrp_(1, 2) - 1)/NPYT) + 1
-            ixyOut_(2, 2) = nint(NYT*float(Ny_prp - 1)/NPYT)
-            YSTART = (ixyPrp_(1, 2) - 1)*dy_prp
-            YEND = (ixyPrp_(2, 2) - 1)*dy_prp
+            ixyOut_(1, 2) = nint(rtmAll_obj%Ny0*float(ixyPrp_(1, 2) - 1)/prpAll_obj%Ny) + 1
+            ixyOut_(2, 2) = nint(rtmAll_obj%Ny0*float(prp_obj%Ny - 1)/prpAll_obj%Ny)
+            prp_obj%yStart = (ixyPrp_(1, 2) - 1)*prp_obj%dy
+            yEnd = (ixyPrp_(2, 2) - 1)*prp_obj%dy
 
         else
 
-            Ny_prp = 1
+            prp_obj%Ny = 1
 
-            ixyOut_(1, 2) = nint(real(NYT)/real(dims(2)))*coords(2) + 1
-            ixyOut_(2, 2) = min(nint(real(NYT)/real(dims(2)))*(coords(2)+1), NYT)
+            ixyOut_(1, 2) =     nint(real(rtmAll_obj%Ny0)/real(dims(2)))*(coords(2)+1)
+            ixyOut_(2, 2) = min(nint(real(rtmAll_obj%Ny0)/real(dims(2)))*(coords(2)+1), rtmAll_obj%Ny0)
 
-            Ny = ixyOut_(2, 2) - ixyOut_(1, 2) + 2
+            rtm_obj%Ny0 = ixyOut_(2, 2) - ixyOut_(1, 2) + 2
 
-            YSTART = real(dy_prp)/real(NYT) * real((ixyOut_(1, 2)-1))
-            YEND   = real(dy_prp)/real(NYT) * real((ixyOut_(2, 2)))
+            prp_obj%yStart = real(prp_obj%dy)/real(rtmAll_obj%Ny0) * real((ixyOut_(1, 2)-1))
+            yEnd           = real(prp_obj%dy)/real(rtmAll_obj%Ny0) * real((ixyOut_(2, 2)))
 
-            dy_prp = YEND - YSTART
+            prp_obj%dy = yEnd - prp_obj%yStart
 
         end if
     else
         ixyOut_(1, 2) = 1
-        ixyOut_(2, 2) = NYT
-        YSTART = 0.0
-        YEND = NPYT*dy_prp
+        ixyOut_(2, 2) = rtmAll_obj%Ny0
+        prp_obj%yStart = 0.0
+        yEnd = prpAll_obj%Ny*prp_obj%dy
     end if
 
     ! Get the processors (rank numbers) of the neighbors
@@ -331,10 +345,10 @@ subroutine shd_mpi__map(BCFLAG, Nx_prp, Ny_prp, Nx, Ny, Nz, dx_prp, dy_prp, file
     if (verbose_ .ge. 5) write (6, '(2X,A,2(I0,2X))')    'Nproc in X and Y: ', dims(1:2)
     if (verbose_ .ge. 5) write (6, '(2X,A,I0)')          '  This processor: ', myProc_
     if (verbose_ .ge. 5) write (6, '(2X,A,4(I0,2X))')    '       Neighbors: ', iProcNeigh_(1:4)
-    if (verbose_ .ge. 5) write (6, '(2X,A,2(F0.2," km",2X))') '         X range: ', XSTART, XEND
-    if (verbose_ .ge. 5) write (6, '(2X,A,2(F0.2," km",2X))') '         Y range: ', YSTART, YEND
+    if (verbose_ .ge. 5) write (6, '(2X,A,2(F0.2," km",2X))') '         X range: ', prp_obj%xStart, xEnd
+    if (verbose_ .ge. 5) write (6, '(2X,A,2(F0.2," km",2X))') '         Y range: ', prp_obj%yStart, yEnd
 #else
-    XSTART = 0.0; YSTART = 0.0
+    prp_obj%xStart = 0.0; prp_obj%yStart = 0.0
 #endif
 
     return
@@ -342,32 +356,38 @@ subroutine shd_mpi__map(BCFLAG, Nx_prp, Ny_prp, Nx, Ny, Nz, dx_prp, dy_prp, file
 end subroutine shd_mpi__map
 
 subroutine shd_mpi__bcastInp(&
-    &runName, fileInp_prp, fileInp_sfc, fileInp_ckd,&
-    &fileInp_sav, fileOut_sav, fileInp_sen,&
+    &runName,&
+    &fileInp_sav, fileOut_sav,&
     &Nstokes, Nx, Ny, Nz, NMU, NPHI, BCFLAG,&
     &IPFLAG, KDIST, DELTAM, GRIDTYPE,&
     &SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
-    &temp0_sfc, alb0_sfc, UNITS, WAVENO, WAVELEN,&
+    &UNITS, WAVENO, WAVELEN,&
     &ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
     &MAXOUT, MAXPAR, NUMOUT, OUTTYPES, parms_Out,&
     &MAX_TOTAL_MB, SPLITTING_FACTOR,&
-    &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO)
+    &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO,&
+    &prp_obj, sfc_obj, ckd_obj, sen_obj)
 
     ! Broadcasts all the user input parameters (except unneeded file names)
     ! from the master processor to the slave processors.
+
+    type(shd_type_prp), intent(inout) :: prp_obj
+    type(shd_type_sfc), intent(inout) :: sfc_obj
+    type(shd_type_ckd), intent(inout) :: ckd_obj
+    type(shd_type_sen), intent(inout) :: sen_obj
 
     integer, intent(inout) :: Nstokes, Nx, Ny, Nz, NMU, NPHI, BCFLAG, IPFLAG
     integer, intent(in)    :: MAXOUT, MAXPAR
     integer, intent(inout) :: MAXITER, NUMOUT
     logical, intent(inout) :: KDIST, DELTAM, ACCELFLAG
     real, intent(inout) :: SOLARFLUX, SOLARMU, SOLARAZ
-    real, intent(inout) :: temp0_sfc, alb0_sfc, SKYRAD, WAVENO(2), WAVELEN
+    real, intent(inout) :: SKYRAD, WAVENO(2), WAVELEN
     real, intent(inout) :: SOLACC, SPLITACC, SHACC, parms_Out(MAXPAR, MAXOUT)
     real, intent(inout) :: MAX_TOTAL_MB, SPLITTING_FACTOR
     real, intent(inout) :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
     character(len=1), intent(inout) :: SRCTYPE, GRIDTYPE, UNITS, OUTTYPES(*)
-    character(len=charMaxLen_), intent(inout) :: runName, fileInp_prp, fileInp_sfc, fileInp_ckd
-    character(len=charMaxLen_), intent(inout) :: fileInp_sav, fileOut_sav, fileInp_sen
+    character(len=charMaxLen_), intent(inout) :: runName
+    character(len=charMaxLen_), intent(inout) :: fileInp_sav, fileOut_sav
 
 #if HAS_MPI
     integer :: ierr, intbuf(10)
@@ -375,7 +395,7 @@ subroutine shd_mpi__bcastInp(&
     real    :: realbuf(16)
     character(len=1) :: char1buf(3)
     character(len=charMaxLen_) :: char256buf(7)
-    character(len=4) :: procstr
+    character(len=4) :: procStr
 
     if (Nproc_ .le. 1) return
 
@@ -389,12 +409,12 @@ subroutine shd_mpi__bcastInp(&
     call mpi_bcast(logbuf, 3, MPI_logical, 0, MPI_comm_world, ierr)
     KDIST = logbuf(1); DELTAM = logbuf(2); ACCELFLAG = logbuf(3)
 
-    realbuf(:) = (/SOLARFLUX, SOLARMU, SOLARAZ, temp0_sfc, alb0_sfc, SKYRAD,&
+    realbuf(:) = (/SOLARFLUX, SOLARMU, SOLARAZ, sfc_obj%avgTemp, sfc_obj%avgAlb, SKYRAD,&
         &WAVENO(1:2), WAVELEN, SOLACC, SPLITACC, SHACC,&
         &MAX_TOTAL_MB, SPLITTING_FACTOR, NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO/)
     call mpi_bcast(realbuf, 16, MPI_real, 0, MPI_comm_world, ierr)
     SOLARFLUX = realbuf(1); SOLARMU = realbuf(2); SOLARAZ = realbuf(3)
-    temp0_sfc = realbuf(4); alb0_sfc = realbuf(5); SKYRAD = realbuf(6)
+    sfc_obj%avgTemp = realbuf(4); sfc_obj%avgAlb = realbuf(5); SKYRAD = realbuf(6)
     WAVENO(1:2) = realbuf(7:8); WAVELEN = realbuf(9)
     SOLACC = realbuf(10); SPLITACC = realbuf(11); SHACC = realbuf(12)
     MAX_TOTAL_MB = realbuf(13); SPLITTING_FACTOR = realbuf(14)
@@ -404,174 +424,189 @@ subroutine shd_mpi__bcastInp(&
     call mpi_bcast(char1buf, 3, MPI_character, 0, MPI_comm_world, ierr)
     SRCTYPE = char1buf(1); GRIDTYPE = char1buf(2); UNITS = char1buf(3)
 
-    char256buf(:) = (/fileInp_prp, fileInp_sfc, fileInp_ckd, fileInp_sav, fileOut_sav, fileInp_sen, runName/)
+    char256buf(:) = (/prp_obj%fname, sfc_obj%fname, ckd_obj%fname, fileInp_sav, fileOut_sav, sen_obj%fname, runName/)
     call mpi_bcast(char256buf, 7*256, MPI_character, 0, MPI_comm_world, ierr)
-    fileInp_prp = char256buf(1); fileInp_sfc = char256buf(2); fileInp_ckd = char256buf(3)
-    fileInp_sav = char256buf(4); fileOut_sav = char256buf(5); fileInp_sen = char256buf(6); runName = char256buf(7)
+    prp_obj%fname = char256buf(1); sfc_obj%fname = char256buf(2); ckd_obj%fname = char256buf(3)
+    fileInp_sav = char256buf(4); fileOut_sav = char256buf(5); sen_obj%fname = char256buf(6); runName = char256buf(7)
 
     call mpi_bcast(parms_Out, MAXPAR*NUMOUT, MPI_real, 0, MPI_comm_world, ierr)
     call mpi_bcast(OUTTYPES, NUMOUT*1, MPI_character, 0, MPI_comm_world, ierr)
 
-    write (procstr, '(I4.4)') myProc_
-    if (fileInp_sav(1:4) .ne. 'NONE') fileInp_sav = trim(fileInp_sav)//'.iproc-'//procstr
-    if (fileOut_sav(1:4) .ne. 'NONE') fileOut_sav = trim(fileOut_sav)//'.iproc-'//procstr
+    write (procStr, '(I4.4)') myProc_
+    if (fileInp_sav(1:4) .ne. 'NONE') fileInp_sav = trim(fileInp_sav)//'.iproc-'//procStr
+    if (fileOut_sav(1:4) .ne. 'NONE') fileOut_sav = trim(fileOut_sav)//'.iproc-'//procStr
 #endif
 
     return
 
 end subroutine shd_mpi__bcastInp
 
-subroutine shd_mpi__bcastPrpSize(Nx_prp, Ny_prp, Nz_prp, dx_prp, dy_prp,&
-    &Npha_prp, MAXLEG, MAXPGL)
+subroutine shd_mpi__bcastPrpSize(prp_obj)
 
     ! Broadcasts the property file size information from the master processor
     ! to the slave processors.
 
-    integer, intent(inout) :: Nx_prp, Ny_prp, Nz_prp, Npha_prp, MAXLEG, MAXPGL
-    real, intent(inout) :: dx_prp, dy_prp
+    type(shd_type_prp), intent(inout) :: prp_obj
 
 #if HAS_MPI
-    integer :: ierr, intbuf(6)
+    integer :: ierr, intbuf(7)
     real    :: realbuf(2)
 
     if (Nproc_ .le. 1) return
 
-    intbuf(:) = (/Nx_prp, Ny_prp, Nz_prp, Npha_prp, MAXLEG, MAXPGL/)
-    call mpi_bcast(intbuf, 6, MPI_integer, 0, MPI_comm_world, ierr)
-    Nx_prp = intbuf(1); Ny_prp = intbuf(2); Nz_prp = intbuf(3)
-    Npha_prp = intbuf(4); MAXLEG = intbuf(5); MAXPGL = intbuf(6)
+    intbuf(:) = (/prp_obj%Nx, prp_obj%Ny, prp_obj%Nz, prp_obj%Npha, prp_obj%maxNz, prp_obj%maxNleg, prp_obj%maxNptsLeg/)
+    call mpi_bcast(intbuf, 7, MPI_integer, 0, MPI_comm_world, ierr)
+    prp_obj%Nx      = intbuf(1); prp_obj%Ny    = intbuf(2); prp_obj%Nz = intbuf(3)
+    prp_obj%Npha    = intbuf(4); prp_obj%maxNz = intbuf(5)
+    prp_obj%maxNleg = intbuf(6); prp_obj%maxNptsLeg = intbuf(7)
 
-    realbuf(:) = (/dx_prp, dy_prp/)
+    realbuf(:) = (/prp_obj%dx, prp_obj%dy/)
     call mpi_bcast(realbuf, 2, MPI_real, 0, MPI_comm_world, ierr)
-    dx_prp = realbuf(1); dy_prp = realbuf(2)
+    prp_obj%dx = realbuf(1); prp_obj%dy = realbuf(2)
 #endif
 
     return
 
 end subroutine shd_mpi__bcastPrpSize
 
-subroutine shd_mpi__bcastPrp(NPXT, NPYT, Nx_prp, Ny_prp, Nz_prp,&
-    &NlegSet_prp, Nleg_prp, Npha_prp,&
-    &z_Prp, maxAsym,&
-    &TEMPPT, EXTINCTPT, ALBEDOPT, LEGENPT, IPHASEPT,&
-    &temp_Prp, ext_Prp, ssa_Prp, leg_Prp, ipha_Prp)
+subroutine shd_mpi__bcastPrp(prpAll_obj, temp_PrpAll, ext_PrpAll, ssa_PrpAll, leg_PrpAll, ipha_PrpAll, &
+                                prp_obj, temp_Prp,    ext_Prp,    ssa_Prp,    leg_Prp,    ipha_Prp)
 
     ! Sends portions of the optical properties on the property grid to each
     ! of the processors.  Deals with the duplicating the grid points on the
     ! boundaries between processors.
 
-    integer, intent(in) :: NPXT, NPYT, Nx_prp, Ny_prp, Nz_prp, NlegSet_prp, Npha_prp
-    integer, intent(inout) :: Nleg_prp
-    real, intent(inout) :: z_Prp(Nz_prp), maxAsym
-    real, intent(in) :: TEMPPT(Nz_prp, NPYT, NPXT), EXTINCTPT(Nz_prp, NPYT, NPXT)
-    real, intent(in) :: ALBEDOPT(Nz_prp, NPYT, NPXT), LEGENPT(*)
-    integer*2, intent(in) :: IPHASEPT(Nz_prp, NPYT, NPXT)
-    real, intent(out) :: temp_Prp(Nz_prp, Ny_prp, Nx_prp), ext_Prp(Nz_prp, Ny_prp, Nx_prp)
-    real, intent(out) :: ssa_Prp(Nz_prp, Ny_prp, Nx_prp), leg_Prp(*)
-    integer*2, intent(out) :: ipha_Prp(Nz_prp, Ny_prp, Nx_prp)
+    type(shd_type_prp), intent(inout) :: prpAll_obj
+    real(kind=R__),  intent(in) :: temp_PrpAll(prpAll_obj%Nz, prpAll_obj%Ny, prpAll_obj%Nx), &
+                                   ext_PrpAll( prpAll_obj%Nz, prpAll_obj%Ny, prpAll_obj%Nx), &
+                                   ssa_PrpAll( prpAll_obj%Nz, prpAll_obj%Ny, prpAll_obj%Nx), &
+                                   leg_PrpAll( prpAll_obj%maxNptsLeg)
+    integer(kind=2), intent(in) :: ipha_PrpAll(prpAll_obj%Nz, prpAll_obj%Ny, prpAll_obj%Nx)
+
+    type(shd_type_prp), intent(inout) :: prp_obj
+    real(kind=R__),  intent(out) :: temp_Prp(prp_obj%maxNpts), &
+                                    ext_Prp( prp_obj%maxNpts), &
+                                    ssa_Prp( prp_obj%maxNpts), &
+                                    leg_Prp( prp_obj%maxNptsLeg)
+    integer(kind=2), intent(out) :: ipha_Prp(prp_obj%maxNpts)
 
 #if HAS_MPI
     integer :: SX, EX, Nx, SY, EY, Ny, N, MAXN, MaxNX, MaxNY
-    integer :: iproc, irq, ierr
-    integer, allocatable :: IXYALL(:, :, :)
-    real, allocatable :: realbuf(:), rbuf(:, :, :)
-    real, allocatable :: tempbuf(:, :), extbuf(:, :), albbuf(:, :)
-    integer*2, allocatable :: ibuf(:, :, :), iphbuf(:, :)
+    integer :: iproc, irq, ierr, Nrq
+    integer, allocatable :: ixyAll(:, :, :)
+    real, allocatable :: rbuf(:, :, :), tempbuf(:, :), extbuf(:, :), ssabuf(:, :)
+    integer(kind=2), allocatable :: ibuf(:, :, :), iphabuf(:, :)
 
     type(MPI_request), allocatable :: requests(:)
     type(MPI_status), allocatable :: status(:)
 
-    ! Broadcast the small stuff that is going to all processors
-    allocate (realbuf(Nz_prp + 1))
-    realbuf(1:Nz_prp + 1) = (/z_Prp(1:Nz_prp), maxAsym/)
-    call mpi_bcast(realbuf, Nz_prp + 1, MPI_real, 0, comm2D_, ierr)
-    z_Prp(1:Nz_prp) = realbuf(1:Nz_prp); maxAsym = realbuf(Nz_prp + 1)
-
-    ! If we have a tabulated phase function, then broadcast to all processors
-    if (Npha_prp .gt. 0) then
-        if (myProc_ .eq. 0) leg_Prp(1:Npha_prp*(Nleg_prp + 1)*NlegSet_prp) =&
-            &LEGENPT(1:Npha_prp*(Nleg_prp + 1)*NlegSet_prp)
-        call mpi_bcast(Nleg_prp, 1, MPI_integer, 0, comm2D_, ierr)
-        call mpi_bcast(leg_Prp, NlegSet_prp*(Nleg_prp + 1)*Npha_prp, MPI_real, 0, comm2D_, ierr)
+    if (prp_obj%Npha .gt. 0) then
+        Nrq = 8
+    else
+        Nrq = 7
     end if
 
     ! Get the ixyPrp_ arrays from all processors to tell where they are in property grid
-    allocate (IXYALL(2, 2, 0:Nproc_ - 1))
-    call mpi_gather(ixyPrp_, 4, MPI_integer, IXYALL, 4, MPI_integer, 0, comm2D_, ierr)
+    allocate(ixyAll(2, 2, 0 : Nproc_-1))
+    call mpi_gather(ixyPrp_, 4, MPI_integer, ixyAll, 4, MPI_integer, 0, comm2D_, ierr)
 
-    allocate (requests(4*Nproc_ + 4), status(4*Nproc_ + 4))
+    allocate(requests(Nrq*Nproc_ + Nrq), status(Nrq*Nproc_ + Nrq))
 
     irq = 0
     if (myProc_ .eq. 0) then
+
         ! Allocate the send buffers for each processor
         MAXN = 1; MaxNX = 1; MaxNY = 1
         do iproc = 0, Nproc_ - 1
-            Nx = IXYALL(2, 1, iproc) - IXYALL(1, 1, iproc) + 1; MaxNX = max(MaxNX, Nx)
-            Ny = IXYALL(2, 2, iproc) - IXYALL(1, 2, iproc) + 1; MaxNY = max(MaxNY, Ny)
-            MAXN = max(MAXN, Nz_prp*Ny*Nx)
+            Nx = ixyAll(2, 1, iproc) - ixyAll(1, 1, iproc) + 1; MaxNX = max(MaxNX, Nx)
+            Ny = ixyAll(2, 2, iproc) - ixyAll(1, 2, iproc) + 1; MaxNY = max(MaxNY, Ny)
+            MAXN = max(MAXN, prpAll_obj%Nz*Ny*Nx)
         end do
-        allocate (rbuf(Nz_prp, MaxNY, MaxNX), ibuf(Nz_prp, MaxNY, MaxNX))
-        allocate (tempbuf(MAXN, 0:Nproc_ - 1), extbuf(MAXN, 0:Nproc_ - 1))
-        allocate (albbuf(MAXN, 0:Nproc_ - 1), iphbuf(MAXN, 0:Nproc_ - 1))
+
+        allocate(rbuf(prpAll_obj%Nz, MaxNY, MaxNX), ibuf(prpAll_obj%Nz, MaxNY, MaxNX))
+        allocate(tempbuf(MAXN, 0:Nproc_ - 1),  extbuf(MAXN, 0:Nproc_ - 1))
+        allocate( ssabuf(MAXN, 0:Nproc_ - 1), iphabuf(MAXN, 0:Nproc_ - 1))
         ! The master processor reformats the four property arrays (to deal with
         ! the wrap around at the full domain edge) and sends the arrays with MPI.
         do iproc = 0, Nproc_ - 1
-            SX = IXYALL(1, 1, iproc); EX = IXYALL(2, 1, iproc)
-            SY = IXYALL(1, 2, iproc); EY = IXYALL(2, 2, iproc)
-            Nx = EX - SX + 1; Ny = EY - SY + 1; N = Nx*Ny*Nz_prp
-            rbuf(:, 1:Ny - 1, 1:Nx - 1) = TEMPPT(:, SY:EY - 1, SX:EX - 1)
-            rbuf(:, 1:Ny - 1, Nx) = TEMPPT(:, SY:EY - 1, mod(EX - 1, NPXT) + 1)
-            rbuf(:, Ny, 1:Nx - 1) = TEMPPT(:, mod(EY - 1, NPYT) + 1, SX:EX - 1)
-            rbuf(:, Ny, Nx) = TEMPPT(:, mod(EY - 1, NPYT) + 1, mod(EX - 1, NPXT) + 1)
-            tempbuf(1:N, iproc) = reshape(rbuf(1:Nz_prp, 1:Ny, 1:Nx), (/N/))
+            SX = ixyAll(1, 1, iproc); EX = ixyAll(2, 1, iproc)
+            SY = ixyAll(1, 2, iproc); EY = ixyAll(2, 2, iproc)
+            Nx = EX - SX + 1; Ny = EY - SY + 1; N = Nx*Ny*prpAll_obj%Nz
+            rbuf(:, 1:Ny - 1, 1:Nx - 1) = temp_PrpAll(:, SY:EY - 1, SX:EX - 1)
+            rbuf(:, 1:Ny - 1,       Nx) = temp_PrpAll(:, SY:EY - 1, mod(EX - 1, prpAll_obj%Nx) + 1)
+            rbuf(:,       Ny, 1:Nx - 1) = temp_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, SX:EX - 1)
+            rbuf(:,       Ny,       Nx) = temp_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, mod(EX - 1, prpAll_obj%Nx) + 1)
+            tempbuf(1:N, iproc) = reshape(rbuf(1:prpAll_obj%Nz, 1:Ny, 1:Nx), (/N/))
             call mpi_isend(tempbuf(1:N, iproc), N, MPI_real, iproc, 1, comm2D_, requests(irq + 1), ierr)
 
-            rbuf(:, 1:Ny - 1, 1:Nx - 1) = EXTINCTPT(:, SY:EY - 1, SX:EX - 1)
-            rbuf(:, 1:Ny - 1, Nx) = EXTINCTPT(:, SY:EY - 1, mod(EX - 1, NPXT) + 1)
-            rbuf(:, Ny, 1:Nx - 1) = EXTINCTPT(:, mod(EY - 1, NPYT) + 1, SX:EX - 1)
-            rbuf(:, Ny, Nx) = EXTINCTPT(:, mod(EY - 1, NPYT) + 1, mod(EX - 1, NPXT) + 1)
-            extbuf(1:N, iproc) = reshape(rbuf(1:Nz_prp, 1:Ny, 1:Nx), (/N/))
+            rbuf(:, 1:Ny - 1, 1:Nx - 1) = ext_PrpAll(:, SY:EY - 1, SX:EX - 1)
+            rbuf(:, 1:Ny - 1,       Nx) = ext_PrpAll(:, SY:EY - 1, mod(EX - 1, prpAll_obj%Nx) + 1)
+            rbuf(:,       Ny, 1:Nx - 1) = ext_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, SX:EX - 1)
+            rbuf(:,       Ny,       Nx) = ext_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, mod(EX - 1, prpAll_obj%Nx) + 1)
+            extbuf(1:N, iproc) = reshape(rbuf(1:prpAll_obj%Nz, 1:Ny, 1:Nx), (/N/))
             call mpi_isend(extbuf(1:N, iproc), N, MPI_real, iproc, 2, comm2D_, requests(irq + 2), ierr)
 
-            rbuf(:, 1:Ny - 1, 1:Nx - 1) = ALBEDOPT(:, SY:EY - 1, SX:EX - 1)
-            rbuf(:, 1:Ny - 1, Nx) = ALBEDOPT(:, SY:EY - 1, mod(EX - 1, NPXT) + 1)
-            rbuf(:, Ny, 1:Nx - 1) = ALBEDOPT(:, mod(EY - 1, NPYT) + 1, SX:EX - 1)
-            rbuf(:, Ny, Nx) = ALBEDOPT(:, mod(EY - 1, NPYT) + 1, mod(EX - 1, NPXT) + 1)
-            albbuf(1:N, iproc) = reshape(rbuf(1:Nz_prp, 1:Ny, 1:Nx), (/N/))
-            call mpi_isend(albbuf(1:N, iproc), N, MPI_real, iproc, 3, comm2D_, requests(irq + 3), ierr)
+            rbuf(:, 1:Ny - 1, 1:Nx - 1) = ssa_PrpAll(:, SY:EY - 1, SX:EX - 1)
+            rbuf(:, 1:Ny - 1,       Nx) = ssa_PrpAll(:, SY:EY - 1, mod(EX - 1, prpAll_obj%Nx) + 1)
+            rbuf(:,       Ny, 1:Nx - 1) = ssa_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, SX:EX - 1)
+            rbuf(:,       Ny,       Nx) = ssa_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, mod(EX - 1, prpAll_obj%Nx) + 1)
+            ssabuf(1:N, iproc) = reshape(rbuf(1:prpAll_obj%Nz, 1:Ny, 1:Nx), (/N/))
+            call mpi_isend(ssabuf(1:N, iproc), N, MPI_real, iproc, 3, comm2D_, requests(irq + 3), ierr)
 
-            ibuf(:, 1:Ny - 1, 1:Nx - 1) = IPHASEPT(:, SY:EY - 1, SX:EX - 1)
-            ibuf(:, 1:Ny - 1, Nx) = IPHASEPT(:, SY:EY - 1, mod(EX - 1, NPXT) + 1)
-            ibuf(:, Ny, 1:Nx - 1) = IPHASEPT(:, mod(EY - 1, NPYT) + 1, SX:EX - 1)
-            ibuf(:, Ny, Nx) = IPHASEPT(:, mod(EY - 1, NPYT) + 1, mod(EX - 1, NPXT) + 1)
-            iphbuf(1:N, iproc) = reshape(ibuf(1:Nz_prp, 1:Ny, 1:Nx), (/N/))
-            call mpi_isend(iphbuf(1:N, iproc), N, MPI_integer2, iproc, 4, comm2D_, requests(irq + 4), ierr)
-            irq = irq + 4
+            ibuf(:, 1:Ny - 1, 1:Nx - 1) = ipha_PrpAll(:, SY:EY - 1, SX:EX - 1)
+            ibuf(:, 1:Ny - 1,       Nx) = ipha_PrpAll(:, SY:EY - 1, mod(EX - 1, prpAll_obj%Nx) + 1)
+            ibuf(:,       Ny, 1:Nx - 1) = ipha_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, SX:EX - 1)
+            ibuf(:,       Ny,       Nx) = ipha_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, mod(EX - 1, prpAll_obj%Nx) + 1)
+            iphabuf(1:N, iproc) = reshape(ibuf(1:prpAll_obj%Nz, 1:Ny, 1:Nx), (/N/))
+            call mpi_isend(iphabuf(1:N, iproc), N, MPI_integer2, iproc, 4, comm2D_, requests(irq + 4), ierr)
+
+            call mpi_isend(prpAll_obj%Nleg   , 1, MPI_integer, iproc, 5, comm2D_, requests(irq + 5), ierr)
+            call mpi_isend(prpAll_obj%maxAsym, 1, MPI_real   , iproc, 6, comm2D_, requests(irq + 6), ierr)
+
+            call mpi_isend(prpAll_obj%z, prpAll_obj%Nz, MPI_real, iproc, 7, comm2D_, requests(irq + 7), ierr)
+
+            if (prpAll_obj%Npha .gt. 0) then
+                call mpi_isend(leg_PrpAll, prpAll_obj%maxNptsLeg, MPI_real, iproc, 8, comm2D_, requests(irq + 8), ierr)
+            end if
+
+            irq = irq + Nrq
+
         end do
+
+
     end if
 
-    N = Nx_prp*Ny_prp*Nz_prp
-    call mpi_irecv(temp_Prp, N, MPI_real    , 0, 1, comm2D_, requests(irq + 1), ierr)
-    call mpi_irecv(ext_Prp , N, MPI_real    , 0, 2, comm2D_, requests(irq + 2), ierr)
-    call mpi_irecv(ssa_Prp , N, MPI_real    , 0, 3, comm2D_, requests(irq + 3), ierr)
-    call mpi_irecv(ipha_Prp, N, MPI_integer2, 0, 4, comm2D_, requests(irq + 4), ierr)
-    irq = irq + 4
+    N = prp_obj%Nx*prp_obj%Ny*prp_obj%Nz
+    call mpi_irecv(temp_Prp, N, MPI_real    , 0, 1, comm2D_, requests(irq+1), ierr)
+    call mpi_irecv(ext_Prp , N, MPI_real    , 0, 2, comm2D_, requests(irq+2), ierr)
+    call mpi_irecv(ssa_Prp , N, MPI_real    , 0, 3, comm2D_, requests(irq+3), ierr)
+    call mpi_irecv(ipha_Prp, N, MPI_integer2, 0, 4, comm2D_, requests(irq+4), ierr)
+
+    call mpi_irecv(prp_obj%Nleg   , 1, MPI_integer, 0, 5, comm2D_, requests(irq+5), ierr)
+    call mpi_irecv(prp_obj%maxAsym, 1, MPI_real   , 0, 6, comm2D_, requests(irq+6), ierr)
+
+    call mpi_irecv(prp_obj%z, prp_obj%Nz, MPI_real, 0, 7, comm2D_, requests(irq+7), ierr)
+
+    if (prp_obj%Npha .gt. 0) then
+        call mpi_irecv(leg_Prp, prp_obj%maxNptsLeg, MPI_real, 0, 8, comm2D_, requests(irq+8), ierr)
+    end if
+
+    irq = irq + Nrq
     call mpi_waitall(irq, requests, status, ierr)
 
-    if (myProc_ .eq. 0) deallocate (tempbuf, extbuf, albbuf, iphbuf, rbuf, ibuf)
-    deallocate (requests, status, IXYALL, realbuf)
+    if (myProc_ .eq. 0) deallocate(tempbuf, extbuf, ssabuf, iphabuf, rbuf, ibuf)
+    deallocate(requests, status, ixyAll)
 #endif
 
     return
 
 end subroutine shd_mpi__bcastPrp
 
-subroutine shd_mpi__bcastSfcSize(Nx_sfc, Ny_sfc, dx_sfc, dy_sfc, maxNpts_sfc, maxNpar_sfc)
+subroutine shd_mpi__bcastSfcSize(sfc_obj)
 
     ! Broadcasts the surface array sizes from the master process to the others.
 
-    integer, intent(inout) :: Nx_sfc, Ny_sfc, maxNpts_sfc, maxNpar_sfc
-    real, intent(inout) :: dx_sfc, dy_sfc
+    type(shd_type_sfc), intent(inout) :: sfc_obj
 
 #if HAS_MPI
     integer :: ierr, intbuf(4)
@@ -579,78 +614,77 @@ subroutine shd_mpi__bcastSfcSize(Nx_sfc, Ny_sfc, dx_sfc, dy_sfc, maxNpts_sfc, ma
 
     if (Nproc_ .le. 1) return
 
-    intbuf(1:4) = (/Nx_sfc, Ny_sfc, maxNpts_sfc, maxNpar_sfc/)
+    intbuf(1:4) = (/sfc_obj%Nx, sfc_obj%Ny, sfc_obj%maxNpts, sfc_obj%maxNpar/)
     call mpi_bcast(intbuf, 4, MPI_integer, 0, comm2D_, ierr)
-    Nx_sfc = intbuf(1); Ny_sfc = intbuf(2); maxNpts_sfc = intbuf(3); maxNpar_sfc = intbuf(4)
+    sfc_obj%Nx = intbuf(1); sfc_obj%Ny = intbuf(2); sfc_obj%maxNpts = intbuf(3); sfc_obj%maxNpar = intbuf(4)
 
-    realbuf(1:2) = (/dx_sfc, dy_sfc/)
+    realbuf(1:2) = (/sfc_obj%dx, sfc_obj%dy/)
     call mpi_bcast(realbuf, 2, MPI_real, 0, comm2D_, ierr)
-    dx_sfc = realbuf(1); dy_sfc = realbuf(2)
+    sfc_obj%dx = realbuf(1); sfc_obj%dy = realbuf(2)
 #endif
 
     return
 
 end subroutine shd_mpi__bcastSfcSize
 
-subroutine shd_mpi__bcastSfc(type_sfc, Nx_sfc, Ny_sfc,&
-    &Npar_sfc, parms_Sfc, temp0_sfc, alb0_sfc)
+subroutine shd_mpi__bcastSfc(sfc_obj, brdf_Sfc)
 
     ! Broadcasts the surface file parameters from the master process to the others.
 
-    character(len=2), intent(inout) :: type_sfc
-    integer, intent(in) :: Nx_sfc, Ny_sfc
-    integer, intent(inout) :: Npar_sfc
-    real, intent(inout) :: parms_Sfc(*), temp0_sfc, alb0_sfc
+    type(shd_type_sfc), intent(inout) :: sfc_obj
+    real(kind=R__), intent(inout) :: brdf_Sfc(sfc_obj%maxNpar, sfc_obj%maxNpts)
 
 #if HAS_MPI
-    integer :: ierr, n
+    integer :: ierr, Ndata
     real    :: realbuf(2)
 
     if (Nproc_ .le. 1) return
 
-    call mpi_bcast(type_sfc, 2, MPI_character, 0, comm2D_, ierr)
+    call mpi_bcast(sfc_obj%type, 2, MPI_character, 0, comm2D_, ierr)
 
-    call mpi_bcast(Npar_sfc, 1, MPI_integer, 0, comm2D_, ierr)
+    call mpi_bcast(sfc_obj%Npar, 1, MPI_integer, 0, comm2D_, ierr)
 
-    realbuf(1:2) = (/temp0_sfc, alb0_sfc/)
+    realbuf(1:2) = (/sfc_obj%avgTemp, sfc_obj%avgAlb/)
     call mpi_bcast(realbuf, 2, MPI_real, 0, comm2D_, ierr)
-    temp0_sfc = realbuf(1); alb0_sfc = realbuf(2)
+    sfc_obj%avgTemp = realbuf(1); sfc_obj%avgAlb = realbuf(2)
 
-    n = Npar_sfc*(Nx_sfc + 1)*(Ny_sfc + 1)
-    call mpi_bcast(parms_Sfc, n, MPI_real, 0, comm2D_, ierr)
+    Ndata = sfc_obj%Npar * (sfc_obj%Nx+1) * (sfc_obj%Ny+1)
+    call mpi_bcast(brdf_Sfc, Ndata, MPI_real, 0, comm2D_, ierr)
 #endif
 
     return
 
 end subroutine shd_mpi__bcastSfc
 
-subroutine shd_mpi__bcastCkdSize(Ng_ckd, Nz_ckd)
+subroutine shd_mpi__bcastCkdSize(ckd_obj)
 
     ! Broadcasts the k-distribution array sizes from the master process to the others.
 
-    integer, intent(inout) :: Ng_ckd, Nz_ckd
+    type(shd_type_ckd), intent(inout) :: ckd_obj
 
 #if HAS_MPI
     integer :: ierr, intbuf(2)
 
     if (Nproc_ .le. 1) return
 
-    intbuf(1:2) = (/Ng_ckd, Nz_ckd/)
+    intbuf(1:2) = (/ckd_obj%Ng, ckd_obj%Nz/)
     call mpi_bcast(intbuf, 2, MPI_integer, 0, comm2D_, ierr)
-    Ng_ckd = intbuf(1); Nz_ckd = intbuf(2)
+    ckd_obj%Ng = intbuf(1); ckd_obj%Nz = intbuf(2)
 #endif
 
     return
 
 end subroutine shd_mpi__bcastCkdSize
 
-subroutine shd_mpi__bcastCkd(solar_Ckd, Ng_ckd, delg_Ckd, Nz_ckd, z_Ckd, kabs_Ckd)
+subroutine shd_mpi__bcastCkd(ckd_obj, solar_Ckd, wgt_Ckd, kabs_Ckd)
 
     ! Broadcasts the k-distribution file parameters from the master process
     ! to the other processes.
 
-    integer, intent(in) :: Ng_ckd, Nz_ckd
-    real, intent(inout) :: solar_Ckd(Ng_ckd), delg_Ckd(Ng_ckd), z_Ckd(Nz_ckd), kabs_Ckd(Nz_ckd, Ng_ckd)
+    type(shd_type_ckd), intent(inout) :: ckd_obj
+    real(kind=R__), intent(inout) :: solar_Ckd(ckd_obj%Ng), &
+                                       wgt_Ckd(ckd_obj%Ng), &
+                                      kabs_Ckd(ckd_obj%Nz, ckd_obj%Ng)
 
 #if HAS_MPI
     integer :: ierr
@@ -658,66 +692,63 @@ subroutine shd_mpi__bcastCkd(solar_Ckd, Ng_ckd, delg_Ckd, Nz_ckd, z_Ckd, kabs_Ck
 
     if (Nproc_ .le. 1) return
 
-    allocate (realbuf(2*Ng_ckd+Nz_ckd))
+    allocate(realbuf(2*ckd_obj%Ng + ckd_obj%Nz))
 
-    realbuf(1 : Ng_ckd) = solar_Ckd(:)
-    realbuf(Ng_ckd+1 : 2*Ng_ckd) = delg_Ckd(:)
+    realbuf(1              : ckd_obj%Ng             ) = solar_Ckd(:)
+    realbuf(ckd_obj%Ng+1   : 2*ckd_obj%Ng           ) = wgt_Ckd(:)
+    realbuf(2*ckd_obj%Ng+1 : 2*ckd_obj%Ng+ckd_obj%Nz) = ckd_obj%z(:)
 
-    realbuf(2*Ng_ckd+1 : 2*Ng_ckd+Nz_ckd) = z_Ckd(:)
-    call mpi_bcast(realbuf, 2*Ng_ckd+Nz_ckd, MPI_real, 0, comm2D_, ierr)
+    call mpi_bcast(realbuf, 2*ckd_obj%Ng+ckd_obj%Nz, MPI_real, 0, comm2D_, ierr)
 
-    solar_Ckd(:) = realbuf(1 : Ng_ckd)
-    delg_Ckd(:)  = realbuf(Ng_ckd+1 : 2*Ng_ckd)
-    z_Ckd(:) = realbuf(2*Ng_ckd+1 : 2*Ng_ckd+Nz_ckd)
+    solar_Ckd(:) = realbuf(             1 :  ckd_obj%Ng)
+    wgt_Ckd(:)   = realbuf(  ckd_obj%Ng+1 : 2*ckd_obj%Ng)
+    ckd_obj%z(:) = realbuf(2*ckd_obj%Ng+1 : 2*ckd_obj%Ng+ckd_obj%Nz)
 
-    call mpi_bcast(kabs_Ckd, Nz_ckd*Ng_ckd, MPI_real, 0, comm2D_, ierr)
+    deallocate(realbuf)
+
+    call mpi_bcast(kabs_Ckd, ckd_obj%Nz*ckd_obj%Ng, MPI_real, 0, comm2D_, ierr)
 #endif
 
     return
 
 end subroutine shd_mpi__bcastCkd
 
-subroutine shd_mpi__bcastSenSize(Npts_sen, Npar_sen)
+subroutine shd_mpi__bcastSenSize(sen_obj)
 
     ! Broadcasts the user-specified sensor data array sizes from
     ! the master process to the others.
 
-    integer, intent(inout) :: Npts_sen, Npar_sen
+    type(shd_type_sen), intent(inout) :: sen_obj
 
 #if HAS_MPI
     integer :: ierr, intbuf(2)
 
     if (Nproc_ .le. 1) return
 
-    intbuf(1:2) = (/Npts_sen, Npar_sen/)
+    intbuf(1:2) = (/sen_obj%Npts, sen_obj%Npar/)
     call mpi_bcast(intbuf, 2, MPI_integer, 0, comm2D_, ierr)
-    Npts_sen = intbuf(1); Npar_sen = intbuf(2)
+    sen_obj%Npts = intbuf(1); sen_obj%Npar = intbuf(2)
 #endif
 
     return
 
 end subroutine shd_mpi__bcastSenSize
 
-subroutine shd_mpi__bcastSen(Npts_sen, Npar_sen, parms_Sen)
+subroutine shd_mpi__bcastSen(sen_obj, view_Sen)
 
     ! Broadcasts the user-specified sensor data array from
     ! the master process to the others.
 
-    integer, intent(inout) :: Npts_sen, Npar_sen
-    real, intent(inout) :: parms_Sen(*)
+    type(shd_type_sen), intent(inout) :: sen_obj
+    real(kind=R__),     intent(inout) :: view_Sen(sen_obj%Npar, sen_obj%Npts)
 
 #if HAS_MPI
-    integer :: ierr, intbuf(2), n
-    real    :: realbuf(4)
+    integer :: ierr, Ndata
 
     if (Nproc_ .le. 1) return
 
-    intbuf(1:2) = (/Npts_sen, Npar_sen/)
-    call mpi_bcast(intbuf, 2, MPI_integer, 0, comm2D_, ierr)
-    Npts_sen = intbuf(1); Npar_sen = intbuf(2)
-
-    n = Npts_sen*Npar_sen
-    call mpi_bcast(parms_Sen, n, MPI_real, 0, comm2D_, ierr)
+    Ndata = sen_obj%Npts*sen_obj%Npar
+    call mpi_bcast(view_Sen, Ndata, MPI_real, 0, comm2D_, ierr)
 #endif
 
     return
@@ -738,7 +769,7 @@ subroutine shd_mpi__bcastMem(MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
     integer :: Nproc, ierr, i, j
     real, allocatable :: MemParam(:, :)
 
-    allocate (MemParam(4, 0:Nproc_ - 1))
+    allocate(MemParam(4, 0:Nproc_ - 1))
     MemParam(1, :) = MAX_TOTAL_MB; MemParam(2, :) = ADAPT_GRID_FACTOR
     MemParam(3, :) = NUM_SH_TERM_FACTOR; MemParam(4, :) = CELL_TO_POINT_RATIO
 
@@ -765,7 +796,7 @@ subroutine shd_mpi__bcastMem(MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
     ADAPT_GRID_FACTOR = MemParam(2, myProc_)
     NUM_SH_TERM_FACTOR = MemParam(3, myProc_)
     CELL_TO_POINT_RATIO = MemParam(4, myProc_)
-    deallocate (MemParam)
+    deallocate(MemParam)
     if (verbose_ .ge. 5) write (6, '(A)') 'Message [mpi__bcastMemParam]:'
     if (verbose_ .ge. 5) write (6, '(2X,A,F0.2,"MB",3(2X,F0.3))') 'Memory parameters used: ', MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
         &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
@@ -795,55 +826,56 @@ real function shd_mpi__sumCpuTime(cpuTimes)
 end function shd_mpi__sumCpuTime
 
 subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
-    &IPFLAG, BCFLAG, NBPTS, NXT, NYT, Nz, NSHOUT,&
+    &NSHOUT,&
     &SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV, SUMSHTERMS,&
-    &XDOMAIN, YDOMAIN, XALLGRID, YALLGRID,&
     &ALLFLUXES, ALLFLUXDIV, ALLSHTERMS,&
-    &NCELLS, NPTS, NSH, NCELLSTOT, NPTSTOT, NSHTOT)
+    &NSH, NCELLSTOT, NPTSTOT, NSHTOT,&
+    &rtmAll_obj, rtm_obj, cell_obj)
 
     ! Gathers the base grid output data in SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV,
     ! and SUMSHTERMS from all the processors and assembles in the master
     ! processor output arrays ALLFLUXES, ALLFLUXDIV, ALLSHTERMS.  Gathers the
     ! ixyOut_ array from each processor to determine where each subdomain is.
-    ! Also gathers the full base grid position arrays (XALLGRID/YALLGRID) and
-    ! sums NCELLS,NPTS,NSH over all processors.
+    ! Also gathers the full base grid position arrays (rtmAll_obj%x/rtmAll_obj%y) and
+    ! sums cell_obj%Npts,rtm_obj%Npts,NSH over all processors.
+
+    type(shd_type_rtm),  intent(inout) :: rtmAll_obj, rtm_obj
+    type(shd_type_cell), intent(in)    :: cell_obj
 
     logical, intent(in) :: FLUX_OUT, FLUXDIV_OUT, SH_OUT
-    integer, intent(in) :: IPFLAG, BCFLAG, NBPTS, NXT, NYT, Nz, NSHOUT
-    real, intent(in) :: XDOMAIN, YDOMAIN
-    real, intent(in) :: SUMFLUXES(2, NBPTS), SUMDIRFLUX(NBPTS)
-    real, intent(in) :: SUMFLUXDIV(NBPTS), SUMSHTERMS(NSHOUT, NBPTS)
-    real, intent(out) :: XALLGRID(NXT), YALLGRID(NYT)
-    real, intent(out) :: ALLFLUXES(3, Nz, NYT, NXT), ALLFLUXDIV(Nz, NYT, NXT)
-    real, intent(out) :: ALLSHTERMS(NSHOUT, Nz, NYT, NXT)
-    integer, intent(in) :: NCELLS, NPTS, NSH
+    integer, intent(in) :: NSHOUT
+    real, intent(in) :: SUMFLUXES(2, rtm_obj%Npts0), SUMDIRFLUX(rtm_obj%Npts0)
+    real, intent(in) :: SUMFLUXDIV(rtm_obj%Npts0), SUMSHTERMS(NSHOUT, rtm_obj%Npts0)
+    real, intent(out) :: ALLFLUXES(3, rtmAll_obj%Nz, rtmAll_obj%Ny0, rtmAll_obj%Nx0), ALLFLUXDIV(rtmAll_obj%Nz, rtmAll_obj%Ny0, rtmAll_obj%Nx0)
+    real, intent(out) :: ALLSHTERMS(NSHOUT, rtmAll_obj%Nz, rtmAll_obj%Ny0, rtmAll_obj%Nx0)
+    integer, intent(in) :: NSH
     integer, intent(out) :: NCELLSTOT, NPTSTOT, NSHTOT
 
 #if HAS_MPI
     integer :: IX, IY, Nx, Ny, NX1, NY1, MAXN, I, send3int(3), recv3int(3)
     integer :: iproc, ierr, irq
-    integer, allocatable :: IXYALL(:, :, :)
+    integer, allocatable :: ixyAll(:, :, :)
     real, allocatable :: sendbuf(:, :), recvbuf(:, :, :), buf(:, :, :, :)
 
     type(MPI_request), allocatable :: requests(:)
     type(MPI_status), allocatable :: status(:)
 
-    allocate (IXYALL(2, 2, 0:Nproc_ - 1))
-    call mpi_gather(ixyOut_, 4, MPI_integer, IXYALL, 4, MPI_integer, 0, comm2D_, ierr)
+    allocate(ixyAll(2, 2, 0:Nproc_ - 1))
+    call mpi_gather(ixyOut_, 4, MPI_integer, ixyAll, 4, MPI_integer, 0, comm2D_, ierr)
 
-    allocate (requests(Nproc_), status(Nproc_))
+    allocate(requests(Nproc_), status(Nproc_))
 
     if (FLUX_OUT) then
         irq = 0
         if (myProc_ .gt. 0) then
-            allocate (sendbuf(3, NBPTS))
+            allocate(sendbuf(3, rtm_obj%Npts0))
             sendbuf(1:2, :) = SUMFLUXES(:, :); sendbuf(3, :) = SUMDIRFLUX(:)
             irq = irq + 1
-            call mpi_isend(sendbuf, 3*NBPTS, MPI_real, 0, 1, comm2D_,&
+            call mpi_isend(sendbuf, 3*rtm_obj%Npts0, MPI_real, 0, 1, comm2D_,&
                 &requests(irq), ierr)
         else
-            MAXN = (maxval(IXYALL(2, 1, :)) + 1)*(maxval(IXYALL(2, 2, :)) + 1)*Nz
-            allocate (recvbuf(3, MAXN, 1:Nproc_ - 1))
+            MAXN = (maxval(ixyAll(2, 1, :)) + 1)*(maxval(ixyAll(2, 2, :)) + 1)*rtmAll_obj%Nz
+            allocate(recvbuf(3, MAXN, 1:Nproc_ - 1))
             do iproc = 1, Nproc_ - 1
                 irq = irq + 1
                 call mpi_irecv(recvbuf(:, :, iproc), 3*MAXN, MPI_real, iproc, 1,&
@@ -853,30 +885,30 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
         call mpi_waitall(irq, requests, status, ierr)
 
         if (myProc_ .eq. 0) then
-            IX = IXYALL(1, 1, 0); Nx = IXYALL(2, 1, 0)
-            IY = IXYALL(1, 2, 0); Ny = IXYALL(2, 2, 0)
+            IX = ixyAll(1, 1, 0); Nx = ixyAll(2, 1, 0)
+            IY = ixyAll(1, 2, 0); Ny = ixyAll(2, 2, 0)
             NX1 = Nx + 1; NY1 = Ny + 1
             if (is1DX_ .and. .not. isMpiX_) NX1 = Nx
             if (is1DYx_ .and. .not. isMpiY_) NY1 = Ny
-            allocate (buf(3, Nz, NY1, NX1))
-            buf(1:2, :, :, :) = reshape(SUMFLUXES(1:2, :), (/2, Nz, NY1, NX1/))
-            buf(3, :, :, :) = reshape(SUMDIRFLUX(:), (/Nz, NY1, NX1/))
-            ALLFLUXES(1:3, 1:Nz, IY:IY + Ny - 1, IX:IX + Nx - 1) = buf(:, 1:Nz, 1:Ny, 1:Nx)
-            deallocate (buf)
+            allocate(buf(3, rtmAll_obj%Nz, NY1, NX1))
+            buf(1:2, :, :, :) = reshape(SUMFLUXES(1:2, :), (/2, rtmAll_obj%Nz, NY1, NX1/))
+            buf(3, :, :, :) = reshape(SUMDIRFLUX(:), (/rtmAll_obj%Nz, NY1, NX1/))
+            ALLFLUXES(1:3, 1:rtmAll_obj%Nz, IY:IY + Ny - 1, IX:IX + Nx - 1) = buf(:, 1:rtmAll_obj%Nz, 1:Ny, 1:Nx)
+            deallocate(buf)
             do iproc = 1, Nproc_ - 1
-                IX = IXYALL(1, 1, iproc); Nx = IXYALL(2, 1, iproc)
-                IY = IXYALL(1, 2, iproc); Ny = IXYALL(2, 2, iproc)
+                IX = ixyAll(1, 1, iproc); Nx = ixyAll(2, 1, iproc)
+                IY = ixyAll(1, 2, iproc); Ny = ixyAll(2, 2, iproc)
                 NX1 = Nx + 1; NY1 = Ny + 1
                 if (is1DX_ .and. .not. isMpiX_) NX1 = Nx
                 if (is1DYx_ .and. .not. isMpiY_) NY1 = Ny
-                allocate (buf(3, Nz, NY1, NX1))
-                buf(:, :, :, :) = reshape(recvbuf(:, 1:Nz*NY1*NX1, iproc), (/3, Nz, NY1, NX1/))
-                ALLFLUXES(1:3, 1:Nz, IY:IY + Ny - 1, IX:IX + Nx - 1) = buf(:, 1:Nz, 1:Ny, 1:Nx)
-                deallocate (buf)
+                allocate(buf(3, rtmAll_obj%Nz, NY1, NX1))
+                buf(:, :, :, :) = reshape(recvbuf(:, 1:rtmAll_obj%Nz*NY1*NX1, iproc), (/3, rtmAll_obj%Nz, NY1, NX1/))
+                ALLFLUXES(1:3, 1:rtmAll_obj%Nz, IY:IY + Ny - 1, IX:IX + Nx - 1) = buf(:, 1:rtmAll_obj%Nz, 1:Ny, 1:Nx)
+                deallocate(buf)
             end do
-            deallocate (recvbuf)
+            deallocate(recvbuf)
         else
-            deallocate (sendbuf)
+            deallocate(sendbuf)
         end if
     end if
 
@@ -884,11 +916,11 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
         irq = 0
         if (myProc_ .gt. 0) then
             irq = irq + 1
-            call mpi_isend(SUMFLUXDIV, NBPTS, MPI_real, 0, 2, comm2D_,&
+            call mpi_isend(SUMFLUXDIV, rtm_obj%Npts0, MPI_real, 0, 2, comm2D_,&
                 &requests(irq), ierr)
         else
-            MAXN = (maxval(IXYALL(2, 1, :)) + 1)*(maxval(IXYALL(2, 2, :)) + 1)*Nz
-            allocate (recvbuf(1, MAXN, 1:Nproc_ - 1))
+            MAXN = (maxval(ixyAll(2, 1, :)) + 1)*(maxval(ixyAll(2, 2, :)) + 1)*rtmAll_obj%Nz
+            allocate(recvbuf(1, MAXN, 1:Nproc_ - 1))
             do iproc = 1, Nproc_ - 1
                 irq = irq + 1
                 call mpi_irecv(recvbuf(:, :, iproc), MAXN, MPI_real, iproc, 2,&
@@ -898,27 +930,27 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
         call mpi_waitall(irq, requests, status, ierr)
 
         if (myProc_ .eq. 0) then
-            IX = IXYALL(1, 1, 0); Nx = IXYALL(2, 1, 0)
-            IY = IXYALL(1, 2, 0); Ny = IXYALL(2, 2, 0)
+            IX = ixyAll(1, 1, 0); Nx = ixyAll(2, 1, 0)
+            IY = ixyAll(1, 2, 0); Ny = ixyAll(2, 2, 0)
             NX1 = Nx + 1; NY1 = Ny + 1
             if (is1DX_ .and. .not. isMpiX_) NX1 = Nx
             if (is1DYx_ .and. .not. isMpiY_) NY1 = Ny
-            allocate (buf(1, Nz, NY1, NX1))
-            buf(1, :, :, :) = reshape(SUMFLUXDIV(:), (/Nz, NY1, NX1/))
-            ALLFLUXDIV(1:Nz, IY:IY + Ny - 1, IX:IX + Nx - 1) = buf(1, 1:Nz, 1:Ny, 1:Nx)
-            deallocate (buf)
+            allocate(buf(1, rtmAll_obj%Nz, NY1, NX1))
+            buf(1, :, :, :) = reshape(SUMFLUXDIV(:), (/rtmAll_obj%Nz, NY1, NX1/))
+            ALLFLUXDIV(1:rtmAll_obj%Nz, IY:IY + Ny - 1, IX:IX + Nx - 1) = buf(1, 1:rtmAll_obj%Nz, 1:Ny, 1:Nx)
+            deallocate(buf)
             do iproc = 1, Nproc_ - 1
-                IX = IXYALL(1, 1, iproc); Nx = IXYALL(2, 1, iproc)
-                IY = IXYALL(1, 2, iproc); Ny = IXYALL(2, 2, iproc)
+                IX = ixyAll(1, 1, iproc); Nx = ixyAll(2, 1, iproc)
+                IY = ixyAll(1, 2, iproc); Ny = ixyAll(2, 2, iproc)
                 NX1 = Nx + 1; NY1 = Ny + 1
                 if (is1DX_ .and. .not. isMpiX_) NX1 = Nx
                 if (is1DYx_ .and. .not. isMpiY_) NY1 = Ny
-                allocate (buf(1, Nz, NY1, NX1))
-                buf(:, :, :, :) = reshape(recvbuf(:, 1:Nz*NY1*NX1, iproc), (/1, Nz, NY1, NX1/))
-                ALLFLUXDIV(1:Nz, IY:IY + Ny - 1, IX:IX + Nx - 1) = buf(1, 1:Nz, 1:Ny, 1:Nx)
-                deallocate (buf)
+                allocate(buf(1, rtmAll_obj%Nz, NY1, NX1))
+                buf(:, :, :, :) = reshape(recvbuf(:, 1:rtmAll_obj%Nz*NY1*NX1, iproc), (/1, rtmAll_obj%Nz, NY1, NX1/))
+                ALLFLUXDIV(1:rtmAll_obj%Nz, IY:IY + Ny - 1, IX:IX + Nx - 1) = buf(1, 1:rtmAll_obj%Nz, 1:Ny, 1:Nx)
+                deallocate(buf)
             end do
-            deallocate (recvbuf)
+            deallocate(recvbuf)
         end if
     end if
 
@@ -926,11 +958,11 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
         irq = 0
         if (myProc_ .gt. 0) then
             irq = irq + 1
-            call mpi_isend(SUMSHTERMS, NSHOUT*NBPTS, MPI_real, 0, 3, comm2D_,&
+            call mpi_isend(SUMSHTERMS, NSHOUT*rtm_obj%Npts0, MPI_real, 0, 3, comm2D_,&
                 &requests(irq), ierr)
         else
-            MAXN = (maxval(IXYALL(2, 1, :)) + 1)*(maxval(IXYALL(2, 2, :)) + 1)*Nz
-            allocate (recvbuf(NSHOUT, MAXN, 1:Nproc_ - 1))
+            MAXN = (maxval(ixyAll(2, 1, :)) + 1)*(maxval(ixyAll(2, 2, :)) + 1)*rtmAll_obj%Nz
+            allocate(recvbuf(NSHOUT, MAXN, 1:Nproc_ - 1))
             do iproc = 1, Nproc_ - 1
                 irq = irq + 1
                 call mpi_irecv(recvbuf(:, :, iproc), NSHOUT*MAXN, MPI_real, iproc, 3,&
@@ -940,67 +972,67 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
         call mpi_waitall(irq, requests, status, ierr)
 
         if (myProc_ .eq. 0) then
-            IX = IXYALL(1, 1, 0); Nx = IXYALL(2, 1, 0)
-            IY = IXYALL(1, 2, 0); Ny = IXYALL(2, 2, 0)
+            IX = ixyAll(1, 1, 0); Nx = ixyAll(2, 1, 0)
+            IY = ixyAll(1, 2, 0); Ny = ixyAll(2, 2, 0)
             NX1 = Nx + 1; NY1 = Ny + 1
             if (is1DX_ .and. .not. isMpiX_) NX1 = Nx
             if (is1DYx_ .and. .not. isMpiY_) NY1 = Ny
-            allocate (buf(NSHOUT, Nz, NY1, NX1))
-            buf(:, :, :, :) = reshape(SUMSHTERMS(:, :), (/NSHOUT, Nz, NY1, NX1/))
-            ALLSHTERMS(:, 1:Nz, IY:IY + Ny - 1, IX:IX + Nx - 1) = buf(:, 1:Nz, 1:Ny, 1:Nx)
-            deallocate (buf)
+            allocate(buf(NSHOUT, rtmAll_obj%Nz, NY1, NX1))
+            buf(:, :, :, :) = reshape(SUMSHTERMS(:, :), (/NSHOUT, rtmAll_obj%Nz, NY1, NX1/))
+            ALLSHTERMS(:, 1:rtmAll_obj%Nz, IY:IY + Ny - 1, IX:IX + Nx - 1) = buf(:, 1:rtmAll_obj%Nz, 1:Ny, 1:Nx)
+            deallocate(buf)
             do iproc = 1, Nproc_ - 1
-                IX = IXYALL(1, 1, iproc); Nx = IXYALL(2, 1, iproc)
-                IY = IXYALL(1, 2, iproc); Ny = IXYALL(2, 2, iproc)
+                IX = ixyAll(1, 1, iproc); Nx = ixyAll(2, 1, iproc)
+                IY = ixyAll(1, 2, iproc); Ny = ixyAll(2, 2, iproc)
                 NX1 = Nx + 1; NY1 = Ny + 1
                 if (is1DX_ .and. .not. isMpiX_) NX1 = Nx
                 if (is1DYx_ .and. .not. isMpiY_) NY1 = Ny
-                allocate (buf(NSHOUT, Nz, NY1, NX1))
-                buf(:, :, :, :) = reshape(recvbuf(:, 1:Nz*NY1*NX1, iproc), (/NSHOUT, Nz, NY1, NX1/))
-                ALLSHTERMS(:, 1:Nz, IY:IY + Ny - 1, IX:IX + Nx - 1) = buf(:, 1:Nz, 1:Ny, 1:Nx)
-                deallocate (buf)
+                allocate(buf(NSHOUT, rtmAll_obj%Nz, NY1, NX1))
+                buf(:, :, :, :) = reshape(recvbuf(:, 1:rtmAll_obj%Nz*NY1*NX1, iproc), (/NSHOUT, rtmAll_obj%Nz, NY1, NX1/))
+                ALLSHTERMS(:, 1:rtmAll_obj%Nz, IY:IY + Ny - 1, IX:IX + Nx - 1) = buf(:, 1:rtmAll_obj%Nz, 1:Ny, 1:Nx)
+                deallocate(buf)
             end do
-            deallocate (recvbuf)
+            deallocate(recvbuf)
         end if
     end if
 
     ! Make the X and Y grids for the full domain
     if (myProc_ .eq. 0) then
-        XALLGRID(1:NXT) = (/(XDOMAIN*(I - 1)/NXT, I=1, NXT)/)
-        YALLGRID(1:NYT) = (/(YDOMAIN*(I - 1)/NYT, I=1, NYT)/)
+        rtmAll_obj%x(1:rtmAll_obj%Nx0) = (/(prp_obj_%xDomain*(I - 1)/rtmAll_obj%Nx0, I=1, rtmAll_obj%Nx0)/)
+        rtmAll_obj%y(1:rtmAll_obj%Ny0) = (/(prp_obj_%yDomain*(I - 1)/rtmAll_obj%Ny0, I=1, rtmAll_obj%Ny0)/)
     end if
 
-    ! Get the sum of the NCELLS, NPTS, and NSH over the processors
-    send3int = (/NCELLS, NPTS, NSH/)
+    ! Get the sum of the cell_obj%Npts, rtm_obj%Npts, and NSH over the processors
+    send3int = (/cell_obj%Npts, rtm_obj%Npts, NSH/)
     call mpi_reduce(send3int, recv3int, 3, MPI_integer, MPI_sum, 0, comm2D_, ierr)
     NCELLSTOT = recv3int(1); NPTSTOT = recv3int(2); NSHTOT = recv3int(3)
 
-    deallocate (IXYALL, requests, status)
+    deallocate(ixyAll, requests, status)
 #endif
 
     return
 
 end subroutine shd_mpi__gatherOut
 
-subroutine shd_mpi__findAlbMax(ALBMAX)
+subroutine shd_mpi__findMaxSsa(maxSsa)
 
-    real, intent(inout) :: ALBMAX
+    real, intent(inout) :: maxSsa
 
 #if HAS_MPI
     integer :: ierr
     real    :: sendrbuf
 
     if (Nproc_ .gt. 1) then
-        ! Call mpi_allreduce to find the max ALBMAX over all processors
-        sendrbuf = ALBMAX
-        call mpi_allreduce(sendrbuf, ALBMAX, 1, MPI_real, MPI_max, comm2D_, ierr)
-        if (ierr .ne. MPI_success) call shd_mpi__abort('Error [mpi__findAlbMax]: mpi_allreduce error.')
+        ! Call mpi_allreduce to find the max maxSsa over all processors
+        sendrbuf = maxSsa
+        call mpi_allreduce(sendrbuf, maxSsa, 1, MPI_real, MPI_max, comm2D_, ierr)
+        if (ierr .ne. MPI_success) call shd_mpi__abort('Error [mpi__findSsaMax]: mpi_allreduce error.')
     end if
 #endif
 
     return
 
-end subroutine shd_mpi__findAlbMax
+end subroutine shd_mpi__findMaxSsa
 
 subroutine shd_mpi__unifySplit(DOSPLIT, STARTSPLITACC)
 
@@ -1046,20 +1078,19 @@ subroutine shd_mpi__findTotSplitCritMax(SPLITCRIT)
 
 end subroutine shd_mpi__findTotSplitCritMax
 
-subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
-    &DELTAM, ML, NlegSet_prp, Nleg_prp,&
-    &SOLARFLUX, SOLARMU, SOLARAZ, xyz_Grid,&
-    &Nx, x_Grid, Ny, y_Grid, DIRFLUX)
+subroutine shd_mpi__makeDirect(SPT,&
+    &DELTAM, ML,&
+    &SOLARFLUX, SOLARMU, SOLARAZ,&
+    &DIRFLUX)
 
-    ! Makes the direct beam solar flux for the NPTS gridpoints started with
-    ! index SPT having X/Y/Z positions in xyz_Grid.
+    ! Makes the direct beam solar flux for the rtm_obj_%Npts gridpoints started with
+    ! index SPT having X/Y/Z positions in xyz_Rtm_.
     ! DIRFLUX is set to F*exp(-tau_sun).
 
-    integer, intent(in) :: SPT, NPTS, BCFLAG, IPFLAG, ML, NlegSet_prp, Nleg_prp, Nx, Ny
+    integer, intent(in) :: SPT, ML
     logical, intent(in) :: DELTAM
     real, intent(in) :: SOLARFLUX, SOLARMU, SOLARAZ
-    real, intent(in) :: xyz_Grid(3, NPTS), x_Grid(Nx + 1), y_Grid(Ny + 1)
-    real, intent(out) :: DIRFLUX(NPTS)
+    real, intent(out) :: DIRFLUX(rtm_obj_%Npts)
 
 #if HAS_MPI
     logical :: VALIDBEAM
@@ -1080,24 +1111,24 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
     type(MPI_request) :: requests(12)
     type(MPI_status) :: status(12)
 
-    MAXNBEAM = 2*NPTS
-    allocate (BndDirRealInfo(4, MAXNBEAM, 4), BndDirIntInfo(2, MAXNBEAM, 4))
-    allocate (DirAllOut(MAXNBEAM, 0:Nproc_ - 1), DirPtrOut(MAXNBEAM, 0:Nproc_ - 1))
-    allocate (DirAllIn(MAXNBEAM), DirPtrIn(MAXNBEAM), Ndone(0:Nproc_ - 1))
+    MAXNBEAM = 2*rtm_obj_%Npts
+    allocate(BndDirRealInfo(4, MAXNBEAM, 4), BndDirIntInfo(2, MAXNBEAM, 4))
+    allocate(DirAllOut(MAXNBEAM, 0:Nproc_ - 1), DirPtrOut(MAXNBEAM, 0:Nproc_ - 1))
+    allocate(DirAllIn(MAXNBEAM), DirPtrIn(MAXNBEAM), Ndone(0:Nproc_ - 1))
 
-    EPS = 1.0e-5*max(x_Grid(2) - x_Grid(1), y_Grid(2) - y_Grid(1))
+    EPS = 1.0e-5*max(rtm_obj_%x(2) - rtm_obj_%x(1), rtm_obj_%y(2) - rtm_obj_%y(1))
 
     if (SPT .eq. 1) then
         ! Initialize the direct beam calculation
-        call shd_rad__computeDirect(1, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
-            &DELTAM, ML, NlegSet_prp, Nleg_prp, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
+        call shd_rad__computeDirect(1, 0.0, 0.0, 0.0, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
+            &DELTAM, ML, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
         ! Find the max lowest uniform Z level over all processors and then
         !   tell shd_rad__computeDirect about it
         UZLEV = UNIFZLEV
         call mpi_allreduce(UZLEV, UNIFZLEV, 1, MPI_real, MPI_max, comm2D_, ierr)
-        call shd_rad__computeDirect(2, 0.0, 0.0, 0.0, BCFLAG, IPFLAG,&
-            &DELTAM, ML, NlegSet_prp, Nleg_prp, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
+        call shd_rad__computeDirect(2, 0.0, 0.0, 0.0, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
+            &DELTAM, ML, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
     end if
 
@@ -1108,9 +1139,9 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
         else
             Ldownx = 1; Lupx = 2
         end if
-        XMAX = x_Grid(Nx)
+        XMAX = rtm_obj_%x(rtm_obj_%Nx0)
     else
-        XMAX = x_Grid(Nx + 1)
+        XMAX = rtm_obj_%x(rtm_obj_%Nx0 + 1)
     end if
     if (isMpiY_) then
         if (sin(SOLARAZ) .gt. 1.0e-5) then
@@ -1118,18 +1149,18 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
         else
             Ldowny = 3; Lupy = 4
         end if
-        YMAX = y_Grid(Ny)
+        YMAX = rtm_obj_%y(rtm_obj_%Ny0)
     else
-        YMAX = y_Grid(Ny + 1)
+        YMAX = rtm_obj_%y(rtm_obj_%Ny0 + 1)
     end if
 
 
     ! Do the initial direct beam tracing starting at the base grid points
     NINVALID(:) = 0
-    do IP = SPT, NPTS
+    do IP = SPT, rtm_obj_%Npts
         DIRPATH = 0.0
-        call shd_rad__computeDirect(0, xyz_Grid(1, IP), xyz_Grid(2, IP), xyz_Grid(3, IP),&
-            &BCFLAG, IPFLAG, DELTAM, ML, NlegSet_prp, Nleg_prp,&
+        call shd_rad__computeDirect(0, xyz_Rtm_(1, IP), xyz_Rtm_(2, IP), xyz_Rtm_(3, IP),&
+            &rtm_obj_%flag_bc, rtm_obj_%flag_ip, DELTAM, ML,&
             &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(IP),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
         ! If we don't have a good direct beam then save the information
@@ -1193,13 +1224,13 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
         if (isMpiX_) then
             ! Continue the backwards ray integrations from the X boundary
             do J = 1, NINVALID(Ldownx)
-                if (Ldownx .eq. 1) BndDirRealInfo(1, J, Ldownx) = x_Grid(1)
-                if (Ldownx .eq. 2) BndDirRealInfo(1, J, Ldownx) = x_Grid(Nx)
+                if (Ldownx .eq. 1) BndDirRealInfo(1, J, Ldownx) = rtm_obj_%x(1)
+                if (Ldownx .eq. 2) BndDirRealInfo(1, J, Ldownx) = rtm_obj_%x(rtm_obj_%Nx0)
                 X = BndDirRealInfo(1, J, Ldownx); Y = BndDirRealInfo(2, J, Ldownx)
                 Z = BndDirRealInfo(3, J, Ldownx); DIRPATH = BndDirRealInfo(4, J, Ldownx)
-                if (Y .lt. (y_Grid(1) - EPS)) Y = YMAX; if (Y .gt. (YMAX + EPS)) Y = y_Grid(1)
-                call shd_rad__computeDirect(0, X, Y, Z, BCFLAG, IPFLAG,&
-                    &DELTAM, ML, NlegSet_prp, Nleg_prp,&
+                if (Y .lt. (rtm_obj_%y(1) - EPS)) Y = YMAX; if (Y .gt. (YMAX + EPS)) Y = rtm_obj_%y(1)
+                call shd_rad__computeDirect(0, X, Y, Z, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
+                    &DELTAM, ML,&
                     &SOLARFLUX, SOLARMU, SOLARAZ, DIRJUNK,&
                     &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
                 ! If we got a valid direct beam then store it in DirAllOut otherwise
@@ -1225,13 +1256,13 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
         if (isMpiY_) then
             ! Continue the backwards ray integrations for the Y boundary
             do J = 1, NINVALID(Ldowny)
-                if (Ldowny .eq. 3) BndDirRealInfo(2, J, Ldowny) = y_Grid(1)
-                if (Ldowny .eq. 4) BndDirRealInfo(2, J, Ldowny) = y_Grid(Ny)
+                if (Ldowny .eq. 3) BndDirRealInfo(2, J, Ldowny) = rtm_obj_%y(1)
+                if (Ldowny .eq. 4) BndDirRealInfo(2, J, Ldowny) = rtm_obj_%y(rtm_obj_%Ny0)
                 X = BndDirRealInfo(1, J, Ldowny); Y = BndDirRealInfo(2, J, Ldowny)
                 Z = BndDirRealInfo(3, J, Ldowny); DIRPATH = BndDirRealInfo(4, J, Ldowny)
-                if (X .lt. (x_Grid(1) - EPS)) X = XMAX; if (X .gt. (XMAX + EPS)) X = x_Grid(1)
-                call shd_rad__computeDirect(0, X, Y, Z, BCFLAG, IPFLAG,&
-                    &DELTAM, ML, NlegSet_prp, Nleg_prp,&
+                if (X .lt. (rtm_obj_%x(1) - EPS)) X = XMAX; if (X .gt. (XMAX + EPS)) X = rtm_obj_%x(1)
+                call shd_rad__computeDirect(0, X, Y, Z, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
+                    &DELTAM, ML,&
                     &SOLARFLUX, SOLARMU, SOLARAZ, DIRJUNK,&
                     &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
                 ! If we got a valid direct beam then store it in DirAllOut otherwise
@@ -1295,16 +1326,16 @@ subroutine shd_mpi__makeDirect(SPT, NPTS, BCFLAG, IPFLAG,&
         end if
     end do
 
-    deallocate (DirAllOut, DirPtrOut, DirAllIn, DirPtrIn, Ndone)
-    deallocate (BndDirRealInfo, BndDirIntInfo)
+    deallocate(DirAllOut, DirPtrOut, DirAllIn, DirPtrIn, Ndone)
+    deallocate(BndDirRealInfo, BndDirIntInfo)
 #endif
 
     return
 
 end subroutine shd_mpi__makeDirect
 
-subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, ptr8Grid_Cell,&
-    &xyz_Grid, Nx, Ny, Nz, x_Grid, y_Grid, z_Grid)
+subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, SWEEPORD,&
+    &Nx, Ny, Nz)
 
     ! Makes the pointers to and positions of the horizontal boundary grid
     ! points of the processors neighboring this one.
@@ -1318,9 +1349,8 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, ptr8Grid_Cell,&
     ! boundary of this subdomain (SIDE: 1=-X, 2=+X, 3=-Y, 4=+Y).  BxyPos_ holds
     ! the gridpoint positions (X,Y,Z) for these boundary points.
 
-    integer, intent(in) :: BCFLAG, IPFLAG, NPTS, SWEEPORD(NPTS, *), ptr8Grid_Cell(8, *)
+    integer, intent(in) :: BCFLAG, IPFLAG, SWEEPORD(rtm_obj_%Npts, *)
     integer, intent(in) :: Nx, Ny, Nz
-    real, intent(in) :: xyz_Grid(3, NPTS), x_Grid(Nx), y_Grid(Ny), z_Grid(Nz)
 
 #if HAS_MPI
     integer :: tag, ierr, irq
@@ -1339,16 +1369,16 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, ptr8Grid_Cell,&
 
     if (.not. (isMpi_)) return
     if (is1D_) return
-    call mpi_allreduce(NPTS .eq. OLDNPTS, SAMEGRID, 1, MPI_logical, MPI_land, comm2D_, ierr)
-    OLDNPTS = NPTS
+    call mpi_allreduce(rtm_obj_%Npts .eq. OLDNPTS, SAMEGRID, 1, MPI_logical, MPI_land, comm2D_, ierr)
+    OLDNPTS = rtm_obj_%Npts
     if (SAMEGRID) return
 
     ! IOCT=1+BITX+2*BITY+4*BITZ ; JOCT=JOCTORDER(IOCT) = (/ 1,3,5,7,2,4,6,8 /)
     ! CX<0: BITX=1, JOCT=3,7,4,8      CY<0: BITY=1, JOCT=5,7,6,8
-    XEDGE(:) = (/x_Grid(Nx), x_Grid(Nx), x_Grid(1), x_Grid(1), x_Grid(Nx), x_Grid(Nx), x_Grid(1), x_Grid(1)/)
-    YEDGE(:) = (/y_Grid(Ny), y_Grid(Ny), y_Grid(Ny), y_Grid(Ny), y_Grid(1), y_Grid(1), y_Grid(1), y_Grid(1)/)
-    XYB(1) = x_Grid(1); XYB(2) = x_Grid(Nx)
-    XYB(3) = y_Grid(1); XYB(4) = y_Grid(Ny)
+    XEDGE(:) = (/rtm_obj_%x(Nx), rtm_obj_%x(Nx), rtm_obj_%x(1), rtm_obj_%x(1), rtm_obj_%x(Nx), rtm_obj_%x(Nx), rtm_obj_%x(1), rtm_obj_%x(1)/)
+    YEDGE(:) = (/rtm_obj_%y(Ny), rtm_obj_%y(Ny), rtm_obj_%y(Ny), rtm_obj_%y(Ny), rtm_obj_%y(1), rtm_obj_%y(1), rtm_obj_%y(1), rtm_obj_%y(1)/)
+    XYB(1) = rtm_obj_%x(1); XYB(2) = rtm_obj_%x(Nx)
+    XYB(3) = rtm_obj_%y(1); XYB(4) = rtm_obj_%y(Ny)
 
     if (is1D_) then
         NOCT = 2
@@ -1364,20 +1394,20 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, ptr8Grid_Cell,&
     else
         MAXNBXY = 3.0*(Nz - 2)*max(Nx, Ny)
     end if
-    allocate (BNDPTR(NOCT, MAXNBXY, 2, 4), BNDPOS(3, NOCT, MAXNBXY, 2, 4))
+    allocate(BNDPTR(NOCT, MAXNBXY, 2, 4), BNDPOS(3, NOCT, MAXNBXY, 2, 4))
 
     N1(:, :) = 0
     do JOCT = 1, NOCT
         BITZ = 1 - ibits(JOCT, 0, 1)
         N(:) = 0
-        do IORDER = 1, NPTS
+        do IORDER = 1, rtm_obj_%Npts
             IPCELL = ishft(SWEEPORD(IORDER, JOCT), -3)
             ICORNER = ibits(SWEEPORD(IORDER, JOCT), 0, 3) + 1
-            IPT = ptr8Grid_Cell(ICORNER, IPCELL)
+            IPT = i8Grid_Cell_(ICORNER, IPCELL)
 
-            if ((xyz_Grid(3, IPT) .lt. z_Grid(Nz) .and. BITZ .eq. 0) .or.&
-                &(xyz_Grid(3, IPT) .gt. z_Grid(1) .and. BITZ .eq. 1)) then
-                if (isMpiX_ .and. xyz_Grid(1, IPT) .eq. XEDGE(JOCT)&
+            if  ((xyz_Rtm_(3, IPT) .lt. rtm_obj_%z(Nz) .and. BITZ .eq. 0) .or.&
+                &(xyz_Rtm_(3, IPT) .gt. rtm_obj_%z(1) .and. BITZ .eq. 1)) then
+                if (isMpiX_ .and. xyz_Rtm_(1, IPT) .eq. XEDGE(JOCT)&
                     &.and. .not. is1DX_) then
                     SIDE = 2 - ibits(JOCT - 1, 1, 1)
                     N(SIDE) = N(SIDE) + 1
@@ -1385,9 +1415,9 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, ptr8Grid_Cell,&
                         call shd_mpi__abort('Error [mpi__findBndryPnt]: MAXNBXY exceeded by N(SIDE) 1x.')
                     end if
                     BNDPTR(JOCT, N(SIDE), 1, SIDE) = IPT
-                    BNDPOS(:, JOCT, N(SIDE), 1, SIDE) = xyz_Grid(:, IPT)
+                    BNDPOS(:, JOCT, N(SIDE), 1, SIDE) = xyz_Rtm_(:, IPT)
                 end if
-                if (isMpiY_ .and. xyz_Grid(2, IPT) .eq. YEDGE(JOCT)&
+                if (isMpiY_ .and. xyz_Rtm_(2, IPT) .eq. YEDGE(JOCT)&
                     &.and. .not. is1DYx_) then
                     SIDE = 4 - ibits(JOCT - 1, 2, 1)
                     N(SIDE) = N(SIDE) + 1
@@ -1395,7 +1425,7 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, ptr8Grid_Cell,&
                         call shd_mpi__abort('Error [mpi__findBndryPnt]: MAXNBXY exceeded by N(SIDE) 1y.')
                     end if
                     BNDPTR(JOCT, N(SIDE), 1, SIDE) = IPT
-                    BNDPOS(:, JOCT, N(SIDE), 1, SIDE) = xyz_Grid(:, IPT)
+                    BNDPOS(:, JOCT, N(SIDE), 1, SIDE) = xyz_Rtm_(:, IPT)
                 end if
             end if
         end do
@@ -1434,9 +1464,9 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, ptr8Grid_Cell,&
     NS = maxval(N2(:, :))
     if (NS .gt. MAXNBXY) call shd_mpi__abort('Error [mpi__findBndryPnt]: MAXNBXY was exceeded.')
 
-    if (allocated(BxyPtr_)) deallocate (BxyPtr_, BxyPos_, iBxyPtr_)
+    if (allocated(BxyPtr_)) deallocate(BxyPtr_, BxyPos_, iBxyPtr_)
     MAXBC = maxval((/N2(:, 1) + N2(:, 3), N2(:, 1) + N2(:, 4), N2(:, 2) + N2(:, 3), N2(:, 2) + N2(:, 4)/))
-    allocate (BxyPtr_(3, MAXBC, NOCT), BxyPos_(3, MAXBC, NOCT), iBxyPtr_(2, Nz, NOCT))
+    allocate(BxyPtr_(3, MAXBC, NOCT), BxyPos_(3, MAXBC, NOCT), iBxyPtr_(2, Nz, NOCT))
 
     ! Put the boundary points from the neighboring subdomains in the
     ! BxyPtr_ and BxyPos_ arrays.  Merge in X and Y boundary points one Z slab
@@ -1453,7 +1483,7 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, ptr8Grid_Cell,&
         ! Combine the indices to the X and Y boundary points and sort on Z
         NBX = 0; if (isMpiX_) NBX = N2(JOCT, LX)
         NBY = 0; if (isMpiY_) NBY = N2(JOCT, LY)
-        allocate (ZARRAY(NBX + NBY), INDX(NBX + NBY))
+        allocate(ZARRAY(NBX + NBY), INDX(NBX + NBY))
         ZARRAY(1:NBX) = BNDPOS(3, JOCT, 1:NBX, 2, LX)
         INDX(1:NBX) = (/(J, J=1, NBX)/)
         ZARRAY(NBX + 1:NBX + NBY) = BNDPOS(3, JOCT, 1:NBY, 2, LY)
@@ -1469,8 +1499,8 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, ptr8Grid_Cell,&
             iBxyPtr_(1, IZ, JOCT) = IBC + 1
             ! Store the boundary point info for this Z slab
             do while ((J .le. (NBX + NBY)) .and.&
-                &(((ZARRAY(J) .ge. z_Grid(IZ)) .and. (BITZ .eq. 0)) .or.&
-                &((ZARRAY(J) .le. z_Grid(IZ)) .and. (BITZ .eq. 1))))
+                &(((ZARRAY(J) .ge. rtm_obj_%z(IZ)) .and. (BITZ .eq. 0)) .or.&
+                 &((ZARRAY(J) .le. rtm_obj_%z(IZ)) .and. (BITZ .eq. 1))))
                 IBC = IBC + 1
                 if (INDX(J) .gt. 0) then
                     IX = INDX(J)
@@ -1487,10 +1517,10 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, ptr8Grid_Cell,&
             end do
             iBxyPtr_(2, IZ, JOCT) = IBC
         end do
-        deallocate (ZARRAY, INDX)
+        deallocate(ZARRAY, INDX)
     end do
 
-    deallocate (BNDPTR, BNDPOS)
+    deallocate(BNDPTR, BNDPOS)
 #endif
 
     return
@@ -1498,9 +1528,8 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, NPTS, SWEEPORD, ptr8Grid_Cell,&
 end subroutine shd_mpi__findBndryPnt
 
 subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
-    &Nx, Ny, Nz, x_Grid, y_Grid, z_Grid,&
-    &NA, NPTS, NCELLS, ptr8Grid_Cell,&
-    &ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell, xyz_Grid,&
+    &Nx, Ny, Nz,&
+    &NA,&
     &MU, PHI, EXTINCT, Nstokes, SOURCE,&
     &KANG, GRIDRAD)
 
@@ -1526,15 +1555,10 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
     ! all the other processors.
 
     integer, intent(in) :: BCFLAG, IPFLAG, JOCT, IZ
-    integer, intent(in) :: Nstokes, Nx, Ny, Nz, NA, NPTS, NCELLS, KANG
-    real, intent(in) :: x_Grid(Nx), y_Grid(Ny), z_Grid(Nz)
-    integer, intent(in) :: ptr8Grid_Cell(8, NCELLS), ptr6Cell_Cell(6, NCELLS)
-    integer, intent(in) :: ptr2Tree_Cell(2, NCELLS)
-    integer*2, intent(in) :: flag_Cell(NCELLS)
-    real, intent(in) :: xyz_Grid(3, NPTS)
+    integer, intent(in) :: Nstokes, Nx, Ny, Nz, NA, KANG
     real, intent(in) :: MU, PHI
-    real, intent(in) :: EXTINCT(NPTS), SOURCE(Nstokes, NA, NPTS)
-    real, intent(inout) :: GRIDRAD(Nstokes, NPTS)
+    real, intent(in) :: EXTINCT(rtm_obj_%Npts), SOURCE(Nstokes, NA, rtm_obj_%Npts)
+    real, intent(inout) :: GRIDRAD(Nstokes, rtm_obj_%Npts)
 
 #if HAS_MPI
     integer :: MAXNBND, Nbcpnts, Lupx, Lupy, Ldownx, Ldowny
@@ -1554,9 +1578,9 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
     type(MPI_status) :: status(12)
 
     MAXNBND = Nproc_*maxval(iBxyPtr_(2, :, :) - iBxyPtr_(1, :, :) + 1)
-    allocate (BndRadRealInfo(4 + Nstokes, MAXNBND, 4), BndRadIntInfo(2, MAXNBND, 4))
-    allocate (RadAllOut(Nstokes, MAXNBND, 0:Nproc_ - 1), RadPtrOut(MAXNBND, 0:Nproc_ - 1))
-    allocate (RadAllIn(Nstokes, MAXNBND), RadPtrIn(MAXNBND), Ndone(0:Nproc_ - 1))
+    allocate(BndRadRealInfo(4 + Nstokes, MAXNBND, 4), BndRadIntInfo(2, MAXNBND, 4))
+    allocate(RadAllOut(Nstokes, MAXNBND, 0:Nproc_ - 1), RadPtrOut(MAXNBND, 0:Nproc_ - 1))
+    allocate(RadAllIn(Nstokes, MAXNBND), RadPtrIn(MAXNBND), Ndone(0:Nproc_ - 1))
 
     Lupx = 0; Lupy = 0; Ldownx = 0; Ldowny = 0
     if (isMpiX_) then
@@ -1585,10 +1609,9 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
         RADIANCE(:) = 0.0; TRANSMIT = 1.0
         xo = x; yo = y; zo = z
         call shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
-            &x_Grid, y_Grid, z_Grid, NPTS, NCELLS,&
-            &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
-            &xyz_Grid, EXTINCT, Nstokes, SOURCE, KANG, GRIDRAD,&
+            &EXTINCT, Nstokes, SOURCE, KANG, GRIDRAD,&
             &MU, PHI, X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
+
         ! If we got a radiance then store it otherwise save
         !  the information needed to pass to other processors
         if (VALIDRAD) then
@@ -1663,16 +1686,14 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
         if (isMpiX_) then
             ! Continue the backwards ray integrations for the X boundary
             do J = 1, NINVALID(Ldownx)
-                if (Ldownx .eq. 1) BndRadRealInfo(1, J, Ldownx) = x_Grid(1)
-                if (Ldownx .eq. 2) BndRadRealInfo(1, J, Ldownx) = x_Grid(Nx)
+                if (Ldownx .eq. 1) BndRadRealInfo(1, J, Ldownx) = rtm_obj_%x(1)
+                if (Ldownx .eq. 2) BndRadRealInfo(1, J, Ldownx) = rtm_obj_%x(Nx)
                 X = BndRadRealInfo(1, J, Ldownx); Y = BndRadRealInfo(2, J, Ldownx)
                 Z = BndRadRealInfo(3, J, Ldownx)
                 SIDE = Ldownx; TRANSMIT = BndRadRealInfo(4, J, Ldownx)
                 RADIANCE(:) = BndRadRealInfo(5:4 + Nstokes, J, Ldownx)
                 call shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
-                    &x_Grid, y_Grid, z_Grid, NPTS, NCELLS,&
-                    &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
-                    &xyz_Grid, EXTINCT, Nstokes, SOURCE, KANG, GRIDRAD,&
+                    &EXTINCT, Nstokes, SOURCE, KANG, GRIDRAD,&
                     &MU, PHI, X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
 
                 ! If we got a radiance then store it in RadAllOut (if for another
@@ -1698,17 +1719,16 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
         if (isMpiY_) then
             ! Continue the backwards ray integrations for the Y boundary
             do J = 1, NINVALID(Ldowny)
-                if (Ldowny .eq. 3) BndRadRealInfo(2, J, Ldowny) = y_Grid(1)
-                if (Ldowny .eq. 4) BndRadRealInfo(2, J, Ldowny) = y_Grid(Ny)
+                if (Ldowny .eq. 3) BndRadRealInfo(2, J, Ldowny) = rtm_obj_%y(1)
+                if (Ldowny .eq. 4) BndRadRealInfo(2, J, Ldowny) = rtm_obj_%y(Ny)
                 X = BndRadRealInfo(1, J, Ldowny); Y = BndRadRealInfo(2, J, Ldowny)
                 Z = BndRadRealInfo(3, J, Ldowny)
                 SIDE = Ldowny; TRANSMIT = BndRadRealInfo(4, J, Ldowny)
                 RADIANCE(:) = BndRadRealInfo(5:4 + Nstokes, J, Ldowny)
                 call shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
-                    &x_Grid, y_Grid, z_Grid, NPTS, NCELLS,&
-                    &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
-                    &xyz_Grid, EXTINCT, Nstokes, SOURCE, KANG, GRIDRAD,&
+                    &EXTINCT, Nstokes, SOURCE, KANG, GRIDRAD,&
                     &MU, PHI, X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
+
                 ! If we got a radiance then store it in RadAllOut (if for another
                 !   processor) otherwise save the information needed to continue
                 !   passing to neighboring processors
@@ -1768,8 +1788,8 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
         end if
     end do
 
-    deallocate (RadAllOut, RadPtrOut, RadAllIn, RadPtrIn, Ndone)
-    deallocate (BndRadRealInfo, BndRadIntInfo)
+    deallocate(RadAllOut, RadPtrOut, RadAllIn, RadPtrIn, Ndone)
+    deallocate(BndRadRealInfo, BndRadIntInfo)
 #endif
 
     return
@@ -1777,53 +1797,32 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
 end subroutine shd_mpi__calBndryRad
 
 subroutine shd_mpi__computeRad(&
-    &Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
-    &ML, MM, NLM, NlegSet_prp, Nleg_prp, Npha_prp,&
-    &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-    &BCFLAG, XDOMAIN, YDOMAIN, IPFLAG,&
-    &SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
-    &type_sfc, Npar_sfc, SFCGRIDPARMS,&
+    &DELTAM,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-    &temp0_sfc, alb0_sfc, SKYRAD, WAVENO, WAVELEN, UNITS,&
-    &x_Grid, y_Grid, z_Grid, xyz_Grid,&
-    &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
-    &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
-    &SHPTR, SOURCE, SOURCE1, GRIDRAD,&
-    &parms_Out, NRAD, RADOUT, parms_Sen)
+    &DIRFLUX, FLUXES,&
+    &src1_Shdo, GRIDRAD,&
+    &parms_Out, NRAD, RADOUT)
 
     ! Computes the radiances for the locations and directions specified
     ! in parms_Out, putting the results in RADOUT and increasing NRAD by
     ! the number of radiances output.  Does the radiative transfer integrations
     ! across multiple processors.
 
-    integer, intent(in) :: Nstokes, Nx, Ny, Nz, BCFLAG, IPFLAG, NPTS, NCELLS
-    integer, intent(in) :: ML, MM, NLM, NlegSet_prp, Nleg_prp, Npha_prp
-    integer, intent(in) :: NMU, NPHI0MAX, NPHI0(NMU)
     integer, intent(inout) :: NRAD
-    integer, intent(in) :: MAXNBC, NTOPPTS, NBOTPTS, Npar_sfc
-    integer, intent(in) :: ptr8Grid_Cell(8, NCELLS), ptr6Cell_Cell(6, NCELLS), ptr2Tree_Cell(2, NCELLS)
-    integer, intent(in) :: SHPTR(NPTS + 1), BCPTR(MAXNBC, 2)
-    integer*2, intent(in) :: flag_Cell(NCELLS), IPHASE(NPTS)
+    integer, intent(in) :: MAXNBC, NTOPPTS, NBOTPTS
+    integer, intent(in) :: BCPTR(MAXNBC, 2)
     logical, intent(in) :: DELTAM
-    real, intent(in) :: SOLARMU, SOLARAZ
-    real, intent(in) :: temp0_sfc, alb0_sfc, SKYRAD, WAVENO(2), WAVELEN
-    real, intent(in) :: MU(NMU), PHI(NMU, NPHI0MAX), WTDO(NMU, NPHI0MAX)
-    real, intent(in) :: XDOMAIN, YDOMAIN, x_Grid(Nx + 1), y_Grid(Ny + 1), z_Grid(Nz)
-    real, intent(in) :: xyz_Grid(3, NPTS)
-    real, intent(in) :: SFCGRIDPARMS(*), BCRAD(Nstokes, *)
-    real, intent(in) :: EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NlegSet_prp, 0:Nleg_prp, NPTS)
-    real, intent(in) :: DIRFLUX(NPTS), FLUXES(2, NPTS), SOURCE(Nstokes, *)
-    real, intent(inout) :: SOURCE1(Nstokes, NPTS), GRIDRAD(Nstokes, NPTS)
+    real, intent(in) :: BCRAD(shdo_obj_%Nstokes, *)
+    real, intent(in) :: DIRFLUX(rtm_obj_%Npts), FLUXES(2, rtm_obj_%Npts)
+    real, intent(inout) :: src1_Shdo(shdo_obj_%Nstokes, rtm_obj_%Npts), GRIDRAD(shdo_obj_%Nstokes, rtm_obj_%Npts)
     real, intent(in) :: parms_Out(*)
-    real, intent(in), optional :: parms_Sen(*)
-    real, intent(out) :: RADOUT(Nstokes, *)
-    character, intent(in) ::  SRCTYPE*1, type_sfc*2, UNITS*1
+    real, intent(out) :: RADOUT(shdo_obj_%Nstokes, *)
 
 #if HAS_MPI
     integer :: IBC, JX, JY, K
     integer :: NANGOUT, Nx_out, Ny_out
-    logical :: LAMBERTIAN, VALIDRAD
-    real(RD_) :: X0, Y0, Z0, XE, YE, ZE, X, Y, Z, TRANSMIT, RADIANCE(Nstokes)
+    logical :: VALIDRAD
+    real(RD_) :: X0, Y0, Z0, XE, YE, ZE, X, Y, Z, TRANSMIT, RADIANCE(shdo_obj_%Nstokes)
     real    :: mu_out, phi_out, phiDeg_out
     real    :: STARTX, STARTY, EPS = 1.0e-5
 
@@ -1845,18 +1844,18 @@ subroutine shd_mpi__computeRad(&
     !╰──────────────────────────────────────────────────────────────╯!
 
     ! Make the isotropic radiances for the top boundary
-    call shd_init__makeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
-        &UNITS, NTOPPTS, Nstokes, BCRAD(1, 1))
+    call shd_init__makeTopRad(src_obj_%type, src_obj_%skyRad, src_obj_%waveNum, src_obj_%avgWaveLen,&
+        &src_obj_%unit, NTOPPTS, shdo_obj_%Nstokes, BCRAD(1, 1))
     ! Make the bottom boundary radiances for the Lambertian surfaces.
     ! Compute the upwelling bottom radiances using the downwelling fluxes.
-    if (type_sfc .eq. 'FL') then
-        call shd_init__makeSfcRadFL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, SRCTYPE, temp0_sfc, alb0_sfc,&
-            &WAVENO, WAVELEN, UNITS, Nstokes, BCRAD(1, 1 + NTOPPTS))
-    else if (type_sfc .eq. 'VL') then
-        call shd_init__makeSfcRadVL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, SRCTYPE, Npar_sfc, SFCGRIDPARMS,&
-            &Nstokes, BCRAD(1, 1 + NTOPPTS))
+    if (sfc_obj_%type .eq. 'FL') then
+        call shd_init__makeBotRadUL(NBOTPTS, BCPTR(1, 2),&
+            &DIRFLUX, FLUXES, src_obj_%type,&
+            &src_obj_%waveNum, src_obj_%avgWaveLen, src_obj_%unit, shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
+    else if (sfc_obj_%type .eq. 'VL') then
+        call shd_init__makeBotRadVL(NBOTPTS, BCPTR(1, 2),&
+            &DIRFLUX, FLUXES, src_obj_%type,&
+            &shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
     end if
 
     ! Setup the regularly spaced radiance locations
@@ -1864,32 +1863,30 @@ subroutine shd_mpi__computeRad(&
     if (parms_Out(2) .le. 0.0) then
         Nx_out = 1
     else
-        Nx_out = max(1, nint(XDOMAIN/parms_Out(2)))
+        Nx_out = max(1, nint(prp_obj_%xDomain/parms_Out(2)))
     end if
     STARTY = 0.0
     if (parms_Out(3) .le. 0.0) then
         Ny_out = 1
     else
-        Ny_out = max(1, nint(YDOMAIN/parms_Out(3)))
+        Ny_out = max(1, nint(prp_obj_%yDomain/parms_Out(3)))
     end if
-    Z0 = min(max(parms_Out(1), z_Grid(1)), z_Grid(Nz))
+    Z0 = min(max(parms_Out(1), rtm_obj_%z(1)), rtm_obj_%z(rtm_obj_%Nz))
     NANGOUT = nint(parms_Out(6))
-
-    LAMBERTIAN = type_sfc(2:2) .eq. 'L'
 
     MAXNRAD = nint(4.0*(Nx_out*Ny_out)/Nproc_)
     ! MAXNRAD = Nx_out*Ny_out
-    allocate (RadSend(Nstokes, MAXNRAD), IndexSend(MAXNRAD))
-    if (myProc_ .eq. 0) allocate (NradRecv(Nproc_ - 1),&
-        &RadRecv(Nstokes, MAXNRAD, Nproc_ - 1), IndexRecv(MAXNRAD, Nproc_ - 1))
-    allocate (BndRadRealInfo(4 + Nstokes, MAXNRAD, 4), BndRadIntInfo(MAXNRAD, 4))
-    allocate (requests(max(12, 3*Nproc_)), status(max(12, 3*Nproc_)))
+    allocate(RadSend(shdo_obj_%Nstokes, MAXNRAD), IndexSend(MAXNRAD))
+    if (myProc_ .eq. 0) allocate(NradRecv(Nproc_ - 1),&
+        &RadRecv(shdo_obj_%Nstokes, MAXNRAD, Nproc_ - 1), IndexRecv(MAXNRAD, Nproc_ - 1))
+    allocate(BndRadRealInfo(4 + shdo_obj_%Nstokes, MAXNRAD, 4), BndRadIntInfo(MAXNRAD, 4))
+    allocate(requests(max(12, 3*Nproc_)), status(max(12, 3*Nproc_)))
 
     ! Loop over the radiance directions
     do K = 1, NANGOUT
-        if (present(parms_Sen)) then
-            mu_out = parms_Sen(2*K - 1)
-            phiDeg_out = parms_Sen(2*K)
+        if (sen_obj_%fname(1:4) .ne. 'NONE') then
+            mu_out     = view_Sen_(1, K)
+            phiDeg_out = view_Sen_(2, K)
         else
             mu_out = parms_Out(2*K + 5)
             phiDeg_out = parms_Out(2*K + 6)
@@ -1903,8 +1900,8 @@ subroutine shd_mpi__computeRad(&
         ! the second step correction is done in the data output
         !   <shd_io__radShiftCorr> in shdOut.f90
         !╭────────────────────────────────────────────────╮!
-        if (IPFLAG .eq. 0) then
-            DS_Z0 = Z0 - z_Grid(1)
+        if (rtm_obj_%flag_ip .eq. 0) then
+            DS_Z0 = Z0 - rtm_obj_%z(1)
             DS_VZA_RAD = acos(mu_out)
             DS_XOFFSET = DS_Z0*dtan(DS_VZA_RAD)*cos(phi_out)
             DS_YOFFSET = DS_Z0*dtan(DS_VZA_RAD)*sin(phi_out)
@@ -1944,17 +1941,17 @@ subroutine shd_mpi__computeRad(&
         end if
 
         ! Compute the source function throughout grid for this angle
-        call shd_src__computeSrcOneDir(Nstokes, ML, MM, NLM, NlegSet_prp,&
-            &Nleg_prp, Npha_prp, NPTS, DELTAM, mu_out, phi_out,&
-            &SRCTYPE, SOLARMU, SOLARAZ, ALBEDO, LEGEN, IPHASE,&
-            &DIRFLUX, SHPTR, SOURCE, SOURCE1)
+        call shd_src__computeSrcOneDir(&
+            &DELTAM, mu_out, phi_out,&
+            &DIRFLUX, src1_Shdo,&
+            &isrcJ_Shdo_, srcJ_Shdo_)
 
         ! Set the radiance field to -1, so we can determine valid radiances
         !   Also set the source array to the extinction times the source
         !   function, so the grid interpolation is correct.
-        do I = 1, NPTS
+        do I = 1, rtm_obj_%Npts
             GRIDRAD(1, I) = -1.0
-            SOURCE1(:, I) = SOURCE1(:, I)*EXTINCT(I)
+            src1_Shdo(:, I) = src1_Shdo(:, I)*ext_Rtm_(I)
         end do
         ! Get boundary radiances: either top or bottom
         ! Isotropic top boundary or Lambertian bottom boundary can use
@@ -1967,11 +1964,11 @@ subroutine shd_mpi__computeRad(&
                 GRIDRAD(:, I) = BCRAD(:, IBC)
             end do
         else
-            if (.not. LAMBERTIAN) then
-                call shd_init__makeSfcRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
-                    &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, mu_out, phi_out,&
-                    &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
-                    &type_sfc, Npar_sfc, SFCGRIDPARMS, Nstokes, BCRAD(1, 1 + NTOPPTS))
+            if (.not. sfc_obj_%isLambertian) then
+                call shd_init__makeBotRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
+                    &shdo_obj_%Nmu, shdo_obj_%maxNphi0, shdo_obj_%Nphi0, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt, mu_out, phi_out,&
+                    &src_obj_%type, src_obj_%avgWaveLen, src_obj_%avgMu, src_obj_%avgAz, DIRFLUX,&
+                    &shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
             end if
             do IBC = 1, NBOTPTS
                 I = BCPTR(IBC, 2)
@@ -1989,7 +1986,7 @@ subroutine shd_mpi__computeRad(&
             end if
         end if
         if (isMpiY_) then
-            !if ((sin(phi_out) .gt. 1.0e-5) .and. (Ny_prp .gt. 1)) then
+            !if ((sin(phi_out) .gt. 1.0e-5) .and. (prp_obj_%Ny .gt. 1)) then
             if ((sin(phi_out) .gt. 1.0e-5)) then
                 Ldowny = 4; Lupy = 3
             else
@@ -2008,14 +2005,11 @@ subroutine shd_mpi__computeRad(&
             do JX = 1, Nx_out
                 NRAD = NRAD + 1
 
-                if (X0 .ge. (x_Grid(1) - EPS) .and. X0 .le. (x_Grid(Nx) + EPS) .and.&
-                    Y0 .ge. (y_Grid(1) - EPS) .and. Y0 .le. (y_Grid(Ny) + EPS)) then
+                if (X0 .ge. (rtm_obj_%x(1) - EPS) .and. X0 .le. (rtm_obj_%x(rtm_obj_%Nx0) + EPS) .and.&
+                    Y0 .ge. (rtm_obj_%y(1) - EPS) .and. Y0 .le. (rtm_obj_%y(rtm_obj_%Ny0) + EPS)) then
                     TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
-                    call shd_src__integrateSrc(BCFLAG, IPFLAG, Nstokes,&
-                        &Nx, Ny, Nz, NPTS, NCELLS,&
-                        &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
-                        &x_Grid, y_Grid, z_Grid, xyz_Grid,&
-                        &mu_out, phi_out, GRIDRAD, EXTINCT, SOURCE1,&
+                    call shd_src__integrateSrc(shdo_obj_%Nstokes,&
+                        &mu_out, phi_out, GRIDRAD, src1_Shdo,&
                         &X0, Y0, Z0, XE, YE, ZE, SIDE,&
                         &TRANSMIT, RADIANCE, VALIDRAD)
 
@@ -2055,7 +2049,7 @@ subroutine shd_mpi__computeRad(&
             if (isMpiX_) then
                 call mpi_isend(NINVALID(Lupx), 1, MPI_integer,&
                     &iProcNeigh_(Lupx), 6*K + 1, comm2D_, requests(irq + 1), ierr)
-                call mpi_isend(BndRadRealInfo(:, :, Lupx), (4 + Nstokes)*NINVALID(Lupx), MPI_double_precision,&
+                call mpi_isend(BndRadRealInfo(:, :, Lupx), (4 + shdo_obj_%Nstokes)*NINVALID(Lupx), MPI_double_precision,&
                     &iProcNeigh_(Lupx), 6*K + 2, comm2D_, requests(irq + 2), ierr)
                 call mpi_isend(BndRadIntInfo(:, Lupx), NINVALID(Lupx), MPI_integer,&
                     &iProcNeigh_(Lupx), 6*K + 3, comm2D_, requests(irq + 3), ierr)
@@ -2064,7 +2058,7 @@ subroutine shd_mpi__computeRad(&
             if (isMpiY_) then
                 call mpi_isend(NINVALID(Lupy), 1, MPI_integer,&
                     &iProcNeigh_(Lupy), 6*K + 4, comm2D_, requests(irq + 1), ierr)
-                call mpi_isend(BndRadRealInfo(:, :, Lupy), (4 + Nstokes)*NINVALID(Lupy), MPI_double_precision,&
+                call mpi_isend(BndRadRealInfo(:, :, Lupy), (4 + shdo_obj_%Nstokes)*NINVALID(Lupy), MPI_double_precision,&
                     &iProcNeigh_(Lupy), 6*K + 5, comm2D_, requests(irq + 2), ierr)
                 call mpi_isend(BndRadIntInfo(:, Lupy), NINVALID(Lupy), MPI_integer,&
                     &iProcNeigh_(Lupy), 6*K + 6, comm2D_, requests(irq + 3), ierr)
@@ -2073,7 +2067,7 @@ subroutine shd_mpi__computeRad(&
             if (isMpiX_) then
                 call mpi_irecv(NINVALID(Ldownx), 1, MPI_integer,&
                     &iProcNeigh_(Ldownx), 6*K + 1, comm2D_, requests(irq + 1), ierr)
-                call mpi_irecv(BndRadRealInfo(:, :, Ldownx), (4 + Nstokes)*MAXNRAD, MPI_double_precision,&
+                call mpi_irecv(BndRadRealInfo(:, :, Ldownx), (4 + shdo_obj_%Nstokes)*MAXNRAD, MPI_double_precision,&
                     &iProcNeigh_(Ldownx), 6*K + 2, comm2D_, requests(irq + 2), ierr)
                 call mpi_irecv(BndRadIntInfo(:, Ldownx), MAXNRAD, MPI_integer,&
                     &iProcNeigh_(Ldownx), 6*K + 3, comm2D_, requests(irq + 3), ierr)
@@ -2082,7 +2076,7 @@ subroutine shd_mpi__computeRad(&
             if (isMpiY_) then
                 call mpi_irecv(NINVALID(Ldowny), 1, MPI_integer,&
                     &iProcNeigh_(Ldowny), 6*K + 4, comm2D_, requests(irq + 1), ierr)
-                call mpi_irecv(BndRadRealInfo(:, :, Ldowny), (4 + Nstokes)*MAXNRAD, MPI_double_precision,&
+                call mpi_irecv(BndRadRealInfo(:, :, Ldowny), (4 + shdo_obj_%Nstokes)*MAXNRAD, MPI_double_precision,&
                     &iProcNeigh_(Ldowny), 6*K + 5, comm2D_, requests(irq + 2), ierr)
                 call mpi_irecv(BndRadIntInfo(:, Ldowny), MAXNRAD, MPI_integer,&
                     &iProcNeigh_(Ldowny), 6*K + 6, comm2D_, requests(irq + 3), ierr)
@@ -2094,18 +2088,16 @@ subroutine shd_mpi__computeRad(&
             if (isMpiX_) then
                 ! Continue the backwards ray integrations for the X boundary
                 do J = 1, NINVALID(Ldownx)
-                    if (Ldownx .eq. 1) BndRadRealInfo(1, J, Ldownx) = x_Grid(1)
-                    if (Ldownx .eq. 2) BndRadRealInfo(1, J, Ldownx) = x_Grid(Nx)
+                    if (Ldownx .eq. 1) BndRadRealInfo(1, J, Ldownx) = rtm_obj_%x(1)
+                    if (Ldownx .eq. 2) BndRadRealInfo(1, J, Ldownx) = rtm_obj_%x(rtm_obj_%Nx0)
                     X = BndRadRealInfo(1, J, Ldownx); Y = BndRadRealInfo(2, J, Ldownx)
                     Z = BndRadRealInfo(3, J, Ldownx); TRANSMIT = BndRadRealInfo(4, J, Ldownx)
-                    RADIANCE(:) = BndRadRealInfo(5:4 + Nstokes, J, Ldownx)
-                    call shd_src__integrateSrc(BCFLAG, IPFLAG, Nstokes,&
-                        &Nx, Ny, Nz, NPTS, NCELLS,&
-                        &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
-                        &x_Grid, y_Grid, z_Grid, xyz_Grid,&
-                        &mu_out, phi_out, GRIDRAD, EXTINCT, SOURCE1,&
+                    RADIANCE(:) = BndRadRealInfo(5:4 + shdo_obj_%Nstokes, J, Ldownx)
+                    call shd_src__integrateSrc(shdo_obj_%Nstokes,&
+                        &mu_out, phi_out, GRIDRAD, src1_Shdo,&
                         &X, Y, Z, XE, YE, ZE, SIDE,&
                         &TRANSMIT, RADIANCE, VALIDRAD)
+
                     ! If we got a radiance then store it in RadSend, otherwise
                     ! save information needed to pass to neighboring processors
                     if (VALIDRAD) then
@@ -2131,18 +2123,16 @@ subroutine shd_mpi__computeRad(&
             if (isMpiY_) then
                 ! Continue the backwards ray integrations for the Y boundary
                 do J = 1, NINVALID(Ldowny)
-                    if (Ldowny .eq. 3) BndRadRealInfo(2, J, Ldowny) = y_Grid(1)
-                    if (Ldowny .eq. 4) BndRadRealInfo(2, J, Ldowny) = y_Grid(Ny)
+                    if (Ldowny .eq. 3) BndRadRealInfo(2, J, Ldowny) = rtm_obj_%y(1)
+                    if (Ldowny .eq. 4) BndRadRealInfo(2, J, Ldowny) = rtm_obj_%y(rtm_obj_%Ny0)
                     X = BndRadRealInfo(1, J, Ldowny); Y = BndRadRealInfo(2, J, Ldowny)
                     Z = BndRadRealInfo(3, J, Ldowny); TRANSMIT = BndRadRealInfo(4, J, Ldowny)
-                    RADIANCE(:) = BndRadRealInfo(5:4 + Nstokes, J, Ldowny)
-                    call shd_src__integrateSrc(BCFLAG, IPFLAG, Nstokes,&
-                        &Nx, Ny, Nz, NPTS, NCELLS,&
-                        &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
-                        &x_Grid, y_Grid, z_Grid, xyz_Grid,&
-                        &mu_out, phi_out, GRIDRAD, EXTINCT, SOURCE1,&
+                    RADIANCE(:) = BndRadRealInfo(5:4 + shdo_obj_%Nstokes, J, Ldowny)
+                    call shd_src__integrateSrc(shdo_obj_%Nstokes,&
+                        &mu_out, phi_out, GRIDRAD, src1_Shdo,&
                         &X, Y, Z, XE, YE, ZE, SIDE,&
                         &TRANSMIT, RADIANCE, VALIDRAD)
+
                     ! If we got a radiance then store it in RadSend, otherwise
                     ! save information needed to pass to neighboring processors
                     if (VALIDRAD) then
@@ -2175,7 +2165,7 @@ subroutine shd_mpi__computeRad(&
         if (myProc_ .gt. 0) then
             ! Send the finished radiances to the master processor
             call mpi_isend(Ndone, 1, MPI_integer, 0, 6*K + 7, comm2D_, requests(1), ierr)
-            call mpi_isend(RadSend, Nstokes*Ndone, MPI_real, 0, 6*K + 8, comm2D_, requests(2), ierr)
+            call mpi_isend(RadSend, shdo_obj_%Nstokes*Ndone, MPI_real, 0, 6*K + 8, comm2D_, requests(2), ierr)
             call mpi_isend(IndexSend, Ndone, MPI_integer, 0, 6*K + 9, comm2D_, requests(3), ierr)
             call mpi_waitall(3, requests, status, ierr)
         else
@@ -2188,7 +2178,7 @@ subroutine shd_mpi__computeRad(&
             do iproc = 1, Nproc_ - 1
                 call mpi_irecv(NradRecv(iproc), 1, MPI_integer, iproc,&
                     &6*K + 7, comm2D_, requests(irq + 1), ierr)
-                call mpi_irecv(RadRecv(:, :, iproc), Nstokes*MAXNRAD, MPI_real, iproc,&
+                call mpi_irecv(RadRecv(:, :, iproc), shdo_obj_%Nstokes*MAXNRAD, MPI_real, iproc,&
                     &6*K + 8, comm2D_, requests(irq + 2), ierr)
                 call mpi_irecv(IndexRecv(:, iproc), MAXNRAD, MPI_integer, iproc,&
                     &6*K + 9, comm2D_, requests(irq + 3), ierr)
@@ -2204,61 +2194,41 @@ subroutine shd_mpi__computeRad(&
 
     end do ! K (angle loop)
 
-    deallocate (requests, status, RadSend, IndexSend)
-    if (myProc_ .eq. 0) deallocate (NradRecv, RadRecv, IndexRecv)
-    deallocate (BndRadRealInfo, BndRadIntInfo)
+    deallocate(requests, status, RadSend, IndexSend)
+    if (myProc_ .eq. 0) deallocate(NradRecv, RadRecv, IndexRecv)
+    deallocate(BndRadRealInfo, BndRadIntInfo)
 #endif
 
     return
 
 end subroutine shd_mpi__computeRad
 
-subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
-    &ML, MM, NLM, NlegSet_prp, Nleg_prp, Npha_prp,&
-    &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-    &BCFLAG, XDOMAIN, YDOMAIN, IPFLAG,&
-    &SRCTYPE, DELTAM, SOLARMU, SOLARAZ,&
-    &type_sfc, Npar_sfc, SFCGRIDPARMS,&
+subroutine shd_mpi__computeCamRad(&
+    &DELTAM,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-    &temp0_sfc, alb0_sfc, SKYRAD, WAVENO, WAVELEN, UNITS,&
-    &x_Grid, y_Grid, z_Grid, xyz_Grid,&
-    &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
-    &EXTINCT, ALBEDO, LEGEN, IPHASE, DIRFLUX, FLUXES,&
-    &SHPTR, SOURCE, parms_Out, IVIS, VISOUT, parms_Sen)
+    &DIRFLUX, FLUXES,&
+    &parms_Out, IVIS, VISOUT)
 
     ! Computes Stokes radiances (output in VISOUT) for the visualization
     !   modes: 1) camera mode,
     !          2) cross track scanning,
     !          3) user-specified sensor mode.
 
-    integer, intent(in) :: Nstokes, Nx, Ny, Nz, BCFLAG, IPFLAG, NPTS, NCELLS
-    integer, intent(in) :: ML, MM, NLM, NlegSet_prp, Nleg_prp, Npha_prp
-    integer, intent(in) :: NMU, NPHI0MAX, NPHI0(NMU)
     integer, intent(inout) :: IVIS
-    integer, intent(in) :: MAXNBC, NTOPPTS, NBOTPTS, Npar_sfc
-    integer, intent(in) :: ptr8Grid_Cell(8, NCELLS), ptr6Cell_Cell(6, NCELLS), ptr2Tree_Cell(2, NCELLS)
-    integer, intent(in) :: SHPTR(NPTS + 1), BCPTR(MAXNBC, 2)
-    integer*2, intent(in) :: flag_Cell(NCELLS), IPHASE(NPTS)
+    integer, intent(in) :: MAXNBC, NTOPPTS, NBOTPTS
+    integer, intent(in) :: BCPTR(MAXNBC, 2)
     logical, intent(in) :: DELTAM
-    real, intent(in) :: SOLARMU, SOLARAZ
-    real, intent(in) :: temp0_sfc, alb0_sfc, SKYRAD, WAVENO(2), WAVELEN
-    real, intent(in) :: MU(NMU), PHI(NMU, NPHI0MAX), WTDO(NMU, NPHI0MAX)
-    real, intent(in) :: XDOMAIN, YDOMAIN, x_Grid(Nx + 1), y_Grid(Ny + 1), z_Grid(Nz)
-    real, intent(in) :: xyz_Grid(3, NPTS)
-    real, intent(in) :: SFCGRIDPARMS(*), BCRAD(Nstokes, *)
-    real, intent(in) :: EXTINCT(NPTS), ALBEDO(NPTS), LEGEN(NlegSet_prp, 0:Nleg_prp, *)
-    real, intent(in) :: DIRFLUX(NPTS), FLUXES(2, NPTS), SOURCE(Nstokes, *)
+    real, intent(in) :: BCRAD(shdo_obj_%Nstokes, *)
+    real, intent(in) :: DIRFLUX(rtm_obj_%Npts), FLUXES(2, rtm_obj_%Npts)
     real, intent(in) :: parms_Out(*)
-    real, intent(in), optional :: parms_Sen(*)
-    real, intent(out) :: VISOUT(Nstokes, *)
-    character, intent(in) :: SRCTYPE*1, type_sfc*2, UNITS*1
+    real, intent(out) :: VISOUT(shdo_obj_%Nstokes, *)
 
 #if HAS_MPI
     integer :: NSCATANGLE, NSTPHASE, I, J, L, N
     integer :: NL, NS, LINE, SAMP
     logical :: CAMERA_MODE, SENSOR_MODE, VALIDRAD
     real, parameter  :: EPS = 1.0e-5
-    real(RD_) :: XE, YE, ZE, TRANSMIT, VISRAD(Nstokes), RADIANCE(Nstokes)
+    real(RD_) :: XE, YE, ZE, TRANSMIT, VISRAD(shdo_obj_%Nstokes), RADIANCE(shdo_obj_%Nstokes)
     real(RD_) :: X0, Y0, Z0, X1, Y1, Z1, X2, Y2, Z2, X, Y, Z
     real(RD_) :: THETA0, THETA1, PHIR, PHI0, COSSCAT, MU2, PHI2
     real(RD_) :: COSTH, SINTH, SINTH0, SINTH1
@@ -2285,32 +2255,32 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
     type(MPI_request), allocatable :: requests(:)
     type(MPI_status), allocatable :: status(:)
 
-    allocate (YLMSUN(NlegSet_prp, NLM))
+    allocate(YLMSUN(prp_obj_%NlegSet, shdo_obj_%Nlm))
 
     if (isSolar_) then
-        call shd_shdo__computeYlm(.true., SOLARMU, SOLARAZ, ML, MM, NlegSet_prp, YLMSUN)
-        if (DELTAM .and. Npha_prp .gt. 0) then
-            NSCATANGLE = max(36, min(MAXSCATANG, 2*Nleg_prp))
-            NSTPHASE = min(NlegSet_prp, 2)
-            allocate (PHASETAB(NSTPHASE, Npha_prp, NSCATANGLE))
-            call shd_scat__computePhase(NSCATANGLE, Npha_prp, NSTPHASE,&
-                &Nstokes, ML, NlegSet_prp, Nleg_prp, LEGEN, PHASETAB)
+        call shd_shdo__computeYlm(.true., src_obj_%avgMu, src_obj_%avgAz, shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet, YLMSUN)
+        if (DELTAM .and. prp_obj_%Npha .gt. 0) then
+            NSCATANGLE = max(36, min(MAXSCATANG, 2*prp_obj_%Nleg))
+            NSTPHASE = min(prp_obj_%NlegSet, 2)
+            allocate(PHASETAB(NSTPHASE, prp_obj_%Npha, NSCATANGLE))
+            call shd_scat__computePhase(NSCATANGLE, prp_obj_%Npha, NSTPHASE,&
+                &shdo_obj_%Nstokes, shdo_obj_%maxNl, prp_obj_%NlegSet, prp_obj_%Nleg, leg_Rtm_, PHASETAB)
         end if
     end if
 
     ! Make the isotropic radiances for the top boundary
-    call shd_init__makeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
-        &UNITS, NTOPPTS, Nstokes, BCRAD(1, 1))
+    call shd_init__makeTopRad(src_obj_%type, src_obj_%skyRad, src_obj_%waveNum, src_obj_%avgWaveLen,&
+        &src_obj_%unit, NTOPPTS, shdo_obj_%Nstokes, BCRAD(1, 1))
     ! Make the bottom boundary radiances for the Lambertian surfaces.
     ! Compute the upwelling bottom radiances using the downwelling fluxes.
-    if (type_sfc .eq. 'FL') then
-        call shd_init__makeSfcRadFL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, SRCTYPE, temp0_sfc, alb0_sfc,&
-            &WAVENO, WAVELEN, UNITS, Nstokes, BCRAD(1, 1 + NTOPPTS))
-    else if (type_sfc .eq. 'VL') then
-        call shd_init__makeSfcRadVL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, SRCTYPE, Npar_sfc, SFCGRIDPARMS,&
-            &Nstokes, BCRAD(1, 1 + NTOPPTS))
+    if (sfc_obj_%type .eq. 'FL') then
+        call shd_init__makeBotRadUL(NBOTPTS, BCPTR(1, 2),&
+            &DIRFLUX, FLUXES, src_obj_%type,&
+            &src_obj_%waveNum, src_obj_%avgWaveLen, src_obj_%unit, shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
+    else if (sfc_obj_%type .eq. 'VL') then
+        call shd_init__makeBotRadVL(NBOTPTS, BCPTR(1, 2),&
+            &DIRFLUX, FLUXES, src_obj_%type,&
+            &shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
     end if
 
     CAMERA_MODE = nint(parms_Out(1)) .eq. 1
@@ -2332,12 +2302,12 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
 
     ! Allocate sending, receiving, etc. arrays for MPI
     MAXNRAD = NL*NS
-    allocate (RadSend(Nstokes, MAXNRAD), IndexSend(MAXNRAD))
-    if (myProc_ .eq. 0) allocate (NradRecv(Nproc_ - 1),&
-        &RadRecv(Nstokes, MAXNRAD, Nproc_ - 1), IndexRecv(MAXNRAD, Nproc_ - 1))
-    allocate (BndSendRadRealInfo(6 + Nstokes, MAXNRAD, 4), BndSendRadIntInfo(MAXNRAD, 4))
-    allocate (BndRecvRadRealInfo(6 + Nstokes, MAXNRAD, 4), BndRecvRadIntInfo(MAXNRAD, 4))
-    allocate (requests(max(24, 3*Nproc_)), status(max(24, 3*Nproc_)))
+    allocate(RadSend(shdo_obj_%Nstokes, MAXNRAD), IndexSend(MAXNRAD))
+    if (myProc_ .eq. 0) allocate(NradRecv(Nproc_ - 1),&
+        &RadRecv(shdo_obj_%Nstokes, MAXNRAD, Nproc_ - 1), IndexRecv(MAXNRAD, Nproc_ - 1))
+    allocate(BndSendRadRealInfo(6 + shdo_obj_%Nstokes, MAXNRAD, 4), BndSendRadIntInfo(MAXNRAD, 4))
+    allocate(BndRecvRadRealInfo(6 + shdo_obj_%Nstokes, MAXNRAD, 4), BndRecvRadIntInfo(MAXNRAD, 4))
+    allocate(requests(max(24, 3*Nproc_)), status(max(24, 3*Nproc_)))
 
     NINVALID(:) = 0
     Ndone = 0
@@ -2399,14 +2369,14 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
 
             else if (SENSOR_MODE) then
 
-                if (present(parms_Sen)) then
-                    X0    =  parms_Sen(5*SAMP - 4)
-                    Y0    =  parms_Sen(5*SAMP - 3)
-                    Z0    =  parms_Sen(5*SAMP - 2)
-                    COSTH =  parms_Sen(5*SAMP - 1)
-                    PHIR  =  parms_Sen(5*SAMP)
+                if (sen_obj_%fname(1:4) .ne. 'NONE') then
+                    X0    =  view_Sen_(1, SAMP)
+                    Y0    =  view_Sen_(2, SAMP)
+                    Z0    =  view_Sen_(3, SAMP)
+                    COSTH =  view_Sen_(4, SAMP)
+                    PHIR  =  view_Sen_(5, SAMP)
                 else
-                    stop 'Error [mpi__computeCamRad]: Need parms_Sen to proceed.'
+                    stop 'Error [mpi__computeCamRad]: Need sen_obj_ to proceed.'
                 end if
 
             else
@@ -2442,18 +2412,18 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
             !print *, IVIS, X0, Y0, Z0, 180.0/DPI_*COSTH, 180.0/DPI_*PHIR
 
             ! Extrapolate ray to domain top if above
-            if (Z0 .gt. z_Grid(Nz)) then
+            if (Z0 .gt. rtm_obj_%z(rtm_obj_%Nz)) then
                 if (COSTH .ge. 0.0) then
                     Ndone = Ndone + 1
                     RadSend(:, Ndone) = 0.0
                     IndexSend(Ndone) = IVIS
                     cycle
                 end if
-                R = (z_Grid(Nz) - Z0)/COSTH
+                R = (rtm_obj_%z(rtm_obj_%Nz) - Z0)/COSTH
                 X0 = X0 + R*sqrt(1 - COSTH**2)*cos(PHIR)
                 Y0 = Y0 + R*sqrt(1 - COSTH**2)*sin(PHIR)
-                Z0 = z_Grid(Nz)
-            else if (Z0 .lt. z_Grid(1)) then
+                Z0 = rtm_obj_%z(rtm_obj_%Nz)
+            else if (Z0 .lt. rtm_obj_%z(1)) then
                 write (6, *) 'Error [mpi__visualizeRad]: Level below domain.'
                 stop
             end if
@@ -2461,19 +2431,19 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
             ! Relocate the starting point in the overall periodic domain
             ! (we know we have a periodic domain if doing MPI)
             if (X0 .ge. 0.0) then
-                X0 = mod(X0, dble(XDOMAIN))
+                X0 = mod(X0, dble(prp_obj_%xDomain))
             else
-                X0 = mod(X0 + XDOMAIN*int(1.0 - X0/XDOMAIN), dble(XDOMAIN))
+                X0 = mod(X0 + prp_obj_%xDomain*int(1.0 - X0/prp_obj_%xDomain), dble(prp_obj_%xDomain))
             end if
             if (Y0 .ge. 0.0) then
-                Y0 = mod(Y0, dble(YDOMAIN))
+                Y0 = mod(Y0, dble(prp_obj_%yDomain))
             else
-                Y0 = mod(Y0 + YDOMAIN*int(1.0 - Y0/YDOMAIN), dble(YDOMAIN))
+                Y0 = mod(Y0 + prp_obj_%yDomain*int(1.0 - Y0/prp_obj_%yDomain), dble(prp_obj_%yDomain))
             end if
 
             ! Start the radiance calculation for those rays starting in this subdomain
-            if ((X0 .ge. x_Grid(1)) .and. (X0 .le. x_Grid(Nx)).and.&
-                (Y0 .ge. y_Grid(1)) .and. (Y0 .le. y_Grid(Ny))) then
+            if ((X0 .ge. rtm_obj_%x(1)) .and. (X0 .le. rtm_obj_%x(rtm_obj_%Nx0)).and.&
+                (Y0 .ge. rtm_obj_%y(1)) .and. (Y0 .le. rtm_obj_%y(rtm_obj_%Ny0))) then
 
                 ! MU2,PHI2 is radiance travel direction (opposite the camera viewing direction)
                 MU2 = -COSTH
@@ -2482,18 +2452,13 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
                 ! Integrate the extinction and source function along this ray
                 ! to calculate the Stokes radiance vector for this pixel
                 TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
-                call shd_src__integrateSrcOneRay(BCFLAG, IPFLAG, Nstokes, NlegSet_prp,&
+                call shd_src__integrateSrcOneRay(shdo_obj_%Nstokes,&
                     &NSTPHASE, NSCATANGLE, PHASETAB,&
-                    &Nx, Ny, Nz, NPTS, NCELLS,&
-                    &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
-                    &x_Grid, y_Grid, z_Grid, xyz_Grid,&
-                    &ML, MM, NLM, Nleg_prp, Npha_prp,&
-                    &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-                    &DELTAM, SRCTYPE, WAVELEN, SOLARMU, SOLARAZ,&
-                    &EXTINCT, ALBEDO, LEGEN, IPHASE,&
-                    &DIRFLUX, SHPTR, SOURCE, YLMSUN,&
+                    &shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
+                    &shdo_obj_%Nmu, shdo_obj_%maxNphi0, shdo_obj_%Nphi0, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
+                    &DELTAM, src_obj_%type, src_obj_%avgWaveLen, src_obj_%avgMu, src_obj_%avgAz,&
+                    &DIRFLUX, isrcJ_Shdo_, srcJ_Shdo_, YLMSUN,&
                     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-                    &type_sfc, Npar_sfc, SFCGRIDPARMS,&
                     &MU2, PHI2, X0, Y0, Z0,&
                     &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
 
@@ -2531,7 +2496,7 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
                 K = 3*SIDE
                 call mpi_isend(NINVALID(SIDE), 1, MPI_integer,&
                     &iProcNeigh_(SIDE), K + 1, comm2D_, requests(irq + 1), ierr)
-                call mpi_isend(BndSendRadRealInfo(:, :, SIDE), (6 + Nstokes)*NINVALID(SIDE), MPI_double_precision,&
+                call mpi_isend(BndSendRadRealInfo(:, :, SIDE), (6 + shdo_obj_%Nstokes)*NINVALID(SIDE), MPI_double_precision,&
                     &iProcNeigh_(SIDE), K + 2, comm2D_, requests(irq + 2), ierr)
                 call mpi_isend(BndSendRadIntInfo(:, SIDE), NINVALID(SIDE), MPI_integer,&
                     &iProcNeigh_(SIDE), K + 3, comm2D_, requests(irq + 3), ierr)
@@ -2545,7 +2510,7 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
                 K = 3*RECVSIDE(SIDE)
                 call mpi_irecv(NINCOMING(SIDE), 1, MPI_integer,&
                     &iProcNeigh_(SIDE), K + 1, comm2D_, requests(irq + 1), ierr)
-                call mpi_irecv(BndRecvRadRealInfo(:, :, SIDE), (6 + Nstokes)*MAXNRAD, MPI_double_precision,&
+                call mpi_irecv(BndRecvRadRealInfo(:, :, SIDE), (6 + shdo_obj_%Nstokes)*MAXNRAD, MPI_double_precision,&
                     &iProcNeigh_(SIDE), K + 2, comm2D_, requests(irq + 2), ierr)
                 call mpi_irecv(BndRecvRadIntInfo(:, SIDE), MAXNRAD, MPI_integer,&
                     &iProcNeigh_(SIDE), K + 3, comm2D_, requests(irq + 3), ierr)
@@ -2558,29 +2523,24 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
         NINVALID(:) = 0
         do IBND = 1, 4
             do J = 1, NINCOMING(IBND)
-                if (IBND .eq. 1) BndRecvRadRealInfo(1, J, IBND) = x_Grid(1)
-                if (IBND .eq. 2) BndRecvRadRealInfo(1, J, IBND) = x_Grid(Nx)
-                if (IBND .eq. 3) BndRecvRadRealInfo(2, J, IBND) = y_Grid(1)
-                if (IBND .eq. 4) BndRecvRadRealInfo(2, J, IBND) = y_Grid(Ny)
+                if (IBND .eq. 1) BndRecvRadRealInfo(1, J, IBND) = rtm_obj_%x(1)
+                if (IBND .eq. 2) BndRecvRadRealInfo(1, J, IBND) = rtm_obj_%x(rtm_obj_%Nx0)
+                if (IBND .eq. 3) BndRecvRadRealInfo(2, J, IBND) = rtm_obj_%y(1)
+                if (IBND .eq. 4) BndRecvRadRealInfo(2, J, IBND) = rtm_obj_%y(rtm_obj_%Ny0)
                 X = BndRecvRadRealInfo(1, J, IBND)
                 Y = BndRecvRadRealInfo(2, J, IBND)
                 Z = BndRecvRadRealInfo(3, J, IBND)
                 MU2 = BndRecvRadRealInfo(4, J, IBND)
                 PHI2 = BndRecvRadRealInfo(5, J, IBND)
                 TRANSMIT = BndRecvRadRealInfo(6, J, IBND)
-                RADIANCE(:) = BndRecvRadRealInfo(7 : 6+Nstokes, J, IBND)
-                call shd_src__integrateSrcOneRay(BCFLAG, IPFLAG, Nstokes, NlegSet_prp,&
+                RADIANCE(:) = BndRecvRadRealInfo(7 : 6+shdo_obj_%Nstokes, J, IBND)
+                call shd_src__integrateSrcOneRay(shdo_obj_%Nstokes,&
                     &NSTPHASE, NSCATANGLE, PHASETAB,&
-                    &Nx, Ny, Nz, NPTS, NCELLS,&
-                    &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
-                    &x_Grid, y_Grid, z_Grid, xyz_Grid,&
-                    &ML, MM, NLM, Nleg_prp, Npha_prp,&
-                    &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-                    &DELTAM, SRCTYPE, WAVELEN, SOLARMU, SOLARAZ,&
-                    &EXTINCT, ALBEDO, LEGEN, IPHASE,&
-                    &DIRFLUX, SHPTR, SOURCE, YLMSUN,&
+                    &shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
+                    &shdo_obj_%Nmu, shdo_obj_%maxNphi0, shdo_obj_%Nphi0, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
+                    &DELTAM, src_obj_%type, src_obj_%avgWaveLen, src_obj_%avgMu, src_obj_%avgAz,&
+                    &DIRFLUX, isrcJ_Shdo_, srcJ_Shdo_, YLMSUN,&
                     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-                    &type_sfc, Npar_sfc, SFCGRIDPARMS,&
                     &MU2, PHI2, X, Y, Z,&
                     &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
 
@@ -2613,7 +2573,7 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
     if (myProc_ .gt. 0) then
         ! Send the finished radiances to the master processor
         call mpi_isend(Ndone, 1, MPI_integer, 0, 21, comm2D_, requests(1), ierr)
-        call mpi_isend(RadSend, Nstokes*Ndone, MPI_real, 0, 22, comm2D_, requests(2), ierr)
+        call mpi_isend(RadSend, shdo_obj_%Nstokes*Ndone, MPI_real, 0, 22, comm2D_, requests(2), ierr)
         call mpi_isend(IndexSend, Ndone, MPI_integer, 0, 23, comm2D_, requests(3), ierr)
         call mpi_waitall(3, requests, status, ierr)
     else
@@ -2626,7 +2586,7 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
         do iproc = 1, Nproc_ - 1
             call mpi_irecv(NradRecv(iproc), 1, MPI_integer, iproc,&
                 &21, comm2D_, requests(irq + 1), ierr)
-            call mpi_irecv(RadRecv(:, :, iproc), Nstokes*MAXNRAD, MPI_real, iproc,&
+            call mpi_irecv(RadRecv(:, :, iproc), shdo_obj_%Nstokes*MAXNRAD, MPI_real, iproc,&
                 &22, comm2D_, requests(irq + 2), ierr)
             call mpi_irecv(IndexRecv(:, iproc), MAXNRAD, MPI_integer, iproc,&
                 &23, comm2D_, requests(irq + 3), ierr)
@@ -2640,12 +2600,12 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
         end do
     end if
 
-    deallocate (requests, status, RadSend, IndexSend)
-    if (myProc_ .eq. 0) deallocate (NradRecv, RadRecv, IndexRecv)
-    deallocate (BndSendRadRealInfo, BndSendRadIntInfo)
-    deallocate (BndRecvRadRealInfo, BndRecvRadIntInfo)
-    deallocate (YLMSUN)
-    if (allocated(PHASETAB)) deallocate (PHASETAB)
+    deallocate(requests, status, RadSend, IndexSend)
+    if (myProc_ .eq. 0) deallocate(NradRecv, RadRecv, IndexRecv)
+    deallocate(BndSendRadRealInfo, BndSendRadIntInfo)
+    deallocate(BndRecvRadRealInfo, BndRecvRadIntInfo)
+    deallocate(YLMSUN)
+    if (allocated(PHASETAB)) deallocate(PHASETAB)
 
     ! On the master processor convert VISOUT(2:,*) from Stokes parameters
     ! to DOLP, AOLP, DOCP
@@ -2665,7 +2625,7 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
                 end if
             end do
             ! Choose the best range for the angle of linear polarization (-90 to 90 or 0 to 180)
-            allocate (AOLP(N))
+            allocate(AOLP(N))
             AOLP(:) = VISOUT(3, IVIS - N + 1:IVIS)
             MEAN = sum(AOLP(:))/N
             STD1 = sqrt(sum((AOLP(:) - MEAN)**2)/N)
@@ -2677,7 +2637,7 @@ subroutine shd_mpi__computeCamRad(Nstokes, Nx, Ny, Nz, NPTS, NCELLS,&
             if (STD2 .lt. STD1) then
                 VISOUT(3, IVIS - N + 1:IVIS) = AOLP(:)
             end if
-            deallocate (AOLP)
+            deallocate(AOLP)
         end if
     end if
 #endif
@@ -2737,58 +2697,58 @@ subroutine shd_mpi__calAccelSolCrit(DOACCEL, DELJDOT, DELJOLD, DELJNEW, JNORM,&
 
 end subroutine shd_mpi__calAccelSolCrit
 
-subroutine shd_mpi__end(NPTS, xyz_Grid, Nx_prp, Ny_prp, XSTART, YSTART, XDOMAIN, YDOMAIN,&
-    &NPXT, NPYT, fileInp_prp, runName)
+subroutine shd_mpi__end(runName, rtm_obj, prpAll_obj)
 
     ! Shuts down MPI at the end, but mainly finds the number of gridpoints
     ! around each property grid point column, sends that array to the master
     ! process, and the master process write out the runName//"_load_balance.out"
     ! file.
 
-    integer, intent(in) :: NPTS, Nx_prp, Ny_prp, NPXT, NPYT
-    real, intent(in) :: xyz_Grid(3, NPTS), XSTART, YSTART, XDOMAIN, YDOMAIN
-    character(len=*), intent(in) :: fileInp_prp, runName
+    type(shd_type_rtm), intent(in) :: rtm_obj
+    type(shd_type_prp), intent(in) :: prpAll_obj
+
+    character(len=*), intent(in) :: runName
 
 #if HAS_MPI
     integer :: I, IX, IY, MAXN, SX, SY, EX, EY, Nx, Ny
     integer :: iproc, ierr, irq
-    integer, allocatable :: NUMGRID(:, :), NUMGRIDALL(:, :), NORM(:, :), IXYALL(:, :, :)
+    integer, allocatable :: NUMGRID(:, :), NUMGRIDALL(:, :), NORM(:, :), ixyAll(:, :, :)
     integer, allocatable :: recvbuf(:, :), buf(:, :)
     real :: dx_prp, dy_prp
     real :: ElapsedTime
     type(MPI_request), allocatable :: requests(:)
     type(MPI_status), allocatable :: status(:)
 
-    dx_prp = real(XDOMAIN)/real(NPXT)
-    dy_prp = real(YDOMAIN)/real(NPYT)
+    dx_prp = real(prp_obj_%xDomain)/real(prpAll_obj%Nx)
+    dy_prp = real(prp_obj_%yDomain)/real(prpAll_obj%Ny)
 
     if (loadBalance_) then
         ! Calculate the number of grid points around each property grid column
-        allocate (NUMGRID(Nx_prp, Ny_prp))
+        allocate(NUMGRID(prp_obj_%Nx, prp_obj_%Ny))
         NUMGRID(:, :) = 0
-        do I = 1, NPTS
-            IX = nint((xyz_Grid(1, I) - XSTART)/dx_prp) + 1
-            IY = nint((xyz_Grid(2, I) - YSTART)/dy_prp) + 1
-            if ((IX .le. Nx_prp) .and. (IY .le. Ny_prp)) then
+        do I = 1, rtm_obj%Npts
+            IX = nint((xyz_Rtm_(1, I) - prp_obj_%xStart)/dx_prp) + 1
+            IY = nint((xyz_Rtm_(2, I) - prp_obj_%yStart)/dy_prp) + 1
+            if ((IX .le. prp_obj_%Nx) .and. (IY .le. prp_obj_%Ny)) then
                 NUMGRID(IX, IY) = NUMGRID(IX, IY) + 1
             end if
         end do
 
         if (Nproc_ .gt. 1) then
             ! Have the master process collect the property grid locations of all
-            allocate (IXYALL(2, 2, 0:Nproc_ - 1))
-            call mpi_gather(ixyPrp_, 4, MPI_integer, IXYALL, 4, MPI_integer, 0, comm2D_, ierr)
+            allocate(ixyAll(2, 2, 0:Nproc_ - 1))
+            call mpi_gather(ixyPrp_, 4, MPI_integer, ixyAll, 4, MPI_integer, 0, comm2D_, ierr)
 
             ! Send the NUMGRIDs to the master processor
-            allocate (requests(Nproc_), status(Nproc_))
+            allocate(requests(Nproc_), status(Nproc_))
             irq = 0
             if (myProc_ .gt. 0) then
                 irq = irq + 1
-                call mpi_isend(NUMGRID, Nx_prp*Ny_prp, MPI_integer, 0, 777, comm2D_,&
+                call mpi_isend(NUMGRID, prp_obj_%Nx*prp_obj_%Ny, MPI_integer, 0, 777, comm2D_,&
                     &requests(irq), ierr)
             else
-                MAXN = (maxval(IXYALL(2, 1, :) - IXYALL(1, 1, :)) + 1)*(maxval(IXYALL(2, 2, :) - IXYALL(1, 2, :)) + 1)
-                allocate (recvbuf(MAXN, 1:Nproc_ - 1))
+                MAXN = (maxval(ixyAll(2, 1, :) - ixyAll(1, 1, :)) + 1)*(maxval(ixyAll(2, 2, :) - ixyAll(1, 2, :)) + 1)
+                allocate(recvbuf(MAXN, 1:Nproc_ - 1))
                 do iproc = 1, Nproc_ - 1
                     irq = irq + 1
                     call mpi_irecv(recvbuf(:, iproc), MAXN, MPI_integer, iproc, 777,&
@@ -2801,20 +2761,20 @@ subroutine shd_mpi__end(NPTS, xyz_Grid, Nx_prp, Ny_prp, XSTART, YSTART, XDOMAIN,
             !   Use a normalization counter (NORM) to deal with grid points that
             !   get contribution from two processors.
             if (myProc_ .eq. 0) then
-                allocate (NUMGRIDALL(NPXT, NPYT), NORM(NPXT, NPYT))
+                allocate(NUMGRIDALL(prpAll_obj%Nx, prpAll_obj%Ny), NORM(prpAll_obj%Nx, prpAll_obj%Ny))
                 NUMGRIDALL(:, :) = 0; NORM(:, :) = 0
-                SX = IXYALL(1, 1, 0); EX = IXYALL(2, 1, 0); Nx = EX - SX + 1
-                SY = IXYALL(1, 2, 0); EY = IXYALL(2, 2, 0); Ny = EY - SY + 1
+                SX = ixyAll(1, 1, 0); EX = ixyAll(2, 1, 0); Nx = EX - SX + 1
+                SY = ixyAll(1, 2, 0); EY = ixyAll(2, 2, 0); Ny = EY - SY + 1
                 NUMGRIDALL(SX:EX, SY:EY) = NUMGRID(:, :)
                 NORM(SX:EX, SY:EY) = reshape((/1/), (/Nx, Ny/), (/1/))
                 do iproc = 1, Nproc_ - 1
-                    SX = IXYALL(1, 1, iproc); EX = IXYALL(2, 1, iproc); Nx = EX - SX + 1
-                    SY = IXYALL(1, 2, iproc); EY = IXYALL(2, 2, iproc); Ny = EY - SY + 1
-                    allocate (buf(Nx, Ny))
+                    SX = ixyAll(1, 1, iproc); EX = ixyAll(2, 1, iproc); Nx = EX - SX + 1
+                    SY = ixyAll(1, 2, iproc); EY = ixyAll(2, 2, iproc); Ny = EY - SY + 1
+                    allocate(buf(Nx, Ny))
                     buf(:, :) = reshape(recvbuf(1:Nx*Ny, iproc), (/Nx, Ny/))
                     NUMGRIDALL(SX:EX - 1, SY:EY - 1) = NUMGRIDALL(SX:EX - 1, SY:EY - 1) + buf(1:Nx - 1, 1:Ny - 1)
                     NORM(SX:EX - 1, SY:EY - 1) = NORM(SX:EX - 1, SY:EY - 1) + reshape((/1/), (/Nx - 1, Ny - 1/), (/1/))
-                    IX = mod(EX - 1, NPXT) + 1; IY = mod(EY - 1, NPYT) + 1
+                    IX = mod(EX - 1, prpAll_obj%Nx) + 1; IY = mod(EY - 1, prpAll_obj%Ny) + 1
                     NUMGRIDALL(IX, SY:EY - 1) = NUMGRIDALL(IX, SY:EY - 1) + buf(Nx, 1:Ny - 1)
                     NORM(IX, SY:EY - 1) = NORM(IX, SY:EY - 1) + reshape((/1/), (/Ny - 1/), (/1/))
                     NUMGRIDALL(SX:EX - 1, IY) = NUMGRIDALL(SX:EX - 1, IY) + buf(1:Nx - 1, Ny)
@@ -2823,43 +2783,43 @@ subroutine shd_mpi__end(NPTS, xyz_Grid, Nx_prp, Ny_prp, XSTART, YSTART, XDOMAIN,
                     NORM(IX, IY) = NORM(IX, IY) + 1
 
                     ! checked
-                    deallocate (buf)
+                    deallocate(buf)
                 end do
 
                 ! checked
-                deallocate (recvbuf)
+                deallocate(recvbuf)
                 NUMGRIDALL(:, :) = NUMGRIDALL(:, :)/NORM(:, :)
 
                 ! checked
-                deallocate (NORM)
+                deallocate(NORM)
             end if
 
             ! checked
-            deallocate (requests, status, IXYALL)
+            deallocate(requests, status, ixyAll)
 
         else
-            allocate (NUMGRIDALL(NPXT, NPYT))
-            NUMGRIDALL(1:Nx_prp, 1:Ny_prp) = NUMGRID(:, :)
+            allocate(NUMGRIDALL(prpAll_obj%Nx, prpAll_obj%Ny))
+            NUMGRIDALL(1:prp_obj_%Nx, 1:prp_obj_%Ny) = NUMGRID(:, :)
         end if
 
         ! checked
-        deallocate (NUMGRID)
+        deallocate(NUMGRID)
 
         if (myProc_ .eq. 0) then
             ! Write out the array to the load balancing file
             open (UNIT=10, FILE=trim(runName)//'_load_balance.out', STATUS='UNKNOWN')
             write (10, '(A)') '! SHDOM grid point load balancing file for property file:'
-            write (10, '(A)') fileInp_prp
-            write (10, '(2(1X,I4),A)') NPXT, NPYT, ' ! property grid size (Nx,Ny)'
-            do IX = 1, NPXT
-                do IY = 1, NPYT
+            write (10, '(A)') prp_obj_%fname
+            write (10, '(2(1X,I4),A)') prpAll_obj%Nx, prpAll_obj%Ny, ' ! property grid size (Nx,Ny)'
+            do IX = 1, prpAll_obj%Nx
+                do IY = 1, prpAll_obj%Ny
                     write (10, '(I4,1X,I4,1X,I5)') IX, IY, NUMGRIDALL(IX, IY)
                 end do
             end do
             close (10)
 
             ! checked
-            deallocate (NUMGRIDALL)
+            deallocate(NUMGRIDALL)
         end if
     end if
 
@@ -2902,8 +2862,8 @@ subroutine shd_mpi__abort(ERRSTR)
 end subroutine shd_mpi__abort
 
 #if HAS_MPI
-subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
-    &fileInp_prp, runName)
+subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord,&
+    &runName, prpAll_obj, prp_obj)
 
     ! Calculates the location of this processor (subdomain) in the property
     ! grid.  The starting and ending property grid point indices for X and Y
@@ -2914,8 +2874,10 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
     ! processor times exists then the optimization uses this information on
     ! heterogeneous processors to try to give more work to faster processors.
 
-    integer, intent(in) :: ProcDims(2), ProcCoord(2), NPXT, NPYT
-    character(len=*), intent(in) :: fileInp_prp, runName
+    type(shd_type_prp), intent(in) :: prpAll_obj, prp_obj
+
+    integer, intent(in) :: ProcDims(2), ProcCoord(2)
+    character(len=*), intent(in) :: runName
     integer :: NPXTI, NPYTI
     integer :: IX, IY, JX, JY, Nxd, Nyd, N, I, ierr
     integer :: BndLines(ProcDims(1) + ProcDims(2) - 2)
@@ -2936,8 +2898,8 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
 
     ! Initialize the subdomain boundary lines to evenly spaced
     Nxd = ProcDims(1); Nyd = ProcDims(2); N = Nxd + Nyd - 2
-    BndLines(1:Nxd - 1) = (/(nint(I*float(NPXT)/Nxd) + 1, I=1, Nxd - 1)/)
-    BndLines(Nxd:N) = (/(nint(I*float(NPYT)/Nyd) + 1, I=1, Nyd - 1)/)
+    BndLines(1:Nxd - 1) = (/(nint(I*float(prpAll_obj%Nx)/Nxd) + 1, I=1, Nxd - 1)/)
+    BndLines(Nxd:N) = (/(nint(I*float(prpAll_obj%Ny)/Nyd) + 1, I=1, Nyd - 1)/)
 
     if (loadBalance_) then
         DoLoadBalancing = .false.
@@ -2948,10 +2910,10 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
                 read (10, *)
                 read (10, '(A)') fileInp_prp0
                 read (10, *) NPXTI, NPYTI
-                if ((NPXTI .ne. NPXT) .or. (NPYTI .ne. NPYT) .or. (fileInp_prp0 .ne. fileInp_prp)) then
+                if ((NPXTI .ne. prpAll_obj%Nx) .or. (NPYTI .ne. prpAll_obj%Ny) .or. (fileInp_prp0 .ne. prp_obj%fname)) then
                     write (6, '(A,A,A)') 'Load balancing file ', trim(runName),&
                         &'_load_balance.inp is not compatible with property file:'
-                    write (6, *) fileInp_prp
+                    write (6, *) prp_obj%fname
                     write (6, *)
                 else
                     DoLoadBalancing = .true.
@@ -2961,28 +2923,28 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
         end if
 
         ! Have the master process collect the locations of all
-        allocate (ProcCoordAll(2, 0:Nproc_ - 1))
+        allocate(ProcCoordAll(2, 0:Nproc_ - 1))
         call mpi_gather(ProcCoord, 2, MPI_integer, ProcCoordAll, 2, MPI_integer, 0, comm2D_, ierr)
 
         if (myProc_ .eq. 0 .and. DoLoadBalancing) then
             ! Read the load balancing file to get array of number of grid points
-            allocate (Ngrid(NPXT + 1, NPYT + 1))
+            allocate(Ngrid(prpAll_obj%Nx + 1, prpAll_obj%Ny + 1))
             open (UNIT=10, FILE=trim(runName)//'_load_balance.inp', STATUS='OLD')
             read (10, *)
             read (10, *)
             read (10, *)
-            do IX = 1, NPXT
-                do IY = 1, NPYT
+            do IX = 1, prpAll_obj%Nx
+                do IY = 1, prpAll_obj%Ny
                     read (10, *) JX, JY, Ngrid(IX, IY)
                 end do
             end do
             close (10)
-            Ngrid(NPXT + 1, :) = Ngrid(1, :)
-            Ngrid(:, NPYT + 1) = Ngrid(:, 1)
-            Ngrid(NPXT + 1, NPYT + 1) = Ngrid(1, 1)
+            Ngrid(prpAll_obj%Nx + 1, :) = Ngrid(1, :)
+            Ngrid(:, prpAll_obj%Ny + 1) = Ngrid(:, 1)
+            Ngrid(prpAll_obj%Nx + 1, prpAll_obj%Ny+ 1) = Ngrid(1, 1)
 
             ! Read the relative processor times if the "shdom_proc_times.inp" file exists
-            allocate (wtproc(Nproc_))
+            allocate(wtproc(Nproc_))
             open (UNIT=11, FILE='shdom_proc_times.inp', STATUS='OLD', IOSTAT=ierr)
             if (ierr .eq. 0) then
                 do i = 1, Nproc_
@@ -2997,7 +2959,7 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
             ! Do the simulated annealing to minimize the objective function
             u = shd_mpi__ran(iseed)
             NITER = NiterFac*N
-            Energy = loadObject(BndLines, Nxd, Nyd, ProcCoordAll, wtproc, NPXT, NPYT, Ngrid)
+            Energy = loadObject(BndLines, Nxd, Nyd, ProcCoordAll, wtproc, Ngrid, prpAll_obj)
             LowestEnergy = Energy
             CurLines(:) = BndLines(:)
             ! print *, 'Annealing cycles: Cycle Temp Energy  BndLines'
@@ -3008,7 +2970,7 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
                 Temp = Temp0*exp(-Tempfac*(icycle - 1)) ! lower the temp
                 ! Adjust the maximum distance a boundary line is perturbed with the cycle number
                 u = float(icycle - 1)/(NCYCLE - 1)
-                DelLines = (1 - u)*0.5*max(NPXT/Nxd, NPYT/Nyd) + u*1.0
+                DelLines = (1 - u)*0.5*max(prpAll_obj%Nx/Nxd, prpAll_obj%Ny/Nyd) + u*1.0
 
                 ! Do NITER iterations per temp cycle
                 do ITER = 1, NITER
@@ -3020,7 +2982,7 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
                         end do
                     end do
                     ! Calculate the energy of these new boundary lines
-                    NewEnergy = loadObject(TrialLines, Nxd, Nyd, ProcCoordAll, wtproc, NPXT, NPYT, Ngrid)
+                    NewEnergy = loadObject(TrialLines, Nxd, Nyd, ProcCoordAll, wtproc, Ngrid, prpAll_obj)
                     DeltaE = NewEnergy - Energy
                     if (DeltaE .lt. 0.0) then ! If lower energy accept change
                         CurLines(:) = TrialLines(:)
@@ -3040,11 +3002,11 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
                 ! print '(I3,2(1X,F9.6),10(1X,I3))', CYCLE,Temp,LowestEnergy, BndLines(:)
             end do ! end of temperature cycles
 
-            deallocate (Ngrid)
+            deallocate(Ngrid)
         end if
 
         call mpi_bcast(BndLines, N, MPI_integer, 0, comm2D_, ierr)
-        deallocate (ProcCoordAll)
+        deallocate(ProcCoordAll)
         if (myProc_ .eq. 0 .and. DoLoadBalancing) then
             write (6, '(A)') 'Optimum load balanced boundary lines in the property grid:'
             write (6, '(A,16I4)') '  X lines:', BndLines(1:Nxd - 1)
@@ -3053,8 +3015,8 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord, NPXT, NPYT,&
     end if
 
     ! Make the subdomain position array for this processor from BndLines
-    IDX(1) = 1; IDX(Nxd + 1) = NPXT + 1; if (Nxd .eq. 1) IDX(Nxd + 1) = NPXT
-    IDY(1) = 1; IDY(Nyd + 1) = NPYT + 1; if (Nyd .eq. 1) IDY(Nyd + 1) = NPYT
+    IDX(1) = 1; IDX(Nxd + 1) = prpAll_obj%Nx + 1; if (Nxd .eq. 1) IDX(Nxd + 1) = prpAll_obj%Nx
+    IDY(1) = 1; IDY(Nyd + 1) = prpAll_obj%Ny + 1; if (Nyd .eq. 1) IDY(Nyd + 1) = prpAll_obj%Ny
     IDX(2:Nxd) = BndLines(1:Nxd - 1); IDY(2:Nyd) = BndLines(Nxd:N)
     ixyPrp_(1:2, 1) = IDX(ProcCoord(1) + 1:ProcCoord(1) + 2)
     ixyPrp_(1:2, 2) = IDY(ProcCoord(2) + 1:ProcCoord(2) + 2)
@@ -3089,9 +3051,7 @@ real function shd_mpi__ran(idum)
 end function shd_mpi__ran
 
 subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
-    &x_Grid, y_Grid, z_Grid, NPTS, NCELLS,&
-    &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell,&
-    &xyz_Grid, EXTINCT, Nstokes, SOURCE, KANG,&
+    &EXTINCT, Nstokes, SOURCE, KANG,&
     &GRIDRAD, MU, PHI,&
     &X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
 
@@ -3109,15 +3069,10 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     ! properly initialized on input).  The ending location X,Y,Z and the
     ! subdomain SIDE (1=-X,2=+X,3=-Y,4=+Y) are also returned.
 
-    integer, intent(in) :: BCFLAG, IPFLAG, Nx, Ny, Nz, NA, NPTS, NCELLS
+    integer, intent(in) :: BCFLAG, IPFLAG, Nx, Ny, Nz, NA
     integer, intent(in) :: Nstokes, KANG
-    real, intent(in) :: x_Grid(Nx), y_Grid(Ny), z_Grid(Nz)
-    integer, intent(in) :: ptr8Grid_Cell(8, NCELLS), ptr6Cell_Cell(6, NCELLS)
-    integer, intent(in) :: ptr2Tree_Cell(2, NCELLS)
-    integer*2, intent(in) :: flag_Cell(NCELLS)
-    real, intent(in) :: xyz_Grid(3, NPTS)
-    real, intent(in) :: EXTINCT(NPTS)
-    real, intent(in) :: SOURCE(Nstokes, NA, NPTS), GRIDRAD(Nstokes, NPTS)
+    real, intent(in) :: EXTINCT(rtm_obj_%Npts)
+    real, intent(in) :: SOURCE(Nstokes, NA, rtm_obj_%Npts), GRIDRAD(Nstokes, rtm_obj_%Npts)
     real, intent(in) :: MU, PHI
     real, intent(inout) :: X, Y, Z
     integer, intent(inout) :: SIDE
@@ -3140,7 +3095,7 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     data GRIDFACE/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8/
     data OPPFACE/2, 1, 4, 3, 6, 5/
 
-    EPS = 1.0e-3*(xyz_Grid(3, ptr8Grid_Cell(8, 1)) - xyz_Grid(3, ptr8Grid_Cell(1, 1)))
+    EPS = 1.0e-3*(xyz_Rtm_(3, i8Grid_Cell_(8, 1)) - xyz_Rtm_(3, i8Grid_Cell_(1, 1)))
 
     ! Make the ray direction (opposite to the discrete ordinate direction)
     CX = sqrt(1.0 - MU**2)*cos(PHI + DPI_)
@@ -3187,7 +3142,7 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     IU = Nz
     do while (IU - IL .gt. 1)
         IM = (IU + IL)/2
-        if (Z .ge. z_Grid(IM)) then
+        if (Z .ge. rtm_obj_%z(IM)) then
             IL = IM
         else
             IU = IM
@@ -3201,17 +3156,17 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     NYC = Ny
     if (isMpiY_ .and. .not. is1DYx_) NYC = Ny - 1
     if (is1DX_) then
-        IX = 1 + nint((Nx - 1)*(X - x_Grid(1))/(x_Grid(Nx) - x_Grid(1)))
+        IX = 1 + nint((Nx - 1)*(X - rtm_obj_%x(1))/(rtm_obj_%x(Nx) - rtm_obj_%x(1)))
     else
-        IX = 1 + int((Nx - 1)*(X - x_Grid(1))/(x_Grid(Nx) - x_Grid(1)))
+        IX = 1 +  int((Nx - 1)*(X - rtm_obj_%x(1))/(rtm_obj_%x(Nx) - rtm_obj_%x(1)))
     end if
     if (is1DYx_) then
-        IY = 1 + nint((Ny - 1)*(Y - y_Grid(1))/(y_Grid(Ny) - y_Grid(1)))
+        IY = 1 + nint((Ny - 1)*(Y - rtm_obj_%y(1))/(rtm_obj_%y(Ny) - rtm_obj_%y(1)))
     else
-        IY = 1 + int((Ny - 1)*(Y - y_Grid(1))/(y_Grid(Ny) - y_Grid(1)))
+        IY = 1 +  int((Ny - 1)*(Y - rtm_obj_%y(1))/(rtm_obj_%y(Ny) - rtm_obj_%y(1)))
     end if
     if ((ix .lt. 1) .or. (iy .lt. 1) .or. (ix .gt. (Nx + 1)) .or. (iy .gt. (Ny + 1))) then
-        write (6, *) 'Bad ix and/or iy', x, y, z, ix, iy, iz, x_Grid(1), x_Grid(Nx), y_Grid(1), y_Grid(ny), myProc_
+        write (6, *) 'Bad ix and/or iy', x, y, z, ix, iy, iz, rtm_obj_%x(1), rtm_obj_%x(Nx), rtm_obj_%y(1), rtm_obj_%y(ny), myProc_
         write (6, *) 'Bad ix and/or iy', side, transmit
         call shd_mpi__abort('Error [mpi_integrateRay]: Bad ix and/or iy, see above.')
     end if
@@ -3226,42 +3181,42 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     ! which dimension (X,Y,Z) the parent cell was split in, then compare
     ! the grid point with the test point (X,Y,Z) to find which child cell
     ! (pos or neg) the test point is in.
-    do while (ptr2Tree_Cell(2, ICELL) .gt. 0)
-        DIR = ibits(int(flag_Cell(ICELL)), 2, 2)
-        IC = ptr2Tree_Cell(2, ICELL) + 1
-        IPTR = ptr8Grid_Cell(1, IC)
+    do while (i2Tree_Cell_(2, ICELL) .gt. 0)
+        DIR = ibits(int(flag_Cell_(ICELL)), 2, 2)
+        IC = i2Tree_Cell_(2, ICELL) + 1
+        IPTR = i8Grid_Cell_(1, IC)
         if (DIR .eq. 1) then
-            if (X .lt. xyz_Grid(1, IPTR)) IC = IC - 1
+            if (X .lt. xyz_Rtm_(1, IPTR)) IC = IC - 1
         else if (DIR .eq. 2) then
-            if (Y .lt. xyz_Grid(2, IPTR)) IC = IC - 1
+            if (Y .lt. xyz_Rtm_(2, IPTR)) IC = IC - 1
         else if (DIR .eq. 3) then
-            if (Z .lt. xyz_Grid(3, IPTR)) IC = IC - 1
+            if (Z .lt. xyz_Rtm_(3, IPTR)) IC = IC - 1
         end if
         ICELL = IC
     end do
 
     IFACE = SIDE
     ! Get the four gridpoints for this face
-    I1 = ptr8Grid_Cell(GRIDFACE(1, IFACE), ICELL)
-    I2 = ptr8Grid_Cell(GRIDFACE(2, IFACE), ICELL)
-    I3 = ptr8Grid_Cell(GRIDFACE(3, IFACE), ICELL)
-    I4 = ptr8Grid_Cell(GRIDFACE(4, IFACE), ICELL)
-    IPINX = btest(int(flag_Cell(ICELL)), 0)
-    IPINY = btest(int(flag_Cell(ICELL)), 1)
+    I1 = i8Grid_Cell_(GRIDFACE(1, IFACE), ICELL)
+    I2 = i8Grid_Cell_(GRIDFACE(2, IFACE), ICELL)
+    I3 = i8Grid_Cell_(GRIDFACE(3, IFACE), ICELL)
+    I4 = i8Grid_Cell_(GRIDFACE(4, IFACE), ICELL)
+    IPINX = btest(int(flag_Cell_(ICELL)), 0)
+    IPINY = btest(int(flag_Cell_(ICELL)), 1)
     ! Compute the face interpolation factors
     if (IFACE .le. 2) then
-        U = (Z - xyz_Grid(3, I1))/(xyz_Grid(3, I3) - xyz_Grid(3, I1))
+        U = (Z - xyz_Rtm_(3, I1))/(xyz_Rtm_(3, I3) - xyz_Rtm_(3, I1))
         if (IPINY) then
             V = 0.5
         else
-            V = (Y - xyz_Grid(2, I1))/(xyz_Grid(2, I2) - xyz_Grid(2, I1))
+            V = (Y - xyz_Rtm_(2, I1))/(xyz_Rtm_(2, I2) - xyz_Rtm_(2, I1))
         end if
     else
-        U = (Z - xyz_Grid(3, I1))/(xyz_Grid(3, I3) - xyz_Grid(3, I1))
+        U = (Z - xyz_Rtm_(3, I1))/(xyz_Rtm_(3, I3) - xyz_Rtm_(3, I1))
         if (IPINX) then
             V = 0.5
         else
-            V = (X - xyz_Grid(1, I1))/(xyz_Grid(1, I2) - xyz_Grid(1, I1))
+            V = (X - xyz_Rtm_(1, I1))/(xyz_Rtm_(1, I2) - xyz_Rtm_(1, I1))
         end if
     end if
 
@@ -3280,25 +3235,25 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     RAD(:) = RADIANCE(:)
     VALIDRAD = .false.
     do while (.not. VALIDRAD .and. ICELL .gt. 0)
-        IPINX = btest(int(flag_Cell(ICELL)), 0)
-        IPINY = btest(int(flag_Cell(ICELL)), 1)
+        IPINX = btest(int(flag_Cell_(ICELL)), 0)
+        IPINY = btest(int(flag_Cell_(ICELL)), 1)
 
         ! Find boundaries of the current cell
         !   Find the three possible intersection planes (X,Y,Z)
         !   from the coordinates of the opposite corner grid point
-        IOPP = ptr8Grid_Cell(9 - IOCT, ICELL)
+        IOPP = i8Grid_Cell_(9 - IOCT, ICELL)
         ! Get the distances to the 3 planes and select the closest
         if (IPINX) then
             SOX = 1.0e20
         else
-            SOX = (xyz_Grid(1, IOPP) - XE)*CXINV
+            SOX = (xyz_Rtm_(1, IOPP) - XE)*CXINV
         end if
         if (IPINY) then
             SOY = 1.0e20
         else
-            SOY = (xyz_Grid(2, IOPP) - YE)*CYINV
+            SOY = (xyz_Rtm_(2, IOPP) - YE)*CYINV
         end if
-        SOZ = (xyz_Grid(3, IOPP) - ZE)*CZINV
+        SOZ = (xyz_Rtm_(3, IOPP) - ZE)*CZINV
         SO = min(SOX, SOY, SOZ)
         if (SO .lt. -EPS) then
             write (6, *) 'SO<0: ', MU, PHI, X, Y, Z, SOX, SOY, SOZ, SO, ICELL, TRANS
@@ -3321,14 +3276,14 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
             JFACE = 3
         end if
         ! Get the next cell to go to
-        INEXTCELL = ptr6Cell_Cell(IFACE, ICELL)
+        INEXTCELL = i6Cell_Cell_(IFACE, ICELL)
         if (INEXTCELL .lt. 0) then
-            call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, xyz_Grid,&
-                &ptr8Grid_Cell, ptr6Cell_Cell, ptr2Tree_Cell, flag_Cell, INEXTCELL)
+            call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL,&
+                &INEXTCELL)
         end if
 
         ! Get the face grid pointers
-        if (ptr6Cell_Cell(IFACE, ICELL) .ge. 0) then
+        if (i6Cell_Cell_(IFACE, ICELL) .ge. 0) then
             ! If going to same or larger face then use previous face
             KFACE = IFACE
             IC = ICELL
@@ -3337,35 +3292,35 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
             KFACE = OPPFACE(IFACE)
             IC = INEXTCELL
         end if
-        I1 = ptr8Grid_Cell(GRIDFACE(1, KFACE), IC)
-        I2 = ptr8Grid_Cell(GRIDFACE(2, KFACE), IC)
-        I3 = ptr8Grid_Cell(GRIDFACE(3, KFACE), IC)
-        I4 = ptr8Grid_Cell(GRIDFACE(4, KFACE), IC)
+        I1 = i8Grid_Cell_(GRIDFACE(1, KFACE), IC)
+        I2 = i8Grid_Cell_(GRIDFACE(2, KFACE), IC)
+        I3 = i8Grid_Cell_(GRIDFACE(3, KFACE), IC)
+        I4 = i8Grid_Cell_(GRIDFACE(4, KFACE), IC)
         ! Compute the face interpolation factors
         if (JFACE .eq. 1) then
-            U = (ZE - xyz_Grid(3, I1))/(xyz_Grid(3, I3) - xyz_Grid(3, I1))
+            U = (ZE - xyz_Rtm_(3, I1))/(xyz_Rtm_(3, I3) - xyz_Rtm_(3, I1))
             if (IPINY) then
                 V = 0.5
             else
-                V = (YE - xyz_Grid(2, I1))/(xyz_Grid(2, I2) - xyz_Grid(2, I1))
+                V = (YE - xyz_Rtm_(2, I1))/(xyz_Rtm_(2, I2) - xyz_Rtm_(2, I1))
             end if
         else if (JFACE .eq. 2) then
-            U = (ZE - xyz_Grid(3, I1))/(xyz_Grid(3, I3) - xyz_Grid(3, I1))
+            U = (ZE - xyz_Rtm_(3, I1))/(xyz_Rtm_(3, I3) - xyz_Rtm_(3, I1))
             if (IPINX) then
                 V = 0.5
             else
-                V = (XE - xyz_Grid(1, I1))/(xyz_Grid(1, I2) - xyz_Grid(1, I1))
+                V = (XE - xyz_Rtm_(1, I1))/(xyz_Rtm_(1, I2) - xyz_Rtm_(1, I1))
             end if
         else
             if (IPINY) then
                 U = 0.5
             else
-                U = (YE - xyz_Grid(2, I1))/(xyz_Grid(2, I3) - xyz_Grid(2, I1))
+                U = (YE - xyz_Rtm_(2, I1))/(xyz_Rtm_(2, I3) - xyz_Rtm_(2, I1))
             end if
             if (IPINX) then
                 V = 0.5
             else
-                V = (XE - xyz_Grid(1, I1))/(xyz_Grid(1, I2) - xyz_Grid(1, I1))
+                V = (XE - xyz_Rtm_(1, I1))/(xyz_Rtm_(1, I2) - xyz_Rtm_(1, I1))
             end if
         end if
         if ((u .lt. -1.0e-4) .or. (v .lt. -1.0e-4) .or. (u .gt. 1.0001) .or. (v .gt. 1.0001)) then
@@ -3376,11 +3331,11 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
         ! Get the location coordinate (does the boundary wrapping)
         if (INEXTCELL .gt. 0) then
             if (JFACE .eq. 1) then
-                XE = xyz_Grid(1, ptr8Grid_Cell(IOCT, INEXTCELL))
+                XE = xyz_Rtm_(1, i8Grid_Cell_(IOCT, INEXTCELL))
             else if (JFACE .eq. 2) then
-                YE = xyz_Grid(2, ptr8Grid_Cell(IOCT, INEXTCELL))
+                YE = xyz_Rtm_(2, i8Grid_Cell_(IOCT, INEXTCELL))
             else
-                ZE = xyz_Grid(3, ptr8Grid_Cell(IOCT, INEXTCELL))
+                ZE = xyz_Rtm_(3, i8Grid_Cell_(IOCT, INEXTCELL))
             end if
         end if
 
@@ -3457,7 +3412,7 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
 end subroutine shd_mpi__integrateRay
 
 real function loadObject(BndLines, Nxd, Nyd, ProcCoordAll, wtproc,&
-    &NPXT, NPYT, Ngrid)
+    &Ngrid, prpAll_obj)
 
     ! Calculates the objective function to minimize in doing the processor
     ! load balancing optimization.  The boundary line indices in X and Y to
@@ -3467,10 +3422,12 @@ real function loadObject(BndLines, Nxd, Nyd, ProcCoordAll, wtproc,&
     ! of each domain and the mean number, weighted by the relative processor
     ! times.
 
+    type(shd_type_prp), intent(in) :: prpAll_obj
+
     integer, intent(in) :: Nxd, Nyd, BndLines(Nxd + Nyd - 2)
     integer, intent(in) :: ProcCoordAll(2, 0:Nxd*Nyd - 1)
     real, intent(in) :: wtproc(0:Nxd*Nyd)
-    integer, intent(in) :: NPXT, NPYT, Ngrid(NPXT + 1, NPYT + 1)
+    integer, intent(in) :: Ngrid(prpAll_obj%Nx + 1, prpAll_obj%Ny + 1)
     integer :: N, I, J, IX, IY, IDX(Nxd + 1), IDY(Nyd + 1)
     real    :: OBJA
     real, save :: sumN = -1.0, a
@@ -3479,8 +3436,8 @@ real function loadObject(BndLines, Nxd, Nyd, ProcCoordAll, wtproc,&
         sumN = sum(Ngrid(:, :)); a = float(Nxd*Nyd)/sumN
     end if
     N = Nxd + Nyd - 2
-    IDX(1) = 1; IDX(Nxd + 1) = NPXT + 1; if (Nxd .eq. 1) IDX(Nxd + 1) = NPXT
-    IDY(1) = 1; IDY(Nyd + 1) = NPYT + 1; if (Nyd .eq. 1) IDY(Nyd + 1) = NPYT
+    IDX(1) = 1; IDX(Nxd + 1) = prpAll_obj%Nx + 1; if (Nxd .eq. 1) IDX(Nxd + 1) = prpAll_obj%Nx
+    IDY(1) = 1; IDY(Nyd + 1) = prpAll_obj%Ny + 1; if (Nyd .eq. 1) IDY(Nyd + 1) = prpAll_obj%Ny
 
     OBJA = 0.0
     do J = 0, Nxd*Nyd - 1

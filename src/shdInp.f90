@@ -44,6 +44,14 @@ module shd_inp
 
     use globals_const, only: PI_
     use globals_cfg,   only: verbose_, charMaxLen_
+    use globals_type,  only: shd_type_rtm, &
+                             shd_type_cell, &
+                             shd_type_shdo, &
+                             shd_type_src, &
+                             shd_type_prp, &
+                             shd_type_sfc, &
+                             shd_type_ckd, &
+                             shd_type_sen
 
     use shd_util, only: shd_util__computePlanck
 
@@ -107,7 +115,7 @@ subroutine shd_io__userInp(&
     character(len=charMaxLen_) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE, SENFILE
     character(len=charMaxLen_) :: OutFileNC, RUNNAME
     integer(kind=1) :: VERBOSE
-    integer I, J, N
+    integer i, j, N
     real GNDEMIS
 
     SOLARMU = -1.0
@@ -246,63 +254,63 @@ subroutine shd_io__userInp(&
     read (*, *) NUMOUT
     write (*, *) NUMOUT
     if (NUMOUT .gt. MAXOUT) stop 'Error [_userInp]: MAXOUT exceeded.'
-    do I = 1, NUMOUT
+    do i = 1, NUMOUT
         write (*, '(1X,A,A)') 'Output type (R-radiance, ',&
             &'V-visualization, F-flux, H-heating,'
         write (*, '(14X,A)') 'S-spherical harmonic, J-source, M-medium)'
-        read (*, '(A)') OUTTYPES(I)
-        write (*, *) OUTTYPES(I)
-        if (OUTTYPES(I) (1:1) .eq. 'R') then
+        read (*, '(A)') OUTTYPES(i)
+        write (*, *) OUTTYPES(i)
+        if (OUTTYPES(i) (1:1) .eq. 'R') then
             write (*, '(1X,A,A)')&
                 &'Z level, X and Y spacing, X and Y offset, ',&
                 &'number of angles, and mu, phi pairs'
-            read (*, *) OUTPARMS(1, I), OUTPARMS(2, I), OUTPARMS(3, I),&
-                &OUTPARMS(4, I), OUTPARMS(5, I),&
-                &N, (OUTPARMS(J + 6, I), J=1, min(2*N, MAXPAR - 6))
+            read (*, *) OUTPARMS(1, i), OUTPARMS(2, i), OUTPARMS(3, i),&
+                &OUTPARMS(4, i), OUTPARMS(5, i),&
+                &N, (OUTPARMS(j + 6, i), j=1, min(2*N, MAXPAR - 6))
             if (N .gt. (MAXPAR - 6)/2) then
-                print *, 'Error [_userInp]: Number of radiance angles is too large for MAXPAR'
+                write (*, *) 'Error [_userInp]: Number of radiance angles is too large for MAXPAR'
                 stop
             end if
             N = min(N, (MAXPAR - 6)/2)
-            OUTPARMS(6, I) = float(N)
-            write (*, *) (OUTPARMS(J, I), J=1, 2*N + 6)
-        else if (OUTTYPES(I) (1:1) .eq. 'V') then
+            OUTPARMS(6, i) = float(N)
+            write (*, *) (OUTPARMS(j, i), j=1, 2*N + 6)
+        else if (OUTTYPES(i) (1:1) .eq. 'V') then
             write (*, '(1X,A,A)')&
                 &'1, bytes,scale, X,Y,Z, theta,phi,rotang, NL,NS, delline,delsamp'
             write (*, '(1X,A,A)')&
                 &'2, bytes,scale, X1,Y1,Z1, X2,Y2,Z2, spacing, scan1,scan2,delscan'
-            read (*, *) (OUTPARMS(J, I), J=1, 13)
-            write (*, *) (OUTPARMS(J, I), J=1, 13)
-        else if (OUTTYPES(I) (1:1) .eq. 'F') then
+            read (*, *) (OUTPARMS(j, i), j=1, 13)
+            write (*, *) (OUTPARMS(j, i), j=1, 13)
+        else if (OUTTYPES(i) (1:1) .eq. 'F') then
             write (*, '(1X,A)')&
                 &'Format (1,2,3,4,5), [Z, del X, del Y for format 2]'
-            read (*, *) N, (OUTPARMS(1 + J, I), J=1, 3*max(0, 1 - abs(N - 2)))
-            OUTPARMS(1, I) = float(N)
+            read (*, *) N, (OUTPARMS(1 + j, i), j=1, 3*max(0, 1 - abs(N - 2)))
+            OUTPARMS(1, i) = float(N)
             if (N .eq. 2) then
-                write (*, *) N, (OUTPARMS(1 + J, I), J=1, 3)
+                write (*, *) N, (OUTPARMS(1 + j, i), j=1, 3)
             else
                 write (*, *) N
             end if
-        else if (OUTTYPES(I) (1:1) .eq. 'H') then
+        else if (OUTTYPES(i) (1:1) .eq. 'H') then
             write (*, '(1X,A)') 'Format (1,2,3)'
-            read (*, *) OUTPARMS(1, I)
-            write (*, *) OUTPARMS(1, I)
-        else if (OUTTYPES(I) (1:1) .eq. 'S') then
+            read (*, *) OUTPARMS(1, i)
+            write (*, *) OUTPARMS(1, i)
+        else if (OUTTYPES(i) (1:1) .eq. 'S') then
             write (*, '(1X,A)') 'Format (1,2)'
-            read (*, *) OUTPARMS(1, I)
-            write (*, *) OUTPARMS(1, I)
-        else if (OUTTYPES(I) (1:1) .eq. 'J') then
+            read (*, *) OUTPARMS(1, i)
+            write (*, *) OUTPARMS(1, i)
+        else if (OUTTYPES(i) (1:1) .eq. 'J') then
             write (*, '(1X,A)') 'Format (1,2),  mu, phi '
-            read (*, *) OUTPARMS(1, I), OUTPARMS(2, I), OUTPARMS(3, I)
-            write (*, *) OUTPARMS(1, I), OUTPARMS(2, I), OUTPARMS(3, I)
-        else if (OUTTYPES(I) (1:1) .eq. 'M') then
+            read (*, *) OUTPARMS(1, i), OUTPARMS(2, i), OUTPARMS(3, i)
+            write (*, *) OUTPARMS(1, i), OUTPARMS(2, i), OUTPARMS(3, i)
+        else if (OUTTYPES(i) (1:1) .eq. 'M') then
             write (*, '(1X,A)') 'Format (1,2)'
-            read (*, *) OUTPARMS(1, I)
-            write (*, *) OUTPARMS(1, I)
+            read (*, *) OUTPARMS(1, i)
+            write (*, *) OUTPARMS(1, i)
         end if
         write (*, '(1X,A,A)') 'Output file name'
-        read (*, '(A)') OUTFILES(I)
-        write (*, '(A)') OUTFILES(I)
+        read (*, '(A)') OUTFILES(i)
+        write (*, '(A)') OUTFILES(i)
     end do
 
     write (*, '(1X,A)') 'Output netcdf file name (or NONE or "")'
@@ -371,7 +379,7 @@ subroutine shd_io__nmlInp(&
     character(len=charMaxLen_) :: dPROPFILE, dSFCFILE, dCKDFILE
     character(len=charMaxLen_) :: dINSAVEFILE, dOUTSAVEFILE, dSENFILE
     integer(kind=1) :: dVERBOSE
-    integer I, J, N
+    integer i, j, N
 
     integer MAXOUT, MAXPAR
     parameter(MAXOUT=20, MAXPAR=100)
@@ -478,50 +486,50 @@ subroutine shd_io__nmlInp(&
 
     dNUMOUT = NUMOUT
     if (NUMOUT .gt. MAXOUT) stop 'Error [_nmlInp]: MAXOUT exceeded.'
-    do I = 1, NUMOUT
-        dOUTTYPES(I) = OUTTYPES(I)
-        if (OUTTYPES(I) (1:1) .eq. 'R') then
+    do i = 1, NUMOUT
+        dOUTTYPES(i) = OUTTYPES(i)
+        if (OUTTYPES(i) (1:1) .eq. 'R') then
             ! new binary angle input do not need the loop above
             if (SENFILE(1:4) .ne. 'NONE') then
-                do J = 1, 6
-                    dOUTPARMS(J, I) = OUTPARMS(J, I)
+                do j = 1, 6
+                    dOUTPARMS(j, i) = OUTPARMS(j, i)
                 end do
             else
-                N = nint(OUTPARMS(6, I))
-                do J = 1, min(2*N + 6, MAXPAR)
-                    dOUTPARMS(J, I) = OUTPARMS(J, I)
+                N = nint(OUTPARMS(6, i))
+                do j = 1, min(2*N + 6, MAXPAR)
+                    dOUTPARMS(j, i) = OUTPARMS(j, i)
                 end do
             end if
-        else if (OUTTYPES(I) (1:1) .eq. 'V') then
-            dOUTPARMS(1, I) = OUTPARMS(1, I)
-            dOUTPARMS(2, I) = OUTPARMS(2, I)
-            dOUTPARMS(3, I) = OUTPARMS(3, I)
+        else if (OUTTYPES(i) (1:1) .eq. 'V') then
+            dOUTPARMS(1, i) = OUTPARMS(1, i)
+            dOUTPARMS(2, i) = OUTPARMS(2, i)
+            dOUTPARMS(3, i) = OUTPARMS(3, i)
             ! new user-specified sensor mode V3 only need 3 parameters
             ! read more parameters if for V1 and V2
-            if (nint(OUTPARMS(1, I)) .le. 2) then
-                do J = 4, 13
-                    dOUTPARMS(J, I) = OUTPARMS(J, I)
+            if (nint(OUTPARMS(1, i)) .le. 2) then
+                do j = 4, 13
+                    dOUTPARMS(j, i) = OUTPARMS(j, i)
                 end do
             end if
-        else if (OUTTYPES(I) (1:1) .eq. 'F') then
-            dOUTPARMS(1, I) = OUTPARMS(1, I)
-            if (nint(OUTPARMS(1, I)) .eq. 2) then
-                do J = 2, 4
-                    dOUTPARMS(J, I) = OUTPARMS(J, I)
+        else if (OUTTYPES(i) (1:1) .eq. 'F') then
+            dOUTPARMS(1, i) = OUTPARMS(1, i)
+            if (nint(OUTPARMS(1, i)) .eq. 2) then
+                do j = 2, 4
+                    dOUTPARMS(j, i) = OUTPARMS(j, i)
                 end do
             end if
-        else if (OUTTYPES(I) (1:1) .eq. 'H') then
-            dOUTPARMS(1, I) = OUTPARMS(1, I)
-        else if (OUTTYPES(I) (1:1) .eq. 'S') then
-            dOUTPARMS(1, I) = OUTPARMS(1, I)
-        else if (OUTTYPES(I) (1:1) .eq. 'J') then
-            dOUTPARMS(1, I) = OUTPARMS(1, I)
-            dOUTPARMS(2, I) = OUTPARMS(2, I)
-            dOUTPARMS(3, I) = OUTPARMS(3, I)
-        else if (OUTTYPES(I) (1:1) .eq. 'M') then
-            dOUTPARMS(1, I) = OUTPARMS(1, I)
+        else if (OUTTYPES(i) (1:1) .eq. 'H') then
+            dOUTPARMS(1, i) = OUTPARMS(1, i)
+        else if (OUTTYPES(i) (1:1) .eq. 'S') then
+            dOUTPARMS(1, i) = OUTPARMS(1, i)
+        else if (OUTTYPES(i) (1:1) .eq. 'J') then
+            dOUTPARMS(1, i) = OUTPARMS(1, i)
+            dOUTPARMS(2, i) = OUTPARMS(2, i)
+            dOUTPARMS(3, i) = OUTPARMS(3, i)
+        else if (OUTTYPES(i) (1:1) .eq. 'M') then
+            dOUTPARMS(1, i) = OUTPARMS(1, i)
         end if
-        dOUTFILES(I) = OUTFILES(I)
+        dOUTFILES(i) = OUTFILES(i)
     end do
 
     dOutFileNC = OutFileNC
@@ -541,10 +549,9 @@ subroutine shd_io__nmlInp(&
 end subroutine shd_io__nmlInp
 
 subroutine shd_io__checkInp(&
-    &NMU, NPHI, DELTAM, MAXASYM,&
-    &GRIDTYPE, SRCTYPE, UNITS, SOLARFLUX, SOLARMU,&
-    &WAVENO, WAVELEN, GNDTEMP, GNDALBEDO,&
-    &SPLITACC, SHACC)
+    &DELTAM,&
+    &SPLITACC, SHACC,&
+    &rtm_obj, shdo_obj, src_obj, prp_obj, sfc_obj)
 
     ! Checks for validity of the input parameters. Gives warning for
     ! parameters that might not be correct.
@@ -552,44 +559,47 @@ subroutine shd_io__checkInp(&
     ! Delta-M should be used for solar transfer with forward peaked
     ! phase functions.
     ! Check for reasonable ranges on SPLITACC and SHACC.
-    ! Check for reasonable range of GNDTEMP and valid range of GNDALBEDO.
-    ! Check for SOLARMU=0.
-    ! Check for NPHI<NMU.
+    ! Check for reasonable range of sfc_obj%avgTemp and valid range of sfc_obj%avgAlb.
+    ! Check for src_obj%avgMu=0.
+    ! Check for shdo_obj%Nphi<shdo_obj%Nmu.
 
-    integer NMU, NPHI
+    type(shd_type_rtm),  intent(in) :: rtm_obj
+    type(shd_type_shdo), intent(in) :: shdo_obj
+    type(shd_type_src),  intent(in) :: src_obj
+    type(shd_type_prp),  intent(in) :: prp_obj
+    type(shd_type_sfc),  intent(in) :: sfc_obj
+
     logical DELTAM
-    real MAXASYM, SOLARFLUX, SOLARMU, WAVENO(2), WAVELEN
-    real GNDTEMP, GNDALBEDO, SPLITACC, SHACC
-    character(len=1) :: GRIDTYPE, SRCTYPE, UNITS
+    real SPLITACC, SHACC
     real FLUX
 
-    if (SRCTYPE .ne. 'S' .and. SRCTYPE .ne. 'T' .and. SRCTYPE .ne. 'B')&
+    if ((src_obj%type .ne. 'S') .and. (src_obj%type .ne. 'T') .and. (src_obj%type .ne. 'B'))&
         &stop 'Error [_checkInp]: Illegal source type.'
-    if (UNITS .ne. 'R' .and. UNITS .ne. 'T' .and. UNITS .ne. 'B')&
+    if ((src_obj%unit .ne. 'R') .and. (src_obj%unit .ne. 'T') .and. (src_obj%unit .ne. 'B'))&
         &stop 'Error [_checkInp]: Illegal units.'
-    if (GRIDTYPE .ne. 'E' .and. GRIDTYPE .ne. 'P' .and. GRIDTYPE .ne. 'F')&
+    if ((rtm_obj%type .ne. 'E') .and. (rtm_obj%type .ne. 'P') .and. (rtm_obj%type .ne. 'F'))&
         &stop 'Error [_checkInp]: Illegal grid type.'
 
-    if (SRCTYPE .ne. 'T' .and. SOLARMU .eq. 0.0) then
+    if ((src_obj%type .ne. 'T') .and. (src_obj%avgMu .eq. 0.0)) then
         stop 'Error [_checkInp]: Cosine solar zenith angle&
-            & (SOLARMU) cannot be 0.'
+            & (src_obj%avgMu) cannot be 0.'
     end if
 
-    if (.not. DELTAM .and. SRCTYPE .ne. 'T' .and. MAXASYM .gt. 0.5) then
+    if (.not. DELTAM .and. (src_obj%type .ne. 'T') .and. prp_obj%maxAsym .gt. 0.5) then
         if (verbose_ .ge. 4) write (*, '(A)') 'Warning [_checkInp]: Delta-M should be used&
             & (DELTAM=.TRUE.) for solar radiative transfer&
             & with highly peaked phase functions.'
     end if
 
     ! Check for SPLITACC and SHACC magnitudes
-    if (SRCTYPE .eq. 'T' .or. SRCTYPE .eq. 'B') then
-        call shd_util__computePlanck(GNDTEMP, UNITS, WAVENO, WAVELEN, FLUX)
+    if ((src_obj%type .eq. 'T') .or. (src_obj%type .eq. 'B')) then
+        call shd_util__computePlanck(sfc_obj%avgTemp, src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen, FLUX)
         FLUX = PI_*FLUX
     else
         FLUX = 0.0
     end if
-    if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
-        FLUX = FLUX + SOLARFLUX
+    if ((src_obj%type .eq. 'S') .or. (src_obj%type .eq. 'B')) then
+        FLUX = FLUX + src_obj%inpSolar
     end if
     if (SPLITACC .gt. 0.0 .and.&
         &(SPLITACC .lt. 0.001*FLUX .or. SPLITACC .gt. 0.1*FLUX)) then
@@ -601,123 +611,137 @@ subroutine shd_io__checkInp(&
             & (SHACC) is not a fraction, but scales with fluxes.'
     end if
 
-    if (SRCTYPE .ne. 'S' .and.&
-        &(GNDTEMP .lt. 150. .or. GNDTEMP .gt. 350.)) then
+    if ((src_obj%type .ne. 'S') .and.&
+        &(sfc_obj%avgTemp .lt. 150. .or. sfc_obj%avgTemp .gt. 350.)) then
         if (verbose_ .ge. 4) write (*, '(A)') 'Warning [_checkInp]:&
             & ground temperature out of Earth range.'
     end if
-    if (GNDALBEDO .lt. 0.0 .or. GNDALBEDO .gt. 1.0) then
+    if (sfc_obj%avgAlb .lt. 0.0 .or. sfc_obj%avgAlb .gt. 1.0) then
         stop 'Error [_checkInp]: Ground albedo must be 0 to 1.'
     end if
 
-    if (NPHI .lt. NMU) then
-      if (verbose_ .ge. 4) write (*, '(A)') 'Warning [_checkInp]: Usually want NPHI >= NMU.'
+    if (shdo_obj%Nphi .lt. shdo_obj%Nmu) then
+      if (verbose_ .ge. 4) write (*, '(A)') 'Warning [_checkInp]: Usually want shdo_obj%Nphi>= shdo_obj%Nmu.'
     end if
 
     return
 end subroutine shd_io__checkInp
 
-subroutine shd_io__readPrpSize(PROPFILE, NSTLEG,&
-    &NLEG, NPX, NPY, NPZ, DELX, DELY,&
-    &NUMPHASE, MAXLEG, MAXPGL)
+subroutine shd_io__readPrpSize(prp_obj)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Description:
     !   Reads parts of the property file to get the maximum array sizes
     !   needed for allocatable arrays.  For extinction only and tabulated
     !   phase function formats, only the header is read, while for the
-    !   standard format, the whole file must be read to determine MAXLEG.
+    !   standard format, the whole file must be read to determine prp_obj%maxNleg.
     !
     ! Input:
-    !   PROFILE: string, file path for the property file (contains extinction, phase function etc.
+    !   prp_obj%fname: string, file path for the property file (contains extinction, phase function etc.
     !          generated by <propgen>)
-    !   NSTLEG: integer, the number of phase function elements used, =1 when unpolarized, =6 when polarized
-    !   NLEG: integer, the number of Legendre series phase function terms used in the solution procedure
+    !   prp_obj%NlegSet: integer, the number of phase function elements used, =1 when unpolarized, =6 when polarized
+    !   prp_obj%Nleg: integer, the number of Legendre series phase function terms used in the solution procedure
     !
     ! Output:
-    !   NPX: integer, number of grid points in X
-    !   NPY: integer, number of grid points in Y
-    !   NPZ: integer, number of grid points in Z
-    !   DELX: real, X grid resolution
-    !   DELY: real, Y grid resolution
-    !   NUMPHASE: integer, number of tabulated phase functions
-    !   MAXLEG: integer, maximum Legendre series order for phase functions
-    !   MAXPGL: integer, maximum data points to store all phase functions
+    !   prp_obj%Nx: integer, number of grid points in X
+    !   prp_obj%Ny: integer, number of grid points in Y
+    !   prp_obj%Nz: integer, number of grid points in Z
+    !   prp_obj%dx: real, X grid resolution
+    !   prp_obj%dy: real, Y grid resolution
+    !   prp_obj%Npha: integer, number of tabulated phase functions
+    !   prp_obj%maxNleg: integer, maximum Legendre series order for phase functions
+    !   prp_obj%maxNptsLeg: integer, maximum data points to store all phase functions
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    character(len=*) , intent(in) :: PROPFILE
-    integer(kind=I__), intent(in) :: NSTLEG, NLEG
+    type(shd_type_prp), intent(inout) :: prp_obj
 
-    integer(kind=I__), intent(out) :: NPX, NPY, NPZ
-    integer(kind=I__), intent(out) :: NUMPHASE, MAXLEG, MAXPGL
-    real(kind=R__)   , intent(out) :: DELX, DELY
-
-    integer(kind=I__) :: NUML, IX, IY, IZ, I, J, K, L
-    real(kind=R__)    :: ZLEVELS, TMP, EXT, ALB, CHI
-    character(len=1)  :: PROPTYPE
+    integer(kind=I__) :: Nleg, ix, iy, iz, i, j, k, l
+    real(kind=R__)    :: z0, temp0, ext0, ssa0, chi0
 
     ! Open the file, figure out the type, and get the grid size
-    open (unit=11, file=trim(adjustl(PROPFILE)), status='OLD')
-    read (11, '(A1)') PROPTYPE
-    if ((PROPTYPE .ne. 'E') .and. (PROPTYPE .ne. 'T')&
-        &.and. (PROPTYPE .ne. 'P')) rewind (1)
-    if ((PROPTYPE .ne. 'P') .and. (NSTLEG .gt. 1)) then
-        stop 'Error [_readPrpSize]: NSTOKES>1 requires polarized phase function property file.'
+    open (unit=11, file=trim(adjustl(prp_obj%fname)), status='old')
+
+    read (11, '(A1)') prp_obj%type
+
+    if ((prp_obj%type .ne. 'E') .and. (prp_obj%type .ne. 'T')&
+        &.and. (prp_obj%type .ne. 'P')) rewind (1)
+
+    if ((prp_obj%type .ne. 'P') .and. (prp_obj%NlegSet .gt. 1)) then
+        stop 'Error [_readPrpSize]: Nstokes>1 requires polarized phase function property file.'
     end if
 
-    read (11, *) NPX, NPY, NPZ
-    read (11, *) DELX, DELY, (ZLEVELS, K=1, NPZ)
+    read (11, *) prp_obj%Nx, prp_obj%Ny, prp_obj%Nz
+    prp_obj%maxNz = prp_obj%Nz
+    prp_obj%maxNpts = prp_obj%Nx * prp_obj%Ny * prp_obj%Nz
+
+    read (11, *) prp_obj%dx, prp_obj%dy, (z0, k=1, prp_obj%Nz)
+    prp_obj%xDomain = prp_obj%Nx * prp_obj%dx
+    prp_obj%yDomain = prp_obj%Ny * prp_obj%dy
+
 
     ! Property file type E is for extinction only format
-    if (PROPTYPE .eq. 'E') then
-        NUMPHASE = 1
-        read (11, *) (TMP, IZ=1, NPZ)
-        read (11, *) ALB, NUML
-        MAXLEG = max(NLEG, NUML)
-        MAXPGL = MAXLEG + 1
+    if (prp_obj%type .eq. 'E') then
+
+        prp_obj%Npha = 1
+        read (11, *) (temp0, iz=1, prp_obj%Nz)
+        read (11, *) ssa0, Nleg
+
+        prp_obj%Nleg = max(prp_obj%Nleg, Nleg)
+        prp_obj%maxNleg = prp_obj%Nleg
+        prp_obj%maxNptsLeg = prp_obj%maxNleg + 1
 
     ! Property file type T is for tabulated phase function format
-    else if (PROPTYPE .eq. 'T') then
-        MAXLEG = NLEG
-        read (11, *) NUMPHASE
-        do I = 1, NUMPHASE
-            read (11, *) NUML, (CHI, L=1, NUML)
-            MAXLEG = max(NUML, MAXLEG)
+    else if (prp_obj%type .eq. 'T') then
+
+        prp_obj%maxNleg = prp_obj%Nleg
+
+        read (11, *) prp_obj%Npha
+        do i = 1, prp_obj%Npha
+            read (11, *) Nleg, (chi0, l=1, Nleg)
+            prp_obj%maxNleg = max(Nleg, prp_obj%maxNleg)
         end do
-        MAXPGL = NUMPHASE*(MAXLEG + 1)
+
+        prp_obj%maxNptsLeg = prp_obj%Npha * (prp_obj%maxNleg + 1)
 
     ! Property file type P is for polarized tabulated phase functi
-    else if (PROPTYPE .eq. 'P') then
-        MAXLEG = NLEG
-        read (11, *) NUMPHASE
-        do I = 1, NUMPHASE
-            do J = 1, 6
-                read (11, *) K, NUML, (CHI, L=0, NUML)
-                MAXLEG = max(NUML, MAXLEG)
+    else if (prp_obj%type .eq. 'P') then
+
+        prp_obj%maxNleg = prp_obj%Nleg
+        read (11, *) prp_obj%Npha
+        do i = 1, prp_obj%Npha
+            do j = 1, 6
+                read (11, *) k, Nleg, (chi0, l=0, Nleg)
+                prp_obj%maxNleg = max(Nleg, prp_obj%maxNleg)
             end do
         end do
-        MAXPGL = NSTLEG*NUMPHASE*(MAXLEG + 1)
+        prp_obj%maxNptsLeg = prp_obj%NlegSet * prp_obj%Npha * (prp_obj%maxNleg + 1)
 
     else
+
+        prp_obj%Npha = 0
+
         ! Standard property file has everything variable
-        MAXLEG = NLEG
+        prp_obj%maxNleg = prp_obj%Nleg
         do while (.true.)
-            read (11, *, end=190) IX, IY, IZ, TMP, EXT, ALB, NUML,&
-                &(CHI, L=1, NUML)
-            MAXLEG = max(NUML, MAXLEG)
+            read (11, *, end=190) ix, iy, iz, temp0, ext0, ssa0, Nleg,&
+                &(chi0, l=1, Nleg)
+            prp_obj%maxNleg = max(Nleg, prp_obj%maxNleg)
         end do
+
 190     continue
-        MAXPGL = NPX*NPY*NPZ*(MAXLEG + 1)
+
+        prp_obj%maxNptsLeg = prp_obj%Nx * prp_obj%Ny * prp_obj%Nz * (prp_obj%maxNleg + 1)
+
     end if
+
     close (unit=11)
+
     return
+
 end subroutine shd_io__readPrpSize
 
-subroutine shd_io__readPrp(&
-    &PROPFILE, NPX, NPY, NPZ,&
-    &NSTLEG, MAXLEG, NLEG, MAXNZ, MAXPG, MAXPGL, DELTAM,&
-    &PROPTYPE, DELX, DELY, ZLEVELS, MAXASYM,&
-    &TEMPP, EXTINCTP, ALBEDOP, LEGENP, NUMPHASE, IPHASEP)
+subroutine shd_io__readPrp(isDeltaM, &
+                           prp_obj, temp_Prp, ext_Prp, ssa_Prp, leg_Prp, ipha_Prp)
 
     ! Reads the medium properties from the file into the property arrays.
     ! There are four formats: the standard format specifies the extinction,
@@ -730,178 +754,219 @@ subroutine shd_io__readPrp(&
     ! The polarized format specifies the six unique elements of the phase
     ! (Mueller) matrix in the header and includes the l=0 term.
     ! If the format is extinction only or tabulated phase function then
-    ! NUMPHASE is the number of phase functions, otherwise NUMPHASE=0.
-    ! If doing delta-M then NLEG is the minimum number of Legendre terms on
+    ! prp_obj%Npha is the number of phase functions, otherwise prp_obj%Npha=0.
+    ! If doing delta-M then prp_obj%Nleg is the minimum number of Legendre terms on
     ! input and the actual maximum number of terms on output, except that
-    ! it may not exceed MAXLEG; otherwise NLEG is the number of Legendre
+    ! it may not exceed prp_obj%maxNleg; otherwise prp_obj%Nleg is the number of Legendre
     ! terms to be used (regardless of what is in property file).
     ! See the overall program documentation for the four file formats.
 
-    integer NPX, NPY, NPZ, NSTLEG, MAXLEG, NLEG, NUMPHASE
-    integer MAXNZ, MAXPG, MAXPGL
-    integer*2 IPHASEP(*)
-    logical DELTAM
-    real DELX, DELY, ZLEVELS(*)
-    real TEMPP(*), EXTINCTP(*)
-    real ALBEDOP(*), LEGENP(*), MAXASYM
-    character(len=*), intent(in) :: PROPFILE
-    character(len=1) :: PROPTYPE
-    integer I, IX, IY, IZ, J, JS, K, KL, L, IL, NUML, IPH, N
-    real :: TMP, EXT, ALB, CHI
+    logical, intent(in) :: isDeltaM
 
-    character(len=charMaxLen_) :: OUTFILE_DATA
-    character(len=charMaxLen_) :: TMP_CHAR
-    character(len=charMaxLen_) :: DIMS_CHAR
-    character(len=20) :: DATA_POSTFIX
-    integer :: NXX, NYY, NZZ, NPP
+    type(shd_type_prp), intent(inout) :: prp_obj
+    real(kind=R__), intent(out) :: temp_Prp(prp_obj%maxNpts), &
+                                   ext_Prp(prp_obj%maxNpts), &
+                                   ssa_Prp(prp_obj%maxNpts), &
+                                   leg_Prp(prp_obj%NlegSet, &
+                                           0:prp_obj%maxNleg, *)
+    integer(kind=2), intent(out) :: ipha_Prp(prp_obj%maxNpts)
+
+    !integer i, ix, iy, iz, j, js, k, kl, l, il, Nleg, ipha0, N
+    integer i, ix, iy, iz, j, js, k, l, Nleg, ipha0, N
+    real :: temp0, ext0, ssa0, chi0
+
+    character(len=charMaxLen_) :: fnameBin
+    character(len=charMaxLen_) :: lineTmp
+    character(len=charMaxLen_) :: lineDim
+    character(len=20) :: dataPostfix
+    integer :: Nxx, Nyy, Nzz, Npp
 
     ! Open the file, figure out the type, and get the grid size
-    open (UNIT=1, FILE=trim(adjustl(PROPFILE)), STATUS='OLD')
-    read (1, '(A1)') PROPTYPE
-    if (PROPTYPE .ne. 'E' .and. PROPTYPE .ne. 'T'&
-        &.and. PROPTYPE .ne. 'P') rewind (1)
-    if (PROPTYPE .ne. 'P' .and. NSTLEG .gt. 1) then
-        write (*, '(A,A)') 'Error [_readPrp]: NSTOKES>1 requires ',&
+    open (unit=1, file=trim(adjustl(prp_obj%fname)), status='old')
+
+    read (1, '(A1)') prp_obj%type
+
+    if (prp_obj%type .ne. 'E' .and. prp_obj%type .ne. 'T'&
+        &.and. prp_obj%type .ne. 'P') rewind (1)
+
+    if (prp_obj%type .ne. 'P' .and. prp_obj%NlegSet .gt. 1) then
+        write (*, '(A,A)') 'Error [_readPrp]: Nstokes>1 requires ',&
             &'Polarized phase function property file.'
         stop
     end if
-    read (1, *) NPX, NPY, NPZ
-    if (NPZ .gt. MAXNZ) stop 'Error [_readPrp]: MAXNZ exceeded.'
-    read (1, *) DELX, DELY, (ZLEVELS(K), K=1, NPZ)
+
+    read (1, *) prp_obj%Nx, prp_obj%Ny, prp_obj%Nz
+
+    if (prp_obj%Nz .gt. prp_obj%maxNz) stop 'Error [_readPrp]: prp_obj%maxNz exceeded.'
+
+    read (1, *) prp_obj%dx, prp_obj%dy, (prp_obj%z(k), k=1, prp_obj%Nz)
 
     ! Property file type E is for extinction only format
-    if (PROPTYPE .eq. 'E') then
-        NUMPHASE = 1
-        read (1, *) (TMP, IZ=1, NPZ)
-        read (1, *) ALB, NUML
-        if (DELTAM) then
-            NLEG = max(NLEG, NUML)
-            NLEG = min(NLEG, MAXLEG)
+    if (prp_obj%type .eq. 'E') then
+
+        prp_obj%Npha = 1
+
+        read (1, *) (temp0, iz=1, prp_obj%Nz)
+        read (1, *) ssa0, Nleg
+
+        if (isDeltaM) then
+            prp_obj%Nleg = max(prp_obj%Nleg, Nleg)
+            prp_obj%Nleg = min(prp_obj%Nleg, prp_obj%maxNleg)
         end if
-        if (NPX*NPY*NPZ .gt. MAXPG)&
-            &stop 'Error [_readPrp]: MAXPG exceeded.'
-        if (NLEG + 1 .gt. MAXPGL)&
-            &stop 'Error [_readPrp]: MAXPGL exceeded.'
+
+        if (prp_obj%Nx * prp_obj%Ny * prp_obj%Nz .gt. prp_obj%maxNpts) then
+            stop 'Error [_readPrp]: prp_obj%maxNpts exceeded.'
+        end if
+
+        if (prp_obj%Nleg + 1 .gt. prp_obj%maxNptsLeg)&
+            &stop 'Error [_readPrp]: prp_obj%maxNptsLeg exceeded.'
+
         rewind (1)
         read (1, *)
-        read (1, *) NPX, NPY, NPZ
-        read (1, *) DELX, DELY, (ZLEVELS(K), K=1, NPZ)
-        read (1, *) (TEMPP(IZ), IZ=1, NPZ)
-        read (1, *) ALB, NUML, (LEGENP(L + 1), L=1, min(NUML, NLEG)),&
-            &(CHI, L=NLEG + 1, NUML)
+        read (1, *) prp_obj%Nx, prp_obj%Ny, prp_obj%Nz
+        read (1, *) prp_obj%dx, prp_obj%dy, (prp_obj%z(k), k=1, prp_obj%Nz)
+        read (1, *) (temp_Prp(iz), iz=1, prp_obj%Nz)
 
-        LEGENP(1) = 1.0
-        MAXASYM = LEGENP(1 + 1)/3.0
-        do L = NUML + 1, NLEG
-            LEGENP(L) = 0.0
+        !read (1, *) ssa0, Nleg, (leg_Prp(l + 1), l=1, min(Nleg, prp_obj%Nleg)),&
+        !    &(chi0, l=prp_obj%Nleg + 1, Nleg)
+        read (1, *) ssa0, Nleg, (leg_Prp(1, l, 1), l=1, min(Nleg, prp_obj%Nleg)),&
+            &(chi0, l=prp_obj%Nleg + 1, Nleg)
+
+        !leg_Prp(1) = 1.0
+        leg_Prp(1, 0, 1) = 1.0
+
+        !prp_obj%maxAsym = leg_Prp(1 + 1)/3.0
+        prp_obj%maxAsym = leg_Prp(1, 1, 1)/3.0
+        do l = Nleg + 1, prp_obj%Nleg
+            !leg_Prp(l) = 0.0
+            leg_Prp(1, l, 1) = 0.0
         end do
 
-        IY = 1
+        iy = 1
         do while (.true.)
-            if (NPY .eq. 1) then
-                read (1, *, end=290) IX, IZ, EXT
+            if (prp_obj%Ny .eq. 1) then
+                read (1, *, end=290) ix, iz, ext0
             else
-                read (1, *, end=290) IX, IY, IZ, EXT
+                read (1, *, end=290) ix, iy, iz, ext0
             end if
-            if (IX .ge. 1 .and. IX .le. NPX .and.&
-               &IY .ge. 1 .and. IY .le. NPY .and.&
-               &IZ .ge. 1 .and. IZ .le. NPZ) then
-                K = IZ + NPZ*(IY - 1) + NPZ*NPY*(IX - 1)
-                TEMPP(K) = TEMPP(IZ)
-                EXTINCTP(K) = EXT
-                ALBEDOP(K) = ALB
-                IPHASEP(K) = 1
+            if (ix .ge. 1 .and. ix .le. prp_obj%Nx .and.&
+               &iy .ge. 1 .and. iy .le. prp_obj%Ny .and.&
+               &iz .ge. 1 .and. iz .le. prp_obj%Nz) then
+                k = iz + prp_obj%Nz*(iy - 1) + prp_obj%Nz*prp_obj%Ny*(ix - 1)
+                temp_Prp(k) = temp_Prp(iz)
+                ext_Prp(k)  = ext0
+                ssa_Prp(k)  = ssa0
+                ipha_Prp(k) = 1
             end if
         end do
 
     ! Property file type T or P is for tabulated phase function format
-    else if (PROPTYPE .eq. 'T' .or. PROPTYPE .eq. 'P') then
+    else if (prp_obj%type .eq. 'T' .or. prp_obj%type .eq. 'P') then
 
-        read (1, *) NUMPHASE
+        read (1, *) prp_obj%Npha
+
         ! If delta-M then find the largest number of Legendre terms
-        if (DELTAM) then
+        if (isDeltaM) then
 
-            do I = 1, NUMPHASE
-                if (PROPTYPE .eq. 'T') then
-                    read (1, *) NUML, (CHI, L=1, NUML)
+            do i = 1, prp_obj%Npha
+                if (prp_obj%type .eq. 'T') then
+                    read (1, *) Nleg, (chi0, l=1, Nleg)
                 else
-                    do J = 1, 6
-                        read (1, *) JS, NUML, (CHI, L=0, NUML)
+                    do j = 1, 6
+                        read (1, *) js, Nleg, (chi0, l=0, Nleg)
                     end do
                 end if
-                NLEG = max(NUML, NLEG)
+                prp_obj%Nleg = max(Nleg, prp_obj%Nleg)
             end do
 
-            if (NLEG .gt. MAXLEG) then
+            if (prp_obj%Nleg .gt. prp_obj%maxNleg) then
                 if (verbose_ .ge. 4) write (*, '(A,I4,A,I4,A)')&
                     &'Warning [_readPrp]: Truncating phase function from ',&
-                    &NLEG, ' to ', MAXLEG, ' Legendre terms.'
+                    &prp_obj%Nleg, ' to ', prp_obj%maxNleg, ' Legendre terms.'
             end if
-            NLEG = min(NLEG, MAXLEG)
+            prp_obj%Nleg = min(prp_obj%Nleg, prp_obj%maxNleg)
 
         end if
 
-        N = NPX*NPY*NPZ
-        if (N .gt. MAXPG) stop 'Error [_readPrp]: MAXPG exceeded.'
-        if (NUMPHASE*(NLEG + 1)*NSTLEG .gt. MAXPGL)&
-            &stop 'Error [_readPrp]: MAXPGL exceeded.'
+        N = prp_obj%Nx * prp_obj%Ny * prp_obj%Nz
+
+        if (N .gt. prp_obj%maxNpts) stop 'Error [_readPrp]: prp_obj%maxNpts exceeded.'
+
+        if (prp_obj%Npha*(prp_obj%Nleg+1)*prp_obj%NlegSet .gt. prp_obj%maxNptsLeg)&
+            &stop 'Error [_readPrp]: prp_obj%maxNptsLeg exceeded.'
+
         rewind (1)
         read (1, *)
-        read (1, *) NPX, NPY, NPZ
-        read (1, *) DELX, DELY, (ZLEVELS(K), K=1, NPZ)
-        read (1, *) NUMPHASE
-        MAXASYM = -1.0
-        do I = 1, NUMPHASE
-            IL = (NLEG + 1)*(I - 1)
-            if (PROPTYPE .eq. 'T') then
-                LEGENP(IL + 1) = 1.0
-                read (1, *) NUML, (LEGENP(IL + L + 1), L=1, min(NUML, NLEG)),&
-                    &(CHI, L=NLEG + 1, NUML)
-                do L = NUML + 1, NLEG
-                    LEGENP(L + IL + 1) = 0.0
+        read (1, *) prp_obj%Nx, prp_obj%Ny, prp_obj%Nz
+        read (1, *) prp_obj%dx, prp_obj%dy, (prp_obj%z(k), k=1, prp_obj%Nz)
+        read (1, *) prp_obj%Npha
+
+        prp_obj%maxAsym = -1.0
+        do i = 1, prp_obj%Npha
+
+            !il = (prp_obj%Nleg + 1)*(i - 1)
+
+            if (prp_obj%type .eq. 'T') then
+
+                !leg_Prp(il + 1) = 1.0
+                leg_Prp(1, 0, i) = 1.0
+
+                !read (1, *) Nleg, (leg_Prp(il + l + 1), l=1, min(Nleg, prp_obj%Nleg)),&
+                !    &(chi0, l=prp_obj%Nleg + 1, Nleg)
+                read (1, *) Nleg, (leg_Prp(1, l, i), l=1, min(Nleg, prp_obj%Nleg)),&
+                    &(chi0, l=prp_obj%Nleg + 1, Nleg)
+
+                do l = Nleg + 1, prp_obj%Nleg
+                    !leg_Prp(l + il + 1) = 0.0
+                    leg_Prp(1, l, i) = 0.0
                 end do
             else
-                do J = 1, 6
-                    if (J .le. NSTLEG) then
-                        read (1, *) JS, NUML,&
-                            &(LEGENP((IL + L)*NSTLEG + J), L=0, min(NUML, NLEG)),&
-                            &(CHI, L=NLEG + 1, NUML)
-                        do L = NUML + 1, NLEG
-                            LEGENP((IL + L)*NSTLEG + J) = 0.0
+                do j = 1, 6
+                    if (j .le. prp_obj%NlegSet) then
+                        !read (1, *) js, Nleg,&
+                        !    &(leg_Prp((il + l)*prp_obj%NlegSet + j), l=0, min(Nleg, prp_obj%Nleg)),&
+                        !    &(chi0, l=prp_obj%Nleg + 1, Nleg)
+                        read (1, *) js, Nleg,&
+                            &(leg_Prp(j, l, i), l=0, min(Nleg, prp_obj%Nleg)),&
+                            &(chi0, l=prp_obj%Nleg + 1, Nleg)
+                        do l = Nleg + 1, prp_obj%Nleg
+                            !leg_Prp((il + l)*prp_obj%NlegSet + j) = 0.0
+                            leg_Prp(j, l, i) = 0.0
                         end do
                     else
-                        read (1, *) JS, NUML, (CHI, L=0, NUML)
+                        read (1, *) js, Nleg, (chi0, l=0, Nleg)
                     end if
                 end do
             end if
-            MAXASYM = max(MAXASYM, LEGENP((IL + 1)*NSTLEG + 1)/3.0)
+            !prp_obj%maxAsym = max(prp_obj%maxAsym, leg_Prp((il + 1)*prp_obj%NlegSet + 1)/3.0)
+            prp_obj%maxAsym = max(prp_obj%maxAsym, leg_Prp(1, 1, i)/3.0)
         end do
 
-        read (1, '(A)') TMP_CHAR ! skip one line
+        read (1, '(A)') lineTmp ! skip one line
 
-        if (TMP_CHAR(1:1) .eq. '!') then
+        if (lineTmp(1:1) .eq. '!') then
 
-            read (1, '(A)') DATA_POSTFIX
-            read (1, '(A)') DIMS_CHAR
+            read (1, '(A)') dataPostfix
+            read (1, '(A)') lineDim
 
-            read (DIMS_CHAR( 3:12), '(I10)') NXX
-            read (DIMS_CHAR(14:23), '(I10)') NYY
-            read (DIMS_CHAR(25:34), '(I10)') NZZ
-            read (DIMS_CHAR(36:45), '(I10)') NPP
+            read (lineDim( 3:12), '(I10)') Nxx
+            read (lineDim(14:23), '(I10)') Nyy
+            read (lineDim(25:34), '(I10)') Nzz
+            read (lineDim(36:45), '(I10)') Npp
 
-            OUTFILE_DATA = trim(adjustl(PROPFILE))//trim(adjustl(DATA_POSTFIX(2:)))
+            fnameBin = trim(adjustl(prp_obj%fname))//trim(adjustl(dataPostfix(2:)))
 
-            open (UNIT=88, FILE=trim(adjustl(OUTFILE_DATA)), STATUS='OLD',&
+            open (UNIT=88, FILE=trim(adjustl(fnameBin)), STATUS='OLD',&
                 &ACCESS='STREAM', FORM='UNFORMATTED')
 
-            ! TEMPP: real(4)
-            read (88) (((   TEMPP(IZ+NPZ*(IY-1)+NPZ*NPY*(IX-1)), IZ=1,NZZ), IY=1,NYY), IX=1,NXX)
-            ! EXTINCTP: real(4)
-            read (88) (((EXTINCTP(IZ+NPZ*(IY-1)+NPZ*NPY*(IX-1)), IZ=1,NZZ), IY=1,NYY), IX=1,NXX)
-            ! ALBEDOP: real(4)
-            read (88) ((( ALBEDOP(IZ+NPZ*(IY-1)+NPZ*NPY*(IX-1)), IZ=1,NZZ), IY=1,NYY), IX=1,NXX)
-            ! IPHASEP: integer(2)
-            read (88) ((( IPHASEP(IZ+NPZ*(IY-1)+NPZ*NPY*(IX-1)), IZ=1,NZZ), IY=1,NYY), IX=1,NXX)
+            ! temp_Prp: real(4)
+            read (88) (((temp_Prp(iz+prp_obj%Nz*(iy-1)+prp_obj%Nz*prp_obj%Ny*(ix-1)), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
+            ! ext_Prp: real(4)
+            read (88) ((( ext_Prp(iz+prp_obj%Nz*(iy-1)+prp_obj%Nz*prp_obj%Ny*(ix-1)), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
+            ! ssa_Prp: real(4)
+            read (88) ((( ssa_Prp(iz+prp_obj%Nz*(iy-1)+prp_obj%Nz*prp_obj%Ny*(ix-1)), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
+            ! ipha_Prp: integer(2)
+            read (88) (((ipha_Prp(iz+prp_obj%Nz*(iy-1)+prp_obj%Nz*prp_obj%Ny*(ix-1)), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
 
             close (88)
 
@@ -912,15 +977,15 @@ subroutine shd_io__readPrp(&
             ! original
             !╭────────────────────────────────────────────────╮!
             do while (.true.)
-                read (1, *, end=290) IX, IY, IZ, TMP, EXT, ALB, IPH
-                if (IX .ge. 1 .and. IX .le. NPX .and.&
-                   &IY .ge. 1 .and. IY .le. NPY .and.&
-                   &IZ .ge. 1 .and. IZ .le. NPZ) then
-                    K = IZ + NPZ*(IY - 1) + NPZ*NPY*(IX - 1)
-                    TEMPP(K) = TMP
-                    EXTINCTP(K) = EXT
-                    ALBEDOP(K) = ALB
-                    IPHASEP(K) = IPH
+                read (1, *, end=290) ix, iy, iz, temp0, ext0, ssa0, ipha0
+                if (ix .ge. 1 .and. ix .le. prp_obj%Nx .and.&
+                   &iy .ge. 1 .and. iy .le. prp_obj%Ny .and.&
+                   &iz .ge. 1 .and. iz .le. prp_obj%Nz) then
+                    k = iz + prp_obj%Nz*(iy - 1) + prp_obj%Nz*prp_obj%Ny*(ix - 1)
+                    temp_Prp(k) = temp0
+                    ext_Prp(k)  = ext0
+                    ssa_Prp(k)  = ssa0
+                    ipha_Prp(k) = ipha0
                 end if
             end do
             !╰────────────────────────────────────────────────╯!
@@ -931,40 +996,65 @@ subroutine shd_io__readPrp(&
 
         ! Standard property file has everything variable
         !   If delta-M then find the largest number of Legendre terms
-        NUMPHASE = 0
-        if (DELTAM) then
+        prp_obj%Npha = 0
+
+        if (isDeltaM) then
             do while (.true.)
-                read (1, *, end=190) IX, IY, IZ, TMP, EXT, ALB, NUML,&
-                    &(CHI, L=1, NUML)
-                NLEG = max(NUML, NLEG)
+                read (1, *, end=190) ix, iy, iz, temp0, ext0, ssa0, Nleg,&
+                    &(chi0, l=1, Nleg)
+                prp_obj%Nleg = max(Nleg, prp_obj%Nleg)
             end do
+
 190         continue
-            NLEG = min(NLEG, MAXLEG)
+
+            prp_obj%Nleg = min(prp_obj%Nleg, prp_obj%maxNleg)
+
             rewind (1)
-            read (1, *) NPX, NPY, NPZ
-            read (1, *) DELX, DELY, (ZLEVELS(K), K=1, NPZ)
+
+            read (1, *) prp_obj%Nx, prp_obj%Ny, prp_obj%Nz
+            read (1, *) prp_obj%dx, prp_obj%dy, (prp_obj%z(k), k=1, prp_obj%Nz)
         end if
-        N = NPX*NPY*NPZ
-        if (N .gt. MAXPG) stop 'Error [_readPrp]: MAXPG exceeded.'
-        if (N*(NLEG + 1) .gt. MAXPGL)&
-            &stop 'Error [_readPrp]: MAXPGL exceeded.'
-        MAXASYM = -1.0
+
+        N = prp_obj%Nx * prp_obj%Ny * prp_obj%Nz
+
+        if (N .gt. prp_obj%maxNpts) stop 'Error [_readPrp]: prp_obj%maxNpts exceeded.'
+
+        if (N*(prp_obj%Nleg + 1) .gt. prp_obj%maxNptsLeg)&
+            &stop 'Error [_readPrp]: prp_obj%maxNptsLeg exceeded.'
+
+        prp_obj%maxAsym = -1.0
         do while (.true.)
-            read (1, *, end=290) IX, IY, IZ, TMP, EXT, ALB, NUML
-            if (IX .ge. 1 .and. IX .le. NPX .and.&
-                &IY .ge. 1 .and. IY .le. NPY .and.&
-                &IZ .ge. 1 .and. IZ .le. NPZ) then
-                K = IZ + NPZ*(IY - 1) + NPZ*NPY*(IX - 1)
-                KL = (NLEG + 1)*(K - 1)
+
+            read (1, *, end=290) ix, iy, iz, temp0, ext0, ssa0, Nleg
+
+            if  (ix .ge. 1 .and. ix .le. prp_obj%Nx .and.&
+                &iy .ge. 1 .and. iy .le. prp_obj%Ny.and.&
+                &iz .ge. 1 .and. iz .le. prp_obj%Nz) then
+
+                k = iz + prp_obj%Nz*(iy - 1) + prp_obj%Nz*prp_obj%Ny*(ix - 1)
+
+                !kl = (prp_obj%Nleg + 1)*(k - 1)
+
                 backspace (1)
-                read (1, *, end=290) IX, IY, IZ, TEMPP(K), EXTINCTP(K),&
-                    &ALBEDOP(K), NUML, (LEGENP(L + KL), L=1, min(NUML, NLEG)),&
-                    &(CHI, L=NLEG + 1, NUML)
-                MAXASYM = max(MAXASYM, LEGENP(KL + 1 + 1)/3.0)
-                LEGENP(1 + KL) = 1.0
-                do L = NUML + 1, NLEG
-                    LEGENP(L + KL) = 0.0
+
+                !read (1, *, end=290) ix, iy, iz, temp_Prp(k), ext_Prp(k),&
+                !    &ssa_Prp(k), Nleg, (leg_Prp(l + kl), l=1, min(Nleg, prp_obj%Nleg)),&
+                !    &(chi0, l=prp_obj%Nleg + 1, Nleg)
+                read (1, *, end=290) ix, iy, iz, temp_Prp(k), ext_Prp(k),&
+                    &ssa_Prp(k), Nleg, (leg_Prp(1, l, k), l=1, min(Nleg, prp_obj%Nleg)),&
+                    &(chi0, l=prp_obj%Nleg + 1, Nleg)
+
+                !prp_obj%maxAsym = max(prp_obj%maxAsym, leg_Prp(kl + 1 + 1)/3.0)
+                !leg_Prp(1 + kl) = 1.0
+
+                prp_obj%maxAsym = max(prp_obj%maxAsym, leg_Prp(1, 1, k)/3.0)
+                leg_Prp(1, 0, k) = 1.0
+
+                do l = Nleg + 1, prp_obj%Nleg
+                    !leg_Prp(l + kl) = 0.0
+                    leg_Prp(1, l, k) = 0.0
                 end do
+
             end if
         end do
 
@@ -972,14 +1062,12 @@ subroutine shd_io__readPrp(&
 
 290 continue
     close (1)
+
     return
 
 end subroutine shd_io__readPrp
 
-subroutine shd_io__checkPrp(&
-    &NPX, NPY, NPZ, NSTLEG, NLEG,&
-    &DELX, DELY, ZLEVELS,&
-    &TEMPP, EXTINCTP, ALBEDOP, LEGENP, NUMPHASE, IPHASEP)
+subroutine shd_io__checkPrp(prp_obj, temp_Prp, ext_Prp, ssa_Prp, leg_Prp, ipha_Prp)
 
     ! Checks the input medium property values for correctness.
     ! Warning if temperature below 150 K or above 350 K.
@@ -989,122 +1077,124 @@ subroutine shd_io__checkPrp(&
     ! Warning if Chi1=1, for people specifying Chi0.
     ! Warning if optical depth across a grid cell exceeds 2.
 
-    integer NPX, NPY, NPZ, NSTLEG, NLEG, NUMPHASE
-    integer*2 IPHASEP(*)
-    real DELX, DELY, ZLEVELS(*)
-    real TEMPP(*), EXTINCTP(*)
-    real ALBEDOP(*), LEGENP(NSTLEG, 0:NLEG, *)
-    integer I, IZ, N, NTHICK
-    logical LEGWARN
-    real TMIN, TMAX, TAU, MAXTAU, DZ
+    type(shd_type_prp), intent(inout) :: prp_obj
 
-    ! NPX and NPY must be 1 or greater, NPZ must be 2 or greater
-    if (NPX .lt. 1 .or. NPY .lt. 1 .or. NPZ .lt. 2) then
+    real(kind=R__), intent(in)  :: temp_Prp(prp_obj%maxNpts), &
+                                   ext_Prp(prp_obj%maxNpts), &
+                                   ssa_Prp(prp_obj%maxNpts), &
+                                   leg_Prp(prp_obj%NlegSet, &
+                                           0:prp_obj%maxNleg, *)
+    integer(kind=2), intent(in) :: ipha_Prp(prp_obj%maxNpts)
+
+    integer(kind=I__) :: i, iz, N, Nthick
+    real(kind=R__)    :: tmin, tmax, tau, maxTau, dz
+    logical :: legWarn
+
+    ! prp_obj%Nx and prp_obj%Ny must be 1 or greater, prp_obj%Nz must be 2 or greater
+    if (prp_obj%Nx .lt. 1 .or. prp_obj%Ny .lt. 1 .or. prp_obj%Nz .lt. 2) then
         write (*, *) 'Error [_checkPrp]: Bad grid size - ',&
-            &NPX, NPY, NPZ
+            &prp_obj%Nx, prp_obj%Ny, prp_obj%Nz
         stop
     end if
 
-    if (DELX .le. 0.0 .or. DELY .le. 0.0) then
+    if (prp_obj%dx .le. 0.0 .or. prp_obj%dy .le. 0.0) then
         write (*, *) 'Error [_checkPrp]: Bad grid spacing - ',&
-            &'DELX,DELY: ', DELX, DELY
+            &'prp_obj%dx,prp_obj%dy: ', prp_obj%dx, prp_obj%dy
         stop
     end if
 
     ! The vertical levels must be increasing
-    do IZ = 1, NPZ - 1
-        if (ZLEVELS(IZ + 1) .le. ZLEVELS(IZ)) then
-            write (*, *) 'Error [_checkPrp]: ZLEVELS must increase : ',&
-                &IZ, ZLEVELS(IZ), ZLEVELS(IZ + 1)
+    do iz = 1, prp_obj%Nz - 1
+        if (prp_obj%z(iz + 1) .le. prp_obj%z(iz)) then
+            write (*, *) 'Error [_checkPrp]: prp_obj%z must increase : ',&
+                &iz, prp_obj%z(iz), prp_obj%z(iz + 1)
             stop
         end if
     end do
 
     ! Loop over the property grid points, checking parameters
     !   Warn about temperatures outside of Earth atmosphere temperat
-    N = NPX*NPY*NPZ
-    TMIN = 1000.0
-    TMAX = -1000.0
-    do I = 1, N
-        TMIN = min(TMIN, TEMPP(I))
-        TMAX = max(TMAX, TEMPP(I))
+    N = prp_obj%Nx*prp_obj%Ny*prp_obj%Nz
+    tmin = 1000.0
+    tmax = -1000.0
+    do i = 1, N
+        tmin = min(tmin, temp_Prp(i))
+        tmax = max(tmax, temp_Prp(i))
     end do
 
-    if (TMIN .lt. 150.0 .or. TMAX .gt. 350.0) then
+    if (tmin .lt. 150.0 .or. tmax .gt. 350.0) then
         if (verbose_ .ge. 4) write (*, *) 'Warning [_checkPrp]: ',&
-            &'temperature min and max (Kelvin): ', TMIN, TMAX
+            &'temperature min and max (Kelvin): ', tmin, tmax
         write (*, *)
     end if
 
-    do I = 1, N
-        if (EXTINCTP(I) .lt. 0.0) then
+    do i = 1, N
+        if (ext_Prp(i) .lt. 0.0) then
             write (*, *) 'Error [_checkPrp]: Negative extinction - ',&
-                &EXTINCTP(I), ' at grid point ', I
+                &ext_Prp(i), ' at grid point ', i
             stop
         end if
-        if (ALBEDOP(I) .lt. 0.0 .or. ALBEDOP(I) .gt. 1.0) then
+        if (ssa_Prp(i) .lt. 0.0 .or. ssa_Prp(i) .gt. 1.0) then
             write (*, *) 'Error [_checkPrp]: Single scattering ',&
-                &'albedo out of range - ', ALBEDOP(I), ' at grid point ', I
+                &'albedo out of range - ', ssa_Prp(i), ' at grid point ', i
             stop
         end if
     end do
 
-    if (NUMPHASE .gt. 0) N = NUMPHASE
-    LEGWARN = .false.
-    do I = 1, N
-        if (LEGENP(1, 1, I) .lt. -3.0 .or. LEGENP(1, 1, I) .gt. 3.0) then
+    if (prp_obj%Npha .gt. 0) N = prp_obj%Npha
+    legWarn = .false.
+    do i = 1, N
+        if (leg_Prp(1, 1, i) .lt. -3.0 .or. leg_Prp(1, 1, i) .gt. 3.0) then
             write (*, *) 'Error [_checkPrp]: Asymmetry parameter ',&
-                &'out of range - ', LEGENP(1, 1, I)/3.0, ' at grid point ', I
+                &'out of range - ', leg_Prp(1, 1, i)/3.0, ' at grid point ', i
             stop
         end if
-        if (LEGENP(1, 1, I) .eq. 1.0) LEGWARN = .true.
+        if (leg_Prp(1, 1, i) .eq. 1.0) legWarn = .true.
     end do
 
-    if (LEGWARN) then
+    if (legWarn) then
         if (verbose_ .ge. 4) write (*, *) 'Warning [_checkPrp]: ',&
             &'an asymmetry parameter is 1/3 (Chi1=1); ',&
             &'  Chi0 should not be specified for Chi1.'
         write (*, *)
     end if
 
-    if (NUMPHASE .gt. 0) then
-        N = NPX*NPY*NPZ
-        do I = 1, N
-            if (IPHASEP(I) .lt. 1 .or. IPHASEP(I) .gt. NUMPHASE) then
+    if (prp_obj%Npha .gt. 0) then
+        N = prp_obj%Nx*prp_obj%Ny*prp_obj%Nz
+        do i = 1, N
+            if (ipha_Prp(i) .lt. 1 .or. ipha_Prp(i) .gt. prp_obj%Npha) then
                 write (*, *) 'Error [_checkPrp]: Phase function pointer',&
-                    &' out of range - ', IPHASEP(I), ' at grid point ', I
+                    &' out of range - ', ipha_Prp(i), ' at grid point ', i
                 stop
             end if
         end do
     end if
 
-    N = NPX*NPY*NPZ
-    NTHICK = 0
-    MAXTAU = 0.0
-    do IZ = 1, NPZ - 1
-        DZ = ZLEVELS(IZ + 1) - ZLEVELS(IZ)
-        do I = 0, N - 1, NPZ
-            TAU = 0.5*(EXTINCTP(I + IZ) + EXTINCTP(I + IZ + 1))*DZ
-            if (TAU .gt. 2.0) then
-                NTHICK = NTHICK + 1
-                MAXTAU = max(MAXTAU, TAU)
+    N = prp_obj%Nx*prp_obj%Ny*prp_obj%Nz
+    Nthick = 0
+    maxTau = 0.0
+    do iz = 1, prp_obj%Nz - 1
+        dz = prp_obj%z(iz + 1) - prp_obj%z(iz)
+        do i = 0, N - 1, prp_obj%Nz
+            tau = 0.5*(ext_Prp(i + iz) + ext_Prp(i + iz + 1))*dz
+            if (tau .gt. 2.0) then
+                Nthick = Nthick + 1
+                maxTau = max(maxTau, tau)
             end if
         end do
     end do
 
-    if (NTHICK .gt. 0) then
+    if (Nthick .gt. 0) then
         if (verbose_ .ge. 5) write (*, '(A)') 'Message [_checkPrp]:'
-        if (verbose_ .ge. 5) write (*, '(A,I0)')   '  Npoints (optical depth > 2): ', NTHICK
-        if (verbose_ .ge. 5) write (*, '(A,F0.2)') '       Max cell optical depth: ', MAXTAU
+        if (verbose_ .ge. 5) write (*, '(A,I0)')   '  Npoints (optical depth > 2): ', Nthick
+        if (verbose_ .ge. 5) write (*, '(A,F0.2)') '       Max cell optical depth: ', maxTau
     end if
 
     return
 
 end subroutine shd_io__checkPrp
 
-subroutine shd_io__readSfcSize(SFCFILE,&
-    &NXSFC, NYSFC, DELXSFC, DELYSFC,&
-    &MAXSFCPTS, MAXSFCPARS)
+subroutine shd_io__readSfcSize(sfc_obj)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Description:
@@ -1112,64 +1202,63 @@ subroutine shd_io__readSfcSize(SFCFILE,&
     !   always included).
     !
     ! Input:
-    !   SFCFILE: string, file path for the surface file (contains BRDF coefficients)
+    !   sfc_obj:
+    !     %fname: character, file path for the surface file (contains BRDF coefficients)
     !
     ! Output:
-    !   NXSFC: integer, number of grid points in X
-    !   NYSFC: integer, number of grid points in Y
-    !   DELXSFC: real, X grid resolution
-    !   DELYSFC: real, Y grid resolution
-    !   MAXSFCPTS: integer, maximum surface points (including extra one line of grids for both X and Y)
-    !   MAXSFCPARS: integer, maximum surface parameters
+    !   sfc_obj:
+    !     %Nx: integer, number of grid points in X
+    !     %Ny: integer, number of grid points in Y
+    !     %dx: real, X grid resolution
+    !     %dy: real, Y grid resolution
+    !     %maxNpts: integer, maximum surface points (including extra one line of grids for both X and Y)
+    !     %maxNpar: integer, maximum surface parameters
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    character(len=*), intent(in) :: SFCFILE
-
-    integer(kind=I__), intent(out) :: NXSFC, NYSFC
-    real(kind=R__)   , intent(out) :: DELXSFC, DELYSFC
-    integer(kind=I__), intent(out) :: MAXSFCPTS, MAXSFCPARS
-
-    character(len=2) :: SFCTYPE
+    type(shd_type_sfc), intent(inout) :: sfc_obj
 
     ! Open the file, figure out the type, and get the grid size
-    SFCTYPE(1:1) = 'V'
+    sfc_obj%type(1:1) = 'V'
 
-    open (unit=21, file=trim(adjustl(SFCFILE)), status='OLD')
-    read (21, '(A1)') SFCTYPE(2:2)
-    read (21, *) NXSFC, NYSFC, DELXSFC, DELYSFC
-    MAXSFCPTS = (NXSFC + 1)*(NYSFC + 1)
+    open (unit=21, file=trim(adjustl(sfc_obj%fname)), status='old')
+
+    read (21, '(A1)') sfc_obj%type(2:2)
+    read (21, *) sfc_obj%Nx, sfc_obj%Ny, sfc_obj%dx, sfc_obj%dy
+
+    sfc_obj%maxNpts = (sfc_obj%Nx + 1)*(sfc_obj%Ny + 1)
 
     ! 0
-    if ((SFCTYPE .eq. 'VL') .or. (SFCTYPE .eq. 'Vl')) then
+    if ((sfc_obj%type .eq. 'VL') .or. (sfc_obj%type .eq. 'Vl')) then
         ! Surface file type L is for variable Lambertian surface
-        MAXSFCPARS = 2
+        sfc_obj%maxNpar = 2
+        sfc_obj%isLambertian = .true.
     ! 1
-    else if ((SFCTYPE .eq. 'VO') .or. (SFCTYPE .eq. 'Vo')) then
+    else if ((sfc_obj%type .eq. 'VO') .or. (sfc_obj%type .eq. 'Vo')) then
         ! Surface file type O is for Ocean BRDF surface
-        MAXSFCPARS = 3
+        sfc_obj%maxNpar = 3
     ! 2
-    else if ((SFCTYPE .eq. 'VR') .or. (SFCTYPE .eq. 'Vr')) then
+    else if ((sfc_obj%type .eq. 'VR') .or. (sfc_obj%type .eq. 'Vr')) then
         ! Surface file type R is for RPV surface
-        MAXSFCPARS = 4
+        sfc_obj%maxNpar = 4
     ! 3
-    else if ((SFCTYPE .eq. 'VT') .or. (SFCTYPE .eq. 'Vt')) then
+    else if ((sfc_obj%type .eq. 'VT') .or. (sfc_obj%type .eq. 'Vt')) then
         ! Surface file type T is for LSRT surface
-        MAXSFCPARS = 4
+        sfc_obj%maxNpar = 4
     ! 4
-    else if ((SFCTYPE .eq. 'VJ') .or. (SFCTYPE .eq. 'Vj')) then
+    else if ((sfc_obj%type .eq. 'VJ') .or. (sfc_obj%type .eq. 'Vj')) then
         ! Surface file type J is for LSRT-Jiao surface
-        MAXSFCPARS = 6
+        sfc_obj%maxNpar = 6
     ! -1
-    else if ((SFCTYPE .eq. 'VW') .or. (SFCTYPE .eq. 'Vw')) then
+    else if ((sfc_obj%type .eq. 'VW') .or. (sfc_obj%type .eq. 'Vw')) then
         ! Surface file type W is for Wave-Fresnel surface
-        MAXSFCPARS = 4
+        sfc_obj%maxNpar = 4
     ! -2
-    else if ((SFCTYPE .eq. 'VD') .or. (SFCTYPE .eq. 'Vd')) then
+    else if ((sfc_obj%type .eq. 'VD') .or. (sfc_obj%type .eq. 'Vd')) then
         ! Surface file type D is for Diner polarized RPV surface:
-        MAXSFCPARS = 6
-    else if ((SFCTYPE .eq. 'VX') .or. (SFCTYPE .eq. 'Vx')) then
+        sfc_obj%maxNpar = 6
+    else if ((sfc_obj%type .eq. 'VX') .or. (sfc_obj%type .eq. 'Vx')) then
         ! Surface file type X is for Mixed-surface type:
-        MAXSFCPARS = 8
+        sfc_obj%maxNpar = 8
     else
         stop 'Error [_readSfcSize]: Unknown BRDF type.'
     end if
@@ -1180,23 +1269,20 @@ subroutine shd_io__readSfcSize(SFCFILE,&
 
 end subroutine shd_io__readSfcSize
 
-subroutine shd_io__readSfc(&
-    &SFCFILE, MAXSFCPTS, MAXSFCPARS,&
-    &SFCTYPE, NXSFC, NYSFC, DELXSFC, DELYSFC,&
-    &NSFCPAR, SFCPARMS, GNDTEMP, GNDALBEDO)
+subroutine shd_io__readSfc(sfc_obj, brdf_Sfc)
 
     ! Reads the surface properties from the file into the surface arrays.
     ! There are currently six surface types (Lambertian, Wave-Fresnel,
     ! Ocean, RPV, and Diner polarized RPV), though it is simple to add more
     ! In all cases the surface properties are specified on a regular, evenly.
-    ! spaced grid of size NXSFC by NYSFC and spacing DELXSFC by DELYSFC.
-    ! The properties are returned on a NXSFC+1 by NYSFC+1 grid that is
+    ! spaced grid of size sfc_obj%Nx by sfc_obj%Ny and spacing sfc_obj%dx by sfc_obj%dy.
+    ! The properties are returned on a sfc_obj%Nx+1 by sfc_obj%Ny+1 grid that is
     ! periodic (NX+1 same as 1, etc).  The surface properties at each
-    ! grid point are returned in SFCPARMS, and the first parameter must
+    ! grid point are returned in brdf_Sfc, and the first parameter must
     ! be temperature.  The number of parameters for each grid point
-    ! (including temperature) are returned in NSFCPAR.
+    ! (including temperature) are returned in sfc_obj%Npar.
     ! Also returned are the domain average ground albedo and temperature
-    ! (GNDALBEDO, GNDTEMP) for use with initialization (hence they can be
+    ! (sfc_obj%avgAlb, sfc_obj%avgTemp) for use with initialization (hence they can be
     ! highly approximate).
     !        Type        Parameters
     !   L  Lambertian    albedo
@@ -1209,94 +1295,116 @@ subroutine shd_io__readSfc(&
     !   D  Diner et al   a, k, b, zeta, sigma
     !   M  Mixed
 
-    integer :: MAXSFCPTS, MAXSFCPARS, NXSFC, NYSFC, NSFCPAR
-    real :: DELXSFC, DELYSFC
-    real :: SFCPARMS(*), GNDTEMP, GNDALBEDO
-    character(len=*), intent(in) :: SFCFILE
-    character(len=2) :: SFCTYPE
-    integer :: N, I, I0, IX, IY, J
-    real :: ALB, TEMP, MRE, MIM, RHO0, KR, THETA, WSPD, PCL
-    real :: PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7, PARAM8
+    type(shd_type_sfc), intent(inout) :: sfc_obj
+    real(kind=R__), intent(out) :: brdf_Sfc(sfc_obj%maxNpar, sfc_obj%maxNpts)
+
+    real :: temp_sfc, alb_sfc
+
+    integer :: N, i, i0, ix, iy, j
+    real :: alb0, temp0, MRE, MIM, RHO0, KR, THETA, WSPD, PCL
+    real :: param1, param2, param3, param4, param5, param6, param7, param8
     real F_ISO, F_VOL, F_GEO, F_JIAO
     real A, B, ZETA, SIGMA, ALPHA
 
-    character(len=charMaxLen_) :: OUTFILE_DATA
-    character(len=charMaxLen_) :: TMP_CHAR
-    character(len=charMaxLen_) :: DIMS_CHAR
-    character(len=20) :: DATA_POSTFIX
-    integer :: NXX, NYY, NPP, IDATA, NDATA
+    character(len=charMaxLen_) :: fnameBin
+    character(len=charMaxLen_) :: lineTmp
+    character(len=charMaxLen_) :: lineDim
+    character(len=20) :: dataPostfix
+    integer :: Nxx, Nyy, Npp, ipar, idata, Ndata
 
     ! Surface type is variable something
-    SFCTYPE(1:1) = 'V'
+    sfc_obj%type(1:1) = 'V'
+
     ! Open the file, figure out the type, and get the grid size
-    open (UNIT=1, FILE=trim(adjustl(SFCFILE)), STATUS='OLD')
-    read (1, '(A1)') SFCTYPE(2:2)
-    read (1, *) NXSFC, NYSFC, DELXSFC, DELYSFC
-    if ((NXSFC + 1)*(NYSFC + 1) .gt. MAXSFCPTS) then
-        write (*, *) 'Error [_readSfc]: MAXSFCPTS exceeded.', (NXSFC + 1)*(NYSFC + 1), MAXSFCPTS
+    open (unit=1, file=trim(adjustl(sfc_obj%fname)), status='old')
+
+    read (1, '(A1)') sfc_obj%type(2:2)
+    read (1, *) sfc_obj%Nx, sfc_obj%Ny, sfc_obj%dx, sfc_obj%dy
+
+    if ((sfc_obj%Nx + 1)*(sfc_obj%Ny + 1) .gt. sfc_obj%maxNpts) then
+        write (*, *) 'Error [_readSfc]: sfc_obj%maxNpts exceeded.', (sfc_obj%Nx + 1)*(sfc_obj%Ny + 1), sfc_obj%maxNpts
         stop
     end if
 
-    GNDTEMP = 0.0
-    GNDALBEDO = 0.0
+    temp_sfc = 0.0
+    alb_sfc  = 0.0
     N = 0
 
     ! Surface file type L is for variable Lambertian surface
-    if ((SFCTYPE .eq. 'VL') .or. (SFCTYPE .eq. 'Vl')) then
+    if ((sfc_obj%type .eq. 'VL') .or. (sfc_obj%type .eq. 'Vl')) then
 
-        NSFCPAR = 2
+        sfc_obj%Npar = 2
+        sfc_obj%isLambertian = .true.
 
-        if (NSFCPAR .gt. MAXSFCPARS) then
-            write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
+        if (sfc_obj%Npar .gt. sfc_obj%maxNpar) then
+            write (*, *) 'Error [_readSfc]: sfc_obj%maxNpar exceeded.'
             stop
         end if
 
-        read (1, '(A)') TMP_CHAR
-        if (TMP_CHAR(1:1) .ne. '!') then ! check if binary input,
-            backspace(1)                 ! if not, go back one line
+        read (1, '(A)') lineTmp
+        if (lineTmp(1:1) .ne. '!') then ! check if binary input,
+            backspace(1)                ! if not, go back one line
             do while (.true.)
-                read (1, *, end=290) IX, IY, TEMP, ALB
-                if (IX .ge. 1 .and. IX .le. NXSFC .and.&
-                    &IY .ge. 1 .and. IY .le. NYSFC) then
-                    I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
-                    SFCPARMS(I + 1) = TEMP
-                    SFCPARMS(I + 2) = ALB
-                    if (ALB .lt. 0.0 .or. ALB .gt. 1.0)&
+                read (1, *, end=290) ix, iy, param1, param2
+                if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
+                    &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
+
+                    !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+                    !brdf_Sfc(i + 1) = temp0
+                    !brdf_Sfc(i + 2) = alb0
+
+                    i = iy + (sfc_obj%Ny + 1)*(ix - 1)
+
+                    brdf_Sfc(1, i) = param1 ! temperature
+                    brdf_Sfc(2, i) = param2 ! albedo
+                    if (alb0 .lt. 0.0 .or. alb0 .gt. 1.0)&
                         &stop 'Error [_readSfc]: Illegal surface albedo.'
-                    if (TEMP .lt. 150. .or. TEMP .gt. 350.) then
+                    if (temp0 .lt. 150. .or. temp0 .gt. 350.) then
                         if (verbose_ .ge. 4) write (*, *) 'Warning [_readSfc]: ',&
-                            &' surface temperature: ', IX, IY, TEMP
+                            &' surface temperature: ', ix, iy, temp0
                     end if
-                    GNDTEMP = GNDTEMP + TEMP
-                    GNDALBEDO = GNDALBEDO + ALB
+
+                    temp_sfc = temp_sfc + param1
+                    alb_sfc  = alb_sfc  + param2
+
                     N = N + 1
+
                 end if
             end do
         end if
 
     ! Surface file type O is for Ocean surface BRDF
     !   Norm Loeb's modification of 6S ocean reflectance module.
-    else if ((SFCTYPE .eq. 'VO') .or. (SFCTYPE .eq. 'Vo')) then
+    else if ((sfc_obj%type .eq. 'VO') .or. (sfc_obj%type .eq. 'Vo')) then
 
-        NSFCPAR = 3
+        sfc_obj%Npar = 3
 
-        if (NSFCPAR .gt. MAXSFCPARS) then
-            write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
+        if (sfc_obj%Npar .gt. sfc_obj%maxNpar) then
+            write (*, *) 'Error [_readSfc]: sfc_obj%maxNpar exceeded.'
             stop
         end if
 
-        read (1, '(A)') TMP_CHAR
-        if (TMP_CHAR(1:1) .ne. '!') then ! check if binary input,
-            backspace(1)                 ! if not, go back one line
+        read (1, '(A)') lineTmp
+        if (lineTmp(1:1) .ne. '!') then ! check if binary input,
+            backspace(1)                ! if not, go back one line
             do while (.true.)
-                read (1, *, end=290) IX, IY, TEMP, WSPD, PCL
-                if (IX .ge. 1 .and. IX .le. NXSFC .and.&
-                    &IY .ge. 1 .and. IY .le. NYSFC) then
-                    I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
-                    SFCPARMS(I + 1) = TEMP
-                    SFCPARMS(I + 2) = WSPD
-                    SFCPARMS(I + 3) = PCL
-                    GNDTEMP = GNDTEMP + TEMP
+                read (1, *, end=290) ix, iy, param1, param2, param3
+                if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
+                    &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
+
+                    !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+                    !brdf_Sfc(i + 1) = temp0
+                    !brdf_Sfc(i + 2) = WSPD
+                    !brdf_Sfc(i + 3) = PCL
+
+                    i = iy + (sfc_obj%Ny + 1)*(ix - 1)
+
+                    brdf_Sfc(1, i) = param1 ! temperature
+                    brdf_Sfc(2, i) = param2 ! 10m wind speed, units: m/s
+                    brdf_Sfc(3, i) = param3 ! pigment concentration, units: mg/m^3
+
+                    temp_sfc = temp_sfc + param1
+
                     N = N + 1
                 end if
             end do
@@ -1307,118 +1415,164 @@ subroutine shd_io__readSfc(&
     !   Reflectance (CSAR) Model. 2. Semiempirical Surface Model
     !   Usable With NOAA Advanced Very High Resolution Radiometer
     !   Data, J. Geophys. Res., 98, 20791-20801.)
-    else if ((SFCTYPE .eq. 'VR') .or. (SFCTYPE .eq. 'Vr')) then
+    else if ((sfc_obj%type .eq. 'VR') .or. (sfc_obj%type .eq. 'Vr')) then
 
-        NSFCPAR = 4
+        sfc_obj%Npar = 4
 
-        if (NSFCPAR .gt. MAXSFCPARS) then
-            write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
+        if (sfc_obj%Npar .gt. sfc_obj%maxNpar) then
+            write (*, *) 'Error [_readSfc]: sfc_obj%maxNpar exceeded.'
             stop
         end if
 
-        read (1, '(A)') TMP_CHAR
-        if (TMP_CHAR(1:1) .ne. '!') then ! check if binary input,
-            backspace(1)                 ! if not, go back one line
+        read (1, '(A)') lineTmp
+        if (lineTmp(1:1) .ne. '!') then ! check if binary input,
+            backspace(1)                ! if not, go back one line
             do while (.true.)
-                read (1, *, end=290) IX, IY, TEMP, RHO0, KR, THETA
-                if (IX .ge. 1 .and. IX .le. NXSFC .and.&
-                    &IY .ge. 1 .and. IY .le. NYSFC) then
-                    I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
-                    SFCPARMS(I + 1) = TEMP
-                    SFCPARMS(I + 2) = RHO0
-                    SFCPARMS(I + 3) = KR
-                    SFCPARMS(I + 4) = THETA
-                    GNDTEMP = GNDTEMP + TEMP
-                    GNDALBEDO = GNDALBEDO + RHO0
+                read (1, *, end=290) ix, iy, param1, param2, param3, param4
+                if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
+                    &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
+
+                    !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+                    !brdf_Sfc(i + 1) = temp0
+                    !brdf_Sfc(i + 2) = RHO0
+                    !brdf_Sfc(i + 3) = KR
+                    !brdf_Sfc(i + 4) = THETA
+
+                    i = iy + (sfc_obj%Ny + 1)*(ix - 1)
+
+                    brdf_Sfc(1, i) = param1 ! temperature
+                    brdf_Sfc(2, i) = param2 ! rho0
+                    brdf_Sfc(3, i) = param3 ! kr
+                    brdf_Sfc(4, i) = param4 ! theta
+
+                    temp_sfc = temp_sfc + param1
+                    alb_sfc  = alb_sfc  + param2
+
                     N = N + 1
+
                 end if
             end do
         end if
 
     ! Surface file type T is for LSRT surface:
-    else if ((SFCTYPE .eq. 'VT') .or. (SFCTYPE .eq. 'Vt')) then
+    else if ((sfc_obj%type .eq. 'VT') .or. (sfc_obj%type .eq. 'Vt')) then
 
-        NSFCPAR = 4
+        sfc_obj%Npar = 4
 
-        if (NSFCPAR .gt. MAXSFCPARS) then
-            write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
+        if (sfc_obj%Npar .gt. sfc_obj%maxNpar) then
+            write (*, *) 'Error [_readSfc]: sfc_obj%maxNpar exceeded.'
             stop
         end if
 
-        read (1, '(A)') TMP_CHAR
-        if (TMP_CHAR(1:1) .ne. '!') then ! check if binary input,
-            backspace(1)                 ! if not, go back one line
+        read (1, '(A)') lineTmp
+        if (lineTmp(1:1) .ne. '!') then ! check if binary input,
+            backspace(1)                ! if not, go back one line
             do while (.true.)
-                read (1, *, end=290) IX, IY, TEMP, F_ISO, F_GEO, F_VOL
-                if (IX .ge. 1 .and. IX .le. NXSFC .and.&
-                    &IY .ge. 1 .and. IY .le. NYSFC) then
-                    I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
-                    SFCPARMS(I + 1) = TEMP
-                    SFCPARMS(I + 2) = F_ISO
-                    SFCPARMS(I + 3) = F_GEO
-                    SFCPARMS(I + 4) = F_VOL
-                    GNDTEMP = GNDTEMP + TEMP
-                    GNDALBEDO = GNDALBEDO + F_ISO
+                read (1, *, end=290) ix, iy, param1, param2, param3, param4
+                if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
+                    &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
+
+                    !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+                    !brdf_Sfc(i + 1) = temp0
+                    !brdf_Sfc(i + 2) = F_ISO
+                    !brdf_Sfc(i + 3) = F_GEO
+                    !brdf_Sfc(i + 4) = F_VOL
+
+                    i = iy + (sfc_obj%Ny + 1)*(ix - 1)
+
+                    brdf_Sfc(1, i) = param1 ! temperature
+                    brdf_Sfc(2, i) = param2 ! f_iso
+                    brdf_Sfc(3, i) = param3 ! f_geo
+                    brdf_Sfc(4, i) = param4 ! f_vol
+
+                    temp_sfc = temp_sfc + param1
+                    alb_sfc  = alb_sfc  + param2
+
                     N = N + 1
+
                 end if
             end do
         end if
 
     ! Surface file type J is for LSRT-Jiao surface:
-    else if ((SFCTYPE .eq. 'VJ') .or. (SFCTYPE .eq. 'Vj')) then
+    else if ((sfc_obj%type .eq. 'VJ') .or. (sfc_obj%type .eq. 'Vj')) then
 
-        NSFCPAR = 6
+        sfc_obj%Npar = 6
 
-        if (NSFCPAR .gt. MAXSFCPARS) then
-            write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
+        if (sfc_obj%Npar .gt. sfc_obj%maxNpar) then
+            write (*, *) 'Error [_readSfc]: sfc_obj%maxNpar exceeded.'
             stop
         end if
 
-        read (1, '(A)') TMP_CHAR
-        if (TMP_CHAR(1:1) .ne. '!') then ! check if binary input,
-            backspace(1)                 ! if not, go back one line
+        read (1, '(A)') lineTmp
+        if (lineTmp(1:1) .ne. '!') then ! check if binary input,
+            backspace(1)                ! if not, go back one line
             do while (.true.)
-                read (1, *, end=290) IX, IY, TEMP, F_ISO, F_GEO, F_VOL, F_JIAO, ALPHA
-                if (IX .ge. 1 .and. IX .le. NXSFC .and.&
-                    &IY .ge. 1 .and. IY .le. NYSFC) then
-                    I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
-                    SFCPARMS(I + 1) = TEMP
-                    SFCPARMS(I + 2) = F_ISO
-                    SFCPARMS(I + 3) = F_GEO
-                    SFCPARMS(I + 4) = F_VOL
-                    SFCPARMS(I + 5) = F_JIAO
-                    SFCPARMS(I + 6) = ALPHA
-                    GNDTEMP = GNDTEMP + TEMP
-                    GNDALBEDO = GNDALBEDO + F_ISO
+                read (1, *, end=290) ix, iy, param1, param2, param3, param4, param5, param6
+                if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
+                    &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
+
+                    !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+                    !brdf_Sfc(i + 1) = temp0
+                    !brdf_Sfc(i + 2) = F_ISO
+                    !brdf_Sfc(i + 3) = F_GEO
+                    !brdf_Sfc(i + 4) = F_VOL
+                    !brdf_Sfc(i + 5) = F_JIAO
+                    !brdf_Sfc(i + 6) = ALPHA
+
+                    i = iy + (sfc_obj%Ny + 1)*(ix - 1)
+
+                    brdf_Sfc(1, i) = param1 ! temperature
+                    brdf_Sfc(2, i) = param2 ! f_iso
+                    brdf_Sfc(3, i) = param3 ! f_geo
+                    brdf_Sfc(4, i) = param4 ! f_vol
+                    brdf_Sfc(5, i) = param5 ! f_jiao
+                    brdf_Sfc(6, i) = param6 ! alpha
+
+                    temp_sfc = temp_sfc + param1
+                    alb_sfc  = alb_sfc  + param2
+
                     N = N + 1
+
                 end if
             end do
         end if
 
     ! Surface file type W is for Wave-Fresnel surface
-    else if ((SFCTYPE .eq. 'VW') .or. (SFCTYPE .eq. 'Vw')) then
+    else if ((sfc_obj%type .eq. 'VW') .or. (sfc_obj%type .eq. 'Vw')) then
 
-        NSFCPAR = 4
+        sfc_obj%Npar = 4
 
-        if (NSFCPAR .gt. MAXSFCPARS) then
-            write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
+        if (sfc_obj%Npar .gt. sfc_obj%maxNpar) then
+            write (*, *) 'Error [_readSfc]: sfc_obj%maxNpar exceeded.'
             stop
         end if
 
-        read (1, '(A)') TMP_CHAR
-        if (TMP_CHAR(1:1) .ne. '!') then ! check if binary input,
+        read (1, '(A)') lineTmp
+        if (lineTmp(1:1) .ne. '!') then ! check if binary input,
             backspace(1)                 ! if not, go back one line
             do while (.true.)
-                read (1, *, end=290) IX, IY, TEMP, MRE, MIM, WSPD
-                if (IX .ge. 1 .and. IX .le. NXSFC .and.&
-                    &IY .ge. 1 .and. IY .le. NYSFC) then
-                    I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
-                    SFCPARMS(I + 1) = TEMP
-                    SFCPARMS(I + 2) = MRE
-                    SFCPARMS(I + 3) = MIM
-                    SFCPARMS(I + 4) = WSPD
-                    GNDTEMP = GNDTEMP + TEMP
+                read (1, *, end=290) ix, iy, param1, param2, param3, param4
+                if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
+                    &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
+
+                    !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+                    !brdf_Sfc(i + 1) = temp0
+                    !brdf_Sfc(i + 2) = MRE
+                    !brdf_Sfc(i + 3) = MIM
+                    !brdf_Sfc(i + 4) = WSPD
+
+                    i = iy + (sfc_obj%Ny + 1)*(ix - 1)
+
+                    brdf_Sfc(1, i) = param1 ! temperature
+                    brdf_Sfc(2, i) = param2 ! M_real
+                    brdf_Sfc(3, i) = param3 ! M_img
+                    brdf_Sfc(4, i) = param4 ! 10m wind speed
+
+                    temp_sfc = temp_sfc + param1
+
                     N = N + 1
+
                 end if
             end do
         end if
@@ -1429,76 +1583,99 @@ subroutine shd_io__readSfc(&
     ! Exploration of a polarized surface bidirectional reflectance model
     ! using the ground-based multiangle spectropolarimetric imager.
     ! Atmosphere 2012, 3, 591-619; doi:10.3390/atmos3040591.)
-    else if ((SFCTYPE .eq. 'VD') .or. (SFCTYPE .eq. 'Vd')) then
+    else if ((sfc_obj%type .eq. 'VD') .or. (sfc_obj%type .eq. 'Vd')) then
 
-        NSFCPAR = 6
+        sfc_obj%Npar = 6
 
-        if (NSFCPAR .gt. MAXSFCPARS) then
-            write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
+        if (sfc_obj%Npar .gt. sfc_obj%maxNpar) then
+            write (*, *) 'Error [_readSfc]: sfc_obj%maxNpar exceeded.'
             stop
         end if
 
-        read (1, '(A)') TMP_CHAR
-        if (TMP_CHAR(1:1) .ne. '!') then ! check if binary input,
+        read (1, '(A)') lineTmp
+        if (lineTmp(1:1) .ne. '!') then ! check if binary input,
             backspace(1)                 ! if not, go back one line
             do while (.true.)
-                read (1, *, end=290) IX, IY, TEMP, A, KR, B, ZETA, SIGMA
-                if (IX .ge. 1 .and. IX .le. NXSFC .and.&
-                    &IY .ge. 1 .and. IY .le. NYSFC) then
-                    I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
-                    SFCPARMS(I + 1) = TEMP
-                    SFCPARMS(I + 2) = A
-                    SFCPARMS(I + 3) = KR
-                    SFCPARMS(I + 4) = B
-                    SFCPARMS(I + 5) = ZETA
-                    SFCPARMS(I + 6) = SIGMA
-                    GNDTEMP = GNDTEMP + TEMP
-                    GNDALBEDO = GNDALBEDO + A
+                read (1, *, end=290) ix, iy, param1, param2, param3, param4, param5, param6
+                if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
+                    &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
+
+                    !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+                    !brdf_Sfc(i + 1) = temp0
+                    !brdf_Sfc(i + 2) = A
+                    !brdf_Sfc(i + 3) = KR
+                    !brdf_Sfc(i + 4) = B
+                    !brdf_Sfc(i + 5) = ZETA
+                    !brdf_Sfc(i + 6) = SIGMA
+
+                    i = iy + (sfc_obj%Ny + 1)*(ix - 1)
+                    brdf_Sfc(1, i) = param1 ! temperature
+                    brdf_Sfc(2, i) = param2 ! A
+                    brdf_Sfc(3, i) = param3 ! Kr
+                    brdf_Sfc(4, i) = param4 ! B
+                    brdf_Sfc(5, i) = param5 ! Zeta
+                    brdf_Sfc(6, i) = param6 ! Sigma
+
+                    temp_sfc = temp_sfc + param1
+                    alb_sfc  = alb_sfc  + param2
+
                     N = N + 1
+
                 end if
             end do
         end if
 
     ! Surface file type X is for Mixed-type surface:
-    else if ((SFCTYPE .eq. 'VX') .or. (SFCTYPE .eq. 'Vx')) then
+    else if ((sfc_obj%type .eq. 'VX') .or. (sfc_obj%type .eq. 'Vx')) then
 
-        NSFCPAR = 8
+        sfc_obj%Npar = 8
 
-        if (NSFCPAR .gt. MAXSFCPARS) then
-            write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.'
+        if (sfc_obj%Npar .gt. sfc_obj%maxNpar) then
+            write (*, *) 'Error [_readSfc]: sfc_obj%maxNpar exceeded.'
             stop
         end if
 
-        read (1, '(A)') TMP_CHAR
-        if (TMP_CHAR(1:1) .ne. '!') then ! check if binary input,
+        read (1, '(A)') lineTmp
+        if (lineTmp(1:1) .ne. '!') then ! check if binary input,
             backspace(1)                 ! if not, go back one line
             do while (.true.)
-                read (1, *, end=290)    IX, IY, PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7, PARAM8
-                ! for Lambertian   (VL):IX, IY, TEMP,   ALB,    -999.0, -999.0, -999.0, -999.0, -999.0,  0.0
-                ! for Ocean        (VO):IX, IY, TEMP,   WSPD,   PCL,    -999.0, -999.0, -999.0, -999.0,  1.0
-                ! for RPV          (VR):IX, IY, TEMP,   RHO0,   KR,     THETA,  -999.0, -999.0, -999.0,  2.0
-                ! for LSRT         (VT):IX, IY, TEMP,   F_ISO,  F_GEO,  F_VOL,  -999.0, -999.0, -999.0,  3.0
-                ! for LSRT-J       (VJ):IX, IY, TEMP,   F_ISO,  F_GEO,  F_VOL,  F_JIAO, ALPHA,  -999.0,  4.0
-                ! for Wave-Fresnel (VW):IX, IY, TEMP,   MRE,    MIM,    WSPD,   -999.0, -999.0, -999.0, -1.0
-                ! for Diner        (VD):IX, IY, TEMP,   A,      KR,     B,      ZETA,   SIGMA,  -999.0, -2.0
+                read (1, *, end=290)    ix, iy, param1, param2, param3, param4, param5, param6, param7, param8
+                ! for Lambertian   (VL):ix, iy, temp0,   alb0,    -999.0, -999.0, -999.0, -999.0, -999.0,  0.0
+                ! for Ocean        (VO):ix, iy, temp0,   WSPD,   PCL,    -999.0, -999.0, -999.0, -999.0,  1.0
+                ! for RPV          (VR):ix, iy, temp0,   RHO0,   KR,     THETA,  -999.0, -999.0, -999.0,  2.0
+                ! for LSRT         (VT):ix, iy, temp0,   F_ISO,  F_GEO,  F_VOL,  -999.0, -999.0, -999.0,  3.0
+                ! for LSRT-J       (VJ):ix, iy, temp0,   F_ISO,  F_GEO,  F_VOL,  F_JIAO, ALPHA,  -999.0,  4.0
+                ! for Wave-Fresnel (VW):ix, iy, temp0,   MRE,    MIM,    WSPD,   -999.0, -999.0, -999.0, -1.0
+                ! for Diner        (VD):ix, iy, temp0,   A,      KR,     B,      ZETA,   SIGMA,  -999.0, -2.0
 
-                if (IX .ge. 1 .and. IX .le. NXSFC .and.&
-                    &IY .ge. 1 .and. IY .le. NYSFC) then
-                    I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
-                    SFCPARMS(I + 1) = PARAM1
-                    SFCPARMS(I + 2) = PARAM2
-                    SFCPARMS(I + 3) = PARAM3
-                    SFCPARMS(I + 4) = PARAM4
-                    SFCPARMS(I + 5) = PARAM5
-                    SFCPARMS(I + 6) = PARAM6
-                    SFCPARMS(I + 7) = PARAM7
-                    SFCPARMS(I + 8) = PARAM8 ! surface identification
+                if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
+                    &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
 
-                    GNDTEMP = GNDTEMP + PARAM1
+                    !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+                    !brdf_Sfc(i + 1) = param1
+                    !brdf_Sfc(i + 2) = param2
+                    !brdf_Sfc(i + 3) = param3
+                    !brdf_Sfc(i + 4) = param4
+                    !brdf_Sfc(i + 5) = param5
+                    !brdf_Sfc(i + 6) = param6
+                    !brdf_Sfc(i + 7) = param7
+                    !brdf_Sfc(i + 8) = param8 ! surface identification
 
-                    ! no albedo for polarized (W) and unpolarized (O) Ocean parameterization
-                    if ((abs(PARAM8)-1.0) .gt. 0.01) then
-                        GNDALBEDO = GNDALBEDO + PARAM2
+                    i = iy + (sfc_obj%Ny + 1)*(ix - 1)
+                    brdf_Sfc(1, i) = param1
+                    brdf_Sfc(2, i) = param2
+                    brdf_Sfc(3, i) = param3
+                    brdf_Sfc(4, i) = param4
+                    brdf_Sfc(5, i) = param5
+                    brdf_Sfc(6, i) = param6
+                    brdf_Sfc(7, i) = param7
+                    brdf_Sfc(8, i) = param8 ! surface identification
+
+                    temp_sfc = temp_sfc + param1
+
+                    ! no albedo for polarized (W [-1]) and unpolarized (O [1]) Ocean parameterization
+                    if ((abs(param8)-1.0) .gt. 0.01) then
+                        alb_sfc = alb_sfc + param2
                     end if
 
                     N = N + 1
@@ -1509,49 +1686,51 @@ subroutine shd_io__readSfc(&
     else
 
         close (1)
-        stop 'Error [_readSfc]: Unknown BRDF type <'//trim(adjustl(SFCTYPE))//'>.'
+        stop 'Error [_readSfc]: Unknown BRDF type <'//trim(adjustl(sfc_obj%type))//'>.'
 
     end if
 
     ! read binary
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    if (NSFCPAR .gt. MAXSFCPARS) then
-        write (*, *) 'Error [_readSfc]: MAXSFCPARS exceeded.', NSFCPAR, MAXSFCPARS
+    if (sfc_obj%Npar .gt. sfc_obj%maxNpar) then
+        write (*, *) 'Error [_readSfc]: sfc_obj%maxNpar exceeded.', sfc_obj%Npar, sfc_obj%maxNpar
         stop
     end if
 
-    read (1, '(A)') DATA_POSTFIX
-    read (1, '(A)') DIMS_CHAR
+    read (1, '(A)') dataPostfix
+    read (1, '(A)') lineDim
 
-    read (DIMS_CHAR( 3:12), '(I10)') NXX
-    read (DIMS_CHAR(14:23), '(I10)') NYY
-    read (DIMS_CHAR(25:34), '(I10)') NPP
+    read (lineDim( 3:12), '(I10)') Nxx
+    read (lineDim(14:23), '(I10)') Nyy
+    read (lineDim(25:34), '(I10)') Npp
 
-    OUTFILE_DATA = trim(adjustl(SFCFILE))//trim(adjustl(DATA_POSTFIX(2:)))
-    open (UNIT=88, FILE=trim(adjustl(OUTFILE_DATA)), STATUS='OLD',&
+    fnameBin = trim(adjustl(sfc_obj%fname))//trim(adjustl(dataPostfix(2:)))
+    open (UNIT=88, FILE=trim(adjustl(fnameBin)), STATUS='OLD',&
         &ACCESS='STREAM', FORM='UNFORMATTED')
-    NDATA = NXX*NYY*NPP
-    read (88) (SFCPARMS(IDATA), IDATA=1, NDATA)
+    Ndata = Nxx*Nyy
+    read (88) ((brdf_Sfc(ipar, idata), ipar=1, Npp), idata=1, Ndata)
     close (88)
 
-    do IY = 1, NYSFC + 1
-        do IX = 1, NXSFC + 1
+    do iy = 1, sfc_obj%Ny + 1
+        do ix = 1, sfc_obj%Nx + 1
 
-            if (IX .ge. 1 .and. IX .le. NXSFC .and.&
-                &IY .ge. 1 .and. IY .le. NYSFC) then
+            if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
+                &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
 
-                I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(IY - 1))
+                !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
 
-                GNDTEMP = GNDTEMP + SFCPARMS(I + 1)
+                i = iy + (sfc_obj%Ny + 1)*(ix - 1)
 
-                if (((SFCTYPE .ne. 'VO') .and. (SFCTYPE .ne. 'Vo')) .and.&
-                    &((SFCTYPE .ne. 'VW') .and. (SFCTYPE .ne. 'Vw'))) then
-                    if ((SFCTYPE .eq. 'VX') .or. (SFCTYPE .eq. 'Vx')) then
-                        if ((abs(SFCPARMS(I+8))-1.0) .gt. 0.01) then ! exclude [O] and [W]
-                            GNDALBEDO = GNDALBEDO + SFCPARMS(I + 2)
+                temp_sfc = temp_sfc + brdf_Sfc(1, i)
+
+                if  (((sfc_obj%type .ne. 'VO') .and. (sfc_obj%type .ne. 'Vo')) .and.&
+                    &((sfc_obj%type .ne. 'VW') .and. (sfc_obj%type .ne. 'Vw'))) then
+                    if ((sfc_obj%type .eq. 'VX') .or. (sfc_obj%type .eq. 'Vx')) then
+                        if ((abs(brdf_Sfc(8, i))-1.0) .gt. 0.01) then ! exclude [O] and [W]
+                            alb_sfc = alb_sfc + brdf_Sfc(2, i)
                         end if
                     else
-                        GNDALBEDO = GNDALBEDO + SFCPARMS(I + 2)
+                        alb_sfc = alb_sfc + brdf_Sfc(2, i)
                     end if
                 end if
 
@@ -1568,155 +1747,168 @@ subroutine shd_io__readSfc(&
     close (1)
 
     ! Copy the edge points to the opposite side for periodic boundar
-    do IX = 1, NXSFC
-        I0 = NSFCPAR*(IX - 1 + (NXSFC + 1)*(1 - 1))
-        I = NSFCPAR*(IX - 1 + (NXSFC + 1)*(NYSFC + 1 - 1))
-        do J = 1, NSFCPAR
-            SFCPARMS(I + J) = SFCPARMS(I0 + J)
+    ! for x, copy bottom line to top line
+    do ix = 1, sfc_obj%Nx
+        !i0 = sfc_obj%Npar * (ix - 1 + (sfc_obj%Nx + 1)*(1 - 1))
+        !i  = sfc_obj%Npar * (ix - 1 + (sfc_obj%Nx + 1)*(sfc_obj%Ny + 1 - 1))
+        i0 = ix
+        i  = ix + (sfc_obj%Nx + 1)*(sfc_obj%Ny)
+        do j = 1, sfc_obj%Npar
+            brdf_Sfc(j, i) = brdf_Sfc(j, i0)
         end do
     end do
 
-    do IY = 1, NYSFC + 1
-        I0 = NSFCPAR*((NXSFC + 1)*(IY - 1))
-        I = NSFCPAR*(NXSFC + (NXSFC + 1)*(IY - 1))
-        do J = 1, NSFCPAR
-            SFCPARMS(I + J) = SFCPARMS(I0 + J)
+    ! for y, copy left line to right line
+    do iy = 1, sfc_obj%Ny + 1
+        !i0 = sfc_obj%Npar * ((sfc_obj%Nx + 1)*(iy - 1))
+        !i  = sfc_obj%Npar * (sfc_obj%Nx + (sfc_obj%Nx + 1)*(iy - 1))
+        i0 = 1 + (sfc_obj%Nx + 1)*(iy - 1)
+        i  = 1 + sfc_obj%Nx + (sfc_obj%Nx + 1)*(iy - 1)
+        do j = 1, sfc_obj%Npar
+            brdf_Sfc(j, i) = brdf_Sfc(j, i0)
         end do
     end do
 
-    GNDTEMP   = GNDTEMP/N
-    GNDALBEDO = GNDALBEDO/N
+    sfc_obj%avgTemp = temp_sfc/N
+    sfc_obj%avgAlb  = alb_sfc/N
     return
 
 end subroutine shd_io__readSfc
 
-subroutine shd_io__readCkdSize(CKDFILE, WAVENO, NG, NZCKD)
+subroutine shd_io__readCkdSize(waveNum, ckd_obj)
 
     ! Find the size of the k-distribution arrays for this wavenumber band
 
-    integer NG, NZCKD
-    real WAVENO(2)
-    character(len=*), intent(in) :: CKDFILE
-    integer NB, IB, JB, KB, N
-    real WAVENUM1, WAVENUM2
+    real(kind=R__), intent(in) :: waveNum(2)
+    type(shd_type_ckd), intent(inout) :: ckd_obj
 
-    open (UNIT=1, FILE=trim(adjustl(CKDFILE)), STATUS='OLD')
+    integer(kind=I__) :: Nband, iband, ibandCheck, ibandSelect
+
+    open (unit=1, file=trim(adjustl(ckd_obj%fname)), status='old')
     read (1, *)
-    read (1, *) NB
+    read (1, *) Nband
     read (1, *)
 
     ! Read band information until the right one is found
-    JB = 0
-    do IB = 1, NB
-        read (1, *) KB, WAVENUM1, WAVENUM2, N
-        if (abs(WAVENUM1 - WAVENO(1)) .lt. 1.0 .and.&
-            &abs(WAVENUM2 - WAVENO(2)) .lt. 1.0) then
+    ibandSelect = 0
+    do iband = 1, Nband
+        read (1, *) ibandCheck, ckd_obj%waveNum(1), ckd_obj%waveNum(2), ckd_obj%Ng
+        if  (abs(ckd_obj%waveNum(1) - waveNum(1)) .lt. 1.0 .and.&
+            &abs(ckd_obj%waveNum(2) - waveNum(2)) .lt. 1.0) then
             backspace (1)
-            NG = N
-            read (1, *) JB, WAVENUM1, WAVENUM2, N
+            read (1, *) ibandSelect, ckd_obj%waveNum(1), ckd_obj%waveNum(2), ckd_obj%Ng
         end if
     end do
 
-    if (JB .eq. 0) then
+    if (ibandSelect .eq. 0) then
         write (*, *) 'Error [_readCkdSize]: Wavenumber range not found in CKD file : ',&
-            &WAVENO(1), WAVENO(2), CKDFILE
+            &waveNum(1), waveNum(2), ckd_obj%fname
         stop
     end if
 
-    read (1, *) NZCKD
+    read (1, *) ckd_obj%Nz
     close (1)
+
     return
 
 end subroutine shd_io__readCkdSize
 
-subroutine shd_io__readCkd(&
-    &MAXNG, MAXNZ, CKDFILE, WAVENO, SOLFLUX,&
-    &NG, DELG, NZCKD, ZCKD, KABS)
+subroutine shd_io__readCkd(waveNum, &
+    ckd_obj, solar_Ckd, wgt_Ckd, kabs_Ckd)
 
     ! Reads the information appropriate for one band from a
     ! correlated k-distribution file.   The wavenumber range (cm^-1)
-    ! in the file must match the desired in WAVENO.  The solar flux
-    ! is returned in SOLFLUX, the number of "g"'s in NG, the weights
-    ! or delta g's in DELG, the number of levels in NZCKD, the
-    ! levels from the top down in ZCKD, and the absorption coefficients
-    ! for each g and level in KABS.  The array sizes MAXNG and MAXNZ
-    ! are checked.
+    ! in the file must match the desired in waveNum.  The solar flux
+    ! is returned in solar_Ckd, the number of "g"'s in ckd_obj%Ng, the weights
+    ! or delta g's in wgt_Ckd, the number of levels in ckd_obj%Nz, the
+    ! levels from the top down in ckd_obj%z, and the absorption coefficients
+    ! for each g and level in kabs_Ckd.
+    ! The array sizes ckd_obj%maxNg and ckd_obj%maxNz are checked.
 
-    integer MAXNG, MAXNZ, NG, NZCKD
-    real WAVENO(2), SOLFLUX(*), DELG(*), ZCKD(*), KABS(*)
-    character(len=*), intent(in) :: CKDFILE
-    integer NB, IB, JB, KB, IG, I, J, N
-    real WAVENUM1, WAVENUM2, SF
+    real(kind=R__), intent(inout) :: waveNum(2)
+    type(shd_type_ckd), intent(inout) :: ckd_obj
+    real(kind=R__), intent(inout) :: solar_Ckd(ckd_obj%Ng), &
+                                       wgt_Ckd(ckd_obj%Ng), &
+                                      kabs_Ckd(ckd_obj%Nz, ckd_obj%Ng)
 
-    open (UNIT=1, FILE=trim(adjustl(CKDFILE)), STATUS='OLD')
+    integer(kind=I__) :: Nband, iband, ibandCheck, ibandSelect
+    integer(kind=I__) :: ig, iz, itmp
+
+    open (unit=1, file=trim(adjustl(ckd_obj%fname)), status='old')
+
     read (1, *)
-    read (1, *) NB
+    read (1, *) Nband
     read (1, *)
+
     ! Read band information until the right one is found
-    JB = 0
-    do IB = 1, NB
-        read (1, *) KB, WAVENUM1, WAVENUM2, N
-        if (abs(WAVENUM1 - WAVENO(1)) .lt. 1.0 .and.&
-            &abs(WAVENUM2 - WAVENO(2)) .lt. 1.0) then
+    ibandSelect = 0
+    do iband = 1, Nband
+        read (1, *) ibandCheck, ckd_obj%waveNum(1), ckd_obj%waveNum(2), ckd_obj%Ng
+        if  (abs(ckd_obj%waveNum(1) - waveNum(1)) .lt. 1.0 .and.&
+            &abs(ckd_obj%waveNum(2) - waveNum(2)) .lt. 1.0) then
             backspace (1)
-            NG = N
-            if (NG .gt. MAXNG) stop 'Error [_readCkd]: MAXNG exceeded.'
-            read (1, *) JB, WAVENO(1), WAVENO(2),&
-                &N, (SOLFLUX(IG), IG=1, NG), (DELG(IG), IG=1, NG)
+            if (ckd_obj%Ng .gt. ckd_obj%maxNg) stop 'Error [_readCkd]: ckd_obj%maxNg exceeded.'
+            read (1, *) ibandSelect, waveNum(1), waveNum(2),&
+                &ckd_obj%Ng, (solar_Ckd(ig), ig=1, ckd_obj%Ng), (wgt_Ckd(ig), ig=1, ckd_obj%Ng)
         end if
     end do
-    if (JB .eq. 0) then
+
+    if (ibandSelect .eq. 0) then
         write (*, *) 'Error [_readCkd]: Wavenumber range not found in CKD file : ',&
-            &WAVENO(1), WAVENO(2), CKDFILE
+            &waveNum(1), waveNum(2), ckd_obj%fname
         stop
     end if
+
     ! Read the Z level heights
-    read (1, *) NZCKD
-    if (NZCKD .gt. MAXNZ) stop 'Error [_readCkd]: MAXNZ exceeded.'
+    read (1, *) ckd_obj%Nz
+    if (ckd_obj%Nz .gt. ckd_obj%maxNz) stop 'Error [_readCkd]: ckd_obj%maxNz exceeded.'
+
     read (1, *)
     read (1, *)
-    do I = 1, NZCKD
-        read (1, *) ZCKD(I)
+    do iz = 1, ckd_obj%maxNz
+        read (1, *) ckd_obj%z(iz)
     end do
+
     ! Skip over the irrelevant bands and read the absorption coeffic
     read (1, *)
-    do I = 1, (JB - 1)*NZCKD
+    do itmp = 1, (ibandSelect - 1)*ckd_obj%maxNz
         read (1, *)
     end do
-    do I = 1, NZCKD
-        read (1, *) IB, J, (KABS(I + (IG - 1)*NZCKD), IG=1, NG)
-        do IG = 1, NG
-            if (KABS(I + (IG - 1)*NZCKD) .lt. 0.0) then
+
+    do iz = 1, ckd_obj%maxNz
+        read (1, *) iband, itmp, (kabs_Ckd(iz, ig), ig=1, ckd_obj%Ng)
+        do ig = 1, ckd_obj%Ng
+            if (kabs_Ckd(iz, ig) .lt. 0.0) then
                 write (*, '(1X,A,A,I3,A,I3,A,I2)')&
                     &'Negative absorption in CKD file.  ',&
-                    &'Band: ', IB, '   Level: ', I, '   k: ', IG
+                    &'Band: ', iband, '   Level: ', iz, '   k: ', ig
             end if
         end do
     end do
     close (1)
+
     return
+
 end subroutine shd_io__readCkd
 
-subroutine shd_io__readSenSize(&
-    &SENFILE, NSENDATA, NSENPAR)
+subroutine shd_io__readSenSize(sen_obj)
 
     ! Reads the user-specified sensor data size information
 
-    character(len=*), intent(in) :: SENFILE
-    integer, intent(out) :: NSENDATA, NSENPAR
+    type(shd_type_sen), intent(inout) :: sen_obj
 
-    character(len=charMaxLen_) :: TMP_CHAR
-    character(len=charMaxLen_) :: DIMS_CHAR
+    character(len=charMaxLen_) :: lineTmp
+    character(len=charMaxLen_) :: lineDim
 
     ! Open the file, figure out the type, and get the grid size
-    open (UNIT=1, FILE=trim(adjustl(SENFILE)), STATUS='OLD')
-    read (1, '(A)') TMP_CHAR ! skip one line
-    read (1, '(A)') TMP_CHAR ! skip one line
-    read (1, '(A)') TMP_CHAR ! skip one line
-    read (1, '(A)') DIMS_CHAR
+    open (unit=1, file=trim(adjustl(sen_obj%fname)), status='old')
+    read (1, '(A)') lineTmp ! skip one line
+    read (1, '(A)') lineTmp ! skip one line
+    read (1, '(A)') lineTmp ! skip one line
+    read (1, '(A)') lineDim
 
-    read (DIMS_CHAR( 3:12), '(I10)') NSENPAR
-    read (DIMS_CHAR(14:23), '(I10)') NSENDATA
+    read (lineDim( 3:12), '(I10)') sen_obj%Npar
+    read (lineDim(14:23), '(I10)') sen_obj%Npts
 
     close (1)
 
@@ -1724,37 +1916,36 @@ subroutine shd_io__readSenSize(&
 
 end subroutine shd_io__readSenSize
 
-subroutine shd_io__readSen(&
-    &SENFILE, NSENDATA, NSENPAR,&
-    &SENPARMS)
+subroutine shd_io__readSen(sen_obj, view_Sen)
 
     ! Reads the user-specified sensor information
 
-    character(len=*), intent(in) :: SENFILE
-    real, intent(inout) :: SENPARMS(*)
-    integer :: NSENDATA, NSENPAR, ISENDATA
+    type(shd_type_sen), intent(inout) :: sen_obj
+    real(kind=R__),     intent(out)   :: view_Sen(sen_obj%Npar, sen_obj%Npts)
 
-    character(len=charMaxLen_) :: OUTFILE_DATA
-    character(len=charMaxLen_) :: TMP_CHAR
-    character(len=charMaxLen_) :: DIMS_CHAR
-    character(len=20) :: DATA_POSTFIX
+    integer :: ipar, ipts
+
+    character(len=charMaxLen_) :: fnameBin
+    character(len=charMaxLen_) :: lineTmp
+    character(len=charMaxLen_) :: lineDim
+    character(len=20) :: dataPostfix
 
     ! Open the file, figure out the type, and get the grid size
-    open (UNIT=1, FILE=trim(adjustl(SENFILE)), STATUS='OLD')
-    read (1, '(A)') TMP_CHAR ! skip one line
-    read (1, '(A)') TMP_CHAR ! skip one line
-    read (1, '(A)') DATA_POSTFIX
-    read (1, '(A)') DIMS_CHAR
+    open (unit=1, file=trim(adjustl(sen_obj%fname)), status='old')
+    read (1, '(A)') lineTmp ! skip one line
+    read (1, '(A)') lineTmp ! skip one line
+    read (1, '(A)') dataPostfix
+    read (1, '(A)') lineDim
 
-    read (DIMS_CHAR( 3:12), '(I10)') NSENPAR
-    read (DIMS_CHAR(14:23), '(I10)') NSENDATA
+    read (lineDim( 3:12), '(I10)') sen_obj%Npar
+    read (lineDim(14:23), '(I10)') sen_obj%Npts
 
-    OUTFILE_DATA = trim(adjustl(SENFILE))//trim(adjustl(DATA_POSTFIX(2:)))
+    fnameBin = trim(adjustl(sen_obj%fname))//trim(adjustl(dataPostfix(2:)))
 
-    open (UNIT=88, FILE=trim(adjustl(OUTFILE_DATA)), STATUS='OLD',&
-        &ACCESS='STREAM', FORM='UNFORMATTED')
+    open (unit=88, file=trim(adjustl(fnameBin)), status='old',&
+        &access='stream', form='unformatted')
 
-    read (88) (SENPARMS(ISENDATA), ISENDATA=1,NSENDATA*NSENPAR)
+    read (88) ((view_Sen(ipar, ipts), ipar=1, sen_obj%Npar), ipts=1, sen_obj%Npts)
 
     close (88)
 
@@ -1765,10 +1956,12 @@ subroutine shd_io__readSen(&
 end subroutine shd_io__readSen
 
 subroutine shd_io__restoreState(&
-    &INSAVEFILE, NSTOKES, NX, NY, NZ,&
-    &ML, MM, NLM, INRADFLAG, NEWGRIDFLAG, XGRID, YGRID, ZGRID,&
-    &NPTS, NCELLS, GRIDPOS, GRIDPTR, NEIGHPTR, TREEPTR,&
-    &CELLFLAGS, FLUXES, SHPTR, SOURCE, RSHPTR, RADIANCE)
+    INSAVEFILE, &
+    INRADFLAG, NEWGRIDFLAG, &
+    FLUXES, &
+    rtm_obj, xyz_Rtm, &
+    cell_obj, i8Grid_Cell, i6Cell_Cell, i2Tree_Cell, flag_Cell, &
+    shdo_obj, iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo)
 
     ! Reads the binary save file containing a previous state of
     ! the SHDOM solution. This includes the cell tree structure,
@@ -1776,22 +1969,32 @@ subroutine shd_io__restoreState(&
     ! the low order terms of the radiance expansion, and the flux array.
     ! If the file name is 'NONE' then the INRADFLAG is set to false,
     ! otherwise it is true.  The input file may have any spherical
-    ! harmonic truncation smaller than the current (ML,MM,NLM).
+    ! harmonic truncation smaller than the current (shdo_obj%maxNl,shdo_obj%maxNm,shdo_obj%Nlm).
     ! The flag NEWGRIDFLAG is set to false if reading succeeds.
 
-    character(*), intent(in) :: INSAVEFILE
-    integer(kind=I__), intent(in) :: NSTOKES, NX, NY, NZ, ML, MM, NLM
+    type(shd_type_rtm),  intent(inout) :: rtm_obj
+    type(shd_type_cell), intent(inout) :: cell_obj
+    type(shd_type_shdo), intent(inout) :: shdo_obj
 
-    integer(kind=I__), intent(out) :: NPTS, NCELLS
-    integer(kind=I__), intent(out) :: SHPTR(*), RSHPTR(*)
-    integer(kind=I__), intent(out) :: GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
-    integer(kind=2), intent(out) :: CELLFLAGS(*)
+    real(kind=R__),    intent(out) :: xyz_Rtm(3, *)
+    integer(kind=I__), intent(out) :: i8Grid_Cell(8, *)
+    integer(kind=I__), intent(out) :: i6Cell_Cell(6, *)
+    integer(kind=I__), intent(out) :: i2Tree_Cell(2, *)
+    integer(kind=2),   intent(out) ::   flag_Cell(*)
+
+    integer(kind=I__), intent(out) :: iradI_Shdo(*)
+    real(kind=R__),    intent(out) ::  radI_Shdo(shdo_obj%Nstokes, *)
+    integer(kind=I__), intent(out) :: isrcJ_Shdo(*)
+    real(kind=R__),    intent(out) ::  srcJ_Shdo(shdo_obj%Nstokes, *)
+
+
+    character(*), intent(in) :: INSAVEFILE
+
     logical, intent(out) :: INRADFLAG, NEWGRIDFLAG
-    real(kind=R__), intent(out) :: XGRID(NX+1), YGRID(NY+1), ZGRID(NZ)
-    real(kind=R__), intent(out) :: GRIDPOS(3, *), FLUXES(2, *), SOURCE(*), RADIANCE(*)
+    real(kind=R__), intent(out) :: FLUXES(2, *)
 
     integer :: NSTI, NXI, NYI, NZI, MLI, MMI, NLMI
-    integer :: I, J, NS, NR
+    integer :: i, j, NS, NR
 
     INRADFLAG = .false.
     NEWGRIDFLAG = .true.
@@ -1800,41 +2003,44 @@ subroutine shd_io__restoreState(&
     open (UNIT=3, FILE=trim(adjustl(INSAVEFILE)), STATUS='OLD',&
         &FORM='UNFORMATTED', ERR=900)
 
-    read (3) NSTI, NXI, NYI, NZI, MLI, MMI, NLMI, NPTS, NCELLS
+    read (3) NSTI, NXI, NYI, NZI, MLI, MMI, NLMI, rtm_obj%Npts, cell_obj%Npts
 
-    if (NXI .ne. NX .or. NYI .ne. NY .or. NZI .ne. NZ) then
+    if ((NXI .ne. rtm_obj%Nx0) .or. (NYI .ne. rtm_obj%Ny0) .or. (NZI .ne. rtm_obj%Nz)) then
         if (verbose_ .ge. 4) write (6, '(A, 3I6)') 'Warning [_restoreState]: wrong grid size:', NXI, NYI, NZI
         close (3)
         return
     end if
 
-    if (NSTI .ne. NSTOKES .or.&
-        &MLI .gt. ML .or. MMI .gt. MM) then
+    if ((NSTI .ne. shdo_obj%Nstokes) .or. &
+        (MLI .gt. shdo_obj%maxNl) .or. &
+        (MMI .gt. shdo_obj%maxNm)) then
         if (verbose_ .ge. 4) write (6, '(A, 3I6)') 'Warning [_restoreState]: incompatible SH:', NSTI, MLI, MMI
         close (3)
         return
     end if
 
-    read (3) (XGRID(I), I=1, NX+1)
-    read (3) (YGRID(I), I=1, NY+1)
-    read (3) (ZGRID(I), I=1, NZ)
-    read (3) ((GRIDPTR(J, I), J=1, 8), I=1, NCELLS)
-    read (3) ((NEIGHPTR(J, I), J=1, 6), I=1, NCELLS)
-    read (3) ((TREEPTR(J, I), J=1, 2), I=1, NCELLS)
-    read (3) (CELLFLAGS(I), I=1, NCELLS)
+    read (3) (rtm_obj%x(i), i=1, rtm_obj%Nx0+1)
+    read (3) (rtm_obj%y(i), i=1, rtm_obj%Ny0+1)
+    read (3) (rtm_obj%z(i), i=1, rtm_obj%Nz)
+    read (3) ((i8Grid_Cell(j, i), j=1, 8), i=1, cell_obj%Npts)
+    read (3) ((i6Cell_Cell(j, i), j=1, 6), i=1, cell_obj%Npts)
+    read (3) ((i2Tree_Cell(j, i), j=1, 2), i=1, cell_obj%Npts)
+    read (3) (flag_Cell(i), i=1, cell_obj%Npts)
 
-    read (3) ((GRIDPOS(J, I), J=1, 3), I=1, NPTS)
-    read (3) ((FLUXES(J, I), J=1, 2), I=1, NPTS)
+    read (3) ((xyz_Rtm(j, i), j=1, 3), i=1, rtm_obj%Npts)
+    read (3) ((FLUXES(j, i), j=1, 2), i=1, rtm_obj%Npts)
 
-    read (3) (SHPTR(I), I=1, NPTS + 1)
-    NS = SHPTR(NPTS + 1)
-    read (3) (SOURCE(I), I=1, NSTOKES*NS)
+    read (3) (isrcJ_Shdo(i), i=1, rtm_obj%Npts + 1)
 
-    NR = 4*NPTS
-    read (3) (RADIANCE(I), I=1, NSTOKES*NR)
-    RSHPTR(1) = 0
-    do I = 1, NPTS
-        RSHPTR(I+1) = RSHPTR(I) + NSTOKES*4
+    NS = isrcJ_Shdo(rtm_obj%Npts + 1)
+    read (3) ((srcJ_Shdo(j, i), j=1, shdo_obj%Nstokes), i=1, NS)
+
+    NR = 4*rtm_obj%Npts
+    read (3) ((radI_Shdo(j, i), j=1, shdo_obj%Nstokes), i=1, NR)
+
+    iradI_Shdo(1) = 0
+    do i = 1, rtm_obj%Npts
+        iradI_Shdo(i+1) = iradI_Shdo(i) + shdo_obj%Nstokes*4
     end do
 
     close (3)

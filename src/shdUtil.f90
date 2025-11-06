@@ -46,6 +46,9 @@ module shd_util
     use globals_cfg,   only: isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
                              is1DX_, is1DYx_
 
+    use globals_obj,   only: rtm_obj_, xyz_Rtm_, &
+                            cell_obj_, i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, flag_Cell_
+
     implicit none
     private
 
@@ -106,10 +109,9 @@ subroutine shd_util__sumData(IFLAG, WT, N, data, SUMDATA)
 
 end subroutine shd_util__sumData
 
-subroutine shd_util__interpData(OLDNPTS, NPTS,&
+subroutine shd_util__interpData(OLDNPTS,&
     &FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
-    &FLUXES, DIRFLUX, FLUXDIV, SHTERMS,&
-    &NBCELLS, NCELLS, TREEPTR, GRIDPTR, GRIDPOS)
+    &FLUXES, DIRFLUX, FLUXDIV, SHTERMS)
 
     !   Interpolates the output data to the new grid points (those >OLDNPTS)
     ! from the old grid points.  The output data is in FLUXES, DIRFLUX,
@@ -117,12 +119,10 @@ subroutine shd_util__interpData(OLDNPTS, NPTS,&
     ! Each new point is located in a cell, and the two parent grid points
     ! are found to interpolate the data from.
 
-    integer OLDNPTS, NPTS, NBCELLS, NCELLS
-    integer GRIDPTR(8, NCELLS), TREEPTR(2, NCELLS)
+    integer OLDNPTS
     logical FLUX_OUT, FLUXDIV_OUT, SH_OUT
-    real FLUXES(2, NPTS), DIRFLUX(NPTS), FLUXDIV(NPTS)
-    real SHTERMS(5, NPTS)
-    real GRIDPOS(3, *)
+    real FLUXES(2, rtm_obj_%Npts), DIRFLUX(rtm_obj_%Npts), FLUXDIV(rtm_obj_%Npts)
+    real SHTERMS(5, rtm_obj_%Npts)
     integer IP, IC, ICELL, IPARENT, IDIR, I, J, DIR1, DIR2, IP1, IP2
     integer GRIDCORNER(2, 4, 3)
     data GRIDCORNER/1, 2, 3, 4, 5, 6, 7, 8, 1, 3, 2, 4, 5, 7, 6, 8,&
@@ -131,20 +131,20 @@ subroutine shd_util__interpData(OLDNPTS, NPTS,&
     if (OLDNPTS .le. 0) return
 
     ! Go through all the non-base grid cells
-    do ICELL = NBCELLS + 1, NCELLS
+    do ICELL = cell_obj_%Npts0+1, cell_obj_%Npts
         do IC = 1, 8
-            IP = GRIDPTR(IC, ICELL)
+            IP = i8Grid_Cell_(IC, ICELL)
             if (IP .gt. OLDNPTS) then
-                IPARENT = TREEPTR(1, ICELL)
+                IPARENT = i2Tree_Cell_(1, ICELL)
                 ! Go through all 12 edges of parent cell to find which one has point
                 do IDIR = 1, 3
                     DIR1 = mod(IDIR - 1 + 1, 3) + 1
                     DIR2 = mod(IDIR - 1 + 2, 3) + 1
                     do I = 1, 4
-                        IP1 = GRIDPTR(GRIDCORNER(1, I, IDIR), IPARENT)
-                        IP2 = GRIDPTR(GRIDCORNER(2, I, IDIR), IPARENT)
-                        if (GRIDPOS(DIR1, IP1) .eq. GRIDPOS(DIR1, IP) .and.&
-                            &GRIDPOS(DIR2, IP1) .eq. GRIDPOS(DIR2, IP)) goto 120
+                        IP1 = i8Grid_Cell_(GRIDCORNER(1, I, IDIR), IPARENT)
+                        IP2 = i8Grid_Cell_(GRIDCORNER(2, I, IDIR), IPARENT)
+                        if  (xyz_Rtm_(DIR1, IP1) .eq. xyz_Rtm_(DIR1, IP) .and.&
+                            &xyz_Rtm_(DIR2, IP1) .eq. xyz_Rtm_(DIR2, IP)) goto 120
                     end do
                 end do
 
@@ -175,40 +175,34 @@ subroutine shd_util__interpData(OLDNPTS, NPTS,&
 
 end subroutine shd_util__interpData
 
-subroutine shd_util__findCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
-    &NCELLS, TREEPTR, GRIDPTR, CELLFLAGS, GRIDPOS,&
-    &BCFLAG, IPFLAG, X0, Y0, Z0, ICELL)
+subroutine shd_util__findCell(X0, Y0, Z0, icell)
 
     !   Locates the grid cell in the tree structure containing the
-    ! specified point (X0,Y0,Z0), and returns the cell pointer ICELL.
-    ! First the base grid cell is found (using NX,NY,NZ, XGRID,YGRID,ZGRID),
+    ! specified point (X0,Y0,Z0), and returns the cell pointer icell.
+    ! First the base grid cell is found (using rtm_obj_%Nx0,rtm_obj_%Ny0,rtm_obj_%Nz, rtm_obj_%x,rtm_obj_%y,rtm_obj_%z),
     ! and the tree is traced down to find the smallest cell containing
     ! the point.
 
-    integer NX, NY, NZ, NCELLS, ICELL, BCFLAG, IPFLAG
-    integer GRIDPTR(8, NCELLS), TREEPTR(2, NCELLS)
-    integer*2 CELLFLAGS(NCELLS)
+    integer icell
     real(RD_) :: X0, Y0, Z0
-    real XGRID(NX + 1), YGRID(NY + 1), ZGRID(NZ)
-    real GRIDPOS(3, *)
     integer IL, IU, IM, IX, IY, IZ, NXC, NYC, IC, IPTR, DIR
     real(RD_) :: XDOMAIN, YDOMAIN
 
     ! Move point to within horizontal domain if periodic
     if (.not. (isOpenX_ .or. isMpiX_)) then
-        XDOMAIN = XGRID(NX + 1) - XGRID(1)
-        if (X0 .lt. XGRID(1)) then
-            X0 = X0 - XDOMAIN*(int((X0 - XGRID(1))/XDOMAIN) - 1)
-        else if (X0 .gt. XGRID(NX + 1)) then
-            X0 = X0 - XDOMAIN*int((X0 - XGRID(1))/XDOMAIN)
+        XDOMAIN = rtm_obj_%x(rtm_obj_%Nx0 + 1) - rtm_obj_%x(1)
+        if (X0 .lt. rtm_obj_%x(1)) then
+            X0 = X0 - XDOMAIN*(int((X0 - rtm_obj_%x(1))/XDOMAIN) - 1)
+        else if (X0 .gt. rtm_obj_%x(rtm_obj_%Nx0 + 1)) then
+            X0 = X0 - XDOMAIN*int((X0 - rtm_obj_%x(1))/XDOMAIN)
         end if
     end if
     if (.not. (isOpenYx_ .or. isMpiY_)) then
-        YDOMAIN = YGRID(NY + 1) - YGRID(1)
-        if (Y0 .lt. YGRID(1)) then
-            Y0 = Y0 - YDOMAIN*(int((Y0 - YGRID(1))/YDOMAIN) - 1)
-        else if (Y0 .gt. YGRID(NY + 1)) then
-            Y0 = Y0 - YDOMAIN*int((Y0 - YGRID(1))/YDOMAIN)
+        YDOMAIN = rtm_obj_%y(rtm_obj_%Ny0 + 1) - rtm_obj_%y(1)
+        if (Y0 .lt. rtm_obj_%y(1)) then
+            Y0 = Y0 - YDOMAIN*(int((Y0 - rtm_obj_%y(1))/YDOMAIN) - 1)
+        else if (Y0 .gt. rtm_obj_%y(rtm_obj_%Ny0 + 1)) then
+            Y0 = Y0 - YDOMAIN*int((Y0 - rtm_obj_%y(1))/YDOMAIN)
         end if
     end if
 
@@ -217,10 +211,10 @@ subroutine shd_util__findCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
     !   Special case for independent pixel: get closest grid column.
     IL = 0
     if (is1DX_) then
-        IU = NX
+        IU = rtm_obj_%Nx0
         do while (IU - IL .gt. 1)
             IM = (IU + IL)/2
-            if (X0 .ge. 0.5*(XGRID(IM) + XGRID(IM + 1))) then
+            if (X0 .ge. 0.5*(rtm_obj_%x(IM) + rtm_obj_%x(IM + 1))) then
                 IL = IM
             else
                 IU = IM
@@ -228,10 +222,10 @@ subroutine shd_util__findCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
         end do
         IL = IL + 1
     else
-        IU = NX + 1
+        IU = rtm_obj_%Nx0 + 1
         do while (IU - IL .gt. 1)
             IM = (IU + IL)/2
-            if (X0 .ge. XGRID(IM)) then
+            if (X0 .ge. rtm_obj_%x(IM)) then
                 IL = IM
             else
                 IU = IM
@@ -242,10 +236,10 @@ subroutine shd_util__findCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
 
     IL = 0
     if (is1DYx_) then
-        IU = NY
+        IU = rtm_obj_%Ny0
         do while (IU - IL .gt. 1)
             IM = (IU + IL)/2
-            if (Y0 .ge. 0.5*(YGRID(IM) + YGRID(IM + 1))) then
+            if (Y0 .ge. 0.5*(rtm_obj_%y(IM) + rtm_obj_%y(IM + 1))) then
                 IL = IM
             else
                 IU = IM
@@ -253,10 +247,10 @@ subroutine shd_util__findCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
         end do
         IL = IL + 1
     else
-        IU = NY + 1
+        IU = rtm_obj_%Ny0 + 1
         do while (IU - IL .gt. 1)
             IM = (IU + IL)/2
-            if (Y0 .ge. YGRID(IM)) then
+            if (Y0 .ge. rtm_obj_%y(IM)) then
                 IL = IM
             else
                 IU = IM
@@ -266,10 +260,10 @@ subroutine shd_util__findCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
     IY = max(IL, 1)
 
     IL = 0
-    IU = NZ
+    IU = rtm_obj_%Nz
     do while (IU - IL .gt. 1)
         IM = (IU + IL)/2
-        if (Z0 .ge. ZGRID(IM)) then
+        if (Z0 .ge. rtm_obj_%z(IM)) then
             IL = IM
         else
             IU = IM
@@ -279,43 +273,43 @@ subroutine shd_util__findCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
 
     ! Special case for open boundary conditions: if outside the 1 to
     !   domain then use the IP grid cells at either end
-    NXC = NX
+    NXC = rtm_obj_%Nx0
     if (isOpenX_) then
-        NXC = NX + 1
-        if (X0 .lt. XGRID(1)) then
-            ! X0 = XGRID(1)
+        NXC = rtm_obj_%Nx0 + 1
+        if (X0 .lt. rtm_obj_%x(1)) then
+            ! X0 = rtm_obj_%x(1)
             IX = 1
-        else if (X0 .gt. XGRID(NX)) then
-            ! X0 = XGRID(NX)
-            IX = NX + 1
+        else if (X0 .gt. rtm_obj_%x(rtm_obj_%Nx0)) then
+            ! X0 = rtm_obj_%x(rtm_obj_%Nx0)
+            IX = rtm_obj_%Nx0 + 1
         else
             IX = IX + 1
         end if
     end if
     if (isMpiX_ .and. .not. is1DX_) then
-        NXC = NX - 1
+        NXC = rtm_obj_%Nx0 - 1
         IX = min(IX, NXC)
     end if
-    NYC = NY
+    NYC = rtm_obj_%Ny0
     if (isOpenYx_) then
-        NYC = NY + 1
-        if (Y0 .lt. YGRID(1)) then
-            ! Y0 = YGRID(1)
+        NYC = rtm_obj_%Ny0 + 1
+        if (Y0 .lt. rtm_obj_%y(1)) then
+            ! Y0 = rtm_obj_%y(1)
             IY = 1
-        else if (Y0 .gt. YGRID(NY)) then
-            ! Y0 = YGRID(NY)
-            IY = NY + 1
+        else if (Y0 .gt. rtm_obj_%y(rtm_obj_%Ny0)) then
+            ! Y0 = rtm_obj_%y(rtm_obj_%Ny0)
+            IY = rtm_obj_%Ny0 + 1
         else
             IY = IY + 1
         end if
     end if
     if (isMpiY_ .and. .not. is1DYx_) then
-        NYC = NY - 1
+        NYC = rtm_obj_%Ny0 - 1
         IY = min(IY, NYC)
     end if
 
     ! Get the base grid cell pointer
-    ICELL = IZ + (NZ - 1)*(IY - 1) + (NZ - 1)*NYC*(IX - 1)
+    icell = IZ + (rtm_obj_%Nz - 1)*(IY - 1) + (rtm_obj_%Nz - 1)*NYC*(IX - 1)
 
     !   Trace down the tree: point to the positive child cell, get the
     ! grid point that is on the negative (X,Y,Z) side, use the
@@ -323,26 +317,25 @@ subroutine shd_util__findCell(NX, NY, NZ, XGRID, YGRID, ZGRID,&
     ! split in, then compare the grid point with the test point
     ! (X0,Y0,Z0) to find which child cell (pos or neg) the test
     ! point is in.
-    do while (TREEPTR(2, ICELL) .gt. 0)
-        DIR = ibits(int(CELLFLAGS(ICELL)), 2, 2)
-        IC = TREEPTR(2, ICELL) + 1
-        IPTR = GRIDPTR(1, IC)
+    do while (i2Tree_Cell_(2, icell) .gt. 0)
+        DIR = ibits(int(flag_Cell_(icell)), 2, 2)
+        IC = i2Tree_Cell_(2, icell) + 1
+        IPTR = i8Grid_Cell_(1, IC)
         if (DIR .eq. 1) then
-            if (X0 .lt. GRIDPOS(1, IPTR)) IC = IC - 1
+            if (X0 .lt. xyz_Rtm_(1, IPTR)) IC = IC - 1
         else if (DIR .eq. 2) then
-            if (Y0 .lt. GRIDPOS(2, IPTR)) IC = IC - 1
+            if (Y0 .lt. xyz_Rtm_(2, IPTR)) IC = IC - 1
         else if (DIR .eq. 3) then
-            if (Z0 .lt. GRIDPOS(3, IPTR)) IC = IC - 1
+            if (Z0 .lt. xyz_Rtm_(3, IPTR)) IC = IC - 1
         end if
-        ICELL = IC
+        icell = IC
     end do
 
     return
 
 end subroutine shd_util__findCell
 
-subroutine shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
-    &GRIDPTR, NEIGHPTR, TREEPTR, CELLFLAGS, INEXT)
+subroutine shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, INEXT)
 
     !   Gets the next cell (INEXT) to go to that is adjacent to this face
     ! IFACE (1-6) has which face (-X,+X,-Y,+Y,-Z,+Z) of the current cell
@@ -351,27 +344,24 @@ subroutine shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
     ! if there are several adjacent to the current cell.
 
     integer IFACE, JFACE, ICELL, INEXT
-    integer GRIDPTR(8, *), NEIGHPTR(6, *), TREEPTR(2, *)
-    integer*2 CELLFLAGS(*)
-    real GRIDPOS(3, *)
     real(RD_) :: XE, YE, ZE
     integer IC, IC1, DIR
 
     ! Get the pointer to the neighbor cell
-    INEXT = NEIGHPTR(IFACE, ICELL)
+    INEXT = i6Cell_Cell_(IFACE, ICELL)
     if (INEXT .lt. 0) then
         ! If neighbor pointer is negative then we are going into a cell
         !   that has subcells, and the absolute value of the pointer is the
         !   cell to start the tree search.
         IC = abs(INEXT)
         ! Go down the tree until there is no children
-        do while (TREEPTR(2, IC) .gt. 0)
+        do while (i2Tree_Cell_(2, IC) .gt. 0)
             ! Get the direction cell is split
-            DIR = ibits(int(CELLFLAGS(IC)), 2, 2)
+            DIR = ibits(int(flag_Cell_(IC)), 2, 2)
             if (DIR .eq. 0) stop 'Error [_findNextCell]: No split direction.'
             ! If split is in direction of face then choose the near child cell
             !   which is the negative side cell if this is a positive face.
-            IC1 = TREEPTR(2, IC)
+            IC1 = i2Tree_Cell_(2, IC)
             if (DIR .eq. JFACE) then
                 IC = IC1 + 1 - mod(IFACE - 1, 2)
             else
@@ -381,11 +371,11 @@ subroutine shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
                 !   on the split line with the current location.
                 IC = IC1
                 if (DIR .eq. 1) then
-                    if (XE .gt. GRIDPOS(1, GRIDPTR(8, IC1))) IC = IC + 1
+                    if (XE .gt. xyz_Rtm_(1, i8Grid_Cell_(8, IC1))) IC = IC + 1
                 else if (DIR .eq. 2) then
-                    if (YE .gt. GRIDPOS(2, GRIDPTR(8, IC1))) IC = IC + 1
+                    if (YE .gt. xyz_Rtm_(2, i8Grid_Cell_(8, IC1))) IC = IC + 1
                 else
-                    if (ZE .gt. GRIDPOS(3, GRIDPTR(8, IC1))) IC = IC + 1
+                    if (ZE .gt. xyz_Rtm_(3, i8Grid_Cell_(8, IC1))) IC = IC + 1
                 end if
             end if
         end do
@@ -397,7 +387,7 @@ subroutine shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, GRIDPOS,&
 end subroutine shd_util__findNextCell
 
 subroutine shd_util__interpTriLin(&
-    &ICELL, GRIDPTR, GRIDPOS,&
+    &ICELL,&
     &X, Y, Z, ND, FIELD, ID1, NV, VALUES)
 
     !   Trilinearly interpolates the field (FIELD) given a grid cell
@@ -406,35 +396,35 @@ subroutine shd_util__interpTriLin(&
     ! scalar field), ID1 is the first element of the vector to interpolate,
     ! and NV elements are output.
 
-    integer, intent(in) :: ICELL, GRIDPTR(8, *), ND, ID1, NV
+    integer, intent(in) :: ICELL, ND, ID1, NV
     real(RD_), intent(in) :: X, Y, Z
-    real :: GRIDPOS(3, *), FIELD(ND, *), VALUES(NV)
+    real :: FIELD(ND, *), VALUES(NV)
     integer :: IPT1, IPT2, ID
     real(RD_) :: U, V, W, UM, VM, WM, DELX, DELY, DELZ
 
-    IPT1 = GRIDPTR(1, ICELL)
-    IPT2 = GRIDPTR(8, ICELL)
-    DELX = GRIDPOS(1, IPT2) - GRIDPOS(1, IPT1)
+    IPT1 = i8Grid_Cell_(1, ICELL)
+    IPT2 = i8Grid_Cell_(8, ICELL)
+    DELX = xyz_Rtm_(1, IPT2) - xyz_Rtm_(1, IPT1)
     if (DELX .le. 0.0) DELX = 1.0
-    DELY = GRIDPOS(2, IPT2) - GRIDPOS(2, IPT1)
+    DELY = xyz_Rtm_(2, IPT2) - xyz_Rtm_(2, IPT1)
     if (DELY .le. 0.0) DELY = 1.0
-    DELZ = GRIDPOS(3, IPT2) - GRIDPOS(3, IPT1)
-    U = (X - GRIDPOS(1, IPT1))/DELX
-    V = (Y - GRIDPOS(2, IPT1))/DELY
-    W = (Z - GRIDPOS(3, IPT1))/DELZ
+    DELZ = xyz_Rtm_(3, IPT2) - xyz_Rtm_(3, IPT1)
+    U = (X - xyz_Rtm_(1, IPT1))/DELX
+    V = (Y - xyz_Rtm_(2, IPT1))/DELY
+    W = (Z - xyz_Rtm_(3, IPT1))/DELZ
     UM = 1 - U
     VM = 1 - V
     WM = 1 - W
 
     do ID = ID1, ID1 + NV - 1
-        VALUES(ID - ID1 + 1) = WM*(VM*(UM*FIELD(ID, GRIDPTR(1, ICELL))&
-            &+ U*FIELD(ID, GRIDPTR(2, ICELL)))&
-            &+ V*(UM*FIELD(ID, GRIDPTR(3, ICELL))&
-            &+ U*FIELD(ID, GRIDPTR(4, ICELL))))&
-            &+ W*(VM*(UM*FIELD(ID, GRIDPTR(5, ICELL))&
-            &+ U*FIELD(ID, GRIDPTR(6, ICELL)))&
-            &+ V*(UM*FIELD(ID, GRIDPTR(7, ICELL))&
-            &+ U*FIELD(ID, GRIDPTR(8, ICELL))))
+        VALUES(ID - ID1 + 1) = WM*(VM*(UM*FIELD(ID, i8Grid_Cell_(1, ICELL))&
+            &+ U*FIELD(ID, i8Grid_Cell_(2, ICELL)))&
+            &+ V*(UM*FIELD(ID, i8Grid_Cell_(3, ICELL))&
+            &+ U*FIELD(ID, i8Grid_Cell_(4, ICELL))))&
+            &+ W*(VM*(UM*FIELD(ID, i8Grid_Cell_(5, ICELL))&
+            &+ U*FIELD(ID, i8Grid_Cell_(6, ICELL)))&
+            &+ V*(UM*FIELD(ID, i8Grid_Cell_(7, ICELL))&
+            &+ U*FIELD(ID, i8Grid_Cell_(8, ICELL))))
     end do
 
     return

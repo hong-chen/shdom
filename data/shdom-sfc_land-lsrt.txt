@@ -1,5 +1,5 @@
 T
-120 120 0.40000001 0.40000001
+120 120 4.00000006e-01 4.00000006e-01
 ! The following provides information for interpreting binary data:
-! .sHdOm-sfc
+! .sHdOmNG-sfc
 !        121,       121,         4

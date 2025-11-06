@@ -3,7 +3,7 @@
  PROPFILE        = 'tmp-data/shdom-prp_les-fast.txt'
  SFCFILE         = '../../data/shdom-sfc_land-lsrt.txt'
  CKDFILE         = '../../data/shdom-ckd_modis-aqua-b01.txt'
- INSAVEFILE      = 'tmp-data/shdom-out_les-fast.sHdOm-sav'
+ INSAVEFILE      = 'tmp-data/shdom-out_les-fast.sHdOmNG-sav'
  OUTSAVEFILE     = 'NONE'
  NSTOKES         = 1
  NX              = 96
@@ -59,7 +59,7 @@
  OUTFILES(2)     = 'tmp-data/shdom-out_les-fast_r-nad.txt'
  OutFileNC       = 'NONE'
  ACCELFLAG       = .TRUE.
- SOLACC          = 1e-05
+ SOLACC          = 1e-04
  MAXITER         = 0
  SPLITACC        = 0.01
  SHACC           = 0.003

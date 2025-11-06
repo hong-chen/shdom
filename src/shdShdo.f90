@@ -82,7 +82,7 @@ contains
 subroutine shd_shdo__computeSH(&
     &NSHOUT, NSTOKES, NPTS, SRCTYPE,&
     &SOLARMU, SOLARAZ, DIRFLUX,&
-    &RSHPTR, ML, MM, RADIANCE, SHTERMS)
+    &iradI_Shdo, ML, MM, radI_Shdo, SHTERMS)
 
     !   Computes the quantities for the spherical harmonic output.
     ! At each grid point the mean radiance and net flux (Fx, Fy, Fz)
@@ -90,9 +90,9 @@ subroutine shd_shdo__computeSH(&
     ! components.  If NSHOUT=5 then the isHighOrder flag is set and the
     ! rms of the higher order terms in the radiance series is computed.
 
-    integer NSTOKES, NPTS, RSHPTR(NPTS + 1), ML, MM, NSHOUT
+    integer NSTOKES, NPTS, iradI_Shdo(NPTS + 1), ML, MM, NSHOUT
     real SOLARMU, SOLARAZ, DIRFLUX(NPTS)
-    real RADIANCE(NSTOKES, *), SHTERMS(NSHOUT, NPTS)
+    real radI_Shdo(NSTOKES, *), SHTERMS(NSHOUT, NPTS)
     character(len=1) :: SRCTYPE
     integer I, IR, J, NLM
     real A, C, C0, IMEAN, FX, FY, FZ, HORMS
@@ -100,7 +100,7 @@ subroutine shd_shdo__computeSH(&
     real, allocatable :: YLMSUN(:)
 
     NLM = (2*MM + 1)*(ML + 1) - MM*(MM + 1)
-    allocate (YLMSUN(NLM))
+    allocate(YLMSUN(NLM))
 
     ! Spherical Harmonic output: individual SH terms
     A = sqrt(2.0*PI_/3.0)
@@ -116,20 +116,20 @@ subroutine shd_shdo__computeSH(&
         call shd_shdo__computeYlm(.true., SOLARMU, SOLARAZ, ML, MM, 1, YLMSUN)
     end if
     do I = 1, NPTS
-        IR = RSHPTR(I)
-        IMEAN = C0*RADIANCE(1, IR + 1)
-        FZ = C*RADIANCE(1, IR + 3)
+        IR = iradI_Shdo(I)
+        IMEAN = C0*radI_Shdo(1, IR + 1)
+        FZ = C*radI_Shdo(1, IR + 3)
         if (MM .gt. 0) then
-            ! FX = -C*RADIANCE(1,IR+4)   ! old spherical harmonics basis
+            ! FX = -C*radI_Shdo(1,IR+4)   ! old spherical harmonics basis
             ! real generaliz
-            FX = -A*(RADIANCE(1, IR + 4) + RADIANCE(1, IR + 2))
+            FX = -A*(radI_Shdo(1, IR + 4) + radI_Shdo(1, IR + 2))
         else
             FX = 0.0
         end if
         if (MM .gt. 0) then
-            ! FY = -C*RADIANCE(1,IR+2)
+            ! FY = -C*radI_Shdo(1,IR+2)
             ! real generaliz
-            FY = -A*(RADIANCE(1, IR + 2) - RADIANCE(1, IR + 4))
+            FY = -A*(radI_Shdo(1, IR + 2) - radI_Shdo(1, IR + 4))
         else
             FY = 0.0
         end if
@@ -148,13 +148,13 @@ subroutine shd_shdo__computeSH(&
             if (isSolar_) then
                 F0 = SECSOL*DIRFLUX(I)
             end if
-            do J = 5, RSHPTR(I + 1) - IR
-                HORMS = HORMS + (F0*YLMSUN(J) + RADIANCE(1, IR + J))**2
+            do J = 5, iradI_Shdo(I + 1) - IR
+                HORMS = HORMS + (F0*YLMSUN(J) + radI_Shdo(1, IR + J))**2
             end do
             SHTERMS(5, I) = sqrt(HORMS)
         end if
     end do
-    deallocate (YLMSUN)
+    deallocate(YLMSUN)
 
     return
 
@@ -185,7 +185,7 @@ subroutine shd_shdo__makeSHDO(NSTLEG, ML, MM, NLM, NMU, NPHI0,&
     real, allocatable :: PRC(:, :)
 
     ! Make the mu part of the real generalized spherical harmonics
-    allocate (PRC(6, NLM))
+    allocate(PRC(6, NLM))
     do I = 1, NMU
         X = MU(I)
         PRC(:, :) = 0.0
@@ -203,7 +203,7 @@ subroutine shd_shdo__makeSHDO(NSTLEG, ML, MM, NLM, NMU, NPHI0,&
             end do
         end do
     end do
-    deallocate (PRC)
+    deallocate(PRC)
 
     ! Make the to and from Fourier coefficients for each mu
     do I = 1, NMU
@@ -300,8 +300,8 @@ subroutine shd_shdo__transSHtoDO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
     integer, allocatable :: MOFJ(:)
     real, allocatable :: SUMUV(:, :), SUMCS(:, :), TMP(:)
 
-    allocate (MOFJ(NLM), TMP(2*MM + 2))
-    allocate (SUMUV(NSTOKES, -MM:MM), SUMCS(NSTOKES, -MM:MM))
+    allocate(MOFJ(NLM), TMP(2*MM + 2))
+    allocate(SUMUV(NSTOKES, -MM:MM), SUMCS(NSTOKES, -MM:MM))
 
     ! Make the M for each J array
     J = 0
@@ -397,7 +397,7 @@ subroutine shd_shdo__transSHtoDO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
             end if
         end if
     end do
-    deallocate (MOFJ, SUMUV, SUMCS, TMP)
+    deallocate(MOFJ, SUMUV, SUMCS, TMP)
 
     return
 
@@ -436,7 +436,7 @@ subroutine shd_shdo__transSHtoDO_(&
     integer, allocatable :: MOFJ(:)
     real, allocatable :: SUMUV(:), SUMCS(:), TMP(:)
 
-    allocate (MOFJ(NLM), SUMUV(-MM:MM), SUMCS(-MM:MM), TMP(2*MM + 2))
+    allocate(MOFJ(NLM), SUMUV(-MM:MM), SUMCS(-MM:MM), TMP(2*MM + 2))
 
     ! Make the M for each J array
     J = 0
@@ -502,7 +502,7 @@ subroutine shd_shdo__transSHtoDO_(&
             end if
         end if
     end do
-    deallocate (MOFJ, SUMUV, SUMCS, TMP)
+    deallocate(MOFJ, SUMUV, SUMCS, TMP)
 
     return
 
@@ -512,7 +512,7 @@ subroutine shd_shdo__transDOtoSH(&
     &NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
     &NMU, NPHI0MAX, NPHI0,&
     &IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
-    &RSHPTR, INDATA, OUTDATA)
+    &iradI_Shdo, INDATA, OUTDATA)
 
     !   Transforms the input field from discrete ordinate space to spherical
     ! harmonic space for one zenith angle (IMU) by keeping a running
@@ -520,7 +520,7 @@ subroutine shd_shdo__transDOtoSH(&
 
     integer NPTS, NSTOKES, NSTLEG
     integer ML, MM, NLM, NMU, NPHI0MAX, NPHI0
-    integer IMU, RSHPTR(NPTS + 1)
+    integer IMU, iradI_Shdo(NPTS + 1)
     logical FFTFLAG(NMU)
     real INDATA(NSTOKES, NPHI0MAX, NPTS), OUTDATA(NSTOKES, *)
     real CMU2(NSTLEG, NMU, NLM), CPHI2(32, -16:16, NMU)
@@ -530,8 +530,8 @@ subroutine shd_shdo__transDOtoSH(&
     integer, allocatable :: MOFJ(:)
     real, allocatable :: SUMUV(:, :), SUMCS(:, :), TMP(:)
 
-    allocate (MOFJ(NLM), TMP(NPHI0))
-    allocate (SUMUV(NSTOKES, -MM:MM), SUMCS(NSTOKES, -MM:MM))
+    allocate(MOFJ(NLM), TMP(NPHI0))
+    allocate(SUMUV(NSTOKES, -MM:MM), SUMCS(NSTOKES, -MM:MM))
 
     DELPHI = 2.0*acos(-1.0)/NPHI0
 
@@ -548,7 +548,7 @@ subroutine shd_shdo__transDOtoSH(&
     IS = 0
     do I = 1, NPTS
         ! Determine the current SH truncation to use
-        NSH = RSHPTR(I + 1) - RSHPTR(I)
+        NSH = iradI_Shdo(I + 1) - iradI_Shdo(I)
         ! Figure the max Fourier azimuthal mode we can do for this Nphi0
         ME = max(0, min((NPHI0/2) - 1, MOFJ(NSH)))
         MS = -ME
@@ -618,7 +618,7 @@ subroutine shd_shdo__transDOtoSH(&
         end do
         IS = IS + NSH
     end do
-    deallocate (MOFJ, SUMUV, SUMCS, TMP)
+    deallocate(MOFJ, SUMUV, SUMCS, TMP)
 
     return
 
@@ -627,7 +627,7 @@ end subroutine shd_shdo__transDOtoSH
 subroutine shd_shdo__transDOtoSH_(NPTS, ML, MM, NLM,&
     &NMU, NPHI0MAX, NPHI0,&
     &IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
-    &RSHPTR, INDATA, OUTDATA)
+    &iradI_Shdo, INDATA, OUTDATA)
 
     !   Transforms the input field from discrete ordinate space to spherical
     ! harmonic space for one zenith angle (IMU) by keeping a running
@@ -635,7 +635,7 @@ subroutine shd_shdo__transDOtoSH_(NPTS, ML, MM, NLM,&
 
     integer NPTS
     integer ML, MM, NLM, NMU, NPHI0MAX, NPHI0
-    integer IMU, RSHPTR(NPTS + 1)
+    integer IMU, iradI_Shdo(NPTS + 1)
     logical FFTFLAG(NMU)
     real INDATA(NPHI0MAX, NPTS), OUTDATA(*)
     real CMU2(NMU, NLM), CPHI2(32, -16:16, NMU)
@@ -645,7 +645,7 @@ subroutine shd_shdo__transDOtoSH_(NPTS, ML, MM, NLM,&
     integer, allocatable :: MOFJ(:)
     real, allocatable :: SUMUV(:), SUMCS(:), TMP(:)
 
-    allocate (MOFJ(NLM), SUMUV(-MM:MM), SUMCS(-MM:MM), TMP(NPHI0))
+    allocate(MOFJ(NLM), SUMUV(-MM:MM), SUMCS(-MM:MM), TMP(NPHI0))
 
     DELPHI = 2.0*acos(-1.0)/NPHI0
     ! Make the M for each J array
@@ -661,7 +661,7 @@ subroutine shd_shdo__transDOtoSH_(NPTS, ML, MM, NLM,&
     IS = 0
     do I = 1, NPTS
         ! Determine the current SH truncation to use
-        NSH = RSHPTR(I + 1) - RSHPTR(I)
+        NSH = iradI_Shdo(I + 1) - iradI_Shdo(I)
         SUMCS(:) = 0.0
         ! Figure the max Fourier azimuthal mode we can do for this Nphi0
         ME = max(0, min((NPHI0/2) - 1, MOFJ(NSH)))
@@ -703,7 +703,7 @@ subroutine shd_shdo__transDOtoSH_(NPTS, ML, MM, NLM,&
         end do
         IS = IS + NSH
     end do
-    deallocate (MOFJ, SUMUV, SUMCS, TMP)
+    deallocate(MOFJ, SUMUV, SUMCS, TMP)
 
     return
 
@@ -822,7 +822,7 @@ subroutine shd_shdo__computeYlm(TRANSPOSED, MU, PHI, ML, MM, NSTLEG, YR)
         return
     end if
 
-    allocate (DM0(0:ML), DM2P(0:ML), DM2M(0:ML))
+    allocate(DM0(0:ML), DM2P(0:ML), DM2M(0:ML))
     X = dble(MU)
 
     FCT = 1.d0/dsqrt(2.d0*DPI_)
@@ -908,7 +908,7 @@ subroutine shd_shdo__computeYlm(TRANSPOSED, MU, PHI, ML, MM, NSTLEG, YR)
         end do
     end do
 
-    deallocate (DM0, DM2P, DM2M)
+    deallocate(DM0, DM2P, DM2M)
 
     return
 
@@ -931,7 +931,7 @@ subroutine shd_shdo__computeYlm_(MU, PHI, ML, MM, YR)
     real(RD_) :: X, FCT, COSM, SINM
     real(RD_), allocatable :: DM0(:)
 
-    allocate (DM0(0:ML))
+    allocate(DM0(0:ML))
     X = dble(MU)
 
     FCT = 1.d0/dsqrt(2.d0*DPI_)
@@ -962,7 +962,7 @@ subroutine shd_shdo__computeYlm_(MU, PHI, ML, MM, YR)
         end do
     end do
 
-    deallocate (DM0)
+    deallocate(DM0)
 
     return
 
@@ -981,7 +981,7 @@ subroutine shd_shdo__computePlm(TRANSPOSED, MU, ML, MM, PRC)
         &DM2M(:)
 
     ! --- allocate ---
-    allocate (DM0(0:ML), DM2P(0:ML), DM2M(0:ML))
+    allocate(DM0(0:ML), DM2P(0:ML), DM2M(0:ML))
 
     X = dble(MU)
 
@@ -1066,7 +1066,7 @@ subroutine shd_shdo__computePlm(TRANSPOSED, MU, ML, MM, PRC)
             PRC(6, J) = -SIGN*P3
         end do
     end do
-    deallocate (DM0, DM2P, DM2M)
+    deallocate(DM0, DM2P, DM2M)
 
     return
 
