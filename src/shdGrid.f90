@@ -519,8 +519,8 @@ subroutine shd_grid__divideCell(&
 
     ! Do the tree pointers: parent points to negative child,
     !   children point back to parent.
-    newCell = cell_obj%Ncell + 1
-    cell_obj%Ncell = cell_obj%Ncell + 2
+    newCell = cell_obj%Npts + 1
+    cell_obj%Npts = cell_obj%Npts + 2
     i2Tree_Cell(2, icell) = newCell
     i2Tree_Cell(1, newCell) = icell
     i2Tree_Cell(2, newCell) = 0
@@ -1609,7 +1609,7 @@ subroutine shd_grid__splitGrid(&
     ! CURSPLITACC if doSplit is true.  The current splitting criterion
     ! achieved is returned in SPLITCRIT.  If we are at the end of the
     ! grid point, grid cell, or spherical harmonic arrays (sizes given
-    ! by rtm_obj%maxNpts, cell_obj%maxNcell, shdo_obj_%maxNptsSH, shdo_obj_%maxNptsDO) then the isOutMem flag is returned true.
+    ! by rtm_obj%maxNpts, cell_obj%maxNpts, shdo_obj_%maxNptsSH, shdo_obj_%maxNptsDO) then the isOutMem flag is returned true.
 
     type(shd_type_rtm),  intent(inout) :: rtm_obj
     type(shd_type_cell), intent(inout) :: cell_obj
@@ -1648,11 +1648,11 @@ subroutine shd_grid__splitGrid(&
         ! Do the cells in batchs, so the newly split cells can be tested
         !   for further splitting
         ICELL1 = 1
-        do while (ICELL1 .le. cell_obj%Ncell)
+        do while (ICELL1 .le. cell_obj%Npts)
             ! For the current batch of cells, compute the adaptive grid
             !   splitting criterion for 3 directions for each cell.
             N = 0
-            do icell = ICELL1, cell_obj%Ncell
+            do icell = ICELL1, cell_obj%Npts
                 if (i2Tree_Cell_(2, icell) .eq. 0) then
                     ! If this is a end node cell then compute adaptive criterion
                     call shd_grid__testCellSplit(icell,&
@@ -1661,7 +1661,7 @@ subroutine shd_grid__splitGrid(&
                     N = N + 1
                 end if
             end do
-            ICELL1 = cell_obj%Ncell + 1
+            ICELL1 = cell_obj%Npts + 1
 
             ! Sort the adaptive criterion in decreasing order
             call shd_util__ssort(ADAPTCRIT, ADAPTIND, N, -2)
@@ -1669,7 +1669,7 @@ subroutine shd_grid__splitGrid(&
             ! Figure how many cells we can split, leaving some room
             !   for cells split during grid smoothing
             FRAC = 0.03
-            MAXCELLS = cell_obj%maxNcell - FRAC*(cell_obj%maxNcell - cell_obj%Ncell) - 2
+            MAXCELLS = cell_obj%maxNpts - FRAC*(cell_obj%maxNpts - cell_obj%Npts) - 2
             MAXPTS   = rtm_obj%maxNpts  - FRAC*(rtm_obj%maxNpts  - rtm_obj%Npts)  - 4
             MAXWORK  = shdo_obj_%maxNptsDO - FRAC*(shdo_obj_%maxNptsDO - shdo_obj_%maxNphi0*rtm_obj%Npts) - 4*shdo_obj_%maxNphi0
             MAXSH    = shdo_obj_%maxNptsSH - FRAC*(shdo_obj_%maxNptsSH - isrcJ_Shdo(rtm_obj%Npts+1)) - 4*shdo_obj_%Nlm
@@ -1680,7 +1680,7 @@ subroutine shd_grid__splitGrid(&
             I = 1
             do while ((.not. isOutMem0) .and. (ADAPTCRIT(I) .gt. CURSPLITACC)&
                 &.and. (I .le. N))
-                if  ((cell_obj%Ncell .gt. MAXCELLS) .or.&
+                if  ((cell_obj%Npts .gt. MAXCELLS) .or.&
                     &(rtm_obj%Npts  .gt. MAXPTS) .or.&
                     &(rtm_obj%Npts*shdo_obj_%maxNphi0   .gt. MAXWORK) .or.&
                     &(isrcJ_Shdo(rtm_obj%Npts + 1) .gt. MAXSH)   .or.&
@@ -1705,7 +1705,7 @@ subroutine shd_grid__splitGrid(&
                 I = I + 1
             end do
 
-            MAXCELLS = cell_obj%maxNcell - 2
+            MAXCELLS = cell_obj%maxNpts - 2
             MAXPTS   = rtm_obj%maxNpts  - 4
             MAXWORK  = shdo_obj_%maxNptsDO - 4*shdo_obj_%maxNphi0
             MAXSH    = shdo_obj_%maxNptsSH - 4*shdo_obj_%Nlm
@@ -1713,7 +1713,7 @@ subroutine shd_grid__splitGrid(&
 
             ! Split some more cells to make the adaptive grid "smoother"
             do while ((.not. isOutMem) .and. (I .le. N))
-                if  ((cell_obj%Ncell .gt. MAXCELLS) .or.&
+                if  ((cell_obj%Npts .gt. MAXCELLS) .or.&
                     &(rtm_obj%Npts  .gt. MAXPTS) .or.&
                     &(rtm_obj%Npts * shdo_obj_%maxNphi0 .gt. MAXWORK) .or.&
                     &(isrcJ_Shdo(rtm_obj%Npts + 1) .gt. MAXSH) .or.&
@@ -1750,7 +1750,7 @@ subroutine shd_grid__splitGrid(&
             isOutMem = .true.
             !write (6, '(2A,I8,A,I8)')&
             !    &'Message [_splitGrid]: Further cell splitting requires larger array allocations: ',&
-            !    &'cell_obj%Ncell= ', cell_obj%Ncell, ', Npnts = ', rtm_obj%Npts
+            !    &'cell_obj%Npts= ', cell_obj%Npts, ', Npnts = ', rtm_obj%Npts
         end if
 
         ! If in parallel mode, calculate all the direct beam fluxes at once
@@ -1766,7 +1766,7 @@ subroutine shd_grid__splitGrid(&
 
     ! Find the max adaptive cell criterion after the cell divisions
     SPLITCRIT = 0.0
-    do icell = 1, cell_obj%Ncell
+    do icell = 1, cell_obj%Npts
         if (i2Tree_Cell_(2, icell) .eq. 0) then
             call shd_grid__testCellSplit(icell,&
                 &ADAPT, ADAPTCRIT(1), idir)

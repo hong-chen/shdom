@@ -205,7 +205,7 @@ subroutine shd_io__outputResult(&
         &'   NSH=', shdo_obj_%Nsh
     write (2, '(A,I1,3(A,I4),2(A,I8))') '!  NSTOKES=', shdo_obj_%Nstokes,&
         &'   NX=', rtm_obj_%Nx0, '   NY=', rtm_obj_%Ny0, '   NZ=', rtm_obj_%Nz,&
-        &'    NPTS=', rtm_obj_%Npts, '   NCELLS=', cell_obj_%Ncell
+        &'    NPTS=', rtm_obj_%Npts, '   NCELLS=', cell_obj_%Npts
     write (2, '(A,A)') '!  PROPERTY_FILE=', trim(prp_obj_%fname)
     write (2, '(A,A,A,I2)') '!  CORRELATED_K-DIST_FILE=',&
         &trim(ckd_obj_%fname), '   NUM_G=', ckd_obj_%Ng
@@ -2008,7 +2008,7 @@ subroutine shd_io__outputCamRad(&
         &'   NSH=', shdo_obj_%Nsh
     write (2, '(A,I1,3(A,I4),2(A,I8))') '!  NSTOKES=', shdo_obj_%Nstokes,&
         &'   NX=', rtm_obj_%Nx0, '   NY=', rtm_obj_%Ny0, '   NZ=', rtm_obj_%Nz,&
-        &'    NPTS=', rtm_obj_%Npts, '   NCELLS=', cell_obj_%Ncell
+        &'    NPTS=', rtm_obj_%Npts, '   NCELLS=', cell_obj_%Npts
     write (2, '(A,A)') '!  PROPERTY_FILE=', trim(prp_obj_%fname)
     write (2, '(A,A,A,I2)') '!  CORRELATED_K-DIST_FILE=',&
         &trim(ckd_obj_%fname), '   NUM_G=', ckd_obj_%Ng
@@ -2269,7 +2269,7 @@ subroutine shd_io__outputImg(&
     I = I + index(BUF(I:I + 79), LF)
     write (BUF(I:I + 90), '(A,I1,3(A,I4),2(A,I8),A1)')&
         & '# NSTOKES=', shdo_obj_%Nstokes, '  NX=', rtm_obj_%Nx0, '   NY=', rtm_obj_%Ny0, '  NZ=', rtm_obj_%Nz,&
-        & '    NPTS=', rtm_obj_%Npts, '   NCELLS=', cell_obj_%Ncell, LF
+        & '    NPTS=', rtm_obj_%Npts, '   NCELLS=', cell_obj_%Npts, LF
     I = I + index(BUF(I:I + 79), LF)
     !write (BUF(I:I + 79), '(A,A,A1)')&
     !    & '# PROPERTY_FILE=', trim(prp_obj_%fname), LF
@@ -2507,7 +2507,7 @@ subroutine shd_io__outputCellSplit(&
         &'Extinct SplitX  SplitY  SplitZ'
 
     ! Loop over all the cells
-    do icell = 1, cell_obj_%Ncell
+    do icell = 1, cell_obj_%Npts
         ! Get the adaptive grid criterion for the 3 directions
         call shd_grid__testCellSplit(icell,&
             &ADAPTCRIT, MAXADAPT, IDIR)
@@ -2602,7 +2602,7 @@ subroutine shd_io__visualizeCell(&
         write (9, '(A)')
     end if
 
-    do IC = 1, cell_obj_%Ncell
+    do IC = 1, cell_obj_%Npts
         ! Output if it is an end cell and crosses the Y value
         if (i2Tree_Cell_(2, IC) .eq. 0 .and.&
             & xyz_Rtm_(2, i8Grid_Cell_(1, IC)) .le. YVAL .and.&
@@ -2678,16 +2678,16 @@ subroutine shd_io__saveState(&
     open (unit=91, file=trim(adjustl(OUTSAVEFILE)), status='REPLACE',&
         &form='UNFORMATTED')
 
-    write (91) shdo_obj_%Nstokes, rtm_obj_%Nx0, rtm_obj_%Ny0, rtm_obj_%Nz, shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm, rtm_obj_%Npts, cell_obj_%Ncell
+    write (91) shdo_obj_%Nstokes, rtm_obj_%Nx0, rtm_obj_%Ny0, rtm_obj_%Nz, shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm, rtm_obj_%Npts, cell_obj_%Npts
 
     write (91) (rtm_obj_%x(I), I=1, rtm_obj_%Nx0+1)
     write (91) (rtm_obj_%y(I), I=1, rtm_obj_%Ny0+1)
     write (91) (rtm_obj_%z(I), I=1, rtm_obj_%Nz)
 
-    write (91) ((i8Grid_Cell_(J, I), J=1, 8), I=1, cell_obj_%Ncell)
-    write (91) ((i6Cell_Cell_(J, I), J=1, 6), I=1, cell_obj_%Ncell)
-    write (91) ((i2Tree_Cell_(J, I), J=1, 2), I=1, cell_obj_%Ncell)
-    write (91)  (flag_Cell_(I), I=1, cell_obj_%Ncell)
+    write (91) ((i8Grid_Cell_(J, I), J=1, 8), I=1, cell_obj_%Npts)
+    write (91) ((i6Cell_Cell_(J, I), J=1, 6), I=1, cell_obj_%Npts)
+    write (91) ((i2Tree_Cell_(J, I), J=1, 2), I=1, cell_obj_%Npts)
+    write (91)  (flag_Cell_(I), I=1, cell_obj_%Npts)
 
     write (91) ((xyz_Rtm_(J, I), J=1, 3), I=1, rtm_obj_%Npts)
     write (91) ((FLUXES(J, I) , J=1, 2), I=1, rtm_obj_%Npts)

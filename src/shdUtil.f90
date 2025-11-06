@@ -131,7 +131,7 @@ subroutine shd_util__interpData(OLDNPTS,&
     if (OLDNPTS .le. 0) return
 
     ! Go through all the non-base grid cells
-    do ICELL = cell_obj_%Ncell0 + 1, cell_obj_%Ncell
+    do ICELL = cell_obj_%Npts0+1, cell_obj_%Npts
         do IC = 1, 8
             IP = i8Grid_Cell_(IC, ICELL)
             if (IP .gt. OLDNPTS) then

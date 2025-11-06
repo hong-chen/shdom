@@ -234,7 +234,7 @@ subroutine shd_init__makeCell(rtm_obj, &
     !
     ! Output:
     !   rtm_obj%Npts : total number of grid points
-    !   cell_obj%Ncell: total number of cells
+    !   cell_obj%Npts: total number of cells
     !   xyz_Rtm(3,IP) : X,Y,Z coordinate values of grid point locations
     !   i8Grid_Cell(8,IC) : pointer to 8 grid points belonging to a cell.
     !                   Order of pointers is based on binary digits Z-Y-X:
@@ -431,7 +431,7 @@ subroutine shd_init__makeCell(rtm_obj, &
             end do
         end do
     end do
-    cell_obj%Ncell = i
+    cell_obj%Npts = i
 
     return
 

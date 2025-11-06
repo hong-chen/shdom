@@ -719,14 +719,14 @@ subroutine shd_intg__backIntegrate3D_(&
     !   NX, NY, NZ: integer, base grid size in X, Y and Z
     !   NA        : integer, total number of angles (MU and PHI)
     !   rtm_obj_%Npts : integer, total number of grid points
-    !   cell_obj_%Ncell : integer, total number of cells
-    !   i8Grid_Cell_(8,cell_obj_%Ncell) : integer array, pointer to 8 grid points belonging to a cell.
+    !   cell_obj_%Npts : integer, total number of cells
+    !   i8Grid_Cell_(8,cell_obj_%Npts) : integer array, pointer to 8 grid points belonging to a cell.
     !                       Order of pointers is based on binary digits Z-Y-X:
     !                       IOCT = 1 + BITX + 2*BITY + 4*BITZ, where
     !                       BITc is 0 for negative side and 1 for positive side.
     !                       1: (-X, -Y, -Z), 2: (+X, -Y, -Z), 3: (-X, +Y, -Z), 4: (+X, +Y, -Z)
     !                       5: (-X, -Y, +Z), 6: (+X, -Y, +Z), 7: (-X, +Y, +Z), 8: (+X, +Y, +Z)
-    !   i6Cell_Cell_(6,cell_obj_%Ncell): integer array, pointer to 6 neighboring cells of a cell.
+    !   i6Cell_Cell_(6,cell_obj_%Npts): integer array, pointer to 6 neighboring cells of a cell.
     !                       Order of pointers are 1:-X, 2:+X, 3:-Y, 4:+Y, 5:-Z, 6:+Z.
     !                       Is 0 if there is no neighbor cell (boundary).
     !                       Is positive if there is just one cell across face
@@ -735,14 +735,14 @@ subroutine shd_intg__backIntegrate3D_(&
     !                       the face of current cell.  In this case the
     !                       cell pointed to is the parent cell that has a
     !                       has same or larger face adjoining current cell.
-    !   i2Tree_Cell_(2,cell_obj_%Ncell) : integer array, pointer to parent and children cells in tree structure.
+    !   i2Tree_Cell_(2,cell_obj_%Npts) : integer array, pointer to parent and children cells in tree structure.
     !                       First is pointer to parent cell, 0 for a base cell.
     !                       Second is pointer to first of the two children cells.
     !                       This pointer is 0 if there are no children cells.
     !                       The children cells are in successive order, with
     !                       the negative side first. See flag_Cell_ for direction
     !                       of division of split.
-    !   flag_Cell_(cell_obj_%Ncell) : integer array, a collection of binary flags for the cells:
+    !   flag_Cell_(cell_obj_%Npts) : integer array, a collection of binary flags for the cells:
     !                       bit  For bit set
     !                       0:  Do independent pixel for X
     !                       1:  Do independent pixel for Y

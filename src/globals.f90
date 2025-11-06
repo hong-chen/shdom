@@ -193,19 +193,12 @@ module globals_type
         integer(kind=I__) :: Ny  = -999
         integer(kind=I__) :: Nz  = -999
 
-        integer(kind=I__) :: maxNz   = -999
+        integer(kind=I__) :: maxNz = -999
         integer(kind=I__) :: maxNptsLeg = -999
 
         integer(kind=I__) :: Npts0 = -999
         integer(kind=I__) :: Npts  = -999
-        integer(kind=I__) :: maxNpts  = -999
-
-        !real(kind=R__) :: dx = -999.0
-        !real(kind=R__) :: dy = -999.0
-        !real(kind=R__) :: xStart  = -999.0
-        !real(kind=R__) :: yStart  = -999.0
-        !real(kind=R__) :: xDomain = -999.0
-        !real(kind=R__) :: yDomain = -999.0
+        integer(kind=I__) :: maxNpts = -999
 
         real(kind=R__),  allocatable :: x(:)
         real(kind=R__),  allocatable :: y(:)
@@ -221,9 +214,9 @@ module globals_type
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type :: shd_type_cell
 
-        integer(kind=I__) :: Ncell0 = -999
-        integer(kind=I__) :: Ncell  = -999
-        integer(kind=I__) :: maxNcell = -999
+        integer(kind=I__) :: Npts0 = -999
+        integer(kind=I__) :: Npts  = -999
+        integer(kind=I__) :: maxNpts = -999
 
         logical :: isAllocated  = .false.
 
@@ -430,10 +423,10 @@ module globals_obj
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_cell), save :: cell_obj_
 
-    integer(kind=I__), allocatable, save :: i8Grid_Cell_(:, :) ! (8, cell_obj%maxNcell)
-    integer(kind=I__), allocatable, save :: i6Cell_Cell_(:, :) ! (6, cell_obj%maxNcell)
-    integer(kind=I__), allocatable, save :: i2Tree_Cell_(:, :) ! (2, cell_obj%maxNcell)
-    integer(kind=2),   allocatable, save ::   flag_Cell_(:)    ! (cell_obj%maxNcell)
+    integer(kind=I__), allocatable, save :: i8Grid_Cell_(:, :) ! (8, cell_obj%maxNpts)
+    integer(kind=I__), allocatable, save :: i6Cell_Cell_(:, :) ! (6, cell_obj%maxNpts)
+    integer(kind=I__), allocatable, save :: i2Tree_Cell_(:, :) ! (2, cell_obj%maxNpts)
+    integer(kind=2),   allocatable, save ::   flag_Cell_(:)    ! (cell_obj%maxNpts)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 

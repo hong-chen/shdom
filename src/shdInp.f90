@@ -2003,7 +2003,7 @@ subroutine shd_io__restoreState(&
     open (UNIT=3, FILE=trim(adjustl(INSAVEFILE)), STATUS='OLD',&
         &FORM='UNFORMATTED', ERR=900)
 
-    read (3) NSTI, NXI, NYI, NZI, MLI, MMI, NLMI, rtm_obj%Npts, cell_obj%Ncell
+    read (3) NSTI, NXI, NYI, NZI, MLI, MMI, NLMI, rtm_obj%Npts, cell_obj%Npts
 
     if ((NXI .ne. rtm_obj%Nx0) .or. (NYI .ne. rtm_obj%Ny0) .or. (NZI .ne. rtm_obj%Nz)) then
         if (verbose_ .ge. 4) write (6, '(A, 3I6)') 'Warning [_restoreState]: wrong grid size:', NXI, NYI, NZI
@@ -2022,10 +2022,10 @@ subroutine shd_io__restoreState(&
     read (3) (rtm_obj%x(i), i=1, rtm_obj%Nx0+1)
     read (3) (rtm_obj%y(i), i=1, rtm_obj%Ny0+1)
     read (3) (rtm_obj%z(i), i=1, rtm_obj%Nz)
-    read (3) ((i8Grid_Cell(j, i), j=1, 8), i=1, cell_obj%Ncell)
-    read (3) ((i6Cell_Cell(j, i), j=1, 6), i=1, cell_obj%Ncell)
-    read (3) ((i2Tree_Cell(j, i), j=1, 2), i=1, cell_obj%Ncell)
-    read (3) (flag_Cell(i), i=1, cell_obj%Ncell)
+    read (3) ((i8Grid_Cell(j, i), j=1, 8), i=1, cell_obj%Npts)
+    read (3) ((i6Cell_Cell(j, i), j=1, 6), i=1, cell_obj%Npts)
+    read (3) ((i2Tree_Cell(j, i), j=1, 2), i=1, cell_obj%Npts)
+    read (3) (flag_Cell(i), i=1, cell_obj%Npts)
 
     read (3) ((xyz_Rtm(j, i), j=1, 3), i=1, rtm_obj%Npts)
     read (3) ((FLUXES(j, i), j=1, 2), i=1, rtm_obj%Npts)

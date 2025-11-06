@@ -837,7 +837,7 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
     ! processor output arrays ALLFLUXES, ALLFLUXDIV, ALLSHTERMS.  Gathers the
     ! ixyOut_ array from each processor to determine where each subdomain is.
     ! Also gathers the full base grid position arrays (rtmAll_obj%x/rtmAll_obj%y) and
-    ! sums cell_obj%Ncell,rtm_obj%Npts,NSH over all processors.
+    ! sums cell_obj%Npts,rtm_obj%Npts,NSH over all processors.
 
     type(shd_type_rtm),  intent(inout) :: rtmAll_obj, rtm_obj
     type(shd_type_cell), intent(in)    :: cell_obj
@@ -1002,8 +1002,8 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
         rtmAll_obj%y(1:rtmAll_obj%Ny0) = (/(prp_obj_%yDomain*(I - 1)/rtmAll_obj%Ny0, I=1, rtmAll_obj%Ny0)/)
     end if
 
-    ! Get the sum of the cell_obj%Ncell, rtm_obj%Npts, and NSH over the processors
-    send3int = (/cell_obj%Ncell, rtm_obj%Npts, NSH/)
+    ! Get the sum of the cell_obj%Npts, rtm_obj%Npts, and NSH over the processors
+    send3int = (/cell_obj%Npts, rtm_obj%Npts, NSH/)
     call mpi_reduce(send3int, recv3int, 3, MPI_integer, MPI_sum, 0, comm2D_, ierr)
     NCELLSTOT = recv3int(1); NPTSTOT = recv3int(2); NSHTOT = recv3int(3)
 

@@ -544,7 +544,7 @@ program shdom
     rtm_obj_%Npts0 = rtm_obj_%Nx*rtm_obj_%Ny*rtm_obj_%Nz
 
     ! Calculate the number of base grid cells depending on the boundary condition flag
-    cell_obj_%Ncell0 = (rtm_obj_%Nz - 1)*(rtm_obj_%Nx0 + ibits(rtm_obj_%flag_bc, 0, 1) - ibits(rtm_obj_%flag_bc, 2, 1))&
+    cell_obj_%Npts0 = (rtm_obj_%Nz - 1)*(rtm_obj_%Nx0 + ibits(rtm_obj_%flag_bc, 0, 1) - ibits(rtm_obj_%flag_bc, 2, 1))&
                                        *(rtm_obj_%Ny0 + ibits(rtm_obj_%flag_bc, 1, 1) - ibits(rtm_obj_%flag_bc, 3, 1))
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
@@ -939,7 +939,7 @@ program shdom
     rtm_obj_%maxNpts = nint(ADAPT_GRID_FACTOR*rtm_obj_%Npts0)
 
     ! max number of grid cells, between 1 and 2 times grid points
-    cell_obj_%maxNcell = nint(CELL_TO_POINT_RATIO*rtm_obj_%maxNpts)
+    cell_obj_%maxNpts = nint(CELL_TO_POINT_RATIO*rtm_obj_%maxNpts)
 
     ! max words for source function and radiance arrays
     shdo_obj_%maxNptsSH = nint(NUM_SH_TERM_FACTOR*shdo_obj_%Nlm*rtm_obj_%maxNpts)
@@ -952,8 +952,8 @@ program shdom
         stop
     end if
 
-    if (4.0*8.0*cell_obj_%maxNcell .gt. huge(shdo_obj_%maxNptsSH)) then
-        write (6, '(A,F8.2)') 'Error [shdom]: Size of i8Grid_Cell_ array (8*cell_obj_%maxNcell) probably exceeds max integer number of bytes:', 8*cell_obj_%maxNcell
+    if (4.0*8.0*cell_obj_%maxNpts .gt. huge(shdo_obj_%maxNptsSH)) then
+        write (6, '(A,F8.2)') 'Error [shdom]: Size of i8Grid_Cell_ array (8*cell_obj_%maxNpts) probably exceeds max integer number of bytes:', 8*cell_obj_%maxNpts
         stop
     end if
 
@@ -999,12 +999,12 @@ program shdom
     allocate(xyz_Rtm_(3, rtm_obj_%maxNpts))
 
     ! a collection of binary flags for the cells
-    allocate(flag_Cell_(cell_obj_%maxNcell))
+    allocate(flag_Cell_(cell_obj_%maxNpts))
 
     ! pointer to 8 grid points belonging to a cell
     ! pointer to 6 neighboring cells of a cell
     ! pointer to parent and children cells in tree structure
-    allocate(i8Grid_Cell_(8, cell_obj_%maxNcell), i6Cell_Cell_(6, cell_obj_%maxNcell), i2Tree_Cell_(2, cell_obj_%maxNcell))
+    allocate(i8Grid_Cell_(8, cell_obj_%maxNpts), i6Cell_Cell_(6, cell_obj_%maxNpts), i2Tree_Cell_(2, cell_obj_%maxNpts))
     !╰────────────────────────────────────────────────╯!
 
     ! boundary points pointers and radiances
@@ -1108,7 +1108,7 @@ program shdom
         if (isBaseOut .or. ((ig_ckd .eq. ckd_obj_%Ng) .and. doGridInit)) then
             ! note: we might not need <rtm_obj_> after all
             call shd_init__makeCell(rtm_obj_, cell_obj_, xyz_Rtm_, i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, flag_Cell_)
-            cell_obj_%Ncell0 = cell_obj_%Ncell
+            cell_obj_%Npts0 = cell_obj_%Npts
         end if
 
         ! Find the monochromatic SHDOM solution: adaptive grid output
@@ -1353,16 +1353,16 @@ program shdom
     ! before:
     !  MAXMB_OUT = 4*(shdo_obj_%Nmu*(2 + 2*shdo_obj_%Nphi + 2*shdo_obj_%Nlm + 2*33*32)&
     !      + 4.5*prp_obj_%maxNpts + prp_obj_%maxNptsLeg + prp_obj_%Npha*prp_obj_%NlegSet*(prp_obj_%maxNleg + 1)&
-    !      + 16.5*cell_obj_%Ncell + rtm_obj_%Npts*(28 + shdo_obj_%maxNphi0*shdo_obj_%Nstokes)&
+    !      + 16.5*cell_obj_%Npts + rtm_obj_%Npts*(28 + shdo_obj_%maxNphi0*shdo_obj_%Nstokes)&
     !      + shdo_obj_%Nstokes*shdo_obj_%Nsh*NbigArr)/1024**2
     ! now:
     !   use NmaxNpts
-    MAXMB_OUT = 4*(memUsed + 16.5*cell_obj_%Ncell&
+    MAXMB_OUT = 4*(memUsed + 16.5*cell_obj_%Npts&
         + rtm_obj_%Npts*(NmaxNpts-16.5*CELL_TO_POINT_RATIO))/1024**2
 
     ADAPTGRIDFAC_OUT = float(rtm_obj_%Npts)/rtm_obj_%Npts0
     SHTERM_FAC_OUT = float(shdo_obj_%Nsh)/(shdo_obj_%Nlm*rtm_obj_%Npts)
-    CELL_POINT_OUT = float(cell_obj_%Ncell)/rtm_obj_%Npts
+    CELL_POINT_OUT = float(cell_obj_%Npts)/rtm_obj_%Npts
     if (verbose_ .ge. 5) write (6, '(A)')'Message [shdom]: Actual MAX_TOTAL_MB, ADAPT_GRID_FACTOR, NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO'
     if (verbose_ .ge. 5) write (6, '(26X,F9.2,6X,F7.3,14X,F5.3,15X,F5.3)') MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
     !╰────────────────────────────────────────────────────────────────────────────╯!

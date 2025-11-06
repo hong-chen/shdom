@@ -103,7 +103,7 @@ subroutine shd_solv__solveRte(&
 
     ! Performs the SHDOM solution procedure.
     ! Output is returned in srcJ_Shdo, radI_Shdo, FLUXES, DIRFLUX.
-    ! The adaptive grid stucture (cell_obj_%Ncell,i8Grid_Cell_,i6Cell_Cell_,i2Tree_Cell_,
+    ! The adaptive grid stucture (cell_obj_%Npts,i8Grid_Cell_,i6Cell_Cell_,i2Tree_Cell_,
     ! flag_Cell_,rtm_obj_%Npts,xyz_Rtm_) is input and modified for new grid
     ! cells and points on output.
 
@@ -202,7 +202,7 @@ subroutine shd_solv__solveRte(&
         ! Interpolate the radiance on the non-base grid points from the
         !   base grid points
         call shd_rad__interpRad(shdo_obj_%Nstokes, rtm_obj_%Npts0, rtm_obj_%Npts, iradI_Shdo_, radI_Shdo_,&
-            &cell_obj_%Ncell0, cell_obj_%Ncell, i2Tree_Cell_, i8Grid_Cell_, xyz_Rtm_)
+            &cell_obj_%Npts0, cell_obj_%Npts, i2Tree_Cell_, i8Grid_Cell_, xyz_Rtm_)
         ! Initialize the source function from the radiance field
         call shd_src__computeSrc(&
             &doFixSH, YlmSolar_Shdo,&
@@ -398,7 +398,7 @@ subroutine shd_solv__solveRte(&
                 &ITER, log10(max(SOLCRIT, 1.0e-20)),&
                 &SPLITCRIT,&
                 &rtm_obj_%Npts,&
-                &cell_obj_%Ncell,&
+                &cell_obj_%Npts,&
                 &float(isrcJ_Shdo_(rtm_obj_%Npts + 1))/rtm_obj_%Npts,&
                 &ELAPSED_TIME
                 !&float(isrcJ_Shdo_(rtm_obj_%Npts + 1))/(rtm_obj_%Npts*shdo_obj_%Nlm)
@@ -408,7 +408,7 @@ subroutine shd_solv__solveRte(&
                     &ITER, log10(max(SOLCRIT, 1.0e-20)),&
                     &SPLITCRIT,&
                     &rtm_obj_%Npts,&
-                    &cell_obj_%Ncell,&
+                    &cell_obj_%Npts,&
                     &float(isrcJ_Shdo_(rtm_obj_%Npts + 1))/rtm_obj_%Npts,&
                     &ELAPSED_TIME
                     !&float(isrcJ_Shdo_(rtm_obj_%Npts + 1))/(rtm_obj_%Npts*shdo_obj_%Nlm)
@@ -417,7 +417,7 @@ subroutine shd_solv__solveRte(&
                     &ITER, log10(max(SOLCRIT, 1.0e-20)),&
                     &SPLITCRIT,&
                     &rtm_obj_%Npts,&
-                    &cell_obj_%Ncell,&
+                    &cell_obj_%Npts,&
                     &float(isrcJ_Shdo_(rtm_obj_%Npts + 1))/rtm_obj_%Npts,&
                     &ELAPSED_TIME
                     !&float(isrcJ_Shdo_(rtm_obj_%Npts + 1))/(rtm_obj_%Npts*shdo_obj_%Nlm)
