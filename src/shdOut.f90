@@ -46,7 +46,7 @@ module shd_out
     use globals_type,  only: shd_type_rtm, shd_type_grid
 
     use globals_obj,   only: rtm_obj_, temp_Rtm_, ext_Rtm_, ssa_Rtm_, leg_Rtm_, ipha_Rtm_, &
-                             xyz_Grid_, i8Pts_Grid_, &
+                             xyz_Grid_, i8Pts_Grid_, i6Cell_Grid_, &
                             shdo_obj_, iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_, &
                              src_obj_, &
                              prp_obj_, &
@@ -2648,8 +2648,8 @@ subroutine shd_io__visualizeCell(&
                 DX = 0.1*(X2 - X1)
                 DZ = 0.1*(Z4 - Z1)
                 do J = 1, 6
-                    if (grid_obj%i6Cell(J, IC) .ne. 0 .and. J .ne. 3 .and. J .ne. 4) then
-                        INeigh = abs(grid_obj%i6Cell(J, IC))
+                    if (i6Cell_Grid_(J, IC) .ne. 0 .and. J .ne. 3 .and. J .ne. 4) then
+                        INeigh = abs(i6Cell_Grid_(J, IC))
                         XN = (xyz_Grid_(1, i8Pts_Grid_(1, INeigh)) + xyz_Grid_(1, i8Pts_Grid_(8, INeigh)))/2
                         ZN = (xyz_Grid_(3, i8Pts_Grid_(1, INeigh)) + xyz_Grid_(3, i8Pts_Grid_(8, INeigh)))/2
                         XA = XC + 1.0*(XN - XC)
@@ -2657,7 +2657,7 @@ subroutine shd_io__visualizeCell(&
                         if (.not. (XN - XC .gt. 0.0 .and. J .eq. 1 .or.&
                             & XN - XC .lt. 0.0 .and. J .eq. 2)) then
                             write (9, '(A,4(1X,F6.3),1X,I8)') '@drawarrow ',&
-                                & S*XC, S*ZC, S*XA, S*ZA, grid_obj%i6Cell(J, IC)
+                                & S*XC, S*ZC, S*XA, S*ZA, i6Cell_Grid_(J, IC)
                         end if
                     end if
                 end do
@@ -2704,7 +2704,7 @@ subroutine shd_io__saveState(&
     write (91) (rtm_obj_%z(I), I=1, rtm_obj_%Ny)
 
     write (91) ((i8Pts_Grid_(J, I), J=1, 8), I=1, grid_obj%Ncell)
-    write (91) ((grid_obj%i6Cell(J, I), J=1, 6), I=1, grid_obj%Ncell)
+    write (91) ((i6Cell_Grid_(J, I), J=1, 6), I=1, grid_obj%Ncell)
     write (91) ((grid_obj%i2Tree(J, I), J=1, 2), I=1, grid_obj%Ncell)
     write (91)  (grid_obj%flag(I), I=1, grid_obj%Ncell)
 

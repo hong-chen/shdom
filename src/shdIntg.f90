@@ -47,7 +47,7 @@ module shd_intg
     use globals_type,  only: shd_type_grid
 
     use globals_obj,   only: rtm_obj_, ext_Rtm_, &
-                             xyz_Grid_, i8Pts_Grid_, &
+                             xyz_Grid_, i8Pts_Grid_, i6Cell_Grid_, &
                             shdo_obj_, &
                              src_obj_, &
                              prp_obj_, &
@@ -541,14 +541,14 @@ subroutine shd_intg__backIntegrate3D(&
                     JFACE = 3
                 end if
                 ! Get the next cell to go to
-                INEXTCELL = grid_obj%i6Cell(IFACE, ICELL)
+                INEXTCELL = i6Cell_Grid_(IFACE, ICELL)
                 if (INEXTCELL .lt. 0) then
                     call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL,&
                         &INEXTCELL, grid_obj)
                 end if
 
                 ! Get the face grid pointers
-                if (grid_obj%i6Cell(IFACE, ICELL) .ge. 0) then
+                if (i6Cell_Grid_(IFACE, ICELL) .ge. 0) then
                     ! If going to same or larger face then use previous face
                     KFACE = IFACE
                     IC = ICELL
@@ -733,7 +733,7 @@ subroutine shd_intg__backIntegrate3D_(&
     !                       BITc is 0 for negative side and 1 for positive side.
     !                       1: (-X, -Y, -Z), 2: (+X, -Y, -Z), 3: (-X, +Y, -Z), 4: (+X, +Y, -Z)
     !                       5: (-X, -Y, +Z), 6: (+X, -Y, +Z), 7: (-X, +Y, +Z), 8: (+X, +Y, +Z)
-    !   grid_obj%i6Cell(6,grid_obj%Ncell): integer array, pointer to 6 neighboring cells of a cell.
+    !   i6Cell_Grid_(6,grid_obj%Ncell): integer array, pointer to 6 neighboring cells of a cell.
     !                       Order of pointers are 1:-X, 2:+X, 3:-Y, 4:+Y, 5:-Z, 6:+Z.
     !                       Is 0 if there is no neighbor cell (boundary).
     !                       Is positive if there is just one cell across face
@@ -957,14 +957,14 @@ subroutine shd_intg__backIntegrate3D_(&
                 end if
 
                 ! Get the next cell to go to
-                INEXTCELL = grid_obj%i6Cell(IFACE, ICELL)
+                INEXTCELL = i6Cell_Grid_(IFACE, ICELL)
                 if (INEXTCELL .lt. 0) then
                     call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL,&
                         &INEXTCELL, grid_obj)
                 end if
 
                 ! Get the face grid pointers
-                if (grid_obj%i6Cell(IFACE, ICELL) .ge. 0) then
+                if (i6Cell_Grid_(IFACE, ICELL) .ge. 0) then
                     ! If going to same or larger face then use previous face
                     KFACE = IFACE
                     IC = ICELL
@@ -1261,14 +1261,14 @@ subroutine shd_intg__backIntegrate2D(&
                     JFACE = 3
                 end if
                 ! Get the next cell to go to
-                INEXTCELL = grid_obj%i6Cell(IFACE, ICELL)
+                INEXTCELL = i6Cell_Grid_(IFACE, ICELL)
                 if (INEXTCELL .lt. 0) then
                     call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL,&
                         &INEXTCELL, grid_obj)
                 end if
 
                 ! Get the face grid pointers
-                if (grid_obj%i6Cell(IFACE, ICELL) .ge. 0) then
+                if (i6Cell_Grid_(IFACE, ICELL) .ge. 0) then
                     ! If going to same or larger face then use previous face
                     KFACE = IFACE
                     IC = ICELL
@@ -1489,7 +1489,7 @@ subroutine shd_intg__backIntegrate1D(&
                 ! Get the intersection face number (i.e. neighptr index)
                 IFACE = 6 - BITZ
                 ! Get the next cell to go to
-                INEXTCELL = grid_obj%i6Cell(IFACE, ICELL)
+                INEXTCELL = i6Cell_Grid_(IFACE, ICELL)
 
                 ! Get the face grid pointers
                 I1 = i8Pts_Grid_(GRIDFACE(IFACE), ICELL)

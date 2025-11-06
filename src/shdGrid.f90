@@ -47,7 +47,7 @@ module shd_grid
     use globals_type,  only: shd_type_grid
 
     use globals_obj,   only:  rtm_obj_, temp_Rtm_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, leg_Rtm_, ipha_Rtm_, &
-                              xyz_Grid_, i8Pts_Grid_, &
+                              xyz_Grid_, i8Pts_Grid_, i6Cell_Grid_, &
                              shdo_obj_, isrcJ_Shdo_, srcJ_Shdo_, &
                               src_obj_, &
                               prp_obj_, temp_Prp_, ext_Prp_, ssa_Prp_, leg_Prp_, ipha_Prp_, &
@@ -219,7 +219,7 @@ subroutine shd_grid__matchGridPnt(&
     KFACE = oppFace(iface)
 
     ! Get the pointer to the neighbor cell
-    IC = abs(grid_obj%i6Cell(iface, icell))
+    IC = abs(i6Cell_Grid_(iface, icell))
     ! Don't process if the neighbor cell is a boundary
     if (IC .eq. 0) return
 
@@ -355,7 +355,7 @@ subroutine shd_grid__makeNewGridPnt(idir, icell, newCell,&
                 &iptsMatch, grid_obj)
         end if
         if (iptsMatch .eq. 0) then
-            ICELL2 = abs(grid_obj%i6Cell(iface1, icell))
+            ICELL2 = abs(i6Cell_Grid_(iface1, icell))
             if (ICELL2 .gt. 0) then
                 call shd_grid__matchGridPnt(XP, YP, ZP, ICELL2, iface2,&
                     &iptsMatch, grid_obj)
@@ -498,18 +498,19 @@ end subroutine shd_grid__makeSweepOrder
 
 subroutine shd_grid__divideCell(&
     &icell, idir, newPts,&
-    &grid_obj, xyz_Grid, i8Pts_Grid)
+    &grid_obj, xyz_Grid, i8Pts_Grid, i6Cell_Grid)
 
     !   Divides a single cell (icell) in the idir direction (1=Z,2=Y,3=X)
     ! Makes the pointers to the two new cells (grid_obj%i2Tree), set the flags
     ! (grid_obj%flag), creates the new grid points if they don't exist already,
-    ! and updates the neighbor pointers (grid_obj%i6Cell) for the new cells and
+    ! and updates the neighbor pointers (i6Cell_Grid) for the new cells and
     ! their neighboring cells.
 
     type(shd_type_grid), intent(inout) :: grid_obj
 
     real(kind=R__),    intent(inout) :: xyz_Grid(3, *)
     integer(kind=I__), intent(inout) :: i8Pts_Grid(8, *)
+    integer(kind=I__), intent(inout) :: i6Cell_Grid(6, *)
 
     integer icell, idir, newPts(3, 4)
     integer newCell, iface, I
@@ -547,30 +548,30 @@ subroutine shd_grid__divideCell(&
     ! Do the neighbor pointers:
     do iface = 1, 6
         ! Special case if the neighbor is the cell itself
-        if (grid_obj%i6Cell(iface, icell) .eq. icell) then
-            grid_obj%i6Cell(iface, newCell) = newCell
-            grid_obj%i6Cell(iface, newCell + 1) = newCell + 1
+        if (i6Cell_Grid(iface, icell) .eq. icell) then
+            i6Cell_Grid(iface, newCell) = newCell
+            i6Cell_Grid(iface, newCell + 1) = newCell + 1
         ! For the faces in the split direction, the children either
         !   point to the other child or inherit the parent's neighbor.
         !   Also update the neighbor's neighbor pointer.
         else if (iface .eq. 2*idir) then
-            grid_obj%i6Cell(iface, newCell) = newCell + 1
-            grid_obj%i6Cell(iface, newCell + 1) = grid_obj%i6Cell(iface, icell)
+            i6Cell_Grid(iface, newCell) = newCell + 1
+            i6Cell_Grid(iface, newCell + 1) = i6Cell_Grid(iface, icell)
         else if (iface .eq. 2*idir - 1) then
-            grid_obj%i6Cell(iface, newCell + 1) = newCell
-            grid_obj%i6Cell(iface, newCell) = grid_obj%i6Cell(iface, icell)
+            i6Cell_Grid(iface, newCell + 1) = newCell
+            i6Cell_Grid(iface, newCell) = i6Cell_Grid(iface, icell)
         else
             ! For the other four faces:
             !   The children inherit the parent's neighbor pointers
-            grid_obj%i6Cell(iface, newCell) = grid_obj%i6Cell(iface, icell)
-            grid_obj%i6Cell(iface, newCell + 1) = grid_obj%i6Cell(iface, icell)
+            i6Cell_Grid(iface, newCell) = i6Cell_Grid(iface, icell)
+            i6Cell_Grid(iface, newCell + 1) = i6Cell_Grid(iface, icell)
         end if
         ! Then see if we can match faces further down the neighbor's tree;
         !   also update the neighboring cells pointers
         call shd_grid__matchNeighCellFace(iface, newCell,&
-            &grid_obj)
+            &grid_obj, i6Cell_Grid)
         call shd_grid__matchNeighCellFace(iface, newCell + 1,&
-            &grid_obj)
+            &grid_obj, i6Cell_Grid)
     end do
 
     return
@@ -578,21 +579,23 @@ subroutine shd_grid__divideCell(&
 end subroutine shd_grid__divideCell
 
 subroutine shd_grid__matchNeighCellFace(iface, IC,&
-    &grid_obj)
+    &grid_obj, i6Cell_Grid)
 
     !   Resolves the neighbor pointers for a new cell IC (from a subdivision)
     ! for the iface face.  Based on the size of this new face and
     ! the corresponding faces of the neighboring cells (down its tree),
-    ! the new cell's grid_obj%i6Cell and those of the neighboring cells are updated.
+    ! the new cell's i6Cell_Grid and those of the neighboring cells are updated.
 
     type(shd_type_grid), intent(in) :: grid_obj
+
+    integer(kind=I__), intent(inout) :: i6Cell_Grid(6, *)
 
     integer iface, IC
     integer icellNeigh, INN, JFACE, IC1, IC8, IN1, IN8, DIR, DIR1, DIR2
     logical DONE
     real POS(3)
 
-    icellNeigh = abs(grid_obj%i6Cell(iface, IC))
+    icellNeigh = abs(i6Cell_Grid(iface, IC))
     ! If no neighbor then return
     if (icellNeigh .eq. 0) return
     JFACE = (iface + 1)/2
@@ -616,9 +619,9 @@ subroutine shd_grid__matchNeighCellFace(iface, IC,&
             &xyz_Grid_(DIR2, IC8) .le. xyz_Grid_(DIR2, IN8)) then
             ! If this is the bottom of the tree then we have a face match
             if (grid_obj%i2Tree(2, icellNeigh) .eq. 0) then
-                grid_obj%i6Cell(iface, IC) =  icellNeigh
+                i6Cell_Grid(iface, IC) =  icellNeigh
             else
-                grid_obj%i6Cell(iface, IC) = -icellNeigh
+                i6Cell_Grid(iface, IC) = -icellNeigh
             end if
         end if
         ! Compare the size of the neighbor face with the new face.
@@ -630,9 +633,9 @@ subroutine shd_grid__matchNeighCellFace(iface, IC,&
             &xyz_Grid_(DIR2, IN1) .ge. xyz_Grid_(DIR2, IC1) .and.&
             &xyz_Grid_(DIR2, IN8) .le. xyz_Grid_(DIR2, IC8)) then
             call shd_grid__inheritNeighCell(icellNeigh, oppFace(iface), IC,&
-                &grid_obj)
+                &grid_obj, i6Cell_Grid)
         else
-            grid_obj%i6Cell(oppFace(iface), icellNeigh) = -abs(grid_obj%i6Cell(oppFace(iface), icellNeigh))
+            i6Cell_Grid(oppFace(iface), icellNeigh) = -abs(i6Cell_Grid(oppFace(iface), icellNeigh))
         end if
 
         ! Go down the neighbors cell tree until there is no children,
@@ -659,12 +662,14 @@ subroutine shd_grid__matchNeighCellFace(iface, IC,&
 end subroutine shd_grid__matchNeighCellFace
 
 subroutine shd_grid__inheritNeighCell(icell, iface, icellNeigh,&
-    &grid_obj)
+    &grid_obj, i6Cell_Grid)
 
     !   Updates the icell cell's new neighbor cell (icellNeigh) for all
     ! children cells that border the face (iface).
 
     type(shd_type_grid), intent(in) :: grid_obj
+
+    integer(kind=I__), intent(inout) :: i6Cell_Grid(6, *)
 
     integer icell, iface, icellNeigh
     integer JFACE, IC, DIR, SP, STACK(50)
@@ -678,7 +683,7 @@ subroutine shd_grid__inheritNeighCell(icell, iface, icellNeigh,&
     SP = 0
     DONE = .false.
     do while (.not. DONE)
-        grid_obj%i6Cell(iface, IC) = icellNeigh
+        i6Cell_Grid(iface, IC) = icellNeigh
         ! If this is an end cell then pop the stack
         if (grid_obj%i2Tree(2, IC) .eq. 0) then
             ! If no more to pop then we are done
@@ -778,7 +783,7 @@ subroutine shd_grid__testGridSmooth(&
                 end if
                 ! If there are multiple neighboring cells then get
                 !   direction the neighbor cell was split
-                icellNeigh = grid_obj%i6Cell(IFACE, icell)
+                icellNeigh = i6Cell_Grid_(IFACE, icell)
                 if (icellNeigh .lt. 0) then
                     DIRSPLIT(J) = ibits(int(grid_obj%flag(abs(icellNeigh))), 2, 2)
                 end if
@@ -1614,7 +1619,7 @@ subroutine shd_grid__splitGrid(&
     DIRFLUX, &
     SOLARFLUX, YLMSUN, &
     ADAPTCRIT, ADAPTIND, &
-    grid_obj, xyz_Grid, i8Pts_Grid, &
+    grid_obj, xyz_Grid, i8Pts_Grid, i6Cell_Grid, &
     temp_Rtm, planck_Rtm, ext_Rtm, ssa_Rtm, leg_Rtm, ipha_Rtm, &
     iradI_Shdo, radI_Shdo, &
     isrcJ_Shdo, srcJ_Shdo)
@@ -1629,6 +1634,7 @@ subroutine shd_grid__splitGrid(&
 
     real(kind=R__),    intent(inout) :: xyz_Grid(3, *)
     integer(kind=I__), intent(inout) :: i8Pts_Grid(8, *)
+    integer(kind=I__), intent(inout) :: i6Cell_Grid(6, *)
 
     real(kind=R__),    intent(inout) :: temp_Rtm(*), planck_Rtm(*), ext_Rtm(*), ssa_Rtm(*)
     real(kind=R__),    intent(inout) :: leg_Rtm(prp_obj_%NlegSet, &
@@ -1701,7 +1707,7 @@ subroutine shd_grid__splitGrid(&
                     icell = int(ADAPTIND(I))/4
                     idir = iand(int(ADAPTIND(I)), 3)
                     ! Create the new grid points and make pointers
-                    call shd_grid__divideCell(icell, idir, newPts, grid_obj, xyz_Grid, i8Pts_Grid)
+                    call shd_grid__divideCell(icell, idir, newPts, grid_obj, xyz_Grid, i8Pts_Grid, i6Cell_Grid)
 
                     ! Interpolate the medium properties, radiance, and source
                     call shd_grid__interpNewGridPnt(newPts,&
@@ -1740,7 +1746,7 @@ subroutine shd_grid__splitGrid(&
                     ! idir = 0
                     if (idir .gt. 0) then
                         ! Create the new grid points and make pointers
-                        call shd_grid__divideCell(icell, idir, newPts, grid_obj, xyz_Grid, i8Pts_Grid)
+                        call shd_grid__divideCell(icell, idir, newPts, grid_obj, xyz_Grid, i8Pts_Grid, i6Cell_Grid)
 
                         ! Interpolate the medium properties, radiance, and source
                         call shd_grid__interpNewGridPnt(newPts,&

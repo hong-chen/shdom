@@ -202,7 +202,7 @@ end subroutine shd_init__makeGrid
 
 subroutine shd_init__makeCell(rtm_obj, &
                               grid_OBJ, &
-                              xyz_Grid, i8Pts_Grid)
+                              xyz_Grid, i8Pts_Grid, i6Cell_Grid)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Description:
@@ -241,7 +241,7 @@ subroutine shd_init__makeCell(rtm_obj, &
     !                   BITc is 0 for negative side and 1 for positive side.
     !                   1: (-X, -Y, -Z), 2: (+X, -Y, -Z), 3: (-X, +Y, -Z), 4: (+X, +Y, -Z)
     !                   5: (-X, -Y, +Z), 6: (+X, -Y, +Z), 7: (-X, +Y, +Z), 8: (+X, +Y, +Z)
-    !   grid_obj%i6Cell(6,IC): pointer to 6 neighboring cells of a cell.
+    !   i6Cell_Grid(6,IC): pointer to 6 neighboring cells of a cell.
     !                   Order of pointers are 1:-X, 2:+X, 3:-Y, 4:+Y, 5:-Z, 6:+Z.
     !                   Is 0 if there is no neighbor cell (boundary).
     !                   Is positive if there is just one cell across face
@@ -270,6 +270,7 @@ subroutine shd_init__makeCell(rtm_obj, &
 
     real(kind=R__),    intent(out) :: xyz_Grid(3, *)
     integer(kind=I__), intent(out) :: i8Pts_Grid(8, *)
+    integer(kind=I__), intent(out) :: i6Cell_Grid(6, *)
 
     integer(kind=I__) :: ix, iy, iz, ix0, ix1, iy0, iy1, i, Nxc, Nyc
 
@@ -332,94 +333,94 @@ subroutine shd_init__makeCell(rtm_obj, &
                 ! Initialize the neighbor pointer; to self for IP mode or
                 !   if open boundary conditions and at either end
                 if (is1DX_) then
-                    grid_obj%i6Cell(1, i) = i
-                    grid_obj%i6Cell(2, i) = i
+                    i6Cell_Grid(1, i) = i
+                    i6Cell_Grid(2, i) = i
                     grid_obj%flag(I) = ibset(int(grid_obj%flag(I)), 0)
                 else if (isOpenX_) then
                     if (ix .eq. 1) then
-                        grid_obj%i6Cell(1, i) = i
-                        grid_obj%i6Cell(2, i) = i + (grid_obj%Nz - 1)*Nyc
+                        i6Cell_Grid(1, i) = i
+                        i6Cell_Grid(2, i) = i + (grid_obj%Nz - 1)*Nyc
                         grid_obj%flag(I) = ibset(int(grid_obj%flag(I)), 0)
                     else if (ix .eq. Nxc) then
-                        grid_obj%i6Cell(1, i) = i - (grid_obj%Nz - 1)*Nyc
-                        grid_obj%i6Cell(2, i) = i
+                        i6Cell_Grid(1, i) = i - (grid_obj%Nz - 1)*Nyc
+                        i6Cell_Grid(2, i) = i
                         grid_obj%flag(I) = ibset(int(grid_obj%flag(I)), 0)
                     else
-                        grid_obj%i6Cell(1, i) = i - (grid_obj%Nz - 1)*Nyc
-                        grid_obj%i6Cell(2, i) = i + (grid_obj%Nz - 1)*Nyc
+                        i6Cell_Grid(1, i) = i - (grid_obj%Nz - 1)*Nyc
+                        i6Cell_Grid(2, i) = i + (grid_obj%Nz - 1)*Nyc
                     end if
                 else if (isMpiX_) then
                     if (ix .eq. 1) then
-                        grid_obj%i6Cell(1, i) = 0
-                        grid_obj%i6Cell(2, i) = i + (grid_obj%Nz - 1)*Nyc
+                        i6Cell_Grid(1, i) = 0
+                        i6Cell_Grid(2, i) = i + (grid_obj%Nz - 1)*Nyc
                     else if (ix .eq. Nxc) then
-                        grid_obj%i6Cell(1, i) = i - (grid_obj%Nz - 1)*Nyc
-                        grid_obj%i6Cell(2, i) = 0
+                        i6Cell_Grid(1, i) = i - (grid_obj%Nz - 1)*Nyc
+                        i6Cell_Grid(2, i) = 0
                     else
-                        grid_obj%i6Cell(1, i) = i - (grid_obj%Nz - 1)*Nyc
-                        grid_obj%i6Cell(2, i) = i + (grid_obj%Nz - 1)*Nyc
+                        i6Cell_Grid(1, i) = i - (grid_obj%Nz - 1)*Nyc
+                        i6Cell_Grid(2, i) = i + (grid_obj%Nz - 1)*Nyc
                     end if
                 else
                     if (ix .eq. 1) then
-                        grid_obj%i6Cell(1, i) = i + (Nxc - 1)*(grid_obj%Nz - 1)*Nyc
+                        i6Cell_Grid(1, i) = i + (Nxc - 1)*(grid_obj%Nz - 1)*Nyc
                     else
-                        grid_obj%i6Cell(1, i) = i - (grid_obj%Nz - 1)*Nyc
+                        i6Cell_Grid(1, i) = i - (grid_obj%Nz - 1)*Nyc
                     end if
                     if (ix .eq. rtm_obj%Nx) then
-                        grid_obj%i6Cell(2, i) = i - (Nxc - 1)*(grid_obj%Nz - 1)*Nyc
+                        i6Cell_Grid(2, i) = i - (Nxc - 1)*(grid_obj%Nz - 1)*Nyc
                     else
-                        grid_obj%i6Cell(2, i) = i + (grid_obj%Nz - 1)*Nyc
+                        i6Cell_Grid(2, i) = i + (grid_obj%Nz - 1)*Nyc
                     end if
                 end if
                 if (is1DYx_) then
-                    grid_obj%i6Cell(3, i) = i
-                    grid_obj%i6Cell(4, i) = i
+                    i6Cell_Grid(3, i) = i
+                    i6Cell_Grid(4, i) = i
                     grid_obj%flag(I) = ibset(int(grid_obj%flag(I)), 1)
                 else if (isOpenYx_) then
                     if (iy .eq. 1) then
-                        grid_obj%i6Cell(3, i) = i
-                        grid_obj%i6Cell(4, i) = i + (grid_obj%Nz - 1)
+                        i6Cell_Grid(3, i) = i
+                        i6Cell_Grid(4, i) = i + (grid_obj%Nz - 1)
                         grid_obj%flag(I) = ibset(int(grid_obj%flag(I)), 1)
                     else if (iy .eq. Nyc) then
-                        grid_obj%i6Cell(3, i) = i - (grid_obj%Nz - 1)
-                        grid_obj%i6Cell(4, i) = i
+                        i6Cell_Grid(3, i) = i - (grid_obj%Nz - 1)
+                        i6Cell_Grid(4, i) = i
                         grid_obj%flag(I) = ibset(int(grid_obj%flag(I)), 1)
                     else
-                        grid_obj%i6Cell(3, i) = i - (grid_obj%Nz - 1)
-                        grid_obj%i6Cell(4, i) = i + (grid_obj%Nz - 1)
+                        i6Cell_Grid(3, i) = i - (grid_obj%Nz - 1)
+                        i6Cell_Grid(4, i) = i + (grid_obj%Nz - 1)
                     end if
                 else if (isMpiY_) then
                     if (iy .eq. 1) then
-                        grid_obj%i6Cell(3, i) = 0
-                        grid_obj%i6Cell(4, i) = i + (grid_obj%Nz - 1)
+                        i6Cell_Grid(3, i) = 0
+                        i6Cell_Grid(4, i) = i + (grid_obj%Nz - 1)
                     else if (iy .eq. Nyc) then
-                        grid_obj%i6Cell(3, i) = i - (grid_obj%Nz - 1)
-                        grid_obj%i6Cell(4, i) = 0
+                        i6Cell_Grid(3, i) = i - (grid_obj%Nz - 1)
+                        i6Cell_Grid(4, i) = 0
                     else
-                        grid_obj%i6Cell(3, i) = i - (grid_obj%Nz - 1)
-                        grid_obj%i6Cell(4, i) = i + (grid_obj%Nz - 1)
+                        i6Cell_Grid(3, i) = i - (grid_obj%Nz - 1)
+                        i6Cell_Grid(4, i) = i + (grid_obj%Nz - 1)
                     end if
                 else
                     if (iy .eq. 1) then
-                        grid_obj%i6Cell(3, i) = i + (Nyc - 1)*(grid_obj%Nz - 1)
+                        i6Cell_Grid(3, i) = i + (Nyc - 1)*(grid_obj%Nz - 1)
                     else
-                        grid_obj%i6Cell(3, i) = i - (grid_obj%Nz - 1)
+                        i6Cell_Grid(3, i) = i - (grid_obj%Nz - 1)
                     end if
                     if (iy .eq. rtm_obj%Ny) then
-                        grid_obj%i6Cell(4, i) = i - (Nyc - 1)*(grid_obj%Nz - 1)
+                        i6Cell_Grid(4, i) = i - (Nyc - 1)*(grid_obj%Nz - 1)
                     else
-                        grid_obj%i6Cell(4, i) = i + (grid_obj%Nz - 1)
+                        i6Cell_Grid(4, i) = i + (grid_obj%Nz - 1)
                     end if
                 end if
                 if (iz .eq. 1) then
-                    grid_obj%i6Cell(5, i) = 0
+                    i6Cell_Grid(5, i) = 0
                 else
-                    grid_obj%i6Cell(5, i) = i - 1
+                    i6Cell_Grid(5, i) = i - 1
                 end if
                 if (iz .eq. grid_obj%Nz - 1) then
-                    grid_obj%i6Cell(6, i) = 0
+                    i6Cell_Grid(6, i) = 0
                 else
-                    grid_obj%i6Cell(6, i) = i + 1
+                    i6Cell_Grid(6, i) = i + 1
                 end if
                 ! Base grid cells have no parents or children
                 grid_obj%i2Tree(1, i) = 0

@@ -53,7 +53,7 @@ module shd_mpi
                              shd_type_sen
 
     use globals_obj,   only:  rtm_obj_, ext_Rtm_, leg_Rtm_, &
-                              xyz_Grid_, i8Pts_Grid_, &
+                              xyz_Grid_, i8Pts_Grid_, i6Cell_Grid_, &
                              shdo_obj_, isrcJ_Shdo_, srcJ_Shdo_, &
                               src_obj_, &
                               prp_obj_, &
@@ -3298,14 +3298,14 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
             JFACE = 3
         end if
         ! Get the next cell to go to
-        INEXTCELL = grid_obj%i6Cell(IFACE, ICELL)
+        INEXTCELL = i6Cell_Grid_(IFACE, ICELL)
         if (INEXTCELL .lt. 0) then
             call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL,&
                 &INEXTCELL, grid_obj)
         end if
 
         ! Get the face grid pointers
-        if (grid_obj%i6Cell(IFACE, ICELL) .ge. 0) then
+        if (i6Cell_Grid_(IFACE, ICELL) .ge. 0) then
             ! If going to same or larger face then use previous face
             KFACE = IFACE
             IC = ICELL

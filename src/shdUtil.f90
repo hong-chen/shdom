@@ -48,7 +48,7 @@ module shd_util
     use globals_type,  only: shd_type_grid
 
     use globals_obj,   only: rtm_obj_, &
-                             xyz_Grid_, i8Pts_Grid_
+                             xyz_Grid_, i8Pts_Grid_, i6Cell_Grid_
 
     implicit none
     private
@@ -358,7 +358,7 @@ subroutine shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, INEXT,&
     integer IC, IC1, DIR
 
     ! Get the pointer to the neighbor cell
-    INEXT = grid_obj%i6Cell(IFACE, ICELL)
+    INEXT = i6Cell_Grid_(IFACE, ICELL)
     if (INEXT .lt. 0) then
         ! If neighbor pointer is negative then we are going into a cell
         !   that has subcells, and the absolute value of the pointer is the

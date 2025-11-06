@@ -47,7 +47,7 @@ module shd_src
     use globals_type,  only: shd_type_grid
 
     use globals_obj,   only: rtm_obj_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, leg_Rtm_, ipha_Rtm_, &
-                             xyz_Grid_, i8Pts_Grid_, &
+                             xyz_Grid_, i8Pts_Grid_, i6Cell_Grid_, &
                             shdo_obj_, &
                              src_obj_, &
                              prp_obj_, &
@@ -1075,13 +1075,13 @@ subroutine shd_src__integrateSrcOneRay(&
             OPENBCFACE = .false.
         end if
         ! Get the next cell to go to
-        INEXTCELL = grid_obj%i6Cell(IFACE, icell)
+        INEXTCELL = i6Cell_Grid_(IFACE, icell)
         if (INEXTCELL .lt. 0) then
             call shd_util__findNextCell(XN, YN, ZN, IFACE, JFACE, icell,&
                 &INEXTCELL, grid_obj)
         end if
         ! If going to same or larger face then use previous face
-        if ((grid_obj%i6Cell(IFACE, icell) .ge. 0) .and. (.not. OPENBCFACE)) then
+        if ((i6Cell_Grid_(IFACE, icell) .ge. 0) .and. (.not. OPENBCFACE)) then
             KFACE = IFACE
             IC = icell
         else
@@ -1352,7 +1352,7 @@ subroutine shd_src__integrateSrc(NSTOKES,&
             OPENBCFACE = .false.
         end if
         ! Get the next cell to go to
-        INEXTCELL = grid_obj%i6Cell(IFACE, icell)
+        INEXTCELL = i6Cell_Grid_(IFACE, icell)
         if (INEXTCELL .lt. 0) then
             call shd_util__findNextCell(XN, YN, ZN, IFACE, JFACE, icell,&
                 &INEXTCELL, grid_obj)
@@ -1360,7 +1360,7 @@ subroutine shd_src__integrateSrc(NSTOKES,&
         ! Get the four grid points on the intersection face for
         !   telling if at the boundary
         !   If going to same or larger face then use previous face
-        if (grid_obj%i6Cell(IFACE, icell) .ge. 0 .and. .not. OPENBCFACE) then
+        if (i6Cell_Grid_(IFACE, icell) .ge. 0 .and. .not. OPENBCFACE) then
             KFACE = IFACE
             IC = icell
         else
