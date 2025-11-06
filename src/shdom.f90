@@ -52,8 +52,18 @@ program shdom
                              shd_type_rtm, &
                              shd_type_cell
 
-    use globals_obj,   only:  rtm_obj_, xyz_Rtm_, temp_Rtm_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, leg_Rtm_, ipha_Rtm_, &
-                             cell_obj_, i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, flag_Cell_, &
+    use globals_obj,   only:  rtm_obj_, xyz_Rtm_, &
+                                       temp_Rtm_, &
+                                     planck_Rtm_, &
+                                        ext_Rtm_, &
+                                        ssa_Rtm_, &
+                                        leg_Rtm_, &
+                                       ipha_Rtm_, &
+                                       brdf_Rtm_, &
+                             cell_obj_, i8Grid_Cell_, &
+                                        i6Cell_Cell_, &
+                                        i2Tree_Cell_, &
+                                          flag_Cell_, &
                              shdo_obj_, iradI_Shdo_, &
                                          radI_Shdo_, &
                                         isrcJ_Shdo_, &
@@ -65,7 +75,6 @@ program shdom
                                          leg_Prp_, &
                                         ipha_Prp_, &
                               sfc_obj_, brdf_Sfc_, &
-                                        brdf_Rtm_, &
                               ckd_obj_, solar_Ckd_, &
                                           wgt_Ckd_, &
                                          kabs_Ckd_, &
@@ -139,10 +148,6 @@ program shdom
     type(shd_type_rtm) :: rtmAll_obj
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    ! cell_obj_
-    !╭────────────────────────────────────────────────────────────────────────────╮!
-    !╰────────────────────────────────────────────────────────────────────────────╯!
-
     real(kind=R__),    allocatable :: work(:)
     integer(kind=I__), allocatable :: work1(:)
     real(kind=R__),    allocatable :: work2(:)
@@ -153,9 +158,6 @@ program shdom
     real(kind=R__), allocatable :: fluxTot_all(:, :, :, :), fluxDiv_all(:, :, :)
     real(kind=R__), allocatable :: SH_all(:, :, :, :)
 
-    ! shdo_obj_
-    !╭────────────────────────────────────────────────────────────────────────────╮!
-    !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! SAV
     !╭────────────────────────────────────────────────────────────────────────────╮!
@@ -173,10 +175,6 @@ program shdom
     integer(kind=2), allocatable :: ipha_PrpAll(:)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    ! sfc_obj_
-    !╭────────────────────────────────────────────────────────────────────────────╮!
-    !╰────────────────────────────────────────────────────────────────────────────╯!
-
     ! CKD
     !╭────────────────────────────────────────────────────────────────────────────╮!
     integer(kind=I__) :: ig_ckd
@@ -187,7 +185,7 @@ program shdom
     integer(kind=I__) :: NptsTop_bc, NptsBot_bc
     integer(kind=I__) :: maxNpts_bc, maxNrad_bc
     integer(kind=I__), allocatable :: ptr_Bc(:)
-    real(kind=R__), allocatable    :: rad_Bc(:, :)
+    real(kind=R__),    allocatable :: rad_Bc(:, :)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
