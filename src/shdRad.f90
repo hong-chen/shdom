@@ -206,7 +206,7 @@ subroutine shd_rad__computeDirect(&
                 I = min(max(IL, 1), ckd_obj_%Nz - 1)
                 W0 = (prp_obj_%z(IZ) - ckd_obj_%z(I))/(ckd_obj_%z(I + 1) - ckd_obj_%z(I))
                 W0 = min(max(W0, 0.0d0), 1.0d0)
-                kabs(IZ) = (1.0 - W0)*kabs_Ckd_(I, ckd_obj_%ig) + W0*kabs_Ckd_(I + 1, ckd_obj_%ig)
+                kabs(IZ) = (1.0 - W0)*kabs_Ckd_(ckd_obj_%ig, I) + W0*kabs_Ckd_(ckd_obj_%ig, I+1)
             else
                 kabs(IZ) = 0.0
             end if

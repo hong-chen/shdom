@@ -683,8 +683,8 @@ subroutine shd_mpi__bcastCkd(ckd_obj, solar_Ckd, wgt_Ckd, kabs_Ckd)
 
     type(shd_type_ckd), intent(inout) :: ckd_obj
     real(kind=R__), intent(inout) :: solar_Ckd(ckd_obj%Ng), &
-                                     wgt_Ckd(ckd_obj%Ng), &
-                                     kabs_Ckd(ckd_obj%Nz, ckd_obj%Ng)
+                                       wgt_Ckd(ckd_obj%Ng), &
+                                      kabs_Ckd(ckd_obj%Ng, ckd_obj%Nz)
 
 #if HAS_MPI
     integer :: ierr

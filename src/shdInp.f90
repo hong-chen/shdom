@@ -1828,8 +1828,8 @@ subroutine shd_io__readCkd(waveNum, &
     real(kind=R__), intent(inout) :: waveNum(2)
     type(shd_type_ckd), intent(inout) :: ckd_obj
     real(kind=R__), intent(inout) :: solar_Ckd(ckd_obj%Ng), &
-                                     wgt_Ckd(ckd_obj%Ng), &
-                                     kabs_Ckd(ckd_obj%Nz, ckd_obj%Ng)
+                                       wgt_Ckd(ckd_obj%Ng), &
+                                      kabs_Ckd(ckd_obj%Ng, ckd_obj%Nz)
 
     integer(kind=I__) :: Nband, iband, ibandCheck, ibandSelect
     integer(kind=I__) :: ig, iz, itmp
@@ -1876,9 +1876,9 @@ subroutine shd_io__readCkd(waveNum, &
     end do
 
     do iz = 1, ckd_obj%maxNz
-        read (1, *) iband, itmp, (kabs_Ckd(iz, ig), ig=1, ckd_obj%Ng)
+        read (1, *) iband, itmp, (kabs_Ckd(ig, iz), ig=1, ckd_obj%Ng)
         do ig = 1, ckd_obj%Ng
-            if (kabs_Ckd(iz, ig) .lt. 0.0) then
+            if (kabs_Ckd(ig, iz) .lt. 0.0) then
                 write (*, '(1X,A,A,I3,A,I3,A,I2)')&
                     &'Negative absorption in CKD file.  ',&
                     &'Band: ', iband, '   Level: ', iz, '   k: ', ig

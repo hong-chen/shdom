@@ -673,7 +673,7 @@ program shdom
 
         allocate(solar_Ckd_(ckd_obj_%Ng), &
                    wgt_Ckd_(ckd_obj_%Ng),   &
-                  kabs_Ckd_(ckd_obj_%Nz, ckd_obj_%Ng))
+                  kabs_Ckd_(ckd_obj_%Ng, ckd_obj_%Nz))
 
         memUsed = memUsed + ckd_obj_%Nz*(2.0+ckd_obj_%Ng) + 2.0*ckd_obj_%Ng
 
