@@ -42,11 +42,10 @@ program shdom
     use globals_const, only: REPS_
     use globals_cfg,   only: verbose_, charMaxLen_, accSolv_, &
                              memTotSysMB_, memPerCpuMB_, &
-                             doNmlInp_, doHighOrder_, &
+                             doNmlInp_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, isMpi_, &
                              is1DX_, is1DYx_, is1D_, is3Ddir1Ddif_, &
-                             is1D1_, isPol_, isPol4_, &
-                             isSolar_, isThermal_
+                             is1D1_, isPol_, isPol4_
     use globals_type,  only: shd_type_prp, &
                              shd_type_sfc, &
                              shd_type_rtm, &
@@ -321,15 +320,15 @@ program shdom
     if (doDeltaM) prpAll_obj%Nleg = shdo_obj_%maxNl + 1
 
     if (src_obj_%type .eq. 'B') then
-        isSolar_ = .true.
-        isThermal_ = .true.
+        src_obj_%doSolar = .true.
+        src_obj_%doTherm = .true.
     else
         if (src_obj_%type .eq. 'S') then
-            isSolar_ = .true.
-            isThermal_ = .false.
+            src_obj_%doSolar = .true.
+            src_obj_%doTherm = .false.
         else if (src_obj_%type .eq. 'T') then
-            isSolar_ = .false.
-            isThermal_ = .true.
+            src_obj_%doSolar = .false.
+            src_obj_%doTherm = .true.
         else
             stop 'Error [shdom]: Unknown src_obj_%type.'
         end if
@@ -435,15 +434,15 @@ program shdom
     ! Choose the option to compute higher order radiance SH terms
     if  ((prpAll_obj%Nx .eq. 1) .and. (prpAll_obj%Ny .eq. 1) .and.&
         &(sfc_obj_%Nx .le. 32) .and. (sfc_obj_%Ny .le. 32)) then
-        doHighOrder_ = .true.
+        shdo_obj_%doHighOrder = .true.
         if (verbose_ .ge. 4) write (6, '(A)') &
-            'Warning [shdom]: 1D calculation, set doHighOrder_ to .TRUE.'
+            'Warning [shdom]: 1D calculation, set shdo_obj_%doHighOrder to .TRUE.'
     else
-        doHighOrder_ = .false.
+        shdo_obj_%doHighOrder = .false.
     end if
 
     Nsh_out = 4
-    if (doHighOrder_) Nsh_out = 5
+    if (shdo_obj_%doHighOrder) Nsh_out = 5
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
@@ -906,7 +905,7 @@ program shdom
 
     memNeed = ADAPT_GRID_FACTOR*rtm_obj_%Npts0*NmaxNpts
 
-    if (doHighOrder_) then
+    if (shdo_obj_%doHighOrder) then
         scaleFactor = min(1.5, ((MAX_TOTAL_MB*1024**2)/4 - memUsed)/memNeed)
     else
         scaleFactor = min(1.0, ((MAX_TOTAL_MB*1024**2)/4 - memUsed)/memNeed)
@@ -1112,7 +1111,7 @@ program shdom
         !   in source (srcJ_Shdo_), radiance (radI_Shdo_), fluxes, direct Flux.
         call shd_solv__solveRte(&
             &doRadInit,&
-            &doDeltaM, doHighOrder_,&
+            &doDeltaM,&
             &doAccel, solAcc, maxIter, solCrit, iter,&
             &splitAcc, shAcc,&
             &maxNpts_bc, maxNrad_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&

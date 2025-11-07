@@ -39,8 +39,7 @@
 
 module shd_solv
 
-    use globals_cfg,  only: verbose_, isMpi_, &
-                            isSolar_
+    use globals_cfg,  only: verbose_, isMpi_
 
     use globals_obj,  only: rtm_obj_, xyz_Rtm_, temp_Rtm_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, leg_Rtm_, ipha_Rtm_, &
                            cell_obj_, i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, flag_Cell_, &
@@ -94,7 +93,7 @@ contains
 
 subroutine shd_solv__solveRte(&
     &doRadInit,&
-    &doDeltaM, doHighOrder,&
+    &doDeltaM,&
     &doAccel, SOLACC, MAXITER, SOLCRIT, ITER,&
     &SPLITACC, SHACC,&
     &MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
@@ -110,7 +109,7 @@ subroutine shd_solv__solveRte(&
     integer MAXITER, ITER
     integer MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR(MAXNBC, 2)
     integer WORK1(*)
-    logical doRadInit, doDeltaM, doAccel, doHighOrder
+    logical doRadInit, doDeltaM, doAccel
     real SOLACC, SOLCRIT, SPLITACC, SHACC
     real BCRAD(*)
     real FLUXES(2, *), DIRFLUX(*)
@@ -165,7 +164,7 @@ subroutine shd_solv__solveRte(&
 
     ! Compute the solar transmission in DIRFLUX.
     ! Precompute Ylm's for solar direction
-    if (isSolar_) then
+    if (src_obj_%doSolar) then
         if (isMpi_) then
             call shd_mpi__makeDirect(1, doDeltaM, shdo_obj_%maxNl,&
                 &src_obj_%avgSolar0, src_obj_%avgMu, src_obj_%avgAz,&
@@ -340,7 +339,7 @@ subroutine shd_solv__solveRte(&
         end if
 
         ! Find the SH truncation to use for the radiance (iradI_Shdo_)
-        call shd_solv__truncRad(doHighOrder, doFixSH, SHACC,&
+        call shd_solv__truncRad(shdo_obj_%doHighOrder, doFixSH, SHACC,&
             &iradI_Shdo_, radI_Shdo_)
 
         ! srcSH to srcDO, then srcDO to radDO, then radDO to radSH

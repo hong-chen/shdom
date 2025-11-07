@@ -43,7 +43,7 @@ module shd_grid
     use globals_cfg,   only: accSolv_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, isMpi_, &
                              is1DX_, is1DYx_, is1D_, &
-                             isPol_, isSolar_, isThermal_
+                             isPol_
 
     use globals_type,  only: shd_type_rtm, &
                              shd_type_cell
@@ -1464,7 +1464,7 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
     end do
 
     C = sqrt(4.0*acos(-1.0))
-    if (isSolar_) then
+    if (src_obj_%doSolar) then
         SECMU0 = 1.0/abs(src_obj_%avgMu)
     end if
 
@@ -1498,13 +1498,13 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
             end if
 
             ! Compute the new Planck source function (if needed)
-            if (isThermal_) then
+            if (src_obj_%doTherm) then
                 call shd_util__computePlanck(temp_Rtm(IP), src_obj_%unit, src_obj_%waveNum, src_obj_%avgWaveLen, BB)
                 planck_Rtm(IP) = (1.0 - ssa_Rtm(IP))*BB
             end if
 
             ! Compute the new direct beam flux (if needed)
-            if (isSolar_) then
+            if (src_obj_%doSolar) then
                 if (isMpi_) then
                     ! If MPI mode then calculate a temporary approximation
                     !   to the direct flux (for source function calculation below)
@@ -1753,7 +1753,7 @@ subroutine shd_grid__splitGrid(&
         end if
 
         ! If in parallel mode, calculate all the direct beam fluxes at once
-        if (isSolar_) then
+        if (src_obj_%doSolar) then
             if (isMpi_) then
                 call shd_mpi__makeDirect(OLDNPTS + 1,&
                     &doDeltaM, shdo_obj_%maxNl,&

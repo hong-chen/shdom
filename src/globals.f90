@@ -146,9 +146,6 @@ module globals_cfg
     ! Namelist input
     logical, save :: doNmlInp_ = .true.
 
-    ! High order radiance (use more SH terms)
-    logical, save :: doHighOrder_
-
     ! Boundary conditions (BCFLAG)
     logical, save :: isOpenX_, isOpenYx_, isMpiX_, isMpiY_, isMpi_
 
@@ -160,9 +157,6 @@ module globals_cfg
 
     ! Polarization
     logical, save :: isPol_, isPol4_
-
-    ! Radiation sources (SRCTYPE)
-    logical, save :: isSolar_, isThermal_
 
 end module globals_cfg
 
@@ -247,7 +241,8 @@ module globals_type
         real(kind=R__),    allocatable :: phi(:, :)
         real(kind=R__),    allocatable :: wgt(:, :)
 
-        logical :: isAllocated  = .false.
+        logical :: doHighOrder = .false.
+        logical :: isAllocated = .false.
 
     end type shd_type_shdo
     !╰────────────────────────────────────────────────────────────────────────────╯!
@@ -274,6 +269,9 @@ module globals_type
         real(kind=R__) :: avgSolar  = -999.0 ! averaged solar from all "g"s of correlated-k
 
         real(kind=R__) :: skyRad = -999.0
+
+        logical :: doSolar = .false.
+        logical :: doTherm = .false.
 
     end type shd_type_src
     !╰────────────────────────────────────────────────────────────────────────────╯!

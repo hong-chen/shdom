@@ -43,8 +43,8 @@ module shd_mpi
     use globals_cfg,   only: verbose_, charMaxLen_, accSolv_, &
                              isMpiX_, isMpiY_, isMpi_, &
                              is1DX_, is1DYx_, is1D_, &
-                             isPol_, isPol4_, &
-                             isSolar_
+                             isPol_, isPol4_
+
     use globals_type,  only: shd_type_rtm,  &
                              shd_type_cell, &
                              shd_type_prp,  &
@@ -2257,7 +2257,7 @@ subroutine shd_mpi__computeCamRad(&
 
     allocate(YLMSUN(prp_obj_%NlegSet, shdo_obj_%Nlm))
 
-    if (isSolar_) then
+    if (src_obj_%doSolar) then
         call shd_shdo__computeYlm(.true., src_obj_%avgMu, src_obj_%avgAz, shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet, YLMSUN)
         if (DELTAM .and. prp_obj_%Npha .gt. 0) then
             NSCATANGLE = max(36, min(MAXSCATANG, 2*prp_obj_%Nleg))

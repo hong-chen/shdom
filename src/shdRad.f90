@@ -44,8 +44,7 @@ module shd_rad
     use globals_cfg,   only: verbose_, accSolv_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
                              is3Ddir1Ddif_, &
-                             isPol_, isPol4_, &
-                             isSolar_, isThermal_
+                             isPol_, isPol4_
 
     use globals_obj,   only: rtm_obj_, xyz_Rtm_, ext_Rtm_, leg_Rtm_, &
                             cell_obj_, &
@@ -902,7 +901,7 @@ subroutine shd_rad__computeCamRad(&
 
     allocate(YLMSUN(prp_obj_%NlegSet, shdo_obj_%Nlm))
 
-    if (isSolar_) then
+    if (src_obj_%doSolar) then
         call shd_shdo__computeYlm(.true., src_obj_%avgMu, src_obj_%avgAz, shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet, YLMSUN)
         if (DELTAM .and. prp_obj_%Npha .gt. 0) then
             NSCATANGLE = max(36, min(MAXSCATANG, 2*prp_obj_%Nleg))
@@ -1121,10 +1120,10 @@ subroutine shd_rad__computeFluxDiv(NSTOKES, NPTS, iradI_Shdo, SRCTYPE,&
     do I = 1, NPTS
         IR = iradI_Shdo(I)
         HR = C*EXTINCT(I)*(1 - ALBEDO(I))*radI_Shdo(1, IR + 1)
-        if (isSolar_) then
+        if (src_obj_%doSolar) then
             HR = HR + EXTINCT(I)*(1.0 - ALBEDO(I))*DIRFLUX(I)*SECMU
         end if
-        if (isThermal_) then
+        if (src_obj_%doTherm) then
             HR = HR - 4*PI_*EXTINCT(I)*PLANCK(I)
         end if
         NETFLUXDIV(I) = -HR

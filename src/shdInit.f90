@@ -42,8 +42,8 @@ module shd_init
     use globals_const, only: RD_, PI_, OPI_
     use globals_cfg,   only: verbose_, planetRadius_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
-                             is1DX_, is1DYx_, &
-                             isSolar_, isThermal_
+                             is1DX_, is1DYx_
+
     use globals_type,  only: shd_type_rtm, &
                              shd_type_cell, &
                              shd_type_prp, &
@@ -501,7 +501,7 @@ subroutine shd_init__makePrp(&
         end if
 
         maxSsa = max(maxSsa, ssa_Rtm(I))
-        if (isThermal_) then
+        if (src_obj_%doTherm) then
             call shd_util__computePlanck(temp_Rtm(I), src_obj_%unit, src_obj_%waveNum, src_obj_%avgWaveLen, BB)
             planck_Rtm(I) = (1.0 - ssa_Rtm(I))*BB
         end if
@@ -869,7 +869,7 @@ subroutine shd_init__makeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
     real SKYRAD2
 
     ! At top, boundary radiance is any isotropic sky radiation
-    if (isSolar_) then
+    if (src_obj_%doSolar) then
         SKYRAD2 = SKYRAD
     else
         call shd_util__computePlanck(SKYRAD, UNITS, WAVENO, WAVELEN, SKYRAD2)
@@ -904,7 +904,7 @@ subroutine shd_init__makeBotRadUL(NBOTPTS, BCPTR,&
     real ALB, GNDRAD
 
     ALB = sfc_obj_%avgAlb/acos(-1.0)
-    if (isThermal_) then
+    if (src_obj_%doTherm) then
         call shd_util__computePlanck(sfc_obj_%avgTemp, UNITS, WAVENO, WAVELEN, GNDRAD)
         GNDRAD = GNDRAD*(1.0 - sfc_obj_%avgAlb)
     end if
@@ -1004,7 +1004,7 @@ subroutine shd_init__makeBotRadU(NBOTPTS, BCPTR,&
         ! Initialize the upwelling boundary radiances to zero or to
         !   the reflection of direct unpolarized solar flux.
         BCRAD(:, IBC, 1) = 0.0
-        if (isSolar_) then
+        if (src_obj_%doSolar) then
             I = BCPTR(IBC)
             call shd_sfc__brdfSurface(sfc_obj_%type(2:2), brdf_Rtm_(2:sfc_obj_%Npar, IBC), WAVELEN,&
                 &MU(IMU), PHI(IMU, IPHI), SOLARMU, SOLARAZ,&
@@ -1075,7 +1075,7 @@ subroutine shd_init__makeBotRadV(&
         ! Initialize the upwelling boundary radiances to zero or to
         !   the reflection of direct unpolarized solar flux.
         BCRAD(:, IBC, 1) = 0.0
-        if (isSolar_) then
+        if (src_obj_%doSolar) then
             I = BCPTR(IBC)
             call shd_sfc__brdfSurface(sfc_obj_%type(2:2), brdf_Rtm_(2:sfc_obj_%Npar, IBC), WAVELEN,&
                 &MU2, PHI2, SOLARMU, SOLARAZ, NSTOKES, REFLECT)

@@ -42,8 +42,7 @@ module shd_src
     use globals_const, only: RD_, DPI_, O4PI_, DO4PI_, &
                              FRAC12_, FRAC13_, FRAC112_
     use globals_cfg,   only: accSolv_, isOpenX_, isOpenYx_, &
-                             isPol_, isPol4_, &
-                             isSolar_, isThermal_
+                             isPol_, isPol4_
 
     use globals_obj,   only: rtm_obj_, xyz_Rtm_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, leg_Rtm_, ipha_Rtm_, &
                             cell_obj_, i8Grid_Cell_, i6Cell_Cell_, flag_Cell_, &
@@ -157,7 +156,7 @@ subroutine shd_src__computeSrcOneCell(&
             end if
 
             ! Special case for solar source and Delta-M
-            if (isSolar_ .and. DELTAM) then
+            if (src_obj_%doSolar .and. DELTAM) then
                 if (prp_obj_%Npha .gt. 0) then
                     IPH = ipha_Rtm_(IP)
                 else
@@ -271,7 +270,7 @@ subroutine shd_src__computeSrcOneCell_(&
             end do
 
             ! Special case for solar source and Delta-M
-            if (isSolar_ .and. DELTAM) then
+            if (src_obj_%doSolar .and. DELTAM) then
                 if (prp_obj_%Npha .gt. 0) then
                     IPH = ipha_Rtm_(IP)
                 else
@@ -354,7 +353,7 @@ subroutine shd_src__computeSrcOneDir(&
 
     ! Precompute Ylm's for output direction and solar direction
     call shd_shdo__computeYlm(.false., MU, PHI, shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet, YLMDIR)
-    if (isSolar_) then
+    if (src_obj_%doSolar) then
         call shd_shdo__computeYlm(.true., src_obj_%avgMu, src_obj_%avgAz, shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet,&
             &YLMSUN)
         SECMU0 = 1.0/abs(src_obj_%avgMu)
@@ -1117,7 +1116,7 @@ subroutine shd_src__integrateSrcOneRay(&
 
     SIDE = IFACE
 
-    if (isSolar_ .and. DELTAM) then
+    if (src_obj_%doSolar .and. DELTAM) then
         if (prp_obj_%Npha .gt. 0) then
             deallocate(SINGSCAT)
         else
@@ -1666,7 +1665,7 @@ subroutine shd_src__computeSrcOnePnt(&
 
     ! Calculate the generalized spherical harmonics source function
     ! from the solar direct beam
-    if (isSolar_) then
+    if (src_obj_%doSolar) then
 
         do J = 1, NLM
             srcT_Shdo(1, J) = srcT_Shdo(1, J)&
@@ -1683,7 +1682,7 @@ subroutine shd_src__computeSrcOnePnt(&
     end if
 
     ! Add in the isotropic unpolarized thermal emission
-    if (isThermal_) then
+    if (src_obj_%doTherm) then
         srcT_Shdo(1, 1) = srcT_Shdo(1, 1) + C*PLANCK
     end if
 
@@ -1716,7 +1715,7 @@ subroutine shd_src__computeSrcOnePnt_(&
 
     ! Calculate the generalized spherical harmonics source function
     ! from the solar direct beam
-    if (isSolar_) then
+    if (src_obj_%doSolar) then
 
         do J = 1, NLM
             srcT_Shdo(J) = FLUX0*ssa0*leg(LOFJ(J), ipha0)*YLMSUN(J)
@@ -1725,7 +1724,7 @@ subroutine shd_src__computeSrcOnePnt_(&
     end if
 
     ! Add in the isotropic unpolarized thermal emission
-    if (isThermal_) then
+    if (src_obj_%doTherm) then
         srcT_Shdo(1) = srcT_Shdo(1) + C*PLANCK
     end if
 
