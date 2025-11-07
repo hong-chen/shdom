@@ -219,152 +219,154 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
     real    :: PHIDIFF
     integer, parameter :: iSFC_ID=7
 
+    SFCTYPE_CASE: select case (SFCTYPE)
 
-    if ((SFCTYPE .eq. 'L') .or. (SFCTYPE .eq. 'l')) then
+        case ('L', 'l')
 
-        ! L or l: Lambertian surface BRDF is constant.
-        !   (for testing, as done more efficiently by Lambertian routine
-        REFLECT(1:NSTOKES, 1:NSTOKES) = 0.0
-        REFLECT(1, 1) = REFPARMS(1)
-
-    else if ((SFCTYPE .eq. 'O') .or. (SFCTYPE .eq. 'o')) then
-
-        ! O: Ocean BRDF from 6S modified by Norm Loeb
-        if (isPol_) then
-            stop 'Error [_brdfSurface]: Ocean BRDF from 6S is only for unpolarized case.'
-        end if
-
-        PHIDIFF = PHI1-PHI2
-        call shd_sfc__brdfOcean(REFPARMS(1), -1., REFPARMS(2), WAVELEN,&
-            & -MU1, MU2, PHIDIFF, PHI1, REFLECT(1, 1))
-
-    else if ((SFCTYPE .eq. 'R') .or. (SFCTYPE .eq. 'r')) then
-
-        ! R: Rahman, Pinty, and Verstraete
-        if (isPol_) then
-            stop 'Error [_brdfSurface]: RPV BRDF is only for unpolarized case.'
-        end if
-
-        PHIDIFF = PHI1-PHI2-PI_
-        call shd_sfc__brdfRPV(REFPARMS(1), REFPARMS(2),&
-            &REFPARMS(3), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
-
-    else if ((SFCTYPE .eq. 'T') .or. (SFCTYPE .eq. 't')) then
-
-        ! T: LSRT model
-        if (isPol_) then
-            stop 'Error [_brdfSurface]: LSRT BRDF is only for unpolarized case.'
-        end if
-
-        PHIDIFF = PHI1-PHI2-PI_
-        call shd_sfc__brdfLSRT(REFPARMS(1), REFPARMS(2),&
-            &REFPARMS(3), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
-
-    else if (SFCTYPE .eq. 'J' .or. SFCTYPE .eq. 'j') then
-
-        ! J: LSRT-Jiao model
-        if (isPol_) then
-            stop 'Error [_brdfSurface]: LSRT-Jiao BRDF is only for unpolarized case'
-        end if
-
-        !PHIDIFF = PHI1-PHI2-PI_
-        PHIDIFF = PHI1-PHI2
-        ! J: LSRT-Jiao model
-        call shd_sfc__brdfLSRTJ(REFPARMS(1), REFPARMS(2),&
-            &REFPARMS(3), REFPARMS(4), REFPARMS(5), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
-
-    else if ((SFCTYPE .eq. 'W') .or. (SFCTYPE .eq. 'w')) then
-
-        ! W: Fresnel reflection with Gaussian distribution of slopes
-        call shd_sfc__brdfFresnel(REFPARMS(1), REFPARMS(2),&
-            &REFPARMS(3), MU1, MU2, PHI1, PHI2, NSTOKES, REFLECT)
-
-    else if ((SFCTYPE .eq. 'D') .or. (SFCTYPE .eq. 'd')) then
-
-        ! D: Diner et al., depolarizing modified RPV + Fresnel reflection
-        !   from microfacets with uniform or Gaussian distribution of s
-        PHIDIFF = PHI2 - PHI1
-        call shd_sfc__brdfDiner(REFPARMS(1), REFPARMS(2), REFPARMS(3),&
-            &REFPARMS(4), REFPARMS(5),&
-            &-MU1, MU2, PHIDIFF, NSTOKES, REFLECT)
-
-
-    else if ((SFCTYPE .eq. 'X') .or. (SFCTYPE .eq. 'x')) then
-
-        ! for Lambertian   (VL):IX, IY, TEMP,   ALB,    -999.0, -999.0, -999.0, -999.0, -999.0,  0.0
-        ! for Ocean        (VO):IX, IY, TEMP,   WSPD,   PCL,    -999.0, -999.0, -999.0, -999.0,  1.0
-        ! for RPV          (VR):IX, IY, TEMP,   RHO0,   KR,     THETA,  -999.0, -999.0, -999.0,  2.0
-        ! for LSRT         (VT):IX, IY, TEMP,   F_ISO,  F_GEO,  F_VOL,  -999.0, -999.0, -999.0,  3.0
-        ! for LSRT-J       (VJ):IX, IY, TEMP,   F_ISO,  F_GEO,  F_VOL,  F_JIAO, ALPHA,  -999.0,  4.0
-        ! for Wave-Fresnel (VW):IX, IY, TEMP,   MRE,    MIM,    WSPD,   -999.0, -999.0, -999.0, -1.0
-        ! for Diner        (VD):IX, IY, TEMP,   A,      KR,     B,      ZETA,   SIGMA,  -999.0, -2.0
-
-        if ((REFPARMS(iSFC_ID) .gt. -0.01) .and. (NSTOKES .gt. 1)) then
-            stop 'Error [_brdfSurface]: Mixed surface is only for unpolarized case.'
-        end if
-
-        ! 0.0
-        if (abs(REFPARMS(iSFC_ID)) .lt. 0.01) then
-
+            ! L or l: Lambertian surface BRDF is constant.
+            !   (for testing, as done more efficiently by Lambertian routine
             REFLECT(1:NSTOKES, 1:NSTOKES) = 0.0
             REFLECT(1, 1) = REFPARMS(1)
 
-        ! 1.0
-        else if (abs(REFPARMS(iSFC_ID)-1.0) .lt. 0.01) then
+        case ('O', 'o')
+
+            ! O: Ocean BRDF from 6S modified by Norm Loeb
+            if (isPol_) then
+                stop 'Error [_brdfSurface]: Ocean BRDF from 6S is only for unpolarized case.'
+            end if
 
             PHIDIFF = PHI1-PHI2
             call shd_sfc__brdfOcean(REFPARMS(1), -1., REFPARMS(2), WAVELEN,&
                 & -MU1, MU2, PHIDIFF, PHI1, REFLECT(1, 1))
 
-        ! 2.0
-        else if (abs(REFPARMS(iSFC_ID)-2.0) .lt. 0.01) then
+        case ('R', 'r')
+
+            ! R: Rahman, Pinty, and Verstraete
+            if (isPol_) then
+                stop 'Error [_brdfSurface]: RPV BRDF is only for unpolarized case.'
+            end if
 
             PHIDIFF = PHI1-PHI2-PI_
             call shd_sfc__brdfRPV(REFPARMS(1), REFPARMS(2),&
                 &REFPARMS(3), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
 
-        ! 3.0
-        else if (abs(REFPARMS(iSFC_ID)-3.0) .lt. 0.01) then
+        case ('T', 't')
+
+            ! T: LSRT model
+            if (isPol_) then
+                stop 'Error [_brdfSurface]: LSRT BRDF is only for unpolarized case.'
+            end if
 
             PHIDIFF = PHI1-PHI2-PI_
             call shd_sfc__brdfLSRT(REFPARMS(1), REFPARMS(2),&
                 &REFPARMS(3), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
 
-        ! 4.0
-        else if (abs(REFPARMS(iSFC_ID)-4.0) .lt. 0.01) then
+        case ('J', 'j')
 
+            ! J: LSRT-Jiao model
+            if (isPol_) then
+                stop 'Error [_brdfSurface]: LSRT-Jiao BRDF is only for unpolarized case'
+            end if
+
+            !PHIDIFF = PHI1-PHI2-PI_
             PHIDIFF = PHI1-PHI2
             ! J: LSRT-Jiao model
             call shd_sfc__brdfLSRTJ(REFPARMS(1), REFPARMS(2),&
                 &REFPARMS(3), REFPARMS(4), REFPARMS(5), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
 
-        ! -1.0
-        else if (abs(REFPARMS(iSFC_ID)+1.0) .lt. 0.01) then
+        case ('W', 'w')
 
+            ! W: Fresnel reflection with Gaussian distribution of slopes
             call shd_sfc__brdfFresnel(REFPARMS(1), REFPARMS(2),&
                 &REFPARMS(3), MU1, MU2, PHI1, PHI2, NSTOKES, REFLECT)
 
-        ! -2.0
-        else if (abs(REFPARMS(iSFC_ID)+2.0) .lt. 0.01) then
+        case ('D', 'd')
 
+            ! D: Diner et al., depolarizing modified RPV + Fresnel reflection
+            !   from microfacets with uniform or Gaussian distribution of s
             PHIDIFF = PHI2 - PHI1
             call shd_sfc__brdfDiner(REFPARMS(1), REFPARMS(2), REFPARMS(3),&
                 &REFPARMS(4), REFPARMS(5),&
                 &-MU1, MU2, PHIDIFF, NSTOKES, REFLECT)
 
-        else
+        case ('X', 'x')
 
-            print *, SFCTYPE
+                ! for Lambertian   (VL):IX, IY, TEMP,   ALB,    -999.0, -999.0, -999.0, -999.0, -999.0,  0.0
+                ! for Ocean        (VO):IX, IY, TEMP,   WSPD,   PCL,    -999.0, -999.0, -999.0, -999.0,  1.0
+                ! for RPV          (VR):IX, IY, TEMP,   RHO0,   KR,     THETA,  -999.0, -999.0, -999.0,  2.0
+                ! for LSRT         (VT):IX, IY, TEMP,   F_ISO,  F_GEO,  F_VOL,  -999.0, -999.0, -999.0,  3.0
+                ! for LSRT-J       (VJ):IX, IY, TEMP,   F_ISO,  F_GEO,  F_VOL,  F_JIAO, ALPHA,  -999.0,  4.0
+                ! for Wave-Fresnel (VW):IX, IY, TEMP,   MRE,    MIM,    WSPD,   -999.0, -999.0, -999.0, -1.0
+                ! for Diner        (VD):IX, IY, TEMP,   A,      KR,     B,      ZETA,   SIGMA,  -999.0, -2.0
+
+            if ((REFPARMS(iSFC_ID) .gt. -0.01) .and. (NSTOKES .gt. 1)) then
+                stop 'Error [_brdfSurface]: Mixed surface is only for unpolarized case.'
+            end if
+
+            MIXSFC_CASE: select case (int(REFPARMS(iSFC_ID)))
+
+                ! 0.0
+                case (0)
+
+                    REFLECT(1:NSTOKES, 1:NSTOKES) = 0.0
+                    REFLECT(1, 1) = REFPARMS(1)
+
+                ! 1.0
+                case (1)
+
+                    PHIDIFF = PHI1-PHI2
+                    call shd_sfc__brdfOcean(REFPARMS(1), -1., REFPARMS(2), WAVELEN,&
+                        & -MU1, MU2, PHIDIFF, PHI1, REFLECT(1, 1))
+
+                ! 2.0
+                case (2)
+
+                    PHIDIFF = PHI1-PHI2-PI_
+                    call shd_sfc__brdfRPV(REFPARMS(1), REFPARMS(2),&
+                        &REFPARMS(3), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
+
+                ! 3.0
+                case (3)
+
+                    PHIDIFF = PHI1-PHI2-PI_
+                    call shd_sfc__brdfLSRT(REFPARMS(1), REFPARMS(2),&
+                        &REFPARMS(3), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
+
+                ! 4.0
+                case (4)
+
+                    PHIDIFF = PHI1-PHI2
+                    ! J: LSRT-Jiao model
+                    call shd_sfc__brdfLSRTJ(REFPARMS(1), REFPARMS(2),&
+                        &REFPARMS(3), REFPARMS(4), REFPARMS(5), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
+
+                ! -1.0
+                case (-1)
+
+                    call shd_sfc__brdfFresnel(REFPARMS(1), REFPARMS(2),&
+                        &REFPARMS(3), MU1, MU2, PHI1, PHI2, NSTOKES, REFLECT)
+
+                ! -2.0
+                case (-2)
+
+                    PHIDIFF = PHI2 - PHI1
+                    call shd_sfc__brdfDiner(REFPARMS(1), REFPARMS(2), REFPARMS(3),&
+                        &REFPARMS(4), REFPARMS(5),&
+                        &-MU1, MU2, PHIDIFF, NSTOKES, REFLECT)
+
+                case default
+
+                    write(6, *) 'SFC_ID=', REFPARMS(iSFC_ID)
+                    stop 'Error [_brdfSurface]: Unknown BRDF type.'
+
+                end select MIXSFC_CASE
+
+        case default
+
+            write(6, *) 'SFCTYPE=', SFCTYPE
             stop 'Error [_brdfSurface]: Unknown BRDF type.'
 
-        end if
-
-    else
-
-        print *, SFCTYPE
-        stop 'Error [_brdfSurface]: Unknown BRDF type.'
-
-    end if
+    end select SFCTYPE_CASE
 
     return
 end subroutine shd_sfc__brdfSurface

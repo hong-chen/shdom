@@ -1229,51 +1229,42 @@ subroutine shd_io__readSfcSize(sfc_obj)
 
     sfc_obj%maxNpts = (sfc_obj%Nx + 1)*(sfc_obj%Ny + 1)
 
-    SFC_CASE: select case (sfc_obj%type)
+    SFCTYPE_CASE: select case (sfc_obj%type)
         ! 0
         case ('VL', 'Vl')
             ! Surface file type L is for variable Lambertian surface
             sfc_obj%maxNpar = 2
             sfc_obj%isLambertian = .true.
-
         ! 1
         case ('VO', 'Vo')
             ! Surface file type O is for Ocean BRDF surface
             sfc_obj%maxNpar = 3
-
         ! 2
         case ('VR', 'Vr')
             ! Surface file type R is for RPV surface
             sfc_obj%maxNpar = 4
-
         ! 3
         case ('VT', 'Vt')
             ! Surface file type T is for LSRT surface
             sfc_obj%maxNpar = 4
-
         ! 4
         case ('VJ', 'Vj')
             ! Surface file type J is for LSRT-Jiao surface
             sfc_obj%maxNpar = 6
-
         ! -1
         case ('VW', 'Vw')
             ! Surface file type W is for Wave-Fresnel surface
             sfc_obj%maxNpar = 4
-
         ! -2
         case ('VD', 'Vd')
             ! Surface file type D is for Diner polarized RPV surface:
             sfc_obj%maxNpar = 6
-
         case ('VX', 'Vx')
             ! Surface file type X is for Mixed-surface type:
             sfc_obj%maxNpar = 8
-
         case default
-
             stop 'Error [_readSfcSize]: Unknown BRDF type.'
-    end select SFC_CASE
+    end select SFCTYPE_CASE
 
     return
 
@@ -1340,365 +1331,367 @@ subroutine shd_io__readSfc(sfc_obj, brdf_Sfc)
     alb_sfc  = 0.0
     N = 0
 
-    ! Surface file type L is for variable Lambertian surface
-    if ((sfc_obj%type .eq. 'VL') .or. (sfc_obj%type .eq. 'Vl')) then
+    SFCTYPE_CASE: select case (sfc_obj%type)
 
-        sfc_obj%Npar = 2
-        sfc_obj%isLambertian = .true.
+        ! Surface file type L is for variable Lambertian surface
+        case ('VL', 'Vl')
 
-        if (sfc_obj%Npar .gt. sfc_obj%maxNpar) then
-            write (*, *) 'Error [_readSfc]: sfc_obj%maxNpar exceeded.'
-            stop
-        end if
+            sfc_obj%Npar = 2
+            sfc_obj%isLambertian = .true.
 
-        read (1, '(A)') lineTmp
-        if (lineTmp(1:1) .ne. '!') then ! check if binary input,
-            backspace(1)                ! if not, go back one line
-            do while (.true.)
-                read (1, *, end=290) ix, iy, param1, param2
-                if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
-                    &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
+            if (sfc_obj%Npar .gt. sfc_obj%maxNpar) then
+                write (*, *) 'Error [_readSfc]: sfc_obj%maxNpar exceeded.'
+                stop
+            end if
 
-                    !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
-                    !brdf_Sfc(i + 1) = temp0
-                    !brdf_Sfc(i + 2) = alb0
+            read (1, '(A)') lineTmp
+            if (lineTmp(1:1) .ne. '!') then ! check if binary input,
+                backspace(1)                ! if not, go back one line
+                do while (.true.)
+                    read (1, *, end=290) ix, iy, param1, param2
+                    if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
+                        &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
 
-                    i = iy + (sfc_obj%Ny + 1)*(ix - 1)
+                        !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+                        !brdf_Sfc(i + 1) = temp0
+                        !brdf_Sfc(i + 2) = alb0
 
-                    brdf_Sfc(1, i) = param1 ! temperature
-                    brdf_Sfc(2, i) = param2 ! albedo
-                    if (alb0 .lt. 0.0 .or. alb0 .gt. 1.0)&
-                        &stop 'Error [_readSfc]: Illegal surface albedo.'
-                    if (temp0 .lt. 150. .or. temp0 .gt. 350.) then
-                        if (verbose_ .ge. 4) write (*, *) 'Warning [_readSfc]: ',&
-                            &' surface temperature: ', ix, iy, temp0
+                        i = iy + (sfc_obj%Ny + 1)*(ix - 1)
+
+                        brdf_Sfc(1, i) = param1 ! temperature
+                        brdf_Sfc(2, i) = param2 ! albedo
+                        if (alb0 .lt. 0.0 .or. alb0 .gt. 1.0)&
+                            &stop 'Error [_readSfc]: Illegal surface albedo.'
+                        if (temp0 .lt. 150. .or. temp0 .gt. 350.) then
+                            if (verbose_ .ge. 4) write (*, *) 'Warning [_readSfc]: ',&
+                                &' surface temperature: ', ix, iy, temp0
+                        end if
+
+                        temp_sfc = temp_sfc + param1
+                        alb_sfc  = alb_sfc  + param2
+
+                        N = N + 1
+
                     end if
+                end do
+            end if
 
-                    temp_sfc = temp_sfc + param1
-                    alb_sfc  = alb_sfc  + param2
+        ! Surface file type O is for Ocean surface BRDF
+        !   Norm Loeb's modification of 6S ocean reflectance module.
+        case ('VO', 'Vo')
 
-                    N = N + 1
+            sfc_obj%Npar = 3
 
-                end if
-            end do
-        end if
+            if (sfc_obj%Npar .gt. sfc_obj%maxNpar) then
+                write (*, *) 'Error [_readSfc]: sfc_obj%maxNpar exceeded.'
+                stop
+            end if
 
-    ! Surface file type O is for Ocean surface BRDF
-    !   Norm Loeb's modification of 6S ocean reflectance module.
-    else if ((sfc_obj%type .eq. 'VO') .or. (sfc_obj%type .eq. 'Vo')) then
+            read (1, '(A)') lineTmp
+            if (lineTmp(1:1) .ne. '!') then ! check if binary input,
+                backspace(1)                ! if not, go back one line
+                do while (.true.)
+                    read (1, *, end=290) ix, iy, param1, param2, param3
+                    if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
+                        &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
 
-        sfc_obj%Npar = 3
+                        !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+                        !brdf_Sfc(i + 1) = temp0
+                        !brdf_Sfc(i + 2) = WSPD
+                        !brdf_Sfc(i + 3) = PCL
 
-        if (sfc_obj%Npar .gt. sfc_obj%maxNpar) then
-            write (*, *) 'Error [_readSfc]: sfc_obj%maxNpar exceeded.'
-            stop
-        end if
+                        i = iy + (sfc_obj%Ny + 1)*(ix - 1)
 
-        read (1, '(A)') lineTmp
-        if (lineTmp(1:1) .ne. '!') then ! check if binary input,
-            backspace(1)                ! if not, go back one line
-            do while (.true.)
-                read (1, *, end=290) ix, iy, param1, param2, param3
-                if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
-                    &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
+                        brdf_Sfc(1, i) = param1 ! temperature
+                        brdf_Sfc(2, i) = param2 ! 10m wind speed, units: m/s
+                        brdf_Sfc(3, i) = param3 ! pigment concentration, units: mg/m^3
 
-                    !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
-                    !brdf_Sfc(i + 1) = temp0
-                    !brdf_Sfc(i + 2) = WSPD
-                    !brdf_Sfc(i + 3) = PCL
+                        temp_sfc = temp_sfc + param1
 
-                    i = iy + (sfc_obj%Ny + 1)*(ix - 1)
-
-                    brdf_Sfc(1, i) = param1 ! temperature
-                    brdf_Sfc(2, i) = param2 ! 10m wind speed, units: m/s
-                    brdf_Sfc(3, i) = param3 ! pigment concentration, units: mg/m^3
-
-                    temp_sfc = temp_sfc + param1
-
-                    N = N + 1
-                end if
-            end do
-        end if
-
-    ! Surface file type R is for RPV surface:
-    !   (Rahman, Pinty, Verstraete, 1993: Coupled Surface-Atmosphe
-    !   Reflectance (CSAR) Model. 2. Semiempirical Surface Model
-    !   Usable With NOAA Advanced Very High Resolution Radiometer
-    !   Data, J. Geophys. Res., 98, 20791-20801.)
-    else if ((sfc_obj%type .eq. 'VR') .or. (sfc_obj%type .eq. 'Vr')) then
-
-        sfc_obj%Npar = 4
-
-        if (sfc_obj%Npar .gt. sfc_obj%maxNpar) then
-            write (*, *) 'Error [_readSfc]: sfc_obj%maxNpar exceeded.'
-            stop
-        end if
-
-        read (1, '(A)') lineTmp
-        if (lineTmp(1:1) .ne. '!') then ! check if binary input,
-            backspace(1)                ! if not, go back one line
-            do while (.true.)
-                read (1, *, end=290) ix, iy, param1, param2, param3, param4
-                if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
-                    &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
-
-                    !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
-                    !brdf_Sfc(i + 1) = temp0
-                    !brdf_Sfc(i + 2) = RHO0
-                    !brdf_Sfc(i + 3) = KR
-                    !brdf_Sfc(i + 4) = THETA
-
-                    i = iy + (sfc_obj%Ny + 1)*(ix - 1)
-
-                    brdf_Sfc(1, i) = param1 ! temperature
-                    brdf_Sfc(2, i) = param2 ! rho0
-                    brdf_Sfc(3, i) = param3 ! kr
-                    brdf_Sfc(4, i) = param4 ! theta
-
-                    temp_sfc = temp_sfc + param1
-                    alb_sfc  = alb_sfc  + param2
-
-                    N = N + 1
-
-                end if
-            end do
-        end if
-
-    ! Surface file type T is for LSRT surface:
-    else if ((sfc_obj%type .eq. 'VT') .or. (sfc_obj%type .eq. 'Vt')) then
-
-        sfc_obj%Npar = 4
-
-        if (sfc_obj%Npar .gt. sfc_obj%maxNpar) then
-            write (*, *) 'Error [_readSfc]: sfc_obj%maxNpar exceeded.'
-            stop
-        end if
-
-        read (1, '(A)') lineTmp
-        if (lineTmp(1:1) .ne. '!') then ! check if binary input,
-            backspace(1)                ! if not, go back one line
-            do while (.true.)
-                read (1, *, end=290) ix, iy, param1, param2, param3, param4
-                if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
-                    &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
-
-                    !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
-                    !brdf_Sfc(i + 1) = temp0
-                    !brdf_Sfc(i + 2) = F_ISO
-                    !brdf_Sfc(i + 3) = F_GEO
-                    !brdf_Sfc(i + 4) = F_VOL
-
-                    i = iy + (sfc_obj%Ny + 1)*(ix - 1)
-
-                    brdf_Sfc(1, i) = param1 ! temperature
-                    brdf_Sfc(2, i) = param2 ! f_iso
-                    brdf_Sfc(3, i) = param3 ! f_geo
-                    brdf_Sfc(4, i) = param4 ! f_vol
-
-                    temp_sfc = temp_sfc + param1
-                    alb_sfc  = alb_sfc  + param2
-
-                    N = N + 1
-
-                end if
-            end do
-        end if
-
-    ! Surface file type J is for LSRT-Jiao surface:
-    else if ((sfc_obj%type .eq. 'VJ') .or. (sfc_obj%type .eq. 'Vj')) then
-
-        sfc_obj%Npar = 6
-
-        if (sfc_obj%Npar .gt. sfc_obj%maxNpar) then
-            write (*, *) 'Error [_readSfc]: sfc_obj%maxNpar exceeded.'
-            stop
-        end if
-
-        read (1, '(A)') lineTmp
-        if (lineTmp(1:1) .ne. '!') then ! check if binary input,
-            backspace(1)                ! if not, go back one line
-            do while (.true.)
-                read (1, *, end=290) ix, iy, param1, param2, param3, param4, param5, param6
-                if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
-                    &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
-
-                    !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
-                    !brdf_Sfc(i + 1) = temp0
-                    !brdf_Sfc(i + 2) = F_ISO
-                    !brdf_Sfc(i + 3) = F_GEO
-                    !brdf_Sfc(i + 4) = F_VOL
-                    !brdf_Sfc(i + 5) = F_JIAO
-                    !brdf_Sfc(i + 6) = ALPHA
-
-                    i = iy + (sfc_obj%Ny + 1)*(ix - 1)
-
-                    brdf_Sfc(1, i) = param1 ! temperature
-                    brdf_Sfc(2, i) = param2 ! f_iso
-                    brdf_Sfc(3, i) = param3 ! f_geo
-                    brdf_Sfc(4, i) = param4 ! f_vol
-                    brdf_Sfc(5, i) = param5 ! f_jiao
-                    brdf_Sfc(6, i) = param6 ! alpha
-
-                    temp_sfc = temp_sfc + param1
-                    alb_sfc  = alb_sfc  + param2
-
-                    N = N + 1
-
-                end if
-            end do
-        end if
-
-    ! Surface file type W is for Wave-Fresnel surface
-    else if ((sfc_obj%type .eq. 'VW') .or. (sfc_obj%type .eq. 'Vw')) then
-
-        sfc_obj%Npar = 4
-
-        if (sfc_obj%Npar .gt. sfc_obj%maxNpar) then
-            write (*, *) 'Error [_readSfc]: sfc_obj%maxNpar exceeded.'
-            stop
-        end if
-
-        read (1, '(A)') lineTmp
-        if (lineTmp(1:1) .ne. '!') then ! check if binary input,
-            backspace(1)                 ! if not, go back one line
-            do while (.true.)
-                read (1, *, end=290) ix, iy, param1, param2, param3, param4
-                if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
-                    &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
-
-                    !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
-                    !brdf_Sfc(i + 1) = temp0
-                    !brdf_Sfc(i + 2) = MRE
-                    !brdf_Sfc(i + 3) = MIM
-                    !brdf_Sfc(i + 4) = WSPD
-
-                    i = iy + (sfc_obj%Ny + 1)*(ix - 1)
-
-                    brdf_Sfc(1, i) = param1 ! temperature
-                    brdf_Sfc(2, i) = param2 ! M_real
-                    brdf_Sfc(3, i) = param3 ! M_img
-                    brdf_Sfc(4, i) = param4 ! 10m wind speed
-
-                    temp_sfc = temp_sfc + param1
-
-                    N = N + 1
-
-                end if
-            end do
-        end if
-
-    ! Surface file type D is for Diner et al surface reflection:
-    ! (Diner, D. J., F. Xu, J. V. Martonchik, B. E. Rheingans, S. Geier,
-    ! V. M. Jovanovic, A. Davis, R. A. Chipman, S. C. McClain, 2012:
-    ! Exploration of a polarized surface bidirectional reflectance model
-    ! using the ground-based multiangle spectropolarimetric imager.
-    ! Atmosphere 2012, 3, 591-619; doi:10.3390/atmos3040591.)
-    else if ((sfc_obj%type .eq. 'VD') .or. (sfc_obj%type .eq. 'Vd')) then
-
-        sfc_obj%Npar = 6
-
-        if (sfc_obj%Npar .gt. sfc_obj%maxNpar) then
-            write (*, *) 'Error [_readSfc]: sfc_obj%maxNpar exceeded.'
-            stop
-        end if
-
-        read (1, '(A)') lineTmp
-        if (lineTmp(1:1) .ne. '!') then ! check if binary input,
-            backspace(1)                 ! if not, go back one line
-            do while (.true.)
-                read (1, *, end=290) ix, iy, param1, param2, param3, param4, param5, param6
-                if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
-                    &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
-
-                    !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
-                    !brdf_Sfc(i + 1) = temp0
-                    !brdf_Sfc(i + 2) = A
-                    !brdf_Sfc(i + 3) = KR
-                    !brdf_Sfc(i + 4) = B
-                    !brdf_Sfc(i + 5) = ZETA
-                    !brdf_Sfc(i + 6) = SIGMA
-
-                    i = iy + (sfc_obj%Ny + 1)*(ix - 1)
-                    brdf_Sfc(1, i) = param1 ! temperature
-                    brdf_Sfc(2, i) = param2 ! A
-                    brdf_Sfc(3, i) = param3 ! Kr
-                    brdf_Sfc(4, i) = param4 ! B
-                    brdf_Sfc(5, i) = param5 ! Zeta
-                    brdf_Sfc(6, i) = param6 ! Sigma
-
-                    temp_sfc = temp_sfc + param1
-                    alb_sfc  = alb_sfc  + param2
-
-                    N = N + 1
-
-                end if
-            end do
-        end if
-
-    ! Surface file type X is for Mixed-type surface:
-    else if ((sfc_obj%type .eq. 'VX') .or. (sfc_obj%type .eq. 'Vx')) then
-
-        sfc_obj%Npar = 8
-
-        if (sfc_obj%Npar .gt. sfc_obj%maxNpar) then
-            write (*, *) 'Error [_readSfc]: sfc_obj%maxNpar exceeded.'
-            stop
-        end if
-
-        read (1, '(A)') lineTmp
-        if (lineTmp(1:1) .ne. '!') then ! check if binary input,
-            backspace(1)                 ! if not, go back one line
-            do while (.true.)
-                read (1, *, end=290)    ix, iy, param1, param2, param3, param4, param5, param6, param7, param8
-                ! for Lambertian   (VL):ix, iy, temp0,   alb0,    -999.0, -999.0, -999.0, -999.0, -999.0,  0.0
-                ! for Ocean        (VO):ix, iy, temp0,   WSPD,   PCL,    -999.0, -999.0, -999.0, -999.0,  1.0
-                ! for RPV          (VR):ix, iy, temp0,   RHO0,   KR,     THETA,  -999.0, -999.0, -999.0,  2.0
-                ! for LSRT         (VT):ix, iy, temp0,   F_ISO,  F_GEO,  F_VOL,  -999.0, -999.0, -999.0,  3.0
-                ! for LSRT-J       (VJ):ix, iy, temp0,   F_ISO,  F_GEO,  F_VOL,  F_JIAO, ALPHA,  -999.0,  4.0
-                ! for Wave-Fresnel (VW):ix, iy, temp0,   MRE,    MIM,    WSPD,   -999.0, -999.0, -999.0, -1.0
-                ! for Diner        (VD):ix, iy, temp0,   A,      KR,     B,      ZETA,   SIGMA,  -999.0, -2.0
-
-                if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
-                    &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
-
-                    !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
-                    !brdf_Sfc(i + 1) = param1
-                    !brdf_Sfc(i + 2) = param2
-                    !brdf_Sfc(i + 3) = param3
-                    !brdf_Sfc(i + 4) = param4
-                    !brdf_Sfc(i + 5) = param5
-                    !brdf_Sfc(i + 6) = param6
-                    !brdf_Sfc(i + 7) = param7
-                    !brdf_Sfc(i + 8) = param8 ! surface identification
-
-                    i = iy + (sfc_obj%Ny + 1)*(ix - 1)
-                    brdf_Sfc(1, i) = param1
-                    brdf_Sfc(2, i) = param2
-                    brdf_Sfc(3, i) = param3
-                    brdf_Sfc(4, i) = param4
-                    brdf_Sfc(5, i) = param5
-                    brdf_Sfc(6, i) = param6
-                    brdf_Sfc(7, i) = param7
-                    brdf_Sfc(8, i) = param8 ! surface identification
-
-                    temp_sfc = temp_sfc + param1
-
-                    ! no albedo for polarized (W [-1]) and unpolarized (O [1]) Ocean parameterization
-                    if ((abs(param8)-1.0) .gt. 0.01) then
-                        alb_sfc = alb_sfc + param2
+                        N = N + 1
                     end if
+                end do
+            end if
 
-                    N = N + 1
-                end if
-            end do
-        end if
+        ! Surface file type R is for RPV surface:
+        !   (Rahman, Pinty, Verstraete, 1993: Coupled Surface-Atmosphe
+        !   Reflectance (CSAR) Model. 2. Semiempirical Surface Model
+        !   Usable With NOAA Advanced Very High Resolution Radiometer
+        !   Data, J. Geophys. Res., 98, 20791-20801.)
+        case ('VR', 'Vr')
 
-    else
+            sfc_obj%Npar = 4
 
-        close (1)
-        stop 'Error [_readSfc]: Unknown BRDF type <'//trim(adjustl(sfc_obj%type))//'>.'
+            if (sfc_obj%Npar .gt. sfc_obj%maxNpar) then
+                write (*, *) 'Error [_readSfc]: sfc_obj%maxNpar exceeded.'
+                stop
+            end if
 
-    end if
+            read (1, '(A)') lineTmp
+            if (lineTmp(1:1) .ne. '!') then ! check if binary input,
+                backspace(1)                ! if not, go back one line
+                do while (.true.)
+                    read (1, *, end=290) ix, iy, param1, param2, param3, param4
+                    if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
+                        &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
+
+                        !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+                        !brdf_Sfc(i + 1) = temp0
+                        !brdf_Sfc(i + 2) = RHO0
+                        !brdf_Sfc(i + 3) = KR
+                        !brdf_Sfc(i + 4) = THETA
+
+                        i = iy + (sfc_obj%Ny + 1)*(ix - 1)
+
+                        brdf_Sfc(1, i) = param1 ! temperature
+                        brdf_Sfc(2, i) = param2 ! rho0
+                        brdf_Sfc(3, i) = param3 ! kr
+                        brdf_Sfc(4, i) = param4 ! theta
+
+                        temp_sfc = temp_sfc + param1
+                        alb_sfc  = alb_sfc  + param2
+
+                        N = N + 1
+
+                    end if
+                end do
+            end if
+
+        ! Surface file type T is for LSRT surface:
+        case ('VT', 'Vt')
+
+            sfc_obj%Npar = 4
+
+            if (sfc_obj%Npar .gt. sfc_obj%maxNpar) then
+                write (*, *) 'Error [_readSfc]: sfc_obj%maxNpar exceeded.'
+                stop
+            end if
+
+            read (1, '(A)') lineTmp
+            if (lineTmp(1:1) .ne. '!') then ! check if binary input,
+                backspace(1)                ! if not, go back one line
+                do while (.true.)
+                    read (1, *, end=290) ix, iy, param1, param2, param3, param4
+                    if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
+                        &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
+
+                        !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+                        !brdf_Sfc(i + 1) = temp0
+                        !brdf_Sfc(i + 2) = F_ISO
+                        !brdf_Sfc(i + 3) = F_GEO
+                        !brdf_Sfc(i + 4) = F_VOL
+
+                        i = iy + (sfc_obj%Ny + 1)*(ix - 1)
+
+                        brdf_Sfc(1, i) = param1 ! temperature
+                        brdf_Sfc(2, i) = param2 ! f_iso
+                        brdf_Sfc(3, i) = param3 ! f_geo
+                        brdf_Sfc(4, i) = param4 ! f_vol
+
+                        temp_sfc = temp_sfc + param1
+                        alb_sfc  = alb_sfc  + param2
+
+                        N = N + 1
+
+                    end if
+                end do
+            end if
+
+        ! Surface file type J is for LSRT-Jiao surface:
+        case ('VJ', 'Vj')
+
+            sfc_obj%Npar = 6
+
+            if (sfc_obj%Npar .gt. sfc_obj%maxNpar) then
+                write (*, *) 'Error [_readSfc]: sfc_obj%maxNpar exceeded.'
+                stop
+            end if
+
+            read (1, '(A)') lineTmp
+            if (lineTmp(1:1) .ne. '!') then ! check if binary input,
+                backspace(1)                ! if not, go back one line
+                do while (.true.)
+                    read (1, *, end=290) ix, iy, param1, param2, param3, param4, param5, param6
+                    if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
+                        &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
+
+                        !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+                        !brdf_Sfc(i + 1) = temp0
+                        !brdf_Sfc(i + 2) = F_ISO
+                        !brdf_Sfc(i + 3) = F_GEO
+                        !brdf_Sfc(i + 4) = F_VOL
+                        !brdf_Sfc(i + 5) = F_JIAO
+                        !brdf_Sfc(i + 6) = ALPHA
+
+                        i = iy + (sfc_obj%Ny + 1)*(ix - 1)
+
+                        brdf_Sfc(1, i) = param1 ! temperature
+                        brdf_Sfc(2, i) = param2 ! f_iso
+                        brdf_Sfc(3, i) = param3 ! f_geo
+                        brdf_Sfc(4, i) = param4 ! f_vol
+                        brdf_Sfc(5, i) = param5 ! f_jiao
+                        brdf_Sfc(6, i) = param6 ! alpha
+
+                        temp_sfc = temp_sfc + param1
+                        alb_sfc  = alb_sfc  + param2
+
+                        N = N + 1
+
+                    end if
+                end do
+            end if
+
+        ! Surface file type W is for Wave-Fresnel surface
+        case ('VW', 'Vw')
+
+            sfc_obj%Npar = 4
+
+            if (sfc_obj%Npar .gt. sfc_obj%maxNpar) then
+                write (*, *) 'Error [_readSfc]: sfc_obj%maxNpar exceeded.'
+                stop
+            end if
+
+            read (1, '(A)') lineTmp
+            if (lineTmp(1:1) .ne. '!') then ! check if binary input,
+                backspace(1)                 ! if not, go back one line
+                do while (.true.)
+                    read (1, *, end=290) ix, iy, param1, param2, param3, param4
+                    if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
+                        &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
+
+                        !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+                        !brdf_Sfc(i + 1) = temp0
+                        !brdf_Sfc(i + 2) = MRE
+                        !brdf_Sfc(i + 3) = MIM
+                        !brdf_Sfc(i + 4) = WSPD
+
+                        i = iy + (sfc_obj%Ny + 1)*(ix - 1)
+
+                        brdf_Sfc(1, i) = param1 ! temperature
+                        brdf_Sfc(2, i) = param2 ! M_real
+                        brdf_Sfc(3, i) = param3 ! M_img
+                        brdf_Sfc(4, i) = param4 ! 10m wind speed
+
+                        temp_sfc = temp_sfc + param1
+
+                        N = N + 1
+
+                    end if
+                end do
+            end if
+
+        ! Surface file type D is for Diner et al surface reflection:
+        ! (Diner, D. J., F. Xu, J. V. Martonchik, B. E. Rheingans, S. Geier,
+        ! V. M. Jovanovic, A. Davis, R. A. Chipman, S. C. McClain, 2012:
+        ! Exploration of a polarized surface bidirectional reflectance model
+        ! using the ground-based multiangle spectropolarimetric imager.
+        ! Atmosphere 2012, 3, 591-619; doi:10.3390/atmos3040591.)
+        case ('VD', 'Vd')
+
+            sfc_obj%Npar = 6
+
+            if (sfc_obj%Npar .gt. sfc_obj%maxNpar) then
+                write (*, *) 'Error [_readSfc]: sfc_obj%maxNpar exceeded.'
+                stop
+            end if
+
+            read (1, '(A)') lineTmp
+            if (lineTmp(1:1) .ne. '!') then ! check if binary input,
+                backspace(1)                 ! if not, go back one line
+                do while (.true.)
+                    read (1, *, end=290) ix, iy, param1, param2, param3, param4, param5, param6
+                    if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
+                        &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
+
+                        !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+                        !brdf_Sfc(i + 1) = temp0
+                        !brdf_Sfc(i + 2) = A
+                        !brdf_Sfc(i + 3) = KR
+                        !brdf_Sfc(i + 4) = B
+                        !brdf_Sfc(i + 5) = ZETA
+                        !brdf_Sfc(i + 6) = SIGMA
+
+                        i = iy + (sfc_obj%Ny + 1)*(ix - 1)
+                        brdf_Sfc(1, i) = param1 ! temperature
+                        brdf_Sfc(2, i) = param2 ! A
+                        brdf_Sfc(3, i) = param3 ! Kr
+                        brdf_Sfc(4, i) = param4 ! B
+                        brdf_Sfc(5, i) = param5 ! Zeta
+                        brdf_Sfc(6, i) = param6 ! Sigma
+
+                        temp_sfc = temp_sfc + param1
+                        alb_sfc  = alb_sfc  + param2
+
+                        N = N + 1
+
+                    end if
+                end do
+            end if
+
+        ! Surface file type X is for Mixed-type surface:
+        case ('VX', 'Vx')
+
+            sfc_obj%Npar = 8
+
+            if (sfc_obj%Npar .gt. sfc_obj%maxNpar) then
+                write (*, *) 'Error [_readSfc]: sfc_obj%maxNpar exceeded.'
+                stop
+            end if
+
+            read (1, '(A)') lineTmp
+            if (lineTmp(1:1) .ne. '!') then ! check if binary input,
+                backspace(1)                 ! if not, go back one line
+                do while (.true.)
+                    read (1, *, end=290)    ix, iy, param1, param2, param3, param4, param5, param6, param7, param8
+                    ! for Lambertian   (VL):ix, iy, temp0,   alb0,    -999.0, -999.0, -999.0, -999.0, -999.0,  0.0
+                    ! for Ocean        (VO):ix, iy, temp0,   WSPD,   PCL,    -999.0, -999.0, -999.0, -999.0,  1.0
+                    ! for RPV          (VR):ix, iy, temp0,   RHO0,   KR,     THETA,  -999.0, -999.0, -999.0,  2.0
+                    ! for LSRT         (VT):ix, iy, temp0,   F_ISO,  F_GEO,  F_VOL,  -999.0, -999.0, -999.0,  3.0
+                    ! for LSRT-J       (VJ):ix, iy, temp0,   F_ISO,  F_GEO,  F_VOL,  F_JIAO, ALPHA,  -999.0,  4.0
+                    ! for Wave-Fresnel (VW):ix, iy, temp0,   MRE,    MIM,    WSPD,   -999.0, -999.0, -999.0, -1.0
+                    ! for Diner        (VD):ix, iy, temp0,   A,      KR,     B,      ZETA,   SIGMA,  -999.0, -2.0
+
+                    if  (ix .ge. 1 .and. ix .le. sfc_obj%Nx .and.&
+                        &iy .ge. 1 .and. iy .le. sfc_obj%Ny) then
+
+                        !i = sfc_obj%Npar * (iy - 1 + (sfc_obj%Ny + 1)*(ix - 1))
+                        !brdf_Sfc(i + 1) = param1
+                        !brdf_Sfc(i + 2) = param2
+                        !brdf_Sfc(i + 3) = param3
+                        !brdf_Sfc(i + 4) = param4
+                        !brdf_Sfc(i + 5) = param5
+                        !brdf_Sfc(i + 6) = param6
+                        !brdf_Sfc(i + 7) = param7
+                        !brdf_Sfc(i + 8) = param8 ! surface identification
+
+                        i = iy + (sfc_obj%Ny + 1)*(ix - 1)
+                        brdf_Sfc(1, i) = param1
+                        brdf_Sfc(2, i) = param2
+                        brdf_Sfc(3, i) = param3
+                        brdf_Sfc(4, i) = param4
+                        brdf_Sfc(5, i) = param5
+                        brdf_Sfc(6, i) = param6
+                        brdf_Sfc(7, i) = param7
+                        brdf_Sfc(8, i) = param8 ! surface identification
+
+                        temp_sfc = temp_sfc + param1
+
+                        ! no albedo for polarized (W [-1]) and unpolarized (O [1]) Ocean parameterization
+                        if ((abs(param8)-1.0) .gt. 0.01) then
+                            alb_sfc = alb_sfc + param2
+                        end if
+
+                        N = N + 1
+                    end if
+                end do
+            end if
+
+        case default
+
+            close (1)
+            stop 'Error [_readSfc]: Unknown BRDF type <'//trim(adjustl(sfc_obj%type))//'>.'
+
+    end select SFCTYPE_CASE
 
     ! read binary
     !╭────────────────────────────────────────────────────────────────────────────╮!
