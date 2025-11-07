@@ -116,8 +116,8 @@ module shd_mpi
     public :: shd_mpi__computeRad
     public :: shd_mpi__computeCamRad
     public :: shd_mpi__findMaxSsa
-    public :: shd_mpi__findTotSplitCritMax
-    public :: shd_mpi__findBndryPnt
+    public :: shd_mpi__findMaxSplitCrit
+    public :: shd_mpi__findBndryPts
     public :: shd_mpi__calBndryRad
     public :: shd_mpi__calAccelSolCrit
     public :: shd_mpi__unifySplit
@@ -1058,7 +1058,7 @@ subroutine shd_mpi__unifySplit(DOSPLIT, STARTSPLITACC)
 
 end subroutine shd_mpi__unifySplit
 
-subroutine shd_mpi__findTotSplitCritMax(SPLITCRIT)
+subroutine shd_mpi__findMaxSplitCrit(SPLITCRIT)
 
     real, intent(inout) :: SPLITCRIT
 
@@ -1076,7 +1076,7 @@ subroutine shd_mpi__findTotSplitCritMax(SPLITCRIT)
 
     return
 
-end subroutine shd_mpi__findTotSplitCritMax
+end subroutine shd_mpi__findMaxSplitCrit
 
 subroutine shd_mpi__makeDirect(SPT,&
     &DELTAM, ML,&
@@ -1334,7 +1334,7 @@ subroutine shd_mpi__makeDirect(SPT,&
 
 end subroutine shd_mpi__makeDirect
 
-subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, SWEEPORD,&
+subroutine shd_mpi__findBndryPts(BCFLAG, IPFLAG, SWEEPORD,&
     &Nx, Ny, Nz)
 
     ! Makes the pointers to and positions of the horizontal boundary grid
@@ -1412,7 +1412,7 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, SWEEPORD,&
                     SIDE = 2 - ibits(JOCT - 1, 1, 1)
                     N(SIDE) = N(SIDE) + 1
                     if (N(SIDE) .gt. MAXNBXY) then
-                        call shd_mpi__abort('Error [mpi__findBndryPnt]: MAXNBXY exceeded by N(SIDE) 1x.')
+                        call shd_mpi__abort('Error [mpi__findBndryPts]: MAXNBXY exceeded by N(SIDE) 1x.')
                     end if
                     BNDPTR(JOCT, N(SIDE), 1, SIDE) = IPT
                     BNDPOS(:, JOCT, N(SIDE), 1, SIDE) = xyz_Rtm_(:, IPT)
@@ -1422,7 +1422,7 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, SWEEPORD,&
                     SIDE = 4 - ibits(JOCT - 1, 2, 1)
                     N(SIDE) = N(SIDE) + 1
                     if (N(SIDE) .gt. MAXNBXY) then
-                        call shd_mpi__abort('Error [mpi__findBndryPnt]: MAXNBXY exceeded by N(SIDE) 1y.')
+                        call shd_mpi__abort('Error [mpi__findBndryPts]: MAXNBXY exceeded by N(SIDE) 1y.')
                     end if
                     BNDPTR(JOCT, N(SIDE), 1, SIDE) = IPT
                     BNDPOS(:, JOCT, N(SIDE), 1, SIDE) = xyz_Rtm_(:, IPT)
@@ -1433,7 +1433,7 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, SWEEPORD,&
     end do
 
     NS = maxval(N1(:, :))
-    if (NS .gt. MAXNBXY) call shd_mpi__abort('Error [mpi__findBndryPnt]: MAXNBXY might be exceeded.')
+    if (NS .gt. MAXNBXY) call shd_mpi__abort('Error [mpi__findBndryPts]: MAXNBXY might be exceeded.')
     N2(:, :) = 0
     irq = 0
     do L = 1, 4
@@ -1462,7 +1462,7 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, SWEEPORD,&
     ! Wait for the transfers among all the neighbors to resolve
     call mpi_waitall(irq, requests, status, ierr)
     NS = maxval(N2(:, :))
-    if (NS .gt. MAXNBXY) call shd_mpi__abort('Error [mpi__findBndryPnt]: MAXNBXY was exceeded.')
+    if (NS .gt. MAXNBXY) call shd_mpi__abort('Error [mpi__findBndryPts]: MAXNBXY was exceeded.')
 
     if (allocated(BxyPtr_)) deallocate(BxyPtr_, BxyPos_, iBxyPtr_)
     MAXBC = maxval((/N2(:, 1) + N2(:, 3), N2(:, 1) + N2(:, 4), N2(:, 2) + N2(:, 3), N2(:, 2) + N2(:, 4)/))
@@ -1525,7 +1525,7 @@ subroutine shd_mpi__findBndryPnt(BCFLAG, IPFLAG, SWEEPORD,&
 
     return
 
-end subroutine shd_mpi__findBndryPnt
+end subroutine shd_mpi__findBndryPts
 
 subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
     &Nx, Ny, Nz,&
@@ -1535,7 +1535,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
 
     ! Calculates the discrete ordinate boundary radiances for the KANG discrete
     ! ordinate (going in direction MU/PHI) for the grid points in the IZ slab.
-    ! shd_mpi__findBndryPnt has already been called to set up the BxyPtr_ and
+    ! shd_mpi__findBndryPts has already been called to set up the BxyPtr_ and
     ! BxyPos_ arrays for the grid points on the boundaries, and the iBxyPtr_
     ! array which has the starting and ending points for the IZ slab.  The
     ! grid points are done in the sweeping order, and so the octant (JOCT)
@@ -1561,7 +1561,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
     real, intent(inout) :: GRIDRAD(Nstokes, rtm_obj_%Npts)
 
 #if HAS_MPI
-    integer :: MAXNBND, Nbcpnts, Lupx, Lupy, Ldownx, Ldowny
+    integer :: MAXNBND, NptsBC, Lupx, Lupy, Ldownx, Ldowny
     integer :: SIDE, NINVALID(0:4)
     integer :: IBC, IPT, I, J, L
     integer :: ierr(12), irq, iproc
@@ -1765,7 +1765,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
                 &iproc, 8, comm2D_, requests(2), ierr(2))
             call mpi_isend(RadPtrOut(:, iproc), Ndone(iproc), MPI_integer,&
                 &iproc, 9, comm2D_, requests(3), ierr(3))
-            call mpi_irecv(Nbcpnts, 1, MPI_integer,&
+            call mpi_irecv(NptsBC, 1, MPI_integer,&
                 &iproc, 7, comm2D_, requests(4), ierr(4))
             call mpi_irecv(RadAllIn, Nstokes*MAXNBND, MPI_real,&
                 &iproc, 8, comm2D_, requests(5), ierr(5))
@@ -1776,7 +1776,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
                 write (6, *) 'MPI error: ', ierr(1:7)
                 call shd_mpi__abort('Error [mpi__calBndryRad]: MPI error 3.')
             end if
-            do I = 1, Nbcpnts
+            do I = 1, NptsBC
                 IPT = RadPtrIn(I)
                 GRIDRAD(:, IPT) = RadAllIn(:, I)
             end do

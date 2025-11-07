@@ -61,7 +61,7 @@ module shd_intg
                         shd_init__makeBotRadV
 
     use shd_grid, only: shd_grid__makeSweepOrder, &
-                        shd_grid__findBndryPnt
+                        shd_grid__findBndryPts
 
     use shd_util, only: shd_util__findNextCell
 
@@ -70,7 +70,7 @@ module shd_intg
                         shd_shdo__transDOtoSH_, &
                         shd_shdo__transDOtoSH
 
-    use shd_mpi,  only: shd_mpi__findBndryPnt, &
+    use shd_mpi,  only: shd_mpi__findBndryPts, &
                         shd_mpi__calBndryRad, &
                         shd_mpi__abort
 
@@ -156,12 +156,12 @@ subroutine shd_intg__integratePath(&
         call shd_grid__makeSweepOrder(SWEEPORD, GRIDRAD)
     end if
 
-    call shd_mpi__findBndryPnt(rtm_obj_%flag_bc, rtm_obj_%flag_ip, SWEEPORD,&
+    call shd_mpi__findBndryPts(rtm_obj_%flag_bc, rtm_obj_%flag_ip, SWEEPORD,&
         &rtm_obj_%Nx0, rtm_obj_%Ny0, rtm_obj_%Nz)
 
     if (rtm_obj_%Npts .ne. OLDNPTS) then
         ! Make the pointers to the grid points on the top and bottom boundaries
-        call shd_grid__findBndryPnt(shdo_obj_%Nang, MAXNBC, MAXBCRAD, &
+        call shd_grid__findBndryPts(shdo_obj_%Nang, MAXNBC, MAXBCRAD, &
             &rtm_obj_%z(1), rtm_obj_%z(rtm_obj_%Nz),&
             &NTOPPTS, NBOTPTS, BCPTR)
         if (sfc_obj_%type(1:1) .eq. 'V') then

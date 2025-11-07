@@ -68,8 +68,8 @@ module shd_src
     integer, parameter :: R__  = selected_real_kind(6) ! default precision for float
     integer, parameter :: I__  = selected_int_kind(9)  ! default precision for integer
 
-    public :: shd_src__computeSrcOnePnt
-    public :: shd_src__computeSrcOnePnt_
+    public :: shd_src__computeSrcOnePts
+    public :: shd_src__computeSrcOnePts_
     public :: shd_src__computeSrcOneCell
     public :: shd_src__computeSrcOneCell_
     public :: shd_src__computeSrcOneDir
@@ -578,13 +578,13 @@ subroutine shd_src__computeSrc(&
                 stop
             end if
             if (isPol_) then
-                call shd_src__computeSrcOnePnt(shdo_obj_%Nstokes, shdo_obj_%Nlm, LOFJ,&
+                call shd_src__computeSrcOnePts(shdo_obj_%Nstokes, shdo_obj_%Nlm, LOFJ,&
                     &src_obj_%type, DIRFLUX(I)*SECMU0, YLMSUN,&
                     &planck_Rtm_(I), ssa_Rtm_(I), IPH, leg_Rtm_,&
                     &NR, radI_Shdo(1, IR+1), srcT_Shdo)
                     !&NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
             else
-                call shd_src__computeSrcOnePnt_(shdo_obj_%Nlm, LOFJ,&
+                call shd_src__computeSrcOnePts_(shdo_obj_%Nlm, LOFJ,&
                     &src_obj_%type, DIRFLUX(I)*SECMU0, YLMSUN,&
                     &planck_Rtm_(I), ssa_Rtm_(I), IPH, leg_Rtm_,&
                     &NR, radI_Shdo(1, IR+1), srcT_Shdo)
@@ -631,13 +631,13 @@ subroutine shd_src__computeSrc(&
             IR = iradI_Shdo(I)
             NR = iradI_Shdo(I + 1) - IR
             if (isPol_) then
-                call shd_src__computeSrcOnePnt(shdo_obj_%Nstokes, shdo_obj_%Nlm, LOFJ,&
+                call shd_src__computeSrcOnePts(shdo_obj_%Nstokes, shdo_obj_%Nlm, LOFJ,&
                     &src_obj_%type, DIRFLUX(I)*SECMU0, YLMSUN,&
                     &planck_Rtm_(I), ssa_Rtm_(I), IPH, leg_Rtm_,&
                     &NR, radI_Shdo(1, IR+1), srcT_Shdo)
                     !&NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
             else
-                call shd_src__computeSrcOnePnt_(shdo_obj_%Nlm, LOFJ,&
+                call shd_src__computeSrcOnePts_(shdo_obj_%Nlm, LOFJ,&
                     &src_obj_%type, DIRFLUX(I)*SECMU0, YLMSUN,&
                     &planck_Rtm_(I), ssa_Rtm_(I), IPH, leg_Rtm_,&
                     &NR, radI_Shdo(1, IR+1), srcT_Shdo)
@@ -670,13 +670,13 @@ subroutine shd_src__computeSrc(&
             stop
         end if
         if (isPol_) then
-            call shd_src__computeSrcOnePnt(shdo_obj_%Nstokes, shdo_obj_%Nlm, LOFJ,&
+            call shd_src__computeSrcOnePts(shdo_obj_%Nstokes, shdo_obj_%Nlm, LOFJ,&
                 &src_obj_%type, DIRFLUX(I)*SECMU0, YLMSUN,&
                 &planck_Rtm_(I), ssa_Rtm_(I), IPH, leg_Rtm_,&
                 &NR, radI_Shdo(1, IR+1), srcT_Shdo)
                 !&NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
         else
-            call shd_src__computeSrcOnePnt_(shdo_obj_%Nlm, LOFJ,&
+            call shd_src__computeSrcOnePts_(shdo_obj_%Nlm, LOFJ,&
                 &src_obj_%type, DIRFLUX(I)*SECMU0, YLMSUN,&
                 &planck_Rtm_(I), ssa_Rtm_(I), IPH, leg_Rtm_,&
                 &NR, radI_Shdo(1, IR+1), srcT_Shdo)
@@ -1605,7 +1605,7 @@ subroutine shd_src__rotatePolarPlane(NSTOKES, COSSCAT,&
 
 end subroutine shd_src__rotatePolarPlane
 
-subroutine shd_src__computeSrcOnePnt(&
+subroutine shd_src__computeSrcOnePts(&
     &NSTOKES, NLM, LOFJ,&
     &SRCTYPE, FLUX0, YLMSUN, PLANCK,&
     &ssa0, ipha0, leg, NR, radI_Shdo,&
@@ -1688,9 +1688,9 @@ subroutine shd_src__computeSrcOnePnt(&
 
     return
 
-end subroutine shd_src__computeSrcOnePnt
+end subroutine shd_src__computeSrcOnePts
 
-subroutine shd_src__computeSrcOnePnt_(&
+subroutine shd_src__computeSrcOnePts_(&
     &NLM, LOFJ,&
     &SRCTYPE, FLUX0, YLMSUN, PLANCK,&
     &ssa0, ipha0, leg, NR, radI_Shdo,&
@@ -1736,6 +1736,6 @@ subroutine shd_src__computeSrcOnePnt_(&
 
     return
 
-end subroutine shd_src__computeSrcOnePnt_
+end subroutine shd_src__computeSrcOnePts_
 
 end module shd_src

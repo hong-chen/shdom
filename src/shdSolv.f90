@@ -67,7 +67,7 @@ module shd_solv
                         shd_shdo__makeSfcDO
 
     use shd_grid, only: shd_grid__interpGrid, &
-                        shd_grid__findBndryPnt, &
+                        shd_grid__findBndryPts, &
                         shd_grid__splitGrid
 
     use shd_intg, only: shd_intg__integratePath
@@ -75,7 +75,7 @@ module shd_solv
     use shd_mpi,  only: shd_mpi__findMaxSsa, &
                         shd_mpi__makeDirect, &
                         shd_mpi__unifySplit, &
-                        shd_mpi__findTotSplitCritMax, &
+                        shd_mpi__findMaxSplitCrit, &
                         shd_mpi__calAccelSolCrit
 
     implicit none
@@ -221,7 +221,7 @@ subroutine shd_solv__solveRte(&
     ! Surface initialization
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Make the pointers to the grid points on the top and bottom boundaries
-    call shd_grid__findBndryPnt(shdo_obj_%Nang, MAXNBC, MAXBCRAD,&
+    call shd_grid__findBndryPts(shdo_obj_%Nang, MAXNBC, MAXBCRAD,&
         &rtm_obj_%z(1), rtm_obj_%z(rtm_obj_%Nz),&
         &NTOPPTS, NBOTPTS, BCPTR)
     if (sfc_obj_%type(1:1) .eq. 'V') then
@@ -332,7 +332,7 @@ subroutine shd_solv__solveRte(&
                 if (SOLCRIT .gt. STARTADAPTSOL) STARTSPLITACC = SPLITCRIT
             end if
             ! Find the maximum splitting criterion over all processors
-            call shd_mpi__findTotSplitCritMax(SPLITCRIT)
+            call shd_mpi__findMaxSplitCrit(SPLITCRIT)
             if (SOLCRIT .le. ENDADAPTSOL) SPLITTESTING = .false.
         else
             doSplit = .false.

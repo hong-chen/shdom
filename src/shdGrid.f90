@@ -62,8 +62,8 @@ module shd_grid
 
     use shd_rad,  only: shd_rad__computeDirect
 
-    use shd_src,  only: shd_src__computeSrcOnePnt_, &
-                        shd_src__computeSrcOnePnt
+    use shd_src,  only: shd_src__computeSrcOnePts_, &
+                        shd_src__computeSrcOnePts
 
     use shd_mpi,  only: shd_mpi__makeDirect
 
@@ -80,9 +80,9 @@ module shd_grid
     integer(kind=I__) :: oppFace(6)
     data oppFace /2, 1, 4, 3, 6, 5/
 
-    public :: shd_grid__findBndryPnt
-    public :: shd_grid__matchGridPnt
-    public :: shd_grid__makeNewGridPnt
+    public :: shd_grid__findBndryPts
+    public :: shd_grid__matchGridPts
+    public :: shd_grid__makeNewGridPts
 
     public :: shd_grid__makeSweepOrder
     public :: shd_grid__divideCell
@@ -93,7 +93,7 @@ module shd_grid
     public :: shd_grid__testCellSplit
 
     public :: shd_grid__interpGrid
-    public :: shd_grid__interpNewGridPnt
+    public :: shd_grid__interpNewGridPts
 
     public :: shd_grid__splitGrid
 
@@ -103,7 +103,7 @@ module shd_grid
 
 contains
 
-subroutine shd_grid__findBndryPnt(&
+subroutine shd_grid__findBndryPts(&
     &NANG, MAXNBC, MAXBCRAD, &
     &ZBOT, ZTOP,&
     &NTOPPTS, NBOTPTS, BCPTR)
@@ -153,7 +153,7 @@ subroutine shd_grid__findBndryPnt(&
         if (xyz_Rtm_(3, I) .ge. ZTOP) then
             IT = IT + 1
             if (IT .gt. MAXNBC .or. IT .gt. MAXBCRAD) then
-                stop 'Error [_findBndryPnt]: MAXNBC exceeded - top.'
+                stop 'Error [_findBndryPts]: MAXNBC exceeded - top.'
             end if
             BCPTR(IT, 1) = I
         end if
@@ -161,7 +161,7 @@ subroutine shd_grid__findBndryPnt(&
         if (xyz_Rtm_(3, I) .le. ZBOT) then
             IB = IB + 1
             if ((IB .gt. MAXNBC) .or. (IT + IB*NA .gt. MAXBCRAD)) then
-                stop 'Error [_findBndryPnt]: MAXNBC exceeded - bottom.'
+                stop 'Error [_findBndryPts]: MAXNBC exceeded - bottom.'
             end if
             BCPTR(IB, 2) = I
         end if
@@ -173,9 +173,9 @@ subroutine shd_grid__findBndryPnt(&
 
     return
 
-end subroutine shd_grid__findBndryPnt
+end subroutine shd_grid__findBndryPts
 
-subroutine shd_grid__matchGridPnt(&
+subroutine shd_grid__matchGridPts(&
     &XP, YP, ZP, icell, iface,&
     &iptsMatch)
 
@@ -243,7 +243,7 @@ subroutine shd_grid__matchGridPnt(&
         ! Get the direction current cell is split
         DIR = ibits(int(flag_Cell_(IC)), 2, 2)
 
-        if (DIR .eq. 0) stop 'Error [_matchGridPnt]: No split direction.'
+        if (DIR .eq. 0) stop 'Error [_matchGridPts]: No split direction.'
 
         ! If split is in direction of face then choose the near child cell
         !   which is the negative side cell if this is a positive face.
@@ -280,15 +280,15 @@ subroutine shd_grid__matchGridPnt(&
                 end if
             end if
             if (SP .ge. MAXSTACK)&
-                &stop 'Error [_matchGridPnt]: MAXSTACK exceeded.'
+                &stop 'Error [_matchGridPts]: MAXSTACK exceeded.'
         end if
     end do
 
     return
 
-end subroutine shd_grid__matchGridPnt
+end subroutine shd_grid__matchGridPts
 
-subroutine shd_grid__makeNewGridPnt(idir, icell, newCell,&
+subroutine shd_grid__makeNewGridPts(idir, icell, newCell,&
     &newPts,&
     &rtm_obj, xyz_Rtm, i8Grid_Cell)
 
@@ -317,7 +317,7 @@ subroutine shd_grid__makeNewGridPnt(idir, icell, newCell,&
 
     !   In general, when subdividing a cell four new points may be made.
     ! Each of these points belongs to two faces of the original cell.
-    ! Use the shd_grid__matchGridPnt routine to try to find matches in cells
+    ! Use the shd_grid__matchGridPts routine to try to find matches in cells
     ! across the two faces that contain the point; also cross the face of
     ! one of these to get the third bounding cell.  If any of the appropriate
     ! gridpoints of these three cells has the same coordinates then the point
@@ -343,17 +343,17 @@ subroutine shd_grid__makeNewGridPnt(idir, icell, newCell,&
         ! Look for gridpoints matching this new point in the three cell
         !   that border this edge
         iface1 = FACEGRID(1, I, idir)
-        call shd_grid__matchGridPnt(XP, YP, ZP, icell, iface1,&
+        call shd_grid__matchGridPts(XP, YP, ZP, icell, iface1,&
             &iptsMatch)
         if (iptsMatch .eq. 0) then
             iface2 = FACEGRID(2, I, idir)
-            call shd_grid__matchGridPnt(XP, YP, ZP, icell, iface2,&
+            call shd_grid__matchGridPts(XP, YP, ZP, icell, iface2,&
                 &iptsMatch)
         end if
         if (iptsMatch .eq. 0) then
             ICELL2 = abs(i6Cell_Cell_(iface1, icell))
             if (ICELL2 .gt. 0) then
-                call shd_grid__matchGridPnt(XP, YP, ZP, ICELL2, iface2,&
+                call shd_grid__matchGridPts(XP, YP, ZP, ICELL2, iface2,&
                     &iptsMatch)
             end if
         end if
@@ -378,7 +378,7 @@ subroutine shd_grid__makeNewGridPnt(idir, icell, newCell,&
 
     return
 
-end subroutine shd_grid__makeNewGridPnt
+end subroutine shd_grid__makeNewGridPts
 
 subroutine shd_grid__makeSweepOrder(&
     &SWEEPORD, GRIDRAD)
@@ -539,7 +539,7 @@ subroutine shd_grid__divideCell(&
     end do
 
     ! Do the grid points:
-    call shd_grid__makeNewGridPnt(idir, icell, newCell,&
+    call shd_grid__makeNewGridPts(idir, icell, newCell,&
         &newPts, rtm_obj, xyz_Rtm, i8Grid_Cell)
 
     ! Do the neighbor pointers:
@@ -1406,7 +1406,7 @@ subroutine shd_grid__InterpTriLinGridPrp(&
 
 end subroutine shd_grid__InterpTriLinGridPrp
 
-subroutine shd_grid__interpNewGridPnt(newPts,&
+subroutine shd_grid__interpNewGridPts(newPts,&
     doDeltaM, ACCELFLAG,&
     SOLARFLUX, YLMSUN,&
     DIRFLUX,&
@@ -1567,13 +1567,13 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
                 IPH = IP
             end if
             if (isPol_) then
-                call shd_src__computeSrcOnePnt(shdo_obj_%Nstokes, shdo_obj_%Nlm, LOFJ,&
+                call shd_src__computeSrcOnePts(shdo_obj_%Nstokes, shdo_obj_%Nlm, LOFJ,&
                     &src_obj_%type, DIRFLUX(IP)*SECMU0, YLMSUN,&
                     &planck_Rtm(IP), ssa_Rtm(IP), IPH, leg_Rtm,&
                     &NR, radI_Shdo(1, IR+1), srcT_Shdo)
                     !&NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
             else
-                call shd_src__computeSrcOnePnt_(shdo_obj_%Nlm, LOFJ,&
+                call shd_src__computeSrcOnePts_(shdo_obj_%Nlm, LOFJ,&
                     &src_obj_%type, DIRFLUX(IP)*SECMU0, YLMSUN,&
                     &planck_Rtm(IP), ssa_Rtm(IP), IPH, leg_Rtm,&
                     &NR, radI_Shdo(1, IR+1), srcT_Shdo)
@@ -1589,7 +1589,7 @@ subroutine shd_grid__interpNewGridPnt(newPts,&
 
     return
 
-end subroutine shd_grid__interpNewGridPnt
+end subroutine shd_grid__interpNewGridPts
 
 subroutine shd_grid__splitGrid(&
     doSplit, isOutMem, CURSPLITACC, SPLITCRIT, &
@@ -1693,7 +1693,7 @@ subroutine shd_grid__splitGrid(&
                                               i8Grid_Cell, i6Cell_Cell, i2Tree_Cell, flag_Cell)
 
                     ! Interpolate the medium properties, radiance, and source
-                    call shd_grid__interpNewGridPnt(newPts,&
+                    call shd_grid__interpNewGridPts(newPts,&
                         &doDeltaM, ACCELFLAG,&
                         &SOLARFLUX, YLMSUN,&
                         &DIRFLUX,&
@@ -1732,7 +1732,7 @@ subroutine shd_grid__splitGrid(&
                                                   i8Grid_Cell, i6Cell_Cell, i2Tree_Cell, flag_Cell)
 
                         ! Interpolate the medium properties, radiance, and source
-                        call shd_grid__interpNewGridPnt(newPts,&
+                        call shd_grid__interpNewGridPts(newPts,&
                             doDeltaM, ACCELFLAG, &
                             SOLARFLUX, YLMSUN, &
                             DIRFLUX, &
@@ -1749,7 +1749,7 @@ subroutine shd_grid__splitGrid(&
             isOutMem = .true.
             !write (6, '(2A,I8,A,I8)')&
             !    &'Message [_splitGrid]: Further cell splitting requires larger array allocations: ',&
-            !    &'cell_obj%Npts= ', cell_obj%Npts, ', Npnts = ', rtm_obj%Npts
+            !    &'cell_obj%Npts= ', cell_obj%Npts, ', NPts = ', rtm_obj%Npts
         end if
 
         ! If in parallel mode, calculate all the direct beam fluxes at once
