@@ -1024,11 +1024,14 @@ program shdom
 
     ! shdo
     !╭────────────────────────────────────────────────╮!
-    ! SH related array
+    ! radiance
+    ! iradI_Shdo_ [+2]: first data is set to 0; last data stores the total number of SH terms
+    !  radI_Shdo_ [+rtm_obj_%maxNpts]: store radiance to swap with work array
     allocate(iradI_Shdo_(rtm_obj_%maxNpts+2), &
               radI_Shdo_(shdo_obj_%Nstokes, shdo_obj_%maxNptsSH + rtm_obj_%maxNpts))
 
-    ! radiance and source
+    ! source
+    ! isrcJ_Shdo_ [+1]: last data stores the total number of SH terms
     allocate(isrcJ_Shdo_(rtm_obj_%maxNpts+1), &
               srcJ_Shdo_(shdo_obj_%Nstokes, shdo_obj_%maxNptsSH))
     !╰────────────────────────────────────────────────╯!
