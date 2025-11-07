@@ -1225,45 +1225,55 @@ subroutine shd_io__readSfcSize(sfc_obj)
     read (21, '(A1)') sfc_obj%type(2:2)
     read (21, *) sfc_obj%Nx, sfc_obj%Ny, sfc_obj%dx, sfc_obj%dy
 
+    close (unit=21)
+
     sfc_obj%maxNpts = (sfc_obj%Nx + 1)*(sfc_obj%Ny + 1)
 
-    ! 0
-    if ((sfc_obj%type .eq. 'VL') .or. (sfc_obj%type .eq. 'Vl')) then
-        ! Surface file type L is for variable Lambertian surface
-        sfc_obj%maxNpar = 2
-        sfc_obj%isLambertian = .true.
-    ! 1
-    else if ((sfc_obj%type .eq. 'VO') .or. (sfc_obj%type .eq. 'Vo')) then
-        ! Surface file type O is for Ocean BRDF surface
-        sfc_obj%maxNpar = 3
-    ! 2
-    else if ((sfc_obj%type .eq. 'VR') .or. (sfc_obj%type .eq. 'Vr')) then
-        ! Surface file type R is for RPV surface
-        sfc_obj%maxNpar = 4
-    ! 3
-    else if ((sfc_obj%type .eq. 'VT') .or. (sfc_obj%type .eq. 'Vt')) then
-        ! Surface file type T is for LSRT surface
-        sfc_obj%maxNpar = 4
-    ! 4
-    else if ((sfc_obj%type .eq. 'VJ') .or. (sfc_obj%type .eq. 'Vj')) then
-        ! Surface file type J is for LSRT-Jiao surface
-        sfc_obj%maxNpar = 6
-    ! -1
-    else if ((sfc_obj%type .eq. 'VW') .or. (sfc_obj%type .eq. 'Vw')) then
-        ! Surface file type W is for Wave-Fresnel surface
-        sfc_obj%maxNpar = 4
-    ! -2
-    else if ((sfc_obj%type .eq. 'VD') .or. (sfc_obj%type .eq. 'Vd')) then
-        ! Surface file type D is for Diner polarized RPV surface:
-        sfc_obj%maxNpar = 6
-    else if ((sfc_obj%type .eq. 'VX') .or. (sfc_obj%type .eq. 'Vx')) then
-        ! Surface file type X is for Mixed-surface type:
-        sfc_obj%maxNpar = 8
-    else
-        stop 'Error [_readSfcSize]: Unknown BRDF type.'
-    end if
+    SFC_CASE: select case (sfc_obj%type)
+        ! 0
+        case ('VL', 'Vl')
+            ! Surface file type L is for variable Lambertian surface
+            sfc_obj%maxNpar = 2
+            sfc_obj%isLambertian = .true.
 
-    close (unit=21)
+        ! 1
+        case ('VO', 'Vo')
+            ! Surface file type O is for Ocean BRDF surface
+            sfc_obj%maxNpar = 3
+
+        ! 2
+        case ('VR', 'Vr')
+            ! Surface file type R is for RPV surface
+            sfc_obj%maxNpar = 4
+
+        ! 3
+        case ('VT', 'Vt')
+            ! Surface file type T is for LSRT surface
+            sfc_obj%maxNpar = 4
+
+        ! 4
+        case ('VJ', 'Vj')
+            ! Surface file type J is for LSRT-Jiao surface
+            sfc_obj%maxNpar = 6
+
+        ! -1
+        case ('VW', 'Vw')
+            ! Surface file type W is for Wave-Fresnel surface
+            sfc_obj%maxNpar = 4
+
+        ! -2
+        case ('VD', 'Vd')
+            ! Surface file type D is for Diner polarized RPV surface:
+            sfc_obj%maxNpar = 6
+
+        case ('VX', 'Vx')
+            ! Surface file type X is for Mixed-surface type:
+            sfc_obj%maxNpar = 8
+
+        case default
+
+            stop 'Error [_readSfcSize]: Unknown BRDF type.'
+    end select SFC_CASE
 
     return
 
