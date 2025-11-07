@@ -1883,7 +1883,7 @@ subroutine shd_mpi__computeRad(&
     allocate(requests(max(12, 3*Nproc_)), status(max(12, 3*Nproc_)))
 
     ! Loop over the radiance directions
-    do K = 1, NANGOUT
+    ANGOUT_LOOP: do K = 1, NANGOUT
         if (sen_obj_%fname(1:4) .ne. 'NONE') then
             mu_out     = view_Sen_(1, K)
             phiDeg_out = view_Sen_(2, K)
@@ -2042,7 +2042,7 @@ subroutine shd_mpi__computeRad(&
         ! Cycle over the passing of info between processors and doing more
         !  partial radiance integrations until all rays have been finished
         AllDone = .false.
-        do while (.not. AllDone)
+        RAYMPI_LOOP: do while (.not. AllDone)
             ! Do the send and receives of the number of incomplete rays and
             !   the real and integer info needed about the radiance integrations
             irq = 0
@@ -2160,7 +2160,7 @@ subroutine shd_mpi__computeRad(&
             call mpi_allreduce(intsendbuf, intrecvbuf, 2, MPI_integer, MPI_max,&
                 &comm2D_, ierr)
             AllDone = all(intrecvbuf(1:2) .eq. 0)
-        end do
+        end do RAYMPI_LOOP
 
         if (myProc_ .gt. 0) then
             ! Send the finished radiances to the master processor
@@ -2192,7 +2192,7 @@ subroutine shd_mpi__computeRad(&
             end do
         end if
 
-    end do ! K (angle loop)
+    end do ANGOUT_LOOP
 
     deallocate(requests, status, RadSend, IndexSend)
     if (myProc_ .eq. 0) deallocate(NradRecv, RadRecv, IndexRecv)
