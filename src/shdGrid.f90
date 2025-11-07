@@ -48,13 +48,27 @@ module shd_grid
     use globals_type,  only: shd_type_rtm, &
                              shd_type_cell
 
-    use globals_obj,   only:  rtm_obj_, xyz_Rtm_, temp_Rtm_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, leg_Rtm_, ipha_Rtm_, &
-                             cell_obj_, i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, flag_Cell_, &
-                             shdo_obj_, isrcJ_Shdo_, srcJ_Shdo_, &
-                              src_obj_, &
-                              prp_obj_, temp_Prp_, ext_Prp_, ssa_Prp_, leg_Prp_, ipha_Prp_, &
-                              sfc_obj_, &
-                              ckd_obj_, kabs_Ckd_
+    use globals_obj,   only: rtm_obj_, xyz_Rtm_, &
+                                      temp_Rtm_, &
+                                       ext_Rtm_, &
+                                       ssa_Rtm_, &
+                                       leg_Rtm_, &
+                                      ipha_Rtm_, &
+                                    planck_Rtm_, &
+                            cell_obj_, i8Grid_Cell_, &
+                                       i6Cell_Cell_, &
+                                       i2Tree_Cell_, &
+                                         flag_Cell_, &
+                            shdo_obj_, isrcJ_Shdo_, &
+                                        srcJ_Shdo_, &
+                             src_obj_, &
+                             prp_obj_, temp_Prp_, &
+                                        ext_Prp_, &
+                                        ssa_Prp_, &
+                                        leg_Prp_, &
+                                       ipha_Prp_, &
+                             sfc_obj_, &
+                             ckd_obj_, kabs_Ckd_
 
     use shd_util, only: shd_util__findNextCell, &
                         shd_util__computePlanck, &

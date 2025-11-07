@@ -46,11 +46,17 @@ module shd_rad
                              is3Ddir1Ddif_, &
                              isPol_, isPol4_
 
-    use globals_obj,   only: rtm_obj_, xyz_Rtm_, ext_Rtm_, leg_Rtm_, &
+    use globals_obj,   only: rtm_obj_, xyz_Rtm_, &
+                                       ext_Rtm_, &
+                                       leg_Rtm_, &
                             cell_obj_, &
-                            shdo_obj_, isrcJ_Shdo_, srcJ_Shdo_, &
+                            shdo_obj_, isrcJ_Shdo_, &
+                                        srcJ_Shdo_, &
                              src_obj_, &
-                             prp_obj_, ext_Prp_, ssa_Prp_, leg_Prp_, ipha_Prp_, &
+                             prp_obj_, ext_Prp_, &
+                                       ssa_Prp_, &
+                                       leg_Prp_, &
+                                      ipha_Prp_, &
                              sfc_obj_, &
                              ckd_obj_, kabs_Ckd_, &
                              sen_obj_, view_Sen_

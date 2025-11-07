@@ -47,7 +47,10 @@ module shd_util
                              is1DX_, is1DYx_
 
     use globals_obj,   only: rtm_obj_, xyz_Rtm_, &
-                            cell_obj_, i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, flag_Cell_
+                            cell_obj_, i8Grid_Cell_, &
+                                       i6Cell_Cell_, &
+                                       i2Tree_Cell_, &
+                                         flag_Cell_
 
     implicit none
     private

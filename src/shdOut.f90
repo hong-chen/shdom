@@ -45,9 +45,20 @@ module shd_out
 
     use globals_type,  only: shd_type_rtm
 
-    use globals_obj,   only: rtm_obj_, xyz_Rtm_, temp_Rtm_, ext_Rtm_, ssa_Rtm_, leg_Rtm_, ipha_Rtm_, &
-                            cell_obj_, i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, flag_Cell_, &
-                            shdo_obj_, iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_, &
+    use globals_obj,   only: rtm_obj_, xyz_Rtm_, &
+                                      temp_Rtm_, &
+                                       ext_Rtm_, &
+                                       ssa_Rtm_, &
+                                       leg_Rtm_, &
+                                      ipha_Rtm_, &
+                            cell_obj_, i8Grid_Cell_, &
+                                       i6Cell_Cell_, &
+                                       i2Tree_Cell_, &
+                                         flag_Cell_, &
+                            shdo_obj_, iradI_Shdo_, &
+                                        radI_Shdo_, &
+                                       isrcJ_Shdo_, &
+                                        srcJ_Shdo_, &
                              src_obj_, &
                              prp_obj_, &
                              sfc_obj_, &

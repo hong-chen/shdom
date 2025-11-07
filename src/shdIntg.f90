@@ -45,12 +45,16 @@ module shd_intg
                              isMpi_, is1DX_, is1DYx_, is1D_, &
                              isPol_
 
-    use globals_obj,   only: rtm_obj_, xyz_Rtm_, ext_Rtm_, &
-                             cell_obj_, i8Grid_Cell_, i6Cell_Cell_, flag_Cell_, &
+    use globals_obj,   only: rtm_obj_, xyz_Rtm_, &
+                                       ext_Rtm_, &
+                                      brdf_Rtm_, &
+                             cell_obj_, i8Grid_Cell_, &
+                                        i6Cell_Cell_, &
+                                          flag_Cell_, &
                             shdo_obj_, &
                              src_obj_, &
                              prp_obj_, &
-                             sfc_obj_, brdf_Sfc_, brdf_Rtm_
+                             sfc_obj_, brdf_Sfc_
 
     use shd_sfc,  only: shd_sfc__interpSfc
 

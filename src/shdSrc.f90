@@ -44,8 +44,15 @@ module shd_src
     use globals_cfg,   only: accSolv_, isOpenX_, isOpenYx_, &
                              isPol_, isPol4_
 
-    use globals_obj,   only: rtm_obj_, xyz_Rtm_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, leg_Rtm_, ipha_Rtm_, &
-                            cell_obj_, i8Grid_Cell_, i6Cell_Cell_, flag_Cell_, &
+    use globals_obj,   only: rtm_obj_, xyz_Rtm_, &
+                                    planck_Rtm_, &
+                                       ext_Rtm_, &
+                                       ssa_Rtm_, &
+                                       leg_Rtm_, &
+                                      ipha_Rtm_, &
+                            cell_obj_, i8Grid_Cell_, &
+                                       i6Cell_Cell_, &
+                                         flag_Cell_, &
                             shdo_obj_, &
                              src_obj_, &
                              prp_obj_, &

@@ -52,9 +52,15 @@ module shd_mpi
                              shd_type_ckd,  &
                              shd_type_sen
 
-    use globals_obj,   only:  rtm_obj_, xyz_Rtm_, ext_Rtm_, leg_Rtm_, &
-                             cell_obj_, i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, flag_Cell_, &
-                             shdo_obj_, isrcJ_Shdo_, srcJ_Shdo_, &
+    use globals_obj,   only:  rtm_obj_, xyz_Rtm_, &
+                                        ext_Rtm_, &
+                                        leg_Rtm_, &
+                             cell_obj_, i8Grid_Cell_, &
+                                        i6Cell_Cell_, &
+                                        i2Tree_Cell_, &
+                                          flag_Cell_, &
+                             shdo_obj_, isrcJ_Shdo_, &
+                                         srcJ_Shdo_, &
                               src_obj_, &
                               prp_obj_, &
                               sfc_obj_, &
