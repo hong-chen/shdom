@@ -194,9 +194,9 @@ module globals_type
         integer(kind=I__) :: Npts  = -999
         integer(kind=I__) :: maxNpts = -999
 
-        real(kind=R__),  allocatable :: x(:)
-        real(kind=R__),  allocatable :: y(:)
-        real(kind=R__),  allocatable :: z(:)
+        real(kind=R__), allocatable :: x(:)
+        real(kind=R__), allocatable :: y(:)
+        real(kind=R__), allocatable :: z(:)
 
         logical :: isAllocated  = .false.
 
@@ -241,6 +241,7 @@ module globals_type
         real(kind=R__),    allocatable :: wgt(:, :)
 
         logical :: doHighOrder = .false.
+
         logical :: isAllocated = .false.
 
     end type shd_type_shdo
@@ -333,6 +334,7 @@ module globals_type
 
         logical :: isUniform    = .false.
         logical :: isLambertian = .false.
+
         logical :: isAllocated  = .false.
 
     end type shd_type_sfc
@@ -439,7 +441,7 @@ module globals_obj
 
     ! SRC (radiation source, e.g., solar, thermal, or both)
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    type(shd_type_src),  save :: src_obj_
+    type(shd_type_src), save :: src_obj_
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
