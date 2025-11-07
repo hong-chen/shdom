@@ -679,60 +679,62 @@ subroutine shd_io__readPrpSize(prp_obj)
     prp_obj%yDomain = prp_obj%Ny * prp_obj%dy
 
 
-    ! Property file type E is for extinction only format
-    if (prp_obj%type .eq. 'E') then
+    PRPTYPE_CASE: select case (prp_obj%type)
 
-        prp_obj%Npha = 1
-        read (11, *) (temp0, iz=1, prp_obj%Nz)
-        read (11, *) ssa0, Nleg
+        ! Property file type E is for extinction only format
+        case ('E', 'e')
 
-        prp_obj%Nleg = max(prp_obj%Nleg, Nleg)
-        prp_obj%maxNleg = prp_obj%Nleg
-        prp_obj%maxNptsLeg = prp_obj%maxNleg + 1
+            prp_obj%Npha = 1
+            read (11, *) (temp0, iz=1, prp_obj%Nz)
+            read (11, *) ssa0, Nleg
 
-    ! Property file type T is for tabulated phase function format
-    else if (prp_obj%type .eq. 'T') then
+            prp_obj%Nleg = max(prp_obj%Nleg, Nleg)
+            prp_obj%maxNleg = prp_obj%Nleg
+            prp_obj%maxNptsLeg = prp_obj%maxNleg + 1
 
-        prp_obj%maxNleg = prp_obj%Nleg
+        ! Property file type T is for tabulated phase function format
+        case ('T', 't')
 
-        read (11, *) prp_obj%Npha
-        do i = 1, prp_obj%Npha
-            read (11, *) Nleg, (chi0, l=1, Nleg)
-            prp_obj%maxNleg = max(Nleg, prp_obj%maxNleg)
-        end do
+            prp_obj%maxNleg = prp_obj%Nleg
 
-        prp_obj%maxNptsLeg = prp_obj%Npha * (prp_obj%maxNleg + 1)
-
-    ! Property file type P is for polarized tabulated phase functi
-    else if (prp_obj%type .eq. 'P') then
-
-        prp_obj%maxNleg = prp_obj%Nleg
-        read (11, *) prp_obj%Npha
-        do i = 1, prp_obj%Npha
-            do j = 1, 6
-                read (11, *) k, Nleg, (chi0, l=0, Nleg)
+            read (11, *) prp_obj%Npha
+            do i = 1, prp_obj%Npha
+                read (11, *) Nleg, (chi0, l=1, Nleg)
                 prp_obj%maxNleg = max(Nleg, prp_obj%maxNleg)
             end do
-        end do
-        prp_obj%maxNptsLeg = prp_obj%NlegSet * prp_obj%Npha * (prp_obj%maxNleg + 1)
 
-    else
+            prp_obj%maxNptsLeg = prp_obj%Npha * (prp_obj%maxNleg + 1)
 
-        prp_obj%Npha = 0
+        ! Property file type P is for polarized tabulated phase functi
+        case ('P', 'p')
 
-        ! Standard property file has everything variable
-        prp_obj%maxNleg = prp_obj%Nleg
-        do while (.true.)
-            read (11, *, end=190) ix, iy, iz, temp0, ext0, ssa0, Nleg,&
-                &(chi0, l=1, Nleg)
-            prp_obj%maxNleg = max(Nleg, prp_obj%maxNleg)
-        end do
+            prp_obj%maxNleg = prp_obj%Nleg
+            read (11, *) prp_obj%Npha
+            do i = 1, prp_obj%Npha
+                do j = 1, 6
+                    read (11, *) k, Nleg, (chi0, l=0, Nleg)
+                    prp_obj%maxNleg = max(Nleg, prp_obj%maxNleg)
+                end do
+            end do
+            prp_obj%maxNptsLeg = prp_obj%NlegSet * prp_obj%Npha * (prp_obj%maxNleg + 1)
 
-190     continue
+        case default
 
-        prp_obj%maxNptsLeg = prp_obj%Nx * prp_obj%Ny * prp_obj%Nz * (prp_obj%maxNleg + 1)
+            prp_obj%Npha = 0
 
-    end if
+            ! Standard property file has everything variable
+            prp_obj%maxNleg = prp_obj%Nleg
+            do while (.true.)
+                read (11, *, end=190) ix, iy, iz, temp0, ext0, ssa0, Nleg,&
+                    &(chi0, l=1, Nleg)
+                prp_obj%maxNleg = max(Nleg, prp_obj%maxNleg)
+            end do
+
+190         continue
+
+            prp_obj%maxNptsLeg = prp_obj%Nx * prp_obj%Ny * prp_obj%Nz * (prp_obj%maxNleg + 1)
+
+    end select PRPTYPE_CASE
 
     close (unit=11)
 
@@ -801,264 +803,266 @@ subroutine shd_io__readPrp(isDeltaM, &
 
     read (1, *) prp_obj%dx, prp_obj%dy, (prp_obj%z(k), k=1, prp_obj%Nz)
 
-    ! Property file type E is for extinction only format
-    if (prp_obj%type .eq. 'E') then
+    PRPTYPE_CASE: select case (prp_obj%type)
 
-        prp_obj%Npha = 1
+        ! Property file type E is for extinction only format
+        case ('E', 'e')
 
-        read (1, *) (temp0, iz=1, prp_obj%Nz)
-        read (1, *) ssa0, Nleg
+            prp_obj%Npha = 1
 
-        if (isDeltaM) then
-            prp_obj%Nleg = max(prp_obj%Nleg, Nleg)
-            prp_obj%Nleg = min(prp_obj%Nleg, prp_obj%maxNleg)
-        end if
+            read (1, *) (temp0, iz=1, prp_obj%Nz)
+            read (1, *) ssa0, Nleg
 
-        if (prp_obj%Nx * prp_obj%Ny * prp_obj%Nz .gt. prp_obj%maxNpts) then
-            stop 'Error [_readPrp]: prp_obj%maxNpts exceeded.'
-        end if
-
-        if (prp_obj%Nleg + 1 .gt. prp_obj%maxNptsLeg)&
-            &stop 'Error [_readPrp]: prp_obj%maxNptsLeg exceeded.'
-
-        rewind (1)
-        read (1, *)
-        read (1, *) prp_obj%Nx, prp_obj%Ny, prp_obj%Nz
-        read (1, *) prp_obj%dx, prp_obj%dy, (prp_obj%z(k), k=1, prp_obj%Nz)
-        read (1, *) (temp_Prp(iz), iz=1, prp_obj%Nz)
-
-        !read (1, *) ssa0, Nleg, (leg_Prp(l + 1), l=1, min(Nleg, prp_obj%Nleg)),&
-        !    &(chi0, l=prp_obj%Nleg + 1, Nleg)
-        read (1, *) ssa0, Nleg, (leg_Prp(1, l, 1), l=1, min(Nleg, prp_obj%Nleg)),&
-            &(chi0, l=prp_obj%Nleg + 1, Nleg)
-
-        !leg_Prp(1) = 1.0
-        leg_Prp(1, 0, 1) = 1.0
-
-        !prp_obj%maxAsym = leg_Prp(1 + 1)/3.0
-        prp_obj%maxAsym = leg_Prp(1, 1, 1)/3.0
-        do l = Nleg + 1, prp_obj%Nleg
-            !leg_Prp(l) = 0.0
-            leg_Prp(1, l, 1) = 0.0
-        end do
-
-        iy = 1
-        do while (.true.)
-            if (prp_obj%Ny .eq. 1) then
-                read (1, *, end=290) ix, iz, ext0
-            else
-                read (1, *, end=290) ix, iy, iz, ext0
+            if (isDeltaM) then
+                prp_obj%Nleg = max(prp_obj%Nleg, Nleg)
+                prp_obj%Nleg = min(prp_obj%Nleg, prp_obj%maxNleg)
             end if
-            if (ix .ge. 1 .and. ix .le. prp_obj%Nx .and.&
-               &iy .ge. 1 .and. iy .le. prp_obj%Ny .and.&
-               &iz .ge. 1 .and. iz .le. prp_obj%Nz) then
-                k = iz + prp_obj%Nz*(iy - 1) + prp_obj%Nz*prp_obj%Ny*(ix - 1)
-                temp_Prp(k) = temp_Prp(iz)
-                ext_Prp(k)  = ext0
-                ssa_Prp(k)  = ssa0
-                ipha_Prp(k) = 1
+
+            if (prp_obj%Nx * prp_obj%Ny * prp_obj%Nz .gt. prp_obj%maxNpts) then
+                stop 'Error [_readPrp]: prp_obj%maxNpts exceeded.'
             end if
-        end do
 
-    ! Property file type T or P is for tabulated phase function format
-    else if (prp_obj%type .eq. 'T' .or. prp_obj%type .eq. 'P') then
+            if (prp_obj%Nleg + 1 .gt. prp_obj%maxNptsLeg)&
+                &stop 'Error [_readPrp]: prp_obj%maxNptsLeg exceeded.'
 
-        read (1, *) prp_obj%Npha
+            rewind (1)
+            read (1, *)
+            read (1, *) prp_obj%Nx, prp_obj%Ny, prp_obj%Nz
+            read (1, *) prp_obj%dx, prp_obj%dy, (prp_obj%z(k), k=1, prp_obj%Nz)
+            read (1, *) (temp_Prp(iz), iz=1, prp_obj%Nz)
 
-        ! If delta-M then find the largest number of Legendre terms
-        if (isDeltaM) then
+            !read (1, *) ssa0, Nleg, (leg_Prp(l + 1), l=1, min(Nleg, prp_obj%Nleg)),&
+            !    &(chi0, l=prp_obj%Nleg + 1, Nleg)
+            read (1, *) ssa0, Nleg, (leg_Prp(1, l, 1), l=1, min(Nleg, prp_obj%Nleg)),&
+                &(chi0, l=prp_obj%Nleg + 1, Nleg)
 
-            do i = 1, prp_obj%Npha
-                if (prp_obj%type .eq. 'T') then
-                    read (1, *) Nleg, (chi0, l=1, Nleg)
-                else
-                    do j = 1, 6
-                        read (1, *) js, Nleg, (chi0, l=0, Nleg)
-                    end do
-                end if
-                prp_obj%Nleg = max(Nleg, prp_obj%Nleg)
+            !leg_Prp(1) = 1.0
+            leg_Prp(1, 0, 1) = 1.0
+
+            !prp_obj%maxAsym = leg_Prp(1 + 1)/3.0
+            prp_obj%maxAsym = leg_Prp(1, 1, 1)/3.0
+            do l = Nleg + 1, prp_obj%Nleg
+                !leg_Prp(l) = 0.0
+                leg_Prp(1, l, 1) = 0.0
             end do
 
-            if (prp_obj%Nleg .gt. prp_obj%maxNleg) then
-                if (verbose_ .ge. 4) write (*, '(A,I4,A,I4,A)')&
-                    &'Warning [_readPrp]: Truncating phase function from ',&
-                    &prp_obj%Nleg, ' to ', prp_obj%maxNleg, ' Legendre terms.'
-            end if
-            prp_obj%Nleg = min(prp_obj%Nleg, prp_obj%maxNleg)
-
-        end if
-
-        N = prp_obj%Nx * prp_obj%Ny * prp_obj%Nz
-
-        if (N .gt. prp_obj%maxNpts) stop 'Error [_readPrp]: prp_obj%maxNpts exceeded.'
-
-        if (prp_obj%Npha*(prp_obj%Nleg+1)*prp_obj%NlegSet .gt. prp_obj%maxNptsLeg)&
-            &stop 'Error [_readPrp]: prp_obj%maxNptsLeg exceeded.'
-
-        rewind (1)
-        read (1, *)
-        read (1, *) prp_obj%Nx, prp_obj%Ny, prp_obj%Nz
-        read (1, *) prp_obj%dx, prp_obj%dy, (prp_obj%z(k), k=1, prp_obj%Nz)
-        read (1, *) prp_obj%Npha
-
-        prp_obj%maxAsym = -1.0
-        do i = 1, prp_obj%Npha
-
-            !il = (prp_obj%Nleg + 1)*(i - 1)
-
-            if (prp_obj%type .eq. 'T') then
-
-                !leg_Prp(il + 1) = 1.0
-                leg_Prp(1, 0, i) = 1.0
-
-                !read (1, *) Nleg, (leg_Prp(il + l + 1), l=1, min(Nleg, prp_obj%Nleg)),&
-                !    &(chi0, l=prp_obj%Nleg + 1, Nleg)
-                read (1, *) Nleg, (leg_Prp(1, l, i), l=1, min(Nleg, prp_obj%Nleg)),&
-                    &(chi0, l=prp_obj%Nleg + 1, Nleg)
-
-                do l = Nleg + 1, prp_obj%Nleg
-                    !leg_Prp(l + il + 1) = 0.0
-                    leg_Prp(1, l, i) = 0.0
-                end do
-            else
-                do j = 1, 6
-                    if (j .le. prp_obj%NlegSet) then
-                        !read (1, *) js, Nleg,&
-                        !    &(leg_Prp((il + l)*prp_obj%NlegSet + j), l=0, min(Nleg, prp_obj%Nleg)),&
-                        !    &(chi0, l=prp_obj%Nleg + 1, Nleg)
-                        read (1, *) js, Nleg,&
-                            &(leg_Prp(j, l, i), l=0, min(Nleg, prp_obj%Nleg)),&
-                            &(chi0, l=prp_obj%Nleg + 1, Nleg)
-                        do l = Nleg + 1, prp_obj%Nleg
-                            !leg_Prp((il + l)*prp_obj%NlegSet + j) = 0.0
-                            leg_Prp(j, l, i) = 0.0
-                        end do
-                    else
-                        read (1, *) js, Nleg, (chi0, l=0, Nleg)
-                    end if
-                end do
-            end if
-            !prp_obj%maxAsym = max(prp_obj%maxAsym, leg_Prp((il + 1)*prp_obj%NlegSet + 1)/3.0)
-            prp_obj%maxAsym = max(prp_obj%maxAsym, leg_Prp(1, 1, i)/3.0)
-        end do
-
-        read (1, '(A)') lineTmp ! skip one line
-
-        if (lineTmp(1:1) .eq. '!') then
-
-            read (1, '(A)') dataPostfix
-            read (1, '(A)') lineDim
-
-            read (lineDim( 3:12), '(I10)') Nxx
-            read (lineDim(14:23), '(I10)') Nyy
-            read (lineDim(25:34), '(I10)') Nzz
-            read (lineDim(36:45), '(I10)') Npp
-
-            fnameBin = trim(adjustl(prp_obj%fname))//trim(adjustl(dataPostfix(2:)))
-
-            open (UNIT=88, FILE=trim(adjustl(fnameBin)), STATUS='OLD',&
-                &ACCESS='STREAM', FORM='UNFORMATTED')
-
-            ! temp_Prp: real(4)
-            read (88) (((temp_Prp(iz+prp_obj%Nz*(iy-1)+prp_obj%Nz*prp_obj%Ny*(ix-1)), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
-            ! ext_Prp: real(4)
-            read (88) ((( ext_Prp(iz+prp_obj%Nz*(iy-1)+prp_obj%Nz*prp_obj%Ny*(ix-1)), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
-            ! ssa_Prp: real(4)
-            read (88) ((( ssa_Prp(iz+prp_obj%Nz*(iy-1)+prp_obj%Nz*prp_obj%Ny*(ix-1)), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
-            ! ipha_Prp: integer(2)
-            read (88) (((ipha_Prp(iz+prp_obj%Nz*(iy-1)+prp_obj%Nz*prp_obj%Ny*(ix-1)), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
-
-            close (88)
-
-        else
-
-            backspace(1)
-
-            ! original
-            !╭────────────────────────────────────────────────╮!
+            iy = 1
             do while (.true.)
-                read (1, *, end=290) ix, iy, iz, temp0, ext0, ssa0, ipha0
+                if (prp_obj%Ny .eq. 1) then
+                    read (1, *, end=290) ix, iz, ext0
+                else
+                    read (1, *, end=290) ix, iy, iz, ext0
+                end if
                 if (ix .ge. 1 .and. ix .le. prp_obj%Nx .and.&
                    &iy .ge. 1 .and. iy .le. prp_obj%Ny .and.&
                    &iz .ge. 1 .and. iz .le. prp_obj%Nz) then
                     k = iz + prp_obj%Nz*(iy - 1) + prp_obj%Nz*prp_obj%Ny*(ix - 1)
-                    temp_Prp(k) = temp0
+                    temp_Prp(k) = temp_Prp(iz)
                     ext_Prp(k)  = ext0
                     ssa_Prp(k)  = ssa0
-                    ipha_Prp(k) = ipha0
+                    ipha_Prp(k) = 1
                 end if
             end do
-            !╰────────────────────────────────────────────────╯!
 
-        end if
+        ! Property file type T or P is for tabulated phase function format
+        case ('T', 't', 'P', 'p')
 
-    else
+            read (1, *) prp_obj%Npha
 
-        ! Standard property file has everything variable
-        !   If delta-M then find the largest number of Legendre terms
-        prp_obj%Npha = 0
+            ! If delta-M then find the largest number of Legendre terms
+            if (isDeltaM) then
 
-        if (isDeltaM) then
-            do while (.true.)
-                read (1, *, end=190) ix, iy, iz, temp0, ext0, ssa0, Nleg,&
-                    &(chi0, l=1, Nleg)
-                prp_obj%Nleg = max(Nleg, prp_obj%Nleg)
-            end do
-
-190         continue
-
-            prp_obj%Nleg = min(prp_obj%Nleg, prp_obj%maxNleg)
-
-            rewind (1)
-
-            read (1, *) prp_obj%Nx, prp_obj%Ny, prp_obj%Nz
-            read (1, *) prp_obj%dx, prp_obj%dy, (prp_obj%z(k), k=1, prp_obj%Nz)
-        end if
-
-        N = prp_obj%Nx * prp_obj%Ny * prp_obj%Nz
-
-        if (N .gt. prp_obj%maxNpts) stop 'Error [_readPrp]: prp_obj%maxNpts exceeded.'
-
-        if (N*(prp_obj%Nleg + 1) .gt. prp_obj%maxNptsLeg)&
-            &stop 'Error [_readPrp]: prp_obj%maxNptsLeg exceeded.'
-
-        prp_obj%maxAsym = -1.0
-        do while (.true.)
-
-            read (1, *, end=290) ix, iy, iz, temp0, ext0, ssa0, Nleg
-
-            if  (ix .ge. 1 .and. ix .le. prp_obj%Nx .and.&
-                &iy .ge. 1 .and. iy .le. prp_obj%Ny.and.&
-                &iz .ge. 1 .and. iz .le. prp_obj%Nz) then
-
-                k = iz + prp_obj%Nz*(iy - 1) + prp_obj%Nz*prp_obj%Ny*(ix - 1)
-
-                !kl = (prp_obj%Nleg + 1)*(k - 1)
-
-                backspace (1)
-
-                !read (1, *, end=290) ix, iy, iz, temp_Prp(k), ext_Prp(k),&
-                !    &ssa_Prp(k), Nleg, (leg_Prp(l + kl), l=1, min(Nleg, prp_obj%Nleg)),&
-                !    &(chi0, l=prp_obj%Nleg + 1, Nleg)
-                read (1, *, end=290) ix, iy, iz, temp_Prp(k), ext_Prp(k),&
-                    &ssa_Prp(k), Nleg, (leg_Prp(1, l, k), l=1, min(Nleg, prp_obj%Nleg)),&
-                    &(chi0, l=prp_obj%Nleg + 1, Nleg)
-
-                !prp_obj%maxAsym = max(prp_obj%maxAsym, leg_Prp(kl + 1 + 1)/3.0)
-                !leg_Prp(1 + kl) = 1.0
-
-                prp_obj%maxAsym = max(prp_obj%maxAsym, leg_Prp(1, 1, k)/3.0)
-                leg_Prp(1, 0, k) = 1.0
-
-                do l = Nleg + 1, prp_obj%Nleg
-                    !leg_Prp(l + kl) = 0.0
-                    leg_Prp(1, l, k) = 0.0
+                do i = 1, prp_obj%Npha
+                    if (prp_obj%type .eq. 'T') then
+                        read (1, *) Nleg, (chi0, l=1, Nleg)
+                    else
+                        do j = 1, 6
+                            read (1, *) js, Nleg, (chi0, l=0, Nleg)
+                        end do
+                    end if
+                    prp_obj%Nleg = max(Nleg, prp_obj%Nleg)
                 end do
 
-            end if
-        end do
+                if (prp_obj%Nleg .gt. prp_obj%maxNleg) then
+                    if (verbose_ .ge. 4) write (*, '(A,I4,A,I4,A)')&
+                        &'Warning [_readPrp]: Truncating phase function from ',&
+                        &prp_obj%Nleg, ' to ', prp_obj%maxNleg, ' Legendre terms.'
+                end if
+                prp_obj%Nleg = min(prp_obj%Nleg, prp_obj%maxNleg)
 
-    end if
+            end if
+
+            N = prp_obj%Nx * prp_obj%Ny * prp_obj%Nz
+
+            if (N .gt. prp_obj%maxNpts) stop 'Error [_readPrp]: prp_obj%maxNpts exceeded.'
+
+            if (prp_obj%Npha*(prp_obj%Nleg+1)*prp_obj%NlegSet .gt. prp_obj%maxNptsLeg)&
+                &stop 'Error [_readPrp]: prp_obj%maxNptsLeg exceeded.'
+
+            rewind (1)
+            read (1, *)
+            read (1, *) prp_obj%Nx, prp_obj%Ny, prp_obj%Nz
+            read (1, *) prp_obj%dx, prp_obj%dy, (prp_obj%z(k), k=1, prp_obj%Nz)
+            read (1, *) prp_obj%Npha
+
+            prp_obj%maxAsym = -1.0
+            do i = 1, prp_obj%Npha
+
+                !il = (prp_obj%Nleg + 1)*(i - 1)
+
+                if (prp_obj%type .eq. 'T') then
+
+                    !leg_Prp(il + 1) = 1.0
+                    leg_Prp(1, 0, i) = 1.0
+
+                    !read (1, *) Nleg, (leg_Prp(il + l + 1), l=1, min(Nleg, prp_obj%Nleg)),&
+                    !    &(chi0, l=prp_obj%Nleg + 1, Nleg)
+                    read (1, *) Nleg, (leg_Prp(1, l, i), l=1, min(Nleg, prp_obj%Nleg)),&
+                        &(chi0, l=prp_obj%Nleg + 1, Nleg)
+
+                    do l = Nleg + 1, prp_obj%Nleg
+                        !leg_Prp(l + il + 1) = 0.0
+                        leg_Prp(1, l, i) = 0.0
+                    end do
+                else
+                    do j = 1, 6
+                        if (j .le. prp_obj%NlegSet) then
+                            !read (1, *) js, Nleg,&
+                            !    &(leg_Prp((il + l)*prp_obj%NlegSet + j), l=0, min(Nleg, prp_obj%Nleg)),&
+                            !    &(chi0, l=prp_obj%Nleg + 1, Nleg)
+                            read (1, *) js, Nleg,&
+                                &(leg_Prp(j, l, i), l=0, min(Nleg, prp_obj%Nleg)),&
+                                &(chi0, l=prp_obj%Nleg + 1, Nleg)
+                            do l = Nleg + 1, prp_obj%Nleg
+                                !leg_Prp((il + l)*prp_obj%NlegSet + j) = 0.0
+                                leg_Prp(j, l, i) = 0.0
+                            end do
+                        else
+                            read (1, *) js, Nleg, (chi0, l=0, Nleg)
+                        end if
+                    end do
+                end if
+                !prp_obj%maxAsym = max(prp_obj%maxAsym, leg_Prp((il + 1)*prp_obj%NlegSet + 1)/3.0)
+                prp_obj%maxAsym = max(prp_obj%maxAsym, leg_Prp(1, 1, i)/3.0)
+            end do
+
+            read (1, '(A)') lineTmp ! skip one line
+
+            if (lineTmp(1:1) .eq. '!') then
+
+                read (1, '(A)') dataPostfix
+                read (1, '(A)') lineDim
+
+                read (lineDim( 3:12), '(I10)') Nxx
+                read (lineDim(14:23), '(I10)') Nyy
+                read (lineDim(25:34), '(I10)') Nzz
+                read (lineDim(36:45), '(I10)') Npp
+
+                fnameBin = trim(adjustl(prp_obj%fname))//trim(adjustl(dataPostfix(2:)))
+
+                open (UNIT=88, FILE=trim(adjustl(fnameBin)), STATUS='OLD',&
+                    &ACCESS='STREAM', FORM='UNFORMATTED')
+
+                ! temp_Prp: real(4)
+                read (88) (((temp_Prp(iz+prp_obj%Nz*(iy-1)+prp_obj%Nz*prp_obj%Ny*(ix-1)), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
+                ! ext_Prp: real(4)
+                read (88) ((( ext_Prp(iz+prp_obj%Nz*(iy-1)+prp_obj%Nz*prp_obj%Ny*(ix-1)), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
+                ! ssa_Prp: real(4)
+                read (88) ((( ssa_Prp(iz+prp_obj%Nz*(iy-1)+prp_obj%Nz*prp_obj%Ny*(ix-1)), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
+                ! ipha_Prp: integer(2)
+                read (88) (((ipha_Prp(iz+prp_obj%Nz*(iy-1)+prp_obj%Nz*prp_obj%Ny*(ix-1)), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
+
+                close (88)
+
+            else
+
+                backspace(1)
+
+                ! original
+                !╭────────────────────────────────────────────────╮!
+                do while (.true.)
+                    read (1, *, end=290) ix, iy, iz, temp0, ext0, ssa0, ipha0
+                    if (ix .ge. 1 .and. ix .le. prp_obj%Nx .and.&
+                       &iy .ge. 1 .and. iy .le. prp_obj%Ny .and.&
+                       &iz .ge. 1 .and. iz .le. prp_obj%Nz) then
+                        k = iz + prp_obj%Nz*(iy - 1) + prp_obj%Nz*prp_obj%Ny*(ix - 1)
+                        temp_Prp(k) = temp0
+                        ext_Prp(k)  = ext0
+                        ssa_Prp(k)  = ssa0
+                        ipha_Prp(k) = ipha0
+                    end if
+                end do
+                !╰────────────────────────────────────────────────╯!
+
+            end if
+
+        case default
+
+            ! Standard property file has everything variable
+            !   If delta-M then find the largest number of Legendre terms
+            prp_obj%Npha = 0
+
+            if (isDeltaM) then
+                do while (.true.)
+                    read (1, *, end=190) ix, iy, iz, temp0, ext0, ssa0, Nleg,&
+                        &(chi0, l=1, Nleg)
+                    prp_obj%Nleg = max(Nleg, prp_obj%Nleg)
+                end do
+
+190             continue
+
+                prp_obj%Nleg = min(prp_obj%Nleg, prp_obj%maxNleg)
+
+                rewind (1)
+
+                read (1, *) prp_obj%Nx, prp_obj%Ny, prp_obj%Nz
+                read (1, *) prp_obj%dx, prp_obj%dy, (prp_obj%z(k), k=1, prp_obj%Nz)
+            end if
+
+            N = prp_obj%Nx * prp_obj%Ny * prp_obj%Nz
+
+            if (N .gt. prp_obj%maxNpts) stop 'Error [_readPrp]: prp_obj%maxNpts exceeded.'
+
+            if (N*(prp_obj%Nleg + 1) .gt. prp_obj%maxNptsLeg)&
+                &stop 'Error [_readPrp]: prp_obj%maxNptsLeg exceeded.'
+
+            prp_obj%maxAsym = -1.0
+            do while (.true.)
+
+                read (1, *, end=290) ix, iy, iz, temp0, ext0, ssa0, Nleg
+
+                if  (ix .ge. 1 .and. ix .le. prp_obj%Nx .and.&
+                    &iy .ge. 1 .and. iy .le. prp_obj%Ny.and.&
+                    &iz .ge. 1 .and. iz .le. prp_obj%Nz) then
+
+                    k = iz + prp_obj%Nz*(iy - 1) + prp_obj%Nz*prp_obj%Ny*(ix - 1)
+
+                    !kl = (prp_obj%Nleg + 1)*(k - 1)
+
+                    backspace (1)
+
+                    !read (1, *, end=290) ix, iy, iz, temp_Prp(k), ext_Prp(k),&
+                    !    &ssa_Prp(k), Nleg, (leg_Prp(l + kl), l=1, min(Nleg, prp_obj%Nleg)),&
+                    !    &(chi0, l=prp_obj%Nleg + 1, Nleg)
+                    read (1, *, end=290) ix, iy, iz, temp_Prp(k), ext_Prp(k),&
+                        &ssa_Prp(k), Nleg, (leg_Prp(1, l, k), l=1, min(Nleg, prp_obj%Nleg)),&
+                        &(chi0, l=prp_obj%Nleg + 1, Nleg)
+
+                    !prp_obj%maxAsym = max(prp_obj%maxAsym, leg_Prp(kl + 1 + 1)/3.0)
+                    !leg_Prp(1 + kl) = 1.0
+
+                    prp_obj%maxAsym = max(prp_obj%maxAsym, leg_Prp(1, 1, k)/3.0)
+                    leg_Prp(1, 0, k) = 1.0
+
+                    do l = Nleg + 1, prp_obj%Nleg
+                        !leg_Prp(l + kl) = 0.0
+                        leg_Prp(1, l, k) = 0.0
+                    end do
+
+                end if
+            end do
+
+    end select PRPTYPE_CASE
 
 290 continue
     close (1)

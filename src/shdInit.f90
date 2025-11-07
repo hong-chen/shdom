@@ -165,36 +165,41 @@ subroutine shd_init__makeGrid(rtm_OBJ, &
 
     ! z
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    if (rtm_obj%type .eq. 'P') then
+    ZTYPE_CASE: select case (rtm_obj%type)
 
-        if (rtm_obj%Nz .ne. prp_obj%Nz) then
-            write (6, *)&
-                &'Error [_makeGrid]: For internal Z grid same as property file grid,'
-            write (6, *) '  must have same number of grid points (rtm_obj%Nz=prp_obj%Nz).'
-            stop
-        end if
-        do iz = 1, rtm_obj%Nz
-            rtm_obj%z(iz) = prp_obj%z(iz)
-        end do
+        case ('P', 'p')
 
-    else if (rtm_obj%type .eq. 'E') then
+            if (rtm_obj%Nz .ne. prp_obj%Nz) then
+                write (6, *)&
+                    &'Error [_makeGrid]: For internal Z grid same as property file grid,'
+                write (6, *) '  must have same number of grid points (rtm_obj%Nz=prp_obj%Nz).'
+                stop
+            end if
+            do iz = 1, rtm_obj%Nz
+                rtm_obj%z(iz) = prp_obj%z(iz)
+            end do
 
-        do iz = 1, rtm_obj%Nz
-            rtm_obj%z(iz) = prp_obj%z(1)&
-                + (iz - 1)*(prp_obj%z(prp_obj%Nz) - prp_obj%z(1))/float(rtm_obj%Nz - 1)
-        end do
+        case ('E', 'e')
 
-    else if (rtm_obj%type .eq. 'F') then
+            do iz = 1, rtm_obj%Nz
+                rtm_obj%z(iz) = prp_obj%z(1)&
+                    + (iz - 1)*(prp_obj%z(prp_obj%Nz) - prp_obj%z(1))/float(rtm_obj%Nz - 1)
+            end do
 
-        if (verbose_ .ge. 5) write(*, '(A)') 'Message [_makeGrid]: Reading rtm_obj%z from <shdom-zgrid.txt> ...'
-        open (UNIT=3, FILE='shdom-zgrid.txt', STATUS='OLD')
-        do iz = 1, rtm_obj%Nz
-            read (3, *) rtm_obj%z(iz)
-        end do
-        close (3)
-    else
-        stop 'Error [_makeGrid]: Illegal grid type in Z.'
-    end if
+        case ('F', 'f')
+
+            if (verbose_ .ge. 5) write(*, '(A)') 'Message [_makeGrid]: Reading rtm_obj%z from <shdom-zgrid.txt> ...'
+            open (UNIT=3, FILE='shdom-zgrid.txt', STATUS='OLD')
+            do iz = 1, rtm_obj%Nz
+                read (3, *) rtm_obj%z(iz)
+            end do
+            close (3)
+
+        case default
+
+            stop 'Error [_makeGrid]: Illegal grid type in Z.'
+
+    end select ZTYPE_CASE
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     return
