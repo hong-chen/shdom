@@ -228,7 +228,6 @@ module globals_type
         integer(kind=I__) :: Nlm  = -999
         integer(kind=I__) :: Nsh  = -999
         integer(kind=I__) :: Nstokes = -999
-        integer(kind=I__) :: NlegSet = -999
 
         integer(kind=I__) :: maxNl = -999
         integer(kind=I__) :: maxNm = -999

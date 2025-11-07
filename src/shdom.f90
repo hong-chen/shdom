@@ -285,11 +285,9 @@ program shdom
     !   spherical harmonics matrices.
     if (shdo_obj_%Nstokes .eq. 1) then
         prpAll_obj%NlegSet = 1
-        shdo_obj_%NlegSet = 1
         isPol_ = .false.
     else
         prpAll_obj%NlegSet = 6
-        shdo_obj_%NlegSet = 6
         isPol_ = .true.
     end if
 
