@@ -760,14 +760,14 @@ subroutine shd_rad__computeRad(&
     end if
 
     ! Setup the regularly spaced radiance locations
-    XDOMAIN = rtm_obj_%x(rtm_obj_%Nx0 + 1 - ibits(rtm_obj_%flag_bc, 0, 1)) - rtm_obj_%x(1) + 2*OUTPARMS(4)
+    XDOMAIN = rtm_obj_%x(rtm_obj_%Nx + 1 - ibits(rtm_obj_%flag_bc, 0, 1)) - rtm_obj_%x(1) + 2*OUTPARMS(4)
     STARTX = -OUTPARMS(4)
     if (OUTPARMS(2) .eq. 0.0) then
         NXOUT = 1
     else
         NXOUT = max(1, nint(XDOMAIN/OUTPARMS(2)))
     end if
-    YDOMAIN = rtm_obj_%y(rtm_obj_%Ny0 + 1 - ibits(rtm_obj_%flag_bc, 1, 1)) - rtm_obj_%y(1) + 2*OUTPARMS(5)
+    YDOMAIN = rtm_obj_%y(rtm_obj_%Ny + 1 - ibits(rtm_obj_%flag_bc, 1, 1)) - rtm_obj_%y(1) + 2*OUTPARMS(5)
     STARTY = -OUTPARMS(5)
     if (OUTPARMS(3) .eq. 0.0) then
         NYOUT = 1
@@ -839,7 +839,7 @@ subroutine shd_rad__computeRad(&
         else
             if (.not. sfc_obj_%isLambertian) then
                 call shd_init__makeBotRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
-                    &shdo_obj_%Nmu, shdo_obj_%maxNphi0, shdo_obj_%Nphi0, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt, MUOUT, PHIOUT,&
+                    &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt, MUOUT, PHIOUT,&
                     &src_obj_%type, src_obj_%avgWaveLen, src_obj_%avgMu, src_obj_%avgAz, DIRFLUX,&
                     &shdo_obj_%Nstokes,&
                     &BCRAD(1, 1 + NTOPPTS))
@@ -1059,7 +1059,7 @@ subroutine shd_rad__computeCamRad(&
             call shd_src__integrateSrcOneRay(shdo_obj_%Nstokes,&
                 &NSTPHASE, NSCATANGLE, PHASETAB,&
                 &shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
-                &shdo_obj_%Nmu, shdo_obj_%maxNphi0, shdo_obj_%Nphi0, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
+                &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
                 &DELTAM, src_obj_%type, src_obj_%avgWaveLen, src_obj_%avgMu, src_obj_%avgAz,&
                 &DIRFLUX, isrcJ_Shdo_, srcJ_Shdo_, YLMSUN,&
                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&

@@ -97,7 +97,7 @@ subroutine shd_init__makeGrid(rtm_OBJ, &
     !             "P": Z base grid levels from property file;
     !             "F": Z base grid levels from file: shdom-zgrid.txt
     !   prp_obj%Nx, prp_obj%Ny, prp_obj%Nz: integer, size of the input property arrays
-    !   rtm_obj%Nx0, rtm_obj%Ny0, rtm_obj%Nz: integer, base grid size in X, Y and Z
+    !   rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz: integer, base grid size in X, Y and Z
     !   prp_obj%xStart, prp_obj%yStart: real, starting X and Y
     !   prp_obj%dx, prp_obj%dy: real, horizontal grid spacing of the property arrays
     !   prp_obj%z: real array, input Z levels from the property file
@@ -105,7 +105,7 @@ subroutine shd_init__makeGrid(rtm_OBJ, &
     ! Output:
     !   rtm_obj%x, rtm_obj%y, rtm_obj%z: real array, grid locations for each dimension.
     !                        To facilitate the periodic horizontal boundaries,
-    !                        there are rtm_obj%Nx0+1 values in rtm_obj%x, rtm_obj%Ny0+1 in rtm_obj%y,
+    !                        there are rtm_obj%Nx+1 values in rtm_obj%x, rtm_obj%Ny+1 in rtm_obj%y,
     !                        rtm_obj%Nz values in rtm_obj%z. Currently the grid locations
     !                        are evenly spaced in X and Y.
     !╰────────────────────────────────────────────────────────────────────────────╯!
@@ -127,16 +127,16 @@ subroutine shd_init__makeGrid(rtm_OBJ, &
     end if
 
     if (isMpiX_) then ! open in X
-        do ix = 1, rtm_obj%Nx0
+        do ix = 1, rtm_obj%Nx
             if (prp_obj%Nx .gt. 1) then
-                rtm_obj%x(ix) = prp_obj%xStart + (ix - 1)*(prp_obj%dx*(prp_obj%Nx - 1))/float(rtm_obj%Nx0 - 1)
+                rtm_obj%x(ix) = prp_obj%xStart + (ix - 1)*(prp_obj%dx*(prp_obj%Nx - 1))/float(rtm_obj%Nx - 1)
             else
-                rtm_obj%x(ix) = prp_obj%xStart + (ix - 1)*(prp_obj%dx*prp_obj%Nx)/float(rtm_obj%Nx0 - 1)
+                rtm_obj%x(ix) = prp_obj%xStart + (ix - 1)*(prp_obj%dx*prp_obj%Nx)/float(rtm_obj%Nx - 1)
             end if
         end do
     else ! periodic in X
-        do ix = 1, rtm_obj%Nx0 + 1
-            rtm_obj%x(ix) = prp_obj%xStart + (ix - 1)*(prp_obj%dx*prp_obj%Nx)/float(rtm_obj%Nx0)
+        do ix = 1, rtm_obj%Nx + 1
+            rtm_obj%x(ix) = prp_obj%xStart + (ix - 1)*(prp_obj%dx*prp_obj%Nx)/float(rtm_obj%Nx)
         end do
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
@@ -149,16 +149,16 @@ subroutine shd_init__makeGrid(rtm_OBJ, &
     end if
 
     if (isMpiY_) then ! open in Y
-        do iy = 1, rtm_obj%Ny0
+        do iy = 1, rtm_obj%Ny
             if (prp_obj%Ny .gt. 1) then
-                rtm_obj%y(iy) = prp_obj%yStart + (iy - 1)*(prp_obj%dy*(prp_obj%Ny - 1))/float(rtm_obj%Ny0 - 1)
+                rtm_obj%y(iy) = prp_obj%yStart + (iy - 1)*(prp_obj%dy*(prp_obj%Ny - 1))/float(rtm_obj%Ny - 1)
             else
-                rtm_obj%y(iy) = prp_obj%yStart + (iy - 1)*(prp_obj%dy*prp_obj%Ny)/float(rtm_obj%Ny0 - 1)
+                rtm_obj%y(iy) = prp_obj%yStart + (iy - 1)*(prp_obj%dy*prp_obj%Ny)/float(rtm_obj%Ny - 1)
             end if
         end do
     else ! periodic in Y
-        do iy = 1, rtm_obj%Ny0 + 1
-            rtm_obj%y(iy) = prp_obj%yStart + (iy - 1)*(prp_obj%dy*prp_obj%Ny)/float(rtm_obj%Ny0)
+        do iy = 1, rtm_obj%Ny + 1
+            rtm_obj%y(iy) = prp_obj%yStart + (iy - 1)*(prp_obj%dy*prp_obj%Ny)/float(rtm_obj%Ny)
         end do
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
@@ -213,27 +213,27 @@ subroutine shd_init__makeCell(rtm_obj, &
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Description:
     !   Make the initial grid cell data structure for the base grid.
-    !   For periodic boundary conditions there are rtm_obj%Nx0*rtm_obj%Ny0*(rtm_obj%Nz-1) grid cells
-    !   and (rtm_obj%Nx0+1)*(rtm_obj%Ny0+1)*rtm_obj%Nz grid points. The ix=rtm_obj%Nx0+1 column is the same
+    !   For periodic boundary conditions there are rtm_obj%Nx*rtm_obj%Ny*(rtm_obj%Nz-1) grid cells
+    !   and (rtm_obj%Nx+1)*(rtm_obj%Ny+1)*rtm_obj%Nz grid points. The ix=rtm_obj%Nx+1 column is the same
     !   as the ix=1 column, because of the periodicity, but the grid points
     !   are repeated.  The last grid cell on the "right" has the last column
     !   of grid points on the "left" and the repeated "virtual" set of grid
     !   points on the "right". For open boundary conditions in X and Y
-    !   there are (rtm_obj%Nx0+1)*(rtm_obj%Ny0+1)*(rtm_obj%Nz-1) grid cells and rtm_obj%Nx0*rtm_obj%Ny0*rtm_obj%Nz grid points.
+    !   there are (rtm_obj%Nx+1)*(rtm_obj%Ny+1)*(rtm_obj%Nz-1) grid cells and rtm_obj%Nx*rtm_obj%Ny*rtm_obj%Nz grid points.
     !   Open boundary conditions are done with the lowest "left most" and
     !   "right most" X and Y columns being independent pixels with
     !   their own grid cells (zero width), therefore one extra grid cell
     !   is required.   Multiple processor boundary conditions have
-    !   (rtm_obj%Nx0-1)*(rtm_obj%Ny0-1)*(rtm_obj%Nz-1) grid cells and rtm_obj%Nx0*rtm_obj%Ny0*rtm_obj%Nz grid points.
-    !   Independent pixel mode has rtm_obj%Nx0*rtm_obj%Ny0*(rtm_obj%Nz-1) grid cells and rtm_obj%Nx0*rtm_obj%Ny0*rtm_obj%Nz
+    !   (rtm_obj%Nx-1)*(rtm_obj%Ny-1)*(rtm_obj%Nz-1) grid cells and rtm_obj%Nx*rtm_obj%Ny*rtm_obj%Nz grid points.
+    !   Independent pixel mode has rtm_obj%Nx*rtm_obj%Ny*(rtm_obj%Nz-1) grid cells and rtm_obj%Nx*rtm_obj%Ny*rtm_obj%Nz
     !   grid points
     !
     ! Input:
-    !   rtm_obj%Nx0, rtm_obj%Ny0, rtm_obj%Nz: integer, base grid size in X, Y and Z
-    !   rtm_obj%Nx, rtm_obj%Ny: integer, base grid actual size in X, Y
+    !   rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz: integer, base grid size in X, Y and Z
+    !   rtm_obj%NxA, rtm_obj%NyA: integer, base grid actual size in X, Y
     !   rtm_obj%x, rtm_obj%y, rtm_obj%z: real array, grid locations for each dimension.
     !                        To facilitate the periodic horizontal boundaries,
-    !                        there are rtm_obj%Nx0+1 values in rtm_obj%x, rtm_obj%Ny0+1 in rtm_obj%y,
+    !                        there are rtm_obj%Nx+1 values in rtm_obj%x, rtm_obj%Ny+1 in rtm_obj%y,
     !                        rtm_obj%Nz values in rtm_obj%z. Currently the grid locations
     !                        are evenly spaced in X and Y.
     !
@@ -284,8 +284,8 @@ subroutine shd_init__makeCell(rtm_obj, &
 
     ! First, make the grid point positions
     i = 0
-    do ix = 1, rtm_obj%Nx
-        do iy = 1, rtm_obj%Ny
+    do ix = 1, rtm_obj%NxA
+        do iy = 1, rtm_obj%NyA
             do iz = 1, rtm_obj%Nz
                 i = i + 1
                 xyz_Rtm(1, i) = rtm_obj%x(ix)
@@ -296,12 +296,12 @@ subroutine shd_init__makeCell(rtm_obj, &
     end do
     rtm_obj%Npts = i
 
-    Nxc = rtm_obj%Nx0
-    if (isOpenX_) Nxc = rtm_obj%Nx0 + 1
-    if (isMpiX_ .and. (.not. is1DX_)) Nxc = rtm_obj%Nx0 - 1
-    Nyc = rtm_obj%Ny0
-    if (isOpenYx_) Nyc = rtm_obj%Ny0 + 1
-    if (isMpiY_ .and. (.not. is1DYx_)) Nyc = rtm_obj%Ny0 - 1
+    Nxc = rtm_obj%Nx
+    if (isOpenX_) Nxc = rtm_obj%Nx + 1
+    if (isMpiX_ .and. (.not. is1DX_)) Nxc = rtm_obj%Nx - 1
+    Nyc = rtm_obj%Ny
+    if (isOpenYx_) Nyc = rtm_obj%Ny + 1
+    if (isMpiY_ .and. (.not. is1DYx_)) Nyc = rtm_obj%Ny - 1
 
     ! Then setup the cell structures
     i = 0
@@ -311,7 +311,7 @@ subroutine shd_init__makeCell(rtm_obj, &
             ix1 = ix
         else if (isOpenX_) then
             ix0 = max(1, ix - 1)
-            ix1 = min(rtm_obj%Nx0, ix)
+            ix1 = min(rtm_obj%Nx, ix)
         else
             ix0 = ix
             ix1 = ix + 1
@@ -322,21 +322,21 @@ subroutine shd_init__makeCell(rtm_obj, &
                 iy1 = iy
             else if (isOpenYx_) then
                 iy0 = max(1, iy - 1)
-                iy1 = min(rtm_obj%Ny0, iy)
+                iy1 = min(rtm_obj%Ny, iy)
             else
                 iy0 = iy
                 iy1 = iy + 1
             end if
             do iz = 1, rtm_obj%Nz - 1
                 i = i + 1
-                i8Grid_Cell(1, i) = iz +     rtm_obj%Nz*(iy0 - 1) + rtm_obj%Nz*rtm_obj%Ny*(ix0 - 1)
-                i8Grid_Cell(2, i) = iz +     rtm_obj%Nz*(iy0 - 1) + rtm_obj%Nz*rtm_obj%Ny*(ix1 - 1)
-                i8Grid_Cell(3, i) = iz +     rtm_obj%Nz*(iy1 - 1) + rtm_obj%Nz*rtm_obj%Ny*(ix0 - 1)
-                i8Grid_Cell(4, i) = iz +     rtm_obj%Nz*(iy1 - 1) + rtm_obj%Nz*rtm_obj%Ny*(ix1 - 1)
-                i8Grid_Cell(5, i) = iz + 1 + rtm_obj%Nz*(iy0 - 1) + rtm_obj%Nz*rtm_obj%Ny*(ix0 - 1)
-                i8Grid_Cell(6, i) = iz + 1 + rtm_obj%Nz*(iy0 - 1) + rtm_obj%Nz*rtm_obj%Ny*(ix1 - 1)
-                i8Grid_Cell(7, i) = iz + 1 + rtm_obj%Nz*(iy1 - 1) + rtm_obj%Nz*rtm_obj%Ny*(ix0 - 1)
-                i8Grid_Cell(8, i) = iz + 1 + rtm_obj%Nz*(iy1 - 1) + rtm_obj%Nz*rtm_obj%Ny*(ix1 - 1)
+                i8Grid_Cell(1, i) = iz +     rtm_obj%Nz*(iy0 - 1) + rtm_obj%Nz*rtm_obj%NyA*(ix0 - 1)
+                i8Grid_Cell(2, i) = iz +     rtm_obj%Nz*(iy0 - 1) + rtm_obj%Nz*rtm_obj%NyA*(ix1 - 1)
+                i8Grid_Cell(3, i) = iz +     rtm_obj%Nz*(iy1 - 1) + rtm_obj%Nz*rtm_obj%NyA*(ix0 - 1)
+                i8Grid_Cell(4, i) = iz +     rtm_obj%Nz*(iy1 - 1) + rtm_obj%Nz*rtm_obj%NyA*(ix1 - 1)
+                i8Grid_Cell(5, i) = iz + 1 + rtm_obj%Nz*(iy0 - 1) + rtm_obj%Nz*rtm_obj%NyA*(ix0 - 1)
+                i8Grid_Cell(6, i) = iz + 1 + rtm_obj%Nz*(iy0 - 1) + rtm_obj%Nz*rtm_obj%NyA*(ix1 - 1)
+                i8Grid_Cell(7, i) = iz + 1 + rtm_obj%Nz*(iy1 - 1) + rtm_obj%Nz*rtm_obj%NyA*(ix0 - 1)
+                i8Grid_Cell(8, i) = iz + 1 + rtm_obj%Nz*(iy1 - 1) + rtm_obj%Nz*rtm_obj%NyA*(ix1 - 1)
                 flag_Cell(I) = 0
                 ! Initialize the neighbor pointer; to self for IP mode or
                 !   if open boundary conditions and at either end
@@ -374,7 +374,7 @@ subroutine shd_init__makeCell(rtm_obj, &
                     else
                         i6Cell_Cell(1, i) = i - (rtm_obj%Nz - 1)*Nyc
                     end if
-                    if (ix .eq. rtm_obj%Nx0) then
+                    if (ix .eq. rtm_obj%Nx) then
                         i6Cell_Cell(2, i) = i - (Nxc - 1)*(rtm_obj%Nz - 1)*Nyc
                     else
                         i6Cell_Cell(2, i) = i + (rtm_obj%Nz - 1)*Nyc
@@ -414,7 +414,7 @@ subroutine shd_init__makeCell(rtm_obj, &
                     else
                         i6Cell_Cell(3, i) = i - (rtm_obj%Nz - 1)
                     end if
-                    if (iy .eq. rtm_obj%Ny0) then
+                    if (iy .eq. rtm_obj%Ny) then
                         i6Cell_Cell(4, i) = i - (Nyc - 1)*(rtm_obj%Nz - 1)
                     else
                         i6Cell_Cell(4, i) = i + (rtm_obj%Nz - 1)

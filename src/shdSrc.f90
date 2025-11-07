@@ -330,7 +330,7 @@ subroutine shd_src__computeSrcOneDir(&
     &isrcJ_Shdo, srcJ_Shdo)
 
     ! Computes the source function (src1_Shdo) in the direction (MU,PHI)
-    ! for the whole domain (rtm_obj_%Nx0,rtm_obj_%Nz).  The spherical harmonic source function
+    ! for the whole domain (rtm_obj_%Nx,rtm_obj_%Nz).  The spherical harmonic source function
     ! series is input in srcJ_Shdo.
     ! For a solar source if delta-M then use Nakajima and Tanaka TMS
     ! procedure, replacing delta-M single scattering with single scattering
@@ -809,7 +809,7 @@ subroutine shd_src__integrateSrcOneRay(&
     TAUTOL = 0.2
 
     EPS = 1.0e-5*(xyz_Rtm_(3, i8Grid_Cell_(8, 1)) - xyz_Rtm_(3, i8Grid_Cell_(1, 1)))
-    MAXCELLSCROSS = 50*max(rtm_obj_%Nx0, rtm_obj_%Ny0, rtm_obj_%Nz)
+    MAXCELLSCROSS = 50*max(rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz)
 
     ! Calculate the generalized spherical harmonics for this direction
     allocate(YLMDIR(prp_obj_%NlegSet, NLM))
@@ -883,8 +883,8 @@ subroutine shd_src__integrateSrcOneRay(&
         BITZ = 0
     end if
     IOCT = 1 + BITX + 2*BITY + 4*BITZ
-    XM = 0.5d0*(rtm_obj_%x(1) + rtm_obj_%x(rtm_obj_%Nx0))
-    YM = 0.5d0*(rtm_obj_%y(1) + rtm_obj_%y(rtm_obj_%Ny0))
+    XM = 0.5d0*(rtm_obj_%x(1) + rtm_obj_%x(rtm_obj_%Nx))
+    YM = 0.5d0*(rtm_obj_%y(1) + rtm_obj_%y(rtm_obj_%Ny))
 
     ! Start at the desired point, getting the extinction and source
     XE = X0
@@ -911,8 +911,8 @@ subroutine shd_src__integrateSrcOneRay(&
         ! Decide which of the eight grid points we need the source fun
         do I = 1, 8
             DONETHIS(I) = DONEFACE(I, IFACE + 1)
-            if (rtm_obj_%Nx0 .eq. 1 .and. ONEX(I) .lt. 0) DONETHIS(I) = ONEX(I)
-            if (rtm_obj_%Ny0 .eq. 1 .and. ONEY(I) .lt. 0) DONETHIS(I) = ONEY(I)
+            if (rtm_obj_%Nx .eq. 1 .and. ONEX(I) .lt. 0) DONETHIS(I) = ONEX(I)
+            if (rtm_obj_%Ny .eq. 1 .and. ONEY(I) .lt. 0) DONETHIS(I) = ONEY(I)
             OEXTINCT8(I) = EXTINCT8(I)
             OSRCEXT8(:, I) = SRCEXT8(:, I)
         end do
@@ -1212,8 +1212,8 @@ subroutine shd_src__integrateSrc(NSTOKES,&
         stop 'Error [_integrateSrc]: Bad MU.'
     end if
     IOCT = 1 + BITX + 2*BITY + 4*BITZ
-    XM = 0.5*(rtm_obj_%x(1) + rtm_obj_%x(rtm_obj_%Nx0))
-    YM = 0.5*(rtm_obj_%y(1) + rtm_obj_%y(rtm_obj_%Ny0))
+    XM = 0.5*(rtm_obj_%x(1) + rtm_obj_%x(rtm_obj_%Nx))
+    YM = 0.5*(rtm_obj_%y(1) + rtm_obj_%y(rtm_obj_%Ny))
 
     ! Start at the desired point, getting the extinction and source
     XE = X0

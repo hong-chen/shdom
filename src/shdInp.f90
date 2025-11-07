@@ -2012,7 +2012,7 @@ subroutine shd_io__restoreState(&
 
     read (3) NSTI, NXI, NYI, NZI, MLI, MMI, NLMI, rtm_obj%Npts, cell_obj%Npts
 
-    if ((NXI .ne. rtm_obj%Nx0) .or. (NYI .ne. rtm_obj%Ny0) .or. (NZI .ne. rtm_obj%Nz)) then
+    if ((NXI .ne. rtm_obj%Nx) .or. (NYI .ne. rtm_obj%Ny) .or. (NZI .ne. rtm_obj%Nz)) then
         if (verbose_ .ge. 4) write (6, '(A, 3I6)') 'Warning [_restoreState]: wrong grid size:', NXI, NYI, NZI
         close (3)
         return
@@ -2026,8 +2026,8 @@ subroutine shd_io__restoreState(&
         return
     end if
 
-    read (3) (rtm_obj%x(i), i=1, rtm_obj%Nx0+1)
-    read (3) (rtm_obj%y(i), i=1, rtm_obj%Ny0+1)
+    read (3) (rtm_obj%x(i), i=1, rtm_obj%Nx+1)
+    read (3) (rtm_obj%y(i), i=1, rtm_obj%Ny+1)
     read (3) (rtm_obj%z(i), i=1, rtm_obj%Nz)
     read (3) ((i8Grid_Cell(j, i), j=1, 8), i=1, cell_obj%Npts)
     read (3) ((i6Cell_Cell(j, i), j=1, 6), i=1, cell_obj%Npts)

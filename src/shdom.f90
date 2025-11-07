@@ -230,7 +230,7 @@ program shdom
         if (doNmlInp_) then
             call shd_io__nmlInp(rtmAll_obj%runName, prpAll_obj%fname, sfc_obj_%fname, ckd_obj_%fname,&
                 fileInp_sav, fileOut_sav, sen_obj_%fname,&
-                shdo_obj_%Nstokes, rtmAll_obj%Nx0, rtmAll_obj%Ny0, rtmAll_obj%Nz, shdo_obj_%Nmu, shdo_obj_%Nphi, rtmAll_obj%flag_bc,&
+                shdo_obj_%Nstokes, rtmAll_obj%Nx, rtmAll_obj%Ny, rtmAll_obj%Nz, shdo_obj_%Nmu, shdo_obj_%Nphi, rtmAll_obj%flag_bc,&
                 rtmAll_obj%flag_ip, doCkd, doDeltaM, rtmAll_obj%type,&
                 src_obj_%type, src_obj_%inpSolar, src_obj_%avgMu, src_obj_%avgAz, src_obj_%skyRad,&
                 sfc_obj_%avgTemp, sfc_obj_%avgAlb, src_obj_%unit, src_obj_%waveNum, src_obj_%avgWaveLen,&
@@ -241,7 +241,7 @@ program shdom
         else
             call shd_io__userInp(rtmAll_obj%runName, prpAll_obj%fname, sfc_obj_%fname, ckd_obj_%fname,&
                 fileInp_sav, fileOut_sav, sen_obj_%fname,&
-                shdo_obj_%Nstokes, rtmAll_obj%Nx0, rtmAll_obj%Ny0, rtmAll_obj%Nz, shdo_obj_%Nmu, shdo_obj_%Nphi, rtmAll_obj%flag_bc,&
+                shdo_obj_%Nstokes, rtmAll_obj%Nx, rtmAll_obj%Ny, rtmAll_obj%Nz, shdo_obj_%Nmu, shdo_obj_%Nphi, rtmAll_obj%flag_bc,&
                 rtmAll_obj%flag_ip, doCkd, doDeltaM, rtmAll_obj%type,&
                 src_obj_%type, src_obj_%inpSolar, src_obj_%avgMu, src_obj_%avgAz, src_obj_%skyRad,&
                 sfc_obj_%avgTemp, sfc_obj_%avgAlb, src_obj_%unit, src_obj_%waveNum, src_obj_%avgWaveLen,&
@@ -254,7 +254,7 @@ program shdom
 
     call shd_mpi__bcastInp(rtmAll_obj%runName,&
         &fileInp_sav, fileOut_sav,&
-        &shdo_obj_%Nstokes, rtmAll_obj%Nx0, rtmAll_obj%Ny0, rtmAll_obj%Nz, shdo_obj_%Nmu, shdo_obj_%Nphi, rtmAll_obj%flag_bc,&
+        &shdo_obj_%Nstokes, rtmAll_obj%Nx, rtmAll_obj%Ny, rtmAll_obj%Nz, shdo_obj_%Nmu, shdo_obj_%Nphi, rtmAll_obj%flag_bc,&
         &rtmAll_obj%flag_ip, doCkd, doDeltaM, rtmAll_obj%type,&
         &src_obj_%type, src_obj_%inpSolar, src_obj_%avgMu, src_obj_%avgAz, src_obj_%skyRad,&
         &src_obj_%unit, src_obj_%waveNum, src_obj_%avgWaveLen,&
@@ -300,10 +300,10 @@ program shdom
     ! Make shdo_obj_%maxNl and shdo_obj_%maxNm from shdo_obj_%Nmu and shdo_obj_%Nphi (for discrete ordinate)
     !   shdo_obj_%Nmu : number of discrete ordinate zenith angles in both hemispheres
     !   shdo_obj_%Nphi: number of discrete ordinate azimuth angles in 2*pi
-    !   shdo_obj_%maxNphi0: The maximum number of azimuth angles actually used
+    !   shdo_obj_%maxNphiA: The maximum number of azimuth angles actually used
     shdo_obj_%Nmu  = max(2, 2*int((shdo_obj_%Nmu + 1)/2)) ! force shdo_obj_%Nmu an even number
     shdo_obj_%Nphi = max(1, shdo_obj_%Nphi)
-    shdo_obj_%maxNphi0 = shdo_obj_%Nphi
+    shdo_obj_%maxNphiA = shdo_obj_%Nphi
 
     ! shdo_obj_%maxNl: The maximum L of the spherical harmonic truncation
     ! shdo_obj_%maxNm: The maximum M of the spherical harmonic truncation
@@ -336,7 +336,7 @@ program shdom
     if (src_obj_%type .eq. 'T') src_obj_%avgAz = 0.0d0
 
     ! angle grids for DO
-    allocate(shdo_obj_%Nphi0(shdo_obj_%Nmu), &
+    allocate(shdo_obj_%NphiA(shdo_obj_%Nmu), &
              shdo_obj_%mu(shdo_obj_%Nmu), &
              shdo_obj_%phi(shdo_obj_%Nmu, shdo_obj_%Nphi), &
              shdo_obj_%wgt(shdo_obj_%Nmu, shdo_obj_%Nphi))
@@ -384,29 +384,29 @@ program shdom
     ! Process grids
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! X, Y, Z grids
-    rtmAll_obj%Nx0 = max(1, rtmAll_obj%Nx0)
-    rtmAll_obj%Ny0 = max(1, rtmAll_obj%Ny0)
+    rtmAll_obj%Nx = max(1, rtmAll_obj%Nx)
+    rtmAll_obj%Ny = max(1, rtmAll_obj%Ny)
     rtmAll_obj%Nz  = max(2, rtmAll_obj%Nz)
 
     ! If single plane or column then force IP mode
     !   if              3D rtmAll_obj%flag_ip=0, bit representation '0000'
-    !   if rtmAll_obj%Ny0=1 rtmAll_obj%flag_ip=1, bit representation '0001'
-    !   if rtmAll_obj%Ny0=1 rtmAll_obj%flag_ip=2, bit representation '0010'
+    !   if rtmAll_obj%Ny=1 rtmAll_obj%flag_ip=1, bit representation '0001'
+    !   if rtmAll_obj%Ny=1 rtmAll_obj%flag_ip=2, bit representation '0010'
     !   if             IPA rtmAll_obj%flag_ip=3, bit representation '0011'
-    if (rtmAll_obj%Nx0 .eq. 1) then
-        ! '0000'(3D,   0) + '0001'(rtmAll_obj%Nx0=1, 1) = '0001' (rtmAll_obj%Nx0=1, 1)
+    if (rtmAll_obj%Nx .eq. 1) then
+        ! '0000'(3D,   0) + '0001'(rtmAll_obj%Nx=1, 1) = '0001' (rtmAll_obj%Nx=1, 1)
         rtmAll_obj%flag_ip = ior(rtmAll_obj%flag_ip, 1)
-        if (verbose_ .ge. 4) write (6, '(A)') 'Warning [shdom]: rtmAll_obj%Nx0=1, reset rtmAll_obj%flag_ip to 1.'
+        if (verbose_ .ge. 4) write (6, '(A)') 'Warning [shdom]: rtmAll_obj%Nx=1, reset rtmAll_obj%flag_ip to 1.'
     end if
 
-    if (rtmAll_obj%Ny0 .eq. 1) then
-        ! '0001'(rtmAll_obj%Nx0=1, 1) + '0010'(rtmAll_obj%Ny0=1, 2) = '0011' (IPA,  3)
+    if (rtmAll_obj%Ny .eq. 1) then
+        ! '0001'(rtmAll_obj%Nx=1, 1) + '0010'(rtmAll_obj%Ny=1, 2) = '0011' (IPA,  3)
         rtmAll_obj%flag_ip = ior(rtmAll_obj%flag_ip, 2)
         if (verbose_ .ge. 4) write (6, '(A)') &
-            'Warning [shdom]: rtmAll_obj%Ny0=1, reset rtmAll_obj%flag_ip to 2 (or 3).'
+            'Warning [shdom]: rtmAll_obj%Ny=1, reset rtmAll_obj%flag_ip to 2 (or 3).'
     end if
 
-    if ((rtmAll_obj%Nx0 .eq. 1) .and. (rtmAll_obj%Ny0 .eq. 1)) then
+    if ((rtmAll_obj%Nx .eq. 1) .and. (rtmAll_obj%Ny .eq. 1)) then
         is1D1_ = .true.
     else
         is1D1_ = .false.
@@ -527,20 +527,20 @@ program shdom
 
     ! Set up base grid point actual size (Nx1xNY1xNZ)
     !   btest(rtm_obj_%flag_bc, 0) checks whether rtm_obj_%flag_bc=1 or rtm_obj_%flag_bc=0 ('...0001' [open in X] or '...0000' [periodic in X])
-    rtm_obj_%Nx = rtm_obj_%Nx0 + 1
-    if (is1DX_ .or. isOpenX_ .or. isMpiX_) rtm_obj_%Nx = rtm_obj_%Nx0
+    rtm_obj_%NxA = rtm_obj_%Nx + 1
+    if (is1DX_ .or. isOpenX_ .or. isMpiX_) rtm_obj_%NxA = rtm_obj_%Nx
 
     ! btest(rtm_obj_%flag_bc, 1) checks whether rtm_obj_%flag_bc=2 [or 3] or rtm_obj_%flag_bc=0 [or 1]
     !   ('...0010' [or '...0011', open in Y] or '...0000' [or '...0001', periodic in Y])
-    rtm_obj_%Ny = rtm_obj_%Ny0 + 1
-    if (is1DYx_ .or. isOpenYx_ .or. isMpiY_) rtm_obj_%Ny = rtm_obj_%Ny0
+    rtm_obj_%NyA = rtm_obj_%Ny + 1
+    if (is1DYx_ .or. isOpenYx_ .or. isMpiY_) rtm_obj_%NyA = rtm_obj_%Ny
 
     ! Number of base points
-    rtm_obj_%Npts0 = rtm_obj_%Nx*rtm_obj_%Ny*rtm_obj_%Nz
+    rtm_obj_%Npts0 = rtm_obj_%NxA*rtm_obj_%NyA*rtm_obj_%Nz
 
     ! Calculate the number of base grid cells depending on the boundary condition flag
-    cell_obj_%Npts0 = (rtm_obj_%Nz - 1)*(rtm_obj_%Nx0 + ibits(rtm_obj_%flag_bc, 0, 1) - ibits(rtm_obj_%flag_bc, 2, 1))&
-                                       *(rtm_obj_%Ny0 + ibits(rtm_obj_%flag_bc, 1, 1) - ibits(rtm_obj_%flag_bc, 3, 1))
+    cell_obj_%Npts0 = (rtm_obj_%Nz - 1)*(rtm_obj_%Nx + ibits(rtm_obj_%flag_bc, 0, 1) - ibits(rtm_obj_%flag_bc, 2, 1))&
+                                       *(rtm_obj_%Ny + ibits(rtm_obj_%flag_bc, 1, 1) - ibits(rtm_obj_%flag_bc, 3, 1))
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! Read prp_obj_%fname and distribute property object if MPI
@@ -846,7 +846,7 @@ program shdom
     NmaxNpts = NmaxNpts + 4.5 ! temp_Rtm_, planck_Rtm_, ext_Rtm_, ssa_Rtm_, ipha_Rtm_[0.5, integer(kind=2)]
 
     ! x, y, z grid
-    memUsed = memUsed + (rtm_obj_%Nx0+1) + (rtm_obj_%Ny0+1) + (rtm_obj_%Nz)
+    memUsed = memUsed + (rtm_obj_%Nx+1) + (rtm_obj_%Ny+1) + (rtm_obj_%Nz)
 
     if (prp_obj_%Npha .gt. 0) then
         memUsed = memUsed + prp_obj_%Npha * prp_obj_%NlegSet * (prp_obj_%maxNleg + 1) ! offset phase table
@@ -858,7 +858,7 @@ program shdom
         if (sfc_obj_%type(2:2) .eq. 'L') then
             NmaxNpts = 3.0/real(rtm_obj_%Nz) * (sfc_obj_%maxNpar + 2.0 + shdo_obj_%Nstokes*2.0)
         else
-            NmaxNpts = 3.0/real(rtm_obj_%Nz) * (sfc_obj_%maxNpar + 2.0 + shdo_obj_%Nstokes*(2.0+ shdo_obj_%Nmu*shdo_obj_%maxNphi0/2))
+            NmaxNpts = 3.0/real(rtm_obj_%Nz) * (sfc_obj_%maxNpar + 2.0 + shdo_obj_%Nstokes*(2.0+ shdo_obj_%Nmu*shdo_obj_%maxNphiA/2))
         end if
     end if
 
@@ -884,7 +884,7 @@ program shdom
 
     memUsed = memUsed + (Nrad+Nlos) ! offset sumRad_Out[Nrad] and sumCam_Out[Nlos]
 
-    NmaxNpts = NmaxNpts + (shdo_obj_%Nstokes*(max(shdo_obj_%maxNphi0, 4)+1.0) + 8.0) !work, work1, work2
+    NmaxNpts = NmaxNpts + (shdo_obj_%Nstokes*(max(shdo_obj_%maxNphiA, 4)+1.0) + 8.0) !work, work1, work2
 
     memUsed = memUsed + Nrad + Nlos ! work2 (over-count but memory safe)
     !╰──────────────────────────────────────────────────────────────╯!
@@ -898,7 +898,7 @@ program shdom
     ! NmaxNpts is now more accurate than before
     ! before:
     !   NmaxNpts = 28.0 + 16.5*CELL_TO_POINT_RATIO&
-    !       + shdo_obj_%maxNphi0*shdo_obj_%Nstokes + NUM_SH_TERM_FACTOR*shdo_obj_%Nstokes*shdo_obj_%Nlm*NbigArr
+    !       + shdo_obj_%maxNphiA*shdo_obj_%Nstokes + NUM_SH_TERM_FACTOR*shdo_obj_%Nstokes*shdo_obj_%Nlm*NbigArr
     ! now: update NmaxNpts from every allocation step
 
     memNeed = ADAPT_GRID_FACTOR*rtm_obj_%Npts0*NmaxNpts
@@ -940,7 +940,7 @@ program shdom
     shdo_obj_%maxNptsSH = nint(NUM_SH_TERM_FACTOR*shdo_obj_%Nlm*rtm_obj_%maxNpts)
 
     ! max words for temporary discrete ordinate azimuthal array
-    shdo_obj_%maxNptsDO = rtm_obj_%maxNpts*max(shdo_obj_%maxNphi0, 4)
+    shdo_obj_%maxNptsDO = rtm_obj_%maxNpts*max(shdo_obj_%maxNphiA, 4)
 
     if (4.0*(shdo_obj_%maxNptsSH + rtm_obj_%maxNpts)*shdo_obj_%Nstokes .gt. huge(shdo_obj_%maxNptsSH)) then
         write (6, '(A,I12)') 'Error [shdom]: Size of big SH arrays (shdo_obj_%maxNptsSH) probably exceeds max integer number of bytes:', shdo_obj_%maxNptsSH
@@ -956,7 +956,7 @@ program shdom
     if (sfc_obj_%isLambertian) then
         maxNrad_bc = 2 * maxNpts_bc
     else
-        maxNrad_bc = (2 + shdo_obj_%Nmu*shdo_obj_%maxNphi0/2)*maxNpts_bc
+        maxNrad_bc = (2 + shdo_obj_%Nmu*shdo_obj_%maxNphiA/2)*maxNpts_bc
     end if
 
     ! max number of legendre coefficients
@@ -973,7 +973,7 @@ program shdom
     ! rtm
     !╭────────────────────────────────────────────────╮!
     ! x, y, z grids
-    allocate(rtm_obj_%x(rtm_obj_%Nx0+1), rtm_obj_%y(rtm_obj_%Ny0+1), rtm_obj_%z(rtm_obj_%Nz))
+    allocate(rtm_obj_%x(rtm_obj_%Nx+1), rtm_obj_%y(rtm_obj_%Ny+1), rtm_obj_%z(rtm_obj_%Nz))
     rtm_obj_%isAllocated = .true.
 
     ! temperature and planck radiance (maybe we don't need this for shortwave)
@@ -1255,10 +1255,10 @@ program shdom
     if (isMpi_) then
 
         if (isMasterProc) then
-            if (isFluxOut) allocate(fluxTot_all(3, rtmAll_obj%Nz, rtmAll_obj%Ny0, rtmAll_obj%Nx0))
-            if (isHROut)   allocate(fluxDiv_all(rtmAll_obj%Nz, rtmAll_obj%Ny0, rtmAll_obj%Nx0))
-            if (isSHOut)   allocate(SH_all(Nsh_out, rtmAll_obj%Nz, rtmAll_obj%Ny0, rtmAll_obj%Nx0))
-            allocate(rtmAll_obj%x(rtmAll_obj%Nx0), rtmAll_obj%y(rtmAll_obj%Ny0))
+            if (isFluxOut) allocate(fluxTot_all(3, rtmAll_obj%Nz, rtmAll_obj%Ny, rtmAll_obj%Nx))
+            if (isHROut)   allocate(fluxDiv_all(rtmAll_obj%Nz, rtmAll_obj%Ny, rtmAll_obj%Nx))
+            if (isSHOut)   allocate(SH_all(Nsh_out, rtmAll_obj%Nz, rtmAll_obj%Ny, rtmAll_obj%Nx))
+            allocate(rtmAll_obj%x(rtmAll_obj%Nx), rtmAll_obj%y(rtmAll_obj%Ny))
             rtmAll_obj%z = rtm_obj_%z
             rtmAll_obj%isAllocated = .true.
         end if
@@ -1350,7 +1350,7 @@ program shdom
     ! before:
     !  MAXMB_OUT = 4*(shdo_obj_%Nmu*(2 + 2*shdo_obj_%Nphi + 2*shdo_obj_%Nlm + 2*33*32)&
     !      + 4.5*prp_obj_%maxNpts + prp_obj_%maxNptsLeg + prp_obj_%Npha*prp_obj_%NlegSet*(prp_obj_%maxNleg + 1)&
-    !      + 16.5*cell_obj_%Npts + rtm_obj_%Npts*(28 + shdo_obj_%maxNphi0*shdo_obj_%Nstokes)&
+    !      + 16.5*cell_obj_%Npts + rtm_obj_%Npts*(28 + shdo_obj_%maxNphiA*shdo_obj_%Nstokes)&
     !      + shdo_obj_%Nstokes*shdo_obj_%Nsh*NbigArr)/1024**2
     ! now:
     !   use NmaxNpts
@@ -1396,7 +1396,7 @@ program shdom
     deallocate(radI_Shdo_, iradI_Shdo_)
     deallocate(srcJ_Shdo_, isrcJ_Shdo_)
     if (shdo_obj_%isAllocated) then
-        deallocate(shdo_obj_%Nphi0, &
+        deallocate(shdo_obj_%NphiA, &
                    shdo_obj_%mu,    &
                    shdo_obj_%phi,   &
                    shdo_obj_%wgt)

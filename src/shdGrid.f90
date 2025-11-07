@@ -443,13 +443,13 @@ subroutine shd_grid__makeSweepOrder(&
         NOCT = 8
     end if
 
-    NXC = rtm_obj_%Nx0
-    if (isOpenX_) NXC = rtm_obj_%Nx0 + 1
-    if (isMpiX_ .and. (.not. is1DX_)) NXC = rtm_obj_%Nx0 - 1
+    NXC = rtm_obj_%Nx
+    if (isOpenX_) NXC = rtm_obj_%Nx + 1
+    if (isMpiX_ .and. (.not. is1DX_)) NXC = rtm_obj_%Nx - 1
 
-    NYC = rtm_obj_%Ny0
-    if (isOpenYx_) NYC = rtm_obj_%Ny0 + 1
-    if (isMpiY_ .and. (.not. is1DYx_)) NYC = rtm_obj_%Ny0 - 1
+    NYC = rtm_obj_%Ny
+    if (isOpenYx_) NYC = rtm_obj_%Ny + 1
+    if (isMpiY_ .and. (.not. is1DYx_)) NYC = rtm_obj_%Ny - 1
 
     ! Loop over the number of octants needed; get the octant number
     do JOCT = 1, NOCT
@@ -1684,7 +1684,7 @@ subroutine shd_grid__splitGrid(&
             FRAC = 0.03
             MAXCELLS = cell_obj%maxNpts - FRAC*(cell_obj%maxNpts - cell_obj%Npts) - 2
             MAXPTS   = rtm_obj%maxNpts  - FRAC*(rtm_obj%maxNpts  - rtm_obj%Npts)  - 4
-            MAXWORK  = shdo_obj_%maxNptsDO - FRAC*(shdo_obj_%maxNptsDO - shdo_obj_%maxNphi0*rtm_obj%Npts) - 4*shdo_obj_%maxNphi0
+            MAXWORK  = shdo_obj_%maxNptsDO - FRAC*(shdo_obj_%maxNptsDO - shdo_obj_%maxNphiA*rtm_obj%Npts) - 4*shdo_obj_%maxNphiA
             MAXSH    = shdo_obj_%maxNptsSH - FRAC*(shdo_obj_%maxNptsSH - isrcJ_Shdo(rtm_obj%Npts+1)) - 4*shdo_obj_%Nlm
             MAXRAD   = shdo_obj_%maxNptsSH + rtm_obj%maxNpts - FRAC*(shdo_obj_%maxNptsSH + rtm_obj%maxNpts - iradI_Shdo(rtm_obj%Npts + 1)) - 4*shdo_obj_%Nlm
 
@@ -1695,7 +1695,7 @@ subroutine shd_grid__splitGrid(&
                 &.and. (I .le. N))
                 if  ((cell_obj%Npts .gt. MAXCELLS) .or.&
                     &(rtm_obj%Npts  .gt. MAXPTS) .or.&
-                    &(rtm_obj%Npts*shdo_obj_%maxNphi0   .gt. MAXWORK) .or.&
+                    &(rtm_obj%Npts*shdo_obj_%maxNphiA   .gt. MAXWORK) .or.&
                     &(isrcJ_Shdo(rtm_obj%Npts + 1) .gt. MAXSH)   .or.&
                     &(iradI_Shdo(rtm_obj%Npts + 1) .gt. MAXRAD)) then
                     isOutMem0 = .true.
@@ -1720,7 +1720,7 @@ subroutine shd_grid__splitGrid(&
 
             MAXCELLS = cell_obj%maxNpts - 2
             MAXPTS   = rtm_obj%maxNpts  - 4
-            MAXWORK  = shdo_obj_%maxNptsDO - 4*shdo_obj_%maxNphi0
+            MAXWORK  = shdo_obj_%maxNptsDO - 4*shdo_obj_%maxNphiA
             MAXSH    = shdo_obj_%maxNptsSH - 4*shdo_obj_%Nlm
             MAXRAD   = shdo_obj_%maxNptsSH + rtm_obj%maxNpts - 4*shdo_obj_%Nlm
 
@@ -1728,7 +1728,7 @@ subroutine shd_grid__splitGrid(&
             do while ((.not. isOutMem) .and. (I .le. N))
                 if  ((cell_obj%Npts .gt. MAXCELLS) .or.&
                     &(rtm_obj%Npts  .gt. MAXPTS) .or.&
-                    &(rtm_obj%Npts * shdo_obj_%maxNphi0 .gt. MAXWORK) .or.&
+                    &(rtm_obj%Npts * shdo_obj_%maxNphiA .gt. MAXWORK) .or.&
                     &(isrcJ_Shdo(rtm_obj%Npts + 1) .gt. MAXSH) .or.&
                     &(iradI_Shdo(rtm_obj%Npts + 1) .gt. MAXRAD)) then
                     isOutMem = .true.

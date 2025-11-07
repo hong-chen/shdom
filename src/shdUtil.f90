@@ -182,7 +182,7 @@ subroutine shd_util__findCell(X0, Y0, Z0, icell)
 
     !   Locates the grid cell in the tree structure containing the
     ! specified point (X0,Y0,Z0), and returns the cell pointer icell.
-    ! First the base grid cell is found (using rtm_obj_%Nx0,rtm_obj_%Ny0,rtm_obj_%Nz, rtm_obj_%x,rtm_obj_%y,rtm_obj_%z),
+    ! First the base grid cell is found (using rtm_obj_%Nx,rtm_obj_%Ny,rtm_obj_%Nz, rtm_obj_%x,rtm_obj_%y,rtm_obj_%z),
     ! and the tree is traced down to find the smallest cell containing
     ! the point.
 
@@ -193,18 +193,18 @@ subroutine shd_util__findCell(X0, Y0, Z0, icell)
 
     ! Move point to within horizontal domain if periodic
     if (.not. (isOpenX_ .or. isMpiX_)) then
-        XDOMAIN = rtm_obj_%x(rtm_obj_%Nx0 + 1) - rtm_obj_%x(1)
+        XDOMAIN = rtm_obj_%x(rtm_obj_%Nx + 1) - rtm_obj_%x(1)
         if (X0 .lt. rtm_obj_%x(1)) then
             X0 = X0 - XDOMAIN*(int((X0 - rtm_obj_%x(1))/XDOMAIN) - 1)
-        else if (X0 .gt. rtm_obj_%x(rtm_obj_%Nx0 + 1)) then
+        else if (X0 .gt. rtm_obj_%x(rtm_obj_%Nx + 1)) then
             X0 = X0 - XDOMAIN*int((X0 - rtm_obj_%x(1))/XDOMAIN)
         end if
     end if
     if (.not. (isOpenYx_ .or. isMpiY_)) then
-        YDOMAIN = rtm_obj_%y(rtm_obj_%Ny0 + 1) - rtm_obj_%y(1)
+        YDOMAIN = rtm_obj_%y(rtm_obj_%Ny + 1) - rtm_obj_%y(1)
         if (Y0 .lt. rtm_obj_%y(1)) then
             Y0 = Y0 - YDOMAIN*(int((Y0 - rtm_obj_%y(1))/YDOMAIN) - 1)
-        else if (Y0 .gt. rtm_obj_%y(rtm_obj_%Ny0 + 1)) then
+        else if (Y0 .gt. rtm_obj_%y(rtm_obj_%Ny + 1)) then
             Y0 = Y0 - YDOMAIN*int((Y0 - rtm_obj_%y(1))/YDOMAIN)
         end if
     end if
@@ -214,7 +214,7 @@ subroutine shd_util__findCell(X0, Y0, Z0, icell)
     !   Special case for independent pixel: get closest grid column.
     IL = 0
     if (is1DX_) then
-        IU = rtm_obj_%Nx0
+        IU = rtm_obj_%Nx
         do while (IU - IL .gt. 1)
             IM = (IU + IL)/2
             if (X0 .ge. 0.5*(rtm_obj_%x(IM) + rtm_obj_%x(IM + 1))) then
@@ -225,7 +225,7 @@ subroutine shd_util__findCell(X0, Y0, Z0, icell)
         end do
         IL = IL + 1
     else
-        IU = rtm_obj_%Nx0 + 1
+        IU = rtm_obj_%Nx + 1
         do while (IU - IL .gt. 1)
             IM = (IU + IL)/2
             if (X0 .ge. rtm_obj_%x(IM)) then
@@ -239,7 +239,7 @@ subroutine shd_util__findCell(X0, Y0, Z0, icell)
 
     IL = 0
     if (is1DYx_) then
-        IU = rtm_obj_%Ny0
+        IU = rtm_obj_%Ny
         do while (IU - IL .gt. 1)
             IM = (IU + IL)/2
             if (Y0 .ge. 0.5*(rtm_obj_%y(IM) + rtm_obj_%y(IM + 1))) then
@@ -250,7 +250,7 @@ subroutine shd_util__findCell(X0, Y0, Z0, icell)
         end do
         IL = IL + 1
     else
-        IU = rtm_obj_%Ny0 + 1
+        IU = rtm_obj_%Ny + 1
         do while (IU - IL .gt. 1)
             IM = (IU + IL)/2
             if (Y0 .ge. rtm_obj_%y(IM)) then
@@ -276,38 +276,38 @@ subroutine shd_util__findCell(X0, Y0, Z0, icell)
 
     ! Special case for open boundary conditions: if outside the 1 to
     !   domain then use the IP grid cells at either end
-    NXC = rtm_obj_%Nx0
+    NXC = rtm_obj_%Nx
     if (isOpenX_) then
-        NXC = rtm_obj_%Nx0 + 1
+        NXC = rtm_obj_%Nx + 1
         if (X0 .lt. rtm_obj_%x(1)) then
             ! X0 = rtm_obj_%x(1)
             IX = 1
-        else if (X0 .gt. rtm_obj_%x(rtm_obj_%Nx0)) then
-            ! X0 = rtm_obj_%x(rtm_obj_%Nx0)
-            IX = rtm_obj_%Nx0 + 1
+        else if (X0 .gt. rtm_obj_%x(rtm_obj_%Nx)) then
+            ! X0 = rtm_obj_%x(rtm_obj_%Nx)
+            IX = rtm_obj_%Nx + 1
         else
             IX = IX + 1
         end if
     end if
     if (isMpiX_ .and. .not. is1DX_) then
-        NXC = rtm_obj_%Nx0 - 1
+        NXC = rtm_obj_%Nx - 1
         IX = min(IX, NXC)
     end if
-    NYC = rtm_obj_%Ny0
+    NYC = rtm_obj_%Ny
     if (isOpenYx_) then
-        NYC = rtm_obj_%Ny0 + 1
+        NYC = rtm_obj_%Ny + 1
         if (Y0 .lt. rtm_obj_%y(1)) then
             ! Y0 = rtm_obj_%y(1)
             IY = 1
-        else if (Y0 .gt. rtm_obj_%y(rtm_obj_%Ny0)) then
-            ! Y0 = rtm_obj_%y(rtm_obj_%Ny0)
-            IY = rtm_obj_%Ny0 + 1
+        else if (Y0 .gt. rtm_obj_%y(rtm_obj_%Ny)) then
+            ! Y0 = rtm_obj_%y(rtm_obj_%Ny)
+            IY = rtm_obj_%Ny + 1
         else
             IY = IY + 1
         end if
     end if
     if (isMpiY_ .and. .not. is1DYx_) then
-        NYC = rtm_obj_%Ny0 - 1
+        NYC = rtm_obj_%Ny - 1
         IY = min(IY, NYC)
     end if
 

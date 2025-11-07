@@ -194,19 +194,19 @@ subroutine shd_solv__solveRte(&
     ! Make the discrete ordinates (angles)
     !   (set 2 is reduced gaussian, 3 is reduced double gauss)
     isetDO = 3
-    call shd_shdo__makeAngle(shdo_obj_%Nmu, shdo_obj_%Nphi, isetDO, shdo_obj_%maxNphi0,&
-        &shdo_obj_%Nphi0, shdo_obj_%mu, shdo_obj_%phi, wgtMu_Shdo, shdo_obj_%wgt, flagFFT_Shdo, shdo_obj_%Nang)
+    call shd_shdo__makeAngle(shdo_obj_%Nmu, shdo_obj_%Nphi, isetDO, shdo_obj_%maxNphiA,&
+        &shdo_obj_%NphiA, shdo_obj_%mu, shdo_obj_%phi, wgtMu_Shdo, shdo_obj_%wgt, flagFFT_Shdo, shdo_obj_%Nang)
 
     ! Make the Ylm transform coefficients
-    call shd_shdo__makeSHDO(prp_obj_%NlegSet, shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm, shdo_obj_%Nmu, shdo_obj_%Nphi0,&
-        &shdo_obj_%maxNphi0, shdo_obj_%mu, shdo_obj_%phi, wgtMu_Shdo, shdo_obj_%wgt, flagFFT_Shdo,&
+    call shd_shdo__makeSHDO(prp_obj_%NlegSet, shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm, shdo_obj_%Nmu, shdo_obj_%NphiA,&
+        &shdo_obj_%maxNphiA, shdo_obj_%mu, shdo_obj_%phi, wgtMu_Shdo, shdo_obj_%wgt, flagFFT_Shdo,&
         &CMU1, CMU2, CPHI1, CPHI2, wPhiFFT_Shdo)
 
     doFixSH = .false.
     if (.not. doRadInit) then
         ! Initialize the radiance on the base grid using Eddington
         ! two-stream plane-parallel
-        call shd_init__makeRad(shdo_obj_%Nstokes, rtm_obj_%Nx*rtm_obj_%Ny, rtm_obj_%Nz,&
+        call shd_init__makeRad(shdo_obj_%Nstokes, rtm_obj_%NxA*rtm_obj_%NyA, rtm_obj_%Nz,&
             &iradI_Shdo_, rtm_obj_%z,&
             &ext_Rtm_, ssa_Rtm_, leg_Rtm_, temp_Rtm_, ipha_Rtm_,&
             &src_obj_%type, src_obj_%avgSolar0, src_obj_%avgMu, src_obj_%skyRad,&
@@ -246,17 +246,17 @@ subroutine shd_solv__solveRte(&
             brdf_Sfc_, brdf_Rtm_)
         call shd_init__checkSfcU(sfc_obj_, brdf_Sfc_)
         if (sfc_obj_%isUniform) then
-            if (shdo_obj_%Nstokes*(shdo_obj_%Nmu/2)*shdo_obj_%maxNphi0 .gt.&
+            if (shdo_obj_%Nstokes*(shdo_obj_%Nmu/2)*shdo_obj_%maxNphiA .gt.&
                 &sqrt(1.0*huge(shdo_obj_%Nmu)/kind(shdo_obj_%Nmu))) then
                 ierr = 1
             else
-                allocate(brdf_Shdo(shdo_obj_%Nstokes, shdo_obj_%Nmu/2, shdo_obj_%maxNphi0,&
-                    &shdo_obj_%Nstokes, shdo_obj_%Nmu/2, shdo_obj_%maxNphi0), stat=ierr)
+                allocate(brdf_Shdo(shdo_obj_%Nstokes, shdo_obj_%Nmu/2, shdo_obj_%maxNphiA,&
+                    &shdo_obj_%Nstokes, shdo_obj_%Nmu/2, shdo_obj_%maxNphiA), stat=ierr)
             end if
             if (ierr .eq. 0) then
                 call shd_shdo__makeSfcDO(sfc_obj_%type, src_obj_%avgWaveLen,&
                     &sfc_obj_%Nx, sfc_obj_%Ny, sfc_obj_%Npar, brdf_Sfc_, shdo_obj_%Nstokes,&
-                    &shdo_obj_%Nmu, shdo_obj_%maxNphi0, shdo_obj_%Nphi0, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
+                    &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
                     &brdf_Shdo)
             else
                 print '(A,A)', 'Not enough memory to allocate precomputed',&
@@ -375,7 +375,7 @@ subroutine shd_solv__solveRte(&
         !   do the adaptive spherical harmonics truncation, compute
         !   the solution criterion, and dot products for acceleration
         if (((SOLCRIT .lt. ENDADAPTSOL) .or. (ITER .gt. 30)) .and.&
-            &((rtm_obj_%Nx0 .gt. 36) .or. (rtm_obj_%Ny0 .gt. 36))) doFixSH = .true.
+            &((rtm_obj_%Nx .gt. 36) .or. (rtm_obj_%Ny .gt. 36))) doFixSH = .true.
 
         ! radSH to srcSH
         !╭────────────────────────────────────────────────╮!

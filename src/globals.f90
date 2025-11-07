@@ -181,11 +181,12 @@ module globals_type
         integer(kind=I__) :: flag_bc = -999
         integer(kind=I__) :: flag_ip = -999
 
-        integer(kind=I__) :: Nx0 = -999
-        integer(kind=I__) :: Ny0 = -999
-        integer(kind=I__) :: Nx  = -999
-        integer(kind=I__) :: Ny  = -999
-        integer(kind=I__) :: Nz  = -999
+        integer(kind=I__) :: Nx = -999
+        integer(kind=I__) :: Ny = -999
+        integer(kind=I__) :: Nz = -999
+
+        integer(kind=I__) :: NxA = -999
+        integer(kind=I__) :: NyA = -999
 
         integer(kind=I__) :: maxNz = -999
         integer(kind=I__) :: maxNptsLeg = -999
@@ -231,11 +232,11 @@ module globals_type
 
         integer(kind=I__) :: maxNl = -999
         integer(kind=I__) :: maxNm = -999
-        integer(kind=I__) :: maxNphi0  = -999
+        integer(kind=I__) :: maxNphiA  = -999
         integer(kind=I__) :: maxNptsSH = -999
         integer(kind=I__) :: maxNptsDO = -999
 
-        integer(kind=I__), allocatable :: Nphi0(:)
+        integer(kind=I__), allocatable :: NphiA(:)
         real(kind=R__),    allocatable :: mu(:)
         real(kind=R__),    allocatable :: phi(:, :)
         real(kind=R__),    allocatable :: wgt(:, :)
