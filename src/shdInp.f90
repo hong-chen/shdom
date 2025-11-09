@@ -1778,6 +1778,10 @@ subroutine shd_io__readSfc(sfc_obj, brdf_Sfc)
 
     sfc_obj%avgTemp = temp_sfc/N
     sfc_obj%avgAlb  = alb_sfc/N
+
+    sfc_obj%xStart = 0.0
+    sfc_obj%yStart = 0.0
+
     return
 
 end subroutine shd_io__readSfc

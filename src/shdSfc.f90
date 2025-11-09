@@ -43,7 +43,7 @@
 module shd_sfc
 
     use globals_const, only: PI_
-    use globals_cfg,   only: isPol_
+    use globals_cfg,   only: isPol_, isMpi_
     use globals_obj,   only: prp_obj_, &
                              sfc_obj_
 
@@ -130,27 +130,35 @@ subroutine shd_sfc__interpSfc(&
             ry = (GRIDPOS(2, igrid) + prp_obj_%dy/2.0 - sfc_obj_%dy/2.0 - sfc_obj_%yStart) / sfc_obj_%dy
             !╰────────────────────────────────────────────────╯!
         else
-            rx = (GRIDPOS(1, igrid)-sfc_obj_%xStart) / sfc_obj_%dx
-            ry = (GRIDPOS(2, igrid)-sfc_obj_%yStart) / sfc_obj_%dy
+            rx = (GRIDPOS(1, igrid) - sfc_obj_%xStart) / sfc_obj_%dx
+            ry = (GRIDPOS(2, igrid) - sfc_obj_%yStart) / sfc_obj_%dy
         end if
 
-        ix = max(1, min(sfc_obj_%Nx, int(rx)+1))
-        iy = max(1, min(sfc_obj_%Ny, int(ry)+1))
-        u = max(0.0, min(1.0, rx - ix + 1))
-        v = max(0.0, min(1.0, ry - iy + 1))
 
-        !i1 = iy + (sfc_obj_%Ny + 1)*(ix - 1)
-        !if (doInterp) then
-        !    i2 = iy     + (sfc_obj_%Ny + 1)*(ix)
-        !    i3 = iy + 1 + (sfc_obj_%Ny + 1)*(ix - 1)
-        !    i4 = iy + 1 + (sfc_obj_%Ny + 1)*(ix)
-        !end if
+        if (isMpi_) then
+            ix = max(1, min(sfc_obj_%Nx, int(rx)+1))
+            iy = max(1, min(sfc_obj_%Ny, int(ry)+1))
+            u = max(0.0, min(1.0, rx - ix + 1))
+            v = max(0.0, min(1.0, ry - iy + 1))
 
-        i1 = iy + (sfc_obj_%Ny)*(ix-1)
-        if (doInterp) then
-            i2 = iy   + (sfc_obj_%Ny)*(ix)
-            i3 = iy+1 + (sfc_obj_%Ny)*(ix-1)
-            i4 = iy+1 + (sfc_obj_%Ny)*(ix)
+            i1 = iy + (sfc_obj_%Ny)*(ix-1)
+            if (doInterp) then
+                i2 = iy   + (sfc_obj_%Ny)*(ix)
+                i3 = iy+1 + (sfc_obj_%Ny)*(ix-1)
+                i4 = iy+1 + (sfc_obj_%Ny)*(ix)
+            end if
+        else
+            ix = max(1, min(sfc_obj_%Nx, int(rx) + 1))
+            iy = max(1, min(sfc_obj_%Ny, int(ry) + 1))
+            u = max(0.0, min(1.0, rx - (ix - 1)))
+            v = max(0.0, min(1.0, ry - (iy - 1)))
+
+            i1 = iy + (sfc_obj_%Ny + 1)*(ix - 1)
+            if (doInterp) then
+                i2 = iy     + (sfc_obj_%Ny + 1)*(ix)
+                i3 = iy + 1 + (sfc_obj_%Ny + 1)*(ix - 1)
+                i4 = iy + 1 + (sfc_obj_%Ny + 1)*(ix)
+            end if
         end if
 
 
@@ -187,11 +195,11 @@ subroutine shd_sfc__interpSfc(&
 
         brdf_Rtm(1, ibc) = planck
 
-        if (ibc .lt. 120) then
-            print *, 'interpSfc:', ibc, igrid, i1, i2, i3, i4, brdf_Rtm(2, ibc)
-            print *, '          ', rx, ry, ix, iy, u, v
-            print *
-        end if
+        write(6, *) 'interpSfc:', ibc, igrid
+        write(6, *) '          ', u, v
+        write(6, *) '          ', brdf_Sfc(2, i1), brdf_Sfc(2, i2), brdf_Sfc(2, i3), brdf_Sfc(2, i4)
+        write(6, *) '          ', brdf_Rtm(2, ibc)
+        write(6, *)
 
     end do
     stop
