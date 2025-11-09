@@ -187,14 +187,14 @@ subroutine shd_sfc__interpSfc(&
 
         brdf_Rtm(1, ibc) = planck
 
-        !if (ibc .lt. 100) then
-        !    print *, 'interpSfc:', ibc, igrid, i1, i2, i3, i4, brdf_Rtm(2, ibc)
-        !    print *, '          ', rx, ry, ix, iy, u, v
-        !    print *
-        !end if
+        if (ibc .lt. 120) then
+            print *, 'interpSfc:', ibc, igrid, i1, i2, i3, i4, brdf_Rtm(2, ibc)
+            print *, '          ', rx, ry, ix, iy, u, v
+            print *
+        end if
 
     end do
-    !stop
+    stop
 
     return
 
