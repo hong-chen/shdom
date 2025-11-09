@@ -134,10 +134,10 @@ subroutine shd_sfc__interpSfc(&
             ry = (GRIDPOS(2, igrid)-sfc_obj_%yStart) / sfc_obj_%dy
         end if
 
-        ix = max(1, min(sfc_obj_%Nx, int(rx) + 1))
-        iy = max(1, min(sfc_obj_%Ny, int(ry) + 1))
-        u = max(0.0, min(1.0, rx - (ix - 1)))
-        v = max(0.0, min(1.0, ry - (iy - 1)))
+        ix = max(1, min(sfc_obj_%Nx, int(rx)+1))
+        iy = max(1, min(sfc_obj_%Ny, int(ry)+1))
+        u = max(0.0, min(1.0, rx - ix + 1))
+        v = max(0.0, min(1.0, ry - iy + 1))
 
         !i1 = iy + (sfc_obj_%Ny + 1)*(ix - 1)
         !if (doInterp) then
@@ -146,12 +146,13 @@ subroutine shd_sfc__interpSfc(&
         !    i4 = iy + 1 + (sfc_obj_%Ny + 1)*(ix)
         !end if
 
-        i1 = iy + (sfc_obj_%Ny)*(ix - 1)
+        i1 = iy + (sfc_obj_%Ny)*(ix-1)
         if (doInterp) then
-            i2 = iy     + (sfc_obj_%Ny)*(ix)
-            i3 = iy + 1 + (sfc_obj_%Ny)*(ix - 1)
-            i4 = iy + 1 + (sfc_obj_%Ny)*(ix)
+            i2 = iy   + (sfc_obj_%Ny)*(ix)
+            i3 = iy+1 + (sfc_obj_%Ny)*(ix-1)
+            i4 = iy+1 + (sfc_obj_%Ny)*(ix)
         end if
+
 
         do ipar = 1, sfc_obj_%Npar
             ! only interpolate BRDF parameter, not surface type ID (currently stored at 8)
@@ -186,7 +187,14 @@ subroutine shd_sfc__interpSfc(&
 
         brdf_Rtm(1, ibc) = planck
 
+        !if (ibc .lt. 100) then
+        !    print *, 'interpSfc:', ibc, igrid, i1, i2, i3, i4, brdf_Rtm(2, ibc)
+        !    print *, '          ', rx, ry, ix, iy, u, v
+        !    print *
+        !end if
+
     end do
+    !stop
 
     return
 
