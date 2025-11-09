@@ -142,7 +142,7 @@ program shdom
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
-    ! rtm_obj
+    ! rtmAll_obj
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_rtm) :: rtmAll_obj
     !╰────────────────────────────────────────────────────────────────────────────╯!
@@ -164,7 +164,7 @@ program shdom
     logical :: doRadInit, doGridInit
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    ! prp_obj_
+    ! prpAll_obj
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_prp) :: prpAll_obj
     real(kind=R__),  allocatable :: temp_PrpAll(:), &
@@ -173,6 +173,13 @@ program shdom
                                      leg_PrpAll(:, :, :)
     integer(kind=2), allocatable :: ipha_PrpAll(:)
     !╰────────────────────────────────────────────────────────────────────────────╯!
+
+
+    ! sfcAll_obj
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    type(shd_type_sfc) :: sfcAll_obj
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
 
     ! CKD
     !╭────────────────────────────────────────────────────────────────────────────╮!
@@ -228,23 +235,23 @@ program shdom
     !   and the results are then broadcast to the child processors.
     if (isMasterProc) then
         if (doNmlInp_) then
-            call shd_io__nmlInp(rtmAll_obj%runName, prpAll_obj%fname, sfc_obj_%fname, ckd_obj_%fname,&
+            call shd_io__nmlInp(rtmAll_obj%runName, prpAll_obj%fname, sfcAll_obj%fname, ckd_obj_%fname,&
                 fileInp_sav, fileOut_sav, sen_obj_%fname,&
                 shdo_obj_%Nstokes, rtmAll_obj%Nx, rtmAll_obj%Ny, rtmAll_obj%Nz, shdo_obj_%Nmu, shdo_obj_%Nphi, rtmAll_obj%flag_bc,&
                 rtmAll_obj%flag_ip, doCkd, doDeltaM, rtmAll_obj%type,&
                 src_obj_%type, src_obj_%inpSolar, src_obj_%avgMu, src_obj_%avgAz, src_obj_%skyRad,&
-                sfc_obj_%avgTemp, sfc_obj_%avgAlb, src_obj_%unit, src_obj_%waveNum, src_obj_%avgWaveLen,&
+                sfcAll_obj%avgTemp, sfcAll_obj%avgAlb, src_obj_%unit, src_obj_%waveNum, src_obj_%avgWaveLen,&
                 doAccel, solAcc, maxIter, splitAcc, shAcc,&
                 maxNset_out, maxNpar_out, Nout, type_Out, parms_Out, file_Out,&
                 fileOut_nc, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
                 NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, verbose_)
         else
-            call shd_io__userInp(rtmAll_obj%runName, prpAll_obj%fname, sfc_obj_%fname, ckd_obj_%fname,&
+            call shd_io__userInp(rtmAll_obj%runName, prpAll_obj%fname, sfcAll_obj%fname, ckd_obj_%fname,&
                 fileInp_sav, fileOut_sav, sen_obj_%fname,&
                 shdo_obj_%Nstokes, rtmAll_obj%Nx, rtmAll_obj%Ny, rtmAll_obj%Nz, shdo_obj_%Nmu, shdo_obj_%Nphi, rtmAll_obj%flag_bc,&
                 rtmAll_obj%flag_ip, doCkd, doDeltaM, rtmAll_obj%type,&
                 src_obj_%type, src_obj_%inpSolar, src_obj_%avgMu, src_obj_%avgAz, src_obj_%skyRad,&
-                sfc_obj_%avgTemp, sfc_obj_%avgAlb, src_obj_%unit, src_obj_%waveNum, src_obj_%avgWaveLen,&
+                sfcAll_obj%avgTemp, sfcAll_obj%avgAlb, src_obj_%unit, src_obj_%waveNum, src_obj_%avgWaveLen,&
                 doAccel, solAcc, maxIter, splitAcc, shAcc,&
                 maxNset_out, maxNpar_out, Nout, type_Out, parms_Out, file_Out,&
                 fileOut_nc, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
@@ -261,7 +268,7 @@ program shdom
         &doAccel, solAcc, maxIter, splitAcc, shAcc,&
         &maxNset_out, maxNpar_out, Nout, type_Out, parms_Out,&
         &MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
-        &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, prpAll_obj, sfc_obj_, ckd_obj_, sen_obj_)
+        &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, prpAll_obj, sfcAll_obj, ckd_obj_, sen_obj_)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! Memory used for initialization (rough estimate, 1 WORD = 4 bytes)
@@ -357,26 +364,26 @@ program shdom
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
-    ! Read sfc_obj_%fname (surface file) to get general info, broadcast sfc_obj_ if MPI
+    ! Read sfcAll_obj%fname (surface file) to get general info, broadcast sfcAll_obj if MPI
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    if (sfc_obj_%fname(1:4) .eq. 'NONE') then
-        sfc_obj_%fname = 'NONE'
-        sfc_obj_%type  = 'FL'
-        sfc_obj_%Nx = 1
-        sfc_obj_%Ny = 1
-        sfc_obj_%dx = prpAll_obj%dx
-        sfc_obj_%dy = prpAll_obj%dy
-        sfc_obj_%maxNpts = 1
-        sfc_obj_%maxNpar = 2
-        sfc_obj_%isUniform    = .true.
-        sfc_obj_%isLambertian = .true.
+    if (sfcAll_obj%fname(1:4) .eq. 'NONE') then
+        sfcAll_obj%fname = 'NONE'
+        sfcAll_obj%type  = 'FL'
+        sfcAll_obj%Nx = 1
+        sfcAll_obj%Ny = 1
+        sfcAll_obj%dx = prpAll_obj%dx
+        sfcAll_obj%dy = prpAll_obj%dy
+        sfcAll_obj%maxNpts = 1
+        sfcAll_obj%maxNpar = 2
+        sfcAll_obj%isUniform    = .true.
+        sfcAll_obj%isLambertian = .true.
     else
         if (isMasterProc) then
             ! find out the size of the surface file grid
-            call shd_io__readSfcSize(sfc_obj_)
+            call shd_io__readSfcSize(sfcAll_obj)
         end if
         ! Broadcast the surface object
-        call shd_mpi__bcastSfcSize(sfc_obj_)
+        call shd_mpi__bcastSfcSize(sfcAll_obj)
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
@@ -414,14 +421,14 @@ program shdom
 
     ! Overwrite prpAll_obj%dx if only 1 grid in X direction
     if (prpAll_obj%Nx .eq. 1) then
-        prpAll_obj%dx = sfc_obj_%Nx * sfc_obj_%dx
+        prpAll_obj%dx = sfcAll_obj%Nx * sfcAll_obj%dx
         if (verbose_ .ge. 4) write (6, '(A)') &
             'Warning [shdom]: prpAll_obj%Nx=1, reset prpAll_obj%dx to match surface domain.'
     end if
 
     ! overwrite prpAll_obj%dy if only 1 grid in Y direction
     if (prpAll_obj%Ny .eq. 1) then
-        prpAll_obj%dy = sfc_obj_%Ny * sfc_obj_%dy
+        prpAll_obj%dy = sfcAll_obj%Ny * sfcAll_obj%dy
         if (verbose_ .ge. 4) write (6, '(A)') &
             'Warning [shdom]: prpAll_obj%Ny=1, reset prpAll_obj%dy to match surface domain.'
     end if
@@ -431,7 +438,7 @@ program shdom
 
     ! Choose the option to compute higher order radiance SH terms
     if  ((prpAll_obj%Nx .eq. 1) .and. (prpAll_obj%Ny .eq. 1) .and.&
-        &(sfc_obj_%Nx .le. 32) .and. (sfc_obj_%Ny .le. 32)) then
+        &(sfcAll_obj%Nx .le. 32) .and. (sfcAll_obj%Ny .le. 32)) then
         shdo_obj_%doHighOrder = .true.
         if (verbose_ .ge. 4) write (6, '(A)') &
             'Warning [shdom]: 1D calculation, set shdo_obj_%doHighOrder to .TRUE.'
@@ -451,8 +458,11 @@ program shdom
     !   the X and Y starting position of this subdomain. Set bits
     !   2 and 3 in rtmAll_obj%flag_bc to indicate multiple processors in X and Y.
     !   Also open the slave processor log files.
-    rtm_obj_ = rtmAll_obj; prp_obj_ = prpAll_obj
-    call shd_mpi__map(rtmAll_obj, prpAll_obj, rtm_obj_, prp_obj_)
+    rtm_obj_ = rtmAll_obj
+    prp_obj_ = prpAll_obj
+    sfc_obj_ = sfcAll_obj
+    call shd_mpi__map(rtmAll_obj, prpAll_obj, sfcAll_obj, &
+                      rtm_obj_,   prp_obj_,   sfc_obj_)
 
     ! rtm_obj_%flag_bc bit-representation '...0001' isOpenX_
     if (btest(rtm_obj_%flag_bc, 0)) then
@@ -621,12 +631,6 @@ program shdom
         call shd_io__checkPrp(prp_obj_, temp_Prp_, ext_Prp_, ssa_Prp_, leg_Prp_, ipha_Prp_)
 
     end if
-
-    if (isMasterProc) then
-        ! Check input parameters
-        call shd_io__checkInp(doDeltaM, splitAcc, shAcc,&
-            &rtm_obj_, shdo_obj_, src_obj_, prp_obj_, sfc_obj_)
-    end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
@@ -648,6 +652,13 @@ program shdom
 
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
+
+
+    if (isMasterProc) then
+        ! Check input parameters
+        call shd_io__checkInp(doDeltaM, splitAcc, shAcc,&
+            &rtm_obj_, shdo_obj_, src_obj_, prp_obj_, sfc_obj_)
+    end if
 
 
     ! Read ckd_obj_%fname and broadcast correlated-k object if MPI

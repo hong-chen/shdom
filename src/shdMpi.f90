@@ -188,7 +188,8 @@ subroutine shd_mpi__start(isMasterProc, Nproc)
 
 end subroutine shd_mpi__start
 
-subroutine shd_mpi__map(rtmAll_obj, prpAll_obj, rtm_obj,  prp_obj)
+subroutine shd_mpi__map(rtmAll_obj, prpAll_obj, sfcAll_obj, &
+                        rtm_obj,    prp_obj,    sfc_obj)
 
     ! Sets up the mapping of processors for the SHDOM domain (creating the
     ! 2D communicator, comm2D_).  Determines the subdomain property grid
@@ -208,9 +209,11 @@ subroutine shd_mpi__map(rtmAll_obj, prpAll_obj, rtm_obj,  prp_obj)
 
     type(shd_type_rtm), intent(in) :: rtmAll_obj
     type(shd_type_prp), intent(in) :: prpAll_obj
+    type(shd_type_sfc), intent(in) :: sfcAll_obj
 
     type(shd_type_rtm), intent(inout) :: rtm_obj
     type(shd_type_prp), intent(inout) :: prp_obj
+    type(shd_type_sfc), intent(inout) :: sfc_obj
 
 #if HAS_MPI
 ! note: this if clause has <else>
@@ -270,6 +273,7 @@ subroutine shd_mpi__map(rtmAll_obj, prpAll_obj, rtm_obj,  prp_obj)
 
     ! Make the new property and base grid sizes and the ixyOut_ arrays
     if (dims(1) .gt. 1) then
+
         if (prpAll_obj%Nx .gt. 1) then
 
             prp_obj%Nx = ixyPrp_(2, 1) - ixyPrp_(1, 1) + 1
@@ -299,11 +303,14 @@ subroutine shd_mpi__map(rtmAll_obj, prpAll_obj, rtm_obj,  prp_obj)
 
 
         end if
+
     else
+
         ixyOut_(1, 1) = 1
         ixyOut_(2, 1) =  rtmAll_obj%Nx
         prp_obj%xStart = 0.0
         xEnd = prpAll_obj%Nx*prp_obj%dx
+
     end if
 
     if (dims(2) .gt. 1) then
@@ -336,11 +343,26 @@ subroutine shd_mpi__map(rtmAll_obj, prpAll_obj, rtm_obj,  prp_obj)
             prp_obj%dy = yEnd - prp_obj%yStart
 
         end if
+
     else
+
         ixyOut_(1, 2) = 1
         ixyOut_(2, 2) = rtmAll_obj%Ny
         prp_obj%yStart = 0.0
         yEnd = prpAll_obj%Ny*prp_obj%dy
+
+    end if
+
+    if (sfcAll_obj%Nx .gt. 1) then
+        sfc_obj%xStart = max((int(prp_obj%xStart/sfc_obj%dx)-2)*sfc_obj%dx, 0.0)
+    else
+        sfc_obj%xStart = 0.0
+    end if
+
+    if (sfcAll_obj%Ny .gt. 1) then
+        sfc_obj%yStart = max((int(prp_obj%yStart/sfc_obj%dy)-2)*sfc_obj%dy, 0.0)
+    else
+        sfc_obj%yStart = 0.0
     end if
 
     ! Get the processors (rank numbers) of the neighbors
@@ -2904,8 +2926,8 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord,&
 
     ! Initialize the subdomain boundary lines to evenly spaced
     Nxd = ProcDims(1); Nyd = ProcDims(2); N = Nxd + Nyd - 2
-    BndLines(1:Nxd - 1) = (/(nint(I*float(prpAll_obj%Nx)/Nxd) + 1, I=1, Nxd - 1)/)
-    BndLines(Nxd:N) = (/(nint(I*float(prpAll_obj%Ny)/Nyd) + 1, I=1, Nyd - 1)/)
+    BndLines(   1:Nxd - 1) = (/(nint(I*float(prpAll_obj%Nx)/Nxd) + 1, I=1, Nxd - 1)/)
+    BndLines( Nxd:      N) = (/(nint(I*float(prpAll_obj%Ny)/Nyd) + 1, I=1, Nyd - 1)/)
 
     if (loadBalance_) then
         DoLoadBalancing = .false.
