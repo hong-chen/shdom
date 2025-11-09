@@ -126,12 +126,12 @@ subroutine shd_sfc__interpSfc(&
             ! added half dx,dy (prp_obj_%dx/2.0-sfc_obj_%dx/2.0, prp_obj_%dy/2.0-sfc_obj_%dy/2.0) to
             ! find surface point that is closest to grid center
             !╭────────────────────────────────────────────────╮!
-            rx = (GRIDPOS(1, igrid) + prp_obj_%dx/2.0 - sfc_obj_%dx/2.0) / sfc_obj_%dx
-            ry = (GRIDPOS(2, igrid) + prp_obj_%dy/2.0 - sfc_obj_%dy/2.0) / sfc_obj_%dy
+            rx = (GRIDPOS(1, igrid) + prp_obj_%dx/2.0 - sfc_obj_%dx/2.0 - sfc_obj_%xStart) / sfc_obj_%dx
+            ry = (GRIDPOS(2, igrid) + prp_obj_%dy/2.0 - sfc_obj_%dy/2.0 - sfc_obj_%yStart) / sfc_obj_%dy
             !╰────────────────────────────────────────────────╯!
         else
-            rx = (GRIDPOS(1, igrid)) / sfc_obj_%dx
-            ry = (GRIDPOS(2, igrid)) / sfc_obj_%dy
+            rx = (GRIDPOS(1, igrid)-sfc_obj_%xStart) / sfc_obj_%dx
+            ry = (GRIDPOS(2, igrid)-sfc_obj_%yStart) / sfc_obj_%dy
         end if
 
         ix = max(1, min(sfc_obj_%Nx, int(rx) + 1))
@@ -139,11 +139,18 @@ subroutine shd_sfc__interpSfc(&
         u = max(0.0, min(1.0, rx - (ix - 1)))
         v = max(0.0, min(1.0, ry - (iy - 1)))
 
-        i1 = iy + (sfc_obj_%Ny + 1)*(ix - 1)
+        !i1 = iy + (sfc_obj_%Ny + 1)*(ix - 1)
+        !if (doInterp) then
+        !    i2 = iy     + (sfc_obj_%Ny + 1)*(ix)
+        !    i3 = iy + 1 + (sfc_obj_%Ny + 1)*(ix - 1)
+        !    i4 = iy + 1 + (sfc_obj_%Ny + 1)*(ix)
+        !end if
+
+        i1 = iy + (sfc_obj_%Ny)*(ix - 1)
         if (doInterp) then
-            i2 = iy     + (sfc_obj_%Ny + 1)*(ix)
-            i3 = iy + 1 + (sfc_obj_%Ny + 1)*(ix - 1)
-            i4 = iy + 1 + (sfc_obj_%Ny + 1)*(ix)
+            i2 = iy     + (sfc_obj_%Ny)*(ix)
+            i3 = iy + 1 + (sfc_obj_%Ny)*(ix - 1)
+            i4 = iy + 1 + (sfc_obj_%Ny)*(ix)
         end if
 
         do ipar = 1, sfc_obj_%Npar

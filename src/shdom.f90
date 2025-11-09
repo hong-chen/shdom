@@ -178,6 +178,7 @@ program shdom
     ! sfcAll_obj
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_sfc) :: sfcAll_obj
+    real(kind=R__),  allocatable :: brdf_SfcAll(:, :)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
@@ -639,20 +640,43 @@ program shdom
     ! Read in the surface properties
     if (sfc_obj_%fname(1:4) .ne. 'NONE') then
 
+        sfc_obj_%maxNpts = sfc_obj_%Nx * sfc_obj_%Ny
         allocate(brdf_Sfc_(sfc_obj_%maxNpar, sfc_obj_%maxNpts))
-
         memUsed = memUsed + sfc_obj_%maxNpar * sfc_obj_%maxNpts
 
         if (isMasterProc) then
-            call shd_io__readSfc(sfc_obj_, brdf_Sfc_)
+            allocate(brdf_SfcAll(sfcAll_obj%maxNpar, sfcAll_obj%maxNpts))
+            call shd_io__readSfc(sfcAll_obj, brdf_SfcAll)
         end if
 
         ! Broadcast the surface object
-        call shd_mpi__bcastSfc(sfc_obj_, brdf_Sfc_)
+        call shd_mpi__bcastSfc(sfcAll_obj, brdf_SfcAll, &
+                               sfc_obj_,   brdf_Sfc_)
+
+        if (isMasterProc) then
+            deallocate(brdf_SfcAll)
+        end if
 
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
+    !print *, sfc_obj_%fname
+    !print *, sfc_obj_%type
+    !print *, sfc_obj_%Nx
+    !print *, sfc_obj_%Ny
+    !print *, sfc_obj_%Npar
+    !print *, sfc_obj_%maxNpts
+    !print *, sfc_obj_%maxNpar
+    !print *, sfc_obj_%dx
+    !print *, sfc_obj_%dy
+    !print *, sfc_obj_%xStart
+    !print *, sfc_obj_%yStart
+    !print *, sfc_obj_%avgTemp
+    !print *, sfc_obj_%avgAlb
+    !print *, sfc_obj_%isUniform
+    !print *, sfc_obj_%isLambertian
+
+    !stop
 
     if (isMasterProc) then
         ! Check input parameters

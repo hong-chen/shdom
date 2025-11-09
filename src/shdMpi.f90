@@ -134,7 +134,7 @@ module shd_mpi
     private :: shd_mpi__integrateRay
     private :: loadObject
 
-    integer :: Nproc_, myProc_, iProcNeigh_(4), ixyPrp_(2, 2), ixyOut_(2, 2)
+    integer :: Nproc_, myProc_, iProcNeigh_(4), ixyPrp_(2, 2), ixySfc_(2, 2), ixyOut_(2, 2)
     logical, parameter :: loadBalance_ = .false.
     real(RD_) :: startTime_
     integer, allocatable :: BxyPtr_(:, :, :), iBxyPtr_(:, :, :)
@@ -219,7 +219,7 @@ subroutine shd_mpi__map(rtmAll_obj, prpAll_obj, sfcAll_obj, &
 ! note: this if clause has <else>
     integer :: i, ierr, dims(2), coords(2)
     logical :: periodic(2) = (/.true., .true./), reorder = .false.
-    real    :: xEnd, yEnd
+    real    :: xEnd_prp, yEnd_prp, xEnd_sfc, yEnd_sfc
     character(len=4) :: procStr
     character(len=charMaxLen_) :: logFile
 
@@ -285,7 +285,7 @@ subroutine shd_mpi__map(rtmAll_obj, prpAll_obj, sfcAll_obj, &
             ixyOut_(1, 1) = nint(rtmAll_obj%Nx*float(ixyPrp_(1, 1) - 1)/prpAll_obj%Nx) + 1
             ixyOut_(2, 1) = nint(rtmAll_obj%Nx*float(prp_obj%Nx    - 1)/prpAll_obj%Nx)
             prp_obj%xStart = (ixyPrp_(1, 1) - 1)*prp_obj%dx
-            xEnd = (ixyPrp_(2, 1) - 1)*prp_obj%dx
+            xEnd_prp = (ixyPrp_(2, 1) - 1)*prp_obj%dx
 
         else
 
@@ -297,9 +297,9 @@ subroutine shd_mpi__map(rtmAll_obj, prpAll_obj, sfcAll_obj, &
             rtm_obj%Nx = ixyOut_(2, 1) - ixyOut_(1, 1) + 2
 
             prp_obj%xStart = real(prp_obj%dx)/real(rtmAll_obj%Nx) * real((ixyOut_(1, 1)-1))
-            xEnd           = real(prp_obj%dx)/real(rtmAll_obj%Nx) * real((ixyOut_(2, 1)))
+            xEnd_prp = real(prp_obj%dx)/real(rtmAll_obj%Nx) * real((ixyOut_(2, 1)))
 
-            prp_obj%dx = xEnd - prp_obj%xStart
+            prp_obj%dx = xEnd_prp - prp_obj%xStart
 
 
         end if
@@ -309,7 +309,7 @@ subroutine shd_mpi__map(rtmAll_obj, prpAll_obj, sfcAll_obj, &
         ixyOut_(1, 1) = 1
         ixyOut_(2, 1) =  rtmAll_obj%Nx
         prp_obj%xStart = 0.0
-        xEnd = prpAll_obj%Nx*prp_obj%dx
+        xEnd_prp = prpAll_obj%Nx*prp_obj%dx
 
     end if
 
@@ -326,7 +326,7 @@ subroutine shd_mpi__map(rtmAll_obj, prpAll_obj, sfcAll_obj, &
             ixyOut_(1, 2) = nint(rtmAll_obj%Ny*float(ixyPrp_(1, 2) - 1)/prpAll_obj%Ny) + 1
             ixyOut_(2, 2) = nint(rtmAll_obj%Ny*float(prp_obj%Ny - 1)/prpAll_obj%Ny)
             prp_obj%yStart = (ixyPrp_(1, 2) - 1)*prp_obj%dy
-            yEnd = (ixyPrp_(2, 2) - 1)*prp_obj%dy
+            yEnd_prp = (ixyPrp_(2, 2) - 1)*prp_obj%dy
 
         else
 
@@ -338,9 +338,9 @@ subroutine shd_mpi__map(rtmAll_obj, prpAll_obj, sfcAll_obj, &
             rtm_obj%Ny = ixyOut_(2, 2) - ixyOut_(1, 2) + 2
 
             prp_obj%yStart = real(prp_obj%dy)/real(rtmAll_obj%Ny) * real((ixyOut_(1, 2)-1))
-            yEnd           = real(prp_obj%dy)/real(rtmAll_obj%Ny) * real((ixyOut_(2, 2)))
+            yEnd_prp = real(prp_obj%dy)/real(rtmAll_obj%Ny) * real((ixyOut_(2, 2)))
 
-            prp_obj%dy = yEnd - prp_obj%yStart
+            prp_obj%dy = yEnd_prp - prp_obj%yStart
 
         end if
 
@@ -349,20 +349,38 @@ subroutine shd_mpi__map(rtmAll_obj, prpAll_obj, sfcAll_obj, &
         ixyOut_(1, 2) = 1
         ixyOut_(2, 2) = rtmAll_obj%Ny
         prp_obj%yStart = 0.0
-        yEnd = prpAll_obj%Ny*prp_obj%dy
+        yEnd_prp = prpAll_obj%Ny*prp_obj%dy
 
     end if
 
     if (sfcAll_obj%Nx .gt. 1) then
-        sfc_obj%xStart = max((int(prp_obj%xStart/sfc_obj%dx)-2)*sfc_obj%dx, 0.0)
+        sfc_obj%xStart = max(0.0, (int(prp_obj%xStart/sfc_obj%dx)-2)*sfc_obj%dx)
+        xEnd_sfc       = min((sfcAll_obj%Nx+1)*sfcAll_obj%dx, (int(xEnd_prp/sfc_obj%dx)+2)*sfc_obj%dx)
+        sfc_obj%Nx     = int((xEnd_sfc-sfc_obj%xStart)/sfc_obj%dx)
+
+        ixySfc_(1, 1) = nint(sfc_obj%xStart/sfc_obj%dx) + 1
+        ixySfc_(2, 1) = ixySfc_(1, 1) + sfc_obj%Nx - 1
     else
         sfc_obj%xStart = 0.0
+        sfc_obj%Nx = 1
+
+        ixySfc_(1, 1) = 1
+        ixySfc_(2, 1) = 1
     end if
 
     if (sfcAll_obj%Ny .gt. 1) then
         sfc_obj%yStart = max((int(prp_obj%yStart/sfc_obj%dy)-2)*sfc_obj%dy, 0.0)
+        yEnd_sfc       = min((sfcAll_obj%Ny+1)*sfcAll_obj%dy, (int(yEnd_prp/sfc_obj%dy)+2)*sfc_obj%dy)
+        sfc_obj%Ny     = int((yEnd_sfc-sfc_obj%yStart)/sfc_obj%dy)
+
+        ixySfc_(1, 2) = nint(sfc_obj%yStart/sfc_obj%dy) + 1
+        ixySfc_(2, 2) = ixySfc_(1, 2) + sfc_obj%Ny - 1
     else
         sfc_obj%yStart = 0.0
+        sfc_obj%Ny = 1
+
+        ixySfc_(1, 2) = 1
+        ixySfc_(2, 2) = 1
     end if
 
     ! Get the processors (rank numbers) of the neighbors
@@ -373,8 +391,8 @@ subroutine shd_mpi__map(rtmAll_obj, prpAll_obj, sfcAll_obj, &
     if (verbose_ .ge. 5) write (6, '(2X,A,2(I0,2X))')    'Nproc in X and Y: ', dims(1:2)
     if (verbose_ .ge. 5) write (6, '(2X,A,I0)')          '  This processor: ', myProc_
     if (verbose_ .ge. 5) write (6, '(2X,A,4(I0,2X))')    '       Neighbors: ', iProcNeigh_(1:4)
-    if (verbose_ .ge. 5) write (6, '(2X,A,2(F0.2," km",2X))') '         X range: ', prp_obj%xStart, xEnd
-    if (verbose_ .ge. 5) write (6, '(2X,A,2(F0.2," km",2X))') '         Y range: ', prp_obj%yStart, yEnd
+    if (verbose_ .ge. 5) write (6, '(2X,A,2(F0.2," km",2X))') '         X range: ', prp_obj%xStart, xEnd_prp
+    if (verbose_ .ge. 5) write (6, '(2X,A,2(F0.2," km",2X))') '         Y range: ', prp_obj%yStart, yEnd_prp
 #else
     prp_obj%xStart = 0.0; prp_obj%yStart = 0.0
 #endif
@@ -519,14 +537,14 @@ subroutine shd_mpi__bcastPrp(prpAll_obj, temp_PrpAll, ext_PrpAll, ssa_PrpAll, le
     integer(kind=2), intent(out) :: ipha_Prp(prp_obj%maxNpts)
 
 #if HAS_MPI
-    integer :: SX, EX, Nx, SY, EY, Ny, N, MAXN, MaxNX, MaxNY
+    integer :: Sx, Ex, Nx, Sy, Ey, Ny, N, maxN, maxNx, maxNy
     integer :: iproc, irq, ierr, Nrq
     integer, allocatable :: ixyAll(:, :, :)
     real, allocatable :: rbuf(:, :, :), tempbuf(:, :), extbuf(:, :), ssabuf(:, :)
     integer(kind=2), allocatable :: ibuf(:, :, :), iphabuf(:, :)
 
     type(MPI_request), allocatable :: requests(:)
-    type(MPI_status), allocatable :: status(:)
+    type(MPI_status),  allocatable :: status(:)
 
     if (prp_obj%Npha .gt. 0) then
         Nrq = 8
@@ -544,47 +562,47 @@ subroutine shd_mpi__bcastPrp(prpAll_obj, temp_PrpAll, ext_PrpAll, ssa_PrpAll, le
     if (myProc_ .eq. 0) then
 
         ! Allocate the send buffers for each processor
-        MAXN = 1; MaxNX = 1; MaxNY = 1
+        MAXN = 1; maxNx = 1; maxNy = 1
         do iproc = 0, Nproc_ - 1
-            Nx = ixyAll(2, 1, iproc) - ixyAll(1, 1, iproc) + 1; MaxNX = max(MaxNX, Nx)
-            Ny = ixyAll(2, 2, iproc) - ixyAll(1, 2, iproc) + 1; MaxNY = max(MaxNY, Ny)
+            Nx = ixyAll(2, 1, iproc) - ixyAll(1, 1, iproc) + 1; maxNx = max(maxNx, Nx)
+            Ny = ixyAll(2, 2, iproc) - ixyAll(1, 2, iproc) + 1; maxNy = max(maxNy, Ny)
             MAXN = max(MAXN, prpAll_obj%Nz*Ny*Nx)
         end do
 
-        allocate(rbuf(prpAll_obj%Nz, MaxNY, MaxNX), ibuf(prpAll_obj%Nz, MaxNY, MaxNX))
+        allocate(rbuf(prpAll_obj%Nz, maxNy, maxNx), ibuf(prpAll_obj%Nz, maxNy, maxNx))
         allocate(tempbuf(MAXN, 0:Nproc_ - 1),  extbuf(MAXN, 0:Nproc_ - 1))
         allocate( ssabuf(MAXN, 0:Nproc_ - 1), iphabuf(MAXN, 0:Nproc_ - 1))
         ! The master processor reformats the four property arrays (to deal with
         ! the wrap around at the full domain edge) and sends the arrays with MPI.
         do iproc = 0, Nproc_ - 1
-            SX = ixyAll(1, 1, iproc); EX = ixyAll(2, 1, iproc)
-            SY = ixyAll(1, 2, iproc); EY = ixyAll(2, 2, iproc)
-            Nx = EX - SX + 1; Ny = EY - SY + 1; N = Nx*Ny*prpAll_obj%Nz
-            rbuf(:, 1:Ny - 1, 1:Nx - 1) = temp_PrpAll(:, SY:EY - 1, SX:EX - 1)
-            rbuf(:, 1:Ny - 1,       Nx) = temp_PrpAll(:, SY:EY - 1, mod(EX - 1, prpAll_obj%Nx) + 1)
-            rbuf(:,       Ny, 1:Nx - 1) = temp_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, SX:EX - 1)
-            rbuf(:,       Ny,       Nx) = temp_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, mod(EX - 1, prpAll_obj%Nx) + 1)
+            Sx = ixyAll(1, 1, iproc); Ex = ixyAll(2, 1, iproc)
+            Sy = ixyAll(1, 2, iproc); Ey = ixyAll(2, 2, iproc)
+            Nx = Ex - Sx + 1; Ny = Ey - Sy + 1; N = Nx*Ny*prpAll_obj%Nz
+            rbuf(:, 1:Ny - 1, 1:Nx - 1) = temp_PrpAll(:, Sy:Ey - 1, Sx:Ex - 1)
+            rbuf(:, 1:Ny - 1,       Nx) = temp_PrpAll(:, Sy:Ey - 1, mod(Ex - 1, prpAll_obj%Nx) + 1)
+            rbuf(:,       Ny, 1:Nx - 1) = temp_PrpAll(:, mod(Ey - 1, prpAll_obj%Ny) + 1, Sx:Ex - 1)
+            rbuf(:,       Ny,       Nx) = temp_PrpAll(:, mod(Ey - 1, prpAll_obj%Ny) + 1, mod(Ex - 1, prpAll_obj%Nx) + 1)
             tempbuf(1:N, iproc) = reshape(rbuf(1:prpAll_obj%Nz, 1:Ny, 1:Nx), (/N/))
             call mpi_isend(tempbuf(1:N, iproc), N, MPI_real, iproc, 1, comm2D_, requests(irq + 1), ierr)
 
-            rbuf(:, 1:Ny - 1, 1:Nx - 1) = ext_PrpAll(:, SY:EY - 1, SX:EX - 1)
-            rbuf(:, 1:Ny - 1,       Nx) = ext_PrpAll(:, SY:EY - 1, mod(EX - 1, prpAll_obj%Nx) + 1)
-            rbuf(:,       Ny, 1:Nx - 1) = ext_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, SX:EX - 1)
-            rbuf(:,       Ny,       Nx) = ext_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, mod(EX - 1, prpAll_obj%Nx) + 1)
+            rbuf(:, 1:Ny - 1, 1:Nx - 1) = ext_PrpAll(:, Sy:Ey - 1, Sx:Ex - 1)
+            rbuf(:, 1:Ny - 1,       Nx) = ext_PrpAll(:, Sy:Ey - 1, mod(Ex - 1, prpAll_obj%Nx) + 1)
+            rbuf(:,       Ny, 1:Nx - 1) = ext_PrpAll(:, mod(Ey - 1, prpAll_obj%Ny) + 1, Sx:Ex - 1)
+            rbuf(:,       Ny,       Nx) = ext_PrpAll(:, mod(Ey - 1, prpAll_obj%Ny) + 1, mod(Ex - 1, prpAll_obj%Nx) + 1)
             extbuf(1:N, iproc) = reshape(rbuf(1:prpAll_obj%Nz, 1:Ny, 1:Nx), (/N/))
             call mpi_isend(extbuf(1:N, iproc), N, MPI_real, iproc, 2, comm2D_, requests(irq + 2), ierr)
 
-            rbuf(:, 1:Ny - 1, 1:Nx - 1) = ssa_PrpAll(:, SY:EY - 1, SX:EX - 1)
-            rbuf(:, 1:Ny - 1,       Nx) = ssa_PrpAll(:, SY:EY - 1, mod(EX - 1, prpAll_obj%Nx) + 1)
-            rbuf(:,       Ny, 1:Nx - 1) = ssa_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, SX:EX - 1)
-            rbuf(:,       Ny,       Nx) = ssa_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, mod(EX - 1, prpAll_obj%Nx) + 1)
+            rbuf(:, 1:Ny - 1, 1:Nx - 1) = ssa_PrpAll(:, Sy:Ey - 1, Sx:Ex - 1)
+            rbuf(:, 1:Ny - 1,       Nx) = ssa_PrpAll(:, Sy:Ey - 1, mod(Ex - 1, prpAll_obj%Nx) + 1)
+            rbuf(:,       Ny, 1:Nx - 1) = ssa_PrpAll(:, mod(Ey - 1, prpAll_obj%Ny) + 1, Sx:Ex - 1)
+            rbuf(:,       Ny,       Nx) = ssa_PrpAll(:, mod(Ey - 1, prpAll_obj%Ny) + 1, mod(Ex - 1, prpAll_obj%Nx) + 1)
             ssabuf(1:N, iproc) = reshape(rbuf(1:prpAll_obj%Nz, 1:Ny, 1:Nx), (/N/))
             call mpi_isend(ssabuf(1:N, iproc), N, MPI_real, iproc, 3, comm2D_, requests(irq + 3), ierr)
 
-            ibuf(:, 1:Ny - 1, 1:Nx - 1) = ipha_PrpAll(:, SY:EY - 1, SX:EX - 1)
-            ibuf(:, 1:Ny - 1,       Nx) = ipha_PrpAll(:, SY:EY - 1, mod(EX - 1, prpAll_obj%Nx) + 1)
-            ibuf(:,       Ny, 1:Nx - 1) = ipha_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, SX:EX - 1)
-            ibuf(:,       Ny,       Nx) = ipha_PrpAll(:, mod(EY - 1, prpAll_obj%Ny) + 1, mod(EX - 1, prpAll_obj%Nx) + 1)
+            ibuf(:, 1:Ny - 1, 1:Nx - 1) = ipha_PrpAll(:, Sy:Ey - 1, Sx:Ex - 1)
+            ibuf(:, 1:Ny - 1,       Nx) = ipha_PrpAll(:, Sy:Ey - 1, mod(Ex - 1, prpAll_obj%Nx) + 1)
+            ibuf(:,       Ny, 1:Nx - 1) = ipha_PrpAll(:, mod(Ey - 1, prpAll_obj%Ny) + 1, Sx:Ex - 1)
+            ibuf(:,       Ny,       Nx) = ipha_PrpAll(:, mod(Ey - 1, prpAll_obj%Ny) + 1, mod(Ex - 1, prpAll_obj%Nx) + 1)
             iphabuf(1:N, iproc) = reshape(ibuf(1:prpAll_obj%Nz, 1:Ny, 1:Nx), (/N/))
             call mpi_isend(iphabuf(1:N, iproc), N, MPI_integer2, iproc, 4, comm2D_, requests(irq + 4), ierr)
 
@@ -655,29 +673,84 @@ subroutine shd_mpi__bcastSfcSize(sfc_obj)
 
 end subroutine shd_mpi__bcastSfcSize
 
-subroutine shd_mpi__bcastSfc(sfc_obj, brdf_Sfc)
+subroutine shd_mpi__bcastSfc(sfcAll_obj, brdf_SfcAll, &
+                             sfc_obj,    brdf_Sfc)
 
     ! Broadcasts the surface file parameters from the master process to the others.
 
+    type(shd_type_sfc), intent(inout) :: sfcAll_obj
+    real(kind=R__),  intent(in) :: brdf_SfcAll(sfcAll_obj%maxNpar, sfcAll_obj%Ny+1, sfcAll_obj%Nx+1)
+
     type(shd_type_sfc), intent(inout) :: sfc_obj
-    real(kind=R__), intent(inout) :: brdf_Sfc(sfc_obj%maxNpar, sfc_obj%maxNpts)
+    real(kind=R__), intent(out) :: brdf_Sfc(sfc_obj%maxNpar*sfc_obj%maxNpts)
 
 #if HAS_MPI
-    integer :: ierr, Ndata
-    real    :: realbuf(2)
+    integer :: Sx, Ex, Nx, Sy, Ey, Ny, N, maxN, maxNx, maxNy
+    integer :: iproc, irq, ierr, Nrq
+    integer, allocatable :: ixyAll(:, :, :)
+    real, allocatable :: rbuf(:, :, :), brdfbuf(:, :)
 
-    if (Nproc_ .le. 1) return
+    type(MPI_request), allocatable :: requests(:)
+    type(MPI_status),  allocatable :: status(:)
 
-    call mpi_bcast(sfc_obj%type, 2, MPI_character, 0, comm2D_, ierr)
+    Nrq = 5
 
-    call mpi_bcast(sfc_obj%Npar, 1, MPI_integer, 0, comm2D_, ierr)
+    ! Get the ixySfc_ arrays from all processors to tell where they are in property grid
+    allocate(ixyAll(2, 2, 0 : Nproc_-1))
+    call mpi_gather(ixySfc_, 4, MPI_integer, ixyAll, 4, MPI_integer, 0, comm2D_, ierr)
 
-    realbuf(1:2) = (/sfc_obj%avgTemp, sfc_obj%avgAlb/)
-    call mpi_bcast(realbuf, 2, MPI_real, 0, comm2D_, ierr)
-    sfc_obj%avgTemp = realbuf(1); sfc_obj%avgAlb = realbuf(2)
+    allocate(requests(Nrq*Nproc_ + Nrq), status(Nrq*Nproc_ + Nrq))
 
-    Ndata = sfc_obj%Npar * (sfc_obj%Nx+1) * (sfc_obj%Ny+1)
-    call mpi_bcast(brdf_Sfc, Ndata, MPI_real, 0, comm2D_, ierr)
+    irq = 0
+    if (myProc_ .eq. 0) then
+
+        ! Allocate the send buffers for each processor
+        maxN = 1; maxNx = 1; maxNy = 1
+        do iproc = 0, Nproc_ - 1
+            Nx = ixyAll(2, 1, iproc) - ixyAll(1, 1, iproc) + 1; maxNx = max(maxNx, Nx)
+            Ny = ixyAll(2, 2, iproc) - ixyAll(1, 2, iproc) + 1; maxNy = max(maxNy, Ny)
+            maxN = max(maxN, sfcAll_obj%maxNpar*Ny*Nx)
+        end do
+
+        allocate(rbuf(sfcAll_obj%maxNpar, maxNy, maxNx))
+        allocate(brdfbuf(maxN, 0:Nproc_ - 1))
+
+        ! The master processor reformats the four property arrays (to deal with
+        ! the wrap around at the full domain edge) and sends the arrays with MPI.
+        do iproc = 0, Nproc_ - 1
+
+            Sx = ixyAll(1, 1, iproc); Ex = ixyAll(2, 1, iproc)
+            Sy = ixyAll(1, 2, iproc); Ey = ixyAll(2, 2, iproc)
+            Nx = Ex - Sx + 1; Ny = Ey - Sy + 1; N = Nx*Ny*sfcAll_obj%maxNpar
+
+            rbuf(:, 1:Ny, 1:Nx) = brdf_SfcAll(:, Sy:Ey, Sx:Ex)
+
+            brdfbuf(1:N, iproc) = reshape(rbuf(1:sfcAll_obj%maxNpar, 1:Ny, 1:Nx), (/N/))
+
+            call mpi_isend(brdfbuf(1:N, iproc), N, MPI_real,      iproc, 1, comm2D_, requests(irq+1), ierr)
+            call mpi_isend(sfcAll_obj%type,     2, MPI_character, iproc, 2, comm2D_, requests(irq+2), ierr)
+            call mpi_isend(sfcAll_obj%Npar,     1, MPI_integer,   iproc, 3, comm2D_, requests(irq+3), ierr)
+            call mpi_isend(sfcAll_obj%avgTemp,  1, MPI_real,      iproc, 4, comm2D_, requests(irq+4), ierr)
+            call mpi_isend(sfcAll_obj%avgAlb,   1, MPI_real,      iproc, 5, comm2D_, requests(irq+5), ierr)
+
+            irq = irq + Nrq
+
+        end do
+
+    end if
+
+    N = sfc_obj%maxNpar*sfc_obj%maxNpts
+    call mpi_irecv(brdf_Sfc,        N, MPI_real,      0, 1, comm2D_, requests(irq+1), ierr)
+    call mpi_irecv(sfc_obj%type,    2, MPI_character, 0, 2, comm2D_, requests(irq+2), ierr)
+    call mpi_irecv(sfc_obj%Npar,    1, MPI_integer,   0, 3, comm2D_, requests(irq+3), ierr)
+    call mpi_irecv(sfc_obj%avgTemp, 1, MPI_real,      0, 4, comm2D_, requests(irq+4), ierr)
+    call mpi_irecv(sfc_obj%avgAlb,  1, MPI_real,      0, 5, comm2D_, requests(irq+5), ierr)
+
+    irq = irq + Nrq
+    call mpi_waitall(irq, requests, status, ierr)
+
+    if (myProc_ .eq. 0) deallocate(brdfbuf, rbuf)
+    deallocate(requests, status, ixyAll)
 #endif
 
     return
@@ -880,7 +953,7 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
     integer, intent(out) :: NCELLSTOT, NPTSTOT, NSHTOT
 
 #if HAS_MPI
-    integer :: IX, IY, Nx, Ny, NX1, NY1, MAXN, I, send3int(3), recv3int(3)
+    integer :: IX, IY, Nx, Ny, NX1, NY1, maxN, I, send3int(3), recv3int(3)
     integer :: iproc, ierr, irq
     integer, allocatable :: ixyAll(:, :, :)
     real, allocatable :: sendbuf(:, :), recvbuf(:, :, :), buf(:, :, :, :)
@@ -902,11 +975,11 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
             call mpi_isend(sendbuf, 3*rtm_obj%Npts0, MPI_real, 0, 1, comm2D_,&
                 &requests(irq), ierr)
         else
-            MAXN = (maxval(ixyAll(2, 1, :)) + 1)*(maxval(ixyAll(2, 2, :)) + 1)*rtmAll_obj%Nz
-            allocate(recvbuf(3, MAXN, 1:Nproc_ - 1))
+            maxN = (maxval(ixyAll(2, 1, :)) + 1)*(maxval(ixyAll(2, 2, :)) + 1)*rtmAll_obj%Nz
+            allocate(recvbuf(3, maxN, 1:Nproc_ - 1))
             do iproc = 1, Nproc_ - 1
                 irq = irq + 1
-                call mpi_irecv(recvbuf(:, :, iproc), 3*MAXN, MPI_real, iproc, 1,&
+                call mpi_irecv(recvbuf(:, :, iproc), 3*maxN, MPI_real, iproc, 1,&
                     &comm2D_, requests(irq), ierr)
             end do
         end if
@@ -947,11 +1020,11 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
             call mpi_isend(SUMFLUXDIV, rtm_obj%Npts0, MPI_real, 0, 2, comm2D_,&
                 &requests(irq), ierr)
         else
-            MAXN = (maxval(ixyAll(2, 1, :)) + 1)*(maxval(ixyAll(2, 2, :)) + 1)*rtmAll_obj%Nz
-            allocate(recvbuf(1, MAXN, 1:Nproc_ - 1))
+            maxN = (maxval(ixyAll(2, 1, :)) + 1)*(maxval(ixyAll(2, 2, :)) + 1)*rtmAll_obj%Nz
+            allocate(recvbuf(1, maxN, 1:Nproc_ - 1))
             do iproc = 1, Nproc_ - 1
                 irq = irq + 1
-                call mpi_irecv(recvbuf(:, :, iproc), MAXN, MPI_real, iproc, 2,&
+                call mpi_irecv(recvbuf(:, :, iproc), maxN, MPI_real, iproc, 2,&
                     &comm2D_, requests(irq), ierr)
             end do
         end if
@@ -989,11 +1062,11 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
             call mpi_isend(SUMSHTERMS, NSHOUT*rtm_obj%Npts0, MPI_real, 0, 3, comm2D_,&
                 &requests(irq), ierr)
         else
-            MAXN = (maxval(ixyAll(2, 1, :)) + 1)*(maxval(ixyAll(2, 2, :)) + 1)*rtmAll_obj%Nz
-            allocate(recvbuf(NSHOUT, MAXN, 1:Nproc_ - 1))
+            maxN = (maxval(ixyAll(2, 1, :)) + 1)*(maxval(ixyAll(2, 2, :)) + 1)*rtmAll_obj%Nz
+            allocate(recvbuf(NSHOUT, maxN, 1:Nproc_ - 1))
             do iproc = 1, Nproc_ - 1
                 irq = irq + 1
-                call mpi_irecv(recvbuf(:, :, iproc), NSHOUT*MAXN, MPI_real, iproc, 3,&
+                call mpi_irecv(recvbuf(:, :, iproc), NSHOUT*maxN, MPI_real, iproc, 3,&
                     &comm2D_, requests(irq), ierr)
             end do
         end if
@@ -2738,7 +2811,7 @@ subroutine shd_mpi__end(runName, rtm_obj, prpAll_obj)
     character(len=*), intent(in) :: runName
 
 #if HAS_MPI
-    integer :: I, IX, IY, MAXN, SX, SY, EX, EY, Nx, Ny
+    integer :: I, IX, IY, maxN, Sx, Sy, Ex, Ey, Nx, Ny
     integer :: iproc, ierr, irq
     integer, allocatable :: NUMGRID(:, :), NUMGRIDALL(:, :), NORM(:, :), ixyAll(:, :, :)
     integer, allocatable :: recvbuf(:, :), buf(:, :)
@@ -2775,11 +2848,11 @@ subroutine shd_mpi__end(runName, rtm_obj, prpAll_obj)
                 call mpi_isend(NUMGRID, prp_obj_%Nx*prp_obj_%Ny, MPI_integer, 0, 777, comm2D_,&
                     &requests(irq), ierr)
             else
-                MAXN = (maxval(ixyAll(2, 1, :) - ixyAll(1, 1, :)) + 1)*(maxval(ixyAll(2, 2, :) - ixyAll(1, 2, :)) + 1)
-                allocate(recvbuf(MAXN, 1:Nproc_ - 1))
+                maxN = (maxval(ixyAll(2, 1, :) - ixyAll(1, 1, :)) + 1)*(maxval(ixyAll(2, 2, :) - ixyAll(1, 2, :)) + 1)
+                allocate(recvbuf(maxN, 1:Nproc_ - 1))
                 do iproc = 1, Nproc_ - 1
                     irq = irq + 1
-                    call mpi_irecv(recvbuf(:, iproc), MAXN, MPI_integer, iproc, 777,&
+                    call mpi_irecv(recvbuf(:, iproc), maxN, MPI_integer, iproc, 777,&
                         &comm2D_, requests(irq), ierr)
                 end do
             end if
@@ -2791,22 +2864,22 @@ subroutine shd_mpi__end(runName, rtm_obj, prpAll_obj)
             if (myProc_ .eq. 0) then
                 allocate(NUMGRIDALL(prpAll_obj%Nx, prpAll_obj%Ny), NORM(prpAll_obj%Nx, prpAll_obj%Ny))
                 NUMGRIDALL(:, :) = 0; NORM(:, :) = 0
-                SX = ixyAll(1, 1, 0); EX = ixyAll(2, 1, 0); Nx = EX - SX + 1
-                SY = ixyAll(1, 2, 0); EY = ixyAll(2, 2, 0); Ny = EY - SY + 1
-                NUMGRIDALL(SX:EX, SY:EY) = NUMGRID(:, :)
-                NORM(SX:EX, SY:EY) = reshape((/1/), (/Nx, Ny/), (/1/))
+                Sx = ixyAll(1, 1, 0); Ex = ixyAll(2, 1, 0); Nx = Ex - Sx + 1
+                Sy = ixyAll(1, 2, 0); Ey = ixyAll(2, 2, 0); Ny = Ey - Sy + 1
+                NUMGRIDALL(Sx:Ex, Sy:Ey) = NUMGRID(:, :)
+                NORM(Sx:Ex, Sy:Ey) = reshape((/1/), (/Nx, Ny/), (/1/))
                 do iproc = 1, Nproc_ - 1
-                    SX = ixyAll(1, 1, iproc); EX = ixyAll(2, 1, iproc); Nx = EX - SX + 1
-                    SY = ixyAll(1, 2, iproc); EY = ixyAll(2, 2, iproc); Ny = EY - SY + 1
+                    Sx = ixyAll(1, 1, iproc); Ex = ixyAll(2, 1, iproc); Nx = Ex - Sx + 1
+                    Sy = ixyAll(1, 2, iproc); Ey = ixyAll(2, 2, iproc); Ny = Ey - Sy + 1
                     allocate(buf(Nx, Ny))
                     buf(:, :) = reshape(recvbuf(1:Nx*Ny, iproc), (/Nx, Ny/))
-                    NUMGRIDALL(SX:EX - 1, SY:EY - 1) = NUMGRIDALL(SX:EX - 1, SY:EY - 1) + buf(1:Nx - 1, 1:Ny - 1)
-                    NORM(SX:EX - 1, SY:EY - 1) = NORM(SX:EX - 1, SY:EY - 1) + reshape((/1/), (/Nx - 1, Ny - 1/), (/1/))
-                    IX = mod(EX - 1, prpAll_obj%Nx) + 1; IY = mod(EY - 1, prpAll_obj%Ny) + 1
-                    NUMGRIDALL(IX, SY:EY - 1) = NUMGRIDALL(IX, SY:EY - 1) + buf(Nx, 1:Ny - 1)
-                    NORM(IX, SY:EY - 1) = NORM(IX, SY:EY - 1) + reshape((/1/), (/Ny - 1/), (/1/))
-                    NUMGRIDALL(SX:EX - 1, IY) = NUMGRIDALL(SX:EX - 1, IY) + buf(1:Nx - 1, Ny)
-                    NORM(SX:EX - 1, IY) = NORM(SX:EX - 1, IY) + reshape((/1/), (/Nx - 1/), (/1/))
+                    NUMGRIDALL(Sx:Ex - 1, Sy:Ey - 1) = NUMGRIDALL(Sx:Ex - 1, Sy:Ey - 1) + buf(1:Nx - 1, 1:Ny - 1)
+                    NORM(Sx:Ex - 1, Sy:Ey - 1) = NORM(Sx:Ex - 1, Sy:Ey - 1) + reshape((/1/), (/Nx - 1, Ny - 1/), (/1/))
+                    IX = mod(Ex - 1, prpAll_obj%Nx) + 1; IY = mod(Ey - 1, prpAll_obj%Ny) + 1
+                    NUMGRIDALL(IX, Sy:Ey - 1) = NUMGRIDALL(IX, Sy:Ey - 1) + buf(Nx, 1:Ny - 1)
+                    NORM(IX, Sy:Ey - 1) = NORM(IX, Sy:Ey - 1) + reshape((/1/), (/Ny - 1/), (/1/))
+                    NUMGRIDALL(Sx:Ex - 1, IY) = NUMGRIDALL(Sx:Ex - 1, IY) + buf(1:Nx - 1, Ny)
+                    NORM(Sx:Ex - 1, IY) = NORM(Sx:Ex - 1, IY) + reshape((/1/), (/Nx - 1/), (/1/))
                     NUMGRIDALL(IX, IY) = NUMGRIDALL(IX, IY) + buf(Nx, Ny)
                     NORM(IX, IY) = NORM(IX, IY) + 1
 
