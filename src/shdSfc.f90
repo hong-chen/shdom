@@ -195,14 +195,15 @@ subroutine shd_sfc__interpSfc(&
 
         brdf_Rtm(1, ibc) = planck
 
-        !write(6, *) 'interpSfc:', ibc, igrid
-        !write(6, *) '          ', u, v
-        !write(6, *) '          ', brdf_Sfc(2, i1), brdf_Sfc(2, i2), brdf_Sfc(2, i3), brdf_Sfc(2, i4)
-        !write(6, *) '          ', brdf_Rtm(2, ibc)
-        !write(6, *)
+        write(6, *) 'interpSfc:', ibc, igrid
+        write(6, *) '          ', GRIDPOS(1, igrid), GRIDPOS(2, igrid)
+        write(6, *) '          ', u, v
+        write(6, *) '          ', brdf_Sfc(2, i1), brdf_Sfc(2, i2), brdf_Sfc(2, i3), brdf_Sfc(2, i4)
+        write(6, *) '          ', brdf_Rtm(2, ibc)
+        write(6, *)
 
     end do
-    !stop
+    stop
 
     return
 

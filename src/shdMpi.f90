@@ -733,6 +733,7 @@ subroutine shd_mpi__bcastSfc(sfcAll_obj, brdf_SfcAll, &
 
             write (6, *) iproc, Nx, Sx, Ex
             write (6, *) iproc, Ny, Sy, Ey
+            write (6, *) Nx*Ny, sfc_obj%maxNpts
             write (6, *)
 
             rbuf(:, 1:Ny, 1:Nx) = brdf_SfcAll(:, Sy:Ey, Sx:Ex)
