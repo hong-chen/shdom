@@ -325,7 +325,7 @@ subroutine shd_mpi__map(rtmAll_obj, prpAll_obj, rtm_obj,  prp_obj)
 
             prp_obj%Ny = 1
 
-            ixyOut_(1, 2) =     nint(real(rtmAll_obj%Ny)/real(dims(2)))*(coords(2)+1)
+            ixyOut_(1, 2) =     nint(real(rtmAll_obj%Ny)/real(dims(2)))*coords(2) + 1
             ixyOut_(2, 2) = min(nint(real(rtmAll_obj%Ny)/real(dims(2)))*(coords(2)+1), rtmAll_obj%Ny)
 
             rtm_obj%Ny = ixyOut_(2, 2) - ixyOut_(1, 2) + 2
