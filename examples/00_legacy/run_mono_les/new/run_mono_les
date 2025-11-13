@@ -15,7 +15,7 @@ set RunSHDOM=1
 set fdir_bin="../../../../build/bin"
 set put_exe="${fdir_bin}/put"
 set propgen_exe="${fdir_bin}/propgen"
-set shdom_exe="${fdir_bin}/shdom_"
+set shdom_exe="${fdir_bin}/shdom"
 
 #   Set the file names and wavelength
 if ($Solar) then
