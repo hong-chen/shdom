@@ -41,7 +41,7 @@ module shd_intg
 
     use globals_const, only: RD_, DPI_, &
                              FRAC13_, FRAC112_
-    use globals_cfg,   only: verbose_, accSolv_, &
+    use globals_cfg,   only: verbose_, accSolv_, doGridPtsPrp_, &
                              isMpi_, is1DX_, is1DYx_, is1D_, &
                              isPol_
 
@@ -1492,20 +1492,22 @@ subroutine shd_intg__backIntegrate1D(&
                 EXT0 = EXTINCT(I1)
                 SRCEXT0(:) = EXTINCT(I1)*SOURCE(:, KANG, I1)
 
-                ! this is added to address layer averaging issue
-                ! a more robust criteria should be developed in the future
-                !   to distinguish the atmopheric medium intersection
-                !╭────────────────────────────────────────────────╮!
-                if (abs(EXT0-EXT1) .gt. min(EXT0, EXT1)*10.0) then
-                    if (BITZ .eq. 0) then
-                        EXT0 = EXT1
-                        SRCEXT0(:) = SRCEXT1(:)
-                    else
-                        EXT1 = EXT0
-                        SRCEXT1(:) = SRCEXT0(:)
-                    endif
+                if (.not. doGridPtsPrp_) then
+                    ! zgrid correction (to address layer averaging issue in z direction)
+                    ! a more robust criteria should be developed in the future
+                    !   to distinguish the atmopheric medium intersection
+                    !╭────────────────────────────────────────────────╮!
+                    if (abs(EXT0-EXT1) .gt. min(EXT0, EXT1)*10.0) then
+                        if (BITZ .eq. 0) then
+                            EXT0 = EXT1
+                            SRCEXT0(:) = SRCEXT1(:)
+                        else
+                            EXT1 = EXT0
+                            SRCEXT1(:) = SRCEXT0(:)
+                        endif
+                    end if
+                    !╰────────────────────────────────────────────────╯!
                 end if
-                !╰────────────────────────────────────────────────╯!
 
                 ! Compute the cell radiance: integration of the source function
                 EXT = 0.5*(EXT0 + EXT1)

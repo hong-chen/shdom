@@ -40,7 +40,7 @@
 module shd_grid
 
     use globals_const, only: RD_
-    use globals_cfg,   only: accSolv_, &
+    use globals_cfg,   only: accSolv_, doGridPtsPrp_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, isMpi_, &
                              is1DX_, is1DYx_, is1D_, &
                              isPol_
@@ -1209,13 +1209,15 @@ subroutine shd_grid__InterpTriLinGridPrp(&
     I7 = I3 + 1
     I8 = I4 + 1
 
-    ! zgrid correction (to address layer averaging issue in z direction)
-    !╭────────────────────────────────────────────────╮!
-    I1 = I5
-    I2 = I6
-    I3 = I7
-    I4 = I8
-    !╰────────────────────────────────────────────────╯!
+    if (.not. doGridPtsPrp_) then
+        ! zgrid correction (to address layer averaging issue in z direction)
+        !╭────────────────────────────────────────────────╮!
+        I1 = I5
+        I2 = I6
+        I3 = I7
+        I4 = I8
+        !╰────────────────────────────────────────────────╯!
+    end if
 
     scat1 = F1*ext_Prp_(I1)*ssa_Prp_(I1)
     scat2 = F2*ext_Prp_(I2)*ssa_Prp_(I2)
@@ -1552,7 +1554,7 @@ subroutine shd_grid__interpNewGridPts(newPts,&
                 else
                     RAD2(:) = 0.0
                 end if
-                ! this is modified to address the layer averaging issue
+                ! zgrid correction (not fully tested, to address layer averaging issue in z direction)
                 !╭────────────────────────────────────────────────╮!
                 !if ((abs(xyz_Rtm_(1, IP1)-xyz_Rtm_(1, IP2)) .lt. 1.0e-6) .and.&
                 !    &(abs(xyz_Rtm_(2, IP1)-xyz_Rtm_(2, IP2)) .lt. 1.0e-6)) then
