@@ -1306,10 +1306,7 @@ subroutine shd_io__readSfc(sfc_obj, brdf_Sfc)
     real :: temp_sfc, alb_sfc
 
     integer :: N, i, i0, ix, iy, j
-    real :: alb0, temp0, MRE, MIM, RHO0, KR, THETA, WSPD, PCL
     real :: param1, param2, param3, param4, param5, param6, param7, param8
-    real F_ISO, F_VOL, F_GEO, F_JIAO
-    real A, B, ZETA, SIGMA, ALPHA
 
     character(len=charMaxLen_) :: fnameBin
     character(len=charMaxLen_) :: lineTmp
@@ -1364,11 +1361,11 @@ subroutine shd_io__readSfc(sfc_obj, brdf_Sfc)
 
                         brdf_Sfc(1, i) = param1 ! temperature
                         brdf_Sfc(2, i) = param2 ! albedo
-                        if (alb0 .lt. 0.0 .or. alb0 .gt. 1.0)&
+                        if ((param2 .lt. 0.0) .or. (param2 .gt. 1.0))&
                             &stop 'Error [_readSfc]: Illegal surface albedo.'
-                        if (temp0 .lt. 150. .or. temp0 .gt. 350.) then
+                        if ((param1 .lt. 150.0) .or. (param1 .gt. 350.0)) then
                             if (verbose_ .ge. 4) write (*, *) 'Warning [_readSfc]: ',&
-                                &' surface temperature: ', ix, iy, temp0
+                                &' surface temperature: ', ix, iy, param1
                         end if
 
                         temp_sfc = temp_sfc + param1
