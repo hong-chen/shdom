@@ -41,7 +41,7 @@ module shd_rad
 
     use globals_const, only: RD_, PI_, DTOR_, &
                              FRAC12_, FRAC13_
-    use globals_cfg,   only: verbose_, accSolv_, &
+    use globals_cfg,   only: verbose_, accSolv_, doGridPtsPrp_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
                              is3Ddir1Ddif_, &
                              isPol_, isPol4_
@@ -433,21 +433,24 @@ subroutine shd_rad__computeDirect(&
             stop
         end if
         ! Get the eight corner extinction values
-        I1 = K + prp_obj_%Nz*(J - 1) + prp_obj_%Nz*prp_obj_%Ny*(I - 1)
-        I2 = K + prp_obj_%Nz*(J - 1) + prp_obj_%Nz*prp_obj_%Ny*(IP - 1)
+        I1 = K + prp_obj_%Nz*( J - 1) + prp_obj_%Nz*prp_obj_%Ny*(I - 1)
+        I2 = K + prp_obj_%Nz*( J - 1) + prp_obj_%Nz*prp_obj_%Ny*(IP - 1)
         I3 = K + prp_obj_%Nz*(JP - 1) + prp_obj_%Nz*prp_obj_%Ny*(I - 1)
         I4 = K + prp_obj_%Nz*(JP - 1) + prp_obj_%Nz*prp_obj_%Ny*(IP - 1)
 
         ! zgrid correction (to address layer averaging issue in z direction)
         !╭────────────────────────────────────────────────╮!
-        !E1 = extDir_Prp(I1)
-        !E2 = extDir_Prp(I2)
-        !E3 = extDir_Prp(I3)
-        !E4 = extDir_Prp(I4)
-        E1 = extDir_Prp(I1 + 1)
-        E2 = extDir_Prp(I2 + 1)
-        E3 = extDir_Prp(I3 + 1)
-        E4 = extDir_Prp(I4 + 1)
+        if (doGridPtsPrp_) then
+            E1 = extDir_Prp(I1)
+            E2 = extDir_Prp(I2)
+            E3 = extDir_Prp(I3)
+            E4 = extDir_Prp(I4)
+        else
+            E1 = extDir_Prp(I1 + 1)
+            E2 = extDir_Prp(I2 + 1)
+            E3 = extDir_Prp(I3 + 1)
+            E4 = extDir_Prp(I4 + 1)
+        end if
         E5 = extDir_Prp(I1 + 1)
         E6 = extDir_Prp(I2 + 1)
         E7 = extDir_Prp(I3 + 1)

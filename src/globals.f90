@@ -146,6 +146,9 @@ module globals_cfg
     ! Namelist input
     logical, save :: doNmlInp_ = .true.
 
+    ! Property at grid points
+    logical, save :: doGridPtsPrp_ = .false.
+
     ! Boundary conditions (BCFLAG)
     logical, save :: isOpenX_, isOpenYx_, isMpiX_, isMpiY_, isMpi_
 

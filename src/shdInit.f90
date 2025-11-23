@@ -40,7 +40,7 @@
 module shd_init
 
     use globals_const, only: RD_, PI_, OPI_
-    use globals_cfg,   only: verbose_, planetRadius_, &
+    use globals_cfg,   only: verbose_, planetRadius_, doGridPtsPrp_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
                              is1DX_, is1DYx_
 
@@ -542,13 +542,14 @@ subroutine shd_init__makeRad(&
     logical DELTAM
     real C0, C1
     real EXT0, ALB0, SCAT0, G0, GNDEMIS
-    real, allocatable :: optZ(:), ssaZ(:), asyZ(:)
+    real EXT1, SCAT1, G1
+    real, allocatable :: tauZ(:), ssaZ(:), asyZ(:)
     real, allocatable :: tempZ(:), FLUXES(:, :)
     character(len=1) :: SRCT
 
     NLAYER = NZ - 1
 
-    allocate(optZ(NZ), ssaZ(NZ), asyZ(NZ))
+    allocate(tauZ(NZ), ssaZ(NZ), asyZ(NZ))
     allocate(tempZ(NZ), FLUXES(3, NZ))
 
     !real, allocatable :: CH(:, :)
@@ -569,48 +570,87 @@ subroutine shd_init__makeRad(&
     iradI_Shdo(1) = 0
     do I = 1, Nxy
 
-        ! this is modified to address layer averaging issue
-        !╭────────────────────────────────────────────────╮!
-        do IZ = 1, NLAYER
+        if (doGridPtsPrp_) then
 
-            L = NZ - IZ
+            do IZ = 1, NLAYER
 
-            ZINDEX = IZ + 1
+                L = NZ - IZ
+                EXT0 = ext(IZ, I)
+                EXT1 = ext(IZ + 1, I)
+                SCAT0 = ssa(IZ,     I)*EXT0
+                SCAT1 = ssa(IZ + 1, I)*EXT1
+                tauZ(L) = (ZGRID(IZ + 1) - ZGRID(IZ))*(EXT0 + EXT1)/2.0
 
-            EXT0 = ext(ZINDEX, I)
-            ALB0 = ssa(ZINDEX, I)
-            SCAT0 = ALB0*EXT0
+                if ((EXT0 + EXT1) .gt. 0.0) then
+                    ssaZ(L) = (SCAT0 + SCAT1)/(EXT0 + EXT1)
+                else
+                    ssaZ(L) = 0.0
+                end if
 
-            optZ(L) = (ZGRID(IZ + 1) - ZGRID(IZ))*EXT0
+                if (prp_obj_%Npha .gt. 0) then
+                    J  = ipha(IZ, I)
+                    G0 = leg(1, 1, J)
+                    J  = ipha(IZ + 1, I)
+                    G1 = leg(1, 1, J)
+                else
+                    J = NZ*(I - 1) + IZ
+                    G0 = leg(1, 1, J)
+                    G1 = leg(1, 1, J + 1)
+                end if
+                if (SCAT0 + SCAT1 .gt. 0.0) then
+                    asyZ(L) = (SCAT0*G0 + SCAT1*G1)/(SCAT0 + SCAT1)
+                else
+                    asyZ(L) = 0.0
+                end if
+                tempZ(L + 1) = temp(IZ, I)
+            end do
 
-            if (EXT0 .gt. 0.0) then
-                ssaZ(L) = ALB0
-            else
-                ssaZ(L) = 0.0
-            end if
+        else
 
-            if (prp_obj_%Npha .gt. 0) then
-                J = ipha(ZINDEX, I)
-            else
-                J = NZ*(I - 1) + IZ
-            end if
-            G0 = leg(1, 1, J)
+            ! zgrid correction (to address layer averaging issue in z direction)
+            !╭────────────────────────────────────────────────╮!
+            do IZ = 1, NLAYER
 
-            if (SCAT0 .gt. 0.0) then
-                asyZ(L) = G0
-            else
-                asyZ(L) = 0.0
-            end if
-            tempZ(L + 1) = temp(IZ, I)
-        end do
-        !╰────────────────────────────────────────────────╯!
+                L = NZ - IZ
+
+                ZINDEX = IZ + 1
+
+                EXT0 = ext(ZINDEX, I)
+                ALB0 = ssa(ZINDEX, I)
+                SCAT0 = ALB0*EXT0
+
+                tauZ(L) = (ZGRID(IZ + 1) - ZGRID(IZ))*EXT0
+
+                if (EXT0 .gt. 0.0) then
+                    ssaZ(L) = ALB0
+                else
+                    ssaZ(L) = 0.0
+                end if
+
+                if (prp_obj_%Npha .gt. 0) then
+                    J = ipha(ZINDEX, I)
+                else
+                    J = NZ*(I - 1) + IZ
+                end if
+                G0 = leg(1, 1, J)
+
+                if (SCAT0 .gt. 0.0) then
+                    asyZ(L) = G0
+                else
+                    asyZ(L) = 0.0
+                end if
+                tempZ(L + 1) = temp(IZ, I)
+            end do
+            !╰────────────────────────────────────────────────╯!
+
+        end if
 
         tempZ(1) = temp(NZ, I)
 
         GNDEMIS = 1.0 - sfc_obj_%avgAlb
 
         ! Call the Eddington flux routine
-        call shd_init__makeFlux(NLAYER, optZ, ssaZ, asyZ,&
+        call shd_init__makeFlux(NLAYER, tauZ, ssaZ, asyZ,&
             &tempZ, DELTAM, SRCTYPE, SOLARFLUX, SOLARMU,&
             &sfc_obj_%avgTemp, GNDEMIS, SKYRAD, UNITS, WAVENO, WAVELEN,&
             &FLUXES)
@@ -629,14 +669,14 @@ subroutine shd_init__makeRad(&
         end do
     end do
 
-    deallocate(optZ, ssaZ, asyZ, tempZ, FLUXES)
+    deallocate(tauZ, ssaZ, asyZ, tempZ, FLUXES)
 
     return
 
 end subroutine shd_init__makeRad
 
 subroutine shd_init__makeFlux(&
-    &NLAYER, optZ, ssaZ, asyZ,&
+    &NLAYER, tauZ, ssaZ, asyZ,&
     &tempZ, DELTAM, SRCTYPE, SOLARFLUX, SOLARMU,&
     &GNDTEMP, GNDEMIS, SKYRAD, UNITS, WAVENO, WAVELEN,&
     &FLUXES)
@@ -662,7 +702,7 @@ subroutine shd_init__makeFlux(&
     !   Input:
     ! NLAYER         integer      Number of homogenous layers
     !                             (layers are specified from the top down)
-    ! optZ           real array   Optical thickness of layers
+    ! tauZ           real array   Optical thickness of layers
     ! ssaZ           real array   Single scattering albedos
     ! asyZ           real array   Asymmetry parameters
     ! tempZ          real array   Temperatures (K) at layer interfaces
@@ -694,7 +734,7 @@ subroutine shd_init__makeFlux(&
     integer NLAYER
     logical DELTAM
     real tempZ(*)
-    real optZ(*), ssaZ(*), asyZ(*)
+    real tauZ(*), ssaZ(*), asyZ(*)
     real GNDTEMP, GNDEMIS, SKYRAD, SOLARFLUX, SOLARMU
     real WAVENO(2), WAVELEN
     character(len=1) :: SRCTYPE, UNITS
@@ -724,7 +764,7 @@ subroutine shd_init__makeFlux(&
     TAU = 0.0
     I = 2
     do L = 1, NLAYER
-        DELTAU = optZ(L)
+        DELTAU = tauZ(L)
         if (DELTAU .lt. 0.0) stop 'Error [_makeFlux]: TAU<0.'
         ! Special case for zero optical depth
         if (DELTAU .eq. 0.0) then

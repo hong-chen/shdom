@@ -394,7 +394,7 @@ program shdom
     ! X, Y, Z grids
     rtmAll_obj%Nx = max(1, rtmAll_obj%Nx)
     rtmAll_obj%Ny = max(1, rtmAll_obj%Ny)
-    rtmAll_obj%Nz  = max(2, rtmAll_obj%Nz)
+    rtmAll_obj%Nz = max(2, rtmAll_obj%Nz)
 
     ! If single plane or column then force IP mode
     !   if              3D rtmAll_obj%flag_ip=0, bit representation '0000'
