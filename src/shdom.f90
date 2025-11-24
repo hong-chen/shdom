@@ -285,7 +285,8 @@ program shdom
     shdo_obj_%Nstokes = max(1, min(4, shdo_obj_%Nstokes))
     if (shdo_obj_%Nstokes .eq. 2) then
         shdo_obj_%Nstokes = 3
-        if (verbose_ .ge. 4) write (6, '(A)') 'Warning [shdom]: shdo_obj_%Nstokes cannot be 2, reset shdo_obj_%Nstokes to 3.'
+        if (verbose_ .ge. 4) &
+            write (6, '(A)') 'Warning [shdom]: shdo_obj_%Nstokes cannot be 2, reset shdo_obj_%Nstokes to 3.'
     end if
 
     ! prpAll_obj%NlegSet is the number of phase function elements used (1 or 6)
@@ -1402,8 +1403,10 @@ program shdom
     ADAPTGRIDFAC_OUT = float(rtm_obj_%Npts)/rtm_obj_%Npts0
     SHTERM_FAC_OUT   = float(shdo_obj_%Nsh)/(shdo_obj_%Nlm*rtm_obj_%Npts)
     CELL_POINT_OUT   = float(cell_obj_%Npts)/rtm_obj_%Npts
-    if (verbose_ .ge. 5) write (6, '(A)')'Message [shdom]: Actual MAX_TOTAL_MB, ADAPT_GRID_FACTOR, NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO'
-    if (verbose_ .ge. 5) write (6, '(26X,F9.2,6X,F7.3,14X,F5.3,15X,F5.3)') MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
+    if (verbose_ .ge. 5) &
+        write (6, '(A)')'Message [shdom]: Actual MAX_TOTAL_MB, ADAPT_GRID_FACTOR, NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO'
+    if (verbose_ .ge. 5) &
+        write (6, '(26X,F9.2,6X,F7.3,14X,F5.3,15X,F5.3)') MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
