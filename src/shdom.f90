@@ -1240,7 +1240,7 @@ program shdom
         if (isFluxOut) then
 
             ! unscale delta-m fluxes
-            if ((src_obj_%type.ne. 'T') .and. doDeltaM) then
+            if ((src_obj_%type .ne. 'T') .and. doDeltaM) then
 
                 allocate(fluxDirTmp(rtm_obj_%Npts))
 
