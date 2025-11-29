@@ -635,7 +635,7 @@ program shdom
     ! Read in the surface properties
     if (sfc_obj_%fname(1:4) .ne. 'NONE') then
 
-        allocate(brdf_Sfc_(sfc_obj_%maxNpar, sfc_obj_%maxNpts))
+        allocate(brdf_Sfc_(sfc_obj_%maxNpar, sfc_obj_%Ny+1, sfc_obj_%Nx+1))
 
         memUsed = memUsed + sfc_obj_%maxNpar * sfc_obj_%maxNpts
 

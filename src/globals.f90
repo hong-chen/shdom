@@ -464,7 +464,7 @@ module globals_obj
     ! SFC
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_sfc), save :: sfc_obj_
-    real(kind=R__), allocatable, save :: brdf_Sfc_(:, :)  ! (sfc_obj%maxNpar, sfc_obj%maxNpts)
+    real(kind=R__), allocatable, save :: brdf_Sfc_(:, :, :)  ! (sfc_obj%maxNpar, sfc_obj%Ny+1, sfc_obj%Nx+1)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 

@@ -99,7 +99,7 @@ subroutine shd_sfc__interpSfc(&
     integer, intent(in) :: NptsBot, BCPTR(*)
     character(len=1), intent(in) :: SRCTYPE, UNITS
 
-    real(kind=R__), intent(in)  :: brdf_Sfc(sfc_obj_%Npar, *)
+    real(kind=R__), intent(in)  :: brdf_Sfc(1:sfc_obj_%Npar, 1:sfc_obj_%Ny+1, 1:sfc_obj_%Nx+1)
     real(kind=R__), intent(out) :: brdf_Rtm(sfc_obj_%Npar, *)
 
     real :: WAVENO(2), WAVELEN
@@ -136,36 +136,24 @@ subroutine shd_sfc__interpSfc(&
 
         ix = max(1, min(sfc_obj_%Nx, int(rx) + 1))
         iy = max(1, min(sfc_obj_%Ny, int(ry) + 1))
-        u = max(0.0, min(1.0, rx - (ix - 1)))
-        v = max(0.0, min(1.0, ry - (iy - 1)))
-
-        i1 = iy + (sfc_obj_%Ny + 1)*(ix - 1)
-        if (doInterp) then
-            i2 = iy     + (sfc_obj_%Ny + 1)*(ix)
-            i3 = iy + 1 + (sfc_obj_%Ny + 1)*(ix - 1)
-            i4 = iy + 1 + (sfc_obj_%Ny + 1)*(ix)
-        end if
+        u  = max(0.0, min(1.0, rx - (ix - 1)))
+        v  = max(0.0, min(1.0, ry - (iy - 1)))
 
         do ipar = 1, sfc_obj_%Npar
             ! only interpolate BRDF parameter, not surface type ID (currently stored at 8)
             if (doInterp) then
                 ! bi-linear interpolation
                 !╭────────────────────────────────────────────────╮!
-                !brdf_Rtm(ipar, ibc) =&
-                !    &  (1.0 - u)*(1.0 - v)*brdf_Sfc(ipar, iy  , ix)&
-                !    &+ (1.0 - u)*       v *brdf_Sfc(ipar, iy  , ix+1)&
-                !    &+        u *(1.0 - v)*brdf_Sfc(ipar, iy+1, ix)&
-                !    &+        u *       v *brdf_Sfc(ipar, iy+1, ix+1)
                 brdf_Rtm(ipar, ibc) =&
-                    &  (1.0 - u)*(1.0 - v)*brdf_Sfc(ipar, i1)&
-                    &+ (1.0 - u)*       v *brdf_Sfc(ipar, i2)&
-                    &+        u *(1.0 - v)*brdf_Sfc(ipar, i3)&
-                    &+        u *       v *brdf_Sfc(ipar, i4)
+                    &  (1.0 - u)*(1.0 - v)*brdf_Sfc(ipar, iy,   ix)&
+                    &+ (1.0 - u)*       v *brdf_Sfc(ipar, iy+1, ix)&
+                    &+        u *(1.0 - v)*brdf_Sfc(ipar, iy,   ix+1)&
+                    &+        u *       v *brdf_Sfc(ipar, iy+1, ix+1)
                 !╰────────────────────────────────────────────────╯!
             else
                 ! nearest interpolation
                 !╭────────────────────────────────────────────────╮!
-                brdf_Rtm(ipar, ibc) = brdf_Sfc(ipar, i1)
+                brdf_Rtm(ipar, ibc) = brdf_Sfc(ipar, iy, ix)
                 !╰────────────────────────────────────────────────╯!
             end if
         end do

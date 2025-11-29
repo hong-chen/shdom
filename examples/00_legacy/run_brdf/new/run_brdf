@@ -31,7 +31,7 @@ set plotscattab_exe="${fdir_bin}/plotscattab"
 #   W  WaveFresnel   polarized ocean model with Cox-Munk Fresnel surface
 #   D  Diner et al   unpolarized modified RPV model and polarized Fresnel
 #                      reflection from randomly oriented microfacets
-set BRDFtype=L
+set BRDFtype=W
 set run=1   # run number (for different BRDF parameters)
 
 #  Set the wavelength (microns), which controls the Rayleigh optical depth
