@@ -1306,7 +1306,6 @@ subroutine shd_io__readSfc(sfc_obj, brdf_Sfc)
     real :: temp_sfc, alb_sfc
 
     integer :: Ntemp, Nalb, i, j, ix, iy
-    real(kind=R__) :: param(8)
 
     character(len=charMaxLen_) :: fnameBin
     character(len=charMaxLen_) :: lineTmp
