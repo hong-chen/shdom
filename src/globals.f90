@@ -453,11 +453,11 @@ module globals_obj
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_prp), save :: prp_obj_
 
-    real(kind=R__),  allocatable, save :: temp_Prp_(:),  &   ! (prp_obj%maxNpts)
-                                           ext_Prp_(:),  &   ! (prp_obj%maxNpts)
-                                           ssa_Prp_(:),  &   ! (prp_obj%maxNpts)
+    real(kind=R__),  allocatable, save :: temp_Prp_(:, :, :),  &   ! (prp_obj%Nz, prp_obj%Ny, prp_obj%Nx)
+                                           ext_Prp_(:, :, :),  &   ! (prp_obj%Nz, prp_obj%Ny, prp_obj%Nx)
+                                           ssa_Prp_(:, :, :),  &   ! (prp_obj%Nz, prp_obj%Ny, prp_obj%Nx)
                                            leg_Prp_(:, :, :) ! (prp_obj%NlegSet, prp_obj%maxNleg, prp_obj%Npha)
-    integer(kind=2), allocatable, save :: ipha_Prp_(:)       ! (prp_obj%maxNpts)
+    integer(kind=2), allocatable, save :: ipha_Prp_(:, :, :) ! (prp_obj%Nz, prp_obj%Ny, prp_obj%Nx)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 

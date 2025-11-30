@@ -766,12 +766,12 @@ subroutine shd_io__readPrp(isDeltaM, &
     logical, intent(in) :: isDeltaM
 
     type(shd_type_prp), intent(inout) :: prp_obj
-    real(kind=R__), intent(out) :: temp_Prp(prp_obj%maxNpts), &
-                                   ext_Prp(prp_obj%maxNpts), &
-                                   ssa_Prp(prp_obj%maxNpts), &
-                                   leg_Prp(prp_obj%NlegSet, &
+    real(kind=R__),  intent(out) :: temp_Prp(prp_obj%Nz, prp_obj%Ny, prp_obj%Nx), &
+                                     ext_Prp(prp_obj%Nz, prp_obj%Ny, prp_obj%Nx), &
+                                     ssa_Prp(prp_obj%Nz, prp_obj%Ny, prp_obj%Nx), &
+                                     leg_Prp(prp_obj%NlegSet, &
                                            0:prp_obj%maxNleg, *)
-    integer(kind=2), intent(out) :: ipha_Prp(prp_obj%maxNpts)
+    integer(kind=2), intent(out) :: ipha_Prp(prp_obj%Nz, prp_obj%Ny, prp_obj%Nx)
 
     !integer i, ix, iy, iz, j, js, k, kl, l, il, Nleg, ipha0, N
     integer i, ix, iy, iz, j, js, k, l, Nleg, ipha0, N
@@ -829,7 +829,7 @@ subroutine shd_io__readPrp(isDeltaM, &
             read (1, *)
             read (1, *) prp_obj%Nx, prp_obj%Ny, prp_obj%Nz
             read (1, *) prp_obj%dx, prp_obj%dy, (prp_obj%z(k), k=1, prp_obj%Nz)
-            read (1, *) (temp_Prp(iz), iz=1, prp_obj%Nz)
+            read (1, *) (temp_Prp(iz, 1, 1), iz=1, prp_obj%Nz)
 
             !read (1, *) ssa0, Nleg, (leg_Prp(l + 1), l=1, min(Nleg, prp_obj%Nleg)),&
             !    &(chi0, l=prp_obj%Nleg + 1, Nleg)
@@ -856,11 +856,10 @@ subroutine shd_io__readPrp(isDeltaM, &
                 if (ix .ge. 1 .and. ix .le. prp_obj%Nx .and.&
                    &iy .ge. 1 .and. iy .le. prp_obj%Ny .and.&
                    &iz .ge. 1 .and. iz .le. prp_obj%Nz) then
-                    k = iz + prp_obj%Nz*(iy - 1) + prp_obj%Nz*prp_obj%Ny*(ix - 1)
-                    temp_Prp(k) = temp_Prp(iz)
-                    ext_Prp(k)  = ext0
-                    ssa_Prp(k)  = ssa0
-                    ipha_Prp(k) = 1
+                    temp_Prp(iz, iy, ix) = temp_Prp(iz, 1, 1)
+                    ext_Prp( iz, iy, ix) = ext0
+                    ssa_Prp( iz, iy, ix) = ssa0
+                    ipha_Prp(iz, iy, ix) = 1
                 end if
             end do
 
@@ -964,13 +963,13 @@ subroutine shd_io__readPrp(isDeltaM, &
                     &ACCESS='STREAM', FORM='UNFORMATTED')
 
                 ! temp_Prp: real(4)
-                read (88) (((temp_Prp(iz+prp_obj%Nz*(iy-1)+prp_obj%Nz*prp_obj%Ny*(ix-1)), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
+                read (88) (((temp_Prp(iz, iy, ix), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
                 ! ext_Prp: real(4)
-                read (88) ((( ext_Prp(iz+prp_obj%Nz*(iy-1)+prp_obj%Nz*prp_obj%Ny*(ix-1)), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
+                read (88) ((( ext_Prp(iz, iy, ix), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
                 ! ssa_Prp: real(4)
-                read (88) ((( ssa_Prp(iz+prp_obj%Nz*(iy-1)+prp_obj%Nz*prp_obj%Ny*(ix-1)), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
+                read (88) ((( ssa_Prp(iz, iy, ix), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
                 ! ipha_Prp: integer(2)
-                read (88) (((ipha_Prp(iz+prp_obj%Nz*(iy-1)+prp_obj%Nz*prp_obj%Ny*(ix-1)), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
+                read (88) (((ipha_Prp(iz, iy, ix), iz=1,Nzz), iy=1,Nyy), ix=1,Nxx)
 
                 close (88)
 
@@ -985,11 +984,10 @@ subroutine shd_io__readPrp(isDeltaM, &
                     if (ix .ge. 1 .and. ix .le. prp_obj%Nx .and.&
                        &iy .ge. 1 .and. iy .le. prp_obj%Ny .and.&
                        &iz .ge. 1 .and. iz .le. prp_obj%Nz) then
-                        k = iz + prp_obj%Nz*(iy - 1) + prp_obj%Nz*prp_obj%Ny*(ix - 1)
-                        temp_Prp(k) = temp0
-                        ext_Prp(k)  = ext0
-                        ssa_Prp(k)  = ssa0
-                        ipha_Prp(k) = ipha0
+                        temp_Prp(iz, iy, ix) = temp0
+                        ext_Prp( iz, iy, ix) = ext0
+                        ssa_Prp( iz, iy, ix) = ssa0
+                        ipha_Prp(iz, iy, ix) = ipha0
                     end if
                 end do
                 !╰────────────────────────────────────────────────╯!
@@ -1044,9 +1042,12 @@ subroutine shd_io__readPrp(isDeltaM, &
                     !read (1, *, end=290) ix, iy, iz, temp_Prp(k), ext_Prp(k),&
                     !    &ssa_Prp(k), Nleg, (leg_Prp(l + kl), l=1, min(Nleg, prp_obj%Nleg)),&
                     !    &(chi0, l=prp_obj%Nleg + 1, Nleg)
-                    read (1, *, end=290) ix, iy, iz, temp_Prp(k), ext_Prp(k),&
-                        &ssa_Prp(k), Nleg, (leg_Prp(1, l, k), l=1, min(Nleg, prp_obj%Nleg)),&
-                        &(chi0, l=prp_obj%Nleg + 1, Nleg)
+                    read (1, *, end=290) ix, iy, iz, &
+                        temp_Prp(iz, iy, ix), &
+                         ext_Prp(iz, iy, ix), &
+                         ssa_Prp(iz, iy, ix), &
+                        Nleg, (leg_Prp(1, l, k), l=1, min(Nleg, prp_obj%Nleg)), &
+                        (chi0, l=prp_obj%Nleg + 1, Nleg)
 
                     !prp_obj%maxAsym = max(prp_obj%maxAsym, leg_Prp(kl + 1 + 1)/3.0)
                     !leg_Prp(1 + kl) = 1.0
