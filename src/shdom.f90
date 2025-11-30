@@ -167,11 +167,11 @@ program shdom
     ! prpAll_obj
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type(shd_type_prp) :: prpAll_obj
-    real(kind=R__),  allocatable :: temp_PrpAll(:), &
-                                     ext_PrpAll(:), &
-                                     ssa_PrpAll(:), &
+    real(kind=R__),  allocatable :: temp_PrpAll(:, :, :), &
+                                     ext_PrpAll(:, :, :), &
+                                     ssa_PrpAll(:, :, :), &
                                      leg_PrpAll(:, :, :)
-    integer(kind=2), allocatable :: ipha_PrpAll(:)
+    integer(kind=2), allocatable :: ipha_PrpAll(:, :, :)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 
@@ -565,13 +565,13 @@ program shdom
     allocate(prp_obj_%z(prp_obj_%Nz))
     prp_obj_%isAllocated = .true.
 
-    allocate(temp_Prp_(prp_obj_%maxNpts),  &
-              ext_Prp_(prp_obj_%maxNpts),  &
-              ssa_Prp_(prp_obj_%maxNpts),  &
+    allocate(temp_Prp_(prp_obj_%Nz, prp_obj_%Ny, prp_obj_%Nx),  &
+              ext_Prp_(prp_obj_%Nz, prp_obj_%Ny, prp_obj_%Nx),  &
+              ssa_Prp_(prp_obj_%Nz, prp_obj_%Ny, prp_obj_%Nx),  &
               leg_Prp_(prp_obj_%NlegSet, &
                      0:prp_obj_%maxNleg, &
                        prp_obj_%maxNptsLeg/(prp_obj_%maxNleg+1)/prp_obj_%NlegSet), &
-             ipha_Prp_(prp_obj_%maxNpts))
+             ipha_Prp_(prp_obj_%Nz, prp_obj_%Ny, prp_obj_%Nx))
 
     ! note: in addition to xxx_Prp_, here memUsed accounts for extDir_Prp
     !       that will be used in shd_rad__computeDirect (shdRad.f90)
@@ -586,13 +586,13 @@ program shdom
             allocate(prpAll_obj%z(prpAll_obj%Nz))
             prpAll_obj%isAllocated = .true.
 
-            allocate(temp_PrpAll(prpAll_obj%maxNpts),  &
-                      ext_PrpAll(prpAll_obj%maxNpts),  &
-                      ssa_PrpAll(prpAll_obj%maxNpts),  &
+            allocate(temp_PrpAll(prpAll_obj%Nz, prpAll_obj%Ny, prpAll_obj%Nx),  &
+                      ext_PrpAll(prpAll_obj%Nz, prpAll_obj%Ny, prpAll_obj%Nx),  &
+                      ssa_PrpAll(prpAll_obj%Nz, prpAll_obj%Ny, prpAll_obj%Nx),  &
                       leg_PrpAll(prpAll_obj%NlegSet,   &
                                0:prpAll_obj%maxNleg, &
                                  prpAll_obj%maxNptsLeg/(prpAll_obj%maxNleg+1)/prpAll_obj%NlegSet), &
-                     ipha_PrpAll(prpAll_obj%maxNpts))
+                     ipha_PrpAll(prpAll_obj%Nz, prpAll_obj%Ny, prpAll_obj%Nx))
 
             call shd_io__readPrp(doDeltaM, &
                                  prpAll_obj, temp_PrpAll, ext_PrpAll, ssa_PrpAll, leg_PrpAll, ipha_PrpAll)
@@ -641,9 +641,8 @@ program shdom
     ! Read in the surface properties
     if (sfc_obj_%fname(1:4) .ne. 'NONE') then
 
-        print *, sfc_obj_%maxNpts
-        print *, sfc_obj_%maxNpar
-        allocate(brdf_Sfc_(sfc_obj_%maxNpar, sfc_obj_%maxNpts))
+        allocate(brdf_Sfc_(sfc_obj_%maxNpar, sfc_obj_%Ny+1, sfc_obj_%Nx+1))
+
         memUsed = memUsed + sfc_obj_%maxNpar * sfc_obj_%maxNpts
 
         if (isMpi_) then

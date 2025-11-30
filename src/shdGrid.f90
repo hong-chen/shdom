@@ -1128,15 +1128,13 @@ subroutine shd_grid__InterpTriLinGridPrp(&
     integer(kind=2), intent(out) :: ipha0
     real(kind=R__),  intent(out) :: temp0, ext0, ssa0, leg0(prp_obj_%NlegSet, 0:prp_obj_%Nleg, *)
 
-    integer(kind=I__) :: IX, IXP, IY, IYP, IZ, L, IL, IM, IU, J
+    integer(kind=I__) :: IX, IXP, IY, IYP, IZ, IZP, L, IL, IM, IU, J
     integer(kind=I__) :: I1, I2, I3, I4, I5, I6, I7, I8, I
 
     real(kind=RD_) :: U, V, W, F1, F2, F3, F4, F5, F6, F7, F8, F
     real(kind=RD_) :: scat1, scat2, scat3, scat4, scat5, scat6, scat7, scat8
     real(kind=RD_) :: scat0, minScat, maxScat
     real(kind=RD_), save :: kabs0, minExt
-
-    integer :: iSelect
 
     if (doInit) then
        ! If there are tabulated phase functions, then transfer them
@@ -1166,8 +1164,10 @@ subroutine shd_grid__InterpTriLinGridPrp(&
         end if
     end do
     IZ = max(IL, 1)
+    IZP = IZ + 1
     W = dble(z0 - prp_obj_%z(IZ))/(prp_obj_%z(IZ + 1) - prp_obj_%z(IZ))
     W = max(min(W, 1.0d0), 0.0d0)
+
     IX = int((x0 - prp_obj_%xStart)/prp_obj_%dx) + 1
     if (abs(x0 - prp_obj_%xStart - prp_obj_%Nx*prp_obj_%dx) .lt. 0.01*prp_obj_%dx) IX = prp_obj_%Nx
     if (IX .lt. 1 .or. IX .gt. prp_obj_%Nx) then
@@ -1179,6 +1179,7 @@ subroutine shd_grid__InterpTriLinGridPrp(&
     U = max(min(U, 1.0d0), 0.0d0)
     if (U .lt. 1.0d-5) U = 0.0d0
     if (U .gt. 1.0d0 - 1.0d-5) U = 1.0d0
+
     IY = int((y0 - prp_obj_%yStart)/prp_obj_%dy) + 1
     if (abs(y0 - prp_obj_%yStart - prp_obj_%Ny*prp_obj_%dy) .lt. 0.01*prp_obj_%dy) IY = prp_obj_%Ny
     if (IY .lt. 1 .or. IY .gt. prp_obj_%Ny) then
@@ -1199,78 +1200,33 @@ subroutine shd_grid__InterpTriLinGridPrp(&
     F6 =          U *(1.0d0 - V)*         W
     F7 = (1.0d0 - U)*         V *         W
     F8 =          U *         V *         W
-    I1 = IZ + prp_obj_%Nz*( IY - 1) + prp_obj_%Nz*prp_obj_%Ny*( IX - 1)
-    I2 = IZ + prp_obj_%Nz*( IY - 1) + prp_obj_%Nz*prp_obj_%Ny*(IXP - 1)
-    I3 = IZ + prp_obj_%Nz*(IYP - 1) + prp_obj_%Nz*prp_obj_%Ny*( IX - 1)
-    I4 = IZ + prp_obj_%Nz*(IYP - 1) + prp_obj_%Nz*prp_obj_%Ny*(IXP - 1)
-
-    I5 = I1 + 1
-    I6 = I2 + 1
-    I7 = I3 + 1
-    I8 = I4 + 1
 
     if (.not. doGridPtsPrp_) then
         ! zgrid correction (to address layer averaging issue in z direction)
         !╭────────────────────────────────────────────────╮!
-        I1 = I5
-        I2 = I6
-        I3 = I7
-        I4 = I8
+        IZ = IZP
         !╰────────────────────────────────────────────────╯!
     end if
 
-    scat1 = F1*ext_Prp_(I1)*ssa_Prp_(I1)
-    scat2 = F2*ext_Prp_(I2)*ssa_Prp_(I2)
-    scat3 = F3*ext_Prp_(I3)*ssa_Prp_(I3)
-    scat4 = F4*ext_Prp_(I4)*ssa_Prp_(I4)
-    scat5 = F5*ext_Prp_(I5)*ssa_Prp_(I5)
-    scat6 = F6*ext_Prp_(I6)*ssa_Prp_(I6)
-    scat7 = F7*ext_Prp_(I7)*ssa_Prp_(I7)
-    scat8 = F8*ext_Prp_(I8)*ssa_Prp_(I8)
+    scat1 = F1*ext_Prp_(IZ,  IY,  IX )*ssa_Prp_(IZ,  IY,  IX)
+    scat2 = F2*ext_Prp_(IZ,  IY,  IXP)*ssa_Prp_(IZ,  IY,  IXP)
+    scat3 = F3*ext_Prp_(IZ,  IYP, IX )*ssa_Prp_(IZ,  IYP, IX)
+    scat4 = F4*ext_Prp_(IZ,  IYP, IXP)*ssa_Prp_(IZ,  IYP, IXP)
+    scat5 = F5*ext_Prp_(IZP, IY,  IX )*ssa_Prp_(IZP, IY,  IX)
+    scat6 = F6*ext_Prp_(IZP, IY,  IXP)*ssa_Prp_(IZP, IY,  IXP)
+    scat7 = F7*ext_Prp_(IZP, IYP, IX )*ssa_Prp_(IZP, IYP, IX)
+    scat8 = F8*ext_Prp_(IZP, IYP, IXP)*ssa_Prp_(IZP, IYP, IXP)
 
-    maxScat = -1.0
-    if (scat1 .gt. maxScat .or. abs(F1 - 1) .lt. 0.001) then
-        maxScat = scat1
-        iSelect = I1
-    end if
-    if (scat2 .gt. maxScat .or. abs(F2 - 1) .lt. 0.001) then
-        maxScat = scat2
-        iSelect = I2
-    end if
-    if (scat3 .gt. maxScat .or. abs(F3 - 1) .lt. 0.001) then
-        maxScat = scat3
-        iSelect = I3
-    end if
-    if (scat4 .gt. maxScat .or. abs(F4 - 1) .lt. 0.001) then
-        maxScat = scat4
-        iSelect = I4
-    end if
-    if (scat5 .gt. maxScat .or. abs(F5 - 1) .lt. 0.001) then
-        maxScat = scat5
-        iSelect = I5
-    end if
-    if (scat6 .gt. maxScat .or. abs(F6 - 1) .lt. 0.001) then
-        maxScat = scat6
-        iSelect = I6
-    end if
-    if (scat7 .gt. maxScat .or. abs(F7 - 1) .lt. 0.001) then
-        maxScat = scat7
-        iSelect = I7
-    end if
-    if (scat8 .gt. maxScat .or. abs(F8 - 1) .lt. 0.001) then
-        maxScat = scat8
-        iSelect = I8
-    end if
+    temp0 = F1*temp_Prp_(IZ,  IY,  IX) + F2*temp_Prp_(IZ,  IY,  IXP) + &
+            F3*temp_Prp_(IZ,  IYP, IX) + F4*temp_Prp_(IZ,  IYP, IXP) + &
+            F5*temp_Prp_(IZP, IY,  IX) + F6*temp_Prp_(IZP, IY,  IXP) + &
+            F7*temp_Prp_(IZP, IYP, IX) + F8*temp_Prp_(IZP, IYP, IXP)
 
-    !temp0 = temp_Prp_(iSelect)
-    !ext0 = ext_Prp_(iSelect)
-    !scat0 = ext_Prp_(iSelect)*ssa_Prp_(iSelect)
+    ext0 = F1*ext_Prp_(IZ,  IY,  IX) + F2*ext_Prp_(IZ,  IY,  IXP) + &
+           F3*ext_Prp_(IZ,  IYP, IX) + F4*ext_Prp_(IZ,  IYP, IXP) + &
+           F5*ext_Prp_(IZP, IY,  IX) + F6*ext_Prp_(IZP, IY,  IXP) + &
+           F7*ext_Prp_(IZP, IYP, IX) + F8*ext_Prp_(IZP, IYP, IXP)
 
-    temp0 = F1*temp_Prp_(I1) + F2*temp_Prp_(I2) + F3*temp_Prp_(I3) + F4*temp_Prp_(I4) &
-          + F5*temp_Prp_(I5) + F6*temp_Prp_(I6) + F7*temp_Prp_(I7) + F8*temp_Prp_(I8)
-    ext0 = F1*ext_Prp_(I1) + F2*ext_Prp_(I2) + F3*ext_Prp_(I3) &
-         + F4*ext_Prp_(I4) + F5*ext_Prp_(I5) + F6*ext_Prp_(I6) &
-         + F7*ext_Prp_(I7) + F8*ext_Prp_(I8)
     scat0 = scat1 + scat2 + scat3 + scat4 + scat5 + scat6 + scat7 + scat8
 
     if (ext0 .gt. minExt) then
@@ -1280,8 +1236,63 @@ subroutine shd_grid__InterpTriLinGridPrp(&
     end if
 
     if (prp_obj_%Npha .gt. 0) then
-        ipha0 = ipha_Prp_(iSelect)
+
+        maxScat = -1.0
+        if (scat1 .gt. maxScat .or. abs(F1 - 1) .lt. 0.001) then
+            maxScat = scat1
+            ipha0 = ipha_Prp_(IZ,  IY, IX)
+        end if
+        if (scat2 .gt. maxScat .or. abs(F2 - 1) .lt. 0.001) then
+            maxScat = scat2
+            ipha0 = ipha_Prp_(IZ,  IY, IXP)
+        end if
+        if (scat3 .gt. maxScat .or. abs(F3 - 1) .lt. 0.001) then
+            maxScat = scat3
+            ipha0 = ipha_Prp_(IZ,  IYP, IX)
+        end if
+        if (scat4 .gt. maxScat .or. abs(F4 - 1) .lt. 0.001) then
+            maxScat = scat4
+            ipha0 = ipha_Prp_(IZ,  IYP, IXP)
+        end if
+        if (scat5 .gt. maxScat .or. abs(F5 - 1) .lt. 0.001) then
+            maxScat = scat5
+            ipha0 = ipha_Prp_(IZP, IY, IX)
+        end if
+        if (scat6 .gt. maxScat .or. abs(F6 - 1) .lt. 0.001) then
+            maxScat = scat6
+            ipha0 = ipha_Prp_(IZP, IY, IXP)
+        end if
+        if (scat7 .gt. maxScat .or. abs(F7 - 1) .lt. 0.001) then
+            maxScat = scat7
+            ipha0 = ipha_Prp_(IZP, IYP, IX)
+        end if
+        if (scat8 .gt. maxScat .or. abs(F8 - 1) .lt. 0.001) then
+            maxScat = scat8
+            ipha0 = ipha_Prp_(IZP, IYP, IXP)
+        end if
+
     else
+
+        I1 = IZ + prp_obj_%Nz*( IY - 1) + prp_obj_%Nz*prp_obj_%Ny*( IX - 1)
+        I2 = IZ + prp_obj_%Nz*( IY - 1) + prp_obj_%Nz*prp_obj_%Ny*(IXP - 1)
+        I3 = IZ + prp_obj_%Nz*(IYP - 1) + prp_obj_%Nz*prp_obj_%Ny*( IX - 1)
+        I4 = IZ + prp_obj_%Nz*(IYP - 1) + prp_obj_%Nz*prp_obj_%Ny*(IXP - 1)
+
+        I5 = I1 + 1
+        I6 = I2 + 1
+        I7 = I3 + 1
+        I8 = I4 + 1
+
+        if (.not. doGridPtsPrp_) then
+            ! zgrid correction (to address layer averaging issue in z direction)
+            !╭────────────────────────────────────────────────╮!
+            I1 = I5
+            I2 = I6
+            I3 = I7
+            I4 = I8
+            !╰────────────────────────────────────────────────╯!
+        end if
+
         ! Standard property file format: unpolarized
         leg0(1, 0, 1) = 1.0
         do L = 1, prp_obj_%Nleg
@@ -1308,6 +1319,7 @@ subroutine shd_grid__InterpTriLinGridPrp(&
             end if
             leg0(1, L, 1) = leg0(1, L, 1)/(2*L + 1)
         end do
+
     end if
 
     ! Trilinearly interpolate the temperature, extinction, scattering

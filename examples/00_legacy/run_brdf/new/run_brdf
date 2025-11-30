@@ -1,11 +1,11 @@
 #!/bin/csh
-#   Script that runs SHDOM for solar radiative transfer in independent 
-# pixel mode for a 2D medium for demonstrating the various BRDF surface 
-# reflection models.  The surface properties may change in the X direction.  
-# The atmosphere has only molecular Rayleigh scattering (up to 30 km), and 
+#   Script that runs SHDOM for solar radiative transfer in independent
+# pixel mode for a 2D medium for demonstrating the various BRDF surface
+# reflection models.  The surface properties may change in the X direction.
+# The atmosphere has only molecular Rayleigh scattering (up to 30 km), and
 # the optical depth is controlled by the wavelength.
 # Outputs hemispheric flux and radiance at a number of angles.
-# The SHDOM radiance files from this script may be plotted with the 
+# The SHDOM radiance files from this script may be plotted with the
 # plot_brdf.pro IDL script.
 
 #  Select sections of script to run
@@ -31,7 +31,7 @@ set plotscattab_exe="${fdir_bin}/plotscattab"
 #   W  WaveFresnel   polarized ocean model with Cox-Munk Fresnel surface
 #   D  Diner et al   unpolarized modified RPV model and polarized Fresnel
 #                      reflection from randomly oriented microfacets
-set BRDFtype=L
+set BRDFtype=W
 set run=1   # run number (for different BRDF parameters)
 
 #  Set the wavelength (microns), which controls the Rayleigh optical depth
@@ -110,10 +110,6 @@ set Ztop=30
 
 
 # ----------------------------------  Start of Processing
-# Compile the "put" command
-if (!(-e ${put_exe}))  cc -o ${put_exe}  put.c
-
-
 if ($MakePrp) then
    #  Make the SHDOM atmosphere property file with only molecular Rayleigh
    # scattering using propgen.  The atmosphere is close to a US standard

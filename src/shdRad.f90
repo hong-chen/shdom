@@ -160,7 +160,7 @@ subroutine shd_rad__computeDirect(&
     real DIRFLUX, UNIFZLEV, XO, YO, ZO, DIRPATH
 
     integer IX, IY, IZ, JZ, IL, IM, IU
-    integer I, J, K, L, IPH, IP, JP, I1, I2, I3, I4
+    integer I, J, K, L, IPH, IP, JP
     integer IPDIRECT, DI, DJ, DK
     logical CONSTX, CONSTY, HITBOUNDARY
     real(RD_) :: ext0, ssa0, F
@@ -177,7 +177,7 @@ subroutine shd_rad__computeDirect(&
     real(RD_) :: B1, B2, B3, B4, B5, B6, B7, B8, C1, C2, C3, C4, C5, C6, C7, C8
     real(RD_) :: UV, UMV, UVM, UMVM, UW, UMW, UWM, UMWM, VW, VMW, VWM, VMWM
     real(RD_) :: VWU, VWUM, UWV, UWVM, UVW, UVWM
-    real, save, allocatable :: kabs(:), minExt(:), maxExt(:), extDir_Prp(:)
+    real, save, allocatable :: kabs(:), minExt(:), maxExt(:), extDir_Prp(:, :, :)
 
     save CX, CY, CZ, CXINV, CYINV, CZINV, DI, DJ, DK, IPDIRECT
     save DELXD, DELYD, XDOMAIN, YDOMAIN, EPSS, EPSZ, UNIFORMZLEV
@@ -193,7 +193,7 @@ subroutine shd_rad__computeDirect(&
             allocate(kabs(prp_obj_%Nz), &
                    minExt(prp_obj_%Nz), &
                    maxExt(prp_obj_%Nz), &
-                   extDir_Prp(prp_obj_%maxNpts))
+                   extDir_Prp(prp_obj_%Nz, prp_obj_%Ny, prp_obj_%Nx))
         end if
         ! Get the gaseous extinction at the property grid levels
         do IZ = 1, prp_obj_%Nz
@@ -223,8 +223,8 @@ subroutine shd_rad__computeDirect(&
             do IY = 1, prp_obj_%Ny
                 do IZ = 1, prp_obj_%Nz
                     IP = IP + 1
-                    ext0 = ext_Prp_(IP)
-                    ssa0 = ssa_Prp_(IP)
+                    ext0 = ext_Prp_(IZ, IY, IX)
+                    ssa0 = ssa_Prp_(IZ, IY, IX)
                     ! Add in the gaseous absorption to extinction
                     if (kabs(IZ) .gt. 0.0) then
                         ssa0 = ssa0*ext0/(ext0 + kabs(IZ))
@@ -233,7 +233,7 @@ subroutine shd_rad__computeDirect(&
                     ! Do the Delta-M scaling if needed
                     if (DELTAM) then
                         if (prp_obj_%Npha .gt. 0) then
-                            IPH = ipha_Prp_(IP)
+                            IPH = ipha_Prp_(IZ, IY, IX)
                         else
                             IPH = IP
                         end if
@@ -242,7 +242,7 @@ subroutine shd_rad__computeDirect(&
                         F = leg_Prp_(1, L, IPH)/(2*L + 1)
                         ext0 = (1.0 - ssa0*F)*ext0
                     end if
-                    extDir_Prp(IP) = ext0
+                    extDir_Prp(IZ, IY, IX) = ext0
                 end do
             end do
         end do
@@ -310,8 +310,8 @@ subroutine shd_rad__computeDirect(&
             do IY = 1, prp_obj_%Ny
                 do IZ = 1, prp_obj_%Nz
                     IP = IP + 1
-                    minExt(IZ) = min(ext_Prp_(IP), minExt(IZ))
-                    maxExt(IZ) = max(ext_Prp_(IP), maxExt(IZ))
+                    minExt(IZ) = min(ext_Prp_(IZ, IY, IX), minExt(IZ))
+                    maxExt(IZ) = max(ext_Prp_(IZ, IY, IX), maxExt(IZ))
                 end do
             end do
         end do
@@ -389,6 +389,7 @@ subroutine shd_rad__computeDirect(&
             HITBOUNDARY = .true.
         end if
     end if
+
     if (isMpiY_) then
         if (CY .gt. 0.0 .and. abs(Y - YDOMAIN) .lt. 0.001*DELYD) then
             SIDE = 4
@@ -403,6 +404,7 @@ subroutine shd_rad__computeDirect(&
     ! Grid cell loop begin
     PATH = DIRPATH
     do while (.not. HITBOUNDARY .and. abs(ZE - prp_obj_%z(prp_obj_%Nz)) .gt. EPSZ)
+
         IP = I + 1
         if (I .eq. prp_obj_%Nx) then
             if (isOpenX_ .or. isMpiX_) then
@@ -411,6 +413,7 @@ subroutine shd_rad__computeDirect(&
                 IP = 1
             end if
         end if
+
         JP = J + 1
         if (J .eq. prp_obj_%Ny) then
             if (isOpenYx_ .or. isMpiY_) then
@@ -419,6 +422,7 @@ subroutine shd_rad__computeDirect(&
                 JP = 1
             end if
         end if
+
         X0 = DELXD*(I - 1)
         X1 = X0 + DELXD
         Y0 = DELYD*(J - 1)
@@ -432,29 +436,24 @@ subroutine shd_rad__computeDirect(&
             write (6, '(1(2X,3F9.5))') X, Y, Z
             stop
         end if
-        ! Get the eight corner extinction values
-        I1 = K + prp_obj_%Nz*( J - 1) + prp_obj_%Nz*prp_obj_%Ny*(I - 1)
-        I2 = K + prp_obj_%Nz*( J - 1) + prp_obj_%Nz*prp_obj_%Ny*(IP - 1)
-        I3 = K + prp_obj_%Nz*(JP - 1) + prp_obj_%Nz*prp_obj_%Ny*(I - 1)
-        I4 = K + prp_obj_%Nz*(JP - 1) + prp_obj_%Nz*prp_obj_%Ny*(IP - 1)
 
         ! zgrid correction (to address layer averaging issue in z direction)
         !╭────────────────────────────────────────────────╮!
         if (doGridPtsPrp_) then
-            E1 = extDir_Prp(I1)
-            E2 = extDir_Prp(I2)
-            E3 = extDir_Prp(I3)
-            E4 = extDir_Prp(I4)
+            E1 = extDir_Prp(K,  J, I)
+            E2 = extDir_Prp(K,  J, IP)
+            E3 = extDir_Prp(K, JP, I)
+            E4 = extDir_Prp(K, JP, IP)
         else
-            E1 = extDir_Prp(I1 + 1)
-            E2 = extDir_Prp(I2 + 1)
-            E3 = extDir_Prp(I3 + 1)
-            E4 = extDir_Prp(I4 + 1)
+            E1 = extDir_Prp(K+1,  J, I)
+            E2 = extDir_Prp(K+1,  J, IP)
+            E3 = extDir_Prp(K+1, JP, I)
+            E4 = extDir_Prp(K+1, JP, IP)
         end if
-        E5 = extDir_Prp(I1 + 1)
-        E6 = extDir_Prp(I2 + 1)
-        E7 = extDir_Prp(I3 + 1)
-        E8 = extDir_Prp(I4 + 1)
+        E5 = extDir_Prp(K+1,  J, I)
+        E6 = extDir_Prp(K+1,  J, IP)
+        E7 = extDir_Prp(K+1, JP, I)
+        E8 = extDir_Prp(K+1, JP, IP)
         !╰────────────────────────────────────────────────╯!
 
         ! Compute the distance to the next grid plane in  X, Y, and Z
@@ -585,49 +584,52 @@ subroutine shd_rad__computeDirect(&
         DU = U1 - U0
         DV = V1 - V0
         DW = W1 - W0
-        UV = U0*V0
-        UMV = U0M*V0
-        UVM = U0*V0M
+        UV   = U0 *V0
+        UMV  = U0M*V0
+        UVM  = U0 *V0M
         UMVM = U0M*V0M
-        UW = U0*W0
-        UMW = U0M*W0
-        UWM = U0*W0M
+        UW   = U0 *W0
+        UMW  = U0M*W0
+        UWM  = U0 *W0M
         UMWM = U0M*W0M
-        VW = V0*W0
-        VMW = V0M*W0
-        VWM = V0*W0M
+        VW   = V0 *W0
+        VMW  = V0M*W0
+        VWM  = V0 *W0M
         VMWM = V0M*W0M
         A =    (E1*U0M + E2*U0)*VMWM&
             &+ (E3*U0M + E4*U0)*VWM&
             &+ (E5*U0M + E6*U0)*VMW&
             &+ (E7*U0M + E8*U0)*VW
+
         B1 = -DU*VMWM - DV*UMWM - DW*UMVM
-        B2 = DU*VMWM - DV*UWM - DW*UVM
-        B3 = -DU*VWM + DV*UMWM - DW*UMV
-        B4 = DU*VWM + DV*UWM - DW*UV
-        B5 = -DU*VMW - DV*UMW + DW*UMVM
-        B6 = DU*VMW - DV*UW + DW*UVM
-        B7 = -DU*VW + DV*UMW + DW*UMV
-        B8 = DU*VW + DV*UW + DW*UV
-        B = B1*E1 + B2*E2 + B3*E3 + B4*E4 + B5*E5 + B6*E6 + B7*E7 + B8*E8
-        VW = DV*DW
-        VWU = VW*U0
+        B2 =  DU*VMWM - DV*UWM  - DW*UVM
+        B3 = -DU*VWM  + DV*UMWM - DW*UMV
+        B4 =  DU*VWM  + DV*UWM  - DW*UV
+        B5 = -DU*VMW  - DV*UMW  + DW*UMVM
+        B6 =  DU*VMW  - DV*UW   + DW*UVM
+        B7 = -DU*VW   + DV*UMW  + DW*UMV
+        B8 =  DU*VW   + DV*UW   + DW*UV
+        B  = B1*E1 + B2*E2 + B3*E3 + B4*E4 + B5*E5 + B6*E6 + B7*E7 + B8*E8
+
+        VW   = DV*DW
+        VWU  = VW*U0
         VWUM = VW*U0M
-        UW = DU*DW
-        UWV = UW*V0
+        UW   = DU*DW
+        UWV  = UW*V0
         UWVM = UW*V0M
-        UV = DU*DV
-        UVW = UV*W0
+        UV   = DU*DV
+        UVW  = UV*W0
         UVWM = UV*W0M
-        C1 = +VWUM + UWVM + UVWM
-        C2 = +VWU - UWVM - UVWM
-        C3 = -VWUM + UWV - UVWM
-        C4 = -VWU - UWV + UVWM
+        C1 =  VWUM + UWVM + UVWM
+        C2 =  VWU  - UWVM - UVWM
+        C3 = -VWUM + UWV  - UVWM
+        C4 = -VWU  - UWV  + UVWM
         C5 = -VWUM - UWVM + UVW
-        C6 = -VWU + UWVM - UVW
-        C7 = +VWUM - UWV - UVW
-        C8 = +VWU + UWV + UVW
-        C = C1*E1 + C2*E2 + C3*E3 + C4*E4 + C5*E5 + C6*E6 + C7*E7 + C8*E8
+        C6 = -VWU  + UWVM - UVW
+        C7 =  VWUM - UWV  - UVW
+        C8 =  VWU  + UWV  + UVW
+        C  = C1*E1 + C2*E2 + C3*E3 + C4*E4 + C5*E5 + C6*E6 + C7*E7 + C8*E8
+
         D = DU*DV*DW*(E2 + E3 + E5 + E8 - E1 - E4 - E6 - E7)
         ! Compute the path through the cell: integration of extinction
         PATH = PATH + SO*(A + 0.5d0*B + FRAC13_*C + 0.25d0*D)
