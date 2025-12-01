@@ -352,14 +352,14 @@ subroutine shd_rad__computeDirect(&
     I = int(X/DELXD) + 1
     if (I .gt. prp_obj_%Nx .and. abs(X - XDOMAIN) .lt. 0.001*DELXD) I = prp_obj_%Nx
     if (I .lt. 1 .or. I .gt. prp_obj_%Nx) then
-        write (6, *) '_computeDirect: Beyond X domain', I, XI, YI, ZI
+        write(6, *) '_computeDirect: Beyond X domain', I, XI, YI, ZI
         stop
     end if
 
     J = int(Y/DELYD) + 1
     if (J .gt. prp_obj_%Ny .and. abs(Y - YDOMAIN) .lt. 0.001*DELYD) J = prp_obj_%Ny
     if (J .lt. 1 .or. J .gt. prp_obj_%Ny) then
-        write (6, *) '_computeDirect: Beyond Y domain', J, XI, YI, ZI
+        write(6, *) '_computeDirect: Beyond Y domain', J, XI, YI, ZI
         stop
     end if
     XE = X
@@ -432,8 +432,8 @@ subroutine shd_rad__computeDirect(&
         if  (I .lt. 1 .or. I .gt. prp_obj_%Nx .or.&
             &J .lt. 1 .or. J .gt. prp_obj_%Ny .or.&
             &K .lt. 1 .or. K .ge. prp_obj_%Nz) then
-            write (6, '(A,3I4)') '_computeDirect: beyond grid!', I, J, K
-            write (6, '(1(2X,3F9.5))') X, Y, Z
+            write(6, '(A,3I4)') '_computeDirect: beyond grid!', I, J, K
+            write(6, '(1(2X,3F9.5))') X, Y, Z
             stop
         end if
 
@@ -559,7 +559,7 @@ subroutine shd_rad__computeDirect(&
             end if
         end if
         if (SO .lt. -EPSS) then
-            write (6, *) '_computeDirect: SO<0', X, Y, Z,&
+            write(6, *) '_computeDirect: SO<0', X, Y, Z,&
                 &XE, YE, ZE, XP, YP, ZP, CX, CY, CZ, SOX, SOY, SOZ
             stop
         end if
@@ -806,16 +806,16 @@ subroutine shd_rad__computeRad(&
         !╰────────────────────────────────────────────────╯!
 
         if (MUOUT .eq. 0.0) then
-            if (verbose_ .ge. 4) write (6, *) 'Warning [_computeRad]: Bad MUOUT for radiance', IANG, MUOUT, PHID
+            if (verbose_ .ge. 4) write(6, *) 'Warning [_computeRad]: Bad MUOUT for radiance', IANG, MUOUT, PHID
             MUOUT = accSolv_
-            write (6, *) '                       New MUOUT=', MUOUT
+            write(6, *) '                       New MUOUT=', MUOUT
         end if
 
         if (abs(MUOUT) .gt. 1.0) then
-            if (verbose_ .ge. 4) write (6, *) 'Warning [_computeRad]: Bad MUOUT for radiance', IANG, MUOUT, PHID
+            if (verbose_ .ge. 4) write(6, *) 'Warning [_computeRad]: Bad MUOUT for radiance', IANG, MUOUT, PHID
             if (MUOUT .gt.  1.0) MUOUT =  1.0
             if (MUOUT .lt. -1.0) MUOUT = -1.0
-            write (6, *) '                       New MUOUT=', MUOUT
+            write(6, *) '                       New MUOUT=', MUOUT
         end if
 
         ! Compute the source function throughout grid for this angle
@@ -1047,7 +1047,7 @@ subroutine shd_rad__computeCamRad(&
                 Y0 = Y0 + R*sqrt(1 - COSTH**2)*sin(PHIR)
                 Z0 = rtm_obj_%z(rtm_obj_%Nz)
             else if (Z0 .lt. rtm_obj_%z(1)) then
-                write (6, *) 'Error [_visualizeRad]: Level below domain.'
+                write(6, *) 'Error [_visualizeRad]: Level below domain.'
                 stop
             end if
 
@@ -1071,7 +1071,7 @@ subroutine shd_rad__computeCamRad(&
                 &MU2, PHI2, X0, Y0, Z0,&
                 &XE, YE, ZE, SIDE, TRANSMIT, VISRAD, VALIDRAD)
 900         continue
-            ! write (6,'(1X,2F8.4,1X,2F11.7,4(1X,F11.6))')&
+            ! write(6,'(1X,2F8.4,1X,2F11.7,4(1X,F11.6))')&
             !     &X0,Y0,MURAY,PHIRAY,VISRAD(:)
             VISOUT(1, IVIS) = VISRAD(1)
             if (VISRAD(1) .gt. 0.0) then

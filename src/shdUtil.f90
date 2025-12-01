@@ -1380,22 +1380,22 @@ subroutine shd_util__tickTock(message, count_start, more_digits)
     if (elapsed_time .lt. 60.0) then
         if (present(more_digits)) then
             if (more_digits) then
-                write (message, '(A,1X,F0.4,A)') trim(adjustl(message)), elapsed_time, ' sec.'
+                write(message, '(A,1X,F0.4,A)') trim(adjustl(message)), elapsed_time, ' sec.'
             else
-                write (message, '(A,1X,F0.2,A)') trim(adjustl(message)), elapsed_time, ' sec.'
+                write(message, '(A,1X,F0.2,A)') trim(adjustl(message)), elapsed_time, ' sec.'
             end if
         else
-            write (message, '(A,1X,F0.2,A)') trim(adjustl(message)), elapsed_time, ' sec.'
+            write(message, '(A,1X,F0.2,A)') trim(adjustl(message)), elapsed_time, ' sec.'
         end if
     else
         if (present(more_digits)) then
             if (more_digits) then
-                write (message, '(A,1X,F0.4,A)') trim(adjustl(message)), elapsed_time/60.0, ' min.'
+                write(message, '(A,1X,F0.4,A)') trim(adjustl(message)), elapsed_time/60.0, ' min.'
             else
-                write (message, '(A,1X,F0.2,A)') trim(adjustl(message)), elapsed_time/60.0, ' min.'
+                write(message, '(A,1X,F0.2,A)') trim(adjustl(message)), elapsed_time/60.0, ' min.'
             end if
         else
-            write (message, '(A,1X,F0.2,A)') trim(adjustl(message)), elapsed_time/60.0, ' min.'
+            write(message, '(A,1X,F0.2,A)') trim(adjustl(message)), elapsed_time/60.0, ' min.'
         end if
     end if
 

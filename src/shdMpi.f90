@@ -160,7 +160,7 @@ subroutine shd_mpi__start(isMasterProc, Nproc)
 
     call mpi_init(ierr)
     if (ierr .ne. MPI_success) then
-        write (6, *) 'Error [mpi__start]: Terminating ...'
+        write(6, *) 'Error [mpi__start]: Terminating ...'
         stop
     end if
 
@@ -173,7 +173,7 @@ subroutine shd_mpi__start(isMasterProc, Nproc)
 
     if (myProc_ .eq. 0) then
         isMasterProc = .true.
-        if (verbose_ .gt. 5) write (6, '(A)') 'Message [mpi__start]: Starting MPI version of SHDOM ...'
+        if (verbose_ .gt. 5) write(6, '(A)') 'Message [mpi__start]: Starting MPI version of SHDOM ...'
     else
         isMasterProc = .false.
     end if
@@ -230,9 +230,9 @@ subroutine shd_mpi__map(rtmAll_obj, prpAll_obj, sfcAll_obj, &
     end if
 
     if (myProc_ .gt. 0) then
-        write (procStr, '(I4.4)') myProc_
+        write(procStr, '(I4.4)') myProc_
         logFile = trim(adjustl(rtm_obj%runName))//'.sHdOmNG-log.iproc-'//procStr
-        open (UNIT=6, FILE=trim(adjustl(logFile)), STATUS='UNKNOWN')
+        open(UNIT=6, FILE=trim(adjustl(logFile)), STATUS='UNKNOWN')
     end if
 
     ! Partition 2D Cartesian topology:
@@ -395,12 +395,12 @@ subroutine shd_mpi__map(rtmAll_obj, prpAll_obj, sfcAll_obj, &
     call mpi_cart_shift(comm2D_, 0, 1, iProcNeigh_(1), iProcNeigh_(2), ierr)
     call mpi_cart_shift(comm2D_, 1, 1, iProcNeigh_(3), iProcNeigh_(4), ierr)
 
-    if (verbose_ .ge. 5) write (6, '(A)') 'Message [mpi__map]:'
-    if (verbose_ .ge. 5) write (6, '(2X,A,2(I0,2X))')    'Nproc in X and Y: ', dims(1:2)
-    if (verbose_ .ge. 5) write (6, '(2X,A,I0)')          '  This processor: ', myProc_
-    if (verbose_ .ge. 5) write (6, '(2X,A,4(I0,2X))')    '       Neighbors: ', iProcNeigh_(1:4)
-    if (verbose_ .ge. 5) write (6, '(2X,A,2(F0.2," km",2X))') '         X range: ', prp_obj%xStart, xEnd_prp
-    if (verbose_ .ge. 5) write (6, '(2X,A,2(F0.2," km",2X))') '         Y range: ', prp_obj%yStart, yEnd_prp
+    if (verbose_ .ge. 5) write(6, '(A)') 'Message [mpi__map]:'
+    if (verbose_ .ge. 5) write(6, '(2X,A,2(I0,2X))')    'Nproc in X and Y: ', dims(1:2)
+    if (verbose_ .ge. 5) write(6, '(2X,A,I0)')          '  This processor: ', myProc_
+    if (verbose_ .ge. 5) write(6, '(2X,A,4(I0,2X))')    '       Neighbors: ', iProcNeigh_(1:4)
+    if (verbose_ .ge. 5) write(6, '(2X,A,2(F0.2," km",2X))') '         X range: ', prp_obj%xStart, xEnd_prp
+    if (verbose_ .ge. 5) write(6, '(2X,A,2(F0.2," km",2X))') '         Y range: ', prp_obj%yStart, yEnd_prp
 #else
     prp_obj%xStart = 0.0; prp_obj%yStart = 0.0
 #endif
@@ -486,7 +486,7 @@ subroutine shd_mpi__bcastInp(&
     call mpi_bcast(parms_Out, MAXPAR*NUMOUT, MPI_real, 0, MPI_comm_world, ierr)
     call mpi_bcast(OUTTYPES, NUMOUT*1, MPI_character, 0, MPI_comm_world, ierr)
 
-    write (procStr, '(I4.4)') myProc_
+    write(procStr, '(I4.4)') myProc_
     if (fileInp_sav(1:4) .ne. 'NONE') fileInp_sav = trim(fileInp_sav)//'.iproc-'//procStr
     if (fileOut_sav(1:4) .ne. 'NONE') fileOut_sav = trim(fileOut_sav)//'.iproc-'//procStr
 #endif
@@ -884,19 +884,19 @@ subroutine shd_mpi__bcastMem(MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
 
     if (myProc_ .eq. 0) then
         ! See if we can read the memory parameter file and number of processors matches
-        open (UNIT=11, FILE=trim(runName)//'_mem_params.inp', STATUS='OLD', IOSTAT=ierr)
+        open(UNIT=11, FILE=trim(runName)//'_mem_params.inp', STATUS='OLD', IOSTAT=ierr)
         if (ierr .eq. 0) then
-            read (11, *)
-            read (11, *) Nproc
+            read(11, *)
+            read(11, *) Nproc
             if (Nproc .ne. Nproc_) then
-                write (6, '(A,A,A)') 'Memory parameter file ', trim(runName),&
+                write(6, '(A,A,A)') 'Memory parameter file ', trim(runName),&
                     &'_mem_params.inp is for a different number of processors.'
             else
                 do i = 0, Nproc - 1
-                    read (11, *) MemParam(:, i)
+                    read(11, *) MemParam(:, i)
                 end do
             end if
-            close (11)
+            close(11)
         end if
     end if
 
@@ -906,8 +906,8 @@ subroutine shd_mpi__bcastMem(MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
     NUM_SH_TERM_FACTOR = MemParam(3, myProc_)
     CELL_TO_POINT_RATIO = MemParam(4, myProc_)
     deallocate(MemParam)
-    if (verbose_ .ge. 5) write (6, '(A)') 'Message [mpi__bcastMemParam]:'
-    if (verbose_ .ge. 5) write (6, '(2X,A,F0.2,"MB",3(2X,F0.3))') 'Memory parameters used: ', MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
+    if (verbose_ .ge. 5) write(6, '(A)') 'Message [mpi__bcastMemParam]:'
+    if (verbose_ .ge. 5) write(6, '(2X,A,F0.2,"MB",3(2X,F0.3))') 'Memory parameters used: ', MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
         &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
 #endif
 
@@ -1729,7 +1729,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
             RadPtrOut(Ndone(iproc), iproc) = IPT
         else
             if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
-                write (6, *) 'Bad SIDE 1:', myProc_, mu, phi, SIDE, x, y, z, xo, yo, zo
+                write(6, *) 'Bad SIDE 1:', myProc_, mu, phi, SIDE, x, y, z, xo, yo, zo
                 call shd_mpi__abort('Error [mpi__calBndryRad]')
             end if
             NINVALID(SIDE) = NINVALID(SIDE) + 1
@@ -1782,12 +1782,12 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
             irq = irq + 3
         end if
         if (any(ierr(1:irq) .ne. MPI_success)) then
-            write (6, *) 'MPI error: ', ierr(1:irq)
+            write(6, *) 'MPI error: ', ierr(1:irq)
             call shd_mpi__abort('Error [mpi__calBndryRad]: MPI error 1.')
         end if
         call mpi_waitall(irq, requests, status, ierr(1))
         if (ierr(1) .ne. MPI_success) then
-            write (6, *) 'mpi_waitall error: ', ierr(1)
+            write(6, *) 'mpi_waitall error: ', ierr(1)
             call shd_mpi__abort('Error [mpi__calBndryRad]: MPI error 2.')
         end if
 
@@ -1815,7 +1815,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
                     RadPtrOut(Ndone(iproc), iproc) = BndRadIntInfo(2, J, Ldownx)
                 else
                     if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
-                        write (6, *) 'Bad SIDE 2x:', myProc_, mu, phi, SIDE, x, y, z
+                        write(6, *) 'Bad SIDE 2x:', myProc_, mu, phi, SIDE, x, y, z
                         call shd_mpi__abort('Error [mpi__calBndryRad]: Bad SIDE 2x, see above.')
                     end if
                     NINVALID(SIDE) = NINVALID(SIDE) + 1
@@ -1848,7 +1848,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
                     RadPtrOut(Ndone(iproc), iproc) = BndRadIntInfo(2, J, Ldowny)
                 else
                     if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
-                        write (6, *) 'Bad SIDE 2y:', myProc_, mu, phi, SIDE, x, y, z
+                        write(6, *) 'Bad SIDE 2y:', myProc_, mu, phi, SIDE, x, y, z
                         call shd_mpi__abort('Error [mpi__calBndryRad]: Bad SIDE 2y, see above.')
                     end if
                     NINVALID(SIDE) = NINVALID(SIDE) + 1
@@ -1882,7 +1882,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
                 &iproc, 9, comm2D_, requests(6), ierr(6))
             call mpi_waitall(6, requests, status, ierr(7))
             if (any(ierr(1:7) .ne. MPI_success)) then
-                write (6, *) 'MPI error: ', ierr(1:7)
+                write(6, *) 'MPI error: ', ierr(1:7)
                 call shd_mpi__abort('Error [mpi__calBndryRad]: MPI error 3.')
             end if
             do I = 1, NptsBC
@@ -2037,16 +2037,16 @@ subroutine shd_mpi__computeRad(&
         !╰────────────────────────────────────────────────╯!
 
         if (mu_out .eq. 0.0) then
-            if (verbose_ .ge. 4) write (6, *) 'Warning [mpi__computeRad]: Bad mu_out for radiance', K, mu_out, phiDeg_out
+            if (verbose_ .ge. 4) write(6, *) 'Warning [mpi__computeRad]: Bad mu_out for radiance', K, mu_out, phiDeg_out
             mu_out = accSolv_
-            write (6, *) '                           New mu_out =', mu_out
+            write(6, *) '                           New mu_out =', mu_out
         end if
 
         if (abs(mu_out) .gt. 1.0) then
-            if (verbose_ .ge. 4) write (6, *) 'Warning [mpi__computeRad]: Bad mu_out for radiance', K, mu_out, phiDeg_out
+            if (verbose_ .ge. 4) write(6, *) 'Warning [mpi__computeRad]: Bad mu_out for radiance', K, mu_out, phiDeg_out
             if (mu_out .gt.  1.0) mu_out =  1.0
             if (mu_out .lt. -1.0) mu_out = -1.0
-            write (6, *) '                           New mu_out =', mu_out
+            write(6, *) '                           New mu_out =', mu_out
         end if
 
         ! Compute the source function throughout grid for this angle
@@ -2132,7 +2132,7 @@ subroutine shd_mpi__computeRad(&
                         IndexSend(Ndone) = NRAD
                     else
                         if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
-                            write (6, *) 'Bad SIDE 1:', myProc_, mu_out, phi_out, x0, y0, z0, SIDE, xe, ye, ze
+                            write(6, *) 'Bad SIDE 1:', myProc_, mu_out, phi_out, x0, y0, z0, SIDE, xe, ye, ze
                             call shd_mpi__abort('Error [mpi__computeRad]: Bad SIDE 1, see above.')
                         end if
                         NINVALID(SIDE) = NINVALID(SIDE) + 1
@@ -2217,7 +2217,7 @@ subroutine shd_mpi__computeRad(&
                         IndexSend(Ndone) = BndRadIntInfo(J, Ldownx)
                     else
                         if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
-                            write (6, *) 'Bad SIDE 2x', myProc_, mu_out, phi_out, x, y, z, SIDE, xe, ye, ze
+                            write(6, *) 'Bad SIDE 2x', myProc_, mu_out, phi_out, x, y, z, SIDE, xe, ye, ze
                             call shd_mpi__abort('Error [mpi__computeRad]: Bad SIDE 2x, see above.')
                         end if
                         NINVALID(SIDE) = NINVALID(SIDE) + 1
@@ -2252,7 +2252,7 @@ subroutine shd_mpi__computeRad(&
                         IndexSend(Ndone) = BndRadIntInfo(J, Ldowny)
                     else
                         if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
-                            write (6, *) 'Bad SIDE 2y', myProc_, mu_out, phi_out, x, y, z, SIDE, xe, ye, ze
+                            write(6, *) 'Bad SIDE 2y', myProc_, mu_out, phi_out, x, y, z, SIDE, xe, ye, ze
                             call shd_mpi__abort('Error [mpi__computeRad]: Bad SIDE 2y, see above.')
                         end if
                         NINVALID(SIDE) = NINVALID(SIDE) + 1
@@ -2518,7 +2518,7 @@ subroutine shd_mpi__computeCamRad(&
 
             end if
 
-            !write (*, *) IVIS, X0, Y0, Z0, 180.0/DPI_*COSTH, 180.0/DPI_*PHIR
+            !write(*, *) IVIS, X0, Y0, Z0, 180.0/DPI_*COSTH, 180.0/DPI_*PHIR
 
             ! Extrapolate ray to domain top if above
             if (Z0 .gt. rtm_obj_%z(rtm_obj_%Nz)) then
@@ -2533,7 +2533,7 @@ subroutine shd_mpi__computeCamRad(&
                 Y0 = Y0 + R*sqrt(1 - COSTH**2)*sin(PHIR)
                 Z0 = rtm_obj_%z(rtm_obj_%Nz)
             else if (Z0 .lt. rtm_obj_%z(1)) then
-                write (6, *) 'Error [mpi__visualizeRad]: Level below domain.'
+                write(6, *) 'Error [mpi__visualizeRad]: Level below domain.'
                 stop
             end if
 
@@ -2677,7 +2677,7 @@ subroutine shd_mpi__computeCamRad(&
             &comm2D_, ierr)
         AllDone = all(intrecvbuf(1:4) .eq. 0)
     end do
-    !write (*, *)'Done with ray tracing.', Ndone
+    !write(*, *)'Done with ray tracing.', Ndone
 
     if (myProc_ .gt. 0) then
         ! Send the finished radiances to the master processor
@@ -2790,7 +2790,7 @@ subroutine shd_mpi__calAccelSolCrit(DOACCEL, DELJDOT, DELJOLD, DELJNEW, JNORM,&
         A = (1 - R*cos(THETA) + R**(1.0 + PIH_/THETA))&
             /(1 + R**2 - 2*R*cos(THETA)) - 1.0
         A = min(10.0, max(0.0, A))
-        ! WRITE (6,'(1X,A,3(1X,F7.3))') '! Acceleration: ', A,R,THETA
+        ! write(6,'(1X,A,3(1X,F7.3))') '! Acceleration: ', A,R,THETA
     else
         A = 0.0
     end if
@@ -2916,16 +2916,16 @@ subroutine shd_mpi__end(runName, rtm_obj, prpAll_obj)
 
         if (myProc_ .eq. 0) then
             ! Write out the array to the load balancing file
-            open (UNIT=10, FILE=trim(runName)//'_load_balance.out', STATUS='UNKNOWN')
-            write (10, '(A)') '! SHDOM grid point load balancing file for property file:'
-            write (10, '(A)') prp_obj_%fname
-            write (10, '(2(1X,I4),A)') prpAll_obj%Nx, prpAll_obj%Ny, ' ! property grid size (Nx,Ny)'
+            open(UNIT=10, FILE=trim(runName)//'_load_balance.out', STATUS='UNKNOWN')
+            write(10, '(A)') '! SHDOM grid point load balancing file for property file:'
+            write(10, '(A)') prp_obj_%fname
+            write(10, '(2(1X,I4),A)') prpAll_obj%Nx, prpAll_obj%Ny, ' ! property grid size (Nx,Ny)'
             do IX = 1, prpAll_obj%Nx
                 do IY = 1, prpAll_obj%Ny
-                    write (10, '(I4,1X,I4,1X,I5)') IX, IY, NUMGRIDALL(IX, IY)
+                    write(10, '(I4,1X,I4,1X,I5)') IX, IY, NUMGRIDALL(IX, IY)
                 end do
             end do
-            close (10)
+            close(10)
 
             ! checked
             deallocate(NUMGRIDALL)
@@ -2935,12 +2935,12 @@ subroutine shd_mpi__end(runName, rtm_obj, prpAll_obj)
     ElapsedTime = mpi_wtime() - startTime_
 
     if (ElapsedTime .lt. 60.0) then
-        if (verbose_ .ge. 5) write (6, '(A,F0.2,A)') 'Message [mpi__end]: Total time used: ', ElapsedTime, ' sec'
+        if (verbose_ .ge. 5) write(6, '(A,F0.2,A)') 'Message [mpi__end]: Total time used: ', ElapsedTime, ' sec'
     else
-        if (verbose_ .ge. 5) write (6, '(A,F0.2,A)') 'Message [mpi__end]: Total time used: ', ElapsedTime/60.0, ' min'
+        if (verbose_ .ge. 5) write(6, '(A,F0.2,A)') 'Message [mpi__end]: Total time used: ', ElapsedTime/60.0, ' min'
     end if
 
-    if (verbose_ .ge. 5) write (6, '(A,"<",A,">")') 'Message [mpi__end]: Finished with SHDOM run: ', trim(adjustl(runName))
+    if (verbose_ .ge. 5) write(6, '(A,"<",A,">")') 'Message [mpi__end]: Finished with SHDOM run: ', trim(adjustl(runName))
 
     ! Shut down MPI
     if (allocated(BxyPtr_)) deallocate(BxyPtr_)
@@ -2959,7 +2959,7 @@ subroutine shd_mpi__abort(ERRSTR)
     character(len=*), intent(in) :: ERRSTR
     integer :: ierr, errorcode = 7
 
-    write (6, *) trim(adjustl(ERRSTR))
+    write(6, *) trim(adjustl(ERRSTR))
 
 #if HAS_MPI
 ! note: this if clause has <else>
@@ -3014,20 +3014,20 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord,&
         DoLoadBalancing = .false.
         if (myProc_ .eq. 0) then
             ! See if we can read the load balancing file and header matches
-            open (UNIT=10, FILE=trim(runName)//'_load_balance.inp', STATUS='OLD', IOSTAT=ierr)
+            open(UNIT=10, FILE=trim(runName)//'_load_balance.inp', STATUS='OLD', IOSTAT=ierr)
             if (ierr .eq. 0) then
-                read (10, *)
-                read (10, '(A)') fileInp_prp0
-                read (10, *) NPXTI, NPYTI
+                read(10, *)
+                read(10, '(A)') fileInp_prp0
+                read(10, *) NPXTI, NPYTI
                 if ((NPXTI .ne. prpAll_obj%Nx) .or. (NPYTI .ne. prpAll_obj%Ny) .or. (fileInp_prp0 .ne. prp_obj%fname)) then
-                    write (6, '(A,A,A)') 'Load balancing file ', trim(runName),&
+                    write(6, '(A,A,A)') 'Load balancing file ', trim(runName),&
                         &'_load_balance.inp is not compatible with property file:'
-                    write (6, *) prp_obj%fname
-                    write (6, *)
+                    write(6, *) prp_obj%fname
+                    write(6, *)
                 else
                     DoLoadBalancing = .true.
                 end if
-                close (10)
+                close(10)
             end if
         end if
 
@@ -3038,28 +3038,28 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord,&
         if (myProc_ .eq. 0 .and. DoLoadBalancing) then
             ! Read the load balancing file to get array of number of grid points
             allocate(Ngrid(prpAll_obj%Nx + 1, prpAll_obj%Ny + 1))
-            open (UNIT=10, FILE=trim(runName)//'_load_balance.inp', STATUS='OLD')
-            read (10, *)
-            read (10, *)
-            read (10, *)
+            open(UNIT=10, FILE=trim(runName)//'_load_balance.inp', STATUS='OLD')
+            read(10, *)
+            read(10, *)
+            read(10, *)
             do IX = 1, prpAll_obj%Nx
                 do IY = 1, prpAll_obj%Ny
-                    read (10, *) JX, JY, Ngrid(IX, IY)
+                    read(10, *) JX, JY, Ngrid(IX, IY)
                 end do
             end do
-            close (10)
+            close(10)
             Ngrid(prpAll_obj%Nx + 1, :) = Ngrid(1, :)
             Ngrid(:, prpAll_obj%Ny + 1) = Ngrid(:, 1)
             Ngrid(prpAll_obj%Nx + 1, prpAll_obj%Ny+ 1) = Ngrid(1, 1)
 
             ! Read the relative processor times if the "shdom_proc_times.inp" file exists
             allocate(wtproc(Nproc_))
-            open (UNIT=11, FILE='shdom_proc_times.inp', STATUS='OLD', IOSTAT=ierr)
+            open(UNIT=11, FILE='shdom_proc_times.inp', STATUS='OLD', IOSTAT=ierr)
             if (ierr .eq. 0) then
                 do i = 1, Nproc_
-                    read (11, *) wtproc(i)
+                    read(11, *) wtproc(i)
                 end do
-                close (11)
+                close(11)
                 wtproc(:) = wtproc(:)*Nproc_/sum(wtproc(:))
             else
                 wtproc(:) = 1.0
@@ -3071,8 +3071,8 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord,&
             Energy = loadObject(BndLines, Nxd, Nyd, ProcCoordAll, wtproc, Ngrid, prpAll_obj)
             LowestEnergy = Energy
             CurLines(:) = BndLines(:)
-            ! write (*, *) 'Annealing cycles: Cycle Temp Energy  BndLines'
-            ! write (*, '(I3,2(1X,F9.6),10(1X,I3))') 0,Temp0,Energy, BndLines(:)
+            ! write(*, *) 'Annealing cycles: Cycle Temp Energy  BndLines'
+            ! write(*, '(I3,2(1X,F9.6),10(1X,I3))') 0,Temp0,Energy, BndLines(:)
 
             ! Loop through the cooling cycles
             do icycle = 1, NCYCLE
@@ -3108,7 +3108,7 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord,&
                         LowestEnergy = Energy
                     end if
                 end do
-                ! write (*, '(I3,2(1X,F9.6),10(1X,I3))') CYCLE,Temp,LowestEnergy, BndLines(:)
+                ! write(*, '(I3,2(1X,F9.6),10(1X,I3))') CYCLE,Temp,LowestEnergy, BndLines(:)
             end do ! end of temperature cycles
 
             deallocate(Ngrid)
@@ -3117,9 +3117,9 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord,&
         call mpi_bcast(BndLines, N, MPI_integer, 0, comm2D_, ierr)
         deallocate(ProcCoordAll)
         if (myProc_ .eq. 0 .and. DoLoadBalancing) then
-            write (6, '(A)') 'Optimum load balanced boundary lines in the property grid:'
-            write (6, '(A,16I4)') '  X lines:', BndLines(1:Nxd - 1)
-            write (6, '(A,16I4)') '  Y lines:', BndLines(Nxd:N)
+            write(6, '(A)') 'Optimum load balanced boundary lines in the property grid:'
+            write(6, '(A,16I4)') '  X lines:', BndLines(1:Nxd - 1)
+            write(6, '(A,16I4)') '  Y lines:', BndLines(Nxd:N)
         end if
     end if
 
@@ -3275,8 +3275,8 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
         IY = 1 +  int((Ny - 1)*(Y - rtm_obj_%y(1))/(rtm_obj_%y(Ny) - rtm_obj_%y(1)))
     end if
     if ((ix .lt. 1) .or. (iy .lt. 1) .or. (ix .gt. (Nx + 1)) .or. (iy .gt. (Ny + 1))) then
-        write (6, *) 'Bad ix and/or iy', x, y, z, ix, iy, iz, rtm_obj_%x(1), rtm_obj_%x(Nx), rtm_obj_%y(1), rtm_obj_%y(ny), myProc_
-        write (6, *) 'Bad ix and/or iy', side, transmit
+        write(6, *) 'Bad ix and/or iy', x, y, z, ix, iy, iz, rtm_obj_%x(1), rtm_obj_%x(Nx), rtm_obj_%y(1), rtm_obj_%y(ny), myProc_
+        write(6, *) 'Bad ix and/or iy', side, transmit
         call shd_mpi__abort('Error [mpi_integrateRay]: Bad ix and/or iy, see above.')
     end if
     IX = min(NXC, IX)
@@ -3365,7 +3365,7 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
         SOZ = (xyz_Rtm_(3, IOPP) - ZE)*CZINV
         SO = min(SOX, SOY, SOZ)
         if (SO .lt. -EPS) then
-            write (6, *) 'SO<0: ', MU, PHI, X, Y, Z, SOX, SOY, SOZ, SO, ICELL, TRANS
+            write(6, *) 'SO<0: ', MU, PHI, X, Y, Z, SOX, SOY, SOZ, SO, ICELL, TRANS
             call shd_mpi__abort('Error [mpi__integrateRay]: SO<0, see above.')
         end if
         ! Compute the coordinates of the cell exitting location
@@ -3433,7 +3433,7 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
             end if
         end if
         if ((u .lt. -1.0e-4) .or. (v .lt. -1.0e-4) .or. (u .gt. 1.0001) .or. (v .gt. 1.0001)) then
-            write (6, *) 'u,v<0 and/or u,v>1: ', mu, phi, x, y, z, xe, ye, ze, u, v, ipinx, ipiny
+            write(6, *) 'u,v<0 and/or u,v>1: ', mu, phi, x, y, z, xe, ye, ze, u, v, ipinx, ipiny
             call shd_mpi__abort('Error [mpi__integrateRay]: u,v<0 and/or u,v>1, see above.')
         end if
 
@@ -3495,7 +3495,7 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
         RAD(:) = RAD(:) + TRANS*SRC(:)*ABSCELL
         TRANS = TRANS*TRANSCELL
         if (RAD(1) .lt. -1.0e-5) then
-            write (6, '(3(1X,F5.3),8(1X,E12.5))')&
+            write(6, '(3(1X,F5.3),8(1X,E12.5))')&
                 &xe, ye, ze, ext0, ext1, so, tau, trans, src, abscell, rad(:)
         end if
         if (GRIDRAD(1, I1) .ge. 0.0 .and. GRIDRAD(1, I2) .ge. 0.0&

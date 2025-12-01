@@ -73,24 +73,24 @@ contains
     ! Open the ASCII file, ensure it's of type "T", and get the grid sizes,
     !   number of phase functions, and maximum number of terms in the phase function series
     !
-    open (UNIT=1, FILE=trim(asciiFileName), STATUS='OLD')
-    read (1, '(A1)') PROPTYPE
+    open(UNIT=1, FILE=trim(asciiFileName), STATUS='OLD')
+    read(1, '(A1)') PROPTYPE
     ! Property file type T and P are for tabulated phase function format
     if (PROPTYPE /= 'T' .and. PROPTYPE /= 'P') &
       stop "Error [convert_Prp_to_netcdf]: Can only convert property file formats 'T' or 'P'"
-    read (1, *) NPX, NPY, NPZ
-    read (1, *) DELX, DELY, (zlevs, j=1, NPZ)
+    read(1, *) NPX, NPY, NPZ
+    read(1, *) DELX, DELY, (zlevs, j=1, NPZ)
     MAXLEG = 0
-    read (1, *) NUMPHASE
+    read(1, *) NUMPHASE
     if (PROPTYPE .eq. 'T') then
       do I = 1, NUMPHASE
-        read (1, *) NUML, (CHI, l=1, NUML)
+        read(1, *) NUML, (CHI, l=1, NUML)
         MAXLEG = max(NUML, MAXLEG)
       end do
     else
       do I = 1, NUMPHASE
         do J = 1, 6
-          read (1, *) K, NUML, (CHI, l=0, NUML)
+          read(1, *) K, NUML, (CHI, l=0, NUML)
           MAXLEG = max(NUML, MAXLEG)
         end do
       end do
@@ -116,16 +116,16 @@ contains
     ! Starting at the top, read in the phase functions...
     !
     rewind (1)
-    read (1, '(A1)') PROPTYPE
-    read (1, *) NPX, NPY, NPZ
-    read (1, *) DELX, DELY, zLevels(:)
-    read (1, *) NUMPHASE
+    read(1, '(A1)') PROPTYPE
+    read(1, *) NPX, NPY, NPZ
+    read(1, *) DELX, DELY, zLevels(:)
+    read(1, *) NUMPHASE
     do i = 1, NUMPHASE
       if (PROPTYPE == 'T') then
-        read (1, *) numl, phaseFunctionCoefficients(1, 1:numL, i)
+        read(1, *) numl, phaseFunctionCoefficients(1, 1:numL, i)
       else
         do j = 1, 6
-          read (1, *) k, numl, phaseFunctionCoefficients(j, 0:numL, i)
+          read(1, *) k, numl, phaseFunctionCoefficients(j, 0:numL, i)
         end do
       end if
     end do
@@ -133,7 +133,7 @@ contains
     ! ... and then the properties at each grid point until we hit the end of the file
     !
     do while (.true.)
-      read (1, *, end=290) IX, IY, IZ, TMP, EXT, ALB, IPH
+      read(1, *, end=290) IX, IY, IZ, TMP, EXT, ALB, IPH
       if (all((/IX >= 1, IX <= NPX, &
                 IY >= 1, IY <= NPY, &
                 IZ >= 1, IZ <= NPZ/))) then
@@ -143,7 +143,7 @@ contains
         phaseFunctionIndex(ix, iy, iz) = IPH
       end if
     end do
-290 close (1)
+290 close(1)
 
     call write_properties_netcdf(extinction, singleScatteringAlbedo, phaseFunctionIndex, &
                                  temperature, phaseFunctionCoefficients, &
@@ -451,7 +451,7 @@ contains
     if (deltaM) then
       NLEG = numTerms - 1
       if (NLEG > MAXLEG) then
-        write (*, '(A,I4,A,I4,A)') 'Warning: truncating phase function from ', NLEG, ' to ', MAXLEG, ' Legendre terms.'
+        write(*, '(A,I4,A,I4,A)') 'Warning: truncating phase function from ', NLEG, ' to ', MAXLEG, ' Legendre terms.'
       end if
       NLEG = min(numTerms, MAXLEG)
     end if
@@ -1070,7 +1070,7 @@ contains
     !   Creates the character representation of an integer.
     !
 
-    write (IntToChar, *) integerValue
+    write(IntToChar, *) integerValue
     IntToChar = adjustl(IntToChar)
   end function IntToChar
 

@@ -404,7 +404,7 @@ subroutine shd_src__computeSrcOneDir(&
                 &src_obj_%avgMu, MU, src_obj_%avgAz - PHI, shdo_obj_%Nstokes,&
                 &SINGSCAT(1, IPH))
             if (SINGSCAT(1, IPH) .le. 0.0) then
-                write (6, *) 'Error [_computeOneSrc]: negative source function',&
+                write(6, *) 'Error [_computeOneSrc]: negative source function',&
                     &' for tabulated phase function:', IPH, MU, PHI, SINGSCAT(1, IPH)
                 stop
             end if
@@ -581,7 +581,7 @@ subroutine shd_src__computeSrc(&
             IR = iradI_Shdo(I)
             NR = iradI_Shdo(I + 1) - IR
             if (NR .gt. shdo_obj_%Nlm) then
-                write (6, *) 'Error [_computeSrc]: NR>NLM 1', I, IR, iradI_Shdo(I + 1)
+                write(6, *) 'Error [_computeSrc]: NR>NLM 1', I, IR, iradI_Shdo(I + 1)
                 stop
             end if
             if (isPol_) then
@@ -673,7 +673,7 @@ subroutine shd_src__computeSrc(&
         IR = iradI_Shdo(I)
         NR = iradI_Shdo(I + 1) - IR
         if (NR .gt. shdo_obj_%Nlm) then
-            write (6, *) 'Error [_computeSrc]: NR>NLM 3', I, IR, iradI_Shdo(I + 1)
+            write(6, *) 'Error [_computeSrc]: NR>NLM 3', I, IR, iradI_Shdo(I + 1)
             stop
         end if
         if (isPol_) then
@@ -719,8 +719,8 @@ subroutine shd_src__computeSrc(&
             isrcJ_Shdo(I) = IS
         end if
         if (IS + NS .gt. shdo_obj_%maxNptsSH) then
-            write (6, *) 'Error [_computeSrc]: shdo_obj_%maxNptsSH exceeded.', shdo_obj_%maxNptsSH
-            write (6, *) '  Out of memory for more spherical harmonic terms.'
+            write(6, *) 'Error [_computeSrc]: shdo_obj_%maxNptsSH exceeded.', shdo_obj_%maxNptsSH
+            write(6, *) '  Out of memory for more spherical harmonic terms.'
             stop
         end if
         ! Transfer the new source function
@@ -892,7 +892,7 @@ subroutine shd_src__integrateSrcOneRay(&
     ZE = Z0
     ! ZE = MAX(MIN(Z0,DBLE(rtm_obj_%z(rtm_obj_%Nz))),DBLE(rtm_obj_%z(1)))
     call shd_util__findCell(XE, YE, ZE, icell)
-    ! write (*, '(A,5(1X,F8.5),1X,I6)') &
+    ! write(*, '(A,5(1X,F8.5),1X,I6)') &
     !     &'_integrateSrcOneRay:',X0,Y0,Z0,MU2,PHI2,icell
     IFACE = 0
     NGRID = 0
@@ -902,7 +902,7 @@ subroutine shd_src__integrateSrcOneRay(&
     do while ((.not. VALIDRAD) .and. (icell .gt. 0))
         ! Make sure current cell is valid
         if (icell .le. 0) then
-            write (6, *) 'Error [_integrateSrcOneRay]: icell=', icell,&
+            write(6, *) 'Error [_integrateSrcOneRay]: icell=', icell,&
                 &MU2, PHI2, XE, YE, ZE
             stop
         end if
@@ -993,7 +993,7 @@ subroutine shd_src__integrateSrcOneRay(&
         SOZ = (xyz_Rtm_(3, IOPP) - ZE)*CZINV
         SO = min(SOX, SOY, SOZ)
         if (SO .lt. -EPS) then
-            write (6, *) 'Error [_integrateSrcOneRay]: SO<0 ',&
+            write(6, *) 'Error [_integrateSrcOneRay]: SO<0 ',&
                 &MU2, PHI2, XE, YE, ZE, SO, icell
             stop
         end if
@@ -1220,7 +1220,7 @@ subroutine shd_src__integrateSrc(NSTOKES,&
     YE = Y0
     ZE = Z0
     call shd_util__findCell(XE, YE, ZE, icell)
-    ! write (*, '(A,5(1X,F8.5),1X,I6)') &
+    ! write(*, '(A,5(1X,F8.5),1X,I6)') &
     !     &'_integrateSrc:', X0, Y0, Z0, MU, PHI, icell
     call shd_util__interpTriLin(icell,&
         &XE, YE, ZE, 1, ext_Rtm_, 1, 1, EXT1)
@@ -1259,7 +1259,7 @@ subroutine shd_src__integrateSrc(NSTOKES,&
         SOZ = (xyz_Rtm_(3, IOPP) - ZE)*CZINV
         SO = min(SOX, SOY, SOZ)
         if (SO .lt. -EPS) then
-            write (6, *) 'Error [_integrateSrc]: SO<0 ',&
+            write(6, *) 'Error [_integrateSrc]: SO<0 ',&
                 &MU, PHI, X0, Y0, Z0, XE, YE, ZE, SO, SOX, SOY, SOZ, rtm_obj_%x(1), rtm_obj_%y(1),&
                 &xyz_Rtm_(1, IOPP), xyz_Rtm_(2, IOPP), xyz_Rtm_(3, IOPP)
             stop

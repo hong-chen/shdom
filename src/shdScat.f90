@@ -112,7 +112,7 @@ subroutine shd_scat__computePhase(&
                 A1 = A1 + FCT*dble(UNSCLEGEN(1, L))*DMM1(L)
             end do
             if (A1 .le. 0.0) then
-                write (6, *) 'Error [_computePhase]: negative phase function',&
+                write(6, *) 'Error [_computePhase]: negative phase function',&
                     &' for tabulated phase function: ', IPH, J, A1
                 stop
             end if

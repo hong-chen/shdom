@@ -286,7 +286,7 @@ program shdom
     if (shdo_obj_%Nstokes .eq. 2) then
         shdo_obj_%Nstokes = 3
         if (verbose_ .ge. 4) &
-            write (6, '(A)') 'Warning [shdom]: shdo_obj_%Nstokes cannot be 2, reset shdo_obj_%Nstokes to 3.'
+            write(6, '(A)') 'Warning [shdom]: shdo_obj_%Nstokes cannot be 2, reset shdo_obj_%Nstokes to 3.'
     end if
 
     ! prpAll_obj%NlegSet is the number of phase function elements used (1 or 6)
@@ -405,13 +405,13 @@ program shdom
     if (rtmAll_obj%Nx .eq. 1) then
         ! '0000'(3D,   0) + '0001'(rtmAll_obj%Nx=1, 1) = '0001' (rtmAll_obj%Nx=1, 1)
         rtmAll_obj%flag_ip = ior(rtmAll_obj%flag_ip, 1)
-        if (verbose_ .ge. 4) write (6, '(A)') 'Warning [shdom]: rtmAll_obj%Nx=1, reset rtmAll_obj%flag_ip to 1.'
+        if (verbose_ .ge. 4) write(6, '(A)') 'Warning [shdom]: rtmAll_obj%Nx=1, reset rtmAll_obj%flag_ip to 1.'
     end if
 
     if (rtmAll_obj%Ny .eq. 1) then
         ! '0001'(rtmAll_obj%Nx=1, 1) + '0010'(rtmAll_obj%Ny=1, 2) = '0011' (IPA,  3)
         rtmAll_obj%flag_ip = ior(rtmAll_obj%flag_ip, 2)
-        if (verbose_ .ge. 4) write (6, '(A)') &
+        if (verbose_ .ge. 4) write(6, '(A)') &
             'Warning [shdom]: rtmAll_obj%Ny=1, reset rtmAll_obj%flag_ip to 2 (or 3).'
     end if
 
@@ -424,14 +424,14 @@ program shdom
     ! Overwrite prpAll_obj%dx if only 1 grid in X direction
     if (prpAll_obj%Nx .eq. 1) then
         prpAll_obj%dx = sfcAll_obj%Nx * sfcAll_obj%dx
-        if (verbose_ .ge. 4) write (6, '(A)') &
+        if (verbose_ .ge. 4) write(6, '(A)') &
             'Warning [shdom]: prpAll_obj%Nx=1, reset prpAll_obj%dx to match surface domain.'
     end if
 
     ! overwrite prpAll_obj%dy if only 1 grid in Y direction
     if (prpAll_obj%Ny .eq. 1) then
         prpAll_obj%dy = sfcAll_obj%Ny * sfcAll_obj%dy
-        if (verbose_ .ge. 4) write (6, '(A)') &
+        if (verbose_ .ge. 4) write(6, '(A)') &
             'Warning [shdom]: prpAll_obj%Ny=1, reset prpAll_obj%dy to match surface domain.'
     end if
 
@@ -442,7 +442,7 @@ program shdom
     if  ((prpAll_obj%Nx .eq. 1) .and. (prpAll_obj%Ny .eq. 1) .and.&
         &(sfcAll_obj%Nx .le. 32) .and. (sfcAll_obj%Ny .le. 32)) then
         shdo_obj_%doHighOrder = .true.
-        if (verbose_ .ge. 4) write (6, '(A)') &
+        if (verbose_ .ge. 4) write(6, '(A)') &
             'Warning [shdom]: 1D calculation, set shdo_obj_%doHighOrder to .TRUE.'
     else
         shdo_obj_%doHighOrder = .false.
@@ -815,24 +815,24 @@ program shdom
         do iout = 1, Nout
             if (type_Out(iout) .eq. 'F') then
                 if (nint(parms_Out(1, iout)) .eq. 2 .or. nint(parms_Out(1, iout)) .eq. 5) then
-                    if (verbose_ .ge. 4) write (6, '(A,I1,A,A)') 'Warning [shdom]: F output format ', nint(parms_Out(1, iout)),&
+                    if (verbose_ .ge. 4) write(6, '(A,I1,A,A)') 'Warning [shdom]: F output format ', nint(parms_Out(1, iout)),&
                         &' not supported for multiple processors: ', trim(adjustl(file_Out(iout)))
                 end if
             else if (type_Out(iout) .eq. 'H') then
                 if (nint(parms_Out(1, iout)) .eq. 3) then
-                    if (verbose_ .ge. 4) write (6, '(A,I1,A,A)') 'Warning [shdom]: H output format ', nint(parms_Out(1, iout)),&
+                    if (verbose_ .ge. 4) write(6, '(A,I1,A,A)') 'Warning [shdom]: H output format ', nint(parms_Out(1, iout)),&
                         &' not supported for multiple processors: ', trim(adjustl(file_Out(iout)))
                 end if
             else if (type_Out(iout) .eq. 'S') then
                 if (nint(parms_Out(1, iout)) .eq. 2) then
-                    if (verbose_ .ge. 4) write (6, '(A,I1,A,A)') 'Warning [shdom]: S output format ', nint(parms_Out(1, iout)),&
+                    if (verbose_ .ge. 4) write(6, '(A,I1,A,A)') 'Warning [shdom]: S output format ', nint(parms_Out(1, iout)),&
                         &' not supported for multiple processors: ', trim(adjustl(file_Out(iout)))
                 end if
             else if (type_Out(iout) .eq. 'J') then
-                if (verbose_ .ge. 4) write (6, '(A,A)') 'Warning [shdom]: J output format not supported for multiple processors: ',&
+                if (verbose_ .ge. 4) write(6, '(A,A)') 'Warning [shdom]: J output format not supported for multiple processors: ',&
                     &trim(adjustl(file_Out(iout)))
             else if (type_Out(iout) .eq. 'M') then
-                if (verbose_ .ge. 4) write (6, '(A,A)') 'Warning [shdom]: M output format not supported for multiple processors: ',&
+                if (verbose_ .ge. 4) write(6, '(A,A)') 'Warning [shdom]: M output format not supported for multiple processors: ',&
                     &trim(adjustl(file_Out(iout)))
             end if
         end do
@@ -854,9 +854,9 @@ program shdom
     memPerCpuMB_ = 0.9*memTotSysMB_/real(Nproc)
     if (MAX_TOTAL_MB .gt. memPerCpuMB_) then
         MAX_TOTAL_MB = memPerCpuMB_
-        if (verbose_ .ge. 5) write (6, '(A,F0.2," MB")') 'Message [shdom]: MAX_TOTAL_MB reduced to: ', MAX_TOTAL_MB
+        if (verbose_ .ge. 5) write(6, '(A,F0.2," MB")') 'Message [shdom]: MAX_TOTAL_MB reduced to: ', MAX_TOTAL_MB
     else
-        if (verbose_ .ge. 5) write (6, '(A,F0.2," MB")') 'Message [shdom]: MAX_TOTAL_MB is set to: ', MAX_TOTAL_MB
+        if (verbose_ .ge. 5) write(6, '(A,F0.2," MB")') 'Message [shdom]: MAX_TOTAL_MB is set to: ', MAX_TOTAL_MB
     end if
 
     if ((splitAcc .le. 1.0d-12) .and. (fileInp_sav(1:4) .eq. 'NONE')) then
@@ -942,14 +942,14 @@ program shdom
     end if
 
     if (scaleFactor .lt. 1.0) then
-        if (verbose_ .ge. 5) write (6, '(A,F8.2)') 'Message [shdom]: ADAPT_GRID_FACTOR reduced to:', ADAPT_GRID_FACTOR
+        if (verbose_ .ge. 5) write(6, '(A,F8.2)') 'Message [shdom]: ADAPT_GRID_FACTOR reduced to:', ADAPT_GRID_FACTOR
     else
-        if (verbose_ .ge. 5) write (6, '(A,F8.2)') 'Message [shdom]: ADAPT_GRID_FACTOR increased to:', ADAPT_GRID_FACTOR
+        if (verbose_ .ge. 5) write(6, '(A,F8.2)') 'Message [shdom]: ADAPT_GRID_FACTOR increased to:', ADAPT_GRID_FACTOR
     end if
 
     memNeed = scaleFactor*memNeed
     if (memNeed .gt. huge(shdo_obj_%maxNptsSH)) then
-        write (6, '(A,F8.2)') 'Error [shdom]: Number of words of memory exceeds max integer size:', memNeed
+        write(6, '(A,F8.2)') 'Error [shdom]: Number of words of memory exceeds max integer size:', memNeed
         stop
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
@@ -970,12 +970,12 @@ program shdom
     shdo_obj_%maxNptsDO = rtm_obj_%maxNpts*max(shdo_obj_%maxNphiA, 4)
 
     if (4.0*(shdo_obj_%maxNptsSH + rtm_obj_%maxNpts)*shdo_obj_%Nstokes .gt. huge(shdo_obj_%maxNptsSH)) then
-        write (6, '(A,I12)') 'Error [shdom]: Size of big SH arrays (shdo_obj_%maxNptsSH) probably exceeds max integer number of bytes:', shdo_obj_%maxNptsSH
+        write(6, '(A,I12)') 'Error [shdom]: Size of big SH arrays (shdo_obj_%maxNptsSH) probably exceeds max integer number of bytes:', shdo_obj_%maxNptsSH
         stop
     end if
 
     if (4.0*8.0*cell_obj_%maxNpts .gt. huge(shdo_obj_%maxNptsSH)) then
-        write (6, '(A,F8.2)') 'Error [shdom]: Size of i8Grid_Cell_ array (8*cell_obj_%maxNpts) probably exceeds max integer number of bytes:', 8*cell_obj_%maxNpts
+        write(6, '(A,F8.2)') 'Error [shdom]: Size of i8Grid_Cell_ array (8*cell_obj_%maxNpts) probably exceeds max integer number of bytes:', 8*cell_obj_%maxNpts
         stop
     end if
 
@@ -1099,7 +1099,7 @@ program shdom
     message = 'Message [shdom]: Total time used for preparation: '
     call shd_util__tickTock(message, countStart)
     if (isMasterProc) then
-        if (verbose_ .ge. 5) write (6, '(A)') trim(adjustl(message))
+        if (verbose_ .ge. 5) write(6, '(A)') trim(adjustl(message))
     end if
 
     ! solve radiative transfer equation
@@ -1107,7 +1107,7 @@ program shdom
     !   2. Compute actual radiance (and/or other radiative quantities specified by user)
     !╭────────────────────────────────────────────────────────────────────────────╮!
     if (verbose_ .ge. 5) &
-        write (6, '(A,"<",A,">")') 'Message [shdom]: Starting solution iterations for SHDOM run: ', &
+        write(6, '(A,"<",A,">")') 'Message [shdom]: Starting solution iterations for SHDOM run: ', &
             trim(adjustl(rtm_obj_%runName))
 
     totIter = 0
@@ -1117,7 +1117,7 @@ program shdom
     ! Loop over the k-distribution g's from high to low absorption
     CKD_LOOP: do ig_ckd = ckd_obj_%Ng, 1, -1
 
-        if (verbose_ .ge. 5) write (6, '(A,I2,A,I2,A)') 'Message [shdom]: Starting ', ckd_obj_%Ng-ig_ckd+1, '/', ckd_obj_%Ng, ' (ig/Ng) ...'
+        if (verbose_ .ge. 5) write(6, '(A,I2,A,I2,A)') 'Message [shdom]: Starting ', ckd_obj_%Ng-ig_ckd+1, '/', ckd_obj_%Ng, ' (ig/Ng) ...'
 
         ! solar flux for given g of CKD
         src_obj_%avgSolar0 = solar_Ckd_(ig_ckd)*src_obj_%inpSolar*abs(src_obj_%avgMu)
@@ -1271,7 +1271,7 @@ program shdom
     message = 'Message [shdom]: Total time used for runs: '
     call shd_util__tickTock(message, countStart)
     if (isMasterProc) then
-        if (verbose_ .ge. 5) write (6, '(A)') trim(adjustl(message))
+        if (verbose_ .ge. 5) write(6, '(A)') trim(adjustl(message))
     end if
 
     ! Output radiance and/or flux (and/or other radiative quantities)
@@ -1367,7 +1367,7 @@ program shdom
     message = 'Message [shdom]: Total time used for output: '
     call shd_util__tickTock(message, countStart)
     if (isMasterProc) then
-        if (verbose_ .ge. 5) write (6, '(A)') trim(adjustl(message))
+        if (verbose_ .ge. 5) write(6, '(A)') trim(adjustl(message))
     end if
 
 
@@ -1388,9 +1388,9 @@ program shdom
     SHTERM_FAC_OUT   = float(shdo_obj_%Nsh)/(shdo_obj_%Nlm*rtm_obj_%Npts)
     CELL_POINT_OUT   = float(cell_obj_%Npts)/rtm_obj_%Npts
     if (verbose_ .ge. 5) &
-        write (6, '(A)')'Message [shdom]: Actual MAX_TOTAL_MB, ADAPT_GRID_FACTOR, NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO'
+        write(6, '(A)')'Message [shdom]: Actual MAX_TOTAL_MB, ADAPT_GRID_FACTOR, NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO'
     if (verbose_ .ge. 5) &
-        write (6, '(26X,F9.2,6X,F7.3,14X,F5.3,15X,F5.3)') MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
+        write(6, '(26X,F9.2,6X,F7.3,14X,F5.3,15X,F5.3)') MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
 

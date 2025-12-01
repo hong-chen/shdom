@@ -1171,7 +1171,7 @@ subroutine shd_grid__InterpTriLinGridPrp(&
     IX = int((x0 - prp_obj_%xStart)/prp_obj_%dx) + 1
     if (abs(x0 - prp_obj_%xStart - prp_obj_%Nx*prp_obj_%dx) .lt. 0.01*prp_obj_%dx) IX = prp_obj_%Nx
     if (IX .lt. 1 .or. IX .gt. prp_obj_%Nx) then
-        write (6, *) 'Error [_InterpTriLinGridPrp]: Beyond X domain.'
+        write(6, *) 'Error [_InterpTriLinGridPrp]: Beyond X domain.'
         stop
     end if
     IXP = mod(IX, prp_obj_%Nx) + 1
@@ -1183,7 +1183,7 @@ subroutine shd_grid__InterpTriLinGridPrp(&
     IY = int((y0 - prp_obj_%yStart)/prp_obj_%dy) + 1
     if (abs(y0 - prp_obj_%yStart - prp_obj_%Ny*prp_obj_%dy) .lt. 0.01*prp_obj_%dy) IY = prp_obj_%Ny
     if (IY .lt. 1 .or. IY .gt. prp_obj_%Ny) then
-        write (6, *) 'Error [_InterpTriLinGridPrp]: Beyond Y domain.'
+        write(6, *) 'Error [_InterpTriLinGridPrp]: Beyond Y domain.'
         stop
     end if
     IYP = mod(IY, prp_obj_%Ny) + 1
@@ -1775,7 +1775,7 @@ subroutine shd_grid__splitGrid(&
         end do
         if (isOutMem0) then
             isOutMem = .true.
-            !write (6, '(2A,I8,A,I8)')&
+            !write(6, '(2A,I8,A,I8)')&
             !    &'Message [_splitGrid]: Further cell splitting requires larger array allocations: ',&
             !    &'cell_obj%Npts= ', cell_obj%Npts, ', NPts = ', rtm_obj%Npts
         end if

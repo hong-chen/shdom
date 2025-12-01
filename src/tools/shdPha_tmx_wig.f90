@@ -459,8 +459,8 @@ subroutine TMATRIXWIG(wavelength, mindex, radius,&
 
       !  OPEN FILES *******************************************************
 
-      ! open (6,FILE='test')
-      ! open (10,FILE='tmatr.write')
+      ! open(6,FILE='test')
+      ! open(10,FILE='tmatr.write')
 
       extcross = 0.0
       scatcross = 0.0
@@ -493,7 +493,7 @@ subroutine TMATRIXWIG(wavelength, mindex, radius,&
       NCHECK = 0
       if (NP .eq. -1 .or. NP .eq. -2) NCHECK = 1
       if (NP .gt. 0 .and. (-1)**NP .eq. 1) NCHECK = 1
-      ! write (6,5454) NCHECK
+      ! write(6,5454) NCHECK
 5454  format('NCHECK=', I1)
       DAX = AXMAX/NPNAX
       if (DABS(RAT - 1d0) .gt. 1d-8 .and. NP .eq. -1) call SAREA(EPS, RAT)
@@ -807,9 +807,9 @@ subroutine TMATRIXWIG(wavelength, mindex, radius,&
           ssalbedo = WALB
           asymmetry = ASYMM
 
-          ! WRITE (10,580) WALB,L1MAX
+          ! write(10,580) WALB,L1MAX
           ! DO L=1,L1MAX
-          !     WRITE (10,575) ALPH1(L),ALPH2(L),ALPH3(L),ALPH4(L),
+          !     write(10,575) ALPH1(L),ALPH2(L),ALPH3(L),ALPH4(L),
           !     & BET1(L),BET2(L)
           ! ENDDO
 575       format(6d14.7)
@@ -1834,9 +1834,9 @@ subroutine TT(NMAX, NCHECK)
       end do
       INFO = 0
       call ZGETRF(NNMAX, NNMAX, ZQ, NPN2, IPIV, INFO)
-      if (INFO .ne. 0) write (6, 1100) INFO
+      if (INFO .ne. 0) write(6, 1100) INFO
       call ZGETRI(NNMAX, ZQ, NPN2, IPIV, ZW, NPN2, INFO)
-      if (INFO .ne. 0) write (6, 1100) INFO
+      if (INFO .ne. 0) write(6, 1100) INFO
 
 1100  format('WARNING: matrix inversion error info=', i6)
       do I = 1, NNMAX
@@ -2372,7 +2372,7 @@ subroutine CCG(N, N1, NMAX, K1, K2, GG)
 50        do 9 NN = NNL, NNF
               if (NN .le. NNM) GG(MIND, NN + 1) = CU(NN)
               if (NN .gt. NNM) GG(MIND, NN + 1) = CD(NN)
-              ! write (6,*) N,M,N1,M1,NN,MM,GG(MIND,NN+1)
+              ! write(6,*) N,M,N1,M1,NN,MM,GG(MIND,NN+1)
 9         continue
 90        continue
 100   end do

@@ -68,56 +68,56 @@ program PLOTSCATTAB
                      '  P11  ', '  P11  ', '  P11  ', &
                      '  P22  ', '  P33  ', '  P44  ', '  P12  ', '  P34  '/)
 
-    write (*, *) 'Scattering table or SHDOM property file input (S or P)'
-    read (*, '(A1)') FILETYPE
-    write (*, '(1X,A1)') FILETYPE
+    write(*, *) 'Scattering table or SHDOM property file input (S or P)'
+    read(*, '(A1)') FILETYPE
+    write(*, '(1X,A1)') FILETYPE
 
-    write (*, *) 'Input file name'
-    read (*, '(A)') INFILE
-    write (*, '(A)') INFILE
+    write(*, *) 'Input file name'
+    read(*, '(A)') INFILE
+    write(*, '(A)') INFILE
 
-    write (*, '(1X,A)') 'Number of angles (<0 to input |n| angles)'
-    read (*, *) NANGLE
-    write (*, *) NANGLE
+    write(*, '(1X,A)') 'Number of angles (<0 to input |n| angles)'
+    read(*, *) NANGLE
+    write(*, *) NANGLE
     allocate(ANGLE(abs(NANGLE)))
     if (NANGLE <= 0) then
         NANGLE = abs(NANGLE)
-        write (*, *) 'Input the angles (degrees)'
+        write(*, *) 'Input the angles (degrees)'
         do J = 1, NANGLE
-            write (*, '(1X,I3,A)') J, ' : '
-            read (*, *) ANGLE(J)
+            write(*, '(1X,I3,A)') J, ' : '
+            read(*, *) ANGLE(J)
         end do
     else
         ANGLE(:) = (/(180.0*FLOAT(J - 1)/(NANGLE - 1), J=1, NANGLE)/)
     end if
 
     if (FILETYPE == 'P') then
-        write (*, '(1X,A)') 'Number of phase functions to output'
-        read (*, *) NOUT
-        write (*, *) NOUT
+        write(*, '(1X,A)') 'Number of phase functions to output'
+        read(*, *) NOUT
+        write(*, *) NOUT
         allocate(OUTREFF(NOUT))
-        write (*, *) 'Input the tabulated phase function indices'
-        read (*, *) OUTREFF(:)
-        write (*, '(20(1X,I4))') nint(OUTREFF(:))
-        write (*, *) 'Phase matrix elements to output for each phase function index'
+        write(*, *) 'Input the tabulated phase function indices'
+        read(*, *) OUTREFF(:)
+        write(*, '(20(1X,I4))') nint(OUTREFF(:))
+        write(*, *) 'Phase matrix elements to output for each phase function index'
     else
-        write (*, '(1X,A)') 'Number of effective radii/matrix elements to output'
-        read (*, *) NOUT
-        write (*, *) NOUT
+        write(*, '(1X,A)') 'Number of effective radii/matrix elements to output'
+        read(*, *) NOUT
+        write(*, *) NOUT
         allocate(OUTREFF(NOUT))
-        write (*, *) 'Input the effective radii (micron)'
-        read (*, *) OUTREFF(:)
-        write (*, '(20(1X,F6.2))') OUTREFF(:)
-        write (*, *) 'Phase matrix elements to output for each effective radius'
+        write(*, *) 'Input the effective radii (micron)'
+        read(*, *) OUTREFF(:)
+        write(*, '(20(1X,F6.2))') OUTREFF(:)
+        write(*, *) 'Phase matrix elements to output for each effective radius'
     end if
     allocate(PELEM(NOUT))
-    write (*, *) '(1=P11, 2=P22, 3=P33, 4=P44, 5=P12, 6=P34) (<0 for ratio to P11)'
-    read (*, *) PELEM(:)
-    write (*, '(20(1X,I2))') PELEM(:)
+    write(*, *) '(1=P11, 2=P22, 3=P33, 4=P44, 5=P12, 6=P34) (<0 for ratio to P11)'
+    read(*, *) PELEM(:)
+    write(*, '(20(1X,I2))') PELEM(:)
 
-    write (*, *) 'Plotting output file name'
-    read (*, '(A)') PLOTFILE
-    write (*, '(A)') PLOTFILE
+    write(*, *) 'Plotting output file name'
+    read(*, '(A)') PLOTFILE
+    write(*, '(A)') PLOTFILE
 
     PELEM(:) = min(6, max(-6, PELEM(:)))
     where (PELEM(:) == -1 .or. PELEM(:) == 0)
@@ -158,22 +158,22 @@ program PLOTSCATTAB
     end do
 
     ! Output the phase functions
-    open (UNIT=1, FILE=trim(adjustl(PLOTFILE)), STATUS='UNKNOWN')
+    open(UNIT=1, FILE=trim(adjustl(PLOTFILE)), STATUS='UNKNOWN')
     if (FILETYPE == 'P') then
-        write (1, '(A,A40)') '!  Property file phase functions: ', INFILE
-        write (1, '(A)') '! Angle  cos(angle)  Phase functions with index numbers'
-        write (1, '(A,20(6X,I3,3X))') '!               ', (nint(OUTREFF(K)), K=1, NOUT)
+        write(1, '(A,A40)') '!  Property file phase functions: ', INFILE
+        write(1, '(A)') '! Angle  cos(angle)  Phase functions with index numbers'
+        write(1, '(A,20(6X,I3,3X))') '!               ', (nint(OUTREFF(K)), K=1, NOUT)
     else
-        write (1, '(A,A40)') '!  Scattering table phase functions: ', INFILE
-        write (1, '(A)') '! Angle  cos(angle)  Phase functions for effective radii (um) / matrix element'
-        write (1, '(A,20(6X,F6.2))') '!               ', (OUTREFF(K), K=1, NOUT)
+        write(1, '(A,A40)') '!  Scattering table phase functions: ', INFILE
+        write(1, '(A)') '! Angle  cos(angle)  Phase functions for effective radii (um) / matrix element'
+        write(1, '(A,20(6X,F6.2))') '!               ', (OUTREFF(K), K=1, NOUT)
     end if
-    write (1, '(A,20(5X,A7))') '!                ', (ELEMNAMES(PELEM(K)), K=1, NOUT)
+    write(1, '(A,20(5X,A7))') '!                ', (ELEMNAMES(PELEM(K)), K=1, NOUT)
     do J = 1, NANGLE
-        write (1, '(1X,F7.2,1X,F9.6,20(E12.4))') &
+        write(1, '(1X,F7.2,1X,F9.6,20(E12.4))') &
             ANGLE(J), cos(ANGLE(J)*PI/180.0), (PHASE(J, K), K=1, NOUT)
     end do
-    close (1)
+    close(1)
 
     deallocate(PHASE, REFF, NCOEF, WIGCOEF, OUTREFF, ANGLE, PELEM)
 end program
@@ -190,18 +190,18 @@ subroutine READ_SCAT_TABLE_SIZE(SCATTABFILE, POLTAB, NPHASEPOL, &
     integer :: I, J, L, NCOEF, IERR
     real    :: REFF, EXT, SSALB, CHI
 
-    open (UNIT=3, FILE=trim(adjustl(SCATTABFILE)), STATUS='OLD')
-    read (3, *)
-    read (3, *)
-    read (3, *)
-    read (3, *)
-    read (3, *)
-    read (3, *) NRETAB
+    open(UNIT=3, FILE=trim(adjustl(SCATTABFILE)), STATUS='OLD')
+    read(3, *)
+    read(3, *)
+    read(3, *)
+    read(3, *)
+    read(3, *)
+    read(3, *) NRETAB
     ! See if this is a polarized scattering table
-    read (3, *) REFF, EXT, SSALB, NCOEF
+    read(3, *) REFF, EXT, SSALB, NCOEF
     POLTAB = .true.
     do I = 1, 6
-        read (3, *, IOSTAT=IERR) J, (CHI, L=0, NCOEF)
+        read(3, *, IOSTAT=IERR) J, (CHI, L=0, NCOEF)
         if (IERR > 0) then
             POLTAB = .false.
             exit
@@ -209,29 +209,29 @@ subroutine READ_SCAT_TABLE_SIZE(SCATTABFILE, POLTAB, NPHASEPOL, &
         if (J /= I) POLTAB = .false.
     end do
     rewind (3)
-    read (3, *)
-    read (3, *)
-    read (3, *)
-    read (3, *)
-    read (3, *)
-    read (3, *) NRETAB
+    read(3, *)
+    read(3, *)
+    read(3, *)
+    read(3, *)
+    read(3, *)
+    read(3, *) NRETAB
     ! Read the rest of the table to get the maximum Ncoef
     MAXNCOEF = 1
     do I = 1, NRETAB
-        read (3, *) REFF, EXT, SSALB, NCOEF
+        read(3, *) REFF, EXT, SSALB, NCOEF
         MAXNCOEF = max(MAXNCOEF, NCOEF)
         if (POLTAB) then
-            read (3, *) J, (CHI, L=0, NCOEF)
-            read (3, *) J, (CHI, L=0, NCOEF)
-            read (3, *) J, (CHI, L=0, NCOEF)
-            read (3, *) J, (CHI, L=0, NCOEF)
-            read (3, *) J, (CHI, L=0, NCOEF)
-            read (3, *) J, (CHI, L=0, NCOEF)
+            read(3, *) J, (CHI, L=0, NCOEF)
+            read(3, *) J, (CHI, L=0, NCOEF)
+            read(3, *) J, (CHI, L=0, NCOEF)
+            read(3, *) J, (CHI, L=0, NCOEF)
+            read(3, *) J, (CHI, L=0, NCOEF)
+            read(3, *) J, (CHI, L=0, NCOEF)
         else
-            read (3, *) (CHI, L=0, NCOEF)
+            read(3, *) (CHI, L=0, NCOEF)
         end if
     end do
-    close (3)
+    close(3)
     if (POLTAB) then
         NPHASEPOL = 6
     else
@@ -256,32 +256,32 @@ subroutine READ_SCAT_TABLE(SCATTABFILE, POLTAB, NPHASEPOL, NRETAB, RETAB, &
     integer :: I, J, L
     real    :: CHI, EXTINCT, SSALB
 
-    open (UNIT=1, FILE=trim(adjustl(SCATTABFILE)), STATUS='OLD')
-    read (1, *)
-    read (1, *)
-    read (1, *)
-    read (1, *)
-    read (1, *)
-    read (1, *)
+    open(UNIT=1, FILE=trim(adjustl(SCATTABFILE)), STATUS='OLD')
+    read(1, *)
+    read(1, *)
+    read(1, *)
+    read(1, *)
+    read(1, *)
+    read(1, *)
     do I = 1, NRETAB
-        read (1, *) RETAB(I), EXTINCT, SSALB, NCOEF(I)
+        read(1, *) RETAB(I), EXTINCT, SSALB, NCOEF(I)
         if (POLTAB) then
-            read (1, *) J, (WIGCOEF(1, L, I), L=0, NCOEF(I))
+            read(1, *) J, (WIGCOEF(1, L, I), L=0, NCOEF(I))
             if (NPHASEPOL > 1) then
-                read (1, *) J, (WIGCOEF(2, L, I), L=0, NCOEF(I))
-                read (1, *) J, (WIGCOEF(3, L, I), L=0, NCOEF(I))
-                read (1, *) J, (WIGCOEF(4, L, I), L=0, NCOEF(I))
-                read (1, *) J, (WIGCOEF(5, L, I), L=0, NCOEF(I))
-                read (1, *) J, (WIGCOEF(6, L, I), L=0, NCOEF(I))
+                read(1, *) J, (WIGCOEF(2, L, I), L=0, NCOEF(I))
+                read(1, *) J, (WIGCOEF(3, L, I), L=0, NCOEF(I))
+                read(1, *) J, (WIGCOEF(4, L, I), L=0, NCOEF(I))
+                read(1, *) J, (WIGCOEF(5, L, I), L=0, NCOEF(I))
+                read(1, *) J, (WIGCOEF(6, L, I), L=0, NCOEF(I))
             else
-                read (1, *) J, (CHI, L=0, NCOEF(I))
-                read (1, *) J, (CHI, L=0, NCOEF(I))
-                read (1, *) J, (CHI, L=0, NCOEF(I))
-                read (1, *) J, (CHI, L=0, NCOEF(I))
-                read (1, *) J, (CHI, L=0, NCOEF(I))
+                read(1, *) J, (CHI, L=0, NCOEF(I))
+                read(1, *) J, (CHI, L=0, NCOEF(I))
+                read(1, *) J, (CHI, L=0, NCOEF(I))
+                read(1, *) J, (CHI, L=0, NCOEF(I))
+                read(1, *) J, (CHI, L=0, NCOEF(I))
             end if
         else
-            read (1, *) (WIGCOEF(1, L, I), L=0, NCOEF(I))
+            read(1, *) (WIGCOEF(1, L, I), L=0, NCOEF(I))
             if (NPHASEPOL > 1) then
                 WIGCOEF(2, :, I) = 0.0
                 WIGCOEF(3, :, I) = 0.0
@@ -299,7 +299,7 @@ subroutine READ_SCAT_TABLE(SCATTABFILE, POLTAB, NPHASEPOL, NRETAB, RETAB, &
             stop
         end if
     end do
-    close (1)
+    close(1)
 end subroutine READ_SCAT_TABLE
 
 subroutine READ_PROPERTY_SIZE(PROPFILE, NPHASEPOL, NUMPHASE, MAXNCOEF)
@@ -313,20 +313,20 @@ subroutine READ_PROPERTY_SIZE(PROPFILE, NPHASEPOL, NUMPHASE, MAXNCOEF)
     character(LEN=1) :: PROPTYPE
 
     ! Open the file, figure out the type, and get the grid size
-    open (UNIT=2, FILE=trim(adjustl(PROPFILE)), STATUS='OLD')
-    read (2, '(A1)') PROPTYPE
+    open(UNIT=2, FILE=trim(adjustl(PROPFILE)), STATUS='OLD')
+    read(2, '(A1)') PROPTYPE
     if (PROPTYPE /= 'T' .and. PROPTYPE /= 'P') then
         print *, 'Error [READ_PROPERTY_SIZE]: Must be a tabulated phase function property file.'
         stop
     end if
-    read (2, *) NPX, NPY, NPZ
-    read (2, *) DELX, DELY, (ZLEVELS, K=1, NPZ)
-    read (2, *) NUMPHASE
+    read(2, *) NPX, NPY, NPZ
+    read(2, *) DELX, DELY, (ZLEVELS, K=1, NPZ)
+    read(2, *) NUMPHASE
     if (PROPTYPE .eq. 'T') then
         ! Property file type T is for tabulated phase function format
         NPHASEPOL = 1
         do I = 1, NUMPHASE
-            read (2, *) NUML, (CHI, L=1, NUML)
+            read(2, *) NUML, (CHI, L=1, NUML)
             MAXNCOEF = max(NUML, MAXNCOEF)
         end do
     else if (PROPTYPE .eq. 'P') then
@@ -334,7 +334,7 @@ subroutine READ_PROPERTY_SIZE(PROPFILE, NPHASEPOL, NUMPHASE, MAXNCOEF)
         NPHASEPOL = 6
         do I = 1, NUMPHASE
             do J = 1, 6
-                read (2, *) K, NUML, (CHI, L=0, NUML)
+                read(2, *) K, NUML, (CHI, L=0, NUML)
                 if (K /= J) then
                     print *, 'Error [READ_PROPERTY_SIZE]: Error reading  polarized tabulated phase function format.'
                     stop
@@ -343,7 +343,7 @@ subroutine READ_PROPERTY_SIZE(PROPFILE, NPHASEPOL, NUMPHASE, MAXNCOEF)
             end do
         end do
     end if
-    close (2)
+    close(2)
 end subroutine READ_PROPERTY_SIZE
 
 subroutine READ_PROPERTY_PHASEMAT(PROPFILE, NPHASEPOL, NUMPHASE, MAXNCOEF, &
@@ -359,22 +359,22 @@ subroutine READ_PROPERTY_PHASEMAT(PROPFILE, NPHASEPOL, NUMPHASE, MAXNCOEF, &
     real    :: DELX, DELY, ZLEVELS
     character(LEN=1) :: PROPTYPE
 
-    open (UNIT=2, FILE=trim(adjustl(PROPFILE)), STATUS='OLD')
-    read (2, '(A1)') PROPTYPE
-    read (2, *) NPX, NPY, NPZ
-    read (2, *) DELX, DELY, (ZLEVELS, K=1, NPZ)
-    read (2, *)
+    open(UNIT=2, FILE=trim(adjustl(PROPFILE)), STATUS='OLD')
+    read(2, '(A1)') PROPTYPE
+    read(2, *) NPX, NPY, NPZ
+    read(2, *) DELX, DELY, (ZLEVELS, K=1, NPZ)
+    read(2, *)
     do I = 1, NUMPHASE
         if (PROPTYPE .eq. 'T') then
-            read (2, *) NCOEF(I), (WIGCOEF(1, L, I), L=1, NCOEF(I))
+            read(2, *) NCOEF(I), (WIGCOEF(1, L, I), L=1, NCOEF(I))
             WIGCOEF(1, 0, I) = 1.0
         else
             do J = 1, 6
-                read (2, *) K, NCOEF(I), (WIGCOEF(K, L, I), L=0, NCOEF(I))
+                read(2, *) K, NCOEF(I), (WIGCOEF(K, L, I), L=0, NCOEF(I))
             end do
         end if
     end do
-    close (2)
+    close(2)
 end subroutine READ_PROPERTY_PHASEMAT
 
 subroutine TRANSFORM_WIGNERD_TO_PHASE(MAXNCOEF, NPHASEPOL, &

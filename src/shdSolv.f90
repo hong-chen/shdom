@@ -259,9 +259,9 @@ subroutine shd_solv__solveRte(&
                     &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
                     &brdf_Shdo)
             else
-                write (*, '(A,A)') 'Not enough memory to allocate precomputed',&
+                write(*, '(A,A)') 'Not enough memory to allocate precomputed',&
                     &' surface BRDF discrete ordinate matrix: '
-                write (*, *) '  Proceeding more slowly.'
+                write(*, *) '  Proceeding more slowly.'
                 sfc_obj_%isUniform = .false.
             end if
         end if
@@ -296,8 +296,8 @@ subroutine shd_solv__solveRte(&
     SPLITCRIT = 0.0
 
     if (verbose_ .ge. 5) then
-        write (6, '(A)') 'Message [_solveRte]:'
-        write (6, '(A)') '+ Iter  Log(Sol)  SplitCrit  Npoints   Ncells  Nsh(avg)'
+        write(6, '(A)') 'Message [_solveRte]:'
+        write(6, '(A)') '+ Iter  Log(Sol)  SplitCrit  Npoints   Ncells  Nsh(avg)'
     end if
 
     ! Main solution loop
@@ -406,7 +406,7 @@ subroutine shd_solv__solveRte(&
         ! Print out the log solution criterion, number of points,
         !   and average SH truncation.
         if (doSplit) then
-            if (verbose_ .ge. 5) write (6, '("S",1X,I4,2X,F7.3,2X,E10.3,1X,I8,1X,I8,1X,F8.2,2X,F6.2," sec")')&
+            if (verbose_ .ge. 5) write(6, '("S",1X,I4,2X,F7.3,2X,E10.3,1X,I8,1X,I8,1X,F8.2,2X,F6.2," sec")')&
                 &ITER, log10(max(SOLCRIT, 1.0e-20)),&
                 &SPLITCRIT,&
                 &rtm_obj_%Npts,&
@@ -416,7 +416,7 @@ subroutine shd_solv__solveRte(&
                 !&float(isrcJ_Shdo_(rtm_obj_%Npts + 1))/(rtm_obj_%Npts*shdo_obj_%Nlm)
         else
             if (isOutMem) then
-                if (verbose_ .ge. 5) write (6, '("M",1X,I4,2X,F7.3,2X,E10.3,1X,I8,1X,I8,1X,F8.2,2X,F6.2," sec")')&
+                if (verbose_ .ge. 5) write(6, '("M",1X,I4,2X,F7.3,2X,E10.3,1X,I8,1X,I8,1X,F8.2,2X,F6.2," sec")')&
                     &ITER, log10(max(SOLCRIT, 1.0e-20)),&
                     &SPLITCRIT,&
                     &rtm_obj_%Npts,&
@@ -425,7 +425,7 @@ subroutine shd_solv__solveRte(&
                     &ELAPSED_TIME
                     !&float(isrcJ_Shdo_(rtm_obj_%Npts + 1))/(rtm_obj_%Npts*shdo_obj_%Nlm)
             else
-                if (verbose_ .ge. 5) write (6, '(2X,I4,2X,F7.3,2X,E10.3,1X,I8,1X,I8,1X,F8.2,2X,F6.2," sec")')&
+                if (verbose_ .ge. 5) write(6, '(2X,I4,2X,F7.3,2X,E10.3,1X,I8,1X,I8,1X,F8.2,2X,F6.2," sec")')&
                     &ITER, log10(max(SOLCRIT, 1.0e-20)),&
                     &SPLITCRIT,&
                     &rtm_obj_%Npts,&
@@ -437,7 +437,7 @@ subroutine shd_solv__solveRte(&
         end if
     end do PICARD_ITER_LOOP
 
-    if (verbose_ .ge. 5) write (6, '(A,I4,A,F9.6)') '- Iterations: ', ITER,&
+    if (verbose_ .ge. 5) write(6, '(A,I4,A,F9.6)') '- Iterations: ', ITER,&
         &', Final Criterion: ', SOLCRIT
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
@@ -577,7 +577,7 @@ subroutine shd_solv__truncRad(doHighOrder, doFixSH, SHACC,&
         IR = IR + NR
         iradI_Shdo(I + 1) = IR
         if (IR .gt. MAXIR) then
-            if (verbose_ .ge. 4) write (6, *)&
+            if (verbose_ .ge. 4) write(6, *)&
                 &'Warning [_truncRad]: Out of memory for more radiance terms.'
             goto 190
         end if
@@ -603,9 +603,9 @@ subroutine shd_solv__truncRad(doHighOrder, doFixSH, SHACC,&
         end if
         IR = IR + NR
         if (IR .gt. MAXIR) then
-            write (6, *) 'Error [_truncRad]: Really out of memory ',&
+            write(6, *) 'Error [_truncRad]: Really out of memory ',&
                 &'for more radiance terms.'
-            write (6, *) '  Increase shdo_obj_%maxNptsSH.'
+            write(6, *) '  Increase shdo_obj_%maxNptsSH.'
             stop
         end if
         iradI_Shdo(I + 1) = IR

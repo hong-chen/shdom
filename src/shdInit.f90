@@ -170,9 +170,9 @@ subroutine shd_init__makeGrid(rtm_OBJ, &
         case ('P', 'p', 'S', 's')
 
             if (rtm_obj%Nz .ne. prp_obj%Nz) then
-                write (6, *)&
+                write(6, *)&
                     &'Error [_makeGrid]: For internal Z grid same as property file grid,'
-                write (6, *) '  must have same number of grid points (rtm_obj%Nz=prp_obj%Nz).'
+                write(6, *) '  must have same number of grid points (rtm_obj%Nz=prp_obj%Nz).'
                 stop
             end if
             do iz = 1, rtm_obj%Nz
@@ -189,11 +189,11 @@ subroutine shd_init__makeGrid(rtm_OBJ, &
         case ('F', 'f')
 
             if (verbose_ .ge. 5) write(*, '(A)') 'Message [_makeGrid]: Reading rtm_obj%z from <shdom-zgrid.txt> ...'
-            open (UNIT=3, FILE='shdom-zgrid.txt', STATUS='OLD')
+            open(UNIT=3, FILE='shdom-zgrid.txt', STATUS='OLD')
             do iz = 1, rtm_obj%Nz
-                read (3, *) rtm_obj%z(iz)
+                read(3, *) rtm_obj%z(iz)
             end do
-            close (3)
+            close(3)
 
         case default
 

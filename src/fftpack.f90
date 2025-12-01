@@ -2983,11 +2983,11 @@
       integer ( kind = 4 ) info
       character ( len = * ) srname
 
-      write ( *, '(a)' ) ' '
-      write ( *, '(a)' ) 'XERFFT - Fatal error!'
+      write( *, '(a)' ) ' '
+      write( *, '(a)' ) 'XERFFT - Fatal error!'
 
       if ( 1 <= info ) then
-        write ( *, '(a,a,a,i3,a)') '  On entry to ', trim ( srname ), &
+        write( *, '(a,a,a,i3,a)') '  On entry to ', trim ( srname ), &
           ' parameter number ', info, ' had an illegal value.'
       else if ( info == -1 ) then
         write( *, '(a,a,a,a)') '  On entry to ', trim ( srname ), &

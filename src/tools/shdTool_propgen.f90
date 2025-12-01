@@ -91,66 +91,66 @@ contains
         integer :: I
         logical :: VERBOSE=.FALSE.
 
-        if (VERBOSE) write (*, *) 'Number of input scattering tables'
-        read (*, *) NSCATTAB
-        if (VERBOSE) write (*, *) NSCATTAB
+        if (VERBOSE) write(*, *) 'Number of input scattering tables'
+        read(*, *) NSCATTAB
+        if (VERBOSE) write(*, *) NSCATTAB
 
         allocate(SCATTABFILES(NSCATTAB), SCATNUMS(NSCATTAB), POLTABS(NSCATTAB))
         if (NSCATTAB > 0) then
-            if (VERBOSE) write (*, *) 'Name of each scattering table'
+            if (VERBOSE) write(*, *) 'Name of each scattering table'
             do I = 1, NSCATTAB
-                read (*, '(A)') SCATTABFILES(I)
-                if (VERBOSE) write (*, '(A256)') SCATTABFILES(I)
+                read(*, '(A)') SCATTABFILES(I)
+                if (VERBOSE) write(*, '(A256)') SCATTABFILES(I)
             end do
-            if (VERBOSE) write (*, *) 'Index or type of each scattering table'
-            read (*, *) SCATNUMS(1:NSCATTAB)
-            if (VERBOSE) write (*, '(20(1X,I2))') SCATNUMS(1:NSCATTAB)
-            if (VERBOSE) write (*, *) 'Polarization flag (T or F) for each scattering table'
-            read (*, *) POLTABS(1:NSCATTAB)
-            if (VERBOSE) write (*, '(20(1X,L1))') POLTABS(1:NSCATTAB)
+            if (VERBOSE) write(*, *) 'Index or type of each scattering table'
+            read(*, *) SCATNUMS(1:NSCATTAB)
+            if (VERBOSE) write(*, '(20(1X,I2))') SCATNUMS(1:NSCATTAB)
+            if (VERBOSE) write(*, *) 'Polarization flag (T or F) for each scattering table'
+            read(*, *) POLTABS(1:NSCATTAB)
+            if (VERBOSE) write(*, '(20(1X,L1))') POLTABS(1:NSCATTAB)
         end if
 
-        if (VERBOSE) write (*, *) 'Input particle properties filename (or NONE for Rayleigh only)'
-        read (*, '(A)') PARFILE
-        if (VERBOSE) write (*, '(A256)') PARFILE
+        if (VERBOSE) write(*, *) 'Input particle properties filename (or NONE for Rayleigh only)'
+        read(*, '(A)') PARFILE
+        if (VERBOSE) write(*, '(A256)') PARFILE
 
-        if (VERBOSE) write (*, *) 'Maximum number of new phase functions created'
-        read (*, *) MAXNEWPHASE
-        if (VERBOSE) write (*, '(1X,I4)') MAXNEWPHASE
+        if (VERBOSE) write(*, *) 'Maximum number of new phase functions created'
+        read(*, *) MAXNEWPHASE
+        if (VERBOSE) write(*, '(1X,I4)') MAXNEWPHASE
 
-        if (VERBOSE) write (*, *) 'Tolerance in asymmetry parameter for creating a new phase function'
-        read (*, *) ASYMTOL
-        if (VERBOSE) write (*, '(1X,F6.4)') ASYMTOL
+        if (VERBOSE) write(*, *) 'Tolerance in asymmetry parameter for creating a new phase function'
+        read(*, *) ASYMTOL
+        if (VERBOSE) write(*, '(1X,F6.4)') ASYMTOL
 
-        if (VERBOSE) write (*, *) 'Maximum fractional error tolerance in value for creating a new phase function'
-        read (*, *) FRACPHASETOL
-        if (VERBOSE) write (*, '(1X,F6.3)') FRACPHASETOL
+        if (VERBOSE) write(*, *) 'Maximum fractional error tolerance in value for creating a new phase function'
+        read(*, *) FRACPHASETOL
+        if (VERBOSE) write(*, '(1X,F6.3)') FRACPHASETOL
 
-        if (VERBOSE) write (*, *) 'Wavelength for Rayleigh molecular scattering (micron)'
-        read (*, *) RAYWAVELEN
-        if (VERBOSE) write (*, *) RAYWAVELEN
+        if (VERBOSE) write(*, *) 'Wavelength for Rayleigh molecular scattering (micron)'
+        read(*, *) RAYWAVELEN
+        if (VERBOSE) write(*, *) RAYWAVELEN
 
-        if (VERBOSE) write (*, *) 'Surface pressure for Rayleigh molecular scattering (mb or hPa)'
-        read (*, *) RAYSFCPRES
-        if (VERBOSE) write (*, *) RAYSFCPRES
+        if (VERBOSE) write(*, *) 'Surface pressure for Rayleigh molecular scattering (mb or hPa)'
+        read(*, *) RAYSFCPRES
+        if (VERBOSE) write(*, *) RAYSFCPRES
 
-        if (VERBOSE) write (*, *) 'Number of extra Z levels'
-        read (*, *) NZO
-        if (VERBOSE) write (*, '(1X,I3)') NZO
+        if (VERBOSE) write(*, *) 'Number of extra Z levels'
+        read(*, *) NZO
+        if (VERBOSE) write(*, '(1X,I3)') NZO
         allocate(ZOTHER(NZO), TEMPOTHER(NZO))
         do I = 1, NZO
-            if (VERBOSE) write (*, *) 'Height (km) and temperature (K) :', I
-            read (*, *) ZOTHER(I), TEMPOTHER(I)
-            if (VERBOSE) write (*, '(1X,F7.3,1X,F6.2)') ZOTHER(I), TEMPOTHER(I)
+            if (VERBOSE) write(*, *) 'Height (km) and temperature (K) :', I
+            read(*, *) ZOTHER(I), TEMPOTHER(I)
+            if (VERBOSE) write(*, '(1X,F7.3,1X,F6.2)') ZOTHER(I), TEMPOTHER(I)
         end do
 
-        if (VERBOSE) write (*, *) 'Output polarized (P) or unpolarized (U) SHDOM property file'
-        read (*, '(A)') POLOUT
-        if (VERBOSE) write (*, *) POLOUT
+        if (VERBOSE) write(*, *) 'Output polarized (P) or unpolarized (U) SHDOM property file'
+        read(*, '(A)') POLOUT
+        if (VERBOSE) write(*, *) POLOUT
 
-        if (VERBOSE) write (*, *) 'Output property file name'
-        read (*, '(A)') PROPFILE
-        if (VERBOSE) write (*, '(A256)') PROPFILE
+        if (VERBOSE) write(*, *) 'Output property file name'
+        read(*, '(A)') PROPFILE
+        if (VERBOSE) write(*, '(A256)') PROPFILE
     end subroutine USER_INPUT
 
     subroutine READ_SCAT_TABLE_SIZE(SCATTABFILE, POLTAB, WAVELEN1, WAVELEN2, &
@@ -166,29 +166,29 @@ contains
         integer :: I, J, L, NCOEF
         real    :: REFF, EXT, SSALB, CHI
 
-        open (UNIT=1, FILE=trim(adjustl(SCATTABFILE)), STATUS='OLD')
-        read (1, *)
-        read (1, *) WAVELEN1, WAVELEN2
-        read (1, *)
-        read (1, *)
-        read (1, *)
-        read (1, *) NRETAB
+        open(UNIT=1, FILE=trim(adjustl(SCATTABFILE)), STATUS='OLD')
+        read(1, *)
+        read(1, *) WAVELEN1, WAVELEN2
+        read(1, *)
+        read(1, *)
+        read(1, *)
+        read(1, *) NRETAB
         MAXNCOEF = 1
         do I = 1, NRETAB
-            read (1, *) REFF, EXT, SSALB, NCOEF
+            read(1, *) REFF, EXT, SSALB, NCOEF
             MAXNCOEF = max(MAXNCOEF, NCOEF)
             if (POLTAB) then
-                read (1, *) J, (CHI, L=0, NCOEF)
-                read (1, *) J, (CHI, L=0, NCOEF)
-                read (1, *) J, (CHI, L=0, NCOEF)
-                read (1, *) J, (CHI, L=0, NCOEF)
-                read (1, *) J, (CHI, L=0, NCOEF)
-                read (1, *) J, (CHI, L=0, NCOEF)
+                read(1, *) J, (CHI, L=0, NCOEF)
+                read(1, *) J, (CHI, L=0, NCOEF)
+                read(1, *) J, (CHI, L=0, NCOEF)
+                read(1, *) J, (CHI, L=0, NCOEF)
+                read(1, *) J, (CHI, L=0, NCOEF)
+                read(1, *) J, (CHI, L=0, NCOEF)
             else
-                read (1, *) (CHI, L=0, NCOEF)
+                read(1, *) (CHI, L=0, NCOEF)
             end if
         end do
-        close (1)
+        close(1)
     end subroutine READ_SCAT_TABLE_SIZE
 
     subroutine READ_SCAT_TABLE(SCATTABFILE, POLTAB, NPHASEPOL, NRETAB, RETAB, &
@@ -208,32 +208,32 @@ contains
         integer :: I, J, L
         real    :: CHI
 
-        open (UNIT=1, FILE=trim(adjustl(SCATTABFILE)), STATUS='OLD')
-        read (1, *)
-        read (1, *)
-        read (1, *)
-        read (1, *)
-        read (1, *)
-        read (1, *)
+        open(UNIT=1, FILE=trim(adjustl(SCATTABFILE)), STATUS='OLD')
+        read(1, *)
+        read(1, *)
+        read(1, *)
+        read(1, *)
+        read(1, *)
+        read(1, *)
         do I = 1, NRETAB
-            read (1, *) RETAB(I), EXTINCT(I), SSALB(I), NCOEF(I)
+            read(1, *) RETAB(I), EXTINCT(I), SSALB(I), NCOEF(I)
             if (POLTAB) then
-                read (1, *) J, (WIGCOEF(1, L, I), L=0, NCOEF(I))
+                read(1, *) J, (WIGCOEF(1, L, I), L=0, NCOEF(I))
                 if (NPHASEPOL > 1) then
-                    read (1, *) J, (WIGCOEF(2, L, I), L=0, NCOEF(I))
-                    read (1, *) J, (WIGCOEF(3, L, I), L=0, NCOEF(I))
-                    read (1, *) J, (WIGCOEF(4, L, I), L=0, NCOEF(I))
-                    read (1, *) J, (WIGCOEF(5, L, I), L=0, NCOEF(I))
-                    read (1, *) J, (WIGCOEF(6, L, I), L=0, NCOEF(I))
+                    read(1, *) J, (WIGCOEF(2, L, I), L=0, NCOEF(I))
+                    read(1, *) J, (WIGCOEF(3, L, I), L=0, NCOEF(I))
+                    read(1, *) J, (WIGCOEF(4, L, I), L=0, NCOEF(I))
+                    read(1, *) J, (WIGCOEF(5, L, I), L=0, NCOEF(I))
+                    read(1, *) J, (WIGCOEF(6, L, I), L=0, NCOEF(I))
                 else
-                    read (1, *) J, (CHI, L=0, NCOEF(I))
-                    read (1, *) J, (CHI, L=0, NCOEF(I))
-                    read (1, *) J, (CHI, L=0, NCOEF(I))
-                    read (1, *) J, (CHI, L=0, NCOEF(I))
-                    read (1, *) J, (CHI, L=0, NCOEF(I))
+                    read(1, *) J, (CHI, L=0, NCOEF(I))
+                    read(1, *) J, (CHI, L=0, NCOEF(I))
+                    read(1, *) J, (CHI, L=0, NCOEF(I))
+                    read(1, *) J, (CHI, L=0, NCOEF(I))
+                    read(1, *) J, (CHI, L=0, NCOEF(I))
                 end if
             else
-                read (1, *) (WIGCOEF(1, L, I), L=0, NCOEF(I))
+                read(1, *) (WIGCOEF(1, L, I), L=0, NCOEF(I))
                 if (NPHASEPOL > 1) then
                     WIGCOEF(2, :, I) = 0.0
                     WIGCOEF(3, :, I) = 0.0
@@ -243,15 +243,15 @@ contains
                 end if
             end if
             if (abs(WIGCOEF(1, 0, I) - 1.0) > 0.0001) then
-                write (*, *) 'Error [READ_SCAT_TABLE]: Incorrect Legendre series; chi_0 is not 1.'
+                write(*, *) 'Error [READ_SCAT_TABLE]: Incorrect Legendre series; chi_0 is not 1.'
                 stop
             end if
             if (I > 1 .and. RETAB(I) <= RETAB(I - 1)) then
-                write (*, *) 'Error [READ_SCAT_TABLE]: Effective radius not increasing in table:', SCATTABFILE
+                write(*, *) 'Error [READ_SCAT_TABLE]: Effective radius not increasing in table:', SCATTABFILE
                 stop
             end if
         end do
-        close (1)
+        close(1)
     end subroutine READ_SCAT_TABLE
 
     subroutine MAKE_TYPE_CONV_TABLE(NTYPES, PARTYPES, MAXTYPENUM, TYPECONV)
@@ -273,10 +273,10 @@ contains
         character(len=256), intent(in) :: PARFILE
         integer, intent(out) :: NX, NY, NZP
 
-        open (UNIT=2, FILE=trim(adjustl(PARFILE)), STATUS='OLD')
-        read (2, *)
-        read (2, *) NX, NY, NZP
-        close (2)
+        open(UNIT=2, FILE=trim(adjustl(PARFILE)), STATUS='OLD')
+        read(2, *)
+        read(2, *) NX, NY, NZP
+        close(2)
     end subroutine READ_PARTICLE_FILE_SIZE
 
     subroutine READ_PARTICLE_FILE(PARFILE, NX, NY, NZP, NSCATTAB, PARTYPES, &
@@ -315,41 +315,41 @@ contains
         REFF(:, :, :, :) = 0.0
 
         ! Read in the header
-        open (UNIT=2, FILE=trim(adjustl(PARFILE)), STATUS='OLD')
-        read (2, *) FILEKIND
-        read (2, *) ! NX, NY, NZP
-        read (2, *) DELX, DELY
-        read (2, *) (ZPAR(IZ), IZ=1, NZP)
-        read (2, *) (TEMPPAR(IZ), IZ=1, NZP)
+        open(UNIT=2, FILE=trim(adjustl(PARFILE)), STATUS='OLD')
+        read(2, *) FILEKIND
+        read(2, *) ! NX, NY, NZP
+        read(2, *) DELX, DELY
+        read(2, *) (ZPAR(IZ), IZ=1, NZP)
+        read(2, *) (TEMPPAR(IZ), IZ=1, NZP)
 
         if (FILEKIND == 2) then
             if (NSCATTAB /= 1) then
-                write (*, *) 'Error [READ_PARTICLE_FILE]: Must have only one scattering table to use 2 parameter LWC file.'
+                write(*, *) 'Error [READ_PARTICLE_FILE]: Must have only one scattering table to use 2 parameter LWC file.'
                 stop
             end if
 
-            read (2, '(A)') TMP_CHAR ! skip one line
+            read(2, '(A)') TMP_CHAR ! skip one line
 
             if (TMP_CHAR(1:1) .eq. '!') then
 
-                read (2, '(A)') DATA_POSTFIX
-                read (2, '(A)') DIMS_CHAR
+                read(2, '(A)') DATA_POSTFIX
+                read(2, '(A)') DIMS_CHAR
 
-                read (DIMS_CHAR( 3:12), '(I10)') NXX
-                read (DIMS_CHAR(14:23), '(I10)') NYY
-                read (DIMS_CHAR(25:34), '(I10)') NZZ
-                read (DIMS_CHAR(36:45), '(I10)') NPP
+                read(DIMS_CHAR( 3:12), '(I10)') NXX
+                read(DIMS_CHAR(14:23), '(I10)') NYY
+                read(DIMS_CHAR(25:34), '(I10)') NZZ
+                read(DIMS_CHAR(36:45), '(I10)') NPP
 
-                read (2, '(A)') CKDFILE
+                read(2, '(A)') CKDFILE
                 CKDFILE = trim(adjustl(CKDFILE(2:)))
 
                 OUTFILE_DATA = trim(adjustl(PARFILE))//trim(adjustl(DATA_POSTFIX(2:)))
 
-                open (UNIT=88, FILE=trim(adjustl(OUTFILE_DATA)), STATUS='OLD',&
+                open(UNIT=88, FILE=trim(adjustl(OUTFILE_DATA)), STATUS='OLD',&
                     &ACCESS='STREAM', FORM='UNFORMATTED')
-                read (88) (((MASSCONT(1, IZ, IY, IX), IZ=1,NZZ), IY=1,NYY), IX=1,NXX)
-                read (88) (((    REFF(1, IZ, IY, IX), IZ=1,NZZ), IY=1,NYY), IX=1,NXX)
-                close (88)
+                read(88) (((MASSCONT(1, IZ, IY, IX), IZ=1,NZZ), IY=1,NYY), IX=1,NXX)
+                read(88) (((    REFF(1, IZ, IY, IX), IZ=1,NZZ), IY=1,NYY), IX=1,NXX)
+                close(88)
 
                 NCOMP = 1
                 PTYPE(1, :, :, :) = PARTYPES(1)
@@ -362,7 +362,7 @@ contains
 
                 ! Read in the data
                 do while (.true.)
-                    read (2, *, end=190) IX, IY, IZ, MASS(1), RE(1)
+                    read(2, *, end=190) IX, IY, IZ, MASS(1), RE(1)
                     if (IX >= 1 .and. IX <= NX .and. IY >= 1 .and. IY <= NY .and. &
                         IZ >= 1 .and. IZ <= NZP) then
                         NCOMP(IZ, IY, IX) = 1
@@ -377,10 +377,10 @@ contains
         else if (FILEKIND == 3) then
             ! Read in the data
             do while (.true.)
-                read (2, *, end=190) IX, IY, IZ, NC, &
+                read(2, *, end=190) IX, IY, IZ, NC, &
                     (PT(I), MASS(I), RE(I), I=1, min(NC, NSCATTAB))
                 if (NC > NSCATTAB) then
-                    write (*, *) 'Error [READ_PARTICLE_FILE]: More particle components than scattering tables.'
+                    write(*, *) 'Error [READ_PARTICLE_FILE]: More particle components than scattering tables.'
                     stop
                 end if
                 if (IX >= 1 .and. IX <= NX .and. IY >= 1 .and. IY <= NY .and. &
@@ -393,12 +393,12 @@ contains
             end do
 
         else
-            write (*, *) 'Error [READ_PARTICLE_FILE]: Must be type 2 or 3 particle properties file.'
+            write(*, *) 'Error [READ_PARTICLE_FILE]: Must be type 2 or 3 particle properties file.'
             stop
         end if
 
 190     continue
-        close (2)
+        close(2)
     end subroutine READ_PARTICLE_FILE
 
     subroutine ORGANIZE_LEVELS(NZP, ZPAR, TEMPPAR, NZO, ZOTHER, TEMPOTHER, &
@@ -423,8 +423,8 @@ contains
         if (NZP > 0) then
             do J = 1, NZO
                 if (ZOTHER(J) >= ZPAR(1) .and. ZOTHER(J) <= ZPAR(NZP)) then
-                    write (*, '(1X,A,F7.3)') 'Warning [ORGANIZE_LEVELS]: Other Z level inside range of particle levels:', ZOTHER(J)
-                    write (*, *) '         The other Z levels have only Rayleigh scattering.'
+                    write(*, '(1X,A,F7.3)') 'Warning [ORGANIZE_LEVELS]: Other Z level inside range of particle levels:', ZOTHER(J)
+                    write(*, *) '         The other Z levels have only Rayleigh scattering.'
                 end if
             end do
         end if
@@ -435,7 +435,7 @@ contains
         ! Check to see if two Z levels are same
         do K = 1, NZT - 1
             if (ZLEVELS(K) == ZLEVELS(K + 1)) then
-                write (*, *) 'Error [ORGANIZE_LEVELS]: Same Z levels: ', ZLEVELS(K)
+                write(*, *) 'Error [ORGANIZE_LEVELS]: Same Z levels: ', ZLEVELS(K)
                 stop
             end if
         end do
@@ -729,19 +729,19 @@ contains
 
         ! read rayleigh extinction from CKDFILE
         !╭────────────────────────────────────────────────╮!
-        open (UNIT=1, FILE=trim(adjustl(CKDFILE)), STATUS='OLD')
-        read (1, *)
-        read (1, *)
-        read (1, *)
-        read (1, *)
-        read (1, *) NZCKD
+        open(UNIT=1, FILE=trim(adjustl(CKDFILE)), STATUS='OLD')
+        read(1, *)
+        read(1, *)
+        read(1, *)
+        read(1, *)
+        read(1, *) NZCKD
 
         allocate(ZCKD(NZCKD), EXTRAY(NZCKD))
 
-        read (1, *)
-        read (1, *)
+        read(1, *)
+        read(1, *)
         do IZ = 1, NZCKD
-            read (1, *) ZCKD(IZ), EXTRAY(IZ)
+            read(1, *) ZCKD(IZ), EXTRAY(IZ)
         end do
 
         close(1)
@@ -883,26 +883,26 @@ contains
 
         ! Open the property file and output the header including the
         !   tabulated phase functions
-        open (UNIT=3, FILE=trim(adjustl(PROPFILE)), STATUS='REPLACE')
+        open(UNIT=3, FILE=trim(adjustl(PROPFILE)), STATUS='REPLACE')
         if (NPHASEPOL == 1) then
-            write (3, '(A)') 'Tabulated phase function property file'
+            write(3, '(A)') 'Tabulated phase function property file'
         else
-            write (3, '(A)') 'Polarized tabulated phase function property file'
+            write(3, '(A)') 'Polarized tabulated phase function property file'
         end if
-        write (3, '(3(1X,I5))') NX, NY, NZT
-        write (3, '(2(1X,F15.8),202(1X,F12.6))') DELX, DELY, (ZLEVELS(I), I=1, NZT)
-        write (3, '(1X,I4)') NPHASEOUT
+        write(3, '(3(1X,I5))') NX, NY, NZT
+        write(3, '(2(1X,F15.8),202(1X,F12.6))') DELX, DELY, (ZLEVELS(I), I=1, NZT)
+        write(3, '(1X,I4)') NPHASEOUT
         do I = 0, NPHASE
             if (PHASECONV(I) > 0) then
                 NL = NCOEF(I)
                 do J = 1, NPHASEPOL
                     if (NPHASEPOL == 1) then
-                        write (3, '(1X,I4,5X,200(1X,E15.6))') NL, (WIGCOEF(J, L, I), L=1, min(NL, 200))
+                        write(3, '(1X,I4,5X,200(1X,E15.6))') NL, (WIGCOEF(J, L, I), L=1, min(NL, 200))
                     else
-                        write (3, '(1X,I1,1X,I4,5X,201(1X,E15.6))') J, NL, (WIGCOEF(J, L, I), L=0, min(NL, 200))
+                        write(3, '(1X,I1,1X,I4,5X,201(1X,E15.6))') J, NL, (WIGCOEF(J, L, I), L=0, min(NL, 200))
                     end if
                     do K = 200, NL - 1, 200
-                        write (3, '(200(1X,E15.6))') (WIGCOEF(J, K + L, I), L=1, min(NL - K, 200))
+                        write(3, '(200(1X,E15.6))') (WIGCOEF(J, K + L, I), L=1, min(NL - K, 200))
                     end do
                 end do
             end if
@@ -910,20 +910,20 @@ contains
 
         ! description for binary data
         !╭────────────────────────────────────────────────╮!
-        write (3, '(A)') '! The following provides information for interpreting binary data:'
-        write (3, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-        write (3, '(A, 4(I10,A))') '! ', NX, ',', NY, ',', NZT, ',', 4, ''
+        write(3, '(A)') '! The following provides information for interpreting binary data:'
+        write(3, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
+        write(3, '(A, 4(I10,A))') '! ', NX, ',', NY, ',', NZT, ',', 4, ''
         !╰────────────────────────────────────────────────╯!
 
         ! Write one line of optical properties for each grid point (binary)
         !╭────────────────────────────────────────────────╮!
-        open (UNIT=88, FILE=trim(adjustl(OUTFILE_DATA)), STATUS='REPLACE',&
+        open(UNIT=88, FILE=trim(adjustl(OUTFILE_DATA)), STATUS='REPLACE',&
             &form='UNFORMATTED', access='STREAM')
-        write (88) (((                     TEMP(IZ), IZ=1,NZT), IY=1,NY), IX=1,NX)
-        write (88) (((          EXTINCT(IZ, IY, IX), IZ=1,NZT), IY=1,NY), IX=1,NX)
-        write (88) (((            SSALB(IZ, IY, IX), IZ=1,NZT), IY=1,NY), IX=1,NX)
-        write (88) (((PHASECONV(IPHASE(IZ, IY, IX)), IZ=1,NZT), IY=1,NY), IX=1,NX)
-        close (88)
+        write(88) (((                     TEMP(IZ), IZ=1,NZT), IY=1,NY), IX=1,NX)
+        write(88) (((          EXTINCT(IZ, IY, IX), IZ=1,NZT), IY=1,NY), IX=1,NX)
+        write(88) (((            SSALB(IZ, IY, IX), IZ=1,NZT), IY=1,NY), IX=1,NX)
+        write(88) (((PHASECONV(IPHASE(IZ, IY, IX)), IZ=1,NZT), IY=1,NY), IX=1,NX)
+        close(88)
         !╰────────────────────────────────────────────────╯!
 
         ! original
@@ -931,14 +931,14 @@ contains
         !do IX = 1, NX
         !    do IY = 1, NY
         !        do IZ = 1, NZT
-        !            write (3, '(3(1X,I4),1X,F5.1,1X,F9.4,1X,F8.6,1X,I3)') IX, IY, IZ, &
+        !            write(3, '(3(1X,I4),1X,F5.1,1X,F9.4,1X,F8.6,1X,I3)') IX, IY, IZ, &
         !                TEMP(IZ), EXTINCT(IZ, IY, IX), SSALB(IZ, IY, IX), PHASECONV(IPHASE(IZ, IY, IX))
         !        end do
         !    end do
         !end do
         !╰────────────────────────────────────────────────╯!
 
-        close (3)
+        close(3)
 
     end subroutine OUTPUT_PROPERTIES
 
@@ -1008,7 +1008,7 @@ program propgen
         MAXCOEF = max(MAXCOEF, MAXNCOEF)
         if (I > 1 .and. abs((WAVELEN1(I) - WAVELEN1(1))/WAVELEN1(1)) > 0.01 &
             .or. abs((WAVELEN2(I) - WAVELEN2(1))/WAVELEN2(1)) > 0.01) then
-            write (*, *) 'Warning [PROPGEN]: Scattering table wavelengths do not agree for table', I
+            write(*, *) 'Warning [PROPGEN]: Scattering table wavelengths do not agree for table', I
         end if
     end do
     deallocate(WAVELEN1, WAVELEN2)
@@ -1074,7 +1074,7 @@ program propgen
                    *(1.0455996 - 341.29061/RAYWAVELEN**2 - 0.90230850*RAYWAVELEN**2) &
                    /(1 + 0.0027059889/RAYWAVELEN**2 - 85.968563*RAYWAVELEN**2)
 
-        if (VERBOSE) write (*, *) 'Rayleigh total atmosphere optical depth: ', RAYLCOEF/0.03370
+        if (VERBOSE) write(*, *) 'Rayleigh total atmosphere optical depth: ', RAYLCOEF/0.03370
 
         ! Compute the molecular Rayleigh scattering extinction profile
         call RAYLEIGH_EXTINCT(NZT, ZLEVELS, TEMP, RAYSFCPRES, RAYLCOEF, EXTRAYL)
@@ -1135,8 +1135,8 @@ program propgen
                             F = -1.0
                         end if
                         if (F < 0.0 .or. F > 1.0) then
-                            write (*, *) 'Warning [PROPGEN]: Effective radius outside of table (IX,IY,IZ,type,Reff):'
-                            write (*, '(4(1X,I3),1X,F6.2)') IX, IY, IZP, PTYPE(J, IZP, IY, IX), REFF(J, IZP, IY, IX)
+                            write(*, *) 'Warning [PROPGEN]: Effective radius outside of table (IX,IY,IZ,type,Reff):'
+                            write(*, '(4(1X,I3),1X,F6.2)') IX, IY, IZP, PTYPE(J, IZP, IY, IX), REFF(J, IZP, IY, IX)
                             F = max(min(F, 1.0), 0.0)
                         end if
 
@@ -1194,7 +1194,7 @@ program propgen
                         else
                             NPHASE = NPHASE + 1
                             if (NPHASE > MAXNPHASE) then
-                                write (*, *) 'Error [PROPGEN]: Maximum number of new phase functions exceeded', NPHASE - NENTRIES
+                                write(*, *) 'Error [PROPGEN]: Maximum number of new phase functions exceeded', NPHASE - NENTRIES
                                 stop
                             end if
                             NCOEF(NPHASE) = NL
@@ -1213,7 +1213,7 @@ program propgen
         end do
     end do
 
-    if (VERBOSE) write (*, *) 'Number of new phase functions added: ', NPHASE - NENTRIES
+    if (VERBOSE) write(*, *) 'Number of new phase functions added: ', NPHASE - NENTRIES
 
     call OUTPUT_PROPERTIES(PROPFILE, NPHASEPOL, NX, NY, NZT, &
                            DELX, DELY, ZLEVELS, TEMP, &

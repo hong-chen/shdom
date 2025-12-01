@@ -182,73 +182,73 @@ subroutine USER_INPUT(POLTAB, WAVELEN, PARTYPE, RINDEX, PARDENS,&
     character(LEN=1), intent(OUT) :: PARTYPE, DISTFLAG
     character(LEN=256), intent(OUT) :: TABLEFILE
 
-    write (*, *) 'Making T-matrix scattering tables for spheroidal particles'
+    write(*, *) 'Making T-matrix scattering tables for spheroidal particles'
 
-    write (*, *) 'Make polarized scattering table (T or F)'
-    read (*, *) POLTAB
-    write (*, '(L)') POLTAB
+    write(*, *) 'Make polarized scattering table (T or F)'
+    read(*, *) POLTAB
+    write(*, '(L)') POLTAB
 
-    write (*, *) 'Wavelength (micron)'
-    read (*, *) WAVELEN
-    write (*, '(1X,F9.3)') WAVELEN
+    write(*, *) 'Wavelength (micron)'
+    read(*, *) WAVELEN
+    write(*, '(1X,F9.3)') WAVELEN
 
-    write (*, *) 'Water, Ice, or Aerosol spherical particles (W,I,A)'
-    read (*, '(A1)') PARTYPE
-    write (*, '(1X,A1)') PARTYPE
+    write(*, *) 'Water, Ice, or Aerosol spherical particles (W,I,A)'
+    read(*, '(A1)') PARTYPE
+    write(*, '(1X,A1)') PARTYPE
 
     if (PARTYPE /= 'W' .and. PARTYPE /= 'I') then
         PARTYPE = 'A'
-        write (*, *) 'Aerosol complex index of refraction'
-        read (*, *) RINDEX
-        write (*, *) RINDEX
-        write (*, *) 'Aerosol particle bulk density (g/cm^3)'
-        read (*, *) PARDENS
-        write (*, '(1X,F5.3)') PARDENS
+        write(*, *) 'Aerosol complex index of refraction'
+        read(*, *) RINDEX
+        write(*, *) RINDEX
+        write(*, *) 'Aerosol particle bulk density (g/cm^3)'
+        read(*, *) PARDENS
+        write(*, '(1X,F5.3)') PARDENS
     end if
 
-    write (*, *) 'Cylindrical particle (T or F) (F for spheroidal)'
-    read (*, *) CYLFLAG
-    write (*, '(1X,L1)') CYLFLAG
+    write(*, *) 'Cylindrical particle (T or F) (F for spheroidal)'
+    read(*, *) CYLFLAG
+    write(*, '(1X,L1)') CYLFLAG
 
-    write (*, *) 'Particle axis ratio (>1 for oblate spheroid, <1 for prolate)'
-    read (*, *) AXRATIO
-    write (*, '(1X,F6.4)') AXRATIO
+    write(*, *) 'Particle axis ratio (>1 for oblate spheroid, <1 for prolate)'
+    read(*, *) AXRATIO
+    write(*, '(1X,F6.4)') AXRATIO
 
-    write (*, *) 'Particle size distribution type: G = Gamma, M = modified gamma, L = Lognormal'
-    read (*, *) DISTFLAG
-    write (*, *) DISTFLAG
+    write(*, *) 'Particle size distribution type: G = Gamma, M = modified gamma, L = Lognormal'
+    read(*, *) DISTFLAG
+    write(*, *) DISTFLAG
     if (DISTFLAG == 'L') then
-        write (*, *) 'Log normal size distribution log standard deviation'
-        read (*, *) ALPHA
-        write (*, '(1X,F6.3)') ALPHA
+        write(*, *) 'Log normal size distribution log standard deviation'
+        read(*, *) ALPHA
+        write(*, '(1X,F6.3)') ALPHA
     else if (DISTFLAG == 'G') then
-        write (*, *) 'Gamma size distribution shape parameter (alpha)'
-        read (*, *) ALPHA
-        write (*, '(1X,F6.3)') ALPHA
+        write(*, *) 'Gamma size distribution shape parameter (alpha)'
+        read(*, *) ALPHA
+        write(*, '(1X,F6.3)') ALPHA
     else if (DISTFLAG == 'M') then
-        write (*, *) 'Modified gamma size distribution shape parameters (alpha & gamma)'
-        read (*, *) ALPHA, GAMMA
-        write (*, '(2(1X,F6.3))') ALPHA, GAMMA
+        write(*, *) 'Modified gamma size distribution shape parameters (alpha & gamma)'
+        read(*, *) ALPHA, GAMMA
+        write(*, '(2(1X,F6.3))') ALPHA, GAMMA
     else
-        write (*, *) 'Error [USER_INPUT]: Unrecognized size distribution type.'
+        write(*, *) 'Error [USER_INPUT]: Unrecognized size distribution type.'
         stop
     end if
 
-    write (*, *) 'Number, starting, and ending tabulated effective radius (micron)'
-    read (*, *) NRETAB, SRETAB, ERETAB
-    write (*, '(1X,I3,2(1X,F7.2))') NRETAB, SRETAB, ERETAB
+    write(*, *) 'Number, starting, and ending tabulated effective radius (micron)'
+    read(*, *) NRETAB, SRETAB, ERETAB
+    write(*, '(1X,I3,2(1X,F7.2))') NRETAB, SRETAB, ERETAB
 
-    write (*, *) 'Log-spaced effective radius (T or F) (F for evenly spaced)'
-    read (*, *) LOGRE
-    write (*, '(L)') LOGRE
+    write(*, *) 'Log-spaced effective radius (T or F) (F for evenly spaced)'
+    read(*, *) LOGRE
+    write(*, '(L)') LOGRE
 
-    write (*, *) 'Maximum particle radius in size distribution (micron)'
-    read (*, *) MAXRADIUS
-    write (*, '(1X,F7.2)') MAXRADIUS
+    write(*, *) 'Maximum particle radius in size distribution (micron)'
+    read(*, *) MAXRADIUS
+    write(*, '(1X,F7.2)') MAXRADIUS
 
-    write (*, *) 'Output scattering table name'
-    read (*, '(A)') TABLEFILE
-    write (*, '(A)') TABLEFILE
+    write(*, *) 'Output scattering table name'
+    read(*, '(A)') TABLEFILE
+    write(*, '(A)') TABLEFILE
 end subroutine USER_INPUT
 
 subroutine GET_NSIZE(SRETAB, MAXRADIUS, WAVELEN, NSIZE)
@@ -445,26 +445,26 @@ subroutine WRITE_SCAT_TABLE(TABLEFILE, POLTAB, WAVELEN,&
     else
         SHAPE = 'spheroid'
     end if
-    open (UNIT=3, FILE=trim(adjustl(TABLEFILE)), STATUS='REPLACE')
+    open(UNIT=3, FILE=trim(adjustl(TABLEFILE)), STATUS='REPLACE')
     if (POLTAB) then
         NPHASEPOL = 6
-        write (3, '(3A)') '! Polarized T-matrix ', trim(SHAPE), ' scattering table vs. effective radius (LWC=1 g/m^3)'
+        write(3, '(3A)') '! Polarized T-matrix ', trim(SHAPE), ' scattering table vs. effective radius (LWC=1 g/m^3)'
     else
         NPHASEPOL = 1
-        write (3, '(3A)') '! T-matrix ', trim(SHAPE), ' scattering table vs. effective radius (LWC=1 g/m^3)'
+        write(3, '(3A)') '! T-matrix ', trim(SHAPE), ' scattering table vs. effective radius (LWC=1 g/m^3)'
     end if
-    write (3, '(2(1X,F8.3),A)') WAVELEN, WAVELEN, '  wavelength range (micron)'
-    write (3, '(1X,F5.3,1X,F6.4,2X,A1,A)') PARDENS, AXRATIO, PARTYPE,&
+    write(3, '(2(1X,F8.3),A)') WAVELEN, WAVELEN, '  wavelength range (micron)'
+    write(3, '(1X,F5.3,1X,F6.4,2X,A1,A)') PARDENS, AXRATIO, PARTYPE,&
         & '   particle density (g/cm^3), axial ratio, and type (Water, Ice, Aerosol)'
-    write (3, '(2(1X,E13.6),A)') RINDEX, '  particle index of refraction'
+    write(3, '(2(1X,E13.6),A)') RINDEX, '  particle index of refraction'
     if (DISTFLAG == 'L') then
-        write (3, '(F7.5,A)') ALPHA, '  lognormal log standard deviation'
+        write(3, '(F7.5,A)') ALPHA, '  lognormal log standard deviation'
     else if (DISTFLAG == 'G') then
-        write (3, '(F7.5,A)') ALPHA, ' gamma size distribution shape parameter'
+        write(3, '(F7.5,A)') ALPHA, ' gamma size distribution shape parameter'
     else if (DISTFLAG == 'M') then
-        write (3, '(2(1X,F7.5),A)') ALPHA, GAMMA, ' modified gamma size distribution shape parameters'
+        write(3, '(2(1X,F7.5),A)') ALPHA, GAMMA, ' modified gamma size distribution shape parameters'
     end if
-    write (3, '(1X,I3,2(1X,F8.3),A)') NRETAB, SRETAB, ERETAB,&
+    write(3, '(1X,I3,2(1X,F8.3),A)') NRETAB, SRETAB, ERETAB,&
         & '  number, starting, ending effective radius'
 
     do I = 1, NRETAB
@@ -475,18 +475,18 @@ subroutine WRITE_SCAT_TABLE(TABLEFILE, POLTAB, WAVELEN,&
         else
             REFF = (ERETAB - SRETAB)*FLOAT(I - 1)/(NRETAB - 1) + SRETAB
         end if
-        write (3, '(1X,F8.4,1X,E12.5,1X,F8.6,1X,I6,A)')&
+        write(3, '(1X,F8.4,1X,E12.5,1X,F8.6,1X,I6,A)')&
             & REFF, EXTINCT(I), SSALB(I), NRANK(I), '  Reff  Ext  Alb  Nrank'
         do J = 1, NPHASEPOL
             if (POLTAB) then
-                write (3, '(I1,1X,201(1X,E15.6))') J, (WIGCOEF(J, L, I), L=0, min(NRANK(I), 200))
+                write(3, '(I1,1X,201(1X,E15.6))') J, (WIGCOEF(J, L, I), L=0, min(NRANK(I), 200))
             else
-                write (3, '(2X,201(1X,E15.6))') (WIGCOEF(J, L, I), L=0, min(NRANK(I), 200))
+                write(3, '(2X,201(1X,E15.6))') (WIGCOEF(J, L, I), L=0, min(NRANK(I), 200))
             end if
             do K = 200, NRANK(I) - 1, 200
-                write (3, '(2X,200(1X,E15.6))') (WIGCOEF(J, K + L, I), L=1, min(200, NRANK(I) - K))
+                write(3, '(2X,200(1X,E15.6))') (WIGCOEF(J, K + L, I), L=1, min(200, NRANK(I) - K))
             end do
         end do
     end do
-    close (3)
+    close(3)
 end subroutine WRITE_SCAT_TABLE
