@@ -259,9 +259,9 @@ subroutine shd_solv__solveRte(&
                     &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
                     &brdf_Shdo)
             else
-                print '(A,A)', 'Not enough memory to allocate precomputed',&
+                write (*, '(A,A)') 'Not enough memory to allocate precomputed',&
                     &' surface BRDF discrete ordinate matrix: '
-                print *, '  Proceeding more slowly.'
+                write (*, *) '  Proceeding more slowly.'
                 sfc_obj_%isUniform = .false.
             end if
         end if

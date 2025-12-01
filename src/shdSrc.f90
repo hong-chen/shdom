@@ -892,7 +892,7 @@ subroutine shd_src__integrateSrcOneRay(&
     ZE = Z0
     ! ZE = MAX(MIN(Z0,DBLE(rtm_obj_%z(rtm_obj_%Nz))),DBLE(rtm_obj_%z(1)))
     call shd_util__findCell(XE, YE, ZE, icell)
-    ! print '(A,5(1X,F8.5),1X,I6)',&
+    ! write (*, '(A,5(1X,F8.5),1X,I6)') &
     !     &'_integrateSrcOneRay:',X0,Y0,Z0,MU2,PHI2,icell
     IFACE = 0
     NGRID = 0
@@ -1220,7 +1220,7 @@ subroutine shd_src__integrateSrc(NSTOKES,&
     YE = Y0
     ZE = Z0
     call shd_util__findCell(XE, YE, ZE, icell)
-    ! print '(A,5(1X,F8.5),1X,I6)', &
+    ! write (*, '(A,5(1X,F8.5),1X,I6)') &
     !     &'_integrateSrc:', X0, Y0, Z0, MU, PHI, icell
     call shd_util__interpTriLin(icell,&
         &XE, YE, ZE, 1, ext_Rtm_, 1, 1, EXT1)

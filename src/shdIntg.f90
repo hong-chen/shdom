@@ -194,7 +194,7 @@ subroutine shd_intg__integratePath(&
         radI_Shdo(:, I) = 0.0
     end do
 
-    ! print *, 'Path integration:'
+    ! write (*, *) 'Path integration:'
     ! Loop over the zenith angles (downwelling angles must be first)
     IANG = 1
     DO_MU_LOOP: do IMU = 1, shdo_obj_%Nmu
@@ -588,7 +588,7 @@ subroutine shd_intg__backIntegrate3D(&
                 end if
                 if (u .lt. -0.0001 .or. v .lt. -0.0001 .or.&
                     &u .gt. 1.0001 .or. v .gt. 1.0001) then
-                    print *, '_backIntegrate3D: u,v<0 or u,v>1: ',&
+                    write (*, *) '_backIntegrate3D: u,v<0 or u,v>1: ',&
                         &mu, phi, xe, ye, ze, u, v, iface, jface, kface,&
                         &xyz_Rtm_(1, i1), xyz_Rtm_(2, i1), xyz_Rtm_(3, i1)
                 end if
@@ -657,7 +657,7 @@ subroutine shd_intg__backIntegrate3D(&
                 TRANSMIT = TRANSMIT*TRANSCELL
                 !if (RAD(1) < -1.0e-5) then
                 if (RAD(1) < -accSolv_) then
-                    print '(A,3(1X,F6.4),8(1X,E12.5))',&
+                    write (*, '(A,3(1X,F6.4),8(1X,E12.5))') &
                         &'_backIntegrate3D: RAD<0 ',&
                         &xe, ye, ze, ext0, ext1, so, tau, transmit, src, abscell, rad(:)
                     call shd_mpi__abort('The end')
@@ -672,17 +672,17 @@ subroutine shd_intg__backIntegrate3D(&
                             &+ F3*GRIDRAD(:, I3) + F4*GRIDRAD(:, I4)
                         RAD(:) = RAD(:) + TRANSMIT*RAD0(:)
                     else
-                        print *, 'Error [_backIntegrate3D]: INEXTCELL=0: ', xe, ye, ze, icell
-                        print *, iz, joct, mu, phi
-                        print '(i7,4(1x,f7.4))', i1, GRIDRAD(1, I1),&
+                        write (*, *) 'Error [_backIntegrate3D]: INEXTCELL=0: ', xe, ye, ze, icell
+                        write (*, *) iz, joct, mu, phi
+                        write (*, '(i7,4(1x,f7.4))') i1, GRIDRAD(1, I1),&
                             &xyz_Rtm_(1, i1), xyz_Rtm_(2, i1), xyz_Rtm_(3, i1)
-                        print '(i7,4(1x,f7.4))', i2, GRIDRAD(1, I2),&
+                        write (*, '(i7,4(1x,f7.4))') i2, GRIDRAD(1, I2),&
                             &xyz_Rtm_(1, i2), xyz_Rtm_(2, i2), xyz_Rtm_(3, i2)
-                        print '(i7,4(1x,f7.4))', i3, GRIDRAD(1, I3),&
+                        write (*, '(i7,4(1x,f7.4))') i3, GRIDRAD(1, I3),&
                             &xyz_Rtm_(1, i3), xyz_Rtm_(2, i3), xyz_Rtm_(3, i3)
-                        print '(i7,4(1x,f7.4))', i4, GRIDRAD(1, I4),&
+                        write (*, '(i7,4(1x,f7.4))') i4, GRIDRAD(1, I4),&
                             &xyz_Rtm_(1, i4), xyz_Rtm_(2, i4), xyz_Rtm_(3, i4)
-                        print '(i7,8x,3(1x,f7.4))', ipt,&
+                        write (*, '(i7,8x,3(1x,f7.4))') ipt,&
                             &xyz_Rtm_(1, ipt), xyz_Rtm_(2, ipt), xyz_Rtm_(3, ipt)
                         stop
                     end if
@@ -700,11 +700,11 @@ subroutine shd_intg__backIntegrate3D(&
     return
 end subroutine shd_intg__backIntegrate3D
 
-subroutine shd_intg__backIntegrate3D_(&
-    &NX, NY, NZ, NA,&
-    &SWEEPORD,&
-    &MU, PHI, TRANSMIN, BCFLAG, IPFLAG,&
-    &EXTINCT, SOURCE, KANG, GRIDRAD)
+subroutine shd_intg__backIntegrate3D_( &
+    NX, NY, NZ, NA, &
+    SWEEPORD, &
+    MU, PHI, TRANSMIN, BCFLAG, IPFLAG, &
+    EXTINCT, SOURCE, KANG, GRIDRAD)
 
     ! Description:
     !   Sweeps through the spatial grid computing radiances for the
@@ -781,13 +781,13 @@ subroutine shd_intg__backIntegrate3D_(&
     real(RD_) :: TAU, TRANSCELL, ABSCELL, RAD, RAD0, TRANSMIT
 
     integer(kind=I__) :: GRIDFACE(4, 6), OPPFACE(6), JOCTORDER_1D(8), JOCTORDER_3D(8)
-    data GRIDFACE /&
-        &1, 3, 5, 7,&
-        &2, 4, 6, 8,&
-        &1, 2, 5, 6,&
-        &3, 4, 7, 8,&
-        &1, 2, 3, 4,&
-        &5, 6, 7, 8/
+    data GRIDFACE /  &
+        1, 3, 5, 7, &
+        2, 4, 6, 8, &
+        1, 2, 5, 6, &
+        3, 4, 7, 8, &
+        1, 2, 3, 4, &
+        5, 6, 7, 8/
     data OPPFACE /2, 1, 4, 3, 6, 5/
     data JOCTORDER_1D /1, 3, 1, 3, 2, 4, 2, 4/
     data JOCTORDER_3D /1, 3, 5, 7, 2, 4, 6, 8/
@@ -865,14 +865,14 @@ subroutine shd_intg__backIntegrate3D_(&
         if (isMpi_) then
             ! For multiple processors get the subdomain boundary radiances
             !   for each Z slab
-            if  ((xyz_Rtm_(3, IPT) .lt. rtm_obj_%z(IZ) .and. BITZ .eq. 0) .or.&
-                &(xyz_Rtm_(3, IPT) .gt. rtm_obj_%z(IZ) .and. BITZ .eq. 1)) then
+            if  ((xyz_Rtm_(3, IPT) .lt. rtm_obj_%z(IZ) .and. BITZ .eq. 0) .or. &
+                 (xyz_Rtm_(3, IPT) .gt. rtm_obj_%z(IZ) .and. BITZ .eq. 1)) then
                 IZ = IZ + 2*BITZ - 1
-                call shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
-                    &NX, NY, NZ,&
-                    &NA,&
-                    &MU, PHI, EXTINCT, 1, SOURCE,&
-                    &KANG, GRIDRAD)
+                call shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ, &
+                    NX, NY, NZ, &
+                    NA, &
+                    MU, PHI, EXTINCT, 1, SOURCE, &
+                    KANG, GRIDRAD)
             end if
         end if
         !╰────────────────────────────────────────────────╯!
@@ -895,9 +895,9 @@ subroutine shd_intg__backIntegrate3D_(&
 
                 ! Make sure current cell is valid
                 if (ICELL .le. 0) then
-                    write (6, *) 'Error [_backIntegrate3D_]: ICELL=0 ',&
-                        &MU, PHI, IPT, INEXTCELL, XE, YE, ZE,&
-                        &xyz_Rtm_(1, IPT), xyz_Rtm_(2, IPT), xyz_Rtm_(3, IPT)
+                    write (6, *) 'Error [_backIntegrate3D_]: ICELL=0 ', &
+                        MU, PHI, IPT, INEXTCELL, XE, YE, ZE, &
+                        xyz_Rtm_(1, IPT), xyz_Rtm_(2, IPT), xyz_Rtm_(3, IPT)
                     stop
                 end if
 
@@ -929,8 +929,8 @@ subroutine shd_intg__backIntegrate3D_(&
                 !╰────────────────────────────────────────────────╯!
 
                 if (SO .lt. -EPS) then
-                    write (6, *) 'Error [_backIntegrate3D_]: SO<0 ',&
-                        &MU, PHI, XE, YE, ZE, SOX, SOY, SOZ, SO, IPT, ICELL
+                    write (6, *) 'Error [_backIntegrate3D_]: SO<0 ', &
+                        MU, PHI, XE, YE, ZE, SOX, SOY, SOZ, SO, IPT, ICELL
                     stop
                 end if
 
@@ -954,8 +954,8 @@ subroutine shd_intg__backIntegrate3D_(&
                 ! Get the next cell to go to
                 INEXTCELL = i6Cell_Cell_(IFACE, ICELL)
                 if (INEXTCELL .lt. 0) then
-                    call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL,&
-                        &INEXTCELL)
+                    call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, &
+                        INEXTCELL)
                 end if
 
                 ! Get the face grid pointers
@@ -1002,11 +1002,11 @@ subroutine shd_intg__backIntegrate3D_(&
                     end if
                 end if
 
-                if (U .lt. -0.0001 .or. V .lt. -0.0001 .or.&
-                    &U .gt. 1.0001 .or. V .gt. 1.0001) then
-                    print *, '_backIntegrate3D_: U,V<0 or U,V>1: ',&
-                        &MU, PHI, XE, YE, ZE, U, V, IFACE, JFACE, KFACE,&
-                        &xyz_Rtm_(1, I1), xyz_Rtm_(2, I1), xyz_Rtm_(3, I1)
+                if (U .lt. -0.0001 .or. V .lt. -0.0001 .or. &
+                    U .gt.  1.0001 .or. V .gt.  1.0001) then
+                    write (*, *) '_backIntegrate3D_: U,V<0 or U,V>1: ', &
+                        MU, PHI, XE, YE, ZE, U, V, IFACE, JFACE, KFACE, &
+                        xyz_Rtm_(1, I1), xyz_Rtm_(2, I1), xyz_Rtm_(3, I1)
                 end if
 
                 ! Get the location coordinate (does the boundary wrapping)
@@ -1021,10 +1021,10 @@ subroutine shd_intg__backIntegrate3D_(&
                 end if
 
                 ! Interpolate extinction and source function at face intersection
-                F1 = (1 - U)*(1 - V)
-                F2 = (1 - U)*V
-                F3 = U*(1 - V)
-                F4 = U*V
+                F1 = (1.0 - U)*(1.0 - V)
+                F2 = (1.0 - U)*       V
+                F3 =        U *(1.0 - V)
+                F4 =        U *       V
                 EXT0 = F1*EXTINCT(I1) + F2*EXTINCT(I2)&
                     &+ F3*EXTINCT(I3) + F4*EXTINCT(I4)
                 ! Correctly interpolate source using extinction*source
@@ -1078,7 +1078,7 @@ subroutine shd_intg__backIntegrate3D_(&
                 TRANSMIT = TRANSMIT*TRANSCELL
                 !if (RAD < -1.0e-5) then
                 if (RAD < -accSolv_) then
-                    print '(A,3(1X,F6.4),8(1X,E12.5))',&
+                    write (*, '(A,3(1X,F6.4),8(1X,E12.5))') &
                         &'_backIntegrate3D_: RAD<0 ',&
                         &XE, YE, ZE, EXT0, EXT1, SO, TAU, TRANSMIT, SRC, ABSCELL, RAD
                     call shd_mpi__abort('The end')
@@ -1094,17 +1094,17 @@ subroutine shd_intg__backIntegrate3D_(&
                             &+ F3*GRIDRAD(I3) + F4*GRIDRAD(I4)
                         RAD = RAD + TRANSMIT*RAD0
                     else
-                        print *, 'Error [_backIntegrate3D_]: INEXTCELL=0: ', xe, ye, ze, icell
-                        print *, iz, joct, mu, phi
-                        print '(i7,4(1x,f7.4))', i1, GRIDRAD(I1),&
+                        write (*, *) 'Error [_backIntegrate3D_]: INEXTCELL=0: ', xe, ye, ze, icell
+                        write (*, *) iz, joct, mu, phi
+                        write (*, '(i7,4(1x,f7.4))') i1, GRIDRAD(I1),&
                             &xyz_Rtm_(1, i1), xyz_Rtm_(2, i1), xyz_Rtm_(3, i1)
-                        print '(i7,4(1x,f7.4))', i2, GRIDRAD(I2),&
+                        write (*, '(i7,4(1x,f7.4))') i2, GRIDRAD(I2),&
                             &xyz_Rtm_(1, i2), xyz_Rtm_(2, i2), xyz_Rtm_(3, i2)
-                        print '(i7,4(1x,f7.4))', i3, GRIDRAD(I3),&
+                        write (*, '(i7,4(1x,f7.4))') i3, GRIDRAD(I3),&
                             &xyz_Rtm_(1, i3), xyz_Rtm_(2, i3), xyz_Rtm_(3, i3)
-                        print '(i7,4(1x,f7.4))', i4, GRIDRAD(I4),&
+                        write (*, '(i7,4(1x,f7.4))') i4, GRIDRAD(I4),&
                             &xyz_Rtm_(1, i4), xyz_Rtm_(2, i4), xyz_Rtm_(3, i4)
-                        print '(i7,8x,3(1x,f7.4))', ipt,&
+                        write (*, '(i7,8x,3(1x,f7.4))') ipt,&
                             &xyz_Rtm_(1, ipt), xyz_Rtm_(2, ipt), xyz_Rtm_(3, ipt)
                         stop
                     end if
@@ -1346,13 +1346,13 @@ subroutine shd_intg__backIntegrate2D(&
                         RAD0(:) = F1*GRIDRAD(:, I1) + F2*GRIDRAD(:, I2)
                         RAD(:) = RAD(:) + TRANSMIT*RAD0(:)
                     else
-                        print *, 'Error [_backIntegrate2D]: INEXTCELL=0: ', xe, ye, ze, icell
-                        print *, iz, joct, mu, phi
-                        print '(i7,4(1x,f7.4))', i1, GRIDRAD(1, I1),&
+                        write (*, *) 'Error [_backIntegrate2D]: INEXTCELL=0: ', xe, ye, ze, icell
+                        write (*, *) iz, joct, mu, phi
+                        write (*, '(i7,4(1x,f7.4))') i1, GRIDRAD(1, I1),&
                             &xyz_Rtm_(1, i1), xyz_Rtm_(2, i1), xyz_Rtm_(3, i1)
-                        print '(i7,4(1x,f7.4))', i2, GRIDRAD(1, I2),&
+                        write (*, '(i7,4(1x,f7.4))') i2, GRIDRAD(1, I2),&
                             &xyz_Rtm_(1, i2), xyz_Rtm_(2, i2), xyz_Rtm_(3, i2)
-                        print '(i7,8x,3(1x,f7.4))', ipt,&
+                        write (*, '(i7,8x,3(1x,f7.4))') ipt,&
                             &xyz_Rtm_(1, ipt), xyz_Rtm_(2, ipt), xyz_Rtm_(3, ipt)
                         stop
                     end if

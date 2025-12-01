@@ -2518,7 +2518,7 @@ subroutine shd_mpi__computeCamRad(&
 
             end if
 
-            !print *, IVIS, X0, Y0, Z0, 180.0/DPI_*COSTH, 180.0/DPI_*PHIR
+            !write (*, *) IVIS, X0, Y0, Z0, 180.0/DPI_*COSTH, 180.0/DPI_*PHIR
 
             ! Extrapolate ray to domain top if above
             if (Z0 .gt. rtm_obj_%z(rtm_obj_%Nz)) then
@@ -2677,7 +2677,7 @@ subroutine shd_mpi__computeCamRad(&
             &comm2D_, ierr)
         AllDone = all(intrecvbuf(1:4) .eq. 0)
     end do
-    !print *,'Done with ray tracing.', Ndone
+    !write (*, *)'Done with ray tracing.', Ndone
 
     if (myProc_ .gt. 0) then
         ! Send the finished radiances to the master processor
@@ -3071,8 +3071,8 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord,&
             Energy = loadObject(BndLines, Nxd, Nyd, ProcCoordAll, wtproc, Ngrid, prpAll_obj)
             LowestEnergy = Energy
             CurLines(:) = BndLines(:)
-            ! print *, 'Annealing cycles: Cycle Temp Energy  BndLines'
-            ! print '(I3,2(1X,F9.6),10(1X,I3))', 0,Temp0,Energy, BndLines(:)
+            ! write (*, *) 'Annealing cycles: Cycle Temp Energy  BndLines'
+            ! write (*, '(I3,2(1X,F9.6),10(1X,I3))') 0,Temp0,Energy, BndLines(:)
 
             ! Loop through the cooling cycles
             do icycle = 1, NCYCLE
@@ -3108,7 +3108,7 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord,&
                         LowestEnergy = Energy
                     end if
                 end do
-                ! print '(I3,2(1X,F9.6),10(1X,I3))', CYCLE,Temp,LowestEnergy, BndLines(:)
+                ! write (*, '(I3,2(1X,F9.6),10(1X,I3))') CYCLE,Temp,LowestEnergy, BndLines(:)
             end do ! end of temperature cycles
 
             deallocate(Ngrid)
