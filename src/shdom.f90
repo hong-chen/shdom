@@ -668,22 +668,9 @@ program shdom
 
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
+    write (*, *) sfc_obj_%Nx, sfc_obj_%Ny, sfc_obj_%Npar
+    write (*, *) sfc_obj_%xStart, sfc_obj_%yStart, sfc_obj_%dx, sfc_obj_%dy
 
-    ! print *, sfc_obj_%fname
-    ! print *, sfc_obj_%type
-    ! print *, sfc_obj_%Nx
-    ! print *, sfc_obj_%Ny
-    ! print *, sfc_obj_%Npar
-    ! print *, sfc_obj_%maxNpts
-    ! print *, sfc_obj_%maxNpar
-    ! print *, sfc_obj_%dx
-    ! print *, sfc_obj_%dy
-    ! print *, sfc_obj_%xStart
-    ! print *, sfc_obj_%yStart
-    ! print *, sfc_obj_%avgTemp
-    ! print *, sfc_obj_%avgAlb
-    ! print *, sfc_obj_%isUniform
-    ! print *, sfc_obj_%isLambertian
 
     if (isMasterProc) then
         ! Check input parameters

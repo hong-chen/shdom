@@ -1318,6 +1318,8 @@ subroutine shd_io__readSfc(sfc_obj, brdf_Sfc)
 
     ! Surface type is variable something
     sfc_obj%type(1:1) = 'V'
+    sfc_obj%xStart = 0.0
+    sfc_obj%yStart = 0.0
 
     ! Open the file, figure out the type, and get the grid size
     open (unit=1, file=trim(adjustl(sfc_obj%fname)), status='old')

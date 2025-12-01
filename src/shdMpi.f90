@@ -354,15 +354,15 @@ subroutine shd_mpi__map(rtmAll_obj, prpAll_obj, sfcAll_obj, &
     end if
 
     if (sfcAll_obj%Nx .gt. 1) then
-        sfc_obj%xStart = max(0.0, (int(prp_obj%xStart/sfc_obj%dx)-3)*sfc_obj%dx)
-        xEnd_sfc       = min((sfcAll_obj%Nx+1)*sfcAll_obj%dx, (int(xEnd_prp/sfc_obj%dx)+3)*sfc_obj%dx)
+        sfc_obj%xStart = max(0.0,                             (int(prp_obj%xStart/sfc_obj%dx)- 3)*sfc_obj%dx)
+        xEnd_sfc       = min((sfcAll_obj%Nx+1)*sfcAll_obj%dx, (int(xEnd_prp/sfc_obj%dx)      + 3)*sfc_obj%dx)
         sfc_obj%Nx     = max(1, int((xEnd_sfc-sfc_obj%xStart)/sfc_obj%dx))
 
         ixySfc_(1, 1) = nint(sfc_obj%xStart/sfc_obj%dx) + 1
         ixySfc_(2, 1) = min(sfcAll_obj%Nx+1, ixySfc_(1, 1) + sfc_obj%Nx)
 
         sfc_obj%xStart = sfc_obj%dx * (ixySfc_(1, 1) - 1)
-        sfc_obj%Nx     = ixySfc_(2, 1) - ixySfc_(1, 1) + 1
+        sfc_obj%Nx     = ixySfc_(2, 1) - ixySfc_(1, 1)
     else
         sfc_obj%xStart = 0.0
         sfc_obj%Nx = 1
@@ -372,15 +372,15 @@ subroutine shd_mpi__map(rtmAll_obj, prpAll_obj, sfcAll_obj, &
     end if
 
     if (sfcAll_obj%Ny .gt. 1) then
-        sfc_obj%yStart = max(0.0, (int(prp_obj%yStart/sfc_obj%dy)-3)*sfc_obj%dy)
-        yEnd_sfc       = min((sfcAll_obj%Ny+1)*sfcAll_obj%dy, (int(yEnd_prp/sfc_obj%dy)+3)*sfc_obj%dy)
+        sfc_obj%yStart = max(0.0,                             (int(prp_obj%yStart/sfc_obj%dy) - 3)*sfc_obj%dy)
+        yEnd_sfc       = min((sfcAll_obj%Ny+1)*sfcAll_obj%dy, (int(yEnd_prp/sfc_obj%dy)       + 3)*sfc_obj%dy)
         sfc_obj%Ny     = max(1, int((yEnd_sfc-sfc_obj%yStart)/sfc_obj%dy))
 
         ixySfc_(1, 2) = nint(sfc_obj%yStart/sfc_obj%dy) + 1
         ixySfc_(2, 2) = min(sfcAll_obj%Ny+1, ixySfc_(1, 2) + sfc_obj%Ny)
 
         sfc_obj%yStart = sfc_obj%dy * (ixySfc_(1, 2) - 1)
-        sfc_obj%Ny     = ixySfc_(2, 2) - ixySfc_(1, 2) + 1
+        sfc_obj%Ny     = ixySfc_(2, 2) - ixySfc_(1, 2)
     else
         sfc_obj%yStart = 0.0
         sfc_obj%Ny = 1
@@ -389,7 +389,7 @@ subroutine shd_mpi__map(rtmAll_obj, prpAll_obj, sfcAll_obj, &
         ixySfc_(2, 2) = 1
     end if
 
-    sfc_obj%maxNpts = sfc_obj%Nx * sfc_obj%Ny
+    sfc_obj%maxNpts = (sfc_obj%Nx+1) * (sfc_obj%Ny+1)
 
     ! Get the processors (rank numbers) of the neighbors
     call mpi_cart_shift(comm2D_, 0, 1, iProcNeigh_(1), iProcNeigh_(2), ierr)
@@ -730,11 +730,6 @@ subroutine shd_mpi__bcastSfc(sfcAll_obj, brdf_SfcAll, &
             Sx = ixyAll(1, 1, iproc); Ex = ixyAll(2, 1, iproc)
             Sy = ixyAll(1, 2, iproc); Ey = ixyAll(2, 2, iproc)
             Nx = Ex - Sx + 1; Ny = Ey - Sy + 1; N = Nx*Ny*sfcAll_obj%maxNpar
-
-            write (6, *) iproc, Nx, Sx, Ex
-            write (6, *) iproc, Ny, Sy, Ey
-            write (6, *) Nx*Ny, sfc_obj%maxNpts
-            write (6, *)
 
             rbuf(:, 1:Ny, 1:Nx) = brdf_SfcAll(:, Sy:Ey, Sx:Ex)
 

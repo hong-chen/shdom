@@ -4,12 +4,12 @@
 
 mkdir -p tmp-data
 
-fname_nml="data/shdom-inp_globe_save.nml"
-if [ "$1" == "mpi" ]; then
-    mpirun -np 4 shdom $fname_nml
-else
-    shdom $fname_nml
-fi
+# fname_nml="data/shdom-inp_globe_save.nml"
+# if [ "$1" == "mpi" ]; then
+#     mpirun -np 4 shdom $fname_nml
+# else
+#     shdom $fname_nml
+# fi
 
 fname_nml="data/shdom-inp_globe_restore.nml"
 if [ "$1" == "mpi" ]; then
