@@ -165,9 +165,9 @@ subroutine shd_init__makeGrid(rtm_OBJ, &
 
     ! z
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    ZTYPE_CASE: select case (rtm_obj%type)
+    GRIDTYPE_CASE: select case (rtm_obj%type)
 
-        case ('P', 'p')
+        case ('P', 'p', 'S', 's')
 
             if (rtm_obj%Nz .ne. prp_obj%Nz) then
                 write (6, *)&
@@ -199,7 +199,7 @@ subroutine shd_init__makeGrid(rtm_OBJ, &
 
             stop 'Error [_makeGrid]: Illegal grid type in Z.'
 
-    end select ZTYPE_CASE
+    end select GRIDTYPE_CASE
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     return
@@ -1263,12 +1263,6 @@ subroutine shd_init__chapman(&
 
         end do
 
-    end do
-
-    do n = 1, NLAYER
-        print *, n
-        print *, CH(n, :)
-        print *
     end do
 
     return
