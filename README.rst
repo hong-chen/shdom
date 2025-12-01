@@ -23,6 +23,10 @@ SHDOM was originally developed by `K. Franklin Evans <evans@nit.colorado.edu>`_ 
 
 **Major changes:**
 
+* Added support for user-specified camera radiance output;
+
+* Modified surface MPI handling to improve memory efficiency;
+
 * Added mixed BRDF surface type support;
 
 * Added support for snow BRDF model (by `Vikas Nataraja <https://github.com/vikasnataraja>`_);
