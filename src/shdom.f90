@@ -668,8 +668,6 @@ program shdom
 
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
-    write (*, *) sfc_obj_%Nx, sfc_obj_%Ny, sfc_obj_%Npar
-    write (*, *) sfc_obj_%xStart, sfc_obj_%yStart, sfc_obj_%dx, sfc_obj_%dy
 
 
     if (isMasterProc) then

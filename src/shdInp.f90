@@ -775,7 +775,7 @@ subroutine shd_io__readPrp(isDeltaM, &
 
     !integer i, ix, iy, iz, j, js, k, kl, l, il, Nleg, ipha0, N
     integer i, ix, iy, iz, j, js, k, l, Nleg, ipha0, N
-    real :: temp0, ext0, ssa0, chi0
+    real :: temp0, ext0, ssa0, chi0, dx, dy
 
     character(len=charMaxLen_) :: fnameBin
     character(len=charMaxLen_) :: lineTmp
@@ -801,7 +801,7 @@ subroutine shd_io__readPrp(isDeltaM, &
 
     if (prp_obj%Nz .gt. prp_obj%maxNz) stop 'Error [_readPrp]: prp_obj%maxNz exceeded.'
 
-    read (1, *) prp_obj%dx, prp_obj%dy, (prp_obj%z(k), k=1, prp_obj%Nz)
+    read (1, *) dx, dy, (prp_obj%z(k), k=1, prp_obj%Nz)
 
     PRPTYPE_CASE: select case (prp_obj%type)
 
@@ -828,7 +828,7 @@ subroutine shd_io__readPrp(isDeltaM, &
             rewind (1)
             read (1, *)
             read (1, *) prp_obj%Nx, prp_obj%Ny, prp_obj%Nz
-            read (1, *) prp_obj%dx, prp_obj%dy, (prp_obj%z(k), k=1, prp_obj%Nz)
+            read (1, *) dx, dy, (prp_obj%z(k), k=1, prp_obj%Nz)
             read (1, *) (temp_Prp(iz, 1, 1), iz=1, prp_obj%Nz)
 
             !read (1, *) ssa0, Nleg, (leg_Prp(l + 1), l=1, min(Nleg, prp_obj%Nleg)),&
@@ -901,7 +901,7 @@ subroutine shd_io__readPrp(isDeltaM, &
             rewind (1)
             read (1, *)
             read (1, *) prp_obj%Nx, prp_obj%Ny, prp_obj%Nz
-            read (1, *) prp_obj%dx, prp_obj%dy, (prp_obj%z(k), k=1, prp_obj%Nz)
+            read (1, *) dx, dy, (prp_obj%z(k), k=1, prp_obj%Nz)
             read (1, *) prp_obj%Npha
 
             prp_obj%maxAsym = -1.0
@@ -1014,7 +1014,7 @@ subroutine shd_io__readPrp(isDeltaM, &
                 rewind (1)
 
                 read (1, *) prp_obj%Nx, prp_obj%Ny, prp_obj%Nz
-                read (1, *) prp_obj%dx, prp_obj%dy, (prp_obj%z(k), k=1, prp_obj%Nz)
+                read (1, *) dx, dy, (prp_obj%z(k), k=1, prp_obj%Nz)
             end if
 
             N = prp_obj%Nx * prp_obj%Ny * prp_obj%Nz
