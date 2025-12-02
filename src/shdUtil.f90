@@ -59,6 +59,9 @@ module shd_util
     integer, parameter :: R__  = selected_real_kind(6) ! default precision for float
     integer, parameter :: I__  = selected_int_kind(9)  ! default precision for integer
 
+    real(kind=R__) :: A2_ = planetRadiusA_*planetRadiusA_
+    real(kind=R__) :: B2_ = planetRadiusB_*planetRadiusB_
+
     public :: shd_util__sumData
     public :: shd_util__interpData
 
@@ -1372,13 +1375,15 @@ subroutine shd_util__computeSolarVect(&
     lon, lat, sza, saa, &
     Sx, Sy, Sz)
 
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Initialize Sun vector at center, converting local ENU to ECEF
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
     implicit none
     real(kind=R__), intent(in)  :: lon, lat, sza, saa
     real(kind=R__), intent(out) :: Sx, Sy, Sz
 
-    real(kind=R__) :: Se, Sn, Su, a2, b2
+    real(kind=R__) :: Se, Sn, Su
     real(kind=R__) :: east_x, east_y, east_z
     real(kind=R__) :: up_x, up_y, up_z
     real(kind=R__) :: north_x, north_y, north_z
@@ -1389,15 +1394,10 @@ subroutine shd_util__computeSolarVect(&
     Sn = sin(sza) * cos(saa)
     Su = cos(sza)
 
-    !------------------------------------------------------------
     ! Ellipsoidal surface normal (UP vector)
-    !------------------------------------------------------------
-    a2 = planetRadiusA_*planetRadiusA_
-    b2 = planetRadiusB_*planetRadiusB_
-
-    nx = cos(lat)*cos(lon)/a2
-    ny = cos(lat)*sin(lon)/a2
-    nz = sin(lat)/b2
+    nx = cos(lat)*cos(lon)/A2_
+    ny = cos(lat)*sin(lon)/A2_
+    nz = sin(lat)/B2_
     norm = sqrt(nx*nx + ny*ny + nz*nz)
 
     up_x = nx / norm
@@ -1427,15 +1427,15 @@ subroutine shd_util__computeSolarAngle(&
     lon, lat, Sx, Sy, Sz, &
     sza, saa)
 
-    !------------------------------------------------------------
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Compute solar angles at any lat/lon on oblate ellipsoid
-    !------------------------------------------------------------
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
     implicit none
     real(kind=R__), intent(in)  :: lon, lat, Sx, Sy, Sz
     real(kind=R__), intent(out) :: sza, saa
 
-    real(kind=R__) :: east_x, east_y, east_z, a2, b2
+    real(kind=R__) :: east_x, east_y, east_z
     real(kind=R__) :: up_x, up_y, up_z
     real(kind=R__) :: north_x, north_y, north_z
     real(kind=R__) :: nx, ny, nz, norm
@@ -1447,11 +1447,9 @@ subroutine shd_util__computeSolarAngle(&
     east_z =  0.0d0
 
     ! Ellipsoidal UP normal
-    a2 = planetRadiusA_*planetRadiusA_
-    b2 = planetRadiusB_*planetRadiusB_
-    nx = cos(lat)*cos(lon)/a2
-    ny = cos(lat)*sin(lon)/a2
-    nz = sin(lat)/b2
+    nx = cos(lat)*cos(lon)/A2_
+    ny = cos(lat)*sin(lon)/A2_
+    nz = sin(lat)/B2_
     norm = sqrt(nx*nx + ny*ny + nz*nz)
 
     up_x = nx / norm
