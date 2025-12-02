@@ -269,6 +269,8 @@ module globals_type
 
         real(kind=R__) :: mu0  = -999.0
         real(kind=R__) :: phi0 = -999.0
+        real(kind=R__) :: lon0 = -999.0
+        real(kind=R__) :: lat0 = -999.0
 
         real(kind=R__) :: solarI  = -999.0 ! solar read from input file
         real(kind=R__) :: solar0  = -999.0 ! solar at every "g", scaled with mu0 and solarFac
@@ -311,6 +313,13 @@ module globals_type
         real(kind=R__) :: xDomain = -999.0
         real(kind=R__) :: yDomain = -999.0
 
+        real(kind=R__) :: dlon = -999.0
+        real(kind=R__) :: dlat = -999.0
+        real(kind=R__) :: lonStart = -999.0
+        real(kind=R__) :: latStart = -999.0
+
+        real(kind=R__), allocatable :: x(:)
+        real(kind=R__), allocatable :: y(:)
         real(kind=R__), allocatable :: z(:)
 
         logical :: isAllocated  = .false.
@@ -340,8 +349,16 @@ module globals_type
         !real(kind=R__) :: xDomain = -999.0
         !real(kind=R__) :: yDomain = -999.0
 
+        real(kind=R__) :: dlon = -999.0
+        real(kind=R__) :: dlat = -999.0
+        real(kind=R__) :: lonStart = -999.0
+        real(kind=R__) :: latStart = -999.0
+
         real(kind=R__) :: avgTemp = -999.0
         real(kind=R__) :: avgAlb  = -999.0
+
+        real(kind=R__), allocatable :: x(:)
+        real(kind=R__), allocatable :: y(:)
 
         logical :: isUniform    = .false.
         logical :: isLambertian = .false.
