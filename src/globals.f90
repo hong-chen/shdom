@@ -130,7 +130,9 @@ module globals_cfg
     real(kind=8), save :: accSolv_
     real(kind=4), save :: memTotSysMB_ = 16000.0
     real(kind=4), save :: memPerCpuMB_
-    real(kind=4), save :: planetRadius_ = 6371.009
+    real(kind=4), save :: planetRadius_  = 6371.0087714 ! arithmetic mean radius [km]
+    real(kind=4), save :: planetRadiusA_ = 6378.1370 ! equatorial radius [km]
+    real(kind=4), save :: planetRadiusB_ = 6356.7523 ! polar radius [km]
 
     integer(kind=1), save :: verbose_ = 5
     !Severity    Level  Description

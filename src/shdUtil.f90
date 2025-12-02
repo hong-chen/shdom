@@ -43,7 +43,8 @@
 module shd_util
 
     use globals_const, only: RD_, PI_, DPI_
-    use globals_cfg,   only: isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
+    use globals_cfg,   only: planetRadiusA_, planetRadiusB_, &
+                             isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
                              is1DX_, is1DYx_
 
     use globals_obj,   only: rtm_obj_, xyz_Rtm_, &
@@ -76,6 +77,9 @@ module shd_util
     public :: shd_util__ssort
     public :: shd_util__ssort_i
     public :: shd_util__ssort_r
+
+    public :: shd_util__computeSolarVect
+    public :: shd_util__computeSolarAngle
 
     public :: shd_util__tickTock
 
@@ -1363,6 +1367,121 @@ subroutine shd_util__ssort_r(X, Y, N, KFLAG)
     return
 
 end subroutine shd_util__ssort_r
+
+subroutine shd_util__computeSolarVect(&
+    lon, lat, sza, saa, &
+    Sx, Sy, Sz)
+
+    ! Initialize Sun vector at center, converting local ENU to ECEF
+
+    implicit none
+    real(kind=R__), intent(in)  :: lon, lat, sza, saa
+    real(kind=R__), intent(out) :: Sx, Sy, Sz
+
+    real(kind=R__) :: Se, Sn, Su, a2, b2
+    real(kind=R__) :: east_x, east_y, east_z
+    real(kind=R__) :: up_x, up_y, up_z
+    real(kind=R__) :: north_x, north_y, north_z
+    real(kind=R__) :: nx, ny, nz, norm
+
+    ! Local ENU Sun vector at center
+    Se = sin(sza) * sin(saa)
+    Sn = sin(sza) * cos(saa)
+    Su = cos(sza)
+
+    !------------------------------------------------------------
+    ! Ellipsoidal surface normal (UP vector)
+    !------------------------------------------------------------
+    a2 = planetRadiusA_*planetRadiusA_
+    b2 = planetRadiusB_*planetRadiusB_
+
+    nx = cos(lat)*cos(lon)/a2
+    ny = cos(lat)*sin(lon)/a2
+    nz = sin(lat)/b2
+    norm = sqrt(nx*nx + ny*ny + nz*nz)
+
+    up_x = nx / norm
+    up_y = ny / norm
+    up_z = nz / norm
+
+    ! East vector (same as spherical)
+    east_x = -sin(lon)
+    east_y =  cos(lon)
+    east_z =  0.0d0
+
+    ! North = Up × East
+    north_x =  up_y*east_z - up_z*east_y
+    north_y =  up_z*east_x - up_x*east_z
+    north_z =  up_x*east_y - up_y*east_x
+
+    ! Convert local ENU Sun vector -> global ECEF
+    Sx = Se*east_x  + Sn*north_x + Su*up_x
+    Sy = Se*east_y  + Sn*north_y + Su*up_y
+    Sz = Se*east_z  + Sn*north_z + Su*up_z
+
+    return
+
+end subroutine shd_util__computeSolarVect
+
+subroutine shd_util__computeSolarAngle(&
+    lon, lat, Sx, Sy, Sz, &
+    sza, saa)
+
+    !------------------------------------------------------------
+    ! Compute solar angles at any lat/lon on oblate ellipsoid
+    !------------------------------------------------------------
+
+    implicit none
+    real(kind=R__), intent(in)  :: lon, lat, Sx, Sy, Sz
+    real(kind=R__), intent(out) :: sza, saa
+
+    real(kind=R__) :: east_x, east_y, east_z, a2, b2
+    real(kind=R__) :: up_x, up_y, up_z
+    real(kind=R__) :: north_x, north_y, north_z
+    real(kind=R__) :: nx, ny, nz, norm
+    real(kind=R__) :: Se, Sn, Su
+
+    ! East (unchanged)
+    east_x = -sin(lon)
+    east_y =  cos(lon)
+    east_z =  0.0d0
+
+    ! Ellipsoidal UP normal
+    a2 = planetRadiusA_*planetRadiusA_
+    b2 = planetRadiusB_*planetRadiusB_
+    nx = cos(lat)*cos(lon)/a2
+    ny = cos(lat)*sin(lon)/a2
+    nz = sin(lat)/b2
+    norm = sqrt(nx*nx + ny*ny + nz*nz)
+
+    up_x = nx / norm
+    up_y = ny / norm
+    up_z = nz / norm
+
+    ! North = Up × East
+    north_x =  up_y*east_z - up_z*east_y
+    north_y =  up_z*east_x - up_x*east_z
+    north_z =  up_x*east_y - up_y*east_x
+
+    ! Project Sun vector into local ENU frame
+    Se = east_x  * Sx + east_y  * Sy + east_z  * Sz
+    Sn = north_x * Sx + north_y * Sy + north_z * Sz
+    Su = up_x    * Sx + up_y    * Sy + up_z    * Sz
+
+    ! Solar angles
+    sza = acos(Su)
+    saa = atan2(Se, Sn)
+
+    ! convert from atmospheric convention [0 at north, positive clockwise] to
+    !       radiative transfer convention [0 at west,  positive counterclockwise]
+    saa = 1.5*PI_ - saa
+
+    if (saa < 0.0)     saa = saa + 2.0*PI_
+    if (saa > 2.0*PI_) saa = saa - 2.0*PI_
+
+    return
+
+end subroutine shd_util__computeSolarAngle
 
 subroutine shd_util__tickTock(message, count_start, more_digits)
 
