@@ -223,41 +223,6 @@ program shdom
     logical :: doCkd, doDeltaM, doAccel
 
 
-    !╭────────────────────────────────────────────────────────────────────────────╮!
-    ! write (*, *) 'hahaha'
-    real(4) :: lat0, lon0, sza0, saa0
-    real(4) :: lat, lon, sza, saa
-    real(4) :: Sx, Sy, Sz
-
-    integer :: i, j
-
-    ! Example center point (in radians)
-    lon0 = -94.468285d0 * acos(-1.0d0)/180.0d0
-    lat0 =   23.41876d0 * acos(-1.0d0)/180.0d0
-
-    ! Example known solar angles at center
-    sza0 =   34.32d0 * acos(-1.0d0)/180.0d0
-    saa0 = -111.88d0 * acos(-1.0d0)/180.0d0
-
-    call shd_util__computeSolarVect(lon0, lat0, sza0, saa0, Sx, Sy, Sz)
-
-    call shd_util__computeSolarAngle(lon0, lat0, Sx, Sy, Sz, sza, saa)
-    ! print *, 0, 0, sza*180.0d0/acos(-1.0d0), saa*180.0d0/acos(-1.0d0)
-
-    do j = 1, 181
-        ! lat = (20.23265d0 + (j-1)*0.214095d0) * acos(-1.0d0)/180.0d0
-        lat = (-90.0 + (j-1)*1.0) * acos(-1.0d0)/180.0d0
-        do i = 1, 361
-            ! lon = (-123.632324d0 + (i-1)*0.294584d0) * acos(-1.0d0)/180.0d0
-            lon = (0.0 + (i-1)*1.0) * acos(-1.0d0)/180.0d0
-            call shd_util__computeSolarAngle(lon, lat, Sx, Sy, Sz, sza, saa)
-            print *, lon*180.0d0/acos(-1.0d0), lat*180.0d0/acos(-1.0d0), sza*180.0d0/acos(-1.0d0), saa*180.0d0/acos(-1.0d0)
-        end do
-    end do
-
-    stop
-    !╰────────────────────────────────────────────────────────────────────────────╯!
-
     ! start timing
     call system_clock(countStart, countRate, countMax)
 
