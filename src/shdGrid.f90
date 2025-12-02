@@ -1493,7 +1493,7 @@ subroutine shd_grid__interpNewGridPts(newPts,&
 
     C = sqrt(4.0*acos(-1.0))
     if (src_obj_%doSolar) then
-        SECMU0 = 1.0/abs(src_obj_%avgMu)
+        SECMU0 = 1.0/abs(src_obj_%mu0)
     end if
 
     ! Loop over the (potentially) four new grid points
@@ -1541,7 +1541,7 @@ subroutine shd_grid__interpNewGridPts(newPts,&
                     ! Otherwise, calculate the exact direct beam from property grid
                     DIRPATH = 0.0
                     call shd_rad__computeDirect(0, X, Y, Z, rtm_obj_%flag_bc, rtm_obj_%flag_ip, doDeltaM,&
-                        &shdo_obj_%maxNl, SOLARFLUX, src_obj_%avgMu, src_obj_%avgAz,&
+                        &shdo_obj_%maxNl, SOLARFLUX, src_obj_%mu0, src_obj_%phi0,&
                         &DIRFLUX(IP),&
                         &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
                 end if
@@ -1785,7 +1785,7 @@ subroutine shd_grid__splitGrid(&
             if (isMpi_) then
                 call shd_mpi__makeDirect(OLDNPTS + 1,&
                     &doDeltaM, shdo_obj_%maxNl,&
-                    &SOLARFLUX, src_obj_%avgMu, src_obj_%avgAz,&
+                    &SOLARFLUX, src_obj_%mu0, src_obj_%phi0,&
                     &DIRFLUX)
             end if
         end if

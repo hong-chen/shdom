@@ -361,11 +361,11 @@ subroutine shd_src__computeSrcOneDir(&
     ! Precompute Ylm's for output direction and solar direction
     call shd_shdo__computeYlm(.false., MU, PHI, shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet, YLMDIR)
     if (src_obj_%doSolar) then
-        call shd_shdo__computeYlm(.true., src_obj_%avgMu, src_obj_%avgAz, shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet,&
+        call shd_shdo__computeYlm(.true., src_obj_%mu0, src_obj_%phi0, shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet,&
             &YLMSUN)
-        SECMU0 = 1.0/abs(src_obj_%avgMu)
-        COSSCAT = src_obj_%avgMu*MU + sqrt((1.0d0 - src_obj_%avgMu**2)*(1.0d0 - MU**2))&
-            &*cos(src_obj_%avgAz - PHI)
+        SECMU0 = 1.0/abs(src_obj_%mu0)
+        COSSCAT = src_obj_%mu0*MU + sqrt((1.0d0 - src_obj_%mu0**2)*(1.0d0 - MU**2))&
+            &*cos(src_obj_%phi0 - PHI)
         if (prp_obj_%Npha .eq. 0 .and. TMS) then
             ! If non-tabulate phase functions (unpolarized) then
             !   compute the Legendre polynomials for the scattering angle
@@ -401,7 +401,7 @@ subroutine shd_src__computeSrcOneDir(&
             ! Sum the Wigner series (for A1 and B1), rotate the plane of
             !   polarization to the outgoing direction, and return the Stoke
             call shd_src__computeSolarStokesVect(UNSCLEGEN, COSSCAT,&
-                &src_obj_%avgMu, MU, src_obj_%avgAz - PHI, shdo_obj_%Nstokes,&
+                &src_obj_%mu0, MU, src_obj_%phi0 - PHI, shdo_obj_%Nstokes,&
                 &SINGSCAT(1, IPH))
             if (SINGSCAT(1, IPH) .le. 0.0) then
                 write(6, *) 'Error [_computeOneSrc]: negative source function',&
@@ -552,7 +552,7 @@ subroutine shd_src__computeSrc(&
     ! Make source function from scattering integral and real sources:
     !   Solar source: DIRFLUX has F0*exp(-tau)
     !   Thermal source: planck_Rtm_ has (1-omega)*B(T)
-    SECMU0 = 1.0/abs(src_obj_%avgMu)
+    SECMU0 = 1.0/abs(src_obj_%mu0)
     C = sqrt(4.0*acos(-1.0))
     ! Make the l index as a function of SH term (J)
     J = 0

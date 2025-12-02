@@ -251,8 +251,8 @@ subroutine shd_io__outputResult(&
         end if
 
         write(2, '(A,E13.6,A,F10.7,A,F8.3)')&
-            &'!  SOLAR_FLUX=', src_obj_%avgSolar, '   SOLAR_MU=', src_obj_%avgMu,&
-            &'   SOLAR_AZ=', src_obj_%avgAz*180.0/acos(-1.0)
+            &'!  SOLAR_FLUX=', src_obj_%solar, '   SOLAR_MU=', src_obj_%mu0,&
+            &'   SOLAR_AZ=', src_obj_%phi0*180.0/acos(-1.0)
 
     else
 
@@ -1329,8 +1329,8 @@ subroutine shd_io__outputResultMpi(&
             end if
         end if
         write(2, '(A,E13.6,A,F10.7,A,F8.3)')&
-            & '!  SOLAR_FLUX=', src_obj_%avgSolar, '   SOLAR_MU=', src_obj_%avgMu,&
-            & '   SOLAR_AZ=', src_obj_%avgAz*180.0/acos(-1.0)
+            & '!  SOLAR_FLUX=', src_obj_%solar, '   SOLAR_MU=', src_obj_%mu0,&
+            & '   SOLAR_AZ=', src_obj_%phi0*180.0/acos(-1.0)
     else
         if (sfc_obj_%type(1:1) .eq. 'V') then
             write(2, '(A,A)') '!  SURFACE_FILE=', trim(sfc_obj_%fname)
@@ -2054,8 +2054,8 @@ subroutine shd_io__outputCamRad(&
         end if
 
         write(2, '(A,E13.6,A,F10.7,A,F8.3)')&
-            &'!  SOLAR_FLUX=', src_obj_%avgSolar, '   SOLAR_MU=', src_obj_%avgMu,&
-            &'   SOLAR_AZ=', src_obj_%avgAz*180.0/acos(-1.0)
+            &'!  SOLAR_FLUX=', src_obj_%solar, '   SOLAR_MU=', src_obj_%mu0,&
+            &'   SOLAR_AZ=', src_obj_%phi0*180.0/acos(-1.0)
 
     else
 
@@ -2327,8 +2327,8 @@ subroutine shd_io__outputImg(&
             end if
         end if
         write(BUF(I:I + 79), '(A,E13.6,A,F10.7,A,F8.3,A1)')&
-            &'# SOLAR_FLUX=', src_obj_%avgSolar, '   SOLAR_MU=', src_obj_%avgMu,&
-            &'   SOLAR_AZ=', src_obj_%avgAz*180.0/acos(-1.0), LF
+            &'# SOLAR_FLUX=', src_obj_%solar, '   SOLAR_MU=', src_obj_%mu0,&
+            &'   SOLAR_AZ=', src_obj_%phi0*180.0/acos(-1.0), LF
         I = I + index(BUF(I:I + 79), LF)
     else
         if (sfc_obj_%type(1:1) .eq. 'V') then

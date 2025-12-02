@@ -259,14 +259,14 @@ subroutine shd_intg__integratePath(&
                     if (sfc_obj_%isUniform) then
                         call shd_init__makeBotRadU(NBOTPTS, BCPTR(1, 2),&
                             &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt, IMU, IPHI,&
-                            &src_obj_%type, src_obj_%avgWaveLen, src_obj_%avgMu, src_obj_%avgAz, DIRFLUX,&
+                            &src_obj_%type, src_obj_%avgWaveLen, src_obj_%mu0, src_obj_%phi0, DIRFLUX,&
                             &SFC_BRDF_DO,&
                             &shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
                     else
                         call shd_init__makeBotRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
                             &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
                             &shdo_obj_%mu(IMU), shdo_obj_%phi(IMU, IPHI),&
-                            &src_obj_%type, src_obj_%avgWaveLen, src_obj_%avgMu, src_obj_%avgAz, DIRFLUX,&
+                            &src_obj_%type, src_obj_%avgWaveLen, src_obj_%mu0, src_obj_%phi0, DIRFLUX,&
                             &shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
                     end if
                 end if

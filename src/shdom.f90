@@ -252,7 +252,7 @@ program shdom
                 fileInp_sav, fileOut_sav, sen_obj_%fname,&
                 shdo_obj_%Nstokes, rtmAll_obj%Nx, rtmAll_obj%Ny, rtmAll_obj%Nz, shdo_obj_%Nmu, shdo_obj_%Nphi, rtmAll_obj%flag_bc,&
                 rtmAll_obj%flag_ip, doCkd, doDeltaM, rtmAll_obj%type,&
-                src_obj_%type, src_obj_%inpSolar, src_obj_%avgMu, src_obj_%avgAz, src_obj_%skyRad,&
+                src_obj_%type, src_obj_%solarI, src_obj_%mu0, src_obj_%phi0, src_obj_%skyRad,&
                 sfcAll_obj%avgTemp, sfcAll_obj%avgAlb, src_obj_%unit, src_obj_%waveNum, src_obj_%avgWaveLen,&
                 doAccel, solAcc, maxIter, splitAcc, shAcc,&
                 maxNset_out, maxNpar_out, Nout, type_Out, parms_Out, file_Out,&
@@ -342,7 +342,7 @@ program shdom
     end if
 
     ! for thermal, reset solar azimuth angle
-    if (src_obj_%type .eq. 'T') src_obj_%avgAz = 0.0d0
+    if (src_obj_%type .eq. 'T') src_obj_%phi0 = 0.0d0
 
     ! angle grids for DO
     allocate(shdo_obj_%NphiA(shdo_obj_%Nmu), &
@@ -1112,7 +1112,7 @@ program shdom
 
     totIter = 0
     oldNpts = 0
-    src_obj_%avgSolar = 0.0d0
+    src_obj_%solar = 0.0d0
 
     ! Loop over the k-distribution g's from high to low absorption
     CKD_LOOP: do ig_ckd = ckd_obj_%Ng, 1, -1
@@ -1120,10 +1120,10 @@ program shdom
         if (verbose_ .ge. 5) write(6, '(A,I2,A,I2,A)') 'Message [shdom]: Starting ', ckd_obj_%Ng-ig_ckd+1, '/', ckd_obj_%Ng, ' (ig/Ng) ...'
 
         ! solar flux for given g of CKD
-        src_obj_%avgSolar0 = solar_Ckd_(ig_ckd)*src_obj_%inpSolar*abs(src_obj_%avgMu)
+        src_obj_%solar0 = solar_Ckd_(ig_ckd)*src_obj_%solarI*abs(src_obj_%mu0)
 
         ! weighted average solar flux
-        src_obj_%avgSolar = src_obj_%avgSolar + solar_Ckd_(ig_ckd)*wgt_Ckd_(ig_ckd)*src_obj_%inpSolar*abs(src_obj_%avgMu)
+        src_obj_%solar = src_obj_%solar + solar_Ckd_(ig_ckd)*wgt_Ckd_(ig_ckd)*src_obj_%solarI*abs(src_obj_%mu0)
 
         ! If doing k-distribution then get the gas absorption profile.
         ckd_obj_%ig = ig_ckd
@@ -1230,11 +1230,11 @@ program shdom
 
                 if (isMpi_) then
                     call shd_mpi__makeDirect(1, .false., shdo_obj_%maxNl,&
-                        &src_obj_%avgSolar0, src_obj_%avgMu, src_obj_%avgAz,&
+                        &src_obj_%solar0, src_obj_%mu0, src_obj_%phi0,&
                         &fluxDirTmp)
                 else
                     call shd_rad__makeDirect(rtm_obj_%Npts, .false., shdo_obj_%maxNl,&
-                        &src_obj_%avgSolar0, src_obj_%avgMu, src_obj_%avgAz,&
+                        &src_obj_%solar0, src_obj_%mu0, src_obj_%phi0,&
                         &fluxDirTmp)
                 end if
 
@@ -1251,13 +1251,13 @@ program shdom
 
         if (isHROut) then
             ! Compute the net flux divergence at every point
-            call shd_rad__computeFluxDiv(shdo_obj_%Nstokes, rtm_obj_%Npts, iradI_Shdo_, src_obj_%type, src_obj_%avgMu,&
+            call shd_rad__computeFluxDiv(shdo_obj_%Nstokes, rtm_obj_%Npts, iradI_Shdo_, src_obj_%type, src_obj_%mu0,&
                 &ext_Rtm_, ssa_Rtm_, planck_Rtm_, fluxDir, radI_Shdo_, work)
             call shd_util__sumData(ckd_obj_%Ng-ig_ckd, wgt_Ckd_(ig_ckd), rtm_obj_%Npts, work, sumFluxDiv_Out)
         end if
 
         if (isSHOut) then
-            call shd_shdo__computeSH(Nsh_out, shdo_obj_%Nstokes, rtm_obj_%Npts, src_obj_%type, src_obj_%avgMu, src_obj_%avgAz,&
+            call shd_shdo__computeSH(Nsh_out, shdo_obj_%Nstokes, rtm_obj_%Npts, src_obj_%type, src_obj_%mu0, src_obj_%phi0,&
                 &fluxDir, iradI_Shdo_, shdo_obj_%maxNl, shdo_obj_%maxNm, radI_Shdo_, work)
             call shd_util__sumData(ckd_obj_%Ng-ig_ckd, wgt_Ckd_(ig_ckd), Nsh_out*rtm_obj_%Npts, work, sumSH_Out)
         end if

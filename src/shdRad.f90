@@ -845,7 +845,7 @@ subroutine shd_rad__computeRad(&
             if (.not. sfc_obj_%isLambertian) then
                 call shd_init__makeBotRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
                     &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt, MUOUT, PHIOUT,&
-                    &src_obj_%type, src_obj_%avgWaveLen, src_obj_%avgMu, src_obj_%avgAz, DIRFLUX,&
+                    &src_obj_%type, src_obj_%avgWaveLen, src_obj_%mu0, src_obj_%phi0, DIRFLUX,&
                     &shdo_obj_%Nstokes,&
                     &BCRAD(1, 1 + NTOPPTS))
             end if
@@ -913,7 +913,7 @@ subroutine shd_rad__computeCamRad(&
     allocate(YLMSUN(prp_obj_%NlegSet, shdo_obj_%Nlm))
 
     if (src_obj_%doSolar) then
-        call shd_shdo__computeYlm(.true., src_obj_%avgMu, src_obj_%avgAz, shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet, YLMSUN)
+        call shd_shdo__computeYlm(.true., src_obj_%mu0, src_obj_%phi0, shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet, YLMSUN)
         if (DELTAM .and. prp_obj_%Npha .gt. 0) then
             NSCATANGLE = max(36, min(MAXSCATANG, 2*prp_obj_%Nleg))
             NSTPHASE = min(prp_obj_%NlegSet, 2)
@@ -1065,7 +1065,7 @@ subroutine shd_rad__computeCamRad(&
                 &NSTPHASE, NSCATANGLE, PHASETAB,&
                 &shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
                 &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
-                &DELTAM, src_obj_%type, src_obj_%avgWaveLen, src_obj_%avgMu, src_obj_%avgAz,&
+                &DELTAM, src_obj_%type, src_obj_%avgWaveLen, src_obj_%mu0, src_obj_%phi0,&
                 &DIRFLUX, isrcJ_Shdo_, srcJ_Shdo_, YLMSUN,&
                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                 &MU2, PHI2, X0, Y0, Z0,&

@@ -452,13 +452,13 @@ subroutine shd_io__nmlInp(&
 
     src_obj%type = SRCTYPE
     if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
-        src_obj%inpSolar = SOLARFLUX
-        src_obj%avgMu = -abs(SOLARMU)
-        src_obj%avgAz = SOLARAZ*acos(-1.0)/180.0
+        src_obj%solarI = SOLARFLUX
+        src_obj%mu0 = -abs(SOLARMU)
+        src_obj%phi0 = SOLARAZ*acos(-1.0)/180.0
     else
-        src_obj%inpSolar = 0.0
-        src_obj%avgMu = 1.0
-        src_obj%avgAz = 0.0
+        src_obj%solarI = 0.0
+        src_obj%mu0 = 1.0
+        src_obj%phi0 = 0.0
     end if
     src_obj%skyRad = SKYRAD
     sfc_obj%avgTemp = GNDTEMP
@@ -559,7 +559,7 @@ subroutine shd_io__checkInp(&
     ! phase functions.
     ! Check for reasonable ranges on SPLITACC and SHACC.
     ! Check for reasonable range of sfc_obj%avgTemp and valid range of sfc_obj%avgAlb.
-    ! Check for src_obj%avgMu=0.
+    ! Check for src_obj%mu0=0.
     ! Check for shdo_obj%Nphi<shdo_obj%Nmu.
 
     type(shd_type_rtm),  intent(in) :: rtm_obj
@@ -579,9 +579,9 @@ subroutine shd_io__checkInp(&
     if ((rtm_obj%type .ne. 'E') .and. (rtm_obj%type .ne. 'P') .and. (rtm_obj%type .ne. 'F'))&
         &stop 'Error [_checkInp]: Illegal grid type.'
 
-    if ((src_obj%type .ne. 'T') .and. (src_obj%avgMu .eq. 0.0)) then
+    if ((src_obj%type .ne. 'T') .and. (src_obj%mu0 .eq. 0.0)) then
         stop 'Error [_checkInp]: Cosine solar zenith angle&
-            & (src_obj%avgMu) cannot be 0.'
+            & (src_obj%mu0) cannot be 0.'
     end if
 
     if (.not. DELTAM .and. (src_obj%type .ne. 'T') .and. prp_obj%maxAsym .gt. 0.5) then
@@ -598,7 +598,7 @@ subroutine shd_io__checkInp(&
         FLUX = 0.0
     end if
     if ((src_obj%type .eq. 'S') .or. (src_obj%type .eq. 'B')) then
-        FLUX = FLUX + src_obj%inpSolar
+        FLUX = FLUX + src_obj%solarI
     end if
     if (SPLITACC .gt. 0.0 .and.&
         &(SPLITACC .lt. 0.001*FLUX .or. SPLITACC .gt. 0.1*FLUX)) then

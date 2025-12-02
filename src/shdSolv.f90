@@ -180,14 +180,14 @@ subroutine shd_solv__solveRte(&
     if (src_obj_%doSolar) then
         if (isMpi_) then
             call shd_mpi__makeDirect(1, doDeltaM, shdo_obj_%maxNl,&
-                &src_obj_%avgSolar0, src_obj_%avgMu, src_obj_%avgAz,&
+                &src_obj_%solar0, src_obj_%mu0, src_obj_%phi0,&
                 &DIRFLUX)
         else
             call shd_rad__makeDirect(rtm_obj_%Npts, doDeltaM, shdo_obj_%maxNl,&
-                &src_obj_%avgSolar0, src_obj_%avgMu, src_obj_%avgAz,&
+                &src_obj_%solar0, src_obj_%mu0, src_obj_%phi0,&
                 &DIRFLUX)
         end if
-        call shd_shdo__computeYlm(.true., src_obj_%avgMu, src_obj_%avgAz, shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet,&
+        call shd_shdo__computeYlm(.true., src_obj_%mu0, src_obj_%phi0, shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet,&
             &YlmSolar_Shdo)
     end if
 
@@ -209,7 +209,7 @@ subroutine shd_solv__solveRte(&
         call shd_init__makeRad(shdo_obj_%Nstokes, rtm_obj_%NxA*rtm_obj_%NyA, rtm_obj_%Nz,&
             &iradI_Shdo_, rtm_obj_%z,&
             &ext_Rtm_, ssa_Rtm_, leg_Rtm_, temp_Rtm_, ipha_Rtm_,&
-            &src_obj_%type, src_obj_%avgSolar0, src_obj_%avgMu, src_obj_%skyRad,&
+            &src_obj_%type, src_obj_%solar0, src_obj_%mu0, src_obj_%skyRad,&
             &src_obj_%unit, src_obj_%waveNum, src_obj_%avgWaveLen, radI_Shdo_)
         ! Interpolate the radiance on the non-base grid points from the
         !   base grid points
@@ -336,7 +336,7 @@ subroutine shd_solv__solveRte(&
                     doDeltaM, doAccel, &
                     isrcD_Shdo, &
                     DIRFLUX, &
-                    src_obj_%avgSolar0, YlmSolar_Shdo, &
+                    src_obj_%solar0, YlmSolar_Shdo, &
                     WORK, WORK2, &
                     rtm_obj_, cell_obj_, &
                     xyz_Rtm_, i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, flag_Cell_, &

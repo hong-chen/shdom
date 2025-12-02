@@ -267,12 +267,12 @@ module globals_type
         real(kind=R__), dimension(2) :: waveLen = [-999.0, -999.0]
         real(kind=R__) :: avgWaveLen = -999.0
 
-        real(kind=R__) :: avgMu = -999.0
-        real(kind=R__) :: avgAz = -999.0
+        real(kind=R__) :: mu0  = -999.0
+        real(kind=R__) :: phi0 = -999.0
 
-        real(kind=R__) :: inpSolar  = -999.0 ! solar read from input file
-        real(kind=R__) :: avgSolar0 = -999.0 ! solar at every "g", scaled with avgMu and solarFac
-        real(kind=R__) :: avgSolar  = -999.0 ! averaged solar from all "g"s of correlated-k
+        real(kind=R__) :: solarI  = -999.0 ! solar read from input file
+        real(kind=R__) :: solar0  = -999.0 ! solar at every "g", scaled with mu0 and solarFac
+        real(kind=R__) :: solar   = -999.0 ! averaged solar from all "g"s of correlated-k
 
         real(kind=R__) :: skyRad = -999.0
 

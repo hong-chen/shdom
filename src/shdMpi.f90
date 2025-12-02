@@ -462,11 +462,11 @@ subroutine shd_mpi__bcastInp(&
     call mpi_bcast(logbuf, 3, MPI_logical, 0, MPI_comm_world, ierr)
     KDIST = logbuf(1); DELTAM = logbuf(2); ACCELFLAG = logbuf(3)
 
-    realbuf(:) = (/src_obj%inpSolar, src_obj%avgMu, src_obj%avgAz, sfc_obj%avgTemp, sfc_obj%avgAlb, src_obj%skyRad,&
+    realbuf(:) = (/src_obj%solarI, src_obj%mu0, src_obj%phi0, sfc_obj%avgTemp, sfc_obj%avgAlb, src_obj%skyRad,&
         &src_obj%waveNum(1:2), src_obj%avgWaveLen, SOLACC, SPLITACC, SHACC,&
         &MAX_TOTAL_MB, SPLITTING_FACTOR, NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO/)
     call mpi_bcast(realbuf, 16, MPI_real, 0, MPI_comm_world, ierr)
-    src_obj%inpSolar = realbuf(1); src_obj%avgMu = realbuf(2); src_obj%avgAz = realbuf(3)
+    src_obj%solarI = realbuf(1); src_obj%mu0 = realbuf(2); src_obj%phi0 = realbuf(3)
     sfc_obj%avgTemp = realbuf(4); sfc_obj%avgAlb = realbuf(5); src_obj%skyRad = realbuf(6)
     src_obj%waveNum(1:2) = realbuf(7:8); src_obj%avgWaveLen = realbuf(9)
     SOLACC = realbuf(10); SPLITACC = realbuf(11); SHACC = realbuf(12)
@@ -2075,7 +2075,7 @@ subroutine shd_mpi__computeRad(&
             if (.not. sfc_obj_%isLambertian) then
                 call shd_init__makeBotRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
                     &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt, mu_out, phi_out,&
-                    &src_obj_%type, src_obj_%avgWaveLen, src_obj_%avgMu, src_obj_%avgAz, DIRFLUX,&
+                    &src_obj_%type, src_obj_%avgWaveLen, src_obj_%mu0, src_obj_%phi0, DIRFLUX,&
                     &shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
             end if
             do IBC = 1, NBOTPTS
@@ -2366,7 +2366,7 @@ subroutine shd_mpi__computeCamRad(&
     allocate(YLMSUN(prp_obj_%NlegSet, shdo_obj_%Nlm))
 
     if (src_obj_%doSolar) then
-        call shd_shdo__computeYlm(.true., src_obj_%avgMu, src_obj_%avgAz, shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet, YLMSUN)
+        call shd_shdo__computeYlm(.true., src_obj_%mu0, src_obj_%phi0, shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet, YLMSUN)
         if (DELTAM .and. prp_obj_%Npha .gt. 0) then
             NSCATANGLE = max(36, min(MAXSCATANG, 2*prp_obj_%Nleg))
             NSTPHASE = min(prp_obj_%NlegSet, 2)
@@ -2564,7 +2564,7 @@ subroutine shd_mpi__computeCamRad(&
                     &NSTPHASE, NSCATANGLE, PHASETAB,&
                     &shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
                     &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
-                    &DELTAM, src_obj_%type, src_obj_%avgWaveLen, src_obj_%avgMu, src_obj_%avgAz,&
+                    &DELTAM, src_obj_%type, src_obj_%avgWaveLen, src_obj_%mu0, src_obj_%phi0,&
                     &DIRFLUX, isrcJ_Shdo_, srcJ_Shdo_, YLMSUN,&
                     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                     &MU2, PHI2, X0, Y0, Z0,&
@@ -2646,7 +2646,7 @@ subroutine shd_mpi__computeCamRad(&
                     &NSTPHASE, NSCATANGLE, PHASETAB,&
                     &shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
                     &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
-                    &DELTAM, src_obj_%type, src_obj_%avgWaveLen, src_obj_%avgMu, src_obj_%avgAz,&
+                    &DELTAM, src_obj_%type, src_obj_%avgWaveLen, src_obj_%mu0, src_obj_%phi0,&
                     &DIRFLUX, isrcJ_Shdo_, srcJ_Shdo_, YLMSUN,&
                     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                     &MU2, PHI2, X, Y, Z,&
