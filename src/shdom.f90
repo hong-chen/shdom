@@ -256,16 +256,15 @@ program shdom
 
         else
 
-            call shd_io__userInp(rtmAll_obj%runName, prpAll_obj%fname, sfcAll_obj%fname, ckd_obj_%fname,&
-                fileInp_sav, fileOut_sav, sen_obj_%fname,&
-                shdo_obj_%Nstokes, rtmAll_obj%Nx, rtmAll_obj%Ny, rtmAll_obj%Nz, shdo_obj_%Nmu, shdo_obj_%Nphi, rtmAll_obj%flag_bc,&
-                rtmAll_obj%flag_ip, doCkd, doDeltaM, rtmAll_obj%type,&
-                src_obj_%type, src_obj_%solarI, src_obj_%mu0, src_obj_%phi0, src_obj_%skyRad,&
-                sfcAll_obj%avgTemp, sfcAll_obj%avgAlb, src_obj_%unit, src_obj_%waveNum, src_obj_%avgWaveLen,&
-                doAccel, solAcc, maxIter, splitAcc, shAcc,&
-                maxNset_out, maxNpar_out, Nout, type_Out, parms_Out, file_Out,&
-                fileOut_nc, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
-                NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, verbose_)
+            call shd_io__userInp(&
+                fileInp_sav, fileOut_sav, &
+                doCkd, doDeltaM, &
+                doAccel, solAcc, maxIter, splitAcc, shAcc, &
+                maxNset_out, maxNpar_out, Nout, type_Out, parms_Out, file_Out, &
+                fileOut_nc, MAX_TOTAL_MB, ADAPT_GRID_FACTOR, &
+                NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, verbose_, &
+                rtmAll_obj, shdo_obj_, src_obj_, &
+                prpAll_obj, sfcAll_obj, ckd_obj_, sen_obj_)
 
         end if
     end if

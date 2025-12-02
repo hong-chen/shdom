@@ -83,65 +83,66 @@ module shd_inp
 contains
 
 subroutine shd_io__userInp(&
-    &RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
-    &INSAVEFILE, OUTSAVEFILE, SENFILE,&
-    &NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG,&
-    &IPFLAG, KDIST, DELTAM, GRIDTYPE,&
-    &SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
-    &GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,&
-    &ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
-    &MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS, OUTFILES,&
-    &OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
-    &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, VERBOSE)
+    INSAVEFILE, OUTSAVEFILE, &
+    KDIST, DELTAM, &
+    ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC, &
+    MAXOUT, MAXPAR, NUMOUT, OUTTYPES, OUTPARMS, OUTFILES, &
+    OutFileNC, MAX_TOTAL_MB, ADAPT_GRID_FACTOR, &
+    NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, VERBOSE, &
+    rtm_obj, shdo_obj, src_obj, &
+    prp_obj, sfc_obj, ckd_obj, sen_obj)
 
     ! Obtains the input parameters for the program by writing prompts
     ! to and reading responses from the terminal.  Echos the inputs to
     ! make a useful log file when running non-interactively.  See the
     ! overall program documentation for the list of input parameters.
 
-    integer NSTOKES, NX, NY, NZ, NMU, NPHI
-    integer BCFLAG, IPFLAG
+    type(shd_type_rtm),  intent(inout) :: rtm_obj
+    type(shd_type_shdo), intent(inout) :: shdo_obj
+    type(shd_type_src),  intent(inout) :: src_obj
+    type(shd_type_prp),  intent(inout) :: prp_obj
+    type(shd_type_sfc),  intent(inout) :: sfc_obj
+    type(shd_type_ckd),  intent(inout) :: ckd_obj
+    type(shd_type_sen),  intent(inout) :: sen_obj
+
     integer MAXITER, MAXOUT, MAXPAR, NUMOUT
     logical KDIST, DELTAM, ACCELFLAG
-    real SOLARFLUX, SOLARMU, SOLARAZ
-    real GNDTEMP, GNDALBEDO, SKYRAD, WAVENO(2), WAVELEN
     real SOLACC, SPLITACC, SHACC
     real OUTPARMS(MAXPAR, MAXOUT)
     real MAX_TOTAL_MB, ADAPT_GRID_FACTOR
     real NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
-    character(len=1) :: SRCTYPE, GRIDTYPE, UNITS
     character(len=1) :: OUTTYPES(*)
     character(len=charMaxLen_) :: OUTFILES(*)
-    character(len=charMaxLen_) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE, SENFILE
-    character(len=charMaxLen_) :: OutFileNC, RUNNAME
+    character(len=charMaxLen_) :: INSAVEFILE, OUTSAVEFILE
+    character(len=charMaxLen_) :: OutFileNC
     integer(kind=1) :: VERBOSE
     integer i, j, N
     real GNDEMIS
 
-    SOLARMU = -1.0
-    GNDALBEDO = 0.0
-    WAVELEN = 1.0
-    WAVENO(1) = 10000.
-    WAVENO(2) = 10001.
-    SENFILE = 'NONE'
+    src_obj%mu0 = -1.0
+    sfc_obj%avgAlb = 0.0
+    src_obj%avgWaveLen = 1.0
+    src_obj%waveNum(1) = 10000.
+    src_obj%waveNum(2) = 10001.
+    sen_obj%fname = 'NONE'
     VERBOSE = verbose_
 
     write(*, *)
     write(*, '(1X,A)') 'Name of this SHDOM run:'
-    read(*, '(A)') RUNNAME
-    write(*, '(A)') RUNNAME
+    read(*, '(A)') rtm_obj%runName
+    write(*, '(A)') rtm_obj%runName
 
     write(*, '(1X,A)') 'Atmospheric optical properties file name'
-    read(*, '(A)') PROPFILE
-    write(*, *) PROPFILE
+    read(*, '(A)') prp_obj%fname
+    write(*, *) prp_obj%fname
     write(*, '(1X,A)') 'Surface properties file name (or NONE)'
-    read(*, '(A)') SFCFILE
-    write(*, *) SFCFILE
+    read(*, '(A)') sfc_obj%fname
+    write(*, *) sfc_obj%fname
     write(*, '(1X,A)')&
         &'Correlated k-distribution file name (or NONE)'
-    read(*, '(A)') CKDFILE
-    write(*, *) CKDFILE
-    KDIST = CKDFILE(1:4) .ne. 'NONE'
+    read(*, '(A)') ckd_obj%fname
+    write(*, *) ckd_obj%fname
+    KDIST = ckd_obj%fname(1:4) .ne. 'NONE'
     write(*, '(1X,A)') 'Input binary save file name'
     read(*, '(A)') INSAVEFILE
     write(*, *) INSAVEFILE
@@ -151,92 +152,92 @@ subroutine shd_io__userInp(&
 
     write(*, '(1X,A)')&
         &'Number of Stokes parameters (1, 3, or 4; 1=unpolarized)'
-    read(*, *) NSTOKES
-    write(*, *) NSTOKES
+    read(*, *) shdo_obj%Nstokes
+    write(*, *) shdo_obj%Nstokes
     write(*, '(1X,A)') 'Internal base grid size (Nx, Ny, Nz)'
-    read(*, *) NX, NY, NZ
-    write(*, *) NX, NY, NZ
+    read(*, *) rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz
+    write(*, *) rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz
     write(*, '(1X,A)') 'Number of discrete ordinates in mu and phi'
-    read(*, *) NMU, NPHI
-    write(*, *) NMU, NPHI
+    read(*, *) shdo_obj%Nmu, shdo_obj%Nphi
+    write(*, *) shdo_obj%Nmu, shdo_obj%Nphi
     write(*, '(1X,A)')&
         &'Boundary conditions (0=periodic, 3=open)'
-    read(*, *) BCFLAG
-    write(*, *) BCFLAG
+    read(*, *) rtm_obj%flag_bc
+    write(*, *) rtm_obj%flag_bc
 
     write(*, '(1X,A)') 'Independent pixel approximation (0,1,2,3)'
-    read(*, *) IPFLAG
-    write(*, *) IPFLAG
+    read(*, *) rtm_obj%flag_ip
+    write(*, *) rtm_obj%flag_ip
     write(*, '(1X,A)') 'Delta-M method (T,F)'
     read(*, *) DELTAM
     write(*, *) DELTAM
     write(*, '(1X,A)') 'Z grid type (E-even, P-property file)'
-    read(*, '(A)') GRIDTYPE
-    write(*, *) GRIDTYPE
+    read(*, '(A)') rtm_obj%type
+    write(*, *) rtm_obj%type
 
     write(*, '(1X,A)') 'Thermal, solar, or both source (T, S, B)'
-    read(*, '(A)') SRCTYPE
-    write(*, *) SRCTYPE
-    if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
+    read(*, '(A)') src_obj%type
+    write(*, *) src_obj%type
+    if ((src_obj%type .eq. 'S') .or. (src_obj%type .eq. 'B')) then
         write(*, '(1X,A)') 'Solar flux and direction (F, mu, phi[deg])'
-        read(*, *) SOLARFLUX, SOLARMU, SOLARAZ
-        write(*, *) SOLARFLUX, SOLARMU, SOLARAZ
+        read(*, *) src_obj%solarI, src_obj%mu0, src_obj%phi0
+        write(*, *) src_obj%solarI, src_obj%mu0, src_obj%phi0
         write(*, '(1X,A)') 'Isotropic sky radiance'
-        read(*, *) SKYRAD
-        write(*, *) SKYRAD
-        if (SFCFILE(1:4) .eq. 'NONE') then
+        read(*, *) src_obj%skyRad
+        write(*, *) src_obj%skyRad
+        if (sfc_obj%fname(1:4) .eq. 'NONE') then
             write(*, '(1X,A)') 'Ground albedo'
-            read(*, *) GNDALBEDO
-            write(*, *) GNDALBEDO
+            read(*, *) sfc_obj%avgAlb
+            write(*, *) sfc_obj%avgAlb
         end if
-        SOLARMU = -abs(SOLARMU)
-        SOLARAZ = SOLARAZ*acos(-1.0)/180.0
+        src_obj%mu0 = -abs(src_obj%mu0)
+        src_obj%phi0 = src_obj%phi0*acos(-1.0)/180.0
     end if
-    GNDTEMP = 300.
-    if (SFCFILE(1:4) .eq. 'NONE') then
-        if (SRCTYPE .eq. 'T' .or. SRCTYPE .eq. 'B') then
+    sfc_obj%avgTemp = 300.
+    if (sfc_obj%fname(1:4) .eq. 'NONE') then
+        if ((src_obj%type .eq. 'T') .or. (src_obj%type .eq. 'B')) then
             write(*, '(1X,A)') 'Ground temperature'
-            read(*, *) GNDTEMP
-            write(*, *) GNDTEMP
+            read(*, *) sfc_obj%avgTemp
+            write(*, *) sfc_obj%avgTemp
         end if
-        if (SRCTYPE .eq. 'T') then
+        if (src_obj%type .eq. 'T') then
             write(*, '(1X,A)') 'Ground emissivity'
             read(*, *) GNDEMIS
             write(*, *) GNDEMIS
-            GNDALBEDO = 1.0 - GNDEMIS
+            sfc_obj%avgAlb = 1.0 - GNDEMIS
         end if
     end if
-    if (SRCTYPE .eq. 'T') then
+    if (src_obj%type .eq. 'T') then
         write(*, '(1X,A)') 'Sky temperature'
-        read(*, *) SKYRAD
-        write(*, *) SKYRAD
+        read(*, *) src_obj%skyRad
+        write(*, *) src_obj%skyRad
     end if
 
     if (KDIST) then
         write(*, '(1X,A)') 'Wavenumber range (cm^-1)'
-        read(*, *) WAVENO(1), WAVENO(2)
-        write(*, *) WAVENO(1), WAVENO(2)
-        if (WAVENO(2) .gt. WAVENO(1)) then
-            UNITS = 'B'
+        read(*, *) src_obj%waveNum(1), src_obj%waveNum(2)
+        write(*, *) src_obj%waveNum(1), src_obj%waveNum(2)
+        if (src_obj%waveNum(2) .gt. src_obj%waveNum(1)) then
+            src_obj%unit = 'B'
         else
-            UNITS = 'R'
+            src_obj%unit = 'R'
         end if
-        WAVELEN = 1.0e4/(0.5*(WAVENO(1) + WAVENO(2)))
+        src_obj%avgWaveLen = 1.0e4/(0.5*(src_obj%waveNum(1) + src_obj%waveNum(2)))
     else
-        if (SRCTYPE .eq. 'T') then
+        if (src_obj%type .eq. 'T') then
             write(*, '(1X,A)') 'Radiance units (R-radiance, T-temp)'
-            read(*, '(A)') UNITS
-            write(*, *) UNITS
-            if (UNITS .ne. 'T') then
+            read(*, '(A)') src_obj%unit
+            write(*, *) src_obj%unit
+            if (src_obj%unit .ne. 'T') then
                 write(*, '(1X,A)') 'Wavelength (micron)'
-                read(*, *) WAVELEN
-                write(*, *) WAVELEN
+                read(*, *) src_obj%avgWaveLen
+                write(*, *) src_obj%avgWaveLen
             end if
         else
-            UNITS = 'R'
+            src_obj%unit = 'R'
             write(*, '(1X,A)') 'Wavelength (micron)'
-            read(*, *) WAVELEN
-            write(*, *) WAVELEN
+            read(*, *) src_obj%avgWaveLen
+            write(*, *) src_obj%avgWaveLen
         end if
     end if
 
