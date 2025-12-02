@@ -59,9 +59,6 @@ module shd_util
     integer, parameter :: R__  = selected_real_kind(6) ! default precision for float
     integer, parameter :: I__  = selected_int_kind(9)  ! default precision for integer
 
-    real(kind=R__) :: A2_ = planetRadiusA_*planetRadiusA_
-    real(kind=R__) :: B2_ = planetRadiusB_*planetRadiusB_
-
     public :: shd_util__sumData
     public :: shd_util__interpData
 
@@ -93,6 +90,9 @@ module shd_util
         module procedure shd_util__ssort_i
         module procedure shd_util__ssort_r
     end interface
+
+    real(kind=R__) :: A2_
+    real(kind=R__) :: B2_
 
 contains
 
@@ -1395,6 +1395,9 @@ subroutine shd_util__computeSolarVect(&
     Su = cos(sza)
 
     ! Ellipsoidal surface normal (UP vector)
+    A2_ = planetRadiusA_*planetRadiusA_
+    B2_ = planetRadiusB_*planetRadiusB_
+
     nx = cos(lat)*cos(lon)/A2_
     ny = cos(lat)*sin(lon)/A2_
     nz = sin(lat)/B2_
