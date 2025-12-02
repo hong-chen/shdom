@@ -1384,7 +1384,7 @@ subroutine shd_util__computeSolarVect(&
     real(kind=R__), intent(out) :: Sx, Sy, Sz
 
     real(kind=R__) :: Se, Sn, Su
-    real(kind=R__) :: east_x, east_y, east_z
+    real(kind=R__) :: east_x, east_y
     real(kind=R__) :: up_x, up_y, up_z
     real(kind=R__) :: north_x, north_y, north_z
     real(kind=R__) :: nx, ny, nz, norm
@@ -1410,17 +1410,16 @@ subroutine shd_util__computeSolarVect(&
     ! East vector (same as spherical)
     east_x = -sin(lon)
     east_y =  cos(lon)
-    east_z =  0.0d0
 
     ! North = Up × East
-    north_x =  up_y*east_z - up_z*east_y
-    north_y =  up_z*east_x - up_x*east_z
+    north_x = -up_z*east_y
+    north_y =  up_z*east_x
     north_z =  up_x*east_y - up_y*east_x
 
     ! Convert local ENU Sun vector -> global ECEF
-    Sx = Se*east_x  + Sn*north_x + Su*up_x
-    Sy = Se*east_y  + Sn*north_y + Su*up_y
-    Sz = Se*east_z  + Sn*north_z + Su*up_z
+    Sx = Se*east_x + Sn*north_x + Su*up_x
+    Sy = Se*east_y + Sn*north_y + Su*up_y
+    Sz = Sn*north_z + Su*up_z
 
     return
 
@@ -1438,7 +1437,7 @@ subroutine shd_util__computeSolarAngle(&
     real(kind=R__), intent(in)  :: lon, lat, Sx, Sy, Sz
     real(kind=R__), intent(out) :: sza, saa
 
-    real(kind=R__) :: east_x, east_y, east_z
+    real(kind=R__) :: east_x, east_y
     real(kind=R__) :: up_x, up_y, up_z
     real(kind=R__) :: north_x, north_y, north_z
     real(kind=R__) :: nx, ny, nz, norm
@@ -1447,7 +1446,6 @@ subroutine shd_util__computeSolarAngle(&
     ! East (unchanged)
     east_x = -sin(lon)
     east_y =  cos(lon)
-    east_z =  0.0d0
 
     ! Ellipsoidal UP normal
     nx = cos(lat)*cos(lon)/A2_
@@ -1460,25 +1458,30 @@ subroutine shd_util__computeSolarAngle(&
     up_z = nz / norm
 
     ! North = Up × East
-    north_x =  up_y*east_z - up_z*east_y
-    north_y =  up_z*east_x - up_x*east_z
+    north_x = -up_z*east_y
+    north_y =  up_z*east_x
     north_z =  up_x*east_y - up_y*east_x
 
     ! Project Sun vector into local ENU frame
-    Se = east_x  * Sx + east_y  * Sy + east_z  * Sz
-    Sn = north_x * Sx + north_y * Sy + north_z * Sz
-    Su = up_x    * Sx + up_y    * Sy + up_z    * Sz
+    Se =  east_x*Sx +  east_y*Sy
+    Sn = north_x*Sx + north_y*Sy + north_z*Sz
+    Su =    up_x*Sx +    up_y*Sy +    up_z*Sz
 
     ! Solar angles
     sza = acos(Su)
-    saa = atan2(Se, Sn)
 
-    ! convert from atmospheric convention [0 at north, positive clockwise] to
-    !       radiative transfer convention [0 at west,  positive counterclockwise]
-    saa = 1.5*PI_ - saa
+    if ((sza .ge. 0.0) .and. (sza .le. 0.5*PI_)) then
+        saa = atan2(Se, Sn)
 
-    if (saa < 0.0)     saa = saa + 2.0*PI_
-    if (saa > 2.0*PI_) saa = saa - 2.0*PI_
+        ! convert from atmospheric convention [0 at north, positive clockwise] to
+        !       radiative transfer convention [0 at west,  positive counterclockwise]
+        saa = 1.5*PI_ - saa
+        if (saa < 0.0)     saa = saa + 2.0*PI_
+        if (saa > 2.0*PI_) saa = saa - 2.0*PI_
+    else
+        sza = -999.0
+        saa = -999.0
+    end if
 
     return
 
