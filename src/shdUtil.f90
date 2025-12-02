@@ -91,8 +91,8 @@ module shd_util
         module procedure shd_util__ssort_r
     end interface
 
-    real(kind=R__) :: A2_
-    real(kind=R__) :: B2_
+    real(kind=R__) :: A2_ = -999.0
+    real(kind=R__) :: B2_ = -999.0
 
 contains
 
@@ -1442,6 +1442,9 @@ subroutine shd_util__computeSolarAngle(&
     real(kind=R__) :: north_x, north_y, north_z
     real(kind=R__) :: nx, ny, nz, norm
     real(kind=R__) :: Se, Sn, Su
+
+    if (A2_ .lt. 0.0) A2_ = planetRadiusA_*planetRadiusA_
+    if (B2_ .lt. 0.0) B2_ = planetRadiusB_*planetRadiusB_
 
     ! East (unchanged)
     east_x = -sin(lon)
