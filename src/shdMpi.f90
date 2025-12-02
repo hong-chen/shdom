@@ -47,6 +47,8 @@ module shd_mpi
 
     use globals_type,  only: shd_type_rtm,  &
                              shd_type_cell, &
+                             shd_type_shdo, &
+                             shd_type_src,  &
                              shd_type_prp,  &
                              shd_type_sfc,  &
                              shd_type_ckd,  &
@@ -410,37 +412,33 @@ subroutine shd_mpi__map(rtmAll_obj, prpAll_obj, sfcAll_obj, &
 end subroutine shd_mpi__map
 
 subroutine shd_mpi__bcastInp(&
-    &runName,&
-    &fileInp_sav, fileOut_sav,&
-    &Nstokes, Nx, Ny, Nz, NMU, NPHI, BCFLAG,&
-    &IPFLAG, KDIST, DELTAM, GRIDTYPE,&
-    &SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
-    &UNITS, WAVENO, WAVELEN,&
-    &ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
-    &MAXOUT, MAXPAR, NUMOUT, OUTTYPES, parms_Out,&
-    &MAX_TOTAL_MB, SPLITTING_FACTOR,&
-    &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO,&
-    &prp_obj, sfc_obj, ckd_obj, sen_obj)
+    fileInp_sav, fileOut_sav,&
+    KDIST, DELTAM,&
+    ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
+    MAXOUT, MAXPAR, NUMOUT, OUTTYPES, parms_Out,&
+    MAX_TOTAL_MB, SPLITTING_FACTOR,&
+    NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO,&
+    rtm_obj, shdo_obj, src_obj, &
+    prp_obj, sfc_obj, ckd_obj, sen_obj)
 
     ! Broadcasts all the user input parameters (except unneeded file names)
     ! from the master processor to the slave processors.
 
-    type(shd_type_prp), intent(inout) :: prp_obj
-    type(shd_type_sfc), intent(inout) :: sfc_obj
-    type(shd_type_ckd), intent(inout) :: ckd_obj
-    type(shd_type_sen), intent(inout) :: sen_obj
+    type(shd_type_rtm),  intent(inout) :: rtm_obj
+    type(shd_type_shdo), intent(inout) :: shdo_obj
+    type(shd_type_src),  intent(inout) :: src_obj
+    type(shd_type_prp),  intent(inout) :: prp_obj
+    type(shd_type_sfc),  intent(inout) :: sfc_obj
+    type(shd_type_ckd),  intent(inout) :: ckd_obj
+    type(shd_type_sen),  intent(inout) :: sen_obj
 
-    integer, intent(inout) :: Nstokes, Nx, Ny, Nz, NMU, NPHI, BCFLAG, IPFLAG
     integer, intent(in)    :: MAXOUT, MAXPAR
     integer, intent(inout) :: MAXITER, NUMOUT
     logical, intent(inout) :: KDIST, DELTAM, ACCELFLAG
-    real, intent(inout) :: SOLARFLUX, SOLARMU, SOLARAZ
-    real, intent(inout) :: SKYRAD, WAVENO(2), WAVELEN
     real, intent(inout) :: SOLACC, SPLITACC, SHACC, parms_Out(MAXPAR, MAXOUT)
     real, intent(inout) :: MAX_TOTAL_MB, SPLITTING_FACTOR
     real, intent(inout) :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
-    character(len=1), intent(inout) :: SRCTYPE, GRIDTYPE, UNITS, OUTTYPES(*)
-    character(len=charMaxLen_), intent(inout) :: runName
+    character(len=1), intent(inout) :: OUTTYPES(*)
     character(len=charMaxLen_), intent(inout) :: fileInp_sav, fileOut_sav
 
 #if HAS_MPI
@@ -453,35 +451,36 @@ subroutine shd_mpi__bcastInp(&
 
     if (Nproc_ .le. 1) return
 
-    intbuf(:) = (/Nstokes, Nx, Ny, Nz, NMU, NPHI, BCFLAG, IPFLAG, MAXITER, NUMOUT/)
+    intbuf(:) = (/shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, shdo_obj%Nmu, &
+                  shdo_obj%Nphi, rtm_obj%flag_bc, rtm_obj%flag_ip, MAXITER, NUMOUT/)
     call mpi_bcast(intbuf, 10, MPI_integer, 0, MPI_comm_world, ierr)
-    Nstokes = intbuf(1); Nx = intbuf(2); Ny = intbuf(3); Nz = intbuf(4)
-    NMU = intbuf(5); NPHI = intbuf(6); BCFLAG = intbuf(7); IPFLAG = intbuf(8)
+    shdo_obj%Nstokes = intbuf(1); rtm_obj%Nx = intbuf(2); rtm_obj%Ny = intbuf(3); rtm_obj%Nz = intbuf(4)
+    shdo_obj%Nmu = intbuf(5); shdo_obj%Nphi = intbuf(6); rtm_obj%flag_bc = intbuf(7); rtm_obj%flag_ip = intbuf(8)
     MAXITER = intbuf(9); NUMOUT = intbuf(10)
 
     logbuf(:) = (/KDIST, DELTAM, ACCELFLAG/)
     call mpi_bcast(logbuf, 3, MPI_logical, 0, MPI_comm_world, ierr)
     KDIST = logbuf(1); DELTAM = logbuf(2); ACCELFLAG = logbuf(3)
 
-    realbuf(:) = (/SOLARFLUX, SOLARMU, SOLARAZ, sfc_obj%avgTemp, sfc_obj%avgAlb, SKYRAD,&
-        &WAVENO(1:2), WAVELEN, SOLACC, SPLITACC, SHACC,&
+    realbuf(:) = (/src_obj%inpSolar, src_obj%avgMu, src_obj%avgAz, sfc_obj%avgTemp, sfc_obj%avgAlb, src_obj%skyRad,&
+        &src_obj%waveNum(1:2), src_obj%avgWaveLen, SOLACC, SPLITACC, SHACC,&
         &MAX_TOTAL_MB, SPLITTING_FACTOR, NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO/)
     call mpi_bcast(realbuf, 16, MPI_real, 0, MPI_comm_world, ierr)
-    SOLARFLUX = realbuf(1); SOLARMU = realbuf(2); SOLARAZ = realbuf(3)
-    sfc_obj%avgTemp = realbuf(4); sfc_obj%avgAlb = realbuf(5); SKYRAD = realbuf(6)
-    WAVENO(1:2) = realbuf(7:8); WAVELEN = realbuf(9)
+    src_obj%inpSolar = realbuf(1); src_obj%avgMu = realbuf(2); src_obj%avgAz = realbuf(3)
+    sfc_obj%avgTemp = realbuf(4); sfc_obj%avgAlb = realbuf(5); src_obj%skyRad = realbuf(6)
+    src_obj%waveNum(1:2) = realbuf(7:8); src_obj%avgWaveLen = realbuf(9)
     SOLACC = realbuf(10); SPLITACC = realbuf(11); SHACC = realbuf(12)
     MAX_TOTAL_MB = realbuf(13); SPLITTING_FACTOR = realbuf(14)
     NUM_SH_TERM_FACTOR = realbuf(15); CELL_TO_POINT_RATIO = realbuf(16)
 
-    char1buf(:) = (/SRCTYPE, GRIDTYPE, UNITS/)
+    char1buf(:) = (/src_obj%type, rtm_obj%type, src_obj%unit/)
     call mpi_bcast(char1buf, 3, MPI_character, 0, MPI_comm_world, ierr)
-    SRCTYPE = char1buf(1); GRIDTYPE = char1buf(2); UNITS = char1buf(3)
+    src_obj%type = char1buf(1); rtm_obj%type = char1buf(2); src_obj%unit = char1buf(3)
 
-    char256buf(:) = (/prp_obj%fname, sfc_obj%fname, ckd_obj%fname, fileInp_sav, fileOut_sav, sen_obj%fname, runName/)
+    char256buf(:) = (/prp_obj%fname, sfc_obj%fname, ckd_obj%fname, fileInp_sav, fileOut_sav, sen_obj%fname, rtm_obj%runName/)
     call mpi_bcast(char256buf, 7*256, MPI_character, 0, MPI_comm_world, ierr)
     prp_obj%fname = char256buf(1); sfc_obj%fname = char256buf(2); ckd_obj%fname = char256buf(3)
-    fileInp_sav = char256buf(4); fileOut_sav = char256buf(5); sen_obj%fname = char256buf(6); runName = char256buf(7)
+    fileInp_sav = char256buf(4); fileOut_sav = char256buf(5); sen_obj%fname = char256buf(6); rtm_obj%runName = char256buf(7)
 
     call mpi_bcast(parms_Out, MAXPAR*NUMOUT, MPI_real, 0, MPI_comm_world, ierr)
     call mpi_bcast(OUTTYPES, NUMOUT*1, MPI_character, 0, MPI_comm_world, ierr)

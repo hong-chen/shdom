@@ -343,41 +343,40 @@ subroutine shd_io__userInp(&
 end subroutine shd_io__userInp
 
 subroutine shd_io__nmlInp(&
-    &dRUNNAME, dPROPFILE, dSFCFILE, dCKDFILE,&
-    &dINSAVEFILE, dOUTSAVEFILE, dSENFILE,&
-    &dNSTOKES, dNX, dNY, dNZ, dNMU, dNPHI,&
-    &dBCFLAG, dIPFLAG,&
-    &dKDIST, dDELTAM, dGRIDTYPE,&
-    &dSRCTYPE, dSOLARFLUX, dSOLARMU, dSOLARAZ, dSKYRAD,&
-    &dGNDTEMP, dGNDALBEDO, dUNITS, dWAVENO, dWAVELEN,&
-    &dACCELFLAG, dSOLACC, dMAXITER, dSPLITACC, dSHACC,&
-    &dMAXOUT, dMAXPAR, dNUMOUT, dOUTTYPES, dOUTPARMS, dOUTFILES,&
-    &dOutFileNC, dMAX_TOTAL_MB, dADAPT_GRID_FACTOR,&
-    &dNUM_SH_TERM_FACTOR, dCELL_TO_POINT_RATIO,&
-    &dVERBOSE)
+    dINSAVEFILE, dOUTSAVEFILE,&
+    dKDIST, dDELTAM,&
+    dACCELFLAG, dSOLACC, dMAXITER, dSPLITACC, dSHACC,&
+    dMAXOUT, dMAXPAR, dNUMOUT, dOUTTYPES, dOUTPARMS, dOUTFILES,&
+    dOutFileNC, dMAX_TOTAL_MB, dADAPT_GRID_FACTOR,&
+    dNUM_SH_TERM_FACTOR, dCELL_TO_POINT_RATIO,&
+    dVERBOSE, &
+    rtm_obj, shdo_obj, src_obj, &
+    prp_obj, sfc_obj, ckd_obj, sen_obj)
 
     ! Obtains the input parameters for the program from a namelist
     ! read from stdin.  See the overall program documentation for the
     ! list of input parameters.  The subroutine dummy variables can't
     ! be in the namelist, hence the two sets of variables.
 
+    type(shd_type_rtm),  intent(inout) :: rtm_obj
+    type(shd_type_shdo), intent(inout) :: shdo_obj
+    type(shd_type_src),  intent(inout) :: src_obj
+    type(shd_type_prp),  intent(inout) :: prp_obj
+    type(shd_type_sfc),  intent(inout) :: sfc_obj
+    type(shd_type_ckd),  intent(inout) :: ckd_obj
+    type(shd_type_sen),  intent(inout) :: sen_obj
+
     integer dMAXOUT, dMAXPAR
-    integer dNSTOKES, dNX, dNY, dNZ, dNMU, dNPHI
-    integer dBCFLAG, dIPFLAG
     integer dMAXITER, dNUMOUT
     logical dKDIST, dDELTAM, dACCELFLAG
-    real dSOLARFLUX, dSOLARMU, dSOLARAZ
-    real dGNDTEMP, dGNDALBEDO, dSKYRAD
-    real dWAVENO(2), dWAVELEN, dSOLACC, dSPLITACC, dSHACC
+    real dSOLACC, dSPLITACC, dSHACC
     real dOUTPARMS(dMAXPAR, dMAXOUT)
     real dMAX_TOTAL_MB, dADAPT_GRID_FACTOR
     real dNUM_SH_TERM_FACTOR, dCELL_TO_POINT_RATIO
-    character(len=1) :: dSRCTYPE, dGRIDTYPE, dUNITS
     character(len=1) ::  dOUTTYPES(*)
     character(len=charMaxLen_) :: dOUTFILES(*)
-    character(len=charMaxLen_) :: dOutFileNC, dRUNNAME
-    character(len=charMaxLen_) :: dPROPFILE, dSFCFILE, dCKDFILE
-    character(len=charMaxLen_) :: dINSAVEFILE, dOUTSAVEFILE, dSENFILE
+    character(len=charMaxLen_) :: dOutFileNC
+    character(len=charMaxLen_) :: dINSAVEFILE, dOUTSAVEFILE
     integer(kind=1) :: dVERBOSE
     integer i, j, N
 
@@ -432,49 +431,48 @@ subroutine shd_io__nmlInp(&
     close(5)
 
     ! Make the assignments to the dummy variables
-    dRUNNAME = RUNNAME
-    dPROPFILE = PROPFILE
-    dSFCFILE = SFCFILE
-    dCKDFILE = CKDFILE
+    rtm_obj%runName = RUNNAME
+    prp_obj%fname = PROPFILE
+    sfc_obj%fname = SFCFILE
+    ckd_obj%fname = CKDFILE
     dKDIST = CKDFILE(1:4) .ne. 'NONE'
     dINSAVEFILE = INSAVEFILE
     dOUTSAVEFILE = OUTSAVEFILE
-    dSENFILE = SENFILE ! this is added for user-specified sensor option, output type [R] and [V3]
-    dNSTOKES = NSTOKES
-    dNX = NX
-    dNY = NY
-    dNZ = NZ
-    dNMU = NMU
-    dNPHI = NPHI
-    dIPFLAG = IPFLAG
-    dBCFLAG = BCFLAG
+    sen_obj%fname = SENFILE ! this is added for user-specified sensor option, output type [R] and [V3]
+    shdo_obj%Nstokes = NSTOKES
+    shdo_obj%Nmu  = NMU
+    shdo_obj%Nphi = NPHI
+    rtm_obj%Nx = NX
+    rtm_obj%Ny = NY
+    rtm_obj%Nz = NZ
+    rtm_obj%flag_ip = IPFLAG
+    rtm_obj%flag_bc = BCFLAG
     dDELTAM = DELTAM
-    dGRIDTYPE = GRIDTYPE
+    rtm_obj%type = GRIDTYPE
 
-    dSRCTYPE = SRCTYPE
+    src_obj%type = SRCTYPE
     if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
-        dSOLARFLUX = SOLARFLUX
-        dSOLARMU = -abs(SOLARMU)
-        dSOLARAZ = SOLARAZ*acos(-1.0)/180.0
+        src_obj%inpSolar = SOLARFLUX
+        src_obj%avgMu = -abs(SOLARMU)
+        src_obj%avgAz = SOLARAZ*acos(-1.0)/180.0
     else
-        dSOLARFLUX = 0.0
-        dSOLARMU = 1.0
-        dSOLARAZ = 0.0
+        src_obj%inpSolar = 0.0
+        src_obj%avgMu = 1.0
+        src_obj%avgAz = 0.0
     end if
-    dSKYRAD = SKYRAD
-    dGNDTEMP = GNDTEMP
-    dGNDALBEDO = GNDALBEDO
+    src_obj%skyRad = SKYRAD
+    sfc_obj%avgTemp = GNDTEMP
+    sfc_obj%avgAlb  = GNDALBEDO
 
     if (dKDIST) then
-        dUNITS = 'B'
-        dWAVENO(1) = WAVENO(1)
-        dWAVENO(2) = WAVENO(2)
-        dWAVELEN = 1.0d4/(0.5d0*(WAVENO(1) + WAVENO(2)))
+        src_obj%unit = 'B'
+        src_obj%waveNum(1:2) = WAVENO(1:2)
+        src_obj%avgWaveLen = 1.0d4/(0.5d0*(WAVENO(1) + WAVENO(2)))
     else
-        dUNITS = UNITS
-        dWAVELEN = WAVELEN
+        src_obj%unit = UNITS
+        src_obj%avgWaveLen = WAVELEN
         if (SRCTYPE .ne. 'T') then
-            dUNITS = 'R'
+            src_obj%unit = 'R'
         end if
     end if
 
@@ -546,6 +544,7 @@ subroutine shd_io__nmlInp(&
     dVERBOSE = VERBOSE
 
     return
+
 end subroutine shd_io__nmlInp
 
 subroutine shd_io__checkInp(&

@@ -238,16 +238,15 @@ program shdom
     !   and the results are then broadcast to the child processors.
     if (isMasterProc) then
         if (doNmlInp_) then
-            call shd_io__nmlInp(rtmAll_obj%runName, prpAll_obj%fname, sfcAll_obj%fname, ckd_obj_%fname,&
-                fileInp_sav, fileOut_sav, sen_obj_%fname,&
-                shdo_obj_%Nstokes, rtmAll_obj%Nx, rtmAll_obj%Ny, rtmAll_obj%Nz, shdo_obj_%Nmu, shdo_obj_%Nphi, rtmAll_obj%flag_bc,&
-                rtmAll_obj%flag_ip, doCkd, doDeltaM, rtmAll_obj%type,&
-                src_obj_%type, src_obj_%inpSolar, src_obj_%avgMu, src_obj_%avgAz, src_obj_%skyRad,&
-                sfcAll_obj%avgTemp, sfcAll_obj%avgAlb, src_obj_%unit, src_obj_%waveNum, src_obj_%avgWaveLen,&
+            call shd_io__nmlInp(&
+                fileInp_sav, fileOut_sav, &
+                doCkd, doDeltaM, &
                 doAccel, solAcc, maxIter, splitAcc, shAcc,&
                 maxNset_out, maxNpar_out, Nout, type_Out, parms_Out, file_Out,&
                 fileOut_nc, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
-                NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, verbose_)
+                NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, verbose_,&
+                rtmAll_obj, shdo_obj_, src_obj_, &
+                prpAll_obj, sfcAll_obj, ckd_obj_, sen_obj_)
         else
             call shd_io__userInp(rtmAll_obj%runName, prpAll_obj%fname, sfcAll_obj%fname, ckd_obj_%fname,&
                 fileInp_sav, fileOut_sav, sen_obj_%fname,&
@@ -262,16 +261,15 @@ program shdom
         end if
     end if
 
-    call shd_mpi__bcastInp(rtmAll_obj%runName,&
-        &fileInp_sav, fileOut_sav,&
-        &shdo_obj_%Nstokes, rtmAll_obj%Nx, rtmAll_obj%Ny, rtmAll_obj%Nz, shdo_obj_%Nmu, shdo_obj_%Nphi, rtmAll_obj%flag_bc,&
-        &rtmAll_obj%flag_ip, doCkd, doDeltaM, rtmAll_obj%type,&
-        &src_obj_%type, src_obj_%inpSolar, src_obj_%avgMu, src_obj_%avgAz, src_obj_%skyRad,&
-        &src_obj_%unit, src_obj_%waveNum, src_obj_%avgWaveLen,&
-        &doAccel, solAcc, maxIter, splitAcc, shAcc,&
-        &maxNset_out, maxNpar_out, Nout, type_Out, parms_Out,&
-        &MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
-        &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, prpAll_obj, sfcAll_obj, ckd_obj_, sen_obj_)
+    call shd_mpi__bcastInp(&
+        fileInp_sav, fileOut_sav,&
+        doCkd, doDeltaM,&
+        doAccel, solAcc, maxIter, splitAcc, shAcc,&
+        maxNset_out, maxNpar_out, Nout, type_Out, parms_Out,&
+        MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
+        NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, &
+        rtmAll_obj, shdo_obj_, src_obj_, &
+        prpAll_obj, sfcAll_obj, ckd_obj_, sen_obj_)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! Memory used for initialization (rough estimate, 1 WORD = 4 bytes)
