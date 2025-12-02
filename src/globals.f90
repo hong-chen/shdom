@@ -145,9 +145,6 @@ module globals_cfg
     !Informational 6      Informational messages
     !All           7      All-level messages
 
-    ! Namelist input
-    logical, save :: doNmlInp_ = .true.
-
     ! Property at grid points
     logical, save :: doGridPtsPrp_ = .false.
 

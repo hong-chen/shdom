@@ -42,7 +42,6 @@ program shdom
     use globals_const, only: REPS_
     use globals_cfg,   only: verbose_, charMaxLen_, accSolv_, &
                              memTotSysMB_, memPerCpuMB_, &
-                             doNmlInp_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, isMpi_, &
                              is1DX_, is1DYx_, is1D_, is3Ddir1Ddif_, &
                              is1D1_, isPol_, isPol4_
@@ -220,6 +219,9 @@ program shdom
     integer(kind=I__) :: countStart, countRate, countMax
     character(len=charMaxLen_) :: message
 
+    integer(kind=I__) :: Narg
+    character(len=charMaxLen_) :: fileNml
+
     logical :: doCkd, doDeltaM, doAccel
 
 
@@ -237,17 +239,23 @@ program shdom
     ! In MPI, the master processor performs the main computation,
     !   and the results are then broadcast to the child processors.
     if (isMasterProc) then
-        if (doNmlInp_) then
-            call shd_io__nmlInp(&
+        Narg = command_argument_count()
+        if (Narg .gt. 0) then
+
+            call get_command_argument(1, fileNml)
+
+            call shd_io__nmlInp(fileNml, &
                 fileInp_sav, fileOut_sav, &
                 doCkd, doDeltaM, &
-                doAccel, solAcc, maxIter, splitAcc, shAcc,&
-                maxNset_out, maxNpar_out, Nout, type_Out, parms_Out, file_Out,&
-                fileOut_nc, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
-                NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, verbose_,&
+                doAccel, solAcc, maxIter, splitAcc, shAcc, &
+                maxNset_out, maxNpar_out, Nout, type_Out, parms_Out, file_Out, &
+                fileOut_nc, MAX_TOTAL_MB, ADAPT_GRID_FACTOR, &
+                NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, verbose_, &
                 rtmAll_obj, shdo_obj_, src_obj_, &
                 prpAll_obj, sfcAll_obj, ckd_obj_, sen_obj_)
+
         else
+
             call shd_io__userInp(rtmAll_obj%runName, prpAll_obj%fname, sfcAll_obj%fname, ckd_obj_%fname,&
                 fileInp_sav, fileOut_sav, sen_obj_%fname,&
                 shdo_obj_%Nstokes, rtmAll_obj%Nx, rtmAll_obj%Ny, rtmAll_obj%Nz, shdo_obj_%Nmu, shdo_obj_%Nphi, rtmAll_obj%flag_bc,&
@@ -258,6 +266,7 @@ program shdom
                 maxNset_out, maxNpar_out, Nout, type_Out, parms_Out, file_Out,&
                 fileOut_nc, MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
                 NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, verbose_)
+
         end if
     end if
 

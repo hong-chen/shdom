@@ -342,13 +342,13 @@ subroutine shd_io__userInp(&
     return
 end subroutine shd_io__userInp
 
-subroutine shd_io__nmlInp(&
-    dINSAVEFILE, dOUTSAVEFILE,&
-    dKDIST, dDELTAM,&
-    dACCELFLAG, dSOLACC, dMAXITER, dSPLITACC, dSHACC,&
-    dMAXOUT, dMAXPAR, dNUMOUT, dOUTTYPES, dOUTPARMS, dOUTFILES,&
-    dOutFileNC, dMAX_TOTAL_MB, dADAPT_GRID_FACTOR,&
-    dNUM_SH_TERM_FACTOR, dCELL_TO_POINT_RATIO,&
+subroutine shd_io__nmlInp(fileNml, &
+    dINSAVEFILE, dOUTSAVEFILE, &
+    dKDIST, dDELTAM, &
+    dACCELFLAG, dSOLACC, dMAXITER, dSPLITACC, dSHACC, &
+    dMAXOUT, dMAXPAR, dNUMOUT, dOUTTYPES, dOUTPARMS, dOUTFILES, &
+    dOutFileNC, dMAX_TOTAL_MB, dADAPT_GRID_FACTOR, &
+    dNUM_SH_TERM_FACTOR, dCELL_TO_POINT_RATIO, &
     dVERBOSE, &
     rtm_obj, shdo_obj, src_obj, &
     prp_obj, sfc_obj, ckd_obj, sen_obj)
@@ -365,6 +365,8 @@ subroutine shd_io__nmlInp(&
     type(shd_type_sfc),  intent(inout) :: sfc_obj
     type(shd_type_ckd),  intent(inout) :: ckd_obj
     type(shd_type_sen),  intent(inout) :: sen_obj
+
+    character(len=charMaxLen_), intent(in) :: fileNml
 
     integer dMAXOUT, dMAXPAR
     integer dMAXITER, dNUMOUT
@@ -410,8 +412,6 @@ subroutine shd_io__nmlInp(&
         &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO,&
         &VERBOSE
 
-    character(len=charMaxLen_) :: NMLFILE
-
     if (dMAXOUT .ne. MAXOUT) stop 'Error [_nmlInp]: MAXOUT not the same.'
     if (dMAXPAR .ne. MAXPAR) stop 'Error [_nmlInp]: MAXPAR not the same.'
 
@@ -424,9 +424,8 @@ subroutine shd_io__nmlInp(&
     VERBOSE = verbose_
 
     ! Read in the namelist
-    call get_command_argument(1, NMLFILE)
-    if (verbose_ .ge. 6) write(*, '(A,"<",A,">")') 'Message [_nmlInp]: ', trim(adjustl(NMLFILE))
-    open(UNIT=5, FILE=trim(adjustl(NMLFILE)), STATUS='OLD')
+    if (verbose_ .ge. 6) write(*, '(A,"<",A,">")') 'Message [_nmlInp]: ', trim(adjustl(fileNml))
+    open(UNIT=5, FILE=trim(adjustl(fileNml)), STATUS='OLD')
     read(5, NML=SHDOMINPUT)
     close(5)
 
