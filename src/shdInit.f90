@@ -1198,7 +1198,7 @@ subroutine shd_init__checkSfcU(sfc_obj, brdf_Sfc)
 end subroutine shd_init__checkSfcU
 
 subroutine shd_init__chapman(&
-    &NLAYER, SOLARMU, planetRadius_, ZLEVELS,&
+    &NLAYER, SOLARMU, planetRadius, ZLEVELS,&
     &CH)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
@@ -1208,7 +1208,7 @@ subroutine shd_init__chapman(&
     ! Input:
     !   NLAYER : integer, number of layers
     !   SOLARMU: real, cosine of incident angle
-    !   planetRadius_: real, planet radius in km
+    !   planetRadius: real, planet radius in km
     !   ZLEVELS: real array, layer height, go from top to surface
     !
     ! Output:
@@ -1222,7 +1222,7 @@ subroutine shd_init__chapman(&
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     integer(kind=I__), intent(in) :: NLAYER
-    real(kind=R__)   , intent(in) :: planetRadius_, ZLEVELS(0:NLAYER), SOLARMU
+    real(kind=R__)   , intent(in) :: planetRadius, ZLEVELS(0:NLAYER), SOLARMU
 
     real(kind=R__), intent(out) :: CH(NLAYER, NLAYER)
 
@@ -1235,7 +1235,7 @@ subroutine shd_init__chapman(&
 
     cos_theta0 = SOLARMU
     sin_theta0 = sqrt(1.0 - SOLARMU*SOLARMU)
-    h = ZLEVELS + planetRadius_
+    h = ZLEVELS + planetRadius
 
     CH(:, :) = -1.0
 
