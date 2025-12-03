@@ -42,7 +42,7 @@
 
 module shd_util
 
-    use globals_const, only: RD_, PI_, DPI_
+    use globals_const, only: RD_, PI_, DPI_, DTOR_
     use globals_cfg,   only: planetRadiusA_, planetRadiusB_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
                              is1DX_, is1DYx_
@@ -79,6 +79,7 @@ module shd_util
     public :: shd_util__ssort_r
 
     public :: indexAt
+    public :: dist
 
     public :: shd_util__computeSolarVect
     public :: shd_util__computeSolarAngle
@@ -93,8 +94,9 @@ module shd_util
         module procedure shd_util__ssort_r
     end interface
 
-    real(kind=R__) :: A2_ = -999.0
-    real(kind=R__) :: B2_ = -999.0
+    real(kind=R__), parameter :: A2_ = planetRadiusA_*planetRadiusA_
+    real(kind=R__), parameter :: B2_ = planetRadiusB_*planetRadiusB_
+    real(kind=R__), parameter :: E2_ = (A2_ - B2_) / A2_
 
 contains
 
@@ -1409,8 +1411,64 @@ function indexAt(x, x1) result(i)
 
 end function indexAt
 
+elemental pure function dist(lon1_deg, lat1_deg, h1_km, &
+                             lon2_deg, lat2_deg, h2_km) result(dist_km)
+
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    ! Calculate distance between two points, each point defined by
+    !   (longitude [degree], latitude [degree], altitude [km])
+    !   on oblate spheroid Earth
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+    real(kind=4), intent(in) :: lon1_deg, lat1_deg, h1_km
+    real(kind=4), intent(in) :: lon2_deg, lat2_deg, h2_km
+    real(kind=4) :: dist_km
+
+    real(kind=4) :: lon1, lat1, lon2, lat2
+    real(kind=4) :: sinlat1, coslat1, sinlon1, coslon1
+    real(kind=4) :: sinlat2, coslat2, sinlon2, coslon2
+    real(kind=4) :: N1, N2
+    real(kind=4) :: x1, y1, z1, x2, y2, z2
+
+    ! --- convert degrees → radians ---
+    lon1 = lon1_deg * DTOR_
+    lat1 = lat1_deg * DTOR_
+    lon2 = lon2_deg * DTOR_
+    lat2 = lat2_deg * DTOR_
+
+    ! --- compute sin/cos efficiently ---
+    call sin_cos(lat1, sinlat1, coslat1)
+    call sin_cos(lon1, sinlon1, coslon1)
+    call sin_cos(lat2, sinlat2, coslat2)
+    call sin_cos(lon2, sinlon2, coslon2)
+
+    ! --- radii of curvature ---
+    N1 = planetRadiusA_ / sqrt(1.0 - E2_ * sinlat1 * sinlat1)
+    N2 = planetRadiusA_ / sqrt(1.0 - E2_ * sinlat2 * sinlat2)
+
+    ! --- ECEF coordinates (km) ---
+    x1 = (N1 + h1_km) * coslat1 * coslon1
+    y1 = (N1 + h1_km) * coslat1 * sinlon1
+    z1 = ((1.0 - E2_) * N1 + h1_km) * sinlat1
+
+    x2 = (N2 + h2_km) * coslat2 * coslon2
+    y2 = (N2 + h2_km) * coslat2 * sinlon2
+    z2 = ((1.0 - E2_) * N2 + h2_km) * sinlat2
+
+    ! --- Euclidean distance ---
+    dist_km = sqrt((x1 - x2)**2 + (y1 - y2)**2 + (z1 - z2)**2)
+
+end function dist
+
+pure subroutine sin_cos(x, s, c)
+    real(kind=4), intent(in)  :: x
+    real(kind=4), intent(out) :: s, c
+    s = sin(x)
+    c = cos(x)
+end subroutine sin_cos
+
 subroutine shd_util__computeSolarVect(&
-    lon, lat, sza, saa, &
+    lon_deg, lat_deg, sza, saa, &
     Sx, Sy, Sz)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
@@ -1418,14 +1476,17 @@ subroutine shd_util__computeSolarVect(&
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     implicit none
-    real(kind=R__), intent(in)  :: lon, lat, sza, saa
+    real(kind=R__), intent(in)  :: lon_deg, lat_deg, sza, saa
     real(kind=R__), intent(out) :: Sx, Sy, Sz
 
-    real(kind=R__) :: Se, Sn, Su
+    real(kind=R__) :: lon, lat, Se, Sn, Su
     real(kind=R__) :: east_x, east_y
     real(kind=R__) :: up_x, up_y, up_z
     real(kind=R__) :: north_x, north_y, north_z
     real(kind=R__) :: nx, ny, nz, norm
+
+    lon = lon_deg * DTOR_
+    lat = lat_deg * DTOR_
 
     ! Local ENU Sun vector at center
     Se = sin(sza) * sin(saa)
@@ -1433,9 +1494,6 @@ subroutine shd_util__computeSolarVect(&
     Su = cos(sza)
 
     ! Ellipsoidal surface normal (UP vector)
-    A2_ = planetRadiusA_*planetRadiusA_
-    B2_ = planetRadiusB_*planetRadiusB_
-
     nx = cos(lat)*cos(lon)/A2_
     ny = cos(lat)*sin(lon)/A2_
     nz = sin(lat)/B2_
@@ -1464,7 +1522,7 @@ subroutine shd_util__computeSolarVect(&
 end subroutine shd_util__computeSolarVect
 
 subroutine shd_util__computeSolarAngle(&
-    lon, lat, Sx, Sy, Sz, &
+    lon_deg, lat_deg, Sx, Sy, Sz, &
     sza, saa)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
@@ -1472,17 +1530,17 @@ subroutine shd_util__computeSolarAngle(&
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     implicit none
-    real(kind=R__), intent(in)  :: lon, lat, Sx, Sy, Sz
+    real(kind=R__), intent(in)  :: lon_deg, lat_deg, Sx, Sy, Sz
     real(kind=R__), intent(out) :: sza, saa
 
-    real(kind=R__) :: east_x, east_y
+    real(kind=R__) :: lon, lat, east_x, east_y
     real(kind=R__) :: up_x, up_y, up_z
     real(kind=R__) :: north_x, north_y, north_z
     real(kind=R__) :: nx, ny, nz, norm
     real(kind=R__) :: Se, Sn, Su
 
-    if (A2_ .lt. 0.0) A2_ = planetRadiusA_*planetRadiusA_
-    if (B2_ .lt. 0.0) B2_ = planetRadiusB_*planetRadiusB_
+    lon = lon_deg * DTOR_
+    lat = lat_deg * DTOR_
 
     ! East (unchanged)
     east_x = -sin(lon)
