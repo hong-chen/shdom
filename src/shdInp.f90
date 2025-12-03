@@ -42,7 +42,7 @@
 
 module shd_inp
 
-    use globals_const, only: PI_
+    use globals_const, only: PI_, DTOR_, FRAC13_
     use globals_cfg,   only: verbose_, charMaxLen_
     use globals_type,  only: shd_type_rtm, &
                              shd_type_cell, &
@@ -191,7 +191,7 @@ subroutine shd_io__userInp(&
             write(*, *) sfc_obj%avgAlb
         end if
         src_obj%mu0 = -abs(src_obj%mu0)
-        src_obj%phi0 = src_obj%phi0*acos(-1.0)/180.0
+        src_obj%phi0 = src_obj%phi0*DTOR_
     end if
     sfc_obj%avgTemp = 300.
     if (sfc_obj%fname(1:4) .eq. 'NONE') then
@@ -454,7 +454,7 @@ subroutine shd_io__nmlInp(fileNml, &
     if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
         src_obj%solarI = SOLARFLUX
         src_obj%mu0 = -abs(SOLARMU)
-        src_obj%phi0 = SOLARAZ*acos(-1.0)/180.0
+        src_obj%phi0 = SOLARAZ*DTOR_
     else
         src_obj%solarI = 0.0
         src_obj%mu0 = 1.0
@@ -838,8 +838,8 @@ subroutine shd_io__readPrp(isDeltaM, &
             !leg_Prp(1) = 1.0
             leg_Prp(1, 0, 1) = 1.0
 
-            !prp_obj%maxAsym = leg_Prp(1 + 1)/3.0
-            prp_obj%maxAsym = leg_Prp(1, 1, 1)/3.0
+            !prp_obj%maxAsym = leg_Prp(1 + 1)*FRAC13_
+            prp_obj%maxAsym = leg_Prp(1, 1, 1) * FRAC13_
             do l = Nleg + 1, prp_obj%Nleg
                 !leg_Prp(l) = 0.0
                 leg_Prp(1, l, 1) = 0.0
@@ -940,8 +940,8 @@ subroutine shd_io__readPrp(isDeltaM, &
                         end if
                     end do
                 end if
-                !prp_obj%maxAsym = max(prp_obj%maxAsym, leg_Prp((il + 1)*prp_obj%NlegSet + 1)/3.0)
-                prp_obj%maxAsym = max(prp_obj%maxAsym, leg_Prp(1, 1, i)/3.0)
+                !prp_obj%maxAsym = max(prp_obj%maxAsym, leg_Prp((il + 1)*prp_obj%NlegSet + 1)*FRAC13_)
+                prp_obj%maxAsym = max(prp_obj%maxAsym, leg_Prp(1, 1, i)*FRAC13_)
             end do
 
             read(1, '(A)') lineTmp ! skip one line
@@ -1048,10 +1048,10 @@ subroutine shd_io__readPrp(isDeltaM, &
                         Nleg, (leg_Prp(1, l, k), l=1, min(Nleg, prp_obj%Nleg)), &
                         (chi0, l=prp_obj%Nleg + 1, Nleg)
 
-                    !prp_obj%maxAsym = max(prp_obj%maxAsym, leg_Prp(kl + 1 + 1)/3.0)
+                    !prp_obj%maxAsym = max(prp_obj%maxAsym, leg_Prp(kl + 1 + 1)*FRAC13_)
                     !leg_Prp(1 + kl) = 1.0
 
-                    prp_obj%maxAsym = max(prp_obj%maxAsym, leg_Prp(1, 1, k)/3.0)
+                    prp_obj%maxAsym = max(prp_obj%maxAsym, leg_Prp(1, 1, k)*FRAC13_)
                     leg_Prp(1, 0, k) = 1.0
 
                     do l = Nleg + 1, prp_obj%Nleg
@@ -1150,7 +1150,7 @@ subroutine shd_io__checkPrp(prp_obj, temp_Prp, ext_Prp, ssa_Prp, leg_Prp, ipha_P
     do i = 1, N
         if (leg_Prp(1, 1, i) .lt. -3.0 .or. leg_Prp(1, 1, i) .gt. 3.0) then
             write(*, *) 'Error [_checkPrp]: Asymmetry parameter ',&
-                &'out of range - ', leg_Prp(1, 1, i)/3.0, ' at grid point ', i
+                &'out of range - ', leg_Prp(1, 1, i)*FRAC13_, ' at grid point ', i
             stop
         end if
         if (leg_Prp(1, 1, i) .eq. 1.0) legWarn = .true.

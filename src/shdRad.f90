@@ -40,7 +40,7 @@
 module shd_rad
 
     use globals_const, only: RD_, PI_, DTOR_, &
-                             FRAC12_, FRAC13_
+                             FRAC13_
     use globals_cfg,   only: verbose_, accSolv_, doGridPtsPrp_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
                              is3Ddir1Ddif_, &
@@ -254,7 +254,7 @@ subroutine shd_rad__computeDirect(&
         ! Make the ray direction (opposite to the solar beam)
         !   SOLAR?? is direction of beam, SUN?? is direction to sun (opposite)
         SUNMU = -SOLARMU
-        SUNAZ = SOLARAZ + acos(-1.0)
+        SUNAZ = SOLARAZ + PI_
         CX = sqrt(1.0 - SUNMU**2)*cos(SUNAZ)
         CY = sqrt(1.0 - SUNMU**2)*sin(SUNAZ)
         CZ = abs(SUNMU)
@@ -706,7 +706,7 @@ subroutine shd_rad__interpRad(&
                     else
                         RAD2(:) = 0.0
                     end if
-                    radI_Shdo(:, IR + J) = FRAC12_*(RAD1(:) + RAD2(:))
+                    radI_Shdo(:, IR + J) = 0.5*(RAD1(:) + RAD2(:))
                 end do
             end if
         end do
@@ -791,7 +791,7 @@ subroutine shd_rad__computeRad(&
             MUOUT = OUTPARMS(2*IANG + 5)
             PHID  = OUTPARMS(2*IANG + 6)
         end if
-        PHIOUT = PHID*acos(-1.0)/180.0
+        PHIOUT = PHID*DTOR_
 
         ! added for fixing the "domain shift" issue (only for 3D)
         !╭────────────────────────────────────────────────╮!
@@ -1078,7 +1078,7 @@ subroutine shd_rad__computeCamRad(&
                 if (isPol_) then
                     ! Output degree (0 to 1) and angle (-180 to 180) of linear polarization
                     VISOUT(2, IVIS) = sqrt(VISRAD(2)**2 + VISRAD(3)**2)/VISRAD(1)
-                    VISOUT(3, IVIS) = (180.0d0/PI_)*FRAC12_*atan2(VISRAD(3), VISRAD(2))
+                    VISOUT(3, IVIS) = DTOR_*0.5*atan2(VISRAD(3), VISRAD(2))
                 end if
                 if (isPol4_) then
                     ! Output degree of circular polarization (-1 to 1)

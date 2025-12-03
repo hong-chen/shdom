@@ -37,13 +37,18 @@ def check(fname, fname_ref, data_len=4, threshold=1e-5, Nerror=10):
             diff = data - data_ref
             if abs(diff)>threshold:
                 ierror += 1
+                if ierror == 1:
+                    print('Error   [check]: Failed file check for <%s>.' % fname)
                 if ierror <= Nerror:
-                    msg = 'Error [check]: iData=%d, Data=%f, Data_Ref=%f, Diff=%f' % (idata+1, data, data_ref, diff)
+                    msg = '                 iData=%d, Data=%f, Data_Ref=%f, Diff=%f' % (idata+1, data, data_ref, diff)
                     print(msg)
                 else:
+                    msg = '                 ...'
+                    print(msg)
                     return
 
     print('Message [check]: Passed file check for <%s>.' % fname)
+
     return
 
 

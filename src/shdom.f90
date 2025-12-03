@@ -39,7 +39,7 @@
 
 program shdom
 
-    use globals_const, only: REPS_
+    use globals_const, only: REPS_, DTOR_
     use globals_cfg,   only: verbose_, charMaxLen_, accSolv_, &
                              memTotSysMB_, memPerCpuMB_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, isMpi_, &
@@ -1209,7 +1209,7 @@ program shdom
             do iout = 1, Nout
                 if (type_Out(iout) .eq. 'J') then
                     mu_out  = parms_Out(2, iout)
-                    phi_out = parms_Out(3, iout)*acos(-1.0)/180.0
+                    phi_out = parms_Out(3, iout)*DTOR_
                     call shd_src__computeSrcOneDir(doDeltaM,&
                         &mu_out, phi_out,&
                         &fluxDir, src1_Out,&

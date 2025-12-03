@@ -39,7 +39,7 @@
 
 module shd_shdo
 
-    use globals_const, only: RD_, PI_, DPI_, OPI_, FRAC12_
+    use globals_const, only: RD_, PI_, PI2_, DPI2_, OPI_, FRAC23_, FRAC43_
     use globals_cfg,   only: isPol_, isPol4_
 
     use globals_obj,   only: src_obj_
@@ -105,8 +105,8 @@ subroutine shd_shdo__computeSH(&
     allocate(YLMSUN(NLM))
 
     ! Spherical Harmonic output: individual SH terms
-    A = sqrt(2.0*PI_/3.0)
-    C = sqrt(4.0*PI_/3.0)
+    A = sqrt(PI_*FRAC23_)
+    C = sqrt(PI_*FRAC43_)
     C0 = 1.0/sqrt(4.0*PI_)
     SECSOL = 1.0/abs(SOLARMU)
     SINSOL = sqrt(1.0 - SOLARMU**2)
@@ -372,8 +372,8 @@ subroutine shd_shdo__transSHtoDO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
                     TMP(1) = SUMCS(N, 0)
                     MR = 2
                     do M = 1, ME
-                        TMP(MR) = FRAC12_*SUMCS(N, M)
-                        TMP(MR + 1) = -FRAC12_*SUMCS(N, -M)
+                        TMP(MR) = 0.5*SUMCS(N, M)
+                        TMP(MR + 1) = -0.5*SUMCS(N, -M)
                         MR = MR + 2
                     end do
                     do M2 = MR, NPHI0
@@ -481,8 +481,8 @@ subroutine shd_shdo__transSHtoDO_(&
                 TMP(1) = SUMCS(0)
                 MR = 2
                 do M = 1, ME
-                    TMP(MR) = FRAC12_*SUMCS(M)
-                    TMP(MR + 1) = -FRAC12_*SUMCS(-M)
+                    TMP(MR) = 0.5*SUMCS(M)
+                    TMP(MR + 1) = -0.5*SUMCS(-M)
                     MR = MR + 2
                 end do
                 do M2 = MR, NPHI0
@@ -535,7 +535,7 @@ subroutine shd_shdo__transDOtoSH(&
     allocate(MOFJ(NLM), TMP(NPHI0))
     allocate(SUMUV(NSTOKES, -MM:MM), SUMCS(NSTOKES, -MM:MM))
 
-    DELPHI = 2.0*acos(-1.0)/NPHI0
+    DELPHI = PI2_/NPHI0
 
     ! Make the M for each J array
     J = 0
@@ -649,7 +649,7 @@ subroutine shd_shdo__transDOtoSH_(NPTS, ML, MM, NLM,&
 
     allocate(MOFJ(NLM), SUMUV(-MM:MM), SUMCS(-MM:MM), TMP(NPHI0))
 
-    DELPHI = 2.0*acos(-1.0)/NPHI0
+    DELPHI = PI2_/NPHI0
     ! Make the M for each J array
     J = 0
     do L = 0, ML
@@ -783,7 +783,7 @@ subroutine shd_shdo__makeAngle(&
                 NPHI0(J) = int(0.9 + NPHI0MAX*sqrt(1 - MU(J)**2))
                 NPHI0(J) = min(NPHI0MAX, GOODNFFT(NPHI0(J)))
             end if
-            DELPHI = 2.0*PI_/NPHI0(J)
+            DELPHI = PI2_/NPHI0(J)
             do K = 1, NPHI0(J)
                 PHI(J, K) = (K - 1)*DELPHI
                 WTDO(J, K) = DELPHI*WTMU(J)
@@ -827,7 +827,7 @@ subroutine shd_shdo__computeYlm(TRANSPOSED, MU, PHI, ML, MM, NSTLEG, YR)
     allocate(DM0(0:ML), DM2P(0:ML), DM2M(0:ML))
     X = dble(MU)
 
-    FCT = 1.d0/dsqrt(2.d0*DPI_)
+    FCT = 1.d0/dsqrt(DPI2_)
 
     ! sign accounting for transpose matrices
     if (.not. TRANSPOSED) then
@@ -936,7 +936,7 @@ subroutine shd_shdo__computeYlm_(MU, PHI, ML, MM, YR)
     allocate(DM0(0:ML))
     X = dble(MU)
 
-    FCT = 1.d0/dsqrt(2.d0*DPI_)
+    FCT = 1.d0/dsqrt(DPI2_)
 
     do M = 0, MM
         call shd_scat__computeWignerDM0(X, ML, M, DM0)
@@ -988,7 +988,7 @@ subroutine shd_shdo__computePlm(TRANSPOSED, MU, ML, MM, PRC)
     X = dble(MU)
 
     ! --- normalization constant ---
-    FCT = 1.d0/dsqrt(2.d0*DPI_)
+    FCT = 1.d0/dsqrt(DPI2_)
 
     ! --- sign accounting for transpose matrices ---
     if (.not. TRANSPOSED) then

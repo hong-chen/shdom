@@ -39,8 +39,8 @@
 
 module shd_src
 
-    use globals_const, only: RD_, DPI_, O4PI_, DO4PI_, &
-                             FRAC12_, FRAC13_, FRAC112_
+    use globals_const, only: RD_, PI_, DPI_, O4PI_, DO4PI_, &
+                             FRAC13_, FRAC112_
     use globals_cfg,   only: accSolv_, isOpenX_, isOpenYx_, &
                              isPol_, isPol4_
 
@@ -553,7 +553,7 @@ subroutine shd_src__computeSrc(&
     !   Solar source: DIRFLUX has F0*exp(-tau)
     !   Thermal source: planck_Rtm_ has (1-omega)*B(T)
     SECMU0 = 1.0/abs(src_obj_%mu0)
-    C = sqrt(4.0*acos(-1.0))
+    C = sqrt(4.0*PI_)
     ! Make the l index as a function of SH term (J)
     J = 0
     do L = 0, shdo_obj_%maxNl

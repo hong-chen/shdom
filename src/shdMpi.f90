@@ -39,7 +39,7 @@
 
 module shd_mpi
 
-    use globals_const, only: RD_, PI_, DPI_, PIH_, FRAC13_, FRAC112_
+    use globals_const, only: RD_, PI_, DPI_, PIH_, DTOR_, RTOD_, FRAC13_, FRAC112_
     use globals_cfg,   only: verbose_, charMaxLen_, accSolv_, &
                              isMpiX_, isMpiY_, isMpi_, &
                              is1DX_, is1DYx_, is1D_, &
@@ -1999,7 +1999,7 @@ subroutine shd_mpi__computeRad(&
             mu_out = parms_Out(2*K + 5)
             phiDeg_out = parms_Out(2*K + 6)
         endif
-        phi_out = phiDeg_out*acos(-1.0)/180.0
+        phi_out = phiDeg_out*DTOR_
 
         ! added for fixing the "domain shift" issue (only for 3D)
         ! this is the first step correction:
@@ -2340,7 +2340,7 @@ subroutine shd_mpi__computeCamRad(&
     real(RD_) :: X0, Y0, Z0, X1, Y1, Z1, X2, Y2, Z2, X, Y, Z
     real(RD_) :: THETA0, THETA1, PHIR, PHI0, COSSCAT, MU2, PHI2
     real(RD_) :: COSTH, SINTH, SINTH0, SINTH1
-    real(RD_) :: U, V, UP, VP, COSDELPHI, ROTANG, DEGRAD, R
+    real(RD_) :: U, V, UP, VP, COSDELPHI, ROTANG, R
     real(RD_) :: DIST, D, RX, RY, RZ, SCANANG
     integer, parameter :: MAXSCATANG = 721
     real, allocatable :: YLMSUN(:, :), PHASETAB(:, :, :)
@@ -2406,8 +2406,6 @@ subroutine shd_mpi__computeCamRad(&
         NS = 1 + int(abs(parms_Out(12) - parms_Out(11))/parms_Out(13))
     end if
 
-    DEGRAD = DPI_/180.0d0
-
     ! Allocate sending, receiving, etc. arrays for MPI
     MAXNRAD = NL*NS
     allocate(RadSend(shdo_obj_%Nstokes, MAXNRAD), IndexSend(MAXNRAD))
@@ -2431,9 +2429,9 @@ subroutine shd_mpi__computeCamRad(&
                 !   1, bytes, scale, X,Y,Z, theta, phi, rotang, NL, NS, delline, delsamp
                 ! Use spherical trig to find the pixel direction (MURAY,PHIRAY)
                 ! from the camera center (THETA0,PHI0) and the relative pixel angles (U,V).
-                UP = (SAMP - NS/2 - 1)*parms_Out(13)*DEGRAD
-                VP = (LINE - NL/2 - 1)*parms_Out(12)*DEGRAD
-                ROTANG = parms_Out(9)*DEGRAD
+                UP = (SAMP - NS/2 - 1)*parms_Out(13)*DTOR_
+                VP = (LINE - NL/2 - 1)*parms_Out(12)*DTOR_
+                ROTANG = parms_Out(9)*DTOR_
                 if (ROTANG .eq. 0.0) then
                     U = UP
                     V = VP
@@ -2441,8 +2439,8 @@ subroutine shd_mpi__computeCamRad(&
                     U = cos(ROTANG)*UP - sin(ROTANG)*VP
                     V = sin(ROTANG)*UP + cos(ROTANG)*VP
                 end if
-                THETA0 = DEGRAD*parms_Out(7)
-                PHI0 = DEGRAD*parms_Out(8)
+                THETA0 = DTOR_*parms_Out(7)
+                PHI0 = DTOR_*parms_Out(8)
                 THETA1 = THETA0 + V
                 if (V .eq. 0.0) then
                     COSTH = cos(U)*cos(THETA0)
@@ -2507,7 +2505,7 @@ subroutine shd_mpi__computeCamRad(&
                 X0 = X1 + D*RX
                 Y0 = Y1 + D*RY
                 Z0 = Z1 + D*RZ
-                SCANANG = DEGRAD*(parms_Out(11) + (SAMP - 1)*parms_Out(13))
+                SCANANG = DTOR_*(parms_Out(11) + (SAMP - 1)*parms_Out(13))
                 COSTH = cos(DPI_ - abs(SCANANG))
                 if (SCANANG .gt. 0.0) then
                     PHIR = atan2(-RX, RY)
@@ -2725,7 +2723,7 @@ subroutine shd_mpi__computeCamRad(&
                 if (VISRAD(1) .gt. 0.0) then
                     ! Output degree (0 to 1) and angle (-180 to 180) of linear polarization
                     VISOUT(2, I) = sqrt(VISRAD(2)**2 + VISRAD(3)**2)/VISRAD(1)
-                    VISOUT(3, I) = (180.0/DPI_)*0.5*atan2(VISRAD(3), VISRAD(2))
+                    VISOUT(3, I) = RTOD_*0.5*atan2(VISRAD(3), VISRAD(2))
                     if (isPol4_) then
                         ! Output degree of circular polarization (-1 to 1)
                         VISOUT(4, I) = VISRAD(4)/VISRAD(1)

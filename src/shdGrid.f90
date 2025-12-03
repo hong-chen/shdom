@@ -39,7 +39,7 @@
 
 module shd_grid
 
-    use globals_const, only: RD_
+    use globals_const, only: RD_, PI_
     use globals_cfg,   only: accSolv_, doGridPtsPrp_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, isMpi_, &
                              is1DX_, is1DYx_, is1D_, &
@@ -1491,7 +1491,7 @@ subroutine shd_grid__interpNewGridPts(newPts,&
         end do
     end do
 
-    C = sqrt(4.0*acos(-1.0))
+    C = sqrt(4.0*PI_)
     if (src_obj_%doSolar) then
         SECMU0 = 1.0/abs(src_obj_%mu0)
     end if

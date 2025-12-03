@@ -78,6 +78,8 @@ module shd_util
     public :: shd_util__ssort_i
     public :: shd_util__ssort_r
 
+    public :: indexAt
+
     public :: shd_util__computeSolarVect
     public :: shd_util__computeSolarAngle
 
@@ -1370,6 +1372,42 @@ subroutine shd_util__ssort_r(X, Y, N, KFLAG)
     return
 
 end subroutine shd_util__ssort_r
+
+function indexAt(x, x1) result(i)
+
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    ! Locates the position of 'x1' in the sorted array 'x' using binary search.
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+    real(kind=R__), intent(in) :: x(:)   ! sorted array
+    real(kind=R__), intent(in) :: x1     ! value to find
+    integer(kind=I__) :: i               ! return index
+    integer :: low, high, mid
+    integer :: n
+
+    n = size(x)
+    low = 1
+    high = n
+
+    do while (low .le. high)
+        mid = low + (high - low) / 2  ! Avoids potential integer overflow
+
+        if (x(mid) .eq. x1) then
+            i = mid
+            return
+        else if (x(mid) .lt. x1) then
+            low = mid + 1
+        else
+            high = mid - 1
+        end if
+    end do
+
+    ! If the loop terminates, the value was not found.
+    ! The 'low' index is the insertion point (the index of the first
+    ! element greater than x1, or n+1 if all elements are smaller).
+    i = low
+
+end function indexAt
 
 subroutine shd_util__computeSolarVect(&
     lon, lat, sza, saa, &

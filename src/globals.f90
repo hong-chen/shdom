@@ -85,14 +85,14 @@ module globals_const
   real(RD_), parameter :: DOPI_   = 1.0_RD_ / DPI_     ! 1/PI
   real(R_) , parameter :: O4PI_   = 1.0_R_  / (4.0_R_*PI_)      ! 1/(4*PI)
   real(RD_), parameter :: DO4PI_  = 1.0_RD_ / (4.0_RD_*DPI_)    ! 1/(4*PI)
-  real(R_),  parameter :: DTOR_   = PI_ / 180.0_R_     ! degree-to-radian factor
+  real(RD_), parameter :: DTOR_   = DPI_ / 180.0_RD_     ! degree-to-radian factor
+  real(RD_), parameter :: RTOD_   = 180.0_RD_ / DPI_     ! radian-to-degree factor
 
   real(R_),  parameter :: SQRT2_  = 1.414213562373095048801688724209698078569_R_   ! sqrt(2)
   real(R_),  parameter :: SQRT3_  = 1.732050807568877293527446341505872366942_R_   ! sqrt(3)
   real(R_),  parameter :: SQRT2A_ = 0.7071067811865475244008443621048490392848_R_  ! 1/sqrt(2)
   real(R_),  parameter :: SQRT3A_ = 0.5773502691896257645091487805019574556476_R_  ! 1/sqrt(3)
 
-  real(R_),  parameter :: FRAC12_  = 1.0_R_ / 2.0_R_    ! 1/2
   real(R_),  parameter :: FRAC13_  = 1.0_R_ / 3.0_R_    ! 1/3
   real(R_),  parameter :: FRAC23_  = 2.0_R_ / 3.0_R_    ! 2/3
   real(R_),  parameter :: FRAC43_  = 4.0_R_ / 3.0_R_    ! 4/3

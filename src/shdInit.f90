@@ -948,7 +948,7 @@ subroutine shd_init__makeBotRadUL(NBOTPTS, BCPTR,&
     integer I, IBC, K
     real ALB, GNDRAD
 
-    ALB = sfc_obj_%avgAlb/acos(-1.0)
+    ALB = sfc_obj_%avgAlb * OPI_
     if (src_obj_%doTherm) then
         call shd_util__computePlanck(sfc_obj_%avgTemp, UNITS, WAVENO, WAVELEN, GNDRAD)
         GNDRAD = GNDRAD*(1.0 - sfc_obj_%avgAlb)
