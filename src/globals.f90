@@ -125,15 +125,14 @@ module globals_cfg
     implicit none
     public
 
-    integer(kind=4), parameter :: charMaxLen_ = 256 ! file name max length (number of characters)
+    integer(kind=4), parameter :: charMaxLen_    = 256 ! file name max length (number of characters)
+    real(kind=4),    parameter :: planetRadius_  = 6371.0087714 ! arithmetic mean radius [km]
+    real(kind=4),    parameter :: planetRadiusA_ = 6378.1370    ! equatorial radius [km]
+    real(kind=4),    parameter :: planetRadiusB_ = 6356.7523    ! polar radius [km]
 
-    real(kind=4), parameter :: memTotSysMB_ = 16000.0
-    real(kind=4), save      :: memPerCpuMB_ = 4000.0
-    real(kind=4), parameter :: planetRadius_  = 6371.0087714 ! arithmetic mean radius [km]
-    real(kind=4), parameter :: planetRadiusA_ = 6378.1370 ! equatorial radius [km]
-    real(kind=4), parameter :: planetRadiusB_ = 6356.7523 ! polar radius [km]
-
-    integer(kind=1), parameter :: verbose_ = 5
+    real(kind=4),    save :: memTotSysMB_ = 16000.0
+    real(kind=4),    save :: memPerCpuMB_ = 4000.0
+    integer(kind=1), save :: verbose_ = 5 ! default value, will be overwritten by input VERBOSE parameter
     !Severity    Level  Description
     !Emergency     0      System unusable
     !Alert         1      Action must be taken immediately
