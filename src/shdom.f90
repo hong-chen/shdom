@@ -1103,7 +1103,7 @@ program shdom
 
 
     if ((rtm_obj_%type .eq. 'S') .or. (rtm_obj_%type .eq. 's')) then
-        call shd_init__makeSolarVect(src_obj_%x0, src_obj_%y0, &
+        call shd_init__makeSolarVect(src_obj_%x0,  src_obj_%y0, &
                                      src_obj_%mu0, src_obj_%phi0, &
                                      solarVect_)
 
