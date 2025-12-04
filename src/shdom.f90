@@ -39,8 +39,8 @@
 
 program shdom
 
-    use globals_const, only: REPS_, DTOR_
-    use globals_cfg,   only: verbose_, charMaxLen_, accSolv_, &
+    use globals_const, only: REPS_, PI_, DTOR_
+    use globals_cfg,   only: verbose_, charMaxLen_, accSolv_, solarVect_, &
                              memTotSysMB_, memPerCpuMB_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, isMpi_, &
                              is1DX_, is1DYx_, is1D_, is3Ddir1Ddif_, &
@@ -78,7 +78,8 @@ program shdom
                                          kabs_Ckd_, &
                               sen_obj_, view_Sen_
 
-    use shd_init, only: shd_init__makeGrid, &
+    use shd_init, only: shd_init__makeSolarVect, &
+                        shd_init__makeGrid, &
                         shd_init__makeCell
 
     use shd_src,  only: shd_src__computeSrcOneDir
@@ -118,7 +119,6 @@ program shdom
 
     use shd_util, only: shd_util__sumData, &
                         shd_util__interpData, &
-                        shd_util__computeSolarVect, &
                         shd_util__computeSolarAngle, &
                         shd_util__tickTock
 
@@ -163,6 +163,14 @@ program shdom
     !╭────────────────────────────────────────────────────────────────────────────╮!
     character(len=charMaxLen_) :: fileInp_sav, fileOut_sav
     logical :: doRadInit, doGridInit
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+    ! SRC
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    real(kind=R__) :: mu0, phi0
+
+    real(kind=R__) :: lat, lon, mu, phi
+    integer :: i, j
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! prpAll_obj
@@ -1095,6 +1103,28 @@ program shdom
         cell_obj_, i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, flag_Cell_, &
         shdo_obj_, iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_)
 
+
+    if ((rtm_obj_%type .eq. 'S') .or. (rtm_obj_%type .eq. 's')) then
+        ! convert <mu0, phi0> from SHDOM convention to traditional convenction
+        mu0  = abs(src_obj_%mu0)
+        phi0 = 1.5*PI_ - src_obj_%phi0
+
+        call shd_init__makeSolarVect(src_obj_%x0, src_obj_%y0, mu0, phi0, &
+                                     solarVect_)
+
+        ! for testing
+        !╭────────────────────────────────────────────────────────────────────────────╮!
+        ! do j = 1, 181
+        !     lat = -90.0 + (j-1)*1.0
+        !     do i = 1, 361
+        !         lon = 0.0 + (i-1)*1.0
+        !         call shd_util__computeSolarAngle(lon, lat, mu, phi)
+        !         print *, lon, lat, acos(-mu)*180.0d0/acos(-1.0d0), 270.0-phi*180.0d0/acos(-1.0d0)
+        !     end do
+        ! end do
+        ! stop
+        !╰────────────────────────────────────────────────────────────────────────────╯!
+    end if
 
     ! Check if we can use pre-calculated "state", if not, generate new grids
     !   doGridInit is from shd_io__restoreState call

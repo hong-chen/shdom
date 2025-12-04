@@ -39,8 +39,9 @@
 
 module shd_init
 
-    use globals_const, only: RD_, PI_, OPI_
-    use globals_cfg,   only: verbose_, planetRadius_, doGridPtsPrp_, &
+    use globals_const, only: RD_, PI_, OPI_, DTOR_
+    use globals_cfg,   only: verbose_, doGridPtsPrp_, &
+                             planetRadius_, A2_, B2_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
                              is1DX_, is1DYx_
 
@@ -66,6 +67,8 @@ module shd_init
     integer, parameter :: R__  = selected_real_kind(6) ! default precision for float
     integer, parameter :: I__  = selected_int_kind(9)  ! default precision for integer
 
+    public :: shd_init__makeSolarVect
+
     public :: shd_init__makeGrid
     public :: shd_init__makeCell
 
@@ -82,6 +85,63 @@ module shd_init
     public :: shd_init__checkSfcU
 
 contains
+
+subroutine shd_init__makeSolarVect(&
+    lon_deg, lat_deg, mu, phi, &
+    solarVect)
+
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    ! Initialize Sun vector at center, converting local ENU to ECEF
+    ! mu is the cosine of solar zenith angle
+    ! phi is the solar azimuth angle in radian [0 north, positive clockwise]
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+    implicit none
+    real(kind=R__), intent(in)  :: lon_deg, lat_deg, mu, phi
+    real(kind=R__), intent(out) :: solarVect(3)
+
+    real(kind=R__) :: lon, lat, Se, Sn, sinmu
+    real(kind=R__) :: east_x, east_y
+    real(kind=R__) :: up_x, up_y, up_z
+    real(kind=R__) :: north_x, north_y, north_z
+    real(kind=R__) :: nx, ny, nz, norm
+
+    lon = lon_deg * DTOR_
+    lat = lat_deg * DTOR_
+
+    ! Local ENU Sun vector at center
+    sinmu = sqrt(1.0 - mu*mu)
+
+    Se = sinmu * sin(phi)
+    Sn = sinmu * cos(phi)
+
+    ! Ellipsoidal surface normal (UP vector)
+    nx = cos(lat)*cos(lon)/A2_
+    ny = cos(lat)*sin(lon)/A2_
+    nz = sin(lat)/B2_
+    norm = sqrt(nx*nx + ny*ny + nz*nz)
+
+    up_x = nx / norm
+    up_y = ny / norm
+    up_z = nz / norm
+
+    ! East vector (same as spherical)
+    east_x = -sin(lon)
+    east_y =  cos(lon)
+
+    ! North = Up × East
+    north_x = -up_z*east_y
+    north_y =  up_z*east_x
+    north_z =  up_x*east_y - up_y*east_x
+
+    ! Convert local ENU Sun vector -> global ECEF
+    solarVect(1) = Se*east_x  + Sn*north_x + mu*up_x
+    solarVect(2) = Se*east_y  + Sn*north_y + mu*up_y
+    solarVect(3) = Sn*north_z + mu*up_z
+
+    return
+
+end subroutine shd_init__makeSolarVect
 
 subroutine shd_init__makeGrid(rtm_OBJ, &
                               prp_OBJ)

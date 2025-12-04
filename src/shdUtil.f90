@@ -44,6 +44,7 @@ module shd_util
 
     use globals_const, only: RD_, PI_, DPI_, DTOR_
     use globals_cfg,   only: planetRadiusA_, planetRadiusB_, &
+                             A2_, B2_, E2_, solarVect_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
                              is1DX_, is1DYx_
 
@@ -81,7 +82,6 @@ module shd_util
     public :: indexAt
     public :: dist
 
-    public :: shd_util__computeSolarVect
     public :: shd_util__computeSolarAngle
 
     public :: shd_util__tickTock
@@ -93,10 +93,6 @@ module shd_util
         module procedure shd_util__ssort_i
         module procedure shd_util__ssort_r
     end interface
-
-    real(kind=R__), parameter :: A2_ = planetRadiusA_*planetRadiusA_
-    real(kind=R__), parameter :: B2_ = planetRadiusB_*planetRadiusB_
-    real(kind=R__), parameter :: E2_ = (A2_ - B2_) / A2_
 
 contains
 
@@ -1467,77 +1463,23 @@ pure subroutine sin_cos(x, s, c)
     c = cos(x)
 end subroutine sin_cos
 
-subroutine shd_util__computeSolarVect(&
-    lon_deg, lat_deg, sza, saa, &
-    Sx, Sy, Sz)
-
-    !╭────────────────────────────────────────────────────────────────────────────╮!
-    ! Initialize Sun vector at center, converting local ENU to ECEF
-    !╰────────────────────────────────────────────────────────────────────────────╯!
-
-    implicit none
-    real(kind=R__), intent(in)  :: lon_deg, lat_deg, sza, saa
-    real(kind=R__), intent(out) :: Sx, Sy, Sz
-
-    real(kind=R__) :: lon, lat, Se, Sn, Su
-    real(kind=R__) :: east_x, east_y
-    real(kind=R__) :: up_x, up_y, up_z
-    real(kind=R__) :: north_x, north_y, north_z
-    real(kind=R__) :: nx, ny, nz, norm
-
-    lon = lon_deg * DTOR_
-    lat = lat_deg * DTOR_
-
-    ! Local ENU Sun vector at center
-    Se = sin(sza) * sin(saa)
-    Sn = sin(sza) * cos(saa)
-    Su = cos(sza)
-
-    ! Ellipsoidal surface normal (UP vector)
-    nx = cos(lat)*cos(lon)/A2_
-    ny = cos(lat)*sin(lon)/A2_
-    nz = sin(lat)/B2_
-    norm = sqrt(nx*nx + ny*ny + nz*nz)
-
-    up_x = nx / norm
-    up_y = ny / norm
-    up_z = nz / norm
-
-    ! East vector (same as spherical)
-    east_x = -sin(lon)
-    east_y =  cos(lon)
-
-    ! North = Up × East
-    north_x = -up_z*east_y
-    north_y =  up_z*east_x
-    north_z =  up_x*east_y - up_y*east_x
-
-    ! Convert local ENU Sun vector -> global ECEF
-    Sx = Se*east_x + Sn*north_x + Su*up_x
-    Sy = Se*east_y + Sn*north_y + Su*up_y
-    Sz = Sn*north_z + Su*up_z
-
-    return
-
-end subroutine shd_util__computeSolarVect
-
 subroutine shd_util__computeSolarAngle(&
-    lon_deg, lat_deg, Sx, Sy, Sz, &
-    sza, saa)
+    lon_deg, lat_deg, &
+    mu, phi)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Compute solar angles at any lat/lon on oblate ellipsoid
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     implicit none
-    real(kind=R__), intent(in)  :: lon_deg, lat_deg, Sx, Sy, Sz
-    real(kind=R__), intent(out) :: sza, saa
+    real(kind=R__), intent(in)  :: lon_deg, lat_deg
+    real(kind=R__), intent(out) :: mu, phi
 
     real(kind=R__) :: lon, lat, east_x, east_y
     real(kind=R__) :: up_x, up_y, up_z
     real(kind=R__) :: north_x, north_y, north_z
     real(kind=R__) :: nx, ny, nz, norm
-    real(kind=R__) :: Se, Sn, Su
+    real(kind=R__) :: Se, Sn
 
     lon = lon_deg * DTOR_
     lat = lat_deg * DTOR_
@@ -1562,24 +1504,26 @@ subroutine shd_util__computeSolarAngle(&
     north_z =  up_x*east_y - up_y*east_x
 
     ! Project Sun vector into local ENU frame
-    Se =  east_x*Sx +  east_y*Sy
-    Sn = north_x*Sx + north_y*Sy + north_z*Sz
-    Su =    up_x*Sx +    up_y*Sy +    up_z*Sz
+    Se =  east_x*solarVect_(1) +  east_y*solarVect_(2)
+    Sn = north_x*solarVect_(1) + north_y*solarVect_(2) + north_z*solarVect_(3)
+    mu =    up_x*solarVect_(1) +    up_y*solarVect_(2) +    up_z*solarVect_(3)
 
-    ! Solar angles
-    sza = acos(Su)
+    if ((mu .ge. 0.0) .and. (mu .le. 1.0)) then
+        phi = atan2(Se, Sn)
 
-    if ((sza .ge. 0.0) .and. (sza .le. 0.5*PI_)) then
-        saa = atan2(Se, Sn)
+        ! convert to SHDOM convenction (opposite to sun direction)
+        ! phi: from  [0 at north, positive clockwise] to
+        !            [0 at east,  positive counterclockwise]
+        !╭────────────────────────────────────────────────────────────────────────────╮!
+        mu = -abs(mu)
+        phi = 1.5*PI_ - phi
 
-        ! convert from atmospheric convention [0 at north, positive clockwise] to
-        !       radiative transfer convention [0 at west,  positive counterclockwise]
-        saa = 1.5*PI_ - saa
-        if (saa < 0.0)     saa = saa + 2.0*PI_
-        if (saa > 2.0*PI_) saa = saa - 2.0*PI_
+        if (phi < 0.0)     phi = phi + 2.0*PI_
+        if (phi > 2.0*PI_) phi = phi - 2.0*PI_
+        !╰────────────────────────────────────────────────────────────────────────────╯!
     else
-        sza = -999.0
-        saa = -999.0
+        mu  = -999.0
+        phi = -999.0
     end if
 
     return

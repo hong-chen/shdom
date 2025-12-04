@@ -126,9 +126,13 @@ module globals_cfg
     public
 
     integer(kind=4), parameter :: charMaxLen_    = 256 ! file name max length (number of characters)
-    real(kind=4),    parameter :: planetRadius_  = 6371.0087714 ! arithmetic mean radius [km]
-    real(kind=4),    parameter :: planetRadiusA_ = 6378.1370    ! equatorial radius [km]
-    real(kind=4),    parameter :: planetRadiusB_ = 6356.7523    ! polar radius [km]
+
+    real(kind=4), parameter :: planetRadius_  = 6371.0087714 ! arithmetic mean radius [km]
+    real(kind=4), parameter :: planetRadiusA_ = 6378.1370    ! equatorial radius [km]
+    real(kind=4), parameter :: planetRadiusB_ = 6356.7523    ! polar radius [km]
+    real(kind=4), parameter :: A2_ = planetRadiusA_*planetRadiusA_
+    real(kind=4), parameter :: B2_ = planetRadiusB_*planetRadiusB_
+    real(kind=4), parameter :: E2_ = (A2_ - B2_) / A2_
 
     real(kind=4),    save :: memTotSysMB_ = 16000.0
     real(kind=4),    save :: memPerCpuMB_ = 4000.0
@@ -147,6 +151,7 @@ module globals_cfg
     logical, parameter :: doGridPtsPrp_ = .false.
 
     real(kind=8), save :: accSolv_
+    real(kind=4), save :: solarVect_(3)
 
     ! Boundary conditions (BCFLAG)
     logical, save :: isOpenX_, isOpenYx_, isMpiX_, isMpiY_, isMpi_
@@ -266,8 +271,9 @@ module globals_type
 
         real(kind=R__) :: mu0  = -999.0
         real(kind=R__) :: phi0 = -999.0
-        real(kind=R__) :: lon0 = -999.0
-        real(kind=R__) :: lat0 = -999.0
+
+        real(kind=R__) :: x0 = -999.0
+        real(kind=R__) :: y0 = -999.0
 
         real(kind=R__) :: solarI  = -999.0 ! solar read from input file
         real(kind=R__) :: solar0  = -999.0 ! solar at every "g", scaled with mu0 and solarFac
@@ -310,11 +316,6 @@ module globals_type
         real(kind=R__) :: xDomain = -999.0
         real(kind=R__) :: yDomain = -999.0
 
-        real(kind=R__) :: dlon = -999.0
-        real(kind=R__) :: dlat = -999.0
-        real(kind=R__) :: lonStart = -999.0
-        real(kind=R__) :: latStart = -999.0
-
         real(kind=R__), allocatable :: x(:)
         real(kind=R__), allocatable :: y(:)
         real(kind=R__), allocatable :: z(:)
@@ -345,11 +346,6 @@ module globals_type
         real(kind=R__) :: yStart  = -999.0
         !real(kind=R__) :: xDomain = -999.0
         !real(kind=R__) :: yDomain = -999.0
-
-        real(kind=R__) :: dlon = -999.0
-        real(kind=R__) :: dlat = -999.0
-        real(kind=R__) :: lonStart = -999.0
-        real(kind=R__) :: latStart = -999.0
 
         real(kind=R__) :: avgTemp = -999.0
         real(kind=R__) :: avgAlb  = -999.0

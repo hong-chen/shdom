@@ -120,10 +120,13 @@ subroutine shd_io__userInp(&
     real GNDEMIS
 
     src_obj%mu0 = -1.0
-    sfc_obj%avgAlb = 0.0
+    src_obj%x0 = 0.0
+    src_obj%y0 = 0.0
     src_obj%avgWaveLen = 1.0
     src_obj%waveNum(1) = 10000.
     src_obj%waveNum(2) = 10001.
+
+    sfc_obj%avgAlb = 0.0
     sen_obj%fname = 'NONE'
     VERBOSE = verbose_
 
@@ -388,7 +391,7 @@ subroutine shd_io__nmlInp(fileNml, &
     integer NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG, IPFLAG
     integer MAXITER, NUMOUT
     logical DELTAM, ACCELFLAG
-    real SOLARFLUX, SOLARMU, SOLARAZ
+    real SOLARFLUX(3), SOLARMU, SOLARAZ
     real GNDTEMP, GNDALBEDO, SKYRAD
     real WAVENO(2), WAVELEN, SOLACC, SPLITACC, SHACC
     real MAX_TOTAL_MB, ADAPT_GRID_FACTOR
@@ -423,6 +426,7 @@ subroutine shd_io__nmlInp(fileNml, &
     WAVENO(2) = 10001.
     SENFILE = 'NONE'
     VERBOSE = verbose_
+    SOLARFLUX = (/1.0, 0.0, 0.0/)
 
     ! Read in the namelist
     if (verbose_ .ge. 6) write(*, '(A,"<",A,">")') 'Message [_nmlInp]: ', trim(adjustl(fileNml))
@@ -452,12 +456,16 @@ subroutine shd_io__nmlInp(fileNml, &
 
     src_obj%type = SRCTYPE
     if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
-        src_obj%solarI = SOLARFLUX
-        src_obj%mu0 = -abs(SOLARMU)
+        src_obj%solarI = SOLARFLUX(1)
+        src_obj%x0 = SOLARFLUX(2)
+        src_obj%y0 = SOLARFLUX(3)
+        src_obj%mu0  = -abs(SOLARMU)
         src_obj%phi0 = SOLARAZ*DTOR_
     else
         src_obj%solarI = 0.0
-        src_obj%mu0 = 1.0
+        src_obj%x0 = 0.0
+        src_obj%y0 = 0.0
+        src_obj%mu0  = 1.0
         src_obj%phi0 = 0.0
     end if
     src_obj%skyRad = SKYRAD
@@ -576,7 +584,10 @@ subroutine shd_io__checkInp(&
         &stop 'Error [_checkInp]: Illegal source type.'
     if ((src_obj%unit .ne. 'R') .and. (src_obj%unit .ne. 'T') .and. (src_obj%unit .ne. 'B'))&
         &stop 'Error [_checkInp]: Illegal units.'
-    if ((rtm_obj%type .ne. 'E') .and. (rtm_obj%type .ne. 'P') .and. (rtm_obj%type .ne. 'F'))&
+    if ((rtm_obj%type .ne. 'E') .and. &
+        (rtm_obj%type .ne. 'S') .and. &
+        (rtm_obj%type .ne. 'P') .and. &
+        (rtm_obj%type .ne. 'F'))&
         &stop 'Error [_checkInp]: Illegal grid type.'
 
     if ((src_obj%type .ne. 'T') .and. (src_obj%mu0 .eq. 0.0)) then

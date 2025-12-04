@@ -444,7 +444,7 @@ subroutine shd_mpi__bcastInp(&
 #if HAS_MPI
     integer :: ierr, intbuf(10)
     logical :: logbuf(3)
-    real    :: realbuf(16)
+    real    :: realbuf(18)
     character(len=1) :: char1buf(3)
     character(len=charMaxLen_) :: char256buf(7)
     character(len=4) :: procStr
@@ -454,35 +454,78 @@ subroutine shd_mpi__bcastInp(&
     intbuf(:) = (/shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, shdo_obj%Nmu, &
                   shdo_obj%Nphi, rtm_obj%flag_bc, rtm_obj%flag_ip, MAXITER, NUMOUT/)
     call mpi_bcast(intbuf, 10, MPI_integer, 0, MPI_comm_world, ierr)
-    shdo_obj%Nstokes = intbuf(1); rtm_obj%Nx = intbuf(2); rtm_obj%Ny = intbuf(3); rtm_obj%Nz = intbuf(4)
-    shdo_obj%Nmu = intbuf(5); shdo_obj%Nphi = intbuf(6); rtm_obj%flag_bc = intbuf(7); rtm_obj%flag_ip = intbuf(8)
-    MAXITER = intbuf(9); NUMOUT = intbuf(10)
+    shdo_obj%Nstokes = intbuf(1)
+    rtm_obj%Nx       = intbuf(2)
+    rtm_obj%Ny       = intbuf(3)
+    rtm_obj%Nz       = intbuf(4)
+    shdo_obj%Nmu     = intbuf(5)
+    shdo_obj%Nphi    = intbuf(6)
+    rtm_obj%flag_bc  = intbuf(7)
+    rtm_obj%flag_ip  = intbuf(8)
+    MAXITER          = intbuf(9)
+    NUMOUT           = intbuf(10)
 
+    ! logical variables
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     logbuf(:) = (/KDIST, DELTAM, ACCELFLAG/)
     call mpi_bcast(logbuf, 3, MPI_logical, 0, MPI_comm_world, ierr)
-    KDIST = logbuf(1); DELTAM = logbuf(2); ACCELFLAG = logbuf(3)
+    KDIST     = logbuf(1)
+    DELTAM    = logbuf(2)
+    ACCELFLAG = logbuf(3)
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    realbuf(:) = (/src_obj%solarI, src_obj%mu0, src_obj%phi0, sfc_obj%avgTemp, sfc_obj%avgAlb, src_obj%skyRad,&
-        &src_obj%waveNum(1:2), src_obj%avgWaveLen, SOLACC, SPLITACC, SHACC,&
-        &MAX_TOTAL_MB, SPLITTING_FACTOR, NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO/)
-    call mpi_bcast(realbuf, 16, MPI_real, 0, MPI_comm_world, ierr)
-    src_obj%solarI = realbuf(1); src_obj%mu0 = realbuf(2); src_obj%phi0 = realbuf(3)
-    sfc_obj%avgTemp = realbuf(4); sfc_obj%avgAlb = realbuf(5); src_obj%skyRad = realbuf(6)
-    src_obj%waveNum(1:2) = realbuf(7:8); src_obj%avgWaveLen = realbuf(9)
-    SOLACC = realbuf(10); SPLITACC = realbuf(11); SHACC = realbuf(12)
-    MAX_TOTAL_MB = realbuf(13); SPLITTING_FACTOR = realbuf(14)
-    NUM_SH_TERM_FACTOR = realbuf(15); CELL_TO_POINT_RATIO = realbuf(16)
+    ! real variables
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    realbuf(:) = (/src_obj%solarI, src_obj%x0, src_obj%y0, src_obj%mu0, src_obj%phi0, &
+                   sfc_obj%avgTemp, sfc_obj%avgAlb, src_obj%skyRad, &
+                   src_obj%waveNum(1:2), src_obj%avgWaveLen, SOLACC, SPLITACC, SHACC, &
+                   MAX_TOTAL_MB, SPLITTING_FACTOR, NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO/)
 
+    call mpi_bcast(realbuf, 18, MPI_real, 0, MPI_comm_world, ierr)
+
+    src_obj%solarI  = realbuf(1)
+    src_obj%x0      = realbuf(2)
+    src_obj%y0      = realbuf(3)
+    src_obj%mu0     = realbuf(4)
+    src_obj%phi0    = realbuf(5)
+    sfc_obj%avgTemp = realbuf(6)
+    sfc_obj%avgAlb  = realbuf(7)
+    src_obj%skyRad  = realbuf(8)
+    src_obj%waveNum(1:2) = realbuf(9:10)
+    src_obj%avgWaveLen   = realbuf(11)
+    SOLACC               = realbuf(12)
+    SPLITACC             = realbuf(13)
+    SHACC                = realbuf(14)
+    MAX_TOTAL_MB         = realbuf(15)
+    SPLITTING_FACTOR     = realbuf(16)
+    NUM_SH_TERM_FACTOR   = realbuf(17)
+    CELL_TO_POINT_RATIO  = realbuf(18)
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+    ! 1-character variables
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     char1buf(:) = (/src_obj%type, rtm_obj%type, src_obj%unit/)
     call mpi_bcast(char1buf, 3, MPI_character, 0, MPI_comm_world, ierr)
-    src_obj%type = char1buf(1); rtm_obj%type = char1buf(2); src_obj%unit = char1buf(3)
+    src_obj%type = char1buf(1)
+    rtm_obj%type = char1buf(2)
+    src_obj%unit = char1buf(3)
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
+    ! long character variables
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     char256buf(:) = (/prp_obj%fname, sfc_obj%fname, ckd_obj%fname, fileInp_sav, fileOut_sav, sen_obj%fname, rtm_obj%runName/)
-    call mpi_bcast(char256buf, 7*256, MPI_character, 0, MPI_comm_world, ierr)
-    prp_obj%fname = char256buf(1); sfc_obj%fname = char256buf(2); ckd_obj%fname = char256buf(3)
-    fileInp_sav = char256buf(4); fileOut_sav = char256buf(5); sen_obj%fname = char256buf(6); rtm_obj%runName = char256buf(7)
+    call mpi_bcast(char256buf, 7*charMaxLen_, MPI_character, 0, MPI_comm_world, ierr)
+    prp_obj%fname   = char256buf(1)
+    sfc_obj%fname   = char256buf(2)
+    ckd_obj%fname   = char256buf(3)
+    fileInp_sav     = char256buf(4)
+    fileOut_sav     = char256buf(5)
+    sen_obj%fname   = char256buf(6)
+    rtm_obj%runName = char256buf(7)
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
     call mpi_bcast(parms_Out, MAXPAR*NUMOUT, MPI_real, 0, MPI_comm_world, ierr)
+
     call mpi_bcast(OUTTYPES, NUMOUT*1, MPI_character, 0, MPI_comm_world, ierr)
 
     write(procStr, '(I4.4)') myProc_
