@@ -402,7 +402,8 @@ module globals_type
         integer(kind=I__) :: Npts = -999
         integer(kind=I__) :: Npar = -999
 
-        logical :: isAllocated  = .false.
+        logical :: doLightBend = .false. ! placeholder for atmospheric refraction implementation
+        logical :: isAllocated = .false.
 
     end type shd_type_sen
     !╰────────────────────────────────────────────────────────────────────────────╯!
