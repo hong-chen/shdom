@@ -132,7 +132,7 @@ module globals_cfg
     real(kind=4), parameter :: planetRadiusB_ = 6356.752314245 ! polar radius [km]
     real(kind=4), parameter :: A2_ = planetRadiusA_*planetRadiusA_
     real(kind=4), parameter :: B2_ = planetRadiusB_*planetRadiusB_
-    real(kind=4), parameter :: E2_ = (A2_ - B2_) / A2_
+    real(kind=4), parameter :: E2_ = (A2_ - B2_) / A2_ ! planet eccentricity
 
     real(kind=4),    save :: memTotSysMB_ = 16000.0
     real(kind=4),    save :: memPerCpuMB_ = 4000.0
