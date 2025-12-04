@@ -87,25 +87,29 @@ module shd_init
 contains
 
 subroutine shd_init__makeSolarVect(&
-    lon_deg, lat_deg, mu, phi, &
+    lon_deg, lat_deg, mu0, phi0, &
     solarVect)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Initialize Sun vector at center, converting local ENU to ECEF
-    ! mu is the cosine of solar zenith angle
-    ! phi is the solar azimuth angle in radian [0 north, positive clockwise]
+    !   mu0 is the SHDOM SOLARMU
+    !   phi0 is the SHDOM SOLARAZ
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     implicit none
-    real(kind=R__), intent(in)  :: lon_deg, lat_deg, mu, phi
+    real(kind=R__), intent(in)  :: lon_deg, lat_deg, mu0, phi0
     real(kind=R__), intent(out) :: solarVect(3)
-
-    real(kind=R__) :: lon, lat, Se, Sn, sinmu
+    real(kind=R__) :: mu, phi, lon, lat, Se, Sn, sinmu
     real(kind=R__) :: east_x, east_y
     real(kind=R__) :: up_x, up_y, up_z
     real(kind=R__) :: north_x, north_y, north_z
     real(kind=R__) :: nx, ny, nz, norm
 
+    ! convert MU (cos(SZA)) and PHI from SHDOM convension to legacy convension
+    mu  = abs(mu0)
+    phi = 1.5*PI_ - phi0
+
+    ! convert longitude and latitude from degree to radian
     lon = lon_deg * DTOR_
     lat = lat_deg * DTOR_
 

@@ -391,7 +391,7 @@ subroutine shd_io__nmlInp(fileNml, &
     integer NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG, IPFLAG
     integer MAXITER, NUMOUT
     logical DELTAM, ACCELFLAG
-    real SOLARFLUX(3), SOLARMU, SOLARAZ
+    real XY_START(2), XY_SOLAR(2), SOLARFLUX, SOLARMU, SOLARAZ
     real GNDTEMP, GNDALBEDO, SKYRAD
     real WAVENO(2), WAVELEN, SOLACC, SPLITACC, SHACC
     real MAX_TOTAL_MB, ADAPT_GRID_FACTOR
@@ -403,18 +403,18 @@ subroutine shd_io__nmlInp(fileNml, &
     character(len=charMaxLen_) :: PROPFILE, SFCFILE, CKDFILE, INSAVEFILE, OUTSAVEFILE
     character(len=charMaxLen_) :: SENFILE, OutFileNC, RUNNAME
     integer(kind=1) :: VERBOSE
-    namelist /SHDOMINPUT/&
-        &RUNNAME, PROPFILE, SFCFILE, CKDFILE,&
-        &INSAVEFILE, OUTSAVEFILE, SENFILE,&
-        &NSTOKES, NX, NY, NZ, NMU, NPHI,&
-        &BCFLAG, IPFLAG, DELTAM, GRIDTYPE,&
-        &SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, SKYRAD,&
-        &GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN,&
-        &ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
-        &NUMOUT, OUTTYPES, OUTPARMS, OUTFILES, OutFileNC,&
-        &MAX_TOTAL_MB, ADAPT_GRID_FACTOR,&
-        &NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO,&
-        &VERBOSE
+    namelist /SHDOMINPUT/ &
+        RUNNAME, PROPFILE, SFCFILE, CKDFILE, &
+        INSAVEFILE, OUTSAVEFILE, SENFILE, &
+        NSTOKES, NX, NY, NZ, XY_START, &
+        NMU, NPHI, BCFLAG, IPFLAG, DELTAM, GRIDTYPE, &
+        SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, XY_SOLAR, SKYRAD, &
+        GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN, &
+        ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC, &
+        NUMOUT, OUTTYPES, OUTPARMS, OUTFILES, OutFileNC, &
+        MAX_TOTAL_MB, ADAPT_GRID_FACTOR, &
+        NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO, &
+        VERBOSE
 
     if (dMAXOUT .ne. MAXOUT) stop 'Error [_nmlInp]: MAXOUT not the same.'
     if (dMAXPAR .ne. MAXPAR) stop 'Error [_nmlInp]: MAXPAR not the same.'
@@ -426,7 +426,8 @@ subroutine shd_io__nmlInp(fileNml, &
     WAVENO(2) = 10001.
     SENFILE = 'NONE'
     VERBOSE = verbose_
-    SOLARFLUX = (/1.0, 0.0, 0.0/)
+    XY_START(1:2) = 0.0
+    XY_SOLAR(1:2) = 0.0
 
     ! Read in the namelist
     if (verbose_ .ge. 6) write(*, '(A,"<",A,">")') 'Message [_nmlInp]: ', trim(adjustl(fileNml))
@@ -436,10 +437,20 @@ subroutine shd_io__nmlInp(fileNml, &
 
     ! Make the assignments to the dummy variables
     rtm_obj%runName = RUNNAME
+    rtm_obj%xStart = XY_START(1)
+    rtm_obj%yStart = XY_START(2)
+
     prp_obj%fname = PROPFILE
+    prp_obj%xStart = XY_START(1)
+    prp_obj%yStart = XY_START(2)
+
     sfc_obj%fname = SFCFILE
+    sfc_obj%xStart = XY_START(1)
+    sfc_obj%yStart = XY_START(2)
+
     ckd_obj%fname = CKDFILE
     dKDIST = CKDFILE(1:4) .ne. 'NONE'
+
     dINSAVEFILE = INSAVEFILE
     dOUTSAVEFILE = OUTSAVEFILE
     sen_obj%fname = SENFILE ! this is added for user-specified sensor option, output type [R] and [V3]
@@ -456,9 +467,9 @@ subroutine shd_io__nmlInp(fileNml, &
 
     src_obj%type = SRCTYPE
     if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
-        src_obj%solarI = SOLARFLUX(1)
-        src_obj%x0 = SOLARFLUX(2)
-        src_obj%y0 = SOLARFLUX(3)
+        src_obj%solarI = SOLARFLUX
+        src_obj%x0 = XY_SOLAR(1)
+        src_obj%y0 = XY_SOLAR(2)
         src_obj%mu0  = -abs(SOLARMU)
         src_obj%phi0 = SOLARAZ*DTOR_
     else

@@ -167,10 +167,8 @@ program shdom
 
     ! SRC
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    real(kind=R__) :: mu0, phi0
-
-    real(kind=R__) :: lat, lon, mu, phi
-    integer :: i, j
+    ! real(kind=R__) :: lat, lon, mu0, phi0
+    ! integer :: i, j
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! prpAll_obj
@@ -1105,11 +1103,8 @@ program shdom
 
 
     if ((rtm_obj_%type .eq. 'S') .or. (rtm_obj_%type .eq. 's')) then
-        ! convert <mu0, phi0> from SHDOM convention to traditional convenction
-        mu0  = abs(src_obj_%mu0)
-        phi0 = 1.5*PI_ - src_obj_%phi0
-
-        call shd_init__makeSolarVect(src_obj_%x0, src_obj_%y0, mu0, phi0, &
+        call shd_init__makeSolarVect(src_obj_%x0, src_obj_%y0, &
+                                     src_obj_%mu0, src_obj_%phi0, &
                                      solarVect_)
 
         ! for testing
@@ -1118,8 +1113,8 @@ program shdom
         !     lat = -90.0 + (j-1)*1.0
         !     do i = 1, 361
         !         lon = 0.0 + (i-1)*1.0
-        !         call shd_util__computeSolarAngle(lon, lat, mu, phi)
-        !         print *, lon, lat, acos(-mu)*180.0d0/acos(-1.0d0), 270.0-phi*180.0d0/acos(-1.0d0)
+        !         call shd_util__computeSolarAngle(lon, lat, mu0, phi0)
+        !         print *, lon, lat, acos(-mu0)*180.0d0/acos(-1.0d0), 270.0-phi0*180.0d0/acos(-1.0d0)
         !     end do
         ! end do
         ! stop

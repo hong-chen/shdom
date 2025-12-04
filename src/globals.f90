@@ -202,6 +202,11 @@ module globals_type
         integer(kind=I__) :: Npts  = -999
         integer(kind=I__) :: maxNpts = -999
 
+        real(kind=R__) :: dx = -999.0
+        real(kind=R__) :: dy = -999.0
+        real(kind=R__) :: xStart  = -999.0
+        real(kind=R__) :: yStart  = -999.0
+
         real(kind=R__), allocatable :: x(:)
         real(kind=R__), allocatable :: y(:)
         real(kind=R__), allocatable :: z(:)

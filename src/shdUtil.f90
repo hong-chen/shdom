@@ -1465,7 +1465,7 @@ end subroutine sin_cos
 
 subroutine shd_util__computeSolarAngle(&
     lon_deg, lat_deg, &
-    mu, phi)
+    mu0, phi0)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Compute solar angles at any lat/lon on oblate ellipsoid
@@ -1473,9 +1473,9 @@ subroutine shd_util__computeSolarAngle(&
 
     implicit none
     real(kind=R__), intent(in)  :: lon_deg, lat_deg
-    real(kind=R__), intent(out) :: mu, phi
+    real(kind=R__), intent(out) :: mu0, phi0
 
-    real(kind=R__) :: lon, lat, east_x, east_y
+    real(kind=R__) :: mu, phi, lon, lat, east_x, east_y
     real(kind=R__) :: up_x, up_y, up_z
     real(kind=R__) :: north_x, north_y, north_z
     real(kind=R__) :: nx, ny, nz, norm
@@ -1515,15 +1515,15 @@ subroutine shd_util__computeSolarAngle(&
         ! phi: from  [0 at north, positive clockwise] to
         !            [0 at east,  positive counterclockwise]
         !╭────────────────────────────────────────────────────────────────────────────╮!
-        mu = -abs(mu)
-        phi = 1.5*PI_ - phi
+        mu0  = -abs(mu)
+        phi0 = 1.5*PI_ - phi
 
-        if (phi < 0.0)     phi = phi + 2.0*PI_
-        if (phi > 2.0*PI_) phi = phi - 2.0*PI_
+        if (phi0 < 0.0)     phi0 = phi0 + 2.0*PI_
+        if (phi0 > 2.0*PI_) phi0 = phi0 - 2.0*PI_
         !╰────────────────────────────────────────────────────────────────────────────╯!
     else
-        mu  = -999.0
-        phi = -999.0
+        mu0  = -999.0
+        phi0 = -999.0
     end if
 
     return
