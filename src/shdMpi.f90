@@ -442,64 +442,64 @@ subroutine shd_mpi__bcastInp(&
     character(len=charMaxLen_), intent(inout) :: fileInp_sav, fileOut_sav
 
 #if HAS_MPI
-    integer :: ierr, intbuf(10)
-    logical :: logbuf(3)
-    real    :: realbuf(18)
+    integer :: ierr, intBuf(10)
+    logical :: logicBuf(3)
+    real    :: realBuf(18)
     character(len=1) :: char1buf(3)
     character(len=charMaxLen_) :: char256buf(7)
     character(len=4) :: procStr
 
     if (Nproc_ .le. 1) return
 
-    intbuf(:) = (/shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, shdo_obj%Nmu, &
+    intBuf(:) = (/shdo_obj%Nstokes, rtm_obj%Nx, rtm_obj%Ny, rtm_obj%Nz, shdo_obj%Nmu, &
                   shdo_obj%Nphi, rtm_obj%flag_bc, rtm_obj%flag_ip, MAXITER, NUMOUT/)
-    call mpi_bcast(intbuf, 10, MPI_integer, 0, MPI_comm_world, ierr)
-    shdo_obj%Nstokes = intbuf(1)
-    rtm_obj%Nx       = intbuf(2)
-    rtm_obj%Ny       = intbuf(3)
-    rtm_obj%Nz       = intbuf(4)
-    shdo_obj%Nmu     = intbuf(5)
-    shdo_obj%Nphi    = intbuf(6)
-    rtm_obj%flag_bc  = intbuf(7)
-    rtm_obj%flag_ip  = intbuf(8)
-    MAXITER          = intbuf(9)
-    NUMOUT           = intbuf(10)
+    call mpi_bcast(intBuf, 10, MPI_integer, 0, MPI_comm_world, ierr)
+    shdo_obj%Nstokes = intBuf(1)
+    rtm_obj%Nx       = intBuf(2)
+    rtm_obj%Ny       = intBuf(3)
+    rtm_obj%Nz       = intBuf(4)
+    shdo_obj%Nmu     = intBuf(5)
+    shdo_obj%Nphi    = intBuf(6)
+    rtm_obj%flag_bc  = intBuf(7)
+    rtm_obj%flag_ip  = intBuf(8)
+    MAXITER          = intBuf(9)
+    NUMOUT           = intBuf(10)
 
     ! logical variables
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    logbuf(:) = (/KDIST, DELTAM, ACCELFLAG/)
-    call mpi_bcast(logbuf, 3, MPI_logical, 0, MPI_comm_world, ierr)
-    KDIST     = logbuf(1)
-    DELTAM    = logbuf(2)
-    ACCELFLAG = logbuf(3)
+    logicBuf(:) = (/KDIST, DELTAM, ACCELFLAG/)
+    call mpi_bcast(logicBuf, 3, MPI_logical, 0, MPI_comm_world, ierr)
+    KDIST     = logicBuf(1)
+    DELTAM    = logicBuf(2)
+    ACCELFLAG = logicBuf(3)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! real variables
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    realbuf(:) = (/src_obj%solarI, src_obj%x0, src_obj%y0, src_obj%mu0, src_obj%phi0, &
+    realBuf(:) = (/src_obj%solarI, src_obj%x0, src_obj%y0, src_obj%mu0, src_obj%phi0, &
                    sfc_obj%avgTemp, sfc_obj%avgAlb, src_obj%skyRad, &
                    src_obj%waveNum(1:2), src_obj%avgWaveLen, SOLACC, SPLITACC, SHACC, &
                    MAX_TOTAL_MB, SPLITTING_FACTOR, NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO/)
 
-    call mpi_bcast(realbuf, 18, MPI_real, 0, MPI_comm_world, ierr)
+    call mpi_bcast(realBuf, 18, MPI_real, 0, MPI_comm_world, ierr)
 
-    src_obj%solarI  = realbuf(1)
-    src_obj%x0      = realbuf(2)
-    src_obj%y0      = realbuf(3)
-    src_obj%mu0     = realbuf(4)
-    src_obj%phi0    = realbuf(5)
-    sfc_obj%avgTemp = realbuf(6)
-    sfc_obj%avgAlb  = realbuf(7)
-    src_obj%skyRad  = realbuf(8)
-    src_obj%waveNum(1:2) = realbuf(9:10)
-    src_obj%avgWaveLen   = realbuf(11)
-    SOLACC               = realbuf(12)
-    SPLITACC             = realbuf(13)
-    SHACC                = realbuf(14)
-    MAX_TOTAL_MB         = realbuf(15)
-    SPLITTING_FACTOR     = realbuf(16)
-    NUM_SH_TERM_FACTOR   = realbuf(17)
-    CELL_TO_POINT_RATIO  = realbuf(18)
+    src_obj%solarI  = realBuf(1)
+    src_obj%x0      = realBuf(2)
+    src_obj%y0      = realBuf(3)
+    src_obj%mu0     = realBuf(4)
+    src_obj%phi0    = realBuf(5)
+    sfc_obj%avgTemp = realBuf(6)
+    sfc_obj%avgAlb  = realBuf(7)
+    src_obj%skyRad  = realBuf(8)
+    src_obj%waveNum(1:2) = realBuf(9:10)
+    src_obj%avgWaveLen   = realBuf(11)
+    SOLACC               = realBuf(12)
+    SPLITACC             = realBuf(13)
+    SHACC                = realBuf(14)
+    MAX_TOTAL_MB         = realBuf(15)
+    SPLITTING_FACTOR     = realBuf(16)
+    NUM_SH_TERM_FACTOR   = realBuf(17)
+    CELL_TO_POINT_RATIO  = realBuf(18)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! 1-character variables
@@ -545,20 +545,20 @@ subroutine shd_mpi__bcastPrpSize(prp_obj)
     type(shd_type_prp), intent(inout) :: prp_obj
 
 #if HAS_MPI
-    integer :: ierr, intbuf(7)
-    real    :: realbuf(2)
+    integer :: ierr, intBuf(7)
+    real    :: realBuf(2)
 
     if (Nproc_ .le. 1) return
 
-    intbuf(:) = (/prp_obj%Nx, prp_obj%Ny, prp_obj%Nz, prp_obj%Npha, prp_obj%maxNz, prp_obj%maxNleg, prp_obj%maxNptsLeg/)
-    call mpi_bcast(intbuf, 7, MPI_integer, 0, MPI_comm_world, ierr)
-    prp_obj%Nx      = intbuf(1); prp_obj%Ny    = intbuf(2); prp_obj%Nz = intbuf(3)
-    prp_obj%Npha    = intbuf(4); prp_obj%maxNz = intbuf(5)
-    prp_obj%maxNleg = intbuf(6); prp_obj%maxNptsLeg = intbuf(7)
+    intBuf(:) = (/prp_obj%Nx, prp_obj%Ny, prp_obj%Nz, prp_obj%Npha, prp_obj%maxNz, prp_obj%maxNleg, prp_obj%maxNptsLeg/)
+    call mpi_bcast(intBuf, 7, MPI_integer, 0, MPI_comm_world, ierr)
+    prp_obj%Nx      = intBuf(1); prp_obj%Ny    = intBuf(2); prp_obj%Nz = intBuf(3)
+    prp_obj%Npha    = intBuf(4); prp_obj%maxNz = intBuf(5)
+    prp_obj%maxNleg = intBuf(6); prp_obj%maxNptsLeg = intBuf(7)
 
-    realbuf(:) = (/prp_obj%dx, prp_obj%dy/)
-    call mpi_bcast(realbuf, 2, MPI_real, 0, MPI_comm_world, ierr)
-    prp_obj%dx = realbuf(1); prp_obj%dy = realbuf(2)
+    realBuf(:) = (/prp_obj%dx, prp_obj%dy/)
+    call mpi_bcast(realBuf, 2, MPI_real, 0, MPI_comm_world, ierr)
+    prp_obj%dx = realBuf(1); prp_obj%dy = realBuf(2)
 #endif
 
     return
@@ -705,18 +705,18 @@ subroutine shd_mpi__bcastSfcSize(sfc_obj)
     type(shd_type_sfc), intent(inout) :: sfc_obj
 
 #if HAS_MPI
-    integer :: ierr, intbuf(4)
-    real :: realbuf(2)
+    integer :: ierr, intBuf(4)
+    real :: realBuf(2)
 
     if (Nproc_ .le. 1) return
 
-    intbuf(1:4) = (/sfc_obj%Nx, sfc_obj%Ny, sfc_obj%maxNpts, sfc_obj%maxNpar/)
-    call mpi_bcast(intbuf, 4, MPI_integer, 0, comm2D_, ierr)
-    sfc_obj%Nx = intbuf(1); sfc_obj%Ny = intbuf(2); sfc_obj%maxNpts = intbuf(3); sfc_obj%maxNpar = intbuf(4)
+    intBuf(1:4) = (/sfc_obj%Nx, sfc_obj%Ny, sfc_obj%maxNpts, sfc_obj%maxNpar/)
+    call mpi_bcast(intBuf, 4, MPI_integer, 0, comm2D_, ierr)
+    sfc_obj%Nx = intBuf(1); sfc_obj%Ny = intBuf(2); sfc_obj%maxNpts = intBuf(3); sfc_obj%maxNpar = intBuf(4)
 
-    realbuf(1:2) = (/sfc_obj%dx, sfc_obj%dy/)
-    call mpi_bcast(realbuf, 2, MPI_real, 0, comm2D_, ierr)
-    sfc_obj%dx = realbuf(1); sfc_obj%dy = realbuf(2)
+    realBuf(1:2) = (/sfc_obj%dx, sfc_obj%dy/)
+    call mpi_bcast(realBuf, 2, MPI_real, 0, comm2D_, ierr)
+    sfc_obj%dx = realBuf(1); sfc_obj%dy = realBuf(2)
 #endif
 
     return
@@ -814,13 +814,13 @@ subroutine shd_mpi__bcastCkdSize(ckd_obj)
     type(shd_type_ckd), intent(inout) :: ckd_obj
 
 #if HAS_MPI
-    integer :: ierr, intbuf(2)
+    integer :: ierr, intBuf(2)
 
     if (Nproc_ .le. 1) return
 
-    intbuf(1:2) = (/ckd_obj%Ng, ckd_obj%Nz/)
-    call mpi_bcast(intbuf, 2, MPI_integer, 0, comm2D_, ierr)
-    ckd_obj%Ng = intbuf(1); ckd_obj%Nz = intbuf(2)
+    intBuf(1:2) = (/ckd_obj%Ng, ckd_obj%Nz/)
+    call mpi_bcast(intBuf, 2, MPI_integer, 0, comm2D_, ierr)
+    ckd_obj%Ng = intBuf(1); ckd_obj%Nz = intBuf(2)
 #endif
 
     return
@@ -839,23 +839,23 @@ subroutine shd_mpi__bcastCkd(ckd_obj, solar_Ckd, wgt_Ckd, kabs_Ckd)
 
 #if HAS_MPI
     integer :: ierr
-    real, allocatable :: realbuf(:)
+    real, allocatable :: realBuf(:)
 
     if (Nproc_ .le. 1) return
 
-    allocate(realbuf(2*ckd_obj%Ng + ckd_obj%Nz))
+    allocate(realBuf(2*ckd_obj%Ng + ckd_obj%Nz))
 
-    realbuf(1              : ckd_obj%Ng             ) = solar_Ckd(:)
-    realbuf(ckd_obj%Ng+1   : 2*ckd_obj%Ng           ) = wgt_Ckd(:)
-    realbuf(2*ckd_obj%Ng+1 : 2*ckd_obj%Ng+ckd_obj%Nz) = ckd_obj%z(:)
+    realBuf(1              : ckd_obj%Ng             ) = solar_Ckd(:)
+    realBuf(ckd_obj%Ng+1   : 2*ckd_obj%Ng           ) = wgt_Ckd(:)
+    realBuf(2*ckd_obj%Ng+1 : 2*ckd_obj%Ng+ckd_obj%Nz) = ckd_obj%z(:)
 
-    call mpi_bcast(realbuf, 2*ckd_obj%Ng+ckd_obj%Nz, MPI_real, 0, comm2D_, ierr)
+    call mpi_bcast(realBuf, 2*ckd_obj%Ng+ckd_obj%Nz, MPI_real, 0, comm2D_, ierr)
 
-    solar_Ckd(:) = realbuf(             1 :  ckd_obj%Ng)
-    wgt_Ckd(:)   = realbuf(  ckd_obj%Ng+1 : 2*ckd_obj%Ng)
-    ckd_obj%z(:) = realbuf(2*ckd_obj%Ng+1 : 2*ckd_obj%Ng+ckd_obj%Nz)
+    solar_Ckd(:) = realBuf(             1 :  ckd_obj%Ng)
+    wgt_Ckd(:)   = realBuf(  ckd_obj%Ng+1 : 2*ckd_obj%Ng)
+    ckd_obj%z(:) = realBuf(2*ckd_obj%Ng+1 : 2*ckd_obj%Ng+ckd_obj%Nz)
 
-    deallocate(realbuf)
+    deallocate(realBuf)
 
     call mpi_bcast(kabs_Ckd, ckd_obj%Nz*ckd_obj%Ng, MPI_real, 0, comm2D_, ierr)
 #endif
@@ -872,13 +872,13 @@ subroutine shd_mpi__bcastSenSize(sen_obj)
     type(shd_type_sen), intent(inout) :: sen_obj
 
 #if HAS_MPI
-    integer :: ierr, intbuf(2)
+    integer :: ierr, intBuf(2)
 
     if (Nproc_ .le. 1) return
 
-    intbuf(1:2) = (/sen_obj%Npts, sen_obj%Npar/)
-    call mpi_bcast(intbuf, 2, MPI_integer, 0, comm2D_, ierr)
-    sen_obj%Npts = intbuf(1); sen_obj%Npar = intbuf(2)
+    intBuf(1:2) = (/sen_obj%Npts, sen_obj%Npar/)
+    call mpi_bcast(intBuf, 2, MPI_integer, 0, comm2D_, ierr)
+    sen_obj%Npts = intBuf(1); sen_obj%Npar = intBuf(2)
 #endif
 
     return

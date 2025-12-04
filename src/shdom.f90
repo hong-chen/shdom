@@ -340,19 +340,24 @@ program shdom
     prpAll_obj%Nleg = shdo_obj_%maxNl
     if (doDeltaM) prpAll_obj%Nleg = shdo_obj_%maxNl + 1
 
+
+    ! radiation source setup
     if (src_obj_%type .eq. 'B') then
         src_obj_%doSolar = .true.
         src_obj_%doTherm = .true.
+    else if (src_obj_%type .eq. 'S') then
+        src_obj_%doSolar = .true.
+        src_obj_%doTherm = .false.
+    else if (src_obj_%type .eq. 'T') then
+        src_obj_%doSolar = .false.
+        src_obj_%doTherm = .true.
     else
-        if (src_obj_%type .eq. 'S') then
-            src_obj_%doSolar = .true.
-            src_obj_%doTherm = .false.
-        else if (src_obj_%type .eq. 'T') then
-            src_obj_%doSolar = .false.
-            src_obj_%doTherm = .true.
-        else
-            stop 'Error [shdom]: Unknown src_obj_%type.'
-        end if
+        stop 'Error [shdom]: Unknown src_obj_%type.'
+    end if
+    if (src_obj_%doSolar .and. (rtmAll_obj%type .eq. 'S')) then
+        src_obj_%doVariableSolar = .true.
+    else
+        src_obj_%doVariableSolar = .false.
     end if
 
     ! for thermal, reset solar azimuth angle
@@ -1102,17 +1107,17 @@ program shdom
         shdo_obj_, iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_)
 
 
-    if ((rtm_obj_%type .eq. 'S') .or. (rtm_obj_%type .eq. 's')) then
+    if (src_obj_%doVariableSolar) then
         call shd_init__makeSolarVect(src_obj_%x0,  src_obj_%y0, &
                                      src_obj_%mu0, src_obj_%phi0, &
                                      solarVect_)
 
         ! for testing
         !╭────────────────────────────────────────────────────────────────────────────╮!
-        ! do j = 1, 181
-        !     lat = -90.0 + (j-1)*1.0
-        !     do i = 1, 361
-        !         lon = 0.0 + (i-1)*1.0
+        ! do j = 1, 1801
+        !     lat = -90.0 + (j-1)*0.1
+        !     do i = 1, 3601
+        !         lon = 0.0 + (i-1)*0.1
         !         call shd_util__computeSolarAngle(lon, lat, mu0, phi0)
         !         print *, lon, lat, acos(-mu0)*180.0d0/acos(-1.0d0), 270.0-phi0*180.0d0/acos(-1.0d0)
         !     end do

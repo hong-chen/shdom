@@ -288,6 +288,7 @@ module globals_type
 
         logical :: doSolar = .false.
         logical :: doTherm = .false.
+        logical :: doVariableSolar = .false.
 
     end type shd_type_src
     !╰────────────────────────────────────────────────────────────────────────────╯!

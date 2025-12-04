@@ -466,19 +466,32 @@ subroutine shd_io__nmlInp(fileNml, &
     rtm_obj%type = GRIDTYPE
 
     src_obj%type = SRCTYPE
-    if (SRCTYPE .eq. 'S' .or. SRCTYPE .eq. 'B') then
-        src_obj%solarI = SOLARFLUX
-        src_obj%x0 = XY_SOLAR(1)
-        src_obj%y0 = XY_SOLAR(2)
-        src_obj%mu0  = -abs(SOLARMU)
-        src_obj%phi0 = SOLARAZ*DTOR_
-    else
-        src_obj%solarI = 0.0
-        src_obj%x0 = 0.0
-        src_obj%y0 = 0.0
-        src_obj%mu0  = 1.0
-        src_obj%phi0 = 0.0
-    end if
+    SRCTYPE_CASE: select case (SRCTYPE)
+        case ('S', 's', 'B', 'b')
+
+            src_obj%solarI = SOLARFLUX
+            src_obj%x0 = XY_SOLAR(1)
+            src_obj%y0 = XY_SOLAR(2)
+            src_obj%mu0  = -abs(SOLARMU)
+            src_obj%phi0 = SOLARAZ*DTOR_
+
+        ! case ('L', 'l', 'R', 'r') ! placeholder for Lidar and Radar
+        !     return
+
+        case ('T', 't')
+            src_obj%solarI = 0.0
+            src_obj%x0 = 0.0
+            src_obj%y0 = 0.0
+            src_obj%mu0  = 1.0
+            src_obj%phi0 = 0.0
+
+        case default
+
+            write(6, *) 'SRCTYPE=', SRCTYPE
+            stop 'Error [_nmlInp]: Unknown radiation source type.'
+
+    end select SRCTYPE_CASE
+
     src_obj%skyRad = SKYRAD
     sfc_obj%avgTemp = GNDTEMP
     sfc_obj%avgAlb  = GNDALBEDO
@@ -505,48 +518,72 @@ subroutine shd_io__nmlInp(fileNml, &
     if (NUMOUT .gt. MAXOUT) stop 'Error [_nmlInp]: MAXOUT exceeded.'
     do i = 1, NUMOUT
         dOUTTYPES(i) = OUTTYPES(i)
-        if (OUTTYPES(i) (1:1) .eq. 'R') then
-            ! new binary angle input do not need the loop above
-            if (SENFILE(1:4) .ne. 'NONE') then
-                do j = 1, 6
-                    dOUTPARMS(j, i) = OUTPARMS(j, i)
-                end do
-            else
-                N = nint(OUTPARMS(6, i))
-                do j = 1, min(2*N + 6, MAXPAR)
-                    dOUTPARMS(j, i) = OUTPARMS(j, i)
-                end do
-            end if
-        else if (OUTTYPES(i) (1:1) .eq. 'V') then
-            dOUTPARMS(1, i) = OUTPARMS(1, i)
-            dOUTPARMS(2, i) = OUTPARMS(2, i)
-            dOUTPARMS(3, i) = OUTPARMS(3, i)
-            ! new user-specified sensor mode V3 only need 3 parameters
-            ! read more parameters if for V1 and V2
-            if (nint(OUTPARMS(1, i)) .le. 2) then
-                do j = 4, 13
-                    dOUTPARMS(j, i) = OUTPARMS(j, i)
-                end do
-            end if
-        else if (OUTTYPES(i) (1:1) .eq. 'F') then
-            dOUTPARMS(1, i) = OUTPARMS(1, i)
-            if (nint(OUTPARMS(1, i)) .eq. 2) then
-                do j = 2, 4
-                    dOUTPARMS(j, i) = OUTPARMS(j, i)
-                end do
-            end if
-        else if (OUTTYPES(i) (1:1) .eq. 'H') then
-            dOUTPARMS(1, i) = OUTPARMS(1, i)
-        else if (OUTTYPES(i) (1:1) .eq. 'S') then
-            dOUTPARMS(1, i) = OUTPARMS(1, i)
-        else if (OUTTYPES(i) (1:1) .eq. 'J') then
-            dOUTPARMS(1, i) = OUTPARMS(1, i)
-            dOUTPARMS(2, i) = OUTPARMS(2, i)
-            dOUTPARMS(3, i) = OUTPARMS(3, i)
-        else if (OUTTYPES(i) (1:1) .eq. 'M') then
-            dOUTPARMS(1, i) = OUTPARMS(1, i)
-        end if
+
+        OUTTYPE_CASE: select case (OUTTYPES(i)(1:1))
+
+            case ('R', 'r')
+
+                ! new binary angle input do not need the loop above
+                if (SENFILE(1:4) .ne. 'NONE') then
+                    do j = 1, 6
+                        dOUTPARMS(j, i) = OUTPARMS(j, i)
+                    end do
+                else
+                    N = nint(OUTPARMS(6, i))
+                    do j = 1, min(2*N + 6, MAXPAR)
+                        dOUTPARMS(j, i) = OUTPARMS(j, i)
+                    end do
+                end if
+
+            case ('V', 'v')
+
+                dOUTPARMS(1, i) = OUTPARMS(1, i)
+                dOUTPARMS(2, i) = OUTPARMS(2, i)
+                dOUTPARMS(3, i) = OUTPARMS(3, i)
+                ! new user-specified sensor mode V3 only need 3 parameters
+                ! read more parameters if for V1 and V2
+                if (nint(OUTPARMS(1, i)) .le. 2) then
+                    do j = 4, 13
+                        dOUTPARMS(j, i) = OUTPARMS(j, i)
+                    end do
+                end if
+
+            case ('F', 'f')
+
+                dOUTPARMS(1, i) = OUTPARMS(1, i)
+                if (nint(OUTPARMS(1, i)) .eq. 2) then
+                    do j = 2, 4
+                        dOUTPARMS(j, i) = OUTPARMS(j, i)
+                    end do
+                end if
+
+            case ('H', 'h')
+
+                dOUTPARMS(1, i) = OUTPARMS(1, i)
+
+            case ('S', 's')
+
+                dOUTPARMS(1, i) = OUTPARMS(1, i)
+
+            case ('J', 'j')
+
+                dOUTPARMS(1, i) = OUTPARMS(1, i)
+                dOUTPARMS(2, i) = OUTPARMS(2, i)
+                dOUTPARMS(3, i) = OUTPARMS(3, i)
+
+            case ('M', 'm')
+
+                dOUTPARMS(1, i) = OUTPARMS(1, i)
+
+            case default
+
+                write(6, *) 'OUTTYPE=', OUTTYPES(i)(1:1)
+                stop 'Error [_nmlInp]: Unknown output type.'
+
+        end select OUTTYPE_CASE
+
         dOUTFILES(i) = OUTFILES(i)
+
     end do
 
     dOutFileNC = OutFileNC
