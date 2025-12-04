@@ -127,9 +127,9 @@ module globals_cfg
 
     integer(kind=4), parameter :: charMaxLen_    = 256 ! file name max length (number of characters)
 
-    real(kind=4), parameter :: planetRadius_  = 6371.0087714 ! arithmetic mean radius [km]
-    real(kind=4), parameter :: planetRadiusA_ = 6378.1370    ! equatorial radius [km]
-    real(kind=4), parameter :: planetRadiusB_ = 6356.7523    ! polar radius [km]
+    real(kind=4), parameter :: planetRadius_  = 6371.0087714   ! arithmetic mean radius [km]
+    real(kind=4), parameter :: planetRadiusA_ = 6378.1370      ! equatorial radius [km]
+    real(kind=4), parameter :: planetRadiusB_ = 6356.752314245 ! polar radius [km]
     real(kind=4), parameter :: A2_ = planetRadiusA_*planetRadiusA_
     real(kind=4), parameter :: B2_ = planetRadiusB_*planetRadiusB_
     real(kind=4), parameter :: E2_ = (A2_ - B2_) / A2_
