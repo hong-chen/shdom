@@ -237,14 +237,18 @@ subroutine shd_solv__solveRte(&
     call shd_grid__findBndryPts(shdo_obj_%Nang, MAXNBC, MAXBCRAD,&
         &rtm_obj_%z(1), rtm_obj_%z(rtm_obj_%Nz),&
         &NTOPPTS, NBOTPTS, BCPTR)
+
     if (sfc_obj_%type(1:1) .eq. 'V') then
+
         ! If this is a variable surface then bilinearly interpolate
         !   the surface temperature and reflection parameters to the
         !   bottom grid points.
         call shd_sfc__interpSfc(NBOTPTS, BCPTR(1, 2), xyz_Rtm_, &
             src_obj_%type, src_obj_%waveNum, src_obj_%avgWaveLen, src_obj_%unit, &
             brdf_Sfc_, brdf_Rtm_)
+
         call shd_init__checkSfcU(sfc_obj_, brdf_Sfc_)
+
         if (sfc_obj_%isUniform) then
             if (shdo_obj_%Nstokes*(shdo_obj_%Nmu/2)*shdo_obj_%maxNphiA .gt.&
                 &sqrt(1.0*huge(shdo_obj_%Nmu)/kind(shdo_obj_%Nmu))) then
@@ -265,6 +269,7 @@ subroutine shd_solv__solveRte(&
                 sfc_obj_%isUniform = .false.
             end if
         end if
+
     end if
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
