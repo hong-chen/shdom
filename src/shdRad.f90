@@ -77,8 +77,8 @@ module shd_rad
     implicit none
     private
 
-    public :: shd_rad__makeDirect
-    public :: shd_rad__computeDirect
+    public :: shd_rad__makeFluxDir
+    public :: shd_rad__computeFluxDir
 
     public :: shd_rad__interpRad
     public :: shd_rad__computeRad
@@ -88,14 +88,14 @@ module shd_rad
 
 contains
 
-subroutine shd_rad__makeDirect(&
+subroutine shd_rad__makeFluxDir(&
     &NPTS, DELTAM,&
     &ML, SOLARFLUX, SOLARMU, SOLARAZ,&
     &DIRFLUX)
 
     ! Makes the direct beam solar flux for the internal base grid.
     !   DIRFLUX is set to F*exp(-tau_sun).
-    !   Actually calls shd_rad__computeDirect to do all the hard work.
+    !   Actually calls shd_rad__computeFluxDir to do all the hard work.
 
     integer NPTS, ML
     logical DELTAM
@@ -105,7 +105,7 @@ subroutine shd_rad__makeDirect(&
     logical VALIDBEAM
     real UNIFZLEV, XO, YO, ZO, DIR, DIRPATH
 
-    call shd_rad__computeDirect(&
+    call shd_rad__computeFluxDir(&
         &1, 0.0, 0.0, 0.0, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
         &DELTAM, ML,&
         &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
@@ -113,7 +113,7 @@ subroutine shd_rad__makeDirect(&
 
     do IP = 1, NPTS
         DIRPATH = 0.0
-        call shd_rad__computeDirect&
+        call shd_rad__computeFluxDir&
             &(0, xyz_Rtm_(1, IP), xyz_Rtm_(2, IP), xyz_Rtm_(3, IP),&
             &rtm_obj_%flag_bc, rtm_obj_%flag_ip, DELTAM, ML,&
             &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(IP),&
@@ -121,9 +121,9 @@ subroutine shd_rad__makeDirect(&
     end do
 
     return
-end subroutine shd_rad__makeDirect
+end subroutine shd_rad__makeFluxDir
 
-subroutine shd_rad__computeDirect(&
+subroutine shd_rad__computeFluxDir(&
     &INIT, XI, YI, ZI, BCFLAG, IPFLAG,&
     &DELTAM, ML, SOLARFLUX, SOLARMU, SOLARAZ,&
     &DIRFLUX, UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
@@ -646,7 +646,7 @@ subroutine shd_rad__computeDirect(&
 
     return
 
-end subroutine shd_rad__computeDirect
+end subroutine shd_rad__computeFluxDir
 
 subroutine shd_rad__interpRad(&
     &NSTOKES, OLDNPTS, NPTS, iradI_Shdo,&

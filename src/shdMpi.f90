@@ -90,7 +90,7 @@ module shd_mpi
                         shd_src__integrateSrc, &
                         shd_src__integrateSrcOneRay
 
-    use shd_rad,  only: shd_rad__computeDirect
+    use shd_rad,  only: shd_rad__computeFluxDir
 
     use shd_scat, only: shd_scat__computePhase
 
@@ -120,7 +120,7 @@ module shd_mpi
     public :: shd_mpi__abort
     public :: shd_mpi__sumCpuTime
 
-    public :: shd_mpi__makeDirect
+    public :: shd_mpi__makeFluxDir
     public :: shd_mpi__computeRad
     public :: shd_mpi__computeCamRad
     public :: shd_mpi__findMaxSsa
@@ -1253,7 +1253,7 @@ subroutine shd_mpi__findMaxSplitCrit(SPLITCRIT)
 
 end subroutine shd_mpi__findMaxSplitCrit
 
-subroutine shd_mpi__makeDirect(SPT,&
+subroutine shd_mpi__makeFluxDir(SPT,&
     &DELTAM, ML,&
     &SOLARFLUX, SOLARMU, SOLARAZ,&
     &DIRFLUX)
@@ -1295,14 +1295,14 @@ subroutine shd_mpi__makeDirect(SPT,&
 
     if (SPT .eq. 1) then
         ! Initialize the direct beam calculation
-        call shd_rad__computeDirect(1, 0.0, 0.0, 0.0, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
+        call shd_rad__computeFluxDir(1, 0.0, 0.0, 0.0, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
             &DELTAM, ML, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
         ! Find the max lowest uniform Z level over all processors and then
-        !   tell shd_rad__computeDirect about it
+        !   tell shd_rad__computeFluxDir about it
         UZLEV = UNIFZLEV
         call mpi_allreduce(UZLEV, UNIFZLEV, 1, MPI_real, MPI_max, comm2D_, ierr)
-        call shd_rad__computeDirect(2, 0.0, 0.0, 0.0, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
+        call shd_rad__computeFluxDir(2, 0.0, 0.0, 0.0, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
             &DELTAM, ML, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
     end if
@@ -1334,16 +1334,16 @@ subroutine shd_mpi__makeDirect(SPT,&
     NINVALID(:) = 0
     do IP = SPT, rtm_obj_%Npts
         DIRPATH = 0.0
-        call shd_rad__computeDirect(0, xyz_Rtm_(1, IP), xyz_Rtm_(2, IP), xyz_Rtm_(3, IP),&
+        call shd_rad__computeFluxDir(0, xyz_Rtm_(1, IP), xyz_Rtm_(2, IP), xyz_Rtm_(3, IP),&
             &rtm_obj_%flag_bc, rtm_obj_%flag_ip, DELTAM, ML,&
             &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(IP),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
         ! If we don't have a good direct beam then save the information
         !   needed to pass to two upstream processors
         if (.not. VALIDBEAM) then
-            if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) call shd_mpi__abort('Error [mpi__makeDirect]: Bad SIDE 1.')
+            if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) call shd_mpi__abort('Error [mpi__makeFluxDir]: Bad SIDE 1.')
             NINVALID(SIDE) = NINVALID(SIDE) + 1
-            if (NINVALID(SIDE) .gt. MAXNBEAM) call shd_mpi__abort('Error [mpi__makeDirect]: NINVALID(SIDE) exceeds MAXNBEAM 1.')
+            if (NINVALID(SIDE) .gt. MAXNBEAM) call shd_mpi__abort('Error [mpi__makeFluxDir]: NINVALID(SIDE) exceeds MAXNBEAM 1.')
             BndDirRealInfo(:, NINVALID(SIDE), SIDE) = (/XO, YO, ZO, DIRPATH/)
             BndDirIntInfo(:, NINVALID(SIDE), SIDE) = (/myProc_, IP/)
         end if
@@ -1404,7 +1404,7 @@ subroutine shd_mpi__makeDirect(SPT,&
                 X = BndDirRealInfo(1, J, Ldownx); Y = BndDirRealInfo(2, J, Ldownx)
                 Z = BndDirRealInfo(3, J, Ldownx); DIRPATH = BndDirRealInfo(4, J, Ldownx)
                 if (Y .lt. (rtm_obj_%y(1) - EPS)) Y = YMAX; if (Y .gt. (YMAX + EPS)) Y = rtm_obj_%y(1)
-                call shd_rad__computeDirect(0, X, Y, Z, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
+                call shd_rad__computeFluxDir(0, X, Y, Z, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
                     &DELTAM, ML,&
                     &SOLARFLUX, SOLARMU, SOLARAZ, DIRJUNK,&
                     &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
@@ -1414,14 +1414,14 @@ subroutine shd_mpi__makeDirect(SPT,&
                     iproc = BndDirIntInfo(1, J, Ldownx)
                     Ndone(iproc) = Ndone(iproc) + 1
                     if (Ndone(iproc) .gt. MAXNBEAM)&
-                        &call shd_mpi__abort('Error [mpi__makeDirect]: Ndone(iproc) exceeds MAXNBEAM x.')
+                        &call shd_mpi__abort('Error [mpi__makeFluxDir]: Ndone(iproc) exceeds MAXNBEAM x.')
                     DirAllOut(Ndone(iproc), iproc) = DIRPATH
                     DirPtrOut(Ndone(iproc), iproc) = BndDirIntInfo(2, J, Ldownx)
                 else
-                    if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) call shd_mpi__abort('Error [mpi__makeDirect]: Bad SIDE 2x.')
+                    if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) call shd_mpi__abort('Error [mpi__makeFluxDir]: Bad SIDE 2x.')
                     NINVALID(SIDE) = NINVALID(SIDE) + 1
                     if (NINVALID(SIDE) .gt. MAXNBEAM)&
-                        &call shd_mpi__abort('Error [mpi__makeDirect]: NINVALID(SIDE) exceeds MAXNBEAM 2x.')
+                        &call shd_mpi__abort('Error [mpi__makeFluxDir]: NINVALID(SIDE) exceeds MAXNBEAM 2x.')
                     BndDirRealInfo(:, NINVALID(SIDE), SIDE) = (/XO, YO, ZO, DIRPATH/)
                     BndDirIntInfo(:, NINVALID(SIDE), SIDE) = BndDirIntInfo(:, J, Ldownx)
                 end if
@@ -1436,7 +1436,7 @@ subroutine shd_mpi__makeDirect(SPT,&
                 X = BndDirRealInfo(1, J, Ldowny); Y = BndDirRealInfo(2, J, Ldowny)
                 Z = BndDirRealInfo(3, J, Ldowny); DIRPATH = BndDirRealInfo(4, J, Ldowny)
                 if (X .lt. (rtm_obj_%x(1) - EPS)) X = XMAX; if (X .gt. (XMAX + EPS)) X = rtm_obj_%x(1)
-                call shd_rad__computeDirect(0, X, Y, Z, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
+                call shd_rad__computeFluxDir(0, X, Y, Z, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
                     &DELTAM, ML,&
                     &SOLARFLUX, SOLARMU, SOLARAZ, DIRJUNK,&
                     &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
@@ -1446,14 +1446,14 @@ subroutine shd_mpi__makeDirect(SPT,&
                     iproc = BndDirIntInfo(1, J, Ldowny)
                     Ndone(iproc) = Ndone(iproc) + 1
                     if (Ndone(iproc) .gt. MAXNBEAM)&
-                        &call shd_mpi__abort('Error [mpi__makeDirect]: Ndone(iproc) exceeds MAXNBEAM y.')
+                        &call shd_mpi__abort('Error [mpi__makeFluxDir]: Ndone(iproc) exceeds MAXNBEAM y.')
                     DirAllOut(Ndone(iproc), iproc) = DIRPATH
                     DirPtrOut(Ndone(iproc), iproc) = BndDirIntInfo(2, J, Ldowny)
                 else
-                    if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) call shd_mpi__abort('Error [mpi__makeDirect]: Bad SIDE 2y.')
+                    if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) call shd_mpi__abort('Error [mpi__makeFluxDir]: Bad SIDE 2y.')
                     NINVALID(SIDE) = NINVALID(SIDE) + 1
                     if (NINVALID(SIDE) .gt. MAXNBEAM)&
-                        &call shd_mpi__abort('Error [mpi__makeDirect]: NINVALID(SIDE) exceeds MAXNBEAM 2x.')
+                        &call shd_mpi__abort('Error [mpi__makeFluxDir]: NINVALID(SIDE) exceeds MAXNBEAM 2x.')
                     BndDirRealInfo(:, NINVALID(SIDE), SIDE) = (/XO, YO, ZO, DIRPATH/)
                     BndDirIntInfo(:, NINVALID(SIDE), SIDE) = BndDirIntInfo(:, J, Ldowny)
                 end if
@@ -1466,7 +1466,7 @@ subroutine shd_mpi__makeDirect(SPT,&
             &comm2D_, ierr)
         AllDone = all(intrecvbuf(1:2) .eq. 0)
         if ((maxval(intrecvbuf(1:2)) .gt. MAXNBEAM) .or. (maxval(Ndone(:)) .gt. MAXNBEAM)) then
-            call shd_mpi__abort('Error [mpi__makeDirect]: MAXNBEAM exceeded 2.')
+            call shd_mpi__abort('Error [mpi__makeFluxDir]: MAXNBEAM exceeded 2.')
         end if
     end do
 
@@ -1507,7 +1507,7 @@ subroutine shd_mpi__makeDirect(SPT,&
 
     return
 
-end subroutine shd_mpi__makeDirect
+end subroutine shd_mpi__makeFluxDir
 
 subroutine shd_mpi__findBndryPts(BCFLAG, IPFLAG, SWEEPORD,&
     &Nx, Ny, Nz)

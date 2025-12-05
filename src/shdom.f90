@@ -90,7 +90,7 @@ program shdom
 
     use shd_rad,  only: shd_rad__computeRad, &
                         shd_rad__computeCamRad, &
-                        shd_rad__makeDirect, &
+                        shd_rad__makeFluxDir, &
                         shd_rad__computeFluxDiv
 
     use shd_inp,  only: shd_io__nmlInp,      shd_io__userInp, shd_io__checkInp, &
@@ -114,7 +114,7 @@ program shdom
                         shd_mpi__bcastSenSize, shd_mpi__bcastSen, &
                         shd_mpi__computeRad, &
                         shd_mpi__computeCamRad, &
-                        shd_mpi__makeDirect, &
+                        shd_mpi__makeFluxDir, &
                         shd_mpi__gatherOut
 
     use shd_util, only: shd_util__sumData, &
@@ -596,7 +596,7 @@ program shdom
              ipha_Prp_(prp_obj_%Nz, prp_obj_%Ny, prp_obj_%Nx))
 
     ! note: in addition to xxx_Prp_, here memUsed accounts for extDir_Prp
-    !       that will be used in shd_rad__computeDirect (shdRad.f90)
+    !       that will be used in shd_rad__computeFluxDir (shdRad.f90)
     memUsed = memUsed + prp_obj_%Nz + 6.0*prp_obj_%maxNpts + prp_obj_%maxNptsLeg
 
     if (isMpi_) then
@@ -1284,11 +1284,11 @@ program shdom
                 allocate(fluxDirTmp(rtm_obj_%Npts))
 
                 if (isMpi_) then
-                    call shd_mpi__makeDirect(1, .false., shdo_obj_%maxNl,&
+                    call shd_mpi__makeFluxDir(1, .false., shdo_obj_%maxNl,&
                         &src_obj_%solar0, src_obj_%mu0, src_obj_%phi0,&
                         &fluxDirTmp)
                 else
-                    call shd_rad__makeDirect(rtm_obj_%Npts, .false., shdo_obj_%maxNl,&
+                    call shd_rad__makeFluxDir(rtm_obj_%Npts, .false., shdo_obj_%maxNl,&
                         &src_obj_%solar0, src_obj_%mu0, src_obj_%phi0,&
                         &fluxDirTmp)
                 end if

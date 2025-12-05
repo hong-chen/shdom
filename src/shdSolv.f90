@@ -69,7 +69,7 @@ module shd_solv
 
     use shd_src,  only: shd_src__computeSrc
 
-    use shd_rad,  only: shd_rad__makeDirect, &
+    use shd_rad,  only: shd_rad__makeFluxDir, &
                         shd_rad__interpRad
 
     use shd_sfc,  only: shd_sfc__interpSfc
@@ -86,7 +86,7 @@ module shd_solv
     use shd_intg, only: shd_intg__integratePath
 
     use shd_mpi,  only: shd_mpi__findMaxSsa, &
-                        shd_mpi__makeDirect, &
+                        shd_mpi__makeFluxDir, &
                         shd_mpi__unifySplit, &
                         shd_mpi__findMaxSplitCrit, &
                         shd_mpi__calAccelSolCrit
@@ -179,11 +179,11 @@ subroutine shd_solv__solveRte(&
     ! Precompute Ylm's for solar direction
     if (src_obj_%doSolar) then
         if (isMpi_) then
-            call shd_mpi__makeDirect(1, doDeltaM, shdo_obj_%maxNl,&
+            call shd_mpi__makeFluxDir(1, doDeltaM, shdo_obj_%maxNl,&
                 &src_obj_%solar0, src_obj_%mu0, src_obj_%phi0,&
                 &DIRFLUX)
         else
-            call shd_rad__makeDirect(rtm_obj_%Npts, doDeltaM, shdo_obj_%maxNl,&
+            call shd_rad__makeFluxDir(rtm_obj_%Npts, doDeltaM, shdo_obj_%maxNl,&
                 &src_obj_%solar0, src_obj_%mu0, src_obj_%phi0,&
                 &DIRFLUX)
         end if
