@@ -74,6 +74,8 @@ module shd_rad
                         shd_init__makeBotRadVL, &
                         shd_init__makeBotRadV
 
+    use shd_util, only: shd_util__computeSolarAngle
+
     implicit none
     private
 
@@ -177,6 +179,9 @@ subroutine shd_rad__computeDirect(&
     integer I, J, K, L, IPH, IP, JP
     integer IPDIRECT, DI, DJ, DK
     logical CONSTX, CONSTY, HITBOUNDARY
+
+    real(kind=R__) :: lon0, lat0, mu0, phi0
+
     real(RD_) :: ext0, ssa0, F
     real(RD_) :: SUNMU, SUNAZ, PATH
     real(RD_) :: EXTBEAMCUT, UNIFORMZLEV
@@ -279,35 +284,37 @@ subroutine shd_rad__computeDirect(&
 
             ! solar setup
             !╭────────────────────────────────────────────────────────────────────────────╮!
-            ! Make the ray direction (opposite to the solar beam)
-            !   SOLARxx is direction of beam, SUNxx is direction to sun (opposite)
-            SUNMU = -SOLARMU
-            SUNAZ = SOLARAZ + PI_
-            CX = sqrt(1.0 - SUNMU**2)*cos(SUNAZ)
-            CY = sqrt(1.0 - SUNMU**2)*sin(SUNAZ)
-            CZ = abs(SUNMU)
-            if (abs(CX) .gt. 1.0e-6) then
-                CXINV = 1.0d0/CX
-            else
-                CX = 0.0
-                CXINV = 1.0e20
-            end if
-            if (abs(CY) .gt. 1.0e-6) then
-                CYINV = 1.0d0/CY
-            else
-                CY = 0.0
-                CYINV = 1.0e20
-            end if
-            if (abs(CZ) .gt. 1.0e-6) then
-                CZINV = 1.0d0/CZ
-            else
-                CZ = 0.0
-                CZINV = 1.0e20
-            end if
+            if (.not. src_obj_%doVariableSolar) then
+                ! Make the ray direction (opposite to the solar beam)
+                !   SOLARxx is direction of beam, SUNxx is direction to sun (opposite)
+                SUNMU = -SOLARMU
+                SUNAZ = SOLARAZ + PI_
+                CX = sqrt(1.0 - SUNMU**2)*cos(SUNAZ)
+                CY = sqrt(1.0 - SUNMU**2)*sin(SUNAZ)
+                CZ = abs(SUNMU)
+                if (abs(CX) .gt. 1.0e-6) then
+                    CXINV = 1.0d0/CX
+                else
+                    CX = 0.0
+                    CXINV = 1.0e20
+                end if
+                if (abs(CY) .gt. 1.0e-6) then
+                    CYINV = 1.0d0/CY
+                else
+                    CY = 0.0
+                    CYINV = 1.0e20
+                end if
+                if (abs(CZ) .gt. 1.0e-6) then
+                    CZINV = 1.0d0/CZ
+                else
+                    CZ = 0.0
+                    CZINV = 1.0e20
+                end if
 
-            DI = nint(sign(1.0d0, CX))
-            DJ = nint(sign(1.0d0, CY))
-            DK = nint(sign(1.0d0, CZ))
+                DI = nint(sign(1.0d0, CX))
+                DJ = nint(sign(1.0d0, CY))
+                DK = nint(sign(1.0d0, CZ))
+            end if
             !╰────────────────────────────────────────────────────────────────────────────╯!
 
             ! domain setup
@@ -376,12 +383,56 @@ subroutine shd_rad__computeDirect(&
 
         case (0)
 
+            ! solar setup
+            !╭────────────────────────────────────────────────────────────────────────────╮!
+            if (src_obj_%doVariableSolar) then
+
+                ! Make the ray direction (opposite to the solar beam)
+                !   mu0, phi0 is direction of beam, SUNxx is direction to sun (opposite)
+                lon0 = XI + rtm_obj_%xOffset
+                lat0 = YI + rtm_obj_%yOffset
+                call shd_util__computeSolarAngle(lon0, lat0, mu0, phi0)
+
+                SUNMU = -mu0
+                SUNAZ = phi0 + PI_
+                CX = sqrt(1.0 - SUNMU**2)*cos(SUNAZ)
+                CY = sqrt(1.0 - SUNMU**2)*sin(SUNAZ)
+                CZ = abs(SUNMU)
+                if (abs(CX) .gt. 1.0e-6) then
+                    CXINV = 1.0d0/CX
+                else
+                    CX = 0.0
+                    CXINV = 1.0e20
+                end if
+                if (abs(CY) .gt. 1.0e-6) then
+                    CYINV = 1.0d0/CY
+                else
+                    CY = 0.0
+                    CYINV = 1.0e20
+                end if
+                if (abs(CZ) .gt. 1.0e-6) then
+                    CZINV = 1.0d0/CZ
+                else
+                    CZ = 0.0
+                    CZINV = 1.0e20
+                end if
+
+                DI = nint(sign(1.0d0, CX))
+                DJ = nint(sign(1.0d0, CY))
+                DK = nint(sign(1.0d0, CZ))
+            end if
+            !╰────────────────────────────────────────────────────────────────────────────╯!
+
+            ! xyz relative to domain
+            !╭────────────────────────────────────────────────────────────────────────────╮!
             ! Here for computing the direct beam path for one starting point.
             Z = ZI
             X = XI - prp_obj_%xStart
             Y = YI - prp_obj_%yStart
+            !╰────────────────────────────────────────────────────────────────────────────╯!
 
-            ! Find the grid location
+            ! find nearest Z index
+            !╭────────────────────────────────────────────────────────────────────────────╮!
             IL = 0
             IU = prp_obj_%Nz
             do while (IU - IL .gt. 1)
@@ -393,32 +444,45 @@ subroutine shd_rad__computeDirect(&
                 end if
             end do
             K = max(IL, 1)
+            !╰────────────────────────────────────────────────────────────────────────────╯!
 
+            ! find nearest I index
+            !╭────────────────────────────────────────────────────────────────────────────╮!
             I = int(X/DELXD) + 1
             if (I .gt. prp_obj_%Nx .and. abs(X - XDOMAIN) .lt. 0.001*DELXD) I = prp_obj_%Nx
             if (I .lt. 1 .or. I .gt. prp_obj_%Nx) then
                 write(6, *) '_computeDirect: Beyond X domain', I, XI, YI, ZI
                 stop
             end if
+            !╰────────────────────────────────────────────────────────────────────────────╯!
 
+            ! find nearest J index
+            !╭────────────────────────────────────────────────────────────────────────────╮!
             J = int(Y/DELYD) + 1
             if (J .gt. prp_obj_%Ny .and. abs(Y - YDOMAIN) .lt. 0.001*DELYD) J = prp_obj_%Ny
             if (J .lt. 1 .or. J .gt. prp_obj_%Ny) then
                 write(6, *) '_computeDirect: Beyond Y domain', J, XI, YI, ZI
                 stop
             end if
+            !╰────────────────────────────────────────────────────────────────────────────╯!
+
             XE = X
             YE = Y
             ZE = Z
+
             XP = XE
             YP = YE
             ZP = ZE
+
             CONSTX = btest(IPDIRECT, 0)
             CONSTY = btest(IPDIRECT, 1)
+
             if (CX .eq. 0.0) CONSTX = .true.
             if (CY .eq. 0.0) CONSTY = .true.
+
             if (isOpenX_ .and. (abs(X) .lt. 0.01*DELXD&
                 &.or. abs(X - (prp_obj_%Nx - 1)*DELXD) .lt. 0.01*DELXD)) CONSTX = .true.
+
             if (isOpenYx_ .and. (abs(Y) .lt. 0.01*DELYD&
                 &.or. abs(Y - (prp_obj_%Ny - 1)*DELYD) .lt. 0.01*DELYD)) CONSTY = .true.
 
@@ -507,6 +571,7 @@ subroutine shd_rad__computeDirect(&
                     CONSTX = .true.
                     CONSTY = .true.
                 end if
+
                 if (CONSTX) then
                     SOX = 1.0e30
                 else if (CX .gt. 0.0) then
@@ -516,6 +581,7 @@ subroutine shd_rad__computeDirect(&
                     SOX = (X0 - XE)*CXINV
                     XP = X0
                 end if
+
                 if (CONSTY) then
                     SOY = 1.0e30
                 else if (CY .gt. 0.0) then
@@ -525,6 +591,7 @@ subroutine shd_rad__computeDirect(&
                     SOY = (Y0 - YE)*CYINV
                     YP = Y0
                 end if
+
                 if (CZ .gt. 0.0) then
                     SOZ = (Z1 - ZE)*CZINV
                     ZP = Z1

@@ -187,8 +187,9 @@ subroutine shd_solv__solveRte(&
                 &src_obj_%solar0, src_obj_%mu0, src_obj_%phi0,&
                 &DIRFLUX)
         end if
-        call shd_shdo__computeYlm(.true., src_obj_%mu0, src_obj_%phi0, shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet,&
-            &YlmSolar_Shdo)
+        call shd_shdo__computeYlm(.true., src_obj_%mu0, src_obj_%phi0, &
+            shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet, &
+            YlmSolar_Shdo)
     end if
 
     ! Make the discrete ordinates (angles)
