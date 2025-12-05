@@ -1188,8 +1188,8 @@ subroutine shd_init__makeBotRadV(&
             I = BCPTR(IBC)
             call shd_sfc__brdfSurface(sfc_obj_%type(2:2), brdf_Rtm_(2:sfc_obj_%Npar, IBC), WAVELEN,&
                 &MU2, PHI2, SOLARMU, SOLARAZ, NSTOKES, REFLECT)
-            BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1)&
-                &+ OPI_*REFLECT(1:NSTOKES, 1)*DIRFLUX(I)
+            BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1) + &
+                OPI_*REFLECT(1:NSTOKES, 1)*DIRFLUX(I)
         end if
 
         ! Integrate over the incident discrete ordinate directions (JMU,JPHI)
@@ -1202,14 +1202,14 @@ subroutine shd_init__makeBotRadV(&
                 W = OPI_*abs(MU(JMU))*WTDO(JMU, JPHI)
                 ! Add in the polarized reflection
                 do K1 = 1, NSTOKES
-                    BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1)&
-                        &+ W*REFLECT(1:NSTOKES, K1)*BCRAD(K1, IBC, JANG + 1)
+                    BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1) + &
+                        W*REFLECT(1:NSTOKES, K1)*BCRAD(K1, IBC, JANG + 1)
                 end do
                 ! Add in the polarized thermal emission
-                BCRAD(1, IBC, 1) = BCRAD(1, IBC, 1)&
-                    &+ W*(1 - REFLECT(1, 1))*brdf_Rtm_(1, IBC)
-                BCRAD(2:, IBC, 1) = BCRAD(2:, IBC, 1)&
-                    &- W*REFLECT(2:NSTOKES, 1)*brdf_Rtm_(1, IBC)
+                BCRAD(1, IBC, 1) = BCRAD(1, IBC, 1) + &
+                    W*(1 - REFLECT(1, 1))*brdf_Rtm_(1, IBC)
+                BCRAD(2:, IBC, 1) = BCRAD(2:, IBC, 1) - &
+                    W*REFLECT(2:NSTOKES, 1)*brdf_Rtm_(1, IBC)
                 JANG = JANG + 1
             end do
         end do
