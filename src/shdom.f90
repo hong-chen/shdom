@@ -1128,6 +1128,19 @@ program shdom
         ! end do
         ! stop
         ! ╰────────────────────────────────────────────────────────────────────────────╯!
+
+        ! for testing
+        !╭────────────────────────────────────────────────────────────────────────────╮!
+        ! do j = 1, 181
+        !     lat = -90.0 + (j-1)*1.0
+        !     do i = 1, 361
+        !         lon = (i-1)*1.0
+        !         call shd_util__computeSolarAngle(lon, lat, mu0, phi0)
+        !         print *, lon, lat, acos(-mu0)*180.0d0/acos(-1.0d0), 270.0-phi0*180.0d0/acos(-1.0d0)
+        !     end do
+        ! end do
+        ! stop
+        ! ╰────────────────────────────────────────────────────────────────────────────╯!
     end if
 
     ! Check if we can use pre-calculated "state", if not, generate new grids
