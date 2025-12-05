@@ -91,6 +91,7 @@ program shdom
     use shd_rad,  only: shd_rad__computeRad, &
                         shd_rad__computeCamRad, &
                         shd_rad__makeFluxDir, &
+                        shd_rad__computeDirect, &
                         shd_rad__computeFluxDiv
 
     use shd_inp,  only: shd_io__nmlInp,      shd_io__userInp, shd_io__checkInp, &
@@ -229,6 +230,9 @@ program shdom
     character(len=charMaxLen_) :: fileNml
 
     logical :: doCkd, doDeltaM, doAccel
+    real(kind=R__)    :: realTmp(10)
+    integer(kind=I__) :: intTmp(10)
+    logical(kind=I__) :: logicTmp(10)
 
 
     ! start timing
@@ -1456,6 +1460,13 @@ program shdom
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! rtm_obj_
     !╭────────────────────────────────────────────────╮!
+     if (src_obj_%type .ne. 'T') then
+        call shd_rad__computeDirect(9, 0.0, 0.0, 0.0, &
+            0, 0, .false., 0, 0.0, 0.0, 0.0, &
+            realTmp(1), realTmp(2), realTmp(3), realTmp(4), &
+            realTmp(5), realTmp(6), intTmp(1), logicTmp(1))
+    end if
+
     deallocate(xyz_Rtm_)
     deallocate(ptr_Bc, rad_Bc)
     deallocate(temp_Rtm_, planck_Rtm_)
