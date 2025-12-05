@@ -482,8 +482,17 @@ program shdom
     rtm_obj_ = rtmAll_obj
     prp_obj_ = prpAll_obj
     sfc_obj_ = sfcAll_obj
+    print *, rtm_obj_%xStart, rtm_obj_%yStart
+    print *, prp_obj_%xStart, prp_obj_%yStart
+    print *, sfc_obj_%xStart, sfc_obj_%yStart
+
     call shd_mpi__map(rtmAll_obj, prpAll_obj, sfcAll_obj, &
                       rtm_obj_,   prp_obj_,   sfc_obj_)
+
+    print *, rtm_obj_%xStart, rtm_obj_%yStart
+    print *, prp_obj_%xStart, prp_obj_%yStart
+    print *, sfc_obj_%xStart, sfc_obj_%yStart
+    stop
 
     ! rtm_obj_%flag_bc bit-representation '...0001' isOpenX_
     if (btest(rtm_obj_%flag_bc, 0)) then

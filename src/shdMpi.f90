@@ -478,7 +478,8 @@ subroutine shd_mpi__bcastInp(&
     !╭────────────────────────────────────────────────────────────────────────────╮!
     realBuf(:) = (/src_obj%solarI, src_obj%x0, src_obj%y0, src_obj%mu0, src_obj%phi0, &
                    sfc_obj%avgTemp, sfc_obj%avgAlb, src_obj%skyRad, &
-                   src_obj%waveNum(1:2), src_obj%avgWaveLen, SOLACC, SPLITACC, SHACC, &
+                   src_obj%waveNum(1:2), src_obj%avgWaveLen, &
+                   SOLACC, SPLITACC, SHACC, &
                    MAX_TOTAL_MB, SPLITTING_FACTOR, NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO/)
 
     call mpi_bcast(realBuf, 18, MPI_real, 0, MPI_comm_world, ierr)
