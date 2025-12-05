@@ -457,8 +457,11 @@ program shdom
     prpAll_obj%xDomain = prpAll_obj%Nx * prpAll_obj%dx
     prpAll_obj%yDomain = prpAll_obj%Ny * prpAll_obj%dy
 
+    rtmAll_obj%dx = prpAll_obj%xDomain / rtmAll_obj%Nx
+    rtmAll_obj%dy = prpAll_obj%yDomain / rtmAll_obj%Ny
+
     ! Choose the option to compute higher order radiance SH terms
-    if  ((prpAll_obj%Nx .eq. 1) .and. (prpAll_obj%Ny .eq. 1) .and.&
+    if  ((prpAll_obj%Nx .eq. 1)  .and. (prpAll_obj%Ny .eq. 1) .and.&
         &(sfcAll_obj%Nx .le. 32) .and. (sfcAll_obj%Ny .le. 32)) then
         shdo_obj_%doHighOrder = .true.
         if (verbose_ .ge. 4) write(6, '(A)') &
@@ -1114,16 +1117,17 @@ program shdom
 
         ! for testing
         !╭────────────────────────────────────────────────────────────────────────────╮!
-        ! do j = 1, 1801
-        !     lat = -90.0 + (j-1)*0.1
-        !     do i = 1, 3601
-        !         lon = 0.0 + (i-1)*0.1
+        ! print *, rtm_obj_%Ny, rtm_obj_%Nx
+        ! do j = 1, rtm_obj_%Ny
+        !     lat = rtm_obj_%yOffset + (j-1)*rtm_obj_%dy + prp_obj_%yStart
+        !     do i = 1, rtm_obj_%Nx
+        !         lon = rtm_obj_%xOffset + (i-1)*rtm_obj_%dx + prp_obj_%xStart
         !         call shd_util__computeSolarAngle(lon, lat, mu0, phi0)
         !         print *, lon, lat, acos(-mu0)*180.0d0/acos(-1.0d0), 270.0-phi0*180.0d0/acos(-1.0d0)
         !     end do
         ! end do
         ! stop
-        !╰────────────────────────────────────────────────────────────────────────────╯!
+        ! ╰────────────────────────────────────────────────────────────────────────────╯!
     end if
 
     ! Check if we can use pre-calculated "state", if not, generate new grids
