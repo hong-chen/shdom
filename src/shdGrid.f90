@@ -74,7 +74,7 @@ module shd_grid
                         shd_util__computePlanck, &
                         shd_util__ssort
 
-    use shd_rad,  only: shd_rad__computeFluxDir
+    use shd_rad,  only: shd_rad__computeDirect
 
     use shd_src,  only: shd_src__computeSrcOnePts_, &
                         shd_src__computeSrcOnePts
@@ -1540,7 +1540,7 @@ subroutine shd_grid__interpNewGridPts(newPts,&
                 else
                     ! Otherwise, calculate the exact direct beam from property grid
                     DIRPATH = 0.0
-                    call shd_rad__computeFluxDir(0, X, Y, Z, rtm_obj_%flag_bc, rtm_obj_%flag_ip, doDeltaM,&
+                    call shd_rad__computeDirect(0, X, Y, Z, rtm_obj_%flag_bc, rtm_obj_%flag_ip, doDeltaM,&
                         &shdo_obj_%maxNl, SOLARFLUX, src_obj_%mu0, src_obj_%phi0,&
                         &DIRFLUX(IP),&
                         &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)

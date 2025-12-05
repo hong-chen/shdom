@@ -90,7 +90,7 @@ module shd_mpi
                         shd_src__integrateSrc, &
                         shd_src__integrateSrcOneRay
 
-    use shd_rad,  only: shd_rad__computeFluxDir
+    use shd_rad,  only: shd_rad__computeDirect
 
     use shd_scat, only: shd_scat__computePhase
 
@@ -1295,14 +1295,14 @@ subroutine shd_mpi__makeFluxDir(SPT,&
 
     if (SPT .eq. 1) then
         ! Initialize the direct beam calculation
-        call shd_rad__computeFluxDir(1, 0.0, 0.0, 0.0, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
+        call shd_rad__computeDirect(1, 0.0, 0.0, 0.0, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
             &DELTAM, ML, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
         ! Find the max lowest uniform Z level over all processors and then
-        !   tell shd_rad__computeFluxDir about it
+        !   tell shd_rad__computeDirect about it
         UZLEV = UNIFZLEV
         call mpi_allreduce(UZLEV, UNIFZLEV, 1, MPI_real, MPI_max, comm2D_, ierr)
-        call shd_rad__computeFluxDir(2, 0.0, 0.0, 0.0, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
+        call shd_rad__computeDirect(2, 0.0, 0.0, 0.0, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
             &DELTAM, ML, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
     end if
@@ -1334,7 +1334,7 @@ subroutine shd_mpi__makeFluxDir(SPT,&
     NINVALID(:) = 0
     do IP = SPT, rtm_obj_%Npts
         DIRPATH = 0.0
-        call shd_rad__computeFluxDir(0, xyz_Rtm_(1, IP), xyz_Rtm_(2, IP), xyz_Rtm_(3, IP),&
+        call shd_rad__computeDirect(0, xyz_Rtm_(1, IP), xyz_Rtm_(2, IP), xyz_Rtm_(3, IP),&
             &rtm_obj_%flag_bc, rtm_obj_%flag_ip, DELTAM, ML,&
             &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(IP),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
@@ -1404,7 +1404,7 @@ subroutine shd_mpi__makeFluxDir(SPT,&
                 X = BndDirRealInfo(1, J, Ldownx); Y = BndDirRealInfo(2, J, Ldownx)
                 Z = BndDirRealInfo(3, J, Ldownx); DIRPATH = BndDirRealInfo(4, J, Ldownx)
                 if (Y .lt. (rtm_obj_%y(1) - EPS)) Y = YMAX; if (Y .gt. (YMAX + EPS)) Y = rtm_obj_%y(1)
-                call shd_rad__computeFluxDir(0, X, Y, Z, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
+                call shd_rad__computeDirect(0, X, Y, Z, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
                     &DELTAM, ML,&
                     &SOLARFLUX, SOLARMU, SOLARAZ, DIRJUNK,&
                     &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
@@ -1436,7 +1436,7 @@ subroutine shd_mpi__makeFluxDir(SPT,&
                 X = BndDirRealInfo(1, J, Ldowny); Y = BndDirRealInfo(2, J, Ldowny)
                 Z = BndDirRealInfo(3, J, Ldowny); DIRPATH = BndDirRealInfo(4, J, Ldowny)
                 if (X .lt. (rtm_obj_%x(1) - EPS)) X = XMAX; if (X .gt. (XMAX + EPS)) X = rtm_obj_%x(1)
-                call shd_rad__computeFluxDir(0, X, Y, Z, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
+                call shd_rad__computeDirect(0, X, Y, Z, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
                     &DELTAM, ML,&
                     &SOLARFLUX, SOLARMU, SOLARAZ, DIRJUNK,&
                     &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)

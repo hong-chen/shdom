@@ -78,13 +78,16 @@ module shd_rad
     private
 
     public :: shd_rad__makeFluxDir
-    public :: shd_rad__computeFluxDir
+    public :: shd_rad__computeDirect
 
     public :: shd_rad__interpRad
     public :: shd_rad__computeRad
     public :: shd_rad__computeCamRad
 
     public :: shd_rad__computeFluxDiv
+
+    integer, parameter :: R__  = selected_real_kind(6) ! default precision for float
+    integer, parameter :: I__  = selected_int_kind(9)  ! default precision for integer
 
 contains
 
@@ -95,7 +98,7 @@ subroutine shd_rad__makeFluxDir(&
 
     ! Makes the direct beam solar flux for the internal base grid.
     !   DIRFLUX is set to F*exp(-tau_sun).
-    !   Actually calls shd_rad__computeFluxDir to do all the hard work.
+    !   Actually calls shd_rad__computeDirect to do all the hard work.
 
     integer NPTS, ML
     logical DELTAM
@@ -105,7 +108,7 @@ subroutine shd_rad__makeFluxDir(&
     logical VALIDBEAM
     real UNIFZLEV, XO, YO, ZO, DIR, DIRPATH
 
-    call shd_rad__computeFluxDir(&
+    call shd_rad__computeDirect(&
         &1, 0.0, 0.0, 0.0, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
         &DELTAM, ML,&
         &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
@@ -113,7 +116,7 @@ subroutine shd_rad__makeFluxDir(&
 
     do IP = 1, NPTS
         DIRPATH = 0.0
-        call shd_rad__computeFluxDir&
+        call shd_rad__computeDirect&
             &(0, xyz_Rtm_(1, IP), xyz_Rtm_(2, IP), xyz_Rtm_(3, IP),&
             &rtm_obj_%flag_bc, rtm_obj_%flag_ip, DELTAM, ML,&
             &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(IP),&
@@ -123,41 +126,51 @@ subroutine shd_rad__makeFluxDir(&
     return
 end subroutine shd_rad__makeFluxDir
 
-subroutine shd_rad__computeFluxDir(&
+subroutine shd_rad__computeDirect(&
     &INIT, XI, YI, ZI, BCFLAG, IPFLAG,&
     &DELTAM, ML, SOLARFLUX, SOLARMU, SOLARAZ,&
     &DIRFLUX, UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
 
     !╭──────────────────────────────────────────────────────────────╮!
     ! Computes the direct beam flux at point (XI,YI,ZI) by integrating
-    !   the extinction through the property grid.  If called with
-    !   INIT=1 then the property grid extinction array, solar direction
-    !   terms, and lowest uniform level are computed and saved.  If called
-    !   with INIT=2 then the input lowest uniform level (UNIFZLEV) is stored.
-    !   Call with INIT=0 to do the path integration and return the direct
-    !   beam flux on the horizontal (DIRFLUX) at XI,YI,ZI.
-    !   The DELTAM flag is used to determine whether to delta-M scale the
-    !   extinction for the direct beam computation.  The extinction includes
-    !   the gaseous absorption.  If the IPFLAG has bit 2 set then the direct
+    !   the extinction through the property grid.
+    ! <INIT> If called with
+    !   INIT=1: the property grid extinction array, solar direction
+    !           terms, and lowest uniform level are computed and saved.
+    !   INIT=2: the input lowest uniform level (UNIFZLEV) is stored.
+    !   INIT=0: to do the path integration and return the direct
+    !           beam flux on the horizontal (DIRFLUX) at XI,YI,ZI.
+    ! <DELTAM> The DELTAM flag is used to determine whether to delta-M scale the
+    !   extinction for the direct beam computation. The extinction includes
+    !   the gaseous absorption.
+    ! <IPFLAG> If the IPFLAG has bit 2 set then the direct
     !   beam tracing is done in 3D, otherwise the lower two bits determine
     !   the type of tracing: 0 for 3D tracing, 1 for XZ only tracing,
-    !   2 for YZ only tracing, and 3 for Z only tracing.  If BCFLAG bits 0
-    !   or 1 are set then have open boundary conditions in X and/or Y.  In
+    !   2 for YZ only tracing, and 3 for Z only tracing.
+    ! <BCFLAG> If BCFLAG bits 0
+    !   or 1 are set then have open boundary conditions in X and/or Y. In
     !   this case when the ray tracing back to the sun reaches the boundary
     !   then independent pixel mode is entered so that only Z grid
     !   intersections occur.
-    ! For use with multiple processors (bit 2 or 3 set in BCFLAG),
+    ! <VALIDBEAM> For use with multiple processors (bit 2 or 3 set in BCFLAG),
     !   the VALIDBEAM flag is returned true if the ray to the sun made it
     !   to the top of the domain before hitting the subdomain side.  If the
-    !   flag is false SIDE is returned with the boundary hit (1=-X, 2=+X,
-    !   3=-Y, 4=+Y).  XE,YE,ZE returns the location of the exitting ray,
-    !   and path is the optical path from XI,YI,ZI to the sun.
+    !   flag is false.
+    ! <SIDE> SIDE is returned with the boundary hit (1=-X, 2=+X,
+    !   3=-Y, 4=+Y).
+    ! <XO, YO, ZO> XE,YE,ZE returns the location of the exitting ray.
+    ! <DIRPATH> the path is the optical path from XI,YI,ZI to the sun.
     !╰──────────────────────────────────────────────────────────────╯!
 
-    integer INIT, BCFLAG, IPFLAG, ML, SIDE
-    logical DELTAM, VALIDBEAM
-    real XI, YI, ZI, SOLARFLUX, SOLARMU, SOLARAZ
-    real DIRFLUX, UNIFZLEV, XO, YO, ZO, DIRPATH
+    integer(kind=I__), intent(in) :: INIT, BCFLAG, IPFLAG, ML
+    real(kind=R__),    intent(in) :: XI, YI, ZI, SOLARFLUX, SOLARMU, SOLARAZ
+    logical, intent(in) :: DELTAM
+
+    integer(kind=I__), intent(out) :: SIDE
+    real(kind=R__),    intent(out) :: DIRFLUX, XO, YO, ZO
+    logical, intent(out) :: VALIDBEAM
+
+    real(kind=R__), intent(inout) :: UNIFZLEV, DIRPATH
 
     integer IX, IY, IZ, JZ, IL, IM, IU
     integer I, J, K, L, IPH, IP, JP
@@ -181,7 +194,6 @@ subroutine shd_rad__computeFluxDir(&
 
     save CX, CY, CZ, CXINV, CYINV, CZINV, DI, DJ, DK, IPDIRECT
     save DELXD, DELYD, XDOMAIN, YDOMAIN, EPSS, EPSZ, UNIFORMZLEV
-
 
     if (INIT .eq. 9) then
         deallocate(kabs, minExt, maxExt, extDir_Prp)
@@ -276,13 +288,17 @@ subroutine shd_rad__computeFluxDir(&
             CZ = 0.0
             CZINV = 1.0e20
         end if
+
         DI = nint(sign(1.0d0, CX))
         DJ = nint(sign(1.0d0, CY))
         DK = nint(sign(1.0d0, CZ))
+
         EPSZ = 1.0e-6*(prp_obj_%z(prp_obj_%Nz) - prp_obj_%z(1))
         EPSS = 1.0e-3*(prp_obj_%z(prp_obj_%Nz) - prp_obj_%z(1))/prp_obj_%Nz
+
         if (.not. btest(IPDIRECT, 0)) EPSS = max(EPSS, 1.0d-4*prp_obj_%dx)
         if (.not. btest(IPDIRECT, 1)) EPSS = max(EPSS, 1.0d-4*prp_obj_%dy)
+
         DELXD = dble(prp_obj_%dx)
         DELYD = dble(prp_obj_%dy)
         EPSS = max(0.001*DELXD, 0.001*DELYD, EPSS)
@@ -305,6 +321,7 @@ subroutine shd_rad__computeFluxDir(&
             minExt(IZ) = 1.0e20
             maxExt(IZ) = 0.0
         end do
+
         IP = 0
         do IX = 1, prp_obj_%Nx
             do IY = 1, prp_obj_%Ny
@@ -315,20 +332,26 @@ subroutine shd_rad__computeFluxDir(&
                 end do
             end do
         end do
+
         JZ = 0
         do IZ = 1, prp_obj_%Nz
             if (maxExt(IZ) - minExt(IZ) .gt. EXTBEAMCUT) JZ = IZ
         end do
+
         JZ = min(prp_obj_%Nz, JZ + 1)
         UNIFORMZLEV = prp_obj_%z(JZ)
         UNIFZLEV = UNIFORMZLEV
+
         return
+
     ! Done with initialization
     end if
 
     if (INIT .eq. 2) then
         UNIFORMZLEV = UNIFZLEV
+
         return
+
     end if
 
     ! Here for computing the direct beam path for one starting point.
@@ -638,15 +661,22 @@ subroutine shd_rad__computeFluxDir(&
         YE = YP + YOFFS
         ZE = ZP
     end do
+
     DIRFLUX = SOLARFLUX*exp(-PATH)
+
     DIRPATH = PATH
-    XO = XE + prp_obj_%xStart; YO = YE + prp_obj_%yStart; ZO = ZE
+
+    XO = XE + prp_obj_%xStart
+    YO = YE + prp_obj_%yStart
+    ZO = ZE
+
     VALIDBEAM = abs(ZE - prp_obj_%z(prp_obj_%Nz)) .lt. EPSZ
+
     if (VALIDBEAM) SIDE = 6
 
     return
 
-end subroutine shd_rad__computeFluxDir
+end subroutine shd_rad__computeDirect
 
 subroutine shd_rad__interpRad(&
     &NSTOKES, OLDNPTS, NPTS, iradI_Shdo,&

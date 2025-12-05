@@ -596,7 +596,7 @@ program shdom
              ipha_Prp_(prp_obj_%Nz, prp_obj_%Ny, prp_obj_%Nx))
 
     ! note: in addition to xxx_Prp_, here memUsed accounts for extDir_Prp
-    !       that will be used in shd_rad__computeFluxDir (shdRad.f90)
+    !       that will be used in shd_rad__computeDirect (shdRad.f90)
     memUsed = memUsed + prp_obj_%Nz + 6.0*prp_obj_%maxNpts + prp_obj_%maxNptsLeg
 
     if (isMpi_) then
