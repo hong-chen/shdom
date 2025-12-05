@@ -1522,8 +1522,8 @@ subroutine shd_util__computeSolarAngle(&
         if (phi0 > 2.0*PI_) phi0 = phi0 - 2.0*PI_
         !╰────────────────────────────────────────────────────────────────────────────╯!
     else
-        mu0  = -999.0
-        phi0 = -999.0
+        mu0  = 0.0
+        phi0 = 0.0
     end if
 
     return

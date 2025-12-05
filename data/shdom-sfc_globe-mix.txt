@@ -1,5 +1,5 @@
 X
-366 153 5.50000000e+00 5.50000000e+00
+366 153 0.0500000000 0.05000000000
 ! The following provides information for interpreting binary data:
 ! .sHdOmNG-sfc
 !        367,       154,         8

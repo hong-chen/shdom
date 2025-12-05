@@ -221,13 +221,15 @@ subroutine shd_mpi__map(rtmAll_obj, prpAll_obj, sfcAll_obj, &
 ! note: this if clause has <else>
     integer :: i, ierr, dims(2), coords(2)
     logical :: periodic(2) = (/.true., .true./), reorder = .false.
-    real    :: xEnd_prp, yEnd_prp, xEnd_sfc, yEnd_sfc
+    real    :: xStart_prp, yStart_prp, xEnd_prp, yEnd_prp
+    real    :: xStart_sfc, yStart_sfc, xEnd_sfc, yEnd_sfc
     character(len=4) :: procStr
     character(len=charMaxLen_) :: logFile
 
     !if ((Nproc_ .eq. 1) .or. ((prpAll_obj%Nx .eq. 1) .and. (prpAll_obj%Ny .eq. 1))) then
     if (Nproc_ .eq. 1) then
         prp_obj%xStart = 0.0; prp_obj%yStart = 0.0
+        sfc_obj%xStart = 0.0; sfc_obj%yStart = 0.0
         return
     end if
 
@@ -286,8 +288,8 @@ subroutine shd_mpi__map(rtmAll_obj, prpAll_obj, sfcAll_obj, &
             end if
             ixyOut_(1, 1) = nint(rtmAll_obj%Nx*float(ixyPrp_(1, 1) - 1)/prpAll_obj%Nx) + 1
             ixyOut_(2, 1) = nint(rtmAll_obj%Nx*float(prp_obj%Nx    - 1)/prpAll_obj%Nx)
-            prp_obj%xStart = (ixyPrp_(1, 1) - 1)*prp_obj%dx
-            xEnd_prp = (ixyPrp_(2, 1) - 1)*prp_obj%dx
+            xStart_prp = (ixyPrp_(1, 1) - 1)*prp_obj%dx
+            xEnd_prp   = (ixyPrp_(2, 1) - 1)*prp_obj%dx
 
         else
 
@@ -298,20 +300,19 @@ subroutine shd_mpi__map(rtmAll_obj, prpAll_obj, sfcAll_obj, &
 
             rtm_obj%Nx = ixyOut_(2, 1) - ixyOut_(1, 1) + 2
 
-            prp_obj%xStart = real(prp_obj%dx)/real(rtmAll_obj%Nx) * real((ixyOut_(1, 1)-1))
-            xEnd_prp = real(prp_obj%dx)/real(rtmAll_obj%Nx) * real((ixyOut_(2, 1)))
+            xStart_prp = real(prp_obj%dx)/real(rtmAll_obj%Nx) * real((ixyOut_(1, 1)-1))
+            xEnd_prp   = real(prp_obj%dx)/real(rtmAll_obj%Nx) * real((ixyOut_(2, 1)))
 
-            prp_obj%dx = xEnd_prp - prp_obj%xStart
-
+            prp_obj%dx = xEnd_prp - xStart_prp
 
         end if
 
     else
 
         ixyOut_(1, 1) = 1
-        ixyOut_(2, 1) =  rtmAll_obj%Nx
-        prp_obj%xStart = 0.0
-        xEnd_prp = prpAll_obj%Nx*prp_obj%dx
+        ixyOut_(2, 1) = rtmAll_obj%Nx
+        xStart_prp = 0.0
+        xEnd_prp   = prpAll_obj%Nx*prp_obj%dx
 
     end if
 
@@ -327,8 +328,8 @@ subroutine shd_mpi__map(rtmAll_obj, prpAll_obj, sfcAll_obj, &
             end if
             ixyOut_(1, 2) = nint(rtmAll_obj%Ny*float(ixyPrp_(1, 2) - 1)/prpAll_obj%Ny) + 1
             ixyOut_(2, 2) = nint(rtmAll_obj%Ny*float(prp_obj%Ny - 1)/prpAll_obj%Ny)
-            prp_obj%yStart = (ixyPrp_(1, 2) - 1)*prp_obj%dy
-            yEnd_prp = (ixyPrp_(2, 2) - 1)*prp_obj%dy
+            yStart_prp = (ixyPrp_(1, 2) - 1)*prp_obj%dy
+            yEnd_prp   = (ixyPrp_(2, 2) - 1)*prp_obj%dy
 
         else
 
@@ -339,10 +340,10 @@ subroutine shd_mpi__map(rtmAll_obj, prpAll_obj, sfcAll_obj, &
 
             rtm_obj%Ny = ixyOut_(2, 2) - ixyOut_(1, 2) + 2
 
-            prp_obj%yStart = real(prp_obj%dy)/real(rtmAll_obj%Ny) * real((ixyOut_(1, 2)-1))
-            yEnd_prp = real(prp_obj%dy)/real(rtmAll_obj%Ny) * real((ixyOut_(2, 2)))
+            yStart_prp = real(prp_obj%dy)/real(rtmAll_obj%Ny) * real((ixyOut_(1, 2)-1))
+            yEnd_prp   = real(prp_obj%dy)/real(rtmAll_obj%Ny) * real((ixyOut_(2, 2)))
 
-            prp_obj%dy = yEnd_prp - prp_obj%yStart
+            prp_obj%dy = yEnd_prp - yStart_prp
 
         end if
 
@@ -350,23 +351,23 @@ subroutine shd_mpi__map(rtmAll_obj, prpAll_obj, sfcAll_obj, &
 
         ixyOut_(1, 2) = 1
         ixyOut_(2, 2) = rtmAll_obj%Ny
-        prp_obj%yStart = 0.0
-        yEnd_prp = prpAll_obj%Ny*prp_obj%dy
+        yStart_prp = 0.0
+        yEnd_prp   = prpAll_obj%Ny*prp_obj%dy
 
     end if
 
     if (sfcAll_obj%Nx .gt. 1) then
-        sfc_obj%xStart = max(0.0,                             (int(prp_obj%xStart/sfc_obj%dx)- 2)*sfc_obj%dx)
-        xEnd_sfc       = min((sfcAll_obj%Nx+1)*sfcAll_obj%dx, (int(xEnd_prp/sfc_obj%dx)      + 2)*sfc_obj%dx)
-        sfc_obj%Nx     = max(1, int((xEnd_sfc-sfc_obj%xStart)/sfc_obj%dx))
+        xStart_sfc = max(0.0,                             (int(xStart_prp/sfc_obj%dx)- 2)*sfc_obj%dx)
+        xEnd_sfc   = min((sfcAll_obj%Nx+1)*sfcAll_obj%dx, (int(xEnd_prp/sfc_obj%dx)  + 2)*sfc_obj%dx)
+        sfc_obj%Nx     = max(1, int((xEnd_sfc-xStart_sfc)/sfc_obj%dx))
 
-        ixySfc_(1, 1) = nint(sfc_obj%xStart/sfc_obj%dx) + 1
+        ixySfc_(1, 1) = nint(xStart_sfc/sfc_obj%dx) + 1
         ixySfc_(2, 1) = min(sfcAll_obj%Nx+1, ixySfc_(1, 1) + sfc_obj%Nx)
 
-        sfc_obj%xStart = sfc_obj%dx * (ixySfc_(1, 1) - 1)
-        sfc_obj%Nx     = ixySfc_(2, 1) - ixySfc_(1, 1)
+        xStart_sfc = sfc_obj%dx * (ixySfc_(1, 1) - 1)
+        sfc_obj%Nx = ixySfc_(2, 1) - ixySfc_(1, 1)
     else
-        sfc_obj%xStart = 0.0
+        xStart_sfc = 0.0
         sfc_obj%Nx = 1
 
         ixySfc_(1, 1) = 1
@@ -374,23 +375,28 @@ subroutine shd_mpi__map(rtmAll_obj, prpAll_obj, sfcAll_obj, &
     end if
 
     if (sfcAll_obj%Ny .gt. 1) then
-        sfc_obj%yStart = max(0.0,                             (int(prp_obj%yStart/sfc_obj%dy) - 2)*sfc_obj%dy)
-        yEnd_sfc       = min((sfcAll_obj%Ny+1)*sfcAll_obj%dy, (int(yEnd_prp/sfc_obj%dy)       + 2)*sfc_obj%dy)
-        sfc_obj%Ny     = max(1, int((yEnd_sfc-sfc_obj%yStart)/sfc_obj%dy))
+        yStart_sfc = max(0.0,                             (int(yStart_prp/sfc_obj%dy) - 2)*sfc_obj%dy)
+        yEnd_sfc   = min((sfcAll_obj%Ny+1)*sfcAll_obj%dy, (int(yEnd_prp/sfc_obj%dy)   + 2)*sfc_obj%dy)
+        sfc_obj%Ny = max(1, int((yEnd_sfc-yStart_sfc)/sfc_obj%dy))
 
-        ixySfc_(1, 2) = nint(sfc_obj%yStart/sfc_obj%dy) + 1
+        ixySfc_(1, 2) = nint(yStart_sfc/sfc_obj%dy) + 1
         ixySfc_(2, 2) = min(sfcAll_obj%Ny+1, ixySfc_(1, 2) + sfc_obj%Ny)
 
-        sfc_obj%yStart = sfc_obj%dy * (ixySfc_(1, 2) - 1)
-        sfc_obj%Ny     = ixySfc_(2, 2) - ixySfc_(1, 2)
+        yStart_sfc = sfc_obj%dy * (ixySfc_(1, 2) - 1)
+        sfc_obj%Ny = ixySfc_(2, 2) - ixySfc_(1, 2)
     else
-        sfc_obj%yStart = 0.0
+        yStart_sfc = 0.0
         sfc_obj%Ny = 1
 
         ixySfc_(1, 2) = 1
         ixySfc_(2, 2) = 1
     end if
 
+    prp_obj%xStart = xStart_prp
+    prp_obj%yStart = yStart_prp
+
+    sfc_obj%xStart = xStart_sfc
+    sfc_obj%yStart = yStart_sfc
     sfc_obj%maxNpts = (sfc_obj%Nx+1) * (sfc_obj%Ny+1)
 
     ! Get the processors (rank numbers) of the neighbors
@@ -401,10 +407,24 @@ subroutine shd_mpi__map(rtmAll_obj, prpAll_obj, sfcAll_obj, &
     if (verbose_ .ge. 5) write(6, '(2X,A,2(I0,2X))')    'Nproc in X and Y: ', dims(1:2)
     if (verbose_ .ge. 5) write(6, '(2X,A,I0)')          '  This processor: ', myProc_
     if (verbose_ .ge. 5) write(6, '(2X,A,4(I0,2X))')    '       Neighbors: ', iProcNeigh_(1:4)
-    if (verbose_ .ge. 5) write(6, '(2X,A,2(F0.2," km",2X))') '         X range: ', prp_obj%xStart, xEnd_prp
-    if (verbose_ .ge. 5) write(6, '(2X,A,2(F0.2," km",2X))') '         Y range: ', prp_obj%yStart, yEnd_prp
-#else
+    if (rtm_obj%type .eq. 'S') then
+        if (verbose_ .ge. 5) &
+            write(6, '(2X,A,2(F6.2," deg",2X))') ' Longitude range: ', &
+                prp_obj%xStart+rtm_obj%xOffset, xEnd_prp+rtm_obj%xOffset
+        if (verbose_ .ge. 5) &
+            write(6, '(2X,A,2(F6.2," deg",2X))') '  Latitude range: ', &
+                prp_obj%yStart+rtm_obj%yOffset, yEnd_prp+rtm_obj%yOffset
+    else
+        if (verbose_ .ge. 5) &
+            write(6, '(2X,A,2(F6.2," km",2X))') '         X range: ', &
+                prp_obj%xStart, xEnd_prp
+        if (verbose_ .ge. 5) &
+            write(6, '(2X,A,2(F6.2," km",2X))') '         Y range: ', &
+                prp_obj%yStart, yEnd_prp
+    end if
+# else
     prp_obj%xStart = 0.0; prp_obj%yStart = 0.0
+    sfc_obj%xStart = 0.0; sfc_obj%yStart = 0.0
 #endif
 
     return
@@ -444,7 +464,7 @@ subroutine shd_mpi__bcastInp(&
 #if HAS_MPI
     integer :: ierr, intBuf(10)
     logical :: logicBuf(3)
-    real    :: realBuf(18)
+    real    :: realBuf(20)
     character(len=1) :: char1buf(3)
     character(len=charMaxLen_) :: char256buf(7)
     character(len=4) :: procStr
@@ -479,10 +499,11 @@ subroutine shd_mpi__bcastInp(&
     realBuf(:) = (/src_obj%solarI, src_obj%x0, src_obj%y0, src_obj%mu0, src_obj%phi0, &
                    sfc_obj%avgTemp, sfc_obj%avgAlb, src_obj%skyRad, &
                    src_obj%waveNum(1:2), src_obj%avgWaveLen, &
+                   rtm_obj%xOffset, rtm_obj%yOffset, &
                    SOLACC, SPLITACC, SHACC, &
                    MAX_TOTAL_MB, SPLITTING_FACTOR, NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO/)
 
-    call mpi_bcast(realBuf, 18, MPI_real, 0, MPI_comm_world, ierr)
+    call mpi_bcast(realBuf, 20, MPI_real, 0, MPI_comm_world, ierr)
 
     src_obj%solarI  = realBuf(1)
     src_obj%x0      = realBuf(2)
@@ -494,13 +515,15 @@ subroutine shd_mpi__bcastInp(&
     src_obj%skyRad  = realBuf(8)
     src_obj%waveNum(1:2) = realBuf(9:10)
     src_obj%avgWaveLen   = realBuf(11)
-    SOLACC               = realBuf(12)
-    SPLITACC             = realBuf(13)
-    SHACC                = realBuf(14)
-    MAX_TOTAL_MB         = realBuf(15)
-    SPLITTING_FACTOR     = realBuf(16)
-    NUM_SH_TERM_FACTOR   = realBuf(17)
-    CELL_TO_POINT_RATIO  = realBuf(18)
+    rtm_obj%xOffset      = realBuf(12)
+    rtm_obj%yOffset      = realBuf(13)
+    SOLACC               = realBuf(14)
+    SPLITACC             = realBuf(15)
+    SHACC                = realBuf(16)
+    MAX_TOTAL_MB         = realBuf(17)
+    SPLITTING_FACTOR     = realBuf(18)
+    NUM_SH_TERM_FACTOR   = realBuf(19)
+    CELL_TO_POINT_RATIO  = realBuf(20)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! 1-character variables
@@ -3040,8 +3063,8 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord,&
     integer :: icycle, ITER, NITER
     integer :: TrialLines(ProcDims(1) + ProcDims(2) - 2), CurLines(ProcDims(1) + ProcDims(2) - 2)
     integer :: iseed = -3
-    real    :: Temp, DelLines, u, shd_mpi__ran
-    real    :: loadObject, Energy, NewEnergy, LowestEnergy, DeltaE, Boltz
+    real    :: Temp, DelLines, u
+    real    :: Energy, NewEnergy, LowestEnergy, DeltaE, Boltz
     integer, allocatable :: ProcCoordAll(:, :), Ngrid(:, :)
     real, allocatable :: wtproc(:)
     character(len=charMaxLen_) :: fileInp_prp0

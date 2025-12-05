@@ -204,8 +204,9 @@ module globals_type
 
         real(kind=R__) :: dx = -999.0
         real(kind=R__) :: dy = -999.0
-        real(kind=R__) :: xStart  = -999.0
-        real(kind=R__) :: yStart  = -999.0
+
+        real(kind=R__) :: xOffset = -999.0
+        real(kind=R__) :: yOffset = -999.0
 
         real(kind=R__), allocatable :: x(:)
         real(kind=R__), allocatable :: y(:)

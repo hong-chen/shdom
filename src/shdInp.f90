@@ -391,7 +391,7 @@ subroutine shd_io__nmlInp(fileNml, &
     integer NSTOKES, NX, NY, NZ, NMU, NPHI, BCFLAG, IPFLAG
     integer MAXITER, NUMOUT
     logical DELTAM, ACCELFLAG
-    real XY_START(2), XY_SOLAR(2), SOLARFLUX, SOLARMU, SOLARAZ
+    real XY_OFFSET(2), XY_SOLAR(2), SOLARFLUX, SOLARMU, SOLARAZ
     real GNDTEMP, GNDALBEDO, SKYRAD
     real WAVENO(2), WAVELEN, SOLACC, SPLITACC, SHACC
     real MAX_TOTAL_MB, ADAPT_GRID_FACTOR
@@ -406,7 +406,7 @@ subroutine shd_io__nmlInp(fileNml, &
     namelist /SHDOMINPUT/ &
         RUNNAME, PROPFILE, SFCFILE, CKDFILE, &
         INSAVEFILE, OUTSAVEFILE, SENFILE, &
-        NSTOKES, NX, NY, NZ, XY_START, &
+        NSTOKES, NX, NY, NZ, XY_OFFSET, &
         NMU, NPHI, BCFLAG, IPFLAG, DELTAM, GRIDTYPE, &
         SRCTYPE, SOLARFLUX, SOLARMU, SOLARAZ, XY_SOLAR, SKYRAD, &
         GNDTEMP, GNDALBEDO, UNITS, WAVENO, WAVELEN, &
@@ -426,7 +426,7 @@ subroutine shd_io__nmlInp(fileNml, &
     WAVENO(2) = 10001.
     SENFILE = 'NONE'
     VERBOSE = verbose_
-    XY_START(1:2) = 0.0
+    XY_OFFSET(1:2) = 0.0
     XY_SOLAR(1:2) = 0.0
 
     ! Read in the namelist
@@ -437,16 +437,12 @@ subroutine shd_io__nmlInp(fileNml, &
 
     ! Make the assignments to the dummy variables
     rtm_obj%runName = RUNNAME
-    rtm_obj%xStart = XY_START(1)
-    rtm_obj%yStart = XY_START(2)
+    rtm_obj%xOffset = XY_OFFSET(1)
+    rtm_obj%yOffset = XY_OFFSET(2)
 
     prp_obj%fname = PROPFILE
-    prp_obj%xStart = XY_START(1)
-    prp_obj%yStart = XY_START(2)
 
     sfc_obj%fname = SFCFILE
-    sfc_obj%xStart = XY_START(1)
-    sfc_obj%yStart = XY_START(2)
 
     ckd_obj%fname = CKDFILE
     dKDIST = CKDFILE(1:4) .ne. 'NONE'
@@ -479,6 +475,7 @@ subroutine shd_io__nmlInp(fileNml, &
         !     return
 
         case ('T', 't')
+
             src_obj%solarI = 0.0
             src_obj%x0 = 0.0
             src_obj%y0 = 0.0
@@ -1376,8 +1373,6 @@ subroutine shd_io__readSfc(sfc_obj, brdf_Sfc)
 
     ! Surface type is variable something
     sfc_obj%type(1:1) = 'V'
-    sfc_obj%xStart = 0.0
-    sfc_obj%yStart = 0.0
 
     ! Open the file, figure out the type, and get the grid size
     open(unit=1, file=trim(adjustl(sfc_obj%fname)), status='old')
