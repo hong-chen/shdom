@@ -50,16 +50,18 @@ module shd_init
                              shd_type_prp, &
                              shd_type_sfc
 
-    use globals_obj, only:  rtm_obj_, &
+    use globals_obj, only:  rtm_obj_, xyz_Rtm_, &
                            shdo_obj_, &
                             src_obj_, &
                             prp_obj_, &
                             sfc_obj_, brdf_Rtm_
 
     use shd_util, only: shd_util__computePlanck, &
+                        shd_util__computeSolarAngle, &
                         shd_util__solveTriDiag
 
     use shd_sfc,  only: shd_sfc__brdfSurface
+
 
     implicit none
     private
@@ -83,6 +85,8 @@ module shd_init
     public :: shd_init__makeBotRadV
 
     public :: shd_init__checkSfcU
+
+    real(kind=R__) :: lon0, lat0, mu0, phi0
 
 contains
 
@@ -581,7 +585,7 @@ subroutine shd_init__makePrp(&
 end subroutine shd_init__makePrp
 
 subroutine shd_init__makeRad(&
-    &NSTOKES, Nxy, NZ,&
+    &NSTOKES, NX, NY, NZ,&
     &iradI_Shdo, ZGRID,&
     &ext, ssa, leg, temp, ipha,&
     &SRCTYPE, SOLARFLUX, SOLARMU,&
@@ -590,19 +594,21 @@ subroutine shd_init__makeRad(&
     ! Initializes radiance field by solving plane-parallel two-stream.
     ! Solves the L=1 M=0 SH system by transforming the pentadiagonal
     ! system to tridiagonal and calling solver.
-    ! Does the initialization for the Nxy columns of the base grid.
+    ! Does the initialization for the NX*NY columns of the base grid.
     ! Only the I Stokes parameter is initialized, the rest are zeroed.
 
-    integer NSTOKES, Nxy, NZ, iradI_Shdo(*)
-    integer*2 ipha(NZ, Nxy)
+    integer NSTOKES, NX, NY, NZ, iradI_Shdo(*)
+
+    integer(kind=2), intent(in) :: ipha(NZ, NY, NX)
+
     real SKYRAD, SOLARFLUX, SOLARMU
     real WAVENO(2), WAVELEN
     real ZGRID(NZ)
-    real ext(NZ, Nxy), ssa(NZ, Nxy), leg(prp_obj_%NlegSet, 0:prp_obj_%Nleg, *)
-    real temp(NZ, Nxy)
+    real ext(NZ, NY, NX), ssa(NZ, NY, NX), leg(prp_obj_%NlegSet, 0:prp_obj_%Nleg, *)
+    real temp(NZ, NY, NX)
     real radI_Shdo(NSTOKES, *)
     character(len=1) :: SRCTYPE, UNITS
-    integer NLAYER, I, IZ, IR, J, K, L, ZINDEX
+    integer NLAYER, IX, IY, IZ, IR, I, J, K, L, ZINDEX
     logical DELTAM
     real C0, C1
     real EXT0, ALB0, SCAT0, G0, GNDEMIS
@@ -632,104 +638,121 @@ subroutine shd_init__makeRad(&
     ! Loop over all the columns in the base grid
     IR = 0
     iradI_Shdo(1) = 0
-    do I = 1, Nxy
+    do IX = 1, NX
+        do IY = 1, NY
 
-        if (doGridPtsPrp_) then
+            I = IY + NY*(IX - 1)
 
-            do IZ = 1, NLAYER
+            if (doGridPtsPrp_) then
 
-                L = NZ - IZ
-                EXT0 = ext(IZ, I)
-                EXT1 = ext(IZ + 1, I)
-                SCAT0 = ssa(IZ,     I)*EXT0
-                SCAT1 = ssa(IZ + 1, I)*EXT1
-                tauZ(L) = (ZGRID(IZ + 1) - ZGRID(IZ))*(EXT0 + EXT1)/2.0
+                do IZ = 1, NLAYER
 
-                if ((EXT0 + EXT1) .gt. 0.0) then
-                    ssaZ(L) = (SCAT0 + SCAT1)/(EXT0 + EXT1)
-                else
-                    ssaZ(L) = 0.0
-                end if
+                    L = NZ - IZ
+                    EXT0  = ext(IZ,     IY, IX)
+                    EXT1  = ext(IZ + 1, IY, IX)
+                    SCAT0 = ssa(IZ,     IY, IX)*EXT0
+                    SCAT1 = ssa(IZ + 1, IY, IX)*EXT1
 
-                if (prp_obj_%Npha .gt. 0) then
-                    J  = ipha(IZ, I)
+                    tauZ(L) = (ZGRID(IZ + 1) - ZGRID(IZ))*(EXT0 + EXT1)/2.0
+
+                    if ((EXT0 + EXT1) .gt. 0.0) then
+                        ssaZ(L) = (SCAT0 + SCAT1)/(EXT0 + EXT1)
+                    else
+                        ssaZ(L) = 0.0
+                    end if
+
+                    if (prp_obj_%Npha .gt. 0) then
+                        J  = ipha(IZ, IY, IX)
+                        G0 = leg(1, 1, J)
+                        J  = ipha(IZ + 1, IY, IX)
+                        G1 = leg(1, 1, J)
+                    else
+                        J = NZ*(I - 1) + IZ
+                        G0 = leg(1, 1, J)
+                        G1 = leg(1, 1, J + 1)
+                    end if
+
+                    if (SCAT0 + SCAT1 .gt. 0.0) then
+                        asyZ(L) = (SCAT0*G0 + SCAT1*G1)/(SCAT0 + SCAT1)
+                    else
+                        asyZ(L) = 0.0
+                    end if
+
+                    tempZ(L + 1) = temp(IZ, IY, IX)
+
+                end do
+
+            else
+
+                ! zgrid correction (to address layer averaging issue in z direction)
+                !╭────────────────────────────────────────────────╮!
+                do IZ = 1, NLAYER
+
+                    L = NZ - IZ
+
+                    ZINDEX = IZ + 1
+
+                    EXT0 = ext(ZINDEX, IY, IX)
+                    ALB0 = ssa(ZINDEX, IY, IX)
+                    SCAT0 = ALB0*EXT0
+
+                    tauZ(L) = (ZGRID(IZ + 1) - ZGRID(IZ))*EXT0
+
+                    if (EXT0 .gt. 0.0) then
+                        ssaZ(L) = ALB0
+                    else
+                        ssaZ(L) = 0.0
+                    end if
+
+                    if (prp_obj_%Npha .gt. 0) then
+                        J = ipha(ZINDEX, IY, IX)
+                    else
+                        J = NZ*(I - 1) + IZ
+                    end if
                     G0 = leg(1, 1, J)
-                    J  = ipha(IZ + 1, I)
-                    G1 = leg(1, 1, J)
-                else
-                    J = NZ*(I - 1) + IZ
-                    G0 = leg(1, 1, J)
-                    G1 = leg(1, 1, J + 1)
-                end if
-                if (SCAT0 + SCAT1 .gt. 0.0) then
-                    asyZ(L) = (SCAT0*G0 + SCAT1*G1)/(SCAT0 + SCAT1)
-                else
-                    asyZ(L) = 0.0
-                end if
-                tempZ(L + 1) = temp(IZ, I)
+
+                    if (SCAT0 .gt. 0.0) then
+                        asyZ(L) = G0
+                    else
+                        asyZ(L) = 0.0
+                    end if
+                    tempZ(L + 1) = temp(IZ, IY, IX)
+                end do
+                !╰────────────────────────────────────────────────╯!
+
+            end if
+
+            tempZ(1) = temp(NZ, IY, IX)
+
+            GNDEMIS = 1.0 - sfc_obj_%avgAlb
+
+            if (src_obj_%doVariableSolar) then
+                lon0 = prp_obj_%xStart + (IX-1)*rtm_obj_%dx + rtm_obj_%xOffset
+                lat0 = prp_obj_%yStart + (IY-1)*rtm_obj_%dy + rtm_obj_%yOffset
+                call shd_util__computeSolarAngle(lon0, lat0, mu0, phi0)
+            else
+                mu0 = SOLARMU
+            end if
+
+            ! Call the Eddington flux routine
+            call shd_init__makeFlux(NLAYER, tauZ, ssaZ, asyZ,&
+                &tempZ, DELTAM, SRCTYPE, SOLARFLUX, mu0,&
+                &sfc_obj_%avgTemp, GNDEMIS, SKYRAD, UNITS, WAVENO, WAVELEN,&
+                &FLUXES)
+
+            ! Convert fluxes to first two moments of spherical harmonics
+            do IZ = 1, NZ
+                L = NZ + 1 - IZ
+                radI_Shdo(:, IR + 1) = 0.0
+                radI_Shdo(:, IR + 2) = 0.0
+                radI_Shdo(:, IR + 3) = 0.0
+                radI_Shdo(:, IR + 4) = 0.0
+                radI_Shdo(1, IR + 1) = C0*(FLUXES(1, L) + FLUXES(2, L))
+                radI_Shdo(1, IR + 3) = C1*(FLUXES(1, L) - FLUXES(2, L))
+                IR = IR + 4
+                iradI_Shdo(IZ + NZ*(I - 1) + 1) = IR
             end do
 
-        else
-
-            ! zgrid correction (to address layer averaging issue in z direction)
-            !╭────────────────────────────────────────────────╮!
-            do IZ = 1, NLAYER
-
-                L = NZ - IZ
-
-                ZINDEX = IZ + 1
-
-                EXT0 = ext(ZINDEX, I)
-                ALB0 = ssa(ZINDEX, I)
-                SCAT0 = ALB0*EXT0
-
-                tauZ(L) = (ZGRID(IZ + 1) - ZGRID(IZ))*EXT0
-
-                if (EXT0 .gt. 0.0) then
-                    ssaZ(L) = ALB0
-                else
-                    ssaZ(L) = 0.0
-                end if
-
-                if (prp_obj_%Npha .gt. 0) then
-                    J = ipha(ZINDEX, I)
-                else
-                    J = NZ*(I - 1) + IZ
-                end if
-                G0 = leg(1, 1, J)
-
-                if (SCAT0 .gt. 0.0) then
-                    asyZ(L) = G0
-                else
-                    asyZ(L) = 0.0
-                end if
-                tempZ(L + 1) = temp(IZ, I)
-            end do
-            !╰────────────────────────────────────────────────╯!
-
-        end if
-
-        tempZ(1) = temp(NZ, I)
-
-        GNDEMIS = 1.0 - sfc_obj_%avgAlb
-
-        ! Call the Eddington flux routine
-        call shd_init__makeFlux(NLAYER, tauZ, ssaZ, asyZ,&
-            &tempZ, DELTAM, SRCTYPE, SOLARFLUX, SOLARMU,&
-            &sfc_obj_%avgTemp, GNDEMIS, SKYRAD, UNITS, WAVENO, WAVELEN,&
-            &FLUXES)
-
-        ! Convert fluxes to first two moments of spherical harmonics
-        do IZ = 1, NZ
-            L = NZ + 1 - IZ
-            radI_Shdo(:, IR + 1) = 0.0
-            radI_Shdo(:, IR + 2) = 0.0
-            radI_Shdo(:, IR + 3) = 0.0
-            radI_Shdo(:, IR + 4) = 0.0
-            radI_Shdo(1, IR + 1) = C0*(FLUXES(1, L) + FLUXES(2, L))
-            radI_Shdo(1, IR + 3) = C1*(FLUXES(1, L) - FLUXES(2, L))
-            IR = IR + 4
-            iradI_Shdo(IZ + NZ*(I - 1) + 1) = IR
         end do
     end do
 
@@ -1186,8 +1209,19 @@ subroutine shd_init__makeBotRadV(&
         BCRAD(:, IBC, 1) = 0.0
         if (src_obj_%doSolar) then
             I = BCPTR(IBC)
+
+            if (src_obj_%doVariableSolar) then
+                lon0 = xyz_Rtm_(1, I) + rtm_obj_%xOffset
+                lat0 = xyz_Rtm_(2, I) + rtm_obj_%yOffset
+                call shd_util__computeSolarAngle(lon0, lat0, mu0, phi0)
+            else
+                mu0  = SOLARMU
+                phi0 = SOLARAZ
+            end if
+
             call shd_sfc__brdfSurface(sfc_obj_%type(2:2), brdf_Rtm_(2:sfc_obj_%Npar, IBC), WAVELEN,&
-                &MU2, PHI2, SOLARMU, SOLARAZ, NSTOKES, REFLECT)
+                &MU2, PHI2, mu0, phi0, NSTOKES, REFLECT)
+
             BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1) + &
                 OPI_*REFLECT(1:NSTOKES, 1)*DIRFLUX(I)
         end if

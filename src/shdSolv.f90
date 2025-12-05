@@ -207,11 +207,12 @@ subroutine shd_solv__solveRte(&
     if (.not. doRadInit) then
         ! Initialize the radiance on the base grid using Eddington
         ! two-stream plane-parallel
-        call shd_init__makeRad(shdo_obj_%Nstokes, rtm_obj_%NxA*rtm_obj_%NyA, rtm_obj_%Nz,&
-            &iradI_Shdo_, rtm_obj_%z,&
-            &ext_Rtm_, ssa_Rtm_, leg_Rtm_, temp_Rtm_, ipha_Rtm_,&
-            &src_obj_%type, src_obj_%solar0, src_obj_%mu0, src_obj_%skyRad,&
-            &src_obj_%unit, src_obj_%waveNum, src_obj_%avgWaveLen, radI_Shdo_)
+        call shd_init__makeRad(shdo_obj_%Nstokes, &
+            rtm_obj_%NxA, rtm_obj_%NyA, rtm_obj_%Nz, &
+            iradI_Shdo_, rtm_obj_%z, &
+            ext_Rtm_, ssa_Rtm_, leg_Rtm_, temp_Rtm_, ipha_Rtm_, &
+            src_obj_%type, src_obj_%solar0, src_obj_%mu0, src_obj_%skyRad, &
+            src_obj_%unit, src_obj_%waveNum, src_obj_%avgWaveLen, radI_Shdo_)
         ! Interpolate the radiance on the non-base grid points from the
         !   base grid points
         call shd_rad__interpRad(shdo_obj_%Nstokes, rtm_obj_%Npts0, rtm_obj_%Npts, iradI_Shdo_, radI_Shdo_,&
