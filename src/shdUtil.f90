@@ -1468,11 +1468,24 @@ end subroutine sin_cos
 subroutine shd_util__computeRayVect(&
         mu0, phi0, &
         cx,     cy,     cz, &
-        cx_inv, cy_inv, cz_inv)
+        cx_inv, cy_inv, cz_inv, &
+        xyz_info)
 
     real(kind=RD_), intent(in)  :: mu0, phi0
     real(kind=RD_), intent(out) :: cx, cy, cz
     real(kind=RD_), intent(out) :: cx_inv, cy_inv, cz_inv
+
+    real(kind=R__), intent(in), optional :: xyz_info(5)
+    real(kind=R__) :: ratio_x, ratio_y
+
+    if (present(xyz_info)) then
+        call shd_util__computeDegKmRatio(xyz_info(1), xyz_info(2), xyz_info(3), &
+                                         xyz_info(4), xyz_info(5), &
+                                         ratio_x, ratio_y)
+    else
+        ratio_x = 1.0d0
+        ratio_y = 1.0d0
+    end if
 
     cx = dsqrt(dble(1.0d0 - mu0**2))*dcos(dble(phi0 + DPI_))
     cy = dsqrt(dble(1.0d0 - mu0**2))*dsin(dble(phi0 + DPI_))
