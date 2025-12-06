@@ -46,7 +46,7 @@ module shd_util
     use globals_cfg,   only: planetRadiusA_, planetRadiusB_, &
                              A2_, B2_, E2_, solarVect_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
-                             is1DX_, is1DYx_
+                             is1DX_, is1DYx_, verbose_
 
     use globals_obj,   only: rtm_obj_, xyz_Rtm_, &
                             cell_obj_, i8Grid_Cell_, &
@@ -82,6 +82,7 @@ module shd_util
     public :: indexAt
     public :: dist
 
+    public :: shd_util__computeRayVect
     public :: shd_util__computeDegKmRatio
     public :: shd_util__computeSolarAngle
 
@@ -1463,6 +1464,43 @@ pure subroutine sin_cos(x, s, c)
     s = sin(x)
     c = cos(x)
 end subroutine sin_cos
+
+subroutine shd_util__computeRayVect(&
+        mu0, phi0, &
+        cx,     cy,     cz, &
+        cx_inv, cy_inv, cz_inv)
+
+    real(kind=R__), intent(in)  :: mu0, phi0
+    real(kind=RD_), intent(out) :: cx, cy, cz
+    real(kind=RD_), intent(out) :: cx_inv, cy_inv, cz_inv
+
+    cx = dsqrt(dble(1.0d0 - mu0**2))*dcos(dble(phi0 + DPI_))
+    cy = dsqrt(dble(1.0d0 - mu0**2))*dsin(dble(phi0 + DPI_))
+    cz = dble(-mu0)
+
+    if (abs(cx) .gt. 1.0e-7) then
+        cx_inv = 1.0d0/cx
+    else
+        if (verbose_ .ge. 7) &
+            write(6, *) 'Message [_computeRayVect]: cx too small, reset cx to 0, cx_inv to 1e8.'
+        cx = 0.0
+        cx_inv = 1.0e8
+    end if
+
+    if (abs(cy) .gt. 1.0e-7) then
+        cy_inv = 1.0d0/cy
+    else
+        if (verbose_ .ge. 7) &
+            write(6, *) 'Message [_computeRayVect]: cx too small, reset cx to 0, cx_inv to 1e8.'
+        cy = 0.0
+        cy_inv = 1.0e8
+    end if
+
+    cz_inv = 1.0d0/cz
+
+    return
+
+end subroutine shd_util__computeRayVect
 
 subroutine shd_util__computeDegKmRatio(&
         lon_deg, lat_deg, h_km, dlon, dlat, &

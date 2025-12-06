@@ -67,7 +67,8 @@ module shd_intg
     use shd_grid, only: shd_grid__makeSweepOrder, &
                         shd_grid__findBndryPts
 
-    use shd_util, only: shd_util__findNextCell
+    use shd_util, only: shd_util__findNextCell, &
+                        shd_util__computeRayVect
 
     use shd_shdo, only: shd_shdo__transSHtoDO_, &
                         shd_shdo__transSHtoDO, &
@@ -410,22 +411,8 @@ subroutine shd_intg__backIntegrate3D(&
     EPS = 1.0e-3*(xyz_Rtm_(3, i8Grid_Cell_(8, 1)) - xyz_Rtm_(3, i8Grid_Cell_(1, 1)))
 
     ! Make the ray direction (opposite to the discrete ordinate direction)
-    CX = sqrt(1.0 - MU**2)*cos(PHI + DPI_)
-    CY = sqrt(1.0 - MU**2)*sin(PHI + DPI_)
-    CZ = -MU
-    if (abs(CX) .gt. 1.0e-5) then
-        CXINV = 1.0d0/CX
-    else
-        CX = 0.0
-        CXINV = 1.0e6
-    end if
-    if (abs(CY) .gt. 1.0e-5) then
-        CYINV = 1.0d0/CY
-    else
-        CY = 0.0
-        CYINV = 1.0e6
-    end if
-    CZINV = 1.0d0/CZ
+    call shd_util__computeRayVect(MU, PHI, &
+        CX, CY, CZ, CXINV, CYINV, CZINV)
 
     ! Setup the sweeping direction and the gridpoint location
     ! BITc is 0 for positive direction trace back ray, 1 for negative.
@@ -797,29 +784,8 @@ subroutine shd_intg__backIntegrate3D_( &
     EPS = 1.0e-3*(xyz_Rtm_(3, i8Grid_Cell_(8, 1)) - xyz_Rtm_(3, i8Grid_Cell_(1, 1)))
 
     ! Make the ray direction (opposite to the discrete ordinate direction)
-    CX = dsqrt(dble(1.0d0 - MU**2))*dcos(dble(PHI + DPI_))
-    CY = dsqrt(dble(1.0d0 - MU**2))*dsin(dble(PHI + DPI_))
-    CZ = dble(-MU)
-
-    if (abs(CX) .gt. 1.0e-7) then
-        CXINV = 1.0d0/CX
-    else
-        if (verbose_ .ge. 7) write(6, *) &
-            'Message [_backIntegrate3D_]: CX too small, reset CX to 0, CXINV to 1e8.'
-        CX = 0.0
-        CXINV = 1.0e8
-    end if
-
-    if (abs(CY) .gt. 1.0e-7) then
-        CYINV = 1.0d0/CY
-    else
-        if (verbose_ .ge. 7) write(6, *) &
-            'Message [_backIntegrate3D_]: CY too small, reset CY to 0, CYINV to 1e8.'
-        CY = 0.0
-        CYINV = 1.0e8
-    end if
-
-    CZINV = 1.0d0/CZ
+    call shd_util__computeRayVect(MU, PHI, &
+        CX, CY, CZ, CXINV, CYINV, CZINV)
 
     ! Setup the sweeping direction and the gridpoint location
     ! BITc is 0 for positive direction trace back ray, 1 for negative.
@@ -1152,7 +1118,7 @@ subroutine shd_intg__backIntegrate2D(&
     integer GRIDFACE(2, 6), OPPFACE(6)
     integer IORDER, ICORNER, JOCTORDER(8)
     logical :: VALIDRAD, VALIDFACE, IPINX
-    real(RD_) :: CX, CZ, CXINV, CZINV
+    real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV
     real(RD_) :: XE, YE, ZE
     real(RD_) :: SO, SOX, SOZ, EPS
     real(RD_) :: U, F1, F2
@@ -1168,15 +1134,8 @@ subroutine shd_intg__backIntegrate2D(&
     EPS = 1.0e-3*(xyz_Rtm_(3, i8Grid_Cell_(8, 1)) - xyz_Rtm_(3, i8Grid_Cell_(1, 1)))
 
     ! Make the ray direction (opposite to the discrete ordinate direction)
-    CX = sqrt(1.0 - MU**2)*cos(PHI + DPI_)
-    CZ = -MU
-    if (abs(CX) .gt. 1.0e-5) then
-        CXINV = 1.0d0/CX
-    else
-        CX = 0.0
-        CXINV = 1.0e6
-    end if
-    CZINV = 1.0d0/CZ
+    call shd_util__computeRayVect(MU, PHI, &
+        CX, CY, CZ, CXINV, CYINV, CZINV)
 
     ! Setup the sweeping direction and the gridpoint location
     ! BITc is 0 for positive direction trace back ray, 1 for negative.
@@ -1399,7 +1358,7 @@ subroutine shd_intg__backIntegrate1D(&
 
     real(kind=R__), intent(inout) :: GRIDRAD(NSTOKES, rtm_obj_%Npts)
 
-    real(kind=RD_) :: CZ, CZINV
+    real(kind=RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV
     real(kind=RD_) :: XE, YE, ZE
     real(kind=RD_) :: SO, EPS
     real(kind=RD_) :: EXT, EXT0, EXT1
@@ -1420,8 +1379,8 @@ subroutine shd_intg__backIntegrate1D(&
     EPS = 1.0e-3*(xyz_Rtm_(3, i8Grid_Cell_(8, 1)) - xyz_Rtm_(3, i8Grid_Cell_(1, 1)))
 
     ! Make the ray direction (opposite to the discrete ordinate direction)
-    CZ = -MU
-    CZINV = 1.0d0/CZ
+    call shd_util__computeRayVect(MU, PHI, &
+        CX, CY, CZ, CXINV, CYINV, CZINV)
 
     ! Setup the sweeping direction and the gridpoint location
     ! BITc is 0 for positive direction trace back ray, 1 for negative.
