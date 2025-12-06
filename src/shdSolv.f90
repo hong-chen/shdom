@@ -179,17 +179,21 @@ subroutine shd_solv__solveRte(&
     ! Precompute Ylm's for solar direction
     if (src_obj_%doSolar) then
         if (isMpi_) then
-            call shd_mpi__makeFluxDir(1, doDeltaM, shdo_obj_%maxNl,&
-                &src_obj_%solar0, src_obj_%mu0, src_obj_%phi0,&
-                &DIRFLUX)
+            call shd_mpi__makeFluxDir(1, doDeltaM, shdo_obj_%maxNl, &
+                src_obj_%solar0, src_obj_%mu0, src_obj_%phi0, &
+                DIRFLUX)
         else
-            call shd_rad__makeFluxDir(rtm_obj_%Npts, doDeltaM, shdo_obj_%maxNl,&
-                &src_obj_%solar0, src_obj_%mu0, src_obj_%phi0,&
-                &DIRFLUX)
+            call shd_rad__makeFluxDir(rtm_obj_%Npts, doDeltaM, shdo_obj_%maxNl, &
+                src_obj_%solar0, src_obj_%mu0, src_obj_%phi0, &
+                DIRFLUX)
         end if
-        call shd_shdo__computeYlm(.true., src_obj_%mu0, src_obj_%phi0, &
-            shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet, &
-            YlmSolar_Shdo)
+
+        ! fixed solar
+        if (.not. src_obj_%doVariableSolar) then
+            call shd_shdo__computeYlm(.true., src_obj_%mu0, src_obj_%phi0, &
+                shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet, &
+                YlmSolar_Shdo)
+        end if
     end if
 
     ! Make the discrete ordinates (angles)
