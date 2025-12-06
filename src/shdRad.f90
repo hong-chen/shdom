@@ -74,7 +74,8 @@ module shd_rad
                         shd_init__makeBotRadVL, &
                         shd_init__makeBotRadV
 
-    use shd_util, only: shd_util__computeSolarAngle
+    use shd_util, only: shd_util__computeRayVect, &
+                        shd_util__computeSolarAngle
 
     implicit none
     private
@@ -183,7 +184,7 @@ subroutine shd_rad__computeDirect(&
     real(kind=R__) :: lon0, lat0, mu0, phi0
 
     real(RD_) :: ext0, ssa0, F
-    real(RD_) :: SUNMU, SUNAZ, PATH
+    real(RD_) :: PATH
     real(RD_) :: EXTBEAMCUT, UNIFORMZLEV
     real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV
     real(RD_) :: EPSS, EPSZ, XDOMAIN, YDOMAIN
@@ -286,30 +287,8 @@ subroutine shd_rad__computeDirect(&
             !╭────────────────────────────────────────────────────────────────────────────╮!
             if (.not. src_obj_%doVariableSolar) then
                 ! Make the ray direction (opposite to the solar beam)
-                !   SOLARxx is direction of beam, SUNxx is direction to sun (opposite)
-                SUNMU = -SOLARMU
-                SUNAZ = SOLARAZ + PI_
-                CX = sqrt(1.0 - SUNMU**2)*cos(SUNAZ)
-                CY = sqrt(1.0 - SUNMU**2)*sin(SUNAZ)
-                CZ = abs(SUNMU)
-                if (abs(CX) .gt. 1.0e-6) then
-                    CXINV = 1.0d0/CX
-                else
-                    CX = 0.0
-                    CXINV = 1.0e20
-                end if
-                if (abs(CY) .gt. 1.0e-6) then
-                    CYINV = 1.0d0/CY
-                else
-                    CY = 0.0
-                    CYINV = 1.0e20
-                end if
-                if (abs(CZ) .gt. 1.0e-6) then
-                    CZINV = 1.0d0/CZ
-                else
-                    CZ = 0.0
-                    CZINV = 1.0e20
-                end if
+                call shd_util__computeRayVect(dble(SOLARMU), dble(SOLARAZ), &
+                    CX, CY, CZ, CXINV, CYINV, CZINV)
 
                 DI = nint(sign(1.0d0, CX))
                 DJ = nint(sign(1.0d0, CY))
@@ -387,35 +366,13 @@ subroutine shd_rad__computeDirect(&
             !╭────────────────────────────────────────────────────────────────────────────╮!
             if (src_obj_%doVariableSolar) then
 
-                ! Make the ray direction (opposite to the solar beam)
-                !   mu0, phi0 is direction of beam, SUNxx is direction to sun (opposite)
                 lon0 = XI + rtm_obj_%xOffset
                 lat0 = YI + rtm_obj_%yOffset
                 call shd_util__computeSolarAngle(lon0, lat0, mu0, phi0)
 
-                SUNMU = -mu0
-                SUNAZ = phi0 + PI_
-                CX = sqrt(1.0 - SUNMU**2)*cos(SUNAZ)
-                CY = sqrt(1.0 - SUNMU**2)*sin(SUNAZ)
-                CZ = abs(SUNMU)
-                if (abs(CX) .gt. 1.0e-6) then
-                    CXINV = 1.0d0/CX
-                else
-                    CX = 0.0
-                    CXINV = 1.0e20
-                end if
-                if (abs(CY) .gt. 1.0e-6) then
-                    CYINV = 1.0d0/CY
-                else
-                    CY = 0.0
-                    CYINV = 1.0e20
-                end if
-                if (abs(CZ) .gt. 1.0e-6) then
-                    CZINV = 1.0d0/CZ
-                else
-                    CZ = 0.0
-                    CZINV = 1.0e20
-                end if
+                ! Make the ray direction (opposite to the solar beam)
+                call shd_util__computeRayVect(dble(mu0), dble(phi0), &
+                    CX, CY, CZ, CXINV, CYINV, CZINV)
 
                 DI = nint(sign(1.0d0, CX))
                 DJ = nint(sign(1.0d0, CY))

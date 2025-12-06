@@ -4,7 +4,7 @@ import struct
 import glob
 
 
-def check(fname, fname_ref, data_len=4, threshold=1e-5, Nerror=10):
+def check(fname, fname_ref, data_len=4, threshold=1e-4, Nerror=100):
 
     if not os.path.exists(fname):
         msg = 'Error [check]: File <%s> does NOT exist.' % (fname)
@@ -34,13 +34,13 @@ def check(fname, fname_ref, data_len=4, threshold=1e-5, Nerror=10):
             data = struct.unpack('=f', f.read(data_len))[0]
             data_ref = struct.unpack('<f', f_ref.read(data_len))[0]
 
-            diff = data - data_ref
+            diff = (data - data_ref) * 100.0
             if abs(diff)>threshold:
                 ierror += 1
                 if ierror == 1:
                     print('Error   [check]: Failed file check for <%s>.' % fname)
                 if ierror <= Nerror:
-                    msg = '                 iData=%d, Data=%f, Data_Ref=%f, Diff=%f' % (idata+1, data, data_ref, diff)
+                    msg = '                 iData=%d, Data=%f, Data_Ref=%f, Diff=%f%%' % (idata+1, data, data_ref, diff)
                     print(msg)
                 else:
                     msg = '                 ...'

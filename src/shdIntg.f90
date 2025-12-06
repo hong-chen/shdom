@@ -411,7 +411,7 @@ subroutine shd_intg__backIntegrate3D(&
     EPS = 1.0e-3*(xyz_Rtm_(3, i8Grid_Cell_(8, 1)) - xyz_Rtm_(3, i8Grid_Cell_(1, 1)))
 
     ! Make the ray direction (opposite to the discrete ordinate direction)
-    call shd_util__computeRayVect(MU, PHI, &
+    call shd_util__computeRayVect(dble(MU), dble(PHI), &
         CX, CY, CZ, CXINV, CYINV, CZINV)
 
     ! Setup the sweeping direction and the gridpoint location
@@ -784,7 +784,7 @@ subroutine shd_intg__backIntegrate3D_( &
     EPS = 1.0e-3*(xyz_Rtm_(3, i8Grid_Cell_(8, 1)) - xyz_Rtm_(3, i8Grid_Cell_(1, 1)))
 
     ! Make the ray direction (opposite to the discrete ordinate direction)
-    call shd_util__computeRayVect(MU, PHI, &
+    call shd_util__computeRayVect(dble(MU), dble(PHI), &
         CX, CY, CZ, CXINV, CYINV, CZINV)
 
     ! Setup the sweeping direction and the gridpoint location
@@ -1134,7 +1134,7 @@ subroutine shd_intg__backIntegrate2D(&
     EPS = 1.0e-3*(xyz_Rtm_(3, i8Grid_Cell_(8, 1)) - xyz_Rtm_(3, i8Grid_Cell_(1, 1)))
 
     ! Make the ray direction (opposite to the discrete ordinate direction)
-    call shd_util__computeRayVect(MU, PHI, &
+    call shd_util__computeRayVect(dble(MU), dble(PHI), &
         CX, CY, CZ, CXINV, CYINV, CZINV)
 
     ! Setup the sweeping direction and the gridpoint location
@@ -1379,7 +1379,7 @@ subroutine shd_intg__backIntegrate1D(&
     EPS = 1.0e-3*(xyz_Rtm_(3, i8Grid_Cell_(8, 1)) - xyz_Rtm_(3, i8Grid_Cell_(1, 1)))
 
     ! Make the ray direction (opposite to the discrete ordinate direction)
-    call shd_util__computeRayVect(MU, PHI, &
+    call shd_util__computeRayVect(dble(MU), dble(PHI), &
         CX, CY, CZ, CXINV, CYINV, CZINV)
 
     ! Setup the sweeping direction and the gridpoint location

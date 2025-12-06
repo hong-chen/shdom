@@ -84,7 +84,8 @@ module shd_mpi
                         shd_init__makeBotRadV
 
     use shd_util, only: shd_util__ssort, &
-                        shd_util__findNextCell
+                        shd_util__findNextCell, &
+                        shd_util__computeRayVect
 
     use shd_src,  only: shd_src__computeSrcOneDir, &
                         shd_src__integrateSrc, &
@@ -3271,22 +3272,8 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     EPS = 1.0e-3*(xyz_Rtm_(3, i8Grid_Cell_(8, 1)) - xyz_Rtm_(3, i8Grid_Cell_(1, 1)))
 
     ! Make the ray direction (opposite to the discrete ordinate direction)
-    CX = sqrt(1.0 - MU**2)*cos(PHI + DPI_)
-    CY = sqrt(1.0 - MU**2)*sin(PHI + DPI_)
-    CZ = -MU
-    if (abs(CX) .gt. 1.0e-5) then
-        CXINV = 1.0d0/CX
-    else
-        CX = 0.0
-        CXINV = 1.0e6
-    end if
-    if (abs(CY) .gt. 1.0e-5) then
-        CYINV = 1.0d0/CY
-    else
-        CY = 0.0
-        CYINV = 1.0e6
-    end if
-    CZINV = 1.0d0/CZ
+    call shd_util__computeRayVect(dble(MU), dble(PHI), &
+        CX, CY, CZ, CXINV, CYINV, CZINV)
 
     ! Setup the sweeping direction and the gridpoint location
     !   BITc is 0 for positive direction trace back ray, 1 for negative.

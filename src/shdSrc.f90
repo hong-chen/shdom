@@ -65,7 +65,8 @@ module shd_src
 
     use shd_util, only: shd_util__findCell, &
                         shd_util__findNextCell, &
-                        shd_util__interpTriLin
+                        shd_util__interpTriLin, &
+                        shd_util__computeRayVect
 
     use shd_init, only: shd_init__makeBotRadV
 
@@ -859,27 +860,8 @@ subroutine shd_src__integrateSrcOneRay(&
     end if
 
     ! Make the ray direction (opposite to the outgoing direction)
-    CX = dsqrt(1.0d0 - MU2**2)*dcos(PHI2 - DPI_)
-    CY = dsqrt(1.0d0 - MU2**2)*dsin(PHI2 - DPI_)
-    CZ = -MU2
-    if (abs(CX) .gt. accSolv_) then
-        CXINV = 1.0d0/CX
-    else
-        CX = 0.0
-        CXINV = 1.0e6
-    end if
-    if (abs(CY) .gt. accSolv_) then
-        CYINV = 1.0d0/CY
-    else
-        CY = 0.0
-        CYINV = 1.0e6
-    end if
-    if (abs(CZ) .gt. accSolv_) then
-        CZINV = 1.0d0/CZ
-    else
-        CZ = 0.0
-        CZINV = 1.0e6
-    end if
+    call shd_util__computeRayVect(MU2, PHI2, &
+        CX, CY, CZ, CXINV, CYINV, CZINV)
 
     ! Setup for the ray path direction
     if (CX .lt. 0.0) then
@@ -1191,22 +1173,8 @@ subroutine shd_src__integrateSrc(NSTOKES,&
     EPS = 1.0e-4*(xyz_Rtm_(3, i8Grid_Cell_(8, 1)) - xyz_Rtm_(3, i8Grid_Cell_(1, 1)))
 
     ! Make the ray direction (opposite to the discrete ordinate dire
-    CX = sqrt(1.0 - MU**2)*cos(PHI + DPI_)
-    CY = sqrt(1.0 - MU**2)*sin(PHI + DPI_)
-    CZ = -MU
-    if (abs(CX) .gt. 1.0e-5) then
-        CXINV = 1.0d0/CX
-    else
-        CX = 0.0
-        CXINV = 1.0e6
-    end if
-    if (abs(CY) .gt. 1.0e-5) then
-        CYINV = 1.0d0/CY
-    else
-        CY = 0.0
-        CYINV = 1.0e6
-    end if
-    CZINV = 1.0d0/CZ
+    call shd_util__computeRayVect(dble(MU), dble(PHI), &
+        CX, CY, CZ, CXINV, CYINV, CZINV)
 
     ! Setup for the ray path direction
     if (CX .lt. 0.0) then

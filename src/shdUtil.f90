@@ -1470,7 +1470,7 @@ subroutine shd_util__computeRayVect(&
         cx,     cy,     cz, &
         cx_inv, cy_inv, cz_inv)
 
-    real(kind=R__), intent(in)  :: mu0, phi0
+    real(kind=RD_), intent(in)  :: mu0, phi0
     real(kind=RD_), intent(out) :: cx, cy, cz
     real(kind=RD_), intent(out) :: cx_inv, cy_inv, cz_inv
 
@@ -1478,25 +1478,32 @@ subroutine shd_util__computeRayVect(&
     cy = dsqrt(dble(1.0d0 - mu0**2))*dsin(dble(phi0 + DPI_))
     cz = dble(-mu0)
 
-    if (abs(cx) .gt. 1.0e-7) then
+    if (abs(cx) .gt. 1.0d-7) then
         cx_inv = 1.0d0/cx
     else
         if (verbose_ .ge. 7) &
             write(6, *) 'Message [_computeRayVect]: cx too small, reset cx to 0, cx_inv to 1e8.'
-        cx = 0.0
-        cx_inv = 1.0e8
+        cx = 0.0d0
+        cx_inv = 1.0d8
     end if
 
-    if (abs(cy) .gt. 1.0e-7) then
+    if (abs(cy) .gt. 1.0d-7) then
         cy_inv = 1.0d0/cy
     else
         if (verbose_ .ge. 7) &
-            write(6, *) 'Message [_computeRayVect]: cx too small, reset cx to 0, cx_inv to 1e8.'
-        cy = 0.0
-        cy_inv = 1.0e8
+            write(6, *) 'Message [_computeRayVect]: cy too small, reset cy to 0, cy_inv to 1e8.'
+        cy = 0.0d0
+        cy_inv = 1.0d8
     end if
 
-    cz_inv = 1.0d0/cz
+    if (abs(cz) .gt. 1.0d-7) then
+        cz_inv = 1.0d0/cz
+    else
+        if (verbose_ .ge. 7) &
+            write(6, *) 'Message [_computeRayVect]: cz too small, reset cz to 0, cz_inv to 1e8.'
+        cz = 0.0d0
+        cz_inv = 1.0d8
+    end if
 
     return
 
