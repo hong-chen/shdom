@@ -89,6 +89,8 @@ module shd_src
     private :: shd_src__rotatePolarPlane
     private :: shd_src__findBndryRad
 
+    real(kind=R__), parameter :: C_ = 3.5449077018110318
+
 contains
 
 subroutine shd_src__computeSrcOneCell(&
@@ -544,17 +546,19 @@ subroutine shd_src__computeSrc(&
     integer IS, ISO, IR, I, IPH, J, JS, K, L, LS, M, MS, ME, NS, NR
     integer, allocatable :: LOFJ(:)
     real, allocatable :: srcT_Shdo(:, :)
-    real SRCMIN, C, SECMU0, D
+    real SRCMIN, SECMU0, D
 
     allocate(LOFJ(shdo_obj_%Nlm), srcT_Shdo(shdo_obj_%Nstokes, shdo_obj_%Nlm))
 
     SRCMIN = SHACC
+
     ! Make source function from scattering integral and real sources:
     !   Solar source: DIRFLUX has F0*exp(-tau)
     !   Thermal source: planck_Rtm_ has (1-omega)*B(T)
     SECMU0 = 1.0/abs(src_obj_%mu0)
-    C = sqrt(4.0*PI_)
+
     ! Make the l index as a function of SH term (J)
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     J = 0
     do L = 0, shdo_obj_%maxNl
         ME = min(L, shdo_obj_%maxNm)
@@ -564,8 +568,10 @@ subroutine shd_src__computeSrc(&
             LOFJ(J) = L
         end do
     end do
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! Compute the dot products of the successive source differences
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     if (.not. FIRST) then
         DELJDOT = 0.0
         DELJOLD = 0.0
@@ -625,8 +631,10 @@ subroutine shd_src__computeSrc(&
             end if
         end do
     end if
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! Compute and store the new source function difference vector
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     if (.not. FIRST .and. ACCELFLAG) then
         do I = 1, rtm_obj_%Npts
             ! Compute the temporary source function for this point
@@ -661,8 +669,10 @@ subroutine shd_src__computeSrc(&
         end do
         isrcD_Shdo(rtm_obj_%Npts + 1) = isrcJ_Shdo(rtm_obj_%Npts + 1)
     end if
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! Compute the source function in the temporary array.
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     IS = 0
     do I = 1, rtm_obj_%Npts
         if (prp_obj_%Npha .gt. 0) then
@@ -730,6 +740,7 @@ subroutine shd_src__computeSrc(&
         IS = IS + NS
     end do
     isrcJ_Shdo(rtm_obj_%Npts + 1) = IS
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
     deallocate(LOFJ, srcT_Shdo)
 
@@ -1631,8 +1642,7 @@ subroutine shd_src__computeSrcOnePts(&
 
     real, intent(out) :: srcT_Shdo(NSTOKES, NLM)
 
-    real, parameter :: C = 3.544907703
-    integer J
+    integer :: J
 
     srcT_Shdo(:, :) = 0.0
 
@@ -1690,7 +1700,7 @@ subroutine shd_src__computeSrcOnePts(&
 
     ! Add in the isotropic unpolarized thermal emission
     if (src_obj_%doTherm) then
-        srcT_Shdo(1, 1) = srcT_Shdo(1, 1) + C*PLANCK
+        srcT_Shdo(1, 1) = srcT_Shdo(1, 1) + C_*PLANCK
     end if
 
     return
@@ -1715,8 +1725,7 @@ subroutine shd_src__computeSrcOnePts_(&
 
     real, intent(out) :: srcT_Shdo(NLM)
 
-    real, parameter :: C = 3.544907703
-    integer J
+    integer ::  J
 
     srcT_Shdo(:) = 0.0
 
@@ -1732,7 +1741,7 @@ subroutine shd_src__computeSrcOnePts_(&
 
     ! Add in the isotropic unpolarized thermal emission
     if (src_obj_%doTherm) then
-        srcT_Shdo(1) = srcT_Shdo(1) + C*PLANCK
+        srcT_Shdo(1) = srcT_Shdo(1) + C_*PLANCK
     end if
 
     ! Calculate the generalized spherical harmonics source function
