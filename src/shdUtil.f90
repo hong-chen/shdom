@@ -82,6 +82,7 @@ module shd_util
     public :: indexAt
     public :: dist
 
+    public :: shd_util__computeDegKmRatio
     public :: shd_util__computeSolarAngle
 
     public :: shd_util__tickTock
@@ -1416,15 +1417,15 @@ elemental pure function dist(lon1_deg, lat1_deg, h1_km, &
     !   on oblate spheroid Earth
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    real(kind=4), intent(in) :: lon1_deg, lat1_deg, h1_km
-    real(kind=4), intent(in) :: lon2_deg, lat2_deg, h2_km
-    real(kind=4) :: dist_km
+    real(kind=R__), intent(in) :: lon1_deg, lat1_deg, h1_km
+    real(kind=R__), intent(in) :: lon2_deg, lat2_deg, h2_km
+    real(kind=R__) :: dist_km
 
-    real(kind=4) :: lon1, lat1, lon2, lat2
-    real(kind=4) :: sinlat1, coslat1, sinlon1, coslon1
-    real(kind=4) :: sinlat2, coslat2, sinlon2, coslon2
-    real(kind=4) :: N1, N2
-    real(kind=4) :: x1, y1, z1, x2, y2, z2
+    real(kind=R__) :: lon1, lat1, lon2, lat2
+    real(kind=R__) :: sinlat1, coslat1, sinlon1, coslon1
+    real(kind=R__) :: sinlat2, coslat2, sinlon2, coslon2
+    real(kind=R__) :: N1, N2
+    real(kind=R__) :: x1, y1, z1, x2, y2, z2
 
     ! --- convert degrees → radians ---
     lon1 = lon1_deg * DTOR_
@@ -1457,11 +1458,28 @@ elemental pure function dist(lon1_deg, lat1_deg, h1_km, &
 end function dist
 
 pure subroutine sin_cos(x, s, c)
-    real(kind=4), intent(in)  :: x
-    real(kind=4), intent(out) :: s, c
+    real(kind=R__), intent(in)  :: x
+    real(kind=R__), intent(out) :: s, c
     s = sin(x)
     c = cos(x)
 end subroutine sin_cos
+
+subroutine shd_util__computeDegKmRatio(&
+        lon_deg, lat_deg, h_km, dlon, dlat, &
+        ratio_x, ratio_y)
+
+    real(kind=R__), intent(in)  :: lon_deg, lat_deg, h_km, dlon, dlat
+    real(kind=R__), intent(out) :: ratio_x, ratio_y
+
+    ratio_x = dist(lon_deg-0.5*dlon, lat_deg, h_km, &
+                   lon_deg+0.5*dlon, lat_deg, h_km) / dlon
+
+    ratio_y = dist(lon_deg, lat_deg-0.5*dlat, h_km, &
+                   lon_deg, lat_deg+0.5*dlat, h_km) / dlat
+
+    return
+
+end subroutine shd_util__computeDegKmRatio
 
 subroutine shd_util__computeSolarAngle(&
     lon_deg, lat_deg, &
