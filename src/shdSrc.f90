@@ -555,7 +555,11 @@ subroutine shd_src__computeSrc(&
     ! Make source function from scattering integral and real sources:
     !   Solar source: DIRFLUX has F0*exp(-tau)
     !   Thermal source: planck_Rtm_ has (1-omega)*B(T)
-    SECMU0 = 1.0/abs(src_obj_%mu0)
+    if (.not. src_obj_%doVariableSolar) then
+        SECMU0 = 1.0/abs(src_obj_%mu0)
+    else
+        SECMU0 = 1.0
+    end if
 
     ! Make the l index as a function of SH term (J)
     !╭────────────────────────────────────────────────────────────────────────────╮!
