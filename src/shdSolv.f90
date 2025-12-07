@@ -139,7 +139,7 @@ subroutine shd_solv__solveRte(&
 
     real, allocatable :: CMU1(:, :, :), CMU2(:, :, :)
     real, allocatable :: CPHI1(:, :, :), CPHI2(:, :, :)
-    real, allocatable :: YlmSolar_Shdo(:, :), wgtMu_Shdo(:), wPhiFFT_Shdo(:)
+    real, allocatable :: YlmSun(:, :), wgtMu_Shdo(:), wPhiFFT_Shdo(:)
     real, allocatable :: brdf_Shdo(:, :, :, :, :, :)
 
     integer(kind=I__), save, allocatable :: isrcD_Shdo(:)
@@ -153,7 +153,7 @@ subroutine shd_solv__solveRte(&
     ! prp_obj_%NlegSet=1 for shdo_obj_%Nstokes=1, otherwise prp_obj_%NlegSet=6
     allocate(CMU1(prp_obj_%NlegSet, shdo_obj_%Nlm, shdo_obj_%Nmu), CMU2(prp_obj_%NlegSet, shdo_obj_%Nlm, shdo_obj_%Nmu))
     allocate(CPHI1(-16:16, 32, shdo_obj_%Nmu), CPHI2(32, -16:16, shdo_obj_%Nmu))
-    allocate(YlmSolar_Shdo(prp_obj_%NlegSet, shdo_obj_%Nlm))
+    allocate(YlmSun(prp_obj_%NlegSet, shdo_obj_%Nlm))
     allocate(flagFFT_Shdo(shdo_obj_%Nmu), wgtMu_Shdo(shdo_obj_%Nmu), wPhiFFT_Shdo(shdo_obj_%Nmu*(3*shdo_obj_%Nphi+ 15)))
 
     if (doAccel .and. (.not. allocated(isrcD_Shdo))) then
@@ -192,7 +192,7 @@ subroutine shd_solv__solveRte(&
         if (.not. src_obj_%doVariableSolar) then
             call shd_shdo__computeYlm(.true., src_obj_%mu0, src_obj_%phi0, &
                 shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet, &
-                YlmSolar_Shdo)
+                YlmSun)
         end if
     end if
 
@@ -223,7 +223,7 @@ subroutine shd_solv__solveRte(&
             &cell_obj_%Npts0, cell_obj_%Npts, i2Tree_Cell_, i8Grid_Cell_, xyz_Rtm_)
         ! Initialize the source function from the radiance field
         call shd_src__computeSrc(&
-            &doFixSH, YlmSolar_Shdo,&
+            &doFixSH, YlmSun,&
             &DIRFLUX, SHACC,&
             &isrcD_Shdo, srcD_Shdo,&
             &.true., doAccel, DELJDOT, DELJOLD, DELJNEW, JNORM,&
@@ -347,7 +347,7 @@ subroutine shd_solv__solveRte(&
                     doDeltaM, doAccel, &
                     isrcD_Shdo, &
                     DIRFLUX, &
-                    src_obj_%solar0, YlmSolar_Shdo, &
+                    src_obj_%solar0, YlmSun, &
                     WORK, WORK2, &
                     rtm_obj_, cell_obj_, &
                     xyz_Rtm_, i8Grid_Cell_, i6Cell_Cell_, i2Tree_Cell_, flag_Cell_, &
@@ -391,7 +391,7 @@ subroutine shd_solv__solveRte(&
         ! radSH to srcSH
         !╭────────────────────────────────────────────────╮!
         call shd_src__computeSrc(&
-            &doFixSH, YlmSolar_Shdo,&
+            &doFixSH, YlmSun,&
             &DIRFLUX, SHACC,&
             &isrcD_Shdo, srcD_Shdo,&
             &.false., doAccel, DELJDOT, DELJOLD, DELJNEW, JNORM,&
@@ -458,7 +458,7 @@ subroutine shd_solv__solveRte(&
     if ((sfc_obj_%type(1:1) .eq. 'V') .and. sfc_obj_%isUniform) then
         deallocate(brdf_Shdo)
     end if
-    deallocate(YlmSolar_Shdo, flagFFT_Shdo, wgtMu_Shdo, wPhiFFT_Shdo)
+    deallocate(YlmSun, flagFFT_Shdo, wgtMu_Shdo, wPhiFFT_Shdo)
     deallocate(CMU1, CMU2, CPHI1, CPHI2)
 
     if (allocated(srcD_Shdo) .and. (ckd_obj_%ig .eq. 1)) &

@@ -77,7 +77,8 @@ module shd_grid
     use shd_rad,  only: shd_rad__computeDirect
 
     use shd_src,  only: shd_src__computeSrcOnePts_, &
-                        shd_src__computeSrcOnePts
+                        shd_src__computeSrcOnePts, &
+                        shd_src__computeSunOnePts
 
     use shd_mpi,  only: shd_mpi__makeFluxDir
 
@@ -122,7 +123,7 @@ subroutine shd_grid__splitGrid(&
     doDeltaM, ACCELFLAG, &
     isrcD_Shdo, &
     DIRFLUX, &
-    SOLARFLUX, YLMSUN, &
+    SOLARFLUX, YlmSun, &
     ADAPTCRIT, ADAPTIND, &
     rtm_obj, cell_obj, &
     xyz_Rtm, i8Grid_Cell, i6Cell_Cell, i2Tree_Cell, flag_Cell, &
@@ -160,7 +161,7 @@ subroutine shd_grid__splitGrid(&
     real ADAPTIND(*)
     logical doDeltaM, ACCELFLAG, doSplit, isOutMem
     real CURSPLITACC, SPLITCRIT
-    real SOLARFLUX, YLMSUN(prp_obj_%NlegSet, shdo_obj_%Nlm)
+    real SOLARFLUX, YlmSun(prp_obj_%NlegSet, shdo_obj_%Nlm)
     real ADAPTCRIT(*)
     real DIRFLUX(*)
     integer icell, ICELL1, idir, I, N, newPts(3, 4), OLDNPTS
@@ -221,7 +222,7 @@ subroutine shd_grid__splitGrid(&
                     ! Interpolate the medium properties, radiance, and source
                     call shd_grid__interpNewGridPts(newPts,&
                         &doDeltaM, ACCELFLAG,&
-                        &SOLARFLUX, YLMSUN,&
+                        &SOLARFLUX, YlmSun,&
                         &DIRFLUX,&
                         &isrcD_Shdo,&
                         &temp_Rtm, planck_Rtm, ext_Rtm, ssa_Rtm, leg_Rtm, ipha_Rtm, &
@@ -260,7 +261,7 @@ subroutine shd_grid__splitGrid(&
                         ! Interpolate the medium properties, radiance, and source
                         call shd_grid__interpNewGridPts(newPts,&
                             doDeltaM, ACCELFLAG, &
-                            SOLARFLUX, YLMSUN, &
+                            SOLARFLUX, YlmSun, &
                             DIRFLUX, &
                             isrcD_Shdo, &
                             temp_Rtm, planck_Rtm, ext_Rtm, ssa_Rtm, leg_Rtm, ipha_Rtm, &
@@ -331,7 +332,7 @@ end subroutine shd_grid__interpGrid
 
 subroutine shd_grid__interpNewGridPts(newPts,&
     doDeltaM, ACCELFLAG,&
-    SOLARFLUX, YLMSUN,&
+    SOLARFLUX, YlmSun,&
     DIRFLUX,&
     isrcD_Shdo,&
     temp_Rtm, planck_Rtm, ext_Rtm, ssa_Rtm, leg_Rtm, ipha_Rtm, &
@@ -362,7 +363,7 @@ subroutine shd_grid__interpNewGridPts(newPts,&
     integer newPts(3, 4)
     integer isrcD_Shdo(*)
     logical doDeltaM, ACCELFLAG
-    real SOLARFLUX, YLMSUN(prp_obj_%NlegSet, shdo_obj_%Nlm)
+    real SOLARFLUX, YlmSun(prp_obj_%NlegSet, shdo_obj_%Nlm)
     real DIRFLUX(rtm_obj_%Npts)
     integer I, IP1, IP2, IP, IPH, J, K, L, M, ME, MS
     integer IS, NS, NS1, NS2
@@ -371,10 +372,14 @@ subroutine shd_grid__interpNewGridPts(newPts,&
     real X, Y, Z, F, BB, C, D, SECMU0
     real RAD1(shdo_obj_%Nstokes), RAD2(shdo_obj_%Nstokes)
     real UNIFZLEV, XO, YO, ZO, DIRPATH
+    real(kind=R__) :: mu0
+    real, allocatable :: srcT_Shdo(:, :), YlmSunT(:, :)
     integer, allocatable :: LOFJ(:)
-    real, allocatable :: srcT_Shdo(:, :)
 
-    allocate(LOFJ(shdo_obj_%Nlm), srcT_Shdo(shdo_obj_%Nstokes, shdo_obj_%Nlm))
+    allocate(LOFJ(shdo_obj_%Nlm), &
+        srcT_Shdo(shdo_obj_%Nstokes, shdo_obj_%Nlm), &
+        YlmSunT(prp_obj_%NlegSet, shdo_obj_%Nlm))
+
     ! Make the l index as a function of SH term (J)
     J = 0
     do L = 0, shdo_obj_%maxNl
@@ -388,7 +393,10 @@ subroutine shd_grid__interpNewGridPts(newPts,&
 
     C = sqrt(4.0*PI_)
     if (src_obj_%doSolar) then
-        SECMU0 = 1.0/abs(src_obj_%mu0)
+        if (.not. src_obj_%doVariableSolar) then
+            YlmSunT(1:prp_obj_%NlegSet, 1:shdo_obj_%Nlm) = YlmSun(1:prp_obj_%NlegSet, 1:shdo_obj_%Nlm)
+            SECMU0 = 1.0d0/abs(src_obj_%mu0)
+        end if
     end if
 
     ! Loop over the (potentially) four new grid points
@@ -489,15 +497,21 @@ subroutine shd_grid__interpNewGridPts(newPts,&
             else
                 IPH = IP
             end if
+
+            if (src_obj_%doVariableSolar) then
+                call shd_src__computeSunOnePts(IP, mu0, YlmSunT)
+                SECMU0 = 1.0d0 / abs(mu0)
+            end if
+
             if (isPol_) then
                 call shd_src__computeSrcOnePts(shdo_obj_%Nstokes, shdo_obj_%Nlm, LOFJ,&
-                    &src_obj_%type, DIRFLUX(IP)*SECMU0, YLMSUN,&
+                    &src_obj_%type, DIRFLUX(IP)*SECMU0, YlmSunT,&
                     &planck_Rtm(IP), ssa_Rtm(IP), IPH, leg_Rtm,&
                     &NR, radI_Shdo(1, IR+1), srcT_Shdo)
                     !&NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
             else
                 call shd_src__computeSrcOnePts_(shdo_obj_%Nlm, LOFJ,&
-                    &src_obj_%type, DIRFLUX(IP)*SECMU0, YLMSUN,&
+                    &src_obj_%type, DIRFLUX(IP)*SECMU0, YlmSunT,&
                     &planck_Rtm(IP), ssa_Rtm(IP), IPH, leg_Rtm,&
                     &NR, radI_Shdo(1, IR+1), srcT_Shdo)
                     !&NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
@@ -508,7 +522,7 @@ subroutine shd_grid__interpNewGridPts(newPts,&
         end if
     end do
 
-    deallocate(LOFJ, srcT_Shdo)
+    deallocate(LOFJ, srcT_Shdo, YlmSunT)
 
     return
 

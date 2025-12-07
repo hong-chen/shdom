@@ -991,14 +991,14 @@ subroutine shd_rad__computeCamRad(&
     real(RD_) :: DIST, D, RX, RY, RZ, SCANANG
     integer MAXSCATANG
     parameter(MAXSCATANG=721)
-    real, allocatable :: YLMSUN(:, :), PHASETAB(:, :, :)
+    real, allocatable :: YlmSun(:, :), PHASETAB(:, :, :)
     real              :: MEAN, STD1, STD2
     real, allocatable :: AOLP(:)
 
-    allocate(YLMSUN(prp_obj_%NlegSet, shdo_obj_%Nlm))
+    allocate(YlmSun(prp_obj_%NlegSet, shdo_obj_%Nlm))
 
     if (src_obj_%doSolar) then
-        call shd_shdo__computeYlm(.true., src_obj_%mu0, src_obj_%phi0, shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet, YLMSUN)
+        call shd_shdo__computeYlm(.true., src_obj_%mu0, src_obj_%phi0, shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet, YlmSun)
         if (DELTAM .and. prp_obj_%Npha .gt. 0) then
             NSCATANGLE = max(36, min(MAXSCATANG, 2*prp_obj_%Nleg))
             NSTPHASE = min(prp_obj_%NlegSet, 2)
@@ -1151,7 +1151,7 @@ subroutine shd_rad__computeCamRad(&
                 &shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
                 &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
                 &DELTAM, src_obj_%type, src_obj_%avgWaveLen, src_obj_%mu0, src_obj_%phi0,&
-                &DIRFLUX, isrcJ_Shdo_, srcJ_Shdo_, YLMSUN,&
+                &DIRFLUX, isrcJ_Shdo_, srcJ_Shdo_, YlmSun,&
                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                 &MU2, PHI2, X0, Y0, Z0,&
                 &XE, YE, ZE, SIDE, TRANSMIT, VISRAD, VALIDRAD)
@@ -1175,7 +1175,7 @@ subroutine shd_rad__computeCamRad(&
         end do
     end do
 
-    deallocate(YLMSUN)
+    deallocate(YlmSun)
     if (allocated(PHASETAB)) deallocate(PHASETAB)
     if (isPol_) then
         ! Choose the best range for the angle of linear polarization (-90 to 90 or 0 to 180)
