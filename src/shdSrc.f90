@@ -1032,15 +1032,15 @@ subroutine shd_src__computeSrcOneDir(&
     real, allocatable :: YlmView(:, :), YlmSun(:, :)
     real(RD_), allocatable :: SUNDIRLEG(:)
     real, allocatable :: UNSCLEGEN(:, :), SINGSCAT(:, :)
-    logical TMS
+    logical doTMS
 
     allocate(YlmView(prp_obj_%NlegSet, shdo_obj_%Nlm), YlmSun(prp_obj_%NlegSet, shdo_obj_%Nlm))
     allocate(SUNDIRLEG(0:prp_obj_%Nleg))
     allocate(UNSCLEGEN(2, 0:prp_obj_%Nleg), SINGSCAT(shdo_obj_%Nstokes, prp_obj_%Npha))
     if (abs(muView) .gt. 1.0) stop 'Error [_computeOneSrc]: Bad muView.'
 
-    TMS = doDeltaM
-    ! TMS = .FALSE.
+    doTMS = doDeltaM
+    ! doTMS = .FALSE.
 
     ! Precompute Ylm's for output vewing direction and solar direction
     call shd_shdo__computeYlm(.false., muView, phiView, shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet, YlmView)
@@ -1052,7 +1052,7 @@ subroutine shd_src__computeSrcOneDir(&
         COSSCAT = src_obj_%mu0*muView + sqrt((1.0d0 - src_obj_%mu0**2)*&
                                              (1.0d0 - muView**2))*&
                                         cos(src_obj_%phi0 - phiView)
-        if ((prp_obj_%Npha .eq. 0) .and. TMS) then
+        if ((prp_obj_%Npha .eq. 0) .and. doTMS) then
             ! If non-tabulate phase functions (unpolarized) then
             !   compute the Legendre polynomials for the scattering angle
             !   for the untruncated solar single scattering computation.
@@ -1065,7 +1065,7 @@ subroutine shd_src__computeSrcOneDir(&
 
     ! If solar source and tabulated phase functions then precompute
     !   the single scattered solar Stokes vector to outgoing direction
-    if ((src_obj_%type .ne. 'T') .and. TMS .and. (prp_obj_%Npha .gt. 0)) then
+    if ((src_obj_%type .ne. 'T') .and. doTMS .and. (prp_obj_%Npha .gt. 0)) then
         do IPH = 1, prp_obj_%Npha
             ! Unscaled the needed Legendre coefficients, but divide by 1-f
             !   because extinction is still scaled (for TMS method)
@@ -1123,7 +1123,7 @@ subroutine shd_src__computeSrcOneDir(&
         end if
 
         ! Special case for solar source and Delta-M
-        if ((src_obj_%type .ne. 'T') .and. TMS) then
+        if ((src_obj_%type .ne. 'T') .and. doTMS) then
             if (prp_obj_%Npha .gt. 0) then
                 IPH = ipha_Rtm_(I)
             else

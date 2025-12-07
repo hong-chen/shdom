@@ -92,7 +92,7 @@ contains
 
 subroutine shd_io__outputResult(&
     &INSAVEFILE, OUTSAVEFILE,&
-    &DELTAM,&
+    &doDeltaM,&
     &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
     &FLUXES, fluxDir, FLUXDIV,&
     &IRAD, RADOUT, NSHOUT, SHTERMS, SOURCE1OUT,&
@@ -107,7 +107,7 @@ subroutine shd_io__outputResult(&
     ! See the overall program documentation for output parameters.
 
     integer, intent(in) :: MAXITER, TOTITER, NSHOUT
-    logical  , intent(in) :: DELTAM
+    logical  , intent(in) :: doDeltaM
     real, intent(in) :: SOLACC, SPLITACC, SHACC
     real, intent(inout) :: OUTPARMS(*)
     character(len=1), intent(in) :: OUTTYPE
@@ -222,7 +222,7 @@ subroutine shd_io__outputResult(&
     write(2, '(A,A)') '!  INPUT_SAVE_FILE=', trim(INSAVEFILE)
     write(2, '(A,A)') '!  OUTPUT_SAVE_FILE=', trim(OUTSAVEFILE)
 
-    if (DELTAM) then
+    if (doDeltaM) then
         write(2, '(A,A14,A)') '!  SOURCE_TYPE=', SOURCENAME,&
             &'      DELTA-M METHOD'
     else
@@ -1180,7 +1180,7 @@ end subroutine shd_io__radShiftCorr
 subroutine shd_io__outputResultMpi(&
     &Npts_tot, Ncell_tot, Nsh_tot,&
     &INSAVEFILE, OUTSAVEFILE,&
-    &DELTAM,&
+    &doDeltaM,&
     &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
     &FLUXES, FLUXDIV, NSHOUT, SHTERMS, IRAD, RADOUT,&
     &OUTTYPE, OUTPARMS, OUTFILE,&
@@ -1197,7 +1197,7 @@ subroutine shd_io__outputResultMpi(&
 
     integer Nsh_tot, Npts_tot, Ncell_tot
     integer MAXITER, TOTITER, IRAD, NSHOUT
-    logical DELTAM
+    logical doDeltaM
     real SOLACC, SPLITACC, SHACC
     real OUTPARMS(*)
     character(len=1), intent(in) :: OUTTYPE
@@ -1304,7 +1304,7 @@ subroutine shd_io__outputResultMpi(&
         & trim(ckd_obj_%fname), '   NUM_G=', ckd_obj_%Ng
     write(2, '(A,A)') '!  INPUT_SAVE_FILE=', trim(INSAVEFILE)
     write(2, '(A,A)') '!  OUTPUT_SAVE_FILE=', trim(OUTSAVEFILE)
-    if (DELTAM) then
+    if (doDeltaM) then
         write(2, '(A,A14,A)') '!  SOURCE_TYPE=', SOURCENAME,&
             & '      DELTA-M METHOD'
     else
@@ -1914,7 +1914,7 @@ end subroutine shd_io__outputResultMpi
 
 subroutine shd_io__outputCamRad(&
     &INSAVEFILE, OUTSAVEFILE,&
-    &DELTAM,&
+    &doDeltaM,&
     &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
     &IVIS, VISOUT, OUTPARMS, OUTFILE)
 
@@ -1925,7 +1925,7 @@ subroutine shd_io__outputCamRad(&
     ! image pixels.
 
     integer MAXITER, TOTITER, IVIS
-    logical, intent(in) :: DELTAM
+    logical, intent(in) :: doDeltaM
     real SOLACC, SPLITACC, SHACC
     real OUTPARMS(*)
     character(len=*), intent(in) :: INSAVEFILE, OUTSAVEFILE
@@ -2025,7 +2025,7 @@ subroutine shd_io__outputCamRad(&
     write(2, '(A,A)') '!  INPUT_SAVE_FILE=', trim(INSAVEFILE)
     write(2, '(A,A)') '!  OUTPUT_SAVE_FILE=', trim(OUTSAVEFILE)
 
-    if (DELTAM) then
+    if (doDeltaM) then
         write(2, '(A,A14,A)') '!  SOURCE_TYPE=', SOURCENAME,&
             &'      DELTA-M METHOD'
     else
@@ -2112,7 +2112,7 @@ end subroutine shd_io__outputCamRad
 
 subroutine shd_io__outputImg(&
     &INSAVEFILE, OUTSAVEFILE,&
-    &DELTAM,&
+    &doDeltaM,&
     &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
     &IVIS, VISOUT, OUTPARMS, OUTFILE)
 
@@ -2123,7 +2123,7 @@ subroutine shd_io__outputImg(&
     ! image pixels.
 
     integer MAXITER, TOTITER, IVIS
-    logical, intent(in) :: DELTAM
+    logical, intent(in) :: doDeltaM
     real SOLACC, SPLITACC, SHACC
     real OUTPARMS(*)
     character(len=*), intent(in) :: INSAVEFILE, OUTSAVEFILE
@@ -2293,7 +2293,7 @@ subroutine shd_io__outputImg(&
     !write(BUF(I:I + 79), '(A,A,A1)')&
     !    & '# OUTPUT_SAVE_FILE=', trim(OUTSAVEFILE), LF
     I = I + index(BUF(I:I + 79), LF)
-    if (DELTAM) then
+    if (doDeltaM) then
         write(BUF(I:I + 79), '(A,A14,A,A1)')&
             & '# SOURCE_TYPE=', SOURCENAME, '    DELTA-M METHOD', LF
         I = I + index(BUF(I:I + 79), LF)

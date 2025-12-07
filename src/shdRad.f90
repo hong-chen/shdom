@@ -95,7 +95,7 @@ module shd_rad
 contains
 
 subroutine shd_rad__makeFluxDir(&
-    &NPTS, DELTAM,&
+    &NPTS, doDeltaM,&
     &ML, SOLARFLUX, muSun, phiSun,&
     &fluxDir)
 
@@ -104,7 +104,7 @@ subroutine shd_rad__makeFluxDir(&
     !   Actually calls shd_rad__computeDirect to do all the hard work.
 
     integer NPTS, ML
-    logical DELTAM
+    logical doDeltaM
     real SOLARFLUX, muSun, phiSun
     real fluxDir(NPTS)
     integer SIDE, IP
@@ -113,7 +113,7 @@ subroutine shd_rad__makeFluxDir(&
 
     call shd_rad__computeDirect(&
         &1, 0.0, 0.0, 0.0, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
-        &DELTAM, ML,&
+        &doDeltaM, ML,&
         &SOLARFLUX, muSun, phiSun, fluxDir(1),&
         &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
 
@@ -121,7 +121,7 @@ subroutine shd_rad__makeFluxDir(&
         DIRPATH = 0.0
         call shd_rad__computeDirect&
             &(0, xyz_Rtm_(1, IP), xyz_Rtm_(2, IP), xyz_Rtm_(3, IP),&
-            &rtm_obj_%flag_bc, rtm_obj_%flag_ip, DELTAM, ML,&
+            &rtm_obj_%flag_bc, rtm_obj_%flag_ip, doDeltaM, ML,&
             &SOLARFLUX, muSun, phiSun, fluxDir(IP),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
     end do
@@ -131,7 +131,7 @@ end subroutine shd_rad__makeFluxDir
 
 subroutine shd_rad__computeDirect(&
     &INIT, XI, YI, ZI, BCFLAG, IPFLAG,&
-    &DELTAM, ML, SOLARFLUX, muSun, phiSun,&
+    &doDeltaM, ML, SOLARFLUX, muSun, phiSun,&
     &fluxDir, UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
 
     !╭──────────────────────────────────────────────────────────────╮!
@@ -144,7 +144,7 @@ subroutine shd_rad__computeDirect(&
     !   INIT=2: the input lowest uniform level (UNIFZLEV) is stored.
     !   INIT=0: to do the path integration and return the direct
     !           beam flux on the horizontal (fluxDir) at XI,YI,ZI.
-    ! <DELTAM> The DELTAM flag is used to determine whether to delta-M scale the
+    ! <doDeltaM> The doDeltaM flag is used to determine whether to delta-M scale the
     !   extinction for the direct beam computation. The extinction includes
     !   the gaseous absorption.
     ! <IPFLAG> If the IPFLAG has bit 2 set then the direct
@@ -168,7 +168,7 @@ subroutine shd_rad__computeDirect(&
 
     integer(kind=I__), intent(in) :: INIT, BCFLAG, IPFLAG, ML
     real(kind=R__),    intent(in) :: XI, YI, ZI, SOLARFLUX, muSun, phiSun
-    logical, intent(in) :: DELTAM
+    logical, intent(in) :: doDeltaM
 
     integer(kind=I__), intent(out) :: SIDE
     real(kind=R__),    intent(out) :: fluxDir, XO, YO, ZO
@@ -266,7 +266,7 @@ subroutine shd_rad__computeDirect(&
                             ext0 = ext0 + kabs(IZ)
                         end if
                         ! Do the Delta-M scaling if needed
-                        if (DELTAM) then
+                        if (doDeltaM) then
                             if (prp_obj_%Npha .gt. 0) then
                                 IPH = ipha_Prp_(IZ, IY, IX)
                             else
@@ -801,7 +801,7 @@ subroutine shd_rad__interpRad(&
 end subroutine shd_rad__interpRad
 
 subroutine shd_rad__computeRad(&
-    &DELTAM,&
+    &doDeltaM,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &fluxDir, FLUXES,&
     &src1_Shdo, GRIDRAD,&
@@ -812,7 +812,7 @@ subroutine shd_rad__computeRad(&
     integer IRAD
     integer MAXNBC, NTOPPTS, NBOTPTS
     integer BCPTR(MAXNBC, 2)
-    logical DELTAM
+    logical doDeltaM
     real BCRAD(shdo_obj_%Nstokes, *)
     real fluxDir(rtm_obj_%Npts), FLUXES(2, rtm_obj_%Npts)
     real src1_Shdo(shdo_obj_%Nstokes, rtm_obj_%Npts), GRIDRAD(shdo_obj_%Nstokes, rtm_obj_%Npts)
@@ -905,7 +905,7 @@ subroutine shd_rad__computeRad(&
 
         ! Compute the source function throughout grid for this angle
         call shd_src__computeSrcOneDir(&
-            &DELTAM, MUOUT, PHIOUT,&
+            &doDeltaM, MUOUT, PHIOUT,&
             &fluxDir, src1_Shdo,&
             &isrcJ_Shdo_, srcJ_Shdo_)
 
@@ -964,7 +964,7 @@ subroutine shd_rad__computeRad(&
 end subroutine shd_rad__computeRad
 
 subroutine shd_rad__computeCamRad(&
-    &DELTAM,&
+    &doDeltaM,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &fluxDir, FLUXES,&
     &OUTPARMS, IVIS, VISOUT)
@@ -975,7 +975,7 @@ subroutine shd_rad__computeCamRad(&
     integer IVIS
     integer MAXNBC, NTOPPTS, NBOTPTS
     integer BCPTR(MAXNBC, 2)
-    logical DELTAM
+    logical doDeltaM
     real BCRAD(shdo_obj_%Nstokes, *)
     real fluxDir(rtm_obj_%Npts), FLUXES(2, rtm_obj_%Npts)
     real OUTPARMS(*), VISOUT(shdo_obj_%Nstokes, *)
@@ -999,7 +999,7 @@ subroutine shd_rad__computeCamRad(&
 
     if (src_obj_%doSolar) then
         call shd_shdo__computeYlm(.true., src_obj_%mu0, src_obj_%phi0, shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet, YlmSun)
-        if (DELTAM .and. prp_obj_%Npha .gt. 0) then
+        if (doDeltaM .and. prp_obj_%Npha .gt. 0) then
             NSCATANGLE = max(36, min(MAXSCATANG, 2*prp_obj_%Nleg))
             NSTPHASE = min(prp_obj_%NlegSet, 2)
             allocate(PHASETAB(NSTPHASE, prp_obj_%Npha, NSCATANGLE))
@@ -1150,7 +1150,7 @@ subroutine shd_rad__computeCamRad(&
                 &NSTPHASE, NSCATANGLE, PHASETAB,&
                 &shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
                 &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
-                &DELTAM, src_obj_%type, src_obj_%avgWaveLen, src_obj_%mu0, src_obj_%phi0,&
+                &doDeltaM, src_obj_%type, src_obj_%avgWaveLen, src_obj_%mu0, src_obj_%phi0,&
                 &fluxDir, isrcJ_Shdo_, srcJ_Shdo_, YlmSun,&
                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                 &MU2, PHI2, X0, Y0, Z0,&

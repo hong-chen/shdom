@@ -434,7 +434,7 @@ end subroutine shd_mpi__map
 
 subroutine shd_mpi__bcastInp(&
     fileInp_sav, fileOut_sav,&
-    KDIST, DELTAM,&
+    KDIST, doDeltaM,&
     ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
     MAXOUT, MAXPAR, NUMOUT, OUTTYPES, parms_Out,&
     MAX_TOTAL_MB, SPLITTING_FACTOR,&
@@ -455,7 +455,7 @@ subroutine shd_mpi__bcastInp(&
 
     integer, intent(in)    :: MAXOUT, MAXPAR
     integer, intent(inout) :: MAXITER, NUMOUT
-    logical, intent(inout) :: KDIST, DELTAM, ACCELFLAG
+    logical, intent(inout) :: KDIST, doDeltaM, ACCELFLAG
     real, intent(inout) :: SOLACC, SPLITACC, SHACC, parms_Out(MAXPAR, MAXOUT)
     real, intent(inout) :: MAX_TOTAL_MB, SPLITTING_FACTOR
     real, intent(inout) :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
@@ -488,10 +488,10 @@ subroutine shd_mpi__bcastInp(&
 
     ! logical variables
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    logicBuf(:) = (/KDIST, DELTAM, ACCELFLAG/)
+    logicBuf(:) = (/KDIST, doDeltaM, ACCELFLAG/)
     call mpi_bcast(logicBuf, 3, MPI_logical, 0, MPI_comm_world, ierr)
     KDIST     = logicBuf(1)
-    DELTAM    = logicBuf(2)
+    doDeltaM    = logicBuf(2)
     ACCELFLAG = logicBuf(3)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
@@ -1255,7 +1255,7 @@ subroutine shd_mpi__findMaxSplitCrit(SPLITCRIT)
 end subroutine shd_mpi__findMaxSplitCrit
 
 subroutine shd_mpi__makeFluxDir(SPT,&
-    &DELTAM, ML,&
+    &doDeltaM, ML,&
     &SOLARFLUX, muSun, phiSun,&
     &fluxDir)
 
@@ -1264,7 +1264,7 @@ subroutine shd_mpi__makeFluxDir(SPT,&
     ! fluxDir is set to F*exp(-tau_sun).
 
     integer, intent(in) :: SPT, ML
-    logical, intent(in) :: DELTAM
+    logical, intent(in) :: doDeltaM
     real, intent(in) :: SOLARFLUX, muSun, phiSun
     real, intent(out) :: fluxDir(rtm_obj_%Npts)
 
@@ -1297,14 +1297,14 @@ subroutine shd_mpi__makeFluxDir(SPT,&
     if (SPT .eq. 1) then
         ! Initialize the direct beam calculation
         call shd_rad__computeDirect(1, 0.0, 0.0, 0.0, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
-            &DELTAM, ML, SOLARFLUX, muSun, phiSun, fluxDir(1),&
+            &doDeltaM, ML, SOLARFLUX, muSun, phiSun, fluxDir(1),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
         ! Find the max lowest uniform Z level over all processors and then
         !   tell shd_rad__computeDirect about it
         UZLEV = UNIFZLEV
         call mpi_allreduce(UZLEV, UNIFZLEV, 1, MPI_real, MPI_max, comm2D_, ierr)
         call shd_rad__computeDirect(2, 0.0, 0.0, 0.0, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
-            &DELTAM, ML, SOLARFLUX, muSun, phiSun, fluxDir(1),&
+            &doDeltaM, ML, SOLARFLUX, muSun, phiSun, fluxDir(1),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
     end if
 
@@ -1336,7 +1336,7 @@ subroutine shd_mpi__makeFluxDir(SPT,&
     do IP = SPT, rtm_obj_%Npts
         DIRPATH = 0.0
         call shd_rad__computeDirect(0, xyz_Rtm_(1, IP), xyz_Rtm_(2, IP), xyz_Rtm_(3, IP),&
-            &rtm_obj_%flag_bc, rtm_obj_%flag_ip, DELTAM, ML,&
+            &rtm_obj_%flag_bc, rtm_obj_%flag_ip, doDeltaM, ML,&
             &SOLARFLUX, muSun, phiSun, fluxDir(IP),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
         ! If we don't have a good direct beam then save the information
@@ -1406,7 +1406,7 @@ subroutine shd_mpi__makeFluxDir(SPT,&
                 Z = BndDirRealInfo(3, J, Ldownx); DIRPATH = BndDirRealInfo(4, J, Ldownx)
                 if (Y .lt. (rtm_obj_%y(1) - EPS)) Y = YMAX; if (Y .gt. (YMAX + EPS)) Y = rtm_obj_%y(1)
                 call shd_rad__computeDirect(0, X, Y, Z, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
-                    &DELTAM, ML,&
+                    &doDeltaM, ML,&
                     &SOLARFLUX, muSun, phiSun, DIRJUNK,&
                     &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
                 ! If we got a valid direct beam then store it in DirAllOut otherwise
@@ -1438,7 +1438,7 @@ subroutine shd_mpi__makeFluxDir(SPT,&
                 Z = BndDirRealInfo(3, J, Ldowny); DIRPATH = BndDirRealInfo(4, J, Ldowny)
                 if (X .lt. (rtm_obj_%x(1) - EPS)) X = XMAX; if (X .gt. (XMAX + EPS)) X = rtm_obj_%x(1)
                 call shd_rad__computeDirect(0, X, Y, Z, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
-                    &DELTAM, ML,&
+                    &doDeltaM, ML,&
                     &SOLARFLUX, muSun, phiSun, DIRJUNK,&
                     &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
                 ! If we got a valid direct beam then store it in DirAllOut otherwise
@@ -1973,7 +1973,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
 end subroutine shd_mpi__calBndryRad
 
 subroutine shd_mpi__computeRad(&
-    &DELTAM,&
+    &doDeltaM,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &fluxDir, FLUXES,&
     &src1_Shdo, GRIDRAD,&
@@ -1987,7 +1987,7 @@ subroutine shd_mpi__computeRad(&
     integer, intent(inout) :: NRAD
     integer, intent(in) :: MAXNBC, NTOPPTS, NBOTPTS
     integer, intent(in) :: BCPTR(MAXNBC, 2)
-    logical, intent(in) :: DELTAM
+    logical, intent(in) :: doDeltaM
     real, intent(in) :: BCRAD(shdo_obj_%Nstokes, *)
     real, intent(in) :: fluxDir(rtm_obj_%Npts), FLUXES(2, rtm_obj_%Npts)
     real, intent(inout) :: src1_Shdo(shdo_obj_%Nstokes, rtm_obj_%Npts), GRIDRAD(shdo_obj_%Nstokes, rtm_obj_%Npts)
@@ -2118,7 +2118,7 @@ subroutine shd_mpi__computeRad(&
 
         ! Compute the source function throughout grid for this angle
         call shd_src__computeSrcOneDir(&
-            &DELTAM, mu_out, phi_out,&
+            &doDeltaM, mu_out, phi_out,&
             &fluxDir, src1_Shdo,&
             &isrcJ_Shdo_, srcJ_Shdo_)
 
@@ -2380,7 +2380,7 @@ subroutine shd_mpi__computeRad(&
 end subroutine shd_mpi__computeRad
 
 subroutine shd_mpi__computeCamRad(&
-    &DELTAM,&
+    &doDeltaM,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &fluxDir, FLUXES,&
     &parms_Out, IVIS, VISOUT)
@@ -2393,7 +2393,7 @@ subroutine shd_mpi__computeCamRad(&
     integer, intent(inout) :: IVIS
     integer, intent(in) :: MAXNBC, NTOPPTS, NBOTPTS
     integer, intent(in) :: BCPTR(MAXNBC, 2)
-    logical, intent(in) :: DELTAM
+    logical, intent(in) :: doDeltaM
     real, intent(in) :: BCRAD(shdo_obj_%Nstokes, *)
     real, intent(in) :: fluxDir(rtm_obj_%Npts), FLUXES(2, rtm_obj_%Npts)
     real, intent(in) :: parms_Out(*)
@@ -2411,7 +2411,7 @@ subroutine shd_mpi__computeCamRad(&
     real(RD_) :: U, V, UP, VP, COSDELPHI, ROTANG, R
     real(RD_) :: DIST, D, RX, RY, RZ, SCANANG
     integer, parameter :: MAXSCATANG = 721
-    real, allocatable :: YLMSUN(:, :), PHASETAB(:, :, :)
+    real, allocatable :: YlmSun(:, :), PHASETAB(:, :, :)
     real              :: MEAN, STD1, STD2
     real, allocatable :: AOLP(:)
 
@@ -2431,11 +2431,11 @@ subroutine shd_mpi__computeCamRad(&
     type(MPI_request), allocatable :: requests(:)
     type(MPI_status), allocatable :: status(:)
 
-    allocate(YLMSUN(prp_obj_%NlegSet, shdo_obj_%Nlm))
+    allocate(YlmSun(prp_obj_%NlegSet, shdo_obj_%Nlm))
 
     if (src_obj_%doSolar) then
-        call shd_shdo__computeYlm(.true., src_obj_%mu0, src_obj_%phi0, shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet, YLMSUN)
-        if (DELTAM .and. prp_obj_%Npha .gt. 0) then
+        call shd_shdo__computeYlm(.true., src_obj_%mu0, src_obj_%phi0, shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet, YlmSun)
+        if (doDeltaM .and. prp_obj_%Npha .gt. 0) then
             NSCATANGLE = max(36, min(MAXSCATANG, 2*prp_obj_%Nleg))
             NSTPHASE = min(prp_obj_%NlegSet, 2)
             allocate(PHASETAB(NSTPHASE, prp_obj_%Npha, NSCATANGLE))
@@ -2630,8 +2630,8 @@ subroutine shd_mpi__computeCamRad(&
                     &NSTPHASE, NSCATANGLE, PHASETAB,&
                     &shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
                     &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
-                    &DELTAM, src_obj_%type, src_obj_%avgWaveLen, src_obj_%mu0, src_obj_%phi0,&
-                    &fluxDir, isrcJ_Shdo_, srcJ_Shdo_, YLMSUN,&
+                    &doDeltaM, src_obj_%type, src_obj_%avgWaveLen, src_obj_%mu0, src_obj_%phi0,&
+                    &fluxDir, isrcJ_Shdo_, srcJ_Shdo_, YlmSun,&
                     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                     &MU2, PHI2, X0, Y0, Z0,&
                     &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
@@ -2712,8 +2712,8 @@ subroutine shd_mpi__computeCamRad(&
                     &NSTPHASE, NSCATANGLE, PHASETAB,&
                     &shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
                     &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
-                    &DELTAM, src_obj_%type, src_obj_%avgWaveLen, src_obj_%mu0, src_obj_%phi0,&
-                    &fluxDir, isrcJ_Shdo_, srcJ_Shdo_, YLMSUN,&
+                    &doDeltaM, src_obj_%type, src_obj_%avgWaveLen, src_obj_%mu0, src_obj_%phi0,&
+                    &fluxDir, isrcJ_Shdo_, srcJ_Shdo_, YlmSun,&
                     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                     &MU2, PHI2, X, Y, Z,&
                     &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
@@ -2778,7 +2778,7 @@ subroutine shd_mpi__computeCamRad(&
     if (myProc_ .eq. 0) deallocate(NradRecv, RadRecv, IndexRecv)
     deallocate(BndSendRadRealInfo, BndSendRadIntInfo)
     deallocate(BndRecvRadRealInfo, BndRecvRadIntInfo)
-    deallocate(YLMSUN)
+    deallocate(YlmSun)
     if (allocated(PHASETAB)) deallocate(PHASETAB)
 
     ! On the master processor convert VISOUT(2:,*) from Stokes parameters

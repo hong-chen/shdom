@@ -797,7 +797,7 @@ subroutine shd_io__readPrpSize(prp_obj)
 
 end subroutine shd_io__readPrpSize
 
-subroutine shd_io__readPrp(isDeltaM, &
+subroutine shd_io__readPrp(doDeltaM, &
                            prp_obj, temp_Prp, ext_Prp, ssa_Prp, leg_Prp, ipha_Prp)
 
     ! Reads the medium properties from the file into the property arrays.
@@ -818,7 +818,7 @@ subroutine shd_io__readPrp(isDeltaM, &
     ! terms to be used (regardless of what is in property file).
     ! See the overall program documentation for the four file formats.
 
-    logical, intent(in) :: isDeltaM
+    logical, intent(in) :: doDeltaM
 
     type(shd_type_prp), intent(inout) :: prp_obj
     real(kind=R__),  intent(out) :: temp_Prp(prp_obj%Nz, prp_obj%Ny, prp_obj%Nx), &
@@ -868,7 +868,7 @@ subroutine shd_io__readPrp(isDeltaM, &
             read(1, *) (temp0, iz=1, prp_obj%Nz)
             read(1, *) ssa0, Nleg
 
-            if (isDeltaM) then
+            if (doDeltaM) then
                 prp_obj%Nleg = max(prp_obj%Nleg, Nleg)
                 prp_obj%Nleg = min(prp_obj%Nleg, prp_obj%maxNleg)
             end if
@@ -924,7 +924,7 @@ subroutine shd_io__readPrp(isDeltaM, &
             read(1, *) prp_obj%Npha
 
             ! If delta-M then find the largest number of Legendre terms
-            if (isDeltaM) then
+            if (doDeltaM) then
 
                 do i = 1, prp_obj%Npha
                     if (prp_obj%type .eq. 'T') then
@@ -1055,7 +1055,7 @@ subroutine shd_io__readPrp(isDeltaM, &
             !   If delta-M then find the largest number of Legendre terms
             prp_obj%Npha = 0
 
-            if (isDeltaM) then
+            if (doDeltaM) then
                 do while (.true.)
                     read(1, *, end=190) ix, iy, iz, temp0, ext0, ssa0, Nleg,&
                         &(chi0, l=1, Nleg)

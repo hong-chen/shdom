@@ -99,10 +99,10 @@ subroutine shd_shdo__computeSH(&
     integer I, IR, J, NLM
     real A, C, C0, IMEAN, FX, FY, FZ, HORMS
     real SECSOL, SINSOL, SOLX, SOLY, SOLM, F0
-    real, allocatable :: YLMSUN(:)
+    real, allocatable :: YlmSun(:)
 
     NLM = (2*MM + 1)*(ML + 1) - MM*(MM + 1)
-    allocate(YLMSUN(NLM))
+    allocate(YlmSun(NLM))
 
     ! Spherical Harmonic output: individual SH terms
     A = sqrt(PI_*FRAC23_)
@@ -115,7 +115,7 @@ subroutine shd_shdo__computeSH(&
     SOLM = SECSOL/(4.0*PI_)
     F0 = 0.0
     if (src_obj_%doSolar) then
-        call shd_shdo__computeYlm(.true., muSun, phiSun, ML, MM, 1, YLMSUN)
+        call shd_shdo__computeYlm(.true., muSun, phiSun, ML, MM, 1, YlmSun)
     end if
     do I = 1, NPTS
         IR = iradI_Shdo(I)
@@ -151,12 +151,12 @@ subroutine shd_shdo__computeSH(&
                 F0 = SECSOL*fluxDir(I)
             end if
             do J = 5, iradI_Shdo(I + 1) - IR
-                HORMS = HORMS + (F0*YLMSUN(J) + radI_Shdo(1, IR + J))**2
+                HORMS = HORMS + (F0*YlmSun(J) + radI_Shdo(1, IR + J))**2
             end do
             SHTERMS(5, I) = sqrt(HORMS)
         end if
     end do
-    deallocate(YLMSUN)
+    deallocate(YlmSun)
 
     return
 
