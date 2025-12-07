@@ -94,7 +94,7 @@ subroutine shd_io__outputResult(&
     &INSAVEFILE, OUTSAVEFILE,&
     &DELTAM,&
     &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
-    &FLUXES, DIRFLUX, FLUXDIV,&
+    &FLUXES, fluxDir, FLUXDIV,&
     &IRAD, RADOUT, NSHOUT, SHTERMS, SOURCE1OUT,&
     &OUTTYPE, OUTPARMS, OUTFILE)
 
@@ -113,7 +113,7 @@ subroutine shd_io__outputResult(&
     character(len=1), intent(in) :: OUTTYPE
     character(len=*), intent(in) :: INSAVEFILE, OUTSAVEFILE
     character(len=*), intent(in) :: OUTFILE
-    real, intent(in) :: FLUXES(2, rtm_obj_%Npts), DIRFLUX(rtm_obj_%Npts), FLUXDIV(rtm_obj_%Npts)
+    real, intent(in) :: FLUXES(2, rtm_obj_%Npts), fluxDir(rtm_obj_%Npts), FLUXDIV(rtm_obj_%Npts)
     real, intent(in) :: SOURCE1OUT(shdo_obj_%Nstokes, *)
 
     real, intent(in) :: RADOUT(shdo_obj_%Nstokes, *), SHTERMS(NSHOUT, rtm_obj_%Npts)
@@ -423,7 +423,7 @@ subroutine shd_io__outputResult(&
 
             if (src_obj_%doSolar) then
                 IDATA = 0
-                call shd_io__outputDataBin(DIRFLUX(1:rtm_obj_%Npts0:rtm_obj_%Nz), 1, N, IDATA, OUTFILE_DATA, 'ADD')
+                call shd_io__outputDataBin(fluxDir(1:rtm_obj_%Npts0:rtm_obj_%Nz), 1, N, IDATA, OUTFILE_DATA, 'ADD')
             end if
             !╰────────────────────────────────────────────────╯!
 
@@ -434,7 +434,7 @@ subroutine shd_io__outputResult(&
             !        &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) then
             !        if (src_obj_%type .ne. 'T') then
             !            write(2, FORM) xyz_Rtm_(1, I), xyz_Rtm_(2, I),&
-            !                & C*FLUXES(2, I + rtm_obj_%Nz - 1), C*FLUXES(1, I), DIRFLUX(I)
+            !                & C*FLUXES(2, I + rtm_obj_%Nz - 1), C*FLUXES(1, I), fluxDir(I)
             !        else
             !            write(2, FORM) xyz_Rtm_(1, I), xyz_Rtm_(2, I),&
             !                & C*FLUXES(2, I + rtm_obj_%Nz - 1), C*FLUXES(1, I)
@@ -489,7 +489,7 @@ subroutine shd_io__outputResult(&
                     call shd_util__interpTriLin(icell,&
                         & X0, Y0, Z0, 2, FLUXES, 2, 1, FUP(IDATA))
                     call shd_util__interpTriLin(icell,&
-                        & X0, Y0, Z0, 1, DIRFLUX, 1, 1, FDIR(IDATA))
+                        & X0, Y0, Z0, 1, fluxDir, 1, 1, FDIR(IDATA))
                     X0 = X0 + OUTPARMS(3)
                 end do
                 Y0 = Y0 + OUTPARMS(4)
@@ -538,7 +538,7 @@ subroutine shd_io__outputResult(&
             !        call shd_util__interpTriLin(icell,&
             !            & X0, Y0, Z0, 2, FLUXES, 2, 1, FUP, cell_obj_)
             !        call shd_util__interpTriLin(icell,&
-            !            & X0, Y0, Z0, 1, DIRFLUX, 1, 1, FDIR, cell_obj_)
+            !            & X0, Y0, Z0, 1, fluxDir, 1, 1, FDIR, cell_obj_)
             !        if (src_obj_%type .ne. 'T') then
             !            write(2, FORM) X0, Y0, C*FUP, C*FDN, FDIR
             !        else
@@ -584,7 +584,7 @@ subroutine shd_io__outputResult(&
                         &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) then
                         SUM1(IZ) = SUM1(IZ) + FLUXES(1, I)
                         SUM2(IZ) = SUM2(IZ) + FLUXES(2, I)
-                        SUM3(IZ) = SUM3(IZ) + DIRFLUX(I)
+                        SUM3(IZ) = SUM3(IZ) + fluxDir(I)
                         N = N + 1
                     end if
                 end do
@@ -631,7 +631,7 @@ subroutine shd_io__outputResult(&
             !            &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) then
             !            SUM1 = SUM1 + FLUXES(1, I)
             !            SUM2 = SUM2 + FLUXES(2, I)
-            !            SUM3 = SUM3 + DIRFLUX(I)
+            !            SUM3 = SUM3 + fluxDir(I)
             !            N = N + 1
             !        end if
             !    end do
@@ -702,7 +702,7 @@ subroutine shd_io__outputResult(&
 
             if (src_obj_%doSolar) then
                 IDATA = 0
-                call shd_io__outputDataBin(DIRFLUX(:), 1, N, IDATA, OUTFILE_DATA, 'ADD')
+                call shd_io__outputDataBin(fluxDir(:), 1, N, IDATA, OUTFILE_DATA, 'ADD')
             end if
 
             ! add grid positions (or binary data cannot be reconstructed)
@@ -719,7 +719,7 @@ subroutine shd_io__outputResult(&
             !        &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) .or. ALLGRID) then
             !        if (src_obj_%type .ne. 'T') then
             !            write(2, FORM) xyz_Rtm_(1, I), xyz_Rtm_(2, I), xyz_Rtm_(3, I),&
-            !                & C*FLUXES(2, I), C*FLUXES(1, I), DIRFLUX(I)
+            !                & C*FLUXES(2, I), C*FLUXES(1, I), fluxDir(I)
             !        else
             !            write(2, FORM) xyz_Rtm_(1, I), xyz_Rtm_(2, I), xyz_Rtm_(3, I),&
             !                & C*FLUXES(2, I), C*FLUXES(1, I)

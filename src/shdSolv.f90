@@ -111,10 +111,10 @@ subroutine shd_solv__solveRte(&
     &SPLITACC, SHACC,&
     &MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &WORK, WORK1, WORK2,&
-    &FLUXES, DIRFLUX)
+    &FLUXES, fluxDir)
 
     ! Performs the SHDOM solution procedure.
-    ! Output is returned in srcJ_Shdo, radI_Shdo, FLUXES, DIRFLUX.
+    ! Output is returned in srcJ_Shdo, radI_Shdo, FLUXES, fluxDir.
     ! The adaptive grid stucture (cell_obj_%Npts,i8Grid_Cell_,i6Cell_Cell_,i2Tree_Cell_,
     ! flag_Cell_,rtm_obj_%Npts,xyz_Rtm_) is input and modified for new grid
     ! cells and points on output.
@@ -125,7 +125,7 @@ subroutine shd_solv__solveRte(&
     logical doRadInit, doDeltaM, doAccel
     real SOLACC, SOLCRIT, SPLITACC, SHACC
     real BCRAD(*)
-    real FLUXES(2, *), DIRFLUX(*)
+    real FLUXES(2, *), fluxDir(*)
     real WORK(*), WORK2(*)
 
     integer I, isetDO
@@ -175,17 +175,17 @@ subroutine shd_solv__solveRte(&
     ! Get the maximum single scattering albedo over all processors
     call shd_mpi__findMaxSsa(maxSsa)
 
-    ! Compute the solar transmission in DIRFLUX.
+    ! Compute the solar transmission in fluxDir.
     ! Precompute Ylm's for solar direction
     if (src_obj_%doSolar) then
         if (isMpi_) then
             call shd_mpi__makeFluxDir(1, doDeltaM, shdo_obj_%maxNl, &
                 src_obj_%solar0, src_obj_%mu0, src_obj_%phi0, &
-                DIRFLUX)
+                fluxDir)
         else
             call shd_rad__makeFluxDir(rtm_obj_%Npts, doDeltaM, shdo_obj_%maxNl, &
                 src_obj_%solar0, src_obj_%mu0, src_obj_%phi0, &
-                DIRFLUX)
+                fluxDir)
         end if
 
         ! fixed solar
@@ -224,7 +224,7 @@ subroutine shd_solv__solveRte(&
         ! Initialize the source function from the radiance field
         call shd_src__computeSrc(&
             &doFixSH, YlmSun,&
-            &DIRFLUX, SHACC,&
+            &fluxDir, SHACC,&
             &isrcD_Shdo, srcD_Shdo,&
             &.true., doAccel, DELJDOT, DELJOLD, DELJNEW, JNORM,&
             &iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_)
@@ -346,7 +346,7 @@ subroutine shd_solv__solveRte(&
                     doSplit, isOutMem, CURSPLITACC, SPLITCRIT, &
                     doDeltaM, doAccel, &
                     isrcD_Shdo, &
-                    DIRFLUX, &
+                    fluxDir, &
                     src_obj_%solar0, YlmSun, &
                     WORK, WORK2, &
                     rtm_obj_, cell_obj_, &
@@ -377,7 +377,7 @@ subroutine shd_solv__solveRte(&
             &brdf_Shdo,&
             &MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
             &CMU1, CPHI1, CMU2, CPHI2, wPhiFFT_Shdo, flagFFT_Shdo,&
-            &DIRFLUX, FLUXES,&
+            &fluxDir, FLUXES,&
             &WORK, WORK1, WORK2,&
             &iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_)
         !╰────────────────────────────────────────────────╯!
@@ -392,7 +392,7 @@ subroutine shd_solv__solveRte(&
         !╭────────────────────────────────────────────────╮!
         call shd_src__computeSrc(&
             &doFixSH, YlmSun,&
-            &DIRFLUX, SHACC,&
+            &fluxDir, SHACC,&
             &isrcD_Shdo, srcD_Shdo,&
             &.false., doAccel, DELJDOT, DELJOLD, DELJNEW, JNORM,&
             &iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_)

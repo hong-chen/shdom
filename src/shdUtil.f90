@@ -123,17 +123,17 @@ end subroutine shd_util__sumData
 
 subroutine shd_util__interpData(OLDNPTS,&
     &FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
-    &FLUXES, DIRFLUX, FLUXDIV, SHTERMS)
+    &FLUXES, fluxDir, FLUXDIV, SHTERMS)
 
     !   Interpolates the output data to the new grid points (those >OLDNPTS)
-    ! from the old grid points.  The output data is in FLUXES, DIRFLUX,
+    ! from the old grid points.  The output data is in FLUXES, fluxDir,
     ! FLUXDIV, and SHTERMS.  OLDNPTS is set to zero to do no interpolation.
     ! Each new point is located in a cell, and the two parent grid points
     ! are found to interpolate the data from.
 
     integer OLDNPTS
     logical FLUX_OUT, FLUXDIV_OUT, SH_OUT
-    real FLUXES(2, rtm_obj_%Npts), DIRFLUX(rtm_obj_%Npts), FLUXDIV(rtm_obj_%Npts)
+    real FLUXES(2, rtm_obj_%Npts), fluxDir(rtm_obj_%Npts), FLUXDIV(rtm_obj_%Npts)
     real SHTERMS(5, rtm_obj_%Npts)
     integer IP, IC, ICELL, IPARENT, IDIR, I, J, DIR1, DIR2, IP1, IP2
     integer GRIDCORNER(2, 4, 3)
@@ -169,7 +169,7 @@ subroutine shd_util__interpData(OLDNPTS,&
                 if (FLUX_OUT) then
                     FLUXES(1, IP) = 0.5*(FLUXES(1, IP1) + FLUXES(1, IP2))
                     FLUXES(2, IP) = 0.5*(FLUXES(2, IP1) + FLUXES(2, IP2))
-                    DIRFLUX(IP) = 0.5*(DIRFLUX(IP1) + DIRFLUX(IP2))
+                    fluxDir(IP) = 0.5*(fluxDir(IP1) + fluxDir(IP2))
                 end if
                 if (FLUXDIV_OUT) then
                     FLUXDIV(IP) = 0.5*(FLUXDIV(IP1) + FLUXDIV(IP2))

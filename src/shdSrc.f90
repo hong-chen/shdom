@@ -376,7 +376,7 @@ subroutine shd_src__integrateSrcOneRay(&
     &NSTPHASE, NSCATANGLE, PHASETAB,&
     &ML, MM, NLM,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-    &doDeltaM, SRCTYPE, WAVELEN, SOLARMU, SOLARAZ,&
+    &doDeltaM, SRCTYPE, WAVELEN, muSun, phiSun,&
     &fluxDir, isrcJ_Shdo, srcJ_Shdo, YlmSun,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &muView, phiView, X0, Y0, Z0,&
@@ -399,7 +399,7 @@ subroutine shd_src__integrateSrcOneRay(&
     integer BCPTR(MAXNBC, 2)
     logical doDeltaM, VALIDRAD
     real WTDO(NMU, NPHI0MAX), MU(NMU), PHI(NMU, NPHI0MAX)
-    real WAVELEN, SOLARMU, SOLARAZ
+    real WAVELEN, muSun, phiSun
     real BCRAD(*)
     real fluxDir(rtm_obj_%Npts), srcJ_Shdo(NSTOKES, *)
     real YlmSun(prp_obj_%NlegSet, NLM)
@@ -453,8 +453,8 @@ subroutine shd_src__integrateSrcOneRay(&
         ! Get the solar single scattering Stokes vector for the outgoin
         !   direction my interpolating in scattering angle in the PHASETA
         !   table and then rotating the Q/U polarization to the outgoing
-        COSSCAT = SOLARMU*muView + dsqrt((1.0d0 - SOLARMU**2)*(1.0d0 - muView**2))&
-            &*dcos(SOLARAZ - phiView)
+        COSSCAT = muSun*muView + dsqrt((1.0d0 - muSun**2)*(1.0d0 - muView**2))&
+            &*dcos(phiSun - phiView)
         if (prp_obj_%Npha .gt. 0) then
             allocate(SINGSCAT(NSTOKES, prp_obj_%Npha))
             F = (NSCATANGLE - 1)*(dacos(COSSCAT)/DPI_) + 1
@@ -464,8 +464,8 @@ subroutine shd_src__integrateSrcOneRay(&
                 SINGSCAT(1:NSTPHASE, I)&
                     &= (1 - F)*PHASETAB(:, I, J) + F*PHASETAB(:, I, J + 1)
                 if (isPol_) then
-                    call shd_src__rotatePolarPlane(NSTOKES, COSSCAT, SOLARMU,&
-                        &sngl(muView), SOLARAZ - sngl(phiView), SINGSCAT(:, I))
+                    call shd_src__rotatePolarPlane(NSTOKES, COSSCAT, muSun,&
+                        &sngl(muView), phiSun - sngl(phiView), SINGSCAT(:, I))
                 end if
             end do
         else
@@ -536,7 +536,7 @@ subroutine shd_src__integrateSrcOneRay(&
         if (isPol_) then
             call shd_src__computeSrcOneCell(icell, i8Grid_Cell_,&
                 &NSTOKES, ML, MM, NLM,&
-                &rtm_obj_%Npts, doDeltaM, SRCTYPE, SOLARMU,&
+                &rtm_obj_%Npts, doDeltaM, SRCTYPE, muSun,&
                 &fluxDir,&
                 &isrcJ_Shdo, srcJ_Shdo, YlmView, YlmSun, SUNDIRLEG, SINGSCAT,&
                 &DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
@@ -544,7 +544,7 @@ subroutine shd_src__integrateSrcOneRay(&
         else
             call shd_src__computeSrcOneCell_(icell, i8Grid_Cell_,&
                 &ML, MM, NLM,&
-                &rtm_obj_%Npts, doDeltaM, SRCTYPE, SOLARMU,&
+                &rtm_obj_%Npts, doDeltaM, SRCTYPE, muSun,&
                 &fluxDir,&
                 &isrcJ_Shdo, srcJ_Shdo, YlmView, YlmSun, SUNDIRLEG, SINGSCAT,&
                 &DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
@@ -725,7 +725,7 @@ subroutine shd_src__integrateSrcOneRay(&
                 &IC, KFACE, i8Grid_Cell_, xyz_Rtm_,&
                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                 &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-                &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, fluxDir,&
+                &SRCTYPE, WAVELEN, muSun, phiSun, fluxDir,&
                 &RADBND)
             radI_Shdo(:) = radI_Shdo(:) + TRANSMIT*RADBND(:)
         else
@@ -1338,7 +1338,7 @@ end subroutine shd_src__computeSrcOnePts_
 subroutine shd_src__computeSrcOneCell(&
     &icell, GRIDPTR,&
     &NSTOKES, ML, MM, NLM,&
-    &NPTS, doDeltaM, SRCTYPE, SOLARMU,&
+    &NPTS, doDeltaM, SRCTYPE, muSun,&
     &fluxDir,&
     &isrcJ_Shdo, srcJ_Shdo, YlmView, YlmSun, SUNDIRLEG, SINGSCAT,&
     &DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
@@ -1356,7 +1356,7 @@ subroutine shd_src__computeSrcOneCell(&
     integer GRIDPTR(8, *), isrcJ_Shdo(NPTS + 1)
     integer DONETHIS(8), OLDIPTS(8)
     logical doDeltaM
-    real SOLARMU
+    real muSun
     real fluxDir(NPTS), srcJ_Shdo(NSTOKES, *)
     real YlmView(prp_obj_%NlegSet, NLM), YlmSun(prp_obj_%NlegSet, NLM)
     real SINGSCAT(NSTOKES, prp_obj_%Npha)
@@ -1368,7 +1368,7 @@ subroutine shd_src__computeSrcOneCell(&
     integer IP, J, JT, L, M, MS, ME, IPH, IS, NS, N, I
     real SECMU0, F, DA, A, A1, B1
 
-    SECMU0 = 1.0d0/abs(SOLARMU)
+    SECMU0 = 1.0d0/abs(muSun)
 
     ! Loop over the grid points, computing the source function
     !   at the viewing angle from the spherical harmonics source fun
@@ -1465,7 +1465,7 @@ end subroutine shd_src__computeSrcOneCell
 subroutine shd_src__computeSrcOneCell_(&
     &icell, GRIDPTR,&
     &ML, MM, NLM,&
-    &NPTS, doDeltaM, SRCTYPE, SOLARMU,&
+    &NPTS, doDeltaM, SRCTYPE, muSun,&
     &fluxDir,&
     &isrcJ_Shdo, srcJ_Shdo, YlmView, YlmSun, SUNDIRLEG, SINGSCAT,&
     &DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
@@ -1483,7 +1483,7 @@ subroutine shd_src__computeSrcOneCell_(&
     integer GRIDPTR(8, *), isrcJ_Shdo(NPTS + 1)
     integer DONETHIS(8), OLDIPTS(8)
     logical doDeltaM
-    real SOLARMU
+    real muSun
     real fluxDir(NPTS), srcJ_Shdo(*)
     real YlmView(NLM), YlmSun(NLM)
     real SINGSCAT(prp_obj_%Npha)
@@ -1495,7 +1495,7 @@ subroutine shd_src__computeSrcOneCell_(&
     integer IP, J, JT, L, M, MS, ME, IPH, IS, NS, N, I
     real SECMU0, F, DA, A, A1, B1
 
-    SECMU0 = 1.0d0/abs(SOLARMU)
+    SECMU0 = 1.0d0/abs(muSun)
 
     ! Loop over the grid points, computing the source function
     !   at the viewing angle from the spherical harmonics source fun
@@ -1569,11 +1569,11 @@ end subroutine shd_src__computeSrcOneCell_
 
 subroutine shd_src__computeSolarStokesVect(&
     &SINGLEGEN, COSSCAT,&
-    &SOLARMU, MU, DELPHI, NSTOKES,&
+    &muSun, MU, DELPHI, NSTOKES,&
     &SCATVECT)
 
     ! Calculates the Stokes vector for a single scattering of unpolarized
-    ! sunlight from the solar direction (SOLARMU) to the outgoing
+    ! sunlight from the solar direction (muSun) to the outgoing
     ! direction (MU) and with cosine scattering angle (COSSCAT).
     ! The A1 and B1 elements of the phase matrix are calculated from
     ! the Wigner function expansion coefficients (SINGLEGEN).
@@ -1581,7 +1581,7 @@ subroutine shd_src__computeSolarStokesVect(&
     ! the outgoing meridional plane.  Also divides the output vector by 4*pi.
 
     integer NSTOKES
-    real SINGLEGEN(2, 0:prp_obj_%Nleg), COSSCAT, SOLARMU, MU, DELPHI
+    real SINGLEGEN(2, 0:prp_obj_%Nleg), COSSCAT, muSun, MU, DELPHI
     real SCATVECT(NSTOKES)
     integer I, J, K, L
     real(RD_) :: X, FCT, A1, B1
@@ -1613,7 +1613,7 @@ subroutine shd_src__computeSolarStokesVect(&
         ! Rotate the plane of polarization from the scattering plane
         !   to the outgoing meridional plane.
         SIN_SCAT = dsqrt(max(0.0d0, 1.d0 - COSSCAT**2))
-        SIN_THETA1 = dsqrt(1.d0 - SOLARMU**2)
+        SIN_THETA1 = dsqrt(1.d0 - muSun**2)
         SIN_THETA2 = dsqrt(1.d0 - MU**2)
         SINPHI = dsin(dble(DELPHI))
         COSPHI = dcos(dble(DELPHI))
@@ -1622,7 +1622,7 @@ subroutine shd_src__computeSolarStokesVect(&
             COS2 = -1.0d0
         else
             SIN2 = SIN_THETA1*SINPHI/SIN_SCAT
-            COS2 = (SIN_THETA2*SOLARMU - SIN_THETA1*MU*COSPHI)/SIN_SCAT
+            COS2 = (SIN_THETA2*muSun - SIN_THETA1*MU*COSPHI)/SIN_SCAT
         end if
         SIN22 = 2.0d0*SIN2*COS2
         COS22 = 1.0d0 - 2.0d0*SIN2**2
@@ -1639,7 +1639,7 @@ subroutine shd_src__computeSolarStokesVect(&
 end subroutine shd_src__computeSolarStokesVect
 
 subroutine shd_src__rotatePolarPlane(NSTOKES, COSSCAT,&
-    &SOLARMU, MU, DELPHI, SCATVECT)
+    &muSun, MU, DELPHI, SCATVECT)
 
     ! Rotates the plane of polarization from the scattering plane
     ! to the outgoing meridional plane for the solar single
@@ -1647,7 +1647,7 @@ subroutine shd_src__rotatePolarPlane(NSTOKES, COSSCAT,&
 
     integer NSTOKES
     real(RD_) :: COSSCAT
-    real SOLARMU, MU, DELPHI
+    real muSun, MU, DELPHI
     real SCATVECT(NSTOKES)
     real B1
     real(RD_) :: SIN_SCAT, SIN_THETA1, SIN_THETA2
@@ -1656,7 +1656,7 @@ subroutine shd_src__rotatePolarPlane(NSTOKES, COSSCAT,&
     if (isPol_) then
         B1 = SCATVECT(2)
         SIN_SCAT = dsqrt(max(0.0d0, 1.d0 - COSSCAT**2))
-        SIN_THETA1 = dsqrt(1.d0 - SOLARMU**2)
+        SIN_THETA1 = dsqrt(1.d0 - muSun**2)
         SIN_THETA2 = dsqrt(1.d0 - MU**2)
         SINPHI = dsin(dble(DELPHI))
         COSPHI = dcos(dble(DELPHI))
@@ -1665,7 +1665,7 @@ subroutine shd_src__rotatePolarPlane(NSTOKES, COSSCAT,&
             COS2 = -1.0d0
         else
             SIN2 = SIN_THETA1*SINPHI/SIN_SCAT
-            COS2 = (SIN_THETA2*SOLARMU - SIN_THETA1*MU*COSPHI)/SIN_SCAT
+            COS2 = (SIN_THETA2*muSun - SIN_THETA1*MU*COSPHI)/SIN_SCAT
         end if
         SIN22 = 2.0d0*SIN2*COS2
         COS22 = 1.0d0 - 2.0d0*SIN2**2
@@ -1685,7 +1685,7 @@ subroutine shd_src__findBndryRad(&
     &icell, KFACE, GRIDPTR, GRIDPOS,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-    &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, fluxDir,&
+    &SRCTYPE, WAVELEN, muSun, phiSun, fluxDir,&
     &RADBND)
 
     !   Returns the interpolated Stokes radiance at the boundary (RADBND)
@@ -1700,7 +1700,7 @@ subroutine shd_src__findBndryRad(&
     real(RD_) :: XB, YB
     real GRIDPOS(3, *)
     real WTDO(NMU, NPHI0MAX), MU(NMU), PHI(NMU, NPHI0MAX)
-    real WAVELEN, SOLARMU, SOLARAZ, fluxDir(*)
+    real WAVELEN, muSun, phiSun, fluxDir(*)
     real BCRAD(NSTOKES, *)
     character(len=1) :: SRCTYPE
 
@@ -1755,7 +1755,7 @@ subroutine shd_src__findBndryRad(&
             if (.not. sfc_obj_%isLambertian) then
                 call shd_init__makeBotRadV(NBOTPTS, IBC, IBC, BCPTR(1, 2),&
                     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, muView, phiView,&
-                    &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, fluxDir,&
+                    &SRCTYPE, WAVELEN, muSun, phiSun, fluxDir,&
                     &NSTOKES,&
                     &BCRAD(:, 1 + NTOPPTS))
             end if

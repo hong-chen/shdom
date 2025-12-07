@@ -96,17 +96,17 @@ contains
 
 subroutine shd_rad__makeFluxDir(&
     &NPTS, DELTAM,&
-    &ML, SOLARFLUX, SOLARMU, SOLARAZ,&
-    &DIRFLUX)
+    &ML, SOLARFLUX, muSun, phiSun,&
+    &fluxDir)
 
     ! Makes the direct beam solar flux for the internal base grid.
-    !   DIRFLUX is set to F*exp(-tau_sun).
+    !   fluxDir is set to F*exp(-tau_sun).
     !   Actually calls shd_rad__computeDirect to do all the hard work.
 
     integer NPTS, ML
     logical DELTAM
-    real SOLARFLUX, SOLARMU, SOLARAZ
-    real DIRFLUX(NPTS)
+    real SOLARFLUX, muSun, phiSun
+    real fluxDir(NPTS)
     integer SIDE, IP
     logical VALIDBEAM
     real UNIFZLEV, XO, YO, ZO, DIR, DIRPATH
@@ -114,7 +114,7 @@ subroutine shd_rad__makeFluxDir(&
     call shd_rad__computeDirect(&
         &1, 0.0, 0.0, 0.0, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
         &DELTAM, ML,&
-        &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
+        &SOLARFLUX, muSun, phiSun, fluxDir(1),&
         &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
 
     do IP = 1, NPTS
@@ -122,7 +122,7 @@ subroutine shd_rad__makeFluxDir(&
         call shd_rad__computeDirect&
             &(0, xyz_Rtm_(1, IP), xyz_Rtm_(2, IP), xyz_Rtm_(3, IP),&
             &rtm_obj_%flag_bc, rtm_obj_%flag_ip, DELTAM, ML,&
-            &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(IP),&
+            &SOLARFLUX, muSun, phiSun, fluxDir(IP),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
     end do
 
@@ -131,8 +131,8 @@ end subroutine shd_rad__makeFluxDir
 
 subroutine shd_rad__computeDirect(&
     &INIT, XI, YI, ZI, BCFLAG, IPFLAG,&
-    &DELTAM, ML, SOLARFLUX, SOLARMU, SOLARAZ,&
-    &DIRFLUX, UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
+    &DELTAM, ML, SOLARFLUX, muSun, phiSun,&
+    &fluxDir, UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
 
     !╭──────────────────────────────────────────────────────────────╮!
     ! Computes the direct beam flux at point (XI,YI,ZI) by integrating
@@ -143,7 +143,7 @@ subroutine shd_rad__computeDirect(&
     !           terms, and lowest uniform level are computed and saved.
     !   INIT=2: the input lowest uniform level (UNIFZLEV) is stored.
     !   INIT=0: to do the path integration and return the direct
-    !           beam flux on the horizontal (DIRFLUX) at XI,YI,ZI.
+    !           beam flux on the horizontal (fluxDir) at XI,YI,ZI.
     ! <DELTAM> The DELTAM flag is used to determine whether to delta-M scale the
     !   extinction for the direct beam computation. The extinction includes
     !   the gaseous absorption.
@@ -167,11 +167,11 @@ subroutine shd_rad__computeDirect(&
     !╰──────────────────────────────────────────────────────────────╯!
 
     integer(kind=I__), intent(in) :: INIT, BCFLAG, IPFLAG, ML
-    real(kind=R__),    intent(in) :: XI, YI, ZI, SOLARFLUX, SOLARMU, SOLARAZ
+    real(kind=R__),    intent(in) :: XI, YI, ZI, SOLARFLUX, muSun, phiSun
     logical, intent(in) :: DELTAM
 
     integer(kind=I__), intent(out) :: SIDE
-    real(kind=R__),    intent(out) :: DIRFLUX, XO, YO, ZO
+    real(kind=R__),    intent(out) :: fluxDir, XO, YO, ZO
     logical, intent(out) :: VALIDBEAM
 
     real(kind=R__), intent(inout) :: UNIFZLEV, DIRPATH
@@ -287,7 +287,7 @@ subroutine shd_rad__computeDirect(&
             !╭────────────────────────────────────────────────────────────────────────────╮!
             if (.not. src_obj_%doVariableSolar) then
                 ! Make the ray direction (opposite to the solar beam)
-                call shd_util__computeRayVect(dble(SOLARMU), dble(SOLARAZ), &
+                call shd_util__computeRayVect(dble(muSun), dble(phiSun), &
                     CX, CY, CZ, CXINV, CYINV, CZINV, &
                     ratio_x, ratio_y)
 
@@ -710,7 +710,7 @@ subroutine shd_rad__computeDirect(&
                 ZE = ZP
             end do
 
-            DIRFLUX = SOLARFLUX*exp(-PATH)
+            fluxDir = SOLARFLUX*exp(-PATH)
 
             DIRPATH = PATH
 
@@ -803,7 +803,7 @@ end subroutine shd_rad__interpRad
 subroutine shd_rad__computeRad(&
     &DELTAM,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-    &DIRFLUX, FLUXES,&
+    &fluxDir, FLUXES,&
     &src1_Shdo, GRIDRAD,&
     &OUTPARMS, IRAD, RADOUT)
 
@@ -814,7 +814,7 @@ subroutine shd_rad__computeRad(&
     integer BCPTR(MAXNBC, 2)
     logical DELTAM
     real BCRAD(shdo_obj_%Nstokes, *)
-    real DIRFLUX(rtm_obj_%Npts), FLUXES(2, rtm_obj_%Npts)
+    real fluxDir(rtm_obj_%Npts), FLUXES(2, rtm_obj_%Npts)
     real src1_Shdo(shdo_obj_%Nstokes, rtm_obj_%Npts), GRIDRAD(shdo_obj_%Nstokes, rtm_obj_%Npts)
     real OUTPARMS(*), RADOUT(shdo_obj_%Nstokes, *)
     integer I, IBC, IANG, JX, JY, K, SIDE
@@ -838,13 +838,13 @@ subroutine shd_rad__computeRad(&
     if (sfc_obj_%type .eq. 'FL') then
 
         call shd_init__makeBotRadUL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, src_obj_%type,&
+            &fluxDir, FLUXES, src_obj_%type,&
             &src_obj_%waveNum, src_obj_%avgWaveLen, src_obj_%unit, shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
 
     else if (sfc_obj_%type .eq. 'VL') then
 
         call shd_init__makeBotRadVL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, src_obj_%type,&
+            &fluxDir, FLUXES, src_obj_%type,&
             &shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
 
     end if
@@ -906,7 +906,7 @@ subroutine shd_rad__computeRad(&
         ! Compute the source function throughout grid for this angle
         call shd_src__computeSrcOneDir(&
             &DELTAM, MUOUT, PHIOUT,&
-            &DIRFLUX, src1_Shdo,&
+            &fluxDir, src1_Shdo,&
             &isrcJ_Shdo_, srcJ_Shdo_)
 
         ! Set the radiance field to -1, so we can determine valid ra
@@ -930,7 +930,7 @@ subroutine shd_rad__computeRad(&
             if (.not. sfc_obj_%isLambertian) then
                 call shd_init__makeBotRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
                     &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt, MUOUT, PHIOUT,&
-                    &src_obj_%type, src_obj_%avgWaveLen, src_obj_%mu0, src_obj_%phi0, DIRFLUX,&
+                    &src_obj_%type, src_obj_%avgWaveLen, src_obj_%mu0, src_obj_%phi0, fluxDir,&
                     &shdo_obj_%Nstokes,&
                     &BCRAD(1, 1 + NTOPPTS))
             end if
@@ -966,7 +966,7 @@ end subroutine shd_rad__computeRad
 subroutine shd_rad__computeCamRad(&
     &DELTAM,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-    &DIRFLUX, FLUXES,&
+    &fluxDir, FLUXES,&
     &OUTPARMS, IVIS, VISOUT)
 
     !   Computes Stokes radiances (output in VISOUT) for the visualization
@@ -977,7 +977,7 @@ subroutine shd_rad__computeCamRad(&
     integer BCPTR(MAXNBC, 2)
     logical DELTAM
     real BCRAD(shdo_obj_%Nstokes, *)
-    real DIRFLUX(rtm_obj_%Npts), FLUXES(2, rtm_obj_%Npts)
+    real fluxDir(rtm_obj_%Npts), FLUXES(2, rtm_obj_%Npts)
     real OUTPARMS(*), VISOUT(shdo_obj_%Nstokes, *)
     integer NSCATANGLE, NSTPHASE, I, J, L, N, SIDE
     integer NL, NS, LINE, SAMP
@@ -1015,11 +1015,11 @@ subroutine shd_rad__computeCamRad(&
     !   Compute the upwelling bottom radiances using the downwelling
     if (sfc_obj_%type .eq. 'FL') then
         call shd_init__makeBotRadUL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, src_obj_%type,&
+            &fluxDir, FLUXES, src_obj_%type,&
             &src_obj_%waveNum, src_obj_%avgWaveLen, src_obj_%unit, shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
     else if (sfc_obj_%type .eq. 'VL') then
         call shd_init__makeBotRadVL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, src_obj_%type,&
+            &fluxDir, FLUXES, src_obj_%type,&
             &shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
     end if
 
@@ -1151,7 +1151,7 @@ subroutine shd_rad__computeCamRad(&
                 &shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
                 &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
                 &DELTAM, src_obj_%type, src_obj_%avgWaveLen, src_obj_%mu0, src_obj_%phi0,&
-                &DIRFLUX, isrcJ_Shdo_, srcJ_Shdo_, YlmSun,&
+                &fluxDir, isrcJ_Shdo_, srcJ_Shdo_, YlmSun,&
                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                 &MU2, PHI2, X0, Y0, Z0,&
                 &XE, YE, ZE, SIDE, TRANSMIT, VISRAD, VALIDRAD)
@@ -1198,13 +1198,13 @@ subroutine shd_rad__computeCamRad(&
 end subroutine shd_rad__computeCamRad
 
 subroutine shd_rad__computeFluxDiv(NSTOKES, NPTS, iradI_Shdo, SRCTYPE,&
-    &SOLARMU, EXTINCT, ALBEDO, PLANCK, DIRFLUX,&
+    &muSun, EXTINCT, ALBEDO, PLANCK, fluxDir,&
     &radI_Shdo, NETFLUXDIV)
 
     ! Computes the net flux divergence at every grid point.
 
     integer NSTOKES, NPTS, iradI_Shdo(NPTS + 1)
-    real PLANCK(NPTS), DIRFLUX(NPTS), SOLARMU
+    real PLANCK(NPTS), fluxDir(NPTS), muSun
     real EXTINCT(NPTS), ALBEDO(NPTS)
     real radI_Shdo(NSTOKES, *), NETFLUXDIV(NPTS)
     character(len=1) :: SRCTYPE
@@ -1212,12 +1212,12 @@ subroutine shd_rad__computeFluxDiv(NSTOKES, NPTS, iradI_Shdo, SRCTYPE,&
     real :: C, SECMU, HR
 
     C = sqrt(4.0*PI_)
-    SECMU = 1.0/abs(SOLARMU)
+    SECMU = 1.0/abs(muSun)
     do I = 1, NPTS
         IR = iradI_Shdo(I)
         HR = C*EXTINCT(I)*(1 - ALBEDO(I))*radI_Shdo(1, IR + 1)
         if (src_obj_%doSolar) then
-            HR = HR + EXTINCT(I)*(1.0 - ALBEDO(I))*DIRFLUX(I)*SECMU
+            HR = HR + EXTINCT(I)*(1.0 - ALBEDO(I))*fluxDir(I)*SECMU
         end if
         if (src_obj_%doTherm) then
             HR = HR - 4*PI_*EXTINCT(I)*PLANCK(I)

@@ -96,8 +96,8 @@ subroutine shd_init__makeSolarVect(&
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Initialize Sun vector at center, converting local ENU to ECEF
-    !   mu0 is the SHDOM SOLARMU
-    !   phi0 is the SHDOM SOLARAZ
+    !   mu0 is the SHDOM muSun
+    !   phi0 is the SHDOM phiSun
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     implicit none
@@ -588,7 +588,7 @@ subroutine shd_init__makeRad(&
     &NSTOKES, NX, NY, NZ,&
     &iradI_Shdo, ZGRID,&
     &ext, ssa, leg, temp, ipha,&
-    &SRCTYPE, SOLARFLUX, SOLARMU,&
+    &SRCTYPE, SOLARFLUX, muSun,&
     &SKYRAD, UNITS, WAVENO, WAVELEN, radI_Shdo)
 
     ! Initializes radiance field by solving plane-parallel two-stream.
@@ -601,7 +601,7 @@ subroutine shd_init__makeRad(&
 
     integer(kind=2), intent(in) :: ipha(NZ, NY, NX)
 
-    real SKYRAD, SOLARFLUX, SOLARMU
+    real SKYRAD, SOLARFLUX, muSun
     real WAVENO(2), WAVELEN
     real ZGRID(NZ)
     real ext(NZ, NY, NX), ssa(NZ, NY, NX), leg(prp_obj_%NlegSet, 0:prp_obj_%Nleg, *)
@@ -624,7 +624,7 @@ subroutine shd_init__makeRad(&
 
     !real, allocatable :: CH(:, :)
     !allocate(CH(NLAYER, NLAYER))
-    !call shd_init__chapman(NLAYER, SOLARMU, planetRadius_, ZGRID(NZ:1:-1), CH)
+    !call shd_init__chapman(NLAYER, muSun, planetRadius_, ZGRID(NZ:1:-1), CH)
 
     DELTAM = .false.
 
@@ -731,7 +731,7 @@ subroutine shd_init__makeRad(&
                 lat0 = prp_obj_%yStart + (IY-1)*rtm_obj_%dy + rtm_obj_%yOffset
                 call shd_util__computeSolarAngle(lon0, lat0, mu0, phi0)
             else
-                mu0 = SOLARMU
+                mu0 = muSun
             end if
 
             ! Call the Eddington flux routine
@@ -764,7 +764,7 @@ end subroutine shd_init__makeRad
 
 subroutine shd_init__makeFlux(&
     &NLAYER, tauZ, ssaZ, asyZ,&
-    &tempZ, DELTAM, SRCTYPE, SOLARFLUX, SOLARMU,&
+    &tempZ, DELTAM, SRCTYPE, SOLARFLUX, muSun,&
     &GNDTEMP, GNDEMIS, SKYRAD, UNITS, WAVENO, WAVELEN,&
     &FLUXES)
 
@@ -798,7 +798,7 @@ subroutine shd_init__makeFlux(&
     ! DELTAM         logical      True for delta-Eddington scaling
     ! SRCTYPE        character    'S' for solar source, 'T' for thermal source
     ! SOLARFLUX      real         Incident solar flux on horizonal plane
-    ! SOLARMU        real         Cosine of the solar zenith angle
+    ! muSun        real         Cosine of the solar zenith angle
     ! GNDTEMP        real         Ground temperature (Kelvin)
     ! GNDEMIS        real         Ground emissivity (1-albedo)
     ! SKYRAD         real         Radiance (for solar) or brightness
@@ -822,7 +822,7 @@ subroutine shd_init__makeFlux(&
     logical DELTAM
     real tempZ(*)
     real tauZ(*), ssaZ(*), asyZ(*)
-    real GNDTEMP, GNDEMIS, SKYRAD, SOLARFLUX, SOLARMU
+    real GNDTEMP, GNDEMIS, SKYRAD, SOLARFLUX, muSun
     real WAVENO(2), WAVELEN
     character(len=1) :: SRCTYPE, UNITS
     real FLUXES(3, *)
@@ -847,7 +847,7 @@ subroutine shd_init__makeFlux(&
         call shd_util__computePlanck(tempZ(1), UNITS, WAVENO, WAVELEN, BBRAD)
         PLANCK1 = PI_*BBRAD
     end if
-    MU0 = abs(SOLARMU)
+    MU0 = abs(muSun)
     TAU = 0.0
     I = 2
     do L = 1, NLAYER
@@ -1017,7 +1017,7 @@ subroutine shd_init__makeTopRad(SRCTYPE, SKYRAD, WAVENO, WAVELEN,&
 end subroutine shd_init__makeTopRad
 
 subroutine shd_init__makeBotRadUL(NBOTPTS, BCPTR,&
-    &DIRFLUX, FLUXES, SRCTYPE,&
+    &fluxDir, FLUXES, SRCTYPE,&
     &WAVENO, WAVELEN, UNITS, NSTOKES, BCRAD)
 
     !   Returns the BCRAD array with the upwelling unpolarized radiance for
@@ -1025,10 +1025,10 @@ subroutine shd_init__makeBotRadUL(NBOTPTS, BCPTR,&
     ! If there is reflection the downwelling hemispheric flux at the
     ! bottom points is gotten (from FLUXES). There may also be thermal
     ! emission (depending on temperature and emissivity) or reflected
-    ! collimated solar radiation (DIRFLUX).
+    ! collimated solar radiation (fluxDir).
 
     integer NBOTPTS, BCPTR(*), NSTOKES
-    real DIRFLUX(*), FLUXES(2, *)
+    real fluxDir(*), FLUXES(2, *)
     real WAVENO(2), WAVELEN
     real BCRAD(NSTOKES, *)
     character(len=1) :: SRCTYPE, UNITS
@@ -1045,11 +1045,11 @@ subroutine shd_init__makeBotRadUL(NBOTPTS, BCPTR,&
     do IBC = 1, NBOTPTS
         I = BCPTR(IBC)
         if (SRCTYPE .eq. 'S') then
-            BCRAD(1, IBC) = ALB*(DIRFLUX(I) + FLUXES(1, I))
+            BCRAD(1, IBC) = ALB*(fluxDir(I) + FLUXES(1, I))
         else if (SRCTYPE .eq. 'T') then
             BCRAD(1, IBC) = GNDRAD + ALB*FLUXES(1, I)
         else if (SRCTYPE .eq. 'B') then
-            BCRAD(1, IBC) = ALB*(DIRFLUX(I) + FLUXES(1, I)) + GNDRAD
+            BCRAD(1, IBC) = ALB*(fluxDir(I) + FLUXES(1, I)) + GNDRAD
         end if
         BCRAD(2:, IBC) = 0.0
     end do
@@ -1059,7 +1059,7 @@ subroutine shd_init__makeBotRadUL(NBOTPTS, BCPTR,&
 end subroutine shd_init__makeBotRadUL
 
 subroutine shd_init__makeBotRadVL(NBOTPTS, BCPTR,&
-    &DIRFLUX, FLUXES, SRCTYPE,&
+    &fluxDir, FLUXES, SRCTYPE,&
     &NSTOKES, BCRAD)
 
     !   Returns the BCRAD array with the upwelling unpolarized radiance for a
@@ -1069,10 +1069,10 @@ subroutine shd_init__makeBotRadVL(NBOTPTS, BCPTR,&
     ! albedo.  The reflection is computed from the downwelling hemispheric
     ! flux (in FLUXES).  There may also be thermal emission (depending on
     ! temperature and emissivity) or reflected collimated solar radiation
-    ! (from DIRFLUX).
+    ! (from fluxDir).
 
     integer NBOTPTS, BCPTR(*), NSTOKES
-    real DIRFLUX(*), FLUXES(2, *)
+    real fluxDir(*), FLUXES(2, *)
     real BCRAD(NSTOKES, *)
     character(len=1) :: SRCTYPE
     integer I, IBC, K
@@ -1083,13 +1083,13 @@ subroutine shd_init__makeBotRadVL(NBOTPTS, BCPTR,&
         I = BCPTR(IBC)
         ALB = brdf_Rtm_(2, IBC)
         if (SRCTYPE .eq. 'S') then
-            BCRAD(1, IBC) = OPI_*ALB*(DIRFLUX(I) + FLUXES(1, I))
+            BCRAD(1, IBC) = OPI_*ALB*(fluxDir(I) + FLUXES(1, I))
         else
             GNDRAD = brdf_Rtm_(1, IBC)*(1 - ALB)
             if (SRCTYPE .eq. 'T') then
                 BCRAD(1, IBC) = GNDRAD + OPI_*ALB*FLUXES(1, I)
             else if (SRCTYPE .eq. 'B') then
-                BCRAD(1, IBC) = OPI_*ALB*(DIRFLUX(I) + FLUXES(1, I)) + GNDRAD
+                BCRAD(1, IBC) = OPI_*ALB*(fluxDir(I) + FLUXES(1, I)) + GNDRAD
             end if
         end if
         BCRAD(2:, IBC) = 0.0
@@ -1101,7 +1101,7 @@ end subroutine shd_init__makeBotRadVL
 
 subroutine shd_init__makeBotRadU(NBOTPTS, BCPTR,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, IMU, IPHI,&
-    &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
+    &SRCTYPE, WAVELEN, muSun, phiSun, fluxDir,&
     &SFC_BRDF_DO,&
     &NSTOKES, BCRAD)
 
@@ -1123,7 +1123,7 @@ subroutine shd_init__makeBotRadU(NBOTPTS, BCPTR,&
     integer NBOTPTS, BCPTR(NBOTPTS)
     integer NMU, NPHI0MAX, NPHI0(NMU), IMU, IPHI, NSTOKES
     real WTDO(NMU, NPHI0MAX), MU(NMU), PHI(NMU, NPHI0MAX)
-    real WAVELEN, SOLARMU, SOLARAZ, DIRFLUX(*)
+    real WAVELEN, muSun, phiSun, fluxDir(*)
     real SFC_BRDF_DO(NSTOKES, NMU/2, NPHI0MAX, NSTOKES, NMU/2, NPHI0MAX)
     real BCRAD(NSTOKES, NBOTPTS, *)
     character(len=1) :: SRCTYPE
@@ -1139,10 +1139,10 @@ subroutine shd_init__makeBotRadU(NBOTPTS, BCPTR,&
         if (src_obj_%doSolar) then
             I = BCPTR(IBC)
             call shd_sfc__brdfSurface(sfc_obj_%type(2:2), brdf_Rtm_(2:sfc_obj_%Npar, IBC), WAVELEN,&
-                &MU(IMU), PHI(IMU, IPHI), SOLARMU, SOLARAZ,&
+                &MU(IMU), PHI(IMU, IPHI), muSun, phiSun,&
                 &NSTOKES, REFLECT)
             BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1)&
-                &+ OPI_*REFLECT(1:NSTOKES, 1)*DIRFLUX(I)
+                &+ OPI_*REFLECT(1:NSTOKES, 1)*fluxDir(I)
         end if
 
         ! Integrate over the incident discrete ordinate directions (JMU, JPHI)
@@ -1172,7 +1172,7 @@ end subroutine shd_init__makeBotRadU
 subroutine shd_init__makeBotRadV(&
     &NBOTPTS, IBEG, IEND, BCPTR,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MU2, PHI2,&
-    &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
+    &SRCTYPE, WAVELEN, muSun, phiSun, fluxDir,&
     &NSTOKES, BCRAD)
 
     !   Computes the upwelling Stokes vector of the bottom boundary points
@@ -1196,7 +1196,7 @@ subroutine shd_init__makeBotRadV(&
     integer NBOTPTS, IBEG, IEND, BCPTR(NBOTPTS)
     integer NMU, NPHI0MAX, NPHI0(NMU), NSTOKES
     real WTDO(NMU, NPHI0MAX), MU(NMU), PHI(NMU, NPHI0MAX)
-    real MU2, PHI2, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX(*)
+    real MU2, PHI2, WAVELEN, muSun, phiSun, fluxDir(*)
     real BCRAD(NSTOKES, NBOTPTS, *)
     character(len=1) :: SRCTYPE
     integer JMU, JPHI, IBC, I, JANG, K, K1, K2
@@ -1215,15 +1215,15 @@ subroutine shd_init__makeBotRadV(&
                 lat0 = xyz_Rtm_(2, I) + rtm_obj_%yOffset
                 call shd_util__computeSolarAngle(lon0, lat0, mu0, phi0)
             else
-                mu0  = SOLARMU
-                phi0 = SOLARAZ
+                mu0  = muSun
+                phi0 = phiSun
             end if
 
             call shd_sfc__brdfSurface(sfc_obj_%type(2:2), brdf_Rtm_(2:sfc_obj_%Npar, IBC), WAVELEN,&
                 &MU2, PHI2, mu0, phi0, NSTOKES, REFLECT)
 
             BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1) + &
-                OPI_*REFLECT(1:NSTOKES, 1)*DIRFLUX(I)
+                OPI_*REFLECT(1:NSTOKES, 1)*fluxDir(I)
         end if
 
         ! Integrate over the incident discrete ordinate directions (JMU,JPHI)
@@ -1296,7 +1296,7 @@ subroutine shd_init__checkSfcU(sfc_obj, brdf_Sfc)
 end subroutine shd_init__checkSfcU
 
 subroutine shd_init__chapman(&
-    &NLAYER, SOLARMU, planetRadius, ZLEVELS,&
+    &NLAYER, muSun, planetRadius, ZLEVELS,&
     &CH)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
@@ -1305,7 +1305,7 @@ subroutine shd_init__chapman(&
     !
     ! Input:
     !   NLAYER : integer, number of layers
-    !   SOLARMU: real, cosine of incident angle
+    !   muSun: real, cosine of incident angle
     !   planetRadius: real, planet radius in km
     !   ZLEVELS: real array, layer height, go from top to surface
     !
@@ -1320,7 +1320,7 @@ subroutine shd_init__chapman(&
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     integer(kind=I__), intent(in) :: NLAYER
-    real(kind=R__)   , intent(in) :: planetRadius, ZLEVELS(0:NLAYER), SOLARMU
+    real(kind=R__)   , intent(in) :: planetRadius, ZLEVELS(0:NLAYER), muSun
 
     real(kind=R__), intent(out) :: CH(NLAYER, NLAYER)
 
@@ -1331,8 +1331,8 @@ subroutine shd_init__chapman(&
 
     if (h(0) .lt. h(NLAYER)) stop 'Error [_chapman]: Input ZLEVELS should go from top to bottom.'
 
-    cos_theta0 = SOLARMU
-    sin_theta0 = sqrt(1.0 - SOLARMU*SOLARMU)
+    cos_theta0 = muSun
+    sin_theta0 = sqrt(1.0 - muSun*muSun)
     h = ZLEVELS + planetRadius
 
     CH(:, :) = -1.0
@@ -1354,7 +1354,7 @@ subroutine shd_init__chapman(&
                 if (n .gt. 1) then
                     CH(lc,n) = CH(lc, n-1)
                 else
-                    CH(lc,n) = SOLARMU
+                    CH(lc,n) = muSun
                 end if
             endif
             s1 = s2

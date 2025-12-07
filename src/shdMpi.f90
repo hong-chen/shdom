@@ -1003,12 +1003,12 @@ end function shd_mpi__sumCpuTime
 
 subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
     &NSHOUT,&
-    &SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV, SUMSHTERMS,&
+    &SUMFLUXES, sumFluxDir, SUMFLUXDIV, SUMSHTERMS,&
     &ALLFLUXES, ALLFLUXDIV, ALLSHTERMS,&
     &NSH, NCELLSTOT, NPTSTOT, NSHTOT,&
     &rtmAll_obj, rtm_obj, cell_obj)
 
-    ! Gathers the base grid output data in SUMFLUXES, SUMDIRFLUX, SUMFLUXDIV,
+    ! Gathers the base grid output data in SUMFLUXES, sumFluxDir, SUMFLUXDIV,
     ! and SUMSHTERMS from all the processors and assembles in the master
     ! processor output arrays ALLFLUXES, ALLFLUXDIV, ALLSHTERMS.  Gathers the
     ! ixyOut_ array from each processor to determine where each subdomain is.
@@ -1020,7 +1020,7 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
 
     logical, intent(in) :: FLUX_OUT, FLUXDIV_OUT, SH_OUT
     integer, intent(in) :: NSHOUT
-    real, intent(in) :: SUMFLUXES(2, rtm_obj%Npts0), SUMDIRFLUX(rtm_obj%Npts0)
+    real, intent(in) :: SUMFLUXES(2, rtm_obj%Npts0), sumFluxDir(rtm_obj%Npts0)
     real, intent(in) :: SUMFLUXDIV(rtm_obj%Npts0), SUMSHTERMS(NSHOUT, rtm_obj%Npts0)
     real, intent(out) :: ALLFLUXES(3, rtmAll_obj%Nz, rtmAll_obj%Ny, rtmAll_obj%Nx), ALLFLUXDIV(rtmAll_obj%Nz, rtmAll_obj%Ny, rtmAll_obj%Nx)
     real, intent(out) :: ALLSHTERMS(NSHOUT, rtmAll_obj%Nz, rtmAll_obj%Ny, rtmAll_obj%Nx)
@@ -1045,7 +1045,7 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
         irq = 0
         if (myProc_ .gt. 0) then
             allocate(sendbuf(3, rtm_obj%Npts0))
-            sendbuf(1:2, :) = SUMFLUXES(:, :); sendbuf(3, :) = SUMDIRFLUX(:)
+            sendbuf(1:2, :) = SUMFLUXES(:, :); sendbuf(3, :) = sumFluxDir(:)
             irq = irq + 1
             call mpi_isend(sendbuf, 3*rtm_obj%Npts0, MPI_real, 0, 1, comm2D_,&
                 &requests(irq), ierr)
@@ -1068,7 +1068,7 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
             if (is1DYx_ .and. .not. isMpiY_) NY1 = Ny
             allocate(buf(3, rtmAll_obj%Nz, NY1, NX1))
             buf(1:2, :, :, :) = reshape(SUMFLUXES(1:2, :), (/2, rtmAll_obj%Nz, NY1, NX1/))
-            buf(3, :, :, :) = reshape(SUMDIRFLUX(:), (/rtmAll_obj%Nz, NY1, NX1/))
+            buf(3, :, :, :) = reshape(sumFluxDir(:), (/rtmAll_obj%Nz, NY1, NX1/))
             ALLFLUXES(1:3, 1:rtmAll_obj%Nz, IY:IY + Ny - 1, IX:IX + Nx - 1) = buf(:, 1:rtmAll_obj%Nz, 1:Ny, 1:Nx)
             deallocate(buf)
             do iproc = 1, Nproc_ - 1
@@ -1256,17 +1256,17 @@ end subroutine shd_mpi__findMaxSplitCrit
 
 subroutine shd_mpi__makeFluxDir(SPT,&
     &DELTAM, ML,&
-    &SOLARFLUX, SOLARMU, SOLARAZ,&
-    &DIRFLUX)
+    &SOLARFLUX, muSun, phiSun,&
+    &fluxDir)
 
     ! Makes the direct beam solar flux for the rtm_obj_%Npts gridpoints started with
     ! index SPT having X/Y/Z positions in xyz_Rtm_.
-    ! DIRFLUX is set to F*exp(-tau_sun).
+    ! fluxDir is set to F*exp(-tau_sun).
 
     integer, intent(in) :: SPT, ML
     logical, intent(in) :: DELTAM
-    real, intent(in) :: SOLARFLUX, SOLARMU, SOLARAZ
-    real, intent(out) :: DIRFLUX(rtm_obj_%Npts)
+    real, intent(in) :: SOLARFLUX, muSun, phiSun
+    real, intent(out) :: fluxDir(rtm_obj_%Npts)
 
 #if HAS_MPI
     logical :: VALIDBEAM
@@ -1297,20 +1297,20 @@ subroutine shd_mpi__makeFluxDir(SPT,&
     if (SPT .eq. 1) then
         ! Initialize the direct beam calculation
         call shd_rad__computeDirect(1, 0.0, 0.0, 0.0, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
-            &DELTAM, ML, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
+            &DELTAM, ML, SOLARFLUX, muSun, phiSun, fluxDir(1),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
         ! Find the max lowest uniform Z level over all processors and then
         !   tell shd_rad__computeDirect about it
         UZLEV = UNIFZLEV
         call mpi_allreduce(UZLEV, UNIFZLEV, 1, MPI_real, MPI_max, comm2D_, ierr)
         call shd_rad__computeDirect(2, 0.0, 0.0, 0.0, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
-            &DELTAM, ML, SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(1),&
+            &DELTAM, ML, SOLARFLUX, muSun, phiSun, fluxDir(1),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
     end if
 
     Lupx = 0; Lupy = 0; Ldownx = 0; Ldowny = 0
     if (isMpiX_) then
-        if (cos(SOLARAZ) .gt. 1.0e-5) then
+        if (cos(phiSun) .gt. 1.0e-5) then
             Ldownx = 2; Lupx = 1
         else
             Ldownx = 1; Lupx = 2
@@ -1320,7 +1320,7 @@ subroutine shd_mpi__makeFluxDir(SPT,&
         XMAX = rtm_obj_%x(rtm_obj_%Nx + 1)
     end if
     if (isMpiY_) then
-        if (sin(SOLARAZ) .gt. 1.0e-5) then
+        if (sin(phiSun) .gt. 1.0e-5) then
             Ldowny = 4; Lupy = 3
         else
             Ldowny = 3; Lupy = 4
@@ -1337,7 +1337,7 @@ subroutine shd_mpi__makeFluxDir(SPT,&
         DIRPATH = 0.0
         call shd_rad__computeDirect(0, xyz_Rtm_(1, IP), xyz_Rtm_(2, IP), xyz_Rtm_(3, IP),&
             &rtm_obj_%flag_bc, rtm_obj_%flag_ip, DELTAM, ML,&
-            &SOLARFLUX, SOLARMU, SOLARAZ, DIRFLUX(IP),&
+            &SOLARFLUX, muSun, phiSun, fluxDir(IP),&
             &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
         ! If we don't have a good direct beam then save the information
         !   needed to pass to two upstream processors
@@ -1407,7 +1407,7 @@ subroutine shd_mpi__makeFluxDir(SPT,&
                 if (Y .lt. (rtm_obj_%y(1) - EPS)) Y = YMAX; if (Y .gt. (YMAX + EPS)) Y = rtm_obj_%y(1)
                 call shd_rad__computeDirect(0, X, Y, Z, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
                     &DELTAM, ML,&
-                    &SOLARFLUX, SOLARMU, SOLARAZ, DIRJUNK,&
+                    &SOLARFLUX, muSun, phiSun, DIRJUNK,&
                     &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
                 ! If we got a valid direct beam then store it in DirAllOut otherwise
                 ! save the information to continue passing to neighboring processors
@@ -1439,7 +1439,7 @@ subroutine shd_mpi__makeFluxDir(SPT,&
                 if (X .lt. (rtm_obj_%x(1) - EPS)) X = XMAX; if (X .gt. (XMAX + EPS)) X = rtm_obj_%x(1)
                 call shd_rad__computeDirect(0, X, Y, Z, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
                     &DELTAM, ML,&
-                    &SOLARFLUX, SOLARMU, SOLARAZ, DIRJUNK,&
+                    &SOLARFLUX, muSun, phiSun, DIRJUNK,&
                     &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
                 ! If we got a valid direct beam then store it in DirAllOut otherwise
                 ! save the information to continue passing to neighboring processors
@@ -1490,14 +1490,14 @@ subroutine shd_mpi__makeFluxDir(SPT,&
             ! Put the direct beam flux in the correct grid point
             do I = 1, Nbeam
                 IP = DirPtrIn(I)
-                DIRFLUX(IP) = SOLARFLUX*exp(-DirAllIn(I))
+                fluxDir(IP) = SOLARFLUX*exp(-DirAllIn(I))
             end do
         else
             ! If we have the direct paths for this processor then avoid MPI and
             !   put the direct beam flux in the grid point
             do I = 1, Ndone(myProc_)
                 IP = DirPtrOut(I, myProc_)
-                DIRFLUX(IP) = SOLARFLUX*exp(-DirAllOut(I, myProc_))
+                fluxDir(IP) = SOLARFLUX*exp(-DirAllOut(I, myProc_))
             end do
         end if
     end do
@@ -1975,7 +1975,7 @@ end subroutine shd_mpi__calBndryRad
 subroutine shd_mpi__computeRad(&
     &DELTAM,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-    &DIRFLUX, FLUXES,&
+    &fluxDir, FLUXES,&
     &src1_Shdo, GRIDRAD,&
     &parms_Out, NRAD, RADOUT)
 
@@ -1989,7 +1989,7 @@ subroutine shd_mpi__computeRad(&
     integer, intent(in) :: BCPTR(MAXNBC, 2)
     logical, intent(in) :: DELTAM
     real, intent(in) :: BCRAD(shdo_obj_%Nstokes, *)
-    real, intent(in) :: DIRFLUX(rtm_obj_%Npts), FLUXES(2, rtm_obj_%Npts)
+    real, intent(in) :: fluxDir(rtm_obj_%Npts), FLUXES(2, rtm_obj_%Npts)
     real, intent(inout) :: src1_Shdo(shdo_obj_%Nstokes, rtm_obj_%Npts), GRIDRAD(shdo_obj_%Nstokes, rtm_obj_%Npts)
     real, intent(in) :: parms_Out(*)
     real, intent(out) :: RADOUT(shdo_obj_%Nstokes, *)
@@ -2026,11 +2026,11 @@ subroutine shd_mpi__computeRad(&
     ! Compute the upwelling bottom radiances using the downwelling fluxes.
     if (sfc_obj_%type .eq. 'FL') then
         call shd_init__makeBotRadUL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, src_obj_%type,&
+            &fluxDir, FLUXES, src_obj_%type,&
             &src_obj_%waveNum, src_obj_%avgWaveLen, src_obj_%unit, shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
     else if (sfc_obj_%type .eq. 'VL') then
         call shd_init__makeBotRadVL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, src_obj_%type,&
+            &fluxDir, FLUXES, src_obj_%type,&
             &shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
     end if
 
@@ -2119,7 +2119,7 @@ subroutine shd_mpi__computeRad(&
         ! Compute the source function throughout grid for this angle
         call shd_src__computeSrcOneDir(&
             &DELTAM, mu_out, phi_out,&
-            &DIRFLUX, src1_Shdo,&
+            &fluxDir, src1_Shdo,&
             &isrcJ_Shdo_, srcJ_Shdo_)
 
         ! Set the radiance field to -1, so we can determine valid radiances
@@ -2143,7 +2143,7 @@ subroutine shd_mpi__computeRad(&
             if (.not. sfc_obj_%isLambertian) then
                 call shd_init__makeBotRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
                     &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt, mu_out, phi_out,&
-                    &src_obj_%type, src_obj_%avgWaveLen, src_obj_%mu0, src_obj_%phi0, DIRFLUX,&
+                    &src_obj_%type, src_obj_%avgWaveLen, src_obj_%mu0, src_obj_%phi0, fluxDir,&
                     &shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
             end if
             do IBC = 1, NBOTPTS
@@ -2382,7 +2382,7 @@ end subroutine shd_mpi__computeRad
 subroutine shd_mpi__computeCamRad(&
     &DELTAM,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-    &DIRFLUX, FLUXES,&
+    &fluxDir, FLUXES,&
     &parms_Out, IVIS, VISOUT)
 
     ! Computes Stokes radiances (output in VISOUT) for the visualization
@@ -2395,7 +2395,7 @@ subroutine shd_mpi__computeCamRad(&
     integer, intent(in) :: BCPTR(MAXNBC, 2)
     logical, intent(in) :: DELTAM
     real, intent(in) :: BCRAD(shdo_obj_%Nstokes, *)
-    real, intent(in) :: DIRFLUX(rtm_obj_%Npts), FLUXES(2, rtm_obj_%Npts)
+    real, intent(in) :: fluxDir(rtm_obj_%Npts), FLUXES(2, rtm_obj_%Npts)
     real, intent(in) :: parms_Out(*)
     real, intent(out) :: VISOUT(shdo_obj_%Nstokes, *)
 
@@ -2451,11 +2451,11 @@ subroutine shd_mpi__computeCamRad(&
     ! Compute the upwelling bottom radiances using the downwelling fluxes.
     if (sfc_obj_%type .eq. 'FL') then
         call shd_init__makeBotRadUL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, src_obj_%type,&
+            &fluxDir, FLUXES, src_obj_%type,&
             &src_obj_%waveNum, src_obj_%avgWaveLen, src_obj_%unit, shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
     else if (sfc_obj_%type .eq. 'VL') then
         call shd_init__makeBotRadVL(NBOTPTS, BCPTR(1, 2),&
-            &DIRFLUX, FLUXES, src_obj_%type,&
+            &fluxDir, FLUXES, src_obj_%type,&
             &shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
     end if
 
@@ -2631,7 +2631,7 @@ subroutine shd_mpi__computeCamRad(&
                     &shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
                     &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
                     &DELTAM, src_obj_%type, src_obj_%avgWaveLen, src_obj_%mu0, src_obj_%phi0,&
-                    &DIRFLUX, isrcJ_Shdo_, srcJ_Shdo_, YLMSUN,&
+                    &fluxDir, isrcJ_Shdo_, srcJ_Shdo_, YLMSUN,&
                     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                     &MU2, PHI2, X0, Y0, Z0,&
                     &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
@@ -2713,7 +2713,7 @@ subroutine shd_mpi__computeCamRad(&
                     &shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
                     &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
                     &DELTAM, src_obj_%type, src_obj_%avgWaveLen, src_obj_%mu0, src_obj_%phi0,&
-                    &DIRFLUX, isrcJ_Shdo_, srcJ_Shdo_, YLMSUN,&
+                    &fluxDir, isrcJ_Shdo_, srcJ_Shdo_, YLMSUN,&
                     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                     &MU2, PHI2, X, Y, Z,&
                     &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD)

@@ -99,7 +99,7 @@ subroutine shd_intg__integratePath(&
     &SFC_BRDF_DO,&
     &MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &CMU1, CPHI1, CMU2, CPHI2, WSAVE, FFTFLAG,&
-    &DIRFLUX, FLUXES,&
+    &fluxDir, FLUXES,&
     &WORK, SWEEPORD, GRIDRAD,&
     &iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo)
 
@@ -140,7 +140,7 @@ subroutine shd_intg__integratePath(&
     real SFC_BRDF_DO(shdo_obj_%Nstokes, shdo_obj_%Nmu/2, shdo_obj_%maxNphiA, shdo_obj_%Nstokes, shdo_obj_%Nmu/2, shdo_obj_%maxNphiA)
     real CMU1(*), CPHI1(*), CMU2(*), CPHI2(*), WSAVE(*)
     real BCRAD(shdo_obj_%Nstokes, MAXBCRAD)
-    real DIRFLUX(rtm_obj_%Npts), FLUXES(2, rtm_obj_%Npts)
+    real fluxDir(rtm_obj_%Npts), FLUXES(2, rtm_obj_%Npts)
     real GRIDRAD(shdo_obj_%Nstokes, rtm_obj_%Npts), WORK(shdo_obj_%Nstokes, shdo_obj_%maxNphiA, rtm_obj_%Npts)
 
     integer I, I1, K, NR, IPHI, IMU, IBC, IANG, IUPDOWN, OLDNPTS
@@ -206,11 +206,11 @@ subroutine shd_intg__integratePath(&
             !   radiances using the downwelling fluxes.
             if (sfc_obj_%type .eq. 'FL') then
                 call shd_init__makeBotRadUL(NBOTPTS, BCPTR(1, 2),&
-                    &DIRFLUX, FLUXES, src_obj_%type,&
+                    &fluxDir, FLUXES, src_obj_%type,&
                     &src_obj_%waveNum, src_obj_%avgWaveLen, src_obj_%unit, shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
             else if (sfc_obj_%type .eq. 'VL') then
                 call shd_init__makeBotRadVL(NBOTPTS, BCPTR(1, 2),&
-                    &DIRFLUX, FLUXES, src_obj_%type,&
+                    &fluxDir, FLUXES, src_obj_%type,&
                     &shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
             end if
         end if
@@ -260,14 +260,14 @@ subroutine shd_intg__integratePath(&
                     if (sfc_obj_%isUniform) then
                         call shd_init__makeBotRadU(NBOTPTS, BCPTR(1, 2),&
                             &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt, IMU, IPHI,&
-                            &src_obj_%type, src_obj_%avgWaveLen, src_obj_%mu0, src_obj_%phi0, DIRFLUX,&
+                            &src_obj_%type, src_obj_%avgWaveLen, src_obj_%mu0, src_obj_%phi0, fluxDir,&
                             &SFC_BRDF_DO,&
                             &shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
                     else
                         call shd_init__makeBotRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
                             &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
                             &shdo_obj_%mu(IMU), shdo_obj_%phi(IMU, IPHI),&
-                            &src_obj_%type, src_obj_%avgWaveLen, src_obj_%mu0, src_obj_%phi0, DIRFLUX,&
+                            &src_obj_%type, src_obj_%avgWaveLen, src_obj_%mu0, src_obj_%phi0, fluxDir,&
                             &shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
                     end if
                 end if

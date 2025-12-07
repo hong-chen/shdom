@@ -122,7 +122,7 @@ subroutine shd_grid__splitGrid(&
     doSplit, isOutMem, CURSPLITACC, SPLITCRIT, &
     doDeltaM, ACCELFLAG, &
     isrcD_Shdo, &
-    DIRFLUX, &
+    fluxDir, &
     SOLARFLUX, YlmSun, &
     ADAPTCRIT, ADAPTIND, &
     rtm_obj, cell_obj, &
@@ -163,7 +163,7 @@ subroutine shd_grid__splitGrid(&
     real CURSPLITACC, SPLITCRIT
     real SOLARFLUX, YlmSun(prp_obj_%NlegSet, shdo_obj_%Nlm)
     real ADAPTCRIT(*)
-    real DIRFLUX(*)
+    real fluxDir(*)
     integer icell, ICELL1, idir, I, N, newPts(3, 4), OLDNPTS
     integer MAXCELLS, MAXPTS, MAXWORK, MAXSH, MAXRAD
     logical isOutMem0
@@ -223,7 +223,7 @@ subroutine shd_grid__splitGrid(&
                     call shd_grid__interpNewGridPts(newPts,&
                         &doDeltaM, ACCELFLAG,&
                         &SOLARFLUX, YlmSun,&
-                        &DIRFLUX,&
+                        &fluxDir,&
                         &isrcD_Shdo,&
                         &temp_Rtm, planck_Rtm, ext_Rtm, ssa_Rtm, leg_Rtm, ipha_Rtm, &
                         &iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo)
@@ -262,7 +262,7 @@ subroutine shd_grid__splitGrid(&
                         call shd_grid__interpNewGridPts(newPts,&
                             doDeltaM, ACCELFLAG, &
                             SOLARFLUX, YlmSun, &
-                            DIRFLUX, &
+                            fluxDir, &
                             isrcD_Shdo, &
                             temp_Rtm, planck_Rtm, ext_Rtm, ssa_Rtm, leg_Rtm, ipha_Rtm, &
                             iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo)
@@ -285,7 +285,7 @@ subroutine shd_grid__splitGrid(&
                 call shd_mpi__makeFluxDir(OLDNPTS + 1,&
                     &doDeltaM, shdo_obj_%maxNl,&
                     &SOLARFLUX, src_obj_%mu0, src_obj_%phi0,&
-                    &DIRFLUX)
+                    &fluxDir)
             end if
         end if
     end if
@@ -333,7 +333,7 @@ end subroutine shd_grid__interpGrid
 subroutine shd_grid__interpNewGridPts(newPts,&
     doDeltaM, ACCELFLAG,&
     SOLARFLUX, YlmSun,&
-    DIRFLUX,&
+    fluxDir,&
     isrcD_Shdo,&
     temp_Rtm, planck_Rtm, ext_Rtm, ssa_Rtm, leg_Rtm, ipha_Rtm, &
     iradI_Shdo, radI_Shdo, &
@@ -364,7 +364,7 @@ subroutine shd_grid__interpNewGridPts(newPts,&
     integer isrcD_Shdo(*)
     logical doDeltaM, ACCELFLAG
     real SOLARFLUX, YlmSun(prp_obj_%NlegSet, shdo_obj_%Nlm)
-    real DIRFLUX(rtm_obj_%Npts)
+    real fluxDir(rtm_obj_%Npts)
     integer I, IP1, IP2, IP, IPH, J, K, L, M, ME, MS
     integer IS, NS, NS1, NS2
     integer IR, IR1, IR2, NR, NR1, NR2, SIDE
@@ -439,13 +439,13 @@ subroutine shd_grid__interpNewGridPts(newPts,&
                 if (isMpi_) then
                     ! If MPI mode then calculate a temporary approximation
                     !   to the direct flux (for source function calculation below)
-                    DIRFLUX(IP) = exp(0.5*(log(DIRFLUX(IP1)) + log(DIRFLUX(IP2))))
+                    fluxDir(IP) = exp(0.5*(log(fluxDir(IP1)) + log(fluxDir(IP2))))
                 else
                     ! Otherwise, calculate the exact direct beam from property grid
                     DIRPATH = 0.0
                     call shd_rad__computeDirect(0, X, Y, Z, rtm_obj_%flag_bc, rtm_obj_%flag_ip, doDeltaM,&
                         &shdo_obj_%maxNl, SOLARFLUX, src_obj_%mu0, src_obj_%phi0,&
-                        &DIRFLUX(IP),&
+                        &fluxDir(IP),&
                         &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
                 end if
             end if
@@ -505,13 +505,13 @@ subroutine shd_grid__interpNewGridPts(newPts,&
 
             if (isPol_) then
                 call shd_src__computeSrcOnePts(shdo_obj_%Nstokes, shdo_obj_%Nlm, LOFJ,&
-                    &src_obj_%type, DIRFLUX(IP)*SECMU0, YlmSunT,&
+                    &src_obj_%type, fluxDir(IP)*SECMU0, YlmSunT,&
                     &planck_Rtm(IP), ssa_Rtm(IP), IPH, leg_Rtm,&
                     &NR, radI_Shdo(1, IR+1), srcT_Shdo)
                     !&NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
             else
                 call shd_src__computeSrcOnePts_(shdo_obj_%Nlm, LOFJ,&
-                    &src_obj_%type, DIRFLUX(IP)*SECMU0, YlmSunT,&
+                    &src_obj_%type, fluxDir(IP)*SECMU0, YlmSunT,&
                     &planck_Rtm(IP), ssa_Rtm(IP), IPH, leg_Rtm,&
                     &NR, radI_Shdo(1, IR+1), srcT_Shdo)
                     !&NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)

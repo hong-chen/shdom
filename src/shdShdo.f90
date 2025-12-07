@@ -83,7 +83,7 @@ contains
 
 subroutine shd_shdo__computeSH(&
     &NSHOUT, NSTOKES, NPTS, SRCTYPE,&
-    &SOLARMU, SOLARAZ, DIRFLUX,&
+    &muSun, phiSun, fluxDir,&
     &iradI_Shdo, ML, MM, radI_Shdo, SHTERMS)
 
     !   Computes the quantities for the spherical harmonic output.
@@ -93,7 +93,7 @@ subroutine shd_shdo__computeSH(&
     ! rms of the higher order terms in the radiance series is computed.
 
     integer NSTOKES, NPTS, iradI_Shdo(NPTS + 1), ML, MM, NSHOUT
-    real SOLARMU, SOLARAZ, DIRFLUX(NPTS)
+    real muSun, phiSun, fluxDir(NPTS)
     real radI_Shdo(NSTOKES, *), SHTERMS(NSHOUT, NPTS)
     character(len=1) :: SRCTYPE
     integer I, IR, J, NLM
@@ -108,14 +108,14 @@ subroutine shd_shdo__computeSH(&
     A = sqrt(PI_*FRAC23_)
     C = sqrt(PI_*FRAC43_)
     C0 = 1.0/sqrt(4.0*PI_)
-    SECSOL = 1.0/abs(SOLARMU)
-    SINSOL = sqrt(1.0 - SOLARMU**2)
-    SOLX = SINSOL*cos(SOLARAZ)*SECSOL
-    SOLY = SINSOL*sin(SOLARAZ)*SECSOL
+    SECSOL = 1.0/abs(muSun)
+    SINSOL = sqrt(1.0 - muSun**2)
+    SOLX = SINSOL*cos(phiSun)*SECSOL
+    SOLY = SINSOL*sin(phiSun)*SECSOL
     SOLM = SECSOL/(4.0*PI_)
     F0 = 0.0
     if (src_obj_%doSolar) then
-        call shd_shdo__computeYlm(.true., SOLARMU, SOLARAZ, ML, MM, 1, YLMSUN)
+        call shd_shdo__computeYlm(.true., muSun, phiSun, ML, MM, 1, YLMSUN)
     end if
     do I = 1, NPTS
         IR = iradI_Shdo(I)
@@ -136,10 +136,10 @@ subroutine shd_shdo__computeSH(&
             FY = 0.0
         end if
         if (src_obj_%doSolar) then
-            IMEAN = IMEAN + DIRFLUX(I)*SOLM
-            FX = FX + DIRFLUX(I)*SOLX
-            FY = FY + DIRFLUX(I)*SOLY
-            FZ = FZ - DIRFLUX(I)
+            IMEAN = IMEAN + fluxDir(I)*SOLM
+            FX = FX + fluxDir(I)*SOLX
+            FY = FY + fluxDir(I)*SOLY
+            FZ = FZ - fluxDir(I)
         end if
         SHTERMS(1, I) = IMEAN
         SHTERMS(2, I) = FX
@@ -148,7 +148,7 @@ subroutine shd_shdo__computeSH(&
         if (NSHOUT .eq. 5) then
             HORMS = 0.0
             if (src_obj_%doSolar) then
-                F0 = SECSOL*DIRFLUX(I)
+                F0 = SECSOL*fluxDir(I)
             end if
             do J = 5, iradI_Shdo(I + 1) - IR
                 HORMS = HORMS + (F0*YLMSUN(J) + radI_Shdo(1, IR + J))**2
