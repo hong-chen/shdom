@@ -410,17 +410,17 @@ subroutine shd_mpi__map(rtmAll_obj, prpAll_obj, sfcAll_obj, &
     if (verbose_ .ge. 5) write(6, '(2X,A,4(I0,2X))')    '       Neighbors: ', iProcNeigh_(1:4)
     if (rtm_obj%type .eq. 'S') then
         if (verbose_ .ge. 5) &
-            write(6, '(2X,A,2(F6.2," deg",2X))') ' Longitude range: ', &
+            write(6, '(2X,A,2(F8.2," deg",2X))') ' Longitude range: ', &
                 prp_obj%xStart+rtm_obj%xOffset, xEnd_prp+rtm_obj%xOffset
         if (verbose_ .ge. 5) &
-            write(6, '(2X,A,2(F6.2," deg",2X))') '  Latitude range: ', &
+            write(6, '(2X,A,2(F8.2," deg",2X))') '  Latitude range: ', &
                 prp_obj%yStart+rtm_obj%yOffset, yEnd_prp+rtm_obj%yOffset
     else
         if (verbose_ .ge. 5) &
-            write(6, '(2X,A,2(F6.2," km",2X))') '         X range: ', &
+            write(6, '(2X,A,2(F8.2," km",2X))') '         X range: ', &
                 prp_obj%xStart, xEnd_prp
         if (verbose_ .ge. 5) &
-            write(6, '(2X,A,2(F6.2," km",2X))') '         Y range: ', &
+            write(6, '(2X,A,2(F8.2," km",2X))') '         Y range: ', &
                 prp_obj%yStart, yEnd_prp
     end if
 # else

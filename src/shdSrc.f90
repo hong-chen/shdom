@@ -100,7 +100,7 @@ contains
 subroutine shd_src__computeSrc(&
     FIXSH, &
     YlmSun, &
-    DIRFLUX, SHACC, &
+    fluxDir, SHACC, &
     isrcD_Shdo, srcD_Shdo, &
     FIRST, ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM, &
     iradI_Shdo, radI_Shdo, &
@@ -108,7 +108,7 @@ subroutine shd_src__computeSrc(&
 
     ! Computes the source function (srcJ_Shdo) in spherical harmonic space
     !   for all the grid points.  The thermal source and/or solar
-    !   pseudo-source (in planck_Rtm_ or DIRFLUX) is added to the scattering source
+    !   pseudo-source (in planck_Rtm_ or fluxDir) is added to the scattering source
     !   (computed from leg_Rtm_ and the spherical harmonic expansion in radI_Shdo).
     !   Also computes the adaptive spherical harmonic truncation for
     !   the source function, unless FIXSH is true.  The SH truncation is set
@@ -140,7 +140,7 @@ subroutine shd_src__computeSrc(&
     logical FIXSH, FIRST, ACCELFLAG
     real SHACC, YlmSun(prp_obj_%NlegSet, shdo_obj_%Nlm)
     real DELJDOT, DELJOLD, DELJNEW, JNORM
-    real DIRFLUX(rtm_obj_%Npts)
+    real fluxDir(rtm_obj_%Npts)
     real srcD_Shdo(shdo_obj_%Nstokes, *)
     integer IS, ISO, IR, I, IPH, J, JS, K, L, LS, M, MS, ME, NS, NR
     integer, allocatable :: LOFJ(:)
@@ -155,7 +155,7 @@ subroutine shd_src__computeSrc(&
     SRCMIN = SHACC
 
     ! Make source function from scattering integral and real sources:
-    !   Solar source: DIRFLUX has F0*exp(-tau)
+    !   Solar source: fluxDir has F0*exp(-tau)
     !   Thermal source: planck_Rtm_ has (1-omega)*B(T)
     if (.not. src_obj_%doVariableSolar) then
         YlmSunT(1:prp_obj_%NlegSet, 1:shdo_obj_%Nlm) = YlmSun(1:prp_obj_%NlegSet, 1:shdo_obj_%Nlm)
@@ -203,13 +203,13 @@ subroutine shd_src__computeSrc(&
 
             if (isPol_) then
                 call shd_src__computeSrcOnePts(shdo_obj_%Nstokes, shdo_obj_%Nlm, LOFJ,&
-                    &src_obj_%type, DIRFLUX(I)*SECMU0, YlmSunT,&
+                    &src_obj_%type, fluxDir(I)*SECMU0, YlmSunT,&
                     &planck_Rtm_(I), ssa_Rtm_(I), IPH, leg_Rtm_,&
                     &NR, radI_Shdo(1, IR+1), srcT_Shdo)
                     !&NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
             else
                 call shd_src__computeSrcOnePts_(shdo_obj_%Nlm, LOFJ,&
-                    src_obj_%type, DIRFLUX(I)*SECMU0, YlmSunT,&
+                    src_obj_%type, fluxDir(I)*SECMU0, YlmSunT,&
                     planck_Rtm_(I), ssa_Rtm_(I), IPH, leg_Rtm_,&
                     NR, radI_Shdo(1, IR+1), srcT_Shdo)
                     !&NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
@@ -264,13 +264,13 @@ subroutine shd_src__computeSrc(&
 
             if (isPol_) then
                 call shd_src__computeSrcOnePts(shdo_obj_%Nstokes, shdo_obj_%Nlm, LOFJ,&
-                    &src_obj_%type, DIRFLUX(I)*SECMU0, YlmSunT,&
+                    &src_obj_%type, fluxDir(I)*SECMU0, YlmSunT,&
                     &planck_Rtm_(I), ssa_Rtm_(I), IPH, leg_Rtm_,&
                     &NR, radI_Shdo(1, IR+1), srcT_Shdo)
                     !&NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
             else
                 call shd_src__computeSrcOnePts_(shdo_obj_%Nlm, LOFJ,&
-                    &src_obj_%type, DIRFLUX(I)*SECMU0, YlmSunT,&
+                    &src_obj_%type, fluxDir(I)*SECMU0, YlmSunT,&
                     &planck_Rtm_(I), ssa_Rtm_(I), IPH, leg_Rtm_,&
                     &NR, radI_Shdo(1, IR+1), srcT_Shdo)
                     !&NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
@@ -311,13 +311,13 @@ subroutine shd_src__computeSrc(&
 
         if (isPol_) then
             call shd_src__computeSrcOnePts(shdo_obj_%Nstokes, shdo_obj_%Nlm, LOFJ,&
-                &src_obj_%type, DIRFLUX(I)*SECMU0, YlmSunT,&
+                &src_obj_%type, fluxDir(I)*SECMU0, YlmSunT,&
                 &planck_Rtm_(I), ssa_Rtm_(I), IPH, leg_Rtm_,&
                 &NR, radI_Shdo(1, IR+1), srcT_Shdo)
                 !&NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
         else
             call shd_src__computeSrcOnePts_(shdo_obj_%Nlm, LOFJ,&
-                &src_obj_%type, DIRFLUX(I)*SECMU0, YlmSunT,&
+                &src_obj_%type, fluxDir(I)*SECMU0, YlmSunT,&
                 &planck_Rtm_(I), ssa_Rtm_(I), IPH, leg_Rtm_,&
                 &NR, radI_Shdo(1, IR+1), srcT_Shdo)
                 !&NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcT_Shdo)
@@ -376,14 +376,14 @@ subroutine shd_src__integrateSrcOneRay(&
     &NSTPHASE, NSCATANGLE, PHASETAB,&
     &ML, MM, NLM,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-    &DELTAM, SRCTYPE, WAVELEN, SOLARMU, SOLARAZ,&
-    &DIRFLUX, isrcJ_Shdo, srcJ_Shdo, YlmSun,&
+    &doDeltaM, SRCTYPE, WAVELEN, SOLARMU, SOLARAZ,&
+    &fluxDir, isrcJ_Shdo, srcJ_Shdo, YlmSun,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-    &MU2, PHI2, X0, Y0, Z0,&
+    &muView, phiView, X0, Y0, Z0,&
     &XE, YE, ZE, SIDE, TRANSMIT, radI_Shdo, VALIDRAD)
 
     !   Integrates the source function through the extinction field
-    ! (ext_Rtm_) backward from the outgoing direction (MU2,PHI2) to find the
+    ! (ext_Rtm_) backward from the outgoing direction (muView,phiView) to find the
     ! radiance (radI_Shdo) at the point X0,Y0,Z0.
     ! The transmission and radiance of the ray so far (TRANSMIT, radI_Shdo)
     ! are input and returned after the integration along with the exitting
@@ -397,14 +397,14 @@ subroutine shd_src__integrateSrcOneRay(&
     integer NMU, NPHI0MAX, NPHI0(NMU)
     integer isrcJ_Shdo(rtm_obj_%Npts + 1)
     integer BCPTR(MAXNBC, 2)
-    logical DELTAM, VALIDRAD
+    logical doDeltaM, VALIDRAD
     real WTDO(NMU, NPHI0MAX), MU(NMU), PHI(NMU, NPHI0MAX)
     real WAVELEN, SOLARMU, SOLARAZ
     real BCRAD(*)
-    real DIRFLUX(rtm_obj_%Npts), srcJ_Shdo(NSTOKES, *)
+    real fluxDir(rtm_obj_%Npts), srcJ_Shdo(NSTOKES, *)
     real YlmSun(prp_obj_%NlegSet, NLM)
     real PHASETAB(NSTPHASE, prp_obj_%Npha, NSCATANGLE)
-    real(RD_) :: MU2, PHI2, X0, Y0, Z0, XE, YE, ZE
+    real(RD_) :: muView, phiView, X0, Y0, Z0, XE, YE, ZE
     real(RD_) :: TRANSMIT, radI_Shdo(NSTOKES)
     character(len=1) :: SRCTYPE
 
@@ -427,7 +427,7 @@ subroutine shd_src__integrateSrcOneRay(&
     real(RD_) :: SRC(NSTOKES)
     real(RD_) :: U, V, W, DELX, DELY, DELZ, INVDELX, INVDELY, INVDELZ
     real(RD_) :: COSSCAT
-    real, allocatable :: YLMDIR(:, :), SINGSCAT(:, :)
+    real, allocatable :: YlmView(:, :), SINGSCAT(:, :)
     real(RD_), allocatable :: SUNDIRLEG(:)
 
     data OPPFACE/2, 1, 4, 3, 6, 5/
@@ -446,15 +446,15 @@ subroutine shd_src__integrateSrcOneRay(&
     MAXCELLSCROSS = 50*max(rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz)
 
     ! Calculate the generalized spherical harmonics for this direction
-    allocate(YLMDIR(prp_obj_%NlegSet, NLM))
-    call shd_shdo__computeYlm(.false., sngl(MU2), sngl(PHI2), ML, MM, prp_obj_%NlegSet, YLMDIR)
+    allocate(YlmView(prp_obj_%NlegSet, NLM))
+    call shd_shdo__computeYlm(.false., sngl(muView), sngl(phiView), ML, MM, prp_obj_%NlegSet, YlmView)
 
-    if ((SRCTYPE .ne. 'T') .and. (DELTAM)) then
+    if ((SRCTYPE .ne. 'T') .and. (doDeltaM)) then
         ! Get the solar single scattering Stokes vector for the outgoin
         !   direction my interpolating in scattering angle in the PHASETA
         !   table and then rotating the Q/U polarization to the outgoing
-        COSSCAT = SOLARMU*MU2 + dsqrt((1.0d0 - SOLARMU**2)*(1.0d0 - MU2**2))&
-            &*dcos(SOLARAZ - PHI2)
+        COSSCAT = SOLARMU*muView + dsqrt((1.0d0 - SOLARMU**2)*(1.0d0 - muView**2))&
+            &*dcos(SOLARAZ - phiView)
         if (prp_obj_%Npha .gt. 0) then
             allocate(SINGSCAT(NSTOKES, prp_obj_%Npha))
             F = (NSCATANGLE - 1)*(dacos(COSSCAT)/DPI_) + 1
@@ -465,7 +465,7 @@ subroutine shd_src__integrateSrcOneRay(&
                     &= (1 - F)*PHASETAB(:, I, J) + F*PHASETAB(:, I, J + 1)
                 if (isPol_) then
                     call shd_src__rotatePolarPlane(NSTOKES, COSSCAT, SOLARMU,&
-                        &sngl(MU2), SOLARAZ - sngl(PHI2), SINGSCAT(:, I))
+                        &sngl(muView), SOLARAZ - sngl(phiView), SINGSCAT(:, I))
                 end if
             end do
         else
@@ -478,7 +478,7 @@ subroutine shd_src__integrateSrcOneRay(&
     end if
 
     ! Make the ray direction (opposite to the outgoing direction)
-    call shd_util__computeRayVect(MU2, PHI2, &
+    call shd_util__computeRayVect(muView, phiView, &
         CX, CY, CZ, CXINV, CYINV, CZINV, &
         ratio_x, ratio_y)
 
@@ -509,7 +509,7 @@ subroutine shd_src__integrateSrcOneRay(&
     ! ZE = MAX(MIN(Z0,DBLE(rtm_obj_%z(rtm_obj_%Nz))),DBLE(rtm_obj_%z(1)))
     call shd_util__findCell(XE, YE, ZE, icell)
     ! write(*, '(A,5(1X,F8.5),1X,I6)') &
-    !     &'_integrateSrcOneRay:',X0,Y0,Z0,MU2,PHI2,icell
+    !     &'_integrateSrcOneRay:',X0,Y0,Z0,muView,phiView,icell
     IFACE = 0
     NGRID = 0
 
@@ -519,7 +519,7 @@ subroutine shd_src__integrateSrcOneRay(&
         ! Make sure current cell is valid
         if (icell .le. 0) then
             write(6, *) 'Error [_integrateSrcOneRay]: icell=', icell,&
-                &MU2, PHI2, XE, YE, ZE
+                &muView, phiView, XE, YE, ZE
             stop
         end if
         NGRID = NGRID + 1
@@ -532,21 +532,21 @@ subroutine shd_src__integrateSrcOneRay(&
             OEXTINCT8(I) = EXTINCT8(I)
             OSRCEXT8(:, I) = SRCEXT8(:, I)
         end do
-        ! Compute the source function times extinction in direction (MU2
+        ! Compute the source function times extinction in direction (muView
         if (isPol_) then
             call shd_src__computeSrcOneCell(icell, i8Grid_Cell_,&
                 &NSTOKES, ML, MM, NLM,&
-                &rtm_obj_%Npts, DELTAM, SRCTYPE, SOLARMU,&
-                &DIRFLUX,&
-                &isrcJ_Shdo, srcJ_Shdo, YLMDIR, YlmSun, SUNDIRLEG, SINGSCAT,&
+                &rtm_obj_%Npts, doDeltaM, SRCTYPE, SOLARMU,&
+                &fluxDir,&
+                &isrcJ_Shdo, srcJ_Shdo, YlmView, YlmSun, SUNDIRLEG, SINGSCAT,&
                 &DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
                 &EXTINCT8, SRCEXT8)
         else
             call shd_src__computeSrcOneCell_(icell, i8Grid_Cell_,&
                 &ML, MM, NLM,&
-                &rtm_obj_%Npts, DELTAM, SRCTYPE, SOLARMU,&
-                &DIRFLUX,&
-                &isrcJ_Shdo, srcJ_Shdo, YLMDIR, YlmSun, SUNDIRLEG, SINGSCAT,&
+                &rtm_obj_%Npts, doDeltaM, SRCTYPE, SOLARMU,&
+                &fluxDir,&
+                &isrcJ_Shdo, srcJ_Shdo, YlmView, YlmSun, SUNDIRLEG, SINGSCAT,&
                 &DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
                 &EXTINCT8, SRCEXT8)
         end if
@@ -610,7 +610,7 @@ subroutine shd_src__integrateSrcOneRay(&
         SO = min(SOX, SOY, SOZ)
         if (SO .lt. -EPS) then
             write(6, *) 'Error [_integrateSrcOneRay]: SO<0 ',&
-                &MU2, PHI2, XE, YE, ZE, SO, icell
+                &muView, phiView, XE, YE, ZE, SO, icell
             stop
         end if
         XN = XE + SO*CX
@@ -721,11 +721,11 @@ subroutine shd_src__integrateSrcOneRay(&
         else if ((INEXTCELL .eq. 0) .and. (IFACE .ge. 5)) then
             VALIDRAD = .true.
             call shd_src__findBndryRad(NSTOKES, XN, YN,&
-                &sngl(MU2), sngl(PHI2),&
+                &sngl(muView), sngl(phiView),&
                 &IC, KFACE, i8Grid_Cell_, xyz_Rtm_,&
                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                 &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-                &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
+                &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, fluxDir,&
                 &RADBND)
             radI_Shdo(:) = radI_Shdo(:) + TRANSMIT*RADBND(:)
         else
@@ -739,7 +739,7 @@ subroutine shd_src__integrateSrcOneRay(&
 
     SIDE = IFACE
 
-    if (src_obj_%doSolar .and. DELTAM) then
+    if (src_obj_%doSolar .and. doDeltaM) then
         if (prp_obj_%Npha .gt. 0) then
             deallocate(SINGSCAT)
         else
@@ -747,7 +747,7 @@ subroutine shd_src__integrateSrcOneRay(&
         end if
     end if
 
-    deallocate(YLMDIR)
+    deallocate(YlmView)
 
     return
 end subroutine shd_src__integrateSrcOneRay
@@ -1008,12 +1008,12 @@ subroutine shd_src__integrateSrc(NSTOKES,&
 end subroutine shd_src__integrateSrc
 
 subroutine shd_src__computeSrcOneDir(&
-    &DELTAM, MU, PHI,&
-    &DIRFLUX,&
-    &src1_Shdo,&
-    &isrcJ_Shdo, srcJ_Shdo)
+    doDeltaM, muView, phiView, &
+    fluxDir, &
+    src1_Shdo, &
+    isrcJ_Shdo, srcJ_Shdo)
 
-    ! Computes the source function (src1_Shdo) in the direction (MU,PHI)
+    ! Computes the source function (src1_Shdo) in the direction (muView,phiView)
     ! for the whole domain (rtm_obj_%Nx,rtm_obj_%Nz).  The spherical harmonic source function
     ! series is input in srcJ_Shdo.
     ! For a solar source if delta-M then use Nakajima and Tanaka TMS
@@ -1023,33 +1023,33 @@ subroutine shd_src__computeSrcOneDir(&
     integer(I__), intent(inout) :: isrcJ_Shdo(*)
     real(R__),    intent(inout) ::  srcJ_Shdo(shdo_obj_%Nstokes, *)
 
-    logical DELTAM
-    real MU, PHI
-    real DIRFLUX(rtm_obj_%Npts)
+    logical doDeltaM
+    real muView, phiView
+    real fluxDir(rtm_obj_%Npts)
     real src1_Shdo(shdo_obj_%Nstokes, rtm_obj_%Npts)
     integer I, J, JT, K, L, M, N, IPH, IS, NS, ME, MS
     real DA, F, A, A1, B1, SECMU0, COSSCAT
-    real, allocatable :: YLMDIR(:, :), YlmSun(:, :)
+    real, allocatable :: YlmView(:, :), YlmSun(:, :)
     real(RD_), allocatable :: SUNDIRLEG(:)
     real, allocatable :: UNSCLEGEN(:, :), SINGSCAT(:, :)
     logical TMS
 
-    allocate(YLMDIR(prp_obj_%NlegSet, shdo_obj_%Nlm), YlmSun(prp_obj_%NlegSet, shdo_obj_%Nlm))
+    allocate(YlmView(prp_obj_%NlegSet, shdo_obj_%Nlm), YlmSun(prp_obj_%NlegSet, shdo_obj_%Nlm))
     allocate(SUNDIRLEG(0:prp_obj_%Nleg))
     allocate(UNSCLEGEN(2, 0:prp_obj_%Nleg), SINGSCAT(shdo_obj_%Nstokes, prp_obj_%Npha))
-    if (abs(MU) .gt. 1.0) stop 'Error [_computeOneSrc]: Bad mu.'
+    if (abs(muView) .gt. 1.0) stop 'Error [_computeOneSrc]: Bad muView.'
 
-    TMS = DELTAM
+    TMS = doDeltaM
     ! TMS = .FALSE.
 
     ! Precompute Ylm's for output direction and solar direction
-    call shd_shdo__computeYlm(.false., MU, PHI, shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet, YLMDIR)
+    call shd_shdo__computeYlm(.false., muView, phiView, shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet, YlmView)
     if (src_obj_%doSolar) then
         call shd_shdo__computeYlm(.true., src_obj_%mu0, src_obj_%phi0, shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet,&
             &YlmSun)
         SECMU0 = 1.0/abs(src_obj_%mu0)
-        COSSCAT = src_obj_%mu0*MU + sqrt((1.0d0 - src_obj_%mu0**2)*(1.0d0 - MU**2))&
-            &*cos(src_obj_%phi0 - PHI)
+        COSSCAT = src_obj_%mu0*muView + sqrt((1.0d0 - src_obj_%mu0**2)*(1.0d0 - muView**2))&
+            &*cos(src_obj_%phi0 - phiView)
         if (prp_obj_%Npha .eq. 0 .and. TMS) then
             ! If non-tabulate phase functions (unpolarized) then
             !   compute the Legendre polynomials for the scattering angle
@@ -1085,11 +1085,11 @@ subroutine shd_src__computeSrcOneDir(&
             ! Sum the Wigner series (for A1 and B1), rotate the plane of
             !   polarization to the outgoing direction, and return the Stoke
             call shd_src__computeSolarStokesVect(UNSCLEGEN, COSSCAT,&
-                &src_obj_%mu0, MU, src_obj_%phi0 - PHI, shdo_obj_%Nstokes,&
+                &src_obj_%mu0, muView, src_obj_%phi0 - phiView, shdo_obj_%Nstokes,&
                 &SINGSCAT(1, IPH))
             if (SINGSCAT(1, IPH) .le. 0.0) then
                 write(6, *) 'Error [_computeOneSrc]: negative source function',&
-                    &' for tabulated phase function:', IPH, MU, PHI, SINGSCAT(1, IPH)
+                    &' for tabulated phase function:', IPH, muView, phiView, SINGSCAT(1, IPH)
                 stop
             end if
         end do
@@ -1104,19 +1104,19 @@ subroutine shd_src__computeSrcOneDir(&
         !   of the source function
         src1_Shdo(:, I) = 0.0
         do J = 1, NS
-            src1_Shdo(1, I) = src1_Shdo(1, I) + srcJ_Shdo(1, IS + J)*YLMDIR(1, J)
+            src1_Shdo(1, I) = src1_Shdo(1, I) + srcJ_Shdo(1, IS + J)*YlmView(1, J)
         end do
         if (isPol_) then
             do J = 1, NS
-                src1_Shdo(2, I) = src1_Shdo(2, I) + srcJ_Shdo(2, IS + J)*YLMDIR(2, J)&
-                    &+ srcJ_Shdo(3, IS + J)*YLMDIR(5, J)
-                src1_Shdo(3, I) = src1_Shdo(3, I) + srcJ_Shdo(2, IS + J)*YLMDIR(6, J)&
-                    &+ srcJ_Shdo(3, IS + J)*YLMDIR(3, J)
+                src1_Shdo(2, I) = src1_Shdo(2, I) + srcJ_Shdo(2, IS + J)*YlmView(2, J)&
+                    &+ srcJ_Shdo(3, IS + J)*YlmView(5, J)
+                src1_Shdo(3, I) = src1_Shdo(3, I) + srcJ_Shdo(2, IS + J)*YlmView(6, J)&
+                    &+ srcJ_Shdo(3, IS + J)*YlmView(3, J)
             end do
         end if
         if (isPol4_) then
             do J = 1, NS
-                src1_Shdo(4, I) = src1_Shdo(4, I) + srcJ_Shdo(4, IS + J)*YLMDIR(4, J)
+                src1_Shdo(4, I) = src1_Shdo(4, I) + srcJ_Shdo(4, IS + J)*YlmView(4, J)
             end do
         end if
 
@@ -1128,7 +1128,7 @@ subroutine shd_src__computeSrcOneDir(&
                 IPH = I
             end if
             ! First subtract off the truncated single scattering
-            DA = ssa_Rtm_(I)*DIRFLUX(I)*SECMU0
+            DA = ssa_Rtm_(I)*fluxDir(I)*SECMU0
             J = 1
             do L = 0, shdo_obj_%maxNl
                 ME = min(L, shdo_obj_%maxNm)
@@ -1138,14 +1138,14 @@ subroutine shd_src__computeSrcOneDir(&
                 if (J .le. NS) then
                     JT = J
                     do M = MS, ME
-                        src1_Shdo(1, I) = src1_Shdo(1, I) - A1*YLMDIR(1, J)*YlmSun(1, J)
+                        src1_Shdo(1, I) = src1_Shdo(1, I) - A1*YlmView(1, J)*YlmSun(1, J)
                         J = J + 1
                     end do
                     if (isPol_) then
                         J = JT
                         do M = MS, ME
-                            src1_Shdo(2, I) = src1_Shdo(2, I) - B1*YLMDIR(2, J)*YlmSun(1, J)
-                            src1_Shdo(3, I) = src1_Shdo(3, I) - B1*YLMDIR(6, J)*YlmSun(1, J)
+                            src1_Shdo(2, I) = src1_Shdo(2, I) - B1*YlmView(2, J)*YlmSun(1, J)
+                            src1_Shdo(3, I) = src1_Shdo(3, I) - B1*YlmView(6, J)*YlmSun(1, J)
                             J = J + 1
                         end do
                     end if
@@ -1174,7 +1174,7 @@ subroutine shd_src__computeSrcOneDir(&
         end if
     end do
 
-    deallocate(YLMDIR, YlmSun, SUNDIRLEG, UNSCLEGEN, SINGSCAT)
+    deallocate(YlmView, YlmSun, SUNDIRLEG, UNSCLEGEN, SINGSCAT)
 
     return
 
@@ -1336,9 +1336,9 @@ end subroutine shd_src__computeSrcOnePts_
 subroutine shd_src__computeSrcOneCell(&
     &icell, GRIDPTR,&
     &NSTOKES, ML, MM, NLM,&
-    &NPTS, DELTAM, SRCTYPE, SOLARMU,&
-    &DIRFLUX,&
-    &isrcJ_Shdo, srcJ_Shdo, YLMDIR, YlmSun, SUNDIRLEG, SINGSCAT,&
+    &NPTS, doDeltaM, SRCTYPE, SOLARMU,&
+    &fluxDir,&
+    &isrcJ_Shdo, srcJ_Shdo, YlmView, YlmSun, SUNDIRLEG, SINGSCAT,&
     &DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
     &EXTINCT8, SRCEXT8)
 
@@ -1353,10 +1353,10 @@ subroutine shd_src__computeSrcOneCell(&
     integer icell, NSTOKES, NPTS, ML, MM, NLM
     integer GRIDPTR(8, *), isrcJ_Shdo(NPTS + 1)
     integer DONETHIS(8), OLDIPTS(8)
-    logical DELTAM
+    logical doDeltaM
     real SOLARMU
-    real DIRFLUX(NPTS), srcJ_Shdo(NSTOKES, *)
-    real YLMDIR(prp_obj_%NlegSet, NLM), YlmSun(prp_obj_%NlegSet, NLM)
+    real fluxDir(NPTS), srcJ_Shdo(NSTOKES, *)
+    real YlmView(prp_obj_%NlegSet, NLM), YlmSun(prp_obj_%NlegSet, NLM)
     real SINGSCAT(NSTOKES, prp_obj_%Npha)
     real OEXTINCT8(8), OSRCEXT8(NSTOKES, 8)
     real EXTINCT8(8), SRCEXT8(NSTOKES, 8)
@@ -1388,31 +1388,31 @@ subroutine shd_src__computeSrcOneCell(&
             !   of the source function
             SRCEXT8(:, N) = 0.0
             do J = 1, NS
-                SRCEXT8(1, N) = SRCEXT8(1, N) + srcJ_Shdo(1, IS + J)*YLMDIR(1, J)
+                SRCEXT8(1, N) = SRCEXT8(1, N) + srcJ_Shdo(1, IS + J)*YlmView(1, J)
             end do
             if (isPol_) then
                 do J = 1, NS
-                    SRCEXT8(2, N) = SRCEXT8(2, N) + srcJ_Shdo(2, IS + J)*YLMDIR(2, J)&
-                        &+ srcJ_Shdo(3, IS + J)*YLMDIR(5, J)
-                    SRCEXT8(3, N) = SRCEXT8(3, N) + srcJ_Shdo(2, IS + J)*YLMDIR(6, J)&
-                        &+ srcJ_Shdo(3, IS + J)*YLMDIR(3, J)
+                    SRCEXT8(2, N) = SRCEXT8(2, N) + srcJ_Shdo(2, IS + J)*YlmView(2, J)&
+                        &+ srcJ_Shdo(3, IS + J)*YlmView(5, J)
+                    SRCEXT8(3, N) = SRCEXT8(3, N) + srcJ_Shdo(2, IS + J)*YlmView(6, J)&
+                        &+ srcJ_Shdo(3, IS + J)*YlmView(3, J)
                 end do
             end if
             if (isPol4_) then
                 do J = 1, NS
-                    SRCEXT8(4, N) = SRCEXT8(4, N) + srcJ_Shdo(4, IS + J)*YLMDIR(4, J)
+                    SRCEXT8(4, N) = SRCEXT8(4, N) + srcJ_Shdo(4, IS + J)*YlmView(4, J)
                 end do
             end if
 
             ! Special case for solar source and Delta-M
-            if (src_obj_%doSolar .and. DELTAM) then
+            if (src_obj_%doSolar .and. doDeltaM) then
                 if (prp_obj_%Npha .gt. 0) then
                     IPH = ipha_Rtm_(IP)
                 else
                     IPH = IP
                 end if
                 ! First subtract off the truncated single scattering
-                DA = ssa_Rtm_(IP)*DIRFLUX(IP)*SECMU0
+                DA = ssa_Rtm_(IP)*fluxDir(IP)*SECMU0
                 J = 1
                 do L = 0, ML
                     ME = min(L, MM)
@@ -1422,14 +1422,14 @@ subroutine shd_src__computeSrcOneCell(&
                     if (J .le. NS) then
                         JT = J
                         do M = MS, ME
-                            SRCEXT8(1, N) = SRCEXT8(1, N) - A1*YLMDIR(1, J)*YlmSun(1, J)
+                            SRCEXT8(1, N) = SRCEXT8(1, N) - A1*YlmView(1, J)*YlmSun(1, J)
                             J = J + 1
                         end do
                         if (isPol_) then
                             J = JT
                             do M = MS, ME
-                                SRCEXT8(2, N) = SRCEXT8(2, N) - B1*YLMDIR(2, J)*YlmSun(1, J)
-                                SRCEXT8(3, N) = SRCEXT8(3, N) - B1*YLMDIR(6, J)*YlmSun(1, J)
+                                SRCEXT8(2, N) = SRCEXT8(2, N) - B1*YlmView(2, J)*YlmSun(1, J)
+                                SRCEXT8(3, N) = SRCEXT8(3, N) - B1*YlmView(6, J)*YlmSun(1, J)
                                 J = J + 1
                             end do
                         end if
@@ -1463,9 +1463,9 @@ end subroutine shd_src__computeSrcOneCell
 subroutine shd_src__computeSrcOneCell_(&
     &icell, GRIDPTR,&
     &ML, MM, NLM,&
-    &NPTS, DELTAM, SRCTYPE, SOLARMU,&
-    &DIRFLUX,&
-    &isrcJ_Shdo, srcJ_Shdo, YLMDIR, YlmSun, SUNDIRLEG, SINGSCAT,&
+    &NPTS, doDeltaM, SRCTYPE, SOLARMU,&
+    &fluxDir,&
+    &isrcJ_Shdo, srcJ_Shdo, YlmView, YlmSun, SUNDIRLEG, SINGSCAT,&
     &DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
     &EXTINCT8, SRCEXT8)
 
@@ -1480,10 +1480,10 @@ subroutine shd_src__computeSrcOneCell_(&
     integer icell, NPTS, ML, MM, NLM
     integer GRIDPTR(8, *), isrcJ_Shdo(NPTS + 1)
     integer DONETHIS(8), OLDIPTS(8)
-    logical DELTAM
+    logical doDeltaM
     real SOLARMU
-    real DIRFLUX(NPTS), srcJ_Shdo(*)
-    real YLMDIR(NLM), YlmSun(NLM)
+    real fluxDir(NPTS), srcJ_Shdo(*)
+    real YlmView(NLM), YlmSun(NLM)
     real SINGSCAT(prp_obj_%Npha)
     real OEXTINCT8(8), OSRCEXT8(8)
     real EXTINCT8(8), SRCEXT8(8)
@@ -1515,18 +1515,18 @@ subroutine shd_src__computeSrcOneCell_(&
             !   of the source function
             SRCEXT8(N) = 0.0
             do J = 1, NS
-                SRCEXT8(N) = SRCEXT8(N) + srcJ_Shdo(IS + J)*YLMDIR(J)
+                SRCEXT8(N) = SRCEXT8(N) + srcJ_Shdo(IS + J)*YlmView(J)
             end do
 
             ! Special case for solar source and Delta-M
-            if (src_obj_%doSolar .and. DELTAM) then
+            if (src_obj_%doSolar .and. doDeltaM) then
                 if (prp_obj_%Npha .gt. 0) then
                     IPH = ipha_Rtm_(IP)
                 else
                     IPH = IP
                 end if
                 ! First subtract off the truncated single scattering
-                DA = ssa_Rtm_(IP)*DIRFLUX(IP)*SECMU0
+                DA = ssa_Rtm_(IP)*fluxDir(IP)*SECMU0
                 J = 1
                 do L = 0, ML
                     ME = min(L, MM)
@@ -1535,7 +1535,7 @@ subroutine shd_src__computeSrcOneCell_(&
                     if (J .le. NS) then
                         JT = J
                         do M = MS, ME
-                            SRCEXT8(N) = SRCEXT8(N) - A1*YLMDIR(J)*YlmSun(J)
+                            SRCEXT8(N) = SRCEXT8(N) - A1*YlmView(J)*YlmSun(J)
                             J = J + 1
                         end do
                     end if
@@ -1679,26 +1679,26 @@ subroutine shd_src__rotatePolarPlane(NSTOKES, COSSCAT,&
 end subroutine shd_src__rotatePolarPlane
 
 subroutine shd_src__findBndryRad(&
-    &NSTOKES, XB, YB, MU2, PHI2,&
+    &NSTOKES, XB, YB, muView, phiView,&
     &icell, KFACE, GRIDPTR, GRIDPOS,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-    &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
+    &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, fluxDir,&
     &RADBND)
 
     !   Returns the interpolated Stokes radiance at the boundary (RADBND)
     ! Inputs are the boundary location (XB,YB), ray direction away from
-    ! boundary (MU2,PHI2), cell number (icell) and face (KFACE) at
+    ! boundary (muView,phiView), cell number (icell) and face (KFACE) at
     ! the boundary point.
 
     integer NSTOKES, icell, KFACE, MAXNBC, NTOPPTS, NBOTPTS
     integer GRIDPTR(8, *), BCPTR(MAXNBC, 2)
     integer NMU, NPHI0MAX, NPHI0(NMU)
-    real MU2, PHI2, RADBND(NSTOKES)
+    real muView, phiView, RADBND(NSTOKES)
     real(RD_) :: XB, YB
     real GRIDPOS(3, *)
     real WTDO(NMU, NPHI0MAX), MU(NMU), PHI(NMU, NPHI0MAX)
-    real WAVELEN, SOLARMU, SOLARAZ, DIRFLUX(*)
+    real WAVELEN, SOLARMU, SOLARAZ, fluxDir(*)
     real BCRAD(NSTOKES, *)
     character(len=1) :: SRCTYPE
 
@@ -1714,7 +1714,7 @@ subroutine shd_src__findBndryRad(&
         X(J) = GRIDPOS(1, IP)
         Y(J) = GRIDPOS(2, IP)
 
-        if (MU2 .lt. 0.0) then
+        if (muView .lt. 0.0) then
             ! Do a binary search to locate the top boundary point
             IL = 1
             IU = NTOPPTS
@@ -1752,8 +1752,8 @@ subroutine shd_src__findBndryRad(&
 
             if (.not. sfc_obj_%isLambertian) then
                 call shd_init__makeBotRadV(NBOTPTS, IBC, IBC, BCPTR(1, 2),&
-                    &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, MU2, PHI2,&
-                    &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, DIRFLUX,&
+                    &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, muView, phiView,&
+                    &SRCTYPE, WAVELEN, SOLARMU, SOLARAZ, fluxDir,&
                     &NSTOKES,&
                     &BCRAD(:, 1 + NTOPPTS))
             end if
