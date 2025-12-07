@@ -1475,18 +1475,9 @@ subroutine shd_util__computeRayVect(&
     real(kind=RD_), intent(in)  :: mu0, phi0
     real(kind=RD_), intent(out) :: cx, cy, cz
     real(kind=RD_), intent(out) :: cx_inv, cy_inv, cz_inv
+    real(kind=RD_), intent(out) :: ratio_x, ratio_y
 
     real(kind=R__), intent(in), optional :: xyz_info(5)
-    real(kind=RD_) :: ratio_x, ratio_y
-
-    if (present(xyz_info)) then
-        call shd_util__computeDegKmRatio(xyz_info(1), xyz_info(2), xyz_info(3), &
-                                         xyz_info(4), xyz_info(5), &
-                                         ratio_x, ratio_y)
-    else
-        ratio_x = 1.0d0
-        ratio_y = 1.0d0
-    end if
 
     cx = dsqrt(dble(1.0d0 - mu0**2))*dcos(dble(phi0 + DPI_))
     cy = dsqrt(dble(1.0d0 - mu0**2))*dsin(dble(phi0 + DPI_))
@@ -1517,6 +1508,16 @@ subroutine shd_util__computeRayVect(&
             write(6, *) 'Message [_computeRayVect]: cz too small, reset cz to 0, cz_inv to 1e8.'
         cz = 0.0d0
         cz_inv = 1.0d8
+    end if
+
+    if (present(xyz_info)) then
+        call shd_util__computeDegKmRatio(&
+            xyz_info(1), xyz_info(2), xyz_info(3), &
+            xyz_info(4), xyz_info(5), &
+            ratio_x, ratio_y)
+    else
+        ratio_x = 1.0d0
+        ratio_y = 1.0d0
     end if
 
     return
