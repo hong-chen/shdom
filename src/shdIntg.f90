@@ -504,6 +504,7 @@ subroutine shd_intg__backIntegrate3D(&
                     SOY = (xyz_Rtm_(2, IOPP) - YE)*CYINV
                 end if
                 SOZ = (xyz_Rtm_(3, IOPP) - ZE)*CZINV
+
                 SO = min(SOX, SOY, SOZ)
                 if (SO .lt. -EPS) then
                     write(6, *) 'Error [_backIntegrate3D]: SO<0 ',&
