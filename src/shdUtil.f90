@@ -1469,6 +1469,7 @@ subroutine shd_util__computeRayVect(&
         mu0, phi0, &
         cx,     cy,     cz, &
         cx_inv, cy_inv, cz_inv, &
+        ratio_x, ratio_y, &
         xyz_info)
 
     real(kind=RD_), intent(in)  :: mu0, phi0
@@ -1476,7 +1477,7 @@ subroutine shd_util__computeRayVect(&
     real(kind=RD_), intent(out) :: cx_inv, cy_inv, cz_inv
 
     real(kind=R__), intent(in), optional :: xyz_info(5)
-    real(kind=R__) :: ratio_x, ratio_y
+    real(kind=RD_) :: ratio_x, ratio_y
 
     if (present(xyz_info)) then
         call shd_util__computeDegKmRatio(xyz_info(1), xyz_info(2), xyz_info(3), &
@@ -1527,7 +1528,7 @@ subroutine shd_util__computeDegKmRatio(&
         ratio_x, ratio_y)
 
     real(kind=R__), intent(in)  :: lon_deg, lat_deg, h_km, dlon, dlat
-    real(kind=R__), intent(out) :: ratio_x, ratio_y
+    real(kind=RD_), intent(out) :: ratio_x, ratio_y
 
     ratio_x = dist(lon_deg-0.5*dlon, lat_deg, h_km, &
                    lon_deg+0.5*dlon, lat_deg, h_km) / dlon

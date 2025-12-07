@@ -186,7 +186,7 @@ subroutine shd_rad__computeDirect(&
     real(RD_) :: ext0, ssa0, F
     real(RD_) :: PATH
     real(RD_) :: EXTBEAMCUT, UNIFORMZLEV
-    real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV
+    real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV, ratio_x, ratio_y
     real(RD_) :: EPSS, EPSZ, XDOMAIN, YDOMAIN
     real(RD_) :: XOFFS, YOFFS, DELXD, DELYD
     real(RD_) :: X, Y, Z, XE, YE, ZE, XP, YP, ZP
@@ -199,7 +199,7 @@ subroutine shd_rad__computeDirect(&
     real(RD_) :: VWU, VWUM, UWV, UWVM, UVW, UVWM
     real, save, allocatable :: kabs(:), minExt(:), maxExt(:), extDir_Prp(:, :, :)
 
-    save CX, CY, CZ, CXINV, CYINV, CZINV, DI, DJ, DK, IPDIRECT
+    save CX, CY, CZ, CXINV, CYINV, CZINV, DI, DJ, DK, IPDIRECT, ratio_x, ratio_y
     save DELXD, DELYD, XDOMAIN, YDOMAIN, EPSS, EPSZ, UNIFORMZLEV
 
 
@@ -288,7 +288,8 @@ subroutine shd_rad__computeDirect(&
             if (.not. src_obj_%doVariableSolar) then
                 ! Make the ray direction (opposite to the solar beam)
                 call shd_util__computeRayVect(dble(SOLARMU), dble(SOLARAZ), &
-                    CX, CY, CZ, CXINV, CYINV, CZINV)
+                    CX, CY, CZ, CXINV, CYINV, CZINV, &
+                    ratio_x, ratio_y)
 
                 DI = nint(sign(1.0d0, CX))
                 DJ = nint(sign(1.0d0, CY))
@@ -372,7 +373,8 @@ subroutine shd_rad__computeDirect(&
 
                 ! Make the ray direction (opposite to the solar beam)
                 call shd_util__computeRayVect(dble(mu0), dble(phi0), &
-                    CX, CY, CZ, CXINV, CYINV, CZINV)
+                    CX, CY, CZ, CXINV, CYINV, CZINV, &
+                    ratio_x, ratio_y)
 
                 DI = nint(sign(1.0d0, CX))
                 DJ = nint(sign(1.0d0, CY))

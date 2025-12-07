@@ -3258,7 +3258,7 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     integer :: I1, I2, I3, I4, IOPP, IFACE, JFACE, KFACE, IC
     integer :: GRIDFACE(4, 6), OPPFACE(6)
     logical :: IPINX, IPINY
-    real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV
+    real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV, ratio_x, ratio_y
     real(RD_) :: XE, YE, ZE
     real(RD_) :: SO, SOX, SOY, SOZ, EPS
     real(RD_) :: U, V, F1, F2, F3, F4
@@ -3273,7 +3273,8 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
 
     ! Make the ray direction (opposite to the discrete ordinate direction)
     call shd_util__computeRayVect(dble(MU), dble(PHI), &
-        CX, CY, CZ, CXINV, CYINV, CZINV)
+        CX, CY, CZ, CXINV, CYINV, CZINV, &
+        ratio_x, ratio_y)
 
     ! Setup the sweeping direction and the gridpoint location
     !   BITc is 0 for positive direction trace back ray, 1 for negative.

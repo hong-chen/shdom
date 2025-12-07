@@ -395,7 +395,7 @@ subroutine shd_intg__backIntegrate3D(&
     integer GRIDFACE(4, 6), OPPFACE(6)
     integer IORDER, ICORNER, JOCTORDER3(8), JOCTORDER2(8)
     logical VALIDRAD, VALIDFACE, IPINX, IPINY
-    real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV
+    real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV, ratio_x, ratio_y
     real(RD_) :: XE, YE, ZE
     real(RD_) :: SO, SOX, SOY, SOZ, EPS, path
     real(RD_) :: U, V, F1, F2, F3, F4
@@ -412,7 +412,8 @@ subroutine shd_intg__backIntegrate3D(&
 
     ! Make the ray direction (opposite to the discrete ordinate direction)
     call shd_util__computeRayVect(dble(MU), dble(PHI), &
-        CX, CY, CZ, CXINV, CYINV, CZINV)
+        CX, CY, CZ, CXINV, CYINV, CZINV, &
+        ratio_x, ratio_y)
 
     ! Setup the sweeping direction and the gridpoint location
     ! BITc is 0 for positive direction trace back ray, 1 for negative.
@@ -759,7 +760,7 @@ subroutine shd_intg__backIntegrate3D_( &
     integer(kind=I__) :: IORDER, ICORNER
     logical :: VALIDRAD, VALIDFACE, IPINX, IPINY
 
-    real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV
+    real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV, ratio_x, ratio_y
     real(RD_) :: XE, YE, ZE
     real(RD_) :: SO, SOX, SOY, SOZ, EPS, path
     real(RD_) :: U, V, F1, F2, F3, F4
@@ -785,7 +786,8 @@ subroutine shd_intg__backIntegrate3D_( &
 
     ! Make the ray direction (opposite to the discrete ordinate direction)
     call shd_util__computeRayVect(dble(MU), dble(PHI), &
-        CX, CY, CZ, CXINV, CYINV, CZINV)
+        CX, CY, CZ, CXINV, CYINV, CZINV, &
+        ratio_x, ratio_y)
 
     ! Setup the sweeping direction and the gridpoint location
     ! BITc is 0 for positive direction trace back ray, 1 for negative.
@@ -1118,7 +1120,7 @@ subroutine shd_intg__backIntegrate2D(&
     integer GRIDFACE(2, 6), OPPFACE(6)
     integer IORDER, ICORNER, JOCTORDER(8)
     logical :: VALIDRAD, VALIDFACE, IPINX
-    real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV
+    real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV, ratio_x, ratio_y
     real(RD_) :: XE, YE, ZE
     real(RD_) :: SO, SOX, SOZ, EPS
     real(RD_) :: U, F1, F2
@@ -1135,7 +1137,8 @@ subroutine shd_intg__backIntegrate2D(&
 
     ! Make the ray direction (opposite to the discrete ordinate direction)
     call shd_util__computeRayVect(dble(MU), dble(PHI), &
-        CX, CY, CZ, CXINV, CYINV, CZINV)
+        CX, CY, CZ, CXINV, CYINV, CZINV, &
+        ratio_x, ratio_y)
 
     ! Setup the sweeping direction and the gridpoint location
     ! BITc is 0 for positive direction trace back ray, 1 for negative.
@@ -1358,7 +1361,7 @@ subroutine shd_intg__backIntegrate1D(&
 
     real(kind=R__), intent(inout) :: GRIDRAD(NSTOKES, rtm_obj_%Npts)
 
-    real(kind=RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV
+    real(kind=RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV, ratio_x, ratio_y
     real(kind=RD_) :: XE, YE, ZE
     real(kind=RD_) :: SO, EPS
     real(kind=RD_) :: EXT, EXT0, EXT1
@@ -1380,7 +1383,8 @@ subroutine shd_intg__backIntegrate1D(&
 
     ! Make the ray direction (opposite to the discrete ordinate direction)
     call shd_util__computeRayVect(dble(MU), dble(PHI), &
-        CX, CY, CZ, CXINV, CYINV, CZINV)
+        CX, CY, CZ, CXINV, CYINV, CZINV, &
+        ratio_x, ratio_y)
 
     ! Setup the sweeping direction and the gridpoint location
     ! BITc is 0 for positive direction trace back ray, 1 for negative.
