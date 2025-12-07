@@ -1010,10 +1010,10 @@ end subroutine shd_src__integrateSrc
 subroutine shd_src__computeSrcOneDir(&
     doDeltaM, muView, phiView, &
     fluxDir, &
-    src1_Shdo, &
+    srcView_Shdo, &
     isrcJ_Shdo, srcJ_Shdo)
 
-    ! Computes the source function (src1_Shdo) in the direction (muView,phiView)
+    ! Computes the source function (srcView_Shdo) in the direction (muView,phiView)
     ! for the whole domain (rtm_obj_%Nx,rtm_obj_%Nz).  The spherical harmonic source function
     ! series is input in srcJ_Shdo.
     ! For a solar source if delta-M then use Nakajima and Tanaka TMS
@@ -1026,7 +1026,7 @@ subroutine shd_src__computeSrcOneDir(&
     logical doDeltaM
     real muView, phiView
     real fluxDir(rtm_obj_%Npts)
-    real src1_Shdo(shdo_obj_%Nstokes, rtm_obj_%Npts)
+    real srcView_Shdo(shdo_obj_%Nstokes, rtm_obj_%Npts)
     integer I, J, JT, K, L, M, N, IPH, IS, NS, ME, MS
     real DA, F, A, A1, B1, SECMU0, COSSCAT
     real, allocatable :: YlmView(:, :), YlmSun(:, :)
@@ -1042,15 +1042,17 @@ subroutine shd_src__computeSrcOneDir(&
     TMS = doDeltaM
     ! TMS = .FALSE.
 
-    ! Precompute Ylm's for output direction and solar direction
+    ! Precompute Ylm's for output vewing direction and solar direction
     call shd_shdo__computeYlm(.false., muView, phiView, shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet, YlmView)
+
     if (src_obj_%doSolar) then
         call shd_shdo__computeYlm(.true., src_obj_%mu0, src_obj_%phi0, shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet,&
             &YlmSun)
         SECMU0 = 1.0/abs(src_obj_%mu0)
-        COSSCAT = src_obj_%mu0*muView + sqrt((1.0d0 - src_obj_%mu0**2)*(1.0d0 - muView**2))&
-            &*cos(src_obj_%phi0 - phiView)
-        if (prp_obj_%Npha .eq. 0 .and. TMS) then
+        COSSCAT = src_obj_%mu0*muView + sqrt((1.0d0 - src_obj_%mu0**2)*&
+                                             (1.0d0 - muView**2))*&
+                                        cos(src_obj_%phi0 - phiView)
+        if ((prp_obj_%Npha .eq. 0) .and. TMS) then
             ! If non-tabulate phase functions (unpolarized) then
             !   compute the Legendre polynomials for the scattering angle
             !   for the untruncated solar single scattering computation.
@@ -1102,21 +1104,21 @@ subroutine shd_src__computeSrcOneDir(&
         NS = isrcJ_Shdo(I + 1) - IS
         ! Sum over the real generalized spherical harmonic series
         !   of the source function
-        src1_Shdo(:, I) = 0.0
+        srcView_Shdo(:, I) = 0.0
         do J = 1, NS
-            src1_Shdo(1, I) = src1_Shdo(1, I) + srcJ_Shdo(1, IS + J)*YlmView(1, J)
+            srcView_Shdo(1, I) = srcView_Shdo(1, I) + srcJ_Shdo(1, IS + J)*YlmView(1, J)
         end do
         if (isPol_) then
             do J = 1, NS
-                src1_Shdo(2, I) = src1_Shdo(2, I) + srcJ_Shdo(2, IS + J)*YlmView(2, J)&
+                srcView_Shdo(2, I) = srcView_Shdo(2, I) + srcJ_Shdo(2, IS + J)*YlmView(2, J)&
                     &+ srcJ_Shdo(3, IS + J)*YlmView(5, J)
-                src1_Shdo(3, I) = src1_Shdo(3, I) + srcJ_Shdo(2, IS + J)*YlmView(6, J)&
+                srcView_Shdo(3, I) = srcView_Shdo(3, I) + srcJ_Shdo(2, IS + J)*YlmView(6, J)&
                     &+ srcJ_Shdo(3, IS + J)*YlmView(3, J)
             end do
         end if
         if (isPol4_) then
             do J = 1, NS
-                src1_Shdo(4, I) = src1_Shdo(4, I) + srcJ_Shdo(4, IS + J)*YlmView(4, J)
+                srcView_Shdo(4, I) = srcView_Shdo(4, I) + srcJ_Shdo(4, IS + J)*YlmView(4, J)
             end do
         end if
 
@@ -1138,14 +1140,14 @@ subroutine shd_src__computeSrcOneDir(&
                 if (J .le. NS) then
                     JT = J
                     do M = MS, ME
-                        src1_Shdo(1, I) = src1_Shdo(1, I) - A1*YlmView(1, J)*YlmSun(1, J)
+                        srcView_Shdo(1, I) = srcView_Shdo(1, I) - A1*YlmView(1, J)*YlmSun(1, J)
                         J = J + 1
                     end do
                     if (isPol_) then
                         J = JT
                         do M = MS, ME
-                            src1_Shdo(2, I) = src1_Shdo(2, I) - B1*YlmView(2, J)*YlmSun(1, J)
-                            src1_Shdo(3, I) = src1_Shdo(3, I) - B1*YlmView(6, J)*YlmSun(1, J)
+                            srcView_Shdo(2, I) = srcView_Shdo(2, I) - B1*YlmView(2, J)*YlmSun(1, J)
+                            srcView_Shdo(3, I) = srcView_Shdo(3, I) - B1*YlmView(6, J)*YlmSun(1, J)
                             J = J + 1
                         end do
                     end if
@@ -1155,7 +1157,7 @@ subroutine shd_src__computeSrcOneDir(&
             ! Then add in the single scattering contribution for the
             !   original unscaled phase matrix.
             if (prp_obj_%Npha .gt. 0) then
-                src1_Shdo(:, I) = src1_Shdo(:, I) + DA*SINGSCAT(:, IPH)
+                srcView_Shdo(:, I) = srcView_Shdo(:, I) + DA*SINGSCAT(:, IPH)
             else if (.not. isPol_) then
                 ! If we have a phase function for each grid point (which
                 !   should be the unpolarized case) then unscale the Legendre
@@ -1168,7 +1170,7 @@ subroutine shd_src__computeSrcOneDir(&
                     else
                         A = DA*leg_Rtm_(1, L, IPH)/(1 - F)
                     end if
-                    src1_Shdo(1, I) = src1_Shdo(1, I) + A*SUNDIRLEG(L)
+                    srcView_Shdo(1, I) = srcView_Shdo(1, I) + A*SUNDIRLEG(L)
                 end do
             end if
         end if
