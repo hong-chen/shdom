@@ -374,9 +374,9 @@ subroutine shd_grid__interpNewGridPts(newPts,&
     real UNIFZLEV, XO, YO, ZO, DIRPATH
     real(kind=R__) :: mu0
     real, allocatable :: srcTmp_Shdo(:, :), YlmSunTmp(:, :)
-    integer, allocatable :: LOFJ(:)
+    integer, allocatable :: ilegJ(:)
 
-    allocate(LOFJ(shdo_obj_%Nlm), &
+    allocate(ilegJ(shdo_obj_%Nlm), &
         srcTmp_Shdo(shdo_obj_%Nstokes, shdo_obj_%Nlm), &
         YlmSunTmp(prp_obj_%NlegSet, shdo_obj_%Nlm))
 
@@ -387,7 +387,7 @@ subroutine shd_grid__interpNewGridPts(newPts,&
         MS = -ME
         do M = MS, ME
             J = J + 1
-            LOFJ(J) = L
+            ilegJ(J) = L
         end do
     end do
 
@@ -504,13 +504,13 @@ subroutine shd_grid__interpNewGridPts(newPts,&
             end if
 
             if (isPol_) then
-                call shd_src__computeSrcOnePts(shdo_obj_%Nstokes, shdo_obj_%Nlm, LOFJ,&
+                call shd_src__computeSrcOnePts(shdo_obj_%Nstokes, shdo_obj_%Nlm, ilegJ,&
                     &src_obj_%type, fluxDir(IP)*SECMU0, YlmSunTmp,&
                     &planck_Rtm(IP), ssa_Rtm(IP), IPH, leg_Rtm,&
                     &NR, radI_Shdo(1, IR+1), srcTmp_Shdo)
                     !&NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcTmp_Shdo)
             else
-                call shd_src__computeSrcOnePts_(shdo_obj_%Nlm, LOFJ,&
+                call shd_src__computeSrcOnePts_(shdo_obj_%Nlm, ilegJ,&
                     &src_obj_%type, fluxDir(IP)*SECMU0, YlmSunTmp,&
                     &planck_Rtm(IP), ssa_Rtm(IP), IPH, leg_Rtm,&
                     &NR, radI_Shdo(1, IR+1), srcTmp_Shdo)
@@ -522,7 +522,7 @@ subroutine shd_grid__interpNewGridPts(newPts,&
         end if
     end do
 
-    deallocate(LOFJ, srcTmp_Shdo, YlmSunTmp)
+    deallocate(ilegJ, srcTmp_Shdo, YlmSunTmp)
 
     return
 

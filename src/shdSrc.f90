@@ -143,12 +143,12 @@ subroutine shd_src__computeSrc(&
     real fluxDir(rtm_obj_%Npts)
     real srcD_Shdo(shdo_obj_%Nstokes, *)
     integer IS, ISO, IR, I, IPH, J, JS, K, L, LS, M, MS, ME, NS, NR
-    integer, allocatable :: LOFJ(:)
+    integer, allocatable :: ilegJ(:)
     real(kind=R__) :: mu0
     real, allocatable :: srcTmp_Shdo(:, :), YlmSunTmp(:, :)
     real SRCMIN, SECMU0, D
 
-    allocate(LOFJ(shdo_obj_%Nlm), &
+    allocate(ilegJ(shdo_obj_%Nlm), &
         srcTmp_Shdo(shdo_obj_%Nstokes, shdo_obj_%Nlm), &
         YlmSunTmp(prp_obj_%NlegSet, shdo_obj_%Nlm))
 
@@ -170,7 +170,7 @@ subroutine shd_src__computeSrc(&
         MS = -ME
         do M = MS, ME
             J = J + 1
-            LOFJ(J) = L
+            ilegJ(J) = L
         end do
     end do
     !╰────────────────────────────────────────────────────────────────────────────╯!
@@ -202,13 +202,13 @@ subroutine shd_src__computeSrc(&
             end if
 
             if (isPol_) then
-                call shd_src__computeSrcOnePts(shdo_obj_%Nstokes, shdo_obj_%Nlm, LOFJ,&
+                call shd_src__computeSrcOnePts(shdo_obj_%Nstokes, shdo_obj_%Nlm, ilegJ,&
                     &src_obj_%type, fluxDir(I)*SECMU0, YlmSunTmp,&
                     &planck_Rtm_(I), ssa_Rtm_(I), IPH, leg_Rtm_,&
                     &NR, radI_Shdo(1, IR+1), srcTmp_Shdo)
                     !&NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcTmp_Shdo)
             else
-                call shd_src__computeSrcOnePts_(shdo_obj_%Nlm, LOFJ,&
+                call shd_src__computeSrcOnePts_(shdo_obj_%Nlm, ilegJ,&
                     src_obj_%type, fluxDir(I)*SECMU0, YlmSunTmp,&
                     planck_Rtm_(I), ssa_Rtm_(I), IPH, leg_Rtm_,&
                     NR, radI_Shdo(1, IR+1), srcTmp_Shdo)
@@ -263,13 +263,13 @@ subroutine shd_src__computeSrc(&
             end if
 
             if (isPol_) then
-                call shd_src__computeSrcOnePts(shdo_obj_%Nstokes, shdo_obj_%Nlm, LOFJ,&
+                call shd_src__computeSrcOnePts(shdo_obj_%Nstokes, shdo_obj_%Nlm, ilegJ,&
                     &src_obj_%type, fluxDir(I)*SECMU0, YlmSunTmp,&
                     &planck_Rtm_(I), ssa_Rtm_(I), IPH, leg_Rtm_,&
                     &NR, radI_Shdo(1, IR+1), srcTmp_Shdo)
                     !&NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcTmp_Shdo)
             else
-                call shd_src__computeSrcOnePts_(shdo_obj_%Nlm, LOFJ,&
+                call shd_src__computeSrcOnePts_(shdo_obj_%Nlm, ilegJ,&
                     &src_obj_%type, fluxDir(I)*SECMU0, YlmSunTmp,&
                     &planck_Rtm_(I), ssa_Rtm_(I), IPH, leg_Rtm_,&
                     &NR, radI_Shdo(1, IR+1), srcTmp_Shdo)
@@ -310,13 +310,13 @@ subroutine shd_src__computeSrc(&
         end if
 
         if (isPol_) then
-            call shd_src__computeSrcOnePts(shdo_obj_%Nstokes, shdo_obj_%Nlm, LOFJ,&
+            call shd_src__computeSrcOnePts(shdo_obj_%Nstokes, shdo_obj_%Nlm, ilegJ,&
                 &src_obj_%type, fluxDir(I)*SECMU0, YlmSunTmp,&
                 &planck_Rtm_(I), ssa_Rtm_(I), IPH, leg_Rtm_,&
                 &NR, radI_Shdo(1, IR+1), srcTmp_Shdo)
                 !&NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcTmp_Shdo)
         else
-            call shd_src__computeSrcOnePts_(shdo_obj_%Nlm, LOFJ,&
+            call shd_src__computeSrcOnePts_(shdo_obj_%Nlm, ilegJ,&
                 &src_obj_%type, fluxDir(I)*SECMU0, YlmSunTmp,&
                 &planck_Rtm_(I), ssa_Rtm_(I), IPH, leg_Rtm_,&
                 &NR, radI_Shdo(1, IR+1), srcTmp_Shdo)
@@ -342,7 +342,7 @@ subroutine shd_src__computeSrc(&
             if (JS .eq. 0) then
                 NS = 0
             else
-                LS = LOFJ(JS)
+                LS = ilegJ(JS)
                 if (LS .le. shdo_obj_%maxNm) then
                     NS = (LS*(LS + 1)) + LS + 1
                 else
@@ -365,7 +365,7 @@ subroutine shd_src__computeSrc(&
     isrcJ_Shdo(rtm_obj_%Npts + 1) = IS
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    deallocate(LOFJ, srcTmp_Shdo, YlmSunTmp)
+    deallocate(ilegJ, srcTmp_Shdo, YlmSunTmp)
 
     return
 
@@ -1220,7 +1220,7 @@ subroutine shd_src__computeSunOnePts(&
 end subroutine shd_src__computeSunOnePts
 
 subroutine shd_src__computeSrcOnePts(&
-    &NSTOKES, NLM, LOFJ,&
+    &NSTOKES, NLM, ilegJ,&
     &SRCTYPE, FLUX0, YlmSun, PLANCK,&
     &ssa0, ipha0, leg, NR, radI_Shdo,&
     &srcTmp_Shdo)
@@ -1230,7 +1230,7 @@ subroutine shd_src__computeSrcOnePts(&
     ! real generalized spherical harmonics and thermal and/or solar
     ! source information.
 
-    integer, intent(in) :: NSTOKES, NLM, LOFJ(NLM), ipha0, NR
+    integer, intent(in) :: NSTOKES, NLM, ilegJ(NLM), ipha0, NR
     real, intent(in) :: FLUX0, YlmSun(prp_obj_%NlegSet, NLM), PLANCK, ssa0
     real, intent(in) :: leg(prp_obj_%NlegSet, 0:prp_obj_%Nleg, *)
     real, intent(in) :: radI_Shdo(NSTOKES, NR)
@@ -1246,19 +1246,19 @@ subroutine shd_src__computeSrcOnePts(&
     ! from the radiance vector in genSH.  Do different parts of the
     ! matrix multiply depending on NSTOKES.
     do J = 1, NR
-        srcTmp_Shdo(1, J) = srcTmp_Shdo(1, J) + leg(1, LOFJ(J), ipha0)*radI_Shdo(1, J)
+        srcTmp_Shdo(1, J) = srcTmp_Shdo(1, J) + leg(1, ilegJ(J), ipha0)*radI_Shdo(1, J)
     end do
 
     if (isPol_) then
 
         do J = 1, NR
-            srcTmp_Shdo(1, J) = srcTmp_Shdo(1, J) + leg(5, LOFJ(J), ipha0)*radI_Shdo(2, J)
+            srcTmp_Shdo(1, J) = srcTmp_Shdo(1, J) + leg(5, ilegJ(J), ipha0)*radI_Shdo(2, J)
         end do
 
         do J = 5, NR
-            srcTmp_Shdo(2, J) = srcTmp_Shdo(2, J) + leg(5, LOFJ(J), ipha0)*radI_Shdo(1, J)&
-                &+ leg(2, LOFJ(J), ipha0)*radI_Shdo(2, J)
-            srcTmp_Shdo(3, J) = srcTmp_Shdo(3, J) + leg(3, LOFJ(J), ipha0)*radI_Shdo(3, J)
+            srcTmp_Shdo(2, J) = srcTmp_Shdo(2, J) + leg(5, ilegJ(J), ipha0)*radI_Shdo(1, J)&
+                &+ leg(2, ilegJ(J), ipha0)*radI_Shdo(2, J)
+            srcTmp_Shdo(3, J) = srcTmp_Shdo(3, J) + leg(3, ilegJ(J), ipha0)*radI_Shdo(3, J)
         end do
 
     end if
@@ -1266,9 +1266,9 @@ subroutine shd_src__computeSrcOnePts(&
     if (isPol4_) then
 
         do J = 1, NR
-            srcTmp_Shdo(3, J) = srcTmp_Shdo(3, J) + leg(6, LOFJ(J), ipha0)*radI_Shdo(4, J)
-            srcTmp_Shdo(4, J) = srcTmp_Shdo(4, J) - leg(6, LOFJ(J), ipha0)*radI_Shdo(3, J)&
-                &+ leg(4, LOFJ(J), ipha0)*radI_Shdo(4, J)
+            srcTmp_Shdo(3, J) = srcTmp_Shdo(3, J) + leg(6, ilegJ(J), ipha0)*radI_Shdo(4, J)
+            srcTmp_Shdo(4, J) = srcTmp_Shdo(4, J) - leg(6, ilegJ(J), ipha0)*radI_Shdo(3, J)&
+                &+ leg(4, ilegJ(J), ipha0)*radI_Shdo(4, J)
         end do
 
     end if
@@ -1282,13 +1282,13 @@ subroutine shd_src__computeSrcOnePts(&
 
         do J = 1, NLM
             srcTmp_Shdo(1, J) = srcTmp_Shdo(1, J)&
-                &+ FLUX0*ssa0*leg(1, LOFJ(J), ipha0)*YlmSun(1, J)
+                &+ FLUX0*ssa0*leg(1, ilegJ(J), ipha0)*YlmSun(1, J)
         end do
 
         if (isPol_) then
             do J = 5, NLM
                 srcTmp_Shdo(2, J) = srcTmp_Shdo(2, J)&
-                    &+ FLUX0*ssa0*leg(5, LOFJ(J), ipha0)*YlmSun(1, J)
+                    &+ FLUX0*ssa0*leg(5, ilegJ(J), ipha0)*YlmSun(1, J)
             end do
         end if
 
@@ -1304,7 +1304,7 @@ subroutine shd_src__computeSrcOnePts(&
 end subroutine shd_src__computeSrcOnePts
 
 subroutine shd_src__computeSrcOnePts_(&
-    &NLM, LOFJ,&
+    &NLM, ilegJ,&
     &SRCTYPE, FLUX0, YlmSun, PLANCK,&
     &ssa0, ipha0, leg, NR, radI_Shdo,&
     &srcTmp_Shdo)
@@ -1313,7 +1313,7 @@ subroutine shd_src__computeSrcOnePts_(&
     ! one grid point from the radiance in spherical harmonics and
     ! thermal and/or solar source information.
 
-    integer, intent(in) :: NLM, LOFJ(NLM), ipha0, NR
+    integer, intent(in) :: NLM, ilegJ(NLM), ipha0, NR
     character(len=1), intent(in) :: SRCTYPE
     real, intent(in) :: FLUX0, YlmSun(NLM), PLANCK, ssa0
     real, intent(in) :: leg(0:prp_obj_%Nleg, *)
@@ -1330,7 +1330,7 @@ subroutine shd_src__computeSrcOnePts_(&
     if (src_obj_%doSolar) then
 
         do J = 1, NLM
-            srcTmp_Shdo(J) = FLUX0*ssa0*leg(LOFJ(J), ipha0)*YlmSun(J)
+            srcTmp_Shdo(J) = FLUX0*ssa0*leg(ilegJ(J), ipha0)*YlmSun(J)
         end do
 
     end if
@@ -1343,7 +1343,7 @@ subroutine shd_src__computeSrcOnePts_(&
     ! Calculate the generalized spherical harmonics source function
     ! from the radiance vector in genSH.
     do J = 1, NR
-        srcTmp_Shdo(J) = srcTmp_Shdo(J) + ssa0*leg(LOFJ(J), ipha0)*radI_Shdo(J)
+        srcTmp_Shdo(J) = srcTmp_Shdo(J) + ssa0*leg(ilegJ(J), ipha0)*radI_Shdo(J)
     end do
 
     return

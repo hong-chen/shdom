@@ -523,7 +523,7 @@ subroutine shd_solv__truncRad(doHighOrder, doFixSH, SHACC,&
     logical doHighOrder, doFixSH
     real SHACC
     integer IRO, IR, NRO, NR, I, J, K, L, LR, LS, M, MS, ME, NS, NLM
-    integer, allocatable :: LOFJ(:)
+    integer, allocatable :: ilegJ(:)
     logical NOTEND
     real RADMIN
 
@@ -535,14 +535,14 @@ subroutine shd_solv__truncRad(doHighOrder, doFixSH, SHACC,&
     NOTEND = .true.
     ! Make the l index as a function of SH term (J)
     NLM = (2*shdo_obj_%maxNm + 1)*(shdo_obj_%maxNl + 1) - shdo_obj_%maxNm*(shdo_obj_%maxNm + 1)
-    allocate(LOFJ(NLM))
+    allocate(ilegJ(NLM))
     J = 0
     do L = 0, shdo_obj_%maxNl
         ME = min(L, shdo_obj_%maxNm)
         MS = -ME
         do M = MS, ME
             J = J + 1
-            LOFJ(J) = L
+            ilegJ(J) = L
         end do
     end do
 
@@ -577,7 +577,7 @@ subroutine shd_solv__truncRad(doHighOrder, doFixSH, SHACC,&
         !   For higher order radiance option, use all terms.
         !   But if out of memory, use the source function truncation.
         NS = max(1, isrcJ_Shdo_(I + 1) - isrcJ_Shdo_(I))
-        LS = LOFJ(NS)
+        LS = ilegJ(NS)
         LR = min(LR, LS + shdo_obj_%maxNl/8 + 2)
         if (doHighOrder) LR = shdo_obj_%maxNl
         if (LR .le. shdo_obj_%maxNm) then
@@ -594,7 +594,7 @@ subroutine shd_solv__truncRad(doHighOrder, doFixSH, SHACC,&
         end if
     end do
     iradI_Shdo(rtm_obj_%Npts + 2) = IR
-    deallocate(LOFJ)
+    deallocate(ilegJ)
     return
 
     ! If out of memory or the SH truncation is fixed then
