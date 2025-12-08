@@ -2114,7 +2114,7 @@ subroutine shd_mpi__computeRadDir(&
 
         if (muView .eq. 0.0) then
             if (verbose_ .ge. 4) then
-                write(6, *) 'Warning [mpi__computeRad]: Bad muView for radiance', K, muView, phiView_deg
+                write(6, *) 'Warning [mpi__computeRadDir]: Bad muView for radiance', K, muView, phiView_deg
                 muView = accSolv_
                 write(6, *) '                           New muView =', muView
             end if
@@ -2122,7 +2122,7 @@ subroutine shd_mpi__computeRadDir(&
 
         if (abs(muView) .gt. 1.0) then
             if (verbose_ .ge. 4) then
-                write(6, *) 'Warning [mpi__computeRad]: Bad muView for radiance', K, muView, phiView_deg
+                write(6, *) 'Warning [mpi__computeRadDir]: Bad muView for radiance', K, muView, phiView_deg
                 if (muView .gt.  1.0) muView =  1.0
                 if (muView .lt. -1.0) muView = -1.0
                 write(6, *) '                           New muView =', muView
@@ -2208,17 +2208,17 @@ subroutine shd_mpi__computeRadDir(&
                     if (VALIDRAD) then
                         Ndone = Ndone + 1
                         if (Ndone .gt. MAXNRAD)&
-                            &call shd_mpi__abort('Error [mpi__computeRad]: MAXNRAD exceeded by Ndone 1.')
+                            &call shd_mpi__abort('Error [mpi__computeRadDir]: MAXNRAD exceeded by Ndone 1.')
                         RadSend(:, Ndone) = RADIANCE(:)
                         IndexSend(Ndone) = NRAD
                     else
                         if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
                             write(6, *) 'Bad SIDE 1:', myProc_, muView, phiView, x0, y0, z0, SIDE, xe, ye, ze
-                            call shd_mpi__abort('Error [mpi__computeRad]: Bad SIDE 1, see above.')
+                            call shd_mpi__abort('Error [mpi__computeRadDir]: Bad SIDE 1, see above.')
                         end if
                         NINVALID(SIDE) = NINVALID(SIDE) + 1
                         if (NINVALID(SIDE) .gt. MAXNRAD)&
-                            call shd_mpi__abort('Error [mpi__computeRad]: MAXNRAD exceeded by NINVALID(SIDE) 1.')
+                            call shd_mpi__abort('Error [mpi__computeRadDir]: MAXNRAD exceeded by NINVALID(SIDE) 1.')
 
                         BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, TRANSMIT, RADIANCE(:)/)
                         BndRadIntInfo(NINVALID(SIDE), SIDE) = NRAD
@@ -2293,17 +2293,17 @@ subroutine shd_mpi__computeRadDir(&
                     if (VALIDRAD) then
                         Ndone = Ndone + 1
                         if (Ndone .gt. MAXNRAD)&
-                            &call shd_mpi__abort('Error [mpi__computeRad]: MAXNRAD exceeded by Ndone 2.')
+                            &call shd_mpi__abort('Error [mpi__computeRadDir]: MAXNRAD exceeded by Ndone 2.')
                         RadSend(:, Ndone) = RADIANCE(:)
                         IndexSend(Ndone) = BndRadIntInfo(J, Ldownx)
                     else
                         if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
                             write(6, *) 'Bad SIDE 2x', myProc_, muView, phiView, x, y, z, SIDE, xe, ye, ze
-                            call shd_mpi__abort('Error [mpi__computeRad]: Bad SIDE 2x, see above.')
+                            call shd_mpi__abort('Error [mpi__computeRadDir]: Bad SIDE 2x, see above.')
                         end if
                         NINVALID(SIDE) = NINVALID(SIDE) + 1
                         if (NINVALID(SIDE) .gt. MAXNRAD)&
-                            &call shd_mpi__abort('Error [mpi__computeRad]: MAXNRAD exceeded by NINVALID(SIDE) 2.')
+                            &call shd_mpi__abort('Error [mpi__computeRadDir]: MAXNRAD exceeded by NINVALID(SIDE) 2.')
                         BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, TRANSMIT, RADIANCE(:)/)
                         BndRadIntInfo(NINVALID(SIDE), SIDE) = BndRadIntInfo(J, Ldownx)
                     end if
@@ -2328,17 +2328,17 @@ subroutine shd_mpi__computeRadDir(&
                     if (VALIDRAD) then
                         Ndone = Ndone + 1
                         if (Ndone .gt. MAXNRAD)&
-                            &call shd_mpi__abort('Error [mpi__computeRad]: MAXNRAD exceeded by Ndone 3.')
+                            &call shd_mpi__abort('Error [mpi__computeRadDir]: MAXNRAD exceeded by Ndone 3.')
                         RadSend(:, Ndone) = RADIANCE(:)
                         IndexSend(Ndone) = BndRadIntInfo(J, Ldowny)
                     else
                         if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
                             write(6, *) 'Bad SIDE 2y', myProc_, muView, phiView, x, y, z, SIDE, xe, ye, ze
-                            call shd_mpi__abort('Error [mpi__computeRad]: Bad SIDE 2y, see above.')
+                            call shd_mpi__abort('Error [mpi__computeRadDir]: Bad SIDE 2y, see above.')
                         end if
                         NINVALID(SIDE) = NINVALID(SIDE) + 1
                         if (NINVALID(SIDE) .gt. MAXNRAD)&
-                            &call shd_mpi__abort('Error [mpi__computeRad]: MAXNRAD exceeded by NINVALID(SIDE) 3.')
+                            &call shd_mpi__abort('Error [mpi__computeRadDir]: MAXNRAD exceeded by NINVALID(SIDE) 3.')
                         BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, TRANSMIT, RADIANCE(:)/)
                         BndRadIntInfo(NINVALID(SIDE), SIDE) = BndRadIntInfo(J, Ldowny)
                     end if
@@ -2566,7 +2566,7 @@ subroutine shd_mpi__computeRadCam(&
                     COSTH =  view_Sen_(4, SAMP)
                     PHIR  =  view_Sen_(5, SAMP)
                 else
-                    stop 'Error [mpi__computeCamRad]: Need sen_obj_ to proceed.'
+                    stop 'Error [mpi__computeRadCam]: Need sen_obj_ to proceed.'
                 end if
 
             else

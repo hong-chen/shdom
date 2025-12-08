@@ -891,13 +891,13 @@ subroutine shd_rad__computeRadDir(&
         !╰────────────────────────────────────────────────╯!
 
         if (MUOUT .eq. 0.0) then
-            if (verbose_ .ge. 4) write(6, *) 'Warning [_computeRad]: Bad MUOUT for radiance', IANG, MUOUT, PHID
+            if (verbose_ .ge. 4) write(6, *) 'Warning [_computeRadDir]: Bad MUOUT for radiance', IANG, MUOUT, PHID
             MUOUT = accSolv_
             write(6, *) '                       New MUOUT=', MUOUT
         end if
 
         if (abs(MUOUT) .gt. 1.0) then
-            if (verbose_ .ge. 4) write(6, *) 'Warning [_computeRad]: Bad MUOUT for radiance', IANG, MUOUT, PHID
+            if (verbose_ .ge. 4) write(6, *) 'Warning [_computeRadDir]: Bad MUOUT for radiance', IANG, MUOUT, PHID
             if (MUOUT .gt.  1.0) MUOUT =  1.0
             if (MUOUT .lt. -1.0) MUOUT = -1.0
             write(6, *) '                       New MUOUT=', MUOUT
@@ -1132,7 +1132,7 @@ subroutine shd_rad__computeRadCam(&
                 Y0 = Y0 + R*sqrt(1 - COSTH**2)*sin(PHIR)
                 Z0 = rtm_obj_%z(rtm_obj_%Nz)
             else if (Z0 .lt. rtm_obj_%z(1)) then
-                write(6, *) 'Error [_visualizeRad]: Level below domain.'
+                write(6, *) 'Error [_computeRadCam]: Level below domain.'
                 stop
             end if
 
