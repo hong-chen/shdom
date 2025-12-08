@@ -1976,7 +1976,7 @@ subroutine shd_mpi__computeRad(&
     &doDeltaM,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &fluxDir, FLUXES,&
-    &src1_Shdo, GRIDRAD,&
+    &srcView_Shdo, GRIDRAD,&
     &parms_Out, NRAD, RADOUT)
 
     ! Computes the radiances for the locations and directions specified
@@ -1990,7 +1990,7 @@ subroutine shd_mpi__computeRad(&
     logical, intent(in) :: doDeltaM
     real, intent(in) :: BCRAD(shdo_obj_%Nstokes, *)
     real, intent(in) :: fluxDir(rtm_obj_%Npts), FLUXES(2, rtm_obj_%Npts)
-    real, intent(inout) :: src1_Shdo(shdo_obj_%Nstokes, rtm_obj_%Npts), GRIDRAD(shdo_obj_%Nstokes, rtm_obj_%Npts)
+    real, intent(inout) :: srcView_Shdo(shdo_obj_%Nstokes, rtm_obj_%Npts), GRIDRAD(shdo_obj_%Nstokes, rtm_obj_%Npts)
     real, intent(in) :: parms_Out(*)
     real, intent(out) :: RADOUT(shdo_obj_%Nstokes, *)
 
@@ -2052,11 +2052,20 @@ subroutine shd_mpi__computeRad(&
 
     MAXNRAD = nint(4.0*(Nx_out*Ny_out)/Nproc_)
     ! MAXNRAD = Nx_out*Ny_out
-    allocate(RadSend(shdo_obj_%Nstokes, MAXNRAD), IndexSend(MAXNRAD))
-    if (myProc_ .eq. 0) allocate(NradRecv(Nproc_ - 1),&
-        &RadRecv(shdo_obj_%Nstokes, MAXNRAD, Nproc_ - 1), IndexRecv(MAXNRAD, Nproc_ - 1))
-    allocate(BndRadRealInfo(4 + shdo_obj_%Nstokes, MAXNRAD, 4), BndRadIntInfo(MAXNRAD, 4))
-    allocate(requests(max(12, 3*Nproc_)), status(max(12, 3*Nproc_)))
+    allocate(RadSend(shdo_obj_%Nstokes, MAXNRAD), &
+             IndexSend(MAXNRAD))
+
+    if (myProc_ .eq. 0) then
+        allocate(NradRecv(Nproc_ - 1),&
+                 RadRecv(shdo_obj_%Nstokes, MAXNRAD, Nproc_ - 1), &
+                 IndexRecv(MAXNRAD, Nproc_ - 1))
+    end if
+
+    allocate(BndRadRealInfo(4 + shdo_obj_%Nstokes, MAXNRAD, 4), &
+             BndRadIntInfo(MAXNRAD, 4))
+
+    allocate(requests(max(12, 3*Nproc_)), &
+             status(max(12, 3*Nproc_)))
 
     ! Loop over the radiance directions
     ANGOUT_LOOP: do K = 1, NANGOUT
@@ -2104,22 +2113,26 @@ subroutine shd_mpi__computeRad(&
         !╰────────────────────────────────────────────────╯!
 
         if (mu_out .eq. 0.0) then
-            if (verbose_ .ge. 4) write(6, *) 'Warning [mpi__computeRad]: Bad mu_out for radiance', K, mu_out, phiDeg_out
-            mu_out = accSolv_
-            write(6, *) '                           New mu_out =', mu_out
+            if (verbose_ .ge. 4) then
+                write(6, *) 'Warning [mpi__computeRad]: Bad mu_out for radiance', K, mu_out, phiDeg_out
+                mu_out = accSolv_
+                write(6, *) '                           New mu_out =', mu_out
+            end if
         end if
 
         if (abs(mu_out) .gt. 1.0) then
-            if (verbose_ .ge. 4) write(6, *) 'Warning [mpi__computeRad]: Bad mu_out for radiance', K, mu_out, phiDeg_out
-            if (mu_out .gt.  1.0) mu_out =  1.0
-            if (mu_out .lt. -1.0) mu_out = -1.0
-            write(6, *) '                           New mu_out =', mu_out
+            if (verbose_ .ge. 4) then
+                write(6, *) 'Warning [mpi__computeRad]: Bad mu_out for radiance', K, mu_out, phiDeg_out
+                if (mu_out .gt.  1.0) mu_out =  1.0
+                if (mu_out .lt. -1.0) mu_out = -1.0
+                write(6, *) '                           New mu_out =', mu_out
+            end if
         end if
 
         ! Compute the source function throughout grid for this angle
         call shd_src__computeSrcOneDir(&
             &doDeltaM, mu_out, phi_out,&
-            &fluxDir, src1_Shdo,&
+            &fluxDir, srcView_Shdo,&
             &isrcJ_Shdo_, srcJ_Shdo_)
 
         ! Set the radiance field to -1, so we can determine valid radiances
@@ -2127,8 +2140,9 @@ subroutine shd_mpi__computeRad(&
         !   function, so the grid interpolation is correct.
         do I = 1, rtm_obj_%Npts
             GRIDRAD(1, I) = -1.0
-            src1_Shdo(:, I) = src1_Shdo(:, I)*ext_Rtm_(I)
+            srcView_Shdo(:, I) = srcView_Shdo(:, I)*ext_Rtm_(I)
         end do
+
         ! Get boundary radiances: either top or bottom
         ! Isotropic top boundary or Lambertian bottom boundary can use
         !   the previously computed boundary radiances in BCRAD,
@@ -2185,7 +2199,7 @@ subroutine shd_mpi__computeRad(&
                     Y0 .ge. (rtm_obj_%y(1) - EPS) .and. Y0 .le. (rtm_obj_%y(rtm_obj_%Ny) + EPS)) then
                     TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
                     call shd_src__integrateSrc(shdo_obj_%Nstokes,&
-                        &mu_out, phi_out, GRIDRAD, src1_Shdo,&
+                        &mu_out, phi_out, GRIDRAD, srcView_Shdo,&
                         &X0, Y0, Z0, XE, YE, ZE, SIDE,&
                         &TRANSMIT, RADIANCE, VALIDRAD)
 
@@ -2270,7 +2284,7 @@ subroutine shd_mpi__computeRad(&
                     Z = BndRadRealInfo(3, J, Ldownx); TRANSMIT = BndRadRealInfo(4, J, Ldownx)
                     RADIANCE(:) = BndRadRealInfo(5:4 + shdo_obj_%Nstokes, J, Ldownx)
                     call shd_src__integrateSrc(shdo_obj_%Nstokes,&
-                        &mu_out, phi_out, GRIDRAD, src1_Shdo,&
+                        &mu_out, phi_out, GRIDRAD, srcView_Shdo,&
                         &X, Y, Z, XE, YE, ZE, SIDE,&
                         &TRANSMIT, RADIANCE, VALIDRAD)
 
@@ -2305,7 +2319,7 @@ subroutine shd_mpi__computeRad(&
                     Z = BndRadRealInfo(3, J, Ldowny); TRANSMIT = BndRadRealInfo(4, J, Ldowny)
                     RADIANCE(:) = BndRadRealInfo(5:4 + shdo_obj_%Nstokes, J, Ldowny)
                     call shd_src__integrateSrc(shdo_obj_%Nstokes,&
-                        &mu_out, phi_out, GRIDRAD, src1_Shdo,&
+                        &mu_out, phi_out, GRIDRAD, srcView_Shdo,&
                         &X, Y, Z, XE, YE, ZE, SIDE,&
                         &TRANSMIT, RADIANCE, VALIDRAD)
 
@@ -2371,7 +2385,9 @@ subroutine shd_mpi__computeRad(&
     end do ANGOUT_LOOP
 
     deallocate(requests, status, RadSend, IndexSend)
+
     if (myProc_ .eq. 0) deallocate(NradRecv, RadRecv, IndexRecv)
+
     deallocate(BndRadRealInfo, BndRadIntInfo)
 #endif
 

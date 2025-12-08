@@ -45,8 +45,13 @@ def figure_les(fname):
                 # plot1
                 #╭──────────────────────────────────────────────────────────────╮#
                 ax1 = fig.add_subplot(111)
-                cs = ax1.imshow(data_shd.T, origin='lower', cmap='Greys_r', zorder=0, vmin=0.0, vmax=0.4, extent=extent)
+                cs = ax1.imshow(data_shd.T, origin='lower', cmap='Greys_r', zorder=0, vmin=0.0, vmax=0.2, extent=extent)
                 ax1.axis('off')
+
+                divider = make_axes_locatable(ax1)
+                cax = divider.append_axes('right', '5%', pad='3%')
+                cbar = fig.colorbar(cs, cax=cax)
+                cax.axis('off')
                 #╰──────────────────────────────────────────────────────────────╯#
                 # save figure
                 #╭──────────────────────────────────────────────────────────────╮#
