@@ -1020,21 +1020,25 @@ subroutine shd_src__computeSrcOneDir(&
     ! procedure, replacing delta-M single scattering with single scattering
     ! for unscaled untruncated phase function.
 
-    integer(I__), intent(inout) :: isrcJ_Shdo(*)
-    real(R__),    intent(inout) ::  srcJ_Shdo(shdo_obj_%Nstokes, *)
+    integer(kind=I__), intent(inout) :: isrcJ_Shdo(*)
+    real(kind=R__),    intent(inout) ::  srcJ_Shdo(shdo_obj_%Nstokes, *)
 
-    logical doDeltaM
-    real muView, phiView
-    real fluxDir(rtm_obj_%Npts)
-    real srcView_Shdo(shdo_obj_%Nstokes, rtm_obj_%Npts)
-    integer I, J, JT, K, L, M, N, IPH, IS, NS, ME, MS
-    real DA, F, A, A1, B1, SECMU0, COSSCAT
+    logical, intent(in) :: doDeltaM
+    real(kind=R__), intent(in) :: muView, phiView
+    real(kind=R__), intent(in) :: fluxDir(rtm_obj_%Npts)
+
+    real(kind=R__), intent(out) :: srcView_Shdo(shdo_obj_%Nstokes, rtm_obj_%Npts)
+
+    integer :: I, J, JT, K, L, M, N, IPH, IS, NS, ME, MS
+    real :: DA, F, A, A1, B1, SECMU0, COSSCAT
     real, allocatable :: YlmView(:, :), YlmSun(:, :)
-    real(RD_), allocatable :: SUNDIRLEG(:)
     real, allocatable :: UNSCLEGEN(:, :), SINGSCAT(:, :)
-    logical doTMS
+    real(RD_), allocatable :: SUNDIRLEG(:)
 
-    allocate(YlmView(prp_obj_%NlegSet, shdo_obj_%Nlm), YlmSun(prp_obj_%NlegSet, shdo_obj_%Nlm))
+    logical :: doTMS
+
+    allocate(YlmView(prp_obj_%NlegSet, shdo_obj_%Nlm), &
+             YlmSun(prp_obj_%NlegSet, shdo_obj_%Nlm))
     allocate(SUNDIRLEG(0:prp_obj_%Nleg))
     allocate(UNSCLEGEN(2, 0:prp_obj_%Nleg), SINGSCAT(shdo_obj_%Nstokes, prp_obj_%Npha))
     if (abs(muView) .gt. 1.0) stop 'Error [_computeOneSrc]: Bad muView.'
@@ -1043,15 +1047,24 @@ subroutine shd_src__computeSrcOneDir(&
     ! doTMS = .FALSE.
 
     ! Precompute Ylm's for output vewing direction and solar direction
-    call shd_shdo__computeYlm(.false., muView, phiView, shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet, YlmView)
+    call shd_shdo__computeYlm(.false., &
+        muView, phiView, &
+        shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet, &
+        YlmView)
 
     if (src_obj_%doSolar) then
-        call shd_shdo__computeYlm(.true., src_obj_%mu0, src_obj_%phi0, shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet,&
+
+        call shd_shdo__computeYlm(.true., &
+            src_obj_%mu0, src_obj_%phi0, &
+            shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet,&
             &YlmSun)
+
         SECMU0 = 1.0/abs(src_obj_%mu0)
+
         COSSCAT = src_obj_%mu0*muView + sqrt((1.0d0 - src_obj_%mu0**2)*&
                                              (1.0d0 - muView**2))*&
                                         cos(src_obj_%phi0 - phiView)
+
         if ((prp_obj_%Npha .eq. 0) .and. doTMS) then
             ! If non-tabulate phase functions (unpolarized) then
             !   compute the Legendre polynomials for the scattering angle
@@ -1061,6 +1074,7 @@ subroutine shd_src__computeSrcOneDir(&
                 SUNDIRLEG(L) = SUNDIRLEG(L)*(2*L + 1)*O4PI_
             end do
         end if
+
     end if
 
     ! If solar source and tabulated phase functions then precompute
@@ -1173,6 +1187,7 @@ subroutine shd_src__computeSrcOneDir(&
                     srcView_Shdo(1, I) = srcView_Shdo(1, I) + A*SUNDIRLEG(L)
                 end do
             end if
+
         end if
     end do
 
