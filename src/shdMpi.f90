@@ -87,7 +87,7 @@ module shd_mpi
                         shd_util__findNextCell, &
                         shd_util__computeRayVect
 
-    use shd_src,  only: shd_src__computeSrcOneDir, &
+    use shd_src,  only: shd_src__computeSrcDir, &
                         shd_src__integrateSrc, &
                         shd_src__integrateSrcOneRay
 
@@ -122,8 +122,8 @@ module shd_mpi
     public :: shd_mpi__sumCpuTime
 
     public :: shd_mpi__makeFluxDir
-    public :: shd_mpi__computeRad
-    public :: shd_mpi__computeCamRad
+    public :: shd_mpi__computeRadDir
+    public :: shd_mpi__computeRadCam
     public :: shd_mpi__findMaxSsa
     public :: shd_mpi__findMaxSplitCrit
     public :: shd_mpi__findBndryPts
@@ -1972,7 +1972,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
 
 end subroutine shd_mpi__calBndryRad
 
-subroutine shd_mpi__computeRad(&
+subroutine shd_mpi__computeRadDir(&
     &doDeltaM,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &fluxDir, FLUXES,&
@@ -2130,7 +2130,7 @@ subroutine shd_mpi__computeRad(&
         end if
 
         ! Compute the source function throughout grid for this angle
-        call shd_src__computeSrcOneDir(&
+        call shd_src__computeSrcDir(&
             &doDeltaM, muView, phiView,&
             &fluxDir, srcView_Shdo,&
             &isrcJ_Shdo_, srcJ_Shdo_)
@@ -2393,9 +2393,9 @@ subroutine shd_mpi__computeRad(&
 
     return
 
-end subroutine shd_mpi__computeRad
+end subroutine shd_mpi__computeRadDir
 
-subroutine shd_mpi__computeCamRad(&
+subroutine shd_mpi__computeRadCam(&
     &doDeltaM,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &fluxDir, FLUXES,&
@@ -2834,7 +2834,7 @@ subroutine shd_mpi__computeCamRad(&
 
     return
 
-end subroutine shd_mpi__computeCamRad
+end subroutine shd_mpi__computeRadCam
 
 subroutine shd_mpi__calAccelSolCrit(DOACCEL, DELJDOT, DELJOLD, DELJNEW, JNORM,&
     &ACCELPAR, SOLCRIT)

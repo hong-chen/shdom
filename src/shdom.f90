@@ -82,14 +82,14 @@ program shdom
                         shd_init__makeGrid, &
                         shd_init__makeCell
 
-    use shd_src,  only: shd_src__computeSrcOneDir
+    use shd_src,  only: shd_src__computeSrcDir
 
     use shd_shdo, only: shd_shdo__computeSH
 
     use shd_solv, only: shd_solv__solveRte
 
-    use shd_rad,  only: shd_rad__computeRad, &
-                        shd_rad__computeCamRad, &
+    use shd_rad,  only: shd_rad__computeRadDir, &
+                        shd_rad__computeRadCam, &
                         shd_rad__makeFluxDir, &
                         shd_rad__computeDirect, &
                         shd_rad__computeFluxDiv
@@ -113,8 +113,8 @@ program shdom
                         shd_mpi__bcastSfcSize, shd_mpi__bcastSfc, &
                         shd_mpi__bcastCkdSize, shd_mpi__bcastCkd, &
                         shd_mpi__bcastSenSize, shd_mpi__bcastSen, &
-                        shd_mpi__computeRad, &
-                        shd_mpi__computeCamRad, &
+                        shd_mpi__computeRadDir, &
+                        shd_mpi__computeRadCam, &
                         shd_mpi__makeFluxDir, &
                         shd_mpi__gatherOut
 
@@ -1214,14 +1214,14 @@ program shdom
             do iout = 1, Nout
                 if (type_Out(iout) .eq. 'R') then
                     if (isMpi_) then
-                        call shd_mpi__computeRad(&
+                        call shd_mpi__computeRadDir(&
                             &doDeltaM,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
                             &fluxDir, fluxTot,&
                             &work(1), work(rtm_obj_%Npts*shdo_obj_%Nstokes+1),&
                             &parms_Out(1, iout), irad, work2)
                     else
-                        call shd_rad__computeRad(&
+                        call shd_rad__computeRadDir(&
                             &doDeltaM,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
                             &fluxDir, fluxTot,&
@@ -1238,13 +1238,13 @@ program shdom
             do iout = 1, Nout
                 if (type_Out(iout) .eq. 'V') then
                     if (isMpi_) then
-                        call shd_mpi__computeCamRad(&
+                        call shd_mpi__computeRadCam(&
                             &doDeltaM,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
                             &fluxDir, fluxTot,&
                             &parms_Out(1, iout), ilos, work2)
                     else
-                        call shd_rad__computeCamRad(&
+                        call shd_rad__computeRadCam(&
                             &doDeltaM,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
                             &fluxDir, fluxTot,&
@@ -1261,7 +1261,7 @@ program shdom
                 if (type_Out(iout) .eq. 'J') then
                     mu_out  = parms_Out(2, iout)
                     phi_out = parms_Out(3, iout)*DTOR_
-                    call shd_src__computeSrcOneDir(doDeltaM,&
+                    call shd_src__computeSrcDir(doDeltaM,&
                         &mu_out, phi_out,&
                         &fluxDir, src1_Out,&
                         &isrcJ_Shdo_, srcJ_Shdo_)

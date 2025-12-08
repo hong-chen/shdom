@@ -81,7 +81,7 @@ module shd_src
     public :: shd_src__integrateSrcOneRay
     public :: shd_src__integrateSrc
 
-    public :: shd_src__computeSrcOneDir
+    public :: shd_src__computeSrcDir
 
     public :: shd_src__computeSrcOnePts
     public :: shd_src__computeSrcOnePts_
@@ -1007,7 +1007,7 @@ subroutine shd_src__integrateSrc(NSTOKES,&
 
 end subroutine shd_src__integrateSrc
 
-subroutine shd_src__computeSrcOneDir(&
+subroutine shd_src__computeSrcDir(&
     doDeltaM, muView, phiView, &
     fluxDir, &
     srcView_Shdo, &
@@ -1195,7 +1195,7 @@ subroutine shd_src__computeSrcOneDir(&
 
     return
 
-end subroutine shd_src__computeSrcOneDir
+end subroutine shd_src__computeSrcDir
 
 subroutine shd_src__computeSunOnePts(&
     ipts, &

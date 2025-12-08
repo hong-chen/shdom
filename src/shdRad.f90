@@ -65,7 +65,7 @@ module shd_rad
 
     use shd_shdo, only: shd_shdo__computeYlm
 
-    use shd_src,  only: shd_src__computeSrcOneDir, &
+    use shd_src,  only: shd_src__computeSrcDir, &
                         shd_src__integrateSrc, &
                         shd_src__integrateSrcOneRay
 
@@ -84,8 +84,8 @@ module shd_rad
     public :: shd_rad__computeDirect
 
     public :: shd_rad__interpRad
-    public :: shd_rad__computeRad
-    public :: shd_rad__computeCamRad
+    public :: shd_rad__computeRadDir
+    public :: shd_rad__computeRadCam
 
     public :: shd_rad__computeFluxDiv
 
@@ -800,7 +800,7 @@ subroutine shd_rad__interpRad(&
     return
 end subroutine shd_rad__interpRad
 
-subroutine shd_rad__computeRad(&
+subroutine shd_rad__computeRadDir(&
     &doDeltaM,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &fluxDir, FLUXES,&
@@ -904,7 +904,7 @@ subroutine shd_rad__computeRad(&
         end if
 
         ! Compute the source function throughout grid for this angle
-        call shd_src__computeSrcOneDir(&
+        call shd_src__computeSrcDir(&
             &doDeltaM, MUOUT, PHIOUT,&
             &fluxDir, src1_Shdo,&
             &isrcJ_Shdo_, srcJ_Shdo_)
@@ -961,9 +961,9 @@ subroutine shd_rad__computeRad(&
 
     return
 
-end subroutine shd_rad__computeRad
+end subroutine shd_rad__computeRadDir
 
-subroutine shd_rad__computeCamRad(&
+subroutine shd_rad__computeRadCam(&
     &doDeltaM,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &fluxDir, FLUXES,&
@@ -1195,7 +1195,7 @@ subroutine shd_rad__computeCamRad(&
         deallocate(AOLP)
     end if
     return
-end subroutine shd_rad__computeCamRad
+end subroutine shd_rad__computeRadCam
 
 subroutine shd_rad__computeFluxDiv(NSTOKES, NPTS, iradI_Shdo, SRCTYPE,&
     &muSun, EXTINCT, ALBEDO, PLANCK, fluxDir,&
