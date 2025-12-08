@@ -72,15 +72,15 @@ subroutine shd_scat__computePhase(&
     real LEGEN(NSTLEG, 0:NLEG, NUMPHASE)
     real PHASETAB(NSTPHASE, NUMPHASE, NSCATANGLE)
     integer IPH, I, J, L
-    real(RD_) :: COSSCAT, FCT, F, X, A1, B1
+    real(RD_) :: muScat, FCT, F, X, A1, B1
     real(RD_), allocatable :: UNSCLEGEN(:, :)
     real(RD_), allocatable :: DMM1(:), DMM2(:)
 
     allocate(UNSCLEGEN(2, 0:NLEG), DMM1(0:NLEG), DMM2(0:NLEG))
 
     do J = 1, NSCATANGLE
-        COSSCAT = cos(DPI_*DFLOAT(J - 1)/(NSCATANGLE - 1))
-        X = dble(COSSCAT)
+        muScat = cos(DPI_*DFLOAT(J - 1)/(NSCATANGLE - 1))
+        X = dble(muScat)
         call shd_scat__computeWigner(X, NLEG, 0, 0, DMM1)
         if (isPol_) then
             call shd_scat__computeWigner(X, NLEG, 2, 0, DMM2)
@@ -136,20 +136,20 @@ subroutine shd_scat__computePhase(&
 
 end subroutine shd_scat__computePhase
 
-subroutine shd_scat__computeLegendre(COSSCAT, NLEG, P)
+subroutine shd_scat__computeLegendre(muScat, NLEG, P)
 
     !   This subroutine computes a set of Legendre polynomials for
-    ! a particular scattering angle COSSCAT.  NLEG is the maximum term.
-    ! The Legendre functions evaluated at COSSCAT are returned in
+    ! a particular scattering angle muScat.  NLEG is the maximum term.
+    ! The Legendre functions evaluated at muScat are returned in
     ! P, starting at l=0 and ending with l=NLEG  (NLEG+1 terms).
 
     integer, intent(in) :: NLEG
-    real(RD_) :: COSSCAT, P(0:NLEG)
+    real(RD_) :: muScat, P(0:NLEG)
     integer L
     real(RD_) :: X, PL, PL1, PL2
 
-    X = dble(COSSCAT)
-    if (X*X .gt. 1.) stop 'Error [_computeLegendre]: <COSSCAT> is greater than 1.'
+    X = dble(muScat)
+    if (X*X .gt. 1.) stop 'Error [_computeLegendre]: <muScat> is greater than 1.'
 
     ! Use the stable upward recursion on l, starting from P_0
     PL2 = 1.0d0

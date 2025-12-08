@@ -2422,7 +2422,7 @@ subroutine shd_mpi__computeRadRay(&
     real, parameter  :: EPS = 1.0e-5
     real(RD_) :: XE, YE, ZE, TRANSMIT, VISRAD(shdo_obj_%Nstokes), RADIANCE(shdo_obj_%Nstokes)
     real(RD_) :: X0, Y0, Z0, X1, Y1, Z1, X2, Y2, Z2, X, Y, Z
-    real(RD_) :: THETA0, THETA1, PHIR, PHI0, COSSCAT, MU2, PHI2
+    real(RD_) :: THETA0, THETA1, PHIR, PHI0, muScat, muView, phiView
     real(RD_) :: COSTH, SINTH, SINTH0, SINTH1
     real(RD_) :: U, V, UP, VP, COSDELPHI, ROTANG, R
     real(RD_) :: DIST, D, RX, RY, RZ, SCANANG
@@ -2638,9 +2638,9 @@ subroutine shd_mpi__computeRadRay(&
             if ((X0 .ge. rtm_obj_%x(1)) .and. (X0 .le. rtm_obj_%x(rtm_obj_%Nx)).and.&
                 (Y0 .ge. rtm_obj_%y(1)) .and. (Y0 .le. rtm_obj_%y(rtm_obj_%Ny))) then
 
-                ! MU2,PHI2 is radiance travel direction (opposite the camera viewing direction)
-                MU2 = -COSTH
-                PHI2 = PHIR + DPI_
+                ! muView,phiView is radiance travel direction (opposite the camera viewing direction)
+                muView = -COSTH
+                phiView = PHIR + DPI_
 
                 ! Integrate the extinction and source function along this ray
                 ! to calculate the Stokes radiance vector for this pixel
@@ -2652,7 +2652,7 @@ subroutine shd_mpi__computeRadRay(&
                     &doDeltaM, src_obj_%type, src_obj_%avgWaveLen, src_obj_%mu0, src_obj_%phi0,&
                     &fluxDir, isrcJ_Shdo_, srcJ_Shdo_, YlmSun,&
                     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-                    &MU2, PHI2, X0, Y0, Z0,&
+                    &muView, phiView, X0, Y0, Z0,&
                     &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
 
                 ! If we got a radiance then store it in RadSend otherwise save
@@ -2668,7 +2668,7 @@ subroutine shd_mpi__computeRadRay(&
                     NINVALID(SIDE) = NINVALID(SIDE) + 1
                     if (NINVALID(SIDE) .gt. MAXNRAD)&
                         &call shd_mpi__abort('Error [mpi__visualizeRad]: MAXNRAD exceeded by NINVALID(SIDE) 1')
-                    BndSendRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, MU2, PHI2, TRANSMIT, RADIANCE(:)/)
+                    BndSendRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, muView, phiView, TRANSMIT, RADIANCE(:)/)
                     BndSendRadIntInfo(NINVALID(SIDE), SIDE) = IVIS
                 end if
             end if
@@ -2723,8 +2723,8 @@ subroutine shd_mpi__computeRadRay(&
                 X = BndRecvRadRealInfo(1, J, IBND)
                 Y = BndRecvRadRealInfo(2, J, IBND)
                 Z = BndRecvRadRealInfo(3, J, IBND)
-                MU2 = BndRecvRadRealInfo(4, J, IBND)
-                PHI2 = BndRecvRadRealInfo(5, J, IBND)
+                muView = BndRecvRadRealInfo(4, J, IBND)
+                phiView = BndRecvRadRealInfo(5, J, IBND)
                 TRANSMIT = BndRecvRadRealInfo(6, J, IBND)
                 RADIANCE(:) = BndRecvRadRealInfo(7 : 6+shdo_obj_%Nstokes, J, IBND)
                 call shd_src__integrateSrcRay(shdo_obj_%Nstokes,&
@@ -2734,7 +2734,7 @@ subroutine shd_mpi__computeRadRay(&
                     &doDeltaM, src_obj_%type, src_obj_%avgWaveLen, src_obj_%mu0, src_obj_%phi0,&
                     &fluxDir, isrcJ_Shdo_, srcJ_Shdo_, YlmSun,&
                     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
-                    &MU2, PHI2, X, Y, Z,&
+                    &muView, phiView, X, Y, Z,&
                     &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
 
                 ! If we got a valid radiance then store it in RadSend, otherwise
@@ -2750,7 +2750,7 @@ subroutine shd_mpi__computeRadRay(&
                     NINVALID(SIDE) = NINVALID(SIDE) + 1
                     if (NINVALID(SIDE) .gt. MAXNRAD)&
                         &call shd_mpi__abort('VISUALIZE_RADIANCE_PAR: MAXNRAD exceeded by NINVALID(SIDE) 2')
-                    BndSendRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, MU2, PHI2, TRANSMIT, RADIANCE(:)/)
+                    BndSendRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, muView, phiView, TRANSMIT, RADIANCE(:)/)
                     BndSendRadIntInfo(NINVALID(SIDE), SIDE) = BndRecvRadIntInfo(J, IBND)
                 end if
             end do
