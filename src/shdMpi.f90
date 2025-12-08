@@ -2450,7 +2450,10 @@ subroutine shd_mpi__computeRadCam(&
     allocate(YlmSun(prp_obj_%NlegSet, shdo_obj_%Nlm))
 
     if (src_obj_%doSolar) then
-        call shd_shdo__computeYlm(.true., src_obj_%mu0, src_obj_%phi0, shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet, YlmSun)
+        call shd_shdo__computeYlm(.true., &
+            src_obj_%mu0, src_obj_%phi0, &
+            shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet, &
+            YlmSun)
         if (doDeltaM .and. prp_obj_%Npha .gt. 0) then
             NSCATANGLE = max(36, min(MAXSCATANG, 2*prp_obj_%Nleg))
             NSTPHASE = min(prp_obj_%NlegSet, 2)
