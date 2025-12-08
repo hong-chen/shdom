@@ -66,8 +66,8 @@ module shd_rad
     use shd_shdo, only: shd_shdo__computeYlm
 
     use shd_src,  only: shd_src__computeSrcDir, &
-                        shd_src__integrateSrc, &
-                        shd_src__integrateSrcOneRay
+                        shd_src__integrateSrcDir, &
+                        shd_src__integrateSrcRay
 
     use shd_init, only: shd_init__makeTopRad, &
                         shd_init__makeBotRadUL, &
@@ -85,7 +85,7 @@ module shd_rad
 
     public :: shd_rad__interpRad
     public :: shd_rad__computeRadDir
-    public :: shd_rad__computeRadCam
+    public :: shd_rad__computeRadRay
 
     public :: shd_rad__computeFluxDiv
 
@@ -947,7 +947,7 @@ subroutine shd_rad__computeRadDir(&
             do JX = 1, NXOUT
                 IRAD = IRAD + 1
                 TRANSMIT = 1.0d0; radI_Shdo(:) = 0.0d0
-                call shd_src__integrateSrc(shdo_obj_%Nstokes,&
+                call shd_src__integrateSrcDir(shdo_obj_%Nstokes,&
                     &MUOUT, PHIOUT, GRIDRAD, src1_Shdo,&
                     &X0, Y0, Z0, XE, YE, ZE, SIDE,&
                     &TRANSMIT, radI_Shdo, VALIDRAD)
@@ -963,7 +963,7 @@ subroutine shd_rad__computeRadDir(&
 
 end subroutine shd_rad__computeRadDir
 
-subroutine shd_rad__computeRadCam(&
+subroutine shd_rad__computeRadRay(&
     &doDeltaM,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &fluxDir, FLUXES,&
@@ -1146,7 +1146,7 @@ subroutine shd_rad__computeRadCam(&
             ! Integrate the extinction and source function along this ray
             !   to calculate the Stokes radiance vector for this pixel
             TRANSMIT = 1.0d0; VISRAD(:) = 0.0d0
-            call shd_src__integrateSrcOneRay(shdo_obj_%Nstokes,&
+            call shd_src__integrateSrcRay(shdo_obj_%Nstokes,&
                 &NSTPHASE, NSCATANGLE, PHASETAB,&
                 &shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
                 &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
@@ -1195,7 +1195,7 @@ subroutine shd_rad__computeRadCam(&
         deallocate(AOLP)
     end if
     return
-end subroutine shd_rad__computeRadCam
+end subroutine shd_rad__computeRadRay
 
 subroutine shd_rad__computeFluxDiv(NSTOKES, NPTS, iradI_Shdo, SRCTYPE,&
     &muSun, EXTINCT, ALBEDO, PLANCK, fluxDir,&

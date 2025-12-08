@@ -67,7 +67,7 @@ module shd_solv
                         shd_init__makeRad, &
                         shd_init__checkSfcU
 
-    use shd_src,  only: shd_src__computeSrc
+    use shd_src,  only: shd_src__computeSrcSH
 
     use shd_rad,  only: shd_rad__makeFluxDir, &
                         shd_rad__interpRad
@@ -222,7 +222,7 @@ subroutine shd_solv__solveRte(&
         call shd_rad__interpRad(shdo_obj_%Nstokes, rtm_obj_%Npts0, rtm_obj_%Npts, iradI_Shdo_, radI_Shdo_,&
             &cell_obj_%Npts0, cell_obj_%Npts, i2Tree_Cell_, i8Grid_Cell_, xyz_Rtm_)
         ! Initialize the source function from the radiance field
-        call shd_src__computeSrc(&
+        call shd_src__computeSrcSH(&
             &doFixSH, YlmSun,&
             &fluxDir, SHACC,&
             &isrcD_Shdo, srcD_Shdo,&
@@ -390,7 +390,7 @@ subroutine shd_solv__solveRte(&
 
         ! radSH to srcSH
         !╭────────────────────────────────────────────────╮!
-        call shd_src__computeSrc(&
+        call shd_src__computeSrcSH(&
             &doFixSH, YlmSun,&
             &fluxDir, SHACC,&
             &isrcD_Shdo, srcD_Shdo,&

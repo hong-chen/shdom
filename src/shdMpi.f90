@@ -88,8 +88,8 @@ module shd_mpi
                         shd_util__computeRayVect
 
     use shd_src,  only: shd_src__computeSrcDir, &
-                        shd_src__integrateSrc, &
-                        shd_src__integrateSrcOneRay
+                        shd_src__integrateSrcDir, &
+                        shd_src__integrateSrcRay
 
     use shd_rad,  only: shd_rad__computeDirect
 
@@ -123,7 +123,7 @@ module shd_mpi
 
     public :: shd_mpi__makeFluxDir
     public :: shd_mpi__computeRadDir
-    public :: shd_mpi__computeRadCam
+    public :: shd_mpi__computeRadRay
     public :: shd_mpi__findMaxSsa
     public :: shd_mpi__findMaxSplitCrit
     public :: shd_mpi__findBndryPts
@@ -2198,7 +2198,7 @@ subroutine shd_mpi__computeRadDir(&
                 if (X0 .ge. (rtm_obj_%x(1) - EPS) .and. X0 .le. (rtm_obj_%x(rtm_obj_%Nx) + EPS) .and.&
                     Y0 .ge. (rtm_obj_%y(1) - EPS) .and. Y0 .le. (rtm_obj_%y(rtm_obj_%Ny) + EPS)) then
                     TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
-                    call shd_src__integrateSrc(shdo_obj_%Nstokes,&
+                    call shd_src__integrateSrcDir(shdo_obj_%Nstokes,&
                         &muView, phiView, GRIDRAD, srcView_Shdo,&
                         &X0, Y0, Z0, XE, YE, ZE, SIDE,&
                         &TRANSMIT, RADIANCE, VALIDRAD)
@@ -2283,7 +2283,7 @@ subroutine shd_mpi__computeRadDir(&
                     X = BndRadRealInfo(1, J, Ldownx); Y = BndRadRealInfo(2, J, Ldownx)
                     Z = BndRadRealInfo(3, J, Ldownx); TRANSMIT = BndRadRealInfo(4, J, Ldownx)
                     RADIANCE(:) = BndRadRealInfo(5:4 + shdo_obj_%Nstokes, J, Ldownx)
-                    call shd_src__integrateSrc(shdo_obj_%Nstokes,&
+                    call shd_src__integrateSrcDir(shdo_obj_%Nstokes,&
                         &muView, phiView, GRIDRAD, srcView_Shdo,&
                         &X, Y, Z, XE, YE, ZE, SIDE,&
                         &TRANSMIT, RADIANCE, VALIDRAD)
@@ -2318,7 +2318,7 @@ subroutine shd_mpi__computeRadDir(&
                     X = BndRadRealInfo(1, J, Ldowny); Y = BndRadRealInfo(2, J, Ldowny)
                     Z = BndRadRealInfo(3, J, Ldowny); TRANSMIT = BndRadRealInfo(4, J, Ldowny)
                     RADIANCE(:) = BndRadRealInfo(5:4 + shdo_obj_%Nstokes, J, Ldowny)
-                    call shd_src__integrateSrc(shdo_obj_%Nstokes,&
+                    call shd_src__integrateSrcDir(shdo_obj_%Nstokes,&
                         &muView, phiView, GRIDRAD, srcView_Shdo,&
                         &X, Y, Z, XE, YE, ZE, SIDE,&
                         &TRANSMIT, RADIANCE, VALIDRAD)
@@ -2395,7 +2395,7 @@ subroutine shd_mpi__computeRadDir(&
 
 end subroutine shd_mpi__computeRadDir
 
-subroutine shd_mpi__computeRadCam(&
+subroutine shd_mpi__computeRadRay(&
     &doDeltaM,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &fluxDir, FLUXES,&
@@ -2645,7 +2645,7 @@ subroutine shd_mpi__computeRadCam(&
                 ! Integrate the extinction and source function along this ray
                 ! to calculate the Stokes radiance vector for this pixel
                 TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
-                call shd_src__integrateSrcOneRay(shdo_obj_%Nstokes,&
+                call shd_src__integrateSrcRay(shdo_obj_%Nstokes,&
                     &NSTPHASE, NSCATANGLE, PHASETAB,&
                     &shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
                     &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
@@ -2727,7 +2727,7 @@ subroutine shd_mpi__computeRadCam(&
                 PHI2 = BndRecvRadRealInfo(5, J, IBND)
                 TRANSMIT = BndRecvRadRealInfo(6, J, IBND)
                 RADIANCE(:) = BndRecvRadRealInfo(7 : 6+shdo_obj_%Nstokes, J, IBND)
-                call shd_src__integrateSrcOneRay(shdo_obj_%Nstokes,&
+                call shd_src__integrateSrcRay(shdo_obj_%Nstokes,&
                     &NSTPHASE, NSCATANGLE, PHASETAB,&
                     &shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
                     &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
@@ -2837,7 +2837,7 @@ subroutine shd_mpi__computeRadCam(&
 
     return
 
-end subroutine shd_mpi__computeRadCam
+end subroutine shd_mpi__computeRadRay
 
 subroutine shd_mpi__calAccelSolCrit(DOACCEL, DELJDOT, DELJOLD, DELJNEW, JNORM,&
     &ACCELPAR, SOLCRIT)

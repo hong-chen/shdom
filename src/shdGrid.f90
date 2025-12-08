@@ -373,12 +373,11 @@ subroutine shd_grid__interpNewGridPts(newPts,&
     real RAD1(shdo_obj_%Nstokes), RAD2(shdo_obj_%Nstokes)
     real UNIFZLEV, XO, YO, ZO, DIRPATH
     real(kind=R__) :: mu0
-    real, allocatable :: srcTmp_Shdo(:, :), YlmSunTmp(:, :)
+    real, allocatable :: srcTmp_Shdo(:, :)
     integer, allocatable :: ilegJ(:)
 
     allocate(ilegJ(shdo_obj_%Nlm), &
-        srcTmp_Shdo(shdo_obj_%Nstokes, shdo_obj_%Nlm), &
-        YlmSunTmp(prp_obj_%NlegSet, shdo_obj_%Nlm))
+        srcTmp_Shdo(shdo_obj_%Nstokes, shdo_obj_%Nlm))
 
     ! Make the l index as a function of SH term (J)
     J = 0
@@ -394,7 +393,6 @@ subroutine shd_grid__interpNewGridPts(newPts,&
     C = sqrt(4.0*PI_)
     if (src_obj_%doSolar) then
         if (.not. src_obj_%doVariableSolar) then
-            YlmSunTmp(1:prp_obj_%NlegSet, 1:shdo_obj_%Nlm) = YlmSun(1:prp_obj_%NlegSet, 1:shdo_obj_%Nlm)
             SECMU0 = 1.0d0/abs(src_obj_%mu0)
         end if
     end if
@@ -499,19 +497,19 @@ subroutine shd_grid__interpNewGridPts(newPts,&
             end if
 
             if (src_obj_%doVariableSolar) then
-                call shd_src__computeSunOnePts(IP, mu0, YlmSunTmp)
+                call shd_src__computeSunOnePts(IP, mu0, YlmSun)
                 SECMU0 = 1.0d0 / abs(mu0)
             end if
 
             if (isPol_) then
                 call shd_src__computeSrcOnePts(shdo_obj_%Nstokes, shdo_obj_%Nlm, ilegJ,&
-                    &src_obj_%type, fluxDir(IP)*SECMU0, YlmSunTmp,&
+                    &src_obj_%type, fluxDir(IP)*SECMU0, YlmSun,&
                     &planck_Rtm(IP), ssa_Rtm(IP), IPH, leg_Rtm,&
                     &NR, radI_Shdo(1, IR+1), srcTmp_Shdo)
                     !&NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcTmp_Shdo)
             else
                 call shd_src__computeSrcOnePts_(shdo_obj_%Nlm, ilegJ,&
-                    &src_obj_%type, fluxDir(IP)*SECMU0, YlmSunTmp,&
+                    &src_obj_%type, fluxDir(IP)*SECMU0, YlmSun,&
                     &planck_Rtm(IP), ssa_Rtm(IP), IPH, leg_Rtm,&
                     &NR, radI_Shdo(1, IR+1), srcTmp_Shdo)
                     !&NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcTmp_Shdo)
@@ -522,7 +520,7 @@ subroutine shd_grid__interpNewGridPts(newPts,&
         end if
     end do
 
-    deallocate(ilegJ, srcTmp_Shdo, YlmSunTmp)
+    deallocate(ilegJ, srcTmp_Shdo)
 
     return
 

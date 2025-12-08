@@ -89,7 +89,7 @@ program shdom
     use shd_solv, only: shd_solv__solveRte
 
     use shd_rad,  only: shd_rad__computeRadDir, &
-                        shd_rad__computeRadCam, &
+                        shd_rad__computeRadRay, &
                         shd_rad__makeFluxDir, &
                         shd_rad__computeDirect, &
                         shd_rad__computeFluxDiv
@@ -114,7 +114,7 @@ program shdom
                         shd_mpi__bcastCkdSize, shd_mpi__bcastCkd, &
                         shd_mpi__bcastSenSize, shd_mpi__bcastSen, &
                         shd_mpi__computeRadDir, &
-                        shd_mpi__computeRadCam, &
+                        shd_mpi__computeRadRay, &
                         shd_mpi__makeFluxDir, &
                         shd_mpi__gatherOut
 
@@ -1248,13 +1248,13 @@ program shdom
             do iout = 1, Nout
                 if (type_Out(iout) .eq. 'V') then
                     if (isMpi_) then
-                        call shd_mpi__computeRadCam(&
+                        call shd_mpi__computeRadRay(&
                             &doDeltaM,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
                             &fluxDir, fluxTot,&
                             &parms_Out(1, iout), ilos, work2)
                     else
-                        call shd_rad__computeRadCam(&
+                        call shd_rad__computeRadRay(&
                             &doDeltaM,&
                             &maxNpts_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
                             &fluxDir, fluxTot,&
