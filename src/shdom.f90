@@ -334,10 +334,20 @@ program shdom
 
     ! shdo_obj_%maxNl: The maximum L of the spherical harmonic truncation
     ! shdo_obj_%maxNm: The maximum M of the spherical harmonic truncation
+    ! For instance, if set NMU=16, NPHI=32,
+    !   shdo_obj_%maxNl = 15
+    !   shdo_obj_%maxNm = 15
+    ! For instance, if set NMU=8, NPHI=16,
+    !   shdo_obj_%maxNl = 7
+    !   shdo_obj_%maxNm = 7
     shdo_obj_%maxNl = shdo_obj_%Nmu - 1
     shdo_obj_%maxNm = max(0, int(shdo_obj_%Nphi/2) - 1)
 
     ! shdo_obj_%Nlm: The number of spherical harmonic terms
+    ! For instance, if set NMU=16, NPHI=32
+    !   shdo_obj_%Nlm = 256
+    ! For instance, if set NMU=8, NPHI=16
+    !   shdo_obj_%Nlm = 64
     shdo_obj_%Nlm = (2*shdo_obj_%maxNm + 1)*(shdo_obj_%maxNl + 1) - shdo_obj_%maxNm*(shdo_obj_%maxNm + 1)
 
     ! prpAll_obj%Nleg: The number of Legendre series phase function terms used in the solution procedure
