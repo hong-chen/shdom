@@ -373,10 +373,10 @@ end subroutine shd_src__computeSrcSH
 subroutine shd_src__computeSrcDir(&
     doDeltaM, muRay, phiRay, &
     fluxDir, &
-    srcView_Shdo, &
+    srcRay_Shdo, &
     isrcJ_Shdo, srcJ_Shdo)
 
-    ! Computes the source function (srcView_Shdo) in the direction (muRay,phiRay)
+    ! Computes the source function (srcRay_Shdo) in the direction (muRay,phiRay)
     ! for the whole domain (rtm_obj_%Nx,rtm_obj_%Nz).  The spherical harmonic source function
     ! series is input in srcJ_Shdo.
     ! For a solar source if delta-M then use Nakajima and Tanaka TMS
@@ -390,7 +390,7 @@ subroutine shd_src__computeSrcDir(&
     real(kind=R__), intent(in) :: muRay, phiRay
     real(kind=R__), intent(in) :: fluxDir(rtm_obj_%Npts)
 
-    real(kind=R__), intent(out) :: srcView_Shdo(shdo_obj_%Nstokes, rtm_obj_%Npts)
+    real(kind=R__), intent(out) :: srcRay_Shdo(shdo_obj_%Nstokes, rtm_obj_%Npts)
 
     integer :: I, J, JT, K, L, M, N, IPH, IS, NS, ME, MS
     real :: DA, F, A, A1, B1, SECMU0, muScat
@@ -481,21 +481,21 @@ subroutine shd_src__computeSrcDir(&
         NS = isrcJ_Shdo(I + 1) - IS
         ! Sum over the real generalized spherical harmonic series
         !   of the source function
-        srcView_Shdo(:, I) = 0.0
+        srcRay_Shdo(:, I) = 0.0
         do J = 1, NS
-            srcView_Shdo(1, I) = srcView_Shdo(1, I) + srcJ_Shdo(1, IS + J)*YlmRay(1, J)
+            srcRay_Shdo(1, I) = srcRay_Shdo(1, I) + srcJ_Shdo(1, IS + J)*YlmRay(1, J)
         end do
         if (isPol_) then
             do J = 1, NS
-                srcView_Shdo(2, I) = srcView_Shdo(2, I) + srcJ_Shdo(2, IS + J)*YlmRay(2, J)&
+                srcRay_Shdo(2, I) = srcRay_Shdo(2, I) + srcJ_Shdo(2, IS + J)*YlmRay(2, J)&
                     &+ srcJ_Shdo(3, IS + J)*YlmRay(5, J)
-                srcView_Shdo(3, I) = srcView_Shdo(3, I) + srcJ_Shdo(2, IS + J)*YlmRay(6, J)&
+                srcRay_Shdo(3, I) = srcRay_Shdo(3, I) + srcJ_Shdo(2, IS + J)*YlmRay(6, J)&
                     &+ srcJ_Shdo(3, IS + J)*YlmRay(3, J)
             end do
         end if
         if (isPol4_) then
             do J = 1, NS
-                srcView_Shdo(4, I) = srcView_Shdo(4, I) + srcJ_Shdo(4, IS + J)*YlmRay(4, J)
+                srcRay_Shdo(4, I) = srcRay_Shdo(4, I) + srcJ_Shdo(4, IS + J)*YlmRay(4, J)
             end do
         end if
 
@@ -517,14 +517,14 @@ subroutine shd_src__computeSrcDir(&
                 if (J .le. NS) then
                     JT = J
                     do M = MS, ME
-                        srcView_Shdo(1, I) = srcView_Shdo(1, I) - A1*YlmRay(1, J)*YlmSun(1, J)
+                        srcRay_Shdo(1, I) = srcRay_Shdo(1, I) - A1*YlmRay(1, J)*YlmSun(1, J)
                         J = J + 1
                     end do
                     if (isPol_) then
                         J = JT
                         do M = MS, ME
-                            srcView_Shdo(2, I) = srcView_Shdo(2, I) - B1*YlmRay(2, J)*YlmSun(1, J)
-                            srcView_Shdo(3, I) = srcView_Shdo(3, I) - B1*YlmRay(6, J)*YlmSun(1, J)
+                            srcRay_Shdo(2, I) = srcRay_Shdo(2, I) - B1*YlmRay(2, J)*YlmSun(1, J)
+                            srcRay_Shdo(3, I) = srcRay_Shdo(3, I) - B1*YlmRay(6, J)*YlmSun(1, J)
                             J = J + 1
                         end do
                     end if
@@ -534,7 +534,7 @@ subroutine shd_src__computeSrcDir(&
             ! Then add in the single scattering contribution for the
             !   original unscaled phase matrix.
             if (prp_obj_%Npha .gt. 0) then
-                srcView_Shdo(:, I) = srcView_Shdo(:, I) + DA*scatVect(:, IPH)
+                srcRay_Shdo(:, I) = srcRay_Shdo(:, I) + DA*scatVect(:, IPH)
             else if (.not. isPol_) then
                 ! If we have a phase function for each grid point (which
                 !   should be the unpolarized case) then unscale the Legendre
@@ -547,7 +547,7 @@ subroutine shd_src__computeSrcDir(&
                     else
                         A = DA*leg_Rtm_(1, L, IPH)/(1 - F)
                     end if
-                    srcView_Shdo(1, I) = srcView_Shdo(1, I) + A*SUNDIRLEG(L)
+                    srcRay_Shdo(1, I) = srcRay_Shdo(1, I) + A*SUNDIRLEG(L)
                 end do
             end if
 

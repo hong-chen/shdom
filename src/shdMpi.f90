@@ -1976,7 +1976,7 @@ subroutine shd_mpi__computeRadDir(&
     &doDeltaM,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &fluxDir, FLUXES,&
-    &srcView_Shdo, GRIDRAD,&
+    &srcRay_Shdo, GRIDRAD,&
     &parms_Out, NRAD, RADOUT)
 
     ! Computes the radiances for the locations and directions specified
@@ -1990,7 +1990,7 @@ subroutine shd_mpi__computeRadDir(&
     logical, intent(in) :: doDeltaM
     real, intent(in) :: BCRAD(shdo_obj_%Nstokes, *)
     real, intent(in) :: fluxDir(rtm_obj_%Npts), FLUXES(2, rtm_obj_%Npts)
-    real, intent(inout) :: srcView_Shdo(shdo_obj_%Nstokes, rtm_obj_%Npts), GRIDRAD(shdo_obj_%Nstokes, rtm_obj_%Npts)
+    real, intent(inout) :: srcRay_Shdo(shdo_obj_%Nstokes, rtm_obj_%Npts), GRIDRAD(shdo_obj_%Nstokes, rtm_obj_%Npts)
     real, intent(in) :: parms_Out(*)
     real, intent(out) :: RADOUT(shdo_obj_%Nstokes, *)
 
@@ -2132,7 +2132,7 @@ subroutine shd_mpi__computeRadDir(&
         ! Compute the source function throughout grid for this angle
         call shd_src__computeSrcDir(&
             &doDeltaM, muRay, phiRay,&
-            &fluxDir, srcView_Shdo,&
+            &fluxDir, srcRay_Shdo,&
             &isrcJ_Shdo_, srcJ_Shdo_)
 
         ! Set the radiance field to -1, so we can determine valid radiances
@@ -2140,7 +2140,7 @@ subroutine shd_mpi__computeRadDir(&
         !   function, so the grid interpolation is correct.
         do I = 1, rtm_obj_%Npts
             GRIDRAD(1, I) = -1.0
-            srcView_Shdo(:, I) = srcView_Shdo(:, I)*ext_Rtm_(I)
+            srcRay_Shdo(:, I) = srcRay_Shdo(:, I)*ext_Rtm_(I)
         end do
 
         ! Get boundary radiances: either top or bottom
@@ -2199,7 +2199,7 @@ subroutine shd_mpi__computeRadDir(&
                     Y0 .ge. (rtm_obj_%y(1) - EPS) .and. Y0 .le. (rtm_obj_%y(rtm_obj_%Ny) + EPS)) then
                     TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
                     call shd_src__integrateSrcDir(shdo_obj_%Nstokes,&
-                        &muRay, phiRay, GRIDRAD, srcView_Shdo,&
+                        &muRay, phiRay, GRIDRAD, srcRay_Shdo,&
                         &X0, Y0, Z0, XE, YE, ZE, SIDE,&
                         &TRANSMIT, RADIANCE, VALIDRAD)
 
@@ -2284,7 +2284,7 @@ subroutine shd_mpi__computeRadDir(&
                     Z = BndRadRealInfo(3, J, Ldownx); TRANSMIT = BndRadRealInfo(4, J, Ldownx)
                     RADIANCE(:) = BndRadRealInfo(5:4 + shdo_obj_%Nstokes, J, Ldownx)
                     call shd_src__integrateSrcDir(shdo_obj_%Nstokes,&
-                        &muRay, phiRay, GRIDRAD, srcView_Shdo,&
+                        &muRay, phiRay, GRIDRAD, srcRay_Shdo,&
                         &X, Y, Z, XE, YE, ZE, SIDE,&
                         &TRANSMIT, RADIANCE, VALIDRAD)
 
@@ -2319,7 +2319,7 @@ subroutine shd_mpi__computeRadDir(&
                     Z = BndRadRealInfo(3, J, Ldowny); TRANSMIT = BndRadRealInfo(4, J, Ldowny)
                     RADIANCE(:) = BndRadRealInfo(5:4 + shdo_obj_%Nstokes, J, Ldowny)
                     call shd_src__integrateSrcDir(shdo_obj_%Nstokes,&
-                        &muRay, phiRay, GRIDRAD, srcView_Shdo,&
+                        &muRay, phiRay, GRIDRAD, srcRay_Shdo,&
                         &X, Y, Z, XE, YE, ZE, SIDE,&
                         &TRANSMIT, RADIANCE, VALIDRAD)
 
