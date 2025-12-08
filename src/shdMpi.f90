@@ -1999,7 +1999,7 @@ subroutine shd_mpi__computeRad(&
     integer :: NANGOUT, Nx_out, Ny_out
     logical :: VALIDRAD
     real(RD_) :: X0, Y0, Z0, XE, YE, ZE, X, Y, Z, TRANSMIT, RADIANCE(shdo_obj_%Nstokes)
-    real    :: mu_out, phi_out, phiDeg_out
+    real    :: muView, phiView, phiView_deg
     real    :: STARTX, STARTY, EPS = 1.0e-5
 
     integer :: MAXNRAD, NDOWN, Lupx, Lupy, Ldownx, Ldowny
@@ -2070,13 +2070,13 @@ subroutine shd_mpi__computeRad(&
     ! Loop over the radiance directions
     ANGOUT_LOOP: do K = 1, NANGOUT
         if (sen_obj_%fname(1:4) .ne. 'NONE') then
-            mu_out     = view_Sen_(1, K)
-            phiDeg_out = view_Sen_(2, K)
+            muView = view_Sen_(1, K)
+            phiView_deg = view_Sen_(2, K)
         else
-            mu_out = parms_Out(2*K + 5)
-            phiDeg_out = parms_Out(2*K + 6)
+            muView = parms_Out(2*K + 5)
+            phiView_deg = parms_Out(2*K + 6)
         endif
-        phi_out = phiDeg_out*DTOR_
+        phiView = phiView_deg*DTOR_
 
         ! added for fixing the "domain shift" issue (only for 3D)
         ! this is the first step correction:
@@ -2087,9 +2087,9 @@ subroutine shd_mpi__computeRad(&
         !╭────────────────────────────────────────────────╮!
         if (rtm_obj_%flag_ip .eq. 0) then
             DS_Z0 = Z0 - rtm_obj_%z(1)
-            DS_VZA_RAD = acos(mu_out)
-            DS_XOFFSET = DS_Z0*dtan(DS_VZA_RAD)*cos(phi_out)
-            DS_YOFFSET = DS_Z0*dtan(DS_VZA_RAD)*sin(phi_out)
+            DS_VZA_RAD = acos(muView)
+            DS_XOFFSET = DS_Z0*dtan(DS_VZA_RAD)*cos(phiView)
+            DS_YOFFSET = DS_Z0*dtan(DS_VZA_RAD)*sin(phiView)
             TOT_XOFFSET = DS_XOFFSET
             TOT_YOFFSET = DS_YOFFSET
         else
@@ -2112,26 +2112,26 @@ subroutine shd_mpi__computeRad(&
         end if
         !╰────────────────────────────────────────────────╯!
 
-        if (mu_out .eq. 0.0) then
+        if (muView .eq. 0.0) then
             if (verbose_ .ge. 4) then
-                write(6, *) 'Warning [mpi__computeRad]: Bad mu_out for radiance', K, mu_out, phiDeg_out
-                mu_out = accSolv_
-                write(6, *) '                           New mu_out =', mu_out
+                write(6, *) 'Warning [mpi__computeRad]: Bad muView for radiance', K, muView, phiView_deg
+                muView = accSolv_
+                write(6, *) '                           New muView =', muView
             end if
         end if
 
-        if (abs(mu_out) .gt. 1.0) then
+        if (abs(muView) .gt. 1.0) then
             if (verbose_ .ge. 4) then
-                write(6, *) 'Warning [mpi__computeRad]: Bad mu_out for radiance', K, mu_out, phiDeg_out
-                if (mu_out .gt.  1.0) mu_out =  1.0
-                if (mu_out .lt. -1.0) mu_out = -1.0
-                write(6, *) '                           New mu_out =', mu_out
+                write(6, *) 'Warning [mpi__computeRad]: Bad muView for radiance', K, muView, phiView_deg
+                if (muView .gt.  1.0) muView =  1.0
+                if (muView .lt. -1.0) muView = -1.0
+                write(6, *) '                           New muView =', muView
             end if
         end if
 
         ! Compute the source function throughout grid for this angle
         call shd_src__computeSrcOneDir(&
-            &doDeltaM, mu_out, phi_out,&
+            &doDeltaM, muView, phiView,&
             &fluxDir, srcView_Shdo,&
             &isrcJ_Shdo_, srcJ_Shdo_)
 
@@ -2148,7 +2148,7 @@ subroutine shd_mpi__computeRad(&
         !   the previously computed boundary radiances in BCRAD,
         !   otherwise, compute the radiance for this angle
         !   by integrating over the stored downwelling radiances.
-        if (mu_out .lt. 0.0) then
+        if (muView .lt. 0.0) then
             do IBC = 1, NTOPPTS
                 I = BCPTR(IBC, 1)
                 GRIDRAD(:, I) = BCRAD(:, IBC)
@@ -2156,7 +2156,7 @@ subroutine shd_mpi__computeRad(&
         else
             if (.not. sfc_obj_%isLambertian) then
                 call shd_init__makeBotRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
-                    &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt, mu_out, phi_out,&
+                    &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt, muView, phiView,&
                     &src_obj_%type, src_obj_%avgWaveLen, src_obj_%mu0, src_obj_%phi0, fluxDir,&
                     &shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
             end if
@@ -2169,15 +2169,15 @@ subroutine shd_mpi__computeRad(&
         ! Set up the upstream/downstream boundaries for this direction
         Lupx = 0; Lupy = 0; Ldownx = 0; Ldowny = 0
         if (isMpiX_) then
-            if ((cos(phi_out) .gt. 1.0e-5)) then
+            if ((cos(phiView) .gt. 1.0e-5)) then
                 Ldownx = 2; Lupx = 1
             else
                 Ldownx = 1; Lupx = 2
             end if
         end if
         if (isMpiY_) then
-            !if ((sin(phi_out) .gt. 1.0e-5) .and. (prp_obj_%Ny .gt. 1)) then
-            if ((sin(phi_out) .gt. 1.0e-5)) then
+            !if ((sin(phiView) .gt. 1.0e-5) .and. (prp_obj_%Ny .gt. 1)) then
+            if ((sin(phiView) .gt. 1.0e-5)) then
                 Ldowny = 4; Lupy = 3
             else
                 Ldowny = 3; Lupy = 4
@@ -2199,7 +2199,7 @@ subroutine shd_mpi__computeRad(&
                     Y0 .ge. (rtm_obj_%y(1) - EPS) .and. Y0 .le. (rtm_obj_%y(rtm_obj_%Ny) + EPS)) then
                     TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
                     call shd_src__integrateSrc(shdo_obj_%Nstokes,&
-                        &mu_out, phi_out, GRIDRAD, srcView_Shdo,&
+                        &muView, phiView, GRIDRAD, srcView_Shdo,&
                         &X0, Y0, Z0, XE, YE, ZE, SIDE,&
                         &TRANSMIT, RADIANCE, VALIDRAD)
 
@@ -2213,7 +2213,7 @@ subroutine shd_mpi__computeRad(&
                         IndexSend(Ndone) = NRAD
                     else
                         if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
-                            write(6, *) 'Bad SIDE 1:', myProc_, mu_out, phi_out, x0, y0, z0, SIDE, xe, ye, ze
+                            write(6, *) 'Bad SIDE 1:', myProc_, muView, phiView, x0, y0, z0, SIDE, xe, ye, ze
                             call shd_mpi__abort('Error [mpi__computeRad]: Bad SIDE 1, see above.')
                         end if
                         NINVALID(SIDE) = NINVALID(SIDE) + 1
@@ -2284,7 +2284,7 @@ subroutine shd_mpi__computeRad(&
                     Z = BndRadRealInfo(3, J, Ldownx); TRANSMIT = BndRadRealInfo(4, J, Ldownx)
                     RADIANCE(:) = BndRadRealInfo(5:4 + shdo_obj_%Nstokes, J, Ldownx)
                     call shd_src__integrateSrc(shdo_obj_%Nstokes,&
-                        &mu_out, phi_out, GRIDRAD, srcView_Shdo,&
+                        &muView, phiView, GRIDRAD, srcView_Shdo,&
                         &X, Y, Z, XE, YE, ZE, SIDE,&
                         &TRANSMIT, RADIANCE, VALIDRAD)
 
@@ -2298,7 +2298,7 @@ subroutine shd_mpi__computeRad(&
                         IndexSend(Ndone) = BndRadIntInfo(J, Ldownx)
                     else
                         if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
-                            write(6, *) 'Bad SIDE 2x', myProc_, mu_out, phi_out, x, y, z, SIDE, xe, ye, ze
+                            write(6, *) 'Bad SIDE 2x', myProc_, muView, phiView, x, y, z, SIDE, xe, ye, ze
                             call shd_mpi__abort('Error [mpi__computeRad]: Bad SIDE 2x, see above.')
                         end if
                         NINVALID(SIDE) = NINVALID(SIDE) + 1
@@ -2319,7 +2319,7 @@ subroutine shd_mpi__computeRad(&
                     Z = BndRadRealInfo(3, J, Ldowny); TRANSMIT = BndRadRealInfo(4, J, Ldowny)
                     RADIANCE(:) = BndRadRealInfo(5:4 + shdo_obj_%Nstokes, J, Ldowny)
                     call shd_src__integrateSrc(shdo_obj_%Nstokes,&
-                        &mu_out, phi_out, GRIDRAD, srcView_Shdo,&
+                        &muView, phiView, GRIDRAD, srcView_Shdo,&
                         &X, Y, Z, XE, YE, ZE, SIDE,&
                         &TRANSMIT, RADIANCE, VALIDRAD)
 
@@ -2333,7 +2333,7 @@ subroutine shd_mpi__computeRad(&
                         IndexSend(Ndone) = BndRadIntInfo(J, Ldowny)
                     else
                         if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
-                            write(6, *) 'Bad SIDE 2y', myProc_, mu_out, phi_out, x, y, z, SIDE, xe, ye, ze
+                            write(6, *) 'Bad SIDE 2y', myProc_, muView, phiView, x, y, z, SIDE, xe, ye, ze
                             call shd_mpi__abort('Error [mpi__computeRad]: Bad SIDE 2y, see above.')
                         end if
                         NINVALID(SIDE) = NINVALID(SIDE) + 1
