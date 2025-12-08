@@ -813,7 +813,7 @@ subroutine shd_grid__makeSweepOrder(&
     !   the corner of the cell (bits 0-2). The first index is the grid
     !   point visiting order (1-rtm_obj_%Npts), and the second index refers to the
     !   octant, but is not the octant number. The octant index is translated
-    !   to the octant number with IOCTORDER - this complication arises because
+    !   to the octant number with iOctOrder - this complication arises because
     !   of the desire to use just 2 or 4 octants in 1D or 2D.
     !
     ! Input:
@@ -822,7 +822,7 @@ subroutine shd_grid__makeSweepOrder(&
     integer(kind=I__), intent(out) :: SWEEPORD(rtm_obj_%Npts, *)
     real(kind=R__)   , intent(out) :: GRIDRAD(rtm_obj_%Npts)
 
-    integer(kind=I__) :: NOCT, IOCT, JOCT, NXC, NYC
+    integer(kind=I__) :: NOCT, iOct, jOct, NXC, NYC
     integer(kind=I__) :: IPCELL, ipts, IORDER
     integer(kind=I__) :: INDEXCORN, ICORNER
 
@@ -837,12 +837,12 @@ subroutine shd_grid__makeSweepOrder(&
         &2, 1, 4, 3, 6, 5, 8, 7,&
         &1, 2, 3, 4, 5, 6, 7, 8/
 
-    integer(kind=I__) :: IOCTORDER(8)
-    data IOCTORDER /1, 5, 2, 6, 3, 7, 4, 8/
+    integer(kind=I__) :: iOctOrder(8)
+    data iOctOrder /1, 5, 2, 6, 3, 7, 4, 8/
 
 
-    ! IOCT is the octant the ray come from or the discrete ordinate
-    !   IOCT = 1 + BITX + 2*BITY + 4*BITZ
+    ! iOct is the octant the ray come from or the discrete ordinate
+    !   iOct = 1 + bitX + 2*bitY + 4*bitZ
 
     if (is1D_) then
         NOCT = 2
@@ -861,8 +861,8 @@ subroutine shd_grid__makeSweepOrder(&
     if (isMpiY_ .and. (.not. is1DYx_)) NYC = rtm_obj_%Ny - 1
 
     ! Loop over the number of octants needed; get the octant number
-    do JOCT = 1, NOCT
-        IOCT = IOCTORDER(JOCT)
+    do jOct = 1, NOCT
+        iOct = iOctOrder(jOct)
 
         ! Set each grid point flag to indicate unvisited.
         do ipts = 1, rtm_obj_%Npts
@@ -878,29 +878,29 @@ subroutine shd_grid__makeSweepOrder(&
 
         ! INDEXCORN is a logical ordering index to the 8 corners in a cell;
         !   it is not the actual corner. ICORNER is the actual corner and
-        !   depends on the ray direction (IOCT) and INDEXCORN.
+        !   depends on the ray direction (iOct) and INDEXCORN.
         !   Scan the 8 points in a cell according to the ray direction:
         !   Do the ones furthest "upstream" first; loop until we find
         !   a point that is not already done.
         if (INDEXCORN .eq. 8) then
             ! If done with the current cell, then go to next
             INDEXCORN = 1
-            if (.not. sweepCellNext(rtm_obj_%flag_bc, NXC, NYC, rtm_obj_%Nz, IOCT,&
+            if (.not. sweepCellNext(rtm_obj_%flag_bc, NXC, NYC, rtm_obj_%Nz, iOct,&
                 &IPCELL)) goto 900
         else
             INDEXCORN = INDEXCORN + 1
         end if
 
         ! Compute the corresponding point
-        ! ICORNER = IAND(NOT(IEOR(INDEXCORN-1,IOCT-1)),7) + 1
-        ICORNER = CORNDOG(INDEXCORN, IOCT)
+        ! ICORNER = IAND(NOT(IEOR(INDEXCORN-1,iOct-1)),7) + 1
+        ICORNER = CORNDOG(INDEXCORN, iOct)
         ipts = i8Grid_Cell_(ICORNER, IPCELL)
         if (GRIDRAD(ipts) .ge. 0.0) goto 100
 
         GRIDRAD(ipts) = 1.0
 
         ! Fill in the next entry with the grid cell and corner of this point
-        SWEEPORD(IORDER, JOCT) = ior(ishft(IPCELL, 3), ICORNER - 1)
+        SWEEPORD(IORDER, jOct) = ior(ishft(IPCELL, 3), ICORNER - 1)
         IORDER = IORDER + 1
         goto 100
 
@@ -1322,17 +1322,17 @@ subroutine shd_grid__testCellSplit(icell,&
 
 end subroutine shd_grid__testCellSplit
 
-logical function sweepCellBase(BCFLAG, NXC, NYC, NZ, IOCT, icell)
+logical function sweepCellBase(BCFLAG, NXC, NYC, NZ, iOct, icell)
 
     !   Returns the next base grid cell.  The octant the ray direction
-    ! is coming from (IOCT) determines the order of sweeping.  icell is 0
+    ! is coming from (iOct) determines the order of sweeping.  icell is 0
     ! for the first call to set things up.  The function returns false if
     ! we are done sweeping the grid.  Do loops over IZ, IY, and IX are
     ! simulated.  For open boundary condition do the endpoint cells
     ! (in X,Y) first, so the boundary grid points will be done with
     ! independent pixel radiative transfer.
 
-    integer BCFLAG, NXC, NYC, NZ, IOCT, icell
+    integer BCFLAG, NXC, NYC, NZ, iOct, icell
     integer IX, IY, IZ, SIX, SIY, SIZ, EIX, EIY, EIZ, DIX, DIY, DIZ
     save IX, IY, IZ, SIX, SIY, SIZ, EIX, EIY, EIZ, DIX, DIY, DIZ
 
@@ -1340,7 +1340,7 @@ logical function sweepCellBase(BCFLAG, NXC, NYC, NZ, IOCT, icell)
 
     ! If first time here then set up the loops
     if (icell .eq. 0) then
-        if (btest(IOCT - 1, 0)) then
+        if (btest(iOct - 1, 0)) then
             DIX = +1
             if (isOpenX_) then
                 SIX = NXC
@@ -1359,7 +1359,7 @@ logical function sweepCellBase(BCFLAG, NXC, NYC, NZ, IOCT, icell)
                 EIX = 1
             end if
         end if
-        if (btest(IOCT - 1, 1)) then
+        if (btest(iOct - 1, 1)) then
             DIY = +1
             if (isOpenYx_) then
                 SIY = NYC
@@ -1378,7 +1378,7 @@ logical function sweepCellBase(BCFLAG, NXC, NYC, NZ, IOCT, icell)
                 EIY = 1
             end if
         end if
-        if (btest(IOCT - 1, 2)) then
+        if (btest(iOct - 1, 2)) then
             DIZ = +1
             SIZ = 1
             EIZ = NZ - 1
@@ -1417,17 +1417,17 @@ logical function sweepCellBase(BCFLAG, NXC, NYC, NZ, IOCT, icell)
 
 end function sweepCellBase
 
-logical function sweepCellNext(BCFLAG, NXC, NYC, NZ, IOCT,&
+logical function sweepCellNext(BCFLAG, NXC, NYC, NZ, iOct,&
     &icell)
 
     !   Returns the next grid cell given the last cell (icell).  The
-    ! octant the ray direction is coming from (IOCT) determines the
+    ! octant the ray direction is coming from (iOct) determines the
     ! order of sweeping.  icell is 0 for the first call to set things up
     ! The function returns false if we are done sweeping the grid.
     ! Within a base cell the tree structure is traced using a stack until
     ! we get to a new end cell.
 
-    integer BCFLAG, NXC, NYC, NZ, IOCT, icell
+    integer BCFLAG, NXC, NYC, NZ, iOct, icell
     integer IC, idir, SP, STACK(50)
     logical DONE
     save SP, STACK
@@ -1437,12 +1437,12 @@ logical function sweepCellNext(BCFLAG, NXC, NYC, NZ, IOCT,&
     ! Special case for first time here
     if (icell .eq. 0) then
         IC = 0
-        sweepCellNext = sweepCellBase(BCFLAG, NXC, NYC, NZ, IOCT, IC)
+        sweepCellNext = sweepCellBase(BCFLAG, NXC, NYC, NZ, iOct, IC)
         SP = 0
     end if
 
     ! The scanning direction is the direction (pos or neg) for each
-    !   of X,Y,Z that the ray is going in (indicated by IOCT).
+    !   of X,Y,Z that the ray is going in (indicated by iOct).
 
     ! Go through the tree checking the cells:
     ! The stack holds the second child cells, which are the
@@ -1459,7 +1459,7 @@ logical function sweepCellNext(BCFLAG, NXC, NYC, NZ, IOCT,&
                 !   next base cell if there is one.
                 if (SP .eq. 0) then
                     sweepCellNext=&
-                        &sweepCellBase(BCFLAG, NXC, NYC, NZ, IOCT, IC)
+                        &sweepCellBase(BCFLAG, NXC, NYC, NZ, iOct, IC)
                     if (.not. sweepCellNext) return
                 else
                     ! Otherwise, pop the stack to get the next cell to go to.
@@ -1474,7 +1474,7 @@ logical function sweepCellNext(BCFLAG, NXC, NYC, NZ, IOCT,&
             SP = SP + 1
             if (SP .gt. 50) stop 'Error [sweepCellNext]: Stack exceeded.'
             idir = ibits(int(flag_Cell_(IC)), 2, 2) - 1
-            if (btest(IOCT - 1, idir)) then
+            if (btest(iOct - 1, idir)) then
                 STACK(SP) = i2Tree_Cell_(2, IC) + 1
                 IC = i2Tree_Cell_(2, IC)
             else

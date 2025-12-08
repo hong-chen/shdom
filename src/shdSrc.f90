@@ -396,13 +396,13 @@ subroutine shd_src__computeSrcDir(&
     real :: DA, F, A, A1, B1, SECMU0, muScat
     real, allocatable :: YlmRay(:, :), YlmSun(:, :)
     real, allocatable :: UNSCLEGEN(:, :), scatVect(:, :)
-    real(RD_), allocatable :: SUNDIRLEG(:)
+    real(RD_), allocatable :: legScat(:)
 
     logical :: doTMS
 
     allocate(YlmRay(prp_obj_%NlegSet, shdo_obj_%Nlm), &
              YlmSun(prp_obj_%NlegSet, shdo_obj_%Nlm))
-    allocate(SUNDIRLEG(0:prp_obj_%Nleg))
+    allocate(legScat(0:prp_obj_%Nleg))
     allocate(UNSCLEGEN(2, 0:prp_obj_%Nleg), scatVect(shdo_obj_%Nstokes, prp_obj_%Npha))
     if (abs(muRay) .gt. 1.0) stop 'Error [_computeOneSrc]: Bad muRay.'
 
@@ -432,9 +432,9 @@ subroutine shd_src__computeSrcDir(&
             ! If non-tabulate phase functions (unpolarized) then
             !   compute the Legendre polynomials for the scattering angle
             !   for the untruncated solar single scattering computation.
-            call shd_scat__computeLegendre(dble(muScat), prp_obj_%Nleg, SUNDIRLEG)
+            call shd_scat__computeLegendre(dble(muScat), prp_obj_%Nleg, legScat)
             do L = 0, prp_obj_%Nleg
-                SUNDIRLEG(L) = SUNDIRLEG(L)*(2*L + 1)*O4PI_
+                legScat(L) = legScat(L)*(2*L + 1)*O4PI_
             end do
         end if
 
@@ -547,14 +547,14 @@ subroutine shd_src__computeSrcDir(&
                     else
                         A = DA*leg_Rtm_(1, L, IPH)/(1 - F)
                     end if
-                    srcRay_Shdo(1, I) = srcRay_Shdo(1, I) + A*SUNDIRLEG(L)
+                    srcRay_Shdo(1, I) = srcRay_Shdo(1, I) + A*legScat(L)
                 end do
             end if
 
         end if
     end do
 
-    deallocate(YlmRay, YlmSun, SUNDIRLEG, UNSCLEGEN, scatVect)
+    deallocate(YlmRay, YlmSun, legScat, UNSCLEGEN, scatVect)
 
     return
 
@@ -597,7 +597,7 @@ subroutine shd_src__integrateSrcRay(&
     real(RD_) :: TRANSMIT, radI_Shdo(NSTOKES)
     character(len=1) :: SRCTYPE
 
-    integer BITX, BITY, BITZ, IOCT, icell, INEXTCELL, IFACE
+    integer bitX, bitY, bitZ, iOct, icell, INEXTCELL, IFACE
     integer IOPP, NTAU, IT, I, IPT1, IPT2, J, L
     logical DONE, IPINX, IPINY, OPENBCFACE
     integer JFACE, KFACE, IC, MAXCELLSCROSS, NGRID
@@ -617,7 +617,7 @@ subroutine shd_src__integrateSrcRay(&
     real(RD_) :: U, V, W, DELX, DELY, DELZ, INVDELX, INVDELY, INVDELZ
     real(RD_) :: muScat
     real, allocatable :: YlmRay(:, :), scatVect(:, :)
-    real(RD_), allocatable :: SUNDIRLEG(:)
+    real(RD_), allocatable :: legScat(:)
 
     data OPPFACE/2, 1, 4, 3, 6, 5/
     data ONEY/0, 0, -1, -2, 0, 0, -5, -6/, ONEX/0, -1, 0, -3, 0, -5, 0, -7/
@@ -663,10 +663,10 @@ subroutine shd_src__integrateSrcRay(&
                 end if
             end do
         else
-            allocate(SUNDIRLEG(0:prp_obj_%Nleg))
-            call shd_scat__computeLegendre(muScat, prp_obj_%Nleg, SUNDIRLEG)
+            allocate(legScat(0:prp_obj_%Nleg))
+            call shd_scat__computeLegendre(muScat, prp_obj_%Nleg, legScat)
             do L = 0, prp_obj_%Nleg
-                SUNDIRLEG(L) = SUNDIRLEG(L)*(2*L + 1)/(4*DPI_)
+                legScat(L) = legScat(L)*(2*L + 1)/(4*DPI_)
             end do
         end if
 
@@ -679,21 +679,21 @@ subroutine shd_src__integrateSrcRay(&
 
     ! Setup for the ray path direction
     if (CX .lt. 0.0) then
-        BITX = 1
+        bitX = 1
     else
-        BITX = 0
+        bitX = 0
     end if
     if (CY .lt. 0.0) then
-        BITY = 1
+        bitY = 1
     else
-        BITY = 0
+        bitY = 0
     end if
     if (CZ .lt. 0.0) then
-        BITZ = 1
+        bitZ = 1
     else
-        BITZ = 0
+        bitZ = 0
     end if
-    IOCT = 1 + BITX + 2*BITY + 4*BITZ
+    iOct = 1 + bitX + 2*bitY + 4*bitZ
     XM = 0.5d0*(rtm_obj_%x(1) + rtm_obj_%x(rtm_obj_%Nx))
     YM = 0.5d0*(rtm_obj_%y(1) + rtm_obj_%y(rtm_obj_%Ny))
 
@@ -733,7 +733,7 @@ subroutine shd_src__integrateSrcRay(&
                 &NSTOKES, ML, MM, NLM,&
                 &rtm_obj_%Npts, doDeltaM, SRCTYPE, muSun,&
                 &fluxDir,&
-                &isrcJ_Shdo, srcJ_Shdo, YlmRay, YlmSun, SUNDIRLEG, scatVect,&
+                &isrcJ_Shdo, srcJ_Shdo, YlmRay, YlmSun, legScat, scatVect,&
                 &DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
                 &EXTINCT8, SRCEXT8)
         else
@@ -741,7 +741,7 @@ subroutine shd_src__integrateSrcRay(&
                 &ML, MM, NLM,&
                 &rtm_obj_%Npts, doDeltaM, SRCTYPE, muSun,&
                 &fluxDir,&
-                &isrcJ_Shdo, srcJ_Shdo, YlmRay, YlmSun, SUNDIRLEG, scatVect,&
+                &isrcJ_Shdo, srcJ_Shdo, YlmRay, YlmSun, legScat, scatVect,&
                 &DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
                 &EXTINCT8, SRCEXT8)
         end if
@@ -788,7 +788,7 @@ subroutine shd_src__integrateSrcRay(&
         ! Find boundaries of the current cell
         ! Find the three possible intersection planes (X,Y,Z)
         !   from the coordinates of the opposite corner grid point
-        IOPP = i8Grid_Cell_(9 - IOCT, icell)
+        IOPP = i8Grid_Cell_(9 - iOct, icell)
         ! Get the distances to the 3 planes and select the closest
         !   (always need to deal with the cell that is wrapped)
         if (IPINX) then
@@ -870,15 +870,15 @@ subroutine shd_src__integrateSrcRay(&
 
         ! Get the intersection face number (i.e. neighptr index)
         if ((SOX .le. SOZ) .and. (SOX .le. SOY)) then
-            IFACE = 2 - BITX
+            IFACE = 2 - bitX
             JFACE = 1
             OPENBCFACE = btest(int(flag_Cell_(icell)), 0) .and. isOpenX_
         else if (SOY .le. SOZ) then
-            IFACE = 4 - BITY
+            IFACE = 4 - bitY
             JFACE = 2
             OPENBCFACE = btest(int(flag_Cell_(icell)), 1) .and. isOpenYx_
         else
-            IFACE = 6 - BITZ
+            IFACE = 6 - bitZ
             JFACE = 3
             OPENBCFACE = .false.
         end if
@@ -901,11 +901,11 @@ subroutine shd_src__integrateSrcRay(&
         ! Get the location coordinate
         if (INEXTCELL .gt. 0) then
             if (JFACE .eq. 1) then
-                XN = xyz_Rtm_(1, i8Grid_Cell_(IOCT, INEXTCELL))
+                XN = xyz_Rtm_(1, i8Grid_Cell_(iOct, INEXTCELL))
             else if (JFACE .eq. 2) then
-                YN = xyz_Rtm_(2, i8Grid_Cell_(IOCT, INEXTCELL))
+                YN = xyz_Rtm_(2, i8Grid_Cell_(iOct, INEXTCELL))
             else
-                ZN = xyz_Rtm_(3, i8Grid_Cell_(IOCT, INEXTCELL))
+                ZN = xyz_Rtm_(3, i8Grid_Cell_(iOct, INEXTCELL))
             end if
         end if
 
@@ -938,7 +938,7 @@ subroutine shd_src__integrateSrcRay(&
         if (prp_obj_%Npha .gt. 0) then
             deallocate(scatVect)
         else
-            deallocate(SUNDIRLEG)
+            deallocate(legScat)
         end if
     end if
 
@@ -966,7 +966,7 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
     real muRay, phiRay
     real(RD_) :: X0, Y0, Z0, XE, YE, ZE, TRANSMIT, radI_Shdo(NSTOKES)
     real srcJ_Shdo(NSTOKES, rtm_obj_%Npts), GRIDRAD(NSTOKES, rtm_obj_%Npts)
-    integer BITX, BITY, BITZ, IOCT, icell, INEXTCELL, IFACE
+    integer bitX, bitY, bitZ, iOct, icell, INEXTCELL, IFACE
     integer I1, I2, I3, I4, IOPP, NTAU, IT, K
     logical IPINX, IPINY, OPENBCFACE
     integer GRIDFACE(4, 6), OPPFACE(6), JFACE, KFACE, IC
@@ -993,23 +993,23 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
 
     ! Setup for the ray path direction
     if (CX .lt. 0.0) then
-        BITX = 1
+        bitX = 1
     else
-        BITX = 0
+        bitX = 0
     end if
     if (CY .lt. 0.0) then
-        BITY = 1
+        bitY = 1
     else
-        BITY = 0
+        bitY = 0
     end if
     if (CZ .lt. -1.0e-3) then
-        BITZ = 1
+        bitZ = 1
     else if (CZ .gt. 1.0e-3) then
-        BITZ = 0
+        bitZ = 0
     else
         stop 'Error [_integrateSrc]: Bad muRay.'
     end if
-    IOCT = 1 + BITX + 2*BITY + 4*BITZ
+    iOct = 1 + bitX + 2*bitY + 4*bitZ
     XM = 0.5*(rtm_obj_%x(1) + rtm_obj_%x(rtm_obj_%Nx))
     YM = 0.5*(rtm_obj_%y(1) + rtm_obj_%y(rtm_obj_%Ny))
 
@@ -1041,7 +1041,7 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
         ! Find boundaries of the current cell
         ! Find the three possible intersection planes (X,Y,Z)
         ! from the coordinates of the opposite corner grid point
-        IOPP = i8Grid_Cell_(9 - IOCT, icell)
+        IOPP = i8Grid_Cell_(9 - iOct, icell)
         ! Get the distances to the 3 planes and select the closest
         !   (always need to deal with the cell that is wrapped)
         if (IPINX .or. CX .eq. 0.0) then
@@ -1131,15 +1131,15 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
 
         ! Get the intersection face number (i.e. neighptr index)
         if (SOX .le. SOZ .and. SOX .le. SOY) then
-            IFACE = 2 - BITX
+            IFACE = 2 - bitX
             JFACE = 1
             OPENBCFACE = btest(int(flag_Cell_(icell)), 0) .and. isOpenX_
         else if (SOY .le. SOZ) then
-            IFACE = 4 - BITY
+            IFACE = 4 - bitY
             JFACE = 2
             OPENBCFACE = btest(int(flag_Cell_(icell)), 1) .and. isOpenYx_
         else
-            IFACE = 6 - BITZ
+            IFACE = 6 - bitZ
             JFACE = 3
             OPENBCFACE = .false.
         end if
@@ -1167,11 +1167,11 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
         ! Get the location coordinate
         if (INEXTCELL .gt. 0) then
             if (JFACE .eq. 1) then
-                XN = xyz_Rtm_(1, i8Grid_Cell_(IOCT, INEXTCELL))
+                XN = xyz_Rtm_(1, i8Grid_Cell_(iOct, INEXTCELL))
             else if (JFACE .eq. 2) then
-                YN = xyz_Rtm_(2, i8Grid_Cell_(IOCT, INEXTCELL))
+                YN = xyz_Rtm_(2, i8Grid_Cell_(iOct, INEXTCELL))
             else
-                ZN = xyz_Rtm_(3, i8Grid_Cell_(IOCT, INEXTCELL))
+                ZN = xyz_Rtm_(3, i8Grid_Cell_(iOct, INEXTCELL))
             end if
         end if
 
@@ -1360,7 +1360,7 @@ subroutine shd_src__computeSrcOneCell(&
     &NSTOKES, ML, MM, NLM,&
     &NPTS, doDeltaM, SRCTYPE, muSun,&
     &fluxDir,&
-    &isrcJ_Shdo, srcJ_Shdo, YlmRay, YlmSun, SUNDIRLEG, scatVect,&
+    &isrcJ_Shdo, srcJ_Shdo, YlmRay, YlmSun, legScat, scatVect,&
     &DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
     &EXTINCT8, SRCEXT8)
 
@@ -1382,7 +1382,7 @@ subroutine shd_src__computeSrcOneCell(&
     real scatVect(NSTOKES, prp_obj_%Npha)
     real OEXTINCT8(8), OSRCEXT8(NSTOKES, 8)
     real EXTINCT8(8), SRCEXT8(NSTOKES, 8)
-    real(RD_) :: SUNDIRLEG(0:prp_obj_%Nleg)
+    real(RD_) :: legScat(0:prp_obj_%Nleg)
     character(len=1) :: SRCTYPE
 
     integer IP, J, JT, L, M, MS, ME, IPH, IS, NS, N, I
@@ -1469,7 +1469,7 @@ subroutine shd_src__computeSrcOneCell(&
                         else
                             A = DA*leg_Rtm_(1, L, IPH)/(1 - F)
                         end if
-                        SRCEXT8(1, N) = SRCEXT8(1, N) + A*SUNDIRLEG(L)
+                        SRCEXT8(1, N) = SRCEXT8(1, N) + A*legScat(L)
                     end do
                 end if
             end if
@@ -1487,7 +1487,7 @@ subroutine shd_src__computeSrcOneCell_(&
     &ML, MM, NLM,&
     &NPTS, doDeltaM, SRCTYPE, muSun,&
     &fluxDir,&
-    &isrcJ_Shdo, srcJ_Shdo, YlmRay, YlmSun, SUNDIRLEG, scatVect,&
+    &isrcJ_Shdo, srcJ_Shdo, YlmRay, YlmSun, legScat, scatVect,&
     &DONETHIS, OLDIPTS, OEXTINCT8, OSRCEXT8,&
     &EXTINCT8, SRCEXT8)
 
@@ -1509,7 +1509,7 @@ subroutine shd_src__computeSrcOneCell_(&
     real scatVect(prp_obj_%Npha)
     real OEXTINCT8(8), OSRCEXT8(8)
     real EXTINCT8(8), SRCEXT8(8)
-    real(RD_) :: SUNDIRLEG(0:prp_obj_%Nleg)
+    real(RD_) :: legScat(0:prp_obj_%Nleg)
     character(len=1) :: SRCTYPE
 
     integer IP, J, JT, L, M, MS, ME, IPH, IS, NS, N, I
@@ -1589,7 +1589,7 @@ subroutine shd_src__computeSrcOneCell_(&
                         else
                             A = DA*leg_Rtm_(1, L, IPH)/(1 - F)
                         end if
-                        SRCEXT8(N) = SRCEXT8(N) + A*SUNDIRLEG(L)
+                        SRCEXT8(N) = SRCEXT8(N) + A*legScat(L)
                     end do
                 end if
             end if

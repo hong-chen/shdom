@@ -311,8 +311,8 @@ subroutine shd_init__makeCell(rtm_obj, &
     !   xyz_Rtm(3,IP) : X,Y,Z coordinate values of grid point locations
     !   i8Grid_Cell(8,IC) : pointer to 8 grid points belonging to a cell.
     !                   Order of pointers is based on binary digits Z-Y-X:
-    !                   IOCT = 1 + BITX + 2*BITY + 4*BITZ, where
-    !                   BITc is 0 for negative side and 1 for positive side.
+    !                   iOct = 1 + bitX + 2*bitY + 4*bitZ, where
+    !                   bit is 0 for negative side and 1 for positive side.
     !                   1: (-X, -Y, -Z), 2: (+X, -Y, -Z), 3: (-X, +Y, -Z), 4: (+X, +Y, -Z)
     !                   5: (-X, -Y, +Z), 6: (+X, -Y, +Z), 7: (-X, +Y, +Z), 8: (+X, +Y, +Z)
     !   i6Cell_Cell(6,IC): pointer to 6 neighboring cells of a cell.

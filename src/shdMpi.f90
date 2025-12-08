@@ -134,7 +134,7 @@ module shd_mpi
 #if HAS_MPI
     private :: shd_mpi__optimizeProcDomain
     private :: shd_mpi__ran
-    private :: shd_mpi__integrateRay
+    private :: shd_mpi__integrateRadRay
     private :: loadObject
 
     integer :: Nproc_, myProc_, iProcNeigh_(4), ixyPrp_(2, 2), ixySfc_(2, 2), ixyOut_(2, 2)
@@ -1518,8 +1518,8 @@ subroutine shd_mpi__findBndryPts(BCFLAG, IPFLAG, SWEEPORD,&
     ! For each of the potentially eight octants there are
     ! two sets of boundary pointers; 1 is for the current subdomain,
     ! and 2 is for the neighboring subdomain.
-    ! Fills in the BxyPtr_(:,IBC,JOCT) and BxyPos_(:,IBC,JOCT) arrays
-    ! (module variables), where IBC is a boundary point index and JOCT is
+    ! Fills in the BxyPtr_(:,IBC,jOct) and BxyPos_(:,IBC,jOct) arrays
+    ! (module variables), where IBC is a boundary point index and jOct is
     ! a sort of octant number. BxyPtr_ holds (iproc,IPT,SIDE) for the boundary
     ! grid points from grid point IPT in processor iproc that are on the SIDE
     ! boundary of this subdomain (SIDE: 1=-X, 2=+X, 3=-Y, 4=+Y).  BxyPos_ holds
@@ -1530,9 +1530,9 @@ subroutine shd_mpi__findBndryPts(BCFLAG, IPFLAG, SWEEPORD,&
 
 #if HAS_MPI
     integer :: tag, ierr, irq
-    integer :: MAXNBXY, NOCT, JOCT, IORDER, IPCELL, ICORNER, IPT, SIDE
+    integer :: MAXNBXY, NOCT, jOct, IORDER, IPCELL, ICORNER, IPT, SIDE
     integer :: L, LI, N(4), N1(8, 4), N2(8, 4), NS, NBX, NBY
-    integer :: MAXBC, IBC, BITZ, SZ, EZ, DZ, LX, LY, IX, IY, IZ, J
+    integer :: MAXBC, IBC, bitZ, SZ, EZ, DZ, LX, LY, IX, IY, IZ, J
     integer :: INOUT_ARR(4) = (/2, 1, 4, 3/)
     integer, save :: OLDNPTS = 0
     logical :: SAMEGRID
@@ -1549,8 +1549,8 @@ subroutine shd_mpi__findBndryPts(BCFLAG, IPFLAG, SWEEPORD,&
     OLDNPTS = rtm_obj_%Npts
     if (SAMEGRID) return
 
-    ! IOCT=1+BITX+2*BITY+4*BITZ ; JOCT=JOCTORDER(IOCT) = (/ 1,3,5,7,2,4,6,8 /)
-    ! CX<0: BITX=1, JOCT=3,7,4,8      CY<0: BITY=1, JOCT=5,7,6,8
+    ! iOct=1+bitX+2*bitY+4*bitZ ; jOct=jOctOrder(iOct) = (/ 1,3,5,7,2,4,6,8 /)
+    ! CX<0: bitX=1, jOct=3,7,4,8      CY<0: bitY=1, jOct=5,7,6,8
     XEDGE(:) = (/rtm_obj_%x(Nx), rtm_obj_%x(Nx), rtm_obj_%x(1), rtm_obj_%x(1), rtm_obj_%x(Nx), rtm_obj_%x(Nx), rtm_obj_%x(1), rtm_obj_%x(1)/)
     YEDGE(:) = (/rtm_obj_%y(Ny), rtm_obj_%y(Ny), rtm_obj_%y(Ny), rtm_obj_%y(Ny), rtm_obj_%y(1), rtm_obj_%y(1), rtm_obj_%y(1), rtm_obj_%y(1)/)
     XYB(1) = rtm_obj_%x(1); XYB(2) = rtm_obj_%x(Nx)
@@ -1573,39 +1573,39 @@ subroutine shd_mpi__findBndryPts(BCFLAG, IPFLAG, SWEEPORD,&
     allocate(BNDPTR(NOCT, MAXNBXY, 2, 4), BNDPOS(3, NOCT, MAXNBXY, 2, 4))
 
     N1(:, :) = 0
-    do JOCT = 1, NOCT
-        BITZ = 1 - ibits(JOCT, 0, 1)
+    do jOct = 1, NOCT
+        bitZ = 1 - ibits(jOct, 0, 1)
         N(:) = 0
         do IORDER = 1, rtm_obj_%Npts
-            IPCELL = ishft(SWEEPORD(IORDER, JOCT), -3)
-            ICORNER = ibits(SWEEPORD(IORDER, JOCT), 0, 3) + 1
+            IPCELL = ishft(SWEEPORD(IORDER, jOct), -3)
+            ICORNER = ibits(SWEEPORD(IORDER, jOct), 0, 3) + 1
             IPT = i8Grid_Cell_(ICORNER, IPCELL)
 
-            if  ((xyz_Rtm_(3, IPT) .lt. rtm_obj_%z(Nz) .and. BITZ .eq. 0) .or.&
-                &(xyz_Rtm_(3, IPT) .gt. rtm_obj_%z(1) .and. BITZ .eq. 1)) then
-                if (isMpiX_ .and. xyz_Rtm_(1, IPT) .eq. XEDGE(JOCT)&
+            if  ((xyz_Rtm_(3, IPT) .lt. rtm_obj_%z(Nz) .and. bitZ .eq. 0) .or.&
+                &(xyz_Rtm_(3, IPT) .gt. rtm_obj_%z(1) .and. bitZ .eq. 1)) then
+                if (isMpiX_ .and. xyz_Rtm_(1, IPT) .eq. XEDGE(jOct)&
                     &.and. .not. is1DX_) then
-                    SIDE = 2 - ibits(JOCT - 1, 1, 1)
+                    SIDE = 2 - ibits(jOct - 1, 1, 1)
                     N(SIDE) = N(SIDE) + 1
                     if (N(SIDE) .gt. MAXNBXY) then
                         call shd_mpi__abort('Error [mpi__findBndryPts]: MAXNBXY exceeded by N(SIDE) 1x.')
                     end if
-                    BNDPTR(JOCT, N(SIDE), 1, SIDE) = IPT
-                    BNDPOS(:, JOCT, N(SIDE), 1, SIDE) = xyz_Rtm_(:, IPT)
+                    BNDPTR(jOct, N(SIDE), 1, SIDE) = IPT
+                    BNDPOS(:, jOct, N(SIDE), 1, SIDE) = xyz_Rtm_(:, IPT)
                 end if
-                if (isMpiY_ .and. xyz_Rtm_(2, IPT) .eq. YEDGE(JOCT)&
+                if (isMpiY_ .and. xyz_Rtm_(2, IPT) .eq. YEDGE(jOct)&
                     &.and. .not. is1DYx_) then
-                    SIDE = 4 - ibits(JOCT - 1, 2, 1)
+                    SIDE = 4 - ibits(jOct - 1, 2, 1)
                     N(SIDE) = N(SIDE) + 1
                     if (N(SIDE) .gt. MAXNBXY) then
                         call shd_mpi__abort('Error [mpi__findBndryPts]: MAXNBXY exceeded by N(SIDE) 1y.')
                     end if
-                    BNDPTR(JOCT, N(SIDE), 1, SIDE) = IPT
-                    BNDPOS(:, JOCT, N(SIDE), 1, SIDE) = xyz_Rtm_(:, IPT)
+                    BNDPTR(jOct, N(SIDE), 1, SIDE) = IPT
+                    BNDPOS(:, jOct, N(SIDE), 1, SIDE) = xyz_Rtm_(:, IPT)
                 end if
             end if
         end do
-        N1(JOCT, :) = N(:)
+        N1(jOct, :) = N(:)
     end do
 
     NS = maxval(N1(:, :))
@@ -1647,51 +1647,51 @@ subroutine shd_mpi__findBndryPts(BCFLAG, IPFLAG, SWEEPORD,&
     ! Put the boundary points from the neighboring subdomains in the
     ! BxyPtr_ and BxyPos_ arrays.  Merge in X and Y boundary points one Z slab
     ! at a time, and set pointers (iBxyPtr_) to start and end of each slab.
-    !  DO IBC = iBxyPtr_(1,IZ,JOCT), iBxyPtr_(2,IZ,JOCT)
-    !    X=BxyPos_(1,IBC,JOCT) ; Y=BxyPos_(2,IBC,JOCT) ; Z=BxyPos_(3,IBC,JOCT)
-    !    iproc=BxyPtr_(1,IBC,JOCT) ; IPT=BxyPtr_(2,IBC,JOCT) ; SIDE=BxyPtr_(2,IBC,JOCT)
+    !  DO IBC = iBxyPtr_(1,IZ,jOct), iBxyPtr_(2,IZ,jOct)
+    !    X=BxyPos_(1,IBC,jOct) ; Y=BxyPos_(2,IBC,jOct) ; Z=BxyPos_(3,IBC,jOct)
+    !    iproc=BxyPtr_(1,IBC,jOct) ; IPT=BxyPtr_(2,IBC,jOct) ; SIDE=BxyPtr_(2,IBC,jOct)
 
-    do JOCT = 1, NOCT
-        BITZ = 1 - ibits(JOCT, 0, 1)
-        DZ = 2*BITZ - 1
-        LX = 1 + ibits(JOCT - 1, 1, 1)
-        LY = 3 + ibits(JOCT - 1, 2, 1)
+    do jOct = 1, NOCT
+        bitZ = 1 - ibits(jOct, 0, 1)
+        DZ = 2*bitZ - 1
+        LX = 1 + ibits(jOct - 1, 1, 1)
+        LY = 3 + ibits(jOct - 1, 2, 1)
         ! Combine the indices to the X and Y boundary points and sort on Z
-        NBX = 0; if (isMpiX_) NBX = N2(JOCT, LX)
-        NBY = 0; if (isMpiY_) NBY = N2(JOCT, LY)
+        NBX = 0; if (isMpiX_) NBX = N2(jOct, LX)
+        NBY = 0; if (isMpiY_) NBY = N2(jOct, LY)
         allocate(ZARRAY(NBX + NBY), INDX(NBX + NBY))
-        ZARRAY(1:NBX) = BNDPOS(3, JOCT, 1:NBX, 2, LX)
+        ZARRAY(1:NBX) = BNDPOS(3, jOct, 1:NBX, 2, LX)
         INDX(1:NBX) = (/(J, J=1, NBX)/)
-        ZARRAY(NBX + 1:NBX + NBY) = BNDPOS(3, JOCT, 1:NBY, 2, LY)
+        ZARRAY(NBX + 1:NBX + NBY) = BNDPOS(3, jOct, 1:NBY, 2, LY)
         INDX(NBX + 1:NBX + NBY) = (/(-J, J=1, NBY)/)
         call shd_util__ssort(ZARRAY, INDX, NBX + NBY, 2*DZ)
 
         ! For each Z slab use Z sorted index to transfer the X or Y boundary points
-        iBxyPtr_(:, :, JOCT) = 0
-        SZ = (Nz - 1)*(1 - BITZ) + 1 + DZ
-        EZ = (Nz - 1)*(BITZ) + 1
+        iBxyPtr_(:, :, jOct) = 0
+        SZ = (Nz - 1)*(1 - bitZ) + 1 + DZ
+        EZ = (Nz - 1)*(bitZ) + 1
         IBC = 0; J = 1
         do IZ = SZ, EZ, DZ
-            iBxyPtr_(1, IZ, JOCT) = IBC + 1
+            iBxyPtr_(1, IZ, jOct) = IBC + 1
             ! Store the boundary point info for this Z slab
             do while ((J .le. (NBX + NBY)) .and.&
-                &(((ZARRAY(J) .ge. rtm_obj_%z(IZ)) .and. (BITZ .eq. 0)) .or.&
-                 &((ZARRAY(J) .le. rtm_obj_%z(IZ)) .and. (BITZ .eq. 1))))
+                &(((ZARRAY(J) .ge. rtm_obj_%z(IZ)) .and. (bitZ .eq. 0)) .or.&
+                 &((ZARRAY(J) .le. rtm_obj_%z(IZ)) .and. (bitZ .eq. 1))))
                 IBC = IBC + 1
                 if (INDX(J) .gt. 0) then
                     IX = INDX(J)
-                    BxyPtr_(:, IBC, JOCT) = (/iProcNeigh_(LX), BNDPTR(JOCT, IX, 2, LX), LX/)
-                    BxyPos_(:, IBC, JOCT) = BNDPOS(:, JOCT, IX, 2, LX)
-                    BxyPos_(int((LX + 1)/2), IBC, JOCT) = XYB(LX)
+                    BxyPtr_(:, IBC, jOct) = (/iProcNeigh_(LX), BNDPTR(jOct, IX, 2, LX), LX/)
+                    BxyPos_(:, IBC, jOct) = BNDPOS(:, jOct, IX, 2, LX)
+                    BxyPos_(int((LX + 1)/2), IBC, jOct) = XYB(LX)
                 else
                     IY = abs(INDX(J))
-                    BxyPtr_(:, IBC, JOCT) = (/iProcNeigh_(LY), BNDPTR(JOCT, IY, 2, LY), LY/)
-                    BxyPos_(:, IBC, JOCT) = BNDPOS(:, JOCT, IY, 2, LY)
-                    BxyPos_(int((LY + 1)/2), IBC, JOCT) = XYB(LY)
+                    BxyPtr_(:, IBC, jOct) = (/iProcNeigh_(LY), BNDPTR(jOct, IY, 2, LY), LY/)
+                    BxyPos_(:, IBC, jOct) = BNDPOS(:, jOct, IY, 2, LY)
+                    BxyPos_(int((LY + 1)/2), IBC, jOct) = XYB(LY)
                 end if
                 J = J + 1
             end do
-            iBxyPtr_(2, IZ, JOCT) = IBC
+            iBxyPtr_(2, IZ, jOct) = IBC
         end do
         deallocate(ZARRAY, INDX)
     end do
@@ -1703,7 +1703,7 @@ subroutine shd_mpi__findBndryPts(BCFLAG, IPFLAG, SWEEPORD,&
 
 end subroutine shd_mpi__findBndryPts
 
-subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
+subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, jOct, IZ,&
     &Nx, Ny, Nz,&
     &NA,&
     &MU, PHI, EXTINCT, Nstokes, SOURCE,&
@@ -1714,13 +1714,13 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
     ! shd_mpi__findBndryPts has already been called to set up the BxyPtr_ and
     ! BxyPos_ arrays for the grid points on the boundaries, and the iBxyPtr_
     ! array which has the starting and ending points for the IZ slab.  The
-    ! grid points are done in the sweeping order, and so the octant (JOCT)
+    ! grid points are done in the sweeping order, and so the octant (jOct)
     ! is used to index into the iBxyPtr_, BxyPtr_, and BxyPos_ arrays.  The
     ! grid points specified in BxyPtr_/BxyPos_ are on the boundaries of this
     ! processor, and need to be traced back along the discrete ordinate
     ! first within this subdomain.  The radiative transfer integrations
     ! with the extinction (EXTINCT) and source function (SOURCE) are done
-    ! with the shd_mpi__integrateRay routine.  If the top or bottom boundary is
+    ! with the shd_mpi__integrateRadRay routine.  If the top or bottom boundary is
     ! hit when tracing back then the radiance is saved, otherwise the
     ! required information (X,Y,Z, transmission, partial radiance, original
     ! processor, and starting grid point) are saved to be sent to the
@@ -1730,7 +1730,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
     ! the finished radiance and original grid points are exchanged with
     ! all the other processors.
 
-    integer, intent(in) :: BCFLAG, IPFLAG, JOCT, IZ
+    integer, intent(in) :: BCFLAG, IPFLAG, jOct, IZ
     integer, intent(in) :: Nstokes, Nx, Ny, Nz, NA, KANG
     real, intent(in) :: MU, PHI
     real, intent(in) :: EXTINCT(rtm_obj_%Npts), SOURCE(Nstokes, NA, rtm_obj_%Npts)
@@ -1778,13 +1778,13 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
     Ndone(:) = 0
     NINVALID(:) = 0
     ! Loop over the downstream boundary points from the neighbor subdomains
-    do IBC = iBxyPtr_(1, IZ, JOCT), iBxyPtr_(2, IZ, JOCT)
-        ! Call shd_mpi__integrateRay for this
-        X = BxyPos_(1, IBC, JOCT); Y = BxyPos_(2, IBC, JOCT); Z = BxyPos_(3, IBC, JOCT)
-        iproc = BxyPtr_(1, IBC, JOCT); IPT = BxyPtr_(2, IBC, JOCT); SIDE = BxyPtr_(3, IBC, JOCT)
+    do IBC = iBxyPtr_(1, IZ, jOct), iBxyPtr_(2, IZ, jOct)
+        ! Call shd_mpi__integrateRadRay for this
+        X = BxyPos_(1, IBC, jOct); Y = BxyPos_(2, IBC, jOct); Z = BxyPos_(3, IBC, jOct)
+        iproc = BxyPtr_(1, IBC, jOct); IPT = BxyPtr_(2, IBC, jOct); SIDE = BxyPtr_(3, IBC, jOct)
         RADIANCE(:) = 0.0; TRANSMIT = 1.0
         xo = x; yo = y; zo = z
-        call shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
+        call shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
             &EXTINCT, Nstokes, SOURCE, KANG, GRIDRAD,&
             &MU, PHI, X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
 
@@ -1868,7 +1868,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
                 Z = BndRadRealInfo(3, J, Ldownx)
                 SIDE = Ldownx; TRANSMIT = BndRadRealInfo(4, J, Ldownx)
                 RADIANCE(:) = BndRadRealInfo(5:4 + Nstokes, J, Ldownx)
-                call shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
+                call shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
                     &EXTINCT, Nstokes, SOURCE, KANG, GRIDRAD,&
                     &MU, PHI, X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
 
@@ -1901,7 +1901,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, JOCT, IZ,&
                 Z = BndRadRealInfo(3, J, Ldowny)
                 SIDE = Ldowny; TRANSMIT = BndRadRealInfo(4, J, Ldowny)
                 RADIANCE(:) = BndRadRealInfo(5:4 + Nstokes, J, Ldowny)
-                call shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
+                call shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
                     &EXTINCT, Nstokes, SOURCE, KANG, GRIDRAD,&
                     &MU, PHI, X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
 
@@ -3243,7 +3243,7 @@ real function shd_mpi__ran(idum)
 
 end function shd_mpi__ran
 
-subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
+subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     &EXTINCT, Nstokes, SOURCE, KANG,&
     &GRIDRAD, MU, PHI,&
     &X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
@@ -3272,7 +3272,7 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     real, intent(inout) :: TRANSMIT, RADIANCE(Nstokes)
     logical, intent(out) :: VALIDRAD
 
-    integer :: BITX, BITY, BITZ, IOCT, NXC, NYC, BTEST
+    integer :: bitX, bitY, bitZ, iOct, NXC, NYC, BTEST
     integer :: IX, IY, IZ, IL, IM, IU, IPTR, DIR, ICELL, INEXTCELL
     integer :: I1, I2, I3, I4, IOPP, IFACE, JFACE, KFACE, IC
     integer :: GRIDFACE(4, 6), OPPFACE(6)
@@ -3296,26 +3296,26 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
         ratio_x, ratio_y)
 
     ! Setup the sweeping direction and the gridpoint location
-    !   BITc is 0 for positive direction trace back ray, 1 for negative.
+    !   bitc is 0 for positive direction trace back ray, 1 for negative.
     if (CX .lt. 0.0) then
-        BITX = 1
+        bitX = 1
     else
-        BITX = 0
+        bitX = 0
     end if
     if (CY .lt. 0.0) then
-        BITY = 1
+        bitY = 1
     else
-        BITY = 0
+        bitY = 0
     end if
     if (CZ .lt. -1.0e-3) then
-        BITZ = 1
+        bitZ = 1
     else if (CZ .gt. 1.0e-3) then
-        BITZ = 0
+        bitZ = 0
     else
         call shd_mpi__abort('Error [mpi__integrateRay]: Bad MU.')
     end if
-    ! IOCT is the octant the ray come from or the discrete ordinate goes to.
-    IOCT = 1 + BITX + 2*BITY + 4*BITZ
+    ! iOct is the octant the ray come from or the discrete ordinate goes to.
+    iOct = 1 + bitX + 2*bitY + 4*bitZ
 
     ! Find the base grid cell that the starting point is in; first in Z
     IL = 0
@@ -3421,7 +3421,7 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
         ! Find boundaries of the current cell
         !   Find the three possible intersection planes (X,Y,Z)
         !   from the coordinates of the opposite corner grid point
-        IOPP = i8Grid_Cell_(9 - IOCT, ICELL)
+        IOPP = i8Grid_Cell_(9 - iOct, ICELL)
         ! Get the distances to the 3 planes and select the closest
         if (IPINX) then
             SOX = 1.0e20
@@ -3446,13 +3446,13 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
 
         ! Get the intersection face number (i.e. ptr6Cell_Cellindex)
         if (SOX .le. SOZ .and. SOX .le. SOY) then
-            IFACE = 2 - BITX
+            IFACE = 2 - bitX
             JFACE = 1
         else if (SOY .le. SOZ) then
-            IFACE = 4 - BITY
+            IFACE = 4 - bitY
             JFACE = 2
         else
-            IFACE = 6 - BITZ
+            IFACE = 6 - bitZ
             JFACE = 3
         end if
         ! Get the next cell to go to
@@ -3511,11 +3511,11 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
         ! Get the location coordinate (does the boundary wrapping)
         if (INEXTCELL .gt. 0) then
             if (JFACE .eq. 1) then
-                XE = xyz_Rtm_(1, i8Grid_Cell_(IOCT, INEXTCELL))
+                XE = xyz_Rtm_(1, i8Grid_Cell_(iOct, INEXTCELL))
             else if (JFACE .eq. 2) then
-                YE = xyz_Rtm_(2, i8Grid_Cell_(IOCT, INEXTCELL))
+                YE = xyz_Rtm_(2, i8Grid_Cell_(iOct, INEXTCELL))
             else
-                ZE = xyz_Rtm_(3, i8Grid_Cell_(IOCT, INEXTCELL))
+                ZE = xyz_Rtm_(3, i8Grid_Cell_(iOct, INEXTCELL))
             end if
         end if
 
@@ -3589,7 +3589,7 @@ subroutine shd_mpi__integrateRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     TRANSMIT = TRANS
     SIDE = IFACE
 
-end subroutine shd_mpi__integrateRay
+end subroutine shd_mpi__integrateRadRay
 
 real function loadObject(BndLines, Nxd, Nyd, ProcCoordAll, wtproc,&
     &Ngrid, prpAll_obj)
