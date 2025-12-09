@@ -369,7 +369,7 @@ subroutine shd_grid__interpNewGridPts(newPts,&
     integer IS, NS, NS1, NS2
     integer IR, IR1, IR2, NR, NR1, NR2, SIDE
     logical VALIDBEAM
-    real X, Y, Z, F, BB, C, D, SECMU0
+    real X, Y, Z, F, BB, C, D, sec0
     real RAD1(shdo_obj_%Nstokes), RAD2(shdo_obj_%Nstokes)
     real UNIFZLEV, XO, YO, ZO, DIRPATH
     real(kind=R__) :: mu0
@@ -393,7 +393,7 @@ subroutine shd_grid__interpNewGridPts(newPts,&
     C = sqrt(4.0*PI_)
     if (src_obj_%doSolar) then
         if (.not. src_obj_%doVariableSolar) then
-            SECMU0 = 1.0d0/abs(src_obj_%mu0)
+            sec0 = 1.0d0/abs(src_obj_%mu0)
         end if
     end if
 
@@ -498,18 +498,18 @@ subroutine shd_grid__interpNewGridPts(newPts,&
 
             if (src_obj_%doVariableSolar) then
                 call shd_src__computeSunOnePts(IP, mu0, YlmSun)
-                SECMU0 = 1.0d0 / abs(mu0)
+                sec0 = 1.0d0 / abs(mu0)
             end if
 
             if (isPol_) then
                 call shd_src__computeSrcOnePts(shdo_obj_%Nstokes, shdo_obj_%Nlm, ilegJ,&
-                    &src_obj_%type, fluxDir(IP)*SECMU0, YlmSun,&
+                    &src_obj_%type, fluxDir(IP)*sec0, YlmSun,&
                     &planck_Rtm(IP), ssa_Rtm(IP), IPH, leg_Rtm,&
                     &NR, radI_Shdo(1, IR+1), srcTmp_Shdo)
                     !&NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcTmp_Shdo)
             else
                 call shd_src__computeSrcOnePts_(shdo_obj_%Nlm, ilegJ,&
-                    &src_obj_%type, fluxDir(IP)*SECMU0, YlmSun,&
+                    &src_obj_%type, fluxDir(IP)*sec0, YlmSun,&
                     &planck_Rtm(IP), ssa_Rtm(IP), IPH, leg_Rtm,&
                     &NR, radI_Shdo(1, IR+1), srcTmp_Shdo)
                     !&NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcTmp_Shdo)

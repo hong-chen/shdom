@@ -73,10 +73,10 @@ subroutine shd_scat__computePhase(&
     real PHASETAB(NSTPHASE, NUMPHASE, NSCATANGLE)
     integer IPH, I, J, L
     real(RD_) :: muScat, FCT, F, X, A1, B1
-    real(RD_), allocatable :: UNSCLEGEN(:, :)
+    real(RD_), allocatable :: legOri(:, :)
     real(RD_), allocatable :: DMM1(:), DMM2(:)
 
-    allocate(UNSCLEGEN(2, 0:NLEG), DMM1(0:NLEG), DMM2(0:NLEG))
+    allocate(legOri(2, 0:NLEG), DMM1(0:NLEG), DMM2(0:NLEG))
 
     do J = 1, NSCATANGLE
         muScat = cos(DPI_*DFLOAT(J - 1)/(NSCATANGLE - 1))
@@ -92,15 +92,15 @@ subroutine shd_scat__computePhase(&
             F = LEGEN(1, ML + 1, IPH)
             do L = 0, NLEG
                 if (L .le. ML) then
-                    UNSCLEGEN(1, L) = LEGEN(1, L, IPH) + F/(1 - F)
+                    legOri(1, L) = LEGEN(1, L, IPH) + F/(1 - F)
                 else
-                    UNSCLEGEN(1, L) = LEGEN(1, L, IPH)/(1 - F)
+                    legOri(1, L) = LEGEN(1, L, IPH)/(1 - F)
                 end if
                 if (NSTLEG .gt. 1) then
                     if (L .le. ML) then
-                        UNSCLEGEN(2, L) = LEGEN(5, L, IPH)
+                        legOri(2, L) = LEGEN(5, L, IPH)
                     else
-                        UNSCLEGEN(2, L) = LEGEN(5, L, IPH)/(1 - F)
+                        legOri(2, L) = LEGEN(5, L, IPH)/(1 - F)
                     end if
                 end if
             end do
@@ -109,7 +109,7 @@ subroutine shd_scat__computePhase(&
             A1 = 0.0d0
             do L = 0, NLEG
                 FCT = 2.0d0*L + 1.0d0
-                A1 = A1 + FCT*dble(UNSCLEGEN(1, L))*DMM1(L)
+                A1 = A1 + FCT*dble(legOri(1, L))*DMM1(L)
             end do
             if (A1 .le. 0.0) then
                 write(6, *) 'Error [_computePhase]: negative phase function',&
@@ -123,14 +123,14 @@ subroutine shd_scat__computePhase(&
                 B1 = 0.0d0
                 do L = 0, NLEG
                     FCT = 2.0d0*L + 1.0d0
-                    B1 = B1 - FCT*dble(UNSCLEGEN(2, L))*DMM2(L)
+                    B1 = B1 - FCT*dble(legOri(2, L))*DMM2(L)
                 end do
                 PHASETAB(2, IPH, J) = sngl(B1*DO4PI_)
             end if
         end do
     end do
 
-    deallocate(UNSCLEGEN, DMM1, DMM2)
+    deallocate(legOri, DMM1, DMM2)
 
     return
 

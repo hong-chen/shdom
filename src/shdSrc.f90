@@ -147,7 +147,7 @@ subroutine shd_src__computeSrcSH(&
     integer, allocatable :: ilegJ(:)
     real(kind=R__) :: mu0
     real, allocatable :: srcTmp_Shdo(:, :)
-    real SRCMIN, SECMU0, D
+    real SRCMIN, sec0, D
 
     allocate(ilegJ(shdo_obj_%Nlm), &
         srcTmp_Shdo(shdo_obj_%Nstokes, shdo_obj_%Nlm))
@@ -158,7 +158,7 @@ subroutine shd_src__computeSrcSH(&
     !   Solar source: fluxDir has F0*exp(-tau)
     !   Thermal source: planck_Rtm_ has (1-omega)*B(T)
     if (.not. src_obj_%doVariableSolar) then
-        SECMU0 = 1.0d0/abs(src_obj_%mu0)
+        sec0 = 1.0d0/abs(src_obj_%mu0)
     end if
 
     ! Make the l index as a function of SH term (J)
@@ -197,18 +197,18 @@ subroutine shd_src__computeSrcSH(&
 
             if (src_obj_%doVariableSolar) then
                 call shd_src__computeSunOnePts(I, mu0, YlmSun)
-                SECMU0 = 1.0d0 / abs(mu0)
+                sec0 = 1.0d0 / abs(mu0)
             end if
 
             if (isPol_) then
                 call shd_src__computeSrcOnePts(shdo_obj_%Nstokes, shdo_obj_%Nlm, ilegJ,&
-                    &src_obj_%type, fluxDir(I)*SECMU0, YlmSun,&
+                    &src_obj_%type, fluxDir(I)*sec0, YlmSun,&
                     &planck_Rtm_(I), ssa_Rtm_(I), IPH, leg_Rtm_,&
                     &NR, radI_Shdo(1, IR+1), srcTmp_Shdo)
                     !&NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcTmp_Shdo)
             else
                 call shd_src__computeSrcOnePts_(shdo_obj_%Nlm, ilegJ,&
-                    src_obj_%type, fluxDir(I)*SECMU0, YlmSun,&
+                    src_obj_%type, fluxDir(I)*sec0, YlmSun,&
                     planck_Rtm_(I), ssa_Rtm_(I), IPH, leg_Rtm_,&
                     NR, radI_Shdo(1, IR+1), srcTmp_Shdo)
                     !&NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcTmp_Shdo)
@@ -258,18 +258,18 @@ subroutine shd_src__computeSrcSH(&
 
             if (src_obj_%doVariableSolar) then
                 call shd_src__computeSunOnePts(I, mu0, YlmSun)
-                SECMU0 = 1.0d0 / abs(mu0)
+                sec0 = 1.0d0 / abs(mu0)
             end if
 
             if (isPol_) then
                 call shd_src__computeSrcOnePts(shdo_obj_%Nstokes, shdo_obj_%Nlm, ilegJ,&
-                    &src_obj_%type, fluxDir(I)*SECMU0, YlmSun,&
+                    &src_obj_%type, fluxDir(I)*sec0, YlmSun,&
                     &planck_Rtm_(I), ssa_Rtm_(I), IPH, leg_Rtm_,&
                     &NR, radI_Shdo(1, IR+1), srcTmp_Shdo)
                     !&NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcTmp_Shdo)
             else
                 call shd_src__computeSrcOnePts_(shdo_obj_%Nlm, ilegJ,&
-                    &src_obj_%type, fluxDir(I)*SECMU0, YlmSun,&
+                    &src_obj_%type, fluxDir(I)*sec0, YlmSun,&
                     &planck_Rtm_(I), ssa_Rtm_(I), IPH, leg_Rtm_,&
                     &NR, radI_Shdo(1, IR+1), srcTmp_Shdo)
                     !&NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcTmp_Shdo)
@@ -305,18 +305,18 @@ subroutine shd_src__computeSrcSH(&
 
         if (src_obj_%doVariableSolar) then
             call shd_src__computeSunOnePts(I, mu0, YlmSun)
-            SECMU0 = 1.0d0 / abs(mu0)
+            sec0 = 1.0d0 / abs(mu0)
         end if
 
         if (isPol_) then
             call shd_src__computeSrcOnePts(shdo_obj_%Nstokes, shdo_obj_%Nlm, ilegJ,&
-                &src_obj_%type, fluxDir(I)*SECMU0, YlmSun,&
+                &src_obj_%type, fluxDir(I)*sec0, YlmSun,&
                 &planck_Rtm_(I), ssa_Rtm_(I), IPH, leg_Rtm_,&
                 &NR, radI_Shdo(1, IR+1), srcTmp_Shdo)
                 !&NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcTmp_Shdo)
         else
             call shd_src__computeSrcOnePts_(shdo_obj_%Nlm, ilegJ,&
-                &src_obj_%type, fluxDir(I)*SECMU0, YlmSun,&
+                &src_obj_%type, fluxDir(I)*sec0, YlmSun,&
                 &planck_Rtm_(I), ssa_Rtm_(I), IPH, leg_Rtm_,&
                 &NR, radI_Shdo(1, IR+1), srcTmp_Shdo)
                 !&NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcTmp_Shdo)
@@ -393,9 +393,9 @@ subroutine shd_src__computeSrcDir(&
     real(kind=R__), intent(out) :: srcRay_Shdo(shdo_obj_%Nstokes, rtm_obj_%Npts)
 
     integer :: I, J, JT, K, L, M, N, IPH, IS, NS, ME, MS
-    real :: DA, F, A, A1, B1, SECMU0, muScat
+    real :: DA, F, A, A1, B1, sec0, muScat
     real, allocatable :: YlmRay(:, :), YlmSun(:, :)
-    real, allocatable :: UNSCLEGEN(:, :), scatVect(:, :)
+    real, allocatable :: legOri(:, :), scatVect(:, :)
     real(RD_), allocatable :: legScat(:)
 
     logical :: doTMS
@@ -403,7 +403,7 @@ subroutine shd_src__computeSrcDir(&
     allocate(YlmRay(prp_obj_%NlegSet, shdo_obj_%Nlm), &
              YlmSun(prp_obj_%NlegSet, shdo_obj_%Nlm))
     allocate(legScat(0:prp_obj_%Nleg))
-    allocate(UNSCLEGEN(2, 0:prp_obj_%Nleg), scatVect(shdo_obj_%Nstokes, prp_obj_%Npha))
+    allocate(legOri(2, 0:prp_obj_%Nleg), scatVect(shdo_obj_%Nstokes, prp_obj_%Npha))
     if (abs(muRay) .gt. 1.0) stop 'Error [_computeOneSrc]: Bad muRay.'
 
     doTMS = doDeltaM
@@ -422,7 +422,7 @@ subroutine shd_src__computeSrcDir(&
             shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet,&
             &YlmSun)
 
-        SECMU0 = 1.0/abs(src_obj_%mu0)
+        sec0 = 1.0/abs(src_obj_%mu0)
 
         muScat = src_obj_%mu0*muRay + sqrt((1.0d0 - src_obj_%mu0**2)*&
                                              (1.0d0 - muRay**2))*&
@@ -449,21 +449,21 @@ subroutine shd_src__computeSrcDir(&
             F = leg_Rtm_(1, shdo_obj_%maxNl + 1, IPH)
             do L = 0, prp_obj_%Nleg
                 if (L .le. shdo_obj_%maxNl) then
-                    UNSCLEGEN(1, L) = leg_Rtm_(1, L, IPH) + F/(1 - F)
+                    legOri(1, L) = leg_Rtm_(1, L, IPH) + F/(1 - F)
                 else
-                    UNSCLEGEN(1, L) = leg_Rtm_(1, L, IPH)/(1 - F)
+                    legOri(1, L) = leg_Rtm_(1, L, IPH)/(1 - F)
                 end if
                 if (prp_obj_%NlegSet .gt. 1) then
                     if (L .le. shdo_obj_%maxNl) then
-                        UNSCLEGEN(2, L) = leg_Rtm_(5, L, IPH)
+                        legOri(2, L) = leg_Rtm_(5, L, IPH)
                     else
-                        UNSCLEGEN(2, L) = leg_Rtm_(5, L, IPH)/(1 - F)
+                        legOri(2, L) = leg_Rtm_(5, L, IPH)/(1 - F)
                     end if
                 end if
             end do
             ! Sum the Wigner series (for A1 and B1), rotate the plane of
             !   polarization to the outgoing direction, and return the Stoke
-            call shd_src__computeSolarStokesVect(UNSCLEGEN, muScat,&
+            call shd_src__computeSolarStokesVect(legOri, muScat,&
                 &src_obj_%mu0, muRay, src_obj_%phi0 - phiRay, shdo_obj_%Nstokes,&
                 &scatVect(1, IPH))
             if (scatVect(1, IPH) .le. 0.0) then
@@ -507,7 +507,7 @@ subroutine shd_src__computeSrcDir(&
                 IPH = I
             end if
             ! First subtract off the truncated single scattering
-            DA = ssa_Rtm_(I)*fluxDir(I)*SECMU0
+            DA = ssa_Rtm_(I)*fluxDir(I)*sec0
             J = 1
             do L = 0, shdo_obj_%maxNl
                 ME = min(L, shdo_obj_%maxNm)
@@ -554,7 +554,7 @@ subroutine shd_src__computeSrcDir(&
         end if
     end do
 
-    deallocate(YlmRay, YlmSun, legScat, UNSCLEGEN, scatVect)
+    deallocate(YlmRay, YlmSun, legScat, legOri, scatVect)
 
     return
 
@@ -1386,9 +1386,9 @@ subroutine shd_src__computeSrcOneCell(&
     character(len=1) :: SRCTYPE
 
     integer IP, J, JT, L, M, MS, ME, IPH, IS, NS, N, I
-    real SECMU0, F, DA, A, A1, B1
+    real sec0, F, DA, A, A1, B1
 
-    SECMU0 = 1.0d0/abs(muSun)
+    sec0 = 1.0d0/abs(muSun)
 
     ! Loop over the grid points, computing the source function
     !   at the viewing angle from the spherical harmonics source fun
@@ -1434,7 +1434,7 @@ subroutine shd_src__computeSrcOneCell(&
                     IPH = IP
                 end if
                 ! First subtract off the truncated single scattering
-                DA = ssa_Rtm_(IP)*fluxDir(IP)*SECMU0
+                DA = ssa_Rtm_(IP)*fluxDir(IP)*sec0
                 J = 1
                 do L = 0, ML
                     ME = min(L, MM)
@@ -1513,10 +1513,10 @@ subroutine shd_src__computeSrcOneCell_(&
     character(len=1) :: SRCTYPE
 
     integer IP, J, JT, L, M, MS, ME, IPH, IS, NS, N, I
-    real SECMU0, F, DA, A, A1, B1
+    real sec0, F, DA, A, A1, B1
 
     if (.not. src_obj_%doVariableSolar) then
-        SECMU0 = 1.0d0/abs(muSun)
+        sec0 = 1.0d0/abs(muSun)
     end if
 
     ! Loop over the grid points, computing the source function
@@ -1553,7 +1553,7 @@ subroutine shd_src__computeSrcOneCell_(&
 
                 if (src_obj_%doVariableSolar) then
                     call shd_src__computeSunOnePts(IP, mu0, YlmSun)
-                    SECMU0 = 1.0d0 / abs(mu0)
+                    sec0 = 1.0d0 / abs(mu0)
                 end if
 
                 if (prp_obj_%Npha .gt. 0) then
@@ -1563,7 +1563,7 @@ subroutine shd_src__computeSrcOneCell_(&
                 end if
 
                 ! First subtract off the truncated single scattering
-                DA = ssa_Rtm_(IP)*fluxDir(IP)*SECMU0
+                DA = ssa_Rtm_(IP)*fluxDir(IP)*sec0
                 J = 1
                 do L = 0, ML
                     ME = min(L, MM)
