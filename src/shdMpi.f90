@@ -1706,11 +1706,11 @@ end subroutine shd_mpi__findBndryPts
 subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, jOct, IZ,&
     &Nx, Ny, Nz,&
     &NA,&
-    &MU, PHI, EXTINCT, Nstokes, SOURCE,&
+    &muRay, phiRay, EXTINCT, Nstokes, SOURCE,&
     &KANG, GRIDRAD)
 
     ! Calculates the discrete ordinate boundary radiances for the KANG discrete
-    ! ordinate (going in direction MU/PHI) for the grid points in the IZ slab.
+    ! ordinate (going in direction muRay/phiRay) for the grid points in the IZ slab.
     ! shd_mpi__findBndryPts has already been called to set up the BxyPtr_ and
     ! BxyPos_ arrays for the grid points on the boundaries, and the iBxyPtr_
     ! array which has the starting and ending points for the IZ slab.  The
@@ -1732,7 +1732,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, jOct, IZ,&
 
     integer, intent(in) :: BCFLAG, IPFLAG, jOct, IZ
     integer, intent(in) :: Nstokes, Nx, Ny, Nz, NA, KANG
-    real, intent(in) :: MU, PHI
+    real, intent(in) :: muRay, phiRay
     real, intent(in) :: EXTINCT(rtm_obj_%Npts), SOURCE(Nstokes, NA, rtm_obj_%Npts)
     real, intent(inout) :: GRIDRAD(Nstokes, rtm_obj_%Npts)
 
@@ -1760,14 +1760,14 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, jOct, IZ,&
 
     Lupx = 0; Lupy = 0; Ldownx = 0; Ldowny = 0
     if (isMpiX_) then
-        if (cos(PHI) .gt. 1.0e-5) then
+        if (cos(phiRay) .gt. 1.0e-5) then
             Ldownx = 2; Lupx = 1
         else
             Ldownx = 1; Lupx = 2
         end if
     end if
     if (isMpiY_) then
-        if (sin(PHI) .gt. 1.0e-5) then
+        if (sin(phiRay) .gt. 1.0e-5) then
             Ldowny = 4; Lupy = 3
         else
             Ldowny = 3; Lupy = 4
@@ -1786,7 +1786,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, jOct, IZ,&
         xo = x; yo = y; zo = z
         call shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
             &EXTINCT, Nstokes, SOURCE, KANG, GRIDRAD,&
-            &MU, PHI, X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
+            &muRay, phiRay, X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
 
         ! If we got a radiance then store it otherwise save
         !  the information needed to pass to other processors
@@ -1796,7 +1796,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, jOct, IZ,&
             RadPtrOut(Ndone(iproc), iproc) = IPT
         else
             if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
-                write(6, *) 'Bad SIDE 1:', myProc_, mu, phi, SIDE, x, y, z, xo, yo, zo
+                write(6, *) 'Bad SIDE 1:', myProc_, muRay, phiRay, SIDE, x, y, z, xo, yo, zo
                 call shd_mpi__abort('Error [mpi__calBndryRad]')
             end if
             NINVALID(SIDE) = NINVALID(SIDE) + 1
@@ -1870,7 +1870,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, jOct, IZ,&
                 RADIANCE(:) = BndRadRealInfo(5:4 + Nstokes, J, Ldownx)
                 call shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
                     &EXTINCT, Nstokes, SOURCE, KANG, GRIDRAD,&
-                    &MU, PHI, X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
+                    &muRay, phiRay, X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
 
                 ! If we got a radiance then store it in RadAllOut (if for another
                 !   processor) otherwise save the information needed to continue
@@ -1882,7 +1882,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, jOct, IZ,&
                     RadPtrOut(Ndone(iproc), iproc) = BndRadIntInfo(2, J, Ldownx)
                 else
                     if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
-                        write(6, *) 'Bad SIDE 2x:', myProc_, mu, phi, SIDE, x, y, z
+                        write(6, *) 'Bad SIDE 2x:', myProc_, muRay, phiRay, SIDE, x, y, z
                         call shd_mpi__abort('Error [mpi__calBndryRad]: Bad SIDE 2x, see above.')
                     end if
                     NINVALID(SIDE) = NINVALID(SIDE) + 1
@@ -1903,7 +1903,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, jOct, IZ,&
                 RADIANCE(:) = BndRadRealInfo(5:4 + Nstokes, J, Ldowny)
                 call shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
                     &EXTINCT, Nstokes, SOURCE, KANG, GRIDRAD,&
-                    &MU, PHI, X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
+                    &muRay, phiRay, X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
 
                 ! If we got a radiance then store it in RadAllOut (if for another
                 !   processor) otherwise save the information needed to continue
@@ -1915,7 +1915,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, jOct, IZ,&
                     RadPtrOut(Ndone(iproc), iproc) = BndRadIntInfo(2, J, Ldowny)
                 else
                     if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
-                        write(6, *) 'Bad SIDE 2y:', myProc_, mu, phi, SIDE, x, y, z
+                        write(6, *) 'Bad SIDE 2y:', myProc_, muRay, phiRay, SIDE, x, y, z
                         call shd_mpi__abort('Error [mpi__calBndryRad]: Bad SIDE 2y, see above.')
                     end if
                     NINVALID(SIDE) = NINVALID(SIDE) + 1
@@ -3245,11 +3245,11 @@ end function shd_mpi__ran
 
 subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     &EXTINCT, Nstokes, SOURCE, KANG,&
-    &GRIDRAD, MU, PHI,&
+    &GRIDRAD, muRay, phiRay,&
     &X, Y, Z, SIDE, TRANSMIT, RADIANCE, VALIDRAD)
 
     ! Integrates the radiative transfer equation tracing a ray starting
-    ! at X,Y,Z on boundary (face) SIDE to get the radiance in direction MU,PHI.
+    ! at X,Y,Z on boundary (face) SIDE to get the radiance in direction muRay,phiRay.
     ! The source function and extinction are integrated backwards from the
     ! starting point.  As each cell is crossed the integration of the source
     ! function across the cell is done and added to the radiance.  If there
@@ -3266,7 +3266,7 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     integer, intent(in) :: Nstokes, KANG
     real, intent(in) :: EXTINCT(rtm_obj_%Npts)
     real, intent(in) :: SOURCE(Nstokes, NA, rtm_obj_%Npts), GRIDRAD(Nstokes, rtm_obj_%Npts)
-    real, intent(in) :: MU, PHI
+    real, intent(in) :: muRay, phiRay
     real, intent(inout) :: X, Y, Z
     integer, intent(inout) :: SIDE
     real, intent(inout) :: TRANSMIT, RADIANCE(Nstokes)
@@ -3291,7 +3291,7 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     EPS = 1.0e-3*(xyz_Rtm_(3, i8Grid_Cell_(8, 1)) - xyz_Rtm_(3, i8Grid_Cell_(1, 1)))
 
     ! Make the ray direction (opposite to the discrete ordinate direction)
-    call shd_util__computeRayVect(dble(MU), dble(PHI), &
+    call shd_util__computeRayVect(dble(muRay), dble(phiRay), &
         CX, CY, CZ, CXINV, CYINV, CZINV, &
         ratio_x, ratio_y)
 
@@ -3312,7 +3312,7 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     else if (CZ .gt. 1.0e-3) then
         bitZ = 0
     else
-        call shd_mpi__abort('Error [mpi__integrateRay]: Bad MU.')
+        call shd_mpi__abort('Error [mpi__integrateRay]: Bad muRay.')
     end if
     ! iOct is the octant the ray come from or the discrete ordinate goes to.
     iOct = 1 + bitX + 2*bitY + 4*bitZ
@@ -3436,7 +3436,7 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
         SOZ = (xyz_Rtm_(3, IOPP) - ZE)*CZINV
         SO = min(SOX, SOY, SOZ)
         if (SO .lt. -EPS) then
-            write(6, *) 'SO<0: ', MU, PHI, X, Y, Z, SOX, SOY, SOZ, SO, ICELL, TRANS
+            write(6, *) 'SO<0: ', muRay, phiRay, X, Y, Z, SOX, SOY, SOZ, SO, ICELL, TRANS
             call shd_mpi__abort('Error [mpi__integrateRay]: SO<0, see above.')
         end if
         ! Compute the coordinates of the cell exitting location
@@ -3504,7 +3504,7 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
             end if
         end if
         if ((u .lt. -1.0e-4) .or. (v .lt. -1.0e-4) .or. (u .gt. 1.0001) .or. (v .gt. 1.0001)) then
-            write(6, *) 'u,v<0 and/or u,v>1: ', mu, phi, x, y, z, xe, ye, ze, u, v, ipinx, ipiny
+            write(6, *) 'u,v<0 and/or u,v>1: ', muRay, phiRay, x, y, z, xe, ye, ze, u, v, ipinx, ipiny
             call shd_mpi__abort('Error [mpi__integrateRay]: u,v<0 and/or u,v>1, see above.')
         end if
 
