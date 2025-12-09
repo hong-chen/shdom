@@ -58,8 +58,6 @@ module shd_shdo
     integer, parameter :: R__  = selected_real_kind(6) ! default precision for float
     integer, parameter :: I__  = selected_int_kind(9)  ! default precision for integer
 
-    public :: shd_shdo__computeSH
-
     public :: shd_shdo__makeSHDO
     public :: shd_shdo__makeSfcDO
 
@@ -71,6 +69,8 @@ module shd_shdo
     public :: shd_shdo__transSHtoDO
     public :: shd_shdo__transDOtoSH
 
+    public :: shd_shdo__computeSH
+
     public :: shd_shdo__makeAngle
 
     public :: shd_shdo__computeYlm
@@ -80,87 +80,6 @@ module shd_shdo
 
 
 contains
-
-subroutine shd_shdo__computeSH(&
-    &NSHOUT, NSTOKES, NPTS, SRCTYPE,&
-    &muSun, phiSun, fluxDir,&
-    &iradI_Shdo, ML, MM, radI_Shdo, SHTERMS)
-
-    !   Computes the quantities for the spherical harmonic output.
-    ! At each grid point the mean radiance and net flux (Fx, Fy, Fz)
-    ! are computed.  The output includes the diffuse and direct solar
-    ! components.  If NSHOUT=5 then the isHighOrder flag is set and the
-    ! rms of the higher order terms in the radiance series is computed.
-
-    integer NSTOKES, NPTS, iradI_Shdo(NPTS + 1), ML, MM, NSHOUT
-    real muSun, phiSun, fluxDir(NPTS)
-    real radI_Shdo(NSTOKES, *), SHTERMS(NSHOUT, NPTS)
-    character(len=1) :: SRCTYPE
-    integer I, IR, J, NLM
-    real A, C, C0, IMEAN, FX, FY, FZ, HORMS
-    real SECSOL, SINSOL, SOLX, SOLY, SOLM, F0
-    real, allocatable :: YlmSun(:)
-
-    NLM = (2*MM + 1)*(ML + 1) - MM*(MM + 1)
-    allocate(YlmSun(NLM))
-
-    ! Spherical Harmonic output: individual SH terms
-    A = sqrt(PI_*FRAC23_)
-    C = sqrt(PI_*FRAC43_)
-    C0 = 1.0/sqrt(4.0*PI_)
-    SECSOL = 1.0/abs(muSun)
-    SINSOL = sqrt(1.0 - muSun**2)
-    SOLX = SINSOL*cos(phiSun)*SECSOL
-    SOLY = SINSOL*sin(phiSun)*SECSOL
-    SOLM = SECSOL/(4.0*PI_)
-    F0 = 0.0
-    if (src_obj_%doSolar) then
-        call shd_shdo__computeYlm(.true., muSun, phiSun, ML, MM, 1, YlmSun)
-    end if
-    do I = 1, NPTS
-        IR = iradI_Shdo(I)
-        IMEAN = C0*radI_Shdo(1, IR + 1)
-        FZ = C*radI_Shdo(1, IR + 3)
-        if (MM .gt. 0) then
-            ! FX = -C*radI_Shdo(1,IR+4)   ! old spherical harmonics basis
-            ! real generaliz
-            FX = -A*(radI_Shdo(1, IR + 4) + radI_Shdo(1, IR + 2))
-        else
-            FX = 0.0
-        end if
-        if (MM .gt. 0) then
-            ! FY = -C*radI_Shdo(1,IR+2)
-            ! real generaliz
-            FY = -A*(radI_Shdo(1, IR + 2) - radI_Shdo(1, IR + 4))
-        else
-            FY = 0.0
-        end if
-        if (src_obj_%doSolar) then
-            IMEAN = IMEAN + fluxDir(I)*SOLM
-            FX = FX + fluxDir(I)*SOLX
-            FY = FY + fluxDir(I)*SOLY
-            FZ = FZ - fluxDir(I)
-        end if
-        SHTERMS(1, I) = IMEAN
-        SHTERMS(2, I) = FX
-        SHTERMS(3, I) = FY
-        SHTERMS(4, I) = FZ
-        if (NSHOUT .eq. 5) then
-            HORMS = 0.0
-            if (src_obj_%doSolar) then
-                F0 = SECSOL*fluxDir(I)
-            end if
-            do J = 5, iradI_Shdo(I + 1) - IR
-                HORMS = HORMS + (F0*YlmSun(J) + radI_Shdo(1, IR + J))**2
-            end do
-            SHTERMS(5, I) = sqrt(HORMS)
-        end if
-    end do
-    deallocate(YlmSun)
-
-    return
-
-end subroutine shd_shdo__computeSH
 
 subroutine shd_shdo__makeSHDO(NSTLEG, ML, MM, NLM, NMU, NPHI0,&
     &NPHI0MAX, MU, PHI, WTMU, WTDO, FFTFLAG,&
@@ -710,6 +629,87 @@ subroutine shd_shdo__transDOtoSH_(NPTS, ML, MM, NLM,&
     return
 
 end subroutine shd_shdo__transDOtoSH_
+
+subroutine shd_shdo__computeSH(&
+    &NSHOUT, NSTOKES, NPTS, SRCTYPE,&
+    &muSun, phiSun, fluxDir,&
+    &iradI_Shdo, ML, MM, radI_Shdo, SHTERMS)
+
+    !   Computes the quantities for the spherical harmonic output.
+    ! At each grid point the mean radiance and net flux (Fx, Fy, Fz)
+    ! are computed.  The output includes the diffuse and direct solar
+    ! components.  If NSHOUT=5 then the isHighOrder flag is set and the
+    ! rms of the higher order terms in the radiance series is computed.
+
+    integer NSTOKES, NPTS, iradI_Shdo(NPTS + 1), ML, MM, NSHOUT
+    real muSun, phiSun, fluxDir(NPTS)
+    real radI_Shdo(NSTOKES, *), SHTERMS(NSHOUT, NPTS)
+    character(len=1) :: SRCTYPE
+    integer I, IR, J, NLM
+    real A, C, C0, IMEAN, FX, FY, FZ, HORMS
+    real SECSOL, SINSOL, SOLX, SOLY, SOLM, F0
+    real, allocatable :: YlmSun(:)
+
+    NLM = (2*MM + 1)*(ML + 1) - MM*(MM + 1)
+    allocate(YlmSun(NLM))
+
+    ! Spherical Harmonic output: individual SH terms
+    A = sqrt(PI_*FRAC23_)
+    C = sqrt(PI_*FRAC43_)
+    C0 = 1.0/sqrt(4.0*PI_)
+    SECSOL = 1.0/abs(muSun)
+    SINSOL = sqrt(1.0 - muSun**2)
+    SOLX = SINSOL*cos(phiSun)*SECSOL
+    SOLY = SINSOL*sin(phiSun)*SECSOL
+    SOLM = SECSOL/(4.0*PI_)
+    F0 = 0.0
+    if (src_obj_%doSolar) then
+        call shd_shdo__computeYlm(.true., muSun, phiSun, ML, MM, 1, YlmSun)
+    end if
+    do I = 1, NPTS
+        IR = iradI_Shdo(I)
+        IMEAN = C0*radI_Shdo(1, IR + 1)
+        FZ = C*radI_Shdo(1, IR + 3)
+        if (MM .gt. 0) then
+            ! FX = -C*radI_Shdo(1,IR+4)   ! old spherical harmonics basis
+            ! real generaliz
+            FX = -A*(radI_Shdo(1, IR + 4) + radI_Shdo(1, IR + 2))
+        else
+            FX = 0.0
+        end if
+        if (MM .gt. 0) then
+            ! FY = -C*radI_Shdo(1,IR+2)
+            ! real generaliz
+            FY = -A*(radI_Shdo(1, IR + 2) - radI_Shdo(1, IR + 4))
+        else
+            FY = 0.0
+        end if
+        if (src_obj_%doSolar) then
+            IMEAN = IMEAN + fluxDir(I)*SOLM
+            FX = FX + fluxDir(I)*SOLX
+            FY = FY + fluxDir(I)*SOLY
+            FZ = FZ - fluxDir(I)
+        end if
+        SHTERMS(1, I) = IMEAN
+        SHTERMS(2, I) = FX
+        SHTERMS(3, I) = FY
+        SHTERMS(4, I) = FZ
+        if (NSHOUT .eq. 5) then
+            HORMS = 0.0
+            if (src_obj_%doSolar) then
+                F0 = SECSOL*fluxDir(I)
+            end if
+            do J = 5, iradI_Shdo(I + 1) - IR
+                HORMS = HORMS + (F0*YlmSun(J) + radI_Shdo(1, IR + J))**2
+            end do
+            SHTERMS(5, I) = sqrt(HORMS)
+        end if
+    end do
+    deallocate(YlmSun)
+
+    return
+
+end subroutine shd_shdo__computeSH
 
 subroutine shd_shdo__makeAngle(&
     &NMU, NPHI, ITYPE, NPHI0MAX,&
