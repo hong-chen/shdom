@@ -327,6 +327,7 @@ module globals_type
         real(kind=R__), allocatable :: y(:)
         real(kind=R__), allocatable :: z(:)
 
+        logical :: isPhaseTab   = .false.
         logical :: isAllocated  = .false.
 
     end type shd_type_prp
