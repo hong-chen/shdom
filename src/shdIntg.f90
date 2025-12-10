@@ -394,7 +394,7 @@ subroutine shd_intg__backIntegrate3D(&
     integer I1, I2, I3, I4, IOPP, JFACE, KFACE, IC, IZ
     integer GRIDFACE(4, 6), OPPFACE(6)
     integer IORDER, ICORNER, jOctOrder3(8), jOctOrder2(8)
-    logical VALIDRAD, VALIDFACE, IPINX, IPINY
+    logical isValidRad, isValidFace, IPINX, IPINY
     real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV, ratio_x, ratio_y
     real(RD_) :: XE, YE, ZE
     real(RD_) :: SO, SOX, SOY, SOZ, EPS, path
@@ -476,8 +476,8 @@ subroutine shd_intg__backIntegrate3D(&
             ZE = xyz_Rtm_(3, IPT)
 
             ! Loop until finding a face with known radiances
-            VALIDRAD = .false.
-            do while (.not. VALIDRAD)
+            isValidRad = .false.
+            do while (.not. isValidRad)
                 ! Make sure current cell is valid
                 if (ICELL .le. 0) then
                     write(6, *) 'Error [_backIntegrate3D]: ICELL=0 ',&
@@ -651,12 +651,12 @@ subroutine shd_intg__backIntegrate3D(&
                         &xe, ye, ze, ext0, ext1, so, tau, transmit, src, abscell, rad(:)
                     call shd_mpi__abort('The end')
                 end if
-                VALIDFACE = (GRIDRAD(1, I1) .ge. -0.1 .and. GRIDRAD(1, I2) .ge. -0.1&
+                isValidFace = (GRIDRAD(1, I1) .ge. -0.1 .and. GRIDRAD(1, I2) .ge. -0.1&
                     &.and. GRIDRAD(1, I3) .ge. -0.1 .and. GRIDRAD(1, I4) .ge. -0.1)
                 if (INEXTCELL .le. 0 .or.&
-                    &(TRANSMIT .le. TRANSMIN .and. VALIDFACE)) then
-                    if (VALIDFACE) then
-                        VALIDRAD = .true.
+                    &(TRANSMIT .le. TRANSMIN .and. isValidFace)) then
+                    if (isValidFace) then
+                        isValidRad = .true.
                         RAD0(:) = F1*GRIDRAD(:, I1) + F2*GRIDRAD(:, I2)&
                             &+ F3*GRIDRAD(:, I3) + F4*GRIDRAD(:, I4)
                         RAD(:) = RAD(:) + TRANSMIT*RAD0(:)
@@ -759,7 +759,7 @@ subroutine shd_intg__backIntegrate3D_( &
     integer(kind=I__) :: IPCELL, ICELL, INEXTCELL, IPT, IFACE
     integer(kind=I__) :: I1, I2, I3, I4, IOPP, JFACE, KFACE, IC, IZ
     integer(kind=I__) :: IORDER, ICORNER
-    logical :: VALIDRAD, VALIDFACE, IPINX, IPINY
+    logical :: isValidRad, isValidFace, IPINX, IPINY
 
     real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV, ratio_x, ratio_y
     real(RD_) :: XE, YE, ZE
@@ -859,8 +859,8 @@ subroutine shd_intg__backIntegrate3D_( &
             ZE = xyz_Rtm_(3, IPT)
 
             ! Loop until finding a face with known radiances
-            VALIDRAD = .false.
-            do while (.not. VALIDRAD)
+            isValidRad = .false.
+            do while (.not. isValidRad)
 
                 ! Make sure current cell is valid
                 if (ICELL .le. 0) then
@@ -1053,12 +1053,12 @@ subroutine shd_intg__backIntegrate3D_( &
                     call shd_mpi__abort('The end')
                 end if
 
-                VALIDFACE = (GRIDRAD(I1) .ge. -0.1 .and. GRIDRAD(I2) .ge. -0.1&
+                isValidFace = (GRIDRAD(I1) .ge. -0.1 .and. GRIDRAD(I2) .ge. -0.1&
                       &.and. GRIDRAD(I3) .ge. -0.1 .and. GRIDRAD(I4) .ge. -0.1)
                 if ( (INEXTCELL .le. 0) .or.&
-                    &((TRANSMIT .le. TRANSMIN) .and. VALIDFACE)) then
-                    if (VALIDFACE) then
-                        VALIDRAD = .true.
+                    &((TRANSMIT .le. TRANSMIN) .and. isValidFace)) then
+                    if (isValidFace) then
+                        isValidRad = .true.
                         RAD0 = F1*GRIDRAD(I1) + F2*GRIDRAD(I2)&
                             &+ F3*GRIDRAD(I3) + F4*GRIDRAD(I4)
                         RAD = RAD + TRANSMIT*RAD0
@@ -1120,7 +1120,7 @@ subroutine shd_intg__backIntegrate2D(&
     integer I1, I2, IOPP, JFACE, KFACE, IC, IZ
     integer GRIDFACE(2, 6), OPPFACE(6)
     integer IORDER, ICORNER, jOctOrder(8)
-    logical :: VALIDRAD, VALIDFACE, IPINX
+    logical :: isValidRad, isValidFace, IPINX
     real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV, ratio_x, ratio_y
     real(RD_) :: XE, YE, ZE
     real(RD_) :: SO, SOX, SOZ, EPS
@@ -1177,8 +1177,8 @@ subroutine shd_intg__backIntegrate2D(&
             ZE = xyz_Rtm_(3, IPT)
 
             ! Loop until finding a face with known radiances
-            VALIDRAD = .false.
-            do while (.not. VALIDRAD)
+            isValidRad = .false.
+            do while (.not. isValidRad)
                 ! Make sure current cell is valid
                 if (ICELL .le. 0) then
                     write(6, *) 'Error [_backIntegrate2D]: ICELL=0 ',&
@@ -1301,11 +1301,11 @@ subroutine shd_intg__backIntegrate2D(&
                 ! to stop the tracing and add in the interpolated face radiance
                 RAD(:) = RAD(:) + TRANSMIT*SRC(:)*ABSCELL
                 TRANSMIT = TRANSMIT*TRANSCELL
-                VALIDFACE = (GRIDRAD(1, I1) .ge. -0.1 .and. GRIDRAD(1, I2) .ge. -0.1)
+                isValidFace = (GRIDRAD(1, I1) .ge. -0.1 .and. GRIDRAD(1, I2) .ge. -0.1)
                 if (INEXTCELL .le. 0 .or.&
-                    &(TRANSMIT .le. TRANSMIN .and. VALIDFACE)) then
-                    if (VALIDFACE) then
-                        VALIDRAD = .true.
+                    &(TRANSMIT .le. TRANSMIN .and. isValidFace)) then
+                    if (isValidFace) then
+                        isValidRad = .true.
                         RAD0(:) = F1*GRIDRAD(:, I1) + F2*GRIDRAD(:, I2)
                         RAD(:) = RAD(:) + TRANSMIT*RAD0(:)
                     else
@@ -1374,7 +1374,7 @@ subroutine shd_intg__backIntegrate1D(&
     integer(kind=I__) :: bitZ, iOct, jOct
     integer(kind=I__) :: IPCELL, ICELL, INEXTCELL, IPT, IFACE, I1, IOPP
     integer(kind=I__) :: IORDER, ICORNER
-    logical :: VALIDRAD
+    logical :: isValidRad
 
     integer(kind=I__) :: GRIDFACE(6), jOctOrder(8)
     data GRIDFACE /0, 0, 0, 0, 1, 5/
@@ -1418,8 +1418,8 @@ subroutine shd_intg__backIntegrate1D(&
             ZE = xyz_Rtm_(3, IPT)
 
             ! Loop until finding a face with known radiances
-            VALIDRAD = .false.
-            do while (.not. VALIDRAD)
+            isValidRad = .false.
+            do while (.not. isValidRad)
                 ! Make sure current cell is valid
                 if (ICELL .le. 0) then
                     write(6, *) 'Error [_backIntegrate1D]: ICELL=0 ',&
@@ -1513,7 +1513,7 @@ subroutine shd_intg__backIntegrate1D(&
 
                 !if (GRIDRAD(1, I1) .ge. -0.1) then
                 if (GRIDRAD(1, I1) .ge. -accSolv_) then
-                    VALIDRAD = .true.
+                    isValidRad = .true.
                     RAD0(:) = GRIDRAD(:, I1)
                     RAD(:) = RAD(:) + TRANSMIT*(RAD0(:)*TRANSCELL + SRC(:)*ABSCELL)
                 else

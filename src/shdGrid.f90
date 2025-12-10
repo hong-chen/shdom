@@ -368,7 +368,7 @@ subroutine shd_grid__interpNewGridPts(newPts,&
     integer I, IP1, IP2, IP, IPH, J, K, L, M, ME, MS
     integer IS, NS, NS1, NS2
     integer IR, IR1, IR2, NR, NR1, NR2, SIDE
-    logical VALIDBEAM
+    logical isValidBeam
     real X, Y, Z, F, BB, C, D, sec0
     real RAD1(shdo_obj_%Nstokes), RAD2(shdo_obj_%Nstokes)
     real UNIFZLEV, XO, YO, ZO, DIRPATH
@@ -444,7 +444,7 @@ subroutine shd_grid__interpNewGridPts(newPts,&
                     call shd_rad__computeDirect(0, X, Y, Z, rtm_obj_%flag_bc, rtm_obj_%flag_ip, doDeltaM,&
                         &shdo_obj_%maxNl, SOLARFLUX, src_obj_%mu0, src_obj_%phi0,&
                         &fluxDir(IP),&
-                        &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
+                        &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, isValidBeam)
                 end if
             end if
 

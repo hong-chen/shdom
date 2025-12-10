@@ -108,14 +108,14 @@ subroutine shd_rad__makeFluxDir(&
     real SOLARFLUX, muSun, phiSun
     real fluxDir(NPTS)
     integer SIDE, IP
-    logical VALIDBEAM
+    logical isValidBeam
     real UNIFZLEV, XO, YO, ZO, DIR, DIRPATH
 
     call shd_rad__computeDirect(&
         &1, 0.0, 0.0, 0.0, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
         &doDeltaM, ML,&
         &SOLARFLUX, muSun, phiSun, fluxDir(1),&
-        &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
+        &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, isValidBeam)
 
     do IP = 1, NPTS
         DIRPATH = 0.0
@@ -123,7 +123,7 @@ subroutine shd_rad__makeFluxDir(&
             &(0, xyz_Rtm_(1, IP), xyz_Rtm_(2, IP), xyz_Rtm_(3, IP),&
             &rtm_obj_%flag_bc, rtm_obj_%flag_ip, doDeltaM, ML,&
             &SOLARFLUX, muSun, phiSun, fluxDir(IP),&
-            &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
+            &UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, isValidBeam)
     end do
 
     return
@@ -132,7 +132,7 @@ end subroutine shd_rad__makeFluxDir
 subroutine shd_rad__computeDirect(&
     &INIT, XI, YI, ZI, BCFLAG, IPFLAG,&
     &doDeltaM, ML, SOLARFLUX, muSun, phiSun,&
-    &fluxDir, UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, VALIDBEAM)
+    &fluxDir, UNIFZLEV, XO, YO, ZO, DIRPATH, SIDE, isValidBeam)
 
     !╭──────────────────────────────────────────────────────────────╮!
     ! Computes the direct beam flux at point (XI,YI,ZI) by integrating
@@ -156,8 +156,8 @@ subroutine shd_rad__computeDirect(&
     !   this case when the ray tracing back to the sun reaches the boundary
     !   then independent pixel mode is entered so that only Z grid
     !   intersections occur.
-    ! <VALIDBEAM> For use with multiple processors (bit 2 or 3 set in BCFLAG),
-    !   the VALIDBEAM flag is returned true if the ray to the sun made it
+    ! <isValidBeam> For use with multiple processors (bit 2 or 3 set in BCFLAG),
+    !   the isValidBeam flag is returned true if the ray to the sun made it
     !   to the top of the domain before hitting the subdomain side.  If the
     !   flag is false.
     ! <SIDE> SIDE is returned with the boundary hit (1=-X, 2=+X,
@@ -172,7 +172,7 @@ subroutine shd_rad__computeDirect(&
 
     integer(kind=I__), intent(out) :: SIDE
     real(kind=R__),    intent(out) :: fluxDir, XO, YO, ZO
-    logical, intent(out) :: VALIDBEAM
+    logical, intent(out) :: isValidBeam
 
     real(kind=R__), intent(inout) :: UNIFZLEV, DIRPATH
 
@@ -718,9 +718,9 @@ subroutine shd_rad__computeDirect(&
             YO = YE + prp_obj_%yStart
             ZO = ZE
 
-            VALIDBEAM = abs(ZE - prp_obj_%z(prp_obj_%Nz)) .lt. EPSZ
+            isValidBeam = abs(ZE - prp_obj_%z(prp_obj_%Nz)) .lt. EPSZ
 
-            if (VALIDBEAM) SIDE = 6
+            if (isValidBeam) SIDE = 6
 
             return
 
@@ -819,7 +819,7 @@ subroutine shd_rad__computeRadDir(&
     real OUTPARMS(*), RADOUT(shdo_obj_%Nstokes, *)
     integer I, IBC, IANG, JX, JY, K, SIDE
     integer NANGOUT, NXOUT, NYOUT
-    logical VALIDRAD
+    logical isValidRad
     real(RD_) :: X0, Y0, Z0, XE, YE, ZE, TRANSMIT, radI_Shdo(4)
     real MUOUT, PHIOUT, PHID
     real XDOMAIN, YDOMAIN, STARTX, STARTY
@@ -950,7 +950,7 @@ subroutine shd_rad__computeRadDir(&
                 call shd_src__integrateSrcDir(shdo_obj_%Nstokes,&
                     &MUOUT, PHIOUT, GRIDRAD, src1_Shdo,&
                     &X0, Y0, Z0, XE, YE, ZE, SIDE,&
-                    &TRANSMIT, radI_Shdo, VALIDRAD)
+                    &TRANSMIT, radI_Shdo, isValidRad)
                 RADOUT(:, IRAD) = radI_Shdo(1:shdo_obj_%Nstokes)
                 X0 = X0 + OUTPARMS(2)
             end do
@@ -981,7 +981,7 @@ subroutine shd_rad__computeRadRay(&
     real OUTPARMS(*), VISOUT(shdo_obj_%Nstokes, *)
     integer NSCATANGLE, NSTPHASE, I, J, L, N, SIDE
     integer NL, NS, LINE, SAMP
-    logical CAMERA_MODE, VALIDRAD
+    logical CAMERA_MODE, isValidRad
     real MURAY, PHIRAY
     real(RD_) :: XE, YE, ZE, TRANSMIT, VISRAD(shdo_obj_%Nstokes)
     real(RD_) :: X0, Y0, Z0, X1, Y1, Z1, X2, Y2, Z2
@@ -1154,7 +1154,7 @@ subroutine shd_rad__computeRadRay(&
                 &fluxDir, isrcJ_Shdo_, srcJ_Shdo_, YlmSun,&
                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                 &MU2, PHI2, X0, Y0, Z0,&
-                &XE, YE, ZE, SIDE, TRANSMIT, VISRAD, VALIDRAD)
+                &XE, YE, ZE, SIDE, TRANSMIT, VISRAD, isValidRad)
 900         continue
             ! write(6,'(1X,2F8.4,1X,2F11.7,4(1X,F11.6))')&
             !     &X0,Y0,MURAY,PHIRAY,VISRAD(:)

@@ -569,7 +569,7 @@ subroutine shd_src__integrateSrcRay(&
     &fluxDir, isrcJ_Shdo, srcJ_Shdo, YlmSun,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &muRay, phiRay, X0, Y0, Z0,&
-    &XE, YE, ZE, SIDE, TRANSMIT, radI_Shdo, VALIDRAD)
+    &XE, YE, ZE, SIDE, TRANSMIT, radI_Shdo, isValidRad)
 
     !   Integrates the source function through the extinction field
     ! (ext_Rtm_) backward from the outgoing direction (muRay,phiRay) to find the
@@ -586,7 +586,7 @@ subroutine shd_src__integrateSrcRay(&
     integer NMU, NPHI0MAX, NPHI0(NMU)
     integer isrcJ_Shdo(rtm_obj_%Npts + 1)
     integer BCPTR(MAXNBC, 2)
-    logical doDeltaM, VALIDRAD
+    logical doDeltaM, isValidRad
     real WTDO(NMU, NPHI0MAX), muDO(NMU), phiDO(NMU, NPHI0MAX)
     real WAVELEN, muSun, phiSun
     real BCRAD(*)
@@ -709,8 +709,8 @@ subroutine shd_src__integrateSrcRay(&
     NGRID = 0
 
     ! Loop until reach a Z boundary or transmission is very small
-    VALIDRAD = .false.
-    do while ((.not. VALIDRAD) .and. (icell .gt. 0))
+    isValidRad = .false.
+    do while ((.not. isValidRad) .and. (icell .gt. 0))
         ! Make sure current cell is valid
         if (icell .le. 0) then
             write(6, *) 'Error [_integrateSrcOneRay]: icell=', icell,&
@@ -912,9 +912,9 @@ subroutine shd_src__integrateSrcRay(&
         ! If the transmission is greater than zero and not at a
         !   boundary then prepare for next cell
         if ((TRANSMIT .lt. TRANSCUT) .or. (NGRID .gt. MAXCELLSCROSS)) then
-            VALIDRAD = .true.
+            isValidRad = .true.
         else if ((INEXTCELL .eq. 0) .and. (IFACE .ge. 5)) then
-            VALIDRAD = .true.
+            isValidRad = .true.
             call shd_src__findBndryRad(NSTOKES, XN, YN,&
                 &sngl(muRay), sngl(phiRay),&
                 &IC, KFACE, i8Grid_Cell_, xyz_Rtm_,&
@@ -950,7 +950,7 @@ end subroutine shd_src__integrateSrcRay
 subroutine shd_src__integrateSrcDir(NSTOKES,&
     &muRay, phiRay, GRIDRAD, srcJ_Shdo,&
     &X0, Y0, Z0, XE, YE, ZE, SIDE,&
-    &TRANSMIT, radI_Shdo, VALIDRAD)
+    &TRANSMIT, radI_Shdo, isValidRad)
 
     ! Integrates the source function (srcJ_Shdo) through the extinction
     ! field (ext_Rtm_) backward in the direction opposite to (muRay,phiRay)
@@ -962,7 +962,7 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
     ! 5=-Z,6=+Z).
 
     integer NSTOKES, SIDE
-    logical VALIDRAD
+    logical isValidRad
     real muRay, phiRay
     real(RD_) :: X0, Y0, Z0, XE, YE, ZE, TRANSMIT, radI_Shdo(NSTOKES)
     real srcJ_Shdo(NSTOKES, rtm_obj_%Npts), GRIDRAD(NSTOKES, rtm_obj_%Npts)
@@ -1027,8 +1027,8 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
     SRCEXT1(1) = max(0.0, SRCEXT1(1))
 
     ! Loop until finding a face with known radiances
-    VALIDRAD = .false.
-    do while (.not. VALIDRAD .and. icell .gt. 0)
+    isValidRad = .false.
+    do while (.not. isValidRad .and. icell .gt. 0)
         ! This cell is independent pixel if IP mode or open boundary
         !   conditions and ray is leaving domain (i.e. not entering)
         IPINX = btest(int(flag_Cell_(icell)), 0) .and.&
@@ -1181,10 +1181,10 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
 
         !if (TRANSMIT .lt. 1.0e-5) then
         if (TRANSMIT .lt. accSolv_) then
-            VALIDRAD = .true.
+            isValidRad = .true.
         else if (GRIDRAD(1, I1) .ge. 0.0 .and. GRIDRAD(1, I2) .ge. 0.0 .and.&
             &GRIDRAD(1, I3) .ge. 0.0 .and. GRIDRAD(1, I4) .ge. 0.0) then
-            VALIDRAD = .true.
+            isValidRad = .true.
             call shd_util__interpTriLin(icell, XI, YI, ZI,&
                 &NSTOKES, GRIDRAD, 1, NSTOKES, RAD0)
             radI_Shdo(:) = radI_Shdo(:) + TRANSMIT*RAD0(:)
