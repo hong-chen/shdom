@@ -120,7 +120,7 @@ contains
 
 subroutine shd_grid__splitGrid(&
     doSplit, isOutMem, CURSPLITACC, SPLITCRIT, &
-    doDeltaM, ACCELFLAG, &
+    doDeltaM, doAccel, &
     isrcD_Shdo, &
     fluxDir, &
     SOLARFLUX, YlmSun, &
@@ -159,7 +159,7 @@ subroutine shd_grid__splitGrid(&
 
     integer isrcD_Shdo(*)
     real ADAPTIND(*)
-    logical doDeltaM, ACCELFLAG, doSplit, isOutMem
+    logical doDeltaM, doAccel, doSplit, isOutMem
     real CURSPLITACC, SPLITCRIT
     real SOLARFLUX, YlmSun(prp_obj_%NlegSet, shdo_obj_%Nlm)
     real ADAPTCRIT(*)
@@ -221,7 +221,7 @@ subroutine shd_grid__splitGrid(&
 
                     ! Interpolate the medium properties, radiance, and source
                     call shd_grid__interpNewGridPts(newPts,&
-                        &doDeltaM, ACCELFLAG,&
+                        &doDeltaM, doAccel,&
                         &SOLARFLUX, YlmSun,&
                         &fluxDir,&
                         &isrcD_Shdo,&
@@ -260,7 +260,7 @@ subroutine shd_grid__splitGrid(&
 
                         ! Interpolate the medium properties, radiance, and source
                         call shd_grid__interpNewGridPts(newPts,&
-                            doDeltaM, ACCELFLAG, &
+                            doDeltaM, doAccel, &
                             SOLARFLUX, YlmSun, &
                             fluxDir, &
                             isrcD_Shdo, &
@@ -331,7 +331,7 @@ subroutine shd_grid__interpGrid(xyz_Rtm)
 end subroutine shd_grid__interpGrid
 
 subroutine shd_grid__interpNewGridPts(newPts,&
-    doDeltaM, ACCELFLAG,&
+    doDeltaM, doAccel,&
     SOLARFLUX, YlmSun,&
     fluxDir,&
     isrcD_Shdo,&
@@ -362,7 +362,7 @@ subroutine shd_grid__interpNewGridPts(newPts,&
 
     integer newPts(3, 4)
     integer isrcD_Shdo(*)
-    logical doDeltaM, ACCELFLAG
+    logical doDeltaM, doAccel
     real SOLARFLUX, YlmSun(prp_obj_%NlegSet, shdo_obj_%Nlm)
     real fluxDir(rtm_obj_%Npts)
     integer I, IP1, IP2, IP, IPH, J, K, L, M, ME, MS
@@ -489,7 +489,7 @@ subroutine shd_grid__interpNewGridPts(newPts,&
             NS = max(NS1, NS2)
             IS = isrcJ_Shdo(IP)
             isrcJ_Shdo(IP + 1) = IS + NS
-            if (ACCELFLAG) isrcD_Shdo(IP + 1) = isrcD_Shdo(IP)
+            if (doAccel) isrcD_Shdo(IP + 1) = isrcD_Shdo(IP)
             if (prp_obj_%Npha .gt. 0) then
                 IPH = ipha_Rtm(IP)
             else

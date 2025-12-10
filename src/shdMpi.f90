@@ -434,8 +434,8 @@ end subroutine shd_mpi__map
 
 subroutine shd_mpi__bcastInp(&
     fileInp_sav, fileOut_sav,&
-    KDIST, doDeltaM,&
-    ACCELFLAG, SOLACC, MAXITER, SPLITACC, SHACC,&
+    doCkd, doDeltaM,&
+    doAccel, SOLACC, MAXITER, SPLITACC, SHACC,&
     MAXOUT, MAXPAR, NUMOUT, OUTTYPES, parms_Out,&
     MAX_TOTAL_MB, SPLITTING_FACTOR,&
     NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO,&
@@ -455,7 +455,7 @@ subroutine shd_mpi__bcastInp(&
 
     integer, intent(in)    :: MAXOUT, MAXPAR
     integer, intent(inout) :: MAXITER, NUMOUT
-    logical, intent(inout) :: KDIST, doDeltaM, ACCELFLAG
+    logical, intent(inout) :: doCkd, doDeltaM, doAccel
     real, intent(inout) :: SOLACC, SPLITACC, SHACC, parms_Out(MAXPAR, MAXOUT)
     real, intent(inout) :: MAX_TOTAL_MB, SPLITTING_FACTOR
     real, intent(inout) :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
@@ -488,11 +488,11 @@ subroutine shd_mpi__bcastInp(&
 
     ! logical variables
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    logicBuf(:) = (/KDIST, doDeltaM, ACCELFLAG/)
+    logicBuf(:) = (/doCkd, doDeltaM, doAccel/)
     call mpi_bcast(logicBuf, 3, MPI_logical, 0, MPI_comm_world, ierr)
-    KDIST     = logicBuf(1)
-    doDeltaM    = logicBuf(2)
-    ACCELFLAG = logicBuf(3)
+    doCkd    = logicBuf(1)
+    doDeltaM = logicBuf(2)
+    doAccel  = logicBuf(3)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! real variables

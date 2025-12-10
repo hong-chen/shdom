@@ -99,11 +99,10 @@ module shd_src
 contains
 
 subroutine shd_src__computeSrcSH(&
-    FIXSH, &
-    YlmSun, &
-    fluxDir, SHACC, &
+    doFixSH, isFirst, doAccel, &
+    YlmSun, fluxDir, SHACC, &
     isrcD_Shdo, srcD_Shdo, &
-    FIRST, ACCELFLAG, DELJDOT, DELJOLD, DELJNEW, JNORM, &
+    DELJDOT, DELJOLD, DELJNEW, JNORM, &
     iradI_Shdo, radI_Shdo, &
     isrcJ_Shdo, srcJ_Shdo)
 
@@ -112,7 +111,7 @@ subroutine shd_src__computeSrcSH(&
     !   pseudo-source (in planck_Rtm_ or fluxDir) is added to the scattering source
     !   (computed from leg_Rtm_ and the spherical harmonic expansion in radI_Shdo).
     !   Also computes the adaptive spherical harmonic truncation for
-    !   the source function, unless FIXSH is true.  The SH truncation is set
+    !   the source function, unless doFixSH is true.  The SH truncation is set
     !   so that the higher terms of the source function are smaller in
     !   absolute value than SHACC. The truncation is to the nearest l,
     !   so that a triangular (for M=L) truncation is preserved.  If there
@@ -130,6 +129,8 @@ subroutine shd_src__computeSrcSH(&
     !   of the solution criterion (SOLCRIT, the RMS difference in succesive
     !   source function fields normalized by the RMS of the field).
 
+    logical, intent(in) :: doFixSH, isFirst, doAccel
+
     integer(I__), intent(inout) :: iradI_Shdo(*)
     real(R__),    intent(inout) ::  radI_Shdo(shdo_obj_%Nstokes, *)
 
@@ -139,7 +140,6 @@ subroutine shd_src__computeSrcSH(&
     real(R__),    intent(inout) :: YlmSun(prp_obj_%NlegSet, shdo_obj_%Nlm)
 
     integer isrcD_Shdo(rtm_obj_%Npts + 1)
-    logical FIXSH, FIRST, ACCELFLAG
     real SHACC, DELJDOT, DELJOLD, DELJNEW, JNORM
     real fluxDir(rtm_obj_%Npts)
     real srcD_Shdo(shdo_obj_%Nstokes, *)
@@ -176,7 +176,7 @@ subroutine shd_src__computeSrcSH(&
 
     ! Compute the dot products of the successive source differences
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    if (.not. FIRST) then
+    if (.not. isFirst) then
         DELJDOT = 0.0
         DELJOLD = 0.0
         DELJNEW = 0.0
@@ -216,7 +216,7 @@ subroutine shd_src__computeSrcSH(&
 
             ! Compute the dot product of the new and old source difference,
             !   and the solution criterion (don't use new points for Jnorm).
-            if (ACCELFLAG) then
+            if (doAccel) then
                 IS = isrcJ_Shdo(I)
                 ISO = isrcD_Shdo(I)
                 NS = min(isrcJ_Shdo(I + 1) - IS, isrcD_Shdo(I + 1) - ISO)
@@ -245,7 +245,7 @@ subroutine shd_src__computeSrcSH(&
 
     ! Compute and store the new source function difference vector
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    if (.not. FIRST .and. ACCELFLAG) then
+    if ((.not. isFirst) .and. doAccel) then
         do I = 1, rtm_obj_%Npts
             ! Compute the temporary source function for this point
             if (prp_obj_%Npha .gt. 0) then
@@ -321,7 +321,7 @@ subroutine shd_src__computeSrcSH(&
                 &NR, radI_Shdo(1, IR+1), srcTmp_Shdo)
                 !&NR, radI_Shdo(1:shdo_obj_%Nstokes, IR+1:NR), srcTmp_Shdo)
         end if
-        if (FIXSH) then
+        if (doFixSH) then
             NS = isrcJ_Shdo(I + 1) - IS
         else
             ! Then do the adaptive spherical harmonics:

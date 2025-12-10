@@ -223,11 +223,11 @@ subroutine shd_solv__solveRte(&
             &cell_obj_%Npts0, cell_obj_%Npts, i2Tree_Cell_, i8Grid_Cell_, xyz_Rtm_)
         ! Initialize the source function from the radiance field
         call shd_src__computeSrcSH(&
-            &doFixSH, YlmSun,&
-            &fluxDir, SHACC,&
-            &isrcD_Shdo, srcD_Shdo,&
-            &.true., doAccel, DELJDOT, DELJOLD, DELJNEW, JNORM,&
-            &iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_)
+            doFixSH, .true., doAccel, &
+            YlmSun, fluxDir, SHACC, &
+            isrcD_Shdo, srcD_Shdo, &
+            DELJDOT, DELJOLD, DELJNEW, JNORM, &
+            iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_)
     end if
 
     if (doAccel) then
@@ -391,11 +391,11 @@ subroutine shd_solv__solveRte(&
         ! radSH to srcSH
         !╭────────────────────────────────────────────────╮!
         call shd_src__computeSrcSH(&
-            &doFixSH, YlmSun,&
-            &fluxDir, SHACC,&
-            &isrcD_Shdo, srcD_Shdo,&
-            &.false., doAccel, DELJDOT, DELJOLD, DELJNEW, JNORM,&
-            &iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_)
+            doFixSH, .false., doAccel, &
+            YlmSun, fluxDir, SHACC, &
+            isrcD_Shdo, srcD_Shdo, &
+            DELJDOT, DELJOLD, DELJNEW, JNORM, &
+            iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_)
         !╰────────────────────────────────────────────────╯!
 
         ! Calculate the acceleration parameter and solution criterion
