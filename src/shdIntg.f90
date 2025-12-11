@@ -1055,8 +1055,8 @@ subroutine shd_intg__backIntegrate3D_( &
 
                 isValidFace = (GRIDRAD(I1) .ge. -0.1 .and. GRIDRAD(I2) .ge. -0.1&
                       &.and. GRIDRAD(I3) .ge. -0.1 .and. GRIDRAD(I4) .ge. -0.1)
-                if ( (INEXTCELL .le. 0) .or.&
-                    &((TRANSMIT .le. TRANSMIN) .and. isValidFace)) then
+                if ((INEXTCELL .le. 0) .or. &
+                    ((TRANSMIT .le. TRANSMIN) .and. isValidFace)) then
                     if (isValidFace) then
                         isValidRad = .true.
                         RAD0 = F1*GRIDRAD(I1) + F2*GRIDRAD(I2)&
