@@ -1102,7 +1102,7 @@ end subroutine shd_init__makeBotRadVL
 subroutine shd_init__makeBotRadU(NBOTPTS, BCPTR,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO, IMU, IPHI,&
     &SRCTYPE, WAVELEN, muSun, phiSun, fluxDir,&
-    &SFC_BRDF_DO,&
+    &brdf_Shdo,&
     &NSTOKES, BCRAD)
 
     !   Computes the upwelling Stokes vector of the bottom boundary points
@@ -1112,7 +1112,7 @@ subroutine shd_init__makeBotRadU(NBOTPTS, BCPTR,&
     ! radiance, the thermal emission (emissivity*Planck function), and the
     ! reflected direct solar flux (if applicable). The upwelling radiance
     ! vector is the integral over all incident directions of the BRDF times
-    ! the downwelling radiance, so a discrete sum is done using the SFC_BRDF_DO
+    ! the downwelling radiance, so a discrete sum is done using the brdf_Shdo
     ! matrix, which includes the integral weights (WTDO). The emissivity
     ! is computed implicitly from the integral of the BRDF. The outgoing
     ! direction is specified with (IMU,IPHI), and the BRDF is computed for
@@ -1124,7 +1124,7 @@ subroutine shd_init__makeBotRadU(NBOTPTS, BCPTR,&
     integer NMU, NPHI0MAX, NPHI0(NMU), IMU, IPHI, NSTOKES
     real WTDO(NMU, NPHI0MAX), MU(NMU), PHI(NMU, NPHI0MAX)
     real WAVELEN, muSun, phiSun, fluxDir(*)
-    real SFC_BRDF_DO(NSTOKES, NMU/2, NPHI0MAX, NSTOKES, NMU/2, NPHI0MAX)
+    real brdf_Shdo(NSTOKES, NMU/2, NPHI0MAX, NSTOKES, NMU/2, NPHI0MAX)
     real BCRAD(NSTOKES, NBOTPTS, *)
     character(len=1) :: SRCTYPE
     integer IMU1, JMU, JPHI, IBC, I, JANG, K, K1, K2
@@ -1152,14 +1152,14 @@ subroutine shd_init__makeBotRadU(NBOTPTS, BCPTR,&
                 ! Add in the polarized reflection
                 do K1 = 1, NSTOKES
                     BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1) + BCRAD(K1, IBC, JANG + 1)&
-                        &*SFC_BRDF_DO(:, IMU1, IPHI, K1, JMU, JPHI)
+                        &*brdf_Shdo(:, IMU1, IPHI, K1, JMU, JPHI)
                 end do
                 ! Add in the polarized thermal emission
                 W = OPI_*abs(MU(JMU))*WTDO(JMU, JPHI)
                 BCRAD(1, IBC, 1) = BCRAD(1, IBC, 1) + brdf_Rtm_(1, IBC)&
-                    &*(W - SFC_BRDF_DO(1, IMU1, IPHI, 1, JMU, JPHI))
+                    &*(W - brdf_Shdo(1, IMU1, IPHI, 1, JMU, JPHI))
                 BCRAD(2:, IBC, 1) = BCRAD(2:, IBC, 1) - brdf_Rtm_(1, IBC)&
-                    &*SFC_BRDF_DO(2:, IMU1, IPHI, 1, JMU, JPHI)
+                    &*brdf_Shdo(2:, IMU1, IPHI, 1, JMU, JPHI)
                 JANG = JANG + 1
             end do
         end do

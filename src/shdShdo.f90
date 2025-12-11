@@ -154,7 +154,7 @@ end subroutine shd_shdo__makeSHDO
 subroutine shd_shdo__makeSfcDO(SFCTYPE, WAVELEN,&
     &NXSFC, NYSFC, NSFCPAR, SFCPARMS, NSTOKES,&
     &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
-    &SFC_BRDF_DO)
+    &brdf_Shdo)
 
     !   Makes the precomputed BRDF surface reflection matrix for
     ! discrete ordinate incident and outgoing directions.  For each
@@ -165,7 +165,7 @@ subroutine shd_shdo__makeSfcDO(SFCTYPE, WAVELEN,&
     integer NSTOKES, NMU, NPHI0MAX, NPHI0(NMU)
     real SFCPARMS(NSFCPAR, NYSFC+1, NXSFC+1), WAVELEN
     real WTDO(NMU, NPHI0MAX), MU(NMU), PHI(NMU, NPHI0MAX)
-    real SFC_BRDF_DO(NSTOKES, NMU/2, NPHI0MAX, NSTOKES, NMU/2, NPHI0MAX)
+    real brdf_Shdo(NSTOKES, NMU/2, NPHI0MAX, NSTOKES, NMU/2, NPHI0MAX)
     character(len=2) :: SFCTYPE
     integer IMU, IMU1, IPHI, JMU, JPHI, K1, K2
     real :: REFLECT(4, 4), W
@@ -182,7 +182,7 @@ subroutine shd_shdo__makeSfcDO(SFCTYPE, WAVELEN,&
                         &WAVELEN, MU(IMU), PHI(IMU, IPHI),&
                         &MU(JMU), PHI(JMU, JPHI), NSTOKES, REFLECT)
                     W = OPI_*abs(MU(JMU))*WTDO(JMU, JPHI)
-                    SFC_BRDF_DO(:, IMU1, IPHI, :, JMU, JPHI)&
+                    brdf_Shdo(:, IMU1, IPHI, :, JMU, JPHI)&
                         &= W*REFLECT(1:NSTOKES, 1:NSTOKES)
                 end do
             end do
