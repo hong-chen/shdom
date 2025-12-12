@@ -213,7 +213,7 @@ program shdom
     real(kind=R__) :: NUM_SH_TERM_FACTOR, CELL_TO_POINT_RATIO
     real(kind=R__) :: MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
 
-    integer(kind=I__) :: oldNpts
+    integer(kind=I__) :: NptsOld
     integer(kind=I__) :: maxIter, iter, totIter, iz, iout, Nout
     integer(kind=I__) :: Nrad, irad, Nx_out, Ny_out, Nlos, ilos, Nscan, Npix, Nsh_out
     integer(kind=I__) :: Ncell_tot, Npts_tot, Nsh_tot
@@ -1180,7 +1180,7 @@ program shdom
             trim(adjustl(rtm_obj_%runName))
 
     totIter = 0
-    oldNpts = 0
+    NptsOld = 0
     src_obj_%solar = 0.0d0
 
     ! Loop over the k-distribution g's from high to low absorption
@@ -1286,7 +1286,7 @@ program shdom
             ! For the output from the grid point arrays (Flux, Net flux, SH)
             !   we may need to interpolate the running k-distribution sum
             !   to the newly created grid points.
-            call shd_util__interpData(oldNpts, isFluxOut, isHROut, isSHOut,&
+            call shd_util__interpData(NptsOld, isFluxOut, isHROut, isSHOut,&
                 sumFluxTot_Out, sumFluxDir_Out, sumFluxDiv_Out, sumSH_Out)
         end if
 
@@ -1331,7 +1331,7 @@ program shdom
             call shd_util__sumData(ckd_obj_%Ng-ig_ckd, wgt_Ckd_(ig_ckd), Nsh_out*rtm_obj_%Npts, work, sumSH_Out)
         end if
 
-        oldNpts = rtm_obj_%Npts
+        NptsOld = rtm_obj_%Npts
 
     end do CKD_LOOP
     !╰────────────────────────────────────────────────────────────────────────────╯!

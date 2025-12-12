@@ -121,17 +121,17 @@ subroutine shd_util__sumData(IFLAG, WT, N, data, SUMDATA)
 
 end subroutine shd_util__sumData
 
-subroutine shd_util__interpData(OLDNPTS,&
+subroutine shd_util__interpData(NptsOld,&
     &FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
     &FLUXES, fluxDir, FLUXDIV, SHTERMS)
 
-    !   Interpolates the output data to the new grid points (those >OLDNPTS)
+    !   Interpolates the output data to the new grid points (those >NptsOld)
     ! from the old grid points.  The output data is in FLUXES, fluxDir,
-    ! FLUXDIV, and SHTERMS.  OLDNPTS is set to zero to do no interpolation.
+    ! FLUXDIV, and SHTERMS.  NptsOld is set to zero to do no interpolation.
     ! Each new point is located in a cell, and the two parent grid points
     ! are found to interpolate the data from.
 
-    integer OLDNPTS
+    integer NptsOld
     logical FLUX_OUT, FLUXDIV_OUT, SH_OUT
     real FLUXES(2, rtm_obj_%Npts), fluxDir(rtm_obj_%Npts), FLUXDIV(rtm_obj_%Npts)
     real SHTERMS(5, rtm_obj_%Npts)
@@ -140,13 +140,13 @@ subroutine shd_util__interpData(OLDNPTS,&
     data GRIDCORNER/1, 2, 3, 4, 5, 6, 7, 8, 1, 3, 2, 4, 5, 7, 6, 8,&
         &1, 5, 2, 6, 3, 7, 4, 8/
 
-    if (OLDNPTS .le. 0) return
+    if (NptsOld .le. 0) return
 
     ! Go through all the non-base grid cells
     do ICELL = cell_obj_%Npts0+1, cell_obj_%Npts
         do IC = 1, 8
             IP = i8Grid_Cell_(IC, ICELL)
-            if (IP .gt. OLDNPTS) then
+            if (IP .gt. NptsOld) then
                 IPARENT = i2Tree_Cell_(1, ICELL)
                 ! Go through all 12 edges of parent cell to find which one has point
                 do IDIR = 1, 3

@@ -99,7 +99,7 @@ subroutine shd_intg__integratePath(&
     &brdf_Shdo,&
     &MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &CMU1, CPHI1, CMU2, CPHI2, WSAVE, FFTFLAG,&
-    &fluxDir, FLUXES,&
+    &fluxDir, fluxTot,&
     &WORK, SWEEPORD, GRIDRAD,&
     &iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo)
 
@@ -112,7 +112,7 @@ subroutine shd_intg__integratePath(&
     ! bottom to the top after computing the surface reflection/emission.
     ! After the path integrations produce the discrete angle radiance
     ! it is transformed and added to output radiance spherical harmonic
-    ! expansion.  The hemispheric flux FLUXES is also computed.
+    ! expansion.  The hemispheric flux fluxTot is also computed.
     ! The discrete ordinates in shdo_obj_%mu, shdo_obj_%phi must be a complete set with the
     ! downwelling (mu<0) angles first.
     !   The surface reflection is handled differently for Lambertian
@@ -140,14 +140,14 @@ subroutine shd_intg__integratePath(&
     real brdf_Shdo(shdo_obj_%Nstokes, shdo_obj_%Nmu/2, shdo_obj_%maxNphiA, shdo_obj_%Nstokes, shdo_obj_%Nmu/2, shdo_obj_%maxNphiA)
     real CMU1(*), CPHI1(*), CMU2(*), CPHI2(*), WSAVE(*)
     real BCRAD(shdo_obj_%Nstokes, MAXBCRAD)
-    real fluxDir(rtm_obj_%Npts), FLUXES(2, rtm_obj_%Npts)
+    real fluxDir(rtm_obj_%Npts), fluxTot(2, rtm_obj_%Npts)
     real GRIDRAD(shdo_obj_%Nstokes, rtm_obj_%Npts), WORK(shdo_obj_%Nstokes, shdo_obj_%maxNphiA, rtm_obj_%Npts)
 
-    integer I, I1, K, NR, iphiDO, imuDO, IBC, IANG, IUPDOWN, OLDNPTS
+    integer I, I1, K, NR, iphiDO, imuDO, IBC, IANG, iUpDn, NptsOld
     integer jOctant, iPts, ip, iorder, iCellPts, iCorner
     logical :: theflag
     real A, TRANSMIN
-    save OLDNPTS
+    save NptsOld
 
     integer :: count_start, count_rate, count_max
     integer :: count_end
@@ -157,14 +157,14 @@ subroutine shd_intg__integratePath(&
     TRANSMIN = 1.00
 
     ! Make the new grid cell/point sweeping order if need to
-    if (rtm_obj_%Npts .ne. OLDNPTS) then
+    if (rtm_obj_%Npts .ne. NptsOld) then
         call shd_grid__makeSweepOrder(SWEEPORD, GRIDRAD)
     end if
 
     call shd_mpi__findBndryPts(rtm_obj_%flag_bc, rtm_obj_%flag_ip, SWEEPORD,&
         &rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz)
 
-    if (rtm_obj_%Npts .ne. OLDNPTS) then
+    if (rtm_obj_%Npts .ne. NptsOld) then
         ! Make the pointers to the grid points on the top and bottom boundaries
         call shd_grid__findBndryPts(shdo_obj_%Nang, MAXNBC, MAXBCRAD, &
             &rtm_obj_%z(1), rtm_obj_%z(rtm_obj_%Nz),&
@@ -184,8 +184,8 @@ subroutine shd_intg__integratePath(&
 
     ! Zero the flux arrays and set temporary radiance to -1 for not valid
     do I = 1, rtm_obj_%Npts
-        FLUXES(1, I) = 0.0
-        FLUXES(2, I) = 0.0
+        fluxTot(1, I) = 0.0
+        fluxTot(2, I) = 0.0
         GRIDRAD(1, I) = -1.0
     end do
 
@@ -203,14 +203,14 @@ subroutine shd_intg__integratePath(&
         if (imuDO .eq. shdo_obj_%Nmu/2 + 1) then
             ! For the first upwelling angle, make the bottom boundary radiances
             !   for the Lambertian surfaces.  Compute the upwelling bottom
-            !   radiances using the downwelling fluxes.
+            !   radiances using the downwelling fluxTot.
             if (sfc_obj_%type .eq. 'FL') then
                 call shd_init__makeBotRadUL(NBOTPTS, BCPTR(1, 2),&
-                    &fluxDir, FLUXES, src_obj_%type,&
+                    &fluxDir, fluxTot, src_obj_%type,&
                     &src_obj_%waveNum, src_obj_%avgWaveLen, src_obj_%unit, shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
             else if (sfc_obj_%type .eq. 'VL') then
                 call shd_init__makeBotRadVL(NBOTPTS, BCPTR(1, 2),&
-                    &fluxDir, FLUXES, src_obj_%type,&
+                    &fluxDir, fluxTot, src_obj_%type,&
                     &shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
             end if
         end if
@@ -240,7 +240,7 @@ subroutine shd_intg__integratePath(&
             if (shdo_obj_%mu(imuDO) .lt. 0.0) then
 
                 ! For downward ordinates, initialize the top boundary radiances
-                IUPDOWN = 1
+                iUpDn = 1
                 do IBC = 1, NTOPPTS
                     I = BCPTR(IBC, 1)
                     GRIDRAD(:, I) = BCRAD(:, IBC)
@@ -249,7 +249,7 @@ subroutine shd_intg__integratePath(&
             else
 
                 ! Initialize the bottom boundary radiances
-                IUPDOWN = 2
+                iUpDn = 2
                 if (.not. sfc_obj_%isLambertian) then
 
                     ! If a Lambertian surface, use the radiances computed above
@@ -325,10 +325,10 @@ subroutine shd_intg__integratePath(&
                 end if
             end do
 
-            ! Do the sum for the hemispheric fluxes for this angle
+            ! Do the sum for the hemispheric fluxTot for this angle
             A = abs(shdo_obj_%mu(imuDO))*shdo_obj_%wgt(imuDO, iphiDO)
             do I = 1, rtm_obj_%Npts
-                FLUXES(IUPDOWN, I) = FLUXES(IUPDOWN, I) + A*WORK(1, iphiDO, I)
+                fluxTot(iUpDn, I) = fluxTot(iUpDn, I) + A*WORK(1, iphiDO, I)
             end do
 
             ! For a general BRDF surface save the downwelling radiance
@@ -359,7 +359,7 @@ subroutine shd_intg__integratePath(&
 
     end do DO_MU_LOOP
 
-    OLDNPTS = rtm_obj_%Npts
+    NptsOld = rtm_obj_%Npts
 
     return
 

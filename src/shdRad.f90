@@ -734,13 +734,13 @@ subroutine shd_rad__computeDirect(&
 end subroutine shd_rad__computeDirect
 
 subroutine shd_rad__interpRad(&
-    &NSTOKES, OLDNPTS, NPTS, iradI_Shdo,&
+    &NSTOKES, NptsOld, NPTS, iradI_Shdo,&
     &radI_Shdo, NBCELLS, NCELLS, TREEPTR, GRIDPTR, GRIDPOS)
 
     ! Interpolates the spherical harmonic radiance array to the new
-    !   grid points (>OLDNPTS) from the old grid points.
+    !   grid points (>NptsOld) from the old grid points.
 
-    integer NSTOKES, OLDNPTS, NPTS, NBCELLS, NCELLS
+    integer NSTOKES, NptsOld, NPTS, NBCELLS, NCELLS
     integer iradI_Shdo(NPTS + 1), GRIDPTR(8, NCELLS), TREEPTR(2, NCELLS)
     real radI_Shdo(NSTOKES, *), GRIDPOS(3, *)
     integer IP, IC, ICELL, IPARENT, IDIR, I, J, K, DIR1, DIR2, IP1, IP2
@@ -750,13 +750,13 @@ subroutine shd_rad__interpRad(&
     data GRIDCORNER/1, 2, 3, 4, 5, 6, 7, 8, 1, 3, 2, 4, 5, 7, 6, 8,&
         &1, 5, 2, 6, 3, 7, 4, 8/
 
-    if (OLDNPTS .le. 0) return
+    if (NptsOld .le. 0) return
 
     ! Go through all the non-base grid cells
     do ICELL = NBCELLS + 1, NCELLS
         do IC = 1, 8
             IP = GRIDPTR(IC, ICELL)
-            if (IP .gt. OLDNPTS) then
+            if (IP .gt. NptsOld) then
                 IPARENT = TREEPTR(1, ICELL)
                 ! Go through all 12 edges of parent cell to find which one h
                 do IDIR = 1, 3

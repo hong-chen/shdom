@@ -1534,7 +1534,7 @@ subroutine shd_mpi__findBndryPts(BCFLAG, IPFLAG, SWEEPORD,&
     integer :: L, LI, N(4), N1(8, 4), N2(8, 4), NS, NBX, NBY
     integer :: MAXBC, IBC, bitZ, SZ, EZ, DZ, LX, LY, IX, IY, IZ, J
     integer :: INOUT_ARR(4) = (/2, 1, 4, 3/)
-    integer, save :: OLDNPTS = 0
+    integer, save :: NptsOld = 0
     logical :: SAMEGRID
     real    :: XEDGE(8), YEDGE(8), XYB(4)
     integer, allocatable :: BNDPTR(:, :, :, :), INDX(:)
@@ -1545,8 +1545,8 @@ subroutine shd_mpi__findBndryPts(BCFLAG, IPFLAG, SWEEPORD,&
 
     if (.not. (isMpi_)) return
     if (is1D_) return
-    call mpi_allreduce(rtm_obj_%Npts .eq. OLDNPTS, SAMEGRID, 1, MPI_logical, MPI_land, comm2D_, ierr)
-    OLDNPTS = rtm_obj_%Npts
+    call mpi_allreduce(rtm_obj_%Npts .eq. NptsOld, SAMEGRID, 1, MPI_logical, MPI_land, comm2D_, ierr)
+    NptsOld = rtm_obj_%Npts
     if (SAMEGRID) return
 
     ! iOctant=1+bitX+2*bitY+4*bitZ ; jOctant=jOctantOrder(iOctant) = (/ 1,3,5,7,2,4,6,8 /)

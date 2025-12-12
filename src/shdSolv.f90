@@ -111,10 +111,10 @@ subroutine shd_solv__solveRte(&
     &SPLITACC, SHACC,&
     &MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &WORK, WORK1, WORK2,&
-    &FLUXES, fluxDir)
+    &fluxTot, fluxDir)
 
     ! Performs the SHDOM solution procedure.
-    ! Output is returned in srcJ_Shdo, radI_Shdo, FLUXES, fluxDir.
+    ! Output is returned in srcJ_Shdo, radI_Shdo, fluxTot, fluxDir.
     ! The adaptive grid stucture (cell_obj_%Npts,i8Grid_Cell_,i6Cell_Cell_,i2Tree_Cell_,
     ! flag_Cell_,rtm_obj_%Npts,xyz_Rtm_) is input and modified for new grid
     ! cells and points on output.
@@ -125,7 +125,7 @@ subroutine shd_solv__solveRte(&
     logical doRadInit, doDeltaM, doAccel
     real SOLACC, SOLCRIT, SPLITACC, SHACC
     real BCRAD(*)
-    real FLUXES(2, *), fluxDir(*)
+    real fluxTot(2, *), fluxDir(*)
     real WORK(*), WORK2(*)
 
     integer I, isetDO
@@ -377,7 +377,7 @@ subroutine shd_solv__solveRte(&
             &brdf_Shdo,&
             &MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
             &CMU1, CPHI1, CMU2, CPHI2, wPhiFFT_Shdo, flagFFT_Shdo,&
-            &fluxDir, FLUXES,&
+            &fluxDir, fluxTot,&
             &WORK, WORK1, WORK2,&
             &iradI_Shdo_, radI_Shdo_, isrcJ_Shdo_, srcJ_Shdo_)
         !╰────────────────────────────────────────────────╯!

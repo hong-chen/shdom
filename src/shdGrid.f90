@@ -164,13 +164,13 @@ subroutine shd_grid__splitGrid(&
     real SOLARFLUX, YlmSun(prp_obj_%NlegSet, shdo_obj_%Nlm)
     real ADAPTCRIT(*)
     real fluxDir(*)
-    integer icell, ICELL1, idir, I, N, newPts(3, 4), OLDNPTS
+    integer icell, ICELL1, idir, I, N, newPts(3, 4), NptsOld
     integer MAXCELLS, MAXPTS, MAXWORK, MAXSH, MAXRAD
     logical isOutMem0
     real ADAPT(3), FRAC
 
     if (doSplit) then
-        OLDNPTS = rtm_obj%Npts
+        NptsOld = rtm_obj%Npts
         ! Do the cells in batchs, so the newly split cells can be tested
         !   for further splitting
         ICELL1 = 1
@@ -282,7 +282,7 @@ subroutine shd_grid__splitGrid(&
         ! If in parallel mode, calculate all the direct beam fluxes at once
         if (src_obj_%doSolar) then
             if (isMpi_) then
-                call shd_mpi__makeFluxDir(OLDNPTS + 1,&
+                call shd_mpi__makeFluxDir(NptsOld + 1,&
                     &doDeltaM, shdo_obj_%maxNl,&
                     &SOLARFLUX, src_obj_%mu0, src_obj_%phi0,&
                     &fluxDir)
