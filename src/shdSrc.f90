@@ -597,7 +597,7 @@ subroutine shd_src__integrateSrcRay(&
     real(RD_) :: TRANSMIT, radI_Shdo(NSTOKES)
     character(len=1) :: SRCTYPE
 
-    integer bitX, bitY, bitZ, iOct, iCell, iCellNext, IFACE
+    integer bitX, bitY, bitZ, iOctant, iCell, iCellNext, IFACE
     integer IOPP, NTAU, IT, I, IPT1, IPT2, J, L
     logical DONE, is1DX, is1DY, OPENBCFACE
     integer JFACE, KFACE, IC, MAXCELLSCROSS, NGRID
@@ -693,7 +693,7 @@ subroutine shd_src__integrateSrcRay(&
     else
         bitZ = 0
     end if
-    iOct = 1 + bitX + 2*bitY + 4*bitZ
+    iOctant = 1 + bitX + 2*bitY + 4*bitZ
     XM = 0.5d0*(rtm_obj_%x(1) + rtm_obj_%x(rtm_obj_%Nx))
     YM = 0.5d0*(rtm_obj_%y(1) + rtm_obj_%y(rtm_obj_%Ny))
 
@@ -788,7 +788,7 @@ subroutine shd_src__integrateSrcRay(&
         ! Find boundaries of the current cell
         ! Find the three possible intersection planes (X,Y,Z)
         !   from the coordinates of the opposite corner grid point
-        IOPP = i8Grid_Cell_(9 - iOct, iCell)
+        IOPP = i8Grid_Cell_(9 - iOctant, iCell)
         ! Get the distances to the 3 planes and select the closest
         !   (always need to deal with the cell that is wrapped)
         if (is1DX) then
@@ -901,11 +901,11 @@ subroutine shd_src__integrateSrcRay(&
         ! Get the location coordinate
         if (iCellNext .gt. 0) then
             if (JFACE .eq. 1) then
-                XN = xyz_Rtm_(1, i8Grid_Cell_(iOct, iCellNext))
+                XN = xyz_Rtm_(1, i8Grid_Cell_(iOctant, iCellNext))
             else if (JFACE .eq. 2) then
-                YN = xyz_Rtm_(2, i8Grid_Cell_(iOct, iCellNext))
+                YN = xyz_Rtm_(2, i8Grid_Cell_(iOctant, iCellNext))
             else
-                ZN = xyz_Rtm_(3, i8Grid_Cell_(iOct, iCellNext))
+                ZN = xyz_Rtm_(3, i8Grid_Cell_(iOctant, iCellNext))
             end if
         end if
 
@@ -966,7 +966,7 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
     real muRay, phiRay
     real(RD_) :: X0, Y0, Z0, XE, YE, ZE, TRANSMIT, radI_Shdo(NSTOKES)
     real srcJ_Shdo(NSTOKES, rtm_obj_%Npts), GRIDRAD(NSTOKES, rtm_obj_%Npts)
-    integer bitX, bitY, bitZ, iOct, iCell, iCellNext, IFACE
+    integer bitX, bitY, bitZ, iOctant, iCell, iCellNext, IFACE
     integer I1, I2, I3, I4, IOPP, NTAU, IT, K
     logical is1DX, is1DY, OPENBCFACE
     integer GRIDFACE(4, 6), OPPFACE(6), JFACE, KFACE, IC
@@ -1009,7 +1009,7 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
     else
         stop 'Error [_integrateSrc]: Bad muRay.'
     end if
-    iOct = 1 + bitX + 2*bitY + 4*bitZ
+    iOctant = 1 + bitX + 2*bitY + 4*bitZ
     XM = 0.5*(rtm_obj_%x(1) + rtm_obj_%x(rtm_obj_%Nx))
     YM = 0.5*(rtm_obj_%y(1) + rtm_obj_%y(rtm_obj_%Ny))
 
@@ -1041,7 +1041,7 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
         ! Find boundaries of the current cell
         ! Find the three possible intersection planes (X,Y,Z)
         ! from the coordinates of the opposite corner grid point
-        IOPP = i8Grid_Cell_(9 - iOct, iCell)
+        IOPP = i8Grid_Cell_(9 - iOctant, iCell)
         ! Get the distances to the 3 planes and select the closest
         !   (always need to deal with the cell that is wrapped)
         if (is1DX .or. CX .eq. 0.0) then
@@ -1167,11 +1167,11 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
         ! Get the location coordinate
         if (iCellNext .gt. 0) then
             if (JFACE .eq. 1) then
-                XN = xyz_Rtm_(1, i8Grid_Cell_(iOct, iCellNext))
+                XN = xyz_Rtm_(1, i8Grid_Cell_(iOctant, iCellNext))
             else if (JFACE .eq. 2) then
-                YN = xyz_Rtm_(2, i8Grid_Cell_(iOct, iCellNext))
+                YN = xyz_Rtm_(2, i8Grid_Cell_(iOctant, iCellNext))
             else
-                ZN = xyz_Rtm_(3, i8Grid_Cell_(iOct, iCellNext))
+                ZN = xyz_Rtm_(3, i8Grid_Cell_(iOctant, iCellNext))
             end if
         end if
 
@@ -1203,16 +1203,16 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
 end subroutine shd_src__integrateSrcDir
 
 subroutine shd_src__computeSunOnePts(&
-    ipts, &
+    iPts, &
     mu0, YlmSun)
 
-    integer(kind=I__), intent(in)  :: ipts
+    integer(kind=I__), intent(in)  :: iPts
     real(kind=R__),    intent(out) :: mu0, YlmSun(prp_obj_%NlegSet, shdo_obj_%Nlm)
 
     real(kind=R__) :: lon0, lat0, phi0
 
-    lon0 = xyz_Rtm_(1, ipts) + rtm_obj_%xOffset
-    lat0 = xyz_Rtm_(2, ipts) + rtm_obj_%yOffset
+    lon0 = xyz_Rtm_(1, iPts) + rtm_obj_%xOffset
+    lat0 = xyz_Rtm_(2, iPts) + rtm_obj_%yOffset
 
     call shd_util__computeSolarAngle(lon0, lat0, mu0, phi0)
 

@@ -1767,7 +1767,7 @@ subroutine shd_io__readSen(sen_obj, view_Sen)
     type(shd_type_sen), intent(inout) :: sen_obj
     real(kind=R__),     intent(out)   :: view_Sen(sen_obj%Npar, sen_obj%Npts)
 
-    integer :: ipar, ipts
+    integer :: ipar, iPts
 
     character(len=charMaxLen_) :: fnameBin
     character(len=charMaxLen_) :: lineTmp
@@ -1789,7 +1789,7 @@ subroutine shd_io__readSen(sen_obj, view_Sen)
     open(unit=88, file=trim(adjustl(fnameBin)), status='old',&
         &access='stream', form='unformatted')
 
-    read(88) ((view_Sen(ipar, ipts), ipar=1, sen_obj%Npar), ipts=1, sen_obj%Npts)
+    read(88) ((view_Sen(ipar, iPts), ipar=1, sen_obj%Npar), iPts=1, sen_obj%Npts)
 
     close(88)
 

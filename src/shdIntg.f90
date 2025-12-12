@@ -144,7 +144,7 @@ subroutine shd_intg__integratePath(&
     real GRIDRAD(shdo_obj_%Nstokes, rtm_obj_%Npts), WORK(shdo_obj_%Nstokes, shdo_obj_%maxNphiA, rtm_obj_%Npts)
 
     integer I, I1, K, NR, iphiDO, imuDO, IBC, IANG, IUPDOWN, OLDNPTS
-    integer joct, iPts, ip, iorder, iCellPts, iCorner
+    integer jOctant, iPts, ip, iorder, iCellPts, iCorner
     logical :: theflag
     real A, TRANSMIN
     save OLDNPTS
@@ -389,11 +389,11 @@ subroutine shd_intg__backIntegrate3D(&
     real MU, PHI, TRANSMIN
     real EXTINCT(rtm_obj_%Npts), SOURCE(NSTOKES, NA, rtm_obj_%Npts)
     real GRIDRAD(NSTOKES, rtm_obj_%Npts)
-    integer bitX, bitY, bitZ, iOct, jOct
+    integer bitX, bitY, bitZ, iOctant, jOctant
     integer iCellPts, iCell, iCellNext, iPts, IFACE
     integer I1, I2, I3, I4, IOPP, JFACE, KFACE, IC, IZ
     integer GRIDFACE(4, 6), OPPFACE(6)
-    integer IORDER, iCorner, jOctOrder3(8), jOctOrder2(8)
+    integer iOrder, iCorner, jOctantOrder3(8), jOctantOrder2(8)
     logical isValidRad, isValidFace, is1DX, is1DY
     real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV, ratioX, ratioY
     real(RD_) :: XE, YE, ZE
@@ -406,7 +406,7 @@ subroutine shd_intg__backIntegrate3D(&
     real(RD_) :: RAD(NSTOKES), RAD0(NSTOKES)
     data GRIDFACE/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8,&
         &1, 2, 3, 4, 5, 6, 7, 8/, OPPFACE/2, 1, 4, 3, 6, 5/
-    data jOctOrder3/1, 3, 5, 7, 2, 4, 6, 8/, jOctOrder2/1, 3, 1, 3, 2, 4, 2, 4/
+    data jOctantOrder3/1, 3, 5, 7, 2, 4, 6, 8/, jOctantOrder2/1, 3, 1, 3, 2, 4, 2, 4/
 
     EPS = 1.0e-3*(xyz_Rtm_(3, i8Grid_Cell_(8, 1)) - xyz_Rtm_(3, i8Grid_Cell_(1, 1)))
 
@@ -434,19 +434,19 @@ subroutine shd_intg__backIntegrate3D(&
     else
         stop 'Error [_backIntegrate3D]: Bad MU.'
     end if
-    ! iOct is the octant the ray come from or the discrete ordinate goes to.
-    iOct = 1 + bitX + 2*bitY + 4*bitZ
+    ! iOctant is the octant the ray come from or the discrete ordinate goes to.
+    iOctant = 1 + bitX + 2*bitY + 4*bitZ
     if (is1DYx_) then
-        jOct = jOctOrder2(iOct)
+        jOctant = jOctantOrder2(iOctant)
     else
-        jOct = jOctOrder3(iOct)
+        jOctant = jOctantOrder3(iOctant)
     end if
 
     IZ = (NZ - 1)*(1 - bitZ) + 1
     ! Sweep through all the grid points
-    do IORDER = 1, rtm_obj_%Npts
-        iCellPts = ishft(SWEEPORD(IORDER, jOct), -3)
-        iCorner = ibits(SWEEPORD(IORDER, jOct), 0, 3) + 1
+    do iOrder = 1, rtm_obj_%Npts
+        iCellPts = ishft(SWEEPORD(iOrder, jOctant), -3)
+        iCorner = ibits(SWEEPORD(iOrder, jOctant), 0, 3) + 1
         iPts = i8Grid_Cell_(iCorner, iCellPts)
 
         if (isMpi_) then
@@ -455,7 +455,7 @@ subroutine shd_intg__backIntegrate3D(&
             if  ((xyz_Rtm_(3, iPts) .lt. rtm_obj_%z(IZ) .and. bitZ .eq. 0) .or.&
                 &(xyz_Rtm_(3, iPts) .gt. rtm_obj_%z(IZ) .and. bitZ .eq. 1)) then
                 IZ = IZ + 2*bitZ - 1
-                call shd_mpi__calBndryRad(BCFLAG, IPFLAG, jOct, IZ,&
+                call shd_mpi__calBndryRad(BCFLAG, IPFLAG, jOctant, IZ,&
                     &NX, NY, NZ,&
                     &NA,&
                     &MU, PHI, EXTINCT, NSTOKES, SOURCE,&
@@ -491,7 +491,7 @@ subroutine shd_intg__backIntegrate3D(&
                 ! Find boundaries of the current cell
                 ! Find the three possible intersection planes (X,Y,Z)
                 !   from the coordinates of the opposite corner grid point
-                IOPP = i8Grid_Cell_(9 - iOct, iCell)
+                IOPP = i8Grid_Cell_(9 - iOctant, iCell)
                 ! Get the distances to the 3 planes and select the closest
                 if (is1DX) then
                     SOX = 1.0e20
@@ -585,11 +585,11 @@ subroutine shd_intg__backIntegrate3D(&
                 ! Get the location coordinate (does the boundary wrapping)
                 if (iCellNext .gt. 0) then
                     if (JFACE .eq. 1) then
-                        XE = xyz_Rtm_(1, i8Grid_Cell_(iOct, iCellNext))
+                        XE = xyz_Rtm_(1, i8Grid_Cell_(iOctant, iCellNext))
                     else if (JFACE .eq. 2) then
-                        YE = xyz_Rtm_(2, i8Grid_Cell_(iOct, iCellNext))
+                        YE = xyz_Rtm_(2, i8Grid_Cell_(iOctant, iCellNext))
                     else
-                        ZE = xyz_Rtm_(3, i8Grid_Cell_(iOct, iCellNext))
+                        ZE = xyz_Rtm_(3, i8Grid_Cell_(iOctant, iCellNext))
                     end if
                 end if
 
@@ -662,7 +662,7 @@ subroutine shd_intg__backIntegrate3D(&
                         RAD(:) = RAD(:) + TRANSMIT*RAD0(:)
                     else
                         write(*, *) 'Error [_backIntegrate3D]: iCellNext=0: ', xe, ye, ze, iCell
-                        write(*, *) iz, joct, mu, phi
+                        write(*, *) iz, jOctant, mu, phi
                         write(*, '(i7,4(1x,f7.4))') i1, GRIDRAD(1, I1),&
                             &xyz_Rtm_(1, i1), xyz_Rtm_(2, i1), xyz_Rtm_(3, i1)
                         write(*, '(i7,4(1x,f7.4))') i2, GRIDRAD(1, I2),&
@@ -715,7 +715,7 @@ subroutine shd_intg__backIntegrate3D_( &
     !   cell_obj_%Npts : integer, total number of cells
     !   i8Grid_Cell_(8,cell_obj_%Npts) : integer array, pointer to 8 grid points belonging to a cell.
     !                       Order of pointers is based on binary digits Z-Y-X:
-    !                       iOct = 1 + bitX + 2*bitY + 4*bitZ, where
+    !                       iOctant = 1 + bitX + 2*bitY + 4*bitZ, where
     !                       bitc is 0 for negative side and 1 for positive side.
     !                       1: (-X, -Y, -Z), 2: (+X, -Y, -Z), 3: (-X, +Y, -Z), 4: (+X, +Y, -Z)
     !                       5: (-X, -Y, +Z), 6: (+X, -Y, +Z), 7: (-X, +Y, +Z), 8: (+X, +Y, +Z)
@@ -755,10 +755,10 @@ subroutine shd_intg__backIntegrate3D_( &
 
     real   (kind=R__), intent(inout) :: GRIDRAD(rtm_obj_%Npts)
 
-    integer(kind=I__) :: bitX, bitY, bitZ, iOct, jOct
+    integer(kind=I__) :: bitX, bitY, bitZ, iOctant, jOctant
     integer(kind=I__) :: iCellPts, iCell, iCellNext, iPts, IFACE
     integer(kind=I__) :: I1, I2, I3, I4, IOPP, JFACE, KFACE, IC, IZ
-    integer(kind=I__) :: IORDER, iCorner
+    integer(kind=I__) :: iOrder, iCorner
     logical :: isValidRad, isValidFace, is1DX, is1DY
 
     real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV, ratioX, ratioY
@@ -769,7 +769,7 @@ subroutine shd_intg__backIntegrate3D_( &
     real(RD_) :: EXT0P, SRCEXT0P
     real(RD_) :: TAU, TRANSCELL, ABSCELL, RAD, RAD0, TRANSMIT
 
-    integer(kind=I__) :: GRIDFACE(4, 6), OPPFACE(6), jOctOrder_1D(8), jOctOrder_3D(8)
+    integer(kind=I__) :: GRIDFACE(4, 6), OPPFACE(6), jOctantOrder_1D(8), jOctantOrder_3D(8)
     data GRIDFACE /  &
         1, 3, 5, 7, &
         2, 4, 6, 8, &
@@ -778,8 +778,8 @@ subroutine shd_intg__backIntegrate3D_( &
         1, 2, 3, 4, &
         5, 6, 7, 8/
     data OPPFACE /2, 1, 4, 3, 6, 5/
-    data jOctOrder_1D /1, 3, 1, 3, 2, 4, 2, 4/
-    data jOctOrder_3D /1, 3, 5, 7, 2, 4, 6, 8/
+    data jOctantOrder_1D /1, 3, 1, 3, 2, 4, 2, 4/
+    data jOctantOrder_3D /1, 3, 5, 7, 2, 4, 6, 8/
 
     integer :: iwhile, ibreak
 
@@ -812,21 +812,21 @@ subroutine shd_intg__backIntegrate3D_( &
         stop 'Error [_backIntegrate3D_]: Bad MU.'
     end if
 
-    ! iOct is the octant the ray come from or the discrete ordinate goes to.
-    iOct = 1 + bitX + 2*bitY + 4*bitZ
+    ! iOctant is the octant the ray come from or the discrete ordinate goes to.
+    iOctant = 1 + bitX + 2*bitY + 4*bitZ
     if (is1DYx_) then
-        jOct = jOctOrder_1D(iOct)
+        jOctant = jOctantOrder_1D(iOctant)
     else
-        jOct = jOctOrder_3D(iOct)
+        jOctant = jOctantOrder_3D(iOctant)
     end if
 
     IZ = (NZ - 1)*(1 - bitZ) + 1
 
     ! Sweep through all the grid points
-    do IORDER = 1, rtm_obj_%Npts
+    do iOrder = 1, rtm_obj_%Npts
 
-        iCellPts  = ishft(SWEEPORD(IORDER, jOct), -3)
-        iCorner = ibits(SWEEPORD(IORDER, jOct), 0, 3) + 1
+        iCellPts  = ishft(SWEEPORD(iOrder, jOctant), -3)
+        iCorner = ibits(SWEEPORD(iOrder, jOctant), 0, 3) + 1
         iPts = i8Grid_Cell_(iCorner, iCellPts)
 
         ! this is for mpi (e.g., shdMpi.f90, not OMP)
@@ -837,7 +837,7 @@ subroutine shd_intg__backIntegrate3D_( &
             if  ((xyz_Rtm_(3, iPts) .lt. rtm_obj_%z(IZ) .and. bitZ .eq. 0) .or. &
                  (xyz_Rtm_(3, iPts) .gt. rtm_obj_%z(IZ) .and. bitZ .eq. 1)) then
                 IZ = IZ + 2*bitZ - 1
-                call shd_mpi__calBndryRad(BCFLAG, IPFLAG, jOct, IZ, &
+                call shd_mpi__calBndryRad(BCFLAG, IPFLAG, jOctant, IZ, &
                     NX, NY, NZ, &
                     NA, &
                     MU, PHI, EXTINCT, 1, SOURCE, &
@@ -876,7 +876,7 @@ subroutine shd_intg__backIntegrate3D_( &
                 ! Find boundaries of the current cell
                 ! Find the three possible intersection planes (X,Y,Z)
                 !   from the coordinates of the opposite corner grid point
-                IOPP = i8Grid_Cell_(9 - iOct, iCell)
+                IOPP = i8Grid_Cell_(9 - iOctant, iCell)
 
                 ! Get the distances to the 3 planes and select the closest
                 !╭────────────────────────────────────────────────╮!
@@ -981,11 +981,11 @@ subroutine shd_intg__backIntegrate3D_( &
                 ! Get the location coordinate (does the boundary wrapping)
                 if (iCellNext .gt. 0) then
                     if (JFACE .eq. 1) then
-                        XE = xyz_Rtm_(1, i8Grid_Cell_(iOct, iCellNext))
+                        XE = xyz_Rtm_(1, i8Grid_Cell_(iOctant, iCellNext))
                     else if (JFACE .eq. 2) then
-                        YE = xyz_Rtm_(2, i8Grid_Cell_(iOct, iCellNext))
+                        YE = xyz_Rtm_(2, i8Grid_Cell_(iOctant, iCellNext))
                     else
-                        ZE = xyz_Rtm_(3, i8Grid_Cell_(iOct, iCellNext))
+                        ZE = xyz_Rtm_(3, i8Grid_Cell_(iOctant, iCellNext))
                     end if
                 end if
 
@@ -1064,7 +1064,7 @@ subroutine shd_intg__backIntegrate3D_( &
                         RAD = RAD + TRANSMIT*RAD0
                     else
                         write(*, *) 'Error [_backIntegrate3D_]: iCellNext=0: ', xe, ye, ze, iCell
-                        write(*, *) iz, joct, mu, phi
+                        write(*, *) iz, jOctant, mu, phi
                         write(*, '(i7,4(1x,f7.4))') i1, GRIDRAD(I1),&
                             &xyz_Rtm_(1, i1), xyz_Rtm_(2, i1), xyz_Rtm_(3, i1)
                         write(*, '(i7,4(1x,f7.4))') i2, GRIDRAD(I2),&
@@ -1115,11 +1115,11 @@ subroutine shd_intg__backIntegrate2D(&
     real MU, PHI, TRANSMIN
     real EXTINCT(rtm_obj_%Npts), SOURCE(NSTOKES, NA, rtm_obj_%Npts)
     real GRIDRAD(NSTOKES, rtm_obj_%Npts)
-    integer bitX, bitZ, iOct, jOct
+    integer bitX, bitZ, iOctant, jOctant
     integer iCellPts, iCell, iCellNext, iPts, IFACE
     integer I1, I2, IOPP, JFACE, KFACE, IC, IZ
     integer GRIDFACE(2, 6), OPPFACE(6)
-    integer IORDER, iCorner, jOctOrder(8)
+    integer iOrder, iCorner, jOctantOrder(8)
     logical :: isValidRad, isValidFace, is1DX
     real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV, ratioX, ratioY
     real(RD_) :: XE, YE, ZE
@@ -1132,7 +1132,7 @@ subroutine shd_intg__backIntegrate2D(&
     real(RD_) :: RAD(NSTOKES), RAD0(NSTOKES)
     data GRIDFACE/1, 5, 2, 6, 0, 0, 0, 0, 1, 2, 5, 6/
     data OPPFACE/2, 1, 4, 3, 6, 5/
-    data jOctOrder/1, 3, 1, 3, 2, 4, 2, 4/
+    data jOctantOrder/1, 3, 1, 3, 2, 4, 2, 4/
 
     EPS = 1.0e-3*(xyz_Rtm_(3, i8Grid_Cell_(8, 1)) - xyz_Rtm_(3, i8Grid_Cell_(1, 1)))
 
@@ -1155,14 +1155,14 @@ subroutine shd_intg__backIntegrate2D(&
     else
         stop 'Error [_backIntegrate2D]: Bad MU.'
     end if
-    ! iOct is the octant the ray come from or the discrete ordinate goes to.
-    iOct = 1 + bitX + 4*bitZ
-    jOct = jOctOrder(iOct)
+    ! iOctant is the octant the ray come from or the discrete ordinate goes to.
+    iOctant = 1 + bitX + 4*bitZ
+    jOctant = jOctantOrder(iOctant)
 
     ! Sweep through all the grid points
-    do IORDER = 1, rtm_obj_%Npts
-        iCellPts = ishft(SWEEPORD(IORDER, jOct), -3)
-        iCorner = ibits(SWEEPORD(IORDER, jOct), 0, 3) + 1
+    do iOrder = 1, rtm_obj_%Npts
+        iCellPts = ishft(SWEEPORD(iOrder, jOctant), -3)
+        iCorner = ibits(SWEEPORD(iOrder, jOctant), 0, 3) + 1
         iPts = i8Grid_Cell_(iCorner, iCellPts)
         if (GRIDRAD(1, iPts) .lt. 0.0) then
 
@@ -1190,7 +1190,7 @@ subroutine shd_intg__backIntegrate2D(&
                 ! Find boundaries of the current cell
                 ! Find the three possible intersection planes (X,Y,Z)
                 !   from the coordinates of the opposite corner grid point
-                IOPP = i8Grid_Cell_(9 - iOct, iCell)
+                IOPP = i8Grid_Cell_(9 - iOctant, iCell)
                 ! Get the distances to the 3 planes and select the closest
                 if (is1DX) then
                     SOX = 1.0e20
@@ -1249,9 +1249,9 @@ subroutine shd_intg__backIntegrate2D(&
                 ! Get the location coordinate (does the boundary wrapping)
                 if (iCellNext .gt. 0) then
                     if (JFACE .eq. 1) then
-                        XE = xyz_Rtm_(1, i8Grid_Cell_(iOct, iCellNext))
+                        XE = xyz_Rtm_(1, i8Grid_Cell_(iOctant, iCellNext))
                     else
-                        ZE = xyz_Rtm_(3, i8Grid_Cell_(iOct, iCellNext))
+                        ZE = xyz_Rtm_(3, i8Grid_Cell_(iOctant, iCellNext))
                     end if
                 end if
 
@@ -1310,7 +1310,7 @@ subroutine shd_intg__backIntegrate2D(&
                         RAD(:) = RAD(:) + TRANSMIT*RAD0(:)
                     else
                         write(*, *) 'Error [_backIntegrate2D]: iCellNext=0: ', xe, ye, ze, iCell
-                        write(*, *) iz, joct, mu, phi
+                        write(*, *) iz, jOctant, mu, phi
                         write(*, '(i7,4(1x,f7.4))') i1, GRIDRAD(1, I1),&
                             &xyz_Rtm_(1, i1), xyz_Rtm_(2, i1), xyz_Rtm_(3, i1)
                         write(*, '(i7,4(1x,f7.4))') i2, GRIDRAD(1, I2),&
@@ -1371,14 +1371,14 @@ subroutine shd_intg__backIntegrate1D(&
     real(kind=RD_) :: TAU, TRANSCELL, ABSCELL, TRANSMIT
     real(kind=RD_) :: RAD(NSTOKES), RAD0(NSTOKES)
 
-    integer(kind=I__) :: bitZ, iOct, jOct
+    integer(kind=I__) :: bitZ, iOctant, jOctant
     integer(kind=I__) :: iCellPts, iCell, iCellNext, iPts, IFACE, I1, IOPP
-    integer(kind=I__) :: IORDER, iCorner
+    integer(kind=I__) :: iOrder, iCorner
     logical :: isValidRad
 
-    integer(kind=I__) :: GRIDFACE(6), jOctOrder(8)
+    integer(kind=I__) :: GRIDFACE(6), jOctantOrder(8)
     data GRIDFACE /0, 0, 0, 0, 1, 5/
-    data jOctOrder /1, 1, 1, 1, 2, 2, 2, 2/
+    data jOctantOrder /1, 1, 1, 1, 2, 2, 2, 2/
 
     EPS = 1.0e-3*(xyz_Rtm_(3, i8Grid_Cell_(8, 1)) - xyz_Rtm_(3, i8Grid_Cell_(1, 1)))
 
@@ -1397,14 +1397,14 @@ subroutine shd_intg__backIntegrate1D(&
         stop 'Error [_backIntegrate1D]: Bad MU.'
     end if
 
-    ! iOct is the octant the ray come from or the discrete ordinate goes to.
-    iOct = 1 + 4*bitZ
-    jOct = jOctOrder(iOct)
+    ! iOctant is the octant the ray come from or the discrete ordinate goes to.
+    iOctant = 1 + 4*bitZ
+    jOctant = jOctantOrder(iOctant)
 
     ! Sweep through all the grid points
-    do IORDER = 1, rtm_obj_%Npts
-        iCellPts = ishft(SWEEPORD(IORDER, jOct), -3)
-        iCorner = ibits(SWEEPORD(IORDER, jOct), 0, 3) + 1
+    do iOrder = 1, rtm_obj_%Npts
+        iCellPts = ishft(SWEEPORD(iOrder, jOctant), -3)
+        iCorner = ibits(SWEEPORD(iOrder, jOctant), 0, 3) + 1
         iPts = i8Grid_Cell_(iCorner, iCellPts)
         if (GRIDRAD(1, iPts) .lt. 0.0) then
             ! Start off at the grid point
@@ -1429,7 +1429,7 @@ subroutine shd_intg__backIntegrate1D(&
                 ! Find boundaries of the current cell
                 ! Find the three possible intersection planes (X,Y,Z)
                 !   from the coordinates of the opposite corner grid point
-                IOPP = i8Grid_Cell_(9 - iOct, iCell)
+                IOPP = i8Grid_Cell_(9 - iOctant, iCell)
                 ! Get the distances to the 3 planes and select the closest
                 SO = (xyz_Rtm_(3, IOPP) - ZE)*CZINV
                 if (SO .lt. -EPS) then
@@ -1449,7 +1449,7 @@ subroutine shd_intg__backIntegrate1D(&
                 I1 = i8Grid_Cell_(GRIDFACE(IFACE), iCell)
                 ! Get the location coordinate (does the boundary wrapping)
                 if (iCellNext .gt. 0) then
-                    ZE = xyz_Rtm_(3, i8Grid_Cell_(iOct, iCellNext))
+                    ZE = xyz_Rtm_(3, i8Grid_Cell_(iOctant, iCellNext))
                 end if
 
                 ! Get extinction and source function at face intersection
