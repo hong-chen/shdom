@@ -3276,7 +3276,7 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     integer :: IX, IY, IZ, IL, IM, IU, IPTR, DIR, ICELL, INEXTCELL
     integer :: I1, I2, I3, I4, IOPP, IFACE, JFACE, KFACE, IC
     integer :: GRIDFACE(4, 6), OPPFACE(6)
-    logical :: IPINX, IPINY
+    logical :: is1DX, is1DY
     real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV, ratioX, ratioY
     real(RD_) :: XE, YE, ZE
     real(RD_) :: SO, SOX, SOY, SOZ, EPS
@@ -3381,19 +3381,19 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     I2 = i8Grid_Cell_(GRIDFACE(2, IFACE), ICELL)
     I3 = i8Grid_Cell_(GRIDFACE(3, IFACE), ICELL)
     I4 = i8Grid_Cell_(GRIDFACE(4, IFACE), ICELL)
-    IPINX = btest(int(flag_Cell_(ICELL)), 0)
-    IPINY = btest(int(flag_Cell_(ICELL)), 1)
+    is1DX = btest(int(flag_Cell_(ICELL)), 0)
+    is1DY = btest(int(flag_Cell_(ICELL)), 1)
     ! Compute the face interpolation factors
     if (IFACE .le. 2) then
         U = (Z - xyz_Rtm_(3, I1))/(xyz_Rtm_(3, I3) - xyz_Rtm_(3, I1))
-        if (IPINY) then
+        if (is1DY) then
             V = 0.5
         else
             V = (Y - xyz_Rtm_(2, I1))/(xyz_Rtm_(2, I2) - xyz_Rtm_(2, I1))
         end if
     else
         U = (Z - xyz_Rtm_(3, I1))/(xyz_Rtm_(3, I3) - xyz_Rtm_(3, I1))
-        if (IPINX) then
+        if (is1DX) then
             V = 0.5
         else
             V = (X - xyz_Rtm_(1, I1))/(xyz_Rtm_(1, I2) - xyz_Rtm_(1, I1))
@@ -3415,20 +3415,20 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     RAD(:) = RADIANCE(:)
     isValidRad = .false.
     do while (.not. isValidRad .and. ICELL .gt. 0)
-        IPINX = btest(int(flag_Cell_(ICELL)), 0)
-        IPINY = btest(int(flag_Cell_(ICELL)), 1)
+        is1DX = btest(int(flag_Cell_(ICELL)), 0)
+        is1DY = btest(int(flag_Cell_(ICELL)), 1)
 
         ! Find boundaries of the current cell
         !   Find the three possible intersection planes (X,Y,Z)
         !   from the coordinates of the opposite corner grid point
         IOPP = i8Grid_Cell_(9 - iOct, ICELL)
         ! Get the distances to the 3 planes and select the closest
-        if (IPINX) then
+        if (is1DX) then
             SOX = 1.0e20
         else
             SOX = (xyz_Rtm_(1, IOPP) - XE)*CXINV
         end if
-        if (IPINY) then
+        if (is1DY) then
             SOY = 1.0e20
         else
             SOY = (xyz_Rtm_(2, IOPP) - YE)*CYINV
@@ -3440,8 +3440,8 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
             call shd_mpi__abort('Error [mpi__integrateRay]: SO<0, see above.')
         end if
         ! Compute the coordinates of the cell exitting location
-        if (.not. IPINX) XE = XE + SO*CX
-        if (.not. IPINY) YE = YE + SO*CY
+        if (.not. is1DX) XE = XE + SO*CX
+        if (.not. is1DY) YE = YE + SO*CY
         ZE = ZE + SO*CZ
 
         ! Get the intersection face number (i.e. ptr6Cell_Cellindex)
@@ -3479,33 +3479,33 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
         ! Compute the face interpolation factors
         if (JFACE .eq. 1) then
             U = (ZE - xyz_Rtm_(3, I1))/(xyz_Rtm_(3, I3) - xyz_Rtm_(3, I1))
-            if (IPINY) then
+            if (is1DY) then
                 V = 0.5
             else
                 V = (YE - xyz_Rtm_(2, I1))/(xyz_Rtm_(2, I2) - xyz_Rtm_(2, I1))
             end if
         else if (JFACE .eq. 2) then
             U = (ZE - xyz_Rtm_(3, I1))/(xyz_Rtm_(3, I3) - xyz_Rtm_(3, I1))
-            if (IPINX) then
+            if (is1DX) then
                 V = 0.5
             else
                 V = (XE - xyz_Rtm_(1, I1))/(xyz_Rtm_(1, I2) - xyz_Rtm_(1, I1))
             end if
         else
-            if (IPINY) then
+            if (is1DY) then
                 U = 0.5
             else
                 U = (YE - xyz_Rtm_(2, I1))/(xyz_Rtm_(2, I3) - xyz_Rtm_(2, I1))
             end if
-            if (IPINX) then
+            if (is1DX) then
                 V = 0.5
             else
                 V = (XE - xyz_Rtm_(1, I1))/(xyz_Rtm_(1, I2) - xyz_Rtm_(1, I1))
             end if
         end if
         if ((u .lt. -1.0e-4) .or. (v .lt. -1.0e-4) .or. (u .gt. 1.0001) .or. (v .gt. 1.0001)) then
-            write(6, *) 'u,v<0 and/or u,v>1: ', muRay, phiRay, x, y, z, xe, ye, ze, u, v, ipinx, ipiny
-            call shd_mpi__abort('Error [mpi__integrateRay]: u,v<0 and/or u,v>1, see above.')
+            write(6, *) 'U,V<0 and/or U,V>1: ', muRay, phiRay, X, Y, Z, XE, YE, ZE, U, V, is1DX, is1DY
+            call shd_mpi__abort('Error [mpi__integrateRay]: U,V<0 and/or U,V>1, see above.')
         end if
 
         ! Get the location coordinate (does the boundary wrapping)

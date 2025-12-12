@@ -599,7 +599,7 @@ subroutine shd_src__integrateSrcRay(&
 
     integer bitX, bitY, bitZ, iOct, icell, INEXTCELL, IFACE
     integer IOPP, NTAU, IT, I, IPT1, IPT2, J, L
-    logical DONE, IPINX, IPINY, OPENBCFACE
+    logical DONE, is1DX, is1DY, OPENBCFACE
     integer JFACE, KFACE, IC, MAXCELLSCROSS, NGRID
     integer OPPFACE(6), OLDIPTS(8), DONETHIS(8)
     integer DONEFACE(8, 7), ONEX(8), ONEY(8)
@@ -778,10 +778,10 @@ subroutine shd_src__integrateSrcRay(&
 
         ! This cell is independent pixel if IP mode or open boundary
         !   conditions and ray is leaving domain (i.e. not entering)
-        IPINX = btest(int(flag_Cell_(icell)), 0) .and.&
+        is1DX = btest(int(flag_Cell_(icell)), 0) .and.&
             &.not. (isOpenX_ .and.&
             &((CX .gt. 0 .and. XE .lt. XM) .or. (CX .lt. 0 .and. XE .gt. XM)))
-        IPINY = btest(int(flag_Cell_(icell)), 1) .and.&
+        is1DY = btest(int(flag_Cell_(icell)), 1) .and.&
             &.not. (isOpenYx_ .and.&
             &((CY .gt. 0 .and. YE .lt. YM) .or. (CY .lt. 0 .and. YE .gt. YM)))
 
@@ -791,12 +791,12 @@ subroutine shd_src__integrateSrcRay(&
         IOPP = i8Grid_Cell_(9 - iOct, icell)
         ! Get the distances to the 3 planes and select the closest
         !   (always need to deal with the cell that is wrapped)
-        if (IPINX) then
+        if (is1DX) then
             SOX = 1.0e20
         else
             SOX = (xyz_Rtm_(1, IOPP) - XE)*CXINV
         end if
-        if (IPINY) then
+        if (is1DY) then
             SOY = 1.0e20
         else
             SOY = (xyz_Rtm_(2, IOPP) - YE)*CYINV
@@ -968,7 +968,7 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
     real srcJ_Shdo(NSTOKES, rtm_obj_%Npts), GRIDRAD(NSTOKES, rtm_obj_%Npts)
     integer bitX, bitY, bitZ, iOct, icell, INEXTCELL, IFACE
     integer I1, I2, I3, I4, IOPP, NTAU, IT, K
-    logical IPINX, IPINY, OPENBCFACE
+    logical is1DX, is1DY, OPENBCFACE
     integer GRIDFACE(4, 6), OPPFACE(6), JFACE, KFACE, IC
     real EXT0(1), EXT1(1), EXTN(1)
     real XM, YM
@@ -1031,10 +1031,10 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
     do while (.not. isValidRad .and. icell .gt. 0)
         ! This cell is independent pixel if IP mode or open boundary
         !   conditions and ray is leaving domain (i.e. not entering)
-        IPINX = btest(int(flag_Cell_(icell)), 0) .and.&
+        is1DX = btest(int(flag_Cell_(icell)), 0) .and.&
             &.not. (isOpenX_ .and.&
             &((CX .gt. 0 .and. XE .lt. XM) .or. (CX .lt. 0 .and. XE .gt. XM)))
-        IPINY = btest(int(flag_Cell_(icell)), 1) .and.&
+        is1DY = btest(int(flag_Cell_(icell)), 1) .and.&
             &.not. (isOpenYx_ .and.&
             &((CY .gt. 0 .and. YE .lt. YM) .or. (CY .lt. 0 .and. YE .gt. YM)))
 
@@ -1044,12 +1044,12 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
         IOPP = i8Grid_Cell_(9 - iOct, icell)
         ! Get the distances to the 3 planes and select the closest
         !   (always need to deal with the cell that is wrapped)
-        if (IPINX .or. CX .eq. 0.0) then
+        if (is1DX .or. CX .eq. 0.0) then
             SOX = 1.0e20
         else
             SOX = (xyz_Rtm_(1, IOPP) - XE)*CXINV
         end if
-        if (IPINY .or. CY .eq. 0.0) then
+        if (is1DY .or. CY .eq. 0.0) then
             SOY = 1.0e20
         else
             SOY = (xyz_Rtm_(2, IOPP) - YE)*CYINV
@@ -1062,12 +1062,12 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
                 &xyz_Rtm_(1, IOPP), xyz_Rtm_(2, IOPP), xyz_Rtm_(3, IOPP)
             stop
         end if
-        if (IPINX) then
+        if (is1DX) then
             XN = XE
         else
             XN = XE + SO*CX
         end if
-        if (IPINY) then
+        if (is1DY) then
             YN = YE
         else
             YN = YE + SO*CY
@@ -1084,12 +1084,12 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
         ! Loop over the subgrid cells
         do IT = 1, NTAU
             S = IT*DELS
-            if (IPINX) then
+            if (is1DX) then
                 XI = XE
             else
                 XI = XE + S*CX
             end if
-            if (IPINY) then
+            if (is1DY) then
                 YI = YE
             else
                 YI = YE + S*CY

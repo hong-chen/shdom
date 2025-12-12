@@ -394,7 +394,7 @@ subroutine shd_intg__backIntegrate3D(&
     integer I1, I2, I3, I4, IOPP, JFACE, KFACE, IC, IZ
     integer GRIDFACE(4, 6), OPPFACE(6)
     integer IORDER, ICORNER, jOctOrder3(8), jOctOrder2(8)
-    logical isValidRad, isValidFace, IPINX, IPINY
+    logical isValidRad, isValidFace, is1DX, is1DY
     real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV, ratioX, ratioY
     real(RD_) :: XE, YE, ZE
     real(RD_) :: SO, SOX, SOY, SOZ, EPS, path
@@ -485,20 +485,20 @@ subroutine shd_intg__backIntegrate3D(&
                         &xyz_Rtm_(1, ipt), xyz_Rtm_(2, ipt), xyz_Rtm_(3, ipt)
                     stop
                 end if
-                IPINX = btest(int(flag_Cell_(ICELL)), 0)
-                IPINY = btest(int(flag_Cell_(ICELL)), 1)
+                is1DX = btest(int(flag_Cell_(ICELL)), 0)
+                is1DY = btest(int(flag_Cell_(ICELL)), 1)
 
                 ! Find boundaries of the current cell
                 ! Find the three possible intersection planes (X,Y,Z)
                 !   from the coordinates of the opposite corner grid point
                 IOPP = i8Grid_Cell_(9 - iOct, ICELL)
                 ! Get the distances to the 3 planes and select the closest
-                if (IPINX) then
+                if (is1DX) then
                     SOX = 1.0e20
                 else
                     SOX = (xyz_Rtm_(1, IOPP) - XE)*CXINV
                 end if
-                if (IPINY) then
+                if (is1DY) then
                     SOY = 1.0e20
                 else
                     SOY = (xyz_Rtm_(2, IOPP) - YE)*CYINV
@@ -551,25 +551,25 @@ subroutine shd_intg__backIntegrate3D(&
                 ! Compute the face interpolation factors
                 if (JFACE .eq. 1) then
                     U = (ZE - xyz_Rtm_(3, I1))/(xyz_Rtm_(3, I3) - xyz_Rtm_(3, I1))
-                    if (IPINY) then
+                    if (is1DY) then
                         V = 0.5
                     else
                         V = (YE - xyz_Rtm_(2, I1))/(xyz_Rtm_(2, I2) - xyz_Rtm_(2, I1))
                     end if
                 else if (JFACE .eq. 2) then
                     U = (ZE - xyz_Rtm_(3, I1))/(xyz_Rtm_(3, I3) - xyz_Rtm_(3, I1))
-                    if (IPINX) then
+                    if (is1DX) then
                         V = 0.5
                     else
                         V = (XE - xyz_Rtm_(1, I1))/(xyz_Rtm_(1, I2) - xyz_Rtm_(1, I1))
                     end if
                 else
-                    if (IPINY) then
+                    if (is1DY) then
                         U = 0.5
                     else
                         U = (YE - xyz_Rtm_(2, I1))/(xyz_Rtm_(2, I3) - xyz_Rtm_(2, I1))
                     end if
-                    if (IPINX) then
+                    if (is1DX) then
                         V = 0.5
                     else
                         V = (XE - xyz_Rtm_(1, I1))/(xyz_Rtm_(1, I2) - xyz_Rtm_(1, I1))
@@ -759,7 +759,7 @@ subroutine shd_intg__backIntegrate3D_( &
     integer(kind=I__) :: IPCELL, ICELL, INEXTCELL, IPT, IFACE
     integer(kind=I__) :: I1, I2, I3, I4, IOPP, JFACE, KFACE, IC, IZ
     integer(kind=I__) :: IORDER, ICORNER
-    logical :: isValidRad, isValidFace, IPINX, IPINY
+    logical :: isValidRad, isValidFace, is1DX, is1DY
 
     real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV, ratioX, ratioY
     real(RD_) :: XE, YE, ZE
@@ -870,8 +870,8 @@ subroutine shd_intg__backIntegrate3D_( &
                     stop
                 end if
 
-                IPINX = btest(int(flag_Cell_(ICELL)), 0)
-                IPINY = btest(int(flag_Cell_(ICELL)), 1)
+                is1DX = btest(int(flag_Cell_(ICELL)), 0)
+                is1DY = btest(int(flag_Cell_(ICELL)), 1)
 
                 ! Find boundaries of the current cell
                 ! Find the three possible intersection planes (X,Y,Z)
@@ -880,13 +880,13 @@ subroutine shd_intg__backIntegrate3D_( &
 
                 ! Get the distances to the 3 planes and select the closest
                 !╭────────────────────────────────────────────────╮!
-                if (IPINX) then
+                if (is1DX) then
                     SOX = 1.0e20
                 else
                     SOX = (xyz_Rtm_(1, IOPP) - XE)*CXINV
                 end if
 
-                if (IPINY) then
+                if (is1DY) then
                     SOY = 1.0e20
                 else
                     SOY = (xyz_Rtm_(2, IOPP) - YE)*CYINV
@@ -946,25 +946,25 @@ subroutine shd_intg__backIntegrate3D_( &
                 ! Compute the face interpolation factors
                 if (JFACE .eq. 1) then
                     U = (ZE - xyz_Rtm_(3, I1))/(xyz_Rtm_(3, I3) - xyz_Rtm_(3, I1))
-                    if (IPINY) then
+                    if (is1DY) then
                         V = 0.5
                     else
                         V = (YE - xyz_Rtm_(2, I1))/(xyz_Rtm_(2, I2) - xyz_Rtm_(2, I1))
                     end if
                 else if (JFACE .eq. 2) then
                     U = (ZE - xyz_Rtm_(3, I1))/(xyz_Rtm_(3, I3) - xyz_Rtm_(3, I1))
-                    if (IPINX) then
+                    if (is1DX) then
                         V = 0.5
                     else
                         V = (XE - xyz_Rtm_(1, I1))/(xyz_Rtm_(1, I2) - xyz_Rtm_(1, I1))
                     end if
                 else
-                    if (IPINY) then
+                    if (is1DY) then
                         U = 0.5
                     else
                         U = (YE - xyz_Rtm_(2, I1))/(xyz_Rtm_(2, I3) - xyz_Rtm_(2, I1))
                     end if
-                    if (IPINX) then
+                    if (is1DX) then
                         V = 0.5
                     else
                         V = (XE - xyz_Rtm_(1, I1))/(xyz_Rtm_(1, I2) - xyz_Rtm_(1, I1))
@@ -1120,7 +1120,7 @@ subroutine shd_intg__backIntegrate2D(&
     integer I1, I2, IOPP, JFACE, KFACE, IC, IZ
     integer GRIDFACE(2, 6), OPPFACE(6)
     integer IORDER, ICORNER, jOctOrder(8)
-    logical :: isValidRad, isValidFace, IPINX
+    logical :: isValidRad, isValidFace, is1DX
     real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV, ratioX, ratioY
     real(RD_) :: XE, YE, ZE
     real(RD_) :: SO, SOX, SOZ, EPS
@@ -1185,14 +1185,14 @@ subroutine shd_intg__backIntegrate2D(&
                         &MU, PHI, IPT, INEXTCELL
                     stop
                 end if
-                IPINX = btest(int(flag_Cell_(ICELL)), 0)
+                is1DX = btest(int(flag_Cell_(ICELL)), 0)
 
                 ! Find boundaries of the current cell
                 ! Find the three possible intersection planes (X,Y,Z)
                 !   from the coordinates of the opposite corner grid point
                 IOPP = i8Grid_Cell_(9 - iOct, ICELL)
                 ! Get the distances to the 3 planes and select the closest
-                if (IPINX) then
+                if (is1DX) then
                     SOX = 1.0e20
                 else
                     SOX = (xyz_Rtm_(1, IOPP) - XE)*CXINV
@@ -1239,7 +1239,7 @@ subroutine shd_intg__backIntegrate2D(&
                 if (JFACE .eq. 1) then
                     U = (ZE - xyz_Rtm_(3, I1))/(xyz_Rtm_(3, I2) - xyz_Rtm_(3, I1))
                 else
-                    if (IPINX) then
+                    if (is1DX) then
                         U = 0.5
                     else
                         U = (XE - xyz_Rtm_(1, I1))/(xyz_Rtm_(1, I2) - xyz_Rtm_(1, I1))
