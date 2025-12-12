@@ -186,7 +186,7 @@ subroutine shd_rad__computeDirect(&
     real(RD_) :: ext0, ssa0, F
     real(RD_) :: PATH
     real(RD_) :: EXTBEAMCUT, UNIFORMZLEV
-    real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV, ratio_x, ratio_y
+    real(RD_) :: cX, cY, cZ, CXINV, CYINV, CZINV, ratioX, ratioY
     real(RD_) :: EPSS, EPSZ, XDOMAIN, YDOMAIN
     real(RD_) :: XOFFS, YOFFS, DELXD, DELYD
     real(RD_) :: X, Y, Z, XE, YE, ZE, XP, YP, ZP
@@ -199,7 +199,7 @@ subroutine shd_rad__computeDirect(&
     real(RD_) :: VWU, VWUM, UWV, UWVM, UVW, UVWM
     real, save, allocatable :: kabs(:), minExt(:), maxExt(:), extDir_Prp(:, :, :)
 
-    save CX, CY, CZ, CXINV, CYINV, CZINV, DI, DJ, DK, IPDIRECT, ratio_x, ratio_y
+    save cX, cY, cZ, CXINV, CYINV, CZINV, DI, DJ, DK, IPDIRECT, ratioX, ratioY
     save DELXD, DELYD, XDOMAIN, YDOMAIN, EPSS, EPSZ, UNIFORMZLEV
 
 
@@ -288,12 +288,12 @@ subroutine shd_rad__computeDirect(&
             if (.not. src_obj_%doVariableSolar) then
                 ! Make the ray direction (opposite to the solar beam)
                 call shd_util__computeRayVect(dble(muSun), dble(phiSun), &
-                    CX, CY, CZ, CXINV, CYINV, CZINV, &
-                    ratio_x, ratio_y)
+                    cX, cY, cZ, CXINV, CYINV, CZINV, &
+                    ratioX, ratioY)
 
-                DI = nint(sign(1.0d0, CX))
-                DJ = nint(sign(1.0d0, CY))
-                DK = nint(sign(1.0d0, CZ))
+                DI = nint(sign(1.0d0, cX))
+                DJ = nint(sign(1.0d0, cY))
+                DK = nint(sign(1.0d0, cZ))
             end if
             !╰────────────────────────────────────────────────────────────────────────────╯!
 
@@ -373,12 +373,12 @@ subroutine shd_rad__computeDirect(&
 
                 ! Make the ray direction (opposite to the solar beam)
                 call shd_util__computeRayVect(dble(mu0), dble(phi0), &
-                    CX, CY, CZ, CXINV, CYINV, CZINV, &
-                    ratio_x, ratio_y)
+                    cX, cY, cZ, CXINV, CYINV, CZINV, &
+                    ratioX, ratioY)
 
-                DI = nint(sign(1.0d0, CX))
-                DJ = nint(sign(1.0d0, CY))
-                DK = nint(sign(1.0d0, CZ))
+                DI = nint(sign(1.0d0, cX))
+                DJ = nint(sign(1.0d0, cY))
+                DK = nint(sign(1.0d0, cZ))
             end if
             !╰────────────────────────────────────────────────────────────────────────────╯!
 
@@ -436,8 +436,8 @@ subroutine shd_rad__computeDirect(&
             CONSTX = btest(IPDIRECT, 0)
             CONSTY = btest(IPDIRECT, 1)
 
-            if (CX .eq. 0.0) CONSTX = .true.
-            if (CY .eq. 0.0) CONSTY = .true.
+            if (cX .eq. 0.0) CONSTX = .true.
+            if (cY .eq. 0.0) CONSTY = .true.
 
             if (isOpenX_ .and. (abs(X) .lt. 0.01*DELXD&
                 &.or. abs(X - (prp_obj_%Nx - 1)*DELXD) .lt. 0.01*DELXD)) CONSTX = .true.
@@ -449,21 +449,21 @@ subroutine shd_rad__computeDirect(&
             !   from a boundary then set the HITBOUNDARY flag
             HITBOUNDARY = .false.
             if (isMpiX_) then
-                if (CX .gt. 0.0 .and. abs(X - XDOMAIN) .lt. 0.001*DELXD) then
+                if (cX .gt. 0.0 .and. abs(X - XDOMAIN) .lt. 0.001*DELXD) then
                     SIDE = 2
                     HITBOUNDARY = .true.
-                else if (CX .lt. 0.0 .and. abs(X) .lt. 0.001*DELXD) then
+                else if (cX .lt. 0.0 .and. abs(X) .lt. 0.001*DELXD) then
                     SIDE = 1
                     HITBOUNDARY = .true.
                 end if
             end if
 
             if (isMpiY_) then
-                if (CY .gt. 0.0 .and. abs(Y - YDOMAIN) .lt. 0.001*DELYD) then
+                if (cY .gt. 0.0 .and. abs(Y - YDOMAIN) .lt. 0.001*DELYD) then
                     SIDE = 4
                     HITBOUNDARY = .true.
                 end if
-                if (CY .lt. 0.0 .and. abs(Y) .lt. 0.001*DELYD) then
+                if (cY .lt. 0.0 .and. abs(Y) .lt. 0.001*DELYD) then
                     SIDE = 3
                     HITBOUNDARY = .true.
                 end if
@@ -533,7 +533,7 @@ subroutine shd_rad__computeDirect(&
 
                 if (CONSTX) then
                     SOX = 1.0e30
-                else if (CX .gt. 0.0) then
+                else if (cX .gt. 0.0) then
                     SOX = (X1 - XE)*CXINV
                     XP = X1
                 else
@@ -543,7 +543,7 @@ subroutine shd_rad__computeDirect(&
 
                 if (CONSTY) then
                     SOY = 1.0e30
-                else if (CY .gt. 0.0) then
+                else if (cY .gt. 0.0) then
                     SOY = (Y1 - YE)*CYINV
                     YP = Y1
                 else
@@ -551,10 +551,10 @@ subroutine shd_rad__computeDirect(&
                     YP = Y0
                 end if
 
-                if (CZ .gt. 0.0) then
+                if (cZ .gt. 0.0) then
                     SOZ = (Z1 - ZE)*CZINV
                     ZP = Z1
-                else if (CZ .lt. 0.0) then
+                else if (cZ .lt. 0.0) then
                     SOZ = (Z0 - ZE)*CZINV
                     ZP = Z0
                 else
@@ -567,13 +567,13 @@ subroutine shd_rad__computeDirect(&
                 YOFFS = 0.0
                 if (SOZ .le. SOX .and. SOZ .le. SOY) then
                     SO = SOZ
-                    if (.not. CONSTX) XP = XE + SO*CX
-                    if (.not. CONSTY) YP = YE + SO*CY
+                    if (.not. CONSTX) XP = XE + SO*cX
+                    if (.not. CONSTY) YP = YE + SO*cY
                     K = K + DK
                 else if (SOX .le. SOY) then
                     SO = SOX
-                    if (.not. CONSTY) YP = YE + SO*CY
-                    ZP = ZE + SO*CZ
+                    if (.not. CONSTY) YP = YE + SO*cY
+                    ZP = ZE + SO*cZ
                     I = I + DI
                     ! If have reached a horizontal boundary then either wrap around
                     !   (periodic) or go into IP mode (open boundaries).
@@ -602,8 +602,8 @@ subroutine shd_rad__computeDirect(&
                     end if
                 else
                     SO = SOY
-                    if (.not. CONSTX) XP = XE + SO*CX
-                    ZP = ZE + SO*CZ
+                    if (.not. CONSTX) XP = XE + SO*cX
+                    ZP = ZE + SO*cZ
                     J = J + DJ
                     if (J .eq. 0) then
                         if (isOpenYx_) then
@@ -631,7 +631,7 @@ subroutine shd_rad__computeDirect(&
                 end if
                 if (SO .lt. -EPSS) then
                     write(6, *) '_computeDirect: SO<0', X, Y, Z,&
-                        &XE, YE, ZE, XP, YP, ZP, CX, CY, CZ, SOX, SOY, SOZ
+                        &XE, YE, ZE, XP, YP, ZP, cX, cY, cZ, SOX, SOY, SOZ
                     stop
                 end if
                 SO = max(SO, 0.0d0)

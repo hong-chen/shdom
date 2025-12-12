@@ -608,7 +608,7 @@ subroutine shd_src__integrateSrcRay(&
     real EXT0, EXT1, EXTN
     real SRCEXT0(NSTOKES), SRCEXT1(NSTOKES), RADBND(NSTOKES)
     real XM, YM, F
-    real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV, ratio_x, ratio_y
+    real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV, ratioX, ratioY
     real(RD_) :: XN, YN, ZN, XI, YI, ZI
     real(RD_) :: SO, SOX, SOY, SOZ, EPS
     real(RD_) :: TAUTOL, TAUGRID, S, DELS, TRANSCUT
@@ -675,7 +675,7 @@ subroutine shd_src__integrateSrcRay(&
     ! Make the ray direction (opposite to the outgoing direction)
     call shd_util__computeRayVect(muRay, phiRay, &
         CX, CY, CZ, CXINV, CYINV, CZINV, &
-        ratio_x, ratio_y)
+        ratioX, ratioY)
 
     ! Setup for the ray path direction
     if (CX .lt. 0.0) then
@@ -973,7 +973,7 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
     real EXT0(1), EXT1(1), EXTN(1)
     real XM, YM
     real SRCEXT0(NSTOKES), SRCEXT1(NSTOKES), RAD0(NSTOKES)
-    real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV, ratio_x, ratio_y
+    real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV, ratioX, ratioY
     real(RD_) :: XN, YN, ZN, XI, YI, ZI
     real(RD_) :: SO, SOX, SOY, SOZ, EPS
     real(RD_) :: TAUTOL, TAUGRID, S, DELS
@@ -989,7 +989,7 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
     ! Make the ray direction (opposite to the discrete ordinate dire
     call shd_util__computeRayVect(dble(muRay), dble(phiRay), &
         CX, CY, CZ, CXINV, CYINV, CZINV, &
-        ratio_x, ratio_y)
+        ratioX, ratioY)
 
     ! Setup for the ray path direction
     if (CX .lt. 0.0) then

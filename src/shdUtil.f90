@@ -1467,7 +1467,7 @@ end subroutine sin_cos
 
 subroutine shd_util__computeRayVect(&
         mu0, phi0, &
-        cx,     cy,     cz, &
+        cx, cy, cz, &
         cx_inv, cy_inv, cz_inv, &
         ratio_x, ratio_y, &
         xyz_info)
