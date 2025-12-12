@@ -390,7 +390,7 @@ subroutine shd_intg__backIntegrate3D(&
     real EXTINCT(rtm_obj_%Npts), SOURCE(NSTOKES, NA, rtm_obj_%Npts)
     real GRIDRAD(NSTOKES, rtm_obj_%Npts)
     integer bitX, bitY, bitZ, iOct, jOct
-    integer IPCELL, ICELL, INEXTCELL, IPT, IFACE
+    integer IPCELL, iCell, iCellNext, IPT, IFACE
     integer I1, I2, I3, I4, IOPP, JFACE, KFACE, IC, IZ
     integer GRIDFACE(4, 6), OPPFACE(6)
     integer IORDER, ICORNER, jOctOrder3(8), jOctOrder2(8)
@@ -466,7 +466,7 @@ subroutine shd_intg__backIntegrate3D(&
         if (GRIDRAD(1, IPT) .lt. 0.0) then
 
             ! Start off at the grid point
-            ICELL = IPCELL
+            iCell = IPCELL
             TRANSMIT = 1.0
             EXT1 = EXTINCT(IPT)
             RAD(:) = 0.0
@@ -479,19 +479,19 @@ subroutine shd_intg__backIntegrate3D(&
             isValidRad = .false.
             do while (.not. isValidRad)
                 ! Make sure current cell is valid
-                if (ICELL .le. 0) then
-                    write(6, *) 'Error [_backIntegrate3D]: ICELL=0 ',&
-                        &MU, PHI, IPT, INEXTCELL, xe, ye, ze,&
+                if (iCell .le. 0) then
+                    write(6, *) 'Error [_backIntegrate3D]: iCell=0 ',&
+                        &MU, PHI, IPT, iCellNext, xe, ye, ze,&
                         &xyz_Rtm_(1, ipt), xyz_Rtm_(2, ipt), xyz_Rtm_(3, ipt)
                     stop
                 end if
-                is1DX = btest(int(flag_Cell_(ICELL)), 0)
-                is1DY = btest(int(flag_Cell_(ICELL)), 1)
+                is1DX = btest(int(flag_Cell_(iCell)), 0)
+                is1DY = btest(int(flag_Cell_(iCell)), 1)
 
                 ! Find boundaries of the current cell
                 ! Find the three possible intersection planes (X,Y,Z)
                 !   from the coordinates of the opposite corner grid point
-                IOPP = i8Grid_Cell_(9 - iOct, ICELL)
+                IOPP = i8Grid_Cell_(9 - iOct, iCell)
                 ! Get the distances to the 3 planes and select the closest
                 if (is1DX) then
                     SOX = 1.0e20
@@ -508,7 +508,7 @@ subroutine shd_intg__backIntegrate3D(&
                 SO = min(SOX, SOY, SOZ)
                 if (SO .lt. -EPS) then
                     write(6, *) 'Error [_backIntegrate3D]: SO<0 ',&
-                        &MU, PHI, XE, YE, ZE, SOX, SOY, SOZ, SO, IPT, ICELL
+                        &MU, PHI, XE, YE, ZE, SOX, SOY, SOZ, SO, IPT, iCell
                     stop
                 end if
                 ! Compute the coordinates of the cell exitting location
@@ -528,21 +528,21 @@ subroutine shd_intg__backIntegrate3D(&
                     JFACE = 3
                 end if
                 ! Get the next cell to go to
-                INEXTCELL = i6Cell_Cell_(IFACE, ICELL)
-                if (INEXTCELL .lt. 0) then
-                    call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL,&
-                        &INEXTCELL)
+                iCellNext = i6Cell_Cell_(IFACE, iCell)
+                if (iCellNext .lt. 0) then
+                    call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, iCell,&
+                        &iCellNext)
                 end if
 
                 ! Get the face grid pointers
-                if (i6Cell_Cell_(IFACE, ICELL) .ge. 0) then
+                if (i6Cell_Cell_(IFACE, iCell) .ge. 0) then
                     ! If going to same or larger face then use previous face
                     KFACE = IFACE
-                    IC = ICELL
+                    IC = iCell
                 else
                     ! If going to smaller face then use next face (more accurate)
                     KFACE = OPPFACE(IFACE)
-                    IC = INEXTCELL
+                    IC = iCellNext
                 end if
                 I1 = i8Grid_Cell_(GRIDFACE(1, KFACE), IC)
                 I2 = i8Grid_Cell_(GRIDFACE(2, KFACE), IC)
@@ -583,13 +583,13 @@ subroutine shd_intg__backIntegrate3D(&
                 end if
 
                 ! Get the location coordinate (does the boundary wrapping)
-                if (INEXTCELL .gt. 0) then
+                if (iCellNext .gt. 0) then
                     if (JFACE .eq. 1) then
-                        XE = xyz_Rtm_(1, i8Grid_Cell_(iOct, INEXTCELL))
+                        XE = xyz_Rtm_(1, i8Grid_Cell_(iOct, iCellNext))
                     else if (JFACE .eq. 2) then
-                        YE = xyz_Rtm_(2, i8Grid_Cell_(iOct, INEXTCELL))
+                        YE = xyz_Rtm_(2, i8Grid_Cell_(iOct, iCellNext))
                     else
-                        ZE = xyz_Rtm_(3, i8Grid_Cell_(iOct, INEXTCELL))
+                        ZE = xyz_Rtm_(3, i8Grid_Cell_(iOct, iCellNext))
                     end if
                 end if
 
@@ -653,7 +653,7 @@ subroutine shd_intg__backIntegrate3D(&
                 end if
                 isValidFace = (GRIDRAD(1, I1) .ge. -0.1 .and. GRIDRAD(1, I2) .ge. -0.1&
                     &.and. GRIDRAD(1, I3) .ge. -0.1 .and. GRIDRAD(1, I4) .ge. -0.1)
-                if (INEXTCELL .le. 0 .or.&
+                if (iCellNext .le. 0 .or.&
                     &(TRANSMIT .le. TRANSMIN .and. isValidFace)) then
                     if (isValidFace) then
                         isValidRad = .true.
@@ -661,7 +661,7 @@ subroutine shd_intg__backIntegrate3D(&
                             &+ F3*GRIDRAD(:, I3) + F4*GRIDRAD(:, I4)
                         RAD(:) = RAD(:) + TRANSMIT*RAD0(:)
                     else
-                        write(*, *) 'Error [_backIntegrate3D]: INEXTCELL=0: ', xe, ye, ze, icell
+                        write(*, *) 'Error [_backIntegrate3D]: iCellNext=0: ', xe, ye, ze, iCell
                         write(*, *) iz, joct, mu, phi
                         write(*, '(i7,4(1x,f7.4))') i1, GRIDRAD(1, I1),&
                             &xyz_Rtm_(1, i1), xyz_Rtm_(2, i1), xyz_Rtm_(3, i1)
@@ -678,7 +678,7 @@ subroutine shd_intg__backIntegrate3D(&
                 else
                     EXT1 = EXT0
                     SRCEXT1(:) = SRCEXT0(:)
-                    ICELL = INEXTCELL
+                    iCell = iCellNext
                 end if
             end do
             GRIDRAD(:, IPT) = RAD(:)
@@ -756,7 +756,7 @@ subroutine shd_intg__backIntegrate3D_( &
     real   (kind=R__), intent(inout) :: GRIDRAD(rtm_obj_%Npts)
 
     integer(kind=I__) :: bitX, bitY, bitZ, iOct, jOct
-    integer(kind=I__) :: IPCELL, ICELL, INEXTCELL, IPT, IFACE
+    integer(kind=I__) :: IPCELL, iCell, iCellNext, IPT, IFACE
     integer(kind=I__) :: I1, I2, I3, I4, IOPP, JFACE, KFACE, IC, IZ
     integer(kind=I__) :: IORDER, ICORNER
     logical :: isValidRad, isValidFace, is1DX, is1DY
@@ -849,7 +849,7 @@ subroutine shd_intg__backIntegrate3D_( &
         if (GRIDRAD(IPT) .lt. 0.0) then
 
             ! Start off at the grid point
-            ICELL = IPCELL
+            iCell = IPCELL
             RAD = 0.0
             TRANSMIT = 1.0
             EXT1 = EXTINCT(IPT)
@@ -863,20 +863,20 @@ subroutine shd_intg__backIntegrate3D_( &
             do while (.not. isValidRad)
 
                 ! Make sure current cell is valid
-                if (ICELL .le. 0) then
-                    write(6, *) 'Error [_backIntegrate3D_]: ICELL=0 ', &
-                        MU, PHI, IPT, INEXTCELL, XE, YE, ZE, &
+                if (iCell .le. 0) then
+                    write(6, *) 'Error [_backIntegrate3D_]: iCell=0 ', &
+                        MU, PHI, IPT, iCellNext, XE, YE, ZE, &
                         xyz_Rtm_(1, IPT), xyz_Rtm_(2, IPT), xyz_Rtm_(3, IPT)
                     stop
                 end if
 
-                is1DX = btest(int(flag_Cell_(ICELL)), 0)
-                is1DY = btest(int(flag_Cell_(ICELL)), 1)
+                is1DX = btest(int(flag_Cell_(iCell)), 0)
+                is1DY = btest(int(flag_Cell_(iCell)), 1)
 
                 ! Find boundaries of the current cell
                 ! Find the three possible intersection planes (X,Y,Z)
                 !   from the coordinates of the opposite corner grid point
-                IOPP = i8Grid_Cell_(9 - iOct, ICELL)
+                IOPP = i8Grid_Cell_(9 - iOct, iCell)
 
                 ! Get the distances to the 3 planes and select the closest
                 !╭────────────────────────────────────────────────╮!
@@ -899,7 +899,7 @@ subroutine shd_intg__backIntegrate3D_( &
 
                 if (SO .lt. -EPS) then
                     write(6, *) 'Error [_backIntegrate3D_]: SO<0 ', &
-                        MU, PHI, XE, YE, ZE, SOX, SOY, SOZ, SO, IPT, ICELL
+                        MU, PHI, XE, YE, ZE, SOX, SOY, SOZ, SO, IPT, iCell
                     stop
                 end if
 
@@ -921,21 +921,21 @@ subroutine shd_intg__backIntegrate3D_( &
                 end if
 
                 ! Get the next cell to go to
-                INEXTCELL = i6Cell_Cell_(IFACE, ICELL)
-                if (INEXTCELL .lt. 0) then
-                    call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, &
-                        INEXTCELL)
+                iCellNext = i6Cell_Cell_(IFACE, iCell)
+                if (iCellNext .lt. 0) then
+                    call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, iCell, &
+                        iCellNext)
                 end if
 
                 ! Get the face grid pointers
-                if (i6Cell_Cell_(IFACE, ICELL) .ge. 0) then
+                if (i6Cell_Cell_(IFACE, iCell) .ge. 0) then
                     ! If going to same or larger face then use previous face
                     KFACE = IFACE
-                    IC = ICELL
+                    IC = iCell
                 else
                     ! If going to smaller face then use next face (more accurate)
                     KFACE = OPPFACE(IFACE)
-                    IC = INEXTCELL
+                    IC = iCellNext
                 end if
 
                 I1 = i8Grid_Cell_(GRIDFACE(1, KFACE), IC)
@@ -979,13 +979,13 @@ subroutine shd_intg__backIntegrate3D_( &
                 end if
 
                 ! Get the location coordinate (does the boundary wrapping)
-                if (INEXTCELL .gt. 0) then
+                if (iCellNext .gt. 0) then
                     if (JFACE .eq. 1) then
-                        XE = xyz_Rtm_(1, i8Grid_Cell_(iOct, INEXTCELL))
+                        XE = xyz_Rtm_(1, i8Grid_Cell_(iOct, iCellNext))
                     else if (JFACE .eq. 2) then
-                        YE = xyz_Rtm_(2, i8Grid_Cell_(iOct, INEXTCELL))
+                        YE = xyz_Rtm_(2, i8Grid_Cell_(iOct, iCellNext))
                     else
-                        ZE = xyz_Rtm_(3, i8Grid_Cell_(iOct, INEXTCELL))
+                        ZE = xyz_Rtm_(3, i8Grid_Cell_(iOct, iCellNext))
                     end if
                 end if
 
@@ -1055,7 +1055,7 @@ subroutine shd_intg__backIntegrate3D_( &
 
                 isValidFace = (GRIDRAD(I1) .ge. -0.1 .and. GRIDRAD(I2) .ge. -0.1&
                       &.and. GRIDRAD(I3) .ge. -0.1 .and. GRIDRAD(I4) .ge. -0.1)
-                if ((INEXTCELL .le. 0) .or. &
+                if ((iCellNext .le. 0) .or. &
                     ((TRANSMIT .le. TRANSMIN) .and. isValidFace)) then
                     if (isValidFace) then
                         isValidRad = .true.
@@ -1063,7 +1063,7 @@ subroutine shd_intg__backIntegrate3D_( &
                             &+ F3*GRIDRAD(I3) + F4*GRIDRAD(I4)
                         RAD = RAD + TRANSMIT*RAD0
                     else
-                        write(*, *) 'Error [_backIntegrate3D_]: INEXTCELL=0: ', xe, ye, ze, icell
+                        write(*, *) 'Error [_backIntegrate3D_]: iCellNext=0: ', xe, ye, ze, iCell
                         write(*, *) iz, joct, mu, phi
                         write(*, '(i7,4(1x,f7.4))') i1, GRIDRAD(I1),&
                             &xyz_Rtm_(1, i1), xyz_Rtm_(2, i1), xyz_Rtm_(3, i1)
@@ -1080,7 +1080,7 @@ subroutine shd_intg__backIntegrate3D_( &
                 else
                     EXT1 = EXT0
                     SRCEXT1 = SRCEXT0
-                    ICELL = INEXTCELL
+                    iCell = iCellNext
                 end if
             end do
 
@@ -1116,7 +1116,7 @@ subroutine shd_intg__backIntegrate2D(&
     real EXTINCT(rtm_obj_%Npts), SOURCE(NSTOKES, NA, rtm_obj_%Npts)
     real GRIDRAD(NSTOKES, rtm_obj_%Npts)
     integer bitX, bitZ, iOct, jOct
-    integer IPCELL, ICELL, INEXTCELL, IPT, IFACE
+    integer IPCELL, iCell, iCellNext, IPT, IFACE
     integer I1, I2, IOPP, JFACE, KFACE, IC, IZ
     integer GRIDFACE(2, 6), OPPFACE(6)
     integer IORDER, ICORNER, jOctOrder(8)
@@ -1167,7 +1167,7 @@ subroutine shd_intg__backIntegrate2D(&
         if (GRIDRAD(1, IPT) .lt. 0.0) then
 
             ! Start off at the grid point
-            ICELL = IPCELL
+            iCell = IPCELL
             TRANSMIT = 1.0
             EXT1 = EXTINCT(IPT)
             RAD(:) = 0.0
@@ -1180,17 +1180,17 @@ subroutine shd_intg__backIntegrate2D(&
             isValidRad = .false.
             do while (.not. isValidRad)
                 ! Make sure current cell is valid
-                if (ICELL .le. 0) then
-                    write(6, *) 'Error [_backIntegrate2D]: ICELL=0 ',&
-                        &MU, PHI, IPT, INEXTCELL
+                if (iCell .le. 0) then
+                    write(6, *) 'Error [_backIntegrate2D]: iCell=0 ',&
+                        &MU, PHI, IPT, iCellNext
                     stop
                 end if
-                is1DX = btest(int(flag_Cell_(ICELL)), 0)
+                is1DX = btest(int(flag_Cell_(iCell)), 0)
 
                 ! Find boundaries of the current cell
                 ! Find the three possible intersection planes (X,Y,Z)
                 !   from the coordinates of the opposite corner grid point
-                IOPP = i8Grid_Cell_(9 - iOct, ICELL)
+                IOPP = i8Grid_Cell_(9 - iOct, iCell)
                 ! Get the distances to the 3 planes and select the closest
                 if (is1DX) then
                     SOX = 1.0e20
@@ -1201,7 +1201,7 @@ subroutine shd_intg__backIntegrate2D(&
                 SO = min(SOX, SOZ)
                 if (SO .lt. -EPS) then
                     write(6, *) 'Error [_backIntegrate2D]: SO<0 ',&
-                        &MU, PHI, XE, ZE, SOX, SOZ, SO, IPT, ICELL
+                        &MU, PHI, XE, ZE, SOX, SOZ, SO, IPT, iCell
                     stop
                 end if
                 ! Compute the coordinates of the cell exitting location
@@ -1217,21 +1217,21 @@ subroutine shd_intg__backIntegrate2D(&
                     JFACE = 3
                 end if
                 ! Get the next cell to go to
-                INEXTCELL = i6Cell_Cell_(IFACE, ICELL)
-                if (INEXTCELL .lt. 0) then
-                    call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL,&
-                        &INEXTCELL)
+                iCellNext = i6Cell_Cell_(IFACE, iCell)
+                if (iCellNext .lt. 0) then
+                    call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, iCell,&
+                        &iCellNext)
                 end if
 
                 ! Get the face grid pointers
-                if (i6Cell_Cell_(IFACE, ICELL) .ge. 0) then
+                if (i6Cell_Cell_(IFACE, iCell) .ge. 0) then
                     ! If going to same or larger face then use previous face
                     KFACE = IFACE
-                    IC = ICELL
+                    IC = iCell
                 else
                     ! If going to smaller face then use next face (more accurate)
                     KFACE = OPPFACE(IFACE)
-                    IC = INEXTCELL
+                    IC = iCellNext
                 end if
                 I1 = i8Grid_Cell_(GRIDFACE(1, KFACE), IC)
                 I2 = i8Grid_Cell_(GRIDFACE(2, KFACE), IC)
@@ -1247,11 +1247,11 @@ subroutine shd_intg__backIntegrate2D(&
                 end if
 
                 ! Get the location coordinate (does the boundary wrapping)
-                if (INEXTCELL .gt. 0) then
+                if (iCellNext .gt. 0) then
                     if (JFACE .eq. 1) then
-                        XE = xyz_Rtm_(1, i8Grid_Cell_(iOct, INEXTCELL))
+                        XE = xyz_Rtm_(1, i8Grid_Cell_(iOct, iCellNext))
                     else
-                        ZE = xyz_Rtm_(3, i8Grid_Cell_(iOct, INEXTCELL))
+                        ZE = xyz_Rtm_(3, i8Grid_Cell_(iOct, iCellNext))
                     end if
                 end if
 
@@ -1302,14 +1302,14 @@ subroutine shd_intg__backIntegrate2D(&
                 RAD(:) = RAD(:) + TRANSMIT*SRC(:)*ABSCELL
                 TRANSMIT = TRANSMIT*TRANSCELL
                 isValidFace = (GRIDRAD(1, I1) .ge. -0.1 .and. GRIDRAD(1, I2) .ge. -0.1)
-                if (INEXTCELL .le. 0 .or.&
+                if (iCellNext .le. 0 .or.&
                     &(TRANSMIT .le. TRANSMIN .and. isValidFace)) then
                     if (isValidFace) then
                         isValidRad = .true.
                         RAD0(:) = F1*GRIDRAD(:, I1) + F2*GRIDRAD(:, I2)
                         RAD(:) = RAD(:) + TRANSMIT*RAD0(:)
                     else
-                        write(*, *) 'Error [_backIntegrate2D]: INEXTCELL=0: ', xe, ye, ze, icell
+                        write(*, *) 'Error [_backIntegrate2D]: iCellNext=0: ', xe, ye, ze, iCell
                         write(*, *) iz, joct, mu, phi
                         write(*, '(i7,4(1x,f7.4))') i1, GRIDRAD(1, I1),&
                             &xyz_Rtm_(1, i1), xyz_Rtm_(2, i1), xyz_Rtm_(3, i1)
@@ -1322,7 +1322,7 @@ subroutine shd_intg__backIntegrate2D(&
                 else
                     EXT1 = EXT0
                     SRCEXT1(:) = SRCEXT0(:)
-                    ICELL = INEXTCELL
+                    iCell = iCellNext
                 end if
             end do
 
@@ -1372,7 +1372,7 @@ subroutine shd_intg__backIntegrate1D(&
     real(kind=RD_) :: RAD(NSTOKES), RAD0(NSTOKES)
 
     integer(kind=I__) :: bitZ, iOct, jOct
-    integer(kind=I__) :: IPCELL, ICELL, INEXTCELL, IPT, IFACE, I1, IOPP
+    integer(kind=I__) :: IPCELL, iCell, iCellNext, IPT, IFACE, I1, IOPP
     integer(kind=I__) :: IORDER, ICORNER
     logical :: isValidRad
 
@@ -1408,7 +1408,7 @@ subroutine shd_intg__backIntegrate1D(&
         IPT = i8Grid_Cell_(ICORNER, IPCELL)
         if (GRIDRAD(1, IPT) .lt. 0.0) then
             ! Start off at the grid point
-            ICELL = IPCELL
+            iCell = IPCELL
             TRANSMIT = 1.0
             EXT1 = EXTINCT(IPT)
             RAD(:) = 0.0
@@ -1421,20 +1421,20 @@ subroutine shd_intg__backIntegrate1D(&
             isValidRad = .false.
             do while (.not. isValidRad)
                 ! Make sure current cell is valid
-                if (ICELL .le. 0) then
-                    write(6, *) 'Error [_backIntegrate1D]: ICELL=0 ',&
-                        &MU, PHI, IPT, INEXTCELL
+                if (iCell .le. 0) then
+                    write(6, *) 'Error [_backIntegrate1D]: iCell=0 ',&
+                        &MU, PHI, IPT, iCellNext
                     stop
                 end if
                 ! Find boundaries of the current cell
                 ! Find the three possible intersection planes (X,Y,Z)
                 !   from the coordinates of the opposite corner grid point
-                IOPP = i8Grid_Cell_(9 - iOct, ICELL)
+                IOPP = i8Grid_Cell_(9 - iOct, iCell)
                 ! Get the distances to the 3 planes and select the closest
                 SO = (xyz_Rtm_(3, IOPP) - ZE)*CZINV
                 if (SO .lt. -EPS) then
                     write(6, *) 'Error [_backIntegrate1D]: SO<0 ',&
-                        &MU, PHI, ZE, SO, IPT, ICELL
+                        &MU, PHI, ZE, SO, IPT, iCell
                     stop
                 end if
                 ! Compute the coordinates of the cell exitting location
@@ -1443,13 +1443,13 @@ subroutine shd_intg__backIntegrate1D(&
                 ! Get the intersection face number (i.e. neighptr index)
                 IFACE = 6 - bitZ
                 ! Get the next cell to go to
-                INEXTCELL = i6Cell_Cell_(IFACE, ICELL)
+                iCellNext = i6Cell_Cell_(IFACE, iCell)
 
                 ! Get the face grid pointers
-                I1 = i8Grid_Cell_(GRIDFACE(IFACE), ICELL)
+                I1 = i8Grid_Cell_(GRIDFACE(IFACE), iCell)
                 ! Get the location coordinate (does the boundary wrapping)
-                if (INEXTCELL .gt. 0) then
-                    ZE = xyz_Rtm_(3, i8Grid_Cell_(iOct, INEXTCELL))
+                if (iCellNext .gt. 0) then
+                    ZE = xyz_Rtm_(3, i8Grid_Cell_(iOct, iCellNext))
                 end if
 
                 ! Get extinction and source function at face intersection
@@ -1521,7 +1521,7 @@ subroutine shd_intg__backIntegrate1D(&
                     SRCEXT1(:) = SRCEXT0(:)
                     TRANSMIT = TRANSMIT*TRANSCELL
                     EXT1 = EXT0
-                    ICELL = INEXTCELL
+                    iCell = iCellNext
                 end if
             end do
 

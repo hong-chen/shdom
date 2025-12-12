@@ -3273,7 +3273,7 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     logical, intent(out) :: isValidRad
 
     integer :: bitX, bitY, bitZ, iOct, NXC, NYC, BTEST
-    integer :: IX, IY, IZ, IL, IM, IU, IPTR, DIR, ICELL, INEXTCELL
+    integer :: IX, IY, IZ, IL, IM, IU, IPTR, DIR, iCell, iCellNext
     integer :: I1, I2, I3, I4, IOPP, IFACE, JFACE, KFACE, IC
     integer :: GRIDFACE(4, 6), OPPFACE(6)
     logical :: is1DX, is1DY
@@ -3354,16 +3354,16 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     IY = min(NYC, IY)
 
     ! Make the base grid cell pointer
-    ICELL = IZ + (Nz - 1)*(IY - 1) + (Nz - 1)*NYC*(IX - 1)
+    iCell = IZ + (Nz - 1)*(IY - 1) + (Nz - 1)*NYC*(IX - 1)
 
     ! Trace down the tree: point to the positive child cell, get the grid
     ! point that is on the negative (X,Y,Z) side, use the flags to find
     ! which dimension (X,Y,Z) the parent cell was split in, then compare
     ! the grid point with the test point (X,Y,Z) to find which child cell
     ! (pos or neg) the test point is in.
-    do while (i2Tree_Cell_(2, ICELL) .gt. 0)
-        DIR = ibits(int(flag_Cell_(ICELL)), 2, 2)
-        IC = i2Tree_Cell_(2, ICELL) + 1
+    do while (i2Tree_Cell_(2, iCell) .gt. 0)
+        DIR = ibits(int(flag_Cell_(iCell)), 2, 2)
+        IC = i2Tree_Cell_(2, iCell) + 1
         IPTR = i8Grid_Cell_(1, IC)
         if (DIR .eq. 1) then
             if (X .lt. xyz_Rtm_(1, IPTR)) IC = IC - 1
@@ -3372,17 +3372,17 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
         else if (DIR .eq. 3) then
             if (Z .lt. xyz_Rtm_(3, IPTR)) IC = IC - 1
         end if
-        ICELL = IC
+        iCell = IC
     end do
 
     IFACE = SIDE
     ! Get the four gridpoints for this face
-    I1 = i8Grid_Cell_(GRIDFACE(1, IFACE), ICELL)
-    I2 = i8Grid_Cell_(GRIDFACE(2, IFACE), ICELL)
-    I3 = i8Grid_Cell_(GRIDFACE(3, IFACE), ICELL)
-    I4 = i8Grid_Cell_(GRIDFACE(4, IFACE), ICELL)
-    is1DX = btest(int(flag_Cell_(ICELL)), 0)
-    is1DY = btest(int(flag_Cell_(ICELL)), 1)
+    I1 = i8Grid_Cell_(GRIDFACE(1, IFACE), iCell)
+    I2 = i8Grid_Cell_(GRIDFACE(2, IFACE), iCell)
+    I3 = i8Grid_Cell_(GRIDFACE(3, IFACE), iCell)
+    I4 = i8Grid_Cell_(GRIDFACE(4, IFACE), iCell)
+    is1DX = btest(int(flag_Cell_(iCell)), 0)
+    is1DY = btest(int(flag_Cell_(iCell)), 1)
     ! Compute the face interpolation factors
     if (IFACE .le. 2) then
         U = (Z - xyz_Rtm_(3, I1))/(xyz_Rtm_(3, I3) - xyz_Rtm_(3, I1))
@@ -3414,14 +3414,14 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     TRANS = TRANSMIT
     RAD(:) = RADIANCE(:)
     isValidRad = .false.
-    do while (.not. isValidRad .and. ICELL .gt. 0)
-        is1DX = btest(int(flag_Cell_(ICELL)), 0)
-        is1DY = btest(int(flag_Cell_(ICELL)), 1)
+    do while (.not. isValidRad .and. iCell .gt. 0)
+        is1DX = btest(int(flag_Cell_(iCell)), 0)
+        is1DY = btest(int(flag_Cell_(iCell)), 1)
 
         ! Find boundaries of the current cell
         !   Find the three possible intersection planes (X,Y,Z)
         !   from the coordinates of the opposite corner grid point
-        IOPP = i8Grid_Cell_(9 - iOct, ICELL)
+        IOPP = i8Grid_Cell_(9 - iOct, iCell)
         ! Get the distances to the 3 planes and select the closest
         if (is1DX) then
             SOX = 1.0e20
@@ -3436,7 +3436,7 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
         SOZ = (xyz_Rtm_(3, IOPP) - ZE)*CZINV
         SO = min(SOX, SOY, SOZ)
         if (SO .lt. -EPS) then
-            write(6, *) 'SO<0: ', muRay, phiRay, X, Y, Z, SOX, SOY, SOZ, SO, ICELL, TRANS
+            write(6, *) 'SO<0: ', muRay, phiRay, X, Y, Z, SOX, SOY, SOZ, SO, iCell, TRANS
             call shd_mpi__abort('Error [mpi__integrateRay]: SO<0, see above.')
         end if
         ! Compute the coordinates of the cell exitting location
@@ -3456,21 +3456,21 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
             JFACE = 3
         end if
         ! Get the next cell to go to
-        INEXTCELL = i6Cell_Cell_(IFACE, ICELL)
-        if (INEXTCELL .lt. 0) then
-            call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL,&
-                &INEXTCELL)
+        iCellNext = i6Cell_Cell_(IFACE, iCell)
+        if (iCellNext .lt. 0) then
+            call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, iCell,&
+                &iCellNext)
         end if
 
         ! Get the face grid pointers
-        if (i6Cell_Cell_(IFACE, ICELL) .ge. 0) then
+        if (i6Cell_Cell_(IFACE, iCell) .ge. 0) then
             ! If going to same or larger face then use previous face
             KFACE = IFACE
-            IC = ICELL
+            IC = iCell
         else
             ! If going to smaller face then use next face (more accurate)
             KFACE = OPPFACE(IFACE)
-            IC = INEXTCELL
+            IC = iCellNext
         end if
         I1 = i8Grid_Cell_(GRIDFACE(1, KFACE), IC)
         I2 = i8Grid_Cell_(GRIDFACE(2, KFACE), IC)
@@ -3509,13 +3509,13 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
         end if
 
         ! Get the location coordinate (does the boundary wrapping)
-        if (INEXTCELL .gt. 0) then
+        if (iCellNext .gt. 0) then
             if (JFACE .eq. 1) then
-                XE = xyz_Rtm_(1, i8Grid_Cell_(iOct, INEXTCELL))
+                XE = xyz_Rtm_(1, i8Grid_Cell_(iOct, iCellNext))
             else if (JFACE .eq. 2) then
-                YE = xyz_Rtm_(2, i8Grid_Cell_(iOct, INEXTCELL))
+                YE = xyz_Rtm_(2, i8Grid_Cell_(iOct, iCellNext))
             else
-                ZE = xyz_Rtm_(3, i8Grid_Cell_(iOct, INEXTCELL))
+                ZE = xyz_Rtm_(3, i8Grid_Cell_(iOct, iCellNext))
             end if
         end if
 
@@ -3581,7 +3581,7 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
         else
             EXT1 = EXT0
             SRCEXT1(:) = SRCEXT0(:)
-            ICELL = INEXTCELL
+            iCell = iCellNext
         end if
     end do
     X = XE; Y = YE; Z = ZE
