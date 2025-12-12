@@ -823,8 +823,8 @@ subroutine shd_grid__makeSweepOrder(&
     real(kind=R__)   , intent(out) :: GRIDRAD(rtm_obj_%Npts)
 
     integer(kind=I__) :: NOCT, iOct, jOct, NXC, NYC
-    integer(kind=I__) :: IPCELL, ipts, IORDER
-    integer(kind=I__) :: INDEXCORN, ICORNER
+    integer(kind=I__) :: iCellPts, ipts, IORDER
+    integer(kind=I__) :: INDEXCORN, iCorner
 
     integer(kind=I__) :: CORNDOG(8, 8)
     data CORNDOG /&
@@ -871,13 +871,13 @@ subroutine shd_grid__makeSweepOrder(&
 
         ! Sweep through all the grid points
         IORDER = 1
-        IPCELL = 0
+        iCellPts = 0
         INDEXCORN = 8
 
 100     continue
 
         ! INDEXCORN is a logical ordering index to the 8 corners in a cell;
-        !   it is not the actual corner. ICORNER is the actual corner and
+        !   it is not the actual corner. iCorner is the actual corner and
         !   depends on the ray direction (iOct) and INDEXCORN.
         !   Scan the 8 points in a cell according to the ray direction:
         !   Do the ones furthest "upstream" first; loop until we find
@@ -886,21 +886,21 @@ subroutine shd_grid__makeSweepOrder(&
             ! If done with the current cell, then go to next
             INDEXCORN = 1
             if (.not. sweepCellNext(rtm_obj_%flag_bc, NXC, NYC, rtm_obj_%Nz, iOct,&
-                &IPCELL)) goto 900
+                &iCellPts)) goto 900
         else
             INDEXCORN = INDEXCORN + 1
         end if
 
         ! Compute the corresponding point
-        ! ICORNER = IAND(NOT(IEOR(INDEXCORN-1,iOct-1)),7) + 1
-        ICORNER = CORNDOG(INDEXCORN, iOct)
-        ipts = i8Grid_Cell_(ICORNER, IPCELL)
+        ! iCorner = iand(NOT(IEOR(INDEXCORN-1,iOct-1)),7) + 1
+        iCorner = CORNDOG(INDEXCORN, iOct)
+        ipts = i8Grid_Cell_(iCorner, iCellPts)
         if (GRIDRAD(ipts) .ge. 0.0) goto 100
 
         GRIDRAD(ipts) = 1.0
 
         ! Fill in the next entry with the grid cell and corner of this point
-        SWEEPORD(IORDER, jOct) = ior(ishft(IPCELL, 3), ICORNER - 1)
+        SWEEPORD(IORDER, jOct) = ior(ishft(iCellPts, 3), iCorner - 1)
         IORDER = IORDER + 1
         goto 100
 

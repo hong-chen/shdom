@@ -144,7 +144,7 @@ subroutine shd_intg__integratePath(&
     real GRIDRAD(shdo_obj_%Nstokes, rtm_obj_%Npts), WORK(shdo_obj_%Nstokes, shdo_obj_%maxNphiA, rtm_obj_%Npts)
 
     integer I, I1, K, NR, iphiDO, imuDO, IBC, IANG, IUPDOWN, OLDNPTS
-    integer joct, ipt, ip, iorder, ipcell, icorner
+    integer joct, iPts, ip, iorder, iCellPts, iCorner
     logical :: theflag
     real A, TRANSMIN
     save OLDNPTS
@@ -390,10 +390,10 @@ subroutine shd_intg__backIntegrate3D(&
     real EXTINCT(rtm_obj_%Npts), SOURCE(NSTOKES, NA, rtm_obj_%Npts)
     real GRIDRAD(NSTOKES, rtm_obj_%Npts)
     integer bitX, bitY, bitZ, iOct, jOct
-    integer IPCELL, iCell, iCellNext, IPT, IFACE
+    integer iCellPts, iCell, iCellNext, iPts, IFACE
     integer I1, I2, I3, I4, IOPP, JFACE, KFACE, IC, IZ
     integer GRIDFACE(4, 6), OPPFACE(6)
-    integer IORDER, ICORNER, jOctOrder3(8), jOctOrder2(8)
+    integer IORDER, iCorner, jOctOrder3(8), jOctOrder2(8)
     logical isValidRad, isValidFace, is1DX, is1DY
     real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV, ratioX, ratioY
     real(RD_) :: XE, YE, ZE
@@ -445,15 +445,15 @@ subroutine shd_intg__backIntegrate3D(&
     IZ = (NZ - 1)*(1 - bitZ) + 1
     ! Sweep through all the grid points
     do IORDER = 1, rtm_obj_%Npts
-        IPCELL = ishft(SWEEPORD(IORDER, jOct), -3)
-        ICORNER = ibits(SWEEPORD(IORDER, jOct), 0, 3) + 1
-        IPT = i8Grid_Cell_(ICORNER, IPCELL)
+        iCellPts = ishft(SWEEPORD(IORDER, jOct), -3)
+        iCorner = ibits(SWEEPORD(IORDER, jOct), 0, 3) + 1
+        iPts = i8Grid_Cell_(iCorner, iCellPts)
 
         if (isMpi_) then
             ! For multiple processors get the subdomain boundary radiances
             !   for each Z slab
-            if  ((xyz_Rtm_(3, IPT) .lt. rtm_obj_%z(IZ) .and. bitZ .eq. 0) .or.&
-                &(xyz_Rtm_(3, IPT) .gt. rtm_obj_%z(IZ) .and. bitZ .eq. 1)) then
+            if  ((xyz_Rtm_(3, iPts) .lt. rtm_obj_%z(IZ) .and. bitZ .eq. 0) .or.&
+                &(xyz_Rtm_(3, iPts) .gt. rtm_obj_%z(IZ) .and. bitZ .eq. 1)) then
                 IZ = IZ + 2*bitZ - 1
                 call shd_mpi__calBndryRad(BCFLAG, IPFLAG, jOct, IZ,&
                     &NX, NY, NZ,&
@@ -463,17 +463,17 @@ subroutine shd_intg__backIntegrate3D(&
             end if
         end if
 
-        if (GRIDRAD(1, IPT) .lt. 0.0) then
+        if (GRIDRAD(1, iPts) .lt. 0.0) then
 
             ! Start off at the grid point
-            iCell = IPCELL
+            iCell = iCellPts
             TRANSMIT = 1.0
-            EXT1 = EXTINCT(IPT)
+            EXT1 = EXTINCT(iPts)
             RAD(:) = 0.0
-            SRCEXT1(:) = EXT1*SOURCE(:, KANG, IPT)
-            XE = xyz_Rtm_(1, IPT)
-            YE = xyz_Rtm_(2, IPT)
-            ZE = xyz_Rtm_(3, IPT)
+            SRCEXT1(:) = EXT1*SOURCE(:, KANG, iPts)
+            XE = xyz_Rtm_(1, iPts)
+            YE = xyz_Rtm_(2, iPts)
+            ZE = xyz_Rtm_(3, iPts)
 
             ! Loop until finding a face with known radiances
             isValidRad = .false.
@@ -481,8 +481,8 @@ subroutine shd_intg__backIntegrate3D(&
                 ! Make sure current cell is valid
                 if (iCell .le. 0) then
                     write(6, *) 'Error [_backIntegrate3D]: iCell=0 ',&
-                        &MU, PHI, IPT, iCellNext, xe, ye, ze,&
-                        &xyz_Rtm_(1, ipt), xyz_Rtm_(2, ipt), xyz_Rtm_(3, ipt)
+                        &MU, PHI, iPts, iCellNext, xe, ye, ze,&
+                        &xyz_Rtm_(1, iPts), xyz_Rtm_(2, iPts), xyz_Rtm_(3, iPts)
                     stop
                 end if
                 is1DX = btest(int(flag_Cell_(iCell)), 0)
@@ -508,7 +508,7 @@ subroutine shd_intg__backIntegrate3D(&
                 SO = min(SOX, SOY, SOZ)
                 if (SO .lt. -EPS) then
                     write(6, *) 'Error [_backIntegrate3D]: SO<0 ',&
-                        &MU, PHI, XE, YE, ZE, SOX, SOY, SOZ, SO, IPT, iCell
+                        &MU, PHI, XE, YE, ZE, SOX, SOY, SOZ, SO, iPts, iCell
                     stop
                 end if
                 ! Compute the coordinates of the cell exitting location
@@ -671,8 +671,8 @@ subroutine shd_intg__backIntegrate3D(&
                             &xyz_Rtm_(1, i3), xyz_Rtm_(2, i3), xyz_Rtm_(3, i3)
                         write(*, '(i7,4(1x,f7.4))') i4, GRIDRAD(1, I4),&
                             &xyz_Rtm_(1, i4), xyz_Rtm_(2, i4), xyz_Rtm_(3, i4)
-                        write(*, '(i7,8x,3(1x,f7.4))') ipt,&
-                            &xyz_Rtm_(1, ipt), xyz_Rtm_(2, ipt), xyz_Rtm_(3, ipt)
+                        write(*, '(i7,8x,3(1x,f7.4))') iPts,&
+                            &xyz_Rtm_(1, iPts), xyz_Rtm_(2, iPts), xyz_Rtm_(3, iPts)
                         stop
                     end if
                 else
@@ -681,7 +681,7 @@ subroutine shd_intg__backIntegrate3D(&
                     iCell = iCellNext
                 end if
             end do
-            GRIDRAD(:, IPT) = RAD(:)
+            GRIDRAD(:, iPts) = RAD(:)
 
         end if
     end do
@@ -756,9 +756,9 @@ subroutine shd_intg__backIntegrate3D_( &
     real   (kind=R__), intent(inout) :: GRIDRAD(rtm_obj_%Npts)
 
     integer(kind=I__) :: bitX, bitY, bitZ, iOct, jOct
-    integer(kind=I__) :: IPCELL, iCell, iCellNext, IPT, IFACE
+    integer(kind=I__) :: iCellPts, iCell, iCellNext, iPts, IFACE
     integer(kind=I__) :: I1, I2, I3, I4, IOPP, JFACE, KFACE, IC, IZ
-    integer(kind=I__) :: IORDER, ICORNER
+    integer(kind=I__) :: IORDER, iCorner
     logical :: isValidRad, isValidFace, is1DX, is1DY
 
     real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV, ratioX, ratioY
@@ -825,17 +825,17 @@ subroutine shd_intg__backIntegrate3D_( &
     ! Sweep through all the grid points
     do IORDER = 1, rtm_obj_%Npts
 
-        IPCELL  = ishft(SWEEPORD(IORDER, jOct), -3)
-        ICORNER = ibits(SWEEPORD(IORDER, jOct), 0, 3) + 1
-        IPT = i8Grid_Cell_(ICORNER, IPCELL)
+        iCellPts  = ishft(SWEEPORD(IORDER, jOct), -3)
+        iCorner = ibits(SWEEPORD(IORDER, jOct), 0, 3) + 1
+        iPts = i8Grid_Cell_(iCorner, iCellPts)
 
         ! this is for mpi (e.g., shdMpi.f90, not OMP)
         !╭────────────────────────────────────────────────╮!
         if (isMpi_) then
             ! For multiple processors get the subdomain boundary radiances
             !   for each Z slab
-            if  ((xyz_Rtm_(3, IPT) .lt. rtm_obj_%z(IZ) .and. bitZ .eq. 0) .or. &
-                 (xyz_Rtm_(3, IPT) .gt. rtm_obj_%z(IZ) .and. bitZ .eq. 1)) then
+            if  ((xyz_Rtm_(3, iPts) .lt. rtm_obj_%z(IZ) .and. bitZ .eq. 0) .or. &
+                 (xyz_Rtm_(3, iPts) .gt. rtm_obj_%z(IZ) .and. bitZ .eq. 1)) then
                 IZ = IZ + 2*bitZ - 1
                 call shd_mpi__calBndryRad(BCFLAG, IPFLAG, jOct, IZ, &
                     NX, NY, NZ, &
@@ -846,17 +846,17 @@ subroutine shd_intg__backIntegrate3D_( &
         end if
         !╰────────────────────────────────────────────────╯!
 
-        if (GRIDRAD(IPT) .lt. 0.0) then
+        if (GRIDRAD(iPts) .lt. 0.0) then
 
             ! Start off at the grid point
-            iCell = IPCELL
+            iCell = iCellPts
             RAD = 0.0
             TRANSMIT = 1.0
-            EXT1 = EXTINCT(IPT)
-            SRCEXT1 = EXT1*SOURCE(KANG, IPT)
-            XE = xyz_Rtm_(1, IPT)
-            YE = xyz_Rtm_(2, IPT)
-            ZE = xyz_Rtm_(3, IPT)
+            EXT1 = EXTINCT(iPts)
+            SRCEXT1 = EXT1*SOURCE(KANG, iPts)
+            XE = xyz_Rtm_(1, iPts)
+            YE = xyz_Rtm_(2, iPts)
+            ZE = xyz_Rtm_(3, iPts)
 
             ! Loop until finding a face with known radiances
             isValidRad = .false.
@@ -865,8 +865,8 @@ subroutine shd_intg__backIntegrate3D_( &
                 ! Make sure current cell is valid
                 if (iCell .le. 0) then
                     write(6, *) 'Error [_backIntegrate3D_]: iCell=0 ', &
-                        MU, PHI, IPT, iCellNext, XE, YE, ZE, &
-                        xyz_Rtm_(1, IPT), xyz_Rtm_(2, IPT), xyz_Rtm_(3, IPT)
+                        MU, PHI, iPts, iCellNext, XE, YE, ZE, &
+                        xyz_Rtm_(1, iPts), xyz_Rtm_(2, iPts), xyz_Rtm_(3, iPts)
                     stop
                 end if
 
@@ -899,7 +899,7 @@ subroutine shd_intg__backIntegrate3D_( &
 
                 if (SO .lt. -EPS) then
                     write(6, *) 'Error [_backIntegrate3D_]: SO<0 ', &
-                        MU, PHI, XE, YE, ZE, SOX, SOY, SOZ, SO, IPT, iCell
+                        MU, PHI, XE, YE, ZE, SOX, SOY, SOZ, SO, iPts, iCell
                     stop
                 end if
 
@@ -1073,8 +1073,8 @@ subroutine shd_intg__backIntegrate3D_( &
                             &xyz_Rtm_(1, i3), xyz_Rtm_(2, i3), xyz_Rtm_(3, i3)
                         write(*, '(i7,4(1x,f7.4))') i4, GRIDRAD(I4),&
                             &xyz_Rtm_(1, i4), xyz_Rtm_(2, i4), xyz_Rtm_(3, i4)
-                        write(*, '(i7,8x,3(1x,f7.4))') ipt,&
-                            &xyz_Rtm_(1, ipt), xyz_Rtm_(2, ipt), xyz_Rtm_(3, ipt)
+                        write(*, '(i7,8x,3(1x,f7.4))') iPts,&
+                            &xyz_Rtm_(1, iPts), xyz_Rtm_(2, iPts), xyz_Rtm_(3, iPts)
                         stop
                     end if
                 else
@@ -1084,7 +1084,7 @@ subroutine shd_intg__backIntegrate3D_( &
                 end if
             end do
 
-            GRIDRAD(IPT) = RAD
+            GRIDRAD(iPts) = RAD
 
         end if
 
@@ -1116,10 +1116,10 @@ subroutine shd_intg__backIntegrate2D(&
     real EXTINCT(rtm_obj_%Npts), SOURCE(NSTOKES, NA, rtm_obj_%Npts)
     real GRIDRAD(NSTOKES, rtm_obj_%Npts)
     integer bitX, bitZ, iOct, jOct
-    integer IPCELL, iCell, iCellNext, IPT, IFACE
+    integer iCellPts, iCell, iCellNext, iPts, IFACE
     integer I1, I2, IOPP, JFACE, KFACE, IC, IZ
     integer GRIDFACE(2, 6), OPPFACE(6)
-    integer IORDER, ICORNER, jOctOrder(8)
+    integer IORDER, iCorner, jOctOrder(8)
     logical :: isValidRad, isValidFace, is1DX
     real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV, ratioX, ratioY
     real(RD_) :: XE, YE, ZE
@@ -1161,20 +1161,20 @@ subroutine shd_intg__backIntegrate2D(&
 
     ! Sweep through all the grid points
     do IORDER = 1, rtm_obj_%Npts
-        IPCELL = ishft(SWEEPORD(IORDER, jOct), -3)
-        ICORNER = ibits(SWEEPORD(IORDER, jOct), 0, 3) + 1
-        IPT = i8Grid_Cell_(ICORNER, IPCELL)
-        if (GRIDRAD(1, IPT) .lt. 0.0) then
+        iCellPts = ishft(SWEEPORD(IORDER, jOct), -3)
+        iCorner = ibits(SWEEPORD(IORDER, jOct), 0, 3) + 1
+        iPts = i8Grid_Cell_(iCorner, iCellPts)
+        if (GRIDRAD(1, iPts) .lt. 0.0) then
 
             ! Start off at the grid point
-            iCell = IPCELL
+            iCell = iCellPts
             TRANSMIT = 1.0
-            EXT1 = EXTINCT(IPT)
+            EXT1 = EXTINCT(iPts)
             RAD(:) = 0.0
-            SRCEXT1(:) = EXT1*SOURCE(:, KANG, IPT)
-            XE = xyz_Rtm_(1, IPT)
-            YE = xyz_Rtm_(2, IPT)
-            ZE = xyz_Rtm_(3, IPT)
+            SRCEXT1(:) = EXT1*SOURCE(:, KANG, iPts)
+            XE = xyz_Rtm_(1, iPts)
+            YE = xyz_Rtm_(2, iPts)
+            ZE = xyz_Rtm_(3, iPts)
 
             ! Loop until finding a face with known radiances
             isValidRad = .false.
@@ -1182,7 +1182,7 @@ subroutine shd_intg__backIntegrate2D(&
                 ! Make sure current cell is valid
                 if (iCell .le. 0) then
                     write(6, *) 'Error [_backIntegrate2D]: iCell=0 ',&
-                        &MU, PHI, IPT, iCellNext
+                        &MU, PHI, iPts, iCellNext
                     stop
                 end if
                 is1DX = btest(int(flag_Cell_(iCell)), 0)
@@ -1201,7 +1201,7 @@ subroutine shd_intg__backIntegrate2D(&
                 SO = min(SOX, SOZ)
                 if (SO .lt. -EPS) then
                     write(6, *) 'Error [_backIntegrate2D]: SO<0 ',&
-                        &MU, PHI, XE, ZE, SOX, SOZ, SO, IPT, iCell
+                        &MU, PHI, XE, ZE, SOX, SOZ, SO, iPts, iCell
                     stop
                 end if
                 ! Compute the coordinates of the cell exitting location
@@ -1315,8 +1315,8 @@ subroutine shd_intg__backIntegrate2D(&
                             &xyz_Rtm_(1, i1), xyz_Rtm_(2, i1), xyz_Rtm_(3, i1)
                         write(*, '(i7,4(1x,f7.4))') i2, GRIDRAD(1, I2),&
                             &xyz_Rtm_(1, i2), xyz_Rtm_(2, i2), xyz_Rtm_(3, i2)
-                        write(*, '(i7,8x,3(1x,f7.4))') ipt,&
-                            &xyz_Rtm_(1, ipt), xyz_Rtm_(2, ipt), xyz_Rtm_(3, ipt)
+                        write(*, '(i7,8x,3(1x,f7.4))') iPts,&
+                            &xyz_Rtm_(1, iPts), xyz_Rtm_(2, iPts), xyz_Rtm_(3, iPts)
                         stop
                     end if
                 else
@@ -1326,7 +1326,7 @@ subroutine shd_intg__backIntegrate2D(&
                 end if
             end do
 
-            GRIDRAD(:, IPT) = RAD(:)
+            GRIDRAD(:, iPts) = RAD(:)
 
         end if
 
@@ -1372,8 +1372,8 @@ subroutine shd_intg__backIntegrate1D(&
     real(kind=RD_) :: RAD(NSTOKES), RAD0(NSTOKES)
 
     integer(kind=I__) :: bitZ, iOct, jOct
-    integer(kind=I__) :: IPCELL, iCell, iCellNext, IPT, IFACE, I1, IOPP
-    integer(kind=I__) :: IORDER, ICORNER
+    integer(kind=I__) :: iCellPts, iCell, iCellNext, iPts, IFACE, I1, IOPP
+    integer(kind=I__) :: IORDER, iCorner
     logical :: isValidRad
 
     integer(kind=I__) :: GRIDFACE(6), jOctOrder(8)
@@ -1403,19 +1403,19 @@ subroutine shd_intg__backIntegrate1D(&
 
     ! Sweep through all the grid points
     do IORDER = 1, rtm_obj_%Npts
-        IPCELL = ishft(SWEEPORD(IORDER, jOct), -3)
-        ICORNER = ibits(SWEEPORD(IORDER, jOct), 0, 3) + 1
-        IPT = i8Grid_Cell_(ICORNER, IPCELL)
-        if (GRIDRAD(1, IPT) .lt. 0.0) then
+        iCellPts = ishft(SWEEPORD(IORDER, jOct), -3)
+        iCorner = ibits(SWEEPORD(IORDER, jOct), 0, 3) + 1
+        iPts = i8Grid_Cell_(iCorner, iCellPts)
+        if (GRIDRAD(1, iPts) .lt. 0.0) then
             ! Start off at the grid point
-            iCell = IPCELL
+            iCell = iCellPts
             TRANSMIT = 1.0
-            EXT1 = EXTINCT(IPT)
+            EXT1 = EXTINCT(iPts)
             RAD(:) = 0.0
-            SRCEXT1(:) = EXT1*SOURCE(:, KANG, IPT)
-            XE = xyz_Rtm_(1, IPT)
-            YE = xyz_Rtm_(2, IPT)
-            ZE = xyz_Rtm_(3, IPT)
+            SRCEXT1(:) = EXT1*SOURCE(:, KANG, iPts)
+            XE = xyz_Rtm_(1, iPts)
+            YE = xyz_Rtm_(2, iPts)
+            ZE = xyz_Rtm_(3, iPts)
 
             ! Loop until finding a face with known radiances
             isValidRad = .false.
@@ -1423,7 +1423,7 @@ subroutine shd_intg__backIntegrate1D(&
                 ! Make sure current cell is valid
                 if (iCell .le. 0) then
                     write(6, *) 'Error [_backIntegrate1D]: iCell=0 ',&
-                        &MU, PHI, IPT, iCellNext
+                        &MU, PHI, iPts, iCellNext
                     stop
                 end if
                 ! Find boundaries of the current cell
@@ -1434,7 +1434,7 @@ subroutine shd_intg__backIntegrate1D(&
                 SO = (xyz_Rtm_(3, IOPP) - ZE)*CZINV
                 if (SO .lt. -EPS) then
                     write(6, *) 'Error [_backIntegrate1D]: SO<0 ',&
-                        &MU, PHI, ZE, SO, IPT, iCell
+                        &MU, PHI, ZE, SO, iPts, iCell
                     stop
                 end if
                 ! Compute the coordinates of the cell exitting location
@@ -1525,7 +1525,7 @@ subroutine shd_intg__backIntegrate1D(&
                 end if
             end do
 
-            GRIDRAD(:, IPT) = RAD(:)
+            GRIDRAD(:, iPts) = RAD(:)
         end if
     end do
 

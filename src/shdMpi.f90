@@ -1520,8 +1520,8 @@ subroutine shd_mpi__findBndryPts(BCFLAG, IPFLAG, SWEEPORD,&
     ! and 2 is for the neighboring subdomain.
     ! Fills in the BxyPtr_(:,IBC,jOct) and BxyPos_(:,IBC,jOct) arrays
     ! (module variables), where IBC is a boundary point index and jOct is
-    ! a sort of octant number. BxyPtr_ holds (iproc,IPT,SIDE) for the boundary
-    ! grid points from grid point IPT in processor iproc that are on the SIDE
+    ! a sort of octant number. BxyPtr_ holds (iproc,iPts,SIDE) for the boundary
+    ! grid points from grid point iPts in processor iproc that are on the SIDE
     ! boundary of this subdomain (SIDE: 1=-X, 2=+X, 3=-Y, 4=+Y).  BxyPos_ holds
     ! the gridpoint positions (X,Y,Z) for these boundary points.
 
@@ -1530,7 +1530,7 @@ subroutine shd_mpi__findBndryPts(BCFLAG, IPFLAG, SWEEPORD,&
 
 #if HAS_MPI
     integer :: tag, ierr, irq
-    integer :: MAXNBXY, NOCT, jOct, IORDER, IPCELL, ICORNER, IPT, SIDE
+    integer :: MAXNBXY, NOCT, jOct, IORDER, iCellPts, iCorner, iPts, SIDE
     integer :: L, LI, N(4), N1(8, 4), N2(8, 4), NS, NBX, NBY
     integer :: MAXBC, IBC, bitZ, SZ, EZ, DZ, LX, LY, IX, IY, IZ, J
     integer :: INOUT_ARR(4) = (/2, 1, 4, 3/)
@@ -1577,31 +1577,31 @@ subroutine shd_mpi__findBndryPts(BCFLAG, IPFLAG, SWEEPORD,&
         bitZ = 1 - ibits(jOct, 0, 1)
         N(:) = 0
         do IORDER = 1, rtm_obj_%Npts
-            IPCELL = ishft(SWEEPORD(IORDER, jOct), -3)
-            ICORNER = ibits(SWEEPORD(IORDER, jOct), 0, 3) + 1
-            IPT = i8Grid_Cell_(ICORNER, IPCELL)
+            iCellPts = ishft(SWEEPORD(IORDER, jOct), -3)
+            iCorner = ibits(SWEEPORD(IORDER, jOct), 0, 3) + 1
+            iPts = i8Grid_Cell_(iCorner, iCellPts)
 
-            if  ((xyz_Rtm_(3, IPT) .lt. rtm_obj_%z(Nz) .and. bitZ .eq. 0) .or.&
-                &(xyz_Rtm_(3, IPT) .gt. rtm_obj_%z(1) .and. bitZ .eq. 1)) then
-                if (isMpiX_ .and. xyz_Rtm_(1, IPT) .eq. XEDGE(jOct)&
+            if  ((xyz_Rtm_(3, iPts) .lt. rtm_obj_%z(Nz) .and. bitZ .eq. 0) .or.&
+                &(xyz_Rtm_(3, iPts) .gt. rtm_obj_%z(1) .and. bitZ .eq. 1)) then
+                if (isMpiX_ .and. xyz_Rtm_(1, iPts) .eq. XEDGE(jOct)&
                     &.and. .not. is1DX_) then
                     SIDE = 2 - ibits(jOct - 1, 1, 1)
                     N(SIDE) = N(SIDE) + 1
                     if (N(SIDE) .gt. MAXNBXY) then
                         call shd_mpi__abort('Error [mpi__findBndryPts]: MAXNBXY exceeded by N(SIDE) 1x.')
                     end if
-                    BNDPTR(jOct, N(SIDE), 1, SIDE) = IPT
-                    BNDPOS(:, jOct, N(SIDE), 1, SIDE) = xyz_Rtm_(:, IPT)
+                    BNDPTR(jOct, N(SIDE), 1, SIDE) = iPts
+                    BNDPOS(:, jOct, N(SIDE), 1, SIDE) = xyz_Rtm_(:, iPts)
                 end if
-                if (isMpiY_ .and. xyz_Rtm_(2, IPT) .eq. YEDGE(jOct)&
+                if (isMpiY_ .and. xyz_Rtm_(2, iPts) .eq. YEDGE(jOct)&
                     &.and. .not. is1DYx_) then
                     SIDE = 4 - ibits(jOct - 1, 2, 1)
                     N(SIDE) = N(SIDE) + 1
                     if (N(SIDE) .gt. MAXNBXY) then
                         call shd_mpi__abort('Error [mpi__findBndryPts]: MAXNBXY exceeded by N(SIDE) 1y.')
                     end if
-                    BNDPTR(jOct, N(SIDE), 1, SIDE) = IPT
-                    BNDPOS(:, jOct, N(SIDE), 1, SIDE) = xyz_Rtm_(:, IPT)
+                    BNDPTR(jOct, N(SIDE), 1, SIDE) = iPts
+                    BNDPOS(:, jOct, N(SIDE), 1, SIDE) = xyz_Rtm_(:, iPts)
                 end if
             end if
         end do
@@ -1649,7 +1649,7 @@ subroutine shd_mpi__findBndryPts(BCFLAG, IPFLAG, SWEEPORD,&
     ! at a time, and set pointers (iBxyPtr_) to start and end of each slab.
     !  DO IBC = iBxyPtr_(1,IZ,jOct), iBxyPtr_(2,IZ,jOct)
     !    X=BxyPos_(1,IBC,jOct) ; Y=BxyPos_(2,IBC,jOct) ; Z=BxyPos_(3,IBC,jOct)
-    !    iproc=BxyPtr_(1,IBC,jOct) ; IPT=BxyPtr_(2,IBC,jOct) ; SIDE=BxyPtr_(2,IBC,jOct)
+    !    iproc=BxyPtr_(1,IBC,jOct) ; iPts=BxyPtr_(2,IBC,jOct) ; SIDE=BxyPtr_(2,IBC,jOct)
 
     do jOct = 1, NOCT
         bitZ = 1 - ibits(jOct, 0, 1)
@@ -1739,7 +1739,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, jOct, IZ,&
 #if HAS_MPI
     integer :: MAXNBND, NptsBC, Lupx, Lupy, Ldownx, Ldowny
     integer :: SIDE, NINVALID(0:4)
-    integer :: IBC, IPT, I, J, L
+    integer :: IBC, iPts, I, J, L
     integer :: ierr(12), irq, iproc
     integer :: intsendbuf(2), intrecvbuf(2)
     logical :: isValidRad, AllDone
@@ -1781,7 +1781,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, jOct, IZ,&
     do IBC = iBxyPtr_(1, IZ, jOct), iBxyPtr_(2, IZ, jOct)
         ! Call shd_mpi__integrateRadRay for this
         X = BxyPos_(1, IBC, jOct); Y = BxyPos_(2, IBC, jOct); Z = BxyPos_(3, IBC, jOct)
-        iproc = BxyPtr_(1, IBC, jOct); IPT = BxyPtr_(2, IBC, jOct); SIDE = BxyPtr_(3, IBC, jOct)
+        iproc = BxyPtr_(1, IBC, jOct); iPts = BxyPtr_(2, IBC, jOct); SIDE = BxyPtr_(3, IBC, jOct)
         RADIANCE(:) = 0.0; TRANSMIT = 1.0
         xo = x; yo = y; zo = z
         call shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
@@ -1793,7 +1793,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, jOct, IZ,&
         if (isValidRad) then
             Ndone(iproc) = Ndone(iproc) + 1
             RadAllOut(:, Ndone(iproc), iproc) = RADIANCE(:)
-            RadPtrOut(Ndone(iproc), iproc) = IPT
+            RadPtrOut(Ndone(iproc), iproc) = iPts
         else
             if ((SIDE .ne. Lupx) .and. (SIDE .ne. Lupy)) then
                 write(6, *) 'Bad SIDE 1:', myProc_, muRay, phiRay, SIDE, x, y, z, xo, yo, zo
@@ -1801,7 +1801,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, jOct, IZ,&
             end if
             NINVALID(SIDE) = NINVALID(SIDE) + 1
             BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/X, Y, Z, TRANSMIT, RADIANCE(:)/)
-            BndRadIntInfo(:, NINVALID(SIDE), SIDE) = (/iproc, IPT/)
+            BndRadIntInfo(:, NINVALID(SIDE), SIDE) = (/iproc, iPts/)
         end if
     end do
 
@@ -1953,13 +1953,13 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, jOct, IZ,&
                 call shd_mpi__abort('Error [mpi__calBndryRad]: MPI error 3.')
             end if
             do I = 1, NptsBC
-                IPT = RadPtrIn(I)
-                GRIDRAD(:, IPT) = RadAllIn(:, I)
+                iPts = RadPtrIn(I)
+                GRIDRAD(:, iPts) = RadAllIn(:, I)
             end do
         else
             do I = 1, Ndone(myProc_)
-                IPT = RadPtrOut(I, myProc_)
-                GRIDRAD(:, IPT) = RadAllOut(:, I, myProc_)
+                iPts = RadPtrOut(I, myProc_)
+                GRIDRAD(:, iPts) = RadAllOut(:, I, myProc_)
             end do
         end if
     end do
