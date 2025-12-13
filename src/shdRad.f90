@@ -743,7 +743,7 @@ subroutine shd_rad__interpRad(&
     integer NSTOKES, NptsOld, NPTS, NBCELLS, NCELLS
     integer iradI_Shdo(NPTS + 1), GRIDPTR(8, NCELLS), TREEPTR(2, NCELLS)
     real radI_Shdo(NSTOKES, *), GRIDPOS(3, *)
-    integer IP, IC, ICELL, IPARENT, IDIR, I, J, K, DIR1, DIR2, IP1, IP2
+    integer IP, IC, iCell, iParent, iDir, I, J, K, DIR1, DIR2, IP1, IP2
     integer IR, IR1, IR2, NR, NR1, NR2
     integer GRIDCORNER(2, 4, 3)
     real RAD1(NSTOKES), RAD2(NSTOKES)
@@ -753,18 +753,18 @@ subroutine shd_rad__interpRad(&
     if (NptsOld .le. 0) return
 
     ! Go through all the non-base grid cells
-    do ICELL = NBCELLS + 1, NCELLS
+    do iCell = NBCELLS + 1, NCELLS
         do IC = 1, 8
-            IP = GRIDPTR(IC, ICELL)
+            IP = GRIDPTR(IC, iCell)
             if (IP .gt. NptsOld) then
-                IPARENT = TREEPTR(1, ICELL)
+                iParent = TREEPTR(1, iCell)
                 ! Go through all 12 edges of parent cell to find which one h
-                do IDIR = 1, 3
-                    DIR1 = mod(IDIR - 1 + 1, 3) + 1
-                    DIR2 = mod(IDIR - 1 + 2, 3) + 1
+                do iDir = 1, 3
+                    DIR1 = mod(iDir - 1 + 1, 3) + 1
+                    DIR2 = mod(iDir - 1 + 2, 3) + 1
                     do I = 1, 4
-                        IP1 = GRIDPTR(GRIDCORNER(1, I, IDIR), IPARENT)
-                        IP2 = GRIDPTR(GRIDCORNER(2, I, IDIR), IPARENT)
+                        IP1 = GRIDPTR(GRIDCORNER(1, I, iDir), iParent)
+                        IP2 = GRIDPTR(GRIDCORNER(2, I, iDir), iParent)
                         if (GRIDPOS(DIR1, IP1) .eq. GRIDPOS(DIR1, IP) .and.&
                             &GRIDPOS(DIR2, IP1) .eq. GRIDPOS(DIR2, IP)) goto 120
                     end do

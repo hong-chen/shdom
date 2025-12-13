@@ -3274,7 +3274,7 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
 
     integer :: bitX, bitY, bitZ, iOctant, NXC, NYC, BTEST
     integer :: IX, IY, IZ, IL, IM, IU, IPTR, DIR, iCell, iCellNext
-    integer :: I1, I2, I3, I4, IOPP, IFACE, JFACE, KFACE, IC
+    integer :: I1, I2, I3, I4, IOPP, iFace, jFace, kFace, IC
     integer :: GRIDFACE(4, 6), OPPFACE(6)
     logical :: is1DX, is1DY
     real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV, ratioX, ratioY
@@ -3375,16 +3375,16 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
         iCell = IC
     end do
 
-    IFACE = SIDE
+    iFace = SIDE
     ! Get the four gridpoints for this face
-    I1 = i8Grid_Cell_(GRIDFACE(1, IFACE), iCell)
-    I2 = i8Grid_Cell_(GRIDFACE(2, IFACE), iCell)
-    I3 = i8Grid_Cell_(GRIDFACE(3, IFACE), iCell)
-    I4 = i8Grid_Cell_(GRIDFACE(4, IFACE), iCell)
+    I1 = i8Grid_Cell_(GRIDFACE(1, iFace), iCell)
+    I2 = i8Grid_Cell_(GRIDFACE(2, iFace), iCell)
+    I3 = i8Grid_Cell_(GRIDFACE(3, iFace), iCell)
+    I4 = i8Grid_Cell_(GRIDFACE(4, iFace), iCell)
     is1DX = btest(int(flag_Cell_(iCell)), 0)
     is1DY = btest(int(flag_Cell_(iCell)), 1)
     ! Compute the face interpolation factors
-    if (IFACE .le. 2) then
+    if (iFace .le. 2) then
         U = (Z - xyz_Rtm_(3, I1))/(xyz_Rtm_(3, I3) - xyz_Rtm_(3, I1))
         if (is1DY) then
             V = 0.5
@@ -3446,45 +3446,45 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
 
         ! Get the intersection face number (i.e. ptr6Cell_Cellindex)
         if (SOX .le. SOZ .and. SOX .le. SOY) then
-            IFACE = 2 - bitX
-            JFACE = 1
+            iFace = 2 - bitX
+            jFace = 1
         else if (SOY .le. SOZ) then
-            IFACE = 4 - bitY
-            JFACE = 2
+            iFace = 4 - bitY
+            jFace = 2
         else
-            IFACE = 6 - bitZ
-            JFACE = 3
+            iFace = 6 - bitZ
+            jFace = 3
         end if
         ! Get the next cell to go to
-        iCellNext = i6Cell_Cell_(IFACE, iCell)
+        iCellNext = i6Cell_Cell_(iFace, iCell)
         if (iCellNext .lt. 0) then
-            call shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, iCell,&
+            call shd_util__findNextCell(XE, YE, ZE, iFace, jFace, iCell,&
                 &iCellNext)
         end if
 
         ! Get the face grid pointers
-        if (i6Cell_Cell_(IFACE, iCell) .ge. 0) then
+        if (i6Cell_Cell_(iFace, iCell) .ge. 0) then
             ! If going to same or larger face then use previous face
-            KFACE = IFACE
+            kFace = iFace
             IC = iCell
         else
             ! If going to smaller face then use next face (more accurate)
-            KFACE = OPPFACE(IFACE)
+            kFace = OPPFACE(iFace)
             IC = iCellNext
         end if
-        I1 = i8Grid_Cell_(GRIDFACE(1, KFACE), IC)
-        I2 = i8Grid_Cell_(GRIDFACE(2, KFACE), IC)
-        I3 = i8Grid_Cell_(GRIDFACE(3, KFACE), IC)
-        I4 = i8Grid_Cell_(GRIDFACE(4, KFACE), IC)
+        I1 = i8Grid_Cell_(GRIDFACE(1, kFace), IC)
+        I2 = i8Grid_Cell_(GRIDFACE(2, kFace), IC)
+        I3 = i8Grid_Cell_(GRIDFACE(3, kFace), IC)
+        I4 = i8Grid_Cell_(GRIDFACE(4, kFace), IC)
         ! Compute the face interpolation factors
-        if (JFACE .eq. 1) then
+        if (jFace .eq. 1) then
             U = (ZE - xyz_Rtm_(3, I1))/(xyz_Rtm_(3, I3) - xyz_Rtm_(3, I1))
             if (is1DY) then
                 V = 0.5
             else
                 V = (YE - xyz_Rtm_(2, I1))/(xyz_Rtm_(2, I2) - xyz_Rtm_(2, I1))
             end if
-        else if (JFACE .eq. 2) then
+        else if (jFace .eq. 2) then
             U = (ZE - xyz_Rtm_(3, I1))/(xyz_Rtm_(3, I3) - xyz_Rtm_(3, I1))
             if (is1DX) then
                 V = 0.5
@@ -3510,9 +3510,9 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
 
         ! Get the location coordinate (does the boundary wrapping)
         if (iCellNext .gt. 0) then
-            if (JFACE .eq. 1) then
+            if (jFace .eq. 1) then
                 XE = xyz_Rtm_(1, i8Grid_Cell_(iOctant, iCellNext))
-            else if (JFACE .eq. 2) then
+            else if (jFace .eq. 2) then
                 YE = xyz_Rtm_(2, i8Grid_Cell_(iOctant, iCellNext))
             else
                 ZE = xyz_Rtm_(3, i8Grid_Cell_(iOctant, iCellNext))
@@ -3587,7 +3587,7 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     X = XE; Y = YE; Z = ZE
     RADIANCE(:) = RAD(:)
     TRANSMIT = TRANS
-    SIDE = IFACE
+    SIDE = iFace
 
 end subroutine shd_mpi__integrateRadRay
 

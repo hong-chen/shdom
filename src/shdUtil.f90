@@ -135,7 +135,7 @@ subroutine shd_util__interpData(NptsOld,&
     logical FLUX_OUT, FLUXDIV_OUT, SH_OUT
     real FLUXES(2, rtm_obj_%Npts), fluxDir(rtm_obj_%Npts), FLUXDIV(rtm_obj_%Npts)
     real SHTERMS(5, rtm_obj_%Npts)
-    integer IP, IC, ICELL, IPARENT, IDIR, I, J, DIR1, DIR2, IP1, IP2
+    integer IP, IC, iCell, iParent, iDir, I, J, DIR1, DIR2, IP1, IP2
     integer GRIDCORNER(2, 4, 3)
     data GRIDCORNER/1, 2, 3, 4, 5, 6, 7, 8, 1, 3, 2, 4, 5, 7, 6, 8,&
         &1, 5, 2, 6, 3, 7, 4, 8/
@@ -143,18 +143,18 @@ subroutine shd_util__interpData(NptsOld,&
     if (NptsOld .le. 0) return
 
     ! Go through all the non-base grid cells
-    do ICELL = cell_obj_%Npts0+1, cell_obj_%Npts
+    do iCell = cell_obj_%Npts0+1, cell_obj_%Npts
         do IC = 1, 8
-            IP = i8Grid_Cell_(IC, ICELL)
+            IP = i8Grid_Cell_(IC, iCell)
             if (IP .gt. NptsOld) then
-                IPARENT = i2Tree_Cell_(1, ICELL)
+                iParent = i2Tree_Cell_(1, iCell)
                 ! Go through all 12 edges of parent cell to find which one has point
-                do IDIR = 1, 3
-                    DIR1 = mod(IDIR - 1 + 1, 3) + 1
-                    DIR2 = mod(IDIR - 1 + 2, 3) + 1
+                do iDir = 1, 3
+                    DIR1 = mod(iDir - 1 + 1, 3) + 1
+                    DIR2 = mod(iDir - 1 + 2, 3) + 1
                     do I = 1, 4
-                        IP1 = i8Grid_Cell_(GRIDCORNER(1, I, IDIR), IPARENT)
-                        IP2 = i8Grid_Cell_(GRIDCORNER(2, I, IDIR), IPARENT)
+                        IP1 = i8Grid_Cell_(GRIDCORNER(1, I, iDir), iParent)
+                        IP2 = i8Grid_Cell_(GRIDCORNER(2, I, iDir), iParent)
                         if  (xyz_Rtm_(DIR1, IP1) .eq. xyz_Rtm_(DIR1, IP) .and.&
                             &xyz_Rtm_(DIR2, IP1) .eq. xyz_Rtm_(DIR2, IP)) goto 120
                     end do
@@ -187,15 +187,15 @@ subroutine shd_util__interpData(NptsOld,&
 
 end subroutine shd_util__interpData
 
-subroutine shd_util__findCell(X0, Y0, Z0, icell)
+subroutine shd_util__findCell(X0, Y0, Z0, iCell)
 
     !   Locates the grid cell in the tree structure containing the
-    ! specified point (X0,Y0,Z0), and returns the cell pointer icell.
+    ! specified point (X0,Y0,Z0), and returns the cell pointer iCell.
     ! First the base grid cell is found (using rtm_obj_%Nx,rtm_obj_%Ny,rtm_obj_%Nz, rtm_obj_%x,rtm_obj_%y,rtm_obj_%z),
     ! and the tree is traced down to find the smallest cell containing
     ! the point.
 
-    integer icell
+    integer iCell
     real(RD_) :: X0, Y0, Z0
     integer IL, IU, IM, IX, IY, IZ, NXC, NYC, IC, IPTR, DIR
     real(RD_) :: XDOMAIN, YDOMAIN
@@ -321,7 +321,7 @@ subroutine shd_util__findCell(X0, Y0, Z0, icell)
     end if
 
     ! Get the base grid cell pointer
-    icell = IZ + (rtm_obj_%Nz - 1)*(IY - 1) + (rtm_obj_%Nz - 1)*NYC*(IX - 1)
+    iCell = IZ + (rtm_obj_%Nz - 1)*(IY - 1) + (rtm_obj_%Nz - 1)*NYC*(IX - 1)
 
     !   Trace down the tree: point to the positive child cell, get the
     ! grid point that is on the negative (X,Y,Z) side, use the
@@ -329,9 +329,9 @@ subroutine shd_util__findCell(X0, Y0, Z0, icell)
     ! split in, then compare the grid point with the test point
     ! (X0,Y0,Z0) to find which child cell (pos or neg) the test
     ! point is in.
-    do while (i2Tree_Cell_(2, icell) .gt. 0)
-        DIR = ibits(int(flag_Cell_(icell)), 2, 2)
-        IC = i2Tree_Cell_(2, icell) + 1
+    do while (i2Tree_Cell_(2, iCell) .gt. 0)
+        DIR = ibits(int(flag_Cell_(iCell)), 2, 2)
+        IC = i2Tree_Cell_(2, iCell) + 1
         IPTR = i8Grid_Cell_(1, IC)
         if (DIR .eq. 1) then
             if (X0 .lt. xyz_Rtm_(1, IPTR)) IC = IC - 1
@@ -340,27 +340,27 @@ subroutine shd_util__findCell(X0, Y0, Z0, icell)
         else if (DIR .eq. 3) then
             if (Z0 .lt. xyz_Rtm_(3, IPTR)) IC = IC - 1
         end if
-        icell = IC
+        iCell = IC
     end do
 
     return
 
 end subroutine shd_util__findCell
 
-subroutine shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, INEXT)
+subroutine shd_util__findNextCell(XE, YE, ZE, iFace, jFace, iCell, INEXT)
 
     !   Gets the next cell (INEXT) to go to that is adjacent to this face
-    ! IFACE (1-6) has which face (-X,+X,-Y,+Y,-Z,+Z) of the current cell
-    ! (ICELL) we are at, and JFACE (1-3) is the direction (X,Y,Z).
+    ! iFace (1-6) has which face (-X,+X,-Y,+Y,-Z,+Z) of the current cell
+    ! (iCell) we are at, and jFace (1-3) is the direction (X,Y,Z).
     ! The current location (XE,YE,ZE) on the face is used to find the cell
     ! if there are several adjacent to the current cell.
 
-    integer IFACE, JFACE, ICELL, INEXT
+    integer iFace, jFace, iCell, INEXT
     real(RD_) :: XE, YE, ZE
     integer IC, IC1, DIR
 
     ! Get the pointer to the neighbor cell
-    INEXT = i6Cell_Cell_(IFACE, ICELL)
+    INEXT = i6Cell_Cell_(iFace, iCell)
     if (INEXT .lt. 0) then
         ! If neighbor pointer is negative then we are going into a cell
         !   that has subcells, and the absolute value of the pointer is the
@@ -374,8 +374,8 @@ subroutine shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, INEXT)
             ! If split is in direction of face then choose the near child cell
             !   which is the negative side cell if this is a positive face.
             IC1 = i2Tree_Cell_(2, IC)
-            if (DIR .eq. JFACE) then
-                IC = IC1 + 1 - mod(IFACE - 1, 2)
+            if (DIR .eq. jFace) then
+                IC = IC1 + 1 - mod(iFace - 1, 2)
             else
                 ! If split is not in direction of face then find which of two cells
                 !   has a face that contains the current location.
@@ -399,23 +399,23 @@ subroutine shd_util__findNextCell(XE, YE, ZE, IFACE, JFACE, ICELL, INEXT)
 end subroutine shd_util__findNextCell
 
 subroutine shd_util__interpTriLin(&
-    &ICELL,&
+    &iCell,&
     &X, Y, Z, ND, FIELD, ID1, NV, VALUES)
 
     !   Trilinearly interpolates the field (FIELD) given a grid cell
-    ! pointer (ICELL), to compute the field values (VALUES) at the desired
+    ! pointer (iCell), to compute the field values (VALUES) at the desired
     ! point (X,Y,Z). ND is the leading index of the FIELD (1 for a
     ! scalar field), ID1 is the first element of the vector to interpolate,
     ! and NV elements are output.
 
-    integer, intent(in) :: ICELL, ND, ID1, NV
+    integer, intent(in) :: iCell, ND, ID1, NV
     real(RD_), intent(in) :: X, Y, Z
     real :: FIELD(ND, *), VALUES(NV)
     integer :: IPT1, IPT2, ID
     real(RD_) :: U, V, W, UM, VM, WM, DELX, DELY, DELZ
 
-    IPT1 = i8Grid_Cell_(1, ICELL)
-    IPT2 = i8Grid_Cell_(8, ICELL)
+    IPT1 = i8Grid_Cell_(1, iCell)
+    IPT2 = i8Grid_Cell_(8, iCell)
     DELX = xyz_Rtm_(1, IPT2) - xyz_Rtm_(1, IPT1)
     if (DELX .le. 0.0) DELX = 1.0
     DELY = xyz_Rtm_(2, IPT2) - xyz_Rtm_(2, IPT1)
@@ -429,14 +429,14 @@ subroutine shd_util__interpTriLin(&
     WM = 1 - W
 
     do ID = ID1, ID1 + NV - 1
-        VALUES(ID - ID1 + 1) = WM*(VM*(UM*FIELD(ID, i8Grid_Cell_(1, ICELL))&
-            &+ U*FIELD(ID, i8Grid_Cell_(2, ICELL)))&
-            &+ V*(UM*FIELD(ID, i8Grid_Cell_(3, ICELL))&
-            &+ U*FIELD(ID, i8Grid_Cell_(4, ICELL))))&
-            &+ W*(VM*(UM*FIELD(ID, i8Grid_Cell_(5, ICELL))&
-            &+ U*FIELD(ID, i8Grid_Cell_(6, ICELL)))&
-            &+ V*(UM*FIELD(ID, i8Grid_Cell_(7, ICELL))&
-            &+ U*FIELD(ID, i8Grid_Cell_(8, ICELL))))
+        VALUES(ID - ID1 + 1) = WM*(VM*(UM*FIELD(ID, i8Grid_Cell_(1, iCell))&
+            &+ U*FIELD(ID, i8Grid_Cell_(2, iCell)))&
+            &+ V*(UM*FIELD(ID, i8Grid_Cell_(3, iCell))&
+            &+ U*FIELD(ID, i8Grid_Cell_(4, iCell))))&
+            &+ W*(VM*(UM*FIELD(ID, i8Grid_Cell_(5, iCell))&
+            &+ U*FIELD(ID, i8Grid_Cell_(6, iCell)))&
+            &+ V*(UM*FIELD(ID, i8Grid_Cell_(7, iCell))&
+            &+ U*FIELD(ID, i8Grid_Cell_(8, iCell))))
     end do
 
     return

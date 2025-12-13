@@ -597,10 +597,10 @@ subroutine shd_src__integrateSrcRay(&
     real(RD_) :: TRANSMIT, radI_Shdo(NSTOKES)
     character(len=1) :: SRCTYPE
 
-    integer bitX, bitY, bitZ, iOctant, iCell, iCellNext, IFACE
+    integer bitX, bitY, bitZ, iOctant, iCell, iCellNext, iFace
     integer IOPP, NTAU, IT, I, IPT1, IPT2, J, L
     logical DONE, is1DX, is1DY, OPENBCFACE
-    integer JFACE, KFACE, IC, MAXCELLSCROSS, NGRID
+    integer jFace, kFace, IC, MAXCELLSCROSS, NGRID
     integer OPPFACE(6), OLDIPTS(8), DONETHIS(8)
     integer DONEFACE(8, 7), ONEX(8), ONEY(8)
     real OEXTINCT8(8), OSRCEXT8(NSTOKES, 8)
@@ -705,7 +705,7 @@ subroutine shd_src__integrateSrcRay(&
     call shd_util__findCell(XE, YE, ZE, iCell)
     ! write(*, '(A,5(1X,F8.5),1X,I6)') &
     !     &'_integrateSrcOneRay:',X0,Y0,Z0,muRay,phiRay,iCell
-    IFACE = 0
+    iFace = 0
     NGRID = 0
 
     ! Loop until reach a Z boundary or transmission is very small
@@ -721,7 +721,7 @@ subroutine shd_src__integrateSrcRay(&
 
         ! Decide which of the eight grid points we need the source fun
         do I = 1, 8
-            DONETHIS(I) = DONEFACE(I, IFACE + 1)
+            DONETHIS(I) = DONEFACE(I, iFace + 1)
             if (rtm_obj_%Nx .eq. 1 .and. ONEX(I) .lt. 0) DONETHIS(I) = ONEX(I)
             if (rtm_obj_%Ny .eq. 1 .and. ONEY(I) .lt. 0) DONETHIS(I) = ONEY(I)
             OEXTINCT8(I) = EXTINCT8(I)
@@ -870,39 +870,39 @@ subroutine shd_src__integrateSrcRay(&
 
         ! Get the intersection face number (i.e. neighptr index)
         if ((SOX .le. SOZ) .and. (SOX .le. SOY)) then
-            IFACE = 2 - bitX
-            JFACE = 1
+            iFace = 2 - bitX
+            jFace = 1
             OPENBCFACE = btest(int(flag_Cell_(iCell)), 0) .and. isOpenX_
         else if (SOY .le. SOZ) then
-            IFACE = 4 - bitY
-            JFACE = 2
+            iFace = 4 - bitY
+            jFace = 2
             OPENBCFACE = btest(int(flag_Cell_(iCell)), 1) .and. isOpenYx_
         else
-            IFACE = 6 - bitZ
-            JFACE = 3
+            iFace = 6 - bitZ
+            jFace = 3
             OPENBCFACE = .false.
         end if
         ! Get the next cell to go to
-        iCellNext = i6Cell_Cell_(IFACE, iCell)
+        iCellNext = i6Cell_Cell_(iFace, iCell)
         if (iCellNext .lt. 0) then
-            call shd_util__findNextCell(XN, YN, ZN, IFACE, JFACE, iCell,&
+            call shd_util__findNextCell(XN, YN, ZN, iFace, jFace, iCell,&
                 &iCellNext)
         end if
         ! If going to same or larger face then use previous face
-        if ((i6Cell_Cell_(IFACE, iCell) .ge. 0) .and. (.not. OPENBCFACE)) then
-            KFACE = IFACE
+        if ((i6Cell_Cell_(iFace, iCell) .ge. 0) .and. (.not. OPENBCFACE)) then
+            kFace = iFace
             IC = iCell
         else
             ! If going to smaller face then use next face (more accurate
-            KFACE = OPPFACE(IFACE)
+            kFace = OPPFACE(iFace)
             IC = iCellNext
-            IFACE = 0
+            iFace = 0
         end if
         ! Get the location coordinate
         if (iCellNext .gt. 0) then
-            if (JFACE .eq. 1) then
+            if (jFace .eq. 1) then
                 XN = xyz_Rtm_(1, i8Grid_Cell_(iOctant, iCellNext))
-            else if (JFACE .eq. 2) then
+            else if (jFace .eq. 2) then
                 YN = xyz_Rtm_(2, i8Grid_Cell_(iOctant, iCellNext))
             else
                 ZN = xyz_Rtm_(3, i8Grid_Cell_(iOctant, iCellNext))
@@ -913,11 +913,11 @@ subroutine shd_src__integrateSrcRay(&
         !   boundary then prepare for next cell
         if ((TRANSMIT .lt. TRANSCUT) .or. (NGRID .gt. MAXCELLSCROSS)) then
             isValidRad = .true.
-        else if ((iCellNext .eq. 0) .and. (IFACE .ge. 5)) then
+        else if ((iCellNext .eq. 0) .and. (iFace .ge. 5)) then
             isValidRad = .true.
             call shd_src__findBndryRad(NSTOKES, XN, YN,&
                 &sngl(muRay), sngl(phiRay),&
-                &IC, KFACE, i8Grid_Cell_, xyz_Rtm_,&
+                &IC, kFace, i8Grid_Cell_, xyz_Rtm_,&
                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                 &NMU, NPHI0MAX, NPHI0, muDO, phiDO, WTDO,&
                 &SRCTYPE, WAVELEN, muSun, phiSun, fluxDir,&
@@ -932,7 +932,7 @@ subroutine shd_src__integrateSrcRay(&
 
     end do
 
-    SIDE = IFACE
+    SIDE = iFace
 
     if (src_obj_%doSolar .and. doDeltaM) then
         if (prp_obj_%Npha .gt. 0) then
@@ -966,10 +966,10 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
     real muRay, phiRay
     real(RD_) :: X0, Y0, Z0, XE, YE, ZE, TRANSMIT, radI_Shdo(NSTOKES)
     real srcJ_Shdo(NSTOKES, rtm_obj_%Npts), GRIDRAD(NSTOKES, rtm_obj_%Npts)
-    integer bitX, bitY, bitZ, iOctant, iCell, iCellNext, IFACE
+    integer bitX, bitY, bitZ, iOctant, iCell, iCellNext, iFace
     integer I1, I2, I3, I4, IOPP, NTAU, IT, K
     logical is1DX, is1DY, OPENBCFACE
-    integer GRIDFACE(4, 6), OPPFACE(6), JFACE, KFACE, IC
+    integer GRIDFACE(4, 6), OPPFACE(6), jFace, kFace, IC
     real EXT0(1), EXT1(1), EXTN(1)
     real XM, YM
     real SRCEXT0(NSTOKES), SRCEXT1(NSTOKES), RAD0(NSTOKES)
@@ -1131,44 +1131,44 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
 
         ! Get the intersection face number (i.e. neighptr index)
         if (SOX .le. SOZ .and. SOX .le. SOY) then
-            IFACE = 2 - bitX
-            JFACE = 1
+            iFace = 2 - bitX
+            jFace = 1
             OPENBCFACE = btest(int(flag_Cell_(iCell)), 0) .and. isOpenX_
         else if (SOY .le. SOZ) then
-            IFACE = 4 - bitY
-            JFACE = 2
+            iFace = 4 - bitY
+            jFace = 2
             OPENBCFACE = btest(int(flag_Cell_(iCell)), 1) .and. isOpenYx_
         else
-            IFACE = 6 - bitZ
-            JFACE = 3
+            iFace = 6 - bitZ
+            jFace = 3
             OPENBCFACE = .false.
         end if
         ! Get the next cell to go to
-        iCellNext = i6Cell_Cell_(IFACE, iCell)
+        iCellNext = i6Cell_Cell_(iFace, iCell)
         if (iCellNext .lt. 0) then
-            call shd_util__findNextCell(XN, YN, ZN, IFACE, JFACE, iCell,&
+            call shd_util__findNextCell(XN, YN, ZN, iFace, jFace, iCell,&
                 &iCellNext)
         end if
         ! Get the four grid points on the intersection face for
         !   telling if at the boundary
         !   If going to same or larger face then use previous face
-        if (i6Cell_Cell_(IFACE, iCell) .ge. 0 .and. .not. OPENBCFACE) then
-            KFACE = IFACE
+        if (i6Cell_Cell_(iFace, iCell) .ge. 0 .and. .not. OPENBCFACE) then
+            kFace = iFace
             IC = iCell
         else
             ! If going to smaller face then use next face (more accurate
-            KFACE = OPPFACE(IFACE)
+            kFace = OPPFACE(iFace)
             IC = iCellNext
         end if
-        I1 = i8Grid_Cell_(GRIDFACE(1, KFACE), IC)
-        I2 = i8Grid_Cell_(GRIDFACE(2, KFACE), IC)
-        I3 = i8Grid_Cell_(GRIDFACE(3, KFACE), IC)
-        I4 = i8Grid_Cell_(GRIDFACE(4, KFACE), IC)
+        I1 = i8Grid_Cell_(GRIDFACE(1, kFace), IC)
+        I2 = i8Grid_Cell_(GRIDFACE(2, kFace), IC)
+        I3 = i8Grid_Cell_(GRIDFACE(3, kFace), IC)
+        I4 = i8Grid_Cell_(GRIDFACE(4, kFace), IC)
         ! Get the location coordinate
         if (iCellNext .gt. 0) then
-            if (JFACE .eq. 1) then
+            if (jFace .eq. 1) then
                 XN = xyz_Rtm_(1, i8Grid_Cell_(iOctant, iCellNext))
-            else if (JFACE .eq. 2) then
+            else if (jFace .eq. 2) then
                 YN = xyz_Rtm_(2, i8Grid_Cell_(iOctant, iCellNext))
             else
                 ZN = xyz_Rtm_(3, i8Grid_Cell_(iOctant, iCellNext))
@@ -1196,7 +1196,7 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
         ZE = ZN
 
     end do
-    SIDE = IFACE
+    SIDE = iFace
 
     return
 
@@ -1719,7 +1719,7 @@ end subroutine shd_src__rotatePolarPlane
 
 subroutine shd_src__findBndryRad(&
     &NSTOKES, XB, YB, muRay, phiRay,&
-    &iCell, KFACE, GRIDPTR, GRIDPOS,&
+    &iCell, kFace, GRIDPTR, GRIDPOS,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &NMU, NPHI0MAX, NPHI0, muDO, phiDO, WTDO,&
     &SRCTYPE, WAVELEN, muSun, phiSun, fluxDir,&
@@ -1727,10 +1727,10 @@ subroutine shd_src__findBndryRad(&
 
     !   Returns the interpolated Stokes radiance at the boundary (RADBND)
     ! Inputs are the boundary location (XB,YB), ray direction away from
-    ! boundary (muRay,phiRay), cell number (iCell) and face (KFACE) at
+    ! boundary (muRay,phiRay), cell number (iCell) and face (kFace) at
     ! the boundary point.
 
-    integer NSTOKES, iCell, KFACE, MAXNBC, NTOPPTS, NBOTPTS
+    integer NSTOKES, iCell, kFace, MAXNBC, NTOPPTS, NBOTPTS
     integer GRIDPTR(8, *), BCPTR(MAXNBC, 2)
     integer NMU, NPHI0MAX, NPHI0(NMU)
     real muRay, phiRay, RADBND(NSTOKES)
@@ -1749,7 +1749,7 @@ subroutine shd_src__findBndryRad(&
 
     ! Loop over the four gridpoints of the cell face on the boundary
     do J = 1, 4
-        IP = GRIDPTR(GRIDFACE(J, KFACE), iCell)
+        IP = GRIDPTR(GRIDFACE(J, kFace), iCell)
         X(J) = GRIDPOS(1, IP)
         Y(J) = GRIDPOS(2, IP)
 
