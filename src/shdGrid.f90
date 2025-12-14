@@ -88,8 +88,8 @@ module shd_grid
     integer, parameter :: R__  = selected_real_kind(6) ! default precision for float
     integer, parameter :: I__  = selected_int_kind(9)  ! default precision for integer
 
-    integer(kind=I__) :: gridCorner(2, 4, 3)
-    data gridCorner /1, 2, 3, 4, 5, 6, 7, 8, 1, 3, 2, 4, 5, 7, 6, 8,&
+    integer(kind=I__) :: cornerGrid(2, 4, 3)
+    data cornerGrid /1, 2, 3, 4, 5, 6, 7, 8, 1, 3, 2, 4, 5, 7, 6, 8,&
         &1, 5, 2, 6, 3, 7, 4, 8/
 
     integer(kind=I__) :: faceOpp(6)
@@ -756,8 +756,8 @@ subroutine shd_grid__makeNewGridPts(iDir, iCell, newCell,&
     ! Loop over the four edges with potentially new points
     do I = 1, 4
         ! Get the grid corners and coordinates for this edge and split direction
-        I1 = gridCorner(1, I, iDir)
-        I2 = gridCorner(2, I, iDir)
+        I1 = cornerGrid(1, I, iDir)
+        I2 = cornerGrid(2, I, iDir)
         IP1 = i8Grid_Cell(I1, iCell)
         IP2 = i8Grid_Cell(I2, iCell)
         XP = (xyz_Rtm(1, IP1) + xyz_Rtm(1, IP2))/2
@@ -1273,8 +1273,8 @@ subroutine shd_grid__testCellSplit(iCell,&
         ! Loop over four edges that cross the ID direction
         do IE = 1, 4
             ! Get the grid points
-            IP1 = i8Grid_Cell_(gridCorner(1, IE, ID), iCell)
-            IP2 = i8Grid_Cell_(gridCorner(2, IE, ID), iCell)
+            IP1 = i8Grid_Cell_(cornerGrid(1, IE, ID), iCell)
+            IP2 = i8Grid_Cell_(cornerGrid(2, IE, ID), iCell)
             if (IP1 .ne. IP2) then
                 NUM = NUM + 1
                 IS1 = isrcJ_Shdo_(IP1)

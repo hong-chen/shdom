@@ -80,7 +80,7 @@ module shd_util
     public :: shd_util__ssort_r
 
     public :: indexAt
-    public :: dist
+    public :: distKm
 
     public :: shd_util__computeRayVect
     public :: shd_util__computeDegKmRatio
@@ -136,8 +136,8 @@ subroutine shd_util__interpData(NptsOld,&
     real FLUXES(2, rtm_obj_%Npts), fluxDir(rtm_obj_%Npts), FLUXDIV(rtm_obj_%Npts)
     real SHTERMS(5, rtm_obj_%Npts)
     integer IP, IC, iCell, iParent, iDir, I, J, DIR1, DIR2, IP1, IP2
-    integer GRIDCORNER(2, 4, 3)
-    data GRIDCORNER/1, 2, 3, 4, 5, 6, 7, 8, 1, 3, 2, 4, 5, 7, 6, 8,&
+    integer cornerGrid(2, 4, 3)
+    data cornerGrid/1, 2, 3, 4, 5, 6, 7, 8, 1, 3, 2, 4, 5, 7, 6, 8,&
         &1, 5, 2, 6, 3, 7, 4, 8/
 
     if (NptsOld .le. 0) return
@@ -153,8 +153,8 @@ subroutine shd_util__interpData(NptsOld,&
                     DIR1 = mod(iDir - 1 + 1, 3) + 1
                     DIR2 = mod(iDir - 1 + 2, 3) + 1
                     do I = 1, 4
-                        IP1 = i8Grid_Cell_(GRIDCORNER(1, I, iDir), iParent)
-                        IP2 = i8Grid_Cell_(GRIDCORNER(2, I, iDir), iParent)
+                        IP1 = i8Grid_Cell_(cornerGrid(1, I, iDir), iParent)
+                        IP2 = i8Grid_Cell_(cornerGrid(2, I, iDir), iParent)
                         if  (xyz_Rtm_(DIR1, IP1) .eq. xyz_Rtm_(DIR1, IP) .and.&
                             &xyz_Rtm_(DIR2, IP1) .eq. xyz_Rtm_(DIR2, IP)) goto 120
                     end do
@@ -1409,7 +1409,7 @@ function indexAt(x, x1) result(i)
 
 end function indexAt
 
-elemental pure function dist(lon1_deg, lat1_deg, h1_km, &
+elemental pure function distKm(lon1_deg, lat1_deg, h1_km, &
                              lon2_deg, lat2_deg, h2_km) result(dist_km)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
@@ -1456,7 +1456,7 @@ elemental pure function dist(lon1_deg, lat1_deg, h1_km, &
     ! --- Euclidean distance ---
     dist_km = sqrt((x1 - x2)**2 + (y1 - y2)**2 + (z1 - z2)**2)
 
-end function dist
+end function distKm
 
 pure subroutine sin_cos(x, s, c)
     real(kind=R__), intent(in)  :: x
@@ -1531,10 +1531,10 @@ subroutine shd_util__computeDegKmRatio(&
     real(kind=R__), intent(in)  :: lon_deg, lat_deg, h_km, dlon, dlat
     real(kind=RD_), intent(out) :: ratio_x, ratio_y
 
-    ratio_x = dist(lon_deg-0.5*dlon, lat_deg, h_km, &
+    ratio_x = distKm(lon_deg-0.5*dlon, lat_deg, h_km, &
                    lon_deg+0.5*dlon, lat_deg, h_km) / dlon
 
-    ratio_y = dist(lon_deg, lat_deg-0.5*dlat, h_km, &
+    ratio_y = distKm(lon_deg, lat_deg-0.5*dlat, h_km, &
                    lon_deg, lat_deg+0.5*dlat, h_km) / dlat
 
     return

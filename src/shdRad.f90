@@ -745,9 +745,9 @@ subroutine shd_rad__interpRad(&
     real radI_Shdo(NSTOKES, *), GRIDPOS(3, *)
     integer IP, IC, iCell, iParent, iDir, I, J, K, DIR1, DIR2, IP1, IP2
     integer IR, IR1, IR2, NR, NR1, NR2
-    integer GRIDCORNER(2, 4, 3)
+    integer cornerGrid(2, 4, 3)
     real RAD1(NSTOKES), RAD2(NSTOKES)
-    data GRIDCORNER/1, 2, 3, 4, 5, 6, 7, 8, 1, 3, 2, 4, 5, 7, 6, 8,&
+    data cornerGrid/1, 2, 3, 4, 5, 6, 7, 8, 1, 3, 2, 4, 5, 7, 6, 8,&
         &1, 5, 2, 6, 3, 7, 4, 8/
 
     if (NptsOld .le. 0) return
@@ -763,8 +763,8 @@ subroutine shd_rad__interpRad(&
                     DIR1 = mod(iDir - 1 + 1, 3) + 1
                     DIR2 = mod(iDir - 1 + 2, 3) + 1
                     do I = 1, 4
-                        IP1 = GRIDPTR(GRIDCORNER(1, I, iDir), iParent)
-                        IP2 = GRIDPTR(GRIDCORNER(2, I, iDir), iParent)
+                        IP1 = GRIDPTR(cornerGrid(1, I, iDir), iParent)
+                        IP2 = GRIDPTR(cornerGrid(2, I, iDir), iParent)
                         if (GRIDPOS(DIR1, IP1) .eq. GRIDPOS(DIR1, IP) .and.&
                             &GRIDPOS(DIR2, IP1) .eq. GRIDPOS(DIR2, IP)) goto 120
                     end do
