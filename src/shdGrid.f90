@@ -112,7 +112,7 @@ module shd_grid
     public :: shd_grid__testGridSmooth
     public :: shd_grid__testCellSplit
 
-    private :: shd_grid__InterpTriLinGridPrp
+    private :: shd_grid__interpTriLinGridPrp
     private :: sweepCellNext
     private :: sweepCellBase
 
@@ -306,7 +306,7 @@ end subroutine shd_grid__splitGrid
 
 subroutine shd_grid__interpGrid(xyz_Rtm)
 
-    ! Calls shd_grid__InterpTriLinGridPrp to interpolate the input arrays from
+    ! Calls shd_grid__interpTriLinGridPrp to interpolate the input arrays from
     !   the property grid to each internal grid point.
 
     real(kind=R__), intent(in) :: xyz_Rtm(3, *)
@@ -314,17 +314,18 @@ subroutine shd_grid__interpGrid(xyz_Rtm)
     integer(kind=I__) :: iPts
 
     ! Initialize: transfer the tabulated phase functions
-    call shd_grid__InterpTriLinGridPrp(&
-        &0.0, 0.0, 0.0,&
-        &.true., temp_Rtm_(1), ext_Rtm_(1), ssa_Rtm_(1),&
-        &leg_Rtm_(1:prp_obj_%NlegSet, 0:prp_obj_%Nleg, 1), ipha_Rtm_(1))
+    call shd_grid__interpTriLinGridPrp(&
+        .true., 0.0, 0.0, 0.0, &
+        temp_Rtm_(1), ext_Rtm_(1), ssa_Rtm_(1), &
+        leg_Rtm_(1:prp_obj_%NlegSet, 0:prp_obj_%Nleg, 1), ipha_Rtm_(1))
 
     ! Trilinearly interpolate from the property grid to the adaptive
     do iPts = 1, rtm_obj_%Npts
-        call shd_grid__InterpTriLinGridPrp(&
-            &xyz_Rtm(1, iPts), xyz_Rtm(2, iPts), xyz_Rtm(3, iPts),&
-            &.false., temp_Rtm_(iPts), ext_Rtm_(iPts), ssa_Rtm_(iPts),&
-            &leg_Rtm_(1:prp_obj_%NlegSet, 0:prp_obj_%Nleg, iPts), ipha_Rtm_(iPts))
+        call shd_grid__interpTriLinGridPrp(&
+            .false., &
+            xyz_Rtm(1, iPts), xyz_Rtm(2, iPts), xyz_Rtm(3, iPts), &
+            temp_Rtm_(iPts), ext_Rtm_(iPts), ssa_Rtm_(iPts), &
+            leg_Rtm_(1:prp_obj_%NlegSet, 0:prp_obj_%Nleg, iPts), ipha_Rtm_(iPts))
     end do
 
     return
@@ -409,9 +410,9 @@ subroutine shd_grid__interpNewGridPts(newPts,&
             X = xyz_Rtm_(1, IP)
             Y = xyz_Rtm_(2, IP)
             Z = xyz_Rtm_(3, IP)
-            call shd_grid__InterpTriLinGridPrp(X, Y, Z, .false.,&
-                &temp_Rtm(IP), ext_Rtm(IP), ssa_Rtm(IP),&
-                &leg_Rtm(1:prp_obj_%NlegSet, 0:prp_obj_%Nleg, 1), ipha_Rtm(IP))
+            call shd_grid__interpTriLinGridPrp(.false., X, Y, Z, &
+                temp_Rtm(IP), ext_Rtm(IP), ssa_Rtm(IP), &
+                leg_Rtm(1:prp_obj_%NlegSet, 0:prp_obj_%Nleg, 1), ipha_Rtm(IP))
             ! Do the Delta-M scaling of extinction and albedo for this point
             if (doDeltaM) then
                 if (prp_obj_%Npha .gt. 0) then
@@ -1491,9 +1492,9 @@ logical function sweepCellNext(BCFLAG, NXC, NYC, NZ, iOctant,&
 
 end function sweepCellNext
 
-subroutine shd_grid__InterpTriLinGridPrp(&
-    &x0, y0, z0, doInit,&
-    &temp0, ext0, ssa0, leg0, ipha0)
+subroutine shd_grid__interpTriLinGridPrp(&
+    doInit, x0, y0, z0, &
+    temp0, ext0, ssa0, leg0, ipha0)
 
     !  Trilinearly interpolates the quantities on the input property
     ! grid at the single point (x0,y0,z0) to get the output temp0,ext0,
@@ -1504,9 +1505,8 @@ subroutine shd_grid__InterpTriLinGridPrp(&
     ! is that of the maximum weighted scattering property grid point.
     ! If doInit=.TRUE. then transfers the tabulated phase functions.
 
-
-    real(kind=R__), intent(in)  :: x0, y0, z0
     logical, intent(in) :: doInit
+    real(kind=R__), intent(in)  :: x0, y0, z0
 
     integer(kind=2), intent(out) :: ipha0
     real(kind=R__),  intent(out) :: temp0, ext0, ssa0, leg0(prp_obj_%NlegSet, 0:prp_obj_%Nleg, *)
@@ -1815,6 +1815,6 @@ subroutine shd_grid__InterpTriLinGridPrp(&
 
     return
 
-end subroutine shd_grid__InterpTriLinGridPrp
+end subroutine shd_grid__interpTriLinGridPrp
 
 end module shd_grid
