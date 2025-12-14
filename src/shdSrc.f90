@@ -601,7 +601,7 @@ subroutine shd_src__integrateSrcRay(&
     integer IOPP, NTAU, IT, I, IPT1, IPT2, J, L
     logical DONE, is1DX, is1DY, OPENBCFACE
     integer jFace, kFace, IC, MAXCELLSCROSS, NGRID
-    integer OPPFACE(6), OLDIPTS(8), DONETHIS(8)
+    integer faceOpp(6), OLDIPTS(8), DONETHIS(8)
     integer DONEFACE(8, 7), ONEX(8), ONEY(8)
     real OEXTINCT8(8), OSRCEXT8(NSTOKES, 8)
     real EXTINCT8(8), SRCEXT8(NSTOKES, 8)
@@ -619,7 +619,7 @@ subroutine shd_src__integrateSrcRay(&
     real, allocatable :: YlmRay(:, :), scatVect(:, :)
     real(RD_), allocatable :: legScat(:)
 
-    data OPPFACE/2, 1, 4, 3, 6, 5/
+    data faceOpp/2, 1, 4, 3, 6, 5/
     data ONEY/0, 0, -1, -2, 0, 0, -5, -6/, ONEX/0, -1, 0, -3, 0, -5, 0, -7/
     data DONEFACE/0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 3, 0, 5, 0, 7, 2, 0, 4, 0, 6, 0, 8, 0,&
         &0, 0, 1, 2, 0, 0, 5, 6, 3, 4, 0, 0, 5, 6, 0, 0,&
@@ -894,7 +894,7 @@ subroutine shd_src__integrateSrcRay(&
             IC = iCell
         else
             ! If going to smaller face then use next face (more accurate
-            kFace = OPPFACE(iFace)
+            kFace = faceOpp(iFace)
             IC = iCellNext
             iFace = 0
         end if
@@ -969,7 +969,7 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
     integer bitX, bitY, bitZ, iOctant, iCell, iCellNext, iFace
     integer I1, I2, I3, I4, IOPP, NTAU, IT, K
     logical is1DX, is1DY, OPENBCFACE
-    integer GRIDFACE(4, 6), OPPFACE(6), jFace, kFace, IC
+    integer faceGrid(4, 6), faceOpp(6), jFace, kFace, IC
     real EXT0(1), EXT1(1), EXTN(1)
     real XM, YM
     real SRCEXT0(NSTOKES), SRCEXT1(NSTOKES), RAD0(NSTOKES)
@@ -979,8 +979,8 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
     real(RD_) :: TAUTOL, TAUGRID, S, DELS
     real(RD_) :: EXT, TAU, TRANSCELL, ABSCELL
     real(RD_) :: SRC(NSTOKES), RAD(NSTOKES)
-    data GRIDFACE/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8,&
-        &1, 2, 3, 4, 5, 6, 7, 8/, OPPFACE/2, 1, 4, 3, 6, 5/
+    data faceGrid/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8,&
+        &1, 2, 3, 4, 5, 6, 7, 8/, faceOpp/2, 1, 4, 3, 6, 5/
 
     ! TAUTOL is the maximum optical path for the subgrid intervals
     TAUTOL = 0.1
@@ -1157,13 +1157,13 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
             IC = iCell
         else
             ! If going to smaller face then use next face (more accurate
-            kFace = OPPFACE(iFace)
+            kFace = faceOpp(iFace)
             IC = iCellNext
         end if
-        I1 = i8Grid_Cell_(GRIDFACE(1, kFace), IC)
-        I2 = i8Grid_Cell_(GRIDFACE(2, kFace), IC)
-        I3 = i8Grid_Cell_(GRIDFACE(3, kFace), IC)
-        I4 = i8Grid_Cell_(GRIDFACE(4, kFace), IC)
+        I1 = i8Grid_Cell_(faceGrid(1, kFace), IC)
+        I2 = i8Grid_Cell_(faceGrid(2, kFace), IC)
+        I3 = i8Grid_Cell_(faceGrid(3, kFace), IC)
+        I4 = i8Grid_Cell_(faceGrid(4, kFace), IC)
         ! Get the location coordinate
         if (iCellNext .gt. 0) then
             if (jFace .eq. 1) then
@@ -1743,13 +1743,13 @@ subroutine shd_src__findBndryRad(&
 
     integer IL, IM, IU, IP, IBC, J
     real X(4), Y(4), RAD(NSTOKES, 4), U, V
-    integer GRIDFACE(4, 6)
-    data GRIDFACE/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8,&
+    integer faceGrid(4, 6)
+    data faceGrid/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8,&
         &1, 2, 3, 4, 5, 6, 7, 8/
 
     ! Loop over the four gridpoints of the cell face on the boundary
     do J = 1, 4
-        IP = GRIDPTR(GRIDFACE(J, kFace), iCell)
+        IP = GRIDPTR(faceGrid(J, kFace), iCell)
         X(J) = GRIDPOS(1, IP)
         Y(J) = GRIDPOS(2, IP)
 

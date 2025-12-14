@@ -92,8 +92,8 @@ module shd_grid
     data gridCorner /1, 2, 3, 4, 5, 6, 7, 8, 1, 3, 2, 4, 5, 7, 6, 8,&
         &1, 5, 2, 6, 3, 7, 4, 8/
 
-    integer(kind=I__) :: oppFace(6)
-    data oppFace /2, 1, 4, 3, 6, 5/
+    integer(kind=I__) :: faceOpp(6)
+    data faceOpp /2, 1, 4, 3, 6, 5/
 
     public :: shd_grid__splitGrid
 
@@ -630,12 +630,12 @@ subroutine shd_grid__matchGridPts(&
 
     integer(kind=I__) :: iDir, DIR, IC, IC1, kFace, iPts, I
 
-    integer(kind=I__) :: gridFace(4, 6)
-    data gridFace /1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8/
+    integer(kind=I__) :: faceGrid(4, 6)
+    data faceGrid /1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8/
 
     iptsMatch = 0
     iDir = (iFace + 1)/2
-    kFace = oppFace(iFace)
+    kFace = faceOpp(iFace)
 
     ! Get the pointer to the neighbor cell
     IC = abs(i6Cell_Cell_(iFace, iCell))
@@ -650,7 +650,7 @@ subroutine shd_grid__matchGridPts(&
         !   corners of the cell's face
         do while (i2Tree_Cell_(2, IC) .eq. 0)
             do I = 1, 4
-                iPts = i8Grid_Cell_(gridFace(I, kFace), IC)
+                iPts = i8Grid_Cell_(faceGrid(I, kFace), IC)
                 if (XP .eq. xyz_Rtm_(1, iPts) .and. YP .eq. xyz_Rtm_(2, iPts)&
                     &.and. ZP .eq. xyz_Rtm_(3, iPts)) then
                     iptsMatch = iPts
@@ -1050,10 +1050,10 @@ subroutine shd_grid__matchNeighCellFace(iFace, IC,&
             &xyz_Rtm_(DIR1, IN8) .le. xyz_Rtm_(DIR1, IC8) .and.&
             &xyz_Rtm_(DIR2, IN1) .ge. xyz_Rtm_(DIR2, IC1) .and.&
             &xyz_Rtm_(DIR2, IN8) .le. xyz_Rtm_(DIR2, IC8)) then
-            call shd_grid__inheritNeighCell(iCellNeigh, oppFace(iFace), IC,&
+            call shd_grid__inheritNeighCell(iCellNeigh, faceOpp(iFace), IC,&
                 &i6Cell_Cell)
         else
-            i6Cell_Cell(oppFace(iFace), iCellNeigh) = -abs(i6Cell_Cell(oppFace(iFace), iCellNeigh))
+            i6Cell_Cell(faceOpp(iFace), iCellNeigh) = -abs(i6Cell_Cell(faceOpp(iFace), iCellNeigh))
         end if
 
         ! Go down the neighbors cell tree until there is no children,

@@ -392,7 +392,7 @@ subroutine shd_intg__backIntegrate3D(&
     integer bitX, bitY, bitZ, iOctant, jOctant
     integer iCellPts, iCell, iCellNext, iPts, iFace
     integer I1, I2, I3, I4, IOPP, jFace, kFace, IC, IZ
-    integer GRIDFACE(4, 6), OPPFACE(6)
+    integer faceGrid(4, 6), faceOpp(6)
     integer iOrder, iCorner, jOctantOrder3(8), jOctantOrder2(8)
     logical isValidRad, isValidFace, is1DX, is1DY
     real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV, ratioX, ratioY
@@ -404,8 +404,8 @@ subroutine shd_intg__backIntegrate3D(&
     real(RD_) :: EXT0P, SRCEXT0P(NSTOKES)
     real(RD_) :: TAU, TRANSCELL, ABSCELL, TRANSMIT
     real(RD_) :: RAD(NSTOKES), RAD0(NSTOKES)
-    data GRIDFACE/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8,&
-        &1, 2, 3, 4, 5, 6, 7, 8/, OPPFACE/2, 1, 4, 3, 6, 5/
+    data faceGrid/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8,&
+        &1, 2, 3, 4, 5, 6, 7, 8/, faceOpp/2, 1, 4, 3, 6, 5/
     data jOctantOrder3/1, 3, 5, 7, 2, 4, 6, 8/, jOctantOrder2/1, 3, 1, 3, 2, 4, 2, 4/
 
     EPS = 1.0e-3*(xyz_Rtm_(3, i8Grid_Cell_(8, 1)) - xyz_Rtm_(3, i8Grid_Cell_(1, 1)))
@@ -541,13 +541,13 @@ subroutine shd_intg__backIntegrate3D(&
                     IC = iCell
                 else
                     ! If going to smaller face then use next face (more accurate)
-                    kFace = OPPFACE(iFace)
+                    kFace = faceOpp(iFace)
                     IC = iCellNext
                 end if
-                I1 = i8Grid_Cell_(GRIDFACE(1, kFace), IC)
-                I2 = i8Grid_Cell_(GRIDFACE(2, kFace), IC)
-                I3 = i8Grid_Cell_(GRIDFACE(3, kFace), IC)
-                I4 = i8Grid_Cell_(GRIDFACE(4, kFace), IC)
+                I1 = i8Grid_Cell_(faceGrid(1, kFace), IC)
+                I2 = i8Grid_Cell_(faceGrid(2, kFace), IC)
+                I3 = i8Grid_Cell_(faceGrid(3, kFace), IC)
+                I4 = i8Grid_Cell_(faceGrid(4, kFace), IC)
                 ! Compute the face interpolation factors
                 if (jFace .eq. 1) then
                     U = (ZE - xyz_Rtm_(3, I1))/(xyz_Rtm_(3, I3) - xyz_Rtm_(3, I1))
@@ -769,15 +769,15 @@ subroutine shd_intg__backIntegrate3D_( &
     real(RD_) :: EXT0P, SRCEXT0P
     real(RD_) :: TAU, TRANSCELL, ABSCELL, RAD, RAD0, TRANSMIT
 
-    integer(kind=I__) :: GRIDFACE(4, 6), OPPFACE(6), jOctantOrder_1D(8), jOctantOrder_3D(8)
-    data GRIDFACE /  &
+    integer(kind=I__) :: faceGrid(4, 6), faceOpp(6), jOctantOrder_1D(8), jOctantOrder_3D(8)
+    data faceGrid /  &
         1, 3, 5, 7, &
         2, 4, 6, 8, &
         1, 2, 5, 6, &
         3, 4, 7, 8, &
         1, 2, 3, 4, &
         5, 6, 7, 8/
-    data OPPFACE /2, 1, 4, 3, 6, 5/
+    data faceOpp /2, 1, 4, 3, 6, 5/
     data jOctantOrder_1D /1, 3, 1, 3, 2, 4, 2, 4/
     data jOctantOrder_3D /1, 3, 5, 7, 2, 4, 6, 8/
 
@@ -934,14 +934,14 @@ subroutine shd_intg__backIntegrate3D_( &
                     IC = iCell
                 else
                     ! If going to smaller face then use next face (more accurate)
-                    kFace = OPPFACE(iFace)
+                    kFace = faceOpp(iFace)
                     IC = iCellNext
                 end if
 
-                I1 = i8Grid_Cell_(GRIDFACE(1, kFace), IC)
-                I2 = i8Grid_Cell_(GRIDFACE(2, kFace), IC)
-                I3 = i8Grid_Cell_(GRIDFACE(3, kFace), IC)
-                I4 = i8Grid_Cell_(GRIDFACE(4, kFace), IC)
+                I1 = i8Grid_Cell_(faceGrid(1, kFace), IC)
+                I2 = i8Grid_Cell_(faceGrid(2, kFace), IC)
+                I3 = i8Grid_Cell_(faceGrid(3, kFace), IC)
+                I4 = i8Grid_Cell_(faceGrid(4, kFace), IC)
 
                 ! Compute the face interpolation factors
                 if (jFace .eq. 1) then
@@ -994,13 +994,13 @@ subroutine shd_intg__backIntegrate3D_( &
                 F2 = (1.0 - U)*       V
                 F3 =        U *(1.0 - V)
                 F4 =        U *       V
-                EXT0 = F1*EXTINCT(I1) + F2*EXTINCT(I2)&
-                    &+ F3*EXTINCT(I3) + F4*EXTINCT(I4)
+                EXT0 = F1*EXTINCT(I1) + F2*EXTINCT(I2) + &
+                       F3*EXTINCT(I3) + F4*EXTINCT(I4)
                 ! Correctly interpolate source using extinction*source
-                SRCEXT0 = (F1*SOURCE(KANG, I1)*EXTINCT(I1)&
-                    &+ F2*SOURCE(KANG, I2)*EXTINCT(I2)&
-                    &+ F3*SOURCE(KANG, I3)*EXTINCT(I3)&
-                    &+ F4*SOURCE(KANG, I4)*EXTINCT(I4))
+                SRCEXT0 = (F1*SOURCE(KANG, I1)*EXTINCT(I1) + &
+                           F2*SOURCE(KANG, I2)*EXTINCT(I2) + &
+                           F3*SOURCE(KANG, I3)*EXTINCT(I3) + &
+                           F4*SOURCE(KANG, I4)*EXTINCT(I4))
                 ! Compute the cell radiance: integration of the source function
                 EXT = 0.5*(EXT0 + EXT1)
 
@@ -1118,7 +1118,7 @@ subroutine shd_intg__backIntegrate2D(&
     integer bitX, bitZ, iOctant, jOctant
     integer iCellPts, iCell, iCellNext, iPts, iFace
     integer I1, I2, IOPP, jFace, kFace, IC, IZ
-    integer GRIDFACE(2, 6), OPPFACE(6)
+    integer faceGrid(2, 6), faceOpp(6)
     integer iOrder, iCorner, jOctantOrder(8)
     logical :: isValidRad, isValidFace, is1DX
     real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV, ratioX, ratioY
@@ -1130,8 +1130,8 @@ subroutine shd_intg__backIntegrate2D(&
     real(RD_) :: EXT0P, SRCEXT0P(NSTOKES)
     real(RD_) :: TAU, TRANSCELL, ABSCELL, TRANSMIT
     real(RD_) :: RAD(NSTOKES), RAD0(NSTOKES)
-    data GRIDFACE/1, 5, 2, 6, 0, 0, 0, 0, 1, 2, 5, 6/
-    data OPPFACE/2, 1, 4, 3, 6, 5/
+    data faceGrid/1, 5, 2, 6, 0, 0, 0, 0, 1, 2, 5, 6/
+    data faceOpp/2, 1, 4, 3, 6, 5/
     data jOctantOrder/1, 3, 1, 3, 2, 4, 2, 4/
 
     EPS = 1.0e-3*(xyz_Rtm_(3, i8Grid_Cell_(8, 1)) - xyz_Rtm_(3, i8Grid_Cell_(1, 1)))
@@ -1230,11 +1230,11 @@ subroutine shd_intg__backIntegrate2D(&
                     IC = iCell
                 else
                     ! If going to smaller face then use next face (more accurate)
-                    kFace = OPPFACE(iFace)
+                    kFace = faceOpp(iFace)
                     IC = iCellNext
                 end if
-                I1 = i8Grid_Cell_(GRIDFACE(1, kFace), IC)
-                I2 = i8Grid_Cell_(GRIDFACE(2, kFace), IC)
+                I1 = i8Grid_Cell_(faceGrid(1, kFace), IC)
+                I2 = i8Grid_Cell_(faceGrid(2, kFace), IC)
                 ! Compute the face interpolation factors
                 if (jFace .eq. 1) then
                     U = (ZE - xyz_Rtm_(3, I1))/(xyz_Rtm_(3, I2) - xyz_Rtm_(3, I1))
@@ -1376,8 +1376,8 @@ subroutine shd_intg__backIntegrate1D(&
     integer(kind=I__) :: iOrder, iCorner
     logical :: isValidRad
 
-    integer(kind=I__) :: GRIDFACE(6), jOctantOrder(8)
-    data GRIDFACE /0, 0, 0, 0, 1, 5/
+    integer(kind=I__) :: faceGrid(6), jOctantOrder(8)
+    data faceGrid /0, 0, 0, 0, 1, 5/
     data jOctantOrder /1, 1, 1, 1, 2, 2, 2, 2/
 
     EPS = 1.0e-3*(xyz_Rtm_(3, i8Grid_Cell_(8, 1)) - xyz_Rtm_(3, i8Grid_Cell_(1, 1)))
@@ -1446,7 +1446,7 @@ subroutine shd_intg__backIntegrate1D(&
                 iCellNext = i6Cell_Cell_(iFace, iCell)
 
                 ! Get the face grid pointers
-                I1 = i8Grid_Cell_(GRIDFACE(iFace), iCell)
+                I1 = i8Grid_Cell_(faceGrid(iFace), iCell)
                 ! Get the location coordinate (does the boundary wrapping)
                 if (iCellNext .gt. 0) then
                     ZE = xyz_Rtm_(3, i8Grid_Cell_(iOctant, iCellNext))
