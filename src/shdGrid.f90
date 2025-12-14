@@ -1262,7 +1262,7 @@ subroutine shd_grid__testCellSplit(iCell,&
     real ADAPTCRIT(3), MAXADAPT
     integer ID, IE, IP1, IP2, IS1, IS2, NS1, NS2, NS
     integer J, NUM
-    real TOSPLIT, SUM1, JAY, TAU, EXT
+    real TOSPLIT, SUM1, JAY, tau, EXT
     real, parameter :: C0 = 0.28209479177387814 ! sqrt(1.0/(4.0*PI_)), Y00 (l=0, m=0)
 
     MAXADAPT = -1.0
@@ -1302,8 +1302,8 @@ subroutine shd_grid__testCellSplit(iCell,&
                 else
                     JAY = 0.0
                 end if
-                TAU = abs(EXT*(xyz_Rtm_(ID, IP2) - xyz_Rtm_(ID, IP1)))
-                TOSPLIT = abs(JAY)*(1 - exp(-TAU))
+                tau = abs(EXT*(xyz_Rtm_(ID, IP2) - xyz_Rtm_(ID, IP1)))
+                TOSPLIT = abs(JAY)*(1 - exp(-tau))
                 SUM1 = SUM1 + TOSPLIT
             end if
         end do

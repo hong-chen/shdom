@@ -832,7 +832,7 @@ subroutine shd_init__makeFlux(&
     real(RD_) :: LAMBDA, R, T, D, CP, CM, A, B, X1, X2
     real(RD_) :: REFLECT, TRANS, SOURCEP, SOURCEM
     real(RD_) :: RADP1P, RADP1M, RADP2P, RADP2M
-    real(RD_) :: MU0, SKYFLUX, GNDFLUX, PLANCK1, PLANCK2, C, TAU
+    real(RD_) :: MU0, SKYFLUX, GNDFLUX, PLANCK1, PLANCK2, C, tau
     real(RD_) :: EXLP, EXLM, V, DS, B1, B2, SOLPP, SOLPM
     real(RD_),  allocatable :: LOWER(:), UPPER(:), DIAG(:), RHS(:)
     real BBRAD
@@ -848,11 +848,11 @@ subroutine shd_init__makeFlux(&
         PLANCK1 = PI_*BBRAD
     end if
     MU0 = abs(muSun)
-    TAU = 0.0
+    tau = 0.0
     I = 2
     do L = 1, NLAYER
         DELTAU = tauZ(L)
-        if (DELTAU .lt. 0.0) stop 'Error [_makeFlux]: TAU<0.'
+        if (DELTAU .lt. 0.0) stop 'Error [_makeFlux]: tau<0.'
         ! Special case for zero optical depth
         if (DELTAU .eq. 0.0) then
             TRANS = 1.0
@@ -911,10 +911,10 @@ subroutine shd_init__makeFlux(&
                 FLUXES(3, L) = 0.0
             else
                 ! Calculate solar source terms
-                FLUXES(3, L) = SOLARFLUX*exp(-TAU/MU0)
+                FLUXES(3, L) = SOLARFLUX*exp(-tau/MU0)
                 DS = 1.0/(LAMBDA**2 - 1.0/MU0**2)
-                B1 = 0.5*OMEGA*(SOLARFLUX/MU0)*exp(-TAU/MU0)*DS
-                B2 = 0.5*OMEGA*(SOLARFLUX/MU0)*exp(-(TAU + DELTAU)/MU0)*DS
+                B1 = 0.5*OMEGA*(SOLARFLUX/MU0)*exp(-tau/MU0)*DS
+                B2 = 0.5*OMEGA*(SOLARFLUX/MU0)*exp(-(tau + DELTAU)/MU0)*DS
                 SOLPP =  1.0 + 1.5*G*MU0
                 SOLPM = -1.0 + 1.5*G*MU0
                 RADP1P = (( T + 1.0/MU0)*SOLPP + R*SOLPM)*B1
@@ -932,7 +932,7 @@ subroutine shd_init__makeFlux(&
                     SOURCEP = X1*CP*EXLP + X2*CM*EXLM + RADP2P
                     SOURCEM = X2*CP + X1*CM + RADP1M
                 end if
-                TAU = TAU + DELTAU
+                tau = tau + DELTAU
             end if
         end if
         DIAG(I) = -REFLECT
@@ -948,8 +948,8 @@ subroutine shd_init__makeFlux(&
 
     ! Set up boundary radiances
     if (SRCTYPE .eq. 'S') then
-        FLUXES(3, NLAYER + 1) = SOLARFLUX*exp(-TAU/MU0)
-        GNDFLUX = (1.0 - GNDEMIS)*SOLARFLUX*exp(-TAU/MU0)
+        FLUXES(3, NLAYER + 1) = SOLARFLUX*exp(-tau/MU0)
+        GNDFLUX = (1.0 - GNDEMIS)*SOLARFLUX*exp(-tau/MU0)
         SKYFLUX = PI_*SKYRAD
     else
         FLUXES(3, NLAYER + 1) = 0.0

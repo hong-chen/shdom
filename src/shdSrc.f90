@@ -598,7 +598,7 @@ subroutine shd_src__integrateSrcRay(&
     character(len=1) :: SRCTYPE
 
     integer bitX, bitY, bitZ, iOctant, iCell, iCellNext, iFace
-    integer IOPP, NTAU, IT, I, IPT1, IPT2, J, L
+    integer iOpp, Ntau, IT, I, IPT1, IPT2, J, L
     logical DONE, is1DX, is1DY, OPENBCFACE
     integer jFace, kFace, IC, MAXCELLSCROSS, NGRID
     integer faceOpp(6), OLDIPTS(8), DONETHIS(8)
@@ -612,7 +612,7 @@ subroutine shd_src__integrateSrcRay(&
     real(RD_) :: XN, YN, ZN, XI, YI, ZI
     real(RD_) :: SO, SOX, SOY, SOZ, EPS
     real(RD_) :: TAUTOL, TAUGRID, S, DELS, TRANSCUT
-    real(RD_) :: EXT, TAU, TRANSCELL, ABSCELL
+    real(RD_) :: EXT, tau, TRANSCELL, ABSCELL
     real(RD_) :: SRC(NSTOKES)
     real(RD_) :: U, V, W, DELX, DELY, DELZ, INVDELX, INVDELY, INVDELZ
     real(RD_) :: muScat
@@ -788,20 +788,20 @@ subroutine shd_src__integrateSrcRay(&
         ! Find boundaries of the current cell
         ! Find the three possible intersection planes (X,Y,Z)
         !   from the coordinates of the opposite corner grid point
-        IOPP = i8Grid_Cell_(9 - iOctant, iCell)
+        iOpp = i8Grid_Cell_(9 - iOctant, iCell)
         ! Get the distances to the 3 planes and select the closest
         !   (always need to deal with the cell that is wrapped)
         if (is1DX) then
             SOX = 1.0e20
         else
-            SOX = (xyz_Rtm_(1, IOPP) - XE)*CXINV
+            SOX = (xyz_Rtm_(1, iOpp) - XE)*CXINV
         end if
         if (is1DY) then
             SOY = 1.0e20
         else
-            SOY = (xyz_Rtm_(2, IOPP) - YE)*CYINV
+            SOY = (xyz_Rtm_(2, iOpp) - YE)*CYINV
         end if
-        SOZ = (xyz_Rtm_(3, IOPP) - ZE)*CZINV
+        SOZ = (xyz_Rtm_(3, iOpp) - ZE)*CZINV
         SO = min(SOX, SOY, SOZ)
         if (SO .lt. -EPS) then
             write(6, *) 'Error [_integrateSrcOneRay]: SO<0 ',&
@@ -822,11 +822,11 @@ subroutine shd_src__integrateSrcRay(&
             &+ W*((1 - V)*((1 - U)*EXTINCT8(5) + U*EXTINCT8(6))&
             &+ V*((1 - U)*EXTINCT8(7) + U*EXTINCT8(8)))
         TAUGRID = SO*0.5*(EXT1 + EXTN)
-        NTAU = max(1, 1 + int(TAUGRID/TAUTOL))
-        DELS = SO/NTAU
+        Ntau = max(1, 1 + int(TAUGRID/TAUTOL))
+        DELS = SO/Ntau
 
         ! Loop over the subgrid cells
-        do IT = 1, NTAU
+        do IT = 1, Ntau
             S = IT*DELS
             XI = XE + S*CX
             YI = YE + S*CY
@@ -848,8 +848,8 @@ subroutine shd_src__integrateSrcRay(&
             ! Compute the subgrid radiance: integration of the source fun
             EXT = 0.5*(EXT0 + EXT1)
             if (EXT .ne. 0.0) then
-                TAU = EXT*DELS
-                ABSCELL = TAU*(1.0d0 - 0.5d0*TAU*(1.0d0 - FRAC13_*TAU))
+                tau = EXT*DELS
+                ABSCELL = tau*(1.0d0 - 0.5d0*tau*(1.0d0 - FRAC13_*tau))
                 TRANSCELL = 1.0d0 - ABSCELL
                 ! Linear extinction, linear source*extinction, to second
                 SRC(:) = (0.5d0*(SRCEXT0(:) + SRCEXT1(:))&
@@ -967,7 +967,7 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
     real(RD_) :: X0, Y0, Z0, XE, YE, ZE, TRANSMIT, radI_Shdo(NSTOKES)
     real srcJ_Shdo(NSTOKES, rtm_obj_%Npts), GRIDRAD(NSTOKES, rtm_obj_%Npts)
     integer bitX, bitY, bitZ, iOctant, iCell, iCellNext, iFace
-    integer I1, I2, I3, I4, IOPP, NTAU, IT, K
+    integer I1, I2, I3, I4, iOpp, Ntau, IT, K
     logical is1DX, is1DY, OPENBCFACE
     integer faceGrid(4, 6), faceOpp(6), jFace, kFace, IC
     real EXT0(1), EXT1(1), EXTN(1)
@@ -977,7 +977,7 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
     real(RD_) :: XN, YN, ZN, XI, YI, ZI
     real(RD_) :: SO, SOX, SOY, SOZ, EPS
     real(RD_) :: TAUTOL, TAUGRID, S, DELS
-    real(RD_) :: EXT, TAU, TRANSCELL, ABSCELL
+    real(RD_) :: EXT, tau, TRANSCELL, ABSCELL
     real(RD_) :: SRC(NSTOKES), RAD(NSTOKES)
     data faceGrid/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8,&
         &1, 2, 3, 4, 5, 6, 7, 8/, faceOpp/2, 1, 4, 3, 6, 5/
@@ -1041,25 +1041,25 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
         ! Find boundaries of the current cell
         ! Find the three possible intersection planes (X,Y,Z)
         ! from the coordinates of the opposite corner grid point
-        IOPP = i8Grid_Cell_(9 - iOctant, iCell)
+        iOpp = i8Grid_Cell_(9 - iOctant, iCell)
         ! Get the distances to the 3 planes and select the closest
         !   (always need to deal with the cell that is wrapped)
         if (is1DX .or. CX .eq. 0.0) then
             SOX = 1.0e20
         else
-            SOX = (xyz_Rtm_(1, IOPP) - XE)*CXINV
+            SOX = (xyz_Rtm_(1, iOpp) - XE)*CXINV
         end if
         if (is1DY .or. CY .eq. 0.0) then
             SOY = 1.0e20
         else
-            SOY = (xyz_Rtm_(2, IOPP) - YE)*CYINV
+            SOY = (xyz_Rtm_(2, iOpp) - YE)*CYINV
         end if
-        SOZ = (xyz_Rtm_(3, IOPP) - ZE)*CZINV
+        SOZ = (xyz_Rtm_(3, iOpp) - ZE)*CZINV
         SO = min(SOX, SOY, SOZ)
         if (SO .lt. -EPS) then
             write(6, *) 'Error [_integrateSrc]: SO<0 ',&
                 &muRay, phiRay, X0, Y0, Z0, XE, YE, ZE, SO, SOX, SOY, SOZ, rtm_obj_%x(1), rtm_obj_%y(1),&
-                &xyz_Rtm_(1, IOPP), xyz_Rtm_(2, IOPP), xyz_Rtm_(3, IOPP)
+                &xyz_Rtm_(1, iOpp), xyz_Rtm_(2, iOpp), xyz_Rtm_(3, iOpp)
             stop
         end if
         if (is1DX) then
@@ -1079,10 +1079,10 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
         call shd_util__interpTriLin(iCell,&
             &XN, YN, ZN, 1, ext_Rtm_, 1, 1, EXTN)
         TAUGRID = SO*0.5*(EXT1(1) + EXTN(1))
-        NTAU = max(1, 1 + int(TAUGRID/TAUTOL))
-        DELS = SO/NTAU
+        Ntau = max(1, 1 + int(TAUGRID/TAUTOL))
+        DELS = SO/Ntau
         ! Loop over the subgrid cells
-        do IT = 1, NTAU
+        do IT = 1, Ntau
             S = IT*DELS
             if (is1DX) then
                 XI = XE
@@ -1096,7 +1096,7 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
             end if
             ZI = ZE + S*CZ
             ! Interpolate extinction and source function along path
-            if (IT .eq. NTAU) then
+            if (IT .eq. Ntau) then
                 EXT0(1) = EXTN(1)
             else
                 call shd_util__interpTriLin(iCell,&
@@ -1109,8 +1109,8 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
             ! Compute the subgrid radiance: integration of the source fun
             EXT = 0.5*(EXT0(1) + EXT1(1))
             if (EXT .ne. 0.0) then
-                TAU = EXT*DELS
-                ABSCELL = TAU*(1.0 - 0.5*TAU*(1.0 - FRAC13_*TAU))
+                tau = EXT*DELS
+                ABSCELL = tau*(1.0 - 0.5*tau*(1.0 - FRAC13_*tau))
                 TRANSCELL = 1.0 - ABSCELL
                 ! Linear extinction, linear source*extinction, to second
                 SRC(:) = (0.5*(SRCEXT0(:) + SRCEXT1(:)) + FRAC112_*&

@@ -391,7 +391,7 @@ subroutine shd_intg__backIntegrate3D(&
     real GRIDRAD(NSTOKES, rtm_obj_%Npts)
     integer bitX, bitY, bitZ, iOctant, jOctant
     integer iCellPts, iCell, iCellNext, iPts, iFace
-    integer I1, I2, I3, I4, IOPP, jFace, kFace, IC, IZ
+    integer I1, I2, I3, I4, iOpp, jFace, kFace, IC, IZ
     integer faceGrid(4, 6), faceOpp(6)
     integer iOrder, iCorner, jOctantOrder3(8), jOctantOrder2(8)
     logical isValidRad, isValidFace, is1DX, is1DY
@@ -402,7 +402,7 @@ subroutine shd_intg__backIntegrate3D(&
     real(RD_) :: EXT, EXT0, EXT1
     real(RD_) :: SRC(NSTOKES), SRCEXT0(NSTOKES), SRCEXT1(NSTOKES)
     real(RD_) :: EXT0P, SRCEXT0P(NSTOKES)
-    real(RD_) :: TAU, TRANSCELL, ABSCELL, TRANSMIT
+    real(RD_) :: tau, TRANSCELL, ABSCELL, TRANSMIT
     real(RD_) :: RAD(NSTOKES), RAD0(NSTOKES)
     data faceGrid/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8,&
         &1, 2, 3, 4, 5, 6, 7, 8/, faceOpp/2, 1, 4, 3, 6, 5/
@@ -491,19 +491,19 @@ subroutine shd_intg__backIntegrate3D(&
                 ! Find boundaries of the current cell
                 ! Find the three possible intersection planes (X,Y,Z)
                 !   from the coordinates of the opposite corner grid point
-                IOPP = i8Grid_Cell_(9 - iOctant, iCell)
+                iOpp = i8Grid_Cell_(9 - iOctant, iCell)
                 ! Get the distances to the 3 planes and select the closest
                 if (is1DX) then
                     SOX = 1.0e20
                 else
-                    SOX = (xyz_Rtm_(1, IOPP) - XE)*CXINV
+                    SOX = (xyz_Rtm_(1, iOpp) - XE)*CXINV
                 end if
                 if (is1DY) then
                     SOY = 1.0e20
                 else
-                    SOY = (xyz_Rtm_(2, IOPP) - YE)*CYINV
+                    SOY = (xyz_Rtm_(2, iOpp) - YE)*CYINV
                 end if
-                SOZ = (xyz_Rtm_(3, IOPP) - ZE)*CZINV
+                SOZ = (xyz_Rtm_(3, iOpp) - ZE)*CZINV
 
                 SO = min(SOX, SOY, SOZ)
                 if (SO .lt. -EPS) then
@@ -607,16 +607,16 @@ subroutine shd_intg__backIntegrate3D(&
                     &+ F4*SOURCE(:, KANG, I4)*EXTINCT(I4)
                 ! Compute the cell radiance: integration of the source function
                 EXT = 0.5*(EXT0 + EXT1)
-                TAU = EXT*SO
-                if (TAU .ge. 0.5) then
-                    TRANSCELL = exp(-TAU)
+                tau = EXT*SO
+                if (tau .ge. 0.5) then
+                    TRANSCELL = exp(-tau)
                     ABSCELL = 1.0 - TRANSCELL
                 else
-                    ABSCELL = TAU*(1.0 - 0.5*TAU*&
-                        &(1.0 - FRAC13_*TAU*(1 - 0.25*TAU)))
+                    ABSCELL = tau*(1.0 - 0.5*tau*&
+                        &(1.0 - FRAC13_*tau*(1 - 0.25*tau)))
                     TRANSCELL = 1.0 - ABSCELL
                 end if
-                if (TAU .le. 2.0) then
+                if (tau .le. 2.0) then
                     if (EXT .eq. 0.0) then
                         SRC(:) = 0.0
                     else
@@ -628,13 +628,13 @@ subroutine shd_intg__backIntegrate3D(&
                     ! Combined first order expansion and constant extinction formula
                     EXT0P = EXT0
                     SRCEXT0P(:) = SRCEXT0(:)
-                    if (TAU .gt. 4.0) then
-                        EXT0P = EXT1 + (EXT0 - EXT1)*4.0/TAU
+                    if (tau .gt. 4.0) then
+                        EXT0P = EXT1 + (EXT0 - EXT1)*4.0/tau
                         if (EXT0 .gt. 0.0) SRCEXT0P(:) = SRCEXT0(:)*EXT0P/EXT0
                     end if
                     SRC(:) = 1.0/(EXT0P + EXT1)*(SRCEXT0P(:) + SRCEXT1(:)&
                         &+ (EXT0P*SRCEXT1(:) - EXT1*SRCEXT0P(:))*2.0/(EXT0P + EXT1)&
-                        &*(1.0 - 2.0/TAU + 2.0*TRANSCELL/ABSCELL))
+                        &*(1.0 - 2.0/tau + 2.0*TRANSCELL/ABSCELL))
                 end if
                 SRC(1) = max(SRC(1), 0.0d0)
 
@@ -757,7 +757,7 @@ subroutine shd_intg__backIntegrate3D_( &
 
     integer(kind=I__) :: bitX, bitY, bitZ, iOctant, jOctant
     integer(kind=I__) :: iCellPts, iCell, iCellNext, iPts, iFace
-    integer(kind=I__) :: I1, I2, I3, I4, IOPP, jFace, kFace, IC, IZ
+    integer(kind=I__) :: I1, I2, I3, I4, iOpp, jFace, kFace, IC, IZ
     integer(kind=I__) :: iOrder, iCorner
     logical :: isValidRad, isValidFace, is1DX, is1DY
 
@@ -767,7 +767,7 @@ subroutine shd_intg__backIntegrate3D_( &
     real(RD_) :: U, V, F1, F2, F3, F4
     real(RD_) :: EXT, EXT0, EXT1, SRC, SRCEXT0, SRCEXT1
     real(RD_) :: EXT0P, SRCEXT0P
-    real(RD_) :: TAU, TRANSCELL, ABSCELL, RAD, RAD0, TRANSMIT
+    real(RD_) :: tau, TRANSCELL, ABSCELL, RAD, RAD0, TRANSMIT
 
     integer(kind=I__) :: faceGrid(4, 6), faceOpp(6), jOctantOrder_1D(8), jOctantOrder_3D(8)
     data faceGrid /  &
@@ -876,23 +876,23 @@ subroutine shd_intg__backIntegrate3D_( &
                 ! Find boundaries of the current cell
                 ! Find the three possible intersection planes (X,Y,Z)
                 !   from the coordinates of the opposite corner grid point
-                IOPP = i8Grid_Cell_(9 - iOctant, iCell)
+                iOpp = i8Grid_Cell_(9 - iOctant, iCell)
 
                 ! Get the distances to the 3 planes and select the closest
                 !╭────────────────────────────────────────────────╮!
                 if (is1DX) then
                     SOX = 1.0e20
                 else
-                    SOX = (xyz_Rtm_(1, IOPP) - XE)*CXINV
+                    SOX = (xyz_Rtm_(1, iOpp) - XE)*CXINV
                 end if
 
                 if (is1DY) then
                     SOY = 1.0e20
                 else
-                    SOY = (xyz_Rtm_(2, IOPP) - YE)*CYINV
+                    SOY = (xyz_Rtm_(2, iOpp) - YE)*CYINV
                 end if
 
-                SOZ = (xyz_Rtm_(3, IOPP) - ZE)*CZINV
+                SOZ = (xyz_Rtm_(3, iOpp) - ZE)*CZINV
 
                 SO = min(SOX, SOY, SOZ)
                 !╰────────────────────────────────────────────────╯!
@@ -1004,17 +1004,17 @@ subroutine shd_intg__backIntegrate3D_( &
                 ! Compute the cell radiance: integration of the source function
                 EXT = 0.5*(EXT0 + EXT1)
 
-                TAU = EXT*SO
-                if (TAU .ge. 0.5) then
-                    TRANSCELL = exp(-TAU)
+                tau = EXT*SO
+                if (tau .ge. 0.5) then
+                    TRANSCELL = exp(-tau)
                     ABSCELL = 1.0 - TRANSCELL
                 else
-                    ABSCELL = TAU*(1.0 - 0.5*TAU*&
-                        &(1.0 - FRAC13_*TAU*(1.0 - 0.25*TAU)))
+                    ABSCELL = tau*(1.0 - 0.5*tau*&
+                        &(1.0 - FRAC13_*tau*(1.0 - 0.25*tau)))
                     TRANSCELL = 1.0 - ABSCELL
                 end if
 
-                if (TAU .le. 2.0) then
+                if (tau .le. 2.0) then
                     if (EXT .eq. 0.0) then
                         SRC = 0.0
                     else
@@ -1026,16 +1026,16 @@ subroutine shd_intg__backIntegrate3D_( &
                     ! Combined first order expansion and constant extinction formula
                     ! SRC = 0.5/EXT *( SRCEXT0+SRCEXT1&
                     !     &+ (EXT0*SRCEXT1-EXT1*SRCEXT0)*SO&
-                    !     &*(1-2/TAU+2*TRANSCELL/ABSCELL)/TAU )
+                    !     &*(1-2/tau+2*TRANSCELL/ABSCELL)/tau )
                     EXT0P = EXT0
                     SRCEXT0P = SRCEXT0
-                    if (TAU .gt. 4.0) then
-                        EXT0P = EXT1 + (EXT0 - EXT1)*4.0/TAU
+                    if (tau .gt. 4.0) then
+                        EXT0P = EXT1 + (EXT0 - EXT1)*4.0/tau
                         if (EXT0 .gt. 0.0) SRCEXT0P = SRCEXT0*EXT0P/EXT0
                     end if
                     SRC = 1.0/(EXT0P + EXT1)*(SRCEXT0P + SRCEXT1&
                         &+ (EXT0P*SRCEXT1 - EXT1*SRCEXT0P)*2.0/(EXT0P + EXT1)&
-                        &*(1.0 - 2.0/TAU + 2.0*TRANSCELL/ABSCELL))
+                        &*(1.0 - 2.0/tau + 2.0*TRANSCELL/ABSCELL))
                 end if
                 SRC = max(SRC, 0.0d0)
 
@@ -1049,7 +1049,7 @@ subroutine shd_intg__backIntegrate3D_( &
                 if (RAD < -accSolv_) then
                     write(*, '(A,3(1X,F6.4),8(1X,E12.5))') &
                         &'_backIntegrate3D_: RAD<0 ',&
-                        &XE, YE, ZE, EXT0, EXT1, SO, TAU, TRANSMIT, SRC, ABSCELL, RAD
+                        &XE, YE, ZE, EXT0, EXT1, SO, tau, TRANSMIT, SRC, ABSCELL, RAD
                     call shd_mpi__abort('The end')
                 end if
 
@@ -1117,7 +1117,7 @@ subroutine shd_intg__backIntegrate2D(&
     real GRIDRAD(NSTOKES, rtm_obj_%Npts)
     integer bitX, bitZ, iOctant, jOctant
     integer iCellPts, iCell, iCellNext, iPts, iFace
-    integer I1, I2, IOPP, jFace, kFace, IC, IZ
+    integer I1, I2, iOpp, jFace, kFace, IC, IZ
     integer faceGrid(2, 6), faceOpp(6)
     integer iOrder, iCorner, jOctantOrder(8)
     logical :: isValidRad, isValidFace, is1DX
@@ -1128,7 +1128,7 @@ subroutine shd_intg__backIntegrate2D(&
     real(RD_) :: EXT, EXT0, EXT1
     real(RD_) :: SRC(NSTOKES), SRCEXT0(NSTOKES), SRCEXT1(NSTOKES)
     real(RD_) :: EXT0P, SRCEXT0P(NSTOKES)
-    real(RD_) :: TAU, TRANSCELL, ABSCELL, TRANSMIT
+    real(RD_) :: tau, TRANSCELL, ABSCELL, TRANSMIT
     real(RD_) :: RAD(NSTOKES), RAD0(NSTOKES)
     data faceGrid/1, 5, 2, 6, 0, 0, 0, 0, 1, 2, 5, 6/
     data faceOpp/2, 1, 4, 3, 6, 5/
@@ -1190,14 +1190,14 @@ subroutine shd_intg__backIntegrate2D(&
                 ! Find boundaries of the current cell
                 ! Find the three possible intersection planes (X,Y,Z)
                 !   from the coordinates of the opposite corner grid point
-                IOPP = i8Grid_Cell_(9 - iOctant, iCell)
+                iOpp = i8Grid_Cell_(9 - iOctant, iCell)
                 ! Get the distances to the 3 planes and select the closest
                 if (is1DX) then
                     SOX = 1.0e20
                 else
-                    SOX = (xyz_Rtm_(1, IOPP) - XE)*CXINV
+                    SOX = (xyz_Rtm_(1, iOpp) - XE)*CXINV
                 end if
-                SOZ = (xyz_Rtm_(3, IOPP) - ZE)*CZINV
+                SOZ = (xyz_Rtm_(3, iOpp) - ZE)*CZINV
                 SO = min(SOX, SOZ)
                 if (SO .lt. -EPS) then
                     write(6, *) 'Error [_backIntegrate2D]: SO<0 ',&
@@ -1264,16 +1264,16 @@ subroutine shd_intg__backIntegrate2D(&
                     &+ F2*SOURCE(:, KANG, I2)*EXTINCT(I2))
                 ! Compute the cell radiance: integration of the source function
                 EXT = 0.5*(EXT0 + EXT1)
-                TAU = EXT*SO
-                if (TAU .ge. 0.5) then
-                    TRANSCELL = exp(-TAU)
+                tau = EXT*SO
+                if (tau .ge. 0.5) then
+                    TRANSCELL = exp(-tau)
                     ABSCELL = 1.0 - TRANSCELL
                 else
-                    ABSCELL = TAU*(1.0 - 0.5*TAU*&
-                        &(1.0 - FRAC13_*TAU*(1 - 0.25*TAU)))
+                    ABSCELL = tau*(1.0 - 0.5*tau*&
+                        &(1.0 - FRAC13_*tau*(1 - 0.25*tau)))
                     TRANSCELL = 1.0 - ABSCELL
                 end if
-                if (TAU .le. 2.0) then
+                if (tau .le. 2.0) then
                     if (EXT .eq. 0.0) then
                         SRC(:) = 0.0
                     else
@@ -1285,13 +1285,13 @@ subroutine shd_intg__backIntegrate2D(&
                     ! Combined first order expansion and constant extinction formula
                     EXT0P = EXT0
                     SRCEXT0P(:) = SRCEXT0(:)
-                    if (TAU .gt. 4.0) then
-                        EXT0P = EXT1 + (EXT0 - EXT1)*4.0/TAU
+                    if (tau .gt. 4.0) then
+                        EXT0P = EXT1 + (EXT0 - EXT1)*4.0/tau
                         if (EXT0 .gt. 0.0) SRCEXT0P(:) = SRCEXT0(:)*EXT0P/EXT0
                     end if
                     SRC(:) = 1.0/(EXT0P + EXT1)*(SRCEXT0P(:) + SRCEXT1(:)&
                         &+ (EXT0P*SRCEXT1(:) - EXT1*SRCEXT0P(:))*2.0/(EXT0P + EXT1)&
-                        &*(1 - 2/TAU + 2*TRANSCELL/ABSCELL))
+                        &*(1 - 2/tau + 2*TRANSCELL/ABSCELL))
                 end if
                 SRC(1) = max(SRC(1), 0.0d0)
 
@@ -1368,11 +1368,11 @@ subroutine shd_intg__backIntegrate1D(&
     real(kind=RD_) :: EXT, EXT0, EXT1
     real(kind=RD_) :: SRC(NSTOKES), SRCEXT0(NSTOKES), SRCEXT1(NSTOKES)
     real(kind=RD_) :: EXT0P, SRCEXT0P(NSTOKES)
-    real(kind=RD_) :: TAU, TRANSCELL, ABSCELL, TRANSMIT
+    real(kind=RD_) :: tau, TRANSCELL, ABSCELL, TRANSMIT
     real(kind=RD_) :: RAD(NSTOKES), RAD0(NSTOKES)
 
     integer(kind=I__) :: bitZ, iOctant, jOctant
-    integer(kind=I__) :: iCellPts, iCell, iCellNext, iPts, iFace, I1, IOPP
+    integer(kind=I__) :: iCellPts, iCell, iCellNext, iPts, iFace, I1, iOpp
     integer(kind=I__) :: iOrder, iCorner
     logical :: isValidRad
 
@@ -1429,9 +1429,9 @@ subroutine shd_intg__backIntegrate1D(&
                 ! Find boundaries of the current cell
                 ! Find the three possible intersection planes (X,Y,Z)
                 !   from the coordinates of the opposite corner grid point
-                IOPP = i8Grid_Cell_(9 - iOctant, iCell)
+                iOpp = i8Grid_Cell_(9 - iOctant, iCell)
                 ! Get the distances to the 3 planes and select the closest
-                SO = (xyz_Rtm_(3, IOPP) - ZE)*CZINV
+                SO = (xyz_Rtm_(3, iOpp) - ZE)*CZINV
                 if (SO .lt. -EPS) then
                     write(6, *) 'Error [_backIntegrate1D]: SO<0 ',&
                         &MU, PHI, ZE, SO, iPts, iCell
@@ -1475,16 +1475,16 @@ subroutine shd_intg__backIntegrate1D(&
 
                 ! Compute the cell radiance: integration of the source function
                 EXT = 0.5*(EXT0 + EXT1)
-                TAU = EXT*SO
-                if (TAU .ge. 0.5) then
-                    TRANSCELL = exp(-TAU)
+                tau = EXT*SO
+                if (tau .ge. 0.5) then
+                    TRANSCELL = exp(-tau)
                     ABSCELL = 1.0 - TRANSCELL
                 else
-                    ABSCELL = TAU*(1.0 - 0.5*TAU*&
-                        &(1.0 - FRAC13_*TAU*(1 - 0.25*TAU)))
+                    ABSCELL = tau*(1.0 - 0.5*tau*&
+                        &(1.0 - FRAC13_*tau*(1 - 0.25*tau)))
                     TRANSCELL = 1.0 - ABSCELL
                 end if
-                if (TAU .le. 2.0) then
+                if (tau .le. 2.0) then
                     if (EXT .eq. 0.0) then
                         SRC(:) = 0.0
                     else
@@ -1495,13 +1495,13 @@ subroutine shd_intg__backIntegrate1D(&
                     ! Combined first order expansion and constant extinction formula
                     EXT0P = EXT0
                     SRCEXT0P(:) = SRCEXT0(:)
-                    if (TAU .gt. 4.0) then
-                        EXT0P = EXT1 + (EXT0 - EXT1)*4.0/TAU
+                    if (tau .gt. 4.0) then
+                        EXT0P = EXT1 + (EXT0 - EXT1)*4.0/tau
                         if (EXT0 .gt. 0.0) SRCEXT0P(:) = SRCEXT0(:)*EXT0P/EXT0
                     end if
                     SRC(:) = 1.0/(EXT0P + EXT1)*(SRCEXT0P(:) + SRCEXT1(:)&
                         &+ (EXT0P*SRCEXT1(:) - EXT1*SRCEXT0P(:))*2.0/(EXT0P + EXT1)&
-                        &*(1 - 2/TAU + 2*TRANSCELL/ABSCELL))
+                        &*(1 - 2/tau + 2*TRANSCELL/ABSCELL))
                 end if
 
                 SRC(1) = max(SRC(1), 0.0)

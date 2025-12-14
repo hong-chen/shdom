@@ -3274,7 +3274,7 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
 
     integer :: bitX, bitY, bitZ, iOctant, NXC, NYC, BTEST
     integer :: IX, IY, IZ, IL, IM, IU, IPTR, DIR, iCell, iCellNext
-    integer :: I1, I2, I3, I4, IOPP, iFace, jFace, kFace, IC
+    integer :: I1, I2, I3, I4, iOpp, iFace, jFace, kFace, IC
     integer :: faceGrid(4, 6), faceOpp(6)
     logical :: is1DX, is1DY
     real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV, ratioX, ratioY
@@ -3284,7 +3284,7 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     real(RD_) :: EXT, EXT0, EXT1
     real(RD_) :: SRC(Nstokes), SRCEXT0(Nstokes), SRCEXT1(Nstokes)
     real(RD_) :: EXT0P, SRCEXT0P(Nstokes)
-    real(RD_) :: TAU, TRANSCELL, ABSCELL, TRANS, RAD(Nstokes), RAD0(Nstokes)
+    real(RD_) :: tau, TRANSCELL, ABSCELL, TRANS, RAD(Nstokes), RAD0(Nstokes)
     data faceGrid/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8/
     data faceOpp/2, 1, 4, 3, 6, 5/
 
@@ -3421,19 +3421,19 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
         ! Find boundaries of the current cell
         !   Find the three possible intersection planes (X,Y,Z)
         !   from the coordinates of the opposite corner grid point
-        IOPP = i8Grid_Cell_(9 - iOctant, iCell)
+        iOpp = i8Grid_Cell_(9 - iOctant, iCell)
         ! Get the distances to the 3 planes and select the closest
         if (is1DX) then
             SOX = 1.0e20
         else
-            SOX = (xyz_Rtm_(1, IOPP) - XE)*CXINV
+            SOX = (xyz_Rtm_(1, iOpp) - XE)*CXINV
         end if
         if (is1DY) then
             SOY = 1.0e20
         else
-            SOY = (xyz_Rtm_(2, IOPP) - YE)*CYINV
+            SOY = (xyz_Rtm_(2, iOpp) - YE)*CYINV
         end if
-        SOZ = (xyz_Rtm_(3, IOPP) - ZE)*CZINV
+        SOZ = (xyz_Rtm_(3, iOpp) - ZE)*CZINV
         SO = min(SOX, SOY, SOZ)
         if (SO .lt. -EPS) then
             write(6, *) 'SO<0: ', muRay, phiRay, X, Y, Z, SOX, SOY, SOZ, SO, iCell, TRANS
@@ -3529,15 +3529,15 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
         SRCEXT0(1) = max(0.0d0, SRCEXT0(1))
         ! Compute the cell radiance: integration of the source function
         EXT = 0.5*(EXT0 + EXT1)
-        TAU = EXT*SO
-        if (TAU .ge. 0.5) then
-            TRANSCELL = exp(-TAU)
+        tau = EXT*SO
+        if (tau .ge. 0.5) then
+            TRANSCELL = exp(-tau)
             ABSCELL = 1.0 - TRANSCELL
         else
-            ABSCELL = TAU*(1.0 - 0.5*TAU*(1.0 - FRAC13_*TAU*(1 - 0.25*TAU)))
+            ABSCELL = tau*(1.0 - 0.5*tau*(1.0 - FRAC13_*tau*(1 - 0.25*tau)))
             TRANSCELL = 1.0 - ABSCELL
         end if
-        if (TAU .le. 2.0) then
+        if (tau .le. 2.0) then
             if (EXT .eq. 0.0) then
                 SRC(:) = 0.0
             else
@@ -3549,13 +3549,13 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
             ! Combined first order expansion and constant extinction formula
             EXT0P = EXT0
             SRCEXT0P(:) = SRCEXT0(:)
-            if (TAU .gt. 4.0) then
-                EXT0P = EXT1 + (EXT0 - EXT1)*4.0/TAU
+            if (tau .gt. 4.0) then
+                EXT0P = EXT1 + (EXT0 - EXT1)*4.0/tau
                 if (EXT0 .gt. 0.0) SRCEXT0P(:) = SRCEXT0(:)*EXT0P/EXT0
             end if
             SRC(:) = 1.0/(EXT0P + EXT1)*(SRCEXT0P(:) + SRCEXT1(:)&
                 &+ (EXT0P*SRCEXT1(:) - EXT1*SRCEXT0P(:))*2.0/(EXT0P + EXT1)&
-                &*(1 - 2/TAU + 2*TRANSCELL/ABSCELL))
+                &*(1 - 2/tau + 2*TRANSCELL/ABSCELL))
         end if
         SRC(1) = max(SRC(1), 0.0d0)
 
