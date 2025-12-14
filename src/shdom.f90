@@ -214,7 +214,7 @@ program shdom
     real(kind=R__) :: MAXMB_OUT, ADAPTGRIDFAC_OUT, SHTERM_FAC_OUT, CELL_POINT_OUT
 
     integer(kind=I__) :: NptsOld
-    integer(kind=I__) :: maxIter, iter, totIter, iz, iout, Nout
+    integer(kind=I__) :: maxIter, Niter, NiterTot, iz, iout, Nout
     integer(kind=I__) :: Nrad, irad, Nx_out, Ny_out, Nlos, ilos, Nscan, Npix, Nsh_out
     integer(kind=I__) :: Ncell_tot, Npts_tot, Nsh_tot
 
@@ -1179,7 +1179,7 @@ program shdom
         write(6, '(A,"<",A,">")') 'Message [shdom]: Starting solution iterations for SHDOM run: ', &
             trim(adjustl(rtm_obj_%runName))
 
-    totIter = 0
+    NiterTot = 0
     NptsOld = 0
     src_obj_%solar = 0.0d0
 
@@ -1209,14 +1209,14 @@ program shdom
         call shd_solv__solveRte(&
             &doRadInit,&
             &doDeltaM,&
-            &doAccel, solAcc, maxIter, solCrit, iter,&
+            &doAccel, solAcc, maxIter, solCrit, Niter,&
             &splitAcc, shAcc,&
             &maxNpts_bc, maxNrad_bc, NptsTop_bc, NptsBot_bc, ptr_Bc, rad_Bc,&
             &work, work1, work2,&
             &fluxTot, fluxDir)
 
         doRadInit = .false.
-        totIter = totIter + iter
+        NiterTot = NiterTot + Niter
 
         ! Compute the output and put in arrays. First the radiance.
         if (isRadOut) then
@@ -1374,7 +1374,7 @@ program shdom
                         &Npts_tot, Ncell_tot, Nsh_tot,&
                         &fileInp_sav, fileOut_sav,&
                         &doDeltaM,&
-                        &splitAcc, shAcc, solAcc, maxIter, totIter,&
+                        &splitAcc, shAcc, solAcc, maxIter, NiterTot,&
                         &fluxTot_all, fluxDiv_all,&
                         &Nsh_out, SH_all, irad, sumRad_Out,&
                         &type_Out(iout), parms_Out(1, iout), file_Out(iout),&
@@ -1399,7 +1399,7 @@ program shdom
                 call shd_io__outputResult(&
                     fileInp_sav, fileOut_sav,&
                     doDeltaM,&
-                    splitAcc, shAcc, solAcc, maxIter, totIter,&
+                    splitAcc, shAcc, solAcc, maxIter, NiterTot,&
                     sumFluxTot_Out, sumFluxDir_Out, sumFluxDiv_Out,&
                     irad, sumRad_Out, Nsh_out, sumSH_Out, src1_Out,&
                     type_Out(iout), parms_Out(1, iout), file_Out(iout))
@@ -1417,7 +1417,7 @@ program shdom
                 call shd_io__outputCamRad(&
                     &fileInp_sav, fileOut_sav,&
                     &doDeltaM,&
-                    &splitAcc, shAcc, solAcc, maxIter, totIter,&
+                    &splitAcc, shAcc, solAcc, maxIter, NiterTot,&
                     &ilos, sumCam_Out, parms_Out(1, iout), file_Out(iout))
             end if
         end do
