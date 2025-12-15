@@ -187,46 +187,51 @@ subroutine shd_util__interpData(NptsOld,&
 
 end subroutine shd_util__interpData
 
-subroutine shd_util__findCell(X0, Y0, Z0, iCell)
+subroutine shd_util__findCell(&
+    x, y, z, &
+    iCell)
 
     !   Locates the grid cell in the tree structure containing the
-    ! specified point (X0,Y0,Z0), and returns the cell pointer iCell.
+    ! specified point (x,y,z), and returns the cell pointer iCell.
     ! First the base grid cell is found (using rtm_obj_%Nx,rtm_obj_%Ny,rtm_obj_%Nz, rtm_obj_%x,rtm_obj_%y,rtm_obj_%z),
     ! and the tree is traced down to find the smallest cell containing
     ! the point.
 
-    integer iCell
-    real(RD_) :: X0, Y0, Z0
-    integer IL, IU, IM, IX, IY, IZ, NXC, NYC, IC, IPTR, DIR
-    real(RD_) :: XDOMAIN, YDOMAIN
+    real(kind=RD_), intent(inout) :: x, y, z
+
+    integer(kind=I__), intent(out) :: iCell
+
+    integer :: IL, IU, IM, IX, IY, IZ, NXC, NYC, IC, IPTR, DIR
+    real(kind=RD_) :: xDomain, yDomain
 
     ! Move point to within horizontal domain if periodic
     if (.not. (isOpenX_ .or. isMpiX_)) then
-        XDOMAIN = rtm_obj_%x(rtm_obj_%Nx + 1) - rtm_obj_%x(1)
-        if (X0 .lt. rtm_obj_%x(1)) then
-            X0 = X0 - XDOMAIN*(int((X0 - rtm_obj_%x(1))/XDOMAIN) - 1)
-        else if (X0 .gt. rtm_obj_%x(rtm_obj_%Nx + 1)) then
-            X0 = X0 - XDOMAIN*int((X0 - rtm_obj_%x(1))/XDOMAIN)
+        xDomain = rtm_obj_%x(rtm_obj_%Nx + 1) - rtm_obj_%x(1)
+        if (x .lt. rtm_obj_%x(1)) then
+            x = x - xDomain*(int((x - rtm_obj_%x(1))/xDomain) - 1)
+        else if (x .gt. rtm_obj_%x(rtm_obj_%Nx + 1)) then
+            x = x - xDomain*int((x - rtm_obj_%x(1))/xDomain)
         end if
     end if
+
     if (.not. (isOpenYx_ .or. isMpiY_)) then
-        YDOMAIN = rtm_obj_%y(rtm_obj_%Ny + 1) - rtm_obj_%y(1)
-        if (Y0 .lt. rtm_obj_%y(1)) then
-            Y0 = Y0 - YDOMAIN*(int((Y0 - rtm_obj_%y(1))/YDOMAIN) - 1)
-        else if (Y0 .gt. rtm_obj_%y(rtm_obj_%Ny + 1)) then
-            Y0 = Y0 - YDOMAIN*int((Y0 - rtm_obj_%y(1))/YDOMAIN)
+        yDomain = rtm_obj_%y(rtm_obj_%Ny + 1) - rtm_obj_%y(1)
+        if (y .lt. rtm_obj_%y(1)) then
+            y = y - yDomain*(int((y - rtm_obj_%y(1))/yDomain) - 1)
+        else if (y .gt. rtm_obj_%y(rtm_obj_%Ny + 1)) then
+            y = y - yDomain*int((y - rtm_obj_%y(1))/yDomain)
         end if
     end if
 
     ! Find the base grid cell (base grid does not have to be even sp
-    !   so do binary search in X, Y, and Z)
+    !   so do binary search in x, y, and z)
     !   Special case for independent pixel: get closest grid column.
     IL = 0
     if (is1DX_) then
         IU = rtm_obj_%Nx
         do while (IU - IL .gt. 1)
             IM = (IU + IL)/2
-            if (X0 .ge. 0.5*(rtm_obj_%x(IM) + rtm_obj_%x(IM + 1))) then
+            if (x .ge. 0.5*(rtm_obj_%x(IM) + rtm_obj_%x(IM + 1))) then
                 IL = IM
             else
                 IU = IM
@@ -237,7 +242,7 @@ subroutine shd_util__findCell(X0, Y0, Z0, iCell)
         IU = rtm_obj_%Nx + 1
         do while (IU - IL .gt. 1)
             IM = (IU + IL)/2
-            if (X0 .ge. rtm_obj_%x(IM)) then
+            if (x .ge. rtm_obj_%x(IM)) then
                 IL = IM
             else
                 IU = IM
@@ -251,7 +256,7 @@ subroutine shd_util__findCell(X0, Y0, Z0, iCell)
         IU = rtm_obj_%Ny
         do while (IU - IL .gt. 1)
             IM = (IU + IL)/2
-            if (Y0 .ge. 0.5*(rtm_obj_%y(IM) + rtm_obj_%y(IM + 1))) then
+            if (y .ge. 0.5*(rtm_obj_%y(IM) + rtm_obj_%y(IM + 1))) then
                 IL = IM
             else
                 IU = IM
@@ -262,7 +267,7 @@ subroutine shd_util__findCell(X0, Y0, Z0, iCell)
         IU = rtm_obj_%Ny + 1
         do while (IU - IL .gt. 1)
             IM = (IU + IL)/2
-            if (Y0 .ge. rtm_obj_%y(IM)) then
+            if (y .ge. rtm_obj_%y(IM)) then
                 IL = IM
             else
                 IU = IM
@@ -275,7 +280,7 @@ subroutine shd_util__findCell(X0, Y0, Z0, iCell)
     IU = rtm_obj_%Nz
     do while (IU - IL .gt. 1)
         IM = (IU + IL)/2
-        if (Z0 .ge. rtm_obj_%z(IM)) then
+        if (z .ge. rtm_obj_%z(IM)) then
             IL = IM
         else
             IU = IM
@@ -288,33 +293,36 @@ subroutine shd_util__findCell(X0, Y0, Z0, iCell)
     NXC = rtm_obj_%Nx
     if (isOpenX_) then
         NXC = rtm_obj_%Nx + 1
-        if (X0 .lt. rtm_obj_%x(1)) then
-            ! X0 = rtm_obj_%x(1)
+        if (x .lt. rtm_obj_%x(1)) then
+            ! x = rtm_obj_%x(1)
             IX = 1
-        else if (X0 .gt. rtm_obj_%x(rtm_obj_%Nx)) then
-            ! X0 = rtm_obj_%x(rtm_obj_%Nx)
+        else if (x .gt. rtm_obj_%x(rtm_obj_%Nx)) then
+            ! x = rtm_obj_%x(rtm_obj_%Nx)
             IX = rtm_obj_%Nx + 1
         else
             IX = IX + 1
         end if
     end if
+
     if (isMpiX_ .and. .not. is1DX_) then
         NXC = rtm_obj_%Nx - 1
         IX = min(IX, NXC)
     end if
+
     NYC = rtm_obj_%Ny
     if (isOpenYx_) then
         NYC = rtm_obj_%Ny + 1
-        if (Y0 .lt. rtm_obj_%y(1)) then
-            ! Y0 = rtm_obj_%y(1)
+        if (y .lt. rtm_obj_%y(1)) then
+            ! y = rtm_obj_%y(1)
             IY = 1
-        else if (Y0 .gt. rtm_obj_%y(rtm_obj_%Ny)) then
-            ! Y0 = rtm_obj_%y(rtm_obj_%Ny)
+        else if (y .gt. rtm_obj_%y(rtm_obj_%Ny)) then
+            ! y = rtm_obj_%y(rtm_obj_%Ny)
             IY = rtm_obj_%Ny + 1
         else
             IY = IY + 1
         end if
     end if
+
     if (isMpiY_ .and. .not. is1DYx_) then
         NYC = rtm_obj_%Ny - 1
         IY = min(IY, NYC)
@@ -324,21 +332,21 @@ subroutine shd_util__findCell(X0, Y0, Z0, iCell)
     iCell = IZ + (rtm_obj_%Nz - 1)*(IY - 1) + (rtm_obj_%Nz - 1)*NYC*(IX - 1)
 
     !   Trace down the tree: point to the positive child cell, get the
-    ! grid point that is on the negative (X,Y,Z) side, use the
-    ! flags to find which dimension (X,Y,Z) the parent cell was
+    ! grid point that is on the negative (x,y,z) side, use the
+    ! flags to find which dimension (x,y,z) the parent cell was
     ! split in, then compare the grid point with the test point
-    ! (X0,Y0,Z0) to find which child cell (pos or neg) the test
+    ! (x,y,z) to find which child cell (pos or neg) the test
     ! point is in.
     do while (i2Tree_Cell_(2, iCell) .gt. 0)
         DIR = ibits(int(flag_Cell_(iCell)), 2, 2)
         IC = i2Tree_Cell_(2, iCell) + 1
         IPTR = i8Grid_Cell_(1, IC)
         if (DIR .eq. 1) then
-            if (X0 .lt. xyz_Rtm_(1, IPTR)) IC = IC - 1
+            if (x .lt. xyz_Rtm_(1, IPTR)) IC = IC - 1
         else if (DIR .eq. 2) then
-            if (Y0 .lt. xyz_Rtm_(2, IPTR)) IC = IC - 1
+            if (y .lt. xyz_Rtm_(2, IPTR)) IC = IC - 1
         else if (DIR .eq. 3) then
-            if (Z0 .lt. xyz_Rtm_(3, IPTR)) IC = IC - 1
+            if (z .lt. xyz_Rtm_(3, IPTR)) IC = IC - 1
         end if
         iCell = IC
     end do
@@ -347,51 +355,65 @@ subroutine shd_util__findCell(X0, Y0, Z0, iCell)
 
 end subroutine shd_util__findCell
 
-subroutine shd_util__findNextCell(XE, YE, ZE, iFace, jFace, iCell, INEXT)
+subroutine shd_util__findNextCell(&
+    x, y, z, &
+    iFace, jFace, iCell, &
+    iCellNext)
 
-    !   Gets the next cell (INEXT) to go to that is adjacent to this face
-    ! iFace (1-6) has which face (-X,+X,-Y,+Y,-Z,+Z) of the current cell
-    ! (iCell) we are at, and jFace (1-3) is the direction (X,Y,Z).
-    ! The current location (XE,YE,ZE) on the face is used to find the cell
+    !   Gets the next cell (iCellNext) to go to that is adjacent to this face
+    ! iFace (1-6) has which face (-x,+x,-y,+y,-z,+z) of the current cell
+    ! (iCell) we are at, and jFace (1-3) is the direction (x,y,z).
+    ! The current location (x,y,z) on the face is used to find the cell
     ! if there are several adjacent to the current cell.
 
-    integer iFace, jFace, iCell, INEXT
-    real(RD_) :: XE, YE, ZE
-    integer IC, IC1, DIR
+    real(kind=RD_),    intent(in) :: x, y, z
+    integer(kind=I__), intent(in) :: iFace, jFace, iCell
+
+    integer(kind=I__), intent(out) :: iCellNext
+
+    integer :: iCellTmp0, iCellTmp1, iDir
 
     ! Get the pointer to the neighbor cell
-    INEXT = i6Cell_Cell_(iFace, iCell)
-    if (INEXT .lt. 0) then
+    iCellNext = i6Cell_Cell_(iFace, iCell)
+
+    if (iCellNext .lt. 0) then
         ! If neighbor pointer is negative then we are going into a cell
         !   that has subcells, and the absolute value of the pointer is the
         !   cell to start the tree search.
-        IC = abs(INEXT)
+        iCellTmp0 = abs(iCellNext)
+
         ! Go down the tree until there is no children
-        do while (i2Tree_Cell_(2, IC) .gt. 0)
+        do while (i2Tree_Cell_(2, iCellTmp0) .gt. 0)
             ! Get the direction cell is split
-            DIR = ibits(int(flag_Cell_(IC)), 2, 2)
-            if (DIR .eq. 0) stop 'Error [_findNextCell]: No split direction.'
+            iDir = ibits(int(flag_Cell_(iCellTmp0)), 2, 2)
+            if (iDir .eq. 0) &
+                stop 'Error [_findNextCell]: No split direction.'
+
             ! If split is in direction of face then choose the near child cell
             !   which is the negative side cell if this is a positive face.
-            IC1 = i2Tree_Cell_(2, IC)
-            if (DIR .eq. jFace) then
-                IC = IC1 + 1 - mod(iFace - 1, 2)
+            iCellTmp1 = i2Tree_Cell_(2, iCellTmp0)
+
+            if (iDir .eq. jFace) then
+                iCellTmp0 = iCellTmp1 + 1 - mod(iFace - 1, 2)
             else
                 ! If split is not in direction of face then find which of two cells
                 !   has a face that contains the current location.
-                ! Compare the appropriate coordinate (X,Y,Z) of the grid point
+                ! Compare the appropriate coordinate (x,y,z) of the grid point
                 !   on the split line with the current location.
-                IC = IC1
-                if (DIR .eq. 1) then
-                    if (XE .gt. xyz_Rtm_(1, i8Grid_Cell_(8, IC1))) IC = IC + 1
-                else if (DIR .eq. 2) then
-                    if (YE .gt. xyz_Rtm_(2, i8Grid_Cell_(8, IC1))) IC = IC + 1
+                iCellTmp0 = iCellTmp1
+                if (iDir .eq. 1) then
+                    if (x .gt. xyz_Rtm_(1, i8Grid_Cell_(8, iCellTmp1))) &
+                        iCellTmp0 = iCellTmp0 + 1
+                else if (iDir .eq. 2) then
+                    if (y .gt. xyz_Rtm_(2, i8Grid_Cell_(8, iCellTmp1))) &
+                        iCellTmp0 = iCellTmp0 + 1
                 else
-                    if (ZE .gt. xyz_Rtm_(3, i8Grid_Cell_(8, IC1))) IC = IC + 1
+                    if (z .gt. xyz_Rtm_(3, i8Grid_Cell_(8, iCellTmp1))) &
+                        iCellTmp0 = iCellTmp0 + 1
                 end if
             end if
         end do
-        INEXT = IC
+        iCellNext = iCellTmp0
     end if
 
     return
@@ -399,44 +421,56 @@ subroutine shd_util__findNextCell(XE, YE, ZE, iFace, jFace, iCell, INEXT)
 end subroutine shd_util__findNextCell
 
 subroutine shd_util__interpTriLin(&
-    &iCell,&
-    &X, Y, Z, ND, FIELD, ID1, NV, VALUES)
+    iCell, x, y, z, &
+    Npar, data_in, &
+    iParStart, NparOut, &
+    data_out)
 
-    !   Trilinearly interpolates the field (FIELD) given a grid cell
-    ! pointer (iCell), to compute the field values (VALUES) at the desired
-    ! point (X,Y,Z). ND is the leading index of the FIELD (1 for a
-    ! scalar field), ID1 is the first element of the vector to interpolate,
-    ! and NV elements are output.
+    !   Trilinearly interpolates the field (data_in) given a grid cell
+    ! pointer (iCell), to compute the field values (data_out) at the desired
+    ! point (x,y,z). Npar is the leading index of the data_in (1 for a
+    ! scalar field), iParStart is the first element of the vector to interpolate,
+    ! and NparOut elements are output.
 
-    integer, intent(in) :: iCell, ND, ID1, NV
-    real(RD_), intent(in) :: X, Y, Z
-    real :: FIELD(ND, *), VALUES(NV)
-    integer :: IPT1, IPT2, ID
-    real(RD_) :: U, V, W, UM, VM, WM, DELX, DELY, DELZ
+    integer, intent(in) :: iCell, Npar, iParStart, NparOut
+    real(kind=RD_), intent(in) :: x, y, z
+    real(kind=R__), intent(in) :: data_in(Npar, *)
 
-    IPT1 = i8Grid_Cell_(1, iCell)
-    IPT2 = i8Grid_Cell_(8, iCell)
-    DELX = xyz_Rtm_(1, IPT2) - xyz_Rtm_(1, IPT1)
-    if (DELX .le. 0.0) DELX = 1.0
-    DELY = xyz_Rtm_(2, IPT2) - xyz_Rtm_(2, IPT1)
-    if (DELY .le. 0.0) DELY = 1.0
-    DELZ = xyz_Rtm_(3, IPT2) - xyz_Rtm_(3, IPT1)
-    U = (X - xyz_Rtm_(1, IPT1))/DELX
-    V = (Y - xyz_Rtm_(2, IPT1))/DELY
-    W = (Z - xyz_Rtm_(3, IPT1))/DELZ
+    real(kind=R__), intent(out) :: data_out(NparOut)
+
+    integer :: iPts1, iPts2, iPar
+    real(RD_) :: U, V, W, UM, VM, WM, dx, dy, dz
+
+    iPts1 = i8Grid_Cell_(1, iCell)
+    iPts2 = i8Grid_Cell_(8, iCell)
+
+    dx = xyz_Rtm_(1, iPts2) - xyz_Rtm_(1, iPts1)
+    if (dx .le. 0.0) dx = 1.0
+
+    dy = xyz_Rtm_(2, iPts2) - xyz_Rtm_(2, iPts1)
+    if (dy .le. 0.0) dy = 1.0
+
+    dz = xyz_Rtm_(3, iPts2) - xyz_Rtm_(3, iPts1)
+
+    U = (x - xyz_Rtm_(1, iPts1))/dx
+    V = (y - xyz_Rtm_(2, iPts1))/dy
+    W = (z - xyz_Rtm_(3, iPts1))/dz
     UM = 1 - U
     VM = 1 - V
     WM = 1 - W
 
-    do ID = ID1, ID1 + NV - 1
-        VALUES(ID - ID1 + 1) = WM*(VM*(UM*FIELD(ID, i8Grid_Cell_(1, iCell))&
-            &+ U*FIELD(ID, i8Grid_Cell_(2, iCell)))&
-            &+ V*(UM*FIELD(ID, i8Grid_Cell_(3, iCell))&
-            &+ U*FIELD(ID, i8Grid_Cell_(4, iCell))))&
-            &+ W*(VM*(UM*FIELD(ID, i8Grid_Cell_(5, iCell))&
-            &+ U*FIELD(ID, i8Grid_Cell_(6, iCell)))&
-            &+ V*(UM*FIELD(ID, i8Grid_Cell_(7, iCell))&
-            &+ U*FIELD(ID, i8Grid_Cell_(8, iCell))))
+    do iPar = iParStart, iParStart + NparOut - 1
+
+        data_out(iPar - iParStart + 1) = &
+            WM*(VM*(UM*data_in(iPar, i8Grid_Cell_(1, iCell)) + &
+                     U*data_in(iPar, i8Grid_Cell_(2, iCell))) + &
+                 V*(UM*data_in(iPar, i8Grid_Cell_(3, iCell)) + &
+                     U*data_in(iPar, i8Grid_Cell_(4, iCell)))) + &
+             W*(VM*(UM*data_in(iPar, i8Grid_Cell_(5, iCell)) + &
+                     U*data_in(iPar, i8Grid_Cell_(6, iCell))) + &
+                 V*(UM*data_in(iPar, i8Grid_Cell_(7, iCell)) + &
+                     U*data_in(iPar, i8Grid_Cell_(8, iCell))))
+
     end do
 
     return
@@ -575,7 +609,7 @@ end subroutine shd_util__computeGausQuad_new
 subroutine shd_util__computeGausQuad(N, XA, WT)
 
     !╭──────────────────────────────────────────────────────────────╮!
-    !   Generates the abscissas (X) and weights (W) for an N point
+    !   Generates the abscissas (x) and weights (W) for an N point
     ! Gauss-Legendre quadrature.  The XA are returned in this order:
     ! -mu1, -mu2, ..., -muK, mu1, mu2, ..., muK  (mu1 > mu2 > muK,
     ! K=N/2, N must be even).
@@ -584,30 +618,30 @@ subroutine shd_util__computeGausQuad(N, XA, WT)
     integer, intent(in) :: N
     real, intent(inout) :: XA(*), WT(*)
     integer :: K, I, J, L
-    real(RD_) :: X, XP, PL, PL1, PL2, DPL
+    real(RD_) :: x, XP, PL, PL1, PL2, DPL
     real(RD_), parameter :: TINY=3.0d-7
 
     K = N/2
     if (2*K .ne. N) stop 'Error [_computeGausQuad]: N must be even.'
     do J = 1, K
-        X = dcos(PI_*(J - 0.25d0)/(N + 0.5d0))
+        x = dcos(PI_*(J - 0.25d0)/(N + 0.5d0))
         I = 0
 100     continue
         PL1 = 1
-        PL = X
+        PL = x
         do L = 2, N
             PL2 = PL1
             PL1 = PL
-            PL = ((2*L - 1)*X*PL1 - (L - 1)*PL2)/L
+            PL = ((2*L - 1)*x*PL1 - (L - 1)*PL2)/L
         end do
-        DPL = N*(X*PL - PL1)/(X*X - 1)
-        XP = X
-        X = XP - PL/DPL
+        DPL = N*(x*PL - PL1)/(x*x - 1)
+        XP = x
+        x = XP - PL/DPL
         I = I + 1
-        if (abs(X - XP) .gt. TINY .and. I .lt. 10) GO TO 100
-        XA(J) = -X
-        XA(J + K) = X
-        WT(J) = 2.0d0/((1.0d0 - X*X)*DPL*DPL)
+        if (abs(x - XP) .gt. TINY .and. I .lt. 10) GO TO 100
+        XA(J) = -x
+        XA(J + K) = x
+        WT(J) = 2.0d0/((1.0d0 - x*x)*DPL*DPL)
         WT(J + K) = WT(J)
     end do
 
@@ -618,7 +652,7 @@ end subroutine shd_util__computeGausQuad
 subroutine shd_util__computeGausQuadDble(N, XA, WT)
 
     !╭──────────────────────────────────────────────────────────────╮!
-    !   Generates the abscissas (X) and weights (W) for an N point
+    !   Generates the abscissas (x) and weights (W) for an N point
     ! Double-Gauss-Legendre quadrature. The XA are returned in this order
     ! -mu1, -mu2, ..., -muK, mu1, mu2, ..., muK  (mu1 > mu2 > muK,
     ! K=N/2, N must be even).
@@ -628,7 +662,7 @@ subroutine shd_util__computeGausQuadDble(N, XA, WT)
     real, intent(inout) :: XA(*), WT(*)
 
     integer :: K, I, J, L, N2
-    real(RD_) :: X, XP, PL, PL1, PL2, DPL
+    real(RD_) :: x, XP, PL, PL1, PL2, DPL
     real(RD_), parameter :: TINY=3.0d-7
 
     N2 = N/2
@@ -636,24 +670,24 @@ subroutine shd_util__computeGausQuadDble(N, XA, WT)
 
     K = (N2 + 1)/2
     do J = 1, K
-        X = cos(DPI_*(J - 0.25d0)/(N2 + 0.5d0))
+        x = cos(DPI_*(J - 0.25d0)/(N2 + 0.5d0))
         I = 0
 100     continue
         PL1 = 1
-        PL = X
+        PL = x
         do L = 2, N2
             PL2 = PL1
             PL1 = PL
-            PL = ((2*L - 1)*X*PL1 - (L - 1)*PL2)/L
+            PL = ((2*L - 1)*x*PL1 - (L - 1)*PL2)/L
         end do
-        DPL = N2*(X*PL - PL1)/(X*X - 1)
-        XP = X
-        X = XP - PL/DPL
+        DPL = N2*(x*PL - PL1)/(x*x - 1)
+        XP = x
+        x = XP - PL/DPL
         I = I + 1
-        if (abs(X - XP) .gt. TINY .and. I .lt. 10) GO TO 100
-        XA(J + N2) = (1 + X)/2
-        XA(N2 + 1 - J + N2) = (1 - X)/2
-        WT(J + N2) = 1/((1 - X*X)*DPL*DPL)
+        if (abs(x - XP) .gt. TINY .and. I .lt. 10) GO TO 100
+        XA(J + N2) = (1 + x)/2
+        XA(N2 + 1 - J + N2) = (1 - x)/2
+        WT(J + N2) = 1/((1 - x*x)*DPL*DPL)
         WT(N2 + 1 - J + N2) = WT(J + N2)
         XA(J) = -XA(J + N2)
         XA(N2 + 1 - J) = -XA(N2 + 1 - J + N2)
@@ -730,13 +764,13 @@ subroutine shd_util__integratePlanck(X1, X2, F)
 
 end subroutine shd_util__integratePlanck
 
-real(RD_) function integralLow(X)
+real(RD_) function integralLow(x)
 
     ! Integral of x**3/(exp(x)-1) from 0 to x.
     ! Accurate for x less than about 1.
     ! Uses Taylor series expansion around x=0.
 
-    real(RD_) :: X
+    real(RD_) :: x
     integer :: N
     real(RD_) :: SUM, F, A(29)
     data A/ 0.0d0,&
@@ -755,10 +789,10 @@ real(RD_) function integralLow(X)
         &   0.0d0, -0.51683202540046382743d-20,&
         &   0.0d0,  0.12188644964239543006d-20/
 
-    SUM = A(4)*X**4
-    F = X
+    SUM = A(4)*x**4
+    F = x
     do N = 3, 29, 2
-        F = X*X*F
+        F = x*x*F
         SUM = SUM + A(N)*F
     end do
 
@@ -768,19 +802,19 @@ real(RD_) function integralLow(X)
 
 end function integralLow
 
-real(RD_) function integralHigh(X)
+real(RD_) function integralHigh(x)
 
     ! Integral of x**3/(exp(x)-1) from x to infinity.
     ! Accurate for x greater than about 1.
 
-    real(RD_) :: X
+    real(RD_) :: x
     integer :: N
     real(RD_) :: SUM
 
     SUM = 0.0d0
     do N = 1, 15
-        SUM = SUM + exp(-N*X)&
-            &*(X**3/N + 3*X**2/N**2 + 6*X/N**3 + 6.0d0/N**4)
+        SUM = SUM + exp(-N*x)&
+            &*(x**3/N + 3*x**2/N**2 + 6*x/N**3 + 6.0d0/N**4)
     end do
 
     integralHigh = SUM
@@ -789,7 +823,7 @@ real(RD_) function integralHigh(X)
 
 end function integralHigh
 
-subroutine shd_util__ssort_i(X, Y, N, KFLAG)
+subroutine shd_util__ssort_i(x, y, N, KFLAG)
 
     !╭──────────────────────────────────────────────────────────────╮!
     !***PURPOSE  Sort an array and optionally make the same interchanges in
@@ -804,19 +838,19 @@ subroutine shd_util__ssort_i(X, Y, N, KFLAG)
     !           Wisniewski, J. A., (SNLA)
     !***DESCRIPTION
     !
-    !   SSORT sorts array X and optionally makes the same interchanges in
-    !   array Y.  The array X may be sorted in increasing order or
+    !   SSORT sorts array x and optionally makes the same interchanges in
+    !   array y.  The array x may be sorted in increasing order or
     !   decreasing order.  A slightly modified quicksort algorithm is used.
     !
     !   Description of Parameters
-    !      X - array of values to be sorted   (usually abscissas)
-    !      Y - array to be (optionally) carried along
-    !      N - number of values in array X to be sorted
+    !      x - array of values to be sorted   (usually abscissas)
+    !      y - array to be (optionally) carried along
+    !      N - number of values in array x to be sorted
     !      KFLAG - control parameter
-    !            =  2  means sort X in increasing order and carry Y along.
-    !            =  1  means sort X in increasing order (ignoring Y)
-    !            = -1  means sort X in decreasing order (ignoring Y)
-    !            = -2  means sort X in decreasing order and carry Y along.
+    !            =  2  means sort x in increasing order and carry y along.
+    !            =  1  means sort x in increasing order (ignoring y)
+    !            = -1  means sort x in decreasing order (ignoring y)
+    !            = -2  means sort x in decreasing order and carry y along.
     !
     !***REFERENCES  R. C. Singleton, Algorithm 347, An efficient algorithm
     !                 for sorting with minimal storage, Communications of
@@ -827,9 +861,9 @@ subroutine shd_util__ssort_i(X, Y, N, KFLAG)
     integer KFLAG, N
 
     ! Array Arguments
-    !real X(*), Y(*)
-    real, intent(inout) :: X(*)
-    integer, intent(inout) :: Y(*)
+    !real x(*), y(*)
+    real, intent(inout) :: x(*)
+    integer, intent(inout) :: y(*)
 
     ! Local Scalars
     ! real R, T, TT, TTY, TY
@@ -855,16 +889,16 @@ subroutine shd_util__ssort_i(X, Y, N, KFLAG)
         stop 'Error [_ssort_i]: The sort control parameter, K, is not 2, 1, -1, or -2.'
     end if
 
-    ! Alter array X to get decreasing order if needed
+    ! Alter array x to get decreasing order if needed
     if (KFLAG .le. -1) then
         do 10 I = 1, NN
-            X(I) = -X(I)
+            x(I) = -x(I)
 10      continue
      end if
 
     if (KK .eq. 2) GO TO 100
 
-    ! Sort X only
+    ! Sort x only
     M = 1
     I = 1
     J = NN
@@ -881,45 +915,45 @@ subroutine shd_util__ssort_i(X, Y, N, KFLAG)
 
     ! Select a central element of the array and save it in location T
     IJ = I + int((J - I)*R)
-    T = X(IJ)
+    T = x(IJ)
 
     ! If first element of array is greater than T, interchange with T
-    if (X(I) .gt. T) then
-        X(IJ) = X(I)
-        X(I) = T
-        T = X(IJ)
+    if (x(I) .gt. T) then
+        x(IJ) = x(I)
+        x(I) = T
+        T = x(IJ)
     end if
     L = J
 
     ! If last element of array is less than than T, interchange with T
-    if (X(J) .lt. T) then
-        X(IJ) = X(J)
-        X(J) = T
-        T = X(IJ)
+    if (x(J) .lt. T) then
+        x(IJ) = x(J)
+        x(J) = T
+        T = x(IJ)
 
         ! If first element of array is greater than T, interchange with T
-        if (X(I) .gt. T) then
-            X(IJ) = X(I)
-            X(I) = T
-            T = X(IJ)
+        if (x(I) .gt. T) then
+            x(IJ) = x(I)
+            x(I) = T
+            T = x(IJ)
         end if
     end if
 
     ! Find an element in the second half of the array which is smaller
     ! than T
 40  L = L - 1
-    if (X(L) .gt. T) GO TO 40
+    if (x(L) .gt. T) GO TO 40
 
     ! Find an element in the first half of the array which is greater
     ! than T
 50  K = K + 1
-    if (X(K) .lt. T) GO TO 50
+    if (x(K) .lt. T) GO TO 50
 
     ! Interchange these elements
     if (K .le. L) then
-        TT = X(L)
-        X(L) = X(K)
-        X(K) = TT
+        TT = x(L)
+        x(L) = x(K)
+        x(K) = TT
         GO TO 40
     end if
 
@@ -949,17 +983,17 @@ subroutine shd_util__ssort_i(X, Y, N, KFLAG)
 
 80  I = I + 1
     if (I .eq. J) GO TO 60
-    T = X(I + 1)
-    if (X(I) .le. T) GO TO 80
+    T = x(I + 1)
+    if (x(I) .le. T) GO TO 80
     K = I
 
-90  X(K + 1) = X(K)
+90  x(K + 1) = x(K)
     K = K - 1
-    if (T .lt. X(K)) GO TO 90
-    X(K + 1) = T
+    if (T .lt. x(K)) GO TO 90
+    x(K + 1) = T
     GO TO 80
 
-    ! Sort X and carry Y along
+    ! Sort x and carry y along
 100 M = 1
     I = 1
     J = NN
@@ -976,58 +1010,58 @@ subroutine shd_util__ssort_i(X, Y, N, KFLAG)
 
     ! Select a central element of the array and save it in location T
     IJ = I + int((J - I)*R)
-    T = X(IJ)
-    TY = Y(IJ)
+    T = x(IJ)
+    TY = y(IJ)
 
     ! If first element of array is greater than T, interchange with T
-    if (X(I) .gt. T) then
-        X(IJ) = X(I)
-        X(I) = T
-        T = X(IJ)
-        Y(IJ) = Y(I)
-        Y(I) = TY
-        TY = Y(IJ)
+    if (x(I) .gt. T) then
+        x(IJ) = x(I)
+        x(I) = T
+        T = x(IJ)
+        y(IJ) = y(I)
+        y(I) = TY
+        TY = y(IJ)
     end if
     L = J
 
     ! If last element of array is less than T, interchange with T
-    if (X(J) .lt. T) then
-        X(IJ) = X(J)
-        X(J) = T
-        T = X(IJ)
-        Y(IJ) = Y(J)
-        Y(J) = TY
-        TY = Y(IJ)
+    if (x(J) .lt. T) then
+        x(IJ) = x(J)
+        x(J) = T
+        T = x(IJ)
+        y(IJ) = y(J)
+        y(J) = TY
+        TY = y(IJ)
 
     ! If first element of array is greater than T, interchange with T
-        if (X(I) .gt. T) then
-            X(IJ) = X(I)
-            X(I) = T
-            T = X(IJ)
-            Y(IJ) = Y(I)
-            Y(I) = TY
-            TY = Y(IJ)
+        if (x(I) .gt. T) then
+            x(IJ) = x(I)
+            x(I) = T
+            T = x(IJ)
+            y(IJ) = y(I)
+            y(I) = TY
+            TY = y(IJ)
         end if
     end if
 
     ! Find an element in the second half of the array which is smaller
     ! than T
 130 L = L - 1
-    if (X(L) .gt. T) GO TO 130
+    if (x(L) .gt. T) GO TO 130
 
     ! Find an element in the first half of the array which is greater
     ! than T
 140 K = K + 1
-    if (X(K) .lt. T) GO TO 140
+    if (x(K) .lt. T) GO TO 140
 
     ! Interchange these elements
     if (K .le. L) then
-        TT = X(L)
-        X(L) = X(K)
-        X(K) = TT
-        TTY = Y(L)
-        Y(L) = Y(K)
-        Y(K) = TTY
+        TT = x(L)
+        x(L) = x(K)
+        x(K) = TT
+        TTY = y(L)
+        y(L) = y(K)
+        y(K) = TTY
         GO TO 130
     end if
 
@@ -1057,23 +1091,23 @@ subroutine shd_util__ssort_i(X, Y, N, KFLAG)
 
 170 I = I + 1
     if (I .eq. J) GO TO 150
-    T = X(I + 1)
-    TY = Y(I + 1)
-    if (X(I) .le. T) GO TO 170
+    T = x(I + 1)
+    TY = y(I + 1)
+    if (x(I) .le. T) GO TO 170
     K = I
 
-180 X(K + 1) = X(K)
-    Y(K + 1) = Y(K)
+180 x(K + 1) = x(K)
+    y(K + 1) = y(K)
     K = K - 1
-    if (T .lt. X(K)) GO TO 180
-    X(K + 1) = T
-    Y(K + 1) = TY
+    if (T .lt. x(K)) GO TO 180
+    x(K + 1) = T
+    y(K + 1) = TY
     GO TO 170
 
     ! Clean up
 190 if (KFLAG .le. -1) then
         do 200 I = 1, NN
-            X(I) = -X(I)
+            x(I) = -x(I)
 200     continue
     end if
 
@@ -1081,7 +1115,7 @@ subroutine shd_util__ssort_i(X, Y, N, KFLAG)
 
 end subroutine shd_util__ssort_i
 
-subroutine shd_util__ssort_r(X, Y, N, KFLAG)
+subroutine shd_util__ssort_r(x, y, N, KFLAG)
 
     !╭──────────────────────────────────────────────────────────────╮!
     !***PURPOSE  Sort an array and optionally make the same interchanges in
@@ -1096,19 +1130,19 @@ subroutine shd_util__ssort_r(X, Y, N, KFLAG)
     !           Wisniewski, J. A., (SNLA)
     !***DESCRIPTION
     !
-    !   SSORT sorts array X and optionally makes the same interchanges in
-    !   array Y.  The array X may be sorted in increasing order or
+    !   SSORT sorts array x and optionally makes the same interchanges in
+    !   array y.  The array x may be sorted in increasing order or
     !   decreasing order.  A slightly modified quicksort algorithm is used.
     !
     !   Description of Parameters
-    !      X - array of values to be sorted   (usually abscissas)
-    !      Y - array to be (optionally) carried along
-    !      N - number of values in array X to be sorted
+    !      x - array of values to be sorted   (usually abscissas)
+    !      y - array to be (optionally) carried along
+    !      N - number of values in array x to be sorted
     !      KFLAG - control parameter
-    !            =  2  means sort X in increasing order and carry Y along.
-    !            =  1  means sort X in increasing order (ignoring Y)
-    !            = -1  means sort X in decreasing order (ignoring Y)
-    !            = -2  means sort X in decreasing order and carry Y along.
+    !            =  2  means sort x in increasing order and carry y along.
+    !            =  1  means sort x in increasing order (ignoring y)
+    !            = -1  means sort x in decreasing order (ignoring y)
+    !            = -2  means sort x in decreasing order and carry y along.
     !
     !***REFERENCES  R. C. Singleton, Algorithm 347, An efficient algorithm
     !                 for sorting with minimal storage, Communications of
@@ -1119,9 +1153,9 @@ subroutine shd_util__ssort_r(X, Y, N, KFLAG)
     integer KFLAG, N
 
     ! Array Arguments
-    !real X(*), Y(*)
-    real, intent(inout) :: X(*)
-    real, intent(inout) :: Y(*)
+    !real x(*), y(*)
+    real, intent(inout) :: x(*)
+    real, intent(inout) :: y(*)
 
     ! Local Scalars
     ! real R, T, TT, TTY, TY
@@ -1147,16 +1181,16 @@ subroutine shd_util__ssort_r(X, Y, N, KFLAG)
         stop 'Error [_ssort_r]: The sort control parameter, K, is not 2, 1, -1, or -2.'
     end if
 
-    ! Alter array X to get decreasing order if needed
+    ! Alter array x to get decreasing order if needed
     if (KFLAG .le. -1) then
         do 10 I = 1, NN
-            X(I) = -X(I)
+            x(I) = -x(I)
 10      continue
      end if
 
     if (KK .eq. 2) GO TO 100
 
-    ! Sort X only
+    ! Sort x only
     M = 1
     I = 1
     J = NN
@@ -1173,45 +1207,45 @@ subroutine shd_util__ssort_r(X, Y, N, KFLAG)
 
     ! Select a central element of the array and save it in location T
     IJ = I + int((J - I)*R)
-    T = X(IJ)
+    T = x(IJ)
 
     ! If first element of array is greater than T, interchange with T
-    if (X(I) .gt. T) then
-        X(IJ) = X(I)
-        X(I) = T
-        T = X(IJ)
+    if (x(I) .gt. T) then
+        x(IJ) = x(I)
+        x(I) = T
+        T = x(IJ)
     end if
     L = J
 
     ! If last element of array is less than than T, interchange with T
-    if (X(J) .lt. T) then
-        X(IJ) = X(J)
-        X(J) = T
-        T = X(IJ)
+    if (x(J) .lt. T) then
+        x(IJ) = x(J)
+        x(J) = T
+        T = x(IJ)
 
         ! If first element of array is greater than T, interchange with T
-        if (X(I) .gt. T) then
-            X(IJ) = X(I)
-            X(I) = T
-            T = X(IJ)
+        if (x(I) .gt. T) then
+            x(IJ) = x(I)
+            x(I) = T
+            T = x(IJ)
         end if
     end if
 
     ! Find an element in the second half of the array which is smaller
     ! than T
 40  L = L - 1
-    if (X(L) .gt. T) GO TO 40
+    if (x(L) .gt. T) GO TO 40
 
     ! Find an element in the first half of the array which is greater
     ! than T
 50  K = K + 1
-    if (X(K) .lt. T) GO TO 50
+    if (x(K) .lt. T) GO TO 50
 
     ! Interchange these elements
     if (K .le. L) then
-        TT = X(L)
-        X(L) = X(K)
-        X(K) = TT
+        TT = x(L)
+        x(L) = x(K)
+        x(K) = TT
         GO TO 40
     end if
 
@@ -1241,17 +1275,17 @@ subroutine shd_util__ssort_r(X, Y, N, KFLAG)
 
 80  I = I + 1
     if (I .eq. J) GO TO 60
-    T = X(I + 1)
-    if (X(I) .le. T) GO TO 80
+    T = x(I + 1)
+    if (x(I) .le. T) GO TO 80
     K = I
 
-90  X(K + 1) = X(K)
+90  x(K + 1) = x(K)
     K = K - 1
-    if (T .lt. X(K)) GO TO 90
-    X(K + 1) = T
+    if (T .lt. x(K)) GO TO 90
+    x(K + 1) = T
     GO TO 80
 
-    ! Sort X and carry Y along
+    ! Sort x and carry y along
 100 M = 1
     I = 1
     J = NN
@@ -1268,58 +1302,58 @@ subroutine shd_util__ssort_r(X, Y, N, KFLAG)
 
     ! Select a central element of the array and save it in location T
     IJ = I + int((J - I)*R)
-    T = X(IJ)
-    TY = Y(IJ)
+    T = x(IJ)
+    TY = y(IJ)
 
     ! If first element of array is greater than T, interchange with T
-    if (X(I) .gt. T) then
-        X(IJ) = X(I)
-        X(I) = T
-        T = X(IJ)
-        Y(IJ) = Y(I)
-        Y(I) = TY
-        TY = Y(IJ)
+    if (x(I) .gt. T) then
+        x(IJ) = x(I)
+        x(I) = T
+        T = x(IJ)
+        y(IJ) = y(I)
+        y(I) = TY
+        TY = y(IJ)
     end if
     L = J
 
     ! If last element of array is less than T, interchange with T
-    if (X(J) .lt. T) then
-        X(IJ) = X(J)
-        X(J) = T
-        T = X(IJ)
-        Y(IJ) = Y(J)
-        Y(J) = TY
-        TY = Y(IJ)
+    if (x(J) .lt. T) then
+        x(IJ) = x(J)
+        x(J) = T
+        T = x(IJ)
+        y(IJ) = y(J)
+        y(J) = TY
+        TY = y(IJ)
 
     ! If first element of array is greater than T, interchange with T
-        if (X(I) .gt. T) then
-            X(IJ) = X(I)
-            X(I) = T
-            T = X(IJ)
-            Y(IJ) = Y(I)
-            Y(I) = TY
-            TY = Y(IJ)
+        if (x(I) .gt. T) then
+            x(IJ) = x(I)
+            x(I) = T
+            T = x(IJ)
+            y(IJ) = y(I)
+            y(I) = TY
+            TY = y(IJ)
         end if
     end if
 
     ! Find an element in the second half of the array which is smaller
     ! than T
 130 L = L - 1
-    if (X(L) .gt. T) GO TO 130
+    if (x(L) .gt. T) GO TO 130
 
     ! Find an element in the first half of the array which is greater
     ! than T
 140 K = K + 1
-    if (X(K) .lt. T) GO TO 140
+    if (x(K) .lt. T) GO TO 140
 
     ! Interchange these elements
     if (K .le. L) then
-        TT = X(L)
-        X(L) = X(K)
-        X(K) = TT
-        TTY = Y(L)
-        Y(L) = Y(K)
-        Y(K) = TTY
+        TT = x(L)
+        x(L) = x(K)
+        x(K) = TT
+        TTY = y(L)
+        y(L) = y(K)
+        y(K) = TTY
         GO TO 130
     end if
 
@@ -1349,23 +1383,23 @@ subroutine shd_util__ssort_r(X, Y, N, KFLAG)
 
 170 I = I + 1
     if (I .eq. J) GO TO 150
-    T = X(I + 1)
-    TY = Y(I + 1)
-    if (X(I) .le. T) GO TO 170
+    T = x(I + 1)
+    TY = y(I + 1)
+    if (x(I) .le. T) GO TO 170
     K = I
 
-180 X(K + 1) = X(K)
-    Y(K + 1) = Y(K)
+180 x(K + 1) = x(K)
+    y(K + 1) = y(K)
     K = K - 1
-    if (T .lt. X(K)) GO TO 180
-    X(K + 1) = T
-    Y(K + 1) = TY
+    if (T .lt. x(K)) GO TO 180
+    x(K + 1) = T
+    y(K + 1) = TY
     GO TO 170
 
     ! Clean up
 190 if (KFLAG .le. -1) then
         do 200 I = 1, NN
-            X(I) = -X(I)
+            x(I) = -x(I)
 200     continue
     end if
 

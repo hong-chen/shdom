@@ -2000,7 +2000,7 @@ subroutine shd_mpi__computeRadDir(&
     logical :: isValidRad
     real(RD_) :: X0, Y0, Z0, XE, YE, ZE, X, Y, Z, TRANSMIT, RADIANCE(shdo_obj_%Nstokes)
     real    :: muRay, phiRay, phiRay_deg
-    real    :: STARTX, STARTY, EPS = 1.0e-5
+    real    :: xStart, yStart, EPS = 1.0e-5
 
     integer :: MAXNRAD, NDOWN, Lupx, Lupy, Ldownx, Ldowny
     integer :: SIDE, NINVALID(0:4)
@@ -2035,13 +2035,13 @@ subroutine shd_mpi__computeRadDir(&
     end if
 
     ! Setup the regularly spaced radiance locations
-    STARTX = 0.0
+    xStart = 0.0
     if (parms_Out(2) .le. 0.0) then
         Nx_out = 1
     else
         Nx_out = max(1, nint(prp_obj_%xDomain/parms_Out(2)))
     end if
-    STARTY = 0.0
+    yStart = 0.0
     if (parms_Out(3) .le. 0.0) then
         Ny_out = 1
     else
@@ -2099,16 +2099,16 @@ subroutine shd_mpi__computeRadDir(&
 
         ! to avoid vertical stripes
         ! this extra pixel shift is considered in the data output (second step correction)
-        STARTX = TOT_XOFFSET - parms_Out(2)*nint(TOT_XOFFSET/parms_Out(2))
-        if (STARTX .lt. 0.0d0) then
-            STARTX = STARTX + parms_Out(2)
+        xStart = TOT_XOFFSET - parms_Out(2)*nint(TOT_XOFFSET/parms_Out(2))
+        if (xStart .lt. 0.0d0) then
+            xStart = xStart + parms_Out(2)
         end if
 
         ! to avoid horizontal stripes
         ! this extra pixel shift is considered in the data output (second step correction)
-        STARTY = TOT_YOFFSET - parms_Out(3)*nint(TOT_YOFFSET/parms_Out(3))
-        if (STARTY .lt. 0.0d0) then
-            STARTY = STARTY + parms_Out(3)
+        yStart = TOT_YOFFSET - parms_Out(3)*nint(TOT_YOFFSET/parms_Out(3))
+        if (yStart .lt. 0.0d0) then
+            yStart = yStart + parms_Out(3)
         end if
         !╰────────────────────────────────────────────────╯!
 
@@ -2189,9 +2189,9 @@ subroutine shd_mpi__computeRadDir(&
 
         ! Loop over all the radiance starting locations and integrate
         !   backwards for those in this subdomain.
-        Y0 = STARTY
+        Y0 = yStart
         do JY = 1, Ny_out
-            X0 = STARTX
+            X0 = xStart
             do JX = 1, Nx_out
                 NRAD = NRAD + 1
 

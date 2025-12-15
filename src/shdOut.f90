@@ -124,7 +124,7 @@ subroutine shd_io__outputResult(&
     logical ALLGRID
     real(RD_) :: MUOUT, PHID
     real :: C, SUM
-    real XDOMAIN, YDOMAIN, STARTX, STARTY
+    real xDomain, yDomain, xStart, yStart
     real, allocatable :: ASYM(:)
     real, allocatable :: FUP(:), FDN(:), FDIR(:)
     real, allocatable :: SUM1(:), SUM2(:), SUM3(:)
@@ -288,23 +288,23 @@ subroutine shd_io__outputResult(&
         ! Radiance output
         ! NXOUT
         !╭────────────────────────────────────────────────╮!
-        XDOMAIN = rtm_obj_%x(rtm_obj_%Nx + 1 - ibits(rtm_obj_%flag_bc, 0, 1)) - rtm_obj_%x(1) + 2*OUTPARMS(4)
-        STARTX = -OUTPARMS(4)
+        xDomain = rtm_obj_%x(rtm_obj_%Nx + 1 - ibits(rtm_obj_%flag_bc, 0, 1)) - rtm_obj_%x(1) + 2*OUTPARMS(4)
+        xStart = -OUTPARMS(4)
         if (OUTPARMS(2) .eq. 0.0) then
             NXOUT = 1
         else
-            NXOUT = max(1, nint(XDOMAIN/OUTPARMS(2)))
+            NXOUT = max(1, nint(xDomain/OUTPARMS(2)))
         end if
         !╰────────────────────────────────────────────────╯!
 
         ! NYOUT
         !╭────────────────────────────────────────────────╮!
-        YDOMAIN = rtm_obj_%y(rtm_obj_%Ny + 1 - ibits(rtm_obj_%flag_bc, 1, 1)) - rtm_obj_%y(1) + 2*OUTPARMS(5)
-        STARTY = -OUTPARMS(5)
+        yDomain = rtm_obj_%y(rtm_obj_%Ny + 1 - ibits(rtm_obj_%flag_bc, 1, 1)) - rtm_obj_%y(1) + 2*OUTPARMS(5)
+        yStart = -OUTPARMS(5)
         if (OUTPARMS(3) .eq. 0.0) then
             NYOUT = 1
         else
-            NYOUT = max(1, nint(YDOMAIN/OUTPARMS(3)))
+            NYOUT = max(1, nint(yDomain/OUTPARMS(3)))
         end if
         !╰────────────────────────────────────────────────╯!
 
@@ -1115,18 +1115,18 @@ end subroutine shd_io__outputResult
 
 subroutine shd_io__radShiftCorr(&
     &DATA, NVAR, NSET, NX, NY, DX, DY,&
-    &XDOMAIN, YDOMAIN,&
+    &xDomain, yDomain,&
     &DS_Z, MU_SET, PHI_SET)
 
     integer, intent(in) :: NVAR, NSET, NX, NY
     real, intent(inout) :: DATA(NVAR, *)
-    real, intent(in) :: DX, DY, XDOMAIN, YDOMAIN
+    real, intent(in) :: DX, DY, xDomain, yDomain
     real, intent(in) :: MU_SET(*), PHI_SET(*)
 
     real(RD_) :: DS_Z
     real(RD_) :: DS_VZA_RAD, DS_XOFFSET, DS_YOFFSET
     real ::MUOUT, PHIOUT
-    real(RD_) :: STARTX, STARTY
+    real(RD_) :: xStart, yStart
     integer :: XSHIFT, YSHIFT, ISET, IVAR
     real, allocatable :: DATA_COPY(:, :, :, :)
 
@@ -1143,15 +1143,15 @@ subroutine shd_io__radShiftCorr(&
         DS_XOFFSET = DS_Z*dtan(DS_VZA_RAD)*cos(PHIOUT)
         DS_YOFFSET = DS_Z*dtan(DS_VZA_RAD)*sin(PHIOUT)
 
-        STARTX = DS_XOFFSET - DX*nint(DS_XOFFSET/DX)
+        xStart = DS_XOFFSET - DX*nint(DS_XOFFSET/DX)
         XSHIFT = nint(DS_XOFFSET/DX)
-        if (STARTX .lt. 0.0d0) then
+        if (xStart .lt. 0.0d0) then
             XSHIFT = XSHIFT - 1
         end if
 
-        STARTY = DS_YOFFSET - DY*nint(DS_YOFFSET/DY)
+        yStart = DS_YOFFSET - DY*nint(DS_YOFFSET/DY)
         YSHIFT = nint(DS_YOFFSET/DY)
-        if (STARTY .lt. 0.0d0) then
+        if (yStart .lt. 0.0d0) then
             YSHIFT = YSHIFT - 1
         end if
 
@@ -1210,7 +1210,7 @@ subroutine shd_io__outputResultMpi(&
     integer NANGOUT, NXOUT, NYOUT
     real :: MUOUT, PHID
     real :: C, SUM
-    real(RD_) :: STARTX, STARTY
+    real(RD_) :: xStart, yStart
     real(RD_) :: X0, Y0, Z0
     character(len=128) :: FORM
     character(len=64) :: GRIDNAME, SOURCENAME, UNITSNAME, OUTNAME, SFCNAME
@@ -1359,13 +1359,13 @@ subroutine shd_io__outputResultMpi(&
 
     if (OUTTYPE .eq. 'R') then
         ! Radiance output
-        STARTX = 0.0
+        xStart = 0.0
         if (OUTPARMS(2) .le. 0.0) then
             NXOUT = 1
         else
             NXOUT = max(1, nint(prp_obj_%xDomain/OUTPARMS(2)))
         end if
-        STARTY = 0.0
+        yStart = 0.0
         if (OUTPARMS(3) .le. 0.0) then
             NYOUT = 1
         else
@@ -1441,9 +1441,9 @@ subroutine shd_io__outputResultMpi(&
         !    PHID = OUTPARMS(2*K + 6)
         !    write(2, '(A,1X,F8.5,1X,F7.2,2X,A)')&
         !        & '! ', MUOUT, PHID, '<- (mu,phi)'
-        !    Y0 = STARTY
+        !    Y0 = yStart
         !    do JY = 1, NYOUT
-        !        X0 = STARTX
+        !        X0 = xStart
         !        do JX = 1, NXOUT
         !            IRAD = IRAD + 1
         !            write(2, FORM) X0, Y0, RADOUT(:, IRAD)
@@ -2542,7 +2542,7 @@ end subroutine shd_io__outputCellSplit
 
 subroutine shd_io__visualizeCell(&
     &OUTFILE, YVAL, OUTTYPE,&
-    &XDOMAIN, ZDOMAIN)
+    &xDomain, zDomain)
 
     ! Visualizes the cell structure by outputting GLE code to draw
     ! a diagram of the cells in the XZ plane.  Only the end cells are
@@ -2552,7 +2552,7 @@ subroutine shd_io__visualizeCell(&
     ! There is a special output for IP mode.
 
     integer OUTTYPE
-    real YVAL, XDOMAIN, ZDOMAIN
+    real YVAL, xDomain, zDomain
     character(len=*), intent(in) :: OUTFILE
     integer IC
     integer J, INeigh
@@ -2560,9 +2560,9 @@ subroutine shd_io__visualizeCell(&
     real X1, Z1, X2, Z2, X3, Z3, X4, Z4, XC, ZC
     real DX, DZ, XN, ZN, XA, ZA
 
-    S = min(24.0/XDOMAIN, 18.0/ZDOMAIN)
-    XSIZE = S*XDOMAIN
-    ZSIZE = S*ZDOMAIN
+    S = min(24.0/xDomain, 18.0/zDomain)
+    XSIZE = S*xDomain
+    ZSIZE = S*zDomain
     open(UNIT=9, FILE=trim(adjustl(OUTFILE)), STATUS='UNKNOWN')
     write(9, '(A,2(1X,F6.2))') 'size ', XSIZE, ZSIZE
     write(9, '(A)') 'set just cc'
@@ -2572,7 +2572,7 @@ subroutine shd_io__visualizeCell(&
     write(9, '(A,1X,F7.3)') '! Y value: ', YVAL
     write(9, '(A)')
     if (is1DX_) then
-        DELX = 0.5*XDOMAIN/rtm_obj_%Nx
+        DELX = 0.5*xDomain/rtm_obj_%Nx
         write(9, '(A)') 'sub drawbox x1 y1 x3 y3 xc yc n'
         write(9, '(A)') ' set color black'
         write(9, '(A)') ' amove x1 y1'

@@ -187,7 +187,7 @@ subroutine shd_rad__computeDirect(&
     real(RD_) :: PATH
     real(RD_) :: EXTBEAMCUT, UNIFORMZLEV
     real(RD_) :: cX, cY, cZ, CXINV, CYINV, CZINV, ratioX, ratioY
-    real(RD_) :: EPSS, EPSZ, XDOMAIN, YDOMAIN
+    real(RD_) :: EPSS, EPSZ, xDomain, yDomain
     real(RD_) :: XOFFS, YOFFS, DELXD, DELYD
     real(RD_) :: X, Y, Z, XE, YE, ZE, XP, YP, ZP
     real(RD_) :: X0, X1, Y0, Y1, Z0, Z1, SO, SOX, SOY, SOZ
@@ -200,7 +200,7 @@ subroutine shd_rad__computeDirect(&
     real, save, allocatable :: kabs(:), minExt(:), maxExt(:), extDir_Prp(:, :, :)
 
     save cX, cY, cZ, CXINV, CYINV, CZINV, DI, DJ, DK, IPDIRECT, ratioX, ratioY
-    save DELXD, DELYD, XDOMAIN, YDOMAIN, EPSS, EPSZ, UNIFORMZLEV
+    save DELXD, DELYD, xDomain, yDomain, EPSS, EPSZ, UNIFORMZLEV
 
 
     INIT_CASE: select case (INIT)
@@ -314,15 +314,15 @@ subroutine shd_rad__computeDirect(&
             EPSS = max(0.001*DELXD, 0.001*DELYD, EPSS)
 
             if (isMpiX_ .and. (prp_obj_%Nx .gt. 1)) then
-                XDOMAIN = DELXD*(prp_obj_%Nx - 1)
+                xDomain = DELXD*(prp_obj_%Nx - 1)
             else
-                XDOMAIN = DELXD*prp_obj_%Nx
+                xDomain = DELXD*prp_obj_%Nx
             end if
 
             if (isMpiY_ .and. (prp_obj_%Ny .gt. 1)) then
-                YDOMAIN = DELYD*(prp_obj_%Ny - 1)
+                yDomain = DELYD*(prp_obj_%Ny - 1)
             else
-                YDOMAIN = DELYD*prp_obj_%Ny
+                yDomain = DELYD*prp_obj_%Ny
             end if
             !╰────────────────────────────────────────────────────────────────────────────╯!
 
@@ -408,7 +408,7 @@ subroutine shd_rad__computeDirect(&
             ! find nearest I index
             !╭────────────────────────────────────────────────────────────────────────────╮!
             I = int(X/DELXD) + 1
-            if (I .gt. prp_obj_%Nx .and. abs(X - XDOMAIN) .lt. 0.001*DELXD) I = prp_obj_%Nx
+            if (I .gt. prp_obj_%Nx .and. abs(X - xDomain) .lt. 0.001*DELXD) I = prp_obj_%Nx
             if (I .lt. 1 .or. I .gt. prp_obj_%Nx) then
                 write(6, *) '_computeDirect: Beyond X domain', I, XI, YI, ZI
                 stop
@@ -418,7 +418,7 @@ subroutine shd_rad__computeDirect(&
             ! find nearest J index
             !╭────────────────────────────────────────────────────────────────────────────╮!
             J = int(Y/DELYD) + 1
-            if (J .gt. prp_obj_%Ny .and. abs(Y - YDOMAIN) .lt. 0.001*DELYD) J = prp_obj_%Ny
+            if (J .gt. prp_obj_%Ny .and. abs(Y - yDomain) .lt. 0.001*DELYD) J = prp_obj_%Ny
             if (J .lt. 1 .or. J .gt. prp_obj_%Ny) then
                 write(6, *) '_computeDirect: Beyond Y domain', J, XI, YI, ZI
                 stop
@@ -449,7 +449,7 @@ subroutine shd_rad__computeDirect(&
             !   from a boundary then set the HITBOUNDARY flag
             HITBOUNDARY = .false.
             if (isMpiX_) then
-                if (cX .gt. 0.0 .and. abs(X - XDOMAIN) .lt. 0.001*DELXD) then
+                if (cX .gt. 0.0 .and. abs(X - xDomain) .lt. 0.001*DELXD) then
                     SIDE = 2
                     HITBOUNDARY = .true.
                 else if (cX .lt. 0.0 .and. abs(X) .lt. 0.001*DELXD) then
@@ -459,7 +459,7 @@ subroutine shd_rad__computeDirect(&
             end if
 
             if (isMpiY_) then
-                if (cY .gt. 0.0 .and. abs(Y - YDOMAIN) .lt. 0.001*DELYD) then
+                if (cY .gt. 0.0 .and. abs(Y - yDomain) .lt. 0.001*DELYD) then
                     SIDE = 4
                     HITBOUNDARY = .true.
                 end if
@@ -586,7 +586,7 @@ subroutine shd_rad__computeDirect(&
                             SIDE = 1
                         else
                             I = prp_obj_%Nx
-                            XOFFS = XDOMAIN
+                            XOFFS = xDomain
                         end if
                     else if (I .ge. prp_obj_%Nx .and. isMpiX_) then
                         HITBOUNDARY = .true.
@@ -597,7 +597,7 @@ subroutine shd_rad__computeDirect(&
                             CONSTX = .true.
                         else
                             I = 1
-                            XOFFS = -XDOMAIN
+                            XOFFS = -xDomain
                         end if
                     end if
                 else
@@ -614,7 +614,7 @@ subroutine shd_rad__computeDirect(&
                             SIDE = 3
                         else
                             J = prp_obj_%Ny
-                            YOFFS = YDOMAIN
+                            YOFFS = yDomain
                         end if
                     else if (J .ge. prp_obj_%Ny .and. isMpiY_) then
                         HITBOUNDARY = .true.
@@ -625,7 +625,7 @@ subroutine shd_rad__computeDirect(&
                             CONSTY = .true.
                         else
                             J = 1
-                            YOFFS = -YDOMAIN
+                            YOFFS = -yDomain
                         end if
                     end if
                 end if
@@ -822,7 +822,7 @@ subroutine shd_rad__computeRadDir(&
     logical isValidRad
     real(RD_) :: X0, Y0, Z0, XE, YE, ZE, TRANSMIT, radI_Shdo(4)
     real MUOUT, PHIOUT, PHID
-    real XDOMAIN, YDOMAIN, STARTX, STARTY
+    real xDomain, yDomain, xStart, yStart
 
     ! added for fixing the "domain shift" issue
     !╭──────────────────────────────────────────────────────────────╮!
@@ -850,19 +850,19 @@ subroutine shd_rad__computeRadDir(&
     end if
 
     ! Setup the regularly spaced radiance locations
-    XDOMAIN = rtm_obj_%x(rtm_obj_%Nx + 1 - ibits(rtm_obj_%flag_bc, 0, 1)) - rtm_obj_%x(1) + 2*OUTPARMS(4)
-    STARTX = -OUTPARMS(4)
+    xDomain = rtm_obj_%x(rtm_obj_%Nx + 1 - ibits(rtm_obj_%flag_bc, 0, 1)) - rtm_obj_%x(1) + 2*OUTPARMS(4)
+    xStart = -OUTPARMS(4)
     if (OUTPARMS(2) .eq. 0.0) then
         NXOUT = 1
     else
-        NXOUT = max(1, nint(XDOMAIN/OUTPARMS(2)))
+        NXOUT = max(1, nint(xDomain/OUTPARMS(2)))
     end if
-    YDOMAIN = rtm_obj_%y(rtm_obj_%Ny + 1 - ibits(rtm_obj_%flag_bc, 1, 1)) - rtm_obj_%y(1) + 2*OUTPARMS(5)
-    STARTY = -OUTPARMS(5)
+    yDomain = rtm_obj_%y(rtm_obj_%Ny + 1 - ibits(rtm_obj_%flag_bc, 1, 1)) - rtm_obj_%y(1) + 2*OUTPARMS(5)
+    yStart = -OUTPARMS(5)
     if (OUTPARMS(3) .eq. 0.0) then
         NYOUT = 1
     else
-        NYOUT = max(1, nint(YDOMAIN/OUTPARMS(3)))
+        NYOUT = max(1, nint(yDomain/OUTPARMS(3)))
     end if
     Z0 = min(max(OUTPARMS(1), rtm_obj_%z(1)), rtm_obj_%z(rtm_obj_%Nz))
     NANGOUT = nint(OUTPARMS(6))
@@ -885,8 +885,8 @@ subroutine shd_rad__computeRadDir(&
             DS_VZA_RAD = acos(MUOUT)
             DS_XOFFSET = DS_Z0*tan(DS_VZA_RAD)*cos(PHIOUT)
             DS_YOFFSET = DS_Z0*tan(DS_VZA_RAD)*sin(PHIOUT)
-            STARTX = -OUTPARMS(4) + DS_XOFFSET
-            STARTY = -OUTPARMS(5) + DS_YOFFSET
+            xStart = -OUTPARMS(4) + DS_XOFFSET
+            yStart = -OUTPARMS(5) + DS_YOFFSET
         endif
         !╰────────────────────────────────────────────────╯!
 
@@ -941,9 +941,9 @@ subroutine shd_rad__computeRadDir(&
         end if
 
         ! Integrate backward from the location to get the radiance
-        Y0 = STARTY
+        Y0 = yStart
         do JY = 1, NYOUT
-            X0 = STARTX
+            X0 = xStart
             do JX = 1, NXOUT
                 IRAD = IRAD + 1
                 TRANSMIT = 1.0d0; radI_Shdo(:) = 0.0d0
