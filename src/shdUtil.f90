@@ -1629,7 +1629,7 @@ subroutine shd_util__computeSolarAngle(&
     north_y =  up_z*east_x
     north_z =  up_x*east_y - up_y*east_x
 
-    ! Project Sun vector into local ENU frame
+    ! Project Sun vector into local ENU (East, North, Up) frame
     Se =  east_x*solarVect_(1) +  east_y*solarVect_(2)
     Sn = north_x*solarVect_(1) + north_y*solarVect_(2) + north_z*solarVect_(3)
     mu =    up_x*solarVect_(1) +    up_y*solarVect_(2) +    up_z*solarVect_(3)
