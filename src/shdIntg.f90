@@ -100,7 +100,7 @@ subroutine shd_intg__integratePath(&
     &MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &CMU1, CPHI1, CMU2, CPHI2, WSAVE, FFTFLAG,&
     &fluxDir, fluxTot,&
-    &WORK, SWEEPORD, GRIDRAD,&
+    &WORK, sweepOrder, GRIDRAD,&
     &iradI_Shdo, radI_Shdo, isrcJ_Shdo, srcJ_Shdo)
 
     !   Performs the path integrations through the medium specified by
@@ -135,7 +135,7 @@ subroutine shd_intg__integratePath(&
 
     integer MAXNBC, MAXBCRAD, NTOPPTS, NBOTPTS
     integer BCPTR(MAXNBC, 2)
-    integer SWEEPORD(rtm_obj_%Npts, *)
+    integer sweepOrder(rtm_obj_%Npts, *)
     logical FFTFLAG(shdo_obj_%Nmu)
     real brdf_Shdo(shdo_obj_%Nstokes, shdo_obj_%Nmu/2, shdo_obj_%maxNphiA, shdo_obj_%Nstokes, shdo_obj_%Nmu/2, shdo_obj_%maxNphiA)
     real CMU1(*), CPHI1(*), CMU2(*), CPHI2(*), WSAVE(*)
@@ -158,10 +158,10 @@ subroutine shd_intg__integratePath(&
 
     ! Make the new grid cell/point sweeping order if need to
     if (rtm_obj_%Npts .ne. NptsOld) then
-        call shd_grid__makeSweepOrder(SWEEPORD, GRIDRAD)
+        call shd_grid__makeSweepOrder(sweepOrder, GRIDRAD)
     end if
 
-    call shd_mpi__findBndryPts(rtm_obj_%flag_bc, rtm_obj_%flag_ip, SWEEPORD,&
+    call shd_mpi__findBndryPts(rtm_obj_%flag_bc, rtm_obj_%flag_ip, sweepOrder,&
         &rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz)
 
     if (rtm_obj_%Npts .ne. NptsOld) then
@@ -283,27 +283,27 @@ subroutine shd_intg__integratePath(&
             if (is1D_) then
 
                 call shd_intg__backIntegrate1D(rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz, shdo_obj_%maxNphiA,&
-                    &SWEEPORD, shdo_obj_%mu(imuDO), shdo_obj_%phi(imuDO, iphiDO), TRANSMIN,&
+                    &sweepOrder, shdo_obj_%mu(imuDO), shdo_obj_%phi(imuDO, iphiDO), TRANSMIN,&
                     &ext_Rtm_, shdo_obj_%Nstokes, WORK, iphiDO, GRIDRAD)
 
             else if (is1DYx_ .and. (.not. isMpi_)) then
 
                 call shd_intg__backIntegrate2D(rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz, shdo_obj_%maxNphiA,&
-                    &SWEEPORD, shdo_obj_%mu(imuDO), shdo_obj_%phi(imuDO, iphiDO), TRANSMIN,&
+                    &sweepOrder, shdo_obj_%mu(imuDO), shdo_obj_%phi(imuDO, iphiDO), TRANSMIN,&
                     &ext_Rtm_, shdo_obj_%Nstokes, WORK, iphiDO, GRIDRAD)
 
             else
                 if (isPol_) then
 
                     call shd_intg__backIntegrate3D(rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz, shdo_obj_%maxNphiA,&
-                        &SWEEPORD,&
+                        &sweepOrder,&
                         &shdo_obj_%mu(imuDO), shdo_obj_%phi(imuDO, iphiDO), TRANSMIN, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
                         &ext_Rtm_, shdo_obj_%Nstokes, WORK, iphiDO, GRIDRAD)
 
                 else
 
                     call shd_intg__backIntegrate3D_(rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz, shdo_obj_%maxNphiA,&
-                        &SWEEPORD,&
+                        &sweepOrder,&
                         &shdo_obj_%mu(imuDO), shdo_obj_%phi(imuDO, iphiDO), TRANSMIN, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
                         &ext_Rtm_, WORK, iphiDO, GRIDRAD)
 
@@ -367,14 +367,14 @@ end subroutine shd_intg__integratePath
 
 subroutine shd_intg__backIntegrate3D(&
     &NX, NY, NZ, NA,&
-    &SWEEPORD,&
+    &sweepOrder,&
     &MU, PHI, TRANSMIN, BCFLAG, IPFLAG,&
     &EXTINCT, NSTOKES, SOURCE, KANG, GRIDRAD)
 
     !   Sweeps through the spatial grid computing radiance vectors for the
     ! discrete ordinate direction (MU,PHI) by integrating the source
     ! function and extinction backward from each point.  The sweeping
-    ! order through the grid points is in SWEEPORD. If a point is
+    ! order through the grid points is in sweepOrder. If a point is
     ! already done (nonnegative in GRIDRAD) then it is skipped.
     ! For each grid point a ray opposite to the ordinate direction is traced
     ! back to a face containing known (valid) radiances.  As each cell is
@@ -385,7 +385,7 @@ subroutine shd_intg__backIntegrate3D(&
 
     integer NX, NY, NZ, NA, NSTOKES, KANG
     integer BCFLAG, IPFLAG
-    integer SWEEPORD(rtm_obj_%Npts, *)
+    integer sweepOrder(rtm_obj_%Npts, *)
     real MU, PHI, TRANSMIN
     real EXTINCT(rtm_obj_%Npts), SOURCE(NSTOKES, NA, rtm_obj_%Npts)
     real GRIDRAD(NSTOKES, rtm_obj_%Npts)
@@ -402,7 +402,7 @@ subroutine shd_intg__backIntegrate3D(&
     real(RD_) :: EXT, EXT0, EXT1
     real(RD_) :: SRC(NSTOKES), SRCEXT0(NSTOKES), SRCEXT1(NSTOKES)
     real(RD_) :: EXT0P, SRCEXT0P(NSTOKES)
-    real(RD_) :: tau, TRANSCELL, ABSCELL, TRANSMIT
+    real(RD_) :: tau, transCell, absCell, trans
     real(RD_) :: RAD(NSTOKES), RAD0(NSTOKES)
     data faceGrid/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8,&
         &1, 2, 3, 4, 5, 6, 7, 8/, faceOpp/2, 1, 4, 3, 6, 5/
@@ -445,8 +445,8 @@ subroutine shd_intg__backIntegrate3D(&
     IZ = (NZ - 1)*(1 - bitZ) + 1
     ! Sweep through all the grid points
     do iOrder = 1, rtm_obj_%Npts
-        iCellPts = ishft(SWEEPORD(iOrder, jOctant), -3)
-        iCorner = ibits(SWEEPORD(iOrder, jOctant), 0, 3) + 1
+        iCellPts = ishft(sweepOrder(iOrder, jOctant), -3)
+        iCorner = ibits(sweepOrder(iOrder, jOctant), 0, 3) + 1
         iPts = i8Grid_Cell_(iCorner, iCellPts)
 
         if (isMpi_) then
@@ -467,7 +467,7 @@ subroutine shd_intg__backIntegrate3D(&
 
             ! Start off at the grid point
             iCell = iCellPts
-            TRANSMIT = 1.0
+            trans = 1.0
             EXT1 = EXTINCT(iPts)
             RAD(:) = 0.0
             SRCEXT1(:) = EXT1*SOURCE(:, KANG, iPts)
@@ -609,12 +609,12 @@ subroutine shd_intg__backIntegrate3D(&
                 EXT = 0.5*(EXT0 + EXT1)
                 tau = EXT*SO
                 if (tau .ge. 0.5) then
-                    TRANSCELL = exp(-tau)
-                    ABSCELL = 1.0 - TRANSCELL
+                    transCell = exp(-tau)
+                    absCell = 1.0 - transCell
                 else
-                    ABSCELL = tau*(1.0 - 0.5*tau*&
+                    absCell = tau*(1.0 - 0.5*tau*&
                         &(1.0 - FRAC13_*tau*(1 - 0.25*tau)))
-                    TRANSCELL = 1.0 - ABSCELL
+                    transCell = 1.0 - absCell
                 end if
                 if (tau .le. 2.0) then
                     if (EXT .eq. 0.0) then
@@ -634,7 +634,7 @@ subroutine shd_intg__backIntegrate3D(&
                     end if
                     SRC(:) = 1.0/(EXT0P + EXT1)*(SRCEXT0P(:) + SRCEXT1(:)&
                         &+ (EXT0P*SRCEXT1(:) - EXT1*SRCEXT0P(:))*2.0/(EXT0P + EXT1)&
-                        &*(1.0 - 2.0/tau + 2.0*TRANSCELL/ABSCELL))
+                        &*(1.0 - 2.0/tau + 2.0*transCell/absCell))
                 end if
                 SRC(1) = max(SRC(1), 0.0d0)
 
@@ -642,24 +642,24 @@ subroutine shd_intg__backIntegrate3D(&
                 ! If this is a boundary or the transmission is below the
                 !   cutoff and we have a valid radiance then set the flag
                 !   to stop the tracing and add in the interpolated face radiance.
-                RAD(:) = RAD(:) + TRANSMIT*SRC(:)*ABSCELL
-                TRANSMIT = TRANSMIT*TRANSCELL
+                RAD(:) = RAD(:) + trans*SRC(:)*absCell
+                trans = trans*transCell
                 !if (RAD(1) < -1.0e-5) then
                 if (RAD(1) < -accSolv_) then
                     write(*, '(A,3(1X,F6.4),8(1X,E12.5))') &
                         &'_backIntegrate3D: RAD<0 ',&
-                        &xe, ye, ze, ext0, ext1, so, tau, transmit, src, abscell, rad(:)
+                        &xe, ye, ze, ext0, ext1, so, tau, trans, src, absCell, rad(:)
                     call shd_mpi__abort('The end')
                 end if
                 isValidFace = (GRIDRAD(1, I1) .ge. -0.1 .and. GRIDRAD(1, I2) .ge. -0.1&
                     &.and. GRIDRAD(1, I3) .ge. -0.1 .and. GRIDRAD(1, I4) .ge. -0.1)
                 if (iCellNext .le. 0 .or.&
-                    &(TRANSMIT .le. TRANSMIN .and. isValidFace)) then
+                    &(trans .le. TRANSMIN .and. isValidFace)) then
                     if (isValidFace) then
                         isValidRad = .true.
                         RAD0(:) = F1*GRIDRAD(:, I1) + F2*GRIDRAD(:, I2)&
                             &+ F3*GRIDRAD(:, I3) + F4*GRIDRAD(:, I4)
-                        RAD(:) = RAD(:) + TRANSMIT*RAD0(:)
+                        RAD(:) = RAD(:) + trans*RAD0(:)
                     else
                         write(*, *) 'Error [_backIntegrate3D]: iCellNext=0: ', xe, ye, ze, iCell
                         write(*, *) iz, jOctant, mu, phi
@@ -691,7 +691,7 @@ end subroutine shd_intg__backIntegrate3D
 
 subroutine shd_intg__backIntegrate3D_( &
     NX, NY, NZ, NA, &
-    SWEEPORD, &
+    sweepOrder, &
     MU, PHI, TRANSMIN, BCFLAG, IPFLAG, &
     EXTINCT, SOURCE, KANG, GRIDRAD)
 
@@ -699,7 +699,7 @@ subroutine shd_intg__backIntegrate3D_( &
     !   Sweeps through the spatial grid computing radiances for the
     !   discrete ordinate direction (MU,PHI) by integrating the source
     !   function and extinction backward from each point. The sweeping
-    !   order through the grid points is in SWEEPORD. If a point is
+    !   order through the grid points is in sweepOrder. If a point is
     !   already done (nonnegative in GRIDRAD) then it is skipped.
     !   For each grid point a ray opposite to the ordinate direction is traced
     !   back to a face containing known (valid) radiances. As each cell is
@@ -746,10 +746,10 @@ subroutine shd_intg__backIntegrate3D_( &
     !                        there are NX+1 values in rtm_obj_%x, NY+1 in rtm_obj_%y,
     !                        NZ values in rtm_obj_%z. Currently the grid locations
     !                        are evenly spaced in X and Y.
-    !   SWEEPORD(rtm_obj_%Npts,*)   : integer array, grid point sweeping order
+    !   sweepOrder(rtm_obj_%Npts,*)   : integer array, grid point sweeping order
 
     integer(kind=I__), intent(in) :: NX, NY, NZ, NA, KANG, BCFLAG, IPFLAG
-    integer(kind=I__), intent(in) :: SWEEPORD(rtm_obj_%Npts, *)
+    integer(kind=I__), intent(in) :: sweepOrder(rtm_obj_%Npts, *)
     real(kind=R__)   , intent(in) :: MU, PHI, TRANSMIN
     real(kind=R__)   , intent(in) :: EXTINCT(rtm_obj_%Npts), SOURCE(NA, rtm_obj_%Npts)
 
@@ -767,7 +767,7 @@ subroutine shd_intg__backIntegrate3D_( &
     real(RD_) :: U, V, F1, F2, F3, F4
     real(RD_) :: EXT, EXT0, EXT1, SRC, SRCEXT0, SRCEXT1
     real(RD_) :: EXT0P, SRCEXT0P
-    real(RD_) :: tau, TRANSCELL, ABSCELL, RAD, RAD0, TRANSMIT
+    real(RD_) :: tau, transCell, absCell, RAD, RAD0, trans
 
     integer(kind=I__) :: faceGrid(4, 6), faceOpp(6), jOctantOrder_1D(8), jOctantOrder_3D(8)
     data faceGrid /  &
@@ -825,8 +825,8 @@ subroutine shd_intg__backIntegrate3D_( &
     ! Sweep through all the grid points
     do iOrder = 1, rtm_obj_%Npts
 
-        iCellPts  = ishft(SWEEPORD(iOrder, jOctant), -3)
-        iCorner = ibits(SWEEPORD(iOrder, jOctant), 0, 3) + 1
+        iCellPts  = ishft(sweepOrder(iOrder, jOctant), -3)
+        iCorner = ibits(sweepOrder(iOrder, jOctant), 0, 3) + 1
         iPts = i8Grid_Cell_(iCorner, iCellPts)
 
         ! this is for mpi (e.g., shdMpi.f90, not OMP)
@@ -851,7 +851,7 @@ subroutine shd_intg__backIntegrate3D_( &
             ! Start off at the grid point
             iCell = iCellPts
             RAD = 0.0
-            TRANSMIT = 1.0
+            trans = 1.0
             EXT1 = EXTINCT(iPts)
             SRCEXT1 = EXT1*SOURCE(KANG, iPts)
             XE = xyz_Rtm_(1, iPts)
@@ -1006,12 +1006,12 @@ subroutine shd_intg__backIntegrate3D_( &
 
                 tau = EXT*SO
                 if (tau .ge. 0.5) then
-                    TRANSCELL = exp(-tau)
-                    ABSCELL = 1.0 - TRANSCELL
+                    transCell = exp(-tau)
+                    absCell = 1.0 - transCell
                 else
-                    ABSCELL = tau*(1.0 - 0.5*tau*&
+                    absCell = tau*(1.0 - 0.5*tau*&
                         &(1.0 - FRAC13_*tau*(1.0 - 0.25*tau)))
-                    TRANSCELL = 1.0 - ABSCELL
+                    transCell = 1.0 - absCell
                 end if
 
                 if (tau .le. 2.0) then
@@ -1026,7 +1026,7 @@ subroutine shd_intg__backIntegrate3D_( &
                     ! Combined first order expansion and constant extinction formula
                     ! SRC = 0.5/EXT *( SRCEXT0+SRCEXT1&
                     !     &+ (EXT0*SRCEXT1-EXT1*SRCEXT0)*SO&
-                    !     &*(1-2/tau+2*TRANSCELL/ABSCELL)/tau )
+                    !     &*(1-2/tau+2*transCell/absCell)/tau )
                     EXT0P = EXT0
                     SRCEXT0P = SRCEXT0
                     if (tau .gt. 4.0) then
@@ -1035,7 +1035,7 @@ subroutine shd_intg__backIntegrate3D_( &
                     end if
                     SRC = 1.0/(EXT0P + EXT1)*(SRCEXT0P + SRCEXT1&
                         &+ (EXT0P*SRCEXT1 - EXT1*SRCEXT0P)*2.0/(EXT0P + EXT1)&
-                        &*(1.0 - 2.0/tau + 2.0*TRANSCELL/ABSCELL))
+                        &*(1.0 - 2.0/tau + 2.0*transCell/absCell))
                 end if
                 SRC = max(SRC, 0.0d0)
 
@@ -1043,25 +1043,25 @@ subroutine shd_intg__backIntegrate3D_( &
                 ! If this is a boundary or the transmission is below the
                 ! cutoff and we have a valid radiance then set the flag
                 ! to stop the tracing and add in the interpolated face radiance.
-                RAD = RAD + TRANSMIT*SRC*ABSCELL
-                TRANSMIT = TRANSMIT*TRANSCELL
+                RAD = RAD + trans*SRC*absCell
+                trans = trans*transCell
                 !if (RAD < -1.0e-5) then
                 if (RAD < -accSolv_) then
                     write(*, '(A,3(1X,F6.4),8(1X,E12.5))') &
                         &'_backIntegrate3D_: RAD<0 ',&
-                        &XE, YE, ZE, EXT0, EXT1, SO, tau, TRANSMIT, SRC, ABSCELL, RAD
+                        &XE, YE, ZE, EXT0, EXT1, SO, tau, trans, SRC, absCell, RAD
                     call shd_mpi__abort('The end')
                 end if
 
                 isValidFace = (GRIDRAD(I1) .ge. -0.1 .and. GRIDRAD(I2) .ge. -0.1&
                       &.and. GRIDRAD(I3) .ge. -0.1 .and. GRIDRAD(I4) .ge. -0.1)
                 if ((iCellNext .le. 0) .or. &
-                    ((TRANSMIT .le. TRANSMIN) .and. isValidFace)) then
+                    ((trans .le. TRANSMIN) .and. isValidFace)) then
                     if (isValidFace) then
                         isValidRad = .true.
                         RAD0 = F1*GRIDRAD(I1) + F2*GRIDRAD(I2)&
                             &+ F3*GRIDRAD(I3) + F4*GRIDRAD(I4)
-                        RAD = RAD + TRANSMIT*RAD0
+                        RAD = RAD + trans*RAD0
                     else
                         write(*, *) 'Error [_backIntegrate3D_]: iCellNext=0: ', xe, ye, ze, iCell
                         write(*, *) iz, jOctant, mu, phi
@@ -1096,7 +1096,7 @@ end subroutine shd_intg__backIntegrate3D_
 
 subroutine shd_intg__backIntegrate2D(&
     &NX, NY, NZ, NA,&
-    &SWEEPORD, MU, PHI, TRANSMIN,&
+    &sweepOrder, MU, PHI, TRANSMIN,&
     &EXTINCT, NSTOKES, SOURCE, KANG, GRIDRAD)
 
     !   Sweeps through the spatial grid computing radiances for the
@@ -1111,7 +1111,7 @@ subroutine shd_intg__backIntegrate2D(&
     ! radiances on the face.  The resulting radiances are put in GRIDRAD.
 
     integer NX, NY, NZ, NA, KANG, NSTOKES
-    integer SWEEPORD(rtm_obj_%Npts, *)
+    integer sweepOrder(rtm_obj_%Npts, *)
     real MU, PHI, TRANSMIN
     real EXTINCT(rtm_obj_%Npts), SOURCE(NSTOKES, NA, rtm_obj_%Npts)
     real GRIDRAD(NSTOKES, rtm_obj_%Npts)
@@ -1128,7 +1128,7 @@ subroutine shd_intg__backIntegrate2D(&
     real(RD_) :: EXT, EXT0, EXT1
     real(RD_) :: SRC(NSTOKES), SRCEXT0(NSTOKES), SRCEXT1(NSTOKES)
     real(RD_) :: EXT0P, SRCEXT0P(NSTOKES)
-    real(RD_) :: tau, TRANSCELL, ABSCELL, TRANSMIT
+    real(RD_) :: tau, transCell, absCell, trans
     real(RD_) :: RAD(NSTOKES), RAD0(NSTOKES)
     data faceGrid/1, 5, 2, 6, 0, 0, 0, 0, 1, 2, 5, 6/
     data faceOpp/2, 1, 4, 3, 6, 5/
@@ -1161,14 +1161,14 @@ subroutine shd_intg__backIntegrate2D(&
 
     ! Sweep through all the grid points
     do iOrder = 1, rtm_obj_%Npts
-        iCellPts = ishft(SWEEPORD(iOrder, jOctant), -3)
-        iCorner = ibits(SWEEPORD(iOrder, jOctant), 0, 3) + 1
+        iCellPts = ishft(sweepOrder(iOrder, jOctant), -3)
+        iCorner = ibits(sweepOrder(iOrder, jOctant), 0, 3) + 1
         iPts = i8Grid_Cell_(iCorner, iCellPts)
         if (GRIDRAD(1, iPts) .lt. 0.0) then
 
             ! Start off at the grid point
             iCell = iCellPts
-            TRANSMIT = 1.0
+            trans = 1.0
             EXT1 = EXTINCT(iPts)
             RAD(:) = 0.0
             SRCEXT1(:) = EXT1*SOURCE(:, KANG, iPts)
@@ -1266,12 +1266,12 @@ subroutine shd_intg__backIntegrate2D(&
                 EXT = 0.5*(EXT0 + EXT1)
                 tau = EXT*SO
                 if (tau .ge. 0.5) then
-                    TRANSCELL = exp(-tau)
-                    ABSCELL = 1.0 - TRANSCELL
+                    transCell = exp(-tau)
+                    absCell = 1.0 - transCell
                 else
-                    ABSCELL = tau*(1.0 - 0.5*tau*&
+                    absCell = tau*(1.0 - 0.5*tau*&
                         &(1.0 - FRAC13_*tau*(1 - 0.25*tau)))
-                    TRANSCELL = 1.0 - ABSCELL
+                    transCell = 1.0 - absCell
                 end if
                 if (tau .le. 2.0) then
                     if (EXT .eq. 0.0) then
@@ -1291,7 +1291,7 @@ subroutine shd_intg__backIntegrate2D(&
                     end if
                     SRC(:) = 1.0/(EXT0P + EXT1)*(SRCEXT0P(:) + SRCEXT1(:)&
                         &+ (EXT0P*SRCEXT1(:) - EXT1*SRCEXT0P(:))*2.0/(EXT0P + EXT1)&
-                        &*(1 - 2/tau + 2*TRANSCELL/ABSCELL))
+                        &*(1 - 2/tau + 2*transCell/absCell))
                 end if
                 SRC(1) = max(SRC(1), 0.0d0)
 
@@ -1299,15 +1299,15 @@ subroutine shd_intg__backIntegrate2D(&
                 ! If this is a boundary or the transmission is below the
                 ! cutoff and we have a valid radiance then set the flag
                 ! to stop the tracing and add in the interpolated face radiance
-                RAD(:) = RAD(:) + TRANSMIT*SRC(:)*ABSCELL
-                TRANSMIT = TRANSMIT*TRANSCELL
+                RAD(:) = RAD(:) + trans*SRC(:)*absCell
+                trans = trans*transCell
                 isValidFace = (GRIDRAD(1, I1) .ge. -0.1 .and. GRIDRAD(1, I2) .ge. -0.1)
                 if (iCellNext .le. 0 .or.&
-                    &(TRANSMIT .le. TRANSMIN .and. isValidFace)) then
+                    &(trans .le. TRANSMIN .and. isValidFace)) then
                     if (isValidFace) then
                         isValidRad = .true.
                         RAD0(:) = F1*GRIDRAD(:, I1) + F2*GRIDRAD(:, I2)
-                        RAD(:) = RAD(:) + TRANSMIT*RAD0(:)
+                        RAD(:) = RAD(:) + trans*RAD0(:)
                     else
                         write(*, *) 'Error [_backIntegrate2D]: iCellNext=0: ', xe, ye, ze, iCell
                         write(*, *) iz, jOctant, mu, phi
@@ -1338,7 +1338,7 @@ end subroutine shd_intg__backIntegrate2D
 
 subroutine shd_intg__backIntegrate1D(&
     &NX, NY, NZ, NA,&
-    &SWEEPORD, MU, PHI, TRANSMIN,&
+    &sweepOrder, MU, PHI, TRANSMIN,&
     &EXTINCT, NSTOKES, SOURCE, KANG, GRIDRAD)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
@@ -1356,7 +1356,7 @@ subroutine shd_intg__backIntegrate1D(&
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     integer(kind=I__), intent(in) :: NX, NY, NZ, NA, KANG, NSTOKES
-    integer(kind=I__), intent(in) :: SWEEPORD(rtm_obj_%Npts, *)
+    integer(kind=I__), intent(in) :: sweepOrder(rtm_obj_%Npts, *)
     real(kind=R__)   , intent(in) :: MU, PHI, TRANSMIN
     real(kind=R__)   , intent(in) :: EXTINCT(rtm_obj_%Npts), SOURCE(NSTOKES, NA, rtm_obj_%Npts)
 
@@ -1368,7 +1368,7 @@ subroutine shd_intg__backIntegrate1D(&
     real(kind=RD_) :: EXT, EXT0, EXT1
     real(kind=RD_) :: SRC(NSTOKES), SRCEXT0(NSTOKES), SRCEXT1(NSTOKES)
     real(kind=RD_) :: EXT0P, SRCEXT0P(NSTOKES)
-    real(kind=RD_) :: tau, TRANSCELL, ABSCELL, TRANSMIT
+    real(kind=RD_) :: tau, transCell, absCell, trans
     real(kind=RD_) :: RAD(NSTOKES), RAD0(NSTOKES)
 
     integer(kind=I__) :: bitZ, iOctant, jOctant
@@ -1403,13 +1403,13 @@ subroutine shd_intg__backIntegrate1D(&
 
     ! Sweep through all the grid points
     do iOrder = 1, rtm_obj_%Npts
-        iCellPts = ishft(SWEEPORD(iOrder, jOctant), -3)
-        iCorner = ibits(SWEEPORD(iOrder, jOctant), 0, 3) + 1
+        iCellPts = ishft(sweepOrder(iOrder, jOctant), -3)
+        iCorner = ibits(sweepOrder(iOrder, jOctant), 0, 3) + 1
         iPts = i8Grid_Cell_(iCorner, iCellPts)
         if (GRIDRAD(1, iPts) .lt. 0.0) then
             ! Start off at the grid point
             iCell = iCellPts
-            TRANSMIT = 1.0
+            trans = 1.0
             EXT1 = EXTINCT(iPts)
             RAD(:) = 0.0
             SRCEXT1(:) = EXT1*SOURCE(:, KANG, iPts)
@@ -1477,12 +1477,12 @@ subroutine shd_intg__backIntegrate1D(&
                 EXT = 0.5*(EXT0 + EXT1)
                 tau = EXT*SO
                 if (tau .ge. 0.5) then
-                    TRANSCELL = exp(-tau)
-                    ABSCELL = 1.0 - TRANSCELL
+                    transCell = exp(-tau)
+                    absCell = 1.0 - transCell
                 else
-                    ABSCELL = tau*(1.0 - 0.5*tau*&
+                    absCell = tau*(1.0 - 0.5*tau*&
                         &(1.0 - FRAC13_*tau*(1 - 0.25*tau)))
-                    TRANSCELL = 1.0 - ABSCELL
+                    transCell = 1.0 - absCell
                 end if
                 if (tau .le. 2.0) then
                     if (EXT .eq. 0.0) then
@@ -1501,7 +1501,7 @@ subroutine shd_intg__backIntegrate1D(&
                     end if
                     SRC(:) = 1.0/(EXT0P + EXT1)*(SRCEXT0P(:) + SRCEXT1(:)&
                         &+ (EXT0P*SRCEXT1(:) - EXT1*SRCEXT0P(:))*2.0/(EXT0P + EXT1)&
-                        &*(1 - 2/tau + 2*TRANSCELL/ABSCELL))
+                        &*(1 - 2/tau + 2*transCell/absCell))
                 end if
 
                 SRC(1) = max(SRC(1), 0.0)
@@ -1515,11 +1515,11 @@ subroutine shd_intg__backIntegrate1D(&
                 if (GRIDRAD(1, I1) .ge. -accSolv_) then
                     isValidRad = .true.
                     RAD0(:) = GRIDRAD(:, I1)
-                    RAD(:) = RAD(:) + TRANSMIT*(RAD0(:)*TRANSCELL + SRC(:)*ABSCELL)
+                    RAD(:) = RAD(:) + trans*(RAD0(:)*transCell + SRC(:)*absCell)
                 else
-                    RAD(:) = RAD(:) + TRANSMIT*SRC(:)*ABSCELL
+                    RAD(:) = RAD(:) + trans*SRC(:)*absCell
                     SRCEXT1(:) = SRCEXT0(:)
-                    TRANSMIT = TRANSMIT*TRANSCELL
+                    trans = trans*transCell
                     EXT1 = EXT0
                     iCell = iCellNext
                 end if

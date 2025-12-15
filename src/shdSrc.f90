@@ -569,12 +569,12 @@ subroutine shd_src__integrateSrcRay(&
     &fluxDir, isrcJ_Shdo, srcJ_Shdo, YlmSun,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &muRay, phiRay, X0, Y0, Z0,&
-    &XE, YE, ZE, SIDE, TRANSMIT, radI_Shdo, isValidRad)
+    &XE, YE, ZE, SIDE, trans, radI_Shdo, isValidRad)
 
     !   Integrates the source function through the extinction field
     ! (ext_Rtm_) backward from the outgoing direction (muRay,phiRay) to find the
     ! radiance (radI_Shdo) at the point X0,Y0,Z0.
-    ! The transmission and radiance of the ray so far (TRANSMIT, radI_Shdo)
+    ! The transmission and radiance of the ray so far (trans, radI_Shdo)
     ! are input and returned after the integration along with the exitting
     ! ray location (XE,YE,ZE) and side of the domain (1=-X,2=+X,3=-Y,4=+Y,
     ! 5=-Z,6=+Z).
@@ -594,7 +594,7 @@ subroutine shd_src__integrateSrcRay(&
     real YlmSun(prp_obj_%NlegSet, NLM)
     real PHASETAB(NSTPHASE, prp_obj_%Npha, NSCATANGLE)
     real(RD_) :: muRay, phiRay, X0, Y0, Z0, XE, YE, ZE
-    real(RD_) :: TRANSMIT, radI_Shdo(NSTOKES)
+    real(RD_) :: trans, radI_Shdo(NSTOKES)
     character(len=1) :: SRCTYPE
 
     integer bitX, bitY, bitZ, iOctant, iCell, iCellNext, iFace
@@ -612,7 +612,7 @@ subroutine shd_src__integrateSrcRay(&
     real(RD_) :: XN, YN, ZN, XI, YI, ZI
     real(RD_) :: SO, SOX, SOY, SOZ, EPS
     real(RD_) :: TAUTOL, TAUGRID, S, DELS, TRANSCUT
-    real(RD_) :: EXT, tau, TRANSCELL, ABSCELL
+    real(RD_) :: EXT, tau, transCell, absCell
     real(RD_) :: SRC(NSTOKES)
     real(RD_) :: U, V, W, DELX, DELY, DELZ, INVDELX, INVDELY, INVDELZ
     real(RD_) :: muScat
@@ -849,20 +849,20 @@ subroutine shd_src__integrateSrcRay(&
             EXT = 0.5*(EXT0 + EXT1)
             if (EXT .ne. 0.0) then
                 tau = EXT*DELS
-                ABSCELL = tau*(1.0d0 - 0.5d0*tau*(1.0d0 - FRAC13_*tau))
-                TRANSCELL = 1.0d0 - ABSCELL
+                absCell = tau*(1.0d0 - 0.5d0*tau*(1.0d0 - FRAC13_*tau))
+                transCell = 1.0d0 - absCell
                 ! Linear extinction, linear source*extinction, to second
                 SRC(:) = (0.5d0*(SRCEXT0(:) + SRCEXT1(:))&
                     &+ FRAC112_*(EXT0*SRCEXT1(:) - EXT1*SRCEXT0(:))*DELS&
                     &*(1.0d0 - 0.05d0*(EXT1 - EXT0)*DELS))/EXT
             else
-                ABSCELL = 0.0
-                TRANSCELL = 1.0
+                absCell = 0.0
+                transCell = 1.0
                 SRC(:) = 0.0
             end if
 
-            radI_Shdo(:) = radI_Shdo(:) + TRANSMIT*SRC(:)*ABSCELL
-            TRANSMIT = TRANSMIT*TRANSCELL
+            radI_Shdo(:) = radI_Shdo(:) + trans*SRC(:)*absCell
+            trans = trans*transCell
             EXT1 = EXT0
             SRCEXT1(:) = SRCEXT0(:)
         ! End of sub grid cell loop
@@ -911,7 +911,7 @@ subroutine shd_src__integrateSrcRay(&
 
         ! If the transmission is greater than zero and not at a
         !   boundary then prepare for next cell
-        if ((TRANSMIT .lt. TRANSCUT) .or. (NGRID .gt. MAXCELLSCROSS)) then
+        if ((trans .lt. TRANSCUT) .or. (NGRID .gt. MAXCELLSCROSS)) then
             isValidRad = .true.
         else if ((iCellNext .eq. 0) .and. (iFace .ge. 5)) then
             isValidRad = .true.
@@ -922,7 +922,7 @@ subroutine shd_src__integrateSrcRay(&
                 &NMU, NPHI0MAX, NPHI0, muDO, phiDO, WTDO,&
                 &SRCTYPE, WAVELEN, muSun, phiSun, fluxDir,&
                 &RADBND)
-            radI_Shdo(:) = radI_Shdo(:) + TRANSMIT*RADBND(:)
+            radI_Shdo(:) = radI_Shdo(:) + trans*RADBND(:)
         else
             iCell = iCellNext
         end if
@@ -950,13 +950,13 @@ end subroutine shd_src__integrateSrcRay
 subroutine shd_src__integrateSrcDir(NSTOKES,&
     &muRay, phiRay, GRIDRAD, srcJ_Shdo,&
     &X0, Y0, Z0, XE, YE, ZE, SIDE,&
-    &TRANSMIT, radI_Shdo, isValidRad)
+    &trans, radI_Shdo, isValidRad)
 
     ! Integrates the source function (srcJ_Shdo) through the extinction
     ! field (ext_Rtm_) backward in the direction opposite to (muRay,phiRay)
     ! to find the outgoing radiance (radI_Shdo) at the point X0,Y0,Z0.
     ! The radiances at the opposite boundary are input in GRIDRAD.
-    ! The transmission and radiance of the ray so far (TRANSMIT, radI_Shdo)
+    ! The transmission and radiance of the ray so far (trans, radI_Shdo)
     ! are input and returned after the integration along with the exitting
     ! ray location (XE,YE,ZE) and side of the domain (1=-X,2=+X,3=-Y,4=+Y,
     ! 5=-Z,6=+Z).
@@ -964,7 +964,7 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
     integer NSTOKES, SIDE
     logical isValidRad
     real muRay, phiRay
-    real(RD_) :: X0, Y0, Z0, XE, YE, ZE, TRANSMIT, radI_Shdo(NSTOKES)
+    real(RD_) :: X0, Y0, Z0, XE, YE, ZE, trans, radI_Shdo(NSTOKES)
     real srcJ_Shdo(NSTOKES, rtm_obj_%Npts), GRIDRAD(NSTOKES, rtm_obj_%Npts)
     integer bitX, bitY, bitZ, iOctant, iCell, iCellNext, iFace
     integer I1, I2, I3, I4, iOpp, Ntau, IT, K
@@ -977,7 +977,7 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
     real(RD_) :: XN, YN, ZN, XI, YI, ZI
     real(RD_) :: SO, SOX, SOY, SOZ, EPS
     real(RD_) :: TAUTOL, TAUGRID, S, DELS
-    real(RD_) :: EXT, tau, TRANSCELL, ABSCELL
+    real(RD_) :: EXT, tau, transCell, absCell
     real(RD_) :: SRC(NSTOKES), RAD(NSTOKES)
     data faceGrid/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8,&
         &1, 2, 3, 4, 5, 6, 7, 8/, faceOpp/2, 1, 4, 3, 6, 5/
@@ -1110,22 +1110,22 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
             EXT = 0.5*(EXT0(1) + EXT1(1))
             if (EXT .ne. 0.0) then
                 tau = EXT*DELS
-                ABSCELL = tau*(1.0 - 0.5*tau*(1.0 - FRAC13_*tau))
-                TRANSCELL = 1.0 - ABSCELL
+                absCell = tau*(1.0 - 0.5*tau*(1.0 - FRAC13_*tau))
+                transCell = 1.0 - absCell
                 ! Linear extinction, linear source*extinction, to second
                 SRC(:) = (0.5*(SRCEXT0(:) + SRCEXT1(:)) + FRAC112_*&
                     &(EXT0(1)*SRCEXT1(:) - EXT1(1)*SRCEXT0(:))*DELS&
                     &*(1.0 - 0.05*(EXT1(1) - EXT0(1))*DELS))/EXT
             else
-                ABSCELL = 0.0
-                TRANSCELL = 1.0
+                absCell = 0.0
+                transCell = 1.0
                 SRC(:) = 0.0
             end if
 
-            radI_Shdo(:) = radI_Shdo(:) + TRANSMIT*SRC(:)*ABSCELL
+            radI_Shdo(:) = radI_Shdo(:) + trans*SRC(:)*absCell
             SRCEXT1(:) = SRCEXT0(:)
             EXT1(1) = EXT0(1)
-            TRANSMIT = TRANSMIT*TRANSCELL
+            trans = trans*transCell
         ! End of sub grid cell loop
         end do
 
@@ -1179,15 +1179,15 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
         !   If so, set flag, interpolate radiance, and add in
         !   If not, only prepare for next cell
 
-        !if (TRANSMIT .lt. 1.0e-5) then
-        if (TRANSMIT .lt. accSolv_) then
+        !if (trans .lt. 1.0e-5) then
+        if (trans .lt. accSolv_) then
             isValidRad = .true.
         else if (GRIDRAD(1, I1) .ge. 0.0 .and. GRIDRAD(1, I2) .ge. 0.0 .and.&
             &GRIDRAD(1, I3) .ge. 0.0 .and. GRIDRAD(1, I4) .ge. 0.0) then
             isValidRad = .true.
             call shd_util__interpTriLin(iCell, XI, YI, ZI,&
                 &NSTOKES, GRIDRAD, 1, NSTOKES, RAD0)
-            radI_Shdo(:) = radI_Shdo(:) + TRANSMIT*RAD0(:)
+            radI_Shdo(:) = radI_Shdo(:) + trans*RAD0(:)
         else
             iCell = iCellNext
         end if

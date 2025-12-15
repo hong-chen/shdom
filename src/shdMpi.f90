@@ -1510,7 +1510,7 @@ subroutine shd_mpi__makeFluxDir(SPT,&
 
 end subroutine shd_mpi__makeFluxDir
 
-subroutine shd_mpi__findBndryPts(BCFLAG, IPFLAG, SWEEPORD,&
+subroutine shd_mpi__findBndryPts(BCFLAG, IPFLAG, sweepOrder,&
     &Nx, Ny, Nz)
 
     ! Makes the pointers to and positions of the horizontal boundary grid
@@ -1525,7 +1525,7 @@ subroutine shd_mpi__findBndryPts(BCFLAG, IPFLAG, SWEEPORD,&
     ! boundary of this subdomain (SIDE: 1=-X, 2=+X, 3=-Y, 4=+Y).  BxyPos_ holds
     ! the gridpoint positions (X,Y,Z) for these boundary points.
 
-    integer, intent(in) :: BCFLAG, IPFLAG, SWEEPORD(rtm_obj_%Npts, *)
+    integer, intent(in) :: BCFLAG, IPFLAG, sweepOrder(rtm_obj_%Npts, *)
     integer, intent(in) :: Nx, Ny, Nz
 
 #if HAS_MPI
@@ -1577,8 +1577,8 @@ subroutine shd_mpi__findBndryPts(BCFLAG, IPFLAG, SWEEPORD,&
         bitZ = 1 - ibits(jOctant, 0, 1)
         N(:) = 0
         do iOrder = 1, rtm_obj_%Npts
-            iCellPts = ishft(SWEEPORD(iOrder, jOctant), -3)
-            iCorner = ibits(SWEEPORD(iOrder, jOctant), 0, 3) + 1
+            iCellPts = ishft(sweepOrder(iOrder, jOctant), -3)
+            iCorner = ibits(sweepOrder(iOrder, jOctant), 0, 3) + 1
             iPts = i8Grid_Cell_(iCorner, iCellPts)
 
             if  ((xyz_Rtm_(3, iPts) .lt. rtm_obj_%z(Nz) .and. bitZ .eq. 0) .or.&
@@ -1743,7 +1743,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, jOctant, IZ,&
     integer :: ierr(12), irq, iproc
     integer :: intsendbuf(2), intrecvbuf(2)
     logical :: isValidRad, AllDone
-    real    :: X, Y, Z, RADIANCE(Nstokes), TRANSMIT, xo, yo, zo
+    real    :: X, Y, Z, RADIANCE(Nstokes), trans, xo, yo, zo
     integer, allocatable :: Ndone(:)
     integer, allocatable :: BndRadIntInfo(:, :, :)
     real, allocatable    :: BndRadRealInfo(:, :, :)
@@ -1782,11 +1782,11 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, jOctant, IZ,&
         ! Call shd_mpi__integrateRadRay for this
         X = BxyPos_(1, IBC, jOctant); Y = BxyPos_(2, IBC, jOctant); Z = BxyPos_(3, IBC, jOctant)
         iproc = BxyPtr_(1, IBC, jOctant); iPts = BxyPtr_(2, IBC, jOctant); SIDE = BxyPtr_(3, IBC, jOctant)
-        RADIANCE(:) = 0.0; TRANSMIT = 1.0
+        RADIANCE(:) = 0.0; trans = 1.0
         xo = x; yo = y; zo = z
         call shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
             &EXTINCT, Nstokes, SOURCE, KANG, GRIDRAD,&
-            &muRay, phiRay, X, Y, Z, SIDE, TRANSMIT, RADIANCE, isValidRad)
+            &muRay, phiRay, X, Y, Z, SIDE, trans, RADIANCE, isValidRad)
 
         ! If we got a radiance then store it otherwise save
         !  the information needed to pass to other processors
@@ -1800,7 +1800,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, jOctant, IZ,&
                 call shd_mpi__abort('Error [mpi__calBndryRad]')
             end if
             NINVALID(SIDE) = NINVALID(SIDE) + 1
-            BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/X, Y, Z, TRANSMIT, RADIANCE(:)/)
+            BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/X, Y, Z, trans, RADIANCE(:)/)
             BndRadIntInfo(:, NINVALID(SIDE), SIDE) = (/iproc, iPts/)
         end if
     end do
@@ -1866,11 +1866,11 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, jOctant, IZ,&
                 if (Ldownx .eq. 2) BndRadRealInfo(1, J, Ldownx) = rtm_obj_%x(Nx)
                 X = BndRadRealInfo(1, J, Ldownx); Y = BndRadRealInfo(2, J, Ldownx)
                 Z = BndRadRealInfo(3, J, Ldownx)
-                SIDE = Ldownx; TRANSMIT = BndRadRealInfo(4, J, Ldownx)
+                SIDE = Ldownx; trans = BndRadRealInfo(4, J, Ldownx)
                 RADIANCE(:) = BndRadRealInfo(5:4 + Nstokes, J, Ldownx)
                 call shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
                     &EXTINCT, Nstokes, SOURCE, KANG, GRIDRAD,&
-                    &muRay, phiRay, X, Y, Z, SIDE, TRANSMIT, RADIANCE, isValidRad)
+                    &muRay, phiRay, X, Y, Z, SIDE, trans, RADIANCE, isValidRad)
 
                 ! If we got a radiance then store it in RadAllOut (if for another
                 !   processor) otherwise save the information needed to continue
@@ -1886,7 +1886,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, jOctant, IZ,&
                         call shd_mpi__abort('Error [mpi__calBndryRad]: Bad SIDE 2x, see above.')
                     end if
                     NINVALID(SIDE) = NINVALID(SIDE) + 1
-                    BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/X, Y, Z, TRANSMIT, RADIANCE(:)/)
+                    BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/X, Y, Z, trans, RADIANCE(:)/)
                     BndRadIntInfo(:, NINVALID(SIDE), SIDE) = BndRadIntInfo(:, J, Ldownx)
                 end if
             end do
@@ -1899,11 +1899,11 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, jOctant, IZ,&
                 if (Ldowny .eq. 4) BndRadRealInfo(2, J, Ldowny) = rtm_obj_%y(Ny)
                 X = BndRadRealInfo(1, J, Ldowny); Y = BndRadRealInfo(2, J, Ldowny)
                 Z = BndRadRealInfo(3, J, Ldowny)
-                SIDE = Ldowny; TRANSMIT = BndRadRealInfo(4, J, Ldowny)
+                SIDE = Ldowny; trans = BndRadRealInfo(4, J, Ldowny)
                 RADIANCE(:) = BndRadRealInfo(5:4 + Nstokes, J, Ldowny)
                 call shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
                     &EXTINCT, Nstokes, SOURCE, KANG, GRIDRAD,&
-                    &muRay, phiRay, X, Y, Z, SIDE, TRANSMIT, RADIANCE, isValidRad)
+                    &muRay, phiRay, X, Y, Z, SIDE, trans, RADIANCE, isValidRad)
 
                 ! If we got a radiance then store it in RadAllOut (if for another
                 !   processor) otherwise save the information needed to continue
@@ -1919,7 +1919,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, jOctant, IZ,&
                         call shd_mpi__abort('Error [mpi__calBndryRad]: Bad SIDE 2y, see above.')
                     end if
                     NINVALID(SIDE) = NINVALID(SIDE) + 1
-                    BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/X, Y, Z, TRANSMIT, RADIANCE(:)/)
+                    BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/X, Y, Z, trans, RADIANCE(:)/)
                     BndRadIntInfo(:, NINVALID(SIDE), SIDE) = BndRadIntInfo(:, J, Ldowny)
                 end if
             end do
@@ -1998,7 +1998,7 @@ subroutine shd_mpi__computeRadDir(&
     integer :: IBC, JX, JY, K
     integer :: NANGOUT, Nx_out, Ny_out
     logical :: isValidRad
-    real(RD_) :: X0, Y0, Z0, XE, YE, ZE, X, Y, Z, TRANSMIT, RADIANCE(shdo_obj_%Nstokes)
+    real(RD_) :: X0, Y0, Z0, XE, YE, ZE, X, Y, Z, trans, RADIANCE(shdo_obj_%Nstokes)
     real    :: muRay, phiRay, phiRay_deg
     real    :: xStart, yStart, EPS = 1.0e-5
 
@@ -2197,11 +2197,11 @@ subroutine shd_mpi__computeRadDir(&
 
                 if (X0 .ge. (rtm_obj_%x(1) - EPS) .and. X0 .le. (rtm_obj_%x(rtm_obj_%Nx) + EPS) .and.&
                     Y0 .ge. (rtm_obj_%y(1) - EPS) .and. Y0 .le. (rtm_obj_%y(rtm_obj_%Ny) + EPS)) then
-                    TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
+                    trans = 1.0d0; RADIANCE(:) = 0.0d0
                     call shd_src__integrateSrcDir(shdo_obj_%Nstokes,&
                         &muRay, phiRay, GRIDRAD, srcRay_Shdo,&
                         &X0, Y0, Z0, XE, YE, ZE, SIDE,&
-                        &TRANSMIT, RADIANCE, isValidRad)
+                        &trans, RADIANCE, isValidRad)
 
                     ! If we got a radiance then store it in RadSend otherwise save
                     !  the information needed to pass to other processors
@@ -2220,7 +2220,7 @@ subroutine shd_mpi__computeRadDir(&
                         if (NINVALID(SIDE) .gt. MAXNRAD)&
                             call shd_mpi__abort('Error [mpi__computeRadDir]: MAXNRAD exceeded by NINVALID(SIDE) 1.')
 
-                        BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, TRANSMIT, RADIANCE(:)/)
+                        BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, trans, RADIANCE(:)/)
                         BndRadIntInfo(NINVALID(SIDE), SIDE) = NRAD
                     end if
                 end if
@@ -2281,12 +2281,12 @@ subroutine shd_mpi__computeRadDir(&
                     if (Ldownx .eq. 1) BndRadRealInfo(1, J, Ldownx) = rtm_obj_%x(1)
                     if (Ldownx .eq. 2) BndRadRealInfo(1, J, Ldownx) = rtm_obj_%x(rtm_obj_%Nx)
                     X = BndRadRealInfo(1, J, Ldownx); Y = BndRadRealInfo(2, J, Ldownx)
-                    Z = BndRadRealInfo(3, J, Ldownx); TRANSMIT = BndRadRealInfo(4, J, Ldownx)
+                    Z = BndRadRealInfo(3, J, Ldownx); trans = BndRadRealInfo(4, J, Ldownx)
                     RADIANCE(:) = BndRadRealInfo(5:4 + shdo_obj_%Nstokes, J, Ldownx)
                     call shd_src__integrateSrcDir(shdo_obj_%Nstokes,&
                         &muRay, phiRay, GRIDRAD, srcRay_Shdo,&
                         &X, Y, Z, XE, YE, ZE, SIDE,&
-                        &TRANSMIT, RADIANCE, isValidRad)
+                        &trans, RADIANCE, isValidRad)
 
                     ! If we got a radiance then store it in RadSend, otherwise
                     ! save information needed to pass to neighboring processors
@@ -2304,7 +2304,7 @@ subroutine shd_mpi__computeRadDir(&
                         NINVALID(SIDE) = NINVALID(SIDE) + 1
                         if (NINVALID(SIDE) .gt. MAXNRAD)&
                             &call shd_mpi__abort('Error [mpi__computeRadDir]: MAXNRAD exceeded by NINVALID(SIDE) 2.')
-                        BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, TRANSMIT, RADIANCE(:)/)
+                        BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, trans, RADIANCE(:)/)
                         BndRadIntInfo(NINVALID(SIDE), SIDE) = BndRadIntInfo(J, Ldownx)
                     end if
                 end do
@@ -2316,12 +2316,12 @@ subroutine shd_mpi__computeRadDir(&
                     if (Ldowny .eq. 3) BndRadRealInfo(2, J, Ldowny) = rtm_obj_%y(1)
                     if (Ldowny .eq. 4) BndRadRealInfo(2, J, Ldowny) = rtm_obj_%y(rtm_obj_%Ny)
                     X = BndRadRealInfo(1, J, Ldowny); Y = BndRadRealInfo(2, J, Ldowny)
-                    Z = BndRadRealInfo(3, J, Ldowny); TRANSMIT = BndRadRealInfo(4, J, Ldowny)
+                    Z = BndRadRealInfo(3, J, Ldowny); trans = BndRadRealInfo(4, J, Ldowny)
                     RADIANCE(:) = BndRadRealInfo(5:4 + shdo_obj_%Nstokes, J, Ldowny)
                     call shd_src__integrateSrcDir(shdo_obj_%Nstokes,&
                         &muRay, phiRay, GRIDRAD, srcRay_Shdo,&
                         &X, Y, Z, XE, YE, ZE, SIDE,&
-                        &TRANSMIT, RADIANCE, isValidRad)
+                        &trans, RADIANCE, isValidRad)
 
                     ! If we got a radiance then store it in RadSend, otherwise
                     ! save information needed to pass to neighboring processors
@@ -2339,7 +2339,7 @@ subroutine shd_mpi__computeRadDir(&
                         NINVALID(SIDE) = NINVALID(SIDE) + 1
                         if (NINVALID(SIDE) .gt. MAXNRAD)&
                             &call shd_mpi__abort('Error [mpi__computeRadDir]: MAXNRAD exceeded by NINVALID(SIDE) 3.')
-                        BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, TRANSMIT, RADIANCE(:)/)
+                        BndRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, trans, RADIANCE(:)/)
                         BndRadIntInfo(NINVALID(SIDE), SIDE) = BndRadIntInfo(J, Ldowny)
                     end if
                 end do
@@ -2420,7 +2420,7 @@ subroutine shd_mpi__computeRadRay(&
     integer :: NL, NS, LINE, SAMP
     logical :: CAMERA_MODE, SENSOR_MODE, isValidRad
     real, parameter  :: EPS = 1.0e-5
-    real(RD_) :: XE, YE, ZE, TRANSMIT, VISRAD(shdo_obj_%Nstokes), RADIANCE(shdo_obj_%Nstokes)
+    real(RD_) :: XE, YE, ZE, trans, VISRAD(shdo_obj_%Nstokes), RADIANCE(shdo_obj_%Nstokes)
     real(RD_) :: X0, Y0, Z0, X1, Y1, Z1, X2, Y2, Z2, X, Y, Z
     real(RD_) :: THETA0, THETA1, PHIR, PHI0, muScat, muRay, phiRay
     real(RD_) :: COSTH, SINTH, SINTH0, SINTH1
@@ -2644,7 +2644,7 @@ subroutine shd_mpi__computeRadRay(&
 
                 ! Integrate the extinction and source function along this ray
                 ! to calculate the Stokes radiance vector for this pixel
-                TRANSMIT = 1.0d0; RADIANCE(:) = 0.0d0
+                trans = 1.0d0; RADIANCE(:) = 0.0d0
                 call shd_src__integrateSrcRay(shdo_obj_%Nstokes,&
                     &NSTPHASE, NSCATANGLE, PHASETAB,&
                     &shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
@@ -2653,7 +2653,7 @@ subroutine shd_mpi__computeRadRay(&
                     &fluxDir, isrcJ_Shdo_, srcJ_Shdo_, YlmSun,&
                     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                     &muRay, phiRay, X0, Y0, Z0,&
-                    &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, isValidRad)
+                    &XE, YE, ZE, SIDE, trans, RADIANCE, isValidRad)
 
                 ! If we got a radiance then store it in RadSend otherwise save
                 !  the information needed to pass to other processors
@@ -2668,7 +2668,7 @@ subroutine shd_mpi__computeRadRay(&
                     NINVALID(SIDE) = NINVALID(SIDE) + 1
                     if (NINVALID(SIDE) .gt. MAXNRAD)&
                         &call shd_mpi__abort('Error [mpi__visualizeRad]: MAXNRAD exceeded by NINVALID(SIDE) 1')
-                    BndSendRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, muRay, phiRay, TRANSMIT, RADIANCE(:)/)
+                    BndSendRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, muRay, phiRay, trans, RADIANCE(:)/)
                     BndSendRadIntInfo(NINVALID(SIDE), SIDE) = IVIS
                 end if
             end if
@@ -2725,7 +2725,7 @@ subroutine shd_mpi__computeRadRay(&
                 Z = BndRecvRadRealInfo(3, J, IBND)
                 muRay = BndRecvRadRealInfo(4, J, IBND)
                 phiRay = BndRecvRadRealInfo(5, J, IBND)
-                TRANSMIT = BndRecvRadRealInfo(6, J, IBND)
+                trans = BndRecvRadRealInfo(6, J, IBND)
                 RADIANCE(:) = BndRecvRadRealInfo(7 : 6+shdo_obj_%Nstokes, J, IBND)
                 call shd_src__integrateSrcRay(shdo_obj_%Nstokes,&
                     &NSTPHASE, NSCATANGLE, PHASETAB,&
@@ -2735,7 +2735,7 @@ subroutine shd_mpi__computeRadRay(&
                     &fluxDir, isrcJ_Shdo_, srcJ_Shdo_, YlmSun,&
                     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                     &muRay, phiRay, X, Y, Z,&
-                    &XE, YE, ZE, SIDE, TRANSMIT, RADIANCE, isValidRad)
+                    &XE, YE, ZE, SIDE, trans, RADIANCE, isValidRad)
 
                 ! If we got a valid radiance then store it in RadSend, otherwise
                 ! save information needed to pass to neighboring processors
@@ -2750,7 +2750,7 @@ subroutine shd_mpi__computeRadRay(&
                     NINVALID(SIDE) = NINVALID(SIDE) + 1
                     if (NINVALID(SIDE) .gt. MAXNRAD)&
                         &call shd_mpi__abort('VISUALIZE_RADIANCE_PAR: MAXNRAD exceeded by NINVALID(SIDE) 2')
-                    BndSendRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, muRay, phiRay, TRANSMIT, RADIANCE(:)/)
+                    BndSendRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, muRay, phiRay, trans, RADIANCE(:)/)
                     BndSendRadIntInfo(NINVALID(SIDE), SIDE) = BndRecvRadIntInfo(J, IBND)
                 end if
             end do
@@ -3246,7 +3246,7 @@ end function shd_mpi__ran
 subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     &EXTINCT, Nstokes, SOURCE, KANG,&
     &GRIDRAD, muRay, phiRay,&
-    &X, Y, Z, SIDE, TRANSMIT, RADIANCE, isValidRad)
+    &X, Y, Z, SIDE, trans, RADIANCE, isValidRad)
 
     ! Integrates the radiative transfer equation tracing a ray starting
     ! at X,Y,Z on boundary (face) SIDE to get the radiance in direction muRay,phiRay.
@@ -3256,9 +3256,9 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     ! are known radiances at the end of the ray path in GRIDRAD, then the
     ! radiance there is interpolated from the four grid points on the face
     ! and isValidRad is returned true. Otherwise isValidRad is returned false.
-    ! TRANSMIT is returned with the transmission from the ray starting point
+    ! trans is returned with the transmission from the ray starting point
     ! to the ending point, and RADIANCE has either the total Stokes radiance or
-    ! the accumulated radiance until the boundary (TRANSMIT and RADIANCE must be
+    ! the accumulated radiance until the boundary (trans and RADIANCE must be
     ! properly initialized on input).  The ending location X,Y,Z and the
     ! subdomain SIDE (1=-X,2=+X,3=-Y,4=+Y) are also returned.
 
@@ -3269,7 +3269,7 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     real, intent(in) :: muRay, phiRay
     real, intent(inout) :: X, Y, Z
     integer, intent(inout) :: SIDE
-    real, intent(inout) :: TRANSMIT, RADIANCE(Nstokes)
+    real, intent(inout) :: trans, RADIANCE(Nstokes)
     logical, intent(out) :: isValidRad
 
     integer :: bitX, bitY, bitZ, iOctant, NXC, NYC, BTEST
@@ -3284,7 +3284,7 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     real(RD_) :: EXT, EXT0, EXT1
     real(RD_) :: SRC(Nstokes), SRCEXT0(Nstokes), SRCEXT1(Nstokes)
     real(RD_) :: EXT0P, SRCEXT0P(Nstokes)
-    real(RD_) :: tau, TRANSCELL, ABSCELL, TRANS, RAD(Nstokes), RAD0(Nstokes)
+    real(RD_) :: tau, transCell, absCell, transTmp, RAD(Nstokes), RAD0(Nstokes)
     data faceGrid/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8/
     data faceOpp/2, 1, 4, 3, 6, 5/
 
@@ -3347,7 +3347,7 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     end if
     if ((ix .lt. 1) .or. (iy .lt. 1) .or. (ix .gt. (Nx + 1)) .or. (iy .gt. (Ny + 1))) then
         write(6, *) 'Bad ix and/or iy', x, y, z, ix, iy, iz, rtm_obj_%x(1), rtm_obj_%x(Nx), rtm_obj_%y(1), rtm_obj_%y(ny), myProc_
-        write(6, *) 'Bad ix and/or iy', side, transmit
+        write(6, *) 'Bad ix and/or iy', side, trans
         call shd_mpi__abort('Error [mpi_integrateRay]: Bad ix and/or iy, see above.')
     end if
     IX = min(NXC, IX)
@@ -3411,7 +3411,7 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
 
     ! Loop until finding a face with known radiances or reaching the boundary
     XE = X; YE = Y; ZE = Z
-    TRANS = TRANSMIT
+    transTmp = trans
     RAD(:) = RADIANCE(:)
     isValidRad = .false.
     do while (.not. isValidRad .and. iCell .gt. 0)
@@ -3436,7 +3436,7 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
         SOZ = (xyz_Rtm_(3, iOpp) - ZE)*CZINV
         SO = min(SOX, SOY, SOZ)
         if (SO .lt. -EPS) then
-            write(6, *) 'SO<0: ', muRay, phiRay, X, Y, Z, SOX, SOY, SOZ, SO, iCell, TRANS
+            write(6, *) 'SO<0: ', muRay, phiRay, X, Y, Z, SOX, SOY, SOZ, SO, iCell, transTmp
             call shd_mpi__abort('Error [mpi__integrateRay]: SO<0, see above.')
         end if
         ! Compute the coordinates of the cell exitting location
@@ -3531,11 +3531,11 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
         EXT = 0.5*(EXT0 + EXT1)
         tau = EXT*SO
         if (tau .ge. 0.5) then
-            TRANSCELL = exp(-tau)
-            ABSCELL = 1.0 - TRANSCELL
+            transCell = exp(-tau)
+            absCell = 1.0 - transCell
         else
-            ABSCELL = tau*(1.0 - 0.5*tau*(1.0 - FRAC13_*tau*(1 - 0.25*tau)))
-            TRANSCELL = 1.0 - ABSCELL
+            absCell = tau*(1.0 - 0.5*tau*(1.0 - FRAC13_*tau*(1 - 0.25*tau)))
+            transCell = 1.0 - absCell
         end if
         if (tau .le. 2.0) then
             if (EXT .eq. 0.0) then
@@ -3555,7 +3555,7 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
             end if
             SRC(:) = 1.0/(EXT0P + EXT1)*(SRCEXT0P(:) + SRCEXT1(:)&
                 &+ (EXT0P*SRCEXT1(:) - EXT1*SRCEXT0P(:))*2.0/(EXT0P + EXT1)&
-                &*(1 - 2/tau + 2*TRANSCELL/ABSCELL))
+                &*(1 - 2/tau + 2*transCell/absCell))
         end if
         SRC(1) = max(SRC(1), 0.0d0)
 
@@ -3563,20 +3563,20 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
         !  If this is a boundary or the transmission is below the
         !  cutoff and we have a valid radiance then set the flag
         !  to stop the tracing and add in the interpolated face radiance.
-        RAD(:) = RAD(:) + TRANS*SRC(:)*ABSCELL
-        TRANS = TRANS*TRANSCELL
+        RAD(:) = RAD(:) + transTmp*SRC(:)*absCell
+        transTmp = transTmp*transCell
         if (RAD(1) .lt. -1.0e-5) then
             write(6, '(3(1X,F5.3),8(1X,E12.5))')&
-                &xe, ye, ze, ext0, ext1, so, tau, trans, src, abscell, rad(:)
+                &xe, ye, ze, ext0, ext1, so, tau, transTmp, src, absCell, rad(:)
         end if
         if (GRIDRAD(1, I1) .ge. 0.0 .and. GRIDRAD(1, I2) .ge. 0.0&
             .and. GRIDRAD(1, I3) .ge. 0.0 .and. GRIDRAD(1, I4) .ge. 0.0) then
             isValidRad = .true.
             RAD0(:) = F1*GRIDRAD(:, I1) + F2*GRIDRAD(:, I2)&
                 &+ F3*GRIDRAD(:, I3) + F4*GRIDRAD(:, I4)
-            RAD(:) = RAD(:) + TRANS*RAD0(:)
-        !else if (TRANS .lt. 1.0e-5) then
-        else if (TRANS .lt. accSolv_) then
+            RAD(:) = RAD(:) + transTmp*RAD0(:)
+        !else if (transTmp .lt. 1.0e-5) then
+        else if (transTmp .lt. accSolv_) then
             isValidRad = .true.
         else
             EXT1 = EXT0
@@ -3586,7 +3586,7 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
     end do
     X = XE; Y = YE; Z = ZE
     RADIANCE(:) = RAD(:)
-    TRANSMIT = TRANS
+    trans = transTmp
     SIDE = iFace
 
 end subroutine shd_mpi__integrateRadRay

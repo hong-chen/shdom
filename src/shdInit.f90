@@ -830,7 +830,7 @@ subroutine shd_init__makeFlux(&
     integer N, L, I
     real(RD_) :: DELTAU, G, OMEGA, F
     real(RD_) :: LAMBDA, R, T, D, CP, CM, A, B, X1, X2
-    real(RD_) :: REFLECT, TRANS, SOURCEP, SOURCEM
+    real(RD_) :: REFLECT, trans, SOURCEP, SOURCEM
     real(RD_) :: RADP1P, RADP1M, RADP2P, RADP2M
     real(RD_) :: MU0, SKYFLUX, GNDFLUX, PLANCK1, PLANCK2, C, tau
     real(RD_) :: EXLP, EXLM, V, DS, B1, B2, SOLPP, SOLPM
@@ -855,7 +855,7 @@ subroutine shd_init__makeFlux(&
         if (DELTAU .lt. 0.0) stop 'Error [_makeFlux]: tau<0.'
         ! Special case for zero optical depth
         if (DELTAU .eq. 0.0) then
-            TRANS = 1.0
+            trans = 1.0
             REFLECT = 0.0
             SOURCEP = 0.0
             SOURCEM = 0.0
@@ -875,15 +875,15 @@ subroutine shd_init__makeFlux(&
             ! Special case for conservative scattering (lambda=0)
             if (LAMBDA .eq. 0.0) then
                 D = 1.0/(1.0 + T*DELTAU)
-                TRANS = D
+                trans = D
                 REFLECT = -R*DELTAU*D
             else
                 X1 = -R
                 X2 = LAMBDA + T
                 EXLP = DEXP(min(LAMBDA*DELTAU, 75.d0))
                 EXLM = 1.0/EXLP
-                TRANS = 2.*LAMBDA/(X2*EXLP + (LAMBDA - T)*EXLM)
-                REFLECT = X1*(EXLP - EXLM)*TRANS/(2.*LAMBDA)
+                trans = 2.*LAMBDA/(X2*EXLP + (LAMBDA - T)*EXLM)
+                REFLECT = X1*(EXLP - EXLM)*trans/(2.*LAMBDA)
                 D = 1.0/(X2**2*EXLP - X1**2*EXLM)
             end if
 
@@ -938,8 +938,8 @@ subroutine shd_init__makeFlux(&
         DIAG(I) = -REFLECT
         DIAG(I + 1) = -REFLECT
         LOWER(I) = 1.0
-        LOWER(I + 1) = -TRANS
-        UPPER(I) = -TRANS
+        LOWER(I + 1) = -trans
+        UPPER(I) = -trans
         UPPER(I + 1) = 1.0
         RHS(I) = SOURCEM
         RHS(I + 1) = SOURCEP

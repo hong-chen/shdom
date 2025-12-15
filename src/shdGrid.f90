@@ -805,12 +805,12 @@ subroutine shd_grid__makeNewGridPts(iDir, iCell, newCell,&
 end subroutine shd_grid__makeNewGridPts
 
 subroutine shd_grid__makeSweepOrder(&
-    &SWEEPORD, GRIDRAD)
+    &sweepOrder, GRIDRAD)
 
     ! Description:
     !   Make the array of grid point sweeping order for each discrete
-    !   ordinate octant (SWEEPORD). Rather than pointing to the grid points
-    !   directly, the elements of SWEEPORD point to the cell (bits 3-30) and
+    !   ordinate octant (sweepOrder). Rather than pointing to the grid points
+    !   directly, the elements of sweepOrder point to the cell (bits 3-30) and
     !   the corner of the cell (bits 0-2). The first index is the grid
     !   point visiting order (1-rtm_obj_%Npts), and the second index refers to the
     !   octant, but is not the octant number. The octant index is translated
@@ -820,7 +820,7 @@ subroutine shd_grid__makeSweepOrder(&
     ! Input:
     !
 
-    integer(kind=I__), intent(out) :: SWEEPORD(rtm_obj_%Npts, *)
+    integer(kind=I__), intent(out) :: sweepOrder(rtm_obj_%Npts, *)
     real(kind=R__)   , intent(out) :: GRIDRAD(rtm_obj_%Npts)
 
     integer(kind=I__) :: Noctant, iOctant, jOctant, NXC, NYC
@@ -901,7 +901,7 @@ subroutine shd_grid__makeSweepOrder(&
         GRIDRAD(iPts) = 1.0
 
         ! Fill in the next entry with the grid cell and corner of this point
-        SWEEPORD(iOrder, jOctant) = ior(ishft(iCellPts, 3), iCorner - 1)
+        sweepOrder(iOrder, jOctant) = ior(ishft(iCellPts, 3), iCorner - 1)
         iOrder = iOrder + 1
         goto 100
 

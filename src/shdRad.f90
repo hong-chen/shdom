@@ -820,7 +820,7 @@ subroutine shd_rad__computeRadDir(&
     integer I, IBC, IANG, JX, JY, K, SIDE
     integer NANGOUT, NXOUT, NYOUT
     logical isValidRad
-    real(RD_) :: X0, Y0, Z0, XE, YE, ZE, TRANSMIT, radI_Shdo(4)
+    real(RD_) :: X0, Y0, Z0, XE, YE, ZE, trans, radI_Shdo(4)
     real MUOUT, PHIOUT, PHID
     real xDomain, yDomain, xStart, yStart
 
@@ -946,11 +946,11 @@ subroutine shd_rad__computeRadDir(&
             X0 = xStart
             do JX = 1, NXOUT
                 IRAD = IRAD + 1
-                TRANSMIT = 1.0d0; radI_Shdo(:) = 0.0d0
+                trans = 1.0d0; radI_Shdo(:) = 0.0d0
                 call shd_src__integrateSrcDir(shdo_obj_%Nstokes,&
                     &MUOUT, PHIOUT, GRIDRAD, src1_Shdo,&
                     &X0, Y0, Z0, XE, YE, ZE, SIDE,&
-                    &TRANSMIT, radI_Shdo, isValidRad)
+                    &trans, radI_Shdo, isValidRad)
                 RADOUT(:, IRAD) = radI_Shdo(1:shdo_obj_%Nstokes)
                 X0 = X0 + OUTPARMS(2)
             end do
@@ -983,7 +983,7 @@ subroutine shd_rad__computeRadRay(&
     integer NL, NS, LINE, SAMP
     logical CAMERA_MODE, isValidRad
     real MURAY, PHIRAY
-    real(RD_) :: XE, YE, ZE, TRANSMIT, VISRAD(shdo_obj_%Nstokes)
+    real(RD_) :: XE, YE, ZE, trans, VISRAD(shdo_obj_%Nstokes)
     real(RD_) :: X0, Y0, Z0, X1, Y1, Z1, X2, Y2, Z2
     real(RD_) :: THETA0, THETA1, PHIR, PHI0
     real(RD_) :: COSTH, SINTH, SINTH0, SINTH1, MU2, PHI2
@@ -1145,7 +1145,7 @@ subroutine shd_rad__computeRadRay(&
 
             ! Integrate the extinction and source function along this ray
             !   to calculate the Stokes radiance vector for this pixel
-            TRANSMIT = 1.0d0; VISRAD(:) = 0.0d0
+            trans = 1.0d0; VISRAD(:) = 0.0d0
             call shd_src__integrateSrcRay(shdo_obj_%Nstokes,&
                 &NSTPHASE, NSCATANGLE, PHASETAB,&
                 &shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
@@ -1154,7 +1154,7 @@ subroutine shd_rad__computeRadRay(&
                 &fluxDir, isrcJ_Shdo_, srcJ_Shdo_, YlmSun,&
                 &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
                 &MU2, PHI2, X0, Y0, Z0,&
-                &XE, YE, ZE, SIDE, TRANSMIT, VISRAD, isValidRad)
+                &XE, YE, ZE, SIDE, trans, VISRAD, isValidRad)
 900         continue
             ! write(6,'(1X,2F8.4,1X,2F11.7,4(1X,F11.6))')&
             !     &X0,Y0,MURAY,PHIRAY,VISRAD(:)
