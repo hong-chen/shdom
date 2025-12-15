@@ -143,14 +143,10 @@ subroutine shd_intg__integratePath(&
     real fluxDir(rtm_obj_%Npts), fluxTot(2, rtm_obj_%Npts)
     real GRIDRAD(shdo_obj_%Nstokes, rtm_obj_%Npts), WORK(shdo_obj_%Nstokes, shdo_obj_%maxNphiA, rtm_obj_%Npts)
 
-    integer I, I1, K, NR, iphiDO, imuDO, IBC, iAngDO, iUpDn, NptsOld
+    integer I, I1, K, NR, iPhiDO, iMuDO, IBC, iAngDO, iUpDn, NptsOld
     integer jOctant, iPts, ip, iorder, iCellPts, iCorner
     real A, minTrans
     save NptsOld
-
-    integer :: count_start, count_rate, count_max
-    integer :: count_end
-    real :: elapsed_time
 
     ! Set the minimum transmission for the cell tracing (1 for single cell)
     minTrans = 1.00
@@ -197,9 +193,9 @@ subroutine shd_intg__integratePath(&
     ! write(*, *) 'Path integration:'
     ! Loop over the zenith angles (downwelling angles must be first)
     iAngDO = 1
-    DO_MU_LOOP: do imuDO = 1, shdo_obj_%Nmu
+    MU_DO_LOOP: do iMuDO = 1, shdo_obj_%Nmu
 
-        if (imuDO .eq. shdo_obj_%Nmu/2 + 1) then
+        if (iMuDO .eq. shdo_obj_%Nmu/2 + 1) then
             ! For the first upwelling angle, make the bottom boundary radiances
             !   for the Lambertian surfaces.  Compute the upwelling bottom
             !   radiances using the downwelling fluxTot.
@@ -216,27 +212,27 @@ subroutine shd_intg__integratePath(&
 
         if (isPol_) then
             call shd_shdo__transSHtoDO(rtm_obj_%Npts, shdo_obj_%Nstokes, prp_obj_%NlegSet, shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
-                &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA(imuDO),&
-                &imuDO, FFTFLAG, CMU1, CPHI1, WSAVE,&
+                &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA(iMuDO),&
+                &iMuDO, FFTFLAG, CMU1, CPHI1, WSAVE,&
                 &isrcJ_Shdo, srcJ_Shdo, WORK)
         else
             call shd_shdo__transSHtoDO_(rtm_obj_%Npts, shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
-                &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA(imuDO),&
-                &imuDO, FFTFLAG, CMU1, CPHI1, WSAVE,&
+                &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA(iMuDO),&
+                &iMuDO, FFTFLAG, CMU1, CPHI1, WSAVE,&
                 &isrcJ_Shdo, srcJ_Shdo, WORK)
         end if
 
         ! Enforce the discrete ordinate I source function to be non-negative
         do I = 1, rtm_obj_%Npts
-            do iphiDO = 1, shdo_obj_%NphiA(imuDO)
-                WORK(1, iphiDO, I) = max(0.0, WORK(1, iphiDO, I))
+            do iPhiDO = 1, shdo_obj_%NphiA(iMuDO)
+                WORK(1, iPhiDO, I) = max(0.0, WORK(1, iPhiDO, I))
             end do
         end do
 
         ! Loop over the azimuthal angles
-        DO_PHI_LOOP: do iphiDO = 1, shdo_obj_%NphiA(imuDO)
+        PHI_DO_LOOP: do iPhiDO = 1, shdo_obj_%NphiA(iMuDO)
 
-            if (shdo_obj_%mu(imuDO) .lt. 0.0) then
+            if (shdo_obj_%mu(iMuDO) .lt. 0.0) then
 
                 ! For downward ordinates, initialize the top boundary radiances
                 iUpDn = 1
@@ -258,14 +254,14 @@ subroutine shd_intg__integratePath(&
                     !   BRDF matrix to do the integration.
                     if (sfc_obj_%isUniform) then
                         call shd_init__makeBotRadU(NBOTPTS, BCPTR(1, 2),&
-                            &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt, imuDO, iphiDO,&
+                            &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt, iMuDO, iPhiDO,&
                             &src_obj_%type, src_obj_%avgWaveLen, src_obj_%mu0, src_obj_%phi0, fluxDir,&
                             &brdf_Shdo,&
                             &shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
                     else
                         call shd_init__makeBotRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
                             &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
-                            &shdo_obj_%mu(imuDO), shdo_obj_%phi(imuDO, iphiDO),&
+                            &shdo_obj_%mu(iMuDO), shdo_obj_%phi(iMuDO, iPhiDO),&
                             &src_obj_%type, src_obj_%avgWaveLen, src_obj_%mu0, src_obj_%phi0, fluxDir,&
                             &shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
                     end if
@@ -282,81 +278,81 @@ subroutine shd_intg__integratePath(&
             if (is1D_) then
 
                 call shd_intg__backIntegrate1D(rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz, shdo_obj_%maxNphiA,&
-                    &sweepOrder, shdo_obj_%mu(imuDO), shdo_obj_%phi(imuDO, iphiDO), minTrans,&
-                    &ext_Rtm_, shdo_obj_%Nstokes, WORK, iphiDO, GRIDRAD)
+                    &sweepOrder, shdo_obj_%mu(iMuDO), shdo_obj_%phi(iMuDO, iPhiDO), minTrans,&
+                    &ext_Rtm_, shdo_obj_%Nstokes, WORK, iPhiDO, GRIDRAD)
 
             else if (is1DYx_ .and. (.not. isMpi_)) then
 
                 call shd_intg__backIntegrate2D(rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz, shdo_obj_%maxNphiA,&
-                    &sweepOrder, shdo_obj_%mu(imuDO), shdo_obj_%phi(imuDO, iphiDO), minTrans,&
-                    &ext_Rtm_, shdo_obj_%Nstokes, WORK, iphiDO, GRIDRAD)
+                    &sweepOrder, shdo_obj_%mu(iMuDO), shdo_obj_%phi(iMuDO, iPhiDO), minTrans,&
+                    &ext_Rtm_, shdo_obj_%Nstokes, WORK, iPhiDO, GRIDRAD)
 
             else
                 if (isPol_) then
 
                     call shd_intg__backIntegrate3D(rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz, shdo_obj_%maxNphiA,&
                         &sweepOrder,&
-                        &shdo_obj_%mu(imuDO), shdo_obj_%phi(imuDO, iphiDO), minTrans, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
-                        &ext_Rtm_, shdo_obj_%Nstokes, WORK, iphiDO, GRIDRAD)
+                        &shdo_obj_%mu(iMuDO), shdo_obj_%phi(iMuDO, iPhiDO), minTrans, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
+                        &ext_Rtm_, shdo_obj_%Nstokes, WORK, iPhiDO, GRIDRAD)
 
                 else
 
                     call shd_intg__backIntegrate3D_(rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz, shdo_obj_%maxNphiA,&
                         &sweepOrder,&
-                        &shdo_obj_%mu(imuDO), shdo_obj_%phi(imuDO, iphiDO), minTrans, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
-                        &ext_Rtm_, WORK, iphiDO, GRIDRAD)
+                        &shdo_obj_%mu(iMuDO), shdo_obj_%phi(iMuDO, iPhiDO), minTrans, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
+                        &ext_Rtm_, WORK, iPhiDO, GRIDRAD)
 
                 end if
             end if
 
-            ! Transfer the radiance for the (imuDO,iphiDO) discrete ordinate from
+            ! Transfer the radiance for the (iMuDO,iPhiDO) discrete ordinate from
             !   GRIDRAD to the work array.
             do I = 1, rtm_obj_%Npts
                 if (GRIDRAD(1, I) .lt. -accSolv_) then
                     if (verbose_ .ge. 4) write(6, *) 'Warning [_integratePath]: Grid point has no value',&
-                        &I, shdo_obj_%mu(imuDO), shdo_obj_%phi(imuDO, iphiDO), GRIDRAD(1, I), rtm_obj_%x(1), rtm_obj_%y(1),&
+                        &I, shdo_obj_%mu(iMuDO), shdo_obj_%phi(iMuDO, iPhiDO), GRIDRAD(1, I), rtm_obj_%x(1), rtm_obj_%y(1),&
                         &xyz_Rtm_(1, I), xyz_Rtm_(2, I), xyz_Rtm_(3, I)
                     ! stop
                     GRIDRAD(1, I) = 0.0
                 else
-                    WORK(:, iphiDO, I) = GRIDRAD(:, I)
+                    WORK(:, iPhiDO, I) = GRIDRAD(:, I)
                     GRIDRAD(1, I) = -1.0
                 end if
             end do
 
             ! Do the sum for the hemispheric fluxTot for this angle
-            A = abs(shdo_obj_%mu(imuDO))*shdo_obj_%wgt(imuDO, iphiDO)
+            A = abs(shdo_obj_%mu(iMuDO))*shdo_obj_%wgt(iMuDO, iPhiDO)
             do I = 1, rtm_obj_%Npts
-                fluxTot(iUpDn, I) = fluxTot(iUpDn, I) + A*WORK(1, iphiDO, I)
+                fluxTot(iUpDn, I) = fluxTot(iUpDn, I) + A*WORK(1, iPhiDO, I)
             end do
 
             ! For a general BRDF surface save the downwelling radiance
             !   at the bottom boundary points.
-            if ((.not. sfc_obj_%isLambertian) .and. (imuDO .le. shdo_obj_%Nmu/2)) then
+            if ((.not. sfc_obj_%isLambertian) .and. (iMuDO .le. shdo_obj_%Nmu/2)) then
                 I1 = NTOPPTS + NBOTPTS*iAngDO
                 do IBC = 1, NBOTPTS
                     I = BCPTR(IBC, 2)
-                    BCRAD(:, IBC + I1) = WORK(:, iphiDO, I)
+                    BCRAD(:, IBC + I1) = WORK(:, iPhiDO, I)
                 end do
             end if
 
             iAngDO = iAngDO + 1
-        end do DO_PHI_LOOP
+        end do PHI_DO_LOOP
 
         ! Transform the radiance to spherical harmonics for this zenith angle
         if (isPol_) then
             call shd_shdo__transDOtoSH(rtm_obj_%Npts, shdo_obj_%Nstokes, prp_obj_%NlegSet, shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
-                &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA(imuDO),&
-                &imuDO, FFTFLAG, CMU2, CPHI2, WSAVE,&
+                &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA(iMuDO),&
+                &iMuDO, FFTFLAG, CMU2, CPHI2, WSAVE,&
                 &iradI_Shdo, WORK, radI_Shdo)
         else
             call shd_shdo__transDOtoSH_(rtm_obj_%Npts, shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
-                &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA(imuDO),&
-                &imuDO, FFTFLAG, CMU2, CPHI2, WSAVE,&
+                &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA(iMuDO),&
+                &iMuDO, FFTFLAG, CMU2, CPHI2, WSAVE,&
                 &iradI_Shdo, WORK, radI_Shdo)
         end if
 
-    end do DO_MU_LOOP
+    end do MU_DO_LOOP
 
     NptsOld = rtm_obj_%Npts
 
