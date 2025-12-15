@@ -181,7 +181,7 @@ subroutine shd_rad__computeDirect(&
     integer IPDIRECT, DI, DJ, DK
     logical CONSTX, CONSTY, HITBOUNDARY
 
-    real(kind=R__) :: lon0, lat0, mu0, phi0
+    real(kind=R__) :: lon0, lat0, muSun0, phiSun0
 
     real(RD_) :: ext0, ssa0, F
     real(RD_) :: PATH
@@ -369,10 +369,10 @@ subroutine shd_rad__computeDirect(&
 
                 lon0 = XI + rtm_obj_%xOffset
                 lat0 = YI + rtm_obj_%yOffset
-                call shd_util__computeSolarAngle(lon0, lat0, mu0, phi0)
+                call shd_util__computeSolarAngle(lon0, lat0, muSun0, phiSun0)
 
                 ! Make the ray direction (opposite to the solar beam)
-                call shd_util__computeRayVect(dble(mu0), dble(phi0), &
+                call shd_util__computeRayVect(dble(muSun0), dble(phiSun0), &
                     cX, cY, cZ, CXINV, CYINV, CZINV, &
                     ratioX, ratioY)
 

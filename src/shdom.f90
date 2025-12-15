@@ -168,7 +168,7 @@ program shdom
 
     ! SRC
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    ! real(kind=R__) :: lat0, lon0, mu0, phi0
+    ! real(kind=R__) :: lat0, lon0, muSun0, phiSun0
     ! integer :: i, j
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
@@ -1136,8 +1136,8 @@ program shdom
         !     lat0 = rtm_obj_%yOffset + (j-1)*rtm_obj_%dy + prp_obj_%yStart
         !     do i = 1, rtm_obj_%Nx
         !         lon0 = rtm_obj_%xOffset + (i-1)*rtm_obj_%dx + prp_obj_%xStart
-        !         call shd_util__computeSolarAngle(lon0, lat0, mu0, phi0)
-        !         print *, lon0, lat0, acos(-mu0)*180.0d0/acos(-1.0d0), 270.0-phi0*180.0d0/acos(-1.0d0)
+        !         call shd_util__computeSolarAngle(lon0, lat0, muSun0, phiSun0)
+        !         print *, lon0, lat0, acos(-muSun0)*180.0d0/acos(-1.0d0), 270.0-phiSun0*180.0d0/acos(-1.0d0)
         !     end do
         ! end do
         ! stop
@@ -1149,8 +1149,8 @@ program shdom
         !     lat0 = -90.0 + (j-1)*1.0
         !     do i = 1, 361
         !         lon0 = (i-1)*1.0
-        !         call shd_util__computeSolarAngle(lon0, lat0, mu0, phi0)
-        !         print *, lon0, lat0, acos(-mu0)*180.0d0/acos(-1.0d0), 270.0-phi0*180.0d0/acos(-1.0d0)
+        !         call shd_util__computeSolarAngle(lon0, lat0, muSun0, phiSun0)
+        !         print *, lon0, lat0, acos(-muSun0)*180.0d0/acos(-1.0d0), 270.0-phiSun0*180.0d0/acos(-1.0d0)
         !     end do
         ! end do
         ! stop

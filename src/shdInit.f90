@@ -86,7 +86,7 @@ module shd_init
 
     public :: shd_init__checkSfcU
 
-    real(kind=R__) :: lon0, lat0, mu0, phi0
+    real(kind=R__) :: lon0, lat0, muSun0, phiSun0
 
 contains
 
@@ -729,14 +729,14 @@ subroutine shd_init__makeRad(&
             if (src_obj_%doVariableSolar) then
                 lon0 = prp_obj_%xStart + (IX-1)*rtm_obj_%dx + rtm_obj_%xOffset
                 lat0 = prp_obj_%yStart + (IY-1)*rtm_obj_%dy + rtm_obj_%yOffset
-                call shd_util__computeSolarAngle(lon0, lat0, mu0, phi0)
+                call shd_util__computeSolarAngle(lon0, lat0, muSun0, phiSun0)
             else
-                mu0 = muSun
+                muSun0 = muSun
             end if
 
             ! Call the Eddington flux routine
             call shd_init__makeFlux(NLAYER, tauZ, ssaZ, asyZ,&
-                &tempZ, DELTAM, SRCTYPE, SOLARFLUX, mu0,&
+                &tempZ, DELTAM, SRCTYPE, SOLARFLUX, muSun0,&
                 &sfc_obj_%avgTemp, GNDEMIS, SKYRAD, UNITS, WAVENO, WAVELEN,&
                 &FLUXES)
 
@@ -882,8 +882,8 @@ subroutine shd_init__makeFlux(&
                 X2 = LAMBDA + T
                 EXLP = DEXP(min(LAMBDA*DELTAU, 75.d0))
                 EXLM = 1.0/EXLP
-                trans = 2.*LAMBDA/(X2*EXLP + (LAMBDA - T)*EXLM)
-                REFLECT = X1*(EXLP - EXLM)*trans/(2.*LAMBDA)
+                trans = 2.0*LAMBDA/(X2*EXLP + (LAMBDA - T)*EXLM)
+                REFLECT = X1*(EXLP - EXLM)*trans/(2.0*LAMBDA)
                 D = 1.0/(X2**2*EXLP - X1**2*EXLM)
             end if
 
@@ -1213,14 +1213,14 @@ subroutine shd_init__makeBotRadV(&
             if (src_obj_%doVariableSolar) then
                 lon0 = xyz_Rtm_(1, I) + rtm_obj_%xOffset
                 lat0 = xyz_Rtm_(2, I) + rtm_obj_%yOffset
-                call shd_util__computeSolarAngle(lon0, lat0, mu0, phi0)
+                call shd_util__computeSolarAngle(lon0, lat0, muSun0, phiSun0)
             else
-                mu0  = muSun
-                phi0 = phiSun
+                muSun0  = muSun
+                phiSun0 = phiSun
             end if
 
             call shd_sfc__brdfSurface(sfc_obj_%type(2:2), brdf_Rtm_(2:sfc_obj_%Npar, IBC), WAVELEN,&
-                &MU2, PHI2, mu0, phi0, NSTOKES, REFLECT)
+                &MU2, PHI2, muSun0, phiSun0, NSTOKES, REFLECT)
 
             BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1) + &
                 OPI_*REFLECT(1:NSTOKES, 1)*fluxDir(I)
