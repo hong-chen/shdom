@@ -204,7 +204,9 @@ subroutine shd_util__findCell(&
 
     !   Locates the grid cell in the tree structure containing the
     ! specified point (x,y,z), and returns the cell pointer iCell.
-    ! First the base grid cell is found (using rtm_obj_%Nx,rtm_obj_%Ny,rtm_obj_%Nz, rtm_obj_%x,rtm_obj_%y,rtm_obj_%z),
+    ! First the base grid cell is found (using
+    ! rtm_obj_%Nx,rtm_obj_%Ny,rtm_obj_%Nz,
+    ! rtm_obj_%x,rtm_obj_%y,rtm_obj_%z),
     ! and the tree is traced down to find the smallest cell containing
     ! the point.
 
@@ -834,7 +836,7 @@ real(RD_) function integralHigh(x)
 
 end function integralHigh
 
-subroutine shd_util__ssort_i(x, y, N, KFLAG)
+subroutine shd_util__ssort_i(x, y, N, kFlag)
 
     !╭──────────────────────────────────────────────────────────────╮!
     !***PURPOSE  Sort an array and optionally make the same interchanges in
@@ -857,7 +859,7 @@ subroutine shd_util__ssort_i(x, y, N, KFLAG)
     !      x - array of values to be sorted   (usually abscissas)
     !      y - array to be (optionally) carried along
     !      N - number of values in array x to be sorted
-    !      KFLAG - control parameter
+    !      kFlag - control parameter
     !            =  2  means sort x in increasing order and carry y along.
     !            =  1  means sort x in increasing order (ignoring y)
     !            = -1  means sort x in decreasing order (ignoring y)
@@ -869,7 +871,7 @@ subroutine shd_util__ssort_i(x, y, N, KFLAG)
     !╰──────────────────────────────────────────────────────────────╯!
 
     ! Scalar Arguments
-    integer KFLAG, N
+    integer kFlag, N
 
     ! Array Arguments
     !real x(*), y(*)
@@ -895,13 +897,13 @@ subroutine shd_util__ssort_i(x, y, N, KFLAG)
         stop 'Error [_ssort_i]: The number of values to be sorted is not positive.'
     end if
 
-    KK = abs(KFLAG)
+    KK = abs(kFlag)
     if (KK .ne. 1 .and. KK .ne. 2) then
         stop 'Error [_ssort_i]: The sort control parameter, K, is not 2, 1, -1, or -2.'
     end if
 
     ! Alter array x to get decreasing order if needed
-    if (KFLAG .le. -1) then
+    if (kFlag .le. -1) then
         do 10 I = 1, NN
             x(I) = -x(I)
 10      continue
@@ -1116,7 +1118,7 @@ subroutine shd_util__ssort_i(x, y, N, KFLAG)
     GO TO 170
 
     ! Clean up
-190 if (KFLAG .le. -1) then
+190 if (kFlag .le. -1) then
         do 200 I = 1, NN
             x(I) = -x(I)
 200     continue
@@ -1126,7 +1128,7 @@ subroutine shd_util__ssort_i(x, y, N, KFLAG)
 
 end subroutine shd_util__ssort_i
 
-subroutine shd_util__ssort_r(x, y, N, KFLAG)
+subroutine shd_util__ssort_r(x, y, N, kFlag)
 
     !╭──────────────────────────────────────────────────────────────╮!
     !***PURPOSE  Sort an array and optionally make the same interchanges in
@@ -1149,7 +1151,7 @@ subroutine shd_util__ssort_r(x, y, N, KFLAG)
     !      x - array of values to be sorted   (usually abscissas)
     !      y - array to be (optionally) carried along
     !      N - number of values in array x to be sorted
-    !      KFLAG - control parameter
+    !      kFlag - control parameter
     !            =  2  means sort x in increasing order and carry y along.
     !            =  1  means sort x in increasing order (ignoring y)
     !            = -1  means sort x in decreasing order (ignoring y)
@@ -1161,7 +1163,7 @@ subroutine shd_util__ssort_r(x, y, N, KFLAG)
     !╰──────────────────────────────────────────────────────────────╯!
 
     ! Scalar Arguments
-    integer KFLAG, N
+    integer kFlag, N
 
     ! Array Arguments
     !real x(*), y(*)
@@ -1187,13 +1189,13 @@ subroutine shd_util__ssort_r(x, y, N, KFLAG)
         stop 'Error [_ssort_r]: The number of values to be sorted is not positive.'
     end if
 
-    KK = abs(KFLAG)
+    KK = abs(kFlag)
     if (KK .ne. 1 .and. KK .ne. 2) then
         stop 'Error [_ssort_r]: The sort control parameter, K, is not 2, 1, -1, or -2.'
     end if
 
     ! Alter array x to get decreasing order if needed
-    if (KFLAG .le. -1) then
+    if (kFlag .le. -1) then
         do 10 I = 1, NN
             x(I) = -x(I)
 10      continue
@@ -1408,7 +1410,7 @@ subroutine shd_util__ssort_r(x, y, N, KFLAG)
     GO TO 170
 
     ! Clean up
-190 if (KFLAG .le. -1) then
+190 if (kFlag .le. -1) then
         do 200 I = 1, NN
             x(I) = -x(I)
 200     continue
@@ -1418,14 +1420,14 @@ subroutine shd_util__ssort_r(x, y, N, KFLAG)
 
 end subroutine shd_util__ssort_r
 
-function indexAt(x, x1) result(i)
+function indexAt(x0, x) result(i)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    ! Locates the position of 'x1' in the sorted array 'x' using binary search.
+    ! Locates the position of 'x0' in the sorted array 'x' using binary search.
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
+    real(kind=R__), intent(in) :: x0     ! value to find
     real(kind=R__), intent(in) :: x(:)   ! sorted array
-    real(kind=R__), intent(in) :: x1     ! value to find
     integer(kind=I__) :: i               ! return index
     integer :: low, high, mid
     integer :: n
@@ -1437,10 +1439,10 @@ function indexAt(x, x1) result(i)
     do while (low .le. high)
         mid = low + (high - low) / 2  ! Avoids potential integer overflow
 
-        if (x(mid) .eq. x1) then
+        if (x(mid) .eq. x0) then
             i = mid
             return
-        else if (x(mid) .lt. x1) then
+        else if (x(mid) .lt. x0) then
             low = mid + 1
         else
             high = mid - 1
@@ -1449,7 +1451,7 @@ function indexAt(x, x1) result(i)
 
     ! If the loop terminates, the value was not found.
     ! The 'low' index is the insertion point (the index of the first
-    ! element greater than x1, or n+1 if all elements are smaller).
+    ! element greater than x0, or n+1 if all elements are smaller).
     i = low
 
 end function indexAt
@@ -1473,23 +1475,23 @@ elemental pure function distKm(lon1_deg, lat1_deg, h1_km, &
     real(kind=R__) :: N1, N2
     real(kind=R__) :: x1, y1, z1, x2, y2, z2
 
-    ! --- convert degrees → radians ---
+    ! convert degrees to radians
     lon1 = lon1_deg * DTOR_
     lat1 = lat1_deg * DTOR_
     lon2 = lon2_deg * DTOR_
     lat2 = lat2_deg * DTOR_
 
-    ! --- compute sin/cos efficiently ---
+    ! compute sin/cos efficiently
     call sin_cos(lat1, sinlat1, coslat1)
     call sin_cos(lon1, sinlon1, coslon1)
     call sin_cos(lat2, sinlat2, coslat2)
     call sin_cos(lon2, sinlon2, coslon2)
 
-    ! --- radii of curvature ---
+    ! radii of curvature
     N1 = planetRadiusA_ / sqrt(1.0 - E2_ * sinlat1 * sinlat1)
     N2 = planetRadiusA_ / sqrt(1.0 - E2_ * sinlat2 * sinlat2)
 
-    ! --- ECEF coordinates (km) ---
+    ! ECEF coordinates (km, Earth-Centered, Earth-Fixed coordinates)
     x1 = (N1 + h1_km) * coslat1 * coslon1
     y1 = (N1 + h1_km) * coslat1 * sinlon1
     z1 = ((1.0 - E2_) * N1 + h1_km) * sinlat1
@@ -1498,7 +1500,7 @@ elemental pure function distKm(lon1_deg, lat1_deg, h1_km, &
     y2 = (N2 + h2_km) * coslat2 * sinlon2
     z2 = ((1.0 - E2_) * N2 + h2_km) * sinlat2
 
-    ! --- Euclidean distance ---
+    ! Euclidean distance
     dist_km = sqrt((x1 - x2)**2 + (y1 - y2)**2 + (z1 - z2)**2)
 
 end function distKm
