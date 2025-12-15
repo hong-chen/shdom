@@ -1916,7 +1916,7 @@ subroutine shd_io__outputCamRad(&
     &INSAVEFILE, OUTSAVEFILE,&
     &doDeltaM,&
     &SPLITACC, SHACC, SOLACC, MAXITER, TOTITER,&
-    &IVIS, VISOUT, OUTPARMS, OUTFILE)
+    &iRad, VISOUT, OUTPARMS, OUTFILE)
 
     ! Writes the visualization image in PGM binary format with either
     ! one byte or two byte pixels.  The PGM binary format (P5) has an
@@ -1924,7 +1924,7 @@ subroutine shd_io__outputCamRad(&
     ! (here the SHDOM input parameters), followed by the byte or two byte
     ! image pixels.
 
-    integer MAXITER, TOTITER, IVIS
+    integer MAXITER, TOTITER, iRad
     logical, intent(in) :: doDeltaM
     real SOLACC, SPLITACC, SHACC
     real OUTPARMS(*)

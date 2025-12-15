@@ -2399,21 +2399,21 @@ subroutine shd_mpi__computeRadRay(&
     &doDeltaM,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &fluxDir, FLUXES,&
-    &parms_Out, IVIS, VISOUT)
+    &parms_Out, iRad, radRay)
 
-    ! Computes Stokes radiances (output in VISOUT) for the visualization
+    ! Computes Stokes radiances (output in radRay) for the visualization
     !   modes: 1) camera mode,
     !          2) cross track scanning,
     !          3) user-specified sensor mode.
 
-    integer, intent(inout) :: IVIS
+    integer, intent(inout) :: iRad
     integer, intent(in) :: MAXNBC, NTOPPTS, NBOTPTS
     integer, intent(in) :: BCPTR(MAXNBC, 2)
     logical, intent(in) :: doDeltaM
     real, intent(in) :: BCRAD(shdo_obj_%Nstokes, *)
     real, intent(in) :: fluxDir(rtm_obj_%Npts), FLUXES(2, rtm_obj_%Npts)
     real, intent(in) :: parms_Out(*)
-    real, intent(out) :: VISOUT(shdo_obj_%Nstokes, *)
+    real, intent(out) :: radRay(shdo_obj_%Nstokes, *)
 
 #if HAS_MPI
     integer :: NangScat, NphaSet, I, J, L, N
@@ -2509,7 +2509,7 @@ subroutine shd_mpi__computeRadRay(&
     LINE_LOOP: do LINE = 1, NL
         SAMP_LOOP: do SAMP = 1, NS
 
-            IVIS = IVIS + 1
+            iRad = iRad + 1
 
             if (isCameraMode) then
 
@@ -2603,14 +2603,14 @@ subroutine shd_mpi__computeRadRay(&
 
             end if
 
-            !write(*, *) IVIS, X0, Y0, Z0, 180.0/DPI_*COSTH, 180.0/DPI_*PHIR
+            !write(*, *) iRad, X0, Y0, Z0, 180.0/DPI_*COSTH, 180.0/DPI_*PHIR
 
             ! Extrapolate ray to domain top if above
             if (Z0 .gt. rtm_obj_%z(rtm_obj_%Nz)) then
                 if (COSTH .ge. 0.0) then
                     Ndone = Ndone + 1
                     RadSend(:, Ndone) = 0.0
-                    IndexSend(Ndone) = IVIS
+                    IndexSend(Ndone) = iRad
                     cycle
                 end if
                 R = (rtm_obj_%z(rtm_obj_%Nz) - Z0)/COSTH
@@ -2663,14 +2663,14 @@ subroutine shd_mpi__computeRadRay(&
                     if (Ndone .gt. MAXNRAD)&
                         &call shd_mpi__abort('Error [mpi__visualizeRad]: MAXNRAD exceeded by Ndone 1')
                     RadSend(:, Ndone) = RADIANCE(:)
-                    IndexSend(Ndone) = IVIS
+                    IndexSend(Ndone) = iRad
                 else
                     if (SIDE .lt. 1 .or. SIDE .gt. 4) call shd_mpi__abort('Error [mpi__visualizeRad]: invalid SIDE 1')
                     NINVALID(SIDE) = NINVALID(SIDE) + 1
                     if (NINVALID(SIDE) .gt. MAXNRAD)&
                         &call shd_mpi__abort('Error [mpi__visualizeRad]: MAXNRAD exceeded by NINVALID(SIDE) 1')
                     BndSendRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, muRay, phiRay, trans, RADIANCE(:)/)
-                    BndSendRadIntInfo(NINVALID(SIDE), SIDE) = IVIS
+                    BndSendRadIntInfo(NINVALID(SIDE), SIDE) = iRad
                 end if
             end if
         end do SAMP_LOOP
@@ -2774,7 +2774,7 @@ subroutine shd_mpi__computeRadRay(&
     else
         ! Put the radiances finished by the master processor in the list
         do i = 1, Ndone
-            VISOUT(:, IndexSend(i)) = RadSend(:, i)
+            radRay(:, IndexSend(i)) = RadSend(:, i)
         end do
         ! Receive the radiances from all the other processors
         irq = 0
@@ -2790,7 +2790,7 @@ subroutine shd_mpi__computeRadRay(&
         call mpi_waitall(irq, requests, status, ierr)
         do iproc = 1, Nproc_ - 1
             do i = 1, NradRecv(iproc)
-                VISOUT(:, IndexRecv(i, iproc)) = RadRecv(:, i, iproc)
+                radRay(:, IndexRecv(i, iproc)) = RadRecv(:, i, iproc)
             end do
         end do
     end if
@@ -2802,26 +2802,26 @@ subroutine shd_mpi__computeRadRay(&
     deallocate(YlmSun)
     if (allocated(phaTab)) deallocate(phaTab)
 
-    ! On the master processor convert VISOUT(2:,*) from Stokes parameters
+    ! On the master processor convert radRay(2:,*) from Stokes parameters
     ! to DOLP, AOLP, DOCP
     if (myProc_ .eq. 0) then
         if (isPol_) then
             N = NL*NS
-            do I = IVIS - N + 1, IVIS
-                VISRAD(:) = VISOUT(:, I)
+            do I = iRad - N + 1, iRad
+                VISRAD(:) = radRay(:, I)
                 if (VISRAD(1) .gt. 0.0) then
                     ! Output degree (0 to 1) and angle (-180 to 180) of linear polarization
-                    VISOUT(2, I) = sqrt(VISRAD(2)**2 + VISRAD(3)**2)/VISRAD(1)
-                    VISOUT(3, I) = RTOD_*0.5*atan2(VISRAD(3), VISRAD(2))
+                    radRay(2, I) = sqrt(VISRAD(2)**2 + VISRAD(3)**2)/VISRAD(1)
+                    radRay(3, I) = RTOD_*0.5*atan2(VISRAD(3), VISRAD(2))
                     if (isPol4_) then
                         ! Output degree of circular polarization (-1 to 1)
-                        VISOUT(4, I) = VISRAD(4)/VISRAD(1)
+                        radRay(4, I) = VISRAD(4)/VISRAD(1)
                     end if
                 end if
             end do
             ! Choose the best range for the angle of linear polarization (-90 to 90 or 0 to 180)
             allocate(AOLP(N))
-            AOLP(:) = VISOUT(3, IVIS - N + 1:IVIS)
+            AOLP(:) = radRay(3, iRad - N + 1:iRad)
             MEAN = sum(AOLP(:))/N
             STD1 = sqrt(sum((AOLP(:) - MEAN)**2)/N)
             where (AOLP(:) .lt. 0.0)
@@ -2830,7 +2830,7 @@ subroutine shd_mpi__computeRadRay(&
             MEAN = sum(AOLP(:))/N
             STD2 = sqrt(sum((AOLP(:) - MEAN)**2)/N)
             if (STD2 .lt. STD1) then
-                VISOUT(3, IVIS - N + 1:IVIS) = AOLP(:)
+                radRay(3, iRad - N + 1:iRad) = AOLP(:)
             end if
             deallocate(AOLP)
         end if

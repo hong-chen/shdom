@@ -967,18 +967,18 @@ subroutine shd_rad__computeRadRay(&
     &doDeltaM,&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &fluxDir, FLUXES,&
-    &OUTPARMS, IVIS, VISOUT)
+    &OUTPARMS, iRad, radRay)
 
-    !   Computes Stokes radiances (output in VISOUT) for the visualization
+    !   Computes Stokes radiances (output in radRay) for the visualization
     !  modes: 1) camera mode, and 2) cross track scanning.
 
-    integer IVIS
+    integer iRad
     integer MAXNBC, NTOPPTS, NBOTPTS
     integer BCPTR(MAXNBC, 2)
     logical doDeltaM
     real BCRAD(shdo_obj_%Nstokes, *)
     real fluxDir(rtm_obj_%Npts), FLUXES(2, rtm_obj_%Npts)
-    real OUTPARMS(*), VISOUT(shdo_obj_%Nstokes, *)
+    real OUTPARMS(*), radRay(shdo_obj_%Nstokes, *)
     integer NangScat, NphaSet, I, J, L, N, SIDE
     integer NL, NS, LINE, SAMP
     logical isCameraMode, isValidRad
@@ -1036,7 +1036,7 @@ subroutine shd_rad__computeRadRay(&
     ! Loop over pixels in image
     do LINE = 1, NL
         do SAMP = 1, NS
-            IVIS = IVIS + 1
+            iRad = iRad + 1
 
             if (isCameraMode) then
                 ! Camera mode:
@@ -1157,19 +1157,19 @@ subroutine shd_rad__computeRadRay(&
 900         continue
             ! write(6,'(1X,2F8.4,1X,2F11.7,4(1X,F11.6))')&
             !     &X0,Y0,muRay,phiRay,VISRAD(:)
-            VISOUT(1, IVIS) = VISRAD(1)
+            radRay(1, iRad) = VISRAD(1)
             if (VISRAD(1) .gt. 0.0) then
                 if (isPol_) then
                     ! Output degree (0 to 1) and angle (-180 to 180) of linear polarization
-                    VISOUT(2, IVIS) = sqrt(VISRAD(2)**2 + VISRAD(3)**2)/VISRAD(1)
-                    VISOUT(3, IVIS) = DTOR_*0.5*atan2(VISRAD(3), VISRAD(2))
+                    radRay(2, iRad) = sqrt(VISRAD(2)**2 + VISRAD(3)**2)/VISRAD(1)
+                    radRay(3, iRad) = DTOR_*0.5*atan2(VISRAD(3), VISRAD(2))
                 end if
                 if (isPol4_) then
                     ! Output degree of circular polarization (-1 to 1)
-                    VISOUT(4, IVIS) = VISRAD(4)/VISRAD(1)
+                    radRay(4, iRad) = VISRAD(4)/VISRAD(1)
                 end if
             else
-                VISOUT(2:, IVIS) = 0.0
+                radRay(2:, iRad) = 0.0
             end if
         end do
     end do
@@ -1180,7 +1180,7 @@ subroutine shd_rad__computeRadRay(&
         ! Choose the best range for the angle of linear polarization (-90 to 90 or 0 to 180)
         N = NL*NS
         allocate(AOLP(N))
-        AOLP(:) = VISOUT(3, IVIS - N + 1:IVIS)
+        AOLP(:) = radRay(3, iRad - N + 1:iRad)
         MEAN = sum(AOLP(:))/N
         STD1 = sqrt(sum((AOLP(:) - MEAN)**2)/N)
         where (AOLP(:) < 0.0)
@@ -1189,7 +1189,7 @@ subroutine shd_rad__computeRadRay(&
         MEAN = sum(AOLP(:))/N
         STD2 = sqrt(sum((AOLP(:) - MEAN)**2)/N)
         if (STD2 < STD1) then
-            VISOUT(3, IVIS - N + 1:IVIS) = AOLP(:)
+            radRay(3, iRad - N + 1:iRad) = AOLP(:)
         end if
         deallocate(AOLP)
     end if
