@@ -562,7 +562,7 @@ end subroutine shd_src__computeSrcDir
 
 subroutine shd_src__integrateSrcRay(&
     &NSTOKES,&
-    &NSTPHASE, NSCATANGLE, PHASETAB,&
+    &NSTPHASE, NSCATANGLE, phaTab,&
     &ML, MM, NLM,&
     &NMU, NPHI0MAX, NPHI0, muDO, phiDO, WTDO,&
     &doDeltaM, SRCTYPE, WAVELEN, muSun, phiSun,&
@@ -592,7 +592,7 @@ subroutine shd_src__integrateSrcRay(&
     real BCRAD(*)
     real fluxDir(rtm_obj_%Npts), srcJ_Shdo(NSTOKES, *)
     real YlmSun(prp_obj_%NlegSet, NLM)
-    real PHASETAB(NSTPHASE, prp_obj_%Npha, NSCATANGLE)
+    real phaTab(NSTPHASE, prp_obj_%Npha, NSCATANGLE)
     real(RD_) :: muRay, phiRay, X0, Y0, Z0, XE, YE, ZE
     real(RD_) :: trans, radI_Shdo(NSTOKES)
     character(len=1) :: SRCTYPE
@@ -656,8 +656,8 @@ subroutine shd_src__integrateSrcRay(&
             J = min(NSCATANGLE - 1, int(F))
             F = F - J
             do I = 1, prp_obj_%Npha
-                scatVect(1:NSTPHASE, I)&
-                    &= (1 - F)*PHASETAB(:, I, J) + F*PHASETAB(:, I, J + 1)
+                scatVect(1:NSTPHASE, I) = &
+                    (1 - F)*phaTab(:, I, J) + F*phaTab(:, I, J + 1)
                 if (isPol_) then
                     call shd_src__rotatePolarPlane(NSTOKES, muScat, muSun,&
                         &sngl(muRay), phiSun - sngl(phiRay), scatVect(:, I))

@@ -2427,7 +2427,7 @@ subroutine shd_mpi__computeRadRay(&
     real(RD_) :: U, V, UP, VP, COSDELPHI, ROTANG, R
     real(RD_) :: DIST, D, RX, RY, RZ, SCANANG
     integer, parameter :: MAXSCATANG = 721
-    real, allocatable :: YlmSun(:, :), PHASETAB(:, :, :)
+    real, allocatable :: YlmSun(:, :), phaTab(:, :, :)
     real              :: MEAN, STD1, STD2
     real, allocatable :: AOLP(:)
 
@@ -2457,9 +2457,9 @@ subroutine shd_mpi__computeRadRay(&
         if (doDeltaM .and. prp_obj_%Npha .gt. 0) then
             NSCATANGLE = max(36, min(MAXSCATANG, 2*prp_obj_%Nleg))
             NSTPHASE = min(prp_obj_%NlegSet, 2)
-            allocate(PHASETAB(NSTPHASE, prp_obj_%Npha, NSCATANGLE))
+            allocate(phaTab(NSTPHASE, prp_obj_%Npha, NSCATANGLE))
             call shd_scat__computePhase(NSCATANGLE, prp_obj_%Npha, NSTPHASE,&
-                &shdo_obj_%Nstokes, shdo_obj_%maxNl, prp_obj_%NlegSet, prp_obj_%Nleg, leg_Rtm_, PHASETAB)
+                &shdo_obj_%Nstokes, shdo_obj_%maxNl, prp_obj_%NlegSet, prp_obj_%Nleg, leg_Rtm_, phaTab)
         end if
     end if
 
@@ -2506,8 +2506,9 @@ subroutine shd_mpi__computeRadRay(&
     Ndone = 0
 
     ! Loop over pixels in image
-    do LINE = 1, NL
-        do SAMP = 1, NS
+    LINE_LOOP: do LINE = 1, NL
+        SAMP_LOOP: do SAMP = 1, NS
+
             IVIS = IVIS + 1
 
             if (isCameraMode) then
@@ -2646,7 +2647,7 @@ subroutine shd_mpi__computeRadRay(&
                 ! to calculate the Stokes radiance vector for this pixel
                 trans = 1.0d0; RADIANCE(:) = 0.0d0
                 call shd_src__integrateSrcRay(shdo_obj_%Nstokes,&
-                    &NSTPHASE, NSCATANGLE, PHASETAB,&
+                    &NSTPHASE, NSCATANGLE, phaTab,&
                     &shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
                     &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
                     &doDeltaM, src_obj_%type, src_obj_%avgWaveLen, src_obj_%mu0, src_obj_%phi0,&
@@ -2672,8 +2673,8 @@ subroutine shd_mpi__computeRadRay(&
                     BndSendRadIntInfo(NINVALID(SIDE), SIDE) = IVIS
                 end if
             end if
-        end do
-    end do
+        end do SAMP_LOOP
+    end do LINE_LOOP
 
     ! Cycle over the passing of info between processors and doing more
     !  partial radiance integrations until all rays have been finished
@@ -2728,7 +2729,7 @@ subroutine shd_mpi__computeRadRay(&
                 trans = BndRecvRadRealInfo(6, J, IBND)
                 RADIANCE(:) = BndRecvRadRealInfo(7 : 6+shdo_obj_%Nstokes, J, IBND)
                 call shd_src__integrateSrcRay(shdo_obj_%Nstokes,&
-                    &NSTPHASE, NSCATANGLE, PHASETAB,&
+                    &NSTPHASE, NSCATANGLE, phaTab,&
                     &shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
                     &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
                     &doDeltaM, src_obj_%type, src_obj_%avgWaveLen, src_obj_%mu0, src_obj_%phi0,&
@@ -2741,15 +2742,16 @@ subroutine shd_mpi__computeRadRay(&
                 ! save information needed to pass to neighboring processors
                 if (isValidRad) then
                     Ndone = Ndone + 1
-                    if (Ndone .gt. MAXNRAD)&
-                        &call shd_mpi__abort('VISUALIZE_RADIANCE_PAR: MAXNRAD exceeded by Ndone 2')
+                    if (Ndone .gt. MAXNRAD) &
+                        call shd_mpi__abort('Error [mpi__computeRadRay]: MAXNRAD exceeded by Ndone 2')
                     RadSend(:, Ndone) = RADIANCE(:)
                     IndexSend(Ndone) = BndRecvRadIntInfo(J, IBND)
                 else
-                    if (SIDE .lt. 1 .or. SIDE .gt. 4) call shd_mpi__abort('VISUALIZE_RADIANCE_PAR: invalid SIDE 2')
+                    if (SIDE .lt. 1 .or. SIDE .gt. 4) &
+                        call shd_mpi__abort('Error [mpi__computeRadRay]: invalid SIDE 2')
                     NINVALID(SIDE) = NINVALID(SIDE) + 1
-                    if (NINVALID(SIDE) .gt. MAXNRAD)&
-                        &call shd_mpi__abort('VISUALIZE_RADIANCE_PAR: MAXNRAD exceeded by NINVALID(SIDE) 2')
+                    if (NINVALID(SIDE) .gt. MAXNRAD) &
+                        call shd_mpi__abort('Error [mpi__computeRadRay]: MAXNRAD exceeded by NINVALID(SIDE) 2')
                     BndSendRadRealInfo(:, NINVALID(SIDE), SIDE) = (/XE, YE, ZE, muRay, phiRay, trans, RADIANCE(:)/)
                     BndSendRadIntInfo(NINVALID(SIDE), SIDE) = BndRecvRadIntInfo(J, IBND)
                 end if
@@ -2798,7 +2800,7 @@ subroutine shd_mpi__computeRadRay(&
     deallocate(BndSendRadRealInfo, BndSendRadIntInfo)
     deallocate(BndRecvRadRealInfo, BndRecvRadIntInfo)
     deallocate(YlmSun)
-    if (allocated(PHASETAB)) deallocate(PHASETAB)
+    if (allocated(phaTab)) deallocate(phaTab)
 
     ! On the master processor convert VISOUT(2:,*) from Stokes parameters
     ! to DOLP, AOLP, DOCP
