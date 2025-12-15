@@ -98,22 +98,27 @@ module shd_util
 
 contains
 
-subroutine shd_util__sumData(IFLAG, WT, N, data, SUMDATA)
+subroutine shd_util__sumData(&
+    iFlag, wgt, Ndata, data_in, &
+    data_sum)
 
     ! Sums an output array over the k-distribution.
-    ! If IFLAG=0 then the output array is set to the input times the weight.
+    ! If iFlag=0 then the output array is set to the input times the weight.
 
-    integer, intent(in) :: IFLAG, N
-    real, intent(in)  :: WT, data(N)
-    real, intent(out) :: SUMDATA(N)
-    integer :: I
-    if (IFLAG .eq. 0) then
-        do I = 1, N
-            SUMDATA(I) = WT*data(I)
+    integer, intent(in) :: iFlag, Ndata
+    real,    intent(in) :: wgt, data_in(Ndata)
+
+    real, intent(out) :: data_sum(Ndata)
+
+    integer :: iData
+
+    if (iFlag .eq. 0) then
+        do iData = 1, Ndata
+            data_sum(iData) = wgt*data_in(iData)
         end do
     else
-        do I = 1, N
-            SUMDATA(I) = SUMDATA(I) + WT*data(I)
+        do iData = 1, Ndata
+            data_sum(iData) = data_sum(iData) + wgt*data_in(iData)
         end do
     end if
 
@@ -121,21 +126,27 @@ subroutine shd_util__sumData(IFLAG, WT, N, data, SUMDATA)
 
 end subroutine shd_util__sumData
 
-subroutine shd_util__interpData(NptsOld,&
-    &FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
-    &FLUXES, fluxDir, FLUXDIV, SHTERMS)
+subroutine shd_util__interpData(&
+    isFluxOut, isHROut, isSHOut, &
+    NptsOld, &
+    fluxTot, fluxDir, fluxDiv, SHterms)
 
     !   Interpolates the output data to the new grid points (those >NptsOld)
-    ! from the old grid points.  The output data is in FLUXES, fluxDir,
-    ! FLUXDIV, and SHTERMS.  NptsOld is set to zero to do no interpolation.
+    ! from the old grid points.  The output data is in fluxTot, fluxDir,
+    ! fluxDiv, and SHterms.  NptsOld is set to zero to do no interpolation.
     ! Each new point is located in a cell, and the two parent grid points
     ! are found to interpolate the data from.
 
-    integer NptsOld
-    logical FLUX_OUT, FLUXDIV_OUT, SH_OUT
-    real FLUXES(2, rtm_obj_%Npts), fluxDir(rtm_obj_%Npts), FLUXDIV(rtm_obj_%Npts)
-    real SHTERMS(5, rtm_obj_%Npts)
+    logical, intent(in) :: isFluxOut, isHROut, isSHOut
+    integer(kind=I__), intent(in) :: NptsOld
+
+    real(kind=R__), intent(out) :: fluxTot(2, rtm_obj_%Npts), &
+                                   fluxDir(rtm_obj_%Npts), &
+                                   fluxDiv(rtm_obj_%Npts), &
+                                   SHterms(5, rtm_obj_%Npts)
+
     integer IP, IC, iCell, iParent, iDir, I, J, DIR1, DIR2, IP1, IP2
+
     integer cornerGrid(2, 4, 3)
     data cornerGrid/1, 2, 3, 4, 5, 6, 7, 8, 1, 3, 2, 4, 5, 7, 6, 8,&
         &1, 5, 2, 6, 3, 7, 4, 8/
@@ -166,17 +177,17 @@ subroutine shd_util__interpData(NptsOld,&
 
                 ! Interpolate the data from the two parent points at the
                 !   ends of the edge; assume the cell was split in half.
-                if (FLUX_OUT) then
-                    FLUXES(1, IP) = 0.5*(FLUXES(1, IP1) + FLUXES(1, IP2))
-                    FLUXES(2, IP) = 0.5*(FLUXES(2, IP1) + FLUXES(2, IP2))
+                if (isFluxOut) then
+                    fluxTot(1, IP) = 0.5*(fluxTot(1, IP1) + fluxTot(1, IP2))
+                    fluxTot(2, IP) = 0.5*(fluxTot(2, IP1) + fluxTot(2, IP2))
                     fluxDir(IP) = 0.5*(fluxDir(IP1) + fluxDir(IP2))
                 end if
-                if (FLUXDIV_OUT) then
-                    FLUXDIV(IP) = 0.5*(FLUXDIV(IP1) + FLUXDIV(IP2))
+                if (isHROut) then
+                    fluxDiv(IP) = 0.5*(fluxDiv(IP1) + fluxDiv(IP2))
                 end if
-                if (SH_OUT) then
+                if (isSHOut) then
                     do J = 1, 5
-                        SHTERMS(J, IP) = 0.5*(SHTERMS(J, IP1) + SHTERMS(J, IP2))
+                        SHterms(J, IP) = 0.5*(SHterms(J, IP1) + SHterms(J, IP2))
                     end do
                 end if
             end if

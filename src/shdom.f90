@@ -1286,7 +1286,7 @@ program shdom
             ! For the output from the grid point arrays (Flux, Net flux, SH)
             !   we may need to interpolate the running k-distribution sum
             !   to the newly created grid points.
-            call shd_util__interpData(NptsOld, isFluxOut, isHROut, isSHOut,&
+            call shd_util__interpData(isFluxOut, isHROut, isSHOut, NptsOld, &
                 sumFluxTot_Out, sumFluxDir_Out, sumFluxDiv_Out, sumSH_Out)
         end if
 
