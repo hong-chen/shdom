@@ -1810,6 +1810,7 @@ subroutine read_ice_refractive_index(filepath, wavelengths, n_real, n_imag, num_
 end subroutine read_ice_refractive_index
 
 subroutine shd_util__get_free_unit(unit)
+
     ! Subroutine to find a free file unit number
 
     integer, intent(out) :: unit
