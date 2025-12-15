@@ -45,6 +45,9 @@ module shd_scat
     implicit none
     private
 
+    integer, parameter :: R__  = selected_real_kind(6) ! default precision for float
+    integer, parameter :: I__  = selected_int_kind(9)  ! default precision for integer
+
     public :: shd_scat__computePhase
     public :: shd_scat__computeLegendre
 
@@ -58,74 +61,77 @@ module shd_scat
 contains
 
 subroutine shd_scat__computePhase(&
-    &NSCATANGLE, NUMPHASE, NSTPHASE,&
-    &NSTOKES, ML, NSTLEG, NLEG, LEGEN, PHASETAB)
+    NangScat, Npha, NphaSet, &
+    Nstokes, maxNleg, NlegSet, Nleg, leg, &
+    phaTab)
 
     ! Description:
     !   Compute the phase matrix elements I-I and I-Q as a function
     !   of scattering angle for solar direct scattering for all the
-    !   tabulated phase functions. Output is in PHASETAB.
-    !   NSTPHASE=1 for NSTOKES=1 and NSTPHASE=2 for NSTOKES>1.
+    !   tabulated phase functions. Output is in phaTab.
+    !   NphaSet=1 for Nstokes=1 and NphaSet=2 for Nstokes>1.
 
-    integer NSCATANGLE, NUMPHASE, NSTPHASE
-    integer NSTOKES, NSTLEG, ML, NLEG
-    real LEGEN(NSTLEG, 0:NLEG, NUMPHASE)
-    real PHASETAB(NSTPHASE, NUMPHASE, NSCATANGLE)
-    integer IPH, I, J, L
-    real(RD_) :: muScat, FCT, F, X, A1, B1
+    integer(kind=I__), intent(in) :: NangScat, Npha, NphaSet
+    integer(kind=I__), intent(in) :: Nstokes, NlegSet, maxNleg, Nleg
+    real(kind=R__),    intent(in) :: leg(NlegSet, 0:Nleg, Npha)
+
+    real(kind=R__), intent(out) :: phaTab(NphaSet, Npha, NangScat)
+
+    integer :: iPha, iAngScat, iLeg
+    real(RD_) :: muScat, factor, F, X, A1, B1
     real(RD_), allocatable :: legOri(:, :)
     real(RD_), allocatable :: DMM1(:), DMM2(:)
 
-    allocate(legOri(2, 0:NLEG), DMM1(0:NLEG), DMM2(0:NLEG))
+    allocate(legOri(2, 0:Nleg), DMM1(0:Nleg), DMM2(0:Nleg))
 
-    do J = 1, NSCATANGLE
-        muScat = cos(DPI_*DFLOAT(J - 1)/(NSCATANGLE - 1))
+    do iAngScat = 1, NangScat
+        muScat = cos(DPI_*dble(iAngScat - 1)/(NangScat - 1))
         X = dble(muScat)
-        call shd_scat__computeWigner(X, NLEG, 0, 0, DMM1)
+        call shd_scat__computeWigner(X, Nleg, 0, 0, DMM1)
         if (isPol_) then
-            call shd_scat__computeWigner(X, NLEG, 2, 0, DMM2)
+            call shd_scat__computeWigner(X, Nleg, 2, 0, DMM2)
         end if
 
         ! Unscaled the needed Legendre coefficients, but divide by 1-f
         !   because extinction is still scaled (for TMS method)
-        do IPH = 1, NUMPHASE
-            F = LEGEN(1, ML + 1, IPH)
-            do L = 0, NLEG
-                if (L .le. ML) then
-                    legOri(1, L) = LEGEN(1, L, IPH) + F/(1 - F)
+        do iPha = 1, Npha
+            F = leg(1, maxNleg + 1, iPha)
+            do iLeg = 0, Nleg
+                if (iLeg .le. maxNleg) then
+                    legOri(1, iLeg) = leg(1, iLeg, iPha) + F/(1 - F)
                 else
-                    legOri(1, L) = LEGEN(1, L, IPH)/(1 - F)
+                    legOri(1, iLeg) = leg(1, iLeg, iPha)/(1 - F)
                 end if
-                if (NSTLEG .gt. 1) then
-                    if (L .le. ML) then
-                        legOri(2, L) = LEGEN(5, L, IPH)
+                if (NlegSet .gt. 1) then
+                    if (iLeg .le. maxNleg) then
+                        legOri(2, iLeg) = leg(5, iLeg, iPha)
                     else
-                        legOri(2, L) = LEGEN(5, L, IPH)/(1 - F)
+                        legOri(2, iLeg) = leg(5, iLeg, iPha)/(1 - F)
                     end if
                 end if
             end do
 
             ! Sum the first Wigner function series, which is actually a Le
             A1 = 0.0d0
-            do L = 0, NLEG
-                FCT = 2.0d0*L + 1.0d0
-                A1 = A1 + FCT*dble(legOri(1, L))*DMM1(L)
+            do iLeg = 0, Nleg
+                factor = 2.0d0*iLeg + 1.0d0
+                A1 = A1 + factor*dble(legOri(1, iLeg))*DMM1(iLeg)
             end do
             if (A1 .le. 0.0) then
                 write(6, *) 'Error [_computePhase]: negative phase function',&
-                    &' for tabulated phase function: ', IPH, J, A1
+                    &' for tabulated phase function: ', iPha, iAngScat, A1
                 stop
             end if
-            PHASETAB(1, IPH, J) = sngl(A1*DO4PI_)
+            phaTab(1, iPha, iAngScat) = sngl(A1*DO4PI_)
 
             if (isPol_) then
                 ! If doing polarization, sum the second Wigner function series
                 B1 = 0.0d0
-                do L = 0, NLEG
-                    FCT = 2.0d0*L + 1.0d0
-                    B1 = B1 - FCT*dble(legOri(2, L))*DMM2(L)
+                do iLeg = 0, Nleg
+                    factor = 2.0d0*iLeg + 1.0d0
+                    B1 = B1 - factor*dble(legOri(2, iLeg))*DMM2(iLeg)
                 end do
-                PHASETAB(2, IPH, J) = sngl(B1*DO4PI_)
+                phaTab(2, iPha, iAngScat) = sngl(B1*DO4PI_)
             end if
         end do
     end do
@@ -136,32 +142,37 @@ subroutine shd_scat__computePhase(&
 
 end subroutine shd_scat__computePhase
 
-subroutine shd_scat__computeLegendre(muScat, NLEG, P)
+subroutine shd_scat__computeLegendre(&
+    muScat, Nleg, &
+    leg)
 
     !   This subroutine computes a set of Legendre polynomials for
-    ! a particular scattering angle muScat.  NLEG is the maximum term.
+    ! a particular scattering angle muScat.  Nleg is the maximum term.
     ! The Legendre functions evaluated at muScat are returned in
-    ! P, starting at l=0 and ending with l=NLEG  (NLEG+1 terms).
+    ! leg, starting at l=0 and ending with l=Nleg  (Nleg+1 terms).
 
-    integer, intent(in) :: NLEG
-    real(RD_) :: muScat, P(0:NLEG)
-    integer L
-    real(RD_) :: X, PL, PL1, PL2
+    real(kind=RD_),    intent(in) :: muScat
+    integer(kind=I__), intent(in) :: Nleg
+
+    real(kind=RD_), intent(out) :: leg(0:Nleg)
+
+    integer :: iLeg
+    real(kind=RD_) :: X, PL, PL1, PL2
 
     X = dble(muScat)
     if (X*X .gt. 1.) stop 'Error [_computeLegendre]: <muScat> is greater than 1.'
 
     ! Use the stable upward recursion on l, starting from P_0
     PL2 = 1.0d0
-    P(0) = PL2
-    if (NLEG .gt. 1) then
+    leg(0) = PL2
+    if (Nleg .gt. 1) then
         PL1 = X
-        P(1) = X
+        leg(1) = X
     end if
 
-    do L = 2, NLEG
-        PL = ((2*L - 1)*X*PL1 - (L - 1)*PL2)/L
-        P(L) = PL
+    do iLeg = 2, Nleg
+        PL = ((2*iLeg - 1)*X*PL1 - (iLeg - 1)*PL2)/iLeg
+        leg(iLeg) = PL
         PL2 = PL1
         PL1 = PL
     end do
