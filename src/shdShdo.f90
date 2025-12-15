@@ -81,7 +81,7 @@ module shd_shdo
 
 contains
 
-subroutine shd_shdo__makeSHDO(NSTLEG, ML, MM, NLM, NMU, NPHI0,&
+subroutine shd_shdo__makeSHDO(NlegSet, ML, MM, NLM, NMU, NPHI0,&
     &NPHI0MAX, MU, PHI, WTMU, WTDO, FFTFLAG,&
     &CMU1, CMU2, CPHI1, CPHI2, WPHISAVE)
 
@@ -95,10 +95,10 @@ subroutine shd_shdo__makeSHDO(NSTLEG, ML, MM, NLM, NMU, NPHI0,&
     ! The FFTPACK phase coefficients for the FFT in azimuth are also
     ! output in WPHISAVE.
 
-    integer NSTLEG, ML, MM, NLM, NMU, NPHI0(NMU), NPHI0MAX
+    integer NlegSet, ML, MM, NLM, NMU, NPHI0(NMU), NPHI0MAX
     logical FFTFLAG(NMU)
     real MU(NMU), PHI(NMU, *), WTMU(NMU), WTDO(NMU, *)
-    real CMU1(NSTLEG, NLM, NMU), CMU2(NSTLEG, NMU, NLM)
+    real CMU1(NlegSet, NLM, NMU), CMU2(NlegSet, NMU, NLM)
     real CPHI1(-16:16, 32, NMU), CPHI2(32, -16:16, NMU)
     real WPHISAVE(3*NPHI0MAX + 15, NMU)
     integer I, J, K, M, Q
@@ -112,14 +112,14 @@ subroutine shd_shdo__makeSHDO(NSTLEG, ML, MM, NLM, NMU, NPHI0,&
         PRC(:, :) = 0.0
         call shd_shdo__computePlm(.false., X, ML, MM, PRC)
         do J = 1, NLM
-            do Q = 1, NSTLEG
+            do Q = 1, NlegSet
                 CMU1(Q, J, I) = PRC(Q, J)
             end do
         end do
         PRC(:, :) = 0.0
         call shd_shdo__computePlm(.true., X, ML, MM, PRC)
         do J = 1, NLM
-            do Q = 1, NSTLEG
+            do Q = 1, NlegSet
                 CMU2(Q, I, J) = PRC(Q, J)*WTMU(I)
             end do
         end do
@@ -193,7 +193,7 @@ subroutine shd_shdo__makeSfcDO(SFCTYPE, WAVELEN,&
 
 end subroutine shd_shdo__makeSfcDO
 
-subroutine shd_shdo__transSHtoDO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
+subroutine shd_shdo__transSHtoDO(NPTS, NSTOKES, NlegSet, ML, MM, NLM,&
     &NMU, NPHI0MAX, NPHI0,&
     &IMU, FFTFLAG, CMU1, CPHI1, WSAVE,&
     &SHPTR, INDATA, OUTDATA)
@@ -209,12 +209,12 @@ subroutine shd_shdo__transSHtoDO(NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
     ! input array is adaptive (with pointer SHPTR); the last term for
     ! each grid point must be the maximum m for the particular l term.
 
-    integer NPTS, NSTOKES, NSTLEG
+    integer NPTS, NSTOKES, NlegSet
     integer ML, MM, NLM, NMU, NPHI0MAX, NPHI0
     integer IMU, SHPTR(NPTS + 1)
     logical FFTFLAG(NMU)
     real INDATA(NSTOKES, *), OUTDATA(NSTOKES, NPHI0MAX, NPTS)
-    real CMU1(NSTLEG, NLM, NMU), CPHI1(-16:16, 32, NMU)
+    real CMU1(NlegSet, NLM, NMU), CPHI1(-16:16, 32, NMU)
     real WSAVE(3*NPHI0MAX + 15, NMU)
     integer I, J, K, L, M, M2, N, IPHI, MS, ME, MR, IS, NSH
     real SUM1
@@ -430,7 +430,7 @@ subroutine shd_shdo__transSHtoDO_(&
 end subroutine shd_shdo__transSHtoDO_
 
 subroutine shd_shdo__transDOtoSH(&
-    &NPTS, NSTOKES, NSTLEG, ML, MM, NLM,&
+    &NPTS, NSTOKES, NlegSet, ML, MM, NLM,&
     &NMU, NPHI0MAX, NPHI0,&
     &IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
     &iradI_Shdo, INDATA, OUTDATA)
@@ -439,12 +439,12 @@ subroutine shd_shdo__transDOtoSH(&
     ! harmonic space for one zenith angle (IMU) by keeping a running
     ! sum in OUTDATA between successive calls.  (See shd_shdo__transSHtoDO for more).
 
-    integer NPTS, NSTOKES, NSTLEG
+    integer NPTS, NSTOKES, NlegSet
     integer ML, MM, NLM, NMU, NPHI0MAX, NPHI0
     integer IMU, iradI_Shdo(NPTS + 1)
     logical FFTFLAG(NMU)
     real INDATA(NSTOKES, NPHI0MAX, NPTS), OUTDATA(NSTOKES, *)
-    real CMU2(NSTLEG, NMU, NLM), CPHI2(32, -16:16, NMU)
+    real CMU2(NlegSet, NMU, NLM), CPHI2(32, -16:16, NMU)
     real WSAVE(3*NPHI0MAX + 15, NMU)
     integer I, IPHI, J, K, L, M, MS, ME, MR, N, IS, NSH
     real SUM1, DELPHI
@@ -800,26 +800,26 @@ subroutine shd_shdo__makeAngle(&
 
 end subroutine shd_shdo__makeAngle
 
-subroutine shd_shdo__computeYlm(TRANSPOSED, MU, PHI, ML, MM, NSTLEG, YR)
+subroutine shd_shdo__computeYlm(doTranspose, MU, PHI, ML, MM, NlegSet, YR)
 
     !   This subroutine computes a set of normalized real generalized
     ! spherical harmonic functions (YR) for a particular direction mu,phi.
     ! (Doicu et al. 2013; http://dx.doi.org/10.1016/j.jqsrt.2012.12.009)
     ! ML is the maximum meridional mode, MM is the maximum azimuthal mode.
-    ! NSTLEG is the number of matrix elements returned, either 1 for the
+    ! NlegSet is the number of matrix elements returned, either 1 for the
     ! 1,1 term or 6 for the 6 unique elements of the 4x4 matrix.
     ! J = 2*(L*(L+1))/2 + M+1  for L<=MM
     ! J = (2*MM+1)*L-MM*(2+2*(MM-1))/2 + M+1  for L>MM
 
-    integer ML, MM, NSTLEG
+    integer ML, MM, NlegSet
     real MU, PHI
-    logical TRANSPOSED
-    real YR(NSTLEG, *)
+    logical doTranspose
+    real YR(NlegSet, *)
     integer J, M, MABS, L
     real(RD_) :: X, FCT, P1, P2, P3, COSM, SINM, SIGN
     real(RD_), allocatable :: DM0(:), DM2P(:), DM2M(:)
 
-    if (NSTLEG .eq. 1) then
+    if (NlegSet .eq. 1) then
         call shd_shdo__computeYlm_(MU, PHI, ML, MM, YR)
         return
     end if
@@ -830,7 +830,7 @@ subroutine shd_shdo__computeYlm(TRANSPOSED, MU, PHI, ML, MM, NSTLEG, YR)
     FCT = 1.d0/dsqrt(DPI2_)
 
     ! sign accounting for transpose matrices
-    if (.not. TRANSPOSED) then
+    if (.not. doTranspose) then
         SIGN = 1.d0
     else
         SIGN = -1.d0
@@ -852,7 +852,7 @@ subroutine shd_shdo__computeYlm(TRANSPOSED, MU, PHI, ML, MM, NSTLEG, YR)
 
     ! --- Unm = Pnm*cos(m*phi) ---
         YR(1, J) = P1
-        if (NSTLEG .eq. 6) then
+        if (NlegSet .eq. 6) then
             YR(2, J) = P2
             YR(3, J) = P2
             YR(4, J) = P1
@@ -884,7 +884,7 @@ subroutine shd_shdo__computeYlm(TRANSPOSED, MU, PHI, ML, MM, NSTLEG, YR)
 
             ! --- Unm = Pnm*cos(m*phi) - D*Pnm*sin(m*phi) ---
             YR(1, J) = P1*COSM - P1*SINM
-            if (NSTLEG .eq. 6) then
+            if (NlegSet .eq. 6) then
                 YR(2, J) = P2*COSM - P2*SINM
                 YR(3, J) = P2*COSM + P2*SINM
                 YR(4, J) = P1*COSM + P1*SINM
@@ -904,7 +904,7 @@ subroutine shd_shdo__computeYlm(TRANSPOSED, MU, PHI, ML, MM, NSTLEG, YR)
 
             ! --- Vnm = Pnm*sin(m*phi) + D*Pnm*cos(m*phi) ---
             YR(1, J) = P1*SINM + P1*COSM
-            if (NSTLEG .eq. 6) then
+            if (NlegSet .eq. 6) then
                 YR(2, J) = P2*SINM + P2*COSM
                 YR(3, J) = P2*SINM - P2*COSM
                 YR(4, J) = P1*SINM - P1*COSM
@@ -976,11 +976,11 @@ subroutine shd_shdo__computeYlm_(MU, PHI, ML, MM, YR)
 
 end subroutine shd_shdo__computeYlm_
 
-subroutine shd_shdo__computePlm(TRANSPOSED, MU, ML, MM, PRC)
+subroutine shd_shdo__computePlm(doTranspose, MU, ML, MM, PRC)
 
     integer ML, MM
     real MU
-    logical TRANSPOSED
+    logical doTranspose
     real PRC(6, *)
     ! --- local variables ---
     integer J, M, MABS, L
@@ -997,7 +997,7 @@ subroutine shd_shdo__computePlm(TRANSPOSED, MU, ML, MM, PRC)
     FCT = 1.d0/dsqrt(DPI2_)
 
     ! --- sign accounting for transpose matrices ---
-    if (.not. TRANSPOSED) then
+    if (.not. doTranspose) then
         SIGN = 1.d0
     else
         SIGN = -1.d0

@@ -609,7 +609,7 @@ subroutine shd_init__makeRad(&
     real radI_Shdo(NSTOKES, *)
     character(len=1) :: SRCTYPE, UNITS
     integer NLAYER, IX, IY, IZ, IR, I, J, K, L, ZINDEX
-    logical DELTAM
+    logical doDeltaM
     real C0, C1
     real EXT0, ALB0, SCAT0, G0, GNDEMIS
     real EXT1, SCAT1, G1
@@ -626,7 +626,7 @@ subroutine shd_init__makeRad(&
     !allocate(CH(NLAYER, NLAYER))
     !call shd_init__chapman(NLAYER, muSun, planetRadius_, ZGRID(NZ:1:-1), CH)
 
-    DELTAM = .false.
+    doDeltaM = .false.
 
     SRCT = SRCTYPE
     if (SRCT .eq. 'B') SRCT = 'T'
@@ -736,7 +736,7 @@ subroutine shd_init__makeRad(&
 
             ! Call the Eddington flux routine
             call shd_init__makeFlux(NLAYER, tauZ, ssaZ, asyZ,&
-                &tempZ, DELTAM, SRCTYPE, SOLARFLUX, muSun0,&
+                &tempZ, doDeltaM, SRCTYPE, SOLARFLUX, muSun0,&
                 &sfc_obj_%avgTemp, GNDEMIS, SKYRAD, UNITS, WAVENO, WAVELEN,&
                 &FLUXES)
 
@@ -764,7 +764,7 @@ end subroutine shd_init__makeRad
 
 subroutine shd_init__makeFlux(&
     &NLAYER, tauZ, ssaZ, asyZ,&
-    &tempZ, DELTAM, SRCTYPE, SOLARFLUX, muSun,&
+    &tempZ, doDeltaM, SRCTYPE, SOLARFLUX, muSun,&
     &GNDTEMP, GNDEMIS, SKYRAD, UNITS, WAVENO, WAVELEN,&
     &FLUXES)
 
@@ -795,7 +795,7 @@ subroutine shd_init__makeFlux(&
     ! tempZ          real array   Temperatures (K) at layer interfaces
     !                              (e.g. tempZ(1) is at top of top layer
     !                               tempZ(2) is at bottom of top layer).
-    ! DELTAM         logical      True for delta-Eddington scaling
+    ! doDeltaM         logical      True for delta-Eddington scaling
     ! SRCTYPE        character    'S' for solar source, 'T' for thermal source
     ! SOLARFLUX      real         Incident solar flux on horizonal plane
     ! muSun        real         Cosine of the solar zenith angle
@@ -819,7 +819,7 @@ subroutine shd_init__makeFlux(&
     !                               L=1 is top, L=NUML+1 is bottom
 
     integer NLAYER
-    logical DELTAM
+    logical doDeltaM
     real tempZ(*)
     real tauZ(*), ssaZ(*), asyZ(*)
     real GNDTEMP, GNDEMIS, SKYRAD, SOLARFLUX, muSun
@@ -862,7 +862,7 @@ subroutine shd_init__makeFlux(&
         else
             OMEGA = ssaZ(L)
             G = asyZ(L)
-            if (DELTAM) then
+            if (doDeltaM) then
                 F = G**2
                 DELTAU = (1 - OMEGA*F)*DELTAU
                 OMEGA = (1 - F)*OMEGA/(1 - OMEGA*F)

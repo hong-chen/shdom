@@ -1011,7 +1011,7 @@ subroutine shd_grid__matchNeighCellFace(iFace, IC,&
 
     integer iFace, IC
     integer iCellNeigh, INN, jFace, IC1, IC8, IN1, IN8, DIR, DIR1, DIR2
-    logical DONE
+    logical isDone
     real POS(3)
 
     iCellNeigh = abs(i6Cell_Cell(iFace, IC))
@@ -1026,8 +1026,8 @@ subroutine shd_grid__matchNeighCellFace(iFace, IC,&
     POS(DIR1) = (xyz_Rtm_(DIR1, IC1) + xyz_Rtm_(DIR1, IC8))/2
     POS(DIR2) = (xyz_Rtm_(DIR2, IC1) + xyz_Rtm_(DIR2, IC8))/2
     ! Go down the neighbors cell tree
-    DONE = .false.
-    do while (.not. DONE .and. IC .ne. iCellNeigh)
+    isDone = .false.
+    do while (.not. isDone .and. IC .ne. iCellNeigh)
         ! Compare the coordinates of this neighbor cell to see
         !   if the new face is contained within the neighbor face.
         IN1 = i8Grid_Cell_(1, iCellNeigh)
@@ -1060,7 +1060,7 @@ subroutine shd_grid__matchNeighCellFace(iFace, IC,&
         ! Go down the neighbors cell tree until there is no children,
         !   finding the cell that contains the center of the new face.
         if (i2Tree_Cell_(2, iCellNeigh) .eq. 0) then
-            DONE = .true.
+            isDone = .true.
         else
             DIR = ibits(int(flag_Cell_(iCellNeigh)), 2, 2)
             INN = i2Tree_Cell_(2, iCellNeigh)
@@ -1090,7 +1090,7 @@ subroutine shd_grid__inheritNeighCell(iCell, iFace, iCellNeigh,&
 
     integer iCell, iFace, iCellNeigh
     integer jFace, IC, DIR, SP, STACK(50)
-    logical DONE
+    logical isDone
 
     ! Go through the tree checking the cells:
     ! The stack holds the second child cells, which are the
@@ -1098,14 +1098,14 @@ subroutine shd_grid__inheritNeighCell(iCell, iFace, iCellNeigh,&
     jFace = (iFace + 1)/2
     IC = iCell
     SP = 0
-    DONE = .false.
-    do while (.not. DONE)
+    isDone = .false.
+    do while (.not. isDone)
         i6Cell_Cell(iFace, IC) = iCellNeigh
         ! If this is an end cell then pop the stack
         if (i2Tree_Cell_(2, IC) .eq. 0) then
             ! If no more to pop then we are done
             if (SP .eq. 0) then
-                DONE = .true.
+                isDone = .true.
             else
                 ! Otherwise, pop the stack to get the next cell to go to
                 IC = STACK(SP)
@@ -1430,7 +1430,7 @@ logical function sweepCellNext(BCFLAG, NXC, NYC, NZ, iOctant,&
 
     integer BCFLAG, NXC, NYC, NZ, iOctant, iCell
     integer IC, iDir, SP, STACK(50)
-    logical DONE
+    logical isDone
     save SP, STACK
 
     IC = iCell
@@ -1448,13 +1448,13 @@ logical function sweepCellNext(BCFLAG, NXC, NYC, NZ, iOctant,&
     ! Go through the tree checking the cells:
     ! The stack holds the second child cells, which are the
     !   next cell to go to if at an end cell.
-    DONE = .false.
-    do while (.not. DONE)
+    isDone = .false.
+    do while (.not. isDone)
         ! If this is an end cell then we are either at the desired cell
         !   or if this is the old cell then we need to pop the stack
         if (i2Tree_Cell_(2, IC) .eq. 0) then
             if (IC .ne. iCell) then
-                DONE = .true.
+                isDone = .true.
             else
                 ! If no more to pop then we are at the base cell, so go to
                 !   next base cell if there is one.

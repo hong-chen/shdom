@@ -138,7 +138,7 @@ module shd_mpi
     private :: loadObject
 
     integer :: Nproc_, myProc_, iProcNeigh_(4), ixyPrp_(2, 2), ixySfc_(2, 2), ixyOut_(2, 2)
-    logical, parameter :: loadBalance_ = .false.
+    logical, parameter :: doLoadBalance_ = .false.
     real(RD_) :: startTime_
     integer, allocatable :: BxyPtr_(:, :, :), iBxyPtr_(:, :, :)
     real, allocatable :: BxyPos_(:, :, :)
@@ -1001,7 +1001,7 @@ real function shd_mpi__sumCpuTime(cpuTimes)
 
 end function shd_mpi__sumCpuTime
 
-subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
+subroutine shd_mpi__gatherOut(isFluxOut, isHROut, isSHOut,&
     &NSHOUT,&
     &SUMFLUXES, sumFluxDir, SUMFLUXDIV, SUMSHTERMS,&
     &ALLFLUXES, ALLFLUXDIV, ALLSHTERMS,&
@@ -1018,7 +1018,7 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
     type(shd_type_rtm),  intent(inout) :: rtmAll_obj, rtm_obj
     type(shd_type_cell), intent(in)    :: cell_obj
 
-    logical, intent(in) :: FLUX_OUT, FLUXDIV_OUT, SH_OUT
+    logical, intent(in) :: isFluxOut, isHROut, isSHOut
     integer, intent(in) :: NSHOUT
     real, intent(in) :: SUMFLUXES(2, rtm_obj%Npts0), sumFluxDir(rtm_obj%Npts0)
     real, intent(in) :: SUMFLUXDIV(rtm_obj%Npts0), SUMSHTERMS(NSHOUT, rtm_obj%Npts0)
@@ -1041,7 +1041,7 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
 
     allocate(requests(Nproc_), status(Nproc_))
 
-    if (FLUX_OUT) then
+    if (isFluxOut) then
         irq = 0
         if (myProc_ .gt. 0) then
             allocate(sendbuf(3, rtm_obj%Npts0))
@@ -1088,7 +1088,7 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
         end if
     end if
 
-    if (FLUXDIV_OUT) then
+    if (isHROut) then
         irq = 0
         if (myProc_ .gt. 0) then
             irq = irq + 1
@@ -1130,7 +1130,7 @@ subroutine shd_mpi__gatherOut(FLUX_OUT, FLUXDIV_OUT, SH_OUT,&
         end if
     end if
 
-    if (SH_OUT) then
+    if (isSHOut) then
         irq = 0
         if (myProc_ .gt. 0) then
             irq = irq + 1
@@ -1210,9 +1210,9 @@ subroutine shd_mpi__findMaxSsa(maxSsa)
 
 end subroutine shd_mpi__findMaxSsa
 
-subroutine shd_mpi__unifySplit(DOSPLIT, STARTSPLITACC)
+subroutine shd_mpi__unifySplit(doSplit, STARTSPLITACC)
 
-    logical, intent(inout) :: DOSPLIT
+    logical, intent(inout) :: doSplit
     real, intent(inout) :: STARTSPLITACC
 
 #if HAS_MPI
@@ -1224,8 +1224,8 @@ subroutine shd_mpi__unifySplit(DOSPLIT, STARTSPLITACC)
         ! Call mpi_allreduce to
         sendrbuf = STARTSPLITACC
         call mpi_allreduce(sendrbuf, STARTSPLITACC, 1, MPI_real, MPI_max, comm2D_, ierr(1))
-        sendlbuf = DOSPLIT
-        call mpi_allreduce(sendlbuf, DOSPLIT, 1, MPI_logical, MPI_lor, comm2D_, ierr(2))
+        sendlbuf = doSplit
+        call mpi_allreduce(sendlbuf, doSplit, 1, MPI_logical, MPI_lor, comm2D_, ierr(2))
         if (any(ierr(:) .ne. MPI_success)) call shd_mpi__abort('Error [mpi__unifySplit]: mpi_allreduce error.')
     end if
 #endif
@@ -1276,7 +1276,7 @@ subroutine shd_mpi__makeFluxDir(SPT,&
     integer :: IP, I, J, L
     integer :: ierr, irq, iproc
     integer :: intsendbuf(2), intrecvbuf(2)
-    logical :: isValidRad, AllDone
+    logical :: isValidRad, isAllDone
     real    :: XO, YO, ZO, X, Y, Z, XMAX, YMAX, EPS, DIRJUNK
     integer, allocatable :: Ndone(:)
     integer, allocatable :: BndDirIntInfo(:, :, :)
@@ -1353,8 +1353,8 @@ subroutine shd_mpi__makeFluxDir(SPT,&
     ! Cycle over the passing of info between processors and doing more
     !  partial direct beam integrations until all rays have been finished
     Ndone(:) = 0
-    AllDone = .false.
-    do while (.not. AllDone)
+    isAllDone = .false.
+    do while (.not. isAllDone)
         ! Do the send and receives of the number of incomplete rays and
         !   the real and integer info needed about the radiance integrations
         irq = 0
@@ -1465,7 +1465,7 @@ subroutine shd_mpi__makeFluxDir(SPT,&
         intsendbuf = (/NINVALID(Lupx), NINVALID(Lupy)/)
         call mpi_allreduce(intsendbuf, intrecvbuf, 2, MPI_integer, MPI_max,&
             &comm2D_, ierr)
-        AllDone = all(intrecvbuf(1:2) .eq. 0)
+        isAllDone = all(intrecvbuf(1:2) .eq. 0)
         if ((maxval(intrecvbuf(1:2)) .gt. MAXNBEAM) .or. (maxval(Ndone(:)) .gt. MAXNBEAM)) then
             call shd_mpi__abort('Error [mpi__makeFluxDir]: MAXNBEAM exceeded 2.')
         end if
@@ -1535,7 +1535,7 @@ subroutine shd_mpi__findBndryPts(BCFLAG, IPFLAG, sweepOrder,&
     integer :: MAXBC, IBC, bitZ, SZ, EZ, DZ, LX, LY, IX, IY, IZ, J
     integer :: INOUT_ARR(4) = (/2, 1, 4, 3/)
     integer, save :: NptsOld = 0
-    logical :: SAMEGRID
+    logical :: isSameGrid
     real    :: XEDGE(8), YEDGE(8), XYB(4)
     integer, allocatable :: BNDPTR(:, :, :, :), INDX(:)
     real, allocatable :: BNDPOS(:, :, :, :, :), ZARRAY(:)
@@ -1545,9 +1545,9 @@ subroutine shd_mpi__findBndryPts(BCFLAG, IPFLAG, sweepOrder,&
 
     if (.not. (isMpi_)) return
     if (is1D_) return
-    call mpi_allreduce(rtm_obj_%Npts .eq. NptsOld, SAMEGRID, 1, MPI_logical, MPI_land, comm2D_, ierr)
+    call mpi_allreduce(rtm_obj_%Npts .eq. NptsOld, isSameGrid, 1, MPI_logical, MPI_land, comm2D_, ierr)
     NptsOld = rtm_obj_%Npts
-    if (SAMEGRID) return
+    if (isSameGrid) return
 
     ! iOctant=1+bitX+2*bitY+4*bitZ ; jOctant=jOctantOrder(iOctant) = (/ 1,3,5,7,2,4,6,8 /)
     ! CX<0: bitX=1, jOctant=3,7,4,8      CY<0: bitY=1, jOctant=5,7,6,8
@@ -1742,7 +1742,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, jOctant, IZ,&
     integer :: IBC, iPts, I, J, L
     integer :: ierr(12), irq, iproc
     integer :: intsendbuf(2), intrecvbuf(2)
-    logical :: isValidRad, AllDone
+    logical :: isValidRad, isAllDone
     real    :: X, Y, Z, RADIANCE(Nstokes), trans, xo, yo, zo
     integer, allocatable :: Ndone(:)
     integer, allocatable :: BndRadIntInfo(:, :, :)
@@ -1807,8 +1807,8 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, jOctant, IZ,&
 
     ! Cycle over the passing of info between processors and doing more
     !  partial radiance integrations until all rays have been finished
-    AllDone = .false.
-    do while (.not. AllDone)
+    isAllDone = .false.
+    do while (.not. isAllDone)
         ! Do the send and receives of the number of incomplete rays and
         !   the real and integer info needed about the radiance integrations
         irq = 0
@@ -1929,7 +1929,7 @@ subroutine shd_mpi__calBndryRad(BCFLAG, IPFLAG, jOctant, IZ,&
         intsendbuf = (/NINVALID(Lupx), NINVALID(Lupy)/)
         call mpi_allreduce(intsendbuf, intrecvbuf, 2, MPI_integer, MPI_max,&
             &comm2D_, ierr(1))
-        AllDone = all(intrecvbuf(1:2) .eq. 0)
+        isAllDone = all(intrecvbuf(1:2) .eq. 0)
     end do
 
     ! Exchange the finished boundary radiances with all of the other processors
@@ -2006,7 +2006,7 @@ subroutine shd_mpi__computeRadDir(&
     integer :: SIDE, NINVALID(0:4)
     integer :: I, J, L, Ndone, intsendbuf(2), intrecvbuf(2)
     integer :: ierr, irq, iproc
-    logical :: AllDone
+    logical :: isAllDone
     integer, allocatable :: NradRecv(:)
     integer, allocatable :: IndexSend(:), IndexRecv(:, :), BndRadIntInfo(:, :)
     real, allocatable    :: RadSend(:, :), RadRecv(:, :, :), BndRadRealInfo(:, :, :)
@@ -2231,8 +2231,8 @@ subroutine shd_mpi__computeRadDir(&
 
         ! Cycle over the passing of info between processors and doing more
         !  partial radiance integrations until all rays have been finished
-        AllDone = .false.
-        RAYMPI_LOOP: do while (.not. AllDone)
+        isAllDone = .false.
+        RAYMPI_LOOP: do while (.not. isAllDone)
             ! Do the send and receives of the number of incomplete rays and
             !   the real and integer info needed about the radiance integrations
             irq = 0
@@ -2349,7 +2349,7 @@ subroutine shd_mpi__computeRadDir(&
             intsendbuf = (/NINVALID(Lupx), NINVALID(Lupy)/)
             call mpi_allreduce(intsendbuf, intrecvbuf, 2, MPI_integer, MPI_max,&
                 &comm2D_, ierr)
-            AllDone = all(intrecvbuf(1:2) .eq. 0)
+            isAllDone = all(intrecvbuf(1:2) .eq. 0)
         end do RAYMPI_LOOP
 
         if (myProc_ .gt. 0) then
@@ -2418,7 +2418,7 @@ subroutine shd_mpi__computeRadRay(&
 #if HAS_MPI
     integer :: NSCATANGLE, NSTPHASE, I, J, L, N
     integer :: NL, NS, LINE, SAMP
-    logical :: CAMERA_MODE, SENSOR_MODE, isValidRad
+    logical :: isCameraMode, isSensorMode, isValidRad
     real, parameter  :: EPS = 1.0e-5
     real(RD_) :: XE, YE, ZE, trans, VISRAD(shdo_obj_%Nstokes), RADIANCE(shdo_obj_%Nstokes)
     real(RD_) :: X0, Y0, Z0, X1, Y1, Z1, X2, Y2, Z2, X, Y, Z
@@ -2437,7 +2437,7 @@ subroutine shd_mpi__computeRadRay(&
     integer :: SIDE, IBND, NINVALID(4), NINCOMING(4)
     integer :: Ndone, intrecvbuf(4)
     integer :: ierr, irq, iproc, K
-    logical :: AllDone
+    logical :: isAllDone
     integer, allocatable :: NradRecv(:)
     integer, allocatable :: IndexSend(:), IndexRecv(:, :)
     integer, allocatable :: BndSendRadIntInfo(:, :), BndRecvRadIntInfo(:, :)
@@ -2478,12 +2478,12 @@ subroutine shd_mpi__computeRadRay(&
             &shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
     end if
 
-    CAMERA_MODE = nint(parms_Out(1)) .eq. 1
-    SENSOR_MODE = nint(parms_Out(1)) .eq. 3
-    if (CAMERA_MODE) then
+    isCameraMode = nint(parms_Out(1)) .eq. 1
+    isSensorMode = nint(parms_Out(1)) .eq. 3
+    if (isCameraMode) then
         NL = nint(parms_Out(10))
         NS = nint(parms_Out(11))
-    else if (SENSOR_MODE) then
+    else if (isSensorMode) then
         NL = 1
         NS = parms_Out(2)
     else
@@ -2510,7 +2510,7 @@ subroutine shd_mpi__computeRadRay(&
         do SAMP = 1, NS
             IVIS = IVIS + 1
 
-            if (CAMERA_MODE) then
+            if (isCameraMode) then
 
                 ! Camera mode:
                 !   1, bytes, scale, X,Y,Z, theta, phi, rotang, NL, NS, delline, delsamp
@@ -2560,7 +2560,7 @@ subroutine shd_mpi__computeRadRay(&
                 Y0 = parms_Out(5)
                 Z0 = parms_Out(6)
 
-            else if (SENSOR_MODE) then
+            else if (isSensorMode) then
 
                 if (sen_obj_%fname(1:4) .ne. 'NONE') then
                     X0    =  view_Sen_(1, SAMP)
@@ -2677,8 +2677,8 @@ subroutine shd_mpi__computeRadRay(&
 
     ! Cycle over the passing of info between processors and doing more
     !  partial radiance integrations until all rays have been finished
-    AllDone = .false.
-    do while (.not. AllDone)
+    isAllDone = .false.
+    do while (.not. isAllDone)
         irq = 0
         ! Do the sends for all four sides of the subdomain.  The number of
         ! incomplete rays and the real and integer info needed about the
@@ -2759,7 +2759,7 @@ subroutine shd_mpi__computeRadRay(&
         ! See if there are any more invalid radiance rays on all the processors
         call mpi_allreduce(NINVALID, intrecvbuf, 4, MPI_integer, MPI_max,&
             &comm2D_, ierr)
-        AllDone = all(intrecvbuf(1:4) .eq. 0)
+        isAllDone = all(intrecvbuf(1:4) .eq. 0)
     end do
     !write(*, *)'Done with ray tracing.', Ndone
 
@@ -2839,14 +2839,14 @@ subroutine shd_mpi__computeRadRay(&
 
 end subroutine shd_mpi__computeRadRay
 
-subroutine shd_mpi__calAccelSolCrit(DOACCEL, DELJDOT, DELJOLD, DELJNEW, JNORM,&
+subroutine shd_mpi__calAccelSolCrit(doAccel, DELJDOT, DELJOLD, DELJNEW, JNORM,&
     &ACCELPAR, SOLCRIT)
 
     ! Does an mpi_allreduce to sum the delta source function vector dot
     ! products over all the processors, and from these calculates the
     ! full-domain-wide acceleration parameter and solution criterion.
 
-    logical, intent(in) :: DOACCEL
+    logical, intent(in) :: doAccel
     real, intent(inout) :: DELJDOT, DELJOLD, DELJNEW, JNORM
     real, intent(out) :: ACCELPAR, SOLCRIT
     real    ::  R, THETA
@@ -2867,7 +2867,7 @@ subroutine shd_mpi__calAccelSolCrit(DOACCEL, DELJDOT, DELJOLD, DELJNEW, JNORM,&
 #endif
 
     ! Accelerate if desired, didn't last time, and things are converging.
-    if (DOACCEL .and. A .eq. 0.0 .and. DELJNEW .lt. DELJOLD) then
+    if (doAccel .and. A .eq. 0.0 .and. DELJNEW .lt. DELJOLD) then
         ! Compute the acceleration extrapolation factor and apply it.
         R = sqrt(DELJNEW/DELJOLD)
         THETA = acos(DELJDOT/sqrt(DELJOLD*DELJNEW))
@@ -2915,7 +2915,7 @@ subroutine shd_mpi__end(runName, rtm_obj, prpAll_obj)
     dx_prp = real(prp_obj_%xDomain)/real(prpAll_obj%Nx)
     dy_prp = real(prp_obj_%yDomain)/real(prpAll_obj%Ny)
 
-    if (loadBalance_) then
+    if (doLoadBalance_) then
         ! Calculate the number of grid points around each property grid column
         allocate(NUMGRID(prp_obj_%Nx, prp_obj_%Ny))
         NUMGRID(:, :) = 0
@@ -3075,7 +3075,7 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord,&
     integer :: IX, IY, JX, JY, Nxd, Nyd, N, I, ierr
     integer :: BndLines(ProcDims(1) + ProcDims(2) - 2)
     integer :: IDX(ProcDims(1) + 1), IDY(ProcDims(2) + 1)
-    logical :: DoLoadBalancing
+    logical :: doLoadBalance
     integer, parameter :: NCYCLE = 30 ! number of annealing cooling cycles
     integer, parameter :: NiterFac = 100 ! number of iterations per length of optimization vector (BndLines)
     real, parameter :: Temp0 = 0.1 ! initial temperature (units of change in objective function "energy")
@@ -3094,8 +3094,8 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord,&
     BndLines(   1:Nxd - 1) = (/(nint(I*float(prpAll_obj%Nx)/Nxd) + 1, I=1, Nxd - 1)/)
     BndLines( Nxd:      N) = (/(nint(I*float(prpAll_obj%Ny)/Nyd) + 1, I=1, Nyd - 1)/)
 
-    if (loadBalance_) then
-        DoLoadBalancing = .false.
+    if (doLoadBalance_) then
+        doLoadBalance = .false.
         if (myProc_ .eq. 0) then
             ! See if we can read the load balancing file and header matches
             open(UNIT=10, FILE=trim(runName)//'_load_balance.inp', STATUS='OLD', IOSTAT=ierr)
@@ -3109,7 +3109,7 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord,&
                     write(6, *) prp_obj%fname
                     write(6, *)
                 else
-                    DoLoadBalancing = .true.
+                    doLoadBalance = .true.
                 end if
                 close(10)
             end if
@@ -3119,7 +3119,7 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord,&
         allocate(ProcCoordAll(2, 0:Nproc_ - 1))
         call mpi_gather(ProcCoord, 2, MPI_integer, ProcCoordAll, 2, MPI_integer, 0, comm2D_, ierr)
 
-        if (myProc_ .eq. 0 .and. DoLoadBalancing) then
+        if (myProc_ .eq. 0 .and. doLoadBalance) then
             ! Read the load balancing file to get array of number of grid points
             allocate(Ngrid(prpAll_obj%Nx + 1, prpAll_obj%Ny + 1))
             open(UNIT=10, FILE=trim(runName)//'_load_balance.inp', STATUS='OLD')
@@ -3200,7 +3200,7 @@ subroutine shd_mpi__optimizeProcDomain(ProcDims, ProcCoord,&
 
         call mpi_bcast(BndLines, N, MPI_integer, 0, comm2D_, ierr)
         deallocate(ProcCoordAll)
-        if (myProc_ .eq. 0 .and. DoLoadBalancing) then
+        if (myProc_ .eq. 0 .and. doLoadBalance) then
             write(6, '(A)') 'Optimum load balanced boundary lines in the property grid:'
             write(6, '(A,16I4)') '  X lines:', BndLines(1:Nxd - 1)
             write(6, '(A,16I4)') '  Y lines:', BndLines(Nxd:N)

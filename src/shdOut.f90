@@ -121,7 +121,7 @@ subroutine shd_io__outputResult(&
 
     integer IZ, I, K, N, NX2, NY2, J, JX, JY, iCell
     integer NANGOUT, NXOUT, NYOUT
-    logical ALLGRID
+    logical doAllGrid
     real(RD_) :: MUOUT, PHID
     real :: C, SUM
     real xDomain, yDomain, xStart, yStart
@@ -650,10 +650,10 @@ subroutine shd_io__outputResult(&
 
             if (nint(OUTPARMS(1)) .eq. 5) then
                 N = rtm_obj_%Npts
-                ALLGRID = .true.
+                doAllGrid = .true.
             else
                 N = rtm_obj_%Npts0
-                ALLGRID = .false.
+                doAllGrid = .false.
             end if
 
             if (src_obj_%unit .eq. 'T') then
@@ -674,7 +674,7 @@ subroutine shd_io__outputResult(&
             ! description for binary data
             !╭────────────────────────────────────────────────╮!
             write(2, '(A)') '! The following contains information for binary data intepretation:'
-            if (ALLGRID) then
+            if (doAllGrid) then
                 write(2, '(A)') '! F5'
                 write(2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
                 ! added x, y, z (NVAR+3)
@@ -688,7 +688,7 @@ subroutine shd_io__outputResult(&
 
             ! binary data
             !╭────────────────────────────────────────────────╮!
-            if (ALLGRID) then
+            if (doAllGrid) then
                 if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <F5> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
             else
                 if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <F4> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
@@ -706,7 +706,7 @@ subroutine shd_io__outputResult(&
             end if
 
             ! add grid positions (or binary data cannot be reconstructed)
-            if (ALLGRID) then
+            if (doAllGrid) then
                 IDATA = 0
                 call shd_io__outputDataBin(xyz_Rtm_(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
             end if
@@ -716,7 +716,7 @@ subroutine shd_io__outputResult(&
             !╭────────────────────────────────────────────────╮!
             !do I = 1, N
             !    if ((xyz_Rtm_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
-            !        &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) .or. ALLGRID) then
+            !        &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) .or. doAllGrid) then
             !        if (src_obj_%type .ne. 'T') then
             !            write(2, FORM) xyz_Rtm_(1, I), xyz_Rtm_(2, I), xyz_Rtm_(3, I),&
             !                & C*FLUXES(2, I), C*FLUXES(1, I), fluxDir(I)
@@ -797,10 +797,10 @@ subroutine shd_io__outputResult(&
             ! Format 3 is flux convergence for every grid point
             if (nint(OUTPARMS(1)) .eq. 3) then
                 N = rtm_obj_%Npts
-                ALLGRID = .true.
+                doAllGrid = .true.
             else
                 N = rtm_obj_%Npts0
-                ALLGRID = .false.
+                doAllGrid = .false.
             end if
 
             write(2, '(A)') '!    X       Y        Z       -DIV(Fnet)'
@@ -808,7 +808,7 @@ subroutine shd_io__outputResult(&
             ! description for binary data
             !╭────────────────────────────────────────────────╮!
             write(2, '(A)') '! The following contains information for binary data intepretation:'
-            if (ALLGRID) then
+            if (doAllGrid) then
                 write(2, '(A)') '! H3'
                 write(2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
                 ! added x, y, z (NVAR+3)
@@ -822,7 +822,7 @@ subroutine shd_io__outputResult(&
 
             ! binary data
             !╭────────────────────────────────────────────────╮!
-            if (ALLGRID) then
+            if (doAllGrid) then
                 if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <H3> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
             else
                 if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <H2> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
@@ -832,7 +832,7 @@ subroutine shd_io__outputResult(&
             call shd_io__outputDataBin(-FLUXDIV, 1, N, IDATA, OUTFILE_DATA)
 
             ! add grid positions (or binary data cannot be reconstructed)
-            if (ALLGRID) then
+            if (doAllGrid) then
                 IDATA = 0
                 call shd_io__outputDataBin(xyz_Rtm_(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
             end if
@@ -842,7 +842,7 @@ subroutine shd_io__outputResult(&
             !╭────────────────────────────────────────────────╮!
             !do I = 1, N
             !    if ((xyz_Rtm_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
-            !        &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) .or. ALLGRID) then
+            !        &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) .or. doAllGrid) then
             !        write(2, '(3(1X,F7.3),2X,E13.5)')&
             !            & xyz_Rtm_(1, I), xyz_Rtm_(2, I), xyz_Rtm_(3, I), -FLUXDIV(I)
             !    end if
@@ -858,10 +858,10 @@ subroutine shd_io__outputResult(&
 
         if (nint(OUTPARMS(1)) .eq. 2) then
             N = rtm_obj_%Npts
-            ALLGRID = .true.
+            doAllGrid = .true.
         else
             N = rtm_obj_%Npts0
-            ALLGRID = .false.
+            doAllGrid = .false.
         end if
 
         ! data processing
@@ -885,7 +885,7 @@ subroutine shd_io__outputResult(&
         ! description for binary data
         !╭────────────────────────────────────────────────╮!
         write(2, '(A)') '! The following contains information for binary data intepretation:'
-        if (ALLGRID) then
+        if (doAllGrid) then
             write(2, '(A)') '! S2'
             write(2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
             ! added x, y, z (NVAR+3)
@@ -899,7 +899,7 @@ subroutine shd_io__outputResult(&
 
         ! binary data
         !╭────────────────────────────────────────────────╮!
-        if (ALLGRID) then
+        if (doAllGrid) then
             if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <S2> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
         else
             if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <S1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
@@ -914,7 +914,7 @@ subroutine shd_io__outputResult(&
         end if
 
         ! add grid positions (or binary data cannot be reconstructed)
-        if (ALLGRID) then
+        if (doAllGrid) then
             IDATA = 0
             call shd_io__outputDataBin(xyz_Rtm_(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
         end if
@@ -929,7 +929,7 @@ subroutine shd_io__outputResult(&
         !        &'          Fx           Fy           Fz       HOrms'
         !    do I = 1, N
         !        if ((xyz_Rtm_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
-        !            &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) .or. ALLGRID) then
+        !            &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) .or. doAllGrid) then
         !            write(2, '(3(1X,F7.3),1X,4(1X,E12.5),1X,F6.3)')&
         !                &xyz_Rtm_(1, I), xyz_Rtm_(2, I), xyz_Rtm_(3, I),&
         !                &SHTERMS(1, I), SHTERMS(2, I), SHTERMS(3, I), SHTERMS(4, I),&
@@ -941,7 +941,7 @@ subroutine shd_io__outputResult(&
         !        &'          Fx           Fy           Fz '
         !    do I = 1, N
         !        if ((xyz_Rtm_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
-        !            &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) .or. ALLGRID) then
+        !            &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) .or. doAllGrid) then
         !            write(2, '(3(1X,F7.3),1X,4(1X,E12.5))')&
         !                &xyz_Rtm_(1, I), xyz_Rtm_(2, I), xyz_Rtm_(3, I),&
         !                &SHTERMS(1, I), SHTERMS(2, I), SHTERMS(3, I), SHTERMS(4, I)
@@ -958,10 +958,10 @@ subroutine shd_io__outputResult(&
         !   at every grid point
         if (nint(OUTPARMS(1)) .eq. 2) then
             N = rtm_obj_%Npts
-            ALLGRID = .true.
+            doAllGrid = .true.
         else
             N = rtm_obj_%Npts0
-            ALLGRID = .false.
+            doAllGrid = .false.
         end if
 
         MUOUT = OUTPARMS(2)
@@ -974,7 +974,7 @@ subroutine shd_io__outputResult(&
         ! description for binary data
         !╭────────────────────────────────────────────────╮!
         write(2, '(A)') '! The following contains information for binary data intepretation:'
-        if (ALLGRID) then
+        if (doAllGrid) then
             write(2, '(A)') '! J2'
             write(2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
             ! added x, y, z (NVAR+3)
@@ -988,7 +988,7 @@ subroutine shd_io__outputResult(&
 
         ! binary data
         !╭────────────────────────────────────────────────╮!
-        if (ALLGRID) then
+        if (doAllGrid) then
             if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <J2> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
         else
             if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <J1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
@@ -1000,7 +1000,7 @@ subroutine shd_io__outputResult(&
         call shd_io__outputDataBin(SOURCE1OUT, 4, N, IDATA, OUTFILE_DATA, 'ADD')
 
         ! add grid positions (or binary data cannot be reconstructed)
-        if (ALLGRID) then
+        if (doAllGrid) then
             IDATA = 0
             call shd_io__outputDataBin(xyz_Rtm_(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
         end if
@@ -1010,7 +1010,7 @@ subroutine shd_io__outputResult(&
         !╭────────────────────────────────────────────────╮!
         !do I = 1, N
         !    if ((xyz_Rtm_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
-        !        &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) .or. ALLGRID) then
+        !        &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) .or. doAllGrid) then
         !        write(2, '(3(1X,F7.3),5(1X,E12.5))')&
         !            & xyz_Rtm_(1, I), xyz_Rtm_(2, I), xyz_Rtm_(3, I),&
         !            & ext_Rtm_(I), SOURCE1OUT(:, I)
@@ -1027,10 +1027,10 @@ subroutine shd_io__outputResult(&
 
         if (nint(OUTPARMS(1)) .eq. 2) then
             N = rtm_obj_%Npts
-            ALLGRID = .true.
+            doAllGrid = .true.
         else
             N = rtm_obj_%Npts0
-            ALLGRID = .false.
+            doAllGrid = .false.
         end if
 
         write(2, '(A,A)') '!    X       Y       Z',&
@@ -1051,7 +1051,7 @@ subroutine shd_io__outputResult(&
         ! description for binary data
         !╭────────────────────────────────────────────────╮!
         write(2, '(A)') '! The following contains information for binary data intepretation:'
-        if (ALLGRID) then
+        if (doAllGrid) then
             write(2, '(A)') '! M2'
             write(2, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
             ! added x, y, z (NVAR+3)
@@ -1065,7 +1065,7 @@ subroutine shd_io__outputResult(&
 
         ! binary data
         !╭────────────────────────────────────────────────╮!
-        if (ALLGRID) then
+        if (doAllGrid) then
             if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <M2> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
         else
             if (verbose_ .ge. 5) write(*, '(A)') 'Message [_outputResult]: <M1> Data info saved at <'//trim(adjustl(OUTFILE))//'>.'
@@ -1081,7 +1081,7 @@ subroutine shd_io__outputResult(&
         call shd_io__outputDataBin(temp_Rtm_, 1, N, IDATA, OUTFILE_DATA, 'ADD')
 
         ! add grid positions (or binary data cannot be reconstructed)
-        if (ALLGRID) then
+        if (doAllGrid) then
             IDATA = 0
             call shd_io__outputDataBin(xyz_Rtm_(1:3, :), 3, N, IDATA, OUTFILE_DATA, 'ADD')
         end if
@@ -1099,7 +1099,7 @@ subroutine shd_io__outputResult(&
         !        ASYM = leg_Rtm_(1, 1, I)
         !    end if
         !    if ((xyz_Rtm_(1, I) .lt. rtm_obj_%x(rtm_obj_%Nx + 1) .and.&
-        !        &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) .or. ALLGRID) then
+        !        &xyz_Rtm_(2, I) .lt. rtm_obj_%y(rtm_obj_%Ny + 1)) .or. doAllGrid) then
         !        write(2, '(3(1X,F7.3),1X,F10.6,1X,F8.6,1X,F8.5,1X,F7.2)')&
         !            & xyz_Rtm_(1, I), xyz_Rtm_(2, I), xyz_Rtm_(3, I),&
         !            & ext_Rtm_(I), ssa_Rtm_(I), ASYM, temp_Rtm_(I)
@@ -2134,7 +2134,7 @@ subroutine shd_io__outputImg(&
     integer DN, I, J, K, L, M
     real MAXLINPOL, MINANGPOL, MAXANGPOL, MAXCIRCPOL
     real VISMIN(4), VISMAX(4), VISSCALE(4)
-    logical CAMERA_MODE, LSBFIRST
+    logical isCameraMode, isLSBFirst
     integer*1, allocatable :: BUFFER1(:)
     character(len=128) :: GRIDNAME, SOURCENAME, UNITSNAME, SFCNAME
     character(len=128) :: POLNAMES(4), VISFORM(4)
@@ -2147,8 +2147,8 @@ subroutine shd_io__outputImg(&
     end do
 
     ! Find the image size
-    CAMERA_MODE = nint(OUTPARMS(1)) .eq. 1
-    if (CAMERA_MODE) then
+    isCameraMode = nint(OUTPARMS(1)) .eq. 1
+    if (isCameraMode) then
         NL = nint(OUTPARMS(10))
         NS = nint(OUTPARMS(11))
     else if (OUTPARMS(1) .eq. 2) then
@@ -2158,7 +2158,7 @@ subroutine shd_io__outputImg(&
         NS = 1 + abs(OUTPARMS(12) - OUTPARMS(11))/OUTPARMS(13)
     end if
     NBYTES = min(2, max(1, nint(abs(OUTPARMS(2)))))
-    LSBFIRST = OUTPARMS(2) .lt. 0.0
+    isLSBFirst = OUTPARMS(2) .lt. 0.0
     allocate(BUFFER1(NBYTES*NS))
     NLOUT = shdo_obj_%Nstokes*NL
 
@@ -2372,7 +2372,7 @@ subroutine shd_io__outputImg(&
     write(BUF(I:I + 7), '(A,A1)') '# ', LF
     I = I + index(BUF(I:I + 7), LF)
 
-    if (CAMERA_MODE) then
+    if (isCameraMode) then
         write(BUF(I:I + 79), '(A,A1)') '# CAMERA MODE:', LF
         I = I + index(BUF(I:I + 79), LF)
         ! 1, bytes, scale, X,Y,Z, theta, phi, rotang, NL, NS, delline,
@@ -2478,7 +2478,7 @@ subroutine shd_io__outputImg(&
                 do I = 1, NS
                     DN = nint(VISSCALE(M)*(VISOUT(M, K) - VISMIN(M)))
                     DN = max(0, min(65535, DN))
-                    if (LSBFIRST) then
+                    if (isLSBFirst) then
                         BUFFER1(2*I - 1) = iand(DN, 255)
                         BUFFER1(2*I) = ishft(DN, -8)
                     else

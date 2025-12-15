@@ -1148,7 +1148,7 @@ subroutine shd_io__checkPrp(prp_obj, temp_Prp, ext_Prp, ssa_Prp, leg_Prp, ipha_P
 
     integer(kind=I__) :: i, iz, N, Nthick
     real(kind=R__)    :: tmin, tmax, tau, maxTau, dz
-    logical :: legWarn
+    logical :: doLegWarn
 
     ! prp_obj%Nx and prp_obj%Ny must be 1 or greater, prp_obj%Nz must be 2 or greater
     if (prp_obj%Nx .lt. 1 .or. prp_obj%Ny .lt. 1 .or. prp_obj%Nz .lt. 2) then
@@ -1202,17 +1202,17 @@ subroutine shd_io__checkPrp(prp_obj, temp_Prp, ext_Prp, ssa_Prp, leg_Prp, ipha_P
     end do
 
     if (prp_obj%Npha .gt. 0) N = prp_obj%Npha
-    legWarn = .false.
+    doLegWarn = .false.
     do i = 1, N
         if (leg_Prp(1, 1, i) .lt. -3.0 .or. leg_Prp(1, 1, i) .gt. 3.0) then
             write(*, *) 'Error [_checkPrp]: Asymmetry parameter ',&
                 &'out of range - ', leg_Prp(1, 1, i)*FRAC13_, ' at grid point ', i
             stop
         end if
-        if (leg_Prp(1, 1, i) .eq. 1.0) legWarn = .true.
+        if (leg_Prp(1, 1, i) .eq. 1.0) doLegWarn = .true.
     end do
 
-    if (legWarn) then
+    if (doLegWarn) then
         if (verbose_ .ge. 4) write(*, *) 'Warning [_checkPrp]: ',&
             &'an asymmetry parameter is 1/3 (Chi1=1); ',&
             &'  Chi0 should not be specified for Chi1.'
@@ -1369,7 +1369,7 @@ subroutine shd_io__readSfc(sfc_obj, brdf_Sfc)
     character(len=20) :: dataPostfix
     integer :: Nxx, Nyy, Npp, ipar
 
-    logical :: hasAlb
+    logical :: doAlb
 
     ! Surface type is variable something
     sfc_obj%type(1:1) = 'V'
@@ -1395,7 +1395,7 @@ subroutine shd_io__readSfc(sfc_obj, brdf_Sfc)
 
             sfc_obj%Npar = 2
             sfc_obj%isLambertian = .true.
-            hasAlb = .true.
+            doAlb = .true.
 
         case ('VO', 'Vo')
             ! Surface file type O is for Ocean surface BRDF
@@ -1406,7 +1406,7 @@ subroutine shd_io__readSfc(sfc_obj, brdf_Sfc)
             ! 3: pigment concentration, units: mg/m^3
 
             sfc_obj%Npar = 3
-            hasAlb = .false.
+            doAlb = .false.
 
         case ('VR', 'Vr')
             ! Surface file type R is for RPV surface:
@@ -1421,7 +1421,7 @@ subroutine shd_io__readSfc(sfc_obj, brdf_Sfc)
             ! 4: theta
 
             sfc_obj%Npar = 4
-            hasAlb = .true.
+            doAlb = .true.
 
         case ('VT', 'Vt')
             ! Surface file type T is for LSRT surface:
@@ -1432,7 +1432,7 @@ subroutine shd_io__readSfc(sfc_obj, brdf_Sfc)
             ! 4: f_vol
 
             sfc_obj%Npar = 4
-            hasAlb = .true.
+            doAlb = .true.
 
         case ('VJ', 'Vj')
             ! Surface file type J is for LSRT-Jiao surface:
@@ -1445,7 +1445,7 @@ subroutine shd_io__readSfc(sfc_obj, brdf_Sfc)
             ! 6: alpha
 
             sfc_obj%Npar = 6
-            hasAlb = .true.
+            doAlb = .true.
 
         case ('VW', 'Vw')
             ! Surface file type W is for Wave-Fresnel surface
@@ -1456,7 +1456,7 @@ subroutine shd_io__readSfc(sfc_obj, brdf_Sfc)
             ! 4: 10m wind speed
 
             sfc_obj%Npar = 4
-            hasAlb = .false.
+            doAlb = .false.
 
         case ('VD', 'Vd')
             ! Surface file type D is for Diner et al surface reflection:
@@ -1474,7 +1474,7 @@ subroutine shd_io__readSfc(sfc_obj, brdf_Sfc)
             ! 6: Sigma
 
             sfc_obj%Npar = 6
-            hasAlb = .true.
+            doAlb = .true.
 
         case ('VX', 'Vx')
             ! Surface file type X is for Mixed-type surface:
@@ -1489,7 +1489,7 @@ subroutine shd_io__readSfc(sfc_obj, brdf_Sfc)
             ! for Diner        (VD):ix, iy, temp0,   A,      KR,     B,      ZETA,   SIGMA,  -999.0, -2.0
 
             sfc_obj%Npar = 8
-            hasAlb = .true.
+            doAlb = .true.
 
         case default
 
@@ -1566,7 +1566,7 @@ subroutine shd_io__readSfc(sfc_obj, brdf_Sfc)
 
                 ! alb
                 !╭──────────────────────────────────────────────────────────────╮!
-                if (hasAlb) then
+                if (doAlb) then
 
                     if (sfc_obj%type .eq. 'VX') then
 
@@ -1801,7 +1801,7 @@ end subroutine shd_io__readSen
 
 subroutine shd_io__restoreState(&
     INSAVEFILE, &
-    INRADFLAG, NEWGRIDFLAG, &
+    doRadInit, doGridInit, &
     FLUXES, &
     rtm_obj, xyz_Rtm, &
     cell_obj, i8Grid_Cell, i6Cell_Cell, i2Tree_Cell, flag_Cell, &
@@ -1811,10 +1811,12 @@ subroutine shd_io__restoreState(&
     ! the SHDOM solution. This includes the cell tree structure,
     ! the spherical harmonic expansion of the source function,
     ! the low order terms of the radiance expansion, and the flux array.
-    ! If the file name is 'NONE' then the INRADFLAG is set to false,
+    ! If the file name is 'NONE' then the doRadInit is set to false,
     ! otherwise it is true.  The input file may have any spherical
     ! harmonic truncation smaller than the current (shdo_obj%maxNl,shdo_obj%maxNm,shdo_obj%Nlm).
-    ! The flag NEWGRIDFLAG is set to false if reading succeeds.
+    ! The flag doGridInit is set to false if reading succeeds.
+
+    character(*), intent(in) :: INSAVEFILE
 
     type(shd_type_rtm),  intent(inout) :: rtm_obj
     type(shd_type_cell), intent(inout) :: cell_obj
@@ -1831,17 +1833,14 @@ subroutine shd_io__restoreState(&
     integer(kind=I__), intent(out) :: isrcJ_Shdo(*)
     real(kind=R__),    intent(out) ::  srcJ_Shdo(shdo_obj%Nstokes, *)
 
-
-    character(*), intent(in) :: INSAVEFILE
-
-    logical, intent(out) :: INRADFLAG, NEWGRIDFLAG
+    logical, intent(out) :: doRadInit, doGridInit
     real(kind=R__), intent(out) :: FLUXES(2, *)
 
     integer :: NSTI, NXI, NYI, NZI, MLI, MMI, NLMI
     integer :: i, j, NS, NR
 
-    INRADFLAG = .false.
-    NEWGRIDFLAG = .true.
+    doRadInit = .false.
+    doGridInit = .true.
     if (INSAVEFILE(1:4) .eq. 'NONE') return
 
     open(UNIT=3, FILE=trim(adjustl(INSAVEFILE)), STATUS='OLD',&
@@ -1891,15 +1890,15 @@ subroutine shd_io__restoreState(&
 
     if (verbose_ .ge. 5) write(6, '(A)') 'Message [_restoreState]: State restored from <'//trim(adjustl(INSAVEFILE))//'> ...'
 
-    INRADFLAG = .true.
-    NEWGRIDFLAG = .false.
+    doRadInit = .true.
+    doGridInit = .false.
     return
 
 900 continue
 
     if (verbose_ .ge. 4) write(6, '(A)') 'Warning [_restoreState]: Failed to restore state file from <'//trim(adjustl(INSAVEFILE))//'>.'
-    INRADFLAG = .false.
-    NEWGRIDFLAG = .true.
+    doRadInit = .false.
+    doGridInit = .true.
 
     return
 

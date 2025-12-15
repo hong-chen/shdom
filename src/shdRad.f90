@@ -179,7 +179,7 @@ subroutine shd_rad__computeDirect(&
     integer IX, IY, IZ, JZ, IL, IM, IU
     integer I, J, K, L, IPH, IP, JP
     integer IPDIRECT, DI, DJ, DK
-    logical CONSTX, CONSTY, HITBOUNDARY
+    logical isConstX, isConstY, isHitBndry
 
     real(kind=R__) :: lon0, lat0, muSun0, phiSun0
 
@@ -433,45 +433,45 @@ subroutine shd_rad__computeDirect(&
             YP = YE
             ZP = ZE
 
-            CONSTX = btest(IPDIRECT, 0)
-            CONSTY = btest(IPDIRECT, 1)
+            isConstX = btest(IPDIRECT, 0)
+            isConstY = btest(IPDIRECT, 1)
 
-            if (cX .eq. 0.0) CONSTX = .true.
-            if (cY .eq. 0.0) CONSTY = .true.
+            if (cX .eq. 0.0) isConstX = .true.
+            if (cY .eq. 0.0) isConstY = .true.
 
             if (isOpenX_ .and. (abs(X) .lt. 0.01*DELXD&
-                &.or. abs(X - (prp_obj_%Nx - 1)*DELXD) .lt. 0.01*DELXD)) CONSTX = .true.
+                &.or. abs(X - (prp_obj_%Nx - 1)*DELXD) .lt. 0.01*DELXD)) isConstX = .true.
 
             if (isOpenYx_ .and. (abs(Y) .lt. 0.01*DELYD&
-                &.or. abs(Y - (prp_obj_%Ny - 1)*DELYD) .lt. 0.01*DELYD)) CONSTY = .true.
+                &.or. abs(Y - (prp_obj_%Ny - 1)*DELYD) .lt. 0.01*DELYD)) isConstY = .true.
 
             ! If have multiple subdomains (processors) and ray is going outwards
-            !   from a boundary then set the HITBOUNDARY flag
-            HITBOUNDARY = .false.
+            !   from a boundary then set the isHitBndry flag
+            isHitBndry = .false.
             if (isMpiX_) then
                 if (cX .gt. 0.0 .and. abs(X - xDomain) .lt. 0.001*DELXD) then
                     SIDE = 2
-                    HITBOUNDARY = .true.
+                    isHitBndry = .true.
                 else if (cX .lt. 0.0 .and. abs(X) .lt. 0.001*DELXD) then
                     SIDE = 1
-                    HITBOUNDARY = .true.
+                    isHitBndry = .true.
                 end if
             end if
 
             if (isMpiY_) then
                 if (cY .gt. 0.0 .and. abs(Y - yDomain) .lt. 0.001*DELYD) then
                     SIDE = 4
-                    HITBOUNDARY = .true.
+                    isHitBndry = .true.
                 end if
                 if (cY .lt. 0.0 .and. abs(Y) .lt. 0.001*DELYD) then
                     SIDE = 3
-                    HITBOUNDARY = .true.
+                    isHitBndry = .true.
                 end if
             end if
 
             ! Grid cell loop begin
             PATH = DIRPATH
-            do while (.not. HITBOUNDARY .and. abs(ZE - prp_obj_%z(prp_obj_%Nz)) .gt. EPSZ)
+            do while (.not. isHitBndry .and. abs(ZE - prp_obj_%z(prp_obj_%Nz)) .gt. EPSZ)
 
                 IP = I + 1
                 if (I .eq. prp_obj_%Nx) then
@@ -527,11 +527,11 @@ subroutine shd_rad__computeDirect(&
                 ! Compute the distance to the next grid plane in  X, Y, and Z
                 !   If in horizontal uniform region or doing IP then fix X and/or Y.
                 if (ZE .ge. UNIFORMZLEV) then
-                    CONSTX = .true.
-                    CONSTY = .true.
+                    isConstX = .true.
+                    isConstY = .true.
                 end if
 
-                if (CONSTX) then
+                if (isConstX) then
                     SOX = 1.0e30
                 else if (cX .gt. 0.0) then
                     SOX = (X1 - XE)*CXINV
@@ -541,7 +541,7 @@ subroutine shd_rad__computeDirect(&
                     XP = X0
                 end if
 
-                if (CONSTY) then
+                if (isConstY) then
                     SOY = 1.0e30
                 else if (cY .gt. 0.0) then
                     SOY = (Y1 - YE)*CYINV
@@ -567,12 +567,12 @@ subroutine shd_rad__computeDirect(&
                 YOFFS = 0.0
                 if (SOZ .le. SOX .and. SOZ .le. SOY) then
                     SO = SOZ
-                    if (.not. CONSTX) XP = XE + SO*cX
-                    if (.not. CONSTY) YP = YE + SO*cY
+                    if (.not. isConstX) XP = XE + SO*cX
+                    if (.not. isConstY) YP = YE + SO*cY
                     K = K + DK
                 else if (SOX .le. SOY) then
                     SO = SOX
-                    if (.not. CONSTY) YP = YE + SO*cY
+                    if (.not. isConstY) YP = YE + SO*cY
                     ZP = ZE + SO*cZ
                     I = I + DI
                     ! If have reached a horizontal boundary then either wrap around
@@ -580,21 +580,21 @@ subroutine shd_rad__computeDirect(&
                     if (I .eq. 0) then
                         if (isOpenX_) then
                             I = 1
-                            CONSTX = .true.
+                            isConstX = .true.
                         else if (isMpiX_) then
-                            HITBOUNDARY = .true.
+                            isHitBndry = .true.
                             SIDE = 1
                         else
                             I = prp_obj_%Nx
                             XOFFS = xDomain
                         end if
                     else if (I .ge. prp_obj_%Nx .and. isMpiX_) then
-                        HITBOUNDARY = .true.
+                        isHitBndry = .true.
                         SIDE = 2
                     else if (I .eq. prp_obj_%Nx + 1) then
                         if (isOpenX_) then
                             I = prp_obj_%Nx
-                            CONSTX = .true.
+                            isConstX = .true.
                         else
                             I = 1
                             XOFFS = -xDomain
@@ -602,27 +602,27 @@ subroutine shd_rad__computeDirect(&
                     end if
                 else
                     SO = SOY
-                    if (.not. CONSTX) XP = XE + SO*cX
+                    if (.not. isConstX) XP = XE + SO*cX
                     ZP = ZE + SO*cZ
                     J = J + DJ
                     if (J .eq. 0) then
                         if (isOpenYx_) then
                             J = 1
-                            CONSTY = .true.
+                            isConstY = .true.
                         else if (isMpiY_) then
-                            HITBOUNDARY = .true.
+                            isHitBndry = .true.
                             SIDE = 3
                         else
                             J = prp_obj_%Ny
                             YOFFS = yDomain
                         end if
                     else if (J .ge. prp_obj_%Ny .and. isMpiY_) then
-                        HITBOUNDARY = .true.
+                        isHitBndry = .true.
                         SIDE = 4
                     else if (J .eq. prp_obj_%Ny + 1) then
                         if (isOpenYx_) then
                             J = prp_obj_%Ny
-                            CONSTY = .true.
+                            isConstY = .true.
                         else
                             J = 1
                             YOFFS = -yDomain
@@ -981,7 +981,7 @@ subroutine shd_rad__computeRadRay(&
     real OUTPARMS(*), VISOUT(shdo_obj_%Nstokes, *)
     integer NSCATANGLE, NSTPHASE, I, J, L, N, SIDE
     integer NL, NS, LINE, SAMP
-    logical CAMERA_MODE, isValidRad
+    logical isCameraMode, isValidRad
     real MURAY, PHIRAY
     real(RD_) :: XE, YE, ZE, trans, VISRAD(shdo_obj_%Nstokes)
     real(RD_) :: X0, Y0, Z0, X1, Y1, Z1, X2, Y2, Z2
@@ -1023,8 +1023,8 @@ subroutine shd_rad__computeRadRay(&
             &shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
     end if
 
-    CAMERA_MODE = nint(OUTPARMS(1)) .eq. 1
-    if (CAMERA_MODE) then
+    isCameraMode = nint(OUTPARMS(1)) .eq. 1
+    if (isCameraMode) then
         NL = nint(OUTPARMS(10))
         NS = nint(OUTPARMS(11))
     else
@@ -1039,7 +1039,7 @@ subroutine shd_rad__computeRadRay(&
         do SAMP = 1, NS
             IVIS = IVIS + 1
 
-            if (CAMERA_MODE) then
+            if (isCameraMode) then
                 ! Camera mode:
                 !   1, bytes, scale, X,Y,Z, theta, phi, rotang, NL, NS, delline,
                 !

@@ -130,7 +130,7 @@ subroutine shd_solv__solveRte(&
 
     integer I, isetDO
     integer MAXNANGBND, NANGBND(4, 2), ierr
-    logical doFixSH, SPLITTESTING, doSplit, isOutMem
+    logical doFixSH, doSplitTest, doSplit, isOutMem
     logical, allocatable :: flagFFT_Shdo(:)
     real maxSsa
     real STARTADAPTSOL, ENDADAPTSOL, ADAPTRANGE, SPLITCRIT
@@ -295,8 +295,8 @@ subroutine shd_solv__solveRte(&
     ! (ADAPTRANGE).  The currect splitting accuracy is computed from
     ! a geometric average of the solution criterion (AVGSOLCRIT).
     ! The shd_grid__splitGrid routine is called and the splitting criterion returned
-    ! as long as SPLITTESTING is true.
-    SPLITTESTING = .true.
+    ! as long as doSplitTest is true.
+    doSplitTest = .true.
     isOutMem = .false.
     ENDADAPTSOL = 0.001
     STARTADAPTSOL = 0.1
@@ -341,7 +341,7 @@ subroutine shd_solv__solveRte(&
             CURSPLITACC = min(CURSPLITACC, max(SPLITACC,&
                 &SPLITACC*(AVGSOLCRIT/(3.0*ENDADAPTSOL))**BETA))
             if (SOLCRIT .le. ENDADAPTSOL) CURSPLITACC = SPLITACC
-            if (SPLITTESTING) then
+            if (doSplitTest) then
                 call shd_grid__splitGrid( &
                     doSplit, isOutMem, CURSPLITACC, SPLITCRIT, &
                     doDeltaM, doAccel, &
@@ -357,7 +357,7 @@ subroutine shd_solv__solveRte(&
             end if
             ! Find the maximum splitting criterion over all processors
             call shd_mpi__findMaxSplitCrit(SPLITCRIT)
-            if (SOLCRIT .le. ENDADAPTSOL) SPLITTESTING = .false.
+            if (SOLCRIT .le. ENDADAPTSOL) doSplitTest = .false.
         else
             doSplit = .false.
         end if
@@ -524,7 +524,7 @@ subroutine shd_solv__truncRad(doHighOrder, doFixSH, SHACC,&
     real SHACC
     integer IRO, IR, NRO, NR, I, J, K, L, LR, LS, M, MS, ME, NS, NLM
     integer, allocatable :: ilegJ(:)
-    logical NOTEND
+    logical isNotEnd
     real RADMIN
 
     MAXIR = shdo_obj_%maxNptsSH + rtm_obj_%maxNpts
@@ -532,7 +532,7 @@ subroutine shd_solv__truncRad(doHighOrder, doFixSH, SHACC,&
     if (doFixSH) goto 190
 
     RADMIN = SHACC
-    NOTEND = .true.
+    isNotEnd = .true.
     ! Make the l index as a function of SH term (J)
     NLM = (2*shdo_obj_%maxNm + 1)*(shdo_obj_%maxNl + 1) - shdo_obj_%maxNm*(shdo_obj_%maxNm + 1)
     allocate(ilegJ(NLM))
@@ -555,8 +555,8 @@ subroutine shd_solv__truncRad(doHighOrder, doFixSH, SHACC,&
         !   upper limit to the SH term radiance).
         !   We don't have radiances for any new points, so don't use them
         NRO = iradI_Shdo(I + 1) - IRO
-        if (NRO .eq. 0) NOTEND = .false.
-        if (NOTEND) then
+        if (NRO .eq. 0) isNotEnd = .false.
+        if (isNotEnd) then
             if (prp_obj_%Npha .gt. 0) then
                 K = ipha_Rtm_(I)
             else
