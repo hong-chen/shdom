@@ -562,7 +562,7 @@ end subroutine shd_src__computeSrcDir
 
 subroutine shd_src__integrateSrcRay(&
     &NSTOKES,&
-    &NSTPHASE, NSCATANGLE, phaTab,&
+    &NphaSet, NangScat, phaTab,&
     &ML, MM, NLM,&
     &NMU, NPHI0MAX, NPHI0, muDO, phiDO, WTDO,&
     &doDeltaM, SRCTYPE, WAVELEN, muSun, phiSun,&
@@ -579,7 +579,7 @@ subroutine shd_src__integrateSrcRay(&
     ! ray location (XE,YE,ZE) and side of the domain (1=-X,2=+X,3=-Y,4=+Y,
     ! 5=-Z,6=+Z).
 
-    integer NSTOKES, NSTPHASE, NSCATANGLE
+    integer NSTOKES, NphaSet, NangScat
     integer SIDE
     integer ML, MM, NLM
     integer MAXNBC, NTOPPTS, NBOTPTS
@@ -592,7 +592,7 @@ subroutine shd_src__integrateSrcRay(&
     real BCRAD(*)
     real fluxDir(rtm_obj_%Npts), srcJ_Shdo(NSTOKES, *)
     real YlmSun(prp_obj_%NlegSet, NLM)
-    real phaTab(NSTPHASE, prp_obj_%Npha, NSCATANGLE)
+    real phaTab(NphaSet, prp_obj_%Npha, NangScat)
     real(RD_) :: muRay, phiRay, X0, Y0, Z0, XE, YE, ZE
     real(RD_) :: trans, radI_Shdo(NSTOKES)
     character(len=1) :: SRCTYPE
@@ -652,11 +652,11 @@ subroutine shd_src__integrateSrcRay(&
 
         if (prp_obj_%Npha .gt. 0) then
             allocate(scatVect(NSTOKES, prp_obj_%Npha))
-            F = (NSCATANGLE - 1)*(dacos(muScat)/DPI_) + 1
-            J = min(NSCATANGLE - 1, int(F))
+            F = (NangScat - 1)*(dacos(muScat)/DPI_) + 1
+            J = min(NangScat - 1, int(F))
             F = F - J
             do I = 1, prp_obj_%Npha
-                scatVect(1:NSTPHASE, I) = &
+                scatVect(1:NphaSet, I) = &
                     (1 - F)*phaTab(:, I, J) + F*phaTab(:, I, J + 1)
                 if (isPol_) then
                     call shd_src__rotatePolarPlane(NSTOKES, muScat, muSun,&

@@ -2416,7 +2416,7 @@ subroutine shd_mpi__computeRadRay(&
     real, intent(out) :: VISOUT(shdo_obj_%Nstokes, *)
 
 #if HAS_MPI
-    integer :: NSCATANGLE, NSTPHASE, I, J, L, N
+    integer :: NangScat, NphaSet, I, J, L, N
     integer :: NL, NS, LINE, SAMP
     logical :: isCameraMode, isSensorMode, isValidRad
     real, parameter  :: EPS = 1.0e-5
@@ -2426,7 +2426,7 @@ subroutine shd_mpi__computeRadRay(&
     real(RD_) :: COSTH, SINTH, SINTH0, SINTH1
     real(RD_) :: U, V, UP, VP, COSDELPHI, ROTANG, R
     real(RD_) :: DIST, D, RX, RY, RZ, SCANANG
-    integer, parameter :: MAXSCATANG = 721
+    integer, parameter :: maxNangScat = 721
     real, allocatable :: YlmSun(:, :), phaTab(:, :, :)
     real              :: MEAN, STD1, STD2
     real, allocatable :: AOLP(:)
@@ -2455,10 +2455,10 @@ subroutine shd_mpi__computeRadRay(&
             shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet, &
             YlmSun)
         if (doDeltaM .and. prp_obj_%Npha .gt. 0) then
-            NSCATANGLE = max(36, min(MAXSCATANG, 2*prp_obj_%Nleg))
-            NSTPHASE = min(prp_obj_%NlegSet, 2)
-            allocate(phaTab(NSTPHASE, prp_obj_%Npha, NSCATANGLE))
-            call shd_scat__computePhase(NSCATANGLE, prp_obj_%Npha, NSTPHASE,&
+            NangScat = max(36, min(maxNangScat, 2*prp_obj_%Nleg))
+            NphaSet = min(prp_obj_%NlegSet, 2)
+            allocate(phaTab(NphaSet, prp_obj_%Npha, NangScat))
+            call shd_scat__computePhase(NangScat, prp_obj_%Npha, NphaSet,&
                 &shdo_obj_%Nstokes, shdo_obj_%maxNl, prp_obj_%NlegSet, prp_obj_%Nleg, leg_Rtm_, phaTab)
         end if
     end if
@@ -2647,7 +2647,7 @@ subroutine shd_mpi__computeRadRay(&
                 ! to calculate the Stokes radiance vector for this pixel
                 trans = 1.0d0; RADIANCE(:) = 0.0d0
                 call shd_src__integrateSrcRay(shdo_obj_%Nstokes,&
-                    &NSTPHASE, NSCATANGLE, phaTab,&
+                    &NphaSet, NangScat, phaTab,&
                     &shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
                     &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
                     &doDeltaM, src_obj_%type, src_obj_%avgWaveLen, src_obj_%mu0, src_obj_%phi0,&
@@ -2729,7 +2729,7 @@ subroutine shd_mpi__computeRadRay(&
                 trans = BndRecvRadRealInfo(6, J, IBND)
                 RADIANCE(:) = BndRecvRadRealInfo(7 : 6+shdo_obj_%Nstokes, J, IBND)
                 call shd_src__integrateSrcRay(shdo_obj_%Nstokes,&
-                    &NSTPHASE, NSCATANGLE, phaTab,&
+                    &NphaSet, NangScat, phaTab,&
                     &shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
                     &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
                     &doDeltaM, src_obj_%type, src_obj_%avgWaveLen, src_obj_%mu0, src_obj_%phi0,&

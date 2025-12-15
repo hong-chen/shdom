@@ -979,18 +979,17 @@ subroutine shd_rad__computeRadRay(&
     real BCRAD(shdo_obj_%Nstokes, *)
     real fluxDir(rtm_obj_%Npts), FLUXES(2, rtm_obj_%Npts)
     real OUTPARMS(*), VISOUT(shdo_obj_%Nstokes, *)
-    integer NSCATANGLE, NSTPHASE, I, J, L, N, SIDE
+    integer NangScat, NphaSet, I, J, L, N, SIDE
     integer NL, NS, LINE, SAMP
     logical isCameraMode, isValidRad
-    real MURAY, PHIRAY
+    real muRay, phiRay
     real(RD_) :: XE, YE, ZE, trans, VISRAD(shdo_obj_%Nstokes)
     real(RD_) :: X0, Y0, Z0, X1, Y1, Z1, X2, Y2, Z2
     real(RD_) :: THETA0, THETA1, PHIR, PHI0
     real(RD_) :: COSTH, SINTH, SINTH0, SINTH1, MU2, PHI2
     real(RD_) :: U, V, UP, VP, COSDELPHI, ROTANG, R
     real(RD_) :: DIST, D, RX, RY, RZ, SCANANG
-    integer MAXSCATANG
-    parameter(MAXSCATANG=721)
+    integer, parameter :: maxNangScat = 721
     real, allocatable :: YlmSun(:, :), phaTab(:, :, :)
     real              :: MEAN, STD1, STD2
     real, allocatable :: AOLP(:)
@@ -1000,10 +999,10 @@ subroutine shd_rad__computeRadRay(&
     if (src_obj_%doSolar) then
         call shd_shdo__computeYlm(.true., src_obj_%mu0, src_obj_%phi0, shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet, YlmSun)
         if (doDeltaM .and. prp_obj_%Npha .gt. 0) then
-            NSCATANGLE = max(36, min(MAXSCATANG, 2*prp_obj_%Nleg))
-            NSTPHASE = min(prp_obj_%NlegSet, 2)
-            allocate(phaTab(NSTPHASE, prp_obj_%Npha, NSCATANGLE))
-            call shd_scat__computePhase(NSCATANGLE, prp_obj_%Npha, NSTPHASE,&
+            NangScat = max(36, min(maxNangScat, 2*prp_obj_%Nleg))
+            NphaSet = min(prp_obj_%NlegSet, 2)
+            allocate(phaTab(NphaSet, prp_obj_%Npha, NangScat))
+            call shd_scat__computePhase(NangScat, prp_obj_%Npha, NphaSet,&
                 &shdo_obj_%Nstokes, shdo_obj_%maxNl, prp_obj_%NlegSet, prp_obj_%Nleg, leg_Rtm_, phaTab)
         end if
     end if
@@ -1043,7 +1042,7 @@ subroutine shd_rad__computeRadRay(&
                 ! Camera mode:
                 !   1, bytes, scale, X,Y,Z, theta, phi, rotang, NL, NS, delline,
                 !
-                ! Use spherical trig to find the pixel direction (MURAY,PHIRAY
+                ! Use spherical trig to find the pixel direction (muRay,phiRay
                 !   from the camera center (THETA0,PHI0) and the relative pixe
                 !   angles (U,V).
                 UP = (SAMP - NS/2 - 1)*OUTPARMS(13)*DTOR_
@@ -1136,10 +1135,10 @@ subroutine shd_rad__computeRadRay(&
                 stop
             end if
 
-            ! MURAY,PHRAY is camera pixel viewing direction;
+            ! muRay,PHRAY is camera pixel viewing direction;
             ! MU2,PHI2 is radiance travel direction (the opposite)
-            MURAY = sngl(COSTH)
-            PHIRAY = sngl(PHIR)
+            muRay = sngl(COSTH)
+            phiRay = sngl(PHIR)
             MU2 = -COSTH
             PHI2 = PHIR + PI_
 
@@ -1147,7 +1146,7 @@ subroutine shd_rad__computeRadRay(&
             !   to calculate the Stokes radiance vector for this pixel
             trans = 1.0d0; VISRAD(:) = 0.0d0
             call shd_src__integrateSrcRay(shdo_obj_%Nstokes,&
-                &NSTPHASE, NSCATANGLE, phaTab,&
+                &NphaSet, NangScat, phaTab,&
                 &shdo_obj_%maxNl, shdo_obj_%maxNm, shdo_obj_%Nlm,&
                 &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt,&
                 &doDeltaM, src_obj_%type, src_obj_%avgWaveLen, src_obj_%mu0, src_obj_%phi0,&
@@ -1157,7 +1156,7 @@ subroutine shd_rad__computeRadRay(&
                 &XE, YE, ZE, SIDE, trans, VISRAD, isValidRad)
 900         continue
             ! write(6,'(1X,2F8.4,1X,2F11.7,4(1X,F11.6))')&
-            !     &X0,Y0,MURAY,PHIRAY,VISRAD(:)
+            !     &X0,Y0,muRay,phiRay,VISRAD(:)
             VISOUT(1, IVIS) = VISRAD(1)
             if (VISRAD(1) .gt. 0.0) then
                 if (isPol_) then
