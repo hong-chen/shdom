@@ -229,7 +229,7 @@
 !           after the lines
 !
 !             DO 600 IAX=1,NPNAX
-!                AXI=AXMAX-DAX*DFLOAT(IAX-1)
+!                AXI=AXMAX-DAX*dble(IAX-1)
 !
 !           in the main program.
 !           For the modified power law distribution (NDISTR=5), the
@@ -378,7 +378,7 @@
 !        NDISTR=4
 !        ...
 !        DO 600 IAX=1,NPNAX
-!           AXI=AXMAX-DAX*DFLOAT(IAX-1)
+!           AXI=AXMAX-DAX*dble(IAX-1)
 !           R1=0.9999999*AXI
 !           R2=1.0000001*AXI
 !        ...
@@ -519,7 +519,7 @@ subroutine TMATRIXWIG(wavelength, mindex, radius,&
       DDELT = 0.1d0*DDELT
 
       do 600 IAX = 1, NPNAX
-          AXI = AXMAX - DAX*DFLOAT(IAX - 1)
+          AXI = AXMAX - DAX*dble(IAX - 1)
           R1 = 0.9999999*AXI
           R2 = 1.0000001*AXI
           NK = IDINT(AXI*NKMAX/AXMAX + 2)
@@ -612,7 +612,7 @@ subroutine TMATRIXWIG(wavelength, mindex, radius,&
                       TI1NN = TI1(N, N)
                       TR1NN1 = TR1(N1, N1)
                       TI1NN1 = TI1(N1, N1)
-                      DN1 = DFLOAT(2*N + 1)
+                      DN1 = dble(2*N + 1)
                       QSCA = QSCA + DN1*(TR1NN*TR1NN + TI1NN*TI1NN&
                           & + TR1NN1*TR1NN1 + TI1NN1*TI1NN1)
                       QEXT = QEXT + (TR1NN + TR1NN1)*DN1
@@ -622,14 +622,14 @@ subroutine TMATRIXWIG(wavelength, mindex, radius,&
                   ! print 7334, NMAX,DSCA,DEXT
                   QEXT1 = QEXT
                   QSCA1 = QSCA
-                  NMIN = DFLOAT(NMAX)/2d0 + 1d0
+                  NMIN = dble(NMAX)/2d0 + 1d0
                   do 10 N = NMIN, NMAX
                       N1 = N + NMAX
                       TR1NN = TR1(N, N)
                       TI1NN = TI1(N, N)
                       TR1NN1 = TR1(N1, N1)
                       TI1NN1 = TI1(N1, N1)
-                      DN1 = DFLOAT(2*N + 1)
+                      DN1 = dble(2*N + 1)
                       DQSCA = DN1*(TR1NN*TR1NN + TI1NN*TI1NN&
                           & + TR1NN1*TR1NN1 + TI1NN1*TI1NN1)
                       DQEXT = (TR1NN + TR1NN1)*DN1
@@ -669,7 +669,7 @@ subroutine TMATRIXWIG(wavelength, mindex, radius,&
                       TI1NN = TI1(N, N)
                       TR1NN1 = TR1(N1, N1)
                       TI1NN1 = TI1(N1, N1)
-                      DN1 = DFLOAT(2*N + 1)
+                      DN1 = dble(2*N + 1)
                       QSCA = QSCA + DN1*(TR1NN*TR1NN + TI1NN*TI1NN&
                           & + TR1NN1*TR1NN1 + TI1NN1*TI1NN1)
                       QEXT = QEXT + (TR1NN + TR1NN1)*DN1
@@ -881,7 +881,7 @@ subroutine TMATRIXWIG(wavelength, mindex, radius,&
 
 600   end do
       ! ITIME=MCLOCK()
-      ! TIME=DFLOAT(ITIME)/6000D0
+      ! TIME=dble(ITIME)/6000D0
       ! PRINT 1001,TIME
 1001  format(' time =', F8.2, ' min')
       return
@@ -902,8 +902,8 @@ subroutine CONST(NGAUSS, NMAX, MMAX, P, X, W, AN, ANN, S, SS, NP, EPS)
 
       do 10 N = 1, NMAX
           NN = N*(N + 1)
-          AN(N) = DFLOAT(NN)
-          D = DSQRT(DFLOAT(2*N + 1)/DFLOAT(NN))
+          AN(N) = dble(NN)
+          D = DSQRT(dble(2*N + 1)/dble(NN))
           DD(N) = D
           do 101 N1 = 1, N
               DDD = D*DD(N1)*0.5d0
@@ -915,7 +915,7 @@ subroutine CONST(NGAUSS, NMAX, MMAX, P, X, W, AN, ANN, S, SS, NP, EPS)
       if (NP .eq. -2) GO TO 11
       call GAUSS(NG, 0, 0, X, W)
       GO TO 19
-11    NG1 = DFLOAT(NGAUSS)/2d0
+11    NG1 = dble(NGAUSS)/2d0
       NG2 = NGAUSS - NG1
       XX = -DCOS(DATAN(EPS))
       call GAUSS(NG1, 0, 0, X1, W1)
@@ -990,8 +990,8 @@ subroutine VARY(LAM, MRR, MRI, A, EPS, NP, NGAUSS, X, P, PPI, PIR, PII,&
       if (NMAX .gt. NPN1) stop
 9000  format(' NMAX = ', I2, ', i.e., greater than ', I3)
       TB = TA*DSQRT(MRR*MRR + MRI*MRI)
-      TB = DMAX1(TB, DFLOAT(NMAX))
-      NNMAX1 = 1.2d0*DSQRT(DMAX1(TA, DFLOAT(NMAX))) + 3d0
+      TB = DMAX1(TB, dble(NMAX))
+      NNMAX1 = 1.2d0*DSQRT(DMAX1(TA, dble(NMAX))) + 3d0
       NNMAX2 = (TB + 4d0*(TB**0.33333d0) + 1.2d0*DSQRT(TB))
       NNMAX2 = NNMAX2 - NMAX + 5
       call BESS(Z, ZR, ZI, NG, NMAX, NNMAX1, NNMAX2)
@@ -1026,7 +1026,7 @@ end subroutine
 subroutine RSP2(X, NG, REV, EPS, N, R, DR)
       implicit real*8(A - H, O - Z)
       real*8 X(NG), R(NG), DR(NG)
-      DNP = DFLOAT(N)
+      DNP = dble(N)
       DN = DNP*DNP
       DN4 = DN*4d0
       EP = EPS*EPS
@@ -1113,11 +1113,11 @@ subroutine RJB(X, Y, U, NMAX, NNMAX)
       real*8 Y(NMAX), U(NMAX), Z(800)
       L = NMAX + NNMAX
       XX = 1d0/X
-      Z(L) = 1d0/(DFLOAT(2*L + 1)*XX)
+      Z(L) = 1d0/(dble(2*L + 1)*XX)
       L1 = L - 1
       do 5 I = 1, L1
           I1 = L - I
-          Z(I1) = 1d0/(DFLOAT(2*I1 + 1)*XX - Z(I1 + 1))
+          Z(I1) = 1d0/(dble(2*I1 + 1)*XX - Z(I1 + 1))
 5     end do
       Z0 = 1d0/(XX - Z(1))
       Y0 = Z0*DCOS(X)*XX
@@ -1127,7 +1127,7 @@ subroutine RJB(X, Y, U, NMAX, NNMAX)
       do 10 I = 2, NMAX
           YI1 = Y(I - 1)
           YI = YI1*Z(I)
-          U(I) = YI1 - DFLOAT(I)*YI*XX
+          U(I) = YI1 - dble(I)*YI*XX
           Y(I) = YI
 10    end do
       return
@@ -1148,11 +1148,11 @@ subroutine RYB(X, Y, V, NMAX)
       Y(2) = (-3d0*X3 + X1)*C - 3d0*X2*S
       NMAX1 = NMAX - 1
       do 5 I = 2, NMAX1
-          Y(I + 1) = DFLOAT(2*I + 1)*X1*Y(I) - Y(I - 1)
+          Y(I + 1) = dble(2*I + 1)*X1*Y(I) - Y(I - 1)
 5     continue
       V(1) = -X1*(C + Y1)
       do 10 I = 2, NMAX
-          V(I) = Y(I - 1) - DFLOAT(I)*X1*Y(I)
+          V(I) = Y(I - 1) - dble(I)*X1*Y(I)
 10    continue
       return
 end subroutine
@@ -1178,13 +1178,13 @@ subroutine CJB(XR, XI, YR, YI, UR, UI, NMAX, NNMAX)
       XRXI = 1d0/(XR*XR + XI*XI)
       CXXR = XR*XRXI
       CXXI = -XI*XRXI
-      QF = 1d0/DFLOAT(2*L + 1)
+      QF = 1d0/dble(2*L + 1)
       CZR(L) = XR*QF
       CZI(L) = XI*QF
       L1 = L - 1
       do I = 1, L1
           I1 = L - I
-          QF = DFLOAT(2*I1 + 1)
+          QF = dble(2*I1 + 1)
           AR = QF*CXXR - CZR(I1 + 1)
           AI = QF*CXXI - CZI(I1 + 1)
           ARI = 1d0/(AR*AR + AI*AI)
@@ -1217,7 +1217,7 @@ subroutine CJB(XR, XI, YR, YI, UR, UI, NMAX, NNMAX)
       UR(1) = CU1R
       UI(1) = CU1I
       do I = 2, NMAX
-          QI = DFLOAT(I)
+          QI = dble(I)
           CYI1R = CYR(I - 1)
           CYI1I = CYI(I - 1)
           CYIR = CYI1R*CZR(I) - CYI1I*CZI(I)
@@ -1499,7 +1499,7 @@ subroutine TMATR(M, NGAUSS, X, W, AN, ANN, S, SS, PPI, PIR, PII, R, DR, DDR,&
       common /CT/ TR1, TI1
       common /CTT/ QR, QI, RGQR, RGQI
       MM1 = M
-      QM = DFLOAT(M)
+      QM = dble(M)
       QMM = QM*QM
       NG = 2*NGAUSS
       NGSS = NG
@@ -1765,9 +1765,9 @@ subroutine VIG(X, NMAX, M, DV1, DV2)
       D1 = 1d0
       D2 = X
       do N = 1, NMAX
-          QN = DFLOAT(N)
-          QN1 = DFLOAT(N + 1)
-          QN2 = DFLOAT(2*N + 1)
+          QN = dble(N)
+          QN1 = dble(N + 1)
+          QN2 = dble(2*N + 1)
           D3 = (QN2*X*D2 - QN*D1)/QN1
           DER = QS1*(QN1*QN/QN2)*(-D1 + D3)
           DV1(N) = D2
@@ -1776,17 +1776,17 @@ subroutine VIG(X, NMAX, M, DV1, DV2)
           D2 = D3
       end do
       return
-20    QMM = DFLOAT(M*M)
+20    QMM = dble(M*M)
       do I = 1, M
           I2 = I*2
-          A = A*DSQRT(DFLOAT(I2 - 1)/DFLOAT(I2))*QS
+          A = A*DSQRT(dble(I2 - 1)/dble(I2))*QS
       end do
       D1 = 0d0
       D2 = A
       do N = M, NMAX
-          QN = DFLOAT(N)
-          QN2 = DFLOAT(2*N + 1)
-          QN1 = DFLOAT(N + 1)
+          QN = dble(N)
+          QN2 = dble(2*N + 1)
+          QN1 = dble(N + 1)
           QNM = DSQRT(QN*QN - QMM)
           QNM1 = DSQRT(QN1*QN1 - QMM)
           D3 = (QN2*X*D2 - QNM*D1)/QNM1
@@ -1941,7 +1941,7 @@ subroutine GSP(NMAX, CSCA, LAM, ALF1, ALF2, ALF3, ALF4, BET1, BET2, LMAX)
       SSI(1) = 1d0
       do 3 I = 1, LMAX
           I1 = I + 1
-          SI = DFLOAT(2*I + 1)
+          SI = dble(2*I + 1)
           SSI(I1) = SI
           if (I .le. NMAX) SSJ(I) = DSQRT(SI)
 3     end do
@@ -2250,7 +2250,7 @@ subroutine FACT
       F(2) = 0d0
       do 2 I = 3, 900
           I1 = I - 1
-          F(I) = F(I1) + 0.5d0*DLOG(DFLOAT(I1))
+          F(I) = F(I1) + 0.5d0*DLOG(dble(I1))
 2     end do
       return
 end subroutine
@@ -2323,21 +2323,21 @@ subroutine CCG(N, N1, NMAX, K1, K2, GG)
           C2 = 0d0
           C1 = C
           do 7 NN = NNL + 1, MIN0(NNM, NNF)
-              A = DFLOAT((NN + MM)*(NN - MM)*(N1 - N + NN))
-              A = A*DFLOAT((N - N1 + NN)*(N + N1 - NN + 1)*(N + N1 + NN + 1))
-              A = DFLOAT(4*NN*NN)/A
-              A = A*DFLOAT((2*NN + 1)*(2*NN - 1))
+              A = dble((NN + MM)*(NN - MM)*(N1 - N + NN))
+              A = A*dble((N - N1 + NN)*(N + N1 - NN + 1)*(N + N1 + NN + 1))
+              A = dble(4*NN*NN)/A
+              A = A*dble((2*NN + 1)*(2*NN - 1))
               A = DSQRT(A)
-              B = 0.5d0*DFLOAT(M - M1)
+              B = 0.5d0*dble(M - M1)
               D = 0d0
               if (NN .eq. 1) GO TO 5
-              B = DFLOAT(2*NN*(NN - 1))
-              B = DFLOAT((2*M - MM)*NN*(NN - 1) - MM*N*(N + 1) +&
+              B = dble(2*NN*(NN - 1))
+              B = dble((2*M - MM)*NN*(NN - 1) - MM*N*(N + 1) +&
                   & MM*N1*(N1 + 1))/B
-              D = DFLOAT(4*(NN - 1)*(NN - 1))
-              D = D*DFLOAT((2*NN - 3)*(2*NN - 1))
-              D = DFLOAT((NN - MM - 1)*(NN + MM - 1)*(N1 - N + NN - 1))/D
-              D = D*DFLOAT((N - N1 + NN - 1)*(N + N1 - NN + 2)*(N + N1 + NN))
+              D = dble(4*(NN - 1)*(NN - 1))
+              D = D*dble((2*NN - 3)*(2*NN - 1))
+              D = dble((NN - MM - 1)*(NN + MM - 1)*(N1 - N + NN - 1))/D
+              D = D*dble((N - N1 + NN - 1)*(N + N1 - NN + 2)*(N + N1 + NN))
               D = DSQRT(D)
 5             C = A*(B*C1 - D*C2)
               C2 = C1
@@ -2351,18 +2351,18 @@ subroutine CCG(N, N1, NMAX, K1, K2, GG)
           C2 = 0d0
           C1 = C
           do 12 NN = NNU - 1, NNM + 1, -1
-              A = DFLOAT((NN - MM + 1)*(NN + MM + 1)*(N1 - N + NN + 1))
-              A = A*DFLOAT((N - N1 + NN + 1)*(N + N1 - NN)*(N + N1 + NN + 2))
-              A = DFLOAT(4*(NN + 1)*(NN + 1))/A
-              A = A*DFLOAT((2*NN + 1)*(2*NN + 3))
+              A = dble((NN - MM + 1)*(NN + MM + 1)*(N1 - N + NN + 1))
+              A = A*dble((N - N1 + NN + 1)*(N + N1 - NN)*(N + N1 + NN + 2))
+              A = dble(4*(NN + 1)*(NN + 1))/A
+              A = A*dble((2*NN + 1)*(2*NN + 3))
               A = DSQRT(A)
-              B = DFLOAT(2*(NN + 2)*(NN + 1))
-              B = DFLOAT((2*M - MM)*(NN + 2)*(NN + 1) - MM*N*(N + 1)&
+              B = dble(2*(NN + 2)*(NN + 1))
+              B = dble((2*M - MM)*(NN + 2)*(NN + 1) - MM*N*(N + 1)&
                   & + MM*N1*(N1 + 1))/B
-              D = DFLOAT(4*(NN + 2)*(NN + 2))
-              D = D*DFLOAT((2*NN + 5)*(2*NN + 3))
-              D = DFLOAT((NN + MM + 2)*(NN - MM + 2)*(N1 - N + NN + 2))/D
-              D = D*DFLOAT((N - N1 + NN + 2)*(N + N1 - NN - 1)*(N + N1 + NN + 3))
+              D = dble(4*(NN + 2)*(NN + 2))
+              D = D*dble((2*NN + 5)*(2*NN + 3))
+              D = dble((NN + MM + 2)*(NN - MM + 2)*(N1 - N + NN + 2))/D
+              D = D*dble((N - N1 + NN + 2)*(N + N1 - NN - 1)*(N + N1 + NN + 3))
               D = DSQRT(D)
               C = A*(B*C1 - D*C2)
               C2 = C1
@@ -2474,7 +2474,7 @@ end subroutine
 subroutine SURFCH(N, E, RAT)
       implicit real*8(A - H, O - Z)
       real*8 X(60), W(60)
-      DN = DFLOAT(N)
+      DN = dble(N)
       E2 = E*E
       EN = E*DN
       NG = 60
@@ -2613,7 +2613,7 @@ subroutine GAUSS(N, IND1, IND2, Z, W)
       C = 3d0
       IND = mod(N, 2)
       K = N/2 + IND
-      F = DFLOAT(N)
+      F = dble(N)
       do 100 I = 1, K
           M = N + 1 - I
           if (I .eq. 1) X = A - B/((F + A)*F)
@@ -2765,7 +2765,7 @@ subroutine HOVENR(L1, A1, A2, A3, A4, B1, B2)
       do 100 L = 1, L1
           KONTR = 1
           LL = L - 1
-          DL = DFLOAT(LL)*2d0 + 1d0
+          DL = dble(LL)*2d0 + 1d0
           DDL = DL*0.48d0
           AA1 = A1(L)
           AA2 = A2(L)
@@ -2824,7 +2824,7 @@ subroutine MATR(A1, A2, A3, A4, B1, B2, LMAX, Nang, muang, scatmat)
       real*8 A1(NPL), A2(NPL), A3(NPL), A4(NPL), B1(NPL), B2(NPL)
 
       ! N=NPNA
-      ! DN=1D0/DFLOAT(N-1)
+      ! DN=1D0/dble(N-1)
       ! DA=DACOS(-1D0)*DN
       ! DB=180D0*DN
       L1MAX = LMAX + 1
@@ -2867,12 +2867,12 @@ subroutine MATR(A1, A2, A3, A4, B1, B2, LMAX, Nang, muang, scatmat)
           PP4 = D6*(U*U - 1d0)
           do 400 L1 = 1, L1MAX
               L = L1 - 1
-              DL = DFLOAT(L)
-              DL1 = DFLOAT(L1)
+              DL = dble(L)
+              DL1 = dble(L1)
               F11 = F11 + A1(L1)*PP1
               F44 = F44 + A4(L1)*PP1
               if (L .eq. LMAX) GO TO 350
-              PL1 = DFLOAT(2*L + 1)
+              PL1 = dble(2*L + 1)
               P = (PL1*U*PP1 - DL*P1)/DL1
               P1 = PP1
               PP1 = P
@@ -2882,16 +2882,16 @@ subroutine MATR(A1, A2, A3, A4, B1, B2, LMAX, Nang, muang, scatmat)
               F12 = F12 + B1(L1)*PP4
               F34 = F34 + B2(L1)*PP4
               if (L .eq. LMAX) GO TO 400
-              PL2 = DFLOAT(L*L1)*U
-              PL3 = DFLOAT(L1*(L*L - 4))
-              PL4 = 1d0/DFLOAT(L*(L1*L1 - 4))
+              PL2 = dble(L*L1)*U
+              PL3 = dble(L1*(L*L - 4))
+              PL4 = 1d0/dble(L*(L1*L1 - 4))
               P = (PL1*(PL2 - 4d0)*PP2 - PL3*P2)*PL4
               P2 = PP2
               PP2 = P
               P = (PL1*(PL2 + 4d0)*PP3 - PL3*P3)*PL4
               P3 = PP3
               PP3 = P
-              P = (PL1*U*PP4 - DSQRT(DFLOAT(L*L - 4))*P4)/DSQRT(DFLOAT(L1*L1 - 4))
+              P = (PL1*U*PP4 - DSQRT(dble(L*L - 4))*P4)/DSQRT(dble(L1*L1 - 4))
               P4 = PP4
               PP4 = P
 400       continue

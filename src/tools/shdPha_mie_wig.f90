@@ -236,7 +236,7 @@ subroutine MIEANGLE(NTERMS, A, B, MU, P1, P2, P3, P4)
         TAUN = N*MU*PIN - (N + 1)*PIM
         ! Calculate the scattering functions at +mu and -mu
         !   using the PIn's and the TAUn's.
-        C = (2*N + 1)/DFLOAT(N*(N + 1))
+        C = (2*N + 1)/dble(N*(N + 1))
         S1 = S1 + C*(A(N)*PIN + B(N)*TAUN)
         S2 = S2 + C*(B(N)*PIN + A(N)*TAUN)
         ! Calculate the angular function PIn by up recurrence
