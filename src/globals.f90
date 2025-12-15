@@ -299,6 +299,7 @@ module globals_type
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type :: shd_type_prp
 
+        integer :: fileID = -999
         character(len=charMaxLen_) :: fname = 'NONE'
         character(len=1) :: type = ' '
 
@@ -338,6 +339,7 @@ module globals_type
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type :: shd_type_sfc
 
+        integer :: fileID = -999
         character(len=charMaxLen_) :: fname = 'NONE'
         character(len=2) :: type = '  '
 
@@ -374,6 +376,7 @@ module globals_type
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type :: shd_type_ckd
 
+        integer :: fileID = -999
         character(len=charMaxLen_) :: fname = 'NONE'
 
         integer(kind=I__) :: Ng = -999
@@ -400,6 +403,7 @@ module globals_type
     !╭────────────────────────────────────────────────────────────────────────────╮!
     type :: shd_type_sen
 
+        integer :: fileID = -999
         character(len=charMaxLen_) :: fname = 'NONE'
         integer(kind=I__) :: Npts = -999
         integer(kind=I__) :: Npar = -999
