@@ -143,7 +143,7 @@ subroutine shd_intg__integratePath(&
     real fluxDir(rtm_obj_%Npts), fluxTot(2, rtm_obj_%Npts)
     real GRIDRAD(shdo_obj_%Nstokes, rtm_obj_%Npts), WORK(shdo_obj_%Nstokes, shdo_obj_%maxNphiA, rtm_obj_%Npts)
 
-    integer I, I1, K, NR, iphiDO, imuDO, IBC, IANG, iUpDn, NptsOld
+    integer I, I1, K, NR, iphiDO, imuDO, IBC, iAngDO, iUpDn, NptsOld
     integer jOctant, iPts, ip, iorder, iCellPts, iCorner
     logical :: theflag
     real A, TRANSMIN
@@ -197,7 +197,7 @@ subroutine shd_intg__integratePath(&
 
     ! write(*, *) 'Path integration:'
     ! Loop over the zenith angles (downwelling angles must be first)
-    IANG = 1
+    iAngDO = 1
     DO_MU_LOOP: do imuDO = 1, shdo_obj_%Nmu
 
         if (imuDO .eq. shdo_obj_%Nmu/2 + 1) then
@@ -334,14 +334,14 @@ subroutine shd_intg__integratePath(&
             ! For a general BRDF surface save the downwelling radiance
             !   at the bottom boundary points.
             if ((.not. sfc_obj_%isLambertian) .and. (imuDO .le. shdo_obj_%Nmu/2)) then
-                I1 = NTOPPTS + NBOTPTS*IANG
+                I1 = NTOPPTS + NBOTPTS*iAngDO
                 do IBC = 1, NBOTPTS
                     I = BCPTR(IBC, 2)
                     BCRAD(:, IBC + I1) = WORK(:, iphiDO, I)
                 end do
             end if
 
-            IANG = IANG + 1
+            iAngDO = iAngDO + 1
         end do DO_PHI_LOOP
 
         ! Transform the radiance to spherical harmonics for this zenith angle
