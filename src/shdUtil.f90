@@ -1456,8 +1456,9 @@ function indexAt(x0, x) result(i)
 
 end function indexAt
 
-elemental pure function distKm(lon1_deg, lat1_deg, h1_km, &
-                             lon2_deg, lat2_deg, h2_km) result(dist_km)
+elemental pure function distKm(&
+    lon1_deg, lat1_deg, h1_km, &
+    lon2_deg, lat2_deg, h2_km) result(dist_km)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Calculate distance between two points, each point defined by
@@ -1513,22 +1514,22 @@ pure subroutine sin_cos(x, s, c)
 end subroutine sin_cos
 
 subroutine shd_util__computeRayVect(&
-    mu0, phi0, &
+    muRay, phiRay, &
     cx, cy, cz, &
     cx_inv, cy_inv, cz_inv, &
     ratio_x, ratio_y, &
     xyz_info)
 
-    real(kind=RD_), intent(in)  :: mu0, phi0
+    real(kind=RD_), intent(in)  :: muRay, phiRay
     real(kind=RD_), intent(out) :: cx, cy, cz
     real(kind=RD_), intent(out) :: cx_inv, cy_inv, cz_inv
     real(kind=RD_), intent(out) :: ratio_x, ratio_y
 
     real(kind=R__), intent(in), optional :: xyz_info(5)
 
-    cx = dsqrt(dble(1.0d0 - mu0**2))*dcos(dble(phi0 + DPI_))
-    cy = dsqrt(dble(1.0d0 - mu0**2))*dsin(dble(phi0 + DPI_))
-    cz = dble(-mu0)
+    cx = dsqrt(dble(1.0d0 - muRay**2))*dcos(dble(phiRay + DPI_))
+    cy = dsqrt(dble(1.0d0 - muRay**2))*dsin(dble(phiRay + DPI_))
+    cz = dble(-muRay)
 
     if (abs(cx) .gt. 1.0d-7) then
         cx_inv = 1.0d0/cx
@@ -1590,7 +1591,7 @@ end subroutine shd_util__computeDegKmRatio
 
 subroutine shd_util__computeSolarAngle(&
     lon_deg, lat_deg, &
-    mu0, phi0)
+    muSun, phiSun)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Compute solar angles at any lat/lon on oblate ellipsoid
@@ -1598,7 +1599,7 @@ subroutine shd_util__computeSolarAngle(&
 
     implicit none
     real(kind=R__), intent(in)  :: lon_deg, lat_deg
-    real(kind=R__), intent(out) :: mu0, phi0
+    real(kind=R__), intent(out) :: muSun, phiSun
 
     real(kind=R__) :: mu, phi, lon, lat, east_x, east_y
     real(kind=R__) :: up_x, up_y, up_z
@@ -1640,15 +1641,15 @@ subroutine shd_util__computeSolarAngle(&
         ! phi: from  [0 at north, positive clockwise] to
         !            [0 at east,  positive counterclockwise]
         !╭────────────────────────────────────────────────────────────────────────────╮!
-        mu0  = -abs(mu)
-        phi0 = 1.5*PI_ - phi
+        muSun  = -abs(mu)
+        phiSun = 1.5*PI_ - phi
 
-        if (phi0 < 0.0)     phi0 = phi0 + 2.0*PI_
-        if (phi0 > 2.0*PI_) phi0 = phi0 - 2.0*PI_
+        if (phiSun < 0.0)     phiSun = phiSun + 2.0*PI_
+        if (phiSun > 2.0*PI_) phiSun = phiSun - 2.0*PI_
         !╰────────────────────────────────────────────────────────────────────────────╯!
     else
-        mu0  = 0.0
-        phi0 = 0.0
+        muSun  = 0.0
+        phiSun = 0.0
     end if
 
     return
@@ -1766,20 +1767,24 @@ subroutine read_ice_refractive_index(filepath, wavelengths, n_real, n_imag, num_
     count = 0
     do
         read(unit_num, fmt='(A)', iostat=io_status) line_buffer
-        if (io_status /= 0) exit ! Exit on EOF or error
+        if (io_status .ne. 0) exit ! Exit on EOF or error
         count = count + 1
     end do
     close(unit_num)
     num_entries = count
 
-    if (num_entries == 0) then
+    if (num_entries .eq. 0) then
         write(*,*) 'No data found in file: ', filepath
         return
     end if
 
     ! Allocate arrays
-    allocate(wavelengths(num_entries), n_real(num_entries), n_imag(num_entries), stat=io_status)
-    if (io_status /= 0) then
+    allocate(wavelengths(num_entries), &
+             n_real(num_entries), &
+             n_imag(num_entries), &
+             stat=io_status)
+
+    if (io_status .ne. 0) then
         write(*,*) 'Error allocating memory for refractive index data.'
         num_entries = 0
         return
