@@ -181,16 +181,16 @@ subroutine shd_scat__computeLegendre(&
 
 end subroutine shd_scat__computeLegendre
 
-subroutine shd_scat__computeWigner(X, NRANK, M, M1, DMM1)
+subroutine shd_scat__computeWigner(X, Nrank, M, M1, DMM1)
 
     ! ----------------------------------------------------------------
     ! |  The routine computes the DMM1N vector coefficients for
-    ! |               M >= 0, M1 >= 0,  N = 0,...,NRANK, and
+    ! |               M >= 0, M1 >= 0,  N = 0,...,Nrank, and
     ! |               -1 < X= COS(BETA) < 1
     ! ----------------------------------------------------------------
 
-    integer NRANK, M, M1
-    real(RD_) :: X, DMM1(0:NRANK)
+    integer Nrank, M, M1
+    real(RD_) :: X, DMM1(0:Nrank)
 
     integer N0, N
     real(RD_) :: FACT1, FACT2
@@ -200,14 +200,14 @@ subroutine shd_scat__computeWigner(X, NRANK, M, M1, DMM1)
     if (N0 .eq. 0) then
         DMM1(0) = 1.d0
         DMM1(1) = X
-        do N = 1, NRANK - 1
+        do N = 1, Nrank - 1
             FACT1 = dble(2*N + 1)*X/dble(N + 1)
             FACT2 = dble(N)/dble(N + 1)
             DMM1(N + 1) = FACT1*DMM1(N) - FACT2*DMM1(N - 1)
         end do
     else
         DMM1(N0) = wignerDMM1N0(X, M, M1)
-        do N = N0, NRANK - 1
+        do N = N0, Nrank - 1
             FACT1 = dble(N*(N + 1))*X - dble(M*M1)
             FACT1 = FACT1/dsqrt(dble((N + 1)**2 - M**2))
             FACT1 = FACT1/dsqrt(dble((N + 1)**2 - M1**2))
@@ -226,19 +226,19 @@ subroutine shd_scat__computeWigner(X, NRANK, M, M1, DMM1)
 end subroutine shd_scat__computeWigner
 
 subroutine shd_scat__computeWignerDM0DM2PDM2M(&
-    &MIU, NRANK, M, DM0, DM2P, DM2M)
+    &MIU, Nrank, M, DM0, DM2P, DM2M)
 
     ! ----------------------------------------------------------------
     ! |  The routine computes the DMM1N vector coefficients for
-    ! |               M >= 0; M1 = 0, 2, -2; N = 0,...,NRANK, and
+    ! |               M >= 0; M1 = 0, 2, -2; N = 0,...,Nrank, and
     ! |              -1 <= MIU <= 1
     ! |  For M1 = -2, we use the symmetry relation
     ! |               DM-M1(MIU) = (-1)**(N+M) * DMM1(-MIU)
     ! ----------------------------------------------------------------
 
-    integer NRANK, M
+    integer Nrank, M
     real(RD_) :: MIU
-    real(RD_) :: DM0(0:NRANK), DM2P(0:NRANK), DM2M(0:NRANK)
+    real(RD_) :: DM0(0:Nrank), DM2P(0:Nrank), DM2M(0:Nrank)
     integer N0, N
     real(RD_) :: XP, XM, FACT1, FACT2, FACTP, FACTM
 
@@ -250,18 +250,18 @@ subroutine shd_scat__computeWignerDM0DM2PDM2M(&
     ! DM0 for M1 = 0
     ! ................................................................
     DM0 = 0.d0
-    if (M .le. NRANK) then
+    if (M .le. Nrank) then
         if (M .eq. 0) then
             DM0(0) = 1.d0
             DM0(1) = XP
-            do N = 1, NRANK - 1
+            do N = 1, Nrank - 1
                 FACT1 = dble(2*N + 1)*XP/dble(N + 1)
                 FACT2 = dble(N)/dble(N + 1)
                 DM0(N + 1) = FACT1*DM0(N) - FACT2*DM0(N - 1)
             end do
         else
             DM0(M) = wignerDMM1N0(XP, M, 0)
-            do N = M, NRANK - 1
+            do N = M, Nrank - 1
                 FACT1 = dble(N*(N + 1))*XP
                 FACT1 = FACT1/dsqrt(dble((N + 1)**2 - M**2))
                 FACT1 = FACT1/dble(N + 1)
@@ -275,7 +275,7 @@ subroutine shd_scat__computeWignerDM0DM2PDM2M(&
                 DM0(N + 1) = FACT1*DM0(N) - FACT2*DM0(N - 1)
             end do
         end if
-        do N = 0, NRANK
+        do N = 0, Nrank
             DM0(N) = dsqrt(N + 0.5d0)*DM0(N)
         end do
     end if
@@ -285,10 +285,10 @@ subroutine shd_scat__computeWignerDM0DM2PDM2M(&
     N0 = max(M, 2)
     DM2P = 0.d0
     DM2M = 0.d0
-    if (M .le. NRANK .and. NRANK .ge. 2) then
+    if (M .le. Nrank .and. Nrank .ge. 2) then
         DM2P(N0) = wignerDMM1N0(XP, M, 2)
         DM2M(N0) = wignerDMM1N0(XM, M, 2)
-        do N = N0, NRANK - 1
+        do N = N0, Nrank - 1
             FACTP = dble(N*(N + 1))*XP - dble(2*M)
             FACTM = dble(N*(N + 1))*XM - dble(2*M)
 
@@ -305,7 +305,7 @@ subroutine shd_scat__computeWignerDM0DM2PDM2M(&
             DM2P(N + 1) = FACTP*FACT1*DM2P(N) - FACT2*DM2P(N - 1)
             DM2M(N + 1) = FACTM*FACT1*DM2M(N) - FACT2*DM2M(N - 1)
         end do
-        do N = 0, NRANK
+        do N = 0, Nrank
             DM2M(N) = (-1.d0)**(N + M)*DM2M(N)
 
             DM2P(N) = dsqrt(N + 0.5d0)*DM2P(N)
@@ -317,37 +317,37 @@ subroutine shd_scat__computeWignerDM0DM2PDM2M(&
 
 end subroutine shd_scat__computeWignerDM0DM2PDM2M
 
-subroutine shd_scat__computeWignerDM0(X, NRANK, M, DM0)
+subroutine shd_scat__computeWignerDM0(X, Nrank, M, DM0)
 
     ! ----------------------------------------------------------------
     ! |  The routine computes the DMM1N vector coefficients for      |
-    ! |               M >= 0; M1 = 0; N = 0,...,NRANK, and           |
+    ! |               M >= 0; M1 = 0; N = 0,...,Nrank, and           |
     ! |              -1 <= X <= 1                                    |
     ! ----------------------------------------------------------------
 
-    integer NRANK, M
+    integer Nrank, M
     real(RD_) :: X
-    real(RD_) :: DM0(0:NRANK)
+    real(RD_) :: DM0(0:Nrank)
     integer N
 
     ! DM0 for M1 = 0
     DM0(:) = 0.d0
-    if (M .le. NRANK) then
+    if (M .le. Nrank) then
         if (M .eq. 0) then
             DM0(0) = 1.0d0
             DM0(1) = X
-            do N = 1, NRANK - 1
+            do N = 1, Nrank - 1
                 DM0(N + 1) = ((2*N + 1)*X*DM0(N) - N*DM0(N - 1))/(N + 1)
             end do
         else
             DM0(M) = wignerDMM0N0(X, M)
-            do N = M, NRANK - 1
+            do N = M, Nrank - 1
                 DM0(N + 1) = ((2*N + 1)*X*DM0(N)&
                     &- dsqrt(dble(N**2 - M**2))*DM0(N - 1))&
                     &/dsqrt(dble((N + 1)**2 - M**2))
             end do
         end if
-        do N = 0, NRANK
+        do N = 0, Nrank
             DM0(N) = dsqrt(N + 0.5d0)*DM0(N)
         end do
     end if
