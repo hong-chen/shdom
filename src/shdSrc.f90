@@ -599,8 +599,8 @@ subroutine shd_src__integrateSrcRay(&
 
     integer bitX, bitY, bitZ, iOctant, iCell, iCellNext, iFace
     integer iOpp, Ntau, IT, I, IPT1, IPT2, J, L
-    logical DONE, is1DX, is1DY, OPENBCFACE
-    integer jFace, kFace, IC, MAXCELLSCROSS, NGRID
+    logical :: is1DX, is1DY, isFaceOpenBC
+    integer jFace, kFace, IC, threshNcross, Ncross
     integer faceOpp(6), OLDIPTS(8), DONETHIS(8)
     integer DONEFACE(8, 7), ONEX(8), ONEY(8)
     real OEXTINCT8(8), OSRCEXT8(NSTOKES, 8)
@@ -611,7 +611,7 @@ subroutine shd_src__integrateSrcRay(&
     real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV, ratioX, ratioY
     real(RD_) :: XN, YN, ZN, XI, YI, ZI
     real(RD_) :: SO, SOX, SOY, SOZ, EPS
-    real(RD_) :: TAUTOL, TAUGRID, S, DELS, TRANSCUT
+    real(RD_) :: threshTau, TAUGRID, S, DELS, threshTrans
     real(RD_) :: EXT, tau, transCell, absCell
     real(RD_) :: SRC(NSTOKES)
     real(RD_) :: U, V, W, DELX, DELY, DELZ, INVDELX, INVDELY, INVDELZ
@@ -625,14 +625,15 @@ subroutine shd_src__integrateSrcRay(&
         &0, 0, 1, 2, 0, 0, 5, 6, 3, 4, 0, 0, 5, 6, 0, 0,&
         &0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 0, 0, 0, 0/
 
-    ! TRANSCUT is the transmission to stop the integration at
-    !TRANSCUT = 5.0e-5
-    TRANSCUT = accSolv_
-    ! TAUTOL is the maximum optical path for the subgrid intervals
-    TAUTOL = 0.2
+    ! threshTrans is the transmission to stop the integration at
+    !threshTrans = 5.0e-5
+    threshTrans = accSolv_
+
+    ! threshTau is the maximum optical path for the subgrid intervals
+    threshTau = 0.2
 
     EPS = 1.0e-5*(xyz_Rtm_(3, i8Grid_Cell_(8, 1)) - xyz_Rtm_(3, i8Grid_Cell_(1, 1)))
-    MAXCELLSCROSS = 50*max(rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz)
+    threshNcross = 50*max(rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz)
 
     ! Calculate the generalized spherical harmonics for this direction
     allocate(YlmRay(prp_obj_%NlegSet, NLM))
@@ -706,7 +707,7 @@ subroutine shd_src__integrateSrcRay(&
     ! write(*, '(A,5(1X,F8.5),1X,I6)') &
     !     &'_integrateSrcOneRay:',X0,Y0,Z0,muRay,phiRay,iCell
     iFace = 0
-    NGRID = 0
+    Ncross = 0
 
     ! Loop until reach a Z boundary or transmission is very small
     isValidRad = .false.
@@ -717,7 +718,7 @@ subroutine shd_src__integrateSrcRay(&
                 &muRay, phiRay, XE, YE, ZE
             stop
         end if
-        NGRID = NGRID + 1
+        Ncross = Ncross + 1
 
         ! Decide which of the eight grid points we need the source fun
         do I = 1, 8
@@ -822,7 +823,7 @@ subroutine shd_src__integrateSrcRay(&
             &+ W*((1 - V)*((1 - U)*EXTINCT8(5) + U*EXTINCT8(6))&
             &+ V*((1 - U)*EXTINCT8(7) + U*EXTINCT8(8)))
         TAUGRID = SO*0.5*(EXT1 + EXTN)
-        Ntau = max(1, 1 + int(TAUGRID/TAUTOL))
+        Ntau = max(1, 1 + int(TAUGRID/threshTau))
         DELS = SO/Ntau
 
         ! Loop over the subgrid cells
@@ -872,15 +873,15 @@ subroutine shd_src__integrateSrcRay(&
         if ((SOX .le. SOZ) .and. (SOX .le. SOY)) then
             iFace = 2 - bitX
             jFace = 1
-            OPENBCFACE = btest(int(flag_Cell_(iCell)), 0) .and. isOpenX_
+            isFaceOpenBC = btest(int(flag_Cell_(iCell)), 0) .and. isOpenX_
         else if (SOY .le. SOZ) then
             iFace = 4 - bitY
             jFace = 2
-            OPENBCFACE = btest(int(flag_Cell_(iCell)), 1) .and. isOpenYx_
+            isFaceOpenBC = btest(int(flag_Cell_(iCell)), 1) .and. isOpenYx_
         else
             iFace = 6 - bitZ
             jFace = 3
-            OPENBCFACE = .false.
+            isFaceOpenBC = .false.
         end if
         ! Get the next cell to go to
         iCellNext = i6Cell_Cell_(iFace, iCell)
@@ -889,7 +890,7 @@ subroutine shd_src__integrateSrcRay(&
                 &iCellNext)
         end if
         ! If going to same or larger face then use previous face
-        if ((i6Cell_Cell_(iFace, iCell) .ge. 0) .and. (.not. OPENBCFACE)) then
+        if ((i6Cell_Cell_(iFace, iCell) .ge. 0) .and. (.not. isFaceOpenBC)) then
             kFace = iFace
             IC = iCell
         else
@@ -911,7 +912,7 @@ subroutine shd_src__integrateSrcRay(&
 
         ! If the transmission is greater than zero and not at a
         !   boundary then prepare for next cell
-        if ((trans .lt. TRANSCUT) .or. (NGRID .gt. MAXCELLSCROSS)) then
+        if ((trans .lt. threshTrans) .or. (Ncross .gt. threshNcross)) then
             isValidRad = .true.
         else if ((iCellNext .eq. 0) .and. (iFace .ge. 5)) then
             isValidRad = .true.
@@ -968,7 +969,7 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
     real srcJ_Shdo(NSTOKES, rtm_obj_%Npts), GRIDRAD(NSTOKES, rtm_obj_%Npts)
     integer bitX, bitY, bitZ, iOctant, iCell, iCellNext, iFace
     integer I1, I2, I3, I4, iOpp, Ntau, IT, K
-    logical is1DX, is1DY, OPENBCFACE
+    logical is1DX, is1DY, isFaceOpenBC
     integer faceGrid(4, 6), faceOpp(6), jFace, kFace, IC
     real EXT0(1), EXT1(1), EXTN(1)
     real XM, YM
@@ -976,14 +977,14 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
     real(RD_) :: CX, CY, CZ, CXINV, CYINV, CZINV, ratioX, ratioY
     real(RD_) :: XN, YN, ZN, XI, YI, ZI
     real(RD_) :: SO, SOX, SOY, SOZ, EPS
-    real(RD_) :: TAUTOL, TAUGRID, S, DELS
+    real(RD_) :: threshTau, TAUGRID, S, DELS
     real(RD_) :: EXT, tau, transCell, absCell
     real(RD_) :: SRC(NSTOKES), RAD(NSTOKES)
     data faceGrid/1, 3, 5, 7, 2, 4, 6, 8, 1, 2, 5, 6, 3, 4, 7, 8,&
         &1, 2, 3, 4, 5, 6, 7, 8/, faceOpp/2, 1, 4, 3, 6, 5/
 
-    ! TAUTOL is the maximum optical path for the subgrid intervals
-    TAUTOL = 0.1
+    ! threshTau is the maximum optical path for the subgrid intervals
+    threshTau = 0.1
     EPS = 1.0e-4*(xyz_Rtm_(3, i8Grid_Cell_(8, 1)) - xyz_Rtm_(3, i8Grid_Cell_(1, 1)))
 
     ! Make the ray direction (opposite to the discrete ordinate dire
@@ -1079,7 +1080,7 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
         call shd_util__interpTriLin(iCell,&
             &XN, YN, ZN, 1, ext_Rtm_, 1, 1, EXTN)
         TAUGRID = SO*0.5*(EXT1(1) + EXTN(1))
-        Ntau = max(1, 1 + int(TAUGRID/TAUTOL))
+        Ntau = max(1, 1 + int(TAUGRID/threshTau))
         DELS = SO/Ntau
         ! Loop over the subgrid cells
         do IT = 1, Ntau
@@ -1133,15 +1134,15 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
         if (SOX .le. SOZ .and. SOX .le. SOY) then
             iFace = 2 - bitX
             jFace = 1
-            OPENBCFACE = btest(int(flag_Cell_(iCell)), 0) .and. isOpenX_
+            isFaceOpenBC = btest(int(flag_Cell_(iCell)), 0) .and. isOpenX_
         else if (SOY .le. SOZ) then
             iFace = 4 - bitY
             jFace = 2
-            OPENBCFACE = btest(int(flag_Cell_(iCell)), 1) .and. isOpenYx_
+            isFaceOpenBC = btest(int(flag_Cell_(iCell)), 1) .and. isOpenYx_
         else
             iFace = 6 - bitZ
             jFace = 3
-            OPENBCFACE = .false.
+            isFaceOpenBC = .false.
         end if
         ! Get the next cell to go to
         iCellNext = i6Cell_Cell_(iFace, iCell)
@@ -1152,7 +1153,7 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
         ! Get the four grid points on the intersection face for
         !   telling if at the boundary
         !   If going to same or larger face then use previous face
-        if (i6Cell_Cell_(iFace, iCell) .ge. 0 .and. .not. OPENBCFACE) then
+        if ((i6Cell_Cell_(iFace, iCell) .ge. 0) .and. (.not. isFaceOpenBC)) then
             kFace = iFace
             IC = iCell
         else
@@ -1182,11 +1183,13 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
         !if (trans .lt. 1.0e-5) then
         if (trans .lt. accSolv_) then
             isValidRad = .true.
-        else if (GRIDRAD(1, I1) .ge. 0.0 .and. GRIDRAD(1, I2) .ge. 0.0 .and.&
-            &GRIDRAD(1, I3) .ge. 0.0 .and. GRIDRAD(1, I4) .ge. 0.0) then
+        else if ((GRIDRAD(1, I1) .ge. 0.0) .and. &
+                 (GRIDRAD(1, I2) .ge. 0.0) .and. &
+                 (GRIDRAD(1, I3) .ge. 0.0) .and. &
+                 (GRIDRAD(1, I4) .ge. 0.0)) then
             isValidRad = .true.
-            call shd_util__interpTriLin(iCell, XI, YI, ZI,&
-                &NSTOKES, GRIDRAD, 1, NSTOKES, RAD0)
+            call shd_util__interpTriLin(iCell, XI, YI, ZI, &
+                NSTOKES, GRIDRAD, 1, NSTOKES, RAD0)
             radI_Shdo(:) = radI_Shdo(:) + trans*RAD0(:)
         else
             iCell = iCellNext

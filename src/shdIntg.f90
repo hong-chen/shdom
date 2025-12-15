@@ -145,8 +145,7 @@ subroutine shd_intg__integratePath(&
 
     integer I, I1, K, NR, iphiDO, imuDO, IBC, iAngDO, iUpDn, NptsOld
     integer jOctant, iPts, ip, iorder, iCellPts, iCorner
-    logical :: theflag
-    real A, TRANSMIN
+    real A, minTrans
     save NptsOld
 
     integer :: count_start, count_rate, count_max
@@ -154,7 +153,7 @@ subroutine shd_intg__integratePath(&
     real :: elapsed_time
 
     ! Set the minimum transmission for the cell tracing (1 for single cell)
-    TRANSMIN = 1.00
+    minTrans = 1.00
 
     ! Make the new grid cell/point sweeping order if need to
     if (rtm_obj_%Npts .ne. NptsOld) then
@@ -283,13 +282,13 @@ subroutine shd_intg__integratePath(&
             if (is1D_) then
 
                 call shd_intg__backIntegrate1D(rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz, shdo_obj_%maxNphiA,&
-                    &sweepOrder, shdo_obj_%mu(imuDO), shdo_obj_%phi(imuDO, iphiDO), TRANSMIN,&
+                    &sweepOrder, shdo_obj_%mu(imuDO), shdo_obj_%phi(imuDO, iphiDO), minTrans,&
                     &ext_Rtm_, shdo_obj_%Nstokes, WORK, iphiDO, GRIDRAD)
 
             else if (is1DYx_ .and. (.not. isMpi_)) then
 
                 call shd_intg__backIntegrate2D(rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz, shdo_obj_%maxNphiA,&
-                    &sweepOrder, shdo_obj_%mu(imuDO), shdo_obj_%phi(imuDO, iphiDO), TRANSMIN,&
+                    &sweepOrder, shdo_obj_%mu(imuDO), shdo_obj_%phi(imuDO, iphiDO), minTrans,&
                     &ext_Rtm_, shdo_obj_%Nstokes, WORK, iphiDO, GRIDRAD)
 
             else
@@ -297,14 +296,14 @@ subroutine shd_intg__integratePath(&
 
                     call shd_intg__backIntegrate3D(rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz, shdo_obj_%maxNphiA,&
                         &sweepOrder,&
-                        &shdo_obj_%mu(imuDO), shdo_obj_%phi(imuDO, iphiDO), TRANSMIN, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
+                        &shdo_obj_%mu(imuDO), shdo_obj_%phi(imuDO, iphiDO), minTrans, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
                         &ext_Rtm_, shdo_obj_%Nstokes, WORK, iphiDO, GRIDRAD)
 
                 else
 
                     call shd_intg__backIntegrate3D_(rtm_obj_%Nx, rtm_obj_%Ny, rtm_obj_%Nz, shdo_obj_%maxNphiA,&
                         &sweepOrder,&
-                        &shdo_obj_%mu(imuDO), shdo_obj_%phi(imuDO, iphiDO), TRANSMIN, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
+                        &shdo_obj_%mu(imuDO), shdo_obj_%phi(imuDO, iphiDO), minTrans, rtm_obj_%flag_bc, rtm_obj_%flag_ip,&
                         &ext_Rtm_, WORK, iphiDO, GRIDRAD)
 
                 end if
@@ -368,7 +367,7 @@ end subroutine shd_intg__integratePath
 subroutine shd_intg__backIntegrate3D(&
     &NX, NY, NZ, NA,&
     &sweepOrder,&
-    &MU, PHI, TRANSMIN, BCFLAG, IPFLAG,&
+    &MU, PHI, minTrans, BCFLAG, IPFLAG,&
     &EXTINCT, NSTOKES, SOURCE, KANG, GRIDRAD)
 
     !   Sweeps through the spatial grid computing radiance vectors for the
@@ -386,7 +385,7 @@ subroutine shd_intg__backIntegrate3D(&
     integer NX, NY, NZ, NA, NSTOKES, KANG
     integer BCFLAG, IPFLAG
     integer sweepOrder(rtm_obj_%Npts, *)
-    real MU, PHI, TRANSMIN
+    real MU, PHI, minTrans
     real EXTINCT(rtm_obj_%Npts), SOURCE(NSTOKES, NA, rtm_obj_%Npts)
     real GRIDRAD(NSTOKES, rtm_obj_%Npts)
     integer bitX, bitY, bitZ, iOctant, jOctant
@@ -654,7 +653,7 @@ subroutine shd_intg__backIntegrate3D(&
                 isValidFace = (GRIDRAD(1, I1) .ge. -0.1 .and. GRIDRAD(1, I2) .ge. -0.1&
                     &.and. GRIDRAD(1, I3) .ge. -0.1 .and. GRIDRAD(1, I4) .ge. -0.1)
                 if (iCellNext .le. 0 .or.&
-                    &(trans .le. TRANSMIN .and. isValidFace)) then
+                    &(trans .le. minTrans .and. isValidFace)) then
                     if (isValidFace) then
                         isValidRad = .true.
                         RAD0(:) = F1*GRIDRAD(:, I1) + F2*GRIDRAD(:, I2)&
@@ -692,7 +691,7 @@ end subroutine shd_intg__backIntegrate3D
 subroutine shd_intg__backIntegrate3D_( &
     NX, NY, NZ, NA, &
     sweepOrder, &
-    MU, PHI, TRANSMIN, BCFLAG, IPFLAG, &
+    MU, PHI, minTrans, BCFLAG, IPFLAG, &
     EXTINCT, SOURCE, KANG, GRIDRAD)
 
     ! Description:
@@ -750,7 +749,7 @@ subroutine shd_intg__backIntegrate3D_( &
 
     integer(kind=I__), intent(in) :: NX, NY, NZ, NA, KANG, BCFLAG, IPFLAG
     integer(kind=I__), intent(in) :: sweepOrder(rtm_obj_%Npts, *)
-    real(kind=R__)   , intent(in) :: MU, PHI, TRANSMIN
+    real(kind=R__)   , intent(in) :: MU, PHI, minTrans
     real(kind=R__)   , intent(in) :: EXTINCT(rtm_obj_%Npts), SOURCE(NA, rtm_obj_%Npts)
 
     real   (kind=R__), intent(inout) :: GRIDRAD(rtm_obj_%Npts)
@@ -1056,7 +1055,7 @@ subroutine shd_intg__backIntegrate3D_( &
                 isValidFace = (GRIDRAD(I1) .ge. -0.1 .and. GRIDRAD(I2) .ge. -0.1&
                       &.and. GRIDRAD(I3) .ge. -0.1 .and. GRIDRAD(I4) .ge. -0.1)
                 if ((iCellNext .le. 0) .or. &
-                    ((trans .le. TRANSMIN) .and. isValidFace)) then
+                    ((trans .le. minTrans) .and. isValidFace)) then
                     if (isValidFace) then
                         isValidRad = .true.
                         RAD0 = F1*GRIDRAD(I1) + F2*GRIDRAD(I2)&
@@ -1096,7 +1095,7 @@ end subroutine shd_intg__backIntegrate3D_
 
 subroutine shd_intg__backIntegrate2D(&
     &NX, NY, NZ, NA,&
-    &sweepOrder, MU, PHI, TRANSMIN,&
+    &sweepOrder, MU, PHI, minTrans,&
     &EXTINCT, NSTOKES, SOURCE, KANG, GRIDRAD)
 
     !   Sweeps through the spatial grid computing radiances for the
@@ -1112,7 +1111,7 @@ subroutine shd_intg__backIntegrate2D(&
 
     integer NX, NY, NZ, NA, KANG, NSTOKES
     integer sweepOrder(rtm_obj_%Npts, *)
-    real MU, PHI, TRANSMIN
+    real MU, PHI, minTrans
     real EXTINCT(rtm_obj_%Npts), SOURCE(NSTOKES, NA, rtm_obj_%Npts)
     real GRIDRAD(NSTOKES, rtm_obj_%Npts)
     integer bitX, bitZ, iOctant, jOctant
@@ -1303,7 +1302,7 @@ subroutine shd_intg__backIntegrate2D(&
                 trans = trans*transCell
                 isValidFace = (GRIDRAD(1, I1) .ge. -0.1 .and. GRIDRAD(1, I2) .ge. -0.1)
                 if (iCellNext .le. 0 .or.&
-                    &(trans .le. TRANSMIN .and. isValidFace)) then
+                    &(trans .le. minTrans .and. isValidFace)) then
                     if (isValidFace) then
                         isValidRad = .true.
                         RAD0(:) = F1*GRIDRAD(:, I1) + F2*GRIDRAD(:, I2)
@@ -1338,7 +1337,7 @@ end subroutine shd_intg__backIntegrate2D
 
 subroutine shd_intg__backIntegrate1D(&
     &NX, NY, NZ, NA,&
-    &sweepOrder, MU, PHI, TRANSMIN,&
+    &sweepOrder, MU, PHI, minTrans,&
     &EXTINCT, NSTOKES, SOURCE, KANG, GRIDRAD)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
@@ -1357,7 +1356,7 @@ subroutine shd_intg__backIntegrate1D(&
 
     integer(kind=I__), intent(in) :: NX, NY, NZ, NA, KANG, NSTOKES
     integer(kind=I__), intent(in) :: sweepOrder(rtm_obj_%Npts, *)
-    real(kind=R__)   , intent(in) :: MU, PHI, TRANSMIN
+    real(kind=R__)   , intent(in) :: MU, PHI, minTrans
     real(kind=R__)   , intent(in) :: EXTINCT(rtm_obj_%Npts), SOURCE(NSTOKES, NA, rtm_obj_%Npts)
 
     real(kind=R__), intent(inout) :: GRIDRAD(NSTOKES, rtm_obj_%Npts)
