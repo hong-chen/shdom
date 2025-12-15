@@ -183,11 +183,11 @@ end subroutine shd_scat__computeLegendre
 
 subroutine shd_scat__computeWigner(X, Nrank, M, M1, DMM1)
 
-    ! ----------------------------------------------------------------
-    ! |  The routine computes the DMM1N vector coefficients for
-    ! |               M >= 0, M1 >= 0,  N = 0,...,Nrank, and
-    ! |               -1 < X= COS(BETA) < 1
-    ! ----------------------------------------------------------------
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    ! The routine computes the DMM1N vector coefficients for
+    !    M >= 0, M1 >= 0,  N = 0,...,Nrank, and
+    !   -1 < X= COS(BETA) < 1
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
     integer Nrank, M, M1
     real(RD_) :: X, DMM1(0:Nrank)
@@ -228,13 +228,13 @@ end subroutine shd_scat__computeWigner
 subroutine shd_scat__computeWignerDM0DM2PDM2M(&
     &MIU, Nrank, M, DM0, DM2P, DM2M)
 
-    ! ----------------------------------------------------------------
-    ! |  The routine computes the DMM1N vector coefficients for
-    ! |               M >= 0; M1 = 0, 2, -2; N = 0,...,Nrank, and
-    ! |              -1 <= MIU <= 1
-    ! |  For M1 = -2, we use the symmetry relation
-    ! |               DM-M1(MIU) = (-1)**(N+M) * DMM1(-MIU)
-    ! ----------------------------------------------------------------
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    ! The routine computes the DMM1N vector coefficients for
+    !    M >= 0; M1 = 0, 2, -2; N = 0,...,Nrank, and
+    !   -1 <= MIU <= 1
+    ! For M1 = -2, we use the symmetry relation
+    !    DM-M1(MIU) = (-1)**(N+M) * DMM1(-MIU)
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
     integer Nrank, M
     real(RD_) :: MIU
@@ -246,9 +246,8 @@ subroutine shd_scat__computeWignerDM0DM2PDM2M(&
     XP = MIU
     !for M1 = - 2
     XM = -MIU
-    ! ................................................................
+
     ! DM0 for M1 = 0
-    ! ................................................................
     DM0 = 0.d0
     if (M .le. Nrank) then
         if (M .eq. 0) then
@@ -279,9 +278,8 @@ subroutine shd_scat__computeWignerDM0DM2PDM2M(&
             DM0(N) = dsqrt(N + 0.5d0)*DM0(N)
         end do
     end if
-    ! ................................................................
+
     ! DM2P and DM2M for M1 = 2 and M1 = -2
-    ! ................................................................
     N0 = max(M, 2)
     DM2P = 0.d0
     DM2M = 0.d0
@@ -319,11 +317,11 @@ end subroutine shd_scat__computeWignerDM0DM2PDM2M
 
 subroutine shd_scat__computeWignerDM0(X, Nrank, M, DM0)
 
-    ! ----------------------------------------------------------------
-    ! |  The routine computes the DMM1N vector coefficients for      |
-    ! |               M >= 0; M1 = 0; N = 0,...,Nrank, and           |
-    ! |              -1 <= X <= 1                                    |
-    ! ----------------------------------------------------------------
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    ! The routine computes the DMM1N vector coefficients for
+    !    M >= 0; M1 = 0; N = 0,...,Nrank, and
+    !   -1 <= X <= 1
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
     integer Nrank, M
     real(RD_) :: X
