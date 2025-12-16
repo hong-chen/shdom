@@ -103,7 +103,7 @@ subroutine shd_init__makeVectECEF(&
     implicit none
     real(kind=R__), intent(in)  :: lon_deg, lat_deg, muIn, phiIn
     real(kind=R__), intent(out) :: vectECEF(3)
-    real(kind=R__) :: mu, phi, lon, lat, Se, Sn, sinmu
+    real(kind=R__) :: mu, phi, lon, lat, Se, Sn, sinZen
     real(kind=R__) :: east_x, east_y
     real(kind=R__) :: up_x, up_y, up_z
     real(kind=R__) :: north_x, north_y, north_z
@@ -118,10 +118,10 @@ subroutine shd_init__makeVectECEF(&
     lat = lat_deg * DTOR_
 
     ! Local ENU vector at center
-    sinmu = sqrt(1.0 - mu*mu)
+    sinZen = sqrt(1.0 - mu*mu)
 
-    Se = sinmu * sin(phi)
-    Sn = sinmu * cos(phi)
+    Se = sinZen * sin(phi)
+    Sn = sinZen * cos(phi)
 
     ! Ellipsoidal surface normal (UP vector)
     nx = cos(lat)*cos(lon)/A2_
@@ -142,7 +142,7 @@ subroutine shd_init__makeVectECEF(&
     north_y =  up_z*east_x
     north_z =  up_x*east_y - up_y*east_x
 
-    ! Convert local ENU Sun vector -> global ECEF
+    ! Convert local ENU vector -> global ECEF
     vectECEF(1) = Se*east_x  + Sn*north_x + mu*up_x
     vectECEF(2) = Se*east_y  + Sn*north_y + mu*up_y
     vectECEF(3) = Sn*north_z + mu*up_z
