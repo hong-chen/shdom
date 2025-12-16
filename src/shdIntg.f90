@@ -429,6 +429,7 @@ subroutine shd_intg__backIntegrate3D(&
     else
         stop 'Error [_backIntegrate3D]: Bad MU.'
     end if
+
     ! iOctant is the octant the ray come from or the discrete ordinate goes to.
     iOctant = 1 + bitX + 2*bitY + 4*bitZ
     if (is1DYx_) then
