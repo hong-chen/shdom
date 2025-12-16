@@ -78,7 +78,7 @@ program shdom
                                          kabs_Ckd_, &
                               sen_obj_, view_Sen_
 
-    use shd_init, only: shd_init__makeSolarVect, &
+    use shd_init, only: shd_init__makeVectECEF, &
                         shd_init__makeGrid, &
                         shd_init__makeCell
 
@@ -120,7 +120,7 @@ program shdom
 
     use shd_util, only: shd_util__sumData, &
                         shd_util__interpData, &
-                        shd_util__computeSolarAngle, &
+                        shd_util__computeDirENU, &
                         shd_util__tickTock
 
     implicit none
@@ -1125,9 +1125,9 @@ program shdom
 
 
     if (src_obj_%doVariableSolar) then
-        call shd_init__makeSolarVect(src_obj_%x0,  src_obj_%y0, &
-                                     src_obj_%mu0, src_obj_%phi0, &
-                                     solarVect_)
+        call shd_init__makeVectECEF(src_obj_%x0,  src_obj_%y0, &
+                                    src_obj_%mu0, src_obj_%phi0, &
+                                    solarVect_)
 
         ! for testing
         !╭────────────────────────────────────────────────────────────────────────────╮!
@@ -1136,7 +1136,7 @@ program shdom
         !     lat0 = rtm_obj_%yOffset + (j-1)*rtm_obj_%dy + prp_obj_%yStart
         !     do i = 1, rtm_obj_%Nx
         !         lon0 = rtm_obj_%xOffset + (i-1)*rtm_obj_%dx + prp_obj_%xStart
-        !         call shd_util__computeSolarAngle(lon0, lat0, muSun0, phiSun0)
+        !         call shd_util__computeDirENU(solarVect_, lon0, lat0, muSun0, phiSun0)
         !         print *, lon0, lat0, acos(-muSun0)*180.0d0/acos(-1.0d0), 270.0-phiSun0*180.0d0/acos(-1.0d0)
         !     end do
         ! end do
@@ -1149,7 +1149,7 @@ program shdom
         !     lat0 = -90.0 + (j-1)*1.0
         !     do i = 1, 361
         !         lon0 = (i-1)*1.0
-        !         call shd_util__computeSolarAngle(lon0, lat0, muSun0, phiSun0)
+        !         call shd_util__computeDirENU(solarVect_, lon0, lat0, muSun0, phiSun0)
         !         print *, lon0, lat0, acos(-muSun0)*180.0d0/acos(-1.0d0), 270.0-phiSun0*180.0d0/acos(-1.0d0)
         !     end do
         ! end do

@@ -41,7 +41,7 @@ module shd_init
 
     use globals_const, only: RD_, PI_, OPI_, DTOR_
     use globals_cfg,   only: verbose_, doGridPtsPrp_, &
-                             planetRadius_, A2_, B2_, &
+                             planetRadius_, A2_, B2_, solarVect_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
                              is1DX_, is1DYx_
 
@@ -57,7 +57,7 @@ module shd_init
                             sfc_obj_, brdf_Rtm_
 
     use shd_util, only: shd_util__computePlanck, &
-                        shd_util__computeSolarAngle, &
+                        shd_util__computeDirENU, &
                         shd_util__solveTriDiag
 
     use shd_sfc,  only: shd_sfc__brdfSurface
@@ -69,7 +69,7 @@ module shd_init
     integer, parameter :: R__  = selected_real_kind(6) ! default precision for float
     integer, parameter :: I__  = selected_int_kind(9)  ! default precision for integer
 
-    public :: shd_init__makeSolarVect
+    public :: shd_init__makeVectECEF
 
     public :: shd_init__makeGrid
     public :: shd_init__makeCell
@@ -90,34 +90,34 @@ module shd_init
 
 contains
 
-subroutine shd_init__makeSolarVect(&
-    lon_deg, lat_deg, mu0, phi0, &
-    solarVect)
+subroutine shd_init__makeVectECEF(&
+    lon_deg, lat_deg, muIn, phiIn, &
+    vectECEF)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    ! Initialize Sun vector at center, converting local ENU to ECEF
-    !   mu0 is the SHDOM muSun
-    !   phi0 is the SHDOM phiSun
+    ! Initialize angle vector at center, converting local ENU to ECEF
+    !   muIn is the SHDOM mu
+    !   phiIn is the SHDOM phi
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     implicit none
-    real(kind=R__), intent(in)  :: lon_deg, lat_deg, mu0, phi0
-    real(kind=R__), intent(out) :: solarVect(3)
+    real(kind=R__), intent(in)  :: lon_deg, lat_deg, muIn, phiIn
+    real(kind=R__), intent(out) :: vectECEF(3)
     real(kind=R__) :: mu, phi, lon, lat, Se, Sn, sinmu
     real(kind=R__) :: east_x, east_y
     real(kind=R__) :: up_x, up_y, up_z
     real(kind=R__) :: north_x, north_y, north_z
     real(kind=R__) :: nx, ny, nz, norm
 
-    ! convert MU (cos(SZA)) and PHI from SHDOM convension to legacy convension
-    mu  = abs(mu0)
-    phi = 1.5*PI_ - phi0
+    ! convert MU (cos(zenith)) and PHI from SHDOM convension to legacy convension
+    mu  = abs(muIn)
+    phi = 1.5*PI_ - phiIn
 
     ! convert longitude and latitude from degree to radian
     lon = lon_deg * DTOR_
     lat = lat_deg * DTOR_
 
-    ! Local ENU Sun vector at center
+    ! Local ENU vector at center
     sinmu = sqrt(1.0 - mu*mu)
 
     Se = sinmu * sin(phi)
@@ -143,13 +143,13 @@ subroutine shd_init__makeSolarVect(&
     north_z =  up_x*east_y - up_y*east_x
 
     ! Convert local ENU Sun vector -> global ECEF
-    solarVect(1) = Se*east_x  + Sn*north_x + mu*up_x
-    solarVect(2) = Se*east_y  + Sn*north_y + mu*up_y
-    solarVect(3) = Sn*north_z + mu*up_z
+    vectECEF(1) = Se*east_x  + Sn*north_x + mu*up_x
+    vectECEF(2) = Se*east_y  + Sn*north_y + mu*up_y
+    vectECEF(3) = Sn*north_z + mu*up_z
 
     return
 
-end subroutine shd_init__makeSolarVect
+end subroutine shd_init__makeVectECEF
 
 subroutine shd_init__makeGrid(rtm_OBJ, &
                               prp_OBJ)
@@ -729,7 +729,7 @@ subroutine shd_init__makeRad(&
             if (src_obj_%doVariableSolar) then
                 lon0 = prp_obj_%xStart + (IX-1)*rtm_obj_%dx + rtm_obj_%xOffset
                 lat0 = prp_obj_%yStart + (IY-1)*rtm_obj_%dy + rtm_obj_%yOffset
-                call shd_util__computeSolarAngle(lon0, lat0, muSun0, phiSun0)
+                call shd_util__computeDirENU(solarVect_, lon0, lat0, muSun0, phiSun0)
             else
                 muSun0 = muSun
             end if
@@ -1213,7 +1213,7 @@ subroutine shd_init__makeBotRadV(&
             if (src_obj_%doVariableSolar) then
                 lon0 = xyz_Rtm_(1, I) + rtm_obj_%xOffset
                 lat0 = xyz_Rtm_(2, I) + rtm_obj_%yOffset
-                call shd_util__computeSolarAngle(lon0, lat0, muSun0, phiSun0)
+                call shd_util__computeDirENU(solarVect_, lon0, lat0, muSun0, phiSun0)
             else
                 muSun0  = muSun
                 phiSun0 = phiSun

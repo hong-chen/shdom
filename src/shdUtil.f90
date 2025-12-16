@@ -44,7 +44,7 @@ module shd_util
 
     use globals_const, only: RD_, PI_, DPI_, DTOR_
     use globals_cfg,   only: charMaxLen_, planetRadiusA_, planetRadiusB_, &
-                             A2_, B2_, E2_, solarVect_, &
+                             A2_, B2_, E2_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
                              is1DX_, is1DYx_, verbose_
 
@@ -84,7 +84,7 @@ module shd_util
 
     public :: shd_util__computeRayVect
     public :: shd_util__computeDegKmRatio
-    public :: shd_util__computeSolarAngle
+    public :: shd_util__computeDirENU
 
     public :: shd_util__tickTock
 
@@ -1589,17 +1589,19 @@ subroutine shd_util__computeDegKmRatio(&
 
 end subroutine shd_util__computeDegKmRatio
 
-subroutine shd_util__computeSolarAngle(&
+subroutine shd_util__computeDirENU(&
+    vectECEF, &
     lon_deg, lat_deg, &
-    muSun, phiSun)
+    muOut, phiOut)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Compute solar angles at any lat/lon on oblate ellipsoid
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     implicit none
+    real(kind=R__), intent(in)  :: vectECEF(3)
     real(kind=R__), intent(in)  :: lon_deg, lat_deg
-    real(kind=R__), intent(out) :: muSun, phiSun
+    real(kind=R__), intent(out) :: muOut, phiOut
 
     real(kind=R__) :: mu, phi, lon, lat, east_x, east_y
     real(kind=R__) :: up_x, up_y, up_z
@@ -1630,9 +1632,9 @@ subroutine shd_util__computeSolarAngle(&
     north_z =  up_x*east_y - up_y*east_x
 
     ! Project Sun vector into local ENU (East, North, Up) frame
-    Se =  east_x*solarVect_(1) +  east_y*solarVect_(2)
-    Sn = north_x*solarVect_(1) + north_y*solarVect_(2) + north_z*solarVect_(3)
-    mu =    up_x*solarVect_(1) +    up_y*solarVect_(2) +    up_z*solarVect_(3)
+    Se =  east_x*vectECEF(1) +  east_y*vectECEF(2)
+    Sn = north_x*vectECEF(1) + north_y*vectECEF(2) + north_z*vectECEF(3)
+    mu =    up_x*vectECEF(1) +    up_y*vectECEF(2) +    up_z*vectECEF(3)
 
     if ((mu .ge. 0.0) .and. (mu .le. 1.0)) then
         phi = atan2(Se, Sn)
@@ -1641,20 +1643,20 @@ subroutine shd_util__computeSolarAngle(&
         ! phi: from  [0 at north, positive clockwise] to
         !            [0 at east,  positive counterclockwise]
         !╭────────────────────────────────────────────────────────────────────────────╮!
-        muSun  = -abs(mu)
-        phiSun = 1.5*PI_ - phi
+        muOut  = -abs(mu)
+        phiOut = 1.5*PI_ - phi
 
-        if (phiSun < 0.0)     phiSun = phiSun + 2.0*PI_
-        if (phiSun > 2.0*PI_) phiSun = phiSun - 2.0*PI_
+        if (phiOut < 0.0)     phiOut = phiOut + 2.0*PI_
+        if (phiOut > 2.0*PI_) phiOut = phiOut - 2.0*PI_
         !╰────────────────────────────────────────────────────────────────────────────╯!
     else
-        muSun  = 0.0
-        phiSun = 0.0
+        muOut  = 0.0
+        phiOut = 0.0
     end if
 
     return
 
-end subroutine shd_util__computeSolarAngle
+end subroutine shd_util__computeDirENU
 
 subroutine shd_util__tickTock(message, count_start, more_digits)
 

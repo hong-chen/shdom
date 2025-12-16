@@ -42,7 +42,7 @@ module shd_src
     use globals_const, only: RD_, PI_, DPI_, O4PI_, DO4PI_, &
                              FRAC13_, FRAC112_
     use globals_cfg,   only: accSolv_, isOpenX_, isOpenYx_, &
-                             isPol_, isPol4_
+                             isPol_, isPol4_, solarVect_
 
     use globals_obj,   only: rtm_obj_, xyz_Rtm_, &
                                     planck_Rtm_, &
@@ -67,7 +67,7 @@ module shd_src
                         shd_util__findNextCell, &
                         shd_util__interpTriLin, &
                         shd_util__computeRayVect, &
-                        shd_util__computeSolarAngle
+                        shd_util__computeDirENU
 
     use shd_init, only: shd_init__makeBotRadV
 
@@ -1217,7 +1217,7 @@ subroutine shd_src__computeSunOnePts(&
     lon0 = xyz_Rtm_(1, iPts) + rtm_obj_%xOffset
     lat0 = xyz_Rtm_(2, iPts) + rtm_obj_%yOffset
 
-    call shd_util__computeSolarAngle(lon0, lat0, mu0, phi0)
+    call shd_util__computeDirENU(solarVect_, lon0, lat0, mu0, phi0)
 
     call shd_shdo__computeYlm(.true., mu0, phi0, &
         shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet, &

@@ -43,7 +43,7 @@ module shd_rad
                              FRAC13_
     use globals_cfg,   only: verbose_, accSolv_, doGridPtsPrp_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
-                             is3Ddir1Ddif_, &
+                             is3Ddir1Ddif_, solarVect_, &
                              isPol_, isPol4_
 
     use globals_obj,   only: rtm_obj_, xyz_Rtm_, &
@@ -75,7 +75,7 @@ module shd_rad
                         shd_init__makeBotRadV
 
     use shd_util, only: shd_util__computeRayVect, &
-                        shd_util__computeSolarAngle
+                        shd_util__computeDirENU
 
     implicit none
     private
@@ -369,7 +369,7 @@ subroutine shd_rad__computeDirect(&
 
                 lon0 = XI + rtm_obj_%xOffset
                 lat0 = YI + rtm_obj_%yOffset
-                call shd_util__computeSolarAngle(lon0, lat0, muSun0, phiSun0)
+                call shd_util__computeDirENU(solarVect_, lon0, lat0, muSun0, phiSun0)
 
                 ! Make the ray direction (opposite to the solar beam)
                 call shd_util__computeRayVect(dble(muSun0), dble(phiSun0), &
