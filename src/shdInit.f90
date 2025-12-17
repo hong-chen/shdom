@@ -41,7 +41,7 @@ module shd_init
 
     use globals_const, only: RD_, PI_, OPI_, DTOR_
     use globals_cfg,   only: verbose_, doGridPtsPrp_, &
-                             planetRadius_, A2_, B2_, solarVect_, &
+                             planetRadius_, E2_, solarVect_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
                              is1DX_, is1DYx_
 
@@ -103,7 +103,8 @@ subroutine shd_init__makeVectECEF(&
     implicit none
     real(kind=R__), intent(in)  :: lon_deg, lat_deg, muIn, phiIn
     real(kind=R__), intent(out) :: vectECEF(3)
-    real(kind=R__) :: mu, phi, lon, lat, Se, Sn, sinZen
+    real(kind=R__) :: mu, phi, lon, lat, Se, Sn
+    real(kind=R__) :: sinLon, cosLon, sinLat, cosLat, sinZen
     real(kind=R__) :: east_x, east_y
     real(kind=R__) :: up_x, up_y, up_z
     real(kind=R__) :: north_x, north_y, north_z
@@ -123,10 +124,15 @@ subroutine shd_init__makeVectECEF(&
     Se = sinZen * sin(phi)
     Sn = sinZen * cos(phi)
 
+    cosLon = cos(lon)
+    sinLon = sin(lon)
+    cosLat = cos(lat)
+    sinLat = sin(lat)
+
     ! Ellipsoidal surface normal (UP vector)
-    nx = cos(lat)*cos(lon)/A2_
-    ny = cos(lat)*sin(lon)/A2_
-    nz = sin(lat)/B2_
+    nx = cosLat*cosLon
+    ny = cosLat*sinLon
+    nz = sinLat/(1.0-E2_)
     norm = sqrt(nx*nx + ny*ny + nz*nz)
 
     up_x = nx / norm
@@ -134,8 +140,8 @@ subroutine shd_init__makeVectECEF(&
     up_z = nz / norm
 
     ! East vector (same as spherical)
-    east_x = -sin(lon)
-    east_y =  cos(lon)
+    east_x = -sinLon
+    east_y =  cosLon
 
     ! North = Up × East
     north_x = -up_z*east_y
@@ -145,7 +151,7 @@ subroutine shd_init__makeVectECEF(&
     ! Convert local ENU vector -> global ECEF
     vectECEF(1) = Se*east_x  + Sn*north_x + mu*up_x
     vectECEF(2) = Se*east_y  + Sn*north_y + mu*up_y
-    vectECEF(3) = Sn*north_z + mu*up_z
+    vectECEF(3) =              Sn*north_z + mu*up_z
 
     return
 
