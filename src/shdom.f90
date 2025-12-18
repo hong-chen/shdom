@@ -78,8 +78,7 @@ program shdom
                                          kabs_Ckd_, &
                               sen_obj_, view_Sen_
 
-    use shd_init, only: shd_init__makeVectECEF, &
-                        shd_init__makeGrid, &
+    use shd_init, only: shd_init__makeGrid, &
                         shd_init__makeCell
 
     use shd_src,  only: shd_src__computeSrcDir
@@ -120,6 +119,7 @@ program shdom
 
     use shd_util, only: shd_util__sumData, &
                         shd_util__interpData, &
+                        shd_util__computeVecECEF, &
                         shd_util__computeDirENU, &
                         shd_util__tickTock
 
@@ -1125,7 +1125,7 @@ program shdom
 
 
     if (src_obj_%doVariableSolar) then
-        call shd_init__makeVectECEF(src_obj_%x0,  src_obj_%y0, &
+        call shd_util__computeVecECEF(src_obj_%x0,  src_obj_%y0, &
                                     src_obj_%mu0, src_obj_%phi0, &
                                     solarVect_)
 

@@ -69,8 +69,6 @@ module shd_init
     integer, parameter :: R__  = selected_real_kind(6) ! default precision for float
     integer, parameter :: I__  = selected_int_kind(9)  ! default precision for integer
 
-    public :: shd_init__makeVectECEF
-
     public :: shd_init__makeGrid
     public :: shd_init__makeCell
 
@@ -89,73 +87,6 @@ module shd_init
     real(kind=R__) :: lon0, lat0, muSun0, phiSun0
 
 contains
-
-subroutine shd_init__makeVectECEF(&
-    lon_deg, lat_deg, muIn, phiIn, &
-    vectECEF)
-
-    !╭────────────────────────────────────────────────────────────────────────────╮!
-    ! Initialize angle vector at center, converting local ENU to ECEF
-    !   muIn is the SHDOM mu
-    !   phiIn is the SHDOM phi
-    !╰────────────────────────────────────────────────────────────────────────────╯!
-
-    implicit none
-    real(kind=R__), intent(in)  :: lon_deg, lat_deg, muIn, phiIn
-    real(kind=R__), intent(out) :: vectECEF(3)
-    real(kind=R__) :: mu, phi, lon, lat, Se, Sn
-    real(kind=R__) :: sinLon, cosLon, sinLat, cosLat, sinZen
-    real(kind=R__) :: east_x, east_y
-    real(kind=R__) :: up_x, up_y, up_z
-    real(kind=R__) :: north_x, north_y, north_z
-    real(kind=R__) :: nx, ny, nz, norm
-
-    ! convert MU (cos(zenith)) and PHI from SHDOM convension to legacy convension
-    mu  = abs(muIn)
-    phi = 1.5*PI_ - phiIn
-
-    ! convert longitude and latitude from degree to radian
-    lon = lon_deg * DTOR_
-    lat = lat_deg * DTOR_
-
-    ! Local ENU vector at center
-    sinZen = sqrt(1.0 - mu*mu)
-
-    Se = sinZen * sin(phi)
-    Sn = sinZen * cos(phi)
-
-    cosLon = cos(lon)
-    sinLon = sin(lon)
-    cosLat = cos(lat)
-    sinLat = sin(lat)
-
-    ! Ellipsoidal surface normal (UP vector)
-    nx = cosLat*cosLon
-    ny = cosLat*sinLon
-    nz = sinLat/(1.0-E2_)
-    norm = sqrt(nx*nx + ny*ny + nz*nz)
-
-    up_x = nx / norm
-    up_y = ny / norm
-    up_z = nz / norm
-
-    ! East vector (same as spherical)
-    east_x = -sinLon
-    east_y =  cosLon
-
-    ! North = Up × East
-    north_x = -up_z*east_y
-    north_y =  up_z*east_x
-    north_z =  up_x*east_y - up_y*east_x
-
-    ! Convert local ENU vector -> global ECEF
-    vectECEF(1) = Se*east_x  + Sn*north_x + mu*up_x
-    vectECEF(2) = Se*east_y  + Sn*north_y + mu*up_y
-    vectECEF(3) =              Sn*north_z + mu*up_z
-
-    return
-
-end subroutine shd_init__makeVectECEF
 
 subroutine shd_init__makeGrid(rtm_OBJ, &
                               prp_OBJ)
