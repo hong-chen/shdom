@@ -39,8 +39,8 @@
 
 module shd_intg
 
-    use globals_const, only: RD_, DPI_, &
-                             FRAC13_, FRAC112_
+    use globals_const, only: RD_, &
+                             f1_3_, f1_12_
     use globals_cfg,   only: verbose_, accSolv_, doGridPtsPrp_, &
                              isMpi_, is1DX_, is1DYx_, is1D_, &
                              isPol_
@@ -609,7 +609,7 @@ subroutine shd_intg__backIntegrate3D(&
                     absCell = 1.0 - transCell
                 else
                     absCell = tau*(1.0 - 0.5*tau*&
-                        &(1.0 - FRAC13_*tau*(1 - 0.25*tau)))
+                        &(1.0 - f1_3_*tau*(1 - 0.25*tau)))
                     transCell = 1.0 - absCell
                 end if
                 if (tau .le. 2.0) then
@@ -617,7 +617,7 @@ subroutine shd_intg__backIntegrate3D(&
                         SRC(:) = 0.0
                     else
                         ! Linear extinction, linear source*extinction, to first order
-                        SRC(:) = (0.5*(SRCEXT0(:) + SRCEXT1(:)) + FRAC112_&
+                        SRC(:) = (0.5*(SRCEXT0(:) + SRCEXT1(:)) + f1_12_&
                             &*(EXT0*SRCEXT1(:) - EXT1*SRCEXT0(:))*SO)/EXT
                     end if
                 else
@@ -1006,7 +1006,7 @@ subroutine shd_intg__backIntegrate3D_( &
                     absCell = 1.0 - transCell
                 else
                     absCell = tau*(1.0 - 0.5*tau*&
-                        &(1.0 - FRAC13_*tau*(1.0 - 0.25*tau)))
+                        &(1.0 - f1_3_*tau*(1.0 - 0.25*tau)))
                     transCell = 1.0 - absCell
                 end if
 
@@ -1016,7 +1016,7 @@ subroutine shd_intg__backIntegrate3D_( &
                     else
                         ! Linear extinction, linear source*extinction, to first order
                         SRC = (0.5*(SRCEXT0 + SRCEXT1)&
-                            &+ FRAC112_*(EXT0*SRCEXT1 - EXT1*SRCEXT0)*SO)/EXT
+                            &+ f1_12_*(EXT0*SRCEXT1 - EXT1*SRCEXT0)*SO)/EXT
                     end if
                 else
                     ! Combined first order expansion and constant extinction formula
@@ -1266,7 +1266,7 @@ subroutine shd_intg__backIntegrate2D(&
                     absCell = 1.0 - transCell
                 else
                     absCell = tau*(1.0 - 0.5*tau*&
-                        &(1.0 - FRAC13_*tau*(1 - 0.25*tau)))
+                        &(1.0 - f1_3_*tau*(1 - 0.25*tau)))
                     transCell = 1.0 - absCell
                 end if
                 if (tau .le. 2.0) then
@@ -1274,7 +1274,7 @@ subroutine shd_intg__backIntegrate2D(&
                         SRC(:) = 0.0
                     else
                         ! Linear extinction, linear source*extinction, to first order
-                        SRC(:) = (0.5*(SRCEXT0(:) + SRCEXT1(:)) + FRAC112_&
+                        SRC(:) = (0.5*(SRCEXT0(:) + SRCEXT1(:)) + f1_12_&
                             &*(EXT0*SRCEXT1(:) - EXT1*SRCEXT0(:))*SO)/EXT
                     end if
                 else
@@ -1477,14 +1477,14 @@ subroutine shd_intg__backIntegrate1D(&
                     absCell = 1.0 - transCell
                 else
                     absCell = tau*(1.0 - 0.5*tau*&
-                        &(1.0 - FRAC13_*tau*(1 - 0.25*tau)))
+                        &(1.0 - f1_3_*tau*(1 - 0.25*tau)))
                     transCell = 1.0 - absCell
                 end if
                 if (tau .le. 2.0) then
                     if (EXT .eq. 0.0) then
                         SRC(:) = 0.0
                     else
-                        SRC(:) = (0.5*(SRCEXT0(:) + SRCEXT1(:)) + FRAC112_&
+                        SRC(:) = (0.5*(SRCEXT0(:) + SRCEXT1(:)) + f1_12_&
                             &*(EXT0*SRCEXT1(:) - EXT1*SRCEXT0(:))*SO)/EXT
                     end if
                 else

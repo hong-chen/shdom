@@ -42,7 +42,7 @@
 
 module shd_inp
 
-    use globals_const, only: PI_, deg2rad_, FRAC13_
+    use globals_const, only: pi_, deg2rad_, f1_3_
     use globals_cfg,   only: verbose_, charMaxLen_
     use globals_type,  only: shd_type_rtm, &
                              shd_type_cell, &
@@ -649,7 +649,7 @@ subroutine shd_io__checkInp(&
     ! Check for SPLITACC and SHACC magnitudes
     if ((src_obj%type .eq. 'T') .or. (src_obj%type .eq. 'B')) then
         call shd_util__computePlanck(sfc_obj%avgTemp, src_obj%unit, src_obj%waveNum, src_obj%avgWaveLen, FLUX)
-        FLUX = PI_*FLUX
+        FLUX = pi_*FLUX
     else
         FLUX = 0.0
     end if
@@ -894,8 +894,8 @@ subroutine shd_io__readPrp(doDeltaM, &
             !leg_Prp(1) = 1.0
             leg_Prp(1, 0, 1) = 1.0
 
-            !prp_obj%maxAsym = leg_Prp(1 + 1)*FRAC13_
-            prp_obj%maxAsym = leg_Prp(1, 1, 1) * FRAC13_
+            !prp_obj%maxAsym = leg_Prp(1 + 1)*f1_3_
+            prp_obj%maxAsym = leg_Prp(1, 1, 1) * f1_3_
             do l = Nleg + 1, prp_obj%Nleg
                 !leg_Prp(l) = 0.0
                 leg_Prp(1, l, 1) = 0.0
@@ -996,8 +996,8 @@ subroutine shd_io__readPrp(doDeltaM, &
                         end if
                     end do
                 end if
-                !prp_obj%maxAsym = max(prp_obj%maxAsym, leg_Prp((il + 1)*prp_obj%NlegSet + 1)*FRAC13_)
-                prp_obj%maxAsym = max(prp_obj%maxAsym, leg_Prp(1, 1, i)*FRAC13_)
+                !prp_obj%maxAsym = max(prp_obj%maxAsym, leg_Prp((il + 1)*prp_obj%NlegSet + 1)*f1_3_)
+                prp_obj%maxAsym = max(prp_obj%maxAsym, leg_Prp(1, 1, i)*f1_3_)
             end do
 
             read(1, '(A)') lineTmp ! skip one line
@@ -1104,10 +1104,10 @@ subroutine shd_io__readPrp(doDeltaM, &
                         Nleg, (leg_Prp(1, l, k), l=1, min(Nleg, prp_obj%Nleg)), &
                         (chi0, l=prp_obj%Nleg + 1, Nleg)
 
-                    !prp_obj%maxAsym = max(prp_obj%maxAsym, leg_Prp(kl + 1 + 1)*FRAC13_)
+                    !prp_obj%maxAsym = max(prp_obj%maxAsym, leg_Prp(kl + 1 + 1)*f1_3_)
                     !leg_Prp(1 + kl) = 1.0
 
-                    prp_obj%maxAsym = max(prp_obj%maxAsym, leg_Prp(1, 1, k)*FRAC13_)
+                    prp_obj%maxAsym = max(prp_obj%maxAsym, leg_Prp(1, 1, k)*f1_3_)
                     leg_Prp(1, 0, k) = 1.0
 
                     do l = Nleg + 1, prp_obj%Nleg
@@ -1206,7 +1206,7 @@ subroutine shd_io__checkPrp(prp_obj, temp_Prp, ext_Prp, ssa_Prp, leg_Prp, ipha_P
     do i = 1, N
         if (leg_Prp(1, 1, i) .lt. -3.0 .or. leg_Prp(1, 1, i) .gt. 3.0) then
             write(*, *) 'Error [_checkPrp]: Asymmetry parameter ',&
-                &'out of range - ', leg_Prp(1, 1, i)*FRAC13_, ' at grid point ', i
+                &'out of range - ', leg_Prp(1, 1, i)*f1_3_, ' at grid point ', i
             stop
         end if
         if (leg_Prp(1, 1, i) .eq. 1.0) doLegWarn = .true.

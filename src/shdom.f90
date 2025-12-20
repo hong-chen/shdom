@@ -39,7 +39,7 @@
 
 program shdom
 
-    use globals_const, only: REPS_, PI_, deg2rad_
+    use globals_const, only: REPS_, pi_, deg2rad_
     use globals_cfg,   only: verbose_, charMaxLen_, accSolv_, solarVect_, &
                              memTotSysMB_, memPerCpuMB_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, isMpi_, &

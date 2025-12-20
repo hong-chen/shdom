@@ -39,7 +39,7 @@
 
 module shd_init
 
-    use globals_const, only: RD_, PI_, OPI_, deg2rad_
+    use globals_const, only: RD_, pi_, f1_pi_, deg2rad_
     use globals_cfg,   only: verbose_, doGridPtsPrp_, &
                              planetRadius_, E2_, solarVect_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
@@ -569,8 +569,8 @@ subroutine shd_init__makeRad(&
     if (SRCT .eq. 'B') SRCT = 'T'
 
     ! SH coefficients
-    C0 = sqrt(1.0d0/PI_)
-    C1 = sqrt(3.0d0/(4.0d0*PI_))
+    C0 = sqrt(1.0d0/pi_)
+    C1 = sqrt(3.0d0/(4.0d0*pi_))
 
     ! Loop over all the columns in the base grid
     IR = 0
@@ -782,7 +782,7 @@ subroutine shd_init__makeFlux(&
     !   two stream problem.
     if (SRCTYPE .eq. 'T') then
         call shd_util__computePlanck(tempZ(1), UNITS, WAVENO, WAVELEN, BBRAD)
-        PLANCK1 = PI_*BBRAD
+        PLANCK1 = pi_*BBRAD
     end if
     MU0 = abs(muSun)
     tau = 0.0
@@ -827,7 +827,7 @@ subroutine shd_init__makeFlux(&
             if (SRCTYPE .eq. 'T') then
                 ! Calculate thermal source terms
                 call shd_util__computePlanck(tempZ(L + 1), UNITS, WAVENO, WAVELEN, BBRAD)
-                PLANCK2 = PI_*BBRAD
+                PLANCK2 = pi_*BBRAD
                 V = 2.0*(PLANCK2 - PLANCK1)/(3.0*(1.0-OMEGA*G)*DELTAU)
                 RADP1P = -V + PLANCK1
                 RADP2M =  V + PLANCK2
@@ -887,13 +887,13 @@ subroutine shd_init__makeFlux(&
     if (SRCTYPE .eq. 'S') then
         FLUXES(3, NLAYER + 1) = SOLARFLUX*exp(-tau/MU0)
         GNDFLUX = (1.0 - GNDEMIS)*SOLARFLUX*exp(-tau/MU0)
-        SKYFLUX = PI_*SKYRAD
+        SKYFLUX = pi_*SKYRAD
     else
         FLUXES(3, NLAYER + 1) = 0.0
         call shd_util__computePlanck(GNDTEMP, UNITS, WAVENO, WAVELEN, BBRAD)
-        GNDFLUX = PI_*BBRAD*GNDEMIS
+        GNDFLUX = pi_*BBRAD*GNDEMIS
         call shd_util__computePlanck(SKYRAD, UNITS, WAVENO, WAVELEN, BBRAD)
-        SKYFLUX = PI_*BBRAD
+        SKYFLUX = pi_*BBRAD
     end if
     ! Setup for and call the tri-diagonal matrix solver
     RHS(1) = SKYFLUX
@@ -906,7 +906,7 @@ subroutine shd_init__makeFlux(&
 
     ! Put the fluxes in the output array
     if (UNITS .eq. 'T') then
-        C = 1.0/PI_
+        C = 1.0/pi_
     else
         C = 1.0
     end if
@@ -972,7 +972,7 @@ subroutine shd_init__makeBotRadUL(NBOTPTS, BCPTR,&
     integer I, IBC, K
     real ALB, GNDRAD
 
-    ALB = sfc_obj_%avgAlb * OPI_
+    ALB = sfc_obj_%avgAlb * f1_pi_
     if (src_obj_%doTherm) then
         call shd_util__computePlanck(sfc_obj_%avgTemp, UNITS, WAVENO, WAVELEN, GNDRAD)
         GNDRAD = GNDRAD*(1.0 - sfc_obj_%avgAlb)
@@ -1020,13 +1020,13 @@ subroutine shd_init__makeBotRadVL(NBOTPTS, BCPTR,&
         I = BCPTR(IBC)
         ALB = brdf_Rtm_(2, IBC)
         if (SRCTYPE .eq. 'S') then
-            BCRAD(1, IBC) = OPI_*ALB*(fluxDir(I) + FLUXES(1, I))
+            BCRAD(1, IBC) = f1_pi_*ALB*(fluxDir(I) + FLUXES(1, I))
         else
             GNDRAD = brdf_Rtm_(1, IBC)*(1 - ALB)
             if (SRCTYPE .eq. 'T') then
-                BCRAD(1, IBC) = GNDRAD + OPI_*ALB*FLUXES(1, I)
+                BCRAD(1, IBC) = GNDRAD + f1_pi_*ALB*FLUXES(1, I)
             else if (SRCTYPE .eq. 'B') then
-                BCRAD(1, IBC) = OPI_*ALB*(fluxDir(I) + FLUXES(1, I)) + GNDRAD
+                BCRAD(1, IBC) = f1_pi_*ALB*(fluxDir(I) + FLUXES(1, I)) + GNDRAD
             end if
         end if
         BCRAD(2:, IBC) = 0.0
@@ -1079,7 +1079,7 @@ subroutine shd_init__makeBotRadU(NBOTPTS, BCPTR,&
                 &MU(IMU), PHI(IMU, IPHI), muSun, phiSun,&
                 &NSTOKES, REFLECT)
             BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1)&
-                &+ OPI_*REFLECT(1:NSTOKES, 1)*fluxDir(I)
+                &+ f1_pi_*REFLECT(1:NSTOKES, 1)*fluxDir(I)
         end if
 
         ! Integrate over the incident discrete ordinate directions (JMU, JPHI)
@@ -1092,7 +1092,7 @@ subroutine shd_init__makeBotRadU(NBOTPTS, BCPTR,&
                         &*brdf_Shdo(:, IMU1, IPHI, K1, JMU, JPHI)
                 end do
                 ! Add in the polarized thermal emission
-                W = OPI_*abs(MU(JMU))*WTDO(JMU, JPHI)
+                W = f1_pi_*abs(MU(JMU))*WTDO(JMU, JPHI)
                 BCRAD(1, IBC, 1) = BCRAD(1, IBC, 1) + brdf_Rtm_(1, IBC)&
                     &*(W - brdf_Shdo(1, IMU1, IPHI, 1, JMU, JPHI))
                 BCRAD(2:, IBC, 1) = BCRAD(2:, IBC, 1) - brdf_Rtm_(1, IBC)&
@@ -1160,7 +1160,7 @@ subroutine shd_init__makeBotRadV(&
                 &MU2, PHI2, muSun0, phiSun0, NSTOKES, REFLECT)
 
             BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1) + &
-                OPI_*REFLECT(1:NSTOKES, 1)*fluxDir(I)
+                f1_pi_*REFLECT(1:NSTOKES, 1)*fluxDir(I)
         end if
 
         ! Integrate over the incident discrete ordinate directions (JMU,JPHI)
@@ -1170,7 +1170,7 @@ subroutine shd_init__makeBotRadV(&
                 call shd_sfc__brdfSurface(sfc_obj_%type(2:2), brdf_Rtm_(2:sfc_obj_%Npar, IBC),&
                     &WAVELEN, MU2, PHI2, MU(JMU), PHI(JMU, JPHI),&
                     &NSTOKES, REFLECT)
-                W = OPI_*abs(MU(JMU))*WTDO(JMU, JPHI)
+                W = f1_pi_*abs(MU(JMU))*WTDO(JMU, JPHI)
                 ! Add in the polarized reflection
                 do K1 = 1, NSTOKES
                     BCRAD(:, IBC, 1) = BCRAD(:, IBC, 1) + &

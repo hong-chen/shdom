@@ -75,30 +75,31 @@ module globals_const
   integer,   parameter :: IMIN_ = -2147483647 - 1      ! min integer of default kind
 
   ! Mathematical constants
-  real(R_),  parameter :: PI_     = 3.141592653589793238462643383279502884197_R_   ! pi
-  real(R_),  parameter :: PIH_    = 1.570796326794896619231321691639751442098_R_   ! pi/2
-  real(R_),  parameter :: PI2_    = 6.283185307179586476925286766559005768394_R_   ! pi*2
-  real(RD_), parameter :: DPI_    = 3.141592653589793238462643383279502884197_RD_  ! pi
-  real(RD_), parameter :: DPIH_   = 1.570796326794896619231321691639751442098_RD_  ! pi/2
-  real(RD_), parameter :: DPI2_   = 6.283185307179586476925286766559005768394_RD_  ! pi*2
-  real(R_) , parameter :: OPI_    = 1.0_R_  / PI_      ! 1/PI
-  real(RD_), parameter :: DOPI_   = 1.0_RD_ / DPI_     ! 1/PI
-  real(R_) , parameter :: O4PI_   = 1.0_R_  / (4.0_R_*PI_)      ! 1/(4*PI)
-  real(RD_), parameter :: DO4PI_  = 1.0_RD_ / (4.0_RD_*DPI_)    ! 1/(4*PI)
-  real(RD_), parameter :: deg2rad_   = DPI_ / 180.0_RD_     ! degree-to-radian factor
-  real(RD_), parameter :: rad2deg_   = 180.0_RD_ / DPI_     ! radian-to-degree factor
+  real(R_),  parameter :: pi_      = 3.141592653589793238462643383279502884197_R_   ! pi
+  real(R_),  parameter :: pi1_2_   = 1.570796326794896619231321691639751442098_R_   ! pi/2
+  real(R_),  parameter :: pi2_     = 6.283185307179586476925286766559005768394_R_   ! pi*2
+  real(R_) , parameter :: f1_pi_   = 1.0_R_  / pi_                                  ! 1/PI
+  real(R_) , parameter :: f1_4pi_  = 1.0_R_  / (4.0_R_*pi_)                         ! 1/(4*PI)
+  real(RD_), parameter :: Dpi_     = 3.141592653589793238462643383279502884197_RD_  ! pi
+  real(RD_), parameter :: Dpi1_2_  = 1.570796326794896619231321691639751442098_RD_  ! pi/2
+  real(RD_), parameter :: Dpi2_    = 6.283185307179586476925286766559005768394_RD_  ! pi*2
+  real(RD_), parameter :: Df1_pi_  = 1.0_RD_ / Dpi_                                 ! 1/PI
+  real(RD_), parameter :: Df1_4pi_ = 1.0_RD_ / (4.0_RD_*Dpi_)                       ! 1/(4*PI)
+
+  real(RD_), parameter :: deg2rad_ = Dpi_ / 180.0_RD_     ! degree-to-radian factor
+  real(RD_), parameter :: rad2deg_ = 180.0_RD_ / Dpi_     ! radian-to-degree factor
 
   real(R_),  parameter :: SQRT2_  = 1.414213562373095048801688724209698078569_R_   ! sqrt(2)
   real(R_),  parameter :: SQRT3_  = 1.732050807568877293527446341505872366942_R_   ! sqrt(3)
   real(R_),  parameter :: SQRT2A_ = 0.7071067811865475244008443621048490392848_R_  ! 1/sqrt(2)
   real(R_),  parameter :: SQRT3A_ = 0.5773502691896257645091487805019574556476_R_  ! 1/sqrt(3)
 
-  real(R_),  parameter :: FRAC13_  = 1.0_R_ / 3.0_R_    ! 1/3
-  real(R_),  parameter :: FRAC23_  = 2.0_R_ / 3.0_R_    ! 2/3
-  real(R_),  parameter :: FRAC43_  = 4.0_R_ / 3.0_R_    ! 4/3
-  real(R_),  parameter :: FRAC53_  = 5.0_R_ / 3.0_R_    ! 5/3
-  real(R_),  parameter :: FRAC16_  = 1.0_R_ / 6.0_R_    ! 1/6
-  real(R_),  parameter :: FRAC112_ = 1.0_R_ / 12.0_R_   ! 1/12
+  real(R_),  parameter :: f1_3_  = 1.0_R_ / 3.0_R_    ! 1/3
+  real(R_),  parameter :: f2_3_  = 2.0_R_ / 3.0_R_    ! 2/3
+  real(R_),  parameter :: f4_3_  = 4.0_R_ / 3.0_R_    ! 4/3
+  real(R_),  parameter :: f5_3_  = 5.0_R_ / 3.0_R_    ! 5/3
+  real(R_),  parameter :: f1_6_  = 1.0_R_ / 6.0_R_    ! 1/6
+  real(R_),  parameter :: f1_12_ = 1.0_R_ / 12.0_R_   ! 1/12
 
   ! Physical constants (SI unit)
   real(R_),  parameter :: CSPEED_ = 2.99792458e+8_R_     ! speed of light (m/s)

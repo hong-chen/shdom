@@ -39,7 +39,7 @@
 
 module shd_scat
 
-    use globals_const, only: RD_, DPI_, DOPI_, DO4PI_
+    use globals_const, only: RD_, Dpi_, Df1_4pi_
     use globals_cfg,   only: isPol_
 
     implicit none
@@ -85,7 +85,7 @@ subroutine shd_scat__computePhase(&
     allocate(legOri(2, 0:Nleg), DMM1(0:Nleg), DMM2(0:Nleg))
 
     do iAngScat = 1, NangScat
-        muScat = cos(DPI_*dble(iAngScat - 1)/(NangScat - 1))
+        muScat = cos(Dpi_*dble(iAngScat - 1)/(NangScat - 1))
         X = dble(muScat)
         call shd_scat__computeWigner(X, Nleg, 0, 0, DMM1)
         if (isPol_) then
@@ -122,7 +122,7 @@ subroutine shd_scat__computePhase(&
                     &' for tabulated phase function: ', iPha, iAngScat, A1
                 stop
             end if
-            phaTab(1, iPha, iAngScat) = sngl(A1*DO4PI_)
+            phaTab(1, iPha, iAngScat) = sngl(A1*Df1_4pi_)
 
             if (isPol_) then
                 ! If doing polarization, sum the second Wigner function series
@@ -131,7 +131,7 @@ subroutine shd_scat__computePhase(&
                     factor = 2.0d0*iLeg + 1.0d0
                     B1 = B1 - factor*dble(legOri(2, iLeg))*DMM2(iLeg)
                 end do
-                phaTab(2, iPha, iAngScat) = sngl(B1*DO4PI_)
+                phaTab(2, iPha, iAngScat) = sngl(B1*Df1_4pi_)
             end if
         end do
     end do

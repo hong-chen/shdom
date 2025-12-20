@@ -39,7 +39,7 @@
 
 module shd_mpi
 
-    use globals_const, only: RD_, PI_, DPI_, PIH_, deg2rad_, rad2deg_, FRAC13_, FRAC112_
+    use globals_const, only: RD_, Dpi_, pi1_2_, deg2rad_, rad2deg_, f1_3_, f1_12_
     use globals_cfg,   only: verbose_, charMaxLen_, accSolv_, &
                              isMpiX_, isMpiY_, isMpi_, &
                              is1DX_, is1DYx_, is1D_, &
@@ -2598,7 +2598,7 @@ subroutine shd_mpi__computeRadRay(&
                 Y0 = Y1 + D*RY
                 Z0 = Z1 + D*RZ
                 SCANANG = deg2rad_*(parms_Out(11) + (SAMP - 1)*parms_Out(13))
-                COSTH = cos(DPI_ - abs(SCANANG))
+                COSTH = cos(Dpi_ - abs(SCANANG))
                 if (SCANANG .gt. 0.0) then
                     PHIR = atan2(-RX, RY)
                 else
@@ -2643,7 +2643,7 @@ subroutine shd_mpi__computeRadRay(&
 
                 ! muRay,phiRay is radiance travel direction (opposite the camera viewing direction)
                 muRay = -COSTH
-                phiRay = PHIR + DPI_
+                phiRay = PHIR + Dpi_
 
                 ! Integrate the extinction and source function along this ray
                 ! to calculate the Stokes radiance vector for this pixel
@@ -2875,7 +2875,7 @@ subroutine shd_mpi__calAccelSolCrit(doAccel, DELJDOT, DELJOLD, DELJNEW, JNORM,&
         ! Compute the acceleration extrapolation factor and apply it.
         R = sqrt(DELJNEW/DELJOLD)
         THETA = acos(DELJDOT/sqrt(DELJOLD*DELJNEW))
-        A = (1 - R*cos(THETA) + R**(1.0 + PIH_/THETA))&
+        A = (1 - R*cos(THETA) + R**(1.0 + pi1_2_/THETA))&
             /(1 + R**2 - 2*R*cos(THETA)) - 1.0
         A = min(10.0, max(0.0, A))
         ! write(6,'(1X,A,3(1X,F7.3))') '! Acceleration: ', A,R,THETA
@@ -3538,7 +3538,7 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
             transCell = exp(-tau)
             absCell = 1.0 - transCell
         else
-            absCell = tau*(1.0 - 0.5*tau*(1.0 - FRAC13_*tau*(1 - 0.25*tau)))
+            absCell = tau*(1.0 - 0.5*tau*(1.0 - f1_3_*tau*(1 - 0.25*tau)))
             transCell = 1.0 - absCell
         end if
         if (tau .le. 2.0) then
@@ -3547,7 +3547,7 @@ subroutine shd_mpi__integrateRadRay(BCFLAG, IPFLAG, Nx, Ny, Nz, NA,&
             else
                 ! Linear extinction, linear source*extinction, to first order
                 SRC(:) = (0.5*(SRCEXT0(:) + SRCEXT1(:))&
-                    &+ FRAC112_*(EXT0*SRCEXT1(:) - EXT1*SRCEXT0(:))*SO)/EXT
+                    &+ f1_12_*(EXT0*SRCEXT1(:) - EXT1*SRCEXT0(:))*SO)/EXT
             end if
         else
             ! Combined first order expansion and constant extinction formula

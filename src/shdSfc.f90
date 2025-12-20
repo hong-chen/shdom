@@ -42,7 +42,7 @@
 
 module shd_sfc
 
-    use globals_const, only: PI_, DPI_, deg2rad_, rad2deg_
+    use globals_const, only: pi_, Dpi_, deg2rad_, rad2deg_
     use globals_cfg,   only: isPol_, isMpi_
     use globals_obj,   only: prp_obj_, &
                              sfc_obj_
@@ -234,7 +234,7 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
                 stop 'Error [_brdfSurface]: RPV BRDF is only for unpolarized case.'
             end if
 
-            PHIDIFF = PHI1-PHI2-PI_
+            PHIDIFF = PHI1-PHI2-pi_
             call shd_sfc__brdfRPV(REFPARMS(1), REFPARMS(2),&
                 &REFPARMS(3), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
 
@@ -245,7 +245,7 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
                 stop 'Error [_brdfSurface]: LSRT BRDF is only for unpolarized case.'
             end if
 
-            PHIDIFF = PHI1-PHI2-PI_
+            PHIDIFF = PHI1-PHI2-pi_
             call shd_sfc__brdfLSRT(REFPARMS(1), REFPARMS(2),&
                 &REFPARMS(3), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
 
@@ -256,7 +256,7 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
                 stop 'Error [_brdfSurface]: LSRT-Jiao BRDF is only for unpolarized case'
             end if
 
-            !PHIDIFF = PHI1-PHI2-PI_
+            !PHIDIFF = PHI1-PHI2-pi_
             PHIDIFF = PHI1-PHI2
             ! J: LSRT-Jiao model
             call shd_sfc__brdfLSRTJ(REFPARMS(1), REFPARMS(2),&
@@ -309,14 +309,14 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
                 ! 2.0
                 case (2)
 
-                    PHIDIFF = PHI1-PHI2-PI_
+                    PHIDIFF = PHI1-PHI2-pi_
                     call shd_sfc__brdfRPV(REFPARMS(1), REFPARMS(2),&
                         &REFPARMS(3), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
 
                 ! 3.0
                 case (3)
 
-                    PHIDIFF = PHI1-PHI2-PI_
+                    PHIDIFF = PHI1-PHI2-pi_
                     call shd_sfc__brdfLSRT(REFPARMS(1), REFPARMS(2),&
                         &REFPARMS(3), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
 
@@ -512,7 +512,7 @@ subroutine shd_sfc__brdfFresnel(MRE, MIM, WINDSPEED,&
     end if
 
     ! Shadowing
-    P = DPI_
+    P = Dpi_
     S1 = DSQRT(2*SIGMA2/P)
     S3 = 1d0/(DSQRT(2*SIGMA2))
     S2 = S3*S3
@@ -778,7 +778,7 @@ subroutine shd_sfc__brdfLSRT(F_ISO, F_GEO, F_VOL, MU1, MU2, PHI, REFLECT)
     SIN_XI = sqrt(1.0 - COS_XI**2)
     XI = acos(COS_XI)
 
-    K_VOL = ((PI_/2.0 - XI)*COS_XI + SIN_XI)/(COS1+COS2) - (PI_/4.0)
+    K_VOL = ((pi_/2.0 - XI)*COS_XI + SIN_XI)/(COS1+COS2) - (pi_/4.0)
     !╰────────────────────────────────────────────────╯!
 
     ! K_GEO
@@ -813,7 +813,7 @@ subroutine shd_sfc__brdfLSRT(F_ISO, F_GEO, F_VOL, MU1, MU2, PHI, REFLECT)
     SIN_T = sqrt(1.0 - COS_T**2)
     T = acos(COS_T)
 
-    O = (1.0/PI_) * (T - SIN_T*COS_T) * (SEC1_ + SEC2_)
+    O = (1.0/pi_) * (T - SIN_T*COS_T) * (SEC1_ + SEC2_)
 
     K_GEO = O - SEC1_ - SEC2_ + 0.5d0*(1.0+COS_XI_)*SEC1_*SEC2_
     !╰────────────────────────────────────────────────╯!
@@ -883,7 +883,7 @@ end subroutine shd_sfc__brdfLSRT
 !     SIN_XI = sqrt(1.0 - COS_XI**2)
 !     XI = acos(COS_XI)
 
-!     K_VOL = ((PI_/2.0 - XI)*COS_XI + SIN_XI)/(COS1+COS2) - (PI_/4.0)
+!     K_VOL = ((pi_/2.0 - XI)*COS_XI + SIN_XI)/(COS1+COS2) - (pi_/4.0)
 !     !╰────────────────────────────────────────────────╯!
 
 !     ! K_GEO
@@ -918,7 +918,7 @@ end subroutine shd_sfc__brdfLSRT
 !     SIN_T = sqrt(1.0 - COS_T**2)
 !     T = acos(COS_T)
 
-!     O = (1.0/PI_) * (T - SIN_T*COS_T) * (SEC1_ + SEC2_)
+!     O = (1.0/pi_) * (T - SIN_T*COS_T) * (SEC1_ + SEC2_)
 
 !     K_GEO = O - SEC1_ - SEC2_ + 0.5d0*(1.0+COS_XI_)*SEC1_*SEC2_
 !     !╰────────────────────────────────────────────────╯!
@@ -944,7 +944,7 @@ end subroutine shd_sfc__brdfLSRT
 !     if (COS_XI_KZ .lt. -1.0) COS_XI_KZ = -1.0
 !     if (COS_XI_KZ .gt.  1.0) COS_XI_KZ =  1.0
 !     XI_KZ = acos(COS_XI_KZ)
-!     XI_KZ_DEG = XI_KZ * 180.0 / PI_ ! convert to degrees to calculate phase function
+!     XI_KZ_DEG = XI_KZ * 180.0 / pi_ ! convert to degrees to calculate phase function
 
 !     ! calculate phase function p of scattering angle xi
 !     P_pha = 11.1 * exp(-0.087 * XI_KZ_DEG) + 1.1 * exp(-0.014 * XI_KZ_DEG)
@@ -1024,7 +1024,7 @@ subroutine shd_sfc__brdfLSRTJ(F_ISO, F_GEO, F_VOL, F_J, ALPHA, MU1, MU2, PHI, RE
     SIN_XI = sqrt(1.0 - COS_XI**2)
     XI = acos(COS_XI)
 
-    K_VOL = ((PI_/2.0 - XI)*COS_XI + SIN_XI)/(COS1+COS2) - (PI_/4.0)
+    K_VOL = ((pi_/2.0 - XI)*COS_XI + SIN_XI)/(COS1+COS2) - (pi_/4.0)
     !╰────────────────────────────────────────────────╯!
 
     ! K_GEO
@@ -1059,7 +1059,7 @@ subroutine shd_sfc__brdfLSRTJ(F_ISO, F_GEO, F_VOL, F_J, ALPHA, MU1, MU2, PHI, RE
     SIN_T = sqrt(1.0 - COS_T**2)
     T = acos(COS_T)
 
-    O = (1.0/PI_) * (T - SIN_T*COS_T) * (SEC1_ + SEC2_)
+    O = (1.0/pi_) * (T - SIN_T*COS_T) * (SEC1_ + SEC2_)
 
     K_GEO = O - SEC1_ - SEC2_ + 0.5d0*(1.0+COS_XI_)*SEC1_*SEC2_
     !╰────────────────────────────────────────────────╯!
@@ -1524,7 +1524,7 @@ subroutine sunglint(wspd, nr, ni, azw, ts, tv, fi, rog)
     coef = coef + c40/24.0*(xe2*xe2 - 6.0*xe2 + 3.0)
     coef = coef + C04/24.0*(xn2*xn2 - 6.0*xn2 + 3.0)
     coef = coef + C22/4.0*(xe2 - 1)*(xn2 - 1)
-    proba = coef/2.0/PI_/sqrt(sigmaU)/sqrt(sigmaC)*exp(-(xe2 + xn2)/2.0)
+    proba = coef/2.0/pi_/sqrt(sigmaU)/sqrt(sigmaC)*exp(-(xe2 + xn2)/2.0)
     ! Compute Fresnel's coefficient R1
     cos2chi = cv*cs + sv*ss*cos(phi)
     if (cos2chi .gt.  1.0) cos2chi = 0.99999999999
@@ -1537,7 +1537,7 @@ subroutine sunglint(wspd, nr, ni, azw, ts, tv, fi, rog)
     co4 = cos(tilt)
     co4 = co4*co4
     co4 = co4*co4
-    Rog = PI_*R1*proba/4.0/cs/cv/co4
+    Rog = pi_*R1*proba/4.0/cs/cv/co4
     return
 end subroutine
 
@@ -1644,7 +1644,7 @@ subroutine glitalbe(wspd, nr, ni, azw, rge)
         if (tet .lt. 65) nta = 31
         nfa = nta
         hta = (1.-costt)/float(nta - 1)
-        hfa = PI_/float(nfa - 1)
+        hfa = pi_/float(nfa - 1)
         ! loops on phiN (azimuth angle of the facet normal vector)
         pr = 0.0
         pp = 0.0
@@ -1694,8 +1694,8 @@ subroutine glitalbe(wspd, nr, ni, azw, rge)
             end do
         end do
 
-        !pond = 2.0*hta*hfa*htb/PI_/sqrt(sigmaC)/sqrt(sigmaU)/3./3./3.
-        pond = 2.0*hta*hfa*htb/PI_/sqrt(sigmaC)/sqrt(sigmaU)/27.0
+        !pond = 2.0*hta*hfa*htb/pi_/sqrt(sigmaC)/sqrt(sigmaU)/3./3./3.
+        pond = 2.0*hta*hfa*htb/pi_/sqrt(sigmaC)/sqrt(sigmaU)/27.0
         prefl = prefl + pr*pond
         proba = proba + pp*pond
     end do

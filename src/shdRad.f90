@@ -39,8 +39,8 @@
 
 module shd_rad
 
-    use globals_const, only: RD_, PI_, deg2rad_, &
-                             FRAC13_
+    use globals_const, only: RD_, pi_, deg2rad_, &
+                             f1_3_
     use globals_cfg,   only: verbose_, accSolv_, doGridPtsPrp_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
                              is3Ddir1Ddif_, solarVect_, &
@@ -703,7 +703,7 @@ subroutine shd_rad__computeDirect(&
 
                 D = DU*DV*DW*(E2 + E3 + E5 + E8 - E1 - E4 - E6 - E7)
                 ! Compute the path through the cell: integration of extinction
-                PATH = PATH + SO*(A + 0.5d0*B + FRAC13_*C + 0.25d0*D)
+                PATH = PATH + SO*(A + 0.5d0*B + f1_3_*C + 0.25d0*D)
 
                 XE = XP + XOFFS
                 YE = YP + YOFFS
@@ -1112,7 +1112,7 @@ subroutine shd_rad__computeRadRay(&
                 Y0 = Y1 + D*RY
                 Z0 = Z1 + D*RZ
                 SCANANG = deg2rad_*(OUTPARMS(11) + (SAMP - 1)*OUTPARMS(13))
-                COSTH = cos(PI_ - abs(SCANANG))
+                COSTH = cos(pi_ - abs(SCANANG))
                 if (SCANANG .gt. 0.0) then
                     PHIR = atan2(-RX, RY)
                 else
@@ -1140,7 +1140,7 @@ subroutine shd_rad__computeRadRay(&
             muRay = sngl(COSTH)
             phiRay = sngl(PHIR)
             MU2 = -COSTH
-            PHI2 = PHIR + PI_
+            PHI2 = PHIR + pi_
 
             ! Integrate the extinction and source function along this ray
             !   to calculate the Stokes radiance vector for this pixel
@@ -1210,7 +1210,7 @@ subroutine shd_rad__computeFluxDiv(NSTOKES, NPTS, iradI_Shdo, SRCTYPE,&
     integer I, IR
     real :: C, SECMU, HR
 
-    C = sqrt(4.0*PI_)
+    C = sqrt(4.0*pi_)
     SECMU = 1.0/abs(muSun)
     do I = 1, NPTS
         IR = iradI_Shdo(I)
@@ -1219,7 +1219,7 @@ subroutine shd_rad__computeFluxDiv(NSTOKES, NPTS, iradI_Shdo, SRCTYPE,&
             HR = HR + EXTINCT(I)*(1.0 - ALBEDO(I))*fluxDir(I)*SECMU
         end if
         if (src_obj_%doTherm) then
-            HR = HR - 4*PI_*EXTINCT(I)*PLANCK(I)
+            HR = HR - 4*pi_*EXTINCT(I)*PLANCK(I)
         end if
         NETFLUXDIV(I) = -HR
     end do

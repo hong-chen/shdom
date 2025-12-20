@@ -39,7 +39,7 @@
 
 module shd_grid
 
-    use globals_const, only: RD_, PI_
+    use globals_const, only: RD_, pi_
     use globals_cfg,   only: accSolv_, doGridPtsPrp_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, isMpi_, &
                              is1DX_, is1DYx_, is1D_, &
@@ -391,7 +391,7 @@ subroutine shd_grid__interpNewGridPts(newPts,&
         end do
     end do
 
-    C = sqrt(4.0*PI_)
+    C = sqrt(4.0*pi_)
     if (src_obj_%doSolar) then
         if (.not. src_obj_%doVariableSolar) then
             sec0 = 1.0d0/abs(src_obj_%mu0)
@@ -1263,7 +1263,7 @@ subroutine shd_grid__testCellSplit(iCell,&
     integer ID, IE, IP1, IP2, IS1, IS2, NS1, NS2, NS
     integer J, NUM
     real TOSPLIT, SUM1, JAY, tau, EXT
-    real, parameter :: C0 = 0.28209479177387814 ! sqrt(1.0/(4.0*PI_)), Y00 (l=0, m=0)
+    real, parameter :: C0 = 0.28209479177387814 ! sqrt(1.0/(4.0*pi_)), Y00 (l=0, m=0)
 
     MAXADAPT = -1.0
     ! Loop over the three possible directions to do the split (X,Y,Z)

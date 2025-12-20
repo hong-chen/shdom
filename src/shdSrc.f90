@@ -39,8 +39,8 @@
 
 module shd_src
 
-    use globals_const, only: RD_, PI_, DPI_, O4PI_, DO4PI_, &
-                             FRAC13_, FRAC112_
+    use globals_const, only: RD_, Dpi_, f1_4pi_, Df1_4pi_, &
+                             f1_3_, f1_12_
     use globals_cfg,   only: accSolv_, isOpenX_, isOpenYx_, &
                              isPol_, isPol4_, solarVect_
 
@@ -434,7 +434,7 @@ subroutine shd_src__computeSrcDir(&
             !   for the untruncated solar single scattering computation.
             call shd_scat__computeLegendre(dble(muScat), prp_obj_%Nleg, legScat)
             do L = 0, prp_obj_%Nleg
-                legScat(L) = legScat(L)*(2*L + 1)*O4PI_
+                legScat(L) = legScat(L)*(2*L + 1)*f1_4pi_
             end do
         end if
 
@@ -652,7 +652,7 @@ subroutine shd_src__integrateSrcRay(&
 
         if (prp_obj_%Npha .gt. 0) then
             allocate(scatVect(NSTOKES, prp_obj_%Npha))
-            F = (NangScat - 1)*(dacos(muScat)/DPI_) + 1
+            F = (NangScat - 1)*(dacos(muScat)/Dpi_) + 1
             J = min(NangScat - 1, int(F))
             F = F - J
             do I = 1, prp_obj_%Npha
@@ -667,7 +667,7 @@ subroutine shd_src__integrateSrcRay(&
             allocate(legScat(0:prp_obj_%Nleg))
             call shd_scat__computeLegendre(muScat, prp_obj_%Nleg, legScat)
             do L = 0, prp_obj_%Nleg
-                legScat(L) = legScat(L)*(2*L + 1)/(4*DPI_)
+                legScat(L) = legScat(L)*(2*L + 1)/(4*Dpi_)
             end do
         end if
 
@@ -850,11 +850,11 @@ subroutine shd_src__integrateSrcRay(&
             EXT = 0.5*(EXT0 + EXT1)
             if (EXT .ne. 0.0) then
                 tau = EXT*DELS
-                absCell = tau*(1.0d0 - 0.5d0*tau*(1.0d0 - FRAC13_*tau))
+                absCell = tau*(1.0d0 - 0.5d0*tau*(1.0d0 - f1_3_*tau))
                 transCell = 1.0d0 - absCell
                 ! Linear extinction, linear source*extinction, to second
                 SRC(:) = (0.5d0*(SRCEXT0(:) + SRCEXT1(:))&
-                    &+ FRAC112_*(EXT0*SRCEXT1(:) - EXT1*SRCEXT0(:))*DELS&
+                    &+ f1_12_*(EXT0*SRCEXT1(:) - EXT1*SRCEXT0(:))*DELS&
                     &*(1.0d0 - 0.05d0*(EXT1 - EXT0)*DELS))/EXT
             else
                 absCell = 0.0
@@ -1111,10 +1111,10 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
             EXT = 0.5*(EXT0(1) + EXT1(1))
             if (EXT .ne. 0.0) then
                 tau = EXT*DELS
-                absCell = tau*(1.0 - 0.5*tau*(1.0 - FRAC13_*tau))
+                absCell = tau*(1.0 - 0.5*tau*(1.0 - f1_3_*tau))
                 transCell = 1.0 - absCell
                 ! Linear extinction, linear source*extinction, to second
-                SRC(:) = (0.5*(SRCEXT0(:) + SRCEXT1(:)) + FRAC112_*&
+                SRC(:) = (0.5*(SRCEXT0(:) + SRCEXT1(:)) + f1_12_*&
                     &(EXT0(1)*SRCEXT1(:) - EXT1(1)*SRCEXT0(:))*DELS&
                     &*(1.0 - 0.05*(EXT1(1) - EXT0(1))*DELS))/EXT
             else
@@ -1639,7 +1639,7 @@ subroutine shd_src__computeSolarStokesVect(&
         FCT = 2.0d0*L + 1.0d0
         A1 = A1 + FCT*dble(SINGLEGEN(1, L))*DMM1(L)
     end do
-    scatVect(1) = A1*DO4PI_
+    scatVect(1) = A1*Df1_4pi_
 
     if (isPol_) then
         ! If doing polarization, sum the second Wigner function series
@@ -1666,8 +1666,8 @@ subroutine shd_src__computeSolarStokesVect(&
         end if
         SIN22 = 2.0d0*SIN2*COS2
         COS22 = 1.0d0 - 2.0d0*SIN2**2
-        scatVect(2) = B1*COS22*DO4PI_
-        scatVect(3) = B1*SIN22*DO4PI_
+        scatVect(2) = B1*COS22*Df1_4pi_
+        scatVect(3) = B1*SIN22*Df1_4pi_
     end if
     if (isPol4_) then
         scatVect(4) = 0.0

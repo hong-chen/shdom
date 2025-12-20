@@ -42,7 +42,7 @@
 
 module shd_util
 
-    use globals_const, only: RD_, PI_, DPI_, deg2rad_
+    use globals_const, only: RD_, pi_, Dpi_, deg2rad_
     use globals_cfg,   only: charMaxLen_, planetRadiusA_, planetRadiusB_, &
                              A2_, B2_, E2_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
@@ -581,7 +581,7 @@ subroutine shd_util__computeGausQuad_new(m, gmu, gwt)
     cona = real(m - 1) / (8.0d0 * m**3)
 
     do k = 1, lim
-        t = real(4 * k - 1) * PI_ / (4.0d0 * m + 2.0d0)
+        t = real(4 * k - 1) * pi_ / (4.0d0 * m + 2.0d0)
         x = cos(t + cona / tan(t))
 
         do iter = 1, MAXIT
@@ -638,7 +638,7 @@ subroutine shd_util__computeGausQuad(N, XA, WT)
     K = N/2
     if (2*K .ne. N) stop 'Error [_computeGausQuad]: N must be even.'
     do J = 1, K
-        x = dcos(PI_*(J - 0.25d0)/(N + 0.5d0))
+        x = dcos(pi_*(J - 0.25d0)/(N + 0.5d0))
         I = 0
 100     continue
         PL1 = 1
@@ -684,7 +684,7 @@ subroutine shd_util__computeGausQuadDble(N, XA, WT)
 
     K = (N2 + 1)/2
     do J = 1, K
-        x = cos(DPI_*(J - 0.25d0)/(N2 + 0.5d0))
+        x = cos(Dpi_*(J - 0.25d0)/(N2 + 0.5d0))
         I = 0
 100     continue
         PL1 = 1
@@ -1528,8 +1528,8 @@ subroutine shd_util__computeRayVect(&
 
     real(kind=R__), intent(in), optional :: xyz_info(5)
 
-    cx = dsqrt(dble(1.0d0 - muRay**2))*dcos(dble(phiRay + DPI_))
-    cy = dsqrt(dble(1.0d0 - muRay**2))*dsin(dble(phiRay + DPI_))
+    cx = dsqrt(dble(1.0d0 - muRay**2))*dcos(dble(phiRay + Dpi_))
+    cy = dsqrt(dble(1.0d0 - muRay**2))*dsin(dble(phiRay + Dpi_))
     cz = dble(-muRay)
 
     if (abs(cx) .gt. 1.0d-7) then
@@ -1612,7 +1612,7 @@ subroutine shd_util__computeVecECEF(&
 
     ! convert MU (cos(zenith)) and PHI from SHDOM convension to legacy convension
     mu  = abs(muIn)
-    phi = 1.5*PI_ - phiIn
+    phi = 1.5*pi_ - phiIn
 
     ! convert longitude and latitude from degree to radian
     lon = lon_deg * deg2rad_
@@ -1712,10 +1712,10 @@ subroutine shd_util__computeDirENU(&
         !            [0 at east,  positive counterclockwise]
         !╭────────────────────────────────────────────────────────────────────────────╮!
         muOut  = -abs(mu)
-        phiOut = 1.5*PI_ - phi
+        phiOut = 1.5*pi_ - phi
 
-        if (phiOut < 0.0)     phiOut = phiOut + 2.0*PI_
-        if (phiOut > 2.0*PI_) phiOut = phiOut - 2.0*PI_
+        if (phiOut < 0.0)     phiOut = phiOut + 2.0*pi_
+        if (phiOut > 2.0*pi_) phiOut = phiOut - 2.0*pi_
         !╰────────────────────────────────────────────────────────────────────────────╯!
     else
         muOut  = 0.0

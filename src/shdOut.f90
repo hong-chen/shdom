@@ -39,7 +39,7 @@
 
 module shd_out
 
-    use globals_const, only: RD_, PI_, deg2rad_, rad2deg_
+    use globals_const, only: RD_, pi_, deg2rad_, rad2deg_
     use globals_cfg,   only: verbose_, charMaxLen_, is1DX_, &
                              isPol_, isPol4_
 
@@ -369,7 +369,7 @@ subroutine shd_io__outputResult(&
     else if (OUTTYPE .eq. 'F') then
 
         if (src_obj_%unit .eq. 'T') then
-            C = 1.0 / PI_
+            C = 1.0 / pi_
         else
             C = 1.0
         end if
@@ -1459,7 +1459,7 @@ subroutine shd_io__outputResultMpi(&
     else if (OUTTYPE .eq. 'F') then
 
         if (src_obj_%unit .eq. 'T') then
-            C = 1.0 / PI_
+            C = 1.0 / pi_
         else
             C = 1.0
         end if
@@ -1516,7 +1516,7 @@ subroutine shd_io__outputResultMpi(&
             ! original
             !╭────────────────────────────────────────────────╮!
             !C = 1.0
-            !if (src_obj_%unit .eq. 'T') C = 1.0 / PI_
+            !if (src_obj_%unit .eq. 'T') C = 1.0 / pi_
             !do I = 1, rtmAll_obj%Nx
             !    do J = 1, rtmAll_obj%Ny
             !        if (src_obj_%type .ne. 'T') then
@@ -1607,7 +1607,7 @@ subroutine shd_io__outputResultMpi(&
             ! original
             !╭────────────────────────────────────────────────╮!
             !C = 1.0
-            !if (src_obj_%unit .eq. 'T') C = 1.0 / PI_
+            !if (src_obj_%unit .eq. 'T') C = 1.0 / pi_
             !N = rtmAll_obj%Nx*rtmAll_obj%Ny
             !do K = 1, rtmAll_obj%Nz
             !    SUM1 = 0.0
@@ -1674,7 +1674,7 @@ subroutine shd_io__outputResultMpi(&
             ! original
             !╭────────────────────────────────────────────────╮!
             !C = 1.0
-            !if (src_obj_%unit .eq. 'T') C = 1.0 / PI_
+            !if (src_obj_%unit .eq. 'T') C = 1.0 / pi_
             !do I = 1, rtmAll_obj%Nx
             !    do J = 1, rtmAll_obj%Ny
             !        do K = 1, rtmAll_obj%Nz
