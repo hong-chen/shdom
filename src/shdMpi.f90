@@ -2491,9 +2491,9 @@ subroutine shd_mpi__computeRadRay(&
         NL = 1
         NS = parms_Out(2)
     else
-        NL = 1 + int(sqrt((parms_Out(4) - parms_Out(7))**2&
-            &+ (parms_Out(5) - parms_Out(8))**2&
-            &+ (parms_Out(6) - parms_Out(9))**2)/parms_Out(10))
+        NL = 1 + int(sqrt((parms_Out(4) - parms_Out(7))**2 + &
+                          (parms_Out(5) - parms_Out(8))**2 + &
+                          (parms_Out(6) - parms_Out(9))**2)/parms_Out(10))
         NS = 1 + int(abs(parms_Out(12) - parms_Out(11))/parms_Out(13))
     end if
 
