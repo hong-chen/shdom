@@ -39,7 +39,7 @@
 
 module shd_init
 
-    use globals_const, only: RD_, PI_, OPI_, DTOR_
+    use globals_const, only: RD_, PI_, OPI_, deg2rad_
     use globals_cfg,   only: verbose_, doGridPtsPrp_, &
                              planetRadius_, E2_, solarVect_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &

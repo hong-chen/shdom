@@ -42,7 +42,7 @@
 
 module shd_inp
 
-    use globals_const, only: PI_, DTOR_, FRAC13_
+    use globals_const, only: PI_, deg2rad_, FRAC13_
     use globals_cfg,   only: verbose_, charMaxLen_
     use globals_type,  only: shd_type_rtm, &
                              shd_type_cell, &
@@ -194,7 +194,7 @@ subroutine shd_io__userInp(&
             write(*, *) sfc_obj%avgAlb
         end if
         src_obj%mu0 = -abs(src_obj%mu0)
-        src_obj%phi0 = src_obj%phi0*DTOR_
+        src_obj%phi0 = src_obj%phi0*deg2rad_
     end if
     sfc_obj%avgTemp = 300.
     if (sfc_obj%fname(1:4) .eq. 'NONE') then
@@ -469,7 +469,7 @@ subroutine shd_io__nmlInp(fileNml, &
             src_obj%x0 = XY_SOLAR(1)
             src_obj%y0 = XY_SOLAR(2)
             src_obj%mu0  = -abs(SOLARMU)
-            src_obj%phi0 = SOLARAZ*DTOR_
+            src_obj%phi0 = SOLARAZ*deg2rad_
 
         ! case ('L', 'l', 'R', 'r') ! placeholder for Lidar and Radar
         !     return

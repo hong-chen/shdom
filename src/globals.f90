@@ -85,8 +85,8 @@ module globals_const
   real(RD_), parameter :: DOPI_   = 1.0_RD_ / DPI_     ! 1/PI
   real(R_) , parameter :: O4PI_   = 1.0_R_  / (4.0_R_*PI_)      ! 1/(4*PI)
   real(RD_), parameter :: DO4PI_  = 1.0_RD_ / (4.0_RD_*DPI_)    ! 1/(4*PI)
-  real(RD_), parameter :: DTOR_   = DPI_ / 180.0_RD_     ! degree-to-radian factor
-  real(RD_), parameter :: RTOD_   = 180.0_RD_ / DPI_     ! radian-to-degree factor
+  real(RD_), parameter :: deg2rad_   = DPI_ / 180.0_RD_     ! degree-to-radian factor
+  real(RD_), parameter :: rad2deg_   = 180.0_RD_ / DPI_     ! radian-to-degree factor
 
   real(R_),  parameter :: SQRT2_  = 1.414213562373095048801688724209698078569_R_   ! sqrt(2)
   real(R_),  parameter :: SQRT3_  = 1.732050807568877293527446341505872366942_R_   ! sqrt(3)

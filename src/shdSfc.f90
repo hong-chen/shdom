@@ -42,7 +42,7 @@
 
 module shd_sfc
 
-    use globals_const, only: PI_, DPI_, DTOR_, RTOD_
+    use globals_const, only: PI_, DPI_, deg2rad_, rad2deg_
     use globals_cfg,   only: isPol_, isMpi_
     use globals_obj,   only: prp_obj_, &
                              sfc_obj_
@@ -1129,7 +1129,7 @@ subroutine shd_sfc__brdfJiao(MU1, MU2, PHI, ALPHA, NORMALIZE, K_J)
     if (COS_XI_J .lt. -1.0) COS_XI_J = -1.0
     if (COS_XI_J .gt.  1.0) COS_XI_J =  1.0
     XI_J = acos(COS_XI_J)
-    XI_J_DEG = XI_J * RTOD_ ! convert to degrees to calculate phase function
+    XI_J_DEG = XI_J * rad2deg_ ! convert to degrees to calculate phase function
 
     ! calculate phase function p of scattering angle xi
     P_PHA = 11.1 * exp(-0.087 * (180.0 - XI_J_DEG)) + 1.1 * exp(-0.014 * (180.0 - XI_J_DEG))
@@ -1208,7 +1208,7 @@ subroutine shd_sfc__brdfOcean(&
         & 0.8678726, 0.8797889, 0.8878716, 0.9091171, 0.7294627,&
         & 0.8137348, 0.8453338, 0.8629867, 0.8745421, 0.9036854/
 
-    fac = DTOR_
+    fac = deg2rad_
 
     ! paw= azim. of sun - azim. of wind (in radian)
     paw = xpaw
@@ -1494,7 +1494,7 @@ subroutine sunglint(wspd, nr, ni, azw, ts, tv, fi, rog)
 
     real :: co4
 
-    fac = DTOR_
+    fac = deg2rad_
 
     phw = azw
 
@@ -1605,7 +1605,7 @@ subroutine glitalbe(wspd, nr, ni, azw, rge)
     integer km, i, j
     integer :: nfa, nta, ntb
 
-    fac = DTOR_
+    fac = deg2rad_
 
     sigma  = 0.003d0 + 0.00512d0*wspd
     sigmaC = 0.003d0 + 0.00192d0*wspd

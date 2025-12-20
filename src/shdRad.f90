@@ -39,7 +39,7 @@
 
 module shd_rad
 
-    use globals_const, only: RD_, PI_, DTOR_, &
+    use globals_const, only: RD_, PI_, deg2rad_, &
                              FRAC13_
     use globals_cfg,   only: verbose_, accSolv_, doGridPtsPrp_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
@@ -876,7 +876,7 @@ subroutine shd_rad__computeRadDir(&
             MUOUT = OUTPARMS(2*IANG + 5)
             PHID  = OUTPARMS(2*IANG + 6)
         end if
-        PHIOUT = PHID*DTOR_
+        PHIOUT = PHID*deg2rad_
 
         ! added for fixing the "domain shift" issue (only for 3D)
         !╭────────────────────────────────────────────────╮!
@@ -1045,9 +1045,9 @@ subroutine shd_rad__computeRadRay(&
                 ! Use spherical trig to find the pixel direction (muRay,phiRay
                 !   from the camera center (THETA0,PHI0) and the relative pixe
                 !   angles (U,V).
-                UP = (SAMP - NS/2 - 1)*OUTPARMS(13)*DTOR_
-                VP = (LINE - NL/2 - 1)*OUTPARMS(12)*DTOR_
-                ROTANG = OUTPARMS(9)*DTOR_
+                UP = (SAMP - NS/2 - 1)*OUTPARMS(13)*deg2rad_
+                VP = (LINE - NL/2 - 1)*OUTPARMS(12)*deg2rad_
+                ROTANG = OUTPARMS(9)*deg2rad_
                 if (ROTANG .eq. 0.0) then
                     U = UP
                     V = VP
@@ -1055,8 +1055,8 @@ subroutine shd_rad__computeRadRay(&
                     U = cos(ROTANG)*UP - sin(ROTANG)*VP
                     V = sin(ROTANG)*UP + cos(ROTANG)*VP
                 end if
-                THETA0 = DTOR_*OUTPARMS(7)
-                PHI0 = DTOR_*OUTPARMS(8)
+                THETA0 = deg2rad_*OUTPARMS(7)
+                PHI0 = deg2rad_*OUTPARMS(8)
                 THETA1 = THETA0 + V
                 if (V .eq. 0.0) then
                     COSTH = cos(U)*cos(THETA0)
@@ -1111,7 +1111,7 @@ subroutine shd_rad__computeRadRay(&
                 X0 = X1 + D*RX
                 Y0 = Y1 + D*RY
                 Z0 = Z1 + D*RZ
-                SCANANG = DTOR_*(OUTPARMS(11) + (SAMP - 1)*OUTPARMS(13))
+                SCANANG = deg2rad_*(OUTPARMS(11) + (SAMP - 1)*OUTPARMS(13))
                 COSTH = cos(PI_ - abs(SCANANG))
                 if (SCANANG .gt. 0.0) then
                     PHIR = atan2(-RX, RY)
@@ -1162,7 +1162,7 @@ subroutine shd_rad__computeRadRay(&
                 if (isPol_) then
                     ! Output degree (0 to 1) and angle (-180 to 180) of linear polarization
                     radRay(2, iRad) = sqrt(VISRAD(2)**2 + VISRAD(3)**2)/VISRAD(1)
-                    radRay(3, iRad) = DTOR_*0.5*atan2(VISRAD(3), VISRAD(2))
+                    radRay(3, iRad) = deg2rad_*0.5*atan2(VISRAD(3), VISRAD(2))
                 end if
                 if (isPol4_) then
                     ! Output degree of circular polarization (-1 to 1)

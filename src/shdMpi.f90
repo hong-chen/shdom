@@ -39,7 +39,7 @@
 
 module shd_mpi
 
-    use globals_const, only: RD_, PI_, DPI_, PIH_, DTOR_, RTOD_, FRAC13_, FRAC112_
+    use globals_const, only: RD_, PI_, DPI_, PIH_, deg2rad_, rad2deg_, FRAC13_, FRAC112_
     use globals_cfg,   only: verbose_, charMaxLen_, accSolv_, &
                              isMpiX_, isMpiY_, isMpi_, &
                              is1DX_, is1DYx_, is1D_, &
@@ -2076,7 +2076,7 @@ subroutine shd_mpi__computeRadDir(&
             muRay = parms_Out(2*K + 5)
             phiRay_deg = parms_Out(2*K + 6)
         endif
-        phiRay = phiRay_deg*DTOR_
+        phiRay = phiRay_deg*deg2rad_
 
         ! added for fixing the "domain shift" issue (only for 3D)
         ! this is the first step correction:
@@ -2445,27 +2445,31 @@ subroutine shd_mpi__computeRadRay(&
     real, allocatable    :: BndSendRadRealInfo(:, :, :), BndRecvRadRealInfo(:, :, :)
 
     type(MPI_request), allocatable :: requests(:)
-    type(MPI_status), allocatable :: status(:)
+    type(MPI_status),  allocatable :: status(:)
 
     allocate(YlmSun(prp_obj_%NlegSet, shdo_obj_%Nlm))
 
     if (src_obj_%doSolar) then
+
         call shd_shdo__computeYlm(.true., &
             src_obj_%mu0, src_obj_%phi0, &
             shdo_obj_%maxNl, shdo_obj_%maxNm, prp_obj_%NlegSet, &
             YlmSun)
-        if (doDeltaM .and. prp_obj_%Npha .gt. 0) then
+
+        if (doDeltaM .and. (prp_obj_%Npha .gt. 0)) then
             NangScat = max(36, min(maxNangScat, 2*prp_obj_%Nleg))
             NphaSet = min(prp_obj_%NlegSet, 2)
             allocate(phaTab(NphaSet, prp_obj_%Npha, NangScat))
             call shd_scat__computePhase(NangScat, prp_obj_%Npha, NphaSet,&
                 &shdo_obj_%Nstokes, shdo_obj_%maxNl, prp_obj_%NlegSet, prp_obj_%Nleg, leg_Rtm_, phaTab)
         end if
+
     end if
 
     ! Make the isotropic radiances for the top boundary
     call shd_init__makeTopRad(src_obj_%type, src_obj_%skyRad, src_obj_%waveNum, src_obj_%avgWaveLen,&
         &src_obj_%unit, NTOPPTS, shdo_obj_%Nstokes, BCRAD(1, 1))
+
     ! Make the bottom boundary radiances for the Lambertian surfaces.
     ! Compute the upwelling bottom radiances using the downwelling fluxes.
     if (sfc_obj_%type .eq. 'FL') then
@@ -2515,11 +2519,11 @@ subroutine shd_mpi__computeRadRay(&
 
                 ! Camera mode:
                 !   1, bytes, scale, X,Y,Z, theta, phi, rotang, NL, NS, delline, delsamp
-                ! Use spherical trig to find the pixel direction (MURAY,PHIRAY)
+                ! Use spherical trig to find the pixel direction (muRay,phiRay)
                 ! from the camera center (THETA0,PHI0) and the relative pixel angles (U,V).
-                UP = (SAMP - NS/2 - 1)*parms_Out(13)*DTOR_
-                VP = (LINE - NL/2 - 1)*parms_Out(12)*DTOR_
-                ROTANG = parms_Out(9)*DTOR_
+                UP = (SAMP - NS/2 - 1)*parms_Out(13)*deg2rad_
+                VP = (LINE - NL/2 - 1)*parms_Out(12)*deg2rad_
+                ROTANG = parms_Out(9)*deg2rad_
                 if (ROTANG .eq. 0.0) then
                     U = UP
                     V = VP
@@ -2527,8 +2531,8 @@ subroutine shd_mpi__computeRadRay(&
                     U = cos(ROTANG)*UP - sin(ROTANG)*VP
                     V = sin(ROTANG)*UP + cos(ROTANG)*VP
                 end if
-                THETA0 = DTOR_*parms_Out(7)
-                PHI0 = DTOR_*parms_Out(8)
+                THETA0 = deg2rad_*parms_Out(7)
+                PHI0 = deg2rad_*parms_Out(8)
                 THETA1 = THETA0 + V
                 if (V .eq. 0.0) then
                     COSTH = cos(U)*cos(THETA0)
@@ -2593,7 +2597,7 @@ subroutine shd_mpi__computeRadRay(&
                 X0 = X1 + D*RX
                 Y0 = Y1 + D*RY
                 Z0 = Z1 + D*RZ
-                SCANANG = DTOR_*(parms_Out(11) + (SAMP - 1)*parms_Out(13))
+                SCANANG = deg2rad_*(parms_Out(11) + (SAMP - 1)*parms_Out(13))
                 COSTH = cos(DPI_ - abs(SCANANG))
                 if (SCANANG .gt. 0.0) then
                     PHIR = atan2(-RX, RY)
@@ -2602,8 +2606,6 @@ subroutine shd_mpi__computeRadRay(&
                 end if
 
             end if
-
-            !write(*, *) iRad, X0, Y0, Z0, 180.0/DPI_*COSTH, 180.0/DPI_*PHIR
 
             ! Extrapolate ray to domain top if above
             if (Z0 .gt. rtm_obj_%z(rtm_obj_%Nz)) then
@@ -2812,7 +2814,7 @@ subroutine shd_mpi__computeRadRay(&
                 if (VISRAD(1) .gt. 0.0) then
                     ! Output degree (0 to 1) and angle (-180 to 180) of linear polarization
                     radRay(2, I) = sqrt(VISRAD(2)**2 + VISRAD(3)**2)/VISRAD(1)
-                    radRay(3, I) = RTOD_*0.5*atan2(VISRAD(3), VISRAD(2))
+                    radRay(3, I) = rad2deg_*0.5*atan2(VISRAD(3), VISRAD(2))
                     if (isPol4_) then
                         ! Output degree of circular polarization (-1 to 1)
                         radRay(4, I) = VISRAD(4)/VISRAD(1)

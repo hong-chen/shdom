@@ -42,7 +42,7 @@
 
 module shd_util
 
-    use globals_const, only: RD_, PI_, DPI_, DTOR_
+    use globals_const, only: RD_, PI_, DPI_, deg2rad_
     use globals_cfg,   only: charMaxLen_, planetRadiusA_, planetRadiusB_, &
                              A2_, B2_, E2_, &
                              isOpenX_, isOpenYx_, isMpiX_, isMpiY_, &
@@ -1478,10 +1478,10 @@ elemental pure function distKm(&
     real(kind=R__) :: x1, y1, z1, x2, y2, z2
 
     ! convert degrees to radians
-    lon1 = lon1_deg * DTOR_
-    lat1 = lat1_deg * DTOR_
-    lon2 = lon2_deg * DTOR_
-    lat2 = lat2_deg * DTOR_
+    lon1 = lon1_deg * deg2rad_
+    lat1 = lat1_deg * deg2rad_
+    lon2 = lon2_deg * deg2rad_
+    lat2 = lat2_deg * deg2rad_
 
     ! compute sin/cos efficiently
     call sin_cos(lat1, sinlat1, coslat1)
@@ -1615,8 +1615,8 @@ subroutine shd_util__computeVecECEF(&
     phi = 1.5*PI_ - phiIn
 
     ! convert longitude and latitude from degree to radian
-    lon = lon_deg * DTOR_
-    lat = lat_deg * DTOR_
+    lon = lon_deg * deg2rad_
+    lat = lat_deg * deg2rad_
 
     ! Local ENU vector at center
     sinZen = sqrt(1.0 - mu*mu)
@@ -1677,8 +1677,8 @@ subroutine shd_util__computeDirENU(&
     real(kind=R__) :: nx, ny, nz, norm
     real(kind=R__) :: Se, Sn
 
-    lon = lon_deg * DTOR_
-    lat = lat_deg * DTOR_
+    lon = lon_deg * deg2rad_
+    lat = lat_deg * deg2rad_
 
     ! East (unchanged)
     east_x = -sin(lon)

@@ -39,7 +39,7 @@
 
 module shd_out
 
-    use globals_const, only: RD_, PI_, DTOR_, RTOD_
+    use globals_const, only: RD_, PI_, deg2rad_, rad2deg_
     use globals_cfg,   only: verbose_, charMaxLen_, is1DX_, &
                              isPol_, isPol4_
 
@@ -252,7 +252,7 @@ subroutine shd_io__outputResult(&
 
         write(2, '(A,E13.6,A,F10.7,A,F8.3)')&
             &'!  SOLAR_FLUX=', src_obj_%solar, '   SOLAR_MU=', src_obj_%mu0,&
-            &'   SOLAR_AZ=', src_obj_%phi0*RTOD_
+            &'   SOLAR_AZ=', src_obj_%phi0*rad2deg_
 
     else
 
@@ -1330,7 +1330,7 @@ subroutine shd_io__outputResultMpi(&
         end if
         write(2, '(A,E13.6,A,F10.7,A,F8.3)')&
             & '!  SOLAR_FLUX=', src_obj_%solar, '   SOLAR_MU=', src_obj_%mu0,&
-            & '   SOLAR_AZ=', src_obj_%phi0*RTOD_
+            & '   SOLAR_AZ=', src_obj_%phi0*rad2deg_
     else
         if (sfc_obj_%type(1:1) .eq. 'V') then
             write(2, '(A,A)') '!  SURFACE_FILE=', trim(sfc_obj_%fname)
@@ -1408,7 +1408,7 @@ subroutine shd_io__outputResultMpi(&
             end if
 
             MU_SET(K) = MUOUT
-            PHI_SET(K) = PHID*DTOR_
+            PHI_SET(K) = PHID*deg2rad_
         end do
 
         if (rtmAll_obj%flag_ip .eq. 0) then
@@ -2055,7 +2055,7 @@ subroutine shd_io__outputCamRad(&
 
         write(2, '(A,E13.6,A,F10.7,A,F8.3)')&
             &'!  SOLAR_FLUX=', src_obj_%solar, '   SOLAR_MU=', src_obj_%mu0,&
-            &'   SOLAR_AZ=', src_obj_%phi0*RTOD_
+            &'   SOLAR_AZ=', src_obj_%phi0*rad2deg_
 
     else
 
@@ -2328,7 +2328,7 @@ subroutine shd_io__outputImg(&
         end if
         write(BUF(I:I + 79), '(A,E13.6,A,F10.7,A,F8.3,A1)')&
             &'# SOLAR_FLUX=', src_obj_%solar, '   SOLAR_MU=', src_obj_%mu0,&
-            &'   SOLAR_AZ=', src_obj_%phi0*RTOD_, LF
+            &'   SOLAR_AZ=', src_obj_%phi0*rad2deg_, LF
         I = I + index(BUF(I:I + 79), LF)
     else
         if (sfc_obj_%type(1:1) .eq. 'V') then
