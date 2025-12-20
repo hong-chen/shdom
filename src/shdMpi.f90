@@ -2421,7 +2421,7 @@ subroutine shd_mpi__computeRadRay(&
     logical :: isCameraMode, isSensorMode, isValidRad
     real, parameter  :: EPS = 1.0e-5
     real(RD_) :: XE, YE, ZE, trans, VISRAD(shdo_obj_%Nstokes), RADIANCE(shdo_obj_%Nstokes)
-    real(RD_) :: X0, Y0, Z0, X1, Y1, Z1, X2, Y2, Z2, X, Y, Z
+    real(RD_) :: X0, Y0, Z0, X1, Y1, Z1, X2, Y2, Z2, X, Y, Z, lon0, lat0
     real(RD_) :: THETA0, THETA1, PHIR, PHI0, muScat, muRay, phiRay
     real(RD_) :: COSTH, SINTH, SINTH0, SINTH1
     real(RD_) :: U, V, UP, VP, COSDELPHI, ROTANG, R
@@ -2620,8 +2620,13 @@ subroutine shd_mpi__computeRadRay(&
                 Y0 = Y0 + R*sqrt(1 - COSTH**2)*sin(PHIR)
                 Z0 = rtm_obj_%z(rtm_obj_%Nz)
             else if (Z0 .lt. rtm_obj_%z(1)) then
-                write(6, *) 'Error [mpi__visualizeRad]: Level below domain.'
-                stop
+                if (isSensorMode) then
+                    lon0 = X0 + rtm_obj_%xOffset
+                    lat0 = Y0 + rtm_obj_%yOffset
+                else
+                    write(6, *) 'Error [mpi__visualizeRad]: Level below domain.'
+                    stop
+                end if
             end if
 
             ! Relocate the starting point in the overall periodic domain
