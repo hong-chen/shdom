@@ -44,8 +44,8 @@ module shd_shdo
 
     use globals_obj,   only: src_obj_
 
-    use shd_util, only: shd_util__computeGausQuad, &
-                        shd_util__computeGausQuadDble
+    use shd_util, only: shd_util__computeGaussQuad, &
+                        shd_util__computeDbleGaussQuad
 
     use shd_scat, only: shd_scat__computeWignerDM0, &
                         shd_scat__computeWignerDM0DM2PDM2M
@@ -768,10 +768,10 @@ subroutine shd_shdo__makeAngle(&
     NANG = 0
     if (ITYPE .ge. 1 .or. ITYPE .le. 3) then
         if (ITYPE .le. 2) then
-            call shd_util__computeGausQuad(NMU, MU, WTMU)
-            !call shd_util__computeGausQuad_new(NMU, MU, WTMU)
+            call shd_util__computeGaussQuad(NMU, MU, WTMU)
+            !call shd_util__computeGaussQuadLRT(NMU, MU, WTMU)
         else if (ITYPE .eq. 3) then
-            call shd_util__computeGausQuadDble(NMU, MU, WTMU)
+            call shd_util__computeDbleGaussQuad(NMU, MU, WTMU)
         end if
         do J = 1, NMU
             NPHI0MAX = NPHI

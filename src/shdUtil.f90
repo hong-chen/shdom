@@ -68,9 +68,9 @@ module shd_util
 
     public :: shd_util__interpTriLin
     public :: shd_util__solveTriDiag
-    public :: shd_util__computeGausQuad_new
-    public :: shd_util__computeGausQuad
-    public :: shd_util__computeGausQuadDble
+    public :: shd_util__computeGaussQuadLRT
+    public :: shd_util__computeGaussQuad
+    public :: shd_util__computeDbleGaussQuad
 
     public :: shd_util__computePlanck
     public :: shd_util__integratePlanck
@@ -553,7 +553,7 @@ subroutine shd_util__solveTriDiag(&
 
 end subroutine shd_util__solveTriDiag
 
-subroutine shd_util__computeGausQuad_new(m, gmu, gwt)
+subroutine shd_util__computeGaussQuadLRT(m, gmu, gwt)
 
     ! this is adapted from libRadtran/libsrc_c/cdisort.c <c_gaussian_quadrature> for testing
 
@@ -618,9 +618,9 @@ subroutine shd_util__computeGausQuad_new(m, gmu, gwt)
 
     return
 
-end subroutine shd_util__computeGausQuad_new
+end subroutine shd_util__computeGaussQuadLRT
 
-subroutine shd_util__computeGausQuad(N, XA, WT)
+subroutine shd_util__computeGaussQuad(N, XA, WT)
 
     !╭──────────────────────────────────────────────────────────────╮!
     !   Generates the abscissas (x) and weights (W) for an N point
@@ -661,15 +661,20 @@ subroutine shd_util__computeGausQuad(N, XA, WT)
 
     return
 
-end subroutine shd_util__computeGausQuad
+end subroutine shd_util__computeGaussQuad
 
-subroutine shd_util__computeGausQuadDble(N, XA, WT)
+subroutine shd_util__computeDbleGaussQuad(N, XA, WT)
 
     !╭──────────────────────────────────────────────────────────────╮!
     !   Generates the abscissas (x) and weights (W) for an N point
     ! Double-Gauss-Legendre quadrature. The XA are returned in this order
     ! -mu1, -mu2, ..., -muK, mu1, mu2, ..., muK  (mu1 > mu2 > muK,
     ! K=N/2, N must be even).
+    !
+    ! Reference:
+    ! Sykes, J. B.: Approximate integration of the equation of transfer,
+    !   Monthly Notices of the Royal Astronomical Society,
+    !   111, 377–386, https://doi.org/10.1093/mnras/111.4.377, 1951.
     !╰──────────────────────────────────────────────────────────────╯!
 
     integer, intent(in) :: N
@@ -711,7 +716,7 @@ subroutine shd_util__computeGausQuadDble(N, XA, WT)
 
     return
 
-end subroutine shd_util__computeGausQuadDble
+end subroutine shd_util__computeDbleGaussQuad
 
 subroutine shd_util__computePlanck(TEMP, UNITS, WAVENO, WAVELEN, PLANCK)
 
