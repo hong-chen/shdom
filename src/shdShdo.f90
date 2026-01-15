@@ -81,8 +81,8 @@ module shd_shdo
 
 contains
 
-subroutine shd_shdo__makeSHDO(NlegSet, ML, MM, NLM, NMU, NPHI0,&
-    &NPHI0MAX, MU, PHI, WTMU, WTDO, FFTFLAG,&
+subroutine shd_shdo__makeSHDO(NlegSet, ML, MM, NLM, Nmu, Nphi0,&
+    &Nphi0Max, MU, PHI, WTMU, WTDO, flagFft,&
     &CMU1, CMU2, CPHI1, CPHI2, WPHISAVE)
 
     ! Makes the transformation coefficients for the real generalized
@@ -95,19 +95,19 @@ subroutine shd_shdo__makeSHDO(NlegSet, ML, MM, NLM, NMU, NPHI0,&
     ! The FFTPACK phase coefficients for the FFT in azimuth are also
     ! output in WPHISAVE.
 
-    integer NlegSet, ML, MM, NLM, NMU, NPHI0(NMU), NPHI0MAX
-    logical FFTFLAG(NMU)
-    real MU(NMU), PHI(NMU, *), WTMU(NMU), WTDO(NMU, *)
-    real CMU1(NlegSet, NLM, NMU), CMU2(NlegSet, NMU, NLM)
-    real CPHI1(-16:16, 32, NMU), CPHI2(32, -16:16, NMU)
-    real WPHISAVE(3*NPHI0MAX + 15, NMU)
+    integer NlegSet, ML, MM, NLM, Nmu, Nphi0(Nmu), Nphi0Max
+    logical flagFft(Nmu)
+    real MU(Nmu), PHI(Nmu, *), WTMU(Nmu), WTDO(Nmu, *)
+    real CMU1(NlegSet, NLM, Nmu), CMU2(NlegSet, Nmu, NLM)
+    real CPHI1(-16:16, 32, Nmu), CPHI2(32, -16:16, Nmu)
+    real WPHISAVE(3*Nphi0Max + 15, Nmu)
     integer I, J, K, M, Q
     real X, W
     real, allocatable :: PRC(:, :)
 
     ! Make the mu part of the real generalized spherical harmonics
     allocate(PRC(6, NLM))
-    do I = 1, NMU
+    do I = 1, Nmu
         X = MU(I)
         PRC(:, :) = 0.0
         call shd_shdo__computePlm(.false., X, ML, MM, PRC)
@@ -127,12 +127,12 @@ subroutine shd_shdo__makeSHDO(NlegSet, ML, MM, NLM, NMU, NPHI0,&
     deallocate(PRC)
 
     ! Make the to and from Fourier coefficients for each mu
-    do I = 1, NMU
-        if (.not. FFTFLAG(I)) then
+    do I = 1, Nmu
+        if (.not. flagFft(I)) then
             ! If not doing an FFT for this mu then make the DFT coeffici
             W = 1.0/WTMU(I)
-            do K = 1, NPHI0(I)
-                if (NPHI0(I) .gt. 32 .or. MM .gt. 16) stop &
+            do K = 1, Nphi0(I)
+                if (Nphi0(I) .gt. 32 .or. MM .gt. 16) stop &
                     &'Error [_makeSHDO]: Fourier coefficients array exceeded.'
                 CPHI1(0, K, I) = 1.0
                 CPHI2(K, 0, I) = WTDO(I, K)*W
@@ -145,7 +145,7 @@ subroutine shd_shdo__makeSHDO(NlegSet, ML, MM, NLM, NMU, NPHI0,&
             end do
         else
             ! Precompute the phase factors for the FFTs
-            call DFFTI(NPHI0(I), WPHISAVE(1, I))
+            call DFFTI(Nphi0(I), WPHISAVE(1, I))
         end if
     end do
     return
@@ -153,7 +153,7 @@ end subroutine shd_shdo__makeSHDO
 
 subroutine shd_shdo__makeSfcDO(SFCTYPE, WAVELEN,&
     &NXSFC, NYSFC, NSFCPAR, SFCPARMS, NSTOKES,&
-    &NMU, NPHI0MAX, NPHI0, MU, PHI, WTDO,&
+    &Nmu, Nphi0Max, Nphi0, MU, PHI, WTDO,&
     &brdf_Shdo)
 
     !   Makes the precomputed BRDF surface reflection matrix for
@@ -162,21 +162,21 @@ subroutine shd_shdo__makeSfcDO(SFCTYPE, WAVELEN,&
     ! integration weights are included.
 
     integer NXSFC, NYSFC, NSFCPAR
-    integer NSTOKES, NMU, NPHI0MAX, NPHI0(NMU)
+    integer NSTOKES, Nmu, Nphi0Max, Nphi0(Nmu)
     real SFCPARMS(NSFCPAR, NYSFC+1, NXSFC+1), WAVELEN
-    real WTDO(NMU, NPHI0MAX), MU(NMU), PHI(NMU, NPHI0MAX)
-    real brdf_Shdo(NSTOKES, NMU/2, NPHI0MAX, NSTOKES, NMU/2, NPHI0MAX)
+    real WTDO(Nmu, Nphi0Max), MU(Nmu), PHI(Nmu, Nphi0Max)
+    real brdf_Shdo(NSTOKES, Nmu/2, Nphi0Max, NSTOKES, Nmu/2, Nphi0Max)
     character(len=2) :: SFCTYPE
     integer IMU, IMU1, IPHI, JMU, JPHI, K1, K2
     real :: REFLECT(4, 4), W
 
     ! Loop over outgoing discrete ordinates (IMU,IPHI)
-    do IMU = NMU/2 + 1, NMU
-        IMU1 = IMU - NMU/2
-        do IPHI = 1, NPHI0(IMU)
+    do IMU = Nmu/2 + 1, Nmu
+        IMU1 = IMU - Nmu/2
+        do IPHI = 1, Nphi0(IMU)
             ! Loop over incident discrete ordinates (JMU,JPHI)
-            do JMU = 1, NMU/2
-                do JPHI = 1, NPHI0(JMU)
+            do JMU = 1, Nmu/2
+                do JPHI = 1, Nphi0(JMU)
                     ! Get the BRDF for this
                     call shd_sfc__brdfSurface(SFCTYPE(2:2), SFCPARMS(2, 1, 1),&
                         &WAVELEN, MU(IMU), PHI(IMU, IPHI),&
@@ -194,28 +194,28 @@ subroutine shd_shdo__makeSfcDO(SFCTYPE, WAVELEN,&
 end subroutine shd_shdo__makeSfcDO
 
 subroutine shd_shdo__transSHtoDO(NPTS, NSTOKES, NlegSet, ML, MM, NLM,&
-    &NMU, NPHI0MAX, NPHI0,&
-    &IMU, FFTFLAG, CMU1, CPHI1, WSAVE,&
+    &Nmu, Nphi0Max, Nphi0,&
+    &IMU, flagFft, CMU1, CPHI1, WSAVE,&
     &SHPTR, INDATA, OUTDATA)
 
     !   Transforms the input data from spherical harmonic space to discrete
     ! ordinate space for one zenith angle (IMU).  Successive transforms are
     ! done in zenith and then azimuth angle.  The Fourier transform in
     ! azimuth is done using a matrix multiply DFT for smaller number of
-    ! angles (NPHI0*(2*MM+1)<160) and with an FFT for larger number of
+    ! angles (Nphi0*(2*MM+1)<160) and with an FFT for larger number of
     ! angles.  The FFT is used for any number of angles above the limit,
-    ! but is much more efficient for NPHI0 whose factors are small primes
+    ! but is much more efficient for Nphi0 whose factors are small primes
     ! (powers of 2 are best).  The spherical harmonic truncation of the
     ! input array is adaptive (with pointer SHPTR); the last term for
     ! each grid point must be the maximum m for the particular l term.
 
     integer NPTS, NSTOKES, NlegSet
-    integer ML, MM, NLM, NMU, NPHI0MAX, NPHI0
+    integer ML, MM, NLM, Nmu, Nphi0Max, Nphi0
     integer IMU, SHPTR(NPTS + 1)
-    logical FFTFLAG(NMU)
-    real INDATA(NSTOKES, *), OUTDATA(NSTOKES, NPHI0MAX, NPTS)
-    real CMU1(NlegSet, NLM, NMU), CPHI1(-16:16, 32, NMU)
-    real WSAVE(3*NPHI0MAX + 15, NMU)
+    logical flagFft(Nmu)
+    real INDATA(NSTOKES, *), OUTDATA(NSTOKES, Nphi0Max, NPTS)
+    real CMU1(NlegSet, NLM, Nmu), CPHI1(-16:16, 32, Nmu)
+    real WSAVE(3*Nphi0Max + 15, Nmu)
     integer I, J, K, L, M, M2, N, IPHI, MS, ME, MR, IS, NSH
     real SUM1
     integer, allocatable :: MOFJ(:)
@@ -239,12 +239,12 @@ subroutine shd_shdo__transSHtoDO(NPTS, NSTOKES, NlegSet, ML, MM, NLM,&
         IS = SHPTR(I)
         NSH = SHPTR(I + 1) - IS
         if (NSH .eq. 0) then
-            do K = 1, NPHI0
+            do K = 1, Nphi0
                 OUTDATA(:, K, I) = 0.0
             end do
         else
             ! Figure the max Fourier azimuthal mode we can do for this Nphi0
-            ME = max(0, min((NPHI0/2) - 1, MOFJ(NSH)))
+            ME = max(0, min((Nphi0/2) - 1, MOFJ(NSH)))
             MS = -ME
             ! First do mu part of real generalized spherical harmonics
             !   transform by summing over l for each m.
@@ -285,7 +285,7 @@ subroutine shd_shdo__transSHtoDO(NPTS, NSTOKES, NlegSet, ML, MM, NLM,&
             end if
 
             ! Then do the Fourier transform from m to phi for each mu
-            if (FFTFLAG(IMU)) then
+            if (flagFft(IMU)) then
                 do N = 1, NSTOKES
                     ! For sines and cosines use a real FFT, and rearrange terms
                     TMP(1) = SUMCS(N, 0)
@@ -295,18 +295,18 @@ subroutine shd_shdo__transSHtoDO(NPTS, NSTOKES, NlegSet, ML, MM, NLM,&
                         TMP(MR + 1) = -0.5*SUMCS(N, -M)
                         MR = MR + 2
                     end do
-                    do M2 = MR, NPHI0
+                    do M2 = MR, Nphi0
                         TMP(M2) = 0.0
                     end do
-                    call DFFTB(NPHI0, TMP, WSAVE(1, IMU))
-                    do K = 1, NPHI0
+                    call DFFTB(Nphi0, TMP, WSAVE(1, IMU))
+                    do K = 1, Nphi0
                         OUTDATA(N, K, I) = TMP(K)
                     end do
                 end do
 
             else
                 ! Else do a slow DFT
-                do IPHI = 1, NPHI0
+                do IPHI = 1, Nphi0
                     do N = 1, NSTOKES
                         SUM1 = 0.0
                         do M = MS, ME
@@ -326,8 +326,8 @@ end subroutine shd_shdo__transSHtoDO
 
 subroutine shd_shdo__transSHtoDO_(&
     &NPTS, ML, MM, NLM,&
-    &NMU, NPHI0MAX, NPHI0,&
-    &IMU, FFTFLAG, CMU1, CPHI1, WSAVE,&
+    &Nmu, Nphi0Max, Nphi0,&
+    &IMU, flagFft, CMU1, CPHI1, WSAVE,&
     &SHPTR, INDATA, OUTDATA)
 
     !   Transforms the input data from spherical harmonic space to discrete
@@ -335,9 +335,9 @@ subroutine shd_shdo__transSHtoDO_(&
     ! Successive transforms are done in zenith and then azimuth angle.
     ! The Fourier transform in
     ! azimuth is done using a matrix multiply DFT for smaller number of
-    ! angles (NPHI0*(2*MM+1)<160) and with an FFT for larger number of
+    ! angles (Nphi0*(2*MM+1)<160) and with an FFT for larger number of
     ! angles.  The FFT is used for any number of angles above the limit,
-    ! but is much more efficient for NPHI0 whose factors are small primes
+    ! but is much more efficient for Nphi0 whose factors are small primes
     ! (powers of 2 are best).  The spherical harmonic truncation of the
     ! input array is adaptive (with pointer SHPTR); the last term for
     ! each grid point must be the maximum m for the particular l term.
@@ -346,12 +346,12 @@ subroutine shd_shdo__transSHtoDO_(&
     ! is 2*Nmu*Nlm.
 
     integer NPTS
-    integer ML, MM, NLM, NMU, NPHI0MAX, NPHI0
+    integer ML, MM, NLM, Nmu, Nphi0Max, Nphi0
     integer IMU, SHPTR(NPTS + 1)
-    logical FFTFLAG(NMU)
-    real INDATA(*), OUTDATA(NPHI0MAX, NPTS)
-    real CMU1(NLM, NMU), CPHI1(-16:16, 32, NMU)
-    real WSAVE(3*NPHI0MAX + 15, NMU)
+    logical flagFft(Nmu)
+    real INDATA(*), OUTDATA(Nphi0Max, NPTS)
+    real CMU1(NLM, Nmu), CPHI1(-16:16, 32, Nmu)
+    real WSAVE(3*Nphi0Max + 15, Nmu)
     integer I, J, K, L, M, M2, N, IPHI, MS, ME, MR, IS, NSH
     real SUM1
     integer, allocatable :: MOFJ(:)
@@ -374,12 +374,12 @@ subroutine shd_shdo__transSHtoDO_(&
         IS = SHPTR(I)
         NSH = SHPTR(I + 1) - IS
         if (NSH .eq. 0) then
-            do K = 1, NPHI0
+            do K = 1, Nphi0
                 OUTDATA(K, I) = 0.0
             end do
         else
             ! Figure the max Fourier azimuthal mode we can do for this Nph0
-            ME = max(0, min((NPHI0/2) - 1, MOFJ(NSH)))
+            ME = max(0, min((Nphi0/2) - 1, MOFJ(NSH)))
             MS = -ME
             ! First do mu part of real generalized spherical harmonics
             !   transform by summing over l for each m.
@@ -395,7 +395,7 @@ subroutine shd_shdo__transSHtoDO_(&
             end do
 
             ! Then do the Fourier transform from m to phi for each mu
-            if (FFTFLAG(IMU)) then
+            if (flagFft(IMU)) then
                 ! For sines and cosines use a real FFT, and rearrange terms
                 TMP(1) = SUMCS(0)
                 MR = 2
@@ -404,16 +404,16 @@ subroutine shd_shdo__transSHtoDO_(&
                     TMP(MR + 1) = -0.5*SUMCS(-M)
                     MR = MR + 2
                 end do
-                do M2 = MR, NPHI0
+                do M2 = MR, Nphi0
                     TMP(M2) = 0.0
                 end do
-                call DFFTB(NPHI0, TMP, WSAVE(1, IMU))
-                do K = 1, NPHI0
+                call DFFTB(Nphi0, TMP, WSAVE(1, IMU))
+                do K = 1, Nphi0
                     OUTDATA(K, I) = TMP(K)
                 end do
             else
                 ! Else do a slow DFT
-                do IPHI = 1, NPHI0
+                do IPHI = 1, Nphi0
                     SUM1 = 0.0
                     do M = MS, ME
                         SUM1 = SUM1 + CPHI1(M, IPHI, IMU)*SUMCS(M)
@@ -431,8 +431,8 @@ end subroutine shd_shdo__transSHtoDO_
 
 subroutine shd_shdo__transDOtoSH(&
     &NPTS, NSTOKES, NlegSet, ML, MM, NLM,&
-    &NMU, NPHI0MAX, NPHI0,&
-    &IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
+    &Nmu, Nphi0Max, Nphi0,&
+    &IMU, flagFft, CMU2, CPHI2, WSAVE,&
     &iradI_Shdo, INDATA, OUTDATA)
 
     !   Transforms the input field from discrete ordinate space to spherical
@@ -440,21 +440,21 @@ subroutine shd_shdo__transDOtoSH(&
     ! sum in OUTDATA between successive calls.  (See shd_shdo__transSHtoDO for more).
 
     integer NPTS, NSTOKES, NlegSet
-    integer ML, MM, NLM, NMU, NPHI0MAX, NPHI0
+    integer ML, MM, NLM, Nmu, Nphi0Max, Nphi0
     integer IMU, iradI_Shdo(NPTS + 1)
-    logical FFTFLAG(NMU)
-    real INDATA(NSTOKES, NPHI0MAX, NPTS), OUTDATA(NSTOKES, *)
-    real CMU2(NlegSet, NMU, NLM), CPHI2(32, -16:16, NMU)
-    real WSAVE(3*NPHI0MAX + 15, NMU)
+    logical flagFft(Nmu)
+    real INDATA(NSTOKES, Nphi0Max, NPTS), OUTDATA(NSTOKES, *)
+    real CMU2(NlegSet, Nmu, NLM), CPHI2(32, -16:16, Nmu)
+    real WSAVE(3*Nphi0Max + 15, Nmu)
     integer I, IPHI, J, K, L, M, MS, ME, MR, N, IS, NSH
-    real SUM1, DELPHI
+    real SUM1, dPhi
     integer, allocatable :: MOFJ(:)
     real, allocatable :: SUMUV(:, :), SUMCS(:, :), TMP(:)
 
-    allocate(MOFJ(NLM), TMP(NPHI0))
+    allocate(MOFJ(NLM), TMP(Nphi0))
     allocate(SUMUV(NSTOKES, -MM:MM), SUMCS(NSTOKES, -MM:MM))
 
-    DELPHI = pi2_/NPHI0
+    dPhi = pi2_/Nphi0
 
     ! Make the M for each J array
     J = 0
@@ -471,21 +471,21 @@ subroutine shd_shdo__transDOtoSH(&
         ! Determine the current SH truncation to use
         NSH = iradI_Shdo(I + 1) - iradI_Shdo(I)
         ! Figure the max Fourier azimuthal mode we can do for this Nphi0
-        ME = max(0, min((NPHI0/2) - 1, MOFJ(NSH)))
+        ME = max(0, min((Nphi0/2) - 1, MOFJ(NSH)))
         MS = -ME
         ! First do Fourier transform from phi to m for each mu
-        if (FFTFLAG(IMU)) then
+        if (flagFft(IMU)) then
             do N = 1, NSTOKES
-                do K = 1, NPHI0
+                do K = 1, Nphi0
                     TMP(K) = INDATA(N, K, I)
                 end do
                 ! For sines and cosines use a real FFT, and rearrange terms
-                call DFFTF(NPHI0, TMP, WSAVE(1, IMU))
-                SUMCS(N, 0) = TMP(1)*DELPHI
+                call DFFTF(Nphi0, TMP, WSAVE(1, IMU))
+                SUMCS(N, 0) = TMP(1)*dPhi
                 MR = 2
                 do M = 1, ME
-                    SUMCS(N, M) = TMP(MR)*DELPHI
-                    SUMCS(N, -M) = -TMP(MR + 1)*DELPHI
+                    SUMCS(N, M) = TMP(MR)*dPhi
+                    SUMCS(N, -M) = -TMP(MR + 1)*dPhi
                     MR = MR + 2
                 end do
             end do
@@ -494,7 +494,7 @@ subroutine shd_shdo__transDOtoSH(&
             do M = MS, ME
                 do N = 1, NSTOKES
                     SUM1 = 0.0
-                    do IPHI = 1, NPHI0
+                    do IPHI = 1, Nphi0
                         SUM1 = SUM1 + CPHI2(IPHI, M, IMU)*INDATA(N, IPHI, I)
                     end do
                     SUMCS(N, M) = SUM1
@@ -546,8 +546,8 @@ subroutine shd_shdo__transDOtoSH(&
 end subroutine shd_shdo__transDOtoSH
 
 subroutine shd_shdo__transDOtoSH_(NPTS, ML, MM, NLM,&
-    &NMU, NPHI0MAX, NPHI0,&
-    &IMU, FFTFLAG, CMU2, CPHI2, WSAVE,&
+    &Nmu, Nphi0Max, Nphi0,&
+    &IMU, flagFft, CMU2, CPHI2, WSAVE,&
     &iradI_Shdo, INDATA, OUTDATA)
 
     !   Transforms the input field from discrete ordinate space to spherical
@@ -555,20 +555,20 @@ subroutine shd_shdo__transDOtoSH_(NPTS, ML, MM, NLM,&
     ! sum in OUTDATA between successive calls.  (See shd_shdo__transSHtoDO for more).
 
     integer NPTS
-    integer ML, MM, NLM, NMU, NPHI0MAX, NPHI0
+    integer ML, MM, NLM, Nmu, Nphi0Max, Nphi0
     integer IMU, iradI_Shdo(NPTS + 1)
-    logical FFTFLAG(NMU)
-    real INDATA(NPHI0MAX, NPTS), OUTDATA(*)
-    real CMU2(NMU, NLM), CPHI2(32, -16:16, NMU)
-    real WSAVE(3*NPHI0MAX + 15, NMU)
+    logical flagFft(Nmu)
+    real INDATA(Nphi0Max, NPTS), OUTDATA(*)
+    real CMU2(Nmu, NLM), CPHI2(32, -16:16, Nmu)
+    real WSAVE(3*Nphi0Max + 15, Nmu)
     integer I, IPHI, J, K, L, M, MS, ME, MR, N, IS, NSH
-    real SUM1, DELPHI
+    real SUM1, dPhi
     integer, allocatable :: MOFJ(:)
     real, allocatable :: SUMUV(:), SUMCS(:), TMP(:)
 
-    allocate(MOFJ(NLM), SUMUV(-MM:MM), SUMCS(-MM:MM), TMP(NPHI0))
+    allocate(MOFJ(NLM), SUMUV(-MM:MM), SUMCS(-MM:MM), TMP(Nphi0))
 
-    DELPHI = pi2_/NPHI0
+    dPhi = pi2_/Nphi0
     ! Make the M for each J array
     J = 0
     do L = 0, ML
@@ -585,27 +585,27 @@ subroutine shd_shdo__transDOtoSH_(NPTS, ML, MM, NLM,&
         NSH = iradI_Shdo(I + 1) - iradI_Shdo(I)
         SUMCS(:) = 0.0
         ! Figure the max Fourier azimuthal mode we can do for this Nphi0
-        ME = max(0, min((NPHI0/2) - 1, MOFJ(NSH)))
+        ME = max(0, min((Nphi0/2) - 1, MOFJ(NSH)))
         MS = -ME
         ! First do Fourier transform from phi to m for each mu
-        if (FFTFLAG(IMU)) then
-            do K = 1, NPHI0
+        if (flagFft(IMU)) then
+            do K = 1, Nphi0
                 TMP(K) = INDATA(K, I)
             end do
             ! For sines and cosines use a real FFT, and rearrange terms
-            call DFFTF(NPHI0, TMP, WSAVE(1, IMU))
-            SUMCS(0) = TMP(1)*DELPHI
+            call DFFTF(Nphi0, TMP, WSAVE(1, IMU))
+            SUMCS(0) = TMP(1)*dPhi
             MR = 2
             do M = 1, ME
-                SUMCS(M) = TMP(MR)*DELPHI
-                SUMCS(-M) = -TMP(MR + 1)*DELPHI
+                SUMCS(M) = TMP(MR)*dPhi
+                SUMCS(-M) = -TMP(MR + 1)*dPhi
                 MR = MR + 2
             end do
         else
             ! Else do a slow DFT
             do M = MS, ME
                 SUM1 = 0.0
-                do IPHI = 1, NPHI0
+                do IPHI = 1, Nphi0
                     SUM1 = SUM1 + CPHI2(IPHI, M, IMU)*INDATA(IPHI, I)
                 end do
                 SUMCS(M) = SUM1
@@ -712,34 +712,34 @@ subroutine shd_shdo__computeSH(&
 end subroutine shd_shdo__computeSH
 
 subroutine shd_shdo__makeAngle(&
-    &NMU, NPHI, ITYPE, NPHI0MAX,&
-    &NPHI0, MU, PHI, WTMU, WTDO, FFTFLAG, NANG)
+    &Nmu, Nphi, iType, Nphi0Max,&
+    &Nphi0, MU, PHI, WTMU, WTDO, flagFft, NANG)
 
     ! Make the set of angles for the discrete space representation.
     ! The number of mu's (cosine zenith angles) and maximum number of
     ! phi's (azimuth angles) is input.  The actual number of azimuthal
-    ! angles for each mu is output (NPHI0).  There are three types of
-    ! discrete ordinate sets: ITYPE=1 is a gaussian grid, 2 is a reduced
+    ! angles for each mu is output (Nphi0).  There are three types of
+    ! discrete ordinate sets: iType=1 is a gaussian grid, 2 is a reduced
     ! gaussian grid, and 3 is a reduced double gaussian set.
-    ! The output is the NMU mu values, the NPHI0 phi values for each mu,
-    ! and the integration weight for each ordinate. The first NMU/2 mu
+    ! The output is the Nmu mu values, the Nphi0 phi values for each mu,
+    ! and the integration weight for each ordinate. The first Nmu/2 mu
     ! angles are the downwelling (mu<0) angles.  Also output are the
-    ! maximum number of azimuthal angles (NPHI0MAX), the flags for doing
+    ! maximum number of azimuthal angles (Nphi0Max), the flags for doing
     ! an azimuthal FFT for each mu and the total number of angles.
 
-    integer(kind=I__), intent(in)    :: NMU, NPHI, ITYPE
-    integer(kind=I__), intent(inout) :: NPHI0MAX
+    integer(kind=I__), intent(in)    :: Nmu, Nphi, iType
+    integer(kind=I__), intent(inout) :: Nphi0Max
 
-    integer(kind=I__), intent(out) :: NPHI0(NMU), NANG
-    real(kind=R__)   , intent(out) :: MU(NMU), PHI(NMU, *), WTMU(NMU), WTDO(NMU, *)
-    logical          , intent(out) :: FFTFLAG(NMU)
+    integer(kind=I__), intent(out) :: Nphi0(Nmu), NANG
+    real(kind=R__)   , intent(out) :: MU(Nmu), PHI(Nmu, *), WTMU(Nmu), WTDO(Nmu, *)
+    logical          , intent(out) :: flagFft(Nmu)
 
     integer(kind=I__) :: J, K, MM
-    real(kind=R__)    :: DELPHI
-    integer(kind=I__), parameter :: MAXNPHI = 256
+    real(kind=R__)    :: dPhi
+    integer(kind=I__), parameter :: NphiMax = 256
 
-    integer(kind=I__) :: GOODNFFT(MAXNPHI)
-    data GOODNFFT/1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 16,&
+    integer(kind=I__) :: Nfft(NphiMax)
+    data Nfft/1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 16,&
         &18, 18, 20, 20, 24, 24, 24, 24, 25, 27, 27, 30, 30, 30, 32, 32,&
         &36, 36, 36, 36, 40, 40, 40, 40, 45, 45, 45, 45, 45, 48, 48, 48,&
         &50, 50, 54, 54, 54, 54, 60, 60, 60, 60, 60, 60, 64, 64, 64, 64,&
@@ -764,32 +764,32 @@ subroutine shd_shdo__makeAngle(&
         &256, 256, 256, 256, 256, 256, 256, 256,&
         &256, 256, 256, 256, 256, 256, 256, 256/
 
-    MM = max(0, int(NPHI/2) - 1)
+    MM = max(0, int(Nphi/2) - 1)
     NANG = 0
-    if (ITYPE .ge. 1 .or. ITYPE .le. 3) then
-        if (ITYPE .le. 2) then
-            call shd_util__computeGaussQuad(NMU, MU, WTMU)
-            !call shd_util__computeGaussQuadLRT(NMU, MU, WTMU)
-        else if (ITYPE .eq. 3) then
-            call shd_util__computeDbleGaussQuad(NMU, MU, WTMU)
+    if (iType .ge. 1 .or. iType .le. 3) then
+        if (iType .le. 2) then
+            call shd_util__computeGaussQuad(Nmu, MU, WTMU)
+            !call shd_util__computeGaussQuadLRT(Nmu, MU, WTMU)
+        else if (iType .eq. 3) then
+            call shd_util__computeDbleGaussQuad(Nmu, MU, WTMU)
         end if
-        do J = 1, NMU
-            NPHI0MAX = NPHI
-            if (ITYPE .eq. 1) then
-                NPHI0(J) = NPHI0MAX
+        do J = 1, Nmu
+            Nphi0Max = Nphi
+            if (iType .eq. 1) then
+                Nphi0(J) = Nphi0Max
             else
-                if (NPHI0MAX .gt. MAXNPHI)&
-                    &stop 'Error [_makeAngle]: Exceeded GOODNFFT.'
-                NPHI0(J) = int(0.9 + NPHI0MAX*sqrt(1 - MU(J)**2))
-                NPHI0(J) = min(NPHI0MAX, GOODNFFT(NPHI0(J)))
+                if (Nphi0Max .gt. NphiMax)&
+                    &stop 'Error [_makeAngle]: Exceeded NphiMax=256.'
+                Nphi0(J) = int(0.9 + Nphi0Max*sqrt(1 - MU(J)**2))
+                Nphi0(J) = min(Nphi0Max, Nfft(Nphi0(J)))
             end if
-            DELPHI = pi2_/NPHI0(J)
-            do K = 1, NPHI0(J)
-                PHI(J, K) = (K - 1)*DELPHI
-                WTDO(J, K) = DELPHI*WTMU(J)
+            dPhi = pi2_/Nphi0(J)
+            do K = 1, Nphi0(J)
+                PHI(J, K) = (K - 1)*dPhi
+                WTDO(J, K) = dPhi*WTMU(J)
             end do
-            NANG = NANG + NPHI0(J)
-            FFTFLAG(J) = (NPHI0(J) .gt. 14) .or. (MM .gt. 15)
+            NANG = NANG + Nphi0(J)
+            flagFft(J) = (Nphi0(J) .gt. 14) .or. (MM .gt. 15)
         end do
 
     else
