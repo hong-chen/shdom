@@ -82,7 +82,7 @@ module shd_shdo
 contains
 
 subroutine shd_shdo__makeSHDO(NlegSet, ML, MM, NLM, Nmu, Nphi0,&
-    &Nphi0Max, MU, PHI, WTMU, WTDO, flagFft,&
+    &maxNphi0, MU, PHI, WTMU, WTDO, flagFft,&
     &CMU1, CMU2, CPHI1, CPHI2, WPHISAVE)
 
     ! Makes the transformation coefficients for the real generalized
@@ -95,12 +95,12 @@ subroutine shd_shdo__makeSHDO(NlegSet, ML, MM, NLM, Nmu, Nphi0,&
     ! The FFTPACK phase coefficients for the FFT in azimuth are also
     ! output in WPHISAVE.
 
-    integer NlegSet, ML, MM, NLM, Nmu, Nphi0(Nmu), Nphi0Max
+    integer NlegSet, ML, MM, NLM, Nmu, Nphi0(Nmu), maxNphi0
     logical flagFft(Nmu)
     real MU(Nmu), PHI(Nmu, *), WTMU(Nmu), WTDO(Nmu, *)
     real CMU1(NlegSet, NLM, Nmu), CMU2(NlegSet, Nmu, NLM)
     real CPHI1(-16:16, 32, Nmu), CPHI2(32, -16:16, Nmu)
-    real WPHISAVE(3*Nphi0Max + 15, Nmu)
+    real WPHISAVE(3*maxNphi0 + 15, Nmu)
     integer I, J, K, M, Q
     real X, W
     real, allocatable :: PRC(:, :)
@@ -153,7 +153,7 @@ end subroutine shd_shdo__makeSHDO
 
 subroutine shd_shdo__makeSfcDO(SFCTYPE, WAVELEN,&
     &NXSFC, NYSFC, NSFCPAR, SFCPARMS, NSTOKES,&
-    &Nmu, Nphi0Max, Nphi0, MU, PHI, WTDO,&
+    &Nmu, maxNphi0, Nphi0, MU, PHI, WTDO,&
     &brdf_Shdo)
 
     !   Makes the precomputed BRDF surface reflection matrix for
@@ -162,10 +162,10 @@ subroutine shd_shdo__makeSfcDO(SFCTYPE, WAVELEN,&
     ! integration weights are included.
 
     integer NXSFC, NYSFC, NSFCPAR
-    integer NSTOKES, Nmu, Nphi0Max, Nphi0(Nmu)
+    integer NSTOKES, Nmu, maxNphi0, Nphi0(Nmu)
     real SFCPARMS(NSFCPAR, NYSFC+1, NXSFC+1), WAVELEN
-    real WTDO(Nmu, Nphi0Max), MU(Nmu), PHI(Nmu, Nphi0Max)
-    real brdf_Shdo(NSTOKES, Nmu/2, Nphi0Max, NSTOKES, Nmu/2, Nphi0Max)
+    real WTDO(Nmu, maxNphi0), MU(Nmu), PHI(Nmu, maxNphi0)
+    real brdf_Shdo(NSTOKES, Nmu/2, maxNphi0, NSTOKES, Nmu/2, maxNphi0)
     character(len=2) :: SFCTYPE
     integer IMU, IMU1, IPHI, JMU, JPHI, K1, K2
     real :: REFLECT(4, 4), W
@@ -194,7 +194,7 @@ subroutine shd_shdo__makeSfcDO(SFCTYPE, WAVELEN,&
 end subroutine shd_shdo__makeSfcDO
 
 subroutine shd_shdo__transSHtoDO(NPTS, NSTOKES, NlegSet, ML, MM, NLM,&
-    &Nmu, Nphi0Max, Nphi0,&
+    &Nmu, maxNphi0, Nphi0,&
     &IMU, flagFft, CMU1, CPHI1, WSAVE,&
     &SHPTR, INDATA, OUTDATA)
 
@@ -210,12 +210,12 @@ subroutine shd_shdo__transSHtoDO(NPTS, NSTOKES, NlegSet, ML, MM, NLM,&
     ! each grid point must be the maximum m for the particular l term.
 
     integer NPTS, NSTOKES, NlegSet
-    integer ML, MM, NLM, Nmu, Nphi0Max, Nphi0
+    integer ML, MM, NLM, Nmu, maxNphi0, Nphi0
     integer IMU, SHPTR(NPTS + 1)
     logical flagFft(Nmu)
-    real INDATA(NSTOKES, *), OUTDATA(NSTOKES, Nphi0Max, NPTS)
+    real INDATA(NSTOKES, *), OUTDATA(NSTOKES, maxNphi0, NPTS)
     real CMU1(NlegSet, NLM, Nmu), CPHI1(-16:16, 32, Nmu)
-    real WSAVE(3*Nphi0Max + 15, Nmu)
+    real WSAVE(3*maxNphi0 + 15, Nmu)
     integer I, J, K, L, M, M2, N, IPHI, MS, ME, MR, IS, NSH
     real SUM1
     integer, allocatable :: MOFJ(:)
@@ -326,7 +326,7 @@ end subroutine shd_shdo__transSHtoDO
 
 subroutine shd_shdo__transSHtoDO_(&
     &NPTS, ML, MM, NLM,&
-    &Nmu, Nphi0Max, Nphi0,&
+    &Nmu, maxNphi0, Nphi0,&
     &IMU, flagFft, CMU1, CPHI1, WSAVE,&
     &SHPTR, INDATA, OUTDATA)
 
@@ -346,12 +346,12 @@ subroutine shd_shdo__transSHtoDO_(&
     ! is 2*Nmu*Nlm.
 
     integer NPTS
-    integer ML, MM, NLM, Nmu, Nphi0Max, Nphi0
+    integer ML, MM, NLM, Nmu, maxNphi0, Nphi0
     integer IMU, SHPTR(NPTS + 1)
     logical flagFft(Nmu)
-    real INDATA(*), OUTDATA(Nphi0Max, NPTS)
+    real INDATA(*), OUTDATA(maxNphi0, NPTS)
     real CMU1(NLM, Nmu), CPHI1(-16:16, 32, Nmu)
-    real WSAVE(3*Nphi0Max + 15, Nmu)
+    real WSAVE(3*maxNphi0 + 15, Nmu)
     integer I, J, K, L, M, M2, N, IPHI, MS, ME, MR, IS, NSH
     real SUM1
     integer, allocatable :: MOFJ(:)
@@ -431,7 +431,7 @@ end subroutine shd_shdo__transSHtoDO_
 
 subroutine shd_shdo__transDOtoSH(&
     &NPTS, NSTOKES, NlegSet, ML, MM, NLM,&
-    &Nmu, Nphi0Max, Nphi0,&
+    &Nmu, maxNphi0, Nphi0,&
     &IMU, flagFft, CMU2, CPHI2, WSAVE,&
     &iradI_Shdo, INDATA, OUTDATA)
 
@@ -440,12 +440,12 @@ subroutine shd_shdo__transDOtoSH(&
     ! sum in OUTDATA between successive calls.  (See shd_shdo__transSHtoDO for more).
 
     integer NPTS, NSTOKES, NlegSet
-    integer ML, MM, NLM, Nmu, Nphi0Max, Nphi0
+    integer ML, MM, NLM, Nmu, maxNphi0, Nphi0
     integer IMU, iradI_Shdo(NPTS + 1)
     logical flagFft(Nmu)
-    real INDATA(NSTOKES, Nphi0Max, NPTS), OUTDATA(NSTOKES, *)
+    real INDATA(NSTOKES, maxNphi0, NPTS), OUTDATA(NSTOKES, *)
     real CMU2(NlegSet, Nmu, NLM), CPHI2(32, -16:16, Nmu)
-    real WSAVE(3*Nphi0Max + 15, Nmu)
+    real WSAVE(3*maxNphi0 + 15, Nmu)
     integer I, IPHI, J, K, L, M, MS, ME, MR, N, IS, NSH
     real SUM1, dPhi
     integer, allocatable :: MOFJ(:)
@@ -546,7 +546,7 @@ subroutine shd_shdo__transDOtoSH(&
 end subroutine shd_shdo__transDOtoSH
 
 subroutine shd_shdo__transDOtoSH_(NPTS, ML, MM, NLM,&
-    &Nmu, Nphi0Max, Nphi0,&
+    &Nmu, maxNphi0, Nphi0,&
     &IMU, flagFft, CMU2, CPHI2, WSAVE,&
     &iradI_Shdo, INDATA, OUTDATA)
 
@@ -555,12 +555,12 @@ subroutine shd_shdo__transDOtoSH_(NPTS, ML, MM, NLM,&
     ! sum in OUTDATA between successive calls.  (See shd_shdo__transSHtoDO for more).
 
     integer NPTS
-    integer ML, MM, NLM, Nmu, Nphi0Max, Nphi0
+    integer ML, MM, NLM, Nmu, maxNphi0, Nphi0
     integer IMU, iradI_Shdo(NPTS + 1)
     logical flagFft(Nmu)
-    real INDATA(Nphi0Max, NPTS), OUTDATA(*)
+    real INDATA(maxNphi0, NPTS), OUTDATA(*)
     real CMU2(Nmu, NLM), CPHI2(32, -16:16, Nmu)
-    real WSAVE(3*Nphi0Max + 15, Nmu)
+    real WSAVE(3*maxNphi0 + 15, Nmu)
     integer I, IPHI, J, K, L, M, MS, ME, MR, N, IS, NSH
     real SUM1, dPhi
     integer, allocatable :: MOFJ(:)
@@ -712,7 +712,7 @@ subroutine shd_shdo__computeSH(&
 end subroutine shd_shdo__computeSH
 
 subroutine shd_shdo__makeAngle(&
-    &Nmu, Nphi, iType, Nphi0Max,&
+    &Nmu, Nphi, iType, maxNphi0,&
     &Nphi0, MU, PHI, WTMU, WTDO, flagFft, NANG)
 
     ! Make the set of angles for the discrete space representation.
@@ -724,11 +724,11 @@ subroutine shd_shdo__makeAngle(&
     ! The output is the Nmu mu values, the Nphi0 phi values for each mu,
     ! and the integration weight for each ordinate. The first Nmu/2 mu
     ! angles are the downwelling (mu<0) angles.  Also output are the
-    ! maximum number of azimuthal angles (Nphi0Max), the flags for doing
+    ! maximum number of azimuthal angles (maxNphi0), the flags for doing
     ! an azimuthal FFT for each mu and the total number of angles.
 
     integer(kind=I__), intent(in)    :: Nmu, Nphi, iType
-    integer(kind=I__), intent(inout) :: Nphi0Max
+    integer(kind=I__), intent(inout) :: maxNphi0
 
     integer(kind=I__), intent(out) :: Nphi0(Nmu), NANG
     real(kind=R__)   , intent(out) :: MU(Nmu), PHI(Nmu, *), WTMU(Nmu), WTDO(Nmu, *)
@@ -736,9 +736,9 @@ subroutine shd_shdo__makeAngle(&
 
     integer(kind=I__) :: J, K, MM
     real(kind=R__)    :: dPhi
-    integer(kind=I__), parameter :: NphiMax = 256
+    integer(kind=I__), parameter :: maxNphi = 256
 
-    integer(kind=I__) :: Nfft(NphiMax)
+    integer(kind=I__) :: Nfft(maxNphi)
     data Nfft/1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 16,&
         &18, 18, 20, 20, 24, 24, 24, 24, 25, 27, 27, 30, 30, 30, 32, 32,&
         &36, 36, 36, 36, 40, 40, 40, 40, 45, 45, 45, 45, 45, 48, 48, 48,&
@@ -774,14 +774,14 @@ subroutine shd_shdo__makeAngle(&
             call shd_util__computeDbleGaussQuad(Nmu, MU, WTMU)
         end if
         do J = 1, Nmu
-            Nphi0Max = Nphi
+            maxNphi0 = Nphi
             if (iType .eq. 1) then
-                Nphi0(J) = Nphi0Max
+                Nphi0(J) = maxNphi0
             else
-                if (Nphi0Max .gt. NphiMax)&
-                    &stop 'Error [_makeAngle]: Exceeded NphiMax=256.'
-                Nphi0(J) = int(0.9 + Nphi0Max*sqrt(1 - MU(J)**2))
-                Nphi0(J) = min(Nphi0Max, Nfft(Nphi0(J)))
+                if (maxNphi0 .gt. maxNphi)&
+                    &stop 'Error [_makeAngle]: Exceeded maxNphi=256.'
+                Nphi0(J) = int(0.9 + maxNphi0*sqrt(1 - MU(J)**2))
+                Nphi0(J) = min(maxNphi0, Nfft(Nphi0(J)))
             end if
             dPhi = pi2_/Nphi0(J)
             do K = 1, Nphi0(J)
