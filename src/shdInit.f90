@@ -732,10 +732,10 @@ subroutine shd_init__makeFlux(&
     ! tempZ          real array   Temperatures (K) at layer interfaces
     !                              (e.g. tempZ(1) is at top of top layer
     !                               tempZ(2) is at bottom of top layer).
-    ! doDeltaM         logical      True for delta-Eddington scaling
+    ! doDeltaM       logical      True for delta-Eddington scaling
     ! SRCTYPE        character    'S' for solar source, 'T' for thermal source
     ! SOLARFLUX      real         Incident solar flux on horizonal plane
-    ! muSun        real         Cosine of the solar zenith angle
+    ! muSun          real         Cosine of the solar zenith angle
     ! GNDTEMP        real         Ground temperature (Kelvin)
     ! GNDEMIS        real         Ground emissivity (1-albedo)
     ! SKYRAD         real         Radiance (for solar) or brightness
