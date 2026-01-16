@@ -42,7 +42,7 @@
 # pick one of the following two
 #╭────────────────────────────────────────────────╮#
 FC = gfortran
-#FC = mpif90
+#FC = mpifort
 #╰────────────────────────────────────────────────╯#
 
 FORTRAN_VERSION = $(shell $(FC) -dumpversion)
