@@ -73,7 +73,7 @@ module shd_sfc
     private :: morcasiwat
     private :: indwat
     private :: sunglint
-    private :: Fresnel
+    private :: fresnel
     private :: glitalbe
     private :: getbound
     !╰────────────────────────────────────────────────╯!
@@ -1274,7 +1274,11 @@ subroutine shd_sfc__brdfOcean(&
     Rwb = (1.0d0/(n12*n12))*tds*tdv*Rw/(1.0d0 - a*Rw)
     ! TOTAL REFLECTANCE OF SEA WATER
     REFLECT = Rwc + (1.0d0 - W)*Rog + (1.0d0 - Rwc)*Rwb
+
+    ! print *, Rwc, W, Rog, Rwb, REFLECT
+
     return
+
 end subroutine shd_sfc__brdfOcean
 
 subroutine morcasiwat(wl, C, R2)
@@ -1473,8 +1477,10 @@ subroutine indwat(wl, xsal, nr, ni)
         nr = nr + nrc
         ni = ni + nic
     end if
+
     return
-end subroutine
+
+end subroutine indwat
 
 subroutine sunglint(wspd, nr, ni, azw, ts, tv, fi, rog)
     ! input parameters:   wspd=speed of the wind (in m/s)
@@ -1496,7 +1502,7 @@ subroutine sunglint(wspd, nr, ni, azw, ts, tv, fi, rog)
 
     fac = deg2rad_
 
-    phw = azw
+    phw = azw*fac
 
     cs = cos(ts*fac)
     cv = cos(tv*fac)
@@ -1531,17 +1537,19 @@ subroutine sunglint(wspd, nr, ni, azw, ts, tv, fi, rog)
     if (cos2chi .lt. -1.0) cos2chi = -0.99999999999
     coschi = sqrt(0.5d0*(1 + cos2chi))
     sinchi = sqrt(0.5d0*(1 - cos2chi))
-    call Fresnel(nr, ni, coschi, sinchi, R1)
+    call fresnel(nr, ni, coschi, sinchi, R1)
 
     ! Compute Reflectance of the sun glint
     co4 = cos(tilt)
     co4 = co4*co4
     co4 = co4*co4
     Rog = pi_*R1*proba/4.0/cs/cv/co4
-    return
-end subroutine
 
-subroutine Fresnel(nr, ni, coschi, sinchi, R1)
+    return
+
+end subroutine sunglint
+
+subroutine fresnel(nr, ni, coschi, sinchi, R1)
     !
     ! to compute the Fresnel's coefficient of reflection (see for
     ! example M. Born and E. Wolf, Principles of Optics, Pergamon Press, fif
@@ -1582,8 +1590,10 @@ subroutine Fresnel(nr, ni, coschi, sinchi, R1)
     !Rl2 = ((b1 - u)**2 + (b2 - v)**2)/((b1 + u)**2 + (b2 + v)**2)
 
     R1 = (Rr2 + Rl2) * 0.5d0
+
     return
-end subroutine
+
+end subroutine fresnel
 
 subroutine glitalbe(wspd, nr, ni, azw, rge)
     !
@@ -1675,7 +1685,7 @@ subroutine glitalbe(wspd, nr, ni, azw, rge)
                     r1 = 0.0
                     cota = 0.0
                 else
-                    call Fresnel(nr, ni, coschi, sinchi, r1)
+                    call fresnel(nr, ni, coschi, sinchi, r1)
                 end if
                 !  Anisotropic Gaussian distribution for wave facets slopes
                 Zx = -tantetn*cosphin
@@ -1699,18 +1709,20 @@ subroutine glitalbe(wspd, nr, ni, azw, rge)
         prefl = prefl + pr*pond
         proba = proba + pp*pond
     end do
+
     rge = prefl/proba
+
     return
-end subroutine
+
+end subroutine glitalbe
 
 subroutine getbound(xvals, ifirst, ilast, x, ind1, ind2)
+
     !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-    !
-    !     PROGRAM: GETBOUND.FOR
-    !
     !     DESCRIPTION: FINDS THE BOUNDS XVALS(IND1) AND XVALS(IND2)
     !                  FOR WHICH X IS BOUNDED.
     !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
     real xvals(*), x
     integer ind1, ind2, ifirst, ilast, i, imid
 
@@ -1769,7 +1781,9 @@ subroutine getbound(xvals, ifirst, ilast, x, ind1, ind2)
             ind2 = ilast
         end if
     end if
+
     return
-end subroutine
+
+end subroutine getbound
 
 end module shd_sfc
