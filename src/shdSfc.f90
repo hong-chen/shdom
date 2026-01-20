@@ -1155,7 +1155,7 @@ end subroutine shd_sfc__brdfJiao
 
 subroutine shd_sfc__brdfOcean(&
     & pws, xsal, pcl, pwl, xmuo, xmu, xphi, xpaw, REFLECT)
-    !
+
     ! INPUT:  pws=wind speed (in m/s) [value not allowed below 0.25 m/s]
     !         xsal=salinity (in ppt) [if xsal<0 then 34.3ppt by default]
     !         pcl=pigment concentration (in mg/m^3)
@@ -1242,19 +1242,24 @@ subroutine shd_sfc__brdfOcean(&
     wspd = max(0.25, pws)
     azw = paw
 
-    ! COMPUTE INDEX OF WATER
+    ! Compute index of water
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     call indwat(wl, xsal, nr, ni)
     n12 = sqrt(nr*nr + ni*ni)
-    ! COMPUTE WHITECAPS REFLECTANCE (LAMBERTIAN)
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+    ! Compute whitecaps reflectance (Lambertian)
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     W = 2.95d-6*(wspd**3.52d0)
     iwl = 1 + int((wl - 0.2)/0.1)
     wlp = 0.5d0 + (iwl - 1)*0.1d0
-    !Ref_i = ref(iwl + 1) + (wl - wlp)/0.1*(ref(iwl) - ref(iwl + 1))
     Ref_i = ref(iwl + 1) + (wl - wlp)*10.0*(ref(iwl) - ref(iwl + 1))
     Rwc = W*Ref_i
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    ! COMPUTE BACKSCATTERED REFLECTANCE FROM THE SEA WATER (LAMBERTIAN)
-    !  water reflectance below the sea surface
+    ! Compute backscattered reflectance from the sea water (Lambertian)
+    !   water reflectance below the sea surface
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     call morcasiwat(wl, C, Rw)
 
     call getbound( wsbnd, 1, 6,  wspd, iws1, iws2)
@@ -1262,26 +1267,29 @@ subroutine shd_sfc__brdfOcean(&
     call getbound(angbnd, 1, 5, tetav, ivz1, ivz2)
     tds = tdsbnd(isz1, iws1)
     tdv = tdvbnd(ivz1, iws1)
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    ! SUNGLINT REFLECTANCE
+    ! Sunglint reflectance
     call sunglint(wspd, nr, ni, azw, tetas, tetav, fi, rog)
+
     ! water reflectance above the sea surface
     ! for explanation on value of a see OCEAALBE.f
     a = 0.485d0
+
     ! add change in solid angle from under to above to surface
     ! that account for 1/(n12*n12) decrease in sea water directional
     ! reflectance
     Rwb = (1.0d0/(n12*n12))*tds*tdv*Rw/(1.0d0 - a*Rw)
-    ! TOTAL REFLECTANCE OF SEA WATER
-    REFLECT = Rwc + (1.0d0 - W)*Rog + (1.0d0 - Rwc)*Rwb
 
-    ! print *, Rwc, W, Rog, Rwb, REFLECT
+    ! Total reflectance of sea water
+    REFLECT = Rwc + (1.0d0 - W)*Rog + (1.0d0 - Rwc)*Rwb
 
     return
 
 end subroutine shd_sfc__brdfOcean
 
 subroutine morcasiwat(wl, C, R2)
+
     ! Spectral diffuse attenuation coefficient of Case I Waters as Predicted
     ! by MOREL within the spectral range 400-700nm (1988, Journal of Geophys
     ! Research, Vol.93, No C9, pp 10749-10768)
@@ -1306,7 +1314,7 @@ subroutine morcasiwat(wl, C, R2)
     !
     ! R2    reflectance of water below the surface
     !    with: R2=(0.33/u)*(bb/Kd)  where u is depending of R2
-    !
+
     real Kw, Kd
     real tKw(61), tXc(61), te(61), tbw(61)
     real wl, c, r2, xc, e, bw, bb, b, bbt, u1, r1, u2, err
@@ -1373,7 +1381,7 @@ subroutine morcasiwat(wl, C, R2)
     iwl = 1 + nint((wl - 0.400d0)/0.005d0)
     Kw = tKw(iwl)
     Xc = tXc(iwl)
-    e = te(iwl)
+    e  = te(iwl)
     bw = tbw(iwl)
 
     if (abs(C) .lt. 0.0001d0) then
@@ -1389,22 +1397,33 @@ subroutine morcasiwat(wl, C, R2)
     u1 = 0.75d0
     R1 = 0.33d0*bb/u1/Kd
 
-50  u2 = 0.90d0*(1.0d0-R1)/(1.0d0+2.25d0*R1)
-    R2 = 0.33d0*bb/u2/Kd
-    err = abs((R2 - R1)/R2)
-    if (err .lt. 0.0001d0) return
-    R1 = R2
-    goto 50
-    return
-end subroutine
+! 50  u2 = 0.90d0*(1.0d0-R1)/(1.0d0+2.25d0*R1)
+!     R2 = 0.33d0*bb/u2/Kd
+!     err = abs((R2 - R1)/R2)
+!     if (err .lt. 0.0001d0) return
+!     R1 = R2
+!     goto 50
+!     return
+
+    do
+        u2  = 0.90d0 * (1.0d0 - R1) / (1.0d0 + 2.25d0 * R1)
+        R2  = 0.33d0 * bb / u2 / Kd
+        err = abs((R2 - R1) / R2)
+
+        if (err < 1.0d-4) return
+
+        R1 = R2
+    end do
+
+end subroutine morcasiwat
 
 subroutine indwat(wl, xsal, nr, ni)
-    !
+
     ! input parameters:  wl=wavelength (in micrometers)
     !                    xsal=salinity (in ppt), if xsal<0 then 34.3ppt by d
     ! output parameters: nr=index of refraction of sea water
     !                    ni=extinction coefficient of sea water
-    !
+
     real twl(62), tnr(62), tni(62)
     real nr, ni, wl, xwl, yr, yi, nrc, nic, xsal
     integer i
@@ -1440,18 +1459,27 @@ subroutine indwat(wl, xsal, nr, ni)
         & 9.24e-02, 6.10e-02, 3.68e-02, 2.61e-02, 1.95e-02,&
         & 1.32e-02, 9.40e-03, 5.15e-03, 3.60e-03, 3.40e-03,&
         & 3.80e-03, 4.60e-03/
+
     i = 2
-10  if (wl .lt. twl(i)) goto 20
-    if (i .lt. 62) then
+
+! 10  if (wl .lt. twl(i)) goto 20
+!     if (i .lt. 62) then
+!         i = i + 1
+!         goto 10
+!     end if
+! 20  xwl = twl(i) - twl(i - 1)
+
+    do while ((wl .ge. twl(i)) .and. (i .lt. 62))
         i = i + 1
-        goto 10
-    end if
-20  xwl = twl(i) - twl(i - 1)
+    end do
+
+    xwl = twl(i) - twl(i - 1)
+
     yr = tnr(i) - tnr(i - 1)
     yi = tni(i) - tni(i - 1)
     nr = tnr(i - 1) + (wl - twl(i - 1))*yr/xwl
     ni = tni(i - 1) + (wl - twl(i - 1))*yi/xwl
-    !
+
     ! Correction to be applied to the index of refraction and to the extinct
     ! coefficients of the pure water to obtain the ocean water one (see for
     ! example Friedman). By default, a typical sea water is assumed
@@ -1483,6 +1511,7 @@ subroutine indwat(wl, xsal, nr, ni)
 end subroutine indwat
 
 subroutine sunglint(wspd, nr, ni, azw, ts, tv, fi, rog)
+
     ! input parameters:   wspd=speed of the wind (in m/s)
     !                     nr=index of refraction of the sea water
     !                     ni=extinction coefficient of the sea water
@@ -1491,7 +1520,7 @@ subroutine sunglint(wspd, nr, ni, azw, ts, tv, fi, rog)
     !                     tv=view zenith angle (in deg.)
     !                     fi=relative azimuth (sun-satellite)
     ! output parameters:  rog=reflectance of the sun glint
-    !
+
     real fac
     real wspd, nr, ni, ts, tv, fi, rog, azw, phw
     real cs, cv, ss, sv, phi, zx, zy, tantilt, tilt, proba, xe, xn, xe2, xn2
@@ -1550,7 +1579,7 @@ subroutine sunglint(wspd, nr, ni, azw, ts, tv, fi, rog)
 end subroutine sunglint
 
 subroutine fresnel(nr, ni, coschi, sinchi, R1)
-    !
+
     ! to compute the Fresnel's coefficient of reflection (see for
     ! example M. Born and E. Wolf, Principles of Optics, Pergamon Press, fif
     ! edition, 1975, pp 628
@@ -1559,7 +1588,7 @@ subroutine fresnel(nr, ni, coschi, sinchi, R1)
     !                   coschi & sinchi=cosine and sine of the incident radi
     !                                   with respect of the wave facet norma
     ! output parameter: R1=Fresnel's coefficient for reflection
-    !
+
     real nr, ni, a1, a2, u, v, Rr2, Rl2, b1, b2, R1, coschi, sinchi
     real :: nr2, ni2
 
@@ -1596,7 +1625,7 @@ subroutine fresnel(nr, ni, coschi, sinchi, R1)
 end subroutine fresnel
 
 subroutine glitalbe(wspd, nr, ni, azw, rge)
-    !
+
     ! To compute the spherical albedo of the sea water. See for example
     ! Masuda et al., Remote Sens. Environ., 24, 313-329, 1988.
     !
@@ -1605,7 +1634,7 @@ subroutine glitalbe(wspd, nr, ni, azw, rge)
     !                   ni=extinction coefficient of the sea water
     !                   azw=azim. of sun - azim. of wind (in deg.)
     ! output parameter: rge=spherical albedo of the sun glint
-    !
+
     real nr, ni, azw, phw, rge, q, wspd, prefl, proba, pr, pp, fac
     real sigma, sigmaC, sigmaU, C21, C03, C40, C04, C22
     real costt, hta, htb, hfa, cotb, cota, cofa, diff, coef
@@ -1718,10 +1747,10 @@ end subroutine glitalbe
 
 subroutine getbound(xvals, ifirst, ilast, x, ind1, ind2)
 
-    !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-    !     DESCRIPTION: FINDS THE BOUNDS XVALS(IND1) AND XVALS(IND2)
-    !                  FOR WHICH X IS BOUNDED.
-    !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    ! Description: finds the bounds xvals(ind1) and xvals(ind2)
+    !   for which x is bounded.
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
     real xvals(*), x
     integer ind1, ind2, ifirst, ilast, i, imid
