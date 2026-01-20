@@ -49,10 +49,10 @@ real function GAMMLN(XX)
     TMP = X + FPF
     TMP = (X + HALF)*log(TMP) - TMP
     SER = ONE
-    do 11 J = 1, 6
+    do J = 1, 6
         X = X + ONE
         SER = SER + COF(J)/X
-11  end do
+    end do
     GAMMLN = TMP + log(STP*SER)
     return
 end function
@@ -386,19 +386,19 @@ subroutine REFWAT(IUNIT, XLAM, T, RN, CN, ABSIND, ABSCOF)
 
     ! REGION FROM 0.2 MICRON TO 1000.0 MICRON  -  TABLE LOOKUP
 
-    if (WL .gt. CUTWAT) GO TO 3
+    if (WL .gt. CUTWAT) goto 3
     do 1 I = 2, NUMWAT
-        if (WL .gt. WLTABW(I)) GO TO 1
+        if (WL .gt. WLTABW(I)) goto 1
         I1 = I - 1
         I2 = I
-        GO TO 2
+        goto 2
 1   end do
     I1 = NUMWAT - 1
     I2 = NUMWAT
 2   FAC = (WL - WLTABW(I1))/(WLTABW(I2) - WLTABW(I1))
     RN = RNTABW(I1) + FAC*(RNTABW(I2) - RNTABW(I1))
     CN = CNTABW(I1) + FAC*(CNTABW(I2) - CNTABW(I1))
-    GO TO 5
+    goto 5
 
     ! REGION FROM 0.1 CM TO 10 CM
     !
@@ -468,7 +468,7 @@ subroutine REFWAT(IUNIT, XLAM, T, RN, CN, ABSIND, ABSCOF)
     ! CORRECTION TO IMAGINARY INDEX TO ACCOUNT FOR THE
     ! REMAINING ABSORPTION BANDS - RAY EQN 8(TABLE 2)
 
-    if (WL .gt. 3000.0) GO TO 5
+    if (WL .gt. 3000.0) goto 5
     CN = CN + SM(WL, 17.0, 0.39, 0.45, 1.3)&
         & + SM(WL, 62.0, 0.41, 0.35, 1.7)&
         & + SM(WL, 300.0, 0.25, 0.47, 3.0)
@@ -905,12 +905,12 @@ subroutine REFICE(IUNIT, XLAM, T, RN, CN, ABSIND, ABSCOF)
     if (IUNIT .eq. 2) ALAM = 10000*ALAM
     if (IUNIT .eq. 3) ALAM = 10000*(1.0/ALAM)
     if (ALAM .lt. WLMIN .or. ALAM .gt. WLMAX) return
-    if (ALAM .gt. CUTICE) GO TO 10
+    if (ALAM .gt. CUTICE) goto 10
 
     ! REGION FROM 0.045 MICRONS TO 167.0 MICRONS - NO TEMPERATURE DEPEND
 
     do 1 I = 2, NWL
-        if (ALAM .lt. WL(I)) GO TO 2
+        if (ALAM .lt. WL(I)) goto 2
 1   end do
 2   X1 = ALOG(WL(I - 1))
     X2 = ALOG(WL(I))
@@ -923,7 +923,7 @@ subroutine REFICE(IUNIT, XLAM, T, RN, CN, ABSIND, ABSCOF)
     Y2 = ALOG(abs(TABIM(I)))
     Y = ((X - X1)*(Y2 - Y1)/(X2 - X1)) + Y1
     CN = exp(Y)
-    GO TO 20
+    goto 20
 
     ! REGION FROM 167.0 MICRONS TO 8.6 METERS - TEMPERATURE DEPENDENCE
 
@@ -931,12 +931,12 @@ subroutine REFICE(IUNIT, XLAM, T, RN, CN, ABSIND, ABSCOF)
     if (TK .gt. TEMREF(1)) TK = TEMREF(1)
     if (TK .lt. TEMREF(4)) TK = TEMREF(4)
     do 11 I = 2, 4
-        if (TK .ge. TEMREF(I)) GO TO 12
+        if (TK .ge. TEMREF(I)) goto 12
 11  end do
 12  LT1 = I
     LT2 = I - 1
     do 13 I = 2, NWLT
-        if (ALAM .le. WLT(I)) GO TO 14
+        if (ALAM .le. WLT(I)) goto 14
 13  end do
 14  X1 = ALOG(WLT(I - 1))
     X2 = ALOG(WLT(I))

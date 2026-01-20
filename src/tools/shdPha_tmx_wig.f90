@@ -532,12 +532,12 @@ subroutine TMATRIXWIG(wavelength, mindex, radius,&
           Z1 = (R2 - R1)*0.5d0
           Z2 = (R1 + R2)*0.5d0
           Z3 = R1*0.5d0
-          if (NDISTR .eq. 5) GO TO 3
+          if (NDISTR .eq. 5) goto 3
           do I = 1, NK
               XG1(I) = Z1*XG(I) + Z2
               WG1(I) = WG(I)*Z1
           end do
-          GO TO 4
+          goto 4
 3         do I = 1, NK
               XG1(I) = Z3*XG(I) + Z3
               WG1(I) = WG(I)*Z3
@@ -636,11 +636,11 @@ subroutine TMATRIXWIG(wavelength, mindex, radius,&
                       DQSCA = DABS(DQSCA/QSCA)
                       DQEXT = DABS(DQEXT/QEXT)
                       NMAX1 = N
-                      if (DQSCA .le. DDELT .and. DQEXT .le. DDELT) GO TO 12
+                      if (DQSCA .le. DDELT .and. DQEXT .le. DDELT) goto 12
 10                continue
 12                continue
                   ! PRINT 7335, NMAX1,DQSCA,DQEXT
-                  if (DSCA .le. DDELT .and. DEXT .le. DDELT) GO TO 55
+                  if (DSCA .le. DDELT .and. DEXT .le. DDELT) goto 55
                   if (NMA .eq. NPN1) then
                       print 7333, NPN1
                       print '(A,F9.4,A,F5.2,A,2F8.4)',&
@@ -679,7 +679,7 @@ subroutine TMATRIXWIG(wavelength, mindex, radius,&
                   ! PRINT 7337, NGGG,DSCA,DEXT
                   QEXT1 = QEXT
                   QSCA1 = QSCA
-                  if (DSCA .le. DDELT .and. DEXT .le. DDELT) GO TO 155
+                  if (DSCA .le. DDELT .and. DEXT .le. DDELT) goto 155
                   if (NGAUS .eq. NPNG1) print 7336
 150           continue
 155           continue
@@ -912,9 +912,9 @@ subroutine CONST(NGAUSS, NMAX, MMAX, P, X, W, AN, ANN, S, SS, NP, EPS)
 101       continue
 10    continue
       NG = 2*NGAUSS
-      if (NP .eq. -2) GO TO 11
+      if (NP .eq. -2) goto 11
       call GAUSS(NG, 0, 0, X, W)
-      GO TO 19
+      goto 19
 11    NG1 = dble(NGAUSS)/2d0
       NG2 = NGAUSS - NG1
       XX = -DCOS(DATAN(EPS))
@@ -1055,10 +1055,10 @@ subroutine RSP3(X, NG, NGAUSS, REV, EPS, R, DR)
       do 50 I = 1, NGAUSS
           CO = -X(I)
           SI = DSQRT(1d0 - CO*CO)
-          if (SI/CO .gt. A/H) GO TO 20
+          if (SI/CO .gt. A/H) goto 20
           RAD = H/CO
           RTHET = H*SI/(CO*CO)
-          GO TO 30
+          goto 30
 20        RAD = A/SI
           RTHET = -A*CO/(SI*SI)
 30        R(I) = RAD*RAD
@@ -1324,7 +1324,7 @@ subroutine TMATR0(NGAUSS, X, W, AN, ANN, S, SS, PPI, PIR, PII, R, DR, DDR,&
               GR21 = 0d0
               GI12 = 0d0
               GI21 = 0d0
-              if (NCHECK .eq. 1 .and. SIG(N1 + N2) .lt. 0d0) GO TO 205
+              if (NCHECK .eq. 1 .and. SIG(N1 + N2) .lt. 0d0) goto 205
 
               do 200 I = 1, NGSS
                   D1N1 = D1(I, N1)
@@ -1627,14 +1627,14 @@ subroutine TMATR(M, NGAUSS, X, W, AN, ANN, S, SS, PPI, PIR, PII, R, DR, DDR,&
                   DSSI = DSS(I)
                   RRI = RR(I)
 
-                  if (NCHECK .eq. 1 .and. SI .gt. 0d0) GO TO 150
+                  if (NCHECK .eq. 1 .and. SI .gt. 0d0) goto 150
 
                   E1 = DSI*AA1
                   AR11 = AR11 + E1*B1R
                   AI11 = AI11 + E1*B1I
                   GR11 = GR11 + E1*C1R
                   GI11 = GI11 + E1*C1I
-                  if (NCHECK .eq. 1) GO TO 160
+                  if (NCHECK .eq. 1) goto 160
 
 150               F1 = RRI*AA2
                   F2 = RRI*URI*AN1*A12
@@ -1648,7 +1648,7 @@ subroutine TMATR(M, NGAUSS, X, W, AN, ANN, S, SS, PPI, PIR, PII, R, DR, DDR,&
                   AI21 = AI21 + F1*B4I + F2*B5I
                   GR21 = GR21 + F1*C4R + F2*C5R
                   GI21 = GI21 + F1*C4I + F2*C5I
-                  if (NCHECK .eq. 1) GO TO 200
+                  if (NCHECK .eq. 1) goto 200
 
 160               E2 = DSI*URI*A11
                   E3 = E2*AN2
@@ -1761,7 +1761,7 @@ subroutine VIG(X, NMAX, M, DV1, DV2)
           DV1(N) = 0d0
           DV2(N) = 0d0
       end do
-      if (M .ne. 0) GO TO 20
+      if (M .ne. 0) goto 20
       D1 = 1d0
       D2 = X
       do N = 1, NMAX
@@ -1997,7 +1997,7 @@ subroutine GSP(NMAX, CSCA, LAM, ALF1, ALF2, ALF3, ALF4, BET1, BET2, LMAX)
                   TR2(L1, NN) = T1 - T2
                   TI1(L1, NN) = T3 + T4
                   TI2(L1, NN) = T3 - T4
-                  if (M .eq. 0) GO TO 6
+                  if (M .eq. 0) goto 6
                   L1 = NPN6 - M
                   T1 = TT1 - TT2
                   T2 = TT3 - TT4
@@ -2037,7 +2037,7 @@ subroutine GSP(NMAX, CSCA, LAM, ALF1, ALF2, ALF3, ALF4, BET1, BET2, LMAX)
                       RI1 = TI1(M1, NN)
                       RR2 = TR2(M1, NN)
                       RI2 = TI2(M1, NN)
-                      if (M .eq. 0) GO TO 12
+                      if (M .eq. 0) goto 12
                       M2 = NPN6 - M
                       RR1 = RR1 + TR1(M2, NN)*SIG
                       RI1 = RI1 + TI1(M2, NN)*SIG
@@ -2172,7 +2172,7 @@ subroutine GSP(NMAX, CSCA, LAM, ALF1, ALF2, ALF3, ALF4, BET1, BET2, LMAX)
           do 290 N = 1, NMAX
               NNMIN = MAX0(1, IABS(N - L))
               NNMAX = MIN0(NMAX, N + L)
-              if (NNMAX .lt. NNMIN) GO TO 290
+              if (NNMAX .lt. NNMIN) goto 290
               call CCG(N, L, NMAX, K1, K2, G1)
               if (L .ge. 2) call CCG(N, L, NMAX, K5, K6, G2)
               NL = N + L
@@ -2195,7 +2195,7 @@ subroutine GSP(NMAX, CSCA, LAM, ALF1, ALF2, ALF3, ALF4, BET1, BET2, LMAX)
                   SSS = G1(NPN6 + 1, NNN)*FFN
                   G1L = G1L + SSS*DM1
                   G2L = G2L + SSS*DM2*SI
-                  if (L .lt. 2) GO TO 280
+                  if (L .lt. 2) goto 280
                   DM3 = 0d0
                   DM4 = 0d0
                   DM5R = 0d0
@@ -2232,7 +2232,7 @@ subroutine GSP(NMAX, CSCA, LAM, ALF1, ALF2, ALF3, ALF4, BET1, BET2, LMAX)
           BET1(L1) = G5LR*2d0
           BET2(L1) = G5LI*2d0
           LMAX = L
-          if (DABS(G1L) .lt. 1d-6) GO TO 500
+          if (DABS(G1L) .lt. 1d-6) goto 500
 300   end do
 500   continue
       return
@@ -2299,7 +2299,7 @@ subroutine CCG(N, N1, NMAX, K1, K2, GG)
       if (NMAX .le. NPN4 .AND.&
           & 0 .le. N1 .AND. &
           & N1 .le. NMAX + N .AND.&
-          & N .ge. 1 .AND. N .le. NMAX) GO TO 1
+          & N .ge. 1 .AND. N .le. NMAX) goto 1
       print 5001
       stop
 5001  format(' ERROR IN SUBROUTINE CCG')
@@ -2311,15 +2311,15 @@ subroutine CCG(N, N1, NMAX, K1, K2, GG)
           M = MIND - NPN6
           MM = M*K1 + K2
           M1 = MM - M
-          if (IABS(M1) .gt. N1) GO TO 90
+          if (IABS(M1) .gt. N1) goto 90
           NNL = MAX0(IABS(MM), IABS(N - N1))
-          if (NNL .gt. NNF) GO TO 90
+          if (NNL .gt. NNF) goto 90
           NNU = N + N1
           NNM = (NNU + NNL)*0.5d0
           if (NNU .eq. NNL) NNM = NNL
           call CCGIN(N, N1, M, MM, C)
           CU(NNL) = C
-          if (NNL .eq. NNF) GO TO 50
+          if (NNL .eq. NNF) goto 50
           C2 = 0d0
           C1 = C
           do 7 NN = NNL + 1, MIN0(NNM, NNF)
@@ -2330,7 +2330,7 @@ subroutine CCG(N, N1, NMAX, K1, K2, GG)
               A = DSQRT(A)
               B = 0.5d0*dble(M - M1)
               D = 0d0
-              if (NN .eq. 1) GO TO 5
+              if (NN .eq. 1) goto 5
               B = dble(2*NN*(NN - 1))
               B = dble((2*M - MM)*NN*(NN - 1) - MM*N*(N + 1) +&
                   & MM*N1*(N1 + 1))/B
@@ -2344,10 +2344,10 @@ subroutine CCG(N, N1, NMAX, K1, K2, GG)
               C1 = C
               CU(NN) = C
 7         continue
-          if (NNF .le. NNM) GO TO 50
+          if (NNF .le. NNM) goto 50
           call DIRECT(N, M, N1, M1, NNU, MM, C)
           CD(NNU) = C
-          if (NNU .eq. NNM + 1) GO TO 50
+          if (NNU .eq. NNM + 1) goto 50
           C2 = 0d0
           C1 = C
           do 12 NN = NNU - 1, NNM + 1, -1
@@ -2408,15 +2408,15 @@ subroutine CCGIN(N, N1, M, MM, G)
       M1 = MM - M
       if (N .ge. IABS(M) .AND.&
           & N1 .ge. IABS(M1) .AND.&
-          & IABS(MM) .le. (N + N1)) GO TO 1
+          & IABS(MM) .le. (N + N1)) goto 1
       print 5001
       stop
 5001  format(' ERROR IN SUBROUTINE CCGIN')
-1     if (IABS(MM) .gt. IABS(N - N1)) GO TO 100
+1     if (IABS(MM) .gt. IABS(N - N1)) goto 100
       L1 = N
       L2 = N1
       L3 = M
-      if (N1 .le. N) GO TO 50
+      if (N1 .le. N) goto 50
       K = N
       N = N1
       N1 = K
@@ -2437,7 +2437,7 @@ subroutine CCGIN(N, N1, M, MM, G)
 100   A = 1d0
       L1 = M
       L2 = MM
-      if (MM .ge. 0) GO TO 150
+      if (MM .ge. 0) goto 150
       MM = -MM
       M = -M
       M1 = -M1
@@ -2455,7 +2455,7 @@ end subroutine
 
 subroutine SAREA(D, RAT)
       implicit real*8(A - H, O - Z)
-      if (D .ge. 1) GO TO 10
+      if (D .ge. 1) goto 10
       E = DSQRT(1d0 - D*D)
       R = 0.5d0*(D**(2d0/3d0) + D**(-1d0/3d0)*DASIN(E)/E)
       R = DSQRT(R)
@@ -2534,7 +2534,7 @@ double precision function ZEROIN(AX, BX, F, TOL)
       EPS = 1d0
 10    EPS = 0.5d0*EPS
       TOL1 = 1d0 + EPS
-      if (TOL1 .gt. 1d0) GO TO 10
+      if (TOL1 .gt. 1d0) goto 10
 15    A = AX
       B = BX
       FA = F(A)
@@ -2543,7 +2543,7 @@ double precision function ZEROIN(AX, BX, F, TOL)
       FC = FA
       D = B - A
       E = D
-30    if (DABS(FC) .ge. DABS(FB)) GO TO 40
+30    if (DABS(FC) .ge. DABS(FB)) goto 40
 35    A = B
       B = C
       C = A
@@ -2552,15 +2552,15 @@ double precision function ZEROIN(AX, BX, F, TOL)
       FC = FA
 40    TOL1 = 2d0*EPS*DABS(B) + 0.5d0*TOL
       XM = 0.5d0*(C - B)
-      if (DABS(XM) .le. TOL1) GO TO 90
-44    if (FB .eq. 0d0) GO TO 90
-45    if (DABS(E) .lt. TOL1) GO TO 70
-46    if (DABS(FA) .le. DABS(FB)) GO TO 70
-47    if (A .ne. C) GO TO 50
+      if (DABS(XM) .le. TOL1) goto 90
+44    if (FB .eq. 0d0) goto 90
+45    if (DABS(E) .lt. TOL1) goto 70
+46    if (DABS(FA) .le. DABS(FB)) goto 70
+47    if (A .ne. C) goto 50
 48    S = FB/FA
       P = 2d0*XM*S
       Q = 1d0 - S
-      GO TO 60
+      goto 60
 50    Q = FA/FC
       R = FB/FC
       S = FB/FA
@@ -2568,11 +2568,11 @@ double precision function ZEROIN(AX, BX, F, TOL)
       Q = (Q - 1d0)*(R - 1d0)*(S - 1d0)
 60    if (P .gt. 0d0) Q = -Q
       P = DABS(P)
-      if ((2d0*P) .ge. (3d0*XM*Q - DABS(TOL1*Q))) GO TO 70
-64    if (P .ge. DABS(0.5d0*E*Q)) GO TO 70
+      if ((2d0*P) .ge. (3d0*XM*Q - DABS(TOL1*Q))) goto 70
+64    if (P .ge. DABS(0.5d0*E*Q)) goto 70
 65    E = D
       D = P/Q
-      GO TO 80
+      goto 80
 70    D = XM
       E = D
 80    A = B
@@ -2580,8 +2580,8 @@ double precision function ZEROIN(AX, BX, F, TOL)
       if (DABS(D) .gt. TOL1) B = B + D
       if (DABS(D) .le. TOL1) B = B + DSIGN(TOL1, XM)
       FB = F(B)
-      if ((FB*(FC/DABS(FC))) .gt. 0d0) GO TO 20
-85    GO TO 30
+      if ((FB*(FC/DABS(FC))) .gt. 0d0) goto 20
+85    goto 30
 90    ZEROIN = B
       return
 end function
@@ -2625,7 +2625,7 @@ subroutine GAUSS(N, IND1, IND2, Z, W)
           CHECK = 1d-16
 10        PB = 1d0
           NITER = NITER + 1
-          if (NITER .le. 100) GO TO 15
+          if (NITER .le. 100) goto 15
           CHECK = CHECK*10d0
 15        PC = X
           DJ = A
@@ -2638,15 +2638,15 @@ subroutine GAUSS(N, IND1, IND2, Z, W)
           PA = A/((PB - X*PC)*F)
           PB = PA*PC*(A - X*X)
           X = X - PB
-          if (DABS(PB) .gt. CHECK*DABS(X)) GO TO 10
+          if (DABS(PB) .gt. CHECK*DABS(X)) goto 10
           Z(M) = X
           W(M) = PA*PA*(A - X*X)
           if (IND1 .eq. 0) W(M) = B*W(M)
-          if (I .eq. K .and. IND .eq. 1) GO TO 100
+          if (I .eq. K .and. IND .eq. 1) goto 100
           Z(I) = -Z(M)
           W(I) = W(M)
 100   end do
-      if (IND2 .ne. 1) GO TO 110
+      if (IND2 .ne. 1) goto 110
       print 1100, N
 1100  format(' ***  POINTS AND WEIGHTS OF GAUSSIAN QUADRATURE FORMULA',&
           & ' OF ', I4, '-TH ORDER')
@@ -2655,12 +2655,12 @@ subroutine GAUSS(N, IND1, IND2, Z, W)
           print 1200, I, ZZ, I, W(I)
 105   continue
 1200  format(' ', 4x, 'X(', I4, ') = ', F17.14, 5x, 'W(', I4, ') = ', F17.14)
-      GO TO 115
+      goto 115
 110   continue
 !     PRINT 1300,N
 1300  format(' GAUSSIAN QUADRATURE FORMULA OF ', I4, '-TH ORDER IS USED')
 115   continue
-      if (IND1 .eq. 0) GO TO 140
+      if (IND1 .eq. 0) goto 140
       do 120 I = 1, N
           Z(I) = (A + Z(I))/B
 120   continue
@@ -2674,10 +2674,10 @@ subroutine DISTRB(NNK, YY, WY, NDISTR, AA, BB, GAM, R1, R2, REFF,&
       & VEFF, PI)
       implicit real*8(A - H, O - Z)
       real*8 YY(NNK), WY(NNK)
-      if (NDISTR .eq. 2) GO TO 100
-      if (NDISTR .eq. 3) GO TO 200
-      if (NDISTR .eq. 4) GO TO 300
-      if (NDISTR .eq. 5) GO TO 360
+      if (NDISTR .eq. 2) goto 100
+      if (NDISTR .eq. 3) goto 200
+      if (NDISTR .eq. 4) goto 300
+      if (NDISTR .eq. 5) goto 360
       print 1001, AA, BB, GAM
 1001  format('MODIFIED GAMMA DISTRIBUTION, alpha=', F6.4, '  r_c=',&
           & F6.4, '  gamma=', F6.4)
@@ -2690,7 +2690,7 @@ subroutine DISTRB(NNK, YY, WY, NDISTR, AA, BB, GAM, R1, R2, REFF,&
           Y = Y*DEXP(-A2*(X**GAM))
           WY(I) = WY(I)*Y
 50    end do
-      GO TO 400
+      goto 400
 100   print 1002, AA, BB
 1002  format('LOG-NORMAL DISTRIBUTION, r_g=', F8.4,&
           & '  [ln(sigma_g)]**2=', F6.4)
@@ -2701,14 +2701,14 @@ subroutine DISTRB(NNK, YY, WY, NDISTR, AA, BB, GAM, R1, R2, REFF,&
           Y = DEXP(-Y*Y*0.5d0/BB)/X
           WY(I) = WY(I)*Y
 150   end do
-      GO TO 400
+      goto 400
 200   print 1003
 1003  format('POWER LAW DISTRIBUTION OF HANSEN & TRAVIS 1974')
       do 250 I = 1, NNK
           X = YY(I)
           WY(I) = WY(I)/(X*X*X)
 250   end do
-      GO TO 400
+      goto 400
 300   continue
       ! print 1004,AA,BB
 1004  format('GAMMA DISTRIBUTION,  a=', F6.3, '  b=', F6.4)
@@ -2719,7 +2719,7 @@ subroutine DISTRB(NNK, YY, WY, NDISTR, AA, BB, GAM, R1, R2, REFF,&
           X = (X**B2)*DEXP(-X*DAB)
           WY(I) = WY(I)*X
 350   end do
-      GO TO 400
+      goto 400
 360   print 1005, BB
 1005  format('MODIFIED POWER LAW DISTRIBUTION,  alpha=', D10.4)
       do 370 I = 1, NNK
@@ -2871,17 +2871,17 @@ subroutine MATR(A1, A2, A3, A4, B1, B2, LMAX, Nang, muang, scatmat)
               DL1 = dble(L1)
               F11 = F11 + A1(L1)*PP1
               F44 = F44 + A4(L1)*PP1
-              if (L .eq. LMAX) GO TO 350
+              if (L .eq. LMAX) goto 350
               PL1 = dble(2*L + 1)
               P = (PL1*U*PP1 - DL*P1)/DL1
               P1 = PP1
               PP1 = P
-350           if (L .lt. 2) GO TO 400
+350           if (L .lt. 2) goto 400
               F2 = F2 + (A2(L1) + A3(L1))*PP2
               F3 = F3 + (A2(L1) - A3(L1))*PP3
               F12 = F12 + B1(L1)*PP4
               F34 = F34 + B2(L1)*PP4
-              if (L .eq. LMAX) GO TO 400
+              if (L .eq. LMAX) goto 400
               PL2 = dble(L*L1)*U
               PL3 = dble(L1*(L*L - 4))
               PL4 = 1d0/dble(L*(L1*L1 - 4))

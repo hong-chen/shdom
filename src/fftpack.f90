@@ -1484,18 +1484,18 @@
       ns2 = n/2
 
       if (n .lt. 2) then
-          go to 106
+          goto 106
       else if (n .eq. 2) then
-          go to 101
+          goto 101
       else
-          go to 102
+          goto 102
       end if
 
   101 x1h = x(1,1)+x(1,2)
       x(1,2) = x(1,1)-x(1,2)
       x(1,1) = x1h
       return
-  102 if ( 3 < n ) go to 103
+  102 if ( 3 < n ) goto 103
       x1p3 = x(1,1)+x(1,3)
       x2 = x(1,2)
       x(1,2) = x(1,1)-x(1,3)
@@ -1518,7 +1518,7 @@
       end do
 
       modn = mod(n,2)
-      if (modn == 0) go to 124
+      if (modn == 0) goto 124
       x(1,ns2+1) = x(1,ns2+1)+x(1,ns2+1)
   124 lenx = inc*(nm1-1)  + 1
       lnsv = nm1 + int(log( real ( nm1, kind = 4 ) )/log( 2.0E+00 )) + 4
@@ -1535,7 +1535,7 @@
       fnm1s2 = real ( nm1, kind = 4 ) / 2.0E+00
       dsum = 0.5D+00 * dsum
       x(1,1) = fnm1s2*x(1,1)
-      if(mod(nm1,2) /= 0) go to 30
+      if(mod(nm1,2) /= 0) goto 30
       x(1,nm1) = x(1,nm1)+x(1,nm1)
    30 fnm1s4 = real ( nm1, kind = 4 ) / 4.0E+00
 
@@ -1625,24 +1625,24 @@
       ns2 = n/2
 
       if (n .lt. 2) then
-          go to 200
+          goto 200
       else if (n .eq. 2) then
-          go to 101
+          goto 101
       else
-          go to 102
+          goto 102
       end if
 
   101 x1h = x(1,1)+x(1,2)
       x(1,2) = 0.5E+00 * (x(1,1)-x(1,2))
       x(1,1) = 0.5E+00 * x1h
-      go to 200
-  102 if ( 3 < n ) go to 103
+      goto 200
+  102 if ( 3 < n ) goto 103
       x1p3 = x(1,1)+x(1,3)
       tx2 = x(1,2)+x(1,2)
       x(1,2) = 0.5E+00 * (x(1,1)-x(1,3))
       x(1,1) = 0.25E+00 *(x1p3+tx2)
       x(1,3) = 0.25E+00 *(x1p3-tx2)
-      go to 200
+      goto 200
   103 dsum = x(1,1)-x(1,n)
       x(1,1) = x(1,1)+x(1,n)
       do k=2,ns2
@@ -1655,7 +1655,7 @@
          x(1,kc) = t1+t2
       end do
       modn = mod(n,2)
-      if (modn == 0) go to 124
+      if (modn == 0) goto 124
       x(1,ns2+1) = x(1,ns2+1)+x(1,ns2+1)
   124 lenx = inc*(nm1-1)  + 1
       lnsv = nm1 + int(log( real ( nm1, kind = 4 ) )/log( 2.0E+00 )) + 4
@@ -1666,12 +1666,12 @@
       if (ier1 /= 0) then
         ier = 20
         call xerfft ('costf1',-5)
-        go to 200
+        goto 200
       end if
 
       snm1 = 1.0E+00 / real ( nm1, kind = 4 )
       dsum = snm1*dsum
-      if(mod(nm1,2) /= 0) go to 30
+      if(mod(nm1,2) /= 0) goto 30
       x(1,nm1) = x(1,nm1)+x(1,nm1)
    30 do i=3,n,2
          xi = 0.5E+00 * x(1,i)
@@ -1679,7 +1679,7 @@
          x(1,i-1) = dsum
          dsum = dsum+xi
       end do
-      if (modn /= 0) go to 117
+      if (modn /= 0) goto 117
       x(1,n) = dsum
   117 x(1,1) = 0.5E+00 * x(1,1)
       x(1,n) = 0.5E+00 * x(1,n)
@@ -1960,41 +1960,41 @@
          idl1 = ido*l1
          iw = iw-(ip-1)*ido
          na = 1-na
-         if (ip /= 4) go to 102
+         if (ip /= 4) goto 102
          ix2 = iw+ido
          ix3 = ix2+ido
-         if (na /= 0) go to 101
+         if (na /= 0) goto 101
          call r1f4kf (ido,l1,c,in,ch,1,wa(iw),wa(ix2),wa(ix3))
-         go to 110
+         goto 110
   101    call r1f4kf (ido,l1,ch,1,c,in,wa(iw),wa(ix2),wa(ix3))
-         go to 110
-  102    if (ip /= 2) go to 104
-         if (na /= 0) go to 103
+         goto 110
+  102    if (ip /= 2) goto 104
+         if (na /= 0) goto 103
          call r1f2kf (ido,l1,c,in,ch,1,wa(iw))
-         go to 110
+         goto 110
   103    call r1f2kf (ido,l1,ch,1,c,in,wa(iw))
-         go to 110
-  104    if (ip /= 3) go to 106
+         goto 110
+  104    if (ip /= 3) goto 106
          ix2 = iw+ido
-         if (na /= 0) go to 105
+         if (na /= 0) goto 105
          call r1f3kf (ido,l1,c,in,ch,1,wa(iw),wa(ix2))
-         go to 110
+         goto 110
   105    call r1f3kf (ido,l1,ch,1,c,in,wa(iw),wa(ix2))
-         go to 110
-  106    if (ip /= 5) go to 108
+         goto 110
+  106    if (ip /= 5) goto 108
          ix2 = iw+ido
          ix3 = ix2+ido
          ix4 = ix3+ido
-         if (na /= 0) go to 107
+         if (na /= 0) goto 107
          call r1f5kf (ido,l1,c,in,ch,1,wa(iw),wa(ix2),wa(ix3),wa(ix4))
-         go to 110
+         goto 110
   107    call r1f5kf (ido,l1,ch,1,c,in,wa(iw),wa(ix2),wa(ix3),wa(ix4))
-         go to 110
+         goto 110
   108    if (ido == 1) na = 1-na
-         if (na /= 0) go to 109
+         if (na /= 0) goto 109
          call r1fgkf (ido,ip,l1,idl1,c,c,c,in,ch,ch,1,wa(iw))
          na = 1
-         go to 110
+         goto 110
   109    call r1fgkf (ido,ip,l1,idl1,ch,ch,ch,1,c,c,in,wa(iw))
          na = 0
   110    l2 = l1
@@ -2006,7 +2006,7 @@
       modn = mod(n,2)
       nl = n-2
       if(modn /= 0) nl = n-1
-      if (na /= 0) go to 120
+      if (na /= 0) goto 120
       c(1,1) = sn*ch(1)
       do 118 j=2,nl,2
          c(1,j) = tsn*ch(j)
@@ -2112,34 +2112,34 @@
   101 j = j+1
 
       if (j .le. 4) then
-          go to 102
+          goto 102
       else
-          go to 103
+          goto 103
       end if
 
   102 ntry = ntryh(j)
-      go to 104
+      goto 104
   103 ntry = ntry+2
   104 nq = nl/ntry
       nr = nl-ntry*nq
 
       if (nr .eq. 0) then
-          go to 105
+          goto 105
       else
-          go to 101
+          goto 101
       end if
 
   105 nf = nf+1
       fac(nf+2) = ntry
       nl = nq
-      if (ntry /= 2) go to 107
-      if (nf == 1) go to 107
+      if (ntry /= 2) goto 107
+      if (nf == 1) goto 107
       do 106 i=2,nf
          ib = nf-i+2
          fac(ib+2) = fac(ib+1)
   106 continue
       fac(3) = 2
-  107 if (nl /= 1) go to 104
+  107 if (nl /= 1) goto 104
       fac(1) = n
       fac(2) = nf
       tpi = 8.0D+00 * atan ( 1.0D+00 )
@@ -2231,11 +2231,11 @@
       end do
 
       if (ido .lt. 2) then
-         go to 107
+         goto 107
       else if (ido .eq. 2) then
-         go to 105
+         goto 105
       else
-         go to 102
+         goto 102
       end if
 
   102 idp2 = ido+2
@@ -2437,11 +2437,11 @@
       end do
 
       if (ido .lt. 2) then
-          go to 107
+          goto 107
       else if (ido .eq. 2) then
-          go to 105
+          goto 105
       else
-          go to 102
+          goto 102
       end if
 
   102 idp2 = ido+2
@@ -2766,7 +2766,7 @@
       idp2 = ido+2
       nbd = (ido-1)/2
 
-      if (ido == 1) go to 119
+      if (ido == 1) goto 119
 
       do ik=1,idl1
          ch2(1,ik,1) = c2(1,ik,1)
@@ -2778,7 +2778,7 @@
          end do
       end do
 
-      if ( l1 < nbd ) go to 107
+      if ( l1 < nbd ) goto 107
       is = -ido
       do 106 j=2,ip
          is = is+ido
@@ -2791,7 +2791,7 @@
   104       continue
   105    continue
   106 continue
-      go to 111
+      goto 111
   107 is = -ido
       do 110 j=2,ip
          is = is+ido
@@ -2804,7 +2804,7 @@
   108       continue
   109    continue
   110 continue
-  111 if (nbd < l1) go to 115
+  111 if (nbd < l1) goto 115
       do 114 j=2,ipph
          jc = ipp2-j
          do 113 k=1,l1
@@ -2816,7 +2816,7 @@
   112       continue
   113    continue
   114 continue
-      go to 121
+      goto 121
   115 do 118 j=2,ipph
          jc = ipp2-j
          do 117 i=3,ido,2
@@ -2828,7 +2828,7 @@
   116       continue
   117    continue
   118 continue
-      go to 121
+      goto 121
   119 do 120 ik=1,idl1
          c2(1,ik,1) = ch2(1,ik,1)
   120 continue
@@ -2872,13 +2872,13 @@
   128    continue
   129 continue
 
-      if (ido < l1) go to 132
+      if (ido < l1) goto 132
       do 131 k=1,l1
          do 130 i=1,ido
             cc(1,i,1,k) = ch(1,i,k,1)
   130    continue
   131 continue
-      go to 135
+      goto 135
   132 do 134 i=1,ido
          do 133 k=1,l1
             cc(1,i,1,k) = ch(1,i,k,1)
@@ -2893,7 +2893,7 @@
   136    continue
   137 continue
       if (ido == 1) return
-      if (nbd < l1) go to 141
+      if (nbd < l1) goto 141
       do 140 j=2,ipph
          jc = ipp2-j
          j2 = j+j

@@ -652,7 +652,7 @@ subroutine shd_util__computeGaussQuad(N, XA, WT)
         XP = x
         x = XP - PL/DPL
         I = I + 1
-        if (abs(x - XP) .gt. TINY .and. I .lt. 10) GO TO 100
+        if (abs(x - XP) .gt. TINY .and. I .lt. 10) goto 100
         XA(J) = -x
         XA(J + K) = x
         WT(J) = 2.0d0/((1.0d0 - x*x)*DPL*DPL)
@@ -703,7 +703,7 @@ subroutine shd_util__computeDbleGaussQuad(N, XA, WT)
         XP = x
         x = XP - PL/DPL
         I = I + 1
-        if (abs(x - XP) .gt. TINY .and. I .lt. 10) GO TO 100
+        if (abs(x - XP) .gt. TINY .and. I .lt. 10) goto 100
         XA(J + N2) = (1 + x)/2
         XA(N2 + 1 - J + N2) = (1 - x)/2
         WT(J + N2) = 1/((1 - x*x)*DPL*DPL)
@@ -915,7 +915,7 @@ subroutine shd_util__ssort_i(x, y, N, kFlag)
 10      continue
      end if
 
-    if (KK .eq. 2) GO TO 100
+    if (KK .eq. 2) goto 100
 
     ! Sort x only
     M = 1
@@ -923,7 +923,7 @@ subroutine shd_util__ssort_i(x, y, N, kFlag)
     J = NN
     R = 0.375e0
 
-20  if (I .eq. J) GO TO 60
+20  if (I .eq. J) goto 60
     if (R .le. 0.5898437e0) then
         R = R + 3.90625e-2
     else
@@ -961,19 +961,19 @@ subroutine shd_util__ssort_i(x, y, N, kFlag)
     ! Find an element in the second half of the array which is smaller
     ! than T
 40  L = L - 1
-    if (x(L) .gt. T) GO TO 40
+    if (x(L) .gt. T) goto 40
 
     ! Find an element in the first half of the array which is greater
     ! than T
 50  K = K + 1
-    if (x(K) .lt. T) GO TO 50
+    if (x(K) .lt. T) goto 50
 
     ! Interchange these elements
     if (K .le. L) then
         TT = x(L)
         x(L) = x(K)
         x(K) = TT
-        GO TO 40
+        goto 40
     end if
 
     ! Save upper and lower subscripts of the array yet to be sorted
@@ -988,29 +988,29 @@ subroutine shd_util__ssort_i(x, y, N, kFlag)
         J = L
         M = M + 1
     end if
-    GO TO 70
+    goto 70
 
     ! Begin again on another portion of the unsorted array
 60  M = M - 1
-    if (M .eq. 0) GO TO 190
+    if (M .eq. 0) goto 190
     I = IL(M)
     J = IU(M)
 
-70  if (J - I .ge. 1) GO TO 30
-    if (I .eq. 1) GO TO 20
+70  if (J - I .ge. 1) goto 30
+    if (I .eq. 1) goto 20
     I = I - 1
 
 80  I = I + 1
-    if (I .eq. J) GO TO 60
+    if (I .eq. J) goto 60
     T = x(I + 1)
-    if (x(I) .le. T) GO TO 80
+    if (x(I) .le. T) goto 80
     K = I
 
 90  x(K + 1) = x(K)
     K = K - 1
-    if (T .lt. x(K)) GO TO 90
+    if (T .lt. x(K)) goto 90
     x(K + 1) = T
-    GO TO 80
+    goto 80
 
     ! Sort x and carry y along
 100 M = 1
@@ -1018,7 +1018,7 @@ subroutine shd_util__ssort_i(x, y, N, kFlag)
     J = NN
     R = 0.375e0
 
-110 if (I .eq. J) GO TO 150
+110 if (I .eq. J) goto 150
     if (R .le. 0.5898437e0) then
         R = R + 3.90625e-2
     else
@@ -1066,12 +1066,12 @@ subroutine shd_util__ssort_i(x, y, N, kFlag)
     ! Find an element in the second half of the array which is smaller
     ! than T
 130 L = L - 1
-    if (x(L) .gt. T) GO TO 130
+    if (x(L) .gt. T) goto 130
 
     ! Find an element in the first half of the array which is greater
     ! than T
 140 K = K + 1
-    if (x(K) .lt. T) GO TO 140
+    if (x(K) .lt. T) goto 140
 
     ! Interchange these elements
     if (K .le. L) then
@@ -1081,7 +1081,7 @@ subroutine shd_util__ssort_i(x, y, N, kFlag)
         TTY = y(L)
         y(L) = y(K)
         y(K) = TTY
-        GO TO 130
+        goto 130
     end if
 
     ! Save upper and lower subscripts of the array yet to be sorted
@@ -1096,32 +1096,32 @@ subroutine shd_util__ssort_i(x, y, N, kFlag)
         J = L
         M = M + 1
     end if
-    GO TO 160
+    goto 160
 
     ! Begin again on another portion of the unsorted array
 150 M = M - 1
-    if (M .eq. 0) GO TO 190
+    if (M .eq. 0) goto 190
     I = IL(M)
     J = IU(M)
 
-160 if (J - I .ge. 1) GO TO 120
-    if (I .eq. 1) GO TO 110
+160 if (J - I .ge. 1) goto 120
+    if (I .eq. 1) goto 110
     I = I - 1
 
 170 I = I + 1
-    if (I .eq. J) GO TO 150
+    if (I .eq. J) goto 150
     T = x(I + 1)
     TY = y(I + 1)
-    if (x(I) .le. T) GO TO 170
+    if (x(I) .le. T) goto 170
     K = I
 
 180 x(K + 1) = x(K)
     y(K + 1) = y(K)
     K = K - 1
-    if (T .lt. x(K)) GO TO 180
+    if (T .lt. x(K)) goto 180
     x(K + 1) = T
     y(K + 1) = TY
-    GO TO 170
+    goto 170
 
     ! Clean up
 190 if (kFlag .le. -1) then
@@ -1207,7 +1207,7 @@ subroutine shd_util__ssort_r(x, y, N, kFlag)
 10      continue
      end if
 
-    if (KK .eq. 2) GO TO 100
+    if (KK .eq. 2) goto 100
 
     ! Sort x only
     M = 1
@@ -1215,7 +1215,7 @@ subroutine shd_util__ssort_r(x, y, N, kFlag)
     J = NN
     R = 0.375e0
 
-20  if (I .eq. J) GO TO 60
+20  if (I .eq. J) goto 60
     if (R .le. 0.5898437e0) then
         R = R + 3.90625e-2
     else
@@ -1253,19 +1253,19 @@ subroutine shd_util__ssort_r(x, y, N, kFlag)
     ! Find an element in the second half of the array which is smaller
     ! than T
 40  L = L - 1
-    if (x(L) .gt. T) GO TO 40
+    if (x(L) .gt. T) goto 40
 
     ! Find an element in the first half of the array which is greater
     ! than T
 50  K = K + 1
-    if (x(K) .lt. T) GO TO 50
+    if (x(K) .lt. T) goto 50
 
     ! Interchange these elements
     if (K .le. L) then
         TT = x(L)
         x(L) = x(K)
         x(K) = TT
-        GO TO 40
+        goto 40
     end if
 
     ! Save upper and lower subscripts of the array yet to be sorted
@@ -1280,29 +1280,29 @@ subroutine shd_util__ssort_r(x, y, N, kFlag)
         J = L
         M = M + 1
     end if
-    GO TO 70
+    goto 70
 
     ! Begin again on another portion of the unsorted array
 60  M = M - 1
-    if (M .eq. 0) GO TO 190
+    if (M .eq. 0) goto 190
     I = IL(M)
     J = IU(M)
 
-70  if (J - I .ge. 1) GO TO 30
-    if (I .eq. 1) GO TO 20
+70  if (J - I .ge. 1) goto 30
+    if (I .eq. 1) goto 20
     I = I - 1
 
 80  I = I + 1
-    if (I .eq. J) GO TO 60
+    if (I .eq. J) goto 60
     T = x(I + 1)
-    if (x(I) .le. T) GO TO 80
+    if (x(I) .le. T) goto 80
     K = I
 
 90  x(K + 1) = x(K)
     K = K - 1
-    if (T .lt. x(K)) GO TO 90
+    if (T .lt. x(K)) goto 90
     x(K + 1) = T
-    GO TO 80
+    goto 80
 
     ! Sort x and carry y along
 100 M = 1
@@ -1310,7 +1310,7 @@ subroutine shd_util__ssort_r(x, y, N, kFlag)
     J = NN
     R = 0.375e0
 
-110 if (I .eq. J) GO TO 150
+110 if (I .eq. J) goto 150
     if (R .le. 0.5898437e0) then
         R = R + 3.90625e-2
     else
@@ -1358,12 +1358,12 @@ subroutine shd_util__ssort_r(x, y, N, kFlag)
     ! Find an element in the second half of the array which is smaller
     ! than T
 130 L = L - 1
-    if (x(L) .gt. T) GO TO 130
+    if (x(L) .gt. T) goto 130
 
     ! Find an element in the first half of the array which is greater
     ! than T
 140 K = K + 1
-    if (x(K) .lt. T) GO TO 140
+    if (x(K) .lt. T) goto 140
 
     ! Interchange these elements
     if (K .le. L) then
@@ -1373,7 +1373,7 @@ subroutine shd_util__ssort_r(x, y, N, kFlag)
         TTY = y(L)
         y(L) = y(K)
         y(K) = TTY
-        GO TO 130
+        goto 130
     end if
 
     ! Save upper and lower subscripts of the array yet to be sorted
@@ -1388,32 +1388,32 @@ subroutine shd_util__ssort_r(x, y, N, kFlag)
         J = L
         M = M + 1
     end if
-    GO TO 160
+    goto 160
 
     ! Begin again on another portion of the unsorted array
 150 M = M - 1
-    if (M .eq. 0) GO TO 190
+    if (M .eq. 0) goto 190
     I = IL(M)
     J = IU(M)
 
-160 if (J - I .ge. 1) GO TO 120
-    if (I .eq. 1) GO TO 110
+160 if (J - I .ge. 1) goto 120
+    if (I .eq. 1) goto 110
     I = I - 1
 
 170 I = I + 1
-    if (I .eq. J) GO TO 150
+    if (I .eq. J) goto 150
     T = x(I + 1)
     TY = y(I + 1)
-    if (x(I) .le. T) GO TO 170
+    if (x(I) .le. T) goto 170
     K = I
 
 180 x(K + 1) = x(K)
     y(K + 1) = y(K)
     K = K - 1
-    if (T .lt. x(K)) GO TO 180
+    if (T .lt. x(K)) goto 180
     x(K + 1) = T
     y(K + 1) = TY
-    GO TO 170
+    goto 170
 
     ! Clean up
 190 if (kFlag .le. -1) then

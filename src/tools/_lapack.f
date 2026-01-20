@@ -721,7 +721,7 @@
 *     ..
 *     .. Executable Statements ..
 *
-      GO TO ( 100, 100, 100, 400, 500, 600, 700, 800, 900, 1000,
+      goto ( 100, 100, 100, 400, 500, 600, 700, 800, 900, 1000,
      $        1100 ) ISPEC
 *
 *     Invalid value for ISPEC
@@ -790,7 +790,7 @@
       C3 = SUBNAM( 4:6 )
       C4 = C3( 2:3 )
 *
-      GO TO ( 110, 200, 300 ) ISPEC
+      goto ( 110, 200, 300 ) ISPEC
 *
   110 CONTINUE
 *
@@ -1824,7 +1824,7 @@ c
       if( n.lt.1 .or. incx.le.0 )return
       izamax = 1
       if(n.eq.1)return
-      if(incx.eq.1)go to 20
+      if(incx.eq.1)goto 20
 c
 c        code for increment not equal to 1
 c
@@ -1832,7 +1832,7 @@ c
       smax = dcabs1(zx(1))
       ix = ix + incx
       do 10 i = 2,n
-         if(dcabs1(zx(ix)).le.smax) go to 5
+         if(dcabs1(zx(ix)).le.smax) goto 5
          izamax = i
          smax = dcabs1(zx(ix))
     5    ix = ix + incx
@@ -1843,7 +1843,7 @@ c        code for increment equal to 1
 c
    20 smax = dcabs1(zx(1))
       do 30 i = 2,n
-         if(dcabs1(zx(i)).le.smax) go to 30
+         if(dcabs1(zx(i)).le.smax) goto 30
          izamax = i
          smax = dcabs1(zx(i))
    30 continue
@@ -1869,7 +1869,7 @@ c
       integer i,incx,incy,ix,iy,n
 c
       if(n.le.0)return
-      if(incx.eq.1.and.incy.eq.1)go to 20
+      if(incx.eq.1.and.incy.eq.1)goto 20
 c
 c       code for unequal increments or equal increments not equal
 c         to 1
@@ -1907,7 +1907,7 @@ c
       integer i,incx,ix,n
 c
       if( n.le.0 .or. incx.le.0 )return
-      if(incx.eq.1)go to 20
+      if(incx.eq.1)goto 20
 c
 c        code for increment not equal to 1
 c

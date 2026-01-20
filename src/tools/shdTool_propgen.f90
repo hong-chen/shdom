@@ -492,7 +492,7 @@ contains
 10          continue
         end if
 
-        if (KK .eq. 2) GO TO 100
+        if (KK .eq. 2) goto 100
 
         ! Sort X only
         M = 1
@@ -500,7 +500,7 @@ contains
         J = NN
         R = 0.375e0
 
-20      if (I .eq. J) GO TO 60
+20      if (I .eq. J) goto 60
         if (R .le. 0.5898437e0) then
             R = R + 3.90625e-2
         else
@@ -532,16 +532,16 @@ contains
         end if
         ! Find an element in the second half of the array which is smaller than T
 40      L = L - 1
-        if (X(L) .gt. T) GO TO 40
+        if (X(L) .gt. T) goto 40
         ! Find an element in the first half of the array which is greater than T
 50      K = K + 1
-        if (X(K) .lt. T) GO TO 50
+        if (X(K) .lt. T) goto 50
         ! Interchange these elements
         if (K .le. L) then
             TT = X(L)
             X(L) = X(K)
             X(K) = TT
-            GO TO 40
+            goto 40
         end if
         ! Save upper and lower subscripts of the array yet to be sorted
         if (L - I .gt. J - K) then
@@ -555,31 +555,31 @@ contains
             J = L
             M = M + 1
         end if
-        GO TO 70
+        goto 70
         ! Begin again on another portion of the unsorted array
 60      M = M - 1
-        if (M .eq. 0) GO TO 190
+        if (M .eq. 0) goto 190
         I = IL(M)
         J = IU(M)
-70      if (J - I .ge. 1) GO TO 30
-        if (I .eq. 1) GO TO 20
+70      if (J - I .ge. 1) goto 30
+        if (I .eq. 1) goto 20
         I = I - 1
 80      I = I + 1
-        if (I .eq. J) GO TO 60
+        if (I .eq. J) goto 60
         T = X(I + 1)
-        if (X(I) .le. T) GO TO 80
+        if (X(I) .le. T) goto 80
         K = I
 90      X(K + 1) = X(K)
         K = K - 1
-        if (T .lt. X(K)) GO TO 90
+        if (T .lt. X(K)) goto 90
         X(K + 1) = T
-        GO TO 80
+        goto 80
         ! Sort X and carry Y along
 100     M = 1
         I = 1
         J = NN
         R = 0.375e0
-110     if (I .eq. J) GO TO 150
+110     if (I .eq. J) goto 150
         if (R .le. 0.5898437e0) then
             R = R + 3.90625e-2
         else
@@ -620,10 +620,10 @@ contains
         end if
         ! Find an element in the second half of the array which is smaller than T
 130     L = L - 1
-        if (X(L) .gt. T) GO TO 130
+        if (X(L) .gt. T) goto 130
         ! Find an element in the first half of the array which is greater than T
 140     K = K + 1
-        if (X(K) .lt. T) GO TO 140
+        if (X(K) .lt. T) goto 140
         ! Interchange these elements
         if (K .le. L) then
              TT = X(L)
@@ -632,7 +632,7 @@ contains
              TTY = Y(L)
              Y(L) = Y(K)
              Y(K) = TTY
-             GO TO 130
+             goto 130
         end if
         ! Save upper and lower subscripts of the array yet to be sorted
         if (L - I .gt. J - K) then
@@ -646,29 +646,29 @@ contains
             J = L
             M = M + 1
         end if
-        GO TO 160
+        goto 160
 
         ! Begin again on another portion of the unsorted array
 150     M = M - 1
-        if (M .eq. 0) GO TO 190
+        if (M .eq. 0) goto 190
         I = IL(M)
         J = IU(M)
-160     if (J - I .ge. 1) GO TO 120
-        if (I .eq. 1) GO TO 110
+160     if (J - I .ge. 1) goto 120
+        if (I .eq. 1) goto 110
         I = I - 1
 170     I = I + 1
-        if (I .eq. J) GO TO 150
+        if (I .eq. J) goto 150
         T = X(I + 1)
         TY = Y(I + 1)
-        if (X(I) .le. T) GO TO 170
+        if (X(I) .le. T) goto 170
         K = I
 180     X(K + 1) = X(K)
         Y(K + 1) = Y(K)
         K = K - 1
-        if (T .lt. X(K)) GO TO 180
+        if (T .lt. X(K)) goto 180
         X(K + 1) = T
         Y(K + 1) = TY
-        GO TO 170
+        goto 170
 !       Clean up
 190     if (KFLAG .le. -1) then
             do 200 I = 1, NN
