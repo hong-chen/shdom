@@ -228,7 +228,7 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, waveLen,&
             end if
 
             dPhi = phiInc-phiOut
-            call shd_sfc__brdfOcean(waveLen, REFPARMS(1), REFPARMS(2), -1.0, &
+            call shd_sfc__brdfOcean(waveLen, REFPARMS(1), REFPARMS(2), phiInc, -1.0, &
                 & -muInc, muOut, dPhi, phiInc, refBRDF(1, 1))
 
         case ('R', 'r')
@@ -307,7 +307,7 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, waveLen,&
                 case (1)
 
                     dPhi = phiInc-phiOut
-                    call shd_sfc__brdfOcean(waveLen, REFPARMS(1), REFPARMS(2), -1.0, &
+                    call shd_sfc__brdfOcean(waveLen, REFPARMS(1), REFPARMS(2), phiInc, -1.0, &
                         & -muInc, muOut, dPhi, phiInc, refBRDF(1, 1))
 
                 ! 2.0
@@ -1164,8 +1164,8 @@ subroutine shd_sfc__brdfJiao(muInc, muOut, PHI, ALPHA, NORMALIZE, K_J)
 end subroutine shd_sfc__brdfJiao
 
 subroutine shd_sfc__brdfOcean(&
-    wvl, wspd, pcl, xsal, &
-    muInc, muOut, dPhiSV, dPhiSW, &
+    wvl, wspd, pcl, phiW, xsal, &
+    muInc, muOut, dPhi, phiS, &
     refBRDF)
 
     ! Description:
@@ -1177,19 +1177,20 @@ subroutine shd_sfc__brdfOcean(&
     !   wvl   : wavelength of the computation (in micrometer)
     !   wspd  : wind speed (in m/s) [value not allowed below 0.25 m/s]
     !   pcl   : pigment concentration (in mg/m^3)
+    !   phiW  : azimuth wind direction (in radians)
     !   xsal  : salinity (in ppt) [if xsal<0 then 34.3ppt by default]
     !   muInc : cosine of the zenith angle of the incident radiation
     !   muOut : cosine of the zenith angle of the reflected radiation
-    !   dPhiSV: relative azimuth angle (between 0 and 2*pi, in radians)
-    !   dPhiSW: azimuth of sun - azimuth of wind (in radians)
+    !   dPhi  : relative azimuth angle (between 0 and 2*pi, in radians)
+    !   phiS  : azimuth of sun
     !
     !   note:
     !   Originally, the following settings is enabled:
     !     For the direct solar radiation, the wind direction
     !     is fixed at the azimuth angle of 0 degree so that
-    !     the azimuth angle of the sun = dPhiSW.
+    !     phiW = 0.0
     !   Now after benchmarking with libRadtran
-    !     dPhiSW is set to 0, which means wind direction is
+    !     phiW is set to phiS, which means wind direction is
     !     the same as the direction of Sun
     !
     ! Output:
@@ -1221,23 +1222,29 @@ subroutine shd_sfc__brdfOcean(&
     ! Austin, R. W.: The remote sensing of spectral radiance from below the
     !   ocean surface, in: Optical Aspects of Oceanography, Academic Press, 1974.
 
-
-    real, intent(in)  :: wspd, xsal, pcl, wvl
-    real, intent(in)  :: muInc, muOut, dPhiSV, dPhiSW
+    real, intent(in)  :: wvl, wspd, pcl, phiW, xsal
+    real, intent(in)  :: muInc, muOut, dPhi, phiS
     real, intent(out) :: refBRDF
 
-    real :: nr, ni, windSpeed, waveLen, phiSV
+    real :: nr, ni, windSpeed, waveLen, phiSV, phiSW
     real :: angZenView, angZenSun, angAziSunView, angAziSunWind
     real :: propWC, refWC, refGL, refSW
 
     ! relative azimuth between Sun and Viewer (0 to 2PI)
-    if (dPhiSV .lt. 0.0) then
-        phiSV = dPhiSV + 2.0*pi_
-    else if (dPhiSV .ge. 2.0*pi_) then
-        phiSV = dPhiSV - 2.0*pi_
+    if (dPhi .lt. 0.0) then
+        phiSV = dPhi + 2.0*pi_
+    else if (dPhi .ge. 2.0*pi_) then
+        phiSV = dPhi - 2.0*pi_
     else
-        phiSV = dPhiSV
+        phiSV = dPhi
     end if
+
+    ! relative azimuth between Sun and Wind (0 to 2PI)
+    ! note: disabled Sun-Wind azimuthal difference (phiW=phiS)
+    !       after being disabled, calculations agree perfectly with libRadtran
+    phiSW = phiS - phiW
+    if (phiSW .lt. 0.0)     phiSW = phiSW + 2.0*pi_
+    if (phiSW .ge. 2.0*pi_) phiSW = phiSW - 2.0*pi_
 
     ! solar zenith angle
     if (muInc .le. 0.028) then
@@ -1277,10 +1284,7 @@ subroutine shd_sfc__brdfOcean(&
 
     ! refGL: reflectance from sunglint (specular)
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    ! note: disabled Sun-Wind azimuthal difference (angAziSunWind = 0.0)
-    !       after being disabled, calculations agree perfectly with libRadtran
-    ! angAziSunWind = dPhiSW*rad2deg_
-    angAziSunWind = 0.0
+    angAziSunWind = phiSW*rad2deg_
     angAziSunView = 180.0 - phiSV*rad2deg_
     call sunglint(windSpeed, nr, ni, angZenSun, angZenView, angAziSunWind, angAziSunView, refGL)
     !╰────────────────────────────────────────────────────────────────────────────╯!
