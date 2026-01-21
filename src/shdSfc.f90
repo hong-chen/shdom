@@ -394,7 +394,7 @@ subroutine shd_sfc__brdfFresnel(MRE, MIM, WINDSPEED,&
     real*8 VP1, VP2, VP3, DMOD, RDZ2, RDZ4, DCOEFF, DEX
     real*8 AF, AF11, AF12, AF21, AF22
     real*8 P, S1, S2, S3, XI, XXI, DCOT, T1, T2
-    real*8 SHADOWI, SHADOWR, SHADOW, DERFC
+    real*8 SHADOWI, SHADOWR, SHADOW
     complex*16 CN1, CN2, CXI2, C1, C2, CRPER, CRPAR
     complex*16 CF11, CF12, CF21, CF22
     complex*16 CI, C21, C22, CTTTP, CTTPT, CTTPP, CTPPT, CTPPP, CPTPP
@@ -402,19 +402,19 @@ subroutine shd_sfc__brdfFresnel(MRE, MIM, WINDSPEED,&
     CN1 = (1.0d0, 0.0d0)
     CN2 = cmplx(MRE, MIM)
     SIGMA2 = max(0.0005d0, 0.0015d0 + 0.00256d0*WINDSPEED)
-    DMUI = DABS(dble(MUI))
+    DMUI = abs(dble(MUI))
     DMUR = dble(MUR)
 
     ! Cartesian components of the unit vectors of the incident and
     ! scattered beams
-    if (DABS(DMUI - 1e0) .lt. 1d-10) DMUI = 0.999999999999d0
-    if (DABS(DMUR - 1e0) .lt. 1d-10) DMUR = 0.999999999999d0
-    DCOSI = DCOS(dble(PHII))
-    DSINI = DSIN(dble(PHII))
-    DCOSR = DCOS(dble(PHIR))
-    DSINR = DSIN(dble(PHIR))
-    DSI = DSQRT(1d0 - DMUI*DMUI)
-    DSR = DSQRT(1d0 - DMUR*DMUR)
+    if (abs(DMUI - 1d0) .lt. 1d-10) DMUI = 0.999999999999d0
+    if (abs(DMUR - 1d0) .lt. 1d-10) DMUR = 0.999999999999d0
+    DCOSI = cos(dble(PHII))
+    DSINI = sin(dble(PHII))
+    DCOSR = cos(dble(PHIR))
+    DSINR = sin(dble(PHIR))
+    DSI = sqrt(1d0 - DMUI*DMUI)
+    DSR = sqrt(1d0 - DMUR*DMUR)
     VI1 = DSI*DCOSI
     VI2 = DSI*DSINI
     VI3 = -DMUI
@@ -431,7 +431,7 @@ subroutine shd_sfc__brdfFresnel(MRE, MIM, WINDSPEED,&
 
     ! Fresnel reflection coefficients
     XI1 = FACTOR*(UNIT1*VI1 + UNIT2*VI2 + UNIT3*VI3)
-    CXI2 = CDSQRT(1d0 - (1d0 - XI1*XI1)*CN1*CN1/(CN2*CN2))
+    CXI2 = sqrt(1d0 - (1d0 - XI1*XI1)*CN1*CN1/(CN2*CN2))
     C1 = CN1*XI1
     C2 = CN2*CXI2
     CRPER = (C1 - C2)/(C1 + C2)
@@ -443,14 +443,14 @@ subroutine shd_sfc__brdfFresnel(MRE, MIM, WINDSPEED,&
     TI1 = -DMUI*DCOSI
     TI2 = -DMUI*DSINI
     TI3 = -DSI
-    TR1 = DMUR*DCOSR
-    TR2 = DMUR*DSINR
+    TR1 =  DMUR*DCOSR
+    TR2 =  DMUR*DSINR
     TR3 = -DSR
     PI1 = -DSINI
-    PI2 = DCOSI
+    PI2 =  DCOSI
     PI3 = 0d0
     PR1 = -DSINR
-    PR2 = DCOSR
+    PR2 =  DCOSR
     PR3 = 0d0
     PIKR = PI1*VR1 + PI2*VR2 + PI3*VR3
     PRKI = PR1*VI1 + PR2*VI2 + PR3*VI3
@@ -460,10 +460,10 @@ subroutine shd_sfc__brdfFresnel(MRE, MIM, WINDSPEED,&
     E2 = TIKR*TRKI
     E3 = TIKR*PRKI
     E4 = PIKR*TRKI
-    CF11 = E1*CRPER + E2*CRPAR
+    CF11 =  E1*CRPER + E2*CRPAR
     CF12 = -E3*CRPER + E4*CRPAR
     CF21 = -E4*CRPER + E3*CRPAR
-    CF22 = E2*CRPER + E1*CRPAR
+    CF22 =  E2*CRPER + E1*CRPAR
 
     ! Calculation of the Stokes reflection matrix
     VP1 = VI2*VR3 - VI3*VR2
@@ -472,13 +472,13 @@ subroutine shd_sfc__brdfFresnel(MRE, MIM, WINDSPEED,&
     DMOD = (VP1*VP1 + VP2*VP2 + VP3*VP3)**2
     RDZ2 = UNIT3*UNIT3
     RDZ4 = RDZ2*RDZ2
-    DEX = DEXP(-(UNIT1*UNIT1 + UNIT2*UNIT2)/(2*SIGMA2*RDZ2))
+    DEX = exp(-(UNIT1*UNIT1 + UNIT2*UNIT2)/(2*SIGMA2*RDZ2))
     DCOEFF = FACT1**2*DEX/(4*DMUI*DMUR*DMOD*RDZ4*2*SIGMA2)
     AF = 0.5d0*DCOEFF
-    AF11 = CDABS(CF11)**2
-    AF12 = CDABS(CF12)**2
-    AF21 = CDABS(CF21)**2
-    AF22 = CDABS(CF22)**2
+    AF11 = abs(CF11)**2
+    AF12 = abs(CF12)**2
+    AF21 = abs(CF21)**2
+    AF22 = abs(CF22)**2
 
     refBRDF(1, 1) = (AF11 + AF12 + AF21 + AF22)*AF
     if (NSTOKES .ge. 2) then
@@ -502,33 +502,39 @@ subroutine shd_sfc__brdfFresnel(MRE, MIM, WINDSPEED,&
         refBRDF(2, 3) = (-CTTTP + CPTPP)*DCOEFF
         refBRDF(3, 1) = (-CTTPT - CTPPP)*DCOEFF
         refBRDF(3, 2) = (-CTTPT + CTPPP)*DCOEFF
-        refBRDF(3, 3) = (CTTPP + CTPPT)*DCOEFF
+        refBRDF(3, 3) = ( CTTPP + CTPPT)*DCOEFF
     end if
 
     if (NSTOKES .ge. 4) then
         refBRDF(1, 4) = -CI*(CTTTP + CPTPP)*DCOEFF
         refBRDF(2, 4) = -CI*(CTTTP - CPTPP)*DCOEFF
-        refBRDF(3, 4) = CI*(CTTPP - CTPPT)*DCOEFF
-        refBRDF(4, 1) = CI*(CTTPT + CTPPP)*DCOEFF
-        refBRDF(4, 2) = CI*(CTTPT - CTPPP)*DCOEFF
+        refBRDF(3, 4) =  CI*(CTTPP - CTPPT)*DCOEFF
+        refBRDF(4, 1) =  CI*(CTTPT + CTPPP)*DCOEFF
+        refBRDF(4, 2) =  CI*(CTTPT - CTPPP)*DCOEFF
         refBRDF(4, 3) = -CI*(CTTPP + CTPPT)*DCOEFF
         refBRDF(4, 4) = (CTTPP - CTPPT)*DCOEFF
     end if
 
     ! Shadowing
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     P = Dpi_
-    S1 = DSQRT(2*SIGMA2/P)
-    S3 = 1d0/(DSQRT(2*SIGMA2))
+    S1 = sqrt(2d0*SIGMA2/P)
+    S3 = 1d0/(sqrt(2d0*SIGMA2))
     S2 = S3*S3
     DCOT = DMUI/sqrt(1d0 - DMUI**2)
-    T1 = DEXP(-S2*DCOT**2)
-    T2 = DERFC(DCOT*S3)
+
+    T1 = exp(-S2*DCOT**2)
+    T2 = erfc(DCOT*S3)
     SHADOWI = 0.5d0*(S1*T1/DCOT - T2)
-    DCOT = DMUR/DSQRT(1d0 - DMUR**2)
-    T1 = DEXP(-S2*DCOT**2)
-    T2 = DERFC(DCOT*S3)
+
+    DCOT = DMUR/sqrt(1d0 - DMUR**2)
+    T1 = exp(-S2*DCOT**2)
+    T2 = erfc(DCOT*S3)
     SHADOWR = 0.5d0*(S1*T1/DCOT - T2)
+
     SHADOW = 1d0/(1d0 + SHADOWI + SHADOWR)
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
     refBRDF(1:NSTOKES, 1:NSTOKES) = refBRDF(1:NSTOKES, 1:NSTOKES)*SHADOW
 
     return
@@ -607,10 +613,10 @@ subroutine shd_sfc__brdfDiner(A, K, B, ZETA, SIGMA,&
     RS = (COSGAMMA - D)/(COSGAMMA + D)
 
     ! Calculate the Mueller matrix elements for Fresnel reflection (eq
-    F11 = 0.5d0*(CABS(RP)**2 + CABS(RS)**2)
-    F12 = 0.5d0*(CABS(RP)**2 - CABS(RS)**2)
+    F11 = 0.5d0*(abs(RP)**2 + abs(RS)**2)
+    F12 = 0.5d0*(abs(RP)**2 - abs(RS)**2)
     F33 = real(RP*conjg(RS))
-    F34 = -IMAG(RP*conjg(RS))
+    F34 = -aimag(RP*conjg(RS))
 
     ! Calculate facet tilt angle, beta (eq 16b)
     COSBETA = 0.5d0*(muInc + muOut)/COSGAMMA
@@ -1162,22 +1168,35 @@ subroutine shd_sfc__brdfOcean(&
     muInc, muOut, dPhiSV, dPhiSW, &
     refBRDF)
 
-    ! INPUT:  pws=wind speed (in m/s) [value not allowed below 0.25 m/s]
-    !         xsal=salinity (in ppt) [if xsal<0 then 34.3ppt by default]
-    !         pcl=pigment concentration (in mg/m^3)
-    !         waveLen=wavelength of the computation (in micrometer)
-    !         muInc=cosine of the zenith angle of the incident radiation
-    !         muOut=cosine of the zenith angle of the reflected radiation
-    !         dPhiSV=relative azimuth angle (between 0 and 2*pi)
-    !         dPhiSW=azim. of sun - azim. of wind (in radian)
-    !              For the direct solar radiation, the wind direction
-    !              is fixed at the azimuth angle of 0 degree so that
-    !              the azimuth angle of the sun = dPhiSW.
+    ! Description:
+    !   Calculate ocean BRDF based on given windspeed, pigment concentration,
+    !   salinity etc. The code was originally from 6S code (v2.1)
+    !   https://salsa.umd.edu/6spage.html
     !
-    ! OUTPUT: refBRDF=the total reflectance of the sea water
+    ! Input:
+    !   wvl   : wavelength of the computation (in micrometer)
+    !   wspd  : wind speed (in m/s) [value not allowed below 0.25 m/s]
+    !   pcl   : pigment concentration (in mg/m^3)
+    !   xsal  : salinity (in ppt) [if xsal<0 then 34.3ppt by default]
+    !   muInc : cosine of the zenith angle of the incident radiation
+    !   muOut : cosine of the zenith angle of the reflected radiation
+    !   dPhiSV: relative azimuth angle (between 0 and 2*pi, in radians)
+    !   dPhiSW: azimuth of sun - azimuth of wind (in radians)
+    !
+    !   note:
+    !   Originally, the following settings is enabled:
+    !     For the direct solar radiation, the wind direction
+    !     is fixed at the azimuth angle of 0 degree so that
+    !     the azimuth angle of the sun = dPhiSW.
+    !   Now after benchmarking with libRadtran
+    !     dPhiSW is set to 0, which means wind direction is
+    !     the same as the direction of Sun
+    !
+    ! Output:
+    !   refBRDF: the total reflectance of the sea water
     !
     ! Reference:
-    ! Original Fortran 77 code was mostly adapted from 6SV1 code, which can be
+    ! Original Fortran 77 code was mostly adapted from 6S code (v2.1), which can be
     !   referenced to the following two papers:
     !
     ! Kotchenova, S. Y., Vermote, E. F., Matarrese, R., and Klemm, F. J., Jr.:
@@ -1203,7 +1222,8 @@ subroutine shd_sfc__brdfOcean(&
     !   ocean surface, in: Optical Aspects of Oceanography, Academic Press, 1974.
 
 
-    real, intent(in)  :: wspd, xsal, pcl, wvl, muInc, muOut, dPhiSV, dPhiSW
+    real, intent(in)  :: wspd, xsal, pcl, wvl
+    real, intent(in)  :: muInc, muOut, dPhiSV, dPhiSW
     real, intent(out) :: refBRDF
 
     real :: nr, ni, windSpeed, waveLen, phiSV
