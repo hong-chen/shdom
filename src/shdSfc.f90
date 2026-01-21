@@ -58,7 +58,7 @@ module shd_sfc
     public :: shd_sfc__interpSfc
     public :: shd_sfc__brdfSurface
 
-    ! surface brdf (including ocean brdf )
+    ! surface brdf (including ocean brdf)
     !╭────────────────────────────────────────────────╮!
     public :: shd_sfc__brdfFresnel
     public :: shd_sfc__brdfDiner
@@ -68,13 +68,17 @@ module shd_sfc
     public :: shd_sfc__brdfOcean
     !╰────────────────────────────────────────────────╯!
 
-    ! ocean brdf sub-modules
+    ! ocean brdf sub-modules (originally from 6SV code,
+    !   https://salsa.umd.edu/6spage.html)
     !╭────────────────────────────────────────────────╮!
-    private :: morcasiwat
-    private :: indwat
+    private :: whitecaps
     private :: sunglint
+    private :: backscatter
+
+    private :: indwat
     private :: fresnel
-    private :: glitalbe
+    private :: morcasiwat
+
     private :: getbound
     !╰────────────────────────────────────────────────╯!
 
@@ -82,7 +86,7 @@ contains
 
 subroutine shd_sfc__interpSfc(&
     NptsBot, BCPTR, GRIDPOS, &
-    SRCTYPE, WAVENO, WAVELEN, UNITS, &
+    SRCTYPE, WAVENO, waveLen, UNITS, &
     brdf_Sfc, brdf_Rtm)
 
     !   Bilinearly interpolates the surface properties from the regular
@@ -102,7 +106,7 @@ subroutine shd_sfc__interpSfc(&
     real(kind=R__), intent(in)  :: brdf_Sfc(1:sfc_obj_%Npar, 1:sfc_obj_%Ny+1, 1:sfc_obj_%Nx+1)
     real(kind=R__), intent(out) :: brdf_Rtm(sfc_obj_%Npar, *)
 
-    real :: WAVENO(2), WAVELEN
+    real :: WAVENO(2), waveLen
     real :: GRIDPOS(3, *)
 
     integer :: igrid, ibc, ix, iy, ipar, i1, i2, i3, i4
@@ -162,7 +166,7 @@ subroutine shd_sfc__interpSfc(&
             planck = 0.0
         else
             temp = brdf_Rtm(1, ibc)
-            call shd_util__computePlanck(temp, UNITS, WAVENO, WAVELEN, planck)
+            call shd_util__computePlanck(temp, UNITS, WAVENO, waveLen, planck)
         end if
 
         brdf_Rtm(1, ibc) = planck
@@ -173,18 +177,18 @@ subroutine shd_sfc__interpSfc(&
 
 end subroutine shd_sfc__interpSfc
 
-subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
-    &MU2, PHI2, MU1, PHI1, NSTOKES, REFLECT)
+subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, waveLen,&
+    &muOut, phiOut, muInc, phiInc, NSTOKES, refBRDF)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Returns the reflection matrix for the general bidirectional
     ! reflection distribution function of the specified type (SFCTYPE).
-    ! The incident direction is (MU1,PHI1), and the outgoing direction
-    ! is (MU2,PHI2) (MU is cosine of zenith angle, and PHI is the azimuth
+    ! The incident direction is (muInc,phiInc), and the outgoing direction
+    ! is (muOut,phiOut) (MU is cosine of zenith angle, and PHI is the azimuth
     ! angle in radians).  The incident directions have mu<0 (downward),
     ! while the outgoing directions have mu>0 (upward). The reflection
     ! function is normalized so that for a Lambertian surface (uniform
-    ! reflection) the returned value (REFLECT) is simply the albedo.
+    ! reflection) the returned value (refBRDF) is simply the albedo.
     ! This routine calls the desired BRDF function, passing the
     ! appropriate parameters.  More BRDF surface types may be added easily
     ! by putting in the appropriate function calls.
@@ -203,8 +207,8 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
     character(len=1), intent(in) :: SFCTYPE
     integer :: NSTOKES
     integer :: K1, K2
-    real    :: REFPARMS(*), WAVELEN, MU1, PHI1, MU2, PHI2, REFLECT(4, 4)
-    real    :: PHIDIFF
+    real    :: REFPARMS(*), waveLen, muInc, phiInc, muOut, phiOut, refBRDF(4, 4)
+    real    :: dPhi
     integer, parameter :: iSFC_ID=7
 
     SFCTYPE_CASE: select case (SFCTYPE)
@@ -213,8 +217,8 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
 
             ! L or l: Lambertian surface BRDF is constant.
             !   (for testing, as done more efficiently by Lambertian routine
-            REFLECT(1:NSTOKES, 1:NSTOKES) = 0.0
-            REFLECT(1, 1) = REFPARMS(1)
+            refBRDF(1:NSTOKES, 1:NSTOKES) = 0.0
+            refBRDF(1, 1) = REFPARMS(1)
 
         case ('O', 'o')
 
@@ -223,9 +227,9 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
                 stop 'Error [_brdfSurface]: Ocean BRDF from 6S is only for unpolarized case.'
             end if
 
-            PHIDIFF = PHI1-PHI2
-            call shd_sfc__brdfOcean(REFPARMS(1), -1., REFPARMS(2), WAVELEN,&
-                & -MU1, MU2, PHIDIFF, PHI1, REFLECT(1, 1))
+            dPhi = phiInc-phiOut
+            call shd_sfc__brdfOcean(waveLen, REFPARMS(1), REFPARMS(2), -1.0, &
+                & -muInc, muOut, dPhi, phiInc, refBRDF(1, 1))
 
         case ('R', 'r')
 
@@ -234,9 +238,9 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
                 stop 'Error [_brdfSurface]: RPV BRDF is only for unpolarized case.'
             end if
 
-            PHIDIFF = PHI1-PHI2-pi_
+            dPhi = phiInc-phiOut-pi_
             call shd_sfc__brdfRPV(REFPARMS(1), REFPARMS(2),&
-                &REFPARMS(3), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
+                &REFPARMS(3), -muInc, muOut, dPhi, refBRDF(1, 1))
 
         case ('T', 't')
 
@@ -245,9 +249,9 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
                 stop 'Error [_brdfSurface]: LSRT BRDF is only for unpolarized case.'
             end if
 
-            PHIDIFF = PHI1-PHI2-pi_
+            dPhi = phiInc-phiOut-pi_
             call shd_sfc__brdfLSRT(REFPARMS(1), REFPARMS(2),&
-                &REFPARMS(3), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
+                &REFPARMS(3), -muInc, muOut, dPhi, refBRDF(1, 1))
 
         case ('J', 'j')
 
@@ -256,26 +260,26 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
                 stop 'Error [_brdfSurface]: LSRT-Jiao BRDF is only for unpolarized case'
             end if
 
-            !PHIDIFF = PHI1-PHI2-pi_
-            PHIDIFF = PHI1-PHI2
+            !dPhi = phiInc-phiOut-pi_
+            dPhi = phiInc-phiOut
             ! J: LSRT-Jiao model
             call shd_sfc__brdfLSRTJ(REFPARMS(1), REFPARMS(2),&
-                &REFPARMS(3), REFPARMS(4), REFPARMS(5), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
+                &REFPARMS(3), REFPARMS(4), REFPARMS(5), -muInc, muOut, dPhi, refBRDF(1, 1))
 
         case ('W', 'w')
 
             ! W: Fresnel reflection with Gaussian distribution of slopes
             call shd_sfc__brdfFresnel(REFPARMS(1), REFPARMS(2),&
-                &REFPARMS(3), MU1, MU2, PHI1, PHI2, NSTOKES, REFLECT)
+                &REFPARMS(3), muInc, muOut, phiInc, phiOut, NSTOKES, refBRDF)
 
         case ('D', 'd')
 
             ! D: Diner et al., depolarizing modified RPV + Fresnel reflection
             !   from microfacets with uniform or Gaussian distribution of s
-            PHIDIFF = PHI2 - PHI1
+            dPhi = phiOut - phiInc
             call shd_sfc__brdfDiner(REFPARMS(1), REFPARMS(2), REFPARMS(3),&
                 &REFPARMS(4), REFPARMS(5),&
-                &-MU1, MU2, PHIDIFF, NSTOKES, REFLECT)
+                &-muInc, muOut, dPhi, NSTOKES, refBRDF)
 
         case ('X', 'x')
 
@@ -296,51 +300,51 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
                 ! 0.0
                 case (0)
 
-                    REFLECT(1:NSTOKES, 1:NSTOKES) = 0.0
-                    REFLECT(1, 1) = REFPARMS(1)
+                    refBRDF(1:NSTOKES, 1:NSTOKES) = 0.0
+                    refBRDF(1, 1) = REFPARMS(1)
 
                 ! 1.0
                 case (1)
 
-                    PHIDIFF = PHI1-PHI2
-                    call shd_sfc__brdfOcean(REFPARMS(1), -1., REFPARMS(2), WAVELEN,&
-                        & -MU1, MU2, PHIDIFF, PHI1, REFLECT(1, 1))
+                    dPhi = phiInc-phiOut
+                    call shd_sfc__brdfOcean(waveLen, REFPARMS(1), REFPARMS(2), -1.0, &
+                        & -muInc, muOut, dPhi, phiInc, refBRDF(1, 1))
 
                 ! 2.0
                 case (2)
 
-                    PHIDIFF = PHI1-PHI2-pi_
+                    dPhi = phiInc-phiOut-pi_
                     call shd_sfc__brdfRPV(REFPARMS(1), REFPARMS(2),&
-                        &REFPARMS(3), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
+                        &REFPARMS(3), -muInc, muOut, dPhi, refBRDF(1, 1))
 
                 ! 3.0
                 case (3)
 
-                    PHIDIFF = PHI1-PHI2-pi_
+                    dPhi = phiInc-phiOut-pi_
                     call shd_sfc__brdfLSRT(REFPARMS(1), REFPARMS(2),&
-                        &REFPARMS(3), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
+                        &REFPARMS(3), -muInc, muOut, dPhi, refBRDF(1, 1))
 
                 ! 4.0
                 case (4)
 
-                    PHIDIFF = PHI1-PHI2
+                    dPhi = phiInc-phiOut
                     ! J: LSRT-Jiao model
                     call shd_sfc__brdfLSRTJ(REFPARMS(1), REFPARMS(2),&
-                        &REFPARMS(3), REFPARMS(4), REFPARMS(5), -MU1, MU2, PHIDIFF, REFLECT(1, 1))
+                        &REFPARMS(3), REFPARMS(4), REFPARMS(5), -muInc, muOut, dPhi, refBRDF(1, 1))
 
                 ! -1.0
                 case (-1)
 
                     call shd_sfc__brdfFresnel(REFPARMS(1), REFPARMS(2),&
-                        &REFPARMS(3), MU1, MU2, PHI1, PHI2, NSTOKES, REFLECT)
+                        &REFPARMS(3), muInc, muOut, phiInc, phiOut, NSTOKES, refBRDF)
 
                 ! -2.0
                 case (-2)
 
-                    PHIDIFF = PHI2 - PHI1
+                    dPhi = phiOut - phiInc
                     call shd_sfc__brdfDiner(REFPARMS(1), REFPARMS(2), REFPARMS(3),&
                         &REFPARMS(4), REFPARMS(5),&
-                        &-MU1, MU2, PHIDIFF, NSTOKES, REFLECT)
+                        &-muInc, muOut, dPhi, NSTOKES, refBRDF)
 
                 case default
 
@@ -360,7 +364,7 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, WAVELEN,&
 end subroutine shd_sfc__brdfSurface
 
 subroutine shd_sfc__brdfFresnel(MRE, MIM, WINDSPEED,&
-    &MUI, MUR, PHII, PHIR, NSTOKES, REFLECT)
+    &MUI, MUR, PHII, PHIR, NSTOKES, refBRDF)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
     !   Computes the polarized Fresnel reflection from a dielectric
@@ -380,7 +384,7 @@ subroutine shd_sfc__brdfFresnel(MRE, MIM, WINDSPEED,&
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     integer NSTOKES
-    real MRE, MIM, WINDSPEED, MUI, MUR, PHII, PHIR, REFLECT(4, 4)
+    real MRE, MIM, WINDSPEED, MUI, MUR, PHII, PHIR, refBRDF(4, 4)
     integer I, J
     real*8 SIGMA2, DMUI, DMUR, DCOSI, DSINI, DCOSR, DSINR, DSI, DSR
     real*8 VI1, VI2, VI3, VR1, VR2, VR3, UNIT1, UNIT2, UNIT3
@@ -476,11 +480,11 @@ subroutine shd_sfc__brdfFresnel(MRE, MIM, WINDSPEED,&
     AF21 = CDABS(CF21)**2
     AF22 = CDABS(CF22)**2
 
-    REFLECT(1, 1) = (AF11 + AF12 + AF21 + AF22)*AF
+    refBRDF(1, 1) = (AF11 + AF12 + AF21 + AF22)*AF
     if (NSTOKES .ge. 2) then
-        REFLECT(1, 2) = (AF11 - AF12 + AF21 - AF22)*AF
-        REFLECT(2, 1) = (AF11 - AF22 + AF12 - AF21)*AF
-        REFLECT(2, 2) = (AF11 - AF12 - AF21 + AF22)*AF
+        refBRDF(1, 2) = (AF11 - AF12 + AF21 - AF22)*AF
+        refBRDF(2, 1) = (AF11 - AF22 + AF12 - AF21)*AF
+        refBRDF(2, 2) = (AF11 - AF12 - AF21 + AF22)*AF
     end if
 
     CI = (0.0d0, -1.0d0)
@@ -494,21 +498,21 @@ subroutine shd_sfc__brdfFresnel(MRE, MIM, WINDSPEED,&
     CPTPP = CF21*C22
 
     if (NSTOKES .ge. 3) then
-        REFLECT(1, 3) = (-CTTTP - CPTPP)*DCOEFF
-        REFLECT(2, 3) = (-CTTTP + CPTPP)*DCOEFF
-        REFLECT(3, 1) = (-CTTPT - CTPPP)*DCOEFF
-        REFLECT(3, 2) = (-CTTPT + CTPPP)*DCOEFF
-        REFLECT(3, 3) = (CTTPP + CTPPT)*DCOEFF
+        refBRDF(1, 3) = (-CTTTP - CPTPP)*DCOEFF
+        refBRDF(2, 3) = (-CTTTP + CPTPP)*DCOEFF
+        refBRDF(3, 1) = (-CTTPT - CTPPP)*DCOEFF
+        refBRDF(3, 2) = (-CTTPT + CTPPP)*DCOEFF
+        refBRDF(3, 3) = (CTTPP + CTPPT)*DCOEFF
     end if
 
     if (NSTOKES .ge. 4) then
-        REFLECT(1, 4) = -CI*(CTTTP + CPTPP)*DCOEFF
-        REFLECT(2, 4) = -CI*(CTTTP - CPTPP)*DCOEFF
-        REFLECT(3, 4) = CI*(CTTPP - CTPPT)*DCOEFF
-        REFLECT(4, 1) = CI*(CTTPT + CTPPP)*DCOEFF
-        REFLECT(4, 2) = CI*(CTTPT - CTPPP)*DCOEFF
-        REFLECT(4, 3) = -CI*(CTTPP + CTPPT)*DCOEFF
-        REFLECT(4, 4) = (CTTPP - CTPPT)*DCOEFF
+        refBRDF(1, 4) = -CI*(CTTTP + CPTPP)*DCOEFF
+        refBRDF(2, 4) = -CI*(CTTTP - CPTPP)*DCOEFF
+        refBRDF(3, 4) = CI*(CTTPP - CTPPT)*DCOEFF
+        refBRDF(4, 1) = CI*(CTTPT + CTPPP)*DCOEFF
+        refBRDF(4, 2) = CI*(CTTPT - CTPPP)*DCOEFF
+        refBRDF(4, 3) = -CI*(CTTPP + CTPPT)*DCOEFF
+        refBRDF(4, 4) = (CTTPP - CTPPT)*DCOEFF
     end if
 
     ! Shadowing
@@ -525,14 +529,14 @@ subroutine shd_sfc__brdfFresnel(MRE, MIM, WINDSPEED,&
     T2 = DERFC(DCOT*S3)
     SHADOWR = 0.5d0*(S1*T1/DCOT - T2)
     SHADOW = 1d0/(1d0 + SHADOWI + SHADOWR)
-    REFLECT(1:NSTOKES, 1:NSTOKES) = REFLECT(1:NSTOKES, 1:NSTOKES)*SHADOW
+    refBRDF(1:NSTOKES, 1:NSTOKES) = refBRDF(1:NSTOKES, 1:NSTOKES)*SHADOW
 
     return
 
 end subroutine shd_sfc__brdfFresnel
 
 subroutine shd_sfc__brdfDiner(A, K, B, ZETA, SIGMA,&
-    &MU1, MU2, PHI, NSTOKES, REFLECT)
+    &muInc, muOut, PHI, NSTOKES, refBRDF)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
     !   Computes polarized reflection from the Diner et al. (2012) model
@@ -541,7 +545,7 @@ subroutine shd_sfc__brdfDiner(A, K, B, ZETA, SIGMA,&
     ! oriented microfacets with either a uniform or Gaussian distributio
     ! of slopes.  The three parameters of the modified-RPV model are A,
     ! and B.  The weight given to the Fresnel-microfacet term is ZETA (i
-    ! ZETA=0 then only the REFLECT(1,1) element is non-zero with the
+    ! ZETA=0 then only the refBRDF(1,1) element is non-zero with the
     ! modified-RPV model).  SIGMA is the standard deviation of microface
     ! slopes for the Gaussian orientation distribution, but if SIGMA<=0
     ! the uniform orientation distribution is used.  The complex index o
@@ -549,9 +553,9 @@ subroutine shd_sfc__brdfDiner(A, K, B, ZETA, SIGMA,&
     ! The Diner et al. (2012) model leaves out the hotspot factor of the
     ! modified RPV model (and the original RPV), but the hotspot factor
     ! included here.
-    !   The cosine of the incident zenith angle is MU1 (MU1>0), the
-    ! cosine of the outgoing zenith angle is MU2 (MU2>0), and the relati
-    ! azimuthal angle is PHI=PHI2-PHI1 (radians).
+    !   The cosine of the incident zenith angle is muInc (muInc>0), the
+    ! cosine of the outgoing zenith angle is muOut (muOut>0), and the relati
+    ! azimuthal angle is PHI=phiOut-phiInc (radians).
     !   For all formulas and definitions, see the paper:
     ! Diner, D. J., F. Xu, J. V. Martonchik, B. E. Rheingans, S. Geier,
     ! V. M. Jovanovic, A. Davis, R. A. Chipman, S. C. McClain, 2012:
@@ -561,8 +565,8 @@ subroutine shd_sfc__brdfDiner(A, K, B, ZETA, SIGMA,&
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     integer NSTOKES
-    real A, K, B, ZETA, SIGMA, MU1, MU2, PHI
-    real REFLECT(4, 4)
+    real A, K, B, ZETA, SIGMA, muInc, muOut, PHI
+    real refBRDF(4, 4)
     integer K1, K2
     real SINTH1, SINTH2, COSPHI, COSSCATANG, TAN1, TAN2, CAPG, HOT
     real GAMMA, COSGAMMA, F11, F12, F33, F34
@@ -574,21 +578,21 @@ subroutine shd_sfc__brdfDiner(A, K, B, ZETA, SIGMA,&
     !   index of refraction specified here
     SFCINDEX = cmplx(1.5, 0.0)
 
-    REFLECT(1:NSTOKES, 1:NSTOKES) = 0.0
+    refBRDF(1:NSTOKES, 1:NSTOKES) = 0.0
 
     ! The modified RPV model (Martonchik et al., 1998, IEEE-TGARS, 36,
     !   is implemented here.  Equation 6 in Diner et al. leaves out the h
-    SINTH1 = sqrt(1.0 - MU1**2)
-    SINTH2 = sqrt(1.0 - MU2**2)
+    SINTH1 = sqrt(1.0 - muInc**2)
+    SINTH2 = sqrt(1.0 - muOut**2)
     COSPHI = cos(PHI)
-    COSSCATANG = -MU1*MU2 + SINTH1*SINTH2*COSPHI
+    COSSCATANG = -muInc*muOut + SINTH1*SINTH2*COSPHI
     COSSCATANG = min(1.0, max(-1.0, COSSCATANG))
-    TAN1 = SINTH1/MU1
-    TAN2 = SINTH2/MU2
+    TAN1 = SINTH1/muInc
+    TAN2 = SINTH2/muOut
     CAPG = sqrt(abs(TAN1**2 + TAN2**2 + 2*TAN1*TAN2*COSPHI))
     HOT = 1 + (1 - A)/(1 + CAPG)
-    REFLECT(1, 1) = A*((MU1 + MU2)*MU1*MU2)**(K - 1)*exp(B*COSSCATANG)
-    REFLECT(1, 1) = REFLECT(1, 1)*HOT
+    refBRDF(1, 1) = A*((muInc + muOut)*muInc*muOut)**(K - 1)*exp(B*COSSCATANG)
+    refBRDF(1, 1) = refBRDF(1, 1)*HOT
     if (ZETA .lt. 0.0) return
 
     ! Calculate incident/reflectance angle relative to microfacet (eq 1
@@ -609,25 +613,25 @@ subroutine shd_sfc__brdfDiner(A, K, B, ZETA, SIGMA,&
     F34 = -IMAG(RP*conjg(RS))
 
     ! Calculate facet tilt angle, beta (eq 16b)
-    COSBETA = 0.5d0*(MU1 + MU2)/COSGAMMA
+    COSBETA = 0.5d0*(muInc + muOut)/COSGAMMA
 
     ! Calculate the factor before the M*P*M matrix including the distri
     !   of microfacet orientations (Gaussian for SIGMA>0) (eq 13 & 14)
     !   Note: Diner's BRDF is multiplied by pi here
     if (SIGMA .gt. 0.0) then
         H = ZETA*exp(-0.5d0*(1/COSBETA**2 - 1)/SIGMA**2)&
-            & /(8*SIGMA**2*MU2*MU1*COSBETA**4)
+            & /(8*SIGMA**2*muOut*muInc*COSBETA**4)
     else
-        H = ZETA/(8*MU2*MU1*COSBETA)
+        H = ZETA/(8*muOut*muInc*COSBETA)
     end if
 
-    REFLECT(1, 1) = REFLECT(1, 1) + H*F11
+    refBRDF(1, 1) = refBRDF(1, 1) + H*F11
 
     if (NSTOKES .ge. 2) then
         ! Calculate the polarization rotation angles (eq 20 & 21)
         SINPHI = sin(PHI)
-        ALPHA1 = atan(SINTH2*SINPHI/(MU2*SINTH1 + SINTH2*MU1*COSPHI))
-        ALPHA2 = atan(SINTH1*SINPHI/(SINTH2*MU1 + MU2*SINTH1*COSPHI))
+        ALPHA1 = atan(SINTH2*SINPHI/(muOut*SINTH1 + SINTH2*muInc*COSPHI))
+        ALPHA2 = atan(SINTH1*SINPHI/(SINTH2*muInc + muOut*SINTH1*COSPHI))
         COS2ALPHA1 = cos(2*ALPHA1)
         SIN2ALPHA1 = sin(2*ALPHA1)
         COS2ALPHA2 = cos(2*ALPHA2)
@@ -635,45 +639,45 @@ subroutine shd_sfc__brdfDiner(A, K, B, ZETA, SIGMA,&
 
         ! Calculate the rotated Mueller matrix (M*P*M) for Fresnel reflec
         !   and multiply by the H factor to get the final BRDF
-        REFLECT(1, 2) = H*F12*COS2ALPHA1
-        REFLECT(2, 1) = H*F12*COS2ALPHA2
-        REFLECT(2, 2) = H*(F11*COS2ALPHA1*COS2ALPHA2&
+        refBRDF(1, 2) = H*F12*COS2ALPHA1
+        refBRDF(2, 1) = H*F12*COS2ALPHA2
+        refBRDF(2, 2) = H*(F11*COS2ALPHA1*COS2ALPHA2&
             & + F33*SIN2ALPHA1*SIN2ALPHA2)
     end if
 
     if (NSTOKES .ge. 3) then
-        REFLECT(1, 3) = -H*F12*SIN2ALPHA1
-        REFLECT(2, 3) = H*(-F11*SIN2ALPHA1*COS2ALPHA2&
+        refBRDF(1, 3) = -H*F12*SIN2ALPHA1
+        refBRDF(2, 3) = H*(-F11*SIN2ALPHA1*COS2ALPHA2&
             & + F33*COS2ALPHA1*SIN2ALPHA2)
-        REFLECT(3, 1) = -H*F12*SIN2ALPHA2
-        REFLECT(3, 2) = H*(-F11*COS2ALPHA1*SIN2ALPHA2&
+        refBRDF(3, 1) = -H*F12*SIN2ALPHA2
+        refBRDF(3, 2) = H*(-F11*COS2ALPHA1*SIN2ALPHA2&
             & + F33*SIN2ALPHA1*COS2ALPHA2)
-        REFLECT(3, 3) = H*(F11*SIN2ALPHA1*SIN2ALPHA2&
+        refBRDF(3, 3) = H*(F11*SIN2ALPHA1*SIN2ALPHA2&
             & + F33*COS2ALPHA1*COS2ALPHA2)
     end if
 
     if (NSTOKES .ge. 4) then
-        REFLECT(1, 4) = 0.0
-        REFLECT(2, 4) = H*F34*SIN2ALPHA2
-        REFLECT(3, 4) = H*F34*COS2ALPHA2
-        REFLECT(4, 1) = 0.0
-        REFLECT(4, 2) = -H*F34*SIN2ALPHA1
-        REFLECT(4, 3) = -H*F34*COS2ALPHA1
-        REFLECT(4, 4) = H*F33
+        refBRDF(1, 4) = 0.0
+        refBRDF(2, 4) = H*F34*SIN2ALPHA2
+        refBRDF(3, 4) = H*F34*COS2ALPHA2
+        refBRDF(4, 1) = 0.0
+        refBRDF(4, 2) = -H*F34*SIN2ALPHA1
+        refBRDF(4, 3) = -H*F34*COS2ALPHA1
+        refBRDF(4, 4) = H*F33
     end if
 
     return
 
 end subroutine shd_sfc__brdfDiner
 
-subroutine shd_sfc__brdfRPV(RHO0, K, THETA, MU1, MU2, PHI, REFLECT)
+subroutine shd_sfc__brdfRPV(RHO0, K, THETA, muInc, muOut, PHI, refBRDF)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
     !   Computes the Rahman, Pinty, Verstraete BRDF.  The incident
-    ! and outgoing cosine zenith angles are MU1 and MU2, respectively,
+    ! and outgoing cosine zenith angles are muInc and muOut, respectively,
     ! and the relative azimuthal angle is PHI.  In this case the incident
     ! direction is where the radiation is coming from (i.e. opposite of
-    ! discrete ordinate), so MU1>0 and the hot spot is MU2=MU1 and PHI=0
+    ! discrete ordinate), so muInc>0 and the hot spot is muOut=muInc and PHI=0
     ! The reference is:
     !   Rahman, Pinty, Verstraete, 1993: Coupled Surface-Atmosphere
     !   Reflectance (CSAR) Model. 2. Semiempirical Surface Model Usable
@@ -685,17 +689,17 @@ subroutine shd_sfc__brdfRPV(RHO0, K, THETA, MU1, MU2, PHI, REFLECT)
     ! unphysical growth of RPV BRDF at small mu or mu0.
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    real, intent(in)  :: RHO0, K, THETA, MU1, MU2, PHI
-    real, intent(out) :: REFLECT
+    real, intent(in)  :: RHO0, K, THETA, muInc, muOut, PHI
+    real, intent(out) :: refBRDF
     real :: mu_min, x1, x2
     real :: M, F, H, COSPHI, SIN1, SIN2, COSG, TAN1, TAN2, CAPG
 
     ! calculate M
     !╭────────────────────────────────────────────────╮!
     mu_min = 0.03
-    x1 = MU1
+    x1 = muInc
     if (x1 .lt. mu_min) x1 = mu_min
-    x2 = MU2
+    x2 = muOut
     if (x2 .lt. mu_min) x2 = mu_min
     M = (x1*x2*(x1 + x2))**(K - 1)
     !╰────────────────────────────────────────────────╯!
@@ -717,21 +721,21 @@ subroutine shd_sfc__brdfRPV(RHO0, K, THETA, MU1, MU2, PHI, REFLECT)
     H = 1 + (1 - RHO0)/(1 + CAPG)
     !╰────────────────────────────────────────────────╯!
 
-    REFLECT = RHO0*M*F*H
+    refBRDF = RHO0*M*F*H
 
     return
 
 end subroutine shd_sfc__brdfRPV
 
-subroutine shd_sfc__brdfLSRT(F_ISO, F_GEO, F_VOL, MU1, MU2, PHI, REFLECT)
+subroutine shd_sfc__brdfLSRT(F_ISO, F_GEO, F_VOL, muInc, muOut, PHI, refBRDF)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Computes the RossLi BRDF.
-    ! MU1: cosine of zenith angle of the incident light (solar zenith angle)
-    ! MU2: cosine of zenith angle of the receiver (viewing zenith angle)
+    ! muInc: cosine of zenith angle of the incident light (solar zenith angle)
+    ! muOut: cosine of zenith angle of the receiver (viewing zenith angle)
     ! PHI: relative azimuth angle, 0 pointing east, positive counter-clockwise
     !
-    ! When MU1>0 and the hot spot is MU2=MU1 and PHI=0
+    ! When muInc>0 and the hot spot is muOut=muInc and PHI=0
     !
     ! Code reference:
     !   https://github.com/vikasnataraja/sif-sat/blob/master/sifsat/kernels.py
@@ -739,8 +743,8 @@ subroutine shd_sfc__brdfLSRT(F_ISO, F_GEO, F_VOL, MU1, MU2, PHI, REFLECT)
     !   MODIS BRDF/Albedo Product ATBD v5.0, equations 37-44
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    real(4), intent(in)  :: F_ISO, F_GEO, F_VOL, MU1, MU2, PHI
-    real(4), intent(out) :: REFLECT
+    real(4), intent(in)  :: F_ISO, F_GEO, F_VOL, muInc, muOut, PHI
+    real(4), intent(out) :: refBRDF
     real(4) :: COS1, COS2, SIN1, SIN2, TAN1, TAN2, COS_PHI, SIN_PHI
     real(4) :: K_GEO, K_VOL
     real(4) :: XI, COS_XI, SIN_XI
@@ -755,8 +759,8 @@ subroutine shd_sfc__brdfLSRT(F_ISO, F_GEO, F_VOL, MU1, MU2, PHI, REFLECT)
     !╭────────────────────────────────────────────────╮!
     COS_MIN = 0.03
 
-    COS1 = MU1
-    COS2 = MU2
+    COS1 = muInc
+    COS2 = muOut
 
     if (COS1 .lt. COS_MIN) COS1 = COS_MIN
     if (COS2 .lt. COS_MIN) COS2 = COS_MIN
@@ -818,23 +822,23 @@ subroutine shd_sfc__brdfLSRT(F_ISO, F_GEO, F_VOL, MU1, MU2, PHI, REFLECT)
     K_GEO = O - SEC1_ - SEC2_ + 0.5d0*(1.0+COS_XI_)*SEC1_*SEC2_
     !╰────────────────────────────────────────────────╯!
 
-    REFLECT = F_ISO + F_VOL*K_VOL + F_GEO*K_GEO
+    refBRDF = F_ISO + F_VOL*K_VOL + F_GEO*K_GEO
 
-    if (REFLECT .lt. 0.0) REFLECT = 0.0
+    if (refBRDF .lt. 0.0) refBRDF = 0.0
 
     return
 
 end subroutine shd_sfc__brdfLSRT
 
-! subroutine shd_sfc__brdfLSRTKZ(F_ISO, F_GEO, F_VOL, F_KZ, MU1, MU2, PHI, REFLECT)
+! subroutine shd_sfc__brdfLSRTKZ(F_ISO, F_GEO, F_VOL, F_KZ, muInc, muOut, PHI, refBRDF)
 
 !     !╭────────────────────────────────────────────────────────────────────────────╮!
 !     ! Computes the RossLi-KokhanovskyZege BRDF (combines LSRT model above with a fourth kernel for snow from Kokhanovsky-Zege).
-!     ! MU1: cosine of zenith angle of the incident light (solar zenith angle)
-!     ! MU2: cosine of zenith angle of the receiver (viewing zenith angle)
+!     ! muInc: cosine of zenith angle of the incident light (solar zenith angle)
+!     ! muOut: cosine of zenith angle of the receiver (viewing zenith angle)
 !     ! PHI: relative azimuth angle, 0 pointing east, positive counter-clockwise
 !     !
-!     ! When MU1>0 and the hot spot is MU2=MU1 and PHI=0
+!     ! When muInc>0 and the hot spot is muOut=muInc and PHI=0
 !     !
 !     ! Code reference:
 !     !   https://github.com/vikasnataraja/sif-sat/blob/master/sifsat/kernels.py
@@ -844,8 +848,8 @@ end subroutine shd_sfc__brdfLSRT
 !     !    KB12: Kokhanovsky & Breon (2012), doi:10.1109/lgrs.2012.2185775
 !     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-!     real(4), intent(in)  :: F_ISO, F_GEO, F_VOL, F_KZ, MU1, MU2, PHI
-!     real(4), intent(out) :: REFLECT
+!     real(4), intent(in)  :: F_ISO, F_GEO, F_VOL, F_KZ, muInc, muOut, PHI
+!     real(4), intent(out) :: refBRDF
 !     real(4) :: COS1, COS2, SIN1, SIN2, TAN1, TAN2, COS_PHI, SIN_PHI
 !     real(4) :: K_GEO, K_VOL, K_KZ
 !     real(4) :: XI, COS_XI, SIN_XI
@@ -860,8 +864,8 @@ end subroutine shd_sfc__brdfLSRT
 !     !╭────────────────────────────────────────────────╮!
 !     COS_MIN = 0.03
 
-!     COS1 = MU1
-!     COS2 = MU2
+!     COS1 = muInc
+!     COS2 = muOut
 
 !     if (COS1 .lt. COS_MIN) COS1 = COS_MIN
 !     if (COS2 .lt. COS_MIN) COS2 = COS_MIN
@@ -950,34 +954,34 @@ end subroutine shd_sfc__brdfLSRT
 !     P_pha = 11.1 * exp(-0.087 * XI_KZ_DEG) + 1.1 * exp(-0.014 * XI_KZ_DEG)
 
 !     ! calculate R0 (reflectance at 0 absorption by snow medium)
-!     R0 = (a + (b * (MU1 + MU2)) + (c * MU1 * MU2) + P_pha) / (4 * (MU1 + MU2))
+!     R0 = (a + (b * (muInc + muOut)) + (c * muInc * muOut) + P_pha) / (4 * (muInc + muOut))
 
 !     ! calculate f (escape function)
 !     ! note that this is a parameterization of the escape function
 !     ! but one can run RT simulation to get the full escape function
-!     K0_sza  = (3/7) * (1 + (2 * MU1))
-!     K0_vza  = (3/7) * (1 + (2 * MU2))
+!     K0_sza  = (3/7) * (1 + (2 * muInc))
+!     K0_vza  = (3/7) * (1 + (2 * muOut))
 !     f = K0_sza * K0_vza / R0
 
 
-!     REFLECT = F_ISO + F_VOL*K_VOL + F_GEO*K_GEO + F_KZ*K_KZ
+!     refBRDF = F_ISO + F_VOL*K_VOL + F_GEO*K_GEO + F_KZ*K_KZ
 
-!     if (REFLECT .lt. 0.0) REFLECT = 0.0 ! relfectance cannot be negative
+!     if (refBRDF .lt. 0.0) refBRDF = 0.0 ! relfectance cannot be negative
 
 !     return
 
 ! end subroutine shd_sfc__brdfLSRTKZ
 
-subroutine shd_sfc__brdfLSRTJ(F_ISO, F_GEO, F_VOL, F_J, ALPHA, MU1, MU2, PHI, REFLECT)
+subroutine shd_sfc__brdfLSRTJ(F_ISO, F_GEO, F_VOL, F_J, ALPHA, muInc, muOut, PHI, refBRDF)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Computes the RossLi-Jiao BRDF (combines LSRT model above with a fourth kernel for snow from Jiao et al.).
-    ! MU1: cosine of zenith angle of the incident light (solar zenith angle)
-    ! MU2: cosine of zenith angle of the receiver (viewing zenith angle)
+    ! muInc: cosine of zenith angle of the incident light (solar zenith angle)
+    ! muOut: cosine of zenith angle of the receiver (viewing zenith angle)
     ! PHI: relative azimuth angle, 0 pointing east, positive counter-clockwise
     ! ALPHA: parameter for the empirical function to control the forward scattering. Jiao et al. (2019) suggest ALPHA=0.2-0.3.
     !
-    ! When MU1>0 and the hot spot is MU2=MU1 and PHI=0
+    ! When muInc>0 and the hot spot is muOut=muInc and PHI=0
     !
     ! Code reference:
     !   https://github.com/vikasnataraja/sif-sat/blob/master/sifsat/kernels.py
@@ -986,8 +990,8 @@ subroutine shd_sfc__brdfLSRTJ(F_ISO, F_GEO, F_VOL, F_J, ALPHA, MU1, MU2, PHI, RE
     !    Jiao et al. (2019) https://doi.org/10.1016/j.rse.2018.11.001
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    real(4), intent(in)  :: F_ISO, F_GEO, F_VOL, F_J, ALPHA, MU1, MU2, PHI
-    real(4), intent(out) :: REFLECT
+    real(4), intent(in)  :: F_ISO, F_GEO, F_VOL, F_J, ALPHA, muInc, muOut, PHI
+    real(4), intent(out) :: refBRDF
     real(4) :: COS1, COS2, SIN1, SIN2, TAN1, TAN2, COS_PHI, SIN_PHI
     real(4) :: K_GEO, K_VOL, K_J
     real(4) :: XI, COS_XI, SIN_XI
@@ -1001,8 +1005,8 @@ subroutine shd_sfc__brdfLSRTJ(F_ISO, F_GEO, F_VOL, F_J, ALPHA, MU1, MU2, PHI, RE
     !╭────────────────────────────────────────────────╮!
     COS_MIN = 0.03
 
-    COS1 = MU1
-    COS2 = MU2
+    COS1 = muInc
+    COS2 = muOut
 
     if (COS1 .lt. COS_MIN) COS1 = COS_MIN
     if (COS2 .lt. COS_MIN) COS2 = COS_MIN
@@ -1066,29 +1070,29 @@ subroutine shd_sfc__brdfLSRTJ(F_ISO, F_GEO, F_VOL, F_J, ALPHA, MU1, MU2, PHI, RE
 
     ! get Jiao kernel value K_J with normalization
     !╭────────────────────────────────────────────────╮!
-    call shd_sfc__brdfJiao(MU1, MU2, PHI, ALPHA, 1, K_J)
+    call shd_sfc__brdfJiao(muInc, muOut, PHI, ALPHA, 1, K_J)
     !╰────────────────────────────────────────────────╯!
 
 
-    REFLECT = F_ISO + F_VOL*K_VOL + F_GEO*K_GEO + F_J*K_J
+    refBRDF = F_ISO + F_VOL*K_VOL + F_GEO*K_GEO + F_J*K_J
 
-    if (REFLECT .lt. 0.0) REFLECT = 0.0 ! relfectance cannot be negative
+    if (refBRDF .lt. 0.0) refBRDF = 0.0 ! relfectance cannot be negative
 
     return
 
 end subroutine shd_sfc__brdfLSRTJ
 
-subroutine shd_sfc__brdfJiao(MU1, MU2, PHI, ALPHA, NORMALIZE, K_J)
+subroutine shd_sfc__brdfJiao(muInc, muOut, PHI, ALPHA, NORMALIZE, K_J)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Computes the Jiao BRDF for snow.
-    ! MU1: cosine of zenith angle of the incident light (solar zenith angle)
-    ! MU2: cosine of zenith angle of the receiver (viewing zenith angle)
+    ! muInc: cosine of zenith angle of the incident light (solar zenith angle)
+    ! muOut: cosine of zenith angle of the receiver (viewing zenith angle)
     ! PHI: relative azimuth angle, 0 pointing east, positive counter-clockwise
     ! ALPHA: parameter for the empirical function to control the forward scattering. Jiao et al. (2019) suggest ALPHA=0.2-0.3.
     ! NORMALIZE: whether to add a normalizer term to the reflectance (1 for yes, 0 for no). If combining this kernel with an isotropic kernel (such as the case with RTLSR/LSRT), set NORMALIZE=1.
     !
-    ! When MU1>0 and the hot spot is MU2=MU1 and PHI=0
+    ! When muInc>0 and the hot spot is muOut=muInc and PHI=0
     !
     ! Code reference:
     !   https://github.com/vikasnataraja/sif-sat/blob/master/sifsat/kernels.py
@@ -1096,7 +1100,7 @@ subroutine shd_sfc__brdfJiao(MU1, MU2, PHI, ALPHA, NORMALIZE, K_J)
     ! Formula reference:
     !    Jiao et al. (2019) https://doi.org/10.1016/j.rse.2018.11.001
     !╰────────────────────────────────────────────────────────────────────────────╯!
-    real(4), intent(in)  :: MU1, MU2, PHI, ALPHA
+    real(4), intent(in)  :: muInc, muOut, PHI, ALPHA
     integer, intent(in)  :: NORMALIZE
     real(4), intent(out) :: K_J
     real(4) :: COS1, COS2, SIN1, SIN2, TAN1, TAN2, COS_PHI, SIN_PHI
@@ -1113,8 +1117,8 @@ subroutine shd_sfc__brdfJiao(MU1, MU2, PHI, ALPHA, NORMALIZE, K_J)
     ! calculate trigonometry
     COS_MIN = 0.03
 
-    COS1 = MU1
-    COS2 = MU2
+    COS1 = muInc
+    COS2 = muOut
 
     if (COS1 .lt. COS_MIN) COS1 = COS_MIN
     if (COS2 .lt. COS_MIN) COS2 = COS_MIN
@@ -1154,171 +1158,393 @@ subroutine shd_sfc__brdfJiao(MU1, MU2, PHI, ALPHA, NORMALIZE, K_J)
 end subroutine shd_sfc__brdfJiao
 
 subroutine shd_sfc__brdfOcean(&
-    & pws, xsal, pcl, pwl, xmuo, xmu, xphi, xpaw, REFLECT)
+    wvl, wspd, pcl, xsal, &
+    muInc, muOut, dPhiSV, dPhiSW, &
+    refBRDF)
 
     ! INPUT:  pws=wind speed (in m/s) [value not allowed below 0.25 m/s]
     !         xsal=salinity (in ppt) [if xsal<0 then 34.3ppt by default]
     !         pcl=pigment concentration (in mg/m^3)
-    !         pwl=wavelength of the computation (in micrometer)
-    !         xmuo=cosine of the zenith angle of the incident radiation
-    !         xmu=cosine of the zenith angle of the reflected radiation
-    !         xphi=relative azimuth angle (between 0 and 2*pi)
-    !         xpaw=azim. of sun - azim. of wind (in radian)
+    !         waveLen=wavelength of the computation (in micrometer)
+    !         muInc=cosine of the zenith angle of the incident radiation
+    !         muOut=cosine of the zenith angle of the reflected radiation
+    !         dPhiSV=relative azimuth angle (between 0 and 2*pi)
+    !         dPhiSW=azim. of sun - azim. of wind (in radian)
     !              For the direct solar radiation, the wind direction
     !              is fixed at the azimuth angle of 0 degree so that
-    !              the azimuth angle of the sun = xpaw.
+    !              the azimuth angle of the sun = dPhiSW.
     !
-    ! OUTPUT: REFLECT=the total reflectance of the sea water
+    ! OUTPUT: refBRDF=the total reflectance of the sea water
+    !
+    ! Reference:
+    ! Original Fortran 77 code was mostly adapted from 6SV1 code, which can be
+    !   referenced to the following two papers:
+    !
+    ! Kotchenova, S. Y., Vermote, E. F., Matarrese, R., and Klemm, F. J., Jr.:
+    !   Validation of a vector version of the 6S radiative transfer code
+    !   for atmospheric correction of satellite data. Part I: Path radiance,
+    !   Appl. Optics, 45, 6762–6774, doi:10.1364/ao.45.006762, 2006.
+    ! Kotchenova, S. Y. and Vermote, E. F.: Validation of a vector version
+    !   of the 6S radiative transfer code for atmospheric correction of
+    !   satellite data. Part II. Homogeneous Lambertian and anisotropic
+    !   surfaces, Appl. Optics, 46, 4455–4464, doi:10.1364/ao.46.004455, 2007.
+    !
+    ! The algorithms are can be referenced to the following papers:
+    !
+    ! Cox, C. and Munk, W.: Some problems in optical oceanography,
+    !   J. Mar. Res., 14, 63–78, 1954. 
+    ! Vermote, E. F., Tanré, D., Deuze, J. L., Herman, M., and Morcette, J. J.:
+    !   Second simulation of the satellite signal in the solar spectrum, 6S:
+    !   An overview, IEEE T. Geosci. Remote, 35, 675–686, 1997. 
+    ! Koepke, P.: Effective reflectance of oceanic whitecaps,
+    !   J. Geophys. Res., 89(D3), 3669–3676,
+    !   https://doi.org/10.1364/AO.23.001816, 1984.
+    ! Austin, R. W.: The remote sensing of spectral radiance from below the
+    !   ocean surface, in: Optical Aspects of Oceanography, Academic Press, 1974.
 
-    real, intent(in)  :: pws, xsal, pcl, pwl, xmuo, xmu, xphi, xpaw
-    real, intent(out) :: REFLECT
 
-    real Ref(39)
-    real :: paw, wl, wspd, C, azw, phi
-    real fac, nr, ni, n12
-    real tetas, w, wlp, ref_i, rwc, rw, tds
-    real tetav, tdv, fi, rog, a, rwb
-    real angbnd(5), wsbnd(6), tdsbnd(5, 6), tdvbnd(5, 6)
+    real, intent(in)  :: wspd, xsal, pcl, wvl, muInc, muOut, dPhiSV, dPhiSW
+    real, intent(out) :: refBRDF
 
-    integer :: iwl, iang, iws, isz1, isz2, ivz1, ivz2, iws1, iws2
+    real :: nr, ni, windSpeed, waveLen, phiSV
+    real :: angZenView, angZenSun, angAziSunView, angAziSunWind
+    real :: propWC, refWC, refGL, refSW
 
-    ! effective reflectance of the whitecaps (Koepke, 1984)
-    data Ref/&
-        & 0.220, 0.220, 0.220, 0.220, 0.220, 0.220, 0.215, 0.210, 0.200, 0.190,&
-        & 0.175, 0.155, 0.130, 0.080, 0.100, 0.105, 0.100, 0.080, 0.045, 0.055,&
-        & 0.065, 0.060, 0.055, 0.040, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,&
-        & 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000/
-
-    data angbnd/0.0, 45.0, 60.0, 75.0, 85.0/
-    data wsbnd/1.0, 3.0, 5.0, 7.0, 9.0, 20.0/
-
-    data((tdsbnd(iang, iws), iws=1, 6), iang=1, 5)/&
-        & 0.9787803, 0.9787738, 0.9787626, 0.9787467, 0.9787264,&
-        & 0.9785573, 0.9706900, 0.9698871, 0.9691746, 0.9685547,&
-        & 0.9680276, 0.9666586, 0.9479931, 0.9404608, 0.9385692,&
-        & 0.9381815, 0.9384519, 0.9430056, 0.9690591, 0.9275920,&
-        & 0.9058769, 0.8951812, 0.8899654, 0.8892645, 0.9980542,&
-        & 0.9602273, 0.9114283, 0.8713799, 0.8417820, 0.7800314/
-
-    data((tdvbnd(iang, iws), iws=1, 6), iang=1, 5)/&
-        & 0.9787764, 0.9787535, 0.9787106, 0.9786453, 0.9785548,&
-        & 0.9775019, 0.9692680, 0.9637051, 0.9564344, 0.9495727,&
-        & 0.9438773, 0.9288712, 0.9225163, 0.9069787, 0.9044844,&
-        & 0.9052351, 0.9068328, 0.9153687, 0.8048478, 0.8479503,&
-        & 0.8678726, 0.8797889, 0.8878716, 0.9091171, 0.7294627,&
-        & 0.8137348, 0.8453338, 0.8629867, 0.8745421, 0.9036854/
-
-    fac = deg2rad_
-
-    ! paw= azim. of sun - azim. of wind (in radian)
-    paw = xpaw
-
-    ! Conversion of parameter
-    phi = xphi
-
-    if (xmuo .le. 0.028) then
-        tetas = acos(0.028)/fac
+    ! relative azimuth between Sun and Viewer (0 to 2PI)
+    if (dPhiSV .lt. 0.0) then
+        phiSV = dPhiSV + 2.0*pi_
+    else if (dPhiSV .ge. 2.0*pi_) then
+        phiSV = dPhiSV - 2.0*pi_
     else
-        tetas = acos(xmuo)/fac
+        phiSV = dPhiSV
     end if
 
-    if (xmu .le. 0.028) then
-        tetav = acos(0.028)/fac
+    ! solar zenith angle
+    if (muInc .le. 0.028) then
+        angZenSun = acos(0.028)*rad2deg_
     else
-        tetav = acos(xmu)/fac
+        angZenSun = acos(muInc)*rad2deg_
     end if
 
-    if (pwl .lt. 0.4) then
-        wl = 0.4
-    else if (pwl .gt. 4.0) then
-        wl = 4.0
+    ! viewing zenith angle
+    if (muOut .le. 0.028) then
+        angZenView = acos(0.028)*rad2deg_
     else
-        wl = pwl
+        angZenView = acos(muOut)*rad2deg_
     end if
 
-    fi = 180.0 - phi/fac
+    ! minimum and maximum wavelength cut (400 to 4000 nm)
+    if (wvl .lt. 0.4) then
+        waveLen = 0.4
+    else if (wvl .gt. 4.0) then
+        waveLen = 4.0
+    else
+        waveLen = wvl
+    end if
 
-    C = pcl
-    wspd = max(0.25, pws)
-    azw = paw
+    ! minimum wind speed cut
+    windSpeed = max(wspd, 0.25)
 
-    ! Compute index of water
+    ! get water refractive indices based on wavelenth (micron) and salinity
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    call indwat(wl, xsal, nr, ni)
-    n12 = sqrt(nr*nr + ni*ni)
+    call indwat(waveLen, xsal, nr, ni)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! Compute whitecaps reflectance (Lambertian)
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    W = 2.95d-6*(wspd**3.52d0)
-    iwl = 1 + int((wl - 0.2)/0.1)
-    wlp = 0.5d0 + (iwl - 1)*0.1d0
-    Ref_i = ref(iwl + 1) + (wl - wlp)*10.0*(ref(iwl) - ref(iwl + 1))
-    Rwc = W*Ref_i
+    call whitecaps(waveLen, windSpeed, propWC, refWC)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    ! Compute backscattered reflectance from the sea water (Lambertian)
-    !   water reflectance below the sea surface
+    ! refGL: reflectance from sunglint (specular)
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    call morcasiwat(wl, C, Rw)
-
-    call getbound( wsbnd, 1, 6,  wspd, iws1, iws2)
-    call getbound(angbnd, 1, 5, tetas, isz1, isz2)
-    call getbound(angbnd, 1, 5, tetav, ivz1, ivz2)
-    tds = tdsbnd(isz1, iws1)
-    tdv = tdvbnd(ivz1, iws1)
+    ! note: disabled Sun-Wind azimuthal difference (angAziSunWind = 0.0)
+    !       after being disabled, calculations agree perfectly with libRadtran
+    ! angAziSunWind = dPhiSW*rad2deg_
+    angAziSunWind = 0.0
+    angAziSunView = 180.0 - phiSV*rad2deg_
+    call sunglint(windSpeed, nr, ni, angZenSun, angZenView, angAziSunWind, angAziSunView, refGL)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    ! Sunglint reflectance
-    call sunglint(wspd, nr, ni, azw, tetas, tetav, fi, rog)
-
-    ! water reflectance above the sea surface
-    ! for explanation on value of a see OCEAALBE.f
-    a = 0.485d0
-
-    ! add change in solid angle from under to above to surface
-    ! that account for 1/(n12*n12) decrease in sea water directional
-    ! reflectance
-    Rwb = (1.0d0/(n12*n12))*tds*tdv*Rw/(1.0d0 - a*Rw)
+    ! refSW: reflectance due to scattering of underwater (Lambertian)
+    !        refSW1: from Morel et al., 1988
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    call backscatter(waveLen, windSpeed, pcl, nr, ni, angZenSun, angZenView, refSW)
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! Total reflectance of sea water
-    REFLECT = Rwc + (1.0d0 - W)*Rog + (1.0d0 - Rwc)*Rwb
+    !   corresponds to Eq. (C1, Appendix C) in Kotchenova and Vermote, 2007
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    !   refWC: reflectance from whitecaps
+    !   refGL: reflectance (specular) from sunglint
+    !   refSW: reflectance due to scattering of underwater
+    !   propWC: proportion of whitecaps
+    refBRDF = refWC + (1.0 - propWC)*refGL + (1.0 - refWC)*refSW
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
     return
 
 end subroutine shd_sfc__brdfOcean
 
-subroutine morcasiwat(wl, C, R2)
+subroutine whitecaps(waveLen, windSpeed, propWC, refWC)
 
-    ! Spectral diffuse attenuation coefficient of Case I Waters as Predicted
-    ! by MOREL within the spectral range 400-700nm (1988, Journal of Geophys
-    ! Research, Vol.93, No C9, pp 10749-10768)
+    ! Description: Effective reflectance of the whitecaps
+    ! input:
+    !   waveLen: wavelength (in micrometer)
+    !   windSpeed: wind speed (in meter/second)
     !
-    ! input parameters: wl wavelength (IN MICROMETERS)
-    !                   C  pigment concentration
-    ! output parameter: R2  reflectance of water
+    ! output:
+    !   refWC: effective reflectance of whitecaps
     !
-    ! According Morel,1988, we use:
-    !
-    ! Kd    spectral value of the attenuation coefficient for
-    !        downwelling irradiance
-    !        with: Kd=Kw+Xc*C**e
-    ! Kw    spectral value of the diffuse attenuation coefficient
-    !        for pure oceanic water
-    ! Xc, e spectral coefficients to compute the diffuse attenuation
-    !       coefficient for pigment
-    ! bb  total backscattering coefficient
-    !  with: bb=0.5*bw+bbt*b
-    ! bw    spectral value of the molecular scattering coefficient of water
-    ! bbt,b parameters to compute the scattering coefficients of pigments
-    !
-    ! R2    reflectance of water below the surface
-    !    with: R2=(0.33/u)*(bb/Kd)  where u is depending of R2
+    ! Reference:
+    ! Koepke, P.: Effective reflectance of oceanic whitecaps,
+    !   J. Geophys. Res., 89(D3), 3669–3676,
+    !   https://doi.org/10.1364/AO.23.001816, 1984.
+    ! Monahan, E. C. and O’Muircheartaigh, I.: Optimal power-law
+    !   description of oceanic white cap coverage dependence on wind speed,
+    !   J. Phys. Oceanogr., 10, 2094–2099, 1980.
 
-    real Kw, Kd
-    real tKw(61), tXc(61), te(61), tbw(61)
-    real wl, c, r2, xc, e, bw, bb, b, bbt, u1, r1, u2, err
-    integer iwl
+    real, intent(in)  :: waveLen, windSpeed
+    real, intent(out) :: propWC, refWC
+
+    integer :: iwvl
+    real :: wvlP, refEff, refEffTable(39)
+
+    ! effective reflectance of the whitecaps (Koepke, 1984)
+    data refEffTable/&
+        0.220, 0.220, 0.220, 0.220, 0.220, 0.220, 0.215, 0.210, 0.200, 0.190,&
+        0.175, 0.155, 0.130, 0.080, 0.100, 0.105, 0.100, 0.080, 0.045, 0.055,&
+        0.065, 0.060, 0.055, 0.040, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,&
+        0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000/
+
+    iwvl = 1 + int((waveLen-0.2)/0.1)
+    wvlP = 0.5 + (iwvl - 1)*0.1
+    refEff = refEffTable(iwvl+1) + (waveLen-wvlP)/0.1 * (refEffTable(iwvl) - refEffTable(iwvl+1))
+
+    ! corresponds to Eq. (3) in Koepke, 1984 (originally from Monahan and O’Muircheartaigh, 1980)
+    propWC = 2.95e-6*(windSpeed**3.52)
+
+    ! corresponds to Eq. (5) in Koepke, 1984
+    refWC = refEff*propWC
+
+    return
+
+end subroutine whitecaps
+
+subroutine sunglint(&
+    windSpeed, nr, ni, &
+    angZenSun, angZenView, &
+    angAziSunWind, angAziSunView, &
+    refGL)
+
+    ! Description:
+    !   Calculate ocean reflectance from sun glint
+    !
+    ! Input:
+    !   windSpeed: speed of the wind (in m/s)
+    !   nr: index of refraction of the sea water
+    !   ni: extinction coefficient of the sea water
+    !   angZenSun: solar zenith angle (in deg.)
+    !   angZenView: view zenith angle (in deg.)
+    !   angAziSunWind: azimuth of the sun minus azimuth of the wind (in deg.)
+    !   angAziSunView: relative azimuth (sun-satellite, in deg.)
+    !
+    ! Output:
+    !   refGL: reflectance of the sun glint
+    !
+    ! Reference:
+    ! C. Cox and W. Munk, “Measurement of the roughness of the sea surface
+    !   from photographs of the sun’s glitter,” J. Opt. Soc. Am. 44, 838–850 (1954).
+    ! C. Cox and W. Munk, “Statistics of the sea surface derived from sun
+    !   glitter,” J. Mar. Res. 13, 198–227 (1954).
+    ! C. Cox and W. Munk, “Some problems in optical oceanography,”
+    !   J. Mar. Res. 14, 63–78 (1955).
+    ! M. Born and E. Wolf, Principles of Optics, 5th ed. (Pergamon, 1975).
+
+    real, intent(in)  :: windSpeed, nr, ni
+    real, intent(in)  :: angZenSun, angZenView, angAziSunWind, angAziSunView
+    real, intent(out) :: refGL
+
+    real :: phiSV, sinThetaS, sinThetaV, cosThetaS, cosThetaV, cosBeta
+    real :: Zx, Zy, tanTilt, betaTilt
+    real :: cosChi, sinChi, cos2Chi, coefFR
+    real :: sigmaC, sigmaU, C21, C03, C40, C04, C22, phiSW, xe, xn, xe2, xn2, coef, Pxy
+
+    cosThetaS = cos(angZenSun *deg2rad_)
+    cosThetaV = cos(angZenView*deg2rad_)
+    sinThetaS = sin(angZenSun *deg2rad_)
+    sinThetaV = sin(angZenView*deg2rad_)
+
+    phiSV = angAziSunView*deg2rad_
+
+    ! calculate tilt angle (in radians)
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    Zx =            (-sinThetaV*sin(phiSV))/(cosThetaS + cosThetaV)
+    Zy = (sinThetaS + sinThetaV*cos(phiSV))/(cosThetaS + cosThetaV)
+    tanTilt  = sqrt(Zx*Zx + Zy*Zy)
+    betaTilt = atan(tanTilt)
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+    ! Anisotropic Gaussian distribution probability
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    sigmaC = 0.003 + 0.00192*windSpeed
+    sigmaU = 0.00316*windSpeed
+
+    C03 = 0.04 - 0.033*windSpeed
+    C04 = 0.23
+    C21 = 0.01 - 0.0086*windSpeed
+    C22 = 0.12
+    C40 = 0.40
+
+    ! relative azimuth between Sun and Wind
+    phiSW = angAziSunWind*deg2rad_
+
+    xe = ( cos(phiSW)*Zx + sin(phiSW)*Zy)/sqrt(SigmaC)
+    xn = (-sin(phiSW)*Zx + cos(phiSW)*Zy)/sqrt(SigmaU)
+    xe2 = xe*xe
+    xn2 = xn*xn
+
+    coef =  1.0 - C21/2.0 *(xe2 - 1.0)*xn - C03/6.0*(xn2 - 3.0)*xn
+    coef = coef + C40/24.0*(xe2*xe2 - 6.0*xe2 + 3.0)
+    coef = coef + C04/24.0*(xn2*xn2 - 6.0*xn2 + 3.0)
+    coef = coef + C22/4.0 *(xe2 - 1.0)*(xn2 - 1.0)
+
+    Pxy = coef/2.0/pi_/sqrt(sigmaU)/sqrt(sigmaC)*exp(-(xe2 + xn2)/2.0)
+
+    ! note: this is added (Jan 20, 2026, by Hong Chen)
+    !   to prevent negative probability
+    !   occured when windSpeed=20 m/s and SunZenith=30 degree
+    Pxy = max(0.0, Pxy)
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+    ! Compute coefficient coefFR (Fresnel's reflection)
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    cos2Chi = cosThetaV*cosThetaS + sinThetaV*sinThetaS*cos(phiSV)
+    if (cos2Chi .gt.  1.0) cos2Chi =  0.99999999999
+    if (cos2Chi .lt. -1.0) cos2Chi = -0.99999999999
+    cosChi = sqrt(0.5*(1.0 + cos2Chi))
+    sinChi = sqrt(0.5*(1.0 - cos2Chi))
+
+    ! note: the following is added after reviewing 6S code (v2.1)
+    if (cosChi .gt.  1.0) cosChi =  0.99999999999
+    if (cosChi .lt. -1.0) cosChi = -0.99999999999
+    if (sinChi .gt.  1.0) sinChi =  0.99999999999
+    if (sinChi .lt. -1.0) sinChi = -0.99999999999
+
+    call fresnel(nr, ni, cosChi, sinChi, coefFR)
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+    ! Compute specular reflection from sunglint
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    cosBeta = cos(betaTilt)
+
+    ! corresponds to Eq. C3 in Kotchenova et al., 2007
+    refGL = pi_*coefFR*Pxy/(4.0*cosThetaS*cosThetaV*(cosBeta**4))
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+    return
+
+end subroutine sunglint
+
+subroutine backscatter(&
+    waveLen, windSpeed, pcl, nr, ni, &
+    angZenSun, angZenView, &
+    refSW)
+
+    real, intent(in)  :: waveLen, windSpeed, pcl, nr, ni
+    real, intent(in)  :: angZenSun, angZenView
+    real, intent(out) :: refSW
+
+    real :: refSW1, tds, tdv, a, n12
+    integer :: iws1, iws2, isz1, isz2, ivz1, ivz2
+    integer :: iang, iws
+
+    real angbnd(5), wsbnd(6), tdsbnd(5, 6), tdvbnd(5, 6)
+
+    data angbnd/&
+        0.0, 45.0, 60.0, 75.0, 85.0/
+
+    data wsbnd/&
+        1.0, 3.0, 5.0, 7.0, 9.0, 20.0/
+
+    data((tdsbnd(iang, iws), iws=1, 6), iang=1, 5)/&
+        0.9787803, 0.9787738, 0.9787626, 0.9787467, 0.9787264,&
+        0.9785573, 0.9706900, 0.9698871, 0.9691746, 0.9685547,&
+        0.9680276, 0.9666586, 0.9479931, 0.9404608, 0.9385692,&
+        0.9381815, 0.9384519, 0.9430056, 0.9690591, 0.9275920,&
+        0.9058769, 0.8951812, 0.8899654, 0.8892645, 0.9980542,&
+        0.9602273, 0.9114283, 0.8713799, 0.8417820, 0.7800314/
+
+    data((tdvbnd(iang, iws), iws=1, 6), iang=1, 5)/&
+        0.9787764, 0.9787535, 0.9787106, 0.9786453, 0.9785548,&
+        0.9775019, 0.9692680, 0.9637051, 0.9564344, 0.9495727,&
+        0.9438773, 0.9288712, 0.9225163, 0.9069787, 0.9044844,&
+        0.9052351, 0.9068328, 0.9153687, 0.8048478, 0.8479503,&
+        0.8678726, 0.8797889, 0.8878716, 0.9091171, 0.7294627,&
+        0.8137348, 0.8453338, 0.8629867, 0.8745421, 0.9036854/
+
+    ! Compute backscattered reflectance from the sea water (Lambertian)
+    !   water reflectance below the sea surface
+    call morcasiwat(waveLen, pcl, refSW1)
+
+    call getbound( wsbnd, 1, 6,       windSpeed, iws1, iws2)
+    call getbound(angbnd, 1, 5,  angZenSun, isz1, isz2)
+    call getbound(angbnd, 1, 5, angZenView, ivz1, ivz2)
+    tds = tdsbnd(isz1, iws1)
+    tdv = tdvbnd(ivz1, iws1)
+
+    ! albedo is a=re is taken from table 2 in Austin, 1974
+    a=0.485
+
+    ! Add change in solid angle from under to above to surface
+    !   that account for 1/(n12*n12) decrease in sea water directional
+    !   reflectance
+    n12 = sqrt(nr*nr + ni*ni)
+
+    refSW = (1.0d0/(n12*n12)) * refSW1*tds*tdv/(1.0d0 - a*refSW1)
+
+end subroutine backscatter
+
+subroutine morcasiwat(waveLen, pcl, refSW)
+
+    ! Description:
+    !   Spectral diffuse attenuation coefficient of Case I Waters as predicted
+    !   by MOREL, 1998
+    !
+    ! Input:
+    !   waveLen: wavelength (in micron)
+    !   pcl: pigment concentration (in mg/m^3)
+    !
+    ! Output:
+    !   refSW: reflectance due to scattering of underwater
+    !
+    ! Additional notes:
+    ! according Morel,1988, we use:
+    ! Kd    : spectral value of the attenuation coefficient for
+    !         downwelling irradiance
+    !         with: Kd=Kw+Xc*pcl**e
+    ! Kw    : spectral value of the diffuse attenuation coefficient
+    !         for pure oceanic water
+    ! Xc, e : spectral coefficients to compute the diffuse attenuation
+    !         coefficient for pigment
+    ! bb    : total backscattering coefficient
+    !         with: bb=0.5*bw+bbt*b
+    ! bw    : spectral value of the molecular scattering coefficient of water
+    ! bbt,b : parameters to compute the scattering coefficients of pigments
+    ! refSW : reflectance of water below the surface
+    !         with: refSW=(0.33/u)*(bb/Kd)  where u is depending of refSW
+    !
+    ! Reference:
+    ! MOREL within the spectral range 400-700nm (1988, Journal of Geophys
+    !   Research, Vol.93, No C9, pp 10749-10768)
+
+    real, intent(in)  :: waveLen, pcl
+    real, intent(out) :: refSW
+
+    real :: Kw, Kd
+    real :: Xc, e, bw, bb, b, bbt, u1, u2, err, refSW0
+    real :: tKw(61), tXc(61), te(61), tbw(61)
+
+    integer :: iwl
 
     data tKw/0.0209, 0.0200, 0.0196, 0.0189, 0.0183,&
         & 0.0182, 0.0171, 0.0170, 0.0168, 0.0166,&
@@ -1373,112 +1599,192 @@ subroutine morcasiwat(wl, C, R2)
         & 0.0007, 0.0007, 0.0007, 0.0007, 0.0007,&
         & 0.0007/
 
-    if (wl .lt. 0.400d0 .or. wl .gt. 0.700d0) then
-        R2 = 0.000
+    ! refSW only applies to wavelength range 400-700 nm
+    if ((waveLen .lt. 0.4) .or. (waveLen .gt. 0.7)) then
+        refSW = 0.000
         return
     end if
 
-    iwl = 1 + nint((wl - 0.400d0)/0.005d0)
+    iwl = 1 + nint((waveLen - 0.4)/0.005)
     Kw = tKw(iwl)
     Xc = tXc(iwl)
     e  = te(iwl)
     bw = tbw(iwl)
 
-    if (abs(C) .lt. 0.0001d0) then
-        bb = 0.5d0*bw
+    if (abs(pcl) .lt. 0.0001) then
+        bb = 0.5*bw
         Kd = Kw
     else
-        b = 0.30d0*C**0.62d0
-        bbt = 0.002d0 + 0.02d0*(0.5d0 - 0.25d0*alog10(C))*0.550d0/wl
-        bb = 0.5d0*bw + bbt*b
-        Kd = Kw + Xc*C**e
+        b   = 0.30*pcl**0.62
+        bbt = 0.002 + 0.02*(0.5 - 0.25*log10(pcl))*0.550/waveLen
+        bb  = 0.5*bw + bbt*b
+        Kd  = Kw + Xc*pcl**e
     end if
 
-    u1 = 0.75d0
-    R1 = 0.33d0*bb/u1/Kd
+    u1 = 0.75
+    refSW0 = 0.33*bb/u1/Kd
 
-! 50  u2 = 0.90d0*(1.0d0-R1)/(1.0d0+2.25d0*R1)
-!     R2 = 0.33d0*bb/u2/Kd
-!     err = abs((R2 - R1)/R2)
-!     if (err .lt. 0.0001d0) return
-!     R1 = R2
-!     goto 50
-!     return
+    ! origianl code (uses goto) replaced by do
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    ! 50  u2 = 0.90d0*(1.0d0-refSW0)/(1.0d0+2.25d0*refSW0)
+    !     refSW = 0.33d0*bb/u2/Kd
+    !     err = abs((refSW - refSW0)/refSW)
+    !     if (err .lt. 0.0001d0) return
+    !     refSW0 = refSW
+    !     goto 50
+    !     return
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
     do
-        u2  = 0.90d0 * (1.0d0 - R1) / (1.0d0 + 2.25d0 * R1)
-        R2  = 0.33d0 * bb / u2 / Kd
-        err = abs((R2 - R1) / R2)
+        u2  = 0.90 * (1.0 - refSW0) / (1.0 + 2.25*refSW0)
+        refSW  = 0.33*bb/u2/Kd
+        err = abs((refSW-refSW0) / refSW)
 
-        if (err < 1.0d-4) return
+        if (err .lt. 0.0001) return
 
-        R1 = R2
+        refSW0 = refSW
     end do
 
 end subroutine morcasiwat
 
-subroutine indwat(wl, xsal, nr, ni)
+subroutine fresnel(&
+    nr, ni, cosChi, sinChi, &
+    coefFR)
 
-    ! input parameters:  wl=wavelength (in micrometers)
-    !                    xsal=salinity (in ppt), if xsal<0 then 34.3ppt by d
-    ! output parameters: nr=index of refraction of sea water
-    !                    ni=extinction coefficient of sea water
+    ! Description:
+    ! Compute the Fresnel's coefficient of reflection
+    !
+    ! Input:
+    !   nr: index of refraction of the sea water
+    !   ni: extinction coefficient of the sea water
+    !   cosChi: cosine of the incident radiation with respect of the wave facet normal
+    !   sinChi: sine of the incident radiation with respect of the wave facet normal
+    !
+    ! Output:
+    !   coefFR: coefficient for Fresnel's reflection
+    !
+    ! Reference:
+    ! M. Born and E. Wolf, Principles of Optics, Pergamon Press, fifth
+    !   edition, 1975, pp 628
 
-    real twl(62), tnr(62), tni(62)
-    real nr, ni, wl, xwl, yr, yi, nrc, nic, xsal
-    integer i
-    ! Indices of refraction for pure water from Hale and Querry,
-    ! Applied Optique, March 1973, Vol. 12,  No. 3, pp. 555-563
+    real, intent(in)  :: nr, ni, cosChi, sinChi
+    real, intent(out) :: coefFR
+
+    real :: a1, a2, u, v, Rr2, Rl2, b1, b2
+    real :: nr2, ni2
+
+    ! original code before optimization
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    !a1 = abs(nr*nr - ni*ni - sinChi*sinChi)
+    !a2 = sqrt((nr*nr - ni*ni - sinChi*sinChi)**2 + 4.0d0*nr*nr*ni*ni)
+    !u = sqrt(0.5d0*(a1 + a2))
+    !v = sqrt(max(0.0, 0.5d0*(-a1 + a2)))
+    !Rr2 = ((cosChi - u)**2 + v*v)/((cosChi + u)**2 + v*v)
+    !b1 = (nr*nr - ni*ni)*cosChi
+    !b2 = 2.0*nr*ni*cosChi
+    !Rl2 = ((b1 - u)**2 + (b2 - v)**2)/((b1 + u)**2 + (b2 + v)**2)
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+    nr2=nr*nr
+    ni2=ni*ni
+
+    ! absolute value for a1 to get v=0 when ni=0
+    a1 = abs(nr2 - ni2 - sinChi*sinChi)
+    a2 = sqrt(a1*a1 + 4.0*nr2*ni2)
+
+    u = sqrt(0.5*( a1 + a2))
+    v = sqrt(0.5*(-a1 + a2))
+    Rr2 = ((cosChi-u)*(cosChi-u) + v*v)/((cosChi+u)*(cosChi+u) + v*v)
+
+    b1 = (nr2-ni2)*cosChi
+    b2 = 2.0*nr*ni*cosChi
+    Rl2 = ((b1-u)*(b1-u)+(b2-v)*(b2-v)) / ((b1+u)*(b1+u) + (b2+v)*(b2+v))
+
+    coefFR = (Rr2 + Rl2) * 0.5d0
+
+    return
+
+end subroutine fresnel
+
+subroutine indwat(waveLen, xsal, nr, ni)
+
+    ! Description:
+    !   Retrieve indices of refraction for pure water
+    !
+    ! Input:
+    !   waveLen: wavelength (in micron)
+    !   xsal: salinity (in ppt), if xsal<0 then 34.3ppt by default
+    !
+    ! Output:
+    !   nr: index of refraction of sea water
+    !   ni: extinction coefficient of sea water
+    !
+    ! Reference:
+    ! Hale, G. M., and Querry, M. R.: Optical Constants of Water in the 200-nm to
+    !   200-μm Wavelength Region, Appl. Opt. 12, 555-563,
+    !   https://doi.org/10.1364/AO.12.000555, 1973.
+
+    real, intent(in)  :: waveLen, xsal
+    real, intent(out) :: nr, ni
+
+    real :: xwl, yr, yi, nrc, nic
+    integer :: i
+
+    real :: twl(62), tnr(62), tni(62)
+
     data twl/&
-        & 0.250, 0.275, 0.300, 0.325, 0.345, 0.375, 0.400, 0.425, 0.445, 0.475,&
-        & 0.500, 0.525, 0.550, 0.575, 0.600, 0.625, 0.650, 0.675, 0.700, 0.725,&
-        & 0.750, 0.775, 0.800, 0.825, 0.850, 0.875, 0.900, 0.925, 0.950, 0.975,&
-        & 1.000, 1.200, 1.400, 1.600, 1.800, 2.000, 2.200, 2.400, 2.600, 2.650,&
-        & 2.700, 2.750, 2.800, 2.850, 2.900, 2.950, 3.000, 3.050, 3.100, 3.150,&
-        & 3.200, 3.250, 3.300, 3.350, 3.400, 3.450, 3.500, 3.600, 3.700, 3.800,&
-        & 3.900, 4.000/
+        0.250, 0.275, 0.300, 0.325, 0.345, 0.375, 0.400, 0.425, 0.445, 0.475,&
+        0.500, 0.525, 0.550, 0.575, 0.600, 0.625, 0.650, 0.675, 0.700, 0.725,&
+        0.750, 0.775, 0.800, 0.825, 0.850, 0.875, 0.900, 0.925, 0.950, 0.975,&
+        1.000, 1.200, 1.400, 1.600, 1.800, 2.000, 2.200, 2.400, 2.600, 2.650,&
+        2.700, 2.750, 2.800, 2.850, 2.900, 2.950, 3.000, 3.050, 3.100, 3.150,&
+        3.200, 3.250, 3.300, 3.350, 3.400, 3.450, 3.500, 3.600, 3.700, 3.800,&
+        3.900, 4.000/
     data tnr/&
-        & 1.362, 1.354, 1.349, 1.346, 1.343, 1.341, 1.339, 1.338, 1.337, 1.336,&
-        & 1.335, 1.334, 1.333, 1.333, 1.332, 1.332, 1.331, 1.331, 1.331, 1.330,&
-        & 1.330, 1.330, 1.329, 1.329, 1.329, 1.328, 1.328, 1.328, 1.327, 1.327,&
-        & 1.327, 1.324, 1.321, 1.317, 1.312, 1.306, 1.296, 1.279, 1.242, 1.219,&
-        & 1.188, 1.157, 1.142, 1.149, 1.201, 1.292, 1.371, 1.426, 1.467, 1.483,&
-        & 1.478, 1.467, 1.450, 1.432, 1.420, 1.410, 1.400, 1.385, 1.374, 1.364,&
-        & 1.357, 1.351/
+        1.362, 1.354, 1.349, 1.346, 1.343, 1.341, 1.339, 1.338, 1.337, 1.336,&
+        1.335, 1.334, 1.333, 1.333, 1.332, 1.332, 1.331, 1.331, 1.331, 1.330,&
+        1.330, 1.330, 1.329, 1.329, 1.329, 1.328, 1.328, 1.328, 1.327, 1.327,&
+        1.327, 1.324, 1.321, 1.317, 1.312, 1.306, 1.296, 1.279, 1.242, 1.219,&
+        1.188, 1.157, 1.142, 1.149, 1.201, 1.292, 1.371, 1.426, 1.467, 1.483,&
+        1.478, 1.467, 1.450, 1.432, 1.420, 1.410, 1.400, 1.385, 1.374, 1.364,&
+        1.357, 1.351/
     data tni/&
-        & 3.35e-08, 2.35e-08, 1.60e-08, 1.08e-08, 6.50e-09,&
-        & 3.50e-09, 1.86e-09, 1.30e-09, 1.02e-09, 9.35e-10,&
-        & 1.00e-09, 1.32e-09, 1.96e-09, 3.60e-09, 1.09e-08,&
-        & 1.39e-08, 1.64e-08, 2.23e-08, 3.35e-08, 9.15e-08,&
-        & 1.56e-07, 1.48e-07, 1.25e-07, 1.82e-07, 2.93e-07,&
-        & 3.91e-07, 4.86e-07, 1.06e-06, 2.93e-06, 3.48e-06,&
-        & 2.89e-06, 9.89e-06, 1.38e-04, 8.55e-05, 1.15e-04,&
-        & 1.10e-03, 2.89e-04, 9.56e-04, 3.17e-03, 6.70e-03,&
-        & 1.90e-02, 5.90e-02, 1.15e-01, 1.85e-01, 2.68e-01,&
-        & 2.98e-01, 2.72e-01, 2.40e-01, 1.92e-01, 1.35e-01,&
-        & 9.24e-02, 6.10e-02, 3.68e-02, 2.61e-02, 1.95e-02,&
-        & 1.32e-02, 9.40e-03, 5.15e-03, 3.60e-03, 3.40e-03,&
-        & 3.80e-03, 4.60e-03/
+        3.35e-08, 2.35e-08, 1.60e-08, 1.08e-08, 6.50e-09,&
+        3.50e-09, 1.86e-09, 1.30e-09, 1.02e-09, 9.35e-10,&
+        1.00e-09, 1.32e-09, 1.96e-09, 3.60e-09, 1.09e-08,&
+        1.39e-08, 1.64e-08, 2.23e-08, 3.35e-08, 9.15e-08,&
+        1.56e-07, 1.48e-07, 1.25e-07, 1.82e-07, 2.93e-07,&
+        3.91e-07, 4.86e-07, 1.06e-06, 2.93e-06, 3.48e-06,&
+        2.89e-06, 9.89e-06, 1.38e-04, 8.55e-05, 1.15e-04,&
+        1.10e-03, 2.89e-04, 9.56e-04, 3.17e-03, 6.70e-03,&
+        1.90e-02, 5.90e-02, 1.15e-01, 1.85e-01, 2.68e-01,&
+        2.98e-01, 2.72e-01, 2.40e-01, 1.92e-01, 1.35e-01,&
+        9.24e-02, 6.10e-02, 3.68e-02, 2.61e-02, 1.95e-02,&
+        1.32e-02, 9.40e-03, 5.15e-03, 3.60e-03, 3.40e-03,&
+        3.80e-03, 4.60e-03/
 
     i = 2
 
-! 10  if (wl .lt. twl(i)) goto 20
-!     if (i .lt. 62) then
-!         i = i + 1
-!         goto 10
-!     end if
-! 20  xwl = twl(i) - twl(i - 1)
+    ! origianl code (uses goto) replaced by do-while
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    ! 10  if (waveLen .lt. twl(i)) goto 20
+    !     if (i .lt. 62) then
+    !         i = i + 1
+    !         goto 10
+    !     end if
+    ! 20  xwl = twl(i) - twl(i - 1)
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    do while ((wl .ge. twl(i)) .and. (i .lt. 62))
+    do while ((waveLen .ge. twl(i)) .and. (i .lt. 62))
         i = i + 1
     end do
 
-    xwl = twl(i) - twl(i - 1)
+    xwl = twl(i) - twl(i-1)
 
-    yr = tnr(i) - tnr(i - 1)
-    yi = tni(i) - tni(i - 1)
-    nr = tnr(i - 1) + (wl - twl(i - 1))*yr/xwl
-    ni = tni(i - 1) + (wl - twl(i - 1))*yi/xwl
+    yr = tnr(i) - tnr(i-1)
+    yi = tni(i) - tni(i-1)
+    nr = tnr(i-1) + (waveLen - twl(i-1))*yr/xwl
+    ni = tni(i-1) + (waveLen - twl(i-1))*yi/xwl
 
     ! Correction to be applied to the index of refraction and to the extinct
     ! coefficients of the pure water to obtain the ocean water one (see for
@@ -1509,241 +1815,6 @@ subroutine indwat(wl, xsal, nr, ni)
     return
 
 end subroutine indwat
-
-subroutine sunglint(wspd, nr, ni, azw, ts, tv, fi, rog)
-
-    ! input parameters:   wspd=speed of the wind (in m/s)
-    !                     nr=index of refraction of the sea water
-    !                     ni=extinction coefficient of the sea water
-    !                     azw=azim. of the sun - azim. of the wind (in radian)
-    !                     ts=solar zenith angle (in deg.)
-    !                     tv=view zenith angle (in deg.)
-    !                     fi=relative azimuth (sun-satellite)
-    ! output parameters:  rog=reflectance of the sun glint
-
-    real fac
-    real wspd, nr, ni, ts, tv, fi, rog, azw, phw
-    real cs, cv, ss, sv, phi, zx, zy, tantilt, tilt, proba, xe, xn, xe2, xn2
-    real coef, cos2chi, coschi, sinchi
-    real r1, sigmaC, sigmaU, C21, C03, C40, C04, C22
-
-    real :: co4
-
-    fac = deg2rad_
-
-    phw = azw*fac
-
-    cs = cos(ts*fac)
-    cv = cos(tv*fac)
-    ss = sin(ts*fac)
-    sv = sin(tv*fac)
-    phi = fi*fac
-    Zx = -sv*sin(phi)/(cs + cv)
-    Zy = (ss + sv*cos(phi))/(cs + cv)
-    tantilt = sqrt(zx*zx + zy*zy)
-    tilt = atan(tantilt)
-    !  Anisotropic Gaussian distribution
-    !    phw=phi_sun-phi_wind
-    sigmaC = 0.003d0 + 0.00192d0*wspd
-    sigmaU = 0.00316d0*wspd
-    C21 = 0.01d0 - 0.0086d0*wspd
-    C03 = 0.04d0 - 0.033d0*wspd
-    C40 = 0.40
-    C22 = 0.12
-    C04 = 0.23
-    xe = ( cos(phw)*Zx + sin(phw)*Zy)/sqrt(SigmaC)
-    xn = (-sin(phw)*Zx + cos(phw)*Zy)/sqrt(SigmaU)
-    xe2 = xe*xe
-    xn2 = xn*xn
-    coef = 1.0 - C21/2.0*(xe2 - 1.0)*xn - C03/6.0*(xn2 - 3.0)*xn
-    coef = coef + c40/24.0*(xe2*xe2 - 6.0*xe2 + 3.0)
-    coef = coef + C04/24.0*(xn2*xn2 - 6.0*xn2 + 3.0)
-    coef = coef + C22/4.0*(xe2 - 1)*(xn2 - 1)
-    proba = coef/2.0/pi_/sqrt(sigmaU)/sqrt(sigmaC)*exp(-(xe2 + xn2)/2.0)
-    ! Compute Fresnel's coefficient R1
-    cos2chi = cv*cs + sv*ss*cos(phi)
-    if (cos2chi .gt.  1.0) cos2chi = 0.99999999999
-    if (cos2chi .lt. -1.0) cos2chi = -0.99999999999
-    coschi = sqrt(0.5d0*(1 + cos2chi))
-    sinchi = sqrt(0.5d0*(1 - cos2chi))
-    call fresnel(nr, ni, coschi, sinchi, R1)
-
-    ! Compute Reflectance of the sun glint
-    co4 = cos(tilt)
-    co4 = co4*co4
-    co4 = co4*co4
-    Rog = pi_*R1*proba/4.0/cs/cv/co4
-
-    return
-
-end subroutine sunglint
-
-subroutine fresnel(nr, ni, coschi, sinchi, R1)
-
-    ! to compute the Fresnel's coefficient of reflection (see for
-    ! example M. Born and E. Wolf, Principles of Optics, Pergamon Press, fif
-    ! edition, 1975, pp 628
-    ! input parameters: nr=index of refraction of the sea water
-    !                   ni=extinction coefficient of the sea water
-    !                   coschi & sinchi=cosine and sine of the incident radi
-    !                                   with respect of the wave facet norma
-    ! output parameter: R1=Fresnel's coefficient for reflection
-
-    real nr, ni, a1, a2, u, v, Rr2, Rl2, b1, b2, R1, coschi, sinchi
-    real :: nr2, ni2
-
-    ! absolute value for a1 to get v=0 when ni=0
-    nr2=nr*nr
-    ni2=ni*ni
-
-    a1 = abs(nr2-ni2-sinchi*sinchi)
-    !a1 = abs(nr*nr - ni*ni - sinchi*sinchi)
-
-    a2=sqrt(a1*a1+4.0*nr2*ni2)
-    !a2 = sqrt((nr*nr - ni*ni - sinchi*sinchi)**2 + 4.0d0*nr*nr*ni*ni)
-
-    u = sqrt(0.5d0*(a1 + a2))
-
-    v = sqrt(0.5d0*(-a1 + a2))
-    !v = sqrt(max(0.0, 0.5d0*(-a1 + a2)))
-
-    Rr2 = ((coschi-u)*(coschi-u)+v*v)/((coschi+u)*(coschi+u)+v*v)
-    !Rr2 = ((coschi - u)**2 + v*v)/((coschi + u)**2 + v*v)
-
-    b1 = (nr2 - ni2)*coschi
-    !b1 = (nr*nr - ni*ni)*coschi
-
-    b2 = 2.0d0*nr*ni*coschi
-
-    Rl2 = ((b1-u)*(b1-u)+(b2-v)*(b2-v))/((b1+u)*(b1+u)+(b2+v)*(b2+v))
-    !Rl2 = ((b1 - u)**2 + (b2 - v)**2)/((b1 + u)**2 + (b2 + v)**2)
-
-    R1 = (Rr2 + Rl2) * 0.5d0
-
-    return
-
-end subroutine fresnel
-
-subroutine glitalbe(wspd, nr, ni, azw, rge)
-
-    ! To compute the spherical albedo of the sea water. See for example
-    ! Masuda et al., Remote Sens. Environ., 24, 313-329, 1988.
-    !
-    ! input parameters: wsp=wind of speed
-    !                   nr=index of refraction of the sea water
-    !                   ni=extinction coefficient of the sea water
-    !                   azw=azim. of sun - azim. of wind (in deg.)
-    ! output parameter: rge=spherical albedo of the sun glint
-
-    real nr, ni, azw, phw, rge, q, wspd, prefl, proba, pr, pp, fac
-    real sigma, sigmaC, sigmaU, C21, C03, C40, C04, C22
-    real costt, hta, htb, hfa, cotb, cota, cofa, diff, coef
-    real phin, cosphin, sinphin, costet, tet, sintet
-    real costetn, sintetn, tantetn, coschi, sinchi
-    real zx, zy, xe, xn, xe2, xn2, fonc0, pond, r1
-    integer km, i, j
-    integer :: nfa, nta, ntb
-
-    fac = deg2rad_
-
-    sigma  = 0.003d0 + 0.00512d0*wspd
-    sigmaC = 0.003d0 + 0.00192d0*wspd
-    sigmaU = 0.00316d0*wspd
-    C21 = 0.01d0 - 0.0086d0*wspd
-    C03 = 0.04d0 -  0.033d0*wspd
-    C40 = 0.40
-    C22 = 0.12
-    C04 = 0.23
-    ! costt to minimize the time of the computation
-    !     integration between 1 and costt instead of 1 and 0
-    q = 50
-    costt = 1.0/sqrt(1.0 + q*sigma/4.0)
-    phw = azw*fac
-
-    prefl = 0.0
-    proba = 0.0
-
-    ntb = 31
-    htb = 1.0/float(ntb - 1)
-    ! loops on the zenith angle of the emitted radiation
-    do km = 1, ntb
-        costet = (km - 1)*htb
-        tet = acos(costet)
-        sintet = sin(tet)
-        tet = tet/fac
-        ! Simpson's rules for the angle of the emitted radiation teta
-        cotb = 2.0
-        diff = abs(km/2 - km/2.0)
-        if (diff .lt. 0.00001) cotb = 4.0
-        if (km .eq. 1 .or. km .eq. ntb) cotb = 1.0
-        !  loops step for phiN and tetaN (N is the facet unit normal vector)
-        if (tet .lt. 91) nta = 801
-        if (tet .lt. 81) nta = 301
-        if (tet .lt. 75) nta = 101
-        if (tet .lt. 65) nta = 31
-        nfa = nta
-        hta = (1.-costt)/float(nta - 1)
-        hfa = pi_/float(nfa - 1)
-        ! loops on phiN (azimuth angle of the facet normal vector)
-        pr = 0.0
-        pp = 0.0
-        do i = 1, nfa
-            phin = (i - 1)*hfa
-            cosphin = cos(phin)
-            sinphin = sin(phin)
-            !  Simpson's rules for phin
-            cofa = 2.0
-            diff = abs(i/2 - i/2.0)
-            if (diff .lt. 0.00001) cofa = 4.0
-            if (i .eq. 1 .or. i .eq. nfa) cofa = 1.0
-            ! loops on tetaN (zenith angle of the facet normal vector)
-            do j = 1, nta
-                costetn = costt + (j - 1)*hta
-                sintetn = sqrt(1 - costetn*costetn)
-                tantetn = sintetn/costetn
-                !  Simpson's rules for tetaN
-                cota = 2.0
-                diff = abs(j/2 - j/2.0)
-                if (diff .lt. 0.00001) cota = 4.0
-                if (j .eq. 1 .or. j .eq. nta) cota = 1.0
-                ! Fresnel's reflection coefficient R1
-                coschi = costet*costetn + sintet*sintetn*cosphin
-                if (coschi*coschi .gt. 1.0) coschi = 0.99999999999
-                sinchi = sqrt(1 - coschi*coschi)
-                if (coschi .lt. 0.0) then
-                    r1 = 0.0
-                    cota = 0.0
-                else
-                    call fresnel(nr, ni, coschi, sinchi, r1)
-                end if
-                !  Anisotropic Gaussian distribution for wave facets slopes
-                Zx = -tantetn*cosphin
-                Zy = -tantetn*sinphin
-                xe = (cos(phw)*Zx + sin(phw)*Zy)/sqrt(SigmaC)
-                xn = (-sin(phw)*Zx + cos(phw)*Zy)/sqrt(SigmaU)
-                xe2 = xe*xe
-                xn2 = xn*xn
-                coef = 1.0 - C21/2.0*(xe2 - 1.0)*xn - C03/6.0*(xn2 - 3.0)*xn
-                coef = coef + c40/24.0*(xe2*xe2 - 6.0*xe2 + 3.0)
-                coef = coef + C04/24.0*(xn2*xn2 - 6.0*xn2 + 3.0)
-                coef = coef + C22/4.0*(xe2 - 1.0)*(xn2 - 1.0)
-                fonc0 = 0.5d0*coschi*coef*exp(-(xe2 + xn2)/2.0)/(costetn**4)
-                pr = pr + r1*fonc0*cofa*cota*cotb
-                pp = pp + fonc0*cofa*cota*cotb
-            end do
-        end do
-
-        !pond = 2.0*hta*hfa*htb/pi_/sqrt(sigmaC)/sqrt(sigmaU)/3./3./3.
-        pond = 2.0*hta*hfa*htb/pi_/sqrt(sigmaC)/sqrt(sigmaU)/27.0
-        prefl = prefl + pr*pond
-        proba = proba + pp*pond
-    end do
-
-    rge = prefl/proba
-
-    return
-
-end subroutine glitalbe
 
 subroutine getbound(xvals, ifirst, ilast, x, ind1, ind2)
 
