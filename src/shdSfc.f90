@@ -1262,7 +1262,7 @@ subroutine shd_sfc__brdfOcean(&
         waveLen = wvl
     end if
 
-    ! minimum wind speed cut
+    ! minimum wind speed cut (too low wind speed will cause extreme sunglint)
     windSpeed = max(wspd, 0.25)
 
     ! get water refractive indices based on wavelenth (micron) and salinity
