@@ -1209,7 +1209,7 @@ subroutine shd_sfc__brdfOcean(&
     !   satellite data. Part II. Homogeneous Lambertian and anisotropic
     !   surfaces, Appl. Optics, 46, 4455–4464, doi:10.1364/ao.46.004455, 2007.
     !
-    ! The algorithms are can be referenced to the following papers:
+    ! The algorithms can be referenced to the following papers:
     !
     ! Cox, C. and Munk, W.: Some problems in optical oceanography,
     !   J. Mar. Res., 14, 63–78, 1954. 
@@ -1230,21 +1230,19 @@ subroutine shd_sfc__brdfOcean(&
     real :: angZenView, angZenSun, angAziSunView, angAziSunWind
     real :: propWC, refWC, refGL, refSW
 
-    ! relative azimuth between Sun and Viewer (0 to 2PI)
-    if (dPhi .lt. 0.0) then
-        phiSV = dPhi + 2.0*pi_
-    else if (dPhi .ge. 2.0*pi_) then
-        phiSV = dPhi - 2.0*pi_
+    ! preprocess input parameters
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    ! minimum and maximum wavelength cut (400 to 4000 nm)
+    if (wvl .lt. 0.4) then
+        waveLen = 0.4
+    else if (wvl .gt. 4.0) then
+        waveLen = 4.0
     else
-        phiSV = dPhi
+        waveLen = wvl
     end if
 
-    ! relative azimuth between Sun and Wind (0 to 2PI)
-    ! note: disabled Sun-Wind azimuthal difference (phiW=phiS)
-    !       after being disabled, calculations agree perfectly with libRadtran
-    phiSW = phiS - phiW
-    if (phiSW .lt. 0.0)     phiSW = phiSW + 2.0*pi_
-    if (phiSW .ge. 2.0*pi_) phiSW = phiSW - 2.0*pi_
+    ! minimum wind speed cut (too low wind speed will cause extreme sunglint)
+    windSpeed = max(wspd, 0.25)
 
     ! solar zenith angle
     if (muInc .le. 0.028) then
@@ -1260,17 +1258,22 @@ subroutine shd_sfc__brdfOcean(&
         angZenView = acos(muOut)*rad2deg_
     end if
 
-    ! minimum and maximum wavelength cut (400 to 4000 nm)
-    if (wvl .lt. 0.4) then
-        waveLen = 0.4
-    else if (wvl .gt. 4.0) then
-        waveLen = 4.0
+    ! relative azimuth between Sun and Viewer (0 to 2PI)
+    if (dPhi .lt. 0.0) then
+        phiSV = dPhi + 2.0*pi_
+    else if (dPhi .ge. 2.0*pi_) then
+        phiSV = dPhi - 2.0*pi_
     else
-        waveLen = wvl
+        phiSV = dPhi
     end if
 
-    ! minimum wind speed cut (too low wind speed will cause extreme sunglint)
-    windSpeed = max(wspd, 0.25)
+    ! relative azimuth between Sun and Wind (0 to 2PI)
+    ! note: disabled Sun-Wind azimuthal difference (phiW=phiS)
+    !       after being disabled, calculations agree perfectly with libRadtran
+    phiSW = phiS - phiW
+    if (phiSW .lt. 0.0)     phiSW = phiSW + 2.0*pi_
+    if (phiSW .ge. 2.0*pi_) phiSW = phiSW - 2.0*pi_
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! get water refractive indices based on wavelenth (micron) and salinity
     !╭────────────────────────────────────────────────────────────────────────────╮!
@@ -1524,7 +1527,7 @@ subroutine backscatter(&
     !   reflectance
     n12 = sqrt(nr*nr + ni*ni)
 
-    refSW = (1.0d0/(n12*n12)) * refSW1*tds*tdv/(1.0d0 - a*refSW1)
+    refSW = (1.0/(n12*n12)) * refSW1*tds*tdv/(1.0 - a*refSW1)
 
 end subroutine backscatter
 
@@ -1840,15 +1843,20 @@ subroutine indwat(waveLen, xsal, nr, ni)
 
 end subroutine indwat
 
-subroutine getbound(xvals, ifirst, ilast, x, ind1, ind2)
+subroutine getbound(&
+    xvals, ifirst, ilast, x, &
+    ind1, ind2)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
     ! Description: finds the bounds xvals(ind1) and xvals(ind2)
     !   for which x is bounded.
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
-    real xvals(*), x
-    integer ind1, ind2, ifirst, ilast, i, imid
+    real,    intent(in)  :: xvals(*), x
+    integer, intent(in)  :: ifirst, ilast
+    integer, intent(out) :: ind1, ind2
+
+    integer :: i, imid
 
     imid = ilast/2 + 1
 
